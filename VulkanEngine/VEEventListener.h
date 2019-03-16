@@ -32,14 +32,13 @@ namespace ve {
 	*
 	*/
 	enum veEventType {
-		VE_EVENT_NONE,				///<Empty event
-		VE_EVENT_FRAME_STARTED,		///<The frame has been started
-		VE_EVENT_PRERENDER,			///<All events have been processed, but no rendering yet
-		VE_EVENT_FRAME_ENDED,		///<The frame has been rendered and is ready to be presented
-		VE_EVENT_KEYBOARD,			///<A keyboard event
-		VE_EVENT_MOUSEMOVE,			///<The mouse has been moved
-		VE_EVENT_MOUSEBUTTON,		///<A mouse button event
-		VE_EVENT_MOUSESCROLL		///<Mouse scroll event
+		VE_EVENT_NONE=0,				///<Empty event
+		VE_EVENT_FRAME_STARTED=1,		///<The frame has been started
+		VE_EVENT_FRAME_ENDED=2,			///<The frame has been rendered and is ready to be presented
+		VE_EVENT_KEYBOARD=4,			///<A keyboard event
+		VE_EVENT_MOUSEMOVE=8,			///<The mouse has been moved
+		VE_EVENT_MOUSEBUTTON=16,		///<A mouse button event
+		VE_EVENT_MOUSESCROLL=32			///<Mouse scroll event
 	};
 
 	/**
@@ -98,8 +97,6 @@ namespace ve {
 
 		///Before frame rendering and all event processing. Event cannot be consumed.
 		virtual void onFrameStarted(veEvent event) {};
-		///All events have been processed, but no rendering yet, you can still fix problems before rendering
-		virtual void onPreRender(veEvent event) {};
 		///After frame rendering and all event processing. Event cannot be consumed.
 		virtual void onFrameEnded(veEvent event) {};
 		///Keyboard event.  Event can be consumed.

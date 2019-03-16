@@ -20,7 +20,10 @@ namespace ve {
 
 	VEEngine * g_pVEEngineSingleton = nullptr;	///<Singleton pointer to the only VEEngine instance
 
-
+	/**
+	* \brief Constructor of my VEEngine
+	* \param[in] debug Switch debuggin on or off
+	*/
 	VEEngine::VEEngine(bool debug) : m_debug(debug) {
 		g_pVEEngineSingleton = this; 
 	}
@@ -416,9 +419,6 @@ namespace ve {
 				m_framebufferResized = false;
 			}
 			
-			event.type = VE_EVENT_PRERENDER;	//notify all listeners that we are about to begin rendering
-			callListeners(m_dt, event);
-
 			processEvents(m_dt);				//process all current events, including pressed keys
 
 			m_pRenderer->drawFrame();			//draw the next frame

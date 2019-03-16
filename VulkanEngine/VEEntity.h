@@ -138,6 +138,8 @@ namespace ve {
 		virtual void getBoundingSphere( glm::vec3 *center, float *radius );		//return center and radius for a bounding sphere
 	};
 
+	class VELight;
+
 	/**
 	*
 	* \brief A camera that can be used to take photos of the scene.
@@ -146,7 +148,6 @@ namespace ve {
 	* represents the camera frustum. The base class however should never be used. Use a derived class.
 	*
 	*/
-	class VELight;
 	class VECamera : public VEEntity {
 	public:
 		float m_nearPlane = 0.2f;	///<The distannce of the near plane to the camera origin

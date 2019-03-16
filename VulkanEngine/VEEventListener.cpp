@@ -33,10 +33,6 @@ namespace ve {
 			onFrameStarted(event);
 			return false;
 			break;
-		case VE_EVENT_PRERENDER:
-			onPreRender(event);
-			return false;
-			break;
 		case VE_EVENT_FRAME_ENDED:
 			onFrameEnded(event);
 			return false;

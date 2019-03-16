@@ -74,6 +74,10 @@ namespace ve {
 	protected:
 
 	public:
+		/**
+		* \brief Constructor of my engine
+		* \param[in] debug Switch debuggin on or off
+		*/
 		MyVulkanEngine( bool debug=false) : VEEngine(debug) {};
 		~MyVulkanEngine() {};
 

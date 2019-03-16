@@ -138,9 +138,9 @@ Functions</h2></td></tr>
 <tr class="memitem:a9e124e61977a97db92adaad757425d9a"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacevh.html#a9e124e61977a97db92adaad757425d9a">vhBufCreateFramebuffers</a> (VkDevice device, std::vector&lt; VkImageView &gt; imageViews, VkImageView depthImageView, VkRenderPass renderPass, VkExtent2D extent, std::vector&lt; VkFramebuffer &gt; &amp;frameBuffers)</td></tr>
 <tr class="memdesc:a9e124e61977a97db92adaad757425d9a"><td class="mdescLeft">&#160;</td><td class="mdescRight">Create framebuffers (color + depth), one for each swap chain image.  <a href="#a9e124e61977a97db92adaad757425d9a">More...</a><br /></td></tr>
 <tr class="separator:a9e124e61977a97db92adaad757425d9a"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a895347653977eb9bb45dff2f39c4e8e5"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacevh.html#a895347653977eb9bb45dff2f39c4e8e5">vhBufCopySwapChainImageToHost</a> (VkDevice device, VmaAllocator allocator, VkQueue graphicsQueue, VkCommandPool commandPool, VkImage image, byte *bufferData, uint32_t width, uint32_t height, uint32_t imageSize)</td></tr>
-<tr class="memdesc:a895347653977eb9bb45dff2f39c4e8e5"><td class="mdescLeft">&#160;</td><td class="mdescRight">Copy a swap chain image to a data buffer, after it has been rendered into.  <a href="#a895347653977eb9bb45dff2f39c4e8e5">More...</a><br /></td></tr>
-<tr class="separator:a895347653977eb9bb45dff2f39c4e8e5"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a7f674603fe81202af0cdab1f669a15b7"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacevh.html#a7f674603fe81202af0cdab1f669a15b7">vhBufCopySwapChainImageToHost</a> (VkDevice device, VmaAllocator allocator, VkQueue graphicsQueue, VkCommandPool commandPool, VkImage image, gli::byte *bufferData, uint32_t width, uint32_t height, uint32_t imageSize)</td></tr>
+<tr class="memdesc:a7f674603fe81202af0cdab1f669a15b7"><td class="mdescLeft">&#160;</td><td class="mdescRight">Copy a swap chain image to a data buffer, after it has been rendered into.  <a href="#a7f674603fe81202af0cdab1f669a15b7">More...</a><br /></td></tr>
+<tr class="separator:a7f674603fe81202af0cdab1f669a15b7"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a90901f6f2cb0f3d551806520abce0dc8"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacevh.html#a90901f6f2cb0f3d551806520abce0dc8">vhBufCreateVertexBuffer</a> (VkDevice device, VmaAllocator allocator, VkQueue graphicsQueue, VkCommandPool commandPool, std::vector&lt; <a class="el" href="structvh_1_1vh_vertex.html">vh::vhVertex</a> &gt; &amp;vertices, VkBuffer *vertexBuffer, VmaAllocation *vertexBufferAllocation)</td></tr>
 <tr class="memdesc:a90901f6f2cb0f3d551806520abce0dc8"><td class="mdescLeft">&#160;</td><td class="mdescRight">Create a Vulkan vertex buffer.  <a href="#a90901f6f2cb0f3d551806520abce0dc8">More...</a><br /></td></tr>
 <tr class="separator:a90901f6f2cb0f3d551806520abce0dc8"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -872,8 +872,8 @@ void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="name
 
 </div>
 </div>
-<a id="a895347653977eb9bb45dff2f39c4e8e5"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a895347653977eb9bb45dff2f39c4e8e5">&#9670;&nbsp;</a></span>vhBufCopySwapChainImageToHost()</h2>
+<a id="a7f674603fe81202af0cdab1f669a15b7"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a7f674603fe81202af0cdab1f669a15b7">&#9670;&nbsp;</a></span>vhBufCopySwapChainImageToHost()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -911,7 +911,7 @@ void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="name
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype">byte *&#160;</td>
+          <td class="paramtype">gli::byte *&#160;</td>
           <td class="paramname"><em>bufferData</em>, </td>
         </tr>
         <tr>
@@ -3305,7 +3305,7 @@ void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="name
 </div><!-- contents -->
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>
-Generated on Fri Mar 15 2019 13:41:22 for Vienna Vulkan Engine by &#160;<a href="http://www.doxygen.org/index.html">
+Generated on Sat Mar 16 2019 19:29:41 for Vienna Vulkan Engine by &#160;<a href="http://www.doxygen.org/index.html">
 <img class="footer" src="doxygen.png" alt="doxygen"/>
 </a> 1.8.15
 </small></address>

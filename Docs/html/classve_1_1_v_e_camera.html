@@ -73,6 +73,11 @@ $(function() {
 <div class="title">ve::VECamera Class Reference<span class="mlabels"><span class="mlabel">abstract</span></span></div>  </div>
 </div><!--header-->
 <div class="contents">
+
+<p>A camera that can be used to take photos of the scene.  
+ <a href="classve_1_1_v_e_camera.html#details">More...</a></p>
+
+<p><code>#include &lt;<a class="el" href="_v_e_entity_8h_source.html">VEEntity.h</a>&gt;</code></p>
 <div class="dynheader">
 Inheritance diagram for ve::VECamera:</div>
 <div class="dyncontent">
@@ -89,10 +94,10 @@ Inheritance diagram for ve::VECamera:</div>
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-methods"></a>
 Public Member Functions</h2></td></tr>
 <tr class="memitem:afd7c652ac8a4367a5bace8bf790c1ea8"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_camera.html#afd7c652ac8a4367a5bace8bf790c1ea8">VECamera</a> (std::string name)</td></tr>
-<tr class="memdesc:afd7c652ac8a4367a5bace8bf790c1ea8"><td class="mdescLeft">&#160;</td><td class="mdescRight"><a class="el" href="classve_1_1_v_e_camera.html">VECamera</a> constructor. Set nearPlane, farPlane to a default value.  <a href="#afd7c652ac8a4367a5bace8bf790c1ea8">More...</a><br /></td></tr>
+<tr class="memdesc:afd7c652ac8a4367a5bace8bf790c1ea8"><td class="mdescLeft">&#160;</td><td class="mdescRight"><a class="el" href="classve_1_1_v_e_camera.html" title="A camera that can be used to take photos of the scene.">VECamera</a> constructor. Set nearPlane, farPlane to a default value.  <a href="#afd7c652ac8a4367a5bace8bf790c1ea8">More...</a><br /></td></tr>
 <tr class="separator:afd7c652ac8a4367a5bace8bf790c1ea8"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:adeea393f0b983f5740f746afb92a3be0"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_camera.html#adeea393f0b983f5740f746afb92a3be0">VECamera</a> (std::string name, float nearPlane, float farPlane)</td></tr>
-<tr class="memdesc:adeea393f0b983f5740f746afb92a3be0"><td class="mdescLeft">&#160;</td><td class="mdescRight"><a class="el" href="classve_1_1_v_e_camera.html">VECamera</a> constructor.  <a href="#adeea393f0b983f5740f746afb92a3be0">More...</a><br /></td></tr>
+<tr class="memdesc:adeea393f0b983f5740f746afb92a3be0"><td class="mdescLeft">&#160;</td><td class="mdescRight"><a class="el" href="classve_1_1_v_e_camera.html" title="A camera that can be used to take photos of the scene.">VECamera</a> constructor.  <a href="#adeea393f0b983f5740f746afb92a3be0">More...</a><br /></td></tr>
 <tr class="separator:adeea393f0b983f5740f746afb92a3be0"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ac08c3a66d9cbc131bf042ab0f356a989"><td class="memItemLeft" align="right" valign="top"><a id="ac08c3a66d9cbc131bf042ab0f356a989"></a>
 virtual glm::mat4&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_camera.html#ac08c3a66d9cbc131bf042ab0f356a989">getProjectionMatrix</a> ()=0</td></tr>
@@ -252,7 +257,10 @@ std::string&#160;</td><td class="memItemRight" valign="bottom"><a class="el" hre
 <tr class="memdesc:a3b3f5063b5de55426c522032e838236a inherit pro_attribs_classve_1_1_v_e_named_class"><td class="mdescLeft">&#160;</td><td class="mdescRight">Name of this instance. <br /></td></tr>
 <tr class="separator:a3b3f5063b5de55426c522032e838236a inherit pro_attribs_classve_1_1_v_e_named_class"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
-<h2 class="groupheader">Constructor &amp; Destructor Documentation</h2>
+<a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
+<div class="textblock"><p>A camera that can be used to take photos of the scene. </p>
+<p><a class="el" href="classve_1_1_v_e_camera.html" title="A camera that can be used to take photos of the scene.">VECamera</a> is derived from <a class="el" href="classve_1_1_v_e_entity.html" title="Represents any object that can be put into a scene.">VEEntity</a> and can be put into the scene. It produces a projection matrix which represents the camera frustum. The base class however should never be used. Use a derived class. </p>
+</div><h2 class="groupheader">Constructor &amp; Destructor Documentation</h2>
 <a id="afd7c652ac8a4367a5bace8bf790c1ea8"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#afd7c652ac8a4367a5bace8bf790c1ea8">&#9670;&nbsp;</a></span>VECamera() <span class="overload">[1/2]</span></h2>
 
@@ -269,7 +277,7 @@ std::string&#160;</td><td class="memItemRight" valign="bottom"><a class="el" hre
       </table>
 </div><div class="memdoc">
 
-<p><a class="el" href="classve_1_1_v_e_camera.html">VECamera</a> constructor. Set nearPlane, farPlane to a default value. </p>
+<p><a class="el" href="classve_1_1_v_e_camera.html" title="A camera that can be used to take photos of the scene.">VECamera</a> constructor. Set nearPlane, farPlane to a default value. </p>
 <dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
     <tr><td class="paramdir">[in]</td><td class="paramname">name</td><td>Name of the camera. </td></tr>
@@ -311,7 +319,7 @@ std::string&#160;</td><td class="memItemRight" valign="bottom"><a class="el" hre
       </table>
 </div><div class="memdoc">
 
-<p><a class="el" href="classve_1_1_v_e_camera.html">VECamera</a> constructor. </p>
+<p><a class="el" href="classve_1_1_v_e_camera.html" title="A camera that can be used to take photos of the scene.">VECamera</a> constructor. </p>
 <dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
     <tr><td class="paramdir">[in]</td><td class="paramname">name</td><td>Name of the camera. </td></tr>
@@ -355,7 +363,7 @@ std::string&#160;</td><td class="memItemRight" valign="bottom"><a class="el" hre
   </table>
   </dd>
 </dl>
-<dl class="section return"><dt>Returns</dt><dd>a new <a class="el" href="classve_1_1_v_e_camera.html">VECamera</a> that can be used to create shadow maps </dd></dl>
+<dl class="section return"><dt>Returns</dt><dd>a new <a class="el" href="classve_1_1_v_e_camera.html" title="A camera that can be used to take photos of the scene.">VECamera</a> that can be used to create shadow maps </dd></dl>
 
 </div>
 </div>
@@ -414,7 +422,7 @@ std::string&#160;</td><td class="memItemRight" valign="bottom"><a class="el" hre
 </div><!-- contents -->
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>
-Generated on Fri Mar 15 2019 13:41:20 for Vienna Vulkan Engine by &#160;<a href="http://www.doxygen.org/index.html">
+Generated on Sat Mar 16 2019 19:29:40 for Vienna Vulkan Engine by &#160;<a href="http://www.doxygen.org/index.html">
 <img class="footer" src="doxygen.png" alt="doxygen"/>
 </a> 1.8.15
 </small></address>
