@@ -23,7 +23,7 @@ namespace ve {
 	/**
 	* \brief Constructor of my VEEngine
 	* \param[in] debug Switch debuggin on or off
-	*/
+	*/ 
 	VEEngine::VEEngine(bool debug) : m_debug(debug) {
 		g_pVEEngineSingleton = this; 
 	}
