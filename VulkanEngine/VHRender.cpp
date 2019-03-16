@@ -285,7 +285,7 @@ namespace vh {
 				descriptorWrites[i].pImageInfo = &imageInfos[i];
 			}
 			else {
-				throw std::exception("Error: No resource in the descriptor set list!");
+				throw std::runtime_error("Error: No resource in the descriptor set list!");
 			}
 			descriptorWrites[i].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
 			descriptorWrites[i].dstSet = descriptorSet;

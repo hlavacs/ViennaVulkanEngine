@@ -460,8 +460,8 @@ namespace vh {
 		vh::vhBufCreateBuffer(	allocator, imageSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VMA_MEMORY_USAGE_CPU_ONLY, 
 								&stagingBuffer, &stagingBufferAllocation);
 
-		byte* mappedData;
-		byte* memPointer;
+		gli::byte* mappedData;
+		gli::byte* memPointer;
 		vmaMapMemory(allocator, stagingBufferAllocation, (void**)&mappedData);
 		memPointer = mappedData;
 		for ( auto image : imageData ) {
@@ -711,7 +711,7 @@ namespace vh {
 	*/
 	void vhBufCopySwapChainImageToHost(VkDevice device, VmaAllocator allocator, VkQueue graphicsQueue,
 										VkCommandPool commandPool, 
-										VkImage image, byte *bufferData, uint32_t width, uint32_t height, uint32_t imageSize) {
+										VkImage image, gli::byte *bufferData, uint32_t width, uint32_t height, uint32_t imageSize) {
 
 		VkBuffer stagingBuffer;
 		VmaAllocation stagingBufferAllocation;
@@ -736,10 +736,10 @@ namespace vh {
 		vmaUnmapMemory(allocator, stagingBufferAllocation);
 
 		for (uint32_t i = 0; i < width * height; i++) {
-			byte r = bufferData[4 * i + 0];
-			byte g = bufferData[4 * i + 1];
-			byte b = bufferData[4 * i + 2];
-			byte a = bufferData[4 * i + 3];
+			gli::byte r = bufferData[4 * i + 0];
+			gli::byte g = bufferData[4 * i + 1];
+			gli::byte b = bufferData[4 * i + 2];
+			gli::byte a = bufferData[4 * i + 3];
 
 			bufferData[4 * i + 0] = b;
 			bufferData[4 * i + 1] = g;

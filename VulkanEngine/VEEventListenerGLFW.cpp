@@ -230,7 +230,7 @@ namespace ve {
 			uint32_t imageSize = extent.width * extent.height * 4;
 			VkImage image = getRendererPointer()->getSwapChainImage();
 
-			byte *dataImage = new byte[imageSize];
+			gli::byte *dataImage = new gli::byte[imageSize];
 
 			vh::vhBufCopySwapChainImageToHost(getRendererPointer()->getDevice(), getRendererPointer()->getVmaAllocator(),
 				getRendererPointer()->getGraphicsQueue(), getRendererPointer()->getCommandPool(),

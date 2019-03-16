@@ -74,7 +74,7 @@ namespace ve {
 	protected:
 
 	public:
-		MyVulkanEngine() {};
+		MyVulkanEngine( bool debug=false) : VEEngine(debug) {};
 		~MyVulkanEngine() {};
 
 		///Register an event listener to interact with the user
@@ -153,7 +153,7 @@ using namespace ve;
 
 int main() {
 
-	MyVulkanEngine mve;
+	MyVulkanEngine mve(true);	//enable or disable debugging (=callback, valication layers)
 	mve.initEngine();
 	mve.loadLevel();
 

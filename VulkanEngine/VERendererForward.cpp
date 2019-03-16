@@ -240,7 +240,7 @@ namespace ve {
 	void VERendererForward::updatePerFrameUBO( uint32_t imageIndex) {
 		VECamera * camera = (VECamera*)getSceneManagerPointer()->getEntity(getSceneManagerPointer()->m_cameraName);
 		if (camera == nullptr) {
-			throw std::exception("Error: did not find camera in Scene Manager!");
+			throw std::runtime_error("Error: did not find camera in Scene Manager!");
 		}
 
 		vh::vhUBOPerFrame ubo = {};

@@ -71,7 +71,7 @@ namespace ve {
 	public:
 		ThreadPool *m_threadPool;				///<A threadpool for parallel processing
 
-		VEEngine();								//Only create ONE instance of the engine!
+		VEEngine( bool debug = false );								//Only create ONE instance of the engine!
 		~VEEngine() {};
 
 		virtual void initEngine();		//Create all engine components

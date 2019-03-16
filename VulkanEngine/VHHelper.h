@@ -214,7 +214,7 @@ namespace vh {
 								VkImageView depthImageView, VkRenderPass renderPass, VkExtent2D extent,
 								std::vector<VkFramebuffer> &frameBuffers);
 	void vhBufCopySwapChainImageToHost(VkDevice device, VmaAllocator allocator, VkQueue graphicsQueue,
-								VkCommandPool commandPool, VkImage image, byte *bufferData, 
+								VkCommandPool commandPool, VkImage image, gli::byte *bufferData, 
 								uint32_t width, uint32_t height, uint32_t imageSize);
 	void vhBufCreateVertexBuffer(	VkDevice device, VmaAllocator allocator,
 									VkQueue graphicsQueue, VkCommandPool commandPool,

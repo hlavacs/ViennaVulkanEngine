@@ -21,7 +21,7 @@ namespace ve {
 	VEEngine * g_pVEEngineSingleton = nullptr;	///<Singleton pointer to the only VEEngine instance
 
 
-	VEEngine::VEEngine() {
+	VEEngine::VEEngine(bool debug) : m_debug(debug) {
 		g_pVEEngineSingleton = this; 
 	}
 
@@ -43,8 +43,13 @@ namespace ve {
 		m_threadPool = new ThreadPool(20); //worker threads
 		m_threadPool->init();
 
-		vhDevCreateInstance(getRequiredInstanceExtensions(), getValidationLayers(), &m_instance);	//Vulkan instance
-		vh::vhSetupDebugCallback( m_instance, &callback );				//create a debug callback for printing debug information
+		std::vector<const char*> instanceExtensions = getRequiredInstanceExtensions();
+		std::vector<const char*> validationLayers = getValidationLayers();
+		vhDevCreateInstance(instanceExtensions, validationLayers, &m_instance);
+		
+		if( m_debug )
+			vh::vhSetupDebugCallback( m_instance, &callback );				//create a debug callback for printing debug information
+		
 		m_pWindow->createSurface(m_instance, &m_pRenderer->m_surface);	//create a Vulkan surface
 		m_pRenderer->initRenderer();		//initialize the renderer
 		m_pSceneManager->initSceneManager();	//initialize the scene manager
@@ -110,7 +115,9 @@ namespace ve {
 		m_pRenderer->closeRenderer();
 		m_pWindow->closeWindow();
 
-		vhDebugDestroyReportCallbackEXT(m_instance, callback, nullptr);
+		if( m_debug )
+			vhDebugDestroyReportCallbackEXT(m_instance, callback, nullptr);
+
 		vkDestroySurfaceKHR(m_instance, m_pRenderer->m_surface, nullptr);
 		vkDestroyInstance(m_instance, nullptr);
 	}
