@@ -1,0 +1,219 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" ToolsVersion="14.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup Label="ProjectConfigurations">
+    <ProjectConfiguration Include="Debug|Win32">
+      <Configuration>Debug</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|Win32">
+      <Configuration>Release</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Debug|x64">
+      <Configuration>Debug</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|x64">
+      <Configuration>Release</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+  </ItemGroup>
+  <PropertyGroup Label="Globals">
+    <ProjectGuid>{F79C21D7-E79D-4EE7-A4EA-57FE14D1CFB7}</ProjectGuid>
+    <Keyword>Win32Proj</Keyword>
+    <RootNamespace>VulkanTest</RootNamespace>
+    <WindowsTargetPlatformVersion>8.1</WindowsTargetPlatformVersion>
+    <ProjectName>VulkanEngine</ProjectName>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <UseDebugLibraries>true</UseDebugLibraries>
+    <PlatformToolset>v140</PlatformToolset>
+    <CharacterSet>Unicode</CharacterSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <UseDebugLibraries>false</UseDebugLibraries>
+    <PlatformToolset>v140</PlatformToolset>
+    <WholeProgramOptimization>true</WholeProgramOptimization>
+    <CharacterSet>Unicode</CharacterSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <UseDebugLibraries>true</UseDebugLibraries>
+    <PlatformToolset>v140</PlatformToolset>
+    <CharacterSet>Unicode</CharacterSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <UseDebugLibraries>false</UseDebugLibraries>
+    <PlatformToolset>v140</PlatformToolset>
+    <WholeProgramOptimization>true</WholeProgramOptimization>
+    <CharacterSet>Unicode</CharacterSet>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+  <ImportGroup Label="ExtensionSettings">
+  </ImportGroup>
+  <ImportGroup Label="Shared">
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <PropertyGroup Label="UserMacros" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <LinkIncremental>false</LinkIncremental>
+    <IncludePath>$(SolutionDir)\external\VulkanSDK\1.1.70.1\Include;$(SolutionDir)\external\glm;$(SolutionDir)\external\stb;$(SolutionDir)\external\glfw\glfw-3.2.1.bin.WIN32\include;$(SolutionDir)\external\VMA;$(SolutionDir)\external\Assimp\include;$(SolutionDir)\external\gli-master;$(SolutionDir)\external\threadpool;$(IncludePath)</IncludePath>
+    <LibraryPath>$(SolutionDir)\external\VulkanSDK\1.1.70.1\Lib32;$(SolutionDir)\external\glfw\glfw-3.2.1.bin.WIN32\lib-vc2015;$(SolutionDir)\external\Assimp\lib\x86\Debug;$(LibraryPath)</LibraryPath>
+    <OutDir>$(SolutionDir)\bin\$(Platform)\$(Configuration)\</OutDir>
+    <IntDir>$(SolutionDir)\bin\$(Platform)\$(Configuration)\</IntDir>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <LinkIncremental>false</LinkIncremental>
+    <IncludePath>$(SolutionDir)\external\VulkanSDK\1.1.70.1\Include;$(SolutionDir)\external\glm;$(SolutionDir)\external\stb;$(SolutionDir)\external\glfw\glfw-3.2.1.bin.WIN64\include;$(SolutionDir)\external\VMA;$(SolutionDir)\external\Assimp\include;$(SolutionDir)\external\gli-master;$(SolutionDir)\external\threadpool;$(IncludePath)</IncludePath>
+    <LibraryPath>$(SolutionDir)\external\glfw\glfw-3.2.1.bin.WIN64\lib-vc2015;$(SolutionDir)\external\VulkanSDK\1.1.70.1\Lib;$(SolutionDir)\external\Assimp\lib\x64\Debug;$(LibraryPath)</LibraryPath>
+    <OutDir>$(SolutionDir)\bin\$(Platform)\$(Configuration)\</OutDir>
+    <IntDir>$(SolutionDir)\bin\$(Platform)\$(Configuration)\</IntDir>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <LinkIncremental>false</LinkIncremental>
+    <IncludePath>$(SolutionDir)\external\VulkanSDK\1.1.70.1\Include;$(SolutionDir)\external\glm;$(SolutionDir)\external\stb;$(SolutionDir)\external\glfw\glfw-3.2.1.bin.WIN32\include;$(SolutionDir)\external\VMA;$(SolutionDir)\external\Assimp\include;$(SolutionDir)\external\gli-master;$(SolutionDir)\external\threadpool;$(IncludePath)</IncludePath>
+    <LibraryPath>$(SolutionDir)\external\VulkanSDK\1.1.70.1\Lib32;$(SolutionDir)\external\glfw\glfw-3.2.1.bin.WIN32\lib-vc2015;$(SolutionDir)\external\Assimp\lib\x86\Release;$(LibraryPath)</LibraryPath>
+    <IntDir>$(SolutionDir)\bin\$(Platform)\$(Configuration)\</IntDir>
+    <OutDir>$(SolutionDir)\bin\$(Platform)\$(Configuration)\</OutDir>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <LinkIncremental>false</LinkIncremental>
+    <IncludePath>$(SolutionDir)\external\VulkanSDK\1.1.70.1\Include;$(SolutionDir)\external\glm;$(SolutionDir)\external\stb;$(SolutionDir)\external\glfw\glfw-3.2.1.bin.WIN64\include;$(SolutionDir)\external\VMA;$(SolutionDir)\external\Assimp\include;$(SolutionDir)\external\gli-master;$(SolutionDir)\external\threadpool;$(IncludePath)</IncludePath>
+    <LibraryPath>$(SolutionDir)\external\glfw\glfw-3.2.1.bin.WIN64\lib-vc2015;$(SolutionDir)\external\VulkanSDK\1.1.70.1\Lib;$(SolutionDir)\external\Assimp\lib\x64\Release;$(LibraryPath)</LibraryPath>
+    <OutDir>$(SolutionDir)\bin\$(Platform)\$(Configuration)\</OutDir>
+    <IntDir>$(SolutionDir)\bin\$(Platform)\$(Configuration)\</IntDir>
+  </PropertyGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <ClCompile>
+      <PrecompiledHeader>
+      </PrecompiledHeader>
+      <WarningLevel>Level3</WarningLevel>
+      <Optimization>Disabled</Optimization>
+      <PreprocessorDefinitions>WIN32;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>$(SolutionDir)\external\VulkanSDK\1.1.70.1\Include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+    </ClCompile>
+    <Link>
+      <SubSystem>Console</SubSystem>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <AdditionalLibraryDirectories>$(SolutionDir)\external\VulkanSDK\1.1.70.1\Lib32;$(SolutionDir)\external\glfw-3.2.1.bin.WIN32\lib-vc2015;$(SolutionDir)\external\VulkanSDK\1.1.70.1\Lib32;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>Vulkan-1.lib;glfw3.lib;assimp-vc140-mt.lib;%(AdditionalDependencies)</AdditionalDependencies>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <ClCompile>
+      <PrecompiledHeader>
+      </PrecompiledHeader>
+      <WarningLevel>Level3</WarningLevel>
+      <Optimization>Disabled</Optimization>
+      <PreprocessorDefinitions>_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ClCompile>
+    <Link>
+      <SubSystem>Console</SubSystem>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <AdditionalDependencies>Vulkan-1.lib;glfw3.lib;assimp-vc140-mt.lib;%(AdditionalDependencies)</AdditionalDependencies>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <PrecompiledHeader>
+      </PrecompiledHeader>
+      <Optimization>MaxSpeed</Optimization>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <PreprocessorDefinitions>WIN32;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>$(SolutionDir)\external\VulkanSDK\1.1.70.1\Include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+    </ClCompile>
+    <Link>
+      <SubSystem>Console</SubSystem>
+      <EnableCOMDATFolding>true</EnableCOMDATFolding>
+      <OptimizeReferences>true</OptimizeReferences>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <AdditionalLibraryDirectories>C:\Users\hlavacs\Documents\Visual Studio 2015\Libraries\glfw-3.2.1.bin.WIN32\lib-vc2015;C:\VulkanSDK\1.1.70.1\Lib32;C:\Users\hlavach4cs\Documents\Visual Studio 2015\Libraries\glfw-3.2.1.bin.WIN32\lib-vc2015;D:\Programme\VulkanSDK\1.1.70.1\Lib32;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>Vulkan-1.lib;glfw3.lib;assimp-vc140-mt.lib;%(AdditionalDependencies)</AdditionalDependencies>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <PrecompiledHeader>
+      </PrecompiledHeader>
+      <Optimization>MaxSpeed</Optimization>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <PreprocessorDefinitions>NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ClCompile>
+    <Link>
+      <SubSystem>Console</SubSystem>
+      <EnableCOMDATFolding>true</EnableCOMDATFolding>
+      <OptimizeReferences>true</OptimizeReferences>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <AdditionalDependencies>Vulkan-1.lib;glfw3.lib;assimp-vc140-mt.lib;%(AdditionalDependencies)</AdditionalDependencies>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemGroup>
+    <ClInclude Include="VESubrenderC1.h" />
+    <ClInclude Include="VESubrenderCubemap.h" />
+    <ClInclude Include="VESubrenderDN.h" />
+    <ClInclude Include="VEEngine.h" />
+    <ClInclude Include="VEEntity.h" />
+    <ClInclude Include="VEEventListener.h" />
+    <ClInclude Include="VEEventListenerGLFW.h" />
+    <ClInclude Include="VEInclude.h" />
+    <ClInclude Include="VENamedClass.h" />
+    <ClInclude Include="VERenderer.h" />
+    <ClInclude Include="VERendererForward.h" />
+    <ClInclude Include="VESceneManager.h" />
+    <ClInclude Include="VESubrender.h" />
+    <ClInclude Include="VESubrenderD.h" />
+    <ClInclude Include="VESubrenderShadow.h" />
+    <ClInclude Include="VEWindow.h" />
+    <ClInclude Include="VEWindowGLFW.h" />
+    <ClInclude Include="VHHelper.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="main.cpp" />
+    <ClCompile Include="VEEngine.cpp" />
+    <ClCompile Include="VEEntity.cpp" />
+    <ClCompile Include="VEEventListener.cpp" />
+    <ClCompile Include="VEEventListenerGLFW.cpp" />
+    <ClCompile Include="VENamedClass.cpp" />
+    <ClCompile Include="VERenderer.cpp" />
+    <ClCompile Include="VERendererForward.cpp" />
+    <ClCompile Include="VESceneManager.cpp" />
+    <ClCompile Include="VESubrender.cpp" />
+    <ClCompile Include="VESubrenderC1.cpp" />
+    <ClCompile Include="VESubrenderCubemap.cpp" />
+    <ClCompile Include="VESubrenderD.cpp" />
+    <ClCompile Include="VESubrenderDN.cpp" />
+    <ClCompile Include="VESubrenderShadow.cpp" />
+    <ClCompile Include="VEWindow.cpp" />
+    <ClCompile Include="VEWindowGLFW.cpp" />
+    <ClCompile Include="VHBuffer.cpp" />
+    <ClCompile Include="VHCommand.cpp" />
+    <ClCompile Include="VHDebug.cpp" />
+    <ClCompile Include="VHDevice.cpp" />
+    <ClCompile Include="VHFile.cpp" />
+    <ClCompile Include="VHMemory.cpp" />
+    <ClCompile Include="VHRender.cpp" />
+    <ClCompile Include="VHSwapchain.cpp" />
+  </ItemGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+  <ImportGroup Label="ExtensionTargets">
+  </ImportGroup>
+</Project>
