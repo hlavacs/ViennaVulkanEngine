@@ -76,6 +76,7 @@
     <LibraryPath>$(SolutionDir)\external\VulkanSDK\1.1.70.1\Lib32;$(SolutionDir)\external\glfw\glfw-3.2.1.bin.WIN32\lib-vc2015;$(SolutionDir)\external\Assimp\lib\x86\Debug;$(LibraryPath)</LibraryPath>
     <OutDir>$(SolutionDir)\bin\$(Platform)\$(Configuration)\</OutDir>
     <IntDir>$(SolutionDir)\bin\$(Platform)\$(Configuration)\</IntDir>
+    <ExecutablePath>$(ExecutablePath)</ExecutablePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <LinkIncremental>false</LinkIncremental>
@@ -83,6 +84,7 @@
     <LibraryPath>$(SolutionDir)\external\glfw\glfw-3.2.1.bin.WIN64\lib-vc2015;$(SolutionDir)\external\VulkanSDK\1.1.70.1\Lib;$(SolutionDir)\external\Assimp\lib\x64\Debug;$(LibraryPath)</LibraryPath>
     <OutDir>$(SolutionDir)\bin\$(Platform)\$(Configuration)\</OutDir>
     <IntDir>$(SolutionDir)\bin\$(Platform)\$(Configuration)\</IntDir>
+    <ExecutablePath>$(ExecutablePath)</ExecutablePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <LinkIncremental>false</LinkIncremental>
@@ -90,6 +92,7 @@
     <LibraryPath>$(SolutionDir)\external\VulkanSDK\1.1.70.1\Lib32;$(SolutionDir)\external\glfw\glfw-3.2.1.bin.WIN32\lib-vc2015;$(SolutionDir)\external\Assimp\lib\x86\Release;$(LibraryPath)</LibraryPath>
     <IntDir>$(SolutionDir)\bin\$(Platform)\$(Configuration)\</IntDir>
     <OutDir>$(SolutionDir)\bin\$(Platform)\$(Configuration)\</OutDir>
+    <ExecutablePath>$(ExecutablePath)</ExecutablePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <LinkIncremental>false</LinkIncremental>
@@ -97,6 +100,7 @@
     <LibraryPath>$(SolutionDir)\external\glfw\glfw-3.2.1.bin.WIN64\lib-vc2015;$(SolutionDir)\external\VulkanSDK\1.1.70.1\Lib;$(SolutionDir)\external\Assimp\lib\x64\Release;$(LibraryPath)</LibraryPath>
     <OutDir>$(SolutionDir)\bin\$(Platform)\$(Configuration)\</OutDir>
     <IntDir>$(SolutionDir)\bin\$(Platform)\$(Configuration)\</IntDir>
+    <ExecutablePath>$(ExecutablePath)</ExecutablePath>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
