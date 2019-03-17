@@ -158,15 +158,15 @@ using namespace ve;
 int main() {
 
 	MyVulkanEngine mve(true);	//enable or disable debugging (=callback, valication layers)
-	mve.initEngine();
-	mve.loadLevel();
-
 
 	try {
+		mve.initEngine();
+		mve.loadLevel();
 		mve.run();
 	}
 	catch (const std::runtime_error& e) {
-		std::cerr << e.what() << std::endl;
+		std::cerr << e.what() << " (press return)" << std::endl;
+		char dummy = getchar();
 		return EXIT_FAILURE;
 	}
 

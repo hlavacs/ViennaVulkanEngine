@@ -94,8 +94,10 @@ namespace ve {
 			//aiProcess_FixInfacingNormals |
 			aiFlags);
 
-		if (pScene == nullptr) return nullptr;
-
+		if (pScene == nullptr) {
+			throw std::runtime_error("Error: Could not load asset file " + filekey + "!");
+			return nullptr;
+		}
 		createMeshes(pScene, filekey, meshes);
 		createMaterials(pScene, basedir, filekey, materials);
 
@@ -135,8 +137,10 @@ namespace ve {
 			//aiProcess_FixInfacingNormals |
 			aiFlags);
 
-		if (pScene == nullptr) return nullptr;
-
+		if (pScene == nullptr) {
+			throw std::runtime_error("Error: Could not load asset file " + filekey + "!");
+			return nullptr;
+		}
 		std::vector<VEMesh*> meshes;
 		createMeshes(pScene, filekey, meshes);
 
@@ -397,6 +401,11 @@ namespace ve {
 			m_materials[filekey] = pMat;
 
 			gli::texture_cube texCube(gli::load(filekey));
+			if (texCube.empty()) {
+				throw std::runtime_error("Error: Could not load cubemap file " + filekey + "!");
+				return nullptr;
+			}
+
 			pMat->mapDiffuse = new VETexture( filekey, texCube );
 		}
 

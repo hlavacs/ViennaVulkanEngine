@@ -447,6 +447,12 @@ namespace vh {
 		for (uint32_t i = 0; i < texNames.size(); i++) {
 			std::string filename = basedir + "/" + texNames[i];
 			imageData[i].pixels = stbi_load(filename.c_str(), &imageData[i].texWidth, &imageData[i].texHeight, &imageData[i].texChannels, STBI_rgb_alpha);
+
+			if (imageData[i].pixels == nullptr) {
+				throw std::runtime_error("Error: Could not load cubemap file " + filename + "!");
+				return;
+			}
+
 			imageData[i].imageSize += imageData[i].texWidth * imageData[i].texHeight * 4;
 			imageSize += imageData[i].imageSize;
 
