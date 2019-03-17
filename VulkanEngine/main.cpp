@@ -37,7 +37,7 @@ namespace ve {
 		LightListener( std::string name) : VEEventListener(name) {};
 
 		bool onKeyboard(veEvent event) {
-			if (event.idata3 == GLFW_PRESS || event.idata3 == GLFW_RELEASE) return false;
+			if ( event.idata3 == GLFW_RELEASE) return false;
 
 			std::set<std::string> &lightnames = getSceneManagerPointer()->getLightnames(); //names of lights in the scene
 			if (lightnames.size() > 0) {
@@ -48,11 +48,17 @@ namespace ve {
 				float speed = 10.0f * (float)event.dt;
 
 				switch (event.idata1) {
+				case GLFW_KEY_Y:
+					e1->multiplyTransform(glm::translate(glm::mat4(1.0f), speed * glm::vec3(0.0f, -1.0f, 0.0f)));
+					break;
+				case GLFW_KEY_I:
+					e1->multiplyTransform(glm::translate(glm::mat4(1.0f), speed * glm::vec3(0.0f, 1.0f, 0.0f)));
+					break;
 				case GLFW_KEY_U:
-					e1->multiplyTransform( glm::translate(glm::mat4(1.0f), speed * glm::vec3(0.0f, 1.0f, 0.0f)));
+					e1->multiplyTransform( glm::translate(glm::mat4(1.0f), speed * glm::vec3(0.0f, 0.0f, 1.0f)));
 					break;
 				case GLFW_KEY_J:
-					e1->multiplyTransform(glm::translate(glm::mat4(1.0f), speed * glm::vec3(0.0f, -1.0f, 0.0f)));
+					e1->multiplyTransform(glm::translate(glm::mat4(1.0f), speed * glm::vec3(0.0f, 0.0f, -1.0f)));
 					break;
 				case GLFW_KEY_H:
 					e1->multiplyTransform(glm::translate(glm::mat4(1.0f), speed * glm::vec3(-1.0f, 0.0f, 0.0f)));
@@ -88,7 +94,7 @@ namespace ve {
 		};
 
 		///Load the first level into the game engine
-		//The engine uses Y-UP!
+		//The engine uses Y-UP, Left-handed
 		void loadLevel() {
 
 			//VEEntity *cubemap = getSceneManagerPointer()->createCubemap("The Cubemap", "models/textures", "grasscube1024.dds");

@@ -92,7 +92,7 @@ namespace ve {
 
 	class VEEntity : public VENamedClass {
 	protected:
-		glm::mat4x4	m_transform = glm::mat4(1.0);	///<Transform from local to parent space
+		glm::mat4x4	m_transform = glm::mat4(1.0);	///<Transform from local to parent space, the engine uses Y-UP, Left-handed
 
 	public:
 		///The entity type determines what kind of entity this is
