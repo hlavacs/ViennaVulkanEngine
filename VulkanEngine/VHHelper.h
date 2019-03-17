@@ -39,9 +39,9 @@
 #include <gli/gli.hpp>
 #include <ThreadPool.h>
 
-#include <assimp\Importer.hpp>
-#include <assimp\scene.h>
-#include <assimp\postprocess.h>
+#include <assimp/Importer.hpp>
+#include <assimp/scene.h>
+#include <assimp/postprocess.h>
 
 #define _USE_MATH_DEFINES
 #include <math.h>
