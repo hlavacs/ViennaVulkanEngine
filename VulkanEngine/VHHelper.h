@@ -87,7 +87,7 @@ namespace vh {
 			bindingDescription.inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
 
 			return bindingDescription;
-		}
+		} 
 
 		///\returns the vertex attribute description of the vertex data
 		static std::array<VkVertexInputAttributeDescription, 4> getAttributeDescriptions() {
