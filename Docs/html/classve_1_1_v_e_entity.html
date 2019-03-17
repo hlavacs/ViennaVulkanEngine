@@ -103,9 +103,7 @@ Public Types</h2></td></tr>
 <a class="el" href="classve_1_1_v_e_entity.html#a2c7f15fd3b11aac4dea3e76cfa508010a07caef08e63d5234399ae67595d94ca4">VE_ENTITY_TYPE_CAMERA_PROJECTIVE</a>, 
 <br />
 &#160;&#160;<a class="el" href="classve_1_1_v_e_entity.html#a2c7f15fd3b11aac4dea3e76cfa508010ac943c13e0a28011a0df66e22a72cd9ab">VE_ENTITY_TYPE_CAMERA_ORTHO</a>, 
-<a class="el" href="classve_1_1_v_e_entity.html#a2c7f15fd3b11aac4dea3e76cfa508010a8c0f915feff41c0b3d5e13f8122bb3d4">VE_ENTITY_TYPE_LIGHT_DIRECTIONAL</a>, 
-<b>VE_ENTITY_TYPE_LIGHT_POINT</b>, 
-<b>VE_ENTITY_TYPE_LIGHT_SPOT</b>
+<b>VE_ENTITY_TYPE_LIGHT</b>
 <br />
  }</td></tr>
 <tr class="memdesc:a2c7f15fd3b11aac4dea3e76cfa508010"><td class="mdescLeft">&#160;</td><td class="mdescRight">The entity type determines what kind of entity this is.  <a href="classve_1_1_v_e_entity.html#a2c7f15fd3b11aac4dea3e76cfa508010">More...</a><br /></td></tr>
@@ -140,6 +138,9 @@ void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="clas
 <tr class="memitem:afe7476a4f8fd9a3a805048ac27a6f07b"><td class="memItemLeft" align="right" valign="top">glm::mat4x4&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_entity.html#afe7476a4f8fd9a3a805048ac27a6f07b">getWorldTransform</a> ()</td></tr>
 <tr class="memdesc:afe7476a4f8fd9a3a805048ac27a6f07b"><td class="mdescLeft">&#160;</td><td class="mdescRight">An entity's world matrix is the local to parent transform multiplied by the parent's world matrix.  <a href="#afe7476a4f8fd9a3a805048ac27a6f07b">More...</a><br /></td></tr>
 <tr class="separator:afe7476a4f8fd9a3a805048ac27a6f07b"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ab214df16d949f99afc71fa7dc75da2d7"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_entity.html#ab214df16d949f99afc71fa7dc75da2d7">lookAt</a> (glm::vec3 eye, glm::vec3 point, glm::vec3 up)</td></tr>
+<tr class="memdesc:ab214df16d949f99afc71fa7dc75da2d7"><td class="mdescLeft">&#160;</td><td class="mdescRight">lookAt function  <a href="#ab214df16d949f99afc71fa7dc75da2d7">More...</a><br /></td></tr>
+<tr class="separator:ab214df16d949f99afc71fa7dc75da2d7"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a57fb05208266b5a931f4bdac25092841"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_entity.html#a57fb05208266b5a931f4bdac25092841">update</a> ()</td></tr>
 <tr class="memdesc:a57fb05208266b5a931f4bdac25092841"><td class="mdescLeft">&#160;</td><td class="mdescRight">Update the entity's UBO buffer with the current world matrix.  <a href="#a57fb05208266b5a931f4bdac25092841">More...</a><br /></td></tr>
 <tr class="separator:a57fb05208266b5a931f4bdac25092841"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -222,7 +223,7 @@ std::vector&lt; VkDescriptorSet &gt;&#160;</td><td class="memItemRight" valign="
 Protected Attributes</h2></td></tr>
 <tr class="memitem:a6d02c9ccf75c72c4cb56672596716cb0"><td class="memItemLeft" align="right" valign="top"><a id="a6d02c9ccf75c72c4cb56672596716cb0"></a>
 glm::mat4x4&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_entity.html#a6d02c9ccf75c72c4cb56672596716cb0">m_transform</a> = glm::mat4(1.0)</td></tr>
-<tr class="memdesc:a6d02c9ccf75c72c4cb56672596716cb0"><td class="mdescLeft">&#160;</td><td class="mdescRight">Transform from local to parent space. <br /></td></tr>
+<tr class="memdesc:a6d02c9ccf75c72c4cb56672596716cb0"><td class="mdescLeft">&#160;</td><td class="mdescRight">Transform from local to parent space, the engine uses Y-UP, Left-handed. <br /></td></tr>
 <tr class="separator:a6d02c9ccf75c72c4cb56672596716cb0"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="inherit_header pro_attribs_classve_1_1_v_e_named_class"><td colspan="2" onclick="javascript:toggleInherit('pro_attribs_classve_1_1_v_e_named_class')"><img src="closed.png" alt="-"/>&#160;Protected Attributes inherited from <a class="el" href="classve_1_1_v_e_named_class.html">ve::VENamedClass</a></td></tr>
 <tr class="memitem:a3b3f5063b5de55426c522032e838236a inherit pro_attribs_classve_1_1_v_e_named_class"><td class="memItemLeft" align="right" valign="top"><a id="a3b3f5063b5de55426c522032e838236a"></a>
@@ -257,8 +258,6 @@ std::string&#160;</td><td class="memItemRight" valign="bottom"><a class="el" hre
 <tr><td class="fieldname"><a id="a2c7f15fd3b11aac4dea3e76cfa508010a07caef08e63d5234399ae67595d94ca4"></a>VE_ENTITY_TYPE_CAMERA_PROJECTIVE&#160;</td><td class="fielddoc"><p>A projective camera, cannot be drawn. </p>
 </td></tr>
 <tr><td class="fieldname"><a id="a2c7f15fd3b11aac4dea3e76cfa508010ac943c13e0a28011a0df66e22a72cd9ab"></a>VE_ENTITY_TYPE_CAMERA_ORTHO&#160;</td><td class="fielddoc"><p>An orthographic camera, cannot be drawn. </p>
-</td></tr>
-<tr><td class="fieldname"><a id="a2c7f15fd3b11aac4dea3e76cfa508010a8c0f915feff41c0b3d5e13f8122bb3d4"></a>VE_ENTITY_TYPE_LIGHT_DIRECTIONAL&#160;</td><td class="fielddoc"><p>Light. </p>
 </td></tr>
 </table>
 
@@ -517,6 +516,50 @@ std::string&#160;</td><td class="memItemRight" valign="bottom"><a class="el" hre
 
 </div>
 </div>
+<a id="ab214df16d949f99afc71fa7dc75da2d7"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ab214df16d949f99afc71fa7dc75da2d7">&#9670;&nbsp;</a></span>lookAt()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">void ve::VEEntity::lookAt </td>
+          <td>(</td>
+          <td class="paramtype">glm::vec3&#160;</td>
+          <td class="paramname"><em>eye</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">glm::vec3&#160;</td>
+          <td class="paramname"><em>point</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">glm::vec3&#160;</td>
+          <td class="paramname"><em>up</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>lookAt function </p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramdir">[in]</td><td class="paramname">eye</td><td>New position of the entity </td></tr>
+    <tr><td class="paramdir">[in]</td><td class="paramname">point</td><td>Entity looks at this point (= new local z axis) </td></tr>
+    <tr><td class="paramdir">[in]</td><td class="paramname">up</td><td>Up vector pointing up </td></tr>
+  </table>
+  </dd>
+</dl>
+
+</div>
+</div>
 <a id="af91e2a9f79b911c7240fc958e70e4881"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#af91e2a9f79b911c7240fc958e70e4881">&#9670;&nbsp;</a></span>multiplyTransform()</h2>
 
@@ -624,7 +667,7 @@ std::string&#160;</td><td class="memItemRight" valign="bottom"><a class="el" hre
 </div><!-- contents -->
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>
-Generated on Sat Mar 16 2019 19:29:40 for Vienna Vulkan Engine by &#160;<a href="http://www.doxygen.org/index.html">
+Generated on Sun Mar 17 2019 15:05:19 for Vienna Vulkan Engine by &#160;<a href="http://www.doxygen.org/index.html">
 <img class="footer" src="doxygen.png" alt="doxygen"/>
 </a> 1.8.15
 </small></address>

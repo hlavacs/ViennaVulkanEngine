@@ -287,6 +287,27 @@ namespace ve {
 		return m_transform;
 	};
 
+
+	/**
+	*
+	* \brief lookAt function
+	*
+	* \param[in] eye New position of the entity
+	* \param[in] point Entity looks at this point (= new local z axis)
+	* \param[in] up Up vector pointing up
+	*
+	*/
+	void VEEntity::lookAt(glm::vec3 eye, glm::vec3 point, glm::vec3 up) {
+		m_transform[3] = glm::vec4(eye.x, eye.y, eye.z, 1.0f);
+		glm::vec3 z = glm::normalize( point - eye );
+		m_transform[2] = glm::vec4(z.x, z.y, z.z, 0.0f);
+		glm::vec3 x = glm::cross( glm::normalize( up ), z );
+		m_transform[0] = glm::vec4(x.x, x.y, x.z, 0.0f);
+		glm::vec3 y = glm::cross(z, x);
+		m_transform[1] = glm::vec4(y.x, y.y, y.z, 0.0f);
+	}
+
+
 	/**
 	*
 	* \brief Adds a child entity to the list of children.
@@ -460,22 +481,13 @@ namespace ve {
 		glm::vec3 center;
 		float radius;
 		getBoundingSphere(&center, &radius);
+		float diam = 2.0f * radius;
+		VECameraOrtho *pCamOrtho = new VECameraOrtho("Ortho", 0.0, diam, diam, diam);
 
 		glm::vec4 z4 = pLight->getTransform()[2];						//Main light direction along light z-axis
 		glm::vec3 z = normalize( glm::vec3(z4.x, z4.y, z4.z) );
-		glm::vec3 up = glm::normalize(glm::vec3(0.0f, 1.0f, 0.0f));
-		glm::vec3 x = glm::cross(z, up);
-		glm::vec3 y = glm::cross(z, x);
-		glm::vec3 pos = center - radius * z;
+		pCamOrtho->lookAt(center - radius * z, center, glm::vec3(0.0f, 1.0f, 0.0f ));
 
-		glm::mat4 transform;
-		transform[0] = glm::vec4( x.x, x.y, x.z, 0.0f );
-		transform[1] = glm::vec4( y.x, y.y, y.z, 0.0f);
-		transform[2] = glm::vec4( z.x, z.y, z.z, 0.0f);
-		transform[3] = glm::vec4( pos.x, pos.y, pos.z, 1.0f);
-
-		VECameraOrtho *pCamOrtho = new VECameraOrtho("Ortho", 0.0, 2.0f * radius, 2.0f * radius, 2.0f * radius);
-		pCamOrtho->setTransform( transform );
 		return pCamOrtho;
 	}
 
@@ -519,7 +531,7 @@ namespace ve {
 		m_aspectRatio = width / height;
 		glm::mat4 pm = glm::perspectiveFov( glm::radians(m_fov), (float) width, (float)height, m_nearPlane, m_farPlane);
 
-		pm[2][2] *= -1.0f;		//Vulka camera looks down its positive z-axis, OpenGL function does it reverse
+		pm[2][2] *= -1.0f;		//camera looks down its positive z-axis, OpenGL function does it reverse
 		pm[2][3] *= -1.0f;
 		return pm;
 	}
@@ -556,8 +568,6 @@ namespace ve {
 		points.push_back( worldMatrix * glm::vec4(-m_farPlane * halfw,  m_farPlane * halfh, m_farPlane, 1.0f));
 		points.push_back( worldMatrix * glm::vec4( m_farPlane * halfw,  m_farPlane * halfh, m_farPlane, 1.0f));
 	}
-
-
 
 
 	//-------------------------------------------------------------------------------------------------
@@ -598,7 +608,9 @@ namespace ve {
 	* \returns the camera projection matrix.
 	*/
 	glm::mat4 VECameraOrtho::getProjectionMatrix(float width, float height) {
-		return glm::ortho(-width / 2.0f, width / 2.0f, -height / 2.0f, height / 2.0f, m_nearPlane, m_farPlane);
+		glm::mat4 pm = glm::ortho(-width * m_width / 2.0f, width * m_width / 2.0f, -height * m_height / 2.0f, height * m_height / 2.0f, m_nearPlane, m_farPlane);
+		pm[2][2] *= -1;	//camera looks down its positive z-axis, OpenGL function does it reverse
+		return pm;
 	}
 
 	/**
@@ -606,7 +618,9 @@ namespace ve {
 	* \returns the camera projection matrix.
 	*/
 	glm::mat4 VECameraOrtho::getProjectionMatrix() {
-		return glm::ortho( -m_width/2.0f, m_width/2.0f, -m_height/2.0f, m_height/2.0f, m_nearPlane, m_farPlane);
+		glm::mat4 pm = glm::ortho( -m_width/2.0f, m_width/2.0f, -m_height/2.0f, m_height/2.0f, m_nearPlane, m_farPlane);
+		pm[2][2] *= -1;		//camera looks down its positive z-axis, OpenGL function does it reverse
+		return pm;
 	}
 
 	/**
@@ -646,7 +660,7 @@ namespace ve {
 	*
 	*/
 	void VELight::fillVhLightStructure(vh::vhLight *pLight) {
-		pLight->type[0] = m_type;
+		pLight->type[0] = m_lightType;
 		pLight->param = param;
 		pLight->col_ambient = col_ambient;
 		pLight->col_diffuse = col_diffuse;
@@ -657,9 +671,10 @@ namespace ve {
 	/**
 	* \brief Simple VELight constructor, default is directional light
 	* \param[in] name Name of the camera
+	* \param[in] type Light type
 	*/
-	VELight::VELight(std::string name) : VEEntity(name) { 
-		m_entityType = VE_ENTITY_TYPE_LIGHT_DIRECTIONAL; 
+	VELight::VELight(std::string name, veLightType type) : VEEntity(name), m_lightType(type) {
+		m_entityType = VE_ENTITY_TYPE_LIGHT;
 	};
 
 }

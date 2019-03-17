@@ -48,7 +48,7 @@ namespace ve {
 				float speed = 10.0f * (float)event.dt;
 
 				switch (event.idata1) {
-				case GLFW_KEY_Y:
+				case GLFW_KEY_Y:		//Z key on German keyboard!
 					e1->multiplyTransform(glm::translate(glm::mat4(1.0f), speed * glm::vec3(0.0f, -1.0f, 0.0f)));
 					break;
 				case GLFW_KEY_I:
@@ -108,10 +108,10 @@ namespace ve {
 			getEnginePointer()->registerEventListener(pRot);
 
 			VEEntity *eSLight = getSceneManagerPointer()->getEntity("StandardLight");
-			VEEntity *eL = m_pSceneManager->loadModel("The Light", "models/test/sphere", "sphere.obj", 0, eSLight);
+			VEEntity *eL = m_pSceneManager->loadModel("The Light", "models/test/sphere", "sphere.obj", 0 , eSLight);
 			eL->multiplyTransform(glm::scale(glm::vec3(0.02f,0.02f,0.02f)));
 
-			VEEntity *e4 = m_pSceneManager->loadModel("The Plane", "models/test", "plane_t_n_s.obj" );
+			VEEntity *e4 = m_pSceneManager->loadModel("The Plane", "models/test", "plane_t_n_s.obj");
 			glm::mat4 scale = glm::scale(glm::mat4(1.0f), glm::vec3(1000.0f, 1.0f, 1000.0f));
 			e4->setTransform(scale);
 

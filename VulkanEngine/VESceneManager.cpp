@@ -47,17 +47,14 @@ namespace ve {
 
 		//camera can only do yaw (parent y-axis) and pitch (local x-axis) rotations
 		VECameraProjective *camera = new VECameraProjective("StandardCamera");
-		glm::mat4 la = glm::lookAt(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f), glm::vec3(0.0f, 1.0f, 0.0f));
-		camera->setTransform( glm::inverse( la ) );
+		camera->lookAt(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f), glm::vec3(0.0f, 1.0f, 0.0f));
 		camera->m_pEntityParent = cameraParent;
 		addEntity(camera);
 		m_cameraName = camera->getName();
 
 		//use one light source
-		VELight *light = new VELight("StandardLight");
-		light->m_type = 0;	//directional
-		glm::mat4 la2 = glm::lookAt(glm::vec3(0.0f, 20.0f, 1.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
-		light->setTransform( glm::inverse( la2 ) ); //LookAt produces a view matrix, not a model matrix
+		VELight *light = new VELight("StandardLight", VELight::VE_LIGHT_TYPE_SPOT );
+		light->lookAt(glm::vec3(0.0f, 10.0f, -80.0f), glm::vec3(0.0f, 10.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
 		addEntity(light);
 		m_lightNames.insert(light->getName());
 	};

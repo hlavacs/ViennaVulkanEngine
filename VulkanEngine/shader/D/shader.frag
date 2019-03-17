@@ -23,8 +23,8 @@ layout(set = 1, binding = 0) uniform UniformBufferObjectPerFrame {
 void main() {
 
     //parameters
-    vec3 lightPos = UBOPerFrame.light1.position[3].xyz;
-    vec3 lightDir = normalize( UBOPerFrame.light1.position[2].xyz );     //for directional light, looks down local y axis
+    vec3 lightPos = UBOPerFrame.light1.transform[3].xyz;
+    vec3 lightDir = normalize( UBOPerFrame.light1.transform[2].xyz );     //for directional light, looks down local y axis
     vec3 viewDir  = normalize( UBOPerFrame.camModel[3].xyz - fragPos );
     vec3 normal   = normalize( fragNormal );
     vec4 param    = UBOPerFrame.light1.param;

@@ -66,8 +66,10 @@ $(function() {
 </div><!-- top -->
 <div class="header">
   <div class="summary">
+<a href="#pub-types">Public Types</a> &#124;
 <a href="#pub-methods">Public Member Functions</a> &#124;
 <a href="#pub-attribs">Public Attributes</a> &#124;
+<a href="#pro-attribs">Protected Attributes</a> &#124;
 <a href="classve_1_1_v_e_light-members.html">List of all members</a>  </div>
   <div class="headertitle">
 <div class="title">ve::VELight Class Reference</div>  </div>
@@ -89,11 +91,33 @@ Inheritance diagram for ve::VELight:</div>
   </map>
 </div></div>
 <table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-types"></a>
+Public Types</h2></td></tr>
+<tr class="memitem:abcedf7166341000b6d4512e9030f6b86"><td class="memItemLeft" align="right" valign="top">enum &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_light.html#abcedf7166341000b6d4512e9030f6b86">veLightType</a> { <a class="el" href="classve_1_1_v_e_light.html#abcedf7166341000b6d4512e9030f6b86abbd68077042b04dd039c381d52a27861">VE_LIGHT_TYPE_DIRECTIONAL</a> =0, 
+<a class="el" href="classve_1_1_v_e_light.html#abcedf7166341000b6d4512e9030f6b86a1c6d87f8ef45f62e8f94d54a2fdf8bec">VE_LIGHT_TYPE_POINT</a> =1, 
+<a class="el" href="classve_1_1_v_e_light.html#abcedf7166341000b6d4512e9030f6b86ac301ffd5b98c7114a1034eb3e8fde6bf">VE_LIGHT_TYPE_SPOT</a> =2
+ }</td></tr>
+<tr class="memdesc:abcedf7166341000b6d4512e9030f6b86"><td class="mdescLeft">&#160;</td><td class="mdescRight">A light can have one of these types.  <a href="classve_1_1_v_e_light.html#abcedf7166341000b6d4512e9030f6b86">More...</a><br /></td></tr>
+<tr class="separator:abcedf7166341000b6d4512e9030f6b86"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="inherit_header pub_types_classve_1_1_v_e_entity"><td colspan="2" onclick="javascript:toggleInherit('pub_types_classve_1_1_v_e_entity')"><img src="closed.png" alt="-"/>&#160;Public Types inherited from <a class="el" href="classve_1_1_v_e_entity.html">ve::VEEntity</a></td></tr>
+<tr class="memitem:a2c7f15fd3b11aac4dea3e76cfa508010 inherit pub_types_classve_1_1_v_e_entity"><td class="memItemLeft" align="right" valign="top">enum &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_entity.html#a2c7f15fd3b11aac4dea3e76cfa508010">veEntityType</a> { <br />
+&#160;&#160;<a class="el" href="classve_1_1_v_e_entity.html#a2c7f15fd3b11aac4dea3e76cfa508010ac5e8480599cc3b59c245476ebb1ac223">VE_ENTITY_TYPE_OBJECT</a>, 
+<a class="el" href="classve_1_1_v_e_entity.html#a2c7f15fd3b11aac4dea3e76cfa508010ae2b8a11c389421cff9bcabf485aa0742">VE_ENTITY_TYPE_CUBEMAP</a>, 
+<a class="el" href="classve_1_1_v_e_entity.html#a2c7f15fd3b11aac4dea3e76cfa508010abac018c253c0f8cbaf76ef41f870124e">VE_ENTITY_TYPE_TERRAIN_HEIGHTMAP</a>, 
+<a class="el" href="classve_1_1_v_e_entity.html#a2c7f15fd3b11aac4dea3e76cfa508010a07caef08e63d5234399ae67595d94ca4">VE_ENTITY_TYPE_CAMERA_PROJECTIVE</a>, 
+<br />
+&#160;&#160;<a class="el" href="classve_1_1_v_e_entity.html#a2c7f15fd3b11aac4dea3e76cfa508010ac943c13e0a28011a0df66e22a72cd9ab">VE_ENTITY_TYPE_CAMERA_ORTHO</a>, 
+<b>VE_ENTITY_TYPE_LIGHT</b>
+<br />
+ }</td></tr>
+<tr class="memdesc:a2c7f15fd3b11aac4dea3e76cfa508010"><td class="mdescLeft">&#160;</td><td class="mdescRight">The entity type determines what kind of entity this is.  <a href="classve_1_1_v_e_entity.html#a2c7f15fd3b11aac4dea3e76cfa508010">More...</a><br /></td></tr>
+<tr class="separator:a2c7f15fd3b11aac4dea3e76cfa508010 inherit pub_types_classve_1_1_v_e_entity"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-methods"></a>
 Public Member Functions</h2></td></tr>
-<tr class="memitem:af7ec4b6788a96457ab874bf901f3ea2f"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_light.html#af7ec4b6788a96457ab874bf901f3ea2f">VELight</a> (std::string name)</td></tr>
-<tr class="memdesc:af7ec4b6788a96457ab874bf901f3ea2f"><td class="mdescLeft">&#160;</td><td class="mdescRight">Simple <a class="el" href="classve_1_1_v_e_light.html" title="A VELight has a color and can be used to light a scene.">VELight</a> constructor, default is directional light.  <a href="#af7ec4b6788a96457ab874bf901f3ea2f">More...</a><br /></td></tr>
-<tr class="separator:af7ec4b6788a96457ab874bf901f3ea2f"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a57b95a61725a083d3777ae1e01614a38"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_light.html#a57b95a61725a083d3777ae1e01614a38">VELight</a> (std::string name, <a class="el" href="classve_1_1_v_e_light.html#abcedf7166341000b6d4512e9030f6b86">veLightType</a> type)</td></tr>
+<tr class="memdesc:a57b95a61725a083d3777ae1e01614a38"><td class="mdescLeft">&#160;</td><td class="mdescRight">Simple <a class="el" href="classve_1_1_v_e_light.html" title="A VELight has a color and can be used to light a scene.">VELight</a> constructor, default is directional light.  <a href="#a57b95a61725a083d3777ae1e01614a38">More...</a><br /></td></tr>
+<tr class="separator:a57b95a61725a083d3777ae1e01614a38"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ac1ecfb37da9a9d079d23481f261b34e6"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_light.html#ac1ecfb37da9a9d079d23481f261b34e6">fillVhLightStructure</a> (<a class="el" href="structvh_1_1vh_light.html">vh::vhLight</a> *pLight)</td></tr>
 <tr class="memdesc:ac1ecfb37da9a9d079d23481f261b34e6"><td class="mdescLeft">&#160;</td><td class="mdescRight">Fill a UBO structure with the light's data.  <a href="#ac1ecfb37da9a9d079d23481f261b34e6">More...</a><br /></td></tr>
 <tr class="separator:ac1ecfb37da9a9d079d23481f261b34e6"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -125,6 +149,9 @@ void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="clas
 <tr class="memitem:afe7476a4f8fd9a3a805048ac27a6f07b inherit pub_methods_classve_1_1_v_e_entity"><td class="memItemLeft" align="right" valign="top">glm::mat4x4&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_entity.html#afe7476a4f8fd9a3a805048ac27a6f07b">getWorldTransform</a> ()</td></tr>
 <tr class="memdesc:afe7476a4f8fd9a3a805048ac27a6f07b inherit pub_methods_classve_1_1_v_e_entity"><td class="mdescLeft">&#160;</td><td class="mdescRight">An entity's world matrix is the local to parent transform multiplied by the parent's world matrix.  <a href="classve_1_1_v_e_entity.html#afe7476a4f8fd9a3a805048ac27a6f07b">More...</a><br /></td></tr>
 <tr class="separator:afe7476a4f8fd9a3a805048ac27a6f07b inherit pub_methods_classve_1_1_v_e_entity"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ab214df16d949f99afc71fa7dc75da2d7 inherit pub_methods_classve_1_1_v_e_entity"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_entity.html#ab214df16d949f99afc71fa7dc75da2d7">lookAt</a> (glm::vec3 eye, glm::vec3 point, glm::vec3 up)</td></tr>
+<tr class="memdesc:ab214df16d949f99afc71fa7dc75da2d7 inherit pub_methods_classve_1_1_v_e_entity"><td class="mdescLeft">&#160;</td><td class="mdescRight">lookAt function  <a href="classve_1_1_v_e_entity.html#ab214df16d949f99afc71fa7dc75da2d7">More...</a><br /></td></tr>
+<tr class="separator:ab214df16d949f99afc71fa7dc75da2d7 inherit pub_methods_classve_1_1_v_e_entity"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a57fb05208266b5a931f4bdac25092841 inherit pub_methods_classve_1_1_v_e_entity"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_entity.html#a57fb05208266b5a931f4bdac25092841">update</a> ()</td></tr>
 <tr class="memdesc:a57fb05208266b5a931f4bdac25092841 inherit pub_methods_classve_1_1_v_e_entity"><td class="mdescLeft">&#160;</td><td class="mdescRight">Update the entity's UBO buffer with the current world matrix.  <a href="classve_1_1_v_e_entity.html#a57fb05208266b5a931f4bdac25092841">More...</a><br /></td></tr>
 <tr class="separator:a57fb05208266b5a931f4bdac25092841 inherit pub_methods_classve_1_1_v_e_entity"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -158,10 +185,6 @@ void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="clas
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-attribs"></a>
 Public Attributes</h2></td></tr>
-<tr class="memitem:aa45766115aabb48c06409bdd4425b94a"><td class="memItemLeft" align="right" valign="top"><a id="aa45766115aabb48c06409bdd4425b94a"></a>
-int32_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_light.html#aa45766115aabb48c06409bdd4425b94a">m_type</a></td></tr>
-<tr class="memdesc:aa45766115aabb48c06409bdd4425b94a"><td class="mdescLeft">&#160;</td><td class="mdescRight">0-directional , 1-point, 2-spot <br /></td></tr>
-<tr class="separator:aa45766115aabb48c06409bdd4425b94a"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a5f2d6ec6fd1eaa7ef392a3166b22fd34"><td class="memItemLeft" align="right" valign="top"><a id="a5f2d6ec6fd1eaa7ef392a3166b22fd34"></a>
 glm::vec4&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_light.html#a5f2d6ec6fd1eaa7ef392a3166b22fd34">param</a> = glm::vec4(1.0f, 1.0f, 1.0f, 1.0f)</td></tr>
 <tr class="memdesc:a5f2d6ec6fd1eaa7ef392a3166b22fd34"><td class="mdescLeft">&#160;</td><td class="mdescRight">1-2: attenuation, 3: Ns <br /></td></tr>
@@ -224,27 +247,16 @@ std::vector&lt; VkDescriptorSet &gt;&#160;</td><td class="memItemRight" valign="
 <tr class="memdesc:a138905b534c146e348315c32341bca2d inherit pub_attribs_classve_1_1_v_e_entity"><td class="mdescLeft">&#160;</td><td class="mdescRight">Per subrenderer descriptor sets. <br /></td></tr>
 <tr class="separator:a138905b534c146e348315c32341bca2d inherit pub_attribs_classve_1_1_v_e_entity"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
-<tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="inherited"></a>
-Additional Inherited Members</h2></td></tr>
-<tr class="inherit_header pub_types_classve_1_1_v_e_entity"><td colspan="2" onclick="javascript:toggleInherit('pub_types_classve_1_1_v_e_entity')"><img src="closed.png" alt="-"/>&#160;Public Types inherited from <a class="el" href="classve_1_1_v_e_entity.html">ve::VEEntity</a></td></tr>
-<tr class="memitem:a2c7f15fd3b11aac4dea3e76cfa508010 inherit pub_types_classve_1_1_v_e_entity"><td class="memItemLeft" align="right" valign="top">enum &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_entity.html#a2c7f15fd3b11aac4dea3e76cfa508010">veEntityType</a> { <br />
-&#160;&#160;<a class="el" href="classve_1_1_v_e_entity.html#a2c7f15fd3b11aac4dea3e76cfa508010ac5e8480599cc3b59c245476ebb1ac223">VE_ENTITY_TYPE_OBJECT</a>, 
-<a class="el" href="classve_1_1_v_e_entity.html#a2c7f15fd3b11aac4dea3e76cfa508010ae2b8a11c389421cff9bcabf485aa0742">VE_ENTITY_TYPE_CUBEMAP</a>, 
-<a class="el" href="classve_1_1_v_e_entity.html#a2c7f15fd3b11aac4dea3e76cfa508010abac018c253c0f8cbaf76ef41f870124e">VE_ENTITY_TYPE_TERRAIN_HEIGHTMAP</a>, 
-<a class="el" href="classve_1_1_v_e_entity.html#a2c7f15fd3b11aac4dea3e76cfa508010a07caef08e63d5234399ae67595d94ca4">VE_ENTITY_TYPE_CAMERA_PROJECTIVE</a>, 
-<br />
-&#160;&#160;<a class="el" href="classve_1_1_v_e_entity.html#a2c7f15fd3b11aac4dea3e76cfa508010ac943c13e0a28011a0df66e22a72cd9ab">VE_ENTITY_TYPE_CAMERA_ORTHO</a>, 
-<a class="el" href="classve_1_1_v_e_entity.html#a2c7f15fd3b11aac4dea3e76cfa508010a8c0f915feff41c0b3d5e13f8122bb3d4">VE_ENTITY_TYPE_LIGHT_DIRECTIONAL</a>, 
-<b>VE_ENTITY_TYPE_LIGHT_POINT</b>, 
-<b>VE_ENTITY_TYPE_LIGHT_SPOT</b>
-<br />
- }</td></tr>
-<tr class="memdesc:a2c7f15fd3b11aac4dea3e76cfa508010"><td class="mdescLeft">&#160;</td><td class="mdescRight">The entity type determines what kind of entity this is.  <a href="classve_1_1_v_e_entity.html#a2c7f15fd3b11aac4dea3e76cfa508010">More...</a><br /></td></tr>
-<tr class="separator:a2c7f15fd3b11aac4dea3e76cfa508010 inherit pub_types_classve_1_1_v_e_entity"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pro-attribs"></a>
+Protected Attributes</h2></td></tr>
+<tr class="memitem:a0e233ff37d3502c7e0c7a43b9853cb83"><td class="memItemLeft" align="right" valign="top"><a id="a0e233ff37d3502c7e0c7a43b9853cb83"></a>
+<a class="el" href="classve_1_1_v_e_light.html#abcedf7166341000b6d4512e9030f6b86">veLightType</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_light.html#a0e233ff37d3502c7e0c7a43b9853cb83">m_lightType</a></td></tr>
+<tr class="memdesc:a0e233ff37d3502c7e0c7a43b9853cb83"><td class="mdescLeft">&#160;</td><td class="mdescRight">Light type of this light. <br /></td></tr>
+<tr class="separator:a0e233ff37d3502c7e0c7a43b9853cb83"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="inherit_header pro_attribs_classve_1_1_v_e_entity"><td colspan="2" onclick="javascript:toggleInherit('pro_attribs_classve_1_1_v_e_entity')"><img src="closed.png" alt="-"/>&#160;Protected Attributes inherited from <a class="el" href="classve_1_1_v_e_entity.html">ve::VEEntity</a></td></tr>
 <tr class="memitem:a6d02c9ccf75c72c4cb56672596716cb0 inherit pro_attribs_classve_1_1_v_e_entity"><td class="memItemLeft" align="right" valign="top"><a id="a6d02c9ccf75c72c4cb56672596716cb0"></a>
 glm::mat4x4&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_entity.html#a6d02c9ccf75c72c4cb56672596716cb0">m_transform</a> = glm::mat4(1.0)</td></tr>
-<tr class="memdesc:a6d02c9ccf75c72c4cb56672596716cb0 inherit pro_attribs_classve_1_1_v_e_entity"><td class="mdescLeft">&#160;</td><td class="mdescRight">Transform from local to parent space. <br /></td></tr>
+<tr class="memdesc:a6d02c9ccf75c72c4cb56672596716cb0 inherit pro_attribs_classve_1_1_v_e_entity"><td class="mdescLeft">&#160;</td><td class="mdescRight">Transform from local to parent space, the engine uses Y-UP, Left-handed. <br /></td></tr>
 <tr class="separator:a6d02c9ccf75c72c4cb56672596716cb0 inherit pro_attribs_classve_1_1_v_e_entity"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="inherit_header pro_attribs_classve_1_1_v_e_named_class"><td colspan="2" onclick="javascript:toggleInherit('pro_attribs_classve_1_1_v_e_named_class')"><img src="closed.png" alt="-"/>&#160;Protected Attributes inherited from <a class="el" href="classve_1_1_v_e_named_class.html">ve::VENamedClass</a></td></tr>
 <tr class="memitem:a3b3f5063b5de55426c522032e838236a inherit pro_attribs_classve_1_1_v_e_named_class"><td class="memItemLeft" align="right" valign="top"><a id="a3b3f5063b5de55426c522032e838236a"></a>
@@ -255,9 +267,34 @@ std::string&#160;</td><td class="memItemRight" valign="bottom"><a class="el" hre
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <div class="textblock"><p>A <a class="el" href="classve_1_1_v_e_light.html" title="A VELight has a color and can be used to light a scene.">VELight</a> has a color and can be used to light a scene. </p>
 <p><a class="el" href="classve_1_1_v_e_light.html" title="A VELight has a color and can be used to light a scene.">VELight</a> is derived from <a class="el" href="classve_1_1_v_e_entity.html" title="Represents any object that can be put into a scene.">VEEntity</a> and can be put into the scene. It shines light on objects and is sent to the fragment shader to produce the final coloring of a pixel. </p>
-</div><h2 class="groupheader">Constructor &amp; Destructor Documentation</h2>
-<a id="af7ec4b6788a96457ab874bf901f3ea2f"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#af7ec4b6788a96457ab874bf901f3ea2f">&#9670;&nbsp;</a></span>VELight()</h2>
+</div><h2 class="groupheader">Member Enumeration Documentation</h2>
+<a id="abcedf7166341000b6d4512e9030f6b86"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#abcedf7166341000b6d4512e9030f6b86">&#9670;&nbsp;</a></span>veLightType</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">enum <a class="el" href="classve_1_1_v_e_light.html#abcedf7166341000b6d4512e9030f6b86">ve::VELight::veLightType</a></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>A light can have one of these types. </p>
+<table class="fieldtable">
+<tr><th colspan="2">Enumerator</th></tr><tr><td class="fieldname"><a id="abcedf7166341000b6d4512e9030f6b86abbd68077042b04dd039c381d52a27861"></a>VE_LIGHT_TYPE_DIRECTIONAL&#160;</td><td class="fielddoc"><p>Directional light. </p>
+</td></tr>
+<tr><td class="fieldname"><a id="abcedf7166341000b6d4512e9030f6b86a1c6d87f8ef45f62e8f94d54a2fdf8bec"></a>VE_LIGHT_TYPE_POINT&#160;</td><td class="fielddoc"><p>Point light. </p>
+</td></tr>
+<tr><td class="fieldname"><a id="abcedf7166341000b6d4512e9030f6b86ac301ffd5b98c7114a1034eb3e8fde6bf"></a>VE_LIGHT_TYPE_SPOT&#160;</td><td class="fielddoc"><p>Spot light. </p>
+</td></tr>
+</table>
+
+</div>
+</div>
+<h2 class="groupheader">Constructor &amp; Destructor Documentation</h2>
+<a id="a57b95a61725a083d3777ae1e01614a38"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a57b95a61725a083d3777ae1e01614a38">&#9670;&nbsp;</a></span>VELight()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -266,8 +303,18 @@ std::string&#160;</td><td class="memItemRight" valign="bottom"><a class="el" hre
           <td class="memname">ve::VELight::VELight </td>
           <td>(</td>
           <td class="paramtype">std::string&#160;</td>
-          <td class="paramname"><em>name</em></td><td>)</td>
+          <td class="paramname"><em>name</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
           <td></td>
+          <td class="paramtype"><a class="el" href="classve_1_1_v_e_light.html#abcedf7166341000b6d4512e9030f6b86">veLightType</a>&#160;</td>
+          <td class="paramname"><em>type</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
         </tr>
       </table>
 </div><div class="memdoc">
@@ -276,6 +323,7 @@ std::string&#160;</td><td class="memItemRight" valign="bottom"><a class="el" hre
 <dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
     <tr><td class="paramdir">[in]</td><td class="paramname">name</td><td>Name of the camera </td></tr>
+    <tr><td class="paramdir">[in]</td><td class="paramname">type</td><td>Light type </td></tr>
   </table>
   </dd>
 </dl>
@@ -316,7 +364,7 @@ std::string&#160;</td><td class="memItemRight" valign="bottom"><a class="el" hre
 </div><!-- contents -->
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>
-Generated on Sat Mar 16 2019 19:29:41 for Vienna Vulkan Engine by &#160;<a href="http://www.doxygen.org/index.html">
+Generated on Sun Mar 17 2019 15:05:19 for Vienna Vulkan Engine by &#160;<a href="http://www.doxygen.org/index.html">
 <img class="footer" src="doxygen.png" alt="doxygen"/>
 </a> 1.8.15
 </small></address>

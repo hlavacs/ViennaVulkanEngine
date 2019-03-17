@@ -8,7 +8,7 @@ var searchData=
   ['veevent',['veEvent',['../structve_1_1ve_event.html#a5e0979f5989201f75416b707fca4a041',1,'ve::veEvent::veEvent(veEventType evt)'],['../structve_1_1ve_event.html#abbb7aa6a48347860dcc3a174fc7bd4b9',1,'ve::veEvent::veEvent(veEventSubsystem sub, veEventType evt)']]],
   ['veeventlistener',['VEEventListener',['../classve_1_1_v_e_event_listener.html#a46128f4c3f14ed965e04ac5f5b4e21d4',1,'ve::VEEventListener']]],
   ['veeventlistenerglfw',['VEEventListenerGLFW',['../classve_1_1_v_e_event_listener_g_l_f_w.html#a5a25a448a8ce474e36fdc22aeac3c593',1,'ve::VEEventListenerGLFW']]],
-  ['velight',['VELight',['../classve_1_1_v_e_light.html#af7ec4b6788a96457ab874bf901f3ea2f',1,'ve::VELight']]],
+  ['velight',['VELight',['../classve_1_1_v_e_light.html#a57b95a61725a083d3777ae1e01614a38',1,'ve::VELight']]],
   ['vematerial',['VEMaterial',['../classve_1_1_v_e_material.html#a4b763640afa208d5408acddfb6cb6699',1,'ve::VEMaterial']]],
   ['vemesh',['VEMesh',['../classve_1_1_v_e_mesh.html#ac97d39bce6a8245dc3c1c7986ec865b6',1,'ve::VEMesh']]],
   ['venamedclass',['VENamedClass',['../classve_1_1_v_e_named_class.html#a7a7dcb85f8b62737a8306ac8110bb935',1,'ve::VENamedClass']]],

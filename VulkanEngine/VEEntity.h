@@ -102,9 +102,7 @@ namespace ve {
 			VE_ENTITY_TYPE_TERRAIN_HEIGHTMAP,	///<A heightmap for terrain modelling
 			VE_ENTITY_TYPE_CAMERA_PROJECTIVE,	///<A projective camera, cannot be drawn
 			VE_ENTITY_TYPE_CAMERA_ORTHO,		///<An orthographic camera, cannot be drawn
-			VE_ENTITY_TYPE_LIGHT_DIRECTIONAL,	///<Light
-			VE_ENTITY_TYPE_LIGHT_POINT,
-			VE_ENTITY_TYPE_LIGHT_SPOT
+			VE_ENTITY_TYPE_LIGHT
 		};
 		
 		uint32_t					m_entityType = VE_ENTITY_TYPE_OBJECT;	///<Entity type
@@ -124,12 +122,16 @@ namespace ve {
 		VEEntity(std::string name, veEntityType type, VEMesh *pMesh, VEMaterial *pMat, glm::mat4 transf, VEEntity *parent);
 		virtual ~VEEntity();
 
+		//--------------------------------------------------
 		void		setTransform(glm::mat4x4 trans);	//Overwrite the transform and copy it to the UBO
 		glm::mat4x4 getTransform();						//Return local transform
 		void		setPosition(glm::vec3 pos);			//Set the position of the entity
 		glm::vec3	getPosition();						//Return the current position
 		void		multiplyTransform(glm::mat4x4 trans); //Multiply the transform, e.g. translate, scale, rotate 
 		glm::mat4x4 getWorldTransform();				//Compute the world matrix
+		void		lookAt(glm::vec3 eye, glm::vec3 point, glm::vec3 up);
+
+		//--------------------------------------------------
 		void		update();							//Copy the world matrix to the UBO
 		void		update(glm::mat4x4 parentWorldMatrix);	//Copy the world matrix using the parent's world matrix
 		void		addChild(VEEntity *);				//Add a new child
@@ -197,8 +199,8 @@ namespace ve {
 	*/
 	class VECameraOrtho : public VECamera {
 	public:
-		float m_width = 16.0;					///<Camera width
-		float m_height = 9.0f;					///<Camera height
+		float m_width = 1.0f/20.0f;					///<Camera width
+		float m_height = 1.0f/20.0f;				///<Camera height
 
 		VECameraOrtho(std::string name);
 		VECameraOrtho(std::string name, float nearPlane, float farPlane, float width, float height );
@@ -219,14 +221,25 @@ namespace ve {
 	*/
 
 	class VELight : public VEEntity {
+
 	public:
-		int32_t   m_type;													///<0-directional , 1-point, 2-spot
+		///A light can have one of these types
+		enum veLightType {
+			VE_LIGHT_TYPE_DIRECTIONAL=0,	///<Directional light
+			VE_LIGHT_TYPE_POINT=1,			///<Point light
+			VE_LIGHT_TYPE_SPOT=2			///<Spot light
+		};
+
+	protected:
+		veLightType m_lightType;	///<Light type of this light
+
+	public:
 		glm::vec4 param = glm::vec4(1.0f, 1.0f, 1.0f, 1.0f);				///<1-2: attenuation, 3: Ns
 		glm::vec4 col_ambient  = 0.5f * glm::vec4(1.0f, 1.0f, 1.0f, 1.0f);	///<Ambient color
 		glm::vec4 col_diffuse  = 0.8f * glm::vec4(1.0f, 1.0f, 1.0f, 1.0f);	///<Diffuse color
 		glm::vec4 col_specular = 0.9f * glm::vec4(1.0f, 1.0f, 1.0f, 1.0f);	///<Specular color
 
-		VELight(std::string name);
+		VELight(std::string name, veLightType type );
 
 		void fillVhLightStructure(vh::vhLight *pLight);
 	};

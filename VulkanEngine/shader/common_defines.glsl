@@ -10,7 +10,7 @@ struct light_t {
   vec4   col_ambient;
   vec4   col_diffuse;
   vec4   col_specular;
-  mat4x4 position;
+  mat4x4 transform;
 };
 
 
