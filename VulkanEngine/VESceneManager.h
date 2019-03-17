@@ -20,6 +20,7 @@ namespace ve {
 	class VESceneManager;
 	extern VESceneManager* g_pVESceneManagerSingleton;	///<Pointer to the only class instance 
 
+	class VESubrenderShadow;
 
 	/**
 	*
@@ -33,6 +34,7 @@ namespace ve {
 		friend VEEngine;
 		friend VERenderer;
 		friend VERendererForward;
+		friend VESubrenderShadow;
 
 	protected:
 		std::map<std::string, VEMesh *>		m_meshes = {};		///< storage of all entities currently in the engine

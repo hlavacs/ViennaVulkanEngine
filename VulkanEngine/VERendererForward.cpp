@@ -119,7 +119,6 @@ namespace ve {
 		addSubrenderer(new VESubrenderCubemap());
 		
 		m_subrenderShadow = new VESubrenderShadow();
-		addSubrenderer(m_subrenderShadow);
 	}
 
 
@@ -315,17 +314,9 @@ namespace ve {
 		//-----------------------------------------------------------------------------------------
 		//shadow pass
 
-		vh::vhBufTransitionImageLayout(m_device, m_graphicsQueue, commandBuffer,
-			m_shadowMap, m_depthMapFormat, 1, 1,
-			VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL );
-
 		vh::vhRenderBeginRenderPass(commandBuffer, m_renderPassShadow, m_shadowFramebuffers[0], m_shadowMapExtent);
-		m_subrenderShadow->draw(commandBuffer, imageIndex);
+		//m_subrenderShadow->draw(commandBuffer, imageIndex);
 		vkCmdEndRenderPass(commandBuffer);
-
-		//vh::vhBufTransitionImageLayout(m_device, m_graphicsQueue, commandBuffer,
-		//	m_shadowMap, m_depthMapFormat, 1, 1,
-		//	VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
 
 		//-----------------------------------------------------------------------------------------
 		//light pass
@@ -333,8 +324,6 @@ namespace ve {
 		vh::vhRenderBeginRenderPass(commandBuffer, m_renderPass, m_swapChainFramebuffers[imageIndex], m_swapChainExtent);
 		for (auto pSub : m_subrenderers) pSub->draw(commandBuffer, imageIndex);
 		vkCmdEndRenderPass(commandBuffer);
-
-
 
 		vh::vhCmdEndSingleTimeCommands(	m_device, m_graphicsQueue, m_commandPool, commandBuffer,
 										m_imageAvailableSemaphores[m_currentFrame], m_renderFinishedSemaphores[m_currentFrame], 

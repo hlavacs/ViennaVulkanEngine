@@ -63,9 +63,9 @@ namespace ve {
 		vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_pipeline);	//bind the PSO
 
 		//go through all entities and draw them
-		for (auto pEntity : m_entities) {
-			if (pEntity->m_drawEntity && pEntity->m_castsShadow) {
-				drawEntity(commandBuffer, imageIndex, pEntity);
+		for (auto pEntity : getSceneManagerPointer()->m_entities) {
+			if (pEntity.second->m_drawEntity && pEntity.second->m_castsShadow) {
+				drawEntity(commandBuffer, imageIndex, pEntity.second);
 			}
 		}
 	}
