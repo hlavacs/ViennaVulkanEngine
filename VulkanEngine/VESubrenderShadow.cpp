@@ -20,14 +20,14 @@ namespace ve {
 	void VESubrenderShadow::initSubrenderer() {
 		VESubrender::initSubrenderer();
 
-		//per object resources
+		//per object resources, set 0
 		vh::vhRenderCreateDescriptorSetLayout(getRendererForwardPointer()->getDevice(),
-		{ VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER },
-		{ VK_SHADER_STAGE_VERTEX_BIT, },
+			{ VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER },
+			{ VK_SHADER_STAGE_VERTEX_BIT, },
 			&m_descriptorSetLayout);
 
 		vh::vhPipeCreateGraphicsPipelineLayout(getRendererForwardPointer()->getDevice(),
-		{ m_descriptorSetLayout, getRendererForwardPointer()->getDescriptorSetLayoutPerFrame() },
+			{ m_descriptorSetLayout, getRendererForwardPointer()->getDescriptorSetLayoutPerFrame(), getRendererForwardPointer()->getDescriptorSetLayoutShadow() },
 			&m_pipelineLayout);
 
 		vh::vhPipeCreateGraphicsPipeline(getRendererForwardPointer()->getDevice(),

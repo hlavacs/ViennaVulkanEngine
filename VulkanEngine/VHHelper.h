@@ -122,34 +122,6 @@ namespace vh {
 		}
 	};
 
-	///Light data
-	struct vhLight {
-		glm::ivec4	type;			///<Light type information
-		glm::vec4	param;			///<Light parameters
-		glm::vec4	col_ambient;	///<Ambient color
-		glm::vec4	col_diffuse;	///<Diffuse color
-		glm::vec4	col_specular;	///<Specular color
-		glm::mat4	position;		///<Position and orientation of the light
-	};
-
-	///Data that is updated once per frame
-	struct vhUBOPerFrame {
-		glm::mat4 camModel;			///<Camera model matrix, needed for camera world position
-		glm::mat4 camView;			///<Camera view matrix
-		glm::mat4 camProj;			///<Camera projection matrix
-		vhLight   light1;			///<Light information
-
-		glm::mat4 shadowView;		///<Shadow view matrix
-		glm::mat4 shadowProj;		///<Shadow projection matrix
-	};
-
-	///Data that is updated for each object
-	struct vhUBOPerObject {
-		glm::mat4 model;			///<Object model matrix
-		glm::mat4 modelInvTrans;	///<Inverse transpose
-		glm::vec4 color;			///<Uniform color if needed by shader
-	};
-
 
 	//--------------------------------------------------------------------------------------------------------------------------------
 

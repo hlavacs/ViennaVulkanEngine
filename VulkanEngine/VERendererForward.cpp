@@ -55,6 +55,7 @@ namespace ve {
 		vh::vhCmdCreateCommandPool(m_physicalDevice, m_device, m_surface, &m_commandPool);
 
 		//------------------------------------------------------------------------------------------------------------
+		//create resources for light pass
 
 		m_depthMapFormat = vh::vhDevFindDepthFormat(m_physicalDevice);
 
@@ -71,6 +72,7 @@ namespace ve {
 
 
 		//------------------------------------------------------------------------------------------------------------
+		//create rsources for shadow pass
 
 		//shadow render pass
 		vh::vhRenderCreateRenderPassShadow( m_device, m_depthMapFormat, &m_renderPassShadow);
@@ -86,20 +88,35 @@ namespace ve {
 
 		//------------------------------------------------------------------------------------------------------------
 		//per frame resources
+
+		//set 1, binding 0 : UBO per Frame data: camera, light
 		vh::vhRenderCreateDescriptorSetLayout(m_device,
 											{ VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER },
 											{ VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT },
 											&m_descriptorSetLayoutPerFrame);
 
+		//set 2, binding 0, 1 : UBO for shadow data, shadow map + sampler
+		vh::vhRenderCreateDescriptorSetLayout(m_device,
+											{ VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,							VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER },
+											{ VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,	VK_SHADER_STAGE_FRAGMENT_BIT },
+											&m_descriptorSetLayoutShadow);
+
+
+		//------------------------------------------------------------------------------------------------------------
+
 		uint32_t maxobjects = 10000;
 		vh::vhRenderCreateDescriptorPool(m_device,
 										{ VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER , VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER }, 
-										{ 2*maxobjects, maxobjects },
+										{ maxobjects, maxobjects },
 										&m_descriptorPool);
 
-		vh::vhBufCreateUniformBuffers(m_vmaAllocator, (uint32_t)m_swapChainImages.size(), (uint32_t)sizeof(vh::vhUBOPerFrame), m_uniformBuffersPerFrame, m_uniformBuffersPerFrameAllocation);
-
 		vh::vhRenderCreateDescriptorSets(m_device, (uint32_t)m_swapChainImages.size(), m_descriptorSetLayoutPerFrame, getDescriptorPool(), m_descriptorSetsPerFrame);
+		vh::vhRenderCreateDescriptorSets(m_device, (uint32_t)m_swapChainImages.size(), m_descriptorSetLayoutShadow,   getDescriptorPool(), m_descriptorSetsShadow);
+
+		//------------------------------------------------------------------------------------------------------------
+
+		vh::vhBufCreateUniformBuffers(m_vmaAllocator, (uint32_t)m_swapChainImages.size(), (uint32_t)sizeof(veUBOPerFrame), m_uniformBuffersPerFrame, m_uniformBuffersPerFrameAllocation);
+		vh::vhBufCreateUniformBuffers(m_vmaAllocator, (uint32_t)m_swapChainImages.size(), (uint32_t)sizeof(veUBOShadow),   m_uniformBuffersShadow,   m_uniformBuffersShadowAllocation);
 
 
 		//------------------------------------------------------------------------------------------------------------
@@ -164,6 +181,11 @@ namespace ve {
 		vkDestroyDescriptorSetLayout(m_device, m_descriptorSetLayoutPerFrame, nullptr);
 		for (size_t i = 0; i < m_uniformBuffersPerFrame.size(); i++) {
 			vmaDestroyBuffer(m_vmaAllocator, m_uniformBuffersPerFrame[i], m_uniformBuffersPerFrameAllocation[i]);
+		}
+
+		vkDestroyDescriptorSetLayout(m_device, m_descriptorSetLayoutShadow, nullptr);
+		for (size_t i = 0; i < m_uniformBuffersShadow.size(); i++) {
+			vmaDestroyBuffer(m_vmaAllocator, m_uniformBuffersShadow[i], m_uniformBuffersShadowAllocation[i]);
 		}
 
 		for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
@@ -237,12 +259,15 @@ namespace ve {
 	*
 	*/
 	void VERendererForward::updatePerFrameUBO( uint32_t imageIndex) {
+
+		//---------------------------------------------------------------------------------------
+
 		VECamera * camera = (VECamera*)getSceneManagerPointer()->getEntity(getSceneManagerPointer()->m_cameraName);
 		if (camera == nullptr) {
 			throw std::runtime_error("Error: did not find camera in Scene Manager!");
 		}
 
-		vh::vhUBOPerFrame ubo = {};
+		veUBOPerFrame ubo = {};
 
 		//fill in camera data
 		ubo.camModel= camera->getWorldTransform();
@@ -262,23 +287,38 @@ namespace ve {
 			}
 		}
 
-		VECamera *pCamShadow = camera->createShadowCamera(plight);
-		ubo.shadowView = glm::inverse(pCamShadow->getWorldTransform());
-		ubo.shadowProj = pCamShadow->getProjectionMatrix();
-
-		void* data=nullptr;
+		void* data = nullptr;
 		vmaMapMemory(m_vmaAllocator, m_uniformBuffersPerFrameAllocation[imageIndex], &data);
-		memcpy(data, &ubo, sizeof(ubo) );
+		memcpy(data, &ubo, sizeof(ubo));
 		vmaUnmapMemory(m_vmaAllocator, m_uniformBuffersPerFrameAllocation[imageIndex]);
-
 
 		//update the descriptor set for the per frame data
 		vh::vhRenderUpdateDescriptorSet(m_device, m_descriptorSetsPerFrame[imageIndex],
 											{ m_uniformBuffersPerFrame[imageIndex] }, //UBOs
-											{ sizeof(vh::vhUBOPerFrame) },			//UBO sizes
+											{ sizeof(veUBOPerFrame) },			//UBO sizes
 											{ VK_NULL_HANDLE },						//textureImageViews
 											{ VK_NULL_HANDLE }						//samplers
 											);
+
+		//---------------------------------------------------------------------------------------
+
+		VECamera *pCamShadow = camera->createShadowCamera(plight);
+		veUBOShadow uboShadow = {};
+		uboShadow.shadowView = glm::inverse(pCamShadow->getWorldTransform());
+		uboShadow.shadowProj = pCamShadow->getProjectionMatrix();
+
+		data=nullptr;
+		vmaMapMemory(m_vmaAllocator, m_uniformBuffersShadowAllocation[imageIndex], &data);
+		memcpy(data, &uboShadow, sizeof(uboShadow) );
+		vmaUnmapMemory(m_vmaAllocator, m_uniformBuffersShadowAllocation[imageIndex]);
+
+		//update the descriptor set for the per frame data
+		vh::vhRenderUpdateDescriptorSet(m_device, m_descriptorSetsShadow[imageIndex],
+										{ m_uniformBuffersShadow[imageIndex] }, //UBOs
+										{ sizeof(veUBOShadow) },			//UBO sizes
+										{ VK_NULL_HANDLE },						//textureImageViews
+										{ VK_NULL_HANDLE }						//samplers
+										);
 	}
 
 	/**

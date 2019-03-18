@@ -23,13 +23,13 @@ namespace ve {
 	class VESubrender {
 
 	public:
-		/**
-		* \brief enums the types of passes that can be initiated by a renderer
-		*/
-		//enum veSubrenderPassType {
-		//	VE_SUBRENDER_PASS_TYPE_LIGHT,	///<Light pass
-		//	VE_SUBRENDER_PASS_TYPE_SHADOW	///<Shadow pass
-		//};
+
+		///Data that is updated for each object
+		struct veUBOPerObject {
+			glm::mat4 model;			///<Object model matrix
+			glm::mat4 modelInvTrans;	///<Inverse transpose
+			glm::vec4 color;			///<Uniform color if needed by shader
+		};
 
 		/**
 		* \brief enums the subrenderers that are registered
@@ -47,7 +47,7 @@ namespace ve {
 	protected:
 		veSubrenderType m_type = VE_SUBRENDERER_TYPE_NONE;	///<Type of the subrenderer
 
-		VkDescriptorSetLayout m_descriptorSetLayout = VK_NULL_HANDLE;	///<Descriptor set layout
+		VkDescriptorSetLayout m_descriptorSetLayout = VK_NULL_HANDLE;	///<Descriptor set 0 : per object
 		VkPipelineLayout m_pipelineLayout = VK_NULL_HANDLE;				///<Pipeline layout
 		VkPipeline m_pipeline = VK_NULL_HANDLE;				///<Pipeline for light pass
 

@@ -16,10 +16,17 @@ layout(set = 1, binding = 0) uniform UniformBufferObjectPerFrame {
     mat4 camView;
     mat4 camProj;
     light_t light1;
+} UBOPerFrame;
 
+
+layout(set = 2, binding = 0) uniform UniformBufferShadow {
     mat4 shadowView;
     mat4 shadowProj;
-} UBOPerFrame;
+}
+
+layout(set = 2, binding = 1) uniform sampler2D shadowSampler;
+
+
 
 
 layout(location = 0) in vec3 inPosition;

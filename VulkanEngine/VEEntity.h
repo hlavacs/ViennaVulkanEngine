@@ -223,6 +223,17 @@ namespace ve {
 	class VELight : public VEEntity {
 
 	public:
+
+		///Light data
+		struct veLight {
+			glm::ivec4	type;			///<Light type information
+			glm::vec4	param;			///<Light parameters
+			glm::vec4	col_ambient;	///<Ambient color
+			glm::vec4	col_diffuse;	///<Diffuse color
+			glm::vec4	col_specular;	///<Specular color
+			glm::mat4	position;		///<Position and orientation of the light
+		};
+
 		///A light can have one of these types
 		enum veLightType {
 			VE_LIGHT_TYPE_DIRECTIONAL=0,	///<Directional light
@@ -241,7 +252,7 @@ namespace ve {
 
 		VELight(std::string name, veLightType type );
 
-		void fillVhLightStructure(vh::vhLight *pLight);
+		void fillVhLightStructure( veLight *pLight);
 	};
 
 

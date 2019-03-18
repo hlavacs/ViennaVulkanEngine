@@ -364,7 +364,7 @@ namespace ve {
 	*
 	*/
 	void VEEntity::update( glm::mat4x4 parentWorldMatrix ) {
-		vh::vhUBOPerObject ubo = {};
+		VESubrender::veUBOPerObject ubo = {};
 		ubo.model = parentWorldMatrix * getTransform();
 		ubo.modelInvTrans = glm::transpose(glm::inverse(ubo.model));
 		if (m_pMaterial != nullptr) {
@@ -659,7 +659,7 @@ namespace ve {
 	* \param[in] pLight Pointer to the light structure that will be copied into a UBO
 	*
 	*/
-	void VELight::fillVhLightStructure(vh::vhLight *pLight) {
+	void VELight::fillVhLightStructure(veLight *pLight) {
 		pLight->type[0] = m_lightType;
 		pLight->param = param;
 		pLight->col_ambient = col_ambient;
