@@ -302,7 +302,7 @@ namespace ve {
 
 		//---------------------------------------------------------------------------------------
 
-		VECamera *pCamShadow = camera->createShadowCamera(plight);
+		VECamera *pCamShadow = camera->createShadowCameraOrtho(plight);
 		veUBOShadow uboShadow = {};
 		uboShadow.shadowView = glm::inverse(pCamShadow->getWorldTransform());
 		uboShadow.shadowProj = pCamShadow->getProjectionMatrix();

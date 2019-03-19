@@ -126,7 +126,10 @@ namespace ve {
 		void		setTransform(glm::mat4x4 trans);	//Overwrite the transform and copy it to the UBO
 		glm::mat4x4 getTransform();						//Return local transform
 		void		setPosition(glm::vec3 pos);			//Set the position of the entity
-		glm::vec3	getPosition();						//Return the current position
+		glm::vec3	getPosition();						//Return the current position in parent space
+		glm::vec3	getXAxis();							//Return local x-axis in parent space
+		glm::vec3	getYAxis();							//Return local y-axis in parent space
+		glm::vec3	getZAxis();							//Return local z-axis in parent space
 		void		multiplyTransform(glm::mat4x4 trans); //Multiply the transform, e.g. translate, scale, rotate 
 		glm::mat4x4 getWorldTransform();				//Compute the world matrix
 		void		lookAt(glm::vec3 eye, glm::vec3 point, glm::vec3 up);
@@ -162,7 +165,8 @@ namespace ve {
 		virtual glm::mat4 getProjectionMatrix( float width, float height )=0;	///<Return the projection matrix
 		virtual void getBoundingSphere(glm::vec3 *center, float *radius);		//return center and radius for a bounding sphere
 		virtual void getFrustumPoints( std::vector<glm::vec4> &points )=0;		///<Return list of frustum points in local space
-		virtual VECamera *createShadowCamera(VELight *light);					//Depending on light type, create shadow camera
+		virtual VECamera *createShadowCameraOrtho(VELight *light);				//Depending on light type, create shadow camera
+		virtual VECamera *createShadowCameraProjective(VELight *light);			//Depending on light type, create shadow camera
 	};
 
 

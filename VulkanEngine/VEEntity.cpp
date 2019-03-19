@@ -263,6 +263,31 @@ namespace ve {
 	};
 
 	/**
+	* \returns the entity's local x-axis in parent space 
+	*/
+	glm::vec3 VEEntity::getXAxis() {
+		glm::vec4 x = m_transform[0];
+		return glm::vec3(x.x, x.y, x.z);
+	}
+
+	/**
+	* \returns the entity's local y-axis in parent space
+	*/
+	glm::vec3 VEEntity::getYAxis() {
+		glm::vec4 y = m_transform[1];
+		return glm::vec3(y.x, y.y, y.z);
+	}
+
+	/**
+	* \returns the entity's local z-axis in parent space
+	*/
+	glm::vec3 VEEntity::getZAxis() {
+		glm::vec4 z = m_transform[2];
+		return glm::vec3(z.x, z.y, z.z);
+	}
+
+
+	/**
 	*
 	* \brief Multiplies the entity's transform with another 4x4 transform.
 	*
@@ -299,7 +324,14 @@ namespace ve {
 	*/
 	void VEEntity::lookAt(glm::vec3 eye, glm::vec3 point, glm::vec3 up) {
 		m_transform[3] = glm::vec4(eye.x, eye.y, eye.z, 1.0f);
-		glm::vec3 z = glm::normalize( point - eye );
+		glm::vec3 z = glm::normalize(point - eye);
+		up = glm::normalize(up);
+		float corr = glm::dot(z, up);	//if z, up are lined up (corr=1 or corr=-1), decorrelate them
+		if (1.0f - fabs(corr) < 0.00001f) {
+			float sc = z.x + z.y + z.z;
+			up = glm::normalize(glm::vec3(sc, sc, sc));
+		}
+
 		m_transform[2] = glm::vec4(z.x, z.y, z.z, 0.0f);
 		glm::vec3 x = glm::cross( glm::normalize( up ), z );
 		m_transform[0] = glm::vec4(x.x, x.y, x.z, 0.0f);
@@ -470,13 +502,13 @@ namespace ve {
 
 	/**
 	*
-	* \brief Create a shadow camera from the camera's frustum bounding sphere
+	* \brief Create an ortho shadow camera from the camera's frustum bounding sphere
 	*
 	* \param[in] pLight Pointer to a light that defines the light direction.
-	* \returns a new VECamera that can be used to create shadow maps
+	* \returns a new VECameraOrtho that can be used to create shadow maps for directional light
 	*
 	*/
-	VECamera * VECamera::createShadowCamera(VELight *pLight) {
+	VECamera * VECamera::createShadowCameraOrtho(VELight *pLight) {
 
 		glm::vec3 center;
 		float radius;
@@ -484,12 +516,42 @@ namespace ve {
 		float diam = 2.0f * radius;
 		VECameraOrtho *pCamOrtho = new VECameraOrtho("Ortho", 0.0, diam, diam, diam);
 
-		glm::vec4 z4 = pLight->getTransform()[2];						//Main light direction along light z-axis
-		glm::vec3 z = normalize( glm::vec3(z4.x, z4.y, z4.z) );
+		glm::vec3 z = normalize(getZAxis());
 		pCamOrtho->lookAt(center - radius * z, center, glm::vec3(0.0f, 1.0f, 0.0f ));
 
 		return pCamOrtho;
 	}
+
+	/**
+	*
+	* \brief Create an ortho shadow camera from the camera's frustum bounding sphere
+	*
+	* \param[in] pLight Pointer to a light that defines the light direction.
+	* \returns a new VECameraProjective that can be used to create shadow maps for spot light
+	* 
+	*/
+	VECamera * VECamera::createShadowCameraProjective(VELight *pLight) {
+
+		glm::vec3 center;
+		float radius;
+		getBoundingSphere(&center, &radius);
+		float diam = 2.0f * radius;
+
+		glm::vec3 pos = pLight->getPosition();
+		glm::vec3 z = normalize(getZAxis());
+		glm::vec3 end = center + radius * z;
+		float pz = glm::dot(pos, z);
+		float ez = glm::dot(end, z);
+		float dist = ez - pz;
+		if (dist <= 0.0) dist = 1.0;
+
+		VECameraProjective *pCamProj = new VECameraProjective("Proj", 0.01f, dist, 1.0f, 90.0f/360.0f);
+		pCamProj->lookAt(pos, pos + dist*z, glm::vec3(0.0f, 1.0f, 0.0f));
+
+		return pCamProj;
+	}
+
+
 
 	//-------------------------------------------------------------------------------------------------
 	//camera projective
