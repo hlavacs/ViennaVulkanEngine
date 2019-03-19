@@ -327,15 +327,15 @@ namespace ve {
 		glm::vec3 z = glm::normalize(point - eye);
 		up = glm::normalize(up);
 		float corr = glm::dot(z, up);	//if z, up are lined up (corr=1 or corr=-1), decorrelate them
-		if (1.0f - fabs(corr) < 0.00001f) {
-			float sc = z.x + z.y + z.z;
-			up = glm::normalize(glm::vec3(sc, sc, sc));
-		}
+		//if (1.0f - fabs(corr) < 0.00001f) {
+		//	float sc = z.x + z.y + z.z;
+		//	up = glm::normalize(glm::vec3(sc, sc, sc));
+		//}
 
 		m_transform[2] = glm::vec4(z.x, z.y, z.z, 0.0f);
-		glm::vec3 x = glm::cross( glm::normalize( up ), z );
+		glm::vec3 x = glm::normalize( glm::cross( up, z ) );
 		m_transform[0] = glm::vec4(x.x, x.y, x.z, 0.0f);
-		glm::vec3 y = glm::cross(z, x);
+		glm::vec3 y = glm::normalize( glm::cross(z, x) );
 		m_transform[1] = glm::vec4(y.x, y.y, y.z, 0.0f);
 	}
 
@@ -502,6 +502,24 @@ namespace ve {
 
 	/**
 	*
+	* \brief Create an shadow camera 
+	*
+	* \param[in] pLight Pointer to a light that defines the light direction and type.
+	* \returns a new VECamera shadow camera
+	*
+	*/
+	VECamera * VECamera::createShadowCamera(VELight *pLight) {
+
+		if (pLight->getLightType() == VELight::VE_LIGHT_TYPE_DIRECTIONAL)
+			return createShadowCameraOrtho(pLight);
+
+		return createShadowCameraProjective(pLight);
+	}
+
+
+
+	/**
+	*
 	* \brief Create an ortho shadow camera from the camera's frustum bounding sphere
 	*
 	* \param[in] pLight Pointer to a light that defines the light direction.
@@ -537,16 +555,29 @@ namespace ve {
 		getBoundingSphere(&center, &radius);
 		float diam = 2.0f * radius;
 
-		glm::vec3 pos = pLight->getPosition();
-		glm::vec3 z = normalize(getZAxis());
-		glm::vec3 end = center + radius * z;
-		float pz = glm::dot(pos, z);
-		float ez = glm::dot(end, z);
-		float dist = ez - pz;
-		if (dist <= 0.0) dist = 1.0;
+		glm::vec3 z = normalize(getZAxis());	//direction of light
 
-		VECameraProjective *pCamProj = new VECameraProjective("Proj", 0.01f, dist, 1.0f, 90.0f/360.0f);
-		pCamProj->lookAt(pos, pos + dist*z, glm::vec3(0.0f, 1.0f, 0.0f));
+		glm::vec3 pos = pLight->getPosition();	//position of light
+		float pz = glm::dot(pos, z);			//z ordinate of position along the z axis
+
+		glm::vec3 begin = center - radius * z;	//begin of frustum bounding sphere along z-axis
+		float bz = glm::dot(begin, z);			//z ordinate of begin along the z axis
+		float onear = bz - pz;					//near plane distance of shadow cam
+		if (onear <= 0.0) onear = 0.1f;
+
+		glm::vec3 end = center + radius * z;	//end of frustum bounding sphere along z-axis
+		float ez = glm::dot(end, z);			//z ordinate of end along the z axis
+		float ofar = ez - pz;					//far plane distance of shadow cam
+		if (ofar <= 0.0) ofar = 1.0f;
+
+		float fov = 45.0f*2.0f/360.0f;			//if light position is outside the sphere
+		if (pz<bz) {
+			float cz = glm::dot(center, z);		//z ordinate of sphere center
+			float fov = atan(radius / (cz - pz));
+		}
+
+		VECameraProjective *pCamProj = new VECameraProjective("Proj", onear, ofar, 1.0f, fov);
+		pCamProj->lookAt(pos, pos + ofar*z, glm::vec3(0.0f, 1.0f, 0.0f));
 
 		return pCamProj;
 	}
@@ -727,7 +758,7 @@ namespace ve {
 		pLight->col_ambient = col_ambient;
 		pLight->col_diffuse = col_diffuse;
 		pLight->col_specular = col_specular;
-		pLight->position = getWorldTransform();
+		pLight->transform = getWorldTransform();
 	}
 
 	/**
@@ -738,6 +769,15 @@ namespace ve {
 	VELight::VELight(std::string name, veLightType type) : VEEntity(name), m_lightType(type) {
 		m_entityType = VE_ENTITY_TYPE_LIGHT;
 	};
+
+
+	/**
+	* \returns the light type of this light
+	*/
+	VELight::veLightType VELight::getLightType() {
+		return m_lightType;
+	}
+
 
 }
 

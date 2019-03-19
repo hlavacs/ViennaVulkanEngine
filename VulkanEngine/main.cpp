@@ -116,9 +116,9 @@ namespace ve {
 			e4->setTransform(scale);
 
 			VEEntity *e1 = m_pSceneManager->loadModel("The Cube",  "models/test/crate0", "cube.obj");
-			e1->setTransform(glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 10.0f, 0.0f)));
+			e1->setTransform(glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 1.0f, 0.0f)));
 
-			VEEntity *e1b = m_pSceneManager->loadModel("The Cube b", "models/test/crate0", "cube.obj");
+			/*VEEntity *e1b = m_pSceneManager->loadModel("The Cube b", "models/test/crate0", "cube.obj");
 			e1b->setTransform(glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 10.0f, 10.0f)));
 
 			VEEntity *e2 = m_pSceneManager->loadModel("The Cube2", "models/test/crate1", "cube.obj");
@@ -152,7 +152,7 @@ namespace ve {
 
 				RotatorListener *pRot = new RotatorListener(name, e, 1.1f, glm::vec3(0.0f, 1.0f, 0.0f));
 				getEnginePointer()->registerEventListener(pRot);
-			}
+			}*/
 			
 		};
 	};

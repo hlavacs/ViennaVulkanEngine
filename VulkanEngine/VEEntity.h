@@ -165,8 +165,9 @@ namespace ve {
 		virtual glm::mat4 getProjectionMatrix( float width, float height )=0;	///<Return the projection matrix
 		virtual void getBoundingSphere(glm::vec3 *center, float *radius);		//return center and radius for a bounding sphere
 		virtual void getFrustumPoints( std::vector<glm::vec4> &points )=0;		///<Return list of frustum points in local space
-		virtual VECamera *createShadowCameraOrtho(VELight *light);				//Depending on light type, create shadow camera
-		virtual VECamera *createShadowCameraProjective(VELight *light);			//Depending on light type, create shadow camera
+		virtual VECamera *createShadowCamera(VELight *light);					//Depending on light type, create shadow camera
+		virtual VECamera *createShadowCameraOrtho(VELight *light);				//Create an ortho shadow cam for directional light
+		virtual VECamera *createShadowCameraProjective(VELight *light);			//Create a projective shadow cam for spot light
 	};
 
 
@@ -230,12 +231,12 @@ namespace ve {
 
 		///Light data
 		struct veLight {
-			glm::ivec4	type;			///<Light type information
+			glm::vec4	type;			///<Light type information
 			glm::vec4	param;			///<Light parameters
 			glm::vec4	col_ambient;	///<Ambient color
 			glm::vec4	col_diffuse;	///<Diffuse color
 			glm::vec4	col_specular;	///<Specular color
-			glm::mat4	position;		///<Position and orientation of the light
+			glm::mat4	transform;		///<Position and orientation of the light
 		};
 
 		///A light can have one of these types
@@ -255,6 +256,7 @@ namespace ve {
 		glm::vec4 col_specular = 0.9f * glm::vec4(1.0f, 1.0f, 1.0f, 1.0f);	///<Specular color
 
 		VELight(std::string name, veLightType type );
+		veLightType getLightType();		//return the light type
 
 		void fillVhLightStructure( veLight *pLight);
 	};

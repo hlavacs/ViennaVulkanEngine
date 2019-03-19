@@ -5,7 +5,7 @@
 //param: light parameters
 
 struct light_t {
-  ivec4  type;
+  vec4   type;
   vec4   param;
   vec4   col_ambient;
   vec4   col_diffuse;
