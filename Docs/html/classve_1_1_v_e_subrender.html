@@ -66,6 +66,7 @@ $(function() {
 </div><!-- top -->
 <div class="header">
   <div class="summary">
+<a href="#nested-classes">Classes</a> &#124;
 <a href="#pub-types">Public Types</a> &#124;
 <a href="#pub-methods">Public Member Functions</a> &#124;
 <a href="#pro-attribs">Protected Attributes</a> &#124;
@@ -93,6 +94,12 @@ Inheritance diagram for ve::VESubrender:</div>
   </map>
 </div></div>
 <table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="nested-classes"></a>
+Classes</h2></td></tr>
+<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structve_1_1_v_e_subrender_1_1ve_u_b_o_per_object.html">veUBOPerObject</a></td></tr>
+<tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">Data that is updated for each object.  <a href="structve_1_1_v_e_subrender_1_1ve_u_b_o_per_object.html#details">More...</a><br /></td></tr>
+<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-types"></a>
 Public Types</h2></td></tr>
 <tr class="memitem:a98064e456a838192bbcedf9b6c529e89"><td class="memItemLeft" align="right" valign="top">enum &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_subrender.html#a98064e456a838192bbcedf9b6c529e89">veSubrenderType</a> { <br />
@@ -106,7 +113,7 @@ Public Types</h2></td></tr>
 <a class="el" href="classve_1_1_v_e_subrender.html#a98064e456a838192bbcedf9b6c529e89a45580fcebca076beb93fb08941b7d1bb">VE_SUBRENDERER_TYPE_SHADOW</a>
 <br />
  }</td></tr>
-<tr class="memdesc:a98064e456a838192bbcedf9b6c529e89"><td class="mdescLeft">&#160;</td><td class="mdescRight">enums the types of passes that can be initiated by a renderer  <a href="classve_1_1_v_e_subrender.html#a98064e456a838192bbcedf9b6c529e89">More...</a><br /></td></tr>
+<tr class="memdesc:a98064e456a838192bbcedf9b6c529e89"><td class="mdescLeft">&#160;</td><td class="mdescRight">enums the subrenderers that are registered  <a href="classve_1_1_v_e_subrender.html#a98064e456a838192bbcedf9b6c529e89">More...</a><br /></td></tr>
 <tr class="separator:a98064e456a838192bbcedf9b6c529e89"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-methods"></a>
@@ -158,7 +165,7 @@ Protected Attributes</h2></td></tr>
 <tr class="separator:aa64ff9519923c9ae2499be7d334a0289"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a498cc0fd318999901bf4ea2e35f2f9b2"><td class="memItemLeft" align="right" valign="top"><a id="a498cc0fd318999901bf4ea2e35f2f9b2"></a>
 VkDescriptorSetLayout&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_subrender.html#a498cc0fd318999901bf4ea2e35f2f9b2">m_descriptorSetLayout</a> = VK_NULL_HANDLE</td></tr>
-<tr class="memdesc:a498cc0fd318999901bf4ea2e35f2f9b2"><td class="mdescLeft">&#160;</td><td class="mdescRight">Descriptor set layout. <br /></td></tr>
+<tr class="memdesc:a498cc0fd318999901bf4ea2e35f2f9b2"><td class="mdescLeft">&#160;</td><td class="mdescRight">Descriptor set 0 : per object. <br /></td></tr>
 <tr class="separator:a498cc0fd318999901bf4ea2e35f2f9b2"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ae8aee2dc1a7dd44a630cef495fb8dfb5"><td class="memItemLeft" align="right" valign="top"><a id="ae8aee2dc1a7dd44a630cef495fb8dfb5"></a>
 VkPipelineLayout&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_subrender.html#ae8aee2dc1a7dd44a630cef495fb8dfb5">m_pipelineLayout</a> = VK_NULL_HANDLE</td></tr>
@@ -189,7 +196,6 @@ std::vector&lt; <a class="el" href="classve_1_1_v_e_entity.html">VEEntity</a> * 
       </table>
 </div><div class="memdoc">
 
-<p>enums the types of passes that can be initiated by a renderer </p>
 <p>enums the subrenderers that are registered </p>
 <table class="fieldtable">
 <tr><th colspan="2">Enumerator</th></tr><tr><td class="fieldname"><a id="a98064e456a838192bbcedf9b6c529e89aa65d64be5dc74e152fa31e9790b8aeb5"></a>VE_SUBRENDERER_TYPE_NONE&#160;</td><td class="fielddoc"><p>No specific type. </p>
@@ -416,7 +422,7 @@ std::vector&lt; <a class="el" href="classve_1_1_v_e_entity.html">VEEntity</a> * 
 </div><!-- contents -->
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>
-Generated on Sun Mar 17 2019 15:05:20 for Vienna Vulkan Engine by &#160;<a href="http://www.doxygen.org/index.html">
+Generated on Tue Mar 19 2019 07:45:17 for Vienna Vulkan Engine by &#160;<a href="http://www.doxygen.org/index.html">
 <img class="footer" src="doxygen.png" alt="doxygen"/>
 </a> 1.8.15
 </small></address>

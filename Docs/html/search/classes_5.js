@@ -8,7 +8,7 @@ var searchData=
   ['veevent',['veEvent',['../structve_1_1ve_event.html',1,'ve']]],
   ['veeventlistener',['VEEventListener',['../classve_1_1_v_e_event_listener.html',1,'ve']]],
   ['veeventlistenerglfw',['VEEventListenerGLFW',['../classve_1_1_v_e_event_listener_g_l_f_w.html',1,'ve']]],
-  ['velight',['VELight',['../classve_1_1_v_e_light.html',1,'ve']]],
+  ['velight',['VELight',['../classve_1_1_v_e_light.html',1,'ve::VELight'],['../structve_1_1_v_e_light_1_1ve_light.html',1,'ve::VELight::veLight']]],
   ['vematerial',['VEMaterial',['../classve_1_1_v_e_material.html',1,'ve']]],
   ['vemesh',['VEMesh',['../classve_1_1_v_e_mesh.html',1,'ve']]],
   ['venamedclass',['VENamedClass',['../classve_1_1_v_e_named_class.html',1,'ve']]],
@@ -22,10 +22,10 @@ var searchData=
   ['vesubrenderdn',['VESubrenderDN',['../classve_1_1_v_e_subrender_d_n.html',1,'ve']]],
   ['vesubrendershadow',['VESubrenderShadow',['../classve_1_1_v_e_subrender_shadow.html',1,'ve']]],
   ['vetexture',['VETexture',['../structve_1_1_v_e_texture.html',1,'ve']]],
+  ['veuboperframe',['veUBOPerFrame',['../structve_1_1_v_e_renderer_forward_1_1ve_u_b_o_per_frame.html',1,'ve::VERendererForward']]],
+  ['veuboperobject',['veUBOPerObject',['../structve_1_1_v_e_subrender_1_1ve_u_b_o_per_object.html',1,'ve::VESubrender']]],
+  ['veuboshadow',['veUBOShadow',['../structve_1_1_v_e_renderer_forward_1_1ve_u_b_o_shadow.html',1,'ve::VERendererForward']]],
   ['vewindow',['VEWindow',['../classve_1_1_v_e_window.html',1,'ve']]],
   ['vewindowglfw',['VEWindowGLFW',['../classve_1_1_v_e_window_g_l_f_w.html',1,'ve']]],
-  ['vhlight',['vhLight',['../structvh_1_1vh_light.html',1,'vh']]],
-  ['vhuboperframe',['vhUBOPerFrame',['../structvh_1_1vh_u_b_o_per_frame.html',1,'vh']]],
-  ['vhuboperobject',['vhUBOPerObject',['../structvh_1_1vh_u_b_o_per_object.html',1,'vh']]],
   ['vhvertex',['vhVertex',['../structvh_1_1vh_vertex.html',1,'vh']]]
 ];

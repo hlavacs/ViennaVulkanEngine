@@ -14,7 +14,9 @@ var searchData=
   ['getdescriptorpool',['getDescriptorPool',['../classve_1_1_v_e_renderer_forward.html#a261b8022273001104132289ba4b2c804',1,'ve::VERendererForward']]],
   ['getdescriptorsetlayout',['getDescriptorSetLayout',['../classve_1_1_v_e_subrender.html#a3b3e75345cfe77bcbb8cb9259ae0f1b0',1,'ve::VESubrender']]],
   ['getdescriptorsetlayoutperframe',['getDescriptorSetLayoutPerFrame',['../classve_1_1_v_e_renderer_forward.html#ae0304fafb33b8bba9fd954607eaa53b1',1,'ve::VERendererForward']]],
+  ['getdescriptorsetlayoutshadow',['getDescriptorSetLayoutShadow',['../classve_1_1_v_e_renderer_forward.html#a71c36ea0fc1e0d8fb1c1c897e01502fa',1,'ve::VERendererForward']]],
   ['getdescriptorsetsperframe',['getDescriptorSetsPerFrame',['../classve_1_1_v_e_renderer_forward.html#a6a7dc67a400adf38f88ed3b00146a876',1,'ve::VERendererForward']]],
+  ['getdescriptorsetsshadow',['getDescriptorSetsShadow',['../classve_1_1_v_e_renderer_forward.html#a08ed66eabdb3b91695f37c4b05371eeb',1,'ve::VERendererForward']]],
   ['getdevice',['getDevice',['../classve_1_1_v_e_renderer.html#af91f2eb87ddc4ab6fd9b32029aba3498',1,'ve::VERenderer']]],
   ['getentity',['getEntity',['../classve_1_1_v_e_scene_manager.html#adc7f6be86700a42d5b8d49189386fcd7',1,'ve::VESceneManager']]],
   ['getextent',['getExtent',['../classve_1_1_v_e_window.html#a832253b31cb9c8697edac4de03663c78',1,'ve::VEWindow::getExtent()'],['../classve_1_1_v_e_window_g_l_f_w.html#af73ea2635e704a94b1bad6036fab84ec',1,'ve::VEWindowGLFW::getExtent()']]],
@@ -46,5 +48,8 @@ var searchData=
   ['getvmaallocator',['getVmaAllocator',['../classve_1_1_v_e_renderer.html#ab510d17894832b49e5df090299a62b5d',1,'ve::VERenderer']]],
   ['getwindow',['getWindow',['../classve_1_1_v_e_engine.html#ab1105bc96fbf572b5749eb16b0b0c308',1,'ve::VEEngine']]],
   ['getworldtransform',['getWorldTransform',['../classve_1_1_v_e_entity.html#afe7476a4f8fd9a3a805048ac27a6f07b',1,'ve::VEEntity']]],
+  ['getxaxis',['getXAxis',['../classve_1_1_v_e_entity.html#aa6a308448b2c063a452536bad7545324',1,'ve::VEEntity']]],
+  ['getyaxis',['getYAxis',['../classve_1_1_v_e_entity.html#aa5407fba37f5e61e09f81cbee540bbdd',1,'ve::VEEntity']]],
+  ['getzaxis',['getZAxis',['../classve_1_1_v_e_entity.html#a25e1ca227861c84ecb56e7befeebca16',1,'ve::VEEntity']]],
   ['graphicsfamily',['graphicsFamily',['../structvh_1_1_queue_family_indices.html#a60d78f857942f04654839a6cadbe1761',1,'vh::QueueFamilyIndices']]]
 ];
