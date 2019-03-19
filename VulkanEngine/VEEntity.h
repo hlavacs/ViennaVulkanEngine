@@ -231,7 +231,7 @@ namespace ve {
 
 		///Light data
 		struct veLight {
-			glm::vec4	type;			///<Light type information
+			glm::ivec4	type;			///<Light type information
 			glm::vec4	param;			///<Light parameters
 			glm::vec4	col_ambient;	///<Ambient color
 			glm::vec4	col_diffuse;	///<Diffuse color

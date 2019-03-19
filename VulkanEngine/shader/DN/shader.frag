@@ -32,7 +32,7 @@ void main() {
     vec3 N        = normalize( fragNormal );
     vec3 T        = normalize( fragTangent );
     T             = normalize( T - dot(T, N)*N );
-    vec3 B        = cross( T, N );
+    vec3 B        = normalize( cross( T, N ) );
     mat3 TBN      = mat3(T,B,N);
     vec3 mapnorm  = normalize( texture(normalSampler, fragTexCoord).xyz*2.0 - 1.0 );
     vec3 normal   = normalize( TBN * mapnorm );
@@ -40,25 +40,25 @@ void main() {
     vec4 param    = UBOPerFrame.light1.param;
     vec3 fragColor = texture(texSampler, fragTexCoord).xyz;
 
-    lightDir = normalize(lightPos - fragPos);  
-
     //start light calculations
+
+    vec3 lightVector = normalize(fragPos - lightPos);
+    float spotFactor = UBOPerFrame.light1.itype[0] == 2 ? pow( max( dot( lightVector, lightDir), 0.0), 10.0) : 1.0;
+    spotFactor *= dot( N, -lightDir )<0 ? 0:1;	//surface facing away?
 
     //ambient
     vec3 ambcol  = UBOPerFrame.light1.col_ambient.xyz;
     vec3 diffcol = UBOPerFrame.light1.col_diffuse.xyz;
     vec3 speccol = UBOPerFrame.light1.col_specular.xyz;
     
-    float pf = dot( N, lightDir )<0 ? 0:1;
-
     //diffuse
-    float diff = max(dot(normal, lightDir), 0.0) * pf;
-    vec3 diffuse = diff * diffcol;
+    float diff = max(dot(normal, -lightVector), 0.0);
+    vec3 diffuse = spotFactor * diff * diffcol;
 
     //specular
-    vec3 reflectDir = reflect(-lightDir, normal);
-    float spec = pow(max(dot(viewDir, reflectDir), 0.0), 40) * pf;
-    vec3 specular = spec * speccol; 
+    vec3 reflectDir = normalize( reflect(lightDir, normal) );
+    float spec = pow(max(dot(viewDir, reflectDir), 0.0), 2.0);
+    vec3 specular = spotFactor * spec * speccol; 
 
     //add up to get the result
     vec3 result = (ambcol + diffuse + specular) * fragColor;

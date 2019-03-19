@@ -33,7 +33,7 @@ void main() {
     //start light calculations
 
     vec3 lightVector = normalize(fragPos - lightPos);
-    float spotFactor = pow( max( dot( lightVector, lightDir), 0.0), 5.0);
+    float spotFactor = UBOPerFrame.light1.itype[0] == 2 ? pow( max( dot( lightVector, lightDir), 0.0), 10.0) : 1;
 
     //ambient
     vec3 ambcol  = UBOPerFrame.light1.col_ambient.xyz;
@@ -41,8 +41,8 @@ void main() {
     vec3 speccol = UBOPerFrame.light1.col_specular.xyz;
     
     //diffuse
-    float diff = max(dot(normal, lightVector), 0.0);
-    vec3 diffuse = spotFactor * diff * UBOPerFrame.light1.col_diffuse.xyz;
+    float diff = max(dot(normal, -lightVector), 0.0);
+    vec3 diffuse = spotFactor * diff * diffcol;
 
     //specular
     vec3 reflectDir = normalize(  reflect( lightDir, normal )  );
@@ -50,7 +50,7 @@ void main() {
     vec3 specular = spotFactor * spec * speccol; 
 
     //add up to get the result
-    vec3 result = (ambcol + 0 + specular) * fragColor;
+    vec3 result = (ambcol + diffuse + specular) * fragColor;
 
     outColor = vec4( result, 1.0 );
 }

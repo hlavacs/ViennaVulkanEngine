@@ -53,8 +53,8 @@ namespace ve {
 		m_cameraName = camera->getName();
 
 		//use one light source
-		VELight *light = new VELight("StandardLight", VELight::VE_LIGHT_TYPE_DIRECTIONAL );
-		light->lookAt(glm::vec3(0.0f, 20.0f, -10.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+		VELight *light = new VELight("StandardLight", VELight::VE_LIGHT_TYPE_SPOT );
+		light->lookAt(glm::vec3(0.0f, 20.0f, -20.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
 		addEntity(light);
 		m_lightNames.insert(light->getName());
 	};
