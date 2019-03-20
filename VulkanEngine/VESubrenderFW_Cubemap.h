@@ -7,23 +7,21 @@
 
 #pragma once
 
-
 namespace ve {
 
 	/**
-	* \brief Subrenderer that manages entities that have one diffuse texture for coloring
+	* \brief Subrenderer that manages entities that are cubemap based sky boxes
 	*/
-	class VESubrenderD : public VESubrender {
+	class VESubrenderFW_Cubemap : public VESubrender {
 	protected:
 
 	public:
 		///Constructor
-		VESubrenderD() { m_type = VE_SUBRENDERER_TYPE_DIFFUSEMAP; };
+		VESubrenderFW_Cubemap() { m_type = VE_SUBRENDERER_TYPE_CUBEMAP; };
 		///Destructor
-		virtual ~VESubrenderD() {};
+		virtual ~VESubrenderFW_Cubemap() {};
 
 		virtual void initSubrenderer();
 		virtual void addEntity(VEEntity *pEntity);
 	};
 }
-

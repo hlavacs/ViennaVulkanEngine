@@ -171,9 +171,9 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClInclude Include="VESubrenderC1.h" />
-    <ClInclude Include="VESubrenderCubemap.h" />
-    <ClInclude Include="VESubrenderDN.h" />
+    <ClInclude Include="VESubrenderFW_C1.h" />
+    <ClInclude Include="VESubrenderFW_Cubemap.h" />
+    <ClInclude Include="VESubrenderFW_DN.h" />
     <ClInclude Include="VEEngine.h" />
     <ClInclude Include="VEEntity.h" />
     <ClInclude Include="VEEventListener.h" />
@@ -184,8 +184,8 @@
     <ClInclude Include="VERendererForward.h" />
     <ClInclude Include="VESceneManager.h" />
     <ClInclude Include="VESubrender.h" />
-    <ClInclude Include="VESubrenderD.h" />
-    <ClInclude Include="VESubrenderShadow.h" />
+    <ClInclude Include="VESubrenderFW_D.h" />
+    <ClInclude Include="VESubrenderFW_Shadow.h" />
     <ClInclude Include="VEWindow.h" />
     <ClInclude Include="VEWindowGLFW.h" />
     <ClInclude Include="VHHelper.h" />
@@ -201,11 +201,11 @@
     <ClCompile Include="VERendererForward.cpp" />
     <ClCompile Include="VESceneManager.cpp" />
     <ClCompile Include="VESubrender.cpp" />
-    <ClCompile Include="VESubrenderC1.cpp" />
-    <ClCompile Include="VESubrenderCubemap.cpp" />
-    <ClCompile Include="VESubrenderD.cpp" />
-    <ClCompile Include="VESubrenderDN.cpp" />
-    <ClCompile Include="VESubrenderShadow.cpp" />
+    <ClCompile Include="VESubrenderFW_C1.cpp" />
+    <ClCompile Include="VESubrenderFW_Cubemap.cpp" />
+    <ClCompile Include="VESubrenderFW_D.cpp" />
+    <ClCompile Include="VESubrenderFW_DN.cpp" />
+    <ClCompile Include="VESubrenderFW_Shadow.cpp" />
     <ClCompile Include="VEWindow.cpp" />
     <ClCompile Include="VEWindowGLFW.cpp" />
     <ClCompile Include="VHBuffer.cpp" />

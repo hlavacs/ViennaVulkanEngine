@@ -130,12 +130,12 @@ namespace ve {
 	* \brief Create and register all known subrenderers for this VERenderer
 	*/
 	void VERendererForward::createSubrenderers() {
-		addSubrenderer(new VESubrenderC1());
-		addSubrenderer(new VESubrenderD());
-		addSubrenderer(new VESubrenderDN());
-		addSubrenderer(new VESubrenderCubemap());
+		addSubrenderer(new VESubrenderFW_C1());
+		addSubrenderer(new VESubrenderFW_D());
+		addSubrenderer(new VESubrenderFW_DN());
+		addSubrenderer(new VESubrenderFW_Cubemap());
 		
-		m_subrenderShadow = new VESubrenderShadow();
+		m_subrenderShadow = new VESubrenderFW_Shadow();
 	}
 
 

@@ -17,7 +17,7 @@ namespace ve {
 	* Create descriptor set layout, pipeline layout and the PSO
 	*
 	*/
-	void VESubrenderShadow::initSubrenderer() {
+	void VESubrenderFW_Shadow::initSubrenderer() {
 		VESubrender::initSubrenderer();
 
 		//per object resources, set 0
@@ -31,7 +31,7 @@ namespace ve {
 			&m_pipelineLayout);
 
 		vh::vhPipeCreateGraphicsPipeline(getRendererForwardPointer()->getDevice(),
-			"shader/Shadow/vert.spv", "",
+			"shader/Forward/Shadow/vert.spv", "",
 			getRendererForwardPointer()->getShadowMapExtent(),
 			m_pipelineLayout, getRendererForwardPointer()->getRenderPassShadow(),
 			&m_pipeline);
@@ -45,7 +45,7 @@ namespace ve {
 	* \returns the index of the entity in the list.
 	*
 	*/
-	void VESubrenderShadow::addEntity(VEEntity *pEntity) {
+	void VESubrenderFW_Shadow::addEntity(VEEntity *pEntity) {
 		m_entities.push_back(pEntity);
 	}
 
@@ -59,7 +59,7 @@ namespace ve {
 	* \param[in] imageIndex Index of the current swap chain image
 	*
 	*/
-	void VESubrenderShadow::draw(VkCommandBuffer commandBuffer, uint32_t imageIndex) {
+	void VESubrenderFW_Shadow::draw(VkCommandBuffer commandBuffer, uint32_t imageIndex) {
 		vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_pipeline);	//bind the PSO
 
 		//go through all entities and draw them

@@ -45,9 +45,6 @@
     <ClInclude Include="VEEventListenerGLFW.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="VESubrenderD.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="VEInclude.h">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -57,16 +54,19 @@
     <ClInclude Include="VENamedClass.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="VESubrenderDN.h">
+    <ClInclude Include="VESubrenderFW_C1.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="VESubrenderC1.h">
+    <ClInclude Include="VESubrenderFW_Cubemap.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="VESubrenderCubemap.h">
+    <ClInclude Include="VESubrenderFW_D.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="VESubrenderShadow.h">
+    <ClInclude Include="VESubrenderFW_DN.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="VESubrenderFW_Shadow.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
@@ -125,25 +125,25 @@
     <ClCompile Include="VEEntity.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="VESubrenderD.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="VESubrender.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="VENamedClass.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="VESubrenderDN.cpp">
+    <ClCompile Include="VESubrenderFW_C1.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="VESubrenderC1.cpp">
+    <ClCompile Include="VESubrenderFW_Cubemap.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="VESubrenderCubemap.cpp">
+    <ClCompile Include="VESubrenderFW_D.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="VESubrenderShadow.cpp">
+    <ClCompile Include="VESubrenderFW_DN.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="VESubrenderFW_Shadow.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

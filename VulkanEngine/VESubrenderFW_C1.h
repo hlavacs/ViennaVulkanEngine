@@ -10,19 +10,20 @@
 namespace ve {
 
 	/**
-	* \brief Subrenderer that manages entities that have a diffuse texture and a normal map
+	* \brief Subrenderer that manages entities that have only one color
 	*/
-	class VESubrenderDN : public VESubrender {
+	class VESubrenderFW_C1 : public VESubrender {
 	protected:
 
 	public:
 		///Constructor
-		VESubrenderDN() { m_type = VE_SUBRENDERER_TYPE_DIFFUSEMAP_NORMALMAP; };
+		VESubrenderFW_C1() { m_type = VE_SUBRENDERER_TYPE_COLOR1; };
 		///Destructor
-		virtual ~VESubrenderDN() {};
+		virtual ~VESubrenderFW_C1() {};
 
 		virtual void initSubrenderer();
 		virtual void addEntity(VEEntity *pEntity);
 	};
 }
+
 

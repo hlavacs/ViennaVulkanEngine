@@ -17,7 +17,7 @@ namespace ve {
 	* Create descriptor set layout, pipeline layout and the PSO
 	*
 	*/
-	void VESubrenderDN::initSubrenderer() {
+	void VESubrenderFW_DN::initSubrenderer() {
 
 		VESubrender::initSubrenderer();
 
@@ -32,7 +32,7 @@ namespace ve {
 			&m_pipelineLayout);
 
 		vh::vhPipeCreateGraphicsPipeline(getRendererForwardPointer()->getDevice(),
-			"shader/DN/vert.spv", "shader/DN/frag.spv",
+			"shader/Forward/DN/vert.spv", "shader/Forward/DN/frag.spv",
 			getRendererForwardPointer()->getSwapChainExtent(),
 			m_pipelineLayout, getRendererForwardPointer()->getRenderPass(),
 			&m_pipeline);
@@ -45,7 +45,7 @@ namespace ve {
 	* Create a UBO for this entity, a descriptor set per swapchain image, and update the descriptor sets
 	*
 	*/
-	void VESubrenderDN::addEntity(VEEntity *pEntity) {
+	void VESubrenderFW_DN::addEntity(VEEntity *pEntity) {
 		VESubrender::addEntity(pEntity);
 
 		vh::vhBufCreateUniformBuffers(getRendererForwardPointer()->getVmaAllocator(),

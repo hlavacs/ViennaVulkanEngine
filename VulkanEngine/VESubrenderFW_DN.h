@@ -10,18 +10,19 @@
 namespace ve {
 
 	/**
-	* \brief Subrenderer that manages entities that are cubemap based sky boxes
+	* \brief Subrenderer that manages entities that have a diffuse texture and a normal map
 	*/
-	class VESubrenderCubemap : public VESubrender {
+	class VESubrenderFW_DN : public VESubrender {
 	protected:
 
 	public:
 		///Constructor
-		VESubrenderCubemap() { m_type = VE_SUBRENDERER_TYPE_CUBEMAP; };
+		VESubrenderFW_DN() { m_type = VE_SUBRENDERER_TYPE_DIFFUSEMAP_NORMALMAP; };
 		///Destructor
-		virtual ~VESubrenderCubemap() {};
+		virtual ~VESubrenderFW_DN() {};
 
 		virtual void initSubrenderer();
 		virtual void addEntity(VEEntity *pEntity);
 	};
 }
+

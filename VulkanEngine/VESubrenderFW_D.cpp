@@ -17,24 +17,24 @@ namespace ve {
 	* Create descriptor set layout, pipeline layout and the PSO
 	*
 	*/
-	void VESubrenderC1::initSubrenderer() {
+	void VESubrenderFW_D::initSubrenderer() {
 		VESubrender::initSubrenderer();
 
 		//per object resources, set 0
 		vh::vhRenderCreateDescriptorSetLayout(getRendererForwardPointer()->getDevice(),
-			{ VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER },
-			{ VK_SHADER_STAGE_VERTEX_BIT,	    },
-			&m_descriptorSetLayout);
+												{ VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER },
+												{ VK_SHADER_STAGE_VERTEX_BIT,		 VK_SHADER_STAGE_FRAGMENT_BIT },
+												&m_descriptorSetLayout);
 
 		vh::vhPipeCreateGraphicsPipelineLayout(getRendererForwardPointer()->getDevice(),
-			{ m_descriptorSetLayout, getRendererForwardPointer()->getDescriptorSetLayoutPerFrame(), getRendererForwardPointer()->getDescriptorSetLayoutShadow() },
-			&m_pipelineLayout);
+												{ m_descriptorSetLayout, getRendererForwardPointer()->getDescriptorSetLayoutPerFrame(), getRendererForwardPointer()->getDescriptorSetLayoutShadow() },
+												&m_pipelineLayout);
 
-		vh::vhPipeCreateGraphicsPipeline(getRendererForwardPointer()->getDevice(),
-			"shader/C1/vert.spv", "shader/C1/frag.spv",
-			getRendererForwardPointer()->getSwapChainExtent(),
-			m_pipelineLayout, getRendererForwardPointer()->getRenderPass(),
-			&m_pipeline);
+		vh::vhPipeCreateGraphicsPipeline(	getRendererForwardPointer()->getDevice(),
+											"shader/Forward/D/vert.spv", "shader/Forward/D/frag.spv",
+											getRendererForwardPointer()->getSwapChainExtent(),
+											m_pipelineLayout, getRendererForwardPointer()->getRenderPass(),
+											&m_pipeline);
 
 	}
 
@@ -44,8 +44,8 @@ namespace ve {
 	* Create a UBO for this entity, a descriptor set per swapchain image, and update the descriptor sets
 	*
 	*/
-	void VESubrenderC1::addEntity(VEEntity *pEntity) {
-		VESubrender::addEntity(pEntity);
+	void VESubrenderFW_D::addEntity(VEEntity *pEntity) {
+		VESubrender::addEntity( pEntity);
 
 		vh::vhBufCreateUniformBuffers(getRendererForwardPointer()->getVmaAllocator(),
 			(uint32_t)getRendererForwardPointer()->getSwapChainNumber(),
@@ -61,10 +61,10 @@ namespace ve {
 		for (uint32_t i = 0; i < pEntity->m_descriptorSets.size(); i++) {
 			vh::vhRenderUpdateDescriptorSet(getRendererForwardPointer()->getDevice(),
 				pEntity->m_descriptorSets[i],
-				{ pEntity->m_uniformBuffers[i] }, //UBOs
-				{ sizeof(veUBOPerObject) },	//UBO sizes
-				{ VK_NULL_HANDLE },	//textureImageViews
-				{ VK_NULL_HANDLE }	//samplers
+				{ pEntity->m_uniformBuffers[i], VK_NULL_HANDLE },	//UBOs
+				{ sizeof(veUBOPerObject),   0  },					//UBO sizes
+				{ VK_NULL_HANDLE, pEntity->m_pMaterial->mapDiffuse->m_imageView  },	//textureImageViews
+				{ VK_NULL_HANDLE, pEntity->m_pMaterial->mapDiffuse->m_sampler    }	//samplers
 			);
 		}
 	}

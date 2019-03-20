@@ -7,23 +7,23 @@
 
 #pragma once
 
+
 namespace ve {
 
 	/**
-	* \brief Subrenderer that manages entities that have only one color
+	* \brief Subrenderer that manages entities that have one diffuse texture for coloring
 	*/
-	class VESubrenderC1 : public VESubrender {
+	class VESubrenderFW_D : public VESubrender {
 	protected:
 
 	public:
 		///Constructor
-		VESubrenderC1() { m_type = VE_SUBRENDERER_TYPE_COLOR1; };
+		VESubrenderFW_D() { m_type = VE_SUBRENDERER_TYPE_DIFFUSEMAP; };
 		///Destructor
-		virtual ~VESubrenderC1() {};
+		virtual ~VESubrenderFW_D() {};
 
 		virtual void initSubrenderer();
 		virtual void addEntity(VEEntity *pEntity);
 	};
 }
-
 

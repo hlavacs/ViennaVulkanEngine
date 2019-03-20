@@ -12,14 +12,14 @@ namespace ve {
 	/**
 	* \brief Subrenderer that manages draws the shadow pass
 	*/
-	class VESubrenderShadow : public VESubrender {
+	class VESubrenderFW_Shadow : public VESubrender {
 	protected:
 
 	public:
 		///Constructor
-		VESubrenderShadow() { m_type = VE_SUBRENDERER_TYPE_SHADOW; };
+		VESubrenderFW_Shadow() { m_type = VE_SUBRENDERER_TYPE_SHADOW; };
 		///Destructor
-		virtual ~VESubrenderShadow() {};
+		virtual ~VESubrenderFW_Shadow() {};
 
 		virtual void initSubrenderer();
 		virtual void addEntity(VEEntity *pEntity);
