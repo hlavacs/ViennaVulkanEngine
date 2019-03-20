@@ -235,14 +235,14 @@ namespace ve {
 	/**
 	* \returns the entity's local to parent transform.
 	*/
-	glm::mat4x4 VEEntity::getTransform() {
+	glm::mat4 VEEntity::getTransform() {
 		return m_transform;
 	}
 
 	/**
 	* \brief Sets the entity's local to parent transform.
 	*/
-	void VEEntity::setTransform(glm::mat4x4 trans) {
+	void VEEntity::setTransform(glm::mat4 trans) {
 		m_transform = trans;
 		update();
 	}
@@ -296,7 +296,7 @@ namespace ve {
 	* \param[in] trans The 4x4 transform that is multiplied from the left onto the entity's old transform.
 	*
 	*/
-	void VEEntity::multiplyTransform(glm::mat4x4 trans) { 
+	void VEEntity::multiplyTransform(glm::mat4 trans) { 
 		setTransform(trans*m_transform); 
 	};
 
@@ -307,7 +307,7 @@ namespace ve {
 	* \returns the entity's world (aka model) matrix.
 	*
 	*/
-	glm::mat4x4 VEEntity::getWorldTransform() {
+	glm::mat4 VEEntity::getWorldTransform() {
 		if (m_pEntityParent != nullptr) return m_pEntityParent->getWorldTransform() * m_transform;
 		return m_transform;
 	};
@@ -378,7 +378,7 @@ namespace ve {
 	*
 	*/
 	void VEEntity::update() {
-		glm::mat4x4 parentWorldMatrix = glm::mat4x4(1.0);
+		glm::mat4 parentWorldMatrix = glm::mat4(1.0);
 		if (m_pEntityParent != nullptr) {
 			parentWorldMatrix = m_pEntityParent->getWorldTransform();
 		}
@@ -395,7 +395,7 @@ namespace ve {
 	* \param[in] parentWorldMatrix The parent's world matrix or an identity matrix.
 	*
 	*/
-	void VEEntity::update( glm::mat4x4 parentWorldMatrix ) {
+	void VEEntity::update( glm::mat4 parentWorldMatrix ) {
 		VESubrender::veUBOPerObject ubo = {};
 		ubo.model = parentWorldMatrix * getTransform();
 		ubo.modelInvTrans = glm::transpose(glm::inverse(ubo.model));
@@ -416,7 +416,7 @@ namespace ve {
 	/**
 	* \brief Update the UBOs of all children of this entity
 	*/
-	void VEEntity::updateChildren( glm::mat4x4 worldMatrix ) {
+	void VEEntity::updateChildren( glm::mat4 worldMatrix ) {
 		for (auto pEntity : m_pEntityChildren) {
 			pEntity->update(worldMatrix);
 		}

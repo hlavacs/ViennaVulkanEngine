@@ -87,8 +87,8 @@ namespace ve {
 		pParent->multiplyTransform( glm::translate(glm::mat4(1.0f), (float)event.dt * trans) );
 
 		///combination of yaw and pitch, both wrt to parent space
-		glm::vec3    rot3 = glm::vec3(rot4.x, rot4.y, rot4.z);
-		glm::mat4x4  rotate = glm::rotate(glm::mat4(1.0), angle, rot3);
+		glm::vec3  rot3 = glm::vec3(rot4.x, rot4.y, rot4.z);
+		glm::mat4  rotate = glm::rotate(glm::mat4(1.0), angle, rot3);
 		pCamera->multiplyTransform( rotate );
 
 		return true;
@@ -135,13 +135,13 @@ namespace ve {
 		float angledx = slow*(float)event.dt * dx;
 		glm::vec4 rot4dx = glm::vec4(0.0, 1.0, 0.0, 1.0);
 		glm::vec3 rot3dx = glm::vec3(rot4dx.x, rot4dx.y, rot4dx.z);
-		glm::mat4x4 rotatedx = glm::rotate(glm::mat4(1.0), angledx, rot3dx);
+		glm::mat4 rotatedx = glm::rotate(glm::mat4(1.0), angledx, rot3dx);
 
 		//dy
 		float angledy = slow*(float)event.dt * dy;			//pitch angle
 		glm::vec4 rot4dy = pCamera->getTransform() * glm::vec4(1.0, 0.0, 0.0, 1.0); //x axis from local to parent space!
 		glm::vec3 rot3dy = glm::vec3(rot4dy.x, rot4dy.y, rot4dy.z);
-		glm::mat4x4 rotatedy = glm::rotate(glm::mat4(1.0), angledy, rot3dy);
+		glm::mat4 rotatedy = glm::rotate(glm::mat4(1.0), angledy, rot3dy);
 
 		pCamera->multiplyTransform( rotatedx * rotatedy  );
 		

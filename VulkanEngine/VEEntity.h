@@ -92,7 +92,7 @@ namespace ve {
 
 	class VEEntity : public VENamedClass {
 	protected:
-		glm::mat4x4	m_transform = glm::mat4(1.0);	///<Transform from local to parent space, the engine uses Y-UP, Left-handed
+		glm::mat4 m_transform = glm::mat4(1.0);	///<Transform from local to parent space, the engine uses Y-UP, Left-handed
 
 	public:
 		///The entity type determines what kind of entity this is
@@ -123,23 +123,23 @@ namespace ve {
 		virtual ~VEEntity();
 
 		//--------------------------------------------------
-		void		setTransform(glm::mat4x4 trans);	//Overwrite the transform and copy it to the UBO
-		glm::mat4x4 getTransform();						//Return local transform
+		void		setTransform(glm::mat4 trans);	//Overwrite the transform and copy it to the UBO
+		glm::mat4	getTransform();						//Return local transform
 		void		setPosition(glm::vec3 pos);			//Set the position of the entity
 		glm::vec3	getPosition();						//Return the current position in parent space
 		glm::vec3	getXAxis();							//Return local x-axis in parent space
 		glm::vec3	getYAxis();							//Return local y-axis in parent space
 		glm::vec3	getZAxis();							//Return local z-axis in parent space
-		void		multiplyTransform(glm::mat4x4 trans); //Multiply the transform, e.g. translate, scale, rotate 
-		glm::mat4x4 getWorldTransform();				//Compute the world matrix
+		void		multiplyTransform(glm::mat4 trans); //Multiply the transform, e.g. translate, scale, rotate 
+		glm::mat4	getWorldTransform();				//Compute the world matrix
 		void		lookAt(glm::vec3 eye, glm::vec3 point, glm::vec3 up);
 
 		//--------------------------------------------------
 		void		update();							//Copy the world matrix to the UBO
-		void		update(glm::mat4x4 parentWorldMatrix);	//Copy the world matrix using the parent's world matrix
+		void		update(glm::mat4 parentWorldMatrix);	//Copy the world matrix using the parent's world matrix
 		void		addChild(VEEntity *);				//Add a new child
 		void		removeChild(VEEntity *);			//Remove a child, dont destroy it
-		void		updateChildren(glm::mat4x4 worldMatrix);	//Update all children
+		void		updateChildren(glm::mat4 worldMatrix);	//Update all children
 		virtual void getBoundingSphere( glm::vec3 *center, float *radius );		//return center and radius for a bounding sphere
 	};
 
