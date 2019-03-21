@@ -69,19 +69,38 @@ namespace ve {
 	*/
 	void VESubrender::drawEntity(VkCommandBuffer commandBuffer, uint32_t imageIndex, VEEntity *entity) {
 
+		bindDescriptorSets(commandBuffer, imageIndex, entity);		//bind the entity's descriptor sets
+
 		VkBuffer vertexBuffers[] = { entity->m_pMesh->m_vertexBuffer };
 		VkDeviceSize offsets[] = { 0 };
-		vkCmdBindVertexBuffers(commandBuffer, 0, 1, vertexBuffers, offsets);
+		vkCmdBindVertexBuffers(commandBuffer, 0, 1, vertexBuffers, offsets);	//bind vertex buffer
 
-		vkCmdBindIndexBuffer(commandBuffer, entity->m_pMesh->m_indexBuffer, 0, VK_INDEX_TYPE_UINT32);
+		vkCmdBindIndexBuffer(commandBuffer, entity->m_pMesh->m_indexBuffer, 0, VK_INDEX_TYPE_UINT32); //bind index buffer
 
+		vkCmdDrawIndexed(commandBuffer, entity->m_pMesh->m_indexCount, 1, 0, 0, 0); //record the draw call
+	}
+
+
+
+	/**
+	*
+	* \brief Bind default descriptor sets - 0...per object 1...per frame
+	*
+	* The function binds the default descriptor sets -  0...per object 1...per frame. 
+	* Can be overloaded.
+	*
+	* \param[in] commandBuffer The command buffer to record into all draw calls
+	* \param[in] imageIndex Index of the current swap chain image
+	* \param[in] entity Pointer to the entity to draw
+	*
+	*/
+	void VESubrender::bindDescriptorSets(VkCommandBuffer commandBuffer, uint32_t imageIndex, VEEntity *entity) {
 		//set 0...per object
 		//set 1...per frame
 		std::vector<VkDescriptorSet> sets = { entity->m_descriptorSets[imageIndex], getRendererForwardPointer()->getDescriptorSetsPerFrame()[imageIndex] };
-		vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_pipelineLayout, 0, 2, sets.data(), 0, nullptr);
-
-		vkCmdDrawIndexed(commandBuffer, entity->m_pMesh->m_indexCount, 1, 0, 0, 0);
+		vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_pipelineLayout, 0, (uint32_t)sets.size(), sets.data(), 0, nullptr);
 	}
+
 
 	/**
 	*

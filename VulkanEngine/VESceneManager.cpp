@@ -50,13 +50,13 @@ namespace ve {
 		camera->lookAt(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f), glm::vec3(0.0f, 1.0f, 0.0f));
 		camera->m_pEntityParent = cameraParent;
 		addEntity(camera);
-		m_cameraName = camera->getName();
+		setCamera( camera );
 
 		//use one light source
 		VELight *light = new VELight("StandardLight", VELight::VE_LIGHT_TYPE_SPOT );
 		light->lookAt(glm::vec3(0.0f, 20.0f, -20.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
 		addEntity(light);
-		m_lightNames.insert(light->getName());
+		m_lights.push_back(light);
 	};
 
 	//-----------------------------------------------------------------------------------------------------------------------
@@ -542,6 +542,42 @@ namespace ve {
 			delete pMat;
 		}
 	}
+
+
+	/**
+	*
+	* \brief Add a light to the m_lights list, thus switching it on
+	*
+	* A light must be also on the stage as entity in the scene manager's entity list. 
+	* but until it is member of this list, it will not be considered as a shining light.
+	*
+	* \param[in] light A pointer to the light to add to the shining lights
+	*
+	*/
+	void  VESceneManager::switchOnLight(VELight * light) {
+		m_lights.push_back(light); 
+	};
+
+
+	/**
+	*
+	* \brief Remove a light from the m_lights list, thus switching it off
+	*
+	* Removing this light does not remove it from the m_entities list.
+	* Removing it from the m_lights list causes the light to be switched off.
+	*
+	* \param[in] light A pointer to the light to switch off
+	*
+	*/
+	void  VESceneManager::switchOffLight(VELight *light) {
+		for (uint32_t i = 0; i < m_lights.size(); i++) {
+			if (light == m_lights[i]) {
+				m_lights[i] = m_lights[m_lights.size() - 1];	//overwrite with last light
+				m_lights.pop_back();							//remove last light
+			}
+		}
+	}
+
 
 	/**
 	* \brief Close down the scene manager and delete all its assets.

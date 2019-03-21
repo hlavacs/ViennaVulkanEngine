@@ -34,7 +34,7 @@ namespace ve {
 		glm::vec4 rot4 = glm::vec4(1.0);						//total rotation around the axes, is 4d !
 		float angle = 0.0;
 
-		VECamera *pCamera = (VECamera*)getSceneManagerPointer()->getEntity(getSceneManagerPointer()->getCameraName());
+		VECamera *pCamera = getSceneManagerPointer()->getCamera();
 		VEEntity *pParent = pCamera->m_pEntityParent;
 
 		switch (event.idata1) {
@@ -126,7 +126,7 @@ namespace ve {
 		m_cursorPrevX = x;							//remember this for next iteration
 		m_cursorPrevY = y;
 
-		VECamera *pCamera = (VECamera*)getEnginePointer()->getSceneManager()->getEntity(getEnginePointer()->getSceneManager()->getCameraName());
+		VECamera *pCamera = getSceneManagerPointer()->getCamera();
 		VEEntity *pParent = pCamera->m_pEntityParent;
 
 		float slow = 1.0;		//camera rotation speed
@@ -192,7 +192,7 @@ namespace ve {
 		float xoffset = event.fdata1;
 		float yoffset = event.fdata2;
 
-		VECamera *pCamera = (VECamera*)getSceneManagerPointer()->getEntity(getEnginePointer()->getSceneManager()->getCameraName());
+		VECamera *pCamera = getSceneManagerPointer()->getCamera();
 		VEEntity *pParent = pCamera->m_pEntityParent;
 		glm::vec4 translate = 1000 * yoffset * glm::vec4(0.0, 0.0, -1.0, 1.0);
 

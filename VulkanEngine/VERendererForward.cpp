@@ -78,13 +78,16 @@ namespace ve {
 		vh::vhRenderCreateRenderPassShadow( m_device, m_depthMapFormat, &m_renderPassShadow);
 
 		//shadow map
-		m_shadowMapExtent = { 2048, 2048 };
-		vh::vhBufCreateDepthResources(	m_device, m_vmaAllocator, m_graphicsQueue, m_commandPool, m_shadowMapExtent,
-										m_depthMapFormat, &m_shadowMap, &m_shadowMapAllocation, &m_shadowMapView);
+		m_shadowMap = new VETexture("ShadowMap");
+		m_shadowMap->m_extent = { 2048, 2048 };
+		vh::vhBufCreateDepthResources(	m_device, m_vmaAllocator, m_graphicsQueue, m_commandPool, m_shadowMap->m_extent,
+										m_depthMapFormat, &m_shadowMap->m_image, &m_shadowMap->m_deviceAllocation, &m_shadowMap->m_imageView);
+
+		vh::vhBufCreateTextureSampler(getRendererPointer()->getDevice(), &m_shadowMap->m_sampler);
 
 		//frame buffers for shadow pass
 		std::vector<VkImageView> empty;
-		vh::vhBufCreateFramebuffers(m_device, empty, m_shadowMapView, m_renderPassShadow, m_shadowMapExtent, m_shadowFramebuffers);
+		vh::vhBufCreateFramebuffers(m_device, empty, m_shadowMap->m_imageView, m_renderPassShadow, m_shadowMap->m_extent, m_shadowFramebuffers);
 
 		//------------------------------------------------------------------------------------------------------------
 		//per frame resources
@@ -171,8 +174,7 @@ namespace ve {
 		vkDestroyFramebuffer(m_device, m_shadowFramebuffers[0], nullptr);
 
 		//destroy shadow map
-		vkDestroyImageView(m_device, m_shadowMapView, nullptr);
-		vmaDestroyImage(m_vmaAllocator, m_shadowMap, m_shadowMapAllocation);
+		delete m_shadowMap;
 
 		vkDestroyRenderPass(m_device, m_renderPassShadow, nullptr);
 
@@ -258,11 +260,11 @@ namespace ve {
 	* \param[in] imageIndex The index of the current swap chain image
 	*
 	*/
-	void VERendererForward::updatePerFrameUBO( uint32_t imageIndex) {
+	void VERendererForward::updatePerFrameUBO(uint32_t imageIndex) {
 
 		//---------------------------------------------------------------------------------------
 
-		VECamera * camera = (VECamera*)getSceneManagerPointer()->getEntity(getSceneManagerPointer()->m_cameraName);
+		VECamera * camera = getSceneManagerPointer()->getCamera();
 		if (camera == nullptr) {
 			throw std::runtime_error("Error: did not find camera in Scene Manager!");
 		}
@@ -270,22 +272,14 @@ namespace ve {
 		veUBOPerFrame ubo = {};
 
 		//fill in camera data
-		ubo.camModel= camera->getWorldTransform();
+		ubo.camModel = camera->getWorldTransform();
 		ubo.camView = glm::inverse(ubo.camModel);
 		ubo.camProj = camera->getProjectionMatrix((float)m_swapChainExtent.width, (float)m_swapChainExtent.height);
 		ubo.camProj[1][1] *= -1; //follow Vulkan specification, not GL
 
 		//fill in light data
-		ubo.light1.type[0] = -1;
-		VELight *plight;
-		if (getSceneManagerPointer()->m_lightNames.size() > 0) {
-			std::string l1 = *getSceneManagerPointer()->m_lightNames.begin();
-			VEEntity *e1 = getSceneManagerPointer()->getEntity(l1);
-			if (e1 != nullptr) {
-				plight = static_cast<VELight*>(e1);
-				plight->fillVhLightStructure(&ubo.light1);
-			}
-		}
+		VELight *plight = getSceneManagerPointer()->getLights()[0];
+		plight->fillVhLightStructure(&ubo.light1);
 
 		void* data = nullptr;
 		vmaMapMemory(m_vmaAllocator, m_uniformBuffersPerFrameAllocation[imageIndex], &data);
@@ -294,32 +288,35 @@ namespace ve {
 
 		//update the descriptor set for the per frame data
 		vh::vhRenderUpdateDescriptorSet(m_device, m_descriptorSetsPerFrame[imageIndex],
-											{ m_uniformBuffersPerFrame[imageIndex] }, //UBOs
-											{ sizeof(veUBOPerFrame) },			//UBO sizes
-											{ VK_NULL_HANDLE },						//textureImageViews
-											{ VK_NULL_HANDLE }						//samplers
-											);
+		{ m_uniformBuffersPerFrame[imageIndex] }, //UBOs
+		{ sizeof(veUBOPerFrame) },			//UBO sizes
+		{ VK_NULL_HANDLE },						//textureImageViews
+		{ VK_NULL_HANDLE }						//samplers
+		);
 
 		//---------------------------------------------------------------------------------------
 
-		VECamera *pCamShadow = camera->createShadowCameraOrtho(plight);
+		VECamera *pCamShadow = camera->createShadowCamera(plight);
 		veUBOShadow uboShadow = {};
 		uboShadow.shadowView = glm::inverse(pCamShadow->getWorldTransform());
 		uboShadow.shadowProj = pCamShadow->getProjectionMatrix();
 
-		data=nullptr;
+		data = nullptr;
 		vmaMapMemory(m_vmaAllocator, m_uniformBuffersShadowAllocation[imageIndex], &data);
-		memcpy(data, &uboShadow, sizeof(uboShadow) );
+		memcpy(data, &uboShadow, sizeof(uboShadow));
 		vmaUnmapMemory(m_vmaAllocator, m_uniformBuffersShadowAllocation[imageIndex]);
 
-		//update the descriptor set for the per frame data
+		//update the descriptor set for the shadow data
 		vh::vhRenderUpdateDescriptorSet(m_device, m_descriptorSetsShadow[imageIndex],
-										{ m_uniformBuffersShadow[imageIndex] }, //UBOs
-										{ sizeof(veUBOShadow) },			//UBO sizes
-										{ VK_NULL_HANDLE },						//textureImageViews
-										{ VK_NULL_HANDLE }						//samplers
+										{ m_uniformBuffersShadow[imageIndex],	VK_NULL_HANDLE },			//UBOs
+										{ sizeof(veUBOShadow) ,					0				},			//UBO sizes
+										{ VK_NULL_HANDLE,						m_shadowMap->m_imageView },	//textureImageViews
+										{ VK_NULL_HANDLE,						m_shadowMap->m_sampler }	//samplers
 										);
 	}
+
+
+
 
 	/**
 	* \brief Draw the frame.
@@ -348,13 +345,14 @@ namespace ve {
 		}
 
 		updatePerFrameUBO( imageIndex );	//update camera data UBO
+
 		//prepare command buffer for drawing
 		VkCommandBuffer commandBuffer = vh::vhCmdBeginSingleTimeCommands(m_device, m_commandPool);
 
 		//-----------------------------------------------------------------------------------------
 		//shadow pass
 
-		vh::vhRenderBeginRenderPass(commandBuffer, m_renderPassShadow, m_shadowFramebuffers[0], m_shadowMapExtent);
+		vh::vhRenderBeginRenderPass(commandBuffer, m_renderPassShadow, m_shadowFramebuffers[0], m_shadowMap->m_extent);
 		//m_subrenderShadow->draw(commandBuffer, imageIndex);
 		vkCmdEndRenderPass(commandBuffer);
 

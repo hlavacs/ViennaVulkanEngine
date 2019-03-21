@@ -63,14 +63,15 @@ namespace ve {
 		veSubrenderType getType() { return m_type; };
 
 		///Create descriptor set layout, pipeline layout and PSO
-		virtual void		initSubrenderer() {};
-		virtual void		closeSubrenderer();
-		virtual void		recreateResources();
+		virtual void	initSubrenderer() {};
+		virtual void	closeSubrenderer();
+		virtual void	recreateResources();
 
-		virtual void		draw( VkCommandBuffer commandBuffer, uint32_t imageIndex );
-		virtual void		drawEntity(VkCommandBuffer commandBuffer, uint32_t imageIndex, VEEntity *entity);
-		virtual void		addEntity( VEEntity *pEntity );
-		virtual void		removeEntity(VEEntity *pEntity);
+		virtual void	draw( VkCommandBuffer commandBuffer, uint32_t imageIndex );
+		virtual void	drawEntity(VkCommandBuffer commandBuffer, uint32_t imageIndex, VEEntity *entity);
+		virtual void	bindDescriptorSets(VkCommandBuffer commandBuffer, uint32_t imageIndex, VEEntity *entity);
+		virtual void	addEntity( VEEntity *pEntity );
+		virtual void	removeEntity(VEEntity *pEntity);
 
 		///Return the descriptor set layout of this subrenderer
 		virtual VkDescriptorSetLayout getDescriptorSetLayout() { return m_descriptorSetLayout; };

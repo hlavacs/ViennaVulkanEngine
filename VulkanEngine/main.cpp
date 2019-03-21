@@ -39,34 +39,29 @@ namespace ve {
 		bool onKeyboard(veEvent event) {
 			if ( event.idata3 == GLFW_RELEASE) return false;
 
-			std::set<std::string> &lightnames = getSceneManagerPointer()->getLightnames(); //names of lights in the scene
-			if (lightnames.size() > 0) {
-				std::string l1 = *lightnames.begin();						//first light name
-				VEEntity *e1 = getSceneManagerPointer()->getEntity(l1);
-				if (e1 == nullptr) return false;
+			VELight *pLight = getSceneManagerPointer()->getLights()[0];		//first light
 
-				float speed = 10.0f * (float)event.dt;
+			float speed = 10.0f * (float)event.dt;
 
-				switch (event.idata1) {
-				case GLFW_KEY_Y:		//Z key on German keyboard!
-					e1->multiplyTransform(glm::translate(glm::mat4(1.0f), speed * glm::vec3(0.0f, -1.0f, 0.0f)));
-					break;
-				case GLFW_KEY_I:
-					e1->multiplyTransform(glm::translate(glm::mat4(1.0f), speed * glm::vec3(0.0f, 1.0f, 0.0f)));
-					break;
-				case GLFW_KEY_U:
-					e1->multiplyTransform( glm::translate(glm::mat4(1.0f), speed * glm::vec3(0.0f, 0.0f, 1.0f)));
-					break;
-				case GLFW_KEY_J:
-					e1->multiplyTransform(glm::translate(glm::mat4(1.0f), speed * glm::vec3(0.0f, 0.0f, -1.0f)));
-					break;
-				case GLFW_KEY_H:
-					e1->multiplyTransform(glm::translate(glm::mat4(1.0f), speed * glm::vec3(-1.0f, 0.0f, 0.0f)));
-					break;
-				case GLFW_KEY_K:
-					e1->multiplyTransform(glm::translate(glm::mat4(1.0f), speed * glm::vec3(1.0f, 0.0f, 0.0f)));
-					break;
-				}
+			switch (event.idata1) {
+			case GLFW_KEY_Y:		//Z key on German keyboard!
+				pLight->multiplyTransform(glm::translate(glm::mat4(1.0f), speed * glm::vec3(0.0f, -1.0f, 0.0f)));
+				break;
+			case GLFW_KEY_I:
+				pLight->multiplyTransform(glm::translate(glm::mat4(1.0f), speed * glm::vec3(0.0f, 1.0f, 0.0f)));
+				break;
+			case GLFW_KEY_U:
+				pLight->multiplyTransform( glm::translate(glm::mat4(1.0f), speed * glm::vec3(0.0f, 0.0f, 1.0f)));
+				break;
+			case GLFW_KEY_J:
+				pLight->multiplyTransform(glm::translate(glm::mat4(1.0f), speed * glm::vec3(0.0f, 0.0f, -1.0f)));
+				break;
+			case GLFW_KEY_H:
+				pLight->multiplyTransform(glm::translate(glm::mat4(1.0f), speed * glm::vec3(-1.0f, 0.0f, 0.0f)));
+				break;
+			case GLFW_KEY_K:
+				pLight->multiplyTransform(glm::translate(glm::mat4(1.0f), speed * glm::vec3(1.0f, 0.0f, 0.0f)));
+				break;
 			}
 			return false;
 		}

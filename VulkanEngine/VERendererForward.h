@@ -48,10 +48,12 @@ namespace ve {
 		VkImageView m_depthImageView;									///<Image view for depth image
 		VkFormat m_depthMapFormat;										///<remember the depth map format
 
-		VkImage m_shadowMap;											///<shadow map image 
-		VmaAllocation m_shadowMapAllocation;							///<Shadow map VMA image allocation info
-		VkImageView m_shadowMapView;									///<Image view for shadow map
-		VkExtent2D  m_shadowMapExtent;									///<extent of shadow map
+		VETexture *m_shadowMap = nullptr;								///<the shadow map
+		//VkImage m_shadowMap;											///<shadow map image 
+		//VmaAllocation m_shadowMapAllocation;							///<Shadow map VMA image allocation info
+		//VkImageView m_shadowMapView;									///<Image view for shadow map
+		//VkSampler	m_shadowSampler = VK_NULL_HANDLE;					///<image sampler
+		//VkExtent2D  m_shadowMapExtent;									///<extent of shadow map
 
 		std::vector<VkBuffer> m_uniformBuffersPerFrame;					///<UBO for camera and light data
 		std::vector<VmaAllocation> m_uniformBuffersPerFrameAllocation;	///<VMA
@@ -77,7 +79,7 @@ namespace ve {
 
 		void createSyncObjects();							//create the sync objects
 		void cleanupSwapChain();							//delete the swapchain
-		void updatePerFrameUBO(uint32_t currentImage);		//update the per frame data like view, proj, lights
+		void updatePerFrameUBO(uint32_t currentImage);		//update the per frame data like view, proj, lights, shadow
 
 		virtual void initRenderer();						//init the renderer
 		virtual void createSubrenderers();					//create the subrenderers
@@ -108,7 +110,7 @@ namespace ve {
 		///\returns the shadow render pass
 		virtual VkRenderPass			getRenderPassShadow() { return m_renderPassShadow; };
 		///\returns the 2D extent of the shadow map
-		virtual VkExtent2D				getShadowMapExtent() { return m_shadowMapExtent; };
+		virtual VkExtent2D				getShadowMapExtent() { return m_shadowMap->m_extent; };
 
 	};
 

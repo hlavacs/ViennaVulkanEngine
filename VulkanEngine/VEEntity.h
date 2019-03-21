@@ -22,9 +22,12 @@ namespace ve {
 		VkImageView		m_imageView = VK_NULL_HANDLE;			///<image view
 		VmaAllocation	m_deviceAllocation = nullptr;			///<VMA allocation info
 		VkSampler		m_sampler = VK_NULL_HANDLE;				///<image sampler
+		VkExtent2D		m_extent = {0,0};						///<map extent
 
 		VETexture(std::string name, gli::texture_cube &texCube);
 		VETexture(std::string name, std::string &basedir, std::vector<std::string> texNames, VkImageCreateFlags flags=0, VkImageViewType viewtype = VK_IMAGE_VIEW_TYPE_2D);
+		VETexture(std::string name) : VENamedClass(name) {};
+		VETexture() : VENamedClass("NoName") {};
 		~VETexture();
 	};
 

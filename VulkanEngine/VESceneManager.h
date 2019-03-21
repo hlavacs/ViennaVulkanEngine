@@ -41,8 +41,8 @@ namespace ve {
 		std::map<std::string, VEMaterial*>	m_materials = {};	///< storage of all entities currently in the engine
 		std::map<std::string, VEEntity*>	m_entities = {};	///< storage of all entities currently in the engine
 
-		std::string			  m_cameraName = "";				///<entity name of the current camera
-		std::set<std::string> m_lightNames = {};				///<names of the lights to use
+		VECamera *				m_camera = nullptr;			///<entity ptr of the current camera
+		std::vector<VELight*>	m_lights = {};				///<ptrs to the lights to use
 
 		virtual void initSceneManager();
 		virtual void closeSceneManager();
@@ -90,16 +90,16 @@ namespace ve {
 		void			deleteMaterial(std::string name);
 
 		///\returns the name of the current camera
-		std::string		getCameraName() { return m_cameraName; };
+		VECamera*		getCamera() { return m_camera; };
 		/**
-		* \brief Set the name of the current camera
+		* \brief Set the the current camera
 		* \param[in] name The name of the camera
 		*/
-		void			setCameraName(std::string name) { m_cameraName = name; };
-		///\returns a pointer to the current camera
-		VECamera *      getCamera() { return static_cast<VECamera*>(m_entities[m_cameraName]);  };
+		void			setCamera( VECamera *cam) { m_camera = cam; };
 		///\returns a list with names of the current lights shining on the scene
-		std::set<std::string> & getLightnames() { return m_lightNames;  };
+		std::vector<VELight*> & getLights() { return m_lights;  };
+		void switchOnLight(VELight * light);	//Add a light to the m_lights list
+		void switchOffLight(VELight *light);	//Remove a light from the m_lights list
 
 		//------------------------------------------------------------------------
 		void			printEntities();
