@@ -1,20 +1,6 @@
 var searchData=
 [
-  ['_7eveentity',['~VEEntity',['../classve_1_1_v_e_entity.html#a6066cbdaef185c2be4c57cbc96e45fcd',1,'ve::VEEntity']]],
-  ['_7eveeventlistener',['~VEEventListener',['../classve_1_1_v_e_event_listener.html#a6c0753d74f74c36eef96d44ba4a71c22',1,'ve::VEEventListener']]],
-  ['_7eveeventlistenerglfw',['~VEEventListenerGLFW',['../classve_1_1_v_e_event_listener_g_l_f_w.html#a50ae54c6b4e6ca8fcf985894f0631541',1,'ve::VEEventListenerGLFW']]],
-  ['_7evematerial',['~VEMaterial',['../classve_1_1_v_e_material.html#a36d0bb4812fd7be997621dfd0ceae07a',1,'ve::VEMaterial']]],
-  ['_7evemesh',['~VEMesh',['../classve_1_1_v_e_mesh.html#aea168a1e49e3cd54abc4d0ae1b17b664',1,'ve::VEMesh']]],
-  ['_7evenamedclass',['~VENamedClass',['../classve_1_1_v_e_named_class.html#a9031d520ce34bf71a0acbdae35907eb7',1,'ve::VENamedClass']]],
-  ['_7everenderer',['~VERenderer',['../classve_1_1_v_e_renderer.html#a280f215ac26d0b01f72bdbc66df381f5',1,'ve::VERenderer']]],
-  ['_7evescenemanager',['~VESceneManager',['../classve_1_1_v_e_scene_manager.html#a63b77d8fc900cdc268ef92dcdfad20ae',1,'ve::VESceneManager']]],
-  ['_7evesubrender',['~VESubrender',['../classve_1_1_v_e_subrender.html#a634024851b44c0c17ff1e3b8ef8a8029',1,'ve::VESubrender']]],
-  ['_7evesubrenderc1',['~VESubrenderC1',['../classve_1_1_v_e_subrender_c1.html#a3d1dff56a15c17424918b13c3ab21d9a',1,'ve::VESubrenderC1']]],
-  ['_7evesubrendercubemap',['~VESubrenderCubemap',['../classve_1_1_v_e_subrender_cubemap.html#aa3a486f03eddd25cdf07d311a428c01f',1,'ve::VESubrenderCubemap']]],
-  ['_7evesubrenderd',['~VESubrenderD',['../classve_1_1_v_e_subrender_d.html#ac31e29eef9650f2deb1fda11574e9541',1,'ve::VESubrenderD']]],
-  ['_7evesubrenderdn',['~VESubrenderDN',['../classve_1_1_v_e_subrender_d_n.html#aeba0814522b7e72554cb3de2bc69889d',1,'ve::VESubrenderDN']]],
-  ['_7evesubrendershadow',['~VESubrenderShadow',['../classve_1_1_v_e_subrender_shadow.html#a06a88e8421e49b9d4b30c28ee9f44326',1,'ve::VESubrenderShadow']]],
-  ['_7evetexture',['~VETexture',['../structve_1_1_v_e_texture.html#ab0476c5b5c6ff4815845576be6ea7691',1,'ve::VETexture']]],
-  ['_7evewindow',['~VEWindow',['../classve_1_1_v_e_window.html#aecb13dcf0d83e28b4a530cbf14ee6079',1,'ve::VEWindow']]],
-  ['_7evewindowglfw',['~VEWindowGLFW',['../classve_1_1_v_e_window_g_l_f_w.html#aea2d04546d919c5810e1b81c201d032c',1,'ve::VEWindowGLFW']]]
+  ['waitforwindowsizechange',['waitForWindowSizeChange',['../classve_1_1_v_e_window.html#a0deaafdbda49e1add2dd5bcaa1f3c270',1,'ve::VEWindow::waitForWindowSizeChange()'],['../classve_1_1_v_e_window_g_l_f_w.html#aac22cb10bc924e28f4492858da4120e0',1,'ve::VEWindowGLFW::waitForWindowSizeChange()']]],
+  ['windowshouldclose',['windowShouldClose',['../classve_1_1_v_e_window.html#aac1a882a9f464563d9463ed4b8909719',1,'ve::VEWindow::windowShouldClose()'],['../classve_1_1_v_e_window_g_l_f_w.html#a329ad7b3b03f6ffa17bcb6ffbbabb3f4',1,'ve::VEWindowGLFW::windowShouldClose()']]],
+  ['windowsizechanged',['windowSizeChanged',['../classve_1_1_v_e_engine.html#ad214e551bf1ebde8f5f5267db00399ba',1,'ve::VEEngine::windowSizeChanged()'],['../classve_1_1_v_e_window.html#adf50af3f3a161f809698b589e4bebf92',1,'ve::VEWindow::windowSizeChanged()']]]
 ];

@@ -86,11 +86,11 @@ Inheritance diagram for ve::VESubrender:</div>
  <div class="center">
   <img src="classve_1_1_v_e_subrender.png" usemap="#ve::VESubrender_map" alt=""/>
   <map id="ve::VESubrender_map" name="ve::VESubrender_map">
-<area href="classve_1_1_v_e_subrender_c1.html" title="Subrenderer that manages entities that have only one color." alt="ve::VESubrenderC1" shape="rect" coords="0,56,162,80"/>
-<area href="classve_1_1_v_e_subrender_cubemap.html" title="Subrenderer that manages entities that are cubemap based sky boxes." alt="ve::VESubrenderCubemap" shape="rect" coords="172,56,334,80"/>
-<area href="classve_1_1_v_e_subrender_d.html" title="Subrenderer that manages entities that have one diffuse texture for coloring." alt="ve::VESubrenderD" shape="rect" coords="344,56,506,80"/>
-<area href="classve_1_1_v_e_subrender_d_n.html" title="Subrenderer that manages entities that have a diffuse texture and a normal map." alt="ve::VESubrenderDN" shape="rect" coords="516,56,678,80"/>
-<area href="classve_1_1_v_e_subrender_shadow.html" title="Subrenderer that manages draws the shadow pass." alt="ve::VESubrenderShadow" shape="rect" coords="688,56,850,80"/>
+<area href="classve_1_1_v_e_subrender_f_w___c1.html" title="Subrenderer that manages entities that have only one color." alt="ve::VESubrenderFW_C1" shape="rect" coords="0,56,188,80"/>
+<area href="classve_1_1_v_e_subrender_f_w___cubemap.html" title="Subrenderer that manages entities that are cubemap based sky boxes." alt="ve::VESubrenderFW_Cubemap" shape="rect" coords="198,56,386,80"/>
+<area href="classve_1_1_v_e_subrender_f_w___d.html" title="Subrenderer that manages entities that have one diffuse texture for coloring." alt="ve::VESubrenderFW_D" shape="rect" coords="396,56,584,80"/>
+<area href="classve_1_1_v_e_subrender_f_w___d_n.html" title="Subrenderer that manages entities that have a diffuse texture and a normal map." alt="ve::VESubrenderFW_DN" shape="rect" coords="594,56,782,80"/>
+<area href="classve_1_1_v_e_subrender_f_w___shadow.html" title="Subrenderer that manages draws the shadow pass." alt="ve::VESubrenderFW_Shadow" shape="rect" coords="792,56,980,80"/>
   </map>
 </div></div>
 <table class="memberdecls">
@@ -146,16 +146,15 @@ virtual void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" hr
 <tr class="memitem:a2cc13f57ad28631b93998fa65b47fc77"><td class="memItemLeft" align="right" valign="top">virtual void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_subrender.html#a2cc13f57ad28631b93998fa65b47fc77">drawEntity</a> (VkCommandBuffer commandBuffer, uint32_t imageIndex, <a class="el" href="classve_1_1_v_e_entity.html">VEEntity</a> *entity)</td></tr>
 <tr class="memdesc:a2cc13f57ad28631b93998fa65b47fc77"><td class="mdescLeft">&#160;</td><td class="mdescRight">Draw one entity.  <a href="#a2cc13f57ad28631b93998fa65b47fc77">More...</a><br /></td></tr>
 <tr class="separator:a2cc13f57ad28631b93998fa65b47fc77"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a4d849e3f73d2274c0173932470fd9cae"><td class="memItemLeft" align="right" valign="top">virtual void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_subrender.html#a4d849e3f73d2274c0173932470fd9cae">bindDescriptorSets</a> (VkCommandBuffer commandBuffer, uint32_t imageIndex, <a class="el" href="classve_1_1_v_e_entity.html">VEEntity</a> *entity)</td></tr>
+<tr class="memdesc:a4d849e3f73d2274c0173932470fd9cae"><td class="mdescLeft">&#160;</td><td class="mdescRight">Bind default descriptor sets - 0...per object 1...per frame.  <a href="#a4d849e3f73d2274c0173932470fd9cae">More...</a><br /></td></tr>
+<tr class="separator:a4d849e3f73d2274c0173932470fd9cae"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a6970ef026e052637bc60fc9b90f46a78"><td class="memItemLeft" align="right" valign="top">virtual void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_subrender.html#a6970ef026e052637bc60fc9b90f46a78">addEntity</a> (<a class="el" href="classve_1_1_v_e_entity.html">VEEntity</a> *pEntity)</td></tr>
 <tr class="memdesc:a6970ef026e052637bc60fc9b90f46a78"><td class="mdescLeft">&#160;</td><td class="mdescRight">Add an entity to the list of associated entities.  <a href="#a6970ef026e052637bc60fc9b90f46a78">More...</a><br /></td></tr>
 <tr class="separator:a6970ef026e052637bc60fc9b90f46a78"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a87358c9b4c985267771438ce11ddd872"><td class="memItemLeft" align="right" valign="top">virtual void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_subrender.html#a87358c9b4c985267771438ce11ddd872">removeEntity</a> (<a class="el" href="classve_1_1_v_e_entity.html">VEEntity</a> *pEntity)</td></tr>
 <tr class="memdesc:a87358c9b4c985267771438ce11ddd872"><td class="mdescLeft">&#160;</td><td class="mdescRight">Removes an entity from this subrenderer - does NOT delete it.  <a href="#a87358c9b4c985267771438ce11ddd872">More...</a><br /></td></tr>
 <tr class="separator:a87358c9b4c985267771438ce11ddd872"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a3b3e75345cfe77bcbb8cb9259ae0f1b0"><td class="memItemLeft" align="right" valign="top"><a id="a3b3e75345cfe77bcbb8cb9259ae0f1b0"></a>
-virtual VkDescriptorSetLayout&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_subrender.html#a3b3e75345cfe77bcbb8cb9259ae0f1b0">getDescriptorSetLayout</a> ()</td></tr>
-<tr class="memdesc:a3b3e75345cfe77bcbb8cb9259ae0f1b0"><td class="mdescLeft">&#160;</td><td class="mdescRight">Return the descriptor set layout of this subrenderer. <br /></td></tr>
-<tr class="separator:a3b3e75345cfe77bcbb8cb9259ae0f1b0"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pro-attribs"></a>
 Protected Attributes</h2></td></tr>
@@ -163,10 +162,14 @@ Protected Attributes</h2></td></tr>
 <a class="el" href="classve_1_1_v_e_subrender.html#a98064e456a838192bbcedf9b6c529e89">veSubrenderType</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_subrender.html#aa64ff9519923c9ae2499be7d334a0289">m_type</a> = <a class="el" href="classve_1_1_v_e_subrender.html#a98064e456a838192bbcedf9b6c529e89aa65d64be5dc74e152fa31e9790b8aeb5">VE_SUBRENDERER_TYPE_NONE</a></td></tr>
 <tr class="memdesc:aa64ff9519923c9ae2499be7d334a0289"><td class="mdescLeft">&#160;</td><td class="mdescRight">Type of the subrenderer. <br /></td></tr>
 <tr class="separator:aa64ff9519923c9ae2499be7d334a0289"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a498cc0fd318999901bf4ea2e35f2f9b2"><td class="memItemLeft" align="right" valign="top"><a id="a498cc0fd318999901bf4ea2e35f2f9b2"></a>
-VkDescriptorSetLayout&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_subrender.html#a498cc0fd318999901bf4ea2e35f2f9b2">m_descriptorSetLayout</a> = VK_NULL_HANDLE</td></tr>
-<tr class="memdesc:a498cc0fd318999901bf4ea2e35f2f9b2"><td class="mdescLeft">&#160;</td><td class="mdescRight">Descriptor set 0 : per object. <br /></td></tr>
-<tr class="separator:a498cc0fd318999901bf4ea2e35f2f9b2"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a302a8dd810eaf64be80a33809ca6c802"><td class="memItemLeft" align="right" valign="top"><a id="a302a8dd810eaf64be80a33809ca6c802"></a>
+VkDescriptorSetLayout&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_subrender.html#a302a8dd810eaf64be80a33809ca6c802">m_descriptorSetLayoutUBO</a> = VK_NULL_HANDLE</td></tr>
+<tr class="memdesc:a302a8dd810eaf64be80a33809ca6c802"><td class="mdescLeft">&#160;</td><td class="mdescRight">Descriptor set 1 : per object UBO. <br /></td></tr>
+<tr class="separator:a302a8dd810eaf64be80a33809ca6c802"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a89ba5ec50e989a27d6a002742997d6a5"><td class="memItemLeft" align="right" valign="top"><a id="a89ba5ec50e989a27d6a002742997d6a5"></a>
+VkDescriptorSetLayout&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_subrender.html#a89ba5ec50e989a27d6a002742997d6a5">m_descriptorSetLayoutResources</a> = VK_NULL_HANDLE</td></tr>
+<tr class="memdesc:a89ba5ec50e989a27d6a002742997d6a5"><td class="mdescLeft">&#160;</td><td class="mdescRight">Descriptor set 3 : per object additional resources. <br /></td></tr>
+<tr class="separator:a89ba5ec50e989a27d6a002742997d6a5"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ae8aee2dc1a7dd44a630cef495fb8dfb5"><td class="memItemLeft" align="right" valign="top"><a id="ae8aee2dc1a7dd44a630cef495fb8dfb5"></a>
 VkPipelineLayout&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_subrender.html#ae8aee2dc1a7dd44a630cef495fb8dfb5">m_pipelineLayout</a> = VK_NULL_HANDLE</td></tr>
 <tr class="memdesc:ae8aee2dc1a7dd44a630cef495fb8dfb5"><td class="mdescLeft">&#160;</td><td class="mdescRight">Pipeline layout. <br /></td></tr>
@@ -249,7 +252,62 @@ std::vector&lt; <a class="el" href="classve_1_1_v_e_entity.html">VEEntity</a> * 
   </dd>
 </dl>
 
-<p>Reimplemented in <a class="el" href="classve_1_1_v_e_subrender_d.html#ad8887b6841a724b1a5530388bf05d701">ve::VESubrenderD</a>, <a class="el" href="classve_1_1_v_e_subrender_c1.html#a6008ca1d17724472f09fd2661547ff31">ve::VESubrenderC1</a>, <a class="el" href="classve_1_1_v_e_subrender_cubemap.html#af62b458b1f2e9c4441ceee424d2ffedf">ve::VESubrenderCubemap</a>, <a class="el" href="classve_1_1_v_e_subrender_d_n.html#a5df2949304a01e7fea3f6d1091f5a373">ve::VESubrenderDN</a>, and <a class="el" href="classve_1_1_v_e_subrender_shadow.html#a89e7dc4c85fd39b171f7c646dc23da80">ve::VESubrenderShadow</a>.</p>
+<p>Reimplemented in <a class="el" href="classve_1_1_v_e_subrender_f_w___d.html#afbab2247597377f6fa1c1afc230d009f">ve::VESubrenderFW_D</a>, <a class="el" href="classve_1_1_v_e_subrender_f_w___c1.html#ad7c483efe3fce90d3f9adce0b7fb762b">ve::VESubrenderFW_C1</a>, <a class="el" href="classve_1_1_v_e_subrender_f_w___cubemap.html#afcc69d9bfd6fb5b16a5173c515fa72f3">ve::VESubrenderFW_Cubemap</a>, <a class="el" href="classve_1_1_v_e_subrender_f_w___d_n.html#a982bd9ee57f0ba527b5310bf019ac4c8">ve::VESubrenderFW_DN</a>, and <a class="el" href="classve_1_1_v_e_subrender_f_w___shadow.html#ad18d2bd792abf8ffe1c1baad5cad2148">ve::VESubrenderFW_Shadow</a>.</p>
+
+</div>
+</div>
+<a id="a4d849e3f73d2274c0173932470fd9cae"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a4d849e3f73d2274c0173932470fd9cae">&#9670;&nbsp;</a></span>bindDescriptorSets()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">void ve::VESubrender::bindDescriptorSets </td>
+          <td>(</td>
+          <td class="paramtype">VkCommandBuffer&#160;</td>
+          <td class="paramname"><em>commandBuffer</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">uint32_t&#160;</td>
+          <td class="paramname"><em>imageIndex</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="classve_1_1_v_e_entity.html">VEEntity</a> *&#160;</td>
+          <td class="paramname"><em>entity</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">virtual</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Bind default descriptor sets - 0...per object 1...per frame. </p>
+<p>The function binds the default descriptor sets - 0...per object 1...per frame. Can be overloaded.</p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramdir">[in]</td><td class="paramname">commandBuffer</td><td>The command buffer to record into all draw calls </td></tr>
+    <tr><td class="paramdir">[in]</td><td class="paramname">imageIndex</td><td>Index of the current swap chain image </td></tr>
+    <tr><td class="paramdir">[in]</td><td class="paramname">entity</td><td>Pointer to the entity to draw </td></tr>
+  </table>
+  </dd>
+</dl>
+
+<p>Reimplemented in <a class="el" href="classve_1_1_v_e_subrender_f_w___shadow.html#a59ef48dd45ad46fa2f357bee586786bb">ve::VESubrenderFW_Shadow</a>.</p>
 
 </div>
 </div>
@@ -297,7 +355,7 @@ std::vector&lt; <a class="el" href="classve_1_1_v_e_entity.html">VEEntity</a> * 
   </dd>
 </dl>
 
-<p>Reimplemented in <a class="el" href="classve_1_1_v_e_subrender_shadow.html#a3c854c01f13897f34bd5d954a4f1740d">ve::VESubrenderShadow</a>.</p>
+<p>Reimplemented in <a class="el" href="classve_1_1_v_e_subrender_f_w___shadow.html#a0d14df6d2b9c16be472af3ee24f2bc3c">ve::VESubrenderFW_Shadow</a>.</p>
 
 </div>
 </div>
@@ -422,7 +480,7 @@ std::vector&lt; <a class="el" href="classve_1_1_v_e_entity.html">VEEntity</a> * 
 </div><!-- contents -->
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>
-Generated on Tue Mar 19 2019 07:45:17 for Vienna Vulkan Engine by &#160;<a href="http://www.doxygen.org/index.html">
+Generated on Fri Mar 22 2019 14:51:21 for Vienna Vulkan Engine by &#160;<a href="http://www.doxygen.org/index.html">
 <img class="footer" src="doxygen.png" alt="doxygen"/>
 </a> 1.8.15
 </small></address>

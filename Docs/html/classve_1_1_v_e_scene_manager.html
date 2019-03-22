@@ -145,15 +145,19 @@ void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="clas
 <tr class="memitem:a16ca7fe353361e0da3ee4a850f57d3ce"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_scene_manager.html#a16ca7fe353361e0da3ee4a850f57d3ce">deleteMaterial</a> (std::string name)</td></tr>
 <tr class="memdesc:a16ca7fe353361e0da3ee4a850f57d3ce"><td class="mdescLeft">&#160;</td><td class="mdescRight">Delete a material given its name.  <a href="#a16ca7fe353361e0da3ee4a850f57d3ce">More...</a><br /></td></tr>
 <tr class="separator:a16ca7fe353361e0da3ee4a850f57d3ce"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a7117a01634d42896257ec5db1cc04088"><td class="memItemLeft" align="right" valign="top">std::string&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_scene_manager.html#a7117a01634d42896257ec5db1cc04088">getCameraName</a> ()</td></tr>
-<tr class="separator:a7117a01634d42896257ec5db1cc04088"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a30e0dcc05163f9e6bcbe966e799ef6a2"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_scene_manager.html#a30e0dcc05163f9e6bcbe966e799ef6a2">setCameraName</a> (std::string name)</td></tr>
-<tr class="memdesc:a30e0dcc05163f9e6bcbe966e799ef6a2"><td class="mdescLeft">&#160;</td><td class="mdescRight">Set the name of the current camera.  <a href="#a30e0dcc05163f9e6bcbe966e799ef6a2">More...</a><br /></td></tr>
-<tr class="separator:a30e0dcc05163f9e6bcbe966e799ef6a2"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a6dedc85430da2d06259704f47ec4f3c7"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classve_1_1_v_e_camera.html">VECamera</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_scene_manager.html#a6dedc85430da2d06259704f47ec4f3c7">getCamera</a> ()</td></tr>
 <tr class="separator:a6dedc85430da2d06259704f47ec4f3c7"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a4269d7b30c439eda27019e7f0e7819d5"><td class="memItemLeft" align="right" valign="top">std::set&lt; std::string &gt; &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_scene_manager.html#a4269d7b30c439eda27019e7f0e7819d5">getLightnames</a> ()</td></tr>
-<tr class="separator:a4269d7b30c439eda27019e7f0e7819d5"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:acedf235e65ee027a0df5dc92163fcefe"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_scene_manager.html#acedf235e65ee027a0df5dc92163fcefe">setCamera</a> (<a class="el" href="classve_1_1_v_e_camera.html">VECamera</a> *cam)</td></tr>
+<tr class="memdesc:acedf235e65ee027a0df5dc92163fcefe"><td class="mdescLeft">&#160;</td><td class="mdescRight">Set the the current camera.  <a href="#acedf235e65ee027a0df5dc92163fcefe">More...</a><br /></td></tr>
+<tr class="separator:acedf235e65ee027a0df5dc92163fcefe"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ad5e8d10dcab7cce48b9b5c28acda0ead"><td class="memItemLeft" align="right" valign="top">std::vector&lt; <a class="el" href="classve_1_1_v_e_light.html">VELight</a> * &gt; &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_scene_manager.html#ad5e8d10dcab7cce48b9b5c28acda0ead">getLights</a> ()</td></tr>
+<tr class="separator:ad5e8d10dcab7cce48b9b5c28acda0ead"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a3c5a46bc9fb0c998451b96b68dcbf45d"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_scene_manager.html#a3c5a46bc9fb0c998451b96b68dcbf45d">switchOnLight</a> (<a class="el" href="classve_1_1_v_e_light.html">VELight</a> *light)</td></tr>
+<tr class="memdesc:a3c5a46bc9fb0c998451b96b68dcbf45d"><td class="mdescLeft">&#160;</td><td class="mdescRight">Add a light to the m_lights list, thus switching it on.  <a href="#a3c5a46bc9fb0c998451b96b68dcbf45d">More...</a><br /></td></tr>
+<tr class="separator:a3c5a46bc9fb0c998451b96b68dcbf45d"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a8d225517b9db68a1d93769bf72fb5e7b"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_scene_manager.html#a8d225517b9db68a1d93769bf72fb5e7b">switchOffLight</a> (<a class="el" href="classve_1_1_v_e_light.html">VELight</a> *light)</td></tr>
+<tr class="memdesc:a8d225517b9db68a1d93769bf72fb5e7b"><td class="mdescLeft">&#160;</td><td class="mdescRight">Remove a light from the m_lights list, thus switching it off.  <a href="#a8d225517b9db68a1d93769bf72fb5e7b">More...</a><br /></td></tr>
+<tr class="separator:a8d225517b9db68a1d93769bf72fb5e7b"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a4b351f4cef52458275abca03f2799bb9"><td class="memItemLeft" align="right" valign="top"><a id="a4b351f4cef52458275abca03f2799bb9"></a>
 void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_scene_manager.html#a4b351f4cef52458275abca03f2799bb9">printEntities</a> ()</td></tr>
 <tr class="memdesc:a4b351f4cef52458275abca03f2799bb9"><td class="mdescLeft">&#160;</td><td class="mdescRight">Print a list of all entities to the console. <br /></td></tr>
@@ -186,14 +190,14 @@ std::map&lt; std::string, <a class="el" href="classve_1_1_v_e_material.html">VEM
 std::map&lt; std::string, <a class="el" href="classve_1_1_v_e_entity.html">VEEntity</a> * &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_scene_manager.html#a9077f31afa5e50ee447dc06438072fa3">m_entities</a> = {}</td></tr>
 <tr class="memdesc:a9077f31afa5e50ee447dc06438072fa3"><td class="mdescLeft">&#160;</td><td class="mdescRight">storage of all entities currently in the engine <br /></td></tr>
 <tr class="separator:a9077f31afa5e50ee447dc06438072fa3"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a0cfdc0fccf7d4d6b571410767c772d2f"><td class="memItemLeft" align="right" valign="top"><a id="a0cfdc0fccf7d4d6b571410767c772d2f"></a>
-std::string&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_scene_manager.html#a0cfdc0fccf7d4d6b571410767c772d2f">m_cameraName</a> = &quot;&quot;</td></tr>
-<tr class="memdesc:a0cfdc0fccf7d4d6b571410767c772d2f"><td class="mdescLeft">&#160;</td><td class="mdescRight">entity name of the current camera <br /></td></tr>
-<tr class="separator:a0cfdc0fccf7d4d6b571410767c772d2f"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a409f061a13332346caea895a84093afb"><td class="memItemLeft" align="right" valign="top"><a id="a409f061a13332346caea895a84093afb"></a>
-std::set&lt; std::string &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_scene_manager.html#a409f061a13332346caea895a84093afb">m_lightNames</a> = {}</td></tr>
-<tr class="memdesc:a409f061a13332346caea895a84093afb"><td class="mdescLeft">&#160;</td><td class="mdescRight">names of the lights to use <br /></td></tr>
-<tr class="separator:a409f061a13332346caea895a84093afb"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ae3fbd394a2d6ff4797ecff2921d6cbcb"><td class="memItemLeft" align="right" valign="top"><a id="ae3fbd394a2d6ff4797ecff2921d6cbcb"></a>
+<a class="el" href="classve_1_1_v_e_camera.html">VECamera</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_scene_manager.html#ae3fbd394a2d6ff4797ecff2921d6cbcb">m_camera</a> = nullptr</td></tr>
+<tr class="memdesc:ae3fbd394a2d6ff4797ecff2921d6cbcb"><td class="mdescLeft">&#160;</td><td class="mdescRight">entity ptr of the current camera <br /></td></tr>
+<tr class="separator:ae3fbd394a2d6ff4797ecff2921d6cbcb"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a0c9304990871bbe6cc0abd0351929439"><td class="memItemLeft" align="right" valign="top"><a id="a0c9304990871bbe6cc0abd0351929439"></a>
+std::vector&lt; <a class="el" href="classve_1_1_v_e_light.html">VELight</a> * &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_scene_manager.html#a0c9304990871bbe6cc0abd0351929439">m_lights</a> = {}</td></tr>
+<tr class="memdesc:a0c9304990871bbe6cc0abd0351929439"><td class="mdescLeft">&#160;</td><td class="mdescRight">ptrs to the lights to use <br /></td></tr>
+<tr class="separator:a0c9304990871bbe6cc0abd0351929439"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <div class="textblock"><p>The scene Manager manages the objects that have been loaded and put into the world. </p>
@@ -772,32 +776,6 @@ std::set&lt; std::string &gt;&#160;</td><td class="memItemRight" valign="bottom"
 
 </div>
 </div>
-<a id="a7117a01634d42896257ec5db1cc04088"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a7117a01634d42896257ec5db1cc04088">&#9670;&nbsp;</a></span>getCameraName()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">std::string ve::VESceneManager::getCameraName </td>
-          <td>(</td>
-          <td class="paramname"></td><td>)</td>
-          <td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-<dl class="section return"><dt>Returns</dt><dd>the name of the current camera </dd></dl>
-
-</div>
-</div>
 <a id="adc7f6be86700a42d5b8d49189386fcd7"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#adc7f6be86700a42d5b8d49189386fcd7">&#9670;&nbsp;</a></span>getEntity()</h2>
 
@@ -825,8 +803,8 @@ std::set&lt; std::string &gt;&#160;</td><td class="memItemRight" valign="bottom"
 
 </div>
 </div>
-<a id="a4269d7b30c439eda27019e7f0e7819d5"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a4269d7b30c439eda27019e7f0e7819d5">&#9670;&nbsp;</a></span>getLightnames()</h2>
+<a id="ad5e8d10dcab7cce48b9b5c28acda0ead"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ad5e8d10dcab7cce48b9b5c28acda0ead">&#9670;&nbsp;</a></span>getLights()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -835,7 +813,7 @@ std::set&lt; std::string &gt;&#160;</td><td class="memItemRight" valign="bottom"
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">std::set&lt;std::string&gt;&amp; ve::VESceneManager::getLightnames </td>
+          <td class="memname">std::vector&lt;<a class="el" href="classve_1_1_v_e_light.html">VELight</a>*&gt;&amp; ve::VESceneManager::getLights </td>
           <td>(</td>
           <td class="paramname"></td><td>)</td>
           <td></td>
@@ -1093,8 +1071,8 @@ std::set&lt; std::string &gt;&#160;</td><td class="memItemRight" valign="bottom"
 
 </div>
 </div>
-<a id="a30e0dcc05163f9e6bcbe966e799ef6a2"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a30e0dcc05163f9e6bcbe966e799ef6a2">&#9670;&nbsp;</a></span>setCameraName()</h2>
+<a id="acedf235e65ee027a0df5dc92163fcefe"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#acedf235e65ee027a0df5dc92163fcefe">&#9670;&nbsp;</a></span>setCamera()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -1103,10 +1081,10 @@ std::set&lt; std::string &gt;&#160;</td><td class="memItemRight" valign="bottom"
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">void ve::VESceneManager::setCameraName </td>
+          <td class="memname">void ve::VESceneManager::setCamera </td>
           <td>(</td>
-          <td class="paramtype">std::string&#160;</td>
-          <td class="paramname"><em>name</em></td><td>)</td>
+          <td class="paramtype"><a class="el" href="classve_1_1_v_e_camera.html">VECamera</a> *&#160;</td>
+          <td class="paramname"><em>cam</em></td><td>)</td>
           <td></td>
         </tr>
       </table>
@@ -1117,10 +1095,64 @@ std::set&lt; std::string &gt;&#160;</td><td class="memItemRight" valign="bottom"
 </table>
 </div><div class="memdoc">
 
-<p>Set the name of the current camera. </p>
+<p>Set the the current camera. </p>
 <dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
-    <tr><td class="paramdir">[in]</td><td class="paramname">name</td><td>The name of the camera </td></tr>
+    <tr><td class="paramdir">[in]</td><td class="paramname">cam</td><td>Pointer to the camera </td></tr>
+  </table>
+  </dd>
+</dl>
+
+</div>
+</div>
+<a id="a8d225517b9db68a1d93769bf72fb5e7b"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a8d225517b9db68a1d93769bf72fb5e7b">&#9670;&nbsp;</a></span>switchOffLight()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">void ve::VESceneManager::switchOffLight </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="classve_1_1_v_e_light.html">VELight</a> *&#160;</td>
+          <td class="paramname"><em>light</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Remove a light from the m_lights list, thus switching it off. </p>
+<p>Removing this light does not remove it from the m_entities list. Removing it from the m_lights list causes the light to be switched off.</p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramdir">[in]</td><td class="paramname">light</td><td>A pointer to the light to switch off </td></tr>
+  </table>
+  </dd>
+</dl>
+
+</div>
+</div>
+<a id="a3c5a46bc9fb0c998451b96b68dcbf45d"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a3c5a46bc9fb0c998451b96b68dcbf45d">&#9670;&nbsp;</a></span>switchOnLight()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">void ve::VESceneManager::switchOnLight </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="classve_1_1_v_e_light.html">VELight</a> *&#160;</td>
+          <td class="paramname"><em>light</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Add a light to the m_lights list, thus switching it on. </p>
+<p>A light must be also on the stage as entity in the scene manager's entity list. but until it is member of this list, it will not be considered as a shining light.</p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramdir">[in]</td><td class="paramname">light</td><td>A pointer to the light to add to the shining lights </td></tr>
   </table>
   </dd>
 </dl>
@@ -1134,7 +1166,7 @@ std::set&lt; std::string &gt;&#160;</td><td class="memItemRight" valign="bottom"
 </div><!-- contents -->
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>
-Generated on Tue Mar 19 2019 07:45:17 for Vienna Vulkan Engine by &#160;<a href="http://www.doxygen.org/index.html">
+Generated on Fri Mar 22 2019 14:51:21 for Vienna Vulkan Engine by &#160;<a href="http://www.doxygen.org/index.html">
 <img class="footer" src="doxygen.png" alt="doxygen"/>
 </a> 1.8.15
 </small></address>

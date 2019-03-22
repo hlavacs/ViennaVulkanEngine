@@ -56,6 +56,10 @@ namespace ve {
 			pSubrender->closeSubrenderer();
 			delete pSubrender;
 		}
+		if (m_subrenderShadow != nullptr) {
+			m_subrenderShadow->closeSubrenderer();
+			delete m_subrenderShadow;
+		}
 	}
 
 	/**

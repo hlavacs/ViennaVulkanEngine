@@ -4,20 +4,20 @@
 
 #include "../common_defines.glsl"
 
-layout(set = 0, binding = 0) uniform UniformBufferObjectPerObject {
+layout(set = 0, binding = 0) uniform UniformBufferObjectPerFrame {
+    mat4 camModel;
+    mat4 camView;
+    mat4 camProj;
+    mat4 shadowView;
+    mat4 shadowProj;
+    light_t light1;
+} UBOPerFrame;
+
+layout(set = 1, binding = 0) uniform UniformBufferObjectPerObject {
     mat4 model;
     mat4 modelInvTrans;
     vec4 color;
 } UBOPerObject;
-
-
-layout(set = 1, binding = 0) uniform UniformBufferObjectPerFrame {
-    mat4 camModel;
-    mat4 camView;
-    mat4 camProj;
-    light_t light1;
-} UBOPerFrame;
-
 
 layout(location = 0) in vec3 inPosition;
 layout(location = 1) in vec3 inNormal;
@@ -39,4 +39,3 @@ void main() {
     fragNormal    = (UBOPerObject.modelInvTrans * vec4( inNormal, 1.0 )).xyz;
     fragTexCoord  = inTexCoord;
 }
-

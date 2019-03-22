@@ -125,6 +125,8 @@ Public Member Functions</h2></td></tr>
 <tr class="memitem:a57b95a61725a083d3777ae1e01614a38"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_light.html#a57b95a61725a083d3777ae1e01614a38">VELight</a> (std::string name, <a class="el" href="classve_1_1_v_e_light.html#abcedf7166341000b6d4512e9030f6b86">veLightType</a> type)</td></tr>
 <tr class="memdesc:a57b95a61725a083d3777ae1e01614a38"><td class="mdescLeft">&#160;</td><td class="mdescRight">Simple <a class="el" href="classve_1_1_v_e_light.html" title="A VELight has a color and can be used to light a scene.">VELight</a> constructor, default is directional light.  <a href="#a57b95a61725a083d3777ae1e01614a38">More...</a><br /></td></tr>
 <tr class="separator:a57b95a61725a083d3777ae1e01614a38"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ad20b8b457fdd68dd53a9a65e7e4c255d"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classve_1_1_v_e_light.html#abcedf7166341000b6d4512e9030f6b86">veLightType</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_light.html#ad20b8b457fdd68dd53a9a65e7e4c255d">getLightType</a> ()</td></tr>
+<tr class="separator:ad20b8b457fdd68dd53a9a65e7e4c255d"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a6b6d419f5045c95d00edfaecce764a68"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_light.html#a6b6d419f5045c95d00edfaecce764a68">fillVhLightStructure</a> (<a class="el" href="structve_1_1_v_e_light_1_1ve_light.html">veLight</a> *pLight)</td></tr>
 <tr class="memdesc:a6b6d419f5045c95d00edfaecce764a68"><td class="mdescLeft">&#160;</td><td class="mdescRight">Fill a UBO structure with the light's data.  <a href="#a6b6d419f5045c95d00edfaecce764a68">More...</a><br /></td></tr>
 <tr class="separator:a6b6d419f5045c95d00edfaecce764a68"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -138,12 +140,12 @@ Public Member Functions</h2></td></tr>
 <tr class="memitem:a6066cbdaef185c2be4c57cbc96e45fcd inherit pub_methods_classve_1_1_v_e_entity"><td class="memItemLeft" align="right" valign="top">virtual&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_entity.html#a6066cbdaef185c2be4c57cbc96e45fcd">~VEEntity</a> ()</td></tr>
 <tr class="memdesc:a6066cbdaef185c2be4c57cbc96e45fcd inherit pub_methods_classve_1_1_v_e_entity"><td class="mdescLeft">&#160;</td><td class="mdescRight"><a class="el" href="classve_1_1_v_e_entity.html" title="Represents any object that can be put into a scene.">VEEntity</a> destructor.  <a href="classve_1_1_v_e_entity.html#a6066cbdaef185c2be4c57cbc96e45fcd">More...</a><br /></td></tr>
 <tr class="separator:a6066cbdaef185c2be4c57cbc96e45fcd inherit pub_methods_classve_1_1_v_e_entity"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a6c2c8de095cb4de94c82529ee3291f6f inherit pub_methods_classve_1_1_v_e_entity"><td class="memItemLeft" align="right" valign="top"><a id="a6c2c8de095cb4de94c82529ee3291f6f"></a>
-void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_entity.html#a6c2c8de095cb4de94c82529ee3291f6f">setTransform</a> (glm::mat4x4 trans)</td></tr>
-<tr class="memdesc:a6c2c8de095cb4de94c82529ee3291f6f inherit pub_methods_classve_1_1_v_e_entity"><td class="mdescLeft">&#160;</td><td class="mdescRight">Sets the entity's local to parent transform. <br /></td></tr>
-<tr class="separator:a6c2c8de095cb4de94c82529ee3291f6f inherit pub_methods_classve_1_1_v_e_entity"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a786983ef0108f18177cfc831d69fd04f inherit pub_methods_classve_1_1_v_e_entity"><td class="memItemLeft" align="right" valign="top">glm::mat4x4&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_entity.html#a786983ef0108f18177cfc831d69fd04f">getTransform</a> ()</td></tr>
-<tr class="separator:a786983ef0108f18177cfc831d69fd04f inherit pub_methods_classve_1_1_v_e_entity"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a7eef96a79854921c96eb135b18919fcc inherit pub_methods_classve_1_1_v_e_entity"><td class="memItemLeft" align="right" valign="top"><a id="a7eef96a79854921c96eb135b18919fcc"></a>
+void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_entity.html#a7eef96a79854921c96eb135b18919fcc">setTransform</a> (glm::mat4 trans)</td></tr>
+<tr class="memdesc:a7eef96a79854921c96eb135b18919fcc inherit pub_methods_classve_1_1_v_e_entity"><td class="mdescLeft">&#160;</td><td class="mdescRight">Sets the entity's local to parent transform. <br /></td></tr>
+<tr class="separator:a7eef96a79854921c96eb135b18919fcc inherit pub_methods_classve_1_1_v_e_entity"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ab4009395728418f7efc486fc7fc22ea2 inherit pub_methods_classve_1_1_v_e_entity"><td class="memItemLeft" align="right" valign="top">glm::mat4&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_entity.html#ab4009395728418f7efc486fc7fc22ea2">getTransform</a> ()</td></tr>
+<tr class="separator:ab4009395728418f7efc486fc7fc22ea2 inherit pub_methods_classve_1_1_v_e_entity"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aeb9f3714fe278bf226e06271746a7087 inherit pub_methods_classve_1_1_v_e_entity"><td class="memItemLeft" align="right" valign="top"><a id="aeb9f3714fe278bf226e06271746a7087"></a>
 void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_entity.html#aeb9f3714fe278bf226e06271746a7087">setPosition</a> (glm::vec3 pos)</td></tr>
 <tr class="memdesc:aeb9f3714fe278bf226e06271746a7087 inherit pub_methods_classve_1_1_v_e_entity"><td class="mdescLeft">&#160;</td><td class="mdescRight">Sets the entity's position. <br /></td></tr>
@@ -156,31 +158,31 @@ void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="clas
 <tr class="separator:aa5407fba37f5e61e09f81cbee540bbdd inherit pub_methods_classve_1_1_v_e_entity"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a25e1ca227861c84ecb56e7befeebca16 inherit pub_methods_classve_1_1_v_e_entity"><td class="memItemLeft" align="right" valign="top">glm::vec3&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_entity.html#a25e1ca227861c84ecb56e7befeebca16">getZAxis</a> ()</td></tr>
 <tr class="separator:a25e1ca227861c84ecb56e7befeebca16 inherit pub_methods_classve_1_1_v_e_entity"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:af91e2a9f79b911c7240fc958e70e4881 inherit pub_methods_classve_1_1_v_e_entity"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_entity.html#af91e2a9f79b911c7240fc958e70e4881">multiplyTransform</a> (glm::mat4x4 trans)</td></tr>
-<tr class="memdesc:af91e2a9f79b911c7240fc958e70e4881 inherit pub_methods_classve_1_1_v_e_entity"><td class="mdescLeft">&#160;</td><td class="mdescRight">Multiplies the entity's transform with another 4x4 transform.  <a href="classve_1_1_v_e_entity.html#af91e2a9f79b911c7240fc958e70e4881">More...</a><br /></td></tr>
-<tr class="separator:af91e2a9f79b911c7240fc958e70e4881 inherit pub_methods_classve_1_1_v_e_entity"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:afe7476a4f8fd9a3a805048ac27a6f07b inherit pub_methods_classve_1_1_v_e_entity"><td class="memItemLeft" align="right" valign="top">glm::mat4x4&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_entity.html#afe7476a4f8fd9a3a805048ac27a6f07b">getWorldTransform</a> ()</td></tr>
-<tr class="memdesc:afe7476a4f8fd9a3a805048ac27a6f07b inherit pub_methods_classve_1_1_v_e_entity"><td class="mdescLeft">&#160;</td><td class="mdescRight">An entity's world matrix is the local to parent transform multiplied by the parent's world matrix.  <a href="classve_1_1_v_e_entity.html#afe7476a4f8fd9a3a805048ac27a6f07b">More...</a><br /></td></tr>
-<tr class="separator:afe7476a4f8fd9a3a805048ac27a6f07b inherit pub_methods_classve_1_1_v_e_entity"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aab7acb5bd5f43f860d43ff1f8f55f65b inherit pub_methods_classve_1_1_v_e_entity"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_entity.html#aab7acb5bd5f43f860d43ff1f8f55f65b">multiplyTransform</a> (glm::mat4 trans)</td></tr>
+<tr class="memdesc:aab7acb5bd5f43f860d43ff1f8f55f65b inherit pub_methods_classve_1_1_v_e_entity"><td class="mdescLeft">&#160;</td><td class="mdescRight">Multiplies the entity's transform with another 4x4 transform.  <a href="classve_1_1_v_e_entity.html#aab7acb5bd5f43f860d43ff1f8f55f65b">More...</a><br /></td></tr>
+<tr class="separator:aab7acb5bd5f43f860d43ff1f8f55f65b inherit pub_methods_classve_1_1_v_e_entity"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a54ad78cc5e01103e9f62103e0a7b5adb inherit pub_methods_classve_1_1_v_e_entity"><td class="memItemLeft" align="right" valign="top">glm::mat4&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_entity.html#a54ad78cc5e01103e9f62103e0a7b5adb">getWorldTransform</a> ()</td></tr>
+<tr class="memdesc:a54ad78cc5e01103e9f62103e0a7b5adb inherit pub_methods_classve_1_1_v_e_entity"><td class="mdescLeft">&#160;</td><td class="mdescRight">An entity's world matrix is the local to parent transform multiplied by the parent's world matrix.  <a href="classve_1_1_v_e_entity.html#a54ad78cc5e01103e9f62103e0a7b5adb">More...</a><br /></td></tr>
+<tr class="separator:a54ad78cc5e01103e9f62103e0a7b5adb inherit pub_methods_classve_1_1_v_e_entity"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ab214df16d949f99afc71fa7dc75da2d7 inherit pub_methods_classve_1_1_v_e_entity"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_entity.html#ab214df16d949f99afc71fa7dc75da2d7">lookAt</a> (glm::vec3 eye, glm::vec3 point, glm::vec3 up)</td></tr>
 <tr class="memdesc:ab214df16d949f99afc71fa7dc75da2d7 inherit pub_methods_classve_1_1_v_e_entity"><td class="mdescLeft">&#160;</td><td class="mdescRight">lookAt function  <a href="classve_1_1_v_e_entity.html#ab214df16d949f99afc71fa7dc75da2d7">More...</a><br /></td></tr>
 <tr class="separator:ab214df16d949f99afc71fa7dc75da2d7 inherit pub_methods_classve_1_1_v_e_entity"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a57fb05208266b5a931f4bdac25092841 inherit pub_methods_classve_1_1_v_e_entity"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_entity.html#a57fb05208266b5a931f4bdac25092841">update</a> ()</td></tr>
 <tr class="memdesc:a57fb05208266b5a931f4bdac25092841 inherit pub_methods_classve_1_1_v_e_entity"><td class="mdescLeft">&#160;</td><td class="mdescRight">Update the entity's UBO buffer with the current world matrix.  <a href="classve_1_1_v_e_entity.html#a57fb05208266b5a931f4bdac25092841">More...</a><br /></td></tr>
 <tr class="separator:a57fb05208266b5a931f4bdac25092841 inherit pub_methods_classve_1_1_v_e_entity"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a1b40414dc95d448ebabb7a2b7a46eb26 inherit pub_methods_classve_1_1_v_e_entity"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_entity.html#a1b40414dc95d448ebabb7a2b7a46eb26">update</a> (glm::mat4x4 parentWorldMatrix)</td></tr>
-<tr class="memdesc:a1b40414dc95d448ebabb7a2b7a46eb26 inherit pub_methods_classve_1_1_v_e_entity"><td class="mdescLeft">&#160;</td><td class="mdescRight">Update the entity's UBO buffer with the current world matrix.  <a href="classve_1_1_v_e_entity.html#a1b40414dc95d448ebabb7a2b7a46eb26">More...</a><br /></td></tr>
-<tr class="separator:a1b40414dc95d448ebabb7a2b7a46eb26 inherit pub_methods_classve_1_1_v_e_entity"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:afb85316e984ae095e75575db77795a13 inherit pub_methods_classve_1_1_v_e_entity"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_entity.html#afb85316e984ae095e75575db77795a13">update</a> (glm::mat4 parentWorldMatrix)</td></tr>
+<tr class="memdesc:afb85316e984ae095e75575db77795a13 inherit pub_methods_classve_1_1_v_e_entity"><td class="mdescLeft">&#160;</td><td class="mdescRight">Update the entity's UBO buffer with the current world matrix.  <a href="classve_1_1_v_e_entity.html#afb85316e984ae095e75575db77795a13">More...</a><br /></td></tr>
+<tr class="separator:afb85316e984ae095e75575db77795a13 inherit pub_methods_classve_1_1_v_e_entity"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a19daed7301b800413013162770132063 inherit pub_methods_classve_1_1_v_e_entity"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_entity.html#a19daed7301b800413013162770132063">addChild</a> (<a class="el" href="classve_1_1_v_e_entity.html">VEEntity</a> *)</td></tr>
 <tr class="memdesc:a19daed7301b800413013162770132063 inherit pub_methods_classve_1_1_v_e_entity"><td class="mdescLeft">&#160;</td><td class="mdescRight">Adds a child entity to the list of children.  <a href="classve_1_1_v_e_entity.html#a19daed7301b800413013162770132063">More...</a><br /></td></tr>
 <tr class="separator:a19daed7301b800413013162770132063 inherit pub_methods_classve_1_1_v_e_entity"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a7ee34ab3f75ceddafad1e2b567479554 inherit pub_methods_classve_1_1_v_e_entity"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_entity.html#a7ee34ab3f75ceddafad1e2b567479554">removeChild</a> (<a class="el" href="classve_1_1_v_e_entity.html">VEEntity</a> *)</td></tr>
 <tr class="memdesc:a7ee34ab3f75ceddafad1e2b567479554 inherit pub_methods_classve_1_1_v_e_entity"><td class="mdescLeft">&#160;</td><td class="mdescRight">remove a child from the children list - child is NOT destroyed  <a href="classve_1_1_v_e_entity.html#a7ee34ab3f75ceddafad1e2b567479554">More...</a><br /></td></tr>
 <tr class="separator:a7ee34ab3f75ceddafad1e2b567479554 inherit pub_methods_classve_1_1_v_e_entity"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a866da5f531b329671dcb52275586414f inherit pub_methods_classve_1_1_v_e_entity"><td class="memItemLeft" align="right" valign="top"><a id="a866da5f531b329671dcb52275586414f"></a>
-void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_entity.html#a866da5f531b329671dcb52275586414f">updateChildren</a> (glm::mat4x4 worldMatrix)</td></tr>
-<tr class="memdesc:a866da5f531b329671dcb52275586414f inherit pub_methods_classve_1_1_v_e_entity"><td class="mdescLeft">&#160;</td><td class="mdescRight">Update the UBOs of all children of this entity. <br /></td></tr>
-<tr class="separator:a866da5f531b329671dcb52275586414f inherit pub_methods_classve_1_1_v_e_entity"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a9acf6159298f4b714f0586a30b5b657e inherit pub_methods_classve_1_1_v_e_entity"><td class="memItemLeft" align="right" valign="top"><a id="a9acf6159298f4b714f0586a30b5b657e"></a>
+void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_entity.html#a9acf6159298f4b714f0586a30b5b657e">updateChildren</a> (glm::mat4 worldMatrix)</td></tr>
+<tr class="memdesc:a9acf6159298f4b714f0586a30b5b657e inherit pub_methods_classve_1_1_v_e_entity"><td class="mdescLeft">&#160;</td><td class="mdescRight">Update the UBOs of all children of this entity. <br /></td></tr>
+<tr class="separator:a9acf6159298f4b714f0586a30b5b657e inherit pub_methods_classve_1_1_v_e_entity"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a55e2e9159b18fcd72cf7dbb3bed04554 inherit pub_methods_classve_1_1_v_e_entity"><td class="memItemLeft" align="right" valign="top">virtual void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_entity.html#a55e2e9159b18fcd72cf7dbb3bed04554">getBoundingSphere</a> (glm::vec3 *center, float *radius)</td></tr>
 <tr class="memdesc:a55e2e9159b18fcd72cf7dbb3bed04554 inherit pub_methods_classve_1_1_v_e_entity"><td class="mdescLeft">&#160;</td><td class="mdescRight">Get a bounding sphere for this entity.  <a href="classve_1_1_v_e_entity.html#a55e2e9159b18fcd72cf7dbb3bed04554">More...</a><br /></td></tr>
 <tr class="separator:a55e2e9159b18fcd72cf7dbb3bed04554 inherit pub_methods_classve_1_1_v_e_entity"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -255,10 +257,14 @@ std::vector&lt; VkBuffer &gt;&#160;</td><td class="memItemRight" valign="bottom"
 std::vector&lt; VmaAllocation &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_entity.html#ae633ec6228724fbef8a37565a89ad8b7">m_uniformBuffersAllocation</a></td></tr>
 <tr class="memdesc:ae633ec6228724fbef8a37565a89ad8b7 inherit pub_attribs_classve_1_1_v_e_entity"><td class="mdescLeft">&#160;</td><td class="mdescRight">VMA information for the UBOs. <br /></td></tr>
 <tr class="separator:ae633ec6228724fbef8a37565a89ad8b7 inherit pub_attribs_classve_1_1_v_e_entity"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a138905b534c146e348315c32341bca2d inherit pub_attribs_classve_1_1_v_e_entity"><td class="memItemLeft" align="right" valign="top"><a id="a138905b534c146e348315c32341bca2d"></a>
-std::vector&lt; VkDescriptorSet &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_entity.html#a138905b534c146e348315c32341bca2d">m_descriptorSets</a></td></tr>
-<tr class="memdesc:a138905b534c146e348315c32341bca2d inherit pub_attribs_classve_1_1_v_e_entity"><td class="mdescLeft">&#160;</td><td class="mdescRight">Per subrenderer descriptor sets. <br /></td></tr>
-<tr class="separator:a138905b534c146e348315c32341bca2d inherit pub_attribs_classve_1_1_v_e_entity"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a121612388fdfc9616ebc2a80bc3efb4e inherit pub_attribs_classve_1_1_v_e_entity"><td class="memItemLeft" align="right" valign="top"><a id="a121612388fdfc9616ebc2a80bc3efb4e"></a>
+std::vector&lt; VkDescriptorSet &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_entity.html#a121612388fdfc9616ebc2a80bc3efb4e">m_descriptorSetsUBO</a></td></tr>
+<tr class="memdesc:a121612388fdfc9616ebc2a80bc3efb4e inherit pub_attribs_classve_1_1_v_e_entity"><td class="mdescLeft">&#160;</td><td class="mdescRight">Per subrenderer descriptor sets for UBO. <br /></td></tr>
+<tr class="separator:a121612388fdfc9616ebc2a80bc3efb4e inherit pub_attribs_classve_1_1_v_e_entity"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ae738386d5421069d8388c601a7ed38df inherit pub_attribs_classve_1_1_v_e_entity"><td class="memItemLeft" align="right" valign="top"><a id="ae738386d5421069d8388c601a7ed38df"></a>
+std::vector&lt; VkDescriptorSet &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_entity.html#ae738386d5421069d8388c601a7ed38df">m_descriptorSetsResources</a></td></tr>
+<tr class="memdesc:ae738386d5421069d8388c601a7ed38df inherit pub_attribs_classve_1_1_v_e_entity"><td class="mdescLeft">&#160;</td><td class="mdescRight">Per subrenderer descriptor sets for other resources. <br /></td></tr>
+<tr class="separator:ae738386d5421069d8388c601a7ed38df inherit pub_attribs_classve_1_1_v_e_entity"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pro-attribs"></a>
 Protected Attributes</h2></td></tr>
@@ -267,10 +273,10 @@ Protected Attributes</h2></td></tr>
 <tr class="memdesc:a0e233ff37d3502c7e0c7a43b9853cb83"><td class="mdescLeft">&#160;</td><td class="mdescRight">Light type of this light. <br /></td></tr>
 <tr class="separator:a0e233ff37d3502c7e0c7a43b9853cb83"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="inherit_header pro_attribs_classve_1_1_v_e_entity"><td colspan="2" onclick="javascript:toggleInherit('pro_attribs_classve_1_1_v_e_entity')"><img src="closed.png" alt="-"/>&#160;Protected Attributes inherited from <a class="el" href="classve_1_1_v_e_entity.html">ve::VEEntity</a></td></tr>
-<tr class="memitem:a6d02c9ccf75c72c4cb56672596716cb0 inherit pro_attribs_classve_1_1_v_e_entity"><td class="memItemLeft" align="right" valign="top"><a id="a6d02c9ccf75c72c4cb56672596716cb0"></a>
-glm::mat4x4&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_entity.html#a6d02c9ccf75c72c4cb56672596716cb0">m_transform</a> = glm::mat4(1.0)</td></tr>
-<tr class="memdesc:a6d02c9ccf75c72c4cb56672596716cb0 inherit pro_attribs_classve_1_1_v_e_entity"><td class="mdescLeft">&#160;</td><td class="mdescRight">Transform from local to parent space, the engine uses Y-UP, Left-handed. <br /></td></tr>
-<tr class="separator:a6d02c9ccf75c72c4cb56672596716cb0 inherit pro_attribs_classve_1_1_v_e_entity"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a2f6267daf41b8a87465af2528c9ea6be inherit pro_attribs_classve_1_1_v_e_entity"><td class="memItemLeft" align="right" valign="top"><a id="a2f6267daf41b8a87465af2528c9ea6be"></a>
+glm::mat4&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_entity.html#a2f6267daf41b8a87465af2528c9ea6be">m_transform</a> = glm::mat4(1.0)</td></tr>
+<tr class="memdesc:a2f6267daf41b8a87465af2528c9ea6be inherit pro_attribs_classve_1_1_v_e_entity"><td class="mdescLeft">&#160;</td><td class="mdescRight">Transform from local to parent space, the engine uses Y-UP, Left-handed. <br /></td></tr>
+<tr class="separator:a2f6267daf41b8a87465af2528c9ea6be inherit pro_attribs_classve_1_1_v_e_entity"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="inherit_header pro_attribs_classve_1_1_v_e_named_class"><td colspan="2" onclick="javascript:toggleInherit('pro_attribs_classve_1_1_v_e_named_class')"><img src="closed.png" alt="-"/>&#160;Protected Attributes inherited from <a class="el" href="classve_1_1_v_e_named_class.html">ve::VENamedClass</a></td></tr>
 <tr class="memitem:a3b3f5063b5de55426c522032e838236a inherit pro_attribs_classve_1_1_v_e_named_class"><td class="memItemLeft" align="right" valign="top"><a id="a3b3f5063b5de55426c522032e838236a"></a>
 std::string&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_named_class.html#a3b3f5063b5de55426c522032e838236a">m_name</a></td></tr>
@@ -370,6 +376,24 @@ std::string&#160;</td><td class="memItemRight" valign="bottom"><a class="el" hre
 
 </div>
 </div>
+<a id="ad20b8b457fdd68dd53a9a65e7e4c255d"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ad20b8b457fdd68dd53a9a65e7e4c255d">&#9670;&nbsp;</a></span>getLightType()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="classve_1_1_v_e_light.html#abcedf7166341000b6d4512e9030f6b86">VELight::veLightType</a> ve::VELight::getLightType </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<dl class="section return"><dt>Returns</dt><dd>the light type of this light </dd></dl>
+
+</div>
+</div>
 <hr/>The documentation for this class was generated from the following files:<ul>
 <li><a class="el" href="_v_e_entity_8h_source.html">VEEntity.h</a></li>
 <li>VEEntity.cpp</li>
@@ -377,7 +401,7 @@ std::string&#160;</td><td class="memItemRight" valign="bottom"><a class="el" hre
 </div><!-- contents -->
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>
-Generated on Tue Mar 19 2019 07:45:17 for Vienna Vulkan Engine by &#160;<a href="http://www.doxygen.org/index.html">
+Generated on Fri Mar 22 2019 14:51:21 for Vienna Vulkan Engine by &#160;<a href="http://www.doxygen.org/index.html">
 <img class="footer" src="doxygen.png" alt="doxygen"/>
 </a> 1.8.15
 </small></address>

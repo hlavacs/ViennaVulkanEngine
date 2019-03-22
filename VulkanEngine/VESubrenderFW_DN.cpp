@@ -23,12 +23,17 @@ namespace ve {
 
 		//per object resources, set 0
 		vh::vhRenderCreateDescriptorSetLayout(getRendererForwardPointer()->getDevice(),
-			{ VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER },
-			{ VK_SHADER_STAGE_VERTEX_BIT,		 VK_SHADER_STAGE_FRAGMENT_BIT,				VK_SHADER_STAGE_FRAGMENT_BIT },
-		&m_descriptorSetLayout);
+			{ VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER },
+			{ VK_SHADER_STAGE_VERTEX_BIT },
+			&m_descriptorSetLayoutUBO);
+
+		vh::vhRenderCreateDescriptorSetLayout(getRendererForwardPointer()->getDevice(),
+			{ VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER },
+			{ VK_SHADER_STAGE_FRAGMENT_BIT,				VK_SHADER_STAGE_FRAGMENT_BIT },
+			&m_descriptorSetLayoutResources);
 
 		vh::vhPipeCreateGraphicsPipelineLayout(getRendererForwardPointer()->getDevice(),
-			{ m_descriptorSetLayout, getRendererForwardPointer()->getDescriptorSetLayoutPerFrame(), getRendererForwardPointer()->getDescriptorSetLayoutShadow() },
+			{ getRendererForwardPointer()->getDescriptorSetLayoutPerFrame(), m_descriptorSetLayoutUBO,  getRendererForwardPointer()->getDescriptorSetLayoutShadow(), m_descriptorSetLayoutResources },
 			&m_pipelineLayout);
 
 		vh::vhPipeCreateGraphicsPipeline(getRendererForwardPointer()->getDevice(),
@@ -55,19 +60,37 @@ namespace ve {
 
 		vh::vhRenderCreateDescriptorSets(getRendererForwardPointer()->getDevice(),
 			(uint32_t)getRendererForwardPointer()->getSwapChainNumber(),
-			getDescriptorSetLayout(),
+			m_descriptorSetLayoutUBO,
 			getRendererForwardPointer()->getDescriptorPool(),
-			pEntity->m_descriptorSets);
+			pEntity->m_descriptorSetsUBO);
 
-		for (uint32_t i = 0; i < pEntity->m_descriptorSets.size(); i++) {
+		for (uint32_t i = 0; i < pEntity->m_descriptorSetsUBO.size(); i++) {
 			vh::vhRenderUpdateDescriptorSet(getRendererForwardPointer()->getDevice(),
-				pEntity->m_descriptorSets[i],
-				{ pEntity->m_uniformBuffers[i], VK_NULL_HANDLE, VK_NULL_HANDLE }, //UBOs
-				{ sizeof(veUBOPerObject),   0,              0 },	//UBO sizes
-				{ VK_NULL_HANDLE, pEntity->m_pMaterial->mapDiffuse->m_imageView, pEntity->m_pMaterial->mapNormal->m_imageView },	//textureImageViews
-				{ VK_NULL_HANDLE, pEntity->m_pMaterial->mapDiffuse->m_sampler,   pEntity->m_pMaterial->mapNormal->m_sampler }	//samplers
+				pEntity->m_descriptorSetsUBO[i],
+				{ pEntity->m_uniformBuffers[i] }, //UBOs
+				{ sizeof(veUBOPerObject) },	//UBO sizes
+				{ VK_NULL_HANDLE },	//textureImageViews
+				{ VK_NULL_HANDLE }	//samplers
 			);
 		}
+
+		vh::vhRenderCreateDescriptorSets(getRendererForwardPointer()->getDevice(),
+			(uint32_t)getRendererForwardPointer()->getSwapChainNumber(),
+			m_descriptorSetLayoutResources,
+			getRendererForwardPointer()->getDescriptorPool(),
+			pEntity->m_descriptorSetsResources);
+
+		for (uint32_t i = 0; i < pEntity->m_descriptorSetsResources.size(); i++) {
+			vh::vhRenderUpdateDescriptorSet(getRendererForwardPointer()->getDevice(),
+				pEntity->m_descriptorSetsResources[i],
+				{ VK_NULL_HANDLE, VK_NULL_HANDLE }, //UBOs
+				{ 0,              0 },	//UBO sizes
+				{ pEntity->m_pMaterial->mapDiffuse->m_imageView, pEntity->m_pMaterial->mapNormal->m_imageView },	//textureImageViews
+				{ pEntity->m_pMaterial->mapDiffuse->m_sampler,   pEntity->m_pMaterial->mapNormal->m_sampler }	//samplers
+			);
+		}
+
+
 	}
 }
 

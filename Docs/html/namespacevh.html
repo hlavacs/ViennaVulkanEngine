@@ -118,9 +118,9 @@ Functions</h2></td></tr>
 <tr class="memitem:a5ae7c3a395c7e2ede974f536c531dc41"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacevh.html#a5ae7c3a395c7e2ede974f536c531dc41">vhBufTransitionImageLayout</a> (VkDevice device, VkQueue graphicsQueue, VkCommandBuffer commandBuffer, VkImage image, VkFormat format, uint32_t miplevels, uint32_t layerCount, VkImageLayout oldLayout, VkImageLayout newLayout)</td></tr>
 <tr class="memdesc:a5ae7c3a395c7e2ede974f536c531dc41"><td class="mdescLeft">&#160;</td><td class="mdescRight">Transition the image layout, causes a pipeline barrier.  <a href="#a5ae7c3a395c7e2ede974f536c531dc41">More...</a><br /></td></tr>
 <tr class="separator:a5ae7c3a395c7e2ede974f536c531dc41"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a903f860aedb2ad265d6074b5cfd4e4a5"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacevh.html#a903f860aedb2ad265d6074b5cfd4e4a5">vhBufCreateTextureImage</a> (VkDevice device, VmaAllocator allocator, VkQueue graphicsQueue, VkCommandPool commandPool, std::string basedir, std::vector&lt; std::string &gt; texNames, VkImageCreateFlags flags, VkImage *textureImage, VmaAllocation *textureImageAllocation)</td></tr>
-<tr class="memdesc:a903f860aedb2ad265d6074b5cfd4e4a5"><td class="mdescLeft">&#160;</td><td class="mdescRight">Create a texture image from multiple files.  <a href="#a903f860aedb2ad265d6074b5cfd4e4a5">More...</a><br /></td></tr>
-<tr class="separator:a903f860aedb2ad265d6074b5cfd4e4a5"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a2615cec03ffb7297f65f9c485bb53d2e"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacevh.html#a2615cec03ffb7297f65f9c485bb53d2e">vhBufCreateTextureImage</a> (VkDevice device, VmaAllocator allocator, VkQueue graphicsQueue, VkCommandPool commandPool, std::string basedir, std::vector&lt; std::string &gt; texNames, VkImageCreateFlags flags, VkImage *textureImage, VmaAllocation *textureImageAllocation, VkExtent2D *extent)</td></tr>
+<tr class="memdesc:a2615cec03ffb7297f65f9c485bb53d2e"><td class="mdescLeft">&#160;</td><td class="mdescRight">Create a texture image from multiple files.  <a href="#a2615cec03ffb7297f65f9c485bb53d2e">More...</a><br /></td></tr>
+<tr class="separator:a2615cec03ffb7297f65f9c485bb53d2e"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a7733e09fb0e2664562663d6a81874976"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacevh.html#a7733e09fb0e2664562663d6a81874976">vhBufCreateTexturecubeImage</a> (VkDevice device, VmaAllocator allocator, VkQueue graphicsQueue, VkCommandPool commandPool, gli::texture_cube &amp;texCube, VkImage *textureImage, VmaAllocation *textureImageAllocation, VkFormat *pFormat)</td></tr>
 <tr class="separator:a7733e09fb0e2664562663d6a81874976"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aa9d7fe471ccd3e065a3e5e6117857e8c"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacevh.html#aa9d7fe471ccd3e065a3e5e6117857e8c">vhBufCreateTextureSampler</a> (VkDevice device, VkSampler *textureSampler)</td></tr>
@@ -1486,8 +1486,8 @@ void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="name
 
 </div>
 </div>
-<a id="a903f860aedb2ad265d6074b5cfd4e4a5"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a903f860aedb2ad265d6074b5cfd4e4a5">&#9670;&nbsp;</a></span>vhBufCreateTextureImage()</h2>
+<a id="a2615cec03ffb7297f65f9c485bb53d2e"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a2615cec03ffb7297f65f9c485bb53d2e">&#9670;&nbsp;</a></span>vhBufCreateTextureImage()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -1544,7 +1544,13 @@ void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="name
           <td class="paramkey"></td>
           <td></td>
           <td class="paramtype">VmaAllocation *&#160;</td>
-          <td class="paramname"><em>textureImageAllocation</em>&#160;</td>
+          <td class="paramname"><em>textureImageAllocation</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">VkExtent2D *&#160;</td>
+          <td class="paramname"><em>extent</em>&#160;</td>
         </tr>
         <tr>
           <td></td>
@@ -1566,6 +1572,7 @@ void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="name
     <tr><td class="paramdir">[in]</td><td class="paramname">flags</td><td>Image create flags </td></tr>
     <tr><td class="paramdir">[out]</td><td class="paramname">textureImage</td><td>The new image </td></tr>
     <tr><td class="paramdir">[out]</td><td class="paramname">textureImageAllocation</td><td>The VMA allocation info </td></tr>
+    <tr><td class="paramdir">[out]</td><td class="paramname">extent</td><td>The extent of the loaded image </td></tr>
   </table>
   </dd>
 </dl>
@@ -3296,7 +3303,7 @@ void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="name
 </div><!-- contents -->
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>
-Generated on Tue Mar 19 2019 07:45:17 for Vienna Vulkan Engine by &#160;<a href="http://www.doxygen.org/index.html">
+Generated on Fri Mar 22 2019 14:51:21 for Vienna Vulkan Engine by &#160;<a href="http://www.doxygen.org/index.html">
 <img class="footer" src="doxygen.png" alt="doxygen"/>
 </a> 1.8.15
 </small></address>

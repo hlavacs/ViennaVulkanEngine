@@ -33,14 +33,11 @@ namespace ve {
 			glm::mat4 camModel;			///<Camera model matrix, needed for camera world position
 			glm::mat4 camView;			///<Camera view matrix
 			glm::mat4 camProj;			///<Camera projection matrix
+			glm::mat4 shadowView;		///<Shadow view matrix
+			glm::mat4 shadowProj;		///<Shadow projection matrix
 			VELight::veLight light1;			///<Light information
 		};
 
-		///Data that is updated for the shadow
-		struct veUBOShadow {
-			glm::mat4 shadowView;		///<Shadow view matrix
-			glm::mat4 shadowProj;		///<Shadow projection matrix
-		};
 
 	protected:
 		VkImage m_depthImage;											///<Depth image 
@@ -49,11 +46,8 @@ namespace ve {
 		VkFormat m_depthMapFormat;										///<remember the depth map format
 
 		VETexture *m_shadowMap = nullptr;								///<the shadow map
-
-		std::vector<VkBuffer> m_uniformBuffersPerFrame;					///<UBO for camera and light data
+		std::vector<VkBuffer> m_uniformBuffersPerFrame;					///<UBO for camera, light data and shadow matrices
 		std::vector<VmaAllocation> m_uniformBuffersPerFrameAllocation;	///<VMA
-		std::vector<VkBuffer> m_uniformBuffersShadow;					///<UBO for shadow matrix
-		std::vector<VmaAllocation> m_uniformBuffersShadowAllocation;	///<VMA
 
 		//per frame render resources
 		VkRenderPass m_renderPass;								///<The light render pass 

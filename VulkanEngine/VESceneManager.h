@@ -89,11 +89,11 @@ namespace ve {
 		VEMaterial *	getMaterial(std::string name) { return m_materials[name]; };
 		void			deleteMaterial(std::string name);
 
-		///\returns the name of the current camera
+		///\returns a pointer to the current camera
 		VECamera*		getCamera() { return m_camera; };
 		/**
 		* \brief Set the the current camera
-		* \param[in] name The name of the camera
+		* \param[in] cam Pointer to the camera
 		*/
 		void			setCamera( VECamera *cam) { m_camera = cam; };
 		///\returns a list with names of the current lights shining on the scene

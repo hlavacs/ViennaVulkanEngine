@@ -24,10 +24,10 @@ namespace ve {
 		vh::vhRenderCreateDescriptorSetLayout(getRendererForwardPointer()->getDevice(),
 			{ VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER },
 			{ VK_SHADER_STAGE_VERTEX_BIT, },
-			&m_descriptorSetLayout);
+			&m_descriptorSetLayoutUBO);
 
 		vh::vhPipeCreateGraphicsPipelineLayout(getRendererForwardPointer()->getDevice(),
-			{ m_descriptorSetLayout, getRendererForwardPointer()->getDescriptorSetLayoutPerFrame(), getRendererForwardPointer()->getDescriptorSetLayoutShadow() },
+			{ getRendererForwardPointer()->getDescriptorSetLayoutPerFrame(), m_descriptorSetLayoutUBO },
 			&m_pipelineLayout);
 
 		vh::vhPipeCreateGraphicsPipeline(getRendererForwardPointer()->getDevice(),
@@ -62,14 +62,12 @@ namespace ve {
 	*
 	*/
 	void VESubrenderFW_Shadow::bindDescriptorSets(VkCommandBuffer commandBuffer, uint32_t imageIndex, VEEntity *entity) {
-		//set 0...per object
-		//set 1...per frame
-		//set 2...shadow
+		//set 0...per frame, includes cam and shadow matrices
+		//set 1...per object UBO
 		std::vector<VkDescriptorSet> sets =
 		{
-			entity->m_descriptorSets[imageIndex],
 			getRendererForwardPointer()->getDescriptorSetsPerFrame()[imageIndex],
-			getRendererForwardPointer()->getDescriptorSetsShadow()[imageIndex]
+			entity->m_descriptorSetsUBO[imageIndex],
 		};
 
 		vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_pipelineLayout, 0, (uint32_t)sets.size(), sets.data(), 0, nullptr);

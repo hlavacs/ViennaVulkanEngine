@@ -24,10 +24,10 @@ namespace ve {
 		vh::vhRenderCreateDescriptorSetLayout(getRendererForwardPointer()->getDevice(),
 			{ VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER },
 			{ VK_SHADER_STAGE_VERTEX_BIT,	    },
-			&m_descriptorSetLayout);
+			&m_descriptorSetLayoutUBO);
 
 		vh::vhPipeCreateGraphicsPipelineLayout(getRendererForwardPointer()->getDevice(),
-			{ m_descriptorSetLayout, getRendererForwardPointer()->getDescriptorSetLayoutPerFrame(), getRendererForwardPointer()->getDescriptorSetLayoutShadow() },
+			{ getRendererForwardPointer()->getDescriptorSetLayoutPerFrame(), m_descriptorSetLayoutUBO, getRendererForwardPointer()->getDescriptorSetLayoutShadow() },
 			&m_pipelineLayout);
 
 		vh::vhPipeCreateGraphicsPipeline(getRendererForwardPointer()->getDevice(),
@@ -54,13 +54,13 @@ namespace ve {
 
 		vh::vhRenderCreateDescriptorSets(getRendererForwardPointer()->getDevice(),
 			(uint32_t)getRendererForwardPointer()->getSwapChainNumber(),
-			getDescriptorSetLayout(),
+			m_descriptorSetLayoutUBO,
 			getRendererForwardPointer()->getDescriptorPool(),
-			pEntity->m_descriptorSets);
+			pEntity->m_descriptorSetsUBO);
 
-		for (uint32_t i = 0; i < pEntity->m_descriptorSets.size(); i++) {
+		for (uint32_t i = 0; i < pEntity->m_descriptorSetsUBO.size(); i++) {
 			vh::vhRenderUpdateDescriptorSet(getRendererForwardPointer()->getDevice(),
-				pEntity->m_descriptorSets[i],
+				pEntity->m_descriptorSetsUBO[i],
 				{ pEntity->m_uniformBuffers[i] }, //UBOs
 				{ sizeof(veUBOPerObject) },	//UBO sizes
 				{ VK_NULL_HANDLE },	//textureImageViews

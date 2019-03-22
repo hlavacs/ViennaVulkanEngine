@@ -429,6 +429,7 @@ namespace vh {
 	* \param[in] flags Image create flags 
 	* \param[out] textureImage The new image
 	* \param[out] textureImageAllocation The VMA allocation info
+	* \param[out] extent The extent of the loaded image
 	*/
 	void vhBufCreateTextureImage(VkDevice device, VmaAllocator allocator, VkQueue graphicsQueue, VkCommandPool commandPool,
 								std::string basedir, std::vector<std::string> texNames, VkImageCreateFlags flags,

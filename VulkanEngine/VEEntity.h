@@ -27,6 +27,7 @@ namespace ve {
 
 		VETexture(std::string name, gli::texture_cube &texCube);
 		VETexture(std::string name, std::string &basedir, std::vector<std::string> texNames, VkImageCreateFlags flags=0, VkImageViewType viewtype = VK_IMAGE_VIEW_TYPE_2D);
+		///Empty constructor
 		VETexture(std::string name) : VENamedClass(name) {};
 		~VETexture();
 	};

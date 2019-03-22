@@ -30,8 +30,11 @@ namespace ve {
 		if (m_pipelineLayout != VK_NULL_HANDLE)
 			vkDestroyPipelineLayout(getRendererPointer()->getDevice(), m_pipelineLayout, nullptr);
 
-		if (m_descriptorSetLayout != VK_NULL_HANDLE)
-			vkDestroyDescriptorSetLayout(getRendererPointer()->getDevice(), m_descriptorSetLayout, nullptr);
+		if (m_descriptorSetLayoutUBO != VK_NULL_HANDLE)
+			vkDestroyDescriptorSetLayout(getRendererPointer()->getDevice(), m_descriptorSetLayoutUBO, nullptr);
+
+		if (m_descriptorSetLayoutResources != VK_NULL_HANDLE)
+			vkDestroyDescriptorSetLayout(getRendererPointer()->getDevice(), m_descriptorSetLayoutResources, nullptr);
 	}
 
 
@@ -95,15 +98,20 @@ namespace ve {
 	*
 	*/
 	void VESubrender::bindDescriptorSets(VkCommandBuffer commandBuffer, uint32_t imageIndex, VEEntity *entity) {
-		//set 0...per object TODO
-		//set 1...per frame
-		//set 2...shadow
+		//set 0...per frame, includes cam and shadow matrices
+		//set 1...per object UBO
+		//set 2...shadow map
+		//set 3...additional per object resources
 		std::vector<VkDescriptorSet> sets =
-			{ 
-				entity->m_descriptorSets[imageIndex], 
+		{ 
 				getRendererForwardPointer()->getDescriptorSetsPerFrame()[imageIndex],
-				getRendererForwardPointer()->getDescriptorSetsShadow()[imageIndex]
-			};
+				entity->m_descriptorSetsUBO[imageIndex], 
+				getRendererForwardPointer()->getDescriptorSetsShadow()[imageIndex],
+		};
+
+		if (entity->m_descriptorSetsResources.size()>0 ) {
+			sets.push_back( entity->m_descriptorSetsResources[imageIndex] );
+		}
 
 		vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_pipelineLayout, 0, (uint32_t)sets.size(), sets.data(), 0, nullptr);
 	}

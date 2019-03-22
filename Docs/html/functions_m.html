@@ -73,8 +73,8 @@ $(function() {
 <li>m_boundingSphereRadius
 : <a class="el" href="classve_1_1_v_e_mesh.html#a9f5524c4710dd47eb6361cda2bf8cff3">ve::VEMesh</a>
 </li>
-<li>m_cameraName
-: <a class="el" href="classve_1_1_v_e_scene_manager.html#a0cfdc0fccf7d4d6b571410767c772d2f">ve::VESceneManager</a>
+<li>m_camera
+: <a class="el" href="classve_1_1_v_e_scene_manager.html#ae3fbd394a2d6ff4797ecff2921d6cbcb">ve::VESceneManager</a>
 </li>
 <li>m_castsShadow
 : <a class="el" href="classve_1_1_v_e_entity.html#a53c7695c209549b2f11ad347c10b91cf">ve::VEEntity</a>
@@ -109,23 +109,29 @@ $(function() {
 <li>m_descriptorPool
 : <a class="el" href="classve_1_1_v_e_renderer_forward.html#abfad776dd4c0b6b3fc7051f2e8082905">ve::VERendererForward</a>
 </li>
-<li>m_descriptorSetLayout
-: <a class="el" href="classve_1_1_v_e_subrender.html#a498cc0fd318999901bf4ea2e35f2f9b2">ve::VESubrender</a>
-</li>
 <li>m_descriptorSetLayoutPerFrame
 : <a class="el" href="classve_1_1_v_e_renderer_forward.html#aaa657a40a82e391d58f8c809373ab94b">ve::VERendererForward</a>
+</li>
+<li>m_descriptorSetLayoutResources
+: <a class="el" href="classve_1_1_v_e_subrender.html#a89ba5ec50e989a27d6a002742997d6a5">ve::VESubrender</a>
 </li>
 <li>m_descriptorSetLayoutShadow
 : <a class="el" href="classve_1_1_v_e_renderer_forward.html#a3d305891d4c8362c64641c7d558a0581">ve::VERendererForward</a>
 </li>
-<li>m_descriptorSets
-: <a class="el" href="classve_1_1_v_e_entity.html#a138905b534c146e348315c32341bca2d">ve::VEEntity</a>
+<li>m_descriptorSetLayoutUBO
+: <a class="el" href="classve_1_1_v_e_subrender.html#a302a8dd810eaf64be80a33809ca6c802">ve::VESubrender</a>
 </li>
 <li>m_descriptorSetsPerFrame
 : <a class="el" href="classve_1_1_v_e_renderer_forward.html#a2d48efe2d2647474aa49289f1dd50773">ve::VERendererForward</a>
 </li>
+<li>m_descriptorSetsResources
+: <a class="el" href="classve_1_1_v_e_entity.html#ae738386d5421069d8388c601a7ed38df">ve::VEEntity</a>
+</li>
 <li>m_descriptorSetsShadow
 : <a class="el" href="classve_1_1_v_e_renderer_forward.html#aac30cf7ec20967a6609b3dd9354d4335">ve::VERendererForward</a>
+</li>
+<li>m_descriptorSetsUBO
+: <a class="el" href="classve_1_1_v_e_entity.html#a121612388fdfc9616ebc2a80bc3efb4e">ve::VEEntity</a>
 </li>
 <li>m_device
 : <a class="el" href="classve_1_1_v_e_renderer.html#aa7a346e8ca92249d76a05fa982b2ea09">ve::VERenderer</a>
@@ -155,8 +161,14 @@ $(function() {
 <li>m_eventListener
 : <a class="el" href="classve_1_1_v_e_engine.html#a5a79a608525f8acd21181299662e682d">ve::VEEngine</a>
 </li>
+<li>m_extent
+: <a class="el" href="structve_1_1_v_e_texture.html#a209281c12522fe428a6f0b417d2087d2">ve::VETexture</a>
+</li>
 <li>m_farPlane
 : <a class="el" href="classve_1_1_v_e_camera.html#a1363dfddd5d3f2d8519f5fcbf05e05a0">ve::VECamera</a>
+</li>
+<li>m_format
+: <a class="el" href="structve_1_1_v_e_texture.html#ab0d7c8392a65064b13de06faeac08ddf">ve::VETexture</a>
 </li>
 <li>m_fov
 : <a class="el" href="classve_1_1_v_e_camera_projective.html#af0ee1c553c122d62d79475fa8e26c723">ve::VECameraProjective</a>
@@ -198,8 +210,8 @@ $(function() {
 <li>m_leftButtonClicked
 : <a class="el" href="classve_1_1_v_e_event_listener_g_l_f_w.html#a059eab628cbc9f7eda6128a95e3f1a04">ve::VEEventListenerGLFW</a>
 </li>
-<li>m_lightNames
-: <a class="el" href="classve_1_1_v_e_scene_manager.html#a409f061a13332346caea895a84093afb">ve::VESceneManager</a>
+<li>m_lights
+: <a class="el" href="classve_1_1_v_e_scene_manager.html#a0c9304990871bbe6cc0abd0351929439">ve::VESceneManager</a>
 </li>
 <li>m_lightType
 : <a class="el" href="classve_1_1_v_e_light.html#a0e233ff37d3502c7e0c7a43b9853cb83">ve::VELight</a>
@@ -277,16 +289,7 @@ $(function() {
 : <a class="el" href="classve_1_1_v_e_renderer_forward.html#a1d794ebec3605b6e8419d2ffd7ba0d9a">ve::VERendererForward</a>
 </li>
 <li>m_shadowMap
-: <a class="el" href="classve_1_1_v_e_renderer_forward.html#abf1ce14f86bc491b31a5120040bb0e9b">ve::VERendererForward</a>
-</li>
-<li>m_shadowMapAllocation
-: <a class="el" href="classve_1_1_v_e_renderer_forward.html#a18c3bd5be0b3dc54973a09afe75199f6">ve::VERendererForward</a>
-</li>
-<li>m_shadowMapExtent
-: <a class="el" href="classve_1_1_v_e_renderer_forward.html#a694638d4cab42597d18453b2619f4221">ve::VERendererForward</a>
-</li>
-<li>m_shadowMapView
-: <a class="el" href="classve_1_1_v_e_renderer_forward.html#a6a96a412a358c85f3404970f0880346c">ve::VERendererForward</a>
+: <a class="el" href="classve_1_1_v_e_renderer_forward.html#ad5c68eae373cfbad951b2b9883050c7f">ve::VERendererForward</a>
 </li>
 <li>m_subrenderers
 : <a class="el" href="classve_1_1_v_e_renderer.html#a7b7960a7a224d719fa7e53d0979ebd27">ve::VERenderer</a>
@@ -328,7 +331,7 @@ $(function() {
 : <a class="el" href="classve_1_1_v_e_engine.html#a39623b5ab5d55a5595cc99ced8f90a30">ve::VEEngine</a>
 </li>
 <li>m_transform
-: <a class="el" href="classve_1_1_v_e_entity.html#a6d02c9ccf75c72c4cb56672596716cb0">ve::VEEntity</a>
+: <a class="el" href="classve_1_1_v_e_entity.html#a2f6267daf41b8a87465af2528c9ea6be">ve::VEEntity</a>
 </li>
 <li>m_type
 : <a class="el" href="classve_1_1_v_e_subrender.html#aa64ff9519923c9ae2499be7d334a0289">ve::VESubrender</a>
@@ -344,12 +347,6 @@ $(function() {
 </li>
 <li>m_uniformBuffersPerFrameAllocation
 : <a class="el" href="classve_1_1_v_e_renderer_forward.html#aa7cddca45b554165b8ae1756d20d7cdd">ve::VERendererForward</a>
-</li>
-<li>m_uniformBuffersShadow
-: <a class="el" href="classve_1_1_v_e_renderer_forward.html#a54d45f05727e2a96e50579066f86a49c">ve::VERendererForward</a>
-</li>
-<li>m_uniformBuffersShadowAllocation
-: <a class="el" href="classve_1_1_v_e_renderer_forward.html#afbdf9f967d75cced53d7a0f16a040957">ve::VERendererForward</a>
 </li>
 <li>m_usePrevCursorPosition
 : <a class="el" href="classve_1_1_v_e_event_listener_g_l_f_w.html#a5a88611136611b0c247dd70cabe3256b">ve::VEEventListenerGLFW</a>
@@ -397,7 +394,7 @@ $(function() {
 : <a class="el" href="classve_1_1_v_e_window_g_l_f_w.html#a1464b28a97f92acc40c0c40be0c3782e">ve::VEWindowGLFW</a>
 </li>
 <li>multiplyTransform()
-: <a class="el" href="classve_1_1_v_e_entity.html#af91e2a9f79b911c7240fc958e70e4881">ve::VEEntity</a>
+: <a class="el" href="classve_1_1_v_e_entity.html#aab7acb5bd5f43f860d43ff1f8f55f65b">ve::VEEntity</a>
 </li>
 <li>MyVulkanEngine()
 : <a class="el" href="classve_1_1_my_vulkan_engine.html#a48d2f056dc4154679516e3b79443bd46">ve::MyVulkanEngine</a>
@@ -406,7 +403,7 @@ $(function() {
 </div><!-- contents -->
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>
-Generated on Tue Mar 19 2019 07:45:18 for Vienna Vulkan Engine by &#160;<a href="http://www.doxygen.org/index.html">
+Generated on Fri Mar 22 2019 14:51:22 for Vienna Vulkan Engine by &#160;<a href="http://www.doxygen.org/index.html">
 <img class="footer" src="doxygen.png" alt="doxygen"/>
 </a> 1.8.15
 </small></address>

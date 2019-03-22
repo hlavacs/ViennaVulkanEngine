@@ -93,19 +93,22 @@ namespace ve {
 
 		//------------------------------------------------------------------------------------------------------------
 		//per frame resources
+		//set 0...per frame, includes cam and shadow matrices
+		//set 1...per object UBO
+		//set 2...shadow map
+		//set 3...additional per object resources
 
-		//set 1, binding 0 : UBO per Frame data: camera, light
+		//set 0, binding 0 : UBO per Frame data: camera, light, shadow matrices
 		vh::vhRenderCreateDescriptorSetLayout(m_device,
 											{ VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER },
 											{ VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT },
 											&m_descriptorSetLayoutPerFrame);
 
-		//set 2, binding 0, 1 : UBO for shadow data, shadow map + sampler
+		//set 2, binding 0 : shadow map + sampler
 		vh::vhRenderCreateDescriptorSetLayout(m_device,
-											{ VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,							VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER },
-											{ VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,	VK_SHADER_STAGE_FRAGMENT_BIT },
+											{ VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER },
+											{ VK_SHADER_STAGE_FRAGMENT_BIT },
 											&m_descriptorSetLayoutShadow);
-
 
 		//------------------------------------------------------------------------------------------------------------
 
@@ -121,8 +124,6 @@ namespace ve {
 		//------------------------------------------------------------------------------------------------------------
 
 		vh::vhBufCreateUniformBuffers(m_vmaAllocator, (uint32_t)m_swapChainImages.size(), (uint32_t)sizeof(veUBOPerFrame), m_uniformBuffersPerFrame, m_uniformBuffersPerFrameAllocation);
-		vh::vhBufCreateUniformBuffers(m_vmaAllocator, (uint32_t)m_swapChainImages.size(), (uint32_t)sizeof(veUBOShadow),   m_uniformBuffersShadow,   m_uniformBuffersShadowAllocation);
-
 
 		//------------------------------------------------------------------------------------------------------------
 
@@ -189,9 +190,6 @@ namespace ve {
 		}
 
 		vkDestroyDescriptorSetLayout(m_device, m_descriptorSetLayoutShadow, nullptr);
-		for (size_t i = 0; i < m_uniformBuffersShadow.size(); i++) {
-			vmaDestroyBuffer(m_vmaAllocator, m_uniformBuffersShadow[i], m_uniformBuffersShadowAllocation[i]);
-		}
 
 		for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
 			vkDestroySemaphore(m_device, m_renderFinishedSemaphores[i], nullptr);
@@ -284,6 +282,10 @@ namespace ve {
 		VELight *plight = getSceneManagerPointer()->getLights()[0];
 		plight->fillVhLightStructure(&ubo.light1);
 
+		VECamera *pCamShadow = camera->createShadowCamera(plight);
+		ubo.shadowView = glm::inverse(pCamShadow->getWorldTransform());
+		ubo.shadowProj = pCamShadow->getProjectionMatrix();
+
 		void* data = nullptr;
 		vmaMapMemory(m_vmaAllocator, m_uniformBuffersPerFrameAllocation[imageIndex], &data);
 		memcpy(data, &ubo, sizeof(ubo));
@@ -295,26 +297,13 @@ namespace ve {
 										{ sizeof(veUBOPerFrame) },					//UBO sizes
 										{ VK_NULL_HANDLE },							//textureImageViews
 										{ VK_NULL_HANDLE });						//samplers
-										
-
-		//---------------------------------------------------------------------------------------
-
-		VECamera *pCamShadow = camera->createShadowCamera(plight);
-		veUBOShadow uboShadow = {};
-		uboShadow.shadowView = glm::inverse(pCamShadow->getWorldTransform());
-		uboShadow.shadowProj = pCamShadow->getProjectionMatrix();
-
-		data = nullptr;
-		vmaMapMemory(m_vmaAllocator, m_uniformBuffersShadowAllocation[imageIndex], &data);
-		memcpy(data, &uboShadow, sizeof(uboShadow));
-		vmaUnmapMemory(m_vmaAllocator, m_uniformBuffersShadowAllocation[imageIndex]);
-
+	
 		//update the descriptor set for the shadow data
 		vh::vhRenderUpdateDescriptorSet(m_device, m_descriptorSetsShadow[imageIndex],
-										{ m_uniformBuffersShadow[imageIndex],	VK_NULL_HANDLE },			//UBOs
-										{ sizeof(veUBOShadow) ,					0				},			//UBO sizes
-										{ VK_NULL_HANDLE,						m_shadowMap->m_imageView },	//textureImageViews
-										{ VK_NULL_HANDLE,						m_shadowMap->m_sampler }	//samplers
+										{ VK_NULL_HANDLE },			//UBOs
+										{ 0				},			//UBO sizes
+										{ m_shadowMap->m_imageView },	//textureImageViews
+										{ m_shadowMap->m_sampler }	//samplers
 										);
 	}
 

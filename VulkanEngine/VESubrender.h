@@ -47,7 +47,8 @@ namespace ve {
 	protected:
 		veSubrenderType m_type = VE_SUBRENDERER_TYPE_NONE;	///<Type of the subrenderer
 
-		VkDescriptorSetLayout m_descriptorSetLayout = VK_NULL_HANDLE;	///<Descriptor set 0 : per object
+		VkDescriptorSetLayout m_descriptorSetLayoutUBO = VK_NULL_HANDLE;		///<Descriptor set 1 : per object UBO
+		VkDescriptorSetLayout m_descriptorSetLayoutResources = VK_NULL_HANDLE;	///<Descriptor set 3 : per object additional resources
 		VkPipelineLayout m_pipelineLayout = VK_NULL_HANDLE;				///<Pipeline layout
 		VkPipeline m_pipeline = VK_NULL_HANDLE;				///<Pipeline for light pass
 
@@ -72,9 +73,6 @@ namespace ve {
 		virtual void	bindDescriptorSets(VkCommandBuffer commandBuffer, uint32_t imageIndex, VEEntity *entity);
 		virtual void	addEntity( VEEntity *pEntity );
 		virtual void	removeEntity(VEEntity *pEntity);
-
-		///Return the descriptor set layout of this subrenderer
-		virtual VkDescriptorSetLayout getDescriptorSetLayout() { return m_descriptorSetLayout; };
 	};
 
 
