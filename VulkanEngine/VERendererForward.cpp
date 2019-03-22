@@ -79,7 +79,7 @@ namespace ve {
 
 		//shadow map
 		m_shadowMap = new VETexture("ShadowMap");
-		m_shadowMap->m_extent = { 2048, 2048 };
+		m_shadowMap->m_extent = { 1024, 1024 };
 		vh::vhBufCreateDepthResources(	m_device, m_vmaAllocator, m_graphicsQueue, m_commandPool, m_shadowMap->m_extent,
 										m_depthMapFormat, &m_shadowMap->m_image, &m_shadowMap->m_deviceAllocation, 
 										&m_shadowMap->m_imageView);
@@ -305,9 +305,9 @@ namespace ve {
 										{ m_shadowMap->m_imageView },	//textureImageViews
 										{ m_shadowMap->m_sampler }	//samplers
 										);
+
+
 	}
-
-
 
 
 	/**
@@ -345,7 +345,7 @@ namespace ve {
 		//shadow pass
 
 		vh::vhRenderBeginRenderPass(commandBuffer, m_renderPassShadow, m_shadowFramebuffers[0], m_shadowMap->m_extent);
-		//m_subrenderShadow->draw(commandBuffer, imageIndex);
+		m_subrenderShadow->draw(commandBuffer, imageIndex);
 		vkCmdEndRenderPass(commandBuffer);
 
 		//-----------------------------------------------------------------------------------------
@@ -358,6 +358,31 @@ namespace ve {
 		vh::vhCmdEndSingleTimeCommands(	m_device, m_graphicsQueue, m_commandPool, commandBuffer,
 										m_imageAvailableSemaphores[m_currentFrame], m_renderFinishedSemaphores[m_currentFrame], 
 										m_inFlightFences[m_currentFrame]);
+
+
+		vkQueueWaitIdle(m_graphicsQueue);
+
+		/*VkExtent2D extent = m_shadowMap->m_extent;
+		uint32_t imageSize = extent.width * extent.height;
+		VkImage image = m_shadowMap->m_image;
+
+		float *dataImage = new float[imageSize];
+		gli::byte *dataImage2 = new gli::byte[imageSize];
+
+		vh::vhBufCopyImageToHost(getRendererPointer()->getDevice(), getRendererPointer()->getVmaAllocator(),
+			getRendererPointer()->getGraphicsQueue(), getRendererPointer()->getCommandPool(),
+			image, VK_FORMAT_D32_SFLOAT, VK_IMAGE_ASPECT_DEPTH_BIT, VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL, (glm::byte*)dataImage, extent.width, extent.height, imageSize*4);
+
+		for (uint32_t v = 0; v < extent.height; v++) {
+			for (uint32_t u = 0; u < extent.width; u++) {
+				dataImage2[v*extent.width + u]   = (glm::byte)(dataImage[v*extent.width + u]*256);
+			}
+		}
+
+		std::string name("screenshots/screenshot" + std::to_string(getEnginePointer()->getLoopCount()) + ".png");
+		stbi_write_png(name.c_str(), extent.width, extent.height, 1, dataImage2, extent.width);
+		delete dataImage;
+		delete dataImage2;*/
 
 	}
 

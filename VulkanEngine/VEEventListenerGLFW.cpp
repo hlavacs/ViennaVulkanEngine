@@ -234,7 +234,7 @@ namespace ve {
 
 			vh::vhBufCopySwapChainImageToHost(getRendererPointer()->getDevice(), getRendererPointer()->getVmaAllocator(),
 				getRendererPointer()->getGraphicsQueue(), getRendererPointer()->getCommandPool(),
-				image, dataImage, extent.width, extent.height, imageSize);
+				image, VK_IMAGE_ASPECT_COLOR_BIT, dataImage, extent.width, extent.height, imageSize);
 
 			getEnginePointer()->m_threadPool->submit([=]() {
 				std::string name("screenshots/screenshot" + std::to_string(m_numScreenshot) + ".png");

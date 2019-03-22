@@ -42,7 +42,6 @@ namespace ve {
 	* \brief Add an entity to the list of associated entities.
 	*
 	* \param[in] pEntity Pointer to the entity to include into the list.
-	* \returns the index of the entity in the list.
 	*
 	*/
 	void VESubrenderFW_Shadow::addEntity(VEEntity *pEntity) {

@@ -169,15 +169,15 @@ namespace vh {
 								VkBuffer buffer, VkImage image, std::vector<VkBufferImageCopy> &regions,
 								uint32_t width, uint32_t height);
 	void vhBufCopyImageToBuffer(VkDevice device, VkQueue queue, VkCommandPool commandPool,
-								VkImage image, VkBuffer buffer, uint32_t layerCount, uint32_t width, uint32_t height);
+								VkImage image, VkImageAspectFlagBits aspect, VkBuffer buffer, uint32_t layerCount, uint32_t width, uint32_t height);
 	void vhBufCopyImageToBuffer(VkDevice device, VkQueue queue, VkCommandPool commandPool,
 								VkImage image, VkBuffer buffer, std::vector<VkBufferImageCopy> &regions,
 								uint32_t width, uint32_t height);
 	void vhBufTransitionImageLayout(VkDevice device, VkQueue graphicsQueue, VkCommandPool commandPool, 
-									VkImage image, VkFormat format, uint32_t miplevels, uint32_t layerCount,
+									VkImage image, VkFormat format, VkImageAspectFlagBits aspect, uint32_t miplevels, uint32_t layerCount,
 									VkImageLayout oldLayout, VkImageLayout newLayout);
 	void vhBufTransitionImageLayout(VkDevice device, VkQueue graphicsQueue, VkCommandBuffer commandBuffer,
-									VkImage image, VkFormat format, uint32_t miplevels, uint32_t layerCount,
+									VkImage image, VkFormat format, VkImageAspectFlagBits aspect, uint32_t miplevels, uint32_t layerCount,
 									VkImageLayout oldLayout, VkImageLayout newLayout);
 	void vhBufCreateTextureImage(VkDevice device, VmaAllocator allocator, VkQueue graphicsQueue, VkCommandPool commandPool, std::string basedir, std::vector<std::string> names, VkImageCreateFlags flags, VkImage *textureImage, VmaAllocation *textureImageAllocation, VkExtent2D *extent);
 	void vhBufCreateTexturecubeImage(VkDevice device, VmaAllocator allocator, VkQueue graphicsQueue, VkCommandPool commandPool, gli::texture_cube &cube, VkImage *textureImage, VmaAllocation *textureImageAllocation, VkFormat *pformat);
@@ -186,8 +186,12 @@ namespace vh {
 								VkImageView depthImageView, VkRenderPass renderPass, VkExtent2D extent,
 								std::vector<VkFramebuffer> &frameBuffers);
 	void vhBufCopySwapChainImageToHost(VkDevice device, VmaAllocator allocator, VkQueue graphicsQueue,
-								VkCommandPool commandPool, VkImage image, gli::byte *bufferData, 
+								VkCommandPool commandPool, VkImage image, VkImageAspectFlagBits aspect, gli::byte *bufferData,
 								uint32_t width, uint32_t height, uint32_t imageSize);
+	void vhBufCopyImageToHost(VkDevice device, VmaAllocator allocator, VkQueue graphicsQueue,
+							VkCommandPool commandPool,
+							VkImage image, VkFormat format, VkImageAspectFlagBits aspect, VkImageLayout layout,
+							gli::byte *bufferData, uint32_t width, uint32_t height, uint32_t imageSize);
 	void vhBufCreateVertexBuffer(	VkDevice device, VmaAllocator allocator,
 									VkQueue graphicsQueue, VkCommandPool commandPool,
 									std::vector<vh::vhVertex> &vertices,

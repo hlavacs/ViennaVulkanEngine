@@ -3,6 +3,7 @@
 #extension GL_GOOGLE_include_directive : enable
 
 #include "../common_defines.glsl"
+#include "../light.glsl"
 
 layout(location = 0) in vec3 fragPos;
 layout(location = 1) in vec3 fragNormal;
@@ -26,11 +27,6 @@ layout(set = 3, binding = 1) uniform sampler2D normalSampler;
 
 void main() {
 
-    //parameters
-    vec3 lightPos = UBOPerFrame.light1.transform[3].xyz;
-    vec3 lightDir = normalize( UBOPerFrame.light1.transform[2].xyz );     //for directional light, looks down local y axis
-    vec3 viewDir  = normalize( UBOPerFrame.camModel[3].xyz - fragPos );
-
     vec3 N        = normalize( fragNormal );
     vec3 T        = normalize( fragTangent );
     T             = normalize( T - dot(T, N)*N );
@@ -39,31 +35,39 @@ void main() {
     vec3 mapnorm  = normalize( texture(normalSampler, fragTexCoord).xyz*2.0 - 1.0 );
     vec3 normal   = normalize( TBN * mapnorm );
 
-    vec4 param    = UBOPerFrame.light1.param;
-    vec3 fragColor = texture(texSampler, fragTexCoord).xyz;
+    //parameters
+    vec3 camPos = UBOPerFrame.camModel[3].xyz;
 
-    //start light calculations
+    vec3 lightPos = UBOPerFrame.light1.transform[3].xyz;
+    vec3 lightDir = normalize( UBOPerFrame.light1.transform[2].xyz );
+    float nfac = dot( fragNormal, -lightDir)<0? 0:1;
+    vec4 lightParam = UBOPerFrame.light1.param;
 
-    vec3 lightVector = normalize(fragPos - lightPos);
-    float spotFactor = UBOPerFrame.light1.itype[0] == 2 ? pow( max( dot( lightVector, lightDir), 0.0), 10.0) : 1.0;
-    spotFactor *= dot( N, -lightDir )<0 ? 0:1;	//surface facing away?
-
-    //ambient
     vec3 ambcol  = UBOPerFrame.light1.col_ambient.xyz;
     vec3 diffcol = UBOPerFrame.light1.col_diffuse.xyz;
     vec3 speccol = UBOPerFrame.light1.col_specular.xyz;
 
-    //diffuse
-    float diff = max(dot(normal, -lightVector), 0.0);
-    vec3 diffuse = spotFactor * diff * diffcol;
+    vec3 fragColor = texture(texSampler, fragTexCoord).xyz;
 
-    //specular
-    vec3 reflectDir = normalize( reflect(lightDir, normal) );
-    float spec = pow(max(dot(viewDir, reflectDir), 0.0), 2.0);
-    vec3 specular = spotFactor * spec * speccol;
+    vec3 result = ambcol * fragColor;
 
-    //add up to get the result
-    vec3 result = (ambcol + diffuse + specular) * fragColor;
+    result += UBOPerFrame.light1.itype[0] == 0?
+                  dirlight( camPos,
+                            lightDir, lightParam,
+                            vec3(0,0,0), diffcol, speccol,
+                            fragPos, normal, fragColor) * nfac : vec3(0,0,0);
+
+    result += UBOPerFrame.light1.itype[0] == 1?
+                  pointlight( camPos,
+                              lightPos, lightParam,
+                              vec3(0,0,0), diffcol, speccol,
+                              fragPos, normal, fragColor) * nfac : vec3(0,0,0);
+
+    result += UBOPerFrame.light1.itype[0] == 2?
+                  spotlight( camPos,
+                             lightPos, lightDir, lightParam,
+                             vec3(0,0,0), diffcol, speccol,
+                             fragPos, normal, fragColor) * nfac : vec3(0,0,0);
 
     outColor = vec4( result, 1.0 );
 }

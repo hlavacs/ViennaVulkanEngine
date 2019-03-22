@@ -105,13 +105,14 @@ namespace vh {
 
 		vhBufCreateImage(allocator, extent.width, extent.height, 1, 1,
 						depthFormat, VK_IMAGE_TILING_OPTIMAL, 
-						VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, 0,
+						VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT, 0,
 						depthImage, depthImageAllocation);
 
 		vh::vhBufCreateImageView(device, *depthImage, depthFormat, VK_IMAGE_VIEW_TYPE_2D, 1, VK_IMAGE_ASPECT_DEPTH_BIT, depthImageView);
 
-		vhBufTransitionImageLayout(device, graphicsQueue, commandPool, *depthImage, depthFormat, 1, 1, 
-									VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL);
+		vh::vhBufTransitionImageLayout( device, graphicsQueue, commandPool, 
+										*depthImage, depthFormat, VK_IMAGE_ASPECT_DEPTH_BIT, 1, 1,
+										VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL);
 	}
 
 
@@ -236,7 +237,7 @@ namespace vh {
 	* \param[in] height Image height
 	*/
 	void vhBufCopyImageToBuffer(VkDevice device, VkQueue graphicsQueue, VkCommandPool commandPool,
-								VkImage image, VkBuffer buffer, 
+								VkImage image, VkImageAspectFlagBits aspect, VkBuffer buffer,
 								uint32_t layerCount, uint32_t width, uint32_t height) {
 
 		std::vector<VkBufferImageCopy> regions;
@@ -245,7 +246,7 @@ namespace vh {
 		region.bufferOffset = 0;
 		region.bufferRowLength = 0;
 		region.bufferImageHeight = 0;
-		region.imageSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+		region.imageSubresource.aspectMask = aspect;
 		region.imageSubresource.mipLevel = 0;
 		region.imageSubresource.baseArrayLayer = 0;
 		region.imageSubresource.layerCount = layerCount;
@@ -300,13 +301,14 @@ namespace vh {
 	* \param[in] newLayout The layout should be transitioned to this new layout
 	*/
 	void vhBufTransitionImageLayout(VkDevice device, VkQueue graphicsQueue, VkCommandPool commandPool,
-		VkImage image, VkFormat format,
+		VkImage image, VkFormat format, VkImageAspectFlagBits aspect,
 		uint32_t miplevels, uint32_t layerCount,
 		VkImageLayout oldLayout, VkImageLayout newLayout) {
 
 		VkCommandBuffer commandBuffer = vhCmdBeginSingleTimeCommands(device, commandPool);
 
-		vhBufTransitionImageLayout( device, graphicsQueue, commandBuffer, image, format, miplevels, layerCount,
+		vhBufTransitionImageLayout( device, graphicsQueue, commandBuffer, image, 
+									format, aspect, miplevels, layerCount,
 									oldLayout, newLayout );
 
 		vhCmdEndSingleTimeCommands(device, graphicsQueue, commandPool, commandBuffer);
@@ -325,8 +327,9 @@ namespace vh {
 	* \param[in] oldLayout Old layout of the image
 	* \param[in] newLayout The layout should be transitioned to this new layout
 	*/
-	void vhBufTransitionImageLayout(VkDevice device, VkQueue graphicsQueue, VkCommandBuffer commandBuffer,
-			VkImage image, VkFormat format,
+	void vhBufTransitionImageLayout(VkDevice device, VkQueue graphicsQueue, 
+			VkCommandBuffer commandBuffer,
+			VkImage image, VkFormat format, VkImageAspectFlagBits aspect,
 			uint32_t miplevels, uint32_t layerCount,
 			VkImageLayout oldLayout, VkImageLayout newLayout) {
 
@@ -337,16 +340,12 @@ namespace vh {
 		barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
 		barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
 		barrier.image = image;
+		barrier.subresourceRange.aspectMask = aspect;
 
-		if (oldLayout == VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL || newLayout == VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL) {
-			barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT;
-
+		if (aspect == VK_IMAGE_ASPECT_DEPTH_BIT ) {
 			if (hasStencilComponent(format)) {
 				barrier.subresourceRange.aspectMask |= VK_IMAGE_ASPECT_STENCIL_BIT;
 			}
-		}
-		else {
-			barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
 		}
 
 		barrier.subresourceRange.baseMipLevel = 0;
@@ -398,6 +397,20 @@ namespace vh {
 
 			sourceStage = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
 			destinationStage = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
+		}
+		else if (oldLayout == VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL && newLayout == VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL) {
+			barrier.srcAccessMask = 0;
+			barrier.dstAccessMask = 0;
+
+			sourceStage = VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT;
+			destinationStage = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
+		}
+		else if (oldLayout == VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL  && newLayout == VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL) {
+			barrier.srcAccessMask = 0;
+			barrier.dstAccessMask = 0;
+
+			sourceStage = VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT;
+			destinationStage = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
 		}
 		else {
 			throw std::invalid_argument("unsupported layout transition!");
@@ -510,7 +523,7 @@ namespace vh {
 								flags, textureImage, textureImageAllocation);
 
 		vhBufTransitionImageLayout(device, graphicsQueue, commandPool, *textureImage,
-			VK_FORMAT_R8G8B8A8_UNORM, mipLevels, (uint32_t)imageData.size(),
+			VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_ASPECT_COLOR_BIT, mipLevels, (uint32_t)imageData.size(),
 			VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
 
 		vhBufCopyBufferToImage(device, graphicsQueue, commandPool, stagingBuffer,
@@ -518,7 +531,7 @@ namespace vh {
 			static_cast<uint32_t>(imageData[0].texWidth), static_cast<uint32_t>(imageData[0].texHeight));
 
 		vhBufTransitionImageLayout(device, graphicsQueue, commandPool, *textureImage,
-			VK_FORMAT_R8G8B8A8_UNORM, mipLevels, (uint32_t)imageData.size(),
+			VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_ASPECT_COLOR_BIT, mipLevels, (uint32_t)imageData.size(),
 			VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
 
 
@@ -618,7 +631,7 @@ namespace vh {
 		}
 
 		vhBufTransitionImageLayout(	device, graphicsQueue, commandPool, *textureImage, 
-									*pFormat, mipLevels, 6, 
+									*pFormat, VK_IMAGE_ASPECT_COLOR_BIT, mipLevels, 6,
 									VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
 
 		vhBufCopyBufferToImage(	device, graphicsQueue, commandPool, stagingBuffer, 
@@ -626,7 +639,7 @@ namespace vh {
 								static_cast<uint32_t>(texWidth), static_cast<uint32_t>(texHeight));
 
 		vhBufTransitionImageLayout(	device, graphicsQueue, commandPool, *textureImage, 
-									*pFormat, mipLevels, 6, 
+									*pFormat, VK_IMAGE_ASPECT_COLOR_BIT, mipLevels, 6,
 									VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
 
 		vmaDestroyBuffer(allocator, stagingBuffer, stagingBufferAllocation);
@@ -716,9 +729,10 @@ namespace vh {
 	* \param[in] height Image height
 	* \param[in] imageSize Size of the image in bytes
 	*/
-	void vhBufCopySwapChainImageToHost(VkDevice device, VmaAllocator allocator, VkQueue graphicsQueue,
-										VkCommandPool commandPool, 
-										VkImage image, gli::byte *bufferData, uint32_t width, uint32_t height, uint32_t imageSize) {
+	void vhBufCopySwapChainImageToHost(VkDevice device, VmaAllocator allocator, 
+				VkQueue graphicsQueue, VkCommandPool commandPool, 
+				VkImage image, VkImageAspectFlagBits aspect, 
+				gli::byte *bufferData, uint32_t width, uint32_t height, uint32_t imageSize) {
 
 		VkBuffer stagingBuffer;
 		VmaAllocation stagingBufferAllocation;
@@ -727,14 +741,14 @@ namespace vh {
 			&stagingBuffer, &stagingBufferAllocation);
 
 		vh::vhBufTransitionImageLayout(device, graphicsQueue, commandPool,
-			image, VK_FORMAT_R8G8B8A8_UNORM, 1, 1,
+			image, VK_FORMAT_R8G8B8A8_UNORM, aspect, 1, 1,
 			VK_IMAGE_LAYOUT_PRESENT_SRC_KHR, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
 
 		vh::vhBufCopyImageToBuffer(device, graphicsQueue, commandPool,
-			image, stagingBuffer, 1, width, height);
+			image, aspect, stagingBuffer, 1, width, height);
 
 		vh::vhBufTransitionImageLayout(device, graphicsQueue, commandPool,
-			image, VK_FORMAT_R8G8B8A8_UNORM, 1, 1,
+			image, VK_FORMAT_R8G8B8A8_UNORM, aspect, 1, 1,
 			VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR);
 
 		void *data;
@@ -756,6 +770,51 @@ namespace vh {
 
 		vmaDestroyBuffer(allocator, stagingBuffer, stagingBufferAllocation);
 	}
+
+
+	/**
+	* \brief Copy a swap chain image to a data buffer, after it has been rendered into
+	* \param[in] device Logical Vulkan device
+	* \param[in] allocator VMA allocator
+	* \param[in] graphicsQueue Device queue for submitting commands
+	* \param[in] commandPool Command pool for allocating command buffers
+	* \param[in] image The source image
+	* \param[in] bufferData The destination buffer data
+	* \param[in] width Ímage width
+	* \param[in] height Image height
+	* \param[in] imageSize Size of the image in bytes
+	*/
+	void vhBufCopyImageToHost(VkDevice device, VmaAllocator allocator, VkQueue graphicsQueue,
+		VkCommandPool commandPool,
+		VkImage image, VkFormat format, VkImageAspectFlagBits aspect, VkImageLayout layout,
+		gli::byte *bufferData, uint32_t width, uint32_t height, uint32_t imageSize) {
+
+		VkBuffer stagingBuffer;
+		VmaAllocation stagingBufferAllocation;
+		vh::vhBufCreateBuffer(allocator, imageSize,
+			VK_BUFFER_USAGE_TRANSFER_DST_BIT, VMA_MEMORY_USAGE_CPU_ONLY,
+			&stagingBuffer, &stagingBufferAllocation);
+
+		vh::vhBufTransitionImageLayout(device, graphicsQueue, commandPool,
+			image, format, aspect, 1, 1,
+			layout, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
+
+		vh::vhBufCopyImageToBuffer(device, graphicsQueue, commandPool,
+			image, aspect, stagingBuffer, 1, width, height);
+
+		vh::vhBufTransitionImageLayout(device, graphicsQueue, commandPool,
+			image, format, aspect, 1, 1,
+			VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, layout);
+
+		void *data;
+		vmaMapMemory(allocator, stagingBufferAllocation, &data);
+		memcpy(bufferData, data, (size_t)imageSize);
+		vmaUnmapMemory(allocator, stagingBufferAllocation);
+
+		vmaDestroyBuffer(allocator, stagingBuffer, stagingBufferAllocation);
+	}
+
+
 
 
 	//-------------------------------------------------------------------------------------------
