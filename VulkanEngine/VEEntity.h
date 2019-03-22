@@ -117,9 +117,10 @@ namespace ve {
 		bool						m_drawEntity = false;					///<should it be drawn at all?
 		bool						m_castsShadow = false;					///<draw in the shadow pass?
 
-		std::vector<VkBuffer>			m_uniformBuffers;			///<One UBO for each framebuffer frame
-		std::vector<VmaAllocation>		m_uniformBuffersAllocation; ///<VMA information for the UBOs
-		std::vector<VkDescriptorSet>	m_descriptorSets;			///<Per subrenderer descriptor sets
+		std::vector<VkBuffer>			m_uniformBuffers;				///<One UBO for each framebuffer frame
+		std::vector<VmaAllocation>		m_uniformBuffersAllocation;		///<VMA information for the UBOs
+		std::vector<VkDescriptorSet>	m_descriptorSetsUBO;			///<Per subrenderer descriptor sets for UBO
+		std::vector<VkDescriptorSet>	m_descriptorSetsResources;		///<Per subrenderer descriptor sets for other resources
 
 		VEEntity( std::string name );
 		VEEntity(std::string name, veEntityType type, VEMesh *pMesh, VEMaterial *pMat, glm::mat4 transf, VEEntity *parent);
