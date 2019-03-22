@@ -72,7 +72,7 @@ namespace ve {
 
 
 		//------------------------------------------------------------------------------------------------------------
-		//create rsources for shadow pass
+		//create resources for shadow pass
 
 		//shadow render pass
 		vh::vhRenderCreateRenderPassShadow( m_device, m_depthMapFormat, &m_renderPassShadow);
@@ -81,13 +81,15 @@ namespace ve {
 		m_shadowMap = new VETexture("ShadowMap");
 		m_shadowMap->m_extent = { 2048, 2048 };
 		vh::vhBufCreateDepthResources(	m_device, m_vmaAllocator, m_graphicsQueue, m_commandPool, m_shadowMap->m_extent,
-										m_depthMapFormat, &m_shadowMap->m_image, &m_shadowMap->m_deviceAllocation, &m_shadowMap->m_imageView);
+										m_depthMapFormat, &m_shadowMap->m_image, &m_shadowMap->m_deviceAllocation, 
+										&m_shadowMap->m_imageView);
 
 		vh::vhBufCreateTextureSampler(getRendererPointer()->getDevice(), &m_shadowMap->m_sampler);
 
 		//frame buffers for shadow pass
 		std::vector<VkImageView> empty;
-		vh::vhBufCreateFramebuffers(m_device, empty, m_shadowMap->m_imageView, m_renderPassShadow, m_shadowMap->m_extent, m_shadowFramebuffers);
+		vh::vhBufCreateFramebuffers(m_device, empty, m_shadowMap->m_imageView, m_renderPassShadow, 
+									m_shadowMap->m_extent, m_shadowFramebuffers);
 
 		//------------------------------------------------------------------------------------------------------------
 		//per frame resources
@@ -139,6 +141,7 @@ namespace ve {
 		addSubrenderer(new VESubrenderFW_Cubemap());
 		
 		m_subrenderShadow = new VESubrenderFW_Shadow();
+		m_subrenderShadow->initSubrenderer();
 	}
 
 
@@ -288,11 +291,11 @@ namespace ve {
 
 		//update the descriptor set for the per frame data
 		vh::vhRenderUpdateDescriptorSet(m_device, m_descriptorSetsPerFrame[imageIndex],
-		{ m_uniformBuffersPerFrame[imageIndex] }, //UBOs
-		{ sizeof(veUBOPerFrame) },			//UBO sizes
-		{ VK_NULL_HANDLE },						//textureImageViews
-		{ VK_NULL_HANDLE }						//samplers
-		);
+										{ m_uniformBuffersPerFrame[imageIndex] },	//UBOs
+										{ sizeof(veUBOPerFrame) },					//UBO sizes
+										{ VK_NULL_HANDLE },							//textureImageViews
+										{ VK_NULL_HANDLE });						//samplers
+										
 
 		//---------------------------------------------------------------------------------------
 

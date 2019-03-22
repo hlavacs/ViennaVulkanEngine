@@ -22,13 +22,13 @@ namespace ve {
 
 		//per object resources, set 0
 		vh::vhRenderCreateDescriptorSetLayout(getRendererForwardPointer()->getDevice(),
-												{ VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER },
-												{ VK_SHADER_STAGE_VERTEX_BIT,		 VK_SHADER_STAGE_FRAGMENT_BIT },
-												&m_descriptorSetLayout);
+			{ VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER },
+			{ VK_SHADER_STAGE_VERTEX_BIT,		 VK_SHADER_STAGE_FRAGMENT_BIT },
+			&m_descriptorSetLayout);
 
 		vh::vhPipeCreateGraphicsPipelineLayout(getRendererForwardPointer()->getDevice(),
-												{ m_descriptorSetLayout, getRendererForwardPointer()->getDescriptorSetLayoutPerFrame(), getRendererForwardPointer()->getDescriptorSetLayoutShadow() },
-												&m_pipelineLayout);
+			{ m_descriptorSetLayout, getRendererForwardPointer()->getDescriptorSetLayoutPerFrame(), getRendererForwardPointer()->getDescriptorSetLayoutShadow() },
+			&m_pipelineLayout);
 
 		vh::vhPipeCreateGraphicsPipeline(	getRendererForwardPointer()->getDevice(),
 											"shader/Forward/D/vert.spv", "shader/Forward/D/frag.spv",

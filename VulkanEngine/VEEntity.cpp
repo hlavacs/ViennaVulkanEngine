@@ -128,10 +128,11 @@ namespace ve {
 
 		vh::vhBufCreateTextureImage(getRendererPointer()->getDevice(), getRendererPointer()->getVmaAllocator(),
 			getRendererPointer()->getGraphicsQueue(), getRendererPointer()->getCommandPool(),
-			basedir, texNames, flags, &m_image, &m_deviceAllocation);
+			basedir, texNames, flags, &m_image, &m_deviceAllocation, &m_extent);
 
+		m_format = VK_FORMAT_R8G8B8A8_UNORM;
 		vh::vhBufCreateImageView(getRendererPointer()->getDevice(), m_image,
-			VK_FORMAT_R8G8B8A8_UNORM, viewType, (uint32_t)texNames.size(), VK_IMAGE_ASPECT_COLOR_BIT, &m_imageView);
+			m_format, viewType, (uint32_t)texNames.size(), VK_IMAGE_ASPECT_COLOR_BIT, &m_imageView);
 
 		vh::vhBufCreateTextureSampler(getRendererPointer()->getDevice(), &m_sampler);
 	}
@@ -148,14 +149,15 @@ namespace ve {
 	*/
 	VETexture::VETexture(std::string name, gli::texture_cube &texCube) : VENamedClass( name ) {
 
-		VkFormat vkformat;
-
 		vh::vhBufCreateTexturecubeImage(getRendererPointer()->getDevice(), getRendererPointer()->getVmaAllocator(),
 			getRendererPointer()->getGraphicsQueue(), getRendererPointer()->getCommandPool(),
-			texCube, &m_image, &m_deviceAllocation, &vkformat);
+			texCube, &m_image, &m_deviceAllocation, &m_format);
+
+		m_extent.width = texCube.extent().x;
+		m_extent.height = texCube.extent().y;
 
 		vh::vhBufCreateImageView(getRendererPointer()->getDevice(), m_image,
-			vkformat, VK_IMAGE_VIEW_TYPE_CUBE, 6,
+			m_format, VK_IMAGE_VIEW_TYPE_CUBE, 6,
 			VK_IMAGE_ASPECT_COLOR_BIT, &m_imageView);
 
 		vh::vhBufCreateTextureSampler(getRendererPointer()->getDevice(), &m_sampler);

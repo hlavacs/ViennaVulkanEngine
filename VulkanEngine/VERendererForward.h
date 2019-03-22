@@ -49,11 +49,6 @@ namespace ve {
 		VkFormat m_depthMapFormat;										///<remember the depth map format
 
 		VETexture *m_shadowMap = nullptr;								///<the shadow map
-		//VkImage m_shadowMap;											///<shadow map image 
-		//VmaAllocation m_shadowMapAllocation;							///<Shadow map VMA image allocation info
-		//VkImageView m_shadowMapView;									///<Image view for shadow map
-		//VkSampler	m_shadowSampler = VK_NULL_HANDLE;					///<image sampler
-		//VkExtent2D  m_shadowMapExtent;									///<extent of shadow map
 
 		std::vector<VkBuffer> m_uniformBuffersPerFrame;					///<UBO for camera and light data
 		std::vector<VmaAllocation> m_uniformBuffersPerFrameAllocation;	///<VMA

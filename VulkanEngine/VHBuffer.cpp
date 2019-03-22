@@ -432,7 +432,7 @@ namespace vh {
 	*/
 	void vhBufCreateTextureImage(VkDevice device, VmaAllocator allocator, VkQueue graphicsQueue, VkCommandPool commandPool,
 								std::string basedir, std::vector<std::string> texNames, VkImageCreateFlags flags,
-								VkImage *textureImage, VmaAllocation *textureImageAllocation) {
+								VkImage *textureImage, VmaAllocation *textureImageAllocation, VkExtent2D *extent) {
 
 		struct image_data {
 			VkDeviceSize imageSize = 0;

@@ -179,7 +179,7 @@ namespace vh {
 	void vhBufTransitionImageLayout(VkDevice device, VkQueue graphicsQueue, VkCommandBuffer commandBuffer,
 									VkImage image, VkFormat format, uint32_t miplevels, uint32_t layerCount,
 									VkImageLayout oldLayout, VkImageLayout newLayout);
-	void vhBufCreateTextureImage(VkDevice device, VmaAllocator allocator, VkQueue graphicsQueue, VkCommandPool commandPool, std::string basedir, std::vector<std::string> names, VkImageCreateFlags flags, VkImage *textureImage, VmaAllocation *textureImageAllocation);
+	void vhBufCreateTextureImage(VkDevice device, VmaAllocator allocator, VkQueue graphicsQueue, VkCommandPool commandPool, std::string basedir, std::vector<std::string> names, VkImageCreateFlags flags, VkImage *textureImage, VmaAllocation *textureImageAllocation, VkExtent2D *extent);
 	void vhBufCreateTexturecubeImage(VkDevice device, VmaAllocator allocator, VkQueue graphicsQueue, VkCommandPool commandPool, gli::texture_cube &cube, VkImage *textureImage, VmaAllocation *textureImageAllocation, VkFormat *pformat);
 	void vhBufCreateTextureSampler(VkDevice device, VkSampler *textureSampler);
 	void vhBufCreateFramebuffers(VkDevice device, std::vector<VkImageView> imageViews,

@@ -95,9 +95,16 @@ namespace ve {
 	*
 	*/
 	void VESubrender::bindDescriptorSets(VkCommandBuffer commandBuffer, uint32_t imageIndex, VEEntity *entity) {
-		//set 0...per object
+		//set 0...per object TODO
 		//set 1...per frame
-		std::vector<VkDescriptorSet> sets = { entity->m_descriptorSets[imageIndex], getRendererForwardPointer()->getDescriptorSetsPerFrame()[imageIndex] };
+		//set 2...shadow
+		std::vector<VkDescriptorSet> sets =
+			{ 
+				entity->m_descriptorSets[imageIndex], 
+				getRendererForwardPointer()->getDescriptorSetsPerFrame()[imageIndex],
+				getRendererForwardPointer()->getDescriptorSetsShadow()[imageIndex]
+			};
+
 		vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_pipelineLayout, 0, (uint32_t)sets.size(), sets.data(), 0, nullptr);
 	}
 
