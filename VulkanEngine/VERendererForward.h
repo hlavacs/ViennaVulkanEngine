@@ -41,7 +41,7 @@ namespace ve {
 
 	protected:
 		VETexture *m_depthMap = nullptr;								///<the image depth map	
-		VETexture *m_shadowMap = nullptr;								///<the shadow map
+		std::vector<VETexture *>m_shadowMaps;							///<the shadow map
 		std::vector<VkBuffer> m_uniformBuffersPerFrame;					///<UBO for camera, light data and shadow matrices
 		std::vector<VmaAllocation> m_uniformBuffersPerFrameAllocation;	///<VMA
 
@@ -95,9 +95,9 @@ namespace ve {
 		///\returns the shadow render pass
 		virtual VkRenderPass			getRenderPassShadow() { return m_renderPassShadow; };
 		VETexture *						getDepthMap() { return m_depthMap; };
-		VETexture *						getShadowMap() { return m_shadowMap; };
+		VETexture *						getShadowMap() { return m_shadowMaps[imageIndex]; };
 		///\returns the 2D extent of the shadow map
-		virtual VkExtent2D				getShadowMapExtent() { return m_shadowMap->m_extent; };
+		virtual VkExtent2D				getShadowMapExtent() { return m_shadowMaps[imageIndex]->m_extent; };
 
 	};
 

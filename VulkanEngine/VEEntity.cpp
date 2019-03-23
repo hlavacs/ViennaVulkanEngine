@@ -536,7 +536,7 @@ namespace ve {
 		float diam = 2.0f * radius;
 		VECameraOrtho *pCamOrtho = new VECameraOrtho("Ortho", 0.0, diam, diam, diam);
 
-		glm::vec3 z = normalize(getZAxis());
+		glm::vec3 z = normalize(pLight->getZAxis());
 		pCamOrtho->lookAt(center - radius * z, center, glm::vec3(0.0f, 1.0f, 0.0f ));
 
 		return pCamOrtho;

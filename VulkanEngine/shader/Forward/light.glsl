@@ -1,6 +1,6 @@
 
 
-float shadowFunc(  vec3 fragposW, mat4 shadowView, mat4 shadowProj, sampler2D shadowMap ) {
+float shadowFactor(  vec3 fragposW, mat4 shadowView, mat4 shadowProj, sampler2D shadowMap, vec2 offset ) {
 
     vec4 fragposH = shadowProj * shadowView * vec4(fragposW,1);
     fragposH /= fragposH.w;                 //homogeneous coords are in [-1,1]
@@ -9,11 +9,35 @@ float shadowFunc(  vec3 fragposW, mat4 shadowView, mat4 shadowProj, sampler2D sh
     fragposH.y = fragposH.y / 2.0 + 0.5;     //translate to [0,1]
 
     float visibility = 1.0;
-    if ( texture( shadowMap, fragposH.xy ).r  <  fragposH.z){
+    if ( texture( shadowMap, fragposH.xy + offset ).r  <  fragposH.z) {
         visibility = 0.0;
     }
     return visibility;
 }
+
+
+
+float shadowFunc(  vec3 fragposW, mat4 shadowView, mat4 shadowProj, sampler2D shadowMap ) {
+
+    ivec2 texDim = textureSize(shadowMap, 0);
+    float scale = 1.2;
+    float dx = scale * 1.0 / float(texDim.x);
+    float dy = scale * 1.0 / float(texDim.y);
+
+    float factor = 0.0;
+    int count = 0;
+    int range = 1;
+
+    for (int x = -range; x <= range; x++) {
+        for (int y = -range; y <= range; y++) {
+            factor += shadowFactor( fragposW, shadowView, shadowProj, shadowMap, vec2(dx*x, dy*y) );
+            count++;
+        }
+    }
+    return factor / count;
+}
+
+
 
 
 vec3 dirlight(  vec3 camposW,

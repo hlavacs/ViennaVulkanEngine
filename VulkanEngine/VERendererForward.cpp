@@ -77,24 +77,36 @@ namespace ve {
 		//create resources for shadow pass
 
 		//shadow map
-		m_shadowMap = new VETexture("ShadowMap");
-		m_shadowMap->m_extent = { 2048, 2048 };
-		m_shadowMap->m_format = m_depthMap->m_format;
+		for (uint32_t i = 0; i < m_swapChainImageViews.size(); i++) {
+			VETexture *pShadowMap = new VETexture("ShadowMap");
+			pShadowMap->m_extent = { 2048, 2048 };
+			pShadowMap->m_format = m_depthMap->m_format;
+			m_shadowMaps.push_back(pShadowMap);
+		}
 
 		//shadow render pass
-		vh::vhRenderCreateRenderPassShadow( m_device, m_shadowMap->m_format, &m_renderPassShadow);
+		vh::vhRenderCreateRenderPassShadow( m_device, m_depthMap->m_format, &m_renderPassShadow);
 
-		vh::vhBufCreateDepthResources(	m_device, m_vmaAllocator, m_graphicsQueue, m_commandPool, m_shadowMap->m_extent,
-										m_shadowMap->m_format, &m_shadowMap->m_image, &m_shadowMap->m_deviceAllocation,
-										&m_shadowMap->m_imageView);
+		std::vector<VkImageView> empty = { };
+		std::vector<VkImageView> depthMapsShadow = { };
 
-		vh::vhBufCreateTextureSampler(getRendererPointer()->getDevice(), &m_shadowMap->m_sampler);
+		for (uint32_t i = 0; i < m_shadowMaps.size(); i++) {
+			vh::vhBufCreateDepthResources(m_device, 
+				m_vmaAllocator, m_graphicsQueue, m_commandPool,
+				m_shadowMaps[i]->m_extent,
+				m_shadowMaps[i]->m_format, &m_shadowMaps[i]->m_image, 
+				&m_shadowMaps[i]->m_deviceAllocation,
+				&m_shadowMaps[i]->m_imageView);
+
+				empty.push_back( VK_NULL_HANDLE);
+				depthMapsShadow.push_back(m_shadowMaps[i]->m_imageView);
+
+				vh::vhBufCreateTextureSampler(getRendererPointer()->getDevice(), &m_shadowMaps[i]->m_sampler);
+		}
 
 		//frame buffers for shadow pass
-		std::vector<VkImageView> empty = { VK_NULL_HANDLE, VK_NULL_HANDLE, VK_NULL_HANDLE };
-		std::vector<VkImageView> depthMapsShadow = {m_shadowMap->m_imageView, m_shadowMap->m_imageView , m_shadowMap->m_imageView };
 		vh::vhBufCreateFramebuffers(m_device, empty, depthMapsShadow, m_renderPassShadow, 
-									m_shadowMap->m_extent, m_shadowFramebuffers);
+									m_shadowMaps[0]->m_extent, m_shadowFramebuffers);
 
 		//------------------------------------------------------------------------------------------------------------
 		//per frame resources
@@ -183,8 +195,8 @@ namespace ve {
 			vkDestroyFramebuffer(m_device, framebuffer, nullptr);
 		}
 
-		//destroy shadow map
-		delete m_shadowMap;
+		//destroy shadow maps
+		for( auto pShadowMap : m_shadowMaps ) delete pShadowMap;
 
 		vkDestroyRenderPass(m_device, m_renderPassShadow, nullptr);
 
@@ -313,8 +325,8 @@ namespace ve {
 		vh::vhRenderUpdateDescriptorSet(m_device, m_descriptorSetsShadow[imageIndex],
 										{ VK_NULL_HANDLE },			//UBOs
 										{ 0				},			//UBO sizes
-										{ m_shadowMap->m_imageView },	//textureImageViews
-										{ m_shadowMap->m_sampler }	//samplers
+										{ m_shadowMaps[imageIndex]->m_imageView },	//textureImageViews
+										{ m_shadowMaps[imageIndex]->m_sampler }	//samplers
 										);
 	}
 
@@ -357,7 +369,8 @@ namespace ve {
 		cv.depthStencil = { 1.0f, 0 };
 		clearValues.push_back(cv);
 		vh::vhRenderBeginRenderPass(commandBuffer, m_renderPassShadow, 
-									m_shadowFramebuffers[imageIndex], clearValues, m_shadowMap->m_extent);
+									m_shadowFramebuffers[imageIndex], clearValues, 
+									m_shadowMaps[imageIndex]->m_extent);
 		m_subrenderShadow->draw(commandBuffer, imageIndex);
 		vkCmdEndRenderPass(commandBuffer);
 
