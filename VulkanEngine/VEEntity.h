@@ -160,8 +160,8 @@ namespace ve {
 	*/
 	class VECamera : public VEEntity {
 	public:
-		float m_nearPlane = 0.2f;	///<The distannce of the near plane to the camera origin
-		float m_farPlane = 200.0f;	///<The distance of the far plane to the camera origin
+		float m_nearPlane = 1.0f;	///<The distance of the near plane to the camera origin
+		float m_farPlane = 100.0f;	///<The distance of the far plane to the camera origin
 
 		VECamera(std::string name);
 		VECamera(std::string name, float nearPlane, float farPlane);

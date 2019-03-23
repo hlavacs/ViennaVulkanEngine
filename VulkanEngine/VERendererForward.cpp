@@ -57,31 +57,35 @@ namespace ve {
 		//------------------------------------------------------------------------------------------------------------
 		//create resources for light pass
 
-		m_depthMapFormat = vh::vhDevFindDepthFormat(m_physicalDevice);
+		m_depthMap = new VETexture("DepthMap");
+		m_depthMap->m_format = vh::vhDevFindDepthFormat(m_physicalDevice);
+		m_depthMap->m_extent = m_swapChainExtent;
 
 		//light render pass
-		vh::vhRenderCreateRenderPass( m_device, m_swapChainImageFormat, m_depthMapFormat, &m_renderPass);
-
+		vh::vhRenderCreateRenderPass( m_device, m_swapChainImageFormat, m_depthMap->m_format, &m_renderPass);
 
 		//depth map for light pass
 		vh::vhBufCreateDepthResources(	m_device, m_vmaAllocator, m_graphicsQueue, m_commandPool, 
-										m_swapChainExtent, m_depthMapFormat, &m_depthImage, &m_depthImageAllocation, &m_depthImageView);
+										m_swapChainExtent, m_depthMap->m_format, &m_depthMap->m_image, &m_depthMap->m_deviceAllocation, &m_depthMap->m_imageView);
 
 		//frame buffers for light pass
-		vh::vhBufCreateFramebuffers(m_device, m_swapChainImageViews, m_depthImageView, m_renderPass, m_swapChainExtent, m_swapChainFramebuffers);
+		vh::vhBufCreateFramebuffers(m_device, m_swapChainImageViews, m_depthMap->m_imageView, m_renderPass, m_swapChainExtent, m_swapChainFramebuffers);
 
 
 		//------------------------------------------------------------------------------------------------------------
 		//create resources for shadow pass
 
-		//shadow render pass
-		vh::vhRenderCreateRenderPassShadow( m_device, m_depthMapFormat, &m_renderPassShadow);
 
 		//shadow map
 		m_shadowMap = new VETexture("ShadowMap");
 		m_shadowMap->m_extent = { 1024, 1024 };
+		m_shadowMap->m_format = m_depthMap->m_format;
+
+		//shadow render pass
+		vh::vhRenderCreateRenderPassShadow( m_device, m_shadowMap->m_format, &m_renderPassShadow);
+
 		vh::vhBufCreateDepthResources(	m_device, m_vmaAllocator, m_graphicsQueue, m_commandPool, m_shadowMap->m_extent,
-										m_depthMapFormat, &m_shadowMap->m_image, &m_shadowMap->m_deviceAllocation, 
+										m_shadowMap->m_format, &m_shadowMap->m_image, &m_shadowMap->m_deviceAllocation,
 										&m_shadowMap->m_imageView);
 
 		vh::vhBufCreateTextureSampler(getRendererPointer()->getDevice(), &m_shadowMap->m_sampler);
@@ -150,8 +154,7 @@ namespace ve {
 	* \brief Destroy the swapchain because window resize or close down
 	*/
 	void VERendererForward::cleanupSwapChain() {
-		vkDestroyImageView(m_device, m_depthImageView, nullptr);
-		vmaDestroyImage(m_vmaAllocator, m_depthImage, m_depthImageAllocation);
+		delete m_depthMap;
 
 		for (auto framebuffer : m_swapChainFramebuffers) {
 			vkDestroyFramebuffer(m_device, framebuffer, nullptr);
@@ -218,11 +221,15 @@ namespace ve {
 			&m_swapChain, m_swapChainImages, m_swapChainImageViews,
 			&m_swapChainImageFormat, &m_swapChainExtent);
 
-		vh::vhRenderCreateRenderPass( m_device, m_swapChainImageFormat, m_depthMapFormat, &m_renderPass);
-		vh::vhBufCreateDepthResources(	m_device, m_vmaAllocator, m_graphicsQueue, m_commandPool, m_swapChainExtent,
-										m_depthMapFormat, &m_depthImage, &m_depthImageAllocation, &m_depthImageView);
+		m_depthMap = new VETexture("DepthMap");
+		m_depthMap->m_format = vh::vhDevFindDepthFormat(m_physicalDevice);
+		m_depthMap->m_extent = m_swapChainExtent;
 
-		vh::vhBufCreateFramebuffers(m_device, m_swapChainImageViews, m_depthImageView, m_renderPass, m_swapChainExtent, m_swapChainFramebuffers);
+		vh::vhRenderCreateRenderPass( m_device, m_swapChainImageFormat, m_depthMap->m_format, &m_renderPass);
+		vh::vhBufCreateDepthResources(	m_device, m_vmaAllocator, m_graphicsQueue, m_commandPool, m_swapChainExtent,
+										m_depthMap->m_format, &m_depthMap->m_image, &m_depthMap->m_deviceAllocation, &m_depthMap->m_imageView);
+
+		vh::vhBufCreateFramebuffers(m_device, m_swapChainImageViews, m_depthMap->m_imageView, m_renderPass, m_swapChainExtent, m_swapChainFramebuffers);
 
 		for (auto pSub : m_subrenderers) pSub->recreateResources();
 	}
@@ -359,30 +366,8 @@ namespace ve {
 										m_imageAvailableSemaphores[m_currentFrame], m_renderFinishedSemaphores[m_currentFrame], 
 										m_inFlightFences[m_currentFrame]);
 
+		//-----------------------------------------------------------------------------------------
 
-		vkQueueWaitIdle(m_graphicsQueue);
-
-		/*VkExtent2D extent = m_shadowMap->m_extent;
-		uint32_t imageSize = extent.width * extent.height;
-		VkImage image = m_shadowMap->m_image;
-
-		float *dataImage = new float[imageSize];
-		gli::byte *dataImage2 = new gli::byte[imageSize];
-
-		vh::vhBufCopyImageToHost(getRendererPointer()->getDevice(), getRendererPointer()->getVmaAllocator(),
-			getRendererPointer()->getGraphicsQueue(), getRendererPointer()->getCommandPool(),
-			image, VK_FORMAT_D32_SFLOAT, VK_IMAGE_ASPECT_DEPTH_BIT, VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL, (glm::byte*)dataImage, extent.width, extent.height, imageSize*4);
-
-		for (uint32_t v = 0; v < extent.height; v++) {
-			for (uint32_t u = 0; u < extent.width; u++) {
-				dataImage2[v*extent.width + u]   = (glm::byte)(dataImage[v*extent.width + u]*256);
-			}
-		}
-
-		std::string name("screenshots/screenshot" + std::to_string(getEnginePointer()->getLoopCount()) + ".png");
-		stbi_write_png(name.c_str(), extent.width, extent.height, 1, dataImage2, extent.width);
-		delete dataImage;
-		delete dataImage2;*/
 
 	}
 

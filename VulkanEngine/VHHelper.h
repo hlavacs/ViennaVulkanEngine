@@ -228,6 +228,9 @@ namespace vh {
 	VkResult vhPipeCreateGraphicsPipeline(	VkDevice device, std::string verShaderFilename, std::string fragShaderFilename,
 											VkExtent2D swapChainExtent, VkPipelineLayout pipelineLayout, VkRenderPass renderPass,
 											VkPipeline *graphicsPipeline);
+	VkResult vhPipeCreateGraphicsShadowPipeline(VkDevice device, std::string verShaderFilename,
+					VkExtent2D shadowMapExtent, VkPipelineLayout pipelineLayout,
+					VkRenderPass renderPass, VkPipeline *graphicsPipeline);
 
 	//file
 	std::vector<char> vhFileRead(const std::string& filename);

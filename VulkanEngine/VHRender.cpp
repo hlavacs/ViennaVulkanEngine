@@ -36,7 +36,7 @@ namespace vh {
 		depthAttachment.format = depthFormat;
 		depthAttachment.samples = VK_SAMPLE_COUNT_1_BIT;
 		depthAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
-		depthAttachment.storeOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+		depthAttachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE; // VK_ATTACHMENT_STORE_OP_DONT_CARE;
 		depthAttachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
 		depthAttachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
 		depthAttachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
@@ -659,7 +659,7 @@ namespace vh {
 
 		VkGraphicsPipelineCreateInfo pipelineInfo = {};
 		pipelineInfo.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
-		pipelineInfo.stageCount = 2;
+		pipelineInfo.stageCount = 1;
 		pipelineInfo.pStages = shaderStages;
 		pipelineInfo.pVertexInputState = &vertexInputInfo;
 		pipelineInfo.pInputAssemblyState = &inputAssembly;

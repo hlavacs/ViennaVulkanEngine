@@ -28,6 +28,10 @@ namespace ve {
 			m_makeScreenshot = true;
 			return false;
 		}
+		if (event.idata1 == GLFW_KEY_O && event.idata3 == GLFW_PRESS) {
+			m_makeScreenshotDepth = true;
+			return false;
+		}
 
 		///create some default constants for the actions 
 		glm::vec4 translate = glm::vec4(0.0, 0.0, 0.0, 1.0);	//total translation
@@ -236,14 +240,49 @@ namespace ve {
 				getRendererPointer()->getGraphicsQueue(), getRendererPointer()->getCommandPool(),
 				image, VK_IMAGE_ASPECT_COLOR_BIT, dataImage, extent.width, extent.height, imageSize);
 
+			m_numScreenshot++;
+
 			getEnginePointer()->m_threadPool->submit([=]() {
-				std::string name("screenshots/screenshot" + std::to_string(m_numScreenshot) + ".png");
+				std::string name("screenshots/screenshot" + std::to_string(m_numScreenshot-1) + ".png");
 				stbi_write_png(name.c_str(), extent.width, extent.height, 4, dataImage, 4 * extent.width);
 				delete dataImage;
 			});
 
-			m_numScreenshot++;
 			m_makeScreenshot = false;
+		}
+
+		if (m_makeScreenshotDepth) {
+
+			VETexture *map = getRendererForwardPointer()->getShadowMap();
+			//VkImageLayout layout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+			VkImageLayout layout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL;
+
+			VkExtent2D extent = map->m_extent;
+			uint32_t imageSize = extent.width * extent.height;
+			VkImage image = map->m_image;
+
+			float *dataImage = new float[imageSize];
+			gli::byte *dataImage2 = new gli::byte[imageSize];
+
+			vh::vhBufCopyImageToHost(getRendererPointer()->getDevice(), getRendererPointer()->getVmaAllocator(),
+				getRendererPointer()->getGraphicsQueue(), getRendererPointer()->getCommandPool(),
+				image, map->m_format, VK_IMAGE_ASPECT_DEPTH_BIT, layout,
+				(glm::byte*)dataImage, extent.width, extent.height, imageSize * 4);
+
+			for (uint32_t v = 0; v < extent.height; v++) {
+				for (uint32_t u = 0; u < extent.width; u++) {
+					dataImage2[v*extent.width + u] = (glm::byte)((dataImage[v*extent.width + u]-0.5)*256);
+					//std::cout << dataImage[v*extent.width + u] << " ";
+				}
+			}
+
+			std::string name("screenshots/screenshot" + std::to_string(m_numScreenshot) + ".png");
+			stbi_write_png(name.c_str(), extent.width, extent.height, 1, dataImage2, extent.width);
+			delete dataImage;
+			delete dataImage2;
+
+			m_numScreenshot++;
+			m_makeScreenshotDepth = false;
 		}
 	};
 

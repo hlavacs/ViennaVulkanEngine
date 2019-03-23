@@ -28,6 +28,7 @@ namespace ve {
 		float m_cursorPrevX = 0;						///<Previous X position of cursor
 		float m_cursorPrevY = 0;						///<Previous Y position of cursor
 		bool  m_makeScreenshot = false;					///<Should I make a screeshot after frame is done?
+		bool  m_makeScreenshotDepth = false;			///<Should I make a screeshot after frame is done?
 		uint32_t m_numScreenshot = 0;					///<Screenshot ID
 
 		virtual void onFrameEnded(veEvent event);

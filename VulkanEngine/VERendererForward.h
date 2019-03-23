@@ -40,11 +40,7 @@ namespace ve {
 
 
 	protected:
-		VkImage m_depthImage;											///<Depth image 
-		VmaAllocation m_depthImageAllocation;							///<VMA image allocation info
-		VkImageView m_depthImageView;									///<Image view for depth image
-		VkFormat m_depthMapFormat;										///<remember the depth map format
-
+		VETexture *m_depthMap = nullptr;								///<the image depth map	
 		VETexture *m_shadowMap = nullptr;								///<the shadow map
 		std::vector<VkBuffer> m_uniformBuffersPerFrame;					///<UBO for camera, light data and shadow matrices
 		std::vector<VmaAllocation> m_uniformBuffersPerFrameAllocation;	///<VMA
@@ -98,6 +94,8 @@ namespace ve {
 		virtual VkRenderPass			getRenderPass() { return m_renderPass; };
 		///\returns the shadow render pass
 		virtual VkRenderPass			getRenderPassShadow() { return m_renderPassShadow; };
+		VETexture *						getDepthMap() { return m_depthMap; };
+		VETexture *						getShadowMap() { return m_shadowMap; };
 		///\returns the 2D extent of the shadow map
 		virtual VkExtent2D				getShadowMapExtent() { return m_shadowMap->m_extent; };
 
