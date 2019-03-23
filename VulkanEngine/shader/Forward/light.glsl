@@ -5,7 +5,8 @@ float shadowFunc(  vec3 fragposW, mat4 shadowView, mat4 shadowProj, sampler2D sh
     vec4 fragposH = shadowProj * shadowView * vec4(fragposW,1);
     fragposH /= fragposH.w;                 //homogeneous coords are in [-1,1]
 
-    fragposH.xz = fragposW.xy / 2 + 0.5;     //translate to [0,1]
+    fragposH.x = fragposH.x / 2.0 + 0.5;     //translate to [0,1]
+    fragposH.y = fragposH.y / 2.0 + 0.5;     //translate to [0,1]
 
     float visibility = 1.0;
     if ( texture( shadowMap, fragposH.xy ).r  <  fragposH.z){
@@ -35,6 +36,7 @@ vec3 dirlight(  vec3 camposW,
     vec3 specular = spec * speccol;
 
     //add up to get the result
+    //return ambcol * shadowFac;
     return (ambcol + shadowFac*(diffuse + specular)) * fragcolor;
 }
 
