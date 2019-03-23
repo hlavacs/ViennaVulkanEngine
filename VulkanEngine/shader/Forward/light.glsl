@@ -1,72 +1,88 @@
 
-vec3 dirlight(  vec3 campos,
-                vec3 lightdir, vec4 lightparam,
-                vec3 ambcol, vec3 diffcol, vec3 speccol,
-                vec3 fragpos, vec3 fragnormal, vec3 fragcolor ) {
 
-    vec3 viewDir  = normalize( campos - fragpos );
+float shadowFunc(  vec3 fragposW, mat4 shadowView, mat4 shadowProj, sampler2D shadowMap ) {
 
-    //start light calculations
-    vec3 lightVector = normalize( lightdir );
+    vec4 fragposH = shadowProj * shadowView * vec4(fragposW,1);
+    fragposH /= fragposH.w;                 //homogeneous coords are in [-1,1]
 
-    //diffuse
-    float diff = max(dot(fragnormal, -lightVector), 0.0);
-    vec3 diffuse = diff * diffcol;
+    fragposH.xz = fragposW.xy / 2 + 0.5;     //translate to [0,1]
 
-    //specular
-    vec3 reflectDir = normalize(  reflect( lightdir, fragnormal )  );
-    float spec = pow( max( dot( viewDir, reflectDir), 0.0), 2.0);
-    vec3 specular = spec * speccol;
-
-    //add up to get the result
-    return (ambcol + diffuse + specular) * fragcolor;
+    float visibility = 1.0;
+    if ( texture( shadowMap, fragposH.xy ).r  <  fragposH.z){
+        visibility = 0.0;
+    }
+    return visibility;
 }
 
 
-vec3 pointlight(  vec3 campos,
-                  vec3 lightpos, vec4 lightparam,
+vec3 dirlight(  vec3 camposW,
+                vec3 lightdirW, vec4 lightparam, float shadowFac,
+                vec3 ambcol, vec3 diffcol, vec3 speccol,
+                vec3 fragposW, vec3 fragnormalW, vec3 fragcolor ) {
+
+    vec3 viewDirW  = normalize( camposW - fragposW );
+
+    //start light calculations
+    vec3 lightVectorW = normalize( lightdirW );
+
+    //diffuse
+    float diff = max(dot(fragnormalW, -lightVectorW), 0.0);
+    vec3 diffuse = diff * diffcol;
+
+    //specular
+    vec3 reflectDirW = normalize(  reflect( lightdirW, fragnormalW )  );
+    float spec = pow( max( dot( viewDirW, reflectDirW), 0.0), 2.0);
+    vec3 specular = spec * speccol;
+
+    //add up to get the result
+    return (ambcol + shadowFac*(diffuse + specular)) * fragcolor;
+}
+
+
+vec3 pointlight(  vec3 camposW,
+                  vec3 lightposW, vec4 lightparam, float shadowFac,
                   vec3 ambcol, vec3 diffcol, vec3 speccol,
-                  vec3 fragpos, vec3 fragnormal, vec3 fragcolor ) {
+                  vec3 fragposW, vec3 fragnormalW, vec3 fragcolor ) {
 
-    vec3 viewDir  = normalize( campos - fragpos );
+    vec3 viewDirW  = normalize( camposW - fragposW );
 
     //start light calculations
-    vec3 lightVector = normalize( fragpos - lightpos );
+    vec3 lightVectorW = normalize( fragposW - lightposW );
 
     //diffuse
-    float diff = max(dot(fragnormal, -lightVector), 0.0);
+    float diff = max(dot(fragnormalW, -lightVectorW), 0.0);
     vec3 diffuse = diff * diffcol;
 
     //specular
-    vec3 reflectDir = normalize(  reflect( lightVector, fragnormal )  );
-    float spec = pow( max( dot( viewDir, reflectDir), 0.0), 2.0);
+    vec3 reflectDirW = normalize(  reflect( lightVectorW, fragnormalW )  );
+    float spec = pow( max( dot( viewDirW, reflectDirW), 0.0), 2.0);
     vec3 specular = spec * speccol;
 
     //add up to get the result
-    return (ambcol + diffuse + specular) * fragcolor;
+    return (ambcol + shadowFac*(diffuse + specular)) * fragcolor;
 }
 
 
-vec3 spotlight( vec3 campos,
-                vec3 lightpos, vec3 lightdir, vec4 lightparam,
+vec3 spotlight( vec3 camposW,
+                vec3 lightposW, vec3 lightdirW, vec4 lightparam, float shadowFac,
                 vec3 ambcol, vec3 diffcol, vec3 speccol,
-                vec3 fragpos, vec3 fragnormal, vec3 fragcolor ) {
+                vec3 fragposW, vec3 fragnormalW, vec3 fragcolor ) {
 
-    vec3 viewDir  = normalize( campos - fragpos );
+    vec3 viewDirW  = normalize( camposW - fragposW );
 
     //start light calculations
-    vec3 lightVector = normalize(fragpos - lightpos);
-    float spotFactor = pow( max( dot( lightVector, lightdir), 0.0), 10.0);
+    vec3 lightVectorW = normalize(fragposW - lightposW);
+    float spotFactor = pow( max( dot( lightVectorW, lightdirW), 0.0), 10.0);
 
     //diffuse
-    float diff = max(dot(fragnormal, -lightVector), 0.0);
+    float diff = max(dot(fragnormalW, -lightVectorW), 0.0);
     vec3 diffuse = spotFactor * diff * diffcol;
 
     //specular
-    vec3 reflectDir = normalize(  reflect( lightdir, fragnormal )  );
-    float spec = pow( max( dot( viewDir, reflectDir), 0.0), 2.0);
+    vec3 reflectDirW = normalize(  reflect( lightdirW, fragnormalW )  );
+    float spec = pow( max( dot( viewDirW, reflectDirW), 0.0), 2.0);
     vec3 specular = spotFactor * spec * speccol;
 
     //add up to get the result
-    return (ambcol + diffuse + specular) * fragcolor;
+    return (ambcol + shadowFac*(diffuse + specular)) * fragcolor;
 }

@@ -183,7 +183,7 @@ namespace vh {
 	void vhBufCreateTexturecubeImage(VkDevice device, VmaAllocator allocator, VkQueue graphicsQueue, VkCommandPool commandPool, gli::texture_cube &cube, VkImage *textureImage, VmaAllocation *textureImageAllocation, VkFormat *pformat);
 	void vhBufCreateTextureSampler(VkDevice device, VkSampler *textureSampler);
 	void vhBufCreateFramebuffers(VkDevice device, std::vector<VkImageView> imageViews,
-								VkImageView depthImageView, VkRenderPass renderPass, VkExtent2D extent,
+								std::vector<VkImageView> depthImageViews, VkRenderPass renderPass, VkExtent2D extent,
 								std::vector<VkFramebuffer> &frameBuffers);
 	void vhBufCopySwapChainImageToHost(VkDevice device, VmaAllocator allocator, VkQueue graphicsQueue,
 								VkCommandPool commandPool, VkImage image, VkImageAspectFlagBits aspect, gli::byte *bufferData,

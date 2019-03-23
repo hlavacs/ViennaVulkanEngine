@@ -111,7 +111,8 @@ namespace ve {
 			e4->setTransform(scale);
 
 			VEEntity *e1 = m_pSceneManager->loadModel("The Cube",  "models/test/crate0", "cube.obj");
-			e1->setTransform(glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 1.0f, 0.0f)));
+			e1->setTransform(glm::translate(glm::mat4(1.0f), glm::vec3(10.0f, 1.0f, 1.0f)));
+			e1->multiplyTransform( glm::scale(glm::mat4(1.0f), glm::vec3(10.0f, 10.0f, 10.0f)));
 
 			VEEntity *e1b = m_pSceneManager->loadModel("The Cube b", "models/test/crate0", "cube.obj");
 			e1b->setTransform(glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 10.0f, 10.0f)));

@@ -99,7 +99,7 @@ namespace vh {
 		attachmentDescription.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
 		attachmentDescription.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
 		attachmentDescription.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;					// We don't care about initial layout of the attachment
-		attachmentDescription.finalLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL; // VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL;// Attachment will be transitioned to shader read at render pass end
+		attachmentDescription.finalLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;		// Attachment will be transitioned to shader read at render pass end
 
 		VkAttachmentReference depthReference = {};
 		depthReference.attachment = 0;
@@ -321,6 +321,8 @@ namespace vh {
 
 		vhRenderBeginRenderPass(commandBuffer, renderPass, frameBuffer, clearValues, extent);
 	}
+
+
 
 	void vhRenderBeginRenderPass(	VkCommandBuffer commandBuffer,
 									VkRenderPass renderPass,

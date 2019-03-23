@@ -6,8 +6,8 @@
 #include "../light.glsl"
 
 
-layout(location = 0) in vec3 fragPos;
-layout(location = 1) in vec3 fragNormal;
+layout(location = 0) in vec3 fragPosW;
+layout(location = 1) in vec3 fragNormalW;
 layout(location = 2) in vec2 fragTexCoord;
 
 layout(location = 0) out vec4 outColor;
@@ -28,11 +28,12 @@ layout(set = 3, binding = 0) uniform sampler2D texSampler;
 void main() {
 
     //parameters
-    vec3 camPos = UBOPerFrame.camModel[3].xyz;
+    vec3 camPosW = UBOPerFrame.camModel[3].xyz;
 
-    vec3 lightPos = UBOPerFrame.light1.transform[3].xyz;
-    vec3 lightDir = normalize( UBOPerFrame.light1.transform[2].xyz );
+    vec3 lightPosW = UBOPerFrame.light1.transform[3].xyz;
+    vec3 lightDirW = normalize( UBOPerFrame.light1.transform[2].xyz );
     vec4 lightParam = UBOPerFrame.light1.param;
+    float shadowFactor = shadowFunc( fragPosW, UBOPerFrame.shadowView, UBOPerFrame.shadowProj, shadowMap );
 
     vec3 ambcol  = UBOPerFrame.light1.col_ambient.xyz;
     vec3 diffcol = UBOPerFrame.light1.col_diffuse.xyz;
@@ -43,22 +44,22 @@ void main() {
     vec3 result = vec3(0,0,0);
 
     result += UBOPerFrame.light1.itype[0] == 0?
-                  dirlight( camPos,
-                            lightDir, lightParam,
+                  dirlight( camPosW,
+                            lightDirW, lightParam, shadowFactor,
                             ambcol, diffcol, speccol,
-                            fragPos, fragNormal, fragColor) : vec3(0,0,0);
+                            fragPosW, fragNormalW, fragColor) : vec3(0,0,0);
 
     result += UBOPerFrame.light1.itype[0] == 1?
-                  pointlight( camPos,
-                              lightPos, lightParam,
+                  pointlight( camPosW,
+                              lightPosW, lightParam, shadowFactor,
                               ambcol, diffcol, speccol,
-                              fragPos, fragNormal, fragColor) : vec3(0,0,0);
+                              fragPosW, fragNormalW, fragColor) : vec3(0,0,0);
 
     result += UBOPerFrame.light1.itype[0] == 2?
-                  spotlight( camPos,
-                             lightPos, lightDir, lightParam,
+                  spotlight( camPosW,
+                             lightPosW, lightDirW, lightParam, shadowFactor,
                              ambcol, diffcol, speccol,
-                             fragPos, fragNormal, fragColor) : vec3(0,0,0);
+                             fragPosW, fragNormalW, fragColor) : vec3(0,0,0);
 
     outColor = vec4( result, 1.0 );
 }

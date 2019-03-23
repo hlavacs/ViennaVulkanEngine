@@ -698,7 +698,7 @@ namespace vh {
 	* \param[out] frameBuffers The resulting frame buffers
 	*/
 	void vhBufCreateFramebuffers(	VkDevice device, std::vector<VkImageView> imageViews,
-									VkImageView depthImageView, VkRenderPass renderPass, VkExtent2D extent,
+									std::vector<VkImageView> depthImageViews, VkRenderPass renderPass, VkExtent2D extent,
 									std::vector<VkFramebuffer> &frameBuffers ) {
 
 		VkFramebufferCreateInfo framebufferInfo = {};
@@ -708,18 +708,16 @@ namespace vh {
 		framebufferInfo.height = extent.height;
 		framebufferInfo.layers = 1;
 
-		uint32_t loops = 1;
-		if (imageViews.size() > 0) loops = (uint32_t)imageViews.size();
+		frameBuffers.resize(imageViews.size());
 
-		frameBuffers.resize(loops);
-
-		for (size_t i = 0; i < loops; i++) {
+		for (size_t i = 0; i < imageViews.size(); i++) {
 			std::vector<VkImageView> attachments;
 			
-			if (imageViews.size() > 0 && imageViews[i]!=VK_NULL_HANDLE )
+			if ( imageViews[i]!=VK_NULL_HANDLE )
 				attachments.push_back(imageViews[i]);
 
-			attachments.push_back(depthImageView);
+			if (depthImageViews[i] != VK_NULL_HANDLE)
+				attachments.push_back(depthImageViews[i]);
 
 			framebufferInfo.attachmentCount = static_cast<uint32_t>(attachments.size());
 			framebufferInfo.pAttachments = attachments.data();
