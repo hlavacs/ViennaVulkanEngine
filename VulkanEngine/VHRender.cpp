@@ -99,7 +99,7 @@ namespace vh {
 		attachmentDescription.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
 		attachmentDescription.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
 		attachmentDescription.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;					// We don't care about initial layout of the attachment
-		attachmentDescription.finalLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL;// Attachment will be transitioned to shader read at render pass end
+		attachmentDescription.finalLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL; // VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL;// Attachment will be transitioned to shader read at render pass end
 
 		VkAttachmentReference depthReference = {};
 		depthReference.attachment = 0;
@@ -311,6 +311,23 @@ namespace vh {
 								 VkRenderPass renderPass, 
 								 VkFramebuffer frameBuffer, 
 								 VkExtent2D extent) {
+
+		std::vector<VkClearValue> clearValues = {};
+		VkClearValue cv1, cv2;
+		cv1.color = { 0.0f, 0.0f, 0.0f, 1.0f };
+		clearValues.push_back(cv1);
+		cv2.depthStencil = { 1.0f, 0 };
+		clearValues.push_back(cv2);
+
+		vhRenderBeginRenderPass(commandBuffer, renderPass, frameBuffer, clearValues, extent);
+	}
+
+	void vhRenderBeginRenderPass(	VkCommandBuffer commandBuffer,
+									VkRenderPass renderPass,
+									VkFramebuffer frameBuffer,
+									std::vector<VkClearValue> &clearValues,
+									VkExtent2D extent) {
+
 		VkRenderPassBeginInfo renderPassInfo = {};
 		renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
 		renderPassInfo.renderPass = renderPass;
@@ -318,15 +335,15 @@ namespace vh {
 		renderPassInfo.renderArea.offset = { 0, 0 };
 		renderPassInfo.renderArea.extent = extent;
 
-		std::array<VkClearValue, 2> clearValues = {};
-		clearValues[0].color = { 0.0f, 0.0f, 0.0f, 1.0f };
-		clearValues[1].depthStencil = { 1.0f, 0 };
-
 		renderPassInfo.clearValueCount = static_cast<uint32_t>(clearValues.size());
 		renderPassInfo.pClearValues = clearValues.data();
 
 		vkCmdBeginRenderPass(commandBuffer, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
+
 	}
+
+
+
 
 	/**
 	*
@@ -650,8 +667,8 @@ namespace vh {
 		colorBlending.sType = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO;
 		colorBlending.logicOpEnable = VK_FALSE;
 		colorBlending.logicOp = VK_LOGIC_OP_COPY;
-		colorBlending.attachmentCount = 1;
-		colorBlending.pAttachments = &colorBlendAttachment;
+		colorBlending.attachmentCount = 0; //1;
+		colorBlending.pAttachments = nullptr; //  &colorBlendAttachment;
 		colorBlending.blendConstants[0] = 0.0f;
 		colorBlending.blendConstants[1] = 0.0f;
 		colorBlending.blendConstants[2] = 0.0f;

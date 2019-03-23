@@ -91,7 +91,7 @@ namespace ve {
 		vh::vhBufCreateTextureSampler(getRendererPointer()->getDevice(), &m_shadowMap->m_sampler);
 
 		//frame buffers for shadow pass
-		std::vector<VkImageView> empty;
+		std::vector<VkImageView> empty = { VK_NULL_HANDLE, VK_NULL_HANDLE, VK_NULL_HANDLE };
 		vh::vhBufCreateFramebuffers(m_device, empty, m_shadowMap->m_imageView, m_renderPassShadow, 
 									m_shadowMap->m_extent, m_shadowFramebuffers);
 
@@ -178,7 +178,9 @@ namespace ve {
 
 		cleanupSwapChain();
 
-		vkDestroyFramebuffer(m_device, m_shadowFramebuffers[0], nullptr);
+		for (auto framebuffer : m_shadowFramebuffers) {
+			vkDestroyFramebuffer(m_device, framebuffer, nullptr);
+		}
 
 		//destroy shadow map
 		delete m_shadowMap;
@@ -283,7 +285,6 @@ namespace ve {
 		ubo.camModel = camera->getWorldTransform();
 		ubo.camView = glm::inverse(ubo.camModel);
 		ubo.camProj = camera->getProjectionMatrix((float)m_swapChainExtent.width, (float)m_swapChainExtent.height);
-		ubo.camProj[1][1] *= -1; //follow Vulkan specification, not GL
 
 		//fill in light data
 		VELight *plight = getSceneManagerPointer()->getLights()[0];
@@ -350,8 +351,12 @@ namespace ve {
 
 		//-----------------------------------------------------------------------------------------
 		//shadow pass
-
-		vh::vhRenderBeginRenderPass(commandBuffer, m_renderPassShadow, m_shadowFramebuffers[0], m_shadowMap->m_extent);
+		std::vector<VkClearValue> clearValues = {};
+		VkClearValue cv;
+		cv.depthStencil = { 1.0f, 0 };
+		clearValues.push_back(cv);
+		vh::vhRenderBeginRenderPass(commandBuffer, m_renderPassShadow, 
+									m_shadowFramebuffers[imageIndex], clearValues, m_shadowMap->m_extent);
 		m_subrenderShadow->draw(commandBuffer, imageIndex);
 		vkCmdEndRenderPass(commandBuffer);
 

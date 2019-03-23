@@ -30,8 +30,8 @@ namespace ve {
 			{ getRendererForwardPointer()->getDescriptorSetLayoutPerFrame(), m_descriptorSetLayoutUBO },
 			&m_pipelineLayout);
 
-		vh::vhPipeCreateGraphicsPipeline(getRendererForwardPointer()->getDevice(),
-			"shader/Forward/Shadow/vert.spv", "shader/Forward/Shadow/frag.spv",
+		vh::vhPipeCreateGraphicsShadowPipeline(getRendererForwardPointer()->getDevice(),
+			"shader/Forward/Shadow/vert.spv", //"shader/Forward/Shadow/frag.spv",
 			getRendererForwardPointer()->getShadowMapExtent(),
 			m_pipelineLayout, getRendererForwardPointer()->getRenderPassShadow(),
 			&m_pipeline);

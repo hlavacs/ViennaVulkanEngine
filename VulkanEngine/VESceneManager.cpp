@@ -46,14 +46,14 @@ namespace ve {
 		addEntity(cameraParent);
 
 		//camera can only do yaw (parent y-axis) and pitch (local x-axis) rotations
-		VECameraProjective *camera = new VECameraProjective("StandardCamera");
+		VECamera *camera = new VECameraProjective("StandardCamera");
 		camera->lookAt(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f), glm::vec3(0.0f, 1.0f, 0.0f));
 		camera->m_pEntityParent = cameraParent;
 		addEntity(camera);
 		setCamera( camera );
 
 		//use one light source
-		VELight *light = new VELight("StandardLight", VELight::VE_LIGHT_TYPE_POINT );
+		VELight *light = new VELight("StandardLight", VELight::VE_LIGHT_TYPE_DIRECTIONAL );
 		light->lookAt(glm::vec3(0.0f, 20.0f, -20.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
 		addEntity(light);
 		m_lights.push_back(light);

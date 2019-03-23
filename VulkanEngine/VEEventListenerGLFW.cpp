@@ -271,7 +271,7 @@ namespace ve {
 
 			for (uint32_t v = 0; v < extent.height; v++) {
 				for (uint32_t u = 0; u < extent.width; u++) {
-					dataImage2[v*extent.width + u] = (glm::byte)((dataImage[v*extent.width + u]-0.5)*256);
+					dataImage2[v*extent.width + u] = (glm::byte)((dataImage[v*extent.width + u]-0.5)*256.0f*2.0f);
 					//std::cout << dataImage[v*extent.width + u] << " ";
 				}
 			}

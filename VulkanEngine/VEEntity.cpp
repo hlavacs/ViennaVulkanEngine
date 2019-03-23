@@ -625,7 +625,7 @@ namespace ve {
 	glm::mat4 VECameraProjective::getProjectionMatrix(float width, float height) {
 		m_aspectRatio = width / height;
 		glm::mat4 pm = glm::perspectiveFov( glm::radians(m_fov), (float) width, (float)height, m_nearPlane, m_farPlane);
-
+		pm[1][1] *= -1.0f;
 		pm[2][2] *= -1.0f;		//camera looks down its positive z-axis, OpenGL function does it reverse
 		pm[2][3] *= -1.0f;
 		return pm;
@@ -704,7 +704,8 @@ namespace ve {
 	*/
 	glm::mat4 VECameraOrtho::getProjectionMatrix(float width, float height) {
 		glm::mat4 pm = glm::ortho(-width * m_width / 2.0f, width * m_width / 2.0f, -height * m_height / 2.0f, height * m_height / 2.0f, m_nearPlane, m_farPlane);
-		pm[2][2] *= -1;	//camera looks down its positive z-axis, OpenGL function does it reverse
+		pm[1][1] *= -1.0f;
+		pm[2][2] *= -1.0;	//camera looks down its positive z-axis, OpenGL function does it reverse
 		return pm;
 	}
 

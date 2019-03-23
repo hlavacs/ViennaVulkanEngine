@@ -716,7 +716,7 @@ namespace vh {
 		for (size_t i = 0; i < loops; i++) {
 			std::vector<VkImageView> attachments;
 			
-			if (imageViews.size() > 0)
+			if (imageViews.size() > 0 && imageViews[i]!=VK_NULL_HANDLE )
 				attachments.push_back(imageViews[i]);
 
 			attachments.push_back(depthImageView);

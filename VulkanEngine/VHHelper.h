@@ -221,6 +221,9 @@ namespace vh {
 									std::vector<VkImageView> textureImageViews,
 									std::vector<VkSampler> textureSamplers);
 	void vhRenderBeginRenderPass(VkCommandBuffer commandBuffer, VkRenderPass renderPass, VkFramebuffer frameBuffer, VkExtent2D extent);
+	void vhRenderBeginRenderPass(VkCommandBuffer commandBuffer,
+								VkRenderPass renderPass, VkFramebuffer frameBuffer,
+								std::vector<VkClearValue> &clearValues, VkExtent2D extent);
 	VkResult vhRenderPresentResult(	VkQueue presentQueue, VkSwapchainKHR swapChain,
 									uint32_t imageIndex, VkSemaphore signalSemaphore);
 
