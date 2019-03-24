@@ -134,7 +134,7 @@ namespace ve {
 			//getSceneManagerPointer()->deleteEntityAndSubentities("The Hand/RootNode/Cube.005");
 
 			std::default_random_engine generator;
-			std::uniform_real_distribution<float> distribution(-50.0, 50.0);
+			std::uniform_real_distribution<float> distribution(-10.0, 10.0);
 
 			for (uint32_t i = 0; i < 20; i++) {
 				std::string name = "The Cube " + std::to_string(i);

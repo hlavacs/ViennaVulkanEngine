@@ -145,7 +145,10 @@ namespace ve {
 		void		addChild(VEEntity *);				//Add a new child
 		void		removeChild(VEEntity *);			//Remove a child, dont destroy it
 		void		updateChildren(glm::mat4 worldMatrix);	//Update all children
+
+		//--------------------------------------------------
 		virtual void getBoundingSphere( glm::vec3 *center, float *radius );		//return center and radius for a bounding sphere
+		virtual void getOBB(std::vector<glm::vec4> &pointsW, float t1, float t2, glm::vec3 &center, float &width, float &height, float &depth);	//return min and max along the axes
 	};
 
 	class VELight;
@@ -167,9 +170,13 @@ namespace ve {
 		VECamera(std::string name, float nearPlane, float farPlane);
 		virtual ~VECamera() {};
 		virtual glm::mat4 getProjectionMatrix()=0;								///<Return the projection matrix
-		virtual glm::mat4 getProjectionMatrix( float width, float height )=0;	///<Return the projection matrix
+		///Return the projection matrix, pure virtual
+		virtual glm::mat4 getProjectionMatrix( float width, float height )=0;
+
+		//--------------------------------------------------
 		virtual void getBoundingSphere(glm::vec3 *center, float *radius);		//return center and radius for a bounding sphere
-		virtual void getFrustumPoints( std::vector<glm::vec4> &points )=0;		///<Return list of frustum points in local space
+		///Return list of frustum points in world space, pure virtual
+		virtual void getFrustumPoints(std::vector<glm::vec4> &points, float t1 = 0.0f, float t2 = 1.0f)=0;
 		virtual VECamera *createShadowCamera(VELight *light);					//Depending on light type, create shadow camera
 		virtual VECamera *createShadowCameraOrtho(VELight *light);				//Create an ortho shadow cam for directional light
 		virtual VECamera *createShadowCameraProjective(VELight *light);			//Create a projective shadow cam for spot light
@@ -187,14 +194,14 @@ namespace ve {
 	class VECameraProjective : public VECamera {
 	public:
 		float m_aspectRatio = 16.0f / 9.0f;		///<Ratio between width and height of camera (and window).
-		float m_fov = 40.0f;					///<Vertical field of view
+		float m_fov = 45.0f;					///<Vertical field of view
 
 		VECameraProjective(std::string name);
 		VECameraProjective(std::string name, float nearPlane, float farPlane, float aspectRatio, float fov);
 		virtual ~VECameraProjective() {};
 		glm::mat4 getProjectionMatrix();										//Return the projection matrix
 		virtual glm::mat4 getProjectionMatrix(float width, float height);		//Return the projection matrix
-		virtual void getFrustumPoints(std::vector<glm::vec4> &points);			//return list of frustum points in local space
+		virtual void getFrustumPoints(std::vector<glm::vec4> &points, float t1 = 0.0f, float t2 = 1.0f);	//return list of frustum points in world space
 	};
 
 
@@ -215,9 +222,9 @@ namespace ve {
 		VECameraOrtho(std::string name);
 		VECameraOrtho(std::string name, float nearPlane, float farPlane, float width, float height );
 		virtual ~VECameraOrtho() {};
-		glm::mat4 getProjectionMatrix();										///<Return the projection matrix
-		virtual glm::mat4 getProjectionMatrix(float width, float height);		///<Return the projection matrix
-		virtual void getFrustumPoints(std::vector<glm::vec4> &points);			//return list of frustum points in local space
+		glm::mat4 getProjectionMatrix();										//Return the projection matrix
+		virtual glm::mat4 getProjectionMatrix(float width, float height);		//Return the projection matrix
+		virtual void getFrustumPoints(std::vector<glm::vec4> &points, float t1 = 0.0f, float t2 = 1.0f);	//return list of frustum points in world space
 	};
 
 
@@ -234,7 +241,7 @@ namespace ve {
 
 	public:
 
-		///Light data
+		///Light data to be copied into a UBO
 		struct veLight {
 			glm::ivec4	type;			///<Light type information
 			glm::vec4	param;			///<Light parameters
@@ -262,7 +269,6 @@ namespace ve {
 
 		VELight(std::string name, veLightType type );
 		veLightType getLightType();		//return the light type
-
 		void fillVhLightStructure( veLight *pLight);
 	};
 

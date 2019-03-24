@@ -91,17 +91,16 @@ namespace ve {
 		std::vector<VkImageView> depthMapsShadow = { };
 
 		for (uint32_t i = 0; i < m_shadowMaps.size(); i++) {
-			vh::vhBufCreateDepthResources(m_device, 
+			vh::vhBufCreateDepthResources(	m_device, 
 				m_vmaAllocator, m_graphicsQueue, m_commandPool,
-				m_shadowMaps[i]->m_extent,
-				m_shadowMaps[i]->m_format, &m_shadowMaps[i]->m_image, 
-				&m_shadowMaps[i]->m_deviceAllocation,
+				m_shadowMaps[i]->m_extent, m_shadowMaps[i]->m_format, 
+				&m_shadowMaps[i]->m_image, &m_shadowMaps[i]->m_deviceAllocation,
 				&m_shadowMaps[i]->m_imageView);
 
-				empty.push_back( VK_NULL_HANDLE);
-				depthMapsShadow.push_back(m_shadowMaps[i]->m_imageView);
+			empty.push_back( VK_NULL_HANDLE);
+			depthMapsShadow.push_back(m_shadowMaps[i]->m_imageView);
 
-				vh::vhBufCreateTextureSampler(getRendererPointer()->getDevice(), &m_shadowMaps[i]->m_sampler);
+			vh::vhBufCreateTextureSampler(getRendererPointer()->getDevice(), &m_shadowMaps[i]->m_sampler);
 		}
 
 		//frame buffers for shadow pass

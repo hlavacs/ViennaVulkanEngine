@@ -329,10 +329,10 @@ namespace ve {
 		glm::vec3 z = glm::normalize(point - eye);
 		up = glm::normalize(up);
 		float corr = glm::dot(z, up);	//if z, up are lined up (corr=1 or corr=-1), decorrelate them
-		//if (1.0f - fabs(corr) < 0.00001f) {
-		//	float sc = z.x + z.y + z.z;
-		//	up = glm::normalize(glm::vec3(sc, sc, sc));
-		//}
+		if (1.0f - fabs(corr) < 0.00001f) {
+			float sc = z.x + z.y + z.z;
+			up = glm::normalize(glm::vec3(sc, sc, sc));
+		}
 
 		m_transform[2] = glm::vec4(z.x, z.y, z.z, 0.0f);
 		glm::vec3 x = glm::normalize( glm::cross( up, z ) );
@@ -443,6 +443,47 @@ namespace ve {
 	}
 
 
+	void VEEntity::getOBB(std::vector<glm::vec4> &points, float t1, float t2, glm::vec3 &center, float &width, float &height, float &depth) {
+
+		glm::mat4 W = getWorldTransform();
+
+		std::vector<glm::vec4> axes;		//3 local axes, into pos and minus direction
+		axes.push_back(-1.0f*W[0]);
+		axes.push_back(      W[0]);
+		axes.push_back(-1.0f*W[1]);
+		axes.push_back(      W[1]);
+		axes.push_back(-1.0f*W[2]);
+		axes.push_back(      W[2]);
+
+		std::vector<glm::vec4> box;			//maxima points into the 6 directions
+		std::vector<float> maxvalues;		//max ordinates
+		box.resize(6);
+		maxvalues.resize(6);
+		for (uint32_t i = 0; i < 6; i++) {	//fill maxima with first point
+			box[i] = points[0];
+			maxvalues[i] = glm::dot(axes[i], points[0]);
+		}
+
+		for (uint32_t i = 1; i < points.size(); i++) {		//go through rest of the points and 6 axis directions
+			for (uint32_t j = 0; j < 6; j++) {
+				float tmp = glm::dot(axes[j], points[i]);
+				if (maxvalues[j] < tmp) {
+					box[j] = points[i];
+					maxvalues[j] = tmp;
+				}
+			}
+		}
+		width  = maxvalues[1] + maxvalues[0];
+		height = maxvalues[3] + maxvalues[2];
+		depth  = maxvalues[5] + maxvalues[4];
+		glm::vec4 center4 = W * glm::vec4(	-maxvalues[0] + width/2.0f, 
+											-maxvalues[2] + height/2.0f, 
+											-maxvalues[4] + depth/2.0f, 0.0f);
+		center = glm::vec3(center4.x, center4.y, center4.z);
+	}
+
+
+
 	//-------------------------------------------------------------------------------------------------
 	//camera
 
@@ -502,6 +543,8 @@ namespace ve {
 	}
 
 
+
+
 	/**
 	*
 	* \brief Create an shadow camera 
@@ -519,7 +562,6 @@ namespace ve {
 	}
 
 
-
 	/**
 	*
 	* \brief Create an ortho shadow camera from the camera's frustum bounding sphere
@@ -530,7 +572,21 @@ namespace ve {
 	*/
 	VECamera * VECamera::createShadowCameraOrtho(VELight *pLight) {
 
+		std::vector<glm::vec4> pointsW;
+		getFrustumPoints(pointsW);
+
 		glm::vec3 center;
+		float width, height, depth;
+		pLight->getOBB(pointsW, 0.0f, 1.0f, center, width, height, depth);
+		depth *= 4.0f;
+		VECameraOrtho *pCamOrtho = new VECameraOrtho("Ortho", 0.1f, depth, width, height);
+		glm::mat4 W = pLight->getWorldTransform();
+		pCamOrtho->setTransform( pLight->getWorldTransform());
+		pCamOrtho->setPosition(center - depth / 2.0f * glm::vec3(W[2].x, W[2].y, W[2].z));
+
+
+		
+		/*glm::vec3 center;
 		float radius;
 		getBoundingSphere(&center, &radius);
 		float diam = 2.0f * radius;
@@ -538,7 +594,7 @@ namespace ve {
 
 		glm::vec3 z = normalize(pLight->getZAxis());
 		pCamOrtho->lookAt(center - radius * z, center, glm::vec3(0.0f, 1.0f, 0.0f ));
-
+		*/
 		return pCamOrtho;
 	}
 
@@ -647,21 +703,27 @@ namespace ve {
 	* \param[out] points List of 8 points that make up the frustum in world space
 	*
 	*/
-	void VECameraProjective::getFrustumPoints(std::vector<glm::vec4> &points) {
-		float halfh = (float)tan( (m_fov/2.0f) * 2.0f * M_PI / 360.0f );
+	void VECameraProjective::getFrustumPoints(std::vector<glm::vec4> &points, float t1, float t2) {
+		float halfh = (float)tan( (m_fov/2.0f) * M_PI / 180.0f );
 		float halfw = halfh * m_aspectRatio;
 
-		glm::mat4 worldMatrix = getWorldTransform();
+		glm::mat4 W = getWorldTransform();
 
-		points.push_back( worldMatrix * glm::vec4(-m_nearPlane * halfw, -m_nearPlane * halfh, m_nearPlane, 1.0f ) );
-		points.push_back( worldMatrix * glm::vec4( m_nearPlane * halfw, -m_nearPlane * halfh, m_nearPlane, 1.0f));
-		points.push_back( worldMatrix * glm::vec4(-m_nearPlane * halfw,  m_nearPlane * halfh, m_nearPlane, 1.0f));
-		points.push_back( worldMatrix * glm::vec4( m_nearPlane * halfw,  m_nearPlane * halfh, m_nearPlane, 1.0f));
+		points.push_back( W*glm::vec4(-m_nearPlane * halfw, -m_nearPlane * halfh, m_nearPlane, 1.0f ) );
+		points.push_back( W*glm::vec4( m_nearPlane * halfw, -m_nearPlane * halfh, m_nearPlane, 1.0f));
+		points.push_back( W*glm::vec4(-m_nearPlane * halfw,  m_nearPlane * halfh, m_nearPlane, 1.0f));
+		points.push_back( W*glm::vec4( m_nearPlane * halfw,  m_nearPlane * halfh, m_nearPlane, 1.0f));
 
-		points.push_back( worldMatrix * glm::vec4(-m_farPlane * halfw, -m_farPlane * halfh, m_farPlane, 1.0f));
-		points.push_back( worldMatrix * glm::vec4( m_farPlane * halfw, -m_farPlane * halfh, m_farPlane, 1.0f));
-		points.push_back( worldMatrix * glm::vec4(-m_farPlane * halfw,  m_farPlane * halfh, m_farPlane, 1.0f));
-		points.push_back( worldMatrix * glm::vec4( m_farPlane * halfw,  m_farPlane * halfh, m_farPlane, 1.0f));
+		points.push_back( W*glm::vec4(-m_farPlane * halfw, -m_farPlane * halfh, m_farPlane, 1.0f));
+		points.push_back( W*glm::vec4( m_farPlane * halfw, -m_farPlane * halfh, m_farPlane, 1.0f));
+		points.push_back( W*glm::vec4(-m_farPlane * halfw,  m_farPlane * halfh, m_farPlane, 1.0f));
+		points.push_back( W*glm::vec4( m_farPlane * halfw,  m_farPlane * halfh, m_farPlane, 1.0f));
+
+		for (uint32_t i = 0; i < 4; i++) {						//interpolate
+			glm::vec4 diff = points[i + 4] - points[i + 0];
+			points[i + 4] = points[i + 0] + t2*diff;
+			points[i + 0] = points[i + 0] + t1*diff;
+		}
 	}
 
 
@@ -727,21 +789,27 @@ namespace ve {
 	* \param[out] points List of 8 points that make up the frustum in world space
 	*
 	*/
-	void VECameraOrtho::getFrustumPoints(std::vector<glm::vec4> &points) {
+	void VECameraOrtho::getFrustumPoints(std::vector<glm::vec4> &points, float t1, float t2) {
 		float halfh = m_height / 2.0f;
 		float halfw = m_width / 2.0f;
 
-		glm::mat4 worldMatrix = getWorldTransform();
+		glm::mat4 W = getWorldTransform();
 
-		points.push_back(worldMatrix * glm::vec4(-halfw, -halfh, m_nearPlane, 1.0f));
-		points.push_back(worldMatrix * glm::vec4( halfw, -halfh, m_nearPlane, 1.0f));
-		points.push_back(worldMatrix * glm::vec4(-halfw,  halfh, m_nearPlane, 1.0f));
-		points.push_back(worldMatrix * glm::vec4( halfw,  halfh, m_nearPlane, 1.0f));
+		points.push_back( W*glm::vec4(-halfw, -halfh, m_nearPlane, 1.0f));
+		points.push_back( W*glm::vec4( halfw, -halfh, m_nearPlane, 1.0f));
+		points.push_back( W*glm::vec4(-halfw,  halfh, m_nearPlane, 1.0f));
+		points.push_back( W*glm::vec4( halfw,  halfh, m_nearPlane, 1.0f));
 
-		points.push_back(worldMatrix * glm::vec4(-halfw, -halfh, m_farPlane, 1.0f));
-		points.push_back(worldMatrix * glm::vec4( halfw, -halfh, m_farPlane, 1.0f));
-		points.push_back(worldMatrix * glm::vec4(-halfw,  halfh, m_farPlane, 1.0f));
-		points.push_back(worldMatrix * glm::vec4( halfw,  halfh, m_farPlane, 1.0f));
+		points.push_back( W*glm::vec4(-halfw, -halfh, m_farPlane, 1.0f));
+		points.push_back( W*glm::vec4( halfw, -halfh, m_farPlane, 1.0f));
+		points.push_back( W*glm::vec4(-halfw,  halfh, m_farPlane, 1.0f));
+		points.push_back( W*glm::vec4( halfw,  halfh, m_farPlane, 1.0f));
+
+		for (uint32_t i = 0; i < 4; i++) {						//interpolate
+			glm::vec4 diff = points[i + 4] - points[i + 0];
+			points[i + 4] = points[i + 0] + t2*diff;
+			points[i + 0] = points[i + 0] + t1*diff;
+		}
 	}
 
 

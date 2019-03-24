@@ -46,7 +46,8 @@ namespace ve {
 		addEntity(cameraParent);
 
 		//camera can only do yaw (parent y-axis) and pitch (local x-axis) rotations
-		VECamera *camera = new VECameraProjective("StandardCamera");
+		VkExtent2D extent = getWindowPointer()->getExtent();
+		VECamera *camera = new VECameraProjective("StandardCamera", 0.1f, 200.0f, extent.width/ (float)extent.height, 45.0f);
 		camera->lookAt(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f), glm::vec3(0.0f, 1.0f, 0.0f));
 		camera->m_pEntityParent = cameraParent;
 		addEntity(camera);
