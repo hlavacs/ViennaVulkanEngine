@@ -23,17 +23,20 @@ namespace ve {
 
 		//per object resources, set 0
 		vh::vhRenderCreateDescriptorSetLayout(getRendererForwardPointer()->getDevice(),
+			{ 1 },
 			{ VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER },
 			{ VK_SHADER_STAGE_VERTEX_BIT },
 			&m_descriptorSetLayoutUBO);
 
 		vh::vhRenderCreateDescriptorSetLayout(getRendererForwardPointer()->getDevice(),
-			{ VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER },
-			{ VK_SHADER_STAGE_FRAGMENT_BIT,				VK_SHADER_STAGE_FRAGMENT_BIT },
+			{ 1,											1 },
+			{ VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,	VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER },
+			{ VK_SHADER_STAGE_FRAGMENT_BIT,					VK_SHADER_STAGE_FRAGMENT_BIT },
 			&m_descriptorSetLayoutResources);
 
 		vh::vhPipeCreateGraphicsPipelineLayout(getRendererForwardPointer()->getDevice(),
 			{ getRendererForwardPointer()->getDescriptorSetLayoutPerFrame(), m_descriptorSetLayoutUBO,  getRendererForwardPointer()->getDescriptorSetLayoutShadow(), m_descriptorSetLayoutResources },
+			{ },
 			&m_pipelineLayout);
 
 		vh::vhPipeCreateGraphicsPipeline(getRendererForwardPointer()->getDevice(),
@@ -69,8 +72,8 @@ namespace ve {
 				pEntity->m_descriptorSetsUBO[i],
 				{ pEntity->m_uniformBuffers[i] }, //UBOs
 				{ sizeof(veUBOPerObject) },	//UBO sizes
-				{ VK_NULL_HANDLE },	//textureImageViews
-				{ VK_NULL_HANDLE }	//samplers
+				{ { VK_NULL_HANDLE } },	//textureImageViews
+				{ { VK_NULL_HANDLE } }	//samplers
 			);
 		}
 
@@ -85,8 +88,8 @@ namespace ve {
 				pEntity->m_descriptorSetsResources[i],
 				{ VK_NULL_HANDLE, VK_NULL_HANDLE }, //UBOs
 				{ 0,              0 },	//UBO sizes
-				{ pEntity->m_pMaterial->mapDiffuse->m_imageView, pEntity->m_pMaterial->mapNormal->m_imageView },	//textureImageViews
-				{ pEntity->m_pMaterial->mapDiffuse->m_sampler,   pEntity->m_pMaterial->mapNormal->m_sampler }	//samplers
+				{ {pEntity->m_pMaterial->mapDiffuse->m_imageView}, {pEntity->m_pMaterial->mapNormal->m_imageView} },	//textureImageViews
+				{ {pEntity->m_pMaterial->mapDiffuse->m_sampler},   {pEntity->m_pMaterial->mapNormal->m_sampler} }	//samplers
 			);
 		}
 

@@ -73,6 +73,7 @@ namespace ve {
 		virtual void	bindDescriptorSets(VkCommandBuffer commandBuffer, uint32_t imageIndex, VEEntity *entity);
 		virtual void	addEntity( VEEntity *pEntity );
 		virtual void	removeEntity(VEEntity *pEntity);
+		VkPipelineLayout getPipelineLayout() { return m_pipelineLayout; };
 	};
 
 

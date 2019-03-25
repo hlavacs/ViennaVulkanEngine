@@ -208,7 +208,7 @@ namespace vh {
 	void vhRenderCreateRenderPass( VkDevice device, VkFormat swapChainImageFormat, VkFormat depthFormat, VkRenderPass *renderPass);
 	void vhRenderCreateRenderPassShadow( VkDevice device, VkFormat depthFormat, VkRenderPass *renderPass);
 
-	void vhRenderCreateDescriptorSetLayout(	VkDevice device, std::vector<VkDescriptorType> types, 
+	void vhRenderCreateDescriptorSetLayout(	VkDevice device, std::vector<uint32_t> counts, std::vector<VkDescriptorType> types,
 											std::vector<VkShaderStageFlags> stageFlags, VkDescriptorSetLayout * descriptorSetLayout);
 	void vhRenderCreateDescriptorPool(	VkDevice device, std::vector<VkDescriptorType> types,
 										std::vector<uint32_t> numberDesc, VkDescriptorPool * descriptorPool);
@@ -218,16 +218,15 @@ namespace vh {
 	void vhRenderUpdateDescriptorSet(VkDevice device, VkDescriptorSet descriptorSet,
 									std::vector<VkBuffer> uniformBuffers,
 									std::vector<uint32_t> bufferRanges,
-									std::vector<VkImageView> textureImageViews,
-									std::vector<VkSampler> textureSamplers);
+									std::vector<std::vector<VkImageView>> textureImageViews,
+									std::vector<std::vector<VkSampler>> textureSamplers);
 	void vhRenderBeginRenderPass(VkCommandBuffer commandBuffer, VkRenderPass renderPass, VkFramebuffer frameBuffer, VkExtent2D extent);
-	void vhRenderBeginRenderPass(VkCommandBuffer commandBuffer,
-								VkRenderPass renderPass, VkFramebuffer frameBuffer,
+	void vhRenderBeginRenderPass(VkCommandBuffer commandBuffer, VkRenderPass renderPass, VkFramebuffer frameBuffer,
 								std::vector<VkClearValue> &clearValues, VkExtent2D extent);
 	VkResult vhRenderPresentResult(	VkQueue presentQueue, VkSwapchainKHR swapChain,
 									uint32_t imageIndex, VkSemaphore signalSemaphore);
 
-	VkResult vhPipeCreateGraphicsPipelineLayout(VkDevice device, std::vector<VkDescriptorSetLayout> descriptorSetLayouts, VkPipelineLayout *pipelineLayout);
+	VkResult vhPipeCreateGraphicsPipelineLayout(VkDevice device, std::vector<VkDescriptorSetLayout> descriptorSetLayouts, std::vector<VkPushConstantRange> pushConstantRanges, VkPipelineLayout *pipelineLayout);
 	VkResult vhPipeCreateGraphicsPipeline(	VkDevice device, std::string verShaderFilename, std::string fragShaderFilename,
 											VkExtent2D swapChainExtent, VkPipelineLayout pipelineLayout, VkRenderPass renderPass,
 											VkPipeline *graphicsPipeline);

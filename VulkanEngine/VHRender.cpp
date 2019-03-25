@@ -152,6 +152,7 @@ namespace vh {
 	*
 	*/
 	void vhRenderCreateDescriptorSetLayout(	VkDevice device,
+											std::vector<uint32_t> counts,
 											std::vector<VkDescriptorType> types, 
 											std::vector<VkShaderStageFlags> stageFlags,
 											VkDescriptorSetLayout * descriptorSetLayout) {
@@ -161,7 +162,7 @@ namespace vh {
 
 		for (uint32_t i = 0; i < types.size(); i++) {
 			bindings[i].binding = i;
-			bindings[i].descriptorCount = 1;
+			bindings[i].descriptorCount = counts[i];
 			bindings[i].descriptorType = types[i];
 			bindings[i].pImmutableSamplers = nullptr;
 			bindings[i].stageFlags = stageFlags[i];
@@ -257,18 +258,25 @@ namespace vh {
 										VkDescriptorSet descriptorSet,
 										std::vector<VkBuffer> uniformBuffers,
 										std::vector<uint32_t> bufferRanges,
-										std::vector<VkImageView> textureImageViews, 
-										std::vector<VkSampler> textureSamplers) {
+										std::vector<std::vector<VkImageView>> textureImageViews, 
+										std::vector<std::vector<VkSampler>> textureSamplers) {
 
 		std::vector<VkWriteDescriptorSet> descriptorWrites = {};
 		descriptorWrites.resize(uniformBuffers.size());
 		
 		std::vector<VkDescriptorBufferInfo> bufferInfos = {};
 		bufferInfos.resize(uniformBuffers.size());
-		std::vector<VkDescriptorImageInfo> imageInfos = {};
+
+		std::vector<std::vector<VkDescriptorImageInfo>> imageInfos = {};	//could be also arrays, so vector of vector
 		imageInfos.resize(uniformBuffers.size());
 
 		for (uint32_t i = 0; i < uniformBuffers.size(); i++) {
+
+			descriptorWrites[i].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+			descriptorWrites[i].dstSet = descriptorSet;
+			descriptorWrites[i].dstBinding = i;
+			descriptorWrites[i].dstArrayElement = 0;
+			descriptorWrites[i].descriptorCount = 1;
 
 			if (uniformBuffers[i] != VK_NULL_HANDLE) {
 				bufferInfos[i].buffer = uniformBuffers[i];
@@ -277,21 +285,24 @@ namespace vh {
 				descriptorWrites[i].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
 				descriptorWrites[i].pBufferInfo = &bufferInfos[i];
 			}
-			else if (textureImageViews[i] != VK_NULL_HANDLE) {
-				imageInfos[i].imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-				imageInfos[i].imageView = textureImageViews[i];
-				imageInfos[i].sampler = textureSamplers[i];
+			else if ( textureImageViews[i].size()>0 ) {
+				for (uint32_t j = 0; j < textureImageViews[i].size(); j++) {
+					VkDescriptorImageInfo imageInfo;
+
+					imageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+					imageInfo.imageView = textureImageViews[i][j];
+					imageInfo.sampler = textureSamplers[i][j];
+
+					imageInfos[i].push_back(imageInfo);
+				}
+				
 				descriptorWrites[i].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-				descriptorWrites[i].pImageInfo = &imageInfos[i];
+				descriptorWrites[i].pImageInfo = &imageInfos[i][0];
+				descriptorWrites[i].descriptorCount = (uint32_t)textureImageViews[i].size();
 			}
 			else {
 				throw std::runtime_error("Error: No resource in the descriptor set list!");
 			}
-			descriptorWrites[i].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-			descriptorWrites[i].dstSet = descriptorSet;
-			descriptorWrites[i].dstBinding = i;
-			descriptorWrites[i].dstArrayElement = 0;
-			descriptorWrites[i].descriptorCount = 1;
 		}
 
 		vkUpdateDescriptorSets(device, static_cast<uint32_t>(descriptorWrites.size()), descriptorWrites.data(), 0, nullptr);
@@ -410,11 +421,16 @@ namespace vh {
 	*/
 	VkResult vhPipeCreateGraphicsPipelineLayout(VkDevice device, 
 												std::vector<VkDescriptorSetLayout> descriptorSetLayouts, 
+												std::vector<VkPushConstantRange>   pushConstantRanges, 
 												VkPipelineLayout *pipelineLayout) {
 		VkPipelineLayoutCreateInfo pipelineLayoutInfo = {};
 		pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
 		pipelineLayoutInfo.setLayoutCount = (uint32_t)descriptorSetLayouts.size();
 		pipelineLayoutInfo.pSetLayouts = descriptorSetLayouts.data();
+		if (pushConstantRanges.size() > 0) {
+			pipelineLayoutInfo.pushConstantRangeCount = (uint32_t)pushConstantRanges.size();
+			pipelineLayoutInfo.pPushConstantRanges = pushConstantRanges.data();
+		}
 
 		return vkCreatePipelineLayout(device, &pipelineLayoutInfo, nullptr, pipelineLayout);
 	}

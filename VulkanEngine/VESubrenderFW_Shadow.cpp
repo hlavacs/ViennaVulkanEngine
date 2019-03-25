@@ -22,16 +22,18 @@ namespace ve {
 
 		//per object resources, set 0
 		vh::vhRenderCreateDescriptorSetLayout(getRendererForwardPointer()->getDevice(),
+			{ 1 },
 			{ VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER },
 			{ VK_SHADER_STAGE_VERTEX_BIT, },
 			&m_descriptorSetLayoutUBO);
 
 		vh::vhPipeCreateGraphicsPipelineLayout(getRendererForwardPointer()->getDevice(),
 			{ getRendererForwardPointer()->getDescriptorSetLayoutPerFrame(), m_descriptorSetLayoutUBO },
+			{ { VK_SHADER_STAGE_FRAGMENT_BIT, 0, 4 } },
 			&m_pipelineLayout);
 
 		vh::vhPipeCreateGraphicsShadowPipeline(getRendererForwardPointer()->getDevice(),
-			"shader/Forward/Shadow/vert.spv", //"shader/Forward/Shadow/frag.spv",
+			"shader/Forward/Shadow/vert.spv", 
 			getRendererForwardPointer()->getShadowMapExtent(),
 			m_pipelineLayout, getRendererForwardPointer()->getRenderPassShadow(),
 			&m_pipeline);

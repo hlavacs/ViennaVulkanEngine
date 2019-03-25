@@ -10,7 +10,7 @@
 
 
 const int MAX_FRAMES_IN_FLIGHT = 2;
-const uint32_t SHADOW_MAP_DIM[NUM_SHADOW_CASCADE] = { 4096, 2048, 1024 };
+const uint32_t SHADOW_MAP_DIM[NUM_SHADOW_CASCADE] = { 2048, 1024, 1024 };
 
 
 namespace ve {
@@ -81,11 +81,11 @@ namespace ve {
 		vh::vhRenderCreateRenderPassShadow( m_device, m_depthMap->m_format, &m_renderPassShadow);
 
 		//shadow maps
-		//the outer vector is the whole cascade
-		//the inner vector is 3 maps for mailbox buffering
+		//the outer loop goes over the imageIndex
+		//the inner loop is the whole shadow cascade per image index
 		for (uint32_t i = 0; i < m_swapChainImageViews.size(); i++) {				//go over number of swapchain images
 
-			std::vector<VETexture*>		shadowMapCascade;								//list of VETextures in a cascade
+			std::vector<VETexture*>		shadowMapCascade;							//list of VETextures in a cascade
 			std::vector<VkFramebuffer>	frameBufferCascade;
 
 			for (uint32_t j = 0; j < NUM_SHADOW_CASCADE; j++) {
@@ -124,17 +124,20 @@ namespace ve {
 
 		//set 0, binding 0 : UBO per Frame data: camera, light, shadow matrices
 		vh::vhRenderCreateDescriptorSetLayout(m_device,
+											{ 1 },
 											{ VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER },
 											{ VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT },
 											&m_descriptorSetLayoutPerFrame);
 
 		//set 2, binding 0 : shadow map + sampler
 		vh::vhRenderCreateDescriptorSetLayout(m_device,
+											{ NUM_SHADOW_CASCADE },
 											{ VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER },
 											{ VK_SHADER_STAGE_FRAGMENT_BIT },
 											&m_descriptorSetLayoutShadow);
 
 		//------------------------------------------------------------------------------------------------------------
+		//create descriptor pool and sets
 
 		uint32_t maxobjects = 10000;
 		vh::vhRenderCreateDescriptorPool(m_device,
@@ -146,6 +149,7 @@ namespace ve {
 		vh::vhRenderCreateDescriptorSets(m_device, (uint32_t)m_swapChainImages.size(), m_descriptorSetLayoutShadow,   getDescriptorPool(), m_descriptorSetsShadow);
 
 		//------------------------------------------------------------------------------------------------------------
+		//create per frame UBO
 
 		vh::vhBufCreateUniformBuffers(m_vmaAllocator, (uint32_t)m_swapChainImages.size(), (uint32_t)sizeof(vePerFrameData_t), m_uniformBuffersPerFrame, m_uniformBuffersPerFrameAllocation);
 
@@ -324,15 +328,24 @@ namespace ve {
 		vh::vhRenderUpdateDescriptorSet(m_device, m_descriptorSetsPerFrame[imageIndex],
 										{ m_uniformBuffersPerFrame[imageIndex] },	//UBOs
 										{ sizeof(vePerFrameData_t) },				//UBO sizes
-										{ VK_NULL_HANDLE },							//textureImageViews
-										{ VK_NULL_HANDLE });						//samplers
+										{ {VK_NULL_HANDLE} },						//textureImageViews
+										{ {VK_NULL_HANDLE} });						//samplers
 	
 		//update the descriptor set for the shadow data
+		std::vector<std::vector<VkImageView>>	imageViews;
+		std::vector<std::vector<VkSampler>>		samplers;
+		imageViews.resize(1);
+		samplers.resize(1);
+		for (uint32_t i = 0; i < NUM_SHADOW_CASCADE; i++) {
+			imageViews[0].push_back(m_shadowMaps[imageIndex][i]->m_imageView);
+			samplers[0].push_back  (m_shadowMaps[imageIndex][i]->m_sampler);
+		}
+
 		vh::vhRenderUpdateDescriptorSet(m_device, m_descriptorSetsShadow[imageIndex],
 										{ VK_NULL_HANDLE },			//UBOs
 										{ 0				},			//UBO sizes
-										{ m_shadowMaps[imageIndex][0]->m_imageView },	//textureImageViews
-										{ m_shadowMaps[imageIndex][0]->m_sampler }		//samplers
+										{ imageViews },				//textureImageViews
+										{ samplers }				//samplers
 										);
 	}
 
@@ -369,40 +382,23 @@ namespace ve {
 		VkCommandBuffer commandBuffer = vh::vhCmdBeginSingleTimeCommands(m_device, m_commandPool);
 
 		//-----------------------------------------------------------------------------------------
-		//shadow pass 1
+		//shadow passes
 
 		std::vector<VkClearValue> clearValues = {};
 		VkClearValue cv;
 		cv.depthStencil = { 1.0f, 0 };
 		clearValues.push_back(cv);
 
-		vh::vhRenderBeginRenderPass(commandBuffer, m_renderPassShadow, 
-									m_shadowFramebuffers[imageIndex][0], clearValues,
-									m_shadowMaps[imageIndex][0]->m_extent);
+		for (int i = 0; i < NUM_SHADOW_CASCADE; i++) {
+			vh::vhRenderBeginRenderPass(commandBuffer, m_renderPassShadow,
+										m_shadowFramebuffers[imageIndex][i], clearValues,
+										m_shadowMaps[imageIndex][i]->m_extent);
 
-		m_subrenderShadow->draw(commandBuffer, imageIndex);
-		vkCmdEndRenderPass(commandBuffer);
+			vkCmdPushConstants(commandBuffer, m_subrenderShadow->getPipelineLayout(), VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(int), &i);
 
-		//-----------------------------------------------------------------------------------------
-		//shadow pass 2
-
-		vh::vhRenderBeginRenderPass(commandBuffer, m_renderPassShadow,
-			m_shadowFramebuffers[imageIndex][1], clearValues,
-			m_shadowMaps[imageIndex][1]->m_extent);
-
-		m_subrenderShadow->draw(commandBuffer, imageIndex);
-		vkCmdEndRenderPass(commandBuffer);
-
-		//-----------------------------------------------------------------------------------------
-		//shadow pass 3
-
-		vh::vhRenderBeginRenderPass(commandBuffer, m_renderPassShadow,
-			m_shadowFramebuffers[imageIndex][2], clearValues,
-			m_shadowMaps[imageIndex][2]->m_extent);
-
-		m_subrenderShadow->draw(commandBuffer, imageIndex);
-		vkCmdEndRenderPass(commandBuffer);
-
+			m_subrenderShadow->draw(commandBuffer, imageIndex);
+			vkCmdEndRenderPass(commandBuffer);
+		}
 
 		//-----------------------------------------------------------------------------------------
 		//light pass
@@ -414,9 +410,6 @@ namespace ve {
 		vh::vhCmdEndSingleTimeCommands(	m_device, m_graphicsQueue, m_commandPool, commandBuffer,
 										m_imageAvailableSemaphores[m_currentFrame], m_renderFinishedSemaphores[m_currentFrame], 
 										m_inFlightFences[m_currentFrame]);
-
-		//-----------------------------------------------------------------------------------------
-
 
 	}
 

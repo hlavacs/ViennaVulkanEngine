@@ -22,12 +22,14 @@ namespace ve {
 
 		//per object resources, set 0
 		vh::vhRenderCreateDescriptorSetLayout(getRendererForwardPointer()->getDevice(),
+			{ 1 },
 			{ VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER },
 			{ VK_SHADER_STAGE_VERTEX_BIT,	    },
 			&m_descriptorSetLayoutUBO);
 
 		vh::vhPipeCreateGraphicsPipelineLayout(getRendererForwardPointer()->getDevice(),
 			{ getRendererForwardPointer()->getDescriptorSetLayoutPerFrame(), m_descriptorSetLayoutUBO, getRendererForwardPointer()->getDescriptorSetLayoutShadow() },
+			{ },
 			&m_pipelineLayout);
 
 		vh::vhPipeCreateGraphicsPipeline(getRendererForwardPointer()->getDevice(),
@@ -63,8 +65,8 @@ namespace ve {
 				pEntity->m_descriptorSetsUBO[i],
 				{ pEntity->m_uniformBuffers[i] }, //UBOs
 				{ sizeof(veUBOPerObject) },	//UBO sizes
-				{ VK_NULL_HANDLE },	//textureImageViews
-				{ VK_NULL_HANDLE }	//samplers
+				{ {VK_NULL_HANDLE} },	//textureImageViews
+				{ {VK_NULL_HANDLE} }	//samplers
 			);
 		}
 	}
