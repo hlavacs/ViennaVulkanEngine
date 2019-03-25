@@ -512,6 +512,22 @@ namespace ve {
 		m_entityType = VE_ENTITY_TYPE_CAMERA_PROJECTIVE;
 	}
 
+
+	void VECamera::fillCameraStructure(veCameraData_t *pCamera) {
+		pCamera->camModel = getWorldTransform();
+		pCamera->camView = glm::inverse(pCamera->camModel);
+
+		VkExtent2D extent = getWindowPointer()->getExtent();
+		pCamera->camProj = getProjectionMatrix( (float)extent.width, (float)extent.height);
+	}
+
+
+	void VECamera::fillShadowStructure(veShadowData_t *pShadow ) {
+		pShadow->shadowView = glm::inverse(getWorldTransform());
+		pShadow->shadowProj = getProjectionMatrix();
+	}
+
+
 	/**
 	* \brief Get a bounding sphere for this camera
 	*
@@ -553,12 +569,12 @@ namespace ve {
 	* \returns a new VECamera shadow camera
 	*
 	*/
-	VECamera * VECamera::createShadowCamera(VELight *pLight) {
+	VECamera * VECamera::createShadowCamera(VELight *pLight, float z0, float z1 ) {
 
 		if (pLight->getLightType() == VELight::VE_LIGHT_TYPE_DIRECTIONAL)
-			return createShadowCameraOrtho(pLight);
+			return createShadowCameraOrtho(pLight, z0, z1);
 
-		return createShadowCameraProjective(pLight);
+		return createShadowCameraProjective(pLight, z0, z1);
 	}
 
 
@@ -570,10 +586,10 @@ namespace ve {
 	* \returns a new VECameraOrtho that can be used to create shadow maps for directional light
 	*
 	*/
-	VECamera * VECamera::createShadowCameraOrtho(VELight *pLight) {
+	VECamera * VECamera::createShadowCameraOrtho(VELight *pLight, float z0, float z1) {
 
 		std::vector<glm::vec4> pointsW;
-		getFrustumPoints(pointsW);
+		getFrustumPoints(pointsW, z0, z1);
 
 		glm::vec3 center;
 		float width, height, depth;
@@ -584,17 +600,6 @@ namespace ve {
 		pCamOrtho->setTransform( pLight->getWorldTransform());
 		pCamOrtho->setPosition(center - depth / 2.0f * glm::vec3(W[2].x, W[2].y, W[2].z));
 
-
-		
-		/*glm::vec3 center;
-		float radius;
-		getBoundingSphere(&center, &radius);
-		float diam = 2.0f * radius;
-		VECameraOrtho *pCamOrtho = new VECameraOrtho("Ortho", 0.0, diam, diam, diam);
-
-		glm::vec3 z = normalize(pLight->getZAxis());
-		pCamOrtho->lookAt(center - radius * z, center, glm::vec3(0.0f, 1.0f, 0.0f ));
-		*/
 		return pCamOrtho;
 	}
 
@@ -606,7 +611,7 @@ namespace ve {
 	* \returns a new VECameraProjective that can be used to create shadow maps for spot light
 	* 
 	*/
-	VECamera * VECamera::createShadowCameraProjective(VELight *pLight) {
+	VECamera * VECamera::createShadowCameraProjective(VELight *pLight, float z0, float z1) {
 
 		glm::vec3 center;
 		float radius;
@@ -703,7 +708,7 @@ namespace ve {
 	* \param[out] points List of 8 points that make up the frustum in world space
 	*
 	*/
-	void VECameraProjective::getFrustumPoints(std::vector<glm::vec4> &points, float t1, float t2) {
+	void VECameraProjective::getFrustumPoints(std::vector<glm::vec4> &points, float z0, float z1) {
 		float halfh = (float)tan( (m_fov/2.0f) * M_PI / 180.0f );
 		float halfw = halfh * m_aspectRatio;
 
@@ -719,10 +724,10 @@ namespace ve {
 		points.push_back( W*glm::vec4(-m_farPlane * halfw,  m_farPlane * halfh, m_farPlane, 1.0f));
 		points.push_back( W*glm::vec4( m_farPlane * halfw,  m_farPlane * halfh, m_farPlane, 1.0f));
 
-		for (uint32_t i = 0; i < 4; i++) {						//interpolate
+		for (uint32_t i = 0; i < 4; i++) {						//interpolate with z0, z1 in [0,1]
 			glm::vec4 diff = points[i + 4] - points[i + 0];
-			points[i + 4] = points[i + 0] + t2*diff;
-			points[i + 0] = points[i + 0] + t1*diff;
+			points[i + 4] = points[i + 0] + z1*diff;
+			points[i + 0] = points[i + 0] + z0*diff;
 		}
 	}
 
@@ -823,7 +828,7 @@ namespace ve {
 	* \param[in] pLight Pointer to the light structure that will be copied into a UBO
 	*
 	*/
-	void VELight::fillVhLightStructure(veLight *pLight) {
+	void VELight::fillLightStructure(veLightData_t *pLight) {
 		pLight->type[0] = m_lightType;
 		pLight->param = param;
 		pLight->col_ambient = col_ambient;

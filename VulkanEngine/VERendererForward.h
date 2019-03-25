@@ -11,7 +11,10 @@
 #define getRendererForwardPointer() g_pVERendererForwardSingleton
 #endif
 
+const int NUM_SHADOW_CASCADE = 3;
+
 namespace ve {
+
 
 	extern VERendererForward* g_pVERendererForwardSingleton;	///<Pointer to the only class instance 
 
@@ -29,32 +32,31 @@ namespace ve {
 	public:
 
 		///Data that is updated once per frame
-		struct veUBOPerFrame {
-			glm::mat4 camModel;			///<Camera model matrix, needed for camera world position
-			glm::mat4 camView;			///<Camera view matrix
-			glm::mat4 camProj;			///<Camera projection matrix
-			glm::mat4 shadowView;		///<Shadow view matrix
-			glm::mat4 shadowProj;		///<Shadow projection matrix
-			VELight::veLight light1;			///<Light information
+		struct vePerFrameData_t {
+			VECamera::veCameraData_t camera;
+			VELight::veLightData_t light;			///<Light information
+			VECamera::veShadowData_t shadow;
 		};
 
 
 	protected:
 		VETexture *m_depthMap = nullptr;								///<the image depth map	
-		std::vector<VETexture *>m_shadowMaps;							///<the shadow map
+		std::vector<std::vector<VETexture *>>m_shadowMaps;				///<the shadow maps - a list of map cascades
 		std::vector<VkBuffer> m_uniformBuffersPerFrame;					///<UBO for camera, light data and shadow matrices
 		std::vector<VmaAllocation> m_uniformBuffersPerFrameAllocation;	///<VMA
 
 		//per frame render resources
-		VkRenderPass m_renderPass;								///<The light render pass 
-		std::vector<VkFramebuffer> m_swapChainFramebuffers;		///<Framebuffers for light pass
-		VkRenderPass m_renderPassShadow;						///<The shadow render pass 
-		std::vector<VkFramebuffer> m_shadowFramebuffers;		///<Framebuffers for shadow pass
-		VkDescriptorPool m_descriptorPool;						///<Descriptor pool for creating per frame descriptor sets
-		VkDescriptorSetLayout m_descriptorSetLayoutPerFrame;	///<Descriptor set 1: per frame 
-		std::vector<VkDescriptorSet> m_descriptorSetsPerFrame;	///<Per frame descriptor sets for set 1
-		VkDescriptorSetLayout m_descriptorSetLayoutShadow;		///<Descriptor set 2: shadow
-		std::vector<VkDescriptorSet> m_descriptorSetsShadow;	///<Per frame descriptor sets for set 2
+		VkRenderPass m_renderPass;										///<The light render pass 
+		std::vector<VkFramebuffer> m_swapChainFramebuffers;				///<Framebuffers for light pass
+
+		VkRenderPass m_renderPassShadow;								///<The shadow render pass 
+		std::vector<std::vector<VkFramebuffer>> m_shadowFramebuffers;	///<Framebuffers for shadow pass - a list of cascades
+
+		VkDescriptorPool m_descriptorPool;								///<Descriptor pool for creating per frame descriptor sets
+		VkDescriptorSetLayout m_descriptorSetLayoutPerFrame;			///<Descriptor set 1: per frame 
+		std::vector<VkDescriptorSet> m_descriptorSetsPerFrame;			///<Per frame descriptor sets for set 1
+		VkDescriptorSetLayout m_descriptorSetLayoutShadow;				///<Descriptor set 2: shadow
+		std::vector<VkDescriptorSet> m_descriptorSetsShadow;			///<Per frame descriptor sets for set 2
 
 		std::vector<VkSemaphore> m_imageAvailableSemaphores;	///<sem for waiting for the next swapchain image
 		std::vector<VkSemaphore> m_renderFinishedSemaphores;	///<sem for signalling that rendering done
@@ -95,9 +97,9 @@ namespace ve {
 		///\returns the shadow render pass
 		virtual VkRenderPass			getRenderPassShadow() { return m_renderPassShadow; };
 		VETexture *						getDepthMap() { return m_depthMap; };
-		VETexture *						getShadowMap() { return m_shadowMaps[imageIndex]; };
+		VETexture *						getShadowMap() { return m_shadowMaps[imageIndex][0]; };
 		///\returns the 2D extent of the shadow map
-		virtual VkExtent2D				getShadowMapExtent() { return m_shadowMaps[imageIndex]->m_extent; };
+		virtual VkExtent2D				getShadowMapExtent() { return m_shadowMaps[imageIndex][0]->m_extent; };
 
 	};
 

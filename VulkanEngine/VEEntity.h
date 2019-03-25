@@ -153,6 +153,8 @@ namespace ve {
 
 	class VELight;
 
+
+
 	/**
 	*
 	* \brief A camera that can be used to take photos of the scene.
@@ -163,12 +165,27 @@ namespace ve {
 	*/
 	class VECamera : public VEEntity {
 	public:
+
+		struct veCameraData_t {
+			glm::mat4 camModel;			///<Camera model matrix, needed for camera world position
+			glm::mat4 camView;			///<Camera view matrix
+			glm::mat4 camProj;			///<Camera projection matrix
+		};
+
+		struct veShadowData_t {
+			glm::mat4 shadowView;
+			glm::mat4 shadowProj;
+		};
+
 		float m_nearPlane = 1.0f;	///<The distance of the near plane to the camera origin
 		float m_farPlane = 200.0f;	///<The distance of the far plane to the camera origin
 
 		VECamera(std::string name);
 		VECamera(std::string name, float nearPlane, float farPlane);
 		virtual ~VECamera() {};
+		void fillCameraStructure(veCameraData_t *pCamera);
+		void fillShadowStructure(veShadowData_t *pCamera);
+
 		virtual glm::mat4 getProjectionMatrix()=0;								///<Return the projection matrix
 		///Return the projection matrix, pure virtual
 		virtual glm::mat4 getProjectionMatrix( float width, float height )=0;
@@ -176,10 +193,10 @@ namespace ve {
 		//--------------------------------------------------
 		virtual void getBoundingSphere(glm::vec3 *center, float *radius);		//return center and radius for a bounding sphere
 		///Return list of frustum points in world space, pure virtual
-		virtual void getFrustumPoints(std::vector<glm::vec4> &points, float t1 = 0.0f, float t2 = 1.0f)=0;
-		virtual VECamera *createShadowCamera(VELight *light);					//Depending on light type, create shadow camera
-		virtual VECamera *createShadowCameraOrtho(VELight *light);				//Create an ortho shadow cam for directional light
-		virtual VECamera *createShadowCameraProjective(VELight *light);			//Create a projective shadow cam for spot light
+		virtual void getFrustumPoints(std::vector<glm::vec4> &points, float z0 = 0.0f, float z1 = 1.0f)=0;
+		virtual VECamera *createShadowCamera(VELight *light, float z0 = 0.0f, float z1 = 1.0f);	//Depending on light type, create shadow camera
+		virtual VECamera *createShadowCameraOrtho(VELight *light, float z0 = 0.0f, float z1 = 1.0f);				//Create an ortho shadow cam for directional light
+		virtual VECamera *createShadowCameraProjective(VELight *light, float z0 = 0.0f, float z1 = 1.0f);			//Create a projective shadow cam for spot light
 	};
 
 
@@ -242,7 +259,7 @@ namespace ve {
 	public:
 
 		///Light data to be copied into a UBO
-		struct veLight {
+		struct veLightData_t {
 			glm::ivec4	type;			///<Light type information
 			glm::vec4	param;			///<Light parameters
 			glm::vec4	col_ambient;	///<Ambient color
@@ -269,7 +286,7 @@ namespace ve {
 
 		VELight(std::string name, veLightType type );
 		veLightType getLightType();		//return the light type
-		void fillVhLightStructure( veLight *pLight);
+		void fillLightStructure( veLightData_t *pLight);
 	};
 
 

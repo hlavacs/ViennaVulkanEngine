@@ -5,21 +5,18 @@
 #include "../common_defines.glsl"
 #include "../light.glsl"
 
-layout(location = 0) in vec3 fragPos;
-layout(location = 1) in vec3 fragNormal;
-layout(location = 2) in vec3 fragTangent;
+layout(location = 0) in vec3 fragPosW;
+layout(location = 1) in vec3 fragNormalW;
+layout(location = 2) in vec3 fragTangentW;
 layout(location = 3) in vec2 fragTexCoord;
 
 layout(location = 0) out vec4 outColor;
 
 layout(set = 0, binding = 0) uniform UniformBufferObjectPerFrame {
-    mat4 camModel;
-    mat4 camView;
-    mat4 camProj;
-    mat4 shadowView;
-    mat4 shadowProj;
-    light_t light1;
-} UBOPerFrame;
+    perFrameData_t data;
+} perFrameUBO;
+
+layout(set = 2, binding = 0) uniform sampler2D shadowMap;
 
 layout(set = 3, binding = 0) uniform sampler2D texSampler;
 layout(set = 3, binding = 1) uniform sampler2D normalSampler;
@@ -27,8 +24,8 @@ layout(set = 3, binding = 1) uniform sampler2D normalSampler;
 
 void main() {
 
-    vec3 N        = normalize( fragNormal );
-    vec3 T        = normalize( fragTangent );
+    vec3 N        = normalize( fragNormalW );
+    vec3 T        = normalize( fragTangentW );
     T             = normalize( T - dot(T, N)*N );
     vec3 B        = normalize( cross( T, N ) );
     mat3 TBN      = mat3(T,B,N);
@@ -36,38 +33,39 @@ void main() {
     vec3 normal   = normalize( TBN * mapnorm );
 
     //parameters
-    vec3 camPos = UBOPerFrame.camModel[3].xyz;
+    vec3 camPos   = perFrameUBO.data.camera.camModel[3].xyz;
 
-    vec3 lightPos = UBOPerFrame.light1.transform[3].xyz;
-    vec3 lightDir = normalize( UBOPerFrame.light1.transform[2].xyz );
-    float nfac = dot( fragNormal, -lightDir)<0? 0:1;
-    vec4 lightParam = UBOPerFrame.light1.param;
+    vec3 lightPos = perFrameUBO.data.light.transform[3].xyz;
+    vec3 lightDir = normalize( perFrameUBO.data.light.transform[2].xyz );
+    float nfac = dot( fragNormalW, -lightDir)<0? 0.5:1;
+    vec4 lightParam = perFrameUBO.data.light.param;
+    float shadowFactor = shadowFunc( fragPosW, perFrameUBO.data.shadow.shadowView, perFrameUBO.data.shadow.shadowProj, shadowMap );
 
-    vec3 ambcol  = UBOPerFrame.light1.col_ambient.xyz;
-    vec3 diffcol = UBOPerFrame.light1.col_diffuse.xyz;
-    vec3 speccol = UBOPerFrame.light1.col_specular.xyz;
+    vec3 ambcol  = perFrameUBO.data.light.col_ambient.xyz;
+    vec3 diffcol = perFrameUBO.data.light.col_diffuse.xyz;
+    vec3 speccol = perFrameUBO.data.light.col_specular.xyz;
 
     vec3 fragColor = texture(texSampler, fragTexCoord).xyz;
 
     vec3 result = ambcol * fragColor;
 
-    result += UBOPerFrame.light1.itype[0] == 0?
+    result += perFrameUBO.data.light.itype[0] == 0?
                   dirlight( camPos,
-                            lightDir, lightParam,
+                            lightDir, lightParam, shadowFactor,
                             vec3(0,0,0), diffcol, speccol,
-                            fragPos, normal, fragColor) * nfac : vec3(0,0,0);
+                            fragPosW, normal, fragColor) * nfac : vec3(0,0,0);
 
-    result += UBOPerFrame.light1.itype[0] == 1?
+    result += perFrameUBO.data.light.itype[0] == 1?
                   pointlight( camPos,
-                              lightPos, lightParam,
+                              lightPos, lightParam, shadowFactor,
                               vec3(0,0,0), diffcol, speccol,
-                              fragPos, normal, fragColor) * nfac : vec3(0,0,0);
+                              fragPosW, normal, fragColor) * nfac : vec3(0,0,0);
 
-    result += UBOPerFrame.light1.itype[0] == 2?
+    result += perFrameUBO.data.light.itype[0] == 2?
                   spotlight( camPos,
-                             lightPos, lightDir, lightParam,
+                             lightPos, lightDir, lightParam, shadowFactor,
                              vec3(0,0,0), diffcol, speccol,
-                             fragPos, normal, fragColor) * nfac : vec3(0,0,0);
+                             fragPosW, normal, fragColor) * nfac : vec3(0,0,0);
 
     outColor = vec4( result, 1.0 );
 }

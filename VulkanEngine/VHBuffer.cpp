@@ -697,8 +697,9 @@ namespace vh {
 	* \param[in] extent Extent of the swap chain images
 	* \param[out] frameBuffers The resulting frame buffers
 	*/
-	void vhBufCreateFramebuffers(	VkDevice device, std::vector<VkImageView> imageViews,
-									std::vector<VkImageView> depthImageViews, VkRenderPass renderPass, VkExtent2D extent,
+	void vhBufCreateFramebuffers(	VkDevice device, 
+									std::vector<VkImageView> imageViews, std::vector<VkImageView> depthImageViews, //should have same length!
+									VkRenderPass renderPass, VkExtent2D extent,
 									std::vector<VkFramebuffer> &frameBuffers ) {
 
 		VkFramebufferCreateInfo framebufferInfo = {};
@@ -708,15 +709,16 @@ namespace vh {
 		framebufferInfo.height = extent.height;
 		framebufferInfo.layers = 1;
 
-		frameBuffers.resize(imageViews.size());
+		uint32_t loops = (uint32_t)std::max(imageViews.size(), depthImageViews.size());
+		frameBuffers.resize( loops );
 
-		for (size_t i = 0; i < imageViews.size(); i++) {
+		for (size_t i = 0; i < loops; i++) {
 			std::vector<VkImageView> attachments;
 			
-			if ( imageViews[i]!=VK_NULL_HANDLE )
+			if (imageViews.size() > i && imageViews[i] != VK_NULL_HANDLE )
 				attachments.push_back(imageViews[i]);
 
-			if (depthImageViews[i] != VK_NULL_HANDLE)
+			if (depthImageViews.size()>i && depthImageViews[i] != VK_NULL_HANDLE)
 				attachments.push_back(depthImageViews[i]);
 
 			framebufferInfo.attachmentCount = static_cast<uint32_t>(attachments.size());

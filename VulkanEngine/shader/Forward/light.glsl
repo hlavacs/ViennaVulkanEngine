@@ -39,7 +39,6 @@ float shadowFunc(  vec3 fragposW, mat4 shadowView, mat4 shadowProj, sampler2D sh
 
 
 
-
 vec3 dirlight(  vec3 camposW,
                 vec3 lightdirW, vec4 lightparam, float shadowFac,
                 vec3 ambcol, vec3 diffcol, vec3 speccol,
