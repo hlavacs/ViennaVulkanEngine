@@ -11,6 +11,6 @@ newmtl plane
   Kd 0.5880 0.5880 0.5880
   Ks 0.0000 0.0000 0.0000
   Ke 0.0000 0.0000 0.0000
-  map_Ka plane.jpg
-  map_Kd plane.jpg
+  map_Ka road2.jpg
+  map_Kd road2.jpg
 

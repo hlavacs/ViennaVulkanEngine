@@ -10,7 +10,7 @@
 
 
 const int MAX_FRAMES_IN_FLIGHT = 2;
-const uint32_t SHADOW_MAP_DIM[NUM_SHADOW_CASCADE] = { 4096, 4096, 4096, 4096 };
+const uint32_t SHADOW_MAP_DIM = 4096;
 
 
 namespace ve {
@@ -89,7 +89,7 @@ namespace ve {
 			std::vector<VkFramebuffer>	frameBufferCascade;
 
 			for (uint32_t j = 0; j < NUM_SHADOW_CASCADE; j++) {
-				VkExtent2D extent = { SHADOW_MAP_DIM[j], SHADOW_MAP_DIM[j] };
+				VkExtent2D extent = { SHADOW_MAP_DIM, SHADOW_MAP_DIM };
 
 				VETexture *pShadowMap = new VETexture("ShadowMap");
 				pShadowMap->m_extent = extent;
@@ -316,7 +316,7 @@ namespace ve {
 		plight->fillLightStructure(&ubo.light);
 
 		//fill in shadow data
-		std::vector<float> limits = {0.0f, 0.10f, 0.20f, 0.50f, 1.0f};
+		std::vector<float> limits = {0.0f, 0.05f, 0.15f, 0.50f, 1.0f};
 
 		for (uint32_t i = 0; i < NUM_SHADOW_CASCADE; i++) {
 			ubo.shadow[i].limits[0] = limits[i];
@@ -398,15 +398,13 @@ namespace ve {
 		cv.depthStencil = { 1.0f, 0 };
 		clearValues.push_back(cv);
 
-		for ( uint32_t i = 0; i < NUM_SHADOW_CASCADE; i++) {
-			unsigned zahl =  i;
-
+		for ( unsigned i = 0; i < NUM_SHADOW_CASCADE; i++) {
 			vh::vhRenderBeginRenderPass(commandBuffer, m_renderPassShadow,
 										m_shadowFramebuffers[imageIndex][i], 
 										clearValues, m_shadowMaps[imageIndex][i]->m_extent);
 
 			m_subrenderShadow->bindPipeline(commandBuffer);
-			vkCmdPushConstants(commandBuffer, m_subrenderShadow->getPipelineLayout(), VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(unsigned), &zahl);
+			vkCmdPushConstants(commandBuffer, m_subrenderShadow->getPipelineLayout(), VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(unsigned), &i);
 			m_subrenderShadow->draw(commandBuffer, imageIndex);
 			vkCmdEndRenderPass(commandBuffer);
 		}
@@ -424,7 +422,6 @@ namespace ve {
 		vh::vhCmdEndSingleTimeCommands(	m_device, m_graphicsQueue, m_commandPool, commandBuffer,
 										m_imageAvailableSemaphores[m_currentFrame], m_renderFinishedSemaphores[m_currentFrame], 
 										m_inFlightFences[m_currentFrame]);
-
 	}
 
 

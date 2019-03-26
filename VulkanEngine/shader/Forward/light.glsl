@@ -25,16 +25,18 @@ float shadowFunc(  vec3 fragposW, mat4 shadowView, mat4 shadowProj, sampler2D sh
     float dy = scale * 1.0 / float(texDim.y);
 
     float factor = 0.0;
-    int count = 0;
+    float sum = 0;
     int range = 1;
+    float weight = 1;
 
     for (int x = -range; x <= range; x++) {
         for (int y = -range; y <= range; y++) {
-            factor += shadowFactor( fragposW, shadowView, shadowProj, shadowMap, vec2(dx*x, dy*y) );
-            count++;
+            weight = 1.0;
+            factor += weight*shadowFactor( fragposW, shadowView, shadowProj, shadowMap, vec2(dx*x, dy*y) );
+            sum += weight;
         }
     }
-    return factor / count;
+    return factor / sum;
 }
 
 
