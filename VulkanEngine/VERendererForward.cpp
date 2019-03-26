@@ -10,7 +10,7 @@
 
 
 const int MAX_FRAMES_IN_FLIGHT = 2;
-const uint32_t SHADOW_MAP_DIM[NUM_SHADOW_CASCADE] = { 1024, 1024, 1024 };
+const uint32_t SHADOW_MAP_DIM[NUM_SHADOW_CASCADE] = { 3000, 3000, 3000 };
 
 
 namespace ve {
@@ -316,20 +316,24 @@ namespace ve {
 		plight->fillLightStructure(&ubo.light);
 
 		//fill in shadow data
-		VECamera *pCamShadow0 = camera->createShadowCamera(plight, 0.00f, 1.0f);
-		pCamShadow0->fillShadowStructure(&ubo.shadow[0] );
+
 		ubo.shadow[0].limits[0] = 0.00f;
-		ubo.shadow[0].limits[1] = 1.0f;
+		ubo.shadow[0].limits[1] = 0.10f;
+		VECamera *pCamShadow0 = 
+			camera->createShadowCamera(plight, ubo.shadow[0].limits[0], ubo.shadow[0].limits[1]);
+		pCamShadow0->fillShadowStructure(&ubo.shadow[0]);
 
-		VECamera *pCamShadow1 = camera->createShadowCamera(plight, 0.25f, 0.60f);
+		ubo.shadow[1].limits[0] = 0.10f;
+		ubo.shadow[1].limits[1] = 0.50f;
+		VECamera *pCamShadow1 = 
+			camera->createShadowCamera(plight, ubo.shadow[1].limits[0], ubo.shadow[1].limits[1]);
 		pCamShadow1->fillShadowStructure(&ubo.shadow[1]);
-		ubo.shadow[1].limits[0] = 0.25f;
-		ubo.shadow[1].limits[1] = 0.60f;
 
-		VECamera *pCamShadow2 = camera->createShadowCamera(plight, 0.60f, 1.0f);
-		pCamShadow2->fillShadowStructure(&ubo.shadow[2]);
-		ubo.shadow[2].limits[0] = 0.60f;
+		ubo.shadow[2].limits[0] = 0.50f;
 		ubo.shadow[2].limits[1] = 1.00f;
+		VECamera *pCamShadow2 = 
+			camera->createShadowCamera(plight, ubo.shadow[2].limits[0], ubo.shadow[2].limits[1]);
+		pCamShadow2->fillShadowStructure(&ubo.shadow[2]);
 
 		delete pCamShadow0;
 		delete pCamShadow1;
@@ -347,7 +351,8 @@ namespace ve {
 										{ {VK_NULL_HANDLE} },						//textureImageViews
 										{ {VK_NULL_HANDLE} });						//samplers
 	
-		//update the descriptor set for the shadow data
+
+		//update the descriptor set for light pass - array of shadow maps
 		std::vector<std::vector<VkImageView>>	imageViews;
 		std::vector<std::vector<VkSampler>>		samplers;
 		imageViews.resize(1);
@@ -406,7 +411,7 @@ namespace ve {
 		clearValues.push_back(cv);
 
 		for ( uint32_t i = 0; i < NUM_SHADOW_CASCADE; i++) {
-			unsigned zahl =  0;
+			unsigned zahl =  i;
 
 			vh::vhRenderBeginRenderPass(commandBuffer, m_renderPassShadow,
 										m_shadowFramebuffers[imageIndex][i], 

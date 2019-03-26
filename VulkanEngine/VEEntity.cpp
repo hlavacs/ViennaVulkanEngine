@@ -519,6 +519,8 @@ namespace ve {
 
 		VkExtent2D extent = getWindowPointer()->getExtent();
 		pCamera->camProj = getProjectionMatrix( (float)extent.width, (float)extent.height);
+		pCamera->param[0] = m_nearPlane;
+		pCamera->param[1] = m_farPlane;
 	}
 
 
@@ -594,7 +596,7 @@ namespace ve {
 		glm::vec3 center;
 		float width, height, depth;
 		pLight->getOBB(pointsW, 0.0f, 1.0f, center, width, height, depth);
-		depth *= 4.0f;
+		depth *= 20.0f;
 		VECameraOrtho *pCamOrtho = new VECameraOrtho("Ortho", 0.1f, depth, width, height);
 		glm::mat4 W = pLight->getWorldTransform();
 		pCamOrtho->setTransform( pLight->getWorldTransform());

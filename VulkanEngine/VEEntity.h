@@ -170,6 +170,7 @@ namespace ve {
 			glm::mat4 camModel;			///<Camera model matrix, needed for camera world position
 			glm::mat4 camView;			///<Camera view matrix
 			glm::mat4 camProj;			///<Camera projection matrix
+			glm::vec4 param;			///<Camera depth
 		};
 
 		struct veShadowData_t {

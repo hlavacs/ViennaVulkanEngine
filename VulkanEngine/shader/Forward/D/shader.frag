@@ -24,10 +24,12 @@ void main() {
 
     //shadow
     int sIdx = 0;
-    if( gl_FragDepth > perFrameUBO.data.shadow[0].limits[1] ) {
+    vec4 param = perFrameUBO.data.camera.param;
+    float z = (gl_FragCoord.z / gl_FragCoord.w)/( param[1] - param[0] );
+    if( z >= perFrameUBO.data.shadow[0].limits[1] ) {
         sIdx = 1;
     }
-    if( gl_FragDepth > perFrameUBO.data.shadow[1].limits[1] ) {
+    if( z >= perFrameUBO.data.shadow[1].limits[1] ) {
         sIdx = 2;
     }
     shadowData_t s = perFrameUBO.data.shadow[sIdx];

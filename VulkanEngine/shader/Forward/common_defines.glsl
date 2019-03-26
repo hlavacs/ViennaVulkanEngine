@@ -25,6 +25,7 @@ struct cameraData_t {
   mat4 camModel;
   mat4 camView;
   mat4 camProj;
+  vec4 param;
 };
 
 struct perFrameData_t {
