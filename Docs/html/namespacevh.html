@@ -106,18 +106,18 @@ Functions</h2></td></tr>
 <tr class="memitem:ac80851c019a6b6a029a08aeff02cf03f"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacevh.html#ac80851c019a6b6a029a08aeff02cf03f">vhBufCopyBufferToImage</a> (VkDevice device, VkQueue graphicsQueue, VkCommandPool commandPool, VkBuffer buffer, VkImage image, std::vector&lt; VkBufferImageCopy &gt; &amp;regions, uint32_t width, uint32_t height)</td></tr>
 <tr class="memdesc:ac80851c019a6b6a029a08aeff02cf03f"><td class="mdescLeft">&#160;</td><td class="mdescRight">Wrapper for copying a buffer to an image, manages queue submission.  <a href="#ac80851c019a6b6a029a08aeff02cf03f">More...</a><br /></td></tr>
 <tr class="separator:ac80851c019a6b6a029a08aeff02cf03f"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:add20808b76335896818caa347b891aa8"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacevh.html#add20808b76335896818caa347b891aa8">vhBufCopyImageToBuffer</a> (VkDevice device, VkQueue graphicsQueue, VkCommandPool commandPool, VkImage image, VkBuffer buffer, uint32_t layerCount, uint32_t width, uint32_t height)</td></tr>
-<tr class="memdesc:add20808b76335896818caa347b891aa8"><td class="mdescLeft">&#160;</td><td class="mdescRight">Copy a VKImage to a VKBuffer.  <a href="#add20808b76335896818caa347b891aa8">More...</a><br /></td></tr>
-<tr class="separator:add20808b76335896818caa347b891aa8"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aa15b3523d6fa3fc5e3ba7c016a60472a"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacevh.html#aa15b3523d6fa3fc5e3ba7c016a60472a">vhBufCopyImageToBuffer</a> (VkDevice device, VkQueue graphicsQueue, VkCommandPool commandPool, VkImage image, VkImageAspectFlagBits aspect, VkBuffer buffer, uint32_t layerCount, uint32_t width, uint32_t height)</td></tr>
+<tr class="memdesc:aa15b3523d6fa3fc5e3ba7c016a60472a"><td class="mdescLeft">&#160;</td><td class="mdescRight">Copy a VKImage to a VKBuffer.  <a href="#aa15b3523d6fa3fc5e3ba7c016a60472a">More...</a><br /></td></tr>
+<tr class="separator:aa15b3523d6fa3fc5e3ba7c016a60472a"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a694a95f414d8bc28efcbbf667a7e58f9"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacevh.html#a694a95f414d8bc28efcbbf667a7e58f9">vhBufCopyImageToBuffer</a> (VkDevice device, VkQueue graphicsQueue, VkCommandPool commandPool, VkImage image, VkBuffer buffer, std::vector&lt; VkBufferImageCopy &gt; &amp;regions, uint32_t width, uint32_t height)</td></tr>
 <tr class="memdesc:a694a95f414d8bc28efcbbf667a7e58f9"><td class="mdescLeft">&#160;</td><td class="mdescRight">Copy a VKImage to a VKBuffer.  <a href="#a694a95f414d8bc28efcbbf667a7e58f9">More...</a><br /></td></tr>
 <tr class="separator:a694a95f414d8bc28efcbbf667a7e58f9"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ae5d28992581687d1389afa2db567ea48"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacevh.html#ae5d28992581687d1389afa2db567ea48">vhBufTransitionImageLayout</a> (VkDevice device, VkQueue graphicsQueue, VkCommandPool commandPool, VkImage image, VkFormat format, uint32_t miplevels, uint32_t layerCount, VkImageLayout oldLayout, VkImageLayout newLayout)</td></tr>
-<tr class="memdesc:ae5d28992581687d1389afa2db567ea48"><td class="mdescLeft">&#160;</td><td class="mdescRight">Transition the image layout, causes a pipeline barrier.  <a href="#ae5d28992581687d1389afa2db567ea48">More...</a><br /></td></tr>
-<tr class="separator:ae5d28992581687d1389afa2db567ea48"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a5ae7c3a395c7e2ede974f536c531dc41"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacevh.html#a5ae7c3a395c7e2ede974f536c531dc41">vhBufTransitionImageLayout</a> (VkDevice device, VkQueue graphicsQueue, VkCommandBuffer commandBuffer, VkImage image, VkFormat format, uint32_t miplevels, uint32_t layerCount, VkImageLayout oldLayout, VkImageLayout newLayout)</td></tr>
-<tr class="memdesc:a5ae7c3a395c7e2ede974f536c531dc41"><td class="mdescLeft">&#160;</td><td class="mdescRight">Transition the image layout, causes a pipeline barrier.  <a href="#a5ae7c3a395c7e2ede974f536c531dc41">More...</a><br /></td></tr>
-<tr class="separator:a5ae7c3a395c7e2ede974f536c531dc41"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ad28d13df6b14efaebef29dde2b1b7674"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacevh.html#ad28d13df6b14efaebef29dde2b1b7674">vhBufTransitionImageLayout</a> (VkDevice device, VkQueue graphicsQueue, VkCommandPool commandPool, VkImage image, VkFormat format, VkImageAspectFlagBits aspect, uint32_t miplevels, uint32_t layerCount, VkImageLayout oldLayout, VkImageLayout newLayout)</td></tr>
+<tr class="memdesc:ad28d13df6b14efaebef29dde2b1b7674"><td class="mdescLeft">&#160;</td><td class="mdescRight">Transition the image layout, causes a pipeline barrier.  <a href="#ad28d13df6b14efaebef29dde2b1b7674">More...</a><br /></td></tr>
+<tr class="separator:ad28d13df6b14efaebef29dde2b1b7674"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a71f3a6b1cca391a5c133f8026c0d7d81"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacevh.html#a71f3a6b1cca391a5c133f8026c0d7d81">vhBufTransitionImageLayout</a> (VkDevice device, VkQueue graphicsQueue, VkCommandBuffer commandBuffer, VkImage image, VkFormat format, VkImageAspectFlagBits aspect, uint32_t miplevels, uint32_t layerCount, VkImageLayout oldLayout, VkImageLayout newLayout)</td></tr>
+<tr class="memdesc:a71f3a6b1cca391a5c133f8026c0d7d81"><td class="mdescLeft">&#160;</td><td class="mdescRight">Transition the image layout, causes a pipeline barrier.  <a href="#a71f3a6b1cca391a5c133f8026c0d7d81">More...</a><br /></td></tr>
+<tr class="separator:a71f3a6b1cca391a5c133f8026c0d7d81"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a2615cec03ffb7297f65f9c485bb53d2e"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacevh.html#a2615cec03ffb7297f65f9c485bb53d2e">vhBufCreateTextureImage</a> (VkDevice device, VmaAllocator allocator, VkQueue graphicsQueue, VkCommandPool commandPool, std::string basedir, std::vector&lt; std::string &gt; texNames, VkImageCreateFlags flags, VkImage *textureImage, VmaAllocation *textureImageAllocation, VkExtent2D *extent)</td></tr>
 <tr class="memdesc:a2615cec03ffb7297f65f9c485bb53d2e"><td class="mdescLeft">&#160;</td><td class="mdescRight">Create a texture image from multiple files.  <a href="#a2615cec03ffb7297f65f9c485bb53d2e">More...</a><br /></td></tr>
 <tr class="separator:a2615cec03ffb7297f65f9c485bb53d2e"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -126,12 +126,15 @@ Functions</h2></td></tr>
 <tr class="memitem:aa9d7fe471ccd3e065a3e5e6117857e8c"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacevh.html#aa9d7fe471ccd3e065a3e5e6117857e8c">vhBufCreateTextureSampler</a> (VkDevice device, VkSampler *textureSampler)</td></tr>
 <tr class="memdesc:aa9d7fe471ccd3e065a3e5e6117857e8c"><td class="mdescLeft">&#160;</td><td class="mdescRight">Create an image sampler for samplign textures in shaders.  <a href="#aa9d7fe471ccd3e065a3e5e6117857e8c">More...</a><br /></td></tr>
 <tr class="separator:aa9d7fe471ccd3e065a3e5e6117857e8c"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a9e124e61977a97db92adaad757425d9a"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacevh.html#a9e124e61977a97db92adaad757425d9a">vhBufCreateFramebuffers</a> (VkDevice device, std::vector&lt; VkImageView &gt; imageViews, VkImageView depthImageView, VkRenderPass renderPass, VkExtent2D extent, std::vector&lt; VkFramebuffer &gt; &amp;frameBuffers)</td></tr>
-<tr class="memdesc:a9e124e61977a97db92adaad757425d9a"><td class="mdescLeft">&#160;</td><td class="mdescRight">Create framebuffers (color + depth), one for each swap chain image.  <a href="#a9e124e61977a97db92adaad757425d9a">More...</a><br /></td></tr>
-<tr class="separator:a9e124e61977a97db92adaad757425d9a"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a7f674603fe81202af0cdab1f669a15b7"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacevh.html#a7f674603fe81202af0cdab1f669a15b7">vhBufCopySwapChainImageToHost</a> (VkDevice device, VmaAllocator allocator, VkQueue graphicsQueue, VkCommandPool commandPool, VkImage image, gli::byte *bufferData, uint32_t width, uint32_t height, uint32_t imageSize)</td></tr>
-<tr class="memdesc:a7f674603fe81202af0cdab1f669a15b7"><td class="mdescLeft">&#160;</td><td class="mdescRight">Copy a swap chain image to a data buffer, after it has been rendered into.  <a href="#a7f674603fe81202af0cdab1f669a15b7">More...</a><br /></td></tr>
-<tr class="separator:a7f674603fe81202af0cdab1f669a15b7"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a54ba7ea8497eed149b5fda470cb71a78"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacevh.html#a54ba7ea8497eed149b5fda470cb71a78">vhBufCreateFramebuffers</a> (VkDevice device, std::vector&lt; VkImageView &gt; imageViews, std::vector&lt; VkImageView &gt; depthImageViews, VkRenderPass renderPass, VkExtent2D extent, std::vector&lt; VkFramebuffer &gt; &amp;frameBuffers)</td></tr>
+<tr class="memdesc:a54ba7ea8497eed149b5fda470cb71a78"><td class="mdescLeft">&#160;</td><td class="mdescRight">Create framebuffers (color + depth), one for each swap chain image.  <a href="#a54ba7ea8497eed149b5fda470cb71a78">More...</a><br /></td></tr>
+<tr class="separator:a54ba7ea8497eed149b5fda470cb71a78"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a6671c2b172d2263c11068f75ae423207"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacevh.html#a6671c2b172d2263c11068f75ae423207">vhBufCopySwapChainImageToHost</a> (VkDevice device, VmaAllocator allocator, VkQueue graphicsQueue, VkCommandPool commandPool, VkImage image, VkImageAspectFlagBits aspect, gli::byte *bufferData, uint32_t width, uint32_t height, uint32_t imageSize)</td></tr>
+<tr class="memdesc:a6671c2b172d2263c11068f75ae423207"><td class="mdescLeft">&#160;</td><td class="mdescRight">Copy a swap chain image to a data buffer, after it has been rendered into.  <a href="#a6671c2b172d2263c11068f75ae423207">More...</a><br /></td></tr>
+<tr class="separator:a6671c2b172d2263c11068f75ae423207"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a0743986ab234bc389a6f3d2bef61a3f7"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacevh.html#a0743986ab234bc389a6f3d2bef61a3f7">vhBufCopyImageToHost</a> (VkDevice device, VmaAllocator allocator, VkQueue graphicsQueue, VkCommandPool commandPool, VkImage image, VkFormat format, VkImageAspectFlagBits aspect, VkImageLayout layout, gli::byte *bufferData, uint32_t width, uint32_t height, uint32_t imageSize)</td></tr>
+<tr class="memdesc:a0743986ab234bc389a6f3d2bef61a3f7"><td class="mdescLeft">&#160;</td><td class="mdescRight">Copy a swap chain image to a data buffer, after it has been rendered into.  <a href="#a0743986ab234bc389a6f3d2bef61a3f7">More...</a><br /></td></tr>
+<tr class="separator:a0743986ab234bc389a6f3d2bef61a3f7"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a90901f6f2cb0f3d551806520abce0dc8"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacevh.html#a90901f6f2cb0f3d551806520abce0dc8">vhBufCreateVertexBuffer</a> (VkDevice device, VmaAllocator allocator, VkQueue graphicsQueue, VkCommandPool commandPool, std::vector&lt; <a class="el" href="structvh_1_1vh_vertex.html">vh::vhVertex</a> &gt; &amp;vertices, VkBuffer *vertexBuffer, VmaAllocation *vertexBufferAllocation)</td></tr>
 <tr class="memdesc:a90901f6f2cb0f3d551806520abce0dc8"><td class="mdescLeft">&#160;</td><td class="mdescRight">Create a Vulkan vertex buffer.  <a href="#a90901f6f2cb0f3d551806520abce0dc8">More...</a><br /></td></tr>
 <tr class="separator:a90901f6f2cb0f3d551806520abce0dc8"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -211,30 +214,36 @@ void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="name
 <tr class="memitem:afc1d99ade9bdbbdcb607bcb54dfac0c8"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacevh.html#afc1d99ade9bdbbdcb607bcb54dfac0c8">vhRenderCreateRenderPassShadow</a> (VkDevice device, VkFormat depthFormat, VkRenderPass *renderPass)</td></tr>
 <tr class="memdesc:afc1d99ade9bdbbdcb607bcb54dfac0c8"><td class="mdescLeft">&#160;</td><td class="mdescRight">Create a render pass for a shadow pass.  <a href="#afc1d99ade9bdbbdcb607bcb54dfac0c8">More...</a><br /></td></tr>
 <tr class="separator:afc1d99ade9bdbbdcb607bcb54dfac0c8"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a5cc8cc8fc8c2b6b333a854c6e9daa8e9"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacevh.html#a5cc8cc8fc8c2b6b333a854c6e9daa8e9">vhRenderCreateDescriptorSetLayout</a> (VkDevice device, std::vector&lt; VkDescriptorType &gt; types, std::vector&lt; VkShaderStageFlags &gt; stageFlags, VkDescriptorSetLayout *descriptorSetLayout)</td></tr>
-<tr class="memdesc:a5cc8cc8fc8c2b6b333a854c6e9daa8e9"><td class="mdescLeft">&#160;</td><td class="mdescRight">Create a descriptor layout.  <a href="#a5cc8cc8fc8c2b6b333a854c6e9daa8e9">More...</a><br /></td></tr>
-<tr class="separator:a5cc8cc8fc8c2b6b333a854c6e9daa8e9"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:acf5951d9e013d1bd9fdab39b2ee4516d"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacevh.html#acf5951d9e013d1bd9fdab39b2ee4516d">vhRenderCreateDescriptorSetLayout</a> (VkDevice device, std::vector&lt; uint32_t &gt; counts, std::vector&lt; VkDescriptorType &gt; types, std::vector&lt; VkShaderStageFlags &gt; stageFlags, VkDescriptorSetLayout *descriptorSetLayout)</td></tr>
+<tr class="memdesc:acf5951d9e013d1bd9fdab39b2ee4516d"><td class="mdescLeft">&#160;</td><td class="mdescRight">Create a descriptor layout.  <a href="#acf5951d9e013d1bd9fdab39b2ee4516d">More...</a><br /></td></tr>
+<tr class="separator:acf5951d9e013d1bd9fdab39b2ee4516d"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ac8f31a918822c6b09d118611bc4e629c"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacevh.html#ac8f31a918822c6b09d118611bc4e629c">vhRenderCreateDescriptorPool</a> (VkDevice device, std::vector&lt; VkDescriptorType &gt; types, std::vector&lt; uint32_t &gt; numberDesc, VkDescriptorPool *descriptorPool)</td></tr>
 <tr class="memdesc:ac8f31a918822c6b09d118611bc4e629c"><td class="mdescLeft">&#160;</td><td class="mdescRight">Create a descriptor pool.  <a href="#ac8f31a918822c6b09d118611bc4e629c">More...</a><br /></td></tr>
 <tr class="separator:ac8f31a918822c6b09d118611bc4e629c"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a5f0c05cca7c6f71779e85f10e25c3878"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacevh.html#a5f0c05cca7c6f71779e85f10e25c3878">vhRenderCreateDescriptorSets</a> (VkDevice device, uint32_t numberDesc, VkDescriptorSetLayout descriptorSetLayout, VkDescriptorPool descriptorPool, std::vector&lt; VkDescriptorSet &gt; &amp;descriptorSets)</td></tr>
 <tr class="memdesc:a5f0c05cca7c6f71779e85f10e25c3878"><td class="mdescLeft">&#160;</td><td class="mdescRight">Create a number of descriptor sets, one for each frame in the swapchain.  <a href="#a5f0c05cca7c6f71779e85f10e25c3878">More...</a><br /></td></tr>
 <tr class="separator:a5f0c05cca7c6f71779e85f10e25c3878"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aeb8a9ef7b0b04bdfff010b96eff38425"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacevh.html#aeb8a9ef7b0b04bdfff010b96eff38425">vhRenderUpdateDescriptorSet</a> (VkDevice device, VkDescriptorSet descriptorSet, std::vector&lt; VkBuffer &gt; uniformBuffers, std::vector&lt; uint32_t &gt; bufferRanges, std::vector&lt; VkImageView &gt; textureImageViews, std::vector&lt; VkSampler &gt; textureSamplers)</td></tr>
-<tr class="memdesc:aeb8a9ef7b0b04bdfff010b96eff38425"><td class="mdescLeft">&#160;</td><td class="mdescRight">Update a descriptor set.  <a href="#aeb8a9ef7b0b04bdfff010b96eff38425">More...</a><br /></td></tr>
-<tr class="separator:aeb8a9ef7b0b04bdfff010b96eff38425"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a6c13ad01667cf5bc7c0946bdc61b53b8"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacevh.html#a6c13ad01667cf5bc7c0946bdc61b53b8">vhRenderUpdateDescriptorSet</a> (VkDevice device, VkDescriptorSet descriptorSet, std::vector&lt; VkBuffer &gt; uniformBuffers, std::vector&lt; uint32_t &gt; bufferRanges, std::vector&lt; std::vector&lt; VkImageView &gt;&gt; textureImageViews, std::vector&lt; std::vector&lt; VkSampler &gt;&gt; textureSamplers)</td></tr>
+<tr class="memdesc:a6c13ad01667cf5bc7c0946bdc61b53b8"><td class="mdescLeft">&#160;</td><td class="mdescRight">Update a descriptor set.  <a href="#a6c13ad01667cf5bc7c0946bdc61b53b8">More...</a><br /></td></tr>
+<tr class="separator:a6c13ad01667cf5bc7c0946bdc61b53b8"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ad33a812099efdb28335db179ab789fd2"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacevh.html#ad33a812099efdb28335db179ab789fd2">vhRenderBeginRenderPass</a> (VkCommandBuffer commandBuffer, VkRenderPass renderPass, VkFramebuffer frameBuffer, VkExtent2D extent)</td></tr>
 <tr class="memdesc:ad33a812099efdb28335db179ab789fd2"><td class="mdescLeft">&#160;</td><td class="mdescRight">Start rendering in a command buffer.  <a href="#ad33a812099efdb28335db179ab789fd2">More...</a><br /></td></tr>
 <tr class="separator:ad33a812099efdb28335db179ab789fd2"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a55ec1b174dce07cb9947b055c354b179"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacevh.html#a55ec1b174dce07cb9947b055c354b179">vhRenderBeginRenderPass</a> (VkCommandBuffer commandBuffer, VkRenderPass renderPass, VkFramebuffer frameBuffer, std::vector&lt; VkClearValue &gt; &amp;clearValues, VkExtent2D extent)</td></tr>
+<tr class="memdesc:a55ec1b174dce07cb9947b055c354b179"><td class="mdescLeft">&#160;</td><td class="mdescRight">Start rendering in a command buffer.  <a href="#a55ec1b174dce07cb9947b055c354b179">More...</a><br /></td></tr>
+<tr class="separator:a55ec1b174dce07cb9947b055c354b179"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a4390e33b2435fdbf76124fdafe6fba2a"><td class="memItemLeft" align="right" valign="top">VkResult&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacevh.html#a4390e33b2435fdbf76124fdafe6fba2a">vhRenderPresentResult</a> (VkQueue presentQueue, VkSwapchainKHR swapChain, uint32_t imageIndex, VkSemaphore signalSemaphore)</td></tr>
 <tr class="memdesc:a4390e33b2435fdbf76124fdafe6fba2a"><td class="mdescLeft">&#160;</td><td class="mdescRight">Present the result of a render operation to a window.  <a href="#a4390e33b2435fdbf76124fdafe6fba2a">More...</a><br /></td></tr>
 <tr class="separator:a4390e33b2435fdbf76124fdafe6fba2a"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a8d8147423d99bfc9ca74ff58e6902f59"><td class="memItemLeft" align="right" valign="top">VkResult&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacevh.html#a8d8147423d99bfc9ca74ff58e6902f59">vhPipeCreateGraphicsPipelineLayout</a> (VkDevice device, std::vector&lt; VkDescriptorSetLayout &gt; descriptorSetLayouts, VkPipelineLayout *pipelineLayout)</td></tr>
-<tr class="memdesc:a8d8147423d99bfc9ca74ff58e6902f59"><td class="mdescLeft">&#160;</td><td class="mdescRight">Create a pipeline layout for drawing a light pass.  <a href="#a8d8147423d99bfc9ca74ff58e6902f59">More...</a><br /></td></tr>
-<tr class="separator:a8d8147423d99bfc9ca74ff58e6902f59"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:add7ac38cec91ccc1cb7f7fc295735651"><td class="memItemLeft" align="right" valign="top">VkResult&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacevh.html#add7ac38cec91ccc1cb7f7fc295735651">vhPipeCreateGraphicsPipelineLayout</a> (VkDevice device, std::vector&lt; VkDescriptorSetLayout &gt; descriptorSetLayouts, std::vector&lt; VkPushConstantRange &gt; pushConstantRanges, VkPipelineLayout *pipelineLayout)</td></tr>
+<tr class="memdesc:add7ac38cec91ccc1cb7f7fc295735651"><td class="mdescLeft">&#160;</td><td class="mdescRight">Create a pipeline layout for drawing a light pass.  <a href="#add7ac38cec91ccc1cb7f7fc295735651">More...</a><br /></td></tr>
+<tr class="separator:add7ac38cec91ccc1cb7f7fc295735651"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a9e55f2bc2ff9784fb212951699e362da"><td class="memItemLeft" align="right" valign="top">VkResult&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacevh.html#a9e55f2bc2ff9784fb212951699e362da">vhPipeCreateGraphicsPipeline</a> (VkDevice device, std::string verShaderFilename, std::string fragShaderFilename, VkExtent2D swapChainExtent, VkPipelineLayout pipelineLayout, VkRenderPass renderPass, VkPipeline *graphicsPipeline)</td></tr>
 <tr class="memdesc:a9e55f2bc2ff9784fb212951699e362da"><td class="mdescLeft">&#160;</td><td class="mdescRight">Create a pipeline state object (PSO) for a light pass.  <a href="#a9e55f2bc2ff9784fb212951699e362da">More...</a><br /></td></tr>
 <tr class="separator:a9e55f2bc2ff9784fb212951699e362da"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a0abe327f01dff0d2f8af18263ee4b768"><td class="memItemLeft" align="right" valign="top">VkResult&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacevh.html#a0abe327f01dff0d2f8af18263ee4b768">vhPipeCreateGraphicsShadowPipeline</a> (VkDevice device, std::string verShaderFilename, VkExtent2D shadowMapExtent, VkPipelineLayout pipelineLayout, VkRenderPass renderPass, VkPipeline *graphicsPipeline)</td></tr>
+<tr class="memdesc:a0abe327f01dff0d2f8af18263ee4b768"><td class="mdescLeft">&#160;</td><td class="mdescRight">Create a pipeline state object (PSO) for a shadow pass.  <a href="#a0abe327f01dff0d2f8af18263ee4b768">More...</a><br /></td></tr>
+<tr class="separator:a0abe327f01dff0d2f8af18263ee4b768"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a5f76d8d8eeb5c06b7f55273a79d9830d"><td class="memItemLeft" align="right" valign="top">uint32_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacevh.html#a5f76d8d8eeb5c06b7f55273a79d9830d">vhMemFindMemoryType</a> (VkPhysicalDevice physicalDevice, uint32_t typeFilter, VkMemoryPropertyFlags properties)</td></tr>
 <tr class="memdesc:a5f76d8d8eeb5c06b7f55273a79d9830d"><td class="mdescLeft">&#160;</td><td class="mdescRight">Find the right memory type.  <a href="#a5f76d8d8eeb5c06b7f55273a79d9830d">More...</a><br /></td></tr>
 <tr class="separator:a5f76d8d8eeb5c06b7f55273a79d9830d"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -244,9 +253,6 @@ void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="name
 <tr class="memitem:a7579b97116c0e15eecd4bd0ede9dea08"><td class="memItemLeft" align="right" valign="top">VkShaderModule&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacevh.html#a7579b97116c0e15eecd4bd0ede9dea08">vhPipeCreateShaderModule</a> (VkDevice device, const std::vector&lt; char &gt; &amp;code)</td></tr>
 <tr class="memdesc:a7579b97116c0e15eecd4bd0ede9dea08"><td class="mdescLeft">&#160;</td><td class="mdescRight">Create a shader module.  <a href="#a7579b97116c0e15eecd4bd0ede9dea08">More...</a><br /></td></tr>
 <tr class="separator:a7579b97116c0e15eecd4bd0ede9dea08"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a0abe327f01dff0d2f8af18263ee4b768"><td class="memItemLeft" align="right" valign="top">VkResult&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacevh.html#a0abe327f01dff0d2f8af18263ee4b768">vhPipeCreateGraphicsShadowPipeline</a> (VkDevice device, std::string verShaderFilename, VkExtent2D shadowMapExtent, VkPipelineLayout pipelineLayout, VkRenderPass renderPass, VkPipeline *graphicsPipeline)</td></tr>
-<tr class="memdesc:a0abe327f01dff0d2f8af18263ee4b768"><td class="mdescLeft">&#160;</td><td class="mdescRight">Create a pipeline state object (PSO) for a shadow pass.  <a href="#a0abe327f01dff0d2f8af18263ee4b768">More...</a><br /></td></tr>
-<tr class="separator:a0abe327f01dff0d2f8af18263ee4b768"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ab8becfa0316ca45ac8a219ce069aec09"><td class="memItemLeft" align="right" valign="top">VkSurfaceFormatKHR&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacevh.html#ab8becfa0316ca45ac8a219ce069aec09">chooseSwapSurfaceFormat</a> (const std::vector&lt; VkSurfaceFormatKHR &gt; &amp;availableFormats)</td></tr>
 <tr class="memdesc:ab8becfa0316ca45ac8a219ce069aec09"><td class="mdescLeft">&#160;</td><td class="mdescRight">Choose swapchain format - try to use VK_FORMAT_B8G8R8A8_UNORM.  <a href="#ab8becfa0316ca45ac8a219ce069aec09">More...</a><br /></td></tr>
 <tr class="separator:ab8becfa0316ca45ac8a219ce069aec09"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -705,8 +711,8 @@ void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="name
 
 </div>
 </div>
-<a id="add20808b76335896818caa347b891aa8"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#add20808b76335896818caa347b891aa8">&#9670;&nbsp;</a></span>vhBufCopyImageToBuffer() <span class="overload">[1/2]</span></h2>
+<a id="aa15b3523d6fa3fc5e3ba7c016a60472a"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aa15b3523d6fa3fc5e3ba7c016a60472a">&#9670;&nbsp;</a></span>vhBufCopyImageToBuffer() <span class="overload">[1/2]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -734,6 +740,12 @@ void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="name
           <td></td>
           <td class="paramtype">VkImage&#160;</td>
           <td class="paramname"><em>image</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">VkImageAspectFlagBits&#160;</td>
+          <td class="paramname"><em>aspect</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
@@ -774,6 +786,7 @@ void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="name
     <tr><td class="paramdir">[in]</td><td class="paramname">graphicsQueue</td><td>Device queue for submitting commands </td></tr>
     <tr><td class="paramdir">[in]</td><td class="paramname">commandPool</td><td>Command pool for allocating command buffers </td></tr>
     <tr><td class="paramdir">[in]</td><td class="paramname">image</td><td>The source image </td></tr>
+    <tr><td class="paramdir">[in]</td><td class="paramname">aspect</td><td>Aspect on how to use the image (color or depth) </td></tr>
     <tr><td class="paramdir">[in]</td><td class="paramname">buffer</td><td>The destination buffer </td></tr>
     <tr><td class="paramdir">[in]</td><td class="paramname">layerCount</td><td>Number of image layers </td></tr>
     <tr><td class="paramdir">[in]</td><td class="paramname">width</td><td>Ímage width </td></tr>
@@ -863,14 +876,14 @@ void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="name
 
 </div>
 </div>
-<a id="a7f674603fe81202af0cdab1f669a15b7"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a7f674603fe81202af0cdab1f669a15b7">&#9670;&nbsp;</a></span>vhBufCopySwapChainImageToHost()</h2>
+<a id="a0743986ab234bc389a6f3d2bef61a3f7"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a0743986ab234bc389a6f3d2bef61a3f7">&#9670;&nbsp;</a></span>vhBufCopyImageToHost()</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">void vh::vhBufCopySwapChainImageToHost </td>
+          <td class="memname">void vh::vhBufCopyImageToHost </td>
           <td>(</td>
           <td class="paramtype">VkDevice&#160;</td>
           <td class="paramname"><em>device</em>, </td>
@@ -898,6 +911,24 @@ void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="name
           <td></td>
           <td class="paramtype">VkImage&#160;</td>
           <td class="paramname"><em>image</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">VkFormat&#160;</td>
+          <td class="paramname"><em>format</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">VkImageAspectFlagBits&#160;</td>
+          <td class="paramname"><em>aspect</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">VkImageLayout&#160;</td>
+          <td class="paramname"><em>layout</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
@@ -939,6 +970,102 @@ void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="name
     <tr><td class="paramdir">[in]</td><td class="paramname">graphicsQueue</td><td>Device queue for submitting commands </td></tr>
     <tr><td class="paramdir">[in]</td><td class="paramname">commandPool</td><td>Command pool for allocating command buffers </td></tr>
     <tr><td class="paramdir">[in]</td><td class="paramname">image</td><td>The source image </td></tr>
+    <tr><td class="paramdir">[in]</td><td class="paramname">format</td><td>Format of the image </td></tr>
+    <tr><td class="paramdir">[in]</td><td class="paramname">aspect</td><td>Color or depth </td></tr>
+    <tr><td class="paramdir">[in]</td><td class="paramname">layout</td><td>The layout the image is currently in </td></tr>
+    <tr><td class="paramdir">[in]</td><td class="paramname">bufferData</td><td>The destination buffer data </td></tr>
+    <tr><td class="paramdir">[in]</td><td class="paramname">width</td><td>Ímage width </td></tr>
+    <tr><td class="paramdir">[in]</td><td class="paramname">height</td><td>Image height </td></tr>
+    <tr><td class="paramdir">[in]</td><td class="paramname">imageSize</td><td>Size of the image in bytes </td></tr>
+  </table>
+  </dd>
+</dl>
+
+</div>
+</div>
+<a id="a6671c2b172d2263c11068f75ae423207"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a6671c2b172d2263c11068f75ae423207">&#9670;&nbsp;</a></span>vhBufCopySwapChainImageToHost()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">void vh::vhBufCopySwapChainImageToHost </td>
+          <td>(</td>
+          <td class="paramtype">VkDevice&#160;</td>
+          <td class="paramname"><em>device</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">VmaAllocator&#160;</td>
+          <td class="paramname"><em>allocator</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">VkQueue&#160;</td>
+          <td class="paramname"><em>graphicsQueue</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">VkCommandPool&#160;</td>
+          <td class="paramname"><em>commandPool</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">VkImage&#160;</td>
+          <td class="paramname"><em>image</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">VkImageAspectFlagBits&#160;</td>
+          <td class="paramname"><em>aspect</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">gli::byte *&#160;</td>
+          <td class="paramname"><em>bufferData</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">uint32_t&#160;</td>
+          <td class="paramname"><em>width</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">uint32_t&#160;</td>
+          <td class="paramname"><em>height</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">uint32_t&#160;</td>
+          <td class="paramname"><em>imageSize</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Copy a swap chain image to a data buffer, after it has been rendered into. </p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramdir">[in]</td><td class="paramname">device</td><td>Logical Vulkan device </td></tr>
+    <tr><td class="paramdir">[in]</td><td class="paramname">allocator</td><td>VMA allocator </td></tr>
+    <tr><td class="paramdir">[in]</td><td class="paramname">graphicsQueue</td><td>Device queue for submitting commands </td></tr>
+    <tr><td class="paramdir">[in]</td><td class="paramname">commandPool</td><td>Command pool for allocating command buffers </td></tr>
+    <tr><td class="paramdir">[in]</td><td class="paramname">image</td><td>The source image </td></tr>
+    <tr><td class="paramdir">[in]</td><td class="paramname">aspect</td><td>Color or depth </td></tr>
     <tr><td class="paramdir">[in]</td><td class="paramname">bufferData</td><td>The destination buffer data </td></tr>
     <tr><td class="paramdir">[in]</td><td class="paramname">width</td><td>Ímage width </td></tr>
     <tr><td class="paramdir">[in]</td><td class="paramname">height</td><td>Image height </td></tr>
@@ -1100,8 +1227,8 @@ void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="name
 
 </div>
 </div>
-<a id="a9e124e61977a97db92adaad757425d9a"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a9e124e61977a97db92adaad757425d9a">&#9670;&nbsp;</a></span>vhBufCreateFramebuffers()</h2>
+<a id="a54ba7ea8497eed149b5fda470cb71a78"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a54ba7ea8497eed149b5fda470cb71a78">&#9670;&nbsp;</a></span>vhBufCreateFramebuffers()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -1121,8 +1248,8 @@ void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="name
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype">VkImageView&#160;</td>
-          <td class="paramname"><em>depthImageView</em>, </td>
+          <td class="paramtype">std::vector&lt; VkImageView &gt;&#160;</td>
+          <td class="paramname"><em>depthImageViews</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
@@ -1155,7 +1282,7 @@ void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="name
   <table class="params">
     <tr><td class="paramdir">[in]</td><td class="paramname">device</td><td>Logical Vulkan device </td></tr>
     <tr><td class="paramdir">[in]</td><td class="paramname">imageViews</td><td>Color images from the swap chain </td></tr>
-    <tr><td class="paramdir">[in]</td><td class="paramname">depthImageView</td><td>Depth image view </td></tr>
+    <tr><td class="paramdir">[in]</td><td class="paramname">depthImageViews</td><td>List with views of the depth images </td></tr>
     <tr><td class="paramdir">[in]</td><td class="paramname">renderPass</td><td>Render pass to be used in </td></tr>
     <tr><td class="paramdir">[in]</td><td class="paramname">extent</td><td>Extent of the swap chain images </td></tr>
     <tr><td class="paramdir">[out]</td><td class="paramname">frameBuffers</td><td>The resulting frame buffers </td></tr>
@@ -1746,8 +1873,8 @@ void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="name
 
 </div>
 </div>
-<a id="ae5d28992581687d1389afa2db567ea48"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ae5d28992581687d1389afa2db567ea48">&#9670;&nbsp;</a></span>vhBufTransitionImageLayout() <span class="overload">[1/2]</span></h2>
+<a id="ad28d13df6b14efaebef29dde2b1b7674"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ad28d13df6b14efaebef29dde2b1b7674">&#9670;&nbsp;</a></span>vhBufTransitionImageLayout() <span class="overload">[1/2]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -1781,6 +1908,12 @@ void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="name
           <td></td>
           <td class="paramtype">VkFormat&#160;</td>
           <td class="paramname"><em>format</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">VkImageAspectFlagBits&#160;</td>
+          <td class="paramname"><em>aspect</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
@@ -1822,6 +1955,7 @@ void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="name
     <tr><td class="paramdir">[in]</td><td class="paramname">commandPool</td><td>Command pool for allocating command buffers </td></tr>
     <tr><td class="paramdir">[in]</td><td class="paramname">image</td><td>The destination image </td></tr>
     <tr><td class="paramdir">[in]</td><td class="paramname">format</td><td>The Image format </td></tr>
+    <tr><td class="paramdir">[in]</td><td class="paramname">aspect</td><td>Color or depth </td></tr>
     <tr><td class="paramdir">[in]</td><td class="paramname">miplevels</td><td>Number of image miplevels </td></tr>
     <tr><td class="paramdir">[in]</td><td class="paramname">layerCount</td><td>Number of image layers </td></tr>
     <tr><td class="paramdir">[in]</td><td class="paramname">oldLayout</td><td>Old layout of the image </td></tr>
@@ -1832,8 +1966,8 @@ void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="name
 
 </div>
 </div>
-<a id="a5ae7c3a395c7e2ede974f536c531dc41"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a5ae7c3a395c7e2ede974f536c531dc41">&#9670;&nbsp;</a></span>vhBufTransitionImageLayout() <span class="overload">[2/2]</span></h2>
+<a id="a71f3a6b1cca391a5c133f8026c0d7d81"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a71f3a6b1cca391a5c133f8026c0d7d81">&#9670;&nbsp;</a></span>vhBufTransitionImageLayout() <span class="overload">[2/2]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -1867,6 +2001,12 @@ void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="name
           <td></td>
           <td class="paramtype">VkFormat&#160;</td>
           <td class="paramname"><em>format</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">VkImageAspectFlagBits&#160;</td>
+          <td class="paramname"><em>aspect</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
@@ -1908,6 +2048,7 @@ void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="name
     <tr><td class="paramdir">[in]</td><td class="paramname">commandBuffer</td><td>Command buffer to record this operation into </td></tr>
     <tr><td class="paramdir">[in]</td><td class="paramname">image</td><td>The destination image </td></tr>
     <tr><td class="paramdir">[in]</td><td class="paramname">format</td><td>The Image format </td></tr>
+    <tr><td class="paramdir">[in]</td><td class="paramname">aspect</td><td>Color or depth </td></tr>
     <tr><td class="paramdir">[in]</td><td class="paramname">miplevels</td><td>Number of image miplevels </td></tr>
     <tr><td class="paramdir">[in]</td><td class="paramname">layerCount</td><td>Number of image layers </td></tr>
     <tr><td class="paramdir">[in]</td><td class="paramname">oldLayout</td><td>Old layout of the image </td></tr>
@@ -2642,8 +2783,8 @@ void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="name
 
 </div>
 </div>
-<a id="a8d8147423d99bfc9ca74ff58e6902f59"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a8d8147423d99bfc9ca74ff58e6902f59">&#9670;&nbsp;</a></span>vhPipeCreateGraphicsPipelineLayout()</h2>
+<a id="add7ac38cec91ccc1cb7f7fc295735651"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#add7ac38cec91ccc1cb7f7fc295735651">&#9670;&nbsp;</a></span>vhPipeCreateGraphicsPipelineLayout()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -2659,6 +2800,12 @@ void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="name
           <td></td>
           <td class="paramtype">std::vector&lt; VkDescriptorSetLayout &gt;&#160;</td>
           <td class="paramname"><em>descriptorSetLayouts</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">std::vector&lt; VkPushConstantRange &gt;&#160;</td>
+          <td class="paramname"><em>pushConstantRanges</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
@@ -2679,6 +2826,7 @@ void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="name
   <table class="params">
     <tr><td class="paramdir">[in]</td><td class="paramname">device</td><td>Logical Vulkan device </td></tr>
     <tr><td class="paramdir">[in]</td><td class="paramname">descriptorSetLayouts</td><td>Descriptor set layouts </td></tr>
+    <tr><td class="paramdir">[in]</td><td class="paramname">pushConstantRanges</td><td>A list with push constant ranges </td></tr>
     <tr><td class="paramdir">[in]</td><td class="paramname">pipelineLayout</td><td>Resulting pipline layout </td></tr>
   </table>
   </dd>
@@ -2792,7 +2940,7 @@ void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="name
 </div>
 </div>
 <a id="ad33a812099efdb28335db179ab789fd2"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ad33a812099efdb28335db179ab789fd2">&#9670;&nbsp;</a></span>vhRenderBeginRenderPass()</h2>
+<h2 class="memtitle"><span class="permalink"><a href="#ad33a812099efdb28335db179ab789fd2">&#9670;&nbsp;</a></span>vhRenderBeginRenderPass() <span class="overload">[1/2]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -2835,6 +2983,64 @@ void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="name
     <tr><td class="paramdir">[in]</td><td class="paramname">commandBuffer</td><td>The command buffer to record into </td></tr>
     <tr><td class="paramdir">[in]</td><td class="paramname">renderPass</td><td>The render pass that should be begun </td></tr>
     <tr><td class="paramdir">[in]</td><td class="paramname">frameBuffer</td><td>The framebuffer for the render pass </td></tr>
+    <tr><td class="paramdir">[in]</td><td class="paramname">extent</td><td>Extent of the framebuffer images </td></tr>
+  </table>
+  </dd>
+</dl>
+
+</div>
+</div>
+<a id="a55ec1b174dce07cb9947b055c354b179"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a55ec1b174dce07cb9947b055c354b179">&#9670;&nbsp;</a></span>vhRenderBeginRenderPass() <span class="overload">[2/2]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">void vh::vhRenderBeginRenderPass </td>
+          <td>(</td>
+          <td class="paramtype">VkCommandBuffer&#160;</td>
+          <td class="paramname"><em>commandBuffer</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">VkRenderPass&#160;</td>
+          <td class="paramname"><em>renderPass</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">VkFramebuffer&#160;</td>
+          <td class="paramname"><em>frameBuffer</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">std::vector&lt; VkClearValue &gt; &amp;&#160;</td>
+          <td class="paramname"><em>clearValues</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">VkExtent2D&#160;</td>
+          <td class="paramname"><em>extent</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Start rendering in a command buffer. </p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramdir">[in]</td><td class="paramname">commandBuffer</td><td>The command buffer to record into </td></tr>
+    <tr><td class="paramdir">[in]</td><td class="paramname">renderPass</td><td>The render pass that should be begun </td></tr>
+    <tr><td class="paramdir">[in]</td><td class="paramname">frameBuffer</td><td>The framebuffer for the render pass </td></tr>
+    <tr><td class="paramdir">[in]</td><td class="paramname">clearValues</td><td>A list of clear values to clear render targets </td></tr>
     <tr><td class="paramdir">[in]</td><td class="paramname">extent</td><td>Extent of the framebuffer images </td></tr>
   </table>
   </dd>
@@ -2893,8 +3099,8 @@ void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="name
 
 </div>
 </div>
-<a id="a5cc8cc8fc8c2b6b333a854c6e9daa8e9"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a5cc8cc8fc8c2b6b333a854c6e9daa8e9">&#9670;&nbsp;</a></span>vhRenderCreateDescriptorSetLayout()</h2>
+<a id="acf5951d9e013d1bd9fdab39b2ee4516d"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#acf5951d9e013d1bd9fdab39b2ee4516d">&#9670;&nbsp;</a></span>vhRenderCreateDescriptorSetLayout()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -2904,6 +3110,12 @@ void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="name
           <td>(</td>
           <td class="paramtype">VkDevice&#160;</td>
           <td class="paramname"><em>device</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">std::vector&lt; uint32_t &gt;&#160;</td>
+          <td class="paramname"><em>counts</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
@@ -2935,6 +3147,7 @@ void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="name
 <dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
     <tr><td class="paramdir">[in]</td><td class="paramname">device</td><td>The logical Vulkan device </td></tr>
+    <tr><td class="paramdir">[in]</td><td class="paramname">counts</td><td>The number of images in an array </td></tr>
     <tr><td class="paramdir">[in]</td><td class="paramname">types</td><td>Contains the resource types for the increasing bindings </td></tr>
     <tr><td class="paramdir">[in]</td><td class="paramname">stageFlags</td><td>Denotes in which stages they should be used </td></tr>
     <tr><td class="paramdir">[out]</td><td class="paramname">descriptorSetLayout</td><td>The new descriptor set layout </td></tr>
@@ -3148,8 +3361,8 @@ void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="name
 
 </div>
 </div>
-<a id="aeb8a9ef7b0b04bdfff010b96eff38425"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#aeb8a9ef7b0b04bdfff010b96eff38425">&#9670;&nbsp;</a></span>vhRenderUpdateDescriptorSet()</h2>
+<a id="a6c13ad01667cf5bc7c0946bdc61b53b8"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a6c13ad01667cf5bc7c0946bdc61b53b8">&#9670;&nbsp;</a></span>vhRenderUpdateDescriptorSet()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -3181,13 +3394,13 @@ void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="name
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype">std::vector&lt; VkImageView &gt;&#160;</td>
+          <td class="paramtype">std::vector&lt; std::vector&lt; VkImageView &gt;&gt;&#160;</td>
           <td class="paramname"><em>textureImageViews</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype">std::vector&lt; VkSampler &gt;&#160;</td>
+          <td class="paramtype">std::vector&lt; std::vector&lt; VkSampler &gt;&gt;&#160;</td>
           <td class="paramname"><em>textureSamplers</em>&#160;</td>
         </tr>
         <tr>
@@ -3303,7 +3516,7 @@ void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="name
 </div><!-- contents -->
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>
-Generated on Fri Mar 22 2019 14:51:21 for Vienna Vulkan Engine by &#160;<a href="http://www.doxygen.org/index.html">
+Generated on Tue Mar 26 2019 21:10:22 for Vienna Vulkan Engine by &#160;<a href="http://www.doxygen.org/index.html">
 <img class="footer" src="doxygen.png" alt="doxygen"/>
 </a> 1.8.15
 </small></address>

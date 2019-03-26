@@ -128,12 +128,20 @@ virtual void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" hr
 virtual void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_subrender.html#afec4fbc3ab9001d79b464cd58a079309">recreateResources</a> ()</td></tr>
 <tr class="memdesc:afec4fbc3ab9001d79b464cd58a079309 inherit pub_methods_classve_1_1_v_e_subrender"><td class="mdescLeft">&#160;</td><td class="mdescRight">If the window size changes then some resources have to be recreated to fit the new size. <br /></td></tr>
 <tr class="separator:afec4fbc3ab9001d79b464cd58a079309 inherit pub_methods_classve_1_1_v_e_subrender"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ad4cec1e88187ebe26ebf9371a524ce5b inherit pub_methods_classve_1_1_v_e_subrender"><td class="memItemLeft" align="right" valign="top"><a id="ad4cec1e88187ebe26ebf9371a524ce5b"></a>
+virtual void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_subrender.html#ad4cec1e88187ebe26ebf9371a524ce5b">bindPipeline</a> (VkCommandBuffer commandBuffer)</td></tr>
+<tr class="memdesc:ad4cec1e88187ebe26ebf9371a524ce5b inherit pub_methods_classve_1_1_v_e_subrender"><td class="mdescLeft">&#160;</td><td class="mdescRight">Bind the subrenderer's pipeline to a commandbuffer. <br /></td></tr>
+<tr class="separator:ad4cec1e88187ebe26ebf9371a524ce5b inherit pub_methods_classve_1_1_v_e_subrender"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a2cc13f57ad28631b93998fa65b47fc77 inherit pub_methods_classve_1_1_v_e_subrender"><td class="memItemLeft" align="right" valign="top">virtual void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_subrender.html#a2cc13f57ad28631b93998fa65b47fc77">drawEntity</a> (VkCommandBuffer commandBuffer, uint32_t imageIndex, <a class="el" href="classve_1_1_v_e_entity.html">VEEntity</a> *entity)</td></tr>
 <tr class="memdesc:a2cc13f57ad28631b93998fa65b47fc77 inherit pub_methods_classve_1_1_v_e_subrender"><td class="mdescLeft">&#160;</td><td class="mdescRight">Draw one entity.  <a href="classve_1_1_v_e_subrender.html#a2cc13f57ad28631b93998fa65b47fc77">More...</a><br /></td></tr>
 <tr class="separator:a2cc13f57ad28631b93998fa65b47fc77 inherit pub_methods_classve_1_1_v_e_subrender"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a87358c9b4c985267771438ce11ddd872 inherit pub_methods_classve_1_1_v_e_subrender"><td class="memItemLeft" align="right" valign="top">virtual void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_subrender.html#a87358c9b4c985267771438ce11ddd872">removeEntity</a> (<a class="el" href="classve_1_1_v_e_entity.html">VEEntity</a> *pEntity)</td></tr>
 <tr class="memdesc:a87358c9b4c985267771438ce11ddd872 inherit pub_methods_classve_1_1_v_e_subrender"><td class="mdescLeft">&#160;</td><td class="mdescRight">Removes an entity from this subrenderer - does NOT delete it.  <a href="classve_1_1_v_e_subrender.html#a87358c9b4c985267771438ce11ddd872">More...</a><br /></td></tr>
 <tr class="separator:a87358c9b4c985267771438ce11ddd872 inherit pub_methods_classve_1_1_v_e_subrender"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a263559df7bbdf6594745909fba7738ba inherit pub_methods_classve_1_1_v_e_subrender"><td class="memItemLeft" align="right" valign="top"><a id="a263559df7bbdf6594745909fba7738ba"></a>
+VkPipelineLayout&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_subrender.html#a263559df7bbdf6594745909fba7738ba">getPipelineLayout</a> ()</td></tr>
+<tr class="memdesc:a263559df7bbdf6594745909fba7738ba inherit pub_methods_classve_1_1_v_e_subrender"><td class="mdescLeft">&#160;</td><td class="mdescRight">return the layout of the local pipeline <br /></td></tr>
+<tr class="separator:a263559df7bbdf6594745909fba7738ba inherit pub_methods_classve_1_1_v_e_subrender"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="inherited"></a>
 Additional Inherited Members</h2></td></tr>
@@ -211,7 +219,6 @@ std::vector&lt; <a class="el" href="classve_1_1_v_e_entity.html">VEEntity</a> * 
   </table>
   </dd>
 </dl>
-<dl class="section return"><dt>Returns</dt><dd>the index of the entity in the list. </dd></dl>
 
 <p>Reimplemented from <a class="el" href="classve_1_1_v_e_subrender.html#a6970ef026e052637bc60fc9b90f46a78">ve::VESubrender</a>.</p>
 
@@ -357,7 +364,7 @@ std::vector&lt; <a class="el" href="classve_1_1_v_e_entity.html">VEEntity</a> * 
 </div><!-- contents -->
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>
-Generated on Fri Mar 22 2019 14:51:21 for Vienna Vulkan Engine by &#160;<a href="http://www.doxygen.org/index.html">
+Generated on Tue Mar 26 2019 21:10:22 for Vienna Vulkan Engine by &#160;<a href="http://www.doxygen.org/index.html">
 <img class="footer" src="doxygen.png" alt="doxygen"/>
 </a> 1.8.15
 </small></address>

@@ -92,8 +92,8 @@ Inheritance diagram for ve::VERendererForward:</div>
 <table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="nested-classes"></a>
 Classes</h2></td></tr>
-<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structve_1_1_v_e_renderer_forward_1_1ve_u_b_o_per_frame.html">veUBOPerFrame</a></td></tr>
-<tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">Data that is updated once per frame.  <a href="structve_1_1_v_e_renderer_forward_1_1ve_u_b_o_per_frame.html#details">More...</a><br /></td></tr>
+<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structve_1_1_v_e_renderer_forward_1_1ve_per_frame_data__t.html">vePerFrameData_t</a></td></tr>
+<tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">Data that is updated once per frame.  <a href="structve_1_1_v_e_renderer_forward_1_1ve_per_frame_data__t.html#details">More...</a><br /></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-methods"></a>
@@ -116,6 +116,10 @@ Public Member Functions</h2></td></tr>
 <tr class="separator:a46f8ff959bd4f8e18405e3c65683f62a"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:acfa386d05b23e6a6ac352bcf255e568b"><td class="memItemLeft" align="right" valign="top">virtual VkRenderPass&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_renderer_forward.html#acfa386d05b23e6a6ac352bcf255e568b">getRenderPassShadow</a> ()</td></tr>
 <tr class="separator:acfa386d05b23e6a6ac352bcf255e568b"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a968944d3d9ae8642c19df38923b19dc8"><td class="memItemLeft" align="right" valign="top"><a class="el" href="structve_1_1_v_e_texture.html">VETexture</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_renderer_forward.html#a968944d3d9ae8642c19df38923b19dc8">getDepthMap</a> ()</td></tr>
+<tr class="separator:a968944d3d9ae8642c19df38923b19dc8"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a7bdfb2d684af3809931143c666fdd9ac"><td class="memItemLeft" align="right" valign="top"><a class="el" href="structve_1_1_v_e_texture.html">VETexture</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_renderer_forward.html#a7bdfb2d684af3809931143c666fdd9ac">getShadowMap</a> ()</td></tr>
+<tr class="separator:a7bdfb2d684af3809931143c666fdd9ac"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a5df79bd0d940dc4eba65c1912554ec05"><td class="memItemLeft" align="right" valign="top">virtual VkExtent2D&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_renderer_forward.html#a5df79bd0d940dc4eba65c1912554ec05">getShadowMapExtent</a> ()</td></tr>
 <tr class="separator:a5df79bd0d940dc4eba65c1912554ec05"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="inherit_header pub_methods_classve_1_1_v_e_renderer"><td colspan="2" onclick="javascript:toggleInherit('pub_methods_classve_1_1_v_e_renderer')"><img src="closed.png" alt="-"/>&#160;Public Member Functions inherited from <a class="el" href="classve_1_1_v_e_renderer.html">ve::VERenderer</a></td></tr>
@@ -200,26 +204,14 @@ virtual void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" hr
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pro-attribs"></a>
 Protected Attributes</h2></td></tr>
-<tr class="memitem:aa63eeb5dd7d09c8e1ae010a75a5b84f8"><td class="memItemLeft" align="right" valign="top"><a id="aa63eeb5dd7d09c8e1ae010a75a5b84f8"></a>
-VkImage&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_renderer_forward.html#aa63eeb5dd7d09c8e1ae010a75a5b84f8">m_depthImage</a></td></tr>
-<tr class="memdesc:aa63eeb5dd7d09c8e1ae010a75a5b84f8"><td class="mdescLeft">&#160;</td><td class="mdescRight">Depth image. <br /></td></tr>
-<tr class="separator:aa63eeb5dd7d09c8e1ae010a75a5b84f8"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:af904381180e0f144f27af9288341973c"><td class="memItemLeft" align="right" valign="top"><a id="af904381180e0f144f27af9288341973c"></a>
-VmaAllocation&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_renderer_forward.html#af904381180e0f144f27af9288341973c">m_depthImageAllocation</a></td></tr>
-<tr class="memdesc:af904381180e0f144f27af9288341973c"><td class="mdescLeft">&#160;</td><td class="mdescRight">VMA image allocation info. <br /></td></tr>
-<tr class="separator:af904381180e0f144f27af9288341973c"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aa52929c479574358ac579918fc8700f4"><td class="memItemLeft" align="right" valign="top"><a id="aa52929c479574358ac579918fc8700f4"></a>
-VkImageView&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_renderer_forward.html#aa52929c479574358ac579918fc8700f4">m_depthImageView</a></td></tr>
-<tr class="memdesc:aa52929c479574358ac579918fc8700f4"><td class="mdescLeft">&#160;</td><td class="mdescRight">Image view for depth image. <br /></td></tr>
-<tr class="separator:aa52929c479574358ac579918fc8700f4"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a37c5bd8268e51f665f976bbf489e3b4a"><td class="memItemLeft" align="right" valign="top"><a id="a37c5bd8268e51f665f976bbf489e3b4a"></a>
-VkFormat&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_renderer_forward.html#a37c5bd8268e51f665f976bbf489e3b4a">m_depthMapFormat</a></td></tr>
-<tr class="memdesc:a37c5bd8268e51f665f976bbf489e3b4a"><td class="mdescLeft">&#160;</td><td class="mdescRight">remember the depth map format <br /></td></tr>
-<tr class="separator:a37c5bd8268e51f665f976bbf489e3b4a"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ad5c68eae373cfbad951b2b9883050c7f"><td class="memItemLeft" align="right" valign="top"><a id="ad5c68eae373cfbad951b2b9883050c7f"></a>
-<a class="el" href="structve_1_1_v_e_texture.html">VETexture</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_renderer_forward.html#ad5c68eae373cfbad951b2b9883050c7f">m_shadowMap</a> = nullptr</td></tr>
-<tr class="memdesc:ad5c68eae373cfbad951b2b9883050c7f"><td class="mdescLeft">&#160;</td><td class="mdescRight">the shadow map <br /></td></tr>
-<tr class="separator:ad5c68eae373cfbad951b2b9883050c7f"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:af05d94bcf795d926ef24bd9e81201ceb"><td class="memItemLeft" align="right" valign="top"><a id="af05d94bcf795d926ef24bd9e81201ceb"></a>
+<a class="el" href="structve_1_1_v_e_texture.html">VETexture</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_renderer_forward.html#af05d94bcf795d926ef24bd9e81201ceb">m_depthMap</a> = nullptr</td></tr>
+<tr class="memdesc:af05d94bcf795d926ef24bd9e81201ceb"><td class="mdescLeft">&#160;</td><td class="mdescRight">the image depth map <br /></td></tr>
+<tr class="separator:af05d94bcf795d926ef24bd9e81201ceb"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a7cd90c189805d5318c4b79006ba9e91e"><td class="memItemLeft" align="right" valign="top"><a id="a7cd90c189805d5318c4b79006ba9e91e"></a>
+std::vector&lt; std::vector&lt; <a class="el" href="structve_1_1_v_e_texture.html">VETexture</a> * &gt; &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_renderer_forward.html#a7cd90c189805d5318c4b79006ba9e91e">m_shadowMaps</a></td></tr>
+<tr class="memdesc:a7cd90c189805d5318c4b79006ba9e91e"><td class="mdescLeft">&#160;</td><td class="mdescRight">the shadow maps - a list of map cascades <br /></td></tr>
+<tr class="separator:a7cd90c189805d5318c4b79006ba9e91e"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a94d19e84e85b2fb6c5d4b4cda9e26891"><td class="memItemLeft" align="right" valign="top"><a id="a94d19e84e85b2fb6c5d4b4cda9e26891"></a>
 std::vector&lt; VkBuffer &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_renderer_forward.html#a94d19e84e85b2fb6c5d4b4cda9e26891">m_uniformBuffersPerFrame</a></td></tr>
 <tr class="memdesc:a94d19e84e85b2fb6c5d4b4cda9e26891"><td class="mdescLeft">&#160;</td><td class="mdescRight">UBO for camera, light data and shadow matrices. <br /></td></tr>
@@ -240,10 +232,10 @@ std::vector&lt; VkFramebuffer &gt;&#160;</td><td class="memItemRight" valign="bo
 VkRenderPass&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_renderer_forward.html#a18770bbdf37dd669fdf0c703d9c56cc4">m_renderPassShadow</a></td></tr>
 <tr class="memdesc:a18770bbdf37dd669fdf0c703d9c56cc4"><td class="mdescLeft">&#160;</td><td class="mdescRight">The shadow render pass. <br /></td></tr>
 <tr class="separator:a18770bbdf37dd669fdf0c703d9c56cc4"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a1d794ebec3605b6e8419d2ffd7ba0d9a"><td class="memItemLeft" align="right" valign="top"><a id="a1d794ebec3605b6e8419d2ffd7ba0d9a"></a>
-std::vector&lt; VkFramebuffer &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_renderer_forward.html#a1d794ebec3605b6e8419d2ffd7ba0d9a">m_shadowFramebuffers</a></td></tr>
-<tr class="memdesc:a1d794ebec3605b6e8419d2ffd7ba0d9a"><td class="mdescLeft">&#160;</td><td class="mdescRight">Framebuffers for shadow pass. <br /></td></tr>
-<tr class="separator:a1d794ebec3605b6e8419d2ffd7ba0d9a"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a2cdfc6a241b98825c6fe68e5dd85407d"><td class="memItemLeft" align="right" valign="top"><a id="a2cdfc6a241b98825c6fe68e5dd85407d"></a>
+std::vector&lt; std::vector&lt; VkFramebuffer &gt; &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_renderer_forward.html#a2cdfc6a241b98825c6fe68e5dd85407d">m_shadowFramebuffers</a></td></tr>
+<tr class="memdesc:a2cdfc6a241b98825c6fe68e5dd85407d"><td class="mdescLeft">&#160;</td><td class="mdescRight">Framebuffers for shadow pass - a list of cascades. <br /></td></tr>
+<tr class="separator:a2cdfc6a241b98825c6fe68e5dd85407d"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:abfad776dd4c0b6b3fc7051f2e8082905"><td class="memItemLeft" align="right" valign="top"><a id="abfad776dd4c0b6b3fc7051f2e8082905"></a>
 VkDescriptorPool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_renderer_forward.html#abfad776dd4c0b6b3fc7051f2e8082905">m_descriptorPool</a></td></tr>
 <tr class="memdesc:abfad776dd4c0b6b3fc7051f2e8082905"><td class="mdescLeft">&#160;</td><td class="mdescRight">Descriptor pool for creating per frame descriptor sets. <br /></td></tr>
@@ -393,6 +385,32 @@ std::vector&lt; <a class="el" href="classve_1_1_v_e_subrender.html">VESubrender<
 </ul>
 
 <p>Reimplemented from <a class="el" href="classve_1_1_v_e_renderer.html#a936f370cff71cb995e5d90017e3834ba">ve::VERenderer</a>.</p>
+
+</div>
+</div>
+<a id="a968944d3d9ae8642c19df38923b19dc8"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a968944d3d9ae8642c19df38923b19dc8">&#9670;&nbsp;</a></span>getDepthMap()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="structve_1_1_v_e_texture.html">VETexture</a>* ve::VERendererForward::getDepthMap </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+<dl class="section return"><dt>Returns</dt><dd>the depth map vector </dd></dl>
 
 </div>
 </div>
@@ -578,6 +596,32 @@ std::vector&lt; <a class="el" href="classve_1_1_v_e_subrender.html">VESubrender<
 
 </div>
 </div>
+<a id="a7bdfb2d684af3809931143c666fdd9ac"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a7bdfb2d684af3809931143c666fdd9ac">&#9670;&nbsp;</a></span>getShadowMap()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="structve_1_1_v_e_texture.html">VETexture</a>* ve::VERendererForward::getShadowMap </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+<dl class="section return"><dt>Returns</dt><dd>a specific depth map from the whole set </dd></dl>
+
+</div>
+</div>
 <a id="a5df79bd0d940dc4eba65c1912554ec05"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a5df79bd0d940dc4eba65c1912554ec05">&#9670;&nbsp;</a></span>getShadowMapExtent()</h2>
 
@@ -705,7 +749,7 @@ std::vector&lt; <a class="el" href="classve_1_1_v_e_subrender.html">VESubrender<
 </div><!-- contents -->
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>
-Generated on Fri Mar 22 2019 14:51:21 for Vienna Vulkan Engine by &#160;<a href="http://www.doxygen.org/index.html">
+Generated on Tue Mar 26 2019 21:10:22 for Vienna Vulkan Engine by &#160;<a href="http://www.doxygen.org/index.html">
 <img class="footer" src="doxygen.png" alt="doxygen"/>
 </a> 1.8.15
 </small></address>
