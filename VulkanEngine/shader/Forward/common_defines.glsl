@@ -18,6 +18,7 @@ struct lightData_t {
 struct shadowData_t {
   mat4 shadowView;
   mat4 shadowProj;
+  vec4 limits;
 };
 
 struct cameraData_t {
@@ -29,7 +30,7 @@ struct cameraData_t {
 struct perFrameData_t {
   cameraData_t camera;
   lightData_t light;
-  shadowData_t shadow;
+  shadowData_t shadow[NUM_SHADOW_CASCADE];
 };
 
 struct perObjectData_t {

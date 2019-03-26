@@ -175,6 +175,7 @@ namespace ve {
 		struct veShadowData_t {
 			glm::mat4 shadowView;
 			glm::mat4 shadowProj;
+			glm::vec4 limits;
 		};
 
 		float m_nearPlane = 1.0f;	///<The distance of the near plane to the camera origin

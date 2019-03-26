@@ -29,7 +29,7 @@ namespace ve {
 
 		vh::vhPipeCreateGraphicsPipelineLayout(getRendererForwardPointer()->getDevice(),
 			{ getRendererForwardPointer()->getDescriptorSetLayoutPerFrame(), m_descriptorSetLayoutUBO },
-			{ { VK_SHADER_STAGE_FRAGMENT_BIT, 0, 4 } },
+			{ { VK_SHADER_STAGE_VERTEX_BIT, 0, 4 } },
 			&m_pipelineLayout);
 
 		vh::vhPipeCreateGraphicsShadowPipeline(getRendererForwardPointer()->getDevice(),
@@ -86,8 +86,6 @@ namespace ve {
 	*
 	*/
 	void VESubrenderFW_Shadow::draw(VkCommandBuffer commandBuffer, uint32_t imageIndex) {
-		vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_pipeline);	//bind the PSO
-
 		//go through all entities and draw them
 		for (auto pEntity : getSceneManagerPointer()->m_entities) {
 			if (pEntity.second->m_drawEntity && pEntity.second->m_castsShadow) {

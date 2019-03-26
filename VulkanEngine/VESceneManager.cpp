@@ -42,12 +42,12 @@ namespace ve {
 
 		//camera parent is used for translation rotations
 		VEEntity *cameraParent = new VEEntity("StandardCameraParent");
-		cameraParent->setTransform( glm::translate(glm::mat4(1.0f), glm::vec3(-20.0f, 20.0f, -20.0f)) );
+		cameraParent->setTransform( glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 10.0f, 0.0f)) );
 		addEntity(cameraParent);
 
 		//camera can only do yaw (parent y-axis) and pitch (local x-axis) rotations
 		VkExtent2D extent = getWindowPointer()->getExtent();
-		VECamera *camera = new VECameraProjective("StandardCamera", 0.1f, 200.0f, extent.width/ (float)extent.height, 45.0f);
+		VECamera *camera = new VECameraProjective("StandardCamera", 1.0f, 201.0f, extent.width/ (float)extent.height, 45.0f);
 		camera->lookAt(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f), glm::vec3(0.0f, 1.0f, 0.0f));
 		camera->m_pEntityParent = cameraParent;
 		addEntity(camera);

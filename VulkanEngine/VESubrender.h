@@ -68,6 +68,7 @@ namespace ve {
 		virtual void	closeSubrenderer();
 		virtual void	recreateResources();
 
+		virtual void	bindPipeline(VkCommandBuffer commandBuffer);
 		virtual void	draw( VkCommandBuffer commandBuffer, uint32_t imageIndex );
 		virtual void	drawEntity(VkCommandBuffer commandBuffer, uint32_t imageIndex, VEEntity *entity);
 		virtual void	bindDescriptorSets(VkCommandBuffer commandBuffer, uint32_t imageIndex, VEEntity *entity);

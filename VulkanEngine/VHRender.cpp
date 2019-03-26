@@ -297,7 +297,7 @@ namespace vh {
 				}
 				
 				descriptorWrites[i].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-				descriptorWrites[i].pImageInfo = &imageInfos[i][0];
+				descriptorWrites[i].pImageInfo = imageInfos[i].data();
 				descriptorWrites[i].descriptorCount = (uint32_t)textureImageViews[i].size();
 			}
 			else {

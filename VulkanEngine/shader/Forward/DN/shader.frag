@@ -16,7 +16,7 @@ layout(set = 0, binding = 0) uniform UniformBufferObjectPerFrame {
     perFrameData_t data;
 } perFrameUBO;
 
-layout(set = 2, binding = 0) uniform sampler2D shadowMap;
+layout(set = 2, binding = 0) uniform sampler2D shadowMap[3];
 
 layout(set = 3, binding = 0) uniform sampler2D texSampler;
 layout(set = 3, binding = 1) uniform sampler2D normalSampler;
@@ -24,6 +24,19 @@ layout(set = 3, binding = 1) uniform sampler2D normalSampler;
 
 void main() {
 
+    //shadow
+    int sIdx = 0;
+    if( gl_FragDepth > perFrameUBO.data.shadow[0].limits[1] ) {
+        sIdx = 1;
+    }
+    if( gl_FragDepth > perFrameUBO.data.shadow[1].limits[1] ) {
+        sIdx = 2;
+    }
+    shadowData_t s = perFrameUBO.data.shadow[sIdx];
+    float shadowFactor = shadowFunc(  fragPosW, s.shadowView,
+                                      s.shadowProj, shadowMap[sIdx] );
+
+    //TBN matrix
     vec3 N        = normalize( fragNormalW );
     vec3 T        = normalize( fragTangentW );
     T             = normalize( T - dot(T, N)*N );
@@ -39,7 +52,6 @@ void main() {
     vec3 lightDir = normalize( perFrameUBO.data.light.transform[2].xyz );
     float nfac = dot( fragNormalW, -lightDir)<0? 0.5:1;
     vec4 lightParam = perFrameUBO.data.light.param;
-    float shadowFactor = shadowFunc( fragPosW, perFrameUBO.data.shadow.shadowView, perFrameUBO.data.shadow.shadowProj, shadowMap );
 
     vec3 ambcol  = perFrameUBO.data.light.col_ambient.xyz;
     vec3 diffcol = perFrameUBO.data.light.col_diffuse.xyz;

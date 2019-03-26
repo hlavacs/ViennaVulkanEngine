@@ -16,27 +16,29 @@ layout(set = 0, binding = 0) uniform UniformBufferObjectPerFrame {
     perFrameData_t data;
 } perFrameUBO;
 
-layout(set = 2, binding = 0) uniform sampler2D shadowMap;
+layout(set = 2, binding = 0) uniform sampler2D shadowMap[3];
 
 layout(set = 3, binding = 0) uniform sampler2D texSampler;
 
 void main() {
 
-    /*int sIdx = 0;
-    if( gl_Position > perFrameUBO.data.shadow[0].zLimit ) {
-      sIdx = 1;
+    //shadow
+    int sIdx = 0;
+    if( gl_FragDepth > perFrameUBO.data.shadow[0].limits[1] ) {
+        sIdx = 1;
     }
-    if( gl_Position > perFrameUBO.data.shadow[1].zLimit ) {
-      sIdx = 2;
-    }*/
+    if( gl_FragDepth > perFrameUBO.data.shadow[1].limits[1] ) {
+        sIdx = 2;
+    }
+    shadowData_t s = perFrameUBO.data.shadow[sIdx];
+    float shadowFactor = shadowFunc(  fragPosW, s.shadowView,
+                                       s.shadowProj, shadowMap[sIdx] );
 
     //parameters
     vec3 camPosW = perFrameUBO.data.camera.camModel[3].xyz;
-
     vec3 lightPosW = perFrameUBO.data.light.transform[3].xyz;
     vec3 lightDirW = normalize( perFrameUBO.data.light.transform[2].xyz );
     vec4 lightParam = perFrameUBO.data.light.param;
-    float shadowFactor = shadowFunc( fragPosW, perFrameUBO.data.shadow.shadowView, perFrameUBO.data.shadow.shadowProj, shadowMap );
 
     vec3 ambcol  = perFrameUBO.data.light.col_ambient.xyz;
     vec3 diffcol = perFrameUBO.data.light.col_diffuse.xyz;

@@ -10,7 +10,7 @@
 
 
 const int MAX_FRAMES_IN_FLIGHT = 2;
-const uint32_t SHADOW_MAP_DIM[NUM_SHADOW_CASCADE] = { 2048, 1024, 1024 };
+const uint32_t SHADOW_MAP_DIM[NUM_SHADOW_CASCADE] = { 1024, 1024, 1024 };
 
 
 namespace ve {
@@ -316,8 +316,24 @@ namespace ve {
 		plight->fillLightStructure(&ubo.light);
 
 		//fill in shadow data
-		VECamera *pCamShadow = camera->createShadowCamera(plight);
-		pCamShadow->fillShadowStructure(&ubo.shadow);
+		VECamera *pCamShadow0 = camera->createShadowCamera(plight, 0.00f, 1.0f);
+		pCamShadow0->fillShadowStructure(&ubo.shadow[0] );
+		ubo.shadow[0].limits[0] = 0.00f;
+		ubo.shadow[0].limits[1] = 1.0f;
+
+		VECamera *pCamShadow1 = camera->createShadowCamera(plight, 0.25f, 0.60f);
+		pCamShadow1->fillShadowStructure(&ubo.shadow[1]);
+		ubo.shadow[1].limits[0] = 0.25f;
+		ubo.shadow[1].limits[1] = 0.60f;
+
+		VECamera *pCamShadow2 = camera->createShadowCamera(plight, 0.60f, 1.0f);
+		pCamShadow2->fillShadowStructure(&ubo.shadow[2]);
+		ubo.shadow[2].limits[0] = 0.60f;
+		ubo.shadow[2].limits[1] = 1.00f;
+
+		delete pCamShadow0;
+		delete pCamShadow1;
+		delete pCamShadow2;
 
 		void* data = nullptr;
 		vmaMapMemory(m_vmaAllocator, m_uniformBuffersPerFrameAllocation[imageIndex], &data);
@@ -389,13 +405,15 @@ namespace ve {
 		cv.depthStencil = { 1.0f, 0 };
 		clearValues.push_back(cv);
 
-		for (int i = 0; i < NUM_SHADOW_CASCADE; i++) {
+		for ( uint32_t i = 0; i < NUM_SHADOW_CASCADE; i++) {
+			unsigned zahl =  0;
+
 			vh::vhRenderBeginRenderPass(commandBuffer, m_renderPassShadow,
-										m_shadowFramebuffers[imageIndex][i], clearValues,
-										m_shadowMaps[imageIndex][i]->m_extent);
+										m_shadowFramebuffers[imageIndex][i], 
+										clearValues, m_shadowMaps[imageIndex][i]->m_extent);
 
-			vkCmdPushConstants(commandBuffer, m_subrenderShadow->getPipelineLayout(), VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(int), &i);
-
+			m_subrenderShadow->bindPipeline(commandBuffer);
+			vkCmdPushConstants(commandBuffer, m_subrenderShadow->getPipelineLayout(), VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(unsigned), &zahl);
 			m_subrenderShadow->draw(commandBuffer, imageIndex);
 			vkCmdEndRenderPass(commandBuffer);
 		}
@@ -404,7 +422,10 @@ namespace ve {
 		//light pass
 
 		vh::vhRenderBeginRenderPass(commandBuffer, m_renderPass, m_swapChainFramebuffers[imageIndex], m_swapChainExtent);
-		for (auto pSub : m_subrenderers) pSub->draw(commandBuffer, imageIndex);
+		for (auto pSub : m_subrenderers) {
+			pSub->bindPipeline(commandBuffer);
+			pSub->draw(commandBuffer, imageIndex);
+		}
 		vkCmdEndRenderPass(commandBuffer);
 
 		vh::vhCmdEndSingleTimeCommands(	m_device, m_graphicsQueue, m_commandPool, commandBuffer,

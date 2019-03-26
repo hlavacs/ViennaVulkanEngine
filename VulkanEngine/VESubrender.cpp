@@ -38,6 +38,11 @@ namespace ve {
 	}
 
 
+	void VESubrender::bindPipeline(VkCommandBuffer commandBuffer) {
+		vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_pipeline);	//bind the PSO
+	}
+
+
 	/**
 	* \brief Draw all associated entities.
 	*
@@ -49,8 +54,6 @@ namespace ve {
 	*
  	*/
 	void VESubrender::draw(VkCommandBuffer commandBuffer, uint32_t imageIndex ) {
-		vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_pipeline);	//bind the PSO
-
 		//go through all entities and draw them
 		for (auto pEntity : m_entities) {
 			if (pEntity->m_drawEntity ) {

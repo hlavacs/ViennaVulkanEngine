@@ -35,7 +35,7 @@ namespace ve {
 		struct vePerFrameData_t {
 			VECamera::veCameraData_t camera;
 			VELight::veLightData_t light;			///<Light information
-			VECamera::veShadowData_t shadow;
+			VECamera::veShadowData_t shadow[NUM_SHADOW_CASCADE];
 		};
 
 
