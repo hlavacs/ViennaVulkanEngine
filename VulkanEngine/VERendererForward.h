@@ -33,9 +33,9 @@ namespace ve {
 
 		///Data that is updated once per frame
 		struct vePerFrameData_t {
-			VECamera::veCameraData_t camera;
-			VELight::veLightData_t light;			///<Light information
-			VECamera::veShadowData_t shadow[NUM_SHADOW_CASCADE];
+			VECamera::veCameraData_t camera;		///<camera data
+			VELight::veLightData_t light;			///<Light data
+			VECamera::veShadowData_t shadow[NUM_SHADOW_CASCADE]; ///<Shadow data
 		};
 
 
@@ -96,7 +96,9 @@ namespace ve {
 		virtual VkRenderPass			getRenderPass() { return m_renderPass; };
 		///\returns the shadow render pass
 		virtual VkRenderPass			getRenderPassShadow() { return m_renderPassShadow; };
+		///\returns the depth map vector
 		VETexture *						getDepthMap() { return m_depthMap; };
+		///\returns a specific depth map from the whole set
 		VETexture *						getShadowMap() { return m_shadowMaps[imageIndex][0]; };
 		///\returns the 2D extent of the shadow map
 		virtual VkExtent2D				getShadowMapExtent() { return m_shadowMaps[imageIndex][0]->m_extent; };

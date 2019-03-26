@@ -442,8 +442,24 @@ namespace ve {
 		}
 	}
 
+	/**
+	*
+	* \brief Get an OBB that exactly holds the given points.
+	*
+	* The OBB is oriented along the local axes of the entity.
+	*
+	* \param[in] points The points that should be engulfed by the OBB, in world space
+	* \param[in] t1 Used for interpolating between frustum edge points
+	* \param[in] t2 Used for interpolating between frustum edge points
+	* \param[out] center Center of the OBB
+	* \param[out] width Width of the OBB
+	* \param[out] height Height of the OBB
+	* \param[out] depth Depth of the OBB
+	*
+	*/
 
-	void VEEntity::getOBB(std::vector<glm::vec4> &points, float t1, float t2, glm::vec3 &center, float &width, float &height, float &depth) {
+	void VEEntity::getOBB(	std::vector<glm::vec4> &points, float t1, float t2, 
+							glm::vec3 &center, float &width, float &height, float &depth) {
 
 		glm::mat4 W = getWorldTransform();
 
@@ -513,6 +529,15 @@ namespace ve {
 	}
 
 
+	/**
+	*
+	* \brief Fills a veCameraData_t structure with the data of this camera
+	*
+	* In this case the camera is used in the light pass to capture photos of light.
+	*
+	* \param[out] pCamera Pointer to a veCameraData_t struct that will be filled.
+	*
+	*/
 	void VECamera::fillCameraStructure(veCameraData_t *pCamera) {
 		pCamera->camModel = getWorldTransform();
 		pCamera->camView = glm::inverse(pCamera->camModel);
@@ -524,6 +549,16 @@ namespace ve {
 	}
 
 
+	/**
+	*
+	* \brief Fills a veShadowData_t structure with the data of this camera
+	*
+	* In this scenario the camera is used to create shadow maps, i.e., it is 
+	* used in a shadow pass.
+	*
+	* \param[out] pShadow Pointer to a veShadowData_t struct that will be filled.
+	*
+	*/
 	void VECamera::fillShadowStructure(veShadowData_t *pShadow ) {
 		pShadow->shadowView = glm::inverse(getWorldTransform());
 		pShadow->shadowProj = getProjectionMatrix();
@@ -561,13 +596,13 @@ namespace ve {
 	}
 
 
-
-
 	/**
 	*
 	* \brief Create an shadow camera 
 	*
 	* \param[in] pLight Pointer to a light that defines the light direction and type.
+	* \param[in] z0 Startparameter for interpolating the frustum
+	* \param[in] z1 Endparameter for interlopating the frustum
 	* \returns a new VECamera shadow camera
 	*
 	*/
@@ -585,6 +620,8 @@ namespace ve {
 	* \brief Create an ortho shadow camera from the camera's frustum bounding sphere
 	*
 	* \param[in] pLight Pointer to a light that defines the light direction.
+	* \param[in] z0 Startparameter for interpolating the frustum
+	* \param[in] z1 Endparameter for interlopating the frustum
 	* \returns a new VECameraOrtho that can be used to create shadow maps for directional light
 	*
 	*/
@@ -610,6 +647,8 @@ namespace ve {
 	* \brief Create an ortho shadow camera from the camera's frustum bounding sphere
 	*
 	* \param[in] pLight Pointer to a light that defines the light direction.
+	* \param[in] z0 Startparameter for interpolating the frustum
+	* \param[in] z1 Endparameter for interlopating the frustum
 	* \returns a new VECameraProjective that can be used to create shadow maps for spot light
 	* 
 	*/
@@ -707,6 +746,8 @@ namespace ve {
 	*
 	* The points are returned in world space.
 	*
+	* \param[in] z0 Startparameter for interpolating the frustum
+	* \param[in] z1 Endparameter for interlopating the frustum
 	* \param[out] points List of 8 points that make up the frustum in world space
 	*
 	*/
@@ -793,6 +834,8 @@ namespace ve {
 	*
 	* The points are returned in world space.
 	*
+	* \param[in] t1 Startparameter for interpolating the frustum
+	* \param[in] t2 Endparameter for interlopating the frustum
 	* \param[out] points List of 8 points that make up the frustum in world space
 	*
 	*/

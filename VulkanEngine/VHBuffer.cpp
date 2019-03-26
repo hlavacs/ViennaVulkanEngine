@@ -231,6 +231,7 @@ namespace vh {
 	* \param[in] graphicsQueue Device queue for submitting commands
 	* \param[in] commandPool Command pool for allocating command buffers
 	* \param[in] image The source image
+	* \param[in] aspect Aspect on how to use the image (color or depth)
 	* \param[in] buffer The destination buffer
 	* \param[in] layerCount Number of image layers
 	* \param[in] width Ímage width
@@ -295,6 +296,7 @@ namespace vh {
 	* \param[in] commandPool Command pool for allocating command buffers
 	* \param[in] image The destination image
 	* \param[in] format The Image format
+	* \param[in] aspect Color or depth
 	* \param[in] miplevels Number of image miplevels
 	* \param[in] layerCount Number of image layers
 	* \param[in] oldLayout Old layout of the image
@@ -322,6 +324,7 @@ namespace vh {
 	* \param[in] commandBuffer Command buffer to record this operation into
 	* \param[in] image The destination image
 	* \param[in] format The Image format
+	* \param[in] aspect Color or depth
 	* \param[in] miplevels Number of image miplevels
 	* \param[in] layerCount Number of image layers
 	* \param[in] oldLayout Old layout of the image
@@ -692,13 +695,14 @@ namespace vh {
 	* \brief Create framebuffers (color + depth), one for each swap chain image
 	* \param[in] device Logical Vulkan device
 	* \param[in] imageViews Color images from the swap chain
-	* \param[in] depthImageView Depth image view
+	* \param[in] depthImageViews List with views of the depth images
 	* \param[in] renderPass Render pass to be used in
 	* \param[in] extent Extent of the swap chain images
 	* \param[out] frameBuffers The resulting frame buffers
 	*/
 	void vhBufCreateFramebuffers(	VkDevice device, 
-									std::vector<VkImageView> imageViews, std::vector<VkImageView> depthImageViews, //should have same length!
+									std::vector<VkImageView> imageViews, 
+									std::vector<VkImageView> depthImageViews, //should have same length!
 									VkRenderPass renderPass, VkExtent2D extent,
 									std::vector<VkFramebuffer> &frameBuffers ) {
 
@@ -738,6 +742,7 @@ namespace vh {
 	* \param[in] graphicsQueue Device queue for submitting commands
 	* \param[in] commandPool Command pool for allocating command buffers
 	* \param[in] image The source image
+	* \param[in] aspect Color or depth
 	* \param[in] bufferData The destination buffer data 
 	* \param[in] width Ímage width
 	* \param[in] height Image height
@@ -793,6 +798,9 @@ namespace vh {
 	* \param[in] graphicsQueue Device queue for submitting commands
 	* \param[in] commandPool Command pool for allocating command buffers
 	* \param[in] image The source image
+	* \param[in] format Format of the image
+	* \param[in] aspect Color or depth
+	* \param[in] layout The layout the image is currently in
 	* \param[in] bufferData The destination buffer data
 	* \param[in] width Ímage width
 	* \param[in] height Image height

@@ -38,6 +38,9 @@ namespace ve {
 	}
 
 
+	/**
+	* \brief Bind the subrenderer's pipeline to a commandbuffer
+	*/
 	void VESubrender::bindPipeline(VkCommandBuffer commandBuffer) {
 		vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_pipeline);	//bind the PSO
 	}

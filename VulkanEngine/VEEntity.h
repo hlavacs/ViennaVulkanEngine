@@ -165,18 +165,19 @@ namespace ve {
 	*/
 	class VECamera : public VEEntity {
 	public:
-
+		///Structure for sending camera information to a UBO
 		struct veCameraData_t {
 			glm::mat4 camModel;			///<Camera model matrix, needed for camera world position
 			glm::mat4 camView;			///<Camera view matrix
 			glm::mat4 camProj;			///<Camera projection matrix
-			glm::vec4 param;			///<Camera depth
+			glm::vec4 param;			///<param[0]: near plane param[1]: far plane distances
 		};
 
+		///Structure for sending information about a shadow to a UBO
 		struct veShadowData_t {
-			glm::mat4 shadowView;
-			glm::mat4 shadowProj;
-			glm::vec4 limits;
+			glm::mat4 shadowView;		///<View matrix of the shadow cam
+			glm::mat4 shadowProj;		///<Projection matrix of the shadow cam
+			glm::vec4 limits;			///<limits[0] nad [1]: fraction of (far-near) distance where frustum begins/ends
 		};
 
 		float m_nearPlane = 1.0f;	///<The distance of the near plane to the camera origin

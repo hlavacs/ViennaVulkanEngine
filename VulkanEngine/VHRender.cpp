@@ -81,14 +81,14 @@ namespace vh {
 
 
 
-#	/**
-		*
-		* \brief Create a render pass for a shadow pass
-		* \param[in] device The logical Vulkan device
-		* \param[in] depthFormat The depth map image format
-		* \param[out] renderPass The new render pass
-		*
-		*/
+	/**
+	*
+	* \brief Create a render pass for a shadow pass
+	* \param[in] device The logical Vulkan device
+	* \param[in] depthFormat The depth map image format
+	* \param[out] renderPass The new render pass
+	*
+	*/
 	void vhRenderCreateRenderPassShadow(VkDevice device, VkFormat depthFormat, VkRenderPass *renderPass) {
 
 		VkAttachmentDescription attachmentDescription{};
@@ -146,6 +146,7 @@ namespace vh {
 	*
 	* \brief Create a descriptor layout
 	* \param[in] device The logical Vulkan device
+	* \param[in] counts The number of images in an array
 	* \param[in] types Contains the resource types for the increasing bindings
 	* \param[in] stageFlags Denotes in which stages they should be used
 	* \param[out] descriptorSetLayout The new descriptor set layout
@@ -335,6 +336,17 @@ namespace vh {
 
 
 
+	/**
+	*
+	* \brief Start rendering in a command buffer
+	*
+	* \param[in] commandBuffer The command buffer to record into
+	* \param[in] renderPass The render pass that should be begun
+	* \param[in] frameBuffer The framebuffer for the render pass
+	* \param[in] clearValues A list of clear values to clear render targets 
+	* \param[in] extent Extent of the framebuffer images
+	*
+	*/
 	void vhRenderBeginRenderPass(	VkCommandBuffer commandBuffer,
 									VkRenderPass renderPass,
 									VkFramebuffer frameBuffer,
@@ -415,6 +427,7 @@ namespace vh {
 	* \brief Create a pipeline layout for drawing a light pass
 	* \param[in] device Logical Vulkan device
 	* \param[in] descriptorSetLayouts Descriptor set layouts
+	* \param[in] pushConstantRanges A list with push constant ranges
 	* \param[in] pipelineLayout Resulting pipline layout
 	* \returns in VkResult
 	*
