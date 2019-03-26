@@ -10,7 +10,7 @@
 
 
 const int MAX_FRAMES_IN_FLIGHT = 2;
-const uint32_t SHADOW_MAP_DIM[NUM_SHADOW_CASCADE] = { 3000, 3000, 3000 };
+const uint32_t SHADOW_MAP_DIM[NUM_SHADOW_CASCADE] = { 4096, 4096, 4096, 4096 };
 
 
 namespace ve {
@@ -316,28 +316,16 @@ namespace ve {
 		plight->fillLightStructure(&ubo.light);
 
 		//fill in shadow data
+		std::vector<float> limits = {0.0f, 0.10f, 0.20f, 0.50f, 1.0f};
 
-		ubo.shadow[0].limits[0] = 0.00f;
-		ubo.shadow[0].limits[1] = 0.10f;
-		VECamera *pCamShadow0 = 
-			camera->createShadowCamera(plight, ubo.shadow[0].limits[0], ubo.shadow[0].limits[1]);
-		pCamShadow0->fillShadowStructure(&ubo.shadow[0]);
-
-		ubo.shadow[1].limits[0] = 0.10f;
-		ubo.shadow[1].limits[1] = 0.50f;
-		VECamera *pCamShadow1 = 
-			camera->createShadowCamera(plight, ubo.shadow[1].limits[0], ubo.shadow[1].limits[1]);
-		pCamShadow1->fillShadowStructure(&ubo.shadow[1]);
-
-		ubo.shadow[2].limits[0] = 0.50f;
-		ubo.shadow[2].limits[1] = 1.00f;
-		VECamera *pCamShadow2 = 
-			camera->createShadowCamera(plight, ubo.shadow[2].limits[0], ubo.shadow[2].limits[1]);
-		pCamShadow2->fillShadowStructure(&ubo.shadow[2]);
-
-		delete pCamShadow0;
-		delete pCamShadow1;
-		delete pCamShadow2;
+		for (uint32_t i = 0; i < NUM_SHADOW_CASCADE; i++) {
+			ubo.shadow[i].limits[0] = limits[i];
+			ubo.shadow[i].limits[1] = limits[i+1];
+			VECamera *pCamShadow =
+				camera->createShadowCamera(plight, limits[i], limits[i+1]);
+			pCamShadow->fillShadowStructure(&ubo.shadow[i]);
+			delete pCamShadow;
+		}
 
 		void* data = nullptr;
 		vmaMapMemory(m_vmaAllocator, m_uniformBuffersPerFrameAllocation[imageIndex], &data);

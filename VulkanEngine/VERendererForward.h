@@ -11,7 +11,7 @@
 #define getRendererForwardPointer() g_pVERendererForwardSingleton
 #endif
 
-const uint32_t NUM_SHADOW_CASCADE = 3;
+const uint32_t NUM_SHADOW_CASCADE = 4;
 
 namespace ve {
 

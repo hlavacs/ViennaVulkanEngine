@@ -4,7 +4,7 @@
 //type: 0-directional, 1-point, 2-spot
 //param: light parameters
 
-#define NUM_SHADOW_CASCADE 3
+#define NUM_SHADOW_CASCADE 4
 
 struct lightData_t {
   ivec4   itype;

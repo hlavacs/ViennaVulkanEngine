@@ -13,8 +13,8 @@ layout(set = 1, binding = 0) uniform UniformBufferObjectPerObject {
     perObjectData_t data;
 } perObjectUBO;
 
-layout( push_constant) uniform PushBlock {
-	int sIdx;
+layout( push_constant ) uniform PushBlock {
+	uint sIdx;
 } push_block;
 
 layout(location = 0) in vec3 inPosition;

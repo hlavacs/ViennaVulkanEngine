@@ -32,9 +32,12 @@ void main() {
     if( z >= perFrameUBO.data.shadow[1].limits[1] ) {
         sIdx = 2;
     }
+    if( z >= perFrameUBO.data.shadow[2].limits[1] ) {
+        sIdx = 3;
+    }
     shadowData_t s = perFrameUBO.data.shadow[sIdx];
-    float shadowFactor = shadowFunc(  fragPosW, s.shadowView,
-                                       s.shadowProj, shadowMap[sIdx] );
+    float shadowFactor = shadowFunc(fragPosW, s.shadowView,
+                                    s.shadowProj, shadowMap[sIdx] );
 
     //parameters
     vec3 camPosW = perFrameUBO.data.camera.camModel[3].xyz;
