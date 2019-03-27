@@ -10,10 +10,12 @@ Create a basic Raytracer with a compute shader for spheres.
 
 In terms of the engine:
   - Derive new renderer
-  - Derive subrenderer for spheres
-  - Derive entity for spheres
+  - Derive entity for spheres?
 
 ### Documentation / Sources used
+Started to work on a derived renderer for the pathtracer based on the already implemented forward renderer.
+First obstacle comute queue family needed, helper function does not provide an option.
+Implemented overloaded helper function to get specific queues with the device creation based on: https://www.khronos.org/registry/vulkan/specs/1.0/html/vkspec.html#VkQueueFlagBits
 
 ### Conclusion
 

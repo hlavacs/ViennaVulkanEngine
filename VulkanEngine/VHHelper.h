@@ -131,6 +131,7 @@ namespace vh {
 	//physical device
 	void vhDevPickPhysicalDevice(VkInstance instance, VkSurfaceKHR surface, std::vector<const char*> requiredExtensions, VkPhysicalDevice *physicalDevice);
 	QueueFamilyIndices vhDevFindQueueFamilies(VkPhysicalDevice device, VkSurfaceKHR surface);
+	std::vector<uint32_t> vhDevFindQueueFamilies(VkPhysicalDevice device, VkSurfaceKHR surface, const std::vector <uint32_t> &queueBitFields);
 	VkFormat vhDevFindSupportedFormat(VkPhysicalDevice physicalDevice, const std::vector<VkFormat>& candidates, VkImageTiling tiling, VkFormatFeatureFlags features);
 	VkFormat vhDevFindDepthFormat(VkPhysicalDevice physicalDevice);
 
@@ -140,6 +141,13 @@ namespace vh {
 									std::vector<const char*> requiredDeviceExtensions,
 									std::vector<const char*> requiredValidationLayers, 
 									VkDevice *device, VkQueue *graphicsQueue, VkQueue *presentQueue);
+
+	void vhDevCreateLogicalDevice( VkPhysicalDevice physicalDevice, VkSurfaceKHR surface,
+		std::vector<const char*> requiredDeviceExtensions,
+		std::vector<const char*> requiredValidationLayers,
+		const std::vector <uint32_t> &queueBitFields,
+		VkDevice *device,
+		std::vector<VkQueue*> &queues);
 
 	//swapchain
 	SwapChainSupportDetails vhDevQuerySwapChainSupport(VkPhysicalDevice device, VkSurfaceKHR surface);

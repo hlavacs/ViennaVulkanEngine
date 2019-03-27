@@ -347,6 +347,124 @@ namespace vh {
 
 		vkGetDeviceQueue(*device, indices.graphicsFamily, 0, graphicsQueue);
 		vkGetDeviceQueue(*device, indices.presentFamily, 0, presentQueue);
+	}
+
+	//-------------------------------------------------------------------------------------------------------
+/**
+*
+* \brief Find suitable queue families of a given physical device
+* \param[in] device A physical device
+* \param[in] surface The surface of a window
+* \returns a structure containing queue family indices of suitable families
+*
+*/
+	std::vector<uint32_t> vhDevFindQueueFamilies(VkPhysicalDevice device, VkSurfaceKHR surface, const std::vector <uint32_t> &queueBitFields) {
+		uint32_t queueFamilyCount = 0;
+		vkGetPhysicalDeviceQueueFamilyProperties(device, &queueFamilyCount, nullptr);
+
+		std::vector<VkQueueFamilyProperties> queueFamilies(queueFamilyCount);
+		vkGetPhysicalDeviceQueueFamilyProperties(device, &queueFamilyCount, queueFamilies.data());
+
+		std::vector<uint32_t> queueFamilyIndices;
+
+		//very bruteforce and simple for now
+		for (const auto& queueBitField : queueBitFields) {
+			uint32_t i = 0;
+			for (const auto& queueFamily : queueFamilies) {
+				if (queueFamily.queueCount > 0 && queueFamily.queueFlags & queueBitField) {
+					queueFamilyIndices.push_back(i);
+					break;
+				}
+
+				if (queueBitField == 0) {
+					VkBool32 presentSupport = false;
+					vkGetPhysicalDeviceSurfaceSupportKHR(device, i, surface, &presentSupport);
+
+					if (queueFamily.queueCount > 0 && presentSupport) {
+						queueFamilyIndices.push_back(i);
+					}
+				}
+				i++;
+			}
+		}
+
+		return queueFamilyIndices;
+	}
+
+	//-------------------------------------------------------------------------------------------------------
+	/**
+	*
+	* \brief Create a logical device and according queues based on queue bit field
+	* \param[in] physicalDevice The physical device
+	* \param[in] surface Window surface
+	* \param[in] requiredDeviceExtensions List of required device extensions
+	* \param[in] requiredValidationLayers List of required validation layers
+	* \param[in] queueBitFields of wanted queues
+				 https://www.khronos.org/registry/vulkan/specs/1.0/html/vkspec.html#VkQueueFlagBits
+				 zero means present queue
+	* \param[out] device The new logical device
+	* \param[out] queues that will be allocated in the order of the bitfields
+	*
+	*/
+	void vhDevCreateLogicalDevice(VkPhysicalDevice physicalDevice, VkSurfaceKHR surface,
+		std::vector<const char*> requiredDeviceExtensions,
+		std::vector<const char*> requiredValidationLayers,
+		const std::vector <uint32_t> &queueBitFields,
+		VkDevice *device,
+		std::vector<VkQueue*> &queues) {
+
+		assert(queueBitFields.size() == queues.size());
+
+		auto indices = vhDevFindQueueFamilies(physicalDevice, surface, queueBitFields);
+
+		if (indices.size() != queueBitFields.size()) {
+			throw std::runtime_error("Not all queried queues supported by device!");
+		}
+
+		std::vector<VkDeviceQueueCreateInfo> queueCreateInfos;
+		const std::set<uint32_t> uniqueQueueFamilies (indices.begin(), indices.end());
+
+		float queuePriority = 1.0f;
+		for (const auto queueFamily : uniqueQueueFamilies) {
+			VkDeviceQueueCreateInfo queueCreateInfo = {};
+			queueCreateInfo.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
+			queueCreateInfo.queueFamilyIndex = queueFamily;
+			queueCreateInfo.queueCount = 1;
+			queueCreateInfo.pQueuePriorities = &queuePriority;
+			queueCreateInfos.push_back(queueCreateInfo);
+		}
+
+		VkPhysicalDeviceFeatures deviceFeatures = {};
+		deviceFeatures.samplerAnisotropy = VK_TRUE;
+		deviceFeatures.textureCompressionBC = VK_TRUE;
+		deviceFeatures.shaderSampledImageArrayDynamicIndexing = VK_TRUE;
+		deviceFeatures.shaderUniformBufferArrayDynamicIndexing = VK_TRUE;
+		deviceFeatures.shaderStorageBufferArrayDynamicIndexing = VK_TRUE;
+		deviceFeatures.shaderStorageImageArrayDynamicIndexing = VK_TRUE;
+
+		VkDeviceCreateInfo createInfo = {};
+		createInfo.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
+
+		createInfo.queueCreateInfoCount = static_cast<uint32_t>(queueCreateInfos.size());
+		createInfo.pQueueCreateInfos = queueCreateInfos.data();
+
+		createInfo.pEnabledFeatures = &deviceFeatures;
+
+		createInfo.enabledExtensionCount = static_cast<uint32_t>(requiredDeviceExtensions.size());
+		createInfo.ppEnabledExtensionNames = requiredDeviceExtensions.data();
+
+		createInfo.enabledLayerCount = static_cast<uint32_t>(requiredValidationLayers.size());
+		createInfo.ppEnabledLayerNames = requiredValidationLayers.data();
+
+		if (vkCreateDevice(physicalDevice, &createInfo, nullptr, device) != VK_SUCCESS) {
+			throw std::runtime_error("failed to create logical device!");
+		}
+
+		uint32_t i{ 0 };
+		for (auto queue : queues) {
+			vkGetDeviceQueue(*device, indices.at(0), 0, queue);
+			i++;
+		}
 
 	}
 }
