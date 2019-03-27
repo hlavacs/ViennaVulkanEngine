@@ -1,6 +1,27 @@
-/bin
+# Vulkan Engine
 VulkanEngine.VC.db
 VulkanEngine.VC.VC.opendb
-/.vs
 git_config.txt
 renderdoc.cap
+/VulkanEngine/screenshots
+/VulkanEngine/screenshots/*
+/VulkanEngine/VulkanEngine.vcxproj
+
+# Visual Studio
+Release
+bin
+obj
+*.ncb
+*.vcproj*
+*.suo
+*.user
+*.sln.cache
+*.manifest
+*.CodeAnalysisLog.xml
+*.lastcodeanalysissucceeded
+_ReSharper.*/
+/.vs
+
+
+# Mac OS X
+.DS_Store
