@@ -96,10 +96,10 @@ namespace ve {
 			glm::mat4 scale = glm::scale(glm::mat4(1.0f), glm::vec3(1000.0f, 1.0f, 1000.0f));
 			e4->setTransform(scale);
 
-			//VEEntity *cubemap = getSceneManagerPointer()->createCubemap("The Cubemap", "models/textures", "grasscube1024.dds");
+			//VEEntity *cubemap = getSceneManagerPointer()->createCubemap("The Cubemap", "models/test/sky", "grasscube1024.dds");
 			
 			//  ft bk up dn rt lf
-			VEEntity *cubemap = getSceneManagerPointer()->createCubemap("The Cubemap", "models/textures/cloudy", 
+			VEEntity *cubemap = getSceneManagerPointer()->createCubemap("The Cubemap", "models/test/sky/cloudy", 
 			{ "bluecloud_ft.jpg", "bluecloud_bk.jpg", "bluecloud_up.jpg", "bluecloud_dn.jpg", "bluecloud_rt.jpg", "bluecloud_lf.jpg" });
 			//{ "graycloud_ft.jpg", "graycloud_bk.jpg", "graycloud_up.jpg", "graycloud_dn.jpg", "graycloud_rt.jpg", "graycloud_lf.jpg" });
 			cubemap->multiplyTransform(glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, -700.0f, 0.0f)));
@@ -127,11 +127,6 @@ namespace ve {
 
 			VEEntity *e7 = m_pSceneManager->loadModel("The Cube6 b", "models/test", "cube1.obj");
 			e7->setTransform(glm::scale(glm::mat4(1.0f), glm::vec3(2.0f, 2.0f, 2.0f)) * glm::translate(glm::mat4(1.0f), glm::vec3(10.0f, 10.0f, 5.0f)));
-
-			//VEEntity *hand = m_pSceneManager->loadModel("The Hand", "models/hand", "hand.fbx", aiProcess_FlipUVs | aiProcess_FlipWindingOrder );
-			//hand->multiplyTransform( glm::rotate( glm::mat4(1.0f), (float)-M_PI/2.0f, glm::vec3(0.0f, 1.0f, 0.0f) ) );
-			//hand->multiplyTransform(glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 10.0f, 5.0f)));
-			//getSceneManagerPointer()->deleteEntityAndSubentities("The Hand/RootNode/Cube.005");
 
 			std::default_random_engine generator;
 			std::uniform_real_distribution<float> distribution(-10.0, 10.0);
