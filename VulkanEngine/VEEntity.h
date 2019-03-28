@@ -25,7 +25,7 @@ namespace ve {
 		VkExtent2D		m_extent = {0,0};						///<map extent
 		VkFormat		m_format;								///<texture format
 
-		VETexture(std::string name, gli::texture_cube &texCube);
+		VETexture(std::string name, gli::texture_cube &texCube, VkImageCreateFlags flags = VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT, VkImageViewType viewType = VK_IMAGE_VIEW_TYPE_CUBE);
 		VETexture(std::string name, std::string &basedir, std::vector<std::string> texNames, VkImageCreateFlags flags=0, VkImageViewType viewtype = VK_IMAGE_VIEW_TYPE_2D);
 		///Empty constructor
 		VETexture(std::string name) : VENamedClass(name) {};
@@ -103,6 +103,8 @@ namespace ve {
 		enum veEntityType {	
 			VE_ENTITY_TYPE_OBJECT,				///<Normal object to be drawn
 			VE_ENTITY_TYPE_CUBEMAP,				///<A cubemap for sky boxes
+			VE_ENTITY_TYPE_CUBEMAP2,			///<A cubemap for sky boxes, but simulated
+			VE_ENTITY_TYPE_SKYPLANE,			///<A plane for sky boxes
 			VE_ENTITY_TYPE_TERRAIN_HEIGHTMAP,	///<A heightmap for terrain modelling
 			VE_ENTITY_TYPE_CAMERA_PROJECTIVE,	///<A projective camera, cannot be drawn
 			VE_ENTITY_TYPE_CAMERA_ORTHO,		///<An orthographic camera, cannot be drawn

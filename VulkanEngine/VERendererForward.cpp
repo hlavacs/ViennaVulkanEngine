@@ -168,7 +168,9 @@ namespace ve {
 		addSubrenderer(new VESubrenderFW_D());
 		addSubrenderer(new VESubrenderFW_DN());
 		addSubrenderer(new VESubrenderFW_Cubemap());
-		
+		addSubrenderer(new VESubrenderFW_Cubemap2());
+		addSubrenderer(new VESubrenderFW_Skyplane());
+
 		m_subrenderShadow = new VESubrenderFW_Shadow();
 		m_subrenderShadow->initSubrenderer();
 	}

@@ -46,6 +46,7 @@ namespace ve {
 
 		virtual void initSceneManager();
 		virtual void closeSceneManager();
+		void copyAiNodes(const aiScene* pScene, std::vector<VEMesh*> &meshes, std::vector<VEMaterial*> &materials, aiNode* node, VEEntity *parent);
 
 	public:
 		///Constructor
@@ -56,15 +57,16 @@ namespace ve {
 		//------------------------------------------------------------------------
 		const aiScene *	loadAssets(	std::string basedir, std::string filename, uint32_t aiFlags, 
 									std::vector<VEMesh*> &meshes, std::vector<VEMaterial*> &materials);
-		VEEntity *		loadModel(std::string entityName, std::string basedir, std::string filename, uint32_t aiFlags=0, VEEntity *parent=nullptr);
-		void			copyAiNodes(const aiScene* pScene, std::vector<VEMesh*> &meshes, std::vector<VEMaterial*> &materials, aiNode* node, VEEntity *parent);
 		void			createMeshes(const aiScene* pScene,std::string filekey, std::vector<VEMesh*> &meshes);
 		void			createMaterials(const aiScene* pScene,  std::string basedir, std::string filekey, std::vector<VEMaterial*> &materials);
+
+		VEEntity *		loadModel(std::string entityName, std::string basedir, std::string filename, uint32_t aiFlags=0, VEEntity *parent=nullptr);
 		VEEntity *		createEntity(std::string entityName, VEMesh *pMesh, VEMaterial *pMat, aiMatrix4x4 transf, VEEntity *parent=nullptr );
 		VEEntity *		createEntity(std::string entityName, VEMesh *pMesh, VEMaterial *pMat, glm::mat4 transf, VEEntity *parent = nullptr);
 		VEEntity *		createEntity(std::string entityName, VEEntity::veEntityType type, VEMesh *pMesh, VEMaterial *pMat, glm::mat4 transf, VEEntity *parent = nullptr);
 		VEEntity *		createCubemap(std::string entityName, std::string basedir, std::string filename );
-		VEEntity *		createCubemap(std::string entityName, std::string basedir, std::vector<std::string> filenames);
+		VEEntity *		createCubemap(std::string entityName, std::string basedir, std::vector<std::string> filenames );
+		VEEntity *		createSkyplane(std::string entityName, std::string basedir, std::string texName);
 
 		//------------------------------------------------------------------------
 		///Add an entity to the scene

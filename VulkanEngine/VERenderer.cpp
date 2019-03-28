@@ -93,6 +93,9 @@ namespace ve {
 		case VEEntity::VE_ENTITY_TYPE_CUBEMAP:
 			type = VESubrender::VE_SUBRENDERER_TYPE_CUBEMAP;
 			break;
+		case VEEntity::VE_ENTITY_TYPE_CUBEMAP2:
+			type = VESubrender::VE_SUBRENDERER_TYPE_CUBEMAP2;
+			break;
 		case VEEntity::VE_ENTITY_TYPE_TERRAIN_HEIGHTMAP:
 			break;
 		default: return;

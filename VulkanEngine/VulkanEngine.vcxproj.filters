@@ -69,6 +69,12 @@
     <ClInclude Include="VESubrenderFW_Shadow.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="VESubrenderFW_Cubemap2.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="VESubrenderFW_Skyplane.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="VEEngine.cpp">
@@ -144,6 +150,12 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="VESubrenderFW_Shadow.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="VESubrenderFW_Cubemap2.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="VESubrenderFW_Skyplane.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

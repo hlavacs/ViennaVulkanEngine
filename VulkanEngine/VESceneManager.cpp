@@ -389,6 +389,16 @@ namespace ve {
 	VEEntity *	VESceneManager::createCubemap(	std::string entityName, std::string basedir, 
 												std::string filename) {
 
+		VEEntity::veEntityType entityType = VEEntity::VE_ENTITY_TYPE_CUBEMAP;
+		VkImageCreateFlags createFlags = VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT;
+		VkImageViewType viewType = VK_IMAGE_VIEW_TYPE_CUBE;
+
+#ifdef __MACOS__
+		entityType = VEEntity::VE_ENTITY_TYPE_CUBEMAP2;
+		createFlags = 0;
+		viewType = 0;
+#endif
+
 		std::string filekey = basedir + "/" + filename;
 
 		VEMesh * pMesh = m_meshes[STANDARD_MESH_INVCUBE];
@@ -404,10 +414,10 @@ namespace ve {
 				return nullptr;
 			}
 
-			pMat->mapDiffuse = new VETexture( filekey, texCube );
+			pMat->mapDiffuse = new VETexture( filekey, texCube, createFlags, viewType );
 		}
 
-		VEEntity *pEntity = createEntity(entityName, VEEntity::VE_ENTITY_TYPE_CUBEMAP, pMesh, pMat, glm::mat4(1.0f), nullptr );
+		VEEntity *pEntity = createEntity(entityName, entityType, pMesh, pMat, glm::mat4(1.0f), nullptr );
 		pEntity->setTransform(glm::scale(glm::vec3(10000.0f, 10000.0f, 10000.0f)));
 
 		return pEntity;
@@ -426,8 +436,19 @@ namespace ve {
 	* \returns a pointer to the new entity
 	*
 	*/
-	VEEntity *	VESceneManager::createCubemap(std::string entityName, std::string basedir, 
-											std::vector<std::string> filenames) {
+	VEEntity *	VESceneManager::createCubemap(	std::string entityName, std::string basedir, 
+												std::vector<std::string> filenames) {
+
+
+		VEEntity::veEntityType entityType = VEEntity::VE_ENTITY_TYPE_CUBEMAP;
+		VkImageCreateFlags createFlags = VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT;
+		VkImageViewType viewType = VK_IMAGE_VIEW_TYPE_CUBE;
+
+//#ifdef __MACOS__
+		entityType = VEEntity::VE_ENTITY_TYPE_CUBEMAP2;
+		createFlags = VK_IMAGE_CREATE_2D_ARRAY_COMPATIBLE_BIT;
+		viewType = VK_IMAGE_VIEW_TYPE_2D_ARRAY;
+//#endif
 
 		std::string filekey = basedir + "/";
 		std::string addstring = "";
@@ -443,14 +464,36 @@ namespace ve {
 			pMat = new VEMaterial(filekey);
 			m_materials[filekey] = pMat;
 
-			pMat->mapDiffuse = new VETexture(entityName, basedir, filenames, VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT, VK_IMAGE_VIEW_TYPE_CUBE);
+			pMat->mapDiffuse = new VETexture(entityName, basedir, filenames, createFlags, viewType );
 		}
 
-		VEEntity *pEntity = createEntity(entityName, VEEntity::VE_ENTITY_TYPE_CUBEMAP, pMesh, pMat, glm::mat4(1.0f), nullptr);
-		pEntity->setTransform(glm::scale(glm::vec3(10000.0f, 10000.0f, 10000.0f)));
+		VEEntity *pEntity = createEntity(entityName, entityType, pMesh, pMat, glm::mat4(1.0f), nullptr);
+		pEntity->setTransform(glm::scale(glm::vec3(500.0f, 500.0f, 500.0f)));
+		pEntity->m_castsShadow = false;
 
 		return pEntity;
 	}
+
+	VEEntity *	VESceneManager::createSkyplane(std::string entityName, std::string basedir, std::string texName) {
+
+		std::string filekey = basedir + "/" + texName;
+		VEMesh * pMesh = m_meshes[STANDARD_MESH_PLANE];
+
+		VEMaterial *pMat = m_materials[filekey];
+		if (pMat == nullptr) {
+			pMat = new VEMaterial(filekey);
+			m_materials[filekey] = pMat;
+
+			pMat->mapDiffuse = new VETexture(entityName, basedir, { texName });
+		}
+
+		VEEntity *pEntity = createEntity(entityName, VEEntity::VE_ENTITY_TYPE_SKYPLANE, pMesh, pMat, glm::mat4(1.0f), nullptr);
+		pEntity->setTransform(glm::scale(glm::vec3(500.0f, 500.0f, 500.0f)));
+		pEntity->m_castsShadow = false;
+
+		return pEntity;
+	}
+
 
 
 	//----------------------------------------------------------------------------------------------------------------

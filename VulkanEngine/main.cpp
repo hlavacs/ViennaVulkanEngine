@@ -102,9 +102,9 @@ namespace ve {
 			VEEntity *cubemap = getSceneManagerPointer()->createCubemap("The Cubemap", "models/test/sky/cloudy", 
 			{ "bluecloud_ft.jpg", "bluecloud_bk.jpg", "bluecloud_up.jpg", "bluecloud_dn.jpg", "bluecloud_rt.jpg", "bluecloud_lf.jpg" });
 			//{ "graycloud_ft.jpg", "graycloud_bk.jpg", "graycloud_up.jpg", "graycloud_dn.jpg", "graycloud_rt.jpg", "graycloud_lf.jpg" });
-			cubemap->multiplyTransform(glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, -700.0f, 0.0f)));
-			RotatorListener *pRot = new RotatorListener("CubemapRotator", cubemap, 0.01f, glm::vec3(0.0f, 1.0f, 0.0f));
-			getEnginePointer()->registerEventListener(pRot);
+			//cubemap->multiplyTransform(glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, -700.0f, 0.0f)));
+			//RotatorListener *pRot = new RotatorListener("CubemapRotator", cubemap, 0.01f, glm::vec3(0.0f, 1.0f, 0.0f));
+			//getEnginePointer()->registerEventListener(pRot);
 		
 			VEEntity *eSLight = getSceneManagerPointer()->getEntity("StandardLight");
 			VEEntity *eL = m_pSceneManager->loadModel("The Light", "models/test/sphere", "sphere.obj", 0 , eSLight);

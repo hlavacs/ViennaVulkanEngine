@@ -171,8 +171,10 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="VESubrenderFW_Skyplane.h" />
     <ClInclude Include="VESubrenderFW_C1.h" />
     <ClInclude Include="VESubrenderFW_Cubemap.h" />
+    <ClInclude Include="VESubrenderFW_Cubemap2.h" />
     <ClInclude Include="VESubrenderFW_DN.h" />
     <ClInclude Include="VEEngine.h" />
     <ClInclude Include="VEEntity.h" />
@@ -203,9 +205,11 @@
     <ClCompile Include="VESubrender.cpp" />
     <ClCompile Include="VESubrenderFW_C1.cpp" />
     <ClCompile Include="VESubrenderFW_Cubemap.cpp" />
+    <ClCompile Include="VESubrenderFW_Cubemap2.cpp" />
     <ClCompile Include="VESubrenderFW_D.cpp" />
     <ClCompile Include="VESubrenderFW_DN.cpp" />
     <ClCompile Include="VESubrenderFW_Shadow.cpp" />
+    <ClCompile Include="VESubrenderFW_Skyplane.cpp" />
     <ClCompile Include="VEWindow.cpp" />
     <ClCompile Include="VEWindowGLFW.cpp" />
     <ClCompile Include="VHBuffer.cpp" />

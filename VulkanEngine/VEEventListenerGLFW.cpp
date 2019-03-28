@@ -267,11 +267,11 @@ namespace ve {
 			vh::vhBufCopyImageToHost(getRendererPointer()->getDevice(), getRendererPointer()->getVmaAllocator(),
 				getRendererPointer()->getGraphicsQueue(), getRendererPointer()->getCommandPool(),
 				image, map->m_format, VK_IMAGE_ASPECT_DEPTH_BIT, layout,
-				(glm::byte*)dataImage, extent.width, extent.height, imageSize * 4);
+				(gli::byte*)dataImage, extent.width, extent.height, imageSize * 4);
 
 			for (uint32_t v = 0; v < extent.height; v++) {
 				for (uint32_t u = 0; u < extent.width; u++) {
-					dataImage2[v*extent.width + u] = (glm::byte)((dataImage[v*extent.width + u]-0.5)*256.0f*2.0f);
+					dataImage2[v*extent.width + u] = (gli::byte)((dataImage[v*extent.width + u]-0.5)*256.0f*2.0f);
 					//std::cout << dataImage[v*extent.width + u] << " ";
 				}
 			}

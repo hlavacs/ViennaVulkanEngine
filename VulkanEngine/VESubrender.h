@@ -40,6 +40,8 @@ namespace ve {
 			VE_SUBRENDERER_TYPE_DIFFUSEMAP,					///<Use a diffuse texture
 			VE_SUBRENDERER_TYPE_DIFFUSEMAP_NORMALMAP,		///<Use a diffuse texture and normal map
 			VE_SUBRENDERER_TYPE_CUBEMAP,					///<Use a cubemap to create a sky box
+			VE_SUBRENDERER_TYPE_CUBEMAP2,					///<Use a cubemap to create a sky box
+			VE_SUBRENDERER_TYPE_SKYPLANE,					///<Use a cubemap to create a sky box
 			VE_SUBRENDERER_TYPE_TERRAIN_WITH_HEIGHTMAP,		///<A tesselated terrain using a height map
 			VE_SUBRENDERER_TYPE_SHADOW						///<Draw entities for the shadow pass
 		};

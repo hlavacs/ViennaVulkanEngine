@@ -147,7 +147,8 @@ namespace ve {
 	* \param[in] texCube The GLI cubemap structure
 	*
 	*/
-	VETexture::VETexture(std::string name, gli::texture_cube &texCube) : VENamedClass( name ) {
+	VETexture::VETexture(std::string name, gli::texture_cube &texCube, 
+						VkImageCreateFlags flags, VkImageViewType viewType ) : VENamedClass( name ) {
 
 		vh::vhBufCreateTexturecubeImage(getRendererPointer()->getDevice(), getRendererPointer()->getVmaAllocator(),
 			getRendererPointer()->getGraphicsQueue(), getRendererPointer()->getCommandPool(),
