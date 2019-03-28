@@ -94,18 +94,24 @@ namespace ve {
 
 			VEEntity *e4 = m_pSceneManager->loadModel("The Plane", "models/test", "plane_t_n_s.obj");
 			glm::mat4 scale = glm::scale(glm::mat4(1.0f), glm::vec3(1000.0f, 1.0f, 1000.0f));
+			e4->setParam( glm::vec4(1000.0f, 1000.0f, 0.0f, 0.0f) );
 			e4->setTransform(scale);
 
 			//VEEntity *cubemap = getSceneManagerPointer()->createCubemap("The Cubemap", "models/test/sky", "grasscube1024.dds");
 			
 			//  ft bk up dn rt lf
-			VEEntity *cubemap = getSceneManagerPointer()->createCubemap("The Cubemap", "models/test/sky/cloudy", 
-			{ "bluecloud_ft.jpg", "bluecloud_bk.jpg", "bluecloud_up.jpg", "bluecloud_dn.jpg", "bluecloud_rt.jpg", "bluecloud_lf.jpg" });
+			//VEEntity *cubemap = getSceneManagerPointer()->createCubemap("The Cubemap", "models/test/sky/cloudy", 
+			//{ "bluecloud_ft.jpg", "bluecloud_bk.jpg", "bluecloud_up.jpg", "bluecloud_dn.jpg", "bluecloud_rt.jpg", "bluecloud_lf.jpg" });
 			//{ "graycloud_ft.jpg", "graycloud_bk.jpg", "graycloud_up.jpg", "graycloud_dn.jpg", "graycloud_rt.jpg", "graycloud_lf.jpg" });
 			//cubemap->multiplyTransform(glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, -700.0f, 0.0f)));
 			//RotatorListener *pRot = new RotatorListener("CubemapRotator", cubemap, 0.01f, glm::vec3(0.0f, 1.0f, 0.0f));
 			//getEnginePointer()->registerEventListener(pRot);
-		
+
+			VEEntity *sp1 = getSceneManagerPointer()->createSkyplane("Skyplane1", "models/test/sky/cloudy", { "bluecloud_up.jpg" });
+			sp1->multiplyTransform( glm::scale(glm::mat4(1.0f), glm::vec3(1000.0f, 1000.0f, 1000.0f)) );
+			sp1->multiplyTransform( glm::rotate( glm::mat4(1.0f), (float)M_PI, glm::vec3(1.0f,0.0f,0.0f) ) );
+			sp1->multiplyTransform( glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 300.0f, 0.0f)));
+
 			VEEntity *eSLight = getSceneManagerPointer()->getEntity("StandardLight");
 			VEEntity *eL = m_pSceneManager->loadModel("The Light", "models/test/sphere", "sphere.obj", 0 , eSLight);
 			eL->multiplyTransform(glm::scale(glm::vec3(0.02f,0.02f,0.02f)));

@@ -29,6 +29,7 @@ namespace ve {
 			glm::mat4 model;			///<Object model matrix
 			glm::mat4 modelInvTrans;	///<Inverse transpose
 			glm::vec4 color;			///<Uniform color if needed by shader
+			glm::vec4 param;			///<A free parameter vector
 		};
 
 		/**

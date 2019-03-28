@@ -444,11 +444,11 @@ namespace ve {
 		VkImageCreateFlags createFlags = VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT;
 		VkImageViewType viewType = VK_IMAGE_VIEW_TYPE_CUBE;
 
-//#ifdef __MACOS__
+#ifdef __MACOS__
 		entityType = VEEntity::VE_ENTITY_TYPE_CUBEMAP2;
 		createFlags = VK_IMAGE_CREATE_2D_ARRAY_COMPATIBLE_BIT;
 		viewType = VK_IMAGE_VIEW_TYPE_2D_ARRAY;
-//#endif
+#endif
 
 		std::string filekey = basedir + "/";
 		std::string addstring = "";
@@ -488,7 +488,6 @@ namespace ve {
 		}
 
 		VEEntity *pEntity = createEntity(entityName, VEEntity::VE_ENTITY_TYPE_SKYPLANE, pMesh, pMat, glm::mat4(1.0f), nullptr);
-		pEntity->setTransform(glm::scale(glm::vec3(500.0f, 500.0f, 500.0f)));
 		pEntity->m_castsShadow = false;
 
 		return pEntity;

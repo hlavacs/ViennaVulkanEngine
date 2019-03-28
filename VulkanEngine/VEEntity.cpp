@@ -289,6 +289,11 @@ namespace ve {
 		return glm::vec3(z.x, z.y, z.z);
 	}
 
+	void VEEntity::setParam( glm::vec4 param) {
+		m_param = param;
+		update();
+	}
+
 
 	/**
 	*
@@ -385,7 +390,7 @@ namespace ve {
 		if (m_pEntityParent != nullptr) {
 			parentWorldMatrix = m_pEntityParent->getWorldTransform();
 		}
-		update(parentWorldMatrix);
+		update(parentWorldMatrix, m_param);
 	}
 
 	/**
@@ -398,13 +403,15 @@ namespace ve {
 	* \param[in] parentWorldMatrix The parent's world matrix or an identity matrix.
 	*
 	*/
-	void VEEntity::update( glm::mat4 parentWorldMatrix ) {
+	void VEEntity::update( glm::mat4 parentWorldMatrix, glm::vec4 param) {
 		VESubrender::veUBOPerObject ubo = {};
 		ubo.model = parentWorldMatrix * getTransform();
 		ubo.modelInvTrans = glm::transpose(glm::inverse(ubo.model));
 		if (m_pMaterial != nullptr) {
 			ubo.color = m_pMaterial->color;
 		}
+		m_param = param;
+		ubo.param = m_param;
 
 		for (uint32_t i = 0; i < m_uniformBuffersAllocation.size(); i++) {
 			void* data = nullptr;
@@ -413,15 +420,15 @@ namespace ve {
 			vmaUnmapMemory(getRendererPointer()->getVmaAllocator(), m_uniformBuffersAllocation[i]);
 		}
 
-		updateChildren(ubo.model);
+		updateChildren(ubo.model, m_param);
 	}
 
 	/**
 	* \brief Update the UBOs of all children of this entity
 	*/
-	void VEEntity::updateChildren( glm::mat4 worldMatrix ) {
+	void VEEntity::updateChildren( glm::mat4 worldMatrix, glm::vec4 param) {
 		for (auto pEntity : m_pEntityChildren) {
-			pEntity->update(worldMatrix);
+			pEntity->update(worldMatrix, param);
 		}
 	}
 

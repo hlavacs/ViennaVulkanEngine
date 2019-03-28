@@ -38,4 +38,5 @@ struct perObjectData_t {
   mat4 model;
   mat4 modelInvTrans;
   vec4 color;
+  vec4 param;
 };

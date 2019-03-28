@@ -16,6 +16,10 @@ layout(set = 0, binding = 0) uniform UniformBufferObjectPerFrame {
     perFrameData_t data;
 } perFrameUBO;
 
+layout(set = 1, binding = 0) uniform UniformBufferObjectPerObject {
+    perObjectData_t data;
+} perObjectUBO;
+
 layout(set = 2, binding = 0) uniform sampler2D shadowMap[3];
 
 layout(set = 3, binding = 0) uniform sampler2D texSampler;
@@ -47,7 +51,7 @@ void main() {
     T             = normalize( T - dot(T, N)*N );
     vec3 B        = normalize( cross( T, N ) );
     mat3 TBN      = mat3(T,B,N);
-    vec3 mapnorm  = normalize( texture(normalSampler, fragTexCoord).xyz*2.0 - 1.0 );
+    vec3 mapnorm  = normalize( texture(normalSampler, (fragTexCoord + perObjectUBO.data.param.zw)*perObjectUBO.data.param.xy).xyz*2.0 - 1.0 );
     vec3 normal   = normalize( TBN * mapnorm );
 
     //parameters
@@ -62,7 +66,7 @@ void main() {
     vec3 diffcol = perFrameUBO.data.light.col_diffuse.xyz;
     vec3 speccol = perFrameUBO.data.light.col_specular.xyz;
 
-    vec3 fragColor = texture(texSampler, fragTexCoord).xyz;
+    vec3 fragColor = texture(texSampler, (fragTexCoord + perObjectUBO.data.param.zw)*perObjectUBO.data.param.xy).xyz;
 
     vec3 result = ambcol * fragColor;
 

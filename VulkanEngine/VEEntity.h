@@ -111,11 +111,13 @@ namespace ve {
 			VE_ENTITY_TYPE_LIGHT
 		};
 		
-		uint32_t					m_entityType = VE_ENTITY_TYPE_OBJECT;	///<Entity type
-		VEMesh *					m_pMesh = nullptr;						///<Pointer to entity mesh
-		VEMaterial *				m_pMaterial = nullptr;					///<Pointer to entity material
-		VEEntity *					m_pEntityParent = nullptr;				///<Pointer to entity parent
-		std::vector<VEEntity *>		m_pEntityChildren;						///<List of entity children
+		uint32_t					m_entityType = VE_ENTITY_TYPE_OBJECT;			///<Entity type
+		VEMesh *					m_pMesh = nullptr;								///<Pointer to entity mesh
+		VEMaterial *				m_pMaterial = nullptr;							///<Pointer to entity material
+		glm::vec4					m_param = glm::vec4(1.0f, 1.0f, 0.0f, 0.0f);	///<A free parameter for drawing
+		VEEntity *					m_pEntityParent = nullptr;						///<Pointer to entity parent
+		std::vector<VEEntity *>		m_pEntityChildren;								///<List of entity children
+
 		VESubrender *				m_pSubrenderer = nullptr;				///<subrenderer this entity is registered with / replace with a set
 		bool						m_drawEntity = false;					///<should it be drawn at all?
 		bool						m_castsShadow = false;					///<draw in the shadow pass?
@@ -137,16 +139,17 @@ namespace ve {
 		glm::vec3	getXAxis();							//Return local x-axis in parent space
 		glm::vec3	getYAxis();							//Return local y-axis in parent space
 		glm::vec3	getZAxis();							//Return local z-axis in parent space
+		void		setParam(glm::vec4 param);			//set the parameter vector
 		void		multiplyTransform(glm::mat4 trans); //Multiply the transform, e.g. translate, scale, rotate 
 		glm::mat4	getWorldTransform();				//Compute the world matrix
 		void		lookAt(glm::vec3 eye, glm::vec3 point, glm::vec3 up);
 
 		//--------------------------------------------------
 		void		update();							//Copy the world matrix to the UBO
-		void		update(glm::mat4 parentWorldMatrix);	//Copy the world matrix using the parent's world matrix
+		void		update(glm::mat4 parentWorldMatrix, glm::vec4 param);//Copy the world matrix using the parent's world matrix
+		void		updateChildren(glm::mat4 worldMatrix, glm::vec4 param);	//Update all children
 		void		addChild(VEEntity *);				//Add a new child
 		void		removeChild(VEEntity *);			//Remove a child, dont destroy it
-		void		updateChildren(glm::mat4 worldMatrix);	//Update all children
 
 		//--------------------------------------------------
 		virtual void getBoundingSphere( glm::vec3 *center, float *radius );		//return center and radius for a bounding sphere
