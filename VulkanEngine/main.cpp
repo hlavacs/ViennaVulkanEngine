@@ -93,9 +93,8 @@ namespace ve {
 		void loadLevel() {
 
 			VEEntity *e4 = m_pSceneManager->loadModel("The Plane", "models/test", "plane_t_n_s.obj");
-			glm::mat4 scale = glm::scale(glm::mat4(1.0f), glm::vec3(1000.0f, 1.0f, 1000.0f));
 			e4->setParam( glm::vec4(1000.0f, 1000.0f, 0.0f, 0.0f) );
-			e4->setTransform(scale);
+			e4->setTransform(glm::scale(glm::mat4(1.0f), glm::vec3(1000.0f, 1.0f, 1000.0f)));
 
 			//VEEntity *cubemap = getSceneManagerPointer()->createCubemap("The Cubemap", "models/test/sky", "grasscube1024.dds");
 			
@@ -107,10 +106,12 @@ namespace ve {
 			//RotatorListener *pRot = new RotatorListener("CubemapRotator", cubemap, 0.01f, glm::vec3(0.0f, 1.0f, 0.0f));
 			//getEnginePointer()->registerEventListener(pRot);
 
-			VEEntity *sp1 = getSceneManagerPointer()->createSkyplane("Skyplane1", "models/test/sky/cloudy", { "bluecloud_up.jpg" });
-			sp1->multiplyTransform( glm::scale(glm::mat4(1.0f), glm::vec3(1000.0f, 1000.0f, 1000.0f)) );
-			sp1->multiplyTransform( glm::rotate( glm::mat4(1.0f), (float)M_PI, glm::vec3(1.0f,0.0f,0.0f) ) );
-			sp1->multiplyTransform( glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 300.0f, 0.0f)));
+			VEEntity *sp1 = m_pSceneManager->createSkybox("The Sky", "models/test/sky/cloudy", 
+			{ "bluecloud_ft.jpg", "bluecloud_bk.jpg", "bluecloud_up.jpg", "bluecloud_dn.jpg", "bluecloud_rt.jpg", "bluecloud_lf.jpg" });
+			RotatorListener *pRot = new RotatorListener("CubemapRotator", sp1, 0.01f, glm::vec3(0.0f, 1.0f, 0.0f));
+			getEnginePointer()->registerEventListener(pRot);
+
+
 
 			VEEntity *eSLight = getSceneManagerPointer()->getEntity("StandardLight");
 			VEEntity *eL = m_pSceneManager->loadModel("The Light", "models/test/sphere", "sphere.obj", 0 , eSLight);
@@ -119,6 +120,7 @@ namespace ve {
 			VEEntity *e1 = m_pSceneManager->loadModel("The Cube",  "models/test/crate0", "cube.obj");
 			e1->setTransform(glm::translate(glm::mat4(1.0f), glm::vec3(10.0f, 1.0f, 1.0f)));
 			e1->multiplyTransform( glm::scale(glm::mat4(1.0f), glm::vec3(10.0f, 10.0f, 10.0f)));
+
 
 			VEEntity *e1b = m_pSceneManager->loadModel("The Cube b", "models/test/crate0", "cube.obj");
 			e1b->setTransform(glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 10.0f, 10.0f)));

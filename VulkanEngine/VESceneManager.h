@@ -67,6 +67,7 @@ namespace ve {
 		VEEntity *		createCubemap(std::string entityName, std::string basedir, std::string filename );
 		VEEntity *		createCubemap(std::string entityName, std::string basedir, std::vector<std::string> filenames );
 		VEEntity *		createSkyplane(std::string entityName, std::string basedir, std::string texName);
+		VEEntity *		createSkybox(std::string entityName, std::string basedir, std::vector<std::string> texNames);
 
 		//------------------------------------------------------------------------
 		///Add an entity to the scene

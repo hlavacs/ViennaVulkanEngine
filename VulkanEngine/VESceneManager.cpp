@@ -493,6 +493,55 @@ namespace ve {
 		return pEntity;
 	}
 
+	//  ft bk up dn rt lf
+	VEEntity * VESceneManager::createSkybox(std::string entityName, std::string basedir, std::vector<std::string> texNames) {
+		std::string filekey = basedir + "/";
+		std::string addstring = "";
+		for (auto filename : texNames) {
+			filekey += addstring + filename;
+			addstring = "+";
+		}
+
+		VEEntity *parent = new VEEntity(entityName);
+
+		float scale = 1000.0f;
+
+		VEEntity *sp1 = getSceneManagerPointer()->createSkyplane(filekey + "/Skyplane1", basedir, texNames[0]);
+		sp1->multiplyTransform(glm::scale(glm::mat4(1.0f), glm::vec3(-scale, 1.0f, -scale)));
+		sp1->multiplyTransform(glm::rotate(glm::mat4(1.0f), -(float)M_PI / 2.0f, glm::vec3(1.0f, 0.0f, 0.0f)));
+		sp1->multiplyTransform(glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 0.0f, scale / 2.0f)));
+		parent->addChild(sp1);
+
+		sp1 = getSceneManagerPointer()->createSkyplane(filekey + "/Skyplane2", basedir, texNames[1]);
+		sp1->multiplyTransform(glm::scale(glm::mat4(1.0f), glm::vec3(scale, 1.0f, scale)));
+		sp1->multiplyTransform(glm::rotate(glm::mat4(1.0f), (float)M_PI / 2.0f, glm::vec3(1.0f, 0.0f, 0.0f)));
+		sp1->multiplyTransform(glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 0.0f, -scale / 2.0f)));
+		parent->addChild(sp1);
+
+		sp1 = getSceneManagerPointer()->createSkyplane(filekey + "/Skyplane3", basedir, texNames[2]);
+		sp1->multiplyTransform(glm::scale(glm::mat4(1.0f), glm::vec3(scale, 1.0f, scale)));
+		sp1->multiplyTransform(glm::rotate(glm::mat4(1.0f), (float)M_PI / 2.0f, glm::vec3(0.0f, 1.0f, 0.0f)));
+		sp1->multiplyTransform(glm::rotate(glm::mat4(1.0f), (float)M_PI, glm::vec3(1.0f, 0.0f, 0.0f)));
+		sp1->multiplyTransform(glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, scale / 2.0f, 0.0f)));
+		parent->addChild(sp1);
+
+		sp1 = getSceneManagerPointer()->createSkyplane(filekey + "/Skyplane4", basedir, texNames[4] );
+		sp1->multiplyTransform(glm::scale(glm::mat4(1.0f), glm::vec3(-scale, 1.0f, -scale)));
+		sp1->multiplyTransform(glm::rotate(glm::mat4(1.0f), (float)M_PI / 2.0f, glm::vec3(0.0f, 1.0f, 0.0f)));
+		sp1->multiplyTransform(glm::rotate(glm::mat4(1.0f), (float)M_PI / 2.0f, glm::vec3(0.0f, 0.0f, 01.0f)));
+		sp1->multiplyTransform(glm::translate(glm::mat4(1.0f), glm::vec3(scale / 2.0f, 0.0f, 0.0f)));
+		parent->addChild(sp1);
+
+		sp1 = getSceneManagerPointer()->createSkyplane(filekey + "/Skyplane5", basedir, texNames[5]);
+		sp1->multiplyTransform(glm::scale(glm::mat4(1.0f), glm::vec3(scale, 1.0f, scale)));
+		sp1->multiplyTransform(glm::rotate(glm::mat4(1.0f), (float)M_PI / 2.0f, glm::vec3(0.0f, 1.0f, 0.0f)));
+		sp1->multiplyTransform(glm::rotate(glm::mat4(1.0f), -(float)M_PI / 2.0f, glm::vec3(0.0f, 0.0f, 1.0f)));
+		sp1->multiplyTransform(glm::translate(glm::mat4(1.0f), glm::vec3(-scale / 2.0f, 0.0f, 0.0f)));
+		parent->addChild(sp1);
+
+		return parent;
+	}
+
 
 
 	//----------------------------------------------------------------------------------------------------------------

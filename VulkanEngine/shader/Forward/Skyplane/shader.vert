@@ -25,6 +25,6 @@ out gl_PerVertex {
 
 void main() {
     vec4 glp = perFrameUBO.data.camera.camProj  * perFrameUBO.data.camera.camView * perObjectUBO.data.model * vec4(inPositionL, 1.0);
-    gl_Position = glp; //vec4( glp.x, glp.y, glp.z, glp.z*1.000001 );
+    gl_Position = vec4( glp.x, glp.y, glp.z, glp.z*1.000001 );
     fragTexCoord   = inTexCoord;
 }
