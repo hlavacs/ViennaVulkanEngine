@@ -4,3 +4,9 @@ VulkanEngine.VC.VC.opendb
 /.vs
 git_config.txt
 renderdoc.cap
+*/MakeFile
+*/.idea/
+*/CMakeCache.txt
+*/CMakeFiles/
+*/cmake_install.cmake
+*/Makefile
