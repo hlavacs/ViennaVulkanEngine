@@ -86,11 +86,13 @@ Inheritance diagram for ve::VESubrender:</div>
  <div class="center">
   <img src="classve_1_1_v_e_subrender.png" usemap="#ve::VESubrender_map" alt=""/>
   <map id="ve::VESubrender_map" name="ve::VESubrender_map">
-<area href="classve_1_1_v_e_subrender_f_w___c1.html" title="Subrenderer that manages entities that have only one color." alt="ve::VESubrenderFW_C1" shape="rect" coords="0,56,188,80"/>
-<area href="classve_1_1_v_e_subrender_f_w___cubemap.html" title="Subrenderer that manages entities that are cubemap based sky boxes." alt="ve::VESubrenderFW_Cubemap" shape="rect" coords="198,56,386,80"/>
-<area href="classve_1_1_v_e_subrender_f_w___d.html" title="Subrenderer that manages entities that have one diffuse texture for coloring." alt="ve::VESubrenderFW_D" shape="rect" coords="396,56,584,80"/>
-<area href="classve_1_1_v_e_subrender_f_w___d_n.html" title="Subrenderer that manages entities that have a diffuse texture and a normal map." alt="ve::VESubrenderFW_DN" shape="rect" coords="594,56,782,80"/>
-<area href="classve_1_1_v_e_subrender_f_w___shadow.html" title="Subrenderer that manages draws the shadow pass." alt="ve::VESubrenderFW_Shadow" shape="rect" coords="792,56,980,80"/>
+<area href="classve_1_1_v_e_subrender_f_w___c1.html" title="Subrenderer that manages entities that have only one color." alt="ve::VESubrenderFW_C1" shape="rect" coords="0,56,195,80"/>
+<area href="classve_1_1_v_e_subrender_f_w___cubemap.html" title="Subrenderer that manages entities that are cubemap based sky boxes." alt="ve::VESubrenderFW_Cubemap" shape="rect" coords="205,56,400,80"/>
+<area href="classve_1_1_v_e_subrender_f_w___cubemap2.html" title="Subrenderer that manages entities that are cubemap based sky boxes." alt="ve::VESubrenderFW_Cubemap2" shape="rect" coords="410,56,605,80"/>
+<area href="classve_1_1_v_e_subrender_f_w___d.html" title="Subrenderer that manages entities that have one diffuse texture for coloring." alt="ve::VESubrenderFW_D" shape="rect" coords="615,56,810,80"/>
+<area href="classve_1_1_v_e_subrender_f_w___d_n.html" title="Subrenderer that manages entities that have a diffuse texture and a normal map." alt="ve::VESubrenderFW_DN" shape="rect" coords="820,56,1015,80"/>
+<area href="classve_1_1_v_e_subrender_f_w___shadow.html" title="Subrenderer that manages draws the shadow pass." alt="ve::VESubrenderFW_Shadow" shape="rect" coords="1025,56,1220,80"/>
+<area href="classve_1_1_v_e_subrender_f_w___skyplane.html" title="Subrenderer that manages entities that are cubemap based sky boxes." alt="ve::VESubrenderFW_Skyplane" shape="rect" coords="1230,56,1425,80"/>
   </map>
 </div></div>
 <table class="memberdecls">
@@ -109,8 +111,11 @@ Public Types</h2></td></tr>
 <a class="el" href="classve_1_1_v_e_subrender.html#a98064e456a838192bbcedf9b6c529e89a231c9e80e3967bbb9cf54f54123729b1">VE_SUBRENDERER_TYPE_DIFFUSEMAP_NORMALMAP</a>, 
 <br />
 &#160;&#160;<a class="el" href="classve_1_1_v_e_subrender.html#a98064e456a838192bbcedf9b6c529e89a6bade61166a61d325eb973023024f505">VE_SUBRENDERER_TYPE_CUBEMAP</a>, 
+<a class="el" href="classve_1_1_v_e_subrender.html#a98064e456a838192bbcedf9b6c529e89a5dcf48c7ac871462384ca3fc4195a973">VE_SUBRENDERER_TYPE_CUBEMAP2</a>, 
+<a class="el" href="classve_1_1_v_e_subrender.html#a98064e456a838192bbcedf9b6c529e89a5593d7a8e6abf15fc94bb4a19efcd271">VE_SUBRENDERER_TYPE_SKYPLANE</a>, 
 <a class="el" href="classve_1_1_v_e_subrender.html#a98064e456a838192bbcedf9b6c529e89a4adbf283af235ebdc5cf2ae5219485c8">VE_SUBRENDERER_TYPE_TERRAIN_WITH_HEIGHTMAP</a>, 
-<a class="el" href="classve_1_1_v_e_subrender.html#a98064e456a838192bbcedf9b6c529e89a45580fcebca076beb93fb08941b7d1bb">VE_SUBRENDERER_TYPE_SHADOW</a>
+<br />
+&#160;&#160;<a class="el" href="classve_1_1_v_e_subrender.html#a98064e456a838192bbcedf9b6c529e89a45580fcebca076beb93fb08941b7d1bb">VE_SUBRENDERER_TYPE_SHADOW</a>
 <br />
  }</td></tr>
 <tr class="memdesc:a98064e456a838192bbcedf9b6c529e89"><td class="mdescLeft">&#160;</td><td class="mdescRight">enums the subrenderers that are registered  <a href="classve_1_1_v_e_subrender.html#a98064e456a838192bbcedf9b6c529e89">More...</a><br /></td></tr>
@@ -219,6 +224,10 @@ std::vector&lt; <a class="el" href="classve_1_1_v_e_entity.html">VEEntity</a> * 
 </td></tr>
 <tr><td class="fieldname"><a id="a98064e456a838192bbcedf9b6c529e89a6bade61166a61d325eb973023024f505"></a>VE_SUBRENDERER_TYPE_CUBEMAP&#160;</td><td class="fielddoc"><p>Use a cubemap to create a sky box. </p>
 </td></tr>
+<tr><td class="fieldname"><a id="a98064e456a838192bbcedf9b6c529e89a5dcf48c7ac871462384ca3fc4195a973"></a>VE_SUBRENDERER_TYPE_CUBEMAP2&#160;</td><td class="fielddoc"><p>Use a cubemap to create a sky box. </p>
+</td></tr>
+<tr><td class="fieldname"><a id="a98064e456a838192bbcedf9b6c529e89a5593d7a8e6abf15fc94bb4a19efcd271"></a>VE_SUBRENDERER_TYPE_SKYPLANE&#160;</td><td class="fielddoc"><p>Use a cubemap to create a sky box. </p>
+</td></tr>
 <tr><td class="fieldname"><a id="a98064e456a838192bbcedf9b6c529e89a4adbf283af235ebdc5cf2ae5219485c8"></a>VE_SUBRENDERER_TYPE_TERRAIN_WITH_HEIGHTMAP&#160;</td><td class="fielddoc"><p>A tesselated terrain using a height map. </p>
 </td></tr>
 <tr><td class="fieldname"><a id="a98064e456a838192bbcedf9b6c529e89a45580fcebca076beb93fb08941b7d1bb"></a>VE_SUBRENDERER_TYPE_SHADOW&#160;</td><td class="fielddoc"><p>Draw entities for the shadow pass. </p>
@@ -260,7 +269,7 @@ std::vector&lt; <a class="el" href="classve_1_1_v_e_entity.html">VEEntity</a> * 
   </dd>
 </dl>
 
-<p>Reimplemented in <a class="el" href="classve_1_1_v_e_subrender_f_w___d.html#afbab2247597377f6fa1c1afc230d009f">ve::VESubrenderFW_D</a>, <a class="el" href="classve_1_1_v_e_subrender_f_w___c1.html#ad7c483efe3fce90d3f9adce0b7fb762b">ve::VESubrenderFW_C1</a>, <a class="el" href="classve_1_1_v_e_subrender_f_w___cubemap.html#afcc69d9bfd6fb5b16a5173c515fa72f3">ve::VESubrenderFW_Cubemap</a>, <a class="el" href="classve_1_1_v_e_subrender_f_w___d_n.html#a982bd9ee57f0ba527b5310bf019ac4c8">ve::VESubrenderFW_DN</a>, and <a class="el" href="classve_1_1_v_e_subrender_f_w___shadow.html#ad18d2bd792abf8ffe1c1baad5cad2148">ve::VESubrenderFW_Shadow</a>.</p>
+<p>Reimplemented in <a class="el" href="classve_1_1_v_e_subrender_f_w___d.html#afbab2247597377f6fa1c1afc230d009f">ve::VESubrenderFW_D</a>, <a class="el" href="classve_1_1_v_e_subrender_f_w___c1.html#ad7c483efe3fce90d3f9adce0b7fb762b">ve::VESubrenderFW_C1</a>, <a class="el" href="classve_1_1_v_e_subrender_f_w___cubemap.html#afcc69d9bfd6fb5b16a5173c515fa72f3">ve::VESubrenderFW_Cubemap</a>, <a class="el" href="classve_1_1_v_e_subrender_f_w___cubemap2.html#a90f2c9d94308318ec3003da2fea16538">ve::VESubrenderFW_Cubemap2</a>, <a class="el" href="classve_1_1_v_e_subrender_f_w___d_n.html#a982bd9ee57f0ba527b5310bf019ac4c8">ve::VESubrenderFW_DN</a>, <a class="el" href="classve_1_1_v_e_subrender_f_w___shadow.html#ad18d2bd792abf8ffe1c1baad5cad2148">ve::VESubrenderFW_Shadow</a>, and <a class="el" href="classve_1_1_v_e_subrender_f_w___skyplane.html#acd3847f082fa2159cc2640c361727cf6">ve::VESubrenderFW_Skyplane</a>.</p>
 
 </div>
 </div>
@@ -488,7 +497,7 @@ std::vector&lt; <a class="el" href="classve_1_1_v_e_entity.html">VEEntity</a> * 
 </div><!-- contents -->
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>
-Generated on Tue Mar 26 2019 21:10:22 for Vienna Vulkan Engine by &#160;<a href="http://www.doxygen.org/index.html">
+Generated on Fri Mar 29 2019 07:39:57 for Vienna Vulkan Engine by &#160;<a href="http://www.doxygen.org/index.html">
 <img class="footer" src="doxygen.png" alt="doxygen"/>
 </a> 1.8.15
 </small></address>

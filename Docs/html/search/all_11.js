@@ -1,6 +1,7 @@
 var searchData=
 [
   ['setcamera',['setCamera',['../classve_1_1_v_e_scene_manager.html#acedf235e65ee027a0df5dc92163fcefe',1,'ve::VESceneManager']]],
+  ['setparam',['setParam',['../classve_1_1_v_e_entity.html#a32e4adf007a6497ddcfb809e69424698',1,'ve::VEEntity']]],
   ['setposition',['setPosition',['../classve_1_1_v_e_entity.html#aeb9f3714fe278bf226e06271746a7087',1,'ve::VEEntity']]],
   ['settransform',['setTransform',['../classve_1_1_v_e_entity.html#a7eef96a79854921c96eb135b18919fcc',1,'ve::VEEntity']]],
   ['shading',['shading',['../classve_1_1_v_e_material.html#a877af32c5e565db2d9696e1da783c2f5',1,'ve::VEMaterial']]],

@@ -90,9 +90,9 @@ Inheritance diagram for ve::VETexture:</div>
 <table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-methods"></a>
 Public Member Functions</h2></td></tr>
-<tr class="memitem:a49da190412f6b279f1fd135d40c0a17f"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structve_1_1_v_e_texture.html#a49da190412f6b279f1fd135d40c0a17f">VETexture</a> (std::string name, gli::texture_cube &amp;texCube)</td></tr>
-<tr class="memdesc:a49da190412f6b279f1fd135d40c0a17f"><td class="mdescLeft">&#160;</td><td class="mdescRight"><a class="el" href="structve_1_1_v_e_texture.html" title="Store texture data.">VETexture</a> constructor from a GLI cube map file.  <a href="#a49da190412f6b279f1fd135d40c0a17f">More...</a><br /></td></tr>
-<tr class="separator:a49da190412f6b279f1fd135d40c0a17f"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a26f911336a5ad290e353bd9829f25814"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structve_1_1_v_e_texture.html#a26f911336a5ad290e353bd9829f25814">VETexture</a> (std::string name, gli::texture_cube &amp;texCube, VkImageCreateFlags flags=VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT, VkImageViewType viewType=VK_IMAGE_VIEW_TYPE_CUBE)</td></tr>
+<tr class="memdesc:a26f911336a5ad290e353bd9829f25814"><td class="mdescLeft">&#160;</td><td class="mdescRight"><a class="el" href="structve_1_1_v_e_texture.html" title="Store texture data.">VETexture</a> constructor from a GLI cube map file.  <a href="#a26f911336a5ad290e353bd9829f25814">More...</a><br /></td></tr>
+<tr class="separator:a26f911336a5ad290e353bd9829f25814"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aa1f5620e177ec14e4b7023a94a464a28"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structve_1_1_v_e_texture.html#aa1f5620e177ec14e4b7023a94a464a28">VETexture</a> (std::string name, std::string &amp;basedir, std::vector&lt; std::string &gt; texNames, VkImageCreateFlags flags=0, VkImageViewType viewtype=VK_IMAGE_VIEW_TYPE_2D)</td></tr>
 <tr class="memdesc:aa1f5620e177ec14e4b7023a94a464a28"><td class="mdescLeft">&#160;</td><td class="mdescRight"><a class="el" href="structve_1_1_v_e_texture.html" title="Store texture data.">VETexture</a> constructor from a list of textures.  <a href="#aa1f5620e177ec14e4b7023a94a464a28">More...</a><br /></td></tr>
 <tr class="separator:aa1f5620e177ec14e4b7023a94a464a28"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -155,8 +155,8 @@ std::string&#160;</td><td class="memItemRight" valign="bottom"><a class="el" hre
 <div class="textblock"><p>Store texture data. </p>
 <p>Store an image and a sampler as shader resource. </p>
 </div><h2 class="groupheader">Constructor &amp; Destructor Documentation</h2>
-<a id="a49da190412f6b279f1fd135d40c0a17f"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a49da190412f6b279f1fd135d40c0a17f">&#9670;&nbsp;</a></span>VETexture() <span class="overload">[1/2]</span></h2>
+<a id="a26f911336a5ad290e353bd9829f25814"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a26f911336a5ad290e353bd9829f25814">&#9670;&nbsp;</a></span>VETexture() <span class="overload">[1/2]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -171,7 +171,19 @@ std::string&#160;</td><td class="memItemRight" valign="bottom"><a class="el" hre
           <td class="paramkey"></td>
           <td></td>
           <td class="paramtype">gli::texture_cube &amp;&#160;</td>
-          <td class="paramname"><em>texCube</em>&#160;</td>
+          <td class="paramname"><em>texCube</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">VkImageCreateFlags&#160;</td>
+          <td class="paramname"><em>flags</em> = <code>VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT</code>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">VkImageViewType&#160;</td>
+          <td class="paramname"><em>viewType</em> = <code>VK_IMAGE_VIEW_TYPE_CUBE</code>&#160;</td>
         </tr>
         <tr>
           <td></td>
@@ -187,6 +199,8 @@ std::string&#160;</td><td class="memItemRight" valign="bottom"><a class="el" hre
   <table class="params">
     <tr><td class="paramdir">[in]</td><td class="paramname">name</td><td>The name of the mesh. </td></tr>
     <tr><td class="paramdir">[in]</td><td class="paramname">texCube</td><td>The GLI cubemap structure </td></tr>
+    <tr><td class="paramdir">[in]</td><td class="paramname">flags</td><td>Create flags for the images (e.g. Cube compatible or array) </td></tr>
+    <tr><td class="paramdir">[in]</td><td class="paramname">viewType</td><td>Type for the image views </td></tr>
   </table>
   </dd>
 </dl>
@@ -259,7 +273,7 @@ std::string&#160;</td><td class="memItemRight" valign="bottom"><a class="el" hre
 </div><!-- contents -->
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>
-Generated on Tue Mar 26 2019 21:10:22 for Vienna Vulkan Engine by &#160;<a href="http://www.doxygen.org/index.html">
+Generated on Fri Mar 29 2019 07:39:57 for Vienna Vulkan Engine by &#160;<a href="http://www.doxygen.org/index.html">
 <img class="footer" src="doxygen.png" alt="doxygen"/>
 </a> 1.8.15
 </small></address>

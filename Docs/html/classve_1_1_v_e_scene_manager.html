@@ -93,18 +93,15 @@ Public Member Functions</h2></td></tr>
 <tr class="memitem:afb42fdaf90df123a6fa6364191d0656b"><td class="memItemLeft" align="right" valign="top">const aiScene *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_scene_manager.html#afb42fdaf90df123a6fa6364191d0656b">loadAssets</a> (std::string basedir, std::string filename, uint32_t aiFlags, std::vector&lt; <a class="el" href="classve_1_1_v_e_mesh.html">VEMesh</a> * &gt; &amp;meshes, std::vector&lt; <a class="el" href="classve_1_1_v_e_material.html">VEMaterial</a> * &gt; &amp;materials)</td></tr>
 <tr class="memdesc:afb42fdaf90df123a6fa6364191d0656b"><td class="mdescLeft">&#160;</td><td class="mdescRight">Load assets from file ussing Assimp.  <a href="#afb42fdaf90df123a6fa6364191d0656b">More...</a><br /></td></tr>
 <tr class="separator:afb42fdaf90df123a6fa6364191d0656b"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ac94a6cd8a030588a74257d5dc3452566"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classve_1_1_v_e_entity.html">VEEntity</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_scene_manager.html#ac94a6cd8a030588a74257d5dc3452566">loadModel</a> (std::string entityName, std::string basedir, std::string filename, uint32_t aiFlags=0, <a class="el" href="classve_1_1_v_e_entity.html">VEEntity</a> *parent=nullptr)</td></tr>
-<tr class="memdesc:ac94a6cd8a030588a74257d5dc3452566"><td class="mdescLeft">&#160;</td><td class="mdescRight">Load assets from file ussing Assimp, create entities from them.  <a href="#ac94a6cd8a030588a74257d5dc3452566">More...</a><br /></td></tr>
-<tr class="separator:ac94a6cd8a030588a74257d5dc3452566"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aa128e75ed6452932bc7ff219d733f73f"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_scene_manager.html#aa128e75ed6452932bc7ff219d733f73f">copyAiNodes</a> (const aiScene *pScene, std::vector&lt; <a class="el" href="classve_1_1_v_e_mesh.html">VEMesh</a> * &gt; &amp;meshes, std::vector&lt; <a class="el" href="classve_1_1_v_e_material.html">VEMaterial</a> * &gt; &amp;materials, aiNode *node, <a class="el" href="classve_1_1_v_e_entity.html">VEEntity</a> *parent)</td></tr>
-<tr class="memdesc:aa128e75ed6452932bc7ff219d733f73f"><td class="mdescLeft">&#160;</td><td class="mdescRight">Follow the Assimp tree of nodes and create entities from them.  <a href="#aa128e75ed6452932bc7ff219d733f73f">More...</a><br /></td></tr>
-<tr class="separator:aa128e75ed6452932bc7ff219d733f73f"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a0dffe81f507aafc98ce88bde78f7c61a"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_scene_manager.html#a0dffe81f507aafc98ce88bde78f7c61a">createMeshes</a> (const aiScene *pScene, std::string filekey, std::vector&lt; <a class="el" href="classve_1_1_v_e_mesh.html">VEMesh</a> * &gt; &amp;meshes)</td></tr>
 <tr class="memdesc:a0dffe81f507aafc98ce88bde78f7c61a"><td class="mdescLeft">&#160;</td><td class="mdescRight">Create all <a class="el" href="classve_1_1_v_e_mesh.html" title="Store a mesh in a Vulkan vertex and index buffer.">VEMesh</a> instances from a file loaded by Assimp.  <a href="#a0dffe81f507aafc98ce88bde78f7c61a">More...</a><br /></td></tr>
 <tr class="separator:a0dffe81f507aafc98ce88bde78f7c61a"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a40cb40d0509a6db4730d8204d08a8c12"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_scene_manager.html#a40cb40d0509a6db4730d8204d08a8c12">createMaterials</a> (const aiScene *pScene, std::string basedir, std::string filekey, std::vector&lt; <a class="el" href="classve_1_1_v_e_material.html">VEMaterial</a> * &gt; &amp;materials)</td></tr>
 <tr class="memdesc:a40cb40d0509a6db4730d8204d08a8c12"><td class="mdescLeft">&#160;</td><td class="mdescRight">Create all <a class="el" href="classve_1_1_v_e_material.html" title="Store material data.">VEMaterial</a> instances from a file loaded by Assimp.  <a href="#a40cb40d0509a6db4730d8204d08a8c12">More...</a><br /></td></tr>
 <tr class="separator:a40cb40d0509a6db4730d8204d08a8c12"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ac94a6cd8a030588a74257d5dc3452566"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classve_1_1_v_e_entity.html">VEEntity</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_scene_manager.html#ac94a6cd8a030588a74257d5dc3452566">loadModel</a> (std::string entityName, std::string basedir, std::string filename, uint32_t aiFlags=0, <a class="el" href="classve_1_1_v_e_entity.html">VEEntity</a> *parent=nullptr)</td></tr>
+<tr class="memdesc:ac94a6cd8a030588a74257d5dc3452566"><td class="mdescLeft">&#160;</td><td class="mdescRight">Load assets from file ussing Assimp, create entities from them.  <a href="#ac94a6cd8a030588a74257d5dc3452566">More...</a><br /></td></tr>
+<tr class="separator:ac94a6cd8a030588a74257d5dc3452566"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ae2af900ab820bc8b701e93849a1d434d"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classve_1_1_v_e_entity.html">VEEntity</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_scene_manager.html#ae2af900ab820bc8b701e93849a1d434d">createEntity</a> (std::string entityName, <a class="el" href="classve_1_1_v_e_mesh.html">VEMesh</a> *pMesh, <a class="el" href="classve_1_1_v_e_material.html">VEMaterial</a> *pMat, aiMatrix4x4 transf, <a class="el" href="classve_1_1_v_e_entity.html">VEEntity</a> *parent=nullptr)</td></tr>
 <tr class="memdesc:ae2af900ab820bc8b701e93849a1d434d"><td class="mdescLeft">&#160;</td><td class="mdescRight">Create an entity.  <a href="#ae2af900ab820bc8b701e93849a1d434d">More...</a><br /></td></tr>
 <tr class="separator:ae2af900ab820bc8b701e93849a1d434d"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -120,6 +117,12 @@ Public Member Functions</h2></td></tr>
 <tr class="memitem:af67fe1959f39dca48c8e79881b6ae313"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classve_1_1_v_e_entity.html">VEEntity</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_scene_manager.html#af67fe1959f39dca48c8e79881b6ae313">createCubemap</a> (std::string entityName, std::string basedir, std::vector&lt; std::string &gt; filenames)</td></tr>
 <tr class="memdesc:af67fe1959f39dca48c8e79881b6ae313"><td class="mdescLeft">&#160;</td><td class="mdescRight">Create a cube map based sky box.  <a href="#af67fe1959f39dca48c8e79881b6ae313">More...</a><br /></td></tr>
 <tr class="separator:af67fe1959f39dca48c8e79881b6ae313"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a733b1cdeac84abc64ede58ac22d61021"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classve_1_1_v_e_entity.html">VEEntity</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_scene_manager.html#a733b1cdeac84abc64ede58ac22d61021">createSkyplane</a> (std::string entityName, std::string basedir, std::string texName)</td></tr>
+<tr class="memdesc:a733b1cdeac84abc64ede58ac22d61021"><td class="mdescLeft">&#160;</td><td class="mdescRight">Create a plane that is projected to the far plane of the frustum.  <a href="#a733b1cdeac84abc64ede58ac22d61021">More...</a><br /></td></tr>
+<tr class="separator:a733b1cdeac84abc64ede58ac22d61021"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a985196c531885faccd3747247e522693"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classve_1_1_v_e_entity.html">VEEntity</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_scene_manager.html#a985196c531885faccd3747247e522693">createSkybox</a> (std::string entityName, std::string basedir, std::vector&lt; std::string &gt; texNames)</td></tr>
+<tr class="memdesc:a985196c531885faccd3747247e522693"><td class="mdescLeft">&#160;</td><td class="mdescRight">Create a skyplane based sky box.  <a href="#a985196c531885faccd3747247e522693">More...</a><br /></td></tr>
+<tr class="separator:a985196c531885faccd3747247e522693"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a0517268bbe1dd89a526caa07b0258a15"><td class="memItemLeft" align="right" valign="top"><a id="a0517268bbe1dd89a526caa07b0258a15"></a>
 void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_scene_manager.html#a0517268bbe1dd89a526caa07b0258a15">addEntity</a> (<a class="el" href="classve_1_1_v_e_entity.html">VEEntity</a> *entity)</td></tr>
 <tr class="memdesc:a0517268bbe1dd89a526caa07b0258a15"><td class="mdescLeft">&#160;</td><td class="mdescRight">Add an entity to the scene. <br /></td></tr>
@@ -175,6 +178,9 @@ Protected Member Functions</h2></td></tr>
 virtual void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_scene_manager.html#a8871bfddf3e3f7497fcdf1b680dc0e48">closeSceneManager</a> ()</td></tr>
 <tr class="memdesc:a8871bfddf3e3f7497fcdf1b680dc0e48"><td class="mdescLeft">&#160;</td><td class="mdescRight">Close down the scene manager and delete all its assets. <br /></td></tr>
 <tr class="separator:a8871bfddf3e3f7497fcdf1b680dc0e48"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aa128e75ed6452932bc7ff219d733f73f"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_scene_manager.html#aa128e75ed6452932bc7ff219d733f73f">copyAiNodes</a> (const aiScene *pScene, std::vector&lt; <a class="el" href="classve_1_1_v_e_mesh.html">VEMesh</a> * &gt; &amp;meshes, std::vector&lt; <a class="el" href="classve_1_1_v_e_material.html">VEMaterial</a> * &gt; &amp;materials, aiNode *node, <a class="el" href="classve_1_1_v_e_entity.html">VEEntity</a> *parent)</td></tr>
+<tr class="memdesc:aa128e75ed6452932bc7ff219d733f73f"><td class="mdescLeft">&#160;</td><td class="mdescRight">Follow the Assimp tree of nodes and create entities from them.  <a href="#aa128e75ed6452932bc7ff219d733f73f">More...</a><br /></td></tr>
+<tr class="separator:aa128e75ed6452932bc7ff219d733f73f"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pro-attribs"></a>
 Protected Attributes</h2></td></tr>
@@ -208,6 +214,9 @@ std::vector&lt; <a class="el" href="classve_1_1_v_e_light.html">VELight</a> * &g
 
 <div class="memitem">
 <div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
       <table class="memname">
         <tr>
           <td class="memname">void ve::VESceneManager::copyAiNodes </td>
@@ -245,6 +254,11 @@ std::vector&lt; <a class="el" href="classve_1_1_v_e_light.html">VELight</a> * &g
           <td></td><td></td>
         </tr>
       </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">protected</span></span>  </td>
+  </tr>
+</table>
 </div><div class="memdoc">
 
 <p>Follow the Assimp tree of nodes and create entities from them. </p>
@@ -669,6 +683,97 @@ std::vector&lt; <a class="el" href="classve_1_1_v_e_light.html">VELight</a> * &g
   </table>
   </dd>
 </dl>
+
+</div>
+</div>
+<a id="a985196c531885faccd3747247e522693"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a985196c531885faccd3747247e522693">&#9670;&nbsp;</a></span>createSkybox()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="classve_1_1_v_e_entity.html">VEEntity</a> * ve::VESceneManager::createSkybox </td>
+          <td>(</td>
+          <td class="paramtype">std::string&#160;</td>
+          <td class="paramname"><em>entityName</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">std::string&#160;</td>
+          <td class="paramname"><em>basedir</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">std::vector&lt; std::string &gt;&#160;</td>
+          <td class="paramname"><em>texNames</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Create a skyplane based sky box. </p>
+<p>This function loads 5 textures to use them as sky planes. The bottom plane is not loaded The order of the tex names must be ft bk up dn rt lf</p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramdir">[in]</td><td class="paramname">entityName</td><td>Name of the new entity. </td></tr>
+    <tr><td class="paramdir">[in]</td><td class="paramname">basedir</td><td>Name of the directory the texture file is in </td></tr>
+    <tr><td class="paramdir">[in]</td><td class="paramname">texNames</td><td>List of 6 names of the texture files. Order must be ft bk up dn rt lf </td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>Returns</dt><dd>a pointer to the new entity, which is the parent of the planes </dd></dl>
+
+</div>
+</div>
+<a id="a733b1cdeac84abc64ede58ac22d61021"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a733b1cdeac84abc64ede58ac22d61021">&#9670;&nbsp;</a></span>createSkyplane()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="classve_1_1_v_e_entity.html">VEEntity</a> * ve::VESceneManager::createSkyplane </td>
+          <td>(</td>
+          <td class="paramtype">std::string&#160;</td>
+          <td class="paramname"><em>entityName</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">std::string&#160;</td>
+          <td class="paramname"><em>basedir</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">std::string&#160;</td>
+          <td class="paramname"><em>texName</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Create a plane that is projected to the far plane of the frustum. </p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramdir">[in]</td><td class="paramname">entityName</td><td>Name of the new entity. </td></tr>
+    <tr><td class="paramdir">[in]</td><td class="paramname">basedir</td><td>Name of the directory the texture file is in </td></tr>
+    <tr><td class="paramdir">[in]</td><td class="paramname">texName</td><td>name of a texture file that contains the sky texture </td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>Returns</dt><dd>a pointer to the new entity </dd></dl>
 
 </div>
 </div>
@@ -1166,7 +1271,7 @@ std::vector&lt; <a class="el" href="classve_1_1_v_e_light.html">VELight</a> * &g
 </div><!-- contents -->
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>
-Generated on Tue Mar 26 2019 21:10:22 for Vienna Vulkan Engine by &#160;<a href="http://www.doxygen.org/index.html">
+Generated on Fri Mar 29 2019 07:39:57 for Vienna Vulkan Engine by &#160;<a href="http://www.doxygen.org/index.html">
 <img class="footer" src="doxygen.png" alt="doxygen"/>
 </a> 1.8.15
 </small></address>

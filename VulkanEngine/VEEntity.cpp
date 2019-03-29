@@ -145,6 +145,8 @@ namespace ve {
 	*
 	* \param[in] name The name of the mesh.
 	* \param[in] texCube The GLI cubemap structure
+	* \param[in] flags Create flags for the images (e.g. Cube compatible or array)
+	* \param[in] viewType Type for the image views
 	*
 	*/
 	VETexture::VETexture(std::string name, gli::texture_cube &texCube, 
@@ -289,6 +291,13 @@ namespace ve {
 		return glm::vec3(z.x, z.y, z.z);
 	}
 
+	/**
+	* \brief Sets the object parameter vector.
+	*
+	* This causes an update of the UBO and all children.
+	*
+	* \param[in] param The new parameter vector
+	*/
 	void VEEntity::setParam( glm::vec4 param) {
 		m_param = param;
 		update();
@@ -401,6 +410,7 @@ namespace ve {
 	* Then copy the struct content into the UBO.
 	*
 	* \param[in] parentWorldMatrix The parent's world matrix or an identity matrix.
+	* \param[in] param The new parameter vector for all children
 	*
 	*/
 	void VEEntity::update( glm::mat4 parentWorldMatrix, glm::vec4 param) {

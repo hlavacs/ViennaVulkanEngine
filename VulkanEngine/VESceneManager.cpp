@@ -474,6 +474,16 @@ namespace ve {
 		return pEntity;
 	}
 
+	/**
+	*
+	* \brief Create a plane that is projected to the far plane of the frustum
+	*
+	* \param[in] entityName Name of the new entity.
+	* \param[in] basedir Name of the directory the texture file is in
+	* \param[in] texName name of a texture file that contains the sky texture
+	* \returns a pointer to the new entity
+	*
+	*/
 	VEEntity *	VESceneManager::createSkyplane(std::string entityName, std::string basedir, std::string texName) {
 
 		std::string filekey = basedir + "/" + texName;
@@ -493,8 +503,22 @@ namespace ve {
 		return pEntity;
 	}
 
-	//  ft bk up dn rt lf
-	VEEntity * VESceneManager::createSkybox(std::string entityName, std::string basedir, std::vector<std::string> texNames) {
+
+	/**
+	*
+	* \brief Create a skyplane based sky box
+	*
+	* This function loads 5 textures to use them as sky planes. The bottom plane is not loaded
+	* The order of the tex names must be ft bk up dn rt lf
+	*
+	* \param[in] entityName Name of the new entity.
+	* \param[in] basedir Name of the directory the texture file is in
+	* \param[in] texNames List of 6 names of the texture files. Order must be ft bk up dn rt lf
+	* \returns a pointer to the new entity, which is the parent of the planes
+	*
+	*/
+	VEEntity * VESceneManager::createSkybox(std::string entityName, std::string basedir, 
+											std::vector<std::string> texNames) {
 		std::string filekey = basedir + "/";
 		std::string addstring = "";
 		for (auto filename : texNames) {

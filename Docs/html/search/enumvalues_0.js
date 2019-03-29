@@ -3,7 +3,9 @@ var searchData=
   ['ve_5fentity_5ftype_5fcamera_5fortho',['VE_ENTITY_TYPE_CAMERA_ORTHO',['../classve_1_1_v_e_entity.html#a2c7f15fd3b11aac4dea3e76cfa508010ac943c13e0a28011a0df66e22a72cd9ab',1,'ve::VEEntity']]],
   ['ve_5fentity_5ftype_5fcamera_5fprojective',['VE_ENTITY_TYPE_CAMERA_PROJECTIVE',['../classve_1_1_v_e_entity.html#a2c7f15fd3b11aac4dea3e76cfa508010a07caef08e63d5234399ae67595d94ca4',1,'ve::VEEntity']]],
   ['ve_5fentity_5ftype_5fcubemap',['VE_ENTITY_TYPE_CUBEMAP',['../classve_1_1_v_e_entity.html#a2c7f15fd3b11aac4dea3e76cfa508010ae2b8a11c389421cff9bcabf485aa0742',1,'ve::VEEntity']]],
+  ['ve_5fentity_5ftype_5fcubemap2',['VE_ENTITY_TYPE_CUBEMAP2',['../classve_1_1_v_e_entity.html#a2c7f15fd3b11aac4dea3e76cfa508010ab4b46b962cd29271ee508f466bd0d275',1,'ve::VEEntity']]],
   ['ve_5fentity_5ftype_5fobject',['VE_ENTITY_TYPE_OBJECT',['../classve_1_1_v_e_entity.html#a2c7f15fd3b11aac4dea3e76cfa508010ac5e8480599cc3b59c245476ebb1ac223',1,'ve::VEEntity']]],
+  ['ve_5fentity_5ftype_5fskyplane',['VE_ENTITY_TYPE_SKYPLANE',['../classve_1_1_v_e_entity.html#a2c7f15fd3b11aac4dea3e76cfa508010a92532eff5ccaf8577b48ca58cda963ed',1,'ve::VEEntity']]],
   ['ve_5fentity_5ftype_5fterrain_5fheightmap',['VE_ENTITY_TYPE_TERRAIN_HEIGHTMAP',['../classve_1_1_v_e_entity.html#a2c7f15fd3b11aac4dea3e76cfa508010abac018c253c0f8cbaf76ef41f870124e',1,'ve::VEEntity']]],
   ['ve_5fevent_5fframe_5fended',['VE_EVENT_FRAME_ENDED',['../namespaceve.html#ae6e59e4741b466de51dfe981360dbfeaa9350a84d0f3a7d8ee6b2687298257be8',1,'ve']]],
   ['ve_5fevent_5fframe_5fstarted',['VE_EVENT_FRAME_STARTED',['../namespaceve.html#ae6e59e4741b466de51dfe981360dbfeaa883e9d03f9199576f65b4b580b9a9449',1,'ve']]],
@@ -21,9 +23,11 @@ var searchData=
   ['ve_5flight_5ftype_5fspot',['VE_LIGHT_TYPE_SPOT',['../classve_1_1_v_e_light.html#abcedf7166341000b6d4512e9030f6b86ac301ffd5b98c7114a1034eb3e8fde6bf',1,'ve::VELight']]],
   ['ve_5fsubrenderer_5ftype_5fcolor1',['VE_SUBRENDERER_TYPE_COLOR1',['../classve_1_1_v_e_subrender.html#a98064e456a838192bbcedf9b6c529e89a898d307ea6b0eb2d6455800be2fef837',1,'ve::VESubrender']]],
   ['ve_5fsubrenderer_5ftype_5fcubemap',['VE_SUBRENDERER_TYPE_CUBEMAP',['../classve_1_1_v_e_subrender.html#a98064e456a838192bbcedf9b6c529e89a6bade61166a61d325eb973023024f505',1,'ve::VESubrender']]],
+  ['ve_5fsubrenderer_5ftype_5fcubemap2',['VE_SUBRENDERER_TYPE_CUBEMAP2',['../classve_1_1_v_e_subrender.html#a98064e456a838192bbcedf9b6c529e89a5dcf48c7ac871462384ca3fc4195a973',1,'ve::VESubrender']]],
   ['ve_5fsubrenderer_5ftype_5fdiffusemap',['VE_SUBRENDERER_TYPE_DIFFUSEMAP',['../classve_1_1_v_e_subrender.html#a98064e456a838192bbcedf9b6c529e89a274213455c8d14007c0f7196ff24c239',1,'ve::VESubrender']]],
   ['ve_5fsubrenderer_5ftype_5fdiffusemap_5fnormalmap',['VE_SUBRENDERER_TYPE_DIFFUSEMAP_NORMALMAP',['../classve_1_1_v_e_subrender.html#a98064e456a838192bbcedf9b6c529e89a231c9e80e3967bbb9cf54f54123729b1',1,'ve::VESubrender']]],
   ['ve_5fsubrenderer_5ftype_5fnone',['VE_SUBRENDERER_TYPE_NONE',['../classve_1_1_v_e_subrender.html#a98064e456a838192bbcedf9b6c529e89aa65d64be5dc74e152fa31e9790b8aeb5',1,'ve::VESubrender']]],
   ['ve_5fsubrenderer_5ftype_5fshadow',['VE_SUBRENDERER_TYPE_SHADOW',['../classve_1_1_v_e_subrender.html#a98064e456a838192bbcedf9b6c529e89a45580fcebca076beb93fb08941b7d1bb',1,'ve::VESubrender']]],
+  ['ve_5fsubrenderer_5ftype_5fskyplane',['VE_SUBRENDERER_TYPE_SKYPLANE',['../classve_1_1_v_e_subrender.html#a98064e456a838192bbcedf9b6c529e89a5593d7a8e6abf15fc94bb4a19efcd271',1,'ve::VESubrender']]],
   ['ve_5fsubrenderer_5ftype_5fterrain_5fwith_5fheightmap',['VE_SUBRENDERER_TYPE_TERRAIN_WITH_HEIGHTMAP',['../classve_1_1_v_e_subrender.html#a98064e456a838192bbcedf9b6c529e89a4adbf283af235ebdc5cf2ae5219485c8',1,'ve::VESubrender']]]
 ];

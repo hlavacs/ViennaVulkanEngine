@@ -23,6 +23,8 @@ var searchData=
   ['createshadowcamera',['createShadowCamera',['../classve_1_1_v_e_camera.html#a63f349405097a1ef9f450b71b71eaae4',1,'ve::VECamera']]],
   ['createshadowcameraortho',['createShadowCameraOrtho',['../classve_1_1_v_e_camera.html#ade4810f37e63d2efe527c63781e27650',1,'ve::VECamera']]],
   ['createshadowcameraprojective',['createShadowCameraProjective',['../classve_1_1_v_e_camera.html#aba723014f5c91dc485f562dbaf6aac22',1,'ve::VECamera']]],
+  ['createskybox',['createSkybox',['../classve_1_1_v_e_scene_manager.html#a985196c531885faccd3747247e522693',1,'ve::VESceneManager']]],
+  ['createskyplane',['createSkyplane',['../classve_1_1_v_e_scene_manager.html#a733b1cdeac84abc64ede58ac22d61021',1,'ve::VESceneManager']]],
   ['createsubrenderers',['createSubrenderers',['../classve_1_1_v_e_renderer.html#a60fcc5678fd0bc20da05c8dfe6b39300',1,'ve::VERenderer::createSubrenderers()'],['../classve_1_1_v_e_renderer_forward.html#a79404755faaf9f393770b290f2d6f598',1,'ve::VERendererForward::createSubrenderers()']]],
   ['createsurface',['createSurface',['../classve_1_1_v_e_window.html#a59133ac24eb6b03601a8058e6894f491',1,'ve::VEWindow::createSurface()'],['../classve_1_1_v_e_window_g_l_f_w.html#a0f2fcdd5800a0786871200aa4806e7aa',1,'ve::VEWindowGLFW::createSurface()']]],
   ['createsyncobjects',['createSyncObjects',['../classve_1_1_v_e_renderer_forward.html#a4d8baf6d34857f8792273ca1e53bd19a',1,'ve::VERendererForward']]],
