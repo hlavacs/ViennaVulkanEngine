@@ -43,20 +43,20 @@ namespace ve {
 		//camera parent is used for translation rotations
 		VEEntity *cameraParent = new VEEntity("StandardCameraParent");
 		cameraParent->setTransform( glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 10.0f, 0.0f)) );
-		addEntity(cameraParent);
+		addMovableObject(cameraParent);
 
 		//camera can only do yaw (parent y-axis) and pitch (local x-axis) rotations
 		VkExtent2D extent = getWindowPointer()->getExtent();
 		VECamera *camera = new VECameraProjective("StandardCamera", 1.0f, 501.0f, extent.width/ (float)extent.height, 45.0f);
 		camera->lookAt(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f), glm::vec3(0.0f, 1.0f, 0.0f));
-		camera->m_pEntityParent = cameraParent;
-		addEntity(camera);
+		camera->m_parent = cameraParent;
+		addMovableObject(camera);
 		setCamera( camera );
 
 		//use one light source
 		VELight *light = new VELight("StandardLight", VELight::VE_LIGHT_TYPE_DIRECTIONAL );
 		light->lookAt(glm::vec3(0.0f, 20.0f, -20.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
-		addEntity(light);
+		addMovableObject(light);
 		m_lights.push_back(light);
 	};
 
@@ -118,8 +118,8 @@ namespace ve {
 	* \param[in] parent Make the new entity a child of this parent entity
 	*
 	*/
-	VEEntity * VESceneManager::loadModel(	std::string entityName, std::string basedir, std::string filename, 
-											uint32_t aiFlags, VEEntity *parent) {
+	VEMovableObject * VESceneManager::loadModel( std::string entityName, std::string basedir, std::string filename,
+												 uint32_t aiFlags, VEMovableObject *parent) {
 
 		Assimp::Importer importer;
 
@@ -145,10 +145,14 @@ namespace ve {
 		std::vector<VEMaterial*> materials;
 		createMaterials(pScene, basedir, filekey, materials);
 
-		VEEntity *pEntity = m_entities[entityName];
-		if (pEntity != nullptr) return pEntity;
-			
-		pEntity = createEntity( entityName, nullptr, nullptr, aiMatrix4x4(), parent );
+		VEMovableObject *pMO = m_movableObjects[entityName];
+		if (pMO != nullptr && pMO->getObjectType() == VEMovableObject::VE_OBJECT_TYPE_ENTITY ) return (VEEntity*)pMO;
+		if (pMO != nullptr) {
+			throw std::runtime_error("Error: Asset " + filekey + " exists and is not an entity!");
+			return nullptr;
+		}
+
+		VEMovableObject *pEntity = createEntity( entityName, nullptr, nullptr, aiMatrix4x4(), parent );
 
 		copyAiNodes( pScene, meshes, materials, pScene->mRootNode, pEntity );
 		pEntity->update();	//update ubos of all children
@@ -175,10 +179,10 @@ namespace ve {
 										std::vector<VEMesh*> &meshes, 
 										std::vector<VEMaterial*> &materials, 
 										aiNode* node, 
-										VEEntity *parent ) {
+										VEMovableObject *parent ) {
 
-		VEEntity *pEntity = createEntity(	parent->getName() + "/" + node->mName.C_Str(),	
-											nullptr, nullptr, aiMatrix4x4(), parent);
+		VEMovableObject *pEntity = createEntity(parent->getName() + "/" + node->mName.C_Str(),
+												nullptr, nullptr, aiMatrix4x4(), parent);
 
 		for (uint32_t i = 0; i < node->mNumMeshes; i++) {	//go through the meshes of the Assimp node
 
@@ -192,8 +196,8 @@ namespace ve {
 			uint32_t paiMatIdx = paiMesh->mMaterialIndex;	//get the material index for this mesh
 			pMaterial = materials[paiMatIdx];				//use the index to get the right VEMaterial
 
-			VEEntity *pEnt = createEntity(  pEntity->getName() + "/Entity_" + std::to_string(i), //create the new entity
-											pMesh, pMaterial, node->mTransformation, pEntity);
+			VEMovableObject *pEnt = createEntity(	pEntity->getName() + "/Entity_" + std::to_string(i), //create the new entity
+													pMesh, pMaterial, node->mTransformation, pEntity);
 		}
 
 		for (uint32_t i = 0; i < node->mNumChildren; i++) {		//recursivly go down the node tree
@@ -327,8 +331,8 @@ namespace ve {
 	* \returns a pointer to the new entity
 	*
 	*/
-	VEEntity * VESceneManager::createEntity(std::string entityName, VEMesh *pMesh, VEMaterial *pMat, 
-											aiMatrix4x4 transf, VEEntity *parent) {
+	VEMovableObject * VESceneManager::createEntity(	std::string entityName, VEMesh *pMesh, VEMaterial *pMat,
+													aiMatrix4x4 transf, VEMovableObject *parent) {
 		glm::mat4 *pMatrix = (glm::mat4*) &transf;
 		return createEntity( entityName, pMesh, pMat, *pMatrix, parent);
 	}
@@ -344,8 +348,8 @@ namespace ve {
 	* \returns a pointer to the new entity
 	*
 	*/
-	VEEntity * VESceneManager::createEntity(std::string entityName, VEMesh *pMesh, VEMaterial *pMat,
-											glm::mat4 transf, VEEntity *parent) {
+	VEEntity * VESceneManager::createEntity(	std::string entityName, VEMesh *pMesh, VEMaterial *pMat,
+												glm::mat4 transf, VEMovableObject *parent) {
 		return createEntity(entityName, VEEntity::VE_ENTITY_TYPE_OBJECT, pMesh, pMat, transf, parent);
 	}
 
@@ -361,10 +365,11 @@ namespace ve {
 	* \returns a pointer to the new entity
 	*
 	*/
-	VEEntity * VESceneManager::createEntity(std::string entityName, VEEntity::veEntityType type, VEMesh *pMesh,
-											VEMaterial *pMat, glm::mat4 transf, VEEntity *parent) {
+	VEEntity * VESceneManager::createEntity(	std::string entityName, VEEntity::veEntityType type, 
+												VEMesh *pMesh, VEMaterial *pMat, 
+												glm::mat4 transf, VEMovableObject *parent) {
 		VEEntity *pEntity = new VEEntity(entityName, type, pMesh, pMat, transf, parent);
-		addEntity(pEntity);				// store entity in the entity array
+		addMovableObject(pEntity);				// store entity in the entity array
 
 		if (pMesh != nullptr && pMat != nullptr) {
 			getRendererPointer()->addEntityToSubrenderer(pEntity);
@@ -386,8 +391,8 @@ namespace ve {
 	* \returns a pointer to the new entity
 	*
 	*/
-	VEEntity *	VESceneManager::createCubemap(	std::string entityName, std::string basedir, 
-												std::string filename) {
+	VEMovableObject *	VESceneManager::createCubemap(	std::string entityName, std::string basedir,
+														std::string filename) {
 
 		VEEntity::veEntityType entityType = VEEntity::VE_ENTITY_TYPE_CUBEMAP;
 		VkImageCreateFlags createFlags = VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT;
@@ -417,7 +422,7 @@ namespace ve {
 			pMat->mapDiffuse = new VETexture( filekey, texCube, createFlags, viewType );
 		}
 
-		VEEntity *pEntity = createEntity(entityName, entityType, pMesh, pMat, glm::mat4(1.0f), nullptr );
+		VEMovableObject *pEntity = createEntity(entityName, entityType, pMesh, pMat, glm::mat4(1.0f), nullptr );
 		pEntity->setTransform(glm::scale(glm::vec3(10000.0f, 10000.0f, 10000.0f)));
 
 		return pEntity;
@@ -436,9 +441,8 @@ namespace ve {
 	* \returns a pointer to the new entity
 	*
 	*/
-	VEEntity *	VESceneManager::createCubemap(	std::string entityName, std::string basedir, 
-												std::vector<std::string> filenames) {
-
+	VEMovableObject * VESceneManager::createCubemap(	std::string entityName, std::string basedir,
+														std::vector<std::string> filenames) {
 
 		VEEntity::veEntityType entityType = VEEntity::VE_ENTITY_TYPE_CUBEMAP;
 		VkImageCreateFlags createFlags = VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT;
@@ -517,8 +521,8 @@ namespace ve {
 	* \returns a pointer to the new entity, which is the parent of the planes
 	*
 	*/
-	VEEntity * VESceneManager::createSkybox(std::string entityName, std::string basedir, 
-											std::vector<std::string> texNames) {
+	VEMovableObject * VESceneManager::createSkybox(	std::string entityName, std::string basedir,
+													std::vector<std::string> texNames) {
 		std::string filekey = basedir + "/";
 		std::string addstring = "";
 		for (auto filename : texNames) {
@@ -584,8 +588,8 @@ namespace ve {
 	* \returns a pointer to the entity
 	*
 	*/
-	VEEntity * VESceneManager::getEntity(std::string name) {
-		if (m_entities.count(name) > 0) return m_entities[name];
+	VEMovableObject * VESceneManager::getMovableObject(std::string name) {
+		if (m_movableObjects.count(name) > 0) return m_movableObjects[name];
 		return nullptr;
 	}
 
@@ -596,25 +600,27 @@ namespace ve {
 	* \param[in] name Name of the entity.
 	*
 	*/
-	void VESceneManager::deleteEntityAndSubentities(std::string name) {
-		VEEntity * pEntity = m_entities[name];
-		if (pEntity == nullptr) return;
+	void VESceneManager::deleteMOAndChildren(std::string name) {
+		VEMovableObject * pObject = m_movableObjects[name];
+		if (pObject == nullptr) return;
 
-		if (pEntity->m_entityType == VEEntity::VE_ENTITY_TYPE_CUBEMAP) {	//remove the event listener associated with this entity
-			getEnginePointer()->deleteEventListener(name);
-		}
+		//if (pObject->m_objectType == VEEntity::VE_ENTITY_TYPE_CUBEMAP) {	//remove the event listener associated with this entity
+		//	getEnginePointer()->deleteEventListener(name);
+		//}  TODO
 
-		if (pEntity->m_pEntityParent != nullptr) pEntity->m_pEntityParent->removeChild(pEntity);
+		if (pObject->m_parent != nullptr) pObject->m_parent->removeChild(pObject);
 
-		std::vector<std::string> namelist;
-		createEntityList(pEntity, namelist);
+		std::vector<std::string> namelist;	//first create a list of all child names
+		createMOList(pObject, namelist);
 
-		//delete entities
+		//go through the list and delete all children
 		for (uint32_t i = 0; i < namelist.size(); i++) {
-			VEEntity *pEntity = m_entities[namelist[i]];
-			getRendererPointer()->removeEntityFromSubrenderers(pEntity);
-			m_entities.erase(namelist[i]);
-			delete pEntity;
+			pObject = m_movableObjects[namelist[i]];
+
+			if( pObject->getObjectType() == VEMovableObject::VE_OBJECT_TYPE_ENTITY )
+				getRendererPointer()->removeEntityFromSubrenderers((VEEntity*)pObject);
+			m_movableObjects.erase(namelist[i]);
+			delete pObject;
 		}
 	}
 
@@ -626,11 +632,11 @@ namespace ve {
 	* \param[out] namelist List of names of children of the entity.
 	*
 	*/
-	void VESceneManager::createEntityList(VEEntity *pEntity, std::vector<std::string> &namelist) {
-		namelist.push_back(pEntity->getName());
+	void VESceneManager::createMOList(VEMovableObject *pObject, std::vector<std::string> &namelist) {
+		namelist.push_back(pObject->getName());
 
-		for( uint32_t i=0; i<pEntity->m_pEntityChildren.size(); i++ ) {
-			createEntityList(pEntity->m_pEntityChildren[i], namelist );
+		for( uint32_t i=0; i<pObject->m_children.size(); i++ ) {
+			createMOList(pObject->m_children[i], namelist );
 		}
 	}
 
@@ -704,7 +710,7 @@ namespace ve {
 	* \brief Close down the scene manager and delete all its assets.
 	*/
 	void VESceneManager::closeSceneManager() {
-		for (auto ent : m_entities) 
+		for (auto ent : m_movableObjects) 
 			delete ent.second;
 		for (auto mesh : m_meshes) delete mesh.second;
 		for (auto mat : m_materials) delete mat.second;
@@ -713,8 +719,8 @@ namespace ve {
 	/**
 	* \brief Print a list of all entities to the console.
 	*/
-	void VESceneManager::printEntities() {
-		for (auto pEnt : m_entities) {
+	void VESceneManager::printMovableObjects() {
+		for (auto pEnt : m_movableObjects) {
 			std::cout << pEnt.second->getName() << "\n";
 		}
 	}
@@ -726,10 +732,10 @@ namespace ve {
 	* \param[in] root Pointer to the root entity of the tree.
 	*
 	*/
-	void VESceneManager::printTree( VEEntity *root ) {
+	void VESceneManager::printTree( VEMovableObject *root ) {
 		std::cout << root->getName() << "\n";
-		for (uint32_t i = 0; i < root->m_pEntityChildren.size(); i++) {
-			printTree( root->m_pEntityChildren[i] );
+		for (uint32_t i = 0; i < root->m_children.size(); i++) {
+			printTree( root->m_children[i] );
 		}
 	}
 

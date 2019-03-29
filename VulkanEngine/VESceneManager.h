@@ -37,16 +37,16 @@ namespace ve {
 		friend VESubrenderFW_Shadow;
 
 	protected:
-		std::map<std::string, VEMesh *>		m_meshes = {};		///< storage of all entities currently in the engine
-		std::map<std::string, VEMaterial*>	m_materials = {};	///< storage of all entities currently in the engine
-		std::map<std::string, VEEntity*>	m_entities = {};	///< storage of all entities currently in the engine
+		std::map<std::string, VEMesh *>		m_meshes = {};				///< storage of all entities currently in the engine
+		std::map<std::string, VEMaterial*>	m_materials = {};			///< storage of all entities currently in the engine
+		std::map<std::string, VEMovableObject*>	m_movableObjects = {};	///< storage of all entities currently in the engine
 
 		VECamera *				m_camera = nullptr;			///<entity ptr of the current camera
 		std::vector<VELight*>	m_lights = {};				///<ptrs to the lights to use
 
 		virtual void initSceneManager();
 		virtual void closeSceneManager();
-		void copyAiNodes(const aiScene* pScene, std::vector<VEMesh*> &meshes, std::vector<VEMaterial*> &materials, aiNode* node, VEEntity *parent);
+		void copyAiNodes(const aiScene* pScene, std::vector<VEMesh*> &meshes, std::vector<VEMaterial*> &materials, aiNode* node, VEMovableObject *parent);
 
 	public:
 		///Constructor
@@ -55,26 +55,29 @@ namespace ve {
 		~VESceneManager() {};
 
 		//------------------------------------------------------------------------
-		const aiScene *	loadAssets(	std::string basedir, std::string filename, uint32_t aiFlags, 
+		const aiScene *		loadAssets(	std::string basedir, std::string filename, uint32_t aiFlags, 
 									std::vector<VEMesh*> &meshes, std::vector<VEMaterial*> &materials);
-		void			createMeshes(const aiScene* pScene,std::string filekey, std::vector<VEMesh*> &meshes);
-		void			createMaterials(const aiScene* pScene,  std::string basedir, std::string filekey, std::vector<VEMaterial*> &materials);
-
-		VEEntity *		loadModel(std::string entityName, std::string basedir, std::string filename, uint32_t aiFlags=0, VEEntity *parent=nullptr);
-		VEEntity *		createEntity(std::string entityName, VEMesh *pMesh, VEMaterial *pMat, aiMatrix4x4 transf, VEEntity *parent=nullptr );
-		VEEntity *		createEntity(std::string entityName, VEMesh *pMesh, VEMaterial *pMat, glm::mat4 transf, VEEntity *parent = nullptr);
-		VEEntity *		createEntity(std::string entityName, VEEntity::veEntityType type, VEMesh *pMesh, VEMaterial *pMat, glm::mat4 transf, VEEntity *parent = nullptr);
-		VEEntity *		createCubemap(std::string entityName, std::string basedir, std::string filename );
-		VEEntity *		createCubemap(std::string entityName, std::string basedir, std::vector<std::string> filenames );
-		VEEntity *		createSkyplane(std::string entityName, std::string basedir, std::string texName);
-		VEEntity *		createSkybox(std::string entityName, std::string basedir, std::vector<std::string> texNames);
+		void				createMeshes(const aiScene* pScene,std::string filekey, std::vector<VEMesh*> &meshes);
+		void				createMaterials(const aiScene* pScene,  std::string basedir, std::string filekey, std::vector<VEMaterial*> &materials);
+		VEMovableObject *	loadModel(std::string entityName, std::string basedir, std::string filename, uint32_t aiFlags=0, VEMovableObject *parent=nullptr);
 
 		//------------------------------------------------------------------------
-		///Add an entity to the scene
-		void			addEntity(VEEntity *entity) { m_entities[entity->getName()] = entity; };
-		VEEntity *		getEntity(std::string entityName);
-		void			deleteEntityAndSubentities(std::string name);
-		void			createEntityList(VEEntity *pEntity, std::vector<std::string> &namelist);
+		VEMovableObject *	createEntity(std::string entityName, VEMesh *pMesh, VEMaterial *pMat, aiMatrix4x4 transf, VEMovableObject *parent=nullptr );
+		VEEntity *			createEntity(std::string entityName, VEMesh *pMesh, VEMaterial *pMat, glm::mat4 transf, VEMovableObject *parent = nullptr);
+		VEEntity *			createEntity(std::string entityName, VEEntity::veEntityType type, VEMesh *pMesh, VEMaterial *pMat, glm::mat4 transf, VEMovableObject *parent = nullptr);
+
+		//------------------------------------------------------------------------
+		VEMovableObject *	createCubemap(std::string entityName, std::string basedir, std::string filename );
+		VEMovableObject *	createCubemap(std::string entityName, std::string basedir, std::vector<std::string> filenames );
+		VEEntity *			createSkyplane(std::string entityName, std::string basedir, std::string texName);
+		VEMovableObject *	createSkybox(std::string entityName, std::string basedir, std::vector<std::string> texNames);
+
+		//------------------------------------------------------------------------
+		///Add a movable object to the scene
+		void				addMovableObject(VEMovableObject *entity) { m_movableObjects[entity->getName()] = entity; };
+		VEMovableObject *	getMovableObject(std::string entityName);
+		void				deleteMOAndChildren(std::string name);
+		void				createMOList(VEMovableObject *pObject, std::vector<std::string> &namelist);
 
 		//------------------------------------------------------------------------
 		/**
@@ -105,8 +108,8 @@ namespace ve {
 		void switchOffLight(VELight *light);	//Remove a light from the m_lights list
 
 		//------------------------------------------------------------------------
-		void			printEntities();
-		void			printTree(VEEntity *root);
+		void			printMovableObjects();
+		void			printTree(VEMovableObject *root);
 	};
 
 }

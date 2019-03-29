@@ -176,6 +176,241 @@ namespace ve {
 	}
 
 
+
+	//---------------------------------------------------------------------
+	//Movable Object
+
+
+	VEMovableObject::VEMovableObject( std::string name ) : VENamedClass(name) {
+	}
+
+	VEMovableObject::VEMovableObject(std::string name, VEMovableObject *parent) : VENamedClass(name) {
+		m_parent = parent;
+		if (parent != nullptr) {
+			parent->addChild(this);
+		}
+	}
+
+	/**
+	* \returns the entity's local to parent transform.
+	*/
+	glm::mat4 VEMovableObject::getTransform() {
+		return m_transform;
+	}
+
+	/**
+	* \brief Sets the entity's local to parent transform.
+	*/
+	void VEMovableObject::setTransform(glm::mat4 trans) {
+		m_transform = trans;
+		update();
+	}
+
+	/**
+	* \brief Sets the entity's position.
+	*/
+	void VEMovableObject::setPosition(glm::vec3 pos) {
+		m_transform[3] = glm::vec4(pos.x, pos.y, pos.z, 1.0f);
+		update();
+	};
+
+	/**
+	* \returns the entity's position.
+	*/
+	glm::vec3 VEMovableObject::getPosition() {
+		return glm::vec3(m_transform[3].x, m_transform[3].y, m_transform[3].z);
+	};
+
+	/**
+	* \returns the entity's local x-axis in parent space
+	*/
+	glm::vec3 VEMovableObject::getXAxis() {
+		glm::vec4 x = m_transform[0];
+		return glm::vec3(x.x, x.y, x.z);
+	}
+
+	/**
+	* \returns the entity's local y-axis in parent space
+	*/
+	glm::vec3 VEMovableObject::getYAxis() {
+		glm::vec4 y = m_transform[1];
+		return glm::vec3(y.x, y.y, y.z);
+	}
+
+	/**
+	* \returns the entity's local z-axis in parent space
+	*/
+	glm::vec3 VEMovableObject::getZAxis() {
+		glm::vec4 z = m_transform[2];
+		return glm::vec3(z.x, z.y, z.z);
+	}
+
+	/**
+	* \brief Sets the object parameter vector.
+	*
+	* This causes an update of the UBO and all children.
+	*
+	* \param[in] param The new parameter vector
+	*/
+	void VEMovableObject::setParam(glm::vec4 param) {
+		m_param = param;
+		update();
+	}
+
+
+	/**
+	*
+	* \brief Multiplies the entity's transform with another 4x4 transform.
+	*
+	* The transform can be a translation, sclaing, rotation etc.
+	*
+	* \param[in] trans The 4x4 transform that is multiplied from the left onto the entity's old transform.
+	*
+	*/
+	void VEMovableObject::multiplyTransform(glm::mat4 trans) {
+		setTransform(trans*m_transform);
+	};
+
+	/**
+	*
+	* \brief An entity's world matrix is the local to parent transform multiplied by the parent's world matrix.
+	*
+	* \returns the entity's world (aka model) matrix.
+	*
+	*/
+	glm::mat4 VEMovableObject::getWorldTransform() {
+		if (m_parent != nullptr) return m_parent->getWorldTransform() * m_transform;
+		return m_transform;
+	};
+
+
+	/**
+	*
+	* \brief lookAt function
+	*
+	* \param[in] eye New position of the entity
+	* \param[in] point Entity looks at this point (= new local z axis)
+	* \param[in] up Up vector pointing up
+	*
+	*/
+	void VEMovableObject::lookAt(glm::vec3 eye, glm::vec3 point, glm::vec3 up) {
+		m_transform[3] = glm::vec4(eye.x, eye.y, eye.z, 1.0f);
+		glm::vec3 z = glm::normalize(point - eye);
+		up = glm::normalize(up);
+		float corr = glm::dot(z, up);	//if z, up are lined up (corr=1 or corr=-1), decorrelate them
+		if (1.0f - fabs(corr) < 0.00001f) {
+			float sc = z.x + z.y + z.z;
+			up = glm::normalize(glm::vec3(sc, sc, sc));
+		}
+
+		m_transform[2] = glm::vec4(z.x, z.y, z.z, 0.0f);
+		glm::vec3 x = glm::normalize(glm::cross(up, z));
+		m_transform[0] = glm::vec4(x.x, x.y, x.z, 0.0f);
+		glm::vec3 y = glm::normalize(glm::cross(z, x));
+		m_transform[1] = glm::vec4(y.x, y.y, y.z, 0.0f);
+	}
+
+
+	/**
+	*
+	* \brief Adds a child entity to the list of children.
+	*
+	* \param[in] pEntity Pointer to the new child.
+	*
+	*/
+	void VEMovableObject::addChild(VEMovableObject * pEntity) {
+		m_children.push_back(pEntity);
+	}
+
+	/**
+	*
+	* \brief remove a child from the children list - child is NOT destroyed
+	*
+	* \param[in] pEntity Pointer to the child to be removed.
+	*
+	*/
+	void VEMovableObject::removeChild(VEMovableObject *pEntity) {
+		for (uint32_t i = 0; i < m_children.size(); i++) {
+			if (pEntity == m_children[i]) {
+				VEMovableObject *last = m_children[m_children.size() - 1];
+				m_children[i] = last;
+				m_children.pop_back();		//child is not detroyed
+				return;
+			}
+		}
+	}
+
+	/**
+	*
+	* \brief Update the entity's UBO buffer with the current world matrix
+	*
+	* If there is a parent, get the parent's world matrix. If not, set the parent matrix to identity.
+	* Then call update(parent) to do the job.
+	*
+	*/
+	void VEMovableObject::update() {
+		glm::mat4 parentWorldMatrix = glm::mat4(1.0);
+		if (m_parent != nullptr) {
+			parentWorldMatrix = m_parent->getWorldTransform();
+		}
+		update(parentWorldMatrix, m_param);
+	}
+
+	/**
+	*
+	* \brief Update the entity's UBO buffer with the current world matrix
+	*
+	* Calculate the new world matrix (and inv transpose matix to transform normal vectors).
+	* Then copy the struct content into the UBO.
+	*
+	* \param[in] parentWorldMatrix The parent's world matrix or an identity matrix.
+	* \param[in] param The new parameter vector for all children
+	*
+	*/
+	void VEMovableObject::update(glm::mat4 parentWorldMatrix, glm::vec4 param) {
+		VESubrender::veUBOPerObject ubo = {};
+		updateUBO( &ubo );						//call derived class for specific data like object color
+
+		ubo.model = parentWorldMatrix * getTransform();
+		ubo.modelInvTrans = glm::transpose(glm::inverse(ubo.model));
+
+		m_param = param;
+		ubo.param = m_param;
+
+		for (uint32_t i = 0; i < m_uniformBuffersAllocation.size(); i++) {
+			void* data = nullptr;
+			vmaMapMemory(getRendererPointer()->getVmaAllocator(), m_uniformBuffersAllocation[i], &data);
+			memcpy(data, &ubo, sizeof(ubo));
+			vmaUnmapMemory(getRendererPointer()->getVmaAllocator(), m_uniformBuffersAllocation[i]);
+		}
+
+		updateChildren(ubo.model, m_param);
+	}
+
+
+	/**
+	* \brief Update the UBOs of all children of this entity
+	*/
+	void VEMovableObject::updateChildren(glm::mat4 worldMatrix, glm::vec4 param) {
+		for (auto pEntity : m_children) {
+			pEntity->update(worldMatrix, param);
+		}
+	}
+
+	void VEMovableObject::getBoundingSphere(glm::vec3 *center, float *radius) {
+		*center = getPosition();
+		*radius = 1.0f;
+	}
+
+	void VEMovableObject::getOBB(std::vector<glm::vec4> &pointsW, float t1, float t2, glm::vec3 &center, float &width, float &height, float &depth) {
+		center = getPosition();
+		width = 1.0f;
+		height = 1.0f;
+		depth = 1.0f;
+	}
+
+
+
 	//---------------------------------------------------------------------
 	//Entity
 
@@ -194,12 +429,11 @@ namespace ve {
 	* \param[in] parent Pointer to the entity's parent.
 	*
 	*/
-	VEEntity::VEEntity(std::string name, veEntityType type, VEMesh *pMesh, VEMaterial *pMat, glm::mat4 transf, VEEntity *parent) :
-						VENamedClass(name), m_entityType( type) {
-		m_pEntityParent = parent;
-		if (parent != nullptr) {
-			parent->addChild(this);
-		}
+	VEEntity::VEEntity(	std::string name, veEntityType type, 
+						VEMesh *pMesh, VEMaterial *pMat, 
+						glm::mat4 transf, VEMovableObject *parent) :
+						VEMovableObject(name, parent), m_entityType( type) {
+
 		setTransform(transf);
 
 		if (pMesh != nullptr && pMat != nullptr) {
@@ -220,7 +454,9 @@ namespace ve {
 	* \param[in] name The name of the mesh.
 	*
 	*/
-	VEEntity::VEEntity(std::string name) : VENamedClass(name), m_entityType(VE_ENTITY_TYPE_OBJECT) {
+	VEEntity::VEEntity(std::string name) : VEMovableObject(name), m_entityType(VE_ENTITY_TYPE_OBJECT) {
+		m_drawEntity = true;
+		m_castsShadow = true;
 	};
 
 
@@ -237,210 +473,13 @@ namespace ve {
 		}
 	}
 
-	/**
-	* \returns the entity's local to parent transform.
-	*/
-	glm::mat4 VEEntity::getTransform() {
-		return m_transform;
-	}
-
-	/**
-	* \brief Sets the entity's local to parent transform.
-	*/
-	void VEEntity::setTransform(glm::mat4 trans) {
-		m_transform = trans;
-		update();
-	}
-
-	/**
-	* \brief Sets the entity's position.
-	*/
-	void VEEntity::setPosition(glm::vec3 pos) { 
-		m_transform[3] = glm::vec4(pos.x, pos.y, pos.z, 1.0f);
-		update();
-	};
-
-	/**
-	* \returns the entity's position.
-	*/
-	glm::vec3 VEEntity::getPosition() { 
-		return glm::vec3(m_transform[3].x, m_transform[3].y, m_transform[3].z);
-	};
-
-	/**
-	* \returns the entity's local x-axis in parent space 
-	*/
-	glm::vec3 VEEntity::getXAxis() {
-		glm::vec4 x = m_transform[0];
-		return glm::vec3(x.x, x.y, x.z);
-	}
-
-	/**
-	* \returns the entity's local y-axis in parent space
-	*/
-	glm::vec3 VEEntity::getYAxis() {
-		glm::vec4 y = m_transform[1];
-		return glm::vec3(y.x, y.y, y.z);
-	}
-
-	/**
-	* \returns the entity's local z-axis in parent space
-	*/
-	glm::vec3 VEEntity::getZAxis() {
-		glm::vec4 z = m_transform[2];
-		return glm::vec3(z.x, z.y, z.z);
-	}
-
-	/**
-	* \brief Sets the object parameter vector.
-	*
-	* This causes an update of the UBO and all children.
-	*
-	* \param[in] param The new parameter vector
-	*/
-	void VEEntity::setParam( glm::vec4 param) {
-		m_param = param;
-		update();
-	}
-
-
-	/**
-	*
-	* \brief Multiplies the entity's transform with another 4x4 transform.
-	*
-	* The transform can be a translation, sclaing, rotation etc.
-	*
-	* \param[in] trans The 4x4 transform that is multiplied from the left onto the entity's old transform.
-	*
-	*/
-	void VEEntity::multiplyTransform(glm::mat4 trans) { 
-		setTransform(trans*m_transform); 
-	};
-
-	/**
-	*
-	* \brief An entity's world matrix is the local to parent transform multiplied by the parent's world matrix.
-	*
-	* \returns the entity's world (aka model) matrix.
-	*
-	*/
-	glm::mat4 VEEntity::getWorldTransform() {
-		if (m_pEntityParent != nullptr) return m_pEntityParent->getWorldTransform() * m_transform;
-		return m_transform;
-	};
-
-
-	/**
-	*
-	* \brief lookAt function
-	*
-	* \param[in] eye New position of the entity
-	* \param[in] point Entity looks at this point (= new local z axis)
-	* \param[in] up Up vector pointing up
-	*
-	*/
-	void VEEntity::lookAt(glm::vec3 eye, glm::vec3 point, glm::vec3 up) {
-		m_transform[3] = glm::vec4(eye.x, eye.y, eye.z, 1.0f);
-		glm::vec3 z = glm::normalize(point - eye);
-		up = glm::normalize(up);
-		float corr = glm::dot(z, up);	//if z, up are lined up (corr=1 or corr=-1), decorrelate them
-		if (1.0f - fabs(corr) < 0.00001f) {
-			float sc = z.x + z.y + z.z;
-			up = glm::normalize(glm::vec3(sc, sc, sc));
-		}
-
-		m_transform[2] = glm::vec4(z.x, z.y, z.z, 0.0f);
-		glm::vec3 x = glm::normalize( glm::cross( up, z ) );
-		m_transform[0] = glm::vec4(x.x, x.y, x.z, 0.0f);
-		glm::vec3 y = glm::normalize( glm::cross(z, x) );
-		m_transform[1] = glm::vec4(y.x, y.y, y.z, 0.0f);
-	}
-
-
-	/**
-	*
-	* \brief Adds a child entity to the list of children.
-	*
-	* \param[in] pEntity Pointer to the new child.
-	*
-	*/
-	void VEEntity::addChild(VEEntity * pEntity) {
-		m_pEntityChildren.push_back(pEntity);
-	}
-
-	/**
-	*
-	* \brief remove a child from the children list - child is NOT destroyed
-	*
-	* \param[in] pEntity Pointer to the child to be removed.
-	*
-	*/
-	void VEEntity::removeChild(VEEntity *pEntity) {
-		for (uint32_t i = 0; i < m_pEntityChildren.size(); i++) {
-			if (pEntity == m_pEntityChildren[i]) {
-				VEEntity *last = m_pEntityChildren[m_pEntityChildren.size() - 1];
-				m_pEntityChildren[i] = last;
-				m_pEntityChildren.pop_back();		//child is not detroyed
-				return;
-			}
-		}
-	}
-
-	/**
-	*
-	* \brief Update the entity's UBO buffer with the current world matrix
-	*
-	* If there is a parent, get the parent's world matrix. If not, set the parent matrix to identity.
-	* Then call update(parent) to do the job.
-	*
-	*/
-	void VEEntity::update() {
-		glm::mat4 parentWorldMatrix = glm::mat4(1.0);
-		if (m_pEntityParent != nullptr) {
-			parentWorldMatrix = m_pEntityParent->getWorldTransform();
-		}
-		update(parentWorldMatrix, m_param);
-	}
-
-	/**
-	*
-	* \brief Update the entity's UBO buffer with the current world matrix
-	* 
-	* Calculate the new world matrix (and inv transpose matix to transform normal vectors).
-	* Then copy the struct content into the UBO.
-	*
-	* \param[in] parentWorldMatrix The parent's world matrix or an identity matrix.
-	* \param[in] param The new parameter vector for all children
-	*
-	*/
-	void VEEntity::update( glm::mat4 parentWorldMatrix, glm::vec4 param) {
-		VESubrender::veUBOPerObject ubo = {};
-		ubo.model = parentWorldMatrix * getTransform();
-		ubo.modelInvTrans = glm::transpose(glm::inverse(ubo.model));
+	void VEEntity::updateUBO( void *ubo) {
+		VESubrender::veUBOPerObject *pUBO = (VESubrender::veUBOPerObject*) ubo;
 		if (m_pMaterial != nullptr) {
-			ubo.color = m_pMaterial->color;
-		}
-		m_param = param;
-		ubo.param = m_param;
-
-		for (uint32_t i = 0; i < m_uniformBuffersAllocation.size(); i++) {
-			void* data = nullptr;
-			vmaMapMemory(getRendererPointer()->getVmaAllocator(), m_uniformBuffersAllocation[i], &data);
-			memcpy(data, &ubo, sizeof(ubo));
-			vmaUnmapMemory(getRendererPointer()->getVmaAllocator(), m_uniformBuffersAllocation[i]);
-		}
-
-		updateChildren(ubo.model, m_param);
+			pUBO->color = m_pMaterial->color;
+		};
 	}
 
-	/**
-	* \brief Update the UBOs of all children of this entity
-	*/
-	void VEEntity::updateChildren( glm::mat4 worldMatrix, glm::vec4 param) {
-		for (auto pEntity : m_pEntityChildren) {
-			pEntity->update(worldMatrix, param);
-		}
-	}
 
 	/**
 	* \brief Get a bounding sphere for this entity
@@ -529,7 +568,7 @@ namespace ve {
 	*
 	*/
 	VECamera::VECamera(std::string name) : VEEntity(name) {
-		m_entityType = VE_ENTITY_TYPE_CAMERA_PROJECTIVE; 
+		m_cameraType = VE_CAMERA_TYPE_PROJECTIVE; 
 	};
 
 	/**
@@ -543,7 +582,7 @@ namespace ve {
 	*/
 	VECamera::VECamera(std::string name, float nearPlane, float farPlane) :
 		VEEntity(name), m_nearPlane(nearPlane), m_farPlane(farPlane) {
-		m_entityType = VE_ENTITY_TYPE_CAMERA_PROJECTIVE;
+		m_cameraType = VE_CAMERA_TYPE_PROJECTIVE;
 	}
 
 
@@ -717,7 +756,7 @@ namespace ve {
 	*
 	*/
 	VECameraProjective::VECameraProjective(std::string name ) : VECamera(name) {
-		m_entityType = VE_ENTITY_TYPE_CAMERA_PROJECTIVE;
+		m_cameraType = VE_CAMERA_TYPE_PROJECTIVE;
 	};
 
 	/**
@@ -733,7 +772,7 @@ namespace ve {
 	*/
 	VECameraProjective::VECameraProjective(std::string name, float nearPlane, float farPlane, float aspectRatio, float fov) :
 			VECamera(name, nearPlane, farPlane), m_aspectRatio(aspectRatio), m_fov(fov)   {
-		m_entityType = VE_ENTITY_TYPE_CAMERA_PROJECTIVE;
+		m_cameraType = VE_CAMERA_TYPE_PROJECTIVE;
 	};
 
 	/**
@@ -804,7 +843,7 @@ namespace ve {
 	*
 	*/
 	VECameraOrtho::VECameraOrtho(std::string name) : VECamera(name) {
-		m_entityType = VE_ENTITY_TYPE_CAMERA_ORTHO;
+		m_cameraType = VE_CAMERA_TYPE_ORTHO;
 	};
 
 	/**
@@ -820,7 +859,7 @@ namespace ve {
 	*/
 	VECameraOrtho::VECameraOrtho(std::string name, float nearPlane, float farPlane, float width, float height) :
 		VECamera(name, nearPlane, farPlane), m_width(width), m_height(height) {
-		m_entityType = VE_ENTITY_TYPE_CAMERA_ORTHO;
+		m_cameraType = VE_CAMERA_TYPE_ORTHO;
 	};
 
 
@@ -906,7 +945,7 @@ namespace ve {
 	* \param[in] type Light type
 	*/
 	VELight::VELight(std::string name, veLightType type) : VEEntity(name), m_lightType(type) {
-		m_entityType = VE_ENTITY_TYPE_LIGHT;
+		m_lightType = VE_LIGHT_TYPE_DIRECTIONAL;
 	};
 
 

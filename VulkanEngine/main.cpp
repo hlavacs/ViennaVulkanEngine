@@ -14,17 +14,17 @@ namespace ve {
 
 	///simple event listener for rotating objects
 	class RotatorListener : public VEEventListener {
-		VEEntity *m_pEntity = nullptr;
+		VEMovableObject *m_pObject = nullptr;
 		float m_speed;
 		glm::vec3 m_axis;
 	public:
 		///Constructor
-		RotatorListener(std::string name, VEEntity *pEntity, float speed, glm::vec3 axis) :
-			VEEventListener(name), m_pEntity(pEntity), m_speed(speed), m_axis(axis) {};
+		RotatorListener(std::string name, VEMovableObject *pObject, float speed, glm::vec3 axis) :
+			VEEventListener(name), m_pObject(pObject), m_speed(speed), m_axis(axis) {};
 
 		void onFrameStarted(veEvent event) {
 			glm::mat4 rot = glm::rotate( glm::mat4(1.0f), m_speed*(float)event.dt, m_axis );
-			m_pEntity->multiplyTransform(rot);
+			m_pObject->multiplyTransform(rot);
 		}
 	};
 
@@ -92,7 +92,7 @@ namespace ve {
 		//The engine uses Y-UP, Left-handed
 		void loadLevel() {
 
-			VEEntity *e4 = m_pSceneManager->loadModel("The Plane", "models/test", "plane_t_n_s.obj");
+			VEMovableObject *e4 = m_pSceneManager->loadModel("The Plane", "models/test", "plane_t_n_s.obj");
 			e4->setParam( glm::vec4(1000.0f, 1000.0f, 0.0f, 0.0f) );
 			e4->setTransform(glm::scale(glm::mat4(1.0f), glm::vec3(1000.0f, 1.0f, 1000.0f)));
 
@@ -106,34 +106,33 @@ namespace ve {
 			//RotatorListener *pRot = new RotatorListener("CubemapRotator", cubemap, 0.01f, glm::vec3(0.0f, 1.0f, 0.0f));
 			//getEnginePointer()->registerEventListener(pRot);
 
-			VEEntity *sp1 = m_pSceneManager->createSkybox("The Sky", "models/test/sky/cloudy", 
+			VEMovableObject *sp1 = m_pSceneManager->createSkybox("The Sky", "models/test/sky/cloudy",
 			{ "bluecloud_ft.jpg", "bluecloud_bk.jpg", "bluecloud_up.jpg", "bluecloud_dn.jpg", "bluecloud_rt.jpg", "bluecloud_lf.jpg" });
 			RotatorListener *pRot = new RotatorListener("CubemapRotator", sp1, 0.01f, glm::vec3(0.0f, 1.0f, 0.0f));
 			getEnginePointer()->registerEventListener(pRot);
 
 
-
-			VEEntity *eSLight = getSceneManagerPointer()->getEntity("StandardLight");
-			VEEntity *eL = m_pSceneManager->loadModel("The Light", "models/test/sphere", "sphere.obj", 0 , eSLight);
+			VELight *eSLight = (VELight*)getSceneManagerPointer()->getMovableObject("StandardLight");
+			VEMovableObject *eL = m_pSceneManager->loadModel("The Light", "models/test/sphere", "sphere.obj", 0 , eSLight);
 			eL->multiplyTransform(glm::scale(glm::vec3(0.02f,0.02f,0.02f)));
 
-			VEEntity *e1 = m_pSceneManager->loadModel("The Cube",  "models/test/crate0", "cube.obj");
+			VEMovableObject *e1 = m_pSceneManager->loadModel("The Cube",  "models/test/crate0", "cube.obj");
 			e1->setTransform(glm::translate(glm::mat4(1.0f), glm::vec3(10.0f, 1.0f, 1.0f)));
 			e1->multiplyTransform( glm::scale(glm::mat4(1.0f), glm::vec3(10.0f, 10.0f, 10.0f)));
 
 
-			VEEntity *e1b = m_pSceneManager->loadModel("The Cube b", "models/test/crate0", "cube.obj");
+			VEMovableObject *e1b = m_pSceneManager->loadModel("The Cube b", "models/test/crate0", "cube.obj");
 			e1b->setTransform(glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 10.0f, 10.0f)));
 
-			VEEntity *e2 = m_pSceneManager->loadModel("The Cube2", "models/test/crate1", "cube.obj");
+			VEMovableObject *e2 = m_pSceneManager->loadModel("The Cube2", "models/test/crate1", "cube.obj");
 			e2->setTransform(glm::translate(glm::mat4(1.0f), glm::vec3(2.0f, 10.0f, 10.0f)));
-			VEEntity *e3 = m_pSceneManager->loadModel("The Cube3", "models/test/crate2", "cube.obj");
+			VEMovableObject *e3 = m_pSceneManager->loadModel("The Cube3", "models/test/crate2", "cube.obj");
 			e3->setTransform(glm::translate(glm::mat4(1.0f), glm::vec3(-2.0f, 10.0f, 10.0f)));
 			
-			VEEntity *e6 = m_pSceneManager->loadModel("The Cube6", "models/test", "cube1.obj");
+			VEMovableObject *e6 = m_pSceneManager->loadModel("The Cube6", "models/test", "cube1.obj");
 			e6->setTransform(glm::scale(glm::mat4(1.0f), glm::vec3(2.0f, 2.0f, 2.0f)) * glm::translate(glm::mat4(1.0f), glm::vec3(10.0f, 10.0f, 1.0f)));
 
-			VEEntity *e7 = m_pSceneManager->loadModel("The Cube6 b", "models/test", "cube1.obj");
+			VEMovableObject *e7 = m_pSceneManager->loadModel("The Cube6 b", "models/test", "cube1.obj");
 			e7->setTransform(glm::scale(glm::mat4(1.0f), glm::vec3(2.0f, 2.0f, 2.0f)) * glm::translate(glm::mat4(1.0f), glm::vec3(10.0f, 10.0f, 5.0f)));
 
 			std::default_random_engine generator;
@@ -143,7 +142,7 @@ namespace ve {
 				std::string name = "The Cube " + std::to_string(i);
 
 				VEEntity *p = new VEEntity( name + "-parent");
-				m_pSceneManager->addEntity(p);
+				m_pSceneManager->addMovableObject(p);
 				p->setTransform( 
 					glm::translate(glm::mat4(1.0f), glm::vec3(2.0f*distribution(generator), 55.0f + distribution(generator), 2.0f*distribution(generator))));
 

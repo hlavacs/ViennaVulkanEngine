@@ -76,7 +76,7 @@ namespace ve {
 
 		VESubrender::veSubrenderType type = VESubrender::VE_SUBRENDERER_TYPE_NONE;
 
-		switch (pEntity->m_entityType) {
+		switch ( pEntity->getEntityType() ) {
 		case VEEntity::VE_ENTITY_TYPE_OBJECT:
 			if (pEntity->m_pMaterial->mapDiffuse != nullptr) {
 

@@ -79,38 +79,42 @@ namespace ve {
 	};
 
 
+	//------------------------------------------------------------------------------------
 
-	/**
-	*
-	*
+
 	class VEMovableObject : public VENamedClass {
-	protected:
-		glm::mat4	m_transform = glm::mat4(1.0);					///<Transform from local to parent space, the engine uses Y-UP, Left-handed
-		glm::vec4	m_param = glm::vec4(1.0f, 1.0f, 0.0f, 0.0f);	///<A free parameter to be used
 
 	public:
 		enum veObjectType {
-			VE_OBJECT_TYPE_OBJECT,		///<Instance of the base class, acts as scene node
+			VE_OBJECT_TYPE_NODE,		///<Instance of the base class, acts as scene node
 			VE_OBJECT_TYPE_ENTITY,		///<Normal object to be drawn
 			VE_OBJECT_TYPE_CAMERA,		///<A projective camera, cannot be drawn
 			VE_OBJECT_TYPE_LIGHT		///<A light
 		};
 
-		VEMovableObject(std::string name, veObjectType objectType );
-		///Virtual destructor
-		virtual ~VEMovableObject(){};
+	protected:
+		veObjectType	m_objectType = VE_OBJECT_TYPE_NODE;		///<Object type
+		glm::mat4		m_transform = glm::mat4(1.0);					///<Transform from local to parent space, the engine uses Y-UP, Left-handed
+		glm::vec4		m_param = glm::vec4(1.0f, 1.0f, 0.0f, 0.0f);	///<A free parameter to be used
 
-		veObjectType					m_objectType = VE_OBJECT_TYPE_OBJECT;			///<Object type
-		VEEntity *						m_pEntityParent = nullptr;						///<Pointer to entity parent
-		std::vector<VEEntity *>			m_pEntityChildren;								///<List of entity children
-		bool							m_drawObject = false;							///<should it be drawn at all?
+	public:
+		VEMovableObject *				m_parent = nullptr;				///<Pointer to entity parent
+		std::vector<VEMovableObject *>	m_children;						///<List of entity children
+		bool							m_drawObject = false;			///<should it be drawn at all?
 
 		std::vector<VkBuffer>			m_uniformBuffers;				///<One UBO for each framebuffer frame
 		std::vector<VmaAllocation>		m_uniformBuffersAllocation;		///<VMA information for the UBOs
 		std::vector<VkDescriptorSet>	m_descriptorSetsUBO;			///<Per subrenderer descriptor sets for UBO
 		std::vector<VkDescriptorSet>	m_descriptorSetsResources;		///<Per subrenderer descriptor sets for other resources
 
-		//--------------------------------------------------
+		//-------------------------------------------------------------------------------------
+		VEMovableObject(std::string name);
+		VEMovableObject(std::string name, VEMovableObject *parent);
+		///Virtual destructor
+		virtual ~VEMovableObject(){};
+		//-------------------------------------------------------------------------------------
+		///\returns the object type
+		veObjectType getObjectType() { return m_objectType; };
 		void		setTransform(glm::mat4 trans);		//Overwrite the transform and copy it to the UBO
 		glm::mat4	getTransform();						//Return local transform
 		void		setPosition(glm::vec3 pos);			//Set the position of the entity
@@ -123,19 +127,20 @@ namespace ve {
 		glm::mat4	getWorldTransform();				//Compute the world matrix
 		void		lookAt(glm::vec3 eye, glm::vec3 point, glm::vec3 up);
 
-		//--------------------------------------------------
-		void		update();							//Copy the world matrix to the UBO
-		void		update(glm::mat4 parentWorldMatrix, glm::vec4 param);//Copy the world matrix using the parent's world matrix
-		void		updateChildren(glm::mat4 worldMatrix, glm::vec4 param);	//Update all children
-		void		addChild(VEEntity *);				//Add a new child
-		void		removeChild(VEEntity *);			//Remove a child, dont destroy it
+		//--------------------------------------------------------------------------------------
+		virtual void update();							//Copy the world matrix to the UBO
+		virtual void update(glm::mat4 parentWorldMatrix, glm::vec4 param);//Copy the world matrix using the parent's world matrix
+		///Meant for subclasses to add data to the UBO, so this function does nothing
+		virtual void updateUBO( void *ubo) {};
 
-		//--------------------------------------------------
+		virtual void updateChildren(glm::mat4 worldMatrix, glm::vec4 param);	//Update all children
+		virtual void addChild(VEMovableObject *);		//Add a new child
+		virtual void removeChild(VEMovableObject *);		//Remove a child, dont destroy it
+
+		//-------------------------------------------------------------------------------------
 		virtual void getBoundingSphere( glm::vec3 *center, float *radius );		//return center and radius for a bounding sphere
 		virtual void getOBB(std::vector<glm::vec4> &pointsW, float t1, float t2, glm::vec3 &center, float &width, float &height, float &depth);	//return min and max along the axes
-
-	};*/
-
+	};
 
 
 	class VESubrender;
@@ -153,9 +158,7 @@ namespace ve {
 	* all drawing related tasks, like creating UBOs and selecting the right PSO.
 	*/
 
-	class VEEntity : public VENamedClass {
-	protected:
-		glm::mat4 m_transform = glm::mat4(1.0);	///<Transform from local to parent space, the engine uses Y-UP, Left-handed
+	class VEEntity : public VEMovableObject {
 
 	public:
 		///The entity type determines what kind of entity this is
@@ -164,56 +167,39 @@ namespace ve {
 			VE_ENTITY_TYPE_CUBEMAP,				///<A cubemap for sky boxes
 			VE_ENTITY_TYPE_CUBEMAP2,			///<A cubemap for sky boxes, but simulated
 			VE_ENTITY_TYPE_SKYPLANE,			///<A plane for sky boxes
-			VE_ENTITY_TYPE_TERRAIN_HEIGHTMAP,	///<A heightmap for terrain modelling
-			VE_ENTITY_TYPE_CAMERA_PROJECTIVE,	///<A projective camera, cannot be drawn
-			VE_ENTITY_TYPE_CAMERA_ORTHO,		///<An orthographic camera, cannot be drawn
-			VE_ENTITY_TYPE_LIGHT
+			VE_ENTITY_TYPE_TERRAIN_HEIGHTMAP	///<A heightmap for terrain modelling
 		};
 		
+	protected:
 		veEntityType				m_entityType = VE_ENTITY_TYPE_OBJECT;			///<Entity type
+
+	public:
 		VEMesh *					m_pMesh = nullptr;								///<Pointer to entity mesh
 		VEMaterial *				m_pMaterial = nullptr;							///<Pointer to entity material
 		glm::vec4					m_param = glm::vec4(1.0f, 1.0f, 0.0f, 0.0f);	///<A free parameter for drawing
-		VEEntity *					m_pEntityParent = nullptr;						///<Pointer to entity parent
-		std::vector<VEEntity *>		m_pEntityChildren;								///<List of entity children
 
 		VESubrender *				m_pSubrenderer = nullptr;				///<subrenderer this entity is registered with / replace with a set
 		bool						m_drawEntity = false;					///<should it be drawn at all?
-		bool						m_castsShadow = false;					///<draw in the shadow pass?
+		bool						m_castsShadow = true;					///<draw in the shadow pass?
 
-		std::vector<VkBuffer>			m_uniformBuffers;				///<One UBO for each framebuffer frame
-		std::vector<VmaAllocation>		m_uniformBuffersAllocation;		///<VMA information for the UBOs
-		std::vector<VkDescriptorSet>	m_descriptorSetsUBO;			///<Per subrenderer descriptor sets for UBO
-		std::vector<VkDescriptorSet>	m_descriptorSetsResources;		///<Per subrenderer descriptor sets for other resources
-
-		VEEntity( std::string name );
-		VEEntity(std::string name, veEntityType type, VEMesh *pMesh, VEMaterial *pMat, glm::mat4 transf, VEEntity *parent);
+		VEEntity(std::string name);
+		VEEntity(	std::string name, veEntityType type, VEMesh *pMesh, VEMaterial *pMat,
+					glm::mat4 transf, VEMovableObject *parent);
 		virtual ~VEEntity();
 
 		//--------------------------------------------------
-		void		setTransform(glm::mat4 trans);	//Overwrite the transform and copy it to the UBO
-		glm::mat4	getTransform();						//Return local transform
-		void		setPosition(glm::vec3 pos);			//Set the position of the entity
-		glm::vec3	getPosition();						//Return the current position in parent space
-		glm::vec3	getXAxis();							//Return local x-axis in parent space
-		glm::vec3	getYAxis();							//Return local y-axis in parent space
-		glm::vec3	getZAxis();							//Return local z-axis in parent space
-		void		setParam(glm::vec4 param);			//set the parameter vector
-		void		multiplyTransform(glm::mat4 trans); //Multiply the transform, e.g. translate, scale, rotate 
-		glm::mat4	getWorldTransform();				//Compute the world matrix
-		void		lookAt(glm::vec3 eye, glm::vec3 point, glm::vec3 up);
+		///\returns the entity type
+		veEntityType getEntityType() { return m_entityType; };
 
 		//--------------------------------------------------
-		void		update();							//Copy the world matrix to the UBO
-		void		update(glm::mat4 parentWorldMatrix, glm::vec4 param);//Copy the world matrix using the parent's world matrix
-		void		updateChildren(glm::mat4 worldMatrix, glm::vec4 param);	//Update all children
-		void		addChild(VEEntity *);				//Add a new child
-		void		removeChild(VEEntity *);			//Remove a child, dont destroy it
+		///Add specific information to the object UBO
+		virtual void updateUBO( void *ubo);
 
 		//--------------------------------------------------
 		virtual void getBoundingSphere( glm::vec3 *center, float *radius );		//return center and radius for a bounding sphere
 		virtual void getOBB(std::vector<glm::vec4> &pointsW, float t1, float t2, glm::vec3 &center, float &width, float &height, float &depth);	//return min and max along the axes
 	};
+
 
 	class VELight;
 
@@ -228,7 +214,13 @@ namespace ve {
 	*
 	*/
 	class VECamera : public VEEntity {
+
 	public:
+		enum veCameraType {
+			VE_CAMERA_TYPE_PROJECTIVE,	///<A projective camera, cannot be drawn
+			VE_CAMERA_TYPE_ORTHO,		///<An orthographic camera, cannot be drawn
+		};
+
 		///Structure for sending camera information to a UBO
 		struct veCameraData_t {
 			glm::mat4 camModel;			///<Camera model matrix, needed for camera world position
@@ -244,15 +236,24 @@ namespace ve {
 			glm::vec4 limits;			///<limits[0] nad [1]: fraction of (far-near) distance where frustum begins/ends
 		};
 
+	protected:
+		veCameraType m_cameraType;	///<Light type of this light
+
+	public:
+
 		float m_nearPlane = 1.0f;	///<The distance of the near plane to the camera origin
 		float m_farPlane = 200.0f;	///<The distance of the far plane to the camera origin
 
 		VECamera(std::string name);
 		VECamera(std::string name, float nearPlane, float farPlane);
 		virtual ~VECamera() {};
+
+		///\returns the camera type
+		veCameraType getCameraType() { return m_cameraType; };
+
+		//--------------------------------------------------
 		void fillCameraStructure(veCameraData_t *pCamera);
 		void fillShadowStructure(veShadowData_t *pCamera);
-
 		virtual glm::mat4 getProjectionMatrix()=0;								///<Return the projection matrix
 		///Return the projection matrix, pure virtual
 		virtual glm::mat4 getProjectionMatrix( float width, float height )=0;
