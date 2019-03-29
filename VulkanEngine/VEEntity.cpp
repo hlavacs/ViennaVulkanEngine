@@ -651,11 +651,11 @@ namespace ve {
 		glm::vec3 center;
 		float width, height, depth;
 		pLight->getOBB(pointsW, 0.0f, 1.0f, center, width, height, depth);
-		depth *= 10.0f;	//TODO - do NOT set too high or else shadow maps wont get drawn!
+		depth *= 5.0f;	//TODO - do NOT set too high or else shadow maps wont get drawn!
 		VECameraOrtho *pCamOrtho = new VECameraOrtho("Ortho", 0.1f, depth, width, height);
 		glm::mat4 W = pLight->getWorldTransform();
 		pCamOrtho->setTransform( pLight->getWorldTransform());
-		pCamOrtho->setPosition(center - depth / 2.0f * glm::vec3(W[2].x, W[2].y, W[2].z));
+		pCamOrtho->setPosition(center - depth*0.9f * glm::vec3(W[2].x, W[2].y, W[2].z));
 
 		return pCamOrtho;
 	}
