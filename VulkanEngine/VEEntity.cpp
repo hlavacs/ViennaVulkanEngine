@@ -366,23 +366,10 @@ namespace ve {
 	*
 	*/
 	void VEMovableObject::update(glm::mat4 parentWorldMatrix, glm::vec4 param) {
-		VESubrender::veUBOPerObject ubo = {};
-		updateUBO( &ubo );						//call derived class for specific data like object color
-
-		ubo.model = parentWorldMatrix * getTransform();
-		ubo.modelInvTrans = glm::transpose(glm::inverse(ubo.model));
-
 		m_param = param;
-		ubo.param = m_param;
-
-		for (uint32_t i = 0; i < m_uniformBuffersAllocation.size(); i++) {
-			void* data = nullptr;
-			vmaMapMemory(getRendererPointer()->getVmaAllocator(), m_uniformBuffersAllocation[i], &data);
-			memcpy(data, &ubo, sizeof(ubo));
-			vmaUnmapMemory(getRendererPointer()->getVmaAllocator(), m_uniformBuffersAllocation[i]);
-		}
-
-		updateChildren(ubo.model, m_param);
+		glm::mat4 worldMatrix = parentWorldMatrix * getTransform();
+		updateUBO(worldMatrix, param);						//call derived class for specific data like object color
+		updateChildren(worldMatrix, m_param);
 	}
 
 
@@ -390,8 +377,8 @@ namespace ve {
 	* \brief Update the UBOs of all children of this entity
 	*/
 	void VEMovableObject::updateChildren(glm::mat4 worldMatrix, glm::vec4 param) {
-		for (auto pEntity : m_children) {
-			pEntity->update(worldMatrix, param);
+		for (auto pObject : m_children) {
+			pObject->update(worldMatrix, param);
 		}
 	}
 
@@ -493,7 +480,6 @@ namespace ve {
 	}
 
 
-
 	/**
 	*
 	* \brief VEEntity destructor.
@@ -507,11 +493,21 @@ namespace ve {
 		}
 	}
 
-	void VEEntity::updateUBO( void *ubo) {
-		VESubrender::veUBOPerObject *pUBO = (VESubrender::veUBOPerObject*) ubo;
+	void VEEntity::updateUBO( glm::mat4 worldMatrix, glm::vec4 param) {
+		VESubrender::veUBOPerObject ubo = {};
+		ubo.model = worldMatrix;
+		ubo.modelInvTrans = glm::transpose(glm::inverse(worldMatrix));
+		ubo.param = param;
 		if (m_pMaterial != nullptr) {
-			pUBO->color = m_pMaterial->color;
+			ubo.color = m_pMaterial->color;
 		};
+
+		for (uint32_t i = 0; i < m_uniformBuffersAllocation.size(); i++) {
+			void* data = nullptr;
+			vmaMapMemory(getRendererPointer()->getVmaAllocator(), m_uniformBuffersAllocation[i], &data);
+			memcpy(data, &ubo, sizeof(ubo));
+			vmaUnmapMemory(getRendererPointer()->getVmaAllocator(), m_uniformBuffersAllocation[i]);
+		}
 	}
 
 

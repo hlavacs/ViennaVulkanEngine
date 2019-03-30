@@ -100,12 +100,6 @@ namespace ve {
 	public:
 		VEMovableObject *				m_parent = nullptr;				///<Pointer to entity parent
 		std::vector<VEMovableObject *>	m_children;						///<List of entity children
-		//bool							m_drawObject = false;			///<should it be drawn at all?
-
-		std::vector<VkBuffer>			m_uniformBuffers;				///<One UBO for each framebuffer frame
-		std::vector<VmaAllocation>		m_uniformBuffersAllocation;		///<VMA information for the UBOs
-		std::vector<VkDescriptorSet>	m_descriptorSetsUBO;			///<Per subrenderer descriptor sets for UBO
-		std::vector<VkDescriptorSet>	m_descriptorSetsResources;		///<Per subrenderer descriptor sets for other resources
 
 		//-------------------------------------------------------------------------------------
 		VEMovableObject(std::string name, glm::mat4 transf = glm::mat4(1.0f), VEMovableObject *parent = nullptr);
@@ -127,12 +121,14 @@ namespace ve {
 		void		lookAt(glm::vec3 eye, glm::vec3 point, glm::vec3 up);
 
 		//--------------------------------------------------------------------------------------
-		virtual void update();							//Copy the world matrix to the UBO
-		virtual void update(glm::mat4 parentWorldMatrix, glm::vec4 param);//Copy the world matrix using the parent's world matrix
-		///Meant for subclasses to add data to the UBO, so this function does nothing
-		virtual void updateUBO( void *ubo) {};
-
+		virtual void update();													//Copy the world matrix to the UBO
+		virtual void update(glm::mat4 parentWorldMatrix, glm::vec4 param);		//Copy the world matrix using the parent's world matrix
 		virtual void updateChildren(glm::mat4 worldMatrix, glm::vec4 param);	//Update all children
+
+		///Meant for subclasses to add data to the UBO, so this function does nothing
+		virtual void updateUBO(glm::mat4 parentWorldMatrix, glm::vec4 param ) {};
+
+		//--------------------------------------------------------------------------------------
 		virtual void addChild(VEMovableObject *);		//Add a new child
 		virtual void removeChild(VEMovableObject *);		//Remove a child, dont destroy it
 
@@ -175,24 +171,26 @@ namespace ve {
 	public:
 		VEMesh *					m_pMesh = nullptr;								///<Pointer to entity mesh
 		VEMaterial *				m_pMaterial = nullptr;							///<Pointer to entity material
-		glm::vec4					m_param = glm::vec4(1.0f, 1.0f, 0.0f, 0.0f);	///<A free parameter for drawing
 
 		VESubrender *				m_pSubrenderer = nullptr;				///<subrenderer this entity is registered with / replace with a set
 		bool						m_drawEntity = false;					///<should it be drawn at all?
 		bool						m_castsShadow = true;					///<draw in the shadow pass?
 
+		std::vector<VkBuffer>			m_uniformBuffers;				///<One UBO for each framebuffer frame
+		std::vector<VmaAllocation>		m_uniformBuffersAllocation;		///<VMA information for the UBOs
+		std::vector<VkDescriptorSet>	m_descriptorSetsUBO;			///<Per subrenderer descriptor sets for UBO
+		std::vector<VkDescriptorSet>	m_descriptorSetsResources;		///<Per subrenderer descriptor sets for other resources
+
 		//VEEntity(std::string name);
-		VEEntity(	std::string name, veEntityType type, VEMesh *pMesh, VEMaterial *pMat,
+		VEEntity(	std::string name, veEntityType type, 
+					VEMesh *pMesh, VEMaterial *pMat,
 					glm::mat4 transf, VEMovableObject *parent);
 		virtual ~VEEntity();
 
 		//--------------------------------------------------
 		///\returns the entity type
 		veEntityType getEntityType() { return m_entityType; };
-
-		//--------------------------------------------------
-		///Add specific information to the object UBO
-		virtual void updateUBO( void *ubo);
+		virtual void updateUBO( glm::mat4 parentWorldMatrix, glm::vec4 param );
 
 		//--------------------------------------------------
 		virtual void getBoundingSphere( glm::vec3 *center, float *radius );		//return center and radius for a bounding sphere
