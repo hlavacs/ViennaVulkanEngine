@@ -328,6 +328,7 @@ namespace ve {
 			pCamShadow->fillShadowStructure(&ubo.shadow[i]);
 			delete pCamShadow;
 		}
+		getSceneManagerPointer()->clearDirtyList();		//HACK - shadow cams land on the dirty list!
 
 		void* data = nullptr;
 		vmaMapMemory(m_vmaAllocator, m_uniformBuffersPerFrameAllocation[imageIndex], &data);
@@ -387,6 +388,7 @@ namespace ve {
 			throw std::runtime_error("failed to acquire swap chain image!");
 		}
 
+		getSceneManagerPointer()->updateDirtyObjects();
 		updatePerFrameUBO( imageIndex );	//update camera data UBO
 
 		//prepare command buffer for drawing

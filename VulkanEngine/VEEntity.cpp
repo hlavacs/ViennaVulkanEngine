@@ -194,7 +194,7 @@ namespace ve {
 		if (parent != nullptr) {
 			parent->addChild(this);
 		}
-		m_transform = transf;
+		setTransform(transf);			//sets this MO also onto the dirty list to be updated
 	}
 
 	/**
@@ -209,7 +209,7 @@ namespace ve {
 	*/
 	void VEMovableObject::setTransform(glm::mat4 trans) {
 		m_transform = trans;
-		update();
+		getSceneManagerPointer()->moveToDirtyList(this);
 	}
 
 	/**
@@ -217,7 +217,7 @@ namespace ve {
 	*/
 	void VEMovableObject::setPosition(glm::vec3 pos) {
 		m_transform[3] = glm::vec4(pos.x, pos.y, pos.z, 1.0f);
-		update();
+		getSceneManagerPointer()->moveToDirtyList(this);
 	};
 
 	/**
@@ -251,17 +251,6 @@ namespace ve {
 		return glm::vec3(z.x, z.y, z.z);
 	}
 
-	/**
-	* \brief Sets the object parameter vector.
-	*
-	* This causes an update of the UBO and all children.
-	*
-	* \param[in] param The new parameter vector
-	*/
-	void VEMovableObject::setParam(glm::vec4 param) {
-		m_param = param;
-		update();
-	}
 
 
 	/**
@@ -314,6 +303,8 @@ namespace ve {
 		m_transform[0] = glm::vec4(x.x, x.y, x.z, 0.0f);
 		glm::vec3 y = glm::normalize(glm::cross(z, x));
 		m_transform[1] = glm::vec4(y.x, y.y, y.z, 0.0f);
+
+		getSceneManagerPointer()->moveToDirtyList(this);
 	}
 
 
@@ -359,7 +350,7 @@ namespace ve {
 		if (m_parent != nullptr) {
 			parentWorldMatrix = m_parent->getWorldTransform();
 		}
-		update(parentWorldMatrix, m_param);
+		update(parentWorldMatrix );
 	}
 
 	/**
@@ -373,20 +364,19 @@ namespace ve {
 	* \param[in] param The new parameter vector for all children
 	*
 	*/
-	void VEMovableObject::update(glm::mat4 parentWorldMatrix, glm::vec4 param) {
-		m_param = param;
+	void VEMovableObject::update(glm::mat4 parentWorldMatrix ) {
 		glm::mat4 worldMatrix = parentWorldMatrix * getTransform();
-		updateUBO(worldMatrix, param);						//call derived class for specific data like object color
-		updateChildren(worldMatrix, m_param);
+		updateUBO(worldMatrix );						//call derived class for specific data like object color
+		updateChildren(worldMatrix );
 	}
 
 
 	/**
 	* \brief Update the UBOs of all children of this entity
 	*/
-	void VEMovableObject::updateChildren(glm::mat4 worldMatrix, glm::vec4 param) {
+	void VEMovableObject::updateChildren(glm::mat4 worldMatrix ) {
 		for (auto pObject : m_children) {
-			pObject->update(worldMatrix, param);
+			pObject->update(worldMatrix);
 		}
 	}
 
@@ -507,6 +497,19 @@ namespace ve {
 	}
 
 	/**
+	* \brief Sets the object parameter vector.
+	*
+	* This causes an update of the UBO and all children.
+	*
+	* \param[in] param The new parameter vector
+	*/
+	void VEEntity::setParam(glm::vec4 param) {
+		m_param = param;
+		getSceneManagerPointer()->moveToDirtyList(this);
+	}
+
+
+	/**
 	*
 	* \brief Update the entity's UBO.
 	*
@@ -514,11 +517,11 @@ namespace ve {
 	* \param[in] param the new free parameter
 	*
 	*/
-	void VEEntity::updateUBO( glm::mat4 worldMatrix, glm::vec4 param) {
+	void VEEntity::updateUBO( glm::mat4 worldMatrix) {
 		VESubrender::veUBOPerObject ubo = {};
 		ubo.model = worldMatrix;
 		ubo.modelInvTrans = glm::transpose(glm::inverse(worldMatrix));
-		ubo.param = param;
+		ubo.param = m_param;
 		if (m_pMaterial != nullptr) {
 			ubo.color = m_pMaterial->color;
 		};

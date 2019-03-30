@@ -106,7 +106,6 @@ namespace ve {
 	protected:
 		veObjectType	m_objectType = VE_OBJECT_TYPE_NODE;				///<Default object type
 		glm::mat4		m_transform = glm::mat4(1.0);					///<Transform from local to parent space, the engine uses Y-UP, Left-handed
-		glm::vec4		m_param = glm::vec4(1.0f, 1.0f, 0.0f, 0.0f);	///<A free parameter to be used (e.g. texture animation)
 
 	public:
 		VEMovableObject *				m_parent = nullptr;				///<Pointer to entity parent
@@ -126,18 +125,17 @@ namespace ve {
 		glm::vec3	getXAxis();							//Return local x-axis in parent space
 		glm::vec3	getYAxis();							//Return local y-axis in parent space
 		glm::vec3	getZAxis();							//Return local z-axis in parent space
-		void		setParam(glm::vec4 param);			//set the parameter vector
 		void		multiplyTransform(glm::mat4 trans); //Multiply the transform, e.g. translate, scale, rotate 
 		glm::mat4	getWorldTransform();				//Compute the world matrix
 		void		lookAt(glm::vec3 eye, glm::vec3 point, glm::vec3 up);
 
 		//--------------------------------------------------------------------------------------
-		virtual void update();													//Copy the world matrix to the UBO
-		virtual void update(glm::mat4 parentWorldMatrix, glm::vec4 param);		//Copy the world matrix using the parent's world matrix
-		virtual void updateChildren(glm::mat4 worldMatrix, glm::vec4 param);	//Update all children
+		virtual void update();												//Copy the world matrix to the UBO
+		virtual void update(glm::mat4 parentWorldMatrix );					//Copy the world matrix using the parent's world matrix
+		virtual void updateChildren(glm::mat4 worldMatrix );				//Update all children
 
 		///Meant for subclasses to add data to the UBO, so this function does nothing
-		virtual void updateUBO(glm::mat4 parentWorldMatrix, glm::vec4 param ) {};
+		virtual void updateUBO(glm::mat4 parentWorldMatrix ) {};
 
 		//--------------------------------------------------------------------------------------
 		virtual void addChild(VEMovableObject *);		//Add a new child
@@ -175,6 +173,7 @@ namespace ve {
 		
 	protected:
 		veEntityType				m_entityType = VE_ENTITY_TYPE_NORMAL;			///<Entity type
+		glm::vec4					m_param = glm::vec4(1.0f, 1.0f, 0.0f, 0.0f);	///<A free parameter to be used (e.g. texture animation)
 
 	public:
 		VEMesh *					m_pMesh = nullptr;								///<Pointer to entity mesh
@@ -196,9 +195,10 @@ namespace ve {
 		virtual ~VEEntity();
 
 		//--------------------------------------------------
+		void setParam(glm::vec4 param);
 		///\returns the entity type
 		veEntityType getEntityType() { return m_entityType; };
-		virtual void updateUBO( glm::mat4 parentWorldMatrix, glm::vec4 param );
+		virtual void updateUBO( glm::mat4 parentWorldMatrix );
 
 		//--------------------------------------------------
 		virtual void getBoundingSphere( glm::vec3 *center, float *radius );		//return center and radius for a bounding sphere

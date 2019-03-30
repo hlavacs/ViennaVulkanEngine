@@ -93,8 +93,9 @@ namespace ve {
 		void loadLevel() {
 
 			VEMovableObject *e4 = m_pSceneManager->loadModel("The Plane", "models/test", "plane_t_n_s.obj");
-			e4->setParam( glm::vec4(1000.0f, 1000.0f, 0.0f, 0.0f) );
 			e4->setTransform(glm::scale(glm::mat4(1.0f), glm::vec3(1000.0f, 1.0f, 1000.0f)));
+			VEEntity *pE4 = (VEEntity*)m_pSceneManager->getMovableObject("The Plane/plane_t_n_s.obj/plane/Entity_0");
+			pE4->setParam( glm::vec4(1000.0f, 1000.0f, 0.0f, 0.0f) );
 
 			//VEEntity *cubemap = getSceneManagerPointer()->createCubemap("The Cubemap", "models/test/sky", "grasscube1024.dds");
 			

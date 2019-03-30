@@ -151,7 +151,6 @@ namespace ve {
 		pMO = createMovableObject(entityName, glm::mat4(1.0f), parent); 
 
 		copyAiNodes( pScene, meshes, materials, pScene->mRootNode, pMO);
-		pMO->update();	//update ubos of all children
 
 		return pMO;
 	}
@@ -394,7 +393,6 @@ namespace ve {
 
 		if (pMesh != nullptr && pMat != nullptr) {
 			getRendererPointer()->addEntityToSubrenderer(pEntity);
-			pEntity->update();
 		}
 		return pEntity;
 	}
@@ -600,7 +598,6 @@ namespace ve {
 	}
 
 
-
 	//----------------------------------------------------------------------------------------------------------------
 	//scene management stuff
 
@@ -617,6 +614,28 @@ namespace ve {
 		return nullptr;
 	}
 
+
+	/**
+	*
+	* \brief Move the head of this object to the dirty list
+	*
+	* \param[in] pObject Pointer to the object, who's parent should be put onto the dirty list
+	*
+	*/
+	void VESceneManager::moveToDirtyList(VEMovableObject *pObject) {
+		m_dirtyList.insert(pObject);
+	}
+
+
+	void VESceneManager::updateDirtyObjects() {
+		for (auto pObject : m_dirtyList) {
+			pObject->update();
+		}
+		m_dirtyList.clear();
+	}
+
+
+
 	/**
 	*
 	* \brief Delete an entity and all its subentities
@@ -627,11 +646,6 @@ namespace ve {
 	void VESceneManager::deleteMOAndChildren(std::string name) {
 		VEMovableObject * pObject = m_movableObjects[name];
 		if (pObject == nullptr) return;
-
-		//if (pObject->m_objectType == VEEntity::VE_ENTITY_TYPE_CUBEMAP) {	//remove the event listener associated with this entity
-		//	getEnginePointer()->deleteEventListener(name);
-		//}  TODO
-
 		if (pObject->m_parent != nullptr) pObject->m_parent->removeChild(pObject);
 
 		std::vector<std::string> namelist;	//first create a list of all child names
@@ -644,6 +658,7 @@ namespace ve {
 			if( pObject->getObjectType() == VEMovableObject::VE_OBJECT_TYPE_ENTITY )
 				getRendererPointer()->removeEntityFromSubrenderers((VEEntity*)pObject);
 			m_movableObjects.erase(namelist[i]);
+			m_dirtyList.erase(pObject);
 			delete pObject;
 		}
 	}

@@ -37,9 +37,10 @@ namespace ve {
 		friend VESubrenderFW_Shadow;
 
 	protected:
-		std::map<std::string, VEMesh *>		m_meshes = {};				///< storage of all entities currently in the engine
-		std::map<std::string, VEMaterial*>	m_materials = {};			///< storage of all entities currently in the engine
-		std::map<std::string, VEMovableObject*>	m_movableObjects = {};	///< storage of all entities currently in the engine
+		std::map<std::string, VEMesh *>			m_meshes = {};			///<Storage of all meshes currently in the engine
+		std::map<std::string, VEMaterial*>		m_materials = {};		///<Storage of all materials currently in the engine
+		std::map<std::string, VEMovableObject*>	m_movableObjects = {};	///<Storage of all movable objects currently in the engine
+		std::set<VEMovableObject*>				m_dirtyList = {};		///<List of dirty movable objects that must be updated
 
 		VECamera *				m_camera = nullptr;			///<entity ptr of the current camera
 		std::vector<VELight*>	m_lights = {};				///<ptrs to the lights to use
@@ -77,6 +78,10 @@ namespace ve {
 		///Add a movable object to the scene
 		void				addMovableObject(VEMovableObject *entity) { m_movableObjects[entity->getName()] = entity; };
 		VEMovableObject *	getMovableObject(std::string entityName);
+		void				moveToDirtyList(VEMovableObject *pObject);
+		void				updateDirtyObjects();
+		///Clear all objects from the dirty list
+		void				clearDirtyList() { m_dirtyList.clear();  };
 		void				deleteMOAndChildren(std::string name);
 		void				createMOList(VEMovableObject *pObject, std::vector<std::string> &namelist);
 
