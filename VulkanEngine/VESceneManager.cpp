@@ -652,7 +652,7 @@ namespace ve {
 	*
 	* \brief Create a list of all child entities of a given entity
 	*
-	* \param[in] pEntity Pointer to the root of the tree.
+	* \param[in] pObject Pointer to the root of the tree.
 	* \param[out] namelist List of names of children of the entity.
 	*
 	*/

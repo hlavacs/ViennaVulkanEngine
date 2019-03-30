@@ -82,9 +82,20 @@ namespace ve {
 	//------------------------------------------------------------------------------------
 
 
+	/**
+	*
+	* \brief Represents any object that can be put into a scene.
+	*
+	* VEMovableObject represents any object that can be used by the scene manager to be put into the scene.
+	* This includes objects, cameras, lights, sky boxes or terrains.
+	* Movable objects can have a parent. If so the local transform is relative to the parent transform. This
+	* relation is stored in the parent and children pointers.
+	*/
+
 	class VEMovableObject : public VENamedClass {
 
 	public:
+		///Object type, can be node, entity for drawing, camera or light
 		enum veObjectType {
 			VE_OBJECT_TYPE_NODE,		///<Instance of the base class, acts as scene node, cannot be drawn
 			VE_OBJECT_TYPE_ENTITY,		///<Normal object to be drawn
@@ -142,14 +153,11 @@ namespace ve {
 
 	/**
 	*
-	* \brief Represents any object that can be put into a scene.
+	* \brief Represents any object that can be drawn.
 	*
-	* VEEntity represents any object that can be used by the scene manager to be put into the scene.
-	* This includes objects, cameras, lights, sky boxes or terrains. It also contains a Vulkan UBO for storing
-	* position and orientation. Entities that should be drawn have exactly one mesh and one material.
-	* Entities can have a parent. If so the local transform is relative to the parent transform. This
-	* is stored in the parent and children pointers.
-	* Entities are associated to exactly one VESubrender instance. This instance is responsible for managing
+	* VEEntity represents any object that can be drawn. It also contains a Vulkan UBO for storing
+	* position and orientation. Entities have exactly one mesh and one material.
+	* Entities are associated with exactly one VESubrender instance. This instance is responsible for managing
 	* all drawing related tasks, like creating UBOs and selecting the right PSO.
 	*/
 
@@ -212,6 +220,7 @@ namespace ve {
 	class VECamera : public VEMovableObject {
 
 	public:
+		///Camera type, can be projective or orthographic
 		enum veCameraType {
 			VE_CAMERA_TYPE_PROJECTIVE,	///<A projective camera, cannot be drawn
 			VE_CAMERA_TYPE_ORTHO,		///<An orthographic camera, cannot be drawn

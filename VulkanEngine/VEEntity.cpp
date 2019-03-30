@@ -181,6 +181,14 @@ namespace ve {
 	//Movable Object
 
 
+	/**
+	* \brief The constructor ot the VEMovableObject class
+	*
+	* \param[in] name The name of this object.
+	* \param[in] transf Position and orientation.
+	* \param[in] parent A parent.
+	*
+	*/
 	VEMovableObject::VEMovableObject(std::string name, glm::mat4 transf, VEMovableObject *parent) : VENamedClass(name) {
 		m_parent = parent;
 		if (parent != nullptr) {
@@ -311,13 +319,13 @@ namespace ve {
 
 	/**
 	*
-	* \brief Adds a child entity to the list of children.
+	* \brief Adds a child object to the list of children.
 	*
-	* \param[in] pEntity Pointer to the new child.
+	* \param[in] pObject Pointer to the new child.
 	*
 	*/
-	void VEMovableObject::addChild(VEMovableObject * pEntity) {
-		m_children.push_back(pEntity);
+	void VEMovableObject::addChild(VEMovableObject * pObject) {
+		m_children.push_back(pObject);
 	}
 
 	/**
@@ -382,6 +390,11 @@ namespace ve {
 		}
 	}
 
+	/**
+	* \brief Get a default bounding sphere for this movable object
+	* \param[out] center The sphere center is also the position of the movable object
+	* \param[out] radius The default radius of the sphere
+	*/
 	void VEMovableObject::getBoundingSphere(glm::vec3 *center, float *radius) {
 		*center = getPosition();
 		*radius = 1.0f;
@@ -493,6 +506,14 @@ namespace ve {
 		}
 	}
 
+	/**
+	*
+	* \brief Update the entity's UBO.
+	*
+	* \param[in] worldMatrix The new world matrix of the entity
+	* \param[in] param the new free parameter
+	*
+	*/
 	void VEEntity::updateUBO( glm::mat4 worldMatrix, glm::vec4 param) {
 		VESubrender::veUBOPerObject ubo = {};
 		ubo.model = worldMatrix;
