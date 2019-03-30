@@ -58,7 +58,9 @@ namespace ve {
 		m_lights.push_back(light);
 	};
 
+
 	//-----------------------------------------------------------------------------------------------------------------------
+	//load stuff using Assimp
 
 	/**
 	*
@@ -314,16 +316,26 @@ namespace ve {
 		}
 	}
 
+	//-----------------------------------------------------------------------------------------
+	//create complex movable objects and entities
 
-	VEMovableObject * VESceneManager::createMovableObject(	std::string name, 
+	/**
+	* \brief Create a movable object, i.e., a scene node
+	*
+	* \param[in] objectName The name of the new MO.
+	* \param[in] transf Local to parent transform.
+	* \param[in] parent Pointer to entity to be used as parent.
+	* \returns a pointer to the new movable object
+	*
+	*/
+	VEMovableObject * VESceneManager::createMovableObject(	std::string objectName,
 															glm::mat4 transf, 
 															VEMovableObject *parent) {
 
-		VEMovableObject *pMO = m_movableObjects[name];
+		VEMovableObject *pMO = m_movableObjects[objectName];
 		if (pMO != nullptr) return pMO;
 
-		pMO = new VEMovableObject(name, glm::mat4(1.0f), parent);
-		pMO->setTransform(transf);
+		pMO = new VEMovableObject(objectName, transf, parent);
 		addMovableObject( pMO );
 		return pMO;
 	}
@@ -386,6 +398,9 @@ namespace ve {
 		}
 		return pEntity;
 	}
+
+	//-----------------------------------------------------------------------------------------
+	//create complex entities
 
 	/**
 	*

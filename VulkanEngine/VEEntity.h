@@ -100,7 +100,7 @@ namespace ve {
 	public:
 		VEMovableObject *				m_parent = nullptr;				///<Pointer to entity parent
 		std::vector<VEMovableObject *>	m_children;						///<List of entity children
-		bool							m_drawObject = false;			///<should it be drawn at all?
+		//bool							m_drawObject = false;			///<should it be drawn at all?
 
 		std::vector<VkBuffer>			m_uniformBuffers;				///<One UBO for each framebuffer frame
 		std::vector<VmaAllocation>		m_uniformBuffersAllocation;		///<VMA information for the UBOs
