@@ -99,43 +99,59 @@ Public Member Functions</h2></td></tr>
 <tr class="memitem:a40cb40d0509a6db4730d8204d08a8c12"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_scene_manager.html#a40cb40d0509a6db4730d8204d08a8c12">createMaterials</a> (const aiScene *pScene, std::string basedir, std::string filekey, std::vector&lt; <a class="el" href="classve_1_1_v_e_material.html">VEMaterial</a> * &gt; &amp;materials)</td></tr>
 <tr class="memdesc:a40cb40d0509a6db4730d8204d08a8c12"><td class="mdescLeft">&#160;</td><td class="mdescRight">Create all <a class="el" href="classve_1_1_v_e_material.html" title="Store material data.">VEMaterial</a> instances from a file loaded by Assimp.  <a href="#a40cb40d0509a6db4730d8204d08a8c12">More...</a><br /></td></tr>
 <tr class="separator:a40cb40d0509a6db4730d8204d08a8c12"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ac94a6cd8a030588a74257d5dc3452566"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classve_1_1_v_e_entity.html">VEEntity</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_scene_manager.html#ac94a6cd8a030588a74257d5dc3452566">loadModel</a> (std::string entityName, std::string basedir, std::string filename, uint32_t aiFlags=0, <a class="el" href="classve_1_1_v_e_entity.html">VEEntity</a> *parent=nullptr)</td></tr>
-<tr class="memdesc:ac94a6cd8a030588a74257d5dc3452566"><td class="mdescLeft">&#160;</td><td class="mdescRight">Load assets from file ussing Assimp, create entities from them.  <a href="#ac94a6cd8a030588a74257d5dc3452566">More...</a><br /></td></tr>
-<tr class="separator:ac94a6cd8a030588a74257d5dc3452566"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ae2af900ab820bc8b701e93849a1d434d"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classve_1_1_v_e_entity.html">VEEntity</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_scene_manager.html#ae2af900ab820bc8b701e93849a1d434d">createEntity</a> (std::string entityName, <a class="el" href="classve_1_1_v_e_mesh.html">VEMesh</a> *pMesh, <a class="el" href="classve_1_1_v_e_material.html">VEMaterial</a> *pMat, aiMatrix4x4 transf, <a class="el" href="classve_1_1_v_e_entity.html">VEEntity</a> *parent=nullptr)</td></tr>
-<tr class="memdesc:ae2af900ab820bc8b701e93849a1d434d"><td class="mdescLeft">&#160;</td><td class="mdescRight">Create an entity.  <a href="#ae2af900ab820bc8b701e93849a1d434d">More...</a><br /></td></tr>
-<tr class="separator:ae2af900ab820bc8b701e93849a1d434d"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ab3ebe9bd2365e708f40961a2f22981c5"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classve_1_1_v_e_entity.html">VEEntity</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_scene_manager.html#ab3ebe9bd2365e708f40961a2f22981c5">createEntity</a> (std::string entityName, <a class="el" href="classve_1_1_v_e_mesh.html">VEMesh</a> *pMesh, <a class="el" href="classve_1_1_v_e_material.html">VEMaterial</a> *pMat, glm::mat4 transf, <a class="el" href="classve_1_1_v_e_entity.html">VEEntity</a> *parent=nullptr)</td></tr>
-<tr class="memdesc:ab3ebe9bd2365e708f40961a2f22981c5"><td class="mdescLeft">&#160;</td><td class="mdescRight">Create an entity.  <a href="#ab3ebe9bd2365e708f40961a2f22981c5">More...</a><br /></td></tr>
-<tr class="separator:ab3ebe9bd2365e708f40961a2f22981c5"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a834fb42250956b0efe67d3e3aa3b295b"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classve_1_1_v_e_entity.html">VEEntity</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_scene_manager.html#a834fb42250956b0efe67d3e3aa3b295b">createEntity</a> (std::string entityName, <a class="el" href="classve_1_1_v_e_entity.html#a2c7f15fd3b11aac4dea3e76cfa508010">VEEntity::veEntityType</a> type, <a class="el" href="classve_1_1_v_e_mesh.html">VEMesh</a> *pMesh, <a class="el" href="classve_1_1_v_e_material.html">VEMaterial</a> *pMat, glm::mat4 transf, <a class="el" href="classve_1_1_v_e_entity.html">VEEntity</a> *parent=nullptr)</td></tr>
-<tr class="memdesc:a834fb42250956b0efe67d3e3aa3b295b"><td class="mdescLeft">&#160;</td><td class="mdescRight">Create an entity.  <a href="#a834fb42250956b0efe67d3e3aa3b295b">More...</a><br /></td></tr>
-<tr class="separator:a834fb42250956b0efe67d3e3aa3b295b"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a2b1db884b25902d3793d3603f29a4180"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classve_1_1_v_e_entity.html">VEEntity</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_scene_manager.html#a2b1db884b25902d3793d3603f29a4180">createCubemap</a> (std::string entityName, std::string basedir, std::string filename)</td></tr>
-<tr class="memdesc:a2b1db884b25902d3793d3603f29a4180"><td class="mdescLeft">&#160;</td><td class="mdescRight">Create a cube map based sky box.  <a href="#a2b1db884b25902d3793d3603f29a4180">More...</a><br /></td></tr>
-<tr class="separator:a2b1db884b25902d3793d3603f29a4180"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:af67fe1959f39dca48c8e79881b6ae313"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classve_1_1_v_e_entity.html">VEEntity</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_scene_manager.html#af67fe1959f39dca48c8e79881b6ae313">createCubemap</a> (std::string entityName, std::string basedir, std::vector&lt; std::string &gt; filenames)</td></tr>
-<tr class="memdesc:af67fe1959f39dca48c8e79881b6ae313"><td class="mdescLeft">&#160;</td><td class="mdescRight">Create a cube map based sky box.  <a href="#af67fe1959f39dca48c8e79881b6ae313">More...</a><br /></td></tr>
-<tr class="separator:af67fe1959f39dca48c8e79881b6ae313"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a319533d9ccee702d6a8e6cb95ffff51c"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classve_1_1_v_e_movable_object.html">VEMovableObject</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_scene_manager.html#a319533d9ccee702d6a8e6cb95ffff51c">loadModel</a> (std::string entityName, std::string basedir, std::string filename, uint32_t aiFlags=0, <a class="el" href="classve_1_1_v_e_movable_object.html">VEMovableObject</a> *parent=nullptr)</td></tr>
+<tr class="memdesc:a319533d9ccee702d6a8e6cb95ffff51c"><td class="mdescLeft">&#160;</td><td class="mdescRight">Load assets from file ussing Assimp, create entities from them.  <a href="#a319533d9ccee702d6a8e6cb95ffff51c">More...</a><br /></td></tr>
+<tr class="separator:a319533d9ccee702d6a8e6cb95ffff51c"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a0d933ca20910b0a9391c4d1d914995f5"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classve_1_1_v_e_movable_object.html">VEMovableObject</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_scene_manager.html#a0d933ca20910b0a9391c4d1d914995f5">createMovableObject</a> (std::string name, glm::mat4 transf=glm::mat4(1.0f), VEMovableObject *parent=nullptr)</td></tr>
+<tr class="memdesc:a0d933ca20910b0a9391c4d1d914995f5"><td class="mdescLeft">&#160;</td><td class="mdescRight">Create a movable object, i.e., a scene node.  <a href="#a0d933ca20910b0a9391c4d1d914995f5">More...</a><br /></td></tr>
+<tr class="separator:a0d933ca20910b0a9391c4d1d914995f5"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a6b2dd0c5b190ba9e294c3292c71fd650"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classve_1_1_v_e_entity.html">VEEntity</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_scene_manager.html#a6b2dd0c5b190ba9e294c3292c71fd650">createEntity</a> (std::string entityName, <a class="el" href="classve_1_1_v_e_mesh.html">VEMesh</a> *pMesh, <a class="el" href="classve_1_1_v_e_material.html">VEMaterial</a> *pMat, aiMatrix4x4 transf, <a class="el" href="classve_1_1_v_e_movable_object.html">VEMovableObject</a> *parent=nullptr)</td></tr>
+<tr class="memdesc:a6b2dd0c5b190ba9e294c3292c71fd650"><td class="mdescLeft">&#160;</td><td class="mdescRight">Create an entity.  <a href="#a6b2dd0c5b190ba9e294c3292c71fd650">More...</a><br /></td></tr>
+<tr class="separator:a6b2dd0c5b190ba9e294c3292c71fd650"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aea4596a7c6f9f644accc99b65e030e2e"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classve_1_1_v_e_entity.html">VEEntity</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_scene_manager.html#aea4596a7c6f9f644accc99b65e030e2e">createEntity</a> (std::string entityName, <a class="el" href="classve_1_1_v_e_mesh.html">VEMesh</a> *pMesh, <a class="el" href="classve_1_1_v_e_material.html">VEMaterial</a> *pMat, glm::mat4 transf, <a class="el" href="classve_1_1_v_e_movable_object.html">VEMovableObject</a> *parent=nullptr)</td></tr>
+<tr class="memdesc:aea4596a7c6f9f644accc99b65e030e2e"><td class="mdescLeft">&#160;</td><td class="mdescRight">Create an entity.  <a href="#aea4596a7c6f9f644accc99b65e030e2e">More...</a><br /></td></tr>
+<tr class="separator:aea4596a7c6f9f644accc99b65e030e2e"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:af8af6b1eebd89cb45433e4381d4787ad"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classve_1_1_v_e_entity.html">VEEntity</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_scene_manager.html#af8af6b1eebd89cb45433e4381d4787ad">createEntity</a> (std::string entityName, <a class="el" href="classve_1_1_v_e_entity.html#a2c7f15fd3b11aac4dea3e76cfa508010">VEEntity::veEntityType</a> type, <a class="el" href="classve_1_1_v_e_mesh.html">VEMesh</a> *pMesh, <a class="el" href="classve_1_1_v_e_material.html">VEMaterial</a> *pMat, glm::mat4 transf, <a class="el" href="classve_1_1_v_e_movable_object.html">VEMovableObject</a> *parent=nullptr)</td></tr>
+<tr class="memdesc:af8af6b1eebd89cb45433e4381d4787ad"><td class="mdescLeft">&#160;</td><td class="mdescRight">Create an entity.  <a href="#af8af6b1eebd89cb45433e4381d4787ad">More...</a><br /></td></tr>
+<tr class="separator:af8af6b1eebd89cb45433e4381d4787ad"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a8d9fb892d7dade1aaa31baf7eda266c6"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classve_1_1_v_e_movable_object.html">VEMovableObject</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_scene_manager.html#a8d9fb892d7dade1aaa31baf7eda266c6">createCubemap</a> (std::string entityName, std::string basedir, std::string filename)</td></tr>
+<tr class="memdesc:a8d9fb892d7dade1aaa31baf7eda266c6"><td class="mdescLeft">&#160;</td><td class="mdescRight">Create a cube map based sky box.  <a href="#a8d9fb892d7dade1aaa31baf7eda266c6">More...</a><br /></td></tr>
+<tr class="separator:a8d9fb892d7dade1aaa31baf7eda266c6"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ac8f3e55541cdcd478b31d888df5d2d4e"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classve_1_1_v_e_movable_object.html">VEMovableObject</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_scene_manager.html#ac8f3e55541cdcd478b31d888df5d2d4e">createCubemap</a> (std::string entityName, std::string basedir, std::vector&lt; std::string &gt; filenames)</td></tr>
+<tr class="memdesc:ac8f3e55541cdcd478b31d888df5d2d4e"><td class="mdescLeft">&#160;</td><td class="mdescRight">Create a cube map based sky box.  <a href="#ac8f3e55541cdcd478b31d888df5d2d4e">More...</a><br /></td></tr>
+<tr class="separator:ac8f3e55541cdcd478b31d888df5d2d4e"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a733b1cdeac84abc64ede58ac22d61021"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classve_1_1_v_e_entity.html">VEEntity</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_scene_manager.html#a733b1cdeac84abc64ede58ac22d61021">createSkyplane</a> (std::string entityName, std::string basedir, std::string texName)</td></tr>
 <tr class="memdesc:a733b1cdeac84abc64ede58ac22d61021"><td class="mdescLeft">&#160;</td><td class="mdescRight">Create a plane that is projected to the far plane of the frustum.  <a href="#a733b1cdeac84abc64ede58ac22d61021">More...</a><br /></td></tr>
 <tr class="separator:a733b1cdeac84abc64ede58ac22d61021"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a985196c531885faccd3747247e522693"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classve_1_1_v_e_entity.html">VEEntity</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_scene_manager.html#a985196c531885faccd3747247e522693">createSkybox</a> (std::string entityName, std::string basedir, std::vector&lt; std::string &gt; texNames)</td></tr>
-<tr class="memdesc:a985196c531885faccd3747247e522693"><td class="mdescLeft">&#160;</td><td class="mdescRight">Create a skyplane based sky box.  <a href="#a985196c531885faccd3747247e522693">More...</a><br /></td></tr>
-<tr class="separator:a985196c531885faccd3747247e522693"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a0517268bbe1dd89a526caa07b0258a15"><td class="memItemLeft" align="right" valign="top"><a id="a0517268bbe1dd89a526caa07b0258a15"></a>
-void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_scene_manager.html#a0517268bbe1dd89a526caa07b0258a15">addEntity</a> (<a class="el" href="classve_1_1_v_e_entity.html">VEEntity</a> *entity)</td></tr>
-<tr class="memdesc:a0517268bbe1dd89a526caa07b0258a15"><td class="mdescLeft">&#160;</td><td class="mdescRight">Add an entity to the scene. <br /></td></tr>
-<tr class="separator:a0517268bbe1dd89a526caa07b0258a15"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:adc7f6be86700a42d5b8d49189386fcd7"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classve_1_1_v_e_entity.html">VEEntity</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_scene_manager.html#adc7f6be86700a42d5b8d49189386fcd7">getEntity</a> (std::string entityName)</td></tr>
-<tr class="memdesc:adc7f6be86700a42d5b8d49189386fcd7"><td class="mdescLeft">&#160;</td><td class="mdescRight">Find an entity using its name.  <a href="#adc7f6be86700a42d5b8d49189386fcd7">More...</a><br /></td></tr>
-<tr class="separator:adc7f6be86700a42d5b8d49189386fcd7"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a2d71a298220909a33c99f69d0738b829"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_scene_manager.html#a2d71a298220909a33c99f69d0738b829">deleteEntityAndSubentities</a> (std::string name)</td></tr>
-<tr class="memdesc:a2d71a298220909a33c99f69d0738b829"><td class="mdescLeft">&#160;</td><td class="mdescRight">Delete an entity and all its subentities.  <a href="#a2d71a298220909a33c99f69d0738b829">More...</a><br /></td></tr>
-<tr class="separator:a2d71a298220909a33c99f69d0738b829"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a831114f046ba95263ae9f033bfd78cf1"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_scene_manager.html#a831114f046ba95263ae9f033bfd78cf1">createEntityList</a> (<a class="el" href="classve_1_1_v_e_entity.html">VEEntity</a> *pEntity, std::vector&lt; std::string &gt; &amp;namelist)</td></tr>
-<tr class="memdesc:a831114f046ba95263ae9f033bfd78cf1"><td class="mdescLeft">&#160;</td><td class="mdescRight">Create a list of all child entities of a given entity.  <a href="#a831114f046ba95263ae9f033bfd78cf1">More...</a><br /></td></tr>
-<tr class="separator:a831114f046ba95263ae9f033bfd78cf1"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ae5dcbd0e42e6e49a6ce118b94721e2b9"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classve_1_1_v_e_movable_object.html">VEMovableObject</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_scene_manager.html#ae5dcbd0e42e6e49a6ce118b94721e2b9">createSkybox</a> (std::string entityName, std::string basedir, std::vector&lt; std::string &gt; texNames)</td></tr>
+<tr class="memdesc:ae5dcbd0e42e6e49a6ce118b94721e2b9"><td class="mdescLeft">&#160;</td><td class="mdescRight">Create a skyplane based sky box.  <a href="#ae5dcbd0e42e6e49a6ce118b94721e2b9">More...</a><br /></td></tr>
+<tr class="separator:ae5dcbd0e42e6e49a6ce118b94721e2b9"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ad7d4a0c42ceb1e277b0033e90076e4b5"><td class="memItemLeft" align="right" valign="top"><a id="ad7d4a0c42ceb1e277b0033e90076e4b5"></a>
+void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_scene_manager.html#ad7d4a0c42ceb1e277b0033e90076e4b5">addMovableObject</a> (<a class="el" href="classve_1_1_v_e_movable_object.html">VEMovableObject</a> *entity)</td></tr>
+<tr class="memdesc:ad7d4a0c42ceb1e277b0033e90076e4b5"><td class="mdescLeft">&#160;</td><td class="mdescRight">Add a movable object to the scene. <br /></td></tr>
+<tr class="separator:ad7d4a0c42ceb1e277b0033e90076e4b5"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a41dadd7a3605dcd76a4198abbd3fa098"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classve_1_1_v_e_movable_object.html">VEMovableObject</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_scene_manager.html#a41dadd7a3605dcd76a4198abbd3fa098">getMovableObject</a> (std::string entityName)</td></tr>
+<tr class="memdesc:a41dadd7a3605dcd76a4198abbd3fa098"><td class="mdescLeft">&#160;</td><td class="mdescRight">Find an entity using its name.  <a href="#a41dadd7a3605dcd76a4198abbd3fa098">More...</a><br /></td></tr>
+<tr class="separator:a41dadd7a3605dcd76a4198abbd3fa098"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a1c274d60ad131adaea869842e1d3f6bf"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_scene_manager.html#a1c274d60ad131adaea869842e1d3f6bf">addToDirtyList</a> (<a class="el" href="classve_1_1_v_e_movable_object.html">VEMovableObject</a> *pObject)</td></tr>
+<tr class="memdesc:a1c274d60ad131adaea869842e1d3f6bf"><td class="mdescLeft">&#160;</td><td class="mdescRight">Move this object to the dirty list.  <a href="#a1c274d60ad131adaea869842e1d3f6bf">More...</a><br /></td></tr>
+<tr class="separator:a1c274d60ad131adaea869842e1d3f6bf"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a2d1436daa82d22bd2f2d8836773767d3"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_scene_manager.html#a2d1436daa82d22bd2f2d8836773767d3">removeFromDirtyList</a> (<a class="el" href="classve_1_1_v_e_movable_object.html">VEMovableObject</a> *pObject)</td></tr>
+<tr class="memdesc:a2d1436daa82d22bd2f2d8836773767d3"><td class="mdescLeft">&#160;</td><td class="mdescRight">Remove this object from the dirty list.  <a href="#a2d1436daa82d22bd2f2d8836773767d3">More...</a><br /></td></tr>
+<tr class="separator:a2d1436daa82d22bd2f2d8836773767d3"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a713795430bbf013fb5a99a45b7b6668f"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_scene_manager.html#a713795430bbf013fb5a99a45b7b6668f">updateDirtyObjects</a> ()</td></tr>
+<tr class="memdesc:a713795430bbf013fb5a99a45b7b6668f"><td class="mdescLeft">&#160;</td><td class="mdescRight">Update all objects on the dirty list and clear the dirty list.  <a href="#a713795430bbf013fb5a99a45b7b6668f">More...</a><br /></td></tr>
+<tr class="separator:a713795430bbf013fb5a99a45b7b6668f"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a72e3fd5a9fe905c1f49d83945ca2fa33"><td class="memItemLeft" align="right" valign="top"><a id="a72e3fd5a9fe905c1f49d83945ca2fa33"></a>
+void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_scene_manager.html#a72e3fd5a9fe905c1f49d83945ca2fa33">clearDirtyList</a> ()</td></tr>
+<tr class="memdesc:a72e3fd5a9fe905c1f49d83945ca2fa33"><td class="mdescLeft">&#160;</td><td class="mdescRight">Clear all objects from the dirty list. <br /></td></tr>
+<tr class="separator:a72e3fd5a9fe905c1f49d83945ca2fa33"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a41088bc019b5a42889cc30e1800c08b0"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_scene_manager.html#a41088bc019b5a42889cc30e1800c08b0">deleteMOAndChildren</a> (std::string name)</td></tr>
+<tr class="memdesc:a41088bc019b5a42889cc30e1800c08b0"><td class="mdescLeft">&#160;</td><td class="mdescRight">Delete an entity and all its subentities.  <a href="#a41088bc019b5a42889cc30e1800c08b0">More...</a><br /></td></tr>
+<tr class="separator:a41088bc019b5a42889cc30e1800c08b0"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a9ed3e3f31952d10df4b6c69b5a625188"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_scene_manager.html#a9ed3e3f31952d10df4b6c69b5a625188">createMOList</a> (<a class="el" href="classve_1_1_v_e_movable_object.html">VEMovableObject</a> *pObject, std::vector&lt; std::string &gt; &amp;namelist)</td></tr>
+<tr class="memdesc:a9ed3e3f31952d10df4b6c69b5a625188"><td class="mdescLeft">&#160;</td><td class="mdescRight">Create a list of all child entities of a given entity.  <a href="#a9ed3e3f31952d10df4b6c69b5a625188">More...</a><br /></td></tr>
+<tr class="separator:a9ed3e3f31952d10df4b6c69b5a625188"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a78127a3b00123f8a108c4eeda09cc1f8"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classve_1_1_v_e_mesh.html">VEMesh</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_scene_manager.html#a78127a3b00123f8a108c4eeda09cc1f8">getMesh</a> (std::string name)</td></tr>
 <tr class="memdesc:a78127a3b00123f8a108c4eeda09cc1f8"><td class="mdescLeft">&#160;</td><td class="mdescRight">Find a mesh by its name and return a pointer to it.  <a href="#a78127a3b00123f8a108c4eeda09cc1f8">More...</a><br /></td></tr>
 <tr class="separator:a78127a3b00123f8a108c4eeda09cc1f8"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -161,13 +177,13 @@ void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="clas
 <tr class="memitem:a8d225517b9db68a1d93769bf72fb5e7b"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_scene_manager.html#a8d225517b9db68a1d93769bf72fb5e7b">switchOffLight</a> (<a class="el" href="classve_1_1_v_e_light.html">VELight</a> *light)</td></tr>
 <tr class="memdesc:a8d225517b9db68a1d93769bf72fb5e7b"><td class="mdescLeft">&#160;</td><td class="mdescRight">Remove a light from the m_lights list, thus switching it off.  <a href="#a8d225517b9db68a1d93769bf72fb5e7b">More...</a><br /></td></tr>
 <tr class="separator:a8d225517b9db68a1d93769bf72fb5e7b"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a4b351f4cef52458275abca03f2799bb9"><td class="memItemLeft" align="right" valign="top"><a id="a4b351f4cef52458275abca03f2799bb9"></a>
-void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_scene_manager.html#a4b351f4cef52458275abca03f2799bb9">printEntities</a> ()</td></tr>
-<tr class="memdesc:a4b351f4cef52458275abca03f2799bb9"><td class="mdescLeft">&#160;</td><td class="mdescRight">Print a list of all entities to the console. <br /></td></tr>
-<tr class="separator:a4b351f4cef52458275abca03f2799bb9"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ac5c97043ff296dec1eb1256e5e61e408"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_scene_manager.html#ac5c97043ff296dec1eb1256e5e61e408">printTree</a> (<a class="el" href="classve_1_1_v_e_entity.html">VEEntity</a> *root)</td></tr>
-<tr class="memdesc:ac5c97043ff296dec1eb1256e5e61e408"><td class="mdescLeft">&#160;</td><td class="mdescRight">Print a list of all entities in an entity tree to the console.  <a href="#ac5c97043ff296dec1eb1256e5e61e408">More...</a><br /></td></tr>
-<tr class="separator:ac5c97043ff296dec1eb1256e5e61e408"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:afc44f1af47c34aad89bdc74c1713823b"><td class="memItemLeft" align="right" valign="top"><a id="afc44f1af47c34aad89bdc74c1713823b"></a>
+void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_scene_manager.html#afc44f1af47c34aad89bdc74c1713823b">printMovableObjects</a> ()</td></tr>
+<tr class="memdesc:afc44f1af47c34aad89bdc74c1713823b"><td class="mdescLeft">&#160;</td><td class="mdescRight">Print a list of all entities to the console. <br /></td></tr>
+<tr class="separator:afc44f1af47c34aad89bdc74c1713823b"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:abc0d7eb36e773073e23baa294f5a20d7"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_scene_manager.html#abc0d7eb36e773073e23baa294f5a20d7">printTree</a> (<a class="el" href="classve_1_1_v_e_movable_object.html">VEMovableObject</a> *root)</td></tr>
+<tr class="memdesc:abc0d7eb36e773073e23baa294f5a20d7"><td class="mdescLeft">&#160;</td><td class="mdescRight">Print a list of all entities in an entity tree to the console.  <a href="#abc0d7eb36e773073e23baa294f5a20d7">More...</a><br /></td></tr>
+<tr class="separator:abc0d7eb36e773073e23baa294f5a20d7"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pro-methods"></a>
 Protected Member Functions</h2></td></tr>
@@ -178,24 +194,28 @@ Protected Member Functions</h2></td></tr>
 virtual void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_scene_manager.html#a8871bfddf3e3f7497fcdf1b680dc0e48">closeSceneManager</a> ()</td></tr>
 <tr class="memdesc:a8871bfddf3e3f7497fcdf1b680dc0e48"><td class="mdescLeft">&#160;</td><td class="mdescRight">Close down the scene manager and delete all its assets. <br /></td></tr>
 <tr class="separator:a8871bfddf3e3f7497fcdf1b680dc0e48"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aa128e75ed6452932bc7ff219d733f73f"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_scene_manager.html#aa128e75ed6452932bc7ff219d733f73f">copyAiNodes</a> (const aiScene *pScene, std::vector&lt; <a class="el" href="classve_1_1_v_e_mesh.html">VEMesh</a> * &gt; &amp;meshes, std::vector&lt; <a class="el" href="classve_1_1_v_e_material.html">VEMaterial</a> * &gt; &amp;materials, aiNode *node, <a class="el" href="classve_1_1_v_e_entity.html">VEEntity</a> *parent)</td></tr>
-<tr class="memdesc:aa128e75ed6452932bc7ff219d733f73f"><td class="mdescLeft">&#160;</td><td class="mdescRight">Follow the Assimp tree of nodes and create entities from them.  <a href="#aa128e75ed6452932bc7ff219d733f73f">More...</a><br /></td></tr>
-<tr class="separator:aa128e75ed6452932bc7ff219d733f73f"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ae6d0f291433d1d59ea0be1257f04ff0f"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_scene_manager.html#ae6d0f291433d1d59ea0be1257f04ff0f">copyAiNodes</a> (const aiScene *pScene, std::vector&lt; <a class="el" href="classve_1_1_v_e_mesh.html">VEMesh</a> * &gt; &amp;meshes, std::vector&lt; <a class="el" href="classve_1_1_v_e_material.html">VEMaterial</a> * &gt; &amp;materials, aiNode *node, <a class="el" href="classve_1_1_v_e_movable_object.html">VEMovableObject</a> *parent)</td></tr>
+<tr class="memdesc:ae6d0f291433d1d59ea0be1257f04ff0f"><td class="mdescLeft">&#160;</td><td class="mdescRight">Follow the Assimp tree of nodes and create entities from them.  <a href="#ae6d0f291433d1d59ea0be1257f04ff0f">More...</a><br /></td></tr>
+<tr class="separator:ae6d0f291433d1d59ea0be1257f04ff0f"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pro-attribs"></a>
 Protected Attributes</h2></td></tr>
 <tr class="memitem:a83355400bed0580ec493733a720a4e9a"><td class="memItemLeft" align="right" valign="top"><a id="a83355400bed0580ec493733a720a4e9a"></a>
 std::map&lt; std::string, <a class="el" href="classve_1_1_v_e_mesh.html">VEMesh</a> * &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_scene_manager.html#a83355400bed0580ec493733a720a4e9a">m_meshes</a> = {}</td></tr>
-<tr class="memdesc:a83355400bed0580ec493733a720a4e9a"><td class="mdescLeft">&#160;</td><td class="mdescRight">storage of all entities currently in the engine <br /></td></tr>
+<tr class="memdesc:a83355400bed0580ec493733a720a4e9a"><td class="mdescLeft">&#160;</td><td class="mdescRight">Storage of all meshes currently in the engine. <br /></td></tr>
 <tr class="separator:a83355400bed0580ec493733a720a4e9a"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aa9181d84127dae4c7d304fc40577e86c"><td class="memItemLeft" align="right" valign="top"><a id="aa9181d84127dae4c7d304fc40577e86c"></a>
 std::map&lt; std::string, <a class="el" href="classve_1_1_v_e_material.html">VEMaterial</a> * &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_scene_manager.html#aa9181d84127dae4c7d304fc40577e86c">m_materials</a> = {}</td></tr>
-<tr class="memdesc:aa9181d84127dae4c7d304fc40577e86c"><td class="mdescLeft">&#160;</td><td class="mdescRight">storage of all entities currently in the engine <br /></td></tr>
+<tr class="memdesc:aa9181d84127dae4c7d304fc40577e86c"><td class="mdescLeft">&#160;</td><td class="mdescRight">Storage of all materials currently in the engine. <br /></td></tr>
 <tr class="separator:aa9181d84127dae4c7d304fc40577e86c"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a9077f31afa5e50ee447dc06438072fa3"><td class="memItemLeft" align="right" valign="top"><a id="a9077f31afa5e50ee447dc06438072fa3"></a>
-std::map&lt; std::string, <a class="el" href="classve_1_1_v_e_entity.html">VEEntity</a> * &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_scene_manager.html#a9077f31afa5e50ee447dc06438072fa3">m_entities</a> = {}</td></tr>
-<tr class="memdesc:a9077f31afa5e50ee447dc06438072fa3"><td class="mdescLeft">&#160;</td><td class="mdescRight">storage of all entities currently in the engine <br /></td></tr>
-<tr class="separator:a9077f31afa5e50ee447dc06438072fa3"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a35462d5c0a9c575482f5b32d484cf0db"><td class="memItemLeft" align="right" valign="top"><a id="a35462d5c0a9c575482f5b32d484cf0db"></a>
+std::map&lt; std::string, <a class="el" href="classve_1_1_v_e_movable_object.html">VEMovableObject</a> * &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_scene_manager.html#a35462d5c0a9c575482f5b32d484cf0db">m_movableObjects</a> = {}</td></tr>
+<tr class="memdesc:a35462d5c0a9c575482f5b32d484cf0db"><td class="mdescLeft">&#160;</td><td class="mdescRight">Storage of all movable objects currently in the engine. <br /></td></tr>
+<tr class="separator:a35462d5c0a9c575482f5b32d484cf0db"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:abb456faf25c36a041f96829ddee43af5"><td class="memItemLeft" align="right" valign="top"><a id="abb456faf25c36a041f96829ddee43af5"></a>
+std::set&lt; <a class="el" href="classve_1_1_v_e_movable_object.html">VEMovableObject</a> * &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_scene_manager.html#abb456faf25c36a041f96829ddee43af5">m_dirtyList</a> = {}</td></tr>
+<tr class="memdesc:abb456faf25c36a041f96829ddee43af5"><td class="mdescLeft">&#160;</td><td class="mdescRight">List of dirty movable objects that must be updated. <br /></td></tr>
+<tr class="separator:abb456faf25c36a041f96829ddee43af5"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ae3fbd394a2d6ff4797ecff2921d6cbcb"><td class="memItemLeft" align="right" valign="top"><a id="ae3fbd394a2d6ff4797ecff2921d6cbcb"></a>
 <a class="el" href="classve_1_1_v_e_camera.html">VECamera</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_scene_manager.html#ae3fbd394a2d6ff4797ecff2921d6cbcb">m_camera</a> = nullptr</td></tr>
 <tr class="memdesc:ae3fbd394a2d6ff4797ecff2921d6cbcb"><td class="mdescLeft">&#160;</td><td class="mdescRight">entity ptr of the current camera <br /></td></tr>
@@ -209,8 +229,34 @@ std::vector&lt; <a class="el" href="classve_1_1_v_e_light.html">VELight</a> * &g
 <div class="textblock"><p>The scene Manager manages the objects that have been loaded and put into the world. </p>
 <p>The scene manager can load objects from file and place them into the world. It also maintains cameras and lights. </p>
 </div><h2 class="groupheader">Member Function Documentation</h2>
-<a id="aa128e75ed6452932bc7ff219d733f73f"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#aa128e75ed6452932bc7ff219d733f73f">&#9670;&nbsp;</a></span>copyAiNodes()</h2>
+<a id="a1c274d60ad131adaea869842e1d3f6bf"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a1c274d60ad131adaea869842e1d3f6bf">&#9670;&nbsp;</a></span>addToDirtyList()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">void ve::VESceneManager::addToDirtyList </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="classve_1_1_v_e_movable_object.html">VEMovableObject</a> *&#160;</td>
+          <td class="paramname"><em>pObject</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Move this object to the dirty list. </p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramdir">[in]</td><td class="paramname">pObject</td><td>Pointer to the object that should be added to the dirty list </td></tr>
+  </table>
+  </dd>
+</dl>
+
+</div>
+</div>
+<a id="ae6d0f291433d1d59ea0be1257f04ff0f"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ae6d0f291433d1d59ea0be1257f04ff0f">&#9670;&nbsp;</a></span>copyAiNodes()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -245,7 +291,7 @@ std::vector&lt; <a class="el" href="classve_1_1_v_e_light.html">VELight</a> * &g
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype"><a class="el" href="classve_1_1_v_e_entity.html">VEEntity</a> *&#160;</td>
+          <td class="paramtype"><a class="el" href="classve_1_1_v_e_movable_object.html">VEMovableObject</a> *&#160;</td>
           <td class="paramname"><em>parent</em>&#160;</td>
         </tr>
         <tr>
@@ -262,7 +308,7 @@ std::vector&lt; <a class="el" href="classve_1_1_v_e_light.html">VELight</a> * &g
 </div><div class="memdoc">
 
 <p>Follow the Assimp tree of nodes and create entities from them. </p>
-<p>Assimp returns a tree of nodes, each node having one or more meshes. Since an <a class="el" href="classve_1_1_v_e_entity.html" title="Represents any object that can be put into a scene.">VEEntity</a> can have only one mesh, for each of the meshes one <a class="el" href="classve_1_1_v_e_entity.html" title="Represents any object that can be put into a scene.">VEEntity</a> is created and being made the child of the current parent.</p>
+<p>Assimp returns a tree of nodes, each node having one or more meshes. Since an <a class="el" href="classve_1_1_v_e_entity.html" title="Represents any object that can be drawn.">VEEntity</a> can have only one mesh, for each of the meshes one <a class="el" href="classve_1_1_v_e_entity.html" title="Represents any object that can be drawn.">VEEntity</a> is created and being made the child of the current parent.</p>
 <dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
     <tr><td class="paramdir">[in]</td><td class="paramname">pScene</td><td>A pointer to the Assimp scene </td></tr>
@@ -276,14 +322,14 @@ std::vector&lt; <a class="el" href="classve_1_1_v_e_light.html">VELight</a> * &g
 
 </div>
 </div>
-<a id="a2b1db884b25902d3793d3603f29a4180"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a2b1db884b25902d3793d3603f29a4180">&#9670;&nbsp;</a></span>createCubemap() <span class="overload">[1/2]</span></h2>
+<a id="a8d9fb892d7dade1aaa31baf7eda266c6"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a8d9fb892d7dade1aaa31baf7eda266c6">&#9670;&nbsp;</a></span>createCubemap() <span class="overload">[1/2]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname"><a class="el" href="classve_1_1_v_e_entity.html">VEEntity</a> * ve::VESceneManager::createCubemap </td>
+          <td class="memname"><a class="el" href="classve_1_1_v_e_movable_object.html">VEMovableObject</a> * ve::VESceneManager::createCubemap </td>
           <td>(</td>
           <td class="paramtype">std::string&#160;</td>
           <td class="paramname"><em>entityName</em>, </td>
@@ -322,14 +368,14 @@ std::vector&lt; <a class="el" href="classve_1_1_v_e_light.html">VELight</a> * &g
 
 </div>
 </div>
-<a id="af67fe1959f39dca48c8e79881b6ae313"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#af67fe1959f39dca48c8e79881b6ae313">&#9670;&nbsp;</a></span>createCubemap() <span class="overload">[2/2]</span></h2>
+<a id="ac8f3e55541cdcd478b31d888df5d2d4e"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ac8f3e55541cdcd478b31d888df5d2d4e">&#9670;&nbsp;</a></span>createCubemap() <span class="overload">[2/2]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname"><a class="el" href="classve_1_1_v_e_entity.html">VEEntity</a> * ve::VESceneManager::createCubemap </td>
+          <td class="memname"><a class="el" href="classve_1_1_v_e_movable_object.html">VEMovableObject</a> * ve::VESceneManager::createCubemap </td>
           <td>(</td>
           <td class="paramtype">std::string&#160;</td>
           <td class="paramname"><em>entityName</em>, </td>
@@ -368,8 +414,8 @@ std::vector&lt; <a class="el" href="classve_1_1_v_e_light.html">VELight</a> * &g
 
 </div>
 </div>
-<a id="ae2af900ab820bc8b701e93849a1d434d"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ae2af900ab820bc8b701e93849a1d434d">&#9670;&nbsp;</a></span>createEntity() <span class="overload">[1/3]</span></h2>
+<a id="a6b2dd0c5b190ba9e294c3292c71fd650"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a6b2dd0c5b190ba9e294c3292c71fd650">&#9670;&nbsp;</a></span>createEntity() <span class="overload">[1/3]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -401,7 +447,7 @@ std::vector&lt; <a class="el" href="classve_1_1_v_e_light.html">VELight</a> * &g
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype"><a class="el" href="classve_1_1_v_e_entity.html">VEEntity</a> *&#160;</td>
+          <td class="paramtype"><a class="el" href="classve_1_1_v_e_movable_object.html">VEMovableObject</a> *&#160;</td>
           <td class="paramname"><em>parent</em> = <code>nullptr</code>&#160;</td>
         </tr>
         <tr>
@@ -427,8 +473,8 @@ std::vector&lt; <a class="el" href="classve_1_1_v_e_light.html">VELight</a> * &g
 
 </div>
 </div>
-<a id="ab3ebe9bd2365e708f40961a2f22981c5"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ab3ebe9bd2365e708f40961a2f22981c5">&#9670;&nbsp;</a></span>createEntity() <span class="overload">[2/3]</span></h2>
+<a id="aea4596a7c6f9f644accc99b65e030e2e"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aea4596a7c6f9f644accc99b65e030e2e">&#9670;&nbsp;</a></span>createEntity() <span class="overload">[2/3]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -460,7 +506,7 @@ std::vector&lt; <a class="el" href="classve_1_1_v_e_light.html">VELight</a> * &g
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype"><a class="el" href="classve_1_1_v_e_entity.html">VEEntity</a> *&#160;</td>
+          <td class="paramtype"><a class="el" href="classve_1_1_v_e_movable_object.html">VEMovableObject</a> *&#160;</td>
           <td class="paramname"><em>parent</em> = <code>nullptr</code>&#160;</td>
         </tr>
         <tr>
@@ -486,8 +532,8 @@ std::vector&lt; <a class="el" href="classve_1_1_v_e_light.html">VELight</a> * &g
 
 </div>
 </div>
-<a id="a834fb42250956b0efe67d3e3aa3b295b"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a834fb42250956b0efe67d3e3aa3b295b">&#9670;&nbsp;</a></span>createEntity() <span class="overload">[3/3]</span></h2>
+<a id="af8af6b1eebd89cb45433e4381d4787ad"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#af8af6b1eebd89cb45433e4381d4787ad">&#9670;&nbsp;</a></span>createEntity() <span class="overload">[3/3]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -525,7 +571,7 @@ std::vector&lt; <a class="el" href="classve_1_1_v_e_light.html">VELight</a> * &g
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype"><a class="el" href="classve_1_1_v_e_entity.html">VEEntity</a> *&#160;</td>
+          <td class="paramtype"><a class="el" href="classve_1_1_v_e_movable_object.html">VEMovableObject</a> *&#160;</td>
           <td class="paramname"><em>parent</em> = <code>nullptr</code>&#160;</td>
         </tr>
         <tr>
@@ -549,43 +595,6 @@ std::vector&lt; <a class="el" href="classve_1_1_v_e_light.html">VELight</a> * &g
   </dd>
 </dl>
 <dl class="section return"><dt>Returns</dt><dd>a pointer to the new entity </dd></dl>
-
-</div>
-</div>
-<a id="a831114f046ba95263ae9f033bfd78cf1"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a831114f046ba95263ae9f033bfd78cf1">&#9670;&nbsp;</a></span>createEntityList()</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">void ve::VESceneManager::createEntityList </td>
-          <td>(</td>
-          <td class="paramtype"><a class="el" href="classve_1_1_v_e_entity.html">VEEntity</a> *&#160;</td>
-          <td class="paramname"><em>pEntity</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">std::vector&lt; std::string &gt; &amp;&#160;</td>
-          <td class="paramname"><em>namelist</em>&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p>Create a list of all child entities of a given entity. </p>
-<dl class="params"><dt>Parameters</dt><dd>
-  <table class="params">
-    <tr><td class="paramdir">[in]</td><td class="paramname">pEntity</td><td>Pointer to the root of the tree. </td></tr>
-    <tr><td class="paramdir">[out]</td><td class="paramname">namelist</td><td>List of names of children of the entity. </td></tr>
-  </table>
-  </dd>
-</dl>
 
 </div>
 </div>
@@ -686,14 +695,96 @@ std::vector&lt; <a class="el" href="classve_1_1_v_e_light.html">VELight</a> * &g
 
 </div>
 </div>
-<a id="a985196c531885faccd3747247e522693"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a985196c531885faccd3747247e522693">&#9670;&nbsp;</a></span>createSkybox()</h2>
+<a id="a9ed3e3f31952d10df4b6c69b5a625188"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a9ed3e3f31952d10df4b6c69b5a625188">&#9670;&nbsp;</a></span>createMOList()</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname"><a class="el" href="classve_1_1_v_e_entity.html">VEEntity</a> * ve::VESceneManager::createSkybox </td>
+          <td class="memname">void ve::VESceneManager::createMOList </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="classve_1_1_v_e_movable_object.html">VEMovableObject</a> *&#160;</td>
+          <td class="paramname"><em>pObject</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">std::vector&lt; std::string &gt; &amp;&#160;</td>
+          <td class="paramname"><em>namelist</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Create a list of all child entities of a given entity. </p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramdir">[in]</td><td class="paramname">pObject</td><td>Pointer to the root of the tree. </td></tr>
+    <tr><td class="paramdir">[out]</td><td class="paramname">namelist</td><td>List of names of children of the entity. </td></tr>
+  </table>
+  </dd>
+</dl>
+
+</div>
+</div>
+<a id="a0d933ca20910b0a9391c4d1d914995f5"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a0d933ca20910b0a9391c4d1d914995f5">&#9670;&nbsp;</a></span>createMovableObject()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="classve_1_1_v_e_movable_object.html">VEMovableObject</a> * ve::VESceneManager::createMovableObject </td>
+          <td>(</td>
+          <td class="paramtype">std::string&#160;</td>
+          <td class="paramname"><em>objectName</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">glm::mat4&#160;</td>
+          <td class="paramname"><em>transf</em> = <code>glm::mat4(1.0f)</code>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="classve_1_1_v_e_movable_object.html">VEMovableObject</a> *&#160;</td>
+          <td class="paramname"><em>parent</em> = <code>nullptr</code>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Create a movable object, i.e., a scene node. </p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramdir">[in]</td><td class="paramname">objectName</td><td>The name of the new MO. </td></tr>
+    <tr><td class="paramdir">[in]</td><td class="paramname">transf</td><td>Local to parent transform. </td></tr>
+    <tr><td class="paramdir">[in]</td><td class="paramname">parent</td><td>Pointer to entity to be used as parent. </td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>Returns</dt><dd>a pointer to the new movable object </dd></dl>
+
+</div>
+</div>
+<a id="ae5dcbd0e42e6e49a6ce118b94721e2b9"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ae5dcbd0e42e6e49a6ce118b94721e2b9">&#9670;&nbsp;</a></span>createSkybox()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="classve_1_1_v_e_movable_object.html">VEMovableObject</a> * ve::VESceneManager::createSkybox </td>
           <td>(</td>
           <td class="paramtype">std::string&#160;</td>
           <td class="paramname"><em>entityName</em>, </td>
@@ -777,32 +868,6 @@ std::vector&lt; <a class="el" href="classve_1_1_v_e_light.html">VELight</a> * &g
 
 </div>
 </div>
-<a id="a2d71a298220909a33c99f69d0738b829"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a2d71a298220909a33c99f69d0738b829">&#9670;&nbsp;</a></span>deleteEntityAndSubentities()</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">void ve::VESceneManager::deleteEntityAndSubentities </td>
-          <td>(</td>
-          <td class="paramtype">std::string&#160;</td>
-          <td class="paramname"><em>name</em></td><td>)</td>
-          <td></td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p>Delete an entity and all its subentities. </p>
-<dl class="params"><dt>Parameters</dt><dd>
-  <table class="params">
-    <tr><td class="paramdir">[in]</td><td class="paramname">name</td><td>Name of the entity. </td></tr>
-  </table>
-  </dd>
-</dl>
-
-</div>
-</div>
 <a id="a16ca7fe353361e0da3ee4a850f57d3ce"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a16ca7fe353361e0da3ee4a850f57d3ce">&#9670;&nbsp;</a></span>deleteMaterial()</h2>
 
@@ -855,6 +920,32 @@ std::vector&lt; <a class="el" href="classve_1_1_v_e_light.html">VELight</a> * &g
 
 </div>
 </div>
+<a id="a41088bc019b5a42889cc30e1800c08b0"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a41088bc019b5a42889cc30e1800c08b0">&#9670;&nbsp;</a></span>deleteMOAndChildren()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">void ve::VESceneManager::deleteMOAndChildren </td>
+          <td>(</td>
+          <td class="paramtype">std::string&#160;</td>
+          <td class="paramname"><em>name</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Delete an entity and all its subentities. </p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramdir">[in]</td><td class="paramname">name</td><td>Name of the entity. </td></tr>
+  </table>
+  </dd>
+</dl>
+
+</div>
+</div>
 <a id="a6dedc85430da2d06259704f47ec4f3c7"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a6dedc85430da2d06259704f47ec4f3c7">&#9670;&nbsp;</a></span>getCamera()</h2>
 
@@ -878,33 +969,6 @@ std::vector&lt; <a class="el" href="classve_1_1_v_e_light.html">VELight</a> * &g
 </table>
 </div><div class="memdoc">
 <dl class="section return"><dt>Returns</dt><dd>a pointer to the current camera </dd></dl>
-
-</div>
-</div>
-<a id="adc7f6be86700a42d5b8d49189386fcd7"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#adc7f6be86700a42d5b8d49189386fcd7">&#9670;&nbsp;</a></span>getEntity()</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname"><a class="el" href="classve_1_1_v_e_entity.html">VEEntity</a> * ve::VESceneManager::getEntity </td>
-          <td>(</td>
-          <td class="paramtype">std::string&#160;</td>
-          <td class="paramname"><em>name</em></td><td>)</td>
-          <td></td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p>Find an entity using its name. </p>
-<dl class="params"><dt>Parameters</dt><dd>
-  <table class="params">
-    <tr><td class="paramdir">[in]</td><td class="paramname">name</td><td>Name of the entity. </td></tr>
-  </table>
-  </dd>
-</dl>
-<dl class="section return"><dt>Returns</dt><dd>a pointer to the entity </dd></dl>
 
 </div>
 </div>
@@ -1004,6 +1068,33 @@ std::vector&lt; <a class="el" href="classve_1_1_v_e_light.html">VELight</a> * &g
 
 </div>
 </div>
+<a id="a41dadd7a3605dcd76a4198abbd3fa098"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a41dadd7a3605dcd76a4198abbd3fa098">&#9670;&nbsp;</a></span>getMovableObject()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="classve_1_1_v_e_movable_object.html">VEMovableObject</a> * ve::VESceneManager::getMovableObject </td>
+          <td>(</td>
+          <td class="paramtype">std::string&#160;</td>
+          <td class="paramname"><em>name</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Find an entity using its name. </p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramdir">[in]</td><td class="paramname">name</td><td>Name of the entity. </td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>Returns</dt><dd>a pointer to the entity </dd></dl>
+
+</div>
+</div>
 <a id="a612ac89ae22a8cdec8b975173b5eeb5c"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a612ac89ae22a8cdec8b975173b5eeb5c">&#9670;&nbsp;</a></span>initSceneManager()</h2>
 
@@ -1091,14 +1182,14 @@ std::vector&lt; <a class="el" href="classve_1_1_v_e_light.html">VELight</a> * &g
 
 </div>
 </div>
-<a id="ac94a6cd8a030588a74257d5dc3452566"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ac94a6cd8a030588a74257d5dc3452566">&#9670;&nbsp;</a></span>loadModel()</h2>
+<a id="a319533d9ccee702d6a8e6cb95ffff51c"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a319533d9ccee702d6a8e6cb95ffff51c">&#9670;&nbsp;</a></span>loadModel()</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname"><a class="el" href="classve_1_1_v_e_entity.html">VEEntity</a> * ve::VESceneManager::loadModel </td>
+          <td class="memname"><a class="el" href="classve_1_1_v_e_movable_object.html">VEMovableObject</a> * ve::VESceneManager::loadModel </td>
           <td>(</td>
           <td class="paramtype">std::string&#160;</td>
           <td class="paramname"><em>entityName</em>, </td>
@@ -1124,7 +1215,7 @@ std::vector&lt; <a class="el" href="classve_1_1_v_e_light.html">VELight</a> * &g
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype"><a class="el" href="classve_1_1_v_e_entity.html">VEEntity</a> *&#160;</td>
+          <td class="paramtype"><a class="el" href="classve_1_1_v_e_movable_object.html">VEMovableObject</a> *&#160;</td>
           <td class="paramname"><em>parent</em> = <code>nullptr</code>&#160;</td>
         </tr>
         <tr>
@@ -1150,8 +1241,8 @@ std::vector&lt; <a class="el" href="classve_1_1_v_e_light.html">VELight</a> * &g
 
 </div>
 </div>
-<a id="ac5c97043ff296dec1eb1256e5e61e408"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ac5c97043ff296dec1eb1256e5e61e408">&#9670;&nbsp;</a></span>printTree()</h2>
+<a id="abc0d7eb36e773073e23baa294f5a20d7"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#abc0d7eb36e773073e23baa294f5a20d7">&#9670;&nbsp;</a></span>printTree()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -1159,7 +1250,7 @@ std::vector&lt; <a class="el" href="classve_1_1_v_e_light.html">VELight</a> * &g
         <tr>
           <td class="memname">void ve::VESceneManager::printTree </td>
           <td>(</td>
-          <td class="paramtype"><a class="el" href="classve_1_1_v_e_entity.html">VEEntity</a> *&#160;</td>
+          <td class="paramtype"><a class="el" href="classve_1_1_v_e_movable_object.html">VEMovableObject</a> *&#160;</td>
           <td class="paramname"><em>root</em></td><td>)</td>
           <td></td>
         </tr>
@@ -1170,6 +1261,32 @@ std::vector&lt; <a class="el" href="classve_1_1_v_e_light.html">VELight</a> * &g
 <dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
     <tr><td class="paramdir">[in]</td><td class="paramname">root</td><td>Pointer to the root entity of the tree. </td></tr>
+  </table>
+  </dd>
+</dl>
+
+</div>
+</div>
+<a id="a2d1436daa82d22bd2f2d8836773767d3"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a2d1436daa82d22bd2f2d8836773767d3">&#9670;&nbsp;</a></span>removeFromDirtyList()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">void ve::VESceneManager::removeFromDirtyList </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="classve_1_1_v_e_movable_object.html">VEMovableObject</a> *&#160;</td>
+          <td class="paramname"><em>pObject</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Remove this object from the dirty list. </p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramdir">[in]</td><td class="paramname">pObject</td><td>Pointer to the object that should be removed from the dirty list </td></tr>
   </table>
   </dd>
 </dl>
@@ -1264,6 +1381,25 @@ std::vector&lt; <a class="el" href="classve_1_1_v_e_light.html">VELight</a> * &g
 
 </div>
 </div>
+<a id="a713795430bbf013fb5a99a45b7b6668f"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a713795430bbf013fb5a99a45b7b6668f">&#9670;&nbsp;</a></span>updateDirtyObjects()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">void ve::VESceneManager::updateDirtyObjects </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Update all objects on the dirty list and clear the dirty list. </p>
+
+</div>
+</div>
 <hr/>The documentation for this class was generated from the following files:<ul>
 <li><a class="el" href="_v_e_scene_manager_8h_source.html">VESceneManager.h</a></li>
 <li>VESceneManager.cpp</li>
@@ -1271,7 +1407,7 @@ std::vector&lt; <a class="el" href="classve_1_1_v_e_light.html">VELight</a> * &g
 </div><!-- contents -->
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>
-Generated on Fri Mar 29 2019 07:39:57 for Vienna Vulkan Engine by &#160;<a href="http://www.doxygen.org/index.html">
+Generated on Sat Mar 30 2019 14:22:49 for Vienna Vulkan Engine by &#160;<a href="http://www.doxygen.org/index.html">
 <img class="footer" src="doxygen.png" alt="doxygen"/>
 </a> 1.8.15
 </small></address>

@@ -64,11 +64,11 @@ $(function() {
 <div class="textblock">Here is a list of all documented class members with links to the class documentation for each member:</div>
 
 <h3><a id="index_v"></a>- v -</h3><ul>
-<li>VE_ENTITY_TYPE_CAMERA_ORTHO
-: <a class="el" href="classve_1_1_v_e_entity.html#a2c7f15fd3b11aac4dea3e76cfa508010ac943c13e0a28011a0df66e22a72cd9ab">ve::VEEntity</a>
+<li>VE_CAMERA_TYPE_ORTHO
+: <a class="el" href="classve_1_1_v_e_camera.html#a2bade7c96b45ffcae80bcc0f111ea0a2a726648e794dcec51597f65ab7ce09406">ve::VECamera</a>
 </li>
-<li>VE_ENTITY_TYPE_CAMERA_PROJECTIVE
-: <a class="el" href="classve_1_1_v_e_entity.html#a2c7f15fd3b11aac4dea3e76cfa508010a07caef08e63d5234399ae67595d94ca4">ve::VEEntity</a>
+<li>VE_CAMERA_TYPE_PROJECTIVE
+: <a class="el" href="classve_1_1_v_e_camera.html#a2bade7c96b45ffcae80bcc0f111ea0a2a6e9146b0c49643cd1a87af909e8b4f03">ve::VECamera</a>
 </li>
 <li>VE_ENTITY_TYPE_CUBEMAP
 : <a class="el" href="classve_1_1_v_e_entity.html#a2c7f15fd3b11aac4dea3e76cfa508010ae2b8a11c389421cff9bcabf485aa0742">ve::VEEntity</a>
@@ -76,8 +76,8 @@ $(function() {
 <li>VE_ENTITY_TYPE_CUBEMAP2
 : <a class="el" href="classve_1_1_v_e_entity.html#a2c7f15fd3b11aac4dea3e76cfa508010ab4b46b962cd29271ee508f466bd0d275">ve::VEEntity</a>
 </li>
-<li>VE_ENTITY_TYPE_OBJECT
-: <a class="el" href="classve_1_1_v_e_entity.html#a2c7f15fd3b11aac4dea3e76cfa508010ac5e8480599cc3b59c245476ebb1ac223">ve::VEEntity</a>
+<li>VE_ENTITY_TYPE_NORMAL
+: <a class="el" href="classve_1_1_v_e_entity.html#a2c7f15fd3b11aac4dea3e76cfa508010ad17a8252ea611aeecd1a3504266d36c3">ve::VEEntity</a>
 </li>
 <li>VE_ENTITY_TYPE_SKYPLANE
 : <a class="el" href="classve_1_1_v_e_entity.html#a2c7f15fd3b11aac4dea3e76cfa508010a92532eff5ccaf8577b48ca58cda963ed">ve::VEEntity</a>
@@ -93,6 +93,18 @@ $(function() {
 </li>
 <li>VE_LIGHT_TYPE_SPOT
 : <a class="el" href="classve_1_1_v_e_light.html#abcedf7166341000b6d4512e9030f6b86ac301ffd5b98c7114a1034eb3e8fde6bf">ve::VELight</a>
+</li>
+<li>VE_OBJECT_TYPE_CAMERA
+: <a class="el" href="classve_1_1_v_e_movable_object.html#a8ee44b7dca66886be80eb9b6db3a1a5ca83de5f84eb9e1dabcc53d6cf94234cdd">ve::VEMovableObject</a>
+</li>
+<li>VE_OBJECT_TYPE_ENTITY
+: <a class="el" href="classve_1_1_v_e_movable_object.html#a8ee44b7dca66886be80eb9b6db3a1a5ca1a053cba32b6a43e220c98dd0ca008d0">ve::VEMovableObject</a>
+</li>
+<li>VE_OBJECT_TYPE_LIGHT
+: <a class="el" href="classve_1_1_v_e_movable_object.html#a8ee44b7dca66886be80eb9b6db3a1a5ca7912da3da308dc17ff5fe68a53f84b11">ve::VEMovableObject</a>
+</li>
+<li>VE_OBJECT_TYPE_NODE
+: <a class="el" href="classve_1_1_v_e_movable_object.html#a8ee44b7dca66886be80eb9b6db3a1a5cab35f1ca0f0a3106e83efaae6b8a6a7c0">ve::VEMovableObject</a>
 </li>
 <li>VE_SUBRENDERER_TYPE_COLOR1
 : <a class="el" href="classve_1_1_v_e_subrender.html#a98064e456a838192bbcedf9b6c529e89a898d307ea6b0eb2d6455800be2fef837">ve::VESubrender</a>
@@ -130,17 +142,20 @@ $(function() {
 <li>VECameraProjective()
 : <a class="el" href="classve_1_1_v_e_camera_projective.html#a9c7e4eb6e430e015f3ce7a5986e72c2c">ve::VECameraProjective</a>
 </li>
+<li>veCameraType
+: <a class="el" href="classve_1_1_v_e_camera.html#a2bade7c96b45ffcae80bcc0f111ea0a2">ve::VECamera</a>
+</li>
 <li>VEEngine()
 : <a class="el" href="classve_1_1_v_e_engine.html#ad7ce2f4761e57c502df73edb3d808356">ve::VEEngine</a>
 </li>
 <li>VEEntity()
-: <a class="el" href="classve_1_1_v_e_entity.html#a604755aaf46f81f36a139e90469a4f87">ve::VEEntity</a>
+: <a class="el" href="classve_1_1_v_e_entity.html#ad79ca7c2c4bdf725b6ab33bd20195874">ve::VEEntity</a>
 </li>
 <li>veEntityType
 : <a class="el" href="classve_1_1_v_e_entity.html#a2c7f15fd3b11aac4dea3e76cfa508010">ve::VEEntity</a>
 </li>
 <li>veEvent()
-: <a class="el" href="structve_1_1ve_event.html#abbb7aa6a48347860dcc3a174fc7bd4b9">ve::veEvent</a>
+: <a class="el" href="structve_1_1ve_event.html#a5e0979f5989201f75416b707fca4a041">ve::veEvent</a>
 </li>
 <li>VEEventListener()
 : <a class="el" href="classve_1_1_v_e_event_listener.html#a46128f4c3f14ed965e04ac5f5b4e21d4">ve::VEEventListener</a>
@@ -160,8 +175,14 @@ $(function() {
 <li>VEMesh()
 : <a class="el" href="classve_1_1_v_e_mesh.html#ac97d39bce6a8245dc3c1c7986ec865b6">ve::VEMesh</a>
 </li>
+<li>VEMovableObject()
+: <a class="el" href="classve_1_1_v_e_movable_object.html#a84c771e53bd63fe639d894149efca784">ve::VEMovableObject</a>
+</li>
 <li>VENamedClass()
 : <a class="el" href="classve_1_1_v_e_named_class.html#a7a7dcb85f8b62737a8306ac8110bb935">ve::VENamedClass</a>
+</li>
+<li>veObjectType
+: <a class="el" href="classve_1_1_v_e_movable_object.html#a8ee44b7dca66886be80eb9b6db3a1a5c">ve::VEMovableObject</a>
 </li>
 <li>VERenderer()
 : <a class="el" href="classve_1_1_v_e_renderer.html#a7631ac9df441e26f3994e27ce3d5af39">ve::VERenderer</a>
@@ -212,7 +233,7 @@ $(function() {
 </div><!-- contents -->
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>
-Generated on Fri Mar 29 2019 07:39:57 for Vienna Vulkan Engine by &#160;<a href="http://www.doxygen.org/index.html">
+Generated on Sat Mar 30 2019 14:22:49 for Vienna Vulkan Engine by &#160;<a href="http://www.doxygen.org/index.html">
 <img class="footer" src="doxygen.png" alt="doxygen"/>
 </a> 1.8.15
 </small></address>

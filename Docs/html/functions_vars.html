@@ -179,8 +179,14 @@ $(function() {
 <li>m_camera
 : <a class="el" href="classve_1_1_v_e_scene_manager.html#ae3fbd394a2d6ff4797ecff2921d6cbcb">ve::VESceneManager</a>
 </li>
+<li>m_cameraType
+: <a class="el" href="classve_1_1_v_e_camera.html#ae82a59028020f66ae9bf24e20d517ba8">ve::VECamera</a>
+</li>
 <li>m_castsShadow
 : <a class="el" href="classve_1_1_v_e_entity.html#a53c7695c209549b2f11ad347c10b91cf">ve::VEEntity</a>
+</li>
+<li>m_children
+: <a class="el" href="classve_1_1_v_e_movable_object.html#a3471224201857ae4479fa507c5748852">ve::VEMovableObject</a>
 </li>
 <li>m_commandPool
 : <a class="el" href="classve_1_1_v_e_renderer.html#aee42258120f2492036f1530f2909cd60">ve::VERenderer</a>
@@ -233,6 +239,9 @@ $(function() {
 <li>m_deviceAllocation
 : <a class="el" href="structve_1_1_v_e_texture.html#abb7ebfa39c471723defe75df8fa73802">ve::VETexture</a>
 </li>
+<li>m_dirtyList
+: <a class="el" href="classve_1_1_v_e_scene_manager.html#abb456faf25c36a041f96829ddee43af5">ve::VESceneManager</a>
+</li>
 <li>m_drawEntity
 : <a class="el" href="classve_1_1_v_e_entity.html#afde432b530b6dfc6c058700520e27ad8">ve::VEEntity</a>
 </li>
@@ -243,8 +252,7 @@ $(function() {
 : <a class="el" href="classve_1_1_v_e_engine.html#aac28e5ea0cb337a41dbc81f95ca5a60d">ve::VEEngine</a>
 </li>
 <li>m_entities
-: <a class="el" href="classve_1_1_v_e_scene_manager.html#a9077f31afa5e50ee447dc06438072fa3">ve::VESceneManager</a>
-, <a class="el" href="classve_1_1_v_e_subrender.html#a846137a205fb8521f96110f8f959ff36">ve::VESubrender</a>
+: <a class="el" href="classve_1_1_v_e_subrender.html#a846137a205fb8521f96110f8f959ff36">ve::VESubrender</a>
 </li>
 <li>m_entityType
 : <a class="el" href="classve_1_1_v_e_entity.html#ae83638dc088915e443bba5c37c38ce6e">ve::VEEntity</a>
@@ -325,6 +333,9 @@ $(function() {
 <li>m_meshes
 : <a class="el" href="classve_1_1_v_e_scene_manager.html#a83355400bed0580ec493733a720a4e9a">ve::VESceneManager</a>
 </li>
+<li>m_movableObjects
+: <a class="el" href="classve_1_1_v_e_scene_manager.html#a35462d5c0a9c575482f5b32d484cf0db">ve::VESceneManager</a>
+</li>
 <li>m_name
 : <a class="el" href="classve_1_1_v_e_named_class.html#a3b3f5063b5de55426c522032e838236a">ve::VENamedClass</a>
 </li>
@@ -334,14 +345,14 @@ $(function() {
 <li>m_numScreenshot
 : <a class="el" href="classve_1_1_v_e_event_listener_g_l_f_w.html#aeac9d019c0b1d853129f1211781c1633">ve::VEEventListenerGLFW</a>
 </li>
+<li>m_objectType
+: <a class="el" href="classve_1_1_v_e_movable_object.html#a3034f021175ff3541af4ae7ea10e5107">ve::VEMovableObject</a>
+</li>
 <li>m_param
 : <a class="el" href="classve_1_1_v_e_entity.html#a28041586419227817162d860667a342a">ve::VEEntity</a>
 </li>
-<li>m_pEntityChildren
-: <a class="el" href="classve_1_1_v_e_entity.html#a67a98fb2edd09e2498f18f5d9a97cccc">ve::VEEntity</a>
-</li>
-<li>m_pEntityParent
-: <a class="el" href="classve_1_1_v_e_entity.html#ad13eff536a34b6ed3efe8403e352aa23">ve::VEEntity</a>
+<li>m_parent
+: <a class="el" href="classve_1_1_v_e_movable_object.html#ae8c4d9c22d81ba8e97fc3ea03acbe586">ve::VEMovableObject</a>
 </li>
 <li>m_physicalDevice
 : <a class="el" href="classve_1_1_v_e_renderer.html#acb75f7b487a45e37a271ade95c6833f4">ve::VERenderer</a>
@@ -431,7 +442,7 @@ $(function() {
 : <a class="el" href="classve_1_1_v_e_engine.html#a39623b5ab5d55a5595cc99ced8f90a30">ve::VEEngine</a>
 </li>
 <li>m_transform
-: <a class="el" href="classve_1_1_v_e_entity.html#a2f6267daf41b8a87465af2528c9ea6be">ve::VEEntity</a>
+: <a class="el" href="classve_1_1_v_e_movable_object.html#ab434d135d6855ce42dd86aa7f701b4ea">ve::VEMovableObject</a>
 </li>
 <li>m_type
 : <a class="el" href="classve_1_1_v_e_subrender.html#aa64ff9519923c9ae2499be7d334a0289">ve::VESubrender</a>
@@ -559,7 +570,7 @@ $(function() {
 </div><!-- contents -->
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>
-Generated on Fri Mar 29 2019 07:39:58 for Vienna Vulkan Engine by &#160;<a href="http://www.doxygen.org/index.html">
+Generated on Sat Mar 30 2019 14:22:50 for Vienna Vulkan Engine by &#160;<a href="http://www.doxygen.org/index.html">
 <img class="footer" src="doxygen.png" alt="doxygen"/>
 </a> 1.8.15
 </small></address>

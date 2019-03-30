@@ -197,6 +197,11 @@ namespace ve {
 		setTransform(transf);			//sets this MO also onto the dirty list to be updated
 	}
 
+	VEMovableObject::~VEMovableObject() {
+		getSceneManagerPointer()->removeFromDirtyList(this);
+	}
+
+
 	/**
 	* \returns the entity's local to parent transform.
 	*/
@@ -209,7 +214,7 @@ namespace ve {
 	*/
 	void VEMovableObject::setTransform(glm::mat4 trans) {
 		m_transform = trans;
-		getSceneManagerPointer()->moveToDirtyList(this);
+		getSceneManagerPointer()->addToDirtyList(this);
 	}
 
 	/**
@@ -217,7 +222,7 @@ namespace ve {
 	*/
 	void VEMovableObject::setPosition(glm::vec3 pos) {
 		m_transform[3] = glm::vec4(pos.x, pos.y, pos.z, 1.0f);
-		getSceneManagerPointer()->moveToDirtyList(this);
+		getSceneManagerPointer()->addToDirtyList(this);
 	};
 
 	/**
@@ -304,7 +309,7 @@ namespace ve {
 		glm::vec3 y = glm::normalize(glm::cross(z, x));
 		m_transform[1] = glm::vec4(y.x, y.y, y.z, 0.0f);
 
-		getSceneManagerPointer()->moveToDirtyList(this);
+		getSceneManagerPointer()->addToDirtyList(this);
 	}
 
 
@@ -361,7 +366,6 @@ namespace ve {
 	* Then copy the struct content into the UBO.
 	*
 	* \param[in] parentWorldMatrix The parent's world matrix or an identity matrix.
-	* \param[in] param The new parameter vector for all children
 	*
 	*/
 	void VEMovableObject::update(glm::mat4 parentWorldMatrix ) {
@@ -505,7 +509,7 @@ namespace ve {
 	*/
 	void VEEntity::setParam(glm::vec4 param) {
 		m_param = param;
-		getSceneManagerPointer()->moveToDirtyList(this);
+		getSceneManagerPointer()->addToDirtyList(this);
 	}
 
 
@@ -514,7 +518,6 @@ namespace ve {
 	* \brief Update the entity's UBO.
 	*
 	* \param[in] worldMatrix The new world matrix of the entity
-	* \param[in] param the new free parameter
 	*
 	*/
 	void VEEntity::updateUBO( glm::mat4 worldMatrix) {

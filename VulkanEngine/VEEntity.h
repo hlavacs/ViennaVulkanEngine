@@ -113,8 +113,7 @@ namespace ve {
 
 		//-------------------------------------------------------------------------------------
 		VEMovableObject(std::string name, glm::mat4 transf = glm::mat4(1.0f), VEMovableObject *parent = nullptr);
-		///Virtual destructor
-		virtual ~VEMovableObject(){};
+		virtual ~VEMovableObject();
 		//-------------------------------------------------------------------------------------
 		///\returns the object type
 		veObjectType getObjectType() { return m_objectType; };

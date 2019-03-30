@@ -617,24 +617,37 @@ namespace ve {
 
 	/**
 	*
-	* \brief Move the head of this object to the dirty list
+	* \brief Move this object to the dirty list
 	*
-	* \param[in] pObject Pointer to the object, who's parent should be put onto the dirty list
+	* \param[in] pObject Pointer to the object that should be added to the dirty list
 	*
 	*/
-	void VESceneManager::moveToDirtyList(VEMovableObject *pObject) {
+	void VESceneManager::addToDirtyList(VEMovableObject *pObject) {
 		m_dirtyList.insert(pObject);
 	}
 
+	/**
+	*
+	* \brief Remove this object from the dirty list
+	*
+	* \param[in] pObject Pointer to the object that should be removed from the dirty list
+	*
+	*/
+	void VESceneManager::removeFromDirtyList(VEMovableObject *pObject) {
+		m_dirtyList.erase(pObject);
+	}
 
+	/**
+	*
+	* \brief Update all objects on the dirty list and clear the dirty list
+	*
+	*/
 	void VESceneManager::updateDirtyObjects() {
 		for (auto pObject : m_dirtyList) {
 			pObject->update();
 		}
 		m_dirtyList.clear();
 	}
-
-
 
 	/**
 	*

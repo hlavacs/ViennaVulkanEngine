@@ -78,7 +78,8 @@ namespace ve {
 		///Add a movable object to the scene
 		void				addMovableObject(VEMovableObject *entity) { m_movableObjects[entity->getName()] = entity; };
 		VEMovableObject *	getMovableObject(std::string entityName);
-		void				moveToDirtyList(VEMovableObject *pObject);
+		void				addToDirtyList(VEMovableObject *pObject);
+		void				removeFromDirtyList(VEMovableObject *pObject);
 		void				updateDirtyObjects();
 		///Clear all objects from the dirty list
 		void				clearDirtyList() { m_dirtyList.clear();  };

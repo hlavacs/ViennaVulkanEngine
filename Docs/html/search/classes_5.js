@@ -13,6 +13,7 @@ var searchData=
   ['velightdata_5ft',['veLightData_t',['../structve_1_1_v_e_light_1_1ve_light_data__t.html',1,'ve::VELight']]],
   ['vematerial',['VEMaterial',['../classve_1_1_v_e_material.html',1,'ve']]],
   ['vemesh',['VEMesh',['../classve_1_1_v_e_mesh.html',1,'ve']]],
+  ['vemovableobject',['VEMovableObject',['../classve_1_1_v_e_movable_object.html',1,'ve']]],
   ['venamedclass',['VENamedClass',['../classve_1_1_v_e_named_class.html',1,'ve']]],
   ['veperframedata_5ft',['vePerFrameData_t',['../structve_1_1_v_e_renderer_forward_1_1ve_per_frame_data__t.html',1,'ve::VERendererForward']]],
   ['verenderer',['VERenderer',['../classve_1_1_v_e_renderer.html',1,'ve']]],
