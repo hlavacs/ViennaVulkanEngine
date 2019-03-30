@@ -89,12 +89,12 @@ namespace ve {
 		//go through all entities and draw them
 		for (auto object : getSceneManagerPointer()->m_movableObjects) {
 			VEMovableObject *pObject = object.second;
-			if (pObject->getObjectType() != VEMovableObject::VE_OBJECT_TYPE_ENTITY) return;
+			if (pObject->getObjectType() == VEMovableObject::VE_OBJECT_TYPE_ENTITY) {
+				VEEntity *pEntity = (VEEntity*)pObject;
 
-			VEEntity *pEntity = (VEEntity*)pObject;
-
-			if (pEntity->m_drawEntity && pEntity->m_castsShadow) {
-				drawEntity(commandBuffer, imageIndex, pEntity);
+				if (pEntity->m_drawEntity && pEntity->m_castsShadow) {
+					drawEntity(commandBuffer, imageIndex, pEntity);
+				}
 			}
 		}
 	}

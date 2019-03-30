@@ -62,7 +62,8 @@ namespace ve {
 		VEMovableObject *	loadModel(std::string entityName, std::string basedir, std::string filename, uint32_t aiFlags=0, VEMovableObject *parent=nullptr);
 
 		//------------------------------------------------------------------------
-		VEMovableObject *	createEntity(std::string entityName, VEMesh *pMesh, VEMaterial *pMat, aiMatrix4x4 transf, VEMovableObject *parent=nullptr );
+		VEMovableObject *	createMovableObject( std::string name, glm::mat4 transf = glm::mat4(1.0f), VEMovableObject *parent = nullptr);
+		VEEntity *			createEntity(std::string entityName, VEMesh *pMesh, VEMaterial *pMat, aiMatrix4x4 transf, VEMovableObject *parent=nullptr );
 		VEEntity *			createEntity(std::string entityName, VEMesh *pMesh, VEMaterial *pMat, glm::mat4 transf, VEMovableObject *parent = nullptr);
 		VEEntity *			createEntity(std::string entityName, VEEntity::veEntityType type, VEMesh *pMesh, VEMaterial *pMat, glm::mat4 transf, VEMovableObject *parent = nullptr);
 

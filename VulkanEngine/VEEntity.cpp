@@ -181,14 +181,12 @@ namespace ve {
 	//Movable Object
 
 
-	VEMovableObject::VEMovableObject( std::string name ) : VENamedClass(name) {
-	}
-
-	VEMovableObject::VEMovableObject(std::string name, VEMovableObject *parent) : VENamedClass(name) {
+	VEMovableObject::VEMovableObject(std::string name, glm::mat4 transf, VEMovableObject *parent) : VENamedClass(name) {
 		m_parent = parent;
 		if (parent != nullptr) {
 			parent->addChild(this);
 		}
+		m_transform = transf;
 	}
 
 	/**
@@ -402,11 +400,60 @@ namespace ve {
 		*radius = 1.0f;
 	}
 
-	void VEMovableObject::getOBB(std::vector<glm::vec4> &pointsW, float t1, float t2, glm::vec3 &center, float &width, float &height, float &depth) {
-		center = getPosition();
-		width = 1.0f;
-		height = 1.0f;
-		depth = 1.0f;
+	/**
+	*
+	* \brief Get an OBB that exactly holds the given points.
+	*
+	* The OBB is oriented along the local axes of the entity.
+	*
+	* \param[in] points The points that should be engulfed by the OBB, in world space
+	* \param[in] t1 Used for interpolating between frustum edge points
+	* \param[in] t2 Used for interpolating between frustum edge points
+	* \param[out] center Center of the OBB
+	* \param[out] width Width of the OBB
+	* \param[out] height Height of the OBB
+	* \param[out] depth Depth of the OBB
+	*
+	*/
+
+	void VEMovableObject::getOBB(std::vector<glm::vec4> &points, float t1, float t2,
+		glm::vec3 &center, float &width, float &height, float &depth) {
+
+		glm::mat4 W = getWorldTransform();
+
+		std::vector<glm::vec4> axes;		//3 local axes, into pos and minus direction
+		axes.push_back(-1.0f*W[0]);
+		axes.push_back(W[0]);
+		axes.push_back(-1.0f*W[1]);
+		axes.push_back(W[1]);
+		axes.push_back(-1.0f*W[2]);
+		axes.push_back(W[2]);
+
+		std::vector<glm::vec4> box;			//maxima points into the 6 directions
+		std::vector<float> maxvalues;		//max ordinates
+		box.resize(6);
+		maxvalues.resize(6);
+		for (uint32_t i = 0; i < 6; i++) {	//fill maxima with first point
+			box[i] = points[0];
+			maxvalues[i] = glm::dot(axes[i], points[0]);
+		}
+
+		for (uint32_t i = 1; i < points.size(); i++) {		//go through rest of the points and 6 axis directions
+			for (uint32_t j = 0; j < 6; j++) {
+				float tmp = glm::dot(axes[j], points[i]);
+				if (maxvalues[j] < tmp) {
+					box[j] = points[i];
+					maxvalues[j] = tmp;
+				}
+			}
+		}
+		width = maxvalues[1] + maxvalues[0];
+		height = maxvalues[3] + maxvalues[2];
+		depth = maxvalues[5] + maxvalues[4];
+		glm::vec4 center4 = W * glm::vec4(-maxvalues[0] + width / 2.0f,
+			-maxvalues[2] + height / 2.0f,
+			-maxvalues[4] + depth / 2.0f, 0.0f);
+		center = glm::vec3(center4.x, center4.y, center4.z);
 	}
 
 
@@ -432,8 +479,9 @@ namespace ve {
 	VEEntity::VEEntity(	std::string name, veEntityType type, 
 						VEMesh *pMesh, VEMaterial *pMat, 
 						glm::mat4 transf, VEMovableObject *parent) :
-						VEMovableObject(name, parent), m_entityType( type) {
+						VEMovableObject(name, transf, parent), m_entityType( type ) {
 
+		m_objectType = VE_OBJECT_TYPE_ENTITY;
 		setTransform(transf);
 
 		if (pMesh != nullptr && pMat != nullptr) {
@@ -444,20 +492,6 @@ namespace ve {
 		}
 	}
 
-
-	/**
-	*
-	* \brief VEEntity constructor.
-	*
-	* Create an empyt VEEntity.
-	*
-	* \param[in] name The name of the mesh.
-	*
-	*/
-	VEEntity::VEEntity(std::string name) : VEMovableObject(name), m_entityType(VE_ENTITY_TYPE_OBJECT) {
-		m_drawEntity = true;
-		m_castsShadow = true;
-	};
 
 
 	/**
@@ -491,68 +525,12 @@ namespace ve {
 	*
 	*/
 	void VEEntity::getBoundingSphere(glm::vec3 *center, float *radius) {
-		*center = glm::vec3(0.0f, 0.0f, 0.0f);
+		*center = getPosition();
 		*radius = 1.0f;
 		if (m_pMesh != nullptr) {
 			*center = m_pMesh->m_boundingSphereCenter;
 			*radius = m_pMesh->m_boundingSphereRadius;
 		}
-	}
-
-	/**
-	*
-	* \brief Get an OBB that exactly holds the given points.
-	*
-	* The OBB is oriented along the local axes of the entity.
-	*
-	* \param[in] points The points that should be engulfed by the OBB, in world space
-	* \param[in] t1 Used for interpolating between frustum edge points
-	* \param[in] t2 Used for interpolating between frustum edge points
-	* \param[out] center Center of the OBB
-	* \param[out] width Width of the OBB
-	* \param[out] height Height of the OBB
-	* \param[out] depth Depth of the OBB
-	*
-	*/
-
-	void VEEntity::getOBB(	std::vector<glm::vec4> &points, float t1, float t2, 
-							glm::vec3 &center, float &width, float &height, float &depth) {
-
-		glm::mat4 W = getWorldTransform();
-
-		std::vector<glm::vec4> axes;		//3 local axes, into pos and minus direction
-		axes.push_back(-1.0f*W[0]);
-		axes.push_back(      W[0]);
-		axes.push_back(-1.0f*W[1]);
-		axes.push_back(      W[1]);
-		axes.push_back(-1.0f*W[2]);
-		axes.push_back(      W[2]);
-
-		std::vector<glm::vec4> box;			//maxima points into the 6 directions
-		std::vector<float> maxvalues;		//max ordinates
-		box.resize(6);
-		maxvalues.resize(6);
-		for (uint32_t i = 0; i < 6; i++) {	//fill maxima with first point
-			box[i] = points[0];
-			maxvalues[i] = glm::dot(axes[i], points[0]);
-		}
-
-		for (uint32_t i = 1; i < points.size(); i++) {		//go through rest of the points and 6 axis directions
-			for (uint32_t j = 0; j < 6; j++) {
-				float tmp = glm::dot(axes[j], points[i]);
-				if (maxvalues[j] < tmp) {
-					box[j] = points[i];
-					maxvalues[j] = tmp;
-				}
-			}
-		}
-		width  = maxvalues[1] + maxvalues[0];
-		height = maxvalues[3] + maxvalues[2];
-		depth  = maxvalues[5] + maxvalues[4];
-		glm::vec4 center4 = W * glm::vec4(	-maxvalues[0] + width/2.0f, 
-											-maxvalues[2] + height/2.0f, 
-											-maxvalues[4] + depth/2.0f, 0.0f);
-		center = glm::vec3(center4.x, center4.y, center4.z);
 	}
 
 
@@ -567,7 +545,8 @@ namespace ve {
 	* \param[in] name Name of the camera.
 	*
 	*/
-	VECamera::VECamera(std::string name) : VEEntity(name) {
+	VECamera::VECamera(std::string name) : VEMovableObject(name) {
+		m_objectType = VE_OBJECT_TYPE_CAMERA;
 		m_cameraType = VE_CAMERA_TYPE_PROJECTIVE; 
 	};
 
@@ -581,7 +560,8 @@ namespace ve {
 	*
 	*/
 	VECamera::VECamera(std::string name, float nearPlane, float farPlane) :
-		VEEntity(name), m_nearPlane(nearPlane), m_farPlane(farPlane) {
+							VEMovableObject(name), m_nearPlane(nearPlane), m_farPlane(farPlane) {
+		m_objectType = VE_OBJECT_TYPE_CAMERA;
 		m_cameraType = VE_CAMERA_TYPE_PROJECTIVE;
 	}
 
@@ -924,6 +904,16 @@ namespace ve {
 	//light
 
 	/**
+	* \brief Simple VELight constructor, default is directional light
+	* \param[in] name Name of the camera
+	* \param[in] type Light type
+	*/
+	VELight::VELight(std::string name, veLightType type) : VEMovableObject(name), m_lightType(type) {
+		m_objectType = VE_OBJECT_TYPE_LIGHT;
+	};
+
+
+	/**
 	*
 	* \brief Fill a UBO structure with the light's data
 	*
@@ -938,16 +928,6 @@ namespace ve {
 		pLight->col_specular = col_specular;
 		pLight->transform = getWorldTransform();
 	}
-
-	/**
-	* \brief Simple VELight constructor, default is directional light
-	* \param[in] name Name of the camera
-	* \param[in] type Light type
-	*/
-	VELight::VELight(std::string name, veLightType type) : VEEntity(name), m_lightType(type) {
-		m_lightType = VE_LIGHT_TYPE_DIRECTIONAL;
-	};
-
 
 	/**
 	* \returns the light type of this light

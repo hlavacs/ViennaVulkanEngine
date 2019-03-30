@@ -86,16 +86,16 @@ namespace ve {
 
 	public:
 		enum veObjectType {
-			VE_OBJECT_TYPE_NODE,		///<Instance of the base class, acts as scene node
+			VE_OBJECT_TYPE_NODE,		///<Instance of the base class, acts as scene node, cannot be drawn
 			VE_OBJECT_TYPE_ENTITY,		///<Normal object to be drawn
 			VE_OBJECT_TYPE_CAMERA,		///<A projective camera, cannot be drawn
-			VE_OBJECT_TYPE_LIGHT		///<A light
+			VE_OBJECT_TYPE_LIGHT		///<A light, cannot be drawn
 		};
 
 	protected:
-		veObjectType	m_objectType = VE_OBJECT_TYPE_NODE;		///<Object type
+		veObjectType	m_objectType = VE_OBJECT_TYPE_NODE;				///<Default object type
 		glm::mat4		m_transform = glm::mat4(1.0);					///<Transform from local to parent space, the engine uses Y-UP, Left-handed
-		glm::vec4		m_param = glm::vec4(1.0f, 1.0f, 0.0f, 0.0f);	///<A free parameter to be used
+		glm::vec4		m_param = glm::vec4(1.0f, 1.0f, 0.0f, 0.0f);	///<A free parameter to be used (e.g. texture animation)
 
 	public:
 		VEMovableObject *				m_parent = nullptr;				///<Pointer to entity parent
@@ -108,8 +108,7 @@ namespace ve {
 		std::vector<VkDescriptorSet>	m_descriptorSetsResources;		///<Per subrenderer descriptor sets for other resources
 
 		//-------------------------------------------------------------------------------------
-		VEMovableObject(std::string name);
-		VEMovableObject(std::string name, VEMovableObject *parent);
+		VEMovableObject(std::string name, glm::mat4 transf = glm::mat4(1.0f), VEMovableObject *parent = nullptr);
 		///Virtual destructor
 		virtual ~VEMovableObject(){};
 		//-------------------------------------------------------------------------------------
@@ -163,7 +162,7 @@ namespace ve {
 	public:
 		///The entity type determines what kind of entity this is
 		enum veEntityType {	
-			VE_ENTITY_TYPE_OBJECT,				///<Normal object to be drawn
+			VE_ENTITY_TYPE_NORMAL,				///<Normal object to be drawn
 			VE_ENTITY_TYPE_CUBEMAP,				///<A cubemap for sky boxes
 			VE_ENTITY_TYPE_CUBEMAP2,			///<A cubemap for sky boxes, but simulated
 			VE_ENTITY_TYPE_SKYPLANE,			///<A plane for sky boxes
@@ -171,7 +170,7 @@ namespace ve {
 		};
 		
 	protected:
-		veEntityType				m_entityType = VE_ENTITY_TYPE_OBJECT;			///<Entity type
+		veEntityType				m_entityType = VE_ENTITY_TYPE_NORMAL;			///<Entity type
 
 	public:
 		VEMesh *					m_pMesh = nullptr;								///<Pointer to entity mesh
@@ -182,7 +181,7 @@ namespace ve {
 		bool						m_drawEntity = false;					///<should it be drawn at all?
 		bool						m_castsShadow = true;					///<draw in the shadow pass?
 
-		VEEntity(std::string name);
+		//VEEntity(std::string name);
 		VEEntity(	std::string name, veEntityType type, VEMesh *pMesh, VEMaterial *pMat,
 					glm::mat4 transf, VEMovableObject *parent);
 		virtual ~VEEntity();
@@ -197,7 +196,6 @@ namespace ve {
 
 		//--------------------------------------------------
 		virtual void getBoundingSphere( glm::vec3 *center, float *radius );		//return center and radius for a bounding sphere
-		virtual void getOBB(std::vector<glm::vec4> &pointsW, float t1, float t2, glm::vec3 &center, float &width, float &height, float &depth);	//return min and max along the axes
 	};
 
 
@@ -213,7 +211,7 @@ namespace ve {
 	* represents the camera frustum. The base class however should never be used. Use a derived class.
 	*
 	*/
-	class VECamera : public VEEntity {
+	class VECamera : public VEMovableObject {
 
 	public:
 		enum veCameraType {
@@ -322,7 +320,7 @@ namespace ve {
 	*
 	*/
 
-	class VELight : public VEEntity {
+	class VELight : public VEMovableObject {
 
 	public:
 

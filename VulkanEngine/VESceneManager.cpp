@@ -41,9 +41,7 @@ namespace ve {
 		loadAssets("models/standard", "sphere.obj", 0, meshes, materials);
 
 		//camera parent is used for translation rotations
-		VEEntity *cameraParent = new VEEntity("StandardCameraParent");
-		cameraParent->setTransform( glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 10.0f, 0.0f)) );
-		addMovableObject(cameraParent);
+		VEMovableObject *cameraParent = createMovableObject("StandardCameraParent", glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 10.0f, 0.0f)) );
 
 		//camera can only do yaw (parent y-axis) and pitch (local x-axis) rotations
 		VkExtent2D extent = getWindowPointer()->getExtent();
@@ -146,18 +144,14 @@ namespace ve {
 		createMaterials(pScene, basedir, filekey, materials);
 
 		VEMovableObject *pMO = m_movableObjects[entityName];
-		if (pMO != nullptr && pMO->getObjectType() == VEMovableObject::VE_OBJECT_TYPE_ENTITY ) return (VEEntity*)pMO;
-		if (pMO != nullptr) {
-			throw std::runtime_error("Error: Asset " + filekey + " exists and is not an entity!");
-			return nullptr;
-		}
+		if (pMO != nullptr ) return pMO;
 
-		VEMovableObject *pEntity = createEntity( entityName, nullptr, nullptr, aiMatrix4x4(), parent );
+		pMO = createMovableObject(entityName, glm::mat4(1.0f), parent); 
 
-		copyAiNodes( pScene, meshes, materials, pScene->mRootNode, pEntity );
-		pEntity->update();	//update ubos of all children
+		copyAiNodes( pScene, meshes, materials, pScene->mRootNode, pMO);
+		pMO->update();	//update ubos of all children
 
-		return pEntity;
+		return pMO;
 	}
 
 	/**
@@ -181,8 +175,8 @@ namespace ve {
 										aiNode* node, 
 										VEMovableObject *parent ) {
 
-		VEMovableObject *pEntity = createEntity(parent->getName() + "/" + node->mName.C_Str(),
-												nullptr, nullptr, aiMatrix4x4(), parent);
+		VEMovableObject *pObject = createMovableObject(	parent->getName() + "/" + node->mName.C_Str(),
+														glm::mat4(1.0f), parent);
 
 		for (uint32_t i = 0; i < node->mNumMeshes; i++) {	//go through the meshes of the Assimp node
 
@@ -196,12 +190,12 @@ namespace ve {
 			uint32_t paiMatIdx = paiMesh->mMaterialIndex;	//get the material index for this mesh
 			pMaterial = materials[paiMatIdx];				//use the index to get the right VEMaterial
 
-			VEMovableObject *pEnt = createEntity(	pEntity->getName() + "/Entity_" + std::to_string(i), //create the new entity
-													pMesh, pMaterial, node->mTransformation, pEntity);
+			VEEntity *pEnt = createEntity(	pObject->getName() + "/Entity_" + std::to_string(i), //create the new entity
+											pMesh, pMaterial, node->mTransformation, pObject);
 		}
 
 		for (uint32_t i = 0; i < node->mNumChildren; i++) {		//recursivly go down the node tree
-			copyAiNodes(pScene, meshes, materials, node->mChildren[i], pEntity);
+			copyAiNodes(pScene, meshes, materials, node->mChildren[i], pObject);
 		}
 
 	}
@@ -320,6 +314,21 @@ namespace ve {
 		}
 	}
 
+
+	VEMovableObject * VESceneManager::createMovableObject(	std::string name, 
+															glm::mat4 transf, 
+															VEMovableObject *parent) {
+
+		VEMovableObject *pMO = m_movableObjects[name];
+		if (pMO != nullptr) return pMO;
+
+		pMO = new VEMovableObject(name, glm::mat4(1.0f), parent);
+		pMO->setTransform(transf);
+		addMovableObject( pMO );
+		return pMO;
+	}
+
+
 	/**
 	* \brief Create an entity
 	*
@@ -331,8 +340,8 @@ namespace ve {
 	* \returns a pointer to the new entity
 	*
 	*/
-	VEMovableObject * VESceneManager::createEntity(	std::string entityName, VEMesh *pMesh, VEMaterial *pMat,
-													aiMatrix4x4 transf, VEMovableObject *parent) {
+	VEEntity * VESceneManager::createEntity(	std::string entityName, VEMesh *pMesh, VEMaterial *pMat,
+												aiMatrix4x4 transf, VEMovableObject *parent) {
 		glm::mat4 *pMatrix = (glm::mat4*) &transf;
 		return createEntity( entityName, pMesh, pMat, *pMatrix, parent);
 	}
@@ -350,7 +359,7 @@ namespace ve {
 	*/
 	VEEntity * VESceneManager::createEntity(	std::string entityName, VEMesh *pMesh, VEMaterial *pMat,
 												glm::mat4 transf, VEMovableObject *parent) {
-		return createEntity(entityName, VEEntity::VE_ENTITY_TYPE_OBJECT, pMesh, pMat, transf, parent);
+		return createEntity(entityName, VEEntity::VE_ENTITY_TYPE_NORMAL, pMesh, pMat, transf, parent);
 	}
 
 	/**
@@ -530,7 +539,7 @@ namespace ve {
 			addstring = "+";
 		}
 
-		VEEntity *parent = new VEEntity(entityName);
+		VEMovableObject *parent = createMovableObject(entityName);
 
 		float scale = 1000.0f;
 

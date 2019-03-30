@@ -120,7 +120,6 @@ namespace ve {
 			e1->setTransform(glm::translate(glm::mat4(1.0f), glm::vec3(10.0f, 1.0f, 1.0f)));
 			e1->multiplyTransform( glm::scale(glm::mat4(1.0f), glm::vec3(10.0f, 10.0f, 10.0f)));
 
-
 			VEMovableObject *e1b = m_pSceneManager->loadModel("The Cube b", "models/test/crate0", "cube.obj");
 			e1b->setTransform(glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 10.0f, 10.0f)));
 
@@ -141,12 +140,11 @@ namespace ve {
 			for (uint32_t i = 0; i < 20; i++) {
 				std::string name = "The Cube " + std::to_string(i);
 
-				VEEntity *p = new VEEntity( name + "-parent");
-				m_pSceneManager->addMovableObject(p);
-				p->setTransform( 
+				VEMovableObject *pMO = m_pSceneManager->createMovableObject( name + "-parent");
+				pMO->setTransform( 
 					glm::translate(glm::mat4(1.0f), glm::vec3(2.0f*distribution(generator), 55.0f + distribution(generator), 2.0f*distribution(generator))));
 
-				VEEntity *e = m_pSceneManager->createEntity( name, m_pSceneManager->getMesh("models/test/crate0/cube.obj/cube"), m_pSceneManager->getMaterial("models/test/crate0/cube.obj/cube"), glm::mat4(1.0f), p );
+				VEEntity *e = m_pSceneManager->createEntity( name, m_pSceneManager->getMesh("models/test/crate0/cube.obj/cube"), m_pSceneManager->getMaterial("models/test/crate0/cube.obj/cube"), glm::mat4(1.0f), pMO );
 
 				RotatorListener *pRot = new RotatorListener(name, e, 1.1f, glm::vec3(0.0f, 1.0f, 0.0f));
 				getEnginePointer()->registerEventListener(pRot);
