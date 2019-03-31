@@ -97,21 +97,10 @@ namespace ve {
 			VEEntity *pE4 = (VEEntity*)m_pSceneManager->getMovableObject("The Plane/plane_t_n_s.obj/plane/Entity_0");
 			pE4->setParam( glm::vec4(1000.0f, 1000.0f, 0.0f, 0.0f) );
 
-			//VEEntity *cubemap = getSceneManagerPointer()->createCubemap("The Cubemap", "models/test/sky", "grasscube1024.dds");
-			
-			//  ft bk up dn rt lf
-			//VEEntity *cubemap = getSceneManagerPointer()->createCubemap("The Cubemap", "models/test/sky/cloudy", 
-			//{ "bluecloud_ft.jpg", "bluecloud_bk.jpg", "bluecloud_up.jpg", "bluecloud_dn.jpg", "bluecloud_rt.jpg", "bluecloud_lf.jpg" });
-			//{ "graycloud_ft.jpg", "graycloud_bk.jpg", "graycloud_up.jpg", "graycloud_dn.jpg", "graycloud_rt.jpg", "graycloud_lf.jpg" });
-			//cubemap->multiplyTransform(glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, -700.0f, 0.0f)));
-			//RotatorListener *pRot = new RotatorListener("CubemapRotator", cubemap, 0.01f, glm::vec3(0.0f, 1.0f, 0.0f));
-			//getEnginePointer()->registerEventListener(pRot);
-
 			VEMovableObject *sp1 = m_pSceneManager->createSkybox("The Sky", "models/test/sky/cloudy",
 			{ "bluecloud_ft.jpg", "bluecloud_bk.jpg", "bluecloud_up.jpg", "bluecloud_dn.jpg", "bluecloud_rt.jpg", "bluecloud_lf.jpg" });
 			RotatorListener *pRot = new RotatorListener("CubemapRotator", sp1, 0.01f, glm::vec3(0.0f, 1.0f, 0.0f));
 			getEnginePointer()->registerEventListener(pRot);
-
 
 			VELight *eSLight = (VELight*)getSceneManagerPointer()->getMovableObject("StandardLight");
 			VEMovableObject *eL = m_pSceneManager->loadModel("The Light", "models/test/sphere", "sphere.obj", 0 , eSLight);
@@ -121,36 +110,9 @@ namespace ve {
 			e1->setTransform(glm::translate(glm::mat4(1.0f), glm::vec3(10.0f, 1.0f, 1.0f)));
 			e1->multiplyTransform( glm::scale(glm::mat4(1.0f), glm::vec3(10.0f, 10.0f, 10.0f)));
 
-			VEMovableObject *e1b = m_pSceneManager->loadModel("The Cube b", "models/test/crate0", "cube.obj");
-			e1b->setTransform(glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 10.0f, 10.0f)));
+			VEMovableObject *pSponza = m_pSceneManager->loadModel("Sponza", "models/sponza", "sponza_part.obj", aiProcess_FlipWindingOrder);
+			pSponza->setTransform(glm::scale(glm::mat4(1.0f), glm::vec3(0.1f, 0.1f, 0.1f)));
 
-			VEMovableObject *e2 = m_pSceneManager->loadModel("The Cube2", "models/test/crate1", "cube.obj");
-			e2->setTransform(glm::translate(glm::mat4(1.0f), glm::vec3(2.0f, 10.0f, 10.0f)));
-			VEMovableObject *e3 = m_pSceneManager->loadModel("The Cube3", "models/test/crate2", "cube.obj");
-			e3->setTransform(glm::translate(glm::mat4(1.0f), glm::vec3(-2.0f, 10.0f, 10.0f)));
-			
-			VEMovableObject *e6 = m_pSceneManager->loadModel("The Cube6", "models/test", "cube1.obj");
-			e6->setTransform(glm::scale(glm::mat4(1.0f), glm::vec3(2.0f, 2.0f, 2.0f)) * glm::translate(glm::mat4(1.0f), glm::vec3(10.0f, 10.0f, 1.0f)));
-
-			VEMovableObject *e7 = m_pSceneManager->loadModel("The Cube6 b", "models/test", "cube1.obj");
-			e7->setTransform(glm::scale(glm::mat4(1.0f), glm::vec3(2.0f, 2.0f, 2.0f)) * glm::translate(glm::mat4(1.0f), glm::vec3(10.0f, 10.0f, 5.0f)));
-
-			std::default_random_engine generator;
-			std::uniform_real_distribution<float> distribution(-10.0, 10.0);
-
-			for (uint32_t i = 0; i < 20; i++) {
-				std::string name = "The Cube " + std::to_string(i);
-
-				VEMovableObject *pMO = m_pSceneManager->createMovableObject( name + "-parent");
-				pMO->setTransform( 
-					glm::translate(glm::mat4(1.0f), glm::vec3(2.0f*distribution(generator), 55.0f + distribution(generator), 2.0f*distribution(generator))));
-
-				VEEntity *e = m_pSceneManager->createEntity( name, m_pSceneManager->getMesh("models/test/crate0/cube.obj/cube"), m_pSceneManager->getMaterial("models/test/crate0/cube.obj/cube"), glm::mat4(1.0f), pMO );
-
-				RotatorListener *pRot = new RotatorListener(name, e, 1.1f, glm::vec3(0.0f, 1.0f, 0.0f));
-				getEnginePointer()->registerEventListener(pRot);
-			}
-			
 		};
 	};
 }

@@ -379,7 +379,7 @@ namespace ve {
 	/**
 	* \returns the loop counter.
 	*/
-	uint64_t VEEngine::getLoopCount() {
+	uint32_t VEEngine::getLoopCount() {
 		return m_loopCount; 
 	};
 

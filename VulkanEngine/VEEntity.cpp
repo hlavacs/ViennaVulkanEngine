@@ -369,6 +369,10 @@ namespace ve {
 	*
 	*/
 	void VEMovableObject::update(glm::mat4 parentWorldMatrix ) {
+		uint32_t now = getEnginePointer()->getLoopCount();
+		if (m_lastUpdate == now) return;
+		m_lastUpdate = now;
+
 		glm::mat4 worldMatrix = parentWorldMatrix * getTransform();
 		updateUBO(worldMatrix );						//call derived class for specific data like object color
 		updateChildren(worldMatrix );

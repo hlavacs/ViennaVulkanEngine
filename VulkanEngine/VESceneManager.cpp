@@ -76,13 +76,16 @@ namespace ve {
 	* \param[out] materials A list of pointers to the loaded materials
 	*
 	*/
-	const aiScene* VESceneManager::loadAssets(	std::string basedir, std::string filename, uint32_t aiFlags, 
-												std::vector<VEMesh*> &meshes, std::vector<VEMaterial*> &materials) {
+	const aiScene* VESceneManager::loadAssets(	std::string basedir, std::string filename, 
+												uint32_t aiFlags, 
+												std::vector<VEMesh*> &meshes, 
+												std::vector<VEMaterial*> &materials) {
 		Assimp::Importer importer;
 
 		std::string filekey = basedir + "/" + filename;
 
 		const aiScene* pScene = importer.ReadFile( filekey, 
+			//aiProcess_FlipWindingOrder |
 			//aiProcess_RemoveRedundantMaterials |
 			//aiProcess_PreTransformVertices |
 			aiProcess_GenNormals | 
@@ -118,14 +121,18 @@ namespace ve {
 	* \param[in] parent Make the new entity a child of this parent entity
 	*
 	*/
-	VEMovableObject * VESceneManager::loadModel( std::string entityName, std::string basedir, std::string filename,
-												 uint32_t aiFlags, VEMovableObject *parent) {
+	VEMovableObject * VESceneManager::loadModel(std::string entityName, 
+												std::string basedir, 
+												std::string filename,
+												uint32_t aiFlags, 
+												VEMovableObject *parent) {
 
 		Assimp::Importer importer;
 
 		std::string filekey = basedir + "/" + filename;
 
 		const aiScene* pScene = importer.ReadFile(filekey,
+			//aiProcess_FlipWindingOrder |
 			//aiProcess_RemoveRedundantMaterials |
 			//aiProcess_PreTransformVertices |
 			aiProcess_GenNormals |
@@ -191,8 +198,10 @@ namespace ve {
 			uint32_t paiMatIdx = paiMesh->mMaterialIndex;	//get the material index for this mesh
 			pMaterial = materials[paiMatIdx];				//use the index to get the right VEMaterial
 
+			glm::mat4 *pMatrix = (glm::mat4*) &node->mTransformation;
+
 			VEEntity *pEnt = createEntity(	pObject->getName() + "/Entity_" + std::to_string(i), //create the new entity
-											pMesh, pMaterial, node->mTransformation, pObject);
+											pMesh, pMaterial, *pMatrix, pObject);
 		}
 
 		for (uint32_t i = 0; i < node->mNumChildren; i++) {		//recursivly go down the node tree
@@ -339,23 +348,6 @@ namespace ve {
 		return pMO;
 	}
 
-
-	/**
-	* \brief Create an entity
-	*
-	* \param[in] entityName The name of the new entity. 
-	* \param[in] pMesh Pointer the mesh for this entity.
-	* \param[in] pMat Pointer to the material for this entity.
-	* \param[in] transf Local to parent transform, given as Assimp matrix.
-	* \param[in] parent Pointer to entity to be used as parent.
-	* \returns a pointer to the new entity
-	*
-	*/
-	VEEntity * VESceneManager::createEntity(	std::string entityName, VEMesh *pMesh, VEMaterial *pMat,
-												aiMatrix4x4 transf, VEMovableObject *parent) {
-		glm::mat4 *pMatrix = (glm::mat4*) &transf;
-		return createEntity( entityName, pMesh, pMat, *pMatrix, parent);
-	}
 
 	/**
 	* \brief Create an entity
