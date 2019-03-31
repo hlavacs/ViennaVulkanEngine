@@ -110,7 +110,7 @@ namespace ve {
 			e1->setTransform(glm::translate(glm::mat4(1.0f), glm::vec3(10.0f, 1.0f, 1.0f)));
 			e1->multiplyTransform( glm::scale(glm::mat4(1.0f), glm::vec3(10.0f, 10.0f, 10.0f)));
 
-			VEMovableObject *pSponza = m_pSceneManager->loadModel("Sponza", "models/sponza", "sponza_part.obj", aiProcess_FlipWindingOrder);
+			VEMovableObject *pSponza = m_pSceneManager->loadModel("Sponza", "models/sponza_part", "sponza.obj", aiProcess_FlipWindingOrder);
 			pSponza->setTransform(glm::scale(glm::mat4(1.0f), glm::vec3(0.1f, 0.1f, 0.1f)));
 
 		};

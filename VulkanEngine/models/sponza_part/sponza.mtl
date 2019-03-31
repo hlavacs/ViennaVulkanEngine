@@ -1,0 +1,152 @@
+newmtl leaf
+map_metallic sponza/Dielectric_metallic.tga
+map_albedo sponza/Sponza_Thorn_diffuse.tga
+map_alpha sponza/sponza_thorn_mask.jpg
+map_normal sponza/Sponza_Thorn_normal.tga
+map_roughness sponza/Sponza_Thorn_roughness.tga
+
+newmtl vase_round
+map_metallic sponza/Dielectric_metallic.tga
+map_albedo sponza/VaseRound_diffuse.tga
+map_normal sponza/VaseRound_normal.tga
+map_roughness sponza/VaseRound_roughness.tga
+
+newmtl Material__47
+metallic 0.1
+albedo 0.470400 0.470400 0.470400
+roughness 0.8
+# floor ?
+
+newmtl Material__57
+map_metallic sponza/Dielectric_metallic.tga
+map_albedo sponza/VasePlant_diffuse.tga
+map_normal sponza/VasePlant_normal.tga
+map_roughness sponza/VasePlant_roughness.tga
+map_alpha sponza/vase_plant_mask.jpg
+
+newmtl Material__298
+map_metallic sponza/Dielectric_metallic.tga
+map_albedo sponza/Background_Albedo.tga
+map_normal sponza/Background_Normal.tga
+map_roughness sponza/Background_roughness.tga
+
+newmtl bricks
+map_metallic sponza/Dielectric_metallic.tga
+map_albedo sponza/Sponza_Bricks_a_Albedo.tga
+map_normal sponza/Sponza_Bricks_a_Normal.tga
+map_roughness sponza/Sponza_Bricks_a_Roughness.tga
+
+newmtl arch
+map_metallic sponza/Dielectric_metallic.tga
+map_albedo sponza/Sponza_Arch_diffuse.tga
+map_roughness sponza/Sponza_Arch_roughness.tga
+map_normal sponza/Sponza_Arch_normal.tga
+
+newmtl ceiling
+map_metallic sponza/Dielectric_metallic.tga
+map_albedo sponza/Sponza_Ceiling_diffuse.tga
+map_roughness sponza/Sponza_Ceiling_roughness.tga
+map_normal sponza/Sponza_Ceiling_normal.tga
+
+newmtl column_a
+map_metallic sponza/Dielectric_metallic.tga
+map_albedo sponza/Sponza_Column_a_diffuse.tga
+map_normal sponza/Sponza_Column_a_normal.tga
+map_roughness sponza/Sponza_Column_a_roughness.tga
+
+newmtl floor
+map_metallic sponza/Dielectric_metallic.tga
+map_albedo sponza/Sponza_Floor_diffuse.tga
+map_normal sponza/Sponza_Floor_normal.tga
+map_roughness sponza/Sponza_Floor_roughness.tga
+
+newmtl column_c
+map_metallic sponza/Dielectric_metallic.tga
+map_albedo sponza/Sponza_Column_c_diffuse.tga
+map_normal sponza/Sponza_Column_c_normal.tga
+map_roughness sponza/Sponza_Column_c_roughness.tga
+
+newmtl details
+map_metallic sponza/Dielectric_metallic.tga
+map_albedo sponza/Sponza_Details_diffuse.tga
+map_normal sponza/Sponza_Details_normal.tga
+map_roughness sponza/Sponza_Details_roughness.tga
+
+newmtl column_b
+map_metallic sponza/Dielectric_metallic.tga
+map_albedo sponza/Sponza_Column_b_diffuse.tga
+map_normal sponza/Sponza_Column_b_normal.tga
+map_roughness sponza/Sponza_Column_b_roughness.tga
+
+newmtl flagpole
+map_metallic sponza/Metallic_metallic.tga
+map_albedo sponza/Sponza_FlagPole_diffuse.tga
+map_normal sponza/Sponza_FlagPole_normal.tga
+map_roughness sponza/Sponza_FlagPole_roughness.tga
+
+newmtl fabric_e
+map_metallic sponza/Sponza_Fabric_metallic.tga
+map_albedo sponza/Sponza_Fabric_Green_diffuse.tga
+map_normal sponza/Sponza_Fabric_Green_normal.tga
+map_roughness sponza/Sponza_Fabric_roughness.tga
+
+newmtl fabric_d
+map_metallic sponza/Sponza_Fabric_metallic.tga
+map_albedo sponza/Sponza_Fabric_Blue_diffuse.tga
+map_normal sponza/Sponza_Fabric_Blue_normal.tga
+map_roughness sponza/Sponza_Fabric_roughness.tga
+
+newmtl fabric_a
+map_metallic sponza/Sponza_Fabric_metallic.tga
+map_albedo sponza/Sponza_Fabric_Red_diffuse.tga
+map_normal sponza/Sponza_Fabric_Red_normal.tga
+map_roughness sponza/Sponza_Fabric_roughness.tga
+
+newmtl fabric_g
+map_metallic sponza/Sponza_Curtain_metallic.tga
+map_albedo sponza/Sponza_Curtain_Blue_diffuse.tga
+map_normal sponza/Sponza_Curtain_Blue_normal.tga
+map_roughness sponza/Sponza_Curtain_roughness.tga
+
+newmtl fabric_c
+map_metallic sponza/Sponza_Curtain_metallic.tga
+map_albedo sponza/Sponza_Curtain_Red_diffuse.tga
+map_normal sponza/Sponza_Curtain_Red_normal.tga
+map_roughness sponza/Sponza_Curtain_roughness.tga
+
+newmtl fabric_f
+map_metallic sponza/Sponza_Curtain_metallic.tga
+map_albedo sponza/Sponza_Curtain_Green_diffuse.tga
+map_normal sponza/Sponza_Curtain_Green_normal.tga
+map_roughness sponza/Sponza_Curtain_roughness.tga
+
+newmtl chain
+map_metallic sponza/ChainTexture_Metallic.tga
+map_albedo sponza/ChainTexture_Albedo.tga
+map_alpha sponza/chain_texture_mask.jpg
+map_normal sponza/ChainTexture_Normal.tga
+map_roughness sponza/ChainTexture_Roughness.tga
+
+newmtl vase_hanging
+map_metallic sponza/Metallic_metallic.tga
+map_albedo sponza/VaseHanging_diffuse.tga
+map_normal sponza/VaseHanging_normal.tga
+map_roughness sponza/VaseHanging_roughness.tga
+
+newmtl vase
+map_metallic sponza/Dielectric_metallic.tga
+map_albedo sponza/Vase_diffuse.tga
+map_normal sponza/Vase_normal.tga
+map_roughness sponza/Vase_roughness.tga
+
+newmtl Material__25
+map_metallic sponza/Dielectric_metallic.tga
+map_albedo sponza/Lion_Albedo.tga
+map_normal sponza/Lion_Normal.tga
+map_roughness sponza/Lion_Roughness.tga
+
+newmtl roof
+map_metallic sponza/Dielectric_metallic.tga
+map_albedo sponza/Sponza_Roof_diffuse.tga
+map_normal sponza/Sponza_Roof_normal.tga
+map_roughness sponza/Sponza_Roof_roughness.tga
