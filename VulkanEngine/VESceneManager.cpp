@@ -265,7 +265,9 @@ namespace ve {
 			if (pMat == nullptr) {
 				pMat = new VEMaterial(name);
 				m_materials[name] = pMat;
-				paiMat->Get(AI_MATKEY_SHADING_MODEL, pMat->shading);
+				int mode;
+				paiMat->Get(AI_MATKEY_SHADING_MODEL, mode);
+				pMat->shading = (aiShadingMode)mode;
 
 				aiColor3D color(0.f, 0.f, 0.f);
 				if (paiMat->Get(AI_MATKEY_COLOR_DIFFUSE, color) == AI_SUCCESS) {
