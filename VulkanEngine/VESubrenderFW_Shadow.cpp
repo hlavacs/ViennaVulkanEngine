@@ -87,9 +87,9 @@ namespace ve {
 	*/
 	void VESubrenderFW_Shadow::draw(VkCommandBuffer commandBuffer, uint32_t imageIndex) {
 		//go through all entities and draw them
-		for (auto object : getSceneManagerPointer()->m_movableObjects) {
-			VEMovableObject *pObject = object.second;
-			if (pObject->getObjectType() == VEMovableObject::VE_OBJECT_TYPE_ENTITY) {
+		for (auto object : getSceneManagerPointer()->m_sceneNodes) {
+			VESceneNode *pObject = object.second;
+			if (pObject->getObjectType() == VESceneNode::VE_OBJECT_TYPE_ENTITY) {
 				VEEntity *pEntity = (VEEntity*)pObject;
 
 				if (pEntity->m_drawEntity && pEntity->m_castsShadow) {

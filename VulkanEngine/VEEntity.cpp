@@ -189,7 +189,7 @@ namespace ve {
 	* \param[in] parent A parent.
 	*
 	*/
-	VEMovableObject::VEMovableObject(std::string name, glm::mat4 transf, VEMovableObject *parent) : VENamedClass(name) {
+	VESceneNode::VESceneNode(std::string name, glm::mat4 transf, VESceneNode *parent) : VENamedClass(name) {
 		m_parent = parent;
 		if (parent != nullptr) {
 			parent->addChild(this);
@@ -197,7 +197,7 @@ namespace ve {
 		setTransform(transf);			//sets this MO also onto the dirty list to be updated
 	}
 
-	VEMovableObject::~VEMovableObject() {
+	VESceneNode::~VESceneNode() {
 		getSceneManagerPointer()->removeFromDirtyList(this);
 	}
 
@@ -205,14 +205,14 @@ namespace ve {
 	/**
 	* \returns the entity's local to parent transform.
 	*/
-	glm::mat4 VEMovableObject::getTransform() {
+	glm::mat4 VESceneNode::getTransform() {
 		return m_transform;
 	}
 
 	/**
 	* \brief Sets the entity's local to parent transform.
 	*/
-	void VEMovableObject::setTransform(glm::mat4 trans) {
+	void VESceneNode::setTransform(glm::mat4 trans) {
 		m_transform = trans;
 		getSceneManagerPointer()->addToDirtyList(this);
 	}
@@ -220,7 +220,7 @@ namespace ve {
 	/**
 	* \brief Sets the entity's position.
 	*/
-	void VEMovableObject::setPosition(glm::vec3 pos) {
+	void VESceneNode::setPosition(glm::vec3 pos) {
 		m_transform[3] = glm::vec4(pos.x, pos.y, pos.z, 1.0f);
 		getSceneManagerPointer()->addToDirtyList(this);
 	};
@@ -228,14 +228,14 @@ namespace ve {
 	/**
 	* \returns the entity's position.
 	*/
-	glm::vec3 VEMovableObject::getPosition() {
+	glm::vec3 VESceneNode::getPosition() {
 		return glm::vec3(m_transform[3].x, m_transform[3].y, m_transform[3].z);
 	};
 
 	/**
 	* \returns the entity's local x-axis in parent space
 	*/
-	glm::vec3 VEMovableObject::getXAxis() {
+	glm::vec3 VESceneNode::getXAxis() {
 		glm::vec4 x = m_transform[0];
 		return glm::vec3(x.x, x.y, x.z);
 	}
@@ -243,7 +243,7 @@ namespace ve {
 	/**
 	* \returns the entity's local y-axis in parent space
 	*/
-	glm::vec3 VEMovableObject::getYAxis() {
+	glm::vec3 VESceneNode::getYAxis() {
 		glm::vec4 y = m_transform[1];
 		return glm::vec3(y.x, y.y, y.z);
 	}
@@ -251,7 +251,7 @@ namespace ve {
 	/**
 	* \returns the entity's local z-axis in parent space
 	*/
-	glm::vec3 VEMovableObject::getZAxis() {
+	glm::vec3 VESceneNode::getZAxis() {
 		glm::vec4 z = m_transform[2];
 		return glm::vec3(z.x, z.y, z.z);
 	}
@@ -267,7 +267,7 @@ namespace ve {
 	* \param[in] trans The 4x4 transform that is multiplied from the left onto the entity's old transform.
 	*
 	*/
-	void VEMovableObject::multiplyTransform(glm::mat4 trans) {
+	void VESceneNode::multiplyTransform(glm::mat4 trans) {
 		setTransform(trans*m_transform);
 	};
 
@@ -278,7 +278,7 @@ namespace ve {
 	* \returns the entity's world (aka model) matrix.
 	*
 	*/
-	glm::mat4 VEMovableObject::getWorldTransform() {
+	glm::mat4 VESceneNode::getWorldTransform() {
 		if (m_parent != nullptr) return m_parent->getWorldTransform() * m_transform;
 		return m_transform;
 	};
@@ -293,7 +293,7 @@ namespace ve {
 	* \param[in] up Up vector pointing up
 	*
 	*/
-	void VEMovableObject::lookAt(glm::vec3 eye, glm::vec3 point, glm::vec3 up) {
+	void VESceneNode::lookAt(glm::vec3 eye, glm::vec3 point, glm::vec3 up) {
 		m_transform[3] = glm::vec4(eye.x, eye.y, eye.z, 1.0f);
 		glm::vec3 z = glm::normalize(point - eye);
 		up = glm::normalize(up);
@@ -320,7 +320,7 @@ namespace ve {
 	* \param[in] pObject Pointer to the new child.
 	*
 	*/
-	void VEMovableObject::addChild(VEMovableObject * pObject) {
+	void VESceneNode::addChild(VESceneNode * pObject) {
 		m_children.push_back(pObject);
 	}
 
@@ -331,10 +331,10 @@ namespace ve {
 	* \param[in] pEntity Pointer to the child to be removed.
 	*
 	*/
-	void VEMovableObject::removeChild(VEMovableObject *pEntity) {
+	void VESceneNode::removeChild(VESceneNode *pEntity) {
 		for (uint32_t i = 0; i < m_children.size(); i++) {
 			if (pEntity == m_children[i]) {
-				VEMovableObject *last = m_children[m_children.size() - 1];
+				VESceneNode *last = m_children[m_children.size() - 1];
 				m_children[i] = last;
 				m_children.pop_back();		//child is not detroyed
 				return;
@@ -350,7 +350,7 @@ namespace ve {
 	* Then call update(parent) to do the job.
 	*
 	*/
-	void VEMovableObject::update() {
+	void VESceneNode::update() {
 		glm::mat4 parentWorldMatrix = glm::mat4(1.0);
 		if (m_parent != nullptr) {
 			parentWorldMatrix = m_parent->getWorldTransform();
@@ -368,7 +368,7 @@ namespace ve {
 	* \param[in] parentWorldMatrix The parent's world matrix or an identity matrix.
 	*
 	*/
-	void VEMovableObject::update(glm::mat4 parentWorldMatrix ) {
+	void VESceneNode::update(glm::mat4 parentWorldMatrix ) {
 		uint32_t now = getEnginePointer()->getLoopCount();
 		if (m_lastUpdate == now) return;
 		m_lastUpdate = now;
@@ -382,7 +382,7 @@ namespace ve {
 	/**
 	* \brief Update the UBOs of all children of this entity
 	*/
-	void VEMovableObject::updateChildren(glm::mat4 worldMatrix ) {
+	void VESceneNode::updateChildren(glm::mat4 worldMatrix ) {
 		for (auto pObject : m_children) {
 			pObject->update(worldMatrix);
 		}
@@ -393,7 +393,7 @@ namespace ve {
 	* \param[out] center The sphere center is also the position of the movable object
 	* \param[out] radius The default radius of the sphere
 	*/
-	void VEMovableObject::getBoundingSphere(glm::vec3 *center, float *radius) {
+	void VESceneNode::getBoundingSphere(glm::vec3 *center, float *radius) {
 		*center = getPosition();
 		*radius = 1.0f;
 	}
@@ -414,7 +414,7 @@ namespace ve {
 	*
 	*/
 
-	void VEMovableObject::getOBB(std::vector<glm::vec4> &points, float t1, float t2,
+	void VESceneNode::getOBB(std::vector<glm::vec4> &points, float t1, float t2,
 		glm::vec3 &center, float &width, float &height, float &depth) {
 
 		glm::mat4 W = getWorldTransform();
@@ -476,8 +476,8 @@ namespace ve {
 	*/
 	VEEntity::VEEntity(	std::string name, veEntityType type, 
 						VEMesh *pMesh, VEMaterial *pMat, 
-						glm::mat4 transf, VEMovableObject *parent) :
-						VEMovableObject(name, transf, parent), m_entityType( type ) {
+						glm::mat4 transf, VESceneNode *parent) :
+							VESceneNode(name, transf, parent), m_entityType( type ) {
 
 		m_objectType = VE_OBJECT_TYPE_ENTITY;
 		setTransform(transf);
@@ -572,7 +572,7 @@ namespace ve {
 	* \param[in] name Name of the camera.
 	*
 	*/
-	VECamera::VECamera(std::string name) : VEMovableObject(name) {
+	VECamera::VECamera(std::string name) : VESceneNode(name) {
 		m_objectType = VE_OBJECT_TYPE_CAMERA;
 		m_cameraType = VE_CAMERA_TYPE_PROJECTIVE; 
 	};
@@ -587,7 +587,7 @@ namespace ve {
 	*
 	*/
 	VECamera::VECamera(std::string name, float nearPlane, float farPlane) :
-							VEMovableObject(name), m_nearPlane(nearPlane), m_farPlane(farPlane) {
+							VESceneNode(name), m_nearPlane(nearPlane), m_farPlane(farPlane) {
 		m_objectType = VE_OBJECT_TYPE_CAMERA;
 		m_cameraType = VE_CAMERA_TYPE_PROJECTIVE;
 	}
@@ -935,7 +935,7 @@ namespace ve {
 	* \param[in] name Name of the camera
 	* \param[in] type Light type
 	*/
-	VELight::VELight(std::string name, veLightType type) : VEMovableObject(name), m_lightType(type) {
+	VELight::VELight(std::string name, veLightType type) : VESceneNode(name), m_lightType(type) {
 		m_objectType = VE_OBJECT_TYPE_LIGHT;
 	};
 

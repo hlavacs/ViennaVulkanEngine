@@ -92,7 +92,7 @@ namespace ve {
 	* relation is stored in the parent and children pointers.
 	*/
 
-	class VEMovableObject : public VENamedClass {
+	class VESceneNode : public VENamedClass {
 
 	public:
 		///Object type, can be node, entity for drawing, camera or light
@@ -108,12 +108,12 @@ namespace ve {
 		glm::mat4		m_transform = glm::mat4(1.0);					///<Transform from local to parent space, the engine uses Y-UP, Left-handed
 		uint32_t		m_lastUpdate = -1;								///<Time (llop count) of last update of this subtree
 	public:
-		VEMovableObject *				m_parent = nullptr;				///<Pointer to entity parent
-		std::vector<VEMovableObject *>	m_children;						///<List of entity children
+		VESceneNode *				m_parent = nullptr;				///<Pointer to entity parent
+		std::vector<VESceneNode *>	m_children;						///<List of entity children
 
 		//-------------------------------------------------------------------------------------
-		VEMovableObject(std::string name, glm::mat4 transf = glm::mat4(1.0f), VEMovableObject *parent = nullptr);
-		virtual ~VEMovableObject();
+		VESceneNode(std::string name, glm::mat4 transf = glm::mat4(1.0f), VESceneNode *parent = nullptr);
+		virtual ~VESceneNode();
 		//-------------------------------------------------------------------------------------
 		///\returns the object type
 		veObjectType getObjectType() { return m_objectType; };
@@ -137,8 +137,8 @@ namespace ve {
 		virtual void updateUBO(glm::mat4 parentWorldMatrix ) {};
 
 		//--------------------------------------------------------------------------------------
-		virtual void addChild(VEMovableObject *);		//Add a new child
-		virtual void removeChild(VEMovableObject *);		//Remove a child, dont destroy it
+		virtual void addChild(VESceneNode *);		//Add a new child
+		virtual void removeChild(VESceneNode *);		//Remove a child, dont destroy it
 
 		//-------------------------------------------------------------------------------------
 		virtual void getBoundingSphere( glm::vec3 *center, float *radius );		//return center and radius for a bounding sphere
@@ -158,7 +158,7 @@ namespace ve {
 	* all drawing related tasks, like creating UBOs and selecting the right PSO.
 	*/
 
-	class VEEntity : public VEMovableObject {
+	class VEEntity : public VESceneNode {
 
 	public:
 		///The entity type determines what kind of entity this is
@@ -190,7 +190,7 @@ namespace ve {
 		//VEEntity(std::string name);
 		VEEntity(	std::string name, veEntityType type, 
 					VEMesh *pMesh, VEMaterial *pMat,
-					glm::mat4 transf, VEMovableObject *parent);
+					glm::mat4 transf, VESceneNode *parent);
 		virtual ~VEEntity();
 
 		//--------------------------------------------------
@@ -216,7 +216,7 @@ namespace ve {
 	* represents the camera frustum. The base class however should never be used. Use a derived class.
 	*
 	*/
-	class VECamera : public VEMovableObject {
+	class VECamera : public VESceneNode {
 
 	public:
 		///Camera type, can be projective or orthographic
@@ -326,7 +326,7 @@ namespace ve {
 	*
 	*/
 
-	class VELight : public VEMovableObject {
+	class VELight : public VESceneNode {
 
 	public:
 

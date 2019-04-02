@@ -14,12 +14,12 @@ namespace ve {
 
 	///simple event listener for rotating objects
 	class RotatorListener : public VEEventListener {
-		VEMovableObject *m_pObject = nullptr;
+		VESceneNode *m_pObject = nullptr;
 		float m_speed;
 		glm::vec3 m_axis;
 	public:
 		///Constructor
-		RotatorListener(std::string name, VEMovableObject *pObject, float speed, glm::vec3 axis) :
+		RotatorListener(std::string name, VESceneNode *pObject, float speed, glm::vec3 axis) :
 			VEEventListener(name), m_pObject(pObject), m_speed(speed), m_axis(axis) {};
 
 		void onFrameStarted(veEvent event) {
@@ -92,26 +92,26 @@ namespace ve {
 		//The engine uses Y-UP, Left-handed
 		void loadLevel() {
 
-			VEMovableObject *e4 = m_pSceneManager->loadModel("The Plane", "models/test", "plane_t_n_s.obj");
+			VESceneNode *e4 = m_pSceneManager->loadModel("The Plane", "models/test", "plane_t_n_s.obj");
 			e4->setTransform(glm::scale(glm::mat4(1.0f), glm::vec3(1000.0f, 1.0f, 1000.0f)));
-			VEEntity *pE4 = (VEEntity*)m_pSceneManager->getMovableObject("The Plane/plane_t_n_s.obj/plane/Entity_0");
+			VEEntity *pE4 = (VEEntity*)m_pSceneManager->getSceneNode("The Plane/plane_t_n_s.obj/plane/Entity_0");
 			pE4->setParam( glm::vec4(1000.0f, 1000.0f, 0.0f, 0.0f) );
 
-			VEMovableObject *sp1 = m_pSceneManager->createSkybox("The Sky", "models/test/sky/cloudy",
+			VESceneNode *sp1 = m_pSceneManager->createSkybox("The Sky", "models/test/sky/cloudy",
 			{ "bluecloud_ft.jpg", "bluecloud_bk.jpg", "bluecloud_up.jpg", "bluecloud_dn.jpg", "bluecloud_rt.jpg", "bluecloud_lf.jpg" });
 			RotatorListener *pRot = new RotatorListener("CubemapRotator", sp1, 0.01f, glm::vec3(0.0f, 1.0f, 0.0f));
 			getEnginePointer()->registerEventListener(pRot);
 
-			VELight *eSLight = (VELight*)getSceneManagerPointer()->getMovableObject("StandardLight");
-			VEMovableObject *eL = m_pSceneManager->loadModel("The Light", "models/test/sphere", "sphere.obj", 0 , eSLight);
+			VELight *eSLight = (VELight*)getSceneManagerPointer()->getSceneNode("StandardLight");
+			VESceneNode *eL = m_pSceneManager->loadModel("The Light", "models/test/sphere", "sphere.obj", 0 , eSLight);
 			eL->multiplyTransform(glm::scale(glm::vec3(0.02f,0.02f,0.02f)));
 
-			VEMovableObject *e1 = m_pSceneManager->loadModel("The Cube",  "models/test/crate0", "cube.obj");
+			VESceneNode *e1 = m_pSceneManager->loadModel("The Cube",  "models/test/crate0", "cube.obj");
 			e1->setTransform(glm::translate(glm::mat4(1.0f), glm::vec3(10.0f, 1.0f, 1.0f)));
 			e1->multiplyTransform( glm::scale(glm::mat4(1.0f), glm::vec3(10.0f, 10.0f, 10.0f)));
 
-			VEMovableObject *pSponza = m_pSceneManager->loadModel("Sponza", "models/sponza", "sponza.dae", aiProcess_FlipWindingOrder);
-			pSponza->setTransform(glm::scale(glm::mat4(1.0f), glm::vec3(0.1f, 0.1f, 0.1f)));
+			//VESceneNode *pSponza = m_pSceneManager->loadModel("Sponza", "models/sponza", "sponza.dae", aiProcess_FlipWindingOrder);
+			//pSponza->setTransform(glm::scale(glm::mat4(1.0f), glm::vec3(0.1f, 0.1f, 0.1f)));
 
 		};
 	};

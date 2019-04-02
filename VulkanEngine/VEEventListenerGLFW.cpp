@@ -39,7 +39,7 @@ namespace ve {
 		float angle = 0.0;
 
 		VECamera *pCamera = getSceneManagerPointer()->getCamera();
-		VEMovableObject *pParent = pCamera->m_parent;
+		VESceneNode *pParent = pCamera->m_parent;
 
 		switch (event.idata1) {
 		case GLFW_KEY_A:
@@ -131,7 +131,7 @@ namespace ve {
 		m_cursorPrevY = y;
 
 		VECamera *pCamera = getSceneManagerPointer()->getCamera();
-		VEMovableObject *pParent = pCamera->m_parent;
+		VESceneNode *pParent = pCamera->m_parent;
 
 		float slow = 1.0;		//camera rotation speed
 
@@ -197,7 +197,7 @@ namespace ve {
 		float yoffset = event.fdata2;
 
 		VECamera *pCamera = getSceneManagerPointer()->getCamera();
-		VEMovableObject *pParent = pCamera->m_parent;
+		VESceneNode *pParent = pCamera->m_parent;
 		glm::vec4 translate = 1000 * yoffset * glm::vec4(0.0, 0.0, -1.0, 1.0);
 
 		if (pParent == nullptr) {
