@@ -76,7 +76,7 @@ namespace ve {
 		VESceneNode *		createSkybox(std::string entityName, std::string basedir, std::vector<std::string> texNames);
 
 		//------------------------------------------------------------------------
-		///Add a movable object to the scene
+		///Add a scene node to the scene
 		void				addSceneNode(VESceneNode *entity) { m_sceneNodes[entity->getName()] = entity; };
 		VESceneNode *		getSceneNode(std::string entityName);
 		void				addToDirtyList(VESceneNode *pObject);

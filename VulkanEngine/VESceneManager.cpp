@@ -327,15 +327,15 @@ namespace ve {
 	}
 
 	//-----------------------------------------------------------------------------------------
-	//create complex movable objects and entities
+	//create complex scene nodes and entities
 
 	/**
-	* \brief Create a movable object, i.e., a scene node
+	* \brief Create a scene node
 	*
 	* \param[in] objectName The name of the new MO.
 	* \param[in] transf Local to parent transform.
 	* \param[in] parent Pointer to entity to be used as parent.
-	* \returns a pointer to the new movable object
+	* \returns a pointer to the new scene node
 	*
 	*/
 	VESceneNode * VESceneManager::createSceneNode(	std::string objectName,
@@ -662,7 +662,7 @@ namespace ve {
 		for (uint32_t i = 0; i < namelist.size(); i++) {
 			pObject = m_sceneNodes[namelist[i]];
 
-			if( pObject->getObjectType() == VESceneNode::VE_OBJECT_TYPE_ENTITY )
+			if( pObject->getNodeType() == VESceneNode::VE_OBJECT_TYPE_ENTITY )
 				getRendererPointer()->removeEntityFromSubrenderers((VEEntity*)pObject);
 			m_sceneNodes.erase(namelist[i]);
 			m_dirtyList.erase(pObject);

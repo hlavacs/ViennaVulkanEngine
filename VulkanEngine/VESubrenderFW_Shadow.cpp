@@ -89,7 +89,7 @@ namespace ve {
 		//go through all entities and draw them
 		for (auto object : getSceneManagerPointer()->m_sceneNodes) {
 			VESceneNode *pObject = object.second;
-			if (pObject->getObjectType() == VESceneNode::VE_OBJECT_TYPE_ENTITY) {
+			if (pObject->getNodeType() == VESceneNode::VE_OBJECT_TYPE_ENTITY) {
 				VEEntity *pEntity = (VEEntity*)pObject;
 
 				if (pEntity->m_drawEntity && pEntity->m_castsShadow) {

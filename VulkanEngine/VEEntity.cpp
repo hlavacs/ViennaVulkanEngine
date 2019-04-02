@@ -178,13 +178,13 @@ namespace ve {
 
 
 	//---------------------------------------------------------------------
-	//Movable Object
+	//Scene node
 
 
 	/**
-	* \brief The constructor ot the VEMovableObject class
+	* \brief The constructor ot the VESceneNode class
 	*
-	* \param[in] name The name of this object.
+	* \param[in] name The name of this node.
 	* \param[in] transf Position and orientation.
 	* \param[in] parent A parent.
 	*
@@ -389,8 +389,8 @@ namespace ve {
 	}
 
 	/**
-	* \brief Get a default bounding sphere for this movable object
-	* \param[out] center The sphere center is also the position of the movable object
+	* \brief Get a default bounding sphere for this scene node
+	* \param[out] center The sphere center is also the position of the scene node
 	* \param[out] radius The default radius of the sphere
 	*/
 	void VESceneNode::getBoundingSphere(glm::vec3 *center, float *radius) {
@@ -479,7 +479,7 @@ namespace ve {
 						glm::mat4 transf, VESceneNode *parent) :
 							VESceneNode(name, transf, parent), m_entityType( type ) {
 
-		m_objectType = VE_OBJECT_TYPE_ENTITY;
+		m_nodeType = VE_OBJECT_TYPE_ENTITY;
 		setTransform(transf);
 
 		if (pMesh != nullptr && pMat != nullptr) {
@@ -573,7 +573,7 @@ namespace ve {
 	*
 	*/
 	VECamera::VECamera(std::string name) : VESceneNode(name) {
-		m_objectType = VE_OBJECT_TYPE_CAMERA;
+		m_nodeType = VE_OBJECT_TYPE_CAMERA;
 		m_cameraType = VE_CAMERA_TYPE_PROJECTIVE; 
 	};
 
@@ -588,7 +588,7 @@ namespace ve {
 	*/
 	VECamera::VECamera(std::string name, float nearPlane, float farPlane) :
 							VESceneNode(name), m_nearPlane(nearPlane), m_farPlane(farPlane) {
-		m_objectType = VE_OBJECT_TYPE_CAMERA;
+		m_nodeType = VE_OBJECT_TYPE_CAMERA;
 		m_cameraType = VE_CAMERA_TYPE_PROJECTIVE;
 	}
 
@@ -936,7 +936,7 @@ namespace ve {
 	* \param[in] type Light type
 	*/
 	VELight::VELight(std::string name, veLightType type) : VESceneNode(name), m_lightType(type) {
-		m_objectType = VE_OBJECT_TYPE_LIGHT;
+		m_nodeType = VE_OBJECT_TYPE_LIGHT;
 	};
 
 
