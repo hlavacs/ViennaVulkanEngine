@@ -73,7 +73,7 @@ $(function() {
 <li>getBoundingSphere()
 : <a class="el" href="classve_1_1_v_e_camera.html#a74cb91079352b36c1c15e3ce6cad8cd0">ve::VECamera</a>
 , <a class="el" href="classve_1_1_v_e_entity.html#a55e2e9159b18fcd72cf7dbb3bed04554">ve::VEEntity</a>
-, <a class="el" href="classve_1_1_v_e_movable_object.html#a5864d7e553316093fe7e333969d366bc">ve::VEMovableObject</a>
+, <a class="el" href="classve_1_1_v_e_scene_node.html#a69e6f4751d7501059de32627c32fb3fc">ve::VESceneNode</a>
 </li>
 <li>getCamera()
 : <a class="el" href="classve_1_1_v_e_scene_manager.html#a6dedc85430da2d06259704f47ec4f3c7">ve::VESceneManager</a>
@@ -130,7 +130,7 @@ $(function() {
 : <a class="el" href="classve_1_1_v_e_light.html#ad20b8b457fdd68dd53a9a65e7e4c255d">ve::VELight</a>
 </li>
 <li>getLoopCount()
-: <a class="el" href="classve_1_1_v_e_engine.html#a1db3debcbd29f54a16342779b881094a">ve::VEEngine</a>
+: <a class="el" href="classve_1_1_v_e_engine.html#ab73e678a5195889ca4ea37aec0c01e33">ve::VEEngine</a>
 </li>
 <li>getMaterial()
 : <a class="el" href="classve_1_1_v_e_scene_manager.html#a08774600d83d1e2cdecdc2ca1bafc6de">ve::VESceneManager</a>
@@ -138,17 +138,14 @@ $(function() {
 <li>getMesh()
 : <a class="el" href="classve_1_1_v_e_scene_manager.html#a78127a3b00123f8a108c4eeda09cc1f8">ve::VESceneManager</a>
 </li>
-<li>getMovableObject()
-: <a class="el" href="classve_1_1_v_e_scene_manager.html#a41dadd7a3605dcd76a4198abbd3fa098">ve::VESceneManager</a>
-</li>
 <li>getName()
 : <a class="el" href="classve_1_1_v_e_named_class.html#ac523da5cc9caa70eaa211c40a7038b37">ve::VENamedClass</a>
 </li>
-<li>getOBB()
-: <a class="el" href="classve_1_1_v_e_movable_object.html#a57ed3e151a507dd7f84fa64a974e8868">ve::VEMovableObject</a>
+<li>getNodeType()
+: <a class="el" href="classve_1_1_v_e_scene_node.html#a98bf32bc9453418e83751372edd0965b">ve::VESceneNode</a>
 </li>
-<li>getObjectType()
-: <a class="el" href="classve_1_1_v_e_movable_object.html#ae5e7d0701e39dda048f519c52a290ddf">ve::VEMovableObject</a>
+<li>getOBB()
+: <a class="el" href="classve_1_1_v_e_scene_node.html#a0b2b024c64cd6961f6277ce7b2fe4f89">ve::VESceneNode</a>
 </li>
 <li>getPhysicalDevice()
 : <a class="el" href="classve_1_1_v_e_renderer.html#a8facfcb8b4a4d81ae116b19e0bd00736">ve::VERenderer</a>
@@ -157,7 +154,7 @@ $(function() {
 : <a class="el" href="classve_1_1_v_e_subrender.html#a263559df7bbdf6594745909fba7738ba">ve::VESubrender</a>
 </li>
 <li>getPosition()
-: <a class="el" href="classve_1_1_v_e_movable_object.html#ad6480caa3957f30711135ba18ffe02d7">ve::VEMovableObject</a>
+: <a class="el" href="classve_1_1_v_e_scene_node.html#a2dbb9aba34916c1bc9b981eac2e10d7c">ve::VESceneNode</a>
 </li>
 <li>getProjectionMatrix()
 : <a class="el" href="classve_1_1_v_e_camera.html#ac08c3a66d9cbc131bf042ab0f356a989">ve::VECamera</a>
@@ -181,6 +178,9 @@ $(function() {
 <li>getSceneManager()
 : <a class="el" href="classve_1_1_v_e_engine.html#a8c33acc438666459862732a9118a169a">ve::VEEngine</a>
 </li>
+<li>getSceneNode()
+: <a class="el" href="classve_1_1_v_e_scene_manager.html#a22dd9760111ca205cf97b2fdcfdbb6d7">ve::VESceneManager</a>
+</li>
 <li>getShadowMap()
 : <a class="el" href="classve_1_1_v_e_renderer_forward.html#a7bdfb2d684af3809931143c666fdd9ac">ve::VERendererForward</a>
 </li>
@@ -203,7 +203,7 @@ $(function() {
 : <a class="el" href="classve_1_1_v_e_renderer.html#ac838b731a04584ceb0f489469a91faf3">ve::VERenderer</a>
 </li>
 <li>getTransform()
-: <a class="el" href="classve_1_1_v_e_movable_object.html#a8e89c3804682d0990591013dfee0438e">ve::VEMovableObject</a>
+: <a class="el" href="classve_1_1_v_e_scene_node.html#ac16a473c85f21fd0992edff29af4a62c">ve::VESceneNode</a>
 </li>
 <li>getType()
 : <a class="el" href="classve_1_1_v_e_subrender.html#a8cfc5124d71d78755293b98b55bdf5f7">ve::VESubrender</a>
@@ -218,16 +218,16 @@ $(function() {
 : <a class="el" href="classve_1_1_v_e_engine.html#ab1105bc96fbf572b5749eb16b0b0c308">ve::VEEngine</a>
 </li>
 <li>getWorldTransform()
-: <a class="el" href="classve_1_1_v_e_movable_object.html#a77d5fc9307e7999cd534269b4c600695">ve::VEMovableObject</a>
+: <a class="el" href="classve_1_1_v_e_scene_node.html#ab704c9158e5ee4baae88378def289834">ve::VESceneNode</a>
 </li>
 <li>getXAxis()
-: <a class="el" href="classve_1_1_v_e_movable_object.html#a59232750a401c36cf948b1330c5e177e">ve::VEMovableObject</a>
+: <a class="el" href="classve_1_1_v_e_scene_node.html#a8f0ecafdef9f761e4df94019822a1dc6">ve::VESceneNode</a>
 </li>
 <li>getYAxis()
-: <a class="el" href="classve_1_1_v_e_movable_object.html#abe43860e353f3807df0b75f6c94b09de">ve::VEMovableObject</a>
+: <a class="el" href="classve_1_1_v_e_scene_node.html#aad01b7a8e986f92c757219d1b11656b1">ve::VESceneNode</a>
 </li>
 <li>getZAxis()
-: <a class="el" href="classve_1_1_v_e_movable_object.html#ae0a21f457d94d0fc97f18016d10f9ec1">ve::VEMovableObject</a>
+: <a class="el" href="classve_1_1_v_e_scene_node.html#a69dfc9398adb1fb6ebcafed6cc154e0f">ve::VESceneNode</a>
 </li>
 <li>graphicsFamily
 : <a class="el" href="structvh_1_1_queue_family_indices.html#a60d78f857942f04654839a6cadbe1761">vh::QueueFamilyIndices</a>
@@ -236,7 +236,7 @@ $(function() {
 </div><!-- contents -->
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>
-Generated on Sat Mar 30 2019 14:22:49 for Vienna Vulkan Engine by &#160;<a href="http://www.doxygen.org/index.html">
+Generated on Wed Apr 3 2019 11:04:38 for Vienna Vulkan Engine by &#160;<a href="http://www.doxygen.org/index.html">
 <img class="footer" src="doxygen.png" alt="doxygen"/>
 </a> 1.8.15
 </small></address>

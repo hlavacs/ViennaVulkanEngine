@@ -6,6 +6,6 @@ var searchData=
   ['veeventsubsystem',['veEventSubsystem',['../namespaceve.html#ac9f43b456d5cecf8e63fcd901addd30c',1,'ve']]],
   ['veeventtype',['veEventType',['../namespaceve.html#ae6e59e4741b466de51dfe981360dbfea',1,'ve']]],
   ['velighttype',['veLightType',['../classve_1_1_v_e_light.html#abcedf7166341000b6d4512e9030f6b86',1,'ve::VELight']]],
-  ['veobjecttype',['veObjectType',['../classve_1_1_v_e_movable_object.html#a8ee44b7dca66886be80eb9b6db3a1a5c',1,'ve::VEMovableObject']]],
+  ['venodetype',['veNodeType',['../classve_1_1_v_e_scene_node.html#aff43b9c0c39fa3362b3908e813608cc8',1,'ve::VESceneNode']]],
   ['vesubrendertype',['veSubrenderType',['../classve_1_1_v_e_subrender.html#a98064e456a838192bbcedf9b6c529e89',1,'ve::VESubrender']]]
 ];

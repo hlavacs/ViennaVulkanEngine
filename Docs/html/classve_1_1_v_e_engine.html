@@ -127,8 +127,8 @@ Public Member Functions</h2></td></tr>
 <tr class="separator:a8c33acc438666459862732a9118a169a"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:abbe8354824904efa0ab69ae95941913e"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classve_1_1_v_e_renderer.html">VERenderer</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_engine.html#abbe8354824904efa0ab69ae95941913e">getRenderer</a> ()</td></tr>
 <tr class="separator:abbe8354824904efa0ab69ae95941913e"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a1db3debcbd29f54a16342779b881094a"><td class="memItemLeft" align="right" valign="top">uint64_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_engine.html#a1db3debcbd29f54a16342779b881094a">getLoopCount</a> ()</td></tr>
-<tr class="separator:a1db3debcbd29f54a16342779b881094a"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ab73e678a5195889ca4ea37aec0c01e33"><td class="memItemLeft" align="right" valign="top">uint32_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_engine.html#ab73e678a5195889ca4ea37aec0c01e33">getLoopCount</a> ()</td></tr>
+<tr class="separator:ab73e678a5195889ca4ea37aec0c01e33"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-attribs"></a>
 Public Attributes</h2></td></tr>
@@ -210,10 +210,10 @@ double&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="cl
 double&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_engine.html#a39623b5ab5d55a5595cc99ced8f90a30">m_time</a> = 0.0</td></tr>
 <tr class="memdesc:a39623b5ab5d55a5595cc99ced8f90a30"><td class="mdescLeft">&#160;</td><td class="mdescRight">Absolute game time since start of the render loop. <br /></td></tr>
 <tr class="separator:a39623b5ab5d55a5595cc99ced8f90a30"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ac552d73a8c2cf86720e771fa7e87c9ac"><td class="memItemLeft" align="right" valign="top"><a id="ac552d73a8c2cf86720e771fa7e87c9ac"></a>
-uint64_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_engine.html#ac552d73a8c2cf86720e771fa7e87c9ac">m_loopCount</a> = 0</td></tr>
-<tr class="memdesc:ac552d73a8c2cf86720e771fa7e87c9ac"><td class="mdescLeft">&#160;</td><td class="mdescRight">Counts up the render loop. <br /></td></tr>
-<tr class="separator:ac552d73a8c2cf86720e771fa7e87c9ac"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a8b332a583a181820248f2e71752e5c4f"><td class="memItemLeft" align="right" valign="top"><a id="a8b332a583a181820248f2e71752e5c4f"></a>
+uint32_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_engine.html#a8b332a583a181820248f2e71752e5c4f">m_loopCount</a> = 0</td></tr>
+<tr class="memdesc:a8b332a583a181820248f2e71752e5c4f"><td class="mdescLeft">&#160;</td><td class="mdescRight">Counts up the render loop. <br /></td></tr>
+<tr class="separator:a8b332a583a181820248f2e71752e5c4f"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a3a2ee465c62eb0d74e51f553586d041a"><td class="memItemLeft" align="right" valign="top"><a id="a3a2ee465c62eb0d74e51f553586d041a"></a>
 bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_engine.html#a3a2ee465c62eb0d74e51f553586d041a">m_framebufferResized</a> = false</td></tr>
 <tr class="memdesc:a3a2ee465c62eb0d74e51f553586d041a"><td class="mdescLeft">&#160;</td><td class="mdescRight">Flag indicating whether the window size has changed. <br /></td></tr>
@@ -540,14 +540,14 @@ bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="clas
 
 </div>
 </div>
-<a id="a1db3debcbd29f54a16342779b881094a"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a1db3debcbd29f54a16342779b881094a">&#9670;&nbsp;</a></span>getLoopCount()</h2>
+<a id="ab73e678a5195889ca4ea37aec0c01e33"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ab73e678a5195889ca4ea37aec0c01e33">&#9670;&nbsp;</a></span>getLoopCount()</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">uint64_t ve::VEEngine::getLoopCount </td>
+          <td class="memname">uint32_t ve::VEEngine::getLoopCount </td>
           <td>(</td>
           <td class="paramname"></td><td>)</td>
           <td></td>
@@ -872,7 +872,7 @@ bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="clas
 </div><!-- contents -->
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>
-Generated on Sat Mar 30 2019 14:22:48 for Vienna Vulkan Engine by &#160;<a href="http://www.doxygen.org/index.html">
+Generated on Wed Apr 3 2019 11:04:38 for Vienna Vulkan Engine by &#160;<a href="http://www.doxygen.org/index.html">
 <img class="footer" src="doxygen.png" alt="doxygen"/>
 </a> 1.8.15
 </small></address>
