@@ -457,6 +457,22 @@ namespace ve {
 
 
 	//---------------------------------------------------------------------
+	//Scene object
+
+	VESceneObject::VESceneObject(std::string name, glm::mat4 transf, VESceneNode *parent) : VESceneNode(name, transf, parent) {
+	}
+
+
+	VESceneObject::~VESceneObject() {
+		for (uint32_t i = 0; i < m_uniformBuffers.size(); i++) {
+			vmaDestroyBuffer(getRendererPointer()->getVmaAllocator(), m_uniformBuffers[i], m_uniformBuffersAllocation[i]);
+		}
+	}
+
+
+
+
+	//---------------------------------------------------------------------
 	//Entity
 
 
@@ -477,7 +493,7 @@ namespace ve {
 	VEEntity::VEEntity(	std::string name, veEntityType type, 
 						VEMesh *pMesh, VEMaterial *pMat, 
 						glm::mat4 transf, VESceneNode *parent) :
-							VESceneNode(name, transf, parent), m_entityType( type ) {
+							VESceneObject(name, transf, parent), m_entityType( type ) {
 
 		m_nodeType = VE_OBJECT_TYPE_ENTITY;
 		setTransform(transf);
@@ -499,9 +515,6 @@ namespace ve {
 	*
 	*/
 	VEEntity::~VEEntity() {
-		for (uint32_t i = 0; i < m_uniformBuffers.size(); i++) {
-			vmaDestroyBuffer(getRendererPointer()->getVmaAllocator(), m_uniformBuffers[i], m_uniformBuffersAllocation[i]);
-		}
 	}
 
 	/**
@@ -572,7 +585,7 @@ namespace ve {
 	* \param[in] name Name of the camera.
 	*
 	*/
-	VECamera::VECamera(std::string name) : VESceneNode(name) {
+	VECamera::VECamera(std::string name, glm::mat4 transf, VESceneNode *parent) : VESceneObject(name, transf, parent) {
 		m_nodeType = VE_OBJECT_TYPE_CAMERA;
 		m_cameraType = VE_CAMERA_TYPE_PROJECTIVE; 
 	};
@@ -586,8 +599,8 @@ namespace ve {
 	* \param[in] farPlane Distance of far plane to the camera origin
 	*
 	*/
-	VECamera::VECamera(std::string name, float nearPlane, float farPlane) :
-							VESceneNode(name), m_nearPlane(nearPlane), m_farPlane(farPlane) {
+	VECamera::VECamera(std::string name, float nearPlane, float farPlane, glm::mat4 transf, VESceneNode *parent) :
+							VESceneObject(name, transf, parent), m_nearPlane(nearPlane), m_farPlane(farPlane) {
 		m_nodeType = VE_OBJECT_TYPE_CAMERA;
 		m_cameraType = VE_CAMERA_TYPE_PROJECTIVE;
 	}
@@ -935,7 +948,8 @@ namespace ve {
 	* \param[in] name Name of the camera
 	* \param[in] type Light type
 	*/
-	VELight::VELight(std::string name, veLightType type) : VESceneNode(name), m_lightType(type) {
+	VELight::VELight(std::string name, veLightType type, glm::mat4 transf, VESceneNode *parent) : 
+						VESceneObject(name, transf, parent), m_lightType(type) {
 		m_nodeType = VE_OBJECT_TYPE_LIGHT;
 	};
 

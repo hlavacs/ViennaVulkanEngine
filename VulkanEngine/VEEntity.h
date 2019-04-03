@@ -146,6 +146,29 @@ namespace ve {
 	};
 
 
+
+	/**
+	*
+	* \brief Represents any object that has its own UBO.
+	*
+	* A scene object has its own UBO describing its transform and current state.
+	* 
+	*/
+
+	class VESceneObject : public VESceneNode {
+
+	public:
+
+		std::vector<VkBuffer>			m_uniformBuffers;				///<One UBO for each framebuffer frame
+		std::vector<VmaAllocation>		m_uniformBuffersAllocation;		///<VMA information for the UBOs
+		std::vector<VkDescriptorSet>	m_descriptorSetsUBO;			///<Descriptor sets for UBO
+
+		VESceneObject(std::string name, glm::mat4 transf = glm::mat4(1.0f), VESceneNode *parent = nullptr);
+		~VESceneObject();
+	};
+
+
+
 	class VESubrender;
 
 	/**
@@ -156,9 +179,10 @@ namespace ve {
 	* position and orientation. Entities have exactly one mesh and one material.
 	* Entities are associated with exactly one VESubrender instance. This instance is responsible for managing
 	* all drawing related tasks, like creating UBOs and selecting the right PSO.
+	*
 	*/
 
-	class VEEntity : public VESceneNode {
+	class VEEntity : public VESceneObject {
 
 	public:
 		///The entity type determines what kind of entity this is
@@ -182,9 +206,9 @@ namespace ve {
 		bool						m_drawEntity = false;					///<should it be drawn at all?
 		bool						m_castsShadow = true;					///<draw in the shadow pass?
 
-		std::vector<VkBuffer>			m_uniformBuffers;				///<One UBO for each framebuffer frame
-		std::vector<VmaAllocation>		m_uniformBuffersAllocation;		///<VMA information for the UBOs
-		std::vector<VkDescriptorSet>	m_descriptorSetsUBO;			///<Per subrenderer descriptor sets for UBO
+		//std::vector<VkBuffer>			m_uniformBuffers;				///<One UBO for each framebuffer frame
+		//std::vector<VmaAllocation>		m_uniformBuffersAllocation;		///<VMA information for the UBOs
+		//std::vector<VkDescriptorSet>	m_descriptorSetsUBO;			///<Per subrenderer descriptor sets for UBO
 		std::vector<VkDescriptorSet>	m_descriptorSetsResources;		///<Per subrenderer descriptor sets for other resources
 
 		//VEEntity(std::string name);
@@ -206,8 +230,6 @@ namespace ve {
 
 	class VELight;
 
-
-
 	/**
 	*
 	* \brief A camera that can be used to take photos of the scene.
@@ -216,7 +238,7 @@ namespace ve {
 	* represents the camera frustum. The base class however should never be used. Use a derived class.
 	*
 	*/
-	class VECamera : public VESceneNode {
+	class VECamera : public VESceneObject {
 
 	public:
 		///Camera type, can be projective or orthographic
@@ -248,8 +270,8 @@ namespace ve {
 		float m_nearPlane = 1.0f;	///<The distance of the near plane to the camera origin
 		float m_farPlane = 200.0f;	///<The distance of the far plane to the camera origin
 
-		VECamera(std::string name);
-		VECamera(std::string name, float nearPlane, float farPlane);
+		VECamera(std::string name, glm::mat4 transf = glm::mat4(1.0f), VESceneNode *parent=nullptr);
+		VECamera(std::string name, float nearPlane, float farPlane, glm::mat4 transf = glm::mat4(1.0f), VESceneNode *parent = nullptr);
 		virtual ~VECamera() {};
 
 		///\returns the camera type
@@ -258,6 +280,8 @@ namespace ve {
 		//--------------------------------------------------
 		void fillCameraStructure(veCameraData_t *pCamera);
 		void fillShadowStructure(veShadowData_t *pCamera);
+		virtual void updateUBO(glm::mat4 parentWorldMatrix) {};
+
 		virtual glm::mat4 getProjectionMatrix()=0;								///<Return the projection matrix
 		///Return the projection matrix, pure virtual
 		virtual glm::mat4 getProjectionMatrix( float width, float height )=0;
@@ -326,7 +350,7 @@ namespace ve {
 	*
 	*/
 
-	class VELight : public VESceneNode {
+	class VELight : public VESceneObject {
 
 	public:
 
@@ -356,9 +380,10 @@ namespace ve {
 		glm::vec4 col_diffuse  = 0.8f * glm::vec4(1.0f, 1.0f, 1.0f, 1.0f);	///<Diffuse color
 		glm::vec4 col_specular = 0.9f * glm::vec4(1.0f, 1.0f, 1.0f, 1.0f);	///<Specular color
 
-		VELight(std::string name, veLightType type );
+		VELight(std::string name, veLightType type, glm::mat4 transf = glm::mat4(1.0f), VESceneNode *parent = nullptr );
 		veLightType getLightType();		//return the light type
 		void fillLightStructure( veLightData_t *pLight);
+		virtual void updateUBO(glm::mat4 parentWorldMatrix) {};
 	};
 
 
