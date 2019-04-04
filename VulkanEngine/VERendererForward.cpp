@@ -83,12 +83,12 @@ namespace ve {
 		//shadow maps
 		//the outer loop goes over the imageIndex
 		//the inner loop is the whole shadow cascade per image index
-		for (uint32_t i = 0; i < m_swapChainImageViews.size(); i++) {				//go over number of swapchain images
+		for (uint32_t i = 0; i < m_swapChainImageViews.size(); i++) {		//go over number of swapchain images
 
-			std::vector<VETexture*>		shadowMapCascade;							//list of VETextures in a cascade
+			std::vector<VETexture*>		shadowMapCascade;					//list of VETextures in a cascade
 			std::vector<VkFramebuffer>	frameBufferCascade;
 
-			for (uint32_t j = 0; j < NUM_SHADOW_CASCADE; j++) {
+			for (uint32_t j = 0; j < 6; j++) {								//point light has 6 shadow maps, thats the max
 				VkExtent2D extent = { SHADOW_MAP_DIM, SHADOW_MAP_DIM };
 
 				VETexture *pShadowMap = new VETexture("ShadowMap");
@@ -117,10 +117,11 @@ namespace ve {
 
 		//------------------------------------------------------------------------------------------------------------
 		//per frame resources
-		//set 0...per frame, includes cam and shadow matrices
+		//set 0...per frame, includes cam and shadow matrices  -> per camera!
 		//set 1...per object UBO
-		//set 2...shadow map
+		//set 2...shadow map array
 		//set 3...additional per object resources
+		//set 4...per light UBO  (NEW)
 
 		//set 0, binding 0 : UBO per Frame data: camera, light, shadow matrices
 		vh::vhRenderCreateDescriptorSetLayout(m_device,

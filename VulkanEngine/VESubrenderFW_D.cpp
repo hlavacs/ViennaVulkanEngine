@@ -57,7 +57,7 @@ namespace ve {
 
 		vh::vhBufCreateUniformBuffers(getRendererForwardPointer()->getVmaAllocator(),
 			(uint32_t)getRendererForwardPointer()->getSwapChainNumber(),
-			(uint32_t)sizeof(veUBOPerObject),
+			(uint32_t)sizeof(VESceneObject::veUBOPerObject_t),
 			pEntity->m_uniformBuffers, pEntity->m_uniformBuffersAllocation);
 
 		vh::vhRenderCreateDescriptorSets(getRendererForwardPointer()->getDevice(),

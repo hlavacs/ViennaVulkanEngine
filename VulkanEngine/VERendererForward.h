@@ -32,11 +32,11 @@ namespace ve {
 	public:
 
 		///Data that is updated once per frame
-		struct vePerFrameData_t {
-			VECamera::veCameraData_t camera;		///<camera data
-			VELight::veLightData_t light;			///<Light data
-			VECamera::veShadowData_t shadow[NUM_SHADOW_CASCADE]; ///<Shadow data
-		};
+		//struct vePerFrameData_t {
+		//	VECamera::veCameraData_t camera;		///<camera data
+		//	VELight::veLightData_t light;			///<Light data
+		//	VECamera::veShadowData_t shadow[NUM_SHADOW_CASCADE]; ///<Shadow data
+		//};
 
 
 	protected:

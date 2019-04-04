@@ -93,6 +93,8 @@ namespace ve {
 		virtual VkExtent2D				getSwapChainExtent() { return m_swapChainExtent;  };
 		///\returns the number of swap chain images
 		virtual uint32_t				getSwapChainNumber() { return (uint32_t)m_swapChainImages.size();  };
+		///\returns the index of the swap chain image that is current prepared for drawing
+		virtual uint32_t				getImageIndex() { return imageIndex;  };
 		///\returns the current swap chain image
 		virtual VkImage					getSwapChainImage() { return m_swapChainImages[imageIndex]; };
 

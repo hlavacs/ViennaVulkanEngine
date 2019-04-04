@@ -97,6 +97,8 @@ namespace ve {
 			VEEntity *pE4 = (VEEntity*)m_pSceneManager->getSceneNode("The Plane/plane_t_n_s.obj/plane/Entity_0");
 			pE4->setParam( glm::vec4(1000.0f, 1000.0f, 0.0f, 0.0f) );
 
+			return;
+
 			VESceneNode *sp1 = m_pSceneManager->createSkybox("The Sky", "models/test/sky/cloudy",
 			{ "bluecloud_ft.jpg", "bluecloud_bk.jpg", "bluecloud_up.jpg", "bluecloud_dn.jpg", "bluecloud_rt.jpg", "bluecloud_lf.jpg" });
 			RotatorListener *pRot = new RotatorListener("CubemapRotator", sp1, 0.01f, glm::vec3(0.0f, 1.0f, 0.0f));

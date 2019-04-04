@@ -12,6 +12,8 @@
 
 namespace ve {
 
+	VkDescriptorSetLayout VESceneObject::m_descriptorSetLayoutPerObject = VK_NULL_HANDLE;	///<Descriptor set layout per object
+
 	//---------------------------------------------------------------------
 	//Mesh
 
@@ -198,7 +200,6 @@ namespace ve {
 	}
 
 	VESceneNode::~VESceneNode() {
-		getSceneManagerPointer()->removeFromDirtyList(this);
 	}
 
 
@@ -214,7 +215,7 @@ namespace ve {
 	*/
 	void VESceneNode::setTransform(glm::mat4 trans) {
 		m_transform = trans;
-		getSceneManagerPointer()->addToDirtyList(this);
+		update();
 	}
 
 	/**
@@ -222,7 +223,7 @@ namespace ve {
 	*/
 	void VESceneNode::setPosition(glm::vec3 pos) {
 		m_transform[3] = glm::vec4(pos.x, pos.y, pos.z, 1.0f);
-		getSceneManagerPointer()->addToDirtyList(this);
+		update();
 	};
 
 	/**
@@ -255,8 +256,6 @@ namespace ve {
 		glm::vec4 z = m_transform[2];
 		return glm::vec3(z.x, z.y, z.z);
 	}
-
-
 
 	/**
 	*
@@ -309,7 +308,6 @@ namespace ve {
 		glm::vec3 y = glm::normalize(glm::cross(z, x));
 		m_transform[1] = glm::vec4(y.x, y.y, y.z, 0.0f);
 
-		getSceneManagerPointer()->addToDirtyList(this);
 	}
 
 
@@ -369,13 +367,9 @@ namespace ve {
 	*
 	*/
 	void VESceneNode::update(glm::mat4 parentWorldMatrix ) {
-		uint32_t now = getEnginePointer()->getLoopCount();
-		if (m_lastUpdate == now) return;
-		m_lastUpdate = now;
-
-		glm::mat4 worldMatrix = parentWorldMatrix * getTransform();
-		updateUBO(worldMatrix );						//call derived class for specific data like object color
-		updateChildren(worldMatrix );
+		glm::mat4 worldMatrix = parentWorldMatrix * getTransform();		//get world matrix
+		updateUBO( worldMatrix );										//call derived class for specific data like object color
+		updateChildren( worldMatrix );									//update all children
 	}
 
 
@@ -384,7 +378,7 @@ namespace ve {
 	*/
 	void VESceneNode::updateChildren(glm::mat4 worldMatrix ) {
 		for (auto pObject : m_children) {
-			pObject->update(worldMatrix);
+			pObject->update(worldMatrix);	//update the children by giving them the current worldMatrix
 		}
 	}
 
@@ -456,16 +450,59 @@ namespace ve {
 
 
 
-	//---------------------------------------------------------------------
+	//-----------------------------------------------------------------------------------------------------
 	//Scene object
 
-	VESceneObject::VESceneObject(std::string name, glm::mat4 transf, VESceneNode *parent) : VESceneNode(name, transf, parent) {
+	VESceneObject::VESceneObject(std::string name, glm::mat4 transf, VESceneNode *parent, uint32_t sizeUBO ) : 
+									VESceneNode(name, transf, parent) {
+
+		if ( m_descriptorSetLayoutPerObject == VK_NULL_HANDLE ) {
+			vh::vhRenderCreateDescriptorSetLayout(getRendererForwardPointer()->getDevice(),
+				{ 1 },
+				{ VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER },
+				{ VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT },
+				&m_descriptorSetLayoutPerObject);
+		}
+
+		if (sizeUBO > 0) {
+			vh::vhBufCreateUniformBuffers(	getRendererPointer()->getVmaAllocator(),
+											(uint32_t)getRendererPointer()->getSwapChainNumber(),
+											sizeUBO, m_uniformBuffers, m_uniformBuffersAllocation);
+
+			vh::vhRenderCreateDescriptorSets(getRendererForwardPointer()->getDevice(),
+				(uint32_t)getRendererForwardPointer()->getSwapChainNumber(),
+				m_descriptorSetLayoutPerObject,
+				getRendererForwardPointer()->getDescriptorPool(),
+				m_descriptorSetsUBO);
+
+			for (uint32_t i = 0; i < m_descriptorSetsUBO.size(); i++) {
+				vh::vhRenderUpdateDescriptorSet(getRendererForwardPointer()->getDevice(),
+					m_descriptorSetsUBO[i],
+					{ m_uniformBuffers[i] },		//UBOs
+					{ sizeof(sizeUBO) },			//UBO sizes
+					{ { VK_NULL_HANDLE } },			//textureImageViews
+					{ { VK_NULL_HANDLE } }			//samplers
+				);
+			}
+		}
 	}
 
 
 	VESceneObject::~VESceneObject() {
 		for (uint32_t i = 0; i < m_uniformBuffers.size(); i++) {
 			vmaDestroyBuffer(getRendererPointer()->getVmaAllocator(), m_uniformBuffers[i], m_uniformBuffersAllocation[i]);
+		}
+	}
+
+
+	void VESceneObject::updateUBO(void *pUBO, uint32_t sizeUBO) {
+		//uint32_t imageIndex = getRendererPointer()->getImageIndex();	//TODO: current swap chain image!!!!!!
+
+		for (uint32_t i = 0; i < getRendererPointer()->getSwapChainNumber(); i++) {
+			void* data = nullptr;
+			vmaMapMemory(getRendererPointer()->getVmaAllocator(), m_uniformBuffersAllocation[i], &data);
+			memcpy(data, pUBO, sizeUBO);
+			vmaUnmapMemory(getRendererPointer()->getVmaAllocator(), m_uniformBuffersAllocation[i]);
 		}
 	}
 
@@ -493,9 +530,8 @@ namespace ve {
 	VEEntity::VEEntity(	std::string name, veEntityType type, 
 						VEMesh *pMesh, VEMaterial *pMat, 
 						glm::mat4 transf, VESceneNode *parent) :
-							VESceneObject(name, transf, parent), m_entityType( type ) {
+							VESceneObject(name, transf, parent, (uint32_t) sizeof(veUBOPerObject_t)), m_entityType( type ) {
 
-		m_nodeType = VE_OBJECT_TYPE_ENTITY;
 		setTransform(transf);
 
 		if (pMesh != nullptr && pMat != nullptr) {
@@ -524,9 +560,9 @@ namespace ve {
 	*
 	* \param[in] param The new parameter vector
 	*/
-	void VEEntity::setParam(glm::vec4 param) {
-		m_param = param;
-		getSceneManagerPointer()->addToDirtyList(this);
+	void VEEntity::setTexParam(glm::vec4 param) {
+		m_texParam = param;
+		update();
 	}
 
 
@@ -538,20 +574,16 @@ namespace ve {
 	*
 	*/
 	void VEEntity::updateUBO( glm::mat4 worldMatrix) {
-		VESubrender::veUBOPerObject ubo = {};
+		veUBOPerObject_t ubo = {};
+
 		ubo.model = worldMatrix;
 		ubo.modelInvTrans = glm::transpose(glm::inverse(worldMatrix));
-		ubo.param = m_param;
+		ubo.texParam = m_texParam;
 		if (m_pMaterial != nullptr) {
 			ubo.color = m_pMaterial->color;
 		};
 
-		for (uint32_t i = 0; i < m_uniformBuffersAllocation.size(); i++) {
-			void* data = nullptr;
-			vmaMapMemory(getRendererPointer()->getVmaAllocator(), m_uniformBuffersAllocation[i], &data);
-			memcpy(data, &ubo, sizeof(ubo));
-			vmaUnmapMemory(getRendererPointer()->getVmaAllocator(), m_uniformBuffersAllocation[i]);
-		}
+		VESceneObject::updateUBO( (void*)&ubo, (uint32_t)sizeof(veUBOPerObject_t));
 	}
 
 
@@ -585,9 +617,8 @@ namespace ve {
 	* \param[in] name Name of the camera.
 	*
 	*/
-	VECamera::VECamera(std::string name, glm::mat4 transf, VESceneNode *parent) : VESceneObject(name, transf, parent) {
-		m_nodeType = VE_OBJECT_TYPE_CAMERA;
-		m_cameraType = VE_CAMERA_TYPE_PROJECTIVE; 
+	VECamera::VECamera(std::string name, glm::mat4 transf, VESceneNode *parent ) : 
+							VESceneObject(name, transf, parent, (uint32_t)sizeof(veUBOPerCamera_t)) {
 	};
 
 	/**
@@ -599,11 +630,24 @@ namespace ve {
 	* \param[in] farPlane Distance of far plane to the camera origin
 	*
 	*/
-	VECamera::VECamera(std::string name, float nearPlane, float farPlane, glm::mat4 transf, VESceneNode *parent) :
-							VESceneObject(name, transf, parent), m_nearPlane(nearPlane), m_farPlane(farPlane) {
-		m_nodeType = VE_OBJECT_TYPE_CAMERA;
-		m_cameraType = VE_CAMERA_TYPE_PROJECTIVE;
+	VECamera::VECamera(std::string name, float nearPlane, float farPlane, glm::mat4 transf, VESceneNode *parent ) :
+							VESceneObject(name, transf, parent, (uint32_t)sizeof(veUBOPerCamera_t)), 
+								m_nearPlane(nearPlane), m_farPlane(farPlane) {
 	}
+
+
+	void VECamera::updateUBO(glm::mat4 worldMatrix) {
+		veUBOPerCamera_t ubo = {};
+
+		ubo.model = worldMatrix;
+		ubo.view = glm::inverse(worldMatrix);
+		ubo.proj = getProjectionMatrix();
+		ubo.param[0] = m_nearPlane;
+		ubo.param[1] = m_farPlane;
+
+		VESceneObject::updateUBO((void*)&ubo, (uint32_t)sizeof(veUBOPerCamera_t));
+	}
+
 
 
 	/**
@@ -615,7 +659,7 @@ namespace ve {
 	* \param[out] pCamera Pointer to a veCameraData_t struct that will be filled.
 	*
 	*/
-	void VECamera::fillCameraStructure(veCameraData_t *pCamera) {
+	/*void VECamera::fillCameraStructure(veCameraData_t *pCamera) {
 		pCamera->camModel = getWorldTransform();
 		pCamera->camView = glm::inverse(pCamera->camModel);
 
@@ -623,7 +667,7 @@ namespace ve {
 		pCamera->camProj = getProjectionMatrix( (float)extent.width, (float)extent.height);
 		pCamera->param[0] = m_nearPlane;
 		pCamera->param[1] = m_farPlane;
-	}
+	}*/
 
 
 	/**
@@ -636,10 +680,10 @@ namespace ve {
 	* \param[out] pShadow Pointer to a veShadowData_t struct that will be filled.
 	*
 	*/
-	void VECamera::fillShadowStructure(veShadowData_t *pShadow ) {
+	/*void VECamera::fillShadowStructure(veShadowData_t *pShadow ) {
 		pShadow->shadowView = glm::inverse(getWorldTransform());
 		pShadow->shadowProj = getProjectionMatrix();
-	}
+	}*/
 
 
 	/**
@@ -776,7 +820,6 @@ namespace ve {
 	*
 	*/
 	VECameraProjective::VECameraProjective(std::string name ) : VECamera(name) {
-		m_cameraType = VE_CAMERA_TYPE_PROJECTIVE;
 	};
 
 	/**
@@ -792,7 +835,6 @@ namespace ve {
 	*/
 	VECameraProjective::VECameraProjective(std::string name, float nearPlane, float farPlane, float aspectRatio, float fov) :
 			VECamera(name, nearPlane, farPlane), m_aspectRatio(aspectRatio), m_fov(fov)   {
-		m_cameraType = VE_CAMERA_TYPE_PROJECTIVE;
 	};
 
 	/**
@@ -863,7 +905,6 @@ namespace ve {
 	*
 	*/
 	VECameraOrtho::VECameraOrtho(std::string name) : VECamera(name) {
-		m_cameraType = VE_CAMERA_TYPE_ORTHO;
 	};
 
 	/**
@@ -879,7 +920,6 @@ namespace ve {
 	*/
 	VECameraOrtho::VECameraOrtho(std::string name, float nearPlane, float farPlane, float width, float height) :
 		VECamera(name, nearPlane, farPlane), m_width(width), m_height(height) {
-		m_cameraType = VE_CAMERA_TYPE_ORTHO;
 	};
 
 
@@ -905,6 +945,7 @@ namespace ve {
 		pm[2][2] *= -1;		//camera looks down its positive z-axis, OpenGL function does it reverse
 		return pm;
 	}
+
 
 	/**
 	* \brief Get a list of 8 points making up the camera frustum
@@ -945,12 +986,12 @@ namespace ve {
 
 	/**
 	* \brief Simple VELight constructor, default is directional light
+	*
 	* \param[in] name Name of the camera
-	* \param[in] type Light type
+	*
 	*/
-	VELight::VELight(std::string name, veLightType type, glm::mat4 transf, VESceneNode *parent) : 
-						VESceneObject(name, transf, parent), m_lightType(type) {
-		m_nodeType = VE_OBJECT_TYPE_LIGHT;
+	VELight::VELight(std::string name, glm::mat4 transf, VESceneNode *parent ) : 
+						VESceneObject(name, transf, parent, (uint32_t)sizeof(veUBOPerLight_t)) {
 	};
 
 
@@ -961,21 +1002,53 @@ namespace ve {
 	* \param[in] pLight Pointer to the light structure that will be copied into a UBO
 	*
 	*/
-	void VELight::fillLightStructure(veLightData_t *pLight) {
+	/*void VELight::fillLightStructure(veLightData_t *pLight) {
 		pLight->type[0] = m_lightType;
 		pLight->param = param;
 		pLight->col_ambient = col_ambient;
 		pLight->col_diffuse = col_diffuse;
 		pLight->col_specular = col_specular;
 		pLight->transform = getWorldTransform();
+	}*/
+
+	void VELight::updateUBO(glm::mat4 worldMatrix) {
+		veUBOPerLight_t ubo = {};
+
+		ubo.type[0] = getLightType();
+		ubo.model = getWorldTransform();
+		ubo.col_ambient = m_col_ambient;
+		ubo.col_diffuse = m_col_diffuse;
+		ubo.col_specular = m_col_specular;
+		ubo.param = m_param;
+
+		VESceneObject::updateUBO((void*)&ubo, (uint32_t)sizeof(veUBOPerLight_t));
 	}
 
-	/**
-	* \returns the light type of this light
-	*/
-	VELight::veLightType VELight::getLightType() {
-		return m_lightType;
-	}
+
+	VELight::~VELight() {
+		for (auto pCam : m_shadowCameras) {
+			delete pCam;
+		}
+		m_shadowCameras.clear();
+	};
+
+
+	//------------------------------------------------------------------------------------------------
+	//derive light classes
+
+	VEDirectionalLight::VEDirectionalLight(std::string name, glm::mat4 transf, VESceneNode *parent) :
+		VELight(name, transf, parent) {
+	};
+
+
+	VEPointLight::VEPointLight(std::string name, glm::mat4 transf, VESceneNode *parent) :
+		VELight( name, transf, parent ) {
+	};
+
+
+	VESpotLight::VESpotLight(std::string name, glm::mat4 transf, VESceneNode *parent) :
+		VELight(name, transf, parent) {
+	};
 
 
 }

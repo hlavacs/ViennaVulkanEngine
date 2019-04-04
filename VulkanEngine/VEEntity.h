@@ -79,7 +79,8 @@ namespace ve {
 	};
 
 
-	//------------------------------------------------------------------------------------
+	//----------------------------------------------------------------------------------------------
+	//Scene node
 
 
 	/**
@@ -104,9 +105,8 @@ namespace ve {
 		};
 
 	protected:
-		veNodeType		m_nodeType = VE_OBJECT_TYPE_SCENENODE;		///<Default node  type
 		glm::mat4		m_transform = glm::mat4(1.0);				///<Transform from local to parent space, the engine uses Y-UP, Left-handed
-		uint32_t		m_lastUpdate = -1;							///<Time (llop count) of last update of this subtree
+
 	public:
 		VESceneNode *				m_parent = nullptr;				///<Pointer to entity parent
 		std::vector<VESceneNode *>	m_children;						///<List of entity children
@@ -114,9 +114,10 @@ namespace ve {
 		//-------------------------------------------------------------------------------------
 		VESceneNode(std::string name, glm::mat4 transf = glm::mat4(1.0f), VESceneNode *parent = nullptr);
 		virtual ~VESceneNode();
+		///\returns the scene node type
+		virtual veNodeType	getNodeType() { return VE_OBJECT_TYPE_SCENENODE; };
+
 		//-------------------------------------------------------------------------------------
-		///\returns the object type
-		veNodeType	getNodeType() { return m_nodeType; };
 		void		setTransform(glm::mat4 trans);		//Overwrite the transform and copy it to the UBO
 		glm::mat4	getTransform();						//Return local transform
 		void		setPosition(glm::vec3 pos);			//Set the position of the entity
@@ -133,7 +134,7 @@ namespace ve {
 		virtual void update(glm::mat4 parentWorldMatrix );					//Copy the world matrix using the parent's world matrix
 		virtual void updateChildren(glm::mat4 worldMatrix );				//Update all children
 
-		///Meant for subclasses to add data to the UBO, so this function does nothing
+		///Meant for subclasses to add data to the UBO, so this function does nothing in base class
 		virtual void updateUBO(glm::mat4 parentWorldMatrix ) {};
 
 		//--------------------------------------------------------------------------------------
@@ -146,6 +147,9 @@ namespace ve {
 	};
 
 
+	//--------------------------------------------------------------------------------------------------
+	//Scene object
+
 
 	/**
 	*
@@ -157,16 +161,23 @@ namespace ve {
 
 	class VESceneObject : public VESceneNode {
 
+	protected:
+		void updateUBO( void *pUBO, uint32_t sizeUBO );						//Helper function to call VMA functions
+		static VkDescriptorSetLayout m_descriptorSetLayoutPerObject;		///<Descriptor set per object - just one UBO
+
 	public:
 
 		std::vector<VkBuffer>			m_uniformBuffers;				///<One UBO for each framebuffer frame
 		std::vector<VmaAllocation>		m_uniformBuffersAllocation;		///<VMA information for the UBOs
 		std::vector<VkDescriptorSet>	m_descriptorSetsUBO;			///<Descriptor sets for UBO
 
-		VESceneObject(std::string name, glm::mat4 transf = glm::mat4(1.0f), VESceneNode *parent = nullptr);
-		~VESceneObject();
+		VESceneObject(std::string name, glm::mat4 transf = glm::mat4(1.0f), VESceneNode *parent = nullptr, uint32_t sizeUBO = 0);
+		virtual ~VESceneObject();
 	};
 
+
+	//--------------------------------------------------------------------------------------------------
+	//Entity
 
 
 	class VESubrender;
@@ -193,22 +204,27 @@ namespace ve {
 			VE_ENTITY_TYPE_SKYPLANE,			///<A plane for sky boxes
 			VE_ENTITY_TYPE_TERRAIN_HEIGHTMAP	///<A heightmap for terrain modelling
 		};
-		
+
+		///Data that is updated for each object
+		struct veUBOPerObject_t {
+			glm::mat4 model;			///<Object model matrix
+			glm::mat4 modelInvTrans;	///<Inverse transpose
+			glm::vec4 color;			///<Uniform color if needed by shader
+			glm::vec4 texParam;			///<Texture scaling and animation
+		};
+
 	protected:
 		veEntityType				m_entityType = VE_ENTITY_TYPE_NORMAL;			///<Entity type
-		glm::vec4					m_param = glm::vec4(1.0f, 1.0f, 0.0f, 0.0f);	///<A free parameter to be used (e.g. texture animation)
+		glm::vec4					m_texParam = glm::vec4(1.0f, 1.0f, 0.0f, 0.0f);	///<Texture animation
 
 	public:
-		VEMesh *					m_pMesh = nullptr;								///<Pointer to entity mesh
-		VEMaterial *				m_pMaterial = nullptr;							///<Pointer to entity material
+		VEMesh *					m_pMesh = nullptr;					///<Pointer to entity mesh
+		VEMaterial *				m_pMaterial = nullptr;				///<Pointer to entity material
 
-		VESubrender *				m_pSubrenderer = nullptr;				///<subrenderer this entity is registered with / replace with a set
-		bool						m_drawEntity = false;					///<should it be drawn at all?
-		bool						m_castsShadow = true;					///<draw in the shadow pass?
+		VESubrender *				m_pSubrenderer = nullptr;			///<subrenderer this entity is registered with / replace with a set
+		bool						m_drawEntity = false;				///<should it be drawn at all?
+		bool						m_castsShadow = true;				///<draw in the shadow pass?
 
-		//std::vector<VkBuffer>			m_uniformBuffers;				///<One UBO for each framebuffer frame
-		//std::vector<VmaAllocation>		m_uniformBuffersAllocation;		///<VMA information for the UBOs
-		//std::vector<VkDescriptorSet>	m_descriptorSetsUBO;			///<Per subrenderer descriptor sets for UBO
 		std::vector<VkDescriptorSet>	m_descriptorSetsResources;		///<Per subrenderer descriptor sets for other resources
 
 		//VEEntity(std::string name);
@@ -216,9 +232,11 @@ namespace ve {
 					VEMesh *pMesh, VEMaterial *pMat,
 					glm::mat4 transf, VESceneNode *parent);
 		virtual ~VEEntity();
+		///\returns the scene node type
+		virtual veNodeType	getNodeType() { return VE_OBJECT_TYPE_ENTITY; };
 
 		//--------------------------------------------------
-		void setParam(glm::vec4 param);
+		void setTexParam(glm::vec4 param);
 		///\returns the entity type
 		veEntityType getEntityType() { return m_entityType; };
 		virtual void updateUBO( glm::mat4 parentWorldMatrix );
@@ -226,6 +244,10 @@ namespace ve {
 		//--------------------------------------------------
 		virtual void getBoundingSphere( glm::vec3 *center, float *radius );		//return center and radius for a bounding sphere
 	};
+
+
+	//--------------------------------------------------------------------------------------------------
+	//Cameras
 
 
 	class VELight;
@@ -243,57 +265,75 @@ namespace ve {
 	public:
 		///Camera type, can be projective or orthographic
 		enum veCameraType {
-			VE_CAMERA_TYPE_PROJECTIVE,	///<A projective camera, cannot be drawn
-			VE_CAMERA_TYPE_ORTHO,		///<An orthographic camera, cannot be drawn
+			VE_CAMERA_TYPE_PROJECTIVE,	///<A projective camera
+			VE_CAMERA_TYPE_ORTHO,		///<An orthographic camera
 		};
 
 		///Structure for sending camera information to a UBO
-		struct veCameraData_t {
-			glm::mat4 camModel;			///<Camera model matrix, needed for camera world position
-			glm::mat4 camView;			///<Camera view matrix
-			glm::mat4 camProj;			///<Camera projection matrix
-			glm::vec4 param;			///<param[0]: near plane param[1]: far plane distances
+		struct veUBOPerCamera_t {
+			glm::mat4 model;		///<Camera model matrix, needed for camera world position
+			glm::mat4 view;			///<Camera view matrix
+			glm::mat4 proj;			///<Camera projection matrix
+			glm::vec4 param;		///<param[0]: near plane param[1]: far plane distances - 2 and 3 are shadow depth fractions
 		};
+
 
 		///Structure for sending information about a shadow to a UBO
-		struct veShadowData_t {
-			glm::mat4 shadowView;		///<View matrix of the shadow cam
-			glm::mat4 shadowProj;		///<Projection matrix of the shadow cam
-			glm::vec4 limits;			///<limits[0] nad [1]: fraction of (far-near) distance where frustum begins/ends
-		};
+		//struct veShadowData_t {
+		//	glm::mat4 shadowView;		///<View matrix of the shadow cam
+		//	glm::mat4 shadowProj;		///<Projection matrix of the shadow cam
+		//	glm::vec4 limits;			///<limits[0] nad [1]: fraction of (far-near) distance where frustum begins/ends
+		//};
 
-	protected:
-		veCameraType m_cameraType;	///<Light type of this light
+		float m_nearPlane = 1.0f;			///<The distance of the near plane to the camera origin
+		float m_farPlane = 200.0f;			///<The distance of the far plane to the camera origin
 
-	public:
+		VECamera(	std::string name, 
+					glm::mat4 transf = glm::mat4(1.0f), 
+					VESceneNode *parent=nullptr );
 
-		float m_nearPlane = 1.0f;	///<The distance of the near plane to the camera origin
-		float m_farPlane = 200.0f;	///<The distance of the far plane to the camera origin
+		VECamera(	std::string name, 
+					float nearPlane, float farPlane, 
+					glm::mat4 transf = glm::mat4(1.0f), 
+					VESceneNode *parent = nullptr );
 
-		VECamera(std::string name, glm::mat4 transf = glm::mat4(1.0f), VESceneNode *parent=nullptr);
-		VECamera(std::string name, float nearPlane, float farPlane, glm::mat4 transf = glm::mat4(1.0f), VESceneNode *parent = nullptr);
 		virtual ~VECamera() {};
 
-		///\returns the camera type
-		veCameraType getCameraType() { return m_cameraType; };
+		//--------------------------------------------------
+		//type
+		///\returns the scene node type
+		virtual veNodeType	getNodeType() { return VE_OBJECT_TYPE_CAMERA; };
+
+		///\returns the camera type - pure virtual for the camera base class
+		virtual veCameraType getCameraType()=0;
 
 		//--------------------------------------------------
-		void fillCameraStructure(veCameraData_t *pCamera);
-		void fillShadowStructure(veShadowData_t *pCamera);
-		virtual void updateUBO(glm::mat4 parentWorldMatrix) {};
+		//UBO
+		//void fillCameraStructure(veCameraData_t *pCamera);
+		//void fillShadowStructure(veShadowData_t *pCamera);
+		//virtual void updateUBO(glm::mat4 parentWorldMatrix) {};
 
-		virtual glm::mat4 getProjectionMatrix()=0;								///<Return the projection matrix
-		///Return the projection matrix, pure virtual
+		virtual void updateUBO(glm::mat4 parentWorldMatrix);
+
+		///\returns the projection matrix - pure virtual for the camera base class
+		virtual glm::mat4 getProjectionMatrix()=0;
+
+		///\return the projection matrix - pure virtual for the camera base class
 		virtual glm::mat4 getProjectionMatrix( float width, float height )=0;
 
 		//--------------------------------------------------
+		//Bounding volumes
 		virtual void getBoundingSphere(glm::vec3 *center, float *radius);		//return center and radius for a bounding sphere
-		///Return list of frustum points in world space, pure virtual
+		///\returns list of frustum points in world space - pure virtual for the camera base class
 		virtual void getFrustumPoints(std::vector<glm::vec4> &points, float z0 = 0.0f, float z1 = 1.0f)=0;
+
+		//--------------------------------------------------
+		//shadow cams
 		virtual VECamera *createShadowCamera(VELight *light, float z0 = 0.0f, float z1 = 1.0f);	//Depending on light type, create shadow camera
 		virtual VECamera *createShadowCameraOrtho(VELight *light, float z0 = 0.0f, float z1 = 1.0f);				//Create an ortho shadow cam for directional light
 		virtual VECamera *createShadowCameraProjective(VELight *light, float z0 = 0.0f, float z1 = 1.0f);			//Create a projective shadow cam for spot light
 	};
+
 
 
 	/**
@@ -312,7 +352,11 @@ namespace ve {
 		VECameraProjective(std::string name);
 		VECameraProjective(std::string name, float nearPlane, float farPlane, float aspectRatio, float fov);
 		virtual ~VECameraProjective() {};
-		glm::mat4 getProjectionMatrix();										//Return the projection matrix
+
+		///\returns the camera type
+		virtual veCameraType getCameraType() { return VE_CAMERA_TYPE_PROJECTIVE; };
+
+		virtual glm::mat4 getProjectionMatrix();								//Return the projection matrix
 		virtual glm::mat4 getProjectionMatrix(float width, float height);		//Return the projection matrix
 		virtual void getFrustumPoints(std::vector<glm::vec4> &points, float t1 = 0.0f, float t2 = 1.0f);	//return list of frustum points in world space
 	};
@@ -335,11 +379,18 @@ namespace ve {
 		VECameraOrtho(std::string name);
 		VECameraOrtho(std::string name, float nearPlane, float farPlane, float width, float height );
 		virtual ~VECameraOrtho() {};
-		glm::mat4 getProjectionMatrix();										//Return the projection matrix
+
+		///\returns the camera type
+		virtual veCameraType getCameraType() { return VE_CAMERA_TYPE_ORTHO; };
+
+		virtual glm::mat4 getProjectionMatrix();								//Return the projection matrix
 		virtual glm::mat4 getProjectionMatrix(float width, float height);		//Return the projection matrix
 		virtual void getFrustumPoints(std::vector<glm::vec4> &points, float t1 = 0.0f, float t2 = 1.0f);	//return list of frustum points in world space
 	};
 
+
+	//--------------------------------------------------------------------------------------------------
+	//Lights
 
 	/**
 	*
@@ -353,17 +404,6 @@ namespace ve {
 	class VELight : public VESceneObject {
 
 	public:
-
-		///Light data to be copied into a UBO
-		struct veLightData_t {
-			glm::ivec4	type;			///<Light type information
-			glm::vec4	param;			///<Light parameters
-			glm::vec4	col_ambient;	///<Ambient color
-			glm::vec4	col_diffuse;	///<Diffuse color
-			glm::vec4	col_specular;	///<Specular color
-			glm::mat4	transform;		///<Position and orientation of the light
-		};
-
 		///A light can have one of these types
 		enum veLightType {
 			VE_LIGHT_TYPE_DIRECTIONAL=0,	///<Directional light
@@ -371,20 +411,75 @@ namespace ve {
 			VE_LIGHT_TYPE_SPOT=2			///<Spot light
 		};
 
+		///Structure for sending information about a shadow to a UBO
+		//struct veShadowData_t {
+		//	VECamera::veCameraData_t	shadowCameras[6];
+		//	glm::vec4					limits;				///<limits[0] and [1]: fraction of (far-near) distance where frustum begins/ends
+		//};
+
+		///Light data to be copied into a UBO
+		struct veUBOPerLight_t {
+			glm::ivec4	type;								///<Light type information
+			glm::mat4	model;								///<Position and orientation of the light
+			glm::vec4	col_ambient;						///<Ambient color
+			glm::vec4	col_diffuse;						///<Diffuse color
+			glm::vec4	col_specular;						///<Specular color
+			glm::vec4	param;								///<Light parameters
+			VECamera::veUBOPerCamera_t shadowCameras[6];	///<Up to 6 different shadows, each having its on camera and shadow map
+		};
+
 	protected:
-		veLightType m_lightType;	///<Light type of this light
+		std::vector<VECamera*>	m_shadowCameras;	///<Up to 6 shadow cameras for this light
 
 	public:
-		glm::vec4 param = glm::vec4(1.0f, 1.0f, 1.0f, 1.0f);				///<1-2: attenuation, 3: Ns
-		glm::vec4 col_ambient  = 0.5f * glm::vec4(1.0f, 1.0f, 1.0f, 1.0f);	///<Ambient color
-		glm::vec4 col_diffuse  = 0.8f * glm::vec4(1.0f, 1.0f, 1.0f, 1.0f);	///<Diffuse color
-		glm::vec4 col_specular = 0.9f * glm::vec4(1.0f, 1.0f, 1.0f, 1.0f);	///<Specular color
+		glm::vec4 m_col_ambient  = 0.5f * glm::vec4(1.0f, 1.0f, 1.0f, 1.0f);	///<Ambient color
+		glm::vec4 m_col_diffuse  = 0.8f * glm::vec4(1.0f, 1.0f, 1.0f, 1.0f);	///<Diffuse color
+		glm::vec4 m_col_specular = 0.9f * glm::vec4(1.0f, 1.0f, 1.0f, 1.0f);	///<Specular color
+		glm::vec4 m_param		 = glm::vec4(1.0f, 1.0f, 1.0f, 1.0f);					///<1-2: attenuation, 3: Ns
 
-		VELight(std::string name, veLightType type, glm::mat4 transf = glm::mat4(1.0f), VESceneNode *parent = nullptr );
-		veLightType getLightType();		//return the light type
-		void fillLightStructure( veLightData_t *pLight);
-		virtual void updateUBO(glm::mat4 parentWorldMatrix) {};
+		VELight(std::string name, glm::mat4 transf = glm::mat4(1.0f), VESceneNode *parent = nullptr);
+		virtual ~VELight();
+
+		///\returns the scene node type
+		virtual veNodeType	getNodeType() { return VE_OBJECT_TYPE_LIGHT; };
+
+		///\returns the light type - pure virtual for the light base class
+		virtual veLightType	getLightType()=0;
+
+		//void fillLightStructure( veLightData_t *pLight);
+		virtual void updateUBO(glm::mat4 parentWorldMatrix);
 	};
+
+
+
+	class VEDirectionalLight : public VELight {
+	public:
+		VEDirectionalLight(	std::string name, glm::mat4 transf = glm::mat4(1.0f), VESceneNode *parent = nullptr);
+		virtual ~VEDirectionalLight() {};
+
+		///\returns the light type
+		virtual veLightType getLightType() { return VE_LIGHT_TYPE_DIRECTIONAL; };
+	};
+
+	class VEPointLight : public VELight {
+	public:
+		VEPointLight(std::string name, glm::mat4 transf = glm::mat4(1.0f), VESceneNode *parent = nullptr);
+		virtual ~VEPointLight() {};
+
+		///\returns the light type
+		virtual veLightType getLightType() { return VE_LIGHT_TYPE_POINT; };
+	};
+
+
+	class VESpotLight : public VELight {
+	public:
+		VESpotLight(std::string name, glm::mat4 transf = glm::mat4(1.0f), VESceneNode *parent = nullptr);
+		virtual ~VESpotLight() {};
+
+		///\returns the light type
+		virtual veLightType getLightType() { return VE_LIGHT_TYPE_SPOT; };
+	};
+
 
 
 }

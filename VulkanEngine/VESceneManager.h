@@ -40,7 +40,6 @@ namespace ve {
 		std::map<std::string, VEMesh *>		m_meshes = {};		///<Storage of all meshes currently in the engine
 		std::map<std::string, VEMaterial*>	m_materials = {};	///<Storage of all materials currently in the engine
 		std::map<std::string, VESceneNode*>	m_sceneNodes = {};	///<Storage of all scene nodes currently in the engine
-		std::set<VESceneNode*>				m_dirtyList = {};	///<List of dirty scene nodes that must be updated
 
 		VECamera *				m_camera = nullptr;			///<entity ptr of the current camera
 		std::vector<VELight*>	m_lights = {};				///<ptrs to the lights to use
@@ -79,11 +78,6 @@ namespace ve {
 		///Add a scene node to the scene
 		void				addSceneNode(VESceneNode *entity) { m_sceneNodes[entity->getName()] = entity; };
 		VESceneNode *		getSceneNode(std::string entityName);
-		void				addToDirtyList(VESceneNode *pObject);
-		void				removeFromDirtyList(VESceneNode *pObject);
-		void				updateDirtyObjects();
-		///Clear all objects from the dirty list
-		void				clearDirtyList() { m_dirtyList.clear();  };
 		void				deleteSceneNodeAndChildren(std::string name);
 		void				createSceneNodeList(VESceneNode *pObject, std::vector<std::string> &namelist);
 

@@ -52,7 +52,7 @@ namespace ve {
 		setCamera( camera );
 
 		//use one light source
-		VELight *light = new VELight("StandardLight", VELight::VE_LIGHT_TYPE_DIRECTIONAL );
+		VELight *light = new VEDirectionalLight("StandardLight" );
 		light->lookAt(glm::vec3(0.0f, 20.0f, -20.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
 		addSceneNode(light);
 		m_lights.push_back(light);
@@ -611,40 +611,6 @@ namespace ve {
 
 	/**
 	*
-	* \brief Move this object to the dirty list
-	*
-	* \param[in] pObject Pointer to the object that should be added to the dirty list
-	*
-	*/
-	void VESceneManager::addToDirtyList(VESceneNode *pObject) {
-		m_dirtyList.insert(pObject);
-	}
-
-	/**
-	*
-	* \brief Remove this object from the dirty list
-	*
-	* \param[in] pObject Pointer to the object that should be removed from the dirty list
-	*
-	*/
-	void VESceneManager::removeFromDirtyList(VESceneNode *pObject) {
-		m_dirtyList.erase(pObject);
-	}
-
-	/**
-	*
-	* \brief Update all objects on the dirty list and clear the dirty list
-	*
-	*/
-	void VESceneManager::updateDirtyObjects() {
-		for (auto pObject : m_dirtyList) {
-			pObject->update();
-		}
-		m_dirtyList.clear();
-	}
-
-	/**
-	*
 	* \brief Delete an entity and all its subentities
 	*
 	* \param[in] name Name of the entity.
@@ -665,7 +631,6 @@ namespace ve {
 			if( pObject->getNodeType() == VESceneNode::VE_OBJECT_TYPE_ENTITY )
 				getRendererPointer()->removeEntityFromSubrenderers((VEEntity*)pObject);
 			m_sceneNodes.erase(namelist[i]);
-			m_dirtyList.erase(pObject);
 			delete pObject;
 		}
 	}
