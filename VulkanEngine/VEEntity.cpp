@@ -630,9 +630,13 @@ namespace ve {
 	* \param[in] farPlane Distance of far plane to the camera origin
 	*
 	*/
-	VECamera::VECamera(std::string name, float nearPlane, float farPlane, glm::mat4 transf, VESceneNode *parent ) :
+	VECamera::VECamera(	std::string name, 
+						float nearPlane, float farPlane,
+						float nearPlaneFraction, float farPlaneFraction,
+						glm::mat4 transf, VESceneNode *parent ) :
 							VESceneObject(name, transf, parent, (uint32_t)sizeof(veUBOPerCamera_t)), 
-								m_nearPlane(nearPlane), m_farPlane(farPlane) {
+							m_nearPlane(nearPlane), m_farPlane(farPlane),
+							m_nearPlaneFraction(nearPlaneFraction), m_farPlaneFraction(farPlaneFraction) {
 	}
 
 
@@ -644,6 +648,8 @@ namespace ve {
 		ubo.proj = getProjectionMatrix();
 		ubo.param[0] = m_nearPlane;
 		ubo.param[1] = m_farPlane;
+		ubo.param[2] = m_nearPlaneFraction;		//needed only if this is a shadow cam
+		ubo.param[3] = m_farPlaneFraction;		//needed only if this is a shadow cam
 
 		VESceneObject::updateUBO((void*)&ubo, (uint32_t)sizeof(veUBOPerCamera_t));
 	}
@@ -819,7 +825,7 @@ namespace ve {
 	* \param[in] name Name of the camera.
 	*
 	*/
-	VECameraProjective::VECameraProjective(std::string name ) : VECamera(name) {
+	VECameraProjective::VECameraProjective(std::string name, glm::mat4 transf, VESceneNode *parent) : VECamera(name, transf, parent ) {
 	};
 
 	/**
@@ -833,8 +839,16 @@ namespace ve {
 	* \param[in] fov Vertical field of view angle.
 	*
 	*/
-	VECameraProjective::VECameraProjective(std::string name, float nearPlane, float farPlane, float aspectRatio, float fov) :
-			VECamera(name, nearPlane, farPlane), m_aspectRatio(aspectRatio), m_fov(fov)   {
+	VECameraProjective::VECameraProjective(	std::string name, 
+											float nearPlane, float farPlane, 
+											float aspectRatio, float fov,
+											float nearPlaneFraction, float farPlaneFraction,
+											glm::mat4 transf, VESceneNode *parent) :
+												VECamera(	name, 
+															nearPlane, farPlane, 
+															nearPlaneFraction, farPlaneFraction,
+															transf, parent ), 
+												m_aspectRatio(aspectRatio), m_fov(fov)   {
 	};
 
 	/**
@@ -867,7 +881,7 @@ namespace ve {
 	*
 	* \param[in] z0 Startparameter for interpolating the frustum
 	* \param[in] z1 Endparameter for interlopating the frustum
-	* \param[out] points List of 8 points that make up the frustum in world space
+	* \param[out] points List of 8 points that make up the interpolated frustum in world space
 	*
 	*/
 	void VECameraProjective::getFrustumPoints(std::vector<glm::vec4> &points, float z0, float z1) {
@@ -904,7 +918,8 @@ namespace ve {
 	* \param[in] name Name of the camera.
 	*
 	*/
-	VECameraOrtho::VECameraOrtho(std::string name) : VECamera(name) {
+	VECameraOrtho::VECameraOrtho(std::string name, glm::mat4 transf = glm::mat4(1.0f), VESceneNode *parent = nullptr) : 
+						VECamera(name, transf, parent ) {
 	};
 
 	/**
@@ -918,8 +933,16 @@ namespace ve {
 	* \param[in] height Height of the frustum
 	*
 	*/
-	VECameraOrtho::VECameraOrtho(std::string name, float nearPlane, float farPlane, float width, float height) :
-		VECamera(name, nearPlane, farPlane), m_width(width), m_height(height) {
+	VECameraOrtho::VECameraOrtho(	std::string name, 
+									float nearPlane, float farPlane, 
+									float width, float height,
+									float nearPlaneFraction = 0.0f, float farPlaneFraction = 1.0f,
+									glm::mat4 transf = glm::mat4(1.0f), VESceneNode *parent = nullptr ) :
+										VECamera(	name, 
+													nearPlane, farPlane, 
+													nearPlaneFraction, farPlaneFraction,
+													transf, parent), 
+										m_width(width), m_height(height) {
 	};
 
 
@@ -954,7 +977,7 @@ namespace ve {
 	*
 	* \param[in] t1 Startparameter for interpolating the frustum
 	* \param[in] t2 Endparameter for interlopating the frustum
-	* \param[out] points List of 8 points that make up the frustum in world space
+	* \param[out] points List of 8 points that make up the interpolated frustum in world space
 	*
 	*/
 	void VECameraOrtho::getFrustumPoints(std::vector<glm::vec4> &points, float t1, float t2) {
@@ -1037,17 +1060,18 @@ namespace ve {
 	//derive light classes
 
 	VEDirectionalLight::VEDirectionalLight(std::string name, glm::mat4 transf, VESceneNode *parent) :
-		VELight(name, transf, parent) {
+							VELight(name, transf, parent) {
+
 	};
 
 
 	VEPointLight::VEPointLight(std::string name, glm::mat4 transf, VESceneNode *parent) :
-		VELight( name, transf, parent ) {
+					VELight( name, transf, parent ) {
 	};
 
 
 	VESpotLight::VESpotLight(std::string name, glm::mat4 transf, VESceneNode *parent) :
-		VELight(name, transf, parent) {
+					VELight(name, transf, parent) {
 	};
 
 

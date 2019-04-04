@@ -42,10 +42,8 @@ namespace ve {
 
 	protected:
 		veSubrenderType m_type = VE_SUBRENDERER_TYPE_NONE;	///<Type of the subrenderer
-
-		VkDescriptorSetLayout m_descriptorSetLayoutUBO = VK_NULL_HANDLE;		///<Descriptor set 1 : per object UBO
 		VkDescriptorSetLayout m_descriptorSetLayoutResources = VK_NULL_HANDLE;	///<Descriptor set 3 : per object additional resources
-		VkPipelineLayout m_pipelineLayout = VK_NULL_HANDLE;				///<Pipeline layout
+		VkPipelineLayout m_pipelineLayout = VK_NULL_HANDLE;	///<Pipeline layout
 		VkPipeline m_pipeline = VK_NULL_HANDLE;				///<Pipeline for light pass
 
 		std::vector<VEEntity *> m_entities;					///<List of associated entities
@@ -64,12 +62,16 @@ namespace ve {
 		virtual void	closeSubrenderer();
 		virtual void	recreateResources();
 
-		virtual void	bindPipeline(VkCommandBuffer commandBuffer);
+		virtual void	bindPipeline( VkCommandBuffer commandBuffer ); 
+		virtual void	bindDescriptorSets(VkCommandBuffer commandBuffer, uint32_t imageIndex, VECamera *pCamera, VELight *pLight, VkDescriptorSet descriptorSetsShadow);
+		virtual void	bindDescriptorSets(VkCommandBuffer commandBuffer, uint32_t imageIndex, VEEntity *entity);
+
 		virtual void	draw( VkCommandBuffer commandBuffer, uint32_t imageIndex );
 		virtual void	drawEntity(VkCommandBuffer commandBuffer, uint32_t imageIndex, VEEntity *entity);
-		virtual void	bindDescriptorSets(VkCommandBuffer commandBuffer, uint32_t imageIndex, VEEntity *entity);
+		
 		virtual void	addEntity( VEEntity *pEntity );
 		virtual void	removeEntity(VEEntity *pEntity);
+		
 		///return the layout of the local pipeline
 		VkPipelineLayout getPipelineLayout() { return m_pipelineLayout; };
 	};

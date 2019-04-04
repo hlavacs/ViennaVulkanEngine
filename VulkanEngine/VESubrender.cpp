@@ -30,9 +30,6 @@ namespace ve {
 		if (m_pipelineLayout != VK_NULL_HANDLE)
 			vkDestroyPipelineLayout(getRendererPointer()->getDevice(), m_pipelineLayout, nullptr);
 
-		if (m_descriptorSetLayoutUBO != VK_NULL_HANDLE)
-			vkDestroyDescriptorSetLayout(getRendererPointer()->getDevice(), m_descriptorSetLayoutUBO, nullptr);
-
 		if (m_descriptorSetLayoutResources != VK_NULL_HANDLE)
 			vkDestroyDescriptorSetLayout(getRendererPointer()->getDevice(), m_descriptorSetLayoutResources, nullptr);
 	}
@@ -41,9 +38,63 @@ namespace ve {
 	/**
 	* \brief Bind the subrenderer's pipeline to a commandbuffer
 	*/
-	void VESubrender::bindPipeline(VkCommandBuffer commandBuffer) {
+	void VESubrender::bindPipeline(VkCommandBuffer commandBuffer ) {
 		vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_pipeline);	//bind the PSO
 	}
+
+
+	void VESubrender::bindDescriptorSets(	VkCommandBuffer commandBuffer, uint32_t imageIndex, 
+											VECamera *pCamera, VELight *pLight, VkDescriptorSet descriptorSetShadow ) {
+
+		//set 0...cam UBO
+		//set 1...per object UBO
+		//set 2...shadow maps
+		//set 3...additional per object resources
+		//set 4...light resources
+
+		std::vector<VkDescriptorSet> set = { pCamera->m_descriptorSetsUBO[imageIndex] };
+		vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_pipelineLayout, 0, (uint32_t)set.size(), set.data(), 0, nullptr);
+
+		if (descriptorSetShadow != VK_NULL_HANDLE) {
+			set = { descriptorSetShadow };
+			vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_pipelineLayout, 2, (uint32_t)set.size(), set.data(), 0, nullptr);
+		}
+
+		set = { pLight->m_descriptorSetsUBO[imageIndex] };
+		vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_pipelineLayout, 4, (uint32_t)set.size(), set.data(), 0, nullptr);
+	}
+
+
+	/**
+	*
+	* \brief Bind default descriptor sets
+	*
+	* The function binds the default descriptor sets. Can be overloaded.
+	*
+	* \param[in] commandBuffer The command buffer to record into all draw calls
+	* \param[in] imageIndex Index of the current swap chain image
+	* \param[in] entity Pointer to the entity to draw
+	*
+	*/
+	void VESubrender::bindDescriptorSets(VkCommandBuffer commandBuffer, uint32_t imageIndex, VEEntity *entity) {
+
+		//set 0...cam UBO (set before)
+		//set 1...per object UBO
+		//set 2...shadow map
+		//set 3...additional per object resources
+		//set 4...light resources (set before)
+
+		std::vector<VkDescriptorSet> sets = { entity->m_descriptorSetsUBO[imageIndex] };
+		vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_pipelineLayout, 1, (uint32_t)sets.size(), sets.data(), 0, nullptr);
+
+		if (entity->m_descriptorSetsResources.size()>0) {
+			sets = { entity->m_descriptorSetsResources[imageIndex] };
+			vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_pipelineLayout, 3, (uint32_t)sets.size(), sets.data(), 0, nullptr);
+		}
+	}
+
+
+
 
 
 	/**
@@ -78,7 +129,7 @@ namespace ve {
 	*/
 	void VESubrender::drawEntity(VkCommandBuffer commandBuffer, uint32_t imageIndex, VEEntity *entity) {
 
-		bindDescriptorSets(commandBuffer, imageIndex, entity);		//bind the entity's descriptor sets
+		bindDescriptorSets(commandBuffer, imageIndex, entity);					//bind the entity's descriptor sets
 
 		VkBuffer vertexBuffers[] = { entity->m_pMesh->m_vertexBuffer };
 		VkDeviceSize offsets[] = { 0 };
@@ -87,39 +138,6 @@ namespace ve {
 		vkCmdBindIndexBuffer(commandBuffer, entity->m_pMesh->m_indexBuffer, 0, VK_INDEX_TYPE_UINT32); //bind index buffer
 
 		vkCmdDrawIndexed(commandBuffer, entity->m_pMesh->m_indexCount, 1, 0, 0, 0); //record the draw call
-	}
-
-
-
-	/**
-	*
-	* \brief Bind default descriptor sets - 0...per object 1...per frame
-	*
-	* The function binds the default descriptor sets -  0...per object 1...per frame. 
-	* Can be overloaded.
-	*
-	* \param[in] commandBuffer The command buffer to record into all draw calls
-	* \param[in] imageIndex Index of the current swap chain image
-	* \param[in] entity Pointer to the entity to draw
-	*
-	*/
-	void VESubrender::bindDescriptorSets(VkCommandBuffer commandBuffer, uint32_t imageIndex, VEEntity *entity) {
-		//set 0...per frame, includes cam and shadow matrices
-		//set 1...per object UBO
-		//set 2...shadow map
-		//set 3...additional per object resources
-		std::vector<VkDescriptorSet> sets =
-		{ 
-				getRendererForwardPointer()->getDescriptorSetsPerFrame()[imageIndex],
-				entity->m_descriptorSetsUBO[imageIndex], 
-				getRendererForwardPointer()->getDescriptorSetsShadow()[imageIndex],
-		};
-
-		if (entity->m_descriptorSetsResources.size()>0 ) {
-			sets.push_back( entity->m_descriptorSetsResources[imageIndex] );
-		}
-
-		vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_pipelineLayout, 0, (uint32_t)sets.size(), sets.data(), 0, nullptr);
 	}
 
 

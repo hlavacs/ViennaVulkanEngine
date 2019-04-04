@@ -388,44 +388,71 @@ namespace ve {
 			throw std::runtime_error("failed to acquire swap chain image!");
 		}
 
-		getSceneManagerPointer()->updateDirtyObjects();
+		VECamera *pCamera = getSceneManagerPointer()->getCamera();
+
 		updatePerFrameUBO( imageIndex );	//update camera data UBO
 
 		//prepare command buffer for drawing
 		VkCommandBuffer commandBuffer = vh::vhCmdBeginSingleTimeCommands(m_device, m_commandPool);
 
 		//-----------------------------------------------------------------------------------------
-		//shadow passes
+		//set clear values for shadow and light passes
 
-		std::vector<VkClearValue> clearValues = {};
+		std::vector<VkClearValue> clearValuesShadow = {};	//shadow map should be cleared every time
 		VkClearValue cv;
 		cv.depthStencil = { 1.0f, 0 };
-		clearValues.push_back(cv);
+		clearValuesShadow.push_back(cv);
 
-		for ( unsigned i = 0; i < NUM_SHADOW_CASCADE; i++) {
-			vh::vhRenderBeginRenderPass(commandBuffer, m_renderPassShadow,
-										m_shadowFramebuffers[imageIndex][i], 
-										clearValues, m_shadowMaps[imageIndex][i]->m_extent);
+		std::vector<VkClearValue> clearValuesLight = {};	//render target and depth buffer should be cleared only first time
+		VkClearValue cv1, cv2;
+		cv1.color = { 0.0f, 0.0f, 0.0f, 1.0f };
+		clearValuesLight.push_back(cv1);
+		cv2.depthStencil = { 1.0f, 0 };
+		clearValuesLight.push_back(cv2);
 
-			m_subrenderShadow->bindPipeline(commandBuffer);
-			vkCmdPushConstants(commandBuffer, m_subrenderShadow->getPipelineLayout(), VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(unsigned), &i);
-			m_subrenderShadow->draw(commandBuffer, imageIndex);
+		//go through all active lights in the scene
+		for (auto pLight : getSceneManagerPointer()->getLights() ) {
+
+			//-----------------------------------------------------------------------------------------
+			//shadow passes
+
+			for (unsigned i = 0; i < pLight->m_shadowCameras.size(); i++) {
+
+				vh::vhRenderBeginRenderPass(commandBuffer, m_renderPassShadow,
+											m_shadowFramebuffers[imageIndex][i],
+											clearValuesShadow, m_shadowMaps[imageIndex][i]->m_extent);
+
+				m_subrenderShadow->bindPipeline( commandBuffer );
+				m_subrenderShadow->bindDescriptorSets( commandBuffer, imageIndex, pLight->m_shadowCameras[i], pLight, VK_NULL_HANDLE );
+
+				vkCmdPushConstants(commandBuffer, m_subrenderShadow->getPipelineLayout(), VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(unsigned), &i);
+
+				m_subrenderShadow->draw(commandBuffer, imageIndex);
+
+				vkCmdEndRenderPass(commandBuffer);
+
+			}
+
+			//-----------------------------------------------------------------------------------------
+			//light pass
+
+			vh::vhRenderBeginRenderPass(commandBuffer, m_renderPass, m_swapChainFramebuffers[imageIndex], clearValuesLight, m_swapChainExtent);
+
+			for (auto pSub : m_subrenderers) {
+				pSub->bindPipeline(commandBuffer );
+				pSub->bindDescriptorSets(commandBuffer, imageIndex, pCamera, pLight, m_descriptorSetsShadow[imageIndex]);
+
+				pSub->draw(commandBuffer, imageIndex);
+			}
+
 			vkCmdEndRenderPass(commandBuffer);
+
+			vh::vhCmdEndSingleTimeCommands(m_device, m_graphicsQueue, m_commandPool, commandBuffer,
+				m_imageAvailableSemaphores[m_currentFrame], m_renderFinishedSemaphores[m_currentFrame],
+				m_inFlightFences[m_currentFrame]);
+
+			clearValuesLight.clear();
 		}
-
-		//-----------------------------------------------------------------------------------------
-		//light pass
-
-		vh::vhRenderBeginRenderPass(commandBuffer, m_renderPass, m_swapChainFramebuffers[imageIndex], m_swapChainExtent);
-		for (auto pSub : m_subrenderers) {
-			pSub->bindPipeline(commandBuffer);
-			pSub->draw(commandBuffer, imageIndex);
-		}
-		vkCmdEndRenderPass(commandBuffer);
-
-		vh::vhCmdEndSingleTimeCommands(	m_device, m_graphicsQueue, m_commandPool, commandBuffer,
-										m_imageAvailableSemaphores[m_currentFrame], m_renderFinishedSemaphores[m_currentFrame], 
-										m_inFlightFences[m_currentFrame]);
 	}
 
 

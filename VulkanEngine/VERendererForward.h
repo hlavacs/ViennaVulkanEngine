@@ -55,6 +55,7 @@ namespace ve {
 		VkDescriptorPool m_descriptorPool;								///<Descriptor pool for creating per frame descriptor sets
 		VkDescriptorSetLayout m_descriptorSetLayoutPerFrame;			///<Descriptor set 1: per frame 
 		std::vector<VkDescriptorSet> m_descriptorSetsPerFrame;			///<Per frame descriptor sets for set 1
+
 		VkDescriptorSetLayout m_descriptorSetLayoutShadow;				///<Descriptor set 2: shadow
 		std::vector<VkDescriptorSet> m_descriptorSetsShadow;			///<Per frame descriptor sets for set 2
 
