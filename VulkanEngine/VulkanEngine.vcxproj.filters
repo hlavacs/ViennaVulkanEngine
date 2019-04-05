@@ -78,6 +78,9 @@
     <ClInclude Include="vk_mem_alloc.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="VEMaterial.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="VEEngine.cpp">
@@ -159,6 +162,9 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="VESubrenderFW_Skyplane.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="VEMaterial.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

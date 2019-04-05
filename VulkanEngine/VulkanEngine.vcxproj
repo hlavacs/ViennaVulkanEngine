@@ -171,6 +171,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="VEMaterial.h" />
     <ClInclude Include="VESubrenderFW_Skyplane.h" />
     <ClInclude Include="VESubrenderFW_C1.h" />
     <ClInclude Include="VESubrenderFW_Cubemap.h" />
@@ -199,6 +200,7 @@
     <ClCompile Include="VEEntity.cpp" />
     <ClCompile Include="VEEventListener.cpp" />
     <ClCompile Include="VEEventListenerGLFW.cpp" />
+    <ClCompile Include="VEMaterial.cpp" />
     <ClCompile Include="VENamedClass.cpp" />
     <ClCompile Include="VERenderer.cpp" />
     <ClCompile Include="VERendererForward.cpp" />

@@ -63,8 +63,8 @@ namespace ve {
 		virtual void	recreateResources();
 
 		virtual void	bindPipeline( VkCommandBuffer commandBuffer ); 
-		virtual void	bindDescriptorSets(VkCommandBuffer commandBuffer, uint32_t imageIndex, VECamera *pCamera, VELight *pLight, VkDescriptorSet descriptorSetsShadow);
-		virtual void	bindDescriptorSets(VkCommandBuffer commandBuffer, uint32_t imageIndex, VEEntity *entity);
+		virtual void	bindDescriptorSetsPerFrame(VkCommandBuffer commandBuffer, uint32_t imageIndex, VECamera *pCamera, VELight *pLight, std::vector<VkDescriptorSet> descriptorSetsShadow);
+		virtual void	bindDescriptorSetsPerEntity(VkCommandBuffer commandBuffer, uint32_t imageIndex, VEEntity *entity);
 
 		virtual void	draw( VkCommandBuffer commandBuffer, uint32_t imageIndex );
 		virtual void	drawEntity(VkCommandBuffer commandBuffer, uint32_t imageIndex, VEEntity *entity);

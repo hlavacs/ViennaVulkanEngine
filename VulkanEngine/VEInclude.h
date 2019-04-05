@@ -16,6 +16,7 @@
 #include "VEWindowGLFW.h"
 #include "VEEngine.h"
 #include "VEEntity.h"
+#include "VEMaterial.h"
 #include "VESceneManager.h"
 #include "VESubrender.h"
 #include "VESubrenderFW_C1.h"

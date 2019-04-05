@@ -13,6 +13,7 @@
 #endif
 
 namespace ve {
+
 	class VEEngine;
 	class VERenderer;
 	class VERendererForward;
@@ -59,35 +60,35 @@ namespace ve {
 		//-------------------------------------------------------------------------------------
 		//Load assets
 
-		const aiScene *		loadAssets(	std::string basedir, std::string filename, uint32_t aiFlags,
+		const aiScene *	loadAssets(	std::string basedir, std::string filename, uint32_t aiFlags,
 									std::vector<VEMesh*> &meshes, std::vector<VEMaterial*> &materials);
-		void				createMeshes(const aiScene* pScene,std::string filekey, std::vector<VEMesh*> &meshes);
-		void				createMaterials(const aiScene* pScene,  std::string basedir, std::string filekey, std::vector<VEMaterial*> &materials);
-		VESceneNode *		loadModel(std::string entityName, std::string basedir, std::string filename, uint32_t aiFlags=0, VESceneNode *parent=nullptr);
+		void			createMeshes(const aiScene* pScene,std::string filekey, std::vector<VEMesh*> &meshes);
+		void			createMaterials(const aiScene* pScene,  std::string basedir, std::string filekey, std::vector<VEMaterial*> &materials);
+		VESceneNode *	loadModel(std::string entityName, std::string basedir, std::string filename, uint32_t aiFlags=0, VESceneNode *parent=nullptr);
 
 		//-------------------------------------------------------------------------------------
 		//Create scene nodes and entities
 
-		VESceneNode *		createSceneNode( std::string name, glm::mat4 transf = glm::mat4(1.0f), VESceneNode *parent = nullptr);
-		VEEntity *			createEntity(std::string entityName, VEMesh *pMesh, VEMaterial *pMat, glm::mat4 transf, VESceneNode *parent = nullptr);
-		VEEntity *			createEntity(std::string entityName, VEEntity::veEntityType type, VEMesh *pMesh, VEMaterial *pMat, glm::mat4 transf, VESceneNode *parent = nullptr);
+		VESceneNode *	createSceneNode( std::string name, glm::mat4 transf = glm::mat4(1.0f), VESceneNode *parent = nullptr);
+		VEEntity *		createEntity(std::string entityName, VEMesh *pMesh, VEMaterial *pMat, glm::mat4 transf, VESceneNode *parent = nullptr);
+		VEEntity *		createEntity(std::string entityName, VEEntity::veEntityType type, VEMesh *pMesh, VEMaterial *pMat, glm::mat4 transf, VESceneNode *parent = nullptr);
 
 		//-------------------------------------------------------------------------------------
 		//Create cubemaps and skyboxes
 
-		VESceneNode *		createCubemap(std::string entityName, std::string basedir, std::string filename );
-		VESceneNode *		createCubemap(std::string entityName, std::string basedir, std::vector<std::string> filenames );
-		VEEntity *			createSkyplane(std::string entityName, std::string basedir, std::string texName);
-		VESceneNode *		createSkybox(std::string entityName, std::string basedir, std::vector<std::string> texNames);
+		VESceneNode *	createCubemap(std::string entityName, std::string basedir, std::string filename );
+		VESceneNode *	createCubemap(std::string entityName, std::string basedir, std::vector<std::string> filenames );
+		VEEntity *		createSkyplane(std::string entityName, std::string basedir, std::string texName);
+		VESceneNode *	createSkybox(std::string entityName, std::string basedir, std::vector<std::string> texNames);
 
 		//-------------------------------------------------------------------------------------
 		//Manage scene nodes and entities
 
 		///Add a scene node to the scene
-		void				addSceneNode(VESceneNode *entity) { m_sceneNodes[entity->getName()] = entity; };
-		VESceneNode *		getSceneNode(std::string entityName);
-		void				deleteSceneNodeAndChildren(std::string name);
-		void				createSceneNodeList(VESceneNode *pObject, std::vector<std::string> &namelist);
+		void			addSceneNode(VESceneNode *entity) { m_sceneNodes[entity->getName()] = entity; };
+		VESceneNode *	getSceneNode(std::string entityName);
+		void			deleteSceneNodeAndChildren(std::string name);
+		void			createSceneNodeList(VESceneNode *pObject, std::vector<std::string> &namelist);
 
 		//-------------------------------------------------------------------------------------
 		//Manage meshes, materials, cameras, lights
@@ -116,8 +117,8 @@ namespace ve {
 		void			setCamera( VECamera *cam) { m_camera = cam; };
 		///\returns a list with names of the current lights shining on the scene
 		std::vector<VELight*> & getLights() { return m_lights;  };
-		void switchOnLight(VELight * light);	//Add a light to the m_lights list
-		void switchOffLight(VELight *light);	//Remove a light from the m_lights list
+		void			switchOnLight(VELight * light);	//Add a light to the m_lights list
+		void			switchOffLight(VELight *light);	//Remove a light from the m_lights list
 
 		//-------------------------------------------------------------------------------------
 		//Print information about the tree of objects

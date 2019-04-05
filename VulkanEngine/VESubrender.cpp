@@ -43,25 +43,17 @@ namespace ve {
 	}
 
 
-	void VESubrender::bindDescriptorSets(	VkCommandBuffer commandBuffer, uint32_t imageIndex, 
-											VECamera *pCamera, VELight *pLight, VkDescriptorSet descriptorSetShadow ) {
+	void VESubrender::bindDescriptorSetsPerFrame(	VkCommandBuffer commandBuffer, uint32_t imageIndex,
+													VECamera *pCamera, VELight *pLight, std::vector<VkDescriptorSet> descriptorSetsShadow ) {
 
 		//set 0...cam UBO
-		//set 1...per object UBO
+		//set 1...light resources
 		//set 2...shadow maps
-		//set 3...additional per object resources
-		//set 4...light resources
+		//set 3...per object UBO
+		//set 4...additional per object resources
 
-		std::vector<VkDescriptorSet> set = { pCamera->m_descriptorSetsUBO[imageIndex] };
+		std::vector<VkDescriptorSet> set = { pCamera->m_descriptorSetsUBO[imageIndex], pLight->m_descriptorSetsUBO[imageIndex], descriptorSetsShadow  };
 		vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_pipelineLayout, 0, (uint32_t)set.size(), set.data(), 0, nullptr);
-
-		if (descriptorSetShadow != VK_NULL_HANDLE) {
-			set = { descriptorSetShadow };
-			vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_pipelineLayout, 2, (uint32_t)set.size(), set.data(), 0, nullptr);
-		}
-
-		set = { pLight->m_descriptorSetsUBO[imageIndex] };
-		vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_pipelineLayout, 4, (uint32_t)set.size(), set.data(), 0, nullptr);
 	}
 
 
@@ -76,21 +68,20 @@ namespace ve {
 	* \param[in] entity Pointer to the entity to draw
 	*
 	*/
-	void VESubrender::bindDescriptorSets(VkCommandBuffer commandBuffer, uint32_t imageIndex, VEEntity *entity) {
+	void VESubrender::bindDescriptorSetsPerEntity(VkCommandBuffer commandBuffer, uint32_t imageIndex, VEEntity *entity) {
 
-		//set 0...cam UBO (set before)
-		//set 1...per object UBO
-		//set 2...shadow map
-		//set 3...additional per object resources
-		//set 4...light resources (set before)
+		//set 0...cam UBO
+		//set 1...light resources
+		//set 2...shadow maps
+		//set 3...per object UBO
+		//set 4...additional per object resources
 
 		std::vector<VkDescriptorSet> sets = { entity->m_descriptorSetsUBO[imageIndex] };
-		vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_pipelineLayout, 1, (uint32_t)sets.size(), sets.data(), 0, nullptr);
-
-		if (entity->m_descriptorSetsResources.size()>0) {
-			sets = { entity->m_descriptorSetsResources[imageIndex] };
-			vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_pipelineLayout, 3, (uint32_t)sets.size(), sets.data(), 0, nullptr);
+		if (entity->m_descriptorSetsResources.size() > 0) {
+			sets.push_back( entity->m_descriptorSetsResources[imageIndex] );
 		}
+
+		vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_pipelineLayout, 3, (uint32_t)sets.size(), sets.data(), 0, nullptr);
 	}
 
 
@@ -129,7 +120,7 @@ namespace ve {
 	*/
 	void VESubrender::drawEntity(VkCommandBuffer commandBuffer, uint32_t imageIndex, VEEntity *entity) {
 
-		bindDescriptorSets(commandBuffer, imageIndex, entity);					//bind the entity's descriptor sets
+		bindDescriptorSetsPerEntity(commandBuffer, imageIndex, entity);					//bind the entity's descriptor sets
 
 		VkBuffer vertexBuffers[] = { entity->m_pMesh->m_vertexBuffer };
 		VkDeviceSize offsets[] = { 0 };

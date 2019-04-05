@@ -20,7 +20,7 @@ layout(set = 1, binding = 0) uniform UniformBufferObjectPerObject {
     perObjectData_t data;
 } perObjectUBO;
 
-layout(set = 2, binding = 0) uniform sampler2D shadowMap[3];
+layout(set = 2, binding = 0) uniform sampler2D shadowMap[NUM_SHADOW_CASCADE];
 
 layout(set = 3, binding = 0) uniform sampler2D texSampler;
 

@@ -361,7 +361,8 @@ namespace vh {
 		renderPassInfo.renderArea.extent = extent;
 
 		renderPassInfo.clearValueCount = static_cast<uint32_t>(clearValues.size());
-		renderPassInfo.pClearValues = clearValues.data();
+		if(clearValues.size()>0)
+			renderPassInfo.pClearValues = clearValues.data();
 
 		vkCmdBeginRenderPass(commandBuffer, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
 
