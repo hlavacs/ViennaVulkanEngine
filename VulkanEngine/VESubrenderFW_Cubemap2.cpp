@@ -21,11 +21,12 @@ namespace ve {
 		VESubrender::initSubrenderer();
 
 		//per object resources, set 0
-		vh::vhRenderCreateDescriptorSetLayout(getRendererForwardPointer()->getDevice(),
+		/*vh::vhRenderCreateDescriptorSetLayout(getRendererForwardPointer()->getDevice(),
 			{ 1 },
 			{ VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER },
 			{ VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT },
 			&m_descriptorSetLayoutUBO);
+		*/
 
 		vh::vhRenderCreateDescriptorSetLayout(getRendererForwardPointer()->getDevice(),
 			{ 1 },
@@ -34,7 +35,7 @@ namespace ve {
 			&m_descriptorSetLayoutResources);
 
 		vh::vhPipeCreateGraphicsPipelineLayout(getRendererForwardPointer()->getDevice(),
-			{ getRendererForwardPointer()->getDescriptorSetLayoutPerFrame(), m_descriptorSetLayoutUBO, getRendererForwardPointer()->getDescriptorSetLayoutShadow(), m_descriptorSetLayoutResources },
+			{ VESceneObject::m_descriptorSetLayoutPerObject,VESceneObject::m_descriptorSetLayoutPerObject, getRendererForwardPointer()->getDescriptorSetLayoutShadow(), VESceneObject::m_descriptorSetLayoutPerObject, m_descriptorSetLayoutResources },
 			{},
 			&m_pipelineLayout);
 
@@ -55,7 +56,7 @@ namespace ve {
 	void VESubrenderFW_Cubemap2::addEntity(VEEntity *pEntity) {
 		VESubrender::addEntity(pEntity);
 
-		vh::vhBufCreateUniformBuffers(getRendererForwardPointer()->getVmaAllocator(),
+		/*vh::vhBufCreateUniformBuffers(getRendererForwardPointer()->getVmaAllocator(),
 			(uint32_t)getRendererPointer()->getSwapChainNumber(),
 			(uint32_t)sizeof(veUBOPerObject),
 			pEntity->m_uniformBuffers, pEntity->m_uniformBuffersAllocation);
@@ -74,7 +75,7 @@ namespace ve {
 				{ { VK_NULL_HANDLE } },	//textureImageViews
 				{ { VK_NULL_HANDLE } }	//samplers
 			);
-		}
+		}*/
 
 		vh::vhRenderCreateDescriptorSets(getRendererForwardPointer()->getDevice(),
 			(uint32_t)getRendererPointer()->getSwapChainNumber(),

@@ -14,8 +14,6 @@ namespace ve {
 
 	VkDescriptorSetLayout VESceneObject::m_descriptorSetLayoutPerObject = VK_NULL_HANDLE;	///<Descriptor set layout per object
 
-
-
 	//---------------------------------------------------------------------
 	//Scene node
 
@@ -755,7 +753,7 @@ namespace ve {
 	* \param[in] name Name of the camera.
 	*
 	*/
-	VECameraOrtho::VECameraOrtho(std::string name, glm::mat4 transf = glm::mat4(1.0f), VESceneNode *parent = nullptr) : 
+	VECameraOrtho::VECameraOrtho(std::string name, glm::mat4 transf, VESceneNode *parent) : 
 						VECamera(name, transf, parent ) {
 	};
 
@@ -773,8 +771,8 @@ namespace ve {
 	VECameraOrtho::VECameraOrtho(	std::string name, 
 									float nearPlane, float farPlane, 
 									float width, float height,
-									float nearPlaneFraction = 0.0f, float farPlaneFraction = 1.0f,
-									glm::mat4 transf = glm::mat4(1.0f), VESceneNode *parent = nullptr ) :
+									float nearPlaneFraction, float farPlaneFraction,
+									glm::mat4 transf, VESceneNode *parent) :
 										VECamera(	name, 
 													nearPlane, farPlane, 
 													nearPlaneFraction, farPlaneFraction,

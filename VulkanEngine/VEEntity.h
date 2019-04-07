@@ -104,10 +104,10 @@ namespace ve {
 
 	protected:
 		void updateUBO( void *pUBO, uint32_t sizeUBO );						//Helper function to call VMA functions
-		static VkDescriptorSetLayout m_descriptorSetLayoutPerObject;		///<Descriptor set per object - just one UBO
 
 	public:
 
+		static VkDescriptorSetLayout	m_descriptorSetLayoutPerObject;	///<Descriptor set per object - just one UBO
 		std::vector<VkBuffer>			m_uniformBuffers;				///<One UBO for each framebuffer frame
 		std::vector<VmaAllocation>		m_uniformBuffersAllocation;		///<VMA information for the UBOs
 		std::vector<VkDescriptorSet>	m_descriptorSetsUBO;			///<Descriptor sets for UBO
@@ -187,7 +187,7 @@ namespace ve {
 		//UBO
 
 		virtual void updateUBO( glm::mat4 worldMatrix );	//update the UBO of this node using its current world matrix
-		void setTexParam(glm::vec4 param);
+		void		 setTexParam(glm::vec4 param);
 
 		//-------------------------------------------------------------------------------------
 		//Bounding volume

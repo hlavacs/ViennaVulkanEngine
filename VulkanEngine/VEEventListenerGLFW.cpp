@@ -253,7 +253,7 @@ namespace ve {
 
 		if (m_makeScreenshotDepth) {
 
-			VETexture *map = getRendererForwardPointer()->getShadowMap();
+			VETexture *map = getRendererForwardPointer()->getShadowMap( getRendererPointer()->getImageIndex() )[0];
 			//VkImageLayout layout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
 			VkImageLayout layout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL;
 

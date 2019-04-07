@@ -21,14 +21,15 @@ namespace ve {
 		VESubrender::initSubrenderer();
 
 		//per object resources, set 0
-		vh::vhRenderCreateDescriptorSetLayout(getRendererForwardPointer()->getDevice(),
+		/*vh::vhRenderCreateDescriptorSetLayout(getRendererForwardPointer()->getDevice(),
 			{ 1 },
 			{ VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER },
 			{ VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, },
 			&m_descriptorSetLayoutUBO);
+		*/
 
 		vh::vhPipeCreateGraphicsPipelineLayout(getRendererForwardPointer()->getDevice(),
-			{ getRendererForwardPointer()->getDescriptorSetLayoutPerFrame(), m_descriptorSetLayoutUBO },
+			{ VESceneObject::m_descriptorSetLayoutPerObject, VESceneObject::m_descriptorSetLayoutPerObject, VK_NULL_HANDLE, VESceneObject::m_descriptorSetLayoutPerObject },
 			{ { VK_SHADER_STAGE_VERTEX_BIT, 0, 4 } },
 			&m_pipelineLayout);
 
@@ -63,15 +64,18 @@ namespace ve {
 	*
 	*/
 	void VESubrenderFW_Shadow::bindDescriptorSets(VkCommandBuffer commandBuffer, uint32_t imageIndex, VEEntity *entity) {
-		//set 0...per frame, includes cam and shadow matrices
-		//set 1...per object UBO
+		//set 0...cam UBO
+		//set 1...light UBO
+		//set 2...shadow maps
+		//set 3...per object UBO
+		//set 4...additional per object resources
+
 		std::vector<VkDescriptorSet> sets =
 		{
-			getRendererForwardPointer()->getDescriptorSetsPerFrame()[imageIndex],
-			entity->m_descriptorSetsUBO[imageIndex],
+			entity->m_descriptorSetsUBO[imageIndex]
 		};
 
-		vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_pipelineLayout, 0, (uint32_t)sets.size(), sets.data(), 0, nullptr);
+		vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_pipelineLayout, 3, (uint32_t)sets.size(), sets.data(), 0, nullptr);
 	}
 
 

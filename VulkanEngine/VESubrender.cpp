@@ -44,7 +44,8 @@ namespace ve {
 
 
 	void VESubrender::bindDescriptorSetsPerFrame(	VkCommandBuffer commandBuffer, uint32_t imageIndex,
-													VECamera *pCamera, VELight *pLight, std::vector<VkDescriptorSet> descriptorSetsShadow ) {
+													VECamera *pCamera, VELight *pLight, 
+													std::vector<VkDescriptorSet> descriptorSetsShadow ) {
 
 		//set 0...cam UBO
 		//set 1...light resources
@@ -52,7 +53,11 @@ namespace ve {
 		//set 3...per object UBO
 		//set 4...additional per object resources
 
-		std::vector<VkDescriptorSet> set = { pCamera->m_descriptorSetsUBO[imageIndex], pLight->m_descriptorSetsUBO[imageIndex], descriptorSetsShadow  };
+		std::vector<VkDescriptorSet> set = 
+			{	pCamera->m_descriptorSetsUBO[imageIndex], 
+				pLight->m_descriptorSetsUBO[imageIndex], 
+				descriptorSetsShadow[imageIndex]  };
+
 		vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_pipelineLayout, 0, (uint32_t)set.size(), set.data(), 0, nullptr);
 	}
 

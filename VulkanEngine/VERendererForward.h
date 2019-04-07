@@ -41,7 +41,7 @@ namespace ve {
 
 	protected:
 		VETexture *					m_depthMap = nullptr;				///<the image depth map	
-		std::vector<VETexture *>	m_shadowMaps;						///<the shadow maps - a list of map cascades
+		std::vector<std::vector<VETexture *>>	m_shadowMaps;			///<the shadow maps - a list of map cascades
 		VkDescriptorPool			m_descriptorPool;					///<Descriptor pool for creating descriptor sets
 		//std::vector<VkBuffer>		m_uniformBuffersPerFrame;			///<UBO for camera, light data and shadow matrices
 		//std::vector<VmaAllocation>	m_uniformBuffersPerFrameAllocation;	///<VMA
@@ -52,7 +52,7 @@ namespace ve {
 
 		//per frame render resources for the shadow pass
 		VkRenderPass				 m_renderPassShadow;				///<The shadow render pass 
-		std::vector<VkFramebuffer>	 m_shadowFramebuffers;				///<Framebuffers for shadow pass (up to 6)
+		std::vector<std::vector<VkFramebuffer>>	 m_shadowFramebuffers;	///<list of Framebuffers for shadow pass (up to 6)
 		VkDescriptorSetLayout		 m_descriptorSetLayoutShadow;		///<Descriptor set layout for using shadow maps in the light pass
 		std::vector<VkDescriptorSet> m_descriptorSetsShadow;			///<Descriptor sets for usage of shadow maps in the light pass
 
@@ -67,7 +67,7 @@ namespace ve {
 
 		void createSyncObjects();							//create the sync objects
 		void cleanupSwapChain();							//delete the swapchain
-		void updatePerFrameUBO(uint32_t currentImage);		//update the per frame data like view, proj, lights, shadow
+		//void updatePerFrameUBO(uint32_t currentImage);		//update the per frame data like view, proj, lights, shadow
 
 		virtual void initRenderer();						//init the renderer
 		virtual void createSubrenderers();					//create the subrenderers
@@ -101,9 +101,9 @@ namespace ve {
 		///\returns the depth map vector
 		VETexture *						getDepthMap() { return m_depthMap; };
 		///\returns a specific depth map from the whole set
-		VETexture *						getShadowMap( uint32_t idx) { return m_shadowMaps[idx]; };
+		std::vector<VETexture *>		getShadowMap( uint32_t idx) { return m_shadowMaps[idx]; };
 		///\returns the 2D extent of the shadow map
-		virtual VkExtent2D				getShadowMapExtent() { return m_shadowMaps[0]->m_extent; };
+		virtual VkExtent2D				getShadowMapExtent() { return m_shadowMaps[0][0]->m_extent; };
 	};
 
 }
