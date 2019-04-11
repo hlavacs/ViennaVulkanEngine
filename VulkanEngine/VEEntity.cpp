@@ -12,7 +12,6 @@
 
 namespace ve {
 
-	VkDescriptorSetLayout VESceneObject::m_descriptorSetLayoutPerObject = VK_NULL_HANDLE;	///<Descriptor set layout per object
 
 	//---------------------------------------------------------------------
 	//Scene node
@@ -289,13 +288,6 @@ namespace ve {
 	VESceneObject::VESceneObject(std::string name, glm::mat4 transf, VESceneNode *parent, uint32_t sizeUBO ) : 
 									VESceneNode(name, transf, parent) {
 
-		if ( m_descriptorSetLayoutPerObject == VK_NULL_HANDLE ) {
-			vh::vhRenderCreateDescriptorSetLayout(getRendererForwardPointer()->getDevice(),
-				{ 1 },
-				{ VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER },
-				{ VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT },
-				&m_descriptorSetLayoutPerObject);
-		}
 
 		if (sizeUBO > 0) {
 			vh::vhBufCreateUniformBuffers(	getRendererPointer()->getVmaAllocator(),
@@ -304,7 +296,7 @@ namespace ve {
 
 			vh::vhRenderCreateDescriptorSets(getRendererForwardPointer()->getDevice(),
 				(uint32_t)getRendererForwardPointer()->getSwapChainNumber(),
-				m_descriptorSetLayoutPerObject,
+				getRendererForwardPointer()->getDescriptorSetLayoutPerObject(),
 				getRendererForwardPointer()->getDescriptorPool(),
 				m_descriptorSetsUBO);
 

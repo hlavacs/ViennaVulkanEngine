@@ -41,12 +41,13 @@ namespace ve {
 		};
 
 	protected:
-		veSubrenderType m_type = VE_SUBRENDERER_TYPE_NONE;	///<Type of the subrenderer
-		VkDescriptorSetLayout m_descriptorSetLayoutResources = VK_NULL_HANDLE;	///<Descriptor set 3 : per object additional resources
-		VkPipelineLayout m_pipelineLayout = VK_NULL_HANDLE;	///<Pipeline layout
-		VkPipeline m_pipeline = VK_NULL_HANDLE;				///<Pipeline for light pass
+		veSubrenderType			m_type = VE_SUBRENDERER_TYPE_NONE;					///<Type of the subrenderer
+		//VkDescriptorSetLayout	m_descriptorSetLayoutPerObject;						///<Descriptor set per object - just one UBO
+		VkDescriptorSetLayout	m_descriptorSetLayoutResources = VK_NULL_HANDLE;	///<Descriptor set 3 : per object additional resources
+		VkPipelineLayout		m_pipelineLayout = VK_NULL_HANDLE;					///<Pipeline layout
+		VkPipeline				m_pipeline = VK_NULL_HANDLE;						///<Pipeline for light pass
 
-		std::vector<VEEntity *> m_entities;					///<List of associated entities
+		std::vector<VEEntity *> m_entities;											///<List of associated entities
 
 	public:
 		///Constructor

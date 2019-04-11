@@ -82,7 +82,7 @@ namespace ve {
 
 		//shadow maps
 		m_shadowMaps.resize(m_swapChainImageViews.size());
-		m_descriptorSetsShadow.resize(m_swapChainImageViews.size());
+		m_shadowFramebuffers.resize(m_swapChainImageViews.size());
 		for (uint32_t i = 0; i < m_swapChainImageViews.size(); i++) {
 			for (uint32_t j = 0; j < NUM_SHADOW_CASCADE; j++) {						//point light has 6 shadow maps, thats the max
 				VkExtent2D extent = { SHADOW_MAP_DIM, SHADOW_MAP_DIM };
@@ -103,11 +103,10 @@ namespace ve {
 				//create the framebuffers holding only the depth images for the shadow maps
 				std::vector<VkFramebuffer> frameBuffers;
 				vh::vhBufCreateFramebuffers(m_device, { VK_NULL_HANDLE }, { pShadowMap->m_imageView },
-					m_renderPassShadow, extent, frameBuffers);
+											m_renderPassShadow, extent, frameBuffers);
 
 				m_shadowFramebuffers[i].push_back(frameBuffers[0]);
 			}
-
 		}
 
 		//------------------------------------------------------------------------------------------------------------
@@ -138,6 +137,14 @@ namespace ve {
 											{ VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER },
 											{ VK_SHADER_STAGE_FRAGMENT_BIT },
 											&m_descriptorSetLayoutShadow);
+
+		//set 3, binding 0 : UBO per scene object: camera, light, entity
+		vh::vhRenderCreateDescriptorSetLayout(	getRendererForwardPointer()->getDevice(),
+												{ 1 },
+												{ VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER },
+												{ VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT , },
+												&m_descriptorSetLayoutPerObject);
+
 
 
 		//vh::vhRenderCreateDescriptorSets(m_device, (uint32_t)m_swapChainImages.size(),	m_descriptorSetLayoutPerFrame, getDescriptorPool(), m_descriptorSetsPerFrame);
@@ -183,13 +190,13 @@ namespace ve {
 	void VERendererForward::createSubrenderers() {
 		addSubrenderer(new VESubrenderFW_C1());
 		addSubrenderer(new VESubrenderFW_D());
-		addSubrenderer(new VESubrenderFW_DN());
+		/*addSubrenderer(new VESubrenderFW_DN());
 		addSubrenderer(new VESubrenderFW_Cubemap());
 		addSubrenderer(new VESubrenderFW_Cubemap2());
 		addSubrenderer(new VESubrenderFW_Skyplane());
 
 		m_subrenderShadow = new VESubrenderFW_Shadow();
-		m_subrenderShadow->initSubrenderer();
+		m_subrenderShadow->initSubrenderer();*/
 	}
 
 
@@ -435,7 +442,7 @@ namespace ve {
 			//-----------------------------------------------------------------------------------------
 			//shadow passes
 
-			for (unsigned i = 0; i < pLight->m_shadowCameras.size(); i++) {
+			/*for (unsigned i = 0; i < pLight->m_shadowCameras.size(); i++) {
 
 				vh::vhRenderBeginRenderPass(commandBuffer, 
 											m_renderPassShadow,
@@ -453,7 +460,7 @@ namespace ve {
 
 				vkCmdEndRenderPass(commandBuffer);
 
-			}
+			}*/
 
 			//-----------------------------------------------------------------------------------------
 			//light pass

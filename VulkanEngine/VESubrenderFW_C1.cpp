@@ -25,10 +25,11 @@ namespace ve {
 			{ 1 },
 			{ VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER },
 			{ VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT ,	    },
-			&m_descriptorSetLayoutUBO);*/
+			&m_descriptorSetLayoutPerObject);*/
 
+		VkDescriptorSetLayout perObjectLayout = getRendererForwardPointer()->getDescriptorSetLayoutPerObject();
 		vh::vhPipeCreateGraphicsPipelineLayout(getRendererForwardPointer()->getDevice(),
-			{ VESceneObject::m_descriptorSetLayoutPerObject, VESceneObject::m_descriptorSetLayoutPerObject, getRendererForwardPointer()->getDescriptorSetLayoutShadow(), VESceneObject::m_descriptorSetLayoutPerObject },
+			{ perObjectLayout, perObjectLayout, getRendererForwardPointer()->getDescriptorSetLayoutShadow(), perObjectLayout },
 			{ },
 			&m_pipelineLayout);
 

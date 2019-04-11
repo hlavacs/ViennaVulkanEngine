@@ -107,7 +107,6 @@ namespace ve {
 
 	public:
 
-		static VkDescriptorSetLayout	m_descriptorSetLayoutPerObject;	///<Descriptor set per object - just one UBO
 		std::vector<VkBuffer>			m_uniformBuffers;				///<One UBO for each framebuffer frame
 		std::vector<VmaAllocation>		m_uniformBuffersAllocation;		///<VMA information for the UBOs
 		std::vector<VkDescriptorSet>	m_descriptorSetsUBO;			///<Descriptor sets for UBO

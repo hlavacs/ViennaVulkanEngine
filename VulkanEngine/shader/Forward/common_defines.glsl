@@ -14,16 +14,16 @@ struct cameraData_t {
 };
 
 struct lightData_t {
-  ivec4  itype;
-  mat4x4 lightModel;
-  vec4   col_ambient;
-  vec4   col_diffuse;
-  vec4   col_specular;
-  vec4   param;
+  ivec4 itype;
+  mat4  lightModel;
+  vec4  col_ambient;
+  vec4  col_diffuse;
+  vec4  col_specular;
+  vec4  param;
   cameraData_t shadowCameras[NUM_SHADOW_CASCADE];
 };
 
-struct perObjectData_t {
+struct objectData_t {
   mat4 model;
   mat4 modelInvTrans;
   vec4 color;

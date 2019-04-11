@@ -40,15 +40,14 @@ namespace ve {
 
 
 	protected:
-		VETexture *					m_depthMap = nullptr;				///<the image depth map	
-		std::vector<std::vector<VETexture *>>	m_shadowMaps;			///<the shadow maps - a list of map cascades
-		VkDescriptorPool			m_descriptorPool;					///<Descriptor pool for creating descriptor sets
-		//std::vector<VkBuffer>		m_uniformBuffersPerFrame;			///<UBO for camera, light data and shadow matrices
-		//std::vector<VmaAllocation>	m_uniformBuffersPerFrameAllocation;	///<VMA
-
 		//per frame render resources
 		VkRenderPass				m_renderPass;						///<The light render pass 
 		std::vector<VkFramebuffer>	m_swapChainFramebuffers;			///<Framebuffers for light pass
+		VETexture *					m_depthMap = nullptr;				///<the image depth map	
+		std::vector<std::vector<VETexture *>>	m_shadowMaps;			///<the shadow maps - a list of map cascades
+
+		//std::vector<VkBuffer>		m_uniformBuffersPerFrame;			///<UBO for camera, light data and shadow matrices
+		//std::vector<VmaAllocation>	m_uniformBuffersPerFrameAllocation;	///<VMA
 
 		//per frame render resources for the shadow pass
 		VkRenderPass				 m_renderPassShadow;				///<The shadow render pass 
@@ -56,8 +55,9 @@ namespace ve {
 		VkDescriptorSetLayout		 m_descriptorSetLayoutShadow;		///<Descriptor set layout for using shadow maps in the light pass
 		std::vector<VkDescriptorSet> m_descriptorSetsShadow;			///<Descriptor sets for usage of shadow maps in the light pass
 
-		//VkDescriptorSetLayout		m_descriptorSetLayoutPerFrame;		///<Descriptor set 1: per frame 
-		//std::vector<VkDescriptorSet> m_descriptorSetsPerFrame;			///<Per frame descriptor sets for set 1
+		VkDescriptorPool			m_descriptorPool;					///<Descriptor pool for creating descriptor sets
+		VkDescriptorSetLayout		m_descriptorSetLayoutPerObject;		///<Descriptor set layout for each scene object
+		//std::vector<VkDescriptorSet> m_descriptorSetsPerFrame;		///<Per frame descriptor sets for set 1
 
 		std::vector<VkSemaphore>	m_imageAvailableSemaphores;			///<sem for waiting for the next swapchain image
 		std::vector<VkSemaphore>	m_renderFinishedSemaphores;			///<sem for signalling that rendering done
@@ -86,6 +86,9 @@ namespace ve {
 		//virtual VkDescriptorSetLayout	getDescriptorSetLayoutPerFrame() { return m_descriptorSetLayoutPerFrame; };
 		///\returns the per frame descriptor set
 		//virtual std::vector<VkDescriptorSet> &getDescriptorSetsPerFrame() { return m_descriptorSetsPerFrame; };
+
+		///<\returns the per frame descriptor set layout
+		virtual VkDescriptorSetLayout	getDescriptorSetLayoutPerObject() { return m_descriptorSetLayoutPerObject; };
 
 		///<\returns the shadow descriptor set layout
 		virtual VkDescriptorSetLayout	getDescriptorSetLayoutShadow() { return m_descriptorSetLayoutShadow; };

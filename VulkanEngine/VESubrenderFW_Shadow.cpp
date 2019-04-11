@@ -28,8 +28,9 @@ namespace ve {
 			&m_descriptorSetLayoutUBO);
 		*/
 
+		VkDescriptorSetLayout perObjectLayout = getRendererForwardPointer()->getDescriptorSetLayoutPerObject();
 		vh::vhPipeCreateGraphicsPipelineLayout(getRendererForwardPointer()->getDevice(),
-			{ VESceneObject::m_descriptorSetLayoutPerObject, VESceneObject::m_descriptorSetLayoutPerObject, VK_NULL_HANDLE, VESceneObject::m_descriptorSetLayoutPerObject },
+			{ perObjectLayout, perObjectLayout, VK_NULL_HANDLE, perObjectLayout },
 			{ { VK_SHADER_STAGE_VERTEX_BIT, 0, 4 } },
 			&m_pipelineLayout);
 

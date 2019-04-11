@@ -12,6 +12,7 @@
 
 namespace ve {
 	
+
 	/**
 	* \brief If the window size changes then some resources have to be recreated to fit the new size.
 	*/
