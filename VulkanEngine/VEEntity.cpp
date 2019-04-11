@@ -50,7 +50,6 @@ namespace ve {
 	*/
 	void VESceneNode::setTransform(glm::mat4 trans) {
 		m_transform = trans;
-		update();
 	}
 
 	/**
@@ -58,7 +57,6 @@ namespace ve {
 	*/
 	void VESceneNode::setPosition(glm::vec3 pos) {
 		m_transform[3] = glm::vec4(pos.x, pos.y, pos.z, 1.0f);
-		update();
 	};
 
 	/**
@@ -183,12 +181,12 @@ namespace ve {
 	* Then call update(parent) to do the job.
 	*
 	*/
-	void VESceneNode::update() {
+	void VESceneNode::update(uint32_t imageIndex) {
 		glm::mat4 parentWorldMatrix = glm::mat4(1.0);
 		if (m_parent != nullptr) {
 			parentWorldMatrix = m_parent->getWorldTransform();
 		}
-		update(parentWorldMatrix );
+		update(parentWorldMatrix, imageIndex );
 	}
 
 	/**
@@ -201,19 +199,19 @@ namespace ve {
 	* \param[in] parentWorldMatrix The parent's world matrix or an identity matrix.
 	*
 	*/
-	void VESceneNode::update(glm::mat4 parentWorldMatrix ) {
+	void VESceneNode::update(glm::mat4 parentWorldMatrix, uint32_t imageIndex ) {
 		glm::mat4 worldMatrix = parentWorldMatrix * getTransform();		//get world matrix
-		updateUBO( worldMatrix );										//call derived class for specific data like object color
-		updateChildren( worldMatrix );									//update all children
+		updateUBO( worldMatrix, imageIndex);					//call derived class for specific data like object color
+		updateChildren( worldMatrix, imageIndex);				//update all children
 	}
 
 
 	/**
 	* \brief Update the UBOs of all children of this entity
 	*/
-	void VESceneNode::updateChildren(glm::mat4 worldMatrix ) {
+	void VESceneNode::updateChildren(glm::mat4 worldMatrix, uint32_t imageIndex) {
 		for (auto pObject : m_children) {
-			pObject->update(worldMatrix);	//update the children by giving them the current worldMatrix
+			pObject->update(worldMatrix, imageIndex);	//update the children by giving them the current worldMatrix
 		}
 	}
 
@@ -330,15 +328,13 @@ namespace ve {
 	}
 
 
-	void VESceneObject::updateUBO(void *pUBO, uint32_t sizeUBO) {
+	void VESceneObject::updateUBO(void *pUBO, uint32_t sizeUBO, uint32_t imageIndex ) {
 		//uint32_t imageIndex = getRendererPointer()->getImageIndex();	//TODO: current swap chain image!!!!!!
 
-		for (uint32_t i = 0; i < getRendererPointer()->getSwapChainNumber(); i++) {
-			void* data = nullptr;
-			vmaMapMemory(getRendererPointer()->getVmaAllocator(), m_uniformBuffersAllocation[i], &data);
-			memcpy(data, pUBO, sizeUBO);
-			vmaUnmapMemory(getRendererPointer()->getVmaAllocator(), m_uniformBuffersAllocation[i]);
-		}
+		void* data = nullptr;
+		vmaMapMemory(getRendererPointer()->getVmaAllocator(), m_uniformBuffersAllocation[imageIndex], &data);
+		memcpy(data, pUBO, sizeUBO);
+		vmaUnmapMemory(getRendererPointer()->getVmaAllocator(), m_uniformBuffersAllocation[imageIndex]);
 	}
 
 
@@ -397,7 +393,6 @@ namespace ve {
 	*/
 	void VEEntity::setTexParam(glm::vec4 param) {
 		m_texParam = param;
-		update();
 	}
 
 
@@ -408,7 +403,7 @@ namespace ve {
 	* \param[in] worldMatrix The new world matrix of the entity
 	*
 	*/
-	void VEEntity::updateUBO( glm::mat4 worldMatrix) {
+	void VEEntity::updateUBO( glm::mat4 worldMatrix, uint32_t imageIndex) {
 		veUBOPerObject_t ubo = {};
 
 		ubo.model = worldMatrix;
@@ -418,7 +413,7 @@ namespace ve {
 			ubo.color = m_pMaterial->color;
 		};
 
-		VESceneObject::updateUBO( (void*)&ubo, (uint32_t)sizeof(veUBOPerObject_t));
+		VESceneObject::updateUBO( (void*)&ubo, (uint32_t)sizeof(veUBOPerObject_t), imageIndex);
 	}
 
 
@@ -475,7 +470,7 @@ namespace ve {
 	}
 
 
-	void VECamera::updateUBO(glm::mat4 worldMatrix) {
+	void VECamera::updateUBO(glm::mat4 worldMatrix, uint32_t imageIndex) {
 		veUBOPerCamera_t ubo = {};
 
 		ubo.model = worldMatrix;
@@ -486,7 +481,7 @@ namespace ve {
 		ubo.param[2] = m_nearPlaneFraction;		//needed only if this is a shadow cam
 		ubo.param[3] = m_farPlaneFraction;		//needed only if this is a shadow cam
 
-		VESceneObject::updateUBO((void*)&ubo, (uint32_t)sizeof(veUBOPerCamera_t));
+		VESceneObject::updateUBO((void*)&ubo, (uint32_t)sizeof(veUBOPerCamera_t), imageIndex );
 	}
 
 
@@ -869,7 +864,7 @@ namespace ve {
 		pLight->transform = getWorldTransform();
 	}*/
 
-	void VELight::updateUBO(glm::mat4 worldMatrix) {
+	void VELight::updateUBO(glm::mat4 worldMatrix, uint32_t imageIndex) {
 		veUBOPerLight_t ubo = {};
 
 		ubo.type[0] = getLightType();
@@ -879,7 +874,7 @@ namespace ve {
 		ubo.col_specular = m_col_specular;
 		ubo.param = m_param;
 
-		VESceneObject::updateUBO((void*)&ubo, (uint32_t)sizeof(veUBOPerLight_t));
+		VESceneObject::updateUBO((void*)&ubo, (uint32_t)sizeof(veUBOPerLight_t), imageIndex);
 	}
 
 

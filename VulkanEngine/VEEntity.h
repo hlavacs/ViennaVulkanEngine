@@ -67,12 +67,12 @@ namespace ve {
 		//--------------------------------------------------------------------------------------
 		//UBO updates
 
-		virtual void update();									//Copy the world matrix to the UBO
-		virtual void update(glm::mat4 parentWorldMatrix );		//Copy the world matrix using the parent's world matrix
-		virtual void updateChildren(glm::mat4 worldMatrix );	//Update all children
+		virtual void update( uint32_t imageIndex );									//Copy the world matrix to the UBO
+		virtual void update(glm::mat4 parentWorldMatrix, uint32_t imageIndex );		//Copy the world matrix using the parent's world matrix
+		virtual void updateChildren(glm::mat4 worldMatrix, uint32_t imageIndex);	//Update all children
 
 		///Meant for subclasses to add data to the UBO, so this function does nothing in base class
-		virtual void updateUBO(glm::mat4 worldMatrix ) {};		//update the UBO of this node using its current world matrix
+		virtual void updateUBO(glm::mat4 worldMatrix, uint32_t imageIndex) {};		//update the UBO of this node using its current world matrix
 
 		//--------------------------------------------------------------------------------------
 		//manage tree
@@ -103,7 +103,7 @@ namespace ve {
 	class VESceneObject : public VESceneNode {
 
 	protected:
-		void updateUBO( void *pUBO, uint32_t sizeUBO );						//Helper function to call VMA functions
+		void updateUBO( void *pUBO, uint32_t sizeUBO, uint32_t imageIndex );						//Helper function to call VMA functions
 
 	public:
 
@@ -186,7 +186,7 @@ namespace ve {
 		//-------------------------------------------------------------------------------------
 		//UBO
 
-		virtual void updateUBO( glm::mat4 worldMatrix );	//update the UBO of this node using its current world matrix
+		virtual void updateUBO( glm::mat4 worldMatrix, uint32_t imageIndex );	//update the UBO of this node using its current world matrix
 		void		 setTexParam(glm::vec4 param);
 
 		//-------------------------------------------------------------------------------------
@@ -267,7 +267,7 @@ namespace ve {
 		//void fillShadowStructure(veShadowData_t *pCamera);
 		//virtual void updateUBO(glm::mat4 parentWorldMatrix) {};
 
-		virtual void updateUBO(glm::mat4 worldMatrix);		//update the UBO of this node using its current world matrix
+		virtual void updateUBO(glm::mat4 worldMatrix, uint32_t imageIndex);		//update the UBO of this node using its current world matrix
 
 		///\returns the projection matrix - pure virtual for the camera base class
 		virtual glm::mat4 getProjectionMatrix()=0;
@@ -437,7 +437,7 @@ namespace ve {
 		//UBO
 
 		//void fillLightStructure( veLightData_t *pLight);
-		virtual void updateUBO(glm::mat4 worldMatrix );		//update the UBO of this node using its current world matrix
+		virtual void updateUBO(glm::mat4 worldMatrix, uint32_t imageIndex);		//update the UBO of this node using its current world matrix
 	};
 
 

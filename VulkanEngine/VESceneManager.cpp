@@ -595,6 +595,18 @@ namespace ve {
 	//----------------------------------------------------------------------------------------------------------------
 	//scene management stuff
 
+
+	void VESceneManager::updateSceneNodes(uint32_t imageIndex ) {
+		for (auto pSceneNode : m_sceneNodes ) {
+			if ( pSceneNode.second->m_parent != nullptr) {
+				pSceneNode.second->update(imageIndex);
+			}
+		}
+
+	}
+
+
+
 	/**
 	*
 	* \brief Find an entity using its name

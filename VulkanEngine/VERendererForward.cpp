@@ -407,6 +407,8 @@ namespace ve {
 
 		VECamera *pCamera = getSceneManagerPointer()->getCamera();
 
+		getSceneManagerPointer()->updateSceneNodes(imageIndex);
+
 		//updatePerFrameUBO( imageIndex );	//update camera data UBO
 
 		//prepare command buffer for drawing
