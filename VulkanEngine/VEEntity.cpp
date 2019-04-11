@@ -304,7 +304,7 @@ namespace ve {
 				vh::vhRenderUpdateDescriptorSet(getRendererForwardPointer()->getDevice(),
 					m_descriptorSetsUBO[i],
 					{ m_uniformBuffers[i] },		//UBOs
-					{ sizeof(sizeUBO) },			//UBO sizes
+					{ sizeUBO },					//UBO sizes
 					{ { VK_NULL_HANDLE } },			//textureImageViews
 					{ { VK_NULL_HANDLE } }			//samplers
 				);
