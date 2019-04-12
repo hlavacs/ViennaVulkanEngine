@@ -190,13 +190,13 @@ namespace ve {
 	void VERendererForward::createSubrenderers() {
 		addSubrenderer(new VESubrenderFW_C1());
 		addSubrenderer(new VESubrenderFW_D());
-		/*addSubrenderer(new VESubrenderFW_DN());
-		addSubrenderer(new VESubrenderFW_Cubemap());
-		addSubrenderer(new VESubrenderFW_Cubemap2());
+		addSubrenderer(new VESubrenderFW_DN());
+		//addSubrenderer(new VESubrenderFW_Cubemap());
+		//addSubrenderer(new VESubrenderFW_Cubemap2());
 		addSubrenderer(new VESubrenderFW_Skyplane());
 
-		m_subrenderShadow = new VESubrenderFW_Shadow();
-		m_subrenderShadow->initSubrenderer();*/
+		//m_subrenderShadow = new VESubrenderFW_Shadow();
+		//m_subrenderShadow->initSubrenderer();
 	}
 
 
@@ -413,6 +413,7 @@ namespace ve {
 		}
 
 		VECamera *pCamera = getSceneManagerPointer()->getCamera();
+		pCamera->setExtent(getWindowPointer()->getExtent());
 
 		getSceneManagerPointer()->updateSceneNodes(imageIndex);
 

@@ -4,13 +4,13 @@
 
 #include "../common_defines.glsl"
 
-layout(set = 0, binding = 0) uniform UniformBufferObjectPerFrame {
-    perFrameData_t data;
-} perFrameUBO;
+layout(set = 0, binding = 0) uniform cameraUBO_t {
+    cameraData_t data;
+} cameraUBO;
 
-layout(set = 1, binding = 0) uniform UniformBufferObjectPerObject {
-    perObjectData_t data;
-} perObjectUBO;
+layout(set = 3, binding = 0) uniform objectUBO_t {
+    objectData_t data;
+} objectUBO;
 
 layout(location = 0) in vec3 inPositionL;
 layout(location = 1) in vec3 inNormalL;
@@ -24,7 +24,7 @@ out gl_PerVertex {
 };
 
 void main() {
-    vec4 glp = perFrameUBO.data.camera.camProj  * perFrameUBO.data.camera.camView * perObjectUBO.data.model * vec4(inPositionL, 1.0);
+    vec4 glp = cameraUBO.data.camProj        * cameraUBO.data.camView * objectUBO.data.model * vec4(inPositionL, 1.0);
     gl_Position = vec4( glp.x, glp.y, glp.z, glp.z*1.000001 );
     fragTexCoord   = inTexCoord;
 }

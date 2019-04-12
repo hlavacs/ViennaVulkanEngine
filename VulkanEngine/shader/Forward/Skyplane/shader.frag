@@ -9,19 +9,19 @@ layout(location = 0) in vec2 fragTexCoord;
 
 layout(location = 0) out vec4 outColor;
 
-layout(set = 0, binding = 0) uniform UniformBufferObjectPerFrame {
-    perFrameData_t data;
-} perFrameUBO;
+layout(set = 0, binding = 0) uniform cameraUBO_t {
+    cameraData_t data;
+} cameraUBO;
 
-layout(set = 1, binding = 0) uniform UniformBufferObjectPerObject {
-    perObjectData_t data;
-} perObjectUBO;
+layout(set = 3, binding = 0) uniform objectUBO_t {
+    objectData_t data;
+} objectUBO;
 
-layout(set = 3, binding = 0) uniform sampler2D texSampler;
+layout(set = 4, binding = 0) uniform sampler2D texSampler;
 
 void main() {
 
-    vec3 fragColor = texture(texSampler, (fragTexCoord + perObjectUBO.data.param.zw)*perObjectUBO.data.param.xy).xyz;
+    vec3 fragColor = texture(texSampler, (fragTexCoord + objectUBO.data.param.zw)*objectUBO.data.param.xy).xyz;
 
     outColor = vec4( fragColor, 1.0 );
 }

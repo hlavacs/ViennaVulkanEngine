@@ -12,7 +12,6 @@ layout(set = 3, binding = 0) uniform objectUBO_t {
     objectData_t data;
 } objectUBO;
 
-
 layout(location = 0) in vec3 inPositionL;
 layout(location = 1) in vec3 inNormalL;
 layout(location = 2) in vec3 inTangentL;

@@ -5,7 +5,6 @@
 #include "../common_defines.glsl"
 #include "../light.glsl"
 
-
 layout(location = 0) in vec3 fragPosW;
 layout(location = 1) in vec3 fragNormalW;
 layout(location = 2) in vec2 fragTexCoord;
@@ -31,20 +30,8 @@ layout(set = 4, binding = 0) uniform sampler2D texSampler;
 void main() {
 
     //shadow
-    int sIdx = 0;
-    vec4 param = cameraUBO.data.param;
-    float z = (gl_FragCoord.z / gl_FragCoord.w)/( param[3] - param[2] );
-    if( z >= lightUBO.data.shadowCameras[0].param[3] ) {
-        sIdx = 1;
-    }
-    if( z >= lightUBO.data.shadowCameras[1].param[3] ) {
-        sIdx = 2;
-    }
-    if( z >= lightUBO.data.shadowCameras[2].param[3] ) {
-        sIdx = 3;
-    }
-    cameraData_t s = lightUBO.data.shadowCameras[sIdx];
-
+    //int sIdx = shadowIdx( cameraUBO.data, lightUBO.data, gl_FragCoord );
+    //cameraData_t s = lightUBO.data.shadowCameras[sIdx];
     float shadowFactor = 1.0; //shadowFunc(fragPosW, s.shadowView, s.shadowProj, shadowMap[sIdx] );
 
     //parameters
@@ -52,12 +39,13 @@ void main() {
     vec3 lightPosW  = lightUBO.data.lightModel[3].xyz;
     vec3 lightDirW  = normalize( lightUBO.data.lightModel[2].xyz );
     vec4 lightParam = lightUBO.data.param;
+    vec4 texParam   = objectUBO.data.param;
 
     vec3 ambcol  = lightUBO.data.col_ambient.xyz;
     vec3 diffcol = lightUBO.data.col_diffuse.xyz;
     vec3 speccol = lightUBO.data.col_specular.xyz;
 
-    vec3 fragColor = texture(texSampler, (fragTexCoord + objectUBO.data.param.zw)*objectUBO.data.param.xy ).xyz;
+    vec3 fragColor = texture(texSampler, (fragTexCoord + texParam.zw)*texParam.xy ).xyz;
 
     vec3 result = vec3(0,0,0);
 

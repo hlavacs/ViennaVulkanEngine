@@ -260,6 +260,9 @@ namespace ve {
 		///\returns the camera type - pure virtual for the camera base class
 		virtual veCameraType getCameraType()=0;
 
+		///Set the camera extent, this is a pure virtual function for the base class
+		virtual void setExtent(VkExtent2D extent)=0;
+
 		//-------------------------------------------------------------------------------------
 		//UBO
 		//void fillCameraStructure(veCameraData_t *pCamera);
@@ -319,6 +322,9 @@ namespace ve {
 		///\returns the camera type
 		virtual veCameraType getCameraType() { return VE_CAMERA_TYPE_PROJECTIVE; };
 
+		///Set the new camera extent to the current view port
+		virtual void setExtent(VkExtent2D e) { m_aspectRatio = (float)e.width / (float)e.height; };
+
 		//-------------------------------------------------------------------------------------
 		//UBO
 
@@ -359,6 +365,9 @@ namespace ve {
 
 		///\returns the camera type
 		virtual veCameraType getCameraType() { return VE_CAMERA_TYPE_ORTHO; };
+
+		///Set the new camera extent to the current view port
+		virtual void setExtent(VkExtent2D e) { m_width = (float)e.width; m_height = (float)e.height; };
 
 		//-------------------------------------------------------------------------------------
 		//UBO

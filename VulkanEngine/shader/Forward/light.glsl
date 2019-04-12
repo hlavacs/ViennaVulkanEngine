@@ -1,5 +1,23 @@
 
 
+
+int shadowIdx( cameraData_t cameraUBO, lightData_t lightUBO, vec4 fragCoord ) {
+  int sIdx = 0;
+  vec4 param = cameraUBO.param;
+  float z = ( fragCoord.z / fragCoord.w )/( param[3] - param[2] );
+  if( z >= lightUBO.shadowCameras[0].param[3] ) {
+    sIdx = 1;
+  }
+  if( z >= lightUBO.shadowCameras[1].param[3] ) {
+    sIdx = 2;
+  }
+  if( z >= lightUBO.shadowCameras[2].param[3] ) {
+    sIdx = 3;
+  }
+  return sIdx;
+}
+
+
 float shadowFactor(  vec3 fragposW, mat4 shadowView, mat4 shadowProj, sampler2D shadowMap, vec2 offset ) {
 
     vec4 fragposH = shadowProj * shadowView * vec4(fragposW,1);
@@ -14,7 +32,6 @@ float shadowFactor(  vec3 fragposW, mat4 shadowView, mat4 shadowProj, sampler2D 
     }
     return visibility;
 }
-
 
 
 float shadowFunc(  vec3 fragposW, mat4 shadowView, mat4 shadowProj, sampler2D shadowMap ) {
