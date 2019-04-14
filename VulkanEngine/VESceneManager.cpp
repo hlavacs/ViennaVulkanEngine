@@ -47,7 +47,6 @@ namespace ve {
 		VkExtent2D extent = getWindowPointer()->getExtent();
 		VECamera *camera = new VECameraProjective("StandardCamera", 1.0f, 501.0f, extent.width/ (float)extent.height, 45.0f);
 		camera->lookAt(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f), glm::vec3(0.0f, 1.0f, 0.0f));
-		camera->m_parent = cameraParent;
 		cameraParent->addChild(camera);
 		addSceneNode(camera);
 		setCamera( camera );
@@ -603,7 +602,6 @@ namespace ve {
 				pSceneNode.second->update(imageIndex);
 			}
 		}
-
 	}
 
 

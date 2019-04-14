@@ -152,6 +152,7 @@ namespace ve {
 	*/
 	void VESceneNode::addChild(VESceneNode * pObject) {
 		m_children.push_back(pObject);
+		pObject->m_parent = this;
 	}
 
 	/**
@@ -321,8 +322,6 @@ namespace ve {
 
 
 	void VESceneObject::updateUBO(void *pUBO, uint32_t sizeUBO, uint32_t imageIndex ) {
-		//uint32_t imageIndex = getRendererPointer()->getImageIndex();	//TODO: current swap chain image!!!!!!
-
 		void* data = nullptr;
 		vmaMapMemory(getRendererPointer()->getVmaAllocator(), m_uniformBuffersAllocation[imageIndex], &data);
 		memcpy(data, pUBO, sizeUBO);
