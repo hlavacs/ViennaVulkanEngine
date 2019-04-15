@@ -820,6 +820,8 @@ namespace ve {
 		glm::mat4 W = pLight->getWorldTransform();
 		setTransform( W );
 		setPosition(center - m_farPlane*0.9f * glm::vec3(W[2].x, W[2].y, W[2].z));
+		m_nearPlaneFraction = z0;
+		m_farPlaneFraction = z1;
 	}
 
 

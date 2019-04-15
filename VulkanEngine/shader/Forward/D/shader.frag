@@ -44,7 +44,7 @@ void main() {
     if( z >= lightUBO.data.shadowCameras[2].param[3] ) {
       sIdx = 3;
     }
-    
+
     cameraData_t s = lightUBO.data.shadowCameras[sIdx];
     float shadowFactor = shadowFunc(fragPosW, s.camView, s.camProj, shadowMap[sIdx] );
 
