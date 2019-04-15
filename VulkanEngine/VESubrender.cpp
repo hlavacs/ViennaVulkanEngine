@@ -54,10 +54,12 @@ namespace ve {
 		//set 3...per object UBO
 		//set 4...additional per object resources
 
-		std::vector<VkDescriptorSet> set = 
-			{	pCamera->m_descriptorSetsUBO[imageIndex], 
-				pLight->m_descriptorSetsUBO[imageIndex], 
-				descriptorSetsShadow[imageIndex]  };
+		std::vector<VkDescriptorSet> set =
+			{ pCamera->m_descriptorSetsUBO[imageIndex], pLight->m_descriptorSetsUBO[imageIndex] };
+
+		if(descriptorSetsShadow.size()>0) {
+			set.push_back(descriptorSetsShadow[imageIndex]);
+		}
 
 		vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_pipelineLayout, 0, (uint32_t)set.size(), set.data(), 0, nullptr);
 	}
@@ -89,9 +91,6 @@ namespace ve {
 
 		vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_pipelineLayout, 3, (uint32_t)sets.size(), sets.data(), 0, nullptr);
 	}
-
-
-
 
 
 	/**

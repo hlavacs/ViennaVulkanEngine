@@ -191,12 +191,12 @@ namespace ve {
 		addSubrenderer(new VESubrenderFW_C1());
 		addSubrenderer(new VESubrenderFW_D());
 		addSubrenderer(new VESubrenderFW_DN());
-		//addSubrenderer(new VESubrenderFW_Cubemap());
-		//addSubrenderer(new VESubrenderFW_Cubemap2());
+		addSubrenderer(new VESubrenderFW_Cubemap());
+		addSubrenderer(new VESubrenderFW_Cubemap2());
 		addSubrenderer(new VESubrenderFW_Skyplane());
 
-		//m_subrenderShadow = new VESubrenderFW_Shadow();
-		//m_subrenderShadow->initSubrenderer();
+		m_subrenderShadow = new VESubrenderFW_Shadow();
+		m_subrenderShadow->initSubrenderer();
 	}
 
 
@@ -444,7 +444,7 @@ namespace ve {
 			//-----------------------------------------------------------------------------------------
 			//shadow passes
 
-			/*for (unsigned i = 0; i < pLight->m_shadowCameras.size(); i++) {
+			for (unsigned i = 0; i < pLight->m_shadowCameras.size(); i++) {
 
 				vh::vhRenderBeginRenderPass(commandBuffer, 
 											m_renderPassShadow,
@@ -456,13 +456,11 @@ namespace ve {
 				m_subrenderShadow->bindDescriptorSetsPerFrame(	commandBuffer, imageIndex, 
 																pLight->m_shadowCameras[i], pLight, {} );
 
-				vkCmdPushConstants(commandBuffer, m_subrenderShadow->getPipelineLayout(), VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(unsigned), &i);
-
 				m_subrenderShadow->draw(commandBuffer, imageIndex);
 
 				vkCmdEndRenderPass(commandBuffer);
 
-			}*/
+			}
 
 			//-----------------------------------------------------------------------------------------
 			//light pass

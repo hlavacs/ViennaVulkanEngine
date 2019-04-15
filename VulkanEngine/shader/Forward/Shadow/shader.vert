@@ -5,25 +5,20 @@
 
 #include "../common_defines.glsl"
 
-layout(set = 0, binding = 0) uniform UniformBufferObjectPerFrame {
-    perFrameData_t data;
-} perFrameUBO;
+layout(set = 0, binding = 0) uniform cameraUBO_t {
+    cameraData_t data;
+} cameraUBO;
 
-layout(set = 1, binding = 0) uniform UniformBufferObjectPerObject {
-    perObjectData_t data;
-} perObjectUBO;
+layout(set = 3, binding = 0) uniform objectUBO_t {
+    objectData_t data;
+} objectUBO;
 
-layout( push_constant ) uniform PushBlock {
-	uint sIdx;
-} push_block;
-
-layout(location = 0) in vec3 inPosition;
+layout(location = 0) in vec3 inPositionL;
 
 out gl_PerVertex {
     vec4 gl_Position;
 };
 
 void main() {
-    shadowData_t s = perFrameUBO.data.shadow[push_block.sIdx];
-    gl_Position = s.shadowProj * s.shadowView * perObjectUBO.data.model * vec4(inPosition, 1.0);
+    gl_Position    = cameraUBO.data.camProj * cameraUBO.data.camView * objectUBO.data.model * vec4(inPositionL, 1.0);
 }

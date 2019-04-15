@@ -287,9 +287,7 @@ namespace ve {
 		//-------------------------------------------------------------------------------------
 		//shadow cams
 
-		virtual VECamera *createShadowCamera(VELight *light, float z0 = 0.0f, float z1 = 1.0f);	//Depending on light type, create shadow camera
-		virtual VECamera *createShadowCameraOrtho(VELight *light, float z0 = 0.0f, float z1 = 1.0f);				//Create an ortho shadow cam for directional light
-		virtual VECamera *createShadowCameraProjective(VELight *light, float z0 = 0.0f, float z1 = 1.0f);			//Create a projective shadow cam for spot light
+		virtual void setShadowCamera(VECamera *pCam, VELight *light, float z0 = 0.0f, float z1 = 1.0f)=0;	//Depending on light type, create shadow camera
 	};
 
 
@@ -335,6 +333,11 @@ namespace ve {
 		//Bounding volume
 
 		virtual void getFrustumPoints(std::vector<glm::vec4> &points, float t1 = 0.0f, float t2 = 1.0f);	//return list of frustum points in world space
+
+		//-------------------------------------------------------------------------------------
+		//shadow cams
+
+		virtual void setShadowCamera(VECamera *pCam, VELight *light, float z0 = 0.0f, float z1 = 1.0f);	//Depending on light type, create shadow camera
 	};
 
 
@@ -379,6 +382,11 @@ namespace ve {
 		//Bounding volume
 
 		virtual void getFrustumPoints(std::vector<glm::vec4> &points, float t1 = 0.0f, float t2 = 1.0f);	//return list of frustum points in world space
+
+		//-------------------------------------------------------------------------------------
+		//shadow cams
+
+		virtual void setShadowCamera(VECamera *pCam, VELight *light, float z0 = 0.0f, float z1 = 1.0f);	//Depending on light type, create shadow camera
 	};
 
 
@@ -435,6 +443,8 @@ namespace ve {
 		VELight(std::string name, glm::mat4 transf = glm::mat4(1.0f), VESceneNode *parent = nullptr);
 		virtual ~VELight();
 
+		virtual void updateShadowCameras(VECamera *pCamera, uint32_t imageIndex )=0;
+
 		///\returns the scene node type
 		virtual veNodeType	getNodeType() { return VE_OBJECT_TYPE_LIGHT; };
 
@@ -459,6 +469,8 @@ namespace ve {
 		VEDirectionalLight(	std::string name, glm::mat4 transf = glm::mat4(1.0f), VESceneNode *parent = nullptr);
 		virtual ~VEDirectionalLight() {};
 
+		virtual void updateShadowCameras(VECamera *pCamera, uint32_t imageIndex);
+
 		///\returns the light type
 		virtual veLightType getLightType() { return VE_LIGHT_TYPE_DIRECTIONAL; };
 	};
@@ -473,6 +485,8 @@ namespace ve {
 		VEPointLight(std::string name, glm::mat4 transf = glm::mat4(1.0f), VESceneNode *parent = nullptr);
 		virtual ~VEPointLight() {};
 
+		virtual void updateShadowCameras(VECamera *pCamera, uint32_t imageIndex);
+
 		///\returns the light type
 		virtual veLightType getLightType() { return VE_LIGHT_TYPE_POINT; };
 	};
@@ -486,6 +500,8 @@ namespace ve {
 
 		VESpotLight(std::string name, glm::mat4 transf = glm::mat4(1.0f), VESceneNode *parent = nullptr);
 		virtual ~VESpotLight() {};
+
+		virtual void updateShadowCameras(VECamera *pCamera, uint32_t imageIndex);
 
 		///\returns the light type
 		virtual veLightType getLightType() { return VE_LIGHT_TYPE_SPOT; };

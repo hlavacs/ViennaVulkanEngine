@@ -6,11 +6,7 @@
 
 #include "../common_defines.glsl"
 
-layout(set = 0, binding = 0) uniform UniformBufferObjectPerFrame {
-    perFrameData_t data;
-} perFrameUBO;
-
-layout (set = 3, binding = 0) uniform sampler2DArray samplerCubeMap;
+layout (set = 4, binding = 0) uniform sampler2DArray samplerCubeMap;
 
 layout(location = 0) in vec3 fragPosL;
 layout(location = 1) in vec3 fragPosW;
