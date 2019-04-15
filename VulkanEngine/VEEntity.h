@@ -158,6 +158,7 @@ namespace ve {
 		glm::vec4					m_texParam = glm::vec4(1.0f, 1.0f, 0.0f, 0.0f);	///<Texture animation
 
 	public:
+		struct veUBOPerObject_t		m_ubo;
 		VEMesh *					m_pMesh = nullptr;					///<Pointer to entity mesh
 		VEMaterial *				m_pMaterial = nullptr;				///<Pointer to entity material
 
@@ -234,7 +235,8 @@ namespace ve {
 		//	glm::vec4 limits;			///<limits[0] nad [1]: fraction of (far-near) distance where frustum begins/ends
 		//};
 
-		float m_nearPlane = 1.0f;			///<The distance of the near plane to the camera origin
+		struct veUBOPerCamera_t m_ubo;
+		float m_nearPlane = 0.1f;			///<The distance of the near plane to the camera origin
 		float m_farPlane = 200.0f;			///<The distance of the far plane to the camera origin
 		float m_nearPlaneFraction = 0.0f;	///<If this is a shadow cam: fraction of frustum covered by this cam, start
 		float m_farPlaneFraction = 1.0f;	///<If this is a shadow cam: fraction of frustum covered by this cam, end
@@ -430,6 +432,7 @@ namespace ve {
 		};
 
 	public:
+		struct veUBOPerLight_t	m_ubo;
 		std::vector<VECamera*>	m_shadowCameras;			///<Up to 6 shadow cameras for this light
 
 		glm::vec4 m_col_ambient  = 0.5f * glm::vec4(1.0f, 1.0f, 1.0f, 1.0f);	///<Ambient color

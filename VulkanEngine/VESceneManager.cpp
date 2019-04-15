@@ -602,10 +602,6 @@ namespace ve {
 				pSceneNode.second->update(imageIndex);
 			}
 		}
-
-		for (auto pLight : m_lights) {
-			pLight->updateShadowCameras( m_camera, imageIndex );
-		}
 	}
 
 

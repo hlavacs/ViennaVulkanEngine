@@ -31,8 +31,22 @@ void main() {
 
     //shadow
     //int sIdx = shadowIdx( cameraUBO.data, lightUBO.data, gl_FragCoord );
-    //cameraData_t s = lightUBO.data.shadowCameras[sIdx];
-    float shadowFactor = 1.0; //shadowFunc(fragPosW, s.shadowView, s.shadowProj, shadowMap[sIdx] );
+
+    int sIdx = 0;
+    vec4 param = cameraUBO.data.param;
+    float z = ( gl_FragCoord.z / gl_FragCoord.w )/( param[1] - param[0] );
+    if( z >= lightUBO.data.shadowCameras[0].param[3] ) {
+      sIdx = 1;
+    }
+    if( z >= lightUBO.data.shadowCameras[1].param[3] ) {
+      sIdx = 2;
+    }
+    if( z >= lightUBO.data.shadowCameras[2].param[3] ) {
+      sIdx = 3;
+    }
+    
+    cameraData_t s = lightUBO.data.shadowCameras[sIdx];
+    float shadowFactor = shadowFunc(fragPosW, s.camView, s.camProj, shadowMap[sIdx] );
 
     //parameters
     vec3 camPosW    = cameraUBO.data.camModel[3].xyz;

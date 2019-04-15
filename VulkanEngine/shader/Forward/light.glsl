@@ -4,7 +4,7 @@
 int shadowIdx( cameraData_t cameraUBO, lightData_t lightUBO, vec4 fragCoord ) {
   int sIdx = 0;
   vec4 param = cameraUBO.param;
-  float z = ( fragCoord.z / fragCoord.w )/( param[3] - param[2] );
+  float z = ( fragCoord.z / fragCoord.w )/( param[1] - param[0] );
   if( z >= lightUBO.shadowCameras[0].param[3] ) {
     sIdx = 1;
   }

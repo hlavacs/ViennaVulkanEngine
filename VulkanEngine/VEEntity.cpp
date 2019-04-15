@@ -395,16 +395,16 @@ namespace ve {
 	*
 	*/
 	void VEEntity::updateUBO( glm::mat4 worldMatrix, uint32_t imageIndex) {
-		veUBOPerObject_t ubo = {};
+		m_ubo = {};
 
-		ubo.model = worldMatrix;
-		ubo.modelInvTrans = glm::transpose(glm::inverse(worldMatrix));
-		ubo.texParam = m_texParam;
+		m_ubo.model = worldMatrix;
+		m_ubo.modelInvTrans = glm::transpose(glm::inverse(worldMatrix));
+		m_ubo.texParam = m_texParam;
 		if (m_pMaterial != nullptr) {
-			ubo.color = m_pMaterial->color;
+			m_ubo.color = m_pMaterial->color;
 		};
 
-		VESceneObject::updateUBO( (void*)&ubo, (uint32_t)sizeof(veUBOPerObject_t), imageIndex);
+		VESceneObject::updateUBO( (void*)&m_ubo, (uint32_t)sizeof(veUBOPerObject_t), imageIndex);
 	}
 
 
@@ -462,17 +462,17 @@ namespace ve {
 
 
 	void VECamera::updateUBO(glm::mat4 worldMatrix, uint32_t imageIndex) {
-		veUBOPerCamera_t ubo = {};
+		m_ubo = {};
 
-		ubo.model = worldMatrix;
-		ubo.view = glm::inverse(worldMatrix);
-		ubo.proj = getProjectionMatrix();
-		ubo.param[0] = m_nearPlane;
-		ubo.param[1] = m_farPlane;
-		ubo.param[2] = m_nearPlaneFraction;		//needed only if this is a shadow cam
-		ubo.param[3] = m_farPlaneFraction;		//needed only if this is a shadow cam
+		m_ubo.model = worldMatrix;
+		m_ubo.view = glm::inverse(worldMatrix);
+		m_ubo.proj = getProjectionMatrix();
+		m_ubo.param[0] = m_nearPlane;
+		m_ubo.param[1] = m_farPlane;
+		m_ubo.param[2] = m_nearPlaneFraction;		//needed only if this is a shadow cam
+		m_ubo.param[3] = m_farPlaneFraction;		//needed only if this is a shadow cam
 
-		VESceneObject::updateUBO((void*)&ubo, (uint32_t)sizeof(veUBOPerCamera_t), imageIndex );
+		VESceneObject::updateUBO((void*)&m_ubo, (uint32_t)sizeof(veUBOPerCamera_t), imageIndex );
 	}
 
 
@@ -854,16 +854,23 @@ namespace ve {
 	}*/
 
 	void VELight::updateUBO(glm::mat4 worldMatrix, uint32_t imageIndex) {
-		veUBOPerLight_t ubo = {};
+		m_ubo = {};
 
-		ubo.type[0] = getLightType();
-		ubo.model = worldMatrix;
-		ubo.col_ambient = m_col_ambient;
-		ubo.col_diffuse = m_col_diffuse;
-		ubo.col_specular = m_col_specular;
-		ubo.param = m_param;
+		m_ubo.type[0] = getLightType();
+		m_ubo.model = worldMatrix;
+		m_ubo.col_ambient = m_col_ambient;
+		m_ubo.col_diffuse = m_col_diffuse;
+		m_ubo.col_specular = m_col_specular;
+		m_ubo.param = m_param;
 
-		VESceneObject::updateUBO((void*)&ubo, (uint32_t)sizeof(veUBOPerLight_t), imageIndex);
+		VECamera *pCam = getSceneManagerPointer()->getCamera();
+
+		updateShadowCameras(pCam, imageIndex);
+		for (uint32_t i = 0; i < m_shadowCameras.size(); i++ ) {
+			m_ubo.shadowCameras[i] = m_shadowCameras[i]->m_ubo;
+		}
+
+		VESceneObject::updateUBO((void*)&m_ubo, (uint32_t)sizeof(veUBOPerLight_t), imageIndex);
 	}
 
 
