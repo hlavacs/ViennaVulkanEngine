@@ -476,43 +476,6 @@ namespace ve {
 	}
 
 
-
-	/**
-	*
-	* \brief Fills a veCameraData_t structure with the data of this camera
-	*
-	* In this case the camera is used in the light pass to capture photos of light.
-	*
-	* \param[out] pCamera Pointer to a veCameraData_t struct that will be filled.
-	*
-	*/
-	/*void VECamera::fillCameraStructure(veCameraData_t *pCamera) {
-		pCamera->camModel = getWorldTransform();
-		pCamera->camView = glm::inverse(pCamera->camModel);
-
-		VkExtent2D extent = getWindowPointer()->getExtent();
-		pCamera->camProj = getProjectionMatrix( (float)extent.width, (float)extent.height);
-		pCamera->param[0] = m_nearPlane;
-		pCamera->param[1] = m_farPlane;
-	}*/
-
-
-	/**
-	*
-	* \brief Fills a veShadowData_t structure with the data of this camera
-	*
-	* In this scenario the camera is used to create shadow maps, i.e., it is 
-	* used in a shadow pass.
-	*
-	* \param[out] pShadow Pointer to a veShadowData_t struct that will be filled.
-	*
-	*/
-	/*void VECamera::fillShadowStructure(veShadowData_t *pShadow ) {
-		pShadow->shadowView = glm::inverse(getWorldTransform());
-		pShadow->shadowProj = getProjectionMatrix();
-	}*/
-
-
 	/**
 	* \brief Get a bounding sphere for this camera
 	*
@@ -542,25 +505,6 @@ namespace ve {
 		*center = glm::vec3( mean.x, mean.y, mean.z );
 		*radius = sqrt(maxsq);
 	}
-
-
-	/**
-	*
-	* \brief Create an shadow camera 
-	*
-	* \param[in] pLight Pointer to a light that defines the light direction and type.
-	* \param[in] z0 Startparameter for interpolating the frustum
-	* \param[in] z1 Endparameter for interlopating the frustum
-	* \returns a new VECamera shadow camera
-	*
-	*
-	VECamera * VECamera::createShadowCamera(VELight *pLight, float z0, float z1 ) {
-
-		if (pLight->getLightType() == VELight::VE_LIGHT_TYPE_DIRECTIONAL)
-			return createShadowCameraOrtho(pLight, z0, z1);
-
-		return createShadowCameraProjective(pLight, z0, z1);
-	}*/
 
 
 
@@ -812,11 +756,9 @@ namespace ve {
 		pCam->getFrustumPoints(pointsW, z0, z1);
 
 		glm::vec3 center;
-		//float width, height, depth;
 		pLight->getOBB(pointsW, 0.0f, 1.0f, center, m_width, m_height, m_farPlane);
 		m_farPlane *= 5.0f;	//TODO - do NOT set too high or else shadow maps wont get drawn!
 		
-		//VECameraOrtho *pCamOrtho = new VECameraOrtho("Ortho", 0.1f, depth, width, height);
 		glm::mat4 W = pLight->getWorldTransform();
 		setTransform( W );
 		setPosition(center - m_farPlane*0.9f * glm::vec3(W[2].x, W[2].y, W[2].z));
@@ -838,22 +780,6 @@ namespace ve {
 						VESceneObject(name, transf, parent, (uint32_t)sizeof(veUBOPerLight_t)) {
 	};
 
-
-	/**
-	*
-	* \brief Fill a UBO structure with the light's data
-	*
-	* \param[in] pLight Pointer to the light structure that will be copied into a UBO
-	*
-	*/
-	/*void VELight::fillLightStructure(veLightData_t *pLight) {
-		pLight->type[0] = m_lightType;
-		pLight->param = param;
-		pLight->col_ambient = col_ambient;
-		pLight->col_diffuse = col_diffuse;
-		pLight->col_specular = col_specular;
-		pLight->transform = getWorldTransform();
-	}*/
 
 	void VELight::updateUBO(glm::mat4 worldMatrix, uint32_t imageIndex) {
 		m_ubo = {};

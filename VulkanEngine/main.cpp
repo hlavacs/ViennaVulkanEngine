@@ -88,6 +88,20 @@ namespace ve {
 			registerEventListener( new LightListener("LightListener"));
 		};
 
+		void createCubes(uint32_t n) {
+
+			for (uint32_t i = 0; i < n; i++) {
+				float stride = 50.0f;
+				static std::default_random_engine e{12345};
+				static std::uniform_real_distribution<> d{ 1.0f, stride }; 
+
+				VESceneNode *e2 = m_pSceneManager->loadModel("The Cube" + std::to_string(i), "models/test/crate0", "cube.obj");
+				e2->setTransform(glm::translate(glm::mat4(1.0f), glm::vec3( d(e) - stride/2.0f, d(e)/2.0f, d(e) - stride/2.0f)));
+				//e2->multiplyTransform(glm::scale(glm::mat4(1.0f), glm::vec3(10.0f, 10.0f, 10.0f)));
+			}
+
+		}
+
 		///Load the first level into the game engine
 		//The engine uses Y-UP, Left-handed
 		void loadLevel() {
@@ -106,15 +120,11 @@ namespace ve {
 			VESceneNode *eL = m_pSceneManager->loadModel("The Light", "models/test/sphere", "sphere.obj", 0 , eSLight);
 			eL->multiplyTransform(glm::scale(glm::vec3(0.02f,0.02f,0.02f)));
 
-
 			VESceneNode *e1 = m_pSceneManager->loadModel("The Cube",  "models/test/crate0", "cube.obj");
 			e1->setTransform(glm::translate(glm::mat4(1.0f), glm::vec3(10.0f, 1.0f, 1.0f)));
 			e1->multiplyTransform( glm::scale(glm::mat4(1.0f), glm::vec3(10.0f, 10.0f, 10.0f)));
 
-			VESceneNode *e2 = m_pSceneManager->loadModel("The Cube2", "models/test/crate0", "cube.obj");
-			e2->setTransform(glm::translate(glm::mat4(1.0f), glm::vec3(20.0f, 1.0f, 10.0f)));
-
-
+			createCubes(100);
 			//VESceneNode *pSponza = m_pSceneManager->loadModel("Sponza", "models/sponza", "sponza.dae", aiProcess_FlipWindingOrder);
 			//pSponza->setTransform(glm::scale(glm::mat4(1.0f), glm::vec3(0.1f, 0.1f, 0.1f)));
 

@@ -76,23 +76,29 @@ void main() {
 
     vec3 result = ambcol * fragColor;
 
-    result += lightUBO.data.itype[0] == 0?
+    #if defined (DIR) || defined(ALL)
+      result += lightUBO.data.itype[0] == 0?
                   dirlight( camPosW,
                             lightDirW, lightParam, shadowFactor,
                             vec3(0,0,0), diffcol, speccol,
                             fragPosW, normal, fragColor) * nfac : vec3(0,0,0);
+    #endif
 
-    result += lightUBO.data.itype[0] == 1?
+    #if defined (POINT) || defined(ALL)
+      result += lightUBO.data.itype[0] == 1?
                   pointlight( camPosW,
                               lightPosW, lightParam, shadowFactor,
                               vec3(0,0,0), diffcol, speccol,
                               fragPosW, normal, fragColor) * nfac : vec3(0,0,0);
+    #endif
 
-    result += lightUBO.data.itype[0] == 2?
+    #if defined (SPOT) || defined(ALL)
+      result += lightUBO.data.itype[0] == 2?
                   spotlight( camPosW,
                              lightPosW, lightDirW, lightParam, shadowFactor,
                              vec3(0,0,0), diffcol, speccol,
                              fragPosW, normal, fragColor) * nfac : vec3(0,0,0);
+    #endif
 
     outColor = vec4( result, 1.0 );
 }
