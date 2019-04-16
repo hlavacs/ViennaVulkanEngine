@@ -423,9 +423,9 @@ namespace ve {
 		struct veUBOPerLight_t	m_ubo;						///<The UBO that is copied to the GPU
 		std::vector<VECamera*>	m_shadowCameras;			///<Up to 6 shadow cameras for this light
 
-		glm::vec4 m_col_ambient  = 0.5f * glm::vec4(1.0f, 1.0f, 1.0f, 1.0f);	///<Ambient color
-		glm::vec4 m_col_diffuse  = 0.8f * glm::vec4(1.0f, 1.0f, 1.0f, 1.0f);	///<Diffuse color
-		glm::vec4 m_col_specular = 0.9f * glm::vec4(1.0f, 1.0f, 1.0f, 1.0f);	///<Specular color
+		glm::vec4 m_col_ambient  = 0.3f * glm::vec4(1.0f, 1.0f, 1.0f, 1.0f);	///<Ambient color
+		glm::vec4 m_col_diffuse  = 0.5f * glm::vec4(1.0f, 1.0f, 1.0f, 1.0f);	///<Diffuse color
+		glm::vec4 m_col_specular = 0.8f * glm::vec4(1.0f, 1.0f, 1.0f, 1.0f);	///<Specular color
 		glm::vec4 m_param		 = glm::vec4(1.0f, 1.0f, 1.0f, 1.0f);			///<1-2: attenuation, 3: Ns
 
 		//-------------------------------------------------------------------------------------

@@ -1,17 +1,16 @@
 
 
 
-int shadowIdx( cameraData_t cameraUBO, lightData_t lightUBO, vec4 fragCoord ) {
+int shadowIdx( vec4 param, vec4 fragCoord, float z1, float z2, float z3 ) {
   int sIdx = 0;
-  vec4 param = cameraUBO.param;
   float z = ( fragCoord.z / fragCoord.w )/( param[1] - param[0] );
-  if( z >= lightUBO.shadowCameras[0].param[3] ) {
+  if( z >= z1 ) {
     sIdx = 1;
   }
-  if( z >= lightUBO.shadowCameras[1].param[3] ) {
+  if( z >= z2 ) {
     sIdx = 2;
   }
-  if( z >= lightUBO.shadowCameras[2].param[3] ) {
+  if( z >= z3 ) {
     sIdx = 3;
   }
   return sIdx;
@@ -58,10 +57,12 @@ float shadowFunc(  vec3 fragposW, mat4 shadowView, mat4 shadowProj, sampler2D sh
 
 
 
-vec3 dirlight(  vec3 camposW,
+vec3 dirlight(  int lightType, vec3 camposW,
                 vec3 lightdirW, vec4 lightparam, float shadowFac,
                 vec3 ambcol, vec3 diffcol, vec3 speccol,
                 vec3 fragposW, vec3 fragnormalW, vec3 fragcolor ) {
+
+    if( lightType != LIGHT_DIR) return vec3(0,0,0);
 
     vec3 viewDirW  = normalize( camposW - fragposW );
 
@@ -83,10 +84,12 @@ vec3 dirlight(  vec3 camposW,
 }
 
 
-vec3 pointlight(  vec3 camposW,
+vec3 pointlight(  int lightType, vec3 camposW,
                   vec3 lightposW, vec4 lightparam, float shadowFac,
                   vec3 ambcol, vec3 diffcol, vec3 speccol,
                   vec3 fragposW, vec3 fragnormalW, vec3 fragcolor ) {
+
+    if( lightType != LIGHT_POINT) return vec3(0,0,0);
 
     vec3 viewDirW  = normalize( camposW - fragposW );
 
@@ -107,10 +110,12 @@ vec3 pointlight(  vec3 camposW,
 }
 
 
-vec3 spotlight( vec3 camposW,
+vec3 spotlight( int lightType, vec3 camposW,
                 vec3 lightposW, vec3 lightdirW, vec4 lightparam, float shadowFac,
                 vec3 ambcol, vec3 diffcol, vec3 speccol,
                 vec3 fragposW, vec3 fragnormalW, vec3 fragcolor ) {
+
+    if( lightType != LIGHT_SPOT) return vec3(0,0,0);
 
     vec3 viewDirW  = normalize( camposW - fragposW );
 

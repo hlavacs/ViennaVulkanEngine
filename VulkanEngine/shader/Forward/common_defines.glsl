@@ -6,6 +6,10 @@
 
 #define NUM_SHADOW_CASCADE 6
 
+#define LIGHT_DIR 0
+#define LIGHT_POINT 1
+#define LIGHT_SPOT 2
+
 struct cameraData_t {
   mat4 camModel;
   mat4 camView;

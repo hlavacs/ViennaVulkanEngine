@@ -33,20 +33,10 @@ layout(set = 4, binding = 1) uniform sampler2D normalSampler;
 void main() {
 
     //shadow
-    //int sIdx = shadowIdx( cameraUBO.data, lightUBO.data, gl_FragCoord );
-
-    int sIdx = 0;
-    vec4 param = cameraUBO.data.param;
-    float z = ( gl_FragCoord.z / gl_FragCoord.w )/( param[1] - param[0] );
-    if( z >= lightUBO.data.shadowCameras[0].param[3] ) {
-      sIdx = 1;
-    }
-    if( z >= lightUBO.data.shadowCameras[1].param[3] ) {
-      sIdx = 2;
-    }
-    if( z >= lightUBO.data.shadowCameras[2].param[3] ) {
-      sIdx = 3;
-    }
+    int sIdx = shadowIdx( cameraUBO.data.param, gl_FragCoord,
+                          lightUBO.data.shadowCameras[0].param[3],
+                          lightUBO.data.shadowCameras[1].param[3],
+                          lightUBO.data.shadowCameras[2].param[3]);
 
     cameraData_t s = lightUBO.data.shadowCameras[sIdx];
     float shadowFactor = shadowFunc(fragPosW, s.camView, s.camProj, shadowMap[sIdx] );
@@ -76,28 +66,25 @@ void main() {
 
     vec3 result = ambcol * fragColor;
 
-    #if defined (DIR) || defined(ALL)
-      result += lightUBO.data.itype[0] == 0?
-                  dirlight( camPosW,
+    #if defined(DIR) || defined(ALL)
+      result +=   dirlight( lightUBO.data.itype[0], camPosW,
                             lightDirW, lightParam, shadowFactor,
                             vec3(0,0,0), diffcol, speccol,
-                            fragPosW, normal, fragColor) * nfac : vec3(0,0,0);
+                            fragPosW, normal, fragColor) * nfac;
     #endif
 
-    #if defined (POINT) || defined(ALL)
-      result += lightUBO.data.itype[0] == 1?
-                  pointlight( camPosW,
+    #if defined(POINT) || defined(ALL)
+      result +=   pointlight( lightUBO.data.itype[0], camPosW,
                               lightPosW, lightParam, shadowFactor,
                               vec3(0,0,0), diffcol, speccol,
-                              fragPosW, normal, fragColor) * nfac : vec3(0,0,0);
+                              fragPosW, normal, fragColor) * nfac;
     #endif
 
-    #if defined (SPOT) || defined(ALL)
-      result += lightUBO.data.itype[0] == 2?
-                  spotlight( camPosW,
+    #if defined(SPOT) || defined(ALL)
+      result +=   spotlight( lightUBO.data.itype[0], camPosW,
                              lightPosW, lightDirW, lightParam, shadowFactor,
                              vec3(0,0,0), diffcol, speccol,
-                             fragPosW, normal, fragColor) * nfac : vec3(0,0,0);
+                             fragPosW, normal, fragColor) * nfac;
     #endif
 
     outColor = vec4( result, 1.0 );
