@@ -22,7 +22,7 @@ namespace ve {
 		virtual ~VESubrenderFW_Skyplane() {};
 
 		///\returns the class of the subrenderer
-		virtual veSubrenderClass getClass() { return VE_SUBRENDERER_CLASS_SHADOW; };
+		virtual veSubrenderClass getClass() { return VE_SUBRENDERER_CLASS_BACKGROUND; };
 		///\returns the type of the subrenderer
 		virtual veSubrenderType getType() { return VE_SUBRENDERER_TYPE_SKYPLANE; };
 

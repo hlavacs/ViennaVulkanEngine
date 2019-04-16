@@ -127,6 +127,8 @@ namespace ve {
 
 		if (m_entities.size() == 0) return;
 
+		if (numPass > 0 && getClass() != VE_SUBRENDERER_CLASS_OBJECT) return;
+
 		bindPipeline(commandBuffer);
 
 		setDynamicPipelineState( commandBuffer, numPass );

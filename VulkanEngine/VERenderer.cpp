@@ -30,6 +30,10 @@ namespace ve {
 	*/
 	void VERenderer::addSubrenderer(VESubrender *pSub) {
 		pSub->initSubrenderer();
+		if (pSub->getClass() == VESubrender::VE_SUBRENDERER_CLASS_SHADOW) {
+			m_subrenderShadow = pSub;
+			return;
+		}
 		m_subrenderers.push_back( pSub );
 	}
 

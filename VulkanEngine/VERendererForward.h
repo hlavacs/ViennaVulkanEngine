@@ -31,7 +31,9 @@ namespace ve {
 
 	protected:
 		//per frame render resources
-		VkRenderPass				m_renderPass;						///<The light render pass 
+		VkRenderPass				m_renderPassClear;					///<The first light render pass, clearing the framebuffers
+		VkRenderPass				m_renderPassLoad;					///<The second light render pass
+
 		std::vector<VkFramebuffer>	m_swapChainFramebuffers;			///<Framebuffers for light pass
 		VETexture *					m_depthMap = nullptr;				///<the image depth map	
 		std::vector<std::vector<VETexture *>>	m_shadowMaps;			///<the shadow maps - a list of map cascades
@@ -76,7 +78,7 @@ namespace ve {
 		///\returns the descriptor pool of the per frame descriptors
 		virtual VkDescriptorPool		getDescriptorPool() { return m_descriptorPool; };
 		///\returns the render pass
-		virtual VkRenderPass			getRenderPass() { return m_renderPass; };
+		virtual VkRenderPass			getRenderPass() { return m_renderPassClear; };
 		///\returns the shadow render pass
 		virtual VkRenderPass			getRenderPassShadow() { return m_renderPassShadow; };
 		///\returns the depth map vector

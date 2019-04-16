@@ -63,7 +63,8 @@ namespace ve {
 		m_depthMap->m_extent = m_swapChainExtent;
 
 		//light render pass
-		vh::vhRenderCreateRenderPass( m_device, m_swapChainImageFormat, m_depthMap->m_format, &m_renderPass);
+		vh::vhRenderCreateRenderPass( m_device, m_swapChainImageFormat, m_depthMap->m_format, VK_ATTACHMENT_LOAD_OP_CLEAR, &m_renderPassClear);
+		vh::vhRenderCreateRenderPass( m_device, m_swapChainImageFormat, m_depthMap->m_format, VK_ATTACHMENT_LOAD_OP_LOAD,  &m_renderPassLoad);
 
 		//depth map for light pass
 		vh::vhBufCreateDepthResources(	m_device, m_vmaAllocator, m_graphicsQueue, m_commandPool, 
@@ -72,7 +73,7 @@ namespace ve {
 		//frame buffers for light pass
 		std::vector<VkImageView> depthMaps;
 		for (uint32_t i = 0; i < m_swapChainImageViews.size(); i++) depthMaps.push_back(m_depthMap->m_imageView);
-		vh::vhBufCreateFramebuffers(m_device, m_swapChainImageViews, depthMaps, m_renderPass, m_swapChainExtent, m_swapChainFramebuffers);
+		vh::vhBufCreateFramebuffers(m_device, m_swapChainImageViews, depthMaps, m_renderPassClear, m_swapChainExtent, m_swapChainFramebuffers);
 
 		//------------------------------------------------------------------------------------------------------------
 		//create resources for shadow pass
@@ -183,9 +184,7 @@ namespace ve {
 		addSubrenderer(new VESubrenderFW_Cubemap());
 		addSubrenderer(new VESubrenderFW_Cubemap2());
 		addSubrenderer(new VESubrenderFW_Skyplane());
-
-		m_subrenderShadow = new VESubrenderFW_Shadow();
-		m_subrenderShadow->initSubrenderer();
+		addSubrenderer( new VESubrenderFW_Shadow());
 	}
 
 
@@ -199,7 +198,8 @@ namespace ve {
 			vkDestroyFramebuffer(m_device, framebuffer, nullptr);
 		}
 
-		vkDestroyRenderPass(m_device, m_renderPass, nullptr);
+		vkDestroyRenderPass(m_device, m_renderPassClear, nullptr);
+		vkDestroyRenderPass(m_device, m_renderPassLoad, nullptr);
 
 		for (auto imageView : m_swapChainImageViews) {
 			vkDestroyImageView(m_device, imageView, nullptr);
@@ -267,13 +267,15 @@ namespace ve {
 		m_depthMap->m_format = vh::vhDevFindDepthFormat(m_physicalDevice);
 		m_depthMap->m_extent = m_swapChainExtent;
 
-		vh::vhRenderCreateRenderPass( m_device, m_swapChainImageFormat, m_depthMap->m_format, &m_renderPass);
+		vh::vhRenderCreateRenderPass( m_device, m_swapChainImageFormat, m_depthMap->m_format, VK_ATTACHMENT_LOAD_OP_CLEAR, &m_renderPassClear);
+		vh::vhRenderCreateRenderPass(m_device, m_swapChainImageFormat, m_depthMap->m_format, VK_ATTACHMENT_LOAD_OP_LOAD, &m_renderPassLoad);
+
 		vh::vhBufCreateDepthResources(	m_device, m_vmaAllocator, m_graphicsQueue, m_commandPool, m_swapChainExtent,
 										m_depthMap->m_format, &m_depthMap->m_image, &m_depthMap->m_deviceAllocation, &m_depthMap->m_imageView);
 
 		std::vector<VkImageView> depthMaps;
 		for (uint32_t i = 0; i < m_swapChainImageViews.size(); i++) depthMaps.push_back(m_depthMap->m_imageView);
-		vh::vhBufCreateFramebuffers(m_device, m_swapChainImageViews, depthMaps, m_renderPass, m_swapChainExtent, m_swapChainFramebuffers);
+		vh::vhBufCreateFramebuffers(m_device, m_swapChainImageViews, depthMaps, m_renderPassClear, m_swapChainExtent, m_swapChainFramebuffers);
 
 		for (auto pSub : m_subrenderers) pSub->recreateResources();
 	}
@@ -371,7 +373,7 @@ namespace ve {
 											clearValuesShadow, 
 											m_shadowMaps[0][i]->m_extent);
 
-				m_subrenderShadow->draw(commandBuffer, imageIndex, i, pLight->m_shadowCameras[i], pLight, {} );
+				m_subrenderShadow->draw( commandBuffer, imageIndex, i, pLight->m_shadowCameras[i], pLight, {} );
 
 				vkCmdEndRenderPass(commandBuffer);
 			}
@@ -379,20 +381,32 @@ namespace ve {
 			//-----------------------------------------------------------------------------------------
 			//light pass
 
-			vh::vhRenderBeginRenderPass(commandBuffer, m_renderPass, m_swapChainFramebuffers[imageIndex], clearValuesLight, m_swapChainExtent);
+			vh::vhRenderBeginRenderPass(commandBuffer, 
+										i==0 ? m_renderPassClear : m_renderPassLoad,
+										m_swapChainFramebuffers[imageIndex], 
+										clearValuesLight, 
+										m_swapChainExtent);
 
 			for (auto pSub : m_subrenderers) {
-				pSub->draw(commandBuffer, imageIndex, i, pCamera, pLight, m_descriptorSetsShadow );
+				if ( i == 0 || pSub->getClass() == VESubrender::VE_SUBRENDERER_CLASS_OBJECT ) {
+					pSub->draw(commandBuffer, imageIndex, i, pCamera, pLight, m_descriptorSetsShadow);
+				}
 			}
 
 			vkCmdEndRenderPass(commandBuffer);
 
-			vh::vhCmdEndSingleTimeCommands(m_device, m_graphicsQueue, m_commandPool, commandBuffer,
-				m_imageAvailableSemaphores[m_currentFrame], m_renderFinishedSemaphores[m_currentFrame],
-				m_inFlightFences[m_currentFrame]);
-
 			clearValuesLight.clear();		//since we blend the images onto each other, do not clear them for passes 2 and further
 		}
+
+		vh::vhCmdEndSingleTimeCommands(	m_device, m_graphicsQueue, m_commandPool, commandBuffer,
+										m_imageAvailableSemaphores[m_currentFrame], 
+										m_renderFinishedSemaphores[m_currentFrame],
+										m_inFlightFences[m_currentFrame]);
+
+		vh::vhBufTransitionImageLayout(	m_device, m_graphicsQueue, m_commandPool,
+										getSwapChainImage(), VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_ASPECT_COLOR_BIT, 1, 1,
+										VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR);
+
 	}
 
 
@@ -402,6 +416,8 @@ namespace ve {
 	* Present the newly drawn frame.
 	*/
 	void VERendererForward::presentFrame() {
+
+
 		VkResult result = vh::vhRenderPresentResult(m_presentQueue, m_swapChain, imageIndex,
 													m_renderFinishedSemaphores[m_currentFrame]);
 

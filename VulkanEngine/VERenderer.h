@@ -53,7 +53,7 @@ namespace ve {
 
 
 		//subrenderers
-		std::vector<VESubrender*> m_subrenderers;				///<List of all registered subrenderers
+		std::vector<VESubrender*> m_subrenderers;				///<Subrenderers for lit objects
 		VESubrender *			  m_subrenderShadow=nullptr;	///<Pointer to the shadow subrenderer
 
 		///Initialize the base class

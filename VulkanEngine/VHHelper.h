@@ -205,7 +205,7 @@ namespace vh {
 									std::vector<VmaAllocation> &uniformBuffersAllocation);
 
 	//rendering
-	void vhRenderCreateRenderPass( VkDevice device, VkFormat swapChainImageFormat, VkFormat depthFormat, VkRenderPass *renderPass);
+	void vhRenderCreateRenderPass( VkDevice device, VkFormat swapChainImageFormat, VkFormat depthFormat, VkAttachmentLoadOp loadOp, VkRenderPass *renderPass);
 	void vhRenderCreateRenderPassShadow( VkDevice device, VkFormat depthFormat, VkRenderPass *renderPass);
 
 	void vhRenderCreateDescriptorSetLayout(	VkDevice device, std::vector<uint32_t> counts, std::vector<VkDescriptorType> types,
