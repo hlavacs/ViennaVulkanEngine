@@ -17,15 +17,22 @@ namespace ve {
 
 	public:
 		///Constructor
-		VESubrenderFW_Shadow() { m_type = VE_SUBRENDERER_TYPE_SHADOW; };
+		VESubrenderFW_Shadow() {};
 		///Destructor
 		virtual ~VESubrenderFW_Shadow() {};
+
+		///\returns the class of the subrenderer
+		virtual veSubrenderClass getClass() { return VE_SUBRENDERER_CLASS_SHADOW; };
+		///\returns the type of the subrenderer
+		virtual veSubrenderType getType() { return VE_SUBRENDERER_TYPE_SHADOW; };
 
 		virtual void initSubrenderer();
 		virtual void addEntity(VEEntity *pEntity);
 		void bindDescriptorSetsPerEntity(VkCommandBuffer commandBuffer, uint32_t imageIndex, VEEntity *entity);
-		void bindDescriptorSets(VkCommandBuffer commandBuffer, uint32_t imageIndex, VEEntity *entity);
-		void draw(VkCommandBuffer commandBuffer, uint32_t imageIndex);
+		//void bindDescriptorSets(VkCommandBuffer commandBuffer, uint32_t imageIndex, VEEntity *entity);
+		virtual void draw(	VkCommandBuffer commandBuffer, uint32_t imageIndex, uint32_t numPass,
+							VECamera *pCamera, VELight *pLight,
+							std::vector<VkDescriptorSet> descriptorSetsShadow);
 	};
 }
 

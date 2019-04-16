@@ -17,9 +17,14 @@ namespace ve {
 
 	public:
 		///Constructor
-		VESubrenderFW_Cubemap() { m_type = VE_SUBRENDERER_TYPE_CUBEMAP; };
+		VESubrenderFW_Cubemap() {};
 		///Destructor
 		virtual ~VESubrenderFW_Cubemap() {};
+
+		///\returns the class of the subrenderer
+		virtual veSubrenderClass getClass() { return VE_SUBRENDERER_CLASS_BACKGROUND; };
+		///\returns the type of the subrenderer
+		virtual veSubrenderType getType() { return VE_SUBRENDERER_TYPE_CUBEMAP; };
 
 		virtual void initSubrenderer();
 		virtual void addEntity(VEEntity *pEntity);

@@ -110,7 +110,7 @@ namespace vh {
 		subpass.colorAttachmentCount = 0;													// No color attachments
 		subpass.pDepthStencilAttachment = &depthReference;									// Reference to our depth attachment
 
-																								// Use subpass dependencies for layout transitions
+																							// Use subpass dependencies for layout transitions
 		std::array<VkSubpassDependency, 2> dependencies;
 
 		dependencies[0].srcSubpass = VK_SUBPASS_EXTERNAL;
@@ -449,6 +449,8 @@ namespace vh {
 		return vkCreatePipelineLayout(device, &pipelineLayoutInfo, nullptr, pipelineLayout);
 	}
 
+
+
 	/**
 	*
 	* \brief Create a pipeline state object (PSO) for a light pass
@@ -458,6 +460,7 @@ namespace vh {
 	* \param[in] swapChainExtent Swapchain extent
 	* \param[in] pipelineLayout Pipeline layout
 	* \param[in] renderPass Renderpass to be used
+	* \param[in] dynamicStates List of dynamic states that can be changed during usage of the pipeline
 	* \param[out] graphicsPipeline The new PSO
 	* \returns in VkResult
 	*
@@ -468,9 +471,10 @@ namespace vh {
 											VkExtent2D swapChainExtent,
 											VkPipelineLayout pipelineLayout,
 											VkRenderPass renderPass,
+											std::vector<VkDynamicState> dynamicStates,
 											VkPipeline *graphicsPipeline) {
 
-		std::vector<VkPipelineShaderStageCreateInfo> shaderStages;    //{ vertShaderStageInfo, fragShaderStageInfo };
+		std::vector<VkPipelineShaderStageCreateInfo> shaderStages; 
 
 		auto vertShaderCode = vhFileRead(verShaderFilename);
 
@@ -559,7 +563,10 @@ namespace vh {
 
 		VkPipelineColorBlendAttachmentState colorBlendAttachment = {};
 		colorBlendAttachment.colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
-		colorBlendAttachment.blendEnable = VK_FALSE;
+		colorBlendAttachment.blendEnable = VK_TRUE;
+		colorBlendAttachment.srcColorBlendFactor = VK_BLEND_FACTOR_ONE;
+		colorBlendAttachment.dstColorBlendFactor = VK_BLEND_FACTOR_CONSTANT_COLOR;
+		colorBlendAttachment.colorBlendOp = VK_BLEND_OP_ADD;
 
 		VkPipelineColorBlendStateCreateInfo colorBlending = {};
 		colorBlending.sType = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO;
@@ -572,6 +579,13 @@ namespace vh {
 		colorBlending.blendConstants[2] = 0.0f;
 		colorBlending.blendConstants[3] = 0.0f;
 
+		VkPipelineDynamicStateCreateInfo dynamicState = {};
+		dynamicState.sType = VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO;
+		dynamicState.dynamicStateCount = (uint32_t)dynamicStates.size();
+		if (dynamicStates.size() > 0) {
+			dynamicState.pDynamicStates = dynamicStates.data();
+		}
+
 		VkGraphicsPipelineCreateInfo pipelineInfo = {};
 		pipelineInfo.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
 		pipelineInfo.stageCount = (uint32_t)shaderStages.size();
@@ -583,6 +597,9 @@ namespace vh {
 		pipelineInfo.pMultisampleState = &multisampling;
 		pipelineInfo.pDepthStencilState = &depthStencil;
 		pipelineInfo.pColorBlendState = &colorBlending;
+		if (dynamicStates.size() > 0) {
+			pipelineInfo.pDynamicState = &dynamicState;
+		}
 		pipelineInfo.layout = pipelineLayout;
 		pipelineInfo.renderPass = renderPass;
 		pipelineInfo.subpass = 0;

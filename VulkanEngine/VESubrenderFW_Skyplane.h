@@ -17,9 +17,14 @@ namespace ve {
 
 	public:
 		///Constructor
-		VESubrenderFW_Skyplane() { m_type = VE_SUBRENDERER_TYPE_SKYPLANE; };
+		VESubrenderFW_Skyplane() { };
 		///Destructor
 		virtual ~VESubrenderFW_Skyplane() {};
+
+		///\returns the class of the subrenderer
+		virtual veSubrenderClass getClass() { return VE_SUBRENDERER_CLASS_SHADOW; };
+		///\returns the type of the subrenderer
+		virtual veSubrenderType getType() { return VE_SUBRENDERER_TYPE_SKYPLANE; };
 
 		virtual void initSubrenderer();
 		virtual void addEntity(VEEntity *pEntity);

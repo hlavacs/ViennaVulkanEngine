@@ -356,7 +356,9 @@ namespace ve {
 		clearValuesLight.push_back(cv2);
 
 		//go through all active lights in the scene
-		for (auto pLight : getSceneManagerPointer()->getLights() ) {
+		for (uint32_t i = 0; i < getSceneManagerPointer()->getLights().size(); i++ ) {
+
+			VELight * pLight = getSceneManagerPointer()->getLights()[i];
 
 			//-----------------------------------------------------------------------------------------
 			//shadow passes
@@ -369,14 +371,9 @@ namespace ve {
 											clearValuesShadow, 
 											m_shadowMaps[0][i]->m_extent);
 
-				m_subrenderShadow->bindPipeline( commandBuffer );
-				m_subrenderShadow->bindDescriptorSetsPerFrame(	commandBuffer, imageIndex, 
-																pLight->m_shadowCameras[i], pLight, {} );
-
-				m_subrenderShadow->draw(commandBuffer, imageIndex);
+				m_subrenderShadow->draw(commandBuffer, imageIndex, i, pLight->m_shadowCameras[i], pLight, {} );
 
 				vkCmdEndRenderPass(commandBuffer);
-
 			}
 
 			//-----------------------------------------------------------------------------------------
@@ -385,10 +382,7 @@ namespace ve {
 			vh::vhRenderBeginRenderPass(commandBuffer, m_renderPass, m_swapChainFramebuffers[imageIndex], clearValuesLight, m_swapChainExtent);
 
 			for (auto pSub : m_subrenderers) {
-				pSub->bindPipeline(commandBuffer );
-				pSub->bindDescriptorSetsPerFrame(commandBuffer, imageIndex, pCamera, pLight, m_descriptorSetsShadow);
-
-				pSub->draw(commandBuffer, imageIndex);
+				pSub->draw(commandBuffer, imageIndex, i, pCamera, pLight, m_descriptorSetsShadow );
 			}
 
 			vkCmdEndRenderPass(commandBuffer);

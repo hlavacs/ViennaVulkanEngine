@@ -17,12 +17,16 @@ namespace ve {
 
 	public:
 		///Constructor
-		VESubrenderFW_C1() { m_type = VE_SUBRENDERER_TYPE_COLOR1; };
+		VESubrenderFW_C1() {};
 		///Destructor
 		virtual ~VESubrenderFW_C1() {};
 
+		///\returns the class of the subrenderer
+		virtual veSubrenderClass getClass() { return VE_SUBRENDERER_CLASS_OBJECT; };
+		///\returns the type of the subrenderer
+		virtual veSubrenderType getType() { return VE_SUBRENDERER_TYPE_COLOR1; };
+
 		virtual void initSubrenderer();
-		virtual void addEntity(VEEntity *pEntity);
 	};
 }
 

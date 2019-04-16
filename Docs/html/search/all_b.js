@@ -92,7 +92,6 @@ var searchData=
   ['m_5fthreadpool',['m_threadPool',['../classve_1_1_v_e_engine.html#a5f1a7f6fad7aefacc97dbdac22a2402d',1,'ve::VEEngine']]],
   ['m_5ftime',['m_time',['../classve_1_1_v_e_engine.html#a39623b5ab5d55a5595cc99ced8f90a30',1,'ve::VEEngine']]],
   ['m_5ftransform',['m_transform',['../classve_1_1_v_e_scene_node.html#a7d562c1efb53cd253f83f1a5a5fd679a',1,'ve::VESceneNode']]],
-  ['m_5ftype',['m_type',['../classve_1_1_v_e_subrender.html#aa64ff9519923c9ae2499be7d334a0289',1,'ve::VESubrender']]],
   ['m_5fubo',['m_ubo',['../classve_1_1_v_e_entity.html#afab7af9c64a8b9773cc4eaa62cee9d2e',1,'ve::VEEntity::m_ubo()'],['../classve_1_1_v_e_camera.html#a51be7f4ebe0f91c45915cd58fc22b36a',1,'ve::VECamera::m_ubo()'],['../classve_1_1_v_e_light.html#a5e4b5e50ee5e0fe1d6d07ffe2370f1ed',1,'ve::VELight::m_ubo()']]],
   ['m_5funiformbuffers',['m_uniformBuffers',['../classve_1_1_v_e_scene_object.html#a441473d5ae5865099dc8be17fe9eabf1',1,'ve::VESceneObject']]],
   ['m_5funiformbuffersallocation',['m_uniformBuffersAllocation',['../classve_1_1_v_e_scene_object.html#a741e316375d282df3de5ee28e4b00876',1,'ve::VESceneObject']]],

@@ -7,5 +7,6 @@ var searchData=
   ['veeventtype',['veEventType',['../namespaceve.html#ae6e59e4741b466de51dfe981360dbfea',1,'ve']]],
   ['velighttype',['veLightType',['../classve_1_1_v_e_light.html#abcedf7166341000b6d4512e9030f6b86',1,'ve::VELight']]],
   ['venodetype',['veNodeType',['../classve_1_1_v_e_scene_node.html#aff43b9c0c39fa3362b3908e813608cc8',1,'ve::VESceneNode']]],
+  ['vesubrenderclass',['veSubrenderClass',['../classve_1_1_v_e_subrender.html#a10aa32462f6b388c9553cdc08388f4cf',1,'ve::VESubrender']]],
   ['vesubrendertype',['veSubrenderType',['../classve_1_1_v_e_subrender.html#a98064e456a838192bbcedf9b6c529e89',1,'ve::VESubrender']]]
 ];

@@ -17,11 +17,17 @@ namespace ve {
 
 	public:
 		///Constructor
-		VESubrenderFW_DN() { m_type = VE_SUBRENDERER_TYPE_DIFFUSEMAP_NORMALMAP; };
+		VESubrenderFW_DN() { };
 		///Destructor
 		virtual ~VESubrenderFW_DN() {};
 
+		///\returns the class of the subrenderer
+		virtual veSubrenderClass getClass() { return VE_SUBRENDERER_CLASS_OBJECT; };
+		///\returns the type of the subrenderer
+		virtual veSubrenderType getType() { return VE_SUBRENDERER_TYPE_DIFFUSEMAP_NORMALMAP; };
+
 		virtual void initSubrenderer();
+		virtual void setDynamicPipelineState(VkCommandBuffer commandBuffer, uint32_t numPass);
 		virtual void addEntity(VEEntity *pEntity);
 	};
 }

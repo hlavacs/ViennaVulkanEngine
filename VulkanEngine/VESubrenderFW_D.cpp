@@ -20,14 +20,6 @@ namespace ve {
 	void VESubrenderFW_D::initSubrenderer() {
 		VESubrender::initSubrenderer();
 
-		//per object resources, set 0
-		/*vh::vhRenderCreateDescriptorSetLayout(getRendererForwardPointer()->getDevice(),
-			{ 1 },
-			{ VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER },
-			{ VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT },
-			&m_descriptorSetLayoutUBO);
-			*/
-
 		vh::vhRenderCreateDescriptorSetLayout(getRendererForwardPointer()->getDevice(),
 			{ 1 },
 			{ VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER },
@@ -42,11 +34,25 @@ namespace ve {
 			&m_pipelineLayout);
 
 		vh::vhPipeCreateGraphicsPipeline(	getRendererForwardPointer()->getDevice(),
-											"shader/Forward/D/vert.spv", "shader/Forward/D/frag.spv",
-											getRendererForwardPointer()->getSwapChainExtent(),
-											m_pipelineLayout, getRendererForwardPointer()->getRenderPass(),
-											&m_pipeline);
+			"shader/Forward/D/vert.spv", "shader/Forward/D/frag.spv",
+			getRendererForwardPointer()->getSwapChainExtent(),
+			m_pipelineLayout, getRendererForwardPointer()->getRenderPass(),
+			{ VK_DYNAMIC_STATE_BLEND_CONSTANTS },
+			&m_pipeline);
 	}
+
+
+	void VESubrenderFW_D::setDynamicPipelineState(VkCommandBuffer commandBuffer, uint32_t numPass) {
+		if (numPass == 0 ) {
+			float blendConstants[4] = { 0.0f, 0.0f, 0.0f, 0.0f };
+			vkCmdSetBlendConstants(commandBuffer, blendConstants);
+			return;
+		}
+
+		float blendConstants[4] = { 1.0f, 1.0f, 1.0f, 1.0f };
+		vkCmdSetBlendConstants(commandBuffer, blendConstants);
+	}
+
 
 	/**
 	* \brief Add an entity to the subrenderer
@@ -56,27 +62,6 @@ namespace ve {
 	*/
 	void VESubrenderFW_D::addEntity(VEEntity *pEntity) {
 		VESubrender::addEntity( pEntity);
-
-		/*vh::vhBufCreateUniformBuffers(getRendererForwardPointer()->getVmaAllocator(),
-			(uint32_t)getRendererForwardPointer()->getSwapChainNumber(),
-			(uint32_t)sizeof(VESceneObject::veUBOPerObject_t),
-			pEntity->m_uniformBuffers, pEntity->m_uniformBuffersAllocation);
-
-		vh::vhRenderCreateDescriptorSets(getRendererForwardPointer()->getDevice(),
-			(uint32_t)getRendererForwardPointer()->getSwapChainNumber(),
-			m_descriptorSetLayoutUBO,
-			getRendererForwardPointer()->getDescriptorPool(),
-			pEntity->m_descriptorSetsUBO);
-
-		for (uint32_t i = 0; i < pEntity->m_descriptorSetsUBO.size(); i++) {
-			vh::vhRenderUpdateDescriptorSet(getRendererForwardPointer()->getDevice(),
-				pEntity->m_descriptorSetsUBO[i],
-				{ pEntity->m_uniformBuffers[i] },	//UBOs
-				{ sizeof(veUBOPerObject) },					//UBO sizes
-				{ {VK_NULL_HANDLE} },	//textureImageViews
-				{ {VK_NULL_HANDLE} }	//samplers
-			);
-		}*/
 
 		vh::vhRenderCreateDescriptorSets(getRendererForwardPointer()->getDevice(),
 			(uint32_t)getRendererForwardPointer()->getSwapChainNumber(),

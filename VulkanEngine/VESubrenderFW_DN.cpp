@@ -21,13 +21,6 @@ namespace ve {
 
 		VESubrender::initSubrenderer();
 
-		//per object resources, set 0
-		/*vh::vhRenderCreateDescriptorSetLayout(getRendererForwardPointer()->getDevice(),
-			{ 1 },
-			{ VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER },
-			{ VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT },
-			&m_descriptorSetLayoutUBO);*/
-
 		vh::vhRenderCreateDescriptorSetLayout(getRendererForwardPointer()->getDevice(),
 			{ 1,											1 },
 			{ VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,	VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER },
@@ -45,9 +38,20 @@ namespace ve {
 			"shader/Forward/DN/vert.spv", "shader/Forward/DN/frag.spv",
 			getRendererForwardPointer()->getSwapChainExtent(),
 			m_pipelineLayout, getRendererForwardPointer()->getRenderPass(),
+			{ VK_DYNAMIC_STATE_BLEND_CONSTANTS },
 			&m_pipeline);
 	}
 
+	void VESubrenderFW_DN::setDynamicPipelineState(VkCommandBuffer commandBuffer, uint32_t numPass) {
+		if (numPass == 0) {
+			float blendConstants[4] = { 0.0f, 0.0f, 0.0f, 0.0f };
+			vkCmdSetBlendConstants(commandBuffer, blendConstants);
+			return;
+		}
+
+		float blendConstants[4] = { 1.0f, 1.0f, 1.0f, 1.0f };
+		vkCmdSetBlendConstants(commandBuffer, blendConstants);
+	}
 
 	/**
 	* \brief Add an entity to the subrenderer

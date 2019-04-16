@@ -238,9 +238,9 @@ void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="name
 <tr class="memitem:add7ac38cec91ccc1cb7f7fc295735651"><td class="memItemLeft" align="right" valign="top">VkResult&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacevh.html#add7ac38cec91ccc1cb7f7fc295735651">vhPipeCreateGraphicsPipelineLayout</a> (VkDevice device, std::vector&lt; VkDescriptorSetLayout &gt; descriptorSetLayouts, std::vector&lt; VkPushConstantRange &gt; pushConstantRanges, VkPipelineLayout *pipelineLayout)</td></tr>
 <tr class="memdesc:add7ac38cec91ccc1cb7f7fc295735651"><td class="mdescLeft">&#160;</td><td class="mdescRight">Create a pipeline layout for drawing a light pass.  <a href="#add7ac38cec91ccc1cb7f7fc295735651">More...</a><br /></td></tr>
 <tr class="separator:add7ac38cec91ccc1cb7f7fc295735651"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a9e55f2bc2ff9784fb212951699e362da"><td class="memItemLeft" align="right" valign="top">VkResult&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacevh.html#a9e55f2bc2ff9784fb212951699e362da">vhPipeCreateGraphicsPipeline</a> (VkDevice device, std::string verShaderFilename, std::string fragShaderFilename, VkExtent2D swapChainExtent, VkPipelineLayout pipelineLayout, VkRenderPass renderPass, VkPipeline *graphicsPipeline)</td></tr>
-<tr class="memdesc:a9e55f2bc2ff9784fb212951699e362da"><td class="mdescLeft">&#160;</td><td class="mdescRight">Create a pipeline state object (PSO) for a light pass.  <a href="#a9e55f2bc2ff9784fb212951699e362da">More...</a><br /></td></tr>
-<tr class="separator:a9e55f2bc2ff9784fb212951699e362da"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aa6903b6ef7debe26830c12a072e43af3"><td class="memItemLeft" align="right" valign="top">VkResult&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacevh.html#aa6903b6ef7debe26830c12a072e43af3">vhPipeCreateGraphicsPipeline</a> (VkDevice device, std::string verShaderFilename, std::string fragShaderFilename, VkExtent2D swapChainExtent, VkPipelineLayout pipelineLayout, VkRenderPass renderPass, std::vector&lt; VkDynamicState &gt; dynamicStates, VkPipeline *graphicsPipeline)</td></tr>
+<tr class="memdesc:aa6903b6ef7debe26830c12a072e43af3"><td class="mdescLeft">&#160;</td><td class="mdescRight">Create a pipeline state object (PSO) for a light pass.  <a href="#aa6903b6ef7debe26830c12a072e43af3">More...</a><br /></td></tr>
+<tr class="separator:aa6903b6ef7debe26830c12a072e43af3"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a0abe327f01dff0d2f8af18263ee4b768"><td class="memItemLeft" align="right" valign="top">VkResult&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacevh.html#a0abe327f01dff0d2f8af18263ee4b768">vhPipeCreateGraphicsShadowPipeline</a> (VkDevice device, std::string verShaderFilename, VkExtent2D shadowMapExtent, VkPipelineLayout pipelineLayout, VkRenderPass renderPass, VkPipeline *graphicsPipeline)</td></tr>
 <tr class="memdesc:a0abe327f01dff0d2f8af18263ee4b768"><td class="mdescLeft">&#160;</td><td class="mdescRight">Create a pipeline state object (PSO) for a shadow pass.  <a href="#a0abe327f01dff0d2f8af18263ee4b768">More...</a><br /></td></tr>
 <tr class="separator:a0abe327f01dff0d2f8af18263ee4b768"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -2710,8 +2710,8 @@ void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="name
 
 </div>
 </div>
-<a id="a9e55f2bc2ff9784fb212951699e362da"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a9e55f2bc2ff9784fb212951699e362da">&#9670;&nbsp;</a></span>vhPipeCreateGraphicsPipeline()</h2>
+<a id="aa6903b6ef7debe26830c12a072e43af3"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aa6903b6ef7debe26830c12a072e43af3">&#9670;&nbsp;</a></span>vhPipeCreateGraphicsPipeline()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -2755,6 +2755,12 @@ void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="name
         <tr>
           <td class="paramkey"></td>
           <td></td>
+          <td class="paramtype">std::vector&lt; VkDynamicState &gt;&#160;</td>
+          <td class="paramname"><em>dynamicStates</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
           <td class="paramtype">VkPipeline *&#160;</td>
           <td class="paramname"><em>graphicsPipeline</em>&#160;</td>
         </tr>
@@ -2775,6 +2781,7 @@ void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="name
     <tr><td class="paramdir">[in]</td><td class="paramname">swapChainExtent</td><td>Swapchain extent </td></tr>
     <tr><td class="paramdir">[in]</td><td class="paramname">pipelineLayout</td><td>Pipeline layout </td></tr>
     <tr><td class="paramdir">[in]</td><td class="paramname">renderPass</td><td>Renderpass to be used </td></tr>
+    <tr><td class="paramdir">[in]</td><td class="paramname">dynamicStates</td><td>List of dynamic states that can be changed during usage of the pipeline </td></tr>
     <tr><td class="paramdir">[out]</td><td class="paramname">graphicsPipeline</td><td>The new PSO </td></tr>
   </table>
   </dd>
@@ -3516,7 +3523,7 @@ void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="name
 </div><!-- contents -->
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>
-Generated on Tue Apr 16 2019 18:37:14 for Vienna Vulkan Engine by &#160;<a href="http://www.doxygen.org/index.html">
+Generated on Tue Apr 16 2019 20:59:30 for Vienna Vulkan Engine by &#160;<a href="http://www.doxygen.org/index.html">
 <img class="footer" src="doxygen.png" alt="doxygen"/>
 </a> 1.8.15
 </small></address>

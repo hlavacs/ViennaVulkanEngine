@@ -38,8 +38,11 @@ namespace ve {
 
 	/**
 	* \brief Bind the subrenderer's pipeline to a commandbuffer
+	*
+	* \param[in] commandBuffer The command buffer to bind the pipeline to
+	*
 	*/
-	void VESubrender::bindPipeline(VkCommandBuffer commandBuffer ) {
+	void VESubrender::bindPipeline( VkCommandBuffer commandBuffer ) {
 		vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_pipeline);	//bind the PSO
 	}
 
@@ -111,12 +114,29 @@ namespace ve {
 	*
 	* \param[in] commandBuffer The command buffer to record into all draw calls
 	* \param[in] imageIndex Index of the current swap chain image
+	* \param[in] numPass The number of the light that has been rendered
+	* \param[in] pCamera Pointer to the current light camera
+	* \param[in] pLight Pointer to the current light
+	* \param[in] descriptorSetsShadow The shadow maps to be used.
 	*
  	*/
-	void VESubrender::draw(VkCommandBuffer commandBuffer, uint32_t imageIndex ) {
+	void VESubrender::draw(	VkCommandBuffer commandBuffer, uint32_t imageIndex,
+							uint32_t numPass,
+							VECamera *pCamera, VELight *pLight,
+							std::vector<VkDescriptorSet> descriptorSetsShadow) {
+
+		if (m_entities.size() == 0) return;
+
+		bindPipeline(commandBuffer);
+
+		setDynamicPipelineState( commandBuffer, numPass );
+
+		bindDescriptorSetsPerFrame(commandBuffer, imageIndex, pCamera, pLight, descriptorSetsShadow );
+
 		//go through all entities and draw them
 		for (auto pEntity : m_entities) {
 			if (pEntity->m_drawEntity ) {
+				bindDescriptorSetsPerEntity(commandBuffer, imageIndex, pEntity);	//bind the entity's descriptor sets
 				drawEntity(commandBuffer, imageIndex, pEntity);
 			}
 		}
@@ -134,8 +154,6 @@ namespace ve {
 	*
 	*/
 	void VESubrender::drawEntity(VkCommandBuffer commandBuffer, uint32_t imageIndex, VEEntity *entity) {
-
-		bindDescriptorSetsPerEntity(commandBuffer, imageIndex, entity);					//bind the entity's descriptor sets
 
 		VkBuffer vertexBuffers[] = { entity->m_pMesh->m_vertexBuffer };
 		VkDeviceSize offsets[] = { 0 };

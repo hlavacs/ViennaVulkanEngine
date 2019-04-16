@@ -20,14 +20,6 @@ namespace ve {
 	void VESubrenderFW_Cubemap2::initSubrenderer() {
 		VESubrender::initSubrenderer();
 
-		//per object resources, set 0
-		/*vh::vhRenderCreateDescriptorSetLayout(getRendererForwardPointer()->getDevice(),
-			{ 1 },
-			{ VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER },
-			{ VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT },
-			&m_descriptorSetLayoutUBO);
-		*/
-
 		vh::vhRenderCreateDescriptorSetLayout(getRendererForwardPointer()->getDevice(),
 			{ 1 },
 			{ VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER },
@@ -44,6 +36,7 @@ namespace ve {
 			"shader/Forward/Cubemap2/vert.spv", "shader/Forward/Cubemap2/frag.spv",
 			getRendererForwardPointer()->getSwapChainExtent(),
 			m_pipelineLayout, getRendererForwardPointer()->getRenderPass(),
+			{},
 			&m_pipeline);
 
 	}
