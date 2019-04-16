@@ -84,8 +84,8 @@ namespace ve {
 		//-------------------------------------------------------------------------------------
 		//Manage scene nodes and entities
 
-		///Add a scene node to the scene
 		void			updateSceneNodes( uint32_t imageIndex );
+		///Add a scene node to the scene
 		void			addSceneNode(VESceneNode *entity) { m_sceneNodes[entity->getName()] = entity; };
 		VESceneNode *	getSceneNode(std::string entityName);
 		void			deleteSceneNodeAndChildren(std::string name);

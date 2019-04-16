@@ -88,6 +88,7 @@ namespace ve {
 			registerEventListener( new LightListener("LightListener"));
 		};
 
+		///create many cubes
 		void createCubes(uint32_t n) {
 
 			for (uint32_t i = 0; i < n; i++) {
@@ -114,7 +115,7 @@ namespace ve {
 			VESceneNode *e4 = m_pSceneManager->loadModel("The Plane", "models/test", "plane_t_n_s.obj");
 			e4->setTransform(glm::scale(glm::mat4(1.0f), glm::vec3(1000.0f, 1.0f, 1000.0f)));
 			VEEntity *pE4 = (VEEntity*)m_pSceneManager->getSceneNode("The Plane/plane_t_n_s.obj/plane/Entity_0");
-			pE4->setTexParam( glm::vec4(1000.0f, 1000.0f, 0.0f, 0.0f) );
+			pE4->setParam( glm::vec4(1000.0f, 1000.0f, 0.0f, 0.0f) );
 
 			VELight *eSLight = (VELight*)getSceneManagerPointer()->getSceneNode("StandardLight");
 			VESceneNode *eL = m_pSceneManager->loadModel("The Light", "models/test/sphere", "sphere.obj", 0 , eSLight);

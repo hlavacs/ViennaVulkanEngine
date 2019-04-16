@@ -44,6 +44,16 @@ namespace ve {
 	}
 
 
+	/**
+	* \brief Bind per frame descriptor sets to the pipeline layout
+	*
+	* \param[in] commandBuffer The command buffer that is used for recording commands
+	* \param[in] imageIndex The index of the swapchain image that is currently used
+	* \param[in] pCamera Pointer to the current light camera
+	* \param[in] pLight Pointer to the currently used light
+	* \param[in] descriptorSetsShadow Shadow maps that are used for creating shadow
+	*
+	*/
 	void VESubrender::bindDescriptorSetsPerFrame(	VkCommandBuffer commandBuffer, uint32_t imageIndex,
 													VECamera *pCamera, VELight *pLight, 
 													std::vector<VkDescriptorSet> descriptorSetsShadow ) {

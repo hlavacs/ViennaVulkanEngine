@@ -123,6 +123,9 @@ Public Member Functions</h2></td></tr>
 <tr class="memitem:aae47277fd521d322ee02dc51f643e7f8"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classve_1_1_v_e_scene_node.html">VESceneNode</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_scene_manager.html#aae47277fd521d322ee02dc51f643e7f8">createSkybox</a> (std::string entityName, std::string basedir, std::vector&lt; std::string &gt; texNames)</td></tr>
 <tr class="memdesc:aae47277fd521d322ee02dc51f643e7f8"><td class="mdescLeft">&#160;</td><td class="mdescRight">Create a skyplane based sky box.  <a href="#aae47277fd521d322ee02dc51f643e7f8">More...</a><br /></td></tr>
 <tr class="separator:aae47277fd521d322ee02dc51f643e7f8"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aaadccc0f574cd30019e940ab56acc832"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_scene_manager.html#aaadccc0f574cd30019e940ab56acc832">updateSceneNodes</a> (uint32_t imageIndex)</td></tr>
+<tr class="memdesc:aaadccc0f574cd30019e940ab56acc832"><td class="mdescLeft">&#160;</td><td class="mdescRight">Find all scene nodes without a parent, then update them and their children.  <a href="#aaadccc0f574cd30019e940ab56acc832">More...</a><br /></td></tr>
+<tr class="separator:aaadccc0f574cd30019e940ab56acc832"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a18a142d8ebce07b6f149fbe8fd8647df"><td class="memItemLeft" align="right" valign="top"><a id="a18a142d8ebce07b6f149fbe8fd8647df"></a>
 void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_scene_manager.html#a18a142d8ebce07b6f149fbe8fd8647df">addSceneNode</a> (<a class="el" href="classve_1_1_v_e_scene_node.html">VESceneNode</a> *entity)</td></tr>
 <tr class="memdesc:a18a142d8ebce07b6f149fbe8fd8647df"><td class="mdescLeft">&#160;</td><td class="mdescRight">Add a scene node to the scene. <br /></td></tr>
@@ -130,19 +133,6 @@ void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="clas
 <tr class="memitem:a22dd9760111ca205cf97b2fdcfdbb6d7"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classve_1_1_v_e_scene_node.html">VESceneNode</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_scene_manager.html#a22dd9760111ca205cf97b2fdcfdbb6d7">getSceneNode</a> (std::string entityName)</td></tr>
 <tr class="memdesc:a22dd9760111ca205cf97b2fdcfdbb6d7"><td class="mdescLeft">&#160;</td><td class="mdescRight">Find an entity using its name.  <a href="#a22dd9760111ca205cf97b2fdcfdbb6d7">More...</a><br /></td></tr>
 <tr class="separator:a22dd9760111ca205cf97b2fdcfdbb6d7"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a61e98d8866c5e0fdea129b3157c0524e"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_scene_manager.html#a61e98d8866c5e0fdea129b3157c0524e">addToDirtyList</a> (<a class="el" href="classve_1_1_v_e_scene_node.html">VESceneNode</a> *pObject)</td></tr>
-<tr class="memdesc:a61e98d8866c5e0fdea129b3157c0524e"><td class="mdescLeft">&#160;</td><td class="mdescRight">Move this object to the dirty list.  <a href="#a61e98d8866c5e0fdea129b3157c0524e">More...</a><br /></td></tr>
-<tr class="separator:a61e98d8866c5e0fdea129b3157c0524e"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ae6163f1b57b09b100c8b74a59b643061"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_scene_manager.html#ae6163f1b57b09b100c8b74a59b643061">removeFromDirtyList</a> (<a class="el" href="classve_1_1_v_e_scene_node.html">VESceneNode</a> *pObject)</td></tr>
-<tr class="memdesc:ae6163f1b57b09b100c8b74a59b643061"><td class="mdescLeft">&#160;</td><td class="mdescRight">Remove this object from the dirty list.  <a href="#ae6163f1b57b09b100c8b74a59b643061">More...</a><br /></td></tr>
-<tr class="separator:ae6163f1b57b09b100c8b74a59b643061"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a713795430bbf013fb5a99a45b7b6668f"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_scene_manager.html#a713795430bbf013fb5a99a45b7b6668f">updateDirtyObjects</a> ()</td></tr>
-<tr class="memdesc:a713795430bbf013fb5a99a45b7b6668f"><td class="mdescLeft">&#160;</td><td class="mdescRight">Update all objects on the dirty list and clear the dirty list.  <a href="#a713795430bbf013fb5a99a45b7b6668f">More...</a><br /></td></tr>
-<tr class="separator:a713795430bbf013fb5a99a45b7b6668f"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a72e3fd5a9fe905c1f49d83945ca2fa33"><td class="memItemLeft" align="right" valign="top"><a id="a72e3fd5a9fe905c1f49d83945ca2fa33"></a>
-void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_scene_manager.html#a72e3fd5a9fe905c1f49d83945ca2fa33">clearDirtyList</a> ()</td></tr>
-<tr class="memdesc:a72e3fd5a9fe905c1f49d83945ca2fa33"><td class="mdescLeft">&#160;</td><td class="mdescRight">Clear all objects from the dirty list. <br /></td></tr>
-<tr class="separator:a72e3fd5a9fe905c1f49d83945ca2fa33"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a4964068bea04034d723881b7551dd597"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_scene_manager.html#a4964068bea04034d723881b7551dd597">deleteSceneNodeAndChildren</a> (std::string name)</td></tr>
 <tr class="memdesc:a4964068bea04034d723881b7551dd597"><td class="mdescLeft">&#160;</td><td class="mdescRight">Delete an entity and all its subentities.  <a href="#a4964068bea04034d723881b7551dd597">More...</a><br /></td></tr>
 <tr class="separator:a4964068bea04034d723881b7551dd597"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -209,10 +199,6 @@ std::map&lt; std::string, <a class="el" href="classve_1_1_v_e_material.html">VEM
 std::map&lt; std::string, <a class="el" href="classve_1_1_v_e_scene_node.html">VESceneNode</a> * &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_scene_manager.html#aaeedb9ee5317fcf9dcdca724dcb86b2b">m_sceneNodes</a> = {}</td></tr>
 <tr class="memdesc:aaeedb9ee5317fcf9dcdca724dcb86b2b"><td class="mdescLeft">&#160;</td><td class="mdescRight">Storage of all scene nodes currently in the engine. <br /></td></tr>
 <tr class="separator:aaeedb9ee5317fcf9dcdca724dcb86b2b"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aa63e5b092e18bb344f6f279c36d51ef4"><td class="memItemLeft" align="right" valign="top"><a id="aa63e5b092e18bb344f6f279c36d51ef4"></a>
-std::set&lt; <a class="el" href="classve_1_1_v_e_scene_node.html">VESceneNode</a> * &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_scene_manager.html#aa63e5b092e18bb344f6f279c36d51ef4">m_dirtyList</a> = {}</td></tr>
-<tr class="memdesc:aa63e5b092e18bb344f6f279c36d51ef4"><td class="mdescLeft">&#160;</td><td class="mdescRight">List of dirty scene nodes that must be updated. <br /></td></tr>
-<tr class="separator:aa63e5b092e18bb344f6f279c36d51ef4"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ae3fbd394a2d6ff4797ecff2921d6cbcb"><td class="memItemLeft" align="right" valign="top"><a id="ae3fbd394a2d6ff4797ecff2921d6cbcb"></a>
 <a class="el" href="classve_1_1_v_e_camera.html">VECamera</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_scene_manager.html#ae3fbd394a2d6ff4797ecff2921d6cbcb">m_camera</a> = nullptr</td></tr>
 <tr class="memdesc:ae3fbd394a2d6ff4797ecff2921d6cbcb"><td class="mdescLeft">&#160;</td><td class="mdescRight">entity ptr of the current camera <br /></td></tr>
@@ -226,32 +212,6 @@ std::vector&lt; <a class="el" href="classve_1_1_v_e_light.html">VELight</a> * &g
 <div class="textblock"><p>The scene Manager manages the objects that have been loaded and put into the world. </p>
 <p>The scene manager can load objects from file and place them into the world. It also maintains cameras and lights. </p>
 </div><h2 class="groupheader">Member Function Documentation</h2>
-<a id="a61e98d8866c5e0fdea129b3157c0524e"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a61e98d8866c5e0fdea129b3157c0524e">&#9670;&nbsp;</a></span>addToDirtyList()</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">void ve::VESceneManager::addToDirtyList </td>
-          <td>(</td>
-          <td class="paramtype"><a class="el" href="classve_1_1_v_e_scene_node.html">VESceneNode</a> *&#160;</td>
-          <td class="paramname"><em>pObject</em></td><td>)</td>
-          <td></td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p>Move this object to the dirty list. </p>
-<dl class="params"><dt>Parameters</dt><dd>
-  <table class="params">
-    <tr><td class="paramdir">[in]</td><td class="paramname">pObject</td><td>Pointer to the object that should be added to the dirty list </td></tr>
-  </table>
-  </dd>
-</dl>
-
-</div>
-</div>
 <a id="a219b7bccb70db3400ec513839c97e958"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a219b7bccb70db3400ec513839c97e958">&#9670;&nbsp;</a></span>copyAiNodes()</h2>
 
@@ -1205,32 +1165,6 @@ std::vector&lt; <a class="el" href="classve_1_1_v_e_light.html">VELight</a> * &g
 
 </div>
 </div>
-<a id="ae6163f1b57b09b100c8b74a59b643061"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ae6163f1b57b09b100c8b74a59b643061">&#9670;&nbsp;</a></span>removeFromDirtyList()</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">void ve::VESceneManager::removeFromDirtyList </td>
-          <td>(</td>
-          <td class="paramtype"><a class="el" href="classve_1_1_v_e_scene_node.html">VESceneNode</a> *&#160;</td>
-          <td class="paramname"><em>pObject</em></td><td>)</td>
-          <td></td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p>Remove this object from the dirty list. </p>
-<dl class="params"><dt>Parameters</dt><dd>
-  <table class="params">
-    <tr><td class="paramdir">[in]</td><td class="paramname">pObject</td><td>Pointer to the object that should be removed from the dirty list </td></tr>
-  </table>
-  </dd>
-</dl>
-
-</div>
-</div>
 <a id="acedf235e65ee027a0df5dc92163fcefe"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#acedf235e65ee027a0df5dc92163fcefe">&#9670;&nbsp;</a></span>setCamera()</h2>
 
@@ -1319,22 +1253,30 @@ std::vector&lt; <a class="el" href="classve_1_1_v_e_light.html">VELight</a> * &g
 
 </div>
 </div>
-<a id="a713795430bbf013fb5a99a45b7b6668f"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a713795430bbf013fb5a99a45b7b6668f">&#9670;&nbsp;</a></span>updateDirtyObjects()</h2>
+<a id="aaadccc0f574cd30019e940ab56acc832"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aaadccc0f574cd30019e940ab56acc832">&#9670;&nbsp;</a></span>updateSceneNodes()</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">void ve::VESceneManager::updateDirtyObjects </td>
+          <td class="memname">void ve::VESceneManager::updateSceneNodes </td>
           <td>(</td>
-          <td class="paramname"></td><td>)</td>
+          <td class="paramtype">uint32_t&#160;</td>
+          <td class="paramname"><em>imageIndex</em></td><td>)</td>
           <td></td>
         </tr>
       </table>
 </div><div class="memdoc">
 
-<p>Update all objects on the dirty list and clear the dirty list. </p>
+<p>Find all scene nodes without a parent, then update them and their children. </p>
+<p>Makes this nodes and their children to copy their data to the GPU</p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramdir">[in]</td><td class="paramname">imageIndex</td><td>Index of the swapchain image that is currently used. </td></tr>
+  </table>
+  </dd>
+</dl>
 
 </div>
 </div>
@@ -1345,7 +1287,7 @@ std::vector&lt; <a class="el" href="classve_1_1_v_e_light.html">VELight</a> * &g
 </div><!-- contents -->
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>
-Generated on Wed Apr 3 2019 11:04:38 for Vienna Vulkan Engine by &#160;<a href="http://www.doxygen.org/index.html">
+Generated on Tue Apr 16 2019 18:37:14 for Vienna Vulkan Engine by &#160;<a href="http://www.doxygen.org/index.html">
 <img class="footer" src="doxygen.png" alt="doxygen"/>
 </a> 1.8.15
 </small></address>

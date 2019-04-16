@@ -70,10 +70,9 @@ $(function() {
 <a href="#pub-types">Public Types</a> &#124;
 <a href="#pub-methods">Public Member Functions</a> &#124;
 <a href="#pub-attribs">Public Attributes</a> &#124;
-<a href="#pro-attribs">Protected Attributes</a> &#124;
 <a href="classve_1_1_v_e_light-members.html">List of all members</a>  </div>
   <div class="headertitle">
-<div class="title">ve::VELight Class Reference</div>  </div>
+<div class="title">ve::VELight Class Reference<span class="mlabels"><span class="mlabel">abstract</span></span></div>  </div>
 </div><!--header-->
 <div class="contents">
 
@@ -87,15 +86,19 @@ Inheritance diagram for ve::VELight:</div>
  <div class="center">
   <img src="classve_1_1_v_e_light.png" usemap="#ve::VELight_map" alt=""/>
   <map id="ve::VELight_map" name="ve::VELight_map">
-<area href="classve_1_1_v_e_scene_node.html" title="Represents any object that can be put into a scene." alt="ve::VESceneNode" shape="rect" coords="0,56,119,80"/>
-<area href="classve_1_1_v_e_named_class.html" title="Base class of all classes that need a name." alt="ve::VENamedClass" shape="rect" coords="0,0,119,24"/>
+<area href="classve_1_1_v_e_scene_object.html" title="Represents any object that has its own UBO." alt="ve::VESceneObject" shape="rect" coords="147,112,284,136"/>
+<area href="classve_1_1_v_e_scene_node.html" title="Represents any object that can be put into a scene." alt="ve::VESceneNode" shape="rect" coords="147,56,284,80"/>
+<area href="classve_1_1_v_e_named_class.html" title="Base class of all classes that need a name." alt="ve::VENamedClass" shape="rect" coords="147,0,284,24"/>
+<area href="classve_1_1_v_e_directional_light.html" title="Directional light class." alt="ve::VEDirectionalLight" shape="rect" coords="0,224,137,248"/>
+<area href="classve_1_1_v_e_point_light.html" title="Point light class." alt="ve::VEPointLight" shape="rect" coords="147,224,284,248"/>
+<area href="classve_1_1_v_e_spot_light.html" title="Spot light class." alt="ve::VESpotLight" shape="rect" coords="294,224,431,248"/>
   </map>
 </div></div>
 <table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="nested-classes"></a>
 Classes</h2></td></tr>
-<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structve_1_1_v_e_light_1_1ve_light_data__t.html">veLightData_t</a></td></tr>
-<tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">Light data to be copied into a UBO.  <a href="structve_1_1_v_e_light_1_1ve_light_data__t.html#details">More...</a><br /></td></tr>
+<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structve_1_1_v_e_light_1_1ve_u_b_o_per_light__t.html">veUBOPerLight_t</a></td></tr>
+<tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">Light data to be copied into a UBO.  <a href="structve_1_1_v_e_light_1_1ve_u_b_o_per_light__t.html#details">More...</a><br /></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-types"></a>
@@ -117,20 +120,38 @@ Public Types</h2></td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-methods"></a>
 Public Member Functions</h2></td></tr>
-<tr class="memitem:a57b95a61725a083d3777ae1e01614a38"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_light.html#a57b95a61725a083d3777ae1e01614a38">VELight</a> (std::string name, <a class="el" href="classve_1_1_v_e_light.html#abcedf7166341000b6d4512e9030f6b86">veLightType</a> type)</td></tr>
-<tr class="memdesc:a57b95a61725a083d3777ae1e01614a38"><td class="mdescLeft">&#160;</td><td class="mdescRight">Simple <a class="el" href="classve_1_1_v_e_light.html" title="A VELight has a color and can be used to light a scene.">VELight</a> constructor, default is directional light.  <a href="#a57b95a61725a083d3777ae1e01614a38">More...</a><br /></td></tr>
-<tr class="separator:a57b95a61725a083d3777ae1e01614a38"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ad20b8b457fdd68dd53a9a65e7e4c255d"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classve_1_1_v_e_light.html#abcedf7166341000b6d4512e9030f6b86">veLightType</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_light.html#ad20b8b457fdd68dd53a9a65e7e4c255d">getLightType</a> ()</td></tr>
-<tr class="separator:ad20b8b457fdd68dd53a9a65e7e4c255d"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a4a1146a8d1fb6b82b5319549ab7b2794"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_light.html#a4a1146a8d1fb6b82b5319549ab7b2794">fillLightStructure</a> (<a class="el" href="structve_1_1_v_e_light_1_1ve_light_data__t.html">veLightData_t</a> *pLight)</td></tr>
-<tr class="memdesc:a4a1146a8d1fb6b82b5319549ab7b2794"><td class="mdescLeft">&#160;</td><td class="mdescRight">Fill a UBO structure with the light's data.  <a href="#a4a1146a8d1fb6b82b5319549ab7b2794">More...</a><br /></td></tr>
-<tr class="separator:a4a1146a8d1fb6b82b5319549ab7b2794"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a6ed73527f265856914523135e05ae159"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_light.html#a6ed73527f265856914523135e05ae159">VELight</a> (std::string name, glm::mat4 transf=glm::mat4(1.0f), VESceneNode *parent=nullptr)</td></tr>
+<tr class="memdesc:a6ed73527f265856914523135e05ae159"><td class="mdescLeft">&#160;</td><td class="mdescRight">Simple <a class="el" href="classve_1_1_v_e_light.html" title="A VELight has a color and can be used to light a scene.">VELight</a> constructor, default is directional light.  <a href="#a6ed73527f265856914523135e05ae159">More...</a><br /></td></tr>
+<tr class="separator:a6ed73527f265856914523135e05ae159"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aaf3079ed9eeffca5686f10e46c5ff177"><td class="memItemLeft" align="right" valign="top">virtual&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_light.html#aaf3079ed9eeffca5686f10e46c5ff177">~VELight</a> ()</td></tr>
+<tr class="memdesc:aaf3079ed9eeffca5686f10e46c5ff177"><td class="mdescLeft">&#160;</td><td class="mdescRight">Destructor of the light class.  <a href="#aaf3079ed9eeffca5686f10e46c5ff177">More...</a><br /></td></tr>
+<tr class="separator:aaf3079ed9eeffca5686f10e46c5ff177"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a141a57b37f17490a71d70c9e9ba9824a"><td class="memItemLeft" align="right" valign="top"><a id="a141a57b37f17490a71d70c9e9ba9824a"></a>
+virtual void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_light.html#a141a57b37f17490a71d70c9e9ba9824a">updateShadowCameras</a> (<a class="el" href="classve_1_1_v_e_camera.html">VECamera</a> *pCamera, uint32_t imageIndex)=0</td></tr>
+<tr class="memdesc:a141a57b37f17490a71d70c9e9ba9824a"><td class="mdescLeft">&#160;</td><td class="mdescRight">Update all shadow cameras of this light - pure virtual for the light base class. <br /></td></tr>
+<tr class="separator:a141a57b37f17490a71d70c9e9ba9824a"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aee1fb43c01264f706e8820eca46ec6b3"><td class="memItemLeft" align="right" valign="top">virtual <a class="el" href="classve_1_1_v_e_scene_node.html#aff43b9c0c39fa3362b3908e813608cc8">veNodeType</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_light.html#aee1fb43c01264f706e8820eca46ec6b3">getNodeType</a> ()</td></tr>
+<tr class="separator:aee1fb43c01264f706e8820eca46ec6b3"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a028486e282b3fc2886dec7da1b678b20"><td class="memItemLeft" align="right" valign="top">virtual <a class="el" href="classve_1_1_v_e_light.html#abcedf7166341000b6d4512e9030f6b86">veLightType</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_light.html#a028486e282b3fc2886dec7da1b678b20">getLightType</a> ()=0</td></tr>
+<tr class="separator:a028486e282b3fc2886dec7da1b678b20"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:afca4ed6d962b1b0a7b1fa2ee98bbf8aa"><td class="memItemLeft" align="right" valign="top">virtual void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_light.html#afca4ed6d962b1b0a7b1fa2ee98bbf8aa">updateUBO</a> (glm::mat4 worldMatrix, uint32_t imageIndex)</td></tr>
+<tr class="memdesc:afca4ed6d962b1b0a7b1fa2ee98bbf8aa"><td class="mdescLeft">&#160;</td><td class="mdescRight">Update the UBO of this light.  <a href="#afca4ed6d962b1b0a7b1fa2ee98bbf8aa">More...</a><br /></td></tr>
+<tr class="separator:afca4ed6d962b1b0a7b1fa2ee98bbf8aa"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="inherit_header pub_methods_classve_1_1_v_e_scene_object"><td colspan="2" onclick="javascript:toggleInherit('pub_methods_classve_1_1_v_e_scene_object')"><img src="closed.png" alt="-"/>&#160;Public Member Functions inherited from <a class="el" href="classve_1_1_v_e_scene_object.html">ve::VESceneObject</a></td></tr>
+<tr class="memitem:a47f23448ab8b4bb4494164dfc6e8044a inherit pub_methods_classve_1_1_v_e_scene_object"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_scene_object.html#a47f23448ab8b4bb4494164dfc6e8044a">VESceneObject</a> (std::string name, glm::mat4 transf=glm::mat4(1.0f), VESceneNode *parent=nullptr, uint32_t sizeUBO=0)</td></tr>
+<tr class="memdesc:a47f23448ab8b4bb4494164dfc6e8044a inherit pub_methods_classve_1_1_v_e_scene_object"><td class="mdescLeft">&#160;</td><td class="mdescRight">Constructor of the scene object class.  <a href="classve_1_1_v_e_scene_object.html#a47f23448ab8b4bb4494164dfc6e8044a">More...</a><br /></td></tr>
+<tr class="separator:a47f23448ab8b4bb4494164dfc6e8044a inherit pub_methods_classve_1_1_v_e_scene_object"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a35ee965e4d12c9e05e78f33bf13ed8fb inherit pub_methods_classve_1_1_v_e_scene_object"><td class="memItemLeft" align="right" valign="top">virtual&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_scene_object.html#a35ee965e4d12c9e05e78f33bf13ed8fb">~VESceneObject</a> ()</td></tr>
+<tr class="memdesc:a35ee965e4d12c9e05e78f33bf13ed8fb inherit pub_methods_classve_1_1_v_e_scene_object"><td class="mdescLeft">&#160;</td><td class="mdescRight">Destructor of the scene object class.  <a href="classve_1_1_v_e_scene_object.html#a35ee965e4d12c9e05e78f33bf13ed8fb">More...</a><br /></td></tr>
+<tr class="separator:a35ee965e4d12c9e05e78f33bf13ed8fb inherit pub_methods_classve_1_1_v_e_scene_object"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="inherit_header pub_methods_classve_1_1_v_e_scene_node"><td colspan="2" onclick="javascript:toggleInherit('pub_methods_classve_1_1_v_e_scene_node')"><img src="closed.png" alt="-"/>&#160;Public Member Functions inherited from <a class="el" href="classve_1_1_v_e_scene_node.html">ve::VESceneNode</a></td></tr>
 <tr class="memitem:a188ce26114bec030ca97d5b5ebacbf7b inherit pub_methods_classve_1_1_v_e_scene_node"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_scene_node.html#a188ce26114bec030ca97d5b5ebacbf7b">VESceneNode</a> (std::string name, glm::mat4 transf=glm::mat4(1.0f), VESceneNode *parent=nullptr)</td></tr>
 <tr class="memdesc:a188ce26114bec030ca97d5b5ebacbf7b inherit pub_methods_classve_1_1_v_e_scene_node"><td class="mdescLeft">&#160;</td><td class="mdescRight">The constructor ot the <a class="el" href="classve_1_1_v_e_scene_node.html" title="Represents any object that can be put into a scene.">VESceneNode</a> class.  <a href="classve_1_1_v_e_scene_node.html#a188ce26114bec030ca97d5b5ebacbf7b">More...</a><br /></td></tr>
 <tr class="separator:a188ce26114bec030ca97d5b5ebacbf7b inherit pub_methods_classve_1_1_v_e_scene_node"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a98bf32bc9453418e83751372edd0965b inherit pub_methods_classve_1_1_v_e_scene_node"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classve_1_1_v_e_scene_node.html#aff43b9c0c39fa3362b3908e813608cc8">veNodeType</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_scene_node.html#a98bf32bc9453418e83751372edd0965b">getNodeType</a> ()</td></tr>
-<tr class="separator:a98bf32bc9453418e83751372edd0965b inherit pub_methods_classve_1_1_v_e_scene_node"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aabeb0f7130c6df9e67d3bdb98ac43c57 inherit pub_methods_classve_1_1_v_e_scene_node"><td class="memItemLeft" align="right" valign="top"><a id="aabeb0f7130c6df9e67d3bdb98ac43c57"></a>
+virtual&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_scene_node.html#aabeb0f7130c6df9e67d3bdb98ac43c57">~VESceneNode</a> ()</td></tr>
+<tr class="memdesc:aabeb0f7130c6df9e67d3bdb98ac43c57 inherit pub_methods_classve_1_1_v_e_scene_node"><td class="mdescLeft">&#160;</td><td class="mdescRight">Destructor of the scene node class. <br /></td></tr>
+<tr class="separator:aabeb0f7130c6df9e67d3bdb98ac43c57 inherit pub_methods_classve_1_1_v_e_scene_node"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a367fee6490278bbf70d33e9a8e17fee9 inherit pub_methods_classve_1_1_v_e_scene_node"><td class="memItemLeft" align="right" valign="top"><a id="a367fee6490278bbf70d33e9a8e17fee9"></a>
 void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_scene_node.html#a367fee6490278bbf70d33e9a8e17fee9">setTransform</a> (glm::mat4 trans)</td></tr>
 <tr class="memdesc:a367fee6490278bbf70d33e9a8e17fee9 inherit pub_methods_classve_1_1_v_e_scene_node"><td class="mdescLeft">&#160;</td><td class="mdescRight">Sets the entity's local to parent transform. <br /></td></tr>
@@ -158,20 +179,16 @@ void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="clas
 <tr class="memitem:a5e41fdd2408fe596a2080f511caea770 inherit pub_methods_classve_1_1_v_e_scene_node"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_scene_node.html#a5e41fdd2408fe596a2080f511caea770">lookAt</a> (glm::vec3 eye, glm::vec3 point, glm::vec3 up)</td></tr>
 <tr class="memdesc:a5e41fdd2408fe596a2080f511caea770 inherit pub_methods_classve_1_1_v_e_scene_node"><td class="mdescLeft">&#160;</td><td class="mdescRight">lookAt function  <a href="classve_1_1_v_e_scene_node.html#a5e41fdd2408fe596a2080f511caea770">More...</a><br /></td></tr>
 <tr class="separator:a5e41fdd2408fe596a2080f511caea770 inherit pub_methods_classve_1_1_v_e_scene_node"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ab9e16e6ae1b164972755b77a52f73679 inherit pub_methods_classve_1_1_v_e_scene_node"><td class="memItemLeft" align="right" valign="top">virtual void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_scene_node.html#ab9e16e6ae1b164972755b77a52f73679">update</a> ()</td></tr>
-<tr class="memdesc:ab9e16e6ae1b164972755b77a52f73679 inherit pub_methods_classve_1_1_v_e_scene_node"><td class="mdescLeft">&#160;</td><td class="mdescRight">Update the entity's UBO buffer with the current world matrix.  <a href="classve_1_1_v_e_scene_node.html#ab9e16e6ae1b164972755b77a52f73679">More...</a><br /></td></tr>
-<tr class="separator:ab9e16e6ae1b164972755b77a52f73679 inherit pub_methods_classve_1_1_v_e_scene_node"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aaa00273c4215fa135a373d64df078485 inherit pub_methods_classve_1_1_v_e_scene_node"><td class="memItemLeft" align="right" valign="top">virtual void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_scene_node.html#aaa00273c4215fa135a373d64df078485">update</a> (glm::mat4 parentWorldMatrix)</td></tr>
-<tr class="memdesc:aaa00273c4215fa135a373d64df078485 inherit pub_methods_classve_1_1_v_e_scene_node"><td class="mdescLeft">&#160;</td><td class="mdescRight">Update the entity's UBO buffer with the current world matrix.  <a href="classve_1_1_v_e_scene_node.html#aaa00273c4215fa135a373d64df078485">More...</a><br /></td></tr>
-<tr class="separator:aaa00273c4215fa135a373d64df078485 inherit pub_methods_classve_1_1_v_e_scene_node"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a85757355f9d1a495ad9d71ddcc7770cd inherit pub_methods_classve_1_1_v_e_scene_node"><td class="memItemLeft" align="right" valign="top"><a id="a85757355f9d1a495ad9d71ddcc7770cd"></a>
-virtual void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_scene_node.html#a85757355f9d1a495ad9d71ddcc7770cd">updateChildren</a> (glm::mat4 worldMatrix)</td></tr>
-<tr class="memdesc:a85757355f9d1a495ad9d71ddcc7770cd inherit pub_methods_classve_1_1_v_e_scene_node"><td class="mdescLeft">&#160;</td><td class="mdescRight">Update the UBOs of all children of this entity. <br /></td></tr>
-<tr class="separator:a85757355f9d1a495ad9d71ddcc7770cd inherit pub_methods_classve_1_1_v_e_scene_node"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a2d9c010b1600da805c9651c0337e1b1e inherit pub_methods_classve_1_1_v_e_scene_node"><td class="memItemLeft" align="right" valign="top"><a id="a2d9c010b1600da805c9651c0337e1b1e"></a>
-virtual void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_scene_node.html#a2d9c010b1600da805c9651c0337e1b1e">updateUBO</a> (glm::mat4 parentWorldMatrix)</td></tr>
-<tr class="memdesc:a2d9c010b1600da805c9651c0337e1b1e inherit pub_methods_classve_1_1_v_e_scene_node"><td class="mdescLeft">&#160;</td><td class="mdescRight">Meant for subclasses to add data to the UBO, so this function does nothing. <br /></td></tr>
-<tr class="separator:a2d9c010b1600da805c9651c0337e1b1e inherit pub_methods_classve_1_1_v_e_scene_node"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aa97bd4ad3fb1efa02ec3df6ef679927d inherit pub_methods_classve_1_1_v_e_scene_node"><td class="memItemLeft" align="right" valign="top">virtual void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_scene_node.html#aa97bd4ad3fb1efa02ec3df6ef679927d">update</a> (uint32_t imageIndex)</td></tr>
+<tr class="memdesc:aa97bd4ad3fb1efa02ec3df6ef679927d inherit pub_methods_classve_1_1_v_e_scene_node"><td class="mdescLeft">&#160;</td><td class="mdescRight">Update the entity's UBO buffer with the current world matrix.  <a href="classve_1_1_v_e_scene_node.html#aa97bd4ad3fb1efa02ec3df6ef679927d">More...</a><br /></td></tr>
+<tr class="separator:aa97bd4ad3fb1efa02ec3df6ef679927d inherit pub_methods_classve_1_1_v_e_scene_node"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a93199fd14bc3f52fd6346491be84afac inherit pub_methods_classve_1_1_v_e_scene_node"><td class="memItemLeft" align="right" valign="top">virtual void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_scene_node.html#a93199fd14bc3f52fd6346491be84afac">update</a> (glm::mat4 parentWorldMatrix, uint32_t imageIndex)</td></tr>
+<tr class="memdesc:a93199fd14bc3f52fd6346491be84afac inherit pub_methods_classve_1_1_v_e_scene_node"><td class="mdescLeft">&#160;</td><td class="mdescRight">Update the entity's UBO buffer with the current world matrix.  <a href="classve_1_1_v_e_scene_node.html#a93199fd14bc3f52fd6346491be84afac">More...</a><br /></td></tr>
+<tr class="separator:a93199fd14bc3f52fd6346491be84afac inherit pub_methods_classve_1_1_v_e_scene_node"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:afeb3d92ef1a5bf684186b96b52d42b25 inherit pub_methods_classve_1_1_v_e_scene_node"><td class="memItemLeft" align="right" valign="top"><a id="afeb3d92ef1a5bf684186b96b52d42b25"></a>
+virtual void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_scene_node.html#afeb3d92ef1a5bf684186b96b52d42b25">updateChildren</a> (glm::mat4 worldMatrix, uint32_t imageIndex)</td></tr>
+<tr class="memdesc:afeb3d92ef1a5bf684186b96b52d42b25 inherit pub_methods_classve_1_1_v_e_scene_node"><td class="mdescLeft">&#160;</td><td class="mdescRight">Update the UBOs of all children of this entity. <br /></td></tr>
+<tr class="separator:afeb3d92ef1a5bf684186b96b52d42b25 inherit pub_methods_classve_1_1_v_e_scene_node"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a010eb4bf7bb911d7e7d212ebcec2a017 inherit pub_methods_classve_1_1_v_e_scene_node"><td class="memItemLeft" align="right" valign="top">virtual void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_scene_node.html#a010eb4bf7bb911d7e7d212ebcec2a017">addChild</a> (<a class="el" href="classve_1_1_v_e_scene_node.html">VESceneNode</a> *)</td></tr>
 <tr class="memdesc:a010eb4bf7bb911d7e7d212ebcec2a017 inherit pub_methods_classve_1_1_v_e_scene_node"><td class="mdescLeft">&#160;</td><td class="mdescRight">Adds a child object to the list of children.  <a href="classve_1_1_v_e_scene_node.html#a010eb4bf7bb911d7e7d212ebcec2a017">More...</a><br /></td></tr>
 <tr class="separator:a010eb4bf7bb911d7e7d212ebcec2a017 inherit pub_methods_classve_1_1_v_e_scene_node"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -198,22 +215,43 @@ virtual void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" hr
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-attribs"></a>
 Public Attributes</h2></td></tr>
-<tr class="memitem:a5f2d6ec6fd1eaa7ef392a3166b22fd34"><td class="memItemLeft" align="right" valign="top"><a id="a5f2d6ec6fd1eaa7ef392a3166b22fd34"></a>
-glm::vec4&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_light.html#a5f2d6ec6fd1eaa7ef392a3166b22fd34">param</a> = glm::vec4(1.0f, 1.0f, 1.0f, 1.0f)</td></tr>
-<tr class="memdesc:a5f2d6ec6fd1eaa7ef392a3166b22fd34"><td class="mdescLeft">&#160;</td><td class="mdescRight">1-2: attenuation, 3: Ns <br /></td></tr>
-<tr class="separator:a5f2d6ec6fd1eaa7ef392a3166b22fd34"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a96861bcc8e4e174435424682921774d4"><td class="memItemLeft" align="right" valign="top"><a id="a96861bcc8e4e174435424682921774d4"></a>
-glm::vec4&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_light.html#a96861bcc8e4e174435424682921774d4">col_ambient</a> = 0.5f * glm::vec4(1.0f, 1.0f, 1.0f, 1.0f)</td></tr>
-<tr class="memdesc:a96861bcc8e4e174435424682921774d4"><td class="mdescLeft">&#160;</td><td class="mdescRight">Ambient color. <br /></td></tr>
-<tr class="separator:a96861bcc8e4e174435424682921774d4"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a7569d673267f328764a882453996a4a9"><td class="memItemLeft" align="right" valign="top"><a id="a7569d673267f328764a882453996a4a9"></a>
-glm::vec4&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_light.html#a7569d673267f328764a882453996a4a9">col_diffuse</a> = 0.8f * glm::vec4(1.0f, 1.0f, 1.0f, 1.0f)</td></tr>
-<tr class="memdesc:a7569d673267f328764a882453996a4a9"><td class="mdescLeft">&#160;</td><td class="mdescRight">Diffuse color. <br /></td></tr>
-<tr class="separator:a7569d673267f328764a882453996a4a9"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a327e772839df938eb61efd5384c59c02"><td class="memItemLeft" align="right" valign="top"><a id="a327e772839df938eb61efd5384c59c02"></a>
-glm::vec4&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_light.html#a327e772839df938eb61efd5384c59c02">col_specular</a> = 0.9f * glm::vec4(1.0f, 1.0f, 1.0f, 1.0f)</td></tr>
-<tr class="memdesc:a327e772839df938eb61efd5384c59c02"><td class="mdescLeft">&#160;</td><td class="mdescRight">Specular color. <br /></td></tr>
-<tr class="separator:a327e772839df938eb61efd5384c59c02"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a5e4b5e50ee5e0fe1d6d07ffe2370f1ed"><td class="memItemLeft" align="right" valign="top"><a id="a5e4b5e50ee5e0fe1d6d07ffe2370f1ed"></a>
+struct <a class="el" href="structve_1_1_v_e_light_1_1ve_u_b_o_per_light__t.html">veUBOPerLight_t</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_light.html#a5e4b5e50ee5e0fe1d6d07ffe2370f1ed">m_ubo</a></td></tr>
+<tr class="memdesc:a5e4b5e50ee5e0fe1d6d07ffe2370f1ed"><td class="mdescLeft">&#160;</td><td class="mdescRight">The UBO that is copied to the GPU. <br /></td></tr>
+<tr class="separator:a5e4b5e50ee5e0fe1d6d07ffe2370f1ed"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ab589bd5c32bcd759abe02142b582b51b"><td class="memItemLeft" align="right" valign="top"><a id="ab589bd5c32bcd759abe02142b582b51b"></a>
+std::vector&lt; <a class="el" href="classve_1_1_v_e_camera.html">VECamera</a> * &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_light.html#ab589bd5c32bcd759abe02142b582b51b">m_shadowCameras</a></td></tr>
+<tr class="memdesc:ab589bd5c32bcd759abe02142b582b51b"><td class="mdescLeft">&#160;</td><td class="mdescRight">Up to 6 shadow cameras for this light. <br /></td></tr>
+<tr class="separator:ab589bd5c32bcd759abe02142b582b51b"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a0db5dbd110208a9f75fb8b297f1e2b6f"><td class="memItemLeft" align="right" valign="top"><a id="a0db5dbd110208a9f75fb8b297f1e2b6f"></a>
+glm::vec4&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_light.html#a0db5dbd110208a9f75fb8b297f1e2b6f">m_col_ambient</a> = 0.5f * glm::vec4(1.0f, 1.0f, 1.0f, 1.0f)</td></tr>
+<tr class="memdesc:a0db5dbd110208a9f75fb8b297f1e2b6f"><td class="mdescLeft">&#160;</td><td class="mdescRight">Ambient color. <br /></td></tr>
+<tr class="separator:a0db5dbd110208a9f75fb8b297f1e2b6f"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ab23d985bc701f50b89aa62b94fa2402d"><td class="memItemLeft" align="right" valign="top"><a id="ab23d985bc701f50b89aa62b94fa2402d"></a>
+glm::vec4&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_light.html#ab23d985bc701f50b89aa62b94fa2402d">m_col_diffuse</a> = 0.8f * glm::vec4(1.0f, 1.0f, 1.0f, 1.0f)</td></tr>
+<tr class="memdesc:ab23d985bc701f50b89aa62b94fa2402d"><td class="mdescLeft">&#160;</td><td class="mdescRight">Diffuse color. <br /></td></tr>
+<tr class="separator:ab23d985bc701f50b89aa62b94fa2402d"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a237452ace4e917ff3a195e7978531399"><td class="memItemLeft" align="right" valign="top"><a id="a237452ace4e917ff3a195e7978531399"></a>
+glm::vec4&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_light.html#a237452ace4e917ff3a195e7978531399">m_col_specular</a> = 0.9f * glm::vec4(1.0f, 1.0f, 1.0f, 1.0f)</td></tr>
+<tr class="memdesc:a237452ace4e917ff3a195e7978531399"><td class="mdescLeft">&#160;</td><td class="mdescRight">Specular color. <br /></td></tr>
+<tr class="separator:a237452ace4e917ff3a195e7978531399"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a804c5af26e28a99c4e65c108af782720"><td class="memItemLeft" align="right" valign="top"><a id="a804c5af26e28a99c4e65c108af782720"></a>
+glm::vec4&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_light.html#a804c5af26e28a99c4e65c108af782720">m_param</a> = glm::vec4(1.0f, 1.0f, 1.0f, 1.0f)</td></tr>
+<tr class="memdesc:a804c5af26e28a99c4e65c108af782720"><td class="mdescLeft">&#160;</td><td class="mdescRight">1-2: attenuation, 3: Ns <br /></td></tr>
+<tr class="separator:a804c5af26e28a99c4e65c108af782720"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="inherit_header pub_attribs_classve_1_1_v_e_scene_object"><td colspan="2" onclick="javascript:toggleInherit('pub_attribs_classve_1_1_v_e_scene_object')"><img src="closed.png" alt="-"/>&#160;Public Attributes inherited from <a class="el" href="classve_1_1_v_e_scene_object.html">ve::VESceneObject</a></td></tr>
+<tr class="memitem:a441473d5ae5865099dc8be17fe9eabf1 inherit pub_attribs_classve_1_1_v_e_scene_object"><td class="memItemLeft" align="right" valign="top"><a id="a441473d5ae5865099dc8be17fe9eabf1"></a>
+std::vector&lt; VkBuffer &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_scene_object.html#a441473d5ae5865099dc8be17fe9eabf1">m_uniformBuffers</a></td></tr>
+<tr class="memdesc:a441473d5ae5865099dc8be17fe9eabf1 inherit pub_attribs_classve_1_1_v_e_scene_object"><td class="mdescLeft">&#160;</td><td class="mdescRight">One UBO for each framebuffer frame. <br /></td></tr>
+<tr class="separator:a441473d5ae5865099dc8be17fe9eabf1 inherit pub_attribs_classve_1_1_v_e_scene_object"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a741e316375d282df3de5ee28e4b00876 inherit pub_attribs_classve_1_1_v_e_scene_object"><td class="memItemLeft" align="right" valign="top"><a id="a741e316375d282df3de5ee28e4b00876"></a>
+std::vector&lt; VmaAllocation &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_scene_object.html#a741e316375d282df3de5ee28e4b00876">m_uniformBuffersAllocation</a></td></tr>
+<tr class="memdesc:a741e316375d282df3de5ee28e4b00876 inherit pub_attribs_classve_1_1_v_e_scene_object"><td class="mdescLeft">&#160;</td><td class="mdescRight">VMA information for the UBOs. <br /></td></tr>
+<tr class="separator:a741e316375d282df3de5ee28e4b00876 inherit pub_attribs_classve_1_1_v_e_scene_object"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aec6bd42b720bd13610fe803b75b35d61 inherit pub_attribs_classve_1_1_v_e_scene_object"><td class="memItemLeft" align="right" valign="top"><a id="aec6bd42b720bd13610fe803b75b35d61"></a>
+std::vector&lt; VkDescriptorSet &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_scene_object.html#aec6bd42b720bd13610fe803b75b35d61">m_descriptorSetsUBO</a></td></tr>
+<tr class="memdesc:aec6bd42b720bd13610fe803b75b35d61 inherit pub_attribs_classve_1_1_v_e_scene_object"><td class="mdescLeft">&#160;</td><td class="mdescRight">Descriptor sets for UBO. <br /></td></tr>
+<tr class="separator:aec6bd42b720bd13610fe803b75b35d61 inherit pub_attribs_classve_1_1_v_e_scene_object"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="inherit_header pub_attribs_classve_1_1_v_e_scene_node"><td colspan="2" onclick="javascript:toggleInherit('pub_attribs_classve_1_1_v_e_scene_node')"><img src="closed.png" alt="-"/>&#160;Public Attributes inherited from <a class="el" href="classve_1_1_v_e_scene_node.html">ve::VESceneNode</a></td></tr>
 <tr class="memitem:a44672160ca1290d4bfdd875532aeb5e3 inherit pub_attribs_classve_1_1_v_e_scene_node"><td class="memItemLeft" align="right" valign="top"><a id="a44672160ca1290d4bfdd875532aeb5e3"></a>
 <a class="el" href="classve_1_1_v_e_scene_node.html">VESceneNode</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_scene_node.html#a44672160ca1290d4bfdd875532aeb5e3">m_parent</a> = nullptr</td></tr>
@@ -224,25 +262,17 @@ std::vector&lt; <a class="el" href="classve_1_1_v_e_scene_node.html">VESceneNode
 <tr class="memdesc:a3c407e497253fb6e76790766e2a1b853 inherit pub_attribs_classve_1_1_v_e_scene_node"><td class="mdescLeft">&#160;</td><td class="mdescRight">List of entity children. <br /></td></tr>
 <tr class="separator:a3c407e497253fb6e76790766e2a1b853 inherit pub_attribs_classve_1_1_v_e_scene_node"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
-<tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pro-attribs"></a>
-Protected Attributes</h2></td></tr>
-<tr class="memitem:a0e233ff37d3502c7e0c7a43b9853cb83"><td class="memItemLeft" align="right" valign="top"><a id="a0e233ff37d3502c7e0c7a43b9853cb83"></a>
-<a class="el" href="classve_1_1_v_e_light.html#abcedf7166341000b6d4512e9030f6b86">veLightType</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_light.html#a0e233ff37d3502c7e0c7a43b9853cb83">m_lightType</a></td></tr>
-<tr class="memdesc:a0e233ff37d3502c7e0c7a43b9853cb83"><td class="mdescLeft">&#160;</td><td class="mdescRight">Light type of this light. <br /></td></tr>
-<tr class="separator:a0e233ff37d3502c7e0c7a43b9853cb83"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="inherited"></a>
+Additional Inherited Members</h2></td></tr>
+<tr class="inherit_header pro_methods_classve_1_1_v_e_scene_object"><td colspan="2" onclick="javascript:toggleInherit('pro_methods_classve_1_1_v_e_scene_object')"><img src="closed.png" alt="-"/>&#160;Protected Member Functions inherited from <a class="el" href="classve_1_1_v_e_scene_object.html">ve::VESceneObject</a></td></tr>
+<tr class="memitem:a4daa340d55baac9b05dba82bd4151b0d inherit pro_methods_classve_1_1_v_e_scene_object"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_scene_object.html#a4daa340d55baac9b05dba82bd4151b0d">updateUBO</a> (void *pUBO, uint32_t sizeUBO, uint32_t imageIndex)</td></tr>
+<tr class="memdesc:a4daa340d55baac9b05dba82bd4151b0d inherit pro_methods_classve_1_1_v_e_scene_object"><td class="mdescLeft">&#160;</td><td class="mdescRight">Constructor of the scene object class.  <a href="classve_1_1_v_e_scene_object.html#a4daa340d55baac9b05dba82bd4151b0d">More...</a><br /></td></tr>
+<tr class="separator:a4daa340d55baac9b05dba82bd4151b0d inherit pro_methods_classve_1_1_v_e_scene_object"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="inherit_header pro_attribs_classve_1_1_v_e_scene_node"><td colspan="2" onclick="javascript:toggleInherit('pro_attribs_classve_1_1_v_e_scene_node')"><img src="closed.png" alt="-"/>&#160;Protected Attributes inherited from <a class="el" href="classve_1_1_v_e_scene_node.html">ve::VESceneNode</a></td></tr>
-<tr class="memitem:a30ae1c4d0ec577b0418679d55a2e49ba inherit pro_attribs_classve_1_1_v_e_scene_node"><td class="memItemLeft" align="right" valign="top"><a id="a30ae1c4d0ec577b0418679d55a2e49ba"></a>
-<a class="el" href="classve_1_1_v_e_scene_node.html#aff43b9c0c39fa3362b3908e813608cc8">veNodeType</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_scene_node.html#a30ae1c4d0ec577b0418679d55a2e49ba">m_nodeType</a> = <a class="el" href="classve_1_1_v_e_scene_node.html#aff43b9c0c39fa3362b3908e813608cc8adc430cfe3997b962556b7eef4de158ad">VE_OBJECT_TYPE_SCENENODE</a></td></tr>
-<tr class="memdesc:a30ae1c4d0ec577b0418679d55a2e49ba inherit pro_attribs_classve_1_1_v_e_scene_node"><td class="mdescLeft">&#160;</td><td class="mdescRight">Default node type. <br /></td></tr>
-<tr class="separator:a30ae1c4d0ec577b0418679d55a2e49ba inherit pro_attribs_classve_1_1_v_e_scene_node"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a7d562c1efb53cd253f83f1a5a5fd679a inherit pro_attribs_classve_1_1_v_e_scene_node"><td class="memItemLeft" align="right" valign="top"><a id="a7d562c1efb53cd253f83f1a5a5fd679a"></a>
 glm::mat4&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_scene_node.html#a7d562c1efb53cd253f83f1a5a5fd679a">m_transform</a> = glm::mat4(1.0)</td></tr>
 <tr class="memdesc:a7d562c1efb53cd253f83f1a5a5fd679a inherit pro_attribs_classve_1_1_v_e_scene_node"><td class="mdescLeft">&#160;</td><td class="mdescRight">Transform from local to parent space, the engine uses Y-UP, Left-handed. <br /></td></tr>
 <tr class="separator:a7d562c1efb53cd253f83f1a5a5fd679a inherit pro_attribs_classve_1_1_v_e_scene_node"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a1a5ca73d0e09f94e0dbba68f52b25455 inherit pro_attribs_classve_1_1_v_e_scene_node"><td class="memItemLeft" align="right" valign="top"><a id="a1a5ca73d0e09f94e0dbba68f52b25455"></a>
-uint32_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_scene_node.html#a1a5ca73d0e09f94e0dbba68f52b25455">m_lastUpdate</a> = -1</td></tr>
-<tr class="memdesc:a1a5ca73d0e09f94e0dbba68f52b25455 inherit pro_attribs_classve_1_1_v_e_scene_node"><td class="mdescLeft">&#160;</td><td class="mdescRight">Time (llop count) of last update of this subtree. <br /></td></tr>
-<tr class="separator:a1a5ca73d0e09f94e0dbba68f52b25455 inherit pro_attribs_classve_1_1_v_e_scene_node"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="inherit_header pro_attribs_classve_1_1_v_e_named_class"><td colspan="2" onclick="javascript:toggleInherit('pro_attribs_classve_1_1_v_e_named_class')"><img src="closed.png" alt="-"/>&#160;Protected Attributes inherited from <a class="el" href="classve_1_1_v_e_named_class.html">ve::VENamedClass</a></td></tr>
 <tr class="memitem:a3b3f5063b5de55426c522032e838236a inherit pro_attribs_classve_1_1_v_e_named_class"><td class="memItemLeft" align="right" valign="top"><a id="a3b3f5063b5de55426c522032e838236a"></a>
 std::string&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_named_class.html#a3b3f5063b5de55426c522032e838236a">m_name</a></td></tr>
@@ -278,8 +308,8 @@ std::string&#160;</td><td class="memItemRight" valign="bottom"><a class="el" hre
 </div>
 </div>
 <h2 class="groupheader">Constructor &amp; Destructor Documentation</h2>
-<a id="a57b95a61725a083d3777ae1e01614a38"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a57b95a61725a083d3777ae1e01614a38">&#9670;&nbsp;</a></span>VELight()</h2>
+<a id="a6ed73527f265856914523135e05ae159"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a6ed73527f265856914523135e05ae159">&#9670;&nbsp;</a></span>VELight()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -293,8 +323,14 @@ std::string&#160;</td><td class="memItemRight" valign="bottom"><a class="el" hre
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype"><a class="el" href="classve_1_1_v_e_light.html#abcedf7166341000b6d4512e9030f6b86">veLightType</a>&#160;</td>
-          <td class="paramname"><em>type</em>&#160;</td>
+          <td class="paramtype">glm::mat4&#160;</td>
+          <td class="paramname"><em>transf</em> = <code>glm::mat4(1.0f)</code>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="classve_1_1_v_e_scene_node.html">VESceneNode</a> *&#160;</td>
+          <td class="paramname"><em>parent</em> = <code>nullptr</code>&#160;</td>
         </tr>
         <tr>
           <td></td>
@@ -308,55 +344,143 @@ std::string&#160;</td><td class="memItemRight" valign="bottom"><a class="el" hre
 <dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
     <tr><td class="paramdir">[in]</td><td class="paramname">name</td><td>Name of the camera </td></tr>
-    <tr><td class="paramdir">[in]</td><td class="paramname">type</td><td>Light type </td></tr>
+    <tr><td class="paramdir">[in]</td><td class="paramname">transf</td><td>Transform of this light, including orientation and position </td></tr>
+    <tr><td class="paramdir">[in]</td><td class="paramname">parent</td><td>The parent of this light, or nullptr </td></tr>
   </table>
   </dd>
 </dl>
 
 </div>
 </div>
-<h2 class="groupheader">Member Function Documentation</h2>
-<a id="a4a1146a8d1fb6b82b5319549ab7b2794"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a4a1146a8d1fb6b82b5319549ab7b2794">&#9670;&nbsp;</a></span>fillLightStructure()</h2>
+<a id="aaf3079ed9eeffca5686f10e46c5ff177"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aaf3079ed9eeffca5686f10e46c5ff177">&#9670;&nbsp;</a></span>~VELight()</h2>
 
 <div class="memitem">
 <div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">void ve::VELight::fillLightStructure </td>
-          <td>(</td>
-          <td class="paramtype"><a class="el" href="structve_1_1_v_e_light_1_1ve_light_data__t.html">veLightData_t</a> *&#160;</td>
-          <td class="paramname"><em>pLight</em></td><td>)</td>
-          <td></td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p>Fill a UBO structure with the light's data. </p>
-<dl class="params"><dt>Parameters</dt><dd>
-  <table class="params">
-    <tr><td class="paramdir">[in]</td><td class="paramname">pLight</td><td>Pointer to the light structure that will be copied into a UBO </td></tr>
-  </table>
-  </dd>
-</dl>
-
-</div>
-</div>
-<a id="ad20b8b457fdd68dd53a9a65e7e4c255d"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ad20b8b457fdd68dd53a9a65e7e4c255d">&#9670;&nbsp;</a></span>getLightType()</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname"><a class="el" href="classve_1_1_v_e_light.html#abcedf7166341000b6d4512e9030f6b86">VELight::veLightType</a> ve::VELight::getLightType </td>
+          <td class="memname">ve::VELight::~VELight </td>
           <td>(</td>
           <td class="paramname"></td><td>)</td>
           <td></td>
         </tr>
       </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">virtual</span></span>  </td>
+  </tr>
+</table>
 </div><div class="memdoc">
-<dl class="section return"><dt>Returns</dt><dd>the light type of this light </dd></dl>
+
+<p>Destructor of the light class. </p>
+
+</div>
+</div>
+<h2 class="groupheader">Member Function Documentation</h2>
+<a id="a028486e282b3fc2886dec7da1b678b20"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a028486e282b3fc2886dec7da1b678b20">&#9670;&nbsp;</a></span>getLightType()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">virtual <a class="el" href="classve_1_1_v_e_light.html#abcedf7166341000b6d4512e9030f6b86">veLightType</a> ve::VELight::getLightType </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">pure virtual</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+<dl class="section return"><dt>Returns</dt><dd>the light type - pure virtual for the light base class </dd></dl>
+
+<p>Implemented in <a class="el" href="classve_1_1_v_e_spot_light.html#a8e513c1850a98db093cf0acbdb4a3db5">ve::VESpotLight</a>, <a class="el" href="classve_1_1_v_e_point_light.html#ab29bda4614f145a99953fc72cc0f6c00">ve::VEPointLight</a>, and <a class="el" href="classve_1_1_v_e_directional_light.html#a275c3055e42377cf13bde69e941ce254">ve::VEDirectionalLight</a>.</p>
+
+</div>
+</div>
+<a id="aee1fb43c01264f706e8820eca46ec6b3"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aee1fb43c01264f706e8820eca46ec6b3">&#9670;&nbsp;</a></span>getNodeType()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">virtual <a class="el" href="classve_1_1_v_e_scene_node.html#aff43b9c0c39fa3362b3908e813608cc8">veNodeType</a> ve::VELight::getNodeType </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span><span class="mlabel">virtual</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+<dl class="section return"><dt>Returns</dt><dd>the scene node type </dd></dl>
+
+<p>Reimplemented from <a class="el" href="classve_1_1_v_e_scene_node.html#a536a9f54c33b29459b307bbf224ce604">ve::VESceneNode</a>.</p>
+
+</div>
+</div>
+<a id="afca4ed6d962b1b0a7b1fa2ee98bbf8aa"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#afca4ed6d962b1b0a7b1fa2ee98bbf8aa">&#9670;&nbsp;</a></span>updateUBO()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">void ve::VELight::updateUBO </td>
+          <td>(</td>
+          <td class="paramtype">glm::mat4&#160;</td>
+          <td class="paramname"><em>worldMatrix</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">uint32_t&#160;</td>
+          <td class="paramname"><em>imageIndex</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">virtual</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Update the UBO of this light. </p>
+<p>This function updates the UBO of this light, but also calls updates on the shadow cameras of this light.</p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramdir">[in]</td><td class="paramname">worldMatrix</td><td>The new world matrix of this light </td></tr>
+    <tr><td class="paramdir">[in]</td><td class="paramname">imageIndex</td><td>Index of the swapchain image that is currently used. </td></tr>
+  </table>
+  </dd>
+</dl>
+
+<p>Reimplemented from <a class="el" href="classve_1_1_v_e_scene_node.html#ae042b8411d2a608155792c5f807bc6c9">ve::VESceneNode</a>.</p>
 
 </div>
 </div>
@@ -367,7 +491,7 @@ std::string&#160;</td><td class="memItemRight" valign="bottom"><a class="el" hre
 </div><!-- contents -->
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>
-Generated on Wed Apr 3 2019 11:04:38 for Vienna Vulkan Engine by &#160;<a href="http://www.doxygen.org/index.html">
+Generated on Tue Apr 16 2019 18:37:13 for Vienna Vulkan Engine by &#160;<a href="http://www.doxygen.org/index.html">
 <img class="footer" src="doxygen.png" alt="doxygen"/>
 </a> 1.8.15
 </small></address>

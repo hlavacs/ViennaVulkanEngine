@@ -1,8 +1,8 @@
 var searchData=
 [
-  ['update',['update',['../classve_1_1_v_e_scene_node.html#ab9e16e6ae1b164972755b77a52f73679',1,'ve::VESceneNode::update()'],['../classve_1_1_v_e_scene_node.html#aaa00273c4215fa135a373d64df078485',1,'ve::VESceneNode::update(glm::mat4 parentWorldMatrix)']]],
-  ['updatechildren',['updateChildren',['../classve_1_1_v_e_scene_node.html#a85757355f9d1a495ad9d71ddcc7770cd',1,'ve::VESceneNode']]],
-  ['updatedirtyobjects',['updateDirtyObjects',['../classve_1_1_v_e_scene_manager.html#a713795430bbf013fb5a99a45b7b6668f',1,'ve::VESceneManager']]],
-  ['updateperframeubo',['updatePerFrameUBO',['../classve_1_1_v_e_renderer_forward.html#a8f341f7a9cdbab56bfcedf4f23441984',1,'ve::VERendererForward']]],
-  ['updateubo',['updateUBO',['../classve_1_1_v_e_scene_node.html#a2d9c010b1600da805c9651c0337e1b1e',1,'ve::VESceneNode::updateUBO()'],['../classve_1_1_v_e_entity.html#ad4dcb282498489e038d1864dad03e50d',1,'ve::VEEntity::updateUBO()']]]
+  ['update',['update',['../classve_1_1_v_e_scene_node.html#aa97bd4ad3fb1efa02ec3df6ef679927d',1,'ve::VESceneNode::update(uint32_t imageIndex)'],['../classve_1_1_v_e_scene_node.html#a93199fd14bc3f52fd6346491be84afac',1,'ve::VESceneNode::update(glm::mat4 parentWorldMatrix, uint32_t imageIndex)']]],
+  ['updatechildren',['updateChildren',['../classve_1_1_v_e_scene_node.html#afeb3d92ef1a5bf684186b96b52d42b25',1,'ve::VESceneNode']]],
+  ['updatescenenodes',['updateSceneNodes',['../classve_1_1_v_e_scene_manager.html#aaadccc0f574cd30019e940ab56acc832',1,'ve::VESceneManager']]],
+  ['updateshadowcameras',['updateShadowCameras',['../classve_1_1_v_e_light.html#a141a57b37f17490a71d70c9e9ba9824a',1,'ve::VELight::updateShadowCameras()'],['../classve_1_1_v_e_directional_light.html#a2118344b4e5b59204706ec7079ea60cf',1,'ve::VEDirectionalLight::updateShadowCameras()'],['../classve_1_1_v_e_point_light.html#a666f4aad52cb4d479a4713a4ef1fdcfd',1,'ve::VEPointLight::updateShadowCameras()'],['../classve_1_1_v_e_spot_light.html#a194ff145bbaaeeddd2a27b903e0997f0',1,'ve::VESpotLight::updateShadowCameras()']]],
+  ['updateubo',['updateUBO',['../classve_1_1_v_e_scene_node.html#ae042b8411d2a608155792c5f807bc6c9',1,'ve::VESceneNode::updateUBO()'],['../classve_1_1_v_e_scene_object.html#a4daa340d55baac9b05dba82bd4151b0d',1,'ve::VESceneObject::updateUBO()'],['../classve_1_1_v_e_entity.html#a769f4b7990f1c142aab61fb30bf8cdb2',1,'ve::VEEntity::updateUBO()'],['../classve_1_1_v_e_camera.html#a4c050ba558242cdb74897016fd684dfa',1,'ve::VECamera::updateUBO()'],['../classve_1_1_v_e_light.html#afca4ed6d962b1b0a7b1fa2ee98bbf8aa',1,'ve::VELight::updateUBO()']]]
 ];

@@ -5,6 +5,5 @@ var searchData=
   ['addentitytosubrenderer',['addEntityToSubrenderer',['../classve_1_1_v_e_renderer.html#acf525534b0e4ec7bad8ea26ebf8ea623',1,'ve::VERenderer']]],
   ['addevent',['addEvent',['../classve_1_1_v_e_engine.html#ae310327d505e2087eddf7cc93519b259',1,'ve::VEEngine']]],
   ['addscenenode',['addSceneNode',['../classve_1_1_v_e_scene_manager.html#a18a142d8ebce07b6f149fbe8fd8647df',1,'ve::VESceneManager']]],
-  ['addsubrenderer',['addSubrenderer',['../classve_1_1_v_e_renderer.html#a270fb91a971028bae9f6a8714fd46cf1',1,'ve::VERenderer']]],
-  ['addtodirtylist',['addToDirtyList',['../classve_1_1_v_e_scene_manager.html#a61e98d8866c5e0fdea129b3157c0524e',1,'ve::VESceneManager']]]
+  ['addsubrenderer',['addSubrenderer',['../classve_1_1_v_e_renderer.html#a270fb91a971028bae9f6a8714fd46cf1',1,'ve::VERenderer']]]
 ];

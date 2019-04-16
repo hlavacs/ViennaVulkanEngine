@@ -595,7 +595,15 @@ namespace ve {
 	//----------------------------------------------------------------------------------------------------------------
 	//scene management stuff
 
-
+	/**
+	*
+	* \brief Find all scene nodes without a parent, then update them and their children
+	*
+	* Makes this nodes and their children to copy their data to the GPU
+	*
+	* \param[in] imageIndex Index of the swapchain image that is currently used.
+	*
+	*/
 	void VESceneManager::updateSceneNodes(uint32_t imageIndex ) {
 		for (auto pSceneNode : m_sceneNodes ) {
 			if ( pSceneNode.second->m_parent == nullptr) {

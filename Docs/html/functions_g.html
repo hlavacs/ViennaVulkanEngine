@@ -79,7 +79,9 @@ $(function() {
 : <a class="el" href="classve_1_1_v_e_scene_manager.html#a6dedc85430da2d06259704f47ec4f3c7">ve::VESceneManager</a>
 </li>
 <li>getCameraType()
-: <a class="el" href="classve_1_1_v_e_camera.html#a7870db8166646e1aa99b802ab2ad3c51">ve::VECamera</a>
+: <a class="el" href="classve_1_1_v_e_camera.html#a7281a5ef2cfd2d75ce09e4b3418c96aa">ve::VECamera</a>
+, <a class="el" href="classve_1_1_v_e_camera_ortho.html#a51753575f58942dea8e109d279ac6a70">ve::VECameraOrtho</a>
+, <a class="el" href="classve_1_1_v_e_camera_projective.html#ad01ec8c08c038338ccd181d8daeb2634">ve::VECameraProjective</a>
 </li>
 <li>getCommandPool()
 : <a class="el" href="classve_1_1_v_e_renderer.html#a5084fa89ab7d9ea79689959fd40b5e05">ve::VERenderer</a>
@@ -90,14 +92,11 @@ $(function() {
 <li>getDescriptorPool()
 : <a class="el" href="classve_1_1_v_e_renderer_forward.html#a261b8022273001104132289ba4b2c804">ve::VERendererForward</a>
 </li>
-<li>getDescriptorSetLayoutPerFrame()
-: <a class="el" href="classve_1_1_v_e_renderer_forward.html#ae0304fafb33b8bba9fd954607eaa53b1">ve::VERendererForward</a>
+<li>getDescriptorSetLayoutPerObject()
+: <a class="el" href="classve_1_1_v_e_renderer_forward.html#a4573d0d746bea18ece359b3351361ea7">ve::VERendererForward</a>
 </li>
 <li>getDescriptorSetLayoutShadow()
 : <a class="el" href="classve_1_1_v_e_renderer_forward.html#a71c36ea0fc1e0d8fb1c1c897e01502fa">ve::VERendererForward</a>
-</li>
-<li>getDescriptorSetsPerFrame()
-: <a class="el" href="classve_1_1_v_e_renderer_forward.html#a6a7dc67a400adf38f88ed3b00146a876">ve::VERendererForward</a>
 </li>
 <li>getDescriptorSetsShadow()
 : <a class="el" href="classve_1_1_v_e_renderer_forward.html#a08ed66eabdb3b91695f37c4b05371eeb">ve::VERendererForward</a>
@@ -106,7 +105,7 @@ $(function() {
 : <a class="el" href="classve_1_1_v_e_renderer.html#af91f2eb87ddc4ab6fd9b32029aba3498">ve::VERenderer</a>
 </li>
 <li>getEntityType()
-: <a class="el" href="classve_1_1_v_e_entity.html#aa25a3c500756bb317cb3e1f8b57dba7e">ve::VEEntity</a>
+: <a class="el" href="classve_1_1_v_e_entity.html#a2a64728e4b83a8d009eea63146530393">ve::VEEntity</a>
 </li>
 <li>getExtent()
 : <a class="el" href="classve_1_1_v_e_window.html#a832253b31cb9c8697edac4de03663c78">ve::VEWindow</a>
@@ -120,6 +119,9 @@ $(function() {
 <li>getGraphicsQueue()
 : <a class="el" href="classve_1_1_v_e_renderer.html#aee715a1e7884cee4780f3a4965c49872">ve::VERenderer</a>
 </li>
+<li>getImageIndex()
+: <a class="el" href="classve_1_1_v_e_renderer.html#a012dfa26b02e68e7afe88864ac9d2936">ve::VERenderer</a>
+</li>
 <li>getInstance()
 : <a class="el" href="classve_1_1_v_e_engine.html#a71c7926d38efd5d5ac02b3eae9e7e459">ve::VEEngine</a>
 </li>
@@ -127,7 +129,10 @@ $(function() {
 : <a class="el" href="classve_1_1_v_e_scene_manager.html#ad5e8d10dcab7cce48b9b5c28acda0ead">ve::VESceneManager</a>
 </li>
 <li>getLightType()
-: <a class="el" href="classve_1_1_v_e_light.html#ad20b8b457fdd68dd53a9a65e7e4c255d">ve::VELight</a>
+: <a class="el" href="classve_1_1_v_e_directional_light.html#a275c3055e42377cf13bde69e941ce254">ve::VEDirectionalLight</a>
+, <a class="el" href="classve_1_1_v_e_light.html#a028486e282b3fc2886dec7da1b678b20">ve::VELight</a>
+, <a class="el" href="classve_1_1_v_e_point_light.html#ab29bda4614f145a99953fc72cc0f6c00">ve::VEPointLight</a>
+, <a class="el" href="classve_1_1_v_e_spot_light.html#a8e513c1850a98db093cf0acbdb4a3db5">ve::VESpotLight</a>
 </li>
 <li>getLoopCount()
 : <a class="el" href="classve_1_1_v_e_engine.html#ab73e678a5195889ca4ea37aec0c01e33">ve::VEEngine</a>
@@ -142,7 +147,10 @@ $(function() {
 : <a class="el" href="classve_1_1_v_e_named_class.html#ac523da5cc9caa70eaa211c40a7038b37">ve::VENamedClass</a>
 </li>
 <li>getNodeType()
-: <a class="el" href="classve_1_1_v_e_scene_node.html#a98bf32bc9453418e83751372edd0965b">ve::VESceneNode</a>
+: <a class="el" href="classve_1_1_v_e_camera.html#ab324af3baa19b0365db9710a64c4eacc">ve::VECamera</a>
+, <a class="el" href="classve_1_1_v_e_entity.html#aad0a7f94d44bd39740344bd743fff2e7">ve::VEEntity</a>
+, <a class="el" href="classve_1_1_v_e_light.html#aee1fb43c01264f706e8820eca46ec6b3">ve::VELight</a>
+, <a class="el" href="classve_1_1_v_e_scene_node.html#a536a9f54c33b29459b307bbf224ce604">ve::VESceneNode</a>
 </li>
 <li>getOBB()
 : <a class="el" href="classve_1_1_v_e_scene_node.html#a0b2b024c64cd6961f6277ce7b2fe4f89">ve::VESceneNode</a>
@@ -182,7 +190,7 @@ $(function() {
 : <a class="el" href="classve_1_1_v_e_scene_manager.html#a22dd9760111ca205cf97b2fdcfdbb6d7">ve::VESceneManager</a>
 </li>
 <li>getShadowMap()
-: <a class="el" href="classve_1_1_v_e_renderer_forward.html#a7bdfb2d684af3809931143c666fdd9ac">ve::VERendererForward</a>
+: <a class="el" href="classve_1_1_v_e_renderer_forward.html#a394266568e9447bfb7b9594a4875440c">ve::VERendererForward</a>
 </li>
 <li>getShadowMapExtent()
 : <a class="el" href="classve_1_1_v_e_renderer_forward.html#a5df79bd0d940dc4eba65c1912554ec05">ve::VERendererForward</a>
@@ -236,7 +244,7 @@ $(function() {
 </div><!-- contents -->
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>
-Generated on Wed Apr 3 2019 11:04:38 for Vienna Vulkan Engine by &#160;<a href="http://www.doxygen.org/index.html">
+Generated on Tue Apr 16 2019 18:37:14 for Vienna Vulkan Engine by &#160;<a href="http://www.doxygen.org/index.html">
 <img class="footer" src="doxygen.png" alt="doxygen"/>
 </a> 1.8.15
 </small></address>

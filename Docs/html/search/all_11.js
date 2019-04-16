@@ -1,13 +1,13 @@
 var searchData=
 [
   ['setcamera',['setCamera',['../classve_1_1_v_e_scene_manager.html#acedf235e65ee027a0df5dc92163fcefe',1,'ve::VESceneManager']]],
+  ['setextent',['setExtent',['../classve_1_1_v_e_camera.html#ac1d0d445e1c2229c4dfd828194992ea8',1,'ve::VECamera::setExtent()'],['../classve_1_1_v_e_camera_projective.html#a530167ddd511114faeca445839687e67',1,'ve::VECameraProjective::setExtent()'],['../classve_1_1_v_e_camera_ortho.html#adc82fbea70bac3bdc613893891e1fd52',1,'ve::VECameraOrtho::setExtent()']]],
   ['setparam',['setParam',['../classve_1_1_v_e_entity.html#a32e4adf007a6497ddcfb809e69424698',1,'ve::VEEntity']]],
   ['setposition',['setPosition',['../classve_1_1_v_e_scene_node.html#a0af270114f93f89969f962f0f3b6f3af',1,'ve::VESceneNode']]],
+  ['setshadowcamera',['setShadowCamera',['../classve_1_1_v_e_camera.html#a59a2bcee3a979107586cd28da9e7498b',1,'ve::VECamera::setShadowCamera()'],['../classve_1_1_v_e_camera_projective.html#a0a473660591452991776f1ab43193e24',1,'ve::VECameraProjective::setShadowCamera()'],['../classve_1_1_v_e_camera_ortho.html#a59f356e9c9634018ecea416e2c1694f2',1,'ve::VECameraOrtho::setShadowCamera()']]],
   ['settransform',['setTransform',['../classve_1_1_v_e_scene_node.html#a367fee6490278bbf70d33e9a8e17fee9',1,'ve::VESceneNode']]],
   ['shading',['shading',['../classve_1_1_v_e_material.html#a877af32c5e565db2d9696e1da783c2f5',1,'ve::VEMaterial']]],
-  ['shadow',['shadow',['../structve_1_1_v_e_renderer_forward_1_1ve_per_frame_data__t.html#acac678b65b2fce600e98948590462876',1,'ve::VERendererForward::vePerFrameData_t']]],
-  ['shadowproj',['shadowProj',['../structve_1_1_v_e_camera_1_1ve_shadow_data__t.html#a1c69fbf04852b807c80607165e3b0c80',1,'ve::VECamera::veShadowData_t']]],
-  ['shadowview',['shadowView',['../structve_1_1_v_e_camera_1_1ve_shadow_data__t.html#a3ebb80286684368473500ec062fbbae0',1,'ve::VECamera::veShadowData_t']]],
+  ['shadowcameras',['shadowCameras',['../structve_1_1_v_e_light_1_1ve_u_b_o_per_light__t.html#a8c88bcc2f0c93b97f469a5b79e5589f7',1,'ve::VELight::veUBOPerLight_t']]],
   ['subsystem',['subsystem',['../structve_1_1ve_event.html#afeebae6769e84bbfea2d3916dc4ac67a',1,'ve::veEvent']]],
   ['swapchainsupportdetails',['SwapChainSupportDetails',['../structvh_1_1_swap_chain_support_details.html',1,'vh']]],
   ['switchofflight',['switchOffLight',['../classve_1_1_v_e_scene_manager.html#a8d225517b9db68a1d93769bf72fb5e7b',1,'ve::VESceneManager']]],

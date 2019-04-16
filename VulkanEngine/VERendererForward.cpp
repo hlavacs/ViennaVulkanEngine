@@ -124,13 +124,6 @@ namespace ve {
 		//set 3...per object UBO
 		//set 4...additional per object resources
 
-		//set 0, binding 0 : UBO per Frame data: camera, light, shadow matrices
-		//vh::vhRenderCreateDescriptorSetLayout(m_device,
-		//									{ 1 },
-		//									{ VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER },
-		//									{ VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT },
-		//									&m_descriptorSetLayoutPerFrame);
-
 		//set 2, binding 0 : shadow map + sampler
 		vh::vhRenderCreateDescriptorSetLayout(m_device,
 											{ NUM_SHADOW_CASCADE },
@@ -172,10 +165,6 @@ namespace ve {
 			);
 		}
 
-
-		//------------------------------------------------------------------------------------------------------------
-		//create per frame UBO
-		//vh::vhBufCreateUniformBuffers(m_vmaAllocator, (uint32_t)m_swapChainImages.size(), (uint32_t)sizeof(vePerFrameData_t), m_uniformBuffersPerFrame, m_uniformBuffersPerFrameAllocation);
 
 		//------------------------------------------------------------------------------------------------------------
 
@@ -244,11 +233,6 @@ namespace ve {
 
 		//destroy per frame resources
 		vkDestroyDescriptorPool(m_device, m_descriptorPool, nullptr);
-		//vkDestroyDescriptorSetLayout(m_device, m_descriptorSetLayoutPerFrame, nullptr);
-		//for (size_t i = 0; i < m_uniformBuffersPerFrame.size(); i++) {
-		//	vmaDestroyBuffer(m_vmaAllocator, m_uniformBuffersPerFrame[i], m_uniformBuffersPerFrameAllocation[i]);
-		//}
-
 		vkDestroyDescriptorSetLayout(m_device, m_descriptorSetLayoutPerObject, nullptr);
 		vkDestroyDescriptorSetLayout(m_device, m_descriptorSetLayoutShadow, nullptr);
 
@@ -321,71 +305,6 @@ namespace ve {
 
 	//--------------------------------------------------------------------------------------------
 
-	/**
-	*
-	* \brief update the per Frame UBO and its descriptor set
-	*
-	* \param[in] imageIndex The index of the current swap chain image
-	*
-	*/
-	/*void VERendererForward::updatePerFrameUBO(uint32_t imageIndex) {
-
-		//---------------------------------------------------------------------------------------
-
-		vePerFrameData_t ubo = {};
-
-		//fill in camera data
-		VECamera * camera = getSceneManagerPointer()->getCamera();
-		camera->fillCameraStructure(&ubo.camera);
-
-		//fill in light data
-		VELight *plight = getSceneManagerPointer()->getLights()[0];
-		plight->fillLightStructure(&ubo.light);
-
-		//fill in shadow data
-		std::vector<float> limits = {0.0f, 0.05f, 0.15f, 0.50f, 1.0f};
-
-		for (uint32_t i = 0; i < NUM_SHADOW_CASCADE; i++) {
-			ubo.shadow[i].limits[0] = limits[i];
-			ubo.shadow[i].limits[1] = limits[i+1];
-			VECamera *pCamShadow =
-				camera->createShadowCamera(plight, limits[i], limits[i+1]);
-			pCamShadow->fillShadowStructure(&ubo.shadow[i]);
-			delete pCamShadow;
-		}
-
-		void* data = nullptr;
-		vmaMapMemory(m_vmaAllocator, m_uniformBuffersPerFrameAllocation[imageIndex], &data);
-		memcpy(data, &ubo, sizeof(ubo));
-		vmaUnmapMemory(m_vmaAllocator, m_uniformBuffersPerFrameAllocation[imageIndex]);
-
-		//update the descriptor set for the per frame data
-		vh::vhRenderUpdateDescriptorSet(m_device, m_descriptorSetsPerFrame[imageIndex],
-										{ m_uniformBuffersPerFrame[imageIndex] },	//UBOs
-										{ sizeof(vePerFrameData_t) },				//UBO sizes
-										{ {VK_NULL_HANDLE} },						//textureImageViews
-										{ {VK_NULL_HANDLE} });						//samplers
-	
-
-		//update the descriptor set for light pass - array of shadow maps
-		std::vector<std::vector<VkImageView>>	imageViews;
-		std::vector<std::vector<VkSampler>>		samplers;
-		imageViews.resize(1);
-		samplers.resize(1);
-		for (uint32_t i = 0; i < NUM_SHADOW_CASCADE; i++) {
-			imageViews[0].push_back(m_shadowMaps[i]->m_imageView);
-			samplers[0].push_back  (m_shadowMaps[i]->m_sampler);
-		}
-
-		vh::vhRenderUpdateDescriptorSet(m_device, m_descriptorSetsShadow[imageIndex],
-										{ VK_NULL_HANDLE },			//UBOs
-										{ 0				},			//UBO sizes
-										{ imageViews },				//textureImageViews
-										{ samplers }				//samplers
-										);
-
-	}*/
-
 
 	/**
 	* \brief Draw the frame.
@@ -417,8 +336,6 @@ namespace ve {
 		pCamera->setExtent(getWindowPointer()->getExtent());
 
 		getSceneManagerPointer()->updateSceneNodes(imageIndex);
-
-		//updatePerFrameUBO( imageIndex );	//update camera data UBO
 
 		//prepare command buffer for drawing
 		VkCommandBuffer commandBuffer = vh::vhCmdBeginSingleTimeCommands(m_device, m_commandPool);
