@@ -66,7 +66,7 @@ void main() {
 
 
     if( lightType == LIGHT_POINT ) {
-    
+
         sIdx = shadowIdxPoint( lightPosW, fragPosW );
         s = lightUBO.data.shadowCameras[sIdx];
         shadowFactor = shadowFunc(fragPosW, s.camView, s.camProj, shadowMap[sIdx] );

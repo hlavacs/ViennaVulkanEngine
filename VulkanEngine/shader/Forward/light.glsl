@@ -23,7 +23,7 @@ int shadowIdxSpot( vec4 fragPosW, mat4 shadowCamView, mat4 shadowCamProj, float 
 
 
 int shadowIdxPoint( vec3 lightPosW, vec3 fragPosW) {
-  vec3 L = normalize( lightPosW - fragPosW );
+  vec3 L = normalize( fragPosW - lightPosW );
   int idx = 0;
   float m = dot( L, vec3(1.0, 0.0, 0.0) );
 
