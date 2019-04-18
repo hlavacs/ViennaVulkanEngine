@@ -45,7 +45,7 @@ namespace ve {
 
 		//camera can only do yaw (parent y-axis) and pitch (local x-axis) rotations
 		VkExtent2D extent = getWindowPointer()->getExtent();
-		VECamera *camera = new VECameraProjective("StandardCamera", 1.0f, 501.0f, extent.width/ (float)extent.height, 45.0f);
+		VECamera *camera = new VECameraProjective("StandardCamera", 0.1f, 500.0f, extent.width/ (float)extent.height, 45.0f);
 		camera->lookAt(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f), glm::vec3(0.0f, 1.0f, 0.0f));
 		cameraParent->addChild(camera);
 		addSceneNode(camera);
@@ -54,15 +54,20 @@ namespace ve {
 		//use one light source
 		VELight *light1 = new VEDirectionalLight("StandardDirLight" );
 		light1->lookAt(glm::vec3(0.0f, 20.0f, -20.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+		light1->m_col_ambient = glm::vec4(0.3f, 0.3f, 0.3f, 1.0f);
+		light1->m_col_diffuse = glm::vec4(0.6f, 0.6f, 0.6f, 1.0f);
+		light1->m_col_specular = glm::vec4(0.2f, 0.2f, 0.2f, 1.0f);
 		addSceneNode(light1);
 		switchOnLight(light1);
 
 		VELight *light2 = new VESpotLight("StandardSpotLight");
 		light2->m_col_ambient = glm::vec4( 0.0f, 0.0f, 0.0f, 1.0f);
-		light2->m_col_diffuse = glm::vec4(0.9f, 0.2f, 0.2f, 1.0f);
+		light2->m_col_diffuse = glm::vec4(0.99f, 0.6f, 0.6f, 1.0f);
 		light2->m_col_specular = glm::vec4(0.0f, 0.0f, 0.0f, 1.0f);
-		light2->lookAt(glm::vec3(0.0f, 20.0f, -20.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+		//light2->lookAt(glm::vec3(0.0f, 20.0f, 20.0f), glm::vec3(0.0f, 0.0f, 1.0f), glm::vec3(0.0f, 1.0f, 0.0f));
 		addSceneNode(light2);
+		camera->addChild(light2);
+		light2->multiplyTransform(glm::translate(glm::vec3(5.0f, 0.0f, 0.0f)));
 		switchOnLight(light2);
 
 		VELight *light3 = new VEPointLight("StandardPointLight");

@@ -1,9 +1,8 @@
 
-
-
-int shadowIdx( vec4 param, vec4 fragCoord, float z1, float z2, float z3 ) {
+int shadowIdxDirectional( vec4 camParam, vec4 fragCoord, float z1, float z2, float z3 ) {
   int sIdx = 0;
-  float z = ( fragCoord.z / fragCoord.w )/( param[1] - param[0] );
+  float z = ( fragCoord.z / fragCoord.w ) / ( camParam[1] - camParam[0] );
+
   if( z >= z1 ) {
     sIdx = 1;
   }
@@ -13,8 +12,22 @@ int shadowIdx( vec4 param, vec4 fragCoord, float z1, float z2, float z3 ) {
   if( z >= z3 ) {
     sIdx = 3;
   }
+
   return sIdx;
 }
+
+
+int shadowIdxSpot( vec4 fragPosW, mat4 shadowCamView, mat4 shadowCamProj, float z1, float z2, float z3 ) {
+  vec4 posFragH = shadowCamProj * shadowCamView * fragPosW;
+
+  return 0;
+}
+
+
+int shadowIdxPoint( vec4 camParam, vec4 fragCoord, float z1, float z2, float z3 ) {
+  return 0;
+}
+
 
 
 float shadowFactor(  vec3 fragposW, mat4 shadowView, mat4 shadowProj, sampler2D shadowMap, vec2 offset ) {
@@ -25,9 +38,10 @@ float shadowFactor(  vec3 fragposW, mat4 shadowView, mat4 shadowProj, sampler2D 
     fragposH.x = fragposH.x / 2.0 + 0.5;     //translate to [0,1]
     fragposH.y = fragposH.y / 2.0 + 0.5;     //translate to [0,1]
 
+    float bias = 0.00005;
     float visibility = 1.0;
-    if ( texture( shadowMap, fragposH.xy + offset ).r  <  fragposH.z) {
-        visibility = 0.0;
+    if ( length( texture( shadowMap, fragposH.xy + offset ).rgb)  <  fragposH.z - bias ) {
+        visibility = 0.5;
     }
     return visibility;
 }
@@ -94,7 +108,11 @@ vec3 pointlight(  int lightType, vec3 camposW,
     vec3 viewDirW  = normalize( camposW - fragposW );
 
     //start light calculations
-    vec3 lightVectorW = normalize( fragposW - lightposW );
+    vec3 lightVectorW = fragposW - lightposW;
+    float distance = length(lightVectorW);
+    float strength = clamp( 1 - distance / lightparam[0], 0, 1);
+
+    lightVectorW = normalize(lightVectorW);
 
     //diffuse
     float diff = max(dot(fragnormalW, -lightVectorW), 0.0);
@@ -106,7 +124,7 @@ vec3 pointlight(  int lightType, vec3 camposW,
     vec3 specular = spec * speccol;
 
     //add up to get the result
-    return (ambcol + shadowFac*(diffuse + specular)) * fragcolor;
+    return (ambcol + strength*shadowFac*(diffuse + specular)) * fragcolor;
 }
 
 
@@ -120,7 +138,11 @@ vec3 spotlight( int lightType, vec3 camposW,
     vec3 viewDirW  = normalize( camposW - fragposW );
 
     //start light calculations
-    vec3 lightVectorW = normalize(fragposW - lightposW);
+    vec3 lightVectorW = fragposW - lightposW;
+    float distance = length(lightVectorW);
+    float strength = clamp( 1 - distance / lightparam[0], 0, 1);
+
+    lightVectorW = normalize(lightVectorW);
     float spotFactor = pow( max( dot( lightVectorW, lightdirW), 0.0), 10.0);
 
     //diffuse
@@ -133,5 +155,5 @@ vec3 spotlight( int lightType, vec3 camposW,
     vec3 specular = spotFactor * spec * speccol;
 
     //add up to get the result
-    return (ambcol + shadowFac*(diffuse + specular)) * fragcolor;
+    return (ambcol + strength*shadowFac*(diffuse + specular)) * fragcolor;
 }

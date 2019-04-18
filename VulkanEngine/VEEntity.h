@@ -276,11 +276,6 @@ namespace ve {
 		///\returns list of frustum points in world space - pure virtual for the camera base class
 		virtual void getFrustumPoints(std::vector<glm::vec4> &points, float z0 = 0.0f, float z1 = 1.0f)=0;
 
-		//-------------------------------------------------------------------------------------
-		//shadow cams
-
-		///Depending on light type, set the camera parameters so its a shadow cam
-		virtual void setShadowCamera(VECamera *pCam, VELight *light, float z0 = 0.0f, float z1 = 1.0f)=0;
 	};
 
 
@@ -297,7 +292,7 @@ namespace ve {
 	class VECameraProjective : public VECamera {
 	public:
 		float m_aspectRatio = 16.0f / 9.0f;		///<Ratio between width and height of camera (and window).
-		float m_fov = 45.0f;					///<Vertical field of view
+		float m_fov = 45.0f;					///<Vertical field of view in degrees
 
 		//-------------------------------------------------------------------------------------
 		//Class and type
@@ -328,11 +323,6 @@ namespace ve {
 		//Bounding volume
 
 		virtual void getFrustumPoints(std::vector<glm::vec4> &points, float t1 = 0.0f, float t2 = 1.0f);	//return list of frustum points in world space
-
-		//-------------------------------------------------------------------------------------
-		//shadow cams
-
-		virtual void setShadowCamera(VECamera *pCam, VELight *light, float z0 = 0.0f, float z1 = 1.0f);	//Depending on light type, create shadow camera
 	};
 
 
@@ -379,10 +369,6 @@ namespace ve {
 
 		virtual void getFrustumPoints(std::vector<glm::vec4> &points, float t1 = 0.0f, float t2 = 1.0f);	//return list of frustum points in world space
 
-		//-------------------------------------------------------------------------------------
-		//shadow cams
-
-		virtual void setShadowCamera(VECamera *pCam, VELight *light, float z0 = 0.0f, float z1 = 1.0f);	//Depending on light type, create shadow camera
 	};
 
 
@@ -426,7 +412,7 @@ namespace ve {
 		glm::vec4 m_col_ambient  = 0.3f * glm::vec4(1.0f, 1.0f, 1.0f, 1.0f);	///<Ambient color
 		glm::vec4 m_col_diffuse  = 0.5f * glm::vec4(1.0f, 1.0f, 1.0f, 1.0f);	///<Diffuse color
 		glm::vec4 m_col_specular = 0.8f * glm::vec4(1.0f, 1.0f, 1.0f, 1.0f);	///<Specular color
-		glm::vec4 m_param		 = glm::vec4(1.0f, 1.0f, 1.0f, 1.0f);			///<1-2: attenuation, 3: Ns
+		glm::vec4 m_param		 = glm::vec4(100.0f, 1.0f, 1.0f, 1.0f);			///<Light parameters: 0...reach
 
 		//-------------------------------------------------------------------------------------
 		//Class and type

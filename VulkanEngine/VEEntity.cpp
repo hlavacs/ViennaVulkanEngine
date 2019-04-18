@@ -651,50 +651,6 @@ namespace ve {
 		}
 	}
 
-	/**
-	*
-	* \brief Create an ortho shadow camera from the camera's frustum bounding sphere
-	*
-	* \param[in] pCam Pointer to the light camera that is currently used.
-	* \param[in] pLight Pointer to a light that defines the light direction.
-	* \param[in] z0 Startparameter for interpolating the frustum
-	* \param[in] z1 Endparameter for interlopating the frustum
-	* \returns a new VECameraProjective that can be used to create shadow maps for spot light
-	*
-	*/
-	void VECameraProjective::setShadowCamera(VECamera *pCam, VELight *pLight, float z0, float z1) {
-
-		glm::vec3 center;
-		float radius;
-		pCam->getBoundingSphere(&center, &radius);
-		float diam = 2.0f * radius;
-
-		glm::vec3 z = normalize(getZAxis());	//direction of light
-
-		glm::vec3 pos = pLight->getPosition();	//position of light
-		float pz = glm::dot(pos, z);			//z ordinate of position along the z axis
-
-		glm::vec3 begin = center - radius * z;	//begin of frustum bounding sphere along z-axis
-		float bz = glm::dot(begin, z);			//z ordinate of begin along the z axis
-		float onear = bz - pz;					//near plane distance of shadow cam
-		if (onear <= 0.0) onear = 0.1f;
-
-		glm::vec3 end = center + radius * z;	//end of frustum bounding sphere along z-axis
-		float ez = glm::dot(end, z);			//z ordinate of end along the z axis
-		float ofar = ez - pz;					//far plane distance of shadow cam
-		if (ofar <= 0.0) ofar = 1.0f;
-
-		float fov = 45.0f*2.0f / 360.0f;			//if light position is outside the sphere
-		if (pz<bz) {
-			float cz = glm::dot(center, z);		//z ordinate of sphere center
-			float fov = atan(radius / (cz - pz));
-		}
-
-		//VECameraProjective *pCamProj = new VECameraProjective("Proj", onear, ofar, 1.0f, fov);
-		lookAt(pos, pos + ofar*z, glm::vec3(0.0f, 1.0f, 0.0f));
-	}
-
-
 
 	//-------------------------------------------------------------------------------------------------
 	//camera ortho
@@ -798,32 +754,6 @@ namespace ve {
 	}
 
 
-	/**
-	*
-	* \brief Create an ortho shadow camera from the camera's frustum bounding sphere
-	*
-	* \param[in] pCam Pointer to the light camera that is currently used.
-	* \param[in] pLight Pointer to a light that defines the light direction.
-	* \param[in] z0 Startparameter for interpolating the frustum
-	* \param[in] z1 Endparameter for interlopating the frustum
-	* \returns a new VECameraOrtho that can be used to create shadow maps for directional light
-	*
-	*/
-	void VECameraOrtho::setShadowCamera(VECamera *pCam, VELight *pLight, float z0, float z1) {
-
-		std::vector<glm::vec4> pointsW;
-		pCam->getFrustumPoints(pointsW, z0, z1);
-
-		glm::vec3 center;
-		pLight->getOBB(pointsW, 0.0f, 1.0f, center, m_width, m_height, m_farPlane);
-		m_farPlane *= 5.0f;	//TODO - do NOT set too high or else shadow maps wont get drawn!
-		
-		glm::mat4 W = pLight->getWorldTransform();
-		setTransform( W );
-		setPosition(center - m_farPlane*0.9f * glm::vec3(W[2].x, W[2].y, W[2].z));
-		m_nearPlaneFraction = z0;
-		m_farPlaneFraction = z1;
-	}
 
 
 	//-------------------------------------------------------------------------------------------------
@@ -865,8 +795,8 @@ namespace ve {
 
 		VECamera *pCam = getSceneManagerPointer()->getCamera();
 
-		updateShadowCameras(pCam, imageIndex);
-		for (uint32_t i = 0; i < m_shadowCameras.size(); i++ ) {
+		updateShadowCameras(pCam, imageIndex);						//copy shadow cam UBOs to GPU
+		for (uint32_t i = 0; i < m_shadowCameras.size(); i++ ) {	//copy shadow cam UBOs to light UBO
 			m_ubo.shadowCameras[i] = m_shadowCameras[i]->m_ubo;
 		}
 
@@ -903,7 +833,7 @@ namespace ve {
 					VELight(name, transf, parent) {
 
 		for (uint32_t i = 0; i < 4; i++) {
-			m_shadowCameras.push_back(new VECameraOrtho("ShadowCam") );
+			m_shadowCameras.push_back(new VECameraOrtho("ShadowCamDirOrtho") );	//no parent - > transform is also world matrix
 		}
 	};
 
@@ -917,12 +847,26 @@ namespace ve {
 	*
 	*/
 	void VEDirectionalLight::updateShadowCameras(VECamera *pCamera, uint32_t imageIndex) {
-		//fill in shadow data
-		std::vector<float> limits = { 0.0f, 0.05f, 0.15f, 0.50f, 1.0f };
+
+		std::vector<float> limits = { 0.0f, 0.05f, 0.15f, 0.50f, 1.0f };	//the frustum is split into 4 segments
 
 		for (uint32_t i = 0; i < m_shadowCameras.size(); i++) {
-			m_shadowCameras[i]->setShadowCamera( pCamera, this, limits[i], limits[i + 1]);
-			m_shadowCameras[i]->update( imageIndex );
+			VECameraOrtho *pShadowCamera = (VECameraOrtho *)m_shadowCameras[i];
+
+			std::vector<glm::vec4> pointsW;
+			pCamera->getFrustumPoints(pointsW, limits[i], limits[i+1]);		//get the ith frustum segment
+
+			glm::vec3 center;
+			getOBB(pointsW, 0.0f, 1.0f, center, pShadowCamera->m_width, pShadowCamera->m_height, pShadowCamera->m_farPlane);
+			pShadowCamera->m_farPlane *= 5.0f;			//TODO - do NOT set too high or else shadow maps wont get drawn!
+
+			glm::mat4 W = getWorldTransform();
+			pShadowCamera->setTransform(W);
+			pShadowCamera->setPosition(center - pShadowCamera->m_farPlane*0.9f * glm::vec3(W[2].x, W[2].y, W[2].z));
+			pShadowCamera->m_nearPlaneFraction = limits[i];
+			pShadowCamera->m_farPlaneFraction = limits[i+1];
+
+			pShadowCamera->update( imageIndex );
 		}
 	}
 
@@ -940,7 +884,7 @@ namespace ve {
 					VELight( name, transf, parent ) {
 
 		for (uint32_t i = 0; i < 6; i++) {
-			m_shadowCameras.push_back(new VECameraProjective("ShadowCam"));
+			m_shadowCameras.push_back(new VECameraProjective("ShadowCamPointProj"));	//no parent - > transform is also world matrix
 		}
 	};
 
@@ -955,27 +899,42 @@ namespace ve {
 	*/
 
 	void VEPointLight::updateShadowCameras(VECamera *pCamera, uint32_t imageIndex) {
-		glm::mat4 trans = m_transform;
 
-		std::vector<glm::mat4> directions = {
-			glm::rotate(glm::mat4(1.0f), -(float)M_PI / 4.0f, glm::vec3(0.0f, 1.0f, 0.0f)),
-			glm::rotate(glm::mat4(1.0f),  (float)M_PI / 4.0f, glm::vec3(0.0f, 1.0f, 0.0f)),
-
-			glm::rotate(glm::mat4(1.0f),  (float)M_PI / 4.0f, glm::vec3(1.0f, 0.0f, 0.0f)),
-			glm::rotate(glm::mat4(1.0f), -(float)M_PI / 4.0f, glm::vec3(1.0f, 0.0f, 0.0f)),
-
-			glm::mat4(1.0f),
-			glm::rotate(glm::mat4(1.0f), 2.0f*(float)M_PI / 4.0f, glm::vec3(0.0f, 1.0f, 0.0f))
-		};
+		float lnear = 0.1f;
+		float llength = m_param[0];
 
 		for (uint32_t i = 0; i < m_shadowCameras.size(); i++) {
-			m_transform = directions[i];
-			setPosition( trans[3] );
-			m_shadowCameras[i]->setShadowCamera(pCamera, this, 0.0f, 1.0f);
-			m_shadowCameras[i]->update(imageIndex);
-		}
 
-		m_transform = trans;
+			VECameraProjective * pShadowCamera = (VECameraProjective *)m_shadowCameras[i];
+
+			pShadowCamera->m_fov = 90.0f;					//a sector has always 90 deg fov
+			pShadowCamera->m_nearPlane = lnear;				//no cascade for point light
+			pShadowCamera->m_farPlane = lnear + llength;
+			pShadowCamera->m_nearPlaneFraction = 0.0f;
+			pShadowCamera->m_farPlaneFraction =  1.0f;
+
+			std::vector<glm::vec3> zaxis =
+			{
+				glm::vec3(1.0f,  0.0f,  0.0f),
+				glm::vec3(-1.0f,  0.0f,  0.0f),
+				glm::vec3(0.0f,  1.0f,  0.0f),
+				glm::vec3(0.0f, -1.0f,  0.0f),
+				glm::vec3(0.0f,  0.0f,  1.0f),
+				glm::vec3(0.0f,  0.0f, -1.0f)
+			};
+			std::vector<glm::vec3> up =
+			{
+				glm::vec3(0.0f,  1.0f,  0.0f),
+				glm::vec3(0.0f,  1.0f,  0.0f),
+				glm::vec3(0.0f,  0.0f, -1.0f),
+				glm::vec3(0.0f,  0.0f,  1.0f),
+				glm::vec3(0.0f,  1.0f,  0.0f),
+				glm::vec3(0.0f,  1.0f,  0.0f)
+			};
+			pShadowCamera->lookAt( getPosition(), getPosition() + zaxis[i], up[i]);
+
+			pShadowCamera->update(imageIndex);
+		}
 	}
 
 	/**
@@ -990,7 +949,9 @@ namespace ve {
 	VESpotLight::VESpotLight(std::string name, glm::mat4 transf, VESceneNode *parent) :
 					VELight(name, transf, parent) {
 
-		m_shadowCameras.push_back(new VECameraProjective("ShadowCam"));
+		for (uint32_t i = 0; i < 1; i++) {
+			m_shadowCameras.push_back(new VECameraProjective("ShadowCamSpotProj"));	//no parent - > transform is also world matrix
+		};
 	};
 
 
@@ -1003,8 +964,28 @@ namespace ve {
 	*
 	*/
 	void VESpotLight::updateShadowCameras(VECamera *pCamera, uint32_t imageIndex) {
-		m_shadowCameras[0]->setShadowCamera(pCamera, this, 0.0f, 1.0f);
-		m_shadowCameras[0]->update(imageIndex);
+
+		//std::vector<float> limits = { 0.0f, 0.05f, 0.15f, 0.50f, 1.0f };	//the frustum is split into 4 segments
+		std::vector<float> limits = { 0.0f, 1.0f };		//the frustum is split into 1 segment
+
+		for (uint32_t i = 0; i < m_shadowCameras.size(); i++) {
+
+			VECameraProjective * pShadowCamera = (VECameraProjective *)m_shadowCameras[i];
+
+			float lnear = 0.1f;
+			float llength = m_param[0];		//reach of light
+
+			pShadowCamera->setTransform(getWorldTransform());
+
+			pShadowCamera->m_aspectRatio = 1.0f;			//TODO: for comparing with light cam
+			pShadowCamera->m_fov = 90.0f;						//TODO: depends on light parameters
+			pShadowCamera->m_nearPlane = lnear + limits[i] * llength;
+			pShadowCamera->m_farPlane  = lnear + limits[i+1] * llength;
+			pShadowCamera->m_nearPlaneFraction = limits[i];
+			pShadowCamera->m_farPlaneFraction  = limits[i+1];
+
+			pShadowCamera->update(imageIndex);
+		}
 	}
 
 }

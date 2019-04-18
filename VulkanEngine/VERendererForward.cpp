@@ -371,9 +371,9 @@ namespace ve {
 											m_renderPassShadow,
 											m_shadowFramebuffers[imageIndex][i],
 											clearValuesShadow, 
-											m_shadowMaps[0][i]->m_extent);
+											m_shadowMaps[0][i]->m_extent);	//all shadow maps have the same extent
 
-				m_subrenderShadow->draw( commandBuffer, imageIndex, i, pLight->m_shadowCameras[i], pLight, {} );
+				m_subrenderShadow->draw(commandBuffer, imageIndex, i, pLight->m_shadowCameras[i], pLight, {});
 
 				vkCmdEndRenderPass(commandBuffer);
 			}
