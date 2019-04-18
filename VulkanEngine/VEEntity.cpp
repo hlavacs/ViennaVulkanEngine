@@ -128,7 +128,7 @@ namespace ve {
 		glm::vec3 z = glm::normalize(point - eye);
 		up = glm::normalize(up);
 		float corr = glm::dot(z, up);	//if z, up are lined up (corr=1 or corr=-1), decorrelate them
-		if (1.0f - fabs(corr) < 0.00001f) {
+		if (fabs(1.0f - fabs(corr)) < 0.00001f) {
 			float sc = z.x + z.y + z.z;
 			up = glm::normalize(glm::vec3(sc, sc, sc));
 		}
@@ -902,11 +902,14 @@ namespace ve {
 
 		float lnear = 0.1f;
 		float llength = m_param[0];
+		glm::vec4 pos4 = getWorldTransform()[3];
+		glm::vec3 pos = glm::vec3(pos4.x, pos4.y, pos4.z);
 
 		for (uint32_t i = 0; i < m_shadowCameras.size(); i++) {
 
 			VECameraProjective * pShadowCamera = (VECameraProjective *)m_shadowCameras[i];
 
+			pShadowCamera->m_aspectRatio = 1.0f;			//TODO: for comparing with light cam
 			pShadowCamera->m_fov = 90.0f;					//a sector has always 90 deg fov
 			pShadowCamera->m_nearPlane = lnear;				//no cascade for point light
 			pShadowCamera->m_farPlane = lnear + llength;
@@ -931,8 +934,7 @@ namespace ve {
 				glm::vec3(0.0f,  1.0f,  0.0f),
 				glm::vec3(0.0f,  1.0f,  0.0f)
 			};
-			pShadowCamera->lookAt( getPosition(), getPosition() + zaxis[i], up[i]);
-
+			pShadowCamera->lookAt( pos, pos + zaxis[i], up[i]);
 			pShadowCamera->update(imageIndex);
 		}
 	}

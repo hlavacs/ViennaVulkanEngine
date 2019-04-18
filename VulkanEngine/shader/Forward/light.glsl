@@ -18,14 +18,27 @@ int shadowIdxDirectional( vec4 camParam, vec4 fragCoord, float z1, float z2, flo
 
 
 int shadowIdxSpot( vec4 fragPosW, mat4 shadowCamView, mat4 shadowCamProj, float z1, float z2, float z3 ) {
-  vec4 posFragH = shadowCamProj * shadowCamView * fragPosW;
-
   return 0;
 }
 
 
-int shadowIdxPoint( vec4 camParam, vec4 fragCoord, float z1, float z2, float z3 ) {
-  return 0;
+int shadowIdxPoint( vec3 lightPosW, vec3 fragPosW) {
+  vec3 L = normalize( lightPosW - fragPosW );
+  int idx = 0;
+  float m = dot( L, vec3(1.0, 0.0, 0.0) );
+
+  float n = dot( L, vec3(-1.0, 0.0, 0.0) );
+  if( n>m) { idx = 1; m = n; }
+  n = dot( L, vec3(0.0, 1.0, 0.0) );
+  if( n>m) { idx = 2; m = n; }
+  n = dot( L, vec3(0.0, -1.0, 0.0) );
+  if( n>m) { idx = 3; m = n; }
+  n = dot( L, vec3(0.0, 0.0, 1.0) );
+  if( n>m) { idx = 4; m = n; }
+  n = dot( L, vec3(0.0, 0.0, -1.0) );
+  if( n>m) { idx = 5; m = n; }
+
+  return idx;
 }
 
 

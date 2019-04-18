@@ -68,12 +68,16 @@ namespace ve {
 		addSceneNode(light2);
 		camera->addChild(light2);
 		light2->multiplyTransform(glm::translate(glm::vec3(5.0f, 0.0f, 0.0f)));
-		switchOnLight(light2);
+		//switchOnLight(light2);
 
 		VELight *light3 = new VEPointLight("StandardPointLight");
-		light3->setPosition( glm::vec3(0.0f, 20.0f, -20.0f) );
+		light3->m_col_ambient = glm::vec4(0.0f, 0.0f, 0.0f, 1.0f);
+		light3->m_col_diffuse = glm::vec4(0.99f, 0.99f, 0.6f, 1.0f);
+		light3->m_col_specular = glm::vec4(0.0f, 0.0f, 0.0f, 1.0f);
 		addSceneNode(light3);
-		//switchOnLight(light3);
+		camera->addChild(light3);
+		light3->multiplyTransform(glm::translate(glm::vec3(0.0f, 0.0f, 15.0f)));
+		switchOnLight(light3);
 
 	};
 

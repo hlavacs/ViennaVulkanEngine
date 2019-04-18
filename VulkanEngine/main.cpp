@@ -117,9 +117,11 @@ namespace ve {
 			VEEntity *pE4 = (VEEntity*)m_pSceneManager->getSceneNode("The Plane/plane_t_n_s.obj/plane/Entity_0");
 			pE4->setParam( glm::vec4(1000.0f, 1000.0f, 0.0f, 0.0f) );
 
-			VELight *eSLight = (VELight*)getSceneManagerPointer()->getSceneNode("StandardLight");
-			VESceneNode *eL = m_pSceneManager->loadModel("The Light", "models/test/sphere", "sphere.obj", 0 , eSLight);
+			VESceneNode *pointLight = getSceneManager()->getSceneNode("StandardPointLight");
+			VESceneNode *eL = m_pSceneManager->loadModel("The Light", "models/test/sphere", "sphere.obj", 0 , pointLight);
 			eL->multiplyTransform(glm::scale(glm::vec3(0.02f,0.02f,0.02f)));
+			VEEntity *pE = (VEEntity*)getSceneManager()->getSceneNode("The Light/sphere.obj/default/Entity_0");
+			pE->m_castsShadow = false;
 
 			VESceneNode *e1 = m_pSceneManager->loadModel("The Cube",  "models/test/crate0", "cube.obj");
 			e1->setTransform(glm::translate(glm::mat4(1.0f), glm::vec3(10.0f, 1.0f, 1.0f)));
