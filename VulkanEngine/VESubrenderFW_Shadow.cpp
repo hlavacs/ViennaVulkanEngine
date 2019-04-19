@@ -26,11 +26,12 @@ namespace ve {
 			{ },
 			&m_pipelineLayout);
 
+		m_pipelines.resize(1);
 		vh::vhPipeCreateGraphicsShadowPipeline(getRendererForwardPointer()->getDevice(),
 			"shader/Forward/Shadow/vert.spv", 
 			getRendererForwardPointer()->getShadowMapExtent(),
 			m_pipelineLayout, getRendererForwardPointer()->getRenderPassShadow(),
-			&m_pipeline);
+			&m_pipelines[0]);
 	}
 
 	/**

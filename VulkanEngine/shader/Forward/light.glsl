@@ -51,10 +51,10 @@ float shadowFactor(  vec3 fragposW, mat4 shadowView, mat4 shadowProj, sampler2D 
     fragposH.x = fragposH.x / 2.0 + 0.5;     //translate to [0,1]
     fragposH.y = fragposH.y / 2.0 + 0.5;     //translate to [0,1]
 
-    float bias = 0.00005;
+    float bias = 0.0001;
     float visibility = 1.0;
     if ( length( texture( shadowMap, fragposH.xy + offset ).rgb)  <  fragposH.z - bias ) {
-        visibility = 0.5;
+        visibility = 0.2;
     }
     return visibility;
 }

@@ -910,7 +910,7 @@ namespace ve {
 			VECameraProjective * pShadowCamera = (VECameraProjective *)m_shadowCameras[i];
 
 			pShadowCamera->m_aspectRatio = 1.0f;			//TODO: for comparing with light cam
-			pShadowCamera->m_fov = 90.0f;					//a sector has always 90 deg fov
+			pShadowCamera->m_fov = 91.0f;					//a sector has always 90 deg fov
 			pShadowCamera->m_nearPlane = lnear;				//no cascade for point light
 			pShadowCamera->m_farPlane = lnear + llength;
 			pShadowCamera->m_nearPlaneFraction = 0.0f;

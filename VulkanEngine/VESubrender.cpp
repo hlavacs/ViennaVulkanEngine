@@ -25,9 +25,9 @@ namespace ve {
 	* \brief Close down the subrenderer and destroy all local resources.
 	*/
 	void VESubrender::closeSubrenderer() {
-		if( m_pipeline!=VK_NULL_HANDLE )
-			vkDestroyPipeline(getRendererPointer()->getDevice(), m_pipeline, nullptr);
-
+		for (auto pipeline : m_pipelines) {
+			vkDestroyPipeline(getRendererPointer()->getDevice(), pipeline, nullptr);
+		}
 		if (m_pipelineLayout != VK_NULL_HANDLE)
 			vkDestroyPipelineLayout(getRendererPointer()->getDevice(), m_pipelineLayout, nullptr);
 
@@ -43,7 +43,7 @@ namespace ve {
 	*
 	*/
 	void VESubrender::bindPipeline( VkCommandBuffer commandBuffer ) {
-		vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_pipeline);	//bind the PSO
+		vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_pipelines[0]);	//bind the PSO
 	}
 
 

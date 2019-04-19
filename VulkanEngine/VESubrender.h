@@ -52,7 +52,7 @@ namespace ve {
 	protected:
 		VkDescriptorSetLayout	m_descriptorSetLayoutResources = VK_NULL_HANDLE;	///<Descriptor set 3 : per object additional resources
 		VkPipelineLayout		m_pipelineLayout = VK_NULL_HANDLE;					///<Pipeline layout
-		VkPipeline				m_pipeline = VK_NULL_HANDLE;						///<Pipeline for light pass
+		std::vector<VkPipeline>	m_pipelines;										///<Pipeline for light pass
 
 		std::vector<VEEntity *> m_entities;											///<List of associated entities
 

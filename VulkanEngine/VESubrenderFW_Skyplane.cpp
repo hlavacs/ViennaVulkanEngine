@@ -32,12 +32,13 @@ namespace ve {
 			{},
 			&m_pipelineLayout);
 
+		m_pipelines.resize(1);
 		vh::vhPipeCreateGraphicsPipeline(getRendererForwardPointer()->getDevice(),
-			"shader/Forward/Skyplane/vert.spv", "shader/Forward/Skyplane/frag.spv",
+			{ "shader/Forward/Skyplane/vert.spv", "shader/Forward/Skyplane/frag.spv" },
 			getRendererForwardPointer()->getSwapChainExtent(),
 			m_pipelineLayout, getRendererForwardPointer()->getRenderPass(),
 			{},
-			&m_pipeline);
+			&m_pipelines[0]);
 
 	}
 

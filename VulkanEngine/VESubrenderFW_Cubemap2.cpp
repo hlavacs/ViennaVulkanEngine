@@ -32,12 +32,13 @@ namespace ve {
 			{},
 			&m_pipelineLayout);
 
+		m_pipelines.resize(1);
 		vh::vhPipeCreateGraphicsPipeline(getRendererForwardPointer()->getDevice(),
-			"shader/Forward/Cubemap2/vert.spv", "shader/Forward/Cubemap2/frag.spv",
+			{ "shader/Forward/Cubemap2/vert.spv", "shader/Forward/Cubemap2/frag.spv" },
 			getRendererForwardPointer()->getSwapChainExtent(),
 			m_pipelineLayout, getRendererForwardPointer()->getRenderPass(),
 			{},
-			&m_pipeline);
+			&m_pipelines[0]);
 
 	}
 

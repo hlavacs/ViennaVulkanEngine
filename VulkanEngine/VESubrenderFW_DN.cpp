@@ -34,12 +34,13 @@ namespace ve {
 			{ },
 			&m_pipelineLayout);
 
+		m_pipelines.resize(1);
 		vh::vhPipeCreateGraphicsPipeline(getRendererForwardPointer()->getDevice(),
-			"shader/Forward/DN/vert.spv", "shader/Forward/DN/frag.spv",
+			{ "shader/Forward/DN/vert.spv", "shader/Forward/DN/frag.spv" },
 			getRendererForwardPointer()->getSwapChainExtent(),
 			m_pipelineLayout, getRendererForwardPointer()->getRenderPass(),
 			{ VK_DYNAMIC_STATE_BLEND_CONSTANTS },
-			&m_pipeline);
+			&m_pipelines[0]);
 	}
 
 	void VESubrenderFW_DN::setDynamicPipelineState(VkCommandBuffer commandBuffer, uint32_t numPass) {

@@ -478,8 +478,7 @@ namespace vh {
 	*
 	*/
 	VkResult vhPipeCreateGraphicsPipeline(	VkDevice device,
-											std::string verShaderFilename,
-											std::string fragShaderFilename,
+											std::vector<std::string> shaderFileNames, 
 											VkExtent2D swapChainExtent,
 											VkPipelineLayout pipelineLayout,
 											VkRenderPass renderPass,
@@ -488,7 +487,7 @@ namespace vh {
 
 		std::vector<VkPipelineShaderStageCreateInfo> shaderStages; 
 
-		auto vertShaderCode = vhFileRead(verShaderFilename);
+		auto vertShaderCode = vhFileRead(shaderFileNames[0]);
 
 		VkShaderModule vertShaderModule = vhPipeCreateShaderModule(device, vertShaderCode);
 
@@ -501,8 +500,8 @@ namespace vh {
 		shaderStages.push_back(vertShaderStageInfo);
 
 		VkShaderModule fragShaderModule = VK_NULL_HANDLE;
-		if (fragShaderFilename.size()>0) {
-			auto fragShaderCode = vhFileRead(fragShaderFilename);
+		if (shaderFileNames.size()>1 && shaderFileNames[1].size()>0) {
+			auto fragShaderCode = vhFileRead(shaderFileNames[1]);
 
 			fragShaderModule = vhPipeCreateShaderModule(device, fragShaderCode);
 
