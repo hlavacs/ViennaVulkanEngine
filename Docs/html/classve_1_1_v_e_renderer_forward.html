@@ -194,10 +194,14 @@ virtual void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" hr
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pro-attribs"></a>
 Protected Attributes</h2></td></tr>
-<tr class="memitem:ad1aa959d80ad639ab2414e9efdb14533"><td class="memItemLeft" align="right" valign="top"><a id="ad1aa959d80ad639ab2414e9efdb14533"></a>
-VkRenderPass&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_renderer_forward.html#ad1aa959d80ad639ab2414e9efdb14533">m_renderPass</a></td></tr>
-<tr class="memdesc:ad1aa959d80ad639ab2414e9efdb14533"><td class="mdescLeft">&#160;</td><td class="mdescRight">The light render pass. <br /></td></tr>
-<tr class="separator:ad1aa959d80ad639ab2414e9efdb14533"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a7d06b07bbb207373274f274b9ddf16c5"><td class="memItemLeft" align="right" valign="top"><a id="a7d06b07bbb207373274f274b9ddf16c5"></a>
+VkRenderPass&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_renderer_forward.html#a7d06b07bbb207373274f274b9ddf16c5">m_renderPassClear</a></td></tr>
+<tr class="memdesc:a7d06b07bbb207373274f274b9ddf16c5"><td class="mdescLeft">&#160;</td><td class="mdescRight">The first light render pass, clearing the framebuffers. <br /></td></tr>
+<tr class="separator:a7d06b07bbb207373274f274b9ddf16c5"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:af118fe9547ab7433b61c691108a2ee37"><td class="memItemLeft" align="right" valign="top"><a id="af118fe9547ab7433b61c691108a2ee37"></a>
+VkRenderPass&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_renderer_forward.html#af118fe9547ab7433b61c691108a2ee37">m_renderPassLoad</a></td></tr>
+<tr class="memdesc:af118fe9547ab7433b61c691108a2ee37"><td class="mdescLeft">&#160;</td><td class="mdescRight">The second light render pass. <br /></td></tr>
+<tr class="separator:af118fe9547ab7433b61c691108a2ee37"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ae5d50f5c9f05f68eb6e7713a331e6d27"><td class="memItemLeft" align="right" valign="top"><a id="ae5d50f5c9f05f68eb6e7713a331e6d27"></a>
 std::vector&lt; VkFramebuffer &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_renderer_forward.html#ae5d50f5c9f05f68eb6e7713a331e6d27">m_swapChainFramebuffers</a></td></tr>
 <tr class="memdesc:ae5d50f5c9f05f68eb6e7713a331e6d27"><td class="mdescLeft">&#160;</td><td class="mdescRight">Framebuffers for light pass. <br /></td></tr>
@@ -317,7 +321,7 @@ uint32_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="
 <tr class="separator:aa74b90a99c4f5ff1d3838ca1d46289d0 inherit pro_attribs_classve_1_1_v_e_renderer"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a7b7960a7a224d719fa7e53d0979ebd27 inherit pro_attribs_classve_1_1_v_e_renderer"><td class="memItemLeft" align="right" valign="top"><a id="a7b7960a7a224d719fa7e53d0979ebd27"></a>
 std::vector&lt; <a class="el" href="classve_1_1_v_e_subrender.html">VESubrender</a> * &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_renderer.html#a7b7960a7a224d719fa7e53d0979ebd27">m_subrenderers</a></td></tr>
-<tr class="memdesc:a7b7960a7a224d719fa7e53d0979ebd27 inherit pro_attribs_classve_1_1_v_e_renderer"><td class="mdescLeft">&#160;</td><td class="mdescRight">List of all registered subrenderers. <br /></td></tr>
+<tr class="memdesc:a7b7960a7a224d719fa7e53d0979ebd27 inherit pro_attribs_classve_1_1_v_e_renderer"><td class="mdescLeft">&#160;</td><td class="mdescRight">Subrenderers for lit objects. <br /></td></tr>
 <tr class="separator:a7b7960a7a224d719fa7e53d0979ebd27 inherit pro_attribs_classve_1_1_v_e_renderer"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a00f5bcce8bc33367df840b44eb6189b7 inherit pro_attribs_classve_1_1_v_e_renderer"><td class="memItemLeft" align="right" valign="top"><a id="a00f5bcce8bc33367df840b44eb6189b7"></a>
 <a class="el" href="classve_1_1_v_e_subrender.html">VESubrender</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_renderer.html#a00f5bcce8bc33367df840b44eb6189b7">m_subrenderShadow</a> =nullptr</td></tr>
@@ -668,7 +672,7 @@ std::vector&lt; <a class="el" href="classve_1_1_v_e_subrender.html">VESubrender<
 </div><!-- contents -->
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>
-Generated on Tue Apr 16 2019 20:59:30 for Vienna Vulkan Engine by &#160;<a href="http://www.doxygen.org/index.html">
+Generated on Fri Apr 19 2019 20:48:00 for Vienna Vulkan Engine by &#160;<a href="http://www.doxygen.org/index.html">
 <img class="footer" src="doxygen.png" alt="doxygen"/>
 </a> 1.8.15
 </small></address>

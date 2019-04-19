@@ -114,9 +114,6 @@ virtual void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" hr
 <tr class="memitem:a346326fb8859d16e3be1267a9768a6c0"><td class="memItemLeft" align="right" valign="top">virtual void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_camera_ortho.html#a346326fb8859d16e3be1267a9768a6c0">getFrustumPoints</a> (std::vector&lt; glm::vec4 &gt; &amp;points, float t1=0.0f, float t2=1.0f)</td></tr>
 <tr class="memdesc:a346326fb8859d16e3be1267a9768a6c0"><td class="mdescLeft">&#160;</td><td class="mdescRight">Get a list of 8 points making up the camera frustum.  <a href="#a346326fb8859d16e3be1267a9768a6c0">More...</a><br /></td></tr>
 <tr class="separator:a346326fb8859d16e3be1267a9768a6c0"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a59f356e9c9634018ecea416e2c1694f2"><td class="memItemLeft" align="right" valign="top">virtual void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_camera_ortho.html#a59f356e9c9634018ecea416e2c1694f2">setShadowCamera</a> (<a class="el" href="classve_1_1_v_e_camera.html">VECamera</a> *pCam, <a class="el" href="classve_1_1_v_e_light.html">VELight</a> *light, float z0=0.0f, float z1=1.0f)</td></tr>
-<tr class="memdesc:a59f356e9c9634018ecea416e2c1694f2"><td class="mdescLeft">&#160;</td><td class="mdescRight">Create an ortho shadow camera from the camera's frustum bounding sphere.  <a href="#a59f356e9c9634018ecea416e2c1694f2">More...</a><br /></td></tr>
-<tr class="separator:a59f356e9c9634018ecea416e2c1694f2"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="inherit_header pub_methods_classve_1_1_v_e_camera"><td colspan="2" onclick="javascript:toggleInherit('pub_methods_classve_1_1_v_e_camera')"><img src="closed.png" alt="-"/>&#160;Public Member Functions inherited from <a class="el" href="classve_1_1_v_e_camera.html">ve::VECamera</a></td></tr>
 <tr class="memitem:a901bbc96c3647af03321a1cd7d6f044d inherit pub_methods_classve_1_1_v_e_camera"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_camera.html#a901bbc96c3647af03321a1cd7d6f044d">VECamera</a> (std::string name, glm::mat4 transf=glm::mat4(1.0f), VESceneNode *parent=nullptr)</td></tr>
 <tr class="memdesc:a901bbc96c3647af03321a1cd7d6f044d inherit pub_methods_classve_1_1_v_e_camera"><td class="mdescLeft">&#160;</td><td class="mdescRight"><a class="el" href="classve_1_1_v_e_camera.html" title="A camera that can be used to take photos of the scene.">VECamera</a> constructor. Set nearPlane, farPlane to a default value.  <a href="classve_1_1_v_e_camera.html#a901bbc96c3647af03321a1cd7d6f044d">More...</a><br /></td></tr>
@@ -149,13 +146,13 @@ virtual&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="c
 <tr class="separator:aabeb0f7130c6df9e67d3bdb98ac43c57 inherit pub_methods_classve_1_1_v_e_scene_node"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a367fee6490278bbf70d33e9a8e17fee9 inherit pub_methods_classve_1_1_v_e_scene_node"><td class="memItemLeft" align="right" valign="top"><a id="a367fee6490278bbf70d33e9a8e17fee9"></a>
 void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_scene_node.html#a367fee6490278bbf70d33e9a8e17fee9">setTransform</a> (glm::mat4 trans)</td></tr>
-<tr class="memdesc:a367fee6490278bbf70d33e9a8e17fee9 inherit pub_methods_classve_1_1_v_e_scene_node"><td class="mdescLeft">&#160;</td><td class="mdescRight">Sets the entity's local to parent transform. <br /></td></tr>
+<tr class="memdesc:a367fee6490278bbf70d33e9a8e17fee9 inherit pub_methods_classve_1_1_v_e_scene_node"><td class="mdescLeft">&#160;</td><td class="mdescRight">Sets the scene node's local to parent transform. <br /></td></tr>
 <tr class="separator:a367fee6490278bbf70d33e9a8e17fee9 inherit pub_methods_classve_1_1_v_e_scene_node"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ac16a473c85f21fd0992edff29af4a62c inherit pub_methods_classve_1_1_v_e_scene_node"><td class="memItemLeft" align="right" valign="top">glm::mat4&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_scene_node.html#ac16a473c85f21fd0992edff29af4a62c">getTransform</a> ()</td></tr>
 <tr class="separator:ac16a473c85f21fd0992edff29af4a62c inherit pub_methods_classve_1_1_v_e_scene_node"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a0af270114f93f89969f962f0f3b6f3af inherit pub_methods_classve_1_1_v_e_scene_node"><td class="memItemLeft" align="right" valign="top"><a id="a0af270114f93f89969f962f0f3b6f3af"></a>
 void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_scene_node.html#a0af270114f93f89969f962f0f3b6f3af">setPosition</a> (glm::vec3 pos)</td></tr>
-<tr class="memdesc:a0af270114f93f89969f962f0f3b6f3af inherit pub_methods_classve_1_1_v_e_scene_node"><td class="mdescLeft">&#160;</td><td class="mdescRight">Sets the entity's position. <br /></td></tr>
+<tr class="memdesc:a0af270114f93f89969f962f0f3b6f3af inherit pub_methods_classve_1_1_v_e_scene_node"><td class="mdescLeft">&#160;</td><td class="mdescRight">Sets the scene node's position. <br /></td></tr>
 <tr class="separator:a0af270114f93f89969f962f0f3b6f3af inherit pub_methods_classve_1_1_v_e_scene_node"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a2dbb9aba34916c1bc9b981eac2e10d7c inherit pub_methods_classve_1_1_v_e_scene_node"><td class="memItemLeft" align="right" valign="top">glm::vec3&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_scene_node.html#a2dbb9aba34916c1bc9b981eac2e10d7c">getPosition</a> ()</td></tr>
 <tr class="separator:a2dbb9aba34916c1bc9b981eac2e10d7c inherit pub_methods_classve_1_1_v_e_scene_node"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -172,7 +169,7 @@ void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="clas
 <tr class="memdesc:ab704c9158e5ee4baae88378def289834 inherit pub_methods_classve_1_1_v_e_scene_node"><td class="mdescLeft">&#160;</td><td class="mdescRight">An entity's world matrix is the local to parent transform multiplied by the parent's world matrix.  <a href="classve_1_1_v_e_scene_node.html#ab704c9158e5ee4baae88378def289834">More...</a><br /></td></tr>
 <tr class="separator:ab704c9158e5ee4baae88378def289834 inherit pub_methods_classve_1_1_v_e_scene_node"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a5e41fdd2408fe596a2080f511caea770 inherit pub_methods_classve_1_1_v_e_scene_node"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_scene_node.html#a5e41fdd2408fe596a2080f511caea770">lookAt</a> (glm::vec3 eye, glm::vec3 point, glm::vec3 up)</td></tr>
-<tr class="memdesc:a5e41fdd2408fe596a2080f511caea770 inherit pub_methods_classve_1_1_v_e_scene_node"><td class="mdescLeft">&#160;</td><td class="mdescRight">lookAt function  <a href="classve_1_1_v_e_scene_node.html#a5e41fdd2408fe596a2080f511caea770">More...</a><br /></td></tr>
+<tr class="memdesc:a5e41fdd2408fe596a2080f511caea770 inherit pub_methods_classve_1_1_v_e_scene_node"><td class="mdescLeft">&#160;</td><td class="mdescRight">lookAt function for a left handed frame of reference  <a href="classve_1_1_v_e_scene_node.html#a5e41fdd2408fe596a2080f511caea770">More...</a><br /></td></tr>
 <tr class="separator:a5e41fdd2408fe596a2080f511caea770 inherit pub_methods_classve_1_1_v_e_scene_node"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aa97bd4ad3fb1efa02ec3df6ef679927d inherit pub_methods_classve_1_1_v_e_scene_node"><td class="memItemLeft" align="right" valign="top">virtual void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_scene_node.html#aa97bd4ad3fb1efa02ec3df6ef679927d">update</a> (uint32_t imageIndex)</td></tr>
 <tr class="memdesc:aa97bd4ad3fb1efa02ec3df6ef679927d inherit pub_methods_classve_1_1_v_e_scene_node"><td class="mdescLeft">&#160;</td><td class="mdescRight">Update the entity's UBO buffer with the current world matrix.  <a href="classve_1_1_v_e_scene_node.html#aa97bd4ad3fb1efa02ec3df6ef679927d">More...</a><br /></td></tr>
@@ -277,7 +274,7 @@ Additional Inherited Members</h2></td></tr>
 <tr class="separator:aff43b9c0c39fa3362b3908e813608cc8 inherit pub_types_classve_1_1_v_e_scene_node"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="inherit_header pro_methods_classve_1_1_v_e_scene_object"><td colspan="2" onclick="javascript:toggleInherit('pro_methods_classve_1_1_v_e_scene_object')"><img src="closed.png" alt="-"/>&#160;Protected Member Functions inherited from <a class="el" href="classve_1_1_v_e_scene_object.html">ve::VESceneObject</a></td></tr>
 <tr class="memitem:a4daa340d55baac9b05dba82bd4151b0d inherit pro_methods_classve_1_1_v_e_scene_object"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_scene_object.html#a4daa340d55baac9b05dba82bd4151b0d">updateUBO</a> (void *pUBO, uint32_t sizeUBO, uint32_t imageIndex)</td></tr>
-<tr class="memdesc:a4daa340d55baac9b05dba82bd4151b0d inherit pro_methods_classve_1_1_v_e_scene_object"><td class="mdescLeft">&#160;</td><td class="mdescRight">Constructor of the scene object class.  <a href="classve_1_1_v_e_scene_object.html#a4daa340d55baac9b05dba82bd4151b0d">More...</a><br /></td></tr>
+<tr class="memdesc:a4daa340d55baac9b05dba82bd4151b0d inherit pro_methods_classve_1_1_v_e_scene_object"><td class="mdescLeft">&#160;</td><td class="mdescRight">Copy the local data of this scene object into the GPU UBO.  <a href="classve_1_1_v_e_scene_object.html#a4daa340d55baac9b05dba82bd4151b0d">More...</a><br /></td></tr>
 <tr class="separator:a4daa340d55baac9b05dba82bd4151b0d inherit pro_methods_classve_1_1_v_e_scene_object"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="inherit_header pro_attribs_classve_1_1_v_e_scene_node"><td colspan="2" onclick="javascript:toggleInherit('pro_attribs_classve_1_1_v_e_scene_node')"><img src="closed.png" alt="-"/>&#160;Protected Attributes inherited from <a class="el" href="classve_1_1_v_e_scene_node.html">ve::VESceneNode</a></td></tr>
 <tr class="memitem:a7d562c1efb53cd253f83f1a5a5fd679a inherit pro_attribs_classve_1_1_v_e_scene_node"><td class="memItemLeft" align="right" valign="top"><a id="a7d562c1efb53cd253f83f1a5a5fd679a"></a>
@@ -586,68 +583,6 @@ std::string&#160;</td><td class="memItemRight" valign="bottom"><a class="el" hre
 
 </div>
 </div>
-<a id="a59f356e9c9634018ecea416e2c1694f2"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a59f356e9c9634018ecea416e2c1694f2">&#9670;&nbsp;</a></span>setShadowCamera()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">void ve::VECameraOrtho::setShadowCamera </td>
-          <td>(</td>
-          <td class="paramtype"><a class="el" href="classve_1_1_v_e_camera.html">VECamera</a> *&#160;</td>
-          <td class="paramname"><em>pCam</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype"><a class="el" href="classve_1_1_v_e_light.html">VELight</a> *&#160;</td>
-          <td class="paramname"><em>pLight</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">float&#160;</td>
-          <td class="paramname"><em>z0</em> = <code>0.0f</code>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">float&#160;</td>
-          <td class="paramname"><em>z1</em> = <code>1.0f</code>&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">virtual</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-
-<p>Create an ortho shadow camera from the camera's frustum bounding sphere. </p>
-<dl class="params"><dt>Parameters</dt><dd>
-  <table class="params">
-    <tr><td class="paramdir">[in]</td><td class="paramname">pCam</td><td>Pointer to the light camera that is currently used. </td></tr>
-    <tr><td class="paramdir">[in]</td><td class="paramname">pLight</td><td>Pointer to a light that defines the light direction. </td></tr>
-    <tr><td class="paramdir">[in]</td><td class="paramname">z0</td><td>Startparameter for interpolating the frustum </td></tr>
-    <tr><td class="paramdir">[in]</td><td class="paramname">z1</td><td>Endparameter for interlopating the frustum </td></tr>
-  </table>
-  </dd>
-</dl>
-<dl class="section return"><dt>Returns</dt><dd>a new <a class="el" href="classve_1_1_v_e_camera_ortho.html" title="Am ortho camera that can be used to take photos of the scene.">VECameraOrtho</a> that can be used to create shadow maps for directional light </dd></dl>
-
-<p>Implements <a class="el" href="classve_1_1_v_e_camera.html#a59a2bcee3a979107586cd28da9e7498b">ve::VECamera</a>.</p>
-
-</div>
-</div>
 <hr/>The documentation for this class was generated from the following files:<ul>
 <li><a class="el" href="_v_e_entity_8h_source.html">VEEntity.h</a></li>
 <li>VEEntity.cpp</li>
@@ -655,7 +590,7 @@ std::string&#160;</td><td class="memItemRight" valign="bottom"><a class="el" hre
 </div><!-- contents -->
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>
-Generated on Tue Apr 16 2019 20:59:29 for Vienna Vulkan Engine by &#160;<a href="http://www.doxygen.org/index.html">
+Generated on Fri Apr 19 2019 20:48:00 for Vienna Vulkan Engine by &#160;<a href="http://www.doxygen.org/index.html">
 <img class="footer" src="doxygen.png" alt="doxygen"/>
 </a> 1.8.15
 </small></address>

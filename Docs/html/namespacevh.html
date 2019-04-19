@@ -208,9 +208,9 @@ void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="name
 <tr class="memitem:a0401ce1a7329f9b52497fff549135f7a"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacevh.html#a0401ce1a7329f9b52497fff549135f7a">vhSwapCreateSwapChain</a> (VkPhysicalDevice physicalDevice, VkSurfaceKHR surface, VkDevice device, VkExtent2D frameBufferExtent, VkSwapchainKHR *swapChain, std::vector&lt; VkImage &gt; &amp;swapChainImages, std::vector&lt; VkImageView &gt; &amp;swapChainImageViews, VkFormat *swapChainImageFormat, VkExtent2D *swapChainExtent)</td></tr>
 <tr class="memdesc:a0401ce1a7329f9b52497fff549135f7a"><td class="mdescLeft">&#160;</td><td class="mdescRight">Choose the swapchain.  <a href="#a0401ce1a7329f9b52497fff549135f7a">More...</a><br /></td></tr>
 <tr class="separator:a0401ce1a7329f9b52497fff549135f7a"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a32d86c99bd3f092ecf7e66dbbca2163b"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacevh.html#a32d86c99bd3f092ecf7e66dbbca2163b">vhRenderCreateRenderPass</a> (VkDevice device, VkFormat swapChainImageFormat, VkFormat depthFormat, VkRenderPass *renderPass)</td></tr>
-<tr class="memdesc:a32d86c99bd3f092ecf7e66dbbca2163b"><td class="mdescLeft">&#160;</td><td class="mdescRight">Create a render pass for a light pass.  <a href="#a32d86c99bd3f092ecf7e66dbbca2163b">More...</a><br /></td></tr>
-<tr class="separator:a32d86c99bd3f092ecf7e66dbbca2163b"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a4e955c65e9f1dd327237cacf2439d81f"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacevh.html#a4e955c65e9f1dd327237cacf2439d81f">vhRenderCreateRenderPass</a> (VkDevice device, VkFormat swapChainImageFormat, VkFormat depthFormat, VkAttachmentLoadOp loadOp, VkRenderPass *renderPass)</td></tr>
+<tr class="memdesc:a4e955c65e9f1dd327237cacf2439d81f"><td class="mdescLeft">&#160;</td><td class="mdescRight">Create a render pass for a light pass.  <a href="#a4e955c65e9f1dd327237cacf2439d81f">More...</a><br /></td></tr>
+<tr class="separator:a4e955c65e9f1dd327237cacf2439d81f"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:afc1d99ade9bdbbdcb607bcb54dfac0c8"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacevh.html#afc1d99ade9bdbbdcb607bcb54dfac0c8">vhRenderCreateRenderPassShadow</a> (VkDevice device, VkFormat depthFormat, VkRenderPass *renderPass)</td></tr>
 <tr class="memdesc:afc1d99ade9bdbbdcb607bcb54dfac0c8"><td class="mdescLeft">&#160;</td><td class="mdescRight">Create a render pass for a shadow pass.  <a href="#afc1d99ade9bdbbdcb607bcb54dfac0c8">More...</a><br /></td></tr>
 <tr class="separator:afc1d99ade9bdbbdcb607bcb54dfac0c8"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -238,9 +238,9 @@ void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="name
 <tr class="memitem:add7ac38cec91ccc1cb7f7fc295735651"><td class="memItemLeft" align="right" valign="top">VkResult&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacevh.html#add7ac38cec91ccc1cb7f7fc295735651">vhPipeCreateGraphicsPipelineLayout</a> (VkDevice device, std::vector&lt; VkDescriptorSetLayout &gt; descriptorSetLayouts, std::vector&lt; VkPushConstantRange &gt; pushConstantRanges, VkPipelineLayout *pipelineLayout)</td></tr>
 <tr class="memdesc:add7ac38cec91ccc1cb7f7fc295735651"><td class="mdescLeft">&#160;</td><td class="mdescRight">Create a pipeline layout for drawing a light pass.  <a href="#add7ac38cec91ccc1cb7f7fc295735651">More...</a><br /></td></tr>
 <tr class="separator:add7ac38cec91ccc1cb7f7fc295735651"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aa6903b6ef7debe26830c12a072e43af3"><td class="memItemLeft" align="right" valign="top">VkResult&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacevh.html#aa6903b6ef7debe26830c12a072e43af3">vhPipeCreateGraphicsPipeline</a> (VkDevice device, std::string verShaderFilename, std::string fragShaderFilename, VkExtent2D swapChainExtent, VkPipelineLayout pipelineLayout, VkRenderPass renderPass, std::vector&lt; VkDynamicState &gt; dynamicStates, VkPipeline *graphicsPipeline)</td></tr>
-<tr class="memdesc:aa6903b6ef7debe26830c12a072e43af3"><td class="mdescLeft">&#160;</td><td class="mdescRight">Create a pipeline state object (PSO) for a light pass.  <a href="#aa6903b6ef7debe26830c12a072e43af3">More...</a><br /></td></tr>
-<tr class="separator:aa6903b6ef7debe26830c12a072e43af3"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a1a7b7ff0f821ebef5c91f82314ddd7da"><td class="memItemLeft" align="right" valign="top">VkResult&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacevh.html#a1a7b7ff0f821ebef5c91f82314ddd7da">vhPipeCreateGraphicsPipeline</a> (VkDevice device, std::vector&lt; std::string &gt; shaderFileNames, VkExtent2D swapChainExtent, VkPipelineLayout pipelineLayout, VkRenderPass renderPass, std::vector&lt; VkDynamicState &gt; dynamicStates, VkPipeline *graphicsPipeline)</td></tr>
+<tr class="memdesc:a1a7b7ff0f821ebef5c91f82314ddd7da"><td class="mdescLeft">&#160;</td><td class="mdescRight">Create a pipeline state object (PSO) for a light pass.  <a href="#a1a7b7ff0f821ebef5c91f82314ddd7da">More...</a><br /></td></tr>
+<tr class="separator:a1a7b7ff0f821ebef5c91f82314ddd7da"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a0abe327f01dff0d2f8af18263ee4b768"><td class="memItemLeft" align="right" valign="top">VkResult&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacevh.html#a0abe327f01dff0d2f8af18263ee4b768">vhPipeCreateGraphicsShadowPipeline</a> (VkDevice device, std::string verShaderFilename, VkExtent2D shadowMapExtent, VkPipelineLayout pipelineLayout, VkRenderPass renderPass, VkPipeline *graphicsPipeline)</td></tr>
 <tr class="memdesc:a0abe327f01dff0d2f8af18263ee4b768"><td class="mdescLeft">&#160;</td><td class="mdescRight">Create a pipeline state object (PSO) for a shadow pass.  <a href="#a0abe327f01dff0d2f8af18263ee4b768">More...</a><br /></td></tr>
 <tr class="separator:a0abe327f01dff0d2f8af18263ee4b768"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -2710,8 +2710,8 @@ void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="name
 
 </div>
 </div>
-<a id="aa6903b6ef7debe26830c12a072e43af3"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#aa6903b6ef7debe26830c12a072e43af3">&#9670;&nbsp;</a></span>vhPipeCreateGraphicsPipeline()</h2>
+<a id="a1a7b7ff0f821ebef5c91f82314ddd7da"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a1a7b7ff0f821ebef5c91f82314ddd7da">&#9670;&nbsp;</a></span>vhPipeCreateGraphicsPipeline()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -2725,14 +2725,8 @@ void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="name
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype">std::string&#160;</td>
-          <td class="paramname"><em>verShaderFilename</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">std::string&#160;</td>
-          <td class="paramname"><em>fragShaderFilename</em>, </td>
+          <td class="paramtype">std::vector&lt; std::string &gt;&#160;</td>
+          <td class="paramname"><em>shaderFileNames</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
@@ -2776,8 +2770,7 @@ void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="name
 <dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
     <tr><td class="paramdir">[in]</td><td class="paramname">device</td><td>Logical Vulkan device </td></tr>
-    <tr><td class="paramdir">[in]</td><td class="paramname">verShaderFilename</td><td>Name of the vetex shader file </td></tr>
-    <tr><td class="paramdir">[in]</td><td class="paramname">fragShaderFilename</td><td>Name of the fragment shader file </td></tr>
+    <tr><td class="paramdir">[in]</td><td class="paramname">shaderFileNames</td><td>List of filenames for the shaders: vertex, fragment, geometry, tess control, tess eval </td></tr>
     <tr><td class="paramdir">[in]</td><td class="paramname">swapChainExtent</td><td>Swapchain extent </td></tr>
     <tr><td class="paramdir">[in]</td><td class="paramname">pipelineLayout</td><td>Pipeline layout </td></tr>
     <tr><td class="paramdir">[in]</td><td class="paramname">renderPass</td><td>Renderpass to be used </td></tr>
@@ -3222,8 +3215,8 @@ void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="name
 
 </div>
 </div>
-<a id="a32d86c99bd3f092ecf7e66dbbca2163b"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a32d86c99bd3f092ecf7e66dbbca2163b">&#9670;&nbsp;</a></span>vhRenderCreateRenderPass()</h2>
+<a id="a4e955c65e9f1dd327237cacf2439d81f"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a4e955c65e9f1dd327237cacf2439d81f">&#9670;&nbsp;</a></span>vhRenderCreateRenderPass()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -3249,6 +3242,12 @@ void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="name
         <tr>
           <td class="paramkey"></td>
           <td></td>
+          <td class="paramtype">VkAttachmentLoadOp&#160;</td>
+          <td class="paramname"><em>loadOp</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
           <td class="paramtype">VkRenderPass *&#160;</td>
           <td class="paramname"><em>renderPass</em>&#160;</td>
         </tr>
@@ -3266,6 +3265,7 @@ void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="name
     <tr><td class="paramdir">[in]</td><td class="paramname">device</td><td>The logical Vulkan device </td></tr>
     <tr><td class="paramdir">[in]</td><td class="paramname">swapChainImageFormat</td><td>The swap chain image format </td></tr>
     <tr><td class="paramdir">[in]</td><td class="paramname">depthFormat</td><td>The depth map image format </td></tr>
+    <tr><td class="paramdir">[in]</td><td class="paramname">loadOp</td><td>Operation what to do with the framebuffer when starting the render pass: clear, keep, or dont care </td></tr>
     <tr><td class="paramdir">[out]</td><td class="paramname">renderPass</td><td>The new render pass </td></tr>
   </table>
   </dd>
@@ -3523,7 +3523,7 @@ void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="name
 </div><!-- contents -->
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>
-Generated on Tue Apr 16 2019 20:59:30 for Vienna Vulkan Engine by &#160;<a href="http://www.doxygen.org/index.html">
+Generated on Fri Apr 19 2019 20:48:01 for Vienna Vulkan Engine by &#160;<a href="http://www.doxygen.org/index.html">
 <img class="footer" src="doxygen.png" alt="doxygen"/>
 </a> 1.8.15
 </small></address>

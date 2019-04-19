@@ -122,13 +122,13 @@ virtual&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="c
 <tr class="separator:a536a9f54c33b29459b307bbf224ce604"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a367fee6490278bbf70d33e9a8e17fee9"><td class="memItemLeft" align="right" valign="top"><a id="a367fee6490278bbf70d33e9a8e17fee9"></a>
 void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_scene_node.html#a367fee6490278bbf70d33e9a8e17fee9">setTransform</a> (glm::mat4 trans)</td></tr>
-<tr class="memdesc:a367fee6490278bbf70d33e9a8e17fee9"><td class="mdescLeft">&#160;</td><td class="mdescRight">Sets the entity's local to parent transform. <br /></td></tr>
+<tr class="memdesc:a367fee6490278bbf70d33e9a8e17fee9"><td class="mdescLeft">&#160;</td><td class="mdescRight">Sets the scene node's local to parent transform. <br /></td></tr>
 <tr class="separator:a367fee6490278bbf70d33e9a8e17fee9"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ac16a473c85f21fd0992edff29af4a62c"><td class="memItemLeft" align="right" valign="top">glm::mat4&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_scene_node.html#ac16a473c85f21fd0992edff29af4a62c">getTransform</a> ()</td></tr>
 <tr class="separator:ac16a473c85f21fd0992edff29af4a62c"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a0af270114f93f89969f962f0f3b6f3af"><td class="memItemLeft" align="right" valign="top"><a id="a0af270114f93f89969f962f0f3b6f3af"></a>
 void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_scene_node.html#a0af270114f93f89969f962f0f3b6f3af">setPosition</a> (glm::vec3 pos)</td></tr>
-<tr class="memdesc:a0af270114f93f89969f962f0f3b6f3af"><td class="mdescLeft">&#160;</td><td class="mdescRight">Sets the entity's position. <br /></td></tr>
+<tr class="memdesc:a0af270114f93f89969f962f0f3b6f3af"><td class="mdescLeft">&#160;</td><td class="mdescRight">Sets the scene node's position. <br /></td></tr>
 <tr class="separator:a0af270114f93f89969f962f0f3b6f3af"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a2dbb9aba34916c1bc9b981eac2e10d7c"><td class="memItemLeft" align="right" valign="top">glm::vec3&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_scene_node.html#a2dbb9aba34916c1bc9b981eac2e10d7c">getPosition</a> ()</td></tr>
 <tr class="separator:a2dbb9aba34916c1bc9b981eac2e10d7c"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -145,7 +145,7 @@ void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="clas
 <tr class="memdesc:ab704c9158e5ee4baae88378def289834"><td class="mdescLeft">&#160;</td><td class="mdescRight">An entity's world matrix is the local to parent transform multiplied by the parent's world matrix.  <a href="#ab704c9158e5ee4baae88378def289834">More...</a><br /></td></tr>
 <tr class="separator:ab704c9158e5ee4baae88378def289834"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a5e41fdd2408fe596a2080f511caea770"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_scene_node.html#a5e41fdd2408fe596a2080f511caea770">lookAt</a> (glm::vec3 eye, glm::vec3 point, glm::vec3 up)</td></tr>
-<tr class="memdesc:a5e41fdd2408fe596a2080f511caea770"><td class="mdescLeft">&#160;</td><td class="mdescRight">lookAt function  <a href="#a5e41fdd2408fe596a2080f511caea770">More...</a><br /></td></tr>
+<tr class="memdesc:a5e41fdd2408fe596a2080f511caea770"><td class="mdescLeft">&#160;</td><td class="mdescRight">lookAt function for a left handed frame of reference  <a href="#a5e41fdd2408fe596a2080f511caea770">More...</a><br /></td></tr>
 <tr class="separator:a5e41fdd2408fe596a2080f511caea770"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aa97bd4ad3fb1efa02ec3df6ef679927d"><td class="memItemLeft" align="right" valign="top">virtual void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_scene_node.html#aa97bd4ad3fb1efa02ec3df6ef679927d">update</a> (uint32_t imageIndex)</td></tr>
 <tr class="memdesc:aa97bd4ad3fb1efa02ec3df6ef679927d"><td class="mdescLeft">&#160;</td><td class="mdescRight">Update the entity's UBO buffer with the current world matrix.  <a href="#aa97bd4ad3fb1efa02ec3df6ef679927d">More...</a><br /></td></tr>
@@ -210,7 +210,7 @@ std::string&#160;</td><td class="memItemRight" valign="bottom"><a class="el" hre
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <div class="textblock"><p>Represents any object that can be put into a scene. </p>
-<p><a class="el" href="classve_1_1_v_e_scene_node.html" title="Represents any object that can be put into a scene.">VESceneNode</a> represents any object that can be used by the scene manager to be put into the scene. This includes objects, cameras, lights, sky boxes or terrains. Scene nodes can have a parent. If so the local transform is relative to the parent transform. This relation is stored in the parent and children pointers. </p>
+<p><a class="el" href="classve_1_1_v_e_scene_node.html" title="Represents any object that can be put into a scene.">VESceneNode</a> represents any object that can be used by the scene manager to be put into the scene. This includes objects, cameras, lights, sky boxes or terrains. Scene nodes have a local to parent transform. This is a 4x4 matrix translating position and orientation fromt the local (object) space to the parent space. Scene nodes can have a parent. If so the local transform is relative to the parent transform. This relation is stored in the parent and children pointers. If the scene node does not have a parent, then the parent is automatically the world frame of reference. Since there is a parent-child relationship, scene nodes build up trees of nodes. </p>
 </div><h2 class="groupheader">Member Enumeration Documentation</h2>
 <a id="aff43b9c0c39fa3362b3908e813608cc8"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#aff43b9c0c39fa3362b3908e813608cc8">&#9670;&nbsp;</a></span>veNodeType</h2>
@@ -458,7 +458,7 @@ std::string&#160;</td><td class="memItemRight" valign="bottom"><a class="el" hre
 </div><div class="memdoc">
 
 <p>Get an OBB that exactly holds the given points. </p>
-<p>The OBB is oriented along the local axes of the entity.</p>
+<p>The OBB is oriented along the local axes of the scene node.</p>
 <dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
     <tr><td class="paramdir">[in]</td><td class="paramname">points</td><td>The points that should be engulfed by the OBB, in world space </td></tr>
@@ -488,7 +488,8 @@ std::string&#160;</td><td class="memItemRight" valign="bottom"><a class="el" hre
         </tr>
       </table>
 </div><div class="memdoc">
-<dl class="section return"><dt>Returns</dt><dd>the entity's position. </dd></dl>
+<dl class="section return"><dt>Returns</dt><dd>the scene nodes's position.</dd></dl>
+<p>The position of a scene node is the 4th column vector of its transform. </p>
 
 </div>
 </div>
@@ -506,7 +507,7 @@ std::string&#160;</td><td class="memItemRight" valign="bottom"><a class="el" hre
         </tr>
       </table>
 </div><div class="memdoc">
-<dl class="section return"><dt>Returns</dt><dd>the entity's local to parent transform. </dd></dl>
+<dl class="section return"><dt>Returns</dt><dd>the scene node's local to parent transform. </dd></dl>
 
 </div>
 </div>
@@ -616,7 +617,7 @@ std::string&#160;</td><td class="memItemRight" valign="bottom"><a class="el" hre
       </table>
 </div><div class="memdoc">
 
-<p>lookAt function </p>
+<p>lookAt function for a left handed frame of reference </p>
 <dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
     <tr><td class="paramdir">[in]</td><td class="paramname">eye</td><td>New position of the entity </td></tr>
@@ -645,7 +646,7 @@ std::string&#160;</td><td class="memItemRight" valign="bottom"><a class="el" hre
 </div><div class="memdoc">
 
 <p>Multiplies the entity's transform with another 4x4 transform. </p>
-<p>The transform can be a translation, sclaing, rotation etc.</p>
+<p>The transform can be a translation, scaling, rotation etc.</p>
 <dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
     <tr><td class="paramdir">[in]</td><td class="paramname">trans</td><td>The 4x4 transform that is multiplied from the left onto the entity's old transform. </td></tr>
@@ -714,7 +715,7 @@ std::string&#160;</td><td class="memItemRight" valign="bottom"><a class="el" hre
 </div><div class="memdoc">
 
 <p>Update the entity's UBO buffer with the current world matrix. </p>
-<p>If there is a parent, get the parent's world matrix. If not, set the parent matrix to identity. Then call update(parent) to do the job.</p>
+<p>If there is a parent, get the parent's world matrix. If not, set the parent matrix to identity. Then call update(parentWorldMatrix) to do the job.</p>
 <dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
     <tr><td class="paramdir">[in]</td><td class="paramname">imageIndex</td><td>The index of the swapchain image that is currently used </td></tr>
@@ -759,7 +760,7 @@ std::string&#160;</td><td class="memItemRight" valign="bottom"><a class="el" hre
 </div><div class="memdoc">
 
 <p>Update the entity's UBO buffer with the current world matrix. </p>
-<p>Calculate the new world matrix (and inv transpose matix to transform normal vectors). Then copy the struct content into the UBO.</p>
+<p>Calculate the new world matrix (and inv transpose matix to transform normal vectors). Then copy the struct content into the UBO. Then call all children to do the same.</p>
 <dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
     <tr><td class="paramdir">[in]</td><td class="paramname">parentWorldMatrix</td><td>The parent's world matrix or an identity matrix. </td></tr>
@@ -777,7 +778,7 @@ std::string&#160;</td><td class="memItemRight" valign="bottom"><a class="el" hre
 </div><!-- contents -->
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>
-Generated on Tue Apr 16 2019 20:59:30 for Vienna Vulkan Engine by &#160;<a href="http://www.doxygen.org/index.html">
+Generated on Fri Apr 19 2019 20:48:00 for Vienna Vulkan Engine by &#160;<a href="http://www.doxygen.org/index.html">
 <img class="footer" src="doxygen.png" alt="doxygen"/>
 </a> 1.8.15
 </small></address>

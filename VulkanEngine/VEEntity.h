@@ -20,8 +20,13 @@ namespace ve {
 	*
 	* VESceneNode represents any object that can be used by the scene manager to be put into the scene.
 	* This includes objects, cameras, lights, sky boxes or terrains.
+	* Scene nodes have a local to parent transform. This is a 4x4 matrix translating position and orientation
+	* fromt the local (object) space to the parent space. 
 	* Scene nodes can have a parent. If so the local transform is relative to the parent transform. This
-	* relation is stored in the parent and children pointers.
+	* relation is stored in the parent and children pointers. If the scene node does not have a parent,
+	* then the parent is automatically the world frame of reference.
+	* Since there is a parent-child relationship, scene nodes build up trees of nodes.
+	*
 	*/
 
 	class VESceneNode : public VENamedClass {
@@ -65,7 +70,7 @@ namespace ve {
 		glm::vec3	getZAxis();							//Return local z-axis in parent space
 		void		multiplyTransform(glm::mat4 trans); //Multiply the transform, e.g. translate, scale, rotate 
 		glm::mat4	getWorldTransform();				//Compute the world matrix
-		void		lookAt(glm::vec3 eye, glm::vec3 point, glm::vec3 up);
+		void		lookAt(glm::vec3 eye, glm::vec3 point, glm::vec3 up); //LookAt function for left handed system
 
 		//--------------------------------------------------------------------------------------
 		//UBO updates
@@ -100,6 +105,10 @@ namespace ve {
 	* \brief Represents any object that has its own UBO.
 	*
 	* A scene object has its own UBO describing its transform and current state.
+	* Scene objects thus need a vector of uniform buffers, buffer allcoations (VMA) and descriptor sets.
+	* This is one for each swap chain image. In a mailbox swapchain, we usually have three images.
+	* Two of them can be in flight, meaning that they are currently rendered into. Thus we need
+	* at least two UBOs per object. 
 	* 
 	*/
 
@@ -129,8 +138,7 @@ namespace ve {
 	*
 	* \brief Represents any object that can be drawn.
 	*
-	* VEEntity represents any object that can be drawn. It also contains a Vulkan UBO for storing
-	* position and orientation. Entities have exactly one mesh and one material.
+	* VEEntity represents any object that can be drawn. Entities have exactly one mesh and one material.
 	* Entities are associated with exactly one VESubrender instance. This instance is responsible for managing
 	* all drawing related tasks, like creating UBOs and selecting the right PSO.
 	*
@@ -208,7 +216,7 @@ namespace ve {
 	*
 	* \brief A camera that can be used to take photos of the scene.
 	*
-	* VECamera is derived from VEEntity and can be put into the scene. It produces a projection matrix which 
+	* VECamera is derived from VESceneObject and can be put into the scene. It produces a projection matrix which 
 	* represents the camera frustum. The base class however should never be used. Use a derived class.
 	*
 	*/
@@ -284,8 +292,9 @@ namespace ve {
 	*
 	* \brief A projective camera that can be used to take photos of the scene.
 	*
-	* VECameraProjective is derived from VECamera and can be put into the scene. It produces a projection matrix which
-	* representing the camera frustum. This class assumes a projective mapping with a camera eye point.
+	* VECameraProjective is derived from VECamera and can be put into the scene. 
+	* It produces a projection matrix which representing the camera frustum. 
+	* This class assumes a projective mapping with a camera eye point.
 	*
 	*/
 
@@ -379,8 +388,8 @@ namespace ve {
 	*
 	* \brief A VELight has a color and can be used to light a scene.
 	*
-	* VELight is derived from VEEntity and can be put into the scene. It shines light on objects and is sent to the
-	* fragment shader to produce the final coloring of a pixel.
+	* VELight is derived from VESceneObject and can be put into the scene. 
+	* It shines light on objects and is sent to the fragment shader to produce the final coloring of a pixel.
 	*
 	*/
 
@@ -443,6 +452,10 @@ namespace ve {
 	* \brief Directional light class.
 	*
 	* This class represents a directional light. It is derived from the VELight class.
+	* A directional light is used to model su or moon light. It comes from a certain fixed direction, 
+	* which is represented by its z-axis. The position of this light is not used.
+	* A directional light uses four ortho cameras as shadow cams. Each of them covers a segment
+	* of the light camera.
 	*
 	*/
 
@@ -469,6 +482,9 @@ namespace ve {
 	* \brief Point light class
 	*
 	* This class represents a point light. It is derived from the VELight class.
+	* A point light emanates from its position, which is the only parameter used.
+	* Its orientation does not influence the scene.
+	* A point light uses 6 projective shadow cameras, filming in 6 different directions.
 	*
 	*/
 
@@ -495,6 +511,7 @@ namespace ve {
 	* \brief Spot light class. 
 	*
 	* This class represents a spot light. It is derived from the VELight class.
+	* A spot light uses one projective shadow camera. 
 	*
 	*/
 

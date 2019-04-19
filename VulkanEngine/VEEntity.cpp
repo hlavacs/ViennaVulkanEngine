@@ -29,7 +29,7 @@ namespace ve {
 	VESceneNode::VESceneNode(std::string name, glm::mat4 transf, VESceneNode *parent) : VENamedClass(name) {
 		m_parent = parent;
 		if (parent != nullptr) {
-			parent->addChild(this);
+			parent->addChild(this);		//if there is a parent, add this scene node to the parent as a child
 		}
 		setTransform(transf);			//sets this MO also onto the dirty list to be updated
 	}
@@ -37,28 +37,31 @@ namespace ve {
 
 
 	/**
-	* \returns the entity's local to parent transform.
+	* \returns the scene node's local to parent transform.
 	*/
 	glm::mat4 VESceneNode::getTransform() {
 		return m_transform;
 	}
 
 	/**
-	* \brief Sets the entity's local to parent transform.
+	* \brief Sets the scene node's local to parent transform.
 	*/
 	void VESceneNode::setTransform(glm::mat4 trans) {
 		m_transform = trans;
 	}
 
 	/**
-	* \brief Sets the entity's position.
+	* \brief Sets the scene node's position.
 	*/
 	void VESceneNode::setPosition(glm::vec3 pos) {
 		m_transform[3] = glm::vec4(pos.x, pos.y, pos.z, 1.0f);
 	};
 
 	/**
-	* \returns the entity's position.
+	* \returns the scene nodes's position.
+	*
+	* The position of a scene node is the 4th column vector of its transform.
+	*
 	*/
 	glm::vec3 VESceneNode::getPosition() {
 		return glm::vec3(m_transform[3].x, m_transform[3].y, m_transform[3].z);
@@ -92,7 +95,7 @@ namespace ve {
 	*
 	* \brief Multiplies the entity's transform with another 4x4 transform.
 	*
-	* The transform can be a translation, sclaing, rotation etc.
+	* The transform can be a translation, scaling, rotation etc.
 	*
 	* \param[in] trans The 4x4 transform that is multiplied from the left onto the entity's old transform.
 	*
@@ -116,7 +119,7 @@ namespace ve {
 
 	/**
 	*
-	* \brief lookAt function
+	* \brief lookAt function for a left handed frame of reference
 	*
 	* \param[in] eye New position of the entity
 	* \param[in] point Entity looks at this point (= new local z axis)
@@ -166,10 +169,10 @@ namespace ve {
 	*/
 	void VESceneNode::removeChild(VESceneNode *pEntity) {
 		for (uint32_t i = 0; i < m_children.size(); i++) {
-			if (pEntity == m_children[i]) {
-				VESceneNode *last = m_children[m_children.size() - 1];
+			if (pEntity == m_children[i]) {								//if child is found
+				VESceneNode *last = m_children[m_children.size() - 1];	//replace it with the last child
 				m_children[i] = last;
-				m_children.pop_back();		//child is not detroyed
+				m_children.pop_back();									//child is not destroyed
 				return;
 			}
 		}
@@ -180,7 +183,7 @@ namespace ve {
 	* \brief Update the entity's UBO buffer with the current world matrix
 	*
 	* If there is a parent, get the parent's world matrix. If not, set the parent matrix to identity.
-	* Then call update(parent) to do the job.
+	* Then call update(parentWorldMatrix) to do the job.
 	*
 	* \param[in] imageIndex The index of the swapchain image that is currently used
 	*
@@ -198,14 +201,14 @@ namespace ve {
 	* \brief Update the entity's UBO buffer with the current world matrix
 	*
 	* Calculate the new world matrix (and inv transpose matix to transform normal vectors).
-	* Then copy the struct content into the UBO.
+	* Then copy the struct content into the UBO. Then call all children to do the same.
 	*
 	* \param[in] parentWorldMatrix The parent's world matrix or an identity matrix.
 	* \param[in] imageIndex The index of the swapchain image that is currently used
 	*
 	*/
 	void VESceneNode::update(glm::mat4 parentWorldMatrix, uint32_t imageIndex ) {
-		glm::mat4 worldMatrix = parentWorldMatrix * getTransform();		//get world matrix
+		glm::mat4 worldMatrix = parentWorldMatrix * getTransform();		//compute the world matrix
 		updateUBO( worldMatrix, imageIndex);					//call derived class for specific data like object color
 		updateChildren( worldMatrix, imageIndex);				//update all children
 	}
@@ -222,8 +225,10 @@ namespace ve {
 
 	/**
 	* \brief Get a default bounding sphere for this scene node
+	*
 	* \param[out] center The sphere center is also the position of the scene node
 	* \param[out] radius The default radius of the sphere
+	*
 	*/
 	void VESceneNode::getBoundingSphere(glm::vec3 *center, float *radius) {
 		*center = getPosition();
@@ -234,7 +239,7 @@ namespace ve {
 	*
 	* \brief Get an OBB that exactly holds the given points.
 	*
-	* The OBB is oriented along the local axes of the entity.
+	* The OBB is oriented along the local axes of the scene node.
 	*
 	* \param[in] points The points that should be engulfed by the OBB, in world space
 	* \param[in] t1 Used for interpolating between frustum edge points
@@ -346,7 +351,7 @@ namespace ve {
 
 	/**
 	*
-	* \brief Constructor of the scene object class.
+	* \brief Copy the local data of this scene object into the GPU UBO.
 	*
 	* \param[in] pUBO Pointer to the UBO that should be copied to the GPU.
 	* \param[in] sizeUBO Size od the UBO.
@@ -409,7 +414,7 @@ namespace ve {
 	/**
 	* \brief Sets the object parameter vector.
 	*
-	* This causes an update of the UBO and all children.
+	* This is usually used for texture animation.
 	*
 	* \param[in] param The new parameter vector
 	*/
@@ -596,10 +601,12 @@ namespace ve {
 	};
 
 	/**
-	* \brief Get a projection matrix for this camera.
+	* \brief Get a projection matrix for this camera (left handed system)
+	*
 	* \param[in] width Width of the current game window.
 	* \param[in] height Height of the current game window.
 	* \returns the camera projection matrix.
+	*
 	*/
 	glm::mat4 VECameraProjective::getProjectionMatrix(float width, float height) {
 		m_aspectRatio = width / height;
@@ -612,6 +619,10 @@ namespace ve {
 
 	/**
 	* \brief Get a projection matrix for this camera.
+	*
+	* In this function the width and height parameters are set using aspect ratio and 1.0.
+	* Then the getProjectionMatrix(float width, float height) function is called.
+	*
 	* \returns the camera projection matrix.
 	*/
 	glm::mat4 VECameraProjective::getProjectionMatrix() {

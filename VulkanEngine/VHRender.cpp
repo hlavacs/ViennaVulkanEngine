@@ -13,9 +13,11 @@ namespace vh {
 #	/**
 	*
 	* \brief Create a render pass for a light pass
+	*
 	* \param[in] device The logical Vulkan device
 	* \param[in] swapChainImageFormat The swap chain image format
 	* \param[in] depthFormat The depth map image format
+	* \param[in] loadOp Operation what to do with the framebuffer when starting the render pass: clear, keep, or dont care
 	* \param[out] renderPass The new render pass
 	*
 	*/
@@ -29,7 +31,7 @@ namespace vh {
 		VkAttachmentDescription colorAttachment = {};
 		colorAttachment.format = swapChainImageFormat;
 		colorAttachment.samples = VK_SAMPLE_COUNT_1_BIT;
-		colorAttachment.loadOp = loadOp; // VK_ATTACHMENT_LOAD_OP_CLEAR;
+		colorAttachment.loadOp = loadOp;
 		colorAttachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
 		colorAttachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
 		colorAttachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
@@ -467,8 +469,7 @@ namespace vh {
 	*
 	* \brief Create a pipeline state object (PSO) for a light pass
 	* \param[in] device Logical Vulkan device
-	* \param[in] verShaderFilename Name of the vetex shader file
-	* \param[in] fragShaderFilename Name of the fragment shader file
+	* \param[in] shaderFileNames List of filenames for the shaders: vertex, fragment, geometry, tess control, tess eval
 	* \param[in] swapChainExtent Swapchain extent
 	* \param[in] pipelineLayout Pipeline layout
 	* \param[in] renderPass Renderpass to be used
