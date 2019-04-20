@@ -25,6 +25,7 @@
 #include "VESubrenderFW_Skyplane.h"
 #include "VESubrenderFW_D.h"
 #include "VESubrenderFW_DN.h"
+#include "VESubrenderFW_Nuklear.h"
 #include "VESubrenderFW_Shadow.h"
 #include "VERenderer.h"
 #include "VERendererForward.h"

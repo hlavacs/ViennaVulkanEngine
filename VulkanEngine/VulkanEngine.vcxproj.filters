@@ -81,6 +81,9 @@
     <ClInclude Include="VEMaterial.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="VESubrenderFW_Nuklear.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="VEEngine.cpp">
@@ -165,6 +168,9 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="VEMaterial.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="VESubrenderFW_Nuklear.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
