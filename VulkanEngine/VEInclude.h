@@ -12,6 +12,7 @@
 #include "VENamedClass.h"
 #include "VEEventListener.h"
 #include "VEEventListenerGLFW.h"
+#include "VEEventListenerNuklear.h"
 #include "VEWindow.h"
 #include "VEWindowGLFW.h"
 #include "VEEngine.h"

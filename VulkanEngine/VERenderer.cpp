@@ -34,6 +34,10 @@ namespace ve {
 			m_subrenderShadow = pSub;
 			return;
 		}
+		if (pSub->getClass() == VESubrender::VE_SUBRENDERER_CLASS_OVERLAY) {
+			m_subrenderOverlay = pSub;
+			return;
+		}
 		m_subrenderers.push_back( pSub );
 	}
 

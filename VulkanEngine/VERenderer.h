@@ -51,10 +51,10 @@ namespace ve {
 		std::vector<VkImageView> m_swapChainImageViews;			///<Image views of the swap chain images
 		uint32_t imageIndex = 0;								///<Index of the current swapchain image
 
-
 		//subrenderers
 		std::vector<VESubrender*> m_subrenderers;				///<Subrenderers for lit objects
 		VESubrender *			  m_subrenderShadow=nullptr;	///<Pointer to the shadow subrenderer
+		VESubrender *			  m_subrenderOverlay = nullptr;	///<Pointer to the overlay subrenderer
 
 		///Initialize the base class
 		virtual void initRenderer() {};
@@ -67,6 +67,8 @@ namespace ve {
 		virtual void destroySubrenderers();
 		///Draw one frame
 		virtual void drawFrame() {};
+		///Draw the overlay (GUI)
+		virtual void drawOverlay() {};
 		///Present the newl drawn frame
 		virtual void presentFrame() {};
 		///Recreate the swap chain
@@ -83,6 +85,8 @@ namespace ve {
 		virtual VkPhysicalDevice		getPhysicalDevice() { return m_physicalDevice; };
 		///\returns the Vulkan logical device
 		virtual VkDevice				getDevice() { return m_device;  };
+		///\returns the KHR surface that connects the window to Vulkan
+		virtual VkSurfaceKHR			getSurface() { return m_surface; };
 		///\returns the Vulkan graphics queue
 		virtual VkQueue					getGraphicsQueue() { return m_graphicsQueue; };
 		///\returns the thread command pool
@@ -97,7 +101,8 @@ namespace ve {
 		virtual uint32_t				getImageIndex() { return imageIndex;  };
 		///\returns the current swap chain image
 		virtual VkImage					getSwapChainImage() { return m_swapChainImages[imageIndex]; };
-
+		///\returns the overlay (GUI) subrenderer
+		virtual VESubrender *			getOverlay() { return m_subrenderOverlay; };
 		virtual void					addEntityToSubrenderer(VEEntity *pEntity);
 		virtual void					removeEntityFromSubrenderers(VEEntity *pEntity);
 	};

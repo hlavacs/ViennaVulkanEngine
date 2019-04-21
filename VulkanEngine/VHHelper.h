@@ -39,7 +39,6 @@
 #include <gli/gli.hpp>
 #include <ThreadPool.h>
 
-
 #include <assimp/Importer.hpp>
 #include <assimp/scene.h>
 #include <assimp/postprocess.h>
@@ -49,6 +48,7 @@
 
 #define GLFW_INCLUDE_VULKAN
 #include <GLFW/glfw3.h>
+
 
 
 
@@ -257,3 +257,8 @@ namespace vh {
 	void vhSetupDebugCallback(VkInstance instance, VkDebugReportCallbackEXT *callback);
 
 }
+
+
+
+#include "nuklear-glfw-vulkan.h"
+

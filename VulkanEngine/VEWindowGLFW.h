@@ -52,6 +52,8 @@ namespace ve {
 		~VEWindowGLFW() {};
 
 		virtual VkExtent2D	getExtent();												//width and height of window
+		///<\returns the GLFW window handle.
+		virtual GLFWwindow*	getWindowHandle() { return m_window; };
 	};
 
 }

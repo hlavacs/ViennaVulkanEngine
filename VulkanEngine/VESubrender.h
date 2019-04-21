@@ -64,19 +64,19 @@ namespace ve {
 		virtual ~VESubrender() {};
 
 		///\returns the class of the subrenderer
-		virtual veSubrenderClass getClass()=0;
+		virtual veSubrenderClass getClass() = 0;
 		///\returns the type of the subrenderer
-		virtual veSubrenderType getType()=0;
+		virtual veSubrenderType getType() = 0;
 
 		///Create descriptor set layout, pipeline layout and PSO
 		virtual void	initSubrenderer() {};
 		virtual void	closeSubrenderer();
 		virtual void	recreateResources();
 
-		virtual void	bindPipeline( VkCommandBuffer commandBuffer ); 
-		virtual void	bindDescriptorSetsPerFrame(	VkCommandBuffer commandBuffer, uint32_t imageIndex, 
-													VECamera *pCamera, VELight *pLight, 
-													std::vector<VkDescriptorSet> descriptorSetsShadow );
+		virtual void	bindPipeline(VkCommandBuffer commandBuffer);
+		virtual void	bindDescriptorSetsPerFrame(	VkCommandBuffer commandBuffer, uint32_t imageIndex,
+													VECamera *pCamera, VELight *pLight,
+													std::vector<VkDescriptorSet> descriptorSetsShadow);
 		virtual void	bindDescriptorSetsPerEntity(VkCommandBuffer commandBuffer, uint32_t imageIndex, VEEntity *entity);
 
 		///Set the dynamic state of the pipeline - does nothing for the base class
@@ -84,7 +84,10 @@ namespace ve {
 
 		virtual void	draw(	VkCommandBuffer commandBuffer, uint32_t imageIndex, uint32_t numPass,
 								VECamera *pCamera, VELight *pLight,
-								std::vector<VkDescriptorSet> descriptorSetsShadow );
+								std::vector<VkDescriptorSet> descriptorSetsShadow);
+		///Perform an arbitrary draw operation
+		///\returns a semaphore signalling when this draw operations has finished
+		virtual VkSemaphore	draw(uint32_t imageIndex, VkSemaphore wait_semaphore) { return VK_NULL_HANDLE; };
 
 		virtual void	drawEntity(VkCommandBuffer commandBuffer, uint32_t imageIndex, VEEntity *entity);
 		

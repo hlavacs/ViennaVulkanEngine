@@ -8,8 +8,6 @@
 #define NK_INCLUDE_VERTEX_BUFFER_OUTPUT
 #define NK_INCLUDE_FONT_BAKING
 #define NK_INCLUDE_DEFAULT_FONT
-#define NK_IMPLEMENTATION
-#define NK_GLFW_VULKAN_IMPLEMENTATION
 
 #include "nuklear.h"
 
@@ -136,7 +134,7 @@ VkPipelineShaderStageCreateInfo create_shader(struct nk_vulkan_adapter* adapter,
 }
 
 void prepare_descriptor_pool(struct nk_vulkan_adapter* adapter) {
-	VkDescriptorPoolSize pool_sizes[2];
+	VkDescriptorPoolSize pool_sizes[2] = {};
 	pool_sizes[0].type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
 	pool_sizes[0].descriptorCount = 1;
 	pool_sizes[1].type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
@@ -152,7 +150,7 @@ void prepare_descriptor_pool(struct nk_vulkan_adapter* adapter) {
 }
 
 void prepare_descriptor_set_layout(struct nk_vulkan_adapter* adapter) {
-	VkDescriptorSetLayoutBinding bindings[2];
+	VkDescriptorSetLayoutBinding bindings[2]={};
 	bindings[0].binding = 0;
 	bindings[0].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
 	bindings[0].descriptorCount = 1;
@@ -167,7 +165,7 @@ void prepare_descriptor_set_layout(struct nk_vulkan_adapter* adapter) {
 	descriptor_set_info.bindingCount = 2;
 	descriptor_set_info.pBindings = bindings;
 
-    assert(vkCreateDescriptorSetLayout(adapter->logical_device, &descriptor_set_info, NULL, &adapter->descriptor_set_layout) == VK_SUCCESS);
+	assert( vkCreateDescriptorSetLayout(adapter->logical_device, &descriptor_set_info, NULL, &adapter->descriptor_set_layout) == VK_SUCCESS); 
 }
 
 void prepare_descriptor_set(struct nk_vulkan_adapter* adapter) {
@@ -191,7 +189,7 @@ void update_write_descriptor_sets(struct nk_vulkan_adapter* adapter) {
 	image_info.imageView = adapter->font_image_view;
 	image_info.sampler = adapter->font_tex;
 
-    VkWriteDescriptorSet descriptor_writes[2];
+	VkWriteDescriptorSet descriptor_writes[2] = {};
     memset(descriptor_writes, 0, sizeof(VkWriteDescriptorSet) * 2);
     descriptor_writes[0].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
     descriptor_writes[0].dstSet = adapter->descriptor_set;
@@ -268,27 +266,27 @@ void prepare_pipeline(struct nk_vulkan_adapter* adapter) {
 	multisample_state.sType = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO;
 	multisample_state.rasterizationSamples = VK_SAMPLE_COUNT_1_BIT;
 
-    VkDynamicState dynamic_states[2] = {
-        VK_DYNAMIC_STATE_VIEWPORT,
-        VK_DYNAMIC_STATE_SCISSOR
-    };
+	VkDynamicState dynamic_states[2] = {
+		VK_DYNAMIC_STATE_VIEWPORT,
+		VK_DYNAMIC_STATE_SCISSOR
+	};
 
 	VkPipelineDynamicStateCreateInfo dynamic_state = {};
 	dynamic_state.sType = VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO;
 	dynamic_state.pDynamicStates = dynamic_states;
 	dynamic_state.dynamicStateCount = 2;
 
-    VkPipelineShaderStageCreateInfo shader_stages[2] = {
-        create_shader(adapter, nuklearshaders_nuklear_vert_spv, nuklearshaders_nuklear_vert_spv_len, VK_SHADER_STAGE_VERTEX_BIT),
-        create_shader(adapter, nuklearshaders_nuklear_frag_spv, nuklearshaders_nuklear_frag_spv_len, VK_SHADER_STAGE_FRAGMENT_BIT)
-    };
+	VkPipelineShaderStageCreateInfo shader_stages[2] = {
+		create_shader(adapter, nuklearshaders_nuklear_vert_spv, nuklearshaders_nuklear_vert_spv_len, VK_SHADER_STAGE_VERTEX_BIT),
+		create_shader(adapter, nuklearshaders_nuklear_frag_spv, nuklearshaders_nuklear_frag_spv_len, VK_SHADER_STAGE_FRAGMENT_BIT)
+	};
 
-	VkVertexInputBindingDescription vertex_input_info[1];
+	VkVertexInputBindingDescription vertex_input_info[1] = {};
 	vertex_input_info[0].binding = 0;
 	vertex_input_info[0].stride = sizeof(struct nk_glfw_vertex);
 	vertex_input_info[0].inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
 
-	VkVertexInputAttributeDescription vertex_attribute_description[3];
+	VkVertexInputAttributeDescription vertex_attribute_description[3] = {};
 	vertex_attribute_description[0].binding = 0;
 	vertex_attribute_description[0].location = 0;
 	vertex_attribute_description[0].format = VK_FORMAT_R32G32_SFLOAT;
@@ -337,51 +335,12 @@ void prepare_pipeline(struct nk_vulkan_adapter* adapter) {
 }
 
 void prepare_render_pass(struct nk_vulkan_adapter* adapter) {
-	VkAttachmentDescription attachments[1] = {};
-	attachments[0].format = adapter->color_format;
-	attachments[0].samples = VK_SAMPLE_COUNT_1_BIT;
-	attachments[0].loadOp = VK_ATTACHMENT_LOAD_OP_LOAD;
-	attachments[0].storeOp = VK_ATTACHMENT_STORE_OP_STORE;
-	attachments[0].stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
-	attachments[0].stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-	attachments[0].initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-	attachments[0].finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
-    
-	VkAttachmentReference color_reference = {};
-	color_reference.attachment = 0;
-	color_reference.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
-
-	VkSubpassDependency subpass_dependencies[1];
-	subpass_dependencies[0].srcSubpass = VK_SUBPASS_EXTERNAL;
-	subpass_dependencies[0].dstSubpass = 0;
-	subpass_dependencies[0].srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
-	subpass_dependencies[0].dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
-	subpass_dependencies[0].srcAccessMask = 0;
-	subpass_dependencies[0].dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
-
-	VkSubpassDescription subpass_description = {};
-	subpass_description.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
-	subpass_description.flags = 0;
-	subpass_description.inputAttachmentCount = 0;
-	subpass_description.pInputAttachments = NULL;
-	subpass_description.colorAttachmentCount = 1;
-	subpass_description.pColorAttachments = &color_reference;
-	subpass_description.pResolveAttachments = NULL;
-	subpass_description.pDepthStencilAttachment = VK_NULL_HANDLE;
-	subpass_description.preserveAttachmentCount = 0;
-	subpass_description.pPreserveAttachments = NULL;
-
-	VkRenderPassCreateInfo render_pass_info = {};
-	render_pass_info.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
-	render_pass_info.pNext = NULL;
-	render_pass_info.attachmentCount = 1;
-	render_pass_info.pAttachments = attachments;
-	render_pass_info.subpassCount = 1;
-	render_pass_info.pSubpasses = &subpass_description;
-	render_pass_info.dependencyCount = 1;
-	render_pass_info.pDependencies = subpass_dependencies;
-    
-    assert(vkCreateRenderPass(adapter->logical_device, &render_pass_info, NULL, &adapter->render_pass) == VK_SUCCESS);
+	vh::vhRenderCreateRenderPass(
+		adapter->logical_device,
+		adapter->color_format,
+		vh::vhDevFindDepthFormat(adapter->physical_device),
+		VK_ATTACHMENT_LOAD_OP_LOAD, 
+		&adapter->render_pass);
 }
 
 void prepare_command_buffers(struct nk_vulkan_adapter* adapter) {
@@ -627,7 +586,11 @@ nk_glfw3_device_upload_atlas(const void *image, int width, int height)
 	image_memory_barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
 	image_memory_barrier.oldLayout = VK_IMAGE_LAYOUT_UNDEFINED;
 	image_memory_barrier.newLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
-	image_memory_barrier.subresourceRange = { VK_IMAGE_ASPECT_COLOR_BIT, 1,1 };
+	image_memory_barrier.subresourceRange = {};
+	image_memory_barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+	image_memory_barrier.subresourceRange.levelCount = 1;
+	image_memory_barrier.subresourceRange.layerCount = 1;
+
 	image_memory_barrier.dstAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
 
 	vkCmdPipelineBarrier(
@@ -664,7 +627,11 @@ nk_glfw3_device_upload_atlas(const void *image, int width, int height)
 	image_shader_memory_barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
 	image_shader_memory_barrier.oldLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
 	image_shader_memory_barrier.newLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-	image_shader_memory_barrier.subresourceRange = { VK_IMAGE_ASPECT_COLOR_BIT, 1,1 };
+	image_shader_memory_barrier.subresourceRange = {};
+	image_shader_memory_barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+	image_shader_memory_barrier.subresourceRange.levelCount = 1;
+	image_shader_memory_barrier.subresourceRange.layerCount = 1;
+
 	image_shader_memory_barrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
 	image_shader_memory_barrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
 

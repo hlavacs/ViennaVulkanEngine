@@ -426,6 +426,8 @@ namespace ve {
 			event.type = VE_EVENT_FRAME_ENDED;	//notify all listeners that the frame ended
 			callListeners(m_dt, event);
 
+			m_pRenderer->drawOverlay();
+
 			m_pRenderer->presentFrame();		//present the next frame
 
 			m_loopCount++;

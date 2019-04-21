@@ -185,6 +185,7 @@ namespace ve {
 		addSubrenderer(new VESubrenderFW_Cubemap2());
 		addSubrenderer(new VESubrenderFW_Skyplane());
 		addSubrenderer( new VESubrenderFW_Shadow());
+		addSubrenderer(new VESubrenderFW_Nuklear());
 	}
 
 
@@ -296,6 +297,7 @@ namespace ve {
 		fenceInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
 		fenceInfo.flags = VK_FENCE_CREATE_SIGNALED_BIT;
 
+		m_overlaySemaphores.resize(MAX_FRAMES_IN_FLIGHT);
 		for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
 			if (vkCreateSemaphore(m_device, &semaphoreInfo, nullptr, &m_imageAvailableSemaphores[i]) != VK_SUCCESS ||
 				vkCreateSemaphore(m_device, &semaphoreInfo, nullptr, &m_renderFinishedSemaphores[i]) != VK_SUCCESS ||
@@ -403,10 +405,12 @@ namespace ve {
 										m_renderFinishedSemaphores[m_currentFrame],
 										m_inFlightFences[m_currentFrame]);
 
-		vh::vhBufTransitionImageLayout(	m_device, m_graphicsQueue, m_commandPool,
-										getSwapChainImage(), VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_ASPECT_COLOR_BIT, 1, 1,
-										VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR);
+		m_overlaySemaphores[m_currentFrame] = m_renderFinishedSemaphores[m_currentFrame];
+	}
 
+
+	void VERendererForward::drawOverlay() {
+		m_overlaySemaphores[m_currentFrame] = m_subrenderOverlay->draw( imageIndex, m_renderFinishedSemaphores[m_currentFrame]);
 	}
 
 
@@ -417,9 +421,12 @@ namespace ve {
 	*/
 	void VERendererForward::presentFrame() {
 
+		vh::vhBufTransitionImageLayout(m_device, m_graphicsQueue, m_commandPool,
+			getSwapChainImage(), VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_ASPECT_COLOR_BIT, 1, 1,
+			VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR);
 
 		VkResult result = vh::vhRenderPresentResult(m_presentQueue, m_swapChain, imageIndex,
-													m_renderFinishedSemaphores[m_currentFrame]);
+													m_overlaySemaphores[m_currentFrame]);
 
 		if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR || m_framebufferResized) {
 			m_framebufferResized = false;

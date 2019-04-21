@@ -49,6 +49,7 @@ namespace ve {
 
 		std::vector<VkSemaphore>	m_imageAvailableSemaphores;			///<sem for waiting for the next swapchain image
 		std::vector<VkSemaphore>	m_renderFinishedSemaphores;			///<sem for signalling that rendering done
+		std::vector<VkSemaphore>	m_overlaySemaphores;				///<sem for signalling that rendering done
 		std::vector<VkFence>		m_inFlightFences;					///<fences for halting the next image render until this one is done
 		size_t						m_currentFrame = 0;					///<int for the fences
 		bool						m_framebufferResized = false;		///<signal that window size is changing
@@ -59,6 +60,7 @@ namespace ve {
 		virtual void initRenderer();						//init the renderer
 		virtual void createSubrenderers();					//create the subrenderers
 		virtual void drawFrame();							//draw one frame
+		virtual void drawOverlay();
 		virtual void presentFrame();						//Present the newly drawn frame
 		virtual void closeRenderer();						//close the renderer
 		virtual void recreateSwapchain();					//new swapchain due to window size change
@@ -74,7 +76,8 @@ namespace ve {
 		virtual VkDescriptorSetLayout	getDescriptorSetLayoutShadow() { return m_descriptorSetLayoutShadow; };
 		///\returns the per frame descriptor set
 		virtual std::vector<VkDescriptorSet> &getDescriptorSetsShadow() { return m_descriptorSetsShadow; };
-
+		///\returns pointer to the swap chain framebuffer vector
+		virtual std::vector<VkFramebuffer> &getSwapChainFrameBuffers() { return m_swapChainFramebuffers;  };
 		///\returns the descriptor pool of the per frame descriptors
 		virtual VkDescriptorPool		getDescriptorPool() { return m_descriptorPool; };
 		///\returns the render pass
