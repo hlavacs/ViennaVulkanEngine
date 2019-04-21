@@ -18,9 +18,9 @@ namespace ve {
 	*/
 	void VEEventListenerNuklear::onFrameEnded(veEvent event) {
 		VESubrenderFW_Nuklear * pSubrender = (VESubrenderFW_Nuklear*)getRendererPointer()->getOverlay();
-		struct nk_context * ctx = pSubrender->getContext();
+		if (pSubrender == nullptr) return;
 
-		nk_glfw3_new_frame();
+		struct nk_context * ctx = pSubrender->getContext();
 
 		/* GUI */
 		if (nk_begin(ctx, "Demo", nk_rect(50, 50, 230, 250),

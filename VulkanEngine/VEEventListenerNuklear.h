@@ -30,8 +30,8 @@ namespace ve {
 
 		struct overlay_settings {
 			float bg_color[4];
-			uint8_t orientation;
-			int zoom;
+			uint8_t orientation = UP;
+			int zoom=0;
 		};
 
 		overlay_settings settings;

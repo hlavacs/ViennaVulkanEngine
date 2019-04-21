@@ -60,7 +60,8 @@ namespace ve {
 		virtual void initRenderer();						//init the renderer
 		virtual void createSubrenderers();					//create the subrenderers
 		virtual void drawFrame();							//draw one frame
-		virtual void drawOverlay();
+		virtual void prepareOverlay();				//prepare to draw the overlay
+		virtual void drawOverlay();					//Draw the overlay (GUI)
 		virtual void presentFrame();						//Present the newly drawn frame
 		virtual void closeRenderer();						//close the renderer
 		virtual void recreateSwapchain();					//new swapchain due to window size change

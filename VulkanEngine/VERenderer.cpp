@@ -68,6 +68,10 @@ namespace ve {
 			m_subrenderShadow->closeSubrenderer();
 			delete m_subrenderShadow;
 		}
+		if (m_subrenderOverlay != nullptr) {
+			m_subrenderOverlay->closeSubrenderer();
+			delete m_subrenderOverlay;
+		}
 	}
 
 	/**

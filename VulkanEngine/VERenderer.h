@@ -68,6 +68,8 @@ namespace ve {
 		///Draw one frame
 		virtual void drawFrame() {};
 		///Draw the overlay (GUI)
+		virtual void prepareOverlay() {};
+		///Draw the overlay (GUI)
 		virtual void drawOverlay() {};
 		///Present the newl drawn frame
 		virtual void presentFrame() {};

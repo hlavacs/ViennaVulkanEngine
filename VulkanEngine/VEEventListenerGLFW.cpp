@@ -112,7 +112,7 @@ namespace ve {
 	*/
 	bool VEEventListenerGLFW::onMouseMove(veEvent event) {
 
-		if (!m_leftButtonClicked) return false;		//only do something if left mouse button is pressed
+		if (!m_rightButtonClicked) return false;		//only do something if left mouse button is pressed
 
 		float x = event.fdata1;
 		float y = event.fdata2;
@@ -166,15 +166,15 @@ namespace ve {
 
 		if (event.idata3 == GLFW_PRESS) {		//just pressed a mouse button
 			m_usePrevCursorPosition = false;
-			if (event.idata1 == GLFW_MOUSE_BUTTON_LEFT)
-				m_leftButtonClicked = true;
+			if (event.idata1 == GLFW_MOUSE_BUTTON_RIGHT)
+				m_rightButtonClicked = true;
 			return true;
 		}
 
 		if (event.idata3 == GLFW_RELEASE) {		//just released a mouse button
 			m_usePrevCursorPosition = false;
-			if (event.idata1 == GLFW_MOUSE_BUTTON_LEFT)
-				m_leftButtonClicked = false;
+			if (event.idata1 == GLFW_MOUSE_BUTTON_RIGHT)
+				m_rightButtonClicked = false;
 			return true;
 		}
 

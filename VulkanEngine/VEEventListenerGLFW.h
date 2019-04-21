@@ -24,7 +24,7 @@ namespace ve {
 
 	protected:
 		bool  m_usePrevCursorPosition = false;			///<Can I use the previous cursor position for moving the camera?
-		bool  m_leftButtonClicked = false;				///<Is the left button currently clicked?
+		bool  m_rightButtonClicked = false;				///<Is the left button currently clicked?
 		float m_cursorPrevX = 0;						///<Previous X position of cursor
 		float m_cursorPrevY = 0;						///<Previous Y position of cursor
 		bool  m_makeScreenshot = false;					///<Should I make a screeshot after frame is done?

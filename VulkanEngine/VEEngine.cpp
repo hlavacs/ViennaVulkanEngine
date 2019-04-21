@@ -423,6 +423,8 @@ namespace ve {
 
 			m_pRenderer->drawFrame();			//draw the next frame
 
+			m_pRenderer->prepareOverlay();
+
 			event.type = VE_EVENT_FRAME_ENDED;	//notify all listeners that the frame ended
 			callListeners(m_dt, event);
 

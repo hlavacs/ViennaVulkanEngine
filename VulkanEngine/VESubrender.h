@@ -82,9 +82,14 @@ namespace ve {
 		///Set the dynamic state of the pipeline - does nothing for the base class
 		virtual void	setDynamicPipelineState(VkCommandBuffer commandBuffer, uint32_t numPass) {};
 
+		//Draw all entities that are managed by this subrenderer
 		virtual void	draw(	VkCommandBuffer commandBuffer, uint32_t imageIndex, uint32_t numPass,
 								VECamera *pCamera, VELight *pLight,
 								std::vector<VkDescriptorSet> descriptorSetsShadow);
+
+		///Prepare to perform draw operation
+		virtual void prepareDraw() {};
+
 		///Perform an arbitrary draw operation
 		///\returns a semaphore signalling when this draw operations has finished
 		virtual VkSemaphore	draw(uint32_t imageIndex, VkSemaphore wait_semaphore) { return VK_NULL_HANDLE; };

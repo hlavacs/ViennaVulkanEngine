@@ -29,6 +29,7 @@ namespace ve {
 
 		virtual void initSubrenderer();
 		virtual void closeSubrenderer();
+		virtual void prepareDraw();
 		virtual void draw(	VkCommandBuffer commandBuffer, uint32_t imageIndex, uint32_t numPass,
 							VECamera *pCamera, VELight *pLight,
 							std::vector<VkDescriptorSet> descriptorSetsShadow) {};

@@ -69,6 +69,10 @@ namespace ve {
 		nk_glfw3_shutdown();
 	}
 
+	void VESubrenderFW_Nuklear::prepareDraw() {
+		nk_glfw3_new_frame();
+	}
+
 	VkSemaphore VESubrenderFW_Nuklear::draw(uint32_t imageIndex, VkSemaphore wait_semaphore) {
 		return nk_glfw3_render(NK_ANTI_ALIASING_ON, imageIndex, wait_semaphore);
 	}

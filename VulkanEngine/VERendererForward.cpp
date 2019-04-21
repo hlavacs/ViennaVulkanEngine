@@ -391,6 +391,7 @@ namespace ve {
 
 			for (auto pSub : m_subrenderers) {
 				if ( i == 0 || pSub->getClass() == VESubrender::VE_SUBRENDERER_CLASS_OBJECT ) {
+					pSub->prepareDraw();
 					pSub->draw(commandBuffer, imageIndex, i, pCamera, pLight, m_descriptorSetsShadow);
 				}
 			}
@@ -409,7 +410,14 @@ namespace ve {
 	}
 
 
+	void VERendererForward::prepareOverlay() {
+		if (m_subrenderOverlay == nullptr) return;
+		m_subrenderOverlay->prepareDraw();
+	}
+
 	void VERendererForward::drawOverlay() {
+		if (m_subrenderOverlay == nullptr) return;
+
 		m_overlaySemaphores[m_currentFrame] = m_subrenderOverlay->draw( imageIndex, m_renderFinishedSemaphores[m_currentFrame]);
 	}
 
