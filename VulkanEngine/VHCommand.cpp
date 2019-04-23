@@ -13,12 +13,15 @@ namespace vh {
 
 	/**
 	* \brief Create a new command pool
+	*
 	* \param[in] physicalDevice Physical Vulkan device
 	* \param[in] device Logical Vulkan device
 	* \param[in] surface Window surface - Needed for finding the right queue families
 	* \param[out] commandPool New command pool for allocating command bbuffers
+	* \returns VK_SUCCESS or a Vulkan error code
+	*
 	*/
-	void vhCmdCreateCommandPool( VkPhysicalDevice physicalDevice, VkDevice device, 
+	VkResult vhCmdCreateCommandPool( VkPhysicalDevice physicalDevice, VkDevice device,
 								VkSurfaceKHR surface, VkCommandPool *commandPool) {
 		QueueFamilyIndices queueFamilyIndices = vhDevFindQueueFamilies(physicalDevice, surface);
 
@@ -26,15 +29,14 @@ namespace vh {
 		poolInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
 		poolInfo.queueFamilyIndex = queueFamilyIndices.graphicsFamily;
 
-		if (vkCreateCommandPool(device, &poolInfo, nullptr, commandPool) != VK_SUCCESS) {
-			throw std::runtime_error("failed to create graphics command pool!");
-		}
+		return vkCreateCommandPool(device, &poolInfo, nullptr, commandPool);
 	}
 
 	//-------------------------------------------------------------------------------------------------------
 
 	/**
 	* \brief Begin submitting a single time command
+	*
 	* \param[in] device Logical Vulkan device
 	* \param[in] commandPool Command pool for allocating command bbuffers
 	* \returns a new VkCommandBuffer to record commands into
@@ -53,7 +55,8 @@ namespace vh {
 		beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
 		beginInfo.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
 
-		vkBeginCommandBuffer(commandBuffer, &beginInfo);
+		if (vkBeginCommandBuffer(commandBuffer, &beginInfo) != VK_SUCCESS)
+			return VK_NULL_HANDLE;
 
 		return commandBuffer;
 	}
@@ -61,19 +64,25 @@ namespace vh {
 
 	/**
 	* \brief End recording into a single time command buffer and submit it
+	*
 	* \param[in] device Logical Vulkan device
 	* \param[in] graphicsQueue Queue to submit the buffer to
 	* \param[in] commandPool Give back the command buffer to the pool
 	* \param[in] commandBuffer The ready to be used command buffer
+	* \returns VK_SUCCESS or a Vulkan error code
+	*
 	*/
-	void vhCmdEndSingleTimeCommands(VkDevice device, VkQueue graphicsQueue, VkCommandPool commandPool,
+	VkResult vhCmdEndSingleTimeCommands(VkDevice device, VkQueue graphicsQueue, VkCommandPool commandPool,
 									VkCommandBuffer commandBuffer) {
-		vhCmdEndSingleTimeCommands(device, graphicsQueue, commandPool, commandBuffer, VK_NULL_HANDLE, VK_NULL_HANDLE, VK_NULL_HANDLE );
+
+		return vhCmdEndSingleTimeCommands(	device, graphicsQueue, commandPool, commandBuffer, 
+											VK_NULL_HANDLE, VK_NULL_HANDLE, VK_NULL_HANDLE );
 	}
 
 
 	/**
 	* \brief End recording into a single time command buffer and submit it
+	*
 	* \param[in] device Logical Vulkan device
 	* \param[in] graphicsQueue Queue to submit the buffer to
 	* \param[in] commandPool Give back the command buffer to the pool
@@ -81,11 +90,13 @@ namespace vh {
 	* \param[in] waitSemaphore A semaphore to wait for before submitting
 	* \param[in] signalSemaphore Signal this semaphore after buffer is done
 	* \param[in] waitFence Signal to this fence after buffer is done
+	* \returns VK_SUCCESS or a Vulkan error code
+	*
 	*/
-	void vhCmdEndSingleTimeCommands(VkDevice device, VkQueue graphicsQueue, VkCommandPool commandPool,
+	VkResult vhCmdEndSingleTimeCommands(VkDevice device, VkQueue graphicsQueue, VkCommandPool commandPool,
 									VkCommandBuffer commandBuffer,
 									VkSemaphore waitSemaphore, VkSemaphore signalSemaphore, VkFence waitFence ) {
-		vkEndCommandBuffer(commandBuffer);
+		VHCHECKRESULT( vkEndCommandBuffer(commandBuffer) );
 
 		VkSubmitInfo submitInfo = {};
 		submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
@@ -111,10 +122,12 @@ namespace vh {
 			vkResetFences(device, 1, &waitFence);
 		}
 
-		vkQueueSubmit(graphicsQueue, 1, &submitInfo, waitFence);
-		vkQueueWaitIdle(graphicsQueue);
+		VHCHECKRESULT( vkQueueSubmit(graphicsQueue, 1, &submitInfo, waitFence) );
+		VHCHECKRESULT( vkQueueWaitIdle(graphicsQueue) );
 
 		vkFreeCommandBuffers(device, commandPool, 1, &commandBuffer);
+
+		return VK_SUCCESS;
 	}
 
 

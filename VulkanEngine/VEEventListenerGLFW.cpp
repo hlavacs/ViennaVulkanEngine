@@ -133,7 +133,7 @@ namespace ve {
 		VECamera *pCamera = getSceneManagerPointer()->getCamera();
 		VESceneNode *pParent = pCamera->m_parent;
 
-		float slow = 1.0;		//camera rotation speed
+		float slow = 0.5;		//camera rotation speed
 
 		//dx
 		float angledx = slow*(float)event.dt * dx;

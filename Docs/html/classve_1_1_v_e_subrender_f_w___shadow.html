@@ -140,6 +140,12 @@ virtual void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" hr
 virtual void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_subrender.html#a1094d8a41700a01118da9426e01160e3">setDynamicPipelineState</a> (VkCommandBuffer commandBuffer, uint32_t numPass)</td></tr>
 <tr class="memdesc:a1094d8a41700a01118da9426e01160e3 inherit pub_methods_classve_1_1_v_e_subrender"><td class="mdescLeft">&#160;</td><td class="mdescRight">Set the dynamic state of the pipeline - does nothing for the base class. <br /></td></tr>
 <tr class="separator:a1094d8a41700a01118da9426e01160e3 inherit pub_methods_classve_1_1_v_e_subrender"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a33616d505c368ef1d2284fa918177064 inherit pub_methods_classve_1_1_v_e_subrender"><td class="memItemLeft" align="right" valign="top"><a id="a33616d505c368ef1d2284fa918177064"></a>
+virtual void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_subrender.html#a33616d505c368ef1d2284fa918177064">prepareDraw</a> ()</td></tr>
+<tr class="memdesc:a33616d505c368ef1d2284fa918177064 inherit pub_methods_classve_1_1_v_e_subrender"><td class="mdescLeft">&#160;</td><td class="mdescRight">Prepare to perform draw operation. <br /></td></tr>
+<tr class="separator:a33616d505c368ef1d2284fa918177064 inherit pub_methods_classve_1_1_v_e_subrender"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ade1dada5a7f4e7d2449b0ba148dc75f1 inherit pub_methods_classve_1_1_v_e_subrender"><td class="memItemLeft" align="right" valign="top">virtual VkSemaphore&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_subrender.html#ade1dada5a7f4e7d2449b0ba148dc75f1">draw</a> (uint32_t imageIndex, VkSemaphore wait_semaphore)</td></tr>
+<tr class="separator:ade1dada5a7f4e7d2449b0ba148dc75f1 inherit pub_methods_classve_1_1_v_e_subrender"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a2cc13f57ad28631b93998fa65b47fc77 inherit pub_methods_classve_1_1_v_e_subrender"><td class="memItemLeft" align="right" valign="top">virtual void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_subrender.html#a2cc13f57ad28631b93998fa65b47fc77">drawEntity</a> (VkCommandBuffer commandBuffer, uint32_t imageIndex, <a class="el" href="classve_1_1_v_e_entity.html">VEEntity</a> *entity)</td></tr>
 <tr class="memdesc:a2cc13f57ad28631b93998fa65b47fc77 inherit pub_methods_classve_1_1_v_e_subrender"><td class="mdescLeft">&#160;</td><td class="mdescRight">Draw one entity.  <a href="classve_1_1_v_e_subrender.html#a2cc13f57ad28631b93998fa65b47fc77">More...</a><br /></td></tr>
 <tr class="separator:a2cc13f57ad28631b93998fa65b47fc77 inherit pub_methods_classve_1_1_v_e_subrender"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -174,7 +180,8 @@ Additional Inherited Members</h2></td></tr>
 <a class="el" href="classve_1_1_v_e_subrender.html#a98064e456a838192bbcedf9b6c529e89a5593d7a8e6abf15fc94bb4a19efcd271">VE_SUBRENDERER_TYPE_SKYPLANE</a>, 
 <a class="el" href="classve_1_1_v_e_subrender.html#a98064e456a838192bbcedf9b6c529e89a4adbf283af235ebdc5cf2ae5219485c8">VE_SUBRENDERER_TYPE_TERRAIN_WITH_HEIGHTMAP</a>, 
 <br />
-&#160;&#160;<a class="el" href="classve_1_1_v_e_subrender.html#a98064e456a838192bbcedf9b6c529e89a45580fcebca076beb93fb08941b7d1bb">VE_SUBRENDERER_TYPE_SHADOW</a>
+&#160;&#160;<a class="el" href="classve_1_1_v_e_subrender.html#a98064e456a838192bbcedf9b6c529e89a63ad23f5092af7839a8154ccb5ee5ca8">VE_SUBRENDERER_TYPE_NUKLEAR</a>, 
+<a class="el" href="classve_1_1_v_e_subrender.html#a98064e456a838192bbcedf9b6c529e89a45580fcebca076beb93fb08941b7d1bb">VE_SUBRENDERER_TYPE_SHADOW</a>
 <br />
  }</td></tr>
 <tr class="memdesc:a98064e456a838192bbcedf9b6c529e89"><td class="mdescLeft">&#160;</td><td class="mdescRight">enums the subrenderers that are registered  <a href="classve_1_1_v_e_subrender.html#a98064e456a838192bbcedf9b6c529e89">More...</a><br /></td></tr>
@@ -460,7 +467,7 @@ std::vector&lt; <a class="el" href="classve_1_1_v_e_entity.html">VEEntity</a> * 
 </div><!-- contents -->
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>
-Generated on Fri Apr 19 2019 20:48:00 for Vienna Vulkan Engine by &#160;<a href="http://www.doxygen.org/index.html">
+Generated on Tue Apr 23 2019 14:29:08 for Vienna Vulkan Engine by &#160;<a href="http://www.doxygen.org/index.html">
 <img class="footer" src="doxygen.png" alt="doxygen"/>
 </a> 1.8.15
 </small></address>

@@ -1,7 +1,7 @@
 /**
 The Vienna Vulkan Engine
 VEEventListenerGLFW.h
-Purpose: Declare VEEventListenerGLFW class
+Purpose: Declare VEEventListenerNuklear class
 
 @author Helmut Hlavacs
 @version 1.0
@@ -14,10 +14,9 @@ namespace ve {
 
 	/**
 	*
-	* \brief An event listener for GLFW events
+	* \brief Example Nuklear GUI
 	*
-	* This is the default event listener for GLFW events. Basically it steers the standard camera around,
-	* just as you would expect from a first person shooter.
+	* This is an example for a Nuklear GUI, implemented in an event listener
 	*
 	*/
 	class VEEventListenerNuklear : public VEEventListener {
@@ -26,21 +25,39 @@ namespace ve {
 		virtual void onFrameEnded(veEvent event);
 
 	public:
-		enum { UP, DOWN };
+		enum { UP, DOWN };						///<example data
 
-		struct overlay_settings {
-			float bg_color[4];
-			uint8_t orientation = UP;
-			int zoom=0;
-		};
-
-		overlay_settings settings;
-		struct nk_color background;
+		float			m_bg_color[4];			///<example data
+		uint8_t			m_orientation = UP;		///<example data
+		int				m_zoom=0;				///<example data
+		struct nk_color m_background;			///<example data
 
 		///Constructor of class VEEventListenerNuklear
 		VEEventListenerNuklear(std::string name) : VEEventListener(name) { };
 		///Destructor of class VEEventListenerNuklear
 		virtual ~VEEventListenerNuklear() {};
 	};
+
+
+	/**
+	*
+	* \brief This event listener is used for displaying error messages using Nuklear
+	*
+	* After a fatal error, this event listener is used to display the error message
+	* before the engine closes down.
+	*
+	*/
+	class VEEventListenerNuklearError : public VEEventListener {
+
+	protected:
+		virtual void onFrameEnded(veEvent event);
+
+	public:
+		///Constructor of class VEEventListenerNuklearError
+		VEEventListenerNuklearError(std::string name) : VEEventListener(name) { };
+		///Destructor of class VEEventListenerNuklearError
+		virtual ~VEEventListenerNuklearError() {};
+	};
+
 }
 

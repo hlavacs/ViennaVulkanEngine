@@ -13,15 +13,18 @@ namespace vh {
 	//-------------------------------------------------------------------------------------------------------
 	/**
 	* \brief Create a Vulkan buffer
+	*
 	* \param[in] allocator VMA allocator
 	* \param[in] size Size of the buffer in bytes
 	* \param[in] usage Buffer usage flags
 	* \param[in] vmaUsage Usage for VMA 
 	* \param[out] buffer The created buffer
 	* \param[out] allocation The VMA allocation
+	* \returns VK_SUCCESS or a Vulkan error code
+	*
 	*/
-	void vhBufCreateBuffer(	VmaAllocator allocator, VkDeviceSize size, VkBufferUsageFlags usage,
-							VmaMemoryUsage vmaUsage, VkBuffer *buffer, VmaAllocation *allocation) {
+	VkResult vhBufCreateBuffer(	VmaAllocator allocator, VkDeviceSize size, VkBufferUsageFlags usage,
+								VmaMemoryUsage vmaUsage, VkBuffer *buffer, VmaAllocation *allocation) {
 		VkBufferCreateInfo bufferInfo = {};
 		bufferInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
 		bufferInfo.size = size;
@@ -31,20 +34,23 @@ namespace vh {
 		VmaAllocationCreateInfo allocInfo = {};
 		allocInfo.usage = vmaUsage;					//VMA_MEMORY_USAGE_GPU_ONLY;
 
-		vmaCreateBuffer(allocator, &bufferInfo, &allocInfo, buffer, allocation, nullptr);
+		return vmaCreateBuffer(allocator, &bufferInfo, &allocInfo, buffer, allocation, nullptr);
 	}
 
 
 	/**
 	* \brief Copy a buffer from a source buffer to a destination buffer
+	*
 	* \param[in] device Logical Vulkan device
 	* \param[in] graphicsQueue Device queue for submitting commands
 	* \param[in] commandPool Command pool for allocating command bbuffers
 	* \param[in] srcBuffer Source buffer
 	* \param[in] dstBuffer Destination buffer
 	* \param[in] size Size in bytes of the data to be copied
+	* \returns VK_SUCCESS or a Vulkan error code
+	*
 	*/
-	void vhBufCopyBuffer(VkDevice device, VkQueue graphicsQueue, VkCommandPool commandPool, 
+	VkResult vhBufCopyBuffer(VkDevice device, VkQueue graphicsQueue, VkCommandPool commandPool,
 						VkBuffer srcBuffer, VkBuffer dstBuffer, VkDeviceSize size) {
 
 		VkCommandBuffer commandBuffer = vh::vhCmdBeginSingleTimeCommands(device, commandPool);
@@ -53,12 +59,13 @@ namespace vh {
 		copyRegion.size = size;
 		vkCmdCopyBuffer(commandBuffer, srcBuffer, dstBuffer, 1, &copyRegion);
 
-		vh::vhCmdEndSingleTimeCommands(device, graphicsQueue, commandPool, commandBuffer);
+		return vhCmdEndSingleTimeCommands(device, graphicsQueue, commandPool, commandBuffer);
 	}
 
 	//-------------------------------------------------------------------------------------------------------
 	/**
 	* \brief Create a view for a Vulkan image
+	*
 	* \param[in] device Logical Vulkan device 
 	* \param[in] image The image for which the view is created
 	* \param[in] format Format of the image
@@ -66,6 +73,8 @@ namespace vh {
 	* \param[in] layerCount Number of image layers
 	* \param[in] aspectFlags Flags for how to use the view
 	* \param[out] imageView The created image view
+	* \returns VK_SUCCESS or a Vulkan error code
+	*
 	*/
 	VkResult vhBufCreateImageView(	VkDevice device, VkImage image, VkFormat format, VkImageViewType viewtype,
 									uint32_t layerCount, 
@@ -89,6 +98,7 @@ namespace vh {
 
 	/**
 	* \brief Create a depth image and a view to be used as depth map
+	*
 	* \param[in] device Logical Vulkan device
 	* \param[in] allocator VMA allocator
 	* \param[in] graphicsQueue Device queue for submitting commands
@@ -98,27 +108,31 @@ namespace vh {
 	* \param[out] depthImage Depth image to be used as depth map
 	* \param[out] depthImageAllocation VMA allocation info
 	* \param[out] depthImageView View of the depth image
+	* \returns VK_SUCCESS or a Vulkan error code
+	*
 	*/
-	void vhBufCreateDepthResources(	VkDevice device, VmaAllocator allocator, VkQueue graphicsQueue,
+	VkResult vhBufCreateDepthResources(	VkDevice device, VmaAllocator allocator, VkQueue graphicsQueue,
 									VkCommandPool commandPool, VkExtent2D extent, VkFormat depthFormat,
 									VkImage *depthImage, VmaAllocation *depthImageAllocation, VkImageView * depthImageView) {
 
-		vhBufCreateImage(allocator, extent.width, extent.height, 1, 1,
-						depthFormat, VK_IMAGE_TILING_OPTIMAL, 
-						VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT, 0,
-						depthImage, depthImageAllocation);
+		
+		VHCHECKRESULT( vhBufCreateImage(allocator, extent.width, extent.height, 1, 1,
+										depthFormat, VK_IMAGE_TILING_OPTIMAL,
+										VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT, 0,
+										depthImage, depthImageAllocation) );
 
-		vh::vhBufCreateImageView(device, *depthImage, depthFormat, VK_IMAGE_VIEW_TYPE_2D, 1, VK_IMAGE_ASPECT_DEPTH_BIT, depthImageView);
+		VHCHECKRESULT( vhBufCreateImageView(device, *depthImage, depthFormat, VK_IMAGE_VIEW_TYPE_2D, 1, VK_IMAGE_ASPECT_DEPTH_BIT, depthImageView) );
 
-		vh::vhBufTransitionImageLayout( device, graphicsQueue, commandPool, 
-										*depthImage, depthFormat, VK_IMAGE_ASPECT_DEPTH_BIT, 1, 1,
-										VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL);
+		return vhBufTransitionImageLayout(	device, graphicsQueue, commandPool, 
+											*depthImage, depthFormat, VK_IMAGE_ASPECT_DEPTH_BIT, 1, 1,
+											VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL);
 	}
 
 
 	//-------------------------------------------------------------------------------------------------------
 	/**
 	* \brief Create a Vulkan image using VMA
+	*
 	* \param[in] allocator Th VMA allocator
 	* \param[in] width Width of the image to be created
 	* \param[in] height Height of the image to be created
@@ -130,8 +144,10 @@ namespace vh {
 	* \param[in] flags Create flags
 	* \param[out] image The new image
 	* \param[out] allocation VMA allocation information
+	* \returns VK_SUCCESS or a Vulkan error code
+	*
 	*/
-	void vhBufCreateImage(	VmaAllocator allocator, uint32_t width, uint32_t height,
+	VkResult vhBufCreateImage(	VmaAllocator allocator, uint32_t width, uint32_t height,
 							uint32_t miplevels, uint32_t arrayLayers,
 							VkFormat format, VkImageTiling tiling, VkImageUsageFlags usage, 
 							VkImageCreateFlags flags,
@@ -156,7 +172,7 @@ namespace vh {
 		VmaAllocationCreateInfo allocInfo = {};
 		allocInfo.usage = VMA_MEMORY_USAGE_GPU_ONLY;
 
-		vmaCreateImage(allocator, &imageInfo, &allocInfo, image, allocation, nullptr);
+		return vmaCreateImage(allocator, &imageInfo, &allocInfo, image, allocation, nullptr);
 	}
 
 
@@ -170,6 +186,7 @@ namespace vh {
 
 	/**
 	* \brief Copy a buffer to an image (for uploading via a staging buffer)
+	*
 	* \param[in] device Logical Vulkan device
 	* \param[in] graphicsQueue Device queue for submitting commands
 	* \param[in] commandPool Command pool for allocating command buffers
@@ -178,8 +195,10 @@ namespace vh {
 	* \param[in] layerCount Number of layers in the image
 	* \param[in] width Image width
 	* \param[in] height Image height
+	* \returns VK_SUCCESS or a Vulkan error code
+	*
 	*/
-	void vhBufCopyBufferToImage(VkDevice device, VkQueue graphicsQueue, VkCommandPool commandPool,
+	VkResult vhBufCopyBufferToImage(VkDevice device, VkQueue graphicsQueue, VkCommandPool commandPool,
 								VkBuffer buffer, VkImage image, uint32_t layerCount, uint32_t width, uint32_t height) {
 
 		std::vector<VkBufferImageCopy> regions;
@@ -200,11 +219,12 @@ namespace vh {
 		};
 		regions.push_back(region);
 
-		vhBufCopyBufferToImage(device, graphicsQueue, commandPool, buffer, image, regions, width, height);
+		return vhBufCopyBufferToImage(device, graphicsQueue, commandPool, buffer, image, regions, width, height);
 	}
 
 	/**
 	* \brief Wrapper for copying a buffer to an image, manages queue submission
+	*
 	* \param[in] device Logical Vulkan device
 	* \param[in] graphicsQueue Device queue for submitting commands
 	* \param[in] commandPool Command pool for allocating command buffers
@@ -213,8 +233,10 @@ namespace vh {
 	* \param[in] regions The regions to be copied
 	* \param[in] width Width of the image
 	* \param[in] height Height of the image
+	* \returns VK_SUCCESS or a Vulkan error code
+	*
 	*/
-	void vhBufCopyBufferToImage(VkDevice device, VkQueue graphicsQueue, VkCommandPool commandPool,
+	VkResult vhBufCopyBufferToImage(VkDevice device, VkQueue graphicsQueue, VkCommandPool commandPool,
 								VkBuffer buffer, VkImage image, std::vector<VkBufferImageCopy> &regions,
 								uint32_t width, uint32_t height) {
 
@@ -222,11 +244,12 @@ namespace vh {
 
 		vkCmdCopyBufferToImage(commandBuffer, buffer, image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, (uint32_t)regions.size(), regions.data());
 
-		vh::vhCmdEndSingleTimeCommands(device, graphicsQueue, commandPool, commandBuffer);
+		return vhCmdEndSingleTimeCommands(device, graphicsQueue, commandPool, commandBuffer);
 	}
 
 	/**
 	* \brief Copy a VKImage to a VKBuffer
+	*
 	* \param[in] device Logical Vulkan device
 	* \param[in] graphicsQueue Device queue for submitting commands
 	* \param[in] commandPool Command pool for allocating command buffers
@@ -236,8 +259,10 @@ namespace vh {
 	* \param[in] layerCount Number of image layers
 	* \param[in] width Ímage width
 	* \param[in] height Image height
+	* \returns VK_SUCCESS or a Vulkan error code
+	*
 	*/
-	void vhBufCopyImageToBuffer(VkDevice device, VkQueue graphicsQueue, VkCommandPool commandPool,
+	VkResult vhBufCopyImageToBuffer(VkDevice device, VkQueue graphicsQueue, VkCommandPool commandPool,
 								VkImage image, VkImageAspectFlagBits aspect, VkBuffer buffer,
 								uint32_t layerCount, uint32_t width, uint32_t height) {
 
@@ -259,12 +284,13 @@ namespace vh {
 		};
 		regions.push_back(region);
 
-		vh::vhBufCopyImageToBuffer(device, graphicsQueue, commandPool, image, buffer, regions, width, height);
+		return vhBufCopyImageToBuffer(device, graphicsQueue, commandPool, image, buffer, regions, width, height);
 	}
 
 
 	/**
 	* \brief Copy a VKImage to a VKBuffer
+	*
 	* \param[in] device Logical Vulkan device
 	* \param[in] graphicsQueue Device queue for submitting commands
 	* \param[in] commandPool Command pool for allocating command buffers
@@ -273,8 +299,10 @@ namespace vh {
 	* \param[in] regions Copy regions detailing the image parts that should be copied
 	* \param[in] width Ímage width
 	* \param[in] height Image height
+	* \returns VK_SUCCESS or a Vulkan error code
+	*
 	*/
-	void vhBufCopyImageToBuffer(VkDevice device, VkQueue graphicsQueue, VkCommandPool commandPool,
+	VkResult vhBufCopyImageToBuffer(VkDevice device, VkQueue graphicsQueue, VkCommandPool commandPool,
 							VkImage image, VkBuffer buffer, std::vector<VkBufferImageCopy> &regions,
 							uint32_t width, uint32_t height ) {
 
@@ -282,7 +310,7 @@ namespace vh {
 
 		vkCmdCopyImageToBuffer(commandBuffer, image, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, buffer, (uint32_t)regions.size(), regions.data());
 
-		vh::vhCmdEndSingleTimeCommands(device, graphicsQueue, commandPool, commandBuffer);
+		return vhCmdEndSingleTimeCommands(device, graphicsQueue, commandPool, commandBuffer);
 	}
 
 
@@ -291,6 +319,7 @@ namespace vh {
 	//
 	/**
 	* \brief Transition the image layout, causes a pipeline barrier
+	*
 	* \param[in] device Logical Vulkan device
 	* \param[in] graphicsQueue Device queue for submitting commands
 	* \param[in] commandPool Command pool for allocating command buffers
@@ -301,24 +330,27 @@ namespace vh {
 	* \param[in] layerCount Number of image layers
 	* \param[in] oldLayout Old layout of the image
 	* \param[in] newLayout The layout should be transitioned to this new layout
+	* \returns VK_SUCCESS or a Vulkan error code
+	*
 	*/
-	void vhBufTransitionImageLayout(VkDevice device, VkQueue graphicsQueue, VkCommandPool commandPool,
+	VkResult vhBufTransitionImageLayout(VkDevice device, VkQueue graphicsQueue, VkCommandPool commandPool,
 		VkImage image, VkFormat format, VkImageAspectFlagBits aspect,
 		uint32_t miplevels, uint32_t layerCount,
 		VkImageLayout oldLayout, VkImageLayout newLayout) {
 
 		VkCommandBuffer commandBuffer = vhCmdBeginSingleTimeCommands(device, commandPool);
 
-		vhBufTransitionImageLayout( device, graphicsQueue, commandBuffer, image, 
-									format, aspect, miplevels, layerCount,
-									oldLayout, newLayout );
+		VHCHECKRESULT( vhBufTransitionImageLayout(	device, graphicsQueue, commandBuffer, image,
+													format, aspect, miplevels, layerCount,
+													oldLayout, newLayout ) );
 
-		vhCmdEndSingleTimeCommands(device, graphicsQueue, commandPool, commandBuffer);
+		return vhCmdEndSingleTimeCommands(device, graphicsQueue, commandPool, commandBuffer);
 	}
 
 
 	/**
 	* \brief Transition the image layout, causes a pipeline barrier
+	*
 	* \param[in] device Logical Vulkan device
 	* \param[in] graphicsQueue Device queue for submitting commands
 	* \param[in] commandBuffer Command buffer to record this operation into
@@ -329,12 +361,14 @@ namespace vh {
 	* \param[in] layerCount Number of image layers
 	* \param[in] oldLayout Old layout of the image
 	* \param[in] newLayout The layout should be transitioned to this new layout
+	* \returns VK_SUCCESS or a Vulkan error code
+	*
 	*/
-	void vhBufTransitionImageLayout(VkDevice device, VkQueue graphicsQueue, 
-			VkCommandBuffer commandBuffer,
-			VkImage image, VkFormat format, VkImageAspectFlagBits aspect,
-			uint32_t miplevels, uint32_t layerCount,
-			VkImageLayout oldLayout, VkImageLayout newLayout) {
+	VkResult vhBufTransitionImageLayout(VkDevice device, VkQueue graphicsQueue,
+										VkCommandBuffer commandBuffer,
+										VkImage image, VkFormat format, VkImageAspectFlagBits aspect,
+										uint32_t miplevels, uint32_t layerCount,
+										VkImageLayout oldLayout, VkImageLayout newLayout) {
 
 		VkImageMemoryBarrier barrier = {};
 		barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
@@ -437,7 +471,7 @@ namespace vh {
 			destinationStage = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
 		}
 		else {
-			throw std::invalid_argument("unsupported layout transition!");
+			return VK_INCOMPLETE;
 		}
 
 		vkCmdPipelineBarrier(
@@ -449,6 +483,7 @@ namespace vh {
 			1, &barrier
 		);
 
+		return VK_SUCCESS;
 	}
 
 	//-------------------------------------------------------------------------
@@ -457,6 +492,7 @@ namespace vh {
 
 	/**
 	* \brief Create a texture image from multiple files
+	*
 	* \param[in] device Logical Vulkan device
 	* \param[in] allocator The VMA allocator
 	* \param[in] graphicsQueue Device queue for submitting commands
@@ -467,8 +503,10 @@ namespace vh {
 	* \param[out] textureImage The new image
 	* \param[out] textureImageAllocation The VMA allocation info
 	* \param[out] extent The extent of the loaded image
+	* \returns VK_SUCCESS or a Vulkan error code
+	*
 	*/
-	void vhBufCreateTextureImage(VkDevice device, VmaAllocator allocator, VkQueue graphicsQueue, VkCommandPool commandPool,
+	VkResult vhBufCreateTextureImage(VkDevice device, VmaAllocator allocator, VkQueue graphicsQueue, VkCommandPool commandPool,
 								std::string basedir, std::vector<std::string> texNames, VkImageCreateFlags flags,
 								VkImage *textureImage, VmaAllocation *textureImageAllocation, VkExtent2D *extent) {
 
@@ -487,26 +525,26 @@ namespace vh {
 			imageData[i].pixels = stbi_load(filename.c_str(), &imageData[i].texWidth, &imageData[i].texHeight, &imageData[i].texChannels, STBI_rgb_alpha);
 
 			if (imageData[i].pixels == nullptr) {
-				throw std::runtime_error("Error: Could not load cubemap file " + filename + "!");
-				return;
+				return VK_INCOMPLETE;
 			}
 
 			imageData[i].imageSize += imageData[i].texWidth * imageData[i].texHeight * 4;
 			imageSize += imageData[i].imageSize;
 
 			if (!imageData[i].pixels) {
-				throw std::runtime_error("failed to load texture image!");
+				return VK_INCOMPLETE;
 			}
 		}
 
 		VkBuffer stagingBuffer;
 		VmaAllocation stagingBufferAllocation;
-		vh::vhBufCreateBuffer(	allocator, imageSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VMA_MEMORY_USAGE_CPU_ONLY, 
-								&stagingBuffer, &stagingBufferAllocation);
+		VHCHECKRESULT( vhBufCreateBuffer(	allocator, imageSize, 
+											VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VMA_MEMORY_USAGE_CPU_ONLY,
+											&stagingBuffer, &stagingBufferAllocation ) );
 
 		gli::byte* mappedData;
 		gli::byte* memPointer;
-		vmaMapMemory(allocator, stagingBufferAllocation, (void**)&mappedData);
+		VHCHECKRESULT( vmaMapMemory(allocator, stagingBufferAllocation, (void**)&mappedData) );
 		memPointer = mappedData;
 		for ( auto image : imageData ) {
 			memcpy(memPointer, image.pixels, static_cast<size_t>(image.imageSize));
@@ -541,30 +579,37 @@ namespace vh {
 		}
 
 
-		vh::vhBufCreateImage(	allocator, imageData[0].texWidth, imageData[0].texHeight, 1, (uint32_t)imageData.size(),
-								VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_TILING_OPTIMAL,
-								VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
-								flags, textureImage, textureImageAllocation);
+		VHCHECKRESULT( vhBufCreateImage(allocator, imageData[0].texWidth, imageData[0].texHeight, 1, (uint32_t)imageData.size(),
+										VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_TILING_OPTIMAL,
+										VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
+										flags, textureImage, textureImageAllocation ) );
 
-		vhBufTransitionImageLayout(device, graphicsQueue, commandPool, *textureImage,
-			VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_ASPECT_COLOR_BIT, mipLevels, (uint32_t)imageData.size(),
-			VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
+		VHCHECKRESULT(	vhBufTransitionImageLayout(	device, graphicsQueue, commandPool, *textureImage,
+													VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_ASPECT_COLOR_BIT, mipLevels, 
+													(uint32_t)imageData.size(),
+													VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL ) );
 
-		vhBufCopyBufferToImage(device, graphicsQueue, commandPool, stagingBuffer,
-			*textureImage, bufferCopyRegions,
-			static_cast<uint32_t>(imageData[0].texWidth), static_cast<uint32_t>(imageData[0].texHeight));
+		VHCHECKRESULT( vhBufCopyBufferToImage(	device, graphicsQueue, commandPool, stagingBuffer,
+												*textureImage, bufferCopyRegions,
+												static_cast<uint32_t>(imageData[0].texWidth), 
+												static_cast<uint32_t>(imageData[0].texHeight) ));
 
-		vhBufTransitionImageLayout(device, graphicsQueue, commandPool, *textureImage,
-			VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_ASPECT_COLOR_BIT, mipLevels, (uint32_t)imageData.size(),
-			VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+		VHCHECKRESULT( vhBufTransitionImageLayout(device, graphicsQueue, commandPool, *textureImage,
+												VK_FORMAT_R8G8B8A8_UNORM, 
+												VK_IMAGE_ASPECT_COLOR_BIT, mipLevels, 
+												(uint32_t)imageData.size(),
+												VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 
+												VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL ) );
 
 
 		vmaDestroyBuffer(allocator, stagingBuffer, stagingBufferAllocation);
+		return VK_SUCCESS;
 	}
 
 
 	/**
-	* \brief
+	* \brief Create an image that is also a cubemap
+	*
 	* \param[in] device Logical Vulkan device
 	* \param[in] allocator VMA allocator
 	* \param[in] graphicsQueue Device queue for submitting commands
@@ -573,8 +618,10 @@ namespace vh {
 	* \param[out] textureImage The new image
 	* \param[out] textureImageAllocation VMA allocation information
 	* \param[out] pFormat The image format (fixed)
+	* \returns VK_SUCCESS or a Vulkan error code
+	*
 	*/
-	void vhBufCreateTexturecubeImage(VkDevice device, VmaAllocator allocator, VkQueue graphicsQueue, VkCommandPool commandPool,
+	VkResult vhBufCreateTexturecubeImage(VkDevice device, VmaAllocator allocator, VkQueue graphicsQueue, VkCommandPool commandPool,
 									gli::texture_cube &texCube, VkImage *textureImage, VmaAllocation *textureImageAllocation, 
 									VkFormat *pFormat) {
 
@@ -615,19 +662,19 @@ namespace vh {
 
 		VkBuffer stagingBuffer;
 		VmaAllocation stagingBufferAllocation;
-		vhBufCreateBuffer(	allocator, imageSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, 
-							VMA_MEMORY_USAGE_CPU_ONLY, &stagingBuffer, &stagingBufferAllocation);
+		VHCHECKRESULT( vhBufCreateBuffer(	allocator, imageSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
+											VMA_MEMORY_USAGE_CPU_ONLY, &stagingBuffer, &stagingBufferAllocation ) );
 
 		void* mappedData;
 		vmaMapMemory(allocator, stagingBufferAllocation, &mappedData);
 		memcpy(mappedData, pixels, static_cast<size_t>(imageSize));
 		vmaUnmapMemory(allocator, stagingBufferAllocation);
 
-		vhBufCreateImage(	allocator, texWidth, texHeight, mipLevels, 6, *pFormat, 
-							VK_IMAGE_TILING_OPTIMAL,
-							VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
-							VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT,
-							textureImage, textureImageAllocation);
+		VHCHECKRESULT( vhBufCreateImage(allocator, texWidth, texHeight, mipLevels, 6, *pFormat,
+										VK_IMAGE_TILING_OPTIMAL,
+										VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
+										VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT,
+										textureImage, textureImageAllocation ) );
 
 		// Setup buffer copy regions for each face including all of it's miplevels
 		std::vector<VkBufferImageCopy> bufferCopyRegions;
@@ -654,29 +701,34 @@ namespace vh {
 			}
 		}
 
-		vhBufTransitionImageLayout(	device, graphicsQueue, commandPool, *textureImage, 
-									*pFormat, VK_IMAGE_ASPECT_COLOR_BIT, mipLevels, 6,
-									VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
+		VHCHECKRESULT( vhBufTransitionImageLayout(	device, graphicsQueue, commandPool, *textureImage,
+													*pFormat, VK_IMAGE_ASPECT_COLOR_BIT, mipLevels, 6,
+													VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL));
 
-		vhBufCopyBufferToImage(	device, graphicsQueue, commandPool, stagingBuffer, 
-								*textureImage, bufferCopyRegions, 
-								static_cast<uint32_t>(texWidth), static_cast<uint32_t>(texHeight));
+		VHCHECKRESULT(vhBufCopyBufferToImage(	device, graphicsQueue, commandPool, stagingBuffer,
+												*textureImage, bufferCopyRegions, 
+												static_cast<uint32_t>(texWidth), static_cast<uint32_t>(texHeight)));
 
-		vhBufTransitionImageLayout(	device, graphicsQueue, commandPool, *textureImage, 
-									*pFormat, VK_IMAGE_ASPECT_COLOR_BIT, mipLevels, 6,
-									VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+		VHCHECKRESULT(vhBufTransitionImageLayout(	device, graphicsQueue, commandPool, *textureImage,
+													*pFormat, VK_IMAGE_ASPECT_COLOR_BIT, mipLevels, 6,
+													VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 
+													VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL));
 
 		vmaDestroyBuffer(allocator, stagingBuffer, stagingBufferAllocation);
+		return VK_SUCCESS;
 	}
 
 
 
 	/**
 	* \brief Create an image sampler for samplign textures in shaders
+	*
 	* \param[in] device Logical Vulkan device
 	* \param[out] textureSampler The new sampler
+	* \returns VK_SUCCESS or a Vulkan error code
+	*
 	*/
-	void vhBufCreateTextureSampler( VkDevice device, VkSampler *textureSampler ) {
+	VkResult vhBufCreateTextureSampler( VkDevice device, VkSampler *textureSampler ) {
 		VkSamplerCreateInfo samplerInfo = {};
 		samplerInfo.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
 		samplerInfo.magFilter = VK_FILTER_LINEAR;
@@ -692,22 +744,24 @@ namespace vh {
 		samplerInfo.compareOp = VK_COMPARE_OP_ALWAYS;
 		samplerInfo.mipmapMode = VK_SAMPLER_MIPMAP_MODE_LINEAR;
 
-		if (vkCreateSampler(device, &samplerInfo, nullptr, textureSampler) != VK_SUCCESS) {
-			throw std::runtime_error("failed to create texture sampler!");
-		}
+		
+		 return vkCreateSampler( device, &samplerInfo, nullptr, textureSampler);
 	}
 
 
 	/**
 	* \brief Create framebuffers (color + depth), one for each swap chain image
+	*
 	* \param[in] device Logical Vulkan device
 	* \param[in] imageViews Color images from the swap chain
 	* \param[in] depthImageViews List with views of the depth images
 	* \param[in] renderPass Render pass to be used in
 	* \param[in] extent Extent of the swap chain images
 	* \param[out] frameBuffers The resulting frame buffers
+	* \returns VK_SUCCESS or a Vulkan error code
+	*
 	*/
-	void vhBufCreateFramebuffers(	VkDevice device, 
+	VkResult vhBufCreateFramebuffers(	VkDevice device,
 									std::vector<VkImageView> imageViews, 
 									std::vector<VkImageView> depthImageViews, //should have same length!
 									VkRenderPass renderPass, VkExtent2D extent,
@@ -735,15 +789,15 @@ namespace vh {
 			framebufferInfo.attachmentCount = static_cast<uint32_t>(attachments.size());
 			framebufferInfo.pAttachments = attachments.data();
 
-			if (vkCreateFramebuffer(device, &framebufferInfo, nullptr, &frameBuffers[i]) != VK_SUCCESS) {
-				throw std::runtime_error("failed to create framebuffer!");
-			}
+			VHCHECKRESULT( vkCreateFramebuffer(device, &framebufferInfo, nullptr, &frameBuffers[i] ) );
 		}
+		return VK_SUCCESS;
 	}
 
 
 	/**
 	* \brief Copy a swap chain image to a data buffer, after it has been rendered into
+	*
 	* \param[in] device Logical Vulkan device
 	* \param[in] allocator VMA allocator
 	* \param[in] graphicsQueue Device queue for submitting commands
@@ -754,31 +808,33 @@ namespace vh {
 	* \param[in] width Ímage width
 	* \param[in] height Image height
 	* \param[in] imageSize Size of the image in bytes
+	* \returns VK_SUCCESS or a Vulkan error code
+	*
 	*/
-	void vhBufCopySwapChainImageToHost(VkDevice device, VmaAllocator allocator, 
+	VkResult vhBufCopySwapChainImageToHost(VkDevice device, VmaAllocator allocator,
 				VkQueue graphicsQueue, VkCommandPool commandPool, 
 				VkImage image, VkImageAspectFlagBits aspect, 
 				gli::byte *bufferData, uint32_t width, uint32_t height, uint32_t imageSize) {
 
 		VkBuffer stagingBuffer;
 		VmaAllocation stagingBufferAllocation;
-		vh::vhBufCreateBuffer(allocator, imageSize,
-			VK_BUFFER_USAGE_TRANSFER_DST_BIT, VMA_MEMORY_USAGE_CPU_ONLY,
-			&stagingBuffer, &stagingBufferAllocation);
+		VHCHECKRESULT(	vhBufCreateBuffer(allocator, imageSize,
+						VK_BUFFER_USAGE_TRANSFER_DST_BIT, VMA_MEMORY_USAGE_CPU_ONLY,
+						&stagingBuffer, &stagingBufferAllocation ) );
 
-		vh::vhBufTransitionImageLayout(device, graphicsQueue, commandPool,
-			image, VK_FORMAT_R8G8B8A8_UNORM, aspect, 1, 1,
-			VK_IMAGE_LAYOUT_PRESENT_SRC_KHR, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
+		VHCHECKRESULT(	vhBufTransitionImageLayout(device, graphicsQueue, commandPool,
+						image, VK_FORMAT_R8G8B8A8_UNORM, aspect, 1, 1,
+						VK_IMAGE_LAYOUT_PRESENT_SRC_KHR, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL));
 
-		vh::vhBufCopyImageToBuffer(device, graphicsQueue, commandPool,
-			image, aspect, stagingBuffer, 1, width, height);
+		VHCHECKRESULT(	vhBufCopyImageToBuffer(device, graphicsQueue, commandPool,
+						image, aspect, stagingBuffer, 1, width, height ) );
 
-		vh::vhBufTransitionImageLayout(device, graphicsQueue, commandPool,
-			image, VK_FORMAT_R8G8B8A8_UNORM, aspect, 1, 1,
-			VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR);
+		VHCHECKRESULT(	vhBufTransitionImageLayout(device, graphicsQueue, commandPool,
+						image, VK_FORMAT_R8G8B8A8_UNORM, aspect, 1, 1,
+						VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR) );
 
 		void *data;
-		vmaMapMemory(allocator, stagingBufferAllocation, &data);
+		VHCHECKRESULT( vmaMapMemory(allocator, stagingBufferAllocation, &data ) );
 		memcpy(bufferData, data, (size_t)imageSize);
 		vmaUnmapMemory(allocator, stagingBufferAllocation);
 
@@ -795,11 +851,13 @@ namespace vh {
 		}
 
 		vmaDestroyBuffer(allocator, stagingBuffer, stagingBufferAllocation);
+		return VK_SUCCESS;
 	}
 
 
 	/**
 	* \brief Copy a swap chain image to a data buffer, after it has been rendered into
+	*
 	* \param[in] device Logical Vulkan device
 	* \param[in] allocator VMA allocator
 	* \param[in] graphicsQueue Device queue for submitting commands
@@ -812,35 +870,38 @@ namespace vh {
 	* \param[in] width Ímage width
 	* \param[in] height Image height
 	* \param[in] imageSize Size of the image in bytes
+	* \returns VK_SUCCESS or a Vulkan error code
+	*
 	*/
-	void vhBufCopyImageToHost(VkDevice device, VmaAllocator allocator, VkQueue graphicsQueue,
+	VkResult vhBufCopyImageToHost(VkDevice device, VmaAllocator allocator, VkQueue graphicsQueue,
 		VkCommandPool commandPool,
 		VkImage image, VkFormat format, VkImageAspectFlagBits aspect, VkImageLayout layout,
 		gli::byte *bufferData, uint32_t width, uint32_t height, uint32_t imageSize) {
 
 		VkBuffer stagingBuffer;
 		VmaAllocation stagingBufferAllocation;
-		vh::vhBufCreateBuffer(allocator, imageSize,
-			VK_BUFFER_USAGE_TRANSFER_DST_BIT, VMA_MEMORY_USAGE_CPU_ONLY,
-			&stagingBuffer, &stagingBufferAllocation);
+		VHCHECKRESULT(	vhBufCreateBuffer(allocator, imageSize,
+						VK_BUFFER_USAGE_TRANSFER_DST_BIT, VMA_MEMORY_USAGE_CPU_ONLY,
+						&stagingBuffer, &stagingBufferAllocation ) );
 
-		vh::vhBufTransitionImageLayout(device, graphicsQueue, commandPool,
-			image, format, aspect, 1, 1,
-			layout, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
+		VHCHECKRESULT(	vhBufTransitionImageLayout(device, graphicsQueue, commandPool,
+						image, format, aspect, 1, 1,
+						layout, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL ) );
 
-		vh::vhBufCopyImageToBuffer(device, graphicsQueue, commandPool,
-			image, aspect, stagingBuffer, 1, width, height);
+		VHCHECKRESULT(	vhBufCopyImageToBuffer(device, graphicsQueue, commandPool,
+						image, aspect, stagingBuffer, 1, width, height ) );
 
-		vh::vhBufTransitionImageLayout(device, graphicsQueue, commandPool,
-			image, format, aspect, 1, 1,
-			VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, layout);
+		VHCHECKRESULT(	vhBufTransitionImageLayout(device, graphicsQueue, commandPool,
+						image, format, aspect, 1, 1,
+						VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, layout ) );
 
 		void *data;
-		vmaMapMemory(allocator, stagingBufferAllocation, &data);
+		VHCHECKRESULT( vmaMapMemory(allocator, stagingBufferAllocation, &data) );
 		memcpy(bufferData, data, (size_t)imageSize);
 		vmaUnmapMemory(allocator, stagingBufferAllocation);
 
 		vmaDestroyBuffer(allocator, stagingBuffer, stagingBufferAllocation);
+		return VK_SUCCESS;
 	}
 
 
@@ -851,6 +912,7 @@ namespace vh {
 
 	/**
 	* \brief Create a Vulkan vertex buffer
+	*
 	* \param[in] device Logical Vulkan device
 	* \param[in] allocator VMA allocator
 	* \param[in] graphicsQueue Device queue for submitting commands
@@ -858,8 +920,10 @@ namespace vh {
 	* \param[in] vertices List of vertices and their data
 	* \param[out] vertexBuffer The new vertex buffer
 	* \param[out] vertexBufferAllocation VMA allocation information
+	* \returns VK_SUCCESS or a Vulkan error code
+	*
 	*/
-	void vhBufCreateVertexBuffer(	VkDevice device, VmaAllocator allocator,
+	VkResult vhBufCreateVertexBuffer(	VkDevice device, VmaAllocator allocator,
 									VkQueue graphicsQueue, VkCommandPool commandPool,
 									std::vector<vh::vhVertex> &vertices,
 									VkBuffer *vertexBuffer, VmaAllocation *vertexBufferAllocation) {
@@ -867,23 +931,29 @@ namespace vh {
 
 		VkBuffer stagingBuffer;
 		VmaAllocation stagingBufferAllocation;
-		vh::vhBufCreateBuffer(allocator, bufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VMA_MEMORY_USAGE_CPU_ONLY, &stagingBuffer, &stagingBufferAllocation);
+		VHCHECKRESULT( vhBufCreateBuffer(	allocator, bufferSize, 
+											VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VMA_MEMORY_USAGE_CPU_ONLY, 
+											&stagingBuffer, &stagingBufferAllocation));
 
 		void* data;
-		vmaMapMemory(allocator, stagingBufferAllocation, &data);
+		VHCHECKRESULT( vmaMapMemory(allocator, stagingBufferAllocation, &data) );
 		memcpy(data, vertices.data(), (size_t)bufferSize);
 		vmaUnmapMemory(allocator, stagingBufferAllocation);
 
-		vh::vhBufCreateBuffer(allocator, bufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, VMA_MEMORY_USAGE_GPU_ONLY, vertexBuffer, vertexBufferAllocation);
+		VHCHECKRESULT( vhBufCreateBuffer(	allocator, bufferSize, 
+											VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, 
+											VMA_MEMORY_USAGE_GPU_ONLY, vertexBuffer, vertexBufferAllocation ) );
 
-		vh::vhBufCopyBuffer(device, graphicsQueue, commandPool, stagingBuffer, *vertexBuffer, bufferSize);
+		VHCHECKRESULT( vhBufCopyBuffer(device, graphicsQueue, commandPool, stagingBuffer, *vertexBuffer, bufferSize ) );
 
 		vmaDestroyBuffer(allocator, stagingBuffer, stagingBufferAllocation);
+		return VK_SUCCESS;
 	}
 
 
 	/**
 	* \brief Create a Vulkan index buffer
+	*
 	* \param[in] device Logical Vulkan device
 	* \param[in] allocator VMA allocator
 	* \param[in] graphicsQueue Device queue for submitting commands
@@ -891,38 +961,46 @@ namespace vh {
 	* \param[in] indices List of indices
 	* \param[out] indexBuffer The new index buffer
 	* \param[out] indexBufferAllocation VMA allocation information
+	* \returns VK_SUCCESS or a Vulkan error code
+	*
 	*/
-	void vhBufCreateIndexBuffer(VkDevice device, VmaAllocator allocator, VkQueue graphicsQueue, VkCommandPool commandPool,
+	VkResult vhBufCreateIndexBuffer(VkDevice device, VmaAllocator allocator, VkQueue graphicsQueue, VkCommandPool commandPool,
 								std::vector<uint32_t> &indices,
 								VkBuffer *indexBuffer, VmaAllocation *indexBufferAllocation) {
 		VkDeviceSize bufferSize = sizeof(indices[0]) * indices.size();
 
 		VkBuffer stagingBuffer;
 		VmaAllocation stagingBufferAllocation;
-		vh::vhBufCreateBuffer(allocator, bufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VMA_MEMORY_USAGE_CPU_ONLY, &stagingBuffer, &stagingBufferAllocation);
+		VHCHECKRESULT( vhBufCreateBuffer(allocator, bufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VMA_MEMORY_USAGE_CPU_ONLY, &stagingBuffer, &stagingBufferAllocation));
 
 		void* data;
-		vmaMapMemory(allocator, stagingBufferAllocation, &data);
+		VHCHECKRESULT( vmaMapMemory(allocator, stagingBufferAllocation, &data ) );
 		memcpy(data, indices.data(), (size_t)bufferSize);
 		vmaUnmapMemory(allocator, stagingBufferAllocation);
 
-		vh::vhBufCreateBuffer(allocator, bufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT, VMA_MEMORY_USAGE_GPU_ONLY, indexBuffer, indexBufferAllocation);
+		VHCHECKRESULT(	vhBufCreateBuffer(allocator, bufferSize, 
+						VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT, VMA_MEMORY_USAGE_GPU_ONLY, 
+						indexBuffer, indexBufferAllocation));
 
-		vh::vhBufCopyBuffer(device, graphicsQueue, commandPool, stagingBuffer, *indexBuffer, bufferSize);
+		VHCHECKRESULT( vhBufCopyBuffer(device, graphicsQueue, commandPool, stagingBuffer, *indexBuffer, bufferSize ) );
 
 		vmaDestroyBuffer(allocator, stagingBuffer, stagingBufferAllocation);
+		return VK_SUCCESS;
 	}
 
 
 	/**
 	* \brief Create a UBO
+	*
 	* \param[in] allocator VMA allocator
 	* \param[in] numberBuffers The number of UBOs to be created
 	* \param[in] bufferSize Size of each new buffer
 	* \param[out] uniformBuffers List containing the new buffers
 	* \param[out] uniformBuffersAllocation VMA allocation information
+	* \returns VK_SUCCESS or a Vulkan error code
+	*
 	*/
-	void vhBufCreateUniformBuffers(	VmaAllocator allocator,
+	VkResult vhBufCreateUniformBuffers(	VmaAllocator allocator,
 									uint32_t numberBuffers, VkDeviceSize bufferSize,
 									std::vector<VkBuffer> &uniformBuffers,
 									std::vector<VmaAllocation> &uniformBuffersAllocation) {
@@ -930,8 +1008,11 @@ namespace vh {
 		uniformBuffersAllocation.resize(numberBuffers);
 
 		for (size_t i = 0; i < numberBuffers; i++) {
-			vh::vhBufCreateBuffer(allocator, bufferSize, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VMA_MEMORY_USAGE_CPU_TO_GPU, &uniformBuffers[i], &uniformBuffersAllocation[i]);
+			VHCHECKRESULT(	vhBufCreateBuffer(allocator, bufferSize, 
+							VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VMA_MEMORY_USAGE_CPU_TO_GPU, 
+							&uniformBuffers[i], &uniformBuffersAllocation[i]));
 		}
+		return VK_SUCCESS;
 	}
 
 

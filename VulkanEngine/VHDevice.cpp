@@ -14,6 +14,7 @@ namespace vh {
 	/**
 	*
 	* \brief Check validation layers of the Vulkan instance
+	*
 	* \param[in] validationLayers
 	* \returns true if all requested layers are supported by the device, else false
 	*
@@ -47,10 +48,11 @@ namespace vh {
 	/**
 	*
 	* \brief Create a Vulkan instance
+	*
 	* \param[in] extensions Requested layers 
 	* \param[in] validationLayers Requested validation layers
 	* \param[out] instance The new instance
-	* \returns VkResult of the operation
+	* \returns VK_SUCCESS or a Vulkan error code
 	*
 	*/
 	VkResult vhDevCreateInstance(std::vector<const char*> &extensions, std::vector<const char*> &validationLayers, VkInstance *instance) {
@@ -84,6 +86,7 @@ namespace vh {
 	/**
 	*
 	* \brief Find suitable queue families of a given physical device
+	*
 	* \param[in] device A physical device
 	* \param[in] surface The surface of a window
 	* \returns a structure containing queue family indices of suitable families
@@ -105,7 +108,11 @@ namespace vh {
 			}
 
 			VkBool32 presentSupport = false;
-			vkGetPhysicalDeviceSurfaceSupportKHR(device, i, surface, &presentSupport);
+			if (vkGetPhysicalDeviceSurfaceSupportKHR(device, i, surface, &presentSupport) != VK_SUCCESS) {
+				indices.graphicsFamily = -1;
+				indices.presentFamily = -1;
+				return indices;
+			}
 
 			if (queueFamily.queueCount > 0 && presentSupport) {
 				indices.presentFamily = i;
@@ -125,6 +132,7 @@ namespace vh {
 	/**
 	*
 	* \brief Check whether a given physical device offers a list of required extensions
+	*
 	* \param[in] device A physical device
 	* \param[in] requiredDeviceExtensions A list with required device extensions
 	* \returns whether the device supports all extensions or not
@@ -132,7 +140,7 @@ namespace vh {
 	*/
 	bool checkDeviceExtensionSupport(VkPhysicalDevice device, std::vector<const char*> requiredDeviceExtensions ) {
 		uint32_t extensionCount;
-		vkEnumerateDeviceExtensionProperties(device, nullptr, &extensionCount, nullptr);
+		vkEnumerateDeviceExtensionProperties(device, nullptr, &extensionCount, nullptr );
 
 		std::vector<VkExtensionProperties> availableExtensions(extensionCount);
 		vkEnumerateDeviceExtensionProperties(device, nullptr, &extensionCount, availableExtensions.data());
@@ -149,6 +157,7 @@ namespace vh {
 	/**
 	*
 	* \brief Query which swap chains a physical device supports
+	*
 	* \param[in] device A physical device
 	* \param[in] surface A window surface
 	* \returns a structure holding details about capabilities, formats and present modes offered by the device
@@ -181,6 +190,7 @@ namespace vh {
 	/**
 	*
 	* \brief Query whether a physical offers all required extensions
+	*
 	* \param[in] device A physical device
 	* \param[in] surface A window surface
 	* \param[in] requiredDeviceExtensions A list of required device extensions
@@ -208,25 +218,27 @@ namespace vh {
 	/**
 	*
 	* \brief Query whether a physical offers all required extensions
+	*
 	* \param[in] instance The Vulkan instance
 	* \param[in] surface A window surface
 	* \param[in] requiredDeviceExtensions A list of required device extensions
 	* \param[out] physicalDevice A physical device that supports all required extensions
+	* \returns VK_SUCCESS or a Vulkan error code
 	*
 	*/
-	void vhDevPickPhysicalDevice(VkInstance instance, VkSurfaceKHR surface, 
+	VkResult vhDevPickPhysicalDevice(VkInstance instance, VkSurfaceKHR surface,
 								std::vector<const char*> requiredDeviceExtensions,
 								VkPhysicalDevice *physicalDevice) {
 
 		uint32_t deviceCount = 0;
-		vkEnumeratePhysicalDevices(instance, &deviceCount, nullptr);
+		VHCHECKRESULT( vkEnumeratePhysicalDevices(instance, &deviceCount, nullptr) );
 
 		if (deviceCount == 0) {
 			throw std::runtime_error("failed to find GPUs with Vulkan support!");
 		}
 
 		std::vector<VkPhysicalDevice> devices(deviceCount);
-		vkEnumeratePhysicalDevices(instance, &deviceCount, devices.data());
+		VHCHECKRESULT( vkEnumeratePhysicalDevices(instance, &deviceCount, devices.data()) );
 
 		for (const auto device : devices) {
 			if (isDeviceSuitable(device, surface, requiredDeviceExtensions)) {
@@ -236,15 +248,16 @@ namespace vh {
 		}
 
 		if (physicalDevice == VK_NULL_HANDLE) {
-			throw std::runtime_error("failed to find a suitable GPU!");
+			return VK_INCOMPLETE;
 		}
-
+		return VK_SUCCESS;
 	}
 
 
 	/**
 	*
 	* \brief Query a suitable image format that the device supports
+	*
 	* \param[in] physicalDevice The physical device
 	* \param[in] candidates A list with candidate formats
 	* \param[in] tiling Linear or optimal
@@ -273,6 +286,7 @@ namespace vh {
 	/**
 	*
 	* \brief Find a suitable format for the depth/stencil buffer
+	*
 	* \param[in] physicalDevice The physical device
 	* \returns a suitable format that is supported by the physical device
 	*
@@ -286,11 +300,11 @@ namespace vh {
 	}
 
 
-
 	//-------------------------------------------------------------------------------------------------------
 	/**
 	*
 	* \brief Create a logical device and according queues
+	*
 	* \param[in] physicalDevice The physical device
 	* \param[in] surface Window surface
 	* \param[in] requiredDeviceExtensions List of required device extensions
@@ -298,9 +312,10 @@ namespace vh {
 	* \param[out] device The new logical device
 	* \param[out] graphicsQueue A graphics queue into the device
 	* \param[out] presentQueue A present queue into the device
+	* \returns VK_SUCCESS or a Vulkan error code
 	*
 	*/
-	void vhDevCreateLogicalDevice(	VkPhysicalDevice physicalDevice, VkSurfaceKHR surface, 
+	VkResult vhDevCreateLogicalDevice(	VkPhysicalDevice physicalDevice, VkSurfaceKHR surface,
 									std::vector<const char*> requiredDeviceExtensions, 
 									std::vector<const char*> requiredValidationLayers, 
 									VkDevice *device, VkQueue *graphicsQueue, VkQueue *presentQueue) {
@@ -341,12 +356,11 @@ namespace vh {
 		createInfo.enabledLayerCount = static_cast<uint32_t>(requiredValidationLayers.size());
 		createInfo.ppEnabledLayerNames = requiredValidationLayers.data();
 
-		if (vkCreateDevice(physicalDevice, &createInfo, nullptr, device) != VK_SUCCESS) {
-			throw std::runtime_error("failed to create logical device!");
-		}
+		VHCHECKRESULT(vkCreateDevice(physicalDevice, &createInfo, nullptr, device) );
 
 		vkGetDeviceQueue(*device, indices.graphicsFamily, 0, graphicsQueue);
 		vkGetDeviceQueue(*device, indices.presentFamily, 0, presentQueue);
 
+		return VK_SUCCESS;
 	}
 }

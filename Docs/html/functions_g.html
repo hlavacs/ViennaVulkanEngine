@@ -90,11 +90,15 @@ $(function() {
 , <a class="el" href="classve_1_1_v_e_subrender_f_w___cubemap.html#a91a70267b28677cf5097dcd222fe3866">ve::VESubrenderFW_Cubemap</a>
 , <a class="el" href="classve_1_1_v_e_subrender_f_w___d.html#a98bf5c152f317a3ce6a3e92c669e9076">ve::VESubrenderFW_D</a>
 , <a class="el" href="classve_1_1_v_e_subrender_f_w___d_n.html#ac23f250eb64e5f2d19c5c70d20ec86b6">ve::VESubrenderFW_DN</a>
+, <a class="el" href="classve_1_1_v_e_subrender_f_w___nuklear.html#a32af67b22090e9a7452a66d697e5693c">ve::VESubrenderFW_Nuklear</a>
 , <a class="el" href="classve_1_1_v_e_subrender_f_w___shadow.html#a34a44ee79ef422660a0e27a4346f4b4d">ve::VESubrenderFW_Shadow</a>
 , <a class="el" href="classve_1_1_v_e_subrender_f_w___skyplane.html#a1e345da16206e3886e26570073ad4619">ve::VESubrenderFW_Skyplane</a>
 </li>
 <li>getCommandPool()
 : <a class="el" href="classve_1_1_v_e_renderer.html#a5084fa89ab7d9ea79689959fd40b5e05">ve::VERenderer</a>
+</li>
+<li>getContext()
+: <a class="el" href="classve_1_1_v_e_subrender_f_w___nuklear.html#a9cf62c2ca841e2652acca437c53c170d">ve::VESubrenderFW_Nuklear</a>
 </li>
 <li>getDepthMap()
 : <a class="el" href="classve_1_1_v_e_renderer_forward.html#a968944d3d9ae8642c19df38923b19dc8">ve::VERendererForward</a>
@@ -168,6 +172,9 @@ $(function() {
 <li>getOBB()
 : <a class="el" href="classve_1_1_v_e_scene_node.html#a0b2b024c64cd6961f6277ce7b2fe4f89">ve::VESceneNode</a>
 </li>
+<li>getOverlay()
+: <a class="el" href="classve_1_1_v_e_renderer.html#ad188e686ab4b6973d50aa924440d23fb">ve::VERenderer</a>
+</li>
 <li>getPhysicalDevice()
 : <a class="el" href="classve_1_1_v_e_renderer.html#a8facfcb8b4a4d81ae116b19e0bd00736">ve::VERenderer</a>
 </li>
@@ -180,7 +187,7 @@ $(function() {
 <li>getProjectionMatrix()
 : <a class="el" href="classve_1_1_v_e_camera.html#ac08c3a66d9cbc131bf042ab0f356a989">ve::VECamera</a>
 , <a class="el" href="classve_1_1_v_e_camera_ortho.html#ae3175de7665043fa9182f8f73ded2940">ve::VECameraOrtho</a>
-, <a class="el" href="classve_1_1_v_e_camera_projective.html#a8a7e93a89acba22255007c7eab71415d">ve::VECameraProjective</a>
+, <a class="el" href="classve_1_1_v_e_camera_projective.html#a4c69d653c77681541feb03b072572040">ve::VECameraProjective</a>
 </li>
 <li>getRenderer()
 : <a class="el" href="classve_1_1_v_e_engine.html#abbe8354824904efa0ab69ae95941913e">ve::VEEngine</a>
@@ -211,8 +218,14 @@ $(function() {
 <li>getSubrenderer()
 : <a class="el" href="classve_1_1_v_e_renderer.html#a2a2543ee8f33708aeb66043f9b80249c">ve::VERenderer</a>
 </li>
+<li>getSurface()
+: <a class="el" href="classve_1_1_v_e_renderer.html#a2cb591918d5d35f7eebcee767511bcc1">ve::VERenderer</a>
+</li>
 <li>getSwapChainExtent()
 : <a class="el" href="classve_1_1_v_e_renderer.html#a181f84c7fd48e58d63316a947821a1de">ve::VERenderer</a>
+</li>
+<li>getSwapChainFrameBuffers()
+: <a class="el" href="classve_1_1_v_e_renderer_forward.html#a748393ef08d01a316ebe366376929385">ve::VERendererForward</a>
 </li>
 <li>getSwapChainImage()
 : <a class="el" href="classve_1_1_v_e_renderer.html#a21d8944f7ae97376a4f8c85528314f07">ve::VERenderer</a>
@@ -233,6 +246,7 @@ $(function() {
 , <a class="el" href="classve_1_1_v_e_subrender_f_w___cubemap.html#a4aee3b2489e83e3272c750be4510901c">ve::VESubrenderFW_Cubemap</a>
 , <a class="el" href="classve_1_1_v_e_subrender_f_w___d.html#a8ca901e752f1f1075f3307d692e23dc4">ve::VESubrenderFW_D</a>
 , <a class="el" href="classve_1_1_v_e_subrender_f_w___d_n.html#ad3153bbcf84668a0957f891fd4a3ddd6">ve::VESubrenderFW_DN</a>
+, <a class="el" href="classve_1_1_v_e_subrender_f_w___nuklear.html#a4ed5c935c3615794d4c10c5565aa8c50">ve::VESubrenderFW_Nuklear</a>
 , <a class="el" href="classve_1_1_v_e_subrender_f_w___shadow.html#a00e51e4f93a8d71c223231045f9abbc8">ve::VESubrenderFW_Shadow</a>
 , <a class="el" href="classve_1_1_v_e_subrender_f_w___skyplane.html#a0fdfe35e09ad169dcbddb207c0e4436b">ve::VESubrenderFW_Skyplane</a>
 </li>
@@ -244,6 +258,9 @@ $(function() {
 </li>
 <li>getWindow()
 : <a class="el" href="classve_1_1_v_e_engine.html#ab1105bc96fbf572b5749eb16b0b0c308">ve::VEEngine</a>
+</li>
+<li>getWindowHandle()
+: <a class="el" href="classve_1_1_v_e_window_g_l_f_w.html#a6b7fa3559c51cf0d564e80e48f6933cf">ve::VEWindowGLFW</a>
 </li>
 <li>getWorldTransform()
 : <a class="el" href="classve_1_1_v_e_scene_node.html#ab704c9158e5ee4baae88378def289834">ve::VESceneNode</a>
@@ -264,7 +281,7 @@ $(function() {
 </div><!-- contents -->
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>
-Generated on Fri Apr 19 2019 20:48:01 for Vienna Vulkan Engine by &#160;<a href="http://www.doxygen.org/index.html">
+Generated on Tue Apr 23 2019 14:29:09 for Vienna Vulkan Engine by &#160;<a href="http://www.doxygen.org/index.html">
 <img class="footer" src="doxygen.png" alt="doxygen"/>
 </a> 1.8.15
 </small></address>

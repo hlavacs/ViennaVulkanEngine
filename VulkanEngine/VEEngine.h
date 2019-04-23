@@ -13,6 +13,15 @@
 
 namespace ve {
 
+	//use this macro to check the function result, if its not VK_SUCCESS then return the error
+	#define VECHECKRESULT(x, msg) { \
+		VkResult retval = (x); \
+		if (retval != VK_SUCCESS) { \
+			throw std::runtime_error(msg); \
+		} \
+	}
+
+
 	class VEWindow;
 	class VERenderer;
 	class VEEventListener;
@@ -74,14 +83,15 @@ namespace ve {
 		VEEngine( bool debug = false );								//Only create ONE instance of the engine!
 		~VEEngine() {};
 
-		virtual void initEngine();		//Create all engine components
-		virtual void run();				//Enter the render loop
-		virtual void end();				//end the render loop
-		void registerEventListener(VEEventListener *lis); //Register a new event listener.
-		void removeEventListener(std::string name);	//Remove an event listener - it is NOT deleted automatically!
-		void deleteEventListener(std::string name); //Delete an event listener
-		void addEvent(veEvent event);				//Add an event to the event list - will be handled in the next loop
-		void deleteEvent(veEvent event);			//Delete an event from the event list
+		virtual void initEngine();							//Create all engine components
+		virtual void run();									//Enter the render loop
+		virtual void fatalError(std::string message);		//Show an error message and close down the engine
+		virtual void end();									//end the render loop
+		void registerEventListener(VEEventListener *lis);	//Register a new event listener.
+		void removeEventListener(std::string name);			//Remove an event listener - it is NOT deleted automatically!
+		void deleteEventListener(std::string name);			//Delete an event listener
+		void addEvent(veEvent event);						//Add an event to the event list - will be handled in the next loop
+		void deleteEvent(veEvent event);					//Delete an event from the event list
 
 		VkInstance		 getInstance();				//Return the Vulkan instance
 		VEWindow       * getWindow();				//Return a pointer to the window instance

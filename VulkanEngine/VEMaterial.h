@@ -79,8 +79,8 @@ namespace ve {
 		float			m_boundingSphereRadius = 1.0;		///<Radius of bounding sphere in local space
 
 		VEMesh(std::string name, const aiMesh *paiMesh);
+		VEMesh(std::string name, std::vector<vh::vhVertex> vertices, std::vector<uint32_t> indices);
 		~VEMesh();
 	};
-
 }
 

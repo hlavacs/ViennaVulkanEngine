@@ -302,7 +302,7 @@ namespace ve {
 			if (vkCreateSemaphore(m_device, &semaphoreInfo, nullptr, &m_imageAvailableSemaphores[i]) != VK_SUCCESS ||
 				vkCreateSemaphore(m_device, &semaphoreInfo, nullptr, &m_renderFinishedSemaphores[i]) != VK_SUCCESS ||
 				vkCreateFence(m_device, &fenceInfo, nullptr, &m_inFlightFences[i]) != VK_SUCCESS ) {
-				throw std::runtime_error("failed to create synchronization objects for a frame!");
+				getEnginePointer()->fatalError("Failed to create synchronization objects for a frame!");
 			}
 		}
 	}
@@ -333,7 +333,7 @@ namespace ve {
 			return;
 		}
 		else if (result != VK_SUCCESS && result != VK_SUBOPTIMAL_KHR) {
-			throw std::runtime_error("failed to acquire swap chain image!");
+			getEnginePointer()->fatalError("Failed to acquire swap chain image!");
 		}
 
 		VECamera *pCamera = getSceneManagerPointer()->getCamera();
@@ -441,7 +441,7 @@ namespace ve {
 			recreateSwapchain();
 		}
 		else if (result != VK_SUCCESS) {
-			throw std::runtime_error("failed to present swap chain image!");
+			getEnginePointer()->fatalError("failed to present swap chain image!");
 		}
 
 		m_currentFrame = (m_currentFrame + 1) % MAX_FRAMES_IN_FLIGHT;

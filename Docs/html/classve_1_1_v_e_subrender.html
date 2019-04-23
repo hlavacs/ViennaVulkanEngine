@@ -85,13 +85,14 @@ Inheritance diagram for ve::VESubrender:</div>
  <div class="center">
   <img src="classve_1_1_v_e_subrender.png" usemap="#ve::VESubrender_map" alt=""/>
   <map id="ve::VESubrender_map" name="ve::VESubrender_map">
-<area href="classve_1_1_v_e_subrender_f_w___c1.html" title="Subrenderer that manages entities that have only one color." alt="ve::VESubrenderFW_C1" shape="rect" coords="0,56,195,80"/>
-<area href="classve_1_1_v_e_subrender_f_w___cubemap.html" title="Subrenderer that manages entities that are cubemap based sky boxes." alt="ve::VESubrenderFW_Cubemap" shape="rect" coords="205,56,400,80"/>
-<area href="classve_1_1_v_e_subrender_f_w___cubemap2.html" title="Subrenderer that manages entities that are cubemap based sky boxes." alt="ve::VESubrenderFW_Cubemap2" shape="rect" coords="410,56,605,80"/>
-<area href="classve_1_1_v_e_subrender_f_w___d.html" title="Subrenderer that manages entities that have one diffuse texture for coloring." alt="ve::VESubrenderFW_D" shape="rect" coords="615,56,810,80"/>
-<area href="classve_1_1_v_e_subrender_f_w___d_n.html" title="Subrenderer that manages entities that have a diffuse texture and a normal map." alt="ve::VESubrenderFW_DN" shape="rect" coords="820,56,1015,80"/>
-<area href="classve_1_1_v_e_subrender_f_w___shadow.html" title="Subrenderer that manages draws the shadow pass." alt="ve::VESubrenderFW_Shadow" shape="rect" coords="1025,56,1220,80"/>
-<area href="classve_1_1_v_e_subrender_f_w___skyplane.html" title="Subrenderer that manages entities that are cubemap based sky boxes." alt="ve::VESubrenderFW_Skyplane" shape="rect" coords="1230,56,1425,80"/>
+<area href="classve_1_1_v_e_subrender_f_w___c1.html" title="Subrenderer that manages entities that have only one color." alt="ve::VESubrenderFW_C1" shape="rect" coords="205,56,400,80"/>
+<area href="classve_1_1_v_e_subrender_f_w___cubemap.html" title="Subrenderer that manages entities that are cubemap based sky boxes." alt="ve::VESubrenderFW_Cubemap" shape="rect" coords="205,112,400,136"/>
+<area href="classve_1_1_v_e_subrender_f_w___cubemap2.html" title="Subrenderer that manages entities that are cubemap based sky boxes." alt="ve::VESubrenderFW_Cubemap2" shape="rect" coords="205,168,400,192"/>
+<area href="classve_1_1_v_e_subrender_f_w___d.html" title="Subrenderer that manages entities that have one diffuse texture for coloring." alt="ve::VESubrenderFW_D" shape="rect" coords="205,224,400,248"/>
+<area href="classve_1_1_v_e_subrender_f_w___d_n.html" title="Subrenderer that manages entities that have a diffuse texture and a normal map." alt="ve::VESubrenderFW_DN" shape="rect" coords="205,280,400,304"/>
+<area href="classve_1_1_v_e_subrender_f_w___nuklear.html" title="Subrenderer that manages entities that have only one color." alt="ve::VESubrenderFW_Nuklear" shape="rect" coords="205,336,400,360"/>
+<area href="classve_1_1_v_e_subrender_f_w___shadow.html" title="Subrenderer that manages draws the shadow pass." alt="ve::VESubrenderFW_Shadow" shape="rect" coords="205,392,400,416"/>
+<area href="classve_1_1_v_e_subrender_f_w___skyplane.html" title="Subrenderer that manages entities that are cubemap based sky boxes." alt="ve::VESubrenderFW_Skyplane" shape="rect" coords="205,448,400,472"/>
   </map>
 </div></div>
 <table class="memberdecls">
@@ -115,7 +116,8 @@ Public Types</h2></td></tr>
 <a class="el" href="classve_1_1_v_e_subrender.html#a98064e456a838192bbcedf9b6c529e89a5593d7a8e6abf15fc94bb4a19efcd271">VE_SUBRENDERER_TYPE_SKYPLANE</a>, 
 <a class="el" href="classve_1_1_v_e_subrender.html#a98064e456a838192bbcedf9b6c529e89a4adbf283af235ebdc5cf2ae5219485c8">VE_SUBRENDERER_TYPE_TERRAIN_WITH_HEIGHTMAP</a>, 
 <br />
-&#160;&#160;<a class="el" href="classve_1_1_v_e_subrender.html#a98064e456a838192bbcedf9b6c529e89a45580fcebca076beb93fb08941b7d1bb">VE_SUBRENDERER_TYPE_SHADOW</a>
+&#160;&#160;<a class="el" href="classve_1_1_v_e_subrender.html#a98064e456a838192bbcedf9b6c529e89a63ad23f5092af7839a8154ccb5ee5ca8">VE_SUBRENDERER_TYPE_NUKLEAR</a>, 
+<a class="el" href="classve_1_1_v_e_subrender.html#a98064e456a838192bbcedf9b6c529e89a45580fcebca076beb93fb08941b7d1bb">VE_SUBRENDERER_TYPE_SHADOW</a>
 <br />
  }</td></tr>
 <tr class="memdesc:a98064e456a838192bbcedf9b6c529e89"><td class="mdescLeft">&#160;</td><td class="mdescRight">enums the subrenderers that are registered  <a href="classve_1_1_v_e_subrender.html#a98064e456a838192bbcedf9b6c529e89">More...</a><br /></td></tr>
@@ -163,6 +165,12 @@ virtual void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" hr
 <tr class="memitem:a6eee6c7136bd4a43ee85de84f70f05b6"><td class="memItemLeft" align="right" valign="top">virtual void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_subrender.html#a6eee6c7136bd4a43ee85de84f70f05b6">draw</a> (VkCommandBuffer commandBuffer, uint32_t imageIndex, uint32_t numPass, <a class="el" href="classve_1_1_v_e_camera.html">VECamera</a> *pCamera, <a class="el" href="classve_1_1_v_e_light.html">VELight</a> *pLight, std::vector&lt; VkDescriptorSet &gt; descriptorSetsShadow)</td></tr>
 <tr class="memdesc:a6eee6c7136bd4a43ee85de84f70f05b6"><td class="mdescLeft">&#160;</td><td class="mdescRight">Draw all associated entities.  <a href="#a6eee6c7136bd4a43ee85de84f70f05b6">More...</a><br /></td></tr>
 <tr class="separator:a6eee6c7136bd4a43ee85de84f70f05b6"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a33616d505c368ef1d2284fa918177064"><td class="memItemLeft" align="right" valign="top"><a id="a33616d505c368ef1d2284fa918177064"></a>
+virtual void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_subrender.html#a33616d505c368ef1d2284fa918177064">prepareDraw</a> ()</td></tr>
+<tr class="memdesc:a33616d505c368ef1d2284fa918177064"><td class="mdescLeft">&#160;</td><td class="mdescRight">Prepare to perform draw operation. <br /></td></tr>
+<tr class="separator:a33616d505c368ef1d2284fa918177064"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ade1dada5a7f4e7d2449b0ba148dc75f1"><td class="memItemLeft" align="right" valign="top">virtual VkSemaphore&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_subrender.html#ade1dada5a7f4e7d2449b0ba148dc75f1">draw</a> (uint32_t imageIndex, VkSemaphore wait_semaphore)</td></tr>
+<tr class="separator:ade1dada5a7f4e7d2449b0ba148dc75f1"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a2cc13f57ad28631b93998fa65b47fc77"><td class="memItemLeft" align="right" valign="top">virtual void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_subrender.html#a2cc13f57ad28631b93998fa65b47fc77">drawEntity</a> (VkCommandBuffer commandBuffer, uint32_t imageIndex, <a class="el" href="classve_1_1_v_e_entity.html">VEEntity</a> *entity)</td></tr>
 <tr class="memdesc:a2cc13f57ad28631b93998fa65b47fc77"><td class="mdescLeft">&#160;</td><td class="mdescRight">Draw one entity.  <a href="#a2cc13f57ad28631b93998fa65b47fc77">More...</a><br /></td></tr>
 <tr class="separator:a2cc13f57ad28631b93998fa65b47fc77"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -254,9 +262,11 @@ std::vector&lt; <a class="el" href="classve_1_1_v_e_entity.html">VEEntity</a> * 
 </td></tr>
 <tr><td class="fieldname"><a id="a98064e456a838192bbcedf9b6c529e89a5dcf48c7ac871462384ca3fc4195a973"></a>VE_SUBRENDERER_TYPE_CUBEMAP2&#160;</td><td class="fielddoc"><p>Use a cubemap to create a sky box. </p>
 </td></tr>
-<tr><td class="fieldname"><a id="a98064e456a838192bbcedf9b6c529e89a5593d7a8e6abf15fc94bb4a19efcd271"></a>VE_SUBRENDERER_TYPE_SKYPLANE&#160;</td><td class="fielddoc"><p>Use a cubemap to create a sky box. </p>
+<tr><td class="fieldname"><a id="a98064e456a838192bbcedf9b6c529e89a5593d7a8e6abf15fc94bb4a19efcd271"></a>VE_SUBRENDERER_TYPE_SKYPLANE&#160;</td><td class="fielddoc"><p>Use a skyplane to create a sky box. </p>
 </td></tr>
 <tr><td class="fieldname"><a id="a98064e456a838192bbcedf9b6c529e89a4adbf283af235ebdc5cf2ae5219485c8"></a>VE_SUBRENDERER_TYPE_TERRAIN_WITH_HEIGHTMAP&#160;</td><td class="fielddoc"><p>A tesselated terrain using a height map. </p>
+</td></tr>
+<tr><td class="fieldname"><a id="a98064e456a838192bbcedf9b6c529e89a63ad23f5092af7839a8154ccb5ee5ca8"></a>VE_SUBRENDERER_TYPE_NUKLEAR&#160;</td><td class="fielddoc"><p>A Nuklear based GUI. </p>
 </td></tr>
 <tr><td class="fieldname"><a id="a98064e456a838192bbcedf9b6c529e89a45580fcebca076beb93fb08941b7d1bb"></a>VE_SUBRENDERER_TYPE_SHADOW&#160;</td><td class="fielddoc"><p>Draw entities for the shadow pass. </p>
 </td></tr>
@@ -457,7 +467,7 @@ std::vector&lt; <a class="el" href="classve_1_1_v_e_entity.html">VEEntity</a> * 
 </div>
 </div>
 <a id="a6eee6c7136bd4a43ee85de84f70f05b6"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a6eee6c7136bd4a43ee85de84f70f05b6">&#9670;&nbsp;</a></span>draw()</h2>
+<h2 class="memtitle"><span class="permalink"><a href="#a6eee6c7136bd4a43ee85de84f70f05b6">&#9670;&nbsp;</a></span>draw() <span class="overload">[1/2]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -528,7 +538,46 @@ std::vector&lt; <a class="el" href="classve_1_1_v_e_entity.html">VEEntity</a> * 
   </dd>
 </dl>
 
-<p>Reimplemented in <a class="el" href="classve_1_1_v_e_subrender_f_w___shadow.html#a63c28e538340f4549a4e0c59416f94b8">ve::VESubrenderFW_Shadow</a>.</p>
+<p>Reimplemented in <a class="el" href="classve_1_1_v_e_subrender_f_w___nuklear.html#a2db738ce36d2447185d66605660ba98e">ve::VESubrenderFW_Nuklear</a>, and <a class="el" href="classve_1_1_v_e_subrender_f_w___shadow.html#a63c28e538340f4549a4e0c59416f94b8">ve::VESubrenderFW_Shadow</a>.</p>
+
+</div>
+</div>
+<a id="ade1dada5a7f4e7d2449b0ba148dc75f1"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ade1dada5a7f4e7d2449b0ba148dc75f1">&#9670;&nbsp;</a></span>draw() <span class="overload">[2/2]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">virtual VkSemaphore ve::VESubrender::draw </td>
+          <td>(</td>
+          <td class="paramtype">uint32_t&#160;</td>
+          <td class="paramname"><em>imageIndex</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">VkSemaphore&#160;</td>
+          <td class="paramname"><em>wait_semaphore</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span><span class="mlabel">virtual</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+<p>Perform an arbitrary draw operation </p><dl class="section return"><dt>Returns</dt><dd>a semaphore signalling when this draw operations has finished </dd></dl>
+
+<p>Reimplemented in <a class="el" href="classve_1_1_v_e_subrender_f_w___nuklear.html#a979e2dc44e78c0cef0ffaa3a31c925dc">ve::VESubrenderFW_Nuklear</a>.</p>
 
 </div>
 </div>
@@ -609,7 +658,7 @@ std::vector&lt; <a class="el" href="classve_1_1_v_e_entity.html">VEEntity</a> * 
 </div><div class="memdoc">
 <dl class="section return"><dt>Returns</dt><dd>the class of the subrenderer </dd></dl>
 
-<p>Implemented in <a class="el" href="classve_1_1_v_e_subrender_f_w___d.html#a98bf5c152f317a3ce6a3e92c669e9076">ve::VESubrenderFW_D</a>, <a class="el" href="classve_1_1_v_e_subrender_f_w___c1.html#aa5611208c2ab949ef0860892a927c733">ve::VESubrenderFW_C1</a>, <a class="el" href="classve_1_1_v_e_subrender_f_w___cubemap.html#a91a70267b28677cf5097dcd222fe3866">ve::VESubrenderFW_Cubemap</a>, <a class="el" href="classve_1_1_v_e_subrender_f_w___cubemap2.html#a542f1169060817dc0c5aed26e54351a8">ve::VESubrenderFW_Cubemap2</a>, <a class="el" href="classve_1_1_v_e_subrender_f_w___d_n.html#ac23f250eb64e5f2d19c5c70d20ec86b6">ve::VESubrenderFW_DN</a>, <a class="el" href="classve_1_1_v_e_subrender_f_w___shadow.html#a34a44ee79ef422660a0e27a4346f4b4d">ve::VESubrenderFW_Shadow</a>, and <a class="el" href="classve_1_1_v_e_subrender_f_w___skyplane.html#a1e345da16206e3886e26570073ad4619">ve::VESubrenderFW_Skyplane</a>.</p>
+<p>Implemented in <a class="el" href="classve_1_1_v_e_subrender_f_w___d.html#a98bf5c152f317a3ce6a3e92c669e9076">ve::VESubrenderFW_D</a>, <a class="el" href="classve_1_1_v_e_subrender_f_w___nuklear.html#a32af67b22090e9a7452a66d697e5693c">ve::VESubrenderFW_Nuklear</a>, <a class="el" href="classve_1_1_v_e_subrender_f_w___c1.html#aa5611208c2ab949ef0860892a927c733">ve::VESubrenderFW_C1</a>, <a class="el" href="classve_1_1_v_e_subrender_f_w___cubemap.html#a91a70267b28677cf5097dcd222fe3866">ve::VESubrenderFW_Cubemap</a>, <a class="el" href="classve_1_1_v_e_subrender_f_w___cubemap2.html#a542f1169060817dc0c5aed26e54351a8">ve::VESubrenderFW_Cubemap2</a>, <a class="el" href="classve_1_1_v_e_subrender_f_w___d_n.html#ac23f250eb64e5f2d19c5c70d20ec86b6">ve::VESubrenderFW_DN</a>, <a class="el" href="classve_1_1_v_e_subrender_f_w___shadow.html#a34a44ee79ef422660a0e27a4346f4b4d">ve::VESubrenderFW_Shadow</a>, and <a class="el" href="classve_1_1_v_e_subrender_f_w___skyplane.html#a1e345da16206e3886e26570073ad4619">ve::VESubrenderFW_Skyplane</a>.</p>
 
 </div>
 </div>
@@ -663,7 +712,7 @@ std::vector&lt; <a class="el" href="classve_1_1_v_e_entity.html">VEEntity</a> * 
 </div><div class="memdoc">
 <dl class="section return"><dt>Returns</dt><dd>the type of the subrenderer </dd></dl>
 
-<p>Implemented in <a class="el" href="classve_1_1_v_e_subrender_f_w___d.html#a8ca901e752f1f1075f3307d692e23dc4">ve::VESubrenderFW_D</a>, <a class="el" href="classve_1_1_v_e_subrender_f_w___c1.html#a9f4511f9bdecfc16dbf18ccac09050ac">ve::VESubrenderFW_C1</a>, <a class="el" href="classve_1_1_v_e_subrender_f_w___cubemap.html#a4aee3b2489e83e3272c750be4510901c">ve::VESubrenderFW_Cubemap</a>, <a class="el" href="classve_1_1_v_e_subrender_f_w___cubemap2.html#a2d263b10b9ce741df5fc4cb4f186c94e">ve::VESubrenderFW_Cubemap2</a>, <a class="el" href="classve_1_1_v_e_subrender_f_w___d_n.html#ad3153bbcf84668a0957f891fd4a3ddd6">ve::VESubrenderFW_DN</a>, <a class="el" href="classve_1_1_v_e_subrender_f_w___shadow.html#a00e51e4f93a8d71c223231045f9abbc8">ve::VESubrenderFW_Shadow</a>, and <a class="el" href="classve_1_1_v_e_subrender_f_w___skyplane.html#a0fdfe35e09ad169dcbddb207c0e4436b">ve::VESubrenderFW_Skyplane</a>.</p>
+<p>Implemented in <a class="el" href="classve_1_1_v_e_subrender_f_w___d.html#a8ca901e752f1f1075f3307d692e23dc4">ve::VESubrenderFW_D</a>, <a class="el" href="classve_1_1_v_e_subrender_f_w___nuklear.html#a4ed5c935c3615794d4c10c5565aa8c50">ve::VESubrenderFW_Nuklear</a>, <a class="el" href="classve_1_1_v_e_subrender_f_w___c1.html#a9f4511f9bdecfc16dbf18ccac09050ac">ve::VESubrenderFW_C1</a>, <a class="el" href="classve_1_1_v_e_subrender_f_w___cubemap.html#a4aee3b2489e83e3272c750be4510901c">ve::VESubrenderFW_Cubemap</a>, <a class="el" href="classve_1_1_v_e_subrender_f_w___cubemap2.html#a2d263b10b9ce741df5fc4cb4f186c94e">ve::VESubrenderFW_Cubemap2</a>, <a class="el" href="classve_1_1_v_e_subrender_f_w___d_n.html#ad3153bbcf84668a0957f891fd4a3ddd6">ve::VESubrenderFW_DN</a>, <a class="el" href="classve_1_1_v_e_subrender_f_w___shadow.html#a00e51e4f93a8d71c223231045f9abbc8">ve::VESubrenderFW_Shadow</a>, and <a class="el" href="classve_1_1_v_e_subrender_f_w___skyplane.html#a0fdfe35e09ad169dcbddb207c0e4436b">ve::VESubrenderFW_Skyplane</a>.</p>
 
 </div>
 </div>
@@ -709,7 +758,7 @@ std::vector&lt; <a class="el" href="classve_1_1_v_e_entity.html">VEEntity</a> * 
 </div><!-- contents -->
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>
-Generated on Fri Apr 19 2019 20:48:00 for Vienna Vulkan Engine by &#160;<a href="http://www.doxygen.org/index.html">
+Generated on Tue Apr 23 2019 14:29:08 for Vienna Vulkan Engine by &#160;<a href="http://www.doxygen.org/index.html">
 <img class="footer" src="doxygen.png" alt="doxygen"/>
 </a> 1.8.15
 </small></address>

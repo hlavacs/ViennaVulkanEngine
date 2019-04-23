@@ -12,7 +12,7 @@ var searchData=
   ['closeengine',['closeEngine',['../classve_1_1_v_e_engine.html#a91282ffe47507599b98f56a7aaac1379',1,'ve::VEEngine']]],
   ['closerenderer',['closeRenderer',['../classve_1_1_v_e_renderer.html#aa3ff9ab7b7f919594437caa8521bb101',1,'ve::VERenderer::closeRenderer()'],['../classve_1_1_v_e_renderer_forward.html#a0279b3fe8107709704337c049fa5c9fd',1,'ve::VERendererForward::closeRenderer()']]],
   ['closescenemanager',['closeSceneManager',['../classve_1_1_v_e_scene_manager.html#a8871bfddf3e3f7497fcdf1b680dc0e48',1,'ve::VESceneManager']]],
-  ['closesubrenderer',['closeSubrenderer',['../classve_1_1_v_e_subrender.html#a03b4f3fab15bf8d22501c445f315e0f1',1,'ve::VESubrender']]],
+  ['closesubrenderer',['closeSubrenderer',['../classve_1_1_v_e_subrender.html#a03b4f3fab15bf8d22501c445f315e0f1',1,'ve::VESubrender::closeSubrenderer()'],['../classve_1_1_v_e_subrender_f_w___nuklear.html#a3e9cc7bc074401b743b9f734a9dc8fea',1,'ve::VESubrenderFW_Nuklear::closeSubrenderer()']]],
   ['closewindow',['closeWindow',['../classve_1_1_v_e_window.html#aac5bf717a342d1c41bfbaeefb890528d',1,'ve::VEWindow::closeWindow()'],['../classve_1_1_v_e_window_g_l_f_w.html#a0e08ebb8dfeba0b6c0c0cb5ec1e6fc40',1,'ve::VEWindowGLFW::closeWindow()']]],
   ['col_5fambient',['col_ambient',['../structve_1_1_v_e_light_1_1ve_u_b_o_per_light__t.html#a6a0ec2911ac4eecbb55d378c95ff013a',1,'ve::VELight::veUBOPerLight_t']]],
   ['col_5fdiffuse',['col_diffuse',['../structve_1_1_v_e_light_1_1ve_u_b_o_per_light__t.html#a3534813c6844651c2f0a10c972d28436',1,'ve::VELight::veUBOPerLight_t']]],

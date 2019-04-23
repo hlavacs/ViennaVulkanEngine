@@ -149,10 +149,9 @@ int main() {
 		mve.loadLevel();
 		mve.run();
 	}
-	catch (const std::runtime_error& e) {
-		std::cerr << e.what() << " (press return)" << std::endl;
-		char dummy = getchar();
-		return EXIT_FAILURE;
+	catch ( const std::exception& e ) {
+		getEnginePointer()->fatalError(e.what());
+		mve.run();
 	}
 
 	return 0;

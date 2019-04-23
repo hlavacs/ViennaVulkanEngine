@@ -189,6 +189,7 @@ namespace ve {
 		}
 	};
 
+
 	/**
 	*
 	* \brief Delete an event listener.
@@ -206,6 +207,8 @@ namespace ve {
 			}
 		}
 	};
+
+
 
 	/**
 	*
@@ -330,7 +333,6 @@ namespace ve {
 		}
 	}
 
-		
 
 	/**
 	*
@@ -343,6 +345,23 @@ namespace ve {
 	void VEEngine::windowSizeChanged() {
 		m_framebufferResized = true;
 	};
+
+
+	/**
+	*
+	* \brief Show a fatal error using the Nuklear GUI
+	*
+	* This function deletes all registered event listeners, and registers one new one,
+	* showing an error message.
+	*
+	*/
+	void VEEngine::fatalError(std::string message) {
+		while (m_eventListener.size() > 0) {
+			deleteEventListener( m_eventListener[0]->getName() );
+		}
+
+		registerEventListener(new VEEventListenerNuklearError(message) );		
+	}
 
 
 	//-------------------------------------------------------------------------------------------------------
@@ -382,6 +401,7 @@ namespace ve {
 	uint32_t VEEngine::getLoopCount() {
 		return m_loopCount; 
 	};
+
 
 
 	//-------------------------------------------------------------------------------------------------------

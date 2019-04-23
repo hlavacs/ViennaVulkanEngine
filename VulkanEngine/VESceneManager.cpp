@@ -120,7 +120,7 @@ namespace ve {
 			aiFlags);
 
 		if (pScene == nullptr) {
-			throw std::runtime_error("Error: Could not load asset file " + filekey + "!");
+			getEnginePointer()->fatalError("Error: Could not load asset file " + filekey + "!");
 			return nullptr;
 		}
 		createMeshes(pScene, filekey, meshes);
@@ -167,7 +167,7 @@ namespace ve {
 			aiFlags);
 
 		if (pScene == nullptr) {
-			throw std::runtime_error("Error: Could not load asset file " + filekey + "!");
+			getEnginePointer()->fatalError("Error: Could not load asset file " + filekey + "!");
 			return nullptr;
 		}
 		std::vector<VEMesh*> meshes;
@@ -455,7 +455,7 @@ namespace ve {
 
 			gli::texture_cube texCube(gli::load(filekey));
 			if (texCube.empty()) {
-				throw std::runtime_error("Error: Could not load cubemap file " + filekey + "!");
+				getEnginePointer()->fatalError("Error: Could not load cubemap file " + filekey + "!");
 				return nullptr;
 			}
 

@@ -14,7 +14,7 @@ namespace ve {
 	*/
 	class VESubrenderFW_Nuklear : public VESubrender {
 	protected:
-		struct nk_context *m_ctx;
+		struct nk_context *m_ctx;						///<The Nuklear context storing the GUI data
 
 	public:
 		///Constructor of class VESubrenderFW_Nuklear

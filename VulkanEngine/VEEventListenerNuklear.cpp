@@ -33,23 +33,23 @@ namespace ve {
 				fprintf(stdout, "button pressed\n");
 
 			nk_layout_row_dynamic(ctx, 30, 2);
-			if (nk_option_label(ctx, "up", settings.orientation == UP)) settings.orientation = UP;
-			if (nk_option_label(ctx, "down", settings.orientation == DOWN)) settings.orientation = DOWN;
+			if (nk_option_label(ctx, "up", m_orientation == UP)) m_orientation = UP;
+			if (nk_option_label(ctx, "down", m_orientation == DOWN)) m_orientation = DOWN;
 
 			nk_layout_row_dynamic(ctx, 25, 1);
-			nk_property_int(ctx, "Zoom:", 0, &settings.zoom, 100, 10, 1);
+			nk_property_int(ctx, "Zoom:", 0, &m_zoom, 100, 10, 1);
 
 			nk_layout_row_dynamic(ctx, 20, 1);
 			nk_label(ctx, "background:", NK_TEXT_LEFT);
 			nk_layout_row_dynamic(ctx, 25, 1);
-			if (nk_combo_begin_color(ctx, background, nk_vec2(nk_widget_width(ctx), 400))) {
+			if (nk_combo_begin_color(ctx, m_background, nk_vec2(nk_widget_width(ctx), 400))) {
 				nk_layout_row_dynamic(ctx, 120, 1);
-				background = nk_color_picker(ctx, background, NK_RGBA);
+				m_background = nk_color_picker(ctx, m_background, NK_RGBA);
 				nk_layout_row_dynamic(ctx, 25, 1);
-				background.r = (nk_byte)nk_propertyi(ctx, "#R:", 0, background.r, 255, 1, 1);
-				background.g = (nk_byte)nk_propertyi(ctx, "#G:", 0, background.g, 255, 1, 1);
-				background.b = (nk_byte)nk_propertyi(ctx, "#B:", 0, background.b, 255, 1, 1);
-				background.a = (nk_byte)nk_propertyi(ctx, "#A:", 0, background.a, 255, 1, 1);
+				m_background.r = (nk_byte)nk_propertyi(ctx, "#R:", 0, m_background.r, 255, 1, 1);
+				m_background.g = (nk_byte)nk_propertyi(ctx, "#G:", 0, m_background.g, 255, 1, 1);
+				m_background.b = (nk_byte)nk_propertyi(ctx, "#B:", 0, m_background.b, 255, 1, 1);
+				m_background.a = (nk_byte)nk_propertyi(ctx, "#A:", 0, m_background.a, 255, 1, 1);
 				nk_combo_end(ctx);
 			}
 		}
@@ -80,7 +80,40 @@ namespace ve {
 		// glfwTerminate();
 		// return 0;
 
-		nk_color_fv(settings.bg_color, background);
+		nk_color_fv( m_bg_color, m_background);
+	}
+
+
+	/**
+	*
+	* \brief Callback for frame ended event
+	*
+	* \param[in] event The frame ended event
+	*
+	*/
+	void VEEventListenerNuklearError::onFrameEnded(veEvent event) {
+		VESubrenderFW_Nuklear * pSubrender = (VESubrenderFW_Nuklear*)getRendererPointer()->getOverlay();
+		if (pSubrender == nullptr) return;
+
+		struct nk_context * ctx = pSubrender->getContext();
+
+		/* GUI */
+		if (nk_begin(ctx, "An error occured", nk_rect(0, 0, (float)getWindowPointer()->getExtent().width, (float)getWindowPointer()->getExtent().height),
+			NK_WINDOW_BORDER | NK_WINDOW_TITLE))
+		{
+			nk_layout_row_dynamic(ctx, 30, 2);
+
+			nk_label(ctx, "Error message: ", NK_TEXT_LEFT);
+			nk_label(ctx, getName().c_str(), NK_TEXT_LEFT);
+
+			nk_layout_row_dynamic(ctx, 30, 2);
+
+			if (nk_button_label(ctx, "Close Engine")) {
+				getEnginePointer()->end();
+			}
+		}
+		nk_end(ctx);
+
 	}
 
 }
