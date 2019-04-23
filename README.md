@@ -3,7 +3,7 @@ The Vienna Vulkan Engine (VVVE) is a Vulkan based render engine meant for learni
 
 - https://ufind.univie.ac.at/de/course.html?lv=052214&semester=2018W
 - https://ufind.univie.ac.at/de/course.html?lv=052212&semester=2018W
- -https://ufind.univie.ac.at/de/course.html?lv=052211&semester=2019S
+- https://ufind.univie.ac.at/de/course.html?lv=052211&semester=2019S
 
 VVE's main contributor is Prof. Helmut Hlavacs (http://entertain.univie.ac.at/~hlavacs/). However, VVE will be heavily involved in the aforementioned course, and other courses as well, and many students are already working on VVE extensions, porting, debugging etc.
 
