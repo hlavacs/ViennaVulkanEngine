@@ -149,9 +149,15 @@ int main() {
 		mve.loadLevel();
 		mve.run();
 	}
-	catch ( const std::exception& e ) {
-		getEnginePointer()->fatalError(e.what());
-		mve.run();
+	catch ( const std::runtime_error & err ) {
+		if (mve.getLoopCount() == 0) {							//engine was not initialized
+			std::cout << "Error: " << err.what() << std::endl;	//just output to console
+			char in = getchar();
+			return 1;
+		}
+
+		getEnginePointer()->fatalError(err.what());		//engines was initialized
+		mve.run();										//output error in window
 	}
 
 	return 0;

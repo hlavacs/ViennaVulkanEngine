@@ -115,14 +115,16 @@ namespace ve {
 		m_boundingSphereRadius = sqrt(m_boundingSphereRadius);
 
 		//create the vertex buffer
-		vh::vhBufCreateVertexBuffer(getRendererPointer()->getDevice(), getRendererPointer()->getVmaAllocator(),
-			getRendererPointer()->getGraphicsQueue(), getRendererPointer()->getCommandPool(),
-			vertices, &m_vertexBuffer, &m_vertexBufferAllocation);
+		VECHECKRESULT( vh::vhBufCreateVertexBuffer(	getRendererPointer()->getDevice(), getRendererPointer()->getVmaAllocator(),
+													getRendererPointer()->getGraphicsQueue(), getRendererPointer()->getCommandPool(),
+													vertices, &m_vertexBuffer, &m_vertexBufferAllocation),
+						"Could not create vertex buffer for " + name);
 
 		//create the index buffer
-		vh::vhBufCreateIndexBuffer(getRendererPointer()->getDevice(), getRendererPointer()->getVmaAllocator(),
-			getRendererPointer()->getGraphicsQueue(), getRendererPointer()->getCommandPool(),
-			indices, &m_indexBuffer, &m_indexBufferAllocation);
+		VECHECKRESULT( vh::vhBufCreateIndexBuffer(	getRendererPointer()->getDevice(), getRendererPointer()->getVmaAllocator(),
+													getRendererPointer()->getGraphicsQueue(), getRendererPointer()->getCommandPool(),
+													indices, &m_indexBuffer, &m_indexBufferAllocation),
+						"Could not create index buffer for " + name);
 	}
 
 
@@ -172,15 +174,18 @@ namespace ve {
 							VkImageCreateFlags flags, VkImageViewType viewType) : VENamedClass(name) {
 		if (texNames.size() == 0) return;
 
-		vh::vhBufCreateTextureImage(getRendererPointer()->getDevice(), getRendererPointer()->getVmaAllocator(),
-			getRendererPointer()->getGraphicsQueue(), getRendererPointer()->getCommandPool(),
-			basedir, texNames, flags, &m_image, &m_deviceAllocation, &m_extent);
+		VECHECKRESULT(vh::vhBufCreateTextureImage(getRendererPointer()->getDevice(), getRendererPointer()->getVmaAllocator(),
+							getRendererPointer()->getGraphicsQueue(), getRendererPointer()->getCommandPool(),
+							basedir, texNames, flags, &m_image, &m_deviceAllocation, &m_extent),
+					"Could not create texture image for " + basedir + "/" + texNames[0] );
 
 		m_format = VK_FORMAT_R8G8B8A8_UNORM;
-		vh::vhBufCreateImageView(getRendererPointer()->getDevice(), m_image,
-			m_format, viewType, (uint32_t)texNames.size(), VK_IMAGE_ASPECT_COLOR_BIT, &m_imageView);
+		VECHECKRESULT(vh::vhBufCreateImageView(getRendererPointer()->getDevice(), m_image,
+							m_format, viewType, (uint32_t)texNames.size(), VK_IMAGE_ASPECT_COLOR_BIT, &m_imageView),
+					"Could not create image view for " + basedir + "/" + texNames[0]);
 
-		vh::vhBufCreateTextureSampler(getRendererPointer()->getDevice(), &m_sampler);
+		VECHECKRESULT(vh::vhBufCreateTextureSampler(getRendererPointer()->getDevice(), &m_sampler),
+					"Could not create texture sampler for " + basedir + "/" + texNames[0]);
 	}
 
 	/**
@@ -198,18 +203,20 @@ namespace ve {
 	VETexture::VETexture(std::string name, gli::texture_cube &texCube,
 		VkImageCreateFlags flags, VkImageViewType viewType) : VENamedClass(name) {
 
-		vh::vhBufCreateTexturecubeImage(getRendererPointer()->getDevice(), getRendererPointer()->getVmaAllocator(),
-			getRendererPointer()->getGraphicsQueue(), getRendererPointer()->getCommandPool(),
-			texCube, &m_image, &m_deviceAllocation, &m_format);
+		VECHECKRESULT(vh::vhBufCreateTexturecubeImage(getRendererPointer()->getDevice(), getRendererPointer()->getVmaAllocator(),
+							getRendererPointer()->getGraphicsQueue(), getRendererPointer()->getCommandPool(),
+							texCube, &m_image, &m_deviceAllocation, &m_format),
+					"Could not create texture cubemap for " + name);
 
 		m_extent.width = texCube.extent().x;
 		m_extent.height = texCube.extent().y;
 
-		vh::vhBufCreateImageView(getRendererPointer()->getDevice(), m_image,
-			m_format, VK_IMAGE_VIEW_TYPE_CUBE, 6,
-			VK_IMAGE_ASPECT_COLOR_BIT, &m_imageView);
+		VECHECKRESULT(vh::vhBufCreateImageView(getRendererPointer()->getDevice(), m_image,
+							m_format, VK_IMAGE_VIEW_TYPE_CUBE, 6, VK_IMAGE_ASPECT_COLOR_BIT, &m_imageView),
+					"Could not create image view for cubemap for " + name);
 
-		vh::vhBufCreateTextureSampler(getRendererPointer()->getDevice(), &m_sampler);
+		VECHECKRESULT(vh::vhBufCreateTextureSampler(getRendererPointer()->getDevice(), &m_sampler),
+					"Could not create texture sampler for cubemap " + name );
 	}
 
 	/**

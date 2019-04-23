@@ -54,10 +54,11 @@ namespace ve {
 			vh::vhSetupDebugCallback( m_instance, &callback );				//create a debug callback for printing debug information
 		
 		m_pWindow->createSurface(m_instance, &m_pRenderer->m_surface);	//create a Vulkan surface
-		m_pRenderer->initRenderer();		//initialize the renderer
+		m_pRenderer->initRenderer();			//initialize the renderer
 		m_pSceneManager->initSceneManager();	//initialize the scene manager
 
 		registerEventListeners();
+		m_loopCount = 1;
 	}
 
 

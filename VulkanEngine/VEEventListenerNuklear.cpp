@@ -101,12 +101,11 @@ namespace ve {
 		if (nk_begin(ctx, "An error occured", nk_rect(0, 0, (float)getWindowPointer()->getExtent().width, (float)getWindowPointer()->getExtent().height),
 			NK_WINDOW_BORDER | NK_WINDOW_TITLE))
 		{
-			nk_layout_row_dynamic(ctx, 30, 2);
+			nk_layout_row_dynamic(ctx, 30, 1);
 
-			nk_label(ctx, "Error message: ", NK_TEXT_LEFT);
-			nk_label(ctx, getName().c_str(), NK_TEXT_LEFT);
+			nk_label(ctx, (std::string( "Error message: ") + getName()).c_str(), NK_TEXT_LEFT);
 
-			nk_layout_row_dynamic(ctx, 30, 2);
+			nk_layout_row_dynamic(ctx, 30, 1);
 
 			if (nk_button_label(ctx, "Close Engine")) {
 				getEnginePointer()->end();
