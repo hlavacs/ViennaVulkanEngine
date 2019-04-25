@@ -32,23 +32,23 @@
 #include <glm/gtx/hash.hpp>
 #include <glm/gtx/transform.hpp>
 
+#define _USE_MATH_DEFINES
+#include <math.h>
+
 #include <vulkan/vulkan.hpp>
 #include "vk_mem_alloc.h"
 #include <stb_image.h>
 #include <stb_image_write.h>
 #include <gli/gli.hpp>
 #include <ThreadPool.h>
+#include "CLInclude.h"
 
 #include <assimp/Importer.hpp>
 #include <assimp/scene.h>
 #include <assimp/postprocess.h>
 
-#define _USE_MATH_DEFINES
-#include <math.h>
-
 #define GLFW_INCLUDE_VULKAN
 #include <GLFW/glfw3.h>
-
 
 
 

@@ -158,6 +158,7 @@ int main() {
 
 		getEnginePointer()->fatalError(err.what());		//engines was initialized
 		mve.run();										//output error in window
+		return 1;
 	}
 
 	return 0;

@@ -87,7 +87,10 @@
     <ClInclude Include="VEEventListenerNuklear.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="PHShape.h">
+    <ClInclude Include="CLShape.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="CLInclude.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
@@ -182,7 +185,7 @@
     <ClCompile Include="VEEventListenerNuklear.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="PHIntersect.cpp">
+    <ClCompile Include="CLIntersect.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

@@ -171,7 +171,8 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClInclude Include="PHShape.h" />
+    <ClInclude Include="CLInclude.h" />
+    <ClInclude Include="CLShape.h" />
     <ClInclude Include="VEEventListenerNuklear.h" />
     <ClInclude Include="VEMaterial.h" />
     <ClInclude Include="VESubrenderFW_Nuklear.h" />
@@ -199,7 +200,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp" />
-    <ClCompile Include="PHIntersect.cpp" />
+    <ClCompile Include="CLIntersect.cpp" />
     <ClCompile Include="VEEngine.cpp" />
     <ClCompile Include="VEEntity.cpp" />
     <ClCompile Include="VEEventListener.cpp" />
