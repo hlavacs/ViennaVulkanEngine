@@ -59,6 +59,8 @@ namespace ve {
 		double m_dt = 0.0;								///<Delta time since the last loop
 		double m_time = 0.0;							///<Absolute game time since start of the render loop
 		uint32_t m_loopCount = 0;						///<Counts up the render loop
+		float m_AvgFrameTime = 0.0f;					///<Average time per frame (ms)
+		float m_AvgNumObjects;							///<Average number of objects drawn
 		bool m_framebufferResized = false;				///<Flag indicating whether the window size has changed.
 		bool m_end_running = false;						///<Flag indicating that the engine should leave the render loop
 		bool m_debug = true;							///<Flag indicating whether debugging is enabled or not
@@ -98,6 +100,10 @@ namespace ve {
 		VESceneManager * getSceneManager();			//Return a  pointer to the scene manager instance
 		VERenderer     * getRenderer();				//Return a pointer to the renderer instance
 		uint32_t		 getLoopCount();			//Return the number of the current render loop
+		///\returns the average frame time in ms
+		float			 getAvgFrameTime() { return m_AvgFrameTime;  };
+		///\returns the average number of objects drawn per frame
+		float			 getAvgNumObjects() { return m_AvgNumObjects; };
 	};
 
 

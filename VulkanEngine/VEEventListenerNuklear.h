@@ -39,25 +39,5 @@ namespace ve {
 	};
 
 
-	/**
-	*
-	* \brief This event listener is used for displaying error messages using Nuklear
-	*
-	* After a fatal error, this event listener is used to display the error message
-	* before the engine closes down.
-	*
-	*/
-	class VEEventListenerNuklearError : public VEEventListener {
-
-	protected:
-		virtual void onFrameEnded(veEvent event);
-
-	public:
-		///Constructor of class VEEventListenerNuklearError
-		VEEventListenerNuklearError(std::string name) : VEEventListener(name) { };
-		///Destructor of class VEEventListenerNuklearError
-		virtual ~VEEventListenerNuklearError() {};
-	};
-
 }
 

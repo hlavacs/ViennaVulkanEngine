@@ -410,11 +410,17 @@ namespace ve {
 	}
 
 
+	/**
+	* \brief Prepare to creat an overlay, e.g. initialize the next frame
+	*/
 	void VERendererForward::prepareOverlay() {
 		if (m_subrenderOverlay == nullptr) return;
 		m_subrenderOverlay->prepareDraw();
 	}
 
+	/**
+	* \brief Draw the overlay into the current frame buffer
+	*/
 	void VERendererForward::drawOverlay() {
 		if (m_subrenderOverlay == nullptr) return;
 

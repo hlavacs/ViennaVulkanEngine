@@ -13,6 +13,8 @@
 #include "VEEventListener.h"
 #include "VEEventListenerGLFW.h"
 #include "VEEventListenerNuklear.h"
+#include "VEEventListenerNuklearError.h"
+#include "VEEventListenerNuklearDebug.h"
 #include "VEWindow.h"
 #include "VEWindowGLFW.h"
 #include "VEEngine.h"

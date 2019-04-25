@@ -54,17 +54,17 @@ namespace ve {
 		size_t						m_currentFrame = 0;					///<int for the fences
 		bool						m_framebufferResized = false;		///<signal that window size is changing
 
-		void createSyncObjects();							//create the sync objects
-		void cleanupSwapChain();							//delete the swapchain
+		void createSyncObjects();					//create the sync objects
+		void cleanupSwapChain();					//delete the swapchain
 
-		virtual void initRenderer();						//init the renderer
-		virtual void createSubrenderers();					//create the subrenderers
-		virtual void drawFrame();							//draw one frame
+		virtual void initRenderer();				//init the renderer
+		virtual void createSubrenderers();			//create the subrenderers
+		virtual void drawFrame();					//draw one frame
 		virtual void prepareOverlay();				//prepare to draw the overlay
 		virtual void drawOverlay();					//Draw the overlay (GUI)
-		virtual void presentFrame();						//Present the newly drawn frame
-		virtual void closeRenderer();						//close the renderer
-		virtual void recreateSwapchain();					//new swapchain due to window size change
+		virtual void presentFrame();				//Present the newly drawn frame
+		virtual void closeRenderer();				//close the renderer
+		virtual void recreateSwapchain();			//new swapchain due to window size change
 
 	public:
 		///Constructor
