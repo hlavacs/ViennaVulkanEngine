@@ -19,19 +19,27 @@ namespace ve {
 		struct nk_context * ctx = pSubrender->getContext();
 
 		/* GUI */
-		if (nk_begin(ctx, "An error occured", nk_rect(	(float)getWindowPointer()->getExtent().width / 2, (float)getWindowPointer()->getExtent().height / 2,
-														(float)getWindowPointer()->getExtent().width/2, (float)getWindowPointer()->getExtent().height/2),
+		if (nk_begin(ctx, "Statistics", nk_rect( 0, 0, 200, 200 ),
 			NK_WINDOW_BORDER | NK_WINDOW_MOVABLE | NK_WINDOW_SCALABLE | NK_WINDOW_MINIMIZABLE | NK_WINDOW_TITLE))
 		{
-			nk_layout_row_dynamic(ctx, 30, 1);
-
-			nk_label(ctx, (std::string("FPS: ") + getName()).c_str(), NK_TEXT_LEFT);
+			char outbuffer[100];
 
 			nk_layout_row_dynamic(ctx, 30, 1);
+			sprintf(outbuffer, "Frametime (ms): %4.1f", getEnginePointer()->getAvgFrameTime()*1000.0f );
+			nk_label(ctx, outbuffer, NK_TEXT_LEFT);
 
-			if (nk_button_label(ctx, "Close Engine")) {
-				getEnginePointer()->end();
-			}
+			nk_layout_row_dynamic(ctx, 30, 1);
+			sprintf(outbuffer, "Updatetime (ms): %4.1f", getEnginePointer()->getAvgUpdateTime()*1000.0f);
+			nk_label(ctx, outbuffer, NK_TEXT_LEFT);
+
+			nk_layout_row_dynamic(ctx, 30, 1);
+			sprintf(outbuffer, "Shadowtime (ms): %4.1f", getRendererForwardPointer()->m_AvgCmdShadowTime*1000.0f);
+			nk_label(ctx, outbuffer, NK_TEXT_LEFT);
+
+			nk_layout_row_dynamic(ctx, 30, 1);
+			sprintf(outbuffer, "Ligthtime (ms): %4.1f", getRendererForwardPointer()->m_AvgCmdLightTime*1000.0f);
+			nk_label(ctx, outbuffer, NK_TEXT_LEFT);
+
 		}
 		nk_end(ctx);
 

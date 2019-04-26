@@ -67,6 +67,10 @@ namespace ve {
 		virtual void recreateSwapchain();			//new swapchain due to window size change
 
 	public:
+		float m_AvgCmdShadowTime = 0.0f;
+		float m_AvgCmdLightTime = 0.0f;
+		float m_AvgCmdCommitTime = 0.0f;
+
 		///Constructor
 		VERendererForward();
 		//Destructor

@@ -11,6 +11,21 @@ namespace vh {
 
 	//-------------------------------------------------------------------------------------------------------
 	
+	std::chrono::high_resolution_clock::time_point vhTimeNow() {
+		return std::chrono::high_resolution_clock::now();
+	}
+
+	float vhTimeDuration(std::chrono::high_resolution_clock::time_point t_prev) {
+		std::chrono::duration<double> time_span = 
+			std::chrono::duration_cast<std::chrono::duration<double>>( vhTimeNow() - t_prev );
+		return std::chrono::duration_cast<std::chrono::milliseconds>(time_span).count() / 1000.0f;
+	}
+
+	float vhAverage(float new_val, float average, float weight ) {
+		return weight*average + (1.0f-weight)*new_val;
+	}
+
+
 	/**
 	*
 	* \brief Check validation layers of the Vulkan instance

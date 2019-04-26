@@ -339,8 +339,6 @@ namespace ve {
 		VECamera *pCamera = getSceneManagerPointer()->getCamera();
 		pCamera->setExtent(getWindowPointer()->getExtent());
 
-		getSceneManagerPointer()->updateSceneNodes(imageIndex);
-
 		//prepare command buffer for drawing
 		VkCommandBuffer commandBuffer = vh::vhCmdBeginSingleTimeCommands(m_device, m_commandPool);
 
@@ -360,6 +358,9 @@ namespace ve {
 		clearValuesLight.push_back(cv2);
 
 		//go through all active lights in the scene
+
+		std::chrono::high_resolution_clock::time_point t_now;
+
 		for (uint32_t i = 0; i < getSceneManagerPointer()->getLights().size(); i++ ) {
 
 			VELight * pLight = getSceneManagerPointer()->getLights()[i];
@@ -367,36 +368,44 @@ namespace ve {
 			//-----------------------------------------------------------------------------------------
 			//shadow passes
 
-			for (unsigned i = 0; i < pLight->m_shadowCameras.size(); i++) {
+			t_now = vh::vhTimeNow();
+			{
+				for (unsigned i = 0; i < pLight->m_shadowCameras.size(); i++) {
 
-				vh::vhRenderBeginRenderPass(commandBuffer, 
-											m_renderPassShadow,
-											m_shadowFramebuffers[imageIndex][i],
-											clearValuesShadow, 
-											m_shadowMaps[0][i]->m_extent);	//all shadow maps have the same extent
+					vh::vhRenderBeginRenderPass(commandBuffer,
+						m_renderPassShadow,
+						m_shadowFramebuffers[imageIndex][i],
+						clearValuesShadow,
+						m_shadowMaps[0][i]->m_extent);	//all shadow maps have the same extent
 
-				m_subrenderShadow->draw(commandBuffer, imageIndex, i, pLight->m_shadowCameras[i], pLight, {});
+					m_subrenderShadow->draw(commandBuffer, imageIndex, i, pLight->m_shadowCameras[i], pLight, {});
 
-				vkCmdEndRenderPass(commandBuffer);
+					vkCmdEndRenderPass(commandBuffer);
+				}
 			}
+			m_AvgCmdShadowTime = vh::vhAverage(vh::vhTimeDuration(t_now), m_AvgCmdShadowTime);
 
 			//-----------------------------------------------------------------------------------------
 			//light pass
 
-			vh::vhRenderBeginRenderPass(commandBuffer, 
-										i==0 ? m_renderPassClear : m_renderPassLoad,
-										m_swapChainFramebuffers[imageIndex], 
-										clearValuesLight, 
-										m_swapChainExtent);
+			t_now = vh::vhTimeNow();
+			{
+				vh::vhRenderBeginRenderPass(commandBuffer,
+					i == 0 ? m_renderPassClear : m_renderPassLoad,
+					m_swapChainFramebuffers[imageIndex],
+					clearValuesLight,
+					m_swapChainExtent);
 
-			for (auto pSub : m_subrenderers) {
-				if ( i == 0 || pSub->getClass() == VESubrender::VE_SUBRENDERER_CLASS_OBJECT ) {
-					pSub->prepareDraw();
-					pSub->draw(commandBuffer, imageIndex, i, pCamera, pLight, m_descriptorSetsShadow);
+				for (auto pSub : m_subrenderers) {
+					if (i == 0 || pSub->getClass() == VESubrender::VE_SUBRENDERER_CLASS_OBJECT) {
+						pSub->prepareDraw();
+						pSub->draw(commandBuffer, imageIndex, i, pCamera, pLight, m_descriptorSetsShadow);
+					}
 				}
-			}
 
-			vkCmdEndRenderPass(commandBuffer);
+				vkCmdEndRenderPass(commandBuffer);
+			}
+			m_AvgCmdLightTime = vh::vhAverage(vh::vhTimeDuration(t_now), m_AvgCmdLightTime);
 
 			clearValuesLight.clear();		//since we blend the images onto each other, do not clear them for passes 2 and further
 		}

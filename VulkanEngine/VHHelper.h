@@ -136,8 +136,14 @@ namespace vh {
 		} \
 	}
 
+	
 
-	//instance
+	//instance (device)
+
+	std::chrono::high_resolution_clock::time_point vhTimeNow();
+	float vhTimeDuration(std::chrono::high_resolution_clock::time_point t_prev);
+	float vhAverage(float new_val, float avgerage, float weight = 0.8f );
+
 	VkResult vhDevCreateInstance(std::vector<const char*> &extensions, std::vector<const char*> &validationLayers, VkInstance *instance);
 
 	//physical device

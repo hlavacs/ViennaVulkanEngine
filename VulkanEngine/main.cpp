@@ -86,8 +86,8 @@ namespace ve {
 		virtual void registerEventListeners() {
 			VEEngine::registerEventListeners();
 			registerEventListener( new LightListener("LightListener"));
-			registerEventListener(new VEEventListenerNuklear("NuklearListener"));
-
+			//registerEventListener(new VEEventListenerNuklear("NuklearListener"));
+			registerEventListener(new VEEventListenerNuklearDebug("NuklearDebugListener"));
 		};
 
 		///create many cubes
