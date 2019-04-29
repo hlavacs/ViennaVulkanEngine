@@ -6,6 +6,8 @@ var searchData=
   ['g_5fpvescenemanagersingleton',['g_pVESceneManagerSingleton',['../namespaceve.html#a332bd6c0e7d486fe96b600451760d305',1,'ve']]],
   ['g_5fpvewindowsingleton',['g_pVEWindowSingleton',['../namespaceve.html#ae6467da2d17e04e2d595abef8a7a58d2',1,'ve']]],
   ['getattributedescriptions',['getAttributeDescriptions',['../structvh_1_1vh_vertex.html#a82689fa16b294bcc49a509774c620f9a',1,'vh::vhVertex']]],
+  ['getavgframetime',['getAvgFrameTime',['../classve_1_1_v_e_engine.html#a38b910412218201ae6cdad9468b91dd5',1,'ve::VEEngine']]],
+  ['getavgupdatetime',['getAvgUpdateTime',['../classve_1_1_v_e_engine.html#aa127ffe8e651dd0ce970a1dcac3dc736',1,'ve::VEEngine']]],
   ['getbindingdescription',['getBindingDescription',['../structvh_1_1vh_vertex.html#ad914118b48e641e32d7712d8d889403e',1,'vh::vhVertex']]],
   ['getboundingsphere',['getBoundingSphere',['../classve_1_1_v_e_scene_node.html#a69e6f4751d7501059de32627c32fb3fc',1,'ve::VESceneNode::getBoundingSphere()'],['../classve_1_1_v_e_entity.html#a55e2e9159b18fcd72cf7dbb3bed04554',1,'ve::VEEntity::getBoundingSphere()'],['../classve_1_1_v_e_camera.html#a74cb91079352b36c1c15e3ce6cad8cd0',1,'ve::VECamera::getBoundingSphere()']]],
   ['getcamera',['getCamera',['../classve_1_1_v_e_scene_manager.html#a6dedc85430da2d06259704f47ec4f3c7',1,'ve::VESceneManager']]],

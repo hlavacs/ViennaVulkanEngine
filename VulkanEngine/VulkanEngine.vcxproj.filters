@@ -34,9 +34,6 @@
     <Filter Include="Source Files\VHelper">
       <UniqueIdentifier>{97507648-312a-4693-9a61-5563a8f0123b}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Header Files\VHelper">
-      <UniqueIdentifier>{d201c4a9-7ccd-4d84-8a55-185822f4ee99}</UniqueIdentifier>
-    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="VEEngine.h">
@@ -108,9 +105,6 @@
     <ClInclude Include="VESubrenderFW_Skyplane.h">
       <Filter>Header Files\VESubrender</Filter>
     </ClInclude>
-    <ClInclude Include="VHHelper.h">
-      <Filter>Header Files\VHelper</Filter>
-    </ClInclude>
     <ClInclude Include="VEEventListenerNuklearError.h">
       <Filter>Header Files\VEEventListener</Filter>
     </ClInclude>
@@ -122,6 +116,9 @@
     </ClInclude>
     <ClInclude Include="VEEventListenerNuklearDebug.h">
       <Filter>Header Files\VEEventListener</Filter>
+    </ClInclude>
+    <ClInclude Include="VHHelper.h">
+      <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

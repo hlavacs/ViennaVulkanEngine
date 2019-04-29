@@ -1,5 +1,6 @@
 var searchData=
 [
+  ['deletecmdbuffers',['deleteCmdBuffers',['../classve_1_1_v_e_renderer_forward.html#a05df8dacb115e0b93c049141f94274d9',1,'ve::VERendererForward']]],
   ['deleteevent',['deleteEvent',['../classve_1_1_v_e_engine.html#ae1e2951e7ef100bad779ccbf1148c466',1,'ve::VEEngine']]],
   ['deleteeventlistener',['deleteEventListener',['../classve_1_1_v_e_engine.html#a9f5ba97f114b2da508e9b6363b10e140',1,'ve::VEEngine']]],
   ['deletematerial',['deleteMaterial',['../classve_1_1_v_e_scene_manager.html#a16ca7fe353361e0da3ee4a850f57d3ce',1,'ve::VESceneManager']]],

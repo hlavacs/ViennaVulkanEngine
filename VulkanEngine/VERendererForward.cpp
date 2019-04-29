@@ -318,6 +318,10 @@ namespace ve {
 
 	//--------------------------------------------------------------------------------------------
 
+	/**
+	* \brief Delete all command buffers and set them to VK_NULL_HANDLE, so next time they have to be 
+	* created and recorded again
+	*/
 	void VERendererForward::deleteCmdBuffers() {
 		for (uint32_t i = 0; i < m_commandBuffers.size(); i++) {
 			if (m_commandBuffers[i] != VK_NULL_HANDLE) {
@@ -328,6 +332,9 @@ namespace ve {
 	}
 
 
+	/**
+	* \brief Create a new command buffer and record the whole scene into it, then end it
+	*/
 	void VERendererForward::recordCmdBuffers() {
 		VECamera *pCamera = getSceneManagerPointer()->getCamera();
 		pCamera->setExtent(getWindowPointer()->getExtent());
@@ -379,7 +386,7 @@ namespace ve {
 					vkCmdEndRenderPass(m_commandBuffers[imageIndex]);
 				}
 			}
-			m_AvgCmdShadowTime = vh::vhTimeDuration(t_now);
+			m_AvgCmdShadowTime = vh::vhAverage( vh::vhTimeDuration(t_now), m_AvgCmdShadowTime );
 
 			//-----------------------------------------------------------------------------------------
 			//light pass
@@ -401,7 +408,7 @@ namespace ve {
 
 				vkCmdEndRenderPass(m_commandBuffers[imageIndex]);
 			}
-			m_AvgCmdLightTime = vh::vhTimeDuration(t_now);
+			m_AvgCmdLightTime = vh::vhAverage( vh::vhTimeDuration(t_now), m_AvgCmdLightTime );
 
 			clearValuesLight.clear();		//since we blend the images onto each other, do not clear them for passes 2 and further
 		}
@@ -417,11 +424,8 @@ namespace ve {
 	*
 	*- wait for draw completion using a fence, so there is at least one frame in the swapchain
 	*- acquire the next image from the swap chain
-	*- update all UBOs
-	*- get a single time command buffer from the pool, bind pipeline and begin the render pass
-	*- loop through all entities and draw them
-	*- end the command buffer and submit it
-	*- wait for the result and present it
+	*- if there is no command buffer yet, record one with the current scene
+	*- submit it to the queue
 	*/
 	void VERendererForward::drawFrame() {
 		vkWaitForFences(m_device, 1, &m_inFlightFences[m_currentFrame], VK_TRUE, std::numeric_limits<uint64_t>::max());
@@ -447,7 +451,6 @@ namespace ve {
 										m_imageAvailableSemaphores[m_currentFrame],
 										m_renderFinishedSemaphores[m_currentFrame],
 										m_inFlightFences[m_currentFrame]);
-
 	}
 
 
@@ -458,6 +461,7 @@ namespace ve {
 		if (m_subrenderOverlay == nullptr) return;
 		m_subrenderOverlay->prepareDraw();
 	}
+
 
 	/**
 	* \brief Draw the overlay into the current frame buffer
@@ -471,16 +475,14 @@ namespace ve {
 
 	/**
 	* \brief Present the new frame.
-	*
-	* Present the newly drawn frame.
 	*/
 	void VERendererForward::presentFrame() {
 
-		vh::vhBufTransitionImageLayout(m_device, m_graphicsQueue, m_commandPool,
-			getSwapChainImage(), VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_ASPECT_COLOR_BIT, 1, 1,
+		vh::vhBufTransitionImageLayout(m_device, m_graphicsQueue, m_commandPool,				//transition the image layout to 
+			getSwapChainImage(), VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_ASPECT_COLOR_BIT, 1, 1,		//VK_IMAGE_LAYOUT_PRESENT_SRC_KHR
 			VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR);
 
-		VkResult result = vh::vhRenderPresentResult(m_presentQueue, m_swapChain, imageIndex,
+		VkResult result = vh::vhRenderPresentResult(m_presentQueue, m_swapChain, imageIndex,	//present it to the swap chain
 													m_overlaySemaphores[m_currentFrame]);
 
 		if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR || m_framebufferResized) {
@@ -491,7 +493,7 @@ namespace ve {
 			getEnginePointer()->fatalError("failed to present swap chain image!");
 		}
 
-		m_currentFrame = (m_currentFrame + 1) % MAX_FRAMES_IN_FLIGHT;
+		m_currentFrame = (m_currentFrame + 1) % MAX_FRAMES_IN_FLIGHT;		//count up the current frame number
 	}
 
 }

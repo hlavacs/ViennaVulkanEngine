@@ -8,7 +8,9 @@ namespace cl {
 	struct clEdge {
 		glm::vec3 points[2];	///<2 edge points
 
+		///Constructor of struct clEdge
 		clEdge() {};
+		///Constructor of struct clEdge
 		clEdge(glm::vec3 p0, glm::vec3 p1) {
 			points[0] = p0;
 			points[1] = p1;
@@ -20,7 +22,9 @@ namespace cl {
 		glm::vec3 normal;			///<normalized normal vector of the plane
 		float d;					///<distance of the plane to origin along the normal
 
+		///Constructor of struct clPlane
 		clPlane() {};
+		///Constructor of struct clPlane
 		clPlane(glm::vec3 p0, glm::vec3 p1, glm::vec3 p2) {	//construct from 3 points
 			glm::vec3 d1 = p1 - p0;
 			glm::vec3 d2 = p2 - p1;
@@ -34,7 +38,9 @@ namespace cl {
 		glm::vec3 points[4];		///<4 points defining a quad, must lie on the same plane
 		struct clPlane plane;		///<The plane defined by the 4 points
 
+		///Constructor of struct clQuad
 		clQuad() {};
+		///Constructor of struct clQuad
 		clQuad( glm::vec3 p0, glm::vec3 p1, glm::vec3 p2, glm::vec3 p3 ) {
 			points[0] = p0;
 			points[1] = p1;
@@ -64,6 +70,7 @@ namespace cl {
 		glm::vec3 vertices[8];		///<near plane and far plane points
 		struct clQuad quads[6];		///<6 quads bounding the frustum		
 
+		///Constructor of struct clFrustum
 		clFrustum( glm::vec3 vert[8] ) {
 			for (uint32_t i = 0; i < 8; i++) vertices[i] = vert[i];
 

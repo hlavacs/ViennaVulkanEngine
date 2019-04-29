@@ -148,6 +148,15 @@ Functions</h2></td></tr>
 <tr class="memitem:ac6c523c56a5fe3a0bb7e3dd58a135d16"><td class="memItemLeft" align="right" valign="top">VkResult&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacevh.html#ac6c523c56a5fe3a0bb7e3dd58a135d16">vhCmdCreateCommandPool</a> (VkPhysicalDevice physicalDevice, VkDevice device, VkSurfaceKHR surface, VkCommandPool *commandPool)</td></tr>
 <tr class="memdesc:ac6c523c56a5fe3a0bb7e3dd58a135d16"><td class="mdescLeft">&#160;</td><td class="mdescRight">Create a new command pool.  <a href="#ac6c523c56a5fe3a0bb7e3dd58a135d16">More...</a><br /></td></tr>
 <tr class="separator:ac6c523c56a5fe3a0bb7e3dd58a135d16"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:afce4235cfc97c6ecc8ba9340ca99a3f9"><td class="memItemLeft" align="right" valign="top">VkResult&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacevh.html#afce4235cfc97c6ecc8ba9340ca99a3f9">vhCmdCreateCommandBuffers</a> (VkDevice device, VkCommandPool commandPool, VkCommandBufferLevel level, uint32_t count, VkCommandBuffer *pBuffers)</td></tr>
+<tr class="memdesc:afce4235cfc97c6ecc8ba9340ca99a3f9"><td class="mdescLeft">&#160;</td><td class="mdescRight">Create a number of command buffers.  <a href="#afce4235cfc97c6ecc8ba9340ca99a3f9">More...</a><br /></td></tr>
+<tr class="separator:afce4235cfc97c6ecc8ba9340ca99a3f9"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a9791b75aecc6358fa0be4612d8a83b95"><td class="memItemLeft" align="right" valign="top">VkResult&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacevh.html#a9791b75aecc6358fa0be4612d8a83b95">vhCmdBeginCommandBuffer</a> (VkDevice device, VkCommandBuffer commandBuffer, VkCommandBufferUsageFlagBits usageFlags)</td></tr>
+<tr class="memdesc:a9791b75aecc6358fa0be4612d8a83b95"><td class="mdescLeft">&#160;</td><td class="mdescRight">Start a command buffer for recording commands.  <a href="#a9791b75aecc6358fa0be4612d8a83b95">More...</a><br /></td></tr>
+<tr class="separator:a9791b75aecc6358fa0be4612d8a83b95"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a9ea5120b4ad57ec1f87cf053475bde19"><td class="memItemLeft" align="right" valign="top">VkResult&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacevh.html#a9ea5120b4ad57ec1f87cf053475bde19">vhCmdSubmitCommandBuffer</a> (VkDevice device, VkQueue queue, VkCommandBuffer commandBuffer, VkSemaphore waitSemaphore, VkSemaphore signalSemaphore, VkFence waitFence)</td></tr>
+<tr class="memdesc:a9ea5120b4ad57ec1f87cf053475bde19"><td class="mdescLeft">&#160;</td><td class="mdescRight">Submit a command buffer to a queue.  <a href="#a9ea5120b4ad57ec1f87cf053475bde19">More...</a><br /></td></tr>
+<tr class="separator:a9ea5120b4ad57ec1f87cf053475bde19"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a72b5d170d3b735ede6a6f57806402ad1"><td class="memItemLeft" align="right" valign="top">VkCommandBuffer&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacevh.html#a72b5d170d3b735ede6a6f57806402ad1">vhCmdBeginSingleTimeCommands</a> (VkDevice device, VkCommandPool commandPool)</td></tr>
 <tr class="memdesc:a72b5d170d3b735ede6a6f57806402ad1"><td class="mdescLeft">&#160;</td><td class="mdescRight">Begin submitting a single time command.  <a href="#a72b5d170d3b735ede6a6f57806402ad1">More...</a><br /></td></tr>
 <tr class="separator:a72b5d170d3b735ede6a6f57806402ad1"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -173,6 +182,15 @@ void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="name
 void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacevh.html#abdeb0d9fcda941f0cb92fd857002d309">vhSetupDebugCallback</a> (VkInstance instance, VkDebugReportCallbackEXT *callback)</td></tr>
 <tr class="memdesc:abdeb0d9fcda941f0cb92fd857002d309"><td class="mdescLeft">&#160;</td><td class="mdescRight">Register debug callback. <br /></td></tr>
 <tr class="separator:abdeb0d9fcda941f0cb92fd857002d309"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a4fad56183a7e4ab61241a8873a247ea1"><td class="memItemLeft" align="right" valign="top">std::chrono::high_resolution_clock::time_point&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacevh.html#a4fad56183a7e4ab61241a8873a247ea1">vhTimeNow</a> ()</td></tr>
+<tr class="memdesc:a4fad56183a7e4ab61241a8873a247ea1"><td class="mdescLeft">&#160;</td><td class="mdescRight">Take a time measurment from the high resolution clock.  <a href="#a4fad56183a7e4ab61241a8873a247ea1">More...</a><br /></td></tr>
+<tr class="separator:a4fad56183a7e4ab61241a8873a247ea1"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a19eaffd746fc8a31941d4559ca0894c0"><td class="memItemLeft" align="right" valign="top">float&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacevh.html#a19eaffd746fc8a31941d4559ca0894c0">vhTimeDuration</a> (std::chrono::high_resolution_clock::time_point t_prev)</td></tr>
+<tr class="memdesc:a19eaffd746fc8a31941d4559ca0894c0"><td class="mdescLeft">&#160;</td><td class="mdescRight">Use the high resolution clock to calculate a time duration since the last time measurement.  <a href="#a19eaffd746fc8a31941d4559ca0894c0">More...</a><br /></td></tr>
+<tr class="separator:a19eaffd746fc8a31941d4559ca0894c0"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:adc2c15cc0cfeb131342076753df95788"><td class="memItemLeft" align="right" valign="top">float&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacevh.html#adc2c15cc0cfeb131342076753df95788">vhAverage</a> (float new_val, float average, float weight)</td></tr>
+<tr class="memdesc:adc2c15cc0cfeb131342076753df95788"><td class="mdescLeft">&#160;</td><td class="mdescRight">Apply expoentatial smoothing to given values.  <a href="#adc2c15cc0cfeb131342076753df95788">More...</a><br /></td></tr>
+<tr class="separator:adc2c15cc0cfeb131342076753df95788"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a42616af40e6817b748d42deeda488618"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacevh.html#a42616af40e6817b748d42deeda488618">checkValidationLayerSupport</a> (std::vector&lt; const char * &gt; &amp;validationLayers)</td></tr>
 <tr class="memdesc:a42616af40e6817b748d42deeda488618"><td class="mdescLeft">&#160;</td><td class="mdescRight">Check validation layers of the Vulkan instance.  <a href="#a42616af40e6817b748d42deeda488618">More...</a><br /></td></tr>
 <tr class="separator:a42616af40e6817b748d42deeda488618"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -486,6 +504,51 @@ void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="name
   </dd>
 </dl>
 <dl class="section return"><dt>Returns</dt><dd>whether the device supports all required extensions or not </dd></dl>
+
+</div>
+</div>
+<a id="adc2c15cc0cfeb131342076753df95788"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#adc2c15cc0cfeb131342076753df95788">&#9670;&nbsp;</a></span>vhAverage()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">float vh::vhAverage </td>
+          <td>(</td>
+          <td class="paramtype">float&#160;</td>
+          <td class="paramname"><em>new_val</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">float&#160;</td>
+          <td class="paramname"><em>average</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">float&#160;</td>
+          <td class="paramname"><em>weight</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Apply expoentatial smoothing to given values. </p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramdir">[in]</td><td class="paramname">new_val</td><td>The newest value that was measured </td></tr>
+    <tr><td class="paramdir">[in]</td><td class="paramname">average</td><td>The average so far </td></tr>
+    <tr><td class="paramdir">[in]</td><td class="paramname">weight</td><td>An averaging weight between 0 and 1 </td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>Returns</dt><dd>The new average </dd></dl>
 
 </div>
 </div>
@@ -2082,6 +2145,51 @@ void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="name
 
 </div>
 </div>
+<a id="a9791b75aecc6358fa0be4612d8a83b95"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a9791b75aecc6358fa0be4612d8a83b95">&#9670;&nbsp;</a></span>vhCmdBeginCommandBuffer()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">VkResult vh::vhCmdBeginCommandBuffer </td>
+          <td>(</td>
+          <td class="paramtype">VkDevice&#160;</td>
+          <td class="paramname"><em>device</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">VkCommandBuffer&#160;</td>
+          <td class="paramname"><em>commandBuffer</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">VkCommandBufferUsageFlagBits&#160;</td>
+          <td class="paramname"><em>usageFlags</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Start a command buffer for recording commands. </p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramdir">[in]</td><td class="paramname">device</td><td>Logical Vulkan device </td></tr>
+    <tr><td class="paramdir">[in]</td><td class="paramname">commandBuffer</td><td>The command buffer to start </td></tr>
+    <tr><td class="paramdir">[in]</td><td class="paramname">usageFlags</td><td>Flags telling how the buffer will be used </td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>Returns</dt><dd>VK_SUCCESS or a Vulkan error code </dd></dl>
+
+</div>
+</div>
 <a id="a72b5d170d3b735ede6a6f57806402ad1"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a72b5d170d3b735ede6a6f57806402ad1">&#9670;&nbsp;</a></span>vhCmdBeginSingleTimeCommands()</h2>
 
@@ -2117,6 +2225,65 @@ void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="name
   </dd>
 </dl>
 <dl class="section return"><dt>Returns</dt><dd>a new VkCommandBuffer to record commands into </dd></dl>
+
+</div>
+</div>
+<a id="afce4235cfc97c6ecc8ba9340ca99a3f9"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#afce4235cfc97c6ecc8ba9340ca99a3f9">&#9670;&nbsp;</a></span>vhCmdCreateCommandBuffers()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">VkResult vh::vhCmdCreateCommandBuffers </td>
+          <td>(</td>
+          <td class="paramtype">VkDevice&#160;</td>
+          <td class="paramname"><em>device</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">VkCommandPool&#160;</td>
+          <td class="paramname"><em>commandPool</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">VkCommandBufferLevel&#160;</td>
+          <td class="paramname"><em>level</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">uint32_t&#160;</td>
+          <td class="paramname"><em>count</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">VkCommandBuffer *&#160;</td>
+          <td class="paramname"><em>pBuffers</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Create a number of command buffers. </p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramdir">[in]</td><td class="paramname">device</td><td>Logical Vulkan device </td></tr>
+    <tr><td class="paramdir">[in]</td><td class="paramname">commandPool</td><td>Command pool for allocating command bbuffers </td></tr>
+    <tr><td class="paramdir">[in]</td><td class="paramname">level</td><td>Level can be primary or secondary </td></tr>
+    <tr><td class="paramdir">[in]</td><td class="paramname">count</td><td>Number of buffers to create </td></tr>
+    <tr><td class="paramdir">[in]</td><td class="paramname">pBuffers</td><td>Pointer to an array where the buffer handles should be stored </td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>Returns</dt><dd>VK_SUCCESS or a Vulkan error code </dd></dl>
 
 </div>
 </div>
@@ -2287,6 +2454,72 @@ void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="name
     <tr><td class="paramdir">[in]</td><td class="paramname">graphicsQueue</td><td>Queue to submit the buffer to </td></tr>
     <tr><td class="paramdir">[in]</td><td class="paramname">commandPool</td><td>Give back the command buffer to the pool </td></tr>
     <tr><td class="paramdir">[in]</td><td class="paramname">commandBuffer</td><td>The ready to be used command buffer </td></tr>
+    <tr><td class="paramdir">[in]</td><td class="paramname">waitSemaphore</td><td>A semaphore to wait for before submitting </td></tr>
+    <tr><td class="paramdir">[in]</td><td class="paramname">signalSemaphore</td><td>Signal this semaphore after buffer is done </td></tr>
+    <tr><td class="paramdir">[in]</td><td class="paramname">waitFence</td><td>Signal to this fence after buffer is done </td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>Returns</dt><dd>VK_SUCCESS or a Vulkan error code </dd></dl>
+
+</div>
+</div>
+<a id="a9ea5120b4ad57ec1f87cf053475bde19"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a9ea5120b4ad57ec1f87cf053475bde19">&#9670;&nbsp;</a></span>vhCmdSubmitCommandBuffer()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">VkResult vh::vhCmdSubmitCommandBuffer </td>
+          <td>(</td>
+          <td class="paramtype">VkDevice&#160;</td>
+          <td class="paramname"><em>device</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">VkQueue&#160;</td>
+          <td class="paramname"><em>queue</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">VkCommandBuffer&#160;</td>
+          <td class="paramname"><em>commandBuffer</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">VkSemaphore&#160;</td>
+          <td class="paramname"><em>waitSemaphore</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">VkSemaphore&#160;</td>
+          <td class="paramname"><em>signalSemaphore</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">VkFence&#160;</td>
+          <td class="paramname"><em>waitFence</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Submit a command buffer to a queue. </p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramdir">[in]</td><td class="paramname">device</td><td>Logical Vulkan device </td></tr>
+    <tr><td class="paramdir">[in]</td><td class="paramname">queue</td><td>The queue the buffer is sent to </td></tr>
+    <tr><td class="paramdir">[in]</td><td class="paramname">commandBuffer</td><td>The command buffer that is sent to the queue </td></tr>
     <tr><td class="paramdir">[in]</td><td class="paramname">waitSemaphore</td><td>A semaphore to wait for before submitting </td></tr>
     <tr><td class="paramdir">[in]</td><td class="paramname">signalSemaphore</td><td>Signal this semaphore after buffer is done </td></tr>
     <tr><td class="paramdir">[in]</td><td class="paramname">waitFence</td><td>Signal to this fence after buffer is done </td></tr>
@@ -3558,10 +3791,57 @@ void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="name
 
 </div>
 </div>
+<a id="a19eaffd746fc8a31941d4559ca0894c0"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a19eaffd746fc8a31941d4559ca0894c0">&#9670;&nbsp;</a></span>vhTimeDuration()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">float vh::vhTimeDuration </td>
+          <td>(</td>
+          <td class="paramtype">std::chrono::high_resolution_clock::time_point&#160;</td>
+          <td class="paramname"><em>t_prev</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Use the high resolution clock to calculate a time duration since the last time measurement. </p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramdir">[in]</td><td class="paramname">t_prev</td><td>The last time measruement </td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>Returns</dt><dd>the measured time duration </dd></dl>
+
+</div>
+</div>
+<a id="a4fad56183a7e4ab61241a8873a247ea1"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a4fad56183a7e4ab61241a8873a247ea1">&#9670;&nbsp;</a></span>vhTimeNow()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">std::chrono::high_resolution_clock::time_point vh::vhTimeNow </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Take a time measurment from the high resolution clock. </p>
+<dl class="section return"><dt>Returns</dt><dd>the measured value of the clock </dd></dl>
+
+</div>
+</div>
 </div><!-- contents -->
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>
-Generated on Wed Apr 24 2019 07:41:52 for Vienna Vulkan Engine by &#160;<a href="http://www.doxygen.org/index.html">
+Generated on Mon Apr 29 2019 11:18:42 for Vienna Vulkan Engine by &#160;<a href="http://www.doxygen.org/index.html">
 <img class="footer" src="doxygen.png" alt="doxygen"/>
 </a> 1.8.15
 </small></address>

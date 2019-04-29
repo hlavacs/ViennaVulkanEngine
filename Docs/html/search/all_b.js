@@ -1,6 +1,11 @@
 var searchData=
 [
   ['m_5faspectratio',['m_aspectRatio',['../classve_1_1_v_e_camera_projective.html#a3642768de7363ab65558ce210668f1b5',1,'ve::VECameraProjective']]],
+  ['m_5favgcmdlighttime',['m_AvgCmdLightTime',['../classve_1_1_v_e_renderer_forward.html#ae61d43069d43d2725e09357c23f6ea44',1,'ve::VERendererForward']]],
+  ['m_5favgcmdshadowtime',['m_AvgCmdShadowTime',['../classve_1_1_v_e_renderer_forward.html#a1b5bfba9bda59900813ba10361f9b9cb',1,'ve::VERendererForward']]],
+  ['m_5favgdrawtime',['m_AvgDrawTime',['../classve_1_1_v_e_engine.html#a104a97487bfa3e74358a4ed24ac7b440',1,'ve::VEEngine']]],
+  ['m_5favgframetime',['m_AvgFrameTime',['../classve_1_1_v_e_engine.html#a6ac906bc477a4f475a33db3e73986d8d',1,'ve::VEEngine']]],
+  ['m_5favgupdatetime',['m_AvgUpdateTime',['../classve_1_1_v_e_engine.html#af3466e5918f7ba4ec756cc1e89eb394d',1,'ve::VEEngine']]],
   ['m_5fbackground',['m_background',['../classve_1_1_v_e_event_listener_nuklear.html#a514ef32f9876a68f8a6adc3bbbba487e',1,'ve::VEEventListenerNuklear']]],
   ['m_5fbg_5fcolor',['m_bg_color',['../classve_1_1_v_e_event_listener_nuklear.html#a53f0481b3db29371ed5b437fbcfd9a93',1,'ve::VEEventListenerNuklear']]],
   ['m_5fboundingspherecenter',['m_boundingSphereCenter',['../classve_1_1_v_e_mesh.html#a0578f4a4b4b9eb9eae85a91fa59857bc',1,'ve::VEMesh']]],
@@ -11,6 +16,7 @@ var searchData=
   ['m_5fcol_5fambient',['m_col_ambient',['../classve_1_1_v_e_light.html#a0db5dbd110208a9f75fb8b297f1e2b6f',1,'ve::VELight']]],
   ['m_5fcol_5fdiffuse',['m_col_diffuse',['../classve_1_1_v_e_light.html#ab23d985bc701f50b89aa62b94fa2402d',1,'ve::VELight']]],
   ['m_5fcol_5fspecular',['m_col_specular',['../classve_1_1_v_e_light.html#a237452ace4e917ff3a195e7978531399',1,'ve::VELight']]],
+  ['m_5fcommandbuffers',['m_commandBuffers',['../classve_1_1_v_e_renderer_forward.html#a33462619a37c661bd9fb848af081257c',1,'ve::VERendererForward']]],
   ['m_5fcommandpool',['m_commandPool',['../classve_1_1_v_e_renderer.html#aee42258120f2492036f1530f2909cd60',1,'ve::VERenderer']]],
   ['m_5fctx',['m_ctx',['../classve_1_1_v_e_subrender_f_w___nuklear.html#a4a15530643a981af5ad2024a58e76d74',1,'ve::VESubrenderFW_Nuklear']]],
   ['m_5fcurrentframe',['m_currentFrame',['../classve_1_1_v_e_renderer_forward.html#a7c42eee414273bab7a3b0396948c1ba9',1,'ve::VERendererForward']]],

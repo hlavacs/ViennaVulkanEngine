@@ -10,6 +10,7 @@ var searchData=
   ['veeventlistener',['VEEventListener',['../classve_1_1_v_e_event_listener.html#a46128f4c3f14ed965e04ac5f5b4e21d4',1,'ve::VEEventListener']]],
   ['veeventlistenerglfw',['VEEventListenerGLFW',['../classve_1_1_v_e_event_listener_g_l_f_w.html#a5a25a448a8ce474e36fdc22aeac3c593',1,'ve::VEEventListenerGLFW']]],
   ['veeventlistenernuklear',['VEEventListenerNuklear',['../classve_1_1_v_e_event_listener_nuklear.html#a2f4f4d9bfca2266656446d01a609274c',1,'ve::VEEventListenerNuklear']]],
+  ['veeventlistenernukleardebug',['VEEventListenerNuklearDebug',['../classve_1_1_v_e_event_listener_nuklear_debug.html#ade302dea099b6cc42e123f549723cd0c',1,'ve::VEEventListenerNuklearDebug']]],
   ['veeventlistenernuklearerror',['VEEventListenerNuklearError',['../classve_1_1_v_e_event_listener_nuklear_error.html#ac597a807ad38d1542b8ce5545fd60644',1,'ve::VEEventListenerNuklearError']]],
   ['velight',['VELight',['../classve_1_1_v_e_light.html#a6ed73527f265856914523135e05ae159',1,'ve::VELight']]],
   ['vematerial',['VEMaterial',['../classve_1_1_v_e_material.html#a4b763640afa208d5408acddfb6cb6699',1,'ve::VEMaterial']]],
@@ -34,6 +35,7 @@ var searchData=
   ['vetexture',['VETexture',['../structve_1_1_v_e_texture.html#a26f911336a5ad290e353bd9829f25814',1,'ve::VETexture::VETexture(std::string name, gli::texture_cube &amp;texCube, VkImageCreateFlags flags=VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT, VkImageViewType viewType=VK_IMAGE_VIEW_TYPE_CUBE)'],['../structve_1_1_v_e_texture.html#aa1f5620e177ec14e4b7023a94a464a28',1,'ve::VETexture::VETexture(std::string name, std::string &amp;basedir, std::vector&lt; std::string &gt; texNames, VkImageCreateFlags flags=0, VkImageViewType viewtype=VK_IMAGE_VIEW_TYPE_2D)'],['../structve_1_1_v_e_texture.html#ab2c2876b425979c4d8e55e89ccda67b5',1,'ve::VETexture::VETexture(std::string name)']]],
   ['vewindow',['VEWindow',['../classve_1_1_v_e_window.html#a0e11d9f10435f62948f7889131dc3df6',1,'ve::VEWindow']]],
   ['vewindowglfw',['VEWindowGLFW',['../classve_1_1_v_e_window_g_l_f_w.html#a3d1a48b988360d30fbda3d5124682a7f',1,'ve::VEWindowGLFW']]],
+  ['vhaverage',['vhAverage',['../namespacevh.html#adc2c15cc0cfeb131342076753df95788',1,'vh']]],
   ['vhbufcopybuffer',['vhBufCopyBuffer',['../namespacevh.html#afacb884f1a1b7b7fdaef90231cd375fc',1,'vh']]],
   ['vhbufcopybuffertoimage',['vhBufCopyBufferToImage',['../namespacevh.html#ad6013974401fbc5a20e71e57f81d03fd',1,'vh::vhBufCopyBufferToImage(VkDevice device, VkQueue graphicsQueue, VkCommandPool commandPool, VkBuffer buffer, VkImage image, uint32_t layerCount, uint32_t width, uint32_t height)'],['../namespacevh.html#a2e21fd45374af2a124cbaf28e6f63c72',1,'vh::vhBufCopyBufferToImage(VkDevice device, VkQueue graphicsQueue, VkCommandPool commandPool, VkBuffer buffer, VkImage image, std::vector&lt; VkBufferImageCopy &gt; &amp;regions, uint32_t width, uint32_t height)']]],
   ['vhbufcopyimagetobuffer',['vhBufCopyImageToBuffer',['../namespacevh.html#ab17813ab63ecaa73dcc45eb113e816fe',1,'vh::vhBufCopyImageToBuffer(VkDevice device, VkQueue graphicsQueue, VkCommandPool commandPool, VkImage image, VkImageAspectFlagBits aspect, VkBuffer buffer, uint32_t layerCount, uint32_t width, uint32_t height)'],['../namespacevh.html#a7c9dfd0d37a40cf2657779c996b0a138',1,'vh::vhBufCopyImageToBuffer(VkDevice device, VkQueue graphicsQueue, VkCommandPool commandPool, VkImage image, VkBuffer buffer, std::vector&lt; VkBufferImageCopy &gt; &amp;regions, uint32_t width, uint32_t height)']]],
@@ -51,9 +53,12 @@ var searchData=
   ['vhbufcreateuniformbuffers',['vhBufCreateUniformBuffers',['../namespacevh.html#ab714be58a365d2b553dea57cb4622b2d',1,'vh']]],
   ['vhbufcreatevertexbuffer',['vhBufCreateVertexBuffer',['../namespacevh.html#a6a49e59322f37fb65f61a23c1a6363cb',1,'vh']]],
   ['vhbuftransitionimagelayout',['vhBufTransitionImageLayout',['../namespacevh.html#a06fb4550531664b62cf3a54d377515a7',1,'vh::vhBufTransitionImageLayout(VkDevice device, VkQueue graphicsQueue, VkCommandPool commandPool, VkImage image, VkFormat format, VkImageAspectFlagBits aspect, uint32_t miplevels, uint32_t layerCount, VkImageLayout oldLayout, VkImageLayout newLayout)'],['../namespacevh.html#a3bb418fe457b4b3cde96e4499ba2e9e6',1,'vh::vhBufTransitionImageLayout(VkDevice device, VkQueue graphicsQueue, VkCommandBuffer commandBuffer, VkImage image, VkFormat format, VkImageAspectFlagBits aspect, uint32_t miplevels, uint32_t layerCount, VkImageLayout oldLayout, VkImageLayout newLayout)']]],
+  ['vhcmdbegincommandbuffer',['vhCmdBeginCommandBuffer',['../namespacevh.html#a9791b75aecc6358fa0be4612d8a83b95',1,'vh']]],
   ['vhcmdbeginsingletimecommands',['vhCmdBeginSingleTimeCommands',['../namespacevh.html#a72b5d170d3b735ede6a6f57806402ad1',1,'vh']]],
+  ['vhcmdcreatecommandbuffers',['vhCmdCreateCommandBuffers',['../namespacevh.html#afce4235cfc97c6ecc8ba9340ca99a3f9',1,'vh']]],
   ['vhcmdcreatecommandpool',['vhCmdCreateCommandPool',['../namespacevh.html#ac6c523c56a5fe3a0bb7e3dd58a135d16',1,'vh']]],
   ['vhcmdendsingletimecommands',['vhCmdEndSingleTimeCommands',['../namespacevh.html#a400527c7164faed90b5edac58203d4ba',1,'vh::vhCmdEndSingleTimeCommands(VkDevice device, VkQueue graphicsQueue, VkCommandPool commandPool, VkCommandBuffer commandBuffer)'],['../namespacevh.html#a3d980637f5b78d90e25253cba749e285',1,'vh::vhCmdEndSingleTimeCommands(VkDevice device, VkQueue graphicsQueue, VkCommandPool commandPool, VkCommandBuffer commandBuffer, VkSemaphore waitSemaphore, VkSemaphore signalSemaphore, VkFence waitFence)']]],
+  ['vhcmdsubmitcommandbuffer',['vhCmdSubmitCommandBuffer',['../namespacevh.html#a9ea5120b4ad57ec1f87cf053475bde19',1,'vh']]],
   ['vhdebugcallback',['vhDebugCallback',['../namespacevh.html#ad37cb47383e3f370dec52aec254a57b3',1,'vh']]],
   ['vhdebugcreatereportcallbackext',['vhDebugCreateReportCallbackEXT',['../namespacevh.html#aae6636471ca9dcc2d2c74c54f5f8ad39',1,'vh']]],
   ['vhdebugdestroyreportcallbackext',['vhDebugDestroyReportCallbackEXT',['../namespacevh.html#afd6ae9a805291e72699e3eb99629f430',1,'vh']]],
@@ -80,5 +85,7 @@ var searchData=
   ['vhrenderpresentresult',['vhRenderPresentResult',['../namespacevh.html#a4390e33b2435fdbf76124fdafe6fba2a',1,'vh']]],
   ['vhrenderupdatedescriptorset',['vhRenderUpdateDescriptorSet',['../namespacevh.html#a686da75542975aa5930179c54bc17306',1,'vh']]],
   ['vhsetupdebugcallback',['vhSetupDebugCallback',['../namespacevh.html#abdeb0d9fcda941f0cb92fd857002d309',1,'vh']]],
-  ['vhswapcreateswapchain',['vhSwapCreateSwapChain',['../namespacevh.html#a6d0e56b8ed7309e0ebf5ba969323e4db',1,'vh']]]
+  ['vhswapcreateswapchain',['vhSwapCreateSwapChain',['../namespacevh.html#a6d0e56b8ed7309e0ebf5ba969323e4db',1,'vh']]],
+  ['vhtimeduration',['vhTimeDuration',['../namespacevh.html#a19eaffd746fc8a31941d4559ca0894c0',1,'vh']]],
+  ['vhtimenow',['vhTimeNow',['../namespacevh.html#a4fad56183a7e4ab61241a8873a247ea1',1,'vh']]]
 ];

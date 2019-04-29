@@ -12,6 +12,7 @@ namespace vh {
 	//-------------------------------------------------------------------------------------------------------
 
 	/**
+	*
 	* \brief Create a new command pool
 	*
 	* \param[in] physicalDevice Physical Vulkan device
@@ -34,7 +35,18 @@ namespace vh {
 
 	//-------------------------------------------------------------------------------------------------------
 
-
+	/**
+	*
+	* \brief Create a number of command buffers
+	*
+	* \param[in] device Logical Vulkan device
+	* \param[in] commandPool Command pool for allocating command bbuffers
+	* \param[in] level Level can be primary or secondary
+	* \param[in] count Number of buffers to create
+	* \param[in] pBuffers Pointer to an array where the buffer handles should be stored
+	* \returns VK_SUCCESS or a Vulkan error code
+	*
+	*/
 	VkResult vhCmdCreateCommandBuffers(	VkDevice device, VkCommandPool commandPool, 
 										VkCommandBufferLevel level,
 										uint32_t count, VkCommandBuffer *pBuffers) {
@@ -49,6 +61,16 @@ namespace vh {
 	}
 
 
+	/**
+	*
+	* \brief Start a command buffer for recording commands
+	*
+	* \param[in] device Logical Vulkan device
+	* \param[in] commandBuffer The command buffer to start
+	* \param[in] usageFlags Flags telling how the buffer will be used
+	* \returns VK_SUCCESS or a Vulkan error code
+	*
+	*/
 	VkResult vhCmdBeginCommandBuffer(VkDevice device, VkCommandBuffer commandBuffer,
 									VkCommandBufferUsageFlagBits usageFlags ) {
 
@@ -60,7 +82,20 @@ namespace vh {
 	}
 
 
-	VkResult vhCmdSubmitCommandBuffer(	VkDevice device, VkQueue graphicsQueue, 
+	/**
+	*
+	* \brief Submit a command buffer to a queue
+	*
+	* \param[in] device Logical Vulkan device
+	* \param[in] queue The queue the buffer is sent to 
+	* \param[in] commandBuffer The command buffer that is sent to the queue
+	* \param[in] waitSemaphore A semaphore to wait for before submitting
+	* \param[in] signalSemaphore Signal this semaphore after buffer is done
+	* \param[in] waitFence Signal to this fence after buffer is done
+	* \returns VK_SUCCESS or a Vulkan error code
+	*
+	*/
+	VkResult vhCmdSubmitCommandBuffer(	VkDevice device, VkQueue queue,
 										VkCommandBuffer commandBuffer,
 										VkSemaphore waitSemaphore, 
 										VkSemaphore signalSemaphore, 
@@ -90,17 +125,18 @@ namespace vh {
 			vkResetFences(device, 1, &waitFence);
 		}
 
-		 return vkQueueSubmit(graphicsQueue, 1, &submitInfo, waitFence);
+		 return vkQueueSubmit(queue, 1, &submitInfo, waitFence);
 	}
 
 
-
 	/**
+	*
 	* \brief Begin submitting a single time command
 	*
 	* \param[in] device Logical Vulkan device
 	* \param[in] commandPool Command pool for allocating command bbuffers
 	* \returns a new VkCommandBuffer to record commands into
+	*
 	*/
 	VkCommandBuffer vhCmdBeginSingleTimeCommands(VkDevice device, VkCommandPool commandPool ) {
 		VkCommandBufferAllocateInfo allocInfo = {};
@@ -124,6 +160,7 @@ namespace vh {
 
 
 	/**
+	*
 	* \brief End recording into a single time command buffer and submit it
 	*
 	* \param[in] device Logical Vulkan device
@@ -142,6 +179,7 @@ namespace vh {
 
 
 	/**
+	*
 	* \brief End recording into a single time command buffer and submit it
 	*
 	* \param[in] device Logical Vulkan device

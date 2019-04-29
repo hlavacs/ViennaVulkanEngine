@@ -143,6 +143,10 @@ void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="clas
 <tr class="separator:abbe8354824904efa0ab69ae95941913e inherit pub_methods_classve_1_1_v_e_engine"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ab73e678a5195889ca4ea37aec0c01e33 inherit pub_methods_classve_1_1_v_e_engine"><td class="memItemLeft" align="right" valign="top">uint32_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_engine.html#ab73e678a5195889ca4ea37aec0c01e33">getLoopCount</a> ()</td></tr>
 <tr class="separator:ab73e678a5195889ca4ea37aec0c01e33 inherit pub_methods_classve_1_1_v_e_engine"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a38b910412218201ae6cdad9468b91dd5 inherit pub_methods_classve_1_1_v_e_engine"><td class="memItemLeft" align="right" valign="top">float&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_engine.html#a38b910412218201ae6cdad9468b91dd5">getAvgFrameTime</a> ()</td></tr>
+<tr class="separator:a38b910412218201ae6cdad9468b91dd5 inherit pub_methods_classve_1_1_v_e_engine"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aa127ffe8e651dd0ce970a1dcac3dc736 inherit pub_methods_classve_1_1_v_e_engine"><td class="memItemLeft" align="right" valign="top">float&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_engine.html#aa127ffe8e651dd0ce970a1dcac3dc736">getAvgUpdateTime</a> ()</td></tr>
+<tr class="separator:aa127ffe8e651dd0ce970a1dcac3dc736 inherit pub_methods_classve_1_1_v_e_engine"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="inherited"></a>
 Additional Inherited Members</h2></td></tr>
@@ -223,6 +227,18 @@ double&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="cl
 uint32_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_engine.html#a8b332a583a181820248f2e71752e5c4f">m_loopCount</a> = 0</td></tr>
 <tr class="memdesc:a8b332a583a181820248f2e71752e5c4f inherit pro_attribs_classve_1_1_v_e_engine"><td class="mdescLeft">&#160;</td><td class="mdescRight">Counts up the render loop. <br /></td></tr>
 <tr class="separator:a8b332a583a181820248f2e71752e5c4f inherit pro_attribs_classve_1_1_v_e_engine"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:af3466e5918f7ba4ec756cc1e89eb394d inherit pro_attribs_classve_1_1_v_e_engine"><td class="memItemLeft" align="right" valign="top"><a id="af3466e5918f7ba4ec756cc1e89eb394d"></a>
+float&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_engine.html#af3466e5918f7ba4ec756cc1e89eb394d">m_AvgUpdateTime</a> = 0.0f</td></tr>
+<tr class="memdesc:af3466e5918f7ba4ec756cc1e89eb394d inherit pro_attribs_classve_1_1_v_e_engine"><td class="mdescLeft">&#160;</td><td class="mdescRight">Average time for OBO updates (s) <br /></td></tr>
+<tr class="separator:af3466e5918f7ba4ec756cc1e89eb394d inherit pro_attribs_classve_1_1_v_e_engine"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a6ac906bc477a4f475a33db3e73986d8d inherit pro_attribs_classve_1_1_v_e_engine"><td class="memItemLeft" align="right" valign="top"><a id="a6ac906bc477a4f475a33db3e73986d8d"></a>
+float&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_engine.html#a6ac906bc477a4f475a33db3e73986d8d">m_AvgFrameTime</a> = 0.0f</td></tr>
+<tr class="memdesc:a6ac906bc477a4f475a33db3e73986d8d inherit pro_attribs_classve_1_1_v_e_engine"><td class="mdescLeft">&#160;</td><td class="mdescRight">Average time per frame (s) <br /></td></tr>
+<tr class="separator:a6ac906bc477a4f475a33db3e73986d8d inherit pro_attribs_classve_1_1_v_e_engine"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a104a97487bfa3e74358a4ed24ac7b440 inherit pro_attribs_classve_1_1_v_e_engine"><td class="memItemLeft" align="right" valign="top"><a id="a104a97487bfa3e74358a4ed24ac7b440"></a>
+float&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_engine.html#a104a97487bfa3e74358a4ed24ac7b440">m_AvgDrawTime</a> = 0.0f</td></tr>
+<tr class="memdesc:a104a97487bfa3e74358a4ed24ac7b440 inherit pro_attribs_classve_1_1_v_e_engine"><td class="mdescLeft">&#160;</td><td class="mdescRight">Average time for baking cmd buffers and calling commit (s) <br /></td></tr>
+<tr class="separator:a104a97487bfa3e74358a4ed24ac7b440 inherit pro_attribs_classve_1_1_v_e_engine"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a3a2ee465c62eb0d74e51f553586d041a inherit pro_attribs_classve_1_1_v_e_engine"><td class="memItemLeft" align="right" valign="top"><a id="a3a2ee465c62eb0d74e51f553586d041a"></a>
 bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_engine.html#a3a2ee465c62eb0d74e51f553586d041a">m_framebufferResized</a> = false</td></tr>
 <tr class="memdesc:a3a2ee465c62eb0d74e51f553586d041a inherit pro_attribs_classve_1_1_v_e_engine"><td class="mdescLeft">&#160;</td><td class="mdescRight">Flag indicating whether the window size has changed. <br /></td></tr>
@@ -279,7 +295,7 @@ bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="clas
 </div><!-- contents -->
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>
-Generated on Wed Apr 24 2019 07:41:51 for Vienna Vulkan Engine by &#160;<a href="http://www.doxygen.org/index.html">
+Generated on Mon Apr 29 2019 11:18:41 for Vienna Vulkan Engine by &#160;<a href="http://www.doxygen.org/index.html">
 <img class="footer" src="doxygen.png" alt="doxygen"/>
 </a> 1.8.15
 </small></address>

@@ -31,7 +31,8 @@ namespace ve {
 
 	protected:
 		std::vector<VkCommandBuffer> m_commandBuffers = {};				///<the main command buffers for recording draw commands
-																		//per frame render resources
+		
+		//per frame render resources
 		VkRenderPass				m_renderPassClear;					///<The first light render pass, clearing the framebuffers
 		VkRenderPass				m_renderPassLoad;					///<The second light render pass - no clearing of framebuffer
 
@@ -69,18 +70,17 @@ namespace ve {
 		virtual void recreateSwapchain();			//new swapchain due to window size change
 
 	public:
-		float m_AvgCmdShadowTime = 0.0f;
-		float m_AvgCmdLightTime = 0.0f;
-		float m_AvgCmdCommitTime = 0.0f;
+		float m_AvgCmdShadowTime = 0.0f;			///<Average time for recording shadow maps
+		float m_AvgCmdLightTime = 0.0f;				///<Average time for recording light pass
 
-		///Constructor
+		///Constructor of class VERendererForward
 		VERendererForward();
-		//Destructor
+		///Destructor of class VERendererForward
 		virtual ~VERendererForward() {};
 		virtual void deleteCmdBuffers();
-		///<\returns the per frame descriptor set layout
+		///\returns the per frame descriptor set layout
 		virtual VkDescriptorSetLayout	getDescriptorSetLayoutPerObject() { return m_descriptorSetLayoutPerObject; };
-		///<\returns the shadow descriptor set layout
+		///\returns the shadow descriptor set layout for the shadow
 		virtual VkDescriptorSetLayout	getDescriptorSetLayoutShadow() { return m_descriptorSetLayoutShadow; };
 		///\returns the per frame descriptor set
 		virtual std::vector<VkDescriptorSet> &getDescriptorSetsShadow() { return m_descriptorSetsShadow; };
