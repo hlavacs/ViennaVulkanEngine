@@ -93,7 +93,7 @@ namespace vh {
 	* \param[out] swapChainExtent Swapchain extent
 	*
 	*/
-	void vhSwapCreateSwapChain(	VkPhysicalDevice physicalDevice, VkSurfaceKHR surface, VkDevice device,
+	VkResult vhSwapCreateSwapChain(	VkPhysicalDevice physicalDevice, VkSurfaceKHR surface, VkDevice device,
 								VkExtent2D frameBufferExtent, VkSwapchainKHR *swapChain,
 								std::vector<VkImage> &swapChainImages, std::vector<VkImageView> &swapChainImageViews,
 								VkFormat *swapChainImageFormat, VkExtent2D *swapChainExtent) {
@@ -141,17 +141,20 @@ namespace vh {
 			throw std::runtime_error("failed to create swap chain!");
 		}
 
-		vkGetSwapchainImagesKHR(device, *swapChain, &imageCount, nullptr);
+		VHCHECKRESULT( vkGetSwapchainImagesKHR(device, *swapChain, &imageCount, nullptr) );
 		swapChainImages.resize(imageCount);
-		vkGetSwapchainImagesKHR(device, *swapChain, &imageCount, swapChainImages.data());
+		VHCHECKRESULT( vkGetSwapchainImagesKHR(device, *swapChain, &imageCount, swapChainImages.data()) );
 
 		*swapChainImageFormat = surfaceFormat.format;
 		*swapChainExtent = swapextent;
 
 		swapChainImageViews.resize(swapChainImages.size());
 		for (uint32_t i = 0; i < swapChainImages.size(); i++) {
-			 vhBufCreateImageView( device, swapChainImages[i], *swapChainImageFormat, VK_IMAGE_VIEW_TYPE_2D, 1, VK_IMAGE_ASPECT_COLOR_BIT, &swapChainImageViews[i]);
+			VHCHECKRESULT( vhBufCreateImageView(	device, swapChainImages[i], *swapChainImageFormat, 
+													VK_IMAGE_VIEW_TYPE_2D, 1, VK_IMAGE_ASPECT_COLOR_BIT, 
+													&swapChainImageViews[i]) );
 		}
+		return VK_SUCCESS;
 	}
 }
 

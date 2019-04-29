@@ -54,10 +54,11 @@ namespace ve {
 			vh::vhSetupDebugCallback( m_instance, &callback );				//create a debug callback for printing debug information
 		
 		m_pWindow->createSurface(m_instance, &m_pRenderer->m_surface);	//create a Vulkan surface
-		m_pRenderer->initRenderer();		//initialize the renderer
+		m_pRenderer->initRenderer();			//initialize the renderer
 		m_pSceneManager->initSceneManager();	//initialize the scene manager
 
 		registerEventListeners();
+		m_loopCount = 1;
 	}
 
 
@@ -189,6 +190,7 @@ namespace ve {
 		}
 	};
 
+
 	/**
 	*
 	* \brief Delete an event listener.
@@ -206,6 +208,8 @@ namespace ve {
 			}
 		}
 	};
+
+
 
 	/**
 	*
@@ -330,7 +334,6 @@ namespace ve {
 		}
 	}
 
-		
 
 	/**
 	*
@@ -343,6 +346,23 @@ namespace ve {
 	void VEEngine::windowSizeChanged() {
 		m_framebufferResized = true;
 	};
+
+
+	/**
+	*
+	* \brief Show a fatal error using the Nuklear GUI
+	*
+	* This function deletes all registered event listeners, and registers one new one,
+	* showing an error message.
+	*
+	*/
+	void VEEngine::fatalError(std::string message) {
+		while (m_eventListener.size() > 0) {
+			deleteEventListener( m_eventListener[0]->getName() );
+		}
+
+		registerEventListener(new VEEventListenerNuklearError(message) );		
+	}
 
 
 	//-------------------------------------------------------------------------------------------------------
@@ -384,6 +404,7 @@ namespace ve {
 	};
 
 
+
 	//-------------------------------------------------------------------------------------------------------
 	//render loop
 
@@ -396,17 +417,14 @@ namespace ve {
 	*
 	*/
 	void VEEngine::run() {
-		std::chrono::high_resolution_clock::time_point t_start = std::chrono::high_resolution_clock::now();
+		std::chrono::high_resolution_clock::time_point t_start = vh::vhTimeNow();
 		std::chrono::high_resolution_clock::time_point t_prev = t_start;
+		std::chrono::high_resolution_clock::time_point t_now;
 
 		while ( !m_end_running) {
-			std::chrono::high_resolution_clock::time_point t_now = std::chrono::high_resolution_clock::now();
-			std::chrono::duration<double> time_span = std::chrono::duration_cast<std::chrono::duration<double>>(t_now - t_prev);
-			m_dt = time_span.count();	//time since last frame
-
-			time_span = std::chrono::duration_cast<std::chrono::duration<double>>(t_now - t_start);
-			m_time = time_span.count();		//time since program start
-			t_prev = t_now;
+			m_dt = vh::vhTimeDuration( t_prev );
+			t_prev = vh::vhTimeNow();
+			m_AvgFrameTime = vh::vhAverage( (float)m_dt, m_AvgFrameTime );
 
 			veEvent event(VE_EVENT_FRAME_STARTED);	//notify all listeners that a new frame starts
 			callListeners(m_dt, event);
@@ -421,7 +439,13 @@ namespace ve {
 			
 			processEvents(m_dt);				//process all current events, including pressed keys
 
-			m_pRenderer->drawFrame();			//draw the next frame
+			t_now = vh::vhTimeNow();
+				getSceneManagerPointer()->updateSceneNodes( getRendererPointer()->getImageIndex());
+			m_AvgUpdateTime = vh::vhAverage(vh::vhTimeDuration(t_now), m_AvgUpdateTime);
+
+			t_now = vh::vhTimeNow();
+				m_pRenderer->drawFrame();			//draw the next frame
+			m_AvgDrawTime = vh::vhAverage(vh::vhTimeDuration(t_now), m_AvgDrawTime);
 
 			m_pRenderer->prepareOverlay();
 

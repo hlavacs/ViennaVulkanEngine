@@ -13,6 +13,27 @@
       <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
       <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
     </Filter>
+    <Filter Include="Header Files\VEEventListener">
+      <UniqueIdentifier>{9cf20900-e4c7-40a8-9abf-042c3c761479}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\VESubrender">
+      <UniqueIdentifier>{c8466613-f4a9-4c88-80c2-ed609015f0d5}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\Collision">
+      <UniqueIdentifier>{ce0ac7ac-7b5a-4df0-b45f-cba68da392cc}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\VEEventListener">
+      <UniqueIdentifier>{4f3aac8f-2864-46de-9425-0085a207a838}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\VESubrender">
+      <UniqueIdentifier>{dfc1647a-4e78-4849-a949-6f6cf7606d8f}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Collision">
+      <UniqueIdentifier>{5f2f439f-74ed-48cc-b7ce-770bea1f7f6d}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\VHelper">
+      <UniqueIdentifier>{97507648-312a-4693-9a61-5563a8f0123b}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="VEEngine.h">
@@ -24,9 +45,6 @@
     <ClInclude Include="VERenderer.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="VEEventListener.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="VEWindowGLFW.h">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -36,43 +54,13 @@
     <ClInclude Include="VESceneManager.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="VHHelper.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="VEEntity.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="VEEventListenerGLFW.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="VEInclude.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="VESubrender.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="VENamedClass.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="VESubrenderFW_C1.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="VESubrenderFW_Cubemap.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="VESubrenderFW_D.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="VESubrenderFW_DN.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="VESubrenderFW_Shadow.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="VESubrenderFW_Cubemap2.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="VESubrenderFW_Skyplane.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="vk_mem_alloc.h">
@@ -81,10 +69,55 @@
     <ClInclude Include="VEMaterial.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="VESubrenderFW_Nuklear.h">
-      <Filter>Header Files</Filter>
+    <ClInclude Include="VEEventListenerGLFW.h">
+      <Filter>Header Files\VEEventListener</Filter>
     </ClInclude>
     <ClInclude Include="VEEventListenerNuklear.h">
+      <Filter>Header Files\VEEventListener</Filter>
+    </ClInclude>
+    <ClInclude Include="CLInclude.h">
+      <Filter>Header Files\Collision</Filter>
+    </ClInclude>
+    <ClInclude Include="CLShape.h">
+      <Filter>Header Files\Collision</Filter>
+    </ClInclude>
+    <ClInclude Include="VESubrenderFW_C1.h">
+      <Filter>Header Files\VESubrender</Filter>
+    </ClInclude>
+    <ClInclude Include="VESubrenderFW_Cubemap.h">
+      <Filter>Header Files\VESubrender</Filter>
+    </ClInclude>
+    <ClInclude Include="VESubrenderFW_Cubemap2.h">
+      <Filter>Header Files\VESubrender</Filter>
+    </ClInclude>
+    <ClInclude Include="VESubrenderFW_D.h">
+      <Filter>Header Files\VESubrender</Filter>
+    </ClInclude>
+    <ClInclude Include="VESubrenderFW_DN.h">
+      <Filter>Header Files\VESubrender</Filter>
+    </ClInclude>
+    <ClInclude Include="VESubrenderFW_Nuklear.h">
+      <Filter>Header Files\VESubrender</Filter>
+    </ClInclude>
+    <ClInclude Include="VESubrenderFW_Shadow.h">
+      <Filter>Header Files\VESubrender</Filter>
+    </ClInclude>
+    <ClInclude Include="VESubrenderFW_Skyplane.h">
+      <Filter>Header Files\VESubrender</Filter>
+    </ClInclude>
+    <ClInclude Include="VEEventListenerNuklearError.h">
+      <Filter>Header Files\VEEventListener</Filter>
+    </ClInclude>
+    <ClInclude Include="VEEventListener.h">
+      <Filter>Header Files\VEEventListener</Filter>
+    </ClInclude>
+    <ClInclude Include="VESubrender.h">
+      <Filter>Header Files\VESubrender</Filter>
+    </ClInclude>
+    <ClInclude Include="VEEventListenerNuklearDebug.h">
+      <Filter>Header Files\VEEventListener</Filter>
+    </ClInclude>
+    <ClInclude Include="VHHelper.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
@@ -101,13 +134,7 @@
     <ClCompile Include="VERenderer.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="VEEventListener.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="VEWindowGLFW.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="VHDevice.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="VERendererForward.cpp">
@@ -116,68 +143,83 @@
     <ClCompile Include="VESceneManager.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="VHSwapchain.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="VHBuffer.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="VHRender.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="VHFile.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="VHCommand.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="VHMemory.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="VEEventListenerGLFW.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="VHDebug.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="VEEntity.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="VESubrender.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="VENamedClass.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="VESubrenderFW_C1.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="VESubrenderFW_Cubemap.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="VESubrenderFW_D.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="VESubrenderFW_DN.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="VESubrenderFW_Shadow.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="VESubrenderFW_Cubemap2.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="VESubrenderFW_Skyplane.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="VEMaterial.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="VESubrenderFW_Nuklear.cpp">
-      <Filter>Source Files</Filter>
+    <ClCompile Include="CLIntersect.cpp">
+      <Filter>Source Files\Collision</Filter>
+    </ClCompile>
+    <ClCompile Include="VEEventListenerGLFW.cpp">
+      <Filter>Source Files\VEEventListener</Filter>
     </ClCompile>
     <ClCompile Include="VEEventListenerNuklear.cpp">
-      <Filter>Source Files</Filter>
+      <Filter>Source Files\VEEventListener</Filter>
+    </ClCompile>
+    <ClCompile Include="VESubrenderFW_C1.cpp">
+      <Filter>Source Files\VESubrender</Filter>
+    </ClCompile>
+    <ClCompile Include="VESubrenderFW_Cubemap.cpp">
+      <Filter>Source Files\VESubrender</Filter>
+    </ClCompile>
+    <ClCompile Include="VESubrenderFW_Cubemap2.cpp">
+      <Filter>Source Files\VESubrender</Filter>
+    </ClCompile>
+    <ClCompile Include="VESubrenderFW_D.cpp">
+      <Filter>Source Files\VESubrender</Filter>
+    </ClCompile>
+    <ClCompile Include="VESubrenderFW_DN.cpp">
+      <Filter>Source Files\VESubrender</Filter>
+    </ClCompile>
+    <ClCompile Include="VESubrenderFW_Nuklear.cpp">
+      <Filter>Source Files\VESubrender</Filter>
+    </ClCompile>
+    <ClCompile Include="VESubrenderFW_Shadow.cpp">
+      <Filter>Source Files\VESubrender</Filter>
+    </ClCompile>
+    <ClCompile Include="VESubrenderFW_Skyplane.cpp">
+      <Filter>Source Files\VESubrender</Filter>
+    </ClCompile>
+    <ClCompile Include="VHBuffer.cpp">
+      <Filter>Source Files\VHelper</Filter>
+    </ClCompile>
+    <ClCompile Include="VHCommand.cpp">
+      <Filter>Source Files\VHelper</Filter>
+    </ClCompile>
+    <ClCompile Include="VHDebug.cpp">
+      <Filter>Source Files\VHelper</Filter>
+    </ClCompile>
+    <ClCompile Include="VHDevice.cpp">
+      <Filter>Source Files\VHelper</Filter>
+    </ClCompile>
+    <ClCompile Include="VHFile.cpp">
+      <Filter>Source Files\VHelper</Filter>
+    </ClCompile>
+    <ClCompile Include="VHMemory.cpp">
+      <Filter>Source Files\VHelper</Filter>
+    </ClCompile>
+    <ClCompile Include="VHRender.cpp">
+      <Filter>Source Files\VHelper</Filter>
+    </ClCompile>
+    <ClCompile Include="VHSwapchain.cpp">
+      <Filter>Source Files\VHelper</Filter>
+    </ClCompile>
+    <ClCompile Include="VEEventListenerNuklearError.cpp">
+      <Filter>Source Files\VEEventListener</Filter>
+    </ClCompile>
+    <ClCompile Include="VEEventListener.cpp">
+      <Filter>Source Files\VEEventListener</Filter>
+    </ClCompile>
+    <ClCompile Include="VESubrender.cpp">
+      <Filter>Source Files\VESubrender</Filter>
+    </ClCompile>
+    <ClCompile Include="VEEventListenerNuklearDebug.cpp">
+      <Filter>Source Files\VEEventListener</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

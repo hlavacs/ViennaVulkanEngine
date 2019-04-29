@@ -30,9 +30,11 @@ namespace ve {
 	class VERendererForward : public VERenderer {
 
 	protected:
+		std::vector<VkCommandBuffer> m_commandBuffers = {};				///<the main command buffers for recording draw commands
+		
 		//per frame render resources
 		VkRenderPass				m_renderPassClear;					///<The first light render pass, clearing the framebuffers
-		VkRenderPass				m_renderPassLoad;					///<The second light render pass
+		VkRenderPass				m_renderPassLoad;					///<The second light render pass - no clearing of framebuffer
 
 		std::vector<VkFramebuffer>	m_swapChainFramebuffers;			///<Framebuffers for light pass
 		VETexture *					m_depthMap = nullptr;				///<the image depth map	
@@ -54,26 +56,31 @@ namespace ve {
 		size_t						m_currentFrame = 0;					///<int for the fences
 		bool						m_framebufferResized = false;		///<signal that window size is changing
 
-		void createSyncObjects();							//create the sync objects
-		void cleanupSwapChain();							//delete the swapchain
+		void createSyncObjects();					//create the sync objects
+		void cleanupSwapChain();					//delete the swapchain
 
-		virtual void initRenderer();						//init the renderer
-		virtual void createSubrenderers();					//create the subrenderers
-		virtual void drawFrame();							//draw one frame
+		virtual void initRenderer();				//init the renderer
+		virtual void createSubrenderers();			//create the subrenderers
+		virtual void recordCmdBuffers();			//record the command buffers
+		virtual void drawFrame();					//draw one frame
 		virtual void prepareOverlay();				//prepare to draw the overlay
 		virtual void drawOverlay();					//Draw the overlay (GUI)
-		virtual void presentFrame();						//Present the newly drawn frame
-		virtual void closeRenderer();						//close the renderer
-		virtual void recreateSwapchain();					//new swapchain due to window size change
+		virtual void presentFrame();				//Present the newly drawn frame
+		virtual void closeRenderer();				//close the renderer
+		virtual void recreateSwapchain();			//new swapchain due to window size change
 
 	public:
-		///Constructor
+		float m_AvgCmdShadowTime = 0.0f;			///<Average time for recording shadow maps
+		float m_AvgCmdLightTime = 0.0f;				///<Average time for recording light pass
+
+		///Constructor of class VERendererForward
 		VERendererForward();
-		//Destructor
+		///Destructor of class VERendererForward
 		virtual ~VERendererForward() {};
-		///<\returns the per frame descriptor set layout
+		virtual void deleteCmdBuffers();
+		///\returns the per frame descriptor set layout
 		virtual VkDescriptorSetLayout	getDescriptorSetLayoutPerObject() { return m_descriptorSetLayoutPerObject; };
-		///<\returns the shadow descriptor set layout
+		///\returns the shadow descriptor set layout for the shadow
 		virtual VkDescriptorSetLayout	getDescriptorSetLayoutShadow() { return m_descriptorSetLayoutShadow; };
 		///\returns the per frame descriptor set
 		virtual std::vector<VkDescriptorSet> &getDescriptorSetsShadow() { return m_descriptorSetsShadow; };

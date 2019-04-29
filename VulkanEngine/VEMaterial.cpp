@@ -25,20 +25,24 @@ namespace ve {
 	*
 	*/
 
-	VEMesh::VEMesh(std::string name, const aiMesh *paiMesh) : VENamedClass(name) {
+	VEMesh::VEMesh(	std::string name, const aiMesh *paiMesh) : VENamedClass(name) {
 		std::vector<vh::vhVertex>	vertices;	//vertex array
 		std::vector<uint32_t>		indices;	//index array
 
-												//copy the mesh vertex data
+		//copy the mesh vertex data
 		m_vertexCount = paiMesh->mNumVertices;
-		float maxsq = 0;
+		m_boundingSphereRadius = 0.0f;
+		m_boundingSphereCenter = glm::vec3( 0.0f, 0.0f, 0.0f );
 		for (uint32_t i = 0; i < paiMesh->mNumVertices; i++) {
 			vh::vhVertex vertex;
 			vertex.pos.x = paiMesh->mVertices[i].x;								//copy 3D position in local space
 			vertex.pos.y = paiMesh->mVertices[i].y;
 			vertex.pos.z = paiMesh->mVertices[i].z;
 
-			maxsq = std::max(std::max(vertex.pos.x*vertex.pos.x, vertex.pos.y*vertex.pos.y), vertex.pos.z*vertex.pos.z);
+			m_boundingSphereRadius = std::max(
+										std::max(	std::max( vertex.pos.x*vertex.pos.x, vertex.pos.y*vertex.pos.y ),
+													vertex.pos.z*vertex.pos.z),
+										m_boundingSphereRadius);
 
 			if (paiMesh->HasNormals()) {										//copy normals
 				vertex.normal.x = paiMesh->mNormals[i].x;
@@ -59,7 +63,7 @@ namespace ve {
 
 			vertices.push_back(vertex);
 		}
-		m_boundingSphereRadius = sqrt(maxsq);
+		m_boundingSphereRadius = sqrt(m_boundingSphereRadius);
 
 		//got through the aiMesh faces, and copy the indices
 		m_indexCount = 0;
@@ -71,15 +75,59 @@ namespace ve {
 		}
 
 		//create the vertex buffer
-		vh::vhBufCreateVertexBuffer(getRendererPointer()->getDevice(), getRendererPointer()->getVmaAllocator(),
-			getRendererPointer()->getGraphicsQueue(), getRendererPointer()->getCommandPool(),
-			vertices, &m_vertexBuffer, &m_vertexBufferAllocation);
+		VECHECKRESULT(vh::vhBufCreateVertexBuffer(	getRendererPointer()->getDevice(), getRendererPointer()->getVmaAllocator(),
+													getRendererPointer()->getGraphicsQueue(), getRendererPointer()->getCommandPool(),
+													vertices, &m_vertexBuffer, &m_vertexBufferAllocation),
+					"Could not create vertex buffer for " + name );
 
 		//create the index buffer
-		vh::vhBufCreateIndexBuffer(getRendererPointer()->getDevice(), getRendererPointer()->getVmaAllocator(),
-			getRendererPointer()->getGraphicsQueue(), getRendererPointer()->getCommandPool(),
-			indices, &m_indexBuffer, &m_indexBufferAllocation);
+		VECHECKRESULT( vh::vhBufCreateIndexBuffer(	getRendererPointer()->getDevice(), getRendererPointer()->getVmaAllocator(),
+													getRendererPointer()->getGraphicsQueue(), getRendererPointer()->getCommandPool(),
+													indices, &m_indexBuffer, &m_indexBufferAllocation),
+					"Could not create index buffer for " + name);
+
 	}
+
+
+	/**
+	*
+	* \brief VEMesh constructor from a vertex and an index list
+	*
+	* \param[in] name The name of the mesh.
+	* \param[in] vertices A list of vertices to be used
+	* \param[in] indices A list of indices to be used
+	*
+	*/
+
+	VEMesh::VEMesh(std::string name, std::vector<vh::vhVertex> vertices, std::vector<uint32_t> indices) : VENamedClass(name) {
+
+		//copy the mesh vertex data
+		m_vertexCount = (uint32_t)vertices.size();
+		m_boundingSphereRadius = 0.0f;
+		m_boundingSphereCenter = glm::vec3(0.0f, 0.0f, 0.0f);
+		for (uint32_t i = 0; i < vertices.size(); i++) {
+
+			m_boundingSphereRadius = std::max (
+										std::max(	std::max( vertices[i].pos.x*vertices[i].pos.x, vertices[i].pos.y*vertices[i].pos.y ), 
+													vertices[i].pos.z*vertices[i].pos.z ), 
+										m_boundingSphereRadius);
+		}
+		m_boundingSphereRadius = sqrt(m_boundingSphereRadius);
+
+		//create the vertex buffer
+		VECHECKRESULT( vh::vhBufCreateVertexBuffer(	getRendererPointer()->getDevice(), getRendererPointer()->getVmaAllocator(),
+													getRendererPointer()->getGraphicsQueue(), getRendererPointer()->getCommandPool(),
+													vertices, &m_vertexBuffer, &m_vertexBufferAllocation),
+						"Could not create vertex buffer for " + name);
+
+		//create the index buffer
+		VECHECKRESULT( vh::vhBufCreateIndexBuffer(	getRendererPointer()->getDevice(), getRendererPointer()->getVmaAllocator(),
+													getRendererPointer()->getGraphicsQueue(), getRendererPointer()->getCommandPool(),
+													indices, &m_indexBuffer, &m_indexBufferAllocation),
+						"Could not create index buffer for " + name);
+	}
+
+
 
 	/**
 	* \brief Destroy the vertex and index buffers
@@ -121,19 +169,23 @@ namespace ve {
 	* \param[in] viewType Vulkan view tape for the image view.
 	*
 	*/
-	VETexture::VETexture(std::string name, std::string &basedir, std::vector<std::string> texNames,
-		VkImageCreateFlags flags, VkImageViewType viewType) : VENamedClass(name) {
+	VETexture::VETexture(	std::string name, 
+							std::string &basedir, std::vector<std::string> texNames,
+							VkImageCreateFlags flags, VkImageViewType viewType) : VENamedClass(name) {
 		if (texNames.size() == 0) return;
 
-		vh::vhBufCreateTextureImage(getRendererPointer()->getDevice(), getRendererPointer()->getVmaAllocator(),
-			getRendererPointer()->getGraphicsQueue(), getRendererPointer()->getCommandPool(),
-			basedir, texNames, flags, &m_image, &m_deviceAllocation, &m_extent);
+		VECHECKRESULT(vh::vhBufCreateTextureImage(getRendererPointer()->getDevice(), getRendererPointer()->getVmaAllocator(),
+							getRendererPointer()->getGraphicsQueue(), getRendererPointer()->getCommandPool(),
+							basedir, texNames, flags, &m_image, &m_deviceAllocation, &m_extent),
+					"Could not create texture image for " + basedir + "/" + texNames[0] );
 
 		m_format = VK_FORMAT_R8G8B8A8_UNORM;
-		vh::vhBufCreateImageView(getRendererPointer()->getDevice(), m_image,
-			m_format, viewType, (uint32_t)texNames.size(), VK_IMAGE_ASPECT_COLOR_BIT, &m_imageView);
+		VECHECKRESULT(vh::vhBufCreateImageView(getRendererPointer()->getDevice(), m_image,
+							m_format, viewType, (uint32_t)texNames.size(), VK_IMAGE_ASPECT_COLOR_BIT, &m_imageView),
+					"Could not create image view for " + basedir + "/" + texNames[0]);
 
-		vh::vhBufCreateTextureSampler(getRendererPointer()->getDevice(), &m_sampler);
+		VECHECKRESULT(vh::vhBufCreateTextureSampler(getRendererPointer()->getDevice(), &m_sampler),
+					"Could not create texture sampler for " + basedir + "/" + texNames[0]);
 	}
 
 	/**
@@ -151,18 +203,20 @@ namespace ve {
 	VETexture::VETexture(std::string name, gli::texture_cube &texCube,
 		VkImageCreateFlags flags, VkImageViewType viewType) : VENamedClass(name) {
 
-		vh::vhBufCreateTexturecubeImage(getRendererPointer()->getDevice(), getRendererPointer()->getVmaAllocator(),
-			getRendererPointer()->getGraphicsQueue(), getRendererPointer()->getCommandPool(),
-			texCube, &m_image, &m_deviceAllocation, &m_format);
+		VECHECKRESULT(vh::vhBufCreateTexturecubeImage(getRendererPointer()->getDevice(), getRendererPointer()->getVmaAllocator(),
+							getRendererPointer()->getGraphicsQueue(), getRendererPointer()->getCommandPool(),
+							texCube, &m_image, &m_deviceAllocation, &m_format),
+					"Could not create texture cubemap for " + name);
 
 		m_extent.width = texCube.extent().x;
 		m_extent.height = texCube.extent().y;
 
-		vh::vhBufCreateImageView(getRendererPointer()->getDevice(), m_image,
-			m_format, VK_IMAGE_VIEW_TYPE_CUBE, 6,
-			VK_IMAGE_ASPECT_COLOR_BIT, &m_imageView);
+		VECHECKRESULT(vh::vhBufCreateImageView(getRendererPointer()->getDevice(), m_image,
+							m_format, VK_IMAGE_VIEW_TYPE_CUBE, 6, VK_IMAGE_ASPECT_COLOR_BIT, &m_imageView),
+					"Could not create image view for cubemap for " + name);
 
-		vh::vhBufCreateTextureSampler(getRendererPointer()->getDevice(), &m_sampler);
+		VECHECKRESULT(vh::vhBufCreateTextureSampler(getRendererPointer()->getDevice(), &m_sampler),
+					"Could not create texture sampler for cubemap " + name );
 	}
 
 	/**

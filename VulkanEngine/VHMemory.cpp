@@ -41,9 +41,10 @@ namespace vh {
 	* \param[in] physicalDevice Physical Vulkan device
 	* \param[in] device Logical device
 	* \param[out] allocator The created VMA allocator
+	* \returns VK_SUCCESS or a Vulkan error code
 	*
 	*/
-	void vhMemCreateVMAAllocator( VkPhysicalDevice physicalDevice, VkDevice device, VmaAllocator &allocator) {
+	VkResult vhMemCreateVMAAllocator( VkPhysicalDevice physicalDevice, VkDevice device, VmaAllocator &allocator) {
 		VmaAllocatorCreateInfo allocatorInfo = {};
 		allocatorInfo.physicalDevice = physicalDevice;
 		allocatorInfo.device = device;
@@ -72,7 +73,7 @@ namespace vh {
 		}
 		*/
 
-		vmaCreateAllocator(&allocatorInfo, &allocator);
+		return vmaCreateAllocator(&allocatorInfo, &allocator);
 	}
 
 }

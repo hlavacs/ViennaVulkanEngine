@@ -86,8 +86,8 @@ namespace ve {
 		virtual void registerEventListeners() {
 			VEEngine::registerEventListeners();
 			registerEventListener( new LightListener("LightListener"));
-			registerEventListener(new VEEventListenerNuklear("NuklearListener"));
-
+			//registerEventListener(new VEEventListenerNuklear("NuklearListener"));
+			registerEventListener(new VEEventListenerNuklearDebug("NuklearDebugListener"));
 		};
 
 		///create many cubes
@@ -129,7 +129,7 @@ namespace ve {
 			e1->setTransform(glm::translate(glm::mat4(1.0f), glm::vec3(10.0f, 1.0f, 1.0f)));
 			e1->multiplyTransform( glm::scale(glm::mat4(1.0f), glm::vec3(10.0f, 10.0f, 10.0f)));
 
-			createCubes(50);
+			createCubes(200);
 			//VESceneNode *pSponza = m_pSceneManager->loadModel("Sponza", "models/sponza", "sponza.dae", aiProcess_FlipWindingOrder);
 			//pSponza->setTransform(glm::scale(glm::mat4(1.0f), glm::vec3(0.1f, 0.1f, 0.1f)));
 
@@ -149,10 +149,16 @@ int main() {
 		mve.loadLevel();
 		mve.run();
 	}
-	catch (const std::runtime_error& e) {
-		std::cerr << e.what() << " (press return)" << std::endl;
-		char dummy = getchar();
-		return EXIT_FAILURE;
+	catch ( const std::runtime_error & err ) {
+		if (mve.getLoopCount() == 0) {							//engine was not initialized
+			std::cout << "Error: " << err.what() << std::endl;	//just output to console
+			char in = getchar();
+			return 1;
+		}
+
+		getEnginePointer()->fatalError(err.what());		//engine has been initialized
+		mve.run();										//output error in window
+		return 1;
 	}
 
 	return 0;

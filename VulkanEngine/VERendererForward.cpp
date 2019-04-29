@@ -51,9 +51,13 @@ namespace ve {
 									&m_swapChainImageFormat, &m_swapChainExtent);
 
 		//------------------------------------------------------------------------------------------------------------
+		//create a command pool and the command buffers
 
-		//create a command pool
 		vh::vhCmdCreateCommandPool(m_physicalDevice, m_device, m_surface, &m_commandPool);
+
+		m_commandBuffers.resize(m_swapChainImages.size() );
+		for (uint32_t i = 0; i < m_swapChainImages.size(); i++) m_commandBuffers[i] = VK_NULL_HANDLE;
+
 
 		//------------------------------------------------------------------------------------------------------------
 		//create resources for light pass
@@ -189,6 +193,7 @@ namespace ve {
 	}
 
 
+
 	/**
 	* \brief Destroy the swapchain because window resize or close down
 	*/
@@ -215,6 +220,8 @@ namespace ve {
 	*/
 	void VERendererForward::closeRenderer() {
 		destroySubrenderers();
+
+		deleteCmdBuffers();
 
 		cleanupSwapChain();
 
@@ -279,6 +286,8 @@ namespace ve {
 		vh::vhBufCreateFramebuffers(m_device, m_swapChainImageViews, depthMaps, m_renderPassClear, m_swapChainExtent, m_swapChainFramebuffers);
 
 		for (auto pSub : m_subrenderers) pSub->recreateResources();
+
+		deleteCmdBuffers();
 	}
 	
 
@@ -302,47 +311,39 @@ namespace ve {
 			if (vkCreateSemaphore(m_device, &semaphoreInfo, nullptr, &m_imageAvailableSemaphores[i]) != VK_SUCCESS ||
 				vkCreateSemaphore(m_device, &semaphoreInfo, nullptr, &m_renderFinishedSemaphores[i]) != VK_SUCCESS ||
 				vkCreateFence(m_device, &fenceInfo, nullptr, &m_inFlightFences[i]) != VK_SUCCESS ) {
-				throw std::runtime_error("failed to create synchronization objects for a frame!");
+				getEnginePointer()->fatalError("Failed to create synchronization objects for a frame!");
 			}
 		}
 	}
 
 	//--------------------------------------------------------------------------------------------
 
+	/**
+	* \brief Delete all command buffers and set them to VK_NULL_HANDLE, so next time they have to be 
+	* created and recorded again
+	*/
+	void VERendererForward::deleteCmdBuffers() {
+		for (uint32_t i = 0; i < m_commandBuffers.size(); i++) {
+			if (m_commandBuffers[i] != VK_NULL_HANDLE) {
+				vkFreeCommandBuffers(m_device, m_commandPool, 1, &m_commandBuffers[i]);
+				m_commandBuffers[i] = VK_NULL_HANDLE;
+			}
+		}
+	}
+
 
 	/**
-	* \brief Draw the frame.
-	*
-	*- wait for draw completion using a fence, so there is at least one frame in the swapchain
-	*- acquire the next image from the swap chain
-	*- update all UBOs
-	*- get a single time command buffer from the pool, bind pipeline and begin the render pass
-	*- loop through all entities and draw them
-	*- end the command buffer and submit it
-	*- wait for the result and present it
+	* \brief Create a new command buffer and record the whole scene into it, then end it
 	*/
-	void VERendererForward::drawFrame() {
-		vkWaitForFences(m_device, 1, &m_inFlightFences[m_currentFrame], VK_TRUE, std::numeric_limits<uint64_t>::max());
-
-		//acquire the next image
-		VkResult result = vkAcquireNextImageKHR(m_device, m_swapChain, std::numeric_limits<uint64_t>::max(),
-												m_imageAvailableSemaphores[m_currentFrame], VK_NULL_HANDLE, &imageIndex);
-
-		if (result == VK_ERROR_OUT_OF_DATE_KHR) {
-			recreateSwapchain();
-			return;
-		}
-		else if (result != VK_SUCCESS && result != VK_SUBOPTIMAL_KHR) {
-			throw std::runtime_error("failed to acquire swap chain image!");
-		}
-
+	void VERendererForward::recordCmdBuffers() {
 		VECamera *pCamera = getSceneManagerPointer()->getCamera();
 		pCamera->setExtent(getWindowPointer()->getExtent());
 
-		getSceneManagerPointer()->updateSceneNodes(imageIndex);
+		vh::vhCmdCreateCommandBuffers(	m_device, m_commandPool,
+										VK_COMMAND_BUFFER_LEVEL_PRIMARY,
+										1, &m_commandBuffers[imageIndex]);
 
-		//prepare command buffer for drawing
-		VkCommandBuffer commandBuffer = vh::vhCmdBeginSingleTimeCommands(m_device, m_commandPool);
+		vh::vhCmdBeginCommandBuffer(m_device, m_commandBuffers[imageIndex], VK_COMMAND_BUFFER_USAGE_SIMULTANEOUS_USE_BIT);
 
 		//-----------------------------------------------------------------------------------------
 		//set clear values for shadow and light passes
@@ -360,61 +361,111 @@ namespace ve {
 		clearValuesLight.push_back(cv2);
 
 		//go through all active lights in the scene
-		for (uint32_t i = 0; i < getSceneManagerPointer()->getLights().size(); i++ ) {
+
+		std::chrono::high_resolution_clock::time_point t_now;
+
+		for (uint32_t i = 0; i < getSceneManagerPointer()->getLights().size(); i++) {
 
 			VELight * pLight = getSceneManagerPointer()->getLights()[i];
 
 			//-----------------------------------------------------------------------------------------
 			//shadow passes
 
-			for (unsigned i = 0; i < pLight->m_shadowCameras.size(); i++) {
+			t_now = vh::vhTimeNow();
+			{
+				for (unsigned i = 0; i < pLight->m_shadowCameras.size(); i++) {
 
-				vh::vhRenderBeginRenderPass(commandBuffer, 
-											m_renderPassShadow,
-											m_shadowFramebuffers[imageIndex][i],
-											clearValuesShadow, 
-											m_shadowMaps[0][i]->m_extent);	//all shadow maps have the same extent
+					vh::vhRenderBeginRenderPass(m_commandBuffers[imageIndex],
+						m_renderPassShadow,
+						m_shadowFramebuffers[imageIndex][i],
+						clearValuesShadow,
+						m_shadowMaps[0][i]->m_extent);	//all shadow maps have the same extent
 
-				m_subrenderShadow->draw(commandBuffer, imageIndex, i, pLight->m_shadowCameras[i], pLight, {});
+					m_subrenderShadow->draw(m_commandBuffers[imageIndex], imageIndex, i, pLight->m_shadowCameras[i], pLight, {});
 
-				vkCmdEndRenderPass(commandBuffer);
+					vkCmdEndRenderPass(m_commandBuffers[imageIndex]);
+				}
 			}
+			m_AvgCmdShadowTime = vh::vhAverage( vh::vhTimeDuration(t_now), m_AvgCmdShadowTime );
 
 			//-----------------------------------------------------------------------------------------
 			//light pass
 
-			vh::vhRenderBeginRenderPass(commandBuffer, 
-										i==0 ? m_renderPassClear : m_renderPassLoad,
-										m_swapChainFramebuffers[imageIndex], 
-										clearValuesLight, 
-										m_swapChainExtent);
+			t_now = vh::vhTimeNow();
+			{
+				vh::vhRenderBeginRenderPass(m_commandBuffers[imageIndex],
+					i == 0 ? m_renderPassClear : m_renderPassLoad,
+					m_swapChainFramebuffers[imageIndex],
+					clearValuesLight,
+					m_swapChainExtent);
 
-			for (auto pSub : m_subrenderers) {
-				if ( i == 0 || pSub->getClass() == VESubrender::VE_SUBRENDERER_CLASS_OBJECT ) {
-					pSub->prepareDraw();
-					pSub->draw(commandBuffer, imageIndex, i, pCamera, pLight, m_descriptorSetsShadow);
+				for (auto pSub : m_subrenderers) {
+					if (i == 0 || pSub->getClass() == VESubrender::VE_SUBRENDERER_CLASS_OBJECT) {
+						pSub->prepareDraw();
+						pSub->draw(m_commandBuffers[imageIndex], imageIndex, i, pCamera, pLight, m_descriptorSetsShadow);
+					}
 				}
-			}
 
-			vkCmdEndRenderPass(commandBuffer);
+				vkCmdEndRenderPass(m_commandBuffers[imageIndex]);
+			}
+			m_AvgCmdLightTime = vh::vhAverage( vh::vhTimeDuration(t_now), m_AvgCmdLightTime );
 
 			clearValuesLight.clear();		//since we blend the images onto each other, do not clear them for passes 2 and further
 		}
 
-		vh::vhCmdEndSingleTimeCommands(	m_device, m_graphicsQueue, m_commandPool, commandBuffer,
-										m_imageAvailableSemaphores[m_currentFrame], 
-										m_renderFinishedSemaphores[m_currentFrame],
-										m_inFlightFences[m_currentFrame]);
+		vkEndCommandBuffer(m_commandBuffers[imageIndex]);
 
 		m_overlaySemaphores[m_currentFrame] = m_renderFinishedSemaphores[m_currentFrame];
 	}
 
 
+	/**
+	* \brief Draw the frame.
+	*
+	*- wait for draw completion using a fence, so there is at least one frame in the swapchain
+	*- acquire the next image from the swap chain
+	*- if there is no command buffer yet, record one with the current scene
+	*- submit it to the queue
+	*/
+	void VERendererForward::drawFrame() {
+		vkWaitForFences(m_device, 1, &m_inFlightFences[m_currentFrame], VK_TRUE, std::numeric_limits<uint64_t>::max());
+
+		//acquire the next image
+		VkResult result = vkAcquireNextImageKHR(m_device, m_swapChain, std::numeric_limits<uint64_t>::max(),
+												m_imageAvailableSemaphores[m_currentFrame], VK_NULL_HANDLE, &imageIndex);
+
+		if (result == VK_ERROR_OUT_OF_DATE_KHR) {
+			recreateSwapchain();
+			return;
+		}
+		else if (result != VK_SUCCESS && result != VK_SUBOPTIMAL_KHR) {
+			getEnginePointer()->fatalError("Failed to acquire swap chain image!");
+		}
+
+		if (m_commandBuffers[imageIndex] == VK_NULL_HANDLE ) {
+			recordCmdBuffers();
+		}
+
+		//submit the command buffers
+		vh::vhCmdSubmitCommandBuffer(	m_device, m_graphicsQueue, m_commandBuffers[imageIndex],
+										m_imageAvailableSemaphores[m_currentFrame],
+										m_renderFinishedSemaphores[m_currentFrame],
+										m_inFlightFences[m_currentFrame]);
+	}
+
+
+	/**
+	* \brief Prepare to creat an overlay, e.g. initialize the next frame
+	*/
 	void VERendererForward::prepareOverlay() {
 		if (m_subrenderOverlay == nullptr) return;
 		m_subrenderOverlay->prepareDraw();
 	}
 
+
+	/**
+	* \brief Draw the overlay into the current frame buffer
+	*/
 	void VERendererForward::drawOverlay() {
 		if (m_subrenderOverlay == nullptr) return;
 
@@ -424,16 +475,14 @@ namespace ve {
 
 	/**
 	* \brief Present the new frame.
-	*
-	* Present the newly drawn frame.
 	*/
 	void VERendererForward::presentFrame() {
 
-		vh::vhBufTransitionImageLayout(m_device, m_graphicsQueue, m_commandPool,
-			getSwapChainImage(), VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_ASPECT_COLOR_BIT, 1, 1,
+		vh::vhBufTransitionImageLayout(m_device, m_graphicsQueue, m_commandPool,				//transition the image layout to 
+			getSwapChainImage(), VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_ASPECT_COLOR_BIT, 1, 1,		//VK_IMAGE_LAYOUT_PRESENT_SRC_KHR
 			VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR);
 
-		VkResult result = vh::vhRenderPresentResult(m_presentQueue, m_swapChain, imageIndex,
+		VkResult result = vh::vhRenderPresentResult(m_presentQueue, m_swapChain, imageIndex,	//present it to the swap chain
 													m_overlaySemaphores[m_currentFrame]);
 
 		if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR || m_framebufferResized) {
@@ -441,10 +490,10 @@ namespace ve {
 			recreateSwapchain();
 		}
 		else if (result != VK_SUCCESS) {
-			throw std::runtime_error("failed to present swap chain image!");
+			getEnginePointer()->fatalError("failed to present swap chain image!");
 		}
 
-		m_currentFrame = (m_currentFrame + 1) % MAX_FRAMES_IN_FLIGHT;
+		m_currentFrame = (m_currentFrame + 1) % MAX_FRAMES_IN_FLIGHT;		//count up the current frame number
 	}
 
 }

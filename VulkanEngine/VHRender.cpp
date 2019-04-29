@@ -19,10 +19,11 @@ namespace vh {
 	* \param[in] depthFormat The depth map image format
 	* \param[in] loadOp Operation what to do with the framebuffer when starting the render pass: clear, keep, or dont care
 	* \param[out] renderPass The new render pass
+	* \returns VK_SUCCESS or a Vulkan error code
 	*
 	*/
 
-	void vhRenderCreateRenderPass(  VkDevice device, 
+	VkResult vhRenderCreateRenderPass(  VkDevice device,
 									VkFormat swapChainImageFormat, 
 									VkFormat depthFormat, 
 									VkAttachmentLoadOp loadOp,
@@ -88,9 +89,7 @@ namespace vh {
 		renderPassInfo.dependencyCount = 1;
 		renderPassInfo.pDependencies = &dependency;
 
-		if (vkCreateRenderPass(device, &renderPassInfo, nullptr, renderPass) != VK_SUCCESS) {
-			throw std::runtime_error("failed to create render pass!");
-		}
+		return vkCreateRenderPass(device, &renderPassInfo, nullptr, renderPass);
 	}
 
 
@@ -98,12 +97,14 @@ namespace vh {
 	/**
 	*
 	* \brief Create a render pass for a shadow pass
+	*
 	* \param[in] device The logical Vulkan device
 	* \param[in] depthFormat The depth map image format
 	* \param[out] renderPass The new render pass
+	* \returns VK_SUCCESS or a Vulkan error code
 	*
 	*/
-	void vhRenderCreateRenderPassShadow(VkDevice device, VkFormat depthFormat, VkRenderPass *renderPass) {
+	VkResult vhRenderCreateRenderPassShadow(VkDevice device, VkFormat depthFormat, VkRenderPass *renderPass) {
 
 		VkAttachmentDescription attachmentDescription{};
 		attachmentDescription.format = depthFormat;
@@ -152,21 +153,23 @@ namespace vh {
 		renderPassCreateInfo.dependencyCount = static_cast<uint32_t>(dependencies.size());
 		renderPassCreateInfo.pDependencies = dependencies.data();
 
-		vkCreateRenderPass(device, &renderPassCreateInfo, nullptr, renderPass);
+		return vkCreateRenderPass(device, &renderPassCreateInfo, nullptr, renderPass);
 	}
 
 
 	/**
 	*
 	* \brief Create a descriptor layout
+	*
 	* \param[in] device The logical Vulkan device
 	* \param[in] counts The number of images in an array
 	* \param[in] types Contains the resource types for the increasing bindings
 	* \param[in] stageFlags Denotes in which stages they should be used
 	* \param[out] descriptorSetLayout The new descriptor set layout
+	* \returns VK_SUCCESS or a Vulkan error code
 	*
 	*/
-	void vhRenderCreateDescriptorSetLayout(	VkDevice device,
+	VkResult vhRenderCreateDescriptorSetLayout(	VkDevice device,
 											std::vector<uint32_t> counts,
 											std::vector<VkDescriptorType> types, 
 											std::vector<VkShaderStageFlags> stageFlags,
@@ -188,21 +191,21 @@ namespace vh {
 		layoutInfo.bindingCount = static_cast<uint32_t>(bindings.size());
 		layoutInfo.pBindings = bindings.data();
 
-		if (vkCreateDescriptorSetLayout(device, &layoutInfo, nullptr, descriptorSetLayout) != VK_SUCCESS) {
-			throw std::runtime_error("failed to create descriptor set layout!");
-		}
+		return vkCreateDescriptorSetLayout(device, &layoutInfo, nullptr, descriptorSetLayout);
 	}
 
 	/**
 	*
 	* \brief Create a descriptor pool
+	*
 	* \param[in] device The logical Vulkan device
 	* \param[in] types Contains the resource types in the pool
 	* \param[in] numberDesc Denotes how many of them are in the pool
 	* \param[out] descriptorPool The new descriptor pool
+	* \returns VK_SUCCESS or a Vulkan error code
 	*
 	*/
-	void vhRenderCreateDescriptorPool(	VkDevice device,
+	VkResult vhRenderCreateDescriptorPool(	VkDevice device,
 										std::vector<VkDescriptorType> types,
 										std::vector<uint32_t> numberDesc, 
 										VkDescriptorPool * descriptorPool) {
@@ -220,22 +223,22 @@ namespace vh {
 		poolInfo.pPoolSizes = poolSizes.data();
 		poolInfo.maxSets = numberDesc[0];
 
-		if (vkCreateDescriptorPool(device, &poolInfo, nullptr, descriptorPool) != VK_SUCCESS) {
-			throw std::runtime_error("failed to create descriptor pool!");
-		}
+		return vkCreateDescriptorPool(device, &poolInfo, nullptr, descriptorPool);
 	}
 
 	/**
 	*
 	* \brief Create a number of descriptor sets, one for each frame in the swapchain
+	*
 	* \param[in] device The logical Vulkan device
 	* \param[in] numberDesc Number of sets to be created
 	* \param[in] descriptorSetLayout The layout for the set
 	* \param[in] descriptorPool The pool from which the set is drawn
 	* \param[out] descriptorSets The new descriptor sets
+	* \returns VK_SUCCESS or a Vulkan error code
 	*
 	*/
-	void vhRenderCreateDescriptorSets(	VkDevice device, uint32_t numberDesc,
+	VkResult vhRenderCreateDescriptorSets(	VkDevice device, uint32_t numberDesc,
 										VkDescriptorSetLayout descriptorSetLayout, 	
 										VkDescriptorPool descriptorPool, 
 										std::vector<VkDescriptorSet> & descriptorSets) {
@@ -248,9 +251,7 @@ namespace vh {
 		allocInfo.pSetLayouts = layouts.data();
 
 		descriptorSets.resize(numberDesc);
-		if (vkAllocateDescriptorSets(device, &allocInfo, &descriptorSets[0]) != VK_SUCCESS) {
-			throw std::runtime_error("failed to allocate descriptor sets!");
-		}
+		return vkAllocateDescriptorSets(device, &allocInfo, &descriptorSets[0]);
 	}
 	
 
@@ -267,9 +268,10 @@ namespace vh {
 	* \param[in] bufferRanges List of buffer sizes
 	* \param[in] textureImageViews List of texture image views to be updated
 	* \param[in] textureSamplers List of texture image samplers
-	* 
+	* \returns VK_SUCCESS or a Vulkan error code
+	*
 	*/
-	void vhRenderUpdateDescriptorSet(	VkDevice device,
+	VkResult vhRenderUpdateDescriptorSet(VkDevice device,
 										VkDescriptorSet descriptorSet,
 										std::vector<VkBuffer> uniformBuffers,
 										std::vector<uint32_t> bufferRanges,
@@ -316,11 +318,12 @@ namespace vh {
 				descriptorWrites[i].descriptorCount = (uint32_t)textureImageViews[i].size();
 			}
 			else {
-				throw std::runtime_error("Error: No resource in the descriptor set list!");
+				return VK_INCOMPLETE;
 			}
 		}
 
 		vkUpdateDescriptorSets(device, static_cast<uint32_t>(descriptorWrites.size()), descriptorWrites.data(), 0, nullptr);
+		return VK_SUCCESS;
 	}
 
 	/**
@@ -331,9 +334,10 @@ namespace vh {
 	* \param[in] renderPass The render pass that should be begun
 	* \param[in] frameBuffer The framebuffer for the render pass
 	* \param[in] extent Extent of the framebuffer images
+	* \returns VK_SUCCESS or a Vulkan error code
 	*
 	*/
-	void vhRenderBeginRenderPass(VkCommandBuffer commandBuffer,
+	VkResult vhRenderBeginRenderPass(VkCommandBuffer commandBuffer,
 								 VkRenderPass renderPass, 
 								 VkFramebuffer frameBuffer, 
 								 VkExtent2D extent) {
@@ -345,7 +349,7 @@ namespace vh {
 		cv2.depthStencil = { 1.0f, 0 };
 		clearValues.push_back(cv2);
 
-		vhRenderBeginRenderPass(commandBuffer, renderPass, frameBuffer, clearValues, extent);
+		return vhRenderBeginRenderPass(commandBuffer, renderPass, frameBuffer, clearValues, extent);
 	}
 
 
@@ -359,9 +363,10 @@ namespace vh {
 	* \param[in] frameBuffer The framebuffer for the render pass
 	* \param[in] clearValues A list of clear values to clear render targets 
 	* \param[in] extent Extent of the framebuffer images
+	* \returns VK_SUCCESS or a Vulkan error code
 	*
 	*/
-	void vhRenderBeginRenderPass(	VkCommandBuffer commandBuffer,
+	VkResult vhRenderBeginRenderPass(	VkCommandBuffer commandBuffer,
 									VkRenderPass renderPass,
 									VkFramebuffer frameBuffer,
 									std::vector<VkClearValue> &clearValues,
@@ -379,7 +384,7 @@ namespace vh {
 			renderPassInfo.pClearValues = clearValues.data();
 
 		vkCmdBeginRenderPass(commandBuffer, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
-
+		return VK_SUCCESS;
 	}
 
 
@@ -388,10 +393,12 @@ namespace vh {
 	/**
 	*
 	* \brief Present the result of a render operation to a window
+	*
 	* \param[in] presentQueue The present queue that the image is sent to
 	* \param[in] swapChain The Vulkan swap chain
 	* \param[in] imageIndex Index of the swap chain image currently used
 	* \param[in] signalSemaphore Semaphore that should be signaled once the operation is done
+	* \returns VK_SUCCESS or a Vulkan error code
 	*
 	*/
 	VkResult vhRenderPresentResult(	VkQueue presentQueue, VkSwapchainKHR swapChain,
@@ -418,6 +425,7 @@ namespace vh {
 	/**
 	*
 	* \brief Create a shader module
+	*
 	* \param[in] device Logical Vulkan device
 	* \param[in] code Blob of bytes that hold the SPIR-V shader code
 	* \returns the shader module
@@ -440,11 +448,12 @@ namespace vh {
 	/**
 	*
 	* \brief Create a pipeline layout for drawing a light pass
+	*
 	* \param[in] device Logical Vulkan device
 	* \param[in] descriptorSetLayouts Descriptor set layouts
 	* \param[in] pushConstantRanges A list with push constant ranges
 	* \param[in] pipelineLayout Resulting pipline layout
-	* \returns in VkResult
+	* \returns VK_SUCCESS or a Vulkan error code
 	*
 	*/
 	VkResult vhPipeCreateGraphicsPipelineLayout(VkDevice device, 
@@ -468,6 +477,7 @@ namespace vh {
 	/**
 	*
 	* \brief Create a pipeline state object (PSO) for a light pass
+	*
 	* \param[in] device Logical Vulkan device
 	* \param[in] shaderFileNames List of filenames for the shaders: vertex, fragment, geometry, tess control, tess eval
 	* \param[in] swapChainExtent Swapchain extent
@@ -475,7 +485,7 @@ namespace vh {
 	* \param[in] renderPass Renderpass to be used
 	* \param[in] dynamicStates List of dynamic states that can be changed during usage of the pipeline
 	* \param[out] graphicsPipeline The new PSO
-	* \returns in VkResult
+	* \returns VK_SUCCESS or a Vulkan error code
 	*
 	*/
 	VkResult vhPipeCreateGraphicsPipeline(	VkDevice device,
@@ -617,9 +627,7 @@ namespace vh {
 		pipelineInfo.subpass = 0;
 		pipelineInfo.basePipelineHandle = VK_NULL_HANDLE;
 
-		if (vkCreateGraphicsPipelines(device, VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, graphicsPipeline) != VK_SUCCESS) {
-			return VK_INCOMPLETE;
-		}
+		VHCHECKRESULT( vkCreateGraphicsPipelines(device, VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, graphicsPipeline) );
 
 		if(fragShaderModule != VK_NULL_HANDLE )
 			vkDestroyShaderModule(device, fragShaderModule, nullptr);
@@ -634,13 +642,14 @@ namespace vh {
 	/**
 	*
 	* \brief Create a pipeline state object (PSO) for a shadow pass
+	*
 	* \param[in] device Logical Vulkan device
 	* \param[in] verShaderFilename Name of the vetex shader file
 	* \param[in] shadowMapExtent Swapchain extent
 	* \param[in] pipelineLayout Pipeline layout
 	* \param[in] renderPass Renderpass to be used
 	* \param[out] graphicsPipeline The new PSO
-	* \returns in VkResult
+	* \returns VK_SUCCESS or a Vulkan error code
 	*
 	*/
 	VkResult vhPipeCreateGraphicsShadowPipeline(VkDevice device,
@@ -751,9 +760,7 @@ namespace vh {
 		pipelineInfo.subpass = 0;
 		pipelineInfo.basePipelineHandle = VK_NULL_HANDLE;
 
-		if (vkCreateGraphicsPipelines(device, VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, graphicsPipeline) != VK_SUCCESS) {
-			return VK_INCOMPLETE;
-		}
+		VHCHECKRESULT(vkCreateGraphicsPipelines(device, VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, graphicsPipeline ) );
 
 		vkDestroyShaderModule(device, vertShaderModule, nullptr);
 		return VK_SUCCESS;

@@ -13,6 +13,15 @@
 
 namespace ve {
 
+	//use this macro to check the function result, if its not VK_SUCCESS then return the error
+	#define VECHECKRESULT(x, msg) { \
+		VkResult retval = (x); \
+		if (retval != VK_SUCCESS) { \
+			throw std::runtime_error(msg); \
+		} \
+	}
+
+
 	class VEWindow;
 	class VERenderer;
 	class VEEventListener;
@@ -50,6 +59,11 @@ namespace ve {
 		double m_dt = 0.0;								///<Delta time since the last loop
 		double m_time = 0.0;							///<Absolute game time since start of the render loop
 		uint32_t m_loopCount = 0;						///<Counts up the render loop
+
+		float m_AvgUpdateTime = 0.0f;					///<Average time for OBO updates (s)
+		float m_AvgFrameTime = 0.0f;					///<Average time per frame (s)
+		float m_AvgDrawTime = 0.0f;						///<Average time for baking cmd buffers and calling commit (s)
+
 		bool m_framebufferResized = false;				///<Flag indicating whether the window size has changed.
 		bool m_end_running = false;						///<Flag indicating that the engine should leave the render loop
 		bool m_debug = true;							///<Flag indicating whether debugging is enabled or not
@@ -74,20 +88,25 @@ namespace ve {
 		VEEngine( bool debug = false );								//Only create ONE instance of the engine!
 		~VEEngine() {};
 
-		virtual void initEngine();		//Create all engine components
-		virtual void run();				//Enter the render loop
-		virtual void end();				//end the render loop
-		void registerEventListener(VEEventListener *lis); //Register a new event listener.
-		void removeEventListener(std::string name);	//Remove an event listener - it is NOT deleted automatically!
-		void deleteEventListener(std::string name); //Delete an event listener
-		void addEvent(veEvent event);				//Add an event to the event list - will be handled in the next loop
-		void deleteEvent(veEvent event);			//Delete an event from the event list
+		virtual void initEngine();							//Create all engine components
+		virtual void run();									//Enter the render loop
+		virtual void fatalError(std::string message);		//Show an error message and close down the engine
+		virtual void end();									//end the render loop
+		void registerEventListener(VEEventListener *lis);	//Register a new event listener.
+		void removeEventListener(std::string name);			//Remove an event listener - it is NOT deleted automatically!
+		void deleteEventListener(std::string name);			//Delete an event listener
+		void addEvent(veEvent event);						//Add an event to the event list - will be handled in the next loop
+		void deleteEvent(veEvent event);					//Delete an event from the event list
 
 		VkInstance		 getInstance();				//Return the Vulkan instance
 		VEWindow       * getWindow();				//Return a pointer to the window instance
 		VESceneManager * getSceneManager();			//Return a  pointer to the scene manager instance
 		VERenderer     * getRenderer();				//Return a pointer to the renderer instance
 		uint32_t		 getLoopCount();			//Return the number of the current render loop
+		///\returns the average frame time (s)
+		float			 getAvgFrameTime() { return m_AvgFrameTime;  };
+		///\returns the average update time (s)
+		float			 getAvgUpdateTime() { return m_AvgUpdateTime; };
 	};
 
 

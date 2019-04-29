@@ -93,6 +93,9 @@ Public Member Functions</h2></td></tr>
 <tr class="memitem:ac97d39bce6a8245dc3c1c7986ec865b6"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_mesh.html#ac97d39bce6a8245dc3c1c7986ec865b6">VEMesh</a> (std::string name, const aiMesh *paiMesh)</td></tr>
 <tr class="memdesc:ac97d39bce6a8245dc3c1c7986ec865b6"><td class="mdescLeft">&#160;</td><td class="mdescRight"><a class="el" href="classve_1_1_v_e_mesh.html" title="Store a mesh in a Vulkan vertex and index buffer.">VEMesh</a> constructor from an Assimp aiMesh.  <a href="#ac97d39bce6a8245dc3c1c7986ec865b6">More...</a><br /></td></tr>
 <tr class="separator:ac97d39bce6a8245dc3c1c7986ec865b6"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a670103f979452c9528fcc6beb2e9f6d7"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_mesh.html#a670103f979452c9528fcc6beb2e9f6d7">VEMesh</a> (std::string name, std::vector&lt; <a class="el" href="structvh_1_1vh_vertex.html">vh::vhVertex</a> &gt; vertices, std::vector&lt; uint32_t &gt; indices)</td></tr>
+<tr class="memdesc:a670103f979452c9528fcc6beb2e9f6d7"><td class="mdescLeft">&#160;</td><td class="mdescRight"><a class="el" href="classve_1_1_v_e_mesh.html" title="Store a mesh in a Vulkan vertex and index buffer.">VEMesh</a> constructor from a vertex and an index list.  <a href="#a670103f979452c9528fcc6beb2e9f6d7">More...</a><br /></td></tr>
+<tr class="separator:a670103f979452c9528fcc6beb2e9f6d7"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aea168a1e49e3cd54abc4d0ae1b17b664"><td class="memItemLeft" align="right" valign="top"><a id="aea168a1e49e3cd54abc4d0ae1b17b664"></a>
 &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_mesh.html#aea168a1e49e3cd54abc4d0ae1b17b664">~VEMesh</a> ()</td></tr>
 <tr class="memdesc:aea168a1e49e3cd54abc4d0ae1b17b664"><td class="mdescLeft">&#160;</td><td class="mdescRight">Destroy the vertex and index buffers. <br /></td></tr>
@@ -157,7 +160,7 @@ std::string&#160;</td><td class="memItemRight" valign="bottom"><a class="el" hre
 <p><a class="el" href="classve_1_1_v_e_mesh.html" title="Store a mesh in a Vulkan vertex and index buffer.">VEMesh</a> stores a mesh in a Vulkan vertex and index buffer. For both buffers, also the VMA allocation information is stored. </p>
 </div><h2 class="groupheader">Constructor &amp; Destructor Documentation</h2>
 <a id="ac97d39bce6a8245dc3c1c7986ec865b6"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ac97d39bce6a8245dc3c1c7986ec865b6">&#9670;&nbsp;</a></span>VEMesh()</h2>
+<h2 class="memtitle"><span class="permalink"><a href="#ac97d39bce6a8245dc3c1c7986ec865b6">&#9670;&nbsp;</a></span>VEMesh() <span class="overload">[1/2]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -194,6 +197,50 @@ std::string&#160;</td><td class="memItemRight" valign="bottom"><a class="el" hre
 
 </div>
 </div>
+<a id="a670103f979452c9528fcc6beb2e9f6d7"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a670103f979452c9528fcc6beb2e9f6d7">&#9670;&nbsp;</a></span>VEMesh() <span class="overload">[2/2]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">ve::VEMesh::VEMesh </td>
+          <td>(</td>
+          <td class="paramtype">std::string&#160;</td>
+          <td class="paramname"><em>name</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">std::vector&lt; <a class="el" href="structvh_1_1vh_vertex.html">vh::vhVertex</a> &gt;&#160;</td>
+          <td class="paramname"><em>vertices</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">std::vector&lt; uint32_t &gt;&#160;</td>
+          <td class="paramname"><em>indices</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p><a class="el" href="classve_1_1_v_e_mesh.html" title="Store a mesh in a Vulkan vertex and index buffer.">VEMesh</a> constructor from a vertex and an index list. </p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramdir">[in]</td><td class="paramname">name</td><td>The name of the mesh. </td></tr>
+    <tr><td class="paramdir">[in]</td><td class="paramname">vertices</td><td>A list of vertices to be used </td></tr>
+    <tr><td class="paramdir">[in]</td><td class="paramname">indices</td><td>A list of indices to be used </td></tr>
+  </table>
+  </dd>
+</dl>
+
+</div>
+</div>
 <hr/>The documentation for this class was generated from the following files:<ul>
 <li><a class="el" href="_v_e_material_8h_source.html">VEMaterial.h</a></li>
 <li>VEMaterial.cpp</li>
@@ -201,7 +248,7 @@ std::string&#160;</td><td class="memItemRight" valign="bottom"><a class="el" hre
 </div><!-- contents -->
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>
-Generated on Fri Apr 19 2019 20:48:00 for Vienna Vulkan Engine by &#160;<a href="http://www.doxygen.org/index.html">
+Generated on Mon Apr 29 2019 11:18:42 for Vienna Vulkan Engine by &#160;<a href="http://www.doxygen.org/index.html">
 <img class="footer" src="doxygen.png" alt="doxygen"/>
 </a> 1.8.15
 </small></address>

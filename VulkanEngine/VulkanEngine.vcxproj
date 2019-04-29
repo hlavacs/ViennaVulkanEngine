@@ -88,7 +88,7 @@
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <LinkIncremental>false</LinkIncremental>
-    <IncludePath>$(SolutionDir)\external\VulkanSDK\1.1.70.1\Include;$(SolutionDir)\external\glm;$(SolutionDir)\external\stb;$(SolutionDir)\external\glfw\glfw-3.2.1.bin.WIN32\include;$(SolutionDir)\external\Assimp\include;$(SolutionDir)\external\gli-master;$(SolutionDir)\external\threadpool;$(IncludePath)</IncludePath>
+    <IncludePath>$(SolutionDir)\external\VulkanSDK\1.1.70.1\Include;$(SolutionDir)\external\glm;$(SolutionDir)\external\stb;$(SolutionDir)\external\glfw\glfw-3.2.1.bin.WIN32\include;$(SolutionDir)\external\Assimp\include;$(SolutionDir)\external\gli-master;$(SolutionDir)\external\threadpool;$(SolutionDir)\external\nuklear;$(IncludePath)</IncludePath>
     <LibraryPath>$(SolutionDir)\external\VulkanSDK\1.1.70.1\Lib32;$(SolutionDir)\external\glfw\glfw-3.2.1.bin.WIN32\lib-vc2015;$(SolutionDir)\external\Assimp\lib\x86\Release;$(LibraryPath)</LibraryPath>
     <IntDir>$(SolutionDir)\bin\$(Platform)\$(Configuration)\</IntDir>
     <OutDir>$(SolutionDir)\bin\$(Platform)\$(Configuration)\</OutDir>
@@ -96,7 +96,7 @@
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <LinkIncremental>false</LinkIncremental>
-    <IncludePath>$(SolutionDir)\external\VulkanSDK\1.1.70.1\Include;$(SolutionDir)\external\glm;$(SolutionDir)\external\stb;$(SolutionDir)\external\glfw\glfw-3.2.1.bin.WIN64\include;$(SolutionDir)\external\Assimp\include;$(SolutionDir)\external\gli-master;$(SolutionDir)\external\threadpool;$(IncludePath)</IncludePath>
+    <IncludePath>$(SolutionDir)\external\VulkanSDK\1.1.70.1\Include;$(SolutionDir)\external\glm;$(SolutionDir)\external\stb;$(SolutionDir)\external\glfw\glfw-3.2.1.bin.WIN64\include;$(SolutionDir)\external\Assimp\include;$(SolutionDir)\external\gli-master;$(SolutionDir)\external\threadpool;$(SolutionDir)\external\nuklear;$(IncludePath)</IncludePath>
     <LibraryPath>$(SolutionDir)\external\glfw\glfw-3.2.1.bin.WIN64\lib-vc2015;$(SolutionDir)\external\VulkanSDK\1.1.70.1\Lib;$(SolutionDir)\external\Assimp\lib\x64\Release;$(LibraryPath)</LibraryPath>
     <OutDir>$(SolutionDir)\bin\$(Platform)\$(Configuration)\</OutDir>
     <IntDir>$(SolutionDir)\bin\$(Platform)\$(Configuration)\</IntDir>
@@ -171,7 +171,11 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="CLInclude.h" />
+    <ClInclude Include="CLShape.h" />
     <ClInclude Include="VEEventListenerNuklear.h" />
+    <ClInclude Include="VEEventListenerNuklearDebug.h" />
+    <ClInclude Include="VEEventListenerNuklearError.h" />
     <ClInclude Include="VEMaterial.h" />
     <ClInclude Include="VESubrenderFW_Nuklear.h" />
     <ClInclude Include="VESubrenderFW_Skyplane.h" />
@@ -198,11 +202,14 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp" />
+    <ClCompile Include="CLIntersect.cpp" />
     <ClCompile Include="VEEngine.cpp" />
     <ClCompile Include="VEEntity.cpp" />
     <ClCompile Include="VEEventListener.cpp" />
     <ClCompile Include="VEEventListenerGLFW.cpp" />
     <ClCompile Include="VEEventListenerNuklear.cpp" />
+    <ClCompile Include="VEEventListenerNuklearDebug.cpp" />
+    <ClCompile Include="VEEventListenerNuklearError.cpp" />
     <ClCompile Include="VEMaterial.cpp" />
     <ClCompile Include="VENamedClass.cpp" />
     <ClCompile Include="VERenderer.cpp" />

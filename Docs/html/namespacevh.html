@@ -83,79 +83,89 @@ Classes</h2></td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="func-members"></a>
 Functions</h2></td></tr>
-<tr class="memitem:a86a2c772e5f54ed38ca9a14ee67ce2ed"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacevh.html#a86a2c772e5f54ed38ca9a14ee67ce2ed">vhBufCreateBuffer</a> (VmaAllocator allocator, VkDeviceSize size, VkBufferUsageFlags usage, VmaMemoryUsage vmaUsage, VkBuffer *buffer, VmaAllocation *allocation)</td></tr>
-<tr class="memdesc:a86a2c772e5f54ed38ca9a14ee67ce2ed"><td class="mdescLeft">&#160;</td><td class="mdescRight">Create a Vulkan buffer.  <a href="#a86a2c772e5f54ed38ca9a14ee67ce2ed">More...</a><br /></td></tr>
-<tr class="separator:a86a2c772e5f54ed38ca9a14ee67ce2ed"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a2dffa38557f5880ca9cedb269d3e45cb"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacevh.html#a2dffa38557f5880ca9cedb269d3e45cb">vhBufCopyBuffer</a> (VkDevice device, VkQueue graphicsQueue, VkCommandPool commandPool, VkBuffer srcBuffer, VkBuffer dstBuffer, VkDeviceSize size)</td></tr>
-<tr class="memdesc:a2dffa38557f5880ca9cedb269d3e45cb"><td class="mdescLeft">&#160;</td><td class="mdescRight">Copy a buffer from a source buffer to a destination buffer.  <a href="#a2dffa38557f5880ca9cedb269d3e45cb">More...</a><br /></td></tr>
-<tr class="separator:a2dffa38557f5880ca9cedb269d3e45cb"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a1e453b74fd578311fb8164797d9f7e31"><td class="memItemLeft" align="right" valign="top">VkResult&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacevh.html#a1e453b74fd578311fb8164797d9f7e31">vhBufCreateBuffer</a> (VmaAllocator allocator, VkDeviceSize size, VkBufferUsageFlags usage, VmaMemoryUsage vmaUsage, VkBuffer *buffer, VmaAllocation *allocation)</td></tr>
+<tr class="memdesc:a1e453b74fd578311fb8164797d9f7e31"><td class="mdescLeft">&#160;</td><td class="mdescRight">Create a Vulkan buffer.  <a href="#a1e453b74fd578311fb8164797d9f7e31">More...</a><br /></td></tr>
+<tr class="separator:a1e453b74fd578311fb8164797d9f7e31"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:afacb884f1a1b7b7fdaef90231cd375fc"><td class="memItemLeft" align="right" valign="top">VkResult&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacevh.html#afacb884f1a1b7b7fdaef90231cd375fc">vhBufCopyBuffer</a> (VkDevice device, VkQueue graphicsQueue, VkCommandPool commandPool, VkBuffer srcBuffer, VkBuffer dstBuffer, VkDeviceSize size)</td></tr>
+<tr class="memdesc:afacb884f1a1b7b7fdaef90231cd375fc"><td class="mdescLeft">&#160;</td><td class="mdescRight">Copy a buffer from a source buffer to a destination buffer.  <a href="#afacb884f1a1b7b7fdaef90231cd375fc">More...</a><br /></td></tr>
+<tr class="separator:afacb884f1a1b7b7fdaef90231cd375fc"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ae5bbfc56732a182fe87f10ce967699ed"><td class="memItemLeft" align="right" valign="top">VkResult&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacevh.html#ae5bbfc56732a182fe87f10ce967699ed">vhBufCreateImageView</a> (VkDevice device, VkImage image, VkFormat format, VkImageViewType viewtype, uint32_t layerCount, VkImageAspectFlags aspectFlags, VkImageView *imageView)</td></tr>
 <tr class="memdesc:ae5bbfc56732a182fe87f10ce967699ed"><td class="mdescLeft">&#160;</td><td class="mdescRight">Create a view for a Vulkan image.  <a href="#ae5bbfc56732a182fe87f10ce967699ed">More...</a><br /></td></tr>
 <tr class="separator:ae5bbfc56732a182fe87f10ce967699ed"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a28e43f0f3007c092b6cfea3b4d2eb925"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacevh.html#a28e43f0f3007c092b6cfea3b4d2eb925">vhBufCreateDepthResources</a> (VkDevice device, VmaAllocator allocator, VkQueue graphicsQueue, VkCommandPool commandPool, VkExtent2D extent, VkFormat depthFormat, VkImage *depthImage, VmaAllocation *depthImageAllocation, VkImageView *depthImageView)</td></tr>
-<tr class="memdesc:a28e43f0f3007c092b6cfea3b4d2eb925"><td class="mdescLeft">&#160;</td><td class="mdescRight">Create a depth image and a view to be used as depth map.  <a href="#a28e43f0f3007c092b6cfea3b4d2eb925">More...</a><br /></td></tr>
-<tr class="separator:a28e43f0f3007c092b6cfea3b4d2eb925"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a5f9240248076972838fd5410d4433b8b"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacevh.html#a5f9240248076972838fd5410d4433b8b">vhBufCreateImage</a> (VmaAllocator allocator, uint32_t width, uint32_t height, uint32_t miplevels, uint32_t arrayLayers, VkFormat format, VkImageTiling tiling, VkImageUsageFlags usage, VkImageCreateFlags flags, VkImage *image, VmaAllocation *allocation)</td></tr>
-<tr class="memdesc:a5f9240248076972838fd5410d4433b8b"><td class="mdescLeft">&#160;</td><td class="mdescRight">Create a Vulkan image using VMA.  <a href="#a5f9240248076972838fd5410d4433b8b">More...</a><br /></td></tr>
-<tr class="separator:a5f9240248076972838fd5410d4433b8b"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a056517b52b39bf799c9e171209c05b46"><td class="memItemLeft" align="right" valign="top">VkResult&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacevh.html#a056517b52b39bf799c9e171209c05b46">vhBufCreateDepthResources</a> (VkDevice device, VmaAllocator allocator, VkQueue graphicsQueue, VkCommandPool commandPool, VkExtent2D extent, VkFormat depthFormat, VkImage *depthImage, VmaAllocation *depthImageAllocation, VkImageView *depthImageView)</td></tr>
+<tr class="memdesc:a056517b52b39bf799c9e171209c05b46"><td class="mdescLeft">&#160;</td><td class="mdescRight">Create a depth image and a view to be used as depth map.  <a href="#a056517b52b39bf799c9e171209c05b46">More...</a><br /></td></tr>
+<tr class="separator:a056517b52b39bf799c9e171209c05b46"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a41b369467235917658b2b1e380bb5272"><td class="memItemLeft" align="right" valign="top">VkResult&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacevh.html#a41b369467235917658b2b1e380bb5272">vhBufCreateImage</a> (VmaAllocator allocator, uint32_t width, uint32_t height, uint32_t miplevels, uint32_t arrayLayers, VkFormat format, VkImageTiling tiling, VkImageUsageFlags usage, VkImageCreateFlags flags, VkImage *image, VmaAllocation *allocation)</td></tr>
+<tr class="memdesc:a41b369467235917658b2b1e380bb5272"><td class="mdescLeft">&#160;</td><td class="mdescRight">Create a Vulkan image using VMA.  <a href="#a41b369467235917658b2b1e380bb5272">More...</a><br /></td></tr>
+<tr class="separator:a41b369467235917658b2b1e380bb5272"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a77a765fa525c8857895ba358996a2938"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacevh.html#a77a765fa525c8857895ba358996a2938">hasStencilComponent</a> (VkFormat format)</td></tr>
 <tr class="separator:a77a765fa525c8857895ba358996a2938"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a1c34f2bae24f3129f4c846227a336833"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacevh.html#a1c34f2bae24f3129f4c846227a336833">vhBufCopyBufferToImage</a> (VkDevice device, VkQueue graphicsQueue, VkCommandPool commandPool, VkBuffer buffer, VkImage image, uint32_t layerCount, uint32_t width, uint32_t height)</td></tr>
-<tr class="memdesc:a1c34f2bae24f3129f4c846227a336833"><td class="mdescLeft">&#160;</td><td class="mdescRight">Copy a buffer to an image (for uploading via a staging buffer)  <a href="#a1c34f2bae24f3129f4c846227a336833">More...</a><br /></td></tr>
-<tr class="separator:a1c34f2bae24f3129f4c846227a336833"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ac80851c019a6b6a029a08aeff02cf03f"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacevh.html#ac80851c019a6b6a029a08aeff02cf03f">vhBufCopyBufferToImage</a> (VkDevice device, VkQueue graphicsQueue, VkCommandPool commandPool, VkBuffer buffer, VkImage image, std::vector&lt; VkBufferImageCopy &gt; &amp;regions, uint32_t width, uint32_t height)</td></tr>
-<tr class="memdesc:ac80851c019a6b6a029a08aeff02cf03f"><td class="mdescLeft">&#160;</td><td class="mdescRight">Wrapper for copying a buffer to an image, manages queue submission.  <a href="#ac80851c019a6b6a029a08aeff02cf03f">More...</a><br /></td></tr>
-<tr class="separator:ac80851c019a6b6a029a08aeff02cf03f"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aa15b3523d6fa3fc5e3ba7c016a60472a"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacevh.html#aa15b3523d6fa3fc5e3ba7c016a60472a">vhBufCopyImageToBuffer</a> (VkDevice device, VkQueue graphicsQueue, VkCommandPool commandPool, VkImage image, VkImageAspectFlagBits aspect, VkBuffer buffer, uint32_t layerCount, uint32_t width, uint32_t height)</td></tr>
-<tr class="memdesc:aa15b3523d6fa3fc5e3ba7c016a60472a"><td class="mdescLeft">&#160;</td><td class="mdescRight">Copy a VKImage to a VKBuffer.  <a href="#aa15b3523d6fa3fc5e3ba7c016a60472a">More...</a><br /></td></tr>
-<tr class="separator:aa15b3523d6fa3fc5e3ba7c016a60472a"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a694a95f414d8bc28efcbbf667a7e58f9"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacevh.html#a694a95f414d8bc28efcbbf667a7e58f9">vhBufCopyImageToBuffer</a> (VkDevice device, VkQueue graphicsQueue, VkCommandPool commandPool, VkImage image, VkBuffer buffer, std::vector&lt; VkBufferImageCopy &gt; &amp;regions, uint32_t width, uint32_t height)</td></tr>
-<tr class="memdesc:a694a95f414d8bc28efcbbf667a7e58f9"><td class="mdescLeft">&#160;</td><td class="mdescRight">Copy a VKImage to a VKBuffer.  <a href="#a694a95f414d8bc28efcbbf667a7e58f9">More...</a><br /></td></tr>
-<tr class="separator:a694a95f414d8bc28efcbbf667a7e58f9"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ad28d13df6b14efaebef29dde2b1b7674"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacevh.html#ad28d13df6b14efaebef29dde2b1b7674">vhBufTransitionImageLayout</a> (VkDevice device, VkQueue graphicsQueue, VkCommandPool commandPool, VkImage image, VkFormat format, VkImageAspectFlagBits aspect, uint32_t miplevels, uint32_t layerCount, VkImageLayout oldLayout, VkImageLayout newLayout)</td></tr>
-<tr class="memdesc:ad28d13df6b14efaebef29dde2b1b7674"><td class="mdescLeft">&#160;</td><td class="mdescRight">Transition the image layout, causes a pipeline barrier.  <a href="#ad28d13df6b14efaebef29dde2b1b7674">More...</a><br /></td></tr>
-<tr class="separator:ad28d13df6b14efaebef29dde2b1b7674"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a71f3a6b1cca391a5c133f8026c0d7d81"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacevh.html#a71f3a6b1cca391a5c133f8026c0d7d81">vhBufTransitionImageLayout</a> (VkDevice device, VkQueue graphicsQueue, VkCommandBuffer commandBuffer, VkImage image, VkFormat format, VkImageAspectFlagBits aspect, uint32_t miplevels, uint32_t layerCount, VkImageLayout oldLayout, VkImageLayout newLayout)</td></tr>
-<tr class="memdesc:a71f3a6b1cca391a5c133f8026c0d7d81"><td class="mdescLeft">&#160;</td><td class="mdescRight">Transition the image layout, causes a pipeline barrier.  <a href="#a71f3a6b1cca391a5c133f8026c0d7d81">More...</a><br /></td></tr>
-<tr class="separator:a71f3a6b1cca391a5c133f8026c0d7d81"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a2615cec03ffb7297f65f9c485bb53d2e"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacevh.html#a2615cec03ffb7297f65f9c485bb53d2e">vhBufCreateTextureImage</a> (VkDevice device, VmaAllocator allocator, VkQueue graphicsQueue, VkCommandPool commandPool, std::string basedir, std::vector&lt; std::string &gt; texNames, VkImageCreateFlags flags, VkImage *textureImage, VmaAllocation *textureImageAllocation, VkExtent2D *extent)</td></tr>
-<tr class="memdesc:a2615cec03ffb7297f65f9c485bb53d2e"><td class="mdescLeft">&#160;</td><td class="mdescRight">Create a texture image from multiple files.  <a href="#a2615cec03ffb7297f65f9c485bb53d2e">More...</a><br /></td></tr>
-<tr class="separator:a2615cec03ffb7297f65f9c485bb53d2e"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a7733e09fb0e2664562663d6a81874976"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacevh.html#a7733e09fb0e2664562663d6a81874976">vhBufCreateTexturecubeImage</a> (VkDevice device, VmaAllocator allocator, VkQueue graphicsQueue, VkCommandPool commandPool, gli::texture_cube &amp;texCube, VkImage *textureImage, VmaAllocation *textureImageAllocation, VkFormat *pFormat)</td></tr>
-<tr class="separator:a7733e09fb0e2664562663d6a81874976"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aa9d7fe471ccd3e065a3e5e6117857e8c"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacevh.html#aa9d7fe471ccd3e065a3e5e6117857e8c">vhBufCreateTextureSampler</a> (VkDevice device, VkSampler *textureSampler)</td></tr>
-<tr class="memdesc:aa9d7fe471ccd3e065a3e5e6117857e8c"><td class="mdescLeft">&#160;</td><td class="mdescRight">Create an image sampler for samplign textures in shaders.  <a href="#aa9d7fe471ccd3e065a3e5e6117857e8c">More...</a><br /></td></tr>
-<tr class="separator:aa9d7fe471ccd3e065a3e5e6117857e8c"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a54ba7ea8497eed149b5fda470cb71a78"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacevh.html#a54ba7ea8497eed149b5fda470cb71a78">vhBufCreateFramebuffers</a> (VkDevice device, std::vector&lt; VkImageView &gt; imageViews, std::vector&lt; VkImageView &gt; depthImageViews, VkRenderPass renderPass, VkExtent2D extent, std::vector&lt; VkFramebuffer &gt; &amp;frameBuffers)</td></tr>
-<tr class="memdesc:a54ba7ea8497eed149b5fda470cb71a78"><td class="mdescLeft">&#160;</td><td class="mdescRight">Create framebuffers (color + depth), one for each swap chain image.  <a href="#a54ba7ea8497eed149b5fda470cb71a78">More...</a><br /></td></tr>
-<tr class="separator:a54ba7ea8497eed149b5fda470cb71a78"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a6671c2b172d2263c11068f75ae423207"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacevh.html#a6671c2b172d2263c11068f75ae423207">vhBufCopySwapChainImageToHost</a> (VkDevice device, VmaAllocator allocator, VkQueue graphicsQueue, VkCommandPool commandPool, VkImage image, VkImageAspectFlagBits aspect, gli::byte *bufferData, uint32_t width, uint32_t height, uint32_t imageSize)</td></tr>
-<tr class="memdesc:a6671c2b172d2263c11068f75ae423207"><td class="mdescLeft">&#160;</td><td class="mdescRight">Copy a swap chain image to a data buffer, after it has been rendered into.  <a href="#a6671c2b172d2263c11068f75ae423207">More...</a><br /></td></tr>
-<tr class="separator:a6671c2b172d2263c11068f75ae423207"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a0743986ab234bc389a6f3d2bef61a3f7"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacevh.html#a0743986ab234bc389a6f3d2bef61a3f7">vhBufCopyImageToHost</a> (VkDevice device, VmaAllocator allocator, VkQueue graphicsQueue, VkCommandPool commandPool, VkImage image, VkFormat format, VkImageAspectFlagBits aspect, VkImageLayout layout, gli::byte *bufferData, uint32_t width, uint32_t height, uint32_t imageSize)</td></tr>
-<tr class="memdesc:a0743986ab234bc389a6f3d2bef61a3f7"><td class="mdescLeft">&#160;</td><td class="mdescRight">Copy a swap chain image to a data buffer, after it has been rendered into.  <a href="#a0743986ab234bc389a6f3d2bef61a3f7">More...</a><br /></td></tr>
-<tr class="separator:a0743986ab234bc389a6f3d2bef61a3f7"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a90901f6f2cb0f3d551806520abce0dc8"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacevh.html#a90901f6f2cb0f3d551806520abce0dc8">vhBufCreateVertexBuffer</a> (VkDevice device, VmaAllocator allocator, VkQueue graphicsQueue, VkCommandPool commandPool, std::vector&lt; <a class="el" href="structvh_1_1vh_vertex.html">vh::vhVertex</a> &gt; &amp;vertices, VkBuffer *vertexBuffer, VmaAllocation *vertexBufferAllocation)</td></tr>
-<tr class="memdesc:a90901f6f2cb0f3d551806520abce0dc8"><td class="mdescLeft">&#160;</td><td class="mdescRight">Create a Vulkan vertex buffer.  <a href="#a90901f6f2cb0f3d551806520abce0dc8">More...</a><br /></td></tr>
-<tr class="separator:a90901f6f2cb0f3d551806520abce0dc8"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a4fb318e83456d2b7f301ad3a5b1c5a07"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacevh.html#a4fb318e83456d2b7f301ad3a5b1c5a07">vhBufCreateIndexBuffer</a> (VkDevice device, VmaAllocator allocator, VkQueue graphicsQueue, VkCommandPool commandPool, std::vector&lt; uint32_t &gt; &amp;indices, VkBuffer *indexBuffer, VmaAllocation *indexBufferAllocation)</td></tr>
-<tr class="memdesc:a4fb318e83456d2b7f301ad3a5b1c5a07"><td class="mdescLeft">&#160;</td><td class="mdescRight">Create a Vulkan index buffer.  <a href="#a4fb318e83456d2b7f301ad3a5b1c5a07">More...</a><br /></td></tr>
-<tr class="separator:a4fb318e83456d2b7f301ad3a5b1c5a07"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ac5f24ff5c0c1d74b3ee1048d461690a0"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacevh.html#ac5f24ff5c0c1d74b3ee1048d461690a0">vhBufCreateUniformBuffers</a> (VmaAllocator allocator, uint32_t numberBuffers, VkDeviceSize bufferSize, std::vector&lt; VkBuffer &gt; &amp;uniformBuffers, std::vector&lt; VmaAllocation &gt; &amp;uniformBuffersAllocation)</td></tr>
-<tr class="memdesc:ac5f24ff5c0c1d74b3ee1048d461690a0"><td class="mdescLeft">&#160;</td><td class="mdescRight">Create a UBO.  <a href="#ac5f24ff5c0c1d74b3ee1048d461690a0">More...</a><br /></td></tr>
-<tr class="separator:ac5f24ff5c0c1d74b3ee1048d461690a0"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a75a61b7e654b90be1ff704e4cfbd6f77"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacevh.html#a75a61b7e654b90be1ff704e4cfbd6f77">vhCmdCreateCommandPool</a> (VkPhysicalDevice physicalDevice, VkDevice device, VkSurfaceKHR surface, VkCommandPool *commandPool)</td></tr>
-<tr class="memdesc:a75a61b7e654b90be1ff704e4cfbd6f77"><td class="mdescLeft">&#160;</td><td class="mdescRight">Create a new command pool.  <a href="#a75a61b7e654b90be1ff704e4cfbd6f77">More...</a><br /></td></tr>
-<tr class="separator:a75a61b7e654b90be1ff704e4cfbd6f77"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ad6013974401fbc5a20e71e57f81d03fd"><td class="memItemLeft" align="right" valign="top">VkResult&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacevh.html#ad6013974401fbc5a20e71e57f81d03fd">vhBufCopyBufferToImage</a> (VkDevice device, VkQueue graphicsQueue, VkCommandPool commandPool, VkBuffer buffer, VkImage image, uint32_t layerCount, uint32_t width, uint32_t height)</td></tr>
+<tr class="memdesc:ad6013974401fbc5a20e71e57f81d03fd"><td class="mdescLeft">&#160;</td><td class="mdescRight">Copy a buffer to an image (for uploading via a staging buffer)  <a href="#ad6013974401fbc5a20e71e57f81d03fd">More...</a><br /></td></tr>
+<tr class="separator:ad6013974401fbc5a20e71e57f81d03fd"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a2e21fd45374af2a124cbaf28e6f63c72"><td class="memItemLeft" align="right" valign="top">VkResult&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacevh.html#a2e21fd45374af2a124cbaf28e6f63c72">vhBufCopyBufferToImage</a> (VkDevice device, VkQueue graphicsQueue, VkCommandPool commandPool, VkBuffer buffer, VkImage image, std::vector&lt; VkBufferImageCopy &gt; &amp;regions, uint32_t width, uint32_t height)</td></tr>
+<tr class="memdesc:a2e21fd45374af2a124cbaf28e6f63c72"><td class="mdescLeft">&#160;</td><td class="mdescRight">Wrapper for copying a buffer to an image, manages queue submission.  <a href="#a2e21fd45374af2a124cbaf28e6f63c72">More...</a><br /></td></tr>
+<tr class="separator:a2e21fd45374af2a124cbaf28e6f63c72"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ab17813ab63ecaa73dcc45eb113e816fe"><td class="memItemLeft" align="right" valign="top">VkResult&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacevh.html#ab17813ab63ecaa73dcc45eb113e816fe">vhBufCopyImageToBuffer</a> (VkDevice device, VkQueue graphicsQueue, VkCommandPool commandPool, VkImage image, VkImageAspectFlagBits aspect, VkBuffer buffer, uint32_t layerCount, uint32_t width, uint32_t height)</td></tr>
+<tr class="memdesc:ab17813ab63ecaa73dcc45eb113e816fe"><td class="mdescLeft">&#160;</td><td class="mdescRight">Copy a VKImage to a VKBuffer.  <a href="#ab17813ab63ecaa73dcc45eb113e816fe">More...</a><br /></td></tr>
+<tr class="separator:ab17813ab63ecaa73dcc45eb113e816fe"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a7c9dfd0d37a40cf2657779c996b0a138"><td class="memItemLeft" align="right" valign="top">VkResult&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacevh.html#a7c9dfd0d37a40cf2657779c996b0a138">vhBufCopyImageToBuffer</a> (VkDevice device, VkQueue graphicsQueue, VkCommandPool commandPool, VkImage image, VkBuffer buffer, std::vector&lt; VkBufferImageCopy &gt; &amp;regions, uint32_t width, uint32_t height)</td></tr>
+<tr class="memdesc:a7c9dfd0d37a40cf2657779c996b0a138"><td class="mdescLeft">&#160;</td><td class="mdescRight">Copy a VKImage to a VKBuffer.  <a href="#a7c9dfd0d37a40cf2657779c996b0a138">More...</a><br /></td></tr>
+<tr class="separator:a7c9dfd0d37a40cf2657779c996b0a138"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a06fb4550531664b62cf3a54d377515a7"><td class="memItemLeft" align="right" valign="top">VkResult&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacevh.html#a06fb4550531664b62cf3a54d377515a7">vhBufTransitionImageLayout</a> (VkDevice device, VkQueue graphicsQueue, VkCommandPool commandPool, VkImage image, VkFormat format, VkImageAspectFlagBits aspect, uint32_t miplevels, uint32_t layerCount, VkImageLayout oldLayout, VkImageLayout newLayout)</td></tr>
+<tr class="memdesc:a06fb4550531664b62cf3a54d377515a7"><td class="mdescLeft">&#160;</td><td class="mdescRight">Transition the image layout, causes a pipeline barrier.  <a href="#a06fb4550531664b62cf3a54d377515a7">More...</a><br /></td></tr>
+<tr class="separator:a06fb4550531664b62cf3a54d377515a7"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a3bb418fe457b4b3cde96e4499ba2e9e6"><td class="memItemLeft" align="right" valign="top">VkResult&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacevh.html#a3bb418fe457b4b3cde96e4499ba2e9e6">vhBufTransitionImageLayout</a> (VkDevice device, VkQueue graphicsQueue, VkCommandBuffer commandBuffer, VkImage image, VkFormat format, VkImageAspectFlagBits aspect, uint32_t miplevels, uint32_t layerCount, VkImageLayout oldLayout, VkImageLayout newLayout)</td></tr>
+<tr class="memdesc:a3bb418fe457b4b3cde96e4499ba2e9e6"><td class="mdescLeft">&#160;</td><td class="mdescRight">Transition the image layout, causes a pipeline barrier.  <a href="#a3bb418fe457b4b3cde96e4499ba2e9e6">More...</a><br /></td></tr>
+<tr class="separator:a3bb418fe457b4b3cde96e4499ba2e9e6"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a9ffbd8afe369bd26aada3c4935bbfded"><td class="memItemLeft" align="right" valign="top">VkResult&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacevh.html#a9ffbd8afe369bd26aada3c4935bbfded">vhBufCreateTextureImage</a> (VkDevice device, VmaAllocator allocator, VkQueue graphicsQueue, VkCommandPool commandPool, std::string basedir, std::vector&lt; std::string &gt; texNames, VkImageCreateFlags flags, VkImage *textureImage, VmaAllocation *textureImageAllocation, VkExtent2D *extent)</td></tr>
+<tr class="memdesc:a9ffbd8afe369bd26aada3c4935bbfded"><td class="mdescLeft">&#160;</td><td class="mdescRight">Create a texture image from multiple files.  <a href="#a9ffbd8afe369bd26aada3c4935bbfded">More...</a><br /></td></tr>
+<tr class="separator:a9ffbd8afe369bd26aada3c4935bbfded"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:acf37e6299054ea7f5138aaa4e426ce72"><td class="memItemLeft" align="right" valign="top">VkResult&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacevh.html#acf37e6299054ea7f5138aaa4e426ce72">vhBufCreateTexturecubeImage</a> (VkDevice device, VmaAllocator allocator, VkQueue graphicsQueue, VkCommandPool commandPool, gli::texture_cube &amp;texCube, VkImage *textureImage, VmaAllocation *textureImageAllocation, VkFormat *pFormat)</td></tr>
+<tr class="memdesc:acf37e6299054ea7f5138aaa4e426ce72"><td class="mdescLeft">&#160;</td><td class="mdescRight">Create an image that is also a cubemap.  <a href="#acf37e6299054ea7f5138aaa4e426ce72">More...</a><br /></td></tr>
+<tr class="separator:acf37e6299054ea7f5138aaa4e426ce72"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ab6871f715a2f97378170122f36283079"><td class="memItemLeft" align="right" valign="top">VkResult&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacevh.html#ab6871f715a2f97378170122f36283079">vhBufCreateTextureSampler</a> (VkDevice device, VkSampler *textureSampler)</td></tr>
+<tr class="memdesc:ab6871f715a2f97378170122f36283079"><td class="mdescLeft">&#160;</td><td class="mdescRight">Create an image sampler for samplign textures in shaders.  <a href="#ab6871f715a2f97378170122f36283079">More...</a><br /></td></tr>
+<tr class="separator:ab6871f715a2f97378170122f36283079"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ab47f3ffb11c9338fcf9421d8356e7935"><td class="memItemLeft" align="right" valign="top">VkResult&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacevh.html#ab47f3ffb11c9338fcf9421d8356e7935">vhBufCreateFramebuffers</a> (VkDevice device, std::vector&lt; VkImageView &gt; imageViews, std::vector&lt; VkImageView &gt; depthImageViews, VkRenderPass renderPass, VkExtent2D extent, std::vector&lt; VkFramebuffer &gt; &amp;frameBuffers)</td></tr>
+<tr class="memdesc:ab47f3ffb11c9338fcf9421d8356e7935"><td class="mdescLeft">&#160;</td><td class="mdescRight">Create framebuffers (color + depth), one for each swap chain image.  <a href="#ab47f3ffb11c9338fcf9421d8356e7935">More...</a><br /></td></tr>
+<tr class="separator:ab47f3ffb11c9338fcf9421d8356e7935"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a0d4011de10faa53afd00433f1bb009e3"><td class="memItemLeft" align="right" valign="top">VkResult&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacevh.html#a0d4011de10faa53afd00433f1bb009e3">vhBufCopySwapChainImageToHost</a> (VkDevice device, VmaAllocator allocator, VkQueue graphicsQueue, VkCommandPool commandPool, VkImage image, VkImageAspectFlagBits aspect, gli::byte *bufferData, uint32_t width, uint32_t height, uint32_t imageSize)</td></tr>
+<tr class="memdesc:a0d4011de10faa53afd00433f1bb009e3"><td class="mdescLeft">&#160;</td><td class="mdescRight">Copy a swap chain image to a data buffer, after it has been rendered into.  <a href="#a0d4011de10faa53afd00433f1bb009e3">More...</a><br /></td></tr>
+<tr class="separator:a0d4011de10faa53afd00433f1bb009e3"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:af8450c3d2289db3a176055b293847f7d"><td class="memItemLeft" align="right" valign="top">VkResult&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacevh.html#af8450c3d2289db3a176055b293847f7d">vhBufCopyImageToHost</a> (VkDevice device, VmaAllocator allocator, VkQueue graphicsQueue, VkCommandPool commandPool, VkImage image, VkFormat format, VkImageAspectFlagBits aspect, VkImageLayout layout, gli::byte *bufferData, uint32_t width, uint32_t height, uint32_t imageSize)</td></tr>
+<tr class="memdesc:af8450c3d2289db3a176055b293847f7d"><td class="mdescLeft">&#160;</td><td class="mdescRight">Copy a swap chain image to a data buffer, after it has been rendered into.  <a href="#af8450c3d2289db3a176055b293847f7d">More...</a><br /></td></tr>
+<tr class="separator:af8450c3d2289db3a176055b293847f7d"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a6a49e59322f37fb65f61a23c1a6363cb"><td class="memItemLeft" align="right" valign="top">VkResult&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacevh.html#a6a49e59322f37fb65f61a23c1a6363cb">vhBufCreateVertexBuffer</a> (VkDevice device, VmaAllocator allocator, VkQueue graphicsQueue, VkCommandPool commandPool, std::vector&lt; <a class="el" href="structvh_1_1vh_vertex.html">vh::vhVertex</a> &gt; &amp;vertices, VkBuffer *vertexBuffer, VmaAllocation *vertexBufferAllocation)</td></tr>
+<tr class="memdesc:a6a49e59322f37fb65f61a23c1a6363cb"><td class="mdescLeft">&#160;</td><td class="mdescRight">Create a Vulkan vertex buffer.  <a href="#a6a49e59322f37fb65f61a23c1a6363cb">More...</a><br /></td></tr>
+<tr class="separator:a6a49e59322f37fb65f61a23c1a6363cb"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:abaaec135aa5e17e36607d4fa3e00d5a2"><td class="memItemLeft" align="right" valign="top">VkResult&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacevh.html#abaaec135aa5e17e36607d4fa3e00d5a2">vhBufCreateIndexBuffer</a> (VkDevice device, VmaAllocator allocator, VkQueue graphicsQueue, VkCommandPool commandPool, std::vector&lt; uint32_t &gt; &amp;indices, VkBuffer *indexBuffer, VmaAllocation *indexBufferAllocation)</td></tr>
+<tr class="memdesc:abaaec135aa5e17e36607d4fa3e00d5a2"><td class="mdescLeft">&#160;</td><td class="mdescRight">Create a Vulkan index buffer.  <a href="#abaaec135aa5e17e36607d4fa3e00d5a2">More...</a><br /></td></tr>
+<tr class="separator:abaaec135aa5e17e36607d4fa3e00d5a2"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ab714be58a365d2b553dea57cb4622b2d"><td class="memItemLeft" align="right" valign="top">VkResult&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacevh.html#ab714be58a365d2b553dea57cb4622b2d">vhBufCreateUniformBuffers</a> (VmaAllocator allocator, uint32_t numberBuffers, VkDeviceSize bufferSize, std::vector&lt; VkBuffer &gt; &amp;uniformBuffers, std::vector&lt; VmaAllocation &gt; &amp;uniformBuffersAllocation)</td></tr>
+<tr class="memdesc:ab714be58a365d2b553dea57cb4622b2d"><td class="mdescLeft">&#160;</td><td class="mdescRight">Create a UBO.  <a href="#ab714be58a365d2b553dea57cb4622b2d">More...</a><br /></td></tr>
+<tr class="separator:ab714be58a365d2b553dea57cb4622b2d"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ac6c523c56a5fe3a0bb7e3dd58a135d16"><td class="memItemLeft" align="right" valign="top">VkResult&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacevh.html#ac6c523c56a5fe3a0bb7e3dd58a135d16">vhCmdCreateCommandPool</a> (VkPhysicalDevice physicalDevice, VkDevice device, VkSurfaceKHR surface, VkCommandPool *commandPool)</td></tr>
+<tr class="memdesc:ac6c523c56a5fe3a0bb7e3dd58a135d16"><td class="mdescLeft">&#160;</td><td class="mdescRight">Create a new command pool.  <a href="#ac6c523c56a5fe3a0bb7e3dd58a135d16">More...</a><br /></td></tr>
+<tr class="separator:ac6c523c56a5fe3a0bb7e3dd58a135d16"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:afce4235cfc97c6ecc8ba9340ca99a3f9"><td class="memItemLeft" align="right" valign="top">VkResult&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacevh.html#afce4235cfc97c6ecc8ba9340ca99a3f9">vhCmdCreateCommandBuffers</a> (VkDevice device, VkCommandPool commandPool, VkCommandBufferLevel level, uint32_t count, VkCommandBuffer *pBuffers)</td></tr>
+<tr class="memdesc:afce4235cfc97c6ecc8ba9340ca99a3f9"><td class="mdescLeft">&#160;</td><td class="mdescRight">Create a number of command buffers.  <a href="#afce4235cfc97c6ecc8ba9340ca99a3f9">More...</a><br /></td></tr>
+<tr class="separator:afce4235cfc97c6ecc8ba9340ca99a3f9"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a9791b75aecc6358fa0be4612d8a83b95"><td class="memItemLeft" align="right" valign="top">VkResult&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacevh.html#a9791b75aecc6358fa0be4612d8a83b95">vhCmdBeginCommandBuffer</a> (VkDevice device, VkCommandBuffer commandBuffer, VkCommandBufferUsageFlagBits usageFlags)</td></tr>
+<tr class="memdesc:a9791b75aecc6358fa0be4612d8a83b95"><td class="mdescLeft">&#160;</td><td class="mdescRight">Start a command buffer for recording commands.  <a href="#a9791b75aecc6358fa0be4612d8a83b95">More...</a><br /></td></tr>
+<tr class="separator:a9791b75aecc6358fa0be4612d8a83b95"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a9ea5120b4ad57ec1f87cf053475bde19"><td class="memItemLeft" align="right" valign="top">VkResult&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacevh.html#a9ea5120b4ad57ec1f87cf053475bde19">vhCmdSubmitCommandBuffer</a> (VkDevice device, VkQueue queue, VkCommandBuffer commandBuffer, VkSemaphore waitSemaphore, VkSemaphore signalSemaphore, VkFence waitFence)</td></tr>
+<tr class="memdesc:a9ea5120b4ad57ec1f87cf053475bde19"><td class="mdescLeft">&#160;</td><td class="mdescRight">Submit a command buffer to a queue.  <a href="#a9ea5120b4ad57ec1f87cf053475bde19">More...</a><br /></td></tr>
+<tr class="separator:a9ea5120b4ad57ec1f87cf053475bde19"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a72b5d170d3b735ede6a6f57806402ad1"><td class="memItemLeft" align="right" valign="top">VkCommandBuffer&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacevh.html#a72b5d170d3b735ede6a6f57806402ad1">vhCmdBeginSingleTimeCommands</a> (VkDevice device, VkCommandPool commandPool)</td></tr>
 <tr class="memdesc:a72b5d170d3b735ede6a6f57806402ad1"><td class="mdescLeft">&#160;</td><td class="mdescRight">Begin submitting a single time command.  <a href="#a72b5d170d3b735ede6a6f57806402ad1">More...</a><br /></td></tr>
 <tr class="separator:a72b5d170d3b735ede6a6f57806402ad1"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a3561c11e98c2d5ba6fc7a2b53a45ac48"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacevh.html#a3561c11e98c2d5ba6fc7a2b53a45ac48">vhCmdEndSingleTimeCommands</a> (VkDevice device, VkQueue graphicsQueue, VkCommandPool commandPool, VkCommandBuffer commandBuffer)</td></tr>
-<tr class="memdesc:a3561c11e98c2d5ba6fc7a2b53a45ac48"><td class="mdescLeft">&#160;</td><td class="mdescRight">End recording into a single time command buffer and submit it.  <a href="#a3561c11e98c2d5ba6fc7a2b53a45ac48">More...</a><br /></td></tr>
-<tr class="separator:a3561c11e98c2d5ba6fc7a2b53a45ac48"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a3500d2b026ba0e56835f14742b59d160"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacevh.html#a3500d2b026ba0e56835f14742b59d160">vhCmdEndSingleTimeCommands</a> (VkDevice device, VkQueue graphicsQueue, VkCommandPool commandPool, VkCommandBuffer commandBuffer, VkSemaphore waitSemaphore, VkSemaphore signalSemaphore, VkFence waitFence)</td></tr>
-<tr class="memdesc:a3500d2b026ba0e56835f14742b59d160"><td class="mdescLeft">&#160;</td><td class="mdescRight">End recording into a single time command buffer and submit it.  <a href="#a3500d2b026ba0e56835f14742b59d160">More...</a><br /></td></tr>
-<tr class="separator:a3500d2b026ba0e56835f14742b59d160"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a400527c7164faed90b5edac58203d4ba"><td class="memItemLeft" align="right" valign="top">VkResult&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacevh.html#a400527c7164faed90b5edac58203d4ba">vhCmdEndSingleTimeCommands</a> (VkDevice device, VkQueue graphicsQueue, VkCommandPool commandPool, VkCommandBuffer commandBuffer)</td></tr>
+<tr class="memdesc:a400527c7164faed90b5edac58203d4ba"><td class="mdescLeft">&#160;</td><td class="mdescRight">End recording into a single time command buffer and submit it.  <a href="#a400527c7164faed90b5edac58203d4ba">More...</a><br /></td></tr>
+<tr class="separator:a400527c7164faed90b5edac58203d4ba"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a3d980637f5b78d90e25253cba749e285"><td class="memItemLeft" align="right" valign="top">VkResult&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacevh.html#a3d980637f5b78d90e25253cba749e285">vhCmdEndSingleTimeCommands</a> (VkDevice device, VkQueue graphicsQueue, VkCommandPool commandPool, VkCommandBuffer commandBuffer, VkSemaphore waitSemaphore, VkSemaphore signalSemaphore, VkFence waitFence)</td></tr>
+<tr class="memdesc:a3d980637f5b78d90e25253cba749e285"><td class="mdescLeft">&#160;</td><td class="mdescRight">End recording into a single time command buffer and submit it.  <a href="#a3d980637f5b78d90e25253cba749e285">More...</a><br /></td></tr>
+<tr class="separator:a3d980637f5b78d90e25253cba749e285"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ad37cb47383e3f370dec52aec254a57b3"><td class="memItemLeft" align="right" valign="top"><a id="ad37cb47383e3f370dec52aec254a57b3"></a>
 VKAPI_ATTR VkBool32 VKAPI_CALL&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacevh.html#ad37cb47383e3f370dec52aec254a57b3">vhDebugCallback</a> (VkDebugReportFlagsEXT flags, VkDebugReportObjectTypeEXT objType, uint64_t obj, size_t location, int32_t code, const char *layerPrefix, const char *msg, void *userData)</td></tr>
 <tr class="memdesc:ad37cb47383e3f370dec52aec254a57b3"><td class="mdescLeft">&#160;</td><td class="mdescRight">Debug callback. <br /></td></tr>
@@ -172,6 +182,15 @@ void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="name
 void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacevh.html#abdeb0d9fcda941f0cb92fd857002d309">vhSetupDebugCallback</a> (VkInstance instance, VkDebugReportCallbackEXT *callback)</td></tr>
 <tr class="memdesc:abdeb0d9fcda941f0cb92fd857002d309"><td class="mdescLeft">&#160;</td><td class="mdescRight">Register debug callback. <br /></td></tr>
 <tr class="separator:abdeb0d9fcda941f0cb92fd857002d309"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a4fad56183a7e4ab61241a8873a247ea1"><td class="memItemLeft" align="right" valign="top">std::chrono::high_resolution_clock::time_point&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacevh.html#a4fad56183a7e4ab61241a8873a247ea1">vhTimeNow</a> ()</td></tr>
+<tr class="memdesc:a4fad56183a7e4ab61241a8873a247ea1"><td class="mdescLeft">&#160;</td><td class="mdescRight">Take a time measurment from the high resolution clock.  <a href="#a4fad56183a7e4ab61241a8873a247ea1">More...</a><br /></td></tr>
+<tr class="separator:a4fad56183a7e4ab61241a8873a247ea1"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a19eaffd746fc8a31941d4559ca0894c0"><td class="memItemLeft" align="right" valign="top">float&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacevh.html#a19eaffd746fc8a31941d4559ca0894c0">vhTimeDuration</a> (std::chrono::high_resolution_clock::time_point t_prev)</td></tr>
+<tr class="memdesc:a19eaffd746fc8a31941d4559ca0894c0"><td class="mdescLeft">&#160;</td><td class="mdescRight">Use the high resolution clock to calculate a time duration since the last time measurement.  <a href="#a19eaffd746fc8a31941d4559ca0894c0">More...</a><br /></td></tr>
+<tr class="separator:a19eaffd746fc8a31941d4559ca0894c0"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:adc2c15cc0cfeb131342076753df95788"><td class="memItemLeft" align="right" valign="top">float&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacevh.html#adc2c15cc0cfeb131342076753df95788">vhAverage</a> (float new_val, float average, float weight)</td></tr>
+<tr class="memdesc:adc2c15cc0cfeb131342076753df95788"><td class="mdescLeft">&#160;</td><td class="mdescRight">Apply expoentatial smoothing to given values.  <a href="#adc2c15cc0cfeb131342076753df95788">More...</a><br /></td></tr>
+<tr class="separator:adc2c15cc0cfeb131342076753df95788"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a42616af40e6817b748d42deeda488618"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacevh.html#a42616af40e6817b748d42deeda488618">checkValidationLayerSupport</a> (std::vector&lt; const char * &gt; &amp;validationLayers)</td></tr>
 <tr class="memdesc:a42616af40e6817b748d42deeda488618"><td class="mdescLeft">&#160;</td><td class="mdescRight">Check validation layers of the Vulkan instance.  <a href="#a42616af40e6817b748d42deeda488618">More...</a><br /></td></tr>
 <tr class="separator:a42616af40e6817b748d42deeda488618"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -190,48 +209,48 @@ void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="name
 <tr class="memitem:a57c20b5524c517208b8984d3734f2aea"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacevh.html#a57c20b5524c517208b8984d3734f2aea">isDeviceSuitable</a> (VkPhysicalDevice device, VkSurfaceKHR surface, std::vector&lt; const char * &gt; requiredDeviceExtensions)</td></tr>
 <tr class="memdesc:a57c20b5524c517208b8984d3734f2aea"><td class="mdescLeft">&#160;</td><td class="mdescRight">Query whether a physical offers all required extensions.  <a href="#a57c20b5524c517208b8984d3734f2aea">More...</a><br /></td></tr>
 <tr class="separator:a57c20b5524c517208b8984d3734f2aea"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a6875d8352834932f9990c7bfb72be6aa"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacevh.html#a6875d8352834932f9990c7bfb72be6aa">vhDevPickPhysicalDevice</a> (VkInstance instance, VkSurfaceKHR surface, std::vector&lt; const char * &gt; requiredDeviceExtensions, VkPhysicalDevice *physicalDevice)</td></tr>
-<tr class="memdesc:a6875d8352834932f9990c7bfb72be6aa"><td class="mdescLeft">&#160;</td><td class="mdescRight">Query whether a physical offers all required extensions.  <a href="#a6875d8352834932f9990c7bfb72be6aa">More...</a><br /></td></tr>
-<tr class="separator:a6875d8352834932f9990c7bfb72be6aa"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a59002ca8897465b479e5f46b1840171a"><td class="memItemLeft" align="right" valign="top">VkResult&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacevh.html#a59002ca8897465b479e5f46b1840171a">vhDevPickPhysicalDevice</a> (VkInstance instance, VkSurfaceKHR surface, std::vector&lt; const char * &gt; requiredDeviceExtensions, VkPhysicalDevice *physicalDevice)</td></tr>
+<tr class="memdesc:a59002ca8897465b479e5f46b1840171a"><td class="mdescLeft">&#160;</td><td class="mdescRight">Query whether a physical offers all required extensions.  <a href="#a59002ca8897465b479e5f46b1840171a">More...</a><br /></td></tr>
+<tr class="separator:a59002ca8897465b479e5f46b1840171a"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a81c685442b0d3f4a3dc89177f8d6f11b"><td class="memItemLeft" align="right" valign="top">VkFormat&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacevh.html#a81c685442b0d3f4a3dc89177f8d6f11b">vhDevFindSupportedFormat</a> (VkPhysicalDevice physicalDevice, const std::vector&lt; VkFormat &gt; &amp;candidates, VkImageTiling tiling, VkFormatFeatureFlags features)</td></tr>
 <tr class="memdesc:a81c685442b0d3f4a3dc89177f8d6f11b"><td class="mdescLeft">&#160;</td><td class="mdescRight">Query a suitable image format that the device supports.  <a href="#a81c685442b0d3f4a3dc89177f8d6f11b">More...</a><br /></td></tr>
 <tr class="separator:a81c685442b0d3f4a3dc89177f8d6f11b"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a8c544f8c40f982eec87405acf83ce225"><td class="memItemLeft" align="right" valign="top">VkFormat&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacevh.html#a8c544f8c40f982eec87405acf83ce225">vhDevFindDepthFormat</a> (VkPhysicalDevice physicalDevice)</td></tr>
 <tr class="memdesc:a8c544f8c40f982eec87405acf83ce225"><td class="mdescLeft">&#160;</td><td class="mdescRight">Find a suitable format for the depth/stencil buffer.  <a href="#a8c544f8c40f982eec87405acf83ce225">More...</a><br /></td></tr>
 <tr class="separator:a8c544f8c40f982eec87405acf83ce225"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a20cb3a4423dcb39d177d382c4834a396"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacevh.html#a20cb3a4423dcb39d177d382c4834a396">vhDevCreateLogicalDevice</a> (VkPhysicalDevice physicalDevice, VkSurfaceKHR surface, std::vector&lt; const char * &gt; requiredDeviceExtensions, std::vector&lt; const char * &gt; requiredValidationLayers, VkDevice *device, VkQueue *graphicsQueue, VkQueue *presentQueue)</td></tr>
-<tr class="memdesc:a20cb3a4423dcb39d177d382c4834a396"><td class="mdescLeft">&#160;</td><td class="mdescRight">Create a logical device and according queues.  <a href="#a20cb3a4423dcb39d177d382c4834a396">More...</a><br /></td></tr>
-<tr class="separator:a20cb3a4423dcb39d177d382c4834a396"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:abef2251fdd3a8f216b82c9a16893578d"><td class="memItemLeft" align="right" valign="top">VkResult&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacevh.html#abef2251fdd3a8f216b82c9a16893578d">vhDevCreateLogicalDevice</a> (VkPhysicalDevice physicalDevice, VkSurfaceKHR surface, std::vector&lt; const char * &gt; requiredDeviceExtensions, std::vector&lt; const char * &gt; requiredValidationLayers, VkDevice *device, VkQueue *graphicsQueue, VkQueue *presentQueue)</td></tr>
+<tr class="memdesc:abef2251fdd3a8f216b82c9a16893578d"><td class="mdescLeft">&#160;</td><td class="mdescRight">Create a logical device and according queues.  <a href="#abef2251fdd3a8f216b82c9a16893578d">More...</a><br /></td></tr>
+<tr class="separator:abef2251fdd3a8f216b82c9a16893578d"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a3e1916a9160bee6b83f7f9effd3cdd34"><td class="memItemLeft" align="right" valign="top">std::vector&lt; char &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacevh.html#a3e1916a9160bee6b83f7f9effd3cdd34">vhFileRead</a> (const std::string &amp;filename)</td></tr>
 <tr class="memdesc:a3e1916a9160bee6b83f7f9effd3cdd34"><td class="mdescLeft">&#160;</td><td class="mdescRight">Read the contents of a file and return a binary blob with it.  <a href="#a3e1916a9160bee6b83f7f9effd3cdd34">More...</a><br /></td></tr>
 <tr class="separator:a3e1916a9160bee6b83f7f9effd3cdd34"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a0401ce1a7329f9b52497fff549135f7a"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacevh.html#a0401ce1a7329f9b52497fff549135f7a">vhSwapCreateSwapChain</a> (VkPhysicalDevice physicalDevice, VkSurfaceKHR surface, VkDevice device, VkExtent2D frameBufferExtent, VkSwapchainKHR *swapChain, std::vector&lt; VkImage &gt; &amp;swapChainImages, std::vector&lt; VkImageView &gt; &amp;swapChainImageViews, VkFormat *swapChainImageFormat, VkExtent2D *swapChainExtent)</td></tr>
-<tr class="memdesc:a0401ce1a7329f9b52497fff549135f7a"><td class="mdescLeft">&#160;</td><td class="mdescRight">Choose the swapchain.  <a href="#a0401ce1a7329f9b52497fff549135f7a">More...</a><br /></td></tr>
-<tr class="separator:a0401ce1a7329f9b52497fff549135f7a"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a4e955c65e9f1dd327237cacf2439d81f"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacevh.html#a4e955c65e9f1dd327237cacf2439d81f">vhRenderCreateRenderPass</a> (VkDevice device, VkFormat swapChainImageFormat, VkFormat depthFormat, VkAttachmentLoadOp loadOp, VkRenderPass *renderPass)</td></tr>
-<tr class="memdesc:a4e955c65e9f1dd327237cacf2439d81f"><td class="mdescLeft">&#160;</td><td class="mdescRight">Create a render pass for a light pass.  <a href="#a4e955c65e9f1dd327237cacf2439d81f">More...</a><br /></td></tr>
-<tr class="separator:a4e955c65e9f1dd327237cacf2439d81f"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:afc1d99ade9bdbbdcb607bcb54dfac0c8"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacevh.html#afc1d99ade9bdbbdcb607bcb54dfac0c8">vhRenderCreateRenderPassShadow</a> (VkDevice device, VkFormat depthFormat, VkRenderPass *renderPass)</td></tr>
-<tr class="memdesc:afc1d99ade9bdbbdcb607bcb54dfac0c8"><td class="mdescLeft">&#160;</td><td class="mdescRight">Create a render pass for a shadow pass.  <a href="#afc1d99ade9bdbbdcb607bcb54dfac0c8">More...</a><br /></td></tr>
-<tr class="separator:afc1d99ade9bdbbdcb607bcb54dfac0c8"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:acf5951d9e013d1bd9fdab39b2ee4516d"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacevh.html#acf5951d9e013d1bd9fdab39b2ee4516d">vhRenderCreateDescriptorSetLayout</a> (VkDevice device, std::vector&lt; uint32_t &gt; counts, std::vector&lt; VkDescriptorType &gt; types, std::vector&lt; VkShaderStageFlags &gt; stageFlags, VkDescriptorSetLayout *descriptorSetLayout)</td></tr>
-<tr class="memdesc:acf5951d9e013d1bd9fdab39b2ee4516d"><td class="mdescLeft">&#160;</td><td class="mdescRight">Create a descriptor layout.  <a href="#acf5951d9e013d1bd9fdab39b2ee4516d">More...</a><br /></td></tr>
-<tr class="separator:acf5951d9e013d1bd9fdab39b2ee4516d"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ac8f31a918822c6b09d118611bc4e629c"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacevh.html#ac8f31a918822c6b09d118611bc4e629c">vhRenderCreateDescriptorPool</a> (VkDevice device, std::vector&lt; VkDescriptorType &gt; types, std::vector&lt; uint32_t &gt; numberDesc, VkDescriptorPool *descriptorPool)</td></tr>
-<tr class="memdesc:ac8f31a918822c6b09d118611bc4e629c"><td class="mdescLeft">&#160;</td><td class="mdescRight">Create a descriptor pool.  <a href="#ac8f31a918822c6b09d118611bc4e629c">More...</a><br /></td></tr>
-<tr class="separator:ac8f31a918822c6b09d118611bc4e629c"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a5f0c05cca7c6f71779e85f10e25c3878"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacevh.html#a5f0c05cca7c6f71779e85f10e25c3878">vhRenderCreateDescriptorSets</a> (VkDevice device, uint32_t numberDesc, VkDescriptorSetLayout descriptorSetLayout, VkDescriptorPool descriptorPool, std::vector&lt; VkDescriptorSet &gt; &amp;descriptorSets)</td></tr>
-<tr class="memdesc:a5f0c05cca7c6f71779e85f10e25c3878"><td class="mdescLeft">&#160;</td><td class="mdescRight">Create a number of descriptor sets, one for each frame in the swapchain.  <a href="#a5f0c05cca7c6f71779e85f10e25c3878">More...</a><br /></td></tr>
-<tr class="separator:a5f0c05cca7c6f71779e85f10e25c3878"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a6c13ad01667cf5bc7c0946bdc61b53b8"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacevh.html#a6c13ad01667cf5bc7c0946bdc61b53b8">vhRenderUpdateDescriptorSet</a> (VkDevice device, VkDescriptorSet descriptorSet, std::vector&lt; VkBuffer &gt; uniformBuffers, std::vector&lt; uint32_t &gt; bufferRanges, std::vector&lt; std::vector&lt; VkImageView &gt;&gt; textureImageViews, std::vector&lt; std::vector&lt; VkSampler &gt;&gt; textureSamplers)</td></tr>
-<tr class="memdesc:a6c13ad01667cf5bc7c0946bdc61b53b8"><td class="mdescLeft">&#160;</td><td class="mdescRight">Update a descriptor set.  <a href="#a6c13ad01667cf5bc7c0946bdc61b53b8">More...</a><br /></td></tr>
-<tr class="separator:a6c13ad01667cf5bc7c0946bdc61b53b8"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ad33a812099efdb28335db179ab789fd2"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacevh.html#ad33a812099efdb28335db179ab789fd2">vhRenderBeginRenderPass</a> (VkCommandBuffer commandBuffer, VkRenderPass renderPass, VkFramebuffer frameBuffer, VkExtent2D extent)</td></tr>
-<tr class="memdesc:ad33a812099efdb28335db179ab789fd2"><td class="mdescLeft">&#160;</td><td class="mdescRight">Start rendering in a command buffer.  <a href="#ad33a812099efdb28335db179ab789fd2">More...</a><br /></td></tr>
-<tr class="separator:ad33a812099efdb28335db179ab789fd2"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a55ec1b174dce07cb9947b055c354b179"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacevh.html#a55ec1b174dce07cb9947b055c354b179">vhRenderBeginRenderPass</a> (VkCommandBuffer commandBuffer, VkRenderPass renderPass, VkFramebuffer frameBuffer, std::vector&lt; VkClearValue &gt; &amp;clearValues, VkExtent2D extent)</td></tr>
-<tr class="memdesc:a55ec1b174dce07cb9947b055c354b179"><td class="mdescLeft">&#160;</td><td class="mdescRight">Start rendering in a command buffer.  <a href="#a55ec1b174dce07cb9947b055c354b179">More...</a><br /></td></tr>
-<tr class="separator:a55ec1b174dce07cb9947b055c354b179"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a6d0e56b8ed7309e0ebf5ba969323e4db"><td class="memItemLeft" align="right" valign="top">VkResult&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacevh.html#a6d0e56b8ed7309e0ebf5ba969323e4db">vhSwapCreateSwapChain</a> (VkPhysicalDevice physicalDevice, VkSurfaceKHR surface, VkDevice device, VkExtent2D frameBufferExtent, VkSwapchainKHR *swapChain, std::vector&lt; VkImage &gt; &amp;swapChainImages, std::vector&lt; VkImageView &gt; &amp;swapChainImageViews, VkFormat *swapChainImageFormat, VkExtent2D *swapChainExtent)</td></tr>
+<tr class="memdesc:a6d0e56b8ed7309e0ebf5ba969323e4db"><td class="mdescLeft">&#160;</td><td class="mdescRight">Choose the swapchain.  <a href="#a6d0e56b8ed7309e0ebf5ba969323e4db">More...</a><br /></td></tr>
+<tr class="separator:a6d0e56b8ed7309e0ebf5ba969323e4db"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aebf05b4e0ad73129da84053e0b354c9e"><td class="memItemLeft" align="right" valign="top">VkResult&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacevh.html#aebf05b4e0ad73129da84053e0b354c9e">vhRenderCreateRenderPass</a> (VkDevice device, VkFormat swapChainImageFormat, VkFormat depthFormat, VkAttachmentLoadOp loadOp, VkRenderPass *renderPass)</td></tr>
+<tr class="memdesc:aebf05b4e0ad73129da84053e0b354c9e"><td class="mdescLeft">&#160;</td><td class="mdescRight">Create a render pass for a light pass.  <a href="#aebf05b4e0ad73129da84053e0b354c9e">More...</a><br /></td></tr>
+<tr class="separator:aebf05b4e0ad73129da84053e0b354c9e"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:abfb40be113bdc3486e32a2553561a279"><td class="memItemLeft" align="right" valign="top">VkResult&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacevh.html#abfb40be113bdc3486e32a2553561a279">vhRenderCreateRenderPassShadow</a> (VkDevice device, VkFormat depthFormat, VkRenderPass *renderPass)</td></tr>
+<tr class="memdesc:abfb40be113bdc3486e32a2553561a279"><td class="mdescLeft">&#160;</td><td class="mdescRight">Create a render pass for a shadow pass.  <a href="#abfb40be113bdc3486e32a2553561a279">More...</a><br /></td></tr>
+<tr class="separator:abfb40be113bdc3486e32a2553561a279"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ace68f67085dba10e4361d22dc099efe6"><td class="memItemLeft" align="right" valign="top">VkResult&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacevh.html#ace68f67085dba10e4361d22dc099efe6">vhRenderCreateDescriptorSetLayout</a> (VkDevice device, std::vector&lt; uint32_t &gt; counts, std::vector&lt; VkDescriptorType &gt; types, std::vector&lt; VkShaderStageFlags &gt; stageFlags, VkDescriptorSetLayout *descriptorSetLayout)</td></tr>
+<tr class="memdesc:ace68f67085dba10e4361d22dc099efe6"><td class="mdescLeft">&#160;</td><td class="mdescRight">Create a descriptor layout.  <a href="#ace68f67085dba10e4361d22dc099efe6">More...</a><br /></td></tr>
+<tr class="separator:ace68f67085dba10e4361d22dc099efe6"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a9392ff3d54398fa4297a442ba2a0efb9"><td class="memItemLeft" align="right" valign="top">VkResult&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacevh.html#a9392ff3d54398fa4297a442ba2a0efb9">vhRenderCreateDescriptorPool</a> (VkDevice device, std::vector&lt; VkDescriptorType &gt; types, std::vector&lt; uint32_t &gt; numberDesc, VkDescriptorPool *descriptorPool)</td></tr>
+<tr class="memdesc:a9392ff3d54398fa4297a442ba2a0efb9"><td class="mdescLeft">&#160;</td><td class="mdescRight">Create a descriptor pool.  <a href="#a9392ff3d54398fa4297a442ba2a0efb9">More...</a><br /></td></tr>
+<tr class="separator:a9392ff3d54398fa4297a442ba2a0efb9"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a2e15c0ed7b15c786bc1bc9f6a574c350"><td class="memItemLeft" align="right" valign="top">VkResult&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacevh.html#a2e15c0ed7b15c786bc1bc9f6a574c350">vhRenderCreateDescriptorSets</a> (VkDevice device, uint32_t numberDesc, VkDescriptorSetLayout descriptorSetLayout, VkDescriptorPool descriptorPool, std::vector&lt; VkDescriptorSet &gt; &amp;descriptorSets)</td></tr>
+<tr class="memdesc:a2e15c0ed7b15c786bc1bc9f6a574c350"><td class="mdescLeft">&#160;</td><td class="mdescRight">Create a number of descriptor sets, one for each frame in the swapchain.  <a href="#a2e15c0ed7b15c786bc1bc9f6a574c350">More...</a><br /></td></tr>
+<tr class="separator:a2e15c0ed7b15c786bc1bc9f6a574c350"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a686da75542975aa5930179c54bc17306"><td class="memItemLeft" align="right" valign="top">VkResult&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacevh.html#a686da75542975aa5930179c54bc17306">vhRenderUpdateDescriptorSet</a> (VkDevice device, VkDescriptorSet descriptorSet, std::vector&lt; VkBuffer &gt; uniformBuffers, std::vector&lt; uint32_t &gt; bufferRanges, std::vector&lt; std::vector&lt; VkImageView &gt;&gt; textureImageViews, std::vector&lt; std::vector&lt; VkSampler &gt;&gt; textureSamplers)</td></tr>
+<tr class="memdesc:a686da75542975aa5930179c54bc17306"><td class="mdescLeft">&#160;</td><td class="mdescRight">Update a descriptor set.  <a href="#a686da75542975aa5930179c54bc17306">More...</a><br /></td></tr>
+<tr class="separator:a686da75542975aa5930179c54bc17306"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:af55f8f528f60a2f23383168b87f19663"><td class="memItemLeft" align="right" valign="top">VkResult&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacevh.html#af55f8f528f60a2f23383168b87f19663">vhRenderBeginRenderPass</a> (VkCommandBuffer commandBuffer, VkRenderPass renderPass, VkFramebuffer frameBuffer, VkExtent2D extent)</td></tr>
+<tr class="memdesc:af55f8f528f60a2f23383168b87f19663"><td class="mdescLeft">&#160;</td><td class="mdescRight">Start rendering in a command buffer.  <a href="#af55f8f528f60a2f23383168b87f19663">More...</a><br /></td></tr>
+<tr class="separator:af55f8f528f60a2f23383168b87f19663"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a80b1190ad4afc68a8da89a60ed2c048a"><td class="memItemLeft" align="right" valign="top">VkResult&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacevh.html#a80b1190ad4afc68a8da89a60ed2c048a">vhRenderBeginRenderPass</a> (VkCommandBuffer commandBuffer, VkRenderPass renderPass, VkFramebuffer frameBuffer, std::vector&lt; VkClearValue &gt; &amp;clearValues, VkExtent2D extent)</td></tr>
+<tr class="memdesc:a80b1190ad4afc68a8da89a60ed2c048a"><td class="mdescLeft">&#160;</td><td class="mdescRight">Start rendering in a command buffer.  <a href="#a80b1190ad4afc68a8da89a60ed2c048a">More...</a><br /></td></tr>
+<tr class="separator:a80b1190ad4afc68a8da89a60ed2c048a"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a4390e33b2435fdbf76124fdafe6fba2a"><td class="memItemLeft" align="right" valign="top">VkResult&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacevh.html#a4390e33b2435fdbf76124fdafe6fba2a">vhRenderPresentResult</a> (VkQueue presentQueue, VkSwapchainKHR swapChain, uint32_t imageIndex, VkSemaphore signalSemaphore)</td></tr>
 <tr class="memdesc:a4390e33b2435fdbf76124fdafe6fba2a"><td class="mdescLeft">&#160;</td><td class="mdescRight">Present the result of a render operation to a window.  <a href="#a4390e33b2435fdbf76124fdafe6fba2a">More...</a><br /></td></tr>
 <tr class="separator:a4390e33b2435fdbf76124fdafe6fba2a"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -247,9 +266,9 @@ void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="name
 <tr class="memitem:a5f76d8d8eeb5c06b7f55273a79d9830d"><td class="memItemLeft" align="right" valign="top">uint32_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacevh.html#a5f76d8d8eeb5c06b7f55273a79d9830d">vhMemFindMemoryType</a> (VkPhysicalDevice physicalDevice, uint32_t typeFilter, VkMemoryPropertyFlags properties)</td></tr>
 <tr class="memdesc:a5f76d8d8eeb5c06b7f55273a79d9830d"><td class="mdescLeft">&#160;</td><td class="mdescRight">Find the right memory type.  <a href="#a5f76d8d8eeb5c06b7f55273a79d9830d">More...</a><br /></td></tr>
 <tr class="separator:a5f76d8d8eeb5c06b7f55273a79d9830d"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:afb4f3634fb9f557f04f1a78824b22795"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacevh.html#afb4f3634fb9f557f04f1a78824b22795">vhMemCreateVMAAllocator</a> (VkPhysicalDevice physicalDevice, VkDevice device, VmaAllocator &amp;allocator)</td></tr>
-<tr class="memdesc:afb4f3634fb9f557f04f1a78824b22795"><td class="mdescLeft">&#160;</td><td class="mdescRight">Initialize the VMA allocator library.  <a href="#afb4f3634fb9f557f04f1a78824b22795">More...</a><br /></td></tr>
-<tr class="separator:afb4f3634fb9f557f04f1a78824b22795"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a7973d81d63d37347572c19477529dd7f"><td class="memItemLeft" align="right" valign="top">VkResult&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacevh.html#a7973d81d63d37347572c19477529dd7f">vhMemCreateVMAAllocator</a> (VkPhysicalDevice physicalDevice, VkDevice device, VmaAllocator &amp;allocator)</td></tr>
+<tr class="memdesc:a7973d81d63d37347572c19477529dd7f"><td class="mdescLeft">&#160;</td><td class="mdescRight">Initialize the VMA allocator library.  <a href="#a7973d81d63d37347572c19477529dd7f">More...</a><br /></td></tr>
+<tr class="separator:a7973d81d63d37347572c19477529dd7f"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a7579b97116c0e15eecd4bd0ede9dea08"><td class="memItemLeft" align="right" valign="top">VkShaderModule&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacevh.html#a7579b97116c0e15eecd4bd0ede9dea08">vhPipeCreateShaderModule</a> (VkDevice device, const std::vector&lt; char &gt; &amp;code)</td></tr>
 <tr class="memdesc:a7579b97116c0e15eecd4bd0ede9dea08"><td class="mdescLeft">&#160;</td><td class="mdescRight">Create a shader module.  <a href="#a7579b97116c0e15eecd4bd0ede9dea08">More...</a><br /></td></tr>
 <tr class="separator:a7579b97116c0e15eecd4bd0ede9dea08"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -488,14 +507,59 @@ void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="name
 
 </div>
 </div>
-<a id="a2dffa38557f5880ca9cedb269d3e45cb"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a2dffa38557f5880ca9cedb269d3e45cb">&#9670;&nbsp;</a></span>vhBufCopyBuffer()</h2>
+<a id="adc2c15cc0cfeb131342076753df95788"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#adc2c15cc0cfeb131342076753df95788">&#9670;&nbsp;</a></span>vhAverage()</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">void vh::vhBufCopyBuffer </td>
+          <td class="memname">float vh::vhAverage </td>
+          <td>(</td>
+          <td class="paramtype">float&#160;</td>
+          <td class="paramname"><em>new_val</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">float&#160;</td>
+          <td class="paramname"><em>average</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">float&#160;</td>
+          <td class="paramname"><em>weight</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Apply expoentatial smoothing to given values. </p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramdir">[in]</td><td class="paramname">new_val</td><td>The newest value that was measured </td></tr>
+    <tr><td class="paramdir">[in]</td><td class="paramname">average</td><td>The average so far </td></tr>
+    <tr><td class="paramdir">[in]</td><td class="paramname">weight</td><td>An averaging weight between 0 and 1 </td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>Returns</dt><dd>The new average </dd></dl>
+
+</div>
+</div>
+<a id="afacb884f1a1b7b7fdaef90231cd375fc"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#afacb884f1a1b7b7fdaef90231cd375fc">&#9670;&nbsp;</a></span>vhBufCopyBuffer()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">VkResult vh::vhBufCopyBuffer </td>
           <td>(</td>
           <td class="paramtype">VkDevice&#160;</td>
           <td class="paramname"><em>device</em>, </td>
@@ -550,17 +614,18 @@ void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="name
   </table>
   </dd>
 </dl>
+<dl class="section return"><dt>Returns</dt><dd>VK_SUCCESS or a Vulkan error code </dd></dl>
 
 </div>
 </div>
-<a id="a1c34f2bae24f3129f4c846227a336833"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a1c34f2bae24f3129f4c846227a336833">&#9670;&nbsp;</a></span>vhBufCopyBufferToImage() <span class="overload">[1/2]</span></h2>
+<a id="ad6013974401fbc5a20e71e57f81d03fd"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ad6013974401fbc5a20e71e57f81d03fd">&#9670;&nbsp;</a></span>vhBufCopyBufferToImage() <span class="overload">[1/2]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">void vh::vhBufCopyBufferToImage </td>
+          <td class="memname">VkResult vh::vhBufCopyBufferToImage </td>
           <td>(</td>
           <td class="paramtype">VkDevice&#160;</td>
           <td class="paramname"><em>device</em>, </td>
@@ -629,17 +694,18 @@ void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="name
   </table>
   </dd>
 </dl>
+<dl class="section return"><dt>Returns</dt><dd>VK_SUCCESS or a Vulkan error code </dd></dl>
 
 </div>
 </div>
-<a id="ac80851c019a6b6a029a08aeff02cf03f"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ac80851c019a6b6a029a08aeff02cf03f">&#9670;&nbsp;</a></span>vhBufCopyBufferToImage() <span class="overload">[2/2]</span></h2>
+<a id="a2e21fd45374af2a124cbaf28e6f63c72"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a2e21fd45374af2a124cbaf28e6f63c72">&#9670;&nbsp;</a></span>vhBufCopyBufferToImage() <span class="overload">[2/2]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">void vh::vhBufCopyBufferToImage </td>
+          <td class="memname">VkResult vh::vhBufCopyBufferToImage </td>
           <td>(</td>
           <td class="paramtype">VkDevice&#160;</td>
           <td class="paramname"><em>device</em>, </td>
@@ -708,17 +774,18 @@ void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="name
   </table>
   </dd>
 </dl>
+<dl class="section return"><dt>Returns</dt><dd>VK_SUCCESS or a Vulkan error code </dd></dl>
 
 </div>
 </div>
-<a id="aa15b3523d6fa3fc5e3ba7c016a60472a"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#aa15b3523d6fa3fc5e3ba7c016a60472a">&#9670;&nbsp;</a></span>vhBufCopyImageToBuffer() <span class="overload">[1/2]</span></h2>
+<a id="ab17813ab63ecaa73dcc45eb113e816fe"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ab17813ab63ecaa73dcc45eb113e816fe">&#9670;&nbsp;</a></span>vhBufCopyImageToBuffer() <span class="overload">[1/2]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">void vh::vhBufCopyImageToBuffer </td>
+          <td class="memname">VkResult vh::vhBufCopyImageToBuffer </td>
           <td>(</td>
           <td class="paramtype">VkDevice&#160;</td>
           <td class="paramname"><em>device</em>, </td>
@@ -794,17 +861,18 @@ void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="name
   </table>
   </dd>
 </dl>
+<dl class="section return"><dt>Returns</dt><dd>VK_SUCCESS or a Vulkan error code </dd></dl>
 
 </div>
 </div>
-<a id="a694a95f414d8bc28efcbbf667a7e58f9"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a694a95f414d8bc28efcbbf667a7e58f9">&#9670;&nbsp;</a></span>vhBufCopyImageToBuffer() <span class="overload">[2/2]</span></h2>
+<a id="a7c9dfd0d37a40cf2657779c996b0a138"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a7c9dfd0d37a40cf2657779c996b0a138">&#9670;&nbsp;</a></span>vhBufCopyImageToBuffer() <span class="overload">[2/2]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">void vh::vhBufCopyImageToBuffer </td>
+          <td class="memname">VkResult vh::vhBufCopyImageToBuffer </td>
           <td>(</td>
           <td class="paramtype">VkDevice&#160;</td>
           <td class="paramname"><em>device</em>, </td>
@@ -873,17 +941,18 @@ void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="name
   </table>
   </dd>
 </dl>
+<dl class="section return"><dt>Returns</dt><dd>VK_SUCCESS or a Vulkan error code </dd></dl>
 
 </div>
 </div>
-<a id="a0743986ab234bc389a6f3d2bef61a3f7"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a0743986ab234bc389a6f3d2bef61a3f7">&#9670;&nbsp;</a></span>vhBufCopyImageToHost()</h2>
+<a id="af8450c3d2289db3a176055b293847f7d"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#af8450c3d2289db3a176055b293847f7d">&#9670;&nbsp;</a></span>vhBufCopyImageToHost()</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">void vh::vhBufCopyImageToHost </td>
+          <td class="memname">VkResult vh::vhBufCopyImageToHost </td>
           <td>(</td>
           <td class="paramtype">VkDevice&#160;</td>
           <td class="paramname"><em>device</em>, </td>
@@ -980,17 +1049,18 @@ void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="name
   </table>
   </dd>
 </dl>
+<dl class="section return"><dt>Returns</dt><dd>VK_SUCCESS or a Vulkan error code </dd></dl>
 
 </div>
 </div>
-<a id="a6671c2b172d2263c11068f75ae423207"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a6671c2b172d2263c11068f75ae423207">&#9670;&nbsp;</a></span>vhBufCopySwapChainImageToHost()</h2>
+<a id="a0d4011de10faa53afd00433f1bb009e3"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a0d4011de10faa53afd00433f1bb009e3">&#9670;&nbsp;</a></span>vhBufCopySwapChainImageToHost()</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">void vh::vhBufCopySwapChainImageToHost </td>
+          <td class="memname">VkResult vh::vhBufCopySwapChainImageToHost </td>
           <td>(</td>
           <td class="paramtype">VkDevice&#160;</td>
           <td class="paramname"><em>device</em>, </td>
@@ -1073,17 +1143,18 @@ void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="name
   </table>
   </dd>
 </dl>
+<dl class="section return"><dt>Returns</dt><dd>VK_SUCCESS or a Vulkan error code </dd></dl>
 
 </div>
 </div>
-<a id="a86a2c772e5f54ed38ca9a14ee67ce2ed"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a86a2c772e5f54ed38ca9a14ee67ce2ed">&#9670;&nbsp;</a></span>vhBufCreateBuffer()</h2>
+<a id="a1e453b74fd578311fb8164797d9f7e31"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a1e453b74fd578311fb8164797d9f7e31">&#9670;&nbsp;</a></span>vhBufCreateBuffer()</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">void vh::vhBufCreateBuffer </td>
+          <td class="memname">VkResult vh::vhBufCreateBuffer </td>
           <td>(</td>
           <td class="paramtype">VmaAllocator&#160;</td>
           <td class="paramname"><em>allocator</em>, </td>
@@ -1138,17 +1209,18 @@ void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="name
   </table>
   </dd>
 </dl>
+<dl class="section return"><dt>Returns</dt><dd>VK_SUCCESS or a Vulkan error code </dd></dl>
 
 </div>
 </div>
-<a id="a28e43f0f3007c092b6cfea3b4d2eb925"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a28e43f0f3007c092b6cfea3b4d2eb925">&#9670;&nbsp;</a></span>vhBufCreateDepthResources()</h2>
+<a id="a056517b52b39bf799c9e171209c05b46"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a056517b52b39bf799c9e171209c05b46">&#9670;&nbsp;</a></span>vhBufCreateDepthResources()</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">void vh::vhBufCreateDepthResources </td>
+          <td class="memname">VkResult vh::vhBufCreateDepthResources </td>
           <td>(</td>
           <td class="paramtype">VkDevice&#160;</td>
           <td class="paramname"><em>device</em>, </td>
@@ -1224,17 +1296,18 @@ void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="name
   </table>
   </dd>
 </dl>
+<dl class="section return"><dt>Returns</dt><dd>VK_SUCCESS or a Vulkan error code </dd></dl>
 
 </div>
 </div>
-<a id="a54ba7ea8497eed149b5fda470cb71a78"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a54ba7ea8497eed149b5fda470cb71a78">&#9670;&nbsp;</a></span>vhBufCreateFramebuffers()</h2>
+<a id="ab47f3ffb11c9338fcf9421d8356e7935"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ab47f3ffb11c9338fcf9421d8356e7935">&#9670;&nbsp;</a></span>vhBufCreateFramebuffers()</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">void vh::vhBufCreateFramebuffers </td>
+          <td class="memname">VkResult vh::vhBufCreateFramebuffers </td>
           <td>(</td>
           <td class="paramtype">VkDevice&#160;</td>
           <td class="paramname"><em>device</em>, </td>
@@ -1289,17 +1362,18 @@ void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="name
   </table>
   </dd>
 </dl>
+<dl class="section return"><dt>Returns</dt><dd>VK_SUCCESS or a Vulkan error code </dd></dl>
 
 </div>
 </div>
-<a id="a5f9240248076972838fd5410d4433b8b"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a5f9240248076972838fd5410d4433b8b">&#9670;&nbsp;</a></span>vhBufCreateImage()</h2>
+<a id="a41b369467235917658b2b1e380bb5272"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a41b369467235917658b2b1e380bb5272">&#9670;&nbsp;</a></span>vhBufCreateImage()</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">void vh::vhBufCreateImage </td>
+          <td class="memname">VkResult vh::vhBufCreateImage </td>
           <td>(</td>
           <td class="paramtype">VmaAllocator&#160;</td>
           <td class="paramname"><em>allocator</em>, </td>
@@ -1389,6 +1463,7 @@ void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="name
   </table>
   </dd>
 </dl>
+<dl class="section return"><dt>Returns</dt><dd>VK_SUCCESS or a Vulkan error code </dd></dl>
 
 </div>
 </div>
@@ -1461,17 +1536,18 @@ void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="name
   </table>
   </dd>
 </dl>
+<dl class="section return"><dt>Returns</dt><dd>VK_SUCCESS or a Vulkan error code </dd></dl>
 
 </div>
 </div>
-<a id="a4fb318e83456d2b7f301ad3a5b1c5a07"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a4fb318e83456d2b7f301ad3a5b1c5a07">&#9670;&nbsp;</a></span>vhBufCreateIndexBuffer()</h2>
+<a id="abaaec135aa5e17e36607d4fa3e00d5a2"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#abaaec135aa5e17e36607d4fa3e00d5a2">&#9670;&nbsp;</a></span>vhBufCreateIndexBuffer()</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">void vh::vhBufCreateIndexBuffer </td>
+          <td class="memname">VkResult vh::vhBufCreateIndexBuffer </td>
           <td>(</td>
           <td class="paramtype">VkDevice&#160;</td>
           <td class="paramname"><em>device</em>, </td>
@@ -1533,17 +1609,18 @@ void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="name
   </table>
   </dd>
 </dl>
+<dl class="section return"><dt>Returns</dt><dd>VK_SUCCESS or a Vulkan error code </dd></dl>
 
 </div>
 </div>
-<a id="a7733e09fb0e2664562663d6a81874976"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a7733e09fb0e2664562663d6a81874976">&#9670;&nbsp;</a></span>vhBufCreateTexturecubeImage()</h2>
+<a id="acf37e6299054ea7f5138aaa4e426ce72"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#acf37e6299054ea7f5138aaa4e426ce72">&#9670;&nbsp;</a></span>vhBufCreateTexturecubeImage()</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">void vh::vhBufCreateTexturecubeImage </td>
+          <td class="memname">VkResult vh::vhBufCreateTexturecubeImage </td>
           <td>(</td>
           <td class="paramtype">VkDevice&#160;</td>
           <td class="paramname"><em>device</em>, </td>
@@ -1597,6 +1674,8 @@ void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="name
         </tr>
       </table>
 </div><div class="memdoc">
+
+<p>Create an image that is also a cubemap. </p>
 <dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
     <tr><td class="paramdir">[in]</td><td class="paramname">device</td><td>Logical Vulkan device </td></tr>
@@ -1610,17 +1689,18 @@ void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="name
   </table>
   </dd>
 </dl>
+<dl class="section return"><dt>Returns</dt><dd>VK_SUCCESS or a Vulkan error code </dd></dl>
 
 </div>
 </div>
-<a id="a2615cec03ffb7297f65f9c485bb53d2e"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a2615cec03ffb7297f65f9c485bb53d2e">&#9670;&nbsp;</a></span>vhBufCreateTextureImage()</h2>
+<a id="a9ffbd8afe369bd26aada3c4935bbfded"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a9ffbd8afe369bd26aada3c4935bbfded">&#9670;&nbsp;</a></span>vhBufCreateTextureImage()</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">void vh::vhBufCreateTextureImage </td>
+          <td class="memname">VkResult vh::vhBufCreateTextureImage </td>
           <td>(</td>
           <td class="paramtype">VkDevice&#160;</td>
           <td class="paramname"><em>device</em>, </td>
@@ -1703,17 +1783,18 @@ void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="name
   </table>
   </dd>
 </dl>
+<dl class="section return"><dt>Returns</dt><dd>VK_SUCCESS or a Vulkan error code </dd></dl>
 
 </div>
 </div>
-<a id="aa9d7fe471ccd3e065a3e5e6117857e8c"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#aa9d7fe471ccd3e065a3e5e6117857e8c">&#9670;&nbsp;</a></span>vhBufCreateTextureSampler()</h2>
+<a id="ab6871f715a2f97378170122f36283079"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ab6871f715a2f97378170122f36283079">&#9670;&nbsp;</a></span>vhBufCreateTextureSampler()</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">void vh::vhBufCreateTextureSampler </td>
+          <td class="memname">VkResult vh::vhBufCreateTextureSampler </td>
           <td>(</td>
           <td class="paramtype">VkDevice&#160;</td>
           <td class="paramname"><em>device</em>, </td>
@@ -1740,17 +1821,18 @@ void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="name
   </table>
   </dd>
 </dl>
+<dl class="section return"><dt>Returns</dt><dd>VK_SUCCESS or a Vulkan error code </dd></dl>
 
 </div>
 </div>
-<a id="ac5f24ff5c0c1d74b3ee1048d461690a0"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ac5f24ff5c0c1d74b3ee1048d461690a0">&#9670;&nbsp;</a></span>vhBufCreateUniformBuffers()</h2>
+<a id="ab714be58a365d2b553dea57cb4622b2d"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ab714be58a365d2b553dea57cb4622b2d">&#9670;&nbsp;</a></span>vhBufCreateUniformBuffers()</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">void vh::vhBufCreateUniformBuffers </td>
+          <td class="memname">VkResult vh::vhBufCreateUniformBuffers </td>
           <td>(</td>
           <td class="paramtype">VmaAllocator&#160;</td>
           <td class="paramname"><em>allocator</em>, </td>
@@ -1798,17 +1880,18 @@ void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="name
   </table>
   </dd>
 </dl>
+<dl class="section return"><dt>Returns</dt><dd>VK_SUCCESS or a Vulkan error code </dd></dl>
 
 </div>
 </div>
-<a id="a90901f6f2cb0f3d551806520abce0dc8"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a90901f6f2cb0f3d551806520abce0dc8">&#9670;&nbsp;</a></span>vhBufCreateVertexBuffer()</h2>
+<a id="a6a49e59322f37fb65f61a23c1a6363cb"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a6a49e59322f37fb65f61a23c1a6363cb">&#9670;&nbsp;</a></span>vhBufCreateVertexBuffer()</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">void vh::vhBufCreateVertexBuffer </td>
+          <td class="memname">VkResult vh::vhBufCreateVertexBuffer </td>
           <td>(</td>
           <td class="paramtype">VkDevice&#160;</td>
           <td class="paramname"><em>device</em>, </td>
@@ -1870,17 +1953,18 @@ void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="name
   </table>
   </dd>
 </dl>
+<dl class="section return"><dt>Returns</dt><dd>VK_SUCCESS or a Vulkan error code </dd></dl>
 
 </div>
 </div>
-<a id="ad28d13df6b14efaebef29dde2b1b7674"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ad28d13df6b14efaebef29dde2b1b7674">&#9670;&nbsp;</a></span>vhBufTransitionImageLayout() <span class="overload">[1/2]</span></h2>
+<a id="a06fb4550531664b62cf3a54d377515a7"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a06fb4550531664b62cf3a54d377515a7">&#9670;&nbsp;</a></span>vhBufTransitionImageLayout() <span class="overload">[1/2]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">void vh::vhBufTransitionImageLayout </td>
+          <td class="memname">VkResult vh::vhBufTransitionImageLayout </td>
           <td>(</td>
           <td class="paramtype">VkDevice&#160;</td>
           <td class="paramname"><em>device</em>, </td>
@@ -1963,17 +2047,18 @@ void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="name
   </table>
   </dd>
 </dl>
+<dl class="section return"><dt>Returns</dt><dd>VK_SUCCESS or a Vulkan error code </dd></dl>
 
 </div>
 </div>
-<a id="a71f3a6b1cca391a5c133f8026c0d7d81"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a71f3a6b1cca391a5c133f8026c0d7d81">&#9670;&nbsp;</a></span>vhBufTransitionImageLayout() <span class="overload">[2/2]</span></h2>
+<a id="a3bb418fe457b4b3cde96e4499ba2e9e6"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a3bb418fe457b4b3cde96e4499ba2e9e6">&#9670;&nbsp;</a></span>vhBufTransitionImageLayout() <span class="overload">[2/2]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">void vh::vhBufTransitionImageLayout </td>
+          <td class="memname">VkResult vh::vhBufTransitionImageLayout </td>
           <td>(</td>
           <td class="paramtype">VkDevice&#160;</td>
           <td class="paramname"><em>device</em>, </td>
@@ -2056,6 +2141,52 @@ void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="name
   </table>
   </dd>
 </dl>
+<dl class="section return"><dt>Returns</dt><dd>VK_SUCCESS or a Vulkan error code </dd></dl>
+
+</div>
+</div>
+<a id="a9791b75aecc6358fa0be4612d8a83b95"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a9791b75aecc6358fa0be4612d8a83b95">&#9670;&nbsp;</a></span>vhCmdBeginCommandBuffer()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">VkResult vh::vhCmdBeginCommandBuffer </td>
+          <td>(</td>
+          <td class="paramtype">VkDevice&#160;</td>
+          <td class="paramname"><em>device</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">VkCommandBuffer&#160;</td>
+          <td class="paramname"><em>commandBuffer</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">VkCommandBufferUsageFlagBits&#160;</td>
+          <td class="paramname"><em>usageFlags</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Start a command buffer for recording commands. </p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramdir">[in]</td><td class="paramname">device</td><td>Logical Vulkan device </td></tr>
+    <tr><td class="paramdir">[in]</td><td class="paramname">commandBuffer</td><td>The command buffer to start </td></tr>
+    <tr><td class="paramdir">[in]</td><td class="paramname">usageFlags</td><td>Flags telling how the buffer will be used </td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>Returns</dt><dd>VK_SUCCESS or a Vulkan error code </dd></dl>
 
 </div>
 </div>
@@ -2097,14 +2228,73 @@ void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="name
 
 </div>
 </div>
-<a id="a75a61b7e654b90be1ff704e4cfbd6f77"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a75a61b7e654b90be1ff704e4cfbd6f77">&#9670;&nbsp;</a></span>vhCmdCreateCommandPool()</h2>
+<a id="afce4235cfc97c6ecc8ba9340ca99a3f9"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#afce4235cfc97c6ecc8ba9340ca99a3f9">&#9670;&nbsp;</a></span>vhCmdCreateCommandBuffers()</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">void vh::vhCmdCreateCommandPool </td>
+          <td class="memname">VkResult vh::vhCmdCreateCommandBuffers </td>
+          <td>(</td>
+          <td class="paramtype">VkDevice&#160;</td>
+          <td class="paramname"><em>device</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">VkCommandPool&#160;</td>
+          <td class="paramname"><em>commandPool</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">VkCommandBufferLevel&#160;</td>
+          <td class="paramname"><em>level</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">uint32_t&#160;</td>
+          <td class="paramname"><em>count</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">VkCommandBuffer *&#160;</td>
+          <td class="paramname"><em>pBuffers</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Create a number of command buffers. </p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramdir">[in]</td><td class="paramname">device</td><td>Logical Vulkan device </td></tr>
+    <tr><td class="paramdir">[in]</td><td class="paramname">commandPool</td><td>Command pool for allocating command bbuffers </td></tr>
+    <tr><td class="paramdir">[in]</td><td class="paramname">level</td><td>Level can be primary or secondary </td></tr>
+    <tr><td class="paramdir">[in]</td><td class="paramname">count</td><td>Number of buffers to create </td></tr>
+    <tr><td class="paramdir">[in]</td><td class="paramname">pBuffers</td><td>Pointer to an array where the buffer handles should be stored </td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>Returns</dt><dd>VK_SUCCESS or a Vulkan error code </dd></dl>
+
+</div>
+</div>
+<a id="ac6c523c56a5fe3a0bb7e3dd58a135d16"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ac6c523c56a5fe3a0bb7e3dd58a135d16">&#9670;&nbsp;</a></span>vhCmdCreateCommandPool()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">VkResult vh::vhCmdCreateCommandPool </td>
           <td>(</td>
           <td class="paramtype">VkPhysicalDevice&#160;</td>
           <td class="paramname"><em>physicalDevice</em>, </td>
@@ -2145,17 +2335,18 @@ void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="name
   </table>
   </dd>
 </dl>
+<dl class="section return"><dt>Returns</dt><dd>VK_SUCCESS or a Vulkan error code </dd></dl>
 
 </div>
 </div>
-<a id="a3561c11e98c2d5ba6fc7a2b53a45ac48"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a3561c11e98c2d5ba6fc7a2b53a45ac48">&#9670;&nbsp;</a></span>vhCmdEndSingleTimeCommands() <span class="overload">[1/2]</span></h2>
+<a id="a400527c7164faed90b5edac58203d4ba"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a400527c7164faed90b5edac58203d4ba">&#9670;&nbsp;</a></span>vhCmdEndSingleTimeCommands() <span class="overload">[1/2]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">void vh::vhCmdEndSingleTimeCommands </td>
+          <td class="memname">VkResult vh::vhCmdEndSingleTimeCommands </td>
           <td>(</td>
           <td class="paramtype">VkDevice&#160;</td>
           <td class="paramname"><em>device</em>, </td>
@@ -2196,17 +2387,18 @@ void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="name
   </table>
   </dd>
 </dl>
+<dl class="section return"><dt>Returns</dt><dd>VK_SUCCESS or a Vulkan error code </dd></dl>
 
 </div>
 </div>
-<a id="a3500d2b026ba0e56835f14742b59d160"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a3500d2b026ba0e56835f14742b59d160">&#9670;&nbsp;</a></span>vhCmdEndSingleTimeCommands() <span class="overload">[2/2]</span></h2>
+<a id="a3d980637f5b78d90e25253cba749e285"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a3d980637f5b78d90e25253cba749e285">&#9670;&nbsp;</a></span>vhCmdEndSingleTimeCommands() <span class="overload">[2/2]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">void vh::vhCmdEndSingleTimeCommands </td>
+          <td class="memname">VkResult vh::vhCmdEndSingleTimeCommands </td>
           <td>(</td>
           <td class="paramtype">VkDevice&#160;</td>
           <td class="paramname"><em>device</em>, </td>
@@ -2268,6 +2460,73 @@ void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="name
   </table>
   </dd>
 </dl>
+<dl class="section return"><dt>Returns</dt><dd>VK_SUCCESS or a Vulkan error code </dd></dl>
+
+</div>
+</div>
+<a id="a9ea5120b4ad57ec1f87cf053475bde19"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a9ea5120b4ad57ec1f87cf053475bde19">&#9670;&nbsp;</a></span>vhCmdSubmitCommandBuffer()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">VkResult vh::vhCmdSubmitCommandBuffer </td>
+          <td>(</td>
+          <td class="paramtype">VkDevice&#160;</td>
+          <td class="paramname"><em>device</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">VkQueue&#160;</td>
+          <td class="paramname"><em>queue</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">VkCommandBuffer&#160;</td>
+          <td class="paramname"><em>commandBuffer</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">VkSemaphore&#160;</td>
+          <td class="paramname"><em>waitSemaphore</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">VkSemaphore&#160;</td>
+          <td class="paramname"><em>signalSemaphore</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">VkFence&#160;</td>
+          <td class="paramname"><em>waitFence</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Submit a command buffer to a queue. </p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramdir">[in]</td><td class="paramname">device</td><td>Logical Vulkan device </td></tr>
+    <tr><td class="paramdir">[in]</td><td class="paramname">queue</td><td>The queue the buffer is sent to </td></tr>
+    <tr><td class="paramdir">[in]</td><td class="paramname">commandBuffer</td><td>The command buffer that is sent to the queue </td></tr>
+    <tr><td class="paramdir">[in]</td><td class="paramname">waitSemaphore</td><td>A semaphore to wait for before submitting </td></tr>
+    <tr><td class="paramdir">[in]</td><td class="paramname">signalSemaphore</td><td>Signal this semaphore after buffer is done </td></tr>
+    <tr><td class="paramdir">[in]</td><td class="paramname">waitFence</td><td>Signal to this fence after buffer is done </td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>Returns</dt><dd>VK_SUCCESS or a Vulkan error code </dd></dl>
 
 </div>
 </div>
@@ -2312,18 +2571,18 @@ void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="name
   </table>
   </dd>
 </dl>
-<dl class="section return"><dt>Returns</dt><dd>VkResult of the operation </dd></dl>
+<dl class="section return"><dt>Returns</dt><dd>VK_SUCCESS or a Vulkan error code </dd></dl>
 
 </div>
 </div>
-<a id="a20cb3a4423dcb39d177d382c4834a396"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a20cb3a4423dcb39d177d382c4834a396">&#9670;&nbsp;</a></span>vhDevCreateLogicalDevice()</h2>
+<a id="abef2251fdd3a8f216b82c9a16893578d"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#abef2251fdd3a8f216b82c9a16893578d">&#9670;&nbsp;</a></span>vhDevCreateLogicalDevice()</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">void vh::vhDevCreateLogicalDevice </td>
+          <td class="memname">VkResult vh::vhDevCreateLogicalDevice </td>
           <td>(</td>
           <td class="paramtype">VkPhysicalDevice&#160;</td>
           <td class="paramname"><em>physicalDevice</em>, </td>
@@ -2385,6 +2644,7 @@ void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="name
   </table>
   </dd>
 </dl>
+<dl class="section return"><dt>Returns</dt><dd>VK_SUCCESS or a Vulkan error code </dd></dl>
 
 </div>
 </div>
@@ -2505,14 +2765,14 @@ void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="name
 
 </div>
 </div>
-<a id="a6875d8352834932f9990c7bfb72be6aa"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a6875d8352834932f9990c7bfb72be6aa">&#9670;&nbsp;</a></span>vhDevPickPhysicalDevice()</h2>
+<a id="a59002ca8897465b479e5f46b1840171a"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a59002ca8897465b479e5f46b1840171a">&#9670;&nbsp;</a></span>vhDevPickPhysicalDevice()</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">void vh::vhDevPickPhysicalDevice </td>
+          <td class="memname">VkResult vh::vhDevPickPhysicalDevice </td>
           <td>(</td>
           <td class="paramtype">VkInstance&#160;</td>
           <td class="paramname"><em>instance</em>, </td>
@@ -2553,6 +2813,7 @@ void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="name
   </table>
   </dd>
 </dl>
+<dl class="section return"><dt>Returns</dt><dd>VK_SUCCESS or a Vulkan error code </dd></dl>
 
 </div>
 </div>
@@ -2621,14 +2882,14 @@ void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="name
 
 </div>
 </div>
-<a id="afb4f3634fb9f557f04f1a78824b22795"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#afb4f3634fb9f557f04f1a78824b22795">&#9670;&nbsp;</a></span>vhMemCreateVMAAllocator()</h2>
+<a id="a7973d81d63d37347572c19477529dd7f"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a7973d81d63d37347572c19477529dd7f">&#9670;&nbsp;</a></span>vhMemCreateVMAAllocator()</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">void vh::vhMemCreateVMAAllocator </td>
+          <td class="memname">VkResult vh::vhMemCreateVMAAllocator </td>
           <td>(</td>
           <td class="paramtype">VkPhysicalDevice&#160;</td>
           <td class="paramname"><em>physicalDevice</em>, </td>
@@ -2662,6 +2923,7 @@ void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="name
   </table>
   </dd>
 </dl>
+<dl class="section return"><dt>Returns</dt><dd>VK_SUCCESS or a Vulkan error code </dd></dl>
 
 </div>
 </div>
@@ -2779,7 +3041,7 @@ void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="name
   </table>
   </dd>
 </dl>
-<dl class="section return"><dt>Returns</dt><dd>in VkResult </dd></dl>
+<dl class="section return"><dt>Returns</dt><dd>VK_SUCCESS or a Vulkan error code </dd></dl>
 
 </div>
 </div>
@@ -2831,7 +3093,7 @@ void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="name
   </table>
   </dd>
 </dl>
-<dl class="section return"><dt>Returns</dt><dd>in VkResult </dd></dl>
+<dl class="section return"><dt>Returns</dt><dd>VK_SUCCESS or a Vulkan error code </dd></dl>
 
 </div>
 </div>
@@ -2897,7 +3159,7 @@ void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="name
   </table>
   </dd>
 </dl>
-<dl class="section return"><dt>Returns</dt><dd>in VkResult </dd></dl>
+<dl class="section return"><dt>Returns</dt><dd>VK_SUCCESS or a Vulkan error code </dd></dl>
 
 </div>
 </div>
@@ -2939,14 +3201,14 @@ void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="name
 
 </div>
 </div>
-<a id="ad33a812099efdb28335db179ab789fd2"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ad33a812099efdb28335db179ab789fd2">&#9670;&nbsp;</a></span>vhRenderBeginRenderPass() <span class="overload">[1/2]</span></h2>
+<a id="af55f8f528f60a2f23383168b87f19663"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#af55f8f528f60a2f23383168b87f19663">&#9670;&nbsp;</a></span>vhRenderBeginRenderPass() <span class="overload">[1/2]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">void vh::vhRenderBeginRenderPass </td>
+          <td class="memname">VkResult vh::vhRenderBeginRenderPass </td>
           <td>(</td>
           <td class="paramtype">VkCommandBuffer&#160;</td>
           <td class="paramname"><em>commandBuffer</em>, </td>
@@ -2987,17 +3249,18 @@ void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="name
   </table>
   </dd>
 </dl>
+<dl class="section return"><dt>Returns</dt><dd>VK_SUCCESS or a Vulkan error code </dd></dl>
 
 </div>
 </div>
-<a id="a55ec1b174dce07cb9947b055c354b179"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a55ec1b174dce07cb9947b055c354b179">&#9670;&nbsp;</a></span>vhRenderBeginRenderPass() <span class="overload">[2/2]</span></h2>
+<a id="a80b1190ad4afc68a8da89a60ed2c048a"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a80b1190ad4afc68a8da89a60ed2c048a">&#9670;&nbsp;</a></span>vhRenderBeginRenderPass() <span class="overload">[2/2]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">void vh::vhRenderBeginRenderPass </td>
+          <td class="memname">VkResult vh::vhRenderBeginRenderPass </td>
           <td>(</td>
           <td class="paramtype">VkCommandBuffer&#160;</td>
           <td class="paramname"><em>commandBuffer</em>, </td>
@@ -3045,17 +3308,18 @@ void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="name
   </table>
   </dd>
 </dl>
+<dl class="section return"><dt>Returns</dt><dd>VK_SUCCESS or a Vulkan error code </dd></dl>
 
 </div>
 </div>
-<a id="ac8f31a918822c6b09d118611bc4e629c"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ac8f31a918822c6b09d118611bc4e629c">&#9670;&nbsp;</a></span>vhRenderCreateDescriptorPool()</h2>
+<a id="a9392ff3d54398fa4297a442ba2a0efb9"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a9392ff3d54398fa4297a442ba2a0efb9">&#9670;&nbsp;</a></span>vhRenderCreateDescriptorPool()</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">void vh::vhRenderCreateDescriptorPool </td>
+          <td class="memname">VkResult vh::vhRenderCreateDescriptorPool </td>
           <td>(</td>
           <td class="paramtype">VkDevice&#160;</td>
           <td class="paramname"><em>device</em>, </td>
@@ -3096,17 +3360,18 @@ void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="name
   </table>
   </dd>
 </dl>
+<dl class="section return"><dt>Returns</dt><dd>VK_SUCCESS or a Vulkan error code </dd></dl>
 
 </div>
 </div>
-<a id="acf5951d9e013d1bd9fdab39b2ee4516d"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#acf5951d9e013d1bd9fdab39b2ee4516d">&#9670;&nbsp;</a></span>vhRenderCreateDescriptorSetLayout()</h2>
+<a id="ace68f67085dba10e4361d22dc099efe6"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ace68f67085dba10e4361d22dc099efe6">&#9670;&nbsp;</a></span>vhRenderCreateDescriptorSetLayout()</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">void vh::vhRenderCreateDescriptorSetLayout </td>
+          <td class="memname">VkResult vh::vhRenderCreateDescriptorSetLayout </td>
           <td>(</td>
           <td class="paramtype">VkDevice&#160;</td>
           <td class="paramname"><em>device</em>, </td>
@@ -3154,17 +3419,18 @@ void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="name
   </table>
   </dd>
 </dl>
+<dl class="section return"><dt>Returns</dt><dd>VK_SUCCESS or a Vulkan error code </dd></dl>
 
 </div>
 </div>
-<a id="a5f0c05cca7c6f71779e85f10e25c3878"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a5f0c05cca7c6f71779e85f10e25c3878">&#9670;&nbsp;</a></span>vhRenderCreateDescriptorSets()</h2>
+<a id="a2e15c0ed7b15c786bc1bc9f6a574c350"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a2e15c0ed7b15c786bc1bc9f6a574c350">&#9670;&nbsp;</a></span>vhRenderCreateDescriptorSets()</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">void vh::vhRenderCreateDescriptorSets </td>
+          <td class="memname">VkResult vh::vhRenderCreateDescriptorSets </td>
           <td>(</td>
           <td class="paramtype">VkDevice&#160;</td>
           <td class="paramname"><em>device</em>, </td>
@@ -3212,17 +3478,18 @@ void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="name
   </table>
   </dd>
 </dl>
+<dl class="section return"><dt>Returns</dt><dd>VK_SUCCESS or a Vulkan error code </dd></dl>
 
 </div>
 </div>
-<a id="a4e955c65e9f1dd327237cacf2439d81f"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a4e955c65e9f1dd327237cacf2439d81f">&#9670;&nbsp;</a></span>vhRenderCreateRenderPass()</h2>
+<a id="aebf05b4e0ad73129da84053e0b354c9e"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aebf05b4e0ad73129da84053e0b354c9e">&#9670;&nbsp;</a></span>vhRenderCreateRenderPass()</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">void vh::vhRenderCreateRenderPass </td>
+          <td class="memname">VkResult vh::vhRenderCreateRenderPass </td>
           <td>(</td>
           <td class="paramtype">VkDevice&#160;</td>
           <td class="paramname"><em>device</em>, </td>
@@ -3270,17 +3537,18 @@ void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="name
   </table>
   </dd>
 </dl>
+<dl class="section return"><dt>Returns</dt><dd>VK_SUCCESS or a Vulkan error code </dd></dl>
 
 </div>
 </div>
-<a id="afc1d99ade9bdbbdcb607bcb54dfac0c8"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#afc1d99ade9bdbbdcb607bcb54dfac0c8">&#9670;&nbsp;</a></span>vhRenderCreateRenderPassShadow()</h2>
+<a id="abfb40be113bdc3486e32a2553561a279"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#abfb40be113bdc3486e32a2553561a279">&#9670;&nbsp;</a></span>vhRenderCreateRenderPassShadow()</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">void vh::vhRenderCreateRenderPassShadow </td>
+          <td class="memname">VkResult vh::vhRenderCreateRenderPassShadow </td>
           <td>(</td>
           <td class="paramtype">VkDevice&#160;</td>
           <td class="paramname"><em>device</em>, </td>
@@ -3314,6 +3582,7 @@ void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="name
   </table>
   </dd>
 </dl>
+<dl class="section return"><dt>Returns</dt><dd>VK_SUCCESS or a Vulkan error code </dd></dl>
 
 </div>
 </div>
@@ -3365,17 +3634,18 @@ void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="name
   </table>
   </dd>
 </dl>
+<dl class="section return"><dt>Returns</dt><dd>VK_SUCCESS or a Vulkan error code </dd></dl>
 
 </div>
 </div>
-<a id="a6c13ad01667cf5bc7c0946bdc61b53b8"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a6c13ad01667cf5bc7c0946bdc61b53b8">&#9670;&nbsp;</a></span>vhRenderUpdateDescriptorSet()</h2>
+<a id="a686da75542975aa5930179c54bc17306"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a686da75542975aa5930179c54bc17306">&#9670;&nbsp;</a></span>vhRenderUpdateDescriptorSet()</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">void vh::vhRenderUpdateDescriptorSet </td>
+          <td class="memname">VkResult vh::vhRenderUpdateDescriptorSet </td>
           <td>(</td>
           <td class="paramtype">VkDevice&#160;</td>
           <td class="paramname"><em>device</em>, </td>
@@ -3431,17 +3701,18 @@ void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="name
   </table>
   </dd>
 </dl>
+<dl class="section return"><dt>Returns</dt><dd>VK_SUCCESS or a Vulkan error code </dd></dl>
 
 </div>
 </div>
-<a id="a0401ce1a7329f9b52497fff549135f7a"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a0401ce1a7329f9b52497fff549135f7a">&#9670;&nbsp;</a></span>vhSwapCreateSwapChain()</h2>
+<a id="a6d0e56b8ed7309e0ebf5ba969323e4db"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a6d0e56b8ed7309e0ebf5ba969323e4db">&#9670;&nbsp;</a></span>vhSwapCreateSwapChain()</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">void vh::vhSwapCreateSwapChain </td>
+          <td class="memname">VkResult vh::vhSwapCreateSwapChain </td>
           <td>(</td>
           <td class="paramtype">VkPhysicalDevice&#160;</td>
           <td class="paramname"><em>physicalDevice</em>, </td>
@@ -3520,10 +3791,57 @@ void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="name
 
 </div>
 </div>
+<a id="a19eaffd746fc8a31941d4559ca0894c0"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a19eaffd746fc8a31941d4559ca0894c0">&#9670;&nbsp;</a></span>vhTimeDuration()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">float vh::vhTimeDuration </td>
+          <td>(</td>
+          <td class="paramtype">std::chrono::high_resolution_clock::time_point&#160;</td>
+          <td class="paramname"><em>t_prev</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Use the high resolution clock to calculate a time duration since the last time measurement. </p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramdir">[in]</td><td class="paramname">t_prev</td><td>The last time measruement </td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>Returns</dt><dd>the measured time duration </dd></dl>
+
+</div>
+</div>
+<a id="a4fad56183a7e4ab61241a8873a247ea1"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a4fad56183a7e4ab61241a8873a247ea1">&#9670;&nbsp;</a></span>vhTimeNow()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">std::chrono::high_resolution_clock::time_point vh::vhTimeNow </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Take a time measurment from the high resolution clock. </p>
+<dl class="section return"><dt>Returns</dt><dd>the measured value of the clock </dd></dl>
+
+</div>
+</div>
 </div><!-- contents -->
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>
-Generated on Fri Apr 19 2019 20:48:01 for Vienna Vulkan Engine by &#160;<a href="http://www.doxygen.org/index.html">
+Generated on Mon Apr 29 2019 11:18:42 for Vienna Vulkan Engine by &#160;<a href="http://www.doxygen.org/index.html">
 <img class="footer" src="doxygen.png" alt="doxygen"/>
 </a> 1.8.15
 </small></address>
