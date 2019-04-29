@@ -189,6 +189,7 @@ namespace ve {
 	}
 
 
+
 	/**
 	* \brief Destroy the swapchain because window resize or close down
 	*/
@@ -310,32 +311,7 @@ namespace ve {
 	//--------------------------------------------------------------------------------------------
 
 
-	/**
-	* \brief Draw the frame.
-	*
-	*- wait for draw completion using a fence, so there is at least one frame in the swapchain
-	*- acquire the next image from the swap chain
-	*- update all UBOs
-	*- get a single time command buffer from the pool, bind pipeline and begin the render pass
-	*- loop through all entities and draw them
-	*- end the command buffer and submit it
-	*- wait for the result and present it
-	*/
-	void VERendererForward::drawFrame() {
-		vkWaitForFences(m_device, 1, &m_inFlightFences[m_currentFrame], VK_TRUE, std::numeric_limits<uint64_t>::max());
-
-		//acquire the next image
-		VkResult result = vkAcquireNextImageKHR(m_device, m_swapChain, std::numeric_limits<uint64_t>::max(),
-												m_imageAvailableSemaphores[m_currentFrame], VK_NULL_HANDLE, &imageIndex);
-
-		if (result == VK_ERROR_OUT_OF_DATE_KHR) {
-			recreateSwapchain();
-			return;
-		}
-		else if (result != VK_SUCCESS && result != VK_SUBOPTIMAL_KHR) {
-			getEnginePointer()->fatalError("Failed to acquire swap chain image!");
-		}
-
+	void VERendererForward::recordCmdBuffers() {
 		VECamera *pCamera = getSceneManagerPointer()->getCamera();
 		pCamera->setExtent(getWindowPointer()->getExtent());
 
@@ -361,7 +337,7 @@ namespace ve {
 
 		std::chrono::high_resolution_clock::time_point t_now;
 
-		for (uint32_t i = 0; i < getSceneManagerPointer()->getLights().size(); i++ ) {
+		for (uint32_t i = 0; i < getSceneManagerPointer()->getLights().size(); i++) {
 
 			VELight * pLight = getSceneManagerPointer()->getLights()[i];
 
@@ -410,12 +386,45 @@ namespace ve {
 			clearValuesLight.clear();		//since we blend the images onto each other, do not clear them for passes 2 and further
 		}
 
-		vh::vhCmdEndSingleTimeCommands(	m_device, m_graphicsQueue, m_commandPool, commandBuffer,
-										m_imageAvailableSemaphores[m_currentFrame], 
-										m_renderFinishedSemaphores[m_currentFrame],
-										m_inFlightFences[m_currentFrame]);
+		vh::vhCmdEndSingleTimeCommands(m_device, m_graphicsQueue, m_commandPool, commandBuffer,
+			m_imageAvailableSemaphores[m_currentFrame],
+			m_renderFinishedSemaphores[m_currentFrame],
+			m_inFlightFences[m_currentFrame]);
 
 		m_overlaySemaphores[m_currentFrame] = m_renderFinishedSemaphores[m_currentFrame];
+
+
+	}
+
+
+	/**
+	* \brief Draw the frame.
+	*
+	*- wait for draw completion using a fence, so there is at least one frame in the swapchain
+	*- acquire the next image from the swap chain
+	*- update all UBOs
+	*- get a single time command buffer from the pool, bind pipeline and begin the render pass
+	*- loop through all entities and draw them
+	*- end the command buffer and submit it
+	*- wait for the result and present it
+	*/
+	void VERendererForward::drawFrame() {
+		vkWaitForFences(m_device, 1, &m_inFlightFences[m_currentFrame], VK_TRUE, std::numeric_limits<uint64_t>::max());
+
+		//acquire the next image
+		VkResult result = vkAcquireNextImageKHR(m_device, m_swapChain, std::numeric_limits<uint64_t>::max(),
+												m_imageAvailableSemaphores[m_currentFrame], VK_NULL_HANDLE, &imageIndex);
+
+		if (result == VK_ERROR_OUT_OF_DATE_KHR) {
+			recreateSwapchain();
+			return;
+		}
+		else if (result != VK_SUCCESS && result != VK_SUBOPTIMAL_KHR) {
+			getEnginePointer()->fatalError("Failed to acquire swap chain image!");
+		}
+
+		recordCmdBuffers();
+
 	}
 
 
