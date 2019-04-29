@@ -106,7 +106,7 @@ namespace ve {
 		}
 
 		///Load the first level into the game engine
-		//The engine uses Y-UP, Left-handed
+		///The engine uses Y-UP, Left-handed
 		void loadLevel() {
 
 			VESceneNode *sp1 = m_pSceneManager->createSkybox("The Sky", "models/test/sky/cloudy",

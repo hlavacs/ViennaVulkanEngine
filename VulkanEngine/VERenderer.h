@@ -81,6 +81,8 @@ namespace ve {
 		VERenderer();
 		///Destructor
 		virtual ~VERenderer() {};
+		///this function is calledby the scene manager if the tree changed
+		virtual void					updateCmdBuffers() {};
 		///\returns the VMA allocator
 		virtual VmaAllocator			getVmaAllocator() { return m_vmaAllocator; };
 		///\returns the Vulkan physical device

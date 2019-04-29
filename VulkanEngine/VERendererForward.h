@@ -77,6 +77,8 @@ namespace ve {
 		VERendererForward();
 		///Destructor of class VERendererForward
 		virtual ~VERendererForward() {};
+		///called whenever the scene graph of the scene manager changes
+		virtual void updateCmdBuffers() { deleteCmdBuffers(); };
 		virtual void deleteCmdBuffers();
 		///\returns the per frame descriptor set layout
 		virtual VkDescriptorSetLayout	getDescriptorSetLayoutPerObject() { return m_descriptorSetLayoutPerObject; };

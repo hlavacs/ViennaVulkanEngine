@@ -40,6 +40,8 @@ namespace ve {
 		loadAssets("models/standard", "plane.obj", 0, meshes, materials);
 		loadAssets("models/standard", "sphere.obj", 0, meshes, materials);
 
+		m_rootSceneNode = new VESceneNode("RootSceneNode");
+
 		//camera parent is used for translation rotations
 		VESceneNode *cameraParent = createSceneNode("StandardCameraParent", glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 10.0f, 0.0f)) );
 
@@ -125,6 +127,8 @@ namespace ve {
 		createMeshes(pScene, filekey, meshes);
 		createMaterials(pScene, basedir, filekey, materials);
 
+		sceneGraphChanged();
+
 		return pScene;
 	}
 
@@ -168,6 +172,9 @@ namespace ve {
 		if (pScene == nullptr) {
 			throw std::runtime_error("Error: Could not load asset file " + filekey + "!");
 		}
+
+		sceneGraphChanged();
+
 		std::vector<VEMesh*> meshes;
 		createMeshes(pScene, filekey, meshes);
 
@@ -229,7 +236,6 @@ namespace ve {
 		for (uint32_t i = 0; i < node->mNumChildren; i++) {		//recursivly go down the node tree
 			copyAiNodes(pScene, meshes, materials, node->mChildren[i], pObject);
 		}
-
 	}
 
 	/**
@@ -369,6 +375,7 @@ namespace ve {
 
 		pMO = new VESceneNode(objectName, transf, parent);
 		addSceneNode( pMO );
+		sceneGraphChanged();
 		return pMO;
 	}
 
@@ -410,6 +417,7 @@ namespace ve {
 		if (pMesh != nullptr && pMat != nullptr) {
 			getRendererPointer()->addEntityToSubrenderer(pEntity);
 		}
+		sceneGraphChanged();
 		return pEntity;
 	}
 
@@ -462,6 +470,7 @@ namespace ve {
 		VESceneNode *pEntity = createEntity(entityName, entityType, pMesh, pMat, glm::mat4(1.0f), nullptr );
 		pEntity->setTransform(glm::scale(glm::vec3(10000.0f, 10000.0f, 10000.0f)));
 
+		sceneGraphChanged();
 		return pEntity;
 	}
 
@@ -512,6 +521,7 @@ namespace ve {
 		pEntity->setTransform(glm::scale(glm::vec3(500.0f, 500.0f, 500.0f)));
 		pEntity->m_castsShadow = false;
 
+		sceneGraphChanged();
 		return pEntity;
 	}
 
@@ -541,6 +551,7 @@ namespace ve {
 		VEEntity *pEntity = createEntity(entityName, VEEntity::VE_ENTITY_TYPE_SKYPLANE, pMesh, pMat, glm::mat4(1.0f), nullptr);
 		pEntity->m_castsShadow = false;
 
+		sceneGraphChanged();
 		return pEntity;
 	}
 
@@ -609,12 +620,21 @@ namespace ve {
 		parent->addChild(sp1);
 		sp1->m_castsShadow = false;
 
+		sceneGraphChanged();
 		return parent;
 	}
 
 
 	//----------------------------------------------------------------------------------------------------------------
 	//scene management stuff
+
+	/**
+	* \brief This should be called whenever the scene graph ist changed
+	*/
+	void VESceneManager::sceneGraphChanged() {
+		getRendererPointer()->updateCmdBuffers();
+	}
+
 
 	/**
 	*
@@ -626,13 +646,24 @@ namespace ve {
 	*
 	*/
 	void VESceneManager::updateSceneNodes(uint32_t imageIndex ) {
-		for (auto pSceneNode : m_sceneNodes ) {
-			if ( pSceneNode.second->m_parent == nullptr) {
-				pSceneNode.second->update(imageIndex);
-			}
-		}
+		m_rootSceneNode->update( imageIndex );
 	}
 
+	/**
+	*
+	* \brief Add a new scene node into the scene
+	*
+	* If the parent is the nullptr then make the root scene node its parent
+	*
+	* \param[in] pNode Pointer to the new scene node
+	*
+	*/
+	void VESceneManager::addSceneNode(VESceneNode *pNode) {
+		if (pNode->m_parent == nullptr) {
+			m_rootSceneNode->addChild(pNode);
+		}
+		m_sceneNodes[pNode->getName()] = pNode;
+	}
 
 
 	/**
@@ -644,7 +675,9 @@ namespace ve {
 	*
 	*/
 	VESceneNode * VESceneManager::getSceneNode(std::string name) {
-		if (m_sceneNodes.count(name) > 0) return m_sceneNodes[name];
+		if (m_sceneNodes.count(name) > 0) 
+			return m_sceneNodes[name];
+
 		return nullptr;
 	}
 
@@ -673,6 +706,7 @@ namespace ve {
 			m_sceneNodes.erase(namelist[i]);
 			delete pObject;
 		}
+		sceneGraphChanged();
 	}
 
 	/**
@@ -734,6 +768,7 @@ namespace ve {
 	*/
 	void  VESceneManager::switchOnLight(VELight * light) {
 		m_lights.push_back(light); 
+		sceneGraphChanged();
 	};
 
 
@@ -754,6 +789,7 @@ namespace ve {
 				m_lights.pop_back();							//remove last light
 			}
 		}
+		sceneGraphChanged();
 	}
 
 
@@ -763,9 +799,11 @@ namespace ve {
 	void VESceneManager::closeSceneManager() {
 		for (auto ent : m_sceneNodes) 
 			delete ent.second;
+		delete m_rootSceneNode;
 		for (auto mesh : m_meshes) delete mesh.second;
 		for (auto mat : m_materials) delete mat.second;
 	}
+
 
 	/**
 	* \brief Print a list of all entities to the console.
@@ -775,6 +813,7 @@ namespace ve {
 			std::cout << pEnt.second->getName() << "\n";
 		}
 	}
+
 
 	/**
 	*

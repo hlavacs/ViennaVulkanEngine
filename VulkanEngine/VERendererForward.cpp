@@ -56,7 +56,7 @@ namespace ve {
 		vh::vhCmdCreateCommandPool(m_physicalDevice, m_device, m_surface, &m_commandPool);
 
 		m_commandBuffers.resize(m_swapChainImages.size() );
-		for (uint32_t i = 0; i < m_swapChainImages.size(); i++) m_commandBuffers[i] = VK_NULL_HANDLE;
+		for (uint32_t i = 0; i < m_swapChainImages.size(); i++) m_commandBuffers[i] = VK_NULL_HANDLE;	//will be created later
 
 
 		//------------------------------------------------------------------------------------------------------------
@@ -78,6 +78,7 @@ namespace ve {
 		std::vector<VkImageView> depthMaps;
 		for (uint32_t i = 0; i < m_swapChainImageViews.size(); i++) depthMaps.push_back(m_depthMap->m_imageView);
 		vh::vhBufCreateFramebuffers(m_device, m_swapChainImageViews, depthMaps, m_renderPassClear, m_swapChainExtent, m_swapChainFramebuffers);
+
 
 		//------------------------------------------------------------------------------------------------------------
 		//create resources for shadow pass
@@ -143,10 +144,6 @@ namespace ve {
 												{ VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT , },
 												&m_descriptorSetLayoutPerObject);
 
-
-
-		//vh::vhRenderCreateDescriptorSets(m_device, (uint32_t)m_swapChainImages.size(),	m_descriptorSetLayoutPerFrame, getDescriptorPool(), m_descriptorSetsPerFrame);
-
 		vh::vhRenderCreateDescriptorSets(m_device, (uint32_t)m_swapChainImages.size(), m_descriptorSetLayoutShadow,   getDescriptorPool(), m_descriptorSetsShadow);
 
 		//update the descriptor set for light pass - array of shadow maps
@@ -191,7 +188,6 @@ namespace ve {
 		addSubrenderer( new VESubrenderFW_Shadow());
 		addSubrenderer(new VESubrenderFW_Nuklear());
 	}
-
 
 
 	/**
