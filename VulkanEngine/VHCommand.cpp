@@ -34,6 +34,67 @@ namespace vh {
 
 	//-------------------------------------------------------------------------------------------------------
 
+
+	VkResult vhCmdCreateCommandBuffers(	VkDevice device, VkCommandPool commandPool, 
+										VkCommandBufferLevel level,
+										uint32_t count, VkCommandBuffer *pBuffers) {
+
+		VkCommandBufferAllocateInfo allocInfo = {};
+		allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
+		allocInfo.level = level;
+		allocInfo.commandPool = commandPool;
+		allocInfo.commandBufferCount = count;
+
+		return vkAllocateCommandBuffers(device, &allocInfo, pBuffers );
+	}
+
+
+	VkResult vhCmdBeginCommandBuffer(VkDevice device, VkCommandBuffer commandBuffer,
+									VkCommandBufferUsageFlagBits usageFlags ) {
+
+		VkCommandBufferBeginInfo beginInfo = {};
+		beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+		beginInfo.flags = usageFlags;
+
+		return vkBeginCommandBuffer(commandBuffer, &beginInfo) ;
+	}
+
+
+	VkResult vhCmdSubmitCommandBuffer(	VkDevice device, VkQueue graphicsQueue, 
+										VkCommandBuffer commandBuffer,
+										VkSemaphore waitSemaphore, 
+										VkSemaphore signalSemaphore, 
+										VkFence waitFence) {
+
+		VkSubmitInfo submitInfo = {};
+		submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+
+		VkSemaphore waitSemaphores[] = { waitSemaphore };
+		VkPipelineStageFlags waitStages[] = { VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT };
+		if (waitSemaphore != VK_NULL_HANDLE) {
+			submitInfo.waitSemaphoreCount = 1;
+			submitInfo.pWaitSemaphores = waitSemaphores;
+			submitInfo.pWaitDstStageMask = waitStages;
+		}
+
+		submitInfo.commandBufferCount = 1;
+		submitInfo.pCommandBuffers = &commandBuffer;
+
+		VkSemaphore signalSemaphores[] = { signalSemaphore };
+		if (signalSemaphore != VK_NULL_HANDLE) {
+			submitInfo.signalSemaphoreCount = 1;
+			submitInfo.pSignalSemaphores = signalSemaphores;
+		}
+
+		if (waitFence != VK_NULL_HANDLE) {
+			vkResetFences(device, 1, &waitFence);
+		}
+
+		 return vkQueueSubmit(graphicsQueue, 1, &submitInfo, waitFence);
+	}
+
+
+
 	/**
 	* \brief Begin submitting a single time command
 	*
@@ -73,7 +134,7 @@ namespace vh {
 	*
 	*/
 	VkResult vhCmdEndSingleTimeCommands(VkDevice device, VkQueue graphicsQueue, VkCommandPool commandPool,
-									VkCommandBuffer commandBuffer) {
+										VkCommandBuffer commandBuffer) {
 
 		return vhCmdEndSingleTimeCommands(	device, graphicsQueue, commandPool, commandBuffer, 
 											VK_NULL_HANDLE, VK_NULL_HANDLE, VK_NULL_HANDLE );
@@ -96,6 +157,7 @@ namespace vh {
 	VkResult vhCmdEndSingleTimeCommands(VkDevice device, VkQueue graphicsQueue, VkCommandPool commandPool,
 									VkCommandBuffer commandBuffer,
 									VkSemaphore waitSemaphore, VkSemaphore signalSemaphore, VkFence waitFence ) {
+
 		VHCHECKRESULT( vkEndCommandBuffer(commandBuffer) );
 
 		VkSubmitInfo submitInfo = {};

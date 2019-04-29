@@ -30,9 +30,10 @@ namespace ve {
 	class VERendererForward : public VERenderer {
 
 	protected:
-		//per frame render resources
+		std::vector<VkCommandBuffer> m_commandBuffers = {};				///<the main command buffers for recording draw commands
+																		//per frame render resources
 		VkRenderPass				m_renderPassClear;					///<The first light render pass, clearing the framebuffers
-		VkRenderPass				m_renderPassLoad;					///<The second light render pass
+		VkRenderPass				m_renderPassLoad;					///<The second light render pass - no clearing of framebuffer
 
 		std::vector<VkFramebuffer>	m_swapChainFramebuffers;			///<Framebuffers for light pass
 		VETexture *					m_depthMap = nullptr;				///<the image depth map	
@@ -76,6 +77,7 @@ namespace ve {
 		VERendererForward();
 		//Destructor
 		virtual ~VERendererForward() {};
+		virtual void deleteCmdBuffers();
 		///<\returns the per frame descriptor set layout
 		virtual VkDescriptorSetLayout	getDescriptorSetLayoutPerObject() { return m_descriptorSetLayoutPerObject; };
 		///<\returns the shadow descriptor set layout

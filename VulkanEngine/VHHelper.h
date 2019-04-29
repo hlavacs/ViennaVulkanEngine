@@ -138,6 +138,7 @@ namespace vh {
 
 	
 
+	//--------------------------------------------------------------------------------------------------------------------------------
 	//instance (device)
 
 	std::chrono::high_resolution_clock::time_point vhTimeNow();
@@ -153,12 +154,14 @@ namespace vh {
 	VkFormat vhDevFindDepthFormat(VkPhysicalDevice physicalDevice);
 
 
+	//--------------------------------------------------------------------------------------------------------------------------------
 	//logical device
 	VkResult vhDevCreateLogicalDevice(	VkPhysicalDevice physicalDevice, VkSurfaceKHR surface, 
 										std::vector<const char*> requiredDeviceExtensions,
 										std::vector<const char*> requiredValidationLayers, 
 										VkDevice *device, VkQueue *graphicsQueue, VkQueue *presentQueue);
 
+	//--------------------------------------------------------------------------------------------------------------------------------
 	//swapchain
 	SwapChainSupportDetails vhDevQuerySwapChainSupport(VkPhysicalDevice device, VkSurfaceKHR surface);
 	VkResult vhSwapCreateSwapChain(	VkPhysicalDevice physicalDevice, VkSurfaceKHR surface, VkDevice device, VkExtent2D frameBufferExtent,
@@ -167,6 +170,7 @@ namespace vh {
 									VkFormat *swapChainImageFormat, VkExtent2D *swapChainExtent);
 
 
+	//--------------------------------------------------------------------------------------------------------------------------------
 	//buffer
 	VkResult vhBufCreateBuffer( VmaAllocator allocator, VkDeviceSize size, VkBufferUsageFlags usage,
 								VmaMemoryUsage vmaUsage, VkBuffer *buffer, VmaAllocation *allocation);
@@ -222,6 +226,7 @@ namespace vh {
 									std::vector<VkBuffer> &uniformBuffers, 
 									std::vector<VmaAllocation> &uniformBuffersAllocation);
 
+	//--------------------------------------------------------------------------------------------------------------------------------
 	//rendering
 	VkResult vhRenderCreateRenderPass( VkDevice device, VkFormat swapChainImageFormat, VkFormat depthFormat, VkAttachmentLoadOp loadOp, VkRenderPass *renderPass);
 	VkResult vhRenderCreateRenderPassShadow( VkDevice device, VkFormat depthFormat, VkRenderPass *renderPass);
@@ -252,20 +257,31 @@ namespace vh {
 												VkExtent2D shadowMapExtent, VkPipelineLayout pipelineLayout,
 												VkRenderPass renderPass, VkPipeline *graphicsPipeline);
 
+	//--------------------------------------------------------------------------------------------------------------------------------
 	//file
 	std::vector<char> vhFileRead(const std::string& filename);
 
+	//--------------------------------------------------------------------------------------------------------------------------------
 	//command
 	VkResult vhCmdCreateCommandPool(VkPhysicalDevice physicalDevice, VkDevice device, VkSurfaceKHR surface, VkCommandPool *commandPool);
+
+	VkResult vhCmdCreateCommandBuffers(	VkDevice device, VkCommandPool commandPool,
+										VkCommandBufferLevel level, uint32_t count, VkCommandBuffer *pBuffers);
+	VkResult vhCmdBeginCommandBuffer(	VkDevice device, VkCommandBuffer commandBuffer,
+										VkCommandBufferUsageFlagBits usageFlags);
+	VkResult vhCmdSubmitCommandBuffer(	VkDevice device, VkQueue graphicsQueue, VkCommandBuffer commandBuffer,
+										VkSemaphore waitSemaphore, VkSemaphore signalSemaphore, VkFence waitFence);
 	VkCommandBuffer vhCmdBeginSingleTimeCommands(VkDevice device, VkCommandPool commandPool);
 	VkResult vhCmdEndSingleTimeCommands(VkDevice device, VkQueue graphicsQueue, VkCommandPool commandPool, VkCommandBuffer commandBuffer);
 	VkResult vhCmdEndSingleTimeCommands(VkDevice device, VkQueue graphicsQueue, VkCommandPool commandPool, VkCommandBuffer commandBuffer,
 										VkSemaphore waitSemaphore, VkSemaphore signalSemaphore, VkFence waitFence);
 
+	//--------------------------------------------------------------------------------------------------------------------------------
 	//memory
 	uint32_t vhMemFindMemoryType(VkPhysicalDevice physicalDevice, uint32_t typeFilter, VkMemoryPropertyFlags properties);
 	VkResult vhMemCreateVMAAllocator(VkPhysicalDevice physicalDevice, VkDevice device, VmaAllocator &allocator);
 
+	//--------------------------------------------------------------------------------------------------------------------------------
 	//debug
 	VKAPI_ATTR VkBool32 VKAPI_CALL vhDebugCallback(VkDebugReportFlagsEXT flags, VkDebugReportObjectTypeEXT objType, uint64_t obj, size_t location, int32_t code, const char* layerPrefix, const char* msg, void* userData);
 	VkResult vhDebugCreateReportCallbackEXT(VkInstance instance, const VkDebugReportCallbackCreateInfoEXT* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkDebugReportCallbackEXT* pCallback);

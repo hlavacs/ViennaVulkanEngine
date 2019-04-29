@@ -51,9 +51,13 @@ namespace ve {
 									&m_swapChainImageFormat, &m_swapChainExtent);
 
 		//------------------------------------------------------------------------------------------------------------
+		//create a command pool and the command buffers
 
-		//create a command pool
 		vh::vhCmdCreateCommandPool(m_physicalDevice, m_device, m_surface, &m_commandPool);
+
+		m_commandBuffers.resize(m_swapChainImages.size() );
+		for (uint32_t i = 0; i < m_swapChainImages.size(); i++) m_commandBuffers[i] = VK_NULL_HANDLE;
+
 
 		//------------------------------------------------------------------------------------------------------------
 		//create resources for light pass
@@ -217,6 +221,8 @@ namespace ve {
 	void VERendererForward::closeRenderer() {
 		destroySubrenderers();
 
+		deleteCmdBuffers();
+
 		cleanupSwapChain();
 
 		for (auto framebufferList : m_shadowFramebuffers) {
@@ -280,6 +286,8 @@ namespace ve {
 		vh::vhBufCreateFramebuffers(m_device, m_swapChainImageViews, depthMaps, m_renderPassClear, m_swapChainExtent, m_swapChainFramebuffers);
 
 		for (auto pSub : m_subrenderers) pSub->recreateResources();
+
+		deleteCmdBuffers();
 	}
 	
 
@@ -310,13 +318,25 @@ namespace ve {
 
 	//--------------------------------------------------------------------------------------------
 
+	void VERendererForward::deleteCmdBuffers() {
+		for (uint32_t i = 0; i < m_commandBuffers.size(); i++) {
+			if (m_commandBuffers[i] != VK_NULL_HANDLE) {
+				vkFreeCommandBuffers(m_device, m_commandPool, 1, &m_commandBuffers[i]);
+				m_commandBuffers[i] = VK_NULL_HANDLE;
+			}
+		}
+	}
+
 
 	void VERendererForward::recordCmdBuffers() {
 		VECamera *pCamera = getSceneManagerPointer()->getCamera();
 		pCamera->setExtent(getWindowPointer()->getExtent());
 
-		//prepare command buffer for drawing
-		VkCommandBuffer commandBuffer = vh::vhCmdBeginSingleTimeCommands(m_device, m_commandPool);
+		vh::vhCmdCreateCommandBuffers(	m_device, m_commandPool,
+										VK_COMMAND_BUFFER_LEVEL_PRIMARY,
+										1, &m_commandBuffers[imageIndex]);
+
+		vh::vhCmdBeginCommandBuffer(m_device, m_commandBuffers[imageIndex], VK_COMMAND_BUFFER_USAGE_SIMULTANEOUS_USE_BIT);
 
 		//-----------------------------------------------------------------------------------------
 		//set clear values for shadow and light passes
@@ -348,25 +368,25 @@ namespace ve {
 			{
 				for (unsigned i = 0; i < pLight->m_shadowCameras.size(); i++) {
 
-					vh::vhRenderBeginRenderPass(commandBuffer,
+					vh::vhRenderBeginRenderPass(m_commandBuffers[imageIndex],
 						m_renderPassShadow,
 						m_shadowFramebuffers[imageIndex][i],
 						clearValuesShadow,
 						m_shadowMaps[0][i]->m_extent);	//all shadow maps have the same extent
 
-					m_subrenderShadow->draw(commandBuffer, imageIndex, i, pLight->m_shadowCameras[i], pLight, {});
+					m_subrenderShadow->draw(m_commandBuffers[imageIndex], imageIndex, i, pLight->m_shadowCameras[i], pLight, {});
 
-					vkCmdEndRenderPass(commandBuffer);
+					vkCmdEndRenderPass(m_commandBuffers[imageIndex]);
 				}
 			}
-			m_AvgCmdShadowTime = vh::vhAverage(vh::vhTimeDuration(t_now), m_AvgCmdShadowTime);
+			m_AvgCmdShadowTime = vh::vhTimeDuration(t_now);
 
 			//-----------------------------------------------------------------------------------------
 			//light pass
 
 			t_now = vh::vhTimeNow();
 			{
-				vh::vhRenderBeginRenderPass(commandBuffer,
+				vh::vhRenderBeginRenderPass(m_commandBuffers[imageIndex],
 					i == 0 ? m_renderPassClear : m_renderPassLoad,
 					m_swapChainFramebuffers[imageIndex],
 					clearValuesLight,
@@ -375,25 +395,20 @@ namespace ve {
 				for (auto pSub : m_subrenderers) {
 					if (i == 0 || pSub->getClass() == VESubrender::VE_SUBRENDERER_CLASS_OBJECT) {
 						pSub->prepareDraw();
-						pSub->draw(commandBuffer, imageIndex, i, pCamera, pLight, m_descriptorSetsShadow);
+						pSub->draw(m_commandBuffers[imageIndex], imageIndex, i, pCamera, pLight, m_descriptorSetsShadow);
 					}
 				}
 
-				vkCmdEndRenderPass(commandBuffer);
+				vkCmdEndRenderPass(m_commandBuffers[imageIndex]);
 			}
-			m_AvgCmdLightTime = vh::vhAverage(vh::vhTimeDuration(t_now), m_AvgCmdLightTime);
+			m_AvgCmdLightTime = vh::vhTimeDuration(t_now);
 
 			clearValuesLight.clear();		//since we blend the images onto each other, do not clear them for passes 2 and further
 		}
 
-		vh::vhCmdEndSingleTimeCommands(m_device, m_graphicsQueue, m_commandPool, commandBuffer,
-			m_imageAvailableSemaphores[m_currentFrame],
-			m_renderFinishedSemaphores[m_currentFrame],
-			m_inFlightFences[m_currentFrame]);
+		vkEndCommandBuffer(m_commandBuffers[imageIndex]);
 
 		m_overlaySemaphores[m_currentFrame] = m_renderFinishedSemaphores[m_currentFrame];
-
-
 	}
 
 
@@ -423,7 +438,15 @@ namespace ve {
 			getEnginePointer()->fatalError("Failed to acquire swap chain image!");
 		}
 
-		recordCmdBuffers();
+		if (m_commandBuffers[imageIndex] == VK_NULL_HANDLE ) {
+			recordCmdBuffers();
+		}
+
+		//submit the command buffers
+		vh::vhCmdSubmitCommandBuffer(	m_device, m_graphicsQueue, m_commandBuffers[imageIndex],
+										m_imageAvailableSemaphores[m_currentFrame],
+										m_renderFinishedSemaphores[m_currentFrame],
+										m_inFlightFences[m_currentFrame]);
 
 	}
 
