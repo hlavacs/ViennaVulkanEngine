@@ -239,9 +239,9 @@ namespace vh {
 	*
 	*/
 	VkResult vhRenderCreateDescriptorSets(	VkDevice device, uint32_t numberDesc,
-										VkDescriptorSetLayout descriptorSetLayout, 	
-										VkDescriptorPool descriptorPool, 
-										std::vector<VkDescriptorSet> & descriptorSets) {
+											VkDescriptorSetLayout descriptorSetLayout, 	
+											VkDescriptorPool descriptorPool, 
+											std::vector<VkDescriptorSet> & descriptorSets) {
 
 		std::vector<VkDescriptorSetLayout> layouts(numberDesc, descriptorSetLayout);
 		VkDescriptorSetAllocateInfo allocInfo = {};

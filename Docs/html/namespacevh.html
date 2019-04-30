@@ -77,6 +77,12 @@ Classes</h2></td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structvh_1_1_swap_chain_support_details.html">SwapChainSupportDetails</a></td></tr>
 <tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">need only for start up  <a href="structvh_1_1_swap_chain_support_details.html#details">More...</a><br /></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structvh_1_1vh_memory_block.html">vhMemoryBlock</a></td></tr>
+<tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">A block of N entries, which are UBOs that e.g. define world matrices etc.  <a href="structvh_1_1vh_memory_block.html#details">More...</a><br /></td></tr>
+<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structvh_1_1vh_memory_handle.html">vhMemoryHandle</a></td></tr>
+<tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">A handle into an entry of a memory block.  <a href="structvh_1_1vh_memory_handle.html#details">More...</a><br /></td></tr>
+<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structvh_1_1vh_vertex.html">vhVertex</a></td></tr>
 <tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">per vertex data that is stored in the vertex buffers  <a href="structvh_1_1vh_vertex.html#details">More...</a><br /></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -269,6 +275,21 @@ void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="name
 <tr class="memitem:a7973d81d63d37347572c19477529dd7f"><td class="memItemLeft" align="right" valign="top">VkResult&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacevh.html#a7973d81d63d37347572c19477529dd7f">vhMemCreateVMAAllocator</a> (VkPhysicalDevice physicalDevice, VkDevice device, VmaAllocator &amp;allocator)</td></tr>
 <tr class="memdesc:a7973d81d63d37347572c19477529dd7f"><td class="mdescLeft">&#160;</td><td class="mdescRight">Initialize the VMA allocator library.  <a href="#a7973d81d63d37347572c19477529dd7f">More...</a><br /></td></tr>
 <tr class="separator:a7973d81d63d37347572c19477529dd7f"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a3def7ff80b80c6347a4ca538c9a0f37e"><td class="memItemLeft" align="right" valign="top">VkResult&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacevh.html#a3def7ff80b80c6347a4ca538c9a0f37e">vhMemBlockAdd</a> (VmaAllocator allocator, VkBufferUsageFlags usage, VmaMemoryUsage vmaUsage, std::vector&lt; <a class="el" href="structvh_1_1vh_memory_block.html">vhMemoryBlock</a> &gt; &amp;blocklist, uint32_t maxNumEntries, uint32_t sizeEntry, uint32_t numBuffers, void *owner, <a class="el" href="structvh_1_1vh_memory_handle.html">vhMemoryHandle</a> *handle)</td></tr>
+<tr class="memdesc:a3def7ff80b80c6347a4ca538c9a0f37e"><td class="mdescLeft">&#160;</td><td class="mdescRight">Add an entry to a memory block.  <a href="#a3def7ff80b80c6347a4ca538c9a0f37e">More...</a><br /></td></tr>
+<tr class="separator:a3def7ff80b80c6347a4ca538c9a0f37e"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a05a86b5a941fb7fe31e3b10e9777461c"><td class="memItemLeft" align="right" valign="top">VkResult&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacevh.html#a05a86b5a941fb7fe31e3b10e9777461c">vhMemBlockUpdateEntry</a> (<a class="el" href="structvh_1_1vh_memory_handle.html">vhMemoryHandle</a> *pHandle, void *data)</td></tr>
+<tr class="memdesc:a05a86b5a941fb7fe31e3b10e9777461c"><td class="mdescLeft">&#160;</td><td class="mdescRight">Update an entry in one of the memory blocks.  <a href="#a05a86b5a941fb7fe31e3b10e9777461c">More...</a><br /></td></tr>
+<tr class="separator:a05a86b5a941fb7fe31e3b10e9777461c"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ad27449c573c79756fc4ce025fb720896"><td class="memItemLeft" align="right" valign="top">VkResult&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacevh.html#ad27449c573c79756fc4ce025fb720896">vhMemBlockUpdateMem</a> (VmaAllocator allocator, std::vector&lt; <a class="el" href="structvh_1_1vh_memory_block.html">vhMemoryBlock</a> &gt; &amp;blocklist, uint32_t index)</td></tr>
+<tr class="memdesc:ad27449c573c79756fc4ce025fb720896"><td class="mdescLeft">&#160;</td><td class="mdescRight">Update all memory blocks by copying them to the GPU.  <a href="#ad27449c573c79756fc4ce025fb720896">More...</a><br /></td></tr>
+<tr class="separator:ad27449c573c79756fc4ce025fb720896"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a1a3aec2f53d3cbdecc6bb85e16c4e8f9"><td class="memItemLeft" align="right" valign="top">VkResult&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacevh.html#a1a3aec2f53d3cbdecc6bb85e16c4e8f9">vhMemBlockDeleteEntry</a> (VmaAllocator allocator, std::vector&lt; <a class="el" href="structvh_1_1vh_memory_block.html">vhMemoryBlock</a> &gt; &amp;blocklist, <a class="el" href="structvh_1_1vh_memory_handle.html">vhMemoryHandle</a> *pHandle)</td></tr>
+<tr class="memdesc:a1a3aec2f53d3cbdecc6bb85e16c4e8f9"><td class="mdescLeft">&#160;</td><td class="mdescRight">Delete an entry from a memory block.  <a href="#a1a3aec2f53d3cbdecc6bb85e16c4e8f9">More...</a><br /></td></tr>
+<tr class="separator:a1a3aec2f53d3cbdecc6bb85e16c4e8f9"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a86d4a4207a675fe3b25cebfbe103a639"><td class="memItemLeft" align="right" valign="top">VkResult&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacevh.html#a86d4a4207a675fe3b25cebfbe103a639">vhMemBlockClear</a> (VmaAllocator allocator, std::vector&lt; <a class="el" href="structvh_1_1vh_memory_block.html">vhMemoryBlock</a> &gt; &amp;blocklist)</td></tr>
+<tr class="memdesc:a86d4a4207a675fe3b25cebfbe103a639"><td class="mdescLeft">&#160;</td><td class="mdescRight">Delete all entries and all blocks.  <a href="#a86d4a4207a675fe3b25cebfbe103a639">More...</a><br /></td></tr>
+<tr class="separator:a86d4a4207a675fe3b25cebfbe103a639"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a7579b97116c0e15eecd4bd0ede9dea08"><td class="memItemLeft" align="right" valign="top">VkShaderModule&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacevh.html#a7579b97116c0e15eecd4bd0ede9dea08">vhPipeCreateShaderModule</a> (VkDevice device, const std::vector&lt; char &gt; &amp;code)</td></tr>
 <tr class="memdesc:a7579b97116c0e15eecd4bd0ede9dea08"><td class="mdescLeft">&#160;</td><td class="mdescRight">Create a shader module.  <a href="#a7579b97116c0e15eecd4bd0ede9dea08">More...</a><br /></td></tr>
 <tr class="separator:a7579b97116c0e15eecd4bd0ede9dea08"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -2882,6 +2903,259 @@ void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="name
 
 </div>
 </div>
+<a id="a3def7ff80b80c6347a4ca538c9a0f37e"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a3def7ff80b80c6347a4ca538c9a0f37e">&#9670;&nbsp;</a></span>vhMemBlockAdd()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">VkResult vh::vhMemBlockAdd </td>
+          <td>(</td>
+          <td class="paramtype">VmaAllocator&#160;</td>
+          <td class="paramname"><em>allocator</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">VkBufferUsageFlags&#160;</td>
+          <td class="paramname"><em>usage</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">VmaMemoryUsage&#160;</td>
+          <td class="paramname"><em>vmaUsage</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">std::vector&lt; <a class="el" href="structvh_1_1vh_memory_block.html">vhMemoryBlock</a> &gt; &amp;&#160;</td>
+          <td class="paramname"><em>blocklist</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">uint32_t&#160;</td>
+          <td class="paramname"><em>maxNumEntries</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">uint32_t&#160;</td>
+          <td class="paramname"><em>sizeEntry</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">uint32_t&#160;</td>
+          <td class="paramname"><em>numBuffers</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">void *&#160;</td>
+          <td class="paramname"><em>owner</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="structvh_1_1vh_memory_handle.html">vhMemoryHandle</a> *&#160;</td>
+          <td class="paramname"><em>handle</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Add an entry to a memory block. </p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramdir">[in]</td><td class="paramname">allocator</td><td>The VMA allocator </td></tr>
+    <tr><td class="paramdir">[in]</td><td class="paramname">usage</td><td>VkBuffer usage flags </td></tr>
+    <tr><td class="paramdir">[in]</td><td class="paramname">vmaUsage</td><td>VMA usage flags </td></tr>
+    <tr><td class="paramdir">[in]</td><td class="paramname">blocklist</td><td>The memory block list </td></tr>
+    <tr><td class="paramdir">[in]</td><td class="paramname">maxNumEntries</td><td>Maximum number of entries in a memory block </td></tr>
+    <tr><td class="paramdir">[in]</td><td class="paramname">sizeEntry</td><td>Size of an entry in bytes </td></tr>
+    <tr><td class="paramdir">[in]</td><td class="paramname">numBuffers</td><td>Number of buffers (one for each framebuffer) </td></tr>
+    <tr><td class="paramdir">[in]</td><td class="paramname">owner</td><td>Pointer to the entry owner </td></tr>
+    <tr><td class="paramdir">[in]</td><td class="paramname">handle</td><td>A handle to the entry </td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>Returns</dt><dd>VK_SUCCESS or a Vulkan error code </dd></dl>
+
+</div>
+</div>
+<a id="a86d4a4207a675fe3b25cebfbe103a639"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a86d4a4207a675fe3b25cebfbe103a639">&#9670;&nbsp;</a></span>vhMemBlockClear()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">VkResult vh::vhMemBlockClear </td>
+          <td>(</td>
+          <td class="paramtype">VmaAllocator&#160;</td>
+          <td class="paramname"><em>allocator</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">std::vector&lt; <a class="el" href="structvh_1_1vh_memory_block.html">vhMemoryBlock</a> &gt; &amp;&#160;</td>
+          <td class="paramname"><em>blocklist</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Delete all entries and all blocks. </p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramdir">[in]</td><td class="paramname">allocator</td><td>The VMA allocator </td></tr>
+    <tr><td class="paramdir">[in]</td><td class="paramname">blocklist</td><td>The memory blocks </td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>Returns</dt><dd>VK_SUCCESS or a Vulkan error code </dd></dl>
+
+</div>
+</div>
+<a id="a1a3aec2f53d3cbdecc6bb85e16c4e8f9"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a1a3aec2f53d3cbdecc6bb85e16c4e8f9">&#9670;&nbsp;</a></span>vhMemBlockDeleteEntry()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">VkResult vh::vhMemBlockDeleteEntry </td>
+          <td>(</td>
+          <td class="paramtype">VmaAllocator&#160;</td>
+          <td class="paramname"><em>allocator</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">std::vector&lt; <a class="el" href="structvh_1_1vh_memory_block.html">vhMemoryBlock</a> &gt; &amp;&#160;</td>
+          <td class="paramname"><em>blocklist</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="structvh_1_1vh_memory_handle.html">vhMemoryHandle</a> *&#160;</td>
+          <td class="paramname"><em>pHandle</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Delete an entry from a memory block. </p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramdir">[in]</td><td class="paramname">allocator</td><td>The VMA allocator </td></tr>
+    <tr><td class="paramdir">[in]</td><td class="paramname">blocklist</td><td>The memory blocks </td></tr>
+    <tr><td class="paramdir">[in]</td><td class="paramname">pHandle</td><td>Pointer to the handle of the entry that should be deleted </td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>Returns</dt><dd>VK_SUCCESS or a Vulkan error code </dd></dl>
+
+</div>
+</div>
+<a id="a05a86b5a941fb7fe31e3b10e9777461c"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a05a86b5a941fb7fe31e3b10e9777461c">&#9670;&nbsp;</a></span>vhMemBlockUpdateEntry()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">VkResult vh::vhMemBlockUpdateEntry </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="structvh_1_1vh_memory_handle.html">vhMemoryHandle</a> *&#160;</td>
+          <td class="paramname"><em>pHandle</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">void *&#160;</td>
+          <td class="paramname"><em>data</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Update an entry in one of the memory blocks. </p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramdir">[in]</td><td class="paramname">pHandle</td><td>Pointer to the handle of the entry </td></tr>
+    <tr><td class="paramdir">[in]</td><td class="paramname">data</td><td>Pointer to a block of data that should be written over the entry </td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>Returns</dt><dd>VK_SUCCESS or a Vulkan error code </dd></dl>
+
+</div>
+</div>
+<a id="ad27449c573c79756fc4ce025fb720896"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ad27449c573c79756fc4ce025fb720896">&#9670;&nbsp;</a></span>vhMemBlockUpdateMem()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">VkResult vh::vhMemBlockUpdateMem </td>
+          <td>(</td>
+          <td class="paramtype">VmaAllocator&#160;</td>
+          <td class="paramname"><em>allocator</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">std::vector&lt; <a class="el" href="structvh_1_1vh_memory_block.html">vhMemoryBlock</a> &gt; &amp;&#160;</td>
+          <td class="paramname"><em>blocklist</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">uint32_t&#160;</td>
+          <td class="paramname"><em>index</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Update all memory blocks by copying them to the GPU. </p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramdir">[in]</td><td class="paramname">allocator</td><td>The VMA allocator </td></tr>
+    <tr><td class="paramdir">[in]</td><td class="paramname">blocklist</td><td>The memory blocks </td></tr>
+    <tr><td class="paramdir">[in]</td><td class="paramname">index</td><td>The index of the buffer to use </td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>Returns</dt><dd>VK_SUCCESS or a Vulkan error code </dd></dl>
+
+</div>
+</div>
 <a id="a7973d81d63d37347572c19477529dd7f"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a7973d81d63d37347572c19477529dd7f">&#9670;&nbsp;</a></span>vhMemCreateVMAAllocator()</h2>
 
@@ -3841,7 +4115,7 @@ void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="name
 </div><!-- contents -->
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>
-Generated on Mon Apr 29 2019 11:18:42 for Vienna Vulkan Engine by &#160;<a href="http://www.doxygen.org/index.html">
+Generated on Tue Apr 30 2019 21:39:33 for Vienna Vulkan Engine by &#160;<a href="http://www.doxygen.org/index.html">
 <img class="footer" src="doxygen.png" alt="doxygen"/>
 </a> 1.8.15
 </small></address>

@@ -45,6 +45,7 @@ var searchData=
   ['getrenderpass',['getRenderPass',['../classve_1_1_v_e_renderer_forward.html#a46f8ff959bd4f8e18405e3c65683f62a',1,'ve::VERendererForward']]],
   ['getrenderpassshadow',['getRenderPassShadow',['../classve_1_1_v_e_renderer_forward.html#acfa386d05b23e6a6ac352bcf255e568b',1,'ve::VERendererForward']]],
   ['getrequiredinstanceextensions',['getRequiredInstanceExtensions',['../classve_1_1_v_e_engine.html#a3f87c45fd841e2e84ce52e60a56b68b1',1,'ve::VEEngine::getRequiredInstanceExtensions()'],['../classve_1_1_v_e_window.html#a8b85a29a013eb397c98575b5e7dd56fd',1,'ve::VEWindow::getRequiredInstanceExtensions()'],['../classve_1_1_v_e_window_g_l_f_w.html#a5f8b1d18bff455cd2823b52944cfacd8',1,'ve::VEWindowGLFW::getRequiredInstanceExtensions()']]],
+  ['getrootscenenode',['getRootSceneNode',['../classve_1_1_v_e_scene_manager.html#a0f1d754eb2b772fdd7d1fc7bc8d94625',1,'ve::VESceneManager']]],
   ['getscenemanager',['getSceneManager',['../classve_1_1_v_e_engine.html#a8c33acc438666459862732a9118a169a',1,'ve::VEEngine']]],
   ['getscenenode',['getSceneNode',['../classve_1_1_v_e_scene_manager.html#a22dd9760111ca205cf97b2fdcfdbb6d7',1,'ve::VESceneManager']]],
   ['getshadowmap',['getShadowMap',['../classve_1_1_v_e_renderer_forward.html#a394266568e9447bfb7b9594a4875440c',1,'ve::VERendererForward']]],

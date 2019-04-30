@@ -54,6 +54,7 @@
 
 namespace vh {
 
+	//--------------------------------------------------------------------------------------------------------------------------------
 	///need only for start up
 	struct QueueFamilyIndices {
 		int graphicsFamily = -1;	///<Index of graphics family
@@ -72,7 +73,9 @@ namespace vh {
 		std::vector<VkPresentModeKHR> presentModes;		///<Possible present modes
 	};
 
-	//the following structs are used to fill in uniform buffers, and are used as they are in GLSL shaders
+
+	//--------------------------------------------------------------------------------------------------------------------------------
+	//vertex data
 
 	///per vertex data that is stored in the vertex buffers
 	struct vhVertex {
@@ -122,6 +125,31 @@ namespace vh {
 		bool operator==(const vhVertex& other) const {
 			return pos == other.pos && normal == other.normal && tangent == other.tangent && texCoord == other.texCoord;
 		}
+	};
+
+
+	//--------------------------------------------------------------------------------------------------------------------------------
+	//structures for managing blocks of memory in the GPU
+
+	struct vhMemoryHandle;
+
+	///A block of N entries, which are UBOs that e.g. define world matrices etc.
+	struct vhMemoryBlock {
+		std::vector<VkBuffer>			buffers;			///<One buffer for each framebuffer frame
+		std::vector<VmaAllocation>		allocations;		///<VMA information for the UBOs
+		std::vector<VkDescriptorSet>	descriptorSets;		///<Descriptor sets for UBO
+		int8_t *						pMemory;			///<pointer to the host memory containing a copy of the block
+		uint32_t						maxNumEntries;		///<maximum number of entries
+		uint32_t						sizeEntry;			///<length of one entry
+		std::vector<vhMemoryHandle*>	handles;			///<list of pointers to the entry handles
+		bool							dirty;				///<if dirty this block needs to be updated
+	};
+
+	///A handle into an entry of a memory block
+	struct vhMemoryHandle {
+		void *owner;					///<pointer to the owner of this entry
+		vhMemoryBlock *pMemBlock;		///<pointer to the memory block
+		uint32_t entryIndex;			///<index into the entry list of the block
 	};
 
 

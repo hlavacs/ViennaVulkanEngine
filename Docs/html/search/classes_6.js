@@ -38,5 +38,7 @@ var searchData=
   ['veuboperobject_5ft',['veUBOPerObject_t',['../structve_1_1_v_e_entity_1_1ve_u_b_o_per_object__t.html',1,'ve::VEEntity']]],
   ['vewindow',['VEWindow',['../classve_1_1_v_e_window.html',1,'ve']]],
   ['vewindowglfw',['VEWindowGLFW',['../classve_1_1_v_e_window_g_l_f_w.html',1,'ve']]],
+  ['vhmemoryblock',['vhMemoryBlock',['../structvh_1_1vh_memory_block.html',1,'vh']]],
+  ['vhmemoryhandle',['vhMemoryHandle',['../structvh_1_1vh_memory_handle.html',1,'vh']]],
   ['vhvertex',['vhVertex',['../structvh_1_1vh_vertex.html',1,'vh']]]
 ];

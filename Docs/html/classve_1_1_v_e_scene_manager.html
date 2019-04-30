@@ -84,11 +84,11 @@ $(function() {
 Public Member Functions</h2></td></tr>
 <tr class="memitem:ab734ad6953897388d0bc7ee22369ed3b"><td class="memItemLeft" align="right" valign="top"><a id="ab734ad6953897388d0bc7ee22369ed3b"></a>
 &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_scene_manager.html#ab734ad6953897388d0bc7ee22369ed3b">VESceneManager</a> ()</td></tr>
-<tr class="memdesc:ab734ad6953897388d0bc7ee22369ed3b"><td class="mdescLeft">&#160;</td><td class="mdescRight">Constructor. <br /></td></tr>
+<tr class="memdesc:ab734ad6953897388d0bc7ee22369ed3b"><td class="mdescLeft">&#160;</td><td class="mdescRight">Constructor of class <a class="el" href="classve_1_1_v_e_scene_manager.html" title="The scene Manager manages the objects that have been loaded and put into the world.">VESceneManager</a>. <br /></td></tr>
 <tr class="separator:ab734ad6953897388d0bc7ee22369ed3b"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a63b77d8fc900cdc268ef92dcdfad20ae"><td class="memItemLeft" align="right" valign="top"><a id="a63b77d8fc900cdc268ef92dcdfad20ae"></a>
 &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_scene_manager.html#a63b77d8fc900cdc268ef92dcdfad20ae">~VESceneManager</a> ()</td></tr>
-<tr class="memdesc:a63b77d8fc900cdc268ef92dcdfad20ae"><td class="mdescLeft">&#160;</td><td class="mdescRight">Destructor. <br /></td></tr>
+<tr class="memdesc:a63b77d8fc900cdc268ef92dcdfad20ae"><td class="mdescLeft">&#160;</td><td class="mdescRight">Destructor of class <a class="el" href="classve_1_1_v_e_scene_manager.html" title="The scene Manager manages the objects that have been loaded and put into the world.">VESceneManager</a>. <br /></td></tr>
 <tr class="separator:a63b77d8fc900cdc268ef92dcdfad20ae"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:afb42fdaf90df123a6fa6364191d0656b"><td class="memItemLeft" align="right" valign="top">const aiScene *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_scene_manager.html#afb42fdaf90df123a6fa6364191d0656b">loadAssets</a> (std::string basedir, std::string filename, uint32_t aiFlags, std::vector&lt; <a class="el" href="classve_1_1_v_e_mesh.html">VEMesh</a> * &gt; &amp;meshes, std::vector&lt; <a class="el" href="classve_1_1_v_e_material.html">VEMaterial</a> * &gt; &amp;materials)</td></tr>
 <tr class="memdesc:afb42fdaf90df123a6fa6364191d0656b"><td class="mdescLeft">&#160;</td><td class="mdescRight">Load assets from file ussing Assimp.  <a href="#afb42fdaf90df123a6fa6364191d0656b">More...</a><br /></td></tr>
@@ -123,12 +123,17 @@ Public Member Functions</h2></td></tr>
 <tr class="memitem:aae47277fd521d322ee02dc51f643e7f8"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classve_1_1_v_e_scene_node.html">VESceneNode</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_scene_manager.html#aae47277fd521d322ee02dc51f643e7f8">createSkybox</a> (std::string entityName, std::string basedir, std::vector&lt; std::string &gt; texNames)</td></tr>
 <tr class="memdesc:aae47277fd521d322ee02dc51f643e7f8"><td class="mdescLeft">&#160;</td><td class="mdescRight">Create a skyplane based sky box.  <a href="#aae47277fd521d322ee02dc51f643e7f8">More...</a><br /></td></tr>
 <tr class="separator:aae47277fd521d322ee02dc51f643e7f8"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a0f1d754eb2b772fdd7d1fc7bc8d94625"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classve_1_1_v_e_scene_node.html">VESceneNode</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_scene_manager.html#a0f1d754eb2b772fdd7d1fc7bc8d94625">getRootSceneNode</a> ()</td></tr>
+<tr class="separator:a0f1d754eb2b772fdd7d1fc7bc8d94625"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ac0ab8c69e5ea095eb394166db5b246bf"><td class="memItemLeft" align="right" valign="top"><a id="ac0ab8c69e5ea095eb394166db5b246bf"></a>
+void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_scene_manager.html#ac0ab8c69e5ea095eb394166db5b246bf">sceneGraphChanged</a> ()</td></tr>
+<tr class="memdesc:ac0ab8c69e5ea095eb394166db5b246bf"><td class="mdescLeft">&#160;</td><td class="mdescRight">This should be called whenever the scene graph ist changed. <br /></td></tr>
+<tr class="separator:ac0ab8c69e5ea095eb394166db5b246bf"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aaadccc0f574cd30019e940ab56acc832"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_scene_manager.html#aaadccc0f574cd30019e940ab56acc832">updateSceneNodes</a> (uint32_t imageIndex)</td></tr>
 <tr class="memdesc:aaadccc0f574cd30019e940ab56acc832"><td class="mdescLeft">&#160;</td><td class="mdescRight">Find all scene nodes without a parent, then update them and their children.  <a href="#aaadccc0f574cd30019e940ab56acc832">More...</a><br /></td></tr>
 <tr class="separator:aaadccc0f574cd30019e940ab56acc832"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a18a142d8ebce07b6f149fbe8fd8647df"><td class="memItemLeft" align="right" valign="top"><a id="a18a142d8ebce07b6f149fbe8fd8647df"></a>
-void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_scene_manager.html#a18a142d8ebce07b6f149fbe8fd8647df">addSceneNode</a> (<a class="el" href="classve_1_1_v_e_scene_node.html">VESceneNode</a> *entity)</td></tr>
-<tr class="memdesc:a18a142d8ebce07b6f149fbe8fd8647df"><td class="mdescLeft">&#160;</td><td class="mdescRight">Add a scene node to the scene. <br /></td></tr>
+<tr class="memitem:a18a142d8ebce07b6f149fbe8fd8647df"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_scene_manager.html#a18a142d8ebce07b6f149fbe8fd8647df">addSceneNode</a> (<a class="el" href="classve_1_1_v_e_scene_node.html">VESceneNode</a> *entity)</td></tr>
+<tr class="memdesc:a18a142d8ebce07b6f149fbe8fd8647df"><td class="mdescLeft">&#160;</td><td class="mdescRight">Add a new scene node into the scene.  <a href="#a18a142d8ebce07b6f149fbe8fd8647df">More...</a><br /></td></tr>
 <tr class="separator:a18a142d8ebce07b6f149fbe8fd8647df"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a22dd9760111ca205cf97b2fdcfdbb6d7"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classve_1_1_v_e_scene_node.html">VESceneNode</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_scene_manager.html#a22dd9760111ca205cf97b2fdcfdbb6d7">getSceneNode</a> (std::string entityName)</td></tr>
 <tr class="memdesc:a22dd9760111ca205cf97b2fdcfdbb6d7"><td class="mdescLeft">&#160;</td><td class="mdescRight">Find an entity using its name.  <a href="#a22dd9760111ca205cf97b2fdcfdbb6d7">More...</a><br /></td></tr>
@@ -199,6 +204,10 @@ std::map&lt; std::string, <a class="el" href="classve_1_1_v_e_material.html">VEM
 std::map&lt; std::string, <a class="el" href="classve_1_1_v_e_scene_node.html">VESceneNode</a> * &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_scene_manager.html#aaeedb9ee5317fcf9dcdca724dcb86b2b">m_sceneNodes</a> = {}</td></tr>
 <tr class="memdesc:aaeedb9ee5317fcf9dcdca724dcb86b2b"><td class="mdescLeft">&#160;</td><td class="mdescRight">Storage of all scene nodes currently in the engine. <br /></td></tr>
 <tr class="separator:aaeedb9ee5317fcf9dcdca724dcb86b2b"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a2fee4d83dc3766d0e44fea509fc46e42"><td class="memItemLeft" align="right" valign="top"><a id="a2fee4d83dc3766d0e44fea509fc46e42"></a>
+<a class="el" href="classve_1_1_v_e_scene_node.html">VESceneNode</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_scene_manager.html#a2fee4d83dc3766d0e44fea509fc46e42">m_rootSceneNode</a></td></tr>
+<tr class="memdesc:a2fee4d83dc3766d0e44fea509fc46e42"><td class="mdescLeft">&#160;</td><td class="mdescRight">The root node of the scene graph. <br /></td></tr>
+<tr class="separator:a2fee4d83dc3766d0e44fea509fc46e42"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ae3fbd394a2d6ff4797ecff2921d6cbcb"><td class="memItemLeft" align="right" valign="top"><a id="ae3fbd394a2d6ff4797ecff2921d6cbcb"></a>
 <a class="el" href="classve_1_1_v_e_camera.html">VECamera</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_scene_manager.html#ae3fbd394a2d6ff4797ecff2921d6cbcb">m_camera</a> = nullptr</td></tr>
 <tr class="memdesc:ae3fbd394a2d6ff4797ecff2921d6cbcb"><td class="mdescLeft">&#160;</td><td class="mdescRight">entity ptr of the current camera <br /></td></tr>
@@ -212,6 +221,33 @@ std::vector&lt; <a class="el" href="classve_1_1_v_e_light.html">VELight</a> * &g
 <div class="textblock"><p>The scene Manager manages the objects that have been loaded and put into the world. </p>
 <p>The scene manager can load objects from file and place them into the world. It also maintains cameras and lights. </p>
 </div><h2 class="groupheader">Member Function Documentation</h2>
+<a id="a18a142d8ebce07b6f149fbe8fd8647df"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a18a142d8ebce07b6f149fbe8fd8647df">&#9670;&nbsp;</a></span>addSceneNode()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">void ve::VESceneManager::addSceneNode </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="classve_1_1_v_e_scene_node.html">VESceneNode</a> *&#160;</td>
+          <td class="paramname"><em>pNode</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Add a new scene node into the scene. </p>
+<p>If the parent is the nullptr then make the root scene node its parent</p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramdir">[in]</td><td class="paramname">pNode</td><td>Pointer to the new scene node </td></tr>
+  </table>
+  </dd>
+</dl>
+
+</div>
+</div>
 <a id="a219b7bccb70db3400ec513839c97e958"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a219b7bccb70db3400ec513839c97e958">&#9670;&nbsp;</a></span>copyAiNodes()</h2>
 
@@ -966,6 +1002,32 @@ std::vector&lt; <a class="el" href="classve_1_1_v_e_light.html">VELight</a> * &g
 
 </div>
 </div>
+<a id="a0f1d754eb2b772fdd7d1fc7bc8d94625"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a0f1d754eb2b772fdd7d1fc7bc8d94625">&#9670;&nbsp;</a></span>getRootSceneNode()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="classve_1_1_v_e_scene_node.html">VESceneNode</a>* ve::VESceneManager::getRootSceneNode </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+<dl class="section return"><dt>Returns</dt><dd>the root scene node </dd></dl>
+
+</div>
+</div>
 <a id="a22dd9760111ca205cf97b2fdcfdbb6d7"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a22dd9760111ca205cf97b2fdcfdbb6d7">&#9670;&nbsp;</a></span>getSceneNode()</h2>
 
@@ -1287,7 +1349,7 @@ std::vector&lt; <a class="el" href="classve_1_1_v_e_light.html">VELight</a> * &g
 </div><!-- contents -->
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>
-Generated on Mon Apr 29 2019 11:18:42 for Vienna Vulkan Engine by &#160;<a href="http://www.doxygen.org/index.html">
+Generated on Tue Apr 30 2019 21:39:33 for Vienna Vulkan Engine by &#160;<a href="http://www.doxygen.org/index.html">
 <img class="footer" src="doxygen.png" alt="doxygen"/>
 </a> 1.8.15
 </small></address>
