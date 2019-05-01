@@ -133,6 +133,8 @@ Public Member Functions</h2></td></tr>
 <tr class="separator:aad0a7f94d44bd39740344bd743fff2e7"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a2a64728e4b83a8d009eea63146530393"><td class="memItemLeft" align="right" valign="top">virtual <a class="el" href="classve_1_1_v_e_entity.html#a2c7f15fd3b11aac4dea3e76cfa508010">veEntityType</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_entity.html#a2a64728e4b83a8d009eea63146530393">getEntityType</a> ()</td></tr>
 <tr class="separator:a2a64728e4b83a8d009eea63146530393"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a457d74108e920591f3393509ea3ff2c9"><td class="memItemLeft" align="right" valign="top">virtual uint32_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_entity.html#a457d74108e920591f3393509ea3ff2c9">getSizeUBO</a> ()</td></tr>
+<tr class="separator:a457d74108e920591f3393509ea3ff2c9"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a769f4b7990f1c142aab61fb30bf8cdb2"><td class="memItemLeft" align="right" valign="top">virtual void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_entity.html#a769f4b7990f1c142aab61fb30bf8cdb2">updateUBO</a> (glm::mat4 worldMatrix, uint32_t imageIndex)</td></tr>
 <tr class="memdesc:a769f4b7990f1c142aab61fb30bf8cdb2"><td class="mdescLeft">&#160;</td><td class="mdescRight">Update the entity's UBO.  <a href="#a769f4b7990f1c142aab61fb30bf8cdb2">More...</a><br /></td></tr>
 <tr class="separator:a769f4b7990f1c142aab61fb30bf8cdb2"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -246,6 +248,10 @@ std::vector&lt; VkDescriptorSet &gt;&#160;</td><td class="memItemRight" valign="
 <tr class="memdesc:ae738386d5421069d8388c601a7ed38df"><td class="mdescLeft">&#160;</td><td class="mdescRight">Per subrenderer descriptor sets for other resources. <br /></td></tr>
 <tr class="separator:ae738386d5421069d8388c601a7ed38df"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="inherit_header pub_attribs_classve_1_1_v_e_scene_object"><td colspan="2" onclick="javascript:toggleInherit('pub_attribs_classve_1_1_v_e_scene_object')"><img src="closed.png" alt="-"/>&#160;Public Attributes inherited from <a class="el" href="classve_1_1_v_e_scene_object.html">ve::VESceneObject</a></td></tr>
+<tr class="memitem:adf005ceab03c6a29498bbc6a4263b2c1 inherit pub_attribs_classve_1_1_v_e_scene_object"><td class="memItemLeft" align="right" valign="top"><a id="adf005ceab03c6a29498bbc6a4263b2c1"></a>
+<a class="el" href="structvh_1_1vh_memory_handle.html">vh::vhMemoryHandle</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_scene_object.html#adf005ceab03c6a29498bbc6a4263b2c1">m_memoryHandle</a> = {}</td></tr>
+<tr class="memdesc:adf005ceab03c6a29498bbc6a4263b2c1 inherit pub_attribs_classve_1_1_v_e_scene_object"><td class="mdescLeft">&#160;</td><td class="mdescRight">Handle to the UBO memory. <br /></td></tr>
+<tr class="separator:adf005ceab03c6a29498bbc6a4263b2c1 inherit pub_attribs_classve_1_1_v_e_scene_object"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a441473d5ae5865099dc8be17fe9eabf1 inherit pub_attribs_classve_1_1_v_e_scene_object"><td class="memItemLeft" align="right" valign="top"><a id="a441473d5ae5865099dc8be17fe9eabf1"></a>
 std::vector&lt; VkBuffer &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_scene_object.html#a441473d5ae5865099dc8be17fe9eabf1">m_uniformBuffers</a></td></tr>
 <tr class="memdesc:a441473d5ae5865099dc8be17fe9eabf1 inherit pub_attribs_classve_1_1_v_e_scene_object"><td class="mdescLeft">&#160;</td><td class="mdescRight">One UBO for each framebuffer frame. <br /></td></tr>
@@ -526,6 +532,34 @@ Additional Inherited Members</h2></td></tr>
 
 </div>
 </div>
+<a id="a457d74108e920591f3393509ea3ff2c9"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a457d74108e920591f3393509ea3ff2c9">&#9670;&nbsp;</a></span>getSizeUBO()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">virtual uint32_t ve::VEEntity::getSizeUBO </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span><span class="mlabel">virtual</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+<dl class="section return"><dt>Returns</dt><dd>size of entity UBO </dd></dl>
+
+<p>Implements <a class="el" href="classve_1_1_v_e_scene_object.html#a8b82750126a55b9c3eff8334079cca12">ve::VESceneObject</a>.</p>
+
+</div>
+</div>
 <a id="a32e4adf007a6497ddcfb809e69424698"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a32e4adf007a6497ddcfb809e69424698">&#9670;&nbsp;</a></span>setParam()</h2>
 
@@ -607,7 +641,7 @@ Additional Inherited Members</h2></td></tr>
 </div><!-- contents -->
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>
-Generated on Tue Apr 30 2019 21:39:32 for Vienna Vulkan Engine by &#160;<a href="http://www.doxygen.org/index.html">
+Generated on Wed May 1 2019 15:05:33 for Vienna Vulkan Engine by &#160;<a href="http://www.doxygen.org/index.html">
 <img class="footer" src="doxygen.png" alt="doxygen"/>
 </a> 1.8.15
 </small></address>

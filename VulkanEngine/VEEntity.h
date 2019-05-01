@@ -118,6 +118,7 @@ namespace ve {
 		void updateUBO( void *pUBO, uint32_t sizeUBO, uint32_t imageIndex ); //Helper function to call VMA functions
 
 	public:
+		vh::vhMemoryHandle				m_memoryHandle = {};			///<Handle to the UBO memory 
 
 		std::vector<VkBuffer>			m_uniformBuffers;				///<One UBO for each framebuffer frame
 		std::vector<VmaAllocation>		m_uniformBuffersAllocation;		///<VMA information for the UBOs
@@ -125,6 +126,8 @@ namespace ve {
 
 		VESceneObject(std::string name, glm::mat4 transf = glm::mat4(1.0f), VESceneNode *parent = nullptr, uint32_t sizeUBO = 0);
 		virtual ~VESceneObject();
+		///\returns the size of the UBO that this object uses
+		virtual uint32_t getSizeUBO()=0;
 	};
 
 
@@ -196,6 +199,8 @@ namespace ve {
 		//-------------------------------------------------------------------------------------
 		//UBO
 
+		///\returns size of entity UBO
+		virtual uint32_t getSizeUBO() { return sizeof(veUBOPerObject_t);  };
 		virtual void updateUBO( glm::mat4 worldMatrix, uint32_t imageIndex );	//update the UBO of this node using its current world matrix
 		void		 setParam(glm::vec4 param);		//set the free parameter
 
@@ -269,6 +274,8 @@ namespace ve {
 		//-------------------------------------------------------------------------------------
 		//UBO
 
+		///\returns size of camera UBO
+		virtual uint32_t getSizeUBO() { return sizeof(veUBOPerCamera_t); };
 		virtual void updateUBO(glm::mat4 worldMatrix, uint32_t imageIndex);		//update the UBO of this node using its current world matrix
 
 		///\returns the projection matrix - pure virtual for the camera base class
@@ -441,7 +448,8 @@ namespace ve {
 		//-------------------------------------------------------------------------------------
 		//UBO
 
-		//void fillLightStructure( veLightData_t *pLight);
+		///\returns size of light UBO
+		virtual uint32_t getSizeUBO() { return sizeof(veUBOPerLight_t); };
 		virtual void updateUBO(glm::mat4 worldMatrix, uint32_t imageIndex);		//update the UBO of this node using its current world matrix
 	};
 

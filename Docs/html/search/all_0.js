@@ -6,5 +6,6 @@ var searchData=
   ['addevent',['addEvent',['../classve_1_1_v_e_engine.html#ae310327d505e2087eddf7cc93519b259',1,'ve::VEEngine']]],
   ['addscenenode',['addSceneNode',['../classve_1_1_v_e_scene_manager.html#a18a142d8ebce07b6f149fbe8fd8647df',1,'ve::VESceneManager']]],
   ['addsubrenderer',['addSubrenderer',['../classve_1_1_v_e_renderer.html#a270fb91a971028bae9f6a8714fd46cf1',1,'ve::VERenderer']]],
-  ['allocations',['allocations',['../structvh_1_1vh_memory_block.html#a04ee4e87dfd4cb1f49d2884ce5bf4022',1,'vh::vhMemoryBlock']]]
+  ['allocations',['allocations',['../structvh_1_1vh_memory_block.html#a04ee4e87dfd4cb1f49d2884ce5bf4022',1,'vh::vhMemoryBlock']]],
+  ['allocator',['allocator',['../structvh_1_1vh_memory_block.html#af2035af3fae60cf4ed4344d7e28e3469',1,'vh::vhMemoryBlock']]]
 ];

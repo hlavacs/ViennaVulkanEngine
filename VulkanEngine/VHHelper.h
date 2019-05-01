@@ -135,14 +135,19 @@ namespace vh {
 
 	///A block of N entries, which are UBOs that e.g. define world matrices etc.
 	struct vhMemoryBlock {
+		VmaAllocator					allocator;			///<VMA allocator
+		VkBufferUsageFlags				usage;				///<Vulkan usage flags
+		VmaMemoryUsage					vmaUsage;			///<VMA usage flags
+
 		std::vector<VkBuffer>			buffers;			///<One buffer for each framebuffer frame
 		std::vector<VmaAllocation>		allocations;		///<VMA information for the UBOs
 		std::vector<VkDescriptorSet>	descriptorSets;		///<Descriptor sets for UBO
+
 		int8_t *						pMemory;			///<pointer to the host memory containing a copy of the block
 		uint32_t						maxNumEntries;		///<maximum number of entries
 		uint32_t						sizeEntry;			///<length of one entry
-		std::vector<vhMemoryHandle*>	handles;			///<list of pointers to the entry handles
-		bool							dirty;				///<if dirty this block needs to be updated
+		std::vector<vhMemoryHandle*>	handles = {};		///<list of pointers to the entry handles
+		std::vector<bool>				dirty;				///<if dirty this block needs to be updated
 	};
 
 	///A handle into an entry of a memory block
@@ -151,6 +156,7 @@ namespace vh {
 		vhMemoryBlock *pMemBlock;		///<pointer to the memory block
 		uint32_t entryIndex;			///<index into the entry list of the block
 	};
+
 
 
 	//--------------------------------------------------------------------------------------------------------------------------------
@@ -308,6 +314,18 @@ namespace vh {
 	//memory
 	uint32_t vhMemFindMemoryType(VkPhysicalDevice physicalDevice, uint32_t typeFilter, VkMemoryPropertyFlags properties);
 	VkResult vhMemCreateVMAAllocator(VkPhysicalDevice physicalDevice, VkDevice device, VmaAllocator &allocator);
+	VkResult vhMemBlockListInit(VmaAllocator allocator, VkBufferUsageFlags usage, VmaMemoryUsage vmaUsage,
+								std::vector<vhMemoryBlock> &blocklist, uint32_t maxNumEntries, uint32_t sizeEntry, uint32_t numBuffers);
+	VkResult vhMemBlockInit(VmaAllocator allocator, VkBufferUsageFlags usage, VmaMemoryUsage vmaUsage,
+							vhMemoryBlock &block, uint32_t maxNumEntries, uint32_t sizeEntry, uint32_t numBuffers);
+	VkResult vhMemBlockListAdd(	std::vector<vhMemoryBlock> &blocklist, void* owner, vhMemoryHandle *handle);
+	VkResult vhMemBlockAdd( vhMemoryBlock &block, void* owner, vhMemoryHandle *handle);
+	VkResult vhMemBlockUpdateEntry(vhMemoryHandle *pHandle, void *data);
+	VkResult vhMemBlockUpdateMem( std::vector<vhMemoryBlock> &blocklist, uint32_t index);
+	VkResult vhMemBlockRemoveEntry(vhMemoryHandle *pHandle);
+	VkResult vhMemBlockListClear( std::vector<vhMemoryBlock> &blocklist);
+	VkResult vhMemBlockDeallocate(vhMemoryBlock &block);
+
 
 	//--------------------------------------------------------------------------------------------------------------------------------
 	//debug

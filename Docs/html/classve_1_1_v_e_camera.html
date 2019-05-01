@@ -132,6 +132,8 @@ Public Member Functions</h2></td></tr>
 virtual void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_camera.html#ac1d0d445e1c2229c4dfd828194992ea8">setExtent</a> (VkExtent2D extent)=0</td></tr>
 <tr class="memdesc:ac1d0d445e1c2229c4dfd828194992ea8"><td class="mdescLeft">&#160;</td><td class="mdescRight">Set the camera extent, this is a pure virtual function for the base class. <br /></td></tr>
 <tr class="separator:ac1d0d445e1c2229c4dfd828194992ea8"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a724d4706974f1e21fb7bb450531ef684"><td class="memItemLeft" align="right" valign="top">virtual uint32_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_camera.html#a724d4706974f1e21fb7bb450531ef684">getSizeUBO</a> ()</td></tr>
+<tr class="separator:a724d4706974f1e21fb7bb450531ef684"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a4c050ba558242cdb74897016fd684dfa"><td class="memItemLeft" align="right" valign="top">virtual void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_camera.html#a4c050ba558242cdb74897016fd684dfa">updateUBO</a> (glm::mat4 worldMatrix, uint32_t imageIndex)</td></tr>
 <tr class="memdesc:a4c050ba558242cdb74897016fd684dfa"><td class="mdescLeft">&#160;</td><td class="mdescRight">Update the UBO of this camera.  <a href="#a4c050ba558242cdb74897016fd684dfa">More...</a><br /></td></tr>
 <tr class="separator:a4c050ba558242cdb74897016fd684dfa"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -240,6 +242,10 @@ float&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="cla
 <tr class="memdesc:ad7b5636c6e9a9172379bf6ec064109ca"><td class="mdescLeft">&#160;</td><td class="mdescRight">If this is a shadow cam: fraction of frustum covered by this cam, end. <br /></td></tr>
 <tr class="separator:ad7b5636c6e9a9172379bf6ec064109ca"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="inherit_header pub_attribs_classve_1_1_v_e_scene_object"><td colspan="2" onclick="javascript:toggleInherit('pub_attribs_classve_1_1_v_e_scene_object')"><img src="closed.png" alt="-"/>&#160;Public Attributes inherited from <a class="el" href="classve_1_1_v_e_scene_object.html">ve::VESceneObject</a></td></tr>
+<tr class="memitem:adf005ceab03c6a29498bbc6a4263b2c1 inherit pub_attribs_classve_1_1_v_e_scene_object"><td class="memItemLeft" align="right" valign="top"><a id="adf005ceab03c6a29498bbc6a4263b2c1"></a>
+<a class="el" href="structvh_1_1vh_memory_handle.html">vh::vhMemoryHandle</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_scene_object.html#adf005ceab03c6a29498bbc6a4263b2c1">m_memoryHandle</a> = {}</td></tr>
+<tr class="memdesc:adf005ceab03c6a29498bbc6a4263b2c1 inherit pub_attribs_classve_1_1_v_e_scene_object"><td class="mdescLeft">&#160;</td><td class="mdescRight">Handle to the UBO memory. <br /></td></tr>
+<tr class="separator:adf005ceab03c6a29498bbc6a4263b2c1 inherit pub_attribs_classve_1_1_v_e_scene_object"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a441473d5ae5865099dc8be17fe9eabf1 inherit pub_attribs_classve_1_1_v_e_scene_object"><td class="memItemLeft" align="right" valign="top"><a id="a441473d5ae5865099dc8be17fe9eabf1"></a>
 std::vector&lt; VkBuffer &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_scene_object.html#a441473d5ae5865099dc8be17fe9eabf1">m_uniformBuffers</a></td></tr>
 <tr class="memdesc:a441473d5ae5865099dc8be17fe9eabf1 inherit pub_attribs_classve_1_1_v_e_scene_object"><td class="mdescLeft">&#160;</td><td class="mdescRight">One UBO for each framebuffer frame. <br /></td></tr>
@@ -639,6 +645,34 @@ std::string&#160;</td><td class="memItemRight" valign="bottom"><a class="el" hre
 
 </div>
 </div>
+<a id="a724d4706974f1e21fb7bb450531ef684"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a724d4706974f1e21fb7bb450531ef684">&#9670;&nbsp;</a></span>getSizeUBO()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">virtual uint32_t ve::VECamera::getSizeUBO </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span><span class="mlabel">virtual</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+<dl class="section return"><dt>Returns</dt><dd>size of camera UBO </dd></dl>
+
+<p>Implements <a class="el" href="classve_1_1_v_e_scene_object.html#a8b82750126a55b9c3eff8334079cca12">ve::VESceneObject</a>.</p>
+
+</div>
+</div>
 <a id="a4c050ba558242cdb74897016fd684dfa"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a4c050ba558242cdb74897016fd684dfa">&#9670;&nbsp;</a></span>updateUBO()</h2>
 
@@ -693,7 +727,7 @@ std::string&#160;</td><td class="memItemRight" valign="bottom"><a class="el" hre
 </div><!-- contents -->
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>
-Generated on Tue Apr 30 2019 21:39:32 for Vienna Vulkan Engine by &#160;<a href="http://www.doxygen.org/index.html">
+Generated on Wed May 1 2019 15:05:33 for Vienna Vulkan Engine by &#160;<a href="http://www.doxygen.org/index.html">
 <img class="footer" src="doxygen.png" alt="doxygen"/>
 </a> 1.8.15
 </small></address>

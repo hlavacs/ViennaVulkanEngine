@@ -51,28 +51,30 @@ namespace ve {
 		};
 
 	protected:
-		VkDescriptorSetLayout	m_descriptorSetLayoutResources = VK_NULL_HANDLE;	///<Descriptor set 3 : per object additional resources
-		VkPipelineLayout		m_pipelineLayout = VK_NULL_HANDLE;					///<Pipeline layout
-		std::vector<VkPipeline>	m_pipelines;										///<Pipeline for light pass(es)
+		VkDescriptorSetLayout			m_descriptorSetLayoutResources = VK_NULL_HANDLE;	///<Descriptor set 3 : per object additional resources
+		VkPipelineLayout				m_pipelineLayout = VK_NULL_HANDLE;					///<Pipeline layout
+		std::vector<VkPipeline>			m_pipelines;										///<Pipeline for light pass(es)
 
-		std::vector<VEEntity *> m_entities;											///<List of associated entities
+		std::vector<vh::vhMemoryBlock>	m_memoryBlocks;										///<memory for the UBOs of the entities
+		std::vector<VEEntity *>			m_entities;											///<List of associated entities
 
 	public:
 		///Constructor of subrender class
 		VESubrender() {};
 		///Destructor of subrender class
 		virtual ~VESubrender() {};
-
 		///\returns the class of the subrenderer
 		virtual veSubrenderClass getClass() = 0;
 		///\returns the type of the subrenderer
 		virtual veSubrenderType getType() = 0;
 
+		//------------------------------------------------------------------------------------------------------------------
 		///Create descriptor set layout, pipeline layout and PSO
 		virtual void	initSubrenderer() {};
 		virtual void	closeSubrenderer();
 		virtual void	recreateResources();
 
+		//------------------------------------------------------------------------------------------------------------------
 		virtual void	bindPipeline(VkCommandBuffer commandBuffer);
 		virtual void	bindDescriptorSetsPerFrame(	VkCommandBuffer commandBuffer, uint32_t imageIndex,
 													VECamera *pCamera, VELight *pLight,
@@ -82,13 +84,14 @@ namespace ve {
 		///Set the dynamic state of the pipeline - does nothing for the base class
 		virtual void	setDynamicPipelineState(VkCommandBuffer commandBuffer, uint32_t numPass) {};
 
+		//------------------------------------------------------------------------------------------------------------------
+		///Prepare to perform draw operation, e.g. for an overlay
+		virtual void prepareDraw() {};
+
 		//Draw all entities that are managed by this subrenderer
 		virtual void	draw(	VkCommandBuffer commandBuffer, uint32_t imageIndex, uint32_t numPass,
 								VECamera *pCamera, VELight *pLight,
 								std::vector<VkDescriptorSet> descriptorSetsShadow);
-
-		///Prepare to perform draw operation
-		virtual void prepareDraw() {};
 
 		///Perform an arbitrary draw operation
 		///\returns a semaphore signalling when this draw operations has finished
@@ -96,6 +99,7 @@ namespace ve {
 
 		virtual void	drawEntity(VkCommandBuffer commandBuffer, uint32_t imageIndex, VEEntity *entity);
 		
+		//------------------------------------------------------------------------------------------------------------------
 		virtual void	addEntity( VEEntity *pEntity );
 		virtual void	removeEntity(VEEntity *pEntity);
 		///\returns the number of entities that this sub renderer manages

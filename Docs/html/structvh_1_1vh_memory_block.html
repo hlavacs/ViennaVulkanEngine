@@ -80,6 +80,18 @@ $(function() {
 <table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-attribs"></a>
 Public Attributes</h2></td></tr>
+<tr class="memitem:af2035af3fae60cf4ed4344d7e28e3469"><td class="memItemLeft" align="right" valign="top"><a id="af2035af3fae60cf4ed4344d7e28e3469"></a>
+VmaAllocator&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structvh_1_1vh_memory_block.html#af2035af3fae60cf4ed4344d7e28e3469">allocator</a></td></tr>
+<tr class="memdesc:af2035af3fae60cf4ed4344d7e28e3469"><td class="mdescLeft">&#160;</td><td class="mdescRight">VMA allocator. <br /></td></tr>
+<tr class="separator:af2035af3fae60cf4ed4344d7e28e3469"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aac5e54ecb766b63bc525a3cc995fced5"><td class="memItemLeft" align="right" valign="top"><a id="aac5e54ecb766b63bc525a3cc995fced5"></a>
+VkBufferUsageFlags&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structvh_1_1vh_memory_block.html#aac5e54ecb766b63bc525a3cc995fced5">usage</a></td></tr>
+<tr class="memdesc:aac5e54ecb766b63bc525a3cc995fced5"><td class="mdescLeft">&#160;</td><td class="mdescRight">Vulkan usage flags. <br /></td></tr>
+<tr class="separator:aac5e54ecb766b63bc525a3cc995fced5"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a4935004ee54c00c02831550a84df9f8a"><td class="memItemLeft" align="right" valign="top"><a id="a4935004ee54c00c02831550a84df9f8a"></a>
+VmaMemoryUsage&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structvh_1_1vh_memory_block.html#a4935004ee54c00c02831550a84df9f8a">vmaUsage</a></td></tr>
+<tr class="memdesc:a4935004ee54c00c02831550a84df9f8a"><td class="mdescLeft">&#160;</td><td class="mdescRight">VMA usage flags. <br /></td></tr>
+<tr class="separator:a4935004ee54c00c02831550a84df9f8a"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a6ee0651e97d91c53f63ffcb315c832b8"><td class="memItemLeft" align="right" valign="top"><a id="a6ee0651e97d91c53f63ffcb315c832b8"></a>
 std::vector&lt; VkBuffer &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structvh_1_1vh_memory_block.html#a6ee0651e97d91c53f63ffcb315c832b8">buffers</a></td></tr>
 <tr class="memdesc:a6ee0651e97d91c53f63ffcb315c832b8"><td class="mdescLeft">&#160;</td><td class="mdescRight">One buffer for each framebuffer frame. <br /></td></tr>
@@ -105,13 +117,13 @@ uint32_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="
 <tr class="memdesc:adaf7853613a33899538d05d02cf4eb62"><td class="mdescLeft">&#160;</td><td class="mdescRight">length of one entry <br /></td></tr>
 <tr class="separator:adaf7853613a33899538d05d02cf4eb62"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a2ef37949c78cb62cc2968b2f10927bb9"><td class="memItemLeft" align="right" valign="top"><a id="a2ef37949c78cb62cc2968b2f10927bb9"></a>
-std::vector&lt; <a class="el" href="structvh_1_1vh_memory_handle.html">vhMemoryHandle</a> * &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structvh_1_1vh_memory_block.html#a2ef37949c78cb62cc2968b2f10927bb9">handles</a></td></tr>
+std::vector&lt; <a class="el" href="structvh_1_1vh_memory_handle.html">vhMemoryHandle</a> * &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structvh_1_1vh_memory_block.html#a2ef37949c78cb62cc2968b2f10927bb9">handles</a> = {}</td></tr>
 <tr class="memdesc:a2ef37949c78cb62cc2968b2f10927bb9"><td class="mdescLeft">&#160;</td><td class="mdescRight">list of pointers to the entry handles <br /></td></tr>
 <tr class="separator:a2ef37949c78cb62cc2968b2f10927bb9"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a0ee8cba14b8ed3045433580a53a62a97"><td class="memItemLeft" align="right" valign="top"><a id="a0ee8cba14b8ed3045433580a53a62a97"></a>
-bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structvh_1_1vh_memory_block.html#a0ee8cba14b8ed3045433580a53a62a97">dirty</a></td></tr>
-<tr class="memdesc:a0ee8cba14b8ed3045433580a53a62a97"><td class="mdescLeft">&#160;</td><td class="mdescRight">if dirty this block needs to be updated <br /></td></tr>
-<tr class="separator:a0ee8cba14b8ed3045433580a53a62a97"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a814202cf5d2f2605569bb9e156198d45"><td class="memItemLeft" align="right" valign="top"><a id="a814202cf5d2f2605569bb9e156198d45"></a>
+std::vector&lt; bool &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structvh_1_1vh_memory_block.html#a814202cf5d2f2605569bb9e156198d45">dirty</a></td></tr>
+<tr class="memdesc:a814202cf5d2f2605569bb9e156198d45"><td class="mdescLeft">&#160;</td><td class="mdescRight">if dirty this block needs to be updated <br /></td></tr>
+<tr class="separator:a814202cf5d2f2605569bb9e156198d45"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <div class="textblock"><p>A block of N entries, which are UBOs that e.g. define world matrices etc. </p>
@@ -121,7 +133,7 @@ bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="stru
 </div><!-- contents -->
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>
-Generated on Tue Apr 30 2019 21:39:33 for Vienna Vulkan Engine by &#160;<a href="http://www.doxygen.org/index.html">
+Generated on Wed May 1 2019 15:05:34 for Vienna Vulkan Engine by &#160;<a href="http://www.doxygen.org/index.html">
 <img class="footer" src="doxygen.png" alt="doxygen"/>
 </a> 1.8.15
 </small></address>

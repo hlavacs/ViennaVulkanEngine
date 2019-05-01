@@ -111,7 +111,7 @@ virtual void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" hr
 <tr class="separator:a3e9cc7bc074401b743b9f734a9dc8fea"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a0d3197b190595e6a323323a4b0384f65"><td class="memItemLeft" align="right" valign="top"><a id="a0d3197b190595e6a323323a4b0384f65"></a>
 virtual void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_subrender_f_w___nuklear.html#a0d3197b190595e6a323323a4b0384f65">prepareDraw</a> ()</td></tr>
-<tr class="memdesc:a0d3197b190595e6a323323a4b0384f65"><td class="mdescLeft">&#160;</td><td class="mdescRight">Prepare to perform draw operation. <br /></td></tr>
+<tr class="memdesc:a0d3197b190595e6a323323a4b0384f65"><td class="mdescLeft">&#160;</td><td class="mdescRight">Prepare to perform draw operation, e.g. for an overlay. <br /></td></tr>
 <tr class="separator:a0d3197b190595e6a323323a4b0384f65"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a2db738ce36d2447185d66605660ba98e"><td class="memItemLeft" align="right" valign="top">virtual void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_subrender_f_w___nuklear.html#a2db738ce36d2447185d66605660ba98e">draw</a> (VkCommandBuffer commandBuffer, uint32_t imageIndex, uint32_t numPass, <a class="el" href="classve_1_1_v_e_camera.html">VECamera</a> *pCamera, <a class="el" href="classve_1_1_v_e_light.html">VELight</a> *pLight, std::vector&lt; VkDescriptorSet &gt; descriptorSetsShadow)</td></tr>
 <tr class="memdesc:a2db738ce36d2447185d66605660ba98e"><td class="mdescLeft">&#160;</td><td class="mdescRight">Draw all associated entities.  <a href="#a2db738ce36d2447185d66605660ba98e">More...</a><br /></td></tr>
@@ -181,6 +181,10 @@ VkPipelineLayout&#160;</td><td class="memItemRight" valign="bottom"><a class="el
 std::vector&lt; VkPipeline &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_subrender.html#ad0860ce587e02d6a300b832f111b04b1">m_pipelines</a></td></tr>
 <tr class="memdesc:ad0860ce587e02d6a300b832f111b04b1 inherit pro_attribs_classve_1_1_v_e_subrender"><td class="mdescLeft">&#160;</td><td class="mdescRight">Pipeline for light pass(es) <br /></td></tr>
 <tr class="separator:ad0860ce587e02d6a300b832f111b04b1 inherit pro_attribs_classve_1_1_v_e_subrender"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a48053bf1c3a3e4a6ab7ddba408643afd inherit pro_attribs_classve_1_1_v_e_subrender"><td class="memItemLeft" align="right" valign="top"><a id="a48053bf1c3a3e4a6ab7ddba408643afd"></a>
+std::vector&lt; <a class="el" href="structvh_1_1vh_memory_block.html">vh::vhMemoryBlock</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_subrender.html#a48053bf1c3a3e4a6ab7ddba408643afd">m_memoryBlocks</a></td></tr>
+<tr class="memdesc:a48053bf1c3a3e4a6ab7ddba408643afd inherit pro_attribs_classve_1_1_v_e_subrender"><td class="mdescLeft">&#160;</td><td class="mdescRight">memory for the UBOs of the entities <br /></td></tr>
+<tr class="separator:a48053bf1c3a3e4a6ab7ddba408643afd inherit pro_attribs_classve_1_1_v_e_subrender"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a846137a205fb8521f96110f8f959ff36 inherit pro_attribs_classve_1_1_v_e_subrender"><td class="memItemLeft" align="right" valign="top"><a id="a846137a205fb8521f96110f8f959ff36"></a>
 std::vector&lt; <a class="el" href="classve_1_1_v_e_entity.html">VEEntity</a> * &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_subrender.html#a846137a205fb8521f96110f8f959ff36">m_entities</a></td></tr>
 <tr class="memdesc:a846137a205fb8521f96110f8f959ff36 inherit pro_attribs_classve_1_1_v_e_subrender"><td class="mdescLeft">&#160;</td><td class="mdescRight">List of associated entities. <br /></td></tr>
@@ -451,7 +455,7 @@ Additional Inherited Members</h2></td></tr>
 </div><!-- contents -->
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>
-Generated on Tue Apr 30 2019 21:39:33 for Vienna Vulkan Engine by &#160;<a href="http://www.doxygen.org/index.html">
+Generated on Wed May 1 2019 15:05:34 for Vienna Vulkan Engine by &#160;<a href="http://www.doxygen.org/index.html">
 <img class="footer" src="doxygen.png" alt="doxygen"/>
 </a> 1.8.15
 </small></address>

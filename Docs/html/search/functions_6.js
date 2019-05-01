@@ -45,6 +45,7 @@ var searchData=
   ['getscenenode',['getSceneNode',['../classve_1_1_v_e_scene_manager.html#a22dd9760111ca205cf97b2fdcfdbb6d7',1,'ve::VESceneManager']]],
   ['getshadowmap',['getShadowMap',['../classve_1_1_v_e_renderer_forward.html#a394266568e9447bfb7b9594a4875440c',1,'ve::VERendererForward']]],
   ['getshadowmapextent',['getShadowMapExtent',['../classve_1_1_v_e_renderer_forward.html#a5df79bd0d940dc4eba65c1912554ec05',1,'ve::VERendererForward']]],
+  ['getsizeubo',['getSizeUBO',['../classve_1_1_v_e_scene_object.html#a8b82750126a55b9c3eff8334079cca12',1,'ve::VESceneObject::getSizeUBO()'],['../classve_1_1_v_e_entity.html#a457d74108e920591f3393509ea3ff2c9',1,'ve::VEEntity::getSizeUBO()'],['../classve_1_1_v_e_camera.html#a724d4706974f1e21fb7bb450531ef684',1,'ve::VECamera::getSizeUBO()'],['../classve_1_1_v_e_light.html#a2e01fc40467f365c3b4f463bf980d4b2',1,'ve::VELight::getSizeUBO()']]],
   ['getsubrenderer',['getSubrenderer',['../classve_1_1_v_e_renderer.html#a2a2543ee8f33708aeb66043f9b80249c',1,'ve::VERenderer']]],
   ['getsurface',['getSurface',['../classve_1_1_v_e_renderer.html#a2cb591918d5d35f7eebcee767511bcc1',1,'ve::VERenderer']]],
   ['getswapchainextent',['getSwapChainExtent',['../classve_1_1_v_e_renderer.html#a181f84c7fd48e58d63316a947821a1de',1,'ve::VERenderer']]],
