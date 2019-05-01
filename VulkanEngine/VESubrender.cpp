@@ -12,6 +12,12 @@
 
 namespace ve {
 	
+	/**
+	* \brief Initialize the subrenderer
+	*/
+	void VESubrender::initSubrenderer() {
+	};
+
 
 	/**
 	* \brief If the window size changes then some resources have to be recreated to fit the new size.

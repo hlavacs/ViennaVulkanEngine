@@ -222,6 +222,7 @@ namespace vh {
 		poolInfo.poolSizeCount = static_cast<uint32_t>(poolSizes.size());
 		poolInfo.pPoolSizes = poolSizes.data();
 		poolInfo.maxSets = numberDesc[0];
+		poolInfo.flags = VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT;
 
 		return vkCreateDescriptorPool(device, &poolInfo, nullptr, descriptorPool);
 	}

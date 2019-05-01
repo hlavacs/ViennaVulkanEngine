@@ -126,14 +126,14 @@ var searchData=
   ['vhfileread',['vhFileRead',['../namespacevh.html#a3e1916a9160bee6b83f7f9effd3cdd34',1,'vh']]],
   ['vhmemblockadd',['vhMemBlockAdd',['../namespacevh.html#a613de36be64a951bc63a70d4031dacf8',1,'vh']]],
   ['vhmemblockdeallocate',['vhMemBlockDeallocate',['../namespacevh.html#a87a3faa32d5115b8cdcb1fb1a0312c8d',1,'vh']]],
-  ['vhmemblockinit',['vhMemBlockInit',['../namespacevh.html#a43d5d24b4edbd13582a2aff0f2964030',1,'vh']]],
+  ['vhmemblockinit',['vhMemBlockInit',['../namespacevh.html#aabe028f1e1a414a674d063f0508bb3ba',1,'vh']]],
   ['vhmemblocklistadd',['vhMemBlockListAdd',['../namespacevh.html#a6d905ad06a7cfc72f4ad55912c876001',1,'vh']]],
   ['vhmemblocklistclear',['vhMemBlockListClear',['../namespacevh.html#a391b108308b2c8f937b8e43080eb248d',1,'vh']]],
-  ['vhmemblocklistinit',['vhMemBlockListInit',['../namespacevh.html#a9e40364bc474f5657aebc20214fa7319',1,'vh']]],
+  ['vhmemblocklistinit',['vhMemBlockListInit',['../namespacevh.html#a8426978313af5ab351b8d4eecf607afa',1,'vh']]],
   ['vhmemblockmoveentry',['vhMemBlockMoveEntry',['../namespacevh.html#a20e4770b4a315151f30950571a5bfd01',1,'vh']]],
   ['vhmemblockremoveentry',['vhMemBlockRemoveEntry',['../namespacevh.html#a5eabede71703c653a56339072b352162',1,'vh']]],
+  ['vhmemblockupdateblocklist',['vhMemBlockUpdateBlockList',['../namespacevh.html#a7c1102adc2dfd2aaa0426488613055d0',1,'vh']]],
   ['vhmemblockupdateentry',['vhMemBlockUpdateEntry',['../namespacevh.html#a05a86b5a941fb7fe31e3b10e9777461c',1,'vh']]],
-  ['vhmemblockupdatemem',['vhMemBlockUpdateMem',['../namespacevh.html#a7647c2bce88ea7a4262a49d4654fc503',1,'vh']]],
   ['vhmemcreatevmaallocator',['vhMemCreateVMAAllocator',['../namespacevh.html#a7973d81d63d37347572c19477529dd7f',1,'vh']]],
   ['vhmemfindmemorytype',['vhMemFindMemoryType',['../namespacevh.html#a5f76d8d8eeb5c06b7f55273a79d9830d',1,'vh']]],
   ['vhmemoryblock',['vhMemoryBlock',['../structvh_1_1vh_memory_block.html',1,'vh']]],
@@ -155,6 +155,5 @@ var searchData=
   ['vhtimeduration',['vhTimeDuration',['../namespacevh.html#a19eaffd746fc8a31941d4559ca0894c0',1,'vh']]],
   ['vhtimenow',['vhTimeNow',['../namespacevh.html#a4fad56183a7e4ab61241a8873a247ea1',1,'vh']]],
   ['vhvertex',['vhVertex',['../structvh_1_1vh_vertex.html',1,'vh']]],
-  ['view',['view',['../structve_1_1_v_e_camera_1_1ve_u_b_o_per_camera__t.html#a909b4cc7e504fdcb7064a671d29dce84',1,'ve::VECamera::veUBOPerCamera_t']]],
-  ['vmausage',['vmaUsage',['../structvh_1_1vh_memory_block.html#a4935004ee54c00c02831550a84df9f8a',1,'vh::vhMemoryBlock']]]
+  ['view',['view',['../structve_1_1_v_e_camera_1_1ve_u_b_o_per_camera__t.html#a909b4cc7e504fdcb7064a671d29dce84',1,'ve::VECamera::veUBOPerCamera_t']]]
 ];

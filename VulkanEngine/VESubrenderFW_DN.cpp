@@ -21,6 +21,11 @@ namespace ve {
 
 		VESubrender::initSubrenderer();
 
+		vh::vhMemBlockListInit(getRendererForwardPointer()->getDevice(), getRendererForwardPointer()->getDescriptorPool(),
+			getRendererForwardPointer()->getDescriptorSetLayoutPerObject(), getRendererForwardPointer()->getVmaAllocator(),
+			5, sizeof(VEEntity::veUBOPerObject_t),
+			getRendererForwardPointer()->getSwapChainNumber(), m_memoryBlocks);
+
 		vh::vhRenderCreateDescriptorSetLayout(getRendererForwardPointer()->getDevice(),
 			{ 1,											1 },
 			{ VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,	VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER },

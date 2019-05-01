@@ -69,8 +69,7 @@ namespace ve {
 		virtual veSubrenderType getType() = 0;
 
 		//------------------------------------------------------------------------------------------------------------------
-		///Create descriptor set layout, pipeline layout and PSO
-		virtual void	initSubrenderer() {};
+		virtual void	initSubrenderer();
 		virtual void	closeSubrenderer();
 		virtual void	recreateResources();
 
