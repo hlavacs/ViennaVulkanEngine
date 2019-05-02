@@ -70,7 +70,7 @@ namespace ve {
 		addSceneNode(light2);
 		camera->addChild(light2);
 		light2->multiplyTransform(glm::translate(glm::vec3(5.0f, 0.0f, 0.0f)));
-		//switchOnLight(light2);
+		switchOnLight(light2);
 
 		VELight *light3 = new VEPointLight("StandardPointLight");
 		light3->m_col_ambient = glm::vec4(0.0f, 0.0f, 0.0f, 1.0f);

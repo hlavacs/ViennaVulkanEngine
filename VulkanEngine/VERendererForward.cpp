@@ -442,7 +442,7 @@ namespace ve {
 			getEnginePointer()->fatalError("Failed to acquire swap chain image!");
 		}
 
-		if (m_commandBuffers[imageIndex] == VK_NULL_HANDLE ) {
+		if (m_commandBuffers[imageIndex] == VK_NULL_HANDLE ) {	//TODO record also if scene has changed
 			recordCmdBuffers();
 		}
 
