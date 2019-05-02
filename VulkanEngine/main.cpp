@@ -94,13 +94,16 @@ namespace ve {
 		void createCubes(uint32_t n) {
 
 			for (uint32_t i = 0; i < n; i++) {
-				float stride = 50.0f;
+				float stride = 150.0f;
 				static std::default_random_engine e{12345};
 				static std::uniform_real_distribution<> d{ 1.0f, stride }; 
 
 				VESceneNode *e2 = m_pSceneManager->loadModel("The Cube" + std::to_string(i), "models/test/crate0", "cube.obj");
 				e2->setTransform(glm::translate(glm::mat4(1.0f), glm::vec3( d(e) - stride/2.0f, d(e)/2.0f, d(e) - stride/2.0f)));
 				//e2->multiplyTransform(glm::scale(glm::mat4(1.0f), glm::vec3(10.0f, 10.0f, 10.0f)));
+
+				registerEventListener(new RotatorListener("LightListener" + std::to_string(i), e2, 0.1f, glm::vec3(0.0f, 1.0f, 0.0f ) ));
+
 			}
 
 		}

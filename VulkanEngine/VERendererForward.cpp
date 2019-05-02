@@ -102,6 +102,10 @@ namespace ve {
 					extent, pShadowMap->m_format,
 					&pShadowMap->m_image, &pShadowMap->m_deviceAllocation, &pShadowMap->m_imageView);
 
+				vh::vhBufTransitionImageLayout(m_device, m_graphicsQueue, m_commandPool,
+					pShadowMap->m_image, pShadowMap->m_format, VK_IMAGE_ASPECT_DEPTH_BIT, 1, 1,
+					VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+
 				vh::vhBufCreateTextureSampler(getRendererPointer()->getDevice(), &pShadowMap->m_sampler);
 
 				m_shadowMaps[i].push_back(pShadowMap);
@@ -121,7 +125,7 @@ namespace ve {
 		uint32_t maxobjects = 10000;
 		vh::vhRenderCreateDescriptorPool(m_device,
 										{ VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER , VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER },
-										{ maxobjects, maxobjects },
+										{ 3*maxobjects, 3*maxobjects },
 										&m_descriptorPool);
 
 		//set 0...cam UBO

@@ -127,6 +127,7 @@ namespace vh {
 														{ sizeEntry*maxNumEntries },		//UBO sizes
 														{ {VK_NULL_HANDLE} }, { {VK_NULL_HANDLE} }));
 		}
+		return VK_SUCCESS;
 	}
 
 
@@ -210,6 +211,7 @@ namespace vh {
 		handle->pMemBlock = &block;											//pointer to last mem block
 		block.handles.push_back(handle);									//add pointer to the handle to the handle list
 		handle->entryIndex = (uint32_t)(block.handles.size() - 1);			//index of last entry in block
+		return VK_SUCCESS;
 	}
 
 

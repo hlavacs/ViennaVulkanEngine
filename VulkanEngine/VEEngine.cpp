@@ -137,7 +137,7 @@ namespace ve {
 	std::vector<const char*> VEEngine::getValidationLayers() {
 		std::vector<const char*> validationLayers = {};
 		if (m_debug) {
-			validationLayers.push_back("VK_LAYER_LUNARG_standard_validation");
+			validationLayers.push_back("VK_LAYER_KHRONOS_validation");
 		}
 		return validationLayers;
 	}

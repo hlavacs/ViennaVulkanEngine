@@ -1,4 +1,9 @@
 
+/*
+* Given a frag coordinate in homogeneous space of the camera,
+* find the index of the shadow camera from a directional light
+* that the frag belongs to (0-3)
+*/
 int shadowIdxDirectional( vec4 camParam, vec4 fragCoord, float z1, float z2, float z3 ) {
   int sIdx = 0;
   float z = ( fragCoord.z / fragCoord.w ) / ( camParam[1] - camParam[0] );
@@ -21,7 +26,11 @@ int shadowIdxSpot( vec4 fragPosW, mat4 shadowCamView, mat4 shadowCamProj, float 
   return 0;
 }
 
-
+/*
+* Given a frag coordinate in world space,
+* find the index of the shadow camera from a point light
+* that the frag belongs to (0-3)
+*/
 int shadowIdxPoint( vec3 lightPosW, vec3 fragPosW) {
   vec3 L = normalize( fragPosW - lightPosW );
   int idx = 0;
