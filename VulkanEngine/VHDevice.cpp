@@ -262,12 +262,13 @@ namespace vh {
 	* \param[in] surface A window surface
 	* \param[in] requiredDeviceExtensions A list of required device extensions
 	* \param[out] physicalDevice A physical device that supports all required extensions
+	* \param[out] limits The physical limits of the physical device
 	* \returns VK_SUCCESS or a Vulkan error code
 	*
 	*/
 	VkResult vhDevPickPhysicalDevice(VkInstance instance, VkSurfaceKHR surface,
 								std::vector<const char*> requiredDeviceExtensions,
-								VkPhysicalDevice *physicalDevice) {
+								VkPhysicalDevice *physicalDevice, VkPhysicalDeviceLimits *limits) {
 
 		uint32_t deviceCount = 0;
 		VHCHECKRESULT( vkEnumeratePhysicalDevices(instance, &deviceCount, nullptr) );
@@ -289,6 +290,11 @@ namespace vh {
 		if (physicalDevice == VK_NULL_HANDLE) {
 			return VK_INCOMPLETE;
 		}
+
+		VkPhysicalDeviceProperties properties;
+		vkGetPhysicalDeviceProperties( *physicalDevice, &properties);
+		*limits = properties.limits;
+
 		return VK_SUCCESS;
 	}
 

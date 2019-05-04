@@ -183,7 +183,8 @@ namespace vh {
 	VkResult vhDevCreateInstance(std::vector<const char*> &extensions, std::vector<const char*> &validationLayers, VkInstance *instance);
 
 	//physical device
-	VkResult vhDevPickPhysicalDevice(VkInstance instance, VkSurfaceKHR surface, std::vector<const char*> requiredExtensions, VkPhysicalDevice *physicalDevice);
+	VkResult vhDevPickPhysicalDevice(	VkInstance instance, VkSurfaceKHR surface, std::vector<const char*> requiredExtensions, 
+										VkPhysicalDevice *physicalDevice, VkPhysicalDeviceLimits *limits );
 	QueueFamilyIndices vhDevFindQueueFamilies(VkPhysicalDevice device, VkSurfaceKHR surface);
 	VkFormat vhDevFindSupportedFormat(VkPhysicalDevice physicalDevice, const std::vector<VkFormat>& candidates, VkImageTiling tiling, VkFormatFeatureFlags features);
 	VkFormat vhDevFindDepthFormat(VkPhysicalDevice physicalDevice);
@@ -302,8 +303,9 @@ namespace vh {
 
 	VkResult vhCmdCreateCommandBuffers(	VkDevice device, VkCommandPool commandPool,
 										VkCommandBufferLevel level, uint32_t count, VkCommandBuffer *pBuffers);
-	VkResult vhCmdBeginCommandBuffer(	VkDevice device, VkCommandBuffer commandBuffer,
-										VkCommandBufferUsageFlagBits usageFlags);
+	VkResult vhCmdBeginCommandBuffer(	VkDevice device, VkCommandBuffer commandBuffer, VkCommandBufferUsageFlagBits usageFlags);
+	VkResult vhCmdBeginCommandBuffer(	VkDevice device, VkRenderPass renderPass, uint32_t subpass, VkFramebuffer framebuffer, 
+										VkCommandBuffer commandBuffer, VkCommandBufferUsageFlagBits usageFlags);
 	VkResult vhCmdSubmitCommandBuffer(	VkDevice device, VkQueue graphicsQueue, VkCommandBuffer commandBuffer,
 										VkSemaphore waitSemaphore, VkSemaphore signalSemaphore, VkFence waitFence);
 	VkCommandBuffer vhCmdBeginSingleTimeCommands(VkDevice device, VkCommandPool commandPool);

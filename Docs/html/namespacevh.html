@@ -157,6 +157,9 @@ Functions</h2></td></tr>
 <tr class="memitem:afce4235cfc97c6ecc8ba9340ca99a3f9"><td class="memItemLeft" align="right" valign="top">VkResult&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacevh.html#afce4235cfc97c6ecc8ba9340ca99a3f9">vhCmdCreateCommandBuffers</a> (VkDevice device, VkCommandPool commandPool, VkCommandBufferLevel level, uint32_t count, VkCommandBuffer *pBuffers)</td></tr>
 <tr class="memdesc:afce4235cfc97c6ecc8ba9340ca99a3f9"><td class="mdescLeft">&#160;</td><td class="mdescRight">Create a number of command buffers.  <a href="#afce4235cfc97c6ecc8ba9340ca99a3f9">More...</a><br /></td></tr>
 <tr class="separator:afce4235cfc97c6ecc8ba9340ca99a3f9"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a2562093b3408ae1d0849c59fff75440a"><td class="memItemLeft" align="right" valign="top">VkResult&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacevh.html#a2562093b3408ae1d0849c59fff75440a">vhCmdBeginCommandBuffer</a> (VkDevice device, VkRenderPass renderPass, uint32_t subpass, VkFramebuffer frameBuffer, VkCommandBuffer commandBuffer, VkCommandBufferUsageFlagBits usageFlags)</td></tr>
+<tr class="memdesc:a2562093b3408ae1d0849c59fff75440a"><td class="mdescLeft">&#160;</td><td class="mdescRight">Start a command buffer for recording commands.  <a href="#a2562093b3408ae1d0849c59fff75440a">More...</a><br /></td></tr>
+<tr class="separator:a2562093b3408ae1d0849c59fff75440a"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a9791b75aecc6358fa0be4612d8a83b95"><td class="memItemLeft" align="right" valign="top">VkResult&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacevh.html#a9791b75aecc6358fa0be4612d8a83b95">vhCmdBeginCommandBuffer</a> (VkDevice device, VkCommandBuffer commandBuffer, VkCommandBufferUsageFlagBits usageFlags)</td></tr>
 <tr class="memdesc:a9791b75aecc6358fa0be4612d8a83b95"><td class="mdescLeft">&#160;</td><td class="mdescRight">Start a command buffer for recording commands.  <a href="#a9791b75aecc6358fa0be4612d8a83b95">More...</a><br /></td></tr>
 <tr class="separator:a9791b75aecc6358fa0be4612d8a83b95"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -215,9 +218,9 @@ void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="name
 <tr class="memitem:a57c20b5524c517208b8984d3734f2aea"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacevh.html#a57c20b5524c517208b8984d3734f2aea">isDeviceSuitable</a> (VkPhysicalDevice device, VkSurfaceKHR surface, std::vector&lt; const char * &gt; requiredDeviceExtensions)</td></tr>
 <tr class="memdesc:a57c20b5524c517208b8984d3734f2aea"><td class="mdescLeft">&#160;</td><td class="mdescRight">Query whether a physical offers all required extensions.  <a href="#a57c20b5524c517208b8984d3734f2aea">More...</a><br /></td></tr>
 <tr class="separator:a57c20b5524c517208b8984d3734f2aea"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a59002ca8897465b479e5f46b1840171a"><td class="memItemLeft" align="right" valign="top">VkResult&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacevh.html#a59002ca8897465b479e5f46b1840171a">vhDevPickPhysicalDevice</a> (VkInstance instance, VkSurfaceKHR surface, std::vector&lt; const char * &gt; requiredDeviceExtensions, VkPhysicalDevice *physicalDevice)</td></tr>
-<tr class="memdesc:a59002ca8897465b479e5f46b1840171a"><td class="mdescLeft">&#160;</td><td class="mdescRight">Query whether a physical offers all required extensions.  <a href="#a59002ca8897465b479e5f46b1840171a">More...</a><br /></td></tr>
-<tr class="separator:a59002ca8897465b479e5f46b1840171a"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a2530270c8cfd4ec0d5ccb8a1a302bdf1"><td class="memItemLeft" align="right" valign="top">VkResult&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacevh.html#a2530270c8cfd4ec0d5ccb8a1a302bdf1">vhDevPickPhysicalDevice</a> (VkInstance instance, VkSurfaceKHR surface, std::vector&lt; const char * &gt; requiredDeviceExtensions, VkPhysicalDevice *physicalDevice, VkPhysicalDeviceLimits *limits)</td></tr>
+<tr class="memdesc:a2530270c8cfd4ec0d5ccb8a1a302bdf1"><td class="mdescLeft">&#160;</td><td class="mdescRight">Query whether a physical offers all required extensions.  <a href="#a2530270c8cfd4ec0d5ccb8a1a302bdf1">More...</a><br /></td></tr>
+<tr class="separator:a2530270c8cfd4ec0d5ccb8a1a302bdf1"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a81c685442b0d3f4a3dc89177f8d6f11b"><td class="memItemLeft" align="right" valign="top">VkFormat&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacevh.html#a81c685442b0d3f4a3dc89177f8d6f11b">vhDevFindSupportedFormat</a> (VkPhysicalDevice physicalDevice, const std::vector&lt; VkFormat &gt; &amp;candidates, VkImageTiling tiling, VkFormatFeatureFlags features)</td></tr>
 <tr class="memdesc:a81c685442b0d3f4a3dc89177f8d6f11b"><td class="mdescLeft">&#160;</td><td class="mdescRight">Query a suitable image format that the device supports.  <a href="#a81c685442b0d3f4a3dc89177f8d6f11b">More...</a><br /></td></tr>
 <tr class="separator:a81c685442b0d3f4a3dc89177f8d6f11b"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -2181,8 +2184,74 @@ void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="name
 
 </div>
 </div>
+<a id="a2562093b3408ae1d0849c59fff75440a"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a2562093b3408ae1d0849c59fff75440a">&#9670;&nbsp;</a></span>vhCmdBeginCommandBuffer() <span class="overload">[1/2]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">VkResult vh::vhCmdBeginCommandBuffer </td>
+          <td>(</td>
+          <td class="paramtype">VkDevice&#160;</td>
+          <td class="paramname"><em>device</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">VkRenderPass&#160;</td>
+          <td class="paramname"><em>renderPass</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">uint32_t&#160;</td>
+          <td class="paramname"><em>subpass</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">VkFramebuffer&#160;</td>
+          <td class="paramname"><em>frameBuffer</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">VkCommandBuffer&#160;</td>
+          <td class="paramname"><em>commandBuffer</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">VkCommandBufferUsageFlagBits&#160;</td>
+          <td class="paramname"><em>usageFlags</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Start a command buffer for recording commands. </p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramdir">[in]</td><td class="paramname">device</td><td>Logical Vulkan device </td></tr>
+    <tr><td class="paramdir">[in]</td><td class="paramname">renderPass</td><td>The render pass that is inherited from the parent command buffer </td></tr>
+    <tr><td class="paramdir">[in]</td><td class="paramname">subpass</td><td>Index of subpass </td></tr>
+    <tr><td class="paramdir">[in]</td><td class="paramname">frameBuffer</td><td>The framebuffer that is rendered into </td></tr>
+    <tr><td class="paramdir">[in]</td><td class="paramname">commandBuffer</td><td>The command buffer to start </td></tr>
+    <tr><td class="paramdir">[in]</td><td class="paramname">usageFlags</td><td>Flags telling how the buffer will be used </td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>Returns</dt><dd>VK_SUCCESS or a Vulkan error code </dd></dl>
+
+</div>
+</div>
 <a id="a9791b75aecc6358fa0be4612d8a83b95"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a9791b75aecc6358fa0be4612d8a83b95">&#9670;&nbsp;</a></span>vhCmdBeginCommandBuffer()</h2>
+<h2 class="memtitle"><span class="permalink"><a href="#a9791b75aecc6358fa0be4612d8a83b95">&#9670;&nbsp;</a></span>vhCmdBeginCommandBuffer() <span class="overload">[2/2]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -2801,8 +2870,8 @@ void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="name
 
 </div>
 </div>
-<a id="a59002ca8897465b479e5f46b1840171a"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a59002ca8897465b479e5f46b1840171a">&#9670;&nbsp;</a></span>vhDevPickPhysicalDevice()</h2>
+<a id="a2530270c8cfd4ec0d5ccb8a1a302bdf1"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a2530270c8cfd4ec0d5ccb8a1a302bdf1">&#9670;&nbsp;</a></span>vhDevPickPhysicalDevice()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -2829,7 +2898,13 @@ void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="name
           <td class="paramkey"></td>
           <td></td>
           <td class="paramtype">VkPhysicalDevice *&#160;</td>
-          <td class="paramname"><em>physicalDevice</em>&#160;</td>
+          <td class="paramname"><em>physicalDevice</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">VkPhysicalDeviceLimits *&#160;</td>
+          <td class="paramname"><em>limits</em>&#160;</td>
         </tr>
         <tr>
           <td></td>
@@ -2846,6 +2921,7 @@ void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="name
     <tr><td class="paramdir">[in]</td><td class="paramname">surface</td><td>A window surface </td></tr>
     <tr><td class="paramdir">[in]</td><td class="paramname">requiredDeviceExtensions</td><td>A list of required device extensions </td></tr>
     <tr><td class="paramdir">[out]</td><td class="paramname">physicalDevice</td><td>A physical device that supports all required extensions </td></tr>
+    <tr><td class="paramdir">[out]</td><td class="paramname">limits</td><td>The physical limits of the physical device </td></tr>
   </table>
   </dd>
 </dl>
@@ -4323,7 +4399,7 @@ void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="name
 </div><!-- contents -->
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>
-Generated on Thu May 2 2019 13:22:24 for Vienna Vulkan Engine by &#160;<a href="http://www.doxygen.org/index.html">
+Generated on Sat May 4 2019 10:54:48 for Vienna Vulkan Engine by &#160;<a href="http://www.doxygen.org/index.html">
 <img class="footer" src="doxygen.png" alt="doxygen"/>
 </a> 1.8.15
 </small></address>

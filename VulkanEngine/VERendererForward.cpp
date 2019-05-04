@@ -40,7 +40,7 @@ namespace ve {
 			"VK_LAYER_LUNARG_standard_validation"
 		};
 
-		vh::vhDevPickPhysicalDevice(getEnginePointer()->getInstance(), m_surface, requiredDeviceExtensions, &m_physicalDevice);
+		vh::vhDevPickPhysicalDevice(getEnginePointer()->getInstance(), m_surface, requiredDeviceExtensions, &m_physicalDevice, &m_deviceLimits );
 		vh::vhDevCreateLogicalDevice(m_physicalDevice, m_surface, requiredDeviceExtensions, requiredValidationLayers,
 									&m_device, &m_graphicsQueue, &m_presentQueue);
 
@@ -57,6 +57,8 @@ namespace ve {
 
 		m_commandBuffers.resize(m_swapChainImages.size() );
 		for (uint32_t i = 0; i < m_swapChainImages.size(); i++) m_commandBuffers[i] = VK_NULL_HANDLE;	//will be created later
+		m_secondaryBuffers.resize(m_swapChainImages.size());
+		for (uint32_t i = 0; i < m_swapChainImages.size(); i++) m_secondaryBuffers[i] = VK_NULL_HANDLE;	//will be created later
 
 
 		//------------------------------------------------------------------------------------------------------------
@@ -267,9 +269,9 @@ namespace ve {
 
 		cleanupSwapChain();
 
-		vh::vhSwapCreateSwapChain(m_physicalDevice, m_surface, m_device, getWindowPointer()->getExtent(),
-			&m_swapChain, m_swapChainImages, m_swapChainImageViews,
-			&m_swapChainImageFormat, &m_swapChainExtent);
+		vh::vhSwapCreateSwapChain(	m_physicalDevice, m_surface, m_device, getWindowPointer()->getExtent(),
+									&m_swapChain, m_swapChainImages, m_swapChainImageViews,
+									&m_swapChainImageFormat, &m_swapChainExtent);
 
 		m_depthMap = new VETexture("DepthMap");
 		m_depthMap->m_format = vh::vhDevFindDepthFormat(m_physicalDevice);
@@ -343,7 +345,14 @@ namespace ve {
 										VK_COMMAND_BUFFER_LEVEL_PRIMARY,
 										1, &m_commandBuffers[imageIndex]);
 
+		/*vh::vhCmdCreateCommandBuffers(	m_device, m_commandPool,
+										VK_COMMAND_BUFFER_LEVEL_SECONDARY,
+										1, &m_secondaryBuffers[imageIndex]);
+										*/
+
 		vh::vhCmdBeginCommandBuffer(m_device, m_commandBuffers[imageIndex], VK_COMMAND_BUFFER_USAGE_SIMULTANEOUS_USE_BIT);
+
+		//vh::vhCmdBeginCommandBuffer(m_device, m_renderPassShadow, 0, m_shadowFramebuffers[imageIndex][0], m_secondaryBuffers[imageIndex], VK_COMMAND_BUFFER_USAGE_SIMULTANEOUS_USE_BIT);
 
 		//-----------------------------------------------------------------------------------------
 		//set clear values for shadow and light passes

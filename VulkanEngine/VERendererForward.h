@@ -31,6 +31,7 @@ namespace ve {
 
 	protected:
 		std::vector<VkCommandBuffer> m_commandBuffers = {};				///<the main command buffers for recording draw commands
+		std::vector<VkCommandBuffer> m_secondaryBuffers = {};			///<secondary buffers for parallel recording
 		
 		//per frame render resources
 		VkRenderPass				m_renderPassClear;					///<The first light render pass, clearing the framebuffers

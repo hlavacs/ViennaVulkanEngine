@@ -241,6 +241,10 @@ Protected Attributes</h2></td></tr>
 std::vector&lt; VkCommandBuffer &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_renderer_forward.html#a33462619a37c661bd9fb848af081257c">m_commandBuffers</a> = {}</td></tr>
 <tr class="memdesc:a33462619a37c661bd9fb848af081257c"><td class="mdescLeft">&#160;</td><td class="mdescRight">the main command buffers for recording draw commands <br /></td></tr>
 <tr class="separator:a33462619a37c661bd9fb848af081257c"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a9dcd6311e871ca602439ad071c0b1438"><td class="memItemLeft" align="right" valign="top"><a id="a9dcd6311e871ca602439ad071c0b1438"></a>
+std::vector&lt; VkCommandBuffer &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_renderer_forward.html#a9dcd6311e871ca602439ad071c0b1438">m_secondaryBuffers</a> = {}</td></tr>
+<tr class="memdesc:a9dcd6311e871ca602439ad071c0b1438"><td class="mdescLeft">&#160;</td><td class="mdescRight">secondary buffers for parallel recording <br /></td></tr>
+<tr class="separator:a9dcd6311e871ca602439ad071c0b1438"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a7d06b07bbb207373274f274b9ddf16c5"><td class="memItemLeft" align="right" valign="top"><a id="a7d06b07bbb207373274f274b9ddf16c5"></a>
 VkRenderPass&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_renderer_forward.html#a7d06b07bbb207373274f274b9ddf16c5">m_renderPassClear</a></td></tr>
 <tr class="memdesc:a7d06b07bbb207373274f274b9ddf16c5"><td class="mdescLeft">&#160;</td><td class="mdescRight">The first light render pass, clearing the framebuffers. <br /></td></tr>
@@ -314,6 +318,10 @@ bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="clas
 VkPhysicalDevice&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_renderer.html#acb75f7b487a45e37a271ade95c6833f4">m_physicalDevice</a> = VK_NULL_HANDLE</td></tr>
 <tr class="memdesc:acb75f7b487a45e37a271ade95c6833f4 inherit pro_attribs_classve_1_1_v_e_renderer"><td class="mdescLeft">&#160;</td><td class="mdescRight">Vulkan physical device handle. <br /></td></tr>
 <tr class="separator:acb75f7b487a45e37a271ade95c6833f4 inherit pro_attribs_classve_1_1_v_e_renderer"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a75fc0faaa00116cc38e5e51ac5ee9f5e inherit pro_attribs_classve_1_1_v_e_renderer"><td class="memItemLeft" align="right" valign="top"><a id="a75fc0faaa00116cc38e5e51ac5ee9f5e"></a>
+VkPhysicalDeviceLimits&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_renderer.html#a75fc0faaa00116cc38e5e51ac5ee9f5e">m_deviceLimits</a> = {}</td></tr>
+<tr class="memdesc:a75fc0faaa00116cc38e5e51ac5ee9f5e inherit pro_attribs_classve_1_1_v_e_renderer"><td class="mdescLeft">&#160;</td><td class="mdescRight">Limits of the physical device. <br /></td></tr>
+<tr class="separator:a75fc0faaa00116cc38e5e51ac5ee9f5e inherit pro_attribs_classve_1_1_v_e_renderer"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aa7a346e8ca92249d76a05fa982b2ea09 inherit pro_attribs_classve_1_1_v_e_renderer"><td class="memItemLeft" align="right" valign="top"><a id="aa7a346e8ca92249d76a05fa982b2ea09"></a>
 VkDevice&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_renderer.html#aa7a346e8ca92249d76a05fa982b2ea09">m_device</a></td></tr>
 <tr class="memdesc:aa7a346e8ca92249d76a05fa982b2ea09 inherit pro_attribs_classve_1_1_v_e_renderer"><td class="mdescLeft">&#160;</td><td class="mdescRight">Vulkan logical device handle. <br /></td></tr>
@@ -720,7 +728,7 @@ std::vector&lt; <a class="el" href="classve_1_1_v_e_subrender.html">VESubrender<
 </div><!-- contents -->
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>
-Generated on Thu May 2 2019 13:22:23 for Vienna Vulkan Engine by &#160;<a href="http://www.doxygen.org/index.html">
+Generated on Sat May 4 2019 10:54:48 for Vienna Vulkan Engine by &#160;<a href="http://www.doxygen.org/index.html">
 <img class="footer" src="doxygen.png" alt="doxygen"/>
 </a> 1.8.15
 </small></address>
