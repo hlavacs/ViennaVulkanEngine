@@ -363,6 +363,8 @@ namespace ve {
 		vmaMapMemory(getRendererPointer()->getVmaAllocator(), m_uniformBuffersAllocation[imageIndex], &data);
 		memcpy(data, pUBO, sizeUBO);
 		vmaUnmapMemory(getRendererPointer()->getVmaAllocator(), m_uniformBuffersAllocation[imageIndex]);
+
+		vh::vhMemBlockUpdateEntry( &m_memoryHandle, pUBO );
 	}
 
 
@@ -822,6 +824,7 @@ namespace ve {
 	*/
 	VELight::~VELight() {
 		for (auto pCam : m_shadowCameras) {
+			getSceneManagerPointer()->removeSceneNode( pCam->getName());
 			delete pCam;
 		}
 		m_shadowCameras.clear();
@@ -844,7 +847,9 @@ namespace ve {
 					VELight(name, transf, parent) {
 
 		for (uint32_t i = 0; i < 4; i++) {
-			m_shadowCameras.push_back(new VECameraOrtho("ShadowCamDirOrtho") );	//no parent - > transform is also world matrix
+			VECameraOrtho *pCam = new VECameraOrtho(m_name + "-ShadowCam" + std::to_string(i) );
+			m_shadowCameras.push_back(pCam );		//no parent - > transform is also world matrix
+			getSceneManagerPointer()->addSceneNode(pCam);
 		}
 	};
 
@@ -895,7 +900,9 @@ namespace ve {
 					VELight( name, transf, parent ) {
 
 		for (uint32_t i = 0; i < 6; i++) {
-			m_shadowCameras.push_back(new VECameraProjective("ShadowCamPointProj"));	//no parent - > transform is also world matrix
+			VECameraProjective *pCam = new VECameraProjective(m_name + "-ShadowCam" + std::to_string(i));
+			m_shadowCameras.push_back(pCam);		//no parent - > transform is also world matrix
+			getSceneManagerPointer()->addSceneNode(pCam);
 		}
 	};
 
@@ -963,7 +970,9 @@ namespace ve {
 					VELight(name, transf, parent) {
 
 		for (uint32_t i = 0; i < 1; i++) {
-			m_shadowCameras.push_back(new VECameraProjective("ShadowCamSpotProj"));	//no parent - > transform is also world matrix
+			VECameraProjective *pCam = new VECameraProjective(m_name + "-ShadowCam" + std::to_string(i));
+			m_shadowCameras.push_back(pCam);		//no parent - > transform is also world matrix
+			getSceneManagerPointer()->addSceneNode(pCam);
 		};
 	};
 

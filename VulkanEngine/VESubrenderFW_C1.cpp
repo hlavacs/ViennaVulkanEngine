@@ -20,11 +20,6 @@ namespace ve {
 	void VESubrenderFW_C1::initSubrenderer() {
 		VESubrender::initSubrenderer();
 
-		vh::vhMemBlockListInit(getRendererForwardPointer()->getDevice(), getRendererForwardPointer()->getDescriptorPool(),
-			getRendererForwardPointer()->getDescriptorSetLayoutPerObject(), getRendererForwardPointer()->getVmaAllocator(),
-			10, sizeof(VEEntity::veUBOPerObject_t),
-			getRendererForwardPointer()->getSwapChainNumber(), m_memoryBlocks);
-
 		VkDescriptorSetLayout perObjectLayout = getRendererForwardPointer()->getDescriptorSetLayoutPerObject();
 		vh::vhPipeCreateGraphicsPipelineLayout(getRendererForwardPointer()->getDevice(),
 			{ perObjectLayout, perObjectLayout, getRendererForwardPointer()->getDescriptorSetLayoutShadow(), perObjectLayout },

@@ -41,7 +41,11 @@ namespace ve {
 		std::map<std::string, VEMesh *>		m_meshes = {};		///<Storage of all meshes currently in the engine
 		std::map<std::string, VEMaterial*>	m_materials = {};	///<Storage of all materials currently in the engine
 		std::map<std::string, VESceneNode*>	m_sceneNodes = {};	///<Storage of all scene nodes currently in the engine
+		
 		VESceneNode						*	m_rootSceneNode;	///<The root node of the scene graph
+
+		///the memory for all UBOs
+		std::map<VESceneObject::veObjectType, std::vector<vh::vhMemoryBlock>> m_memoryBlockMap;										///<memory for the UBOs of the entities
 
 		VECamera *				m_camera = nullptr;			///<entity ptr of the current camera
 		std::vector<VELight*>	m_lights = {};				///<ptrs to the lights to use
@@ -89,8 +93,9 @@ namespace ve {
 		VESceneNode *	getRootSceneNode() { return m_rootSceneNode; };
 		void			sceneGraphChanged();
 		void			updateSceneNodes( uint32_t imageIndex );
-		void			addSceneNode(VESceneNode *entity);
+		void			addSceneNode(VESceneNode *pNode, VESceneNode *parent=nullptr);
 		VESceneNode *	getSceneNode(std::string entityName);
+		void			removeSceneNode(std::string name);
 		void			deleteSceneNodeAndChildren(std::string name);
 		void			createSceneNodeList(VESceneNode *pObject, std::vector<std::string> &namelist);
 

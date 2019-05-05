@@ -101,10 +101,8 @@ Inheritance diagram for ve::VESceneNode:</div>
 <table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-types"></a>
 Public Types</h2></td></tr>
-<tr class="memitem:aff43b9c0c39fa3362b3908e813608cc8"><td class="memItemLeft" align="right" valign="top">enum &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_scene_node.html#aff43b9c0c39fa3362b3908e813608cc8">veNodeType</a> { <a class="el" href="classve_1_1_v_e_scene_node.html#aff43b9c0c39fa3362b3908e813608cc8adc430cfe3997b962556b7eef4de158ad">VE_OBJECT_TYPE_SCENENODE</a>, 
-<a class="el" href="classve_1_1_v_e_scene_node.html#aff43b9c0c39fa3362b3908e813608cc8a63b4aa64724ad40a7b8aba730f23908b">VE_OBJECT_TYPE_ENTITY</a>, 
-<a class="el" href="classve_1_1_v_e_scene_node.html#aff43b9c0c39fa3362b3908e813608cc8ae5033506a99ab32134c7e8982da19c66">VE_OBJECT_TYPE_CAMERA</a>, 
-<a class="el" href="classve_1_1_v_e_scene_node.html#aff43b9c0c39fa3362b3908e813608cc8ae4efc11f5524b9248c284f429e6e8d1d">VE_OBJECT_TYPE_LIGHT</a>
+<tr class="memitem:aff43b9c0c39fa3362b3908e813608cc8"><td class="memItemLeft" align="right" valign="top">enum &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_scene_node.html#aff43b9c0c39fa3362b3908e813608cc8">veNodeType</a> { <a class="el" href="classve_1_1_v_e_scene_node.html#aff43b9c0c39fa3362b3908e813608cc8adf3bdb97f8331363db5c9ca5b4921574">VE_NODE_TYPE_SCENENODE</a>, 
+<a class="el" href="classve_1_1_v_e_scene_node.html#aff43b9c0c39fa3362b3908e813608cc8a510ccc03083236719f937a26ea332ea0">VE_NODE_TYPE_SCENEOBJECT</a>
  }</td></tr>
 <tr class="memdesc:aff43b9c0c39fa3362b3908e813608cc8"><td class="mdescLeft">&#160;</td><td class="mdescRight">Object type, can be node, entity for drawing, camera or light.  <a href="classve_1_1_v_e_scene_node.html#aff43b9c0c39fa3362b3908e813608cc8">More...</a><br /></td></tr>
 <tr class="separator:aff43b9c0c39fa3362b3908e813608cc8"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -226,13 +224,9 @@ std::string&#160;</td><td class="memItemRight" valign="bottom"><a class="el" hre
 
 <p>Object type, can be node, entity for drawing, camera or light. </p>
 <table class="fieldtable">
-<tr><th colspan="2">Enumerator</th></tr><tr><td class="fieldname"><a id="aff43b9c0c39fa3362b3908e813608cc8adc430cfe3997b962556b7eef4de158ad"></a>VE_OBJECT_TYPE_SCENENODE&#160;</td><td class="fielddoc"><p>Instance of the base class, acts as scene node, cannot be drawn. </p>
+<tr><th colspan="2">Enumerator</th></tr><tr><td class="fieldname"><a id="aff43b9c0c39fa3362b3908e813608cc8adf3bdb97f8331363db5c9ca5b4921574"></a>VE_NODE_TYPE_SCENENODE&#160;</td><td class="fielddoc"><p>Instance of the base class, acts as scene node, cannot be drawn. </p>
 </td></tr>
-<tr><td class="fieldname"><a id="aff43b9c0c39fa3362b3908e813608cc8a63b4aa64724ad40a7b8aba730f23908b"></a>VE_OBJECT_TYPE_ENTITY&#160;</td><td class="fielddoc"><p>Normal object to be drawn. </p>
-</td></tr>
-<tr><td class="fieldname"><a id="aff43b9c0c39fa3362b3908e813608cc8ae5033506a99ab32134c7e8982da19c66"></a>VE_OBJECT_TYPE_CAMERA&#160;</td><td class="fielddoc"><p>A projective camera, cannot be drawn. </p>
-</td></tr>
-<tr><td class="fieldname"><a id="aff43b9c0c39fa3362b3908e813608cc8ae4efc11f5524b9248c284f429e6e8d1d"></a>VE_OBJECT_TYPE_LIGHT&#160;</td><td class="fielddoc"><p>A light, cannot be drawn. </p>
+<tr><td class="fieldname"><a id="aff43b9c0c39fa3362b3908e813608cc8a510ccc03083236719f937a26ea332ea0"></a>VE_NODE_TYPE_SCENEOBJECT&#160;</td><td class="fielddoc"><p>Instance of the base class, acts as scene node, cannot be drawn. </p>
 </td></tr>
 </table>
 
@@ -389,7 +383,7 @@ std::string&#160;</td><td class="memItemRight" valign="bottom"><a class="el" hre
 </div><div class="memdoc">
 <dl class="section return"><dt>Returns</dt><dd>the scene node type </dd></dl>
 
-<p>Reimplemented in <a class="el" href="classve_1_1_v_e_light.html#aee1fb43c01264f706e8820eca46ec6b3">ve::VELight</a>, <a class="el" href="classve_1_1_v_e_camera.html#ab324af3baa19b0365db9710a64c4eacc">ve::VECamera</a>, and <a class="el" href="classve_1_1_v_e_entity.html#aad0a7f94d44bd39740344bd743fff2e7">ve::VEEntity</a>.</p>
+<p>Reimplemented in <a class="el" href="classve_1_1_v_e_scene_object.html#ac0931da48392c5b24c4058176a5cdac4">ve::VESceneObject</a>.</p>
 
 </div>
 </div>
@@ -778,7 +772,7 @@ std::string&#160;</td><td class="memItemRight" valign="bottom"><a class="el" hre
 </div><!-- contents -->
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>
-Generated on Sat May 4 2019 10:54:48 for Vienna Vulkan Engine by &#160;<a href="http://www.doxygen.org/index.html">
+Generated on Sun May 5 2019 21:09:49 for Vienna Vulkan Engine by &#160;<a href="http://www.doxygen.org/index.html">
 <img class="footer" src="doxygen.png" alt="doxygen"/>
 </a> 1.8.15
 </small></address>

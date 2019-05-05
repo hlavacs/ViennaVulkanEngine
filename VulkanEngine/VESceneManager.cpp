@@ -32,6 +32,30 @@ namespace ve {
 	*
 	*/
 	void VESceneManager::initSceneManager() {
+
+		std::vector<vh::vhMemoryBlock> emptyList;
+
+		m_memoryBlockMap[VESceneObject::VE_OBJECT_TYPE_ENTITY] = emptyList;
+		vh::vhMemBlockListInit(getRendererForwardPointer()->getDevice(),
+			getRendererForwardPointer()->getVmaAllocator(),
+			2048, sizeof(VEEntity::veUBOPerObject_t),
+			getRendererForwardPointer()->getSwapChainNumber(),
+			m_memoryBlockMap[VESceneObject::VE_OBJECT_TYPE_ENTITY]);
+
+		m_memoryBlockMap[VESceneObject::VE_OBJECT_TYPE_CAMERA] = emptyList;
+		vh::vhMemBlockListInit(getRendererForwardPointer()->getDevice(),
+			getRendererForwardPointer()->getVmaAllocator(),
+			64, sizeof(VECamera::veUBOPerCamera_t),
+			getRendererForwardPointer()->getSwapChainNumber(),
+			m_memoryBlockMap[VESceneObject::VE_OBJECT_TYPE_CAMERA]);
+
+		m_memoryBlockMap[VESceneObject::VE_OBJECT_TYPE_LIGHT] = emptyList;
+		vh::vhMemBlockListInit(getRendererForwardPointer()->getDevice(),
+			getRendererForwardPointer()->getVmaAllocator(),
+			16, sizeof(VELight::veUBOPerLight_t),
+			getRendererForwardPointer()->getSwapChainNumber(),
+			m_memoryBlockMap[VESceneObject::VE_OBJECT_TYPE_LIGHT]);
+
 		std::vector<VEMesh*> meshes;
 		std::vector<VEMaterial*> materials;
 
@@ -43,14 +67,14 @@ namespace ve {
 		m_rootSceneNode = new VESceneNode("RootSceneNode");
 
 		//camera parent is used for translation rotations
-		VESceneNode *cameraParent = createSceneNode("StandardCameraParent", glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 10.0f, 0.0f)) );
+		VESceneNode *cameraParent = createSceneNode("StandardCameraParent", glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 10.0f, 0.0f)), m_rootSceneNode );
 
 		//camera can only do yaw (parent y-axis) and pitch (local x-axis) rotations
 		VkExtent2D extent = getWindowPointer()->getExtent();
 		VECamera *camera = new VECameraProjective("StandardCamera", 0.1f, 500.0f, extent.width/ (float)extent.height, 45.0f);
 		camera->lookAt(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f), glm::vec3(0.0f, 1.0f, 0.0f));
 		cameraParent->addChild(camera);
-		addSceneNode(camera);
+		addSceneNode(camera );
 		setCamera( camera );
 
 		//use one light source
@@ -59,7 +83,7 @@ namespace ve {
 		light1->m_col_ambient = glm::vec4(0.1f, 0.1f, 0.1f, 1.0f);
 		light1->m_col_diffuse = glm::vec4(0.3f, 0.3f, 0.3f, 1.0f);
 		light1->m_col_specular = glm::vec4(0.1f, 0.1f, 0.1f, 1.0f);
-		addSceneNode(light1);
+		addSceneNode(light1, m_rootSceneNode );
 		switchOnLight(light1);
 
 		VELight *light2 = new VESpotLight("StandardSpotLight");
@@ -67,7 +91,7 @@ namespace ve {
 		light2->m_col_diffuse = glm::vec4(0.99f, 0.6f, 0.6f, 1.0f);
 		light2->m_col_specular = glm::vec4(0.0f, 0.0f, 0.0f, 1.0f);
 		//light2->lookAt(glm::vec3(0.0f, 20.0f, 20.0f), glm::vec3(0.0f, 0.0f, 1.0f), glm::vec3(0.0f, 1.0f, 0.0f));
-		addSceneNode(light2);
+		addSceneNode(light2, m_rootSceneNode );
 		camera->addChild(light2);
 		light2->multiplyTransform(glm::translate(glm::vec3(5.0f, 0.0f, 0.0f)));
 		switchOnLight(light2);
@@ -77,7 +101,7 @@ namespace ve {
 		light3->m_col_diffuse = glm::vec4(0.99f, 0.99f, 0.6f, 1.0f);
 		light3->m_col_specular = glm::vec4(0.0f, 0.0f, 0.0f, 1.0f);
 		light3->m_param[0] = 100.0f;
-		addSceneNode(light3);
+		addSceneNode(light3, m_rootSceneNode );
 		camera->addChild(light3);
 		light3->multiplyTransform(glm::translate(glm::vec3(0.0f, 0.0f, 15.0f)));
 		switchOnLight(light3);
@@ -548,7 +572,7 @@ namespace ve {
 			pMat->mapDiffuse = new VETexture(entityName, basedir, { texName });
 		}
 
-		VEEntity *pEntity = createEntity(entityName, VEEntity::VE_ENTITY_TYPE_SKYPLANE, pMesh, pMat, glm::mat4(1.0f), nullptr);
+		VEEntity *pEntity = createEntity(entityName, VEEntity::VE_ENTITY_TYPE_SKYPLANE, pMesh, pMat, glm::mat4(1.0f), nullptr );
 		pEntity->m_castsShadow = false;
 
 		sceneGraphChanged();
@@ -579,7 +603,7 @@ namespace ve {
 		}
 
 		VESceneNode *parent = createSceneNode(entityName);
-
+		m_rootSceneNode->addChild(parent);
 		float scale = 1000.0f;
 
 		VEEntity *sp1 = getSceneManagerPointer()->createSkyplane(filekey + "/Skyplane1", basedir, texNames[0]);
@@ -656,12 +680,21 @@ namespace ve {
 	* If the parent is the nullptr then make the root scene node its parent
 	*
 	* \param[in] pNode Pointer to the new scene node
+	* \param[in] parent Pointer to the new parent of this node
 	*
 	*/
-	void VESceneManager::addSceneNode(VESceneNode *pNode) {
-		if (pNode->m_parent == nullptr) {
-			m_rootSceneNode->addChild(pNode);
+	void VESceneManager::addSceneNode(VESceneNode *pNode, VESceneNode *parent) {
+
+		if (pNode->getNodeType() == VESceneNode::VE_NODE_TYPE_SCENEOBJECT) {
+			VESceneObject *pObject = (VESceneObject*)pNode;
+			if (pObject->m_memoryHandle.owner == nullptr) {
+				vh::vhMemBlockListAdd(m_memoryBlockMap[pObject->getObjectType()], pObject, &pObject->m_memoryHandle);
+			}
 		}
+
+		if (parent != nullptr) {
+			parent->addChild(pNode);
+		} 
 		m_sceneNodes[pNode->getName()] = pNode;
 	}
 
@@ -684,27 +717,42 @@ namespace ve {
 
 	/**
 	*
-	* \brief Delete an entity and all its subentities
+	* \brief Remove a scene node
 	*
-	* \param[in] name Name of the entity.
+	* \param[in] name Name of the scene node.
+	*
+	*/
+	void VESceneManager::removeSceneNode(std::string name) {
+		m_sceneNodes.erase(name);
+	}
+
+
+	/**
+	*
+	* \brief Delete a scene node and all its subentities
+	*
+	* \param[in] name Name of the scene node.
 	*
 	*/
 	void VESceneManager::deleteSceneNodeAndChildren(std::string name) {
-		VESceneNode * pObject = m_sceneNodes[name];
-		if (pObject == nullptr) return;
-		if (pObject->m_parent != nullptr) pObject->m_parent->removeChild(pObject);
+		VESceneNode * pNode = m_sceneNodes[name];
+		if (pNode == nullptr) return;
+		if (pNode->m_parent != nullptr) pNode->m_parent->removeChild(pNode);
 
 		std::vector<std::string> namelist;	//first create a list of all child names
-		createSceneNodeList(pObject, namelist);
+		createSceneNodeList(pNode, namelist);
 
 		//go through the list and delete all children
 		for (uint32_t i = 0; i < namelist.size(); i++) {
-			pObject = m_sceneNodes[namelist[i]];
+			pNode = m_sceneNodes[namelist[i]];
 
-			if( pObject->getNodeType() == VESceneNode::VE_OBJECT_TYPE_ENTITY )
-				getRendererPointer()->removeEntityFromSubrenderers((VEEntity*)pObject);
+			if (pNode->getNodeType() == VESceneNode::VE_NODE_TYPE_SCENEOBJECT) {
+				VESceneObject *pObject = (VESceneObject*)pNode;
+				if( pObject->getObjectType() == VESceneObject::VE_OBJECT_TYPE_ENTITY )
+					getRendererPointer()->removeEntityFromSubrenderers((VEEntity*)pObject);
+			}
 			m_sceneNodes.erase(namelist[i]);
-			delete pObject;
+			delete pNode;
 		}
 		sceneGraphChanged();
 	}
@@ -802,6 +850,10 @@ namespace ve {
 		delete m_rootSceneNode;
 		for (auto mesh : m_meshes) delete mesh.second;
 		for (auto mat : m_materials) delete mat.second;
+
+		for (auto list : m_memoryBlockMap) {
+			vh::vhMemBlockListClear(list.second);
+		}
 	}
 
 

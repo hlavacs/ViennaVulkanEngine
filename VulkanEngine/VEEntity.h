@@ -34,14 +34,12 @@ namespace ve {
 	public:
 		///Object type, can be node, entity for drawing, camera or light
 		enum veNodeType {
-			VE_OBJECT_TYPE_SCENENODE,	///<Instance of the base class, acts as scene node, cannot be drawn
-			VE_OBJECT_TYPE_ENTITY,		///<Normal object to be drawn
-			VE_OBJECT_TYPE_CAMERA,		///<A projective camera, cannot be drawn
-			VE_OBJECT_TYPE_LIGHT		///<A light, cannot be drawn
+			VE_NODE_TYPE_SCENENODE,		///<Instance of the base class, acts as scene node, cannot be drawn
+			VE_NODE_TYPE_SCENEOBJECT	///<Instance of the base class, acts as scene node, cannot be drawn
 		};
 
 	protected:
-		glm::mat4		m_transform = glm::mat4(1.0);		///<Transform from local to parent space, the engine uses Y-UP, Left-handed
+		glm::mat4 m_transform = glm::mat4(1.0);		///<Transform from local to parent space, the engine uses Y-UP, Left-handed
 
 	public:
 		VESceneNode *				m_parent = nullptr;		///<Pointer to entity parent
@@ -56,7 +54,7 @@ namespace ve {
 		virtual ~VESceneNode() {};
 
 		///\returns the scene node type
-		virtual veNodeType	getNodeType() { return VE_OBJECT_TYPE_SCENENODE; };
+		virtual veNodeType	getNodeType() { return VE_NODE_TYPE_SCENENODE; };
 
 		//-------------------------------------------------------------------------------------
 		//transforms
@@ -114,6 +112,15 @@ namespace ve {
 
 	class VESceneObject : public VESceneNode {
 
+	public:
+
+		///Object type, can be node, entity for drawing, camera or light
+		enum veObjectType {
+			VE_OBJECT_TYPE_ENTITY,		///<Normal object to be drawn
+			VE_OBJECT_TYPE_CAMERA,		///<A projective camera, cannot be drawn
+			VE_OBJECT_TYPE_LIGHT		///<A light, cannot be drawn
+		};
+
 	protected:
 		void updateUBO( void *pUBO, uint32_t sizeUBO, uint32_t imageIndex ); //Helper function to call VMA functions
 
@@ -126,6 +133,13 @@ namespace ve {
 
 		VESceneObject(std::string name, glm::mat4 transf = glm::mat4(1.0f), VESceneNode *parent = nullptr, uint32_t sizeUBO = 0);
 		virtual ~VESceneObject();
+
+		///\returns the scene node type
+		virtual veNodeType getNodeType() { return VE_NODE_TYPE_SCENEOBJECT; };
+
+		///\returns the scene object type
+		virtual veObjectType getObjectType() = 0;
+
 		///\returns the size of the UBO that this object uses
 		virtual uint32_t getSizeUBO()=0;
 	};
@@ -150,6 +164,7 @@ namespace ve {
 	class VEEntity : public VESceneObject {
 
 	public:
+
 		///The entity type determines what kind of entity this is
 		enum veEntityType {	
 			VE_ENTITY_TYPE_NORMAL,				///<Normal object to be drawn
@@ -191,7 +206,7 @@ namespace ve {
 		virtual ~VEEntity();
 
 		///\returns the scene node type
-		virtual veNodeType	getNodeType() { return VE_OBJECT_TYPE_ENTITY; };
+		virtual veObjectType getObjectType() { return VE_OBJECT_TYPE_ENTITY; };
 
 		///\returns the entity type
 		virtual veEntityType getEntityType() { return m_entityType; };
@@ -263,7 +278,7 @@ namespace ve {
 		virtual ~VECamera() {};
 
 		///\returns the scene node type
-		virtual veNodeType	getNodeType() { return VE_OBJECT_TYPE_CAMERA; };
+		virtual veObjectType getObjectType() { return VE_OBJECT_TYPE_CAMERA; };
 
 		///\returns the camera type - pure virtual for the camera base class
 		virtual veCameraType getCameraType()=0;
@@ -440,7 +455,7 @@ namespace ve {
 		virtual void updateShadowCameras(VECamera *pCamera, uint32_t imageIndex )=0;
 
 		///\returns the scene node type
-		virtual veNodeType	getNodeType() { return VE_OBJECT_TYPE_LIGHT; };
+		virtual veObjectType getObjectType() { return VE_OBJECT_TYPE_LIGHT; };
 
 		///\returns the light type - pure virtual for the light base class
 		virtual veLightType	getLightType()=0;

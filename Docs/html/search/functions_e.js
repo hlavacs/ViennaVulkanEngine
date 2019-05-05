@@ -9,6 +9,7 @@ var searchData=
   ['removeentity',['removeEntity',['../classve_1_1_v_e_subrender.html#a87358c9b4c985267771438ce11ddd872',1,'ve::VESubrender']]],
   ['removeentityfromsubrenderers',['removeEntityFromSubrenderers',['../classve_1_1_v_e_renderer.html#ab9b882c882cb555c469dfd74c8e70236',1,'ve::VERenderer']]],
   ['removeeventlistener',['removeEventListener',['../classve_1_1_v_e_engine.html#aeb82d22efa554a6086b5452a24c33cc9',1,'ve::VEEngine']]],
+  ['removescenenode',['removeSceneNode',['../classve_1_1_v_e_scene_manager.html#a7f08d20fe7db91110ac95ea431e6022d',1,'ve::VESceneManager']]],
   ['rotatorlistener',['RotatorListener',['../classve_1_1_rotator_listener.html#a30c9874c0bf2a580bf1d5deb3f895e27',1,'ve::RotatorListener']]],
   ['run',['run',['../classve_1_1_v_e_engine.html#a62fa2c32d1378dc445c4c7e19175b3bf',1,'ve::VEEngine']]]
 ];

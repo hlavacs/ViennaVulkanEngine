@@ -345,13 +345,9 @@ namespace ve {
 										VK_COMMAND_BUFFER_LEVEL_PRIMARY,
 										1, &m_commandBuffers[imageIndex]);
 
-		/*vh::vhCmdCreateCommandBuffers(	m_device, m_commandPool,
-										VK_COMMAND_BUFFER_LEVEL_SECONDARY,
-										1, &m_secondaryBuffers[imageIndex]);
-										*/
-
 		vh::vhCmdBeginCommandBuffer(m_device, m_commandBuffers[imageIndex], VK_COMMAND_BUFFER_USAGE_SIMULTANEOUS_USE_BIT);
 
+		//vh::vhCmdCreateCommandBuffers(	m_device, m_commandPool, VK_COMMAND_BUFFER_LEVEL_SECONDARY, 1, &m_secondaryBuffers[imageIndex]);
 		//vh::vhCmdBeginCommandBuffer(m_device, m_renderPassShadow, 0, m_shadowFramebuffers[imageIndex][0], m_secondaryBuffers[imageIndex], VK_COMMAND_BUFFER_USAGE_SIMULTANEOUS_USE_BIT);
 
 		//-----------------------------------------------------------------------------------------

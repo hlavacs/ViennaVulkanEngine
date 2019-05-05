@@ -62,7 +62,7 @@ var searchData=
   ['m_5fmakescreenshot',['m_makeScreenshot',['../classve_1_1_v_e_event_listener_g_l_f_w.html#a4579945550a8eb58d1590379d807cc72',1,'ve::VEEventListenerGLFW']]],
   ['m_5fmakescreenshotdepth',['m_makeScreenshotDepth',['../classve_1_1_v_e_event_listener_g_l_f_w.html#a967213c81e4f7a53601542011e3cd594',1,'ve::VEEventListenerGLFW']]],
   ['m_5fmaterials',['m_materials',['../classve_1_1_v_e_scene_manager.html#aa9181d84127dae4c7d304fc40577e86c',1,'ve::VESceneManager']]],
-  ['m_5fmemoryblocks',['m_memoryBlocks',['../classve_1_1_v_e_subrender.html#a48053bf1c3a3e4a6ab7ddba408643afd',1,'ve::VESubrender']]],
+  ['m_5fmemoryblockmap',['m_memoryBlockMap',['../classve_1_1_v_e_scene_manager.html#adf0156e362c736e55192f1ca46a60841',1,'ve::VESceneManager']]],
   ['m_5fmemoryhandle',['m_memoryHandle',['../classve_1_1_v_e_scene_object.html#adf005ceab03c6a29498bbc6a4263b2c1',1,'ve::VESceneObject']]],
   ['m_5fmeshes',['m_meshes',['../classve_1_1_v_e_scene_manager.html#a83355400bed0580ec493733a720a4e9a',1,'ve::VESceneManager']]],
   ['m_5fname',['m_name',['../classve_1_1_v_e_named_class.html#a3b3f5063b5de55426c522032e838236a',1,'ve::VENamedClass']]],

@@ -55,7 +55,6 @@ namespace ve {
 		VkPipelineLayout				m_pipelineLayout = VK_NULL_HANDLE;					///<Pipeline layout
 		std::vector<VkPipeline>			m_pipelines;										///<Pipeline for light pass(es)
 
-		std::vector<vh::vhMemoryBlock>	m_memoryBlocks;										///<memory for the UBOs of the entities
 		std::vector<VEEntity *>			m_entities;											///<List of associated entities
 
 	public:

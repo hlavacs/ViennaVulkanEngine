@@ -63,8 +63,6 @@ namespace vh {
 	* \brief Initialize a list of memory blocks
 	*
 	* \param[in] device The logical Vulkan device
-	* \param[in] pool A descriptor set pool
-	* \param[in] layout Descriptor set layout
 	* \param[in] allocator The VMA allocator
 	* \param[in] maxNumEntries Maximum number of entries in a memory block
 	* \param[in] sizeEntry Size of an entry in bytes
@@ -73,12 +71,12 @@ namespace vh {
 	* \returns VK_SUCCESS or a Vulkan error code
 	*
 	*/
-	VkResult vhMemBlockListInit(VkDevice device, VkDescriptorPool pool, VkDescriptorSetLayout layout,
-								VmaAllocator allocator, uint32_t maxNumEntries, uint32_t sizeEntry, 
+	VkResult vhMemBlockListInit(VkDevice device, VmaAllocator allocator, 
+								uint32_t maxNumEntries, uint32_t sizeEntry, 
 								uint32_t numBuffers, std::vector<vhMemoryBlock> &blocklist) {
 		if (blocklist.empty()) {
 			vhMemoryBlock block = {};
-			VHCHECKRESULT( vhMemBlockInit(device, pool, layout, allocator, maxNumEntries, sizeEntry, numBuffers, block) );
+			VHCHECKRESULT( vhMemBlockInit(device, allocator, maxNumEntries, sizeEntry, numBuffers, block) );
 			blocklist.push_back(block);
 		}
 		return VK_SUCCESS;
@@ -90,8 +88,6 @@ namespace vh {
 	* \brief Initialize a single memory block
 	*
 	* \param[in] device The logical Vulkan device
-	* \param[in] pool A descriptor set pool
-	* \param[in] layout Descriptor set layout
 	* \param[in] allocator The VMA allocator
 	* \param[in] maxNumEntries Maximum number of entries in a memory block
 	* \param[in] sizeEntry Size of an entry in bytes
@@ -100,13 +96,11 @@ namespace vh {
 	* \returns VK_SUCCESS or a Vulkan error code
 	*
 	*/
-	VkResult vhMemBlockInit(VkDevice device, VkDescriptorPool pool, VkDescriptorSetLayout layout,
-							VmaAllocator allocator, uint32_t maxNumEntries, uint32_t sizeEntry, 
+	VkResult vhMemBlockInit(VkDevice device, VmaAllocator allocator, 
+							uint32_t maxNumEntries, uint32_t sizeEntry, 
 							uint32_t numBuffers, vhMemoryBlock &block ) {
 
 		block.device = device;			//needed for creating descriptor sets
-		block.pool = pool;
-		block.layout = layout;
 		block.allocator = allocator;	//needed for allocating buffers
 
 		block.pMemory = new int8_t[sizeEntry*maxNumEntries];	//allocate host memory
@@ -117,17 +111,7 @@ namespace vh {
 
 		block.buffers.resize(numBuffers);						//Vulkan buffers
 		block.allocations.resize(numBuffers);					//VMA allocations
-		block.descriptorSets.resize(numBuffers);				//descriptor sets
-		VHCHECKRESULT(vhRenderCreateDescriptorSets(block.device, numBuffers, block.layout, block.pool, block.descriptorSets));
-		VHCHECKRESULT(vhBufCreateUniformBuffers(allocator, numBuffers, sizeEntry*maxNumEntries, block.buffers, block.allocations));
-
-		for (uint32_t i = 0; i < numBuffers; i++) {
-			VHCHECKRESULT( vhRenderUpdateDescriptorSet(	block.device, block.descriptorSets[i],
-														{ block.buffers[i] },				//UBOs
-														{ sizeEntry*maxNumEntries },		//UBO sizes
-														{ {VK_NULL_HANDLE} }, { {VK_NULL_HANDLE} }));
-		}
-		return VK_SUCCESS;
+		return vhBufCreateUniformBuffers(allocator, numBuffers, sizeEntry*maxNumEntries, block.buffers, block.allocations);
 	}
 
 
@@ -156,8 +140,8 @@ namespace vh {
 			vhMemoryBlock block = {};												//new block
 			
 			//initialize the new block using the first block
-			VHCHECKRESULT( vhMemBlockInit(	blocklist[0].device, blocklist[0].pool, blocklist[0].layout, 
-											blocklist[0].allocator, blocklist[0].maxNumEntries, blocklist[0].sizeEntry, 
+			VHCHECKRESULT( vhMemBlockInit(	blocklist[0].device, blocklist[0].allocator, 
+											blocklist[0].maxNumEntries, blocklist[0].sizeEntry, 
 											(uint32_t)blocklist[0].buffers.size(), block) );
 
 			blocklist.push_back(block);												//add the new mem block to the block list
@@ -196,10 +180,9 @@ namespace vh {
 			for (uint32_t i = 0; i < block.buffers.size(); i++) {		//destroy the old Vulkan buffers
 				vmaDestroyBuffer(block.allocator, block.buffers[i], block.allocations[i]);
 			}
-			vkFreeDescriptorSets(block.device, block.pool, (uint32_t)block.descriptorSets.size(), block.descriptorSets.data());
 
-			VHCHECKRESULT( vhMemBlockInit(	block.device, block.pool, block.layout,				//allocate new memory, buffers, desc. sets
-											block.allocator, block.maxNumEntries, block.sizeEntry, 
+			VHCHECKRESULT( vhMemBlockInit(	block.device, block.allocator, 
+											block.maxNumEntries, block.sizeEntry, 
 											(uint32_t)block.buffers.size(), block) );
 
 			memcpy(block.pMemory, pOldMem, oldSize);						//copy old data to the new buffer
@@ -225,8 +208,7 @@ namespace vh {
 	*
 	*/
 	VkResult vhMemBlockUpdateEntry( vhMemoryHandle *pHandle, void *data ) {
-		void *pEntry = pHandle->pMemBlock->pMemory + pHandle->pMemBlock->sizeEntry * pHandle->entryIndex;
-		memcpy(pEntry, data, pHandle->pMemBlock->sizeEntry );
+		memcpy(pHandle->getPointer(), data, pHandle->pMemBlock->sizeEntry );
 		for (auto d : pHandle->pMemBlock->dirty) d = true;								//mark as dirty
 		return VK_SUCCESS;
 	}
@@ -330,7 +312,6 @@ namespace vh {
 		for (uint32_t i = 0; i < block.buffers.size(); i++) {
 			vmaDestroyBuffer(block.allocator, block.buffers[i], block.allocations[i]);
 		}
-		vkFreeDescriptorSets(block.device, block.pool, (uint32_t)block.descriptorSets.size(), block.descriptorSets.data());
 		return VK_SUCCESS;
 	}
 

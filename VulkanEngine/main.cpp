@@ -99,6 +99,7 @@ namespace ve {
 				static std::uniform_real_distribution<> d{ 1.0f, stride }; 
 
 				VESceneNode *e2 = m_pSceneManager->loadModel("The Cube" + std::to_string(i), "models/test/crate0", "cube.obj");
+				getSceneManagerPointer()->getRootSceneNode()->addChild(e2);
 				e2->setTransform(glm::translate(glm::mat4(1.0f), glm::vec3( d(e) - stride/2.0f, d(e)/2.0f, d(e) - stride/2.0f)));
 				//e2->multiplyTransform(glm::scale(glm::mat4(1.0f), glm::vec3(10.0f, 10.0f, 10.0f)));
 
@@ -117,10 +118,11 @@ namespace ve {
 			RotatorListener *pRot = new RotatorListener("CubemapRotator", sp1, 0.01f, glm::vec3(0.0f, 1.0f, 0.0f));
 			getEnginePointer()->registerEventListener(pRot);
 
-			VESceneNode *e4 = m_pSceneManager->loadModel("The Plane", "models/test", "plane_t_n_s.obj");
+			VESceneNode *e4 = m_pSceneManager->loadModel("The Plane", "models/test", "plane_t_n_s.obj" );
 			e4->setTransform(glm::scale(glm::mat4(1.0f), glm::vec3(1000.0f, 1.0f, 1000.0f)));
 			VEEntity *pE4 = (VEEntity*)m_pSceneManager->getSceneNode("The Plane/plane_t_n_s.obj/plane/Entity_0");
 			pE4->setParam( glm::vec4(1000.0f, 1000.0f, 0.0f, 0.0f) );
+			getSceneManagerPointer()->getRootSceneNode()->addChild(e4);
 
 			VESceneNode *pointLight = getSceneManager()->getSceneNode("StandardPointLight");
 			VESceneNode *eL = m_pSceneManager->loadModel("The Light", "models/test/sphere", "sphere.obj", 0 , pointLight);
@@ -131,6 +133,7 @@ namespace ve {
 			VESceneNode *e1 = m_pSceneManager->loadModel("The Cube",  "models/test/crate0", "cube.obj");
 			e1->setTransform(glm::translate(glm::mat4(1.0f), glm::vec3(10.0f, 1.0f, 1.0f)));
 			e1->multiplyTransform( glm::scale(glm::mat4(1.0f), glm::vec3(10.0f, 10.0f, 10.0f)));
+			getSceneManagerPointer()->getRootSceneNode()->addChild(e1);
 
 			createCubes(400);
 			//VESceneNode *pSponza = m_pSceneManager->loadModel("Sponza", "models/sponza", "sponza.dae", aiProcess_FlipWindingOrder);

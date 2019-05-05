@@ -31,7 +31,6 @@ namespace ve {
 	* \brief Close down the subrenderer and destroy all local resources.
 	*/
 	void VESubrender::closeSubrenderer() {
-		vh::vhMemBlockListClear( m_memoryBlocks );
 
 		for (auto pipeline : m_pipelines) {
 			vkDestroyPipeline(getRendererPointer()->getDevice(), pipeline, nullptr);
