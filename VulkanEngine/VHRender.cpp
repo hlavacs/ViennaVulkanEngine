@@ -272,12 +272,37 @@ namespace vh {
 	* \returns VK_SUCCESS or a Vulkan error code
 	*
 	*/
-	VkResult vhRenderUpdateDescriptorSet(VkDevice device,
-										VkDescriptorSet descriptorSet,
-										std::vector<VkBuffer> uniformBuffers,
-										std::vector<uint32_t> bufferRanges,
-										std::vector<std::vector<VkImageView>> textureImageViews, 
-										std::vector<std::vector<VkSampler>> textureSamplers) {
+	VkResult vhRenderUpdateDescriptorSet(	VkDevice device,
+											VkDescriptorSet descriptorSet,
+											std::vector<VkBuffer> uniformBuffers,
+											std::vector<uint32_t> bufferRanges,
+											std::vector<std::vector<VkImageView>> textureImageViews,
+											std::vector<std::vector<VkSampler>> textureSamplers) {
+
+		std::vector<VkDescriptorType> descriptorTypes = {};
+
+		for (uint32_t i = 0; i < uniformBuffers.size(); i++) {
+			if (uniformBuffers[i] != VK_NULL_HANDLE)
+				descriptorTypes.push_back(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
+			else
+				descriptorTypes.push_back(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
+		}
+
+		return vhRenderUpdateDescriptorSet(	device, descriptorSet, 
+											descriptorTypes,
+											uniformBuffers,
+											bufferRanges,
+											textureImageViews,
+											textureSamplers);
+	}
+
+	VkResult vhRenderUpdateDescriptorSet(	VkDevice device,
+											VkDescriptorSet descriptorSet,
+											std::vector<VkDescriptorType> descriptorTypes,
+											std::vector<VkBuffer> uniformBuffers,
+											std::vector<uint32_t> bufferRanges,
+											std::vector<std::vector<VkImageView>> textureImageViews,
+											std::vector<std::vector<VkSampler>> textureSamplers) {
 
 		std::vector<VkWriteDescriptorSet> descriptorWrites = {};
 		descriptorWrites.resize(uniformBuffers.size());
@@ -300,7 +325,7 @@ namespace vh {
 				bufferInfos[i].buffer = uniformBuffers[i];
 				bufferInfos[i].offset = 0;
 				bufferInfos[i].range = bufferRanges[i];
-				descriptorWrites[i].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+				descriptorWrites[i].descriptorType = descriptorTypes[i], //VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
 				descriptorWrites[i].pBufferInfo = &bufferInfos[i];
 			}
 			else if ( textureImageViews[i].size()>0 ) {
@@ -314,7 +339,7 @@ namespace vh {
 					imageInfos[i].push_back(imageInfo);
 				}
 				
-				descriptorWrites[i].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+				descriptorWrites[i].descriptorType = descriptorTypes[i], //VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
 				descriptorWrites[i].pImageInfo = imageInfos[i].data();
 				descriptorWrites[i].descriptorCount = (uint32_t)textureImageViews[i].size();
 			}

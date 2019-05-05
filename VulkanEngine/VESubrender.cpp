@@ -39,6 +39,14 @@ namespace ve {
 		if (m_pipelineLayout != VK_NULL_HANDLE)
 			vkDestroyPipelineLayout(getRendererPointer()->getDevice(), m_pipelineLayout, nullptr);
 
+		for (auto pipeline : m_pipelines2) {
+			vkDestroyPipeline(getRendererPointer()->getDevice(), pipeline, nullptr);
+		}
+
+		if (m_pipelineLayout2 != VK_NULL_HANDLE)
+			vkDestroyPipelineLayout(getRendererPointer()->getDevice(), m_pipelineLayout2, nullptr);
+
+
 		if (m_descriptorSetLayoutResources != VK_NULL_HANDLE)
 			vkDestroyDescriptorSetLayout(getRendererPointer()->getDevice(), m_descriptorSetLayoutResources, nullptr);
 	}
@@ -112,6 +120,8 @@ namespace ve {
 
 		vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_pipelineLayout, 3, (uint32_t)sets.size(), sets.data(), 0, nullptr);
 	}
+
+
 
 
 	/**

@@ -139,6 +139,9 @@ namespace vh {
 		VmaAllocator					allocator;			///<VMA allocator
 		std::vector<VkBuffer>			buffers;			///<One buffer for each framebuffer frame
 		std::vector<VmaAllocation>		allocations;		///<VMA information for the UBOs
+		VkDescriptorPool				descriptorPool;		///<Descriptor pool 
+		VkDescriptorSetLayout			descriptorLayout;	///<Descriptor layout 
+		std::vector<VkDescriptorSet>	descriptorSets;		///<Descriptor sets for UBO
 
 		int8_t *						pMemory;			///<pointer to the host memory containing a copy of the block
 		uint32_t						maxNumEntries;		///<maximum number of entries
@@ -275,7 +278,13 @@ namespace vh {
 	VkResult vhRenderCreateDescriptorSets(	VkDevice device, uint32_t numberDesc,
 											VkDescriptorSetLayout descriptorSetLayout, VkDescriptorPool descriptorPool,
 											std::vector<VkDescriptorSet> & descriptorSets);
+	VkResult vhRenderUpdateDescriptorSet(	VkDevice device, VkDescriptorSet descriptorSet,
+											std::vector<VkBuffer> uniformBuffers,
+											std::vector<uint32_t> bufferRanges,
+											std::vector<std::vector<VkImageView>> textureImageViews,
+											std::vector<std::vector<VkSampler>> textureSamplers);
 	VkResult vhRenderUpdateDescriptorSet(VkDevice device, VkDescriptorSet descriptorSet,
+										std::vector<VkDescriptorType> descriptorTypes,
 										std::vector<VkBuffer> uniformBuffers,
 										std::vector<uint32_t> bufferRanges,
 										std::vector<std::vector<VkImageView>> textureImageViews,
@@ -319,10 +328,12 @@ namespace vh {
 	uint32_t vhMemFindMemoryType(VkPhysicalDevice physicalDevice, uint32_t typeFilter, VkMemoryPropertyFlags properties);
 	VkResult vhMemCreateVMAAllocator(VkPhysicalDevice physicalDevice, VkDevice device, VmaAllocator &allocator);
 	VkResult vhMemBlockListInit(VkDevice device, VmaAllocator allocator, 
+								VkDescriptorPool descriptorPool, VkDescriptorSetLayout descriptorLayout,
 								uint32_t maxNumEntries, uint32_t sizeEntry, 
 								uint32_t numBuffers, std::vector<vhMemoryBlock> &blocklist);
 	VkResult vhMemBlockInit(VkDevice device, VmaAllocator allocator, 
-							uint32_t maxNumEntries, uint32_t sizeEntry, 
+							VkDescriptorPool descriptorPool, VkDescriptorSetLayout descriptorLayout,
+							uint32_t maxNumEntries, uint32_t sizeEntry,
 							uint32_t numBuffers, vhMemoryBlock &block);
 	VkResult vhMemBlockListAdd(	std::vector<vhMemoryBlock> &blocklist, void* owner, vhMemoryHandle *handle);
 	VkResult vhMemBlockAdd( vhMemoryBlock &block, void* owner, vhMemoryHandle *handle);

@@ -28,8 +28,11 @@ namespace ve {
 		virtual veSubrenderType getType() { return VE_SUBRENDERER_TYPE_DIFFUSEMAP; };
 
 		virtual void initSubrenderer();
+		virtual void bindPipeline(VkCommandBuffer commandBuffer);
 		virtual void setDynamicPipelineState(VkCommandBuffer commandBuffer, uint32_t numPass);
 		virtual void addEntity(VEEntity *pEntity);
+		virtual void bindDescriptorSetsPerEntity(VkCommandBuffer commandBuffer, uint32_t imageIndex, VEEntity *entity);
+
 	};
 }
 

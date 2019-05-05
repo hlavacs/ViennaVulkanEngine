@@ -126,8 +126,8 @@ namespace ve {
 
 		uint32_t maxobjects = 10000;
 		vh::vhRenderCreateDescriptorPool(m_device,
-										{ VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER , VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER },
-										{ 3*maxobjects, 3*maxobjects },
+										{ VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER , VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER },
+										{ maxobjects, maxobjects, maxobjects },
 										&m_descriptorPool);
 
 		//set 0...cam UBO
@@ -149,6 +149,12 @@ namespace ve {
 												{ VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER },
 												{ VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT , },
 												&m_descriptorSetLayoutPerObject);
+
+		vh::vhRenderCreateDescriptorSetLayout(	getRendererForwardPointer()->getDevice(),
+												{ 1 },
+												{ VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC },
+												{ VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT , },
+												&m_descriptorSetLayoutPerObject2);
 
 		vh::vhRenderCreateDescriptorSets(m_device, (uint32_t)m_swapChainImages.size(), m_descriptorSetLayoutShadow,   getDescriptorPool(), m_descriptorSetsShadow);
 
@@ -244,6 +250,7 @@ namespace ve {
 		//destroy per frame resources
 		vkDestroyDescriptorPool(m_device, m_descriptorPool, nullptr);
 		vkDestroyDescriptorSetLayout(m_device, m_descriptorSetLayoutPerObject, nullptr);
+		vkDestroyDescriptorSetLayout(m_device, m_descriptorSetLayoutPerObject2, nullptr);
 		vkDestroyDescriptorSetLayout(m_device, m_descriptorSetLayoutShadow, nullptr);
 
 		for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {

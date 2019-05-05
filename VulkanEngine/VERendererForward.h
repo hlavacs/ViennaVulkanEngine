@@ -49,6 +49,7 @@ namespace ve {
 
 		VkDescriptorPool			m_descriptorPool;					///<Descriptor pool for creating descriptor sets
 		VkDescriptorSetLayout		m_descriptorSetLayoutPerObject;		///<Descriptor set layout for each scene object
+		VkDescriptorSetLayout		m_descriptorSetLayoutPerObject2;		///<Descriptor set layout for each scene object
 
 		std::vector<VkSemaphore>	m_imageAvailableSemaphores;			///<sem for waiting for the next swapchain image
 		std::vector<VkSemaphore>	m_renderFinishedSemaphores;			///<sem for signalling that rendering done
@@ -83,6 +84,7 @@ namespace ve {
 		virtual void deleteCmdBuffers();
 		///\returns the per frame descriptor set layout
 		virtual VkDescriptorSetLayout	getDescriptorSetLayoutPerObject() { return m_descriptorSetLayoutPerObject; };
+		virtual VkDescriptorSetLayout	getDescriptorSetLayoutPerObject2() { return m_descriptorSetLayoutPerObject2; };
 		///\returns the shadow descriptor set layout for the shadow
 		virtual VkDescriptorSetLayout	getDescriptorSetLayoutShadow() { return m_descriptorSetLayoutShadow; };
 		///\returns the per frame descriptor set

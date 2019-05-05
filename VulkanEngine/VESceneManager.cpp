@@ -38,6 +38,8 @@ namespace ve {
 		m_memoryBlockMap[VESceneObject::VE_OBJECT_TYPE_ENTITY] = emptyList;
 		vh::vhMemBlockListInit(getRendererForwardPointer()->getDevice(),
 			getRendererForwardPointer()->getVmaAllocator(),
+			getRendererForwardPointer()->getDescriptorPool(),
+			getRendererForwardPointer()->getDescriptorSetLayoutPerObject2(),
 			2048, sizeof(VEEntity::veUBOPerObject_t),
 			getRendererForwardPointer()->getSwapChainNumber(),
 			m_memoryBlockMap[VESceneObject::VE_OBJECT_TYPE_ENTITY]);
@@ -45,6 +47,8 @@ namespace ve {
 		m_memoryBlockMap[VESceneObject::VE_OBJECT_TYPE_CAMERA] = emptyList;
 		vh::vhMemBlockListInit(getRendererForwardPointer()->getDevice(),
 			getRendererForwardPointer()->getVmaAllocator(),
+			getRendererForwardPointer()->getDescriptorPool(),
+			getRendererForwardPointer()->getDescriptorSetLayoutPerObject2(),
 			64, sizeof(VECamera::veUBOPerCamera_t),
 			getRendererForwardPointer()->getSwapChainNumber(),
 			m_memoryBlockMap[VESceneObject::VE_OBJECT_TYPE_CAMERA]);
@@ -52,6 +56,8 @@ namespace ve {
 		m_memoryBlockMap[VESceneObject::VE_OBJECT_TYPE_LIGHT] = emptyList;
 		vh::vhMemBlockListInit(getRendererForwardPointer()->getDevice(),
 			getRendererForwardPointer()->getVmaAllocator(),
+			getRendererForwardPointer()->getDescriptorPool(),
+			getRendererForwardPointer()->getDescriptorSetLayoutPerObject2(),
 			16, sizeof(VELight::veUBOPerLight_t),
 			getRendererForwardPointer()->getSwapChainNumber(),
 			m_memoryBlockMap[VESceneObject::VE_OBJECT_TYPE_LIGHT]);
@@ -491,7 +497,7 @@ namespace ve {
 			pMat->mapDiffuse = new VETexture( filekey, texCube, createFlags, viewType );
 		}
 
-		VESceneNode *pEntity = createEntity(entityName, entityType, pMesh, pMat, glm::mat4(1.0f), nullptr );
+		VESceneNode *pEntity = createEntity(entityName, entityType, pMesh, pMat, glm::mat4(1.0f), m_rootSceneNode );
 		pEntity->setTransform(glm::scale(glm::vec3(10000.0f, 10000.0f, 10000.0f)));
 
 		sceneGraphChanged();
@@ -541,7 +547,7 @@ namespace ve {
 			pMat->mapDiffuse = new VETexture(entityName, basedir, filenames, createFlags, viewType );
 		}
 
-		VEEntity *pEntity = createEntity(entityName, entityType, pMesh, pMat, glm::mat4(1.0f), nullptr);
+		VEEntity *pEntity = createEntity(entityName, entityType, pMesh, pMat, glm::mat4(1.0f), m_rootSceneNode );
 		pEntity->setTransform(glm::scale(glm::vec3(500.0f, 500.0f, 500.0f)));
 		pEntity->m_castsShadow = false;
 
@@ -572,7 +578,7 @@ namespace ve {
 			pMat->mapDiffuse = new VETexture(entityName, basedir, { texName });
 		}
 
-		VEEntity *pEntity = createEntity(entityName, VEEntity::VE_ENTITY_TYPE_SKYPLANE, pMesh, pMat, glm::mat4(1.0f), nullptr );
+		VEEntity *pEntity = createEntity(entityName, VEEntity::VE_ENTITY_TYPE_SKYPLANE, pMesh, pMat, glm::mat4(1.0f), m_rootSceneNode );
 		pEntity->m_castsShadow = false;
 
 		sceneGraphChanged();
@@ -671,6 +677,10 @@ namespace ve {
 	*/
 	void VESceneManager::updateSceneNodes(uint32_t imageIndex ) {
 		m_rootSceneNode->update( imageIndex );
+
+		for (auto list : m_memoryBlockMap) {
+			vh::vhMemBlockUpdateBlockList(list.second, imageIndex );
+		}
 	}
 
 	/**

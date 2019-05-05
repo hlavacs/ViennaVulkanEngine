@@ -51,27 +51,6 @@ namespace ve {
 	void VESubrenderFW_Skyplane::addEntity(VEEntity *pEntity) {
 		VESubrender::addEntity(pEntity);
 
-		/*vh::vhBufCreateUniformBuffers(getRendererForwardPointer()->getVmaAllocator(),
-			(uint32_t)getRendererForwardPointer()->getSwapChainNumber(),
-			(uint32_t)sizeof(veUBOPerObject),
-			pEntity->m_uniformBuffers, pEntity->m_uniformBuffersAllocation);
-
-		vh::vhRenderCreateDescriptorSets(getRendererForwardPointer()->getDevice(),
-			(uint32_t)getRendererForwardPointer()->getSwapChainNumber(),
-			m_descriptorSetLayoutUBO,
-			getRendererForwardPointer()->getDescriptorPool(),
-			pEntity->m_descriptorSetsUBO);
-
-		for (uint32_t i = 0; i < pEntity->m_descriptorSetsUBO.size(); i++) {
-			vh::vhRenderUpdateDescriptorSet(getRendererForwardPointer()->getDevice(),
-				pEntity->m_descriptorSetsUBO[i],
-				{ pEntity->m_uniformBuffers[i] },	//UBOs
-				{ sizeof(veUBOPerObject) },					//UBO sizes
-				{ { VK_NULL_HANDLE } },	//textureImageViews
-				{ { VK_NULL_HANDLE } }	//samplers
-			);
-		}*/
-
 		vh::vhRenderCreateDescriptorSets(getRendererForwardPointer()->getDevice(),
 			(uint32_t)getRendererForwardPointer()->getSwapChainNumber(),
 			m_descriptorSetLayoutResources,
