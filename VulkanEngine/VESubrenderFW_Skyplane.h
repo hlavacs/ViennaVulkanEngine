@@ -27,7 +27,11 @@ namespace ve {
 		virtual veSubrenderType getType() { return VE_SUBRENDERER_TYPE_SKYPLANE; };
 
 		virtual void initSubrenderer();
-		virtual void addEntity(VEEntity *pEntity);
+		virtual void addEntity(VEEntity *pEntity);		
+		
+		virtual void bindPipeline(VkCommandBuffer commandBuffer);
+		virtual void bindDescriptorSetsPerEntity(VkCommandBuffer commandBuffer, uint32_t imageIndex, VEEntity *entity);
+
 	};
 }
 

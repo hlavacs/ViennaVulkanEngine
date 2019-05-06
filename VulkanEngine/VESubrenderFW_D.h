@@ -30,6 +30,9 @@ namespace ve {
 		virtual void initSubrenderer();
 		virtual void bindPipeline(VkCommandBuffer commandBuffer);
 		virtual void bindDescriptorSetsPerEntity(VkCommandBuffer commandBuffer, uint32_t imageIndex, VEEntity *entity);
+		virtual void	bindDescriptorSetsPerFrame(VkCommandBuffer commandBuffer, uint32_t imageIndex,
+			VECamera *pCamera, VELight *pLight,
+			std::vector<VkDescriptorSet> descriptorSetsShadow);
 		virtual void setDynamicPipelineState(VkCommandBuffer commandBuffer, uint32_t numPass);
 		virtual void addEntity(VEEntity *pEntity);
 

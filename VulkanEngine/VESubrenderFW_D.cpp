@@ -102,6 +102,22 @@ namespace ve {
 		vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_pipelines2[0]);	//bind the PSO
 	}
 
+
+	void VESubrenderFW_D::bindDescriptorSetsPerFrame(VkCommandBuffer commandBuffer, uint32_t imageIndex,
+												VECamera *pCamera, VELight *pLight,
+												std::vector<VkDescriptorSet> descriptorSetsShadow) {
+
+		std::vector<VkDescriptorSet> set = { pCamera->m_descriptorSetsUBO[imageIndex], pLight->m_descriptorSetsUBO[imageIndex] };
+		uint32_t offsets[2] = {};
+
+		if (descriptorSetsShadow.size()>0) {
+			set.push_back(descriptorSetsShadow[imageIndex]);
+		}
+
+		vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_pipelineLayout, 0, (uint32_t)set.size(), set.data(), 0, nullptr);
+	}
+
+
 	void VESubrenderFW_D::bindDescriptorSetsPerEntity(VkCommandBuffer commandBuffer, uint32_t imageIndex, VEEntity *entity) {
 
 		std::vector<VkDescriptorSet> sets = { entity->m_memoryHandle.pMemBlock->descriptorSets[imageIndex] };
