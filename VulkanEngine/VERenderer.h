@@ -32,6 +32,7 @@ namespace ve {
 
 	protected:
 		VkPhysicalDevice m_physicalDevice = VK_NULL_HANDLE;		///<Vulkan physical device handle
+		VkPhysicalDeviceFeatures m_deviceFeatures = {};			///<Features of the physical device
 		VkPhysicalDeviceLimits m_deviceLimits = {};				///<Limits of the physical device
 		VkDevice m_device;										///<Vulkan logical device handle
 		VkQueue m_graphicsQueue;								///<Vulkan graphics queue

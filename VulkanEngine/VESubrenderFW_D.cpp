@@ -57,7 +57,6 @@ namespace ve {
 			{ VK_DYNAMIC_STATE_BLEND_CONSTANTS },
 			&m_pipelines2[0]);
 
-
 	}
 
 

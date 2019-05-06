@@ -188,7 +188,7 @@ namespace vh {
 
 	//physical device
 	VkResult vhDevPickPhysicalDevice(	VkInstance instance, VkSurfaceKHR surface, std::vector<const char*> requiredExtensions, 
-										VkPhysicalDevice *physicalDevice, VkPhysicalDeviceLimits *limits );
+										VkPhysicalDevice *physicalDevice, VkPhysicalDeviceFeatures* pFeatures, VkPhysicalDeviceLimits *limits );
 	QueueFamilyIndices vhDevFindQueueFamilies(VkPhysicalDevice device, VkSurfaceKHR surface);
 	VkFormat vhDevFindSupportedFormat(VkPhysicalDevice physicalDevice, const std::vector<VkFormat>& candidates, VkImageTiling tiling, VkFormatFeatureFlags features);
 	VkFormat vhDevFindDepthFormat(VkPhysicalDevice physicalDevice);

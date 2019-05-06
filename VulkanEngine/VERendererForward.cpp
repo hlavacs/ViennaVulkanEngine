@@ -40,7 +40,9 @@ namespace ve {
 			"VK_LAYER_LUNARG_standard_validation"
 		};
 
-		vh::vhDevPickPhysicalDevice(getEnginePointer()->getInstance(), m_surface, requiredDeviceExtensions, &m_physicalDevice, &m_deviceLimits );
+		vh::vhDevPickPhysicalDevice(getEnginePointer()->getInstance(), m_surface, requiredDeviceExtensions, 
+									&m_physicalDevice, &m_deviceFeatures, &m_deviceLimits );
+		
 		vh::vhDevCreateLogicalDevice(m_physicalDevice, m_surface, requiredDeviceExtensions, requiredValidationLayers,
 									&m_device, &m_graphicsQueue, &m_presentQueue);
 

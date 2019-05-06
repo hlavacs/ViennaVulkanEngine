@@ -268,7 +268,7 @@ namespace vh {
 	*/
 	VkResult vhDevPickPhysicalDevice(VkInstance instance, VkSurfaceKHR surface,
 								std::vector<const char*> requiredDeviceExtensions,
-								VkPhysicalDevice *physicalDevice, VkPhysicalDeviceLimits *limits) {
+								VkPhysicalDevice *physicalDevice, VkPhysicalDeviceFeatures* pFeatures, VkPhysicalDeviceLimits *limits) {
 
 		uint32_t deviceCount = 0;
 		VHCHECKRESULT( vkEnumeratePhysicalDevices(instance, &deviceCount, nullptr) );
@@ -294,6 +294,8 @@ namespace vh {
 		VkPhysicalDeviceProperties properties;
 		vkGetPhysicalDeviceProperties( *physicalDevice, &properties);
 		*limits = properties.limits;
+
+		vkGetPhysicalDeviceFeatures( *physicalDevice, pFeatures);
 
 		return VK_SUCCESS;
 	}
