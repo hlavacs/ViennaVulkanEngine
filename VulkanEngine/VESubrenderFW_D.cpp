@@ -26,23 +26,6 @@ namespace ve {
 			{ VK_SHADER_STAGE_FRAGMENT_BIT },
 			&m_descriptorSetLayoutResources);
 
-		/*VkDescriptorSetLayout perObjectLayout = getRendererForwardPointer()->getDescriptorSetLayoutPerObject();
-
-		vh::vhPipeCreateGraphicsPipelineLayout(getRendererForwardPointer()->getDevice(),
-			{ perObjectLayout, perObjectLayout,  getRendererForwardPointer()->getDescriptorSetLayoutShadow(), perObjectLayout, m_descriptorSetLayoutResources },
-			{ },
-			&m_pipelineLayout);
-
-		m_pipelines.resize(1);
-		vh::vhPipeCreateGraphicsPipeline(	getRendererForwardPointer()->getDevice(),
-			{ "shader/Forward/D/vert.spv", "shader/Forward/D/frag.spv" },
-			getRendererForwardPointer()->getSwapChainExtent(),
-			m_pipelineLayout, getRendererForwardPointer()->getRenderPass(),
-			{ VK_DYNAMIC_STATE_BLEND_CONSTANTS },
-			&m_pipelines[0]);
-			*/
-
-		//-----------------------------------------------------------------
 		VkDescriptorSetLayout perObjectLayout2 = getRendererForwardPointer()->getDescriptorSetLayoutPerObject2();
 
 		vh::vhPipeCreateGraphicsPipelineLayout(getRendererForwardPointer()->getDevice(),
@@ -82,7 +65,7 @@ namespace ve {
 		VESubrender::addEntity( pEntity);
 
 		vh::vhRenderCreateDescriptorSets(getRendererForwardPointer()->getDevice(),
-			(uint32_t)getRendererForwardPointer()->getSwapChainNumber(),
+			1, //(uint32_t)getRendererForwardPointer()->getSwapChainNumber(),
 			m_descriptorSetLayoutResources,
 			getRendererForwardPointer()->getDescriptorPool(),
 			pEntity->m_descriptorSetsResources);
@@ -97,45 +80,6 @@ namespace ve {
 			);
 		}
 	}
-
-	/*void VESubrenderFW_D::bindPipeline(VkCommandBuffer commandBuffer) {
-		vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_pipelines2[0]);	//bind the PSO
-	}
-
-
-	void VESubrenderFW_D::bindDescriptorSetsPerFrame(VkCommandBuffer commandBuffer, uint32_t imageIndex,
-												VECamera *pCamera, VELight *pLight,
-												std::vector<VkDescriptorSet> descriptorSetsShadow) {
-
-		std::vector<VkDescriptorSet> set = {
-			pCamera->m_memoryHandle.pMemBlock->descriptorSets[imageIndex],
-			pLight->m_memoryHandle.pMemBlock->descriptorSets[imageIndex]
-		};
-
-		uint32_t offsets[2] = { pCamera->m_memoryHandle.entryIndex * sizeof(VECamera::veUBOPerCamera_t),
-								pLight->m_memoryHandle.entryIndex * sizeof(VELight::veUBOPerLight_t) };
-
-		if (descriptorSetsShadow.size()>0) {
-			set.push_back(descriptorSetsShadow[imageIndex]);
-		}
-
-		vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_pipelineLayout2, 
-								0, (uint32_t)set.size(), set.data(), 2, offsets);
-	}
-
-
-	void VESubrenderFW_D::bindDescriptorSetsPerEntity(VkCommandBuffer commandBuffer, uint32_t imageIndex, VEEntity *entity) {
-
-		std::vector<VkDescriptorSet> sets = { entity->m_memoryHandle.pMemBlock->descriptorSets[imageIndex] };
-		if (entity->m_descriptorSetsResources.size() > 0) {
-			sets.push_back(entity->m_descriptorSetsResources[imageIndex]);
-		}
-
-		uint32_t offset = entity->m_memoryHandle.entryIndex * sizeof(VEEntity::veUBOPerObject_t );
-		vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_pipelineLayout2,
-			3, (uint32_t)sets.size(), sets.data(), 1, &offset );
-	}
-	*/
 
 }
 

@@ -20,20 +20,6 @@ namespace ve {
 	void VESubrenderFW_Shadow::initSubrenderer() {
 		VESubrender::initSubrenderer();
 
-		/*VkDescriptorSetLayout perObjectLayout = getRendererForwardPointer()->getDescriptorSetLayoutPerObject();
-		vh::vhPipeCreateGraphicsPipelineLayout(getRendererForwardPointer()->getDevice(),
-			{ perObjectLayout, perObjectLayout, getRendererForwardPointer()->getDescriptorSetLayoutShadow(), perObjectLayout },
-			{ },
-			&m_pipelineLayout);
-
-		m_pipelines.resize(1);
-		vh::vhPipeCreateGraphicsShadowPipeline(getRendererForwardPointer()->getDevice(),
-			"shader/Forward/Shadow/vert.spv", 
-			getRendererForwardPointer()->getShadowMapExtent(),
-			m_pipelineLayout, getRendererForwardPointer()->getRenderPassShadow(),
-			&m_pipelines[0]);*/
-
-		//----------------------------------------------------------------------------------------------------------
 		VkDescriptorSetLayout perObjectLayout2 = getRendererForwardPointer()->getDescriptorSetLayoutPerObject2();
 		vh::vhPipeCreateGraphicsPipelineLayout(getRendererForwardPointer()->getDevice(),
 		{ perObjectLayout2, perObjectLayout2, getRendererForwardPointer()->getDescriptorSetLayoutShadow(), perObjectLayout2 },
@@ -47,7 +33,6 @@ namespace ve {
 			m_pipelineLayout2, 
 			getRendererForwardPointer()->getRenderPassShadow(),
 			&m_pipelines2[0]);
-
 
 	}
 
@@ -88,13 +73,6 @@ namespace ve {
 		vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_pipelineLayout2,
 								3, (uint32_t)sets.size(), sets.data(), 1, &offset);
 
-		//return;
-
-
-		/*std::vector<VkDescriptorSet> sets = { entity->m_descriptorSetsUBO[imageIndex] };
-
-		vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_pipelineLayout, 3, (uint32_t)sets.size(), sets.data(), 0, nullptr);
-		*/
 	}
 
 
