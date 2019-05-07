@@ -364,7 +364,8 @@ namespace ve {
 		memcpy(data, pUBO, sizeUBO);
 		vmaUnmapMemory(getRendererPointer()->getVmaAllocator(), m_uniformBuffersAllocation[imageIndex]);
 
-		vh::vhMemBlockUpdateEntry( &m_memoryHandle, pUBO );
+		if( m_memoryHandle.pMemBlock != nullptr) 
+			vh::vhMemBlockUpdateEntry( &m_memoryHandle, pUBO );
 	}
 
 

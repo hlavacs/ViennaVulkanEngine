@@ -198,7 +198,7 @@ namespace ve {
 
 		VECamera *pCamera = getSceneManagerPointer()->getCamera();
 		VESceneNode *pParent = pCamera->m_parent;
-		glm::vec4 translate = 1000 * yoffset * glm::vec4(0.0, 0.0, -1.0, 1.0);
+		glm::vec4 translate = 1000 * yoffset * glm::vec4(0.0, 0.0, 1.0, 1.0);
 
 		if (pParent == nullptr) {
 			pParent = pCamera;

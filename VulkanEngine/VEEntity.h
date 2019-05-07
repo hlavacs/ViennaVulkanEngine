@@ -257,6 +257,7 @@ namespace ve {
 			glm::mat4 view;			///<Camera view matrix
 			glm::mat4 proj;			///<Camera projection matrix
 			glm::vec4 param;		///<param[0]: near plane param[1]: far plane distances - 2 and 3 are shadow depth fractions
+			glm::vec4 padding[3];
 		};
 
 		struct veUBOPerCamera_t m_ubo;		///<The UBO that is copied to the GPU
@@ -434,6 +435,7 @@ namespace ve {
 			glm::vec4	col_diffuse;						///<Diffuse color
 			glm::vec4	col_specular;						///<Specular color
 			glm::vec4	param;								///<Light parameters
+			glm::vec4	padding[7];
 			VECamera::veUBOPerCamera_t shadowCameras[6];	///<Up to 6 different shadows, each having its own camera and shadow map
 		};
 

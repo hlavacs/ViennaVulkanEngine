@@ -45,7 +45,7 @@ namespace ve {
 		VkDescriptorSetLayout perObjectLayout2 = getRendererForwardPointer()->getDescriptorSetLayoutPerObject2();
 
 		vh::vhPipeCreateGraphicsPipelineLayout(getRendererForwardPointer()->getDevice(),
-		{ perObjectLayout, perObjectLayout,  getRendererForwardPointer()->getDescriptorSetLayoutShadow(), perObjectLayout2, m_descriptorSetLayoutResources },
+		{ perObjectLayout2, perObjectLayout2,  getRendererForwardPointer()->getDescriptorSetLayoutShadow(), perObjectLayout2, m_descriptorSetLayoutResources },
 		{},
 			&m_pipelineLayout2);
 
@@ -58,7 +58,6 @@ namespace ve {
 			&m_pipelines2[0]);
 
 	}
-
 
 	void VESubrenderFW_D::setDynamicPipelineState(VkCommandBuffer commandBuffer, uint32_t numPass) {
 		if (numPass == 0 ) {
@@ -107,14 +106,20 @@ namespace ve {
 												VECamera *pCamera, VELight *pLight,
 												std::vector<VkDescriptorSet> descriptorSetsShadow) {
 
-		std::vector<VkDescriptorSet> set = { pCamera->m_descriptorSetsUBO[imageIndex], pLight->m_descriptorSetsUBO[imageIndex] };
-		uint32_t offsets[2] = {};
+		std::vector<VkDescriptorSet> set = {
+			pCamera->m_memoryHandle.pMemBlock->descriptorSets[imageIndex],
+			pLight->m_memoryHandle.pMemBlock->descriptorSets[imageIndex]
+		};
+
+		uint32_t offsets[2] = { pCamera->m_memoryHandle.entryIndex * sizeof(VECamera::veUBOPerCamera_t),
+								pLight->m_memoryHandle.entryIndex * sizeof(VELight::veUBOPerLight_t) };
 
 		if (descriptorSetsShadow.size()>0) {
 			set.push_back(descriptorSetsShadow[imageIndex]);
 		}
 
-		vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_pipelineLayout, 0, (uint32_t)set.size(), set.data(), 0, nullptr);
+		vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_pipelineLayout2, 
+								0, (uint32_t)set.size(), set.data(), 2, offsets);
 	}
 
 

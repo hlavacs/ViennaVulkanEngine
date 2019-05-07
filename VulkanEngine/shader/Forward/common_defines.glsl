@@ -15,6 +15,7 @@ struct cameraData_t {
   mat4 camView;
   mat4 camProj;
   vec4 param;
+  vec4 padding[3];
 };
 
 struct lightData_t {
@@ -24,6 +25,7 @@ struct lightData_t {
   vec4  col_diffuse;
   vec4  col_specular;
   vec4  param;
+  vec4 padding[7];
   cameraData_t shadowCameras[NUM_SHADOW_CASCADE];
 };
 
@@ -32,4 +34,5 @@ struct objectData_t {
   mat4 modelInvTrans;
   vec4 color;
   vec4 param;
+  vec4 padding[6];
 };
