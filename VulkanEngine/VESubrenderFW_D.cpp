@@ -97,7 +97,7 @@ namespace ve {
 		}
 	}
 
-	void VESubrenderFW_D::bindPipeline(VkCommandBuffer commandBuffer) {
+	/*void VESubrenderFW_D::bindPipeline(VkCommandBuffer commandBuffer) {
 		vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_pipelines2[0]);	//bind the PSO
 	}
 
@@ -134,6 +134,7 @@ namespace ve {
 		vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_pipelineLayout2,
 			3, (uint32_t)sets.size(), sets.data(), 1, &offset );
 	}
+	*/
 
 }
 

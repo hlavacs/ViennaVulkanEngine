@@ -59,7 +59,7 @@ namespace ve {
 	*
 	*/
 	void VESubrender::bindPipeline( VkCommandBuffer commandBuffer ) {
-		vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_pipelines[0]);	//bind the PSO
+		vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_pipelines2[0]);	//bind the PSO
 	}
 
 
@@ -83,8 +83,24 @@ namespace ve {
 		//set 3...per object UBO
 		//set 4...additional per object resources
 
-		std::vector<VkDescriptorSet> set =
-			{ pCamera->m_descriptorSetsUBO[imageIndex], pLight->m_descriptorSetsUBO[imageIndex] };
+		std::vector<VkDescriptorSet> set = {
+			pCamera->m_memoryHandle.pMemBlock->descriptorSets[imageIndex],
+			pLight->m_memoryHandle.pMemBlock->descriptorSets[imageIndex]
+		};
+
+		uint32_t offsets[2] = { pCamera->m_memoryHandle.entryIndex * sizeof(VECamera::veUBOPerCamera_t),
+			pLight->m_memoryHandle.entryIndex * sizeof(VELight::veUBOPerLight_t) };
+
+		if (descriptorSetsShadow.size()>0) {
+			set.push_back(descriptorSetsShadow[imageIndex]);
+		}
+
+		vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_pipelineLayout2,
+								0, (uint32_t)set.size(), set.data(), 2, offsets);
+
+		return;
+
+		//std::vector<VkDescriptorSet> set = { pCamera->m_descriptorSetsUBO[imageIndex], pLight->m_descriptorSetsUBO[imageIndex] };
 
 		if(descriptorSetsShadow.size()>0) {
 			set.push_back(descriptorSetsShadow[imageIndex]);
@@ -113,7 +129,18 @@ namespace ve {
 		//set 3...per object UBO
 		//set 4...additional per object resources
 
-		std::vector<VkDescriptorSet> sets = { entity->m_descriptorSetsUBO[imageIndex] };
+		std::vector<VkDescriptorSet> sets = { entity->m_memoryHandle.pMemBlock->descriptorSets[imageIndex] };
+		if (entity->m_descriptorSetsResources.size() > 0) {
+			sets.push_back(entity->m_descriptorSetsResources[imageIndex]);
+		}
+
+		uint32_t offset = entity->m_memoryHandle.entryIndex * sizeof(VEEntity::veUBOPerObject_t);
+		vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_pipelineLayout2,
+			3, (uint32_t)sets.size(), sets.data(), 1, &offset);
+
+		return;
+
+		//std::vector<VkDescriptorSet> sets = { entity->m_descriptorSetsUBO[imageIndex] };
 		if (entity->m_descriptorSetsResources.size() > 0) {
 			sets.push_back( entity->m_descriptorSetsResources[imageIndex] );
 		}

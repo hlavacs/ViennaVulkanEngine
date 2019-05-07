@@ -32,6 +32,23 @@ namespace ve {
 			getRendererForwardPointer()->getShadowMapExtent(),
 			m_pipelineLayout, getRendererForwardPointer()->getRenderPassShadow(),
 			&m_pipelines[0]);
+
+		//----------------------------------------------------------------------------------------------------------
+		VkDescriptorSetLayout perObjectLayout2 = getRendererForwardPointer()->getDescriptorSetLayoutPerObject2();
+		vh::vhPipeCreateGraphicsPipelineLayout(getRendererForwardPointer()->getDevice(),
+		{ perObjectLayout2, perObjectLayout2, getRendererForwardPointer()->getDescriptorSetLayoutShadow(), perObjectLayout2 },
+		{},
+		&m_pipelineLayout2);
+
+		m_pipelines2.resize(1);
+		vh::vhPipeCreateGraphicsShadowPipeline(getRendererForwardPointer()->getDevice(),
+			"shader/Forward/Shadow/vert.spv",
+			getRendererForwardPointer()->getShadowMapExtent(),
+			m_pipelineLayout2, 
+			getRendererForwardPointer()->getRenderPassShadow(),
+			&m_pipelines2[0]);
+
+
 	}
 
 	/**
@@ -63,9 +80,18 @@ namespace ve {
 		//set 1...light resources
 		//set 2...shadow maps
 		//set 3...per object UBO
-		//set 4...additional per object resources
+		//set 4...additional per object resources - NOT used in shadows
 
-		std::vector<VkDescriptorSet> sets = { entity->m_descriptorSetsUBO[imageIndex] };
+		std::vector<VkDescriptorSet> sets = { entity->m_memoryHandle.pMemBlock->descriptorSets[imageIndex] };
+
+		uint32_t offset = entity->m_memoryHandle.entryIndex * sizeof(VEEntity::veUBOPerObject_t);
+		vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_pipelineLayout2,
+								3, (uint32_t)sets.size(), sets.data(), 1, &offset);
+
+		return;
+
+
+		//std::vector<VkDescriptorSet> sets = { entity->m_descriptorSetsUBO[imageIndex] };
 
 		vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_pipelineLayout, 3, (uint32_t)sets.size(), sets.data(), 0, nullptr);
 	}

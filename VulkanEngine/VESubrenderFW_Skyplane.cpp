@@ -44,7 +44,7 @@ namespace ve {
 		VkDescriptorSetLayout perObjectLayout2 = getRendererForwardPointer()->getDescriptorSetLayoutPerObject2();
 
 		vh::vhPipeCreateGraphicsPipelineLayout(getRendererForwardPointer()->getDevice(),
-		{ perObjectLayout, perObjectLayout,  getRendererForwardPointer()->getDescriptorSetLayoutShadow(), perObjectLayout2, m_descriptorSetLayoutResources },
+		{ perObjectLayout2, perObjectLayout2,  getRendererForwardPointer()->getDescriptorSetLayoutShadow(), perObjectLayout2, m_descriptorSetLayoutResources },
 		{}, &m_pipelineLayout2);
 
 		m_pipelines2.resize(1);
@@ -84,7 +84,7 @@ namespace ve {
 		}
 	}
 
-	void VESubrenderFW_Skyplane::bindPipeline(VkCommandBuffer commandBuffer) {
+	/*void VESubrenderFW_Skyplane::bindPipeline(VkCommandBuffer commandBuffer) {
 		vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_pipelines2[0]);	//bind the PSO
 	}
 
@@ -98,7 +98,7 @@ namespace ve {
 		uint32_t offset = entity->m_memoryHandle.entryIndex * sizeof(VEEntity::veUBOPerObject_t);
 		vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_pipelineLayout2,
 			3, (uint32_t)sets.size(), sets.data(), 1, &offset);
-	}
+	}*/
 }
 
 

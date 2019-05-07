@@ -29,8 +29,8 @@ namespace ve {
 		virtual void initSubrenderer();
 		virtual void addEntity(VEEntity *pEntity);		
 		
-		virtual void bindPipeline(VkCommandBuffer commandBuffer);
-		virtual void bindDescriptorSetsPerEntity(VkCommandBuffer commandBuffer, uint32_t imageIndex, VEEntity *entity);
+		//virtual void bindPipeline(VkCommandBuffer commandBuffer);
+		//virtual void bindDescriptorSetsPerEntity(VkCommandBuffer commandBuffer, uint32_t imageIndex, VEEntity *entity);
 
 	};
 }
