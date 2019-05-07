@@ -158,7 +158,6 @@ namespace vh {
 	struct vhMemoryHandle {
 		void *owner;					///<pointer to the owner of this entry
 		vhMemoryBlock *pMemBlock;		///<pointer to the memory block
-		uint32_t listIndex=0;			///<index into the list 
 		uint32_t entryIndex=0;			///<index into the entry list of the block
 
 		///\returns the pointer to the UBO 

@@ -12,6 +12,11 @@
 #define getSceneManagerPointer() g_pVESceneManagerSingleton
 #endif
 
+#ifndef getRoot
+#define getRoot() getSceneManagerPointer()->getRootSceneNode()
+#endif
+
+
 namespace ve {
 
 	class VEEngine;
