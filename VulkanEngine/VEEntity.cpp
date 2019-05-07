@@ -312,7 +312,7 @@ namespace ve {
 	VESceneObject::VESceneObject(std::string name, glm::mat4 transf, VESceneNode *parent, uint32_t sizeUBO ) : 
 									VESceneNode(name, transf, parent) {
 
-		if (sizeUBO > 0) {
+/*		if (sizeUBO > 0) {
 			vh::vhBufCreateUniformBuffers(	getRendererPointer()->getVmaAllocator(),
 											(uint32_t)getRendererPointer()->getSwapChainNumber(),
 											sizeUBO, m_uniformBuffers, m_uniformBuffersAllocation);
@@ -332,7 +332,7 @@ namespace ve {
 					{ { VK_NULL_HANDLE } }			//samplers
 				);
 			}
-		}
+		}*/
 	}
 
 
@@ -344,9 +344,9 @@ namespace ve {
 	*
 	*/
 	VESceneObject::~VESceneObject() {
-		for (uint32_t i = 0; i < m_uniformBuffers.size(); i++) {
+		/*for (uint32_t i = 0; i < m_uniformBuffers.size(); i++) {
 			vmaDestroyBuffer(getRendererPointer()->getVmaAllocator(), m_uniformBuffers[i], m_uniformBuffersAllocation[i]);
-		}
+		}*/
 	}
 
 	/**
@@ -359,10 +359,10 @@ namespace ve {
 	*
 	*/
 	void VESceneObject::updateUBO(void *pUBO, uint32_t sizeUBO, uint32_t imageIndex ) {
-		void* data = nullptr;
+		/*void* data = nullptr;
 		vmaMapMemory(getRendererPointer()->getVmaAllocator(), m_uniformBuffersAllocation[imageIndex], &data);
 		memcpy(data, pUBO, sizeUBO);
-		vmaUnmapMemory(getRendererPointer()->getVmaAllocator(), m_uniformBuffersAllocation[imageIndex]);
+		vmaUnmapMemory(getRendererPointer()->getVmaAllocator(), m_uniformBuffersAllocation[imageIndex]);*/
 
 		if( m_memoryHandle.pMemBlock != nullptr) 
 			vh::vhMemBlockUpdateEntry( &m_memoryHandle, pUBO );

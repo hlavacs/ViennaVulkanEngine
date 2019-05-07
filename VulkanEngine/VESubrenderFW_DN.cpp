@@ -27,7 +27,7 @@ namespace ve {
 			{ VK_SHADER_STAGE_FRAGMENT_BIT,					VK_SHADER_STAGE_FRAGMENT_BIT },
 			&m_descriptorSetLayoutResources);
 
-		VkDescriptorSetLayout perObjectLayout = getRendererForwardPointer()->getDescriptorSetLayoutPerObject();
+		/*VkDescriptorSetLayout perObjectLayout = getRendererForwardPointer()->getDescriptorSetLayoutPerObject();
 
 		vh::vhPipeCreateGraphicsPipelineLayout(getRendererForwardPointer()->getDevice(),
 			{ perObjectLayout, perObjectLayout,  getRendererForwardPointer()->getDescriptorSetLayoutShadow(), perObjectLayout, m_descriptorSetLayoutResources },
@@ -41,7 +41,7 @@ namespace ve {
 			m_pipelineLayout, getRendererForwardPointer()->getRenderPass(),
 			{ VK_DYNAMIC_STATE_BLEND_CONSTANTS },
 			&m_pipelines[0]);
-
+			*/
 
 		//-----------------------------------------------------------------
 		VkDescriptorSetLayout perObjectLayout2 = getRendererForwardPointer()->getDescriptorSetLayoutPerObject2();

@@ -126,7 +126,7 @@ namespace ve {
 		//------------------------------------------------------------------------------------------------------------
 		//create descriptor pool, layout and sets
 
-		uint32_t maxobjects = 10000;
+		uint32_t maxobjects = 40000;
 		vh::vhRenderCreateDescriptorPool(m_device,
 										{ VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER , VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER },
 										{ maxobjects, maxobjects, maxobjects },

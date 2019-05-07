@@ -32,12 +32,13 @@ namespace ve {
 	*/
 	void VESubrender::closeSubrenderer() {
 
-		for (auto pipeline : m_pipelines) {
+		/*for (auto pipeline : m_pipelines) {
 			vkDestroyPipeline(getRendererPointer()->getDevice(), pipeline, nullptr);
 		}
 
 		if (m_pipelineLayout != VK_NULL_HANDLE)
 			vkDestroyPipelineLayout(getRendererPointer()->getDevice(), m_pipelineLayout, nullptr);
+			*/
 
 		for (auto pipeline : m_pipelines2) {
 			vkDestroyPipeline(getRendererPointer()->getDevice(), pipeline, nullptr);
@@ -98,15 +99,15 @@ namespace ve {
 		vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_pipelineLayout2,
 								0, (uint32_t)set.size(), set.data(), 2, offsets);
 
-		return;
+		//return;
 
-		//std::vector<VkDescriptorSet> set = { pCamera->m_descriptorSetsUBO[imageIndex], pLight->m_descriptorSetsUBO[imageIndex] };
+		/*std::vector<VkDescriptorSet> set = { pCamera->m_descriptorSetsUBO[imageIndex], pLight->m_descriptorSetsUBO[imageIndex] };
 
 		if(descriptorSetsShadow.size()>0) {
 			set.push_back(descriptorSetsShadow[imageIndex]);
 		}
 
-		vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_pipelineLayout, 0, (uint32_t)set.size(), set.data(), 0, nullptr);
+		vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_pipelineLayout, 0, (uint32_t)set.size(), set.data(), 0, nullptr);*/
 	}
 
 
@@ -138,7 +139,7 @@ namespace ve {
 		vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_pipelineLayout2,
 			3, (uint32_t)sets.size(), sets.data(), 1, &offset);
 
-		return;
+		/*return;
 
 		//std::vector<VkDescriptorSet> sets = { entity->m_descriptorSetsUBO[imageIndex] };
 		if (entity->m_descriptorSetsResources.size() > 0) {
@@ -146,6 +147,7 @@ namespace ve {
 		}
 
 		vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_pipelineLayout, 3, (uint32_t)sets.size(), sets.data(), 0, nullptr);
+		*/
 	}
 
 

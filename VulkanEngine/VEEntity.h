@@ -127,10 +127,6 @@ namespace ve {
 	public:
 		vh::vhMemoryHandle				m_memoryHandle = {};			///<Handle to the UBO memory 
 
-		std::vector<VkBuffer>			m_uniformBuffers;				///<One UBO for each framebuffer frame
-		std::vector<VmaAllocation>		m_uniformBuffersAllocation;		///<VMA information for the UBOs
-		std::vector<VkDescriptorSet>	m_descriptorSetsUBO;			///<Descriptor sets for UBO
-
 		VESceneObject(std::string name, glm::mat4 transf = glm::mat4(1.0f), VESceneNode *parent = nullptr, uint32_t sizeUBO = 0);
 		virtual ~VESceneObject();
 
@@ -216,9 +212,9 @@ namespace ve {
 		//UBO
 
 		///\returns size of entity UBO
-		virtual uint32_t getSizeUBO() { return sizeof(veUBOPerObject_t);  };
-		virtual void updateUBO( glm::mat4 worldMatrix, uint32_t imageIndex );	//update the UBO of this node using its current world matrix
-		void		 setParam(glm::vec4 param);		//set the free parameter
+		virtual uint32_t	getSizeUBO() { return sizeof(veUBOPerObject_t);  };
+		virtual void		updateUBO( glm::mat4 worldMatrix, uint32_t imageIndex );	//update the UBO of this node using its current world matrix
+		void				setParam( glm::vec4 param);		//set the free parameter
 
 		//-------------------------------------------------------------------------------------
 		//Bounding volume

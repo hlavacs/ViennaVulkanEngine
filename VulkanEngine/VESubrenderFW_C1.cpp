@@ -20,7 +20,7 @@ namespace ve {
 	void VESubrenderFW_C1::initSubrenderer() {
 		VESubrender::initSubrenderer();
 
-		VkDescriptorSetLayout perObjectLayout = getRendererForwardPointer()->getDescriptorSetLayoutPerObject();
+		/*VkDescriptorSetLayout perObjectLayout = getRendererForwardPointer()->getDescriptorSetLayoutPerObject();
 		vh::vhPipeCreateGraphicsPipelineLayout(getRendererForwardPointer()->getDevice(),
 			{ perObjectLayout, perObjectLayout, getRendererForwardPointer()->getDescriptorSetLayoutShadow(), perObjectLayout },
 			{ },&m_pipelineLayout);
@@ -32,7 +32,7 @@ namespace ve {
 			m_pipelineLayout, getRendererForwardPointer()->getRenderPass(),
 			{},
 			&m_pipelines[0]);
-
+			*/
 
 		//-----------------------------------------------------------------
 		VkDescriptorSetLayout perObjectLayout2 = getRendererForwardPointer()->getDescriptorSetLayoutPerObject2();

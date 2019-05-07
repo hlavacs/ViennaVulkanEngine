@@ -45,7 +45,7 @@ namespace ve {
 		VESceneNode						*	m_rootSceneNode;	///<The root node of the scene graph
 
 		///the memory for all UBOs
-		std::map<VESceneObject::veObjectType, std::vector<vh::vhMemoryBlock>> m_memoryBlockMap;										///<memory for the UBOs of the entities
+		std::map<VESceneObject::veObjectType, std::vector<vh::vhMemoryBlock*>> m_memoryBlockMap;										///<memory for the UBOs of the entities
 
 		VECamera *				m_camera = nullptr;			///<entity ptr of the current camera
 		std::vector<VELight*>	m_lights = {};				///<ptrs to the lights to use

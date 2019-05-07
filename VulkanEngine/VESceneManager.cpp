@@ -33,7 +33,7 @@ namespace ve {
 	*/
 	void VESceneManager::initSceneManager() {
 
-		std::vector<vh::vhMemoryBlock> emptyList;
+		std::vector<vh::vhMemoryBlock*> emptyList;
 
 		m_memoryBlockMap[VESceneObject::VE_OBJECT_TYPE_ENTITY] = emptyList;
 		vh::vhMemBlockListInit(getRendererForwardPointer()->getDevice(),
@@ -87,7 +87,7 @@ namespace ve {
 		VELight *light1 = new VEDirectionalLight("StandardDirLight" );
 		light1->lookAt(glm::vec3(0.0f, 20.0f, -20.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
 		light1->m_col_ambient = glm::vec4(0.1f, 0.1f, 0.1f, 1.0f);
-		light1->m_col_diffuse = glm::vec4(0.8f, 0.8f, 0.8f, 1.0f);
+		light1->m_col_diffuse = glm::vec4(0.5f, 0.5f, 0.5f, 1.0f);
 		light1->m_col_specular = glm::vec4(0.1f, 0.1f, 0.1f, 1.0f);
 		addSceneNode(light1, m_rootSceneNode );
 		switchOnLight(light1);
