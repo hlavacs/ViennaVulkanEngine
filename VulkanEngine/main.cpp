@@ -93,12 +93,14 @@ namespace ve {
 		///create many cubes
 		void createCubes(uint32_t n) {
 
-			for (uint32_t i = 0; i < n; i++) {
-				float stride = 150.0f;
-				static std::default_random_engine e{12345};
-				static std::uniform_real_distribution<> d{ 1.0f, stride }; 
+			float stride = 200.0f;
+			static std::default_random_engine e{12345};
+			static std::uniform_real_distribution<> d{ 1.0f, stride }; 
 
+			for (uint32_t i = 0; i < n; i++) {
 				VESceneNode *e2 = m_pSceneManager->loadModel("The Cube" + std::to_string(i), "models/test/crate0", "cube.obj");
+				
+				
 				getSceneManagerPointer()->getRootSceneNode()->addChild(e2);
 				e2->setTransform(glm::translate(glm::mat4(1.0f), glm::vec3( d(e) - stride/2.0f, d(e)/2.0f, d(e) - stride/2.0f)));
 				//e2->multiplyTransform(glm::scale(glm::mat4(1.0f), glm::vec3(10.0f, 10.0f, 10.0f)));
@@ -135,7 +137,7 @@ namespace ve {
 			e1->multiplyTransform( glm::scale(glm::mat4(1.0f), glm::vec3(10.0f, 10.0f, 10.0f)));
 			getSceneManagerPointer()->getRootSceneNode()->addChild(e1);
 
-			createCubes(5000);
+			createCubes(100);
 			//VESceneNode *pSponza = m_pSceneManager->loadModel("Sponza", "models/sponza", "sponza.dae", aiProcess_FlipWindingOrder);
 			//pSponza->setTransform(glm::scale(glm::mat4(1.0f), glm::vec3(0.1f, 0.1f, 0.1f)));
 
