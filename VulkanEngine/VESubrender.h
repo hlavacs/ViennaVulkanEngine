@@ -51,13 +51,12 @@ namespace ve {
 		};
 
 	protected:
-		VkDescriptorSetLayout			m_descriptorSetLayoutResources = VK_NULL_HANDLE;	///<Descriptor set 3 : per object additional resources
-		//VkPipelineLayout				m_pipelineLayout = VK_NULL_HANDLE;					///<Pipeline layout
-		//std::vector<VkPipeline>			m_pipelines;										///<Pipeline for light pass(es)
+		VkDescriptorSetLayout			m_descriptorSetLayoutResources = VK_NULL_HANDLE;	///<Descriptor set layout for per object resources (like images)
+		std::vector<VkDescriptorSet>	m_descriptorSetsResources;							///<Per object resources
+		std::vector<VkDescriptorImageInfo> m_imageMaps;										///<Default textures
 
-		VkPipelineLayout				m_pipelineLayout2 = VK_NULL_HANDLE;					///<Pipeline layout
-		std::vector<VkPipeline>			m_pipelines2;										///<Pipeline for light pass(es)
-
+		VkPipelineLayout				m_pipelineLayout = VK_NULL_HANDLE;					///<Pipeline layout
+		std::vector<VkPipeline>			m_pipelines;										///<Pipeline for light pass(es)
 		std::vector<VEEntity *>			m_entities;											///<List of associated entities
 
 	public:
@@ -107,7 +106,7 @@ namespace ve {
 		uint32_t		getNumberEntities() { return (uint32_t)m_entities.size(); };
 		
 		///return the layout of the local pipeline
-		VkPipelineLayout getPipelineLayout() { return m_pipelineLayout2; };
+		VkPipelineLayout getPipelineLayout() { return m_pipelineLayout; };
 	};
 
 

@@ -14,11 +14,12 @@ namespace ve {
 	*/
 	class VESubrenderFW_DN : public VESubrender {
 	protected:
+		std::vector<VkDescriptorImageInfo> m_normalMaps;
 
 	public:
-		///Constructor
+		///Constructor for class VESubrenderFW_DN
 		VESubrenderFW_DN() { };
-		///Destructor
+		///Destructor for class VESubrenderFW_DN
 		virtual ~VESubrenderFW_DN() {};
 
 		///\returns the class of the subrenderer

@@ -26,19 +26,19 @@ namespace ve {
 			{ VK_SHADER_STAGE_FRAGMENT_BIT },
 			&m_descriptorSetLayoutResources);
 
-		VkDescriptorSetLayout perObjectLayout2 = getRendererForwardPointer()->getDescriptorSetLayoutPerObject2();
+		VkDescriptorSetLayout perObjectLayout = getRendererForwardPointer()->getDescriptorSetLayoutPerObject2();
 
 		vh::vhPipeCreateGraphicsPipelineLayout(getRendererForwardPointer()->getDevice(),
-		{ perObjectLayout2, perObjectLayout2,  getRendererForwardPointer()->getDescriptorSetLayoutShadow(), perObjectLayout2, m_descriptorSetLayoutResources },
-		{}, &m_pipelineLayout2);
+		{ perObjectLayout, perObjectLayout,  getRendererForwardPointer()->getDescriptorSetLayoutShadow(), perObjectLayout, m_descriptorSetLayoutResources },
+		{}, &m_pipelineLayout);
 
-		m_pipelines2.resize(1);
+		m_pipelines.resize(1);
 		vh::vhPipeCreateGraphicsPipeline(getRendererForwardPointer()->getDevice(),
 		{ "shader/Forward/Cubemap2/vert.spv", "shader/Forward/Cubemap2/frag.spv" },
 			getRendererForwardPointer()->getSwapChainExtent(),
-			m_pipelineLayout2, getRendererForwardPointer()->getRenderPass(),
+			m_pipelineLayout, getRendererForwardPointer()->getRenderPass(),
 			{ },
-			&m_pipelines2[0]);
+			&m_pipelines[0]);
 
 	}
 
