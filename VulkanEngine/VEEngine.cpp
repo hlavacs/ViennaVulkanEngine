@@ -57,6 +57,10 @@ namespace ve {
 		m_pRenderer->initRenderer();			//initialize the renderer
 		m_pSceneManager->initSceneManager();	//initialize the scene manager
 
+		for (uint32_t i = VE_EVENT_NONE; i < VE_EVENT_LAST; i++) {	//initialize the event listeners lists
+			m_eventListeners[(veEventType)i] = {};
+		}
+
 		registerEventListeners();
 		m_loopCount = 1;
 	}
@@ -111,8 +115,10 @@ namespace ve {
 		m_threadPool->shutdown();
 		delete m_threadPool;
 
-		for (auto el : m_eventListener) delete el;
-		m_eventListener.clear();
+		
+		//for (auto el : m_eventListener) delete el;
+		//m_eventListener.clear();
+		clearEventListenerList();
 		m_eventlist.clear();
 
 		m_pSceneManager->closeSceneManager();
@@ -168,8 +174,72 @@ namespace ve {
 	*
 	*/
 	void VEEngine::registerEventListener(VEEventListener *pListener) {
-		m_eventListener.push_back( pListener );
+		std::vector<veEventType> eventTypes;
+		for (uint32_t i = VE_EVENT_NONE+1; i < VE_EVENT_LAST; i++) {
+			eventTypes.push_back((veEventType)i);
+		}
+		registerEventListener(pListener, eventTypes);
 	}; 
+
+
+	/**
+	*
+	* \brief Register an event listener for a specific evennt type
+	*
+	* The event listener will be sent events of this type
+	*
+	* \param[in] pListener Pointer to the event listener to be registered.
+	* \param[in] eventTypes List with event types that are sent to this listener
+	*
+	*/
+	void VEEngine::registerEventListener(VEEventListener *pListener, std::vector<veEventType> eventTypes) {
+		for (auto eventType : eventTypes) {
+			m_eventListeners[eventType].push_back(pListener);
+		}
+	}
+
+
+	/**
+	*
+	* \brief Return a pointer to a specified event listener
+	*
+	* \param[in] name Name of the listener that should be found
+	* \returns a pointer to the event listener having this name
+	*
+	*/
+	VEEventListener* VEEngine::getEventListener(std::string name) {
+		for (auto list : m_eventListeners) {
+			for (auto listener : list.second) {
+				if (listener->getName() == name) {
+					return listener;
+				}
+			}
+		}
+		return nullptr;
+	}
+
+
+	/**
+	*
+	* \brief Register an event listener for a specific evennt type
+	*
+	* The event listener will be sent events of this type
+	*
+	* \param[in] name Name of the listener that should be removed
+	* \param[in] list Reference to the list that this listener should be registered in
+	*
+	*/
+	void VEEngine::removeEventListener(std::string name, std::vector<VEEventListener*>&list) {
+		for (uint32_t i = 0; i < list.size(); i++) {
+			if (list[i]->getName() == name) {
+				list[i] = list[list.size() - 1];		//write over last listener
+				list.pop_back();
+				return;
+			}
+		}
+	}
+
+	
 
 	/**
 	*
@@ -181,12 +251,8 @@ namespace ve {
 	*
 	*/
 	void VEEngine::removeEventListener(std::string name) {
-		for (uint32_t i = 0; i < m_eventListener.size(); i++) {
-			if (m_eventListener[i]->getName() == name) {
-				m_eventListener[i] = m_eventListener[m_eventListener.size() - 1];		//write over last listener
-				m_eventListener.pop_back();
-				return;
-			}
+		for (auto list : m_eventListeners) {
+			removeEventListener(name, list.second);
 		}
 	};
 
@@ -195,19 +261,49 @@ namespace ve {
 	*
 	* \brief Delete an event listener.
 	*
-	* The event listener will be removed from the list and destroyed.
+	* The event listener will be removed from the list of listeners and be destroyed
+	*
+	* \param[in] name The name of the listener zu be destroyed
 	*
 	*/
 	void VEEngine::deleteEventListener(std::string name)  {
-		for (uint32_t i = 0; i < m_eventListener.size(); i++) {
-			if (m_eventListener[i]->getName() == name) {
-				delete m_eventListener[i];											//delete the pointer
-				m_eventListener[i] = m_eventListener[m_eventListener.size()-1];		//write over last listener
-				m_eventListener.pop_back();
-				return;
-			}
+		VEEventListener *pListener = getEventListener(name);
+		if (pListener != nullptr) {
+			removeEventListener(name);
+			delete pListener;
 		}
 	};
+
+
+
+	/**
+	*
+	* \brief Destroy all event listeners
+	*
+	*/
+	void VEEngine::clearEventListenerList() {
+		std::set<VEEventListener*> lset;
+		for (auto list : m_eventListeners) {
+			for (auto listener : list.second) {
+				lset.insert(listener);
+			}
+			list.second.clear();
+		}
+		for (auto pListener : lset) delete pListener;
+	}
+
+
+	/**
+	*
+	* \brief Call all listeners registered for a specific event type
+	*
+	* \param[in] dt Delta time that passed by since the last loop.
+	* \param[in] event The event that should be passed to all listeners.
+	*
+	*/
+	void VEEngine::callListeners(double dt, veEvent event ) {
+		callListeners(dt, event, &m_eventListeners[event.type]);
+	}
 
 
 
@@ -221,28 +317,27 @@ namespace ve {
 	*
 	* \param[in] dt Delta time that passed by since the last loop.
 	* \param[in] event The event that should be passed to all listeners.
+	* \param[in] list The list of registered event listeners, that should receive this event
 	*
 	*/
-	void VEEngine::callListeners(double dt, veEvent event) {
+	void VEEngine::callListeners(double dt, veEvent event, std::vector<VEEventListener*> *list ) {
 		event.dt = dt;
 
-		if ( false) {		//m_eventListener.size() > 0) { ToDO: fix VEEntity::updateChildren 
+		if ( list->size()>100 ) {
 			uint32_t numThreads = 10;
-			uint32_t numListenerPerThread = (uint32_t)m_eventListener.size() / numThreads;
-			uint32_t numListenerLastThread = (uint32_t)m_eventListener.size() - numListenerPerThread * (numThreads - 1);
+			uint32_t numListenerPerThread = (uint32_t)list->size() / numThreads;
 
-			uint32_t startIdx;
-			uint32_t endIdx;
+			uint32_t startIdx, endIdx;
 			for (uint32_t k = 0; k < numThreads; k++) {
 				startIdx = k*numListenerPerThread;
-				endIdx = k < numThreads - 1 ? numListenerPerThread : numListenerLastThread;
-				m_threadPool->submit([=]() { this->callListeners(dt, event, startIdx, endIdx); });
+				endIdx = k < numThreads - 1 ? (k+1)*numListenerPerThread-1 : list->size()-1;
+				auto lst = m_threadPool->submit([=]() { this->callListeners(dt, event, list, startIdx, endIdx); });
+				if (k == numThreads - 1) lst.get();
 			}
 		}
 		else {
-			if(m_eventListener.size()>0) callListeners( dt, event, 0, (uint32_t) m_eventListener.size() - 1);
+			if(list->size()>0) callListeners( dt, event, list, 0, (uint32_t) list->size() - 1);
 		}
-
 	}
 
 	/**
@@ -251,17 +346,19 @@ namespace ve {
 	*
 	* \param[in] dt Delta time that passed by since the last loop.
 	* \param[in] event The event that should be processed.
+	* \param[in] list The list of registered event listeners, that should receive this event
 	* \param[in] startIdx Index of the first listener to call
 	* \param[in] endIdx Index of the last listener to call
 	*
 	*/
-	void VEEngine::callListeners(double dt, veEvent event, uint32_t startIdx, uint32_t endIdx) {
+	void VEEngine::callListeners(double dt, veEvent event, std::vector<VEEventListener*> *list, uint32_t startIdx, uint32_t endIdx) {
 		for( uint32_t i=startIdx; i<=endIdx; i++ ) {
-			if (m_eventListener[i]->onEvent(event)) return;		//if return true then the listener has consumed the event
+			if ((*list)[i]->onEvent(event)) return;		//if return true then the listener has consumed the event
 		}
 	}
 
 
+	//---------------------------------------------------------------------------------------------------
 
 	/**
 	*
@@ -327,11 +424,7 @@ namespace ve {
 				callListeners(dt, event);
 			}
 		}
-		m_eventlist.clear();
-
-		for (auto event : keepEvents) {
-			m_eventlist.push_back(event);
-		}
+		m_eventlist = keepEvents;
 	}
 
 
@@ -357,10 +450,7 @@ namespace ve {
 	*
 	*/
 	void VEEngine::fatalError(std::string message) {
-		while (m_eventListener.size() > 0) {
-			deleteEventListener( m_eventListener[0]->getName() );
-		}
-
+		clearEventListenerList();
 		registerEventListener(new VEEventListenerNuklearError(message) );		
 	}
 

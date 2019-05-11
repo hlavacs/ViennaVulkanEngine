@@ -54,7 +54,7 @@ namespace ve {
 		VkDebugReportCallbackEXT callback;				///<Debug callback handle
 
 		std::vector<veEvent> m_eventlist;				///<List of events that should be handled in the next loop
-		std::vector<VEEventListener*> m_eventListener;	///<set of registered event listeners
+		std::map<veEventType, std::vector<VEEventListener*>> m_eventListeners; ///<Maps event types to lists of evennt listeners
 
 		double m_dt = 0.0;								///<Delta time since the last loop
 		double m_time = 0.0;							///<Absolute game time since start of the render loop
@@ -71,7 +71,8 @@ namespace ve {
 		virtual std::vector<const char*> getRequiredInstanceExtensions(); //Return a list of required Vulkan instance extensions
 		virtual std::vector<const char*> getValidationLayers();	//Returns a list of required Vulkan validation layers
 		void callListeners(double dt, veEvent event);	//Call all event listeners and give them certain event
-		void callListeners(double dt, veEvent event, uint32_t startIdx, uint32_t endIdx);
+		void callListeners(double dt, veEvent event, std::vector<VEEventListener*> *list);	//Call all event listeners and give them certain event
+		void callListeners(double dt, veEvent event, std::vector<VEEventListener*> *list, uint32_t startIdx, uint32_t endIdx);
 		void processEvents(double dt);			//Start handling all events
 		void windowSizeChanged();				//Callback for window if window size has changed
 
@@ -93,8 +94,12 @@ namespace ve {
 		virtual void fatalError(std::string message);		//Show an error message and close down the engine
 		virtual void end();									//end the render loop
 		void registerEventListener(VEEventListener *lis);	//Register a new event listener.
+		void registerEventListener(VEEventListener *lis, std::vector<veEventType> eventTypes);	//Register a new event listener for these events only
+		VEEventListener* getEventListener(std::string name);	//get pointer to an event listener
 		void removeEventListener(std::string name);			//Remove an event listener - it is NOT deleted automatically!
+		void removeEventListener(std::string name, std::vector<VEEventListener*>&list);			//Remove an event listener - it is NOT deleted automatically!
 		void deleteEventListener(std::string name);			//Delete an event listener
+		void clearEventListenerList();
 		void addEvent(veEvent event);						//Add an event to the event list - will be handled in the next loop
 		void deleteEvent(veEvent event);					//Delete an event from the event list
 

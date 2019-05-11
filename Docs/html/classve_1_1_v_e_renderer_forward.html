@@ -110,6 +110,8 @@ virtual void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" hr
 <tr class="separator:a05df8dacb115e0b93c049141f94274d9"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a4573d0d746bea18ece359b3351361ea7"><td class="memItemLeft" align="right" valign="top">virtual VkDescriptorSetLayout&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_renderer_forward.html#a4573d0d746bea18ece359b3351361ea7">getDescriptorSetLayoutPerObject</a> ()</td></tr>
 <tr class="separator:a4573d0d746bea18ece359b3351361ea7"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a41c7cd2d90f38131cefcd60237cd465b"><td class="memItemLeft" align="right" valign="top">virtual VkDescriptorSetLayout&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_renderer_forward.html#a41c7cd2d90f38131cefcd60237cd465b">getDescriptorSetLayoutPerObject2</a> ()</td></tr>
+<tr class="separator:a41c7cd2d90f38131cefcd60237cd465b"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a71c36ea0fc1e0d8fb1c1c897e01502fa"><td class="memItemLeft" align="right" valign="top">virtual VkDescriptorSetLayout&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_renderer_forward.html#a71c36ea0fc1e0d8fb1c1c897e01502fa">getDescriptorSetLayoutShadow</a> ()</td></tr>
 <tr class="separator:a71c36ea0fc1e0d8fb1c1c897e01502fa"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a08ed66eabdb3b91695f37c4b05371eeb"><td class="memItemLeft" align="right" valign="top">virtual std::vector&lt; VkDescriptorSet &gt; &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_renderer_forward.html#a08ed66eabdb3b91695f37c4b05371eeb">getDescriptorSetsShadow</a> ()</td></tr>
@@ -289,6 +291,10 @@ VkDescriptorPool&#160;</td><td class="memItemRight" valign="bottom"><a class="el
 VkDescriptorSetLayout&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_renderer_forward.html#a34eb9fec3153a2503a1fab633bf005bb">m_descriptorSetLayoutPerObject</a></td></tr>
 <tr class="memdesc:a34eb9fec3153a2503a1fab633bf005bb"><td class="mdescLeft">&#160;</td><td class="mdescRight">Descriptor set layout for each scene object. <br /></td></tr>
 <tr class="separator:a34eb9fec3153a2503a1fab633bf005bb"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aee0a5b2f4676f7a236259c6c3101ad5c"><td class="memItemLeft" align="right" valign="top"><a id="aee0a5b2f4676f7a236259c6c3101ad5c"></a>
+VkDescriptorSetLayout&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_renderer_forward.html#aee0a5b2f4676f7a236259c6c3101ad5c">m_descriptorSetLayoutPerObject2</a></td></tr>
+<tr class="memdesc:aee0a5b2f4676f7a236259c6c3101ad5c"><td class="mdescLeft">&#160;</td><td class="mdescRight">Descriptor set layout for each scene object. <br /></td></tr>
+<tr class="separator:aee0a5b2f4676f7a236259c6c3101ad5c"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ac54d28e47cc07fb876e0687a7946a243"><td class="memItemLeft" align="right" valign="top"><a id="ac54d28e47cc07fb876e0687a7946a243"></a>
 std::vector&lt; VkSemaphore &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_renderer_forward.html#ac54d28e47cc07fb876e0687a7946a243">m_imageAvailableSemaphores</a></td></tr>
 <tr class="memdesc:ac54d28e47cc07fb876e0687a7946a243"><td class="mdescLeft">&#160;</td><td class="mdescRight">sem for waiting for the next swapchain image <br /></td></tr>
@@ -318,6 +324,10 @@ bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="clas
 VkPhysicalDevice&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_renderer.html#acb75f7b487a45e37a271ade95c6833f4">m_physicalDevice</a> = VK_NULL_HANDLE</td></tr>
 <tr class="memdesc:acb75f7b487a45e37a271ade95c6833f4 inherit pro_attribs_classve_1_1_v_e_renderer"><td class="mdescLeft">&#160;</td><td class="mdescRight">Vulkan physical device handle. <br /></td></tr>
 <tr class="separator:acb75f7b487a45e37a271ade95c6833f4 inherit pro_attribs_classve_1_1_v_e_renderer"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:af730a455abf4cbb6209317e898847eeb inherit pro_attribs_classve_1_1_v_e_renderer"><td class="memItemLeft" align="right" valign="top"><a id="af730a455abf4cbb6209317e898847eeb"></a>
+VkPhysicalDeviceFeatures&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_renderer.html#af730a455abf4cbb6209317e898847eeb">m_deviceFeatures</a> = {}</td></tr>
+<tr class="memdesc:af730a455abf4cbb6209317e898847eeb inherit pro_attribs_classve_1_1_v_e_renderer"><td class="mdescLeft">&#160;</td><td class="mdescRight">Features of the physical device. <br /></td></tr>
+<tr class="separator:af730a455abf4cbb6209317e898847eeb inherit pro_attribs_classve_1_1_v_e_renderer"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a75fc0faaa00116cc38e5e51ac5ee9f5e inherit pro_attribs_classve_1_1_v_e_renderer"><td class="memItemLeft" align="right" valign="top"><a id="a75fc0faaa00116cc38e5e51ac5ee9f5e"></a>
 VkPhysicalDeviceLimits&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_renderer.html#a75fc0faaa00116cc38e5e51ac5ee9f5e">m_deviceLimits</a> = {}</td></tr>
 <tr class="memdesc:a75fc0faaa00116cc38e5e51ac5ee9f5e inherit pro_attribs_classve_1_1_v_e_renderer"><td class="mdescLeft">&#160;</td><td class="mdescRight">Limits of the physical device. <br /></td></tr>
@@ -505,6 +515,32 @@ std::vector&lt; <a class="el" href="classve_1_1_v_e_subrender.html">VESubrender<
 </table>
 </div><div class="memdoc">
 <dl class="section return"><dt>Returns</dt><dd>the per frame descriptor set layout </dd></dl>
+
+</div>
+</div>
+<a id="a41c7cd2d90f38131cefcd60237cd465b"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a41c7cd2d90f38131cefcd60237cd465b">&#9670;&nbsp;</a></span>getDescriptorSetLayoutPerObject2()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">virtual VkDescriptorSetLayout ve::VERendererForward::getDescriptorSetLayoutPerObject2 </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span><span class="mlabel">virtual</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+<dl class="section return"><dt>Returns</dt><dd>the per frame descriptor set layout2 (dynamic buffer) </dd></dl>
 
 </div>
 </div>
@@ -728,7 +764,7 @@ std::vector&lt; <a class="el" href="classve_1_1_v_e_subrender.html">VESubrender<
 </div><!-- contents -->
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>
-Generated on Sun May 5 2019 21:09:49 for Vienna Vulkan Engine by &#160;<a href="http://www.doxygen.org/index.html">
+Generated on Sat May 11 2019 14:57:31 for Vienna Vulkan Engine by &#160;<a href="http://www.doxygen.org/index.html">
 <img class="footer" src="doxygen.png" alt="doxygen"/>
 </a> 1.8.15
 </small></address>

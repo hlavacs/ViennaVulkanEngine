@@ -84,6 +84,7 @@ namespace ve {
 		virtual void deleteCmdBuffers();
 		///\returns the per frame descriptor set layout
 		virtual VkDescriptorSetLayout	getDescriptorSetLayoutPerObject() { return m_descriptorSetLayoutPerObject; };
+		///\returns the per frame descriptor set layout2 (dynamic buffer)
 		virtual VkDescriptorSetLayout	getDescriptorSetLayoutPerObject2() { return m_descriptorSetLayoutPerObject2; };
 		///\returns the shadow descriptor set layout for the shadow
 		virtual VkDescriptorSetLayout	getDescriptorSetLayoutShadow() { return m_descriptorSetLayoutShadow; };

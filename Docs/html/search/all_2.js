@@ -1,7 +1,7 @@
 var searchData=
 [
   ['callback',['callback',['../classve_1_1_v_e_engine.html#a3d17e07c94ad7690b3b95199b31cc298',1,'ve::VEEngine']]],
-  ['calllisteners',['callListeners',['../classve_1_1_v_e_engine.html#afda435b80e47cbeff4132e63dd3e35aa',1,'ve::VEEngine::callListeners(double dt, veEvent event)'],['../classve_1_1_v_e_engine.html#a2c32aa93734c6495d726c428a4bad31c',1,'ve::VEEngine::callListeners(double dt, veEvent event, uint32_t startIdx, uint32_t endIdx)']]],
+  ['calllisteners',['callListeners',['../classve_1_1_v_e_engine.html#afda435b80e47cbeff4132e63dd3e35aa',1,'ve::VEEngine::callListeners(double dt, veEvent event)'],['../classve_1_1_v_e_engine.html#a7d869b8a668d10ac5c919f1c40c1d4ea',1,'ve::VEEngine::callListeners(double dt, veEvent event, std::vector&lt; VEEventListener * &gt; &amp;list)'],['../classve_1_1_v_e_engine.html#a81b80e8f16a66f7cfdfc023edfa5065c',1,'ve::VEEngine::callListeners(double dt, veEvent event, std::vector&lt; VEEventListener * &gt; &amp;list, uint32_t startIdx, uint32_t endIdx)']]],
   ['capabilities',['capabilities',['../structvh_1_1_swap_chain_support_details.html#a5ccdd1d5de916e1dae7dbd51494ad1d0',1,'vh::SwapChainSupportDetails']]],
   ['center',['center',['../structcl_1_1cl_sphere.html#a90f35c8a46efee7cc1c809f1f37aa1cb',1,'cl::clSphere']]],
   ['checkdeviceextensionsupport',['checkDeviceExtensionSupport',['../namespacevh.html#a5b8c854df58e16a79055422d1b1f8516',1,'vh']]],
@@ -10,6 +10,7 @@ var searchData=
   ['chooseswappresentmode',['chooseSwapPresentMode',['../namespacevh.html#ac2fb86cff54a572754a511f5b3589c03',1,'vh']]],
   ['chooseswapsurfaceformat',['chooseSwapSurfaceFormat',['../namespacevh.html#ab8becfa0316ca45ac8a219ce069aec09',1,'vh']]],
   ['cleanupswapchain',['cleanupSwapChain',['../classve_1_1_v_e_renderer_forward.html#a5076ebfd87ce4dedc36daa84f1c828a3',1,'ve::VERendererForward']]],
+  ['cleareventlistenerlist',['clearEventListenerList',['../classve_1_1_v_e_engine.html#af2ec66cab700133ccb2f8ccce969c23b',1,'ve::VEEngine']]],
   ['cledge',['clEdge',['../structcl_1_1cl_edge.html',1,'cl::clEdge'],['../structcl_1_1cl_edge.html#a29e1332b0f80aeb551d11de71140d8dd',1,'cl::clEdge::clEdge()'],['../structcl_1_1cl_edge.html#a3b9b3f3b51581a65f3bb3256d830159c',1,'cl::clEdge::clEdge(glm::vec3 p0, glm::vec3 p1)']]],
   ['clfrustum',['clFrustum',['../structcl_1_1cl_frustum.html',1,'cl::clFrustum'],['../structcl_1_1cl_frustum.html#a572d7b41ab3b1af4dcd93d7deff90924',1,'cl::clFrustum::clFrustum()']]],
   ['clhalfspace',['clHalfspace',['../structcl_1_1cl_halfspace.html',1,'cl']]],

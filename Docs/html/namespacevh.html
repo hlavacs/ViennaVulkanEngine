@@ -218,9 +218,9 @@ void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="name
 <tr class="memitem:a57c20b5524c517208b8984d3734f2aea"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacevh.html#a57c20b5524c517208b8984d3734f2aea">isDeviceSuitable</a> (VkPhysicalDevice device, VkSurfaceKHR surface, std::vector&lt; const char * &gt; requiredDeviceExtensions)</td></tr>
 <tr class="memdesc:a57c20b5524c517208b8984d3734f2aea"><td class="mdescLeft">&#160;</td><td class="mdescRight">Query whether a physical offers all required extensions.  <a href="#a57c20b5524c517208b8984d3734f2aea">More...</a><br /></td></tr>
 <tr class="separator:a57c20b5524c517208b8984d3734f2aea"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a2530270c8cfd4ec0d5ccb8a1a302bdf1"><td class="memItemLeft" align="right" valign="top">VkResult&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacevh.html#a2530270c8cfd4ec0d5ccb8a1a302bdf1">vhDevPickPhysicalDevice</a> (VkInstance instance, VkSurfaceKHR surface, std::vector&lt; const char * &gt; requiredDeviceExtensions, VkPhysicalDevice *physicalDevice, VkPhysicalDeviceLimits *limits)</td></tr>
-<tr class="memdesc:a2530270c8cfd4ec0d5ccb8a1a302bdf1"><td class="mdescLeft">&#160;</td><td class="mdescRight">Query whether a physical offers all required extensions.  <a href="#a2530270c8cfd4ec0d5ccb8a1a302bdf1">More...</a><br /></td></tr>
-<tr class="separator:a2530270c8cfd4ec0d5ccb8a1a302bdf1"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aec90a175a6a85803cef70c3c41ce365f"><td class="memItemLeft" align="right" valign="top">VkResult&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacevh.html#aec90a175a6a85803cef70c3c41ce365f">vhDevPickPhysicalDevice</a> (VkInstance instance, VkSurfaceKHR surface, std::vector&lt; const char * &gt; requiredDeviceExtensions, VkPhysicalDevice *physicalDevice, VkPhysicalDeviceFeatures *pFeatures, VkPhysicalDeviceLimits *limits)</td></tr>
+<tr class="memdesc:aec90a175a6a85803cef70c3c41ce365f"><td class="mdescLeft">&#160;</td><td class="mdescRight">Query whether a physical offers all required extensions.  <a href="#aec90a175a6a85803cef70c3c41ce365f">More...</a><br /></td></tr>
+<tr class="separator:aec90a175a6a85803cef70c3c41ce365f"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a81c685442b0d3f4a3dc89177f8d6f11b"><td class="memItemLeft" align="right" valign="top">VkFormat&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacevh.html#a81c685442b0d3f4a3dc89177f8d6f11b">vhDevFindSupportedFormat</a> (VkPhysicalDevice physicalDevice, const std::vector&lt; VkFormat &gt; &amp;candidates, VkImageTiling tiling, VkFormatFeatureFlags features)</td></tr>
 <tr class="memdesc:a81c685442b0d3f4a3dc89177f8d6f11b"><td class="mdescLeft">&#160;</td><td class="mdescRight">Query a suitable image format that the device supports.  <a href="#a81c685442b0d3f4a3dc89177f8d6f11b">More...</a><br /></td></tr>
 <tr class="separator:a81c685442b0d3f4a3dc89177f8d6f11b"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -254,6 +254,9 @@ void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="name
 <tr class="memitem:a686da75542975aa5930179c54bc17306"><td class="memItemLeft" align="right" valign="top">VkResult&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacevh.html#a686da75542975aa5930179c54bc17306">vhRenderUpdateDescriptorSet</a> (VkDevice device, VkDescriptorSet descriptorSet, std::vector&lt; VkBuffer &gt; uniformBuffers, std::vector&lt; uint32_t &gt; bufferRanges, std::vector&lt; std::vector&lt; VkImageView &gt;&gt; textureImageViews, std::vector&lt; std::vector&lt; VkSampler &gt;&gt; textureSamplers)</td></tr>
 <tr class="memdesc:a686da75542975aa5930179c54bc17306"><td class="mdescLeft">&#160;</td><td class="mdescRight">Update a descriptor set.  <a href="#a686da75542975aa5930179c54bc17306">More...</a><br /></td></tr>
 <tr class="separator:a686da75542975aa5930179c54bc17306"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:afab6a4f31575479f0449c03cff83a3c0"><td class="memItemLeft" align="right" valign="top">VkResult&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacevh.html#afab6a4f31575479f0449c03cff83a3c0">vhRenderUpdateDescriptorSet</a> (VkDevice device, VkDescriptorSet descriptorSet, std::vector&lt; VkDescriptorType &gt; descriptorTypes, std::vector&lt; VkBuffer &gt; uniformBuffers, std::vector&lt; uint32_t &gt; bufferRanges, std::vector&lt; std::vector&lt; VkImageView &gt;&gt; textureImageViews, std::vector&lt; std::vector&lt; VkSampler &gt;&gt; textureSamplers)</td></tr>
+<tr class="memdesc:afab6a4f31575479f0449c03cff83a3c0"><td class="mdescLeft">&#160;</td><td class="mdescRight">Update a descriptor set.  <a href="#afab6a4f31575479f0449c03cff83a3c0">More...</a><br /></td></tr>
+<tr class="separator:afab6a4f31575479f0449c03cff83a3c0"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:af55f8f528f60a2f23383168b87f19663"><td class="memItemLeft" align="right" valign="top">VkResult&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacevh.html#af55f8f528f60a2f23383168b87f19663">vhRenderBeginRenderPass</a> (VkCommandBuffer commandBuffer, VkRenderPass renderPass, VkFramebuffer frameBuffer, VkExtent2D extent)</td></tr>
 <tr class="memdesc:af55f8f528f60a2f23383168b87f19663"><td class="mdescLeft">&#160;</td><td class="mdescRight">Start rendering in a command buffer.  <a href="#af55f8f528f60a2f23383168b87f19663">More...</a><br /></td></tr>
 <tr class="separator:af55f8f528f60a2f23383168b87f19663"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -278,36 +281,36 @@ void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="name
 <tr class="memitem:a7973d81d63d37347572c19477529dd7f"><td class="memItemLeft" align="right" valign="top">VkResult&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacevh.html#a7973d81d63d37347572c19477529dd7f">vhMemCreateVMAAllocator</a> (VkPhysicalDevice physicalDevice, VkDevice device, VmaAllocator &amp;allocator)</td></tr>
 <tr class="memdesc:a7973d81d63d37347572c19477529dd7f"><td class="mdescLeft">&#160;</td><td class="mdescRight">Initialize the VMA allocator library.  <a href="#a7973d81d63d37347572c19477529dd7f">More...</a><br /></td></tr>
 <tr class="separator:a7973d81d63d37347572c19477529dd7f"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a1f6e67825199092ca9ba460abd88abdf"><td class="memItemLeft" align="right" valign="top">VkResult&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacevh.html#a1f6e67825199092ca9ba460abd88abdf">vhMemBlockListInit</a> (VkDevice device, VmaAllocator allocator, uint32_t maxNumEntries, uint32_t sizeEntry, uint32_t numBuffers, std::vector&lt; <a class="el" href="structvh_1_1vh_memory_block.html">vhMemoryBlock</a> &gt; &amp;blocklist)</td></tr>
-<tr class="memdesc:a1f6e67825199092ca9ba460abd88abdf"><td class="mdescLeft">&#160;</td><td class="mdescRight">Initialize a list of memory blocks.  <a href="#a1f6e67825199092ca9ba460abd88abdf">More...</a><br /></td></tr>
-<tr class="separator:a1f6e67825199092ca9ba460abd88abdf"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a8b1172915899bbd33e1fd4a9e5c85e8c"><td class="memItemLeft" align="right" valign="top">VkResult&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacevh.html#a8b1172915899bbd33e1fd4a9e5c85e8c">vhMemBlockInit</a> (VkDevice device, VmaAllocator allocator, uint32_t maxNumEntries, uint32_t sizeEntry, uint32_t numBuffers, <a class="el" href="structvh_1_1vh_memory_block.html">vhMemoryBlock</a> &amp;block)</td></tr>
-<tr class="memdesc:a8b1172915899bbd33e1fd4a9e5c85e8c"><td class="mdescLeft">&#160;</td><td class="mdescRight">Initialize a single memory block.  <a href="#a8b1172915899bbd33e1fd4a9e5c85e8c">More...</a><br /></td></tr>
-<tr class="separator:a8b1172915899bbd33e1fd4a9e5c85e8c"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a6d905ad06a7cfc72f4ad55912c876001"><td class="memItemLeft" align="right" valign="top">VkResult&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacevh.html#a6d905ad06a7cfc72f4ad55912c876001">vhMemBlockListAdd</a> (std::vector&lt; <a class="el" href="structvh_1_1vh_memory_block.html">vhMemoryBlock</a> &gt; &amp;blocklist, void *owner, <a class="el" href="structvh_1_1vh_memory_handle.html">vhMemoryHandle</a> *handle)</td></tr>
-<tr class="memdesc:a6d905ad06a7cfc72f4ad55912c876001"><td class="mdescLeft">&#160;</td><td class="mdescRight">Add an entry to a memory block list.  <a href="#a6d905ad06a7cfc72f4ad55912c876001">More...</a><br /></td></tr>
-<tr class="separator:a6d905ad06a7cfc72f4ad55912c876001"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a613de36be64a951bc63a70d4031dacf8"><td class="memItemLeft" align="right" valign="top">VkResult&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacevh.html#a613de36be64a951bc63a70d4031dacf8">vhMemBlockAdd</a> (<a class="el" href="structvh_1_1vh_memory_block.html">vhMemoryBlock</a> &amp;block, void *owner, <a class="el" href="structvh_1_1vh_memory_handle.html">vhMemoryHandle</a> *handle)</td></tr>
-<tr class="memdesc:a613de36be64a951bc63a70d4031dacf8"><td class="mdescLeft">&#160;</td><td class="mdescRight">Add an entry to a memory block (not a block list)  <a href="#a613de36be64a951bc63a70d4031dacf8">More...</a><br /></td></tr>
-<tr class="separator:a613de36be64a951bc63a70d4031dacf8"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a201d7925aad9bb6685ceba7d73285d40"><td class="memItemLeft" align="right" valign="top">VkResult&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacevh.html#a201d7925aad9bb6685ceba7d73285d40">vhMemBlockListInit</a> (VkDevice device, VmaAllocator allocator, VkDescriptorPool descriptorPool, VkDescriptorSetLayout descriptorLayout, uint32_t maxNumEntries, uint32_t sizeEntry, uint32_t numBuffers, std::vector&lt; <a class="el" href="structvh_1_1vh_memory_block.html">vhMemoryBlock</a> * &gt; &amp;blocklist)</td></tr>
+<tr class="memdesc:a201d7925aad9bb6685ceba7d73285d40"><td class="mdescLeft">&#160;</td><td class="mdescRight">Initialize a list of memory blocks.  <a href="#a201d7925aad9bb6685ceba7d73285d40">More...</a><br /></td></tr>
+<tr class="separator:a201d7925aad9bb6685ceba7d73285d40"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ab24b12561d007b25ffc99ab0a990d813"><td class="memItemLeft" align="right" valign="top">VkResult&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacevh.html#ab24b12561d007b25ffc99ab0a990d813">vhMemBlockInit</a> (VkDevice device, VmaAllocator allocator, VkDescriptorPool descriptorPool, VkDescriptorSetLayout descriptorLayout, uint32_t maxNumEntries, uint32_t sizeEntry, uint32_t numBuffers, <a class="el" href="structvh_1_1vh_memory_block.html">vhMemoryBlock</a> *pBlock)</td></tr>
+<tr class="memdesc:ab24b12561d007b25ffc99ab0a990d813"><td class="mdescLeft">&#160;</td><td class="mdescRight">Initialize a single memory block.  <a href="#ab24b12561d007b25ffc99ab0a990d813">More...</a><br /></td></tr>
+<tr class="separator:ab24b12561d007b25ffc99ab0a990d813"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aa2ca7c6b6a5a41f490eb3399590d4b7a"><td class="memItemLeft" align="right" valign="top">VkResult&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacevh.html#aa2ca7c6b6a5a41f490eb3399590d4b7a">vhMemBlockListAdd</a> (std::vector&lt; <a class="el" href="structvh_1_1vh_memory_block.html">vhMemoryBlock</a> * &gt; &amp;blocklist, void *owner, <a class="el" href="structvh_1_1vh_memory_handle.html">vhMemoryHandle</a> *handle)</td></tr>
+<tr class="memdesc:aa2ca7c6b6a5a41f490eb3399590d4b7a"><td class="mdescLeft">&#160;</td><td class="mdescRight">Add an entry to a memory block list.  <a href="#aa2ca7c6b6a5a41f490eb3399590d4b7a">More...</a><br /></td></tr>
+<tr class="separator:aa2ca7c6b6a5a41f490eb3399590d4b7a"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a0423ae2bd016c8eb50c1750059e811c3"><td class="memItemLeft" align="right" valign="top">VkResult&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacevh.html#a0423ae2bd016c8eb50c1750059e811c3">vhMemBlockAdd</a> (<a class="el" href="structvh_1_1vh_memory_block.html">vhMemoryBlock</a> *pBlock, void *owner, <a class="el" href="structvh_1_1vh_memory_handle.html">vhMemoryHandle</a> *handle)</td></tr>
+<tr class="memdesc:a0423ae2bd016c8eb50c1750059e811c3"><td class="mdescLeft">&#160;</td><td class="mdescRight">Add an entry to a memory block (not a block list)  <a href="#a0423ae2bd016c8eb50c1750059e811c3">More...</a><br /></td></tr>
+<tr class="separator:a0423ae2bd016c8eb50c1750059e811c3"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a05a86b5a941fb7fe31e3b10e9777461c"><td class="memItemLeft" align="right" valign="top">VkResult&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacevh.html#a05a86b5a941fb7fe31e3b10e9777461c">vhMemBlockUpdateEntry</a> (<a class="el" href="structvh_1_1vh_memory_handle.html">vhMemoryHandle</a> *pHandle, void *data)</td></tr>
 <tr class="memdesc:a05a86b5a941fb7fe31e3b10e9777461c"><td class="mdescLeft">&#160;</td><td class="mdescRight">Update an entry in one of the memory blocks.  <a href="#a05a86b5a941fb7fe31e3b10e9777461c">More...</a><br /></td></tr>
 <tr class="separator:a05a86b5a941fb7fe31e3b10e9777461c"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a7c1102adc2dfd2aaa0426488613055d0"><td class="memItemLeft" align="right" valign="top">VkResult&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacevh.html#a7c1102adc2dfd2aaa0426488613055d0">vhMemBlockUpdateBlockList</a> (std::vector&lt; <a class="el" href="structvh_1_1vh_memory_block.html">vhMemoryBlock</a> &gt; &amp;blocklist, uint32_t index)</td></tr>
-<tr class="memdesc:a7c1102adc2dfd2aaa0426488613055d0"><td class="mdescLeft">&#160;</td><td class="mdescRight">Update all memory blocks by copying them to the GPU.  <a href="#a7c1102adc2dfd2aaa0426488613055d0">More...</a><br /></td></tr>
-<tr class="separator:a7c1102adc2dfd2aaa0426488613055d0"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a83b1662591a2f820b12a485a17a8f2a0"><td class="memItemLeft" align="right" valign="top">VkResult&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacevh.html#a83b1662591a2f820b12a485a17a8f2a0">vhMemBlockUpdateBlockList</a> (std::vector&lt; <a class="el" href="structvh_1_1vh_memory_block.html">vhMemoryBlock</a> * &gt; &amp;blocklist, uint32_t index)</td></tr>
+<tr class="memdesc:a83b1662591a2f820b12a485a17a8f2a0"><td class="mdescLeft">&#160;</td><td class="mdescRight">Update all memory blocks by copying them to the GPU.  <a href="#a83b1662591a2f820b12a485a17a8f2a0">More...</a><br /></td></tr>
+<tr class="separator:a83b1662591a2f820b12a485a17a8f2a0"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a5eabede71703c653a56339072b352162"><td class="memItemLeft" align="right" valign="top">VkResult&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacevh.html#a5eabede71703c653a56339072b352162">vhMemBlockRemoveEntry</a> (<a class="el" href="structvh_1_1vh_memory_handle.html">vhMemoryHandle</a> *pHandle)</td></tr>
 <tr class="memdesc:a5eabede71703c653a56339072b352162"><td class="mdescLeft">&#160;</td><td class="mdescRight">Remove an entry from a memory block.  <a href="#a5eabede71703c653a56339072b352162">More...</a><br /></td></tr>
 <tr class="separator:a5eabede71703c653a56339072b352162"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a391b108308b2c8f937b8e43080eb248d"><td class="memItemLeft" align="right" valign="top">VkResult&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacevh.html#a391b108308b2c8f937b8e43080eb248d">vhMemBlockListClear</a> (std::vector&lt; <a class="el" href="structvh_1_1vh_memory_block.html">vhMemoryBlock</a> &gt; &amp;blocklist)</td></tr>
-<tr class="memdesc:a391b108308b2c8f937b8e43080eb248d"><td class="mdescLeft">&#160;</td><td class="mdescRight">Delete all entries and all blocks from a block list.  <a href="#a391b108308b2c8f937b8e43080eb248d">More...</a><br /></td></tr>
-<tr class="separator:a391b108308b2c8f937b8e43080eb248d"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a87a3faa32d5115b8cdcb1fb1a0312c8d"><td class="memItemLeft" align="right" valign="top">VkResult&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacevh.html#a87a3faa32d5115b8cdcb1fb1a0312c8d">vhMemBlockDeallocate</a> (<a class="el" href="structvh_1_1vh_memory_block.html">vhMemoryBlock</a> &amp;block)</td></tr>
-<tr class="memdesc:a87a3faa32d5115b8cdcb1fb1a0312c8d"><td class="mdescLeft">&#160;</td><td class="mdescRight">Deallocate the memory from a block.  <a href="#a87a3faa32d5115b8cdcb1fb1a0312c8d">More...</a><br /></td></tr>
-<tr class="separator:a87a3faa32d5115b8cdcb1fb1a0312c8d"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a20e4770b4a315151f30950571a5bfd01"><td class="memItemLeft" align="right" valign="top">VkResult&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacevh.html#a20e4770b4a315151f30950571a5bfd01">vhMemBlockMoveEntry</a> (std::vector&lt; <a class="el" href="structvh_1_1vh_memory_block.html">vhMemoryBlock</a> &gt; &amp;dstblocklist, <a class="el" href="structvh_1_1vh_memory_handle.html">vhMemoryHandle</a> *pHandle)</td></tr>
-<tr class="memdesc:a20e4770b4a315151f30950571a5bfd01"><td class="mdescLeft">&#160;</td><td class="mdescRight">Move a handle from one list to another list.  <a href="#a20e4770b4a315151f30950571a5bfd01">More...</a><br /></td></tr>
-<tr class="separator:a20e4770b4a315151f30950571a5bfd01"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a106c314c7a88deb8050948301ea30012"><td class="memItemLeft" align="right" valign="top">VkResult&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacevh.html#a106c314c7a88deb8050948301ea30012">vhMemBlockListClear</a> (std::vector&lt; <a class="el" href="structvh_1_1vh_memory_block.html">vhMemoryBlock</a> * &gt; &amp;blocklist)</td></tr>
+<tr class="memdesc:a106c314c7a88deb8050948301ea30012"><td class="mdescLeft">&#160;</td><td class="mdescRight">Delete all entries and all blocks from a block list.  <a href="#a106c314c7a88deb8050948301ea30012">More...</a><br /></td></tr>
+<tr class="separator:a106c314c7a88deb8050948301ea30012"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a416256074e592e0204883ac3e3d2361b"><td class="memItemLeft" align="right" valign="top">VkResult&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacevh.html#a416256074e592e0204883ac3e3d2361b">vhMemBlockDeallocate</a> (<a class="el" href="structvh_1_1vh_memory_block.html">vhMemoryBlock</a> *pBlock)</td></tr>
+<tr class="memdesc:a416256074e592e0204883ac3e3d2361b"><td class="mdescLeft">&#160;</td><td class="mdescRight">Deallocate the memory from a block.  <a href="#a416256074e592e0204883ac3e3d2361b">More...</a><br /></td></tr>
+<tr class="separator:a416256074e592e0204883ac3e3d2361b"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a613fe5f8bf3159e698b7188fdc5e39a1"><td class="memItemLeft" align="right" valign="top">VkResult&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacevh.html#a613fe5f8bf3159e698b7188fdc5e39a1">vhMemBlockMoveEntry</a> (std::vector&lt; <a class="el" href="structvh_1_1vh_memory_block.html">vhMemoryBlock</a> * &gt; &amp;dstblocklist, <a class="el" href="structvh_1_1vh_memory_handle.html">vhMemoryHandle</a> *pHandle)</td></tr>
+<tr class="memdesc:a613fe5f8bf3159e698b7188fdc5e39a1"><td class="mdescLeft">&#160;</td><td class="mdescRight">Move a handle from one list to another list.  <a href="#a613fe5f8bf3159e698b7188fdc5e39a1">More...</a><br /></td></tr>
+<tr class="separator:a613fe5f8bf3159e698b7188fdc5e39a1"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a7579b97116c0e15eecd4bd0ede9dea08"><td class="memItemLeft" align="right" valign="top">VkShaderModule&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacevh.html#a7579b97116c0e15eecd4bd0ede9dea08">vhPipeCreateShaderModule</a> (VkDevice device, const std::vector&lt; char &gt; &amp;code)</td></tr>
 <tr class="memdesc:a7579b97116c0e15eecd4bd0ede9dea08"><td class="mdescLeft">&#160;</td><td class="mdescRight">Create a shader module.  <a href="#a7579b97116c0e15eecd4bd0ede9dea08">More...</a><br /></td></tr>
 <tr class="separator:a7579b97116c0e15eecd4bd0ede9dea08"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -2870,8 +2873,8 @@ void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="name
 
 </div>
 </div>
-<a id="a2530270c8cfd4ec0d5ccb8a1a302bdf1"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a2530270c8cfd4ec0d5ccb8a1a302bdf1">&#9670;&nbsp;</a></span>vhDevPickPhysicalDevice()</h2>
+<a id="aec90a175a6a85803cef70c3c41ce365f"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aec90a175a6a85803cef70c3c41ce365f">&#9670;&nbsp;</a></span>vhDevPickPhysicalDevice()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -2903,6 +2906,12 @@ void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="name
         <tr>
           <td class="paramkey"></td>
           <td></td>
+          <td class="paramtype">VkPhysicalDeviceFeatures *&#160;</td>
+          <td class="paramname"><em>pFeatures</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
           <td class="paramtype">VkPhysicalDeviceLimits *&#160;</td>
           <td class="paramname"><em>limits</em>&#160;</td>
         </tr>
@@ -2921,6 +2930,7 @@ void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="name
     <tr><td class="paramdir">[in]</td><td class="paramname">surface</td><td>A window surface </td></tr>
     <tr><td class="paramdir">[in]</td><td class="paramname">requiredDeviceExtensions</td><td>A list of required device extensions </td></tr>
     <tr><td class="paramdir">[out]</td><td class="paramname">physicalDevice</td><td>A physical device that supports all required extensions </td></tr>
+    <tr><td class="paramdir">[out]</td><td class="paramname">pFeatures</td><td>The features supported by this device </td></tr>
     <tr><td class="paramdir">[out]</td><td class="paramname">limits</td><td>The physical limits of the physical device </td></tr>
   </table>
   </dd>
@@ -2994,8 +3004,8 @@ void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="name
 
 </div>
 </div>
-<a id="a613de36be64a951bc63a70d4031dacf8"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a613de36be64a951bc63a70d4031dacf8">&#9670;&nbsp;</a></span>vhMemBlockAdd()</h2>
+<a id="a0423ae2bd016c8eb50c1750059e811c3"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a0423ae2bd016c8eb50c1750059e811c3">&#9670;&nbsp;</a></span>vhMemBlockAdd()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -3003,8 +3013,8 @@ void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="name
         <tr>
           <td class="memname">VkResult vh::vhMemBlockAdd </td>
           <td>(</td>
-          <td class="paramtype"><a class="el" href="structvh_1_1vh_memory_block.html">vhMemoryBlock</a> &amp;&#160;</td>
-          <td class="paramname"><em>block</em>, </td>
+          <td class="paramtype"><a class="el" href="structvh_1_1vh_memory_block.html">vhMemoryBlock</a> *&#160;</td>
+          <td class="paramname"><em>pBlock</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
@@ -3030,7 +3040,7 @@ void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="name
 <p>This function should only be called for single memory blocks that are not part of a block list. If the block gets full, it is reallocated with twice the old capacity.</p>
 <dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
-    <tr><td class="paramdir">[in]</td><td class="paramname">block</td><td>The memory block to be appended </td></tr>
+    <tr><td class="paramdir">[in]</td><td class="paramname">pBlock</td><td>The memory block to be appended </td></tr>
     <tr><td class="paramdir">[in]</td><td class="paramname">owner</td><td>Pointer to the entry owner </td></tr>
     <tr><td class="paramdir">[in]</td><td class="paramname">handle</td><td>A handle to the entry </td></tr>
   </table>
@@ -3040,8 +3050,8 @@ void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="name
 
 </div>
 </div>
-<a id="a87a3faa32d5115b8cdcb1fb1a0312c8d"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a87a3faa32d5115b8cdcb1fb1a0312c8d">&#9670;&nbsp;</a></span>vhMemBlockDeallocate()</h2>
+<a id="a416256074e592e0204883ac3e3d2361b"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a416256074e592e0204883ac3e3d2361b">&#9670;&nbsp;</a></span>vhMemBlockDeallocate()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -3049,8 +3059,8 @@ void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="name
         <tr>
           <td class="memname">VkResult vh::vhMemBlockDeallocate </td>
           <td>(</td>
-          <td class="paramtype"><a class="el" href="structvh_1_1vh_memory_block.html">vhMemoryBlock</a> &amp;&#160;</td>
-          <td class="paramname"><em>block</em></td><td>)</td>
+          <td class="paramtype"><a class="el" href="structvh_1_1vh_memory_block.html">vhMemoryBlock</a> *&#160;</td>
+          <td class="paramname"><em>pBlock</em></td><td>)</td>
           <td></td>
         </tr>
       </table>
@@ -3059,7 +3069,7 @@ void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="name
 <p>Deallocate the memory from a block. </p>
 <dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
-    <tr><td class="paramdir">[in]</td><td class="paramname">block</td><td>The memory block that is to be deleted </td></tr>
+    <tr><td class="paramdir">[in]</td><td class="paramname">pBlock</td><td>The memory block that is to be deleted </td></tr>
   </table>
   </dd>
 </dl>
@@ -3067,8 +3077,8 @@ void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="name
 
 </div>
 </div>
-<a id="a8b1172915899bbd33e1fd4a9e5c85e8c"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a8b1172915899bbd33e1fd4a9e5c85e8c">&#9670;&nbsp;</a></span>vhMemBlockInit()</h2>
+<a id="ab24b12561d007b25ffc99ab0a990d813"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ab24b12561d007b25ffc99ab0a990d813">&#9670;&nbsp;</a></span>vhMemBlockInit()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -3084,6 +3094,18 @@ void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="name
           <td></td>
           <td class="paramtype">VmaAllocator&#160;</td>
           <td class="paramname"><em>allocator</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">VkDescriptorPool&#160;</td>
+          <td class="paramname"><em>descriptorPool</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">VkDescriptorSetLayout&#160;</td>
+          <td class="paramname"><em>descriptorLayout</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
@@ -3106,8 +3128,8 @@ void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="name
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype"><a class="el" href="structvh_1_1vh_memory_block.html">vhMemoryBlock</a> &amp;&#160;</td>
-          <td class="paramname"><em>block</em>&#160;</td>
+          <td class="paramtype"><a class="el" href="structvh_1_1vh_memory_block.html">vhMemoryBlock</a> *&#160;</td>
+          <td class="paramname"><em>pBlock</em>&#160;</td>
         </tr>
         <tr>
           <td></td>
@@ -3122,10 +3144,12 @@ void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="name
   <table class="params">
     <tr><td class="paramdir">[in]</td><td class="paramname">device</td><td>The logical Vulkan device </td></tr>
     <tr><td class="paramdir">[in]</td><td class="paramname">allocator</td><td>The VMA allocator </td></tr>
+    <tr><td class="paramdir">[in]</td><td class="paramname">descriptorPool</td><td>Descriptor pool for creating descriptor sets </td></tr>
+    <tr><td class="paramdir">[in]</td><td class="paramname">descriptorLayout</td><td>Descriptor layout for creating descriptor sets </td></tr>
     <tr><td class="paramdir">[in]</td><td class="paramname">maxNumEntries</td><td>Maximum number of entries in a memory block </td></tr>
     <tr><td class="paramdir">[in]</td><td class="paramname">sizeEntry</td><td>Size of an entry in bytes </td></tr>
     <tr><td class="paramdir">[in]</td><td class="paramname">numBuffers</td><td>Number of buffers (one for each framebuffer) </td></tr>
-    <tr><td class="paramdir">[in]</td><td class="paramname">block</td><td>A reference to the memory block </td></tr>
+    <tr><td class="paramdir">[in]</td><td class="paramname">pBlock</td><td>A pointer to the memory block </td></tr>
   </table>
   </dd>
 </dl>
@@ -3133,8 +3157,8 @@ void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="name
 
 </div>
 </div>
-<a id="a6d905ad06a7cfc72f4ad55912c876001"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a6d905ad06a7cfc72f4ad55912c876001">&#9670;&nbsp;</a></span>vhMemBlockListAdd()</h2>
+<a id="aa2ca7c6b6a5a41f490eb3399590d4b7a"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aa2ca7c6b6a5a41f490eb3399590d4b7a">&#9670;&nbsp;</a></span>vhMemBlockListAdd()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -3142,7 +3166,7 @@ void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="name
         <tr>
           <td class="memname">VkResult vh::vhMemBlockListAdd </td>
           <td>(</td>
-          <td class="paramtype">std::vector&lt; <a class="el" href="structvh_1_1vh_memory_block.html">vhMemoryBlock</a> &gt; &amp;&#160;</td>
+          <td class="paramtype">std::vector&lt; <a class="el" href="structvh_1_1vh_memory_block.html">vhMemoryBlock</a> * &gt; &amp;&#160;</td>
           <td class="paramname"><em>blocklist</em>, </td>
         </tr>
         <tr>
@@ -3178,8 +3202,8 @@ void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="name
 
 </div>
 </div>
-<a id="a391b108308b2c8f937b8e43080eb248d"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a391b108308b2c8f937b8e43080eb248d">&#9670;&nbsp;</a></span>vhMemBlockListClear()</h2>
+<a id="a106c314c7a88deb8050948301ea30012"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a106c314c7a88deb8050948301ea30012">&#9670;&nbsp;</a></span>vhMemBlockListClear()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -3187,7 +3211,7 @@ void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="name
         <tr>
           <td class="memname">VkResult vh::vhMemBlockListClear </td>
           <td>(</td>
-          <td class="paramtype">std::vector&lt; <a class="el" href="structvh_1_1vh_memory_block.html">vhMemoryBlock</a> &gt; &amp;&#160;</td>
+          <td class="paramtype">std::vector&lt; <a class="el" href="structvh_1_1vh_memory_block.html">vhMemoryBlock</a> * &gt; &amp;&#160;</td>
           <td class="paramname"><em>blocklist</em></td><td>)</td>
           <td></td>
         </tr>
@@ -3205,8 +3229,8 @@ void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="name
 
 </div>
 </div>
-<a id="a1f6e67825199092ca9ba460abd88abdf"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a1f6e67825199092ca9ba460abd88abdf">&#9670;&nbsp;</a></span>vhMemBlockListInit()</h2>
+<a id="a201d7925aad9bb6685ceba7d73285d40"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a201d7925aad9bb6685ceba7d73285d40">&#9670;&nbsp;</a></span>vhMemBlockListInit()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -3222,6 +3246,18 @@ void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="name
           <td></td>
           <td class="paramtype">VmaAllocator&#160;</td>
           <td class="paramname"><em>allocator</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">VkDescriptorPool&#160;</td>
+          <td class="paramname"><em>descriptorPool</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">VkDescriptorSetLayout&#160;</td>
+          <td class="paramname"><em>descriptorLayout</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
@@ -3244,7 +3280,7 @@ void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="name
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype">std::vector&lt; <a class="el" href="structvh_1_1vh_memory_block.html">vhMemoryBlock</a> &gt; &amp;&#160;</td>
+          <td class="paramtype">std::vector&lt; <a class="el" href="structvh_1_1vh_memory_block.html">vhMemoryBlock</a> * &gt; &amp;&#160;</td>
           <td class="paramname"><em>blocklist</em>&#160;</td>
         </tr>
         <tr>
@@ -3260,6 +3296,8 @@ void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="name
   <table class="params">
     <tr><td class="paramdir">[in]</td><td class="paramname">device</td><td>The logical Vulkan device </td></tr>
     <tr><td class="paramdir">[in]</td><td class="paramname">allocator</td><td>The VMA allocator </td></tr>
+    <tr><td class="paramdir">[in]</td><td class="paramname">descriptorPool</td><td>Descriptor pool for creating descriptor sets </td></tr>
+    <tr><td class="paramdir">[in]</td><td class="paramname">descriptorLayout</td><td>Descriptor layout for creating descriptor sets </td></tr>
     <tr><td class="paramdir">[in]</td><td class="paramname">maxNumEntries</td><td>Maximum number of entries in a memory block </td></tr>
     <tr><td class="paramdir">[in]</td><td class="paramname">sizeEntry</td><td>Size of an entry in bytes </td></tr>
     <tr><td class="paramdir">[in]</td><td class="paramname">numBuffers</td><td>Number of buffers (one for each framebuffer) </td></tr>
@@ -3271,8 +3309,8 @@ void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="name
 
 </div>
 </div>
-<a id="a20e4770b4a315151f30950571a5bfd01"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a20e4770b4a315151f30950571a5bfd01">&#9670;&nbsp;</a></span>vhMemBlockMoveEntry()</h2>
+<a id="a613fe5f8bf3159e698b7188fdc5e39a1"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a613fe5f8bf3159e698b7188fdc5e39a1">&#9670;&nbsp;</a></span>vhMemBlockMoveEntry()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -3280,7 +3318,7 @@ void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="name
         <tr>
           <td class="memname">VkResult vh::vhMemBlockMoveEntry </td>
           <td>(</td>
-          <td class="paramtype">std::vector&lt; <a class="el" href="structvh_1_1vh_memory_block.html">vhMemoryBlock</a> &gt; &amp;&#160;</td>
+          <td class="paramtype">std::vector&lt; <a class="el" href="structvh_1_1vh_memory_block.html">vhMemoryBlock</a> * &gt; &amp;&#160;</td>
           <td class="paramname"><em>dstblocklist</em>, </td>
         </tr>
         <tr>
@@ -3336,8 +3374,8 @@ void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="name
 
 </div>
 </div>
-<a id="a7c1102adc2dfd2aaa0426488613055d0"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a7c1102adc2dfd2aaa0426488613055d0">&#9670;&nbsp;</a></span>vhMemBlockUpdateBlockList()</h2>
+<a id="a83b1662591a2f820b12a485a17a8f2a0"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a83b1662591a2f820b12a485a17a8f2a0">&#9670;&nbsp;</a></span>vhMemBlockUpdateBlockList()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -3345,7 +3383,7 @@ void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="name
         <tr>
           <td class="memname">VkResult vh::vhMemBlockUpdateBlockList </td>
           <td>(</td>
-          <td class="paramtype">std::vector&lt; <a class="el" href="structvh_1_1vh_memory_block.html">vhMemoryBlock</a> &gt; &amp;&#160;</td>
+          <td class="paramtype">std::vector&lt; <a class="el" href="structvh_1_1vh_memory_block.html">vhMemoryBlock</a> * &gt; &amp;&#160;</td>
           <td class="paramname"><em>blocklist</em>, </td>
         </tr>
         <tr>
@@ -4169,7 +4207,7 @@ void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="name
 </div>
 </div>
 <a id="a686da75542975aa5930179c54bc17306"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a686da75542975aa5930179c54bc17306">&#9670;&nbsp;</a></span>vhRenderUpdateDescriptorSet()</h2>
+<h2 class="memtitle"><span class="permalink"><a href="#a686da75542975aa5930179c54bc17306">&#9670;&nbsp;</a></span>vhRenderUpdateDescriptorSet() <span class="overload">[1/2]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -4224,6 +4262,80 @@ void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="name
   <table class="params">
     <tr><td class="paramdir">[in]</td><td class="paramname">device</td><td>Logical Vulkan device </td></tr>
     <tr><td class="paramdir">[in]</td><td class="paramname">descriptorSet</td><td>The descriptor set to be updated </td></tr>
+    <tr><td class="paramdir">[in]</td><td class="paramname">uniformBuffers</td><td>List of UBOs (can contain null handles) </td></tr>
+    <tr><td class="paramdir">[in]</td><td class="paramname">bufferRanges</td><td>List of buffer sizes </td></tr>
+    <tr><td class="paramdir">[in]</td><td class="paramname">textureImageViews</td><td>List of texture image views to be updated </td></tr>
+    <tr><td class="paramdir">[in]</td><td class="paramname">textureSamplers</td><td>List of texture image samplers </td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>Returns</dt><dd>VK_SUCCESS or a Vulkan error code </dd></dl>
+
+</div>
+</div>
+<a id="afab6a4f31575479f0449c03cff83a3c0"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#afab6a4f31575479f0449c03cff83a3c0">&#9670;&nbsp;</a></span>vhRenderUpdateDescriptorSet() <span class="overload">[2/2]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">VkResult vh::vhRenderUpdateDescriptorSet </td>
+          <td>(</td>
+          <td class="paramtype">VkDevice&#160;</td>
+          <td class="paramname"><em>device</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">VkDescriptorSet&#160;</td>
+          <td class="paramname"><em>descriptorSet</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">std::vector&lt; VkDescriptorType &gt;&#160;</td>
+          <td class="paramname"><em>descriptorTypes</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">std::vector&lt; VkBuffer &gt;&#160;</td>
+          <td class="paramname"><em>uniformBuffers</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">std::vector&lt; uint32_t &gt;&#160;</td>
+          <td class="paramname"><em>bufferRanges</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">std::vector&lt; std::vector&lt; VkImageView &gt;&gt;&#160;</td>
+          <td class="paramname"><em>textureImageViews</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">std::vector&lt; std::vector&lt; VkSampler &gt;&gt;&#160;</td>
+          <td class="paramname"><em>textureSamplers</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Update a descriptor set. </p>
+<p>Since it can contain variable number of resources, the lists contain either uniformBuffers or imageViews/sampler. The size of the lists MUST be the same!</p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramdir">[in]</td><td class="paramname">device</td><td>Logical Vulkan device </td></tr>
+    <tr><td class="paramdir">[in]</td><td class="paramname">descriptorSet</td><td>The descriptor set to be updated </td></tr>
+    <tr><td class="paramdir">[in]</td><td class="paramname">descriptorTypes</td><td>A list with the descriptor types </td></tr>
     <tr><td class="paramdir">[in]</td><td class="paramname">uniformBuffers</td><td>List of UBOs (can contain null handles) </td></tr>
     <tr><td class="paramdir">[in]</td><td class="paramname">bufferRanges</td><td>List of buffer sizes </td></tr>
     <tr><td class="paramdir">[in]</td><td class="paramname">textureImageViews</td><td>List of texture image views to be updated </td></tr>
@@ -4371,7 +4483,7 @@ void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="name
 </div><!-- contents -->
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>
-Generated on Sun May 5 2019 21:09:50 for Vienna Vulkan Engine by &#160;<a href="http://www.doxygen.org/index.html">
+Generated on Sat May 11 2019 14:57:31 for Vienna Vulkan Engine by &#160;<a href="http://www.doxygen.org/index.html">
 <img class="footer" src="doxygen.png" alt="doxygen"/>
 </a> 1.8.15
 </small></address>

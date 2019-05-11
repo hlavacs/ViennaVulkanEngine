@@ -171,8 +171,16 @@ struct nk_context *&#160;</td><td class="memItemRight" valign="bottom"><a class=
 <tr class="inherit_header pro_attribs_classve_1_1_v_e_subrender"><td colspan="2" onclick="javascript:toggleInherit('pro_attribs_classve_1_1_v_e_subrender')"><img src="closed.png" alt="-"/>&#160;Protected Attributes inherited from <a class="el" href="classve_1_1_v_e_subrender.html">ve::VESubrender</a></td></tr>
 <tr class="memitem:a89ba5ec50e989a27d6a002742997d6a5 inherit pro_attribs_classve_1_1_v_e_subrender"><td class="memItemLeft" align="right" valign="top"><a id="a89ba5ec50e989a27d6a002742997d6a5"></a>
 VkDescriptorSetLayout&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_subrender.html#a89ba5ec50e989a27d6a002742997d6a5">m_descriptorSetLayoutResources</a> = VK_NULL_HANDLE</td></tr>
-<tr class="memdesc:a89ba5ec50e989a27d6a002742997d6a5 inherit pro_attribs_classve_1_1_v_e_subrender"><td class="mdescLeft">&#160;</td><td class="mdescRight">Descriptor set 3 : per object additional resources. <br /></td></tr>
+<tr class="memdesc:a89ba5ec50e989a27d6a002742997d6a5 inherit pro_attribs_classve_1_1_v_e_subrender"><td class="mdescLeft">&#160;</td><td class="mdescRight">Descriptor set layout for per object resources (like images) <br /></td></tr>
 <tr class="separator:a89ba5ec50e989a27d6a002742997d6a5 inherit pro_attribs_classve_1_1_v_e_subrender"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a36943ca6f7610f2da74c882e78f85e8e inherit pro_attribs_classve_1_1_v_e_subrender"><td class="memItemLeft" align="right" valign="top"><a id="a36943ca6f7610f2da74c882e78f85e8e"></a>
+std::vector&lt; VkDescriptorSet &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_subrender.html#a36943ca6f7610f2da74c882e78f85e8e">m_descriptorSetsResources</a></td></tr>
+<tr class="memdesc:a36943ca6f7610f2da74c882e78f85e8e inherit pro_attribs_classve_1_1_v_e_subrender"><td class="mdescLeft">&#160;</td><td class="mdescRight">Per object resources. <br /></td></tr>
+<tr class="separator:a36943ca6f7610f2da74c882e78f85e8e inherit pro_attribs_classve_1_1_v_e_subrender"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:acae7bbfcc939ff45a51e709d51f551d9 inherit pro_attribs_classve_1_1_v_e_subrender"><td class="memItemLeft" align="right" valign="top"><a id="acae7bbfcc939ff45a51e709d51f551d9"></a>
+std::vector&lt; VkDescriptorImageInfo &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_subrender.html#acae7bbfcc939ff45a51e709d51f551d9">m_imageMaps</a></td></tr>
+<tr class="memdesc:acae7bbfcc939ff45a51e709d51f551d9 inherit pro_attribs_classve_1_1_v_e_subrender"><td class="mdescLeft">&#160;</td><td class="mdescRight">Default textures. <br /></td></tr>
+<tr class="separator:acae7bbfcc939ff45a51e709d51f551d9 inherit pro_attribs_classve_1_1_v_e_subrender"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ae8aee2dc1a7dd44a630cef495fb8dfb5 inherit pro_attribs_classve_1_1_v_e_subrender"><td class="memItemLeft" align="right" valign="top"><a id="ae8aee2dc1a7dd44a630cef495fb8dfb5"></a>
 VkPipelineLayout&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_subrender.html#ae8aee2dc1a7dd44a630cef495fb8dfb5">m_pipelineLayout</a> = VK_NULL_HANDLE</td></tr>
 <tr class="memdesc:ae8aee2dc1a7dd44a630cef495fb8dfb5 inherit pro_attribs_classve_1_1_v_e_subrender"><td class="mdescLeft">&#160;</td><td class="mdescRight">Pipeline layout. <br /></td></tr>
@@ -451,7 +459,7 @@ Additional Inherited Members</h2></td></tr>
 </div><!-- contents -->
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>
-Generated on Sun May 5 2019 21:09:50 for Vienna Vulkan Engine by &#160;<a href="http://www.doxygen.org/index.html">
+Generated on Sat May 11 2019 14:57:31 for Vienna Vulkan Engine by &#160;<a href="http://www.doxygen.org/index.html">
 <img class="footer" src="doxygen.png" alt="doxygen"/>
 </a> 1.8.15
 </small></address>

@@ -211,9 +211,9 @@ std::map&lt; std::string, <a class="el" href="classve_1_1_v_e_scene_node.html">V
 <a class="el" href="classve_1_1_v_e_scene_node.html">VESceneNode</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_scene_manager.html#a2fee4d83dc3766d0e44fea509fc46e42">m_rootSceneNode</a></td></tr>
 <tr class="memdesc:a2fee4d83dc3766d0e44fea509fc46e42"><td class="mdescLeft">&#160;</td><td class="mdescRight">The root node of the scene graph. <br /></td></tr>
 <tr class="separator:a2fee4d83dc3766d0e44fea509fc46e42"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:adf0156e362c736e55192f1ca46a60841"><td class="memItemLeft" align="right" valign="top">std::map&lt; <a class="el" href="classve_1_1_v_e_scene_object.html#a01743df3f6eb6b2edfc3940860e90d99">VESceneObject::veObjectType</a>, std::vector&lt; <a class="el" href="structvh_1_1vh_memory_block.html">vh::vhMemoryBlock</a> &gt; &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_scene_manager.html#adf0156e362c736e55192f1ca46a60841">m_memoryBlockMap</a></td></tr>
-<tr class="memdesc:adf0156e362c736e55192f1ca46a60841"><td class="mdescLeft">&#160;</td><td class="mdescRight">the memory for all UBOs  <a href="#adf0156e362c736e55192f1ca46a60841">More...</a><br /></td></tr>
-<tr class="separator:adf0156e362c736e55192f1ca46a60841"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a7c9c3dc020e29b827005e3a676e7112d"><td class="memItemLeft" align="right" valign="top">std::map&lt; <a class="el" href="classve_1_1_v_e_scene_object.html#a01743df3f6eb6b2edfc3940860e90d99">VESceneObject::veObjectType</a>, std::vector&lt; <a class="el" href="structvh_1_1vh_memory_block.html">vh::vhMemoryBlock</a> * &gt; &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_scene_manager.html#a7c9c3dc020e29b827005e3a676e7112d">m_memoryBlockMap</a></td></tr>
+<tr class="memdesc:a7c9c3dc020e29b827005e3a676e7112d"><td class="mdescLeft">&#160;</td><td class="mdescRight">the memory for all UBOs  <a href="#a7c9c3dc020e29b827005e3a676e7112d">More...</a><br /></td></tr>
+<tr class="separator:a7c9c3dc020e29b827005e3a676e7112d"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ae3fbd394a2d6ff4797ecff2921d6cbcb"><td class="memItemLeft" align="right" valign="top"><a id="ae3fbd394a2d6ff4797ecff2921d6cbcb"></a>
 <a class="el" href="classve_1_1_v_e_camera.html">VECamera</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_scene_manager.html#ae3fbd394a2d6ff4797ecff2921d6cbcb">m_camera</a> = nullptr</td></tr>
 <tr class="memdesc:ae3fbd394a2d6ff4797ecff2921d6cbcb"><td class="mdescLeft">&#160;</td><td class="mdescRight">entity ptr of the current camera <br /></td></tr>
@@ -1386,8 +1386,8 @@ std::vector&lt; <a class="el" href="classve_1_1_v_e_light.html">VELight</a> * &g
 </div>
 </div>
 <h2 class="groupheader">Member Data Documentation</h2>
-<a id="adf0156e362c736e55192f1ca46a60841"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#adf0156e362c736e55192f1ca46a60841">&#9670;&nbsp;</a></span>m_memoryBlockMap</h2>
+<a id="a7c9c3dc020e29b827005e3a676e7112d"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a7c9c3dc020e29b827005e3a676e7112d">&#9670;&nbsp;</a></span>m_memoryBlockMap</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -1396,7 +1396,7 @@ std::vector&lt; <a class="el" href="classve_1_1_v_e_light.html">VELight</a> * &g
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">std::map&lt;<a class="el" href="classve_1_1_v_e_scene_object.html#a01743df3f6eb6b2edfc3940860e90d99">VESceneObject::veObjectType</a>, std::vector&lt;<a class="el" href="structvh_1_1vh_memory_block.html">vh::vhMemoryBlock</a>&gt; &gt; ve::VESceneManager::m_memoryBlockMap</td>
+          <td class="memname">std::map&lt;<a class="el" href="classve_1_1_v_e_scene_object.html#a01743df3f6eb6b2edfc3940860e90d99">VESceneObject::veObjectType</a>, std::vector&lt;<a class="el" href="structvh_1_1vh_memory_block.html">vh::vhMemoryBlock</a>*&gt; &gt; ve::VESceneManager::m_memoryBlockMap</td>
         </tr>
       </table>
   </td>
@@ -1418,7 +1418,7 @@ std::vector&lt; <a class="el" href="classve_1_1_v_e_light.html">VELight</a> * &g
 </div><!-- contents -->
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>
-Generated on Sun May 5 2019 21:09:49 for Vienna Vulkan Engine by &#160;<a href="http://www.doxygen.org/index.html">
+Generated on Sat May 11 2019 14:57:31 for Vienna Vulkan Engine by &#160;<a href="http://www.doxygen.org/index.html">
 <img class="footer" src="doxygen.png" alt="doxygen"/>
 </a> 1.8.15
 </small></address>

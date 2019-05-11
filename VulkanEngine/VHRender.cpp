@@ -296,6 +296,25 @@ namespace vh {
 											textureSamplers);
 	}
 
+
+	/**
+	*
+	* \brief Update a descriptor set
+	*
+	* Since it can contain variable number of resources, the lists contain either uniformBuffers or imageViews/sampler.
+	* The size of the lists MUST be the same!
+	*
+	* \param[in] device Logical Vulkan device
+	* \param[in] descriptorSet The descriptor set to be updated
+	* \param[in] descriptorTypes A list with the descriptor types 
+	* \param[in] uniformBuffers List of UBOs (can contain null handles)
+	* \param[in] bufferRanges List of buffer sizes
+	* \param[in] textureImageViews List of texture image views to be updated
+	* \param[in] textureSamplers List of texture image samplers
+	* \returns VK_SUCCESS or a Vulkan error code
+	*
+	*/
+
 	VkResult vhRenderUpdateDescriptorSet(	VkDevice device,
 											VkDescriptorSet descriptorSet,
 											std::vector<VkDescriptorType> descriptorTypes,

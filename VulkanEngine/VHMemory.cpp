@@ -97,7 +97,7 @@ namespace vh {
 	* \param[in] maxNumEntries Maximum number of entries in a memory block
 	* \param[in] sizeEntry Size of an entry in bytes
 	* \param[in] numBuffers Number of buffers (one for each framebuffer)
-	* \param[in] block A pointer to the memory block
+	* \param[in] pBlock A pointer to the memory block
 	* \returns VK_SUCCESS or a Vulkan error code
 	*
 	*/
@@ -183,7 +183,7 @@ namespace vh {
 	* This function should only be called for single memory blocks that are not part of a block list.
 	* If the block gets full, it is reallocated with twice the old capacity.
 	*
-	* \param[in] block The memory block to be appended
+	* \param[in] pBlock The memory block to be appended
 	* \param[in] owner Pointer to the entry owner
 	* \param[in] handle A handle to the entry
 	* \returns VK_SUCCESS or a Vulkan error code
@@ -321,7 +321,7 @@ namespace vh {
 	*
 	* \brief Deallocate the memory from a block
 	*
-	* \param[in] block The memory block that is to be deleted
+	* \param[in] pBlock The memory block that is to be deleted
 	* \returns VK_SUCCESS or a Vulkan error code
 	*
 	*/

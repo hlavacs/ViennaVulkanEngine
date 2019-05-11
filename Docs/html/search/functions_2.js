@@ -1,12 +1,13 @@
 var searchData=
 [
-  ['calllisteners',['callListeners',['../classve_1_1_v_e_engine.html#afda435b80e47cbeff4132e63dd3e35aa',1,'ve::VEEngine::callListeners(double dt, veEvent event)'],['../classve_1_1_v_e_engine.html#a2c32aa93734c6495d726c428a4bad31c',1,'ve::VEEngine::callListeners(double dt, veEvent event, uint32_t startIdx, uint32_t endIdx)']]],
+  ['calllisteners',['callListeners',['../classve_1_1_v_e_engine.html#afda435b80e47cbeff4132e63dd3e35aa',1,'ve::VEEngine::callListeners(double dt, veEvent event)'],['../classve_1_1_v_e_engine.html#a7d869b8a668d10ac5c919f1c40c1d4ea',1,'ve::VEEngine::callListeners(double dt, veEvent event, std::vector&lt; VEEventListener * &gt; &amp;list)'],['../classve_1_1_v_e_engine.html#a81b80e8f16a66f7cfdfc023edfa5065c',1,'ve::VEEngine::callListeners(double dt, veEvent event, std::vector&lt; VEEventListener * &gt; &amp;list, uint32_t startIdx, uint32_t endIdx)']]],
   ['checkdeviceextensionsupport',['checkDeviceExtensionSupport',['../namespacevh.html#a5b8c854df58e16a79055422d1b1f8516',1,'vh']]],
   ['checkvalidationlayersupport',['checkValidationLayerSupport',['../namespacevh.html#a42616af40e6817b748d42deeda488618',1,'vh']]],
   ['chooseswapextent',['chooseSwapExtent',['../namespacevh.html#a13205b72a90888bd5950d79fcbd529b6',1,'vh']]],
   ['chooseswappresentmode',['chooseSwapPresentMode',['../namespacevh.html#ac2fb86cff54a572754a511f5b3589c03',1,'vh']]],
   ['chooseswapsurfaceformat',['chooseSwapSurfaceFormat',['../namespacevh.html#ab8becfa0316ca45ac8a219ce069aec09',1,'vh']]],
   ['cleanupswapchain',['cleanupSwapChain',['../classve_1_1_v_e_renderer_forward.html#a5076ebfd87ce4dedc36daa84f1c828a3',1,'ve::VERendererForward']]],
+  ['cleareventlistenerlist',['clearEventListenerList',['../classve_1_1_v_e_engine.html#af2ec66cab700133ccb2f8ccce969c23b',1,'ve::VEEngine']]],
   ['cledge',['clEdge',['../structcl_1_1cl_edge.html#a29e1332b0f80aeb551d11de71140d8dd',1,'cl::clEdge::clEdge()'],['../structcl_1_1cl_edge.html#a3b9b3f3b51581a65f3bb3256d830159c',1,'cl::clEdge::clEdge(glm::vec3 p0, glm::vec3 p1)']]],
   ['clfrustum',['clFrustum',['../structcl_1_1cl_frustum.html#a572d7b41ab3b1af4dcd93d7deff90924',1,'cl::clFrustum']]],
   ['closeengine',['closeEngine',['../classve_1_1_v_e_engine.html#a91282ffe47507599b98f56a7aaac1379',1,'ve::VEEngine']]],

@@ -149,6 +149,7 @@ namespace vh {
 		std::vector<vhMemoryHandle*>	handles = {};		///<list of pointers to the entry handles
 		std::vector<bool>				dirty;				///<if dirty this block needs to be updated
 
+		///makr all UBO blocks as dirty
 		void setDirty() {
 			for (auto d : dirty) d = true;		//mark as dirty
 		};
