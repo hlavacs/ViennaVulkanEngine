@@ -312,27 +312,6 @@ namespace ve {
 	VESceneObject::VESceneObject(std::string name, glm::mat4 transf, VESceneNode *parent, uint32_t sizeUBO ) : 
 									VESceneNode(name, transf, parent) {
 
-/*		if (sizeUBO > 0) {
-			vh::vhBufCreateUniformBuffers(	getRendererPointer()->getVmaAllocator(),
-											(uint32_t)getRendererPointer()->getSwapChainNumber(),
-											sizeUBO, m_uniformBuffers, m_uniformBuffersAllocation);
-
-			vh::vhRenderCreateDescriptorSets(getRendererForwardPointer()->getDevice(),
-				(uint32_t)getRendererForwardPointer()->getSwapChainNumber(),
-				getRendererForwardPointer()->getDescriptorSetLayoutPerObject(),
-				getRendererForwardPointer()->getDescriptorPool(),
-				m_descriptorSetsUBO);
-
-			for (uint32_t i = 0; i < m_descriptorSetsUBO.size(); i++) {
-				vh::vhRenderUpdateDescriptorSet(getRendererForwardPointer()->getDevice(),
-					m_descriptorSetsUBO[i],
-					{ m_uniformBuffers[i] },		//UBOs
-					{ sizeUBO },					//UBO sizes
-					{ { VK_NULL_HANDLE } },			//textureImageViews
-					{ { VK_NULL_HANDLE } }			//samplers
-				);
-			}
-		}*/
 	}
 
 
@@ -344,9 +323,6 @@ namespace ve {
 	*
 	*/
 	VESceneObject::~VESceneObject() {
-		/*for (uint32_t i = 0; i < m_uniformBuffers.size(); i++) {
-			vmaDestroyBuffer(getRendererPointer()->getVmaAllocator(), m_uniformBuffers[i], m_uniformBuffersAllocation[i]);
-		}*/
 	}
 
 	/**
@@ -359,11 +335,6 @@ namespace ve {
 	*
 	*/
 	void VESceneObject::updateUBO(void *pUBO, uint32_t sizeUBO, uint32_t imageIndex ) {
-		/*void* data = nullptr;
-		vmaMapMemory(getRendererPointer()->getVmaAllocator(), m_uniformBuffersAllocation[imageIndex], &data);
-		memcpy(data, pUBO, sizeUBO);
-		vmaUnmapMemory(getRendererPointer()->getVmaAllocator(), m_uniformBuffersAllocation[imageIndex]);*/
-
 		if( m_memoryHandle.pMemBlock != nullptr) 
 			vh::vhMemBlockUpdateEntry( &m_memoryHandle, pUBO );
 	}
@@ -435,16 +406,16 @@ namespace ve {
 	*
 	*/
 	void VEEntity::updateUBO( glm::mat4 worldMatrix, uint32_t imageIndex) {
-		m_ubo = {};
+		veUBOPerObject_t ubo = {};
 
-		m_ubo.model = worldMatrix;
-		m_ubo.modelInvTrans = glm::transpose(glm::inverse(worldMatrix));
-		m_ubo.param = m_param;
+		ubo.model = m_drawEntity ? worldMatrix : glm::mat4(0.0f);
+		ubo.modelInvTrans = glm::transpose(glm::inverse(worldMatrix));
+		ubo.param = m_param;
 		if (m_pMaterial != nullptr) {
-			m_ubo.color = m_pMaterial->color;
+			ubo.color = m_pMaterial->color;
 		};
 
-		VESceneObject::updateUBO( (void*)&m_ubo, (uint32_t)sizeof(veUBOPerObject_t), imageIndex);
+		VESceneObject::updateUBO( (void*)&ubo, (uint32_t)sizeof(veUBOPerObject_t), imageIndex);
 	}
 
 

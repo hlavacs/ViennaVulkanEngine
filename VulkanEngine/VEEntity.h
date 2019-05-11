@@ -184,7 +184,7 @@ namespace ve {
 		glm::vec4					m_param = glm::vec4(1.0f, 1.0f, 0.0f, 0.0f);	///<Free parameter, e.g. for texture animation
 
 	public:
-		struct veUBOPerObject_t		m_ubo;							///<UBO to be copied to the GPU
+		//struct veUBOPerObject_t		m_ubo;							///<UBO to be copied to the GPU
 		VEMesh *					m_pMesh = nullptr;				///<Pointer to entity mesh
 		VEMaterial *				m_pMaterial = nullptr;			///<Pointer to entity material
 

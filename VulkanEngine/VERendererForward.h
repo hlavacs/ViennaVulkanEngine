@@ -57,6 +57,7 @@ namespace ve {
 		std::vector<VkFence>		m_inFlightFences;					///<fences for halting the next image render until this one is done
 		size_t						m_currentFrame = 0;					///<int for the fences
 		bool						m_framebufferResized = false;		///<signal that window size is changing
+		bool						m_recording = false;				///<during recording the recording needs all threads
 
 		void createSyncObjects();					//create the sync objects
 		void cleanupSwapChain();					//delete the swapchain
@@ -104,6 +105,8 @@ namespace ve {
 		std::vector<VETexture *>		getShadowMap( uint32_t idx) { return m_shadowMaps[idx]; };
 		///\returns the 2D extent of the shadow map
 		virtual VkExtent2D				getShadowMapExtent() { return m_shadowMaps[0][0]->m_extent; };
+		///\returns whether the renderer is currently recording or not
+		bool isRecording() { return m_recording; }
 	};
 
 }

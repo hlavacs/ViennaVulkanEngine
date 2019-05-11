@@ -323,16 +323,17 @@ namespace ve {
 	void VEEngine::callListeners(double dt, veEvent event, std::vector<VEEventListener*> *list ) {
 		event.dt = dt;
 
-		if ( list->size()>100 ) {
-			uint32_t numThreads = 10;
+		if ( !getRendererForwardPointer()->isRecording() && list->size()>200 ) {
+			int div = 100;
+			uint32_t numThreads =  std::min((int)list->size()/div, 10);
 			uint32_t numListenerPerThread = (uint32_t)list->size() / numThreads;
 
 			uint32_t startIdx, endIdx;
 			for (uint32_t k = 0; k < numThreads; k++) {
 				startIdx = k*numListenerPerThread;
-				endIdx = k < numThreads - 1 ? (k+1)*numListenerPerThread-1 : list->size()-1;
+				endIdx = k < numThreads - 1 ? (k+1)*numListenerPerThread-1 : (uint32_t)list->size()-1;
 				auto lst = m_threadPool->submit([=]() { this->callListeners(dt, event, list, startIdx, endIdx); });
-				if (k == numThreads - 1) lst.get();
+				if (k == numThreads - 1) lst.get();	//wait for the last thread
 			}
 		}
 		else {
