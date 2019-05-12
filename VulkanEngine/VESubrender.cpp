@@ -43,6 +43,9 @@ namespace ve {
 		if (m_descriptorSetLayoutResources != VK_NULL_HANDLE)
 			vkDestroyDescriptorSetLayout(getRendererPointer()->getDevice(), m_descriptorSetLayoutResources, nullptr);
 
+		if (m_descriptorSetLayoutResources2 != VK_NULL_HANDLE)
+			vkDestroyDescriptorSetLayout(getRendererPointer()->getDevice(), m_descriptorSetLayoutResources2, nullptr);
+
 
 	}
 

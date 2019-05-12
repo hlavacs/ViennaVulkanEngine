@@ -294,6 +294,12 @@ namespace vh {
 										std::vector<uint32_t> bufferRanges,
 										std::vector<std::vector<VkImageView>> textureImageViews,
 										std::vector<std::vector<VkSampler>> textureSamplers);
+
+	VkResult vhRenderUpdateDescriptorSetMaps(VkDevice device,
+											VkDescriptorSet descriptorSet,
+											uint32_t binding,
+											std::vector<VkDescriptorImageInfo> &maps);
+
 	VkResult vhRenderBeginRenderPass(VkCommandBuffer commandBuffer, VkRenderPass renderPass, VkFramebuffer frameBuffer, VkExtent2D extent);
 	VkResult vhRenderBeginRenderPass(VkCommandBuffer commandBuffer, VkRenderPass renderPass, VkFramebuffer frameBuffer,
 									std::vector<VkClearValue> &clearValues, VkExtent2D extent);

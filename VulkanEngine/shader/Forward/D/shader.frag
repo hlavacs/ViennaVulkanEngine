@@ -1,6 +1,9 @@
 #version 450
 #extension GL_ARB_separate_shader_objects : enable
 #extension GL_GOOGLE_include_directive : enable
+#extension GL_ARB_shading_language_420pack : enable
+#extension GL_EXT_nonuniform_qualifier : enable
+
 
 #include "../common_defines.glsl"
 #include "../light.glsl"
@@ -27,6 +30,9 @@ layout(set = 3, binding = 0) uniform objectUBO_t {
 
 layout(set = 4, binding = 0) uniform sampler2D texSampler;
 
+layout(set = 5, binding = 0) uniform sampler2D texSamplerArray[];
+
+
 void main() {
 
     //parameters
@@ -36,12 +42,14 @@ void main() {
     vec3 lightDirW  = normalize( lightUBO.data.lightModel[2].xyz );
     vec4 lightParam = lightUBO.data.param;
     vec4 texParam   = objectUBO.data.param;
+    vec2 texCoord   = (fragTexCoord + texParam.zw)*texParam.xy;
+    ivec4 iparam    = objectUBO.data.iparam;
 
     //colors
     vec3 ambcol  = lightUBO.data.col_ambient.xyz;
     vec3 diffcol = lightUBO.data.col_diffuse.xyz;
     vec3 speccol = lightUBO.data.col_specular.xyz;
-    vec3 fragColor = texture(texSampler, (fragTexCoord + texParam.zw)*texParam.xy ).xyz;
+    vec3 fragColor = texture( texSampler, texCoord ).xyz;
 
     vec3 result = ambcol * fragColor;
     int sIdx = 0;

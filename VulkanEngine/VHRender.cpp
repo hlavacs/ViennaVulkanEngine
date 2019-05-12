@@ -371,6 +371,25 @@ namespace vh {
 		return VK_SUCCESS;
 	}
 
+
+
+	VkResult vhRenderUpdateDescriptorSetMaps(	VkDevice device,
+												VkDescriptorSet descriptorSet,
+												uint32_t binding,
+												std::vector<VkDescriptorImageInfo> &maps) {
+		VkWriteDescriptorSet writeSet = {};
+		writeSet.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+		writeSet.dstSet = descriptorSet;
+		writeSet.dstBinding = 0;
+		writeSet.dstArrayElement = 0;
+		writeSet.descriptorCount = (uint32_t)maps.size();
+		writeSet.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+		writeSet.pImageInfo = maps.data();
+		vkUpdateDescriptorSets( device, 1, &writeSet, 0, nullptr);
+		return VK_SUCCESS;
+	}
+
+
 	/**
 	*
 	* \brief Start rendering in a command buffer

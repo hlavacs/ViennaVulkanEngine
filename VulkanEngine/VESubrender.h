@@ -52,9 +52,8 @@ namespace ve {
 
 	protected:
 		VkDescriptorSetLayout			m_descriptorSetLayoutResources = VK_NULL_HANDLE;	///<Descriptor set layout for per object resources (like images)
-		std::vector<VkDescriptorSet>	m_descriptorSetsResources;							///<Per object resources
-		std::vector<VkDescriptorImageInfo> m_imageMaps;										///<Default textures
-
+		VkDescriptorSetLayout			m_descriptorSetLayoutResources2 = VK_NULL_HANDLE;	///<Descriptor set layout for per object resources (like images)
+		std::vector <VkDescriptorSet>	m_descriptorSetsResources;							///<Per object resources
 		VkPipelineLayout				m_pipelineLayout = VK_NULL_HANDLE;					///<Pipeline layout
 		std::vector<VkPipeline>			m_pipelines;										///<Pipeline for light pass(es)
 		std::vector<VEEntity *>			m_entities;											///<List of associated entities

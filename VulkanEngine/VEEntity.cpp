@@ -411,6 +411,7 @@ namespace ve {
 		ubo.model = m_drawEntity ? worldMatrix : glm::mat4(0.0f);
 		ubo.modelInvTrans = glm::transpose(glm::inverse(worldMatrix));
 		ubo.param = m_param;
+		ubo.iparam[0] = m_resourceIdx;
 		if (m_pMaterial != nullptr) {
 			ubo.color = m_pMaterial->color;
 		};

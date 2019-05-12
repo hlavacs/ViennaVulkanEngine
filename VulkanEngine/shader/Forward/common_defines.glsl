@@ -34,5 +34,6 @@ struct objectData_t {
   mat4 modelInvTrans;
   vec4 color;
   vec4 param;
-  vec4 padding[6];
+  ivec4 iparam;
+  vec4 padding[5];
 };

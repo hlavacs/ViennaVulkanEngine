@@ -137,7 +137,7 @@ namespace ve {
 			e1->multiplyTransform( glm::scale(glm::mat4(1.0f), glm::vec3(10.0f, 10.0f, 10.0f)));
 			getRoot()->addChild(e1);
 
-			createCubes(15000);
+			createCubes(300);
 			//VESceneNode *pSponza = m_pSceneManager->loadModel("Sponza", "models/sponza", "sponza.dae", aiProcess_FlipWindingOrder);
 			//pSponza->setTransform(glm::scale(glm::mat4(1.0f), glm::vec3(0.1f, 0.1f, 0.1f)));
 
@@ -150,7 +150,12 @@ using namespace ve;
 
 int main() {
 
-	MyVulkanEngine mve(true);	//enable or disable debugging (=callback, valication layers)
+	bool debug = false;
+#ifdef  _DEBUG
+	debug = true;
+#endif
+
+	MyVulkanEngine mve(debug);	//enable or disable debugging (=callback, validation layers)
 
 	try {
 		mve.initEngine();

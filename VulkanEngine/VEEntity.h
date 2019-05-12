@@ -175,16 +175,16 @@ namespace ve {
 			glm::mat4 model;			///<Object model matrix
 			glm::mat4 modelInvTrans;	///<Inverse transpose
 			glm::vec4 color;			///<Uniform color if needed by shader
-			glm::vec4 param;			///<Texture scaling and animation
-			glm::vec4 padding[6];		///<paddding to ensure that struct has size 256
+			glm::vec4 param;			///<Texture scaling and animation: 0,1..scale 2,3...offset
+			glm::ivec4 iparam;			///<iparam[0] is the resource idx
+			glm::vec4 padding[5];		///<paddding to ensure that struct has size 256
 		};
 
 	protected:
 		veEntityType				m_entityType = VE_ENTITY_TYPE_NORMAL;			///<Entity type
 		glm::vec4					m_param = glm::vec4(1.0f, 1.0f, 0.0f, 0.0f);	///<Free parameter, e.g. for texture animation
-
+		uint32_t					m_resourceIdx = 0;								///<Idx into subrenderer list of resources
 	public:
-		//struct veUBOPerObject_t		m_ubo;							///<UBO to be copied to the GPU
 		VEMesh *					m_pMesh = nullptr;				///<Pointer to entity mesh
 		VEMaterial *				m_pMaterial = nullptr;			///<Pointer to entity material
 
@@ -215,7 +215,13 @@ namespace ve {
 		virtual uint32_t	getSizeUBO() { return sizeof(veUBOPerObject_t);  };
 		virtual void		updateUBO( glm::mat4 worldMatrix, uint32_t imageIndex );	//update the UBO of this node using its current world matrix
 		void				setParam( glm::vec4 param);		//set the free parameter
-
+		/*
+		* \brief set the index into the subrenderer resource list
+		* \param[in] idx The new index
+		*/
+		void				setResourceIdx( uint32_t idx ) { m_resourceIdx = idx; };
+		///\returns the index into the list of resources for this entity, held by the subrenderer
+		uint32_t			getResourceIdx() { return m_resourceIdx;  };
 		//-------------------------------------------------------------------------------------
 		//Bounding volume
 
