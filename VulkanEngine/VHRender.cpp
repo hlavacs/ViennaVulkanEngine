@@ -251,8 +251,9 @@ namespace vh {
 		allocInfo.descriptorSetCount = static_cast<uint32_t>(numberDesc);
 		allocInfo.pSetLayouts = layouts.data();
 
-		descriptorSets.resize(numberDesc);
-		return vkAllocateDescriptorSets(device, &allocInfo, &descriptorSets[0]);
+		uint32_t size = (uint32_t)descriptorSets.size();
+		descriptorSets.resize(size + numberDesc);
+		return vkAllocateDescriptorSets(device, &allocInfo, &descriptorSets[size]);
 	}
 	
 
@@ -390,11 +391,9 @@ namespace vh {
 			descriptorWrites[i].dstSet = descriptorSet;
 			descriptorWrites[i].dstBinding = i;
 			descriptorWrites[i].dstArrayElement = 0;
-			descriptorWrites[i].descriptorCount = (uint32_t)maps[i].size();
-
+			descriptorWrites[i].descriptorCount = descriptorCount;
 			descriptorWrites[i].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-			descriptorWrites[i].pImageInfo = maps[i].data();
-			descriptorWrites[i].descriptorCount = (uint32_t)maps[i].size();
+			descriptorWrites[i].pImageInfo = &maps[i][offset];
 		}
 
 		vkUpdateDescriptorSets(device, static_cast<uint32_t>(descriptorWrites.size()), descriptorWrites.data(), 0, nullptr);

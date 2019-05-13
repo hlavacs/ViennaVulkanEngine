@@ -49,7 +49,7 @@ void main() {
     vec4 texParam   = objectUBO.data.param;
     vec2 texCoord   = (fragTexCoord + texParam.zw)*texParam.xy;
     ivec4 iparam    = objectUBO.data.iparam;
-
+    uint resIdx     = iparam.x % resourceArrayLength;
 
     //TBN matrix
     vec3 N        = normalize( fragNormalW );
@@ -57,14 +57,14 @@ void main() {
     T             = normalize( T - dot(T, N)*N );
     vec3 B        = normalize( cross( T, N ) );
     mat3 TBN      = mat3(T,B,N);
-    vec3 mapnorm  = normalize( texture(normalSamplerArray[iparam.x], texCoord).xyz*2.0 - 1.0 );
+    vec3 mapnorm  = normalize( texture(normalSamplerArray[resIdx], texCoord).xyz*2.0 - 1.0 );
     vec3 normal   = normalize( TBN * mapnorm );
 
     //colors
     vec3 ambcol  = lightUBO.data.col_ambient.xyz;
     vec3 diffcol = lightUBO.data.col_diffuse.xyz;
     vec3 speccol = lightUBO.data.col_specular.xyz;
-    vec3 fragColor = texture(texSamplerArray[iparam.x], texCoord).xyz;
+    vec3 fragColor = texture(texSamplerArray[resIdx], texCoord).xyz;
 
     vec3 result = ambcol * fragColor;
     int sIdx = 0;

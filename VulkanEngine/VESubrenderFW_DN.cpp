@@ -51,19 +51,23 @@ namespace ve {
 
 		//----------------------------------------
 
-		vh::vhRenderCreateDescriptorSets(getRendererForwardPointer()->getDevice(),
-			1,
-			m_descriptorSetLayoutResources2,
-			getRendererForwardPointer()->getDescriptorPool(),
-			m_descriptorSetsResources);
-
 		if (m_maps.empty()) {
 			m_maps.resize(2);
 		}
 
-		if (m_maps[0].size() > 0) {
-			vh::vhRenderUpdateDescriptorSetMaps(getRendererPointer()->getDevice(),
-												m_descriptorSetsResources[0], 0, 0, m_resourceArrayLength, m_maps);
+		uint32_t size = (uint32_t)m_descriptorSetsResources.size();
+		if (size > 0) {
+			m_descriptorSetsResources.clear();
+			vh::vhRenderCreateDescriptorSets(getRendererForwardPointer()->getDevice(),
+				size, m_descriptorSetLayoutResources2,
+				getRendererForwardPointer()->getDescriptorPool(),
+				m_descriptorSetsResources);
+
+			for (uint32_t i = 0; i < size; i++) {
+				vh::vhRenderUpdateDescriptorSetMaps(getRendererPointer()->getDevice(),
+					m_descriptorSetsResources[i],
+					0, i*m_resourceArrayLength, m_resourceArrayLength, m_maps);
+			}
 		}
 
 	}
@@ -93,7 +97,7 @@ namespace ve {
 			sets.push_back(entity->m_descriptorSetsResources[0]);
 		}
 		if (m_descriptorSetsResources.size() > 0) {
-			sets.push_back(m_descriptorSetsResources[0]);
+			sets.push_back(m_descriptorSetsResources[entity->getResourceIdx() / m_resourceArrayLength]);
 		}
 
 		uint32_t offset = entity->m_memoryHandle.entryIndex * sizeof(VEEntity::veUBOPerObject_t);
@@ -111,7 +115,6 @@ namespace ve {
 	*
 	*/
 	void VESubrenderFW_DN::addEntity(VEEntity *pEntity) {
-		VESubrender::addEntity(pEntity);
 
 		VkDescriptorImageInfo imageInfo1 = {};
 		imageInfo1.imageView = pEntity->m_pMaterial->mapDiffuse->m_imageView;
@@ -123,20 +126,33 @@ namespace ve {
 		imageInfo2.sampler = pEntity->m_pMaterial->mapNormal->m_sampler;
 		imageInfo2.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
 
-		pEntity->setResourceIdx((uint32_t)m_maps[0].size());
+		pEntity->setResourceIdx((uint32_t)m_entities.size());
 
-		if (m_maps[0].empty()) {
-			m_maps[0].resize(m_resourceArrayLength);
-			for (uint32_t i = 0; i<m_resourceArrayLength; i++) m_maps[0][i] = imageInfo1;
+		uint32_t offset = 0;
+		if (pEntity->getResourceIdx() % m_resourceArrayLength == 0) {
+			vh::vhRenderCreateDescriptorSets(getRendererForwardPointer()->getDevice(),
+				1, m_descriptorSetLayoutResources2,
+				getRendererForwardPointer()->getDescriptorPool(),
+				m_descriptorSetsResources);
 
-			m_maps[1].resize(m_resourceArrayLength);
-			for (uint32_t i = 0; i<m_resourceArrayLength; i++) m_maps[1][i] = imageInfo2;
+			offset = (uint32_t)m_maps[0].size();
+			m_maps[0].resize(offset + m_resourceArrayLength);
+			for (uint32_t i = offset; i<offset + m_resourceArrayLength; i++) m_maps[0][i] = imageInfo1;
+			m_maps[1].resize(offset + m_resourceArrayLength);
+			for (uint32_t i = offset; i<offset + m_resourceArrayLength; i++) m_maps[1][i] = imageInfo2;
+		}
+		else {
+			offset = (uint32_t)m_maps[0].size() / m_resourceArrayLength - 1;
+			offset *= m_resourceArrayLength;
+			m_maps[0][m_entities.size()] = imageInfo1;
+			m_maps[1][m_entities.size()] = imageInfo2;
 		}
 
 		vh::vhRenderUpdateDescriptorSetMaps(getRendererPointer()->getDevice(),
-											m_descriptorSetsResources[0], 
-											0, 0, m_resourceArrayLength, m_maps);
+											m_descriptorSetsResources[m_descriptorSetsResources.size() - 1],
+											0, offset, m_resourceArrayLength, m_maps);
 
+		VESubrender::addEntity(pEntity);
 
 		//-------------------------------------------------------------------------
 		vh::vhRenderCreateDescriptorSets(getRendererForwardPointer()->getDevice(),

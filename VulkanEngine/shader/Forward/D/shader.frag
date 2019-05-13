@@ -45,12 +45,13 @@ void main() {
     vec4 texParam   = objectUBO.data.param;
     vec2 texCoord   = (fragTexCoord + texParam.zw)*texParam.xy;
     ivec4 iparam    = objectUBO.data.iparam;
+    uint resIdx     = iparam.x % resourceArrayLength;
 
     //colors
     vec3 ambcol  = lightUBO.data.col_ambient.xyz;
     vec3 diffcol = lightUBO.data.col_diffuse.xyz;
     vec3 speccol = lightUBO.data.col_specular.xyz;
-    vec3 fragColor = texture( texSamplerArray[iparam.x], texCoord ).xyz;
+    vec3 fragColor = texture( texSamplerArray[resIdx], texCoord ).xyz;
 
     vec3 result = ambcol * fragColor;
     int sIdx = 0;
