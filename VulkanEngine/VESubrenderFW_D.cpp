@@ -57,27 +57,6 @@ namespace ve {
 	}
 
 
-	/*void VESubrenderFW_D::bindDescriptorSetsPerEntity(	VkCommandBuffer commandBuffer, 
-														uint32_t imageIndex, VEEntity *entity) {
-
-		//set 0...cam UBO
-		//set 1...light resources
-		//set 2...shadow maps
-		//set 3...per object UBO
-		//set 4...additional per object resources
-
-		std::vector<VkDescriptorSet> sets = { entity->m_memoryHandle.pMemBlock->descriptorSets[imageIndex] };
-		if (m_descriptorSetsResources.size() > 0) {
-			sets.push_back(m_descriptorSetsResources[entity->getResourceIdx()/ m_resourceArrayLength]);
-		}
-
-		uint32_t offset = entity->m_memoryHandle.entryIndex * sizeof(VEEntity::veUBOPerObject_t);
-		vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_pipelineLayout,
-			3, (uint32_t)sets.size(), sets.data(), 1, &offset);
-	}*/
-
-
-
 	/**
 	* \brief Add an entity to the subrenderer
 	*

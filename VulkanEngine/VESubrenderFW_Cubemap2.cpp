@@ -18,6 +18,8 @@ namespace ve {
 	*
 	*/
 	void VESubrenderFW_Cubemap2::initSubrenderer() {
+		m_resourceArrayLength = 16;
+
 		VESubrender::initSubrenderer();
 
 		vh::vhRenderCreateDescriptorSetLayout(getRendererForwardPointer()->getDevice(),

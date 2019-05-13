@@ -93,7 +93,7 @@ namespace ve {
 		///create many cubes
 		void createCubes(uint32_t n) {
 
-			float stride = 200.0f;
+			float stride = 400.0f;
 			static std::default_random_engine e{12345};
 			static std::uniform_real_distribution<> d{ 1.0f, stride }; 
 
@@ -137,7 +137,7 @@ namespace ve {
 			e1->multiplyTransform( glm::scale(glm::mat4(1.0f), glm::vec3(10.0f, 10.0f, 10.0f)));
 			getRoot()->addChild(e1);
 
-			createCubes(30000);
+			createCubes(40000);
 			//VESceneNode *pSponza = m_pSceneManager->loadModel("Sponza", "models/sponza", "sponza.dae", aiProcess_FlipWindingOrder);
 			//pSponza->setTransform(glm::scale(glm::mat4(1.0f), glm::vec3(0.1f, 0.1f, 0.1f)));
 

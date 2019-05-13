@@ -129,21 +129,15 @@ namespace ve {
 		//set 4...additional per object resources
 
 		std::vector<VkDescriptorSet> sets = { entity->m_memoryHandle.pMemBlock->descriptorSets[imageIndex] };
-		//if (entity->m_descriptorSetsResources.size() > 0) {
-		//	sets.push_back(entity->m_descriptorSetsResources[0]);
-		//}
 		if (m_descriptorSetsResources.size() > 0) {
 			sets.push_back(m_descriptorSetsResources[entity->getResourceIdx() / m_resourceArrayLength]);
 		}
-
 
 		uint32_t offset = entity->m_memoryHandle.entryIndex * sizeof(VEEntity::veUBOPerObject_t);
 		vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_pipelineLayout,
 			3, (uint32_t)sets.size(), sets.data(), 1, &offset);
 
 	}
-
-
 
 
 	/**
@@ -246,8 +240,8 @@ namespace ve {
 		}
 
 		vh::vhRenderUpdateDescriptorSetMaps(getRendererPointer()->getDevice(),
-			m_descriptorSetsResources[m_descriptorSetsResources.size() - 1],
-			0, offset, m_resourceArrayLength, m_maps);
+											m_descriptorSetsResources[m_descriptorSetsResources.size() - 1],
+											0, offset, m_resourceArrayLength, m_maps);
 
 	}
 
@@ -269,7 +263,23 @@ namespace ve {
 		for (uint32_t i = 0; i < size; i++) {
 			if (m_entities[i] == pEntity) {
 				m_entities[i] = m_entities[size - 1];			//replace with former last entity (could be identical)
-				m_entities.pop_back();							//remove the last
+				m_entities[i]->setResourceIdx( i );				//new resource index
+				for (uint32_t j = 0; j < m_maps.size(); j++) {	//move also the map entries
+					m_maps[j][i] = m_maps[j][size - 1];
+				}
+				uint32_t offset = (uint32_t)(i / m_resourceArrayLength) - 1; 
+				offset *= m_resourceArrayLength;
+				vh::vhRenderUpdateDescriptorSetMaps(getRendererPointer()->getDevice(),
+													m_descriptorSetsResources[(uint32_t)(i / m_resourceArrayLength)],
+													0, offset, m_resourceArrayLength, m_maps);
+
+				m_entities.pop_back();				//remove the last
+				if (m_entities.size() % m_resourceArrayLength == 0) {	//shrunk?
+					for (uint32_t j = 0; j < m_maps.size(); j++) {
+						m_maps[j].resize(m_entities.size());			//remove map entries
+					}
+					m_descriptorSetsResources.pop_back();				//remove descriptor set
+				}
 			}
 		}
 	}
