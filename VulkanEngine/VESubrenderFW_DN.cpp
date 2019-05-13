@@ -28,7 +28,7 @@ namespace ve {
 			&m_descriptorSetLayoutResources);
 
 		vh::vhRenderCreateDescriptorSetLayout(getRendererForwardPointer()->getDevice(),
-			{ 300,											300 },
+			{ m_resourceArrayLength,						m_resourceArrayLength },
 			{ VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,	VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER },
 			{ VK_SHADER_STAGE_FRAGMENT_BIT,					VK_SHADER_STAGE_FRAGMENT_BIT },
 			&m_descriptorSetLayoutResources2);
@@ -59,10 +59,10 @@ namespace ve {
 
 		if (m_diffuseMaps.size() > 0) {
 			vh::vhRenderUpdateDescriptorSetMaps(getRendererPointer()->getDevice(),
-				m_descriptorSetsResources[0], 0, m_diffuseMaps);
+				m_descriptorSetsResources[0], 0, 0, m_resourceArrayLength, m_diffuseMaps);
 
 			vh::vhRenderUpdateDescriptorSetMaps(getRendererPointer()->getDevice(),
-				m_descriptorSetsResources[0], 1, m_normalMaps);
+				m_descriptorSetsResources[0], 1, 0, m_resourceArrayLength, m_normalMaps);
 
 		}
 
@@ -120,8 +120,13 @@ namespace ve {
 		pEntity->setResourceIdx((uint32_t)m_diffuseMaps.size());
 		m_diffuseMaps.push_back(imageInfo);
 
+		if (m_diffuseMaps.size() == 1) {
+			for (uint32_t i = 1; i<m_resourceArrayLength; i++) m_diffuseMaps.push_back(imageInfo);
+		}
+
 		vh::vhRenderUpdateDescriptorSetMaps(getRendererPointer()->getDevice(),
-											m_descriptorSetsResources[0], 0, m_diffuseMaps);
+											m_descriptorSetsResources[0], 
+											0, 0, m_resourceArrayLength, m_diffuseMaps);
 
 		imageInfo = {};
 		imageInfo.imageView = pEntity->m_pMaterial->mapNormal->m_imageView;
@@ -129,8 +134,13 @@ namespace ve {
 		imageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
 		m_normalMaps.push_back(imageInfo);
 
+		if (m_normalMaps.size() == 1) {
+			for (uint32_t i = 1; i<m_resourceArrayLength; i++) m_normalMaps.push_back(imageInfo);
+		}
+
 		vh::vhRenderUpdateDescriptorSetMaps(getRendererPointer()->getDevice(),
-											m_descriptorSetsResources[0], 1, m_normalMaps);
+											m_descriptorSetsResources[0], 
+											1, 0, m_resourceArrayLength, m_normalMaps);
 
 
 		//-------------------------------------------------------------------------

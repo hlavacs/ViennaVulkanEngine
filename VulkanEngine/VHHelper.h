@@ -298,7 +298,9 @@ namespace vh {
 	VkResult vhRenderUpdateDescriptorSetMaps(VkDevice device,
 											VkDescriptorSet descriptorSet,
 											uint32_t binding,
-											std::vector<VkDescriptorImageInfo> &maps);
+											uint32_t offset,
+											uint32_t descriptorCount,
+											std::vector<std::vector<VkDescriptorImageInfo>> &maps);
 
 	VkResult vhRenderBeginRenderPass(VkCommandBuffer commandBuffer, VkRenderPass renderPass, VkFramebuffer frameBuffer, VkExtent2D extent);
 	VkResult vhRenderBeginRenderPass(VkCommandBuffer commandBuffer, VkRenderPass renderPass, VkFramebuffer frameBuffer,

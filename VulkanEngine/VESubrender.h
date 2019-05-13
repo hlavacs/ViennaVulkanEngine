@@ -51,6 +51,7 @@ namespace ve {
 		};
 
 	protected:
+		uint32_t						m_resourceArrayLength = 512;						///<Length of resource array in shader
 		VkDescriptorSetLayout			m_descriptorSetLayoutResources = VK_NULL_HANDLE;	///<Descriptor set layout for per object resources (like images)
 		VkDescriptorSetLayout			m_descriptorSetLayoutResources2 = VK_NULL_HANDLE;	///<Descriptor set layout for per object resources (like images)
 		std::vector <VkDescriptorSet>	m_descriptorSetsResources;							///<Per object resources

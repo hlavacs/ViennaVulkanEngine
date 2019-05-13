@@ -27,7 +27,7 @@ namespace ve {
 			&m_descriptorSetLayoutResources);
 
 		vh::vhRenderCreateDescriptorSetLayout(getRendererForwardPointer()->getDevice(),
-			{ 1 },
+			{ m_resourceArrayLength },
 			{ VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER },
 			{ VK_SHADER_STAGE_FRAGMENT_BIT },
 			&m_descriptorSetLayoutResources2);
@@ -57,8 +57,8 @@ namespace ve {
 
 		if( m_diffuseMaps.size()>0)
 			vh::vhRenderUpdateDescriptorSetMaps(getRendererPointer()->getDevice(),
-												m_descriptorSetsResources[0], 0, m_diffuseMaps);
-
+												m_descriptorSetsResources[0], 
+												0, 0, m_resourceArrayLength, m_diffuseMaps);
 
 	}
 
@@ -114,8 +114,13 @@ namespace ve {
 		pEntity->setResourceIdx( (uint32_t)m_diffuseMaps.size());
 		m_diffuseMaps.push_back(imageInfo);
 
+		if (m_diffuseMaps.size() == 1) {
+			for( uint32_t i=1; i<m_resourceArrayLength; i++ ) m_diffuseMaps.push_back(imageInfo);
+		}
+
 		vh::vhRenderUpdateDescriptorSetMaps(getRendererPointer()->getDevice(),
-											m_descriptorSetsResources[0], 0, m_diffuseMaps);
+											m_descriptorSetsResources[0], 
+											0, 0, m_resourceArrayLength, m_diffuseMaps);
 
 		//----------------------------------
 

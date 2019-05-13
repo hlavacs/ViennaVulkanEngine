@@ -376,15 +376,18 @@ namespace vh {
 	VkResult vhRenderUpdateDescriptorSetMaps(	VkDevice device,
 												VkDescriptorSet descriptorSet,
 												uint32_t binding,
-												std::vector<VkDescriptorImageInfo> &maps) {
+												uint32_t offset,
+												uint32_t descriptorCount,
+												std::vector<std::vector<VkDescriptorImageInfo>> &maps) {
+
 		VkWriteDescriptorSet writeSet = {};
 		writeSet.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
 		writeSet.dstSet = descriptorSet;
-		writeSet.dstBinding = 0;
+		writeSet.dstBinding = binding;
 		writeSet.dstArrayElement = 0;
-		writeSet.descriptorCount = (uint32_t)maps.size();
 		writeSet.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-		writeSet.pImageInfo = maps.data();
+		writeSet.descriptorCount = descriptorCount;
+		writeSet.pImageInfo = &maps[offset];
 		vkUpdateDescriptorSets( device, 1, &writeSet, 0, nullptr);
 		return VK_SUCCESS;
 	}

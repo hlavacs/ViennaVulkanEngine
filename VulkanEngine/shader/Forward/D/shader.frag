@@ -4,6 +4,7 @@
 #extension GL_ARB_shading_language_420pack : enable
 #extension GL_EXT_nonuniform_qualifier : enable
 
+#define resourceArrayLength 512
 
 #include "../common_defines.glsl"
 #include "../light.glsl"
@@ -30,7 +31,7 @@ layout(set = 3, binding = 0) uniform objectUBO_t {
 
 layout(set = 4, binding = 0) uniform sampler2D texSampler;
 
-layout(set = 5, binding = 0) uniform sampler2D texSamplerArray[];
+layout(set = 5, binding = 0) uniform sampler2D texSamplerArray[resourceArrayLength];
 
 
 void main() {
@@ -49,7 +50,7 @@ void main() {
     vec3 ambcol  = lightUBO.data.col_ambient.xyz;
     vec3 diffcol = lightUBO.data.col_diffuse.xyz;
     vec3 speccol = lightUBO.data.col_specular.xyz;
-    vec3 fragColor = texture( texSampler, texCoord ).xyz;
+    vec3 fragColor = texture( texSamplerArray[iparam.x], texCoord ).xyz;
 
     vec3 result = ambcol * fragColor;
     int sIdx = 0;

@@ -55,6 +55,8 @@ namespace ve {
 		VECamera *				m_camera = nullptr;			///<entity ptr of the current camera
 		std::vector<VELight*>	m_lights = {};				///<ptrs to the lights to use
 
+		std::mutex				m_mutex;					///<Mutex for multithreading, locks the scene manager
+
 		virtual void initSceneManager();
 		virtual void closeSceneManager();
 		void copyAiNodes(	const aiScene* pScene, 
@@ -66,6 +68,9 @@ namespace ve {
 		VESceneManager();
 		///Destructor of class VESceneManager
 		~VESceneManager() {};
+
+		void lockSceneManager() { m_mutex.lock(); };		///<lock the mutex
+		void unlockSceneManager() { m_mutex.unlock(); };	///<unlock the mutex
 
 		//-------------------------------------------------------------------------------------
 		//Load assets
