@@ -53,8 +53,8 @@ namespace ve {
 	protected:
 		uint32_t						m_resourceArrayLength = 512;						///<Length of resource array in shader
 		VkDescriptorSetLayout			m_descriptorSetLayoutResources = VK_NULL_HANDLE;	///<Descriptor set layout for per object resources (like images)
-		VkDescriptorSetLayout			m_descriptorSetLayoutResources2 = VK_NULL_HANDLE;	///<Descriptor set layout for per object resources (like images)
 		std::vector <VkDescriptorSet>	m_descriptorSetsResources;							///<Per object resources
+		std::vector<std::vector<VkDescriptorImageInfo>> m_maps;								///<descriptor write info for the  maps
 		VkPipelineLayout				m_pipelineLayout = VK_NULL_HANDLE;					///<Pipeline layout
 		std::vector<VkPipeline>			m_pipelines;										///<Pipeline for light pass(es)
 		std::vector<VEEntity *>			m_entities;											///<List of associated entities
@@ -101,6 +101,7 @@ namespace ve {
 		
 		//------------------------------------------------------------------------------------------------------------------
 		virtual void	addEntity( VEEntity *pEntity );
+		virtual void	addMaps(VEEntity *pEntity, std::vector<VkDescriptorImageInfo> &newMaps);
 		virtual void	removeEntity(VEEntity *pEntity);
 		///\returns the number of entities that this sub renderer manages
 		uint32_t		getNumberEntities() { return (uint32_t)m_entities.size(); };

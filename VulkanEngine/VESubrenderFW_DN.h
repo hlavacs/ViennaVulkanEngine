@@ -13,9 +13,6 @@ namespace ve {
 	* \brief Subrenderer that manages entities that have a diffuse texture and a normal map
 	*/
 	class VESubrenderFW_DN : public VESubrender {
-	protected:
-		std::vector<std::vector<VkDescriptorImageInfo>> m_maps;			///<descriptor write info for the  maps
-
 	public:
 		///Constructor for class VESubrenderFW_DN
 		VESubrenderFW_DN() { };

@@ -14,9 +14,6 @@ namespace ve {
 	* \brief Subrenderer that manages entities that have one diffuse texture for coloring
 	*/
 	class VESubrenderFW_D : public VESubrender {
-	protected:
-		std::vector<std::vector<VkDescriptorImageInfo>> m_maps;			///<descriptor write info for the  maps
-
 	public:
 		///Constructor
 		VESubrenderFW_D() {};

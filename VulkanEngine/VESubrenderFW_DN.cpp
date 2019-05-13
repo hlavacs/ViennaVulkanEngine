@@ -22,22 +22,16 @@ namespace ve {
 		VESubrender::initSubrenderer();
 
 		vh::vhRenderCreateDescriptorSetLayout(getRendererForwardPointer()->getDevice(),
-			{ 1,											1 },
-			{ VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,	VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER },
-			{ VK_SHADER_STAGE_FRAGMENT_BIT,					VK_SHADER_STAGE_FRAGMENT_BIT },
-			&m_descriptorSetLayoutResources);
-
-		vh::vhRenderCreateDescriptorSetLayout(getRendererForwardPointer()->getDevice(),
 			{ m_resourceArrayLength,						m_resourceArrayLength },
 			{ VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,	VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER },
 			{ VK_SHADER_STAGE_FRAGMENT_BIT,					VK_SHADER_STAGE_FRAGMENT_BIT },
-			&m_descriptorSetLayoutResources2);
+			&m_descriptorSetLayoutResources);
 
 		VkDescriptorSetLayout perObjectLayout = getRendererForwardPointer()->getDescriptorSetLayoutPerObject2();
 
 		vh::vhPipeCreateGraphicsPipelineLayout(getRendererForwardPointer()->getDevice(),
 		{ perObjectLayout, perObjectLayout,  getRendererForwardPointer()->getDescriptorSetLayoutShadow(), 
-			perObjectLayout, m_descriptorSetLayoutResources, m_descriptorSetLayoutResources2 },
+			perObjectLayout, m_descriptorSetLayoutResources },
 		{},
 			&m_pipelineLayout);
 
@@ -51,25 +45,7 @@ namespace ve {
 
 		//----------------------------------------
 
-		if (m_maps.empty()) {
-			m_maps.resize(2);
-		}
-
-		uint32_t size = (uint32_t)m_descriptorSetsResources.size();
-		if (size > 0) {
-			m_descriptorSetsResources.clear();
-			vh::vhRenderCreateDescriptorSets(getRendererForwardPointer()->getDevice(),
-				size, m_descriptorSetLayoutResources2,
-				getRendererForwardPointer()->getDescriptorPool(),
-				m_descriptorSetsResources);
-
-			for (uint32_t i = 0; i < size; i++) {
-				vh::vhRenderUpdateDescriptorSetMaps(getRendererPointer()->getDevice(),
-					m_descriptorSetsResources[i],
-					0, i*m_resourceArrayLength, m_resourceArrayLength, m_maps);
-			}
-		}
-
+		if (m_maps.empty()) m_maps.resize(2);
 	}
 
 
@@ -93,9 +69,6 @@ namespace ve {
 		//set 4...additional per object resources
 
 		std::vector<VkDescriptorSet> sets = { entity->m_memoryHandle.pMemBlock->descriptorSets[imageIndex] };
-		if (entity->m_descriptorSetsResources.size() > 0) {
-			sets.push_back(entity->m_descriptorSetsResources[0]);
-		}
 		if (m_descriptorSetsResources.size() > 0) {
 			sets.push_back(m_descriptorSetsResources[entity->getResourceIdx() / m_resourceArrayLength]);
 		}
@@ -131,7 +104,7 @@ namespace ve {
 		uint32_t offset = 0;
 		if (pEntity->getResourceIdx() % m_resourceArrayLength == 0) {
 			vh::vhRenderCreateDescriptorSets(getRendererForwardPointer()->getDevice(),
-				1, m_descriptorSetLayoutResources2,
+				1, m_descriptorSetLayoutResources,
 				getRendererForwardPointer()->getDescriptorPool(),
 				m_descriptorSetsResources);
 
@@ -154,22 +127,6 @@ namespace ve {
 
 		VESubrender::addEntity(pEntity);
 
-		//-------------------------------------------------------------------------
-		vh::vhRenderCreateDescriptorSets(getRendererForwardPointer()->getDevice(),
-			1, //(uint32_t)getRendererForwardPointer()->getSwapChainNumber(),
-			m_descriptorSetLayoutResources,
-			getRendererForwardPointer()->getDescriptorPool(),
-			pEntity->m_descriptorSetsResources);
-
-		for (uint32_t i = 0; i < pEntity->m_descriptorSetsResources.size(); i++) {
-			vh::vhRenderUpdateDescriptorSet(getRendererForwardPointer()->getDevice(),
-				pEntity->m_descriptorSetsResources[i],
-				{ VK_NULL_HANDLE, VK_NULL_HANDLE }, //UBOs
-				{ 0,              0 },	//UBO sizes
-				{ {pEntity->m_pMaterial->mapDiffuse->m_imageView}, {pEntity->m_pMaterial->mapNormal->m_imageView} },	//textureImageViews
-				{ {pEntity->m_pMaterial->mapDiffuse->m_sampler},   {pEntity->m_pMaterial->mapNormal->m_sampler} }	//samplers
-			);
-		}
 	}
 
 }

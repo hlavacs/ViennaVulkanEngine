@@ -30,11 +30,11 @@ layout(set = 3, binding = 0) uniform objectUBO_t {
     objectData_t data;
 } objectUBO;
 
-layout(set = 4, binding = 0) uniform sampler2D texSampler;
-layout(set = 4, binding = 1) uniform sampler2D normalSampler;
+//layout(set = 4, binding = 0) uniform sampler2D texSampler;
+//layout(set = 4, binding = 1) uniform sampler2D normalSampler;
 
-layout(set = 5, binding = 0) uniform sampler2D texSamplerArray[resourceArrayLength];
-layout(set = 5, binding = 1) uniform sampler2D normalSamplerArray[resourceArrayLength];
+layout(set = 4, binding = 0) uniform sampler2D texSamplerArray[resourceArrayLength];
+layout(set = 4, binding = 1) uniform sampler2D normalSamplerArray[resourceArrayLength];
 
 
 void main() {

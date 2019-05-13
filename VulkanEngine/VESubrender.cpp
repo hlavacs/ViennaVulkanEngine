@@ -25,6 +25,21 @@ namespace ve {
 	void VESubrender::recreateResources() {
 		closeSubrenderer();
 		initSubrenderer();
+
+		uint32_t size = (uint32_t)m_descriptorSetsResources.size();
+		if (size > 0) {
+			m_descriptorSetsResources.clear();
+			vh::vhRenderCreateDescriptorSets(getRendererForwardPointer()->getDevice(),
+				size, m_descriptorSetLayoutResources,
+				getRendererForwardPointer()->getDescriptorPool(),
+				m_descriptorSetsResources);
+
+			for (uint32_t i = 0; i < size; i++) {
+				vh::vhRenderUpdateDescriptorSetMaps(getRendererPointer()->getDevice(),
+					m_descriptorSetsResources[i],
+					0, i*m_resourceArrayLength, m_resourceArrayLength, m_maps);
+			}
+		}
 	}
 
 	/**
@@ -41,9 +56,6 @@ namespace ve {
 
 		if (m_descriptorSetLayoutResources != VK_NULL_HANDLE)
 			vkDestroyDescriptorSetLayout(getRendererPointer()->getDevice(), m_descriptorSetLayoutResources, nullptr);
-
-		if (m_descriptorSetLayoutResources2 != VK_NULL_HANDLE)
-			vkDestroyDescriptorSetLayout(getRendererPointer()->getDevice(), m_descriptorSetLayoutResources2, nullptr);
 
 	}
 
@@ -202,6 +214,39 @@ namespace ve {
 		m_entities.push_back(pEntity);
 		pEntity->m_pSubrenderer = this;
 	}
+
+
+	void VESubrender::addMaps(VEEntity *pEntity, std::vector<VkDescriptorImageInfo> &newMaps ) {
+		pEntity->setResourceIdx((uint32_t)m_entities.size());
+
+		uint32_t offset = 0;
+		if (pEntity->getResourceIdx() % m_resourceArrayLength == 0) {
+			vh::vhRenderCreateDescriptorSets(getRendererForwardPointer()->getDevice(),
+				1, m_descriptorSetLayoutResources,
+				getRendererForwardPointer()->getDescriptorPool(),
+				m_descriptorSetsResources);
+
+			offset = (uint32_t)m_maps[0].size();
+
+			for (uint32_t i = 0; i < m_maps.size(); i++ ) {
+				m_maps[i].resize(offset + m_resourceArrayLength);
+				for (uint32_t j = offset; j < offset + m_resourceArrayLength; j++) m_maps[i][j] = newMaps[i];
+			}
+		}
+		else {
+			offset = (uint32_t)m_maps[0].size() / m_resourceArrayLength - 1;
+			offset *= m_resourceArrayLength;
+			for (uint32_t i = 0; i < m_maps.size(); i++) {
+				m_maps[i][m_entities.size()] = newMaps[i];
+			}
+		}
+
+		vh::vhRenderUpdateDescriptorSetMaps(getRendererPointer()->getDevice(),
+			m_descriptorSetsResources[m_descriptorSetsResources.size() - 1],
+			0, offset, m_resourceArrayLength, m_maps);
+
+	}
+
 
 	/**
 	*
