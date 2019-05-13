@@ -380,15 +380,24 @@ namespace vh {
 												uint32_t descriptorCount,
 												std::vector<std::vector<VkDescriptorImageInfo>> &maps) {
 
-		VkWriteDescriptorSet writeSet = {};
-		writeSet.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-		writeSet.dstSet = descriptorSet;
-		writeSet.dstBinding = binding;
-		writeSet.dstArrayElement = 0;
-		writeSet.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-		writeSet.descriptorCount = descriptorCount;
-		writeSet.pImageInfo = &maps[offset];
-		vkUpdateDescriptorSets( device, 1, &writeSet, 0, nullptr);
+
+		std::vector<VkWriteDescriptorSet> descriptorWrites = {};
+		descriptorWrites.resize(maps.size());
+
+		for (uint32_t i = binding; i < maps.size(); i++) {
+
+			descriptorWrites[i].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+			descriptorWrites[i].dstSet = descriptorSet;
+			descriptorWrites[i].dstBinding = i;
+			descriptorWrites[i].dstArrayElement = 0;
+			descriptorWrites[i].descriptorCount = (uint32_t)maps[i].size();
+
+			descriptorWrites[i].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+			descriptorWrites[i].pImageInfo = maps[i].data();
+			descriptorWrites[i].descriptorCount = (uint32_t)maps[i].size();
+		}
+
+		vkUpdateDescriptorSets(device, static_cast<uint32_t>(descriptorWrites.size()), descriptorWrites.data(), 0, nullptr);
 		return VK_SUCCESS;
 	}
 

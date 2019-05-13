@@ -57,13 +57,13 @@ namespace ve {
 			getRendererForwardPointer()->getDescriptorPool(),
 			m_descriptorSetsResources);
 
-		if (m_diffuseMaps.size() > 0) {
-			vh::vhRenderUpdateDescriptorSetMaps(getRendererPointer()->getDevice(),
-				m_descriptorSetsResources[0], 0, 0, m_resourceArrayLength, m_diffuseMaps);
+		if (m_maps.empty()) {
+			m_maps.resize(2);
+		}
 
+		if (m_maps[0].size() > 0) {
 			vh::vhRenderUpdateDescriptorSetMaps(getRendererPointer()->getDevice(),
-				m_descriptorSetsResources[0], 1, 0, m_resourceArrayLength, m_normalMaps);
-
+												m_descriptorSetsResources[0], 0, 0, m_resourceArrayLength, m_maps);
 		}
 
 	}
@@ -113,34 +113,29 @@ namespace ve {
 	void VESubrenderFW_DN::addEntity(VEEntity *pEntity) {
 		VESubrender::addEntity(pEntity);
 
-		VkDescriptorImageInfo imageInfo = {};
-		imageInfo.imageView = pEntity->m_pMaterial->mapDiffuse->m_imageView;
-		imageInfo.sampler = pEntity->m_pMaterial->mapDiffuse->m_sampler;
-		imageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-		pEntity->setResourceIdx((uint32_t)m_diffuseMaps.size());
-		m_diffuseMaps.push_back(imageInfo);
+		VkDescriptorImageInfo imageInfo1 = {};
+		imageInfo1.imageView = pEntity->m_pMaterial->mapDiffuse->m_imageView;
+		imageInfo1.sampler = pEntity->m_pMaterial->mapDiffuse->m_sampler;
+		imageInfo1.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
 
-		if (m_diffuseMaps.size() == 1) {
-			for (uint32_t i = 1; i<m_resourceArrayLength; i++) m_diffuseMaps.push_back(imageInfo);
+		VkDescriptorImageInfo imageInfo2 = {};
+		imageInfo2.imageView = pEntity->m_pMaterial->mapNormal->m_imageView;
+		imageInfo2.sampler = pEntity->m_pMaterial->mapNormal->m_sampler;
+		imageInfo2.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+
+		pEntity->setResourceIdx((uint32_t)m_maps[0].size());
+
+		if (m_maps[0].empty()) {
+			m_maps[0].resize(m_resourceArrayLength);
+			for (uint32_t i = 0; i<m_resourceArrayLength; i++) m_maps[0][i] = imageInfo1;
+
+			m_maps[1].resize(m_resourceArrayLength);
+			for (uint32_t i = 0; i<m_resourceArrayLength; i++) m_maps[1][i] = imageInfo2;
 		}
 
 		vh::vhRenderUpdateDescriptorSetMaps(getRendererPointer()->getDevice(),
 											m_descriptorSetsResources[0], 
-											0, 0, m_resourceArrayLength, m_diffuseMaps);
-
-		imageInfo = {};
-		imageInfo.imageView = pEntity->m_pMaterial->mapNormal->m_imageView;
-		imageInfo.sampler = pEntity->m_pMaterial->mapNormal->m_sampler;
-		imageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-		m_normalMaps.push_back(imageInfo);
-
-		if (m_normalMaps.size() == 1) {
-			for (uint32_t i = 1; i<m_resourceArrayLength; i++) m_normalMaps.push_back(imageInfo);
-		}
-
-		vh::vhRenderUpdateDescriptorSetMaps(getRendererPointer()->getDevice(),
-											m_descriptorSetsResources[0], 
-											1, 0, m_resourceArrayLength, m_normalMaps);
+											0, 0, m_resourceArrayLength, m_maps);
 
 
 		//-------------------------------------------------------------------------

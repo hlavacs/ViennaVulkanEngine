@@ -393,7 +393,7 @@ namespace vh {
 
 		VkPhysicalDeviceDescriptorIndexingFeaturesEXT ext = {};
 		ext.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DESCRIPTOR_INDEXING_FEATURES_EXT;
-		ext.runtimeDescriptorArray = VK_TRUE;
+		//ext.runtimeDescriptorArray = VK_TRUE;
 
 		VkDeviceCreateInfo createInfo = {};
 		createInfo.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;

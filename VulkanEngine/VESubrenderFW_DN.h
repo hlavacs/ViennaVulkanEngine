@@ -14,8 +14,7 @@ namespace ve {
 	*/
 	class VESubrenderFW_DN : public VESubrender {
 	protected:
-		std::vector<VkDescriptorImageInfo> m_diffuseMaps;	///<descriptor write info for the diffuse maps
-		std::vector<VkDescriptorImageInfo> m_normalMaps;	///<descriptor write info for the normal maps	
+		std::vector<std::vector<VkDescriptorImageInfo>> m_maps;			///<descriptor write info for the  maps
 
 	public:
 		///Constructor for class VESubrenderFW_DN

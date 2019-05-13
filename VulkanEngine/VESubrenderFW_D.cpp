@@ -55,10 +55,12 @@ namespace ve {
 			getRendererForwardPointer()->getDescriptorPool(),
 			m_descriptorSetsResources);
 
-		if( m_diffuseMaps.size()>0)
+		if (m_maps.empty()) m_maps.resize(1);
+
+		if( m_maps[0].size()>0)
 			vh::vhRenderUpdateDescriptorSetMaps(getRendererPointer()->getDevice(),
 												m_descriptorSetsResources[0], 
-												0, 0, m_resourceArrayLength, m_diffuseMaps);
+												0, 0, m_resourceArrayLength, m_maps);
 
 	}
 
@@ -107,25 +109,27 @@ namespace ve {
 	void VESubrenderFW_D::addEntity(VEEntity *pEntity) {
 		VESubrender::addEntity( pEntity);
 
-		VkDescriptorImageInfo imageInfo = {};
-		imageInfo.imageView = pEntity->m_pMaterial->mapDiffuse->m_imageView;
-		imageInfo.sampler = pEntity->m_pMaterial->mapDiffuse->m_sampler;
-		imageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-		pEntity->setResourceIdx( (uint32_t)m_diffuseMaps.size());
-		m_diffuseMaps.push_back(imageInfo);
 
-		if (m_diffuseMaps.size() == 1) {
-			for( uint32_t i=1; i<m_resourceArrayLength; i++ ) m_diffuseMaps.push_back(imageInfo);
+		VkDescriptorImageInfo imageInfo1 = {};
+		imageInfo1.imageView = pEntity->m_pMaterial->mapDiffuse->m_imageView;
+		imageInfo1.sampler = pEntity->m_pMaterial->mapDiffuse->m_sampler;
+		imageInfo1.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+
+		pEntity->setResourceIdx((uint32_t)m_maps[0].size());
+
+		if (m_maps[0].empty()) {
+			m_maps[0].resize(m_resourceArrayLength);
+			for (uint32_t i = 0; i<m_resourceArrayLength; i++) m_maps[0][i] = imageInfo1;
 		}
 
 		vh::vhRenderUpdateDescriptorSetMaps(getRendererPointer()->getDevice(),
 											m_descriptorSetsResources[0], 
-											0, 0, m_resourceArrayLength, m_diffuseMaps);
+											0, 0, m_resourceArrayLength, m_maps);
 
 		//----------------------------------
 
 		vh::vhRenderCreateDescriptorSets(getRendererForwardPointer()->getDevice(),
-			1, //(uint32_t)getRendererForwardPointer()->getSwapChainNumber(),
+			1, 
 			m_descriptorSetLayoutResources,
 			getRendererForwardPointer()->getDescriptorPool(),
 			pEntity->m_descriptorSetsResources);
