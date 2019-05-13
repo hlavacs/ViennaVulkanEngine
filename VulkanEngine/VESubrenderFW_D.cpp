@@ -41,8 +41,6 @@ namespace ve {
 			{ VK_DYNAMIC_STATE_BLEND_CONSTANTS },
 			&m_pipelines[0]);
 
-		//----------------------------------------
-
 		if (m_maps.empty()) m_maps.resize(1);
 
 	}
@@ -59,7 +57,7 @@ namespace ve {
 	}
 
 
-	void VESubrenderFW_D::bindDescriptorSetsPerEntity(	VkCommandBuffer commandBuffer, 
+	/*void VESubrenderFW_D::bindDescriptorSetsPerEntity(	VkCommandBuffer commandBuffer, 
 														uint32_t imageIndex, VEEntity *entity) {
 
 		//set 0...cam UBO
@@ -76,7 +74,7 @@ namespace ve {
 		uint32_t offset = entity->m_memoryHandle.entryIndex * sizeof(VEEntity::veUBOPerObject_t);
 		vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_pipelineLayout,
 			3, (uint32_t)sets.size(), sets.data(), 1, &offset);
-	}
+	}*/
 
 
 

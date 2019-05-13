@@ -129,9 +129,13 @@ namespace ve {
 		//set 4...additional per object resources
 
 		std::vector<VkDescriptorSet> sets = { entity->m_memoryHandle.pMemBlock->descriptorSets[imageIndex] };
-		if (entity->m_descriptorSetsResources.size() > 0) {
-			sets.push_back(entity->m_descriptorSetsResources[0]);
+		//if (entity->m_descriptorSetsResources.size() > 0) {
+		//	sets.push_back(entity->m_descriptorSetsResources[0]);
+		//}
+		if (m_descriptorSetsResources.size() > 0) {
+			sets.push_back(m_descriptorSetsResources[entity->getResourceIdx() / m_resourceArrayLength]);
 		}
+
 
 		uint32_t offset = entity->m_memoryHandle.entryIndex * sizeof(VEEntity::veUBOPerObject_t);
 		vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_pipelineLayout,

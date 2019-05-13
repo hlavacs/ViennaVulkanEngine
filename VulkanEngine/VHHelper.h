@@ -35,7 +35,7 @@
 #define _USE_MATH_DEFINES
 #include <math.h>
 
-#include <vulkan/vulkan.hpp>
+//#include <vulkan/vulkan.hpp>
 #include "vk_mem_alloc.h"
 #include <stb_image.h>
 #include <stb_image_write.h>

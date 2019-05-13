@@ -192,8 +192,6 @@ namespace ve {
 		bool						m_drawEntity = false;			///<should it be drawn at all?
 		bool						m_castsShadow = true;			///<draw in the shadow pass?
 
-		std::vector<VkDescriptorSet> m_descriptorSetsResources;		///<Per subrenderer descriptor sets for other resources
-
 		//-------------------------------------------------------------------------------------
 		//Class and type
 

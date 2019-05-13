@@ -21,7 +21,7 @@ namespace ve {
 		VESubrender::initSubrenderer();
 
 		vh::vhRenderCreateDescriptorSetLayout(getRendererForwardPointer()->getDevice(),
-			{ 1 },
+			{ m_resourceArrayLength },
 			{ VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER },
 			{ VK_SHADER_STAGE_FRAGMENT_BIT },
 			&m_descriptorSetLayoutResources);
@@ -29,7 +29,8 @@ namespace ve {
 		VkDescriptorSetLayout perObjectLayout = getRendererForwardPointer()->getDescriptorSetLayoutPerObject2();
 
 		vh::vhPipeCreateGraphicsPipelineLayout(getRendererForwardPointer()->getDevice(),
-		{ perObjectLayout, perObjectLayout,  getRendererForwardPointer()->getDescriptorSetLayoutShadow(), perObjectLayout, m_descriptorSetLayoutResources },
+		{	perObjectLayout, perObjectLayout,  getRendererForwardPointer()->getDescriptorSetLayoutShadow(), 
+			perObjectLayout, m_descriptorSetLayoutResources },
 		{}, &m_pipelineLayout);
 
 		m_pipelines.resize(1);
@@ -40,6 +41,8 @@ namespace ve {
 			{ },
 			&m_pipelines[0]);
 
+		if (m_maps.empty()) m_maps.resize(1);
+
 	}
 
 	/**
@@ -49,24 +52,17 @@ namespace ve {
 	*
 	*/
 	void VESubrenderFW_Cubemap::addEntity(VEEntity *pEntity) {
+
+		VkDescriptorImageInfo imageInfo1 = {};
+		imageInfo1.imageView = pEntity->m_pMaterial->mapDiffuse->m_imageView;
+		imageInfo1.sampler = pEntity->m_pMaterial->mapDiffuse->m_sampler;
+		imageInfo1.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+
+		std::vector<VkDescriptorImageInfo> maps = { imageInfo1 };
+
+		addMaps(pEntity, maps);
+
 		VESubrender::addEntity(pEntity);
-
-		vh::vhRenderCreateDescriptorSets(getRendererForwardPointer()->getDevice(),
-			1, //(uint32_t)getRendererPointer()->getSwapChainNumber(),
-			m_descriptorSetLayoutResources,
-			getRendererForwardPointer()->getDescriptorPool(),
-			pEntity->m_descriptorSetsResources);
-
-		for (uint32_t i = 0; i < pEntity->m_descriptorSetsResources.size(); i++) {
-			vh::vhRenderUpdateDescriptorSet(getRendererForwardPointer()->getDevice(),
-				pEntity->m_descriptorSetsResources[i],
-				{ VK_NULL_HANDLE }, //UBOs
-				{ 0  }, //UBO sizes
-				{ {pEntity->m_pMaterial->mapDiffuse->m_imageView} },	//textureImageViews
-				{ {pEntity->m_pMaterial->mapDiffuse->m_sampler} }	//samplers
-			);
-		}
-
 	}
 
 }

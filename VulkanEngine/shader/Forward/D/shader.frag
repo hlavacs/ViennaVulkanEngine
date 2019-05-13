@@ -4,7 +4,7 @@
 #extension GL_ARB_shading_language_420pack : enable
 #extension GL_EXT_nonuniform_qualifier : enable
 
-#define resourceArrayLength 512
+#define RESOURCEARRAYLENGTH 512
 
 #include "../common_defines.glsl"
 #include "../light.glsl"
@@ -29,9 +29,7 @@ layout(set = 3, binding = 0) uniform objectUBO_t {
     objectData_t data;
 } objectUBO;
 
-//layout(set = 4, binding = 0) uniform sampler2D texSampler;
-
-layout(set = 4, binding = 0) uniform sampler2D texSamplerArray[resourceArrayLength];
+layout(set = 4, binding = 0) uniform sampler2D texSamplerArray[RESOURCEARRAYLENGTH];
 
 
 void main() {
@@ -45,7 +43,7 @@ void main() {
     vec4 texParam   = objectUBO.data.param;
     vec2 texCoord   = (fragTexCoord + texParam.zw)*texParam.xy;
     ivec4 iparam    = objectUBO.data.iparam;
-    uint resIdx     = iparam.x % resourceArrayLength;
+    uint resIdx     = iparam.x % RESOURCEARRAYLENGTH;
 
     //colors
     vec3 ambcol  = lightUBO.data.col_ambient.xyz;
