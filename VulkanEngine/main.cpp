@@ -93,7 +93,7 @@ namespace ve {
 		///create many cubes
 		void createCubes(uint32_t n) {
 
-			float stride = 400.0f;
+			float stride = 300.0f;
 			static std::default_random_engine e{12345};
 			static std::uniform_real_distribution<> d{ 1.0f, stride }; 
 

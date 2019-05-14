@@ -76,11 +76,13 @@ namespace ve {
 
 		//depth map for light pass
 		vh::vhBufCreateDepthResources(	m_device, m_vmaAllocator, m_graphicsQueue, m_commandPool, 
-										m_swapChainExtent, m_depthMap->m_format, &m_depthMap->m_image, &m_depthMap->m_deviceAllocation, &m_depthMap->m_imageView);
+										m_swapChainExtent, m_depthMap->m_format, 
+										&m_depthMap->m_image, &m_depthMap->m_deviceAllocation, 
+										&m_depthMap->m_imageInfo.imageView);
 
 		//frame buffers for light pass
 		std::vector<VkImageView> depthMaps;
-		for (uint32_t i = 0; i < m_swapChainImageViews.size(); i++) depthMaps.push_back(m_depthMap->m_imageView);
+		for (uint32_t i = 0; i < m_swapChainImageViews.size(); i++) depthMaps.push_back(m_depthMap->m_imageInfo.imageView);
 		vh::vhBufCreateFramebuffers(m_device, m_swapChainImageViews, depthMaps, m_renderPassClear, m_swapChainExtent, m_swapChainFramebuffers);
 
 
@@ -104,19 +106,19 @@ namespace ve {
 				//create the depth images
 				vh::vhBufCreateDepthResources(m_device, m_vmaAllocator, m_graphicsQueue, m_commandPool,
 					extent, pShadowMap->m_format,
-					&pShadowMap->m_image, &pShadowMap->m_deviceAllocation, &pShadowMap->m_imageView);
+					&pShadowMap->m_image, &pShadowMap->m_deviceAllocation, &pShadowMap->m_imageInfo.imageView);
 
 				vh::vhBufTransitionImageLayout(m_device, m_graphicsQueue, m_commandPool,
 					pShadowMap->m_image, pShadowMap->m_format, VK_IMAGE_ASPECT_DEPTH_BIT, 1, 1,
 					VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
 
-				vh::vhBufCreateTextureSampler(getRendererPointer()->getDevice(), &pShadowMap->m_sampler);
+				vh::vhBufCreateTextureSampler(getRendererPointer()->getDevice(), &pShadowMap->m_imageInfo.sampler);
 
 				m_shadowMaps[i].push_back(pShadowMap);
 
 				//create the framebuffers holding only the depth images for the shadow maps
 				std::vector<VkFramebuffer> frameBuffers;
-				vh::vhBufCreateFramebuffers(m_device, { VK_NULL_HANDLE }, { pShadowMap->m_imageView },
+				vh::vhBufCreateFramebuffers(m_device, { VK_NULL_HANDLE }, { pShadowMap->m_imageInfo.imageView },
 											m_renderPassShadow, extent, frameBuffers);
 
 				m_shadowFramebuffers[i].push_back(frameBuffers[0]);
@@ -169,8 +171,8 @@ namespace ve {
 			samplers.resize(1);
 			
 			for (uint32_t j = 0; j < NUM_SHADOW_CASCADE; j++) {
-				imageViews[0].push_back(m_shadowMaps[i][j]->m_imageView);
-				samplers[0].push_back(m_shadowMaps[i][j]->m_sampler);
+				imageViews[0].push_back(m_shadowMaps[i][j]->m_imageInfo.imageView);
+				samplers[0].push_back(m_shadowMaps[i][j]->m_imageInfo.sampler);
 			}
 
 			vh::vhRenderUpdateDescriptorSet(m_device, m_descriptorSetsShadow[i],
@@ -196,8 +198,6 @@ namespace ve {
 		addSubrenderer(new VESubrenderFW_C1());
 		addSubrenderer(new VESubrenderFW_D());
 		addSubrenderer(new VESubrenderFW_DN());
-		//addSubrenderer(new VESubrenderFW_Cubemap());
-		//addSubrenderer(new VESubrenderFW_Cubemap2());
 		addSubrenderer(new VESubrenderFW_Skyplane());
 		addSubrenderer( new VESubrenderFW_Shadow());
 		addSubrenderer(new VESubrenderFW_Nuklear());
@@ -290,10 +290,10 @@ namespace ve {
 		vh::vhRenderCreateRenderPass(m_device, m_swapChainImageFormat, m_depthMap->m_format, VK_ATTACHMENT_LOAD_OP_LOAD, &m_renderPassLoad);
 
 		vh::vhBufCreateDepthResources(	m_device, m_vmaAllocator, m_graphicsQueue, m_commandPool, m_swapChainExtent,
-										m_depthMap->m_format, &m_depthMap->m_image, &m_depthMap->m_deviceAllocation, &m_depthMap->m_imageView);
+										m_depthMap->m_format, &m_depthMap->m_image, &m_depthMap->m_deviceAllocation, &m_depthMap->m_imageInfo.imageView);
 
 		std::vector<VkImageView> depthMaps;
-		for (uint32_t i = 0; i < m_swapChainImageViews.size(); i++) depthMaps.push_back(m_depthMap->m_imageView);
+		for (uint32_t i = 0; i < m_swapChainImageViews.size(); i++) depthMaps.push_back(m_depthMap->m_imageInfo.imageView);
 		vh::vhBufCreateFramebuffers(m_device, m_swapChainImageViews, depthMaps, m_renderPassClear, m_swapChainExtent, m_swapChainFramebuffers);
 
 		for (auto pSub : m_subrenderers) pSub->recreateResources();

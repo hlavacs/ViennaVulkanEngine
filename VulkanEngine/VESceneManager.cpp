@@ -454,106 +454,6 @@ namespace ve {
 	//-----------------------------------------------------------------------------------------
 	//create complex entities
 
-	/**
-	*
-	* \brief Create a cube map based sky box
-	*
-	* This function uses GLI to load either a ktx or dds file containing a cube map.
-	* The cube is then rotated an scaled so that it can be used as sky box.
-	*
-	* \param[in] entityName Name of the new entity.
-	* \param[in] basedir Name of the directory the texture file is in
-	* \param[in] filename Name of the texture file.
-	* \returns a pointer to the new entity
-	*
-	*/
-	VESceneNode *	VESceneManager::createCubemap(	std::string entityName, std::string basedir,
-													std::string filename) {
-
-		VEEntity::veEntityType entityType = VEEntity::VE_ENTITY_TYPE_CUBEMAP;
-		VkImageCreateFlags createFlags = VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT;
-		VkImageViewType viewType = VK_IMAGE_VIEW_TYPE_CUBE;
-
-#ifdef __MACOS__
-		entityType = VEEntity::VE_ENTITY_TYPE_CUBEMAP2;
-		createFlags = 0;
-		viewType = 0;
-#endif
-
-		std::string filekey = basedir + "/" + filename;
-
-		VEMesh * pMesh = m_meshes[STANDARD_MESH_INVCUBE];
-
-		VEMaterial *pMat = m_materials[filekey];
-		if (pMat == nullptr) {
-			pMat = new VEMaterial(filekey);
-			m_materials[filekey] = pMat;
-
-			gli::texture_cube texCube(gli::load(filekey));
-			if (texCube.empty()) {
-				throw std::runtime_error("Error: Could not load cubemap file " + filekey + "!");
-			}
-
-			pMat->mapDiffuse = new VETexture( filekey, texCube, createFlags, viewType );
-		}
-
-		VESceneNode *pEntity = createEntity(entityName, entityType, pMesh, pMat, glm::mat4(1.0f), m_rootSceneNode );
-		pEntity->setTransform(glm::scale(glm::vec3(10000.0f, 10000.0f, 10000.0f)));
-
-		sceneGraphChanged();
-		return pEntity;
-	}
-
-	/**
-	*
-	* \brief Create a cube map based sky box
-	*
-	* This function loads 6 textures to use them in a cube map.
-	* The cube is then rotated an scaled so that it can be used as sky box.
-	*
-	* \param[in] entityName Name of the new entity.
-	* \param[in] basedir Name of the directory the texture file is in
-	* \param[in] filenames List of 6 names of the texture files. Order must be ft bk up dn rt lf
-	* \returns a pointer to the new entity
-	*
-	*/
-	VESceneNode * VESceneManager::createCubemap(	std::string entityName, std::string basedir,
-													std::vector<std::string> filenames) {
-
-		VEEntity::veEntityType entityType = VEEntity::VE_ENTITY_TYPE_CUBEMAP;
-		VkImageCreateFlags createFlags = VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT;
-		VkImageViewType viewType = VK_IMAGE_VIEW_TYPE_CUBE;
-
-#ifdef __MACOS__
-		entityType = VEEntity::VE_ENTITY_TYPE_CUBEMAP2;
-		createFlags = VK_IMAGE_CREATE_2D_ARRAY_COMPATIBLE_BIT;
-		viewType = VK_IMAGE_VIEW_TYPE_2D_ARRAY;
-#endif
-
-		std::string filekey = basedir + "/";
-		std::string addstring = "";
-		for (auto filename : filenames) {
-			filekey += addstring + filename;
-			addstring = "+";
-		}
-
-		VEMesh * pMesh = m_meshes[STANDARD_MESH_INVCUBE];
-
-		VEMaterial *pMat = m_materials[filekey];
-		if (pMat == nullptr) {
-			pMat = new VEMaterial(filekey);
-			m_materials[filekey] = pMat;
-
-			pMat->mapDiffuse = new VETexture(entityName, basedir, filenames, createFlags, viewType );
-		}
-
-		VEEntity *pEntity = createEntity(entityName, entityType, pMesh, pMat, glm::mat4(1.0f), m_rootSceneNode );
-		pEntity->setTransform(glm::scale(glm::vec3(500.0f, 500.0f, 500.0f)));
-		pEntity->m_castsShadow = false;
-
-		sceneGraphChanged();
-		return pEntity;
-	}
 
 	/**
 	*
@@ -890,6 +790,112 @@ namespace ve {
 			printTree( root->m_children[i] );
 		}
 	}
+
+
+	//---------------------------------------------------------------------------------------------
+	//deprecated
+
+	/**
+	*
+	* \brief Create a cube map based sky box
+	*
+	* This function uses GLI to load either a ktx or dds file containing a cube map.
+	* The cube is then rotated an scaled so that it can be used as sky box.
+	*
+	* \param[in] entityName Name of the new entity.
+	* \param[in] basedir Name of the directory the texture file is in
+	* \param[in] filename Name of the texture file.
+	* \returns a pointer to the new entity
+	*
+	*/
+	/*VESceneNode *	VESceneManager::createCubemap(std::string entityName, std::string basedir,
+		std::string filename) {
+
+		VEEntity::veEntityType entityType = VEEntity::VE_ENTITY_TYPE_CUBEMAP;
+		VkImageCreateFlags createFlags = VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT;
+		VkImageViewType viewType = VK_IMAGE_VIEW_TYPE_CUBE;
+
+#ifdef __MACOS__
+		entityType = VEEntity::VE_ENTITY_TYPE_CUBEMAP2;
+		createFlags = 0;
+		viewType = 0;
+#endif
+
+		std::string filekey = basedir + "/" + filename;
+
+		VEMesh * pMesh = m_meshes[STANDARD_MESH_INVCUBE];
+
+		VEMaterial *pMat = m_materials[filekey];
+		if (pMat == nullptr) {
+			pMat = new VEMaterial(filekey);
+			m_materials[filekey] = pMat;
+
+			gli::texture_cube texCube(gli::load(filekey));
+			if (texCube.empty()) {
+				throw std::runtime_error("Error: Could not load cubemap file " + filekey + "!");
+			}
+
+			pMat->mapDiffuse = new VETexture(filekey, texCube, createFlags, viewType);
+		}
+
+		VESceneNode *pEntity = createEntity(entityName, entityType, pMesh, pMat, glm::mat4(1.0f), m_rootSceneNode);
+		pEntity->setTransform(glm::scale(glm::vec3(10000.0f, 10000.0f, 10000.0f)));
+
+		sceneGraphChanged();
+		return pEntity;
+	}*/
+
+	/**
+	*
+	* \brief Create a cube map based sky box
+	*
+	* This function loads 6 textures to use them in a cube map.
+	* The cube is then rotated an scaled so that it can be used as sky box.
+	*
+	* \param[in] entityName Name of the new entity.
+	* \param[in] basedir Name of the directory the texture file is in
+	* \param[in] filenames List of 6 names of the texture files. Order must be ft bk up dn rt lf
+	* \returns a pointer to the new entity
+	*
+	*/
+	/*VESceneNode * VESceneManager::createCubemap(std::string entityName, std::string basedir,
+		std::vector<std::string> filenames) {
+
+		VEEntity::veEntityType entityType = VEEntity::VE_ENTITY_TYPE_CUBEMAP;
+		VkImageCreateFlags createFlags = VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT;
+		VkImageViewType viewType = VK_IMAGE_VIEW_TYPE_CUBE;
+
+#ifdef __MACOS__
+		entityType = VEEntity::VE_ENTITY_TYPE_CUBEMAP2;
+		createFlags = VK_IMAGE_CREATE_2D_ARRAY_COMPATIBLE_BIT;
+		viewType = VK_IMAGE_VIEW_TYPE_2D_ARRAY;
+#endif
+
+		std::string filekey = basedir + "/";
+		std::string addstring = "";
+		for (auto filename : filenames) {
+			filekey += addstring + filename;
+			addstring = "+";
+		}
+
+		VEMesh * pMesh = m_meshes[STANDARD_MESH_INVCUBE];
+
+		VEMaterial *pMat = m_materials[filekey];
+		if (pMat == nullptr) {
+			pMat = new VEMaterial(filekey);
+			m_materials[filekey] = pMat;
+
+			pMat->mapDiffuse = new VETexture(entityName, basedir, filenames, createFlags, viewType);
+		}
+
+		VEEntity *pEntity = createEntity(entityName, entityType, pMesh, pMat, glm::mat4(1.0f), m_rootSceneNode);
+		pEntity->setTransform(glm::scale(glm::vec3(500.0f, 500.0f, 500.0f)));
+		pEntity->m_castsShadow = false;
+
+		sceneGraphChanged();
+		return pEntity;
+	}*/
+
 
 }
 

@@ -23,8 +23,6 @@
 #include "VESceneManager.h"
 #include "VESubrender.h"
 #include "VESubrenderFW_C1.h"
-#include "VESubrenderFW_Cubemap.h"
-#include "VESubrenderFW_Cubemap2.h"
 #include "VESubrenderFW_Skyplane.h"
 #include "VESubrenderFW_D.h"
 #include "VESubrenderFW_DN.h"

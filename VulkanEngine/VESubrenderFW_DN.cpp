@@ -65,7 +65,7 @@ namespace ve {
 	*/
 	void VESubrenderFW_DN::addEntity(VEEntity *pEntity) {
 
-		VkDescriptorImageInfo imageInfo1 = {};
+		/*VkDescriptorImageInfo imageInfo1 = {};
 		imageInfo1.imageView = pEntity->m_pMaterial->mapDiffuse->m_imageView;
 		imageInfo1.sampler = pEntity->m_pMaterial->mapDiffuse->m_sampler;
 		imageInfo1.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
@@ -73,9 +73,12 @@ namespace ve {
 		VkDescriptorImageInfo imageInfo2 = {};
 		imageInfo2.imageView = pEntity->m_pMaterial->mapNormal->m_imageView;
 		imageInfo2.sampler = pEntity->m_pMaterial->mapNormal->m_sampler;
-		imageInfo2.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+		imageInfo2.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;*/
 
-		std::vector<VkDescriptorImageInfo> maps = { imageInfo1, imageInfo2 };
+		std::vector<VkDescriptorImageInfo> maps = { 
+			pEntity->m_pMaterial->mapDiffuse->m_imageInfo, 
+			pEntity->m_pMaterial->mapNormal->m_imageInfo 
+		};
 
 		addMaps(pEntity, maps);
 

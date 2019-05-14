@@ -80,12 +80,6 @@
     <ClInclude Include="VESubrenderFW_C1.h">
       <Filter>Header Files\VESubrender</Filter>
     </ClInclude>
-    <ClInclude Include="VESubrenderFW_Cubemap.h">
-      <Filter>Header Files\VESubrender</Filter>
-    </ClInclude>
-    <ClInclude Include="VESubrenderFW_Cubemap2.h">
-      <Filter>Header Files\VESubrender</Filter>
-    </ClInclude>
     <ClInclude Include="VESubrenderFW_D.h">
       <Filter>Header Files\VESubrender</Filter>
     </ClInclude>
@@ -158,12 +152,6 @@
       <Filter>Source Files\VEEventListener</Filter>
     </ClCompile>
     <ClCompile Include="VESubrenderFW_C1.cpp">
-      <Filter>Source Files\VESubrender</Filter>
-    </ClCompile>
-    <ClCompile Include="VESubrenderFW_Cubemap.cpp">
-      <Filter>Source Files\VESubrender</Filter>
-    </ClCompile>
-    <ClCompile Include="VESubrenderFW_Cubemap2.cpp">
       <Filter>Source Files\VESubrender</Filter>
     </ClCompile>
     <ClCompile Include="VESubrenderFW_D.cpp">

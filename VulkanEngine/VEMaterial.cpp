@@ -181,10 +181,10 @@ namespace ve {
 
 		m_format = VK_FORMAT_R8G8B8A8_UNORM;
 		VECHECKRESULT(vh::vhBufCreateImageView(getRendererPointer()->getDevice(), m_image,
-							m_format, viewType, (uint32_t)texNames.size(), VK_IMAGE_ASPECT_COLOR_BIT, &m_imageView),
+							m_format, viewType, (uint32_t)texNames.size(), VK_IMAGE_ASPECT_COLOR_BIT, &m_imageInfo.imageView),
 					"Could not create image view for " + basedir + "/" + texNames[0]);
 
-		VECHECKRESULT(vh::vhBufCreateTextureSampler(getRendererPointer()->getDevice(), &m_sampler),
+		VECHECKRESULT(vh::vhBufCreateTextureSampler(getRendererPointer()->getDevice(), &m_imageInfo.sampler),
 					"Could not create texture sampler for " + basedir + "/" + texNames[0]);
 	}
 
@@ -212,10 +212,10 @@ namespace ve {
 		m_extent.height = texCube.extent().y;
 
 		VECHECKRESULT(vh::vhBufCreateImageView(getRendererPointer()->getDevice(), m_image,
-							m_format, VK_IMAGE_VIEW_TYPE_CUBE, 6, VK_IMAGE_ASPECT_COLOR_BIT, &m_imageView),
+							m_format, VK_IMAGE_VIEW_TYPE_CUBE, 6, VK_IMAGE_ASPECT_COLOR_BIT, &m_imageInfo.imageView),
 					"Could not create image view for cubemap for " + name);
 
-		VECHECKRESULT(vh::vhBufCreateTextureSampler(getRendererPointer()->getDevice(), &m_sampler),
+		VECHECKRESULT(vh::vhBufCreateTextureSampler(getRendererPointer()->getDevice(), &m_imageInfo.sampler),
 					"Could not create texture sampler for cubemap " + name );
 	}
 
@@ -223,8 +223,8 @@ namespace ve {
 	* \brief VETexture destructor - destroy the sampler, image view and image
 	*/
 	VETexture::~VETexture() {
-		if (m_sampler != VK_NULL_HANDLE) vkDestroySampler(getRendererPointer()->getDevice(), m_sampler, nullptr);
-		if (m_imageView != VK_NULL_HANDLE) vkDestroyImageView(getRendererPointer()->getDevice(), m_imageView, nullptr);
+		if (m_imageInfo.sampler != VK_NULL_HANDLE) vkDestroySampler(getRendererPointer()->getDevice(), m_imageInfo.sampler, nullptr);
+		if (m_imageInfo.imageView != VK_NULL_HANDLE) vkDestroyImageView(getRendererPointer()->getDevice(), m_imageInfo.imageView, nullptr);
 		if (m_image != VK_NULL_HANDLE) vmaDestroyImage(getRendererPointer()->getVmaAllocator(), m_image, m_deviceAllocation);
 	}
 

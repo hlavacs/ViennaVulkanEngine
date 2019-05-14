@@ -63,14 +63,16 @@ namespace ve {
 							std::vector<VEMesh*> &meshes, std::vector<VEMaterial*> &materials, 
 							aiNode* node, VESceneNode *parent);
 
+		void lockSceneManager() { m_mutex.lock(); };		///<lock the mutex
+		void unlockSceneManager() { m_mutex.unlock(); };	///<unlock the mutex
+
+
+
 	public:
 		///Constructor of class VESceneManager
 		VESceneManager();
 		///Destructor of class VESceneManager
 		~VESceneManager() {};
-
-		void lockSceneManager() { m_mutex.lock(); };		///<lock the mutex
-		void unlockSceneManager() { m_mutex.unlock(); };	///<unlock the mutex
 
 		//-------------------------------------------------------------------------------------
 		//Load assets
@@ -91,8 +93,6 @@ namespace ve {
 		//-------------------------------------------------------------------------------------
 		//Create cubemaps and skyboxes
 
-		VESceneNode *	createCubemap(std::string entityName, std::string basedir, std::string filename );
-		VESceneNode *	createCubemap(std::string entityName, std::string basedir, std::vector<std::string> filenames );
 		VEEntity *		createSkyplane(std::string entityName, std::string basedir, std::string texName);
 		VESceneNode *	createSkybox(std::string entityName, std::string basedir, std::vector<std::string> texNames);
 
@@ -144,6 +144,12 @@ namespace ve {
 
 		void			printSceneNodes();
 		void			printTree(VESceneNode *root);
+
+		//-------------------------------------------------------------------------------------
+		//deprecated
+		//VESceneNode *	createCubemap(std::string entityName, std::string basedir, std::string filename);
+		//VESceneNode *	createCubemap(std::string entityName, std::string basedir, std::vector<std::string> filenames);
+
 	};
 
 }
