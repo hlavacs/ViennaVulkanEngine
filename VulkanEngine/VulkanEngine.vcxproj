@@ -177,6 +177,7 @@
     <ClInclude Include="VEEventListenerNuklearDebug.h" />
     <ClInclude Include="VEEventListenerNuklearError.h" />
     <ClInclude Include="VEMaterial.h" />
+    <ClInclude Include="VESubrenderFW.h" />
     <ClInclude Include="VESubrenderFW_Nuklear.h" />
     <ClInclude Include="VESubrenderFW_Skyplane.h" />
     <ClInclude Include="VESubrenderFW_C1.h" />
@@ -214,6 +215,7 @@
     <ClCompile Include="VERendererForward.cpp" />
     <ClCompile Include="VESceneManager.cpp" />
     <ClCompile Include="VESubrender.cpp" />
+    <ClCompile Include="VESubrenderFW.cpp" />
     <ClCompile Include="VESubrenderFW_C1.cpp" />
     <ClCompile Include="VESubrenderFW_D.cpp" />
     <ClCompile Include="VESubrenderFW_DN.cpp" />

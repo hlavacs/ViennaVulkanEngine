@@ -22,6 +22,7 @@
 #include "VEEntity.h"
 #include "VESceneManager.h"
 #include "VESubrender.h"
+#include "VESubrenderFW.h"
 #include "VESubrenderFW_C1.h"
 #include "VESubrenderFW_Skyplane.h"
 #include "VESubrenderFW_D.h"

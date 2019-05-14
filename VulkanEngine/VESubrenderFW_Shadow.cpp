@@ -18,7 +18,7 @@ namespace ve {
 	*
 	*/
 	void VESubrenderFW_Shadow::initSubrenderer() {
-		VESubrender::initSubrenderer();
+		VESubrenderFW::initSubrenderer();
 
 		VkDescriptorSetLayout perObjectLayout = getRendererForwardPointer()->getDescriptorSetLayoutPerObject2();
 		vh::vhPipeCreateGraphicsPipelineLayout(getRendererForwardPointer()->getDevice(),

@@ -12,7 +12,7 @@ namespace ve {
 	/**
 	* \brief Subrenderer that manages entities that have a diffuse texture and a normal map
 	*/
-	class VESubrenderFW_DN : public VESubrender {
+	class VESubrenderFW_DN : public VESubrenderFW {
 	public:
 		///Constructor for class VESubrenderFW_DN
 		VESubrenderFW_DN() { };
@@ -26,7 +26,6 @@ namespace ve {
 
 		virtual void initSubrenderer();
 		virtual void setDynamicPipelineState(VkCommandBuffer commandBuffer, uint32_t numPass);
-		//virtual void bindDescriptorSetsPerEntity(VkCommandBuffer commandBuffer, uint32_t imageIndex, VEEntity *entity);
 		virtual void addEntity(VEEntity *pEntity);
 	};
 }

@@ -12,7 +12,7 @@ namespace ve {
 	/**
 	* \brief Subrenderer that manages entities that are cubemap based sky boxes
 	*/
-	class VESubrenderFW_Skyplane : public VESubrender {
+	class VESubrenderFW_Skyplane : public VESubrenderFW {
 	protected:
 
 	public:

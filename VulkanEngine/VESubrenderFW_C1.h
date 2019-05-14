@@ -12,7 +12,7 @@ namespace ve {
 	/**
 	* \brief Subrenderer that manages entities that have only one color
 	*/
-	class VESubrenderFW_C1 : public VESubrender {
+	class VESubrenderFW_C1 : public VESubrenderFW {
 	protected:
 
 	public:

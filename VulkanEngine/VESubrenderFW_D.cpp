@@ -18,7 +18,7 @@ namespace ve {
 	*
 	*/
 	void VESubrenderFW_D::initSubrenderer() {
-		VESubrender::initSubrenderer();
+		VESubrenderFW::initSubrenderer();
 
 		vh::vhRenderCreateDescriptorSetLayout(getRendererForwardPointer()->getDevice(),
 			{ m_resourceArrayLength },
@@ -65,15 +65,10 @@ namespace ve {
 	*/
 	void VESubrenderFW_D::addEntity(VEEntity *pEntity) {
 
-		VkDescriptorImageInfo imageInfo1 = {};
-		
-		//imageInfo1.imageView = pEntity->m_pMaterial->mapDiffuse->m_imageView;
-		//imageInfo1.sampler = pEntity->m_pMaterial->mapDiffuse->m_sampler;
-		//imageInfo1.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-
 		std::vector<VkDescriptorImageInfo> maps = { pEntity->m_pMaterial->mapDiffuse->m_imageInfo };
 
 		addMaps(pEntity, maps);
+
 		VESubrender::addEntity( pEntity);
 	}
 

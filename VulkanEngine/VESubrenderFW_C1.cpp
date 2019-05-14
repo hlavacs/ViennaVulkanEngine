@@ -18,7 +18,7 @@ namespace ve {
 	*
 	*/
 	void VESubrenderFW_C1::initSubrenderer() {
-		VESubrender::initSubrenderer();
+		VESubrenderFW::initSubrenderer();
 
 		VkDescriptorSetLayout perObjectLayout2 = getRendererForwardPointer()->getDescriptorSetLayoutPerObject2();
 

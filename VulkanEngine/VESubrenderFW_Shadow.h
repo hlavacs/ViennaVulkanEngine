@@ -12,7 +12,7 @@ namespace ve {
 	/**
 	* \brief Subrenderer that manages draws the shadow pass
 	*/
-	class VESubrenderFW_Shadow : public VESubrender {
+	class VESubrenderFW_Shadow : public VESubrenderFW {
 	protected:
 
 	public:

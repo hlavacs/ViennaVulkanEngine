@@ -110,6 +110,9 @@
     <ClInclude Include="VHHelper.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="VESubrenderFW.h">
+      <Filter>Header Files\VESubrender</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="VEEngine.cpp">
@@ -204,6 +207,9 @@
     </ClCompile>
     <ClCompile Include="VEEventListenerNuklearDebug.cpp">
       <Filter>Source Files\VEEventListener</Filter>
+    </ClCompile>
+    <ClCompile Include="VESubrenderFW.cpp">
+      <Filter>Source Files\VESubrender</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

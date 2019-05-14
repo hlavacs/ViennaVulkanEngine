@@ -12,7 +12,7 @@ namespace ve {
 	/**
 	* \brief Subrenderer that manages entities that have only one color
 	*/
-	class VESubrenderFW_Nuklear : public VESubrender {
+	class VESubrenderFW_Nuklear : public VESubrenderFW {
 	protected:
 		struct nk_context *m_ctx;						///<The Nuklear context storing the GUI data
 

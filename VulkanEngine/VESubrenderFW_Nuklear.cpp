@@ -23,7 +23,7 @@ namespace ve {
 	*
 	*/
 	void VESubrenderFW_Nuklear::initSubrenderer() {
-		VESubrender::initSubrenderer();
+		VESubrenderFW::initSubrenderer();
 		
 		struct nk_font_atlas *atlas;
 
