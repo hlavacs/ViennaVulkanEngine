@@ -234,20 +234,21 @@ namespace ve {
 			uint32_t imageSize = extent.width * extent.height * 4;
 			VkImage image = getRendererPointer()->getSwapChainImage();
 
-			gli::byte *dataImage = new gli::byte[imageSize];
+			uint8_t *dataImage = new uint8_t[imageSize];
 
-			vh::vhBufCopySwapChainImageToHost(getRendererPointer()->getDevice(), getRendererPointer()->getVmaAllocator(),
-				getRendererPointer()->getGraphicsQueue(), getRendererPointer()->getCommandPool(),
-				image, VK_IMAGE_ASPECT_COLOR_BIT, dataImage, extent.width, extent.height, imageSize);
+			vh::vhBufCopySwapChainImageToHost(getRendererPointer()->getDevice(), 
+				getRendererPointer()->getVmaAllocator(),
+				getRendererPointer()->getGraphicsQueue(), 
+				getRendererPointer()->getCommandPool(),
+				image, VK_FORMAT_R8G8B8A8_UNORM,
+				VK_IMAGE_ASPECT_COLOR_BIT, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+				dataImage, extent.width, extent.height, imageSize);
 
 			m_numScreenshot++;
 
-			std::thread t([=]() {
-				std::string name("screenshots/screenshot" + std::to_string(m_numScreenshot-1) + ".png");
-				stbi_write_png(name.c_str(), extent.width, extent.height, 4, dataImage, 4 * extent.width);
-				delete dataImage;
-			});
-			t.join();
+			std::string name("screenshots/screenshot" + std::to_string(m_numScreenshot-1) + ".jpg");
+			stbi_write_jpg(name.c_str(), extent.width, extent.height, 4, dataImage, 4 * extent.width);
+			delete[] dataImage;
 
 			m_makeScreenshot = false;
 		}
@@ -256,7 +257,7 @@ namespace ve {
 
 			VETexture *map = getRendererForwardPointer()->getShadowMap( getRendererPointer()->getImageIndex() )[0];
 			//VkImageLayout layout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
-			VkImageLayout layout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL;
+			VkImageLayout layout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
 
 			VkExtent2D extent = map->m_extent;
 			uint32_t imageSize = extent.width * extent.height;
@@ -265,8 +266,10 @@ namespace ve {
 			float *dataImage = new float[imageSize];
 			gli::byte *dataImage2 = new gli::byte[imageSize];
 
-			vh::vhBufCopyImageToHost(getRendererPointer()->getDevice(), getRendererPointer()->getVmaAllocator(),
-				getRendererPointer()->getGraphicsQueue(), getRendererPointer()->getCommandPool(),
+			vh::vhBufCopyImageToHost(getRendererPointer()->getDevice(), 
+				getRendererPointer()->getVmaAllocator(),
+				getRendererPointer()->getGraphicsQueue(), 
+				getRendererPointer()->getCommandPool(),
 				image, map->m_format, VK_IMAGE_ASPECT_DEPTH_BIT, layout,
 				(gli::byte*)dataImage, extent.width, extent.height, imageSize * 4);
 
@@ -277,10 +280,10 @@ namespace ve {
 				}
 			}
 
-			std::string name("screenshots/screenshot" + std::to_string(m_numScreenshot) + ".png");
-			stbi_write_png(name.c_str(), extent.width, extent.height, 1, dataImage2, extent.width);
-			delete dataImage;
-			delete dataImage2;
+			std::string name("screenshots/screenshot" + std::to_string(m_numScreenshot) + ".jpg");
+			stbi_write_jpg(name.c_str(), extent.width, extent.height, 1, dataImage2, extent.width);
+			delete[] dataImage;
+			delete[] dataImage2;
 
 			m_numScreenshot++;
 			m_makeScreenshotDepth = false;

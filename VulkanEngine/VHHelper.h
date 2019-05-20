@@ -251,12 +251,15 @@ namespace vh {
 	VkResult vhBufCreateFramebuffers(VkDevice device, std::vector<VkImageView> imageViews,
 									std::vector<VkImageView> depthImageViews, VkRenderPass renderPass, VkExtent2D extent,
 									std::vector<VkFramebuffer> &frameBuffers);
-	VkResult vhBufCopySwapChainImageToHost(	VkDevice device, VmaAllocator allocator, VkQueue graphicsQueue,
-											VkCommandPool commandPool, VkImage image, VkImageAspectFlagBits aspect, gli::byte *bufferData,
-											uint32_t width, uint32_t height, uint32_t imageSize);
-	VkResult vhBufCopyImageToHost(	VkDevice device, VmaAllocator allocator, VkQueue graphicsQueue,
-									VkCommandPool commandPool,
-									VkImage image, VkFormat format, VkImageAspectFlagBits aspect, VkImageLayout layout,
+	VkResult vhBufCopySwapChainImageToHost(	VkDevice device, VmaAllocator allocator, 
+											VkQueue graphicsQueue, 	VkCommandPool commandPool, 
+											VkImage image, VkFormat format,
+											VkImageAspectFlagBits aspect, VkImageLayout layout,
+											gli::byte *bufferData, 	uint32_t width, uint32_t height, uint32_t imageSize);
+	VkResult vhBufCopyImageToHost(	VkDevice device, VmaAllocator allocator, 
+									VkQueue graphicsQueue, VkCommandPool commandPool,
+									VkImage image, VkFormat format, 
+									VkImageAspectFlagBits aspect, VkImageLayout layout,
 									gli::byte *bufferData, uint32_t width, uint32_t height, uint32_t imageSize);
 	VkResult vhBufCreateVertexBuffer(VkDevice device, VmaAllocator allocator,
 									VkQueue graphicsQueue, VkCommandPool commandPool,

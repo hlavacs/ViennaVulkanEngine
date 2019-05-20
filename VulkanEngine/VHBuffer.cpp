@@ -775,7 +775,8 @@ namespace vh {
 	*/
 	VkResult vhBufCopySwapChainImageToHost(VkDevice device, VmaAllocator allocator,
 				VkQueue graphicsQueue, VkCommandPool commandPool, 
-				VkImage image, VkImageAspectFlagBits aspect, 
+				VkImage image, VkFormat format,
+				VkImageAspectFlagBits aspect, VkImageLayout layout,
 				gli::byte *bufferData, uint32_t width, uint32_t height, uint32_t imageSize) {
 
 		VkBuffer stagingBuffer;
@@ -785,15 +786,15 @@ namespace vh {
 						&stagingBuffer, &stagingBufferAllocation ) );
 
 		VHCHECKRESULT(	vhBufTransitionImageLayout(device, graphicsQueue, commandPool,
-						image, VK_FORMAT_R8G8B8A8_UNORM, aspect, 1, 1,
-						VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL));
+						image, format, aspect, 1, 1,
+						layout, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL));
 
 		VHCHECKRESULT(	vhBufCopyImageToBuffer(device, graphicsQueue, commandPool,
 						image, aspect, stagingBuffer, 1, width, height ) );
 
 		VHCHECKRESULT(	vhBufTransitionImageLayout(device, graphicsQueue, commandPool,
-						image, VK_FORMAT_R8G8B8A8_UNORM, aspect, 1, 1,
-						VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL) );
+						image, format, aspect, 1, 1,
+						VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, layout) );
 
 		void *data;
 		VHCHECKRESULT( vmaMapMemory(allocator, stagingBufferAllocation, &data ) );
@@ -837,7 +838,8 @@ namespace vh {
 	*/
 	VkResult vhBufCopyImageToHost(VkDevice device, VmaAllocator allocator, VkQueue graphicsQueue,
 		VkCommandPool commandPool,
-		VkImage image, VkFormat format, VkImageAspectFlagBits aspect, VkImageLayout layout,
+		VkImage image, VkFormat format, 
+		VkImageAspectFlagBits aspect, VkImageLayout layout,
 		gli::byte *bufferData, uint32_t width, uint32_t height, uint32_t imageSize) {
 
 		VkBuffer stagingBuffer;
