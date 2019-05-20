@@ -54,7 +54,6 @@ namespace ve {
 
 		VECamera *				m_camera = nullptr;			///<entity ptr of the current camera
 		std::vector<VELight*>	m_lights = {};				///<ptrs to the lights to use
-
 		std::mutex				m_mutex;					///<Mutex for multithreading, locks the scene manager
 
 		virtual void initSceneManager();
@@ -63,10 +62,10 @@ namespace ve {
 							std::vector<VEMesh*> &meshes, std::vector<VEMaterial*> &materials, 
 							aiNode* node, VESceneNode *parent);
 
-		void lockSceneManager() { m_mutex.lock(); };		///<lock the mutex
-		void unlockSceneManager() { m_mutex.unlock(); };	///<unlock the mutex
-
-
+		///\brief lock the scene manager mutex
+		void lockSceneManager() { m_mutex.lock(); };
+		///\brief unlock the scene manager mutex
+		void unlockSceneManager() { m_mutex.unlock(); };	
 
 	public:
 		///Constructor of class VESceneManager

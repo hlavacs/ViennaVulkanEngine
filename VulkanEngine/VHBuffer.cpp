@@ -786,14 +786,14 @@ namespace vh {
 
 		VHCHECKRESULT(	vhBufTransitionImageLayout(device, graphicsQueue, commandPool,
 						image, VK_FORMAT_R8G8B8A8_UNORM, aspect, 1, 1,
-						VK_IMAGE_LAYOUT_PRESENT_SRC_KHR, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL));
+						VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL));
 
 		VHCHECKRESULT(	vhBufCopyImageToBuffer(device, graphicsQueue, commandPool,
 						image, aspect, stagingBuffer, 1, width, height ) );
 
 		VHCHECKRESULT(	vhBufTransitionImageLayout(device, graphicsQueue, commandPool,
 						image, VK_FORMAT_R8G8B8A8_UNORM, aspect, 1, 1,
-						VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR) );
+						VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL) );
 
 		void *data;
 		VHCHECKRESULT( vmaMapMemory(allocator, stagingBufferAllocation, &data ) );

@@ -122,18 +122,13 @@ Public Attributes</h2></td></tr>
 VkImage&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structve_1_1_v_e_texture.html#a6520ddfb382d133188b3724ed6451371">m_image</a> = VK_NULL_HANDLE</td></tr>
 <tr class="memdesc:a6520ddfb382d133188b3724ed6451371"><td class="mdescLeft">&#160;</td><td class="mdescRight">image handle <br /></td></tr>
 <tr class="separator:a6520ddfb382d133188b3724ed6451371"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ad897199b8431f6ca7a1c78abd528aa3f"><td class="memItemLeft" align="right" valign="top"><a id="ad897199b8431f6ca7a1c78abd528aa3f"></a>
-VkImageView&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structve_1_1_v_e_texture.html#ad897199b8431f6ca7a1c78abd528aa3f">m_imageView</a> = VK_NULL_HANDLE</td></tr>
-<tr class="memdesc:ad897199b8431f6ca7a1c78abd528aa3f"><td class="mdescLeft">&#160;</td><td class="mdescRight">image view <br /></td></tr>
-<tr class="separator:ad897199b8431f6ca7a1c78abd528aa3f"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a2c031bd422d4b45c44701933b8526ca2"><td class="memItemLeft" align="right" valign="top">VkDescriptorImageInfo&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structve_1_1_v_e_texture.html#a2c031bd422d4b45c44701933b8526ca2">m_imageInfo</a></td></tr>
+<tr class="memdesc:a2c031bd422d4b45c44701933b8526ca2"><td class="mdescLeft">&#160;</td><td class="mdescRight">Vulkan handles for the image.  <a href="#a2c031bd422d4b45c44701933b8526ca2">More...</a><br /></td></tr>
+<tr class="separator:a2c031bd422d4b45c44701933b8526ca2"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:abb7ebfa39c471723defe75df8fa73802"><td class="memItemLeft" align="right" valign="top"><a id="abb7ebfa39c471723defe75df8fa73802"></a>
 VmaAllocation&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structve_1_1_v_e_texture.html#abb7ebfa39c471723defe75df8fa73802">m_deviceAllocation</a> = nullptr</td></tr>
 <tr class="memdesc:abb7ebfa39c471723defe75df8fa73802"><td class="mdescLeft">&#160;</td><td class="mdescRight">VMA allocation info. <br /></td></tr>
 <tr class="separator:abb7ebfa39c471723defe75df8fa73802"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a82d96ae695a2bd6c1bc83b57087bc0bd"><td class="memItemLeft" align="right" valign="top"><a id="a82d96ae695a2bd6c1bc83b57087bc0bd"></a>
-VkSampler&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structve_1_1_v_e_texture.html#a82d96ae695a2bd6c1bc83b57087bc0bd">m_sampler</a> = VK_NULL_HANDLE</td></tr>
-<tr class="memdesc:a82d96ae695a2bd6c1bc83b57087bc0bd"><td class="mdescLeft">&#160;</td><td class="mdescRight">image sampler <br /></td></tr>
-<tr class="separator:a82d96ae695a2bd6c1bc83b57087bc0bd"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a209281c12522fe428a6f0b417d2087d2"><td class="memItemLeft" align="right" valign="top"><a id="a209281c12522fe428a6f0b417d2087d2"></a>
 VkExtent2D&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structve_1_1_v_e_texture.html#a209281c12522fe428a6f0b417d2087d2">m_extent</a> = { 0,0 }</td></tr>
 <tr class="memdesc:a209281c12522fe428a6f0b417d2087d2"><td class="mdescLeft">&#160;</td><td class="mdescRight">map extent <br /></td></tr>
@@ -266,6 +261,23 @@ std::string&#160;</td><td class="memItemRight" valign="bottom"><a class="el" hre
 
 </div>
 </div>
+<h2 class="groupheader">Member Data Documentation</h2>
+<a id="a2c031bd422d4b45c44701933b8526ca2"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a2c031bd422d4b45c44701933b8526ca2">&#9670;&nbsp;</a></span>m_imageInfo</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">VkDescriptorImageInfo ve::VETexture::m_imageInfo</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<b>Initial value:</b><div class="fragment"><div class="line">= {</div><div class="line">            VK_NULL_HANDLE,                                     </div><div class="line">            VK_NULL_HANDLE,                                     </div><div class="line">            VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL            </div><div class="line">        }</div></div><!-- fragment -->
+<p>Vulkan handles for the image. </p>
+
+</div>
+</div>
 <hr/>The documentation for this struct was generated from the following files:<ul>
 <li><a class="el" href="_v_e_material_8h_source.html">VEMaterial.h</a></li>
 <li>VEMaterial.cpp</li>
@@ -273,7 +285,7 @@ std::string&#160;</td><td class="memItemRight" valign="bottom"><a class="el" hre
 </div><!-- contents -->
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>
-Generated on Sat May 11 2019 14:57:31 for Vienna Vulkan Engine by &#160;<a href="http://www.doxygen.org/index.html">
+Generated on Mon May 20 2019 11:43:45 for Vienna Vulkan Engine by &#160;<a href="http://www.doxygen.org/index.html">
 <img class="footer" src="doxygen.png" alt="doxygen"/>
 </a> 1.8.15
 </small></address>

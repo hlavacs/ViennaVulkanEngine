@@ -1,5 +1,6 @@
 var searchData=
 [
+  ['unlockscenemanager',['unlockSceneManager',['../classve_1_1_v_e_scene_manager.html#adc95303be93a963b015a8ba69b275a31',1,'ve::VESceneManager']]],
   ['update',['update',['../classve_1_1_v_e_scene_node.html#aa97bd4ad3fb1efa02ec3df6ef679927d',1,'ve::VESceneNode::update(uint32_t imageIndex)'],['../classve_1_1_v_e_scene_node.html#a93199fd14bc3f52fd6346491be84afac',1,'ve::VESceneNode::update(glm::mat4 parentWorldMatrix, uint32_t imageIndex)']]],
   ['updatechildren',['updateChildren',['../classve_1_1_v_e_scene_node.html#afeb3d92ef1a5bf684186b96b52d42b25',1,'ve::VESceneNode']]],
   ['updatecmdbuffers',['updateCmdBuffers',['../classve_1_1_v_e_renderer.html#ae3b8dd26763f9a15f99145fee0a1aec4',1,'ve::VERenderer::updateCmdBuffers()'],['../classve_1_1_v_e_renderer_forward.html#af8cb79ff5273dca7df9ef44f57243a1c',1,'ve::VERendererForward::updateCmdBuffers()']]],

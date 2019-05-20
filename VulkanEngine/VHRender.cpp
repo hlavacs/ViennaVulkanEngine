@@ -373,6 +373,22 @@ namespace vh {
 	}
 
 
+	/**
+	*
+	* \brief Update a descriptor set being composed of arrays of textures
+	*
+	* A shader may use arrays of textures, e.g. one for albedo, one for normal maps., one for metalness etc.
+	* This funtion binds a subset of existing image infos such that the shader can access them as arrays of textures.
+	*
+	* \param[in] device Logical Vulkan device
+	* \param[in] descriptorSet The descriptor set to be updated
+	* \param[in] binding Start binding number, array bindings begin with this number
+	* \param[in] offset Start idx for the array of image infos
+	* \param[in] descriptorCount Number of images in the array = array length
+	* \param[in] maps List of image info lists
+	* \returns VK_SUCCESS or a Vulkan error code
+	*
+	*/
 
 	VkResult vhRenderUpdateDescriptorSetMaps(	VkDevice device,
 												VkDescriptorSet descriptorSet,
@@ -380,7 +396,6 @@ namespace vh {
 												uint32_t offset,
 												uint32_t descriptorCount,
 												std::vector<std::vector<VkDescriptorImageInfo>> &maps) {
-
 
 		std::vector<VkWriteDescriptorSet> descriptorWrites = {};
 		descriptorWrites.resize(maps.size());

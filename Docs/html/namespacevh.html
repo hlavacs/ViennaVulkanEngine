@@ -257,6 +257,9 @@ void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="name
 <tr class="memitem:afab6a4f31575479f0449c03cff83a3c0"><td class="memItemLeft" align="right" valign="top">VkResult&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacevh.html#afab6a4f31575479f0449c03cff83a3c0">vhRenderUpdateDescriptorSet</a> (VkDevice device, VkDescriptorSet descriptorSet, std::vector&lt; VkDescriptorType &gt; descriptorTypes, std::vector&lt; VkBuffer &gt; uniformBuffers, std::vector&lt; uint32_t &gt; bufferRanges, std::vector&lt; std::vector&lt; VkImageView &gt;&gt; textureImageViews, std::vector&lt; std::vector&lt; VkSampler &gt;&gt; textureSamplers)</td></tr>
 <tr class="memdesc:afab6a4f31575479f0449c03cff83a3c0"><td class="mdescLeft">&#160;</td><td class="mdescRight">Update a descriptor set.  <a href="#afab6a4f31575479f0449c03cff83a3c0">More...</a><br /></td></tr>
 <tr class="separator:afab6a4f31575479f0449c03cff83a3c0"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a869d9fac1760fdf3ca8b7abcc2c143e9"><td class="memItemLeft" align="right" valign="top">VkResult&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacevh.html#a869d9fac1760fdf3ca8b7abcc2c143e9">vhRenderUpdateDescriptorSetMaps</a> (VkDevice device, VkDescriptorSet descriptorSet, uint32_t binding, uint32_t offset, uint32_t descriptorCount, std::vector&lt; std::vector&lt; VkDescriptorImageInfo &gt;&gt; &amp;maps)</td></tr>
+<tr class="memdesc:a869d9fac1760fdf3ca8b7abcc2c143e9"><td class="mdescLeft">&#160;</td><td class="mdescRight">Update a descriptor set being composed of arrays of textures.  <a href="#a869d9fac1760fdf3ca8b7abcc2c143e9">More...</a><br /></td></tr>
+<tr class="separator:a869d9fac1760fdf3ca8b7abcc2c143e9"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:af55f8f528f60a2f23383168b87f19663"><td class="memItemLeft" align="right" valign="top">VkResult&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacevh.html#af55f8f528f60a2f23383168b87f19663">vhRenderBeginRenderPass</a> (VkCommandBuffer commandBuffer, VkRenderPass renderPass, VkFramebuffer frameBuffer, VkExtent2D extent)</td></tr>
 <tr class="memdesc:af55f8f528f60a2f23383168b87f19663"><td class="mdescLeft">&#160;</td><td class="mdescRight">Start rendering in a command buffer.  <a href="#af55f8f528f60a2f23383168b87f19663">More...</a><br /></td></tr>
 <tr class="separator:af55f8f528f60a2f23383168b87f19663"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -4347,6 +4350,73 @@ void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="name
 
 </div>
 </div>
+<a id="a869d9fac1760fdf3ca8b7abcc2c143e9"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a869d9fac1760fdf3ca8b7abcc2c143e9">&#9670;&nbsp;</a></span>vhRenderUpdateDescriptorSetMaps()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">VkResult vh::vhRenderUpdateDescriptorSetMaps </td>
+          <td>(</td>
+          <td class="paramtype">VkDevice&#160;</td>
+          <td class="paramname"><em>device</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">VkDescriptorSet&#160;</td>
+          <td class="paramname"><em>descriptorSet</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">uint32_t&#160;</td>
+          <td class="paramname"><em>binding</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">uint32_t&#160;</td>
+          <td class="paramname"><em>offset</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">uint32_t&#160;</td>
+          <td class="paramname"><em>descriptorCount</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">std::vector&lt; std::vector&lt; VkDescriptorImageInfo &gt;&gt; &amp;&#160;</td>
+          <td class="paramname"><em>maps</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Update a descriptor set being composed of arrays of textures. </p>
+<p>A shader may use arrays of textures, e.g. one for albedo, one for normal maps., one for metalness etc. This funtion binds a subset of existing image infos such that the shader can access them as arrays of textures.</p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramdir">[in]</td><td class="paramname">device</td><td>Logical Vulkan device </td></tr>
+    <tr><td class="paramdir">[in]</td><td class="paramname">descriptorSet</td><td>The descriptor set to be updated </td></tr>
+    <tr><td class="paramdir">[in]</td><td class="paramname">binding</td><td>Start binding number, array bindings begin with this number </td></tr>
+    <tr><td class="paramdir">[in]</td><td class="paramname">offset</td><td>Start idx for the array of image infos </td></tr>
+    <tr><td class="paramdir">[in]</td><td class="paramname">descriptorCount</td><td>Number of images in the array = array length </td></tr>
+    <tr><td class="paramdir">[in]</td><td class="paramname">maps</td><td>List of image info lists </td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>Returns</dt><dd>VK_SUCCESS or a Vulkan error code </dd></dl>
+
+</div>
+</div>
 <a id="a6d0e56b8ed7309e0ebf5ba969323e4db"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a6d0e56b8ed7309e0ebf5ba969323e4db">&#9670;&nbsp;</a></span>vhSwapCreateSwapChain()</h2>
 
@@ -4483,7 +4553,7 @@ void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="name
 </div><!-- contents -->
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>
-Generated on Sat May 11 2019 14:57:31 for Vienna Vulkan Engine by &#160;<a href="http://www.doxygen.org/index.html">
+Generated on Mon May 20 2019 11:43:45 for Vienna Vulkan Engine by &#160;<a href="http://www.doxygen.org/index.html">
 <img class="footer" src="doxygen.png" alt="doxygen"/>
 </a> 1.8.15
 </small></address>

@@ -65,25 +65,30 @@ namespace ve {
 
 		//------------------------------------------------------------------------------------------------------------------
 		virtual void	initSubrenderer();
+		///\brief close the subrenderer - empty base class function
 		virtual void	closeSubrenderer() {};
+		///\brief recreate subrenderer resources - empty base class function
 		virtual void	recreateResources() {};
 
 		virtual void	addEntity(VEEntity *pEntity);
-		virtual void	removeEntity(VEEntity *pEntity)=0;
+		///\brief remove an entity from the subrenderer - empty base class function
+		virtual void	removeEntity(VEEntity *pEntity) {};
 
 		//------------------------------------------------------------------------------------------------------------------
-		///Prepare to perform draw operation, e.g. for an overlay
-		virtual void prepareDraw()=0;
+		///\brief Prepare to perform draw operation, e.g. for an overlay
+		virtual void	prepareDraw() {};
 
-		//Draw all entities that are managed by this subrenderer
+		///\brief Draw all entities that are managed by this subrenderer
 		virtual void	draw(VkCommandBuffer commandBuffer, uint32_t imageIndex, uint32_t numPass,
-			VECamera *pCamera, VELight *pLight, std::vector<VkDescriptorSet> descriptorSetsShadow)=0;
+							VECamera *pCamera, VELight *pLight, 
+							std::vector<VkDescriptorSet> descriptorSetsShadow) {};
 
 		///Perform an arbitrary draw operation
 		///\returns a semaphore signalling when this draw operations has finished
 		virtual VkSemaphore	draw(uint32_t imageIndex, VkSemaphore wait_semaphore) { return VK_NULL_HANDLE; };
 
-		virtual void	drawEntity(VkCommandBuffer commandBuffer, uint32_t imageIndex, VEEntity *entity)=0;
+		///\brief draw a specific entity
+		virtual void	drawEntity(VkCommandBuffer commandBuffer, uint32_t imageIndex, VEEntity *entity) {};
 
 	};
 

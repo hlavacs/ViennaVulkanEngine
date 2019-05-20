@@ -130,6 +130,8 @@ virtual void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" hr
 <tr class="separator:a394266568e9447bfb7b9594a4875440c"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a5df79bd0d940dc4eba65c1912554ec05"><td class="memItemLeft" align="right" valign="top">virtual VkExtent2D&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_renderer_forward.html#a5df79bd0d940dc4eba65c1912554ec05">getShadowMapExtent</a> ()</td></tr>
 <tr class="separator:a5df79bd0d940dc4eba65c1912554ec05"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aaaa84595c7e7ad25acc2f2d94666133b"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_renderer_forward.html#aaaa84595c7e7ad25acc2f2d94666133b">isRecording</a> ()</td></tr>
+<tr class="separator:aaaa84595c7e7ad25acc2f2d94666133b"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="inherit_header pub_methods_classve_1_1_v_e_renderer"><td colspan="2" onclick="javascript:toggleInherit('pub_methods_classve_1_1_v_e_renderer')"><img src="closed.png" alt="-"/>&#160;Public Member Functions inherited from <a class="el" href="classve_1_1_v_e_renderer.html">ve::VERenderer</a></td></tr>
 <tr class="memitem:a7631ac9df441e26f3994e27ce3d5af39 inherit pub_methods_classve_1_1_v_e_renderer"><td class="memItemLeft" align="right" valign="top"><a id="a7631ac9df441e26f3994e27ce3d5af39"></a>
 &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_renderer.html#a7631ac9df441e26f3994e27ce3d5af39">VERenderer</a> ()</td></tr>
@@ -319,6 +321,10 @@ size_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="cl
 bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_renderer_forward.html#a1f6f0610bac0c8d0b217f607c9207b85">m_framebufferResized</a> = false</td></tr>
 <tr class="memdesc:a1f6f0610bac0c8d0b217f607c9207b85"><td class="mdescLeft">&#160;</td><td class="mdescRight">signal that window size is changing <br /></td></tr>
 <tr class="separator:a1f6f0610bac0c8d0b217f607c9207b85"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a6578a471209e2cc7484e7a7ba0ab9cca"><td class="memItemLeft" align="right" valign="top"><a id="a6578a471209e2cc7484e7a7ba0ab9cca"></a>
+bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_renderer_forward.html#a6578a471209e2cc7484e7a7ba0ab9cca">m_recording</a> = false</td></tr>
+<tr class="memdesc:a6578a471209e2cc7484e7a7ba0ab9cca"><td class="mdescLeft">&#160;</td><td class="mdescRight">during recording the recording needs all threads <br /></td></tr>
+<tr class="separator:a6578a471209e2cc7484e7a7ba0ab9cca"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="inherit_header pro_attribs_classve_1_1_v_e_renderer"><td colspan="2" onclick="javascript:toggleInherit('pro_attribs_classve_1_1_v_e_renderer')"><img src="closed.png" alt="-"/>&#160;Protected Attributes inherited from <a class="el" href="classve_1_1_v_e_renderer.html">ve::VERenderer</a></td></tr>
 <tr class="memitem:acb75f7b487a45e37a271ade95c6833f4 inherit pro_attribs_classve_1_1_v_e_renderer"><td class="memItemLeft" align="right" valign="top"><a id="acb75f7b487a45e37a271ade95c6833f4"></a>
 VkPhysicalDevice&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_renderer.html#acb75f7b487a45e37a271ade95c6833f4">m_physicalDevice</a> = VK_NULL_HANDLE</td></tr>
@@ -757,6 +763,32 @@ std::vector&lt; <a class="el" href="classve_1_1_v_e_subrender.html">VESubrender<
 
 </div>
 </div>
+<a id="aaaa84595c7e7ad25acc2f2d94666133b"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aaaa84595c7e7ad25acc2f2d94666133b">&#9670;&nbsp;</a></span>isRecording()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">bool ve::VERendererForward::isRecording </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+<dl class="section return"><dt>Returns</dt><dd>whether the renderer is currently recording or not </dd></dl>
+
+</div>
+</div>
 <hr/>The documentation for this class was generated from the following files:<ul>
 <li><a class="el" href="_v_e_renderer_forward_8h_source.html">VERendererForward.h</a></li>
 <li>VERendererForward.cpp</li>
@@ -764,7 +796,7 @@ std::vector&lt; <a class="el" href="classve_1_1_v_e_subrender.html">VESubrender<
 </div><!-- contents -->
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>
-Generated on Sat May 11 2019 14:57:31 for Vienna Vulkan Engine by &#160;<a href="http://www.doxygen.org/index.html">
+Generated on Mon May 20 2019 11:43:45 for Vienna Vulkan Engine by &#160;<a href="http://www.doxygen.org/index.html">
 <img class="footer" src="doxygen.png" alt="doxygen"/>
 </a> 1.8.15
 </small></address>

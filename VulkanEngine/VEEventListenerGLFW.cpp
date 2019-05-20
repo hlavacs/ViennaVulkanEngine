@@ -242,11 +242,12 @@ namespace ve {
 
 			m_numScreenshot++;
 
-			getEnginePointer()->m_threadPool->submit([=]() {
+			std::thread t([=]() {
 				std::string name("screenshots/screenshot" + std::to_string(m_numScreenshot-1) + ".png");
 				stbi_write_png(name.c_str(), extent.width, extent.height, 4, dataImage, 4 * extent.width);
 				delete dataImage;
 			});
+			t.join();
 
 			m_makeScreenshot = false;
 		}

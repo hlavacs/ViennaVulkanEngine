@@ -207,7 +207,7 @@ namespace ve {
 	* \brief Add some maps of an entity to the map list of this subrenderer
 	*
 	* \param[in] pEntity Pointer to the entity
-	* \param[in] newmaps List of maps to be added to this subrenderer
+	* \param[in] newMaps List of maps to be added to this subrenderer
 	*
 	*/
 	void VESubrenderFW::addMaps(VEEntity *pEntity, std::vector<VkDescriptorImageInfo> &newMaps) {

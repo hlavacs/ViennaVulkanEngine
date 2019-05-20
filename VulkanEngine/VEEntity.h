@@ -213,7 +213,7 @@ namespace ve {
 		virtual uint32_t	getSizeUBO() { return sizeof(veUBOPerObject_t);  };
 		virtual void		updateUBO( glm::mat4 worldMatrix, uint32_t imageIndex );	//update the UBO of this node using its current world matrix
 		void				setParam( glm::vec4 param);		//set the free parameter
-		/*
+		/**
 		* \brief set the index into the subrenderer resource list
 		* \param[in] idx The new index
 		*/

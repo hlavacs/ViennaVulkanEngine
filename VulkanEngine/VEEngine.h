@@ -84,8 +84,6 @@ namespace ve {
 		virtual void closeEngine();				//Close down the engine
 
 	public:
-		ThreadPool *m_threadPool;				///<A threadpool for parallel processing
-
 		VEEngine( bool debug = false );								//Only create ONE instance of the engine!
 		~VEEngine() {};
 

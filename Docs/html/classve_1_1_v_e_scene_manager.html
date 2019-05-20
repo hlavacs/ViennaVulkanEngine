@@ -111,12 +111,6 @@ Public Member Functions</h2></td></tr>
 <tr class="memitem:a9e9773c6d25c6fa5ea849fe393bb8e7b"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classve_1_1_v_e_entity.html">VEEntity</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_scene_manager.html#a9e9773c6d25c6fa5ea849fe393bb8e7b">createEntity</a> (std::string entityName, <a class="el" href="classve_1_1_v_e_entity.html#a2c7f15fd3b11aac4dea3e76cfa508010">VEEntity::veEntityType</a> type, <a class="el" href="classve_1_1_v_e_mesh.html">VEMesh</a> *pMesh, <a class="el" href="classve_1_1_v_e_material.html">VEMaterial</a> *pMat, glm::mat4 transf, <a class="el" href="classve_1_1_v_e_scene_node.html">VESceneNode</a> *parent=nullptr)</td></tr>
 <tr class="memdesc:a9e9773c6d25c6fa5ea849fe393bb8e7b"><td class="mdescLeft">&#160;</td><td class="mdescRight">Create an entity.  <a href="#a9e9773c6d25c6fa5ea849fe393bb8e7b">More...</a><br /></td></tr>
 <tr class="separator:a9e9773c6d25c6fa5ea849fe393bb8e7b"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a6a05a9c4236e5aa2a2140f172bd4f6b1"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classve_1_1_v_e_scene_node.html">VESceneNode</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_scene_manager.html#a6a05a9c4236e5aa2a2140f172bd4f6b1">createCubemap</a> (std::string entityName, std::string basedir, std::string filename)</td></tr>
-<tr class="memdesc:a6a05a9c4236e5aa2a2140f172bd4f6b1"><td class="mdescLeft">&#160;</td><td class="mdescRight">Create a cube map based sky box.  <a href="#a6a05a9c4236e5aa2a2140f172bd4f6b1">More...</a><br /></td></tr>
-<tr class="separator:a6a05a9c4236e5aa2a2140f172bd4f6b1"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a22900dda5097a091f671992599a5a826"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classve_1_1_v_e_scene_node.html">VESceneNode</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_scene_manager.html#a22900dda5097a091f671992599a5a826">createCubemap</a> (std::string entityName, std::string basedir, std::vector&lt; std::string &gt; filenames)</td></tr>
-<tr class="memdesc:a22900dda5097a091f671992599a5a826"><td class="mdescLeft">&#160;</td><td class="mdescRight">Create a cube map based sky box.  <a href="#a22900dda5097a091f671992599a5a826">More...</a><br /></td></tr>
-<tr class="separator:a22900dda5097a091f671992599a5a826"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a733b1cdeac84abc64ede58ac22d61021"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classve_1_1_v_e_entity.html">VEEntity</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_scene_manager.html#a733b1cdeac84abc64ede58ac22d61021">createSkyplane</a> (std::string entityName, std::string basedir, std::string texName)</td></tr>
 <tr class="memdesc:a733b1cdeac84abc64ede58ac22d61021"><td class="mdescLeft">&#160;</td><td class="mdescRight">Create a plane that is projected to the far plane of the frustum.  <a href="#a733b1cdeac84abc64ede58ac22d61021">More...</a><br /></td></tr>
 <tr class="separator:a733b1cdeac84abc64ede58ac22d61021"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -192,6 +186,14 @@ virtual void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" hr
 <tr class="memitem:a219b7bccb70db3400ec513839c97e958"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_scene_manager.html#a219b7bccb70db3400ec513839c97e958">copyAiNodes</a> (const aiScene *pScene, std::vector&lt; <a class="el" href="classve_1_1_v_e_mesh.html">VEMesh</a> * &gt; &amp;meshes, std::vector&lt; <a class="el" href="classve_1_1_v_e_material.html">VEMaterial</a> * &gt; &amp;materials, aiNode *node, <a class="el" href="classve_1_1_v_e_scene_node.html">VESceneNode</a> *parent)</td></tr>
 <tr class="memdesc:a219b7bccb70db3400ec513839c97e958"><td class="mdescLeft">&#160;</td><td class="mdescRight">Follow the Assimp tree of nodes and create entities from them.  <a href="#a219b7bccb70db3400ec513839c97e958">More...</a><br /></td></tr>
 <tr class="separator:a219b7bccb70db3400ec513839c97e958"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aabc66593da3ed79e27dac1647782a161"><td class="memItemLeft" align="right" valign="top"><a id="aabc66593da3ed79e27dac1647782a161"></a>
+void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_scene_manager.html#aabc66593da3ed79e27dac1647782a161">lockSceneManager</a> ()</td></tr>
+<tr class="memdesc:aabc66593da3ed79e27dac1647782a161"><td class="mdescLeft">&#160;</td><td class="mdescRight">lock the scene manager mutex <br /></td></tr>
+<tr class="separator:aabc66593da3ed79e27dac1647782a161"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:adc95303be93a963b015a8ba69b275a31"><td class="memItemLeft" align="right" valign="top"><a id="adc95303be93a963b015a8ba69b275a31"></a>
+void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_scene_manager.html#adc95303be93a963b015a8ba69b275a31">unlockSceneManager</a> ()</td></tr>
+<tr class="memdesc:adc95303be93a963b015a8ba69b275a31"><td class="mdescLeft">&#160;</td><td class="mdescRight">unlock the scene manager mutex <br /></td></tr>
+<tr class="separator:adc95303be93a963b015a8ba69b275a31"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pro-attribs"></a>
 Protected Attributes</h2></td></tr>
@@ -222,6 +224,10 @@ std::map&lt; std::string, <a class="el" href="classve_1_1_v_e_scene_node.html">V
 std::vector&lt; <a class="el" href="classve_1_1_v_e_light.html">VELight</a> * &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_scene_manager.html#a0c9304990871bbe6cc0abd0351929439">m_lights</a> = {}</td></tr>
 <tr class="memdesc:a0c9304990871bbe6cc0abd0351929439"><td class="mdescLeft">&#160;</td><td class="mdescRight">ptrs to the lights to use <br /></td></tr>
 <tr class="separator:a0c9304990871bbe6cc0abd0351929439"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a8599d3a15f3fd43b31cd17cc4cfedc81"><td class="memItemLeft" align="right" valign="top"><a id="a8599d3a15f3fd43b31cd17cc4cfedc81"></a>
+std::mutex&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_scene_manager.html#a8599d3a15f3fd43b31cd17cc4cfedc81">m_mutex</a></td></tr>
+<tr class="memdesc:a8599d3a15f3fd43b31cd17cc4cfedc81"><td class="mdescLeft">&#160;</td><td class="mdescRight">Mutex for multithreading, locks the scene manager. <br /></td></tr>
+<tr class="separator:a8599d3a15f3fd43b31cd17cc4cfedc81"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <div class="textblock"><p>The scene Manager manages the objects that have been loaded and put into the world. </p>
@@ -329,98 +335,6 @@ std::vector&lt; <a class="el" href="classve_1_1_v_e_light.html">VELight</a> * &g
   </table>
   </dd>
 </dl>
-
-</div>
-</div>
-<a id="a6a05a9c4236e5aa2a2140f172bd4f6b1"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a6a05a9c4236e5aa2a2140f172bd4f6b1">&#9670;&nbsp;</a></span>createCubemap() <span class="overload">[1/2]</span></h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname"><a class="el" href="classve_1_1_v_e_scene_node.html">VESceneNode</a> * ve::VESceneManager::createCubemap </td>
-          <td>(</td>
-          <td class="paramtype">std::string&#160;</td>
-          <td class="paramname"><em>entityName</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">std::string&#160;</td>
-          <td class="paramname"><em>basedir</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">std::string&#160;</td>
-          <td class="paramname"><em>filename</em>&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p>Create a cube map based sky box. </p>
-<p>This function uses GLI to load either a ktx or dds file containing a cube map. The cube is then rotated an scaled so that it can be used as sky box.</p>
-<dl class="params"><dt>Parameters</dt><dd>
-  <table class="params">
-    <tr><td class="paramdir">[in]</td><td class="paramname">entityName</td><td>Name of the new entity. </td></tr>
-    <tr><td class="paramdir">[in]</td><td class="paramname">basedir</td><td>Name of the directory the texture file is in </td></tr>
-    <tr><td class="paramdir">[in]</td><td class="paramname">filename</td><td>Name of the texture file. </td></tr>
-  </table>
-  </dd>
-</dl>
-<dl class="section return"><dt>Returns</dt><dd>a pointer to the new entity </dd></dl>
-
-</div>
-</div>
-<a id="a22900dda5097a091f671992599a5a826"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a22900dda5097a091f671992599a5a826">&#9670;&nbsp;</a></span>createCubemap() <span class="overload">[2/2]</span></h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname"><a class="el" href="classve_1_1_v_e_scene_node.html">VESceneNode</a> * ve::VESceneManager::createCubemap </td>
-          <td>(</td>
-          <td class="paramtype">std::string&#160;</td>
-          <td class="paramname"><em>entityName</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">std::string&#160;</td>
-          <td class="paramname"><em>basedir</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">std::vector&lt; std::string &gt;&#160;</td>
-          <td class="paramname"><em>filenames</em>&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p>Create a cube map based sky box. </p>
-<p>This function loads 6 textures to use them in a cube map. The cube is then rotated an scaled so that it can be used as sky box.</p>
-<dl class="params"><dt>Parameters</dt><dd>
-  <table class="params">
-    <tr><td class="paramdir">[in]</td><td class="paramname">entityName</td><td>Name of the new entity. </td></tr>
-    <tr><td class="paramdir">[in]</td><td class="paramname">basedir</td><td>Name of the directory the texture file is in </td></tr>
-    <tr><td class="paramdir">[in]</td><td class="paramname">filenames</td><td>List of 6 names of the texture files. Order must be ft bk up dn rt lf </td></tr>
-  </table>
-  </dd>
-</dl>
-<dl class="section return"><dt>Returns</dt><dd>a pointer to the new entity </dd></dl>
 
 </div>
 </div>
@@ -1418,7 +1332,7 @@ std::vector&lt; <a class="el" href="classve_1_1_v_e_light.html">VELight</a> * &g
 </div><!-- contents -->
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>
-Generated on Sat May 11 2019 14:57:31 for Vienna Vulkan Engine by &#160;<a href="http://www.doxygen.org/index.html">
+Generated on Mon May 20 2019 11:43:45 for Vienna Vulkan Engine by &#160;<a href="http://www.doxygen.org/index.html">
 <img class="footer" src="doxygen.png" alt="doxygen"/>
 </a> 1.8.15
 </small></address>

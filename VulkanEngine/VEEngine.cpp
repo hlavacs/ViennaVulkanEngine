@@ -43,9 +43,6 @@ namespace ve {
 		createWindow();						//create a window
 		m_pWindow->initWindow(800, 600);	//inittialize the window
 
-		m_threadPool = new ThreadPool(20); //worker threads
-		m_threadPool->init();
-
 		std::vector<const char*> instanceExtensions = getRequiredInstanceExtensions();
 		std::vector<const char*> validationLayers = getValidationLayers();
 		vhDevCreateInstance(instanceExtensions, validationLayers, &m_instance);
@@ -112,12 +109,6 @@ namespace ve {
 	*/
 	void VEEngine::closeEngine() {
 
-		m_threadPool->shutdown();
-		delete m_threadPool;
-
-		
-		//for (auto el : m_eventListener) delete el;
-		//m_eventListener.clear();
 		clearEventListenerList();
 		m_eventlist.clear();
 
@@ -322,18 +313,23 @@ namespace ve {
 	*/
 	void VEEngine::callListeners(double dt, veEvent event, std::vector<VEEventListener*> *list ) {
 		event.dt = dt;
+		const int maxThreads = 10;
 
 		if ( !getRendererForwardPointer()->isRecording() && list->size()>200 ) {
 			int div = 100;
-			uint32_t numThreads =  std::min((int)list->size()/div, 10);
+			uint32_t numThreads =  std::min((int)list->size()/div, maxThreads);
 			uint32_t numListenerPerThread = (uint32_t)list->size() / numThreads;
 
 			uint32_t startIdx, endIdx;
+			std::thread threads[maxThreads];
+
 			for (uint32_t k = 0; k < numThreads; k++) {
 				startIdx = k*numListenerPerThread;
 				endIdx = k < numThreads - 1 ? (k+1)*numListenerPerThread-1 : (uint32_t)list->size()-1;
-				auto lst = m_threadPool->submit([=]() { this->callListeners(dt, event, list, startIdx, endIdx); });
-				if (k == numThreads - 1) lst.get();	//wait for the last thread
+				threads[k] = std::thread([=]() { this->callListeners(dt, event, list, startIdx, endIdx); });
+			}
+			for (uint32_t k = 0; k < numThreads; k++) {
+				threads[k].join();
 			}
 		}
 		else {

@@ -21,6 +21,7 @@
 #include <map>
 #include <unordered_map>
 #include <thread>
+#include <mutex>
 #include <random>
 #include <cmath>
 
@@ -39,7 +40,6 @@
 #include <stb_image.h>
 #include <stb_image_write.h>
 #include <gli/gli.hpp>
-#include <ThreadPool.h>
 #include "CLInclude.h"
 
 #include <assimp/Importer.hpp>
