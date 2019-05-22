@@ -48,9 +48,7 @@ namespace ve {
 		std::map<std::string, VESceneNode*>	m_sceneNodes = {};	///<Storage of all scene nodes currently in the engine
 		
 		VESceneNode						*	m_rootSceneNode;	///<The root node of the scene graph
-
-		///the memory for all UBOs
-		std::map<VESceneObject::veObjectType, std::vector<vh::vhMemoryBlock*>> m_memoryBlockMap;										///<memory for the UBOs of the entities
+		std::map<VESceneObject::veObjectType, std::vector<vh::vhMemoryBlock*>> m_memoryBlockMap;	///<memory for the UBOs of the entities
 
 		VECamera *				m_camera = nullptr;			///<entity ptr of the current camera
 		std::vector<VELight*>	m_lights = {};				///<ptrs to the lights to use
@@ -58,9 +56,18 @@ namespace ve {
 
 		virtual void initSceneManager();
 		virtual void closeSceneManager();
-		void copyAiNodes(	const aiScene* pScene, 
-							std::vector<VEMesh*> &meshes, std::vector<VEMaterial*> &materials, 
-							aiNode* node, VESceneNode *parent);
+		void createMeshes(const aiScene* pScene,std::string filekey, std::vector<VEMesh*> &meshes);
+		void createMaterials(const aiScene* pScene,  std::string basedir, std::string filekey, std::vector<VEMaterial*> &materials);
+		void copyAiNodes(	const aiScene* pScene,  std::vector<VEMesh*> &meshes, 
+							std::vector<VEMaterial*> &materials, aiNode* node, VESceneNode *parent);
+
+		//private shadow functions for the public API, so API does not lock itself
+		VESceneNode *	createSceneNode2(std::string name, glm::mat4 transf = glm::mat4(1.0f), VESceneNode *parent = nullptr);
+		VEEntity *		createEntity2(std::string entityName, VEEntity::veEntityType type, VEMesh *pMesh, VEMaterial *pMat, glm::mat4 transf, VESceneNode *parent = nullptr);
+		void			addSceneNode2(VESceneNode *pNode, VESceneNode *parent = nullptr);
+		void			createSceneNodeList2(VESceneNode *pObject, std::vector<std::string> &namelist);
+		VEEntity *		createSkyplane2(std::string entityName, std::string basedir, std::string texName);
+		void			sceneGraphChanged();			//tell renderer to rerecord the cmd buffers
 
 		///\brief lock the scene manager mutex
 		void lockSceneManager() { m_mutex.lock(); };
@@ -78,9 +85,8 @@ namespace ve {
 
 		const aiScene *	loadAssets(	std::string basedir, std::string filename, uint32_t aiFlags,
 									std::vector<VEMesh*> &meshes, std::vector<VEMaterial*> &materials);
-		void			createMeshes(const aiScene* pScene,std::string filekey, std::vector<VEMesh*> &meshes);
-		void			createMaterials(const aiScene* pScene,  std::string basedir, std::string filekey, std::vector<VEMaterial*> &materials);
-		VESceneNode *	loadModel(std::string entityName, std::string basedir, std::string filename, uint32_t aiFlags=0, VESceneNode *parent=nullptr);
+		VESceneNode *	loadModel(	std::string entityName, std::string basedir, std::string filename, 
+									uint32_t aiFlags=0, VESceneNode *parent=nullptr);
 
 		//-------------------------------------------------------------------------------------
 		//Create scene nodes and entities
@@ -100,7 +106,8 @@ namespace ve {
 
 		///\returns the root scene node
 		VESceneNode *	getRootSceneNode() { return m_rootSceneNode; };
-		void			sceneGraphChanged();
+		//----------------------------------------------------------------
+		//API that needs to by synchronized
 		void			updateSceneNodes( uint32_t imageIndex );
 		void			addSceneNode(VESceneNode *pNode, VESceneNode *parent=nullptr);
 		VESceneNode *	getSceneNode(std::string entityName);
@@ -111,19 +118,14 @@ namespace ve {
 		//-------------------------------------------------------------------------------------
 		//Manage meshes, materials, cameras, lights
 
-		/**
-		* \brief Find a mesh by its name and return a pointer to it
-		* \param[in] name The name of mesh
-		* \returns a mesh given its name
-		*/
-		VEMesh *		getMesh(std::string name) { return m_meshes[name]; };
+		VEMesh *		getMesh(std::string name);
 		void			deleteMesh(std::string name);
 		/**
 		* \brief Find a material by its name and return a pointer to it
 		* \param[in] name The name of material
 		* \returns a material given its name
 		*/
-		VEMaterial *	getMaterial(std::string name) { return m_materials[name]; };
+		VEMaterial *	getMaterial(std::string name);
 		void			deleteMaterial(std::string name);
 
 		///\returns a pointer to the current camera

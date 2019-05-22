@@ -67,6 +67,7 @@ namespace ve {
 		bool m_framebufferResized = false;				///<Flag indicating whether the window size has changed.
 		bool m_end_running = false;						///<Flag indicating that the engine should leave the render loop
 		bool m_debug = true;							///<Flag indicating whether debugging is enabled or not
+		uint32_t m_maxThreads = 10;						///<max number of threads that may be started by the VEEngine class
 
 		virtual std::vector<const char*> getRequiredInstanceExtensions(); //Return a list of required Vulkan instance extensions
 		virtual std::vector<const char*> getValidationLayers();	//Returns a list of required Vulkan validation layers
@@ -110,8 +111,8 @@ namespace ve {
 		float			 getAvgFrameTime() { return m_AvgFrameTime;  };
 		///\returns the average update time (s)
 		float			 getAvgUpdateTime() { return m_AvgUpdateTime; };
+		///\returns the mx number of threads that anybody may start during the render loop
+		uint32_t		getMaxThreads() { return m_maxThreads; };
 	};
-
-
 
 }

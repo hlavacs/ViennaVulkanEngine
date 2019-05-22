@@ -313,15 +313,15 @@ namespace ve {
 	*/
 	void VEEngine::callListeners(double dt, veEvent event, std::vector<VEEventListener*> *list ) {
 		event.dt = dt;
-		const int maxThreads = 10;
 
 		if ( !getRendererForwardPointer()->isRecording() && list->size()>200 ) {
 			int div = 100;
-			uint32_t numThreads =  std::min((int)list->size()/div, maxThreads);
+			uint32_t numThreads =  std::min((int)list->size()/div, (int)m_maxThreads);
 			uint32_t numListenerPerThread = (uint32_t)list->size() / numThreads;
 
 			uint32_t startIdx, endIdx;
-			std::thread threads[maxThreads];
+			std::vector<std::thread> threads;
+			threads.resize(numThreads);
 
 			for (uint32_t k = 0; k < numThreads; k++) {
 				startIdx = k*numListenerPerThread;
@@ -350,7 +350,7 @@ namespace ve {
 	*/
 	void VEEngine::callListeners(double dt, veEvent event, std::vector<VEEventListener*> *list, uint32_t startIdx, uint32_t endIdx) {
 		for( uint32_t i=startIdx; i<=endIdx; i++ ) {
-			if ((*list)[i]->onEvent(event)) return;		//if return true then the listener has consumed the event
+			if ((*list)[i]->onEvent(event)) return;		//if return true then the listener has consumed the event, so stop processing it
 		}
 	}
 
@@ -387,8 +387,8 @@ namespace ve {
 				event.idata1 == m_eventlist[i].idata1 &&
 				event.idata2 == m_eventlist[i].idata2 &&
 				event.idata3 == m_eventlist[i].idata3 &&
-				event.idata4 == m_eventlist[i].idata4
-				) {
+				event.idata4 == m_eventlist[i].idata4 ) {
+
 				uint32_t last = (uint32_t)m_eventlist.size() - 1;
 				m_eventlist[i] = m_eventlist[last];
 				m_eventlist.pop_back();
@@ -443,7 +443,7 @@ namespace ve {
 	* \brief Show a fatal error using the Nuklear GUI
 	*
 	* This function deletes all registered event listeners, and registers one new one,
-	* showing an error message.
+	* showing an error message. 
 	*
 	*/
 	void VEEngine::fatalError(std::string message) {
@@ -527,11 +527,11 @@ namespace ve {
 			processEvents(m_dt);				//process all current events, including pressed keys
 
 			t_now = vh::vhTimeNow();
-				getSceneManagerPointer()->updateSceneNodes( getRendererPointer()->getImageIndex());
+			getSceneManagerPointer()->updateSceneNodes( getRendererPointer()->getImageIndex());	//update scene node UBOs
 			m_AvgUpdateTime = vh::vhAverage(vh::vhTimeDuration(t_now), m_AvgUpdateTime);
 
 			t_now = vh::vhTimeNow();
-				m_pRenderer->drawFrame();			//draw the next frame
+			m_pRenderer->drawFrame();			//draw the next frame
 			m_AvgDrawTime = vh::vhAverage(vh::vhTimeDuration(t_now), m_AvgDrawTime);
 
 			m_pRenderer->prepareOverlay();
@@ -539,7 +539,7 @@ namespace ve {
 			event.type = VE_EVENT_FRAME_ENDED;	//notify all listeners that the frame ended
 			callListeners(m_dt, event);
 
-			m_pRenderer->drawOverlay();
+			m_pRenderer->drawOverlay();			//draw overlay or post processing
 
 			m_pRenderer->presentFrame();		//present the next frame
 

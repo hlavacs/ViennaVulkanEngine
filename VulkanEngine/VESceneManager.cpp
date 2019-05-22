@@ -152,12 +152,12 @@ namespace ve {
 			aiFlags);
 
 		if (pScene == nullptr) {
-			throw std::runtime_error("Error: Could not load asset file " + filekey + "!");
+			getEnginePointer()->fatalError("Error: Could not load asset file " + filekey + "!");
+			return nullptr;
 		}
-		createMeshes(pScene, filekey, meshes);
-		createMaterials(pScene, basedir, filekey, materials);
 
-		sceneGraphChanged();
+		createMeshes(pScene, filekey, meshes);					//create new meshes if any
+		createMaterials(pScene, basedir, filekey, materials);	//create new materials if any
 
 		return pScene;
 	}
@@ -184,6 +184,11 @@ namespace ve {
 												uint32_t aiFlags, 
 												VESceneNode *parent) {
 
+		VESceneNode *pMO = m_sceneNodes[entityName];	//if an entity with this name exists return it
+		if (pMO != nullptr) {
+			return pMO;
+		}
+
 		Assimp::Importer importer;
 
 		std::string filekey = basedir + "/" + filename;
@@ -200,26 +205,24 @@ namespace ve {
 			aiFlags);
 
 		if (pScene == nullptr) {
-			throw std::runtime_error("Error: Could not load asset file " + filekey + "!");
+			getEnginePointer()->fatalError("Error: Could not load asset file " + filekey + "!");
+			return nullptr;
 		}
 
-		sceneGraphChanged();
+		pMO = createSceneNode2(entityName, glm::mat4(1.0f), parent);	//create a new scene node as parent of the whole scene
 
 		std::vector<VEMesh*> meshes;
-		createMeshes(pScene, filekey, meshes);
-
+		createMeshes(pScene, filekey, meshes);					//create the new meshes if any
 		std::vector<VEMaterial*> materials;
-		createMaterials(pScene, basedir, filekey, materials);
+		createMaterials(pScene, basedir, filekey, materials);	//create the new materials if any
 
-		VESceneNode *pMO = m_sceneNodes[entityName];
-		if (pMO != nullptr ) return pMO;
+		copyAiNodes( pScene, meshes, materials, pScene->mRootNode, pMO);	//create scene nodes and entities from the file
 
-		pMO = createSceneNode(entityName, glm::mat4(1.0f), parent); 
-
-		copyAiNodes( pScene, meshes, materials, pScene->mRootNode, pMO);
+		sceneGraphChanged();	//notify renderer to rerecord the cmd buffers
 
 		return pMO;
 	}
+
 
 	/**
 	*
@@ -242,7 +245,7 @@ namespace ve {
 										aiNode* node, 
 										VESceneNode *parent ) {
 
-		VESceneNode *pObject = createSceneNode(	parent->getName() + "/" + node->mName.C_Str(),
+		VESceneNode *pObject = createSceneNode2(parent->getName() + "/" + node->mName.C_Str(),
 												glm::mat4(1.0f), parent);
 
 		for (uint32_t i = 0; i < node->mNumMeshes; i++) {	//go through the meshes of the Assimp node
@@ -259,7 +262,8 @@ namespace ve {
 
 			glm::mat4 *pMatrix = (glm::mat4*) &node->mTransformation;
 
-			VEEntity *pEnt = createEntity(	pObject->getName() + "/Entity_" + std::to_string(i), //create the new entity
+			VEEntity *pEnt = createEntity2(	pObject->getName() + "/Entity_" + std::to_string(i), //create the new entity
+											VEEntity::VE_ENTITY_TYPE_NORMAL,
 											pMesh, pMaterial, *pMatrix, pObject);
 		}
 
@@ -267,6 +271,7 @@ namespace ve {
 			copyAiNodes(pScene, meshes, materials, node->mChildren[i], pObject);
 		}
 	}
+
 
 	/**
 	*
@@ -390,13 +395,34 @@ namespace ve {
 	/**
 	* \brief Create a scene node
 	*
+	* Calls its own shadow function, so that it does not block itself when called by another public function
+	*
 	* \param[in] objectName The name of the new MO.
 	* \param[in] transf Local to parent transform.
 	* \param[in] parent Pointer to entity to be used as parent.
 	* \returns a pointer to the new scene node
 	*
 	*/
-	VESceneNode * VESceneManager::createSceneNode(	std::string objectName,
+	VESceneNode * VESceneManager::createSceneNode(std::string objectName, glm::mat4 transf, VESceneNode *parent) {
+		VESceneNode * pNode = createSceneNode2( objectName, transf, parent );
+
+		return pNode;
+	}
+
+
+	/**
+	* \brief Create a scene node
+	*
+	* This is a protected shadow funtion of the public API function. It can be called by other public
+	* functions that lock the mutex.
+	*
+	* \param[in] objectName The name of the new MO.
+	* \param[in] transf Local to parent transform.
+	* \param[in] parent Pointer to entity to be used as parent.
+	* \returns a pointer to the new scene node
+	*
+	*/
+	VESceneNode * VESceneManager::createSceneNode2(	std::string objectName,
 													glm::mat4 transf, 
 													VESceneNode *parent) {
 
@@ -404,7 +430,7 @@ namespace ve {
 		if (pMO != nullptr) return pMO;
 
 		pMO = new VESceneNode(objectName, transf, parent);
-		addSceneNode( pMO );
+		addSceneNode2( pMO );
 		sceneGraphChanged();
 		return pMO;
 	}
@@ -426,6 +452,7 @@ namespace ve {
 		return createEntity(entityName, VEEntity::VE_ENTITY_TYPE_NORMAL, pMesh, pMat, transf, parent);
 	}
 
+
 	/**
 	* \brief Create an entity
 	*
@@ -438,7 +465,28 @@ namespace ve {
 	* \returns a pointer to the new entity
 	*
 	*/
-	VEEntity * VESceneManager::createEntity(	std::string entityName, VEEntity::veEntityType type, 
+	VEEntity * VESceneManager::createEntity(std::string entityName, VEEntity::veEntityType type,
+											VEMesh *pMesh, VEMaterial *pMat, glm::mat4 transf, VESceneNode *parent) {
+
+		VEEntity *pEntity = createEntity2(entityName, type, pMesh, pMat, transf, parent);
+
+		return pEntity;
+	}
+
+
+	/**
+	* \brief Create an entity
+	*
+	* \param[in] entityName The name of the new entity.
+	* \param[in] type The entity type to be used.
+	* \param[in] pMesh Pointer the mesh for this entity.
+	* \param[in] pMat Pointer to the material for this entity.
+	* \param[in] transf Local to parent transform, given as GLM matrix.
+	* \param[in] parent Pointer to entity to be used as parent.
+	* \returns a pointer to the new entity
+	*
+	*/
+	VEEntity * VESceneManager::createEntity2(	std::string entityName, VEEntity::veEntityType type, 
 												VEMesh *pMesh, VEMaterial *pMat, 
 												glm::mat4 transf, VESceneNode *parent) {
 		VEEntity *pEntity = new VEEntity(entityName, type, pMesh, pMat, transf, parent);
@@ -459,6 +507,8 @@ namespace ve {
 	*
 	* \brief Create a plane that is projected to the far plane of the frustum
 	*
+	* Public API that locks the mutex and then calls its won shadow function
+	*
 	* \param[in] entityName Name of the new entity.
 	* \param[in] basedir Name of the directory the texture file is in
 	* \param[in] texName name of a texture file that contains the sky texture
@@ -466,6 +516,24 @@ namespace ve {
 	*
 	*/
 	VEEntity *	VESceneManager::createSkyplane(std::string entityName, std::string basedir, std::string texName) {
+		VEEntity *pEntity = createSkyplane2(entityName, basedir, texName);
+		return pEntity;
+	}
+
+
+	/**
+	*
+	* \brief Create a plane that is projected to the far plane of the frustum
+	*
+	* Protected shadow function that creates  the plane.
+	*
+	* \param[in] entityName Name of the new entity.
+	* \param[in] basedir Name of the directory the texture file is in
+	* \param[in] texName name of a texture file that contains the sky texture
+	* \returns a pointer to the new entity
+	*
+	*/
+	VEEntity *	VESceneManager::createSkyplane2(std::string entityName, std::string basedir, std::string texName) {
 
 		std::string filekey = basedir + "/" + texName;
 		VEMesh * pMesh = m_meshes[STANDARD_MESH_PLANE];
@@ -478,7 +546,7 @@ namespace ve {
 			pMat->mapDiffuse = new VETexture(entityName, basedir, { texName });
 		}
 
-		VEEntity *pEntity = createEntity(entityName, VEEntity::VE_ENTITY_TYPE_SKYPLANE, pMesh, pMat, glm::mat4(1.0f), m_rootSceneNode );
+		VEEntity *pEntity = createEntity2(entityName, VEEntity::VE_ENTITY_TYPE_SKYPLANE, pMesh, pMat, glm::mat4(1.0f), m_rootSceneNode );
 		pEntity->m_castsShadow = false;
 
 		sceneGraphChanged();
@@ -508,25 +576,25 @@ namespace ve {
 			addstring = "+";
 		}
 
-		VESceneNode *parent = createSceneNode(entityName);
+		VESceneNode *parent = createSceneNode2(entityName);
 		m_rootSceneNode->addChild(parent);
 		float scale = 1000.0f;
 
-		VEEntity *sp1 = getSceneManagerPointer()->createSkyplane(filekey + "/Skyplane1", basedir, texNames[0]);
+		VEEntity *sp1 = getSceneManagerPointer()->createSkyplane2(filekey + "/Skyplane1", basedir, texNames[0]);
 		sp1->multiplyTransform(glm::scale(glm::mat4(1.0f), glm::vec3(-scale, 1.0f, -scale)));
 		sp1->multiplyTransform(glm::rotate(glm::mat4(1.0f), -(float)M_PI / 2.0f, glm::vec3(1.0f, 0.0f, 0.0f)));
 		sp1->multiplyTransform(glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 0.0f, scale / 2.0f)));
 		parent->addChild(sp1);
 		sp1->m_castsShadow = false;
 
-		sp1 = getSceneManagerPointer()->createSkyplane(filekey + "/Skyplane2", basedir, texNames[1]);
+		sp1 = getSceneManagerPointer()->createSkyplane2(filekey + "/Skyplane2", basedir, texNames[1]);
 		sp1->multiplyTransform(glm::scale(glm::mat4(1.0f), glm::vec3(scale, 1.0f, scale)));
 		sp1->multiplyTransform(glm::rotate(glm::mat4(1.0f), (float)M_PI / 2.0f, glm::vec3(1.0f, 0.0f, 0.0f)));
 		sp1->multiplyTransform(glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 0.0f, -scale / 2.0f)));
 		parent->addChild(sp1);
 		sp1->m_castsShadow = false;
 
-		sp1 = getSceneManagerPointer()->createSkyplane(filekey + "/Skyplane3", basedir, texNames[2]);
+		sp1 = getSceneManagerPointer()->createSkyplane2(filekey + "/Skyplane3", basedir, texNames[2]);
 		sp1->multiplyTransform(glm::scale(glm::mat4(1.0f), glm::vec3(scale, 1.0f, scale)));
 		sp1->multiplyTransform(glm::rotate(glm::mat4(1.0f), (float)M_PI / 2.0f, glm::vec3(0.0f, 1.0f, 0.0f)));
 		sp1->multiplyTransform(glm::rotate(glm::mat4(1.0f), (float)M_PI, glm::vec3(1.0f, 0.0f, 0.0f)));
@@ -534,7 +602,7 @@ namespace ve {
 		parent->addChild(sp1);
 		sp1->m_castsShadow = false;
 
-		sp1 = getSceneManagerPointer()->createSkyplane(filekey + "/Skyplane4", basedir, texNames[4] );
+		sp1 = getSceneManagerPointer()->createSkyplane2(filekey + "/Skyplane4", basedir, texNames[4] );
 		sp1->multiplyTransform(glm::scale(glm::mat4(1.0f), glm::vec3(-scale, 1.0f, -scale)));
 		sp1->multiplyTransform(glm::rotate(glm::mat4(1.0f), (float)M_PI / 2.0f, glm::vec3(0.0f, 1.0f, 0.0f)));
 		sp1->multiplyTransform(glm::rotate(glm::mat4(1.0f), (float)M_PI / 2.0f, glm::vec3(0.0f, 0.0f, 01.0f)));
@@ -542,7 +610,7 @@ namespace ve {
 		parent->addChild(sp1);
 		sp1->m_castsShadow = false;
 
-		sp1 = getSceneManagerPointer()->createSkyplane(filekey + "/Skyplane5", basedir, texNames[5]);
+		sp1 = getSceneManagerPointer()->createSkyplane2(filekey + "/Skyplane5", basedir, texNames[5]);
 		sp1->multiplyTransform(glm::scale(glm::mat4(1.0f), glm::vec3(scale, 1.0f, scale)));
 		sp1->multiplyTransform(glm::rotate(glm::mat4(1.0f), (float)M_PI / 2.0f, glm::vec3(0.0f, 1.0f, 0.0f)));
 		sp1->multiplyTransform(glm::rotate(glm::mat4(1.0f), -(float)M_PI / 2.0f, glm::vec3(0.0f, 0.0f, 1.0f)));
@@ -583,17 +651,35 @@ namespace ve {
 		}
 	}
 
+
 	/**
 	*
 	* \brief Add a new scene node into the scene
 	*
-	* If the parent is the nullptr then make the root scene node its parent
+	* If the parent is the nullptr then make the root scene node its parent.
+	* This is the public API function that locks the mutex
 	*
 	* \param[in] pNode Pointer to the new scene node
 	* \param[in] parent Pointer to the new parent of this node
 	*
 	*/
 	void VESceneManager::addSceneNode(VESceneNode *pNode, VESceneNode *parent) {
+		addSceneNode2(pNode, parent);
+	}
+
+
+	/**
+	*
+	* \brief Add a new scene node into the scene
+	*
+	* If the parent is the nullptr then make the root scene node its parent.
+	* This is the protected shadow function.
+	*
+	* \param[in] pNode Pointer to the new scene node
+	* \param[in] parent Pointer to the new parent of this node
+	*
+	*/
+	void VESceneManager::addSceneNode2(VESceneNode *pNode, VESceneNode *parent) {
 
 		if (pNode->getNodeType() == VESceneNode::VE_NODE_TYPE_SCENEOBJECT) {
 			VESceneObject *pObject = (VESceneObject*)pNode;
@@ -650,7 +736,7 @@ namespace ve {
 		if (pNode->m_parent != nullptr) pNode->m_parent->removeChild(pNode);
 
 		std::vector<std::string> namelist;	//first create a list of all child names
-		createSceneNodeList(pNode, namelist);
+		createSceneNodeList2(pNode, namelist);
 
 		//go through the list and delete all children
 		for (uint32_t i = 0; i < namelist.size(); i++) {
@@ -667,6 +753,22 @@ namespace ve {
 		sceneGraphChanged();
 	}
 
+
+	/**
+	*
+	* \brief Create a list of all child entities of a given entity
+	*
+	* Public API function locks the mutex, then calls its shadow function
+	*
+	* \param[in] pObject Pointer to the root of the tree.
+	* \param[out] namelist List of names of children of the entity.
+	*
+	*/
+	void VESceneManager::createSceneNodeList(VESceneNode *pObject, std::vector<std::string> &namelist) {
+		createSceneNodeList2(pObject, namelist);
+	}
+
+
 	/**
 	*
 	* \brief Create a list of all child entities of a given entity
@@ -675,13 +777,27 @@ namespace ve {
 	* \param[out] namelist List of names of children of the entity.
 	*
 	*/
-	void VESceneManager::createSceneNodeList(VESceneNode *pObject, std::vector<std::string> &namelist) {
+	void VESceneManager::createSceneNodeList2(VESceneNode *pObject, std::vector<std::string> &namelist) {
 		namelist.push_back(pObject->getName());
 
 		for( uint32_t i=0; i<pObject->m_children.size(); i++ ) {
-			createSceneNodeList(pObject->m_children[i], namelist );
+			createSceneNodeList2(pObject->m_children[i], namelist );
 		}
 	}
+
+
+
+	/**
+	* \brief Find a mesh by its name and return a pointer to it
+	*
+	* \param[in] name The name of mesh
+	* \returns a mesh given its name
+	*
+	*/
+	VEMesh * VESceneManager::getMesh(std::string name) {
+		return m_meshes[name]; 
+	};
+
 
 	/**
 	*
@@ -697,6 +813,17 @@ namespace ve {
 			delete pMesh;
 		}
 	}
+
+
+	/**
+	* \brief Find a material by its name and return a pointer to it
+	* \param[in] name The name of material
+	* \returns a material given its name
+	*/
+	VEMaterial * VESceneManager::getMaterial(std::string name) {
+		return m_materials[name]; 
+	};
+
 
 	/**
 	*
