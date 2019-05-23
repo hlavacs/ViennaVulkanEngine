@@ -39,11 +39,11 @@ namespace ve {
 		};
 
 	protected:
-		glm::mat4 m_transform = glm::mat4(1.0);		///<Transform from local to parent space, the engine uses Y-UP, Left-handed
+		glm::mat4					m_transform = glm::mat4(1.0);	///<Transform from local to parent space, the engine uses Y-UP, Left-handed
+		std::vector<VESceneNode *>	m_children;						///<List of entity children
+		VESceneNode *				m_parent = nullptr;				///<Pointer to entity parent
 
 	public:
-		VESceneNode *				m_parent = nullptr;		///<Pointer to entity parent
-		std::vector<VESceneNode *>	m_children;				///<List of entity children
 
 		//-------------------------------------------------------------------------------------
 		//Class and type
@@ -55,6 +55,11 @@ namespace ve {
 
 		///\returns the scene node type
 		virtual veNodeType	getNodeType() { return VE_NODE_TYPE_SCENENODE; };
+
+		VESceneNode *		getParent() { return m_parent;  };
+		void				setParent(VESceneNode *parent) { m_parent = parent; };
+		std::vector<VESceneNode *> & getChildrenList() { return m_children;  };
+
 
 		//-------------------------------------------------------------------------------------
 		//transforms

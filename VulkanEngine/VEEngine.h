@@ -59,16 +59,24 @@ namespace ve {
 		double m_dt = 0.0;								///<Delta time since the last loop
 		double m_time = 0.0;							///<Absolute game time since start of the render loop
 		uint32_t m_loopCount = 0;						///<Counts up the render loop
+		int m_maxThreads = 10;							///<max number of threads that the engine may start in parallel in its thread pool
+		ThreadPool *m_threadPool;						///<thread pool for parallel processing
 
+		//time statistics 
 		float m_AvgUpdateTime = 0.0f;					///<Average time for OBO updates (s)
 		float m_AvgFrameTime = 0.0f;					///<Average time per frame (s)
 		float m_AvgDrawTime = 0.0f;						///<Average time for baking cmd buffers and calling commit (s)
+		float m_AvgStartedTime = 0.0f;					///<Average time for processing frame started event
+		float m_AvgEventTime = 0.0f;					///<Average time for processing windows events
+		float m_AvgEndedTime = 0.0f;					///<Average time for processing frame ended event
+		float m_AvgPresentTime = 0.0f;					///<Average time for presenting the frame
+		float m_AvgPrepOvlTime = 0.0f;					///<Average prepare overlay time
+		float m_AvgDrawOvlTime = 0.0f;					///<Average draw overlay time
 
 		bool m_framebufferResized = false;				///<Flag indicating whether the window size has changed.
 		bool m_end_running = false;						///<Flag indicating that the engine should leave the render loop
 		bool m_debug = true;							///<Flag indicating whether debugging is enabled or not
-		uint32_t m_maxThreads = 10;						///<max number of threads that may be started by the VEEngine class
-
+		
 		virtual std::vector<const char*> getRequiredInstanceExtensions(); //Return a list of required Vulkan instance extensions
 		virtual std::vector<const char*> getValidationLayers();	//Returns a list of required Vulkan validation layers
 		void callListeners(double dt, veEvent event);	//Call all event listeners and give them certain event
@@ -107,12 +115,36 @@ namespace ve {
 		VESceneManager * getSceneManager();			//Return a  pointer to the scene manager instance
 		VERenderer     * getRenderer();				//Return a pointer to the renderer instance
 		uint32_t		 getLoopCount();			//Return the number of the current render loop
+
+		//-----------------------------------------------------------------------------------------------
+		//thread pool
+
+		///\returns the max number of threads that anybody may start during the render loop
+		uint32_t		getMaxThreads() { return m_maxThreads; };
+		///\returns a pointer to the threadpool
+		ThreadPool *	getThreadPool() { return m_threadPool; };
+
+		//-----------------------------------------------------------------------------------------------
+		//time statistics
+
 		///\returns the average frame time (s)
 		float			 getAvgFrameTime() { return m_AvgFrameTime;  };
 		///\returns the average update time (s)
 		float			 getAvgUpdateTime() { return m_AvgUpdateTime; };
-		///\returns the mx number of threads that anybody may start during the render loop
-		uint32_t		getMaxThreads() { return m_maxThreads; };
+		///\returns the average started time (s)
+		float			 getAvgStartedTime() { return m_AvgStartedTime; };
+		///\returns the average event time (s)
+		float			 getAvgEventTime() { return m_AvgEventTime; };
+		///\returns the average event time (s)
+		float			 getAvgDrawTime() { return m_AvgDrawTime; };
+		///\returns the average ended time (s)
+		float			 getAvgEndedTime() { return m_AvgEndedTime; };
+		///\returns the average present time (s)
+		float			 getAvgPresentTime() { return m_AvgPresentTime; };
+		///\returns the average prep overlay time (s)
+		float			 getAvgPrepOvlTime() { return m_AvgPrepOvlTime; };
+		///\returns the average draw overlay time (s)
+		float			 getAvgDrawOvlTime() { return m_AvgDrawOvlTime; };
 	};
 
 }

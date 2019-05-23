@@ -43,6 +43,10 @@ namespace ve {
 		createWindow();						//create a window
 		m_pWindow->initWindow(800, 600);	//inittialize the window
 
+		m_maxThreads = 20;
+		m_threadPool = new ThreadPool(m_maxThreads); //worker threads
+		m_threadPool->init();
+
 		std::vector<const char*> instanceExtensions = getRequiredInstanceExtensions();
 		std::vector<const char*> validationLayers = getValidationLayers();
 		vhDevCreateInstance(instanceExtensions, validationLayers, &m_instance);
@@ -108,6 +112,8 @@ namespace ve {
 	* \brief Close the engine, delete all resources.
 	*/
 	void VEEngine::closeEngine() {
+		m_threadPool->shutdown();
+		delete m_threadPool;
 
 		clearEventListenerList();
 		m_eventlist.clear();
@@ -138,6 +144,7 @@ namespace ve {
 		}
 		return validationLayers;
 	}
+
 
 	/**
 	* \returns a list of Vulkan API instance extensions that are required.
@@ -231,7 +238,6 @@ namespace ve {
 	}
 
 	
-
 	/**
 	*
 	* \brief Remove an event listener.
@@ -266,7 +272,6 @@ namespace ve {
 	};
 
 
-
 	/**
 	*
 	* \brief Destroy all event listeners
@@ -297,7 +302,6 @@ namespace ve {
 	}
 
 
-
 	/**
 	*
 	* \brief Call all event listeners.
@@ -320,16 +324,11 @@ namespace ve {
 			uint32_t numListenerPerThread = (uint32_t)list->size() / numThreads;
 
 			uint32_t startIdx, endIdx;
-			std::vector<std::thread> threads;
-			threads.resize(numThreads);
-
 			for (uint32_t k = 0; k < numThreads; k++) {
 				startIdx = k*numListenerPerThread;
-				endIdx = k < numThreads - 1 ? (k+1)*numListenerPerThread-1 : (uint32_t)list->size()-1;
-				threads[k] = std::thread([=]() { this->callListeners(dt, event, list, startIdx, endIdx); });
-			}
-			for (uint32_t k = 0; k < numThreads; k++) {
-				threads[k].join();
+				endIdx = k == numThreads - 1 ? (uint32_t)list->size()-1 : (k+1)*numListenerPerThread-1;
+				auto future = m_threadPool->submit([=]() { this->callListeners(dt, event, list, startIdx, endIdx);  });
+				if (k == numThreads - 1) future.get();	//wait for the last thread to finish
 			}
 		}
 		else {
@@ -510,11 +509,13 @@ namespace ve {
 
 		while ( !m_end_running) {
 			m_dt = vh::vhTimeDuration( t_prev );
-			t_prev = vh::vhTimeNow();
 			m_AvgFrameTime = vh::vhAverage( (float)m_dt, m_AvgFrameTime );
+			t_prev = vh::vhTimeNow();
 
+			t_now = vh::vhTimeNow();
 			veEvent event(VE_EVENT_FRAME_STARTED);	//notify all listeners that a new frame starts
 			callListeners(m_dt, event);
+			m_AvgStartedTime = vh::vhAverage(vh::vhTimeDuration(t_now), m_AvgStartedTime);
 
 			m_pWindow->pollEvents();			//poll window events which should be injected into the event queue
 
@@ -524,7 +525,9 @@ namespace ve {
 				m_framebufferResized = false;
 			}
 			
+			t_now = vh::vhTimeNow();
 			processEvents(m_dt);				//process all current events, including pressed keys
+			m_AvgEventTime = vh::vhAverage(vh::vhTimeDuration(t_now), m_AvgEventTime);
 
 			t_now = vh::vhTimeNow();
 			getSceneManagerPointer()->updateSceneNodes( getRendererPointer()->getImageIndex());	//update scene node UBOs
@@ -534,14 +537,22 @@ namespace ve {
 			m_pRenderer->drawFrame();			//draw the next frame
 			m_AvgDrawTime = vh::vhAverage(vh::vhTimeDuration(t_now), m_AvgDrawTime);
 
+			t_now = vh::vhTimeNow();
 			m_pRenderer->prepareOverlay();
+			m_AvgPrepOvlTime = vh::vhAverage(vh::vhTimeDuration(t_now), m_AvgPrepOvlTime);
 
-			event.type = VE_EVENT_FRAME_ENDED;	//notify all listeners that the frame ended
+			t_now = vh::vhTimeNow();
+			event.type = VE_EVENT_FRAME_ENDED;	//notify all listeners that the frame ended, e.g. fill cmd buffers for overlay
 			callListeners(m_dt, event);
+			m_AvgEndedTime = vh::vhAverage(vh::vhTimeDuration(t_now), m_AvgEndedTime);
 
+			t_now = vh::vhTimeNow();
 			m_pRenderer->drawOverlay();			//draw overlay or post processing
+			m_AvgDrawOvlTime = vh::vhAverage(vh::vhTimeDuration(t_now), m_AvgDrawOvlTime);
 
+			t_now = vh::vhTimeNow();
 			m_pRenderer->presentFrame();		//present the next frame
+			m_AvgPresentTime = vh::vhAverage(vh::vhTimeDuration(t_now), m_AvgPresentTime);
 
 			m_loopCount++;
 		}

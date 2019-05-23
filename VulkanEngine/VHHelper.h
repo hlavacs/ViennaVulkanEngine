@@ -39,6 +39,7 @@
 #include "vk_mem_alloc.h"
 #include <stb_image.h>
 #include <stb_image_write.h>
+#include <ThreadPool.h>
 #include <gli/gli.hpp>
 #include "CLInclude.h"
 
@@ -167,7 +168,6 @@ namespace vh {
 	};
 
 
-
 	//--------------------------------------------------------------------------------------------------------------------------------
 	//declaration of all helper functions
 
@@ -184,10 +184,7 @@ namespace vh {
 	//--------------------------------------------------------------------------------------------------------------------------------
 	//instance (device)
 
-	std::chrono::high_resolution_clock::time_point vhTimeNow();
-	float vhTimeDuration(std::chrono::high_resolution_clock::time_point t_prev);
-	float vhAverage(float new_val, float avgerage, float weight = 0.8f );
-
+	//create a Vulkan instance
 	VkResult vhDevCreateInstance(std::vector<const char*> &extensions, std::vector<const char*> &validationLayers, VkInstance *instance);
 
 	//physical device
@@ -321,6 +318,12 @@ namespace vh {
 	//--------------------------------------------------------------------------------------------------------------------------------
 	//file
 	std::vector<char> vhFileRead(const std::string& filename);
+
+	//timing functions
+	std::chrono::high_resolution_clock::time_point vhTimeNow();
+	float vhTimeDuration(std::chrono::high_resolution_clock::time_point t_prev);
+	float vhAverage(float new_val, float avgerage, float weight = 0.8f);
+
 
 	//--------------------------------------------------------------------------------------------------------------------------------
 	//command

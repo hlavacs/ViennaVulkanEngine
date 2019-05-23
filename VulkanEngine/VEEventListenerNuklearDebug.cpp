@@ -19,25 +19,59 @@ namespace ve {
 		struct nk_context * ctx = pSubrender->getContext();
 
 		/* GUI */
-		if (nk_begin(ctx, "Statistics", nk_rect( 0, 0, 200, 200 ),
+		if (nk_begin(ctx, "Statistics", nk_rect( 0, 0, 200, 500 ),
 			NK_WINDOW_BORDER | NK_WINDOW_MOVABLE | NK_WINDOW_SCALABLE | NK_WINDOW_MINIMIZABLE | NK_WINDOW_TITLE))
 		{
 			char outbuffer[100];
+			nk_layout_row_dynamic(ctx, 30, 1);
+			nk_label(ctx, "LOOP", NK_TEXT_LEFT);
 
 			nk_layout_row_dynamic(ctx, 30, 1);
-			sprintf(outbuffer, "Frametime (ms): %4.1f", getEnginePointer()->getAvgFrameTime()*1000.0f );
+			sprintf(outbuffer, "  Frametime (ms): %4.1f", getEnginePointer()->getAvgFrameTime()*1000.0f );
 			nk_label(ctx, outbuffer, NK_TEXT_LEFT);
 
 			nk_layout_row_dynamic(ctx, 30, 1);
-			sprintf(outbuffer, "Updatetime (ms): %4.1f", getEnginePointer()->getAvgUpdateTime()*1000.0f);
+			sprintf(outbuffer, "  Started (ms): %4.1f", getEnginePointer()->getAvgStartedTime()*1000.0f);
 			nk_label(ctx, outbuffer, NK_TEXT_LEFT);
 
 			nk_layout_row_dynamic(ctx, 30, 1);
-			sprintf(outbuffer, "Shadowtime (ms): %4.1f", getRendererForwardPointer()->m_AvgCmdShadowTime*1000.0f);
+			sprintf(outbuffer, "  Events(ms): %4.1f", getEnginePointer()->getAvgEventTime()*1000.0f);
 			nk_label(ctx, outbuffer, NK_TEXT_LEFT);
 
 			nk_layout_row_dynamic(ctx, 30, 1);
-			sprintf(outbuffer, "Ligthtime (ms): %4.1f", getRendererForwardPointer()->m_AvgCmdLightTime*1000.0f);
+			sprintf(outbuffer, "  Updates (ms): %4.1f", getEnginePointer()->getAvgUpdateTime()*1000.0f);
+			nk_label(ctx, outbuffer, NK_TEXT_LEFT);
+
+			nk_layout_row_dynamic(ctx, 30, 1);
+			sprintf(outbuffer, "  Draw (ms): %4.1f", getEnginePointer()->getAvgDrawTime()*1000.0f);
+			nk_label(ctx, outbuffer, NK_TEXT_LEFT);
+
+			nk_layout_row_dynamic(ctx, 30, 1);
+			sprintf(outbuffer, "  Prep Ovl (ms): %4.1f", getEnginePointer()->getAvgPrepOvlTime()*1000.0f);
+			nk_label(ctx, outbuffer, NK_TEXT_LEFT);
+
+			nk_layout_row_dynamic(ctx, 30, 1);
+			sprintf(outbuffer, "  Ended (ms): %4.1f", getEnginePointer()->getAvgEndedTime()*1000.0f);
+			nk_label(ctx, outbuffer, NK_TEXT_LEFT);
+
+			nk_layout_row_dynamic(ctx, 30, 1);
+			sprintf(outbuffer, "  Draw Ovl (ms): %4.1f", getEnginePointer()->getAvgDrawOvlTime()*1000.0f);
+			nk_label(ctx, outbuffer, NK_TEXT_LEFT);
+
+			nk_layout_row_dynamic(ctx, 30, 1);
+			sprintf(outbuffer, "  Present (ms): %4.1f", getEnginePointer()->getAvgPresentTime()*1000.0f);
+			nk_label(ctx, outbuffer, NK_TEXT_LEFT);
+
+			//----------------------------------------------------------
+			nk_layout_row_dynamic(ctx, 30, 1);
+			nk_label(ctx, "RECORDING", NK_TEXT_LEFT);
+
+			nk_layout_row_dynamic(ctx, 30, 1);
+			sprintf(outbuffer, "  Record shadow (ms): %4.1f", getRendererForwardPointer()->m_AvgCmdShadowTime*1000.0f);
+			nk_label(ctx, outbuffer, NK_TEXT_LEFT);
+
+			nk_layout_row_dynamic(ctx, 30, 1);
+			sprintf(outbuffer, "  Record light (ms): %4.1f", getRendererForwardPointer()->m_AvgCmdLightTime*1000.0f);
 			nk_label(ctx, outbuffer, NK_TEXT_LEFT);
 
 		}

@@ -72,7 +72,7 @@
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <LinkIncremental>false</LinkIncremental>
-    <IncludePath>$(SolutionDir)\external\VulkanSDK\1.1.106.0\Include;$(SolutionDir)\external\glm;$(SolutionDir)\external\stb;$(SolutionDir)\external\glfw\glfw-3.2.1.bin.WIN32\include;$(SolutionDir)\external\Assimp\include;$(SolutionDir)\external\gli-master;$(SolutionDir)\external\nuklear;$(IncludePath)</IncludePath>
+    <IncludePath>$(SolutionDir)\external\VulkanSDK\1.1.106.0\Include;$(SolutionDir)\external\glm;$(SolutionDir)\external\stb;$(SolutionDir)\external\glfw\glfw-3.2.1.bin.WIN32\include;$(SolutionDir)\external\Assimp\include;$(SolutionDir)\external\gli-master;$(SolutionDir)\external\nuklear;$(SolutionDir)\external\threadpool;$(IncludePath)</IncludePath>
     <LibraryPath>$(SolutionDir)\external\VulkanSDK\1.1.106.0\Lib32;$(SolutionDir)\external\glfw\glfw-3.2.1.bin.WIN32\lib-vc2015;$(SolutionDir)\external\Assimp\lib\x86\Debug;$(LibraryPath)</LibraryPath>
     <OutDir>$(SolutionDir)\bin\$(Platform)\$(Configuration)\</OutDir>
     <IntDir>$(SolutionDir)\bin\$(Platform)\$(Configuration)\</IntDir>
@@ -80,7 +80,7 @@
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <LinkIncremental>false</LinkIncremental>
-    <IncludePath>$(SolutionDir)\external\VulkanSDK\1.1.106.0\Include;$(SolutionDir)\external\glm;$(SolutionDir)\external\stb;$(SolutionDir)\external\glfw\glfw-3.2.1.bin.WIN64\include;$(SolutionDir)\external\Assimp\include;$(SolutionDir)\external\gli-master;$(SolutionDir)\external\nuklear;$(IncludePath)</IncludePath>
+    <IncludePath>$(SolutionDir)\external\VulkanSDK\1.1.106.0\Include;$(SolutionDir)\external\glm;$(SolutionDir)\external\stb;$(SolutionDir)\external\glfw\glfw-3.2.1.bin.WIN64\include;$(SolutionDir)\external\Assimp\include;$(SolutionDir)\external\gli-master;$(SolutionDir)\external\nuklear;$(SolutionDir)\external\threadpool;$(IncludePath)</IncludePath>
     <LibraryPath>$(SolutionDir)\external\glfw\glfw-3.2.1.bin.WIN64\lib-vc2015;$(SolutionDir)\external\VulkanSDK\1.1.106.0\Lib;$(SolutionDir)\external\Assimp\lib\x64\Debug;$(LibraryPath)</LibraryPath>
     <OutDir>$(SolutionDir)\bin\$(Platform)\$(Configuration)\</OutDir>
     <IntDir>$(SolutionDir)\bin\$(Platform)\$(Configuration)\</IntDir>
@@ -88,7 +88,7 @@
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <LinkIncremental>false</LinkIncremental>
-    <IncludePath>$(SolutionDir)\external\VulkanSDK\1.1.106.0\Include;$(SolutionDir)\external\glm;$(SolutionDir)\external\stb;$(SolutionDir)\external\glfw\glfw-3.2.1.bin.WIN32\include;$(SolutionDir)\external\Assimp\include;$(SolutionDir)\external\gli-master;$(SolutionDir)\external\nuklear;$(IncludePath)</IncludePath>
+    <IncludePath>$(SolutionDir)\external\VulkanSDK\1.1.106.0\Include;$(SolutionDir)\external\glm;$(SolutionDir)\external\stb;$(SolutionDir)\external\glfw\glfw-3.2.1.bin.WIN32\include;$(SolutionDir)\external\Assimp\include;$(SolutionDir)\external\gli-master;$(SolutionDir)\external\nuklear;$(SolutionDir)\external\threadpool;$(IncludePath)</IncludePath>
     <LibraryPath>$(SolutionDir)\external\VulkanSDK\1.1.106.0\Lib32;$(SolutionDir)\external\glfw\glfw-3.2.1.bin.WIN32\lib-vc2015;$(SolutionDir)\external\Assimp\lib\x86\Release;$(LibraryPath)</LibraryPath>
     <IntDir>$(SolutionDir)\bin\$(Platform)\$(Configuration)\</IntDir>
     <OutDir>$(SolutionDir)\bin\$(Platform)\$(Configuration)\</OutDir>
@@ -96,7 +96,7 @@
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <LinkIncremental>false</LinkIncremental>
-    <IncludePath>$(SolutionDir)\external\VulkanSDK\1.1.106.0\Include;$(SolutionDir)\external\glm;$(SolutionDir)\external\stb;$(SolutionDir)\external\glfw\glfw-3.2.1.bin.WIN64\include;$(SolutionDir)\external\Assimp\include;$(SolutionDir)\external\gli-master;$(SolutionDir)\external\nuklear;$(IncludePath)</IncludePath>
+    <IncludePath>$(SolutionDir)\external\VulkanSDK\1.1.106.0\Include;$(SolutionDir)\external\glm;$(SolutionDir)\external\stb;$(SolutionDir)\external\glfw\glfw-3.2.1.bin.WIN64\include;$(SolutionDir)\external\Assimp\include;$(SolutionDir)\external\gli-master;$(SolutionDir)\external\nuklear;$(SolutionDir)\external\threadpool;$(IncludePath)</IncludePath>
     <LibraryPath>$(SolutionDir)\external\glfw\glfw-3.2.1.bin.WIN64\lib-vc2015;$(SolutionDir)\external\VulkanSDK\1.1.106.0\Lib;$(SolutionDir)\external\Assimp\lib\x64\Release;$(LibraryPath)</LibraryPath>
     <OutDir>$(SolutionDir)\bin\$(Platform)\$(Configuration)\</OutDir>
     <IntDir>$(SolutionDir)\bin\$(Platform)\$(Configuration)\</IntDir>

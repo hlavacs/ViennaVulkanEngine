@@ -80,7 +80,7 @@ namespace ve {
 		VECamera *camera = new VECameraProjective("StandardCamera", 0.1f, 500.0f, extent.width/ (float)extent.height, 45.0f);
 		camera->lookAt(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f), glm::vec3(0.0f, 1.0f, 0.0f));
 		cameraParent->addChild(camera);
-		addSceneNode(camera );
+		addSceneNode2(camera );
 		setCamera( camera );
 
 		//use one light source
@@ -89,7 +89,7 @@ namespace ve {
 		light1->m_col_ambient = glm::vec4(0.1f, 0.1f, 0.1f, 1.0f);
 		light1->m_col_diffuse = glm::vec4(0.5f, 0.5f, 0.5f, 1.0f);
 		light1->m_col_specular = glm::vec4(0.1f, 0.1f, 0.1f, 1.0f);
-		addSceneNode(light1, m_rootSceneNode );
+		addSceneNode2(light1, m_rootSceneNode );
 		switchOnLight(light1);
 
 		VELight *light2 = new VESpotLight("StandardSpotLight");
@@ -97,7 +97,7 @@ namespace ve {
 		light2->m_col_diffuse = glm::vec4(0.99f, 0.6f, 0.6f, 1.0f);
 		light2->m_col_specular = glm::vec4(0.0f, 0.0f, 0.0f, 1.0f);
 		//light2->lookAt(glm::vec3(0.0f, 20.0f, 20.0f), glm::vec3(0.0f, 0.0f, 1.0f), glm::vec3(0.0f, 1.0f, 0.0f));
-		addSceneNode(light2, m_rootSceneNode );
+		addSceneNode2(light2, m_rootSceneNode );
 		camera->addChild(light2);
 		light2->multiplyTransform(glm::translate(glm::vec3(5.0f, 0.0f, 0.0f)));
 		switchOnLight(light2);
@@ -107,7 +107,7 @@ namespace ve {
 		light3->m_col_diffuse = glm::vec4(0.99f, 0.99f, 0.6f, 1.0f);
 		light3->m_col_specular = glm::vec4(0.0f, 0.0f, 0.0f, 1.0f);
 		light3->m_param[0] = 100.0f;
-		addSceneNode(light3, m_rootSceneNode );
+		addSceneNode2(light3, m_rootSceneNode );
 		camera->addChild(light3);
 		light3->multiplyTransform(glm::translate(glm::vec3(0.0f, 0.0f, 15.0f)));
 		switchOnLight(light3);
@@ -136,6 +136,8 @@ namespace ve {
 												uint32_t aiFlags, 
 												std::vector<VEMesh*> &meshes, 
 												std::vector<VEMaterial*> &materials) {
+		lockSceneManager();
+
 		Assimp::Importer importer;
 
 		std::string filekey = basedir + "/" + filename;
@@ -153,12 +155,14 @@ namespace ve {
 
 		if (pScene == nullptr) {
 			getEnginePointer()->fatalError("Error: Could not load asset file " + filekey + "!");
+			unlockSceneManager();
 			return nullptr;
 		}
 
 		createMeshes(pScene, filekey, meshes);					//create new meshes if any
 		createMaterials(pScene, basedir, filekey, materials);	//create new materials if any
 
+		unlockSceneManager();
 		return pScene;
 	}
 
@@ -184,8 +188,11 @@ namespace ve {
 												uint32_t aiFlags, 
 												VESceneNode *parent) {
 
+		lockSceneManager();
+
 		VESceneNode *pMO = m_sceneNodes[entityName];	//if an entity with this name exists return it
 		if (pMO != nullptr) {
+			unlockSceneManager();
 			return pMO;
 		}
 
@@ -206,6 +213,7 @@ namespace ve {
 
 		if (pScene == nullptr) {
 			getEnginePointer()->fatalError("Error: Could not load asset file " + filekey + "!");
+			unlockSceneManager();
 			return nullptr;
 		}
 
@@ -220,6 +228,7 @@ namespace ve {
 
 		sceneGraphChanged();	//notify renderer to rerecord the cmd buffers
 
+		unlockSceneManager();
 		return pMO;
 	}
 
@@ -301,6 +310,7 @@ namespace ve {
 			meshes.push_back(pMesh);
 		}
 	}
+
 
 	/**
 	*
@@ -389,6 +399,7 @@ namespace ve {
 		}
 	}
 
+
 	//-----------------------------------------------------------------------------------------
 	//create complex scene nodes and entities
 
@@ -404,7 +415,9 @@ namespace ve {
 	*
 	*/
 	VESceneNode * VESceneManager::createSceneNode(std::string objectName, glm::mat4 transf, VESceneNode *parent) {
+		lockSceneManager();
 		VESceneNode * pNode = createSceneNode2( objectName, transf, parent );
+		unlockSceneManager();
 
 		return pNode;
 	}
@@ -468,7 +481,9 @@ namespace ve {
 	VEEntity * VESceneManager::createEntity(std::string entityName, VEEntity::veEntityType type,
 											VEMesh *pMesh, VEMaterial *pMat, glm::mat4 transf, VESceneNode *parent) {
 
+		lockSceneManager();
 		VEEntity *pEntity = createEntity2(entityName, type, pMesh, pMat, transf, parent);
+		unlockSceneManager();
 
 		return pEntity;
 	}
@@ -490,7 +505,7 @@ namespace ve {
 												VEMesh *pMesh, VEMaterial *pMat, 
 												glm::mat4 transf, VESceneNode *parent) {
 		VEEntity *pEntity = new VEEntity(entityName, type, pMesh, pMat, transf, parent);
-		addSceneNode(pEntity);				// store entity in the entity array
+		addSceneNode2(pEntity);				// store entity in the entity array
 
 		if (pMesh != nullptr && pMat != nullptr) {
 			getRendererPointer()->addEntityToSubrenderer(pEntity);
@@ -516,7 +531,10 @@ namespace ve {
 	*
 	*/
 	VEEntity *	VESceneManager::createSkyplane(std::string entityName, std::string basedir, std::string texName) {
+		lockSceneManager();
 		VEEntity *pEntity = createSkyplane2(entityName, basedir, texName);
+		unlockSceneManager();
+
 		return pEntity;
 	}
 
@@ -569,6 +587,8 @@ namespace ve {
 	*/
 	VESceneNode * VESceneManager::createSkybox(	std::string entityName, std::string basedir,
 												std::vector<std::string> texNames) {
+		lockSceneManager();
+
 		std::string filekey = basedir + "/";
 		std::string addstring = "";
 		for (auto filename : texNames) {
@@ -619,12 +639,26 @@ namespace ve {
 		sp1->m_castsShadow = false;
 
 		sceneGraphChanged();
+		unlockSceneManager();
+
 		return parent;
 	}
 
 
 	//----------------------------------------------------------------------------------------------------------------
 	//scene management stuff
+
+	///\brief lock the scene manager mutex
+	void VESceneManager::lockSceneManager() {
+		m_mutex.lock(); 
+	};
+
+	
+	///\brief unlock the scene manager mutex
+	void VESceneManager::unlockSceneManager() {
+		m_mutex.unlock(); 
+	};
+
 
 	/**
 	* \brief This should be called whenever the scene graph ist changed
@@ -644,11 +678,13 @@ namespace ve {
 	*
 	*/
 	void VESceneManager::updateSceneNodes(uint32_t imageIndex ) {
+		lockSceneManager();
 		m_rootSceneNode->update( imageIndex );
 
 		for (auto list : m_memoryBlockMap) {
 			vh::vhMemBlockUpdateBlockList(list.second, imageIndex );
 		}
+		unlockSceneManager();
 	}
 
 
@@ -664,7 +700,9 @@ namespace ve {
 	*
 	*/
 	void VESceneManager::addSceneNode(VESceneNode *pNode, VESceneNode *parent) {
+		lockSceneManager();
 		addSceneNode2(pNode, parent);
+		unlockSceneManager();
 	}
 
 
@@ -704,10 +742,16 @@ namespace ve {
 	*
 	*/
 	VESceneNode * VESceneManager::getSceneNode(std::string name) {
-		if (m_sceneNodes.count(name) > 0) 
-			return m_sceneNodes[name];
+		lockSceneManager();
 
-		return nullptr;
+		VESceneNode * pNode = nullptr;
+
+		if (m_sceneNodes.count(name) > 0) 
+			pNode = m_sceneNodes[name];
+
+		unlockSceneManager();
+
+		return pNode;
 	}
 
 
@@ -719,7 +763,9 @@ namespace ve {
 	*
 	*/
 	void VESceneManager::removeSceneNode(std::string name) {
+		lockSceneManager();
 		m_sceneNodes.erase(name);
+		unlockSceneManager();
 	}
 
 
@@ -731,9 +777,14 @@ namespace ve {
 	*
 	*/
 	void VESceneManager::deleteSceneNodeAndChildren(std::string name) {
+		lockSceneManager();
+
 		VESceneNode * pNode = m_sceneNodes[name];
-		if (pNode == nullptr) return;
-		if (pNode->m_parent != nullptr) pNode->m_parent->removeChild(pNode);
+		if (pNode == nullptr) {
+			unlockSceneManager();
+			return;
+		}
+		if (pNode->getParent() != nullptr) pNode->getParent()->removeChild(pNode);
 
 		std::vector<std::string> namelist;	//first create a list of all child names
 		createSceneNodeList2(pNode, namelist);
@@ -751,6 +802,7 @@ namespace ve {
 			delete pNode;
 		}
 		sceneGraphChanged();
+		unlockSceneManager();
 	}
 
 
@@ -765,7 +817,9 @@ namespace ve {
 	*
 	*/
 	void VESceneManager::createSceneNodeList(VESceneNode *pObject, std::vector<std::string> &namelist) {
+		lockSceneManager();
 		createSceneNodeList2(pObject, namelist);
+		unlockSceneManager();
 	}
 
 
@@ -780,8 +834,8 @@ namespace ve {
 	void VESceneManager::createSceneNodeList2(VESceneNode *pObject, std::vector<std::string> &namelist) {
 		namelist.push_back(pObject->getName());
 
-		for( uint32_t i=0; i<pObject->m_children.size(); i++ ) {
-			createSceneNodeList2(pObject->m_children[i], namelist );
+		for( uint32_t i=0; i<pObject->getChildrenList().size(); i++ ) {
+			createSceneNodeList2(pObject->getChildrenList()[i], namelist );
 		}
 	}
 
@@ -795,7 +849,11 @@ namespace ve {
 	*
 	*/
 	VEMesh * VESceneManager::getMesh(std::string name) {
-		return m_meshes[name]; 
+		lockSceneManager();
+		VEMesh *pMesh = m_meshes[name];
+		unlockSceneManager();
+
+		return pMesh;
 	};
 
 
@@ -807,11 +865,15 @@ namespace ve {
 	*
 	*/
 	void VESceneManager::deleteMesh(std::string name) {
+		lockSceneManager();
+
 		VEMesh * pMesh = m_meshes[name];
 		if (pMesh != nullptr) {
 			m_meshes.erase(name);
 			delete pMesh;
 		}
+
+		unlockSceneManager();
 	}
 
 
@@ -821,7 +883,10 @@ namespace ve {
 	* \returns a material given its name
 	*/
 	VEMaterial * VESceneManager::getMaterial(std::string name) {
-		return m_materials[name]; 
+		lockSceneManager();
+		VEMaterial * pMat =  m_materials[name];
+		unlockSceneManager();
+		return pMat;
 	};
 
 
@@ -833,11 +898,14 @@ namespace ve {
 	*
 	*/
 	void VESceneManager::deleteMaterial(std::string name) {
+		lockSceneManager();
+
 		VEMaterial * pMat = m_materials[name];
 		if (pMat != nullptr) {
 			m_materials.erase(name);
 			delete pMat;
 		}
+		unlockSceneManager();
 	}
 
 
@@ -852,8 +920,10 @@ namespace ve {
 	*
 	*/
 	void  VESceneManager::switchOnLight(VELight * light) {
+		lockSceneManager();
 		m_lights.push_back(light); 
 		sceneGraphChanged();
+		unlockSceneManager();
 	};
 
 
@@ -868,6 +938,7 @@ namespace ve {
 	*
 	*/
 	void  VESceneManager::switchOffLight(VELight *light) {
+		lockSceneManager();
 		for (uint32_t i = 0; i < m_lights.size(); i++) {
 			if (light == m_lights[i]) {
 				m_lights[i] = m_lights[m_lights.size() - 1];	//overwrite with last light
@@ -875,6 +946,7 @@ namespace ve {
 			}
 		}
 		sceneGraphChanged();
+		unlockSceneManager();
 	}
 
 
@@ -898,9 +970,11 @@ namespace ve {
 	* \brief Print a list of all entities to the console.
 	*/
 	void VESceneManager::printSceneNodes() {
+		lockSceneManager();
 		for (auto pEnt : m_sceneNodes) {
 			std::cout << pEnt.second->getName() << "\n";
 		}
+		unlockSceneManager();
 	}
 
 
@@ -912,10 +986,12 @@ namespace ve {
 	*
 	*/
 	void VESceneManager::printTree(VESceneNode *root ) {
+		lockSceneManager();
 		std::cout << root->getName() << "\n";
-		for (uint32_t i = 0; i < root->m_children.size(); i++) {
-			printTree( root->m_children[i] );
+		for (uint32_t i = 0; i < root->getChildrenList().size(); i++) {
+			printTree( root->getChildrenList()[i] );
 		}
+		unlockSceneManager();
 	}
 
 
