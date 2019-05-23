@@ -37,6 +37,10 @@ namespace ve {
 			onFrameEnded(event);
 			return false;
 			break;
+		case VE_EVENT_DRAW_OVERLAY:
+			onDrawOverlay(event);
+			return false;
+			break;
 		case VE_EVENT_KEYBOARD:
 			return onKeyboard(event);
 			break;

@@ -22,7 +22,7 @@ namespace ve {
 	class VEEventListenerNuklear : public VEEventListener {
 
 	protected:
-		virtual void onFrameEnded(veEvent event);
+		virtual void onDrawOverlay(veEvent event);
 
 	public:
 		enum { UP, DOWN };						///<example data

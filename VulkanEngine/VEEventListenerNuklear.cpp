@@ -16,7 +16,7 @@ namespace ve {
 	* \param[in] event The frame ended event
 	*
 	*/
-	void VEEventListenerNuklear::onFrameEnded(veEvent event) {
+	void VEEventListenerNuklear::onDrawOverlay(veEvent event) {
 		VESubrenderFW_Nuklear * pSubrender = (VESubrenderFW_Nuklear*)getRendererPointer()->getOverlay();
 		if (pSubrender == nullptr) return;
 

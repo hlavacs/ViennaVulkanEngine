@@ -26,7 +26,7 @@ namespace ve {
 	class VEEventListenerNuklearDebug : public VEEventListener {
 
 	protected:
-		virtual void onFrameEnded(veEvent event);
+		virtual void onDrawOverlay(veEvent event);
 
 	public:
 		///Constructor of class VEEventListenerNuklearError

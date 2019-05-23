@@ -512,10 +512,16 @@ namespace ve {
 			m_AvgFrameTime = vh::vhAverage( (float)m_dt, m_AvgFrameTime );
 			t_prev = vh::vhTimeNow();
 
+			//----------------------------------------------------------------------------------
+			//process frame begin
+
 			t_now = vh::vhTimeNow();
 			veEvent event(VE_EVENT_FRAME_STARTED);	//notify all listeners that a new frame starts
 			callListeners(m_dt, event);
 			m_AvgStartedTime = vh::vhAverage(vh::vhTimeDuration(t_now), m_AvgStartedTime);
+
+			//----------------------------------------------------------------------------------
+			//get and process window events
 
 			m_pWindow->pollEvents();			//poll window events which should be injected into the event queue
 
@@ -529,26 +535,46 @@ namespace ve {
 			processEvents(m_dt);				//process all current events, including pressed keys
 			m_AvgEventTime = vh::vhAverage(vh::vhTimeDuration(t_now), m_AvgEventTime);
 
+			//----------------------------------------------------------------------------------
+			//update world matrices and send them to the GPU
+
 			t_now = vh::vhTimeNow();
 			getSceneManagerPointer()->updateSceneNodes( getRendererPointer()->getImageIndex());	//update scene node UBOs
 			m_AvgUpdateTime = vh::vhAverage(vh::vhTimeDuration(t_now), m_AvgUpdateTime);
 
+			//----------------------------------------------------------------------------------
+			//submit the cmd buffer to the GPU
+
 			t_now = vh::vhTimeNow();
 			m_pRenderer->drawFrame();			//draw the next frame
 			m_AvgDrawTime = vh::vhAverage(vh::vhTimeDuration(t_now), m_AvgDrawTime);
+
+			//----------------------------------------------------------------------------------
+			//Overlay
 
 			t_now = vh::vhTimeNow();
 			m_pRenderer->prepareOverlay();
 			m_AvgPrepOvlTime = vh::vhAverage(vh::vhTimeDuration(t_now), m_AvgPrepOvlTime);
 
 			t_now = vh::vhTimeNow();
-			event.type = VE_EVENT_FRAME_ENDED;	//notify all listeners that the frame ended, e.g. fill cmd buffers for overlay
+			event.type = VE_EVENT_DRAW_OVERLAY;		//notify all listeners that they can draw an overlay now
 			callListeners(m_dt, event);
 			m_AvgEndedTime = vh::vhAverage(vh::vhTimeDuration(t_now), m_AvgEndedTime);
 
 			t_now = vh::vhTimeNow();
-			m_pRenderer->drawOverlay();			//draw overlay or post processing
+			m_pRenderer->drawOverlay();			//draw overlay in the subrenderer
 			m_AvgDrawOvlTime = vh::vhAverage(vh::vhTimeDuration(t_now), m_AvgDrawOvlTime);
+
+			//----------------------------------------------------------------------------------
+			//Frame ended
+
+			t_now = vh::vhTimeNow();
+			event.type = VE_EVENT_FRAME_ENDED;	//notify all listeners that the frame ended, e.g. fill cmd buffers for overlay
+			callListeners(m_dt, event);
+			m_AvgEndedTime = vh::vhAverage(vh::vhTimeDuration(t_now), m_AvgEndedTime);
+
+			//----------------------------------------------------------------------------------
+			//present the finished frame
 
 			t_now = vh::vhTimeNow();
 			m_pRenderer->presentFrame();		//present the next frame

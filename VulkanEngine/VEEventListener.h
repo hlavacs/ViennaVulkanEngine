@@ -35,6 +35,7 @@ namespace ve {
 		VE_EVENT_NONE=0,			///<Empty event
 		VE_EVENT_FRAME_STARTED,		///<The frame has been started
 		VE_EVENT_FRAME_ENDED,		///<The frame has been rendered and is ready to be presented
+		VE_EVENT_DRAW_OVERLAY,		///<Draw overlays
 		VE_EVENT_KEYBOARD,			///<A keyboard event
 		VE_EVENT_MOUSEMOVE,			///<The mouse has been moved
 		VE_EVENT_MOUSEBUTTON,		///<A mouse button event
@@ -96,10 +97,19 @@ namespace ve {
 	protected:
 		virtual bool onEvent(veEvent event);
 
+		//-------------------------------------------------------------------------------
+		//Running the render loop
+
 		///Before frame rendering and all event processing. Event cannot be consumed.
 		virtual void onFrameStarted(veEvent event) {};
 		///After frame rendering and all event processing. Event cannot be consumed.
 		virtual void onFrameEnded(veEvent event) {};
+		///Draw an overlay
+		virtual void onDrawOverlay(veEvent event) {};
+
+		//-------------------------------------------------------------------------------
+		//window events
+
 		///Keyboard event.  Event can be consumed.
 		virtual bool onKeyboard(veEvent event) { return false; };
 		///Mouse move event.  Event cann be consumed.
