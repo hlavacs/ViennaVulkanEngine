@@ -43,7 +43,7 @@ namespace ve {
 		createWindow();						//create a window
 		m_pWindow->initWindow(800, 600);	//inittialize the window
 
-		m_maxThreads = 20;
+		m_maxThreads = 20;					//enable multithreading
 		m_threadPool = new ThreadPool(m_maxThreads); //worker threads
 		m_threadPool->init();
 
@@ -318,7 +318,7 @@ namespace ve {
 	void VEEngine::callListeners(double dt, veEvent event, std::vector<VEEventListener*> *list ) {
 		event.dt = dt;
 
-		if ( !getRendererForwardPointer()->isRecording() && list->size()>200 ) {
+		if ( m_maxThreads>1 && !getRendererForwardPointer()->isRecording() && list->size()>200 ) {
 			int div = 100;
 			uint32_t numThreads =  std::min((int)list->size()/div, (int)m_maxThreads);
 			uint32_t numListenerPerThread = (uint32_t)list->size() / numThreads;

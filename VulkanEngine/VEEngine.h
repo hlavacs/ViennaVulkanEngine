@@ -93,13 +93,20 @@ namespace ve {
 		virtual void closeEngine();				//Close down the engine
 
 	public:
-		VEEngine( bool debug = false );								//Only create ONE instance of the engine!
+		VEEngine( bool debug = false );			//Only create ONE instance of the engine!
 		~VEEngine() {};
+
+		//-----------------------------------------------------------------------------------------------
+		//managing the engine
 
 		virtual void initEngine();							//Create all engine components
 		virtual void run();									//Enter the render loop
 		virtual void fatalError(std::string message);		//Show an error message and close down the engine
 		virtual void end();									//end the render loop
+
+		//-----------------------------------------------------------------------------------------------
+		//managing events and listeners
+
 		void registerEventListener(VEEventListener *lis);	//Register a new event listener.
 		void registerEventListener(VEEventListener *lis, std::vector<veEventType> eventTypes);	//Register a new event listener for these events only
 		VEEventListener* getEventListener(std::string name);	//get pointer to an event listener
@@ -109,6 +116,9 @@ namespace ve {
 		void clearEventListenerList();
 		void addEvent(veEvent event);						//Add an event to the event list - will be handled in the next loop
 		void deleteEvent(veEvent event);					//Delete an event from the event list
+
+		//-----------------------------------------------------------------------------------------------
+		//get information and pointers
 
 		VkInstance		 getInstance();				//Return the Vulkan instance
 		VEWindow       * getWindow();				//Return a pointer to the window instance
