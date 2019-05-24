@@ -69,10 +69,6 @@ namespace ve {
 		VEEntity *		createSkyplane2(std::string entityName, std::string basedir, std::string texName);
 		void			sceneGraphChanged();			//tell renderer to rerecord the cmd buffers
 
-		//locking and unlocking the scene manager for thread safety
-		void lockSceneManager();	//lock the scene manager mutex		
-		void unlockSceneManager();	//unlock the scene manager mutex
-
 	public:
 		///Constructor of class VESceneManager
 		VESceneManager();

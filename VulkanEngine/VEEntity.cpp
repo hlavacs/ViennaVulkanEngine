@@ -847,7 +847,7 @@ namespace ve {
 
 			glm::vec3 center;
 			getOBB(pointsW, 0.0f, 1.0f, center, pShadowCamera->m_width, pShadowCamera->m_height, pShadowCamera->m_farPlane);
-			pShadowCamera->m_farPlane *= 5.0f;			//TODO - do NOT set too high or else shadow maps wont get drawn!
+			pShadowCamera->m_farPlane *= 8.0f;			//TODO - do NOT set too high or else shadow maps wont get drawn!
 
 			glm::mat4 W = getWorldTransform();
 			pShadowCamera->setTransform(W);
