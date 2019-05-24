@@ -29,45 +29,35 @@ namespace ve {
 	};
 
 
-
-	///simple event listener for managing light movement
-	class LightListener : public VEEventListener {
+	///simple event listener for loading levels
+	class LevelListener : public VEEventListener {
 	public:
 		///Constructor
-		LightListener( std::string name) : VEEventListener(name) {};
+		LevelListener(std::string name) : VEEventListener(name) {};
 
-		bool onKeyboard(veEvent event) {
-			if ( event.idata3 == GLFW_RELEASE) return false;
+		virtual bool onKeyboard(veEvent event) {
+			if (event.idata3 == GLFW_RELEASE) return false;
 
-			VELight *pLight = getSceneManagerPointer()->getLights()[0];		//first light
+			if (event.idata1 == GLFW_KEY_1 && event.idata3 == GLFW_PRESS) {
+				getSceneManagerPointer()->deleteScene();
+				getEnginePointer()->loadLevel(1);
+				return true;
+			}
 
-			float speed = 10.0f * (float)event.dt;
+			if (event.idata1 == GLFW_KEY_2 && event.idata3 == GLFW_PRESS) {
+				getSceneManagerPointer()->deleteScene();
+				getEnginePointer()->loadLevel(2);
+				return true;
+			}
 
-			switch (event.idata1) {
-			case GLFW_KEY_Y:		//Z key on German keyboard!
-				pLight->multiplyTransform(glm::translate(glm::mat4(1.0f), speed * glm::vec3(0.0f, -1.0f, 0.0f)));
-				break;
-			case GLFW_KEY_I:
-				pLight->multiplyTransform(glm::translate(glm::mat4(1.0f), speed * glm::vec3(0.0f, 1.0f, 0.0f)));
-				break;
-			case GLFW_KEY_U:
-				pLight->multiplyTransform( glm::translate(glm::mat4(1.0f), speed * glm::vec3(0.0f, 0.0f, 1.0f)));
-				break;
-			case GLFW_KEY_J:
-				pLight->multiplyTransform(glm::translate(glm::mat4(1.0f), speed * glm::vec3(0.0f, 0.0f, -1.0f)));
-				break;
-			case GLFW_KEY_H:
-				pLight->multiplyTransform(glm::translate(glm::mat4(1.0f), speed * glm::vec3(-1.0f, 0.0f, 0.0f)));
-				break;
-			case GLFW_KEY_K:
-				pLight->multiplyTransform(glm::translate(glm::mat4(1.0f), speed * glm::vec3(1.0f, 0.0f, 0.0f)));
-				break;
+			if (event.idata1 == GLFW_KEY_3 && event.idata3 == GLFW_PRESS) {
+				getSceneManagerPointer()->deleteScene();
+				getEnginePointer()->loadLevel(3);
+				return true;
 			}
 			return false;
 		}
 	};
-
-
 
 
 	///user defined manager class, derived from VEEngine
@@ -85,9 +75,9 @@ namespace ve {
 		///Register an event listener to interact with the user
 		virtual void registerEventListeners() {
 			VEEngine::registerEventListeners();
-			registerEventListener( new LightListener("LightListener"));
-			//registerEventListener(new VEEventListenerNuklear("NuklearListener"));
-			registerEventListener(new VEEventListenerNuklearDebug("NuklearDebugListener"));
+
+			registerEventListener(new LevelListener("LevelListener"), { VE_EVENT_KEYBOARD });
+			registerEventListener(new VEEventListenerNuklearDebug("NuklearDebugListener"), {VE_EVENT_DRAW_OVERLAY});
 		};
 
 		///create many cubes
@@ -103,9 +93,7 @@ namespace ve {
 				VEEntity *e2 = getSceneManagerPointer()->createEntity( "The Cube" + std::to_string(i), pMesh, pMat, glm::mat4(1.0f), getRoot() );
 				e2->setTransform(glm::translate(glm::mat4(1.0f), glm::vec3( d(e) - stride/2.0f, d(e)/2.0f, d(e) - stride/2.0f)));
 				//e2->multiplyTransform(glm::scale(glm::mat4(1.0f), glm::vec3(10.0f, 10.0f, 10.0f)));
-
-				registerEventListener(	new RotatorListener("LightListener" + std::to_string(i), e2, 0.1f, glm::vec3(0.0f, 1.0f, 0.0f)), 
-										{ VE_EVENT_FRAME_STARTED } );
+				registerEventListener(	new RotatorListener("LightListener" + std::to_string(i), e2, 0.1f, glm::vec3(0.0f, 1.0f, 0.0f)), { VE_EVENT_FRAME_STARTED } );
 
 			}
 
@@ -113,10 +101,55 @@ namespace ve {
 
 		///Load the first level into the game engine
 		///The engine uses Y-UP, Left-handed
-		void loadLevel() {
+		virtual void loadLevel( uint32_t numLevel=1) {
+
+			VESceneNode *pScene = getSceneManagerPointer()->createSceneNode("Level 1", glm::mat4(1.0f), getRoot() );
+
+			//camera parent is used for translations
+			VESceneNode *cameraParent = getSceneManagerPointer()->createSceneNode("StandardCameraParent", glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 10.0f, 0.0f)), pScene);
+
+			//camera can only do yaw (parent y-axis) and pitch (local x-axis) rotations
+			VkExtent2D extent = getWindowPointer()->getExtent();
+			VECamera *camera = new VECameraProjective("StandardCamera", 0.1f, 500.0f, extent.width / (float)extent.height, 45.0f);
+			camera->lookAt(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+			cameraParent->addChild(camera);
+			getSceneManagerPointer()->addSceneNode(camera);
+			getSceneManagerPointer()->setCamera(camera);
+
+			//use one light source
+			VELight *light1 = new VEDirectionalLight("StandardDirLight");
+			light1->lookAt(glm::vec3(0.0f, 20.0f, -20.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+			light1->m_col_ambient = glm::vec4(0.1f, 0.1f, 0.1f, 1.0f);
+			light1->m_col_diffuse = glm::vec4(0.5f, 0.5f, 0.5f, 1.0f);
+			light1->m_col_specular = glm::vec4(0.1f, 0.1f, 0.1f, 1.0f);
+			getSceneManagerPointer()->addSceneNode(light1, pScene );
+			getSceneManagerPointer()->switchOnLight(light1);
+
+			VELight *light2 = new VESpotLight("StandardSpotLight");
+			light2->m_col_ambient = glm::vec4(0.0f, 0.0f, 0.0f, 1.0f);
+			light2->m_col_diffuse = glm::vec4(0.99f, 0.6f, 0.6f, 1.0f);
+			light2->m_col_specular = glm::vec4(0.0f, 0.0f, 0.0f, 1.0f);
+			//light2->lookAt(glm::vec3(0.0f, 20.0f, 20.0f), glm::vec3(0.0f, 0.0f, 1.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+			getSceneManagerPointer()->addSceneNode(light2, pScene);
+			camera->addChild(light2);
+			light2->multiplyTransform(glm::translate(glm::vec3(5.0f, 0.0f, 0.0f)));
+			getSceneManagerPointer()->switchOnLight(light2);
+
+			VELight *light3 = new VEPointLight("StandardPointLight");
+			light3->m_col_ambient = glm::vec4(0.0f, 0.0f, 0.0f, 1.0f);
+			light3->m_col_diffuse = glm::vec4(0.99f, 0.99f, 0.6f, 1.0f);
+			light3->m_col_specular = glm::vec4(0.0f, 0.0f, 0.0f, 1.0f);
+			light3->m_param[0] = 100.0f;
+			getSceneManagerPointer()->addSceneNode(light3, pScene);
+			camera->addChild(light3);
+			light3->multiplyTransform(glm::translate(glm::vec3(0.0f, 0.0f, 15.0f)));
+			getSceneManagerPointer()->switchOnLight(light3);
+
+			//scene models
 
 			VESceneNode *sp1 = m_pSceneManager->createSkybox("The Sky", "models/test/sky/cloudy",
 			{ "bluecloud_ft.jpg", "bluecloud_bk.jpg", "bluecloud_up.jpg", "bluecloud_dn.jpg", "bluecloud_rt.jpg", "bluecloud_lf.jpg" });		
+			pScene->addChild(sp1);
 			RotatorListener *pRot = new RotatorListener("CubemapRotator", sp1, 0.01f, glm::vec3(0.0f, 1.0f, 0.0f));
 			getEnginePointer()->registerEventListener(pRot);
 
@@ -124,7 +157,7 @@ namespace ve {
 			e4->setTransform(glm::scale(glm::mat4(1.0f), glm::vec3(1000.0f, 1.0f, 1000.0f)));
 			VEEntity *pE4 = (VEEntity*)m_pSceneManager->getSceneNode("The Plane/plane_t_n_s.obj/plane/Entity_0");
 			pE4->setParam( glm::vec4(1000.0f, 1000.0f, 0.0f, 0.0f) );
-			getRoot()->addChild(e4);
+			pScene->addChild(e4);
 
 			VESceneNode *pointLight = getSceneManager()->getSceneNode("StandardPointLight");
 			VESceneNode *eL = m_pSceneManager->loadModel("The Light", "models/test/sphere", "sphere.obj", 0 , pointLight);
@@ -135,9 +168,9 @@ namespace ve {
 			VESceneNode *e1 = m_pSceneManager->loadModel("The Cube",  "models/test/crate0", "cube.obj");
 			e1->setTransform(glm::translate(glm::mat4(1.0f), glm::vec3(10.0f, 1.0f, 1.0f)));
 			e1->multiplyTransform( glm::scale(glm::mat4(1.0f), glm::vec3(10.0f, 10.0f, 10.0f)));
-			getRoot()->addChild(e1);
+			pScene->addChild(e1);
 
-			createCubes(40000);
+			createCubes(200);
 			//VESceneNode *pSponza = m_pSceneManager->loadModel("Sponza", "models/sponza", "sponza.dae", aiProcess_FlipWindingOrder);
 			//pSponza->setTransform(glm::scale(glm::mat4(1.0f), glm::vec3(0.1f, 0.1f, 0.1f)));
 

@@ -116,6 +116,8 @@ namespace ve {
 		VESceneNode *	getSceneNode(std::string entityName);
 		void			removeSceneNode(std::string name);
 		void			deleteSceneNodeAndChildren(std::string name);
+		void			deleteSceneNodeAndChildren2(std::string name);
+		void			deleteScene();
 		void			createSceneNodeList(VESceneNode *pObject, std::vector<std::string> &namelist);
 
 		//-------------------------------------------------------------------------------------

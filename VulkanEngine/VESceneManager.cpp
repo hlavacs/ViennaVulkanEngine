@@ -72,46 +72,6 @@ namespace ve {
 
 		m_rootSceneNode = new VESceneNode("RootSceneNode");
 
-		//camera parent is used for translation rotations
-		VESceneNode *cameraParent = createSceneNode2("StandardCameraParent", glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 10.0f, 0.0f)), getRoot() );
-
-		//camera can only do yaw (parent y-axis) and pitch (local x-axis) rotations
-		VkExtent2D extent = getWindowPointer()->getExtent();
-		VECamera *camera = new VECameraProjective("StandardCamera", 0.1f, 500.0f, extent.width/ (float)extent.height, 45.0f);
-		camera->lookAt(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f), glm::vec3(0.0f, 1.0f, 0.0f));
-		cameraParent->addChild(camera);
-		addSceneNode2(camera );
-		setCamera( camera );
-
-		//use one light source
-		VELight *light1 = new VEDirectionalLight("StandardDirLight" );
-		light1->lookAt(glm::vec3(0.0f, 20.0f, -20.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
-		light1->m_col_ambient = glm::vec4(0.1f, 0.1f, 0.1f, 1.0f);
-		light1->m_col_diffuse = glm::vec4(0.5f, 0.5f, 0.5f, 1.0f);
-		light1->m_col_specular = glm::vec4(0.1f, 0.1f, 0.1f, 1.0f);
-		addSceneNode2(light1, m_rootSceneNode );
-		switchOnLight(light1);
-
-		VELight *light2 = new VESpotLight("StandardSpotLight");
-		light2->m_col_ambient = glm::vec4( 0.0f, 0.0f, 0.0f, 1.0f);
-		light2->m_col_diffuse = glm::vec4(0.99f, 0.6f, 0.6f, 1.0f);
-		light2->m_col_specular = glm::vec4(0.0f, 0.0f, 0.0f, 1.0f);
-		//light2->lookAt(glm::vec3(0.0f, 20.0f, 20.0f), glm::vec3(0.0f, 0.0f, 1.0f), glm::vec3(0.0f, 1.0f, 0.0f));
-		addSceneNode2(light2, m_rootSceneNode );
-		camera->addChild(light2);
-		light2->multiplyTransform(glm::translate(glm::vec3(5.0f, 0.0f, 0.0f)));
-		switchOnLight(light2);
-
-		VELight *light3 = new VEPointLight("StandardPointLight");
-		light3->m_col_ambient = glm::vec4(0.0f, 0.0f, 0.0f, 1.0f);
-		light3->m_col_diffuse = glm::vec4(0.99f, 0.99f, 0.6f, 1.0f);
-		light3->m_col_specular = glm::vec4(0.0f, 0.0f, 0.0f, 1.0f);
-		light3->m_param[0] = 100.0f;
-		addSceneNode2(light3, m_rootSceneNode );
-		camera->addChild(light3);
-		light3->multiplyTransform(glm::translate(glm::vec3(0.0f, 0.0f, 15.0f)));
-		switchOnLight(light3);
-
 	};
 
 
@@ -769,6 +729,7 @@ namespace ve {
 	}
 
 
+
 	/**
 	*
 	* \brief Delete a scene node and all its subentities
@@ -778,12 +739,24 @@ namespace ve {
 	*/
 	void VESceneManager::deleteSceneNodeAndChildren(std::string name) {
 		lockSceneManager();
+		deleteSceneNodeAndChildren2( name );
+		unlockSceneManager();
+	}
+
+
+
+	/**
+	*
+	* \brief Delete a scene node and all its subentities
+	*
+	* \param[in] name Name of the scene node.
+	*
+	*/
+	void VESceneManager::deleteSceneNodeAndChildren2(std::string name) {
 
 		VESceneNode * pNode = m_sceneNodes[name];
-		if (pNode == nullptr) {
-			unlockSceneManager();
-			return;
-		}
+		if (pNode == nullptr) return; 
+
 		if (pNode->getParent() != nullptr) pNode->getParent()->removeChild(pNode);
 
 		std::vector<std::string> namelist;	//first create a list of all child names
@@ -802,6 +775,29 @@ namespace ve {
 			delete pNode;
 		}
 		sceneGraphChanged();
+	}
+
+
+	/**
+	*
+	* \brief Create a list of all child entities of a given entity, then delete them
+	*
+	* Function will delete all children of the root scene node, bit not the root itself
+	*
+	*/
+
+	void  VESceneManager::deleteScene() {
+		lockSceneManager();
+
+		std::vector<std::string> namelist;
+
+		for (auto pNode : m_rootSceneNode->getChildrenList()) {
+			namelist.push_back(pNode->getName());
+		}
+		for (auto name : namelist) {
+			deleteSceneNodeAndChildren2(name);
+		}
+
 		unlockSceneManager();
 	}
 

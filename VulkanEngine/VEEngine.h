@@ -100,6 +100,8 @@ namespace ve {
 		//managing the engine
 
 		virtual void initEngine();							//Create all engine components
+		///\brief Load a specific level
+		virtual void loadLevel(uint32_t numLevel = 1) {};
 		virtual void run();									//Enter the render loop
 		virtual void fatalError(std::string message);		//Show an error message and close down the engine
 		virtual void end();									//end the render loop

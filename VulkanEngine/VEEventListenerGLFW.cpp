@@ -33,6 +33,12 @@ namespace ve {
 			return false;
 		}
 
+		if (event.idata1 == GLFW_KEY_O && event.idata3 == GLFW_PRESS) {
+			m_makeScreenshotDepth = true;
+			return false;
+		}
+
+
 		///create some default constants for the actions 
 		glm::vec4 translate = glm::vec4(0.0, 0.0, 0.0, 1.0);	//total translation
 		glm::vec4 rot4 = glm::vec4(1.0);						//total rotation around the axes, is 4d !
