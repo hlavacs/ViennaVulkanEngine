@@ -32,3 +32,13 @@
 #include "VERenderer.h"
 #include "VERendererForward.h"
 
+
+#define VECHECKPOINTER(x) { \
+		void* pointer = (x); \
+		if (!pointer) { \
+			getEnginePointer()->fatalError("Return pointer is null!"); \
+			return; \
+		} \
+	}
+
+

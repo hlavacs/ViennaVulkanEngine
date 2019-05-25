@@ -279,11 +279,12 @@ namespace ve {
 	*/
 	void VEEngine::clearEventListenerList() {
 		std::set<VEEventListener*> lset;
-		for (auto list : m_eventListeners) {
-			for (auto listener : list.second) {
-				lset.insert(listener);
+
+		for (uint32_t i = VE_EVENT_NONE; i < VE_EVENT_LAST; i++) {	//initialize the event listeners lists
+			for (uint32_t j = 0; j < m_eventListeners[(veEventType)i].size(); j++) {
+				lset.insert(m_eventListeners[(veEventType)i][j]);
 			}
-			list.second.clear();
+			m_eventListeners[(veEventType)i].clear();
 		}
 		for (auto pListener : lset) delete pListener;
 	}
@@ -633,14 +634,14 @@ namespace ve {
 		light2->multiplyTransform(glm::translate(glm::vec3(5.0f, 0.0f, 0.0f)));
 		getSceneManagerPointer()->switchOnLight(light2);
 
-		VELight *light3 = new VEPointLight("StandardPointLight");
+		VELight *light3 = new VEPointLight("StandardPointLight");		//sphere iis attached to this!
 		light3->m_col_ambient = glm::vec4(0.0f, 0.0f, 0.0f, 1.0f);
 		light3->m_col_diffuse = glm::vec4(0.99f, 0.99f, 0.6f, 1.0f);
 		light3->m_col_specular = glm::vec4(0.0f, 0.0f, 0.0f, 1.0f);
 		light3->m_param[0] = 100.0f;
-		getSceneManagerPointer()->addSceneNode(light3, getRoot());
 		camera->addChild(light3);
 		light3->multiplyTransform(glm::translate(glm::vec3(0.0f, 0.0f, 15.0f)));
+		getSceneManagerPointer()->addSceneNode(light3);
 		getSceneManagerPointer()->switchOnLight(light3);
 
 	}
