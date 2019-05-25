@@ -796,10 +796,10 @@ namespace ve {
 	*
 	*/
 	VELight::~VELight() {
-		for (auto pCam : m_shadowCameras) {
+		/*for (auto pCam : m_shadowCameras) {
 			getSceneManagerPointer()->removeSceneNode( pCam->getName());
 			delete pCam;
-		}
+		}*/
 		m_shadowCameras.clear();
 	};
 

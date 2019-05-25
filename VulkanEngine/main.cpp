@@ -93,7 +93,7 @@ namespace ve {
 				VEEntity *e2 = getSceneManagerPointer()->createEntity( "The Cube" + std::to_string(i), pMesh, pMat, glm::mat4(1.0f), getRoot() );
 				e2->setTransform(glm::translate(glm::mat4(1.0f), glm::vec3( d(e) - stride/2.0f, d(e)/2.0f, d(e) - stride/2.0f)));
 				//e2->multiplyTransform(glm::scale(glm::mat4(1.0f), glm::vec3(10.0f, 10.0f, 10.0f)));
-				registerEventListener(	new RotatorListener("LightListener" + std::to_string(i), e2, 0.1f, glm::vec3(0.0f, 1.0f, 0.0f)), { VE_EVENT_FRAME_STARTED } );
+				registerEventListener(	new RotatorListener("LightListener" + std::to_string(i), e2, 0.01f, glm::vec3(0.0f, 1.0f, 0.0f)), { VE_EVENT_FRAME_STARTED } );
 
 			}
 
@@ -102,49 +102,10 @@ namespace ve {
 		///Load the first level into the game engine
 		///The engine uses Y-UP, Left-handed
 		virtual void loadLevel( uint32_t numLevel=1) {
+			VEEngine::loadLevel(numLevel );
 
 			VESceneNode *pScene = getSceneManagerPointer()->createSceneNode("Level 1", glm::mat4(1.0f), getRoot() );
-
-			//camera parent is used for translations
-			VESceneNode *cameraParent = getSceneManagerPointer()->createSceneNode("StandardCameraParent", glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 10.0f, 0.0f)), pScene);
-
-			//camera can only do yaw (parent y-axis) and pitch (local x-axis) rotations
-			VkExtent2D extent = getWindowPointer()->getExtent();
-			VECamera *camera = new VECameraProjective("StandardCamera", 0.1f, 500.0f, extent.width / (float)extent.height, 45.0f);
-			camera->lookAt(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f), glm::vec3(0.0f, 1.0f, 0.0f));
-			cameraParent->addChild(camera);
-			getSceneManagerPointer()->addSceneNode(camera);
-			getSceneManagerPointer()->setCamera(camera);
-
-			//use one light source
-			VELight *light1 = new VEDirectionalLight("StandardDirLight");
-			light1->lookAt(glm::vec3(0.0f, 20.0f, -20.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
-			light1->m_col_ambient = glm::vec4(0.1f, 0.1f, 0.1f, 1.0f);
-			light1->m_col_diffuse = glm::vec4(0.5f, 0.5f, 0.5f, 1.0f);
-			light1->m_col_specular = glm::vec4(0.1f, 0.1f, 0.1f, 1.0f);
-			getSceneManagerPointer()->addSceneNode(light1, pScene );
-			getSceneManagerPointer()->switchOnLight(light1);
-
-			VELight *light2 = new VESpotLight("StandardSpotLight");
-			light2->m_col_ambient = glm::vec4(0.0f, 0.0f, 0.0f, 1.0f);
-			light2->m_col_diffuse = glm::vec4(0.99f, 0.6f, 0.6f, 1.0f);
-			light2->m_col_specular = glm::vec4(0.0f, 0.0f, 0.0f, 1.0f);
-			//light2->lookAt(glm::vec3(0.0f, 20.0f, 20.0f), glm::vec3(0.0f, 0.0f, 1.0f), glm::vec3(0.0f, 1.0f, 0.0f));
-			getSceneManagerPointer()->addSceneNode(light2, pScene);
-			camera->addChild(light2);
-			light2->multiplyTransform(glm::translate(glm::vec3(5.0f, 0.0f, 0.0f)));
-			getSceneManagerPointer()->switchOnLight(light2);
-
-			VELight *light3 = new VEPointLight("StandardPointLight");
-			light3->m_col_ambient = glm::vec4(0.0f, 0.0f, 0.0f, 1.0f);
-			light3->m_col_diffuse = glm::vec4(0.99f, 0.99f, 0.6f, 1.0f);
-			light3->m_col_specular = glm::vec4(0.0f, 0.0f, 0.0f, 1.0f);
-			light3->m_param[0] = 100.0f;
-			getSceneManagerPointer()->addSceneNode(light3, pScene);
-			camera->addChild(light3);
-			light3->multiplyTransform(glm::translate(glm::vec3(0.0f, 0.0f, 15.0f)));
-			getSceneManagerPointer()->switchOnLight(light3);
-
+	
 			//scene models
 
 			VESceneNode *sp1 = m_pSceneManager->createSkybox("The Sky", "models/test/sky/cloudy",
