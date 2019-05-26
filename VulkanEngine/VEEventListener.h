@@ -11,55 +11,57 @@
 namespace ve {
 	class VEEngine;
 
-	/**
-	* \brief Enumerates possible subsystems. 
-	*
-	* A subsystem determines the scope of events and how event data are interpreted. For example, GLFW is 
-	* a subsystem using its own event types and keyboard IDs. Event listeners can use the subsystem to 
-	* determine whether they can even understand the event. 
-	*
-	*/
-	enum veEventSubsystem {
-		VE_EVENT_SUBSYSTEM_GENERIC,		///<No subsystem given
-		VE_EVENT_SUBSYSTEM_GLFW			///<GLFW
-	};
-
-	/**
-	* \brief Enumerates event types.
-	*
-	* An event type identifies a class of events, and enables event listeners to further narrow down the events they
-	* are interested in. 
-	*
-	*/
-	enum veEventType {
-		VE_EVENT_NONE=0,			///<Empty event
-		VE_EVENT_FRAME_STARTED,		///<The frame has been started
-		VE_EVENT_FRAME_ENDED,		///<The frame has been rendered and is ready to be presented
-		VE_EVENT_DRAW_OVERLAY,		///<Draw overlays
-		VE_EVENT_KEYBOARD,			///<A keyboard event
-		VE_EVENT_MOUSEMOVE,			///<The mouse has been moved
-		VE_EVENT_MOUSEBUTTON,		///<A mouse button event
-		VE_EVENT_MOUSESCROLL,		///<Mouse scroll event
-		VE_EVENT_LAST
-	};
-
-	/**
-	* \brief Lifetime of an event.
-	*
-	* A once-event will be destroyed right after event processing. A continuous event will remain in the
-	* event list and will be sent to the listeners in the next loop.
-	*
-	*/
-	enum veEventLifeTime {
-		VE_EVENT_LIFETIME_ONCE,			///<One time event
-		VE_EVENT_LIFETIME_CONTINUOUS	///<Continuous event
-	};
 
 
 	/**
 	* \brief Structure for storing event related data.
 	*/
 	struct veEvent {
+
+		/**
+		* \brief Enumerates possible subsystems.	
+		*
+		* A subsystem determines the scope of events and how event data are interpreted. For example, GLFW is 
+		* a subsystem using its own event types and keyboard IDs. Event listeners can use the subsystem to 
+		* determine whether they can even understand the event. 
+		*
+		*/
+		enum veEventSubsystem {
+			VE_EVENT_SUBSYSTEM_GENERIC,		///<No subsystem given
+			VE_EVENT_SUBSYSTEM_GLFW			///<GLFW
+		};
+
+		/**
+		* \brief Enumerates event types.
+		*
+		* An event type identifies a class of events, and enables event listeners to further narrow down the events they
+		* are interested in. 
+		*
+		*/
+		enum veEventType {
+			VE_EVENT_NONE=0,			///<Empty event
+			VE_EVENT_FRAME_STARTED,		///<The frame has been started
+			VE_EVENT_FRAME_ENDED,		///<The frame has been rendered and is ready to be presented
+			VE_EVENT_DRAW_OVERLAY,		///<Draw overlays
+			VE_EVENT_KEYBOARD,			///<A keyboard event
+			VE_EVENT_MOUSEMOVE,			///<The mouse has been moved
+			VE_EVENT_MOUSEBUTTON,		///<A mouse button event
+			VE_EVENT_MOUSESCROLL,		///<Mouse scroll event
+			VE_EVENT_LAST
+		};
+
+		/**
+			* \brief Lifetime of an event.
+		*
+		* A once-event will be destroyed right after event processing. A continuous event will remain in the
+		* event list and will be sent to the listeners in the next loop.	
+		*
+		*/
+		enum veEventLifeTime {
+			VE_EVENT_LIFETIME_ONCE,			///<One time event
+			VE_EVENT_LIFETIME_CONTINUOUS	///<Continuous event
+		};
+
 		veEventSubsystem	subsystem = VE_EVENT_SUBSYSTEM_GENERIC;		///<Event subsystem
 		veEventType			type = VE_EVENT_NONE;						///<Event type
 		veEventLifeTime		lifeTime = VE_EVENT_LIFETIME_ONCE;			///<Event lifetime

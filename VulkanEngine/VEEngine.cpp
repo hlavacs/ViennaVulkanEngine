@@ -58,8 +58,8 @@ namespace ve {
 		m_pRenderer->initRenderer();			//initialize the renderer
 		m_pSceneManager->initSceneManager();	//initialize the scene manager
 
-		for (uint32_t i = VE_EVENT_NONE; i < VE_EVENT_LAST; i++) {	//initialize the event listeners lists
-			m_eventListeners[(veEventType)i] = {};
+		for (uint32_t i = veEvent::VE_EVENT_NONE; i < veEvent::VE_EVENT_LAST; i++) {	//initialize the event listeners lists
+			m_eventListeners[(veEvent::veEventType)i] = {};
 		}
 
 		registerEventListeners();
@@ -172,9 +172,9 @@ namespace ve {
 	*
 	*/
 	void VEEngine::registerEventListener(VEEventListener *pListener) {
-		std::vector<veEventType> eventTypes;
-		for (uint32_t i = VE_EVENT_NONE+1; i < VE_EVENT_LAST; i++) {
-			eventTypes.push_back((veEventType)i);
+		std::vector<veEvent::veEventType> eventTypes;
+		for (uint32_t i = veEvent::VE_EVENT_NONE+1; i < veEvent::VE_EVENT_LAST; i++) {
+			eventTypes.push_back((veEvent::veEventType)i);
 		}
 		registerEventListener(pListener, eventTypes);
 	}; 
@@ -190,7 +190,7 @@ namespace ve {
 	* \param[in] eventTypes List with event types that are sent to this listener
 	*
 	*/
-	void VEEngine::registerEventListener(VEEventListener *pListener, std::vector<veEventType> eventTypes) {
+	void VEEngine::registerEventListener(VEEventListener *pListener, std::vector<veEvent::veEventType> eventTypes) {
 		for (auto eventType : eventTypes) {
 			m_eventListeners[eventType].push_back(pListener);
 		}
@@ -280,11 +280,11 @@ namespace ve {
 	void VEEngine::clearEventListenerList() {
 		std::set<VEEventListener*> lset;
 
-		for (uint32_t i = VE_EVENT_NONE; i < VE_EVENT_LAST; i++) {	//initialize the event listeners lists
-			for (uint32_t j = 0; j < m_eventListeners[(veEventType)i].size(); j++) {
-				lset.insert(m_eventListeners[(veEventType)i][j]);
+		for (uint32_t i = veEvent::VE_EVENT_NONE; i < veEvent::VE_EVENT_LAST; i++) {	//initialize the event listeners lists
+			for (uint32_t j = 0; j < m_eventListeners[(veEvent::veEventType)i].size(); j++) {
+				lset.insert(m_eventListeners[(veEvent::veEventType)i][j]);
 			}
-			m_eventListeners[(veEventType)i].clear();
+			m_eventListeners[(veEvent::veEventType)i].clear();
 		}
 		for (auto pListener : lset) delete pListener;
 	}
@@ -411,7 +411,7 @@ namespace ve {
 
 		std::vector<veEvent> keepEvents;							//Keep these events in the list
 		for (auto event : m_eventlist) {
-			if (event.lifeTime == VE_EVENT_LIFETIME_CONTINUOUS) {
+			if (event.lifeTime == veEvent::VE_EVENT_LIFETIME_CONTINUOUS) {
 				keepEvents.push_back(event);
 			}
 		}
@@ -517,7 +517,7 @@ namespace ve {
 			//process frame begin
 
 			t_now = vh::vhTimeNow();
-			veEvent event(VE_EVENT_FRAME_STARTED);	//notify all listeners that a new frame starts
+			veEvent event(veEvent::VE_EVENT_FRAME_STARTED );	//notify all listeners that a new frame starts
 			callListeners(m_dt, event);
 			m_AvgStartedTime = vh::vhAverage(vh::vhTimeDuration(t_now), m_AvgStartedTime);
 
@@ -558,7 +558,7 @@ namespace ve {
 			m_AvgPrepOvlTime = vh::vhAverage(vh::vhTimeDuration(t_now), m_AvgPrepOvlTime);
 
 			t_now = vh::vhTimeNow();
-			event.type = VE_EVENT_DRAW_OVERLAY;		//notify all listeners that they can draw an overlay now
+			event.type = veEvent::VE_EVENT_DRAW_OVERLAY;		//notify all listeners that they can draw an overlay now
 			callListeners(m_dt, event);
 			m_AvgEndedTime = vh::vhAverage(vh::vhTimeDuration(t_now), m_AvgEndedTime);
 
@@ -570,7 +570,7 @@ namespace ve {
 			//Frame ended
 
 			t_now = vh::vhTimeNow();
-			event.type = VE_EVENT_FRAME_ENDED;	//notify all listeners that the frame ended, e.g. fill cmd buffers for overlay
+			event.type = veEvent::VE_EVENT_FRAME_ENDED;	//notify all listeners that the frame ended, e.g. fill cmd buffers for overlay
 			callListeners(m_dt, event);
 			m_AvgEndedTime = vh::vhAverage(vh::vhTimeDuration(t_now), m_AvgEndedTime);
 

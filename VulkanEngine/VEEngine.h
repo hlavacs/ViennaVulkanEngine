@@ -46,7 +46,7 @@ namespace ve {
 		VkDebugReportCallbackEXT callback;				///<Debug callback handle
 
 		std::vector<veEvent> m_eventlist;				///<List of events that should be handled in the next loop
-		std::map<veEventType, std::vector<VEEventListener*>> m_eventListeners; ///<Maps event types to lists of evennt listeners
+		std::map<veEvent::veEventType, std::vector<VEEventListener*>> m_eventListeners; ///<Maps event types to lists of evennt listeners
 
 		double m_dt = 0.0;								///<Delta time since the last loop
 		double m_time = 0.0;							///<Absolute game time since start of the render loop
@@ -101,7 +101,7 @@ namespace ve {
 		//managing events and listeners
 
 		void registerEventListener(VEEventListener *lis);	//Register a new event listener.
-		void registerEventListener(VEEventListener *lis, std::vector<veEventType> eventTypes);	//Register a new event listener for these events only
+		void registerEventListener(VEEventListener *lis, std::vector<veEvent::veEventType> eventTypes);	//Register a new event listener for these events only
 		VEEventListener* getEventListener(std::string name);	//get pointer to an event listener
 		void removeEventListener(std::string name);			//Remove an event listener - it is NOT deleted automatically!
 		void removeEventListener(std::string name, std::vector<VEEventListener*>&list);			//Remove an event listener - it is NOT deleted automatically!

@@ -102,12 +102,12 @@ namespace ve {
 			}
 			type = VESubrender::VE_SUBRENDERER_TYPE_COLOR1;
 			break;
-		case VEEntity::VE_ENTITY_TYPE_CUBEMAP:
+		/*case VEEntity::VE_ENTITY_TYPE_CUBEMAP:
 			type = VESubrender::VE_SUBRENDERER_TYPE_CUBEMAP;
 			break;
 		case VEEntity::VE_ENTITY_TYPE_CUBEMAP2:
 			type = VESubrender::VE_SUBRENDERER_TYPE_CUBEMAP2;
-			break;
+			break;*/
 		case VEEntity::VE_ENTITY_TYPE_SKYPLANE:
 			type = VESubrender::VE_SUBRENDERER_TYPE_SKYPLANE;
 			break;

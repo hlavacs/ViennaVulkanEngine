@@ -169,8 +169,8 @@ namespace ve {
 		///The entity type determines what kind of entity this is
 		enum veEntityType {	
 			VE_ENTITY_TYPE_NORMAL,				///<Normal object to be drawn
-			VE_ENTITY_TYPE_CUBEMAP,				///<A cubemap for sky boxes
-			VE_ENTITY_TYPE_CUBEMAP2,			///<A cubemap for sky boxes, but simulated
+			//VE_ENTITY_TYPE_CUBEMAP,				///<A cubemap for sky boxes
+			//VE_ENTITY_TYPE_CUBEMAP2,			///<A cubemap for sky boxes, but simulated
 			VE_ENTITY_TYPE_SKYPLANE,			///<A plane for sky boxes
 			VE_ENTITY_TYPE_TERRAIN_HEIGHTMAP	///<A heightmap for terrain modelling
 		};
