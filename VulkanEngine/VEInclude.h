@@ -33,11 +33,20 @@
 #include "VERendererForward.h"
 
 
-#define VECHECKPOINTER(x) { \
+//use this macro to check the function result, if its not VK_SUCCESS then return the error
+#define VECHECKRESULT(x, msg) { \
+		VkResult retval = (x); \
+		if (retval != VK_SUCCESS) { \
+			throw std::runtime_error(msg); \
+		} \
+	}
+
+
+//use this macro to check the function result, if its not VK_SUCCESS then return the error
+#define VECHECKPOINTER(x, msg) { \
 		void* pointer = (x); \
 		if (!pointer) { \
-			getEnginePointer()->fatalError("Return pointer is null!"); \
-			return; \
+			throw std::runtime_error(msg); \
 		} \
 	}
 

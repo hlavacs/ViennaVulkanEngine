@@ -114,10 +114,7 @@ namespace ve {
 			//aiProcess_FixInfacingNormals |
 			aiFlags);
 
-		if (pScene == nullptr) {
-			getEnginePointer()->fatalError("Error: Could not load asset file " + filekey + "!");
-			return nullptr;
-		}
+		VECHECKPOINTER( (void*)pScene, "Error: Could not load asset file " + filekey + "!" );
 
 		createMeshes(pScene, filekey, meshes);					//create new meshes if any
 		createMaterials(pScene, basedir, filekey, materials);	//create new materials if any
@@ -169,10 +166,7 @@ namespace ve {
 			//aiProcess_FixInfacingNormals |
 			aiFlags);
 
-		if (pScene == nullptr) {
-			getEnginePointer()->fatalError("Error: Could not load asset file " + filekey + "!");
-			return nullptr;
-		}
+		VECHECKPOINTER((void*)pScene, "Error: Could not load asset file " + filekey + "!");
 
 		pMO = createSceneNode2(entityName, glm::mat4(1.0f), parent);	//create a new scene node as parent of the whole scene
 
