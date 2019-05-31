@@ -781,7 +781,7 @@ namespace ve {
 
 		VECamera *pCam = getSceneManagerPointer()->getCamera();
 
-		updateShadowCameras(pCam, imageIndex);						//copy shadow cam UBOs to GPU
+		updateShadowCameras(pCam, imageIndex);						//copy shadow cam UBOs to GPU		
 		for (uint32_t i = 0; i < m_shadowCameras.size(); i++ ) {	//copy shadow cam UBOs to light UBO
 			m_ubo.shadowCameras[i] = m_shadowCameras[i]->m_ubo;
 		}
@@ -945,6 +945,7 @@ namespace ve {
 		for (uint32_t i = 0; i < 1; i++) {
 			VECameraProjective *pCam = new VECameraProjective(m_name + "-ShadowCam" + std::to_string(i));
 			m_shadowCameras.push_back(pCam);		//no parent - > transform is also world matrix
+			//addChild(pCam);
 			getSceneManagerPointer()->addSceneNode(pCam);
 		};
 	};
@@ -970,7 +971,7 @@ namespace ve {
 			float lnear = 0.1f;
 			float llength = m_param[0];		//reach of light
 
-			pShadowCamera->setTransform(getWorldTransform());
+			pShadowCamera->setTransform(getWorldTransform());	//remove
 
 			pShadowCamera->m_aspectRatio = 1.0f;			//TODO: for comparing with light cam
 			pShadowCamera->m_fov = 90.0f;						//TODO: depends on light parameters
@@ -979,7 +980,7 @@ namespace ve {
 			pShadowCamera->m_nearPlaneFraction = limits[i];
 			pShadowCamera->m_farPlaneFraction  = limits[i+1];
 
-			pShadowCamera->update(imageIndex);
+			pShadowCamera->update(imageIndex);	//remove
 		}
 	}
 

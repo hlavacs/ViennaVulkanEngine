@@ -622,7 +622,7 @@ namespace ve {
 		light1->m_col_diffuse = glm::vec4(0.5f, 0.5f, 0.5f, 1.0f);
 		light1->m_col_specular = glm::vec4(0.1f, 0.1f, 0.1f, 1.0f);
 		getSceneManagerPointer()->addSceneNode(light1, getRoot());
-		getSceneManagerPointer()->switchOnLight(light1);
+		//getSceneManagerPointer()->switchOnLight(light1);
 
 		VELight *light2 = new VESpotLight("StandardSpotLight");
 		light2->m_col_ambient = glm::vec4(0.0f, 0.0f, 0.0f, 1.0f);
@@ -642,7 +642,7 @@ namespace ve {
 		camera->addChild(light3);
 		light3->multiplyTransform(glm::translate(glm::vec3(0.0f, 0.0f, 15.0f)));
 		getSceneManagerPointer()->addSceneNode(light3);
-		getSceneManagerPointer()->switchOnLight(light3);
+		//getSceneManagerPointer()->switchOnLight(light3);
 
 	}
 

@@ -142,7 +142,7 @@ namespace ve {
 
 		//set 2, binding 0 : shadow map + sampler
 		vh::vhRenderCreateDescriptorSetLayout(m_device,
-											{ NUM_SHADOW_CASCADE },
+											{ NUM_SHADOW_CASCADE },								//add shadow UBOs here
 											{ VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER },
 											{ VK_SHADER_STAGE_FRAGMENT_BIT },
 											&m_descriptorSetLayoutShadow);
