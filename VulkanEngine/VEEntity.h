@@ -42,6 +42,7 @@ namespace ve {
 		glm::mat4					m_transform = glm::mat4(1.0);	///<Transform from local to parent space, the engine uses Y-UP, Left-handed
 		std::vector<VESceneNode *>	m_children;						///<List of entity children
 		VESceneNode *				m_parent = nullptr;				///<Pointer to entity parent
+		std::mutex					m_mutex;						///<Mutex for locking access to this node
 
 	public:
 
@@ -57,7 +58,7 @@ namespace ve {
 		virtual veNodeType	getNodeType() { return VE_NODE_TYPE_SCENENODE; };
 
 		VESceneNode *		getParent() { return m_parent;  };
-		void				setParent(VESceneNode *parent) { m_parent = parent; };
+		bool				hasParent() { return m_parent != nullptr; };
 		std::vector<VESceneNode *> & getChildrenList() { return m_children;  };
 
 
@@ -169,8 +170,6 @@ namespace ve {
 		///The entity type determines what kind of entity this is
 		enum veEntityType {	
 			VE_ENTITY_TYPE_NORMAL,				///<Normal object to be drawn
-			//VE_ENTITY_TYPE_CUBEMAP,				///<A cubemap for sky boxes
-			//VE_ENTITY_TYPE_CUBEMAP2,			///<A cubemap for sky boxes, but simulated
 			VE_ENTITY_TYPE_SKYPLANE,			///<A plane for sky boxes
 			VE_ENTITY_TYPE_TERRAIN_HEIGHTMAP	///<A heightmap for terrain modelling
 		};

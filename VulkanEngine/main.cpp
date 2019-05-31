@@ -108,7 +108,8 @@ namespace ve {
 		///Load the first level into the game engine
 		///The engine uses Y-UP, Left-handed
 		virtual void loadLevel( uint32_t numLevel=1) {
-			VEEngine::loadLevel(numLevel );
+
+			VEEngine::loadLevel(numLevel );			//create standard cameras and lights
 
 			VESceneNode *pScene;
 			VECHECKPOINTER( pScene = getSceneManagerPointer()->createSceneNode("Level 1", glm::mat4(1.0f), getRoot()), "Could not create Level 1" );

@@ -146,10 +146,7 @@ namespace ve {
 
 		std::lock_guard<std::mutex> lock(m_mutex);
 
-		VESceneNode *pMO = m_sceneNodes[entityName];	//if an entity with this name exists return it
-		if (pMO != nullptr) {
-			return pMO;
-		}
+		if( m_sceneNodes.count( entityName)>0 ) return  m_sceneNodes[entityName];			//if an entity with this name exists return it
 
 		Assimp::Importer importer;
 
@@ -168,7 +165,7 @@ namespace ve {
 
 		VECHECKPOINTER((void*)pScene, "Error: Could not load asset file " + filekey + "!");
 
-		pMO = createSceneNode2(entityName, glm::mat4(1.0f), parent);	//create a new scene node as parent of the whole scene
+		VESceneNode *pMO = createSceneNode2(entityName, glm::mat4(1.0f), parent);	//create a new scene node as parent of the whole scene
 
 		std::vector<VEMesh*> meshes;
 		createMeshes(pScene, filekey, meshes);					//create the new meshes if any
@@ -251,10 +248,13 @@ namespace ve {
 			const aiMesh *paiMesh = pScene->mMeshes[i];
 			std::string name = filekey + "/" + paiMesh->mName.C_Str();
 
-			VEMesh *pMesh = m_meshes[name];
-			if (pMesh == nullptr) {
+			VEMesh *pMesh = nullptr;
+			if (m_meshes.count(name)==0 ) {
 				pMesh = new VEMesh(name, paiMesh);
 				m_meshes[name] = pMesh;
+			}
+			else {
+				pMesh = m_meshes[name];
 			}
 			meshes.push_back(pMesh);
 		}
@@ -283,8 +283,8 @@ namespace ve {
 			paiMat->Get(AI_MATKEY_NAME, matname);
 
 			std::string name = filekey + "/" + matname.C_Str();
-			VEMaterial *pMat = m_materials[name];
-			if (pMat == nullptr) {
+			VEMaterial *pMat = nullptr;
+			if (m_materials.count(name)==0) {
 				pMat = new VEMaterial(name);
 				m_materials[name] = pMat;
 				int mode;
@@ -344,6 +344,10 @@ namespace ve {
 					if (pMat->mapHeight == nullptr) pMat->mapHeight = new VETexture(filekey + "/" + name, basedir, { name });
 				}
 			}
+			else {
+				pMat = m_materials[name];
+			}
+
 			materials.push_back(pMat);
 		}
 	}
@@ -385,10 +389,9 @@ namespace ve {
 													glm::mat4 transf, 
 													VESceneNode *parent) {
 
-		VESceneNode *pMO = m_sceneNodes[objectName];
-		if (pMO != nullptr) return pMO;
+		if (m_sceneNodes.count(objectName)>0) return m_sceneNodes[objectName];
 
-		pMO = new VESceneNode(objectName, transf, parent);
+		VESceneNode *pMO = new VESceneNode(objectName, transf, parent);
 		addSceneNode2( pMO );
 		sceneGraphChanged();
 		return pMO;
@@ -496,12 +499,15 @@ namespace ve {
 		std::string filekey = basedir + "/" + texName;
 		VEMesh * pMesh = m_meshes[STANDARD_MESH_PLANE];
 
-		VEMaterial *pMat = m_materials[filekey];
-		if (pMat == nullptr) {
+		VEMaterial *pMat = nullptr;
+		if (m_materials.count(filekey)==0) {
 			pMat = new VEMaterial(filekey);
 			m_materials[filekey] = pMat;
 
 			pMat->mapDiffuse = new VETexture(entityName, basedir, { texName });
+		}
+		else {
+			pMat = m_materials[filekey];
 		}
 
 		VEEntity *pEntity = createEntity2(entityName, VEEntity::VE_ENTITY_TYPE_SKYPLANE, pMesh, pMat, glm::mat4(1.0f), m_rootSceneNode );
@@ -668,12 +674,8 @@ namespace ve {
 	VESceneNode * VESceneManager::getSceneNode(std::string name) {
 		std::lock_guard<std::mutex> lock(m_mutex);
 
-		VESceneNode * pNode = nullptr;
-
-		if (m_sceneNodes.count(name) > 0) 
-			pNode = m_sceneNodes[name];
-
-		return pNode;
+		if (m_sceneNodes.count(name) == 0) return nullptr;
+		return m_sceneNodes[name];
 	}
 
 
@@ -686,7 +688,13 @@ namespace ve {
 	*/
 	void VESceneManager::removeSceneNode(std::string name) {
 		std::lock_guard<std::mutex> lock(m_mutex);
-		m_sceneNodes.erase(name);
+		if ( m_sceneNodes.count(name) > 0 ) {
+			VESceneNode *pNode = m_sceneNodes[name];
+			if ( pNode->hasParent() ) {
+				pNode->getParent()->removeChild(pNode);
+			}
+			m_sceneNodes.erase(name);
+		}
 	}
 
 
@@ -714,10 +722,10 @@ namespace ve {
 	*/
 	void VESceneManager::deleteSceneNodeAndChildren2(std::string name) {
 
+		if (m_sceneNodes.count(name) == 0) return;
 		VESceneNode * pNode = m_sceneNodes[name];
-		if (pNode == nullptr) return; 
 
-		if (pNode->getParent() != nullptr) pNode->getParent()->removeChild(pNode);
+		if (pNode->hasParent()) pNode->getParent()->removeChild(pNode);
 
 		std::vector<std::string> namelist;	//first create a list of all child names
 		createSceneNodeList2(pNode, namelist);
@@ -752,6 +760,7 @@ namespace ve {
 		std::vector<std::string> namelist;
 
 		for (auto pNode : m_rootSceneNode->getChildrenList()) {
+			m_rootSceneNode->removeChild( pNode );
 			namelist.push_back(pNode->getName());
 		}
 		for (auto name : namelist) {
@@ -803,6 +812,7 @@ namespace ve {
 	*/
 	VEMesh * VESceneManager::getMesh(std::string name) {
 		std::lock_guard<std::mutex> lock(m_mutex);
+		if (m_meshes.count(name) == 0) return nullptr;
 		return m_meshes[name];
 	};
 
@@ -817,8 +827,8 @@ namespace ve {
 	void VESceneManager::deleteMesh(std::string name) {
 		std::lock_guard<std::mutex> lock(m_mutex);
 
-		VEMesh * pMesh = m_meshes[name];
-		if (pMesh != nullptr) {
+		if (m_meshes.count(name)>0) {
+			VEMesh * pMesh = m_meshes[name];
 			m_meshes.erase(name);
 			delete pMesh;
 		}
@@ -832,6 +842,7 @@ namespace ve {
 	*/
 	VEMaterial * VESceneManager::getMaterial(std::string name) {
 		std::lock_guard<std::mutex> lock(m_mutex);
+		if (m_materials.count(name) == 0) return nullptr;
 		return m_materials[name];
 	};
 
@@ -846,8 +857,8 @@ namespace ve {
 	void VESceneManager::deleteMaterial(std::string name) {
 		std::lock_guard<std::mutex> lock(m_mutex);
 
-		VEMaterial * pMat = m_materials[name];
-		if (pMat != nullptr) {
+		if (m_materials.count(name)>0) {
+			VEMaterial * pMat = m_materials[name];
 			m_materials.erase(name);
 			delete pMat;
 		}
