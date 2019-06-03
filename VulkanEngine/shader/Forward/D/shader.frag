@@ -44,6 +44,7 @@ void main() {
     vec2 texCoord   = (fragTexCoord + texParam.zw)*texParam.xy;
     ivec4 iparam    = objectUBO.data.iparam;
     uint resIdx     = iparam.x % RESOURCEARRAYLENGTH;
+    vec3 normalW    = fragNormalW;  //to be consistent with DN
 
     //colors
     vec3 ambcol  = lightUBO.data.col_ambient.xyz;
@@ -69,7 +70,7 @@ void main() {
         result +=   dirlight( lightType, camPosW,
                               lightDirW, lightParam, shadowFactor,
                               ambcol, diffcol, speccol,
-                              fragPosW, fragNormalW, fragColor);
+                              fragPosW, normalW, fragColor);
     }
 
 
@@ -82,7 +83,7 @@ void main() {
         result +=   pointlight( lightType, camPosW,
                                 lightPosW, lightParam, shadowFactor,
                                 ambcol, diffcol, speccol,
-                                fragPosW, fragNormalW, fragColor);
+                                fragPosW, normalW, fragColor);
     }
 
     if( lightType == LIGHT_SPOT ) {
@@ -92,7 +93,7 @@ void main() {
         result +=  spotlight( lightType, camPosW,
                               lightPosW, lightDirW, lightParam, shadowFactor,
                               ambcol, diffcol, speccol,
-                              fragPosW, fragNormalW, fragColor);
+                              fragPosW, normalW, fragColor);
     }
 
     outColor = vec4( result, 1.0 );

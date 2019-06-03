@@ -55,7 +55,7 @@ void main() {
     vec3 B        = normalize( cross( T, N ) );
     mat3 TBN      = mat3(T,B,N);
     vec3 mapnorm  = normalize( texture(normalSamplerArray[resIdx], texCoord).xyz*2.0 - 1.0 );
-    vec3 normal   = normalize( TBN * mapnorm );
+    vec3 normalW  = normalize( TBN * mapnorm );
 
     //colors
     vec3 ambcol  = lightUBO.data.col_ambient.xyz;
@@ -81,7 +81,7 @@ void main() {
         result +=   dirlight( lightType, camPosW,
                               lightDirW, lightParam, shadowFactor,
                               ambcol, diffcol, speccol,
-                              fragPosW, fragNormalW, fragColor);
+                              fragPosW, normalW, fragColor);
     }
 
 
@@ -94,7 +94,7 @@ void main() {
         result +=   pointlight( lightType, camPosW,
                                 lightPosW, lightParam, shadowFactor,
                                 ambcol, diffcol, speccol,
-                                fragPosW, fragNormalW, fragColor);
+                                fragPosW, normalW, fragColor);
     }
 
     if( lightType == LIGHT_SPOT ) {
@@ -104,7 +104,7 @@ void main() {
         result +=  spotlight( lightType, camPosW,
                               lightPosW, lightDirW, lightParam, shadowFactor,
                               ambcol, diffcol, speccol,
-                              fragPosW, fragNormalW, fragColor);
+                              fragPosW, normalW, fragColor);
     }
 
     outColor = vec4( result, 1.0 );

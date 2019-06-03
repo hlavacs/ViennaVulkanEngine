@@ -619,30 +619,31 @@ namespace ve {
 		VELight *light1 = new VEDirectionalLight("StandardDirLight");
 		light1->lookAt(glm::vec3(0.0f, 20.0f, -20.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
 		light1->m_col_ambient = glm::vec4(0.1f, 0.1f, 0.1f, 1.0f);
-		light1->m_col_diffuse = glm::vec4(0.5f, 0.5f, 0.5f, 1.0f);
+		light1->m_col_diffuse = glm::vec4(0.9f, 0.9f, 0.9f, 1.0f);
 		light1->m_col_specular = glm::vec4(0.1f, 0.1f, 0.1f, 1.0f);
 		getSceneManagerPointer()->addSceneNode(light1, getRoot());
-		//getSceneManagerPointer()->switchOnLight(light1);
+		getSceneManagerPointer()->switchOnLight(light1);
+
+		VELight *light3 = new VEPointLight("StandardPointLight");		//sphere iis attached to this!
+		light3->m_col_ambient = glm::vec4(0.0f, 0.0f, 0.0f, 1.0f);
+		light3->m_col_diffuse = glm::vec4(0.99f, 0.99f, 0.6f, 1.0f);
+		light3->m_col_specular = glm::vec4(0.9f, 0.9f, 0.9f, 1.0f);
+		light3->m_param[0] = 100.0f;
+		camera->addChild(light3);
+		light3->multiplyTransform(glm::translate(glm::vec3(0.0f, 0.0f, 15.0f)));
+		getSceneManagerPointer()->addSceneNode(light3);
+		getSceneManagerPointer()->switchOnLight(light3);
 
 		VELight *light2 = new VESpotLight("StandardSpotLight");
 		light2->m_col_ambient = glm::vec4(0.0f, 0.0f, 0.0f, 1.0f);
 		light2->m_col_diffuse = glm::vec4(0.99f, 0.6f, 0.6f, 1.0f);
 		light2->m_col_specular = glm::vec4(0.0f, 0.0f, 0.0f, 1.0f);
+		light2->m_param[0] = 100.0f;
 		//light2->lookAt(glm::vec3(0.0f, 20.0f, 20.0f), glm::vec3(0.0f, 0.0f, 1.0f), glm::vec3(0.0f, 1.0f, 0.0f));
 		getSceneManagerPointer()->addSceneNode(light2, getRoot());
 		camera->addChild(light2);
 		light2->multiplyTransform(glm::translate(glm::vec3(5.0f, 0.0f, 0.0f)));
 		getSceneManagerPointer()->switchOnLight(light2);
-
-		VELight *light3 = new VEPointLight("StandardPointLight");		//sphere iis attached to this!
-		light3->m_col_ambient = glm::vec4(0.0f, 0.0f, 0.0f, 1.0f);
-		light3->m_col_diffuse = glm::vec4(0.99f, 0.99f, 0.6f, 1.0f);
-		light3->m_col_specular = glm::vec4(0.0f, 0.0f, 0.0f, 1.0f);
-		light3->m_param[0] = 100.0f;
-		camera->addChild(light3);
-		light3->multiplyTransform(glm::translate(glm::vec3(0.0f, 0.0f, 15.0f)));
-		getSceneManagerPointer()->addSceneNode(light3);
-		//getSceneManagerPointer()->switchOnLight(light3);
 
 	}
 
