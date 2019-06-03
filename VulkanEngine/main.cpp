@@ -88,15 +88,14 @@ namespace ve {
 			static std::uniform_real_distribution<> d{ 1.0f, stride }; 
 
 			VEMesh *pMesh;
-			VECHECKPOINTER( pMesh = getSceneManagerPointer()->getMesh("models/test/crate0/cube.obj/cube"), "Could not load model file" );
+			VECHECKPOINTER( pMesh = getSceneManagerPointer()->getMesh("models/test/crate0/cube.obj/cube") );
 
 			VEMaterial *pMat;
-			VECHECKPOINTER( pMat = getSceneManagerPointer()->getMaterial("models/test/crate0/cube.obj/cube"), "Could not load cube" );
+			VECHECKPOINTER( pMat = getSceneManagerPointer()->getMaterial("models/test/crate0/cube.obj/cube") );
 
 			for (uint32_t i = 0; i < n; i++) {		
 				VEEntity *e2;
-				VECHECKPOINTER( e2 = getSceneManagerPointer()->createEntity("The Cube" + std::to_string(i), pMesh, pMat, glm::mat4(1.0f), getRoot()),
-					"Could not create The Cube");
+				VECHECKPOINTER( e2 = getSceneManagerPointer()->createEntity("The Cube" + std::to_string(i), pMesh, pMat, glm::mat4(1.0f), getRoot()) );
 
 				e2->setTransform(glm::translate(glm::mat4(1.0f), glm::vec3( d(e) - stride/2.0f, d(e)/2.0f, d(e) - stride/2.0f)));
 				//e2->multiplyTransform(glm::scale(glm::mat4(1.0f), glm::vec3(10.0f, 10.0f, 10.0f)));
@@ -112,42 +111,42 @@ namespace ve {
 			VEEngine::loadLevel(numLevel );			//create standard cameras and lights
 
 			VESceneNode *pScene;
-			VECHECKPOINTER( pScene = getSceneManagerPointer()->createSceneNode("Level 1", glm::mat4(1.0f), getRoot()), "Could not create Level 1" );
+			VECHECKPOINTER( pScene = getSceneManagerPointer()->createSceneNode("Level 1", glm::mat4(1.0f), getRoot()) );
 	
 			//scene models
 
 			VESceneNode *sp1;
-			VECHECKPOINTER( sp1 = m_pSceneManager->createSkybox("The Sky", "models/test/sky/cloudy",
+			VECHECKPOINTER( sp1 = getSceneManagerPointer()->createSkybox("The Sky", "models/test/sky/cloudy",
 										{	"bluecloud_ft.jpg", "bluecloud_bk.jpg", "bluecloud_up.jpg", 
-											"bluecloud_dn.jpg", "bluecloud_rt.jpg", "bluecloud_lf.jpg" }), "Could not create Skybox" );
+											"bluecloud_dn.jpg", "bluecloud_rt.jpg", "bluecloud_lf.jpg" }) );
 			pScene->addChild(sp1);
 
 			RotatorListener *pRot;
-			VECHECKPOINTER( pRot = new RotatorListener("CubemapRotator", sp1, 0.01f, glm::vec3(0.0f, 1.0f, 0.0f)), "Could not create Rotator" );
+			VECHECKPOINTER( pRot = new RotatorListener("CubemapRotator", sp1, 0.01f, glm::vec3(0.0f, 1.0f, 0.0f)) );
 			getEnginePointer()->registerEventListener(pRot);
 
 			VESceneNode *e4;
-			VECHECKPOINTER( e4 = m_pSceneManager->loadModel("The Plane", "models/test", "plane_t_n_s.obj"), "Could not load plane obj" );
+			VECHECKPOINTER( e4 = getSceneManagerPointer()->loadModel("The Plane", "models/test", "plane_t_n_s.obj") );
 			e4->setTransform(glm::scale(glm::mat4(1.0f), glm::vec3(1000.0f, 1.0f, 1000.0f)));
 
 			VEEntity *pE4;
-			VECHECKPOINTER( pE4 = (VEEntity*)m_pSceneManager->getSceneNode("The Plane/plane_t_n_s.obj/plane/Entity_0"), "Could not get plane node" );
+			VECHECKPOINTER( pE4 = (VEEntity*)getSceneManagerPointer()->getSceneNode("The Plane/plane_t_n_s.obj/plane/Entity_0") );
 			pE4->setParam( glm::vec4(1000.0f, 1000.0f, 0.0f, 0.0f) );
 			pScene->addChild(e4);
 
-			VESceneNode *pointLight;
-			VECHECKPOINTER( pointLight = getSceneManager()->getSceneNode("StandardPointLight"), "Could not get point light pointer");
+			VESceneNode *pointLight = getSceneManagerPointer()->getSceneNode("StandardPointLight");
+			if (pointLight != nullptr) {
+				VESceneNode *eL;
+				VECHECKPOINTER(eL = getSceneManagerPointer()->loadModel("The Light", "models/test/sphere", "sphere.obj", 0, pointLight));
+				eL->multiplyTransform(glm::scale(glm::vec3(0.02f, 0.02f, 0.02f)));
 
-			VESceneNode *eL;
-			VECHECKPOINTER( eL = m_pSceneManager->loadModel("The Light", "models/test/sphere", "sphere.obj", 0, pointLight), "Could not load The Light");
-			eL->multiplyTransform(glm::scale(glm::vec3(0.02f,0.02f,0.02f)));
-
-			VEEntity *pE;
-			VECHECKPOINTER( pE = (VEEntity*)getSceneManager()->getSceneNode("The Light/sphere.obj/default/Entity_0"), "Could not get The Light");
-			pE->m_castsShadow = false;
+				VEEntity *pE;
+				VECHECKPOINTER( pE = (VEEntity*)getSceneManagerPointer()->getSceneNode("The Light/sphere.obj/default/Entity_0"));
+				pE->m_castsShadow = false;
+			}
 
 			VESceneNode *e1;
-			VECHECKPOINTER( e1 = m_pSceneManager->loadModel("The Cube", "models/test/crate0", "cube.obj"), "Could not load The Cube");
+			VECHECKPOINTER( e1 = getSceneManagerPointer()->loadModel("The Cube", "models/test/crate0", "cube.obj"));
 			e1->multiplyTransform( glm::scale(glm::mat4(1.0f), glm::vec3(10.0f, 10.0f, 10.0f)));
 			e1->multiplyTransform( glm::translate(glm::mat4(1.0f), glm::vec3(10.0f, 5.0f, 10.0f)));
 			pScene->addChild(e1);
@@ -172,22 +171,9 @@ int main() {
 
 	MyVulkanEngine mve(debug);	//enable or disable debugging (=callback, validation layers)
 
-	try {
-		mve.initEngine();
-		mve.loadLevel();
-		mve.run();
-	}
-	catch ( const std::runtime_error & err ) {
-		if (mve.getLoopCount() == 0) {							//engine was not initialized
-			std::cout << "Error: " << err.what() << std::endl;	//just output to console
-			char in = getchar();
-			return 1;
-		}
-
-		getEnginePointer()->fatalError(err.what());		//engine has been initialized
-		mve.run();										//output error in window
-		return 1;
-	}
+	mve.initEngine();
+	mve.loadLevel();
+	mve.run();
 
 	return 0;
 }

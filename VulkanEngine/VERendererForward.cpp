@@ -322,7 +322,8 @@ namespace ve {
 			if (vkCreateSemaphore(m_device, &semaphoreInfo, nullptr, &m_imageAvailableSemaphores[i]) != VK_SUCCESS ||
 				vkCreateSemaphore(m_device, &semaphoreInfo, nullptr, &m_renderFinishedSemaphores[i]) != VK_SUCCESS ||
 				vkCreateFence(m_device, &fenceInfo, nullptr, &m_inFlightFences[i]) != VK_SUCCESS ) {
-				getEnginePointer()->fatalError("Failed to create synchronization objects for a frame!");
+				assert(false);
+				exit(1);
 			}
 		}
 	}
@@ -453,7 +454,8 @@ namespace ve {
 			return;
 		}
 		else if (result != VK_SUCCESS && result != VK_SUBOPTIMAL_KHR) {
-			getEnginePointer()->fatalError("Failed to acquire swap chain image!");
+			assert(false);
+			exit(1);
 		}
 
 		if (m_commandBuffers[imageIndex] == VK_NULL_HANDLE ) {
@@ -504,7 +506,8 @@ namespace ve {
 			recreateSwapchain();
 		}
 		else if (result != VK_SUCCESS) {
-			getEnginePointer()->fatalError("failed to present swap chain image!");
+			assert(false);
+			exit(1);
 		}
 
 		m_currentFrame = (m_currentFrame + 1) % MAX_FRAMES_IN_FLIGHT;		//count up the current frame number

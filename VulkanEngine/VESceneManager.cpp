@@ -114,7 +114,7 @@ namespace ve {
 			//aiProcess_FixInfacingNormals |
 			aiFlags);
 
-		VECHECKPOINTER( (void*)pScene, "Error: Could not load asset file " + filekey + "!" );
+		VECHECKPOINTER( (void*)pScene );
 
 		createMeshes(pScene, filekey, meshes);					//create new meshes if any
 		createMaterials(pScene, basedir, filekey, materials);	//create new materials if any
@@ -163,7 +163,7 @@ namespace ve {
 			//aiProcess_FixInfacingNormals |
 			aiFlags);
 
-		VECHECKPOINTER((void*)pScene, "Error: Could not load asset file " + filekey + "!");
+		VECHECKPOINTER((void*)pScene);
 
 		VESceneNode *pMO = createSceneNode2(entityName, glm::mat4(1.0f), parent);	//create a new scene node as parent of the whole scene
 
@@ -392,7 +392,7 @@ namespace ve {
 		if (m_sceneNodes.count(objectName)>0) return m_sceneNodes[objectName];
 
 		VESceneNode *pMO = new VESceneNode(objectName, transf, parent);
-		addSceneNode2( pMO );
+		addSceneNodeAndChildren2( pMO );
 		sceneGraphChanged();
 		return pMO;
 	}
@@ -451,7 +451,7 @@ namespace ve {
 												VEMesh *pMesh, VEMaterial *pMat, 
 												glm::mat4 transf, VESceneNode *parent) {
 		VEEntity *pEntity = new VEEntity(entityName, type, pMesh, pMat, transf, parent);
-		addSceneNode2(pEntity);				// store entity in the entity array
+		addSceneNodeAndChildren2(pEntity);				// store entity in the entity array
 
 		if (pMesh != nullptr && pMat != nullptr) {
 			getRendererPointer()->addEntityToSubrenderer(pEntity);
@@ -459,6 +459,44 @@ namespace ve {
 		sceneGraphChanged();
 		return pEntity;
 	}
+
+
+	VECamera * VESceneManager::createCamera(std::string cameraName, VECamera::veCameraType type, glm::mat4 transf, VESceneNode *parent) {
+		std::lock_guard<std::mutex> lock(m_mutex);
+
+		VECamera *pCam = nullptr;
+		if (type == VECamera::VE_CAMERA_TYPE_PROJECTIVE) {
+			pCam = new VECameraProjective(cameraName, transf, parent );
+		}
+		else {
+			pCam = new VECameraOrtho(cameraName, transf, parent);
+		}
+
+		addSceneNodeAndChildren2(pCam);
+		return pCam;
+	}
+
+
+
+	VELight * VESceneManager::createLight(std::string lightName, VELight::veLightType type, glm::mat4 transf, VESceneNode *parent) {
+		//std::lock_guard<std::mutex> lock(m_mutex);
+
+		VELight *pLight = nullptr;
+		if (type == VELight::VE_LIGHT_TYPE_DIRECTIONAL) {
+			pLight = new VEDirectionalLight(lightName, transf, parent);
+		} else 		if (type == VELight::VE_LIGHT_TYPE_POINT) {
+			pLight = new VEPointLight(lightName, transf, parent);
+		}
+		else {
+			pLight = new VESpotLight(lightName, transf, parent);
+		}
+		
+		addSceneNodeAndChildren2(pLight);
+		return pLight;
+	}
+
+
+
 
 	//-----------------------------------------------------------------------------------------
 	//create complex entities
@@ -630,9 +668,9 @@ namespace ve {
 	* \param[in] parent Pointer to the new parent of this node
 	*
 	*/
-	void VESceneManager::addSceneNode(VESceneNode *pNode, VESceneNode *parent) {
+	void VESceneManager::addSceneNodeAndChildren(VESceneNode *pNode, VESceneNode *parent) {
 		std::lock_guard<std::mutex> lock(m_mutex);
-		addSceneNode2(pNode, parent);
+		addSceneNodeAndChildren2(pNode, parent);
 	}
 
 
@@ -647,7 +685,7 @@ namespace ve {
 	* \param[in] parent Pointer to the new parent of this node
 	*
 	*/
-	void VESceneManager::addSceneNode2(VESceneNode *pNode, VESceneNode *parent) {
+	void VESceneManager::addSceneNodeAndChildren2(VESceneNode *pNode, VESceneNode *parent) {
 
 		if (pNode->getNodeType() == VESceneNode::VE_NODE_TYPE_SCENEOBJECT) {
 			VESceneObject *pObject = (VESceneObject*)pNode;

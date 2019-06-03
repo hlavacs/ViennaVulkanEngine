@@ -822,7 +822,7 @@ namespace ve {
 		for (uint32_t i = 0; i < 4; i++) {
 			VECameraOrtho *pCam = new VECameraOrtho(m_name + "-ShadowCam" + std::to_string(i) );
 			m_shadowCameras.push_back(pCam );		//no parent - > transform is also world matrix
-			getSceneManagerPointer()->addSceneNode(pCam);
+			getSceneManagerPointer()->addSceneNodeAndChildren(pCam);
 		}
 	};
 
@@ -875,7 +875,7 @@ namespace ve {
 		for (uint32_t i = 0; i < 6; i++) {
 			VECameraProjective *pCam = new VECameraProjective(m_name + "-ShadowCam" + std::to_string(i));
 			m_shadowCameras.push_back(pCam);		//no parent - > transform is also world matrix
-			getSceneManagerPointer()->addSceneNode(pCam);
+			getSceneManagerPointer()->addSceneNodeAndChildren(pCam);
 		}
 	};
 
@@ -946,7 +946,7 @@ namespace ve {
 			VECameraProjective *pCam = new VECameraProjective(m_name + "-ShadowCam" + std::to_string(i));
 			m_shadowCameras.push_back(pCam);		//no parent - > transform is also world matrix
 			//addChild(pCam);
-			getSceneManagerPointer()->addSceneNode(pCam);
+			getSceneManagerPointer()->addSceneNodeAndChildren(pCam);
 		};
 	};
 

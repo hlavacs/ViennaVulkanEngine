@@ -24,7 +24,8 @@ namespace vh {
 		std::ifstream file(filename, std::ios::ate | std::ios::binary);
 
 		if (!file.is_open()) {
-			throw std::runtime_error("failed to open file!");
+			assert(false);
+			exit(1);
 		}
 
 		size_t fileSize = (size_t)file.tellg();

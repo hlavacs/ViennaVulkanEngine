@@ -58,7 +58,8 @@ namespace vh {
 	VkResult vhDevCreateInstance(std::vector<const char*> &extensions, std::vector<const char*> &validationLayers, VkInstance *instance) {
 
 		if (validationLayers.size() > 0 && !checkValidationLayerSupport(validationLayers) ) {
-			throw std::runtime_error("validation layers requested, but not available!");
+			assert(false);
+			exit(1);
 		}
 
 		VkApplicationInfo appInfo = {};
@@ -237,7 +238,8 @@ namespace vh {
 		VHCHECKRESULT( vkEnumeratePhysicalDevices(instance, &deviceCount, nullptr) );
 
 		if (deviceCount == 0) {
-			throw std::runtime_error("failed to find GPUs with Vulkan support!");
+			assert(false);
+			exit(1);
 		}
 
 		std::vector<VkPhysicalDevice> devices(deviceCount);
@@ -289,7 +291,8 @@ namespace vh {
 			}
 		}
 
-		throw std::runtime_error("failed to find supported format!");
+		assert(false);
+		exit(1);
 	}
 
 

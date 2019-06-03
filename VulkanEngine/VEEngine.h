@@ -93,7 +93,6 @@ namespace ve {
 
 		virtual void initEngine();							//Create all engine components
 		virtual void run();									//Enter the render loop
-		virtual void fatalError(std::string message);		//Show an error message and close down the engine
 		virtual void end();									//end the render loop
 		virtual void loadLevel(uint32_t numLevel = 1);		//load standard level with standard camera and lights
 

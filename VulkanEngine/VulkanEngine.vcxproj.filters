@@ -95,9 +95,6 @@
     <ClInclude Include="VESubrenderFW_Skyplane.h">
       <Filter>Header Files\VESubrender</Filter>
     </ClInclude>
-    <ClInclude Include="VEEventListenerNuklearError.h">
-      <Filter>Header Files\VEEventListener</Filter>
-    </ClInclude>
     <ClInclude Include="VEEventListener.h">
       <Filter>Header Files\VEEventListener</Filter>
     </ClInclude>
@@ -195,9 +192,6 @@
     </ClCompile>
     <ClCompile Include="VHSwapchain.cpp">
       <Filter>Source Files\VHelper</Filter>
-    </ClCompile>
-    <ClCompile Include="VEEventListenerNuklearError.cpp">
-      <Filter>Source Files\VEEventListener</Filter>
     </ClCompile>
     <ClCompile Include="VEEventListener.cpp">
       <Filter>Source Files\VEEventListener</Filter>

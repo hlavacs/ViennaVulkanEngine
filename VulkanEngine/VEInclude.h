@@ -13,7 +13,6 @@
 #include "VEEventListener.h"
 #include "VEEventListenerGLFW.h"
 #include "VEEventListenerNuklear.h"
-#include "VEEventListenerNuklearError.h"
 #include "VEEventListenerNuklearDebug.h"
 #include "VEWindow.h"
 #include "VEWindowGLFW.h"
@@ -34,20 +33,16 @@
 
 
 //use this macro to check the function result, if its not VK_SUCCESS then return the error
-#define VECHECKRESULT(x, msg) { \
+#define VECHECKRESULT(x) { \
 		VkResult retval = (x); \
-		if (retval != VK_SUCCESS) { \
-			throw std::runtime_error(msg); \
-		} \
+		assert (retval == VK_SUCCESS); \
 	}
 
 
 //use this macro to check the function result, if its not VK_SUCCESS then return the error
-#define VECHECKPOINTER(x, msg) { \
+#define VECHECKPOINTER(x) { \
 		void* pointer = (x); \
-		if (!pointer) { \
-			throw std::runtime_error(msg); \
-		} \
+		assert (pointer!=nullptr); \
 	}
 
 

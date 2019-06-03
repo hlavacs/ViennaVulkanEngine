@@ -175,7 +175,6 @@
     <ClInclude Include="CLShape.h" />
     <ClInclude Include="VEEventListenerNuklear.h" />
     <ClInclude Include="VEEventListenerNuklearDebug.h" />
-    <ClInclude Include="VEEventListenerNuklearError.h" />
     <ClInclude Include="VEMaterial.h" />
     <ClInclude Include="VESubrenderFW.h" />
     <ClInclude Include="VESubrenderFW_Nuklear.h" />
@@ -208,7 +207,6 @@
     <ClCompile Include="VEEventListenerGLFW.cpp" />
     <ClCompile Include="VEEventListenerNuklear.cpp" />
     <ClCompile Include="VEEventListenerNuklearDebug.cpp" />
-    <ClCompile Include="VEEventListenerNuklearError.cpp" />
     <ClCompile Include="VEMaterial.cpp" />
     <ClCompile Include="VENamedClass.cpp" />
     <ClCompile Include="VERenderer.cpp" />

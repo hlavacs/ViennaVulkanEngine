@@ -138,7 +138,8 @@ namespace vh {
 		createInfo.clipped = VK_TRUE;
 
 		if (vkCreateSwapchainKHR(device, &createInfo, nullptr, swapChain) != VK_SUCCESS) {
-			throw std::runtime_error("failed to create swap chain!");
+			assert(false);
+			exit(1);
 		}
 
 		VHCHECKRESULT( vkGetSwapchainImagesKHR(device, *swapChain, &imageCount, nullptr) );

@@ -30,6 +30,7 @@ namespace ve {
 	*/
 
 	class VESceneNode : public VENamedClass {
+		friend VESceneManager;
 
 	public:
 		///Object type, can be node, entity for drawing, camera or light
@@ -44,15 +45,17 @@ namespace ve {
 		VESceneNode *				m_parent = nullptr;				///<Pointer to entity parent
 		std::mutex					m_mutex;						///<Mutex for locking access to this node
 
+		//constructor
+		VESceneNode(std::string name, glm::mat4 transf = glm::mat4(1.0f), VESceneNode *parent = nullptr);
+
+		///Destructor of the scene node class.
+		virtual ~VESceneNode() {};
+
 	public:
 
 		//-------------------------------------------------------------------------------------
 		//Class and type
 
-		VESceneNode(std::string name, glm::mat4 transf = glm::mat4(1.0f), VESceneNode *parent = nullptr);
-
-		///Destructor of the scene node class.
-		virtual ~VESceneNode() {};
 
 		///\returns the scene node type
 		virtual veNodeType	getNodeType() { return VE_NODE_TYPE_SCENENODE; };
@@ -117,6 +120,7 @@ namespace ve {
 	*/
 
 	class VESceneObject : public VESceneNode {
+		friend VESceneManager;
 
 	public:
 
@@ -130,11 +134,11 @@ namespace ve {
 	protected:
 		void updateUBO( void *pUBO, uint32_t sizeUBO, uint32_t imageIndex ); //Helper function to call VMA functions
 
-	public:
-		vh::vhMemoryHandle				m_memoryHandle = {};			///<Handle to the UBO memory 
-
 		VESceneObject(std::string name, glm::mat4 transf = glm::mat4(1.0f), VESceneNode *parent = nullptr, uint32_t sizeUBO = 0);
 		virtual ~VESceneObject();
+
+	public:
+		vh::vhMemoryHandle				m_memoryHandle = {};			///<Handle to the UBO memory 
 
 		///\returns the scene node type
 		virtual veNodeType getNodeType() { return VE_NODE_TYPE_SCENEOBJECT; };
@@ -164,6 +168,7 @@ namespace ve {
 	*/
 
 	class VEEntity : public VESceneObject {
+		friend VESceneManager;
 
 	public:
 
@@ -188,6 +193,12 @@ namespace ve {
 		veEntityType				m_entityType = VE_ENTITY_TYPE_NORMAL;			///<Entity type
 		glm::vec4					m_param = glm::vec4(1.0f, 1.0f, 0.0f, 0.0f);	///<Free parameter, e.g. for texture animation
 		uint32_t					m_resourceIdx = 0;								///<Idx into subrenderer list of resources
+
+		VEEntity(	std::string name, veEntityType type,
+					VEMesh *pMesh, VEMaterial *pMat,
+					glm::mat4 transf, VESceneNode *parent);
+		virtual ~VEEntity();
+
 	public:
 		VEMesh *					m_pMesh = nullptr;				///<Pointer to entity mesh
 		VEMaterial *				m_pMaterial = nullptr;			///<Pointer to entity material
@@ -199,10 +210,6 @@ namespace ve {
 		//-------------------------------------------------------------------------------------
 		//Class and type
 
-		VEEntity(	std::string name, veEntityType type,
-					VEMesh *pMesh, VEMaterial *pMat,
-					glm::mat4 transf, VESceneNode *parent);
-		virtual ~VEEntity();
 
 		///\returns the scene node type
 		virtual veObjectType getObjectType() { return VE_OBJECT_TYPE_ENTITY; };
@@ -271,15 +278,15 @@ namespace ve {
 		float m_farPlaneFraction = 1.0f;	///<If this is a shadow cam: fraction of frustum covered by this cam, end
 
 		//-------------------------------------------------------------------------------------
-		//Class and type
+		//Type
 
-		VECamera(	std::string name, glm::mat4 transf = glm::mat4(1.0f), VESceneNode *parent=nullptr );
+		VECamera(std::string name, glm::mat4 transf = glm::mat4(1.0f), VESceneNode *parent = nullptr);
 
-		VECamera(	std::string name, 
-					float nearPlane, float farPlane, 
-					float nearPlaneFraction = 0.0f, float farPlaneFraction = 1.0f,
-					glm::mat4 transf = glm::mat4(1.0f),
-					VESceneNode *parent = nullptr );
+		VECamera(std::string name,
+			float nearPlane, float farPlane,
+			float nearPlaneFraction = 0.0f, float farPlaneFraction = 1.0f,
+			glm::mat4 transf = glm::mat4(1.0f),
+			VESceneNode *parent = nullptr);
 
 		virtual ~VECamera() {};
 
@@ -325,15 +332,15 @@ namespace ve {
 	* This class assumes a projective mapping with a camera eye point.
 	*
 	*/
+	class VEPointLight;
+	class VESpotLight; 
 
 	class VECameraProjective : public VECamera {
-	public:
-		float m_aspectRatio = 16.0f / 9.0f;		///<Ratio between width and height of camera (and window).
-		float m_fov = 45.0f;					///<Vertical field of view in degrees
+		friend VESceneManager;
+		friend VEPointLight;
+		friend VESpotLight;
 
-		//-------------------------------------------------------------------------------------
-		//Class and type
-
+	protected:
 		VECameraProjective(std::string name, glm::mat4 transf = glm::mat4(1.0f), VESceneNode *parent = nullptr);
 		VECameraProjective(	std::string name, 
 							float nearPlane, float farPlane, 
@@ -343,6 +350,13 @@ namespace ve {
 
 		///Destructor projective camera
 		virtual ~VECameraProjective() {};
+
+	public:
+		float m_aspectRatio = 16.0f / 9.0f;		///<Ratio between width and height of camera (and window).
+		float m_fov = 45.0f;					///<Vertical field of view in degrees
+
+		//-------------------------------------------------------------------------------------
+		//Type
 
 		///\returns the camera type
 		virtual veCameraType getCameraType() { return VE_CAMERA_TYPE_PROJECTIVE; };
@@ -373,14 +387,13 @@ namespace ve {
 	*
 	*/
 
+	class VEDirectionalLight;
+
 	class VECameraOrtho : public VECamera {
-	public:
-		float m_width = 1.0f/20.0f;			///<Camera width
-		float m_height = 1.0f/20.0f;		///<Camera height
+		friend VESceneManager;
+		friend VEDirectionalLight;
 
-		//-------------------------------------------------------------------------------------
-		//Class and type
-
+	protected:
 		VECameraOrtho(	std::string name, glm::mat4 transf = glm::mat4(1.0f), VESceneNode *parent = nullptr );
 		VECameraOrtho(	std::string name, 
 						float nearPlane, float farPlane, 
@@ -388,6 +401,13 @@ namespace ve {
 						float nearPlaneFraction = 0.0f, float farPlaneFraction = 1.0f,
 						glm::mat4 transf = glm::mat4(1.0f), VESceneNode *parent = nullptr);
 		virtual ~VECameraOrtho() {};
+
+	public:
+		float m_width = 1.0f/20.0f;			///<Camera width
+		float m_height = 1.0f/20.0f;		///<Camera height
+
+		//-------------------------------------------------------------------------------------
+		//Type
 
 		///\returns the camera type
 		virtual veCameraType getCameraType() { return VE_CAMERA_TYPE_ORTHO; };
@@ -422,6 +442,7 @@ namespace ve {
 	*/
 
 	class VELight : public VESceneObject {
+		friend VESceneManager;
 
 	public:
 		///A light can have one of these types
@@ -443,6 +464,10 @@ namespace ve {
 			VECamera::veUBOPerCamera_t shadowCameras[6];	///<Up to 6 different shadows, each having its own camera and shadow map
 		};
 
+	protected:
+		VELight(std::string name, glm::mat4 transf = glm::mat4(1.0f), VESceneNode *parent = nullptr);
+		virtual ~VELight();
+
 	public:
 		struct veUBOPerLight_t	m_ubo;						///<The UBO that is copied to the GPU
 		std::vector<VECamera*>	m_shadowCameras;			///<Up to 6 shadow cameras for this light
@@ -453,10 +478,7 @@ namespace ve {
 		glm::vec4 m_param		 = glm::vec4(100.0f, 1.0f, 1.0f, 1.0f);			///<Light parameters: 0...reach
 
 		//-------------------------------------------------------------------------------------
-		//Class and type
-
-		VELight(std::string name, glm::mat4 transf = glm::mat4(1.0f), VESceneNode *parent = nullptr);
-		virtual ~VELight();
+		//Type
 
 		///Update all shadow cameras of this light - pure virtual for the light base class
 		virtual void updateShadowCameras(VECamera *pCamera, uint32_t imageIndex )=0;
@@ -490,15 +512,15 @@ namespace ve {
 	*/
 
 	class VEDirectionalLight : public VELight {
-	public:
+		friend VESceneManager;
 
-		//-------------------------------------------------------------------------------------
-		//Class and type
-
+	protected:
 		VEDirectionalLight(	std::string name, glm::mat4 transf = glm::mat4(1.0f), VESceneNode *parent = nullptr);
 
 		///Destructor of the directional light
 		virtual ~VEDirectionalLight() {};
+
+	public:
 
 		virtual void updateShadowCameras(VECamera *pCamera, uint32_t imageIndex);
 
@@ -519,15 +541,15 @@ namespace ve {
 	*/
 
 	class VEPointLight : public VELight {
-	public:
+		friend VESceneManager;
 
-		//-------------------------------------------------------------------------------------
-		//Class and type
-
+	protected:
 		VEPointLight(std::string name, glm::mat4 transf = glm::mat4(1.0f), VESceneNode *parent = nullptr);
 
 		///Destructor of the point light
 		virtual ~VEPointLight() {};
+
+	public:
 
 		virtual void updateShadowCameras(VECamera *pCamera, uint32_t imageIndex);
 
@@ -546,15 +568,15 @@ namespace ve {
 	*/
 
 	class VESpotLight : public VELight {
-	public:
+		friend VESceneManager;
 
-		//-------------------------------------------------------------------------------------
-		//Class and type
-
+	protected:
 		VESpotLight(std::string name, glm::mat4 transf = glm::mat4(1.0f), VESceneNode *parent = nullptr);
 
 		///Destructor of the spot light
 		virtual ~VESpotLight() {};
+
+	public:
 
 		virtual void updateShadowCameras(VECamera *pCamera, uint32_t imageIndex);
 

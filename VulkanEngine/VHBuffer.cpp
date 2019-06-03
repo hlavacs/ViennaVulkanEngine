@@ -615,7 +615,8 @@ namespace vh {
 		}
 
 		if (!pixels) {
-			throw std::runtime_error("failed to load texture cube image!");
+			assert(false);
+			exit(1);
 		}
 
 		uint32_t texWidth  = texCube.extent().x;
