@@ -66,6 +66,7 @@ $(function() {
 </div><!-- top -->
 <div class="header">
   <div class="summary">
+<a href="#pub-types">Public Types</a> &#124;
 <a href="#pub-methods">Public Member Functions</a> &#124;
 <a href="#pub-attribs">Public Attributes</a> &#124;
 <a href="structve_1_1ve_event-members.html">List of all members</a>  </div>
@@ -79,29 +80,57 @@ $(function() {
 
 <p><code>#include &lt;<a class="el" href="_v_e_event_listener_8h_source.html">VEEventListener.h</a>&gt;</code></p>
 <table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-types"></a>
+Public Types</h2></td></tr>
+<tr class="memitem:a0addb8c4b54dcea16b57b10bf490a0a6"><td class="memItemLeft" align="right" valign="top">enum &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structve_1_1ve_event.html#a0addb8c4b54dcea16b57b10bf490a0a6">veEventSubsystem</a> { <a class="el" href="structve_1_1ve_event.html#a0addb8c4b54dcea16b57b10bf490a0a6a6b13d7241b63f9a92f4f356b43e072bc">VE_EVENT_SUBSYSTEM_GENERIC</a>, 
+<a class="el" href="structve_1_1ve_event.html#a0addb8c4b54dcea16b57b10bf490a0a6aa00e966851e5427c5859fc3a5e64816b">VE_EVENT_SUBSYSTEM_GLFW</a>
+ }</td></tr>
+<tr class="memdesc:a0addb8c4b54dcea16b57b10bf490a0a6"><td class="mdescLeft">&#160;</td><td class="mdescRight">Enumerates possible subsystems.  <a href="structve_1_1ve_event.html#a0addb8c4b54dcea16b57b10bf490a0a6">More...</a><br /></td></tr>
+<tr class="separator:a0addb8c4b54dcea16b57b10bf490a0a6"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a726c4f6879b113926d4bc38c2d1731ff"><td class="memItemLeft" align="right" valign="top">enum &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structve_1_1ve_event.html#a726c4f6879b113926d4bc38c2d1731ff">veEventType</a> { <br />
+&#160;&#160;<a class="el" href="structve_1_1ve_event.html#a726c4f6879b113926d4bc38c2d1731ffa6b226b17517c4f726c617739841a01b4">VE_EVENT_NONE</a> =0, 
+<a class="el" href="structve_1_1ve_event.html#a726c4f6879b113926d4bc38c2d1731ffabd198feae66a7b77ecef213c796d2840">VE_EVENT_FRAME_STARTED</a>, 
+<a class="el" href="structve_1_1ve_event.html#a726c4f6879b113926d4bc38c2d1731ffa7044423655add48addf30cb1446aa186">VE_EVENT_FRAME_ENDED</a>, 
+<a class="el" href="structve_1_1ve_event.html#a726c4f6879b113926d4bc38c2d1731ffa5a7222d32d9280be883fb0e961902ea5">VE_EVENT_DRAW_OVERLAY</a>, 
+<br />
+&#160;&#160;<a class="el" href="structve_1_1ve_event.html#a726c4f6879b113926d4bc38c2d1731ffae75ce8c1c897061849bd8cc1d5935c83">VE_EVENT_KEYBOARD</a>, 
+<a class="el" href="structve_1_1ve_event.html#a726c4f6879b113926d4bc38c2d1731ffadc112a78e4eef2744c81a636fd968302">VE_EVENT_MOUSEMOVE</a>, 
+<a class="el" href="structve_1_1ve_event.html#a726c4f6879b113926d4bc38c2d1731ffaf7924c0084f0f8ea4ecd3a40dad5c5e0">VE_EVENT_MOUSEBUTTON</a>, 
+<a class="el" href="structve_1_1ve_event.html#a726c4f6879b113926d4bc38c2d1731ffacc8a47f7e74f4bef53f82ddb7b96b749">VE_EVENT_MOUSESCROLL</a>, 
+<br />
+&#160;&#160;<b>VE_EVENT_LAST</b>
+<br />
+ }</td></tr>
+<tr class="memdesc:a726c4f6879b113926d4bc38c2d1731ff"><td class="mdescLeft">&#160;</td><td class="mdescRight">Enumerates event types.  <a href="structve_1_1ve_event.html#a726c4f6879b113926d4bc38c2d1731ff">More...</a><br /></td></tr>
+<tr class="separator:a726c4f6879b113926d4bc38c2d1731ff"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ac0494608ee3c2ba4f517c26f25f9af3e"><td class="memItemLeft" align="right" valign="top">enum &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structve_1_1ve_event.html#ac0494608ee3c2ba4f517c26f25f9af3e">veEventLifeTime</a> { <a class="el" href="structve_1_1ve_event.html#ac0494608ee3c2ba4f517c26f25f9af3ea9da6dcaf647f7378e2c490cf8a8d924b">VE_EVENT_LIFETIME_ONCE</a>, 
+<a class="el" href="structve_1_1ve_event.html#ac0494608ee3c2ba4f517c26f25f9af3ea43fed52c6c6840b823f3d8d6ff374cc4">VE_EVENT_LIFETIME_CONTINUOUS</a>
+ }</td></tr>
+<tr class="separator:ac0494608ee3c2ba4f517c26f25f9af3e"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-methods"></a>
 Public Member Functions</h2></td></tr>
 <tr class="memitem:a5e0979f5989201f75416b707fca4a041"><td class="memItemLeft" align="right" valign="top"><a id="a5e0979f5989201f75416b707fca4a041"></a>
-&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structve_1_1ve_event.html#a5e0979f5989201f75416b707fca4a041">veEvent</a> (<a class="el" href="namespaceve.html#ae6e59e4741b466de51dfe981360dbfea">veEventType</a> evt)</td></tr>
+&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structve_1_1ve_event.html#a5e0979f5989201f75416b707fca4a041">veEvent</a> (<a class="el" href="structve_1_1ve_event.html#a726c4f6879b113926d4bc38c2d1731ff">veEventType</a> evt)</td></tr>
 <tr class="memdesc:a5e0979f5989201f75416b707fca4a041"><td class="mdescLeft">&#160;</td><td class="mdescRight">Constructor using default subsystem. <br /></td></tr>
 <tr class="separator:a5e0979f5989201f75416b707fca4a041"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:abbb7aa6a48347860dcc3a174fc7bd4b9"><td class="memItemLeft" align="right" valign="top"><a id="abbb7aa6a48347860dcc3a174fc7bd4b9"></a>
-&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structve_1_1ve_event.html#abbb7aa6a48347860dcc3a174fc7bd4b9">veEvent</a> (<a class="el" href="namespaceve.html#ac9f43b456d5cecf8e63fcd901addd30c">veEventSubsystem</a> sub, <a class="el" href="namespaceve.html#ae6e59e4741b466de51dfe981360dbfea">veEventType</a> evt)</td></tr>
+&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structve_1_1ve_event.html#abbb7aa6a48347860dcc3a174fc7bd4b9">veEvent</a> (<a class="el" href="structve_1_1ve_event.html#a0addb8c4b54dcea16b57b10bf490a0a6">veEventSubsystem</a> sub, <a class="el" href="structve_1_1ve_event.html#a726c4f6879b113926d4bc38c2d1731ff">veEventType</a> evt)</td></tr>
 <tr class="memdesc:abbb7aa6a48347860dcc3a174fc7bd4b9"><td class="mdescLeft">&#160;</td><td class="mdescRight">Constructor. <br /></td></tr>
 <tr class="separator:abbb7aa6a48347860dcc3a174fc7bd4b9"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-attribs"></a>
 Public Attributes</h2></td></tr>
 <tr class="memitem:afeebae6769e84bbfea2d3916dc4ac67a"><td class="memItemLeft" align="right" valign="top"><a id="afeebae6769e84bbfea2d3916dc4ac67a"></a>
-<a class="el" href="namespaceve.html#ac9f43b456d5cecf8e63fcd901addd30c">veEventSubsystem</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structve_1_1ve_event.html#afeebae6769e84bbfea2d3916dc4ac67a">subsystem</a> = <a class="el" href="namespaceve.html#ac9f43b456d5cecf8e63fcd901addd30cae32dfb8dce57a3fc1cead8ebc49986ff">VE_EVENT_SUBSYSTEM_GENERIC</a></td></tr>
+<a class="el" href="structve_1_1ve_event.html#a0addb8c4b54dcea16b57b10bf490a0a6">veEventSubsystem</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structve_1_1ve_event.html#afeebae6769e84bbfea2d3916dc4ac67a">subsystem</a> = <a class="el" href="structve_1_1ve_event.html#a0addb8c4b54dcea16b57b10bf490a0a6a6b13d7241b63f9a92f4f356b43e072bc">VE_EVENT_SUBSYSTEM_GENERIC</a></td></tr>
 <tr class="memdesc:afeebae6769e84bbfea2d3916dc4ac67a"><td class="mdescLeft">&#160;</td><td class="mdescRight">Event subsystem. <br /></td></tr>
 <tr class="separator:afeebae6769e84bbfea2d3916dc4ac67a"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a74d211229b041b20230f0bb71c34a91a"><td class="memItemLeft" align="right" valign="top"><a id="a74d211229b041b20230f0bb71c34a91a"></a>
-<a class="el" href="namespaceve.html#ae6e59e4741b466de51dfe981360dbfea">veEventType</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structve_1_1ve_event.html#a74d211229b041b20230f0bb71c34a91a">type</a> = <a class="el" href="namespaceve.html#ae6e59e4741b466de51dfe981360dbfeaa7b27aad6ca9b4f5590845bb69cd56c12">VE_EVENT_NONE</a></td></tr>
+<a class="el" href="structve_1_1ve_event.html#a726c4f6879b113926d4bc38c2d1731ff">veEventType</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structve_1_1ve_event.html#a74d211229b041b20230f0bb71c34a91a">type</a> = <a class="el" href="structve_1_1ve_event.html#a726c4f6879b113926d4bc38c2d1731ffa6b226b17517c4f726c617739841a01b4">VE_EVENT_NONE</a></td></tr>
 <tr class="memdesc:a74d211229b041b20230f0bb71c34a91a"><td class="mdescLeft">&#160;</td><td class="mdescRight">Event type. <br /></td></tr>
 <tr class="separator:a74d211229b041b20230f0bb71c34a91a"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:af6bc4cb61472ca596e78f15907f8abb9"><td class="memItemLeft" align="right" valign="top"><a id="af6bc4cb61472ca596e78f15907f8abb9"></a>
-<a class="el" href="namespaceve.html#a3bef0d8c63879fe4166843827784adc6">veEventLifeTime</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structve_1_1ve_event.html#af6bc4cb61472ca596e78f15907f8abb9">lifeTime</a> = <a class="el" href="namespaceve.html#a3bef0d8c63879fe4166843827784adc6ac9a5309e14c5efa8a5a4558adee697c4">VE_EVENT_LIFETIME_ONCE</a></td></tr>
+<a class="el" href="structve_1_1ve_event.html#ac0494608ee3c2ba4f517c26f25f9af3e">veEventLifeTime</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structve_1_1ve_event.html#af6bc4cb61472ca596e78f15907f8abb9">lifeTime</a> = <a class="el" href="structve_1_1ve_event.html#ac0494608ee3c2ba4f517c26f25f9af3ea9da6dcaf647f7378e2c490cf8a8d924b">VE_EVENT_LIFETIME_ONCE</a></td></tr>
 <tr class="memdesc:af6bc4cb61472ca596e78f15907f8abb9"><td class="mdescLeft">&#160;</td><td class="mdescRight">Event lifetime. <br /></td></tr>
 <tr class="separator:af6bc4cb61472ca596e78f15907f8abb9"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:abd4b90b1c668e11245df4c1cda98d9be"><td class="memItemLeft" align="right" valign="top"><a id="abd4b90b1c668e11245df4c1cda98d9be"></a>
@@ -151,13 +180,94 @@ void *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="st
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <div class="textblock"><p>Structure for storing event related data. </p>
-</div><hr/>The documentation for this struct was generated from the following file:<ul>
+</div><h2 class="groupheader">Member Enumeration Documentation</h2>
+<a id="ac0494608ee3c2ba4f517c26f25f9af3e"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ac0494608ee3c2ba4f517c26f25f9af3e">&#9670;&nbsp;</a></span>veEventLifeTime</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">enum <a class="el" href="structve_1_1ve_event.html#ac0494608ee3c2ba4f517c26f25f9af3e">ve::veEvent::veEventLifeTime</a></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<pre class="fragment">\brief Lifetime of an event.
+</pre><p>A once-event will be destroyed right after event processing. A continuous event will remain in the event list and will be sent to the listeners in the next loop. </p>
+<table class="fieldtable">
+<tr><th colspan="2">Enumerator</th></tr><tr><td class="fieldname"><a id="ac0494608ee3c2ba4f517c26f25f9af3ea9da6dcaf647f7378e2c490cf8a8d924b"></a>VE_EVENT_LIFETIME_ONCE&#160;</td><td class="fielddoc"><p>One time event. </p>
+</td></tr>
+<tr><td class="fieldname"><a id="ac0494608ee3c2ba4f517c26f25f9af3ea43fed52c6c6840b823f3d8d6ff374cc4"></a>VE_EVENT_LIFETIME_CONTINUOUS&#160;</td><td class="fielddoc"><p>Continuous event. </p>
+</td></tr>
+</table>
+
+</div>
+</div>
+<a id="a0addb8c4b54dcea16b57b10bf490a0a6"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a0addb8c4b54dcea16b57b10bf490a0a6">&#9670;&nbsp;</a></span>veEventSubsystem</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">enum <a class="el" href="structve_1_1ve_event.html#a0addb8c4b54dcea16b57b10bf490a0a6">ve::veEvent::veEventSubsystem</a></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Enumerates possible subsystems. </p>
+<p>A subsystem determines the scope of events and how event data are interpreted. For example, GLFW is a subsystem using its own event types and keyboard IDs. Event listeners can use the subsystem to determine whether they can even understand the event. </p>
+<table class="fieldtable">
+<tr><th colspan="2">Enumerator</th></tr><tr><td class="fieldname"><a id="a0addb8c4b54dcea16b57b10bf490a0a6a6b13d7241b63f9a92f4f356b43e072bc"></a>VE_EVENT_SUBSYSTEM_GENERIC&#160;</td><td class="fielddoc"><p>No subsystem given. </p>
+</td></tr>
+<tr><td class="fieldname"><a id="a0addb8c4b54dcea16b57b10bf490a0a6aa00e966851e5427c5859fc3a5e64816b"></a>VE_EVENT_SUBSYSTEM_GLFW&#160;</td><td class="fielddoc"><p>GLFW. </p>
+</td></tr>
+</table>
+
+</div>
+</div>
+<a id="a726c4f6879b113926d4bc38c2d1731ff"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a726c4f6879b113926d4bc38c2d1731ff">&#9670;&nbsp;</a></span>veEventType</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">enum <a class="el" href="structve_1_1ve_event.html#a726c4f6879b113926d4bc38c2d1731ff">ve::veEvent::veEventType</a></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Enumerates event types. </p>
+<p>An event type identifies a class of events, and enables event listeners to further narrow down the events they are interested in. </p>
+<table class="fieldtable">
+<tr><th colspan="2">Enumerator</th></tr><tr><td class="fieldname"><a id="a726c4f6879b113926d4bc38c2d1731ffa6b226b17517c4f726c617739841a01b4"></a>VE_EVENT_NONE&#160;</td><td class="fielddoc"><p>Empty event. </p>
+</td></tr>
+<tr><td class="fieldname"><a id="a726c4f6879b113926d4bc38c2d1731ffabd198feae66a7b77ecef213c796d2840"></a>VE_EVENT_FRAME_STARTED&#160;</td><td class="fielddoc"><p>The frame has been started. </p>
+</td></tr>
+<tr><td class="fieldname"><a id="a726c4f6879b113926d4bc38c2d1731ffa7044423655add48addf30cb1446aa186"></a>VE_EVENT_FRAME_ENDED&#160;</td><td class="fielddoc"><p>The frame has been rendered and is ready to be presented. </p>
+</td></tr>
+<tr><td class="fieldname"><a id="a726c4f6879b113926d4bc38c2d1731ffa5a7222d32d9280be883fb0e961902ea5"></a>VE_EVENT_DRAW_OVERLAY&#160;</td><td class="fielddoc"><p>Draw overlays. </p>
+</td></tr>
+<tr><td class="fieldname"><a id="a726c4f6879b113926d4bc38c2d1731ffae75ce8c1c897061849bd8cc1d5935c83"></a>VE_EVENT_KEYBOARD&#160;</td><td class="fielddoc"><p>A keyboard event. </p>
+</td></tr>
+<tr><td class="fieldname"><a id="a726c4f6879b113926d4bc38c2d1731ffadc112a78e4eef2744c81a636fd968302"></a>VE_EVENT_MOUSEMOVE&#160;</td><td class="fielddoc"><p>The mouse has been moved. </p>
+</td></tr>
+<tr><td class="fieldname"><a id="a726c4f6879b113926d4bc38c2d1731ffaf7924c0084f0f8ea4ecd3a40dad5c5e0"></a>VE_EVENT_MOUSEBUTTON&#160;</td><td class="fielddoc"><p>A mouse button event. </p>
+</td></tr>
+<tr><td class="fieldname"><a id="a726c4f6879b113926d4bc38c2d1731ffacc8a47f7e74f4bef53f82ddb7b96b749"></a>VE_EVENT_MOUSESCROLL&#160;</td><td class="fielddoc"><p>Mouse scroll event. </p>
+</td></tr>
+</table>
+
+</div>
+</div>
+<hr/>The documentation for this struct was generated from the following file:<ul>
 <li><a class="el" href="_v_e_event_listener_8h_source.html">VEEventListener.h</a></li>
 </ul>
 </div><!-- contents -->
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>
-Generated on Mon May 20 2019 11:43:44 for Vienna Vulkan Engine by &#160;<a href="http://www.doxygen.org/index.html">
+Generated on Tue Jun 4 2019 11:26:57 for Vienna Vulkan Engine by &#160;<a href="http://www.doxygen.org/index.html">
 <img class="footer" src="doxygen.png" alt="doxygen"/>
 </a> 1.8.15
 </small></address>

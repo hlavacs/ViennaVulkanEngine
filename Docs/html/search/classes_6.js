@@ -11,7 +11,6 @@ var searchData=
   ['veeventlistenerglfw',['VEEventListenerGLFW',['../classve_1_1_v_e_event_listener_g_l_f_w.html',1,'ve']]],
   ['veeventlistenernuklear',['VEEventListenerNuklear',['../classve_1_1_v_e_event_listener_nuklear.html',1,'ve']]],
   ['veeventlistenernukleardebug',['VEEventListenerNuklearDebug',['../classve_1_1_v_e_event_listener_nuklear_debug.html',1,'ve']]],
-  ['veeventlistenernuklearerror',['VEEventListenerNuklearError',['../classve_1_1_v_e_event_listener_nuklear_error.html',1,'ve']]],
   ['velight',['VELight',['../classve_1_1_v_e_light.html',1,'ve']]],
   ['vematerial',['VEMaterial',['../classve_1_1_v_e_material.html',1,'ve']]],
   ['vemesh',['VEMesh',['../classve_1_1_v_e_mesh.html',1,'ve']]],

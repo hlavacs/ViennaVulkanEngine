@@ -51,11 +51,22 @@ namespace ve {
 		///Destructor of the scene node class.
 		virtual ~VESceneNode() {};
 
+		//--------------------------------------------------------------------------------------
+		//UBO updates
+
+		virtual void update(uint32_t imageIndex);									//Copy the world matrix to the UBO
+		virtual void update(glm::mat4 parentWorldMatrix, uint32_t imageIndex);		//Copy the world matrix using the parent's world matrix
+		virtual void updateChildren(glm::mat4 worldMatrix, uint32_t imageIndex);	//Update all children
+
+		///update the local copy of the UBO
+		virtual void updateLocalUBO() {};
+		///Meant for subclasses to add data to the UBO, so this function does nothing in base class
+		virtual void updateUBO(glm::mat4 worldMatrix, uint32_t imageIndex) {};
+
 	public:
 
 		//-------------------------------------------------------------------------------------
-		//Class and type
-
+		//Type
 
 		///\returns the scene node type
 		virtual veNodeType	getNodeType() { return VE_NODE_TYPE_SCENENODE; };
@@ -63,7 +74,6 @@ namespace ve {
 		VESceneNode *		getParent() { return m_parent;  };
 		bool				hasParent() { return m_parent != nullptr; };
 		std::vector<VESceneNode *> & getChildrenList() { return m_children;  };
-
 
 		//-------------------------------------------------------------------------------------
 		//transforms
@@ -80,17 +90,7 @@ namespace ve {
 		void		lookAt(glm::vec3 eye, glm::vec3 point, glm::vec3 up); //LookAt function for left handed system
 
 		//--------------------------------------------------------------------------------------
-		//UBO updates
-
-		virtual void update( uint32_t imageIndex );									//Copy the world matrix to the UBO
-		virtual void update(glm::mat4 parentWorldMatrix, uint32_t imageIndex );		//Copy the world matrix using the parent's world matrix
-		virtual void updateChildren(glm::mat4 worldMatrix, uint32_t imageIndex);	//Update all children
-
-		///Meant for subclasses to add data to the UBO, so this function does nothing in base class
-		virtual void updateUBO(glm::mat4 worldMatrix, uint32_t imageIndex) {};		//update the UBO of this node using its current world matrix
-
-		//--------------------------------------------------------------------------------------
-		//manage tree
+		//manage tree, will make cmd buffers to be rerecorded since the tree is changed
 
 		virtual void addChild(VESceneNode *);		//Add a new child
 		virtual void removeChild(VESceneNode *);	//Remove a child, dont destroy it
@@ -132,7 +132,8 @@ namespace ve {
 		};
 
 	protected:
-		void updateUBO( void *pUBO, uint32_t sizeUBO, uint32_t imageIndex ); //Helper function to call VMA functions
+		virtual void updateLocalUBO() {};											 //update the local copy of the UBO
+		virtual void updateUBO( void *pUBO, uint32_t sizeUBO, uint32_t imageIndex ); //Helper function to call VMA functions
 
 		VESceneObject(std::string name, glm::mat4 transf = glm::mat4(1.0f), uint32_t sizeUBO = 0);
 		virtual ~VESceneObject();
@@ -199,6 +200,9 @@ namespace ve {
 					glm::mat4 transf );
 		virtual ~VEEntity();
 
+		virtual void updateLocalUBO();												//update the local copy of the UBO
+		virtual void updateUBO(glm::mat4 worldMatrix, uint32_t imageIndex);			//update the UBO of this node using its current world matrix
+
 	public:
 		VEMesh *					m_pMesh = nullptr;				///<Pointer to entity mesh
 		VEMaterial *				m_pMaterial = nullptr;			///<Pointer to entity material
@@ -222,7 +226,6 @@ namespace ve {
 
 		///\returns size of entity UBO
 		virtual uint32_t	getSizeUBO() { return sizeof(veUBOPerObject_t);  };
-		virtual void		updateUBO( glm::mat4 worldMatrix, uint32_t imageIndex );	//update the UBO of this node using its current world matrix
 		void				setParam( glm::vec4 param);		//set the free parameter
 		/**
 		* \brief set the index into the subrenderer resource list
@@ -254,6 +257,10 @@ namespace ve {
 	*/
 
 	class VECamera : public VESceneObject {
+
+	protected:
+		virtual void updateLocalUBO();											//update local UBO copy
+		virtual void updateUBO(glm::mat4 worldMatrix, uint32_t imageIndex);		//update the UBO of this node using its current world matrix
 
 	public:
 		///Camera type, can be projective or orthographic
@@ -303,7 +310,6 @@ namespace ve {
 
 		///\returns size of camera UBO
 		virtual uint32_t getSizeUBO() { return sizeof(veUBOPerCamera_t); };
-		virtual void updateUBO(glm::mat4 worldMatrix, uint32_t imageIndex);		//update the UBO of this node using its current world matrix
 
 		///\returns the projection matrix - pure virtual for the camera base class
 		virtual glm::mat4 getProjectionMatrix()=0;
@@ -467,6 +473,9 @@ namespace ve {
 		VELight(std::string name, glm::mat4 transf = glm::mat4(1.0f) );
 		virtual ~VELight();
 
+		virtual void updateLocalUBO();											//update local UBO 
+		virtual void updateUBO(glm::mat4 worldMatrix, uint32_t imageIndex);		//update the UBO of this node using its current world matrix
+
 	public:
 		struct veUBOPerLight_t	m_ubo;						///<The UBO that is copied to the GPU
 		std::vector<VECamera*>	m_shadowCameras;			///<Up to 6 shadow cameras for this light
@@ -493,7 +502,6 @@ namespace ve {
 
 		///\returns size of light UBO
 		virtual uint32_t getSizeUBO() { return sizeof(veUBOPerLight_t); };
-		virtual void updateUBO(glm::mat4 worldMatrix, uint32_t imageIndex);		//update the UBO of this node using its current world matrix
 	};
 
 

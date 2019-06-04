@@ -5,7 +5,7 @@
 <meta http-equiv="X-UA-Compatible" content="IE=9"/>
 <meta name="generator" content="Doxygen 1.8.15"/>
 <meta name="viewport" content="width=device-width, initial-scale=1"/>
-<title>Vienna Vulkan Engine: ve::RotatorListener Class Reference</title>
+<title>Vienna Vulkan Engine: ve::LevelListener Class Reference</title>
 <link href="tabs.css" rel="stylesheet" type="text/css"/>
 <script type="text/javascript" src="jquery.js"></script>
 <script type="text/javascript" src="dynsections.js"></script>
@@ -61,26 +61,26 @@ $(function() {
 
 <div id="nav-path" class="navpath">
   <ul>
-<li class="navelem"><a class="el" href="namespaceve.html">ve</a></li><li class="navelem"><a class="el" href="classve_1_1_rotator_listener.html">RotatorListener</a></li>  </ul>
+<li class="navelem"><a class="el" href="namespaceve.html">ve</a></li><li class="navelem"><a class="el" href="classve_1_1_level_listener.html">LevelListener</a></li>  </ul>
 </div>
 </div><!-- top -->
 <div class="header">
   <div class="summary">
 <a href="#pub-methods">Public Member Functions</a> &#124;
-<a href="classve_1_1_rotator_listener-members.html">List of all members</a>  </div>
+<a href="classve_1_1_level_listener-members.html">List of all members</a>  </div>
   <div class="headertitle">
-<div class="title">ve::RotatorListener Class Reference</div>  </div>
+<div class="title">ve::LevelListener Class Reference</div>  </div>
 </div><!--header-->
 <div class="contents">
 
-<p>simple event listener for rotating objects  
- <a href="classve_1_1_rotator_listener.html#details">More...</a></p>
+<p>simple event listener for loading levels  
+ <a href="classve_1_1_level_listener.html#details">More...</a></p>
 <div class="dynheader">
-Inheritance diagram for ve::RotatorListener:</div>
+Inheritance diagram for ve::LevelListener:</div>
 <div class="dyncontent">
  <div class="center">
-  <img src="classve_1_1_rotator_listener.png" usemap="#ve::RotatorListener_map" alt=""/>
-  <map id="ve::RotatorListener_map" name="ve::RotatorListener_map">
+  <img src="classve_1_1_level_listener.png" usemap="#ve::LevelListener_map" alt=""/>
+  <map id="ve::LevelListener_map" name="ve::LevelListener_map">
 <area href="classve_1_1_v_e_event_listener.html" title="Base class of all event listeners." alt="ve::VEEventListener" shape="rect" coords="0,56,126,80"/>
 <area href="classve_1_1_v_e_named_class.html" title="Base class of all classes that need a name." alt="ve::VENamedClass" shape="rect" coords="0,0,126,24"/>
   </map>
@@ -88,14 +88,14 @@ Inheritance diagram for ve::RotatorListener:</div>
 <table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-methods"></a>
 Public Member Functions</h2></td></tr>
-<tr class="memitem:a30c9874c0bf2a580bf1d5deb3f895e27"><td class="memItemLeft" align="right" valign="top"><a id="a30c9874c0bf2a580bf1d5deb3f895e27"></a>
-&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_rotator_listener.html#a30c9874c0bf2a580bf1d5deb3f895e27">RotatorListener</a> (std::string name, <a class="el" href="classve_1_1_v_e_scene_node.html">VESceneNode</a> *pObject, float speed, glm::vec3 axis)</td></tr>
-<tr class="memdesc:a30c9874c0bf2a580bf1d5deb3f895e27"><td class="mdescLeft">&#160;</td><td class="mdescRight">Constructor. <br /></td></tr>
-<tr class="separator:a30c9874c0bf2a580bf1d5deb3f895e27"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:abaa8a21003e6c24f22384fc6ac9de8e5"><td class="memItemLeft" align="right" valign="top"><a id="abaa8a21003e6c24f22384fc6ac9de8e5"></a>
-void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_rotator_listener.html#abaa8a21003e6c24f22384fc6ac9de8e5">onFrameStarted</a> (<a class="el" href="structve_1_1ve_event.html">veEvent</a> event)</td></tr>
-<tr class="memdesc:abaa8a21003e6c24f22384fc6ac9de8e5"><td class="mdescLeft">&#160;</td><td class="mdescRight">Before frame rendering and all event processing. Event cannot be consumed. <br /></td></tr>
-<tr class="separator:abaa8a21003e6c24f22384fc6ac9de8e5"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ab37a0e68c8b89a36e9686f4f2d976a7c"><td class="memItemLeft" align="right" valign="top"><a id="ab37a0e68c8b89a36e9686f4f2d976a7c"></a>
+&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_level_listener.html#ab37a0e68c8b89a36e9686f4f2d976a7c">LevelListener</a> (std::string name)</td></tr>
+<tr class="memdesc:ab37a0e68c8b89a36e9686f4f2d976a7c"><td class="mdescLeft">&#160;</td><td class="mdescRight">Constructor. <br /></td></tr>
+<tr class="separator:ab37a0e68c8b89a36e9686f4f2d976a7c"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ac19e5fba64fe4ecb5e32d5b130ebf0dc"><td class="memItemLeft" align="right" valign="top"><a id="ac19e5fba64fe4ecb5e32d5b130ebf0dc"></a>
+virtual bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_level_listener.html#ac19e5fba64fe4ecb5e32d5b130ebf0dc">onKeyboard</a> (<a class="el" href="structve_1_1ve_event.html">veEvent</a> event)</td></tr>
+<tr class="memdesc:ac19e5fba64fe4ecb5e32d5b130ebf0dc"><td class="mdescLeft">&#160;</td><td class="mdescRight">Keyboard event. Event can be consumed. <br /></td></tr>
+<tr class="separator:ac19e5fba64fe4ecb5e32d5b130ebf0dc"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="inherit_header pub_methods_classve_1_1_v_e_event_listener"><td colspan="2" onclick="javascript:toggleInherit('pub_methods_classve_1_1_v_e_event_listener')"><img src="closed.png" alt="-"/>&#160;Public Member Functions inherited from <a class="el" href="classve_1_1_v_e_event_listener.html">ve::VEEventListener</a></td></tr>
 <tr class="memitem:a46128f4c3f14ed965e04ac5f5b4e21d4 inherit pub_methods_classve_1_1_v_e_event_listener"><td class="memItemLeft" align="right" valign="top"><a id="a46128f4c3f14ed965e04ac5f5b4e21d4"></a>
 &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_event_listener.html#a46128f4c3f14ed965e04ac5f5b4e21d4">VEEventListener</a> (std::string name)</td></tr>
@@ -123,6 +123,10 @@ Additional Inherited Members</h2></td></tr>
 <tr class="memitem:af942f696ca9235a8db25d949712145b7 inherit pro_methods_classve_1_1_v_e_event_listener"><td class="memItemLeft" align="right" valign="top">virtual bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_event_listener.html#af942f696ca9235a8db25d949712145b7">onEvent</a> (<a class="el" href="structve_1_1ve_event.html">veEvent</a> event)</td></tr>
 <tr class="memdesc:af942f696ca9235a8db25d949712145b7 inherit pro_methods_classve_1_1_v_e_event_listener"><td class="mdescLeft">&#160;</td><td class="mdescRight">Use the main event type to call specific handlers.  <a href="classve_1_1_v_e_event_listener.html#af942f696ca9235a8db25d949712145b7">More...</a><br /></td></tr>
 <tr class="separator:af942f696ca9235a8db25d949712145b7 inherit pro_methods_classve_1_1_v_e_event_listener"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a21baf06172ceaca632b79fc15bac8b22 inherit pro_methods_classve_1_1_v_e_event_listener"><td class="memItemLeft" align="right" valign="top"><a id="a21baf06172ceaca632b79fc15bac8b22"></a>
+virtual void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_event_listener.html#a21baf06172ceaca632b79fc15bac8b22">onFrameStarted</a> (<a class="el" href="structve_1_1ve_event.html">veEvent</a> event)</td></tr>
+<tr class="memdesc:a21baf06172ceaca632b79fc15bac8b22 inherit pro_methods_classve_1_1_v_e_event_listener"><td class="mdescLeft">&#160;</td><td class="mdescRight">Before frame rendering and all event processing. Event cannot be consumed. <br /></td></tr>
+<tr class="separator:a21baf06172ceaca632b79fc15bac8b22 inherit pro_methods_classve_1_1_v_e_event_listener"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aabab7ca3baf82d7b79dbe2799aaea448 inherit pro_methods_classve_1_1_v_e_event_listener"><td class="memItemLeft" align="right" valign="top"><a id="aabab7ca3baf82d7b79dbe2799aaea448"></a>
 virtual void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_event_listener.html#aabab7ca3baf82d7b79dbe2799aaea448">onFrameEnded</a> (<a class="el" href="structve_1_1ve_event.html">veEvent</a> event)</td></tr>
 <tr class="memdesc:aabab7ca3baf82d7b79dbe2799aaea448 inherit pro_methods_classve_1_1_v_e_event_listener"><td class="mdescLeft">&#160;</td><td class="mdescRight">After frame rendering and all event processing. Event cannot be consumed. <br /></td></tr>
@@ -131,10 +135,6 @@ virtual void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" hr
 virtual void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_event_listener.html#a4e68998e0a4c2e2525887ac54296da20">onDrawOverlay</a> (<a class="el" href="structve_1_1ve_event.html">veEvent</a> event)</td></tr>
 <tr class="memdesc:a4e68998e0a4c2e2525887ac54296da20 inherit pro_methods_classve_1_1_v_e_event_listener"><td class="mdescLeft">&#160;</td><td class="mdescRight">Draw an overlay. <br /></td></tr>
 <tr class="separator:a4e68998e0a4c2e2525887ac54296da20 inherit pro_methods_classve_1_1_v_e_event_listener"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:abda6970650708c068be3b9d7c3fd0980 inherit pro_methods_classve_1_1_v_e_event_listener"><td class="memItemLeft" align="right" valign="top"><a id="abda6970650708c068be3b9d7c3fd0980"></a>
-virtual bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_event_listener.html#abda6970650708c068be3b9d7c3fd0980">onKeyboard</a> (<a class="el" href="structve_1_1ve_event.html">veEvent</a> event)</td></tr>
-<tr class="memdesc:abda6970650708c068be3b9d7c3fd0980 inherit pro_methods_classve_1_1_v_e_event_listener"><td class="mdescLeft">&#160;</td><td class="mdescRight">Keyboard event. Event can be consumed. <br /></td></tr>
-<tr class="separator:abda6970650708c068be3b9d7c3fd0980 inherit pro_methods_classve_1_1_v_e_event_listener"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ad030bb9c1e81a97ccc95757d4e7d9fa7 inherit pro_methods_classve_1_1_v_e_event_listener"><td class="memItemLeft" align="right" valign="top"><a id="ad030bb9c1e81a97ccc95757d4e7d9fa7"></a>
 virtual bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_event_listener.html#ad030bb9c1e81a97ccc95757d4e7d9fa7">onMouseMove</a> (<a class="el" href="structve_1_1ve_event.html">veEvent</a> event)</td></tr>
 <tr class="memdesc:ad030bb9c1e81a97ccc95757d4e7d9fa7 inherit pro_methods_classve_1_1_v_e_event_listener"><td class="mdescLeft">&#160;</td><td class="mdescRight">Mouse move event. Event cann be consumed. <br /></td></tr>
@@ -154,7 +154,7 @@ std::string&#160;</td><td class="memItemRight" valign="bottom"><a class="el" hre
 <tr class="separator:a3b3f5063b5de55426c522032e838236a inherit pro_attribs_classve_1_1_v_e_named_class"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
-<div class="textblock"><p>simple event listener for rotating objects </p>
+<div class="textblock"><p>simple event listener for loading levels </p>
 </div><hr/>The documentation for this class was generated from the following file:<ul>
 <li>main.cpp</li>
 </ul>

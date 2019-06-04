@@ -22,7 +22,6 @@ namespace ve {
 	*
 	* \param[in] name The name of this node.
 	* \param[in] transf Position and orientation.
-	* \param[in] parent A parent.
 	*
 	*/
 
@@ -149,10 +148,11 @@ namespace ve {
 	*
 	*/
 	void VESceneNode::addChild(VESceneNode * pObject) {
-		if ( pObject->m_parent != this ) {
+		if ( pObject != nullptr && pObject->m_parent != this ) {
 			if(pObject->m_parent != nullptr ) pObject->m_parent->removeChild(pObject);
 			pObject->m_parent = this;
 			m_children.push_back(pObject);
+			getRendererPointer()->updateCmdBuffers();
 		}
 	}
 
@@ -163,12 +163,14 @@ namespace ve {
 	* \param[in] pEntity Pointer to the child to be removed.
 	*
 	*/
-	void VESceneNode::removeChild(VESceneNode *pEntity) {
+	void VESceneNode::removeChild(VESceneNode *pNode) {
 		for (uint32_t i = 0; i < m_children.size(); i++) {
-			if (pEntity == m_children[i]) {								//if child is found
+			if (pNode == m_children[i]) {								//if child is found
 				VESceneNode *last = m_children[m_children.size() - 1];	//replace it with the last child
 				m_children[i] = last;
 				m_children.pop_back();									//child is not destroyed
+				pNode->m_parent = nullptr;
+				getRendererPointer()->updateCmdBuffers();
 				return;
 			}
 		}
@@ -212,6 +214,10 @@ namespace ve {
 
 	/**
 	* \brief Update the UBOs of all children of this entity
+	*
+	* \param[in] worldMatrix The world matrix or an identity matrix.
+	* \param[in] imageIndex The index of the swapchain image that is currently used
+	*
 	*/
 	void VESceneNode::updateChildren(glm::mat4 worldMatrix, uint32_t imageIndex) {
 		for (auto pObject : m_children) {
@@ -300,8 +306,7 @@ namespace ve {
 	* then the descriptor sets, then the UBOs and sets are connected.
 	*
 	* \param[in] name Name of the new scene object.
-	* \param[in] transf Transform of the object, containing orientation and position.
-	* \param[in] parent Parent of the object, or nullptr.
+	* \param[in] transf Transform of the object, containing orientation and position
 	* \param[in] sizeUBO Size of the object's UBO, if >0 then the object needs UBOs
 	*
 	*/
@@ -352,7 +357,6 @@ namespace ve {
 	* \param[in] pMesh Pointer to the mesh.
 	* \param[in] pMat Pointer to the material.
 	* \param[in] transf The local to parent transform.
-	* \param[in] parent Pointer to the entity's parent.
 	*
 	*/
 	VEEntity::VEEntity(	std::string name, veEntityType type, 
@@ -417,6 +421,16 @@ namespace ve {
 
 
 	/**
+	*
+	* \brief Update the entity's local UBO copy.
+	*
+	*/
+	void VEEntity::updateLocalUBO() {
+
+	}
+
+
+	/**
 	* \brief Get a bounding sphere for this entity
 	*
 	* Return the bounding sphere of the mesh that this entity represents (if there is one).
@@ -445,7 +459,6 @@ namespace ve {
 	*
 	* \param[in] name Name of the camera.
 	* \param[in] transf Transform of this camera, including orientation and position
-	* \param[in] parent The parent of this camera, or nullptr
 	*
 	*/
 	VECamera::VECamera(std::string name, glm::mat4 transf ) : 
@@ -462,7 +475,6 @@ namespace ve {
 	* \param[in] nearPlaneFraction If this is shadow cam of a directional light: fraction of frustum that is covered by this cam
 	* \param[in] farPlaneFraction If this is shadow cam of a directional light: fraction of frustum that is covered by this cam
 	* \param[in] transf Transform of this camera, including orientation and position
-	* \param[in] parent The parent of this camera, or nullptr
 	*
 	*/
 	VECamera::VECamera(	std::string name, 
@@ -495,6 +507,16 @@ namespace ve {
 
 		VESceneObject::updateUBO((void*)&m_ubo, (uint32_t)sizeof(veUBOPerCamera_t), imageIndex );
 	}
+
+	/**
+	*
+	* \brief Update the entity's local UBO copy.
+	*
+	*/
+	void VECamera::updateLocalUBO() {
+
+	}
+
 
 
 	/**
@@ -538,10 +560,9 @@ namespace ve {
 	*
 	* \param[in] name Name of the camera.
 	* \param[in] transf Transform of this camera, including orientation and position
-	* \param[in] parent The parent of this camera, or nullptr
 	*
 	*/
-	VECameraProjective::VECameraProjective(std::string name, glm::mat4 transf ) : VECamera(name, transf ) {
+	VECameraProjective::VECameraProjective(std::string name, glm::mat4 transf ) : VECamera( name, transf ) {
 	};
 
 	/**
@@ -556,7 +577,6 @@ namespace ve {
 	* \param[in] nearPlaneFraction If this is shadow cam of a directional light: fraction of frustum that is covered by this cam
 	* \param[in] farPlaneFraction If this is shadow cam of a directional light: fraction of frustum that is covered by this cam
 	* \param[in] transf Transform of this camera, including orientation and position
-	* \param[in] parent The parent of this camera, or nullptr
 	*
 	*/
 	VECameraProjective::VECameraProjective(	std::string name, 
@@ -643,7 +663,6 @@ namespace ve {
 	*
 	* \param[in] name Name of the camera.
 	* \param[in] transf Transform of this camera, including orientation and position
-	* \param[in] parent The parent of this camera, or nullptr
 	*
 	*/
 	VECameraOrtho::VECameraOrtho(std::string name, glm::mat4 transf ) : 
@@ -662,7 +681,6 @@ namespace ve {
 	* \param[in] nearPlaneFraction If this is shadow cam of a directional light: fraction of frustum that is covered by this cam
 	* \param[in] farPlaneFraction If this is shadow cam of a directional light: fraction of frustum that is covered by this cam
 	* \param[in] transf Transform of this camera, including orientation and position
-	* \param[in] parent The parent of this camera, or nullptr
 	*
 	*/
 	VECameraOrtho::VECameraOrtho(	std::string name, 
@@ -746,7 +764,6 @@ namespace ve {
 	*
 	* \param[in] name Name of the camera
 	* \param[in] transf Transform of this light, including orientation and position
-	* \param[in] parent The parent of this light, or nullptr
 	*
 	*/
 	VELight::VELight(std::string name, glm::mat4 transf ) : 
@@ -785,6 +802,16 @@ namespace ve {
 		VESceneObject::updateUBO((void*)&m_ubo, (uint32_t)sizeof(veUBOPerLight_t), imageIndex);
 	}
 
+	/**
+	*
+	* \brief Update the lights's local UBO copy.
+	*
+	*/
+	void VELight::updateLocalUBO() {
+
+	}
+
+
 
 	/**
 	*
@@ -792,11 +819,6 @@ namespace ve {
 	*
 	*/
 	VELight::~VELight() {
-		/*for (auto pCam : m_shadowCameras) {
-			getSceneManagerPointer()->removeSceneNode( pCam->getName());
-			delete pCam;
-		}*/
-		m_shadowCameras.clear();
 	};
 
 
@@ -809,7 +831,6 @@ namespace ve {
 	*
 	* \param[in] name The name of this directional light
 	* \param[in] transf The transform including orientation and position
-	* \param[in] parent The parent of this light
 	*
 	*/
 	VEDirectionalLight::VEDirectionalLight(std::string name, glm::mat4 transf ) :
@@ -866,7 +887,6 @@ namespace ve {
 	*
 	* \param[in] name The name of this point light
 	* \param[in] transf The transform including orientation and position
-	* \param[in] parent The parent of this light
 	*
 	*/
 	VEPointLight::VEPointLight(std::string name, glm::mat4 transf ) :
@@ -876,7 +896,6 @@ namespace ve {
 			VECameraProjective *pCam = new VECameraProjective(m_name + "-ShadowCam" + std::to_string(i));
 			m_shadowCameras.push_back(pCam);		//no parent - > transform is also world matrix
 			addChild(pCam);
-			//getSceneManagerPointer()->addSceneNodeAndChildren(pCam);
 		}
 	};
 
@@ -943,7 +962,6 @@ namespace ve {
 	*
 	* \param[in] name The name of this spot light
 	* \param[in] transf The transform including orientation and position
-	* \param[in] parent The parent of this light
 	*
 	*/
 	VESpotLight::VESpotLight(std::string name, glm::mat4 transf ) :

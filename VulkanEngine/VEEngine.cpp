@@ -527,7 +527,7 @@ namespace ve {
 			//update world matrices and send them to the GPU
 
 			t_now = vh::vhTimeNow();
-			getSceneManagerPointer()->updateSceneNodes( getRendererPointer()->getImageIndex());	//update scene node UBOs
+			getSceneManagerPointer()->updateSceneNodes2( getRendererPointer()->getImageIndex());	//update scene node UBOs
 			m_AvgUpdateTime = vh::vhAverage(vh::vhTimeDuration(t_now), m_AvgUpdateTime);
 
 			//----------------------------------------------------------------------------------

@@ -136,9 +136,9 @@ Functions</h2></td></tr>
 <tr class="memitem:ab47f3ffb11c9338fcf9421d8356e7935"><td class="memItemLeft" align="right" valign="top">VkResult&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacevh.html#ab47f3ffb11c9338fcf9421d8356e7935">vhBufCreateFramebuffers</a> (VkDevice device, std::vector&lt; VkImageView &gt; imageViews, std::vector&lt; VkImageView &gt; depthImageViews, VkRenderPass renderPass, VkExtent2D extent, std::vector&lt; VkFramebuffer &gt; &amp;frameBuffers)</td></tr>
 <tr class="memdesc:ab47f3ffb11c9338fcf9421d8356e7935"><td class="mdescLeft">&#160;</td><td class="mdescRight">Create framebuffers (color + depth), one for each swap chain image.  <a href="#ab47f3ffb11c9338fcf9421d8356e7935">More...</a><br /></td></tr>
 <tr class="separator:ab47f3ffb11c9338fcf9421d8356e7935"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a0d4011de10faa53afd00433f1bb009e3"><td class="memItemLeft" align="right" valign="top">VkResult&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacevh.html#a0d4011de10faa53afd00433f1bb009e3">vhBufCopySwapChainImageToHost</a> (VkDevice device, VmaAllocator allocator, VkQueue graphicsQueue, VkCommandPool commandPool, VkImage image, VkImageAspectFlagBits aspect, gli::byte *bufferData, uint32_t width, uint32_t height, uint32_t imageSize)</td></tr>
-<tr class="memdesc:a0d4011de10faa53afd00433f1bb009e3"><td class="mdescLeft">&#160;</td><td class="mdescRight">Copy a swap chain image to a data buffer, after it has been rendered into.  <a href="#a0d4011de10faa53afd00433f1bb009e3">More...</a><br /></td></tr>
-<tr class="separator:a0d4011de10faa53afd00433f1bb009e3"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ac5eba21d77f42e06cba84215d055f9b4"><td class="memItemLeft" align="right" valign="top">VkResult&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacevh.html#ac5eba21d77f42e06cba84215d055f9b4">vhBufCopySwapChainImageToHost</a> (VkDevice device, VmaAllocator allocator, VkQueue graphicsQueue, VkCommandPool commandPool, VkImage image, VkFormat format, VkImageAspectFlagBits aspect, VkImageLayout layout, gli::byte *bufferData, uint32_t width, uint32_t height, uint32_t imageSize)</td></tr>
+<tr class="memdesc:ac5eba21d77f42e06cba84215d055f9b4"><td class="mdescLeft">&#160;</td><td class="mdescRight">Copy a swap chain image to a data buffer, after it has been rendered into.  <a href="#ac5eba21d77f42e06cba84215d055f9b4">More...</a><br /></td></tr>
+<tr class="separator:ac5eba21d77f42e06cba84215d055f9b4"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:af8450c3d2289db3a176055b293847f7d"><td class="memItemLeft" align="right" valign="top">VkResult&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacevh.html#af8450c3d2289db3a176055b293847f7d">vhBufCopyImageToHost</a> (VkDevice device, VmaAllocator allocator, VkQueue graphicsQueue, VkCommandPool commandPool, VkImage image, VkFormat format, VkImageAspectFlagBits aspect, VkImageLayout layout, gli::byte *bufferData, uint32_t width, uint32_t height, uint32_t imageSize)</td></tr>
 <tr class="memdesc:af8450c3d2289db3a176055b293847f7d"><td class="mdescLeft">&#160;</td><td class="mdescRight">Copy a swap chain image to a data buffer, after it has been rendered into.  <a href="#af8450c3d2289db3a176055b293847f7d">More...</a><br /></td></tr>
 <tr class="separator:af8450c3d2289db3a176055b293847f7d"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -191,15 +191,6 @@ void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="name
 void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacevh.html#abdeb0d9fcda941f0cb92fd857002d309">vhSetupDebugCallback</a> (VkInstance instance, VkDebugReportCallbackEXT *callback)</td></tr>
 <tr class="memdesc:abdeb0d9fcda941f0cb92fd857002d309"><td class="mdescLeft">&#160;</td><td class="mdescRight">Register debug callback. <br /></td></tr>
 <tr class="separator:abdeb0d9fcda941f0cb92fd857002d309"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a4fad56183a7e4ab61241a8873a247ea1"><td class="memItemLeft" align="right" valign="top">std::chrono::high_resolution_clock::time_point&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacevh.html#a4fad56183a7e4ab61241a8873a247ea1">vhTimeNow</a> ()</td></tr>
-<tr class="memdesc:a4fad56183a7e4ab61241a8873a247ea1"><td class="mdescLeft">&#160;</td><td class="mdescRight">Take a time measurment from the high resolution clock.  <a href="#a4fad56183a7e4ab61241a8873a247ea1">More...</a><br /></td></tr>
-<tr class="separator:a4fad56183a7e4ab61241a8873a247ea1"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a19eaffd746fc8a31941d4559ca0894c0"><td class="memItemLeft" align="right" valign="top">float&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacevh.html#a19eaffd746fc8a31941d4559ca0894c0">vhTimeDuration</a> (std::chrono::high_resolution_clock::time_point t_prev)</td></tr>
-<tr class="memdesc:a19eaffd746fc8a31941d4559ca0894c0"><td class="mdescLeft">&#160;</td><td class="mdescRight">Use the high resolution clock to calculate a time duration since the last time measurement.  <a href="#a19eaffd746fc8a31941d4559ca0894c0">More...</a><br /></td></tr>
-<tr class="separator:a19eaffd746fc8a31941d4559ca0894c0"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:adc2c15cc0cfeb131342076753df95788"><td class="memItemLeft" align="right" valign="top">float&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacevh.html#adc2c15cc0cfeb131342076753df95788">vhAverage</a> (float new_val, float average, float weight)</td></tr>
-<tr class="memdesc:adc2c15cc0cfeb131342076753df95788"><td class="mdescLeft">&#160;</td><td class="mdescRight">Apply expoentatial smoothing to given values.  <a href="#adc2c15cc0cfeb131342076753df95788">More...</a><br /></td></tr>
-<tr class="separator:adc2c15cc0cfeb131342076753df95788"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a42616af40e6817b748d42deeda488618"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacevh.html#a42616af40e6817b748d42deeda488618">checkValidationLayerSupport</a> (std::vector&lt; const char * &gt; &amp;validationLayers)</td></tr>
 <tr class="memdesc:a42616af40e6817b748d42deeda488618"><td class="mdescLeft">&#160;</td><td class="mdescRight">Check validation layers of the Vulkan instance.  <a href="#a42616af40e6817b748d42deeda488618">More...</a><br /></td></tr>
 <tr class="separator:a42616af40e6817b748d42deeda488618"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -233,6 +224,15 @@ void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="name
 <tr class="memitem:a3e1916a9160bee6b83f7f9effd3cdd34"><td class="memItemLeft" align="right" valign="top">std::vector&lt; char &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacevh.html#a3e1916a9160bee6b83f7f9effd3cdd34">vhFileRead</a> (const std::string &amp;filename)</td></tr>
 <tr class="memdesc:a3e1916a9160bee6b83f7f9effd3cdd34"><td class="mdescLeft">&#160;</td><td class="mdescRight">Read the contents of a file and return a binary blob with it.  <a href="#a3e1916a9160bee6b83f7f9effd3cdd34">More...</a><br /></td></tr>
 <tr class="separator:a3e1916a9160bee6b83f7f9effd3cdd34"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a4fad56183a7e4ab61241a8873a247ea1"><td class="memItemLeft" align="right" valign="top">std::chrono::high_resolution_clock::time_point&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacevh.html#a4fad56183a7e4ab61241a8873a247ea1">vhTimeNow</a> ()</td></tr>
+<tr class="memdesc:a4fad56183a7e4ab61241a8873a247ea1"><td class="mdescLeft">&#160;</td><td class="mdescRight">Take a time measurment from the high resolution clock.  <a href="#a4fad56183a7e4ab61241a8873a247ea1">More...</a><br /></td></tr>
+<tr class="separator:a4fad56183a7e4ab61241a8873a247ea1"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a19eaffd746fc8a31941d4559ca0894c0"><td class="memItemLeft" align="right" valign="top">float&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacevh.html#a19eaffd746fc8a31941d4559ca0894c0">vhTimeDuration</a> (std::chrono::high_resolution_clock::time_point t_prev)</td></tr>
+<tr class="memdesc:a19eaffd746fc8a31941d4559ca0894c0"><td class="mdescLeft">&#160;</td><td class="mdescRight">Use the high resolution clock to calculate a time duration since the last time measurement.  <a href="#a19eaffd746fc8a31941d4559ca0894c0">More...</a><br /></td></tr>
+<tr class="separator:a19eaffd746fc8a31941d4559ca0894c0"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:adc2c15cc0cfeb131342076753df95788"><td class="memItemLeft" align="right" valign="top">float&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacevh.html#adc2c15cc0cfeb131342076753df95788">vhAverage</a> (float new_val, float average, float weight)</td></tr>
+<tr class="memdesc:adc2c15cc0cfeb131342076753df95788"><td class="mdescLeft">&#160;</td><td class="mdescRight">Apply expoentatial smoothing to given values.  <a href="#adc2c15cc0cfeb131342076753df95788">More...</a><br /></td></tr>
+<tr class="separator:adc2c15cc0cfeb131342076753df95788"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a6d0e56b8ed7309e0ebf5ba969323e4db"><td class="memItemLeft" align="right" valign="top">VkResult&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacevh.html#a6d0e56b8ed7309e0ebf5ba969323e4db">vhSwapCreateSwapChain</a> (VkPhysicalDevice physicalDevice, VkSurfaceKHR surface, VkDevice device, VkExtent2D frameBufferExtent, VkSwapchainKHR *swapChain, std::vector&lt; VkImage &gt; &amp;swapChainImages, std::vector&lt; VkImageView &gt; &amp;swapChainImageViews, VkFormat *swapChainImageFormat, VkExtent2D *swapChainExtent)</td></tr>
 <tr class="memdesc:a6d0e56b8ed7309e0ebf5ba969323e4db"><td class="mdescLeft">&#160;</td><td class="mdescRight">Choose the swapchain.  <a href="#a6d0e56b8ed7309e0ebf5ba969323e4db">More...</a><br /></td></tr>
 <tr class="separator:a6d0e56b8ed7309e0ebf5ba969323e4db"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -1098,8 +1098,8 @@ void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="name
 
 </div>
 </div>
-<a id="a0d4011de10faa53afd00433f1bb009e3"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a0d4011de10faa53afd00433f1bb009e3">&#9670;&nbsp;</a></span>vhBufCopySwapChainImageToHost()</h2>
+<a id="ac5eba21d77f42e06cba84215d055f9b4"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ac5eba21d77f42e06cba84215d055f9b4">&#9670;&nbsp;</a></span>vhBufCopySwapChainImageToHost()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -1137,8 +1137,20 @@ void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="name
         <tr>
           <td class="paramkey"></td>
           <td></td>
+          <td class="paramtype">VkFormat&#160;</td>
+          <td class="paramname"><em>format</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
           <td class="paramtype">VkImageAspectFlagBits&#160;</td>
           <td class="paramname"><em>aspect</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">VkImageLayout&#160;</td>
+          <td class="paramname"><em>layout</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
@@ -4553,7 +4565,7 @@ void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="name
 </div><!-- contents -->
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>
-Generated on Mon May 20 2019 11:43:45 for Vienna Vulkan Engine by &#160;<a href="http://www.doxygen.org/index.html">
+Generated on Tue Jun 4 2019 11:26:58 for Vienna Vulkan Engine by &#160;<a href="http://www.doxygen.org/index.html">
 <img class="footer" src="doxygen.png" alt="doxygen"/>
 </a> 1.8.15
 </small></address>

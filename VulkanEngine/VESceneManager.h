@@ -64,11 +64,12 @@ namespace ve {
 		//private shadow functions for the public API, so API does not lock itself
 		VESceneNode *	createSceneNode2(std::string name, VESceneNode *parent, glm::mat4 transf = glm::mat4(1.0f) );
 		VEEntity *		createEntity2(std::string entityName, VEEntity::veEntityType type, VEMesh *pMesh, VEMaterial *pMat, VESceneNode *parent, glm::mat4 transf = glm::mat4(1.0f) );
-		void			addSceneNodeAndChildren(VESceneNode *pNode, VESceneNode *parent );
+		void			addSceneNodeAndChildren2(VESceneNode *pNode, VESceneNode *parent );
 		void			deleteSceneNodeAndChildren2(std::string name);
 		void			createSceneNodeList2(VESceneNode *pObject, std::vector<std::string> &namelist);
 		VEEntity *		createSkyplane2(std::string entityName, std::string basedir, std::string texName, VESceneNode *parent);
-		void			sceneGraphChanged();			//tell renderer to rerecord the cmd buffers
+		void			updateSceneNodes2(uint32_t imageIndex);
+		void			sceneGraphChanged2();			//tell renderer to rerecord the cmd buffers
 
 	public:
 		///Constructor of class VESceneManager
@@ -112,7 +113,6 @@ namespace ve {
 
 		//----------------------------------------------------------------
 		//API that needs to by synchronized
-		void			updateSceneNodes( uint32_t imageIndex );
 		VESceneNode *	getSceneNode(std::string entityName);
 		void			deleteSceneNodeAndChildren(std::string name);
 		void			deleteScene();

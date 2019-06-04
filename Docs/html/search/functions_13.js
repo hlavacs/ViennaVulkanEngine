@@ -7,7 +7,6 @@ var searchData=
   ['_7eveeventlistenerglfw',['~VEEventListenerGLFW',['../classve_1_1_v_e_event_listener_g_l_f_w.html#a50ae54c6b4e6ca8fcf985894f0631541',1,'ve::VEEventListenerGLFW']]],
   ['_7eveeventlistenernuklear',['~VEEventListenerNuklear',['../classve_1_1_v_e_event_listener_nuklear.html#a4e4884068997c547e0b077dc80d6d720',1,'ve::VEEventListenerNuklear']]],
   ['_7eveeventlistenernukleardebug',['~VEEventListenerNuklearDebug',['../classve_1_1_v_e_event_listener_nuklear_debug.html#aac467186868dd85c575500880bac9d45',1,'ve::VEEventListenerNuklearDebug']]],
-  ['_7eveeventlistenernuklearerror',['~VEEventListenerNuklearError',['../classve_1_1_v_e_event_listener_nuklear_error.html#a7b1c9f8a6faa25e360ee2bb80fcb7840',1,'ve::VEEventListenerNuklearError']]],
   ['_7evelight',['~VELight',['../classve_1_1_v_e_light.html#aaf3079ed9eeffca5686f10e46c5ff177',1,'ve::VELight']]],
   ['_7evematerial',['~VEMaterial',['../classve_1_1_v_e_material.html#a36d0bb4812fd7be997621dfd0ceae07a',1,'ve::VEMaterial']]],
   ['_7evemesh',['~VEMesh',['../classve_1_1_v_e_mesh.html#aea168a1e49e3cd54abc4d0ae1b17b664',1,'ve::VEMesh']]],

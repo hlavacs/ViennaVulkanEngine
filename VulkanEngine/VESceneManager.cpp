@@ -174,7 +174,7 @@ namespace ve {
 
 		copyAiNodes( pScene, meshes, materials, pScene->mRootNode, pMO);	//create scene nodes and entities from the file
 
-		sceneGraphChanged();	//notify renderer to rerecord the cmd buffers
+		sceneGraphChanged2();	//notify renderer to rerecord the cmd buffers
 		return pMO;
 	}
 
@@ -391,8 +391,8 @@ namespace ve {
 		if (m_sceneNodes.count(objectName)>0) return m_sceneNodes[objectName];
 
 		VESceneNode *pMO = new VESceneNode(objectName, transf );
-		addSceneNodeAndChildren( pMO, parent );
-		sceneGraphChanged();
+		addSceneNodeAndChildren2( pMO, parent );
+		sceneGraphChanged2();
 		return pMO;
 	}
 
@@ -450,16 +450,26 @@ namespace ve {
 												VEMesh *pMesh, VEMaterial *pMat, VESceneNode *parent, 
 												glm::mat4 transf) {
 		VEEntity *pEntity = new VEEntity(entityName, type, pMesh, pMat, transf );
-		addSceneNodeAndChildren(pEntity, parent );				// store entity in the entity array
+		addSceneNodeAndChildren2(pEntity, parent );				// store entity in the entity array
 
 		if (pMesh != nullptr && pMat != nullptr) {
 			getRendererPointer()->addEntityToSubrenderer(pEntity);
 		}
-		sceneGraphChanged();
+		sceneGraphChanged2();
 		return pEntity;
 	}
 
 
+	/**
+	* \brief Create a camera
+	*
+	* \param[in] cameraName The name of the new camera.
+	* \param[in] type The camera type to be used.
+	* \param[in] parent Pointer to entity to be used as parent.
+	* \param[in] transf Local to parent transform, given as GLM matrix.
+	* \returns a pointer to the new camera
+	*
+	*/
 	VECamera * VESceneManager::createCamera(std::string cameraName, VECamera::veCameraType type, VESceneNode *parent, glm::mat4 transf) {
 		std::lock_guard<std::mutex> lock(m_mutex);
 
@@ -471,14 +481,24 @@ namespace ve {
 			pCam = new VECameraOrtho(cameraName, transf );
 		}
 
-		addSceneNodeAndChildren( pCam, parent );
+		addSceneNodeAndChildren2( pCam, parent );
 		return pCam;
 	}
 
 
 
+	/**
+	* \brief Create a light
+	*
+	* \param[in] lightName The name of the new camera.
+	* \param[in] type The light type to be used.
+	* \param[in] parent Pointer to scene node to be used as parent.
+	* \param[in] transf Local to parent transform, given as GLM matrix.
+	* \returns a pointer to the new light
+	*
+	*/
 	VELight * VESceneManager::createLight(std::string lightName, VELight::veLightType type, VESceneNode *parent, glm::mat4 transf) {
-		//std::lock_guard<std::mutex> lock(m_mutex);
+		std::lock_guard<std::mutex> lock(m_mutex);
 
 		VELight *pLight = nullptr;
 		if (type == VELight::VE_LIGHT_TYPE_DIRECTIONAL) {
@@ -490,7 +510,7 @@ namespace ve {
 			pLight = new VESpotLight(lightName, transf );
 		}
 		
-		addSceneNodeAndChildren(pLight, parent);
+		addSceneNodeAndChildren2(pLight, parent);
 		return pLight;
 	}
 
@@ -550,7 +570,7 @@ namespace ve {
 		VEEntity *pEntity = createEntity2(entityName, VEEntity::VE_ENTITY_TYPE_SKYPLANE, pMesh, pMat, parent );
 		pEntity->m_castsShadow = false;
 
-		sceneGraphChanged();
+		sceneGraphChanged2();
 		return pEntity;
 	}
 
@@ -620,7 +640,7 @@ namespace ve {
 		parent->addChild(sp1);
 		sp1->m_castsShadow = false;
 
-		sceneGraphChanged();
+		sceneGraphChanged2();
 		return parent;
 	}
 
@@ -631,7 +651,7 @@ namespace ve {
 	/**
 	* \brief This should be called whenever the scene graph ist changed
 	*/
-	void VESceneManager::sceneGraphChanged() {
+	void VESceneManager::sceneGraphChanged2() {
 		getRendererPointer()->updateCmdBuffers();
 	}
 
@@ -645,7 +665,7 @@ namespace ve {
 	* \param[in] imageIndex Index of the swapchain image that is currently used.
 	*
 	*/
-	void VESceneManager::updateSceneNodes(uint32_t imageIndex ) {
+	void VESceneManager::updateSceneNodes2(uint32_t imageIndex ) {
 		std::lock_guard<std::mutex> lock(m_mutex);
 		m_rootSceneNode->update( imageIndex );
 
@@ -667,7 +687,7 @@ namespace ve {
 	* \param[in] parent Pointer to the new parent of this node
 	*
 	*/
-	void VESceneManager::addSceneNodeAndChildren(VESceneNode *pNode, VESceneNode *parent) {
+	void VESceneManager::addSceneNodeAndChildren2(VESceneNode *pNode, VESceneNode *parent) {
 
 		if (pNode->getNodeType() == VESceneNode::VE_NODE_TYPE_SCENEOBJECT) {
 			VESceneObject *pObject = (VESceneObject*)pNode;
@@ -682,7 +702,7 @@ namespace ve {
 		m_sceneNodes[pNode->getName()] = pNode;
 
 		for (auto pChild : pNode->getChildrenList()) {
-			addSceneNodeAndChildren(pChild, pNode );
+			addSceneNodeAndChildren2(pChild, pNode );
 		}
 	}
 
@@ -746,7 +766,7 @@ namespace ve {
 			m_sceneNodes.erase(namelist[i]);
 			delete pNode;
 		}
-		sceneGraphChanged();
+		sceneGraphChanged2();
 	}
 
 
@@ -882,7 +902,7 @@ namespace ve {
 	void  VESceneManager::switchOnLight(VELight * light) {
 		std::lock_guard<std::mutex> lock(m_mutex);
 		m_lights.push_back(light);
-		sceneGraphChanged();
+		sceneGraphChanged2();
 	};
 
 
@@ -904,7 +924,7 @@ namespace ve {
 				m_lights.pop_back();							//remove last light
 			}
 		}
-		sceneGraphChanged();
+		sceneGraphChanged2();
 	}
 
 

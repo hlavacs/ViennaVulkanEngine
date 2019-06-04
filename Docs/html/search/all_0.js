@@ -5,7 +5,7 @@ var searchData=
   ['addentitytosubrenderer',['addEntityToSubrenderer',['../classve_1_1_v_e_renderer.html#acf525534b0e4ec7bad8ea26ebf8ea623',1,'ve::VERenderer']]],
   ['addevent',['addEvent',['../classve_1_1_v_e_engine.html#ae310327d505e2087eddf7cc93519b259',1,'ve::VEEngine']]],
   ['addmaps',['addMaps',['../classve_1_1_v_e_subrender_f_w.html#a722105bc29baff864edcd556ade82153',1,'ve::VESubrenderFW']]],
-  ['addscenenode',['addSceneNode',['../classve_1_1_v_e_scene_manager.html#a47b11f7dfcf0adf9be57a8002fe1352b',1,'ve::VESceneManager']]],
+  ['addscenenodeandchildren2',['addSceneNodeAndChildren2',['../classve_1_1_v_e_scene_manager.html#a13d04ba7bd4af9ef0b351abc14a67aca',1,'ve::VESceneManager']]],
   ['addsubrenderer',['addSubrenderer',['../classve_1_1_v_e_renderer.html#a270fb91a971028bae9f6a8714fd46cf1',1,'ve::VERenderer']]],
   ['allocations',['allocations',['../structvh_1_1vh_memory_block.html#a04ee4e87dfd4cb1f49d2884ce5bf4022',1,'vh::vhMemoryBlock']]],
   ['allocator',['allocator',['../structvh_1_1vh_memory_block.html#af2035af3fae60cf4ed4344d7e28e3469',1,'vh::vhMemoryBlock']]]
