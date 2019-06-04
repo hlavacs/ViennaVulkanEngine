@@ -160,7 +160,7 @@ namespace ve {
 	*
 	* \brief remove a child from the children list - child is NOT destroyed
 	*
-	* \param[in] pEntity Pointer to the child to be removed.
+	* \param[in] pNode Pointer to the child to be removed.
 	*
 	*/
 	void VESceneNode::removeChild(VESceneNode *pNode) {
@@ -483,7 +483,6 @@ namespace ve {
 	* \brief Update the UBO of this camera.
 	*
 	* \param[in] worldMatrix The new world matrix of this camera
-	* \param[in] imageIndex Index of the swapchain image that is currently used.
 	*
 	*/
 	void VECamera::updateLocalUBO(glm::mat4 worldMatrix) {
@@ -501,6 +500,9 @@ namespace ve {
 	/**
 	*
 	* \brief Update the entity's local UBO copy.
+	*
+	* \param[in] worldMatrix The new world matrix of this camera
+	* \param[in] imageIndex Index of the swapchain image that is currently used.
 	*
 	*/
 	void VECamera::updateUBO(glm::mat4 worldMatrix, uint32_t imageIndex) {
@@ -770,7 +772,6 @@ namespace ve {
 	* cameras of this light.
 	*
 	* \param[in] worldMatrix The new world matrix of this light
-	* \param[in] imageIndex Index of the swapchain image that is currently used.
 	*
 	*/
 	void VELight::updateLocalUBO(glm::mat4 worldMatrix) {
@@ -787,6 +788,9 @@ namespace ve {
 	/**
 	*
 	* \brief Update the lights's local UBO copy.
+	*
+	* \param[in] worldMatrix The new world matrix of this light
+	* \param[in] imageIndex Index of the swapchain image that is currently used.
 	*
 	*/
 	void VELight::updateUBO(glm::mat4 worldMatrix, uint32_t imageIndex ) {

@@ -530,6 +530,7 @@ namespace ve {
 	* \param[in] entityName Name of the new entity.
 	* \param[in] basedir Name of the directory the texture file is in
 	* \param[in] texName name of a texture file that contains the sky texture
+	* \param[in] parent Pointer to the parent of this skyplane
 	* \returns a pointer to the new entity
 	*
 	*/
@@ -548,6 +549,7 @@ namespace ve {
 	* \param[in] entityName Name of the new entity.
 	* \param[in] basedir Name of the directory the texture file is in
 	* \param[in] texName name of a texture file that contains the sky texture
+	* \param[in] parent Pointer to the parent of this skyplane
 	* \returns a pointer to the new entity
 	*
 	*/

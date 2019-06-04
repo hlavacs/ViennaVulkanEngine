@@ -766,8 +766,10 @@ namespace vh {
 	* \param[in] graphicsQueue Device queue for submitting commands
 	* \param[in] commandPool Command pool for allocating command buffers
 	* \param[in] image The source image
+	* \param[in] format The pixel format of this image
 	* \param[in] aspect Color or depth
-	* \param[in] bufferData The destination buffer data 
+	* \param[in] layout The layout that this image is currently and should be again after the copy
+	* \param[in] bufferData The destination buffer data
 	* \param[in] width Ímage width
 	* \param[in] height Image height
 	* \param[in] imageSize Size of the image in bytes

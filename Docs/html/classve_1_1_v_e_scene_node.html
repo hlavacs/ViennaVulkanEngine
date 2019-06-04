@@ -91,8 +91,8 @@ Inheritance diagram for ve::VESceneNode:</div>
 <area href="classve_1_1_v_e_camera.html" title="A camera that can be used to take photos of the scene." alt="ve::VECamera" shape="rect" coords="80,168,230,192"/>
 <area href="classve_1_1_v_e_entity.html" title="Represents any object that can be drawn." alt="ve::VEEntity" shape="rect" coords="240,168,390,192"/>
 <area href="classve_1_1_v_e_light.html" title="A VELight has a color and can be used to light a scene." alt="ve::VELight" shape="rect" coords="480,168,630,192"/>
-<area href="classve_1_1_v_e_camera_ortho.html" alt="ve::VECameraOrtho" shape="rect" coords="0,224,150,248"/>
-<area href="classve_1_1_v_e_camera_projective.html" alt="ve::VECameraProjective" shape="rect" coords="160,224,310,248"/>
+<area href="classve_1_1_v_e_camera_ortho.html" title="Am ortho camera that can be used to take photos of the scene." alt="ve::VECameraOrtho" shape="rect" coords="0,224,150,248"/>
+<area href="classve_1_1_v_e_camera_projective.html" title="A projective camera that can be used to take photos of the scene." alt="ve::VECameraProjective" shape="rect" coords="160,224,310,248"/>
 <area href="classve_1_1_v_e_directional_light.html" title="Directional light class." alt="ve::VEDirectionalLight" shape="rect" coords="320,224,470,248"/>
 <area href="classve_1_1_v_e_point_light.html" title="Point light class." alt="ve::VEPointLight" shape="rect" coords="480,224,630,248"/>
 <area href="classve_1_1_v_e_spot_light.html" title="Spot light class." alt="ve::VESpotLight" shape="rect" coords="640,224,790,248"/>
@@ -111,14 +111,11 @@ Public Types</h2></td></tr>
 Public Member Functions</h2></td></tr>
 <tr class="memitem:a536a9f54c33b29459b307bbf224ce604"><td class="memItemLeft" align="right" valign="top">virtual <a class="el" href="classve_1_1_v_e_scene_node.html#aff43b9c0c39fa3362b3908e813608cc8">veNodeType</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_scene_node.html#a536a9f54c33b29459b307bbf224ce604">getNodeType</a> ()</td></tr>
 <tr class="separator:a536a9f54c33b29459b307bbf224ce604"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a3994368aaeda684fd4267a70db6b06e9"><td class="memItemLeft" align="right" valign="top"><a id="a3994368aaeda684fd4267a70db6b06e9"></a>
-<a class="el" href="classve_1_1_v_e_scene_node.html">VESceneNode</a> *&#160;</td><td class="memItemRight" valign="bottom"><b>getParent</b> ()</td></tr>
+<tr class="memitem:a3994368aaeda684fd4267a70db6b06e9"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classve_1_1_v_e_scene_node.html">VESceneNode</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_scene_node.html#a3994368aaeda684fd4267a70db6b06e9">getParent</a> ()</td></tr>
 <tr class="separator:a3994368aaeda684fd4267a70db6b06e9"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:af7edca2d209a001ce1eb84c9eca8d100"><td class="memItemLeft" align="right" valign="top"><a id="af7edca2d209a001ce1eb84c9eca8d100"></a>
-bool&#160;</td><td class="memItemRight" valign="bottom"><b>hasParent</b> ()</td></tr>
+<tr class="memitem:af7edca2d209a001ce1eb84c9eca8d100"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_scene_node.html#af7edca2d209a001ce1eb84c9eca8d100">hasParent</a> ()</td></tr>
 <tr class="separator:af7edca2d209a001ce1eb84c9eca8d100"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a7059b68055b77a3d0be0bb8b40bc501d"><td class="memItemLeft" align="right" valign="top"><a id="a7059b68055b77a3d0be0bb8b40bc501d"></a>
-std::vector&lt; <a class="el" href="classve_1_1_v_e_scene_node.html">VESceneNode</a> * &gt; &amp;&#160;</td><td class="memItemRight" valign="bottom"><b>getChildrenList</b> ()</td></tr>
+<tr class="memitem:a7059b68055b77a3d0be0bb8b40bc501d"><td class="memItemLeft" align="right" valign="top">std::vector&lt; <a class="el" href="classve_1_1_v_e_scene_node.html">VESceneNode</a> * &gt; &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_scene_node.html#a7059b68055b77a3d0be0bb8b40bc501d">getChildrenList</a> ()</td></tr>
 <tr class="separator:a7059b68055b77a3d0be0bb8b40bc501d"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a367fee6490278bbf70d33e9a8e17fee9"><td class="memItemLeft" align="right" valign="top"><a id="a367fee6490278bbf70d33e9a8e17fee9"></a>
 void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_scene_node.html#a367fee6490278bbf70d33e9a8e17fee9">setTransform</a> (glm::mat4 trans)</td></tr>
@@ -147,19 +144,6 @@ void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="clas
 <tr class="memitem:a5e41fdd2408fe596a2080f511caea770"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_scene_node.html#a5e41fdd2408fe596a2080f511caea770">lookAt</a> (glm::vec3 eye, glm::vec3 point, glm::vec3 up)</td></tr>
 <tr class="memdesc:a5e41fdd2408fe596a2080f511caea770"><td class="mdescLeft">&#160;</td><td class="mdescRight">lookAt function for a left handed frame of reference  <a href="#a5e41fdd2408fe596a2080f511caea770">More...</a><br /></td></tr>
 <tr class="separator:a5e41fdd2408fe596a2080f511caea770"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aa97bd4ad3fb1efa02ec3df6ef679927d"><td class="memItemLeft" align="right" valign="top">virtual void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_scene_node.html#aa97bd4ad3fb1efa02ec3df6ef679927d">update</a> (uint32_t imageIndex)</td></tr>
-<tr class="memdesc:aa97bd4ad3fb1efa02ec3df6ef679927d"><td class="mdescLeft">&#160;</td><td class="mdescRight">Update the entity's UBO buffer with the current world matrix.  <a href="#aa97bd4ad3fb1efa02ec3df6ef679927d">More...</a><br /></td></tr>
-<tr class="separator:aa97bd4ad3fb1efa02ec3df6ef679927d"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a93199fd14bc3f52fd6346491be84afac"><td class="memItemLeft" align="right" valign="top">virtual void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_scene_node.html#a93199fd14bc3f52fd6346491be84afac">update</a> (glm::mat4 parentWorldMatrix, uint32_t imageIndex)</td></tr>
-<tr class="memdesc:a93199fd14bc3f52fd6346491be84afac"><td class="mdescLeft">&#160;</td><td class="mdescRight">Update the entity's UBO buffer with the current world matrix.  <a href="#a93199fd14bc3f52fd6346491be84afac">More...</a><br /></td></tr>
-<tr class="separator:a93199fd14bc3f52fd6346491be84afac"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:afeb3d92ef1a5bf684186b96b52d42b25"><td class="memItemLeft" align="right" valign="top">virtual void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_scene_node.html#afeb3d92ef1a5bf684186b96b52d42b25">updateChildren</a> (glm::mat4 worldMatrix, uint32_t imageIndex)</td></tr>
-<tr class="memdesc:afeb3d92ef1a5bf684186b96b52d42b25"><td class="mdescLeft">&#160;</td><td class="mdescRight">Update the UBOs of all children of this entity.  <a href="#afeb3d92ef1a5bf684186b96b52d42b25">More...</a><br /></td></tr>
-<tr class="separator:afeb3d92ef1a5bf684186b96b52d42b25"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ae042b8411d2a608155792c5f807bc6c9"><td class="memItemLeft" align="right" valign="top"><a id="ae042b8411d2a608155792c5f807bc6c9"></a>
-virtual void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_scene_node.html#ae042b8411d2a608155792c5f807bc6c9">updateUBO</a> (glm::mat4 worldMatrix, uint32_t imageIndex)</td></tr>
-<tr class="memdesc:ae042b8411d2a608155792c5f807bc6c9"><td class="mdescLeft">&#160;</td><td class="mdescRight">Meant for subclasses to add data to the UBO, so this function does nothing in base class. <br /></td></tr>
-<tr class="separator:ae042b8411d2a608155792c5f807bc6c9"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a010eb4bf7bb911d7e7d212ebcec2a017"><td class="memItemLeft" align="right" valign="top">virtual void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_scene_node.html#a010eb4bf7bb911d7e7d212ebcec2a017">addChild</a> (<a class="el" href="classve_1_1_v_e_scene_node.html">VESceneNode</a> *)</td></tr>
 <tr class="memdesc:a010eb4bf7bb911d7e7d212ebcec2a017"><td class="mdescLeft">&#160;</td><td class="mdescRight">Adds a child object to the list of children.  <a href="#a010eb4bf7bb911d7e7d212ebcec2a017">More...</a><br /></td></tr>
 <tr class="separator:a010eb4bf7bb911d7e7d212ebcec2a017"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -193,6 +177,19 @@ Protected Member Functions</h2></td></tr>
 virtual&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_scene_node.html#aabeb0f7130c6df9e67d3bdb98ac43c57">~VESceneNode</a> ()</td></tr>
 <tr class="memdesc:aabeb0f7130c6df9e67d3bdb98ac43c57"><td class="mdescLeft">&#160;</td><td class="mdescRight">Destructor of the scene node class. <br /></td></tr>
 <tr class="separator:aabeb0f7130c6df9e67d3bdb98ac43c57"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aa97bd4ad3fb1efa02ec3df6ef679927d"><td class="memItemLeft" align="right" valign="top">virtual void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_scene_node.html#aa97bd4ad3fb1efa02ec3df6ef679927d">update</a> (uint32_t imageIndex)</td></tr>
+<tr class="memdesc:aa97bd4ad3fb1efa02ec3df6ef679927d"><td class="mdescLeft">&#160;</td><td class="mdescRight">Update the entity's UBO buffer with the current world matrix.  <a href="#aa97bd4ad3fb1efa02ec3df6ef679927d">More...</a><br /></td></tr>
+<tr class="separator:aa97bd4ad3fb1efa02ec3df6ef679927d"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a93199fd14bc3f52fd6346491be84afac"><td class="memItemLeft" align="right" valign="top">virtual void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_scene_node.html#a93199fd14bc3f52fd6346491be84afac">update</a> (glm::mat4 parentWorldMatrix, uint32_t imageIndex)</td></tr>
+<tr class="memdesc:a93199fd14bc3f52fd6346491be84afac"><td class="mdescLeft">&#160;</td><td class="mdescRight">Update the entity's UBO buffer with the current world matrix.  <a href="#a93199fd14bc3f52fd6346491be84afac">More...</a><br /></td></tr>
+<tr class="separator:a93199fd14bc3f52fd6346491be84afac"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:afeb3d92ef1a5bf684186b96b52d42b25"><td class="memItemLeft" align="right" valign="top">virtual void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_scene_node.html#afeb3d92ef1a5bf684186b96b52d42b25">updateChildren</a> (glm::mat4 worldMatrix, uint32_t imageIndex)</td></tr>
+<tr class="memdesc:afeb3d92ef1a5bf684186b96b52d42b25"><td class="mdescLeft">&#160;</td><td class="mdescRight">Update the UBOs of all children of this entity.  <a href="#afeb3d92ef1a5bf684186b96b52d42b25">More...</a><br /></td></tr>
+<tr class="separator:afeb3d92ef1a5bf684186b96b52d42b25"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ae042b8411d2a608155792c5f807bc6c9"><td class="memItemLeft" align="right" valign="top"><a id="ae042b8411d2a608155792c5f807bc6c9"></a>
+virtual void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_scene_node.html#ae042b8411d2a608155792c5f807bc6c9">updateUBO</a> (glm::mat4 worldMatrix, uint32_t imageIndex)</td></tr>
+<tr class="memdesc:ae042b8411d2a608155792c5f807bc6c9"><td class="mdescLeft">&#160;</td><td class="mdescRight">Meant for subclasses to add data to the UBO, so this function does nothing in base class. <br /></td></tr>
+<tr class="separator:ae042b8411d2a608155792c5f807bc6c9"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pro-attribs"></a>
 Protected Attributes</h2></td></tr>
@@ -372,6 +369,32 @@ std::string&#160;</td><td class="memItemRight" valign="bottom"><a class="el" hre
 
 </div>
 </div>
+<a id="a7059b68055b77a3d0be0bb8b40bc501d"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a7059b68055b77a3d0be0bb8b40bc501d">&#9670;&nbsp;</a></span>getChildrenList()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">std::vector&lt;<a class="el" href="classve_1_1_v_e_scene_node.html">VESceneNode</a> *&gt;&amp; ve::VESceneNode::getChildrenList </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+<dl class="section return"><dt>Returns</dt><dd>a reference to the children list of this scene node </dd></dl>
+
+</div>
+</div>
 <a id="a536a9f54c33b29459b307bbf224ce604"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a536a9f54c33b29459b307bbf224ce604">&#9670;&nbsp;</a></span>getNodeType()</h2>
 
@@ -478,6 +501,32 @@ std::string&#160;</td><td class="memItemRight" valign="bottom"><a class="el" hre
   </table>
   </dd>
 </dl>
+
+</div>
+</div>
+<a id="a3994368aaeda684fd4267a70db6b06e9"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a3994368aaeda684fd4267a70db6b06e9">&#9670;&nbsp;</a></span>getParent()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="classve_1_1_v_e_scene_node.html">VESceneNode</a>* ve::VESceneNode::getParent </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+<dl class="section return"><dt>Returns</dt><dd>the parent of this scene node </dd></dl>
 
 </div>
 </div>
@@ -592,6 +641,32 @@ std::string&#160;</td><td class="memItemRight" valign="bottom"><a class="el" hre
 
 </div>
 </div>
+<a id="af7edca2d209a001ce1eb84c9eca8d100"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#af7edca2d209a001ce1eb84c9eca8d100">&#9670;&nbsp;</a></span>hasParent()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">bool ve::VESceneNode::hasParent </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+<dl class="section return"><dt>Returns</dt><dd>whether this scene node has a parent </dd></dl>
+
+</div>
+</div>
 <a id="a5e41fdd2408fe596a2080f511caea770"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a5e41fdd2408fe596a2080f511caea770">&#9670;&nbsp;</a></span>lookAt()</h2>
 
@@ -690,7 +765,7 @@ std::string&#160;</td><td class="memItemRight" valign="bottom"><a class="el" hre
 <p>remove a child from the children list - child is NOT destroyed </p>
 <dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
-    <tr><td class="paramdir">[in]</td><td class="paramname">pEntity</td><td>Pointer to the child to be removed. </td></tr>
+    <tr><td class="paramdir">[in]</td><td class="paramname">pNode</td><td>Pointer to the child to be removed. </td></tr>
   </table>
   </dd>
 </dl>
@@ -716,7 +791,7 @@ std::string&#160;</td><td class="memItemRight" valign="bottom"><a class="el" hre
       </table>
   </td>
   <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">virtual</span></span>  </td>
+<span class="mlabels"><span class="mlabel">protected</span><span class="mlabel">virtual</span></span>  </td>
   </tr>
 </table>
 </div><div class="memdoc">
@@ -761,7 +836,7 @@ std::string&#160;</td><td class="memItemRight" valign="bottom"><a class="el" hre
       </table>
   </td>
   <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">virtual</span></span>  </td>
+<span class="mlabels"><span class="mlabel">protected</span><span class="mlabel">virtual</span></span>  </td>
   </tr>
 </table>
 </div><div class="memdoc">
@@ -807,7 +882,7 @@ std::string&#160;</td><td class="memItemRight" valign="bottom"><a class="el" hre
       </table>
   </td>
   <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">virtual</span></span>  </td>
+<span class="mlabels"><span class="mlabel">protected</span><span class="mlabel">virtual</span></span>  </td>
   </tr>
 </table>
 </div><div class="memdoc">
@@ -830,7 +905,7 @@ std::string&#160;</td><td class="memItemRight" valign="bottom"><a class="el" hre
 </div><!-- contents -->
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>
-Generated on Tue Jun 4 2019 11:26:58 for Vienna Vulkan Engine by &#160;<a href="http://www.doxygen.org/index.html">
+Generated on Tue Jun 4 2019 22:40:10 for Vienna Vulkan Engine by &#160;<a href="http://www.doxygen.org/index.html">
 <img class="footer" src="doxygen.png" alt="doxygen"/>
 </a> 1.8.15
 </small></address>

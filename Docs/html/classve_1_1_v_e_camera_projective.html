@@ -74,6 +74,11 @@ $(function() {
 <div class="title">ve::VECameraProjective Class Reference</div>  </div>
 </div><!--header-->
 <div class="contents">
+
+<p>A projective camera that can be used to take photos of the scene.  
+ <a href="classve_1_1_v_e_camera_projective.html#details">More...</a></p>
+
+<p><code>#include &lt;<a class="el" href="_v_e_entity_8h_source.html">VEEntity.h</a>&gt;</code></p>
 <div class="dynheader">
 Inheritance diagram for ve::VECameraProjective:</div>
 <div class="dyncontent">
@@ -115,9 +120,6 @@ virtual void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" hr
 <tr class="separator:afcb4533ee16b91bcc2d22a849bd91a8f inherit pub_methods_classve_1_1_v_e_camera"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a724d4706974f1e21fb7bb450531ef684 inherit pub_methods_classve_1_1_v_e_camera"><td class="memItemLeft" align="right" valign="top">virtual uint32_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_camera.html#a724d4706974f1e21fb7bb450531ef684">getSizeUBO</a> ()</td></tr>
 <tr class="separator:a724d4706974f1e21fb7bb450531ef684 inherit pub_methods_classve_1_1_v_e_camera"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a4c050ba558242cdb74897016fd684dfa inherit pub_methods_classve_1_1_v_e_camera"><td class="memItemLeft" align="right" valign="top">virtual void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_camera.html#a4c050ba558242cdb74897016fd684dfa">updateUBO</a> (glm::mat4 worldMatrix, uint32_t imageIndex)</td></tr>
-<tr class="memdesc:a4c050ba558242cdb74897016fd684dfa inherit pub_methods_classve_1_1_v_e_camera"><td class="mdescLeft">&#160;</td><td class="mdescRight">Update the UBO of this camera.  <a href="classve_1_1_v_e_camera.html#a4c050ba558242cdb74897016fd684dfa">More...</a><br /></td></tr>
-<tr class="separator:a4c050ba558242cdb74897016fd684dfa inherit pub_methods_classve_1_1_v_e_camera"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a74cb91079352b36c1c15e3ce6cad8cd0 inherit pub_methods_classve_1_1_v_e_camera"><td class="memItemLeft" align="right" valign="top">virtual void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_camera.html#a74cb91079352b36c1c15e3ce6cad8cd0">getBoundingSphere</a> (glm::vec3 *center, float *radius)</td></tr>
 <tr class="memdesc:a74cb91079352b36c1c15e3ce6cad8cd0 inherit pub_methods_classve_1_1_v_e_camera"><td class="mdescLeft">&#160;</td><td class="mdescRight">Get a bounding sphere for this camera.  <a href="classve_1_1_v_e_camera.html#a74cb91079352b36c1c15e3ce6cad8cd0">More...</a><br /></td></tr>
 <tr class="separator:a74cb91079352b36c1c15e3ce6cad8cd0 inherit pub_methods_classve_1_1_v_e_camera"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -125,14 +127,11 @@ virtual void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" hr
 <tr class="memitem:ac0931da48392c5b24c4058176a5cdac4 inherit pub_methods_classve_1_1_v_e_scene_object"><td class="memItemLeft" align="right" valign="top">virtual <a class="el" href="classve_1_1_v_e_scene_node.html#aff43b9c0c39fa3362b3908e813608cc8">veNodeType</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_scene_object.html#ac0931da48392c5b24c4058176a5cdac4">getNodeType</a> ()</td></tr>
 <tr class="separator:ac0931da48392c5b24c4058176a5cdac4 inherit pub_methods_classve_1_1_v_e_scene_object"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="inherit_header pub_methods_classve_1_1_v_e_scene_node"><td colspan="2" onclick="javascript:toggleInherit('pub_methods_classve_1_1_v_e_scene_node')"><img src="closed.png" alt="-"/>&#160;Public Member Functions inherited from <a class="el" href="classve_1_1_v_e_scene_node.html">ve::VESceneNode</a></td></tr>
-<tr class="memitem:a3994368aaeda684fd4267a70db6b06e9 inherit pub_methods_classve_1_1_v_e_scene_node"><td class="memItemLeft" align="right" valign="top"><a id="a3994368aaeda684fd4267a70db6b06e9"></a>
-<a class="el" href="classve_1_1_v_e_scene_node.html">VESceneNode</a> *&#160;</td><td class="memItemRight" valign="bottom"><b>getParent</b> ()</td></tr>
+<tr class="memitem:a3994368aaeda684fd4267a70db6b06e9 inherit pub_methods_classve_1_1_v_e_scene_node"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classve_1_1_v_e_scene_node.html">VESceneNode</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_scene_node.html#a3994368aaeda684fd4267a70db6b06e9">getParent</a> ()</td></tr>
 <tr class="separator:a3994368aaeda684fd4267a70db6b06e9 inherit pub_methods_classve_1_1_v_e_scene_node"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:af7edca2d209a001ce1eb84c9eca8d100 inherit pub_methods_classve_1_1_v_e_scene_node"><td class="memItemLeft" align="right" valign="top"><a id="af7edca2d209a001ce1eb84c9eca8d100"></a>
-bool&#160;</td><td class="memItemRight" valign="bottom"><b>hasParent</b> ()</td></tr>
+<tr class="memitem:af7edca2d209a001ce1eb84c9eca8d100 inherit pub_methods_classve_1_1_v_e_scene_node"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_scene_node.html#af7edca2d209a001ce1eb84c9eca8d100">hasParent</a> ()</td></tr>
 <tr class="separator:af7edca2d209a001ce1eb84c9eca8d100 inherit pub_methods_classve_1_1_v_e_scene_node"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a7059b68055b77a3d0be0bb8b40bc501d inherit pub_methods_classve_1_1_v_e_scene_node"><td class="memItemLeft" align="right" valign="top"><a id="a7059b68055b77a3d0be0bb8b40bc501d"></a>
-std::vector&lt; <a class="el" href="classve_1_1_v_e_scene_node.html">VESceneNode</a> * &gt; &amp;&#160;</td><td class="memItemRight" valign="bottom"><b>getChildrenList</b> ()</td></tr>
+<tr class="memitem:a7059b68055b77a3d0be0bb8b40bc501d inherit pub_methods_classve_1_1_v_e_scene_node"><td class="memItemLeft" align="right" valign="top">std::vector&lt; <a class="el" href="classve_1_1_v_e_scene_node.html">VESceneNode</a> * &gt; &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_scene_node.html#a7059b68055b77a3d0be0bb8b40bc501d">getChildrenList</a> ()</td></tr>
 <tr class="separator:a7059b68055b77a3d0be0bb8b40bc501d inherit pub_methods_classve_1_1_v_e_scene_node"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a367fee6490278bbf70d33e9a8e17fee9 inherit pub_methods_classve_1_1_v_e_scene_node"><td class="memItemLeft" align="right" valign="top"><a id="a367fee6490278bbf70d33e9a8e17fee9"></a>
 void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_scene_node.html#a367fee6490278bbf70d33e9a8e17fee9">setTransform</a> (glm::mat4 trans)</td></tr>
@@ -161,15 +160,6 @@ void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="clas
 <tr class="memitem:a5e41fdd2408fe596a2080f511caea770 inherit pub_methods_classve_1_1_v_e_scene_node"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_scene_node.html#a5e41fdd2408fe596a2080f511caea770">lookAt</a> (glm::vec3 eye, glm::vec3 point, glm::vec3 up)</td></tr>
 <tr class="memdesc:a5e41fdd2408fe596a2080f511caea770 inherit pub_methods_classve_1_1_v_e_scene_node"><td class="mdescLeft">&#160;</td><td class="mdescRight">lookAt function for a left handed frame of reference  <a href="classve_1_1_v_e_scene_node.html#a5e41fdd2408fe596a2080f511caea770">More...</a><br /></td></tr>
 <tr class="separator:a5e41fdd2408fe596a2080f511caea770 inherit pub_methods_classve_1_1_v_e_scene_node"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aa97bd4ad3fb1efa02ec3df6ef679927d inherit pub_methods_classve_1_1_v_e_scene_node"><td class="memItemLeft" align="right" valign="top">virtual void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_scene_node.html#aa97bd4ad3fb1efa02ec3df6ef679927d">update</a> (uint32_t imageIndex)</td></tr>
-<tr class="memdesc:aa97bd4ad3fb1efa02ec3df6ef679927d inherit pub_methods_classve_1_1_v_e_scene_node"><td class="mdescLeft">&#160;</td><td class="mdescRight">Update the entity's UBO buffer with the current world matrix.  <a href="classve_1_1_v_e_scene_node.html#aa97bd4ad3fb1efa02ec3df6ef679927d">More...</a><br /></td></tr>
-<tr class="separator:aa97bd4ad3fb1efa02ec3df6ef679927d inherit pub_methods_classve_1_1_v_e_scene_node"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a93199fd14bc3f52fd6346491be84afac inherit pub_methods_classve_1_1_v_e_scene_node"><td class="memItemLeft" align="right" valign="top">virtual void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_scene_node.html#a93199fd14bc3f52fd6346491be84afac">update</a> (glm::mat4 parentWorldMatrix, uint32_t imageIndex)</td></tr>
-<tr class="memdesc:a93199fd14bc3f52fd6346491be84afac inherit pub_methods_classve_1_1_v_e_scene_node"><td class="mdescLeft">&#160;</td><td class="mdescRight">Update the entity's UBO buffer with the current world matrix.  <a href="classve_1_1_v_e_scene_node.html#a93199fd14bc3f52fd6346491be84afac">More...</a><br /></td></tr>
-<tr class="separator:a93199fd14bc3f52fd6346491be84afac inherit pub_methods_classve_1_1_v_e_scene_node"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:afeb3d92ef1a5bf684186b96b52d42b25 inherit pub_methods_classve_1_1_v_e_scene_node"><td class="memItemLeft" align="right" valign="top">virtual void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_scene_node.html#afeb3d92ef1a5bf684186b96b52d42b25">updateChildren</a> (glm::mat4 worldMatrix, uint32_t imageIndex)</td></tr>
-<tr class="memdesc:afeb3d92ef1a5bf684186b96b52d42b25 inherit pub_methods_classve_1_1_v_e_scene_node"><td class="mdescLeft">&#160;</td><td class="mdescRight">Update the UBOs of all children of this entity.  <a href="classve_1_1_v_e_scene_node.html#afeb3d92ef1a5bf684186b96b52d42b25">More...</a><br /></td></tr>
-<tr class="separator:afeb3d92ef1a5bf684186b96b52d42b25 inherit pub_methods_classve_1_1_v_e_scene_node"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a010eb4bf7bb911d7e7d212ebcec2a017 inherit pub_methods_classve_1_1_v_e_scene_node"><td class="memItemLeft" align="right" valign="top">virtual void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_scene_node.html#a010eb4bf7bb911d7e7d212ebcec2a017">addChild</a> (<a class="el" href="classve_1_1_v_e_scene_node.html">VESceneNode</a> *)</td></tr>
 <tr class="memdesc:a010eb4bf7bb911d7e7d212ebcec2a017 inherit pub_methods_classve_1_1_v_e_scene_node"><td class="mdescLeft">&#160;</td><td class="mdescRight">Adds a child object to the list of children.  <a href="classve_1_1_v_e_scene_node.html#a010eb4bf7bb911d7e7d212ebcec2a017">More...</a><br /></td></tr>
 <tr class="separator:a010eb4bf7bb911d7e7d212ebcec2a017 inherit pub_methods_classve_1_1_v_e_scene_node"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -231,17 +221,24 @@ float&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="cla
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pro-methods"></a>
 Protected Member Functions</h2></td></tr>
 <tr class="memitem:acf2cd0d711a5211c7c065a30601bb717"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_camera_projective.html#acf2cd0d711a5211c7c065a30601bb717">VECameraProjective</a> (std::string name, glm::mat4 transf=glm::mat4(1.0f))</td></tr>
-<tr class="memdesc:acf2cd0d711a5211c7c065a30601bb717"><td class="mdescLeft">&#160;</td><td class="mdescRight"><a class="el" href="classve_1_1_v_e_camera_projective.html">VECameraProjective</a> constructor. Set nearPlane, farPlane, aspect ratio and fov to a default value.  <a href="#acf2cd0d711a5211c7c065a30601bb717">More...</a><br /></td></tr>
+<tr class="memdesc:acf2cd0d711a5211c7c065a30601bb717"><td class="mdescLeft">&#160;</td><td class="mdescRight"><a class="el" href="classve_1_1_v_e_camera_projective.html" title="A projective camera that can be used to take photos of the scene.">VECameraProjective</a> constructor. Set nearPlane, farPlane, aspect ratio and fov to a default value.  <a href="#acf2cd0d711a5211c7c065a30601bb717">More...</a><br /></td></tr>
 <tr class="separator:acf2cd0d711a5211c7c065a30601bb717"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a5e7a67a286c0bf46386623896b40f5a3"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_camera_projective.html#a5e7a67a286c0bf46386623896b40f5a3">VECameraProjective</a> (std::string name, float nearPlane, float farPlane, float aspectRatio, float fov, float nearPlaneFraction=0.0f, float farPlaneFraction=1.0f, glm::mat4 transf=glm::mat4(1.0f))</td></tr>
-<tr class="memdesc:a5e7a67a286c0bf46386623896b40f5a3"><td class="mdescLeft">&#160;</td><td class="mdescRight"><a class="el" href="classve_1_1_v_e_camera_projective.html">VECameraProjective</a> constructor.  <a href="#a5e7a67a286c0bf46386623896b40f5a3">More...</a><br /></td></tr>
+<tr class="memdesc:a5e7a67a286c0bf46386623896b40f5a3"><td class="mdescLeft">&#160;</td><td class="mdescRight"><a class="el" href="classve_1_1_v_e_camera_projective.html" title="A projective camera that can be used to take photos of the scene.">VECameraProjective</a> constructor.  <a href="#a5e7a67a286c0bf46386623896b40f5a3">More...</a><br /></td></tr>
 <tr class="separator:a5e7a67a286c0bf46386623896b40f5a3"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ad329791250f3d1f67bde87111289706c"><td class="memItemLeft" align="right" valign="top"><a id="ad329791250f3d1f67bde87111289706c"></a>
 virtual&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_camera_projective.html#ad329791250f3d1f67bde87111289706c">~VECameraProjective</a> ()</td></tr>
 <tr class="memdesc:ad329791250f3d1f67bde87111289706c"><td class="mdescLeft">&#160;</td><td class="mdescRight">Destructor projective camera. <br /></td></tr>
 <tr class="separator:ad329791250f3d1f67bde87111289706c"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="inherit_header pro_methods_classve_1_1_v_e_camera"><td colspan="2" onclick="javascript:toggleInherit('pro_methods_classve_1_1_v_e_camera')"><img src="closed.png" alt="-"/>&#160;Protected Member Functions inherited from <a class="el" href="classve_1_1_v_e_camera.html">ve::VECamera</a></td></tr>
+<tr class="memitem:a4c8ab5207dc1bbab55f0b84c42cac034 inherit pro_methods_classve_1_1_v_e_camera"><td class="memItemLeft" align="right" valign="top">virtual void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_camera.html#a4c8ab5207dc1bbab55f0b84c42cac034">updateLocalUBO</a> (glm::mat4 worldMatrix)</td></tr>
+<tr class="memdesc:a4c8ab5207dc1bbab55f0b84c42cac034 inherit pro_methods_classve_1_1_v_e_camera"><td class="mdescLeft">&#160;</td><td class="mdescRight">Update the UBO of this camera.  <a href="classve_1_1_v_e_camera.html#a4c8ab5207dc1bbab55f0b84c42cac034">More...</a><br /></td></tr>
+<tr class="separator:a4c8ab5207dc1bbab55f0b84c42cac034 inherit pro_methods_classve_1_1_v_e_camera"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a4c050ba558242cdb74897016fd684dfa inherit pro_methods_classve_1_1_v_e_camera"><td class="memItemLeft" align="right" valign="top">virtual void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_camera.html#a4c050ba558242cdb74897016fd684dfa">updateUBO</a> (glm::mat4 worldMatrix, uint32_t imageIndex)</td></tr>
+<tr class="memdesc:a4c050ba558242cdb74897016fd684dfa inherit pro_methods_classve_1_1_v_e_camera"><td class="mdescLeft">&#160;</td><td class="mdescRight">Update the entity's local UBO copy.  <a href="classve_1_1_v_e_camera.html#a4c050ba558242cdb74897016fd684dfa">More...</a><br /></td></tr>
+<tr class="separator:a4c050ba558242cdb74897016fd684dfa inherit pro_methods_classve_1_1_v_e_camera"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="inherit_header pro_methods_classve_1_1_v_e_scene_object"><td colspan="2" onclick="javascript:toggleInherit('pro_methods_classve_1_1_v_e_scene_object')"><img src="closed.png" alt="-"/>&#160;Protected Member Functions inherited from <a class="el" href="classve_1_1_v_e_scene_object.html">ve::VESceneObject</a></td></tr>
-<tr class="memitem:a4daa340d55baac9b05dba82bd4151b0d inherit pro_methods_classve_1_1_v_e_scene_object"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_scene_object.html#a4daa340d55baac9b05dba82bd4151b0d">updateUBO</a> (void *pUBO, uint32_t sizeUBO, uint32_t imageIndex)</td></tr>
+<tr class="memitem:a4daa340d55baac9b05dba82bd4151b0d inherit pro_methods_classve_1_1_v_e_scene_object"><td class="memItemLeft" align="right" valign="top">virtual void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_scene_object.html#a4daa340d55baac9b05dba82bd4151b0d">updateUBO</a> (void *pUBO, uint32_t sizeUBO, uint32_t imageIndex)</td></tr>
 <tr class="memdesc:a4daa340d55baac9b05dba82bd4151b0d inherit pro_methods_classve_1_1_v_e_scene_object"><td class="mdescLeft">&#160;</td><td class="mdescRight">Copy the local data of this scene object into the GPU UBO.  <a href="classve_1_1_v_e_scene_object.html#a4daa340d55baac9b05dba82bd4151b0d">More...</a><br /></td></tr>
 <tr class="separator:a4daa340d55baac9b05dba82bd4151b0d inherit pro_methods_classve_1_1_v_e_scene_object"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ad055516f45c0a8c813402cb75361622f inherit pro_methods_classve_1_1_v_e_scene_object"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_scene_object.html#ad055516f45c0a8c813402cb75361622f">VESceneObject</a> (std::string name, glm::mat4 transf=glm::mat4(1.0f), uint32_t sizeUBO=0)</td></tr>
@@ -258,6 +255,15 @@ virtual&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="c
 virtual&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_scene_node.html#aabeb0f7130c6df9e67d3bdb98ac43c57">~VESceneNode</a> ()</td></tr>
 <tr class="memdesc:aabeb0f7130c6df9e67d3bdb98ac43c57 inherit pro_methods_classve_1_1_v_e_scene_node"><td class="mdescLeft">&#160;</td><td class="mdescRight">Destructor of the scene node class. <br /></td></tr>
 <tr class="separator:aabeb0f7130c6df9e67d3bdb98ac43c57 inherit pro_methods_classve_1_1_v_e_scene_node"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aa97bd4ad3fb1efa02ec3df6ef679927d inherit pro_methods_classve_1_1_v_e_scene_node"><td class="memItemLeft" align="right" valign="top">virtual void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_scene_node.html#aa97bd4ad3fb1efa02ec3df6ef679927d">update</a> (uint32_t imageIndex)</td></tr>
+<tr class="memdesc:aa97bd4ad3fb1efa02ec3df6ef679927d inherit pro_methods_classve_1_1_v_e_scene_node"><td class="mdescLeft">&#160;</td><td class="mdescRight">Update the entity's UBO buffer with the current world matrix.  <a href="classve_1_1_v_e_scene_node.html#aa97bd4ad3fb1efa02ec3df6ef679927d">More...</a><br /></td></tr>
+<tr class="separator:aa97bd4ad3fb1efa02ec3df6ef679927d inherit pro_methods_classve_1_1_v_e_scene_node"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a93199fd14bc3f52fd6346491be84afac inherit pro_methods_classve_1_1_v_e_scene_node"><td class="memItemLeft" align="right" valign="top">virtual void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_scene_node.html#a93199fd14bc3f52fd6346491be84afac">update</a> (glm::mat4 parentWorldMatrix, uint32_t imageIndex)</td></tr>
+<tr class="memdesc:a93199fd14bc3f52fd6346491be84afac inherit pro_methods_classve_1_1_v_e_scene_node"><td class="mdescLeft">&#160;</td><td class="mdescRight">Update the entity's UBO buffer with the current world matrix.  <a href="classve_1_1_v_e_scene_node.html#a93199fd14bc3f52fd6346491be84afac">More...</a><br /></td></tr>
+<tr class="separator:a93199fd14bc3f52fd6346491be84afac inherit pro_methods_classve_1_1_v_e_scene_node"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:afeb3d92ef1a5bf684186b96b52d42b25 inherit pro_methods_classve_1_1_v_e_scene_node"><td class="memItemLeft" align="right" valign="top">virtual void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_scene_node.html#afeb3d92ef1a5bf684186b96b52d42b25">updateChildren</a> (glm::mat4 worldMatrix, uint32_t imageIndex)</td></tr>
+<tr class="memdesc:afeb3d92ef1a5bf684186b96b52d42b25 inherit pro_methods_classve_1_1_v_e_scene_node"><td class="mdescLeft">&#160;</td><td class="mdescRight">Update the UBOs of all children of this entity.  <a href="classve_1_1_v_e_scene_node.html#afeb3d92ef1a5bf684186b96b52d42b25">More...</a><br /></td></tr>
+<tr class="separator:afeb3d92ef1a5bf684186b96b52d42b25 inherit pro_methods_classve_1_1_v_e_scene_node"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="inherited"></a>
 Additional Inherited Members</h2></td></tr>
@@ -303,7 +309,10 @@ std::string&#160;</td><td class="memItemRight" valign="bottom"><a class="el" hre
 <tr class="memdesc:a3b3f5063b5de55426c522032e838236a inherit pro_attribs_classve_1_1_v_e_named_class"><td class="mdescLeft">&#160;</td><td class="mdescRight">Name of this instance. <br /></td></tr>
 <tr class="separator:a3b3f5063b5de55426c522032e838236a inherit pro_attribs_classve_1_1_v_e_named_class"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
-<h2 class="groupheader">Constructor &amp; Destructor Documentation</h2>
+<a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
+<div class="textblock"><p>A projective camera that can be used to take photos of the scene. </p>
+<p><a class="el" href="classve_1_1_v_e_camera_projective.html" title="A projective camera that can be used to take photos of the scene.">VECameraProjective</a> is derived from <a class="el" href="classve_1_1_v_e_camera.html" title="A camera that can be used to take photos of the scene.">VECamera</a> and can be put into the scene. It produces a projection matrix which representing the camera frustum. This class assumes a projective mapping with a camera eye point. </p>
+</div><h2 class="groupheader">Constructor &amp; Destructor Documentation</h2>
 <a id="acf2cd0d711a5211c7c065a30601bb717"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#acf2cd0d711a5211c7c065a30601bb717">&#9670;&nbsp;</a></span>VECameraProjective() <span class="overload">[1/2]</span></h2>
 
@@ -338,7 +347,7 @@ std::string&#160;</td><td class="memItemRight" valign="bottom"><a class="el" hre
 </table>
 </div><div class="memdoc">
 
-<p><a class="el" href="classve_1_1_v_e_camera_projective.html">VECameraProjective</a> constructor. Set nearPlane, farPlane, aspect ratio and fov to a default value. </p>
+<p><a class="el" href="classve_1_1_v_e_camera_projective.html" title="A projective camera that can be used to take photos of the scene.">VECameraProjective</a> constructor. Set nearPlane, farPlane, aspect ratio and fov to a default value. </p>
 <dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
     <tr><td class="paramdir">[in]</td><td class="paramname">name</td><td>Name of the camera. </td></tr>
@@ -419,7 +428,7 @@ std::string&#160;</td><td class="memItemRight" valign="bottom"><a class="el" hre
 </table>
 </div><div class="memdoc">
 
-<p><a class="el" href="classve_1_1_v_e_camera_projective.html">VECameraProjective</a> constructor. </p>
+<p><a class="el" href="classve_1_1_v_e_camera_projective.html" title="A projective camera that can be used to take photos of the scene.">VECameraProjective</a> constructor. </p>
 <dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
     <tr><td class="paramdir">[in]</td><td class="paramname">name</td><td>Name of the camera. </td></tr>
@@ -606,7 +615,7 @@ std::string&#160;</td><td class="memItemRight" valign="bottom"><a class="el" hre
 </div><!-- contents -->
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>
-Generated on Tue Jun 4 2019 11:26:57 for Vienna Vulkan Engine by &#160;<a href="http://www.doxygen.org/index.html">
+Generated on Tue Jun 4 2019 22:40:09 for Vienna Vulkan Engine by &#160;<a href="http://www.doxygen.org/index.html">
 <img class="footer" src="doxygen.png" alt="doxygen"/>
 </a> 1.8.15
 </small></address>

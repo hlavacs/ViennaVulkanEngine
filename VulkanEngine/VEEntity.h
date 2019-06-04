@@ -68,9 +68,11 @@ namespace ve {
 
 		///\returns the scene node type
 		virtual veNodeType	getNodeType() { return VE_NODE_TYPE_SCENENODE; };
-
+		///\returns the parent of this scene node
 		VESceneNode *		getParent() { return m_parent;  };
+		///\returns whether this scene node has a parent
 		bool				hasParent() { return m_parent != nullptr; };
+		///\returns a reference to the children list of this scene node
 		std::vector<VESceneNode *> & getChildrenList() { return m_children;  };
 
 		//-------------------------------------------------------------------------------------
@@ -324,6 +326,9 @@ namespace ve {
 
 
 
+	class VEPointLight;
+	class VESpotLight; 
+
 	/**
 	*
 	* \brief A projective camera that can be used to take photos of the scene.
@@ -333,9 +338,6 @@ namespace ve {
 	* This class assumes a projective mapping with a camera eye point.
 	*
 	*/
-	class VEPointLight;
-	class VESpotLight; 
-
 	class VECameraProjective : public VECamera {
 		friend VESceneManager;
 		friend VEPointLight;
@@ -378,6 +380,8 @@ namespace ve {
 	};
 
 
+	class VEDirectionalLight;
+
 	/**
 	*
 	* \brief Am ortho camera that can be used to take photos of the scene.
@@ -387,9 +391,6 @@ namespace ve {
 	* The frustum is a box and x,z are not influenced by the depth value.
 	*
 	*/
-
-	class VEDirectionalLight;
-
 	class VECameraOrtho : public VECamera {
 		friend VESceneManager;
 		friend VEDirectionalLight;
