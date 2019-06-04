@@ -871,6 +871,7 @@ namespace ve {
 		for (uint32_t i = 0; i < 6; i++) {
 			VECameraProjective *pCam = new VECameraProjective(m_name + "-ShadowCam" + std::to_string(i));
 			m_shadowCameras.push_back(pCam);		//no parent - > transform is also world matrix
+			addChild(pCam);
 			//getSceneManagerPointer()->addSceneNodeAndChildren(pCam);
 		}
 	};
@@ -889,8 +890,29 @@ namespace ve {
 
 		float lnear = 0.1f;
 		float llength = m_param[0];
-		glm::vec4 pos4 = getWorldTransform()[3];
+		glm::mat4 lightWorldMatrix = getWorldTransform();
+		glm::mat4 invLightMatrix = glm::inverse(lightWorldMatrix);
+		glm::vec4 pos4 = lightWorldMatrix[3];
 		glm::vec3 pos = glm::vec3(pos4.x, pos4.y, pos4.z);
+
+		std::vector<glm::vec3> zaxis =
+		{
+			glm::vec3(1.0f,  0.0f,  0.0f),
+			glm::vec3(-1.0f,  0.0f,  0.0f),
+			glm::vec3(0.0f,  1.0f,  0.0f),
+			glm::vec3(0.0f, -1.0f,  0.0f),
+			glm::vec3(0.0f,  0.0f,  1.0f),
+			glm::vec3(0.0f,  0.0f, -1.0f)
+		};
+		std::vector<glm::vec3> up =
+		{
+			glm::vec3(0.0f,  1.0f,  0.0f),
+			glm::vec3(0.0f,  1.0f,  0.0f),
+			glm::vec3(0.0f,  0.0f, -1.0f),
+			glm::vec3(0.0f,  0.0f,  1.0f),
+			glm::vec3(0.0f,  1.0f,  0.0f),
+			glm::vec3(0.0f,  1.0f,  0.0f)
+		};
 
 		for (uint32_t i = 0; i < m_shadowCameras.size(); i++) {
 
@@ -903,26 +925,11 @@ namespace ve {
 			pShadowCamera->m_nearPlaneFraction = 0.0f;
 			pShadowCamera->m_farPlaneFraction =  1.0f;
 
-			std::vector<glm::vec3> zaxis =
-			{
-				glm::vec3(1.0f,  0.0f,  0.0f),
-				glm::vec3(-1.0f,  0.0f,  0.0f),
-				glm::vec3(0.0f,  1.0f,  0.0f),
-				glm::vec3(0.0f, -1.0f,  0.0f),
-				glm::vec3(0.0f,  0.0f,  1.0f),
-				glm::vec3(0.0f,  0.0f, -1.0f)
-			};
-			std::vector<glm::vec3> up =
-			{
-				glm::vec3(0.0f,  1.0f,  0.0f),
-				glm::vec3(0.0f,  1.0f,  0.0f),
-				glm::vec3(0.0f,  0.0f, -1.0f),
-				glm::vec3(0.0f,  0.0f,  1.0f),
-				glm::vec3(0.0f,  1.0f,  0.0f),
-				glm::vec3(0.0f,  1.0f,  0.0f)
-			};
 			pShadowCamera->lookAt( pos, pos + zaxis[i], up[i]);
-			pShadowCamera->update(imageIndex);
+
+			pShadowCamera->updateUBO( pShadowCamera->getTransform(), imageIndex);
+
+			pShadowCamera->multiplyTransform(invLightMatrix);
 		}
 	}
 
@@ -940,10 +947,8 @@ namespace ve {
 
 		for (uint32_t i = 0; i < 1; i++) {
 			VECameraProjective *pCam = new VECameraProjective(m_name + "-ShadowCam" + std::to_string(i));
-			m_shadowCameras.push_back(pCam);		//no parent - > transform is also world matrix
+			m_shadowCameras.push_back(pCam);
 			addChild(pCam);
-			//addChild(pCam);
-			//getSceneManagerPointer()->addSceneNodeAndChildren(pCam);
 		};
 	};
 
@@ -961,14 +966,14 @@ namespace ve {
 		//std::vector<float> limits = { 0.0f, 0.05f, 0.15f, 0.50f, 1.0f };	//the frustum is split into 4 segments
 		std::vector<float> limits = { 0.0f, 1.0f };		//the frustum is split into 1 segment
 
+		glm::mat4 lightWorldMatrix = getWorldTransform();
+
 		for (uint32_t i = 0; i < m_shadowCameras.size(); i++) {
 
 			VECameraProjective * pShadowCamera = (VECameraProjective *)m_shadowCameras[i];
 
 			float lnear = 0.1f;
 			float llength = m_param[0];		//reach of light
-
-			//pShadowCamera->setTransform(getWorldTransform());	//remove
 
 			pShadowCamera->m_aspectRatio = 1.0f;			//TODO: for comparing with light cam
 			pShadowCamera->m_fov = 90.0f;						//TODO: depends on light parameters
@@ -977,7 +982,7 @@ namespace ve {
 			pShadowCamera->m_nearPlaneFraction = limits[i];
 			pShadowCamera->m_farPlaneFraction  = limits[i+1];
 
-			//pShadowCamera->update(imageIndex);	//remove
+			pShadowCamera->updateUBO(lightWorldMatrix * pShadowCamera->getTransform(), imageIndex );
 		}
 	}
 
