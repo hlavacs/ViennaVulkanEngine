@@ -416,18 +416,10 @@ namespace ve {
 			ubo.color = m_pMaterial->color;
 		};
 
-		VESceneObject::updateUBO( (void*)&ubo, (uint32_t)sizeof(veUBOPerObject_t), imageIndex);
+		VESceneObject::updateUBO((void*)&ubo, (uint32_t)sizeof(veUBOPerObject_t), imageIndex);
 	}
 
 
-	/**
-	*
-	* \brief Update the entity's local UBO copy.
-	*
-	*/
-	void VEEntity::updateLocalUBO() {
-
-	}
 
 
 	/**
@@ -494,7 +486,7 @@ namespace ve {
 	* \param[in] imageIndex Index of the swapchain image that is currently used.
 	*
 	*/
-	void VECamera::updateUBO(glm::mat4 worldMatrix, uint32_t imageIndex) {
+	void VECamera::updateLocalUBO(glm::mat4 worldMatrix) {
 		m_ubo = {};
 
 		m_ubo.model = worldMatrix;
@@ -504,8 +496,6 @@ namespace ve {
 		m_ubo.param[1] = m_farPlane;
 		m_ubo.param[2] = m_nearPlaneFraction;		//needed only if this is a shadow cam
 		m_ubo.param[3] = m_farPlaneFraction;		//needed only if this is a shadow cam
-
-		VESceneObject::updateUBO((void*)&m_ubo, (uint32_t)sizeof(veUBOPerCamera_t), imageIndex );
 	}
 
 	/**
@@ -513,8 +503,9 @@ namespace ve {
 	* \brief Update the entity's local UBO copy.
 	*
 	*/
-	void VECamera::updateLocalUBO() {
-
+	void VECamera::updateUBO(glm::mat4 worldMatrix, uint32_t imageIndex) {
+		updateLocalUBO(worldMatrix);
+		VESceneObject::updateUBO((void*)&m_ubo, (uint32_t)sizeof(veUBOPerCamera_t), imageIndex );
 	}
 
 
@@ -782,7 +773,7 @@ namespace ve {
 	* \param[in] imageIndex Index of the swapchain image that is currently used.
 	*
 	*/
-	void VELight::updateUBO(glm::mat4 worldMatrix, uint32_t imageIndex) {
+	void VELight::updateLocalUBO(glm::mat4 worldMatrix) {
 		m_ubo = {};
 
 		m_ubo.type[0] = getLightType();
@@ -791,6 +782,15 @@ namespace ve {
 		m_ubo.col_diffuse = m_col_diffuse;
 		m_ubo.col_specular = m_col_specular;
 		m_ubo.param = m_param;
+	}
+
+	/**
+	*
+	* \brief Update the lights's local UBO copy.
+	*
+	*/
+	void VELight::updateUBO(glm::mat4 worldMatrix, uint32_t imageIndex ) {
+		updateLocalUBO(worldMatrix);
 
 		VECamera *pCam = getSceneManagerPointer()->getCamera();
 
@@ -800,15 +800,6 @@ namespace ve {
 		}
 
 		VESceneObject::updateUBO((void*)&m_ubo, (uint32_t)sizeof(veUBOPerLight_t), imageIndex);
-	}
-
-	/**
-	*
-	* \brief Update the lights's local UBO copy.
-	*
-	*/
-	void VELight::updateLocalUBO() {
-
 	}
 
 
@@ -874,7 +865,7 @@ namespace ve {
 			pShadowCamera->m_nearPlaneFraction = limits[i];
 			pShadowCamera->m_farPlaneFraction = limits[i+1];
 
-			pShadowCamera->updateUBO( pShadowCamera->getTransform(), imageIndex );
+			pShadowCamera->updateLocalUBO( pShadowCamera->getTransform() );
 
 			pShadowCamera->multiplyTransform(invLightMatrix);
 		}
@@ -950,7 +941,7 @@ namespace ve {
 
 			pShadowCamera->lookAt( pos, pos + zaxis[i], up[i]);
 
-			pShadowCamera->updateUBO( pShadowCamera->getTransform(), imageIndex);
+			pShadowCamera->updateLocalUBO( pShadowCamera->getTransform());
 
 			pShadowCamera->multiplyTransform(invLightMatrix);
 		}
@@ -1004,7 +995,7 @@ namespace ve {
 			pShadowCamera->m_nearPlaneFraction = limits[i];
 			pShadowCamera->m_farPlaneFraction  = limits[i+1];
 
-			pShadowCamera->updateUBO(lightWorldMatrix * pShadowCamera->getTransform(), imageIndex );
+			pShadowCamera->updateLocalUBO(lightWorldMatrix * pShadowCamera->getTransform() );
 		}
 	}
 

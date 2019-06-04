@@ -58,8 +58,6 @@ namespace ve {
 		virtual void update(glm::mat4 parentWorldMatrix, uint32_t imageIndex);		//Copy the world matrix using the parent's world matrix
 		virtual void updateChildren(glm::mat4 worldMatrix, uint32_t imageIndex);	//Update all children
 
-		///update the local copy of the UBO
-		virtual void updateLocalUBO() {};
 		///Meant for subclasses to add data to the UBO, so this function does nothing in base class
 		virtual void updateUBO(glm::mat4 worldMatrix, uint32_t imageIndex) {};
 
@@ -132,7 +130,6 @@ namespace ve {
 		};
 
 	protected:
-		virtual void updateLocalUBO() {};											 //update the local copy of the UBO
 		virtual void updateUBO( void *pUBO, uint32_t sizeUBO, uint32_t imageIndex ); //Helper function to call VMA functions
 
 		VESceneObject(std::string name, glm::mat4 transf = glm::mat4(1.0f), uint32_t sizeUBO = 0);
@@ -200,8 +197,7 @@ namespace ve {
 					glm::mat4 transf );
 		virtual ~VEEntity();
 
-		virtual void updateLocalUBO();												//update the local copy of the UBO
-		virtual void updateUBO(glm::mat4 worldMatrix, uint32_t imageIndex);			//update the UBO of this node using its current world matrix
+		virtual void updateUBO(glm::mat4 worldMatrix, uint32_t imageIndex);		//update the UBO of this node using its current world matrix
 
 	public:
 		VEMesh *					m_pMesh = nullptr;				///<Pointer to entity mesh
@@ -259,7 +255,7 @@ namespace ve {
 	class VECamera : public VESceneObject {
 
 	protected:
-		virtual void updateLocalUBO();											//update local UBO copy
+		virtual void updateLocalUBO(glm::mat4 worldMatrix);						//update local UBO copy
 		virtual void updateUBO(glm::mat4 worldMatrix, uint32_t imageIndex);		//update the UBO of this node using its current world matrix
 
 	public:
@@ -473,7 +469,7 @@ namespace ve {
 		VELight(std::string name, glm::mat4 transf = glm::mat4(1.0f) );
 		virtual ~VELight();
 
-		virtual void updateLocalUBO();											//update local UBO 
+		virtual void updateLocalUBO(glm::mat4 worldMatrix);						//update local UBO 
 		virtual void updateUBO(glm::mat4 worldMatrix, uint32_t imageIndex);		//update the UBO of this node using its current world matrix
 
 	public:
