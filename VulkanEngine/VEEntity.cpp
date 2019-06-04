@@ -818,7 +818,7 @@ namespace ve {
 		for (uint32_t i = 0; i < 4; i++) {
 			VECameraOrtho *pCam = new VECameraOrtho(m_name + "-ShadowCam" + std::to_string(i) );
 			m_shadowCameras.push_back(pCam );		//no parent - > transform is also world matrix
-			//getSceneManagerPointer()->addSceneNodeAndChildren(pCam);
+			addChild(pCam);
 		}
 	};
 
@@ -835,6 +835,9 @@ namespace ve {
 
 		std::vector<float> limits = { 0.0f, 0.05f, 0.15f, 0.50f, 1.0f };	//the frustum is split into 4 segments
 
+		glm::mat4 lightWorldMatrix = getWorldTransform();
+		glm::mat4 invLightMatrix = glm::inverse(lightWorldMatrix);
+
 		for (uint32_t i = 0; i < m_shadowCameras.size(); i++) {
 			VECameraOrtho *pShadowCamera = (VECameraOrtho *)m_shadowCameras[i];
 
@@ -845,13 +848,14 @@ namespace ve {
 			getOBB(pointsW, 0.0f, 1.0f, center, pShadowCamera->m_width, pShadowCamera->m_height, pShadowCamera->m_farPlane);
 			pShadowCamera->m_farPlane *= 8.0f;			//TODO - do NOT set too high or else shadow maps wont get drawn!
 
-			glm::mat4 W = getWorldTransform();
-			pShadowCamera->setTransform(W);
-			pShadowCamera->setPosition(center - pShadowCamera->m_farPlane*0.9f * glm::vec3(W[2].x, W[2].y, W[2].z));
+			pShadowCamera->setTransform(lightWorldMatrix);
+			pShadowCamera->setPosition(center - pShadowCamera->m_farPlane*0.9f * glm::vec3(lightWorldMatrix[2].x, lightWorldMatrix[2].y, lightWorldMatrix[2].z));
 			pShadowCamera->m_nearPlaneFraction = limits[i];
 			pShadowCamera->m_farPlaneFraction = limits[i+1];
 
-			pShadowCamera->update( imageIndex );
+			pShadowCamera->updateUBO( pShadowCamera->getTransform(), imageIndex );
+
+			pShadowCamera->multiplyTransform(invLightMatrix);
 		}
 	}
 
