@@ -46,7 +46,7 @@ namespace ve {
 		std::mutex					m_mutex;						///<Mutex for locking access to this node
 
 		//constructor
-		VESceneNode(std::string name, glm::mat4 transf = glm::mat4(1.0f), VESceneNode *parent = nullptr);
+		VESceneNode(std::string name, glm::mat4 transf = glm::mat4(1.0f) );
 
 		///Destructor of the scene node class.
 		virtual ~VESceneNode() {};
@@ -134,7 +134,7 @@ namespace ve {
 	protected:
 		void updateUBO( void *pUBO, uint32_t sizeUBO, uint32_t imageIndex ); //Helper function to call VMA functions
 
-		VESceneObject(std::string name, glm::mat4 transf = glm::mat4(1.0f), VESceneNode *parent = nullptr, uint32_t sizeUBO = 0);
+		VESceneObject(std::string name, glm::mat4 transf = glm::mat4(1.0f), uint32_t sizeUBO = 0);
 		virtual ~VESceneObject();
 
 	public:
@@ -196,7 +196,7 @@ namespace ve {
 
 		VEEntity(	std::string name, veEntityType type,
 					VEMesh *pMesh, VEMaterial *pMat,
-					glm::mat4 transf, VESceneNode *parent);
+					glm::mat4 transf );
 		virtual ~VEEntity();
 
 	public:
@@ -280,13 +280,12 @@ namespace ve {
 		//-------------------------------------------------------------------------------------
 		//Type
 
-		VECamera(std::string name, glm::mat4 transf = glm::mat4(1.0f), VESceneNode *parent = nullptr);
+		VECamera(std::string name, glm::mat4 transf = glm::mat4(1.0f) );
 
 		VECamera(std::string name,
 			float nearPlane, float farPlane,
 			float nearPlaneFraction = 0.0f, float farPlaneFraction = 1.0f,
-			glm::mat4 transf = glm::mat4(1.0f),
-			VESceneNode *parent = nullptr);
+			glm::mat4 transf = glm::mat4(1.0f) );
 
 		virtual ~VECamera() {};
 
@@ -341,12 +340,12 @@ namespace ve {
 		friend VESpotLight;
 
 	protected:
-		VECameraProjective(std::string name, glm::mat4 transf = glm::mat4(1.0f), VESceneNode *parent = nullptr);
+		VECameraProjective(std::string name, glm::mat4 transf = glm::mat4(1.0f) );
 		VECameraProjective(	std::string name, 
 							float nearPlane, float farPlane, 
 							float aspectRatio, float fov,
 							float nearPlaneFraction = 0.0f, float farPlaneFraction = 1.0f,
-							glm::mat4 transf = glm::mat4(1.0f), VESceneNode *parent = nullptr );
+							glm::mat4 transf = glm::mat4(1.0f) );
 
 		///Destructor projective camera
 		virtual ~VECameraProjective() {};
@@ -394,12 +393,12 @@ namespace ve {
 		friend VEDirectionalLight;
 
 	protected:
-		VECameraOrtho(	std::string name, glm::mat4 transf = glm::mat4(1.0f), VESceneNode *parent = nullptr );
+		VECameraOrtho(	std::string name, glm::mat4 transf = glm::mat4(1.0f) );
 		VECameraOrtho(	std::string name, 
 						float nearPlane, float farPlane, 
 						float width, float height, 
 						float nearPlaneFraction = 0.0f, float farPlaneFraction = 1.0f,
-						glm::mat4 transf = glm::mat4(1.0f), VESceneNode *parent = nullptr);
+						glm::mat4 transf = glm::mat4(1.0f) );
 		virtual ~VECameraOrtho() {};
 
 	public:
@@ -465,7 +464,7 @@ namespace ve {
 		};
 
 	protected:
-		VELight(std::string name, glm::mat4 transf = glm::mat4(1.0f), VESceneNode *parent = nullptr);
+		VELight(std::string name, glm::mat4 transf = glm::mat4(1.0f) );
 		virtual ~VELight();
 
 	public:
@@ -515,7 +514,7 @@ namespace ve {
 		friend VESceneManager;
 
 	protected:
-		VEDirectionalLight(	std::string name, glm::mat4 transf = glm::mat4(1.0f), VESceneNode *parent = nullptr);
+		VEDirectionalLight(	std::string name, glm::mat4 transf = glm::mat4(1.0f) );
 
 		///Destructor of the directional light
 		virtual ~VEDirectionalLight() {};
@@ -544,7 +543,7 @@ namespace ve {
 		friend VESceneManager;
 
 	protected:
-		VEPointLight(std::string name, glm::mat4 transf = glm::mat4(1.0f), VESceneNode *parent = nullptr);
+		VEPointLight(std::string name, glm::mat4 transf = glm::mat4(1.0f) );
 
 		///Destructor of the point light
 		virtual ~VEPointLight() {};
@@ -571,7 +570,7 @@ namespace ve {
 		friend VESceneManager;
 
 	protected:
-		VESpotLight(std::string name, glm::mat4 transf = glm::mat4(1.0f), VESceneNode *parent = nullptr);
+		VESpotLight(std::string name, glm::mat4 transf = glm::mat4(1.0f) );
 
 		///Destructor of the spot light
 		virtual ~VESpotLight() {};

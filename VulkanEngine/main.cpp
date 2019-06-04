@@ -95,7 +95,7 @@ namespace ve {
 
 			for (uint32_t i = 0; i < n; i++) {		
 				VEEntity *e2;
-				VECHECKPOINTER( e2 = getSceneManagerPointer()->createEntity("The Cube" + std::to_string(i), pMesh, pMat, glm::mat4(1.0f), getRoot()) );
+				VECHECKPOINTER( e2 = getSceneManagerPointer()->createEntity("The Cube" + std::to_string(i), pMesh, pMat, getRoot() ) );
 
 				e2->setTransform(glm::translate(glm::mat4(1.0f), glm::vec3( d(e) - stride/2.0f, d(e)/2.0f, d(e) - stride/2.0f)));
 				//e2->multiplyTransform(glm::scale(glm::mat4(1.0f), glm::vec3(10.0f, 10.0f, 10.0f)));
@@ -111,7 +111,7 @@ namespace ve {
 			VEEngine::loadLevel(numLevel );			//create standard cameras and lights
 
 			VESceneNode *pScene;
-			VECHECKPOINTER( pScene = getSceneManagerPointer()->createSceneNode("Level 1", glm::mat4(1.0f), getRoot()) );
+			VECHECKPOINTER( pScene = getSceneManagerPointer()->createSceneNode("Level 1", getRoot()) );
 	
 			//scene models
 

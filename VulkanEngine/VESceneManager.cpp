@@ -165,7 +165,7 @@ namespace ve {
 
 		VECHECKPOINTER((void*)pScene);
 
-		VESceneNode *pMO = createSceneNode2(entityName, glm::mat4(1.0f), parent);	//create a new scene node as parent of the whole scene
+		VESceneNode *pMO = createSceneNode2(entityName, parent );	//create a new scene node as parent of the whole scene
 
 		std::vector<VEMesh*> meshes;
 		createMeshes(pScene, filekey, meshes);					//create the new meshes if any
@@ -200,8 +200,7 @@ namespace ve {
 										aiNode* node, 
 										VESceneNode *parent ) {
 
-		VESceneNode *pObject = createSceneNode2(parent->getName() + "/" + node->mName.C_Str(),
-												glm::mat4(1.0f), parent);
+		VESceneNode *pObject = createSceneNode2(parent->getName() + "/" + node->mName.C_Str(), parent );
 
 		for (uint32_t i = 0; i < node->mNumMeshes; i++) {	//go through the meshes of the Assimp node
 
@@ -219,7 +218,7 @@ namespace ve {
 
 			VEEntity *pEnt = createEntity2(	pObject->getName() + "/Entity_" + std::to_string(i), //create the new entity
 											VEEntity::VE_ENTITY_TYPE_NORMAL,
-											pMesh, pMaterial, *pMatrix, pObject);
+											pMesh, pMaterial, pObject, *pMatrix );
 		}
 
 		for (uint32_t i = 0; i < node->mNumChildren; i++) {		//recursivly go down the node tree
@@ -367,9 +366,9 @@ namespace ve {
 	* \returns a pointer to the new scene node
 	*
 	*/
-	VESceneNode * VESceneManager::createSceneNode(std::string objectName, glm::mat4 transf, VESceneNode *parent) {
+	VESceneNode * VESceneManager::createSceneNode(std::string objectName, VESceneNode *parent, glm::mat4 transf) {
 		std::lock_guard<std::mutex> lock(m_mutex);
-		return createSceneNode2( objectName, transf, parent );
+		return createSceneNode2( objectName, parent, transf  );
 	}
 
 
@@ -386,13 +385,13 @@ namespace ve {
 	*
 	*/
 	VESceneNode * VESceneManager::createSceneNode2(	std::string objectName,
-													glm::mat4 transf, 
-													VESceneNode *parent) {
+													VESceneNode *parent, 
+													glm::mat4 transf ) {
 
 		if (m_sceneNodes.count(objectName)>0) return m_sceneNodes[objectName];
 
-		VESceneNode *pMO = new VESceneNode(objectName, transf, parent);
-		addSceneNodeAndChildren2( pMO );
+		VESceneNode *pMO = new VESceneNode(objectName, transf );
+		addSceneNodeAndChildren( pMO, parent );
 		sceneGraphChanged();
 		return pMO;
 	}
@@ -410,8 +409,8 @@ namespace ve {
 	*
 	*/
 	VEEntity * VESceneManager::createEntity(	std::string entityName, VEMesh *pMesh, VEMaterial *pMat,
-												glm::mat4 transf, VESceneNode *parent) {
-		return createEntity(entityName, VEEntity::VE_ENTITY_TYPE_NORMAL, pMesh, pMat, transf, parent);
+												VESceneNode *parent, glm::mat4 transf) {
+		return createEntity(entityName, VEEntity::VE_ENTITY_TYPE_NORMAL, pMesh, pMat, parent, transf);
 	}
 
 
@@ -428,10 +427,10 @@ namespace ve {
 	*
 	*/
 	VEEntity * VESceneManager::createEntity(std::string entityName, VEEntity::veEntityType type,
-											VEMesh *pMesh, VEMaterial *pMat, glm::mat4 transf, VESceneNode *parent) {
+											VEMesh *pMesh, VEMaterial *pMat, VESceneNode *parent, glm::mat4 transf) {
 
 		std::lock_guard<std::mutex> lock(m_mutex);
-		return createEntity2(entityName, type, pMesh, pMat, transf, parent);
+		return createEntity2(entityName, type, pMesh, pMat, parent, transf);
 	}
 
 
@@ -448,10 +447,10 @@ namespace ve {
 	*
 	*/
 	VEEntity * VESceneManager::createEntity2(	std::string entityName, VEEntity::veEntityType type, 
-												VEMesh *pMesh, VEMaterial *pMat, 
-												glm::mat4 transf, VESceneNode *parent) {
-		VEEntity *pEntity = new VEEntity(entityName, type, pMesh, pMat, transf, parent);
-		addSceneNodeAndChildren2(pEntity);				// store entity in the entity array
+												VEMesh *pMesh, VEMaterial *pMat, VESceneNode *parent, 
+												glm::mat4 transf) {
+		VEEntity *pEntity = new VEEntity(entityName, type, pMesh, pMat, transf );
+		addSceneNodeAndChildren(pEntity, parent );				// store entity in the entity array
 
 		if (pMesh != nullptr && pMat != nullptr) {
 			getRendererPointer()->addEntityToSubrenderer(pEntity);
@@ -461,37 +460,37 @@ namespace ve {
 	}
 
 
-	VECamera * VESceneManager::createCamera(std::string cameraName, VECamera::veCameraType type, glm::mat4 transf, VESceneNode *parent) {
+	VECamera * VESceneManager::createCamera(std::string cameraName, VECamera::veCameraType type, VESceneNode *parent, glm::mat4 transf) {
 		std::lock_guard<std::mutex> lock(m_mutex);
 
 		VECamera *pCam = nullptr;
 		if (type == VECamera::VE_CAMERA_TYPE_PROJECTIVE) {
-			pCam = new VECameraProjective(cameraName, transf, parent );
+			pCam = new VECameraProjective( cameraName, transf );
 		}
 		else {
-			pCam = new VECameraOrtho(cameraName, transf, parent);
+			pCam = new VECameraOrtho(cameraName, transf );
 		}
 
-		addSceneNodeAndChildren2(pCam);
+		addSceneNodeAndChildren( pCam, parent );
 		return pCam;
 	}
 
 
 
-	VELight * VESceneManager::createLight(std::string lightName, VELight::veLightType type, glm::mat4 transf, VESceneNode *parent) {
+	VELight * VESceneManager::createLight(std::string lightName, VELight::veLightType type, VESceneNode *parent, glm::mat4 transf) {
 		//std::lock_guard<std::mutex> lock(m_mutex);
 
 		VELight *pLight = nullptr;
 		if (type == VELight::VE_LIGHT_TYPE_DIRECTIONAL) {
-			pLight = new VEDirectionalLight(lightName, transf, parent);
+			pLight = new VEDirectionalLight(lightName, transf );
 		} else 		if (type == VELight::VE_LIGHT_TYPE_POINT) {
-			pLight = new VEPointLight(lightName, transf, parent);
+			pLight = new VEPointLight(lightName, transf );
 		}
 		else {
-			pLight = new VESpotLight(lightName, transf, parent);
+			pLight = new VESpotLight(lightName, transf );
 		}
 		
-		addSceneNodeAndChildren2(pLight);
+		addSceneNodeAndChildren(pLight, parent);
 		return pLight;
 	}
 
@@ -514,9 +513,9 @@ namespace ve {
 	* \returns a pointer to the new entity
 	*
 	*/
-	VEEntity *	VESceneManager::createSkyplane(std::string entityName, std::string basedir, std::string texName) {
+	VEEntity *	VESceneManager::createSkyplane(std::string entityName, std::string basedir, std::string texName, VESceneNode *parent) {
 		std::lock_guard<std::mutex> lock(m_mutex);
-		return createSkyplane2(entityName, basedir, texName);
+		return createSkyplane2(entityName, basedir, texName, parent);
 	}
 
 
@@ -532,7 +531,7 @@ namespace ve {
 	* \returns a pointer to the new entity
 	*
 	*/
-	VEEntity *	VESceneManager::createSkyplane2(std::string entityName, std::string basedir, std::string texName) {
+	VEEntity *	VESceneManager::createSkyplane2(std::string entityName, std::string basedir, std::string texName, VESceneNode *parent) {
 
 		std::string filekey = basedir + "/" + texName;
 		VEMesh * pMesh = m_meshes[STANDARD_MESH_PLANE];
@@ -548,7 +547,7 @@ namespace ve {
 			pMat = m_materials[filekey];
 		}
 
-		VEEntity *pEntity = createEntity2(entityName, VEEntity::VE_ENTITY_TYPE_SKYPLANE, pMesh, pMat, glm::mat4(1.0f), m_rootSceneNode );
+		VEEntity *pEntity = createEntity2(entityName, VEEntity::VE_ENTITY_TYPE_SKYPLANE, pMesh, pMat, parent );
 		pEntity->m_castsShadow = false;
 
 		sceneGraphChanged();
@@ -580,25 +579,24 @@ namespace ve {
 			addstring = "+";
 		}
 
-		VESceneNode *parent = createSceneNode2(entityName);
-		m_rootSceneNode->addChild(parent);
+		VESceneNode *parent = createSceneNode2(entityName, getRoot());
 		float scale = 1000.0f;
 
-		VEEntity *sp1 = getSceneManagerPointer()->createSkyplane2(filekey + "/Skyplane1", basedir, texNames[0]);
+		VEEntity *sp1 = getSceneManagerPointer()->createSkyplane2(filekey + "/Skyplane1", basedir, texNames[0], parent);
 		sp1->multiplyTransform(glm::scale(glm::mat4(1.0f), glm::vec3(-scale, 1.0f, -scale)));
 		sp1->multiplyTransform(glm::rotate(glm::mat4(1.0f), -(float)M_PI / 2.0f, glm::vec3(1.0f, 0.0f, 0.0f)));
 		sp1->multiplyTransform(glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 0.0f, scale / 2.0f)));
 		parent->addChild(sp1);
 		sp1->m_castsShadow = false;
 
-		sp1 = getSceneManagerPointer()->createSkyplane2(filekey + "/Skyplane2", basedir, texNames[1]);
+		sp1 = getSceneManagerPointer()->createSkyplane2(filekey + "/Skyplane2", basedir, texNames[1], parent);
 		sp1->multiplyTransform(glm::scale(glm::mat4(1.0f), glm::vec3(scale, 1.0f, scale)));
 		sp1->multiplyTransform(glm::rotate(glm::mat4(1.0f), (float)M_PI / 2.0f, glm::vec3(1.0f, 0.0f, 0.0f)));
 		sp1->multiplyTransform(glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 0.0f, -scale / 2.0f)));
 		parent->addChild(sp1);
 		sp1->m_castsShadow = false;
 
-		sp1 = getSceneManagerPointer()->createSkyplane2(filekey + "/Skyplane3", basedir, texNames[2]);
+		sp1 = getSceneManagerPointer()->createSkyplane2(filekey + "/Skyplane3", basedir, texNames[2], parent);
 		sp1->multiplyTransform(glm::scale(glm::mat4(1.0f), glm::vec3(scale, 1.0f, scale)));
 		sp1->multiplyTransform(glm::rotate(glm::mat4(1.0f), (float)M_PI / 2.0f, glm::vec3(0.0f, 1.0f, 0.0f)));
 		sp1->multiplyTransform(glm::rotate(glm::mat4(1.0f), (float)M_PI, glm::vec3(1.0f, 0.0f, 0.0f)));
@@ -606,7 +604,7 @@ namespace ve {
 		parent->addChild(sp1);
 		sp1->m_castsShadow = false;
 
-		sp1 = getSceneManagerPointer()->createSkyplane2(filekey + "/Skyplane4", basedir, texNames[4] );
+		sp1 = getSceneManagerPointer()->createSkyplane2(filekey + "/Skyplane4", basedir, texNames[4], parent);
 		sp1->multiplyTransform(glm::scale(glm::mat4(1.0f), glm::vec3(-scale, 1.0f, -scale)));
 		sp1->multiplyTransform(glm::rotate(glm::mat4(1.0f), (float)M_PI / 2.0f, glm::vec3(0.0f, 1.0f, 0.0f)));
 		sp1->multiplyTransform(glm::rotate(glm::mat4(1.0f), (float)M_PI / 2.0f, glm::vec3(0.0f, 0.0f, 01.0f)));
@@ -614,7 +612,7 @@ namespace ve {
 		parent->addChild(sp1);
 		sp1->m_castsShadow = false;
 
-		sp1 = getSceneManagerPointer()->createSkyplane2(filekey + "/Skyplane5", basedir, texNames[5]);
+		sp1 = getSceneManagerPointer()->createSkyplane2(filekey + "/Skyplane5", basedir, texNames[5], parent);
 		sp1->multiplyTransform(glm::scale(glm::mat4(1.0f), glm::vec3(scale, 1.0f, scale)));
 		sp1->multiplyTransform(glm::rotate(glm::mat4(1.0f), (float)M_PI / 2.0f, glm::vec3(0.0f, 1.0f, 0.0f)));
 		sp1->multiplyTransform(glm::rotate(glm::mat4(1.0f), -(float)M_PI / 2.0f, glm::vec3(0.0f, 0.0f, 1.0f)));
@@ -657,22 +655,6 @@ namespace ve {
 	}
 
 
-	/**
-	*
-	* \brief Add a new scene node into the scene
-	*
-	* If the parent is the nullptr then make the root scene node its parent.
-	* This is the public API function that locks the mutex
-	*
-	* \param[in] pNode Pointer to the new scene node
-	* \param[in] parent Pointer to the new parent of this node
-	*
-	*/
-	void VESceneManager::addSceneNodeAndChildren(VESceneNode *pNode, VESceneNode *parent) {
-		std::lock_guard<std::mutex> lock(m_mutex);
-		addSceneNodeAndChildren2(pNode, parent);
-	}
-
 
 	/**
 	*
@@ -685,7 +667,7 @@ namespace ve {
 	* \param[in] parent Pointer to the new parent of this node
 	*
 	*/
-	void VESceneManager::addSceneNodeAndChildren2(VESceneNode *pNode, VESceneNode *parent) {
+	void VESceneManager::addSceneNodeAndChildren(VESceneNode *pNode, VESceneNode *parent) {
 
 		if (pNode->getNodeType() == VESceneNode::VE_NODE_TYPE_SCENEOBJECT) {
 			VESceneObject *pObject = (VESceneObject*)pNode;
@@ -694,10 +676,14 @@ namespace ve {
 			}
 		}
 
-		if (parent != nullptr) {
+		if (parent != nullptr ) {
 			parent->addChild(pNode);
 		} 
 		m_sceneNodes[pNode->getName()] = pNode;
+
+		for (auto pChild : pNode->getChildrenList()) {
+			addSceneNodeAndChildren(pChild, pNode );
+		}
 	}
 
 
@@ -717,24 +703,6 @@ namespace ve {
 	}
 
 
-	/**
-	*
-	* \brief Remove a scene node
-	*
-	* \param[in] name Name of the scene node.
-	*
-	*/
-	void VESceneManager::removeSceneNode(std::string name) {
-		std::lock_guard<std::mutex> lock(m_mutex);
-		if ( m_sceneNodes.count(name) > 0 ) {
-			VESceneNode *pNode = m_sceneNodes[name];
-			if ( pNode->hasParent() ) {
-				pNode->getParent()->removeChild(pNode);
-			}
-			m_sceneNodes.erase(name);
-		}
-	}
-
 
 
 	/**
@@ -746,9 +714,8 @@ namespace ve {
 	*/
 	void VESceneManager::deleteSceneNodeAndChildren(std::string name) {
 		std::lock_guard<std::mutex> lock(m_mutex);
-		deleteSceneNodeAndChildren2( name );
+		deleteSceneNodeAndChildren2(name);
 	}
-
 
 
 	/**
@@ -759,7 +726,6 @@ namespace ve {
 	*
 	*/
 	void VESceneManager::deleteSceneNodeAndChildren2(std::string name) {
-
 		if (m_sceneNodes.count(name) == 0) return;
 		VESceneNode * pNode = m_sceneNodes[name];
 

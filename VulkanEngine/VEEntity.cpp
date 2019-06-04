@@ -26,11 +26,8 @@ namespace ve {
 	*
 	*/
 
-	VESceneNode::VESceneNode(std::string name, glm::mat4 transf, VESceneNode *parent) : VENamedClass(name) {
-		m_parent = parent;
-		if (parent != nullptr) {
-			parent->addChild(this);		//if there is a parent, add this scene node to the parent as a child
-		}
+	VESceneNode::VESceneNode(std::string name, glm::mat4 transf ) : VENamedClass(name) {
+		m_parent = nullptr;
 		setTransform(transf);			//sets this MO also onto the dirty list to be updated
 	}
 
@@ -152,12 +149,11 @@ namespace ve {
 	*
 	*/
 	void VESceneNode::addChild(VESceneNode * pObject) {
-		if (pObject->m_parent != nullptr) {
-			pObject->m_parent->removeChild(pObject);
+		if ( pObject->m_parent != this ) {
+			if(pObject->m_parent != nullptr ) pObject->m_parent->removeChild(pObject);
+			pObject->m_parent = this;
+			m_children.push_back(pObject);
 		}
-
-		pObject->m_parent = this;
-		m_children.push_back(pObject);
 	}
 
 	/**
@@ -309,8 +305,8 @@ namespace ve {
 	* \param[in] sizeUBO Size of the object's UBO, if >0 then the object needs UBOs
 	*
 	*/
-	VESceneObject::VESceneObject(std::string name, glm::mat4 transf, VESceneNode *parent, uint32_t sizeUBO ) : 
-									VESceneNode(name, transf, parent) {
+	VESceneObject::VESceneObject(std::string name, glm::mat4 transf, uint32_t sizeUBO ) : 
+									VESceneNode(name, transf) {
 
 	}
 
@@ -361,8 +357,8 @@ namespace ve {
 	*/
 	VEEntity::VEEntity(	std::string name, veEntityType type, 
 						VEMesh *pMesh, VEMaterial *pMat, 
-						glm::mat4 transf, VESceneNode *parent) :
-							VESceneObject(name, transf, parent, (uint32_t) sizeof(veUBOPerObject_t)), m_entityType( type ) {
+						glm::mat4 transf ) :
+							VESceneObject(name, transf, (uint32_t) sizeof(veUBOPerObject_t)), m_entityType( type ) {
 
 		setTransform(transf);
 
@@ -452,8 +448,8 @@ namespace ve {
 	* \param[in] parent The parent of this camera, or nullptr
 	*
 	*/
-	VECamera::VECamera(std::string name, glm::mat4 transf, VESceneNode *parent ) : 
-							VESceneObject(name, transf, parent, (uint32_t)sizeof(veUBOPerCamera_t)) {
+	VECamera::VECamera(std::string name, glm::mat4 transf ) : 
+							VESceneObject(name, transf, (uint32_t)sizeof(veUBOPerCamera_t)) {
 	};
 
 	/**
@@ -472,8 +468,8 @@ namespace ve {
 	VECamera::VECamera(	std::string name, 
 						float nearPlane, float farPlane,
 						float nearPlaneFraction, float farPlaneFraction,
-						glm::mat4 transf, VESceneNode *parent ) :
-							VESceneObject(name, transf, parent, (uint32_t)sizeof(veUBOPerCamera_t)), 
+						glm::mat4 transf ) :
+							VESceneObject(name, transf, (uint32_t)sizeof(veUBOPerCamera_t)), 
 							m_nearPlane(nearPlane), m_farPlane(farPlane),
 							m_nearPlaneFraction(nearPlaneFraction), m_farPlaneFraction(farPlaneFraction) {
 	}
@@ -545,7 +541,7 @@ namespace ve {
 	* \param[in] parent The parent of this camera, or nullptr
 	*
 	*/
-	VECameraProjective::VECameraProjective(std::string name, glm::mat4 transf, VESceneNode *parent) : VECamera(name, transf, parent ) {
+	VECameraProjective::VECameraProjective(std::string name, glm::mat4 transf ) : VECamera(name, transf ) {
 	};
 
 	/**
@@ -567,11 +563,11 @@ namespace ve {
 											float nearPlane, float farPlane, 
 											float aspectRatio, float fov,
 											float nearPlaneFraction, float farPlaneFraction,
-											glm::mat4 transf, VESceneNode *parent) :
+											glm::mat4 transf ) :
 												VECamera(	name, 
 															nearPlane, farPlane, 
 															nearPlaneFraction, farPlaneFraction,
-															transf, parent ), 
+															transf ), 
 												m_aspectRatio(aspectRatio), m_fov(fov)   {
 	};
 
@@ -650,8 +646,8 @@ namespace ve {
 	* \param[in] parent The parent of this camera, or nullptr
 	*
 	*/
-	VECameraOrtho::VECameraOrtho(std::string name, glm::mat4 transf, VESceneNode *parent) : 
-						VECamera(name, transf, parent ) {
+	VECameraOrtho::VECameraOrtho(std::string name, glm::mat4 transf ) : 
+						VECamera(name, transf ) {
 	};
 
 	/**
@@ -673,11 +669,11 @@ namespace ve {
 									float nearPlane, float farPlane, 
 									float width, float height,
 									float nearPlaneFraction, float farPlaneFraction,
-									glm::mat4 transf, VESceneNode *parent) :
+									glm::mat4 transf) :
 										VECamera(	name, 
 													nearPlane, farPlane, 
 													nearPlaneFraction, farPlaneFraction,
-													transf, parent), 
+													transf), 
 										m_width(width), m_height(height) {
 	};
 
@@ -753,8 +749,8 @@ namespace ve {
 	* \param[in] parent The parent of this light, or nullptr
 	*
 	*/
-	VELight::VELight(std::string name, glm::mat4 transf, VESceneNode *parent ) : 
-						VESceneObject(name, transf, parent, (uint32_t)sizeof(veUBOPerLight_t)) {
+	VELight::VELight(std::string name, glm::mat4 transf ) : 
+						VESceneObject(name, transf, (uint32_t)sizeof(veUBOPerLight_t)) {
 	};
 
 
@@ -816,13 +812,13 @@ namespace ve {
 	* \param[in] parent The parent of this light
 	*
 	*/
-	VEDirectionalLight::VEDirectionalLight(std::string name, glm::mat4 transf, VESceneNode *parent) :
-					VELight(name, transf, parent) {
+	VEDirectionalLight::VEDirectionalLight(std::string name, glm::mat4 transf ) :
+					VELight(name, transf) {
 
 		for (uint32_t i = 0; i < 4; i++) {
 			VECameraOrtho *pCam = new VECameraOrtho(m_name + "-ShadowCam" + std::to_string(i) );
 			m_shadowCameras.push_back(pCam );		//no parent - > transform is also world matrix
-			getSceneManagerPointer()->addSceneNodeAndChildren(pCam);
+			//getSceneManagerPointer()->addSceneNodeAndChildren(pCam);
 		}
 	};
 
@@ -869,13 +865,13 @@ namespace ve {
 	* \param[in] parent The parent of this light
 	*
 	*/
-	VEPointLight::VEPointLight(std::string name, glm::mat4 transf, VESceneNode *parent) :
-					VELight( name, transf, parent ) {
+	VEPointLight::VEPointLight(std::string name, glm::mat4 transf ) :
+					VELight( name, transf ) {
 
 		for (uint32_t i = 0; i < 6; i++) {
 			VECameraProjective *pCam = new VECameraProjective(m_name + "-ShadowCam" + std::to_string(i));
 			m_shadowCameras.push_back(pCam);		//no parent - > transform is also world matrix
-			getSceneManagerPointer()->addSceneNodeAndChildren(pCam);
+			//getSceneManagerPointer()->addSceneNodeAndChildren(pCam);
 		}
 	};
 
@@ -939,14 +935,15 @@ namespace ve {
 	* \param[in] parent The parent of this light
 	*
 	*/
-	VESpotLight::VESpotLight(std::string name, glm::mat4 transf, VESceneNode *parent) :
-					VELight(name, transf, parent) {
+	VESpotLight::VESpotLight(std::string name, glm::mat4 transf ) :
+					VELight(name, transf) {
 
 		for (uint32_t i = 0; i < 1; i++) {
 			VECameraProjective *pCam = new VECameraProjective(m_name + "-ShadowCam" + std::to_string(i));
 			m_shadowCameras.push_back(pCam);		//no parent - > transform is also world matrix
+			addChild(pCam);
 			//addChild(pCam);
-			getSceneManagerPointer()->addSceneNodeAndChildren(pCam);
+			//getSceneManagerPointer()->addSceneNodeAndChildren(pCam);
 		};
 	};
 
@@ -971,7 +968,7 @@ namespace ve {
 			float lnear = 0.1f;
 			float llength = m_param[0];		//reach of light
 
-			pShadowCamera->setTransform(getWorldTransform());	//remove
+			//pShadowCamera->setTransform(getWorldTransform());	//remove
 
 			pShadowCamera->m_aspectRatio = 1.0f;			//TODO: for comparing with light cam
 			pShadowCamera->m_fov = 90.0f;						//TODO: depends on light parameters
@@ -980,7 +977,7 @@ namespace ve {
 			pShadowCamera->m_nearPlaneFraction = limits[i];
 			pShadowCamera->m_farPlaneFraction  = limits[i+1];
 
-			pShadowCamera->update(imageIndex);	//remove
+			//pShadowCamera->update(imageIndex);	//remove
 		}
 	}
 

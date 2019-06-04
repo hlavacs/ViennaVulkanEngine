@@ -62,11 +62,12 @@ namespace ve {
 							std::vector<VEMaterial*> &materials, aiNode* node, VESceneNode *parent);
 
 		//private shadow functions for the public API, so API does not lock itself
-		VESceneNode *	createSceneNode2(std::string name, glm::mat4 transf = glm::mat4(1.0f), VESceneNode *parent = nullptr);
-		VEEntity *		createEntity2(std::string entityName, VEEntity::veEntityType type, VEMesh *pMesh, VEMaterial *pMat, glm::mat4 transf, VESceneNode *parent = nullptr);
-		void			addSceneNodeAndChildren2(VESceneNode *pNode, VESceneNode *parent = nullptr);
+		VESceneNode *	createSceneNode2(std::string name, VESceneNode *parent, glm::mat4 transf = glm::mat4(1.0f) );
+		VEEntity *		createEntity2(std::string entityName, VEEntity::veEntityType type, VEMesh *pMesh, VEMaterial *pMat, VESceneNode *parent, glm::mat4 transf = glm::mat4(1.0f) );
+		void			addSceneNodeAndChildren(VESceneNode *pNode, VESceneNode *parent );
+		void			deleteSceneNodeAndChildren2(std::string name);
 		void			createSceneNodeList2(VESceneNode *pObject, std::vector<std::string> &namelist);
-		VEEntity *		createSkyplane2(std::string entityName, std::string basedir, std::string texName);
+		VEEntity *		createSkyplane2(std::string entityName, std::string basedir, std::string texName, VESceneNode *parent);
 		void			sceneGraphChanged();			//tell renderer to rerecord the cmd buffers
 
 	public:
@@ -89,17 +90,18 @@ namespace ve {
 
 		//-------------------------------------------------------------------------------------
 		//Create scene nodes and entities
+		//API that needs to by synchronized
 
-		VESceneNode *	createSceneNode( std::string name, glm::mat4 transf = glm::mat4(1.0f), VESceneNode *parent = nullptr);
-		VEEntity *		createEntity(std::string entityName, VEMesh *pMesh, VEMaterial *pMat, glm::mat4 transf, VESceneNode *parent = nullptr);
-		VEEntity *		createEntity(std::string entityName, VEEntity::veEntityType type, VEMesh *pMesh, VEMaterial *pMat, glm::mat4 transf, VESceneNode *parent = nullptr);
-		VECamera *		createCamera(std::string cameraName, VECamera::veCameraType type, glm::mat4 transf = glm::mat4(1.0f), VESceneNode *parent = nullptr);
-		VELight *		createLight(std::string lightName, VELight::veLightType type, glm::mat4 transf = glm::mat4(1.0f), VESceneNode *parent = nullptr);
+		VESceneNode *	createSceneNode( std::string name, VESceneNode *parent, glm::mat4 transf = glm::mat4(1.0f));
+		VEEntity *		createEntity(std::string entityName, VEMesh *pMesh, VEMaterial *pMat, VESceneNode *parent, glm::mat4 transf = glm::mat4(1.0f));
+		VEEntity *		createEntity(std::string entityName, VEEntity::veEntityType type, VEMesh *pMesh, VEMaterial *pMat, VESceneNode *parent, glm::mat4 transf = glm::mat4(1.0f));
+		VECamera *		createCamera(std::string cameraName, VECamera::veCameraType type, VESceneNode *parent, glm::mat4 transf = glm::mat4(1.0f) );
+		VELight *		createLight(std::string lightName, VELight::veLightType type, VESceneNode *parent, glm::mat4 transf = glm::mat4(1.0f));
 
 		//-------------------------------------------------------------------------------------
 		//Create cubemaps and skyboxes
 
-		VEEntity *		createSkyplane(std::string entityName, std::string basedir, std::string texName);
+		VEEntity *		createSkyplane(std::string entityName, std::string basedir, std::string texName, VESceneNode *parent );
 		VESceneNode *	createSkybox(std::string entityName, std::string basedir, std::vector<std::string> texNames);
 
 		//-------------------------------------------------------------------------------------
@@ -107,14 +109,12 @@ namespace ve {
 
 		///\returns the root scene node
 		VESceneNode *	getRootSceneNode() { return m_rootSceneNode; };
+
 		//----------------------------------------------------------------
 		//API that needs to by synchronized
 		void			updateSceneNodes( uint32_t imageIndex );
-		void			addSceneNodeAndChildren(VESceneNode *pNode, VESceneNode *parent=nullptr);
 		VESceneNode *	getSceneNode(std::string entityName);
-		void			removeSceneNode(std::string name);
 		void			deleteSceneNodeAndChildren(std::string name);
-		void			deleteSceneNodeAndChildren2(std::string name);
 		void			deleteScene();
 		void			createSceneNodeList(VESceneNode *pObject, std::vector<std::string> &namelist);
 

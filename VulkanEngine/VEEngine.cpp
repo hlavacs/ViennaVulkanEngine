@@ -590,13 +590,12 @@ namespace ve {
 	void VEEngine::loadLevel(uint32_t numLevel ) {
 
 		//camera parent is used for translations
-		VESceneNode *cameraParent = getSceneManagerPointer()->createSceneNode(	"StandardCameraParent", 
-																				glm::translate(glm::mat4(1.0f), 
-																				glm::vec3(0.0f, 10.0f, 0.0f)), getRoot());
+		VESceneNode *cameraParent = getSceneManagerPointer()->createSceneNode(	"StandardCameraParent", getRoot(), 
+																				glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 10.0f, 0.0f)));
 
 		//camera can only do yaw (parent y-axis) and pitch (local x-axis) rotations
 		VkExtent2D extent = getWindowPointer()->getExtent();
-		VECameraProjective *camera = (VECameraProjective *)getSceneManagerPointer()->createCamera("StandardCamera", VECamera::VE_CAMERA_TYPE_PROJECTIVE, glm::mat4(1.0f), cameraParent);
+		VECameraProjective *camera = (VECameraProjective *)getSceneManagerPointer()->createCamera("StandardCamera", VECamera::VE_CAMERA_TYPE_PROJECTIVE, cameraParent);
 		camera->m_nearPlane = 0.1f;
 		camera->m_farPlane = 500.1f;
 		camera->m_aspectRatio = extent.width / (float)extent.height;
@@ -624,7 +623,7 @@ namespace ve {
 		//getSceneManagerPointer()->switchOnLight(light3);
 		*/
 
-		VELight *light2 = (VESpotLight *)getSceneManagerPointer()->createLight("StandardSpotLight", VELight::VE_LIGHT_TYPE_SPOT, glm::mat4(1.0f), camera);  
+		VELight *light2 = (VESpotLight *)getSceneManagerPointer()->createLight("StandardSpotLight", VELight::VE_LIGHT_TYPE_SPOT, camera);  
 		light2->m_col_ambient = glm::vec4(0.0f, 0.0f, 0.0f, 1.0f);
 		light2->m_col_diffuse = glm::vec4(0.99f, 0.6f, 0.6f, 1.0f);
 		light2->m_col_specular = glm::vec4(0.0f, 0.0f, 0.0f, 1.0f);
