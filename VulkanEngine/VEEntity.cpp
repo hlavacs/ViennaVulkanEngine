@@ -25,17 +25,15 @@ namespace ve {
 	*
 	*/
 
-	VESceneNode::VESceneNode(std::string name, glm::mat4 transf ) : VENamedClass(name) {
-		m_parent = nullptr;
-		setTransform(transf);			//sets this MO also onto the dirty list to be updated
+	VESceneNode::VESceneNode(std::string name, glm::mat4 transf ) : VENamedClass(name), m_parent(nullptr), m_transform(transf) {
 	}
-
-
 
 	/**
 	* \returns the scene node's local to parent transform.
 	*/
 	glm::mat4 VESceneNode::getTransform() {
+		std::lock_guard<std::mutex> lock(m_mutex);
+
 		return m_transform;
 	}
 
@@ -43,6 +41,8 @@ namespace ve {
 	* \brief Sets the scene node's local to parent transform.
 	*/
 	void VESceneNode::setTransform(glm::mat4 trans) {
+		std::lock_guard<std::mutex> lock(m_mutex);
+
 		m_transform = trans;
 	}
 
@@ -50,6 +50,8 @@ namespace ve {
 	* \brief Sets the scene node's position.
 	*/
 	void VESceneNode::setPosition(glm::vec3 pos) {
+		std::lock_guard<std::mutex> lock(m_mutex);
+
 		m_transform[3] = glm::vec4(pos.x, pos.y, pos.z, 1.0f);
 	};
 
@@ -60,6 +62,8 @@ namespace ve {
 	*
 	*/
 	glm::vec3 VESceneNode::getPosition() {
+		std::lock_guard<std::mutex> lock(m_mutex);
+
 		return glm::vec3(m_transform[3].x, m_transform[3].y, m_transform[3].z);
 	};
 
@@ -67,6 +71,8 @@ namespace ve {
 	* \returns the entity's local x-axis in parent space
 	*/
 	glm::vec3 VESceneNode::getXAxis() {
+		std::lock_guard<std::mutex> lock(m_mutex);
+
 		glm::vec4 x = m_transform[0];
 		return glm::vec3(x.x, x.y, x.z);
 	}
@@ -75,6 +81,8 @@ namespace ve {
 	* \returns the entity's local y-axis in parent space
 	*/
 	glm::vec3 VESceneNode::getYAxis() {
+		std::lock_guard<std::mutex> lock(m_mutex);
+
 		glm::vec4 y = m_transform[1];
 		return glm::vec3(y.x, y.y, y.z);
 	}
@@ -83,6 +91,8 @@ namespace ve {
 	* \returns the entity's local z-axis in parent space
 	*/
 	glm::vec3 VESceneNode::getZAxis() {
+		std::lock_guard<std::mutex> lock(m_mutex);
+
 		glm::vec4 z = m_transform[2];
 		return glm::vec3(z.x, z.y, z.z);
 	}
@@ -97,7 +107,9 @@ namespace ve {
 	*
 	*/
 	void VESceneNode::multiplyTransform(glm::mat4 trans) {
-		setTransform(trans*m_transform);
+		std::lock_guard<std::mutex> lock(m_mutex);
+
+		m_transform = trans*m_transform;
 	};
 
 	/**
@@ -108,8 +120,24 @@ namespace ve {
 	*
 	*/
 	glm::mat4 VESceneNode::getWorldTransform() {
+		std::lock_guard<std::mutex> lock(m_mutex);
+
+		return getWorldTransform2();
+	};
+
+	/**
+	*
+	* \brief An entity's world matrix is the local to parent transform multiplied by the parent's world matrix.
+	*
+	* \returns the entity's world (aka model) matrix.
+	*
+	*/
+	glm::mat4 VESceneNode::getWorldTransform2() {
 		if (m_parent != nullptr) return m_parent->getWorldTransform() * m_transform;
-		return m_transform;
+
+		if( this == getRoot() ) return m_transform;
+
+		return glm::mat4(0.0f);
 	};
 
 
@@ -123,6 +151,8 @@ namespace ve {
 	*
 	*/
 	void VESceneNode::lookAt(glm::vec3 eye, glm::vec3 point, glm::vec3 up) {
+		std::lock_guard<std::mutex> lock(m_mutex);
+
 		m_transform[3] = glm::vec4(eye.x, eye.y, eye.z, 1.0f);
 		glm::vec3 z = glm::normalize(point - eye);
 		up = glm::normalize(up);
@@ -148,6 +178,8 @@ namespace ve {
 	*
 	*/
 	void VESceneNode::addChild(VESceneNode * pObject) {
+		std::lock_guard<std::mutex> lock(m_mutex);
+
 		if ( pObject != nullptr && pObject->m_parent != this ) {
 			if(pObject->m_parent != nullptr ) pObject->m_parent->removeChild(pObject);
 			pObject->m_parent = this;
@@ -164,6 +196,8 @@ namespace ve {
 	*
 	*/
 	void VESceneNode::removeChild(VESceneNode *pNode) {
+		std::lock_guard<std::mutex> lock(m_mutex);
+
 		for (uint32_t i = 0; i < m_children.size(); i++) {
 			if (pNode == m_children[i]) {								//if child is found
 				VESceneNode *last = m_children[m_children.size() - 1];	//replace it with the last child
@@ -228,12 +262,14 @@ namespace ve {
 	/**
 	* \brief Get a default bounding sphere for this scene node
 	*
+	* Syncing is done in getPosition()
+	*
 	* \param[out] center The sphere center is also the position of the scene node
 	* \param[out] radius The default radius of the sphere
 	*
 	*/
 	void VESceneNode::getBoundingSphere(glm::vec3 *center, float *radius) {
-		*center = getPosition();
+		*center = getPosition();		//locking done in here
 		*radius = 1.0f;
 	}
 
@@ -253,10 +289,12 @@ namespace ve {
 	*
 	*/
 
-	void VESceneNode::getOBB(std::vector<glm::vec4> &points, float t1, float t2,
-		glm::vec3 &center, float &width, float &height, float &depth) {
+	void VESceneNode::getOBB(	std::vector<glm::vec4> &points, float t1, float t2,
+								glm::vec3 &center, float &width, float &height, float &depth) {
 
-		glm::mat4 W = getWorldTransform();
+		std::lock_guard<std::mutex> lock(m_mutex);
+
+		glm::mat4 W = getWorldTransform2();
 
 		std::vector<glm::vec4> axes;		//3 local axes, into pos and minus direction
 		axes.push_back(-1.0f*W[0]);
@@ -310,7 +348,7 @@ namespace ve {
 	* \param[in] sizeUBO Size of the object's UBO, if >0 then the object needs UBOs
 	*
 	*/
-	VESceneObject::VESceneObject(std::string name, glm::mat4 transf, uint32_t sizeUBO ) : 
+	VESceneObject::VESceneObject(	std::string name, glm::mat4 transf, uint32_t sizeUBO ) : 
 									VESceneNode(name, transf) {
 
 	}
@@ -364,8 +402,6 @@ namespace ve {
 						glm::mat4 transf ) :
 							VESceneObject(name, transf, (uint32_t) sizeof(veUBOPerObject_t)), m_entityType( type ) {
 
-		setTransform(transf);
-
 		if (pMesh != nullptr && pMat != nullptr) {
 			m_pMesh = pMesh;
 			m_pMaterial = pMat;
@@ -393,6 +429,8 @@ namespace ve {
 	* \param[in] param The new parameter vector
 	*/
 	void VEEntity::setParam(glm::vec4 param) {
+		std::lock_guard<std::mutex> lock(m_mutex);
+
 		m_param = param;
 	}
 
@@ -432,9 +470,10 @@ namespace ve {
 	*
 	*/
 	void VEEntity::getBoundingSphere(glm::vec3 *center, float *radius) {
-		*center = getPosition();
+		*center = getPosition();	//locking done in here
 		*radius = 1.0f;
 		if (m_pMesh != nullptr) {
+			std::lock_guard<std::mutex> lock(m_mutex);
 			*center = m_pMesh->m_boundingSphereCenter;
 			*radius = m_pMesh->m_boundingSphereRadius;
 		}
@@ -526,6 +565,8 @@ namespace ve {
 
 		getFrustumPoints(points);					//get frustum points in world space
 
+		std::lock_guard<std::mutex> lock(m_mutex);	//lock against parallel access
+
 		glm::vec4 mean(0.0f, 0.0f, 0.0f, 1.0f);
 		for (auto point : points) {
 			mean += point;
@@ -593,6 +634,8 @@ namespace ve {
 	*
 	*/
 	glm::mat4 VECameraProjective::getProjectionMatrix(float width, float height) {
+		std::lock_guard<std::mutex> lock(m_mutex);
+
 		m_aspectRatio = width / height;
 		glm::mat4 pm = glm::perspectiveFov( glm::radians(m_fov), (float) width, (float)height, m_nearPlane, m_farPlane);
 		pm[1][1] *= -1.0f;
@@ -624,10 +667,12 @@ namespace ve {
 	*
 	*/
 	void VECameraProjective::getFrustumPoints(std::vector<glm::vec4> &points, float z0, float z1) {
+		std::lock_guard<std::mutex> lock(m_mutex);
+
 		float halfh = (float)tan( (m_fov/2.0f) * M_PI / 180.0f );
 		float halfw = halfh * m_aspectRatio;
 
-		glm::mat4 W = getWorldTransform();
+		glm::mat4 W = getWorldTransform2();
 
 		points.push_back( W*glm::vec4(-m_nearPlane * halfw, -m_nearPlane * halfh, m_nearPlane, 1.0f ) );
 		points.push_back( W*glm::vec4( m_nearPlane * halfw, -m_nearPlane * halfh, m_nearPlane, 1.0f));
@@ -696,6 +741,8 @@ namespace ve {
 	* \returns the camera projection matrix.
 	*/
 	glm::mat4 VECameraOrtho::getProjectionMatrix(float width, float height) {
+		std::lock_guard<std::mutex> lock(m_mutex);
+
 		glm::mat4 pm = glm::ortho(-width * m_width / 2.0f, width * m_width / 2.0f, -height * m_height / 2.0f, height * m_height / 2.0f, m_nearPlane, m_farPlane);
 		pm[1][1] *= -1.0f;
 		pm[2][2] *= -1.0;	//camera looks down its positive z-axis, OpenGL function does it reverse
@@ -707,6 +754,8 @@ namespace ve {
 	* \returns the camera projection matrix.
 	*/
 	glm::mat4 VECameraOrtho::getProjectionMatrix() {
+		std::lock_guard<std::mutex> lock(m_mutex);
+
 		glm::mat4 pm = glm::ortho( -m_width/2.0f, m_width/2.0f, -m_height/2.0f, m_height/2.0f, m_nearPlane, m_farPlane);
 		pm[2][2] *= -1;		//camera looks down its positive z-axis, OpenGL function does it reverse
 		return pm;
@@ -724,10 +773,12 @@ namespace ve {
 	*
 	*/
 	void VECameraOrtho::getFrustumPoints(std::vector<glm::vec4> &points, float t1, float t2) {
+		std::lock_guard<std::mutex> lock(m_mutex);
+
 		float halfh = m_height / 2.0f;
 		float halfw = m_width / 2.0f;
 
-		glm::mat4 W = getWorldTransform();
+		glm::mat4 W = getWorldTransform2();
 
 		points.push_back( W*glm::vec4(-halfw, -halfh, m_nearPlane, 1.0f));
 		points.push_back( W*glm::vec4( halfw, -halfh, m_nearPlane, 1.0f));
@@ -848,10 +899,9 @@ namespace ve {
 	*
 	*/
 	void VEDirectionalLight::updateShadowCameras(VECamera *pCamera, uint32_t imageIndex) {
-
 		std::vector<float> limits = { 0.0f, 0.05f, 0.15f, 0.50f, 1.0f };	//the frustum is split into 4 segments
 
-		glm::mat4 lightWorldMatrix = getWorldTransform();
+		glm::mat4 lightWorldMatrix = getWorldTransform2();
 		glm::mat4 invLightMatrix = glm::inverse(lightWorldMatrix);
 
 		for (uint32_t i = 0; i < m_shadowCameras.size(); i++) {
@@ -908,7 +958,7 @@ namespace ve {
 
 		float lnear = 0.1f;
 		float llength = m_param[0];
-		glm::mat4 lightWorldMatrix = getWorldTransform();
+		glm::mat4 lightWorldMatrix = getWorldTransform2();
 		glm::mat4 invLightMatrix = glm::inverse(lightWorldMatrix);
 		glm::vec4 pos4 = lightWorldMatrix[3];
 		glm::vec3 pos = glm::vec3(pos4.x, pos4.y, pos4.z);
@@ -983,7 +1033,7 @@ namespace ve {
 		//std::vector<float> limits = { 0.0f, 0.05f, 0.15f, 0.50f, 1.0f };	//the frustum is split into 4 segments
 		std::vector<float> limits = { 0.0f, 1.0f };		//the frustum is split into 1 segment
 
-		glm::mat4 lightWorldMatrix = getWorldTransform();
+		glm::mat4 lightWorldMatrix = getWorldTransform2();
 
 		for (uint32_t i = 0; i < m_shadowCameras.size(); i++) {
 

@@ -53,6 +53,9 @@ namespace ve {
 		virtual ~VESceneNode() {};
 
 		//--------------------------------------------------------------------------------------
+		glm::mat4	getWorldTransform2();				//Compute the world matrix
+
+		//--------------------------------------------------------------------------------------
 		//UBO updates
 
 		virtual void update(uint32_t imageIndex);									//Copy the world matrix to the UBO
@@ -61,6 +64,7 @@ namespace ve {
 
 		///Meant for subclasses to add data to the UBO, so this function does nothing in base class
 		virtual void updateUBO(glm::mat4 worldMatrix, uint32_t imageIndex) {};
+
 
 	public:
 
@@ -77,7 +81,7 @@ namespace ve {
 		std::vector<VESceneNode *> & getChildrenList() { return m_children;  };
 
 		//-------------------------------------------------------------------------------------
-		//transforms
+		//transforms - must be synchronized with mutex
 
 		void		setTransform(glm::mat4 trans);		//Overwrite the transform and copy it to the UBO
 		glm::mat4	getTransform();						//Return local transform
@@ -92,6 +96,7 @@ namespace ve {
 
 		//--------------------------------------------------------------------------------------
 		//manage tree, will make cmd buffers to be rerecorded since the tree is changed
+		//must be synchronized
 
 		virtual void addChild(VESceneNode *);		//Add a new child
 		virtual void removeChild(VESceneNode *);	//Remove a child, dont destroy it
