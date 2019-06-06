@@ -21,11 +21,12 @@ namespace ve {
 	* VESceneNode represents any object that can be used by the scene manager to be put into the scene.
 	* This includes objects, cameras, lights, sky boxes or terrains.
 	* Scene nodes have a local to parent transform. This is a 4x4 matrix translating position and orientation
-	* fromt the local (object) space to the parent space. 
+	* from the local (object) space to the parent space. 
 	* Scene nodes can have a parent. If so the local transform is relative to the parent transform. This
-	* relation is stored in the parent and children pointers. If the scene node does not have a parent,
-	* then the parent is automatically the world frame of reference.
+	* relation is stored in the parent and children pointers. 
 	* Since there is a parent-child relationship, scene nodes build up trees of nodes.
+	* If the scene node does not have a parent,
+	* it will not be updated during the update run, and it will not be drawn.
 	*
 	*/
 
@@ -33,7 +34,7 @@ namespace ve {
 		friend VESceneManager;
 
 	public:
-		///Object type, can be node, entity for drawing, camera or light
+		///Object type, can be just a scene node, or an object that additionally needs a UBO buffer
 		enum veNodeType {
 			VE_NODE_TYPE_SCENENODE,		///<Instance of the base class, acts as scene node, cannot be drawn
 			VE_NODE_TYPE_SCENEOBJECT	///<Instance of the base class, acts as scene node, cannot be drawn

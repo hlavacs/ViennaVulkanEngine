@@ -205,5 +205,8 @@
     <ClCompile Include="VESubrenderFW.cpp">
       <Filter>Source Files\VESubrender</Filter>
     </ClCompile>
+    <ClCompile Include="VEDocumentation.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>

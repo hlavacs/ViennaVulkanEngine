@@ -154,10 +154,10 @@ namespace ve {
 	* \param[in] descriptorSetsShadow The shadow maps to be used.
 	*
 	*/
-	void VESubrenderFW::draw(VkCommandBuffer commandBuffer, uint32_t imageIndex,
-		uint32_t numPass,
-		VECamera *pCamera, VELight *pLight,
-		std::vector<VkDescriptorSet> descriptorSetsShadow) {
+	void VESubrenderFW::draw(	VkCommandBuffer commandBuffer, uint32_t imageIndex,
+								uint32_t numPass,
+								VECamera *pCamera, VELight *pLight,
+								std::vector<VkDescriptorSet> descriptorSetsShadow) {
 
 		if (m_entities.size() == 0) return;
 

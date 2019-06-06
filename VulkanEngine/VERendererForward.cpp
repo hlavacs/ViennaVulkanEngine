@@ -391,10 +391,10 @@ namespace ve {
 				for (unsigned i = 0; i < pLight->m_shadowCameras.size(); i++) {
 
 					vh::vhRenderBeginRenderPass(m_commandBuffers[imageIndex],
-						m_renderPassShadow,
-						m_shadowFramebuffers[imageIndex][i],
-						clearValuesShadow,
-						m_shadowMaps[0][i]->m_extent);	//all shadow maps have the same extent
+												m_renderPassShadow,
+												m_shadowFramebuffers[imageIndex][i],
+												clearValuesShadow,
+												m_shadowMaps[0][i]->m_extent);	//all shadow maps have the same extent
 
 					m_subrenderShadow->draw(m_commandBuffers[imageIndex], imageIndex, i, pLight->m_shadowCameras[i], pLight, {});
 
@@ -409,10 +409,10 @@ namespace ve {
 			t_now = vh::vhTimeNow();
 			{
 				vh::vhRenderBeginRenderPass(m_commandBuffers[imageIndex],
-					i == 0 ? m_renderPassClear : m_renderPassLoad,
-					m_swapChainFramebuffers[imageIndex],
-					clearValuesLight,
-					m_swapChainExtent);
+											i == 0 ? m_renderPassClear : m_renderPassLoad,
+											m_swapChainFramebuffers[imageIndex],
+											clearValuesLight,
+											m_swapChainExtent);
 
 				for (auto pSub : m_subrenderers) {
 					if (i == 0 || pSub->getClass() == VESubrender::VE_SUBRENDERER_CLASS_OBJECT) {

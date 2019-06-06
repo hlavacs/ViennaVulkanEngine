@@ -201,6 +201,7 @@
   <ItemGroup>
     <ClCompile Include="main.cpp" />
     <ClCompile Include="CLIntersect.cpp" />
+    <ClCompile Include="VEDocumentation.cpp" />
     <ClCompile Include="VEEngine.cpp" />
     <ClCompile Include="VEEntity.cpp" />
     <ClCompile Include="VEEventListener.cpp" />
