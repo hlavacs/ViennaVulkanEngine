@@ -235,11 +235,12 @@ namespace vh {
 	* \param[in] numberDesc Number of sets to be created
 	* \param[in] descriptorSetLayout The layout for the set
 	* \param[in] descriptorPool The pool from which the set is drawn
-	* \param[out] descriptorSets The new descriptor sets
+	* \param[out] descriptorSets Vector with desriptor sets, the new sets will be appended to this vector
 	* \returns VK_SUCCESS or a Vulkan error code
 	*
 	*/
-	VkResult vhRenderCreateDescriptorSets(	VkDevice device, uint32_t numberDesc,
+	VkResult vhRenderCreateDescriptorSets(	VkDevice device, 
+											uint32_t numberDesc,
 											VkDescriptorSetLayout descriptorSetLayout, 	
 											VkDescriptorPool descriptorPool, 
 											std::vector<VkDescriptorSet> & descriptorSets) {
@@ -252,7 +253,7 @@ namespace vh {
 		allocInfo.pSetLayouts = layouts.data();
 
 		uint32_t size = (uint32_t)descriptorSets.size();
-		descriptorSets.resize(size + numberDesc);
+		descriptorSets.resize(size + numberDesc);										//resize so we can append new sets to the vector
 		return vkAllocateDescriptorSets(device, &allocInfo, &descriptorSets[size]);
 	}
 	

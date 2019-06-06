@@ -348,7 +348,9 @@ namespace ve {
 	* \brief Create a new command buffer and record the whole scene into it, then end it
 	*/
 	void VERendererForward::recordCmdBuffers() {
-		VECamera *pCamera = getSceneManagerPointer()->getCamera();
+		VECamera *pCamera;
+		VECHECKPOINTER( pCamera = getSceneManagerPointer()->getCamera() );
+
 		pCamera->setExtent(getWindowPointer()->getExtent());
 
 		vh::vhCmdCreateCommandBuffers(	m_device, m_commandPool,

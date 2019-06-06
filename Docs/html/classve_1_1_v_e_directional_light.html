@@ -204,6 +204,9 @@ virtual&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="c
 virtual&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_scene_node.html#aabeb0f7130c6df9e67d3bdb98ac43c57">~VESceneNode</a> ()</td></tr>
 <tr class="memdesc:aabeb0f7130c6df9e67d3bdb98ac43c57 inherit pro_methods_classve_1_1_v_e_scene_node"><td class="mdescLeft">&#160;</td><td class="mdescRight">Destructor of the scene node class. <br /></td></tr>
 <tr class="separator:aabeb0f7130c6df9e67d3bdb98ac43c57 inherit pro_methods_classve_1_1_v_e_scene_node"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a0fc9cdc205b1a07806e2d3457178ad9b inherit pro_methods_classve_1_1_v_e_scene_node"><td class="memItemLeft" align="right" valign="top">glm::mat4&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_scene_node.html#a0fc9cdc205b1a07806e2d3457178ad9b">getWorldTransform2</a> ()</td></tr>
+<tr class="memdesc:a0fc9cdc205b1a07806e2d3457178ad9b inherit pro_methods_classve_1_1_v_e_scene_node"><td class="mdescLeft">&#160;</td><td class="mdescRight">An entity's world matrix is the local to parent transform multiplied by the parent's world matrix.  <a href="classve_1_1_v_e_scene_node.html#a0fc9cdc205b1a07806e2d3457178ad9b">More...</a><br /></td></tr>
+<tr class="separator:a0fc9cdc205b1a07806e2d3457178ad9b inherit pro_methods_classve_1_1_v_e_scene_node"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aa97bd4ad3fb1efa02ec3df6ef679927d inherit pro_methods_classve_1_1_v_e_scene_node"><td class="memItemLeft" align="right" valign="top">virtual void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_scene_node.html#aa97bd4ad3fb1efa02ec3df6ef679927d">update</a> (uint32_t imageIndex)</td></tr>
 <tr class="memdesc:aa97bd4ad3fb1efa02ec3df6ef679927d inherit pro_methods_classve_1_1_v_e_scene_node"><td class="mdescLeft">&#160;</td><td class="mdescRight">Update the entity's UBO buffer with the current world matrix.  <a href="classve_1_1_v_e_scene_node.html#aa97bd4ad3fb1efa02ec3df6ef679927d">More...</a><br /></td></tr>
 <tr class="separator:aa97bd4ad3fb1efa02ec3df6ef679927d inherit pro_methods_classve_1_1_v_e_scene_node"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -234,7 +237,7 @@ Additional Inherited Members</h2></td></tr>
 <tr class="memitem:aff43b9c0c39fa3362b3908e813608cc8 inherit pub_types_classve_1_1_v_e_scene_node"><td class="memItemLeft" align="right" valign="top">enum &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_scene_node.html#aff43b9c0c39fa3362b3908e813608cc8">veNodeType</a> { <a class="el" href="classve_1_1_v_e_scene_node.html#aff43b9c0c39fa3362b3908e813608cc8adf3bdb97f8331363db5c9ca5b4921574">VE_NODE_TYPE_SCENENODE</a>, 
 <a class="el" href="classve_1_1_v_e_scene_node.html#aff43b9c0c39fa3362b3908e813608cc8a510ccc03083236719f937a26ea332ea0">VE_NODE_TYPE_SCENEOBJECT</a>
  }</td></tr>
-<tr class="memdesc:aff43b9c0c39fa3362b3908e813608cc8"><td class="mdescLeft">&#160;</td><td class="mdescRight">Object type, can be node, entity for drawing, camera or light.  <a href="classve_1_1_v_e_scene_node.html#aff43b9c0c39fa3362b3908e813608cc8">More...</a><br /></td></tr>
+<tr class="memdesc:aff43b9c0c39fa3362b3908e813608cc8"><td class="mdescLeft">&#160;</td><td class="mdescRight">Object type, can be just a scene node, or an object that additionally needs a UBO buffer.  <a href="classve_1_1_v_e_scene_node.html#aff43b9c0c39fa3362b3908e813608cc8">More...</a><br /></td></tr>
 <tr class="separator:aff43b9c0c39fa3362b3908e813608cc8 inherit pub_types_classve_1_1_v_e_scene_node"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="inherit_header pub_attribs_classve_1_1_v_e_light"><td colspan="2" onclick="javascript:toggleInherit('pub_attribs_classve_1_1_v_e_light')"><img src="closed.png" alt="-"/>&#160;Public Attributes inherited from <a class="el" href="classve_1_1_v_e_light.html">ve::VELight</a></td></tr>
 <tr class="memitem:a5e4b5e50ee5e0fe1d6d07ffe2370f1ed inherit pub_attribs_classve_1_1_v_e_light"><td class="memItemLeft" align="right" valign="top"><a id="a5e4b5e50ee5e0fe1d6d07ffe2370f1ed"></a>
@@ -421,7 +424,7 @@ std::string&#160;</td><td class="memItemRight" valign="bottom"><a class="el" hre
 </div><!-- contents -->
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>
-Generated on Thu Jun 6 2019 10:17:35 for Vienna Vulkan Engine by &#160;<a href="http://www.doxygen.org/index.html">
+Generated on Thu Jun 6 2019 17:28:39 for Vienna Vulkan Engine by &#160;<a href="http://www.doxygen.org/index.html">
 <img class="footer" src="doxygen.png" alt="doxygen"/>
 </a> 1.8.15
 </small></address>

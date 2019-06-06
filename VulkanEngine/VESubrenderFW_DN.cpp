@@ -20,7 +20,7 @@ namespace ve {
 	void VESubrenderFW_DN::initSubrenderer() {
 		VESubrenderFW::initSubrenderer();
 
-		vh::vhRenderCreateDescriptorSetLayout(getRendererForwardPointer()->getDevice(),
+		vh::vhRenderCreateDescriptorSetLayout(getRendererForwardPointer()->getDevice(),		//binding 0...array, binding 1...array
 			{ m_resourceArrayLength,						m_resourceArrayLength },
 			{ VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,	VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER },
 			{ VK_SHADER_STAGE_FRAGMENT_BIT,					VK_SHADER_STAGE_FRAGMENT_BIT },

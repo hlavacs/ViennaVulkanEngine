@@ -27,8 +27,8 @@ namespace ve {
 	protected:
 		uint32_t						m_resourceArrayLength = 512;						///<Length of resource array in shader
 		VkDescriptorSetLayout			m_descriptorSetLayoutResources = VK_NULL_HANDLE;	///<Descriptor set layout for per object resources (like images)
-		std::vector <VkDescriptorSet>	m_descriptorSetsResources;							///<Per object resources
-		std::vector<std::vector<VkDescriptorImageInfo>> m_maps;								///<descriptor write info for the  maps
+		std::vector<VkDescriptorSet>	m_descriptorSetsResources;							///<a list of resource descriptor set arrays, maps are condensed into these arrays of size K
+		std::vector<std::vector<VkDescriptorImageInfo>> m_maps;								///<descriptor write info for the  maps, m_maps[0] may contain all diffuse maps, m_maps[1] all normal maps etc
 		VkPipelineLayout				m_pipelineLayout = VK_NULL_HANDLE;					///<Pipeline layout
 		std::vector<VkPipeline>			m_pipelines;										///<Pipeline for light pass(es)
 

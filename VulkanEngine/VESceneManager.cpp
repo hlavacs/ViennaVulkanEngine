@@ -785,7 +785,8 @@ namespace ve {
 
 		std::vector<std::string> namelist;
 
-		for (auto pNode : m_rootSceneNode->getChildrenList()) {
+		while (m_rootSceneNode->getChildrenList().size()>0) {
+			auto pNode = m_rootSceneNode->getChildrenList()[0];
 			m_rootSceneNode->removeChild( pNode );
 			namelist.push_back(pNode->getName());
 		}

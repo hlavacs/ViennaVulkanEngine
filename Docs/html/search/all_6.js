@@ -81,6 +81,7 @@ var searchData=
   ['getwindow',['getWindow',['../classve_1_1_v_e_engine.html#ab1105bc96fbf572b5749eb16b0b0c308',1,'ve::VEEngine']]],
   ['getwindowhandle',['getWindowHandle',['../classve_1_1_v_e_window_g_l_f_w.html#a6b7fa3559c51cf0d564e80e48f6933cf',1,'ve::VEWindowGLFW']]],
   ['getworldtransform',['getWorldTransform',['../classve_1_1_v_e_scene_node.html#ab704c9158e5ee4baae88378def289834',1,'ve::VESceneNode']]],
+  ['getworldtransform2',['getWorldTransform2',['../classve_1_1_v_e_scene_node.html#a0fc9cdc205b1a07806e2d3457178ad9b',1,'ve::VESceneNode']]],
   ['getxaxis',['getXAxis',['../classve_1_1_v_e_scene_node.html#a8f0ecafdef9f761e4df94019822a1dc6',1,'ve::VESceneNode']]],
   ['getyaxis',['getYAxis',['../classve_1_1_v_e_scene_node.html#aad01b7a8e986f92c757219d1b11656b1',1,'ve::VESceneNode']]],
   ['getzaxis',['getZAxis',['../classve_1_1_v_e_scene_node.html#a69dfc9398adb1fb6ebcafed6cc154e0f',1,'ve::VESceneNode']]],

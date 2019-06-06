@@ -182,11 +182,11 @@ VkDescriptorSetLayout&#160;</td><td class="memItemRight" valign="bottom"><a clas
 <tr class="separator:ac9f88d79cc92f43cd9ca65394420453c"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a8b13b29b13d846b1417a7e837d9f2b6c"><td class="memItemLeft" align="right" valign="top"><a id="a8b13b29b13d846b1417a7e837d9f2b6c"></a>
 std::vector&lt; VkDescriptorSet &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_subrender_f_w.html#a8b13b29b13d846b1417a7e837d9f2b6c">m_descriptorSetsResources</a></td></tr>
-<tr class="memdesc:a8b13b29b13d846b1417a7e837d9f2b6c"><td class="mdescLeft">&#160;</td><td class="mdescRight">Per object resources. <br /></td></tr>
+<tr class="memdesc:a8b13b29b13d846b1417a7e837d9f2b6c"><td class="mdescLeft">&#160;</td><td class="mdescRight">a list of resource descriptor set arrays, maps are condensed into these arrays of size K <br /></td></tr>
 <tr class="separator:a8b13b29b13d846b1417a7e837d9f2b6c"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aaa929aebcffbb08f27fa480ce99f432a"><td class="memItemLeft" align="right" valign="top"><a id="aaa929aebcffbb08f27fa480ce99f432a"></a>
 std::vector&lt; std::vector&lt; VkDescriptorImageInfo &gt; &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_subrender_f_w.html#aaa929aebcffbb08f27fa480ce99f432a">m_maps</a></td></tr>
-<tr class="memdesc:aaa929aebcffbb08f27fa480ce99f432a"><td class="mdescLeft">&#160;</td><td class="mdescRight">descriptor write info for the maps <br /></td></tr>
+<tr class="memdesc:aaa929aebcffbb08f27fa480ce99f432a"><td class="mdescLeft">&#160;</td><td class="mdescRight">descriptor write info for the maps, m_maps[0] may contain all diffuse maps, m_maps[1] all normal maps etc <br /></td></tr>
 <tr class="separator:aaa929aebcffbb08f27fa480ce99f432a"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a6039e37a444b7ba448d553dca6652042"><td class="memItemLeft" align="right" valign="top"><a id="a6039e37a444b7ba448d553dca6652042"></a>
 VkPipelineLayout&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_subrender_f_w.html#a6039e37a444b7ba448d553dca6652042">m_pipelineLayout</a> = VK_NULL_HANDLE</td></tr>
@@ -307,10 +307,11 @@ Additional Inherited Members</h2></td></tr>
 </div><div class="memdoc">
 
 <p>Add some maps of an entity to the map list of this subrenderer. </p>
+<p>m_maps is a list of map lists. Each entity may need 1-N maps, like diffuse, normal, etc. m_maps thus has N entries, one for such a map type. m_map[0] might hold all diffuse maps. If a new entity is added, then its maps are just appended to the N lists. However, we have descriptor sets, each set having N bindings (one binding for each map type), each binding describing an array of e.g. K textures. So we break each list into chunks of size K, and bind each chunk to one descriptor. Variable offset denotes the start of such a chunk.</p>
 <dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
     <tr><td class="paramdir">[in]</td><td class="paramname">pEntity</td><td>Pointer to the entity </td></tr>
-    <tr><td class="paramdir">[in]</td><td class="paramname">newMaps</td><td>List of maps to be added to this subrenderer </td></tr>
+    <tr><td class="paramdir">[in]</td><td class="paramname">newMaps</td><td>List of 1..N maps to be added to this subrenderer, e.g. {diffuse texture}, or {diffuse, normal} </td></tr>
   </table>
   </dd>
 </dl>
@@ -776,7 +777,7 @@ Additional Inherited Members</h2></td></tr>
 </div><!-- contents -->
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>
-Generated on Thu Jun 6 2019 10:17:35 for Vienna Vulkan Engine by &#160;<a href="http://www.doxygen.org/index.html">
+Generated on Thu Jun 6 2019 17:28:40 for Vienna Vulkan Engine by &#160;<a href="http://www.doxygen.org/index.html">
 <img class="footer" src="doxygen.png" alt="doxygen"/>
 </a> 1.8.15
 </small></address>
