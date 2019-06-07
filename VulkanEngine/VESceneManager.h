@@ -103,7 +103,7 @@ namespace ve {
 		//Create cubemaps and skyboxes
 
 		VEEntity *		createSkyplane(std::string entityName, std::string basedir, std::string texName, VESceneNode *parent );
-		VESceneNode *	createSkybox(std::string entityName, std::string basedir, std::vector<std::string> texNames);
+		VESceneNode *	createSkybox(std::string entityName, std::string basedir, std::vector<std::string> texNames, VESceneNode *parent );
 
 		//-------------------------------------------------------------------------------------
 		//Manage scene nodes and entities

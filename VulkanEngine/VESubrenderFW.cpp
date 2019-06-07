@@ -289,7 +289,6 @@ namespace ve {
 						arrayIndex*m_resourceArrayLength,
 						m_resourceArrayLength, m_maps);
 
-
 					//shrink the lists
 					m_entities.pop_back();										//remove the last
 					if (m_entities.size() % m_resourceArrayLength == 0) {		//shrunk?
@@ -299,7 +298,9 @@ namespace ve {
 						m_descriptorSetsResources.resize(m_entities.size());	//remove descriptor sets
 					}
 				}
-
+				else {
+					m_entities.pop_back();										//remove the last
+				}
 				return;
 			}
 		}

@@ -81,7 +81,7 @@ namespace ve {
 		};
 
 		///create many cubes
-		void createCubes(uint32_t n) {
+		void createCubes(uint32_t n, VESceneNode *parent ) {
 
 			float stride = 300.0f;
 			static std::default_random_engine e{12345};
@@ -95,7 +95,7 @@ namespace ve {
 
 			for (uint32_t i = 0; i < n; i++) {		
 				VEEntity *e2;
-				VECHECKPOINTER( e2 = getSceneManagerPointer()->createEntity("The Cube" + std::to_string(i), pMesh, pMat, getRoot() ) );
+				VECHECKPOINTER( e2 = getSceneManagerPointer()->createEntity("The Cube" + std::to_string(i), pMesh, pMat, parent ) );
 
 				e2->setTransform(glm::translate(glm::mat4(1.0f), glm::vec3( d(e) - stride/2.0f, d(e)/2.0f, d(e) - stride/2.0f)));
 				//e2->multiplyTransform(glm::scale(glm::mat4(1.0f), glm::vec3(10.0f, 10.0f, 10.0f)));
@@ -118,8 +118,7 @@ namespace ve {
 			VESceneNode *sp1;
 			VECHECKPOINTER( sp1 = getSceneManagerPointer()->createSkybox("The Sky", "models/test/sky/cloudy",
 										{	"bluecloud_ft.jpg", "bluecloud_bk.jpg", "bluecloud_up.jpg", 
-											"bluecloud_dn.jpg", "bluecloud_rt.jpg", "bluecloud_lf.jpg" }) );
-			pScene->addChild(sp1);
+											"bluecloud_dn.jpg", "bluecloud_rt.jpg", "bluecloud_lf.jpg" }, pScene)  );
 
 			RotatorListener *pRot;
 			VECHECKPOINTER( pRot = new RotatorListener("CubemapRotator", sp1, 0.01f, glm::vec3(0.0f, 1.0f, 0.0f)) );
@@ -151,7 +150,7 @@ namespace ve {
 			e1->multiplyTransform( glm::translate(glm::mat4(1.0f), glm::vec3(10.0f, 5.0f, 10.0f)));
 			pScene->addChild(e1);
 
-			createCubes(10);
+			//createCubes(10, pScene);
 			//VESceneNode *pSponza = m_pSceneManager->loadModel("Sponza", "models/sponza", "sponza.dae", aiProcess_FlipWindingOrder);
 			//pSponza->setTransform(glm::scale(glm::mat4(1.0f), glm::vec3(0.1f, 0.1f, 0.1f)));
 

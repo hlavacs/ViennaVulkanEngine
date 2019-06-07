@@ -591,7 +591,7 @@ namespace ve {
 	*
 	*/
 	VESceneNode * VESceneManager::createSkybox(	std::string entityName, std::string basedir,
-												std::vector<std::string> texNames) {
+												std::vector<std::string> texNames, VESceneNode *parent) {
 		std::lock_guard<std::mutex> lock(m_mutex);
 
 		std::string filekey = basedir + "/";
@@ -601,45 +601,40 @@ namespace ve {
 			addstring = "+";
 		}
 
-		VESceneNode *parent = createSceneNode2(entityName, getRoot());
+		VESceneNode *skybox = createSceneNode2(entityName, parent);
 		float scale = 1000.0f;
 
-		VEEntity *sp1 = getSceneManagerPointer()->createSkyplane2(filekey + "/Skyplane1", basedir, texNames[0], parent);
+		VEEntity *sp1 = getSceneManagerPointer()->createSkyplane2(filekey + "/Skyplane1", basedir, texNames[0], skybox);
 		sp1->multiplyTransform(glm::scale(glm::mat4(1.0f), glm::vec3(-scale, 1.0f, -scale)));
 		sp1->multiplyTransform(glm::rotate(glm::mat4(1.0f), -(float)M_PI / 2.0f, glm::vec3(1.0f, 0.0f, 0.0f)));
 		sp1->multiplyTransform(glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 0.0f, scale / 2.0f)));
-		parent->addChild(sp1);
 		sp1->m_castsShadow = false;
 
-		sp1 = getSceneManagerPointer()->createSkyplane2(filekey + "/Skyplane2", basedir, texNames[1], parent);
+		sp1 = getSceneManagerPointer()->createSkyplane2(filekey + "/Skyplane2", basedir, texNames[1], skybox);
 		sp1->multiplyTransform(glm::scale(glm::mat4(1.0f), glm::vec3(scale, 1.0f, scale)));
 		sp1->multiplyTransform(glm::rotate(glm::mat4(1.0f), (float)M_PI / 2.0f, glm::vec3(1.0f, 0.0f, 0.0f)));
 		sp1->multiplyTransform(glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 0.0f, -scale / 2.0f)));
-		parent->addChild(sp1);
 		sp1->m_castsShadow = false;
 
-		sp1 = getSceneManagerPointer()->createSkyplane2(filekey + "/Skyplane3", basedir, texNames[2], parent);
+		sp1 = getSceneManagerPointer()->createSkyplane2(filekey + "/Skyplane3", basedir, texNames[2], skybox);
 		sp1->multiplyTransform(glm::scale(glm::mat4(1.0f), glm::vec3(scale, 1.0f, scale)));
 		sp1->multiplyTransform(glm::rotate(glm::mat4(1.0f), (float)M_PI / 2.0f, glm::vec3(0.0f, 1.0f, 0.0f)));
 		sp1->multiplyTransform(glm::rotate(glm::mat4(1.0f), (float)M_PI, glm::vec3(1.0f, 0.0f, 0.0f)));
 		sp1->multiplyTransform(glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, scale / 2.0f, 0.0f)));
-		parent->addChild(sp1);
 		sp1->m_castsShadow = false;
 
-		sp1 = getSceneManagerPointer()->createSkyplane2(filekey + "/Skyplane4", basedir, texNames[4], parent);
+		sp1 = getSceneManagerPointer()->createSkyplane2(filekey + "/Skyplane4", basedir, texNames[4], skybox);
 		sp1->multiplyTransform(glm::scale(glm::mat4(1.0f), glm::vec3(-scale, 1.0f, -scale)));
 		sp1->multiplyTransform(glm::rotate(glm::mat4(1.0f), (float)M_PI / 2.0f, glm::vec3(0.0f, 1.0f, 0.0f)));
 		sp1->multiplyTransform(glm::rotate(glm::mat4(1.0f), (float)M_PI / 2.0f, glm::vec3(0.0f, 0.0f, 01.0f)));
 		sp1->multiplyTransform(glm::translate(glm::mat4(1.0f), glm::vec3(scale / 2.0f, 0.0f, 0.0f)));
-		parent->addChild(sp1);
 		sp1->m_castsShadow = false;
 
-		sp1 = getSceneManagerPointer()->createSkyplane2(filekey + "/Skyplane5", basedir, texNames[5], parent);
+		sp1 = getSceneManagerPointer()->createSkyplane2(filekey + "/Skyplane5", basedir, texNames[5], skybox);
 		sp1->multiplyTransform(glm::scale(glm::mat4(1.0f), glm::vec3(scale, 1.0f, scale)));
 		sp1->multiplyTransform(glm::rotate(glm::mat4(1.0f), (float)M_PI / 2.0f, glm::vec3(0.0f, 1.0f, 0.0f)));
 		sp1->multiplyTransform(glm::rotate(glm::mat4(1.0f), -(float)M_PI / 2.0f, glm::vec3(0.0f, 0.0f, 1.0f)));
 		sp1->multiplyTransform(glm::translate(glm::mat4(1.0f), glm::vec3(-scale / 2.0f, 0.0f, 0.0f)));
-		parent->addChild(sp1);
 		sp1->m_castsShadow = false;
 
 		sceneGraphChanged2();
@@ -783,16 +778,16 @@ namespace ve {
 	void  VESceneManager::deleteScene() {
 		std::lock_guard<std::mutex> lock(m_mutex);
 
-		std::vector<std::string> namelist;
+		VERendererForward *rf = getRendererForwardPointer();
 
-		while (m_rootSceneNode->getChildrenList().size()>0) {
-			auto pNode = m_rootSceneNode->getChildrenList()[0];
-			m_rootSceneNode->removeChild( pNode );
-			namelist.push_back(pNode->getName());
+		while (m_sceneNodes.size() > 0) {
+			std::map<std::string, VESceneNode*>::iterator first = m_sceneNodes.begin();
+
+			deleteSceneNodeAndChildren2(first->second->getName());
 		}
-		for (auto name : namelist) {
-			deleteSceneNodeAndChildren2(name);
-		}
+
+		
+		return;
 	}
 
 
