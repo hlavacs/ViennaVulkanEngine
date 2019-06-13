@@ -446,8 +446,15 @@ namespace ve {
 	void VEEntity::updateUBO( glm::mat4 worldMatrix, uint32_t imageIndex) {
 		veUBOPerObject_t ubo = {};
 
-		ubo.model = m_drawEntity ? worldMatrix : glm::mat4(0.0f);
-		ubo.modelInvTrans = glm::transpose(glm::inverse(worldMatrix));
+		if (m_drawEntity) {
+			ubo.model = worldMatrix;
+			ubo.modelInvTrans = glm::transpose(glm::inverse(worldMatrix));
+		}
+		else {
+			ubo.model = glm::mat4(0.0f);
+			ubo.modelInvTrans = ubo.model;
+		}
+
 		ubo.param = m_param;
 		ubo.iparam[0] = m_resourceIdx;		//make sure the shader uses the right maps in the array of maps
 		if (m_pMaterial != nullptr) {

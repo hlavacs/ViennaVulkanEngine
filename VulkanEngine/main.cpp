@@ -34,6 +34,41 @@ namespace ve {
 	};
 
 
+	///simple event listener for rotating objects
+	class BlinkListener : public VEEventListener {
+		VEEntity *m_pEntity;
+		double t_now = 0.0;
+		double t_last = 0.0;
+		double m_blinkDuration;
+
+	public:
+		///Constructor
+		BlinkListener(std::string name, VEEntity *pEntity, double duration) : 
+			VEEventListener(name), m_pEntity(pEntity), m_blinkDuration(duration) {};
+
+		void onFrameStarted(veEvent event) {
+			t_now += event.dt;
+			double duration = t_now - t_last;
+
+			if (duration > m_blinkDuration) {
+
+				if (m_pEntity->m_drawEntity)
+					m_pEntity->m_drawEntity = false;
+				else
+					m_pEntity->m_drawEntity = true;
+
+				t_last = t_now;
+			}
+		}
+
+		bool onSceneNodeDeleted(veEvent event) {
+			if (m_pEntity == event.ptr) return true;
+			return false;
+		};
+
+	};
+
+
 	///simple event listener for loading levels
 	class LevelListener : public VEEventListener {
 	public:
@@ -91,6 +126,7 @@ namespace ve {
 			float stride = 300.0f;
 			static std::default_random_engine e{12345};
 			static std::uniform_real_distribution<> d{ 1.0f, stride }; 
+			static std::uniform_real_distribution<> dur{ 0.3f, 1.0f };
 
 			VEMesh *pMesh;
 			VECHECKPOINTER( pMesh = getSceneManagerPointer()->getMesh("models/test/crate0/cube.obj/cube") );
@@ -104,7 +140,8 @@ namespace ve {
 
 				e2->setTransform(glm::translate(glm::mat4(1.0f), glm::vec3( d(e) - stride/2.0f, d(e)/2.0f, d(e) - stride/2.0f)));
 				//e2->multiplyTransform(glm::scale(glm::mat4(1.0f), glm::vec3(10.0f, 10.0f, 10.0f)));
-				registerEventListener(	new RotatorListener("LightListener" + std::to_string(i), e2, 0.01f, glm::vec3(0.0f, 1.0f, 0.0f)), { veEvent::VE_EVENT_FRAME_STARTED, veEvent::VE_EVENT_DELETE_NODE } );
+				registerEventListener( new RotatorListener("RotatorListener" + std::to_string(i), e2, 0.01f, glm::vec3(0.0f, 1.0f, 0.0f)), { veEvent::VE_EVENT_FRAME_STARTED, veEvent::VE_EVENT_DELETE_NODE } );
+				registerEventListener( new BlinkListener("BlinkListener" + std::to_string(i), e2, dur(e) ), { veEvent::VE_EVENT_FRAME_STARTED, veEvent::VE_EVENT_DELETE_NODE });
 			}
 
 		}
@@ -154,7 +191,7 @@ namespace ve {
 			e1->multiplyTransform( glm::translate(glm::mat4(1.0f), glm::vec3(10.0f, 5.0f, 10.0f)));
 			pScene->addChild(e1);
 
-			createCubes(500, pScene);
+			createCubes(20000, pScene);
 			//VESceneNode *pSponza = m_pSceneManager->loadModel("Sponza", "models/sponza", "sponza.dae", aiProcess_FlipWindingOrder);
 			//pSponza->setTransform(glm::scale(glm::mat4(1.0f), glm::vec3(0.1f, 0.1f, 0.1f)));
 

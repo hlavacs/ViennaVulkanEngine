@@ -321,7 +321,7 @@ namespace ve {
 	void VEEngine::callListeners(double dt, veEvent event, std::vector<VEEventListener*> *list ) {
 		event.dt = dt;
 
-		if ( false ) { //m_maxThreads>1 && !getRendererForwardPointer()->isRecording() && list->size()>200 ) {
+		if ( m_maxThreads>1 && !getRendererForwardPointer()->isRecording() && list->size()>200 ) {
 			int div = 100;
 			uint32_t numThreads =  std::min((int)list->size()/div, (int)m_maxThreads);
 			uint32_t numListenerPerThread = (uint32_t)list->size() / numThreads;

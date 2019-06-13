@@ -171,7 +171,7 @@ namespace ve {
 
 		//go through all entities and draw them
 		for (auto pEntity : m_entities) {
-			if (pEntity->m_drawEntity) {
+			if (true) {				//pEntity->m_drawEntity) {
 				bindDescriptorSetsPerEntity(commandBuffer, imageIndex, pEntity);	//bind the entity's descriptor sets
 				drawEntity(commandBuffer, imageIndex, pEntity);
 			}

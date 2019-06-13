@@ -106,7 +106,7 @@ namespace ve {
 				if (pObject->getObjectType() == VESceneObject::VE_OBJECT_TYPE_ENTITY) {
 					VEEntity *pEntity = (VEEntity*)pObject;
 
-					if (pEntity->m_drawEntity && pEntity->m_castsShadow) {
+					if ( pEntity->m_castsShadow ) {  //&& pEntity->m_drawEntity ) {
 						bindDescriptorSetsPerEntity(commandBuffer, imageIndex, pEntity);	//bind the entity's descriptor sets
 						drawEntity(commandBuffer, imageIndex, pEntity);
 					}
