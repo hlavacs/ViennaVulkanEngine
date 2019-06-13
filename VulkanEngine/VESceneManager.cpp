@@ -720,8 +720,6 @@ namespace ve {
 	}
 
 
-
-
 	/**
 	*
 	* \brief Delete a scene node and all its subentities
@@ -773,7 +771,21 @@ namespace ve {
 			}
 			m_sceneNodes.erase(namelist[i]);
 
-			//Schedule event
+			//notify frame listeners that this node has been deleted
+			veEvent event(veEvent::VE_EVENT_SUBSYSTEM_GENERIC, veEvent::VE_EVENT_DELETE_NODE);
+			event.ptr = pNode;
+			//todo
+			std::vector<std::string> nameList;
+			std::vector<VEEventListener*> *listeners = getEnginePointer()->m_eventListeners[veEvent::VE_EVENT_DELETE_NODE];
+			for (auto listener : *listeners) {
+				if (listener->onSceneNodeDeleted(event)) {
+					nameList.push_back(listener->getName());
+				}
+			}
+			for (auto name : nameList) {
+				getEnginePointer()->deleteEventListener(name);
+			}
+
 			delete pNode;
 		}
 		sceneGraphChanged2();
@@ -791,7 +803,7 @@ namespace ve {
 	void  VESceneManager::deleteScene() {
 		std::lock_guard<std::mutex> lock(m_mutex);
 
-		VERendererForward *rf = getRendererForwardPointer();
+		getEnginePointer()->clearEventListenerList();
 
 		while (m_sceneNodes.size() > 0) {
 			std::map<std::string, VESceneNode*>::iterator first = m_sceneNodes.begin();
@@ -799,7 +811,6 @@ namespace ve {
 			deleteSceneNodeAndChildren2(first->second->getName());
 		}
 
-		
 		return;
 	}
 

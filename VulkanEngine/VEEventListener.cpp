@@ -53,6 +53,9 @@ namespace ve {
 		case veEvent::VE_EVENT_MOUSESCROLL:
 			return onMouseScroll(event);
 			break;
+		case veEvent::VE_EVENT_DELETE_NODE:
+			return onSceneNodeDeleted(event);
+			break;
 
 		default:
 			break;

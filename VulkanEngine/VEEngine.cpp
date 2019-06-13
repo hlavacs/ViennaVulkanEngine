@@ -59,10 +59,8 @@ namespace ve {
 		m_pSceneManager->initSceneManager();	//initialize the scene manager
 
 		for (uint32_t i = veEvent::VE_EVENT_NONE; i < veEvent::VE_EVENT_LAST; i++) {	//initialize the event listeners lists
-			m_eventListeners[(veEvent::veEventType)i] = {};
+			m_eventListeners[(veEvent::veEventType)i] = new std::vector<VEEventListener*>;
 		}
-
-		registerEventListeners();
 		m_loopCount = 1;
 	}
 
@@ -117,6 +115,10 @@ namespace ve {
 
 		clearEventListenerList();
 		m_eventlist.clear();
+
+		for (uint32_t i = veEvent::VE_EVENT_NONE; i < veEvent::VE_EVENT_LAST; i++) {	//initialize the event listeners lists
+			delete m_eventListeners[(veEvent::veEventType)i];
+		}
 
 		m_pSceneManager->closeSceneManager();
 		m_pRenderer->closeRenderer();
@@ -192,7 +194,7 @@ namespace ve {
 	*/
 	void VEEngine::registerEventListener(VEEventListener *pListener, std::vector<veEvent::veEventType> eventTypes) {
 		for (auto eventType : eventTypes) {
-			m_eventListeners[eventType].push_back(pListener);
+			m_eventListeners[eventType]->push_back(pListener);
 		}
 	}
 
@@ -207,7 +209,7 @@ namespace ve {
 	*/
 	VEEventListener* VEEngine::getEventListener(std::string name) {
 		for (auto list : m_eventListeners) {
-			for (auto listener : list.second) {
+			for (auto listener : *(list.second) ) {
 				if (listener->getName() == name) {
 					return listener;
 				}
@@ -227,11 +229,11 @@ namespace ve {
 	* \param[in] list Reference to the list that this listener should be registered in
 	*
 	*/
-	void VEEngine::removeEventListener(std::string name, std::vector<VEEventListener*>&list) {
-		for (uint32_t i = 0; i < list.size(); i++) {
-			if (list[i]->getName() == name) {
-				list[i] = list[list.size() - 1];		//write over last listener
-				list.pop_back();
+	void VEEngine::removeEventListener(std::string name, std::vector<VEEventListener*> *list) {
+		for (uint32_t i = 0; i < list->size(); i++) {
+			if ((*list)[i]->getName() == name) {
+				(*list)[i] = (*list)[list->size() - 1];		//write over last listener
+				list->pop_back();
 				return;
 			}
 		}
@@ -248,7 +250,7 @@ namespace ve {
 	*
 	*/
 	void VEEngine::removeEventListener(std::string name) {
-		for (auto list : m_eventListeners) {
+		for each (auto list in  m_eventListeners) {
 			removeEventListener(name, list.second);
 		}
 	};
@@ -281,10 +283,10 @@ namespace ve {
 		std::set<VEEventListener*> lset;
 
 		for (uint32_t i = veEvent::VE_EVENT_NONE; i < veEvent::VE_EVENT_LAST; i++) {	//initialize the event listeners lists
-			for (uint32_t j = 0; j < m_eventListeners[(veEvent::veEventType)i].size(); j++) {
-				lset.insert(m_eventListeners[(veEvent::veEventType)i][j]);
+			for (uint32_t j = 0; j < m_eventListeners[(veEvent::veEventType)i]->size(); j++) {
+				lset.insert((*m_eventListeners[(veEvent::veEventType)i])[j]);
 			}
-			m_eventListeners[(veEvent::veEventType)i].clear();
+			m_eventListeners[(veEvent::veEventType)i]->clear();
 		}
 		for (auto pListener : lset) delete pListener;
 	}
@@ -299,7 +301,7 @@ namespace ve {
 	*
 	*/
 	void VEEngine::callListeners(double dt, veEvent event ) {
-		callListeners(dt, event, &m_eventListeners[event.type]);
+		callListeners(dt, event, m_eventListeners[event.type]);
 	}
 
 
@@ -319,7 +321,7 @@ namespace ve {
 	void VEEngine::callListeners(double dt, veEvent event, std::vector<VEEventListener*> *list ) {
 		event.dt = dt;
 
-		if ( m_maxThreads>1 && !getRendererForwardPointer()->isRecording() && list->size()>200 ) {
+		if ( false ) { //m_maxThreads>1 && !getRendererForwardPointer()->isRecording() && list->size()>200 ) {
 			int div = 100;
 			uint32_t numThreads =  std::min((int)list->size()/div, (int)m_maxThreads);
 			uint32_t numListenerPerThread = (uint32_t)list->size() / numThreads;
@@ -626,7 +628,8 @@ namespace ve {
 		light2->m_param[0] = 200.0f;
 		light2->multiplyTransform(glm::translate(glm::vec3(5.0f, 0.0f, 0.0f)));
 		getSceneManagerPointer()->switchOnLight(light2);
-		
+
+		registerEventListeners();	
 	}
 
 

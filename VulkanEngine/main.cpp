@@ -26,6 +26,11 @@ namespace ve {
 			glm::mat4 rot = glm::rotate( glm::mat4(1.0f), m_speed*(float)event.dt, m_axis );
 			m_pObject->multiplyTransform(rot);
 		}
+
+		bool onSceneNodeDeleted(veEvent event) {
+			if (m_pObject == event.ptr) return true;
+			return false;
+		};
 	};
 
 
@@ -99,7 +104,7 @@ namespace ve {
 
 				e2->setTransform(glm::translate(glm::mat4(1.0f), glm::vec3( d(e) - stride/2.0f, d(e)/2.0f, d(e) - stride/2.0f)));
 				//e2->multiplyTransform(glm::scale(glm::mat4(1.0f), glm::vec3(10.0f, 10.0f, 10.0f)));
-				registerEventListener(	new RotatorListener("LightListener" + std::to_string(i), e2, 0.01f, glm::vec3(0.0f, 1.0f, 0.0f)), { veEvent::VE_EVENT_FRAME_STARTED } );
+				registerEventListener(	new RotatorListener("LightListener" + std::to_string(i), e2, 0.01f, glm::vec3(0.0f, 1.0f, 0.0f)), { veEvent::VE_EVENT_FRAME_STARTED, veEvent::VE_EVENT_DELETE_NODE } );
 			}
 
 		}
@@ -122,7 +127,7 @@ namespace ve {
 
 			RotatorListener *pRot;
 			VECHECKPOINTER( pRot = new RotatorListener("CubemapRotator", sp1, 0.01f, glm::vec3(0.0f, 1.0f, 0.0f)) );
-			getEnginePointer()->registerEventListener(pRot);
+			getEnginePointer()->registerEventListener(pRot, { veEvent::VE_EVENT_DELETE_NODE, veEvent::VE_EVENT_FRAME_STARTED });
 
 			VESceneNode *e4;
 			VECHECKPOINTER( e4 = getSceneManagerPointer()->loadModel("The Plane", "models/test", "plane_t_n_s.obj",0, pScene) );
@@ -149,7 +154,7 @@ namespace ve {
 			e1->multiplyTransform( glm::translate(glm::mat4(1.0f), glm::vec3(10.0f, 5.0f, 10.0f)));
 			pScene->addChild(e1);
 
-			createCubes(10, pScene);
+			createCubes(500, pScene);
 			//VESceneNode *pSponza = m_pSceneManager->loadModel("Sponza", "models/sponza", "sponza.dae", aiProcess_FlipWindingOrder);
 			//pSponza->setTransform(glm::scale(glm::mat4(1.0f), glm::vec3(0.1f, 0.1f, 0.1f)));
 
@@ -170,7 +175,7 @@ int main() {
 	MyVulkanEngine mve(debug);	//enable or disable debugging (=callback, validation layers)
 
 	mve.initEngine();
-	mve.loadLevel();
+	mve.loadLevel(1);
 	mve.run();
 
 	return 0;

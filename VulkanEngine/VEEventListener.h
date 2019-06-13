@@ -84,6 +84,7 @@ namespace ve {
 		veEvent(veEventSubsystem sub, veEventType evt) { subsystem = sub; type = evt; };
 	};
 
+	class VESceneManager;
 
 	/**
 	*
@@ -96,6 +97,7 @@ namespace ve {
 	*/
 	class VEEventListener : public VENamedClass {
 		friend VEEngine;
+		friend VESceneManager;
 
 	protected:
 		virtual bool onEvent(veEvent event);
@@ -126,6 +128,7 @@ namespace ve {
 		//Other stuff
 
 		///A scene node was deleted
+		///\returns flag indicating whether this event listener should be destroyed
 		virtual bool onSceneNodeDeleted(veEvent event) { return false; };
 
 	public:
