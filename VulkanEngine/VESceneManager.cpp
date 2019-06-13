@@ -757,10 +757,23 @@ namespace ve {
 
 			if (pNode->getNodeType() == VESceneNode::VE_NODE_TYPE_SCENEOBJECT) {
 				VESceneObject *pObject = (VESceneObject*)pNode;
+
+				if (pObject->getObjectType() == VESceneObject::VE_OBJECT_TYPE_CAMERA && m_camera == (VECamera*)pObject)
+					m_camera = nullptr;
+
+				if (pObject->getObjectType() == VESceneObject::VE_OBJECT_TYPE_LIGHT)
+					switchOffLight2( (VELight*)pObject );
+
 				if( pObject->getObjectType() == VESceneObject::VE_OBJECT_TYPE_ENTITY )
 					getRendererPointer()->removeEntityFromSubrenderers((VEEntity*)pObject);
+
+				if (pObject->m_memoryHandle.owner != nullptr) {
+					vh::vhMemBlockRemoveEntry(&pObject->m_memoryHandle);
+				}
 			}
 			m_sceneNodes.erase(namelist[i]);
+
+			//Schedule event
 			delete pNode;
 		}
 		sceneGraphChanged2();
@@ -916,6 +929,21 @@ namespace ve {
 	*/
 	void  VESceneManager::switchOffLight(VELight *light) {
 		std::lock_guard<std::mutex> lock(m_mutex);
+		switchOffLight2(light);
+	}
+
+
+	/**
+	*
+	* \brief Remove a light from the m_lights list, thus switching it off
+	*
+	* Removing this light does not remove it from the m_entities list.
+	* Removing it from the m_lights list causes the light to be switched off.
+	*
+	* \param[in] light A pointer to the light to switch off
+	*
+	*/
+	void  VESceneManager::switchOffLight2(VELight *light) {
 		for (uint32_t i = 0; i < m_lights.size(); i++) {
 			if (light == m_lights[i]) {
 				m_lights[i] = m_lights[m_lights.size() - 1];	//overwrite with last light

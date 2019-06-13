@@ -69,7 +69,8 @@ namespace ve {
 		void			createSceneNodeList2(VESceneNode *pObject, std::vector<std::string> &namelist);
 		VEEntity *		createSkyplane2(std::string entityName, std::string basedir, std::string texName, VESceneNode *parent);
 		void			updateSceneNodes2(uint32_t imageIndex);
-		void			sceneGraphChanged2();			//tell renderer to rerecord the cmd buffers
+		void			switchOffLight2(VELight *light);		//Remove a light from the m_lights list
+		void			sceneGraphChanged2();					//tell renderer to rerecord the cmd buffers
 
 	public:
 		///Constructor of class VESceneManager

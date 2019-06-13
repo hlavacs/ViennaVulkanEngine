@@ -47,6 +47,7 @@ namespace ve {
 			VE_EVENT_MOUSEMOVE,			///<The mouse has been moved
 			VE_EVENT_MOUSEBUTTON,		///<A mouse button event
 			VE_EVENT_MOUSESCROLL,		///<Mouse scroll event
+			VE_EVENT_DELETE_NODE,		///<A scene node was deleted
 			VE_EVENT_LAST
 		};
 
@@ -75,7 +76,7 @@ namespace ve {
 		float				fdata2 = 0.0f;								///<Arbitrary float information
 		float				fdata3 = 0.0f;								///<Arbitrary float information
 		float				fdata4 = 0.0f;								///<Arbitrary float information
-		void *				ptr=nullptr;								///<User pointer
+		void *				ptr=nullptr;								///<User pointer, eg for a deleted node
 
 		///Constructor using default subsystem
 		veEvent(veEventType evt) { subsystem = VE_EVENT_SUBSYSTEM_GENERIC;  type = evt; };
@@ -120,6 +121,12 @@ namespace ve {
 		virtual bool onMouseButton(veEvent event) { return false; };
 		///Mouse scroll event.  Event can be consumed.
 		virtual bool onMouseScroll(veEvent event) { return false; };
+
+		//-------------------------------------------------------------------------------
+		//Other stuff
+
+		///A scene node was deleted
+		virtual bool onSceneNodeDeleted(veEvent event) { return false; };
 
 	public:
 		VEEventListener( std::string name );

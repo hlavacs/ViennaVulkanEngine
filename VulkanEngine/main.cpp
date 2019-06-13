@@ -125,13 +125,12 @@ namespace ve {
 			getEnginePointer()->registerEventListener(pRot);
 
 			VESceneNode *e4;
-			VECHECKPOINTER( e4 = getSceneManagerPointer()->loadModel("The Plane", "models/test", "plane_t_n_s.obj") );
+			VECHECKPOINTER( e4 = getSceneManagerPointer()->loadModel("The Plane", "models/test", "plane_t_n_s.obj",0, pScene) );
 			e4->setTransform(glm::scale(glm::mat4(1.0f), glm::vec3(1000.0f, 1.0f, 1000.0f)));
 
 			VEEntity *pE4;
 			VECHECKPOINTER( pE4 = (VEEntity*)getSceneManagerPointer()->getSceneNode("The Plane/plane_t_n_s.obj/plane/Entity_0") );
 			pE4->setParam( glm::vec4(1000.0f, 1000.0f, 0.0f, 0.0f) );
-			pScene->addChild(e4);
 
 			VESceneNode *pointLight = getSceneManagerPointer()->getSceneNode("StandardPointLight");
 			if (pointLight != nullptr) {
@@ -150,7 +149,7 @@ namespace ve {
 			e1->multiplyTransform( glm::translate(glm::mat4(1.0f), glm::vec3(10.0f, 5.0f, 10.0f)));
 			pScene->addChild(e1);
 
-			//createCubes(10, pScene);
+			createCubes(10, pScene);
 			//VESceneNode *pSponza = m_pSceneManager->loadModel("Sponza", "models/sponza", "sponza.dae", aiProcess_FlipWindingOrder);
 			//pSponza->setTransform(glm::scale(glm::mat4(1.0f), glm::vec3(0.1f, 0.1f, 0.1f)));
 
