@@ -109,6 +109,7 @@ namespace ve {
 		///Constructor
 		LightListener(std::string name) : VEEventListener(name) {};
 
+		///\brief switch on or off a given light
 		void toggleLight(std::string name) {
 			VELight *pLight = (VELight*)getSceneManagerPointer()->getSceneNode(name);
 			if (pLight == nullptr) return;

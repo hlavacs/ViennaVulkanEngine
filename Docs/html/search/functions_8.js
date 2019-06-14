@@ -7,5 +7,6 @@ var searchData=
   ['initwindow',['initWindow',['../classve_1_1_v_e_window.html#a0473bfaaa31df9caa5df8295c5f36f95',1,'ve::VEWindow::initWindow()'],['../classve_1_1_v_e_window_g_l_f_w.html#a9063edbdf7a895a166863f95bcf2797c',1,'ve::VEWindowGLFW::initWindow()']]],
   ['iscomplete',['isComplete',['../structvh_1_1_queue_family_indices.html#a7828338663fb6c745fa219bfdfb9f32e',1,'vh::QueueFamilyIndices']]],
   ['isdevicesuitable',['isDeviceSuitable',['../namespacevh.html#a57c20b5524c517208b8984d3734f2aea',1,'vh']]],
+  ['islightswitchedon',['isLightSwitchedOn',['../classve_1_1_v_e_scene_manager.html#ae1c8ac5618111935152c1c4162e265a0',1,'ve::VESceneManager::isLightSwitchedOn(VELight *pLight)'],['../classve_1_1_v_e_scene_manager.html#a4192543595368ee1d35663cc63dc61dd',1,'ve::VESceneManager::isLightSwitchedOn(std::string name)']]],
   ['isrecording',['isRecording',['../classve_1_1_v_e_renderer_forward.html#aaaa84595c7e7ad25acc2f2d94666133b',1,'ve::VERendererForward']]]
 ];
