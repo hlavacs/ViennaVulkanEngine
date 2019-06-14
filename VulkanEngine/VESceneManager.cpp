@@ -967,6 +967,40 @@ namespace ve {
 
 
 	/**
+	*
+	* \brief Determine whether a light is switched on or not
+	*
+	* \param[in] pLight A pointer to the light to query
+	* \returns true if the light is switched on, else false
+	*
+	*/
+	bool VESceneManager::isLightSwitchedOn(VELight *pLight) {
+		if (pLight == nullptr) return false;
+
+		std::lock_guard<std::mutex> lock(m_mutex);
+		for (auto light : m_lights) {
+			if (light == pLight) return true;
+		}
+		return false;
+	}
+
+
+	/**
+	*
+	* \brief Determine whether a light is switched on or not
+	*
+	* \param[in] name The name of the light to query
+	* \returns true if the light is switched on, else false
+	*
+	*/
+	bool VESceneManager::isLightSwitchedOn(std::string name) {
+		VELight *pLight = (VELight*)getSceneNode(name);
+		return isLightSwitchedOn(pLight);
+	}
+
+
+
+	/**
 	* \brief Close down the scene manager and delete all its assets.
 	*/
 	void VESceneManager::closeSceneManager() {

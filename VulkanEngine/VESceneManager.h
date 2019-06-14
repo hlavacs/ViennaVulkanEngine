@@ -141,8 +141,10 @@ namespace ve {
 		void			setCamera( VECamera *cam) { m_camera = cam; };
 		///\returns a list with names of the current lights shining on the scene
 		std::vector<VELight*> & getLights() { return m_lights;  };
-		void			switchOnLight(VELight * light);		//Add a light to the m_lights list
-		void			switchOffLight(VELight *light);		//Remove a light from the m_lights list
+		void			switchOnLight(VELight * pLight);		//Add a light to the m_lights list
+		void			switchOffLight(VELight *pLight);		//Remove a light from the m_lights list
+		bool			isLightSwitchedOn( VELight *pLight );
+		bool			isLightSwitchedOn( std::string name );
 
 		//-------------------------------------------------------------------------------------
 		//Print information about the tree of objects

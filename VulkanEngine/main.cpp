@@ -46,6 +46,7 @@ namespace ve {
 		BlinkListener(std::string name, VEEntity *pEntity, double duration) : 
 			VEEventListener(name), m_pEntity(pEntity), m_blinkDuration(duration) {};
 
+		///\brief let cubes blink
 		void onFrameStarted(veEvent event) {
 			t_now += event.dt;
 			double duration = t_now - t_last;
@@ -61,6 +62,7 @@ namespace ve {
 			}
 		}
 
+		///\returns true if this event listener instance should be deleted also
 		bool onSceneNodeDeleted(veEvent event) {
 			if (m_pEntity == event.ptr) return true;
 			return false;
@@ -75,6 +77,7 @@ namespace ve {
 		///Constructor
 		LevelListener(std::string name) : VEEventListener(name) {};
 
+		///load a new level when pressing numbers 1-3
 		virtual bool onKeyboard(veEvent event) {
 			if (event.idata3 == GLFW_RELEASE) return false;
 
@@ -100,6 +103,48 @@ namespace ve {
 	};
 
 
+	///simple event listener for switching on/off light
+	class LightListener : public VEEventListener {
+	public:
+		///Constructor
+		LightListener(std::string name) : VEEventListener(name) {};
+
+		void toggleLight(std::string name) {
+			VELight *pLight = (VELight*)getSceneManagerPointer()->getSceneNode(name);
+			if (pLight == nullptr) return;
+
+			if (getSceneManagerPointer()->isLightSwitchedOn(pLight)) {
+				getSceneManagerPointer()->switchOffLight(pLight);
+			}
+			else {
+				getSceneManagerPointer()->switchOnLight(pLight);
+			}
+		}
+
+		///load a new level when pressing numbers 1-3
+		virtual bool onKeyboard(veEvent event) {
+			if (event.idata3 == GLFW_RELEASE) return false;
+
+			if (event.idata1 == GLFW_KEY_8 && event.idata3 == GLFW_PRESS) {
+				toggleLight("StandardDirLight");
+				return true;
+			}
+
+			if (event.idata1 == GLFW_KEY_9 && event.idata3 == GLFW_PRESS) {
+				toggleLight("StandardPointLight");
+				return true;
+			}
+
+			if (event.idata1 == GLFW_KEY_0 && event.idata3 == GLFW_PRESS) {
+				toggleLight("StandardSpotLight");
+				return true;
+			}
+			return false;
+		}
+	};
+
+
+
 	///user defined manager class, derived from VEEngine
 	class MyVulkanEngine : public VEEngine {
 	protected:
@@ -117,6 +162,7 @@ namespace ve {
 			VEEngine::registerEventListeners();
 
 			registerEventListener(new LevelListener("LevelListener"), { veEvent::VE_EVENT_KEYBOARD });
+			registerEventListener(new LightListener("LevelListener"), { veEvent::VE_EVENT_KEYBOARD });
 			registerEventListener(new VEEventListenerNuklearDebug("NuklearDebugListener"), { veEvent::VE_EVENT_DRAW_OVERLAY});
 		};
 
@@ -139,7 +185,6 @@ namespace ve {
 				VECHECKPOINTER( e2 = getSceneManagerPointer()->createEntity("The Cube" + std::to_string(i), pMesh, pMat, parent ) );
 
 				e2->setTransform(glm::translate(glm::mat4(1.0f), glm::vec3( d(e) - stride/2.0f, d(e)/2.0f, d(e) - stride/2.0f)));
-				//e2->multiplyTransform(glm::scale(glm::mat4(1.0f), glm::vec3(10.0f, 10.0f, 10.0f)));
 				registerEventListener( new RotatorListener("RotatorListener" + std::to_string(i), e2, 0.01f, glm::vec3(0.0f, 1.0f, 0.0f)), { veEvent::VE_EVENT_FRAME_STARTED, veEvent::VE_EVENT_DELETE_NODE } );
 				registerEventListener( new BlinkListener("BlinkListener" + std::to_string(i), e2, dur(e) ), { veEvent::VE_EVENT_FRAME_STARTED, veEvent::VE_EVENT_DELETE_NODE });
 			}
