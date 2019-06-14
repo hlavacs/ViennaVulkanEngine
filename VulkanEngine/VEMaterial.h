@@ -21,9 +21,14 @@ namespace ve {
 
 	struct VETexture : VENamedClass {
 		VkImage			m_image = VK_NULL_HANDLE;				///<image handle
-		VkImageView		m_imageView = VK_NULL_HANDLE;			///<image view
+
+		///\brief Vulkan handles for the image
+		VkDescriptorImageInfo m_imageInfo = {
+			VK_NULL_HANDLE,										///<sampler
+			VK_NULL_HANDLE,										///<image view
+			VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL			///<layout
+		};
 		VmaAllocation	m_deviceAllocation = nullptr;			///<VMA allocation info
-		VkSampler		m_sampler = VK_NULL_HANDLE;				///<image sampler
 		VkExtent2D		m_extent = { 0,0 };						///<map extent
 		VkFormat		m_format;								///<texture format
 

@@ -137,13 +137,13 @@ virtual void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" hr
 virtual void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_subrender.html#a1094d8a41700a01118da9426e01160e3">setDynamicPipelineState</a> (VkCommandBuffer commandBuffer, uint32_t numPass)</td></tr>
 <tr class="memdesc:a1094d8a41700a01118da9426e01160e3 inherit pub_methods_classve_1_1_v_e_subrender"><td class="mdescLeft">&#160;</td><td class="mdescRight">Set the dynamic state of the pipeline - does nothing for the base class. <br /></td></tr>
 <tr class="separator:a1094d8a41700a01118da9426e01160e3 inherit pub_methods_classve_1_1_v_e_subrender"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a33616d505c368ef1d2284fa918177064 inherit pub_methods_classve_1_1_v_e_subrender"><td class="memItemLeft" align="right" valign="top"><a id="a33616d505c368ef1d2284fa918177064"></a>
+virtual void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_subrender.html#a33616d505c368ef1d2284fa918177064">prepareDraw</a> ()</td></tr>
+<tr class="memdesc:a33616d505c368ef1d2284fa918177064 inherit pub_methods_classve_1_1_v_e_subrender"><td class="mdescLeft">&#160;</td><td class="mdescRight">Prepare to perform draw operation, e.g. for an overlay. <br /></td></tr>
+<tr class="separator:a33616d505c368ef1d2284fa918177064 inherit pub_methods_classve_1_1_v_e_subrender"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a6eee6c7136bd4a43ee85de84f70f05b6 inherit pub_methods_classve_1_1_v_e_subrender"><td class="memItemLeft" align="right" valign="top">virtual void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_subrender.html#a6eee6c7136bd4a43ee85de84f70f05b6">draw</a> (VkCommandBuffer commandBuffer, uint32_t imageIndex, uint32_t numPass, <a class="el" href="classve_1_1_v_e_camera.html">VECamera</a> *pCamera, <a class="el" href="classve_1_1_v_e_light.html">VELight</a> *pLight, std::vector&lt; VkDescriptorSet &gt; descriptorSetsShadow)</td></tr>
 <tr class="memdesc:a6eee6c7136bd4a43ee85de84f70f05b6 inherit pub_methods_classve_1_1_v_e_subrender"><td class="mdescLeft">&#160;</td><td class="mdescRight">Draw all associated entities.  <a href="classve_1_1_v_e_subrender.html#a6eee6c7136bd4a43ee85de84f70f05b6">More...</a><br /></td></tr>
 <tr class="separator:a6eee6c7136bd4a43ee85de84f70f05b6 inherit pub_methods_classve_1_1_v_e_subrender"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a33616d505c368ef1d2284fa918177064 inherit pub_methods_classve_1_1_v_e_subrender"><td class="memItemLeft" align="right" valign="top"><a id="a33616d505c368ef1d2284fa918177064"></a>
-virtual void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_subrender.html#a33616d505c368ef1d2284fa918177064">prepareDraw</a> ()</td></tr>
-<tr class="memdesc:a33616d505c368ef1d2284fa918177064 inherit pub_methods_classve_1_1_v_e_subrender"><td class="mdescLeft">&#160;</td><td class="mdescRight">Prepare to perform draw operation. <br /></td></tr>
-<tr class="separator:a33616d505c368ef1d2284fa918177064 inherit pub_methods_classve_1_1_v_e_subrender"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ade1dada5a7f4e7d2449b0ba148dc75f1 inherit pub_methods_classve_1_1_v_e_subrender"><td class="memItemLeft" align="right" valign="top">virtual VkSemaphore&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_subrender.html#ade1dada5a7f4e7d2449b0ba148dc75f1">draw</a> (uint32_t imageIndex, VkSemaphore wait_semaphore)</td></tr>
 <tr class="separator:ade1dada5a7f4e7d2449b0ba148dc75f1 inherit pub_methods_classve_1_1_v_e_subrender"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a2cc13f57ad28631b93998fa65b47fc77 inherit pub_methods_classve_1_1_v_e_subrender"><td class="memItemLeft" align="right" valign="top">virtual void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_subrender.html#a2cc13f57ad28631b93998fa65b47fc77">drawEntity</a> (VkCommandBuffer commandBuffer, uint32_t imageIndex, <a class="el" href="classve_1_1_v_e_entity.html">VEEntity</a> *entity)</td></tr>
@@ -189,15 +189,23 @@ Additional Inherited Members</h2></td></tr>
 <tr class="inherit_header pro_attribs_classve_1_1_v_e_subrender"><td colspan="2" onclick="javascript:toggleInherit('pro_attribs_classve_1_1_v_e_subrender')"><img src="closed.png" alt="-"/>&#160;Protected Attributes inherited from <a class="el" href="classve_1_1_v_e_subrender.html">ve::VESubrender</a></td></tr>
 <tr class="memitem:a89ba5ec50e989a27d6a002742997d6a5 inherit pro_attribs_classve_1_1_v_e_subrender"><td class="memItemLeft" align="right" valign="top"><a id="a89ba5ec50e989a27d6a002742997d6a5"></a>
 VkDescriptorSetLayout&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_subrender.html#a89ba5ec50e989a27d6a002742997d6a5">m_descriptorSetLayoutResources</a> = VK_NULL_HANDLE</td></tr>
-<tr class="memdesc:a89ba5ec50e989a27d6a002742997d6a5 inherit pro_attribs_classve_1_1_v_e_subrender"><td class="mdescLeft">&#160;</td><td class="mdescRight">Descriptor set 3 : per object additional resources. <br /></td></tr>
+<tr class="memdesc:a89ba5ec50e989a27d6a002742997d6a5 inherit pro_attribs_classve_1_1_v_e_subrender"><td class="mdescLeft">&#160;</td><td class="mdescRight">Descriptor set layout for per object resources (like images) <br /></td></tr>
 <tr class="separator:a89ba5ec50e989a27d6a002742997d6a5 inherit pro_attribs_classve_1_1_v_e_subrender"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a36943ca6f7610f2da74c882e78f85e8e inherit pro_attribs_classve_1_1_v_e_subrender"><td class="memItemLeft" align="right" valign="top"><a id="a36943ca6f7610f2da74c882e78f85e8e"></a>
+std::vector&lt; VkDescriptorSet &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_subrender.html#a36943ca6f7610f2da74c882e78f85e8e">m_descriptorSetsResources</a></td></tr>
+<tr class="memdesc:a36943ca6f7610f2da74c882e78f85e8e inherit pro_attribs_classve_1_1_v_e_subrender"><td class="mdescLeft">&#160;</td><td class="mdescRight">Per object resources. <br /></td></tr>
+<tr class="separator:a36943ca6f7610f2da74c882e78f85e8e inherit pro_attribs_classve_1_1_v_e_subrender"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:acae7bbfcc939ff45a51e709d51f551d9 inherit pro_attribs_classve_1_1_v_e_subrender"><td class="memItemLeft" align="right" valign="top"><a id="acae7bbfcc939ff45a51e709d51f551d9"></a>
+std::vector&lt; VkDescriptorImageInfo &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_subrender.html#acae7bbfcc939ff45a51e709d51f551d9">m_imageMaps</a></td></tr>
+<tr class="memdesc:acae7bbfcc939ff45a51e709d51f551d9 inherit pro_attribs_classve_1_1_v_e_subrender"><td class="mdescLeft">&#160;</td><td class="mdescRight">Default textures. <br /></td></tr>
+<tr class="separator:acae7bbfcc939ff45a51e709d51f551d9 inherit pro_attribs_classve_1_1_v_e_subrender"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ae8aee2dc1a7dd44a630cef495fb8dfb5 inherit pro_attribs_classve_1_1_v_e_subrender"><td class="memItemLeft" align="right" valign="top"><a id="ae8aee2dc1a7dd44a630cef495fb8dfb5"></a>
 VkPipelineLayout&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_subrender.html#ae8aee2dc1a7dd44a630cef495fb8dfb5">m_pipelineLayout</a> = VK_NULL_HANDLE</td></tr>
 <tr class="memdesc:ae8aee2dc1a7dd44a630cef495fb8dfb5 inherit pro_attribs_classve_1_1_v_e_subrender"><td class="mdescLeft">&#160;</td><td class="mdescRight">Pipeline layout. <br /></td></tr>
 <tr class="separator:ae8aee2dc1a7dd44a630cef495fb8dfb5 inherit pro_attribs_classve_1_1_v_e_subrender"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ad0860ce587e02d6a300b832f111b04b1 inherit pro_attribs_classve_1_1_v_e_subrender"><td class="memItemLeft" align="right" valign="top"><a id="ad0860ce587e02d6a300b832f111b04b1"></a>
 std::vector&lt; VkPipeline &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_subrender.html#ad0860ce587e02d6a300b832f111b04b1">m_pipelines</a></td></tr>
-<tr class="memdesc:ad0860ce587e02d6a300b832f111b04b1 inherit pro_attribs_classve_1_1_v_e_subrender"><td class="mdescLeft">&#160;</td><td class="mdescRight">Pipeline for light pass. <br /></td></tr>
+<tr class="memdesc:ad0860ce587e02d6a300b832f111b04b1 inherit pro_attribs_classve_1_1_v_e_subrender"><td class="mdescLeft">&#160;</td><td class="mdescRight">Pipeline for light pass(es) <br /></td></tr>
 <tr class="separator:ad0860ce587e02d6a300b832f111b04b1 inherit pro_attribs_classve_1_1_v_e_subrender"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a846137a205fb8521f96110f8f959ff36 inherit pro_attribs_classve_1_1_v_e_subrender"><td class="memItemLeft" align="right" valign="top"><a id="a846137a205fb8521f96110f8f959ff36"></a>
 std::vector&lt; <a class="el" href="classve_1_1_v_e_entity.html">VEEntity</a> * &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_subrender.html#a846137a205fb8521f96110f8f959ff36">m_entities</a></td></tr>
@@ -320,7 +328,7 @@ std::vector&lt; <a class="el" href="classve_1_1_v_e_entity.html">VEEntity</a> * 
 <p>Initialize the subrenderer. </p>
 <p>Create descriptor set layout, pipeline layout and the PSO </p>
 
-<p>Reimplemented from <a class="el" href="classve_1_1_v_e_subrender.html#a645800e27678cbea28b3a3ea834b850e">ve::VESubrender</a>.</p>
+<p>Reimplemented from <a class="el" href="classve_1_1_v_e_subrender.html#a24ab619f9f9739a940388c1b9b33152b">ve::VESubrender</a>.</p>
 
 </div>
 </div>
@@ -331,7 +339,7 @@ std::vector&lt; <a class="el" href="classve_1_1_v_e_entity.html">VEEntity</a> * 
 </div><!-- contents -->
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>
-Generated on Mon Apr 29 2019 11:18:42 for Vienna Vulkan Engine by &#160;<a href="http://www.doxygen.org/index.html">
+Generated on Sat May 11 2019 14:57:31 for Vienna Vulkan Engine by &#160;<a href="http://www.doxygen.org/index.html">
 <img class="footer" src="doxygen.png" alt="doxygen"/>
 </a> 1.8.15
 </small></address>

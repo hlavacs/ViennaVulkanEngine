@@ -13,9 +13,7 @@ namespace ve {
 	/**
 	* \brief Subrenderer that manages entities that have one diffuse texture for coloring
 	*/
-	class VESubrenderFW_D : public VESubrender {
-	protected:
-
+	class VESubrenderFW_D : public VESubrenderFW {
 	public:
 		///Constructor
 		VESubrenderFW_D() {};
@@ -30,6 +28,7 @@ namespace ve {
 		virtual void initSubrenderer();
 		virtual void setDynamicPipelineState(VkCommandBuffer commandBuffer, uint32_t numPass);
 		virtual void addEntity(VEEntity *pEntity);
+
 	};
 }
 

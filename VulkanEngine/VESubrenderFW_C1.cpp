@@ -18,23 +18,24 @@ namespace ve {
 	*
 	*/
 	void VESubrenderFW_C1::initSubrenderer() {
-		VESubrender::initSubrenderer();
+		VESubrenderFW::initSubrenderer();
 
-		VkDescriptorSetLayout perObjectLayout = getRendererForwardPointer()->getDescriptorSetLayoutPerObject();
+		VkDescriptorSetLayout perObjectLayout2 = getRendererForwardPointer()->getDescriptorSetLayoutPerObject2();
+
 		vh::vhPipeCreateGraphicsPipelineLayout(getRendererForwardPointer()->getDevice(),
-			{ perObjectLayout, perObjectLayout, getRendererForwardPointer()->getDescriptorSetLayoutShadow(), perObjectLayout },
-			{ },
-			&m_pipelineLayout);
+		{ perObjectLayout2, perObjectLayout2,  getRendererForwardPointer()->getDescriptorSetLayoutShadow(), perObjectLayout2 },
+		{},&m_pipelineLayout);
 
 		m_pipelines.resize(1);
 		vh::vhPipeCreateGraphicsPipeline(getRendererForwardPointer()->getDevice(),
-			{ "shader/Forward/C1/vert.spv", "shader/Forward/C1/frag.spv" },
+		{ "shader/Forward/C1/vert.spv", "shader/Forward/C1/frag.spv" },
 			getRendererForwardPointer()->getSwapChainExtent(),
 			m_pipelineLayout, getRendererForwardPointer()->getRenderPass(),
-			{},
+			{ },
 			&m_pipelines[0]);
 
 	}
+
 }
 
 

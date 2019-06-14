@@ -61,6 +61,38 @@ namespace vh {
 	}
 
 
+
+	/**
+	*
+	* \brief Start a command buffer for recording commands
+	*
+	* \param[in] device Logical Vulkan device
+	* \param[in] renderPass The render pass that is inherited from the parent command buffer
+	* \param[in] subpass Index of subpass
+	* \param[in] frameBuffer The framebuffer that is rendered into
+	* \param[in] commandBuffer The command buffer to start
+	* \param[in] usageFlags Flags telling how the buffer will be used
+	* \returns VK_SUCCESS or a Vulkan error code
+	*
+	*/
+	VkResult vhCmdBeginCommandBuffer(	VkDevice device, VkRenderPass renderPass, uint32_t subpass, VkFramebuffer frameBuffer,
+										VkCommandBuffer commandBuffer, VkCommandBufferUsageFlagBits usageFlags) {
+		VkCommandBufferInheritanceInfo inheritance = {};
+		inheritance.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_INFO;
+		inheritance.framebuffer = frameBuffer;
+		inheritance.renderPass = renderPass;
+		inheritance.subpass = subpass;
+		
+		VkCommandBufferBeginInfo beginInfo = {};
+		beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+		beginInfo.flags = usageFlags;
+		beginInfo.pInheritanceInfo = &inheritance;
+
+		return vkBeginCommandBuffer(commandBuffer, &beginInfo);
+	}
+
+
+
 	/**
 	*
 	* \brief Start a command buffer for recording commands

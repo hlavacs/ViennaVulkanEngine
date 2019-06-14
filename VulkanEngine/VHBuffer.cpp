@@ -428,50 +428,12 @@ namespace vh {
 			sourceStage = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
 			destinationStage = VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT;
 		}
-		else if (oldLayout == VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL && newLayout == VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL) {
-			barrier.srcAccessMask = 0;
-			barrier.dstAccessMask = 0;
-
-			sourceStage = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
-			destinationStage = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
-		}
-		else if (oldLayout == VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL && newLayout == VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL) {
+		else  {
 			barrier.srcAccessMask = 0;
 			barrier.dstAccessMask = 0;
 
 			sourceStage = VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT;
 			destinationStage = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
-		}
-		else if (oldLayout == VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL  && newLayout == VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL) {
-			barrier.srcAccessMask = 0;
-			barrier.dstAccessMask = 0;
-
-			sourceStage = VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT;
-			destinationStage = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
-		}
-		else if (oldLayout == VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL  && newLayout == VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL) {
-			barrier.srcAccessMask = 0;
-			barrier.dstAccessMask = 0;
-
-			sourceStage = VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT;
-			destinationStage = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
-		}
-		else if (oldLayout == VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL  && newLayout == VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL ) {
-			barrier.srcAccessMask = 0;
-			barrier.dstAccessMask = 0;
-
-			sourceStage = VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT;
-			destinationStage = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
-		}
-		else if (oldLayout == VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL  && newLayout == VK_IMAGE_LAYOUT_PRESENT_SRC_KHR) {
-			barrier.srcAccessMask = 0;
-			barrier.dstAccessMask = 0;
-
-			sourceStage = VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT;
-			destinationStage = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
-		}
-		else {
-			return VK_INCOMPLETE;
 		}
 
 		vkCmdPipelineBarrier(
@@ -653,7 +615,8 @@ namespace vh {
 		}
 
 		if (!pixels) {
-			throw std::runtime_error("failed to load texture cube image!");
+			assert(false);
+			exit(1);
 		}
 
 		uint32_t texWidth  = texCube.extent().x;
@@ -803,8 +766,10 @@ namespace vh {
 	* \param[in] graphicsQueue Device queue for submitting commands
 	* \param[in] commandPool Command pool for allocating command buffers
 	* \param[in] image The source image
+	* \param[in] format The pixel format of this image
 	* \param[in] aspect Color or depth
-	* \param[in] bufferData The destination buffer data 
+	* \param[in] layout The layout that this image is currently and should be again after the copy
+	* \param[in] bufferData The destination buffer data
 	* \param[in] width Ímage width
 	* \param[in] height Image height
 	* \param[in] imageSize Size of the image in bytes
@@ -813,7 +778,8 @@ namespace vh {
 	*/
 	VkResult vhBufCopySwapChainImageToHost(VkDevice device, VmaAllocator allocator,
 				VkQueue graphicsQueue, VkCommandPool commandPool, 
-				VkImage image, VkImageAspectFlagBits aspect, 
+				VkImage image, VkFormat format,
+				VkImageAspectFlagBits aspect, VkImageLayout layout,
 				gli::byte *bufferData, uint32_t width, uint32_t height, uint32_t imageSize) {
 
 		VkBuffer stagingBuffer;
@@ -823,15 +789,15 @@ namespace vh {
 						&stagingBuffer, &stagingBufferAllocation ) );
 
 		VHCHECKRESULT(	vhBufTransitionImageLayout(device, graphicsQueue, commandPool,
-						image, VK_FORMAT_R8G8B8A8_UNORM, aspect, 1, 1,
-						VK_IMAGE_LAYOUT_PRESENT_SRC_KHR, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL));
+						image, format, aspect, 1, 1,
+						layout, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL));
 
 		VHCHECKRESULT(	vhBufCopyImageToBuffer(device, graphicsQueue, commandPool,
 						image, aspect, stagingBuffer, 1, width, height ) );
 
 		VHCHECKRESULT(	vhBufTransitionImageLayout(device, graphicsQueue, commandPool,
-						image, VK_FORMAT_R8G8B8A8_UNORM, aspect, 1, 1,
-						VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR) );
+						image, format, aspect, 1, 1,
+						VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, layout) );
 
 		void *data;
 		VHCHECKRESULT( vmaMapMemory(allocator, stagingBufferAllocation, &data ) );
@@ -875,7 +841,8 @@ namespace vh {
 	*/
 	VkResult vhBufCopyImageToHost(VkDevice device, VmaAllocator allocator, VkQueue graphicsQueue,
 		VkCommandPool commandPool,
-		VkImage image, VkFormat format, VkImageAspectFlagBits aspect, VkImageLayout layout,
+		VkImage image, VkFormat format, 
+		VkImageAspectFlagBits aspect, VkImageLayout layout,
 		gli::byte *bufferData, uint32_t width, uint32_t height, uint32_t imageSize) {
 
 		VkBuffer stagingBuffer;

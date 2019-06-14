@@ -9,10 +9,6 @@
       <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
       <Extensions>h;hh;hpp;hxx;hm;inl;inc;xsd</Extensions>
     </Filter>
-    <Filter Include="Resource Files">
-      <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
-      <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
-    </Filter>
     <Filter Include="Header Files\VEEventListener">
       <UniqueIdentifier>{9cf20900-e4c7-40a8-9abf-042c3c761479}</UniqueIdentifier>
     </Filter>
@@ -84,12 +80,6 @@
     <ClInclude Include="VESubrenderFW_C1.h">
       <Filter>Header Files\VESubrender</Filter>
     </ClInclude>
-    <ClInclude Include="VESubrenderFW_Cubemap.h">
-      <Filter>Header Files\VESubrender</Filter>
-    </ClInclude>
-    <ClInclude Include="VESubrenderFW_Cubemap2.h">
-      <Filter>Header Files\VESubrender</Filter>
-    </ClInclude>
     <ClInclude Include="VESubrenderFW_D.h">
       <Filter>Header Files\VESubrender</Filter>
     </ClInclude>
@@ -105,9 +95,6 @@
     <ClInclude Include="VESubrenderFW_Skyplane.h">
       <Filter>Header Files\VESubrender</Filter>
     </ClInclude>
-    <ClInclude Include="VEEventListenerNuklearError.h">
-      <Filter>Header Files\VEEventListener</Filter>
-    </ClInclude>
     <ClInclude Include="VEEventListener.h">
       <Filter>Header Files\VEEventListener</Filter>
     </ClInclude>
@@ -119,6 +106,9 @@
     </ClInclude>
     <ClInclude Include="VHHelper.h">
       <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="VESubrenderFW.h">
+      <Filter>Header Files\VESubrender</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -164,12 +154,6 @@
     <ClCompile Include="VESubrenderFW_C1.cpp">
       <Filter>Source Files\VESubrender</Filter>
     </ClCompile>
-    <ClCompile Include="VESubrenderFW_Cubemap.cpp">
-      <Filter>Source Files\VESubrender</Filter>
-    </ClCompile>
-    <ClCompile Include="VESubrenderFW_Cubemap2.cpp">
-      <Filter>Source Files\VESubrender</Filter>
-    </ClCompile>
     <ClCompile Include="VESubrenderFW_D.cpp">
       <Filter>Source Files\VESubrender</Filter>
     </ClCompile>
@@ -209,9 +193,6 @@
     <ClCompile Include="VHSwapchain.cpp">
       <Filter>Source Files\VHelper</Filter>
     </ClCompile>
-    <ClCompile Include="VEEventListenerNuklearError.cpp">
-      <Filter>Source Files\VEEventListener</Filter>
-    </ClCompile>
     <ClCompile Include="VEEventListener.cpp">
       <Filter>Source Files\VEEventListener</Filter>
     </ClCompile>
@@ -220,6 +201,12 @@
     </ClCompile>
     <ClCompile Include="VEEventListenerNuklearDebug.cpp">
       <Filter>Source Files\VEEventListener</Filter>
+    </ClCompile>
+    <ClCompile Include="VESubrenderFW.cpp">
+      <Filter>Source Files\VESubrender</Filter>
+    </ClCompile>
+    <ClCompile Include="VEDocumentation.cpp">
+      <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

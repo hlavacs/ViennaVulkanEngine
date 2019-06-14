@@ -222,6 +222,7 @@ namespace vh {
 		poolInfo.poolSizeCount = static_cast<uint32_t>(poolSizes.size());
 		poolInfo.pPoolSizes = poolSizes.data();
 		poolInfo.maxSets = numberDesc[0];
+		poolInfo.flags = VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT;
 
 		return vkCreateDescriptorPool(device, &poolInfo, nullptr, descriptorPool);
 	}
@@ -234,14 +235,15 @@ namespace vh {
 	* \param[in] numberDesc Number of sets to be created
 	* \param[in] descriptorSetLayout The layout for the set
 	* \param[in] descriptorPool The pool from which the set is drawn
-	* \param[out] descriptorSets The new descriptor sets
+	* \param[out] descriptorSets Vector with desriptor sets, the new sets will be appended to this vector
 	* \returns VK_SUCCESS or a Vulkan error code
 	*
 	*/
-	VkResult vhRenderCreateDescriptorSets(	VkDevice device, uint32_t numberDesc,
-										VkDescriptorSetLayout descriptorSetLayout, 	
-										VkDescriptorPool descriptorPool, 
-										std::vector<VkDescriptorSet> & descriptorSets) {
+	VkResult vhRenderCreateDescriptorSets(	VkDevice device, 
+											uint32_t numberDesc,
+											VkDescriptorSetLayout descriptorSetLayout, 	
+											VkDescriptorPool descriptorPool, 
+											std::vector<VkDescriptorSet> & descriptorSets) {
 
 		std::vector<VkDescriptorSetLayout> layouts(numberDesc, descriptorSetLayout);
 		VkDescriptorSetAllocateInfo allocInfo = {};
@@ -250,8 +252,9 @@ namespace vh {
 		allocInfo.descriptorSetCount = static_cast<uint32_t>(numberDesc);
 		allocInfo.pSetLayouts = layouts.data();
 
-		descriptorSets.resize(numberDesc);
-		return vkAllocateDescriptorSets(device, &allocInfo, &descriptorSets[0]);
+		uint32_t size = (uint32_t)descriptorSets.size();
+		descriptorSets.resize(size + numberDesc);										//resize so we can append new sets to the vector
+		return vkAllocateDescriptorSets(device, &allocInfo, &descriptorSets[size]);
 	}
 	
 
@@ -271,12 +274,56 @@ namespace vh {
 	* \returns VK_SUCCESS or a Vulkan error code
 	*
 	*/
-	VkResult vhRenderUpdateDescriptorSet(VkDevice device,
-										VkDescriptorSet descriptorSet,
-										std::vector<VkBuffer> uniformBuffers,
-										std::vector<uint32_t> bufferRanges,
-										std::vector<std::vector<VkImageView>> textureImageViews, 
-										std::vector<std::vector<VkSampler>> textureSamplers) {
+	VkResult vhRenderUpdateDescriptorSet(	VkDevice device,
+											VkDescriptorSet descriptorSet,
+											std::vector<VkBuffer> uniformBuffers,
+											std::vector<uint32_t> bufferRanges,
+											std::vector<std::vector<VkImageView>> textureImageViews,
+											std::vector<std::vector<VkSampler>> textureSamplers) {
+
+		std::vector<VkDescriptorType> descriptorTypes = {};
+
+		for (uint32_t i = 0; i < uniformBuffers.size(); i++) {
+			if (uniformBuffers[i] != VK_NULL_HANDLE)
+				descriptorTypes.push_back(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
+			else
+				descriptorTypes.push_back(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
+		}
+
+		return vhRenderUpdateDescriptorSet(	device, descriptorSet, 
+											descriptorTypes,
+											uniformBuffers,
+											bufferRanges,
+											textureImageViews,
+											textureSamplers);
+	}
+
+
+	/**
+	*
+	* \brief Update a descriptor set
+	*
+	* Since it can contain variable number of resources, the lists contain either uniformBuffers or imageViews/sampler.
+	* The size of the lists MUST be the same!
+	*
+	* \param[in] device Logical Vulkan device
+	* \param[in] descriptorSet The descriptor set to be updated
+	* \param[in] descriptorTypes A list with the descriptor types 
+	* \param[in] uniformBuffers List of UBOs (can contain null handles)
+	* \param[in] bufferRanges List of buffer sizes
+	* \param[in] textureImageViews List of texture image views to be updated
+	* \param[in] textureSamplers List of texture image samplers
+	* \returns VK_SUCCESS or a Vulkan error code
+	*
+	*/
+
+	VkResult vhRenderUpdateDescriptorSet(	VkDevice device,
+											VkDescriptorSet descriptorSet,
+											std::vector<VkDescriptorType> descriptorTypes,
+											std::vector<VkBuffer> uniformBuffers,
+											std::vector<uint32_t> bufferRanges,
+											std::vector<std::vector<VkImageView>> textureImageViews,
+											std::vector<std::vector<VkSampler>> textureSamplers) {
 
 		std::vector<VkWriteDescriptorSet> descriptorWrites = {};
 		descriptorWrites.resize(uniformBuffers.size());
@@ -299,7 +346,7 @@ namespace vh {
 				bufferInfos[i].buffer = uniformBuffers[i];
 				bufferInfos[i].offset = 0;
 				bufferInfos[i].range = bufferRanges[i];
-				descriptorWrites[i].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+				descriptorWrites[i].descriptorType = descriptorTypes[i], //VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
 				descriptorWrites[i].pBufferInfo = &bufferInfos[i];
 			}
 			else if ( textureImageViews[i].size()>0 ) {
@@ -313,7 +360,7 @@ namespace vh {
 					imageInfos[i].push_back(imageInfo);
 				}
 				
-				descriptorWrites[i].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+				descriptorWrites[i].descriptorType = descriptorTypes[i], //VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
 				descriptorWrites[i].pImageInfo = imageInfos[i].data();
 				descriptorWrites[i].descriptorCount = (uint32_t)textureImageViews[i].size();
 			}
@@ -325,6 +372,50 @@ namespace vh {
 		vkUpdateDescriptorSets(device, static_cast<uint32_t>(descriptorWrites.size()), descriptorWrites.data(), 0, nullptr);
 		return VK_SUCCESS;
 	}
+
+
+	/**
+	*
+	* \brief Update a descriptor set being composed of arrays of textures
+	*
+	* A shader may use arrays of textures, e.g. one for albedo, one for normal maps., one for metalness etc.
+	* This funtion binds a subset of existing image infos such that the shader can access them as arrays of textures.
+	*
+	* \param[in] device Logical Vulkan device
+	* \param[in] descriptorSet The descriptor set to be updated
+	* \param[in] binding Start binding number, array bindings begin with this number
+	* \param[in] offset Start idx for the array of image infos
+	* \param[in] descriptorCount Number of images in the array = array length
+	* \param[in] maps List of image info lists
+	* \returns VK_SUCCESS or a Vulkan error code
+	*
+	*/
+
+	VkResult vhRenderUpdateDescriptorSetMaps(	VkDevice device,
+												VkDescriptorSet descriptorSet,
+												uint32_t binding,
+												uint32_t offset,
+												uint32_t descriptorCount,
+												std::vector<std::vector<VkDescriptorImageInfo>> &maps) {
+
+		std::vector<VkWriteDescriptorSet> descriptorWrites = {};
+		descriptorWrites.resize(maps.size());
+
+		for (uint32_t i = binding; i < maps.size(); i++) {
+
+			descriptorWrites[i].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+			descriptorWrites[i].dstSet = descriptorSet;
+			descriptorWrites[i].dstBinding = i;
+			descriptorWrites[i].dstArrayElement = 0;
+			descriptorWrites[i].descriptorCount = descriptorCount;
+			descriptorWrites[i].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+			descriptorWrites[i].pImageInfo = &maps[i][offset];
+		}
+
+		vkUpdateDescriptorSets(device, static_cast<uint32_t>(descriptorWrites.size()), descriptorWrites.data(), 0, nullptr);
+		return VK_SUCCESS;
+	}
+
 
 	/**
 	*
@@ -439,7 +530,8 @@ namespace vh {
 
 		VkShaderModule shaderModule;
 		if (vkCreateShaderModule(device, &createInfo, nullptr, &shaderModule) != VK_SUCCESS) {
-			throw std::runtime_error("failed to create shader module!");
+			assert(false);
+			exit(1);
 		}
 
 		return shaderModule;

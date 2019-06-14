@@ -47,7 +47,8 @@ namespace vh {
 		createInfo.pfnCallback = vhDebugCallback;
 
 		if (vhDebugCreateReportCallbackEXT(instance, &createInfo, nullptr, callback) != VK_SUCCESS) {
-			throw std::runtime_error("failed to setup debug callback!");
+			assert(false);
+			exit(1);
 		}
 		return;
 	}

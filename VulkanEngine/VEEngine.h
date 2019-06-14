@@ -13,14 +13,6 @@
 
 namespace ve {
 
-	//use this macro to check the function result, if its not VK_SUCCESS then return the error
-	#define VECHECKRESULT(x, msg) { \
-		VkResult retval = (x); \
-		if (retval != VK_SUCCESS) { \
-			throw std::runtime_error(msg); \
-		} \
-	}
-
 
 	class VEWindow;
 	class VERenderer;
@@ -54,24 +46,34 @@ namespace ve {
 		VkDebugReportCallbackEXT callback;				///<Debug callback handle
 
 		std::vector<veEvent> m_eventlist;				///<List of events that should be handled in the next loop
-		std::vector<VEEventListener*> m_eventListener;	///<set of registered event listeners
+		std::map<veEvent::veEventType, std::vector<VEEventListener*>*> m_eventListeners; ///<Maps event types to lists of evennt listeners
 
 		double m_dt = 0.0;								///<Delta time since the last loop
 		double m_time = 0.0;							///<Absolute game time since start of the render loop
 		uint32_t m_loopCount = 0;						///<Counts up the render loop
+		int m_maxThreads = 10;							///<max number of threads that the engine may start in parallel in its thread pool
+		ThreadPool *m_threadPool;						///<thread pool for parallel processing
 
+		//time statistics 
 		float m_AvgUpdateTime = 0.0f;					///<Average time for OBO updates (s)
 		float m_AvgFrameTime = 0.0f;					///<Average time per frame (s)
 		float m_AvgDrawTime = 0.0f;						///<Average time for baking cmd buffers and calling commit (s)
+		float m_AvgStartedTime = 0.0f;					///<Average time for processing frame started event
+		float m_AvgEventTime = 0.0f;					///<Average time for processing windows events
+		float m_AvgEndedTime = 0.0f;					///<Average time for processing frame ended event
+		float m_AvgPresentTime = 0.0f;					///<Average time for presenting the frame
+		float m_AvgPrepOvlTime = 0.0f;					///<Average prepare overlay time
+		float m_AvgDrawOvlTime = 0.0f;					///<Average draw overlay time
 
 		bool m_framebufferResized = false;				///<Flag indicating whether the window size has changed.
 		bool m_end_running = false;						///<Flag indicating that the engine should leave the render loop
 		bool m_debug = true;							///<Flag indicating whether debugging is enabled or not
-
+		
 		virtual std::vector<const char*> getRequiredInstanceExtensions(); //Return a list of required Vulkan instance extensions
 		virtual std::vector<const char*> getValidationLayers();	//Returns a list of required Vulkan validation layers
 		void callListeners(double dt, veEvent event);	//Call all event listeners and give them certain event
-		void callListeners(double dt, veEvent event, uint32_t startIdx, uint32_t endIdx);
+		void callListeners(double dt, veEvent event, std::vector<VEEventListener*> *list);	//Call all event listeners and give them certain event
+		void callListeners(double dt, veEvent event, std::vector<VEEventListener*> *list, uint32_t startIdx, uint32_t endIdx);
 		void processEvents(double dt);			//Start handling all events
 		void windowSizeChanged();				//Callback for window if window size has changed
 
@@ -83,32 +85,71 @@ namespace ve {
 		virtual void closeEngine();				//Close down the engine
 
 	public:
-		ThreadPool *m_threadPool;				///<A threadpool for parallel processing
-
-		VEEngine( bool debug = false );								//Only create ONE instance of the engine!
+		VEEngine( bool debug = false );			//Only create ONE instance of the engine!
 		~VEEngine() {};
+
+		//-----------------------------------------------------------------------------------------------
+		//managing the engine
 
 		virtual void initEngine();							//Create all engine components
 		virtual void run();									//Enter the render loop
-		virtual void fatalError(std::string message);		//Show an error message and close down the engine
 		virtual void end();									//end the render loop
+		virtual void loadLevel(uint32_t numLevel = 1);		//load standard level with standard camera and lights
+
+		//-----------------------------------------------------------------------------------------------
+		//managing events and listeners
+
 		void registerEventListener(VEEventListener *lis);	//Register a new event listener.
+		void registerEventListener(VEEventListener *lis, std::vector<veEvent::veEventType> eventTypes);	//Register a new event listener for these events only
+		VEEventListener* getEventListener(std::string name);	//get pointer to an event listener
 		void removeEventListener(std::string name);			//Remove an event listener - it is NOT deleted automatically!
+		void removeEventListener(std::string name, std::vector<VEEventListener*>*list);			//Remove an event listener - it is NOT deleted automatically!
 		void deleteEventListener(std::string name);			//Delete an event listener
+		void clearEventListenerList();
 		void addEvent(veEvent event);						//Add an event to the event list - will be handled in the next loop
 		void deleteEvent(veEvent event);					//Delete an event from the event list
+
+		//-----------------------------------------------------------------------------------------------
+		//get information and pointers
 
 		VkInstance		 getInstance();				//Return the Vulkan instance
 		VEWindow       * getWindow();				//Return a pointer to the window instance
 		VESceneManager * getSceneManager();			//Return a  pointer to the scene manager instance
 		VERenderer     * getRenderer();				//Return a pointer to the renderer instance
 		uint32_t		 getLoopCount();			//Return the number of the current render loop
+
+		//-----------------------------------------------------------------------------------------------
+		//thread pool
+
+		///\returns the max number of threads that anybody may start during the render loop
+		uint32_t		getMaxThreads() { return m_maxThreads; };
+		///\returns a pointer to the threadpool
+		ThreadPool *	getThreadPool() { return m_threadPool; };
+
+		//-----------------------------------------------------------------------------------------------
+		//time statistics
+
 		///\returns the average frame time (s)
 		float			 getAvgFrameTime() { return m_AvgFrameTime;  };
 		///\returns the average update time (s)
 		float			 getAvgUpdateTime() { return m_AvgUpdateTime; };
+		///\returns the average started time (s)
+		float			 getAvgStartedTime() { return m_AvgStartedTime; };
+		///\returns the average event time (s)
+		float			 getAvgEventTime() { return m_AvgEventTime; };
+		///\returns the average event time (s)
+		float			 getAvgDrawTime() { return m_AvgDrawTime; };
+		///\returns the average ended time (s)
+		float			 getAvgEndedTime() { return m_AvgEndedTime; };
+		///\returns the average present time (s)
+		float			 getAvgPresentTime() { return m_AvgPresentTime; };
+		///\returns the average prep overlay time (s)
+		float			 getAvgPrepOvlTime() { return m_AvgPrepOvlTime; };
+		///\returns the average draw overlay time (s)
+		float			 getAvgDrawOvlTime() { return m_AvgDrawOvlTime; };
 	};
 
-
-
 }
+
+
+

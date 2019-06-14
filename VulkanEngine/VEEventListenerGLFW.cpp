@@ -33,13 +33,19 @@ namespace ve {
 			return false;
 		}
 
+		if (event.idata1 == GLFW_KEY_1 && event.idata3 == GLFW_PRESS) {
+			getSceneManagerPointer()->deleteScene();
+			getEnginePointer()->loadLevel(1);
+			return true;
+		}
+
 		///create some default constants for the actions 
 		glm::vec4 translate = glm::vec4(0.0, 0.0, 0.0, 1.0);	//total translation
 		glm::vec4 rot4 = glm::vec4(1.0);						//total rotation around the axes, is 4d !
 		float angle = 0.0;
 
 		VECamera *pCamera = getSceneManagerPointer()->getCamera();
-		VESceneNode *pParent = pCamera->m_parent;
+		VESceneNode *pParent = pCamera->getParent();
 
 		switch (event.idata1) {
 		case GLFW_KEY_A:
@@ -131,7 +137,7 @@ namespace ve {
 		m_cursorPrevY = y;
 
 		VECamera *pCamera = getSceneManagerPointer()->getCamera();
-		VESceneNode *pParent = pCamera->m_parent;
+		VESceneNode *pParent = pCamera->getParent();
 
 		float slow = 0.5;		//camera rotation speed
 
@@ -197,8 +203,8 @@ namespace ve {
 		float yoffset = event.fdata2;
 
 		VECamera *pCamera = getSceneManagerPointer()->getCamera();
-		VESceneNode *pParent = pCamera->m_parent;
-		glm::vec4 translate = 1000 * yoffset * glm::vec4(0.0, 0.0, -1.0, 1.0);
+		VESceneNode *pParent = pCamera->getParent();
+		glm::vec4 translate = 1000 * yoffset * glm::vec4(0.0, 0.0, 1.0, 1.0);
 
 		if (pParent == nullptr) {
 			pParent = pCamera;
@@ -234,19 +240,21 @@ namespace ve {
 			uint32_t imageSize = extent.width * extent.height * 4;
 			VkImage image = getRendererPointer()->getSwapChainImage();
 
-			gli::byte *dataImage = new gli::byte[imageSize];
+			uint8_t *dataImage = new uint8_t[imageSize];
 
-			vh::vhBufCopySwapChainImageToHost(getRendererPointer()->getDevice(), getRendererPointer()->getVmaAllocator(),
-				getRendererPointer()->getGraphicsQueue(), getRendererPointer()->getCommandPool(),
-				image, VK_IMAGE_ASPECT_COLOR_BIT, dataImage, extent.width, extent.height, imageSize);
+			vh::vhBufCopySwapChainImageToHost(getRendererPointer()->getDevice(), 
+				getRendererPointer()->getVmaAllocator(),
+				getRendererPointer()->getGraphicsQueue(), 
+				getRendererPointer()->getCommandPool(),
+				image, VK_FORMAT_R8G8B8A8_UNORM,
+				VK_IMAGE_ASPECT_COLOR_BIT, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+				dataImage, extent.width, extent.height, imageSize);
 
 			m_numScreenshot++;
 
-			getEnginePointer()->m_threadPool->submit([=]() {
-				std::string name("screenshots/screenshot" + std::to_string(m_numScreenshot-1) + ".png");
-				stbi_write_png(name.c_str(), extent.width, extent.height, 4, dataImage, 4 * extent.width);
-				delete dataImage;
-			});
+			std::string name("screenshots/screenshot" + std::to_string(m_numScreenshot-1) + ".jpg");
+			stbi_write_jpg(name.c_str(), extent.width, extent.height, 4, dataImage, 4 * extent.width);
+			delete[] dataImage;
 
 			m_makeScreenshot = false;
 		}
@@ -255,7 +263,7 @@ namespace ve {
 
 			VETexture *map = getRendererForwardPointer()->getShadowMap( getRendererPointer()->getImageIndex() )[0];
 			//VkImageLayout layout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
-			VkImageLayout layout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL;
+			VkImageLayout layout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
 
 			VkExtent2D extent = map->m_extent;
 			uint32_t imageSize = extent.width * extent.height;
@@ -264,8 +272,10 @@ namespace ve {
 			float *dataImage = new float[imageSize];
 			gli::byte *dataImage2 = new gli::byte[imageSize];
 
-			vh::vhBufCopyImageToHost(getRendererPointer()->getDevice(), getRendererPointer()->getVmaAllocator(),
-				getRendererPointer()->getGraphicsQueue(), getRendererPointer()->getCommandPool(),
+			vh::vhBufCopyImageToHost(getRendererPointer()->getDevice(), 
+				getRendererPointer()->getVmaAllocator(),
+				getRendererPointer()->getGraphicsQueue(), 
+				getRendererPointer()->getCommandPool(),
 				image, map->m_format, VK_IMAGE_ASPECT_DEPTH_BIT, layout,
 				(gli::byte*)dataImage, extent.width, extent.height, imageSize * 4);
 
@@ -276,10 +286,10 @@ namespace ve {
 				}
 			}
 
-			std::string name("screenshots/screenshot" + std::to_string(m_numScreenshot) + ".png");
-			stbi_write_png(name.c_str(), extent.width, extent.height, 1, dataImage2, extent.width);
-			delete dataImage;
-			delete dataImage2;
+			std::string name("screenshots/screenshot" + std::to_string(m_numScreenshot) + ".jpg");
+			stbi_write_jpg(name.c_str(), extent.width, extent.height, 1, dataImage2, extent.width);
+			delete[] dataImage;
+			delete[] dataImage2;
 
 			m_numScreenshot++;
 			m_makeScreenshotDepth = false;

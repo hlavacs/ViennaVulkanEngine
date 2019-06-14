@@ -12,13 +12,11 @@ namespace ve {
 	/**
 	* \brief Subrenderer that manages entities that have a diffuse texture and a normal map
 	*/
-	class VESubrenderFW_DN : public VESubrender {
-	protected:
-
+	class VESubrenderFW_DN : public VESubrenderFW {
 	public:
-		///Constructor
+		///Constructor for class VESubrenderFW_DN
 		VESubrenderFW_DN() { };
-		///Destructor
+		///Destructor for class VESubrenderFW_DN
 		virtual ~VESubrenderFW_DN() {};
 
 		///\returns the class of the subrenderer

@@ -32,6 +32,9 @@ namespace ve {
 
 	protected:
 		VkPhysicalDevice m_physicalDevice = VK_NULL_HANDLE;		///<Vulkan physical device handle
+		VkPhysicalDeviceFeatures m_deviceFeatures = {};			///<Features of the physical device
+		VkPhysicalDeviceLimits m_deviceLimits = {};				///<Limits of the physical device
+
 		VkDevice m_device;										///<Vulkan logical device handle
 		VkQueue m_graphicsQueue;								///<Vulkan graphics queue
 		VkQueue m_presentQueue;									///<Vulkan present queue
@@ -81,6 +84,8 @@ namespace ve {
 		VERenderer();
 		///Destructor
 		virtual ~VERenderer() {};
+		///this function is calledby the scene manager if the tree changed
+		virtual void					updateCmdBuffers() {};
 		///\returns the VMA allocator
 		virtual VmaAllocator			getVmaAllocator() { return m_vmaAllocator; };
 		///\returns the Vulkan physical device

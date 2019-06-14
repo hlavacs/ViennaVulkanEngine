@@ -31,6 +31,7 @@ namespace ve {
 
 	protected:
 		std::vector<VkCommandBuffer> m_commandBuffers = {};				///<the main command buffers for recording draw commands
+		std::vector<VkCommandBuffer> m_secondaryBuffers = {};			///<secondary buffers for parallel recording
 		
 		//per frame render resources
 		VkRenderPass				m_renderPassClear;					///<The first light render pass, clearing the framebuffers
@@ -48,6 +49,7 @@ namespace ve {
 
 		VkDescriptorPool			m_descriptorPool;					///<Descriptor pool for creating descriptor sets
 		VkDescriptorSetLayout		m_descriptorSetLayoutPerObject;		///<Descriptor set layout for each scene object
+		VkDescriptorSetLayout		m_descriptorSetLayoutPerObject2;		///<Descriptor set layout for each scene object
 
 		std::vector<VkSemaphore>	m_imageAvailableSemaphores;			///<sem for waiting for the next swapchain image
 		std::vector<VkSemaphore>	m_renderFinishedSemaphores;			///<sem for signalling that rendering done
@@ -55,6 +57,7 @@ namespace ve {
 		std::vector<VkFence>		m_inFlightFences;					///<fences for halting the next image render until this one is done
 		size_t						m_currentFrame = 0;					///<int for the fences
 		bool						m_framebufferResized = false;		///<signal that window size is changing
+		bool						m_recording = false;				///<during recording the recording needs all threads
 
 		void createSyncObjects();					//create the sync objects
 		void cleanupSwapChain();					//delete the swapchain
@@ -77,9 +80,13 @@ namespace ve {
 		VERendererForward();
 		///Destructor of class VERendererForward
 		virtual ~VERendererForward() {};
+		///called whenever the scene graph of the scene manager changes
+		virtual void updateCmdBuffers() { deleteCmdBuffers(); };
 		virtual void deleteCmdBuffers();
 		///\returns the per frame descriptor set layout
 		virtual VkDescriptorSetLayout	getDescriptorSetLayoutPerObject() { return m_descriptorSetLayoutPerObject; };
+		///\returns the per frame descriptor set layout2 (dynamic buffer)
+		virtual VkDescriptorSetLayout	getDescriptorSetLayoutPerObject2() { return m_descriptorSetLayoutPerObject2; };
 		///\returns the shadow descriptor set layout for the shadow
 		virtual VkDescriptorSetLayout	getDescriptorSetLayoutShadow() { return m_descriptorSetLayoutShadow; };
 		///\returns the per frame descriptor set
@@ -98,6 +105,8 @@ namespace ve {
 		std::vector<VETexture *>		getShadowMap( uint32_t idx) { return m_shadowMaps[idx]; };
 		///\returns the 2D extent of the shadow map
 		virtual VkExtent2D				getShadowMapExtent() { return m_shadowMaps[0][0]->m_extent; };
+		///\returns whether the renderer is currently recording or not
+		bool isRecording() { return m_recording; }
 	};
 
 }

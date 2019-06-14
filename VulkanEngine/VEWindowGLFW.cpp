@@ -109,7 +109,7 @@ namespace ve {
 
 		if (action == GLFW_REPEAT) return;		//no need for this
 
-		veEvent event(VE_EVENT_SUBSYSTEM_GLFW, VE_EVENT_KEYBOARD);
+		veEvent event(veEvent::VE_EVENT_SUBSYSTEM_GLFW, veEvent::VE_EVENT_KEYBOARD);
 		event.idata1 = key;
 		event.idata2 = scancode;
 		event.idata3 = action;
@@ -121,7 +121,7 @@ namespace ve {
 
 			event.notBeforeTime = getEnginePointer()->getLoopCount() + 1;
 			event.idata3 = GLFW_REPEAT;
-			event.lifeTime = VE_EVENT_LIFETIME_CONTINUOUS;
+			event.lifeTime = veEvent::VE_EVENT_LIFETIME_CONTINUOUS;
 			app->processEvent(event);
 		}
 
@@ -142,7 +142,7 @@ namespace ve {
 	*/
 	void VEWindowGLFW::cursor_pos_callbackGLFW(GLFWwindow* window, double xpos, double ypos) {
 		auto app = reinterpret_cast<VEWindowGLFW*>(glfwGetWindowUserPointer(window));
-		veEvent event(VE_EVENT_SUBSYSTEM_GLFW, VE_EVENT_MOUSEMOVE);
+		veEvent event(veEvent::VE_EVENT_SUBSYSTEM_GLFW, veEvent::VE_EVENT_MOUSEMOVE);
 		event.fdata1 = (float)xpos;
 		event.fdata2 = (float)ypos;
 		event.ptr = window;
@@ -172,7 +172,7 @@ namespace ve {
 
 		if (action == GLFW_REPEAT) return;		//no need for this
 
-		veEvent event(VE_EVENT_SUBSYSTEM_GLFW, VE_EVENT_MOUSEBUTTON);
+		veEvent event(veEvent::VE_EVENT_SUBSYSTEM_GLFW, veEvent::VE_EVENT_MOUSEBUTTON);
 		event.idata1 = button;
 		event.idata3 = action;
 		event.idata4 = mods;
@@ -182,7 +182,7 @@ namespace ve {
 		if (action == GLFW_PRESS) {				//just started to press a key -> remember it in the engine
 			event.notBeforeTime = getEnginePointer()->getLoopCount() + 1;
 			event.idata3 = GLFW_REPEAT;
-			event.lifeTime = VE_EVENT_LIFETIME_CONTINUOUS;
+			event.lifeTime = veEvent::VE_EVENT_LIFETIME_CONTINUOUS;
 			app->processEvent(event);
 		}
 
@@ -203,7 +203,7 @@ namespace ve {
 	*/
 	void VEWindowGLFW::mouse_scroll_callback(GLFWwindow* window, double xoffset, double yoffset) {
 		auto app = reinterpret_cast<VEWindowGLFW*>(glfwGetWindowUserPointer(window));
-		veEvent event(VE_EVENT_SUBSYSTEM_GLFW, VE_EVENT_MOUSESCROLL);
+		veEvent event(veEvent::VE_EVENT_SUBSYSTEM_GLFW, veEvent::VE_EVENT_MOUSESCROLL);
 		event.fdata1 = (float)xoffset;
 		event.fdata2 = (float)yoffset;
 		event.ptr = window;

@@ -18,20 +18,22 @@ namespace ve {
 	*
 	*/
 	void VESubrenderFW_Shadow::initSubrenderer() {
-		VESubrender::initSubrenderer();
+		VESubrenderFW::initSubrenderer();
 
-		VkDescriptorSetLayout perObjectLayout = getRendererForwardPointer()->getDescriptorSetLayoutPerObject();
+		VkDescriptorSetLayout perObjectLayout = getRendererForwardPointer()->getDescriptorSetLayoutPerObject2();
 		vh::vhPipeCreateGraphicsPipelineLayout(getRendererForwardPointer()->getDevice(),
-			{ perObjectLayout, perObjectLayout, getRendererForwardPointer()->getDescriptorSetLayoutShadow(), perObjectLayout },
-			{ },
-			&m_pipelineLayout);
+		{ perObjectLayout, perObjectLayout, getRendererForwardPointer()->getDescriptorSetLayoutShadow(), perObjectLayout },
+		{},
+		&m_pipelineLayout);
 
 		m_pipelines.resize(1);
 		vh::vhPipeCreateGraphicsShadowPipeline(getRendererForwardPointer()->getDevice(),
-			"shader/Forward/Shadow/vert.spv", 
+			"shader/Forward/Shadow/vert.spv",
 			getRendererForwardPointer()->getShadowMapExtent(),
-			m_pipelineLayout, getRendererForwardPointer()->getRenderPassShadow(),
+			m_pipelineLayout, 
+			getRendererForwardPointer()->getRenderPassShadow(),
 			&m_pipelines[0]);
+
 	}
 
 	/**
@@ -63,11 +65,14 @@ namespace ve {
 		//set 1...light resources
 		//set 2...shadow maps
 		//set 3...per object UBO
-		//set 4...additional per object resources
+		//set 4...additional per object resources - NOT used in shadows
 
-		std::vector<VkDescriptorSet> sets = { entity->m_descriptorSetsUBO[imageIndex] };
+		std::vector<VkDescriptorSet> sets = { entity->m_memoryHandle.pMemBlock->descriptorSets[imageIndex] };
 
-		vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_pipelineLayout, 3, (uint32_t)sets.size(), sets.data(), 0, nullptr);
+		uint32_t offset = entity->m_memoryHandle.entryIndex * sizeof(VEEntity::veUBOPerObject_t);
+		vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_pipelineLayout,
+								3, (uint32_t)sets.size(), sets.data(), 1, &offset);
+
 	}
 
 
@@ -95,13 +100,16 @@ namespace ve {
 
 		//go through all entities and draw them
 		for (auto object : getSceneManagerPointer()->m_sceneNodes) {
-			VESceneNode *pObject = object.second;
-			if (pObject->getNodeType() == VESceneNode::VE_OBJECT_TYPE_ENTITY) {
-				VEEntity *pEntity = (VEEntity*)pObject;
+			VESceneNode *pNode = object.second;
+			if (pNode->getNodeType() == VESceneNode::VE_NODE_TYPE_SCENEOBJECT) {
+				VESceneObject *pObject = (VESceneObject*) pNode;
+				if (pObject->getObjectType() == VESceneObject::VE_OBJECT_TYPE_ENTITY) {
+					VEEntity *pEntity = (VEEntity*)pObject;
 
-				if (pEntity->m_drawEntity && pEntity->m_castsShadow) {
-					bindDescriptorSetsPerEntity(commandBuffer, imageIndex, pEntity);	//bind the entity's descriptor sets
-					drawEntity(commandBuffer, imageIndex, pEntity);
+					if ( pEntity->m_castsShadow ) {  //&& pEntity->m_drawEntity ) {
+						bindDescriptorSetsPerEntity(commandBuffer, imageIndex, pEntity);	//bind the entity's descriptor sets
+						drawEntity(commandBuffer, imageIndex, pEntity);
+					}
 				}
 			}
 		}

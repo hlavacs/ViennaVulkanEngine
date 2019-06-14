@@ -13,45 +13,6 @@ namespace vh {
 	
 	/**
 	*
-	* \brief Take a time measurment from the high resolution clock
-	* \returns the measured value of the clock
-	*
-	*/
-	std::chrono::high_resolution_clock::time_point vhTimeNow() {
-		return std::chrono::high_resolution_clock::now();
-	}
-
-	/**
-	*
-	* \brief Use the high resolution clock to calculate a time duration since the last time measurement
-	*
-	* \param[in] t_prev The last time measruement
-	* \returns the measured time duration
-	*
-	*/
-	float vhTimeDuration(std::chrono::high_resolution_clock::time_point t_prev) {
-		std::chrono::duration<double> time_span = 
-			std::chrono::duration_cast<std::chrono::duration<double>>( vhTimeNow() - t_prev );
-		return std::chrono::duration_cast<std::chrono::milliseconds>(time_span).count() / 1000.0f;
-	}
-
-	/**
-	*
-	* \brief Apply expoentatial smoothing to given values
-	*
-	* \param[in] new_val The newest value that was measured
-	* \param[in] average The average so far
-	* \param[in] weight An averaging weight between 0 and 1
-	* \returns The new average
-	*
-	*/
-	float vhAverage(float new_val, float average, float weight ) {
-		return weight*average + (1.0f-weight)*new_val;
-	}
-
-
-	/**
-	*
 	* \brief Check validation layers of the Vulkan instance
 	*
 	* \param[in] validationLayers
@@ -97,7 +58,8 @@ namespace vh {
 	VkResult vhDevCreateInstance(std::vector<const char*> &extensions, std::vector<const char*> &validationLayers, VkInstance *instance) {
 
 		if (validationLayers.size() > 0 && !checkValidationLayerSupport(validationLayers) ) {
-			throw std::runtime_error("validation layers requested, but not available!");
+			assert(false);
+			exit(1);
 		}
 
 		VkApplicationInfo appInfo = {};
@@ -262,18 +224,22 @@ namespace vh {
 	* \param[in] surface A window surface
 	* \param[in] requiredDeviceExtensions A list of required device extensions
 	* \param[out] physicalDevice A physical device that supports all required extensions
+	* \param[out] pFeatures The features supported by this device
+	* \param[out] limits The physical limits of the physical device
 	* \returns VK_SUCCESS or a Vulkan error code
 	*
 	*/
 	VkResult vhDevPickPhysicalDevice(VkInstance instance, VkSurfaceKHR surface,
 								std::vector<const char*> requiredDeviceExtensions,
-								VkPhysicalDevice *physicalDevice) {
+								VkPhysicalDevice *physicalDevice, VkPhysicalDeviceFeatures* pFeatures, 
+								VkPhysicalDeviceLimits *limits) {
 
 		uint32_t deviceCount = 0;
 		VHCHECKRESULT( vkEnumeratePhysicalDevices(instance, &deviceCount, nullptr) );
 
 		if (deviceCount == 0) {
-			throw std::runtime_error("failed to find GPUs with Vulkan support!");
+			assert(false);
+			exit(1);
 		}
 
 		std::vector<VkPhysicalDevice> devices(deviceCount);
@@ -289,6 +255,13 @@ namespace vh {
 		if (physicalDevice == VK_NULL_HANDLE) {
 			return VK_INCOMPLETE;
 		}
+
+		VkPhysicalDeviceProperties properties;
+		vkGetPhysicalDeviceProperties( *physicalDevice, &properties);
+		*limits = properties.limits;
+
+		vkGetPhysicalDeviceFeatures( *physicalDevice, pFeatures);
+
 		return VK_SUCCESS;
 	}
 
@@ -318,7 +291,8 @@ namespace vh {
 			}
 		}
 
-		throw std::runtime_error("failed to find supported format!");
+		assert(false);
+		exit(1);
 	}
 
 
@@ -381,8 +355,13 @@ namespace vh {
 		deviceFeatures.shaderStorageBufferArrayDynamicIndexing = VK_TRUE;
 		deviceFeatures.shaderStorageImageArrayDynamicIndexing = VK_TRUE;
 
+		VkPhysicalDeviceDescriptorIndexingFeaturesEXT ext = {};
+		ext.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DESCRIPTOR_INDEXING_FEATURES_EXT;
+		//ext.runtimeDescriptorArray = VK_TRUE;
+
 		VkDeviceCreateInfo createInfo = {};
 		createInfo.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
+		createInfo.pNext = &ext;
 
 		createInfo.queueCreateInfoCount = static_cast<uint32_t>(queueCreateInfos.size());
 		createInfo.pQueueCreateInfos = queueCreateInfos.data();

@@ -26,48 +26,78 @@ namespace ve {
 			glm::mat4 rot = glm::rotate( glm::mat4(1.0f), m_speed*(float)event.dt, m_axis );
 			m_pObject->multiplyTransform(rot);
 		}
+
+		bool onSceneNodeDeleted(veEvent event) {
+			if (m_pObject == event.ptr) return true;
+			return false;
+		};
 	};
 
 
+	///simple event listener for rotating objects
+	class BlinkListener : public VEEventListener {
+		VEEntity *m_pEntity;
+		double t_now = 0.0;
+		double t_last = 0.0;
+		double m_blinkDuration;
 
-	///simple event listener for managing light movement
-	class LightListener : public VEEventListener {
 	public:
 		///Constructor
-		LightListener( std::string name) : VEEventListener(name) {};
+		BlinkListener(std::string name, VEEntity *pEntity, double duration) : 
+			VEEventListener(name), m_pEntity(pEntity), m_blinkDuration(duration) {};
 
-		bool onKeyboard(veEvent event) {
-			if ( event.idata3 == GLFW_RELEASE) return false;
+		void onFrameStarted(veEvent event) {
+			t_now += event.dt;
+			double duration = t_now - t_last;
 
-			VELight *pLight = getSceneManagerPointer()->getLights()[0];		//first light
+			if (duration > m_blinkDuration) {
 
-			float speed = 10.0f * (float)event.dt;
+				if (m_pEntity->m_drawEntity)
+					m_pEntity->m_drawEntity = false;
+				else
+					m_pEntity->m_drawEntity = true;
 
-			switch (event.idata1) {
-			case GLFW_KEY_Y:		//Z key on German keyboard!
-				pLight->multiplyTransform(glm::translate(glm::mat4(1.0f), speed * glm::vec3(0.0f, -1.0f, 0.0f)));
-				break;
-			case GLFW_KEY_I:
-				pLight->multiplyTransform(glm::translate(glm::mat4(1.0f), speed * glm::vec3(0.0f, 1.0f, 0.0f)));
-				break;
-			case GLFW_KEY_U:
-				pLight->multiplyTransform( glm::translate(glm::mat4(1.0f), speed * glm::vec3(0.0f, 0.0f, 1.0f)));
-				break;
-			case GLFW_KEY_J:
-				pLight->multiplyTransform(glm::translate(glm::mat4(1.0f), speed * glm::vec3(0.0f, 0.0f, -1.0f)));
-				break;
-			case GLFW_KEY_H:
-				pLight->multiplyTransform(glm::translate(glm::mat4(1.0f), speed * glm::vec3(-1.0f, 0.0f, 0.0f)));
-				break;
-			case GLFW_KEY_K:
-				pLight->multiplyTransform(glm::translate(glm::mat4(1.0f), speed * glm::vec3(1.0f, 0.0f, 0.0f)));
-				break;
+				t_last = t_now;
+			}
+		}
+
+		bool onSceneNodeDeleted(veEvent event) {
+			if (m_pEntity == event.ptr) return true;
+			return false;
+		};
+
+	};
+
+
+	///simple event listener for loading levels
+	class LevelListener : public VEEventListener {
+	public:
+		///Constructor
+		LevelListener(std::string name) : VEEventListener(name) {};
+
+		virtual bool onKeyboard(veEvent event) {
+			if (event.idata3 == GLFW_RELEASE) return false;
+
+			if (event.idata1 == GLFW_KEY_1 && event.idata3 == GLFW_PRESS) {
+				getSceneManagerPointer()->deleteScene();
+				getEnginePointer()->loadLevel(1);
+				return true;
+			}
+
+			if (event.idata1 == GLFW_KEY_2 && event.idata3 == GLFW_PRESS) {
+				getSceneManagerPointer()->deleteScene();
+				getEnginePointer()->loadLevel(2);
+				return true;
+			}
+
+			if (event.idata1 == GLFW_KEY_3 && event.idata3 == GLFW_PRESS) {
+				getSceneManagerPointer()->deleteScene();
+				getEnginePointer()->loadLevel(3);
+				return true;
 			}
 			return false;
 		}
 	};
-
-
 
 
 	///user defined manager class, derived from VEEngine
@@ -85,51 +115,83 @@ namespace ve {
 		///Register an event listener to interact with the user
 		virtual void registerEventListeners() {
 			VEEngine::registerEventListeners();
-			registerEventListener( new LightListener("LightListener"));
-			//registerEventListener(new VEEventListenerNuklear("NuklearListener"));
-			registerEventListener(new VEEventListenerNuklearDebug("NuklearDebugListener"));
+
+			registerEventListener(new LevelListener("LevelListener"), { veEvent::VE_EVENT_KEYBOARD });
+			registerEventListener(new VEEventListenerNuklearDebug("NuklearDebugListener"), { veEvent::VE_EVENT_DRAW_OVERLAY});
 		};
 
 		///create many cubes
-		void createCubes(uint32_t n) {
+		void createCubes(uint32_t n, VESceneNode *parent ) {
 
-			for (uint32_t i = 0; i < n; i++) {
-				float stride = 50.0f;
-				static std::default_random_engine e{12345};
-				static std::uniform_real_distribution<> d{ 1.0f, stride }; 
+			float stride = 300.0f;
+			static std::default_random_engine e{12345};
+			static std::uniform_real_distribution<> d{ 1.0f, stride }; 
+			static std::uniform_real_distribution<> dur{ 0.3f, 1.0f };
 
-				VESceneNode *e2 = m_pSceneManager->loadModel("The Cube" + std::to_string(i), "models/test/crate0", "cube.obj");
+			VEMesh *pMesh;
+			VECHECKPOINTER( pMesh = getSceneManagerPointer()->getMesh("models/test/crate0/cube.obj/cube") );
+
+			VEMaterial *pMat;
+			VECHECKPOINTER( pMat = getSceneManagerPointer()->getMaterial("models/test/crate0/cube.obj/cube") );
+
+			for (uint32_t i = 0; i < n; i++) {		
+				VEEntity *e2;
+				VECHECKPOINTER( e2 = getSceneManagerPointer()->createEntity("The Cube" + std::to_string(i), pMesh, pMat, parent ) );
+
 				e2->setTransform(glm::translate(glm::mat4(1.0f), glm::vec3( d(e) - stride/2.0f, d(e)/2.0f, d(e) - stride/2.0f)));
 				//e2->multiplyTransform(glm::scale(glm::mat4(1.0f), glm::vec3(10.0f, 10.0f, 10.0f)));
+				registerEventListener( new RotatorListener("RotatorListener" + std::to_string(i), e2, 0.01f, glm::vec3(0.0f, 1.0f, 0.0f)), { veEvent::VE_EVENT_FRAME_STARTED, veEvent::VE_EVENT_DELETE_NODE } );
+				registerEventListener( new BlinkListener("BlinkListener" + std::to_string(i), e2, dur(e) ), { veEvent::VE_EVENT_FRAME_STARTED, veEvent::VE_EVENT_DELETE_NODE });
 			}
 
 		}
 
 		///Load the first level into the game engine
-		//The engine uses Y-UP, Left-handed
-		void loadLevel() {
+		///The engine uses Y-UP, Left-handed
+		virtual void loadLevel( uint32_t numLevel=1) {
 
-			VESceneNode *sp1 = m_pSceneManager->createSkybox("The Sky", "models/test/sky/cloudy",
-			{ "bluecloud_ft.jpg", "bluecloud_bk.jpg", "bluecloud_up.jpg", "bluecloud_dn.jpg", "bluecloud_rt.jpg", "bluecloud_lf.jpg" });		
-			RotatorListener *pRot = new RotatorListener("CubemapRotator", sp1, 0.01f, glm::vec3(0.0f, 1.0f, 0.0f));
-			getEnginePointer()->registerEventListener(pRot);
+			VEEngine::loadLevel(numLevel );			//create standard cameras and lights
 
-			VESceneNode *e4 = m_pSceneManager->loadModel("The Plane", "models/test", "plane_t_n_s.obj");
+			VESceneNode *pScene;
+			VECHECKPOINTER( pScene = getSceneManagerPointer()->createSceneNode("Level 1", getRoot()) );
+	
+			//scene models
+
+			VESceneNode *sp1;
+			VECHECKPOINTER( sp1 = getSceneManagerPointer()->createSkybox("The Sky", "models/test/sky/cloudy",
+										{	"bluecloud_ft.jpg", "bluecloud_bk.jpg", "bluecloud_up.jpg", 
+											"bluecloud_dn.jpg", "bluecloud_rt.jpg", "bluecloud_lf.jpg" }, pScene)  );
+
+			RotatorListener *pRot;
+			VECHECKPOINTER( pRot = new RotatorListener("CubemapRotator", sp1, 0.01f, glm::vec3(0.0f, 1.0f, 0.0f)) );
+			getEnginePointer()->registerEventListener(pRot, { veEvent::VE_EVENT_DELETE_NODE, veEvent::VE_EVENT_FRAME_STARTED });
+
+			VESceneNode *e4;
+			VECHECKPOINTER( e4 = getSceneManagerPointer()->loadModel("The Plane", "models/test", "plane_t_n_s.obj",0, pScene) );
 			e4->setTransform(glm::scale(glm::mat4(1.0f), glm::vec3(1000.0f, 1.0f, 1000.0f)));
-			VEEntity *pE4 = (VEEntity*)m_pSceneManager->getSceneNode("The Plane/plane_t_n_s.obj/plane/Entity_0");
+
+			VEEntity *pE4;
+			VECHECKPOINTER( pE4 = (VEEntity*)getSceneManagerPointer()->getSceneNode("The Plane/plane_t_n_s.obj/plane/Entity_0") );
 			pE4->setParam( glm::vec4(1000.0f, 1000.0f, 0.0f, 0.0f) );
 
-			VESceneNode *pointLight = getSceneManager()->getSceneNode("StandardPointLight");
-			VESceneNode *eL = m_pSceneManager->loadModel("The Light", "models/test/sphere", "sphere.obj", 0 , pointLight);
-			eL->multiplyTransform(glm::scale(glm::vec3(0.02f,0.02f,0.02f)));
-			VEEntity *pE = (VEEntity*)getSceneManager()->getSceneNode("The Light/sphere.obj/default/Entity_0");
-			pE->m_castsShadow = false;
+			VESceneNode *pointLight = getSceneManagerPointer()->getSceneNode("StandardPointLight");
+			if (pointLight != nullptr) {
+				VESceneNode *eL;
+				VECHECKPOINTER(eL = getSceneManagerPointer()->loadModel("The Light", "models/test/sphere", "sphere.obj", 0, pointLight));
+				eL->multiplyTransform(glm::scale(glm::vec3(0.02f, 0.02f, 0.02f)));
 
-			VESceneNode *e1 = m_pSceneManager->loadModel("The Cube",  "models/test/crate0", "cube.obj");
-			e1->setTransform(glm::translate(glm::mat4(1.0f), glm::vec3(10.0f, 1.0f, 1.0f)));
+				VEEntity *pE;
+				VECHECKPOINTER( pE = (VEEntity*)getSceneManagerPointer()->getSceneNode("The Light/sphere.obj/default/Entity_0"));
+				pE->m_castsShadow = false;
+			}
+
+			VESceneNode *e1;
+			VECHECKPOINTER( e1 = getSceneManagerPointer()->loadModel("The Cube", "models/test/crate0", "cube.obj"));
 			e1->multiplyTransform( glm::scale(glm::mat4(1.0f), glm::vec3(10.0f, 10.0f, 10.0f)));
+			e1->multiplyTransform( glm::translate(glm::mat4(1.0f), glm::vec3(10.0f, 5.0f, 10.0f)));
+			pScene->addChild(e1);
 
-			createCubes(200);
+			createCubes(20000, pScene);
 			//VESceneNode *pSponza = m_pSceneManager->loadModel("Sponza", "models/sponza", "sponza.dae", aiProcess_FlipWindingOrder);
 			//pSponza->setTransform(glm::scale(glm::mat4(1.0f), glm::vec3(0.1f, 0.1f, 0.1f)));
 
@@ -142,24 +204,16 @@ using namespace ve;
 
 int main() {
 
-	MyVulkanEngine mve(true);	//enable or disable debugging (=callback, valication layers)
+	bool debug = false;
+#ifdef  _DEBUG
+	debug = true;
+#endif
 
-	try {
-		mve.initEngine();
-		mve.loadLevel();
-		mve.run();
-	}
-	catch ( const std::runtime_error & err ) {
-		if (mve.getLoopCount() == 0) {							//engine was not initialized
-			std::cout << "Error: " << err.what() << std::endl;	//just output to console
-			char in = getchar();
-			return 1;
-		}
+	MyVulkanEngine mve(debug);	//enable or disable debugging (=callback, validation layers)
 
-		getEnginePointer()->fatalError(err.what());		//engine has been initialized
-		mve.run();										//output error in window
-		return 1;
-	}
+	mve.initEngine();
+	mve.loadLevel(1);
+	mve.run();
 
 	return 0;
 }

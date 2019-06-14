@@ -12,6 +12,11 @@
 #define getSceneManagerPointer() g_pVESceneManagerSingleton
 #endif
 
+#ifndef getRoot
+#define getRoot() getSceneManagerPointer()->getRootSceneNode()
+#endif
+
+
 namespace ve {
 
 	class VEEngine;
@@ -41,72 +46,90 @@ namespace ve {
 		std::map<std::string, VEMesh *>		m_meshes = {};		///<Storage of all meshes currently in the engine
 		std::map<std::string, VEMaterial*>	m_materials = {};	///<Storage of all materials currently in the engine
 		std::map<std::string, VESceneNode*>	m_sceneNodes = {};	///<Storage of all scene nodes currently in the engine
+		
+		VESceneNode						*	m_rootSceneNode;	///<The root node of the scene graph
+		std::map<VESceneObject::veObjectType, std::vector<vh::vhMemoryBlock*>> m_memoryBlockMap;	///<memory for the UBOs of the entities
 
 		VECamera *				m_camera = nullptr;			///<entity ptr of the current camera
 		std::vector<VELight*>	m_lights = {};				///<ptrs to the lights to use
+		std::mutex				m_mutex;					///<Mutex for multithreading, locks the scene manager
 
 		virtual void initSceneManager();
 		virtual void closeSceneManager();
-		void copyAiNodes(	const aiScene* pScene, 
-							std::vector<VEMesh*> &meshes, std::vector<VEMaterial*> &materials, 
-							aiNode* node, VESceneNode *parent);
+		void createMeshes(const aiScene* pScene,std::string filekey, std::vector<VEMesh*> &meshes);
+		void createMaterials(const aiScene* pScene,  std::string basedir, std::string filekey, std::vector<VEMaterial*> &materials);
+		void copyAiNodes(	const aiScene* pScene,  std::vector<VEMesh*> &meshes, 
+							std::vector<VEMaterial*> &materials, aiNode* node, VESceneNode *parent);
+
+		//private shadow functions for the public API, so API does not lock itself
+		VESceneNode *	createSceneNode2(std::string name, VESceneNode *parent, glm::mat4 transf = glm::mat4(1.0f) );
+		VEEntity *		createEntity2(std::string entityName, VEEntity::veEntityType type, VEMesh *pMesh, VEMaterial *pMat, VESceneNode *parent, glm::mat4 transf = glm::mat4(1.0f) );
+		void			addSceneNodeAndChildren2(VESceneNode *pNode, VESceneNode *parent );
+		void			deleteSceneNodeAndChildren2(std::string name);
+		void			createSceneNodeList2(VESceneNode *pObject, std::vector<std::string> &namelist);
+		VEEntity *		createSkyplane2(std::string entityName, std::string basedir, std::string texName, VESceneNode *parent);
+		void			updateSceneNodes2(uint32_t imageIndex);
+		void			switchOffLight2(VELight *light);		//Remove a light from the m_lights list
+		void			sceneGraphChanged2();					//tell renderer to rerecord the cmd buffers
 
 	public:
-		///Constructor
+		///Constructor of class VESceneManager
 		VESceneManager();
-		///Destructor
+		///Destructor of class VESceneManager
 		~VESceneManager() {};
+
+		//-------------------------------------------------------------------------------------
+		//Public API of the scene manager - will lock and unlock the scene manager to make it thread save
+		//then access internal data structures or call internal shadow functions
 
 		//-------------------------------------------------------------------------------------
 		//Load assets
 
 		const aiScene *	loadAssets(	std::string basedir, std::string filename, uint32_t aiFlags,
 									std::vector<VEMesh*> &meshes, std::vector<VEMaterial*> &materials);
-		void			createMeshes(const aiScene* pScene,std::string filekey, std::vector<VEMesh*> &meshes);
-		void			createMaterials(const aiScene* pScene,  std::string basedir, std::string filekey, std::vector<VEMaterial*> &materials);
-		VESceneNode *	loadModel(std::string entityName, std::string basedir, std::string filename, uint32_t aiFlags=0, VESceneNode *parent=nullptr);
+		VESceneNode *	loadModel(	std::string entityName, std::string basedir, std::string filename, 
+									uint32_t aiFlags=0, VESceneNode *parent=nullptr);
 
 		//-------------------------------------------------------------------------------------
 		//Create scene nodes and entities
+		//API that needs to by synchronized
 
-		VESceneNode *	createSceneNode( std::string name, glm::mat4 transf = glm::mat4(1.0f), VESceneNode *parent = nullptr);
-		VEEntity *		createEntity(std::string entityName, VEMesh *pMesh, VEMaterial *pMat, glm::mat4 transf, VESceneNode *parent = nullptr);
-		VEEntity *		createEntity(std::string entityName, VEEntity::veEntityType type, VEMesh *pMesh, VEMaterial *pMat, glm::mat4 transf, VESceneNode *parent = nullptr);
+		VESceneNode *	createSceneNode( std::string name, VESceneNode *parent, glm::mat4 transf = glm::mat4(1.0f));
+		VEEntity *		createEntity(std::string entityName, VEMesh *pMesh, VEMaterial *pMat, VESceneNode *parent, glm::mat4 transf = glm::mat4(1.0f));
+		VEEntity *		createEntity(std::string entityName, VEEntity::veEntityType type, VEMesh *pMesh, VEMaterial *pMat, VESceneNode *parent, glm::mat4 transf = glm::mat4(1.0f));
+		VECamera *		createCamera(std::string cameraName, VECamera::veCameraType type, VESceneNode *parent, glm::mat4 transf = glm::mat4(1.0f) );
+		VELight *		createLight(std::string lightName, VELight::veLightType type, VESceneNode *parent, glm::mat4 transf = glm::mat4(1.0f));
 
 		//-------------------------------------------------------------------------------------
 		//Create cubemaps and skyboxes
 
-		VESceneNode *	createCubemap(std::string entityName, std::string basedir, std::string filename );
-		VESceneNode *	createCubemap(std::string entityName, std::string basedir, std::vector<std::string> filenames );
-		VEEntity *		createSkyplane(std::string entityName, std::string basedir, std::string texName);
-		VESceneNode *	createSkybox(std::string entityName, std::string basedir, std::vector<std::string> texNames);
+		VEEntity *		createSkyplane(std::string entityName, std::string basedir, std::string texName, VESceneNode *parent );
+		VESceneNode *	createSkybox(std::string entityName, std::string basedir, std::vector<std::string> texNames, VESceneNode *parent );
 
 		//-------------------------------------------------------------------------------------
 		//Manage scene nodes and entities
 
-		void			updateSceneNodes( uint32_t imageIndex );
-		///Add a scene node to the scene
-		void			addSceneNode(VESceneNode *entity) { m_sceneNodes[entity->getName()] = entity; };
+		///\returns the root scene node
+		VESceneNode *	getRootSceneNode() { return m_rootSceneNode; };
+
+		//----------------------------------------------------------------
+		//API that needs to by synchronized
 		VESceneNode *	getSceneNode(std::string entityName);
 		void			deleteSceneNodeAndChildren(std::string name);
+		void			deleteScene();
 		void			createSceneNodeList(VESceneNode *pObject, std::vector<std::string> &namelist);
 
 		//-------------------------------------------------------------------------------------
 		//Manage meshes, materials, cameras, lights
 
-		/**
-		* \brief Find a mesh by its name and return a pointer to it
-		* \param[in] name The name of mesh
-		* \returns a mesh given its name
-		*/
-		VEMesh *		getMesh(std::string name) { return m_meshes[name]; };
+		VEMesh *		getMesh(std::string name);
 		void			deleteMesh(std::string name);
 		/**
 		* \brief Find a material by its name and return a pointer to it
 		* \param[in] name The name of material
 		* \returns a material given its name
 		*/
-		VEMaterial *	getMaterial(std::string name) { return m_materials[name]; };
+		VEMaterial *	getMaterial(std::string name);
 		void			deleteMaterial(std::string name);
 
 		///\returns a pointer to the current camera
@@ -126,6 +149,12 @@ namespace ve {
 
 		void			printSceneNodes();
 		void			printTree(VESceneNode *root);
+
+		//-------------------------------------------------------------------------------------
+		//deprecated
+		//VESceneNode *	createCubemap(std::string entityName, std::string basedir, std::string filename);
+		//VESceneNode *	createCubemap(std::string entityName, std::string basedir, std::vector<std::string> filenames);
+
 	};
 
 }

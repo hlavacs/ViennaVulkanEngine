@@ -21,6 +21,7 @@
 #include <map>
 #include <unordered_map>
 #include <thread>
+#include <mutex>
 #include <random>
 #include <cmath>
 
@@ -35,12 +36,11 @@
 #define _USE_MATH_DEFINES
 #include <math.h>
 
-#include <vulkan/vulkan.hpp>
 #include "vk_mem_alloc.h"
 #include <stb_image.h>
 #include <stb_image_write.h>
-#include <gli/gli.hpp>
 #include <ThreadPool.h>
+#include <gli/gli.hpp>
 #include "CLInclude.h"
 
 #include <assimp/Importer.hpp>
@@ -54,6 +54,7 @@
 
 namespace vh {
 
+	//--------------------------------------------------------------------------------------------------------------------------------
 	///need only for start up
 	struct QueueFamilyIndices {
 		int graphicsFamily = -1;	///<Index of graphics family
@@ -72,7 +73,9 @@ namespace vh {
 		std::vector<VkPresentModeKHR> presentModes;		///<Possible present modes
 	};
 
-	//the following structs are used to fill in uniform buffers, and are used as they are in GLSL shaders
+
+	//--------------------------------------------------------------------------------------------------------------------------------
+	//vertex data
 
 	///per vertex data that is stored in the vertex buffers
 	struct vhVertex {
@@ -126,6 +129,46 @@ namespace vh {
 
 
 	//--------------------------------------------------------------------------------------------------------------------------------
+	//structures for managing blocks of memory in the GPU
+
+	struct vhMemoryHandle;
+
+	///A block of N entries, which are UBOs that e.g. define world matrices etc.
+	struct vhMemoryBlock {
+		VkDevice						device;				///<logical device to be used to create descriptor sets
+		VmaAllocator					allocator;			///<VMA allocator
+		std::vector<VkBuffer>			buffers;			///<One buffer for each framebuffer frame
+		std::vector<VmaAllocation>		allocations;		///<VMA information for the UBOs
+		VkDescriptorPool				descriptorPool;		///<Descriptor pool 
+		VkDescriptorSetLayout			descriptorLayout;	///<Descriptor layout 
+		std::vector<VkDescriptorSet>	descriptorSets;		///<Descriptor sets for UBO
+
+		int8_t *						pMemory;			///<pointer to the host memory containing a copy of the block
+		uint32_t						maxNumEntries;		///<maximum number of entries
+		uint32_t						sizeEntry;			///<length of one entry
+		std::vector<vhMemoryHandle*>	handles = {};		///<list of pointers to the entry handles
+		std::vector<bool>				dirty;				///<if dirty this block needs to be updated
+
+		///makr all UBO blocks as dirty
+		void setDirty() {
+			for (auto d : dirty) d = true;		//mark as dirty
+		};
+	};
+
+	///A handle into an entry of a memory block
+	struct vhMemoryHandle {
+		void *owner;					///<pointer to the owner of this entry
+		vhMemoryBlock *pMemBlock;		///<pointer to the memory block
+		uint32_t entryIndex=0;			///<index into the entry list of the block
+
+		///\returns the pointer to the UBO 
+		void *getPointer() {
+			return pMemBlock->pMemory + pMemBlock->sizeEntry * entryIndex;
+		};
+	};
+
+
+	//--------------------------------------------------------------------------------------------------------------------------------
 	//declaration of all helper functions
 
 	//use this macro to check the function result, if its not VK_SUCCESS then return the error
@@ -136,19 +179,16 @@ namespace vh {
 		} \
 	}
 
-	
 
 	//--------------------------------------------------------------------------------------------------------------------------------
 	//instance (device)
 
-	std::chrono::high_resolution_clock::time_point vhTimeNow();
-	float vhTimeDuration(std::chrono::high_resolution_clock::time_point t_prev);
-	float vhAverage(float new_val, float avgerage, float weight = 0.8f );
-
+	//create a Vulkan instance
 	VkResult vhDevCreateInstance(std::vector<const char*> &extensions, std::vector<const char*> &validationLayers, VkInstance *instance);
 
 	//physical device
-	VkResult vhDevPickPhysicalDevice(VkInstance instance, VkSurfaceKHR surface, std::vector<const char*> requiredExtensions, VkPhysicalDevice *physicalDevice);
+	VkResult vhDevPickPhysicalDevice(	VkInstance instance, VkSurfaceKHR surface, std::vector<const char*> requiredExtensions, 
+										VkPhysicalDevice *physicalDevice, VkPhysicalDeviceFeatures* pFeatures, VkPhysicalDeviceLimits *limits );
 	QueueFamilyIndices vhDevFindQueueFamilies(VkPhysicalDevice device, VkSurfaceKHR surface);
 	VkFormat vhDevFindSupportedFormat(VkPhysicalDevice physicalDevice, const std::vector<VkFormat>& candidates, VkImageTiling tiling, VkFormatFeatureFlags features);
 	VkFormat vhDevFindDepthFormat(VkPhysicalDevice physicalDevice);
@@ -207,12 +247,15 @@ namespace vh {
 	VkResult vhBufCreateFramebuffers(VkDevice device, std::vector<VkImageView> imageViews,
 									std::vector<VkImageView> depthImageViews, VkRenderPass renderPass, VkExtent2D extent,
 									std::vector<VkFramebuffer> &frameBuffers);
-	VkResult vhBufCopySwapChainImageToHost(	VkDevice device, VmaAllocator allocator, VkQueue graphicsQueue,
-											VkCommandPool commandPool, VkImage image, VkImageAspectFlagBits aspect, gli::byte *bufferData,
-											uint32_t width, uint32_t height, uint32_t imageSize);
-	VkResult vhBufCopyImageToHost(	VkDevice device, VmaAllocator allocator, VkQueue graphicsQueue,
-									VkCommandPool commandPool,
-									VkImage image, VkFormat format, VkImageAspectFlagBits aspect, VkImageLayout layout,
+	VkResult vhBufCopySwapChainImageToHost(	VkDevice device, VmaAllocator allocator, 
+											VkQueue graphicsQueue, 	VkCommandPool commandPool, 
+											VkImage image, VkFormat format,
+											VkImageAspectFlagBits aspect, VkImageLayout layout,
+											gli::byte *bufferData, 	uint32_t width, uint32_t height, uint32_t imageSize);
+	VkResult vhBufCopyImageToHost(	VkDevice device, VmaAllocator allocator, 
+									VkQueue graphicsQueue, VkCommandPool commandPool,
+									VkImage image, VkFormat format, 
+									VkImageAspectFlagBits aspect, VkImageLayout layout,
 									gli::byte *bufferData, uint32_t width, uint32_t height, uint32_t imageSize);
 	VkResult vhBufCreateVertexBuffer(VkDevice device, VmaAllocator allocator,
 									VkQueue graphicsQueue, VkCommandPool commandPool,
@@ -238,11 +281,25 @@ namespace vh {
 	VkResult vhRenderCreateDescriptorSets(	VkDevice device, uint32_t numberDesc,
 											VkDescriptorSetLayout descriptorSetLayout, VkDescriptorPool descriptorPool,
 											std::vector<VkDescriptorSet> & descriptorSets);
+	VkResult vhRenderUpdateDescriptorSet(	VkDevice device, VkDescriptorSet descriptorSet,
+											std::vector<VkBuffer> uniformBuffers,
+											std::vector<uint32_t> bufferRanges,
+											std::vector<std::vector<VkImageView>> textureImageViews,
+											std::vector<std::vector<VkSampler>> textureSamplers);
 	VkResult vhRenderUpdateDescriptorSet(VkDevice device, VkDescriptorSet descriptorSet,
+										std::vector<VkDescriptorType> descriptorTypes,
 										std::vector<VkBuffer> uniformBuffers,
 										std::vector<uint32_t> bufferRanges,
 										std::vector<std::vector<VkImageView>> textureImageViews,
 										std::vector<std::vector<VkSampler>> textureSamplers);
+
+	VkResult vhRenderUpdateDescriptorSetMaps(VkDevice device,
+											VkDescriptorSet descriptorSet,
+											uint32_t binding,
+											uint32_t offset,
+											uint32_t descriptorCount,
+											std::vector<std::vector<VkDescriptorImageInfo>> &maps);
+
 	VkResult vhRenderBeginRenderPass(VkCommandBuffer commandBuffer, VkRenderPass renderPass, VkFramebuffer frameBuffer, VkExtent2D extent);
 	VkResult vhRenderBeginRenderPass(VkCommandBuffer commandBuffer, VkRenderPass renderPass, VkFramebuffer frameBuffer,
 									std::vector<VkClearValue> &clearValues, VkExtent2D extent);
@@ -261,14 +318,21 @@ namespace vh {
 	//file
 	std::vector<char> vhFileRead(const std::string& filename);
 
+	//timing functions
+	std::chrono::high_resolution_clock::time_point vhTimeNow();
+	float vhTimeDuration(std::chrono::high_resolution_clock::time_point t_prev);
+	float vhAverage(float new_val, float avgerage, float weight = 0.8f);
+
+
 	//--------------------------------------------------------------------------------------------------------------------------------
 	//command
 	VkResult vhCmdCreateCommandPool(VkPhysicalDevice physicalDevice, VkDevice device, VkSurfaceKHR surface, VkCommandPool *commandPool);
 
 	VkResult vhCmdCreateCommandBuffers(	VkDevice device, VkCommandPool commandPool,
 										VkCommandBufferLevel level, uint32_t count, VkCommandBuffer *pBuffers);
-	VkResult vhCmdBeginCommandBuffer(	VkDevice device, VkCommandBuffer commandBuffer,
-										VkCommandBufferUsageFlagBits usageFlags);
+	VkResult vhCmdBeginCommandBuffer(	VkDevice device, VkCommandBuffer commandBuffer, VkCommandBufferUsageFlagBits usageFlags);
+	VkResult vhCmdBeginCommandBuffer(	VkDevice device, VkRenderPass renderPass, uint32_t subpass, VkFramebuffer framebuffer, 
+										VkCommandBuffer commandBuffer, VkCommandBufferUsageFlagBits usageFlags);
 	VkResult vhCmdSubmitCommandBuffer(	VkDevice device, VkQueue graphicsQueue, VkCommandBuffer commandBuffer,
 										VkSemaphore waitSemaphore, VkSemaphore signalSemaphore, VkFence waitFence);
 	VkCommandBuffer vhCmdBeginSingleTimeCommands(VkDevice device, VkCommandPool commandPool);
@@ -280,6 +344,23 @@ namespace vh {
 	//memory
 	uint32_t vhMemFindMemoryType(VkPhysicalDevice physicalDevice, uint32_t typeFilter, VkMemoryPropertyFlags properties);
 	VkResult vhMemCreateVMAAllocator(VkPhysicalDevice physicalDevice, VkDevice device, VmaAllocator &allocator);
+	//Memory blocks
+	VkResult vhMemBlockListInit(VkDevice device, VmaAllocator allocator, 
+								VkDescriptorPool descriptorPool, VkDescriptorSetLayout descriptorLayout,
+								uint32_t maxNumEntries, uint32_t sizeEntry, 
+								uint32_t numBuffers, std::vector<vhMemoryBlock*> &blocklist);
+	VkResult vhMemBlockInit(VkDevice device, VmaAllocator allocator, 
+							VkDescriptorPool descriptorPool, VkDescriptorSetLayout descriptorLayout,
+							uint32_t maxNumEntries, uint32_t sizeEntry,
+							uint32_t numBuffers, vhMemoryBlock *pBlock);
+	VkResult vhMemBlockListAdd(	std::vector<vhMemoryBlock*> &blocklist, void* owner, vhMemoryHandle *handle);
+	VkResult vhMemBlockAdd( vhMemoryBlock *pBlock, void* owner, vhMemoryHandle *handle);
+	VkResult vhMemBlockUpdateEntry(vhMemoryHandle *pHandle, void *data);
+	VkResult vhMemBlockUpdateBlockList(std::vector<vhMemoryBlock*> &blocklist, uint32_t index);
+	VkResult vhMemBlockRemoveEntry(vhMemoryHandle *pHandle);
+	VkResult vhMemBlockListClear( std::vector<vhMemoryBlock*> &blocklist);
+	VkResult vhMemBlockDeallocate(vhMemoryBlock *pBlock);
+
 
 	//--------------------------------------------------------------------------------------------------------------------------------
 	//debug

@@ -22,24 +22,18 @@ namespace ve {
 	*
 	* \param[in] name The name of this node.
 	* \param[in] transf Position and orientation.
-	* \param[in] parent A parent.
 	*
 	*/
 
-	VESceneNode::VESceneNode(std::string name, glm::mat4 transf, VESceneNode *parent) : VENamedClass(name) {
-		m_parent = parent;
-		if (parent != nullptr) {
-			parent->addChild(this);		//if there is a parent, add this scene node to the parent as a child
-		}
-		setTransform(transf);			//sets this MO also onto the dirty list to be updated
+	VESceneNode::VESceneNode(std::string name, glm::mat4 transf ) : VENamedClass(name), m_parent(nullptr), m_transform(transf) {
 	}
-
-
 
 	/**
 	* \returns the scene node's local to parent transform.
 	*/
 	glm::mat4 VESceneNode::getTransform() {
+		std::lock_guard<std::mutex> lock(m_mutex);
+
 		return m_transform;
 	}
 
@@ -47,6 +41,8 @@ namespace ve {
 	* \brief Sets the scene node's local to parent transform.
 	*/
 	void VESceneNode::setTransform(glm::mat4 trans) {
+		std::lock_guard<std::mutex> lock(m_mutex);
+
 		m_transform = trans;
 	}
 
@@ -54,6 +50,8 @@ namespace ve {
 	* \brief Sets the scene node's position.
 	*/
 	void VESceneNode::setPosition(glm::vec3 pos) {
+		std::lock_guard<std::mutex> lock(m_mutex);
+
 		m_transform[3] = glm::vec4(pos.x, pos.y, pos.z, 1.0f);
 	};
 
@@ -64,6 +62,8 @@ namespace ve {
 	*
 	*/
 	glm::vec3 VESceneNode::getPosition() {
+		std::lock_guard<std::mutex> lock(m_mutex);
+
 		return glm::vec3(m_transform[3].x, m_transform[3].y, m_transform[3].z);
 	};
 
@@ -71,6 +71,8 @@ namespace ve {
 	* \returns the entity's local x-axis in parent space
 	*/
 	glm::vec3 VESceneNode::getXAxis() {
+		std::lock_guard<std::mutex> lock(m_mutex);
+
 		glm::vec4 x = m_transform[0];
 		return glm::vec3(x.x, x.y, x.z);
 	}
@@ -79,6 +81,8 @@ namespace ve {
 	* \returns the entity's local y-axis in parent space
 	*/
 	glm::vec3 VESceneNode::getYAxis() {
+		std::lock_guard<std::mutex> lock(m_mutex);
+
 		glm::vec4 y = m_transform[1];
 		return glm::vec3(y.x, y.y, y.z);
 	}
@@ -87,6 +91,8 @@ namespace ve {
 	* \returns the entity's local z-axis in parent space
 	*/
 	glm::vec3 VESceneNode::getZAxis() {
+		std::lock_guard<std::mutex> lock(m_mutex);
+
 		glm::vec4 z = m_transform[2];
 		return glm::vec3(z.x, z.y, z.z);
 	}
@@ -101,7 +107,9 @@ namespace ve {
 	*
 	*/
 	void VESceneNode::multiplyTransform(glm::mat4 trans) {
-		setTransform(trans*m_transform);
+		std::lock_guard<std::mutex> lock(m_mutex);
+
+		m_transform = trans*m_transform;
 	};
 
 	/**
@@ -112,8 +120,24 @@ namespace ve {
 	*
 	*/
 	glm::mat4 VESceneNode::getWorldTransform() {
+		std::lock_guard<std::mutex> lock(m_mutex);
+
+		return getWorldTransform2();
+	};
+
+	/**
+	*
+	* \brief An entity's world matrix is the local to parent transform multiplied by the parent's world matrix.
+	*
+	* \returns the entity's world (aka model) matrix.
+	*
+	*/
+	glm::mat4 VESceneNode::getWorldTransform2() {
 		if (m_parent != nullptr) return m_parent->getWorldTransform() * m_transform;
-		return m_transform;
+
+		if( this == getRoot() ) return m_transform;
+
+		return glm::mat4(0.0f);
 	};
 
 
@@ -127,6 +151,8 @@ namespace ve {
 	*
 	*/
 	void VESceneNode::lookAt(glm::vec3 eye, glm::vec3 point, glm::vec3 up) {
+		std::lock_guard<std::mutex> lock(m_mutex);
+
 		m_transform[3] = glm::vec4(eye.x, eye.y, eye.z, 1.0f);
 		glm::vec3 z = glm::normalize(point - eye);
 		up = glm::normalize(up);
@@ -152,27 +178,33 @@ namespace ve {
 	*
 	*/
 	void VESceneNode::addChild(VESceneNode * pObject) {
-		if (pObject->m_parent != nullptr) {
-			pObject->m_parent->removeChild(pObject);
-		}
+		std::lock_guard<std::mutex> lock(m_mutex);
 
-		pObject->m_parent = this;
-		m_children.push_back(pObject);
+		if ( pObject != nullptr && pObject->m_parent != this ) {
+			if(pObject->m_parent != nullptr ) pObject->m_parent->removeChild(pObject);
+			pObject->m_parent = this;
+			m_children.push_back(pObject);
+			getRendererPointer()->updateCmdBuffers();
+		}
 	}
 
 	/**
 	*
 	* \brief remove a child from the children list - child is NOT destroyed
 	*
-	* \param[in] pEntity Pointer to the child to be removed.
+	* \param[in] pNode Pointer to the child to be removed.
 	*
 	*/
-	void VESceneNode::removeChild(VESceneNode *pEntity) {
+	void VESceneNode::removeChild(VESceneNode *pNode) {
+		std::lock_guard<std::mutex> lock(m_mutex);
+
 		for (uint32_t i = 0; i < m_children.size(); i++) {
-			if (pEntity == m_children[i]) {								//if child is found
+			if (pNode == m_children[i]) {								//if child is found
 				VESceneNode *last = m_children[m_children.size() - 1];	//replace it with the last child
 				m_children[i] = last;
 				m_children.pop_back();									//child is not destroyed
+				pNode->m_parent = nullptr;
+				getRendererPointer()->updateCmdBuffers();
 				return;
 			}
 		}
@@ -216,6 +248,10 @@ namespace ve {
 
 	/**
 	* \brief Update the UBOs of all children of this entity
+	*
+	* \param[in] worldMatrix The world matrix or an identity matrix.
+	* \param[in] imageIndex The index of the swapchain image that is currently used
+	*
 	*/
 	void VESceneNode::updateChildren(glm::mat4 worldMatrix, uint32_t imageIndex) {
 		for (auto pObject : m_children) {
@@ -226,12 +262,14 @@ namespace ve {
 	/**
 	* \brief Get a default bounding sphere for this scene node
 	*
+	* Syncing is done in getPosition()
+	*
 	* \param[out] center The sphere center is also the position of the scene node
 	* \param[out] radius The default radius of the sphere
 	*
 	*/
 	void VESceneNode::getBoundingSphere(glm::vec3 *center, float *radius) {
-		*center = getPosition();
+		*center = getPosition();		//locking done in here
 		*radius = 1.0f;
 	}
 
@@ -251,10 +289,12 @@ namespace ve {
 	*
 	*/
 
-	void VESceneNode::getOBB(std::vector<glm::vec4> &points, float t1, float t2,
-		glm::vec3 &center, float &width, float &height, float &depth) {
+	void VESceneNode::getOBB(	std::vector<glm::vec4> &points, float t1, float t2,
+								glm::vec3 &center, float &width, float &height, float &depth) {
 
-		glm::mat4 W = getWorldTransform();
+		std::lock_guard<std::mutex> lock(m_mutex);
+
+		glm::mat4 W = getWorldTransform2();
 
 		std::vector<glm::vec4> axes;		//3 local axes, into pos and minus direction
 		axes.push_back(-1.0f*W[0]);
@@ -304,35 +344,13 @@ namespace ve {
 	* then the descriptor sets, then the UBOs and sets are connected.
 	*
 	* \param[in] name Name of the new scene object.
-	* \param[in] transf Transform of the object, containing orientation and position.
-	* \param[in] parent Parent of the object, or nullptr.
+	* \param[in] transf Transform of the object, containing orientation and position
 	* \param[in] sizeUBO Size of the object's UBO, if >0 then the object needs UBOs
 	*
 	*/
-	VESceneObject::VESceneObject(std::string name, glm::mat4 transf, VESceneNode *parent, uint32_t sizeUBO ) : 
-									VESceneNode(name, transf, parent) {
+	VESceneObject::VESceneObject(	std::string name, glm::mat4 transf, uint32_t sizeUBO ) : 
+									VESceneNode(name, transf) {
 
-		if (sizeUBO > 0) {
-			vh::vhBufCreateUniformBuffers(	getRendererPointer()->getVmaAllocator(),
-											(uint32_t)getRendererPointer()->getSwapChainNumber(),
-											sizeUBO, m_uniformBuffers, m_uniformBuffersAllocation);
-
-			vh::vhRenderCreateDescriptorSets(getRendererForwardPointer()->getDevice(),
-				(uint32_t)getRendererForwardPointer()->getSwapChainNumber(),
-				getRendererForwardPointer()->getDescriptorSetLayoutPerObject(),
-				getRendererForwardPointer()->getDescriptorPool(),
-				m_descriptorSetsUBO);
-
-			for (uint32_t i = 0; i < m_descriptorSetsUBO.size(); i++) {
-				vh::vhRenderUpdateDescriptorSet(getRendererForwardPointer()->getDevice(),
-					m_descriptorSetsUBO[i],
-					{ m_uniformBuffers[i] },		//UBOs
-					{ sizeUBO },					//UBO sizes
-					{ { VK_NULL_HANDLE } },			//textureImageViews
-					{ { VK_NULL_HANDLE } }			//samplers
-				);
-			}
-		}
 	}
 
 
@@ -344,9 +362,6 @@ namespace ve {
 	*
 	*/
 	VESceneObject::~VESceneObject() {
-		for (uint32_t i = 0; i < m_uniformBuffers.size(); i++) {
-			vmaDestroyBuffer(getRendererPointer()->getVmaAllocator(), m_uniformBuffers[i], m_uniformBuffersAllocation[i]);
-		}
 	}
 
 	/**
@@ -359,10 +374,8 @@ namespace ve {
 	*
 	*/
 	void VESceneObject::updateUBO(void *pUBO, uint32_t sizeUBO, uint32_t imageIndex ) {
-		void* data = nullptr;
-		vmaMapMemory(getRendererPointer()->getVmaAllocator(), m_uniformBuffersAllocation[imageIndex], &data);
-		memcpy(data, pUBO, sizeUBO);
-		vmaUnmapMemory(getRendererPointer()->getVmaAllocator(), m_uniformBuffersAllocation[imageIndex]);
+		if( m_memoryHandle.pMemBlock != nullptr) 
+			vh::vhMemBlockUpdateEntry( &m_memoryHandle, pUBO );
 	}
 
 
@@ -382,15 +395,12 @@ namespace ve {
 	* \param[in] pMesh Pointer to the mesh.
 	* \param[in] pMat Pointer to the material.
 	* \param[in] transf The local to parent transform.
-	* \param[in] parent Pointer to the entity's parent.
 	*
 	*/
 	VEEntity::VEEntity(	std::string name, veEntityType type, 
 						VEMesh *pMesh, VEMaterial *pMat, 
-						glm::mat4 transf, VESceneNode *parent) :
-							VESceneObject(name, transf, parent, (uint32_t) sizeof(veUBOPerObject_t)), m_entityType( type ) {
-
-		setTransform(transf);
+						glm::mat4 transf ) :
+							VESceneObject(name, transf, (uint32_t) sizeof(veUBOPerObject_t)), m_entityType( type ) {
 
 		if (pMesh != nullptr && pMat != nullptr) {
 			m_pMesh = pMesh;
@@ -419,6 +429,8 @@ namespace ve {
 	* \param[in] param The new parameter vector
 	*/
 	void VEEntity::setParam(glm::vec4 param) {
+		std::lock_guard<std::mutex> lock(m_mutex);
+
 		m_param = param;
 	}
 
@@ -432,17 +444,27 @@ namespace ve {
 	*
 	*/
 	void VEEntity::updateUBO( glm::mat4 worldMatrix, uint32_t imageIndex) {
-		m_ubo = {};
+		veUBOPerObject_t ubo = {};
 
-		m_ubo.model = worldMatrix;
-		m_ubo.modelInvTrans = glm::transpose(glm::inverse(worldMatrix));
-		m_ubo.param = m_param;
+		if (m_drawEntity) {
+			ubo.model = worldMatrix;
+			ubo.modelInvTrans = glm::transpose(glm::inverse(worldMatrix));
+		}
+		else {
+			ubo.model = glm::mat4(0.0f);
+			ubo.modelInvTrans = ubo.model;
+		}
+
+		ubo.param = m_param;
+		ubo.iparam[0] = m_resourceIdx;		//make sure the shader uses the right maps in the array of maps
 		if (m_pMaterial != nullptr) {
-			m_ubo.color = m_pMaterial->color;
+			ubo.color = m_pMaterial->color;
 		};
 
-		VESceneObject::updateUBO( (void*)&m_ubo, (uint32_t)sizeof(veUBOPerObject_t), imageIndex);
+		VESceneObject::updateUBO((void*)&ubo, (uint32_t)sizeof(veUBOPerObject_t), imageIndex);
 	}
+
+
 
 
 	/**
@@ -455,9 +477,10 @@ namespace ve {
 	*
 	*/
 	void VEEntity::getBoundingSphere(glm::vec3 *center, float *radius) {
-		*center = getPosition();
+		*center = getPosition();	//locking done in here
 		*radius = 1.0f;
 		if (m_pMesh != nullptr) {
+			std::lock_guard<std::mutex> lock(m_mutex);
 			*center = m_pMesh->m_boundingSphereCenter;
 			*radius = m_pMesh->m_boundingSphereRadius;
 		}
@@ -474,11 +497,10 @@ namespace ve {
 	*
 	* \param[in] name Name of the camera.
 	* \param[in] transf Transform of this camera, including orientation and position
-	* \param[in] parent The parent of this camera, or nullptr
 	*
 	*/
-	VECamera::VECamera(std::string name, glm::mat4 transf, VESceneNode *parent ) : 
-							VESceneObject(name, transf, parent, (uint32_t)sizeof(veUBOPerCamera_t)) {
+	VECamera::VECamera(std::string name, glm::mat4 transf ) : 
+							VESceneObject(name, transf, (uint32_t)sizeof(veUBOPerCamera_t)) {
 	};
 
 	/**
@@ -491,14 +513,13 @@ namespace ve {
 	* \param[in] nearPlaneFraction If this is shadow cam of a directional light: fraction of frustum that is covered by this cam
 	* \param[in] farPlaneFraction If this is shadow cam of a directional light: fraction of frustum that is covered by this cam
 	* \param[in] transf Transform of this camera, including orientation and position
-	* \param[in] parent The parent of this camera, or nullptr
 	*
 	*/
 	VECamera::VECamera(	std::string name, 
 						float nearPlane, float farPlane,
 						float nearPlaneFraction, float farPlaneFraction,
-						glm::mat4 transf, VESceneNode *parent ) :
-							VESceneObject(name, transf, parent, (uint32_t)sizeof(veUBOPerCamera_t)), 
+						glm::mat4 transf ) :
+							VESceneObject(name, transf, (uint32_t)sizeof(veUBOPerCamera_t)), 
 							m_nearPlane(nearPlane), m_farPlane(farPlane),
 							m_nearPlaneFraction(nearPlaneFraction), m_farPlaneFraction(farPlaneFraction) {
 	}
@@ -508,10 +529,9 @@ namespace ve {
 	* \brief Update the UBO of this camera.
 	*
 	* \param[in] worldMatrix The new world matrix of this camera
-	* \param[in] imageIndex Index of the swapchain image that is currently used.
 	*
 	*/
-	void VECamera::updateUBO(glm::mat4 worldMatrix, uint32_t imageIndex) {
+	void VECamera::updateLocalUBO(glm::mat4 worldMatrix) {
 		m_ubo = {};
 
 		m_ubo.model = worldMatrix;
@@ -521,9 +541,21 @@ namespace ve {
 		m_ubo.param[1] = m_farPlane;
 		m_ubo.param[2] = m_nearPlaneFraction;		//needed only if this is a shadow cam
 		m_ubo.param[3] = m_farPlaneFraction;		//needed only if this is a shadow cam
+	}
 
+	/**
+	*
+	* \brief Update the entity's local UBO copy.
+	*
+	* \param[in] worldMatrix The new world matrix of this camera
+	* \param[in] imageIndex Index of the swapchain image that is currently used.
+	*
+	*/
+	void VECamera::updateUBO(glm::mat4 worldMatrix, uint32_t imageIndex) {
+		updateLocalUBO(worldMatrix);
 		VESceneObject::updateUBO((void*)&m_ubo, (uint32_t)sizeof(veUBOPerCamera_t), imageIndex );
 	}
+
 
 
 	/**
@@ -539,6 +571,8 @@ namespace ve {
 		std::vector<glm::vec4> points;
 
 		getFrustumPoints(points);					//get frustum points in world space
+
+		std::lock_guard<std::mutex> lock(m_mutex);	//lock against parallel access
 
 		glm::vec4 mean(0.0f, 0.0f, 0.0f, 1.0f);
 		for (auto point : points) {
@@ -567,10 +601,9 @@ namespace ve {
 	*
 	* \param[in] name Name of the camera.
 	* \param[in] transf Transform of this camera, including orientation and position
-	* \param[in] parent The parent of this camera, or nullptr
 	*
 	*/
-	VECameraProjective::VECameraProjective(std::string name, glm::mat4 transf, VESceneNode *parent) : VECamera(name, transf, parent ) {
+	VECameraProjective::VECameraProjective(std::string name, glm::mat4 transf ) : VECamera( name, transf ) {
 	};
 
 	/**
@@ -585,18 +618,17 @@ namespace ve {
 	* \param[in] nearPlaneFraction If this is shadow cam of a directional light: fraction of frustum that is covered by this cam
 	* \param[in] farPlaneFraction If this is shadow cam of a directional light: fraction of frustum that is covered by this cam
 	* \param[in] transf Transform of this camera, including orientation and position
-	* \param[in] parent The parent of this camera, or nullptr
 	*
 	*/
 	VECameraProjective::VECameraProjective(	std::string name, 
 											float nearPlane, float farPlane, 
 											float aspectRatio, float fov,
 											float nearPlaneFraction, float farPlaneFraction,
-											glm::mat4 transf, VESceneNode *parent) :
+											glm::mat4 transf ) :
 												VECamera(	name, 
 															nearPlane, farPlane, 
 															nearPlaneFraction, farPlaneFraction,
-															transf, parent ), 
+															transf ), 
 												m_aspectRatio(aspectRatio), m_fov(fov)   {
 	};
 
@@ -609,6 +641,8 @@ namespace ve {
 	*
 	*/
 	glm::mat4 VECameraProjective::getProjectionMatrix(float width, float height) {
+		std::lock_guard<std::mutex> lock(m_mutex);
+
 		m_aspectRatio = width / height;
 		glm::mat4 pm = glm::perspectiveFov( glm::radians(m_fov), (float) width, (float)height, m_nearPlane, m_farPlane);
 		pm[1][1] *= -1.0f;
@@ -640,10 +674,12 @@ namespace ve {
 	*
 	*/
 	void VECameraProjective::getFrustumPoints(std::vector<glm::vec4> &points, float z0, float z1) {
+		std::lock_guard<std::mutex> lock(m_mutex);
+
 		float halfh = (float)tan( (m_fov/2.0f) * M_PI / 180.0f );
 		float halfw = halfh * m_aspectRatio;
 
-		glm::mat4 W = getWorldTransform();
+		glm::mat4 W = getWorldTransform2();
 
 		points.push_back( W*glm::vec4(-m_nearPlane * halfw, -m_nearPlane * halfh, m_nearPlane, 1.0f ) );
 		points.push_back( W*glm::vec4( m_nearPlane * halfw, -m_nearPlane * halfh, m_nearPlane, 1.0f));
@@ -672,11 +708,10 @@ namespace ve {
 	*
 	* \param[in] name Name of the camera.
 	* \param[in] transf Transform of this camera, including orientation and position
-	* \param[in] parent The parent of this camera, or nullptr
 	*
 	*/
-	VECameraOrtho::VECameraOrtho(std::string name, glm::mat4 transf, VESceneNode *parent) : 
-						VECamera(name, transf, parent ) {
+	VECameraOrtho::VECameraOrtho(std::string name, glm::mat4 transf ) : 
+						VECamera(name, transf ) {
 	};
 
 	/**
@@ -691,18 +726,17 @@ namespace ve {
 	* \param[in] nearPlaneFraction If this is shadow cam of a directional light: fraction of frustum that is covered by this cam
 	* \param[in] farPlaneFraction If this is shadow cam of a directional light: fraction of frustum that is covered by this cam
 	* \param[in] transf Transform of this camera, including orientation and position
-	* \param[in] parent The parent of this camera, or nullptr
 	*
 	*/
 	VECameraOrtho::VECameraOrtho(	std::string name, 
 									float nearPlane, float farPlane, 
 									float width, float height,
 									float nearPlaneFraction, float farPlaneFraction,
-									glm::mat4 transf, VESceneNode *parent) :
+									glm::mat4 transf) :
 										VECamera(	name, 
 													nearPlane, farPlane, 
 													nearPlaneFraction, farPlaneFraction,
-													transf, parent), 
+													transf), 
 										m_width(width), m_height(height) {
 	};
 
@@ -714,6 +748,8 @@ namespace ve {
 	* \returns the camera projection matrix.
 	*/
 	glm::mat4 VECameraOrtho::getProjectionMatrix(float width, float height) {
+		std::lock_guard<std::mutex> lock(m_mutex);
+
 		glm::mat4 pm = glm::ortho(-width * m_width / 2.0f, width * m_width / 2.0f, -height * m_height / 2.0f, height * m_height / 2.0f, m_nearPlane, m_farPlane);
 		pm[1][1] *= -1.0f;
 		pm[2][2] *= -1.0;	//camera looks down its positive z-axis, OpenGL function does it reverse
@@ -725,6 +761,8 @@ namespace ve {
 	* \returns the camera projection matrix.
 	*/
 	glm::mat4 VECameraOrtho::getProjectionMatrix() {
+		std::lock_guard<std::mutex> lock(m_mutex);
+
 		glm::mat4 pm = glm::ortho( -m_width/2.0f, m_width/2.0f, -m_height/2.0f, m_height/2.0f, m_nearPlane, m_farPlane);
 		pm[2][2] *= -1;		//camera looks down its positive z-axis, OpenGL function does it reverse
 		return pm;
@@ -742,10 +780,12 @@ namespace ve {
 	*
 	*/
 	void VECameraOrtho::getFrustumPoints(std::vector<glm::vec4> &points, float t1, float t2) {
+		std::lock_guard<std::mutex> lock(m_mutex);
+
 		float halfh = m_height / 2.0f;
 		float halfw = m_width / 2.0f;
 
-		glm::mat4 W = getWorldTransform();
+		glm::mat4 W = getWorldTransform2();
 
 		points.push_back( W*glm::vec4(-halfw, -halfh, m_nearPlane, 1.0f));
 		points.push_back( W*glm::vec4( halfw, -halfh, m_nearPlane, 1.0f));
@@ -775,11 +815,10 @@ namespace ve {
 	*
 	* \param[in] name Name of the camera
 	* \param[in] transf Transform of this light, including orientation and position
-	* \param[in] parent The parent of this light, or nullptr
 	*
 	*/
-	VELight::VELight(std::string name, glm::mat4 transf, VESceneNode *parent ) : 
-						VESceneObject(name, transf, parent, (uint32_t)sizeof(veUBOPerLight_t)) {
+	VELight::VELight(std::string name, glm::mat4 transf ) : 
+						VESceneObject(name, transf, (uint32_t)sizeof(veUBOPerLight_t)) {
 	};
 
 
@@ -791,10 +830,9 @@ namespace ve {
 	* cameras of this light.
 	*
 	* \param[in] worldMatrix The new world matrix of this light
-	* \param[in] imageIndex Index of the swapchain image that is currently used.
 	*
 	*/
-	void VELight::updateUBO(glm::mat4 worldMatrix, uint32_t imageIndex) {
+	void VELight::updateLocalUBO(glm::mat4 worldMatrix) {
 		m_ubo = {};
 
 		m_ubo.type[0] = getLightType();
@@ -803,10 +841,22 @@ namespace ve {
 		m_ubo.col_diffuse = m_col_diffuse;
 		m_ubo.col_specular = m_col_specular;
 		m_ubo.param = m_param;
+	}
+
+	/**
+	*
+	* \brief Update the lights's local UBO copy.
+	*
+	* \param[in] worldMatrix The new world matrix of this light
+	* \param[in] imageIndex Index of the swapchain image that is currently used.
+	*
+	*/
+	void VELight::updateUBO(glm::mat4 worldMatrix, uint32_t imageIndex ) {
+		updateLocalUBO(worldMatrix);
 
 		VECamera *pCam = getSceneManagerPointer()->getCamera();
 
-		updateShadowCameras(pCam, imageIndex);						//copy shadow cam UBOs to GPU
+		updateShadowCameras(pCam, imageIndex);						//copy shadow cam UBOs to GPU		
 		for (uint32_t i = 0; i < m_shadowCameras.size(); i++ ) {	//copy shadow cam UBOs to light UBO
 			m_ubo.shadowCameras[i] = m_shadowCameras[i]->m_ubo;
 		}
@@ -815,16 +865,13 @@ namespace ve {
 	}
 
 
+
 	/**
 	*
 	* \brief Destructor of the light class.
 	*
 	*/
 	VELight::~VELight() {
-		for (auto pCam : m_shadowCameras) {
-			delete pCam;
-		}
-		m_shadowCameras.clear();
 	};
 
 
@@ -837,14 +884,15 @@ namespace ve {
 	*
 	* \param[in] name The name of this directional light
 	* \param[in] transf The transform including orientation and position
-	* \param[in] parent The parent of this light
 	*
 	*/
-	VEDirectionalLight::VEDirectionalLight(std::string name, glm::mat4 transf, VESceneNode *parent) :
-					VELight(name, transf, parent) {
+	VEDirectionalLight::VEDirectionalLight(std::string name, glm::mat4 transf ) :
+					VELight(name, transf) {
 
 		for (uint32_t i = 0; i < 4; i++) {
-			m_shadowCameras.push_back(new VECameraOrtho("ShadowCamDirOrtho") );	//no parent - > transform is also world matrix
+			VECameraOrtho *pCam = new VECameraOrtho(m_name + "-ShadowCam" + std::to_string(i) );
+			m_shadowCameras.push_back(pCam );		//no parent - > transform is also world matrix
+			addChild(pCam);
 		}
 	};
 
@@ -858,8 +906,10 @@ namespace ve {
 	*
 	*/
 	void VEDirectionalLight::updateShadowCameras(VECamera *pCamera, uint32_t imageIndex) {
-
 		std::vector<float> limits = { 0.0f, 0.05f, 0.15f, 0.50f, 1.0f };	//the frustum is split into 4 segments
+
+		glm::mat4 lightWorldMatrix = getWorldTransform2();
+		glm::mat4 invLightMatrix = glm::inverse(lightWorldMatrix);
 
 		for (uint32_t i = 0; i < m_shadowCameras.size(); i++) {
 			VECameraOrtho *pShadowCamera = (VECameraOrtho *)m_shadowCameras[i];
@@ -869,15 +919,16 @@ namespace ve {
 
 			glm::vec3 center;
 			getOBB(pointsW, 0.0f, 1.0f, center, pShadowCamera->m_width, pShadowCamera->m_height, pShadowCamera->m_farPlane);
-			pShadowCamera->m_farPlane *= 5.0f;			//TODO - do NOT set too high or else shadow maps wont get drawn!
+			pShadowCamera->m_farPlane *= 8.0f;			//TODO - do NOT set too high or else shadow maps wont get drawn!
 
-			glm::mat4 W = getWorldTransform();
-			pShadowCamera->setTransform(W);
-			pShadowCamera->setPosition(center - pShadowCamera->m_farPlane*0.9f * glm::vec3(W[2].x, W[2].y, W[2].z));
+			pShadowCamera->setTransform(lightWorldMatrix);
+			pShadowCamera->setPosition(center - pShadowCamera->m_farPlane*0.9f * glm::vec3(lightWorldMatrix[2].x, lightWorldMatrix[2].y, lightWorldMatrix[2].z));
 			pShadowCamera->m_nearPlaneFraction = limits[i];
 			pShadowCamera->m_farPlaneFraction = limits[i+1];
 
-			pShadowCamera->update( imageIndex );
+			pShadowCamera->updateLocalUBO( pShadowCamera->getTransform() );
+
+			pShadowCamera->multiplyTransform(invLightMatrix);
 		}
 	}
 
@@ -888,14 +939,15 @@ namespace ve {
 	*
 	* \param[in] name The name of this point light
 	* \param[in] transf The transform including orientation and position
-	* \param[in] parent The parent of this light
 	*
 	*/
-	VEPointLight::VEPointLight(std::string name, glm::mat4 transf, VESceneNode *parent) :
-					VELight( name, transf, parent ) {
+	VEPointLight::VEPointLight(std::string name, glm::mat4 transf ) :
+					VELight( name, transf ) {
 
 		for (uint32_t i = 0; i < 6; i++) {
-			m_shadowCameras.push_back(new VECameraProjective("ShadowCamPointProj"));	//no parent - > transform is also world matrix
+			VECameraProjective *pCam = new VECameraProjective(m_name + "-ShadowCam" + std::to_string(i));
+			m_shadowCameras.push_back(pCam);		//no parent - > transform is also world matrix
+			addChild(pCam);
 		}
 	};
 
@@ -913,8 +965,29 @@ namespace ve {
 
 		float lnear = 0.1f;
 		float llength = m_param[0];
-		glm::vec4 pos4 = getWorldTransform()[3];
+		glm::mat4 lightWorldMatrix = getWorldTransform2();
+		glm::mat4 invLightMatrix = glm::inverse(lightWorldMatrix);
+		glm::vec4 pos4 = lightWorldMatrix[3];
 		glm::vec3 pos = glm::vec3(pos4.x, pos4.y, pos4.z);
+
+		std::vector<glm::vec3> zaxis =
+		{
+			glm::vec3(1.0f,  0.0f,  0.0f),
+			glm::vec3(-1.0f,  0.0f,  0.0f),
+			glm::vec3(0.0f,  1.0f,  0.0f),
+			glm::vec3(0.0f, -1.0f,  0.0f),
+			glm::vec3(0.0f,  0.0f,  1.0f),
+			glm::vec3(0.0f,  0.0f, -1.0f)
+		};
+		std::vector<glm::vec3> up =
+		{
+			glm::vec3(0.0f,  1.0f,  0.0f),
+			glm::vec3(0.0f,  1.0f,  0.0f),
+			glm::vec3(0.0f,  0.0f, -1.0f),
+			glm::vec3(0.0f,  0.0f,  1.0f),
+			glm::vec3(0.0f,  1.0f,  0.0f),
+			glm::vec3(0.0f,  1.0f,  0.0f)
+		};
 
 		for (uint32_t i = 0; i < m_shadowCameras.size(); i++) {
 
@@ -927,26 +1000,11 @@ namespace ve {
 			pShadowCamera->m_nearPlaneFraction = 0.0f;
 			pShadowCamera->m_farPlaneFraction =  1.0f;
 
-			std::vector<glm::vec3> zaxis =
-			{
-				glm::vec3(1.0f,  0.0f,  0.0f),
-				glm::vec3(-1.0f,  0.0f,  0.0f),
-				glm::vec3(0.0f,  1.0f,  0.0f),
-				glm::vec3(0.0f, -1.0f,  0.0f),
-				glm::vec3(0.0f,  0.0f,  1.0f),
-				glm::vec3(0.0f,  0.0f, -1.0f)
-			};
-			std::vector<glm::vec3> up =
-			{
-				glm::vec3(0.0f,  1.0f,  0.0f),
-				glm::vec3(0.0f,  1.0f,  0.0f),
-				glm::vec3(0.0f,  0.0f, -1.0f),
-				glm::vec3(0.0f,  0.0f,  1.0f),
-				glm::vec3(0.0f,  1.0f,  0.0f),
-				glm::vec3(0.0f,  1.0f,  0.0f)
-			};
 			pShadowCamera->lookAt( pos, pos + zaxis[i], up[i]);
-			pShadowCamera->update(imageIndex);
+
+			pShadowCamera->updateLocalUBO( pShadowCamera->getTransform());
+
+			pShadowCamera->multiplyTransform(invLightMatrix);
 		}
 	}
 
@@ -956,14 +1014,15 @@ namespace ve {
 	*
 	* \param[in] name The name of this spot light
 	* \param[in] transf The transform including orientation and position
-	* \param[in] parent The parent of this light
 	*
 	*/
-	VESpotLight::VESpotLight(std::string name, glm::mat4 transf, VESceneNode *parent) :
-					VELight(name, transf, parent) {
+	VESpotLight::VESpotLight(std::string name, glm::mat4 transf ) :
+					VELight(name, transf) {
 
 		for (uint32_t i = 0; i < 1; i++) {
-			m_shadowCameras.push_back(new VECameraProjective("ShadowCamSpotProj"));	//no parent - > transform is also world matrix
+			VECameraProjective *pCam = new VECameraProjective(m_name + "-ShadowCam" + std::to_string(i));
+			m_shadowCameras.push_back(pCam);
+			addChild(pCam);
 		};
 	};
 
@@ -981,14 +1040,14 @@ namespace ve {
 		//std::vector<float> limits = { 0.0f, 0.05f, 0.15f, 0.50f, 1.0f };	//the frustum is split into 4 segments
 		std::vector<float> limits = { 0.0f, 1.0f };		//the frustum is split into 1 segment
 
+		glm::mat4 lightWorldMatrix = getWorldTransform2();
+
 		for (uint32_t i = 0; i < m_shadowCameras.size(); i++) {
 
 			VECameraProjective * pShadowCamera = (VECameraProjective *)m_shadowCameras[i];
 
 			float lnear = 0.1f;
 			float llength = m_param[0];		//reach of light
-
-			pShadowCamera->setTransform(getWorldTransform());
 
 			pShadowCamera->m_aspectRatio = 1.0f;			//TODO: for comparing with light cam
 			pShadowCamera->m_fov = 90.0f;						//TODO: depends on light parameters
@@ -997,7 +1056,7 @@ namespace ve {
 			pShadowCamera->m_nearPlaneFraction = limits[i];
 			pShadowCamera->m_farPlaneFraction  = limits[i+1];
 
-			pShadowCamera->update(imageIndex);
+			pShadowCamera->updateLocalUBO(lightWorldMatrix * pShadowCamera->getTransform() );
 		}
 	}
 

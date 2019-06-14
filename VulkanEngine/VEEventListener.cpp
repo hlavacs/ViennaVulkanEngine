@@ -29,25 +29,32 @@ namespace ve {
 	*/
 	bool VEEventListener::onEvent( veEvent event ) {
 		switch ( event.type ) {
-		case VE_EVENT_FRAME_STARTED :
+		case veEvent::VE_EVENT_FRAME_STARTED :
 			onFrameStarted(event);
 			return false;
 			break;
-		case VE_EVENT_FRAME_ENDED:
+		case veEvent::VE_EVENT_FRAME_ENDED:
 			onFrameEnded(event);
 			return false;
 			break;
-		case VE_EVENT_KEYBOARD:
+		case veEvent::VE_EVENT_DRAW_OVERLAY:
+			onDrawOverlay(event);
+			return false;
+			break;
+		case veEvent::VE_EVENT_KEYBOARD:
 			return onKeyboard(event);
 			break;
-		case VE_EVENT_MOUSEMOVE:
+		case veEvent::VE_EVENT_MOUSEMOVE:
 			return onMouseMove(event);
 			break;
-		case VE_EVENT_MOUSEBUTTON:
+		case veEvent::VE_EVENT_MOUSEBUTTON:
 			return onMouseButton(event);
 			break;
-		case VE_EVENT_MOUSESCROLL:
+		case veEvent::VE_EVENT_MOUSESCROLL:
 			return onMouseScroll(event);
+			break;
+		case veEvent::VE_EVENT_DELETE_NODE:
+			return onSceneNodeDeleted(event);
 			break;
 
 		default:
