@@ -36,9 +36,15 @@ layout(set = 4, binding = 1) uniform sampler2D normalSamplerArray[RESOURCEARRAYL
 
 void main() {
 
+    int  lightType  = lightUBO.data.itype[0];
+
+    if( lightType == LIGHT_AMBIENT ) {
+      outColor = lightUBO.data.col_ambient;
+      return;
+    }
+
     //parameters
     vec3 camPosW   = cameraUBO.data.camModel[3].xyz;
-    int  lightType  = lightUBO.data.itype[0];
     vec3 lightPosW = lightUBO.data.lightModel[3].xyz;
     vec3 lightDirW = normalize( lightUBO.data.lightModel[2].xyz );
     float nfac = dot( fragNormalW, -lightDirW)<0? 0.5:1;

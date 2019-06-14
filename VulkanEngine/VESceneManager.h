@@ -53,6 +53,7 @@ namespace ve {
 		VECamera *				m_camera = nullptr;			///<entity ptr of the current camera
 		std::vector<VELight*>	m_lights = {};				///<ptrs to the lights to use
 		std::mutex				m_mutex;					///<Mutex for multithreading, locks the scene manager
+		bool					m_autoRecord = true;		///<if true, then scene graph changes automatically leasd to a cmd buffer rerecording
 
 		virtual void initSceneManager();
 		virtual void closeSceneManager();
@@ -70,7 +71,6 @@ namespace ve {
 		VEEntity *		createSkyplane2(std::string entityName, std::string basedir, std::string texName, VESceneNode *parent);
 		void			updateSceneNodes2(uint32_t imageIndex);
 		void			switchOffLight2(VELight *light);		//Remove a light from the m_lights list
-		void			sceneGraphChanged2();					//tell renderer to rerecord the cmd buffers
 
 	public:
 		///Constructor of class VESceneManager
@@ -111,6 +111,10 @@ namespace ve {
 
 		///\returns the root scene node
 		VESceneNode *	getRootSceneNode() { return m_rootSceneNode; };
+
+		///\brief If true then scene graph changes automatically trigger a cmd buffer rerecording
+		void			setAutoRecord(bool flag) { m_autoRecord = flag; };
+		void			sceneGraphChanged();					//tell renderer to rerecord the cmd buffers
 
 		//----------------------------------------------------------------
 		//API that needs to by synchronized

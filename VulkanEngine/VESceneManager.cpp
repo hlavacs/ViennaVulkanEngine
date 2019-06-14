@@ -174,7 +174,7 @@ namespace ve {
 
 		copyAiNodes( pScene, meshes, materials, pScene->mRootNode, pMO);	//create scene nodes and entities from the file
 
-		sceneGraphChanged2();	//notify renderer to rerecord the cmd buffers
+		sceneGraphChanged();	//notify renderer to rerecord the cmd buffers
 		return pMO;
 	}
 
@@ -392,7 +392,7 @@ namespace ve {
 
 		VESceneNode *pMO = new VESceneNode(objectName, transf );
 		addSceneNodeAndChildren2( pMO, parent );
-		sceneGraphChanged2();
+		sceneGraphChanged();
 		return pMO;
 	}
 
@@ -455,7 +455,7 @@ namespace ve {
 		if (pMesh != nullptr && pMat != nullptr) {
 			getRendererPointer()->addEntityToSubrenderer(pEntity);
 		}
-		sceneGraphChanged2();
+		sceneGraphChanged();
 		return pEntity;
 	}
 
@@ -572,7 +572,7 @@ namespace ve {
 		VEEntity *pEntity = createEntity2(entityName, VEEntity::VE_ENTITY_TYPE_SKYPLANE, pMesh, pMat, parent );
 		pEntity->m_castsShadow = false;
 
-		sceneGraphChanged2();
+		sceneGraphChanged();
 		return pEntity;
 	}
 
@@ -638,7 +638,7 @@ namespace ve {
 		sp1->multiplyTransform(glm::translate(glm::mat4(1.0f), glm::vec3(-scale / 2.0f, 0.0f, 0.0f)));
 		sp1->m_castsShadow = false;
 
-		sceneGraphChanged2();
+		sceneGraphChanged();
 		return parent;
 	}
 
@@ -649,8 +649,8 @@ namespace ve {
 	/**
 	* \brief This should be called whenever the scene graph ist changed
 	*/
-	void VESceneManager::sceneGraphChanged2() {
-		getRendererPointer()->updateCmdBuffers();
+	void VESceneManager::sceneGraphChanged() {
+		if(m_autoRecord) getRendererPointer()->updateCmdBuffers();	//if no auto record then app has to trigger rerecording itself
 	}
 
 
@@ -789,7 +789,7 @@ namespace ve {
 
 			delete pNode;
 		}
-		sceneGraphChanged2();
+		sceneGraphChanged();
 	}
 
 
@@ -925,7 +925,7 @@ namespace ve {
 	void  VESceneManager::switchOnLight(VELight * light) {
 		std::lock_guard<std::mutex> lock(m_mutex);
 		m_lights.push_back(light);
-		sceneGraphChanged2();
+		sceneGraphChanged();
 	};
 
 
@@ -962,7 +962,7 @@ namespace ve {
 				m_lights.pop_back();							//remove last light
 			}
 		}
-		sceneGraphChanged2();
+		sceneGraphChanged();
 	}
 
 
@@ -994,8 +994,8 @@ namespace ve {
 	*
 	*/
 	bool VESceneManager::isLightSwitchedOn(std::string name) {
-		VELight *pLight = (VELight*)getSceneNode(name);
-		return isLightSwitchedOn(pLight);
+		VELight *pLight = (VELight*)getSceneNode(name);				//is synchronized
+		return isLightSwitchedOn(pLight);							//is synchronized
 	}
 
 

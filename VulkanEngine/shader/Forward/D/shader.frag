@@ -34,9 +34,15 @@ layout(set = 4, binding = 0) uniform sampler2D texSamplerArray[RESOURCEARRAYLENG
 
 void main() {
 
+    int  lightType  = lightUBO.data.itype[0];
+
+    if( lightType == LIGHT_AMBIENT ) {
+      outColor = lightUBO.data.col_ambient;
+      return;
+    }
+
     //parameters
     vec3 camPosW    = cameraUBO.data.camModel[3].xyz;
-    int  lightType  = lightUBO.data.itype[0];
     vec3 lightPosW  = lightUBO.data.lightModel[3].xyz;
     vec3 lightDirW  = normalize( lightUBO.data.lightModel[2].xyz );
     vec4 lightParam = lightUBO.data.param;

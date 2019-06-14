@@ -457,7 +457,8 @@ namespace ve {
 		enum veLightType {
 			VE_LIGHT_TYPE_DIRECTIONAL=0,	///<Directional light
 			VE_LIGHT_TYPE_POINT=1,			///<Point light
-			VE_LIGHT_TYPE_SPOT=2			///<Spot light
+			VE_LIGHT_TYPE_SPOT=2,			///<Spot light
+			VE_LIGHT_TYPE_AMBIENT=3			///<Ambient light, lighting is constant in the scene
 		};
 
 		///Light data to be copied into a UBO
@@ -593,6 +594,35 @@ namespace ve {
 		///\returns the light type
 		virtual veLightType getLightType() { return VE_LIGHT_TYPE_SPOT; };
 	};
+
+
+	/**
+	*
+	* \brief Ambient light class. 
+	*
+	* This class represents an ambient light. It is derived from the VELight class.
+	* An ambient light is constant throughout the scene
+	*
+	*/
+
+	class VEAmbientLight : public VELight {
+		friend VESceneManager;
+
+	protected:
+		VEAmbientLight(std::string name) : VELight( name ) {};
+
+		///Destructor of the spot light
+		virtual ~VEAmbientLight() {};
+
+	public:
+
+		virtual void updateShadowCameras(VECamera *pCamera, uint32_t imageIndex) {};
+
+		///\returns the light type
+		virtual veLightType getLightType() { return VE_LIGHT_TYPE_AMBIENT; };
+	};
+
+
 
 
 }

@@ -9,6 +9,7 @@
 #define LIGHT_DIR 0
 #define LIGHT_POINT 1
 #define LIGHT_SPOT 2
+#define LIGHT_AMBIENT 3
 
 struct cameraData_t {
   mat4 camModel;
