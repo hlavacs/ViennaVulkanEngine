@@ -10,7 +10,6 @@
 #include <fstream>
 #include <iostream>
 #include <fstream>
-#include <stdexcept>
 #include <algorithm>
 #include <chrono>
 #include <vector>
