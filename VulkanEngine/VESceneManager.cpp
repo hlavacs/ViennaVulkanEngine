@@ -587,6 +587,7 @@ namespace ve {
 	* \param[in] entityName Name of the new entity.
 	* \param[in] basedir Name of the directory the texture file is in
 	* \param[in] texNames List of 6 names of the texture files. Order must be ft bk up dn rt lf
+	* \param[in] parent Pointer to a scene node that is the parent of this box, should be root node
 	* \returns a pointer to the new entity, which is the parent of the planes
 	*
 	*/

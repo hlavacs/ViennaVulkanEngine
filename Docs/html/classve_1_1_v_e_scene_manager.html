@@ -114,9 +114,9 @@ Public Member Functions</h2></td></tr>
 <tr class="memitem:aaa8af67156442bb6438a1c3a46b8e109"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classve_1_1_v_e_entity.html">VEEntity</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_scene_manager.html#aaa8af67156442bb6438a1c3a46b8e109">createSkyplane</a> (std::string entityName, std::string basedir, std::string texName, <a class="el" href="classve_1_1_v_e_scene_node.html">VESceneNode</a> *parent)</td></tr>
 <tr class="memdesc:aaa8af67156442bb6438a1c3a46b8e109"><td class="mdescLeft">&#160;</td><td class="mdescRight">Create a plane that is projected to the far plane of the frustum.  <a href="#aaa8af67156442bb6438a1c3a46b8e109">More...</a><br /></td></tr>
 <tr class="separator:aaa8af67156442bb6438a1c3a46b8e109"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aae47277fd521d322ee02dc51f643e7f8"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classve_1_1_v_e_scene_node.html">VESceneNode</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_scene_manager.html#aae47277fd521d322ee02dc51f643e7f8">createSkybox</a> (std::string entityName, std::string basedir, std::vector&lt; std::string &gt; texNames)</td></tr>
-<tr class="memdesc:aae47277fd521d322ee02dc51f643e7f8"><td class="mdescLeft">&#160;</td><td class="mdescRight">Create a skyplane based sky box.  <a href="#aae47277fd521d322ee02dc51f643e7f8">More...</a><br /></td></tr>
-<tr class="separator:aae47277fd521d322ee02dc51f643e7f8"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:adb596cddd13574ef55c944c0b4adcff4"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classve_1_1_v_e_scene_node.html">VESceneNode</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_scene_manager.html#adb596cddd13574ef55c944c0b4adcff4">createSkybox</a> (std::string entityName, std::string basedir, std::vector&lt; std::string &gt; texNames, <a class="el" href="classve_1_1_v_e_scene_node.html">VESceneNode</a> *parent)</td></tr>
+<tr class="memdesc:adb596cddd13574ef55c944c0b4adcff4"><td class="mdescLeft">&#160;</td><td class="mdescRight">Create a skyplane based sky box.  <a href="#adb596cddd13574ef55c944c0b4adcff4">More...</a><br /></td></tr>
+<tr class="separator:adb596cddd13574ef55c944c0b4adcff4"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a0f1d754eb2b772fdd7d1fc7bc8d94625"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classve_1_1_v_e_scene_node.html">VESceneNode</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_scene_manager.html#a0f1d754eb2b772fdd7d1fc7bc8d94625">getRootSceneNode</a> ()</td></tr>
 <tr class="separator:a0f1d754eb2b772fdd7d1fc7bc8d94625"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a22dd9760111ca205cf97b2fdcfdbb6d7"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classve_1_1_v_e_scene_node.html">VESceneNode</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_scene_manager.html#a22dd9760111ca205cf97b2fdcfdbb6d7">getSceneNode</a> (std::string entityName)</td></tr>
@@ -203,6 +203,9 @@ virtual void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" hr
 <tr class="memitem:a7a55c27e941a05d5314aa5e30b28c7ed"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_scene_manager.html#a7a55c27e941a05d5314aa5e30b28c7ed">updateSceneNodes2</a> (uint32_t imageIndex)</td></tr>
 <tr class="memdesc:a7a55c27e941a05d5314aa5e30b28c7ed"><td class="mdescLeft">&#160;</td><td class="mdescRight">Find all scene nodes without a parent, then update them and their children.  <a href="#a7a55c27e941a05d5314aa5e30b28c7ed">More...</a><br /></td></tr>
 <tr class="separator:a7a55c27e941a05d5314aa5e30b28c7ed"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a842af61c4ba07c19bbae9c9233be1f27"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_scene_manager.html#a842af61c4ba07c19bbae9c9233be1f27">switchOffLight2</a> (<a class="el" href="classve_1_1_v_e_light.html">VELight</a> *light)</td></tr>
+<tr class="memdesc:a842af61c4ba07c19bbae9c9233be1f27"><td class="mdescLeft">&#160;</td><td class="mdescRight">Remove a light from the m_lights list, thus switching it off.  <a href="#a842af61c4ba07c19bbae9c9233be1f27">More...</a><br /></td></tr>
+<tr class="separator:a842af61c4ba07c19bbae9c9233be1f27"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aa6929a5a216090f467a4daa5722173d5"><td class="memItemLeft" align="right" valign="top"><a id="aa6929a5a216090f467a4daa5722173d5"></a>
 void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_scene_manager.html#aa6929a5a216090f467a4daa5722173d5">sceneGraphChanged2</a> ()</td></tr>
 <tr class="memdesc:aa6929a5a216090f467a4daa5722173d5"><td class="mdescLeft">&#160;</td><td class="mdescRight">This should be called whenever the scene graph ist changed. <br /></td></tr>
@@ -959,8 +962,8 @@ std::mutex&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href
 
 </div>
 </div>
-<a id="aae47277fd521d322ee02dc51f643e7f8"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#aae47277fd521d322ee02dc51f643e7f8">&#9670;&nbsp;</a></span>createSkybox()</h2>
+<a id="adb596cddd13574ef55c944c0b4adcff4"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#adb596cddd13574ef55c944c0b4adcff4">&#9670;&nbsp;</a></span>createSkybox()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -981,7 +984,13 @@ std::mutex&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href
           <td class="paramkey"></td>
           <td></td>
           <td class="paramtype">std::vector&lt; std::string &gt;&#160;</td>
-          <td class="paramname"><em>texNames</em>&#160;</td>
+          <td class="paramname"><em>texNames</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="classve_1_1_v_e_scene_node.html">VESceneNode</a> *&#160;</td>
+          <td class="paramname"><em>parent</em>&#160;</td>
         </tr>
         <tr>
           <td></td>
@@ -998,6 +1007,7 @@ std::mutex&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href
     <tr><td class="paramdir">[in]</td><td class="paramname">entityName</td><td>Name of the new entity. </td></tr>
     <tr><td class="paramdir">[in]</td><td class="paramname">basedir</td><td>Name of the directory the texture file is in </td></tr>
     <tr><td class="paramdir">[in]</td><td class="paramname">texNames</td><td>List of 6 names of the texture files. Order must be ft bk up dn rt lf </td></tr>
+    <tr><td class="paramdir">[in]</td><td class="paramname">parent</td><td>Pointer to a scene node that is the parent of this box, should be root node </td></tr>
   </table>
   </dd>
 </dl>
@@ -1643,6 +1653,41 @@ std::mutex&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href
 
 </div>
 </div>
+<a id="a842af61c4ba07c19bbae9c9233be1f27"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a842af61c4ba07c19bbae9c9233be1f27">&#9670;&nbsp;</a></span>switchOffLight2()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">void ve::VESceneManager::switchOffLight2 </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="classve_1_1_v_e_light.html">VELight</a> *&#160;</td>
+          <td class="paramname"><em>light</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">protected</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Remove a light from the m_lights list, thus switching it off. </p>
+<p>Removing this light does not remove it from the m_entities list. Removing it from the m_lights list causes the light to be switched off.</p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramdir">[in]</td><td class="paramname">light</td><td>A pointer to the light to switch off </td></tr>
+  </table>
+  </dd>
+</dl>
+
+</div>
+</div>
 <a id="a3c5a46bc9fb0c998451b96b68dcbf45d"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a3c5a46bc9fb0c998451b96b68dcbf45d">&#9670;&nbsp;</a></span>switchOnLight()</h2>
 
@@ -1712,7 +1757,7 @@ std::mutex&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href
 </div><!-- contents -->
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>
-Generated on Thu Jun 6 2019 17:28:40 for Vienna Vulkan Engine by &#160;<a href="http://www.doxygen.org/index.html">
+Generated on Fri Jun 14 2019 12:10:03 for Vienna Vulkan Engine by &#160;<a href="http://www.doxygen.org/index.html">
 <img class="footer" src="doxygen.png" alt="doxygen"/>
 </a> 1.8.15
 </small></address>

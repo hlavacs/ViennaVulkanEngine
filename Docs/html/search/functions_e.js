@@ -8,7 +8,7 @@ var searchData=
   ['removechild',['removeChild',['../classve_1_1_v_e_scene_node.html#a1529634fd49e5c87fd5102eedf12265a',1,'ve::VESceneNode']]],
   ['removeentity',['removeEntity',['../classve_1_1_v_e_subrender.html#a6c4ec37a5d7598effd43b92851dd1b26',1,'ve::VESubrender::removeEntity()'],['../classve_1_1_v_e_subrender_f_w.html#a00fc3ad5508f27a03436379eb2c38c0b',1,'ve::VESubrenderFW::removeEntity()']]],
   ['removeentityfromsubrenderers',['removeEntityFromSubrenderers',['../classve_1_1_v_e_renderer.html#ab9b882c882cb555c469dfd74c8e70236',1,'ve::VERenderer']]],
-  ['removeeventlistener',['removeEventListener',['../classve_1_1_v_e_engine.html#aeb82d22efa554a6086b5452a24c33cc9',1,'ve::VEEngine::removeEventListener(std::string name)'],['../classve_1_1_v_e_engine.html#a2b4f80461f9f9fe1c6d1ba71b5b7a339',1,'ve::VEEngine::removeEventListener(std::string name, std::vector&lt; VEEventListener * &gt; &amp;list)']]],
+  ['removeeventlistener',['removeEventListener',['../classve_1_1_v_e_engine.html#aeb82d22efa554a6086b5452a24c33cc9',1,'ve::VEEngine::removeEventListener(std::string name)'],['../classve_1_1_v_e_engine.html#aa6c7d5ead79744ec8792ddd7cf44c2a3',1,'ve::VEEngine::removeEventListener(std::string name, std::vector&lt; VEEventListener * &gt; *list)']]],
   ['rotatorlistener',['RotatorListener',['../classve_1_1_rotator_listener.html#a30c9874c0bf2a580bf1d5deb3f895e27',1,'ve::RotatorListener']]],
   ['run',['run',['../classve_1_1_v_e_engine.html#a62fa2c32d1378dc445c4c7e19175b3bf',1,'ve::VEEngine']]]
 ];

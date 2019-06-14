@@ -6,6 +6,7 @@ var searchData=
   ['ve_5fentity_5ftype_5fnormal',['VE_ENTITY_TYPE_NORMAL',['../classve_1_1_v_e_entity.html#a2c7f15fd3b11aac4dea3e76cfa508010ad17a8252ea611aeecd1a3504266d36c3',1,'ve::VEEntity']]],
   ['ve_5fentity_5ftype_5fskyplane',['VE_ENTITY_TYPE_SKYPLANE',['../classve_1_1_v_e_entity.html#a2c7f15fd3b11aac4dea3e76cfa508010a92532eff5ccaf8577b48ca58cda963ed',1,'ve::VEEntity']]],
   ['ve_5fentity_5ftype_5fterrain_5fheightmap',['VE_ENTITY_TYPE_TERRAIN_HEIGHTMAP',['../classve_1_1_v_e_entity.html#a2c7f15fd3b11aac4dea3e76cfa508010abac018c253c0f8cbaf76ef41f870124e',1,'ve::VEEntity']]],
+  ['ve_5fevent_5fdelete_5fnode',['VE_EVENT_DELETE_NODE',['../structve_1_1ve_event.html#a726c4f6879b113926d4bc38c2d1731ffa18225359464148828786b3f227e3b9d0',1,'ve::veEvent']]],
   ['ve_5fevent_5fdraw_5foverlay',['VE_EVENT_DRAW_OVERLAY',['../structve_1_1ve_event.html#a726c4f6879b113926d4bc38c2d1731ffa5a7222d32d9280be883fb0e961902ea5',1,'ve::veEvent']]],
   ['ve_5fevent_5fframe_5fended',['VE_EVENT_FRAME_ENDED',['../structve_1_1ve_event.html#a726c4f6879b113926d4bc38c2d1731ffa7044423655add48addf30cb1446aa186',1,'ve::veEvent']]],
   ['ve_5fevent_5fframe_5fstarted',['VE_EVENT_FRAME_STARTED',['../structve_1_1ve_event.html#a726c4f6879b113926d4bc38c2d1731ffabd198feae66a7b77ecef213c796d2840',1,'ve::veEvent']]],

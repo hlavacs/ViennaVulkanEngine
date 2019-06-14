@@ -84,12 +84,13 @@ Inheritance diagram for ve::VEEventListener:</div>
  <div class="center">
   <img src="classve_1_1_v_e_event_listener.png" usemap="#ve::VEEventListener_map" alt=""/>
   <map id="ve::VEEventListener_map" name="ve::VEEventListener_map">
-<area href="classve_1_1_v_e_named_class.html" title="Base class of all classes that need a name." alt="ve::VENamedClass" shape="rect" coords="434,0,641,24"/>
-<area href="classve_1_1_level_listener.html" title="simple event listener for loading levels" alt="ve::LevelListener" shape="rect" coords="0,112,207,136"/>
-<area href="classve_1_1_rotator_listener.html" title="simple event listener for rotating objects" alt="ve::RotatorListener" shape="rect" coords="217,112,424,136"/>
-<area href="classve_1_1_v_e_event_listener_g_l_f_w.html" title="An event listener for GLFW events." alt="ve::VEEventListenerGLFW" shape="rect" coords="434,112,641,136"/>
-<area href="classve_1_1_v_e_event_listener_nuklear.html" title="Example Nuklear GUI." alt="ve::VEEventListenerNuklear" shape="rect" coords="651,112,858,136"/>
-<area href="classve_1_1_v_e_event_listener_nuklear_debug.html" title="This event listener is used for displaying error messages using Nuklear." alt="ve::VEEventListenerNuklearDebug" shape="rect" coords="868,112,1075,136"/>
+<area href="classve_1_1_v_e_named_class.html" title="Base class of all classes that need a name." alt="ve::VENamedClass" shape="rect" coords="542,0,749,24"/>
+<area href="classve_1_1_blink_listener.html" title="simple event listener for rotating objects" alt="ve::BlinkListener" shape="rect" coords="0,112,207,136"/>
+<area href="classve_1_1_level_listener.html" title="simple event listener for loading levels" alt="ve::LevelListener" shape="rect" coords="217,112,424,136"/>
+<area href="classve_1_1_rotator_listener.html" title="simple event listener for rotating objects" alt="ve::RotatorListener" shape="rect" coords="434,112,641,136"/>
+<area href="classve_1_1_v_e_event_listener_g_l_f_w.html" title="An event listener for GLFW events." alt="ve::VEEventListenerGLFW" shape="rect" coords="651,112,858,136"/>
+<area href="classve_1_1_v_e_event_listener_nuklear.html" title="Example Nuklear GUI." alt="ve::VEEventListenerNuklear" shape="rect" coords="868,112,1075,136"/>
+<area href="classve_1_1_v_e_event_listener_nuklear_debug.html" title="This event listener is used for displaying error messages using Nuklear." alt="ve::VEEventListenerNuklearDebug" shape="rect" coords="1085,112,1292,136"/>
   </map>
 </div></div>
 <table class="memberdecls">
@@ -148,6 +149,8 @@ virtual bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" hr
 virtual bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_event_listener.html#a3352edfaf499ff85fb80bb067f6da6a5">onMouseScroll</a> (<a class="el" href="structve_1_1ve_event.html">veEvent</a> event)</td></tr>
 <tr class="memdesc:a3352edfaf499ff85fb80bb067f6da6a5"><td class="mdescLeft">&#160;</td><td class="mdescRight">Mouse scroll event. Event can be consumed. <br /></td></tr>
 <tr class="separator:a3352edfaf499ff85fb80bb067f6da6a5"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ab5d5e5d459e90661cba85dcafaf72081"><td class="memItemLeft" align="right" valign="top">virtual bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_event_listener.html#ab5d5e5d459e90661cba85dcafaf72081">onSceneNodeDeleted</a> (<a class="el" href="structve_1_1ve_event.html">veEvent</a> event)</td></tr>
+<tr class="separator:ab5d5e5d459e90661cba85dcafaf72081"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="inherited"></a>
 Additional Inherited Members</h2></td></tr>
@@ -197,6 +200,35 @@ std::string&#160;</td><td class="memItemRight" valign="bottom"><a class="el" hre
 
 </div>
 </div>
+<a id="ab5d5e5d459e90661cba85dcafaf72081"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ab5d5e5d459e90661cba85dcafaf72081">&#9670;&nbsp;</a></span>onSceneNodeDeleted()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">virtual bool ve::VEEventListener::onSceneNodeDeleted </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="structve_1_1ve_event.html">veEvent</a>&#160;</td>
+          <td class="paramname"><em>event</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span><span class="mlabel">protected</span><span class="mlabel">virtual</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+<p>A scene node was deleted </p><dl class="section return"><dt>Returns</dt><dd>flag indicating whether this event listener should be destroyed </dd></dl>
+
+<p>Reimplemented in <a class="el" href="classve_1_1_blink_listener.html#acb625c2028904012ca71335d639b074f">ve::BlinkListener</a>, and <a class="el" href="classve_1_1_rotator_listener.html#ad13e967fd8890565ab246199454d3821">ve::RotatorListener</a>.</p>
+
+</div>
+</div>
 <hr/>The documentation for this class was generated from the following files:<ul>
 <li><a class="el" href="_v_e_event_listener_8h_source.html">VEEventListener.h</a></li>
 <li>VEEventListener.cpp</li>
@@ -204,7 +236,7 @@ std::string&#160;</td><td class="memItemRight" valign="bottom"><a class="el" hre
 </div><!-- contents -->
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>
-Generated on Thu Jun 6 2019 17:28:39 for Vienna Vulkan Engine by &#160;<a href="http://www.doxygen.org/index.html">
+Generated on Fri Jun 14 2019 12:10:02 for Vienna Vulkan Engine by &#160;<a href="http://www.doxygen.org/index.html">
 <img class="footer" src="doxygen.png" alt="doxygen"/>
 </a> 1.8.15
 </small></address>

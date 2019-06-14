@@ -119,9 +119,9 @@ virtual void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" hr
 <tr class="memitem:aeb82d22efa554a6086b5452a24c33cc9"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_engine.html#aeb82d22efa554a6086b5452a24c33cc9">removeEventListener</a> (std::string name)</td></tr>
 <tr class="memdesc:aeb82d22efa554a6086b5452a24c33cc9"><td class="mdescLeft">&#160;</td><td class="mdescRight">Remove an event listener.  <a href="#aeb82d22efa554a6086b5452a24c33cc9">More...</a><br /></td></tr>
 <tr class="separator:aeb82d22efa554a6086b5452a24c33cc9"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a2b4f80461f9f9fe1c6d1ba71b5b7a339"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_engine.html#a2b4f80461f9f9fe1c6d1ba71b5b7a339">removeEventListener</a> (std::string name, std::vector&lt; <a class="el" href="classve_1_1_v_e_event_listener.html">VEEventListener</a> * &gt; &amp;list)</td></tr>
-<tr class="memdesc:a2b4f80461f9f9fe1c6d1ba71b5b7a339"><td class="mdescLeft">&#160;</td><td class="mdescRight">Register an event listener for a specific evennt type.  <a href="#a2b4f80461f9f9fe1c6d1ba71b5b7a339">More...</a><br /></td></tr>
-<tr class="separator:a2b4f80461f9f9fe1c6d1ba71b5b7a339"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aa6c7d5ead79744ec8792ddd7cf44c2a3"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_engine.html#aa6c7d5ead79744ec8792ddd7cf44c2a3">removeEventListener</a> (std::string name, std::vector&lt; <a class="el" href="classve_1_1_v_e_event_listener.html">VEEventListener</a> * &gt; *list)</td></tr>
+<tr class="memdesc:aa6c7d5ead79744ec8792ddd7cf44c2a3"><td class="mdescLeft">&#160;</td><td class="mdescRight">Register an event listener for a specific evennt type.  <a href="#aa6c7d5ead79744ec8792ddd7cf44c2a3">More...</a><br /></td></tr>
+<tr class="separator:aa6c7d5ead79744ec8792ddd7cf44c2a3"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a9f5ba97f114b2da508e9b6363b10e140"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_engine.html#a9f5ba97f114b2da508e9b6363b10e140">deleteEventListener</a> (std::string name)</td></tr>
 <tr class="memdesc:a9f5ba97f114b2da508e9b6363b10e140"><td class="mdescLeft">&#160;</td><td class="mdescRight">Delete an event listener.  <a href="#a9f5ba97f114b2da508e9b6363b10e140">More...</a><br /></td></tr>
 <tr class="separator:a9f5ba97f114b2da508e9b6363b10e140"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -231,10 +231,10 @@ VkDebugReportCallbackEXT&#160;</td><td class="memItemRight" valign="bottom"><a c
 std::vector&lt; <a class="el" href="structve_1_1ve_event.html">veEvent</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_engine.html#a7e1c10b9b9b8fead1477472db96acbd6">m_eventlist</a></td></tr>
 <tr class="memdesc:a7e1c10b9b9b8fead1477472db96acbd6"><td class="mdescLeft">&#160;</td><td class="mdescRight">List of events that should be handled in the next loop. <br /></td></tr>
 <tr class="separator:a7e1c10b9b9b8fead1477472db96acbd6"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a76d56e49d3565bd11a3db78c3cb9361b"><td class="memItemLeft" align="right" valign="top"><a id="a76d56e49d3565bd11a3db78c3cb9361b"></a>
-std::map&lt; <a class="el" href="structve_1_1ve_event.html#a726c4f6879b113926d4bc38c2d1731ff">veEvent::veEventType</a>, std::vector&lt; <a class="el" href="classve_1_1_v_e_event_listener.html">VEEventListener</a> * &gt; &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_engine.html#a76d56e49d3565bd11a3db78c3cb9361b">m_eventListeners</a></td></tr>
-<tr class="memdesc:a76d56e49d3565bd11a3db78c3cb9361b"><td class="mdescLeft">&#160;</td><td class="mdescRight">Maps event types to lists of evennt listeners. <br /></td></tr>
-<tr class="separator:a76d56e49d3565bd11a3db78c3cb9361b"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ad07970d40517dec1d609265ad06b6acc"><td class="memItemLeft" align="right" valign="top"><a id="ad07970d40517dec1d609265ad06b6acc"></a>
+std::map&lt; <a class="el" href="structve_1_1ve_event.html#a726c4f6879b113926d4bc38c2d1731ff">veEvent::veEventType</a>, std::vector&lt; <a class="el" href="classve_1_1_v_e_event_listener.html">VEEventListener</a> * &gt; * &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_engine.html#ad07970d40517dec1d609265ad06b6acc">m_eventListeners</a></td></tr>
+<tr class="memdesc:ad07970d40517dec1d609265ad06b6acc"><td class="mdescLeft">&#160;</td><td class="mdescRight">Maps event types to lists of evennt listeners. <br /></td></tr>
+<tr class="separator:ad07970d40517dec1d609265ad06b6acc"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a53b1fbf53f36aa9999efbde5be63db78"><td class="memItemLeft" align="right" valign="top"><a id="a53b1fbf53f36aa9999efbde5be63db78"></a>
 double&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_engine.html#a53b1fbf53f36aa9999efbde5be63db78">m_dt</a> = 0.0</td></tr>
 <tr class="memdesc:a53b1fbf53f36aa9999efbde5be63db78"><td class="mdescLeft">&#160;</td><td class="mdescRight">Delta time since the last loop. <br /></td></tr>
@@ -1321,8 +1321,8 @@ bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="clas
 
 </div>
 </div>
-<a id="a2b4f80461f9f9fe1c6d1ba71b5b7a339"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a2b4f80461f9f9fe1c6d1ba71b5b7a339">&#9670;&nbsp;</a></span>removeEventListener() <span class="overload">[2/2]</span></h2>
+<a id="aa6c7d5ead79744ec8792ddd7cf44c2a3"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aa6c7d5ead79744ec8792ddd7cf44c2a3">&#9670;&nbsp;</a></span>removeEventListener() <span class="overload">[2/2]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -1336,7 +1336,7 @@ bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="clas
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype">std::vector&lt; <a class="el" href="classve_1_1_v_e_event_listener.html">VEEventListener</a> * &gt; &amp;&#160;</td>
+          <td class="paramtype">std::vector&lt; <a class="el" href="classve_1_1_v_e_event_listener.html">VEEventListener</a> * &gt; *&#160;</td>
           <td class="paramname"><em>list</em>&#160;</td>
         </tr>
         <tr>
@@ -1422,7 +1422,7 @@ bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="clas
 </div><!-- contents -->
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>
-Generated on Thu Jun 6 2019 17:28:39 for Vienna Vulkan Engine by &#160;<a href="http://www.doxygen.org/index.html">
+Generated on Fri Jun 14 2019 12:10:02 for Vienna Vulkan Engine by &#160;<a href="http://www.doxygen.org/index.html">
 <img class="footer" src="doxygen.png" alt="doxygen"/>
 </a> 1.8.15
 </small></address>
