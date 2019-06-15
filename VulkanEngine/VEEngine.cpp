@@ -606,7 +606,7 @@ namespace ve {
 		getSceneManagerPointer()->setCamera(camera);
 
 		VELight *light4 = (VESpotLight *)getSceneManagerPointer()->createLight("StandardAmbientLight", VELight::VE_LIGHT_TYPE_AMBIENT, camera);
-		light4->m_col_ambient = glm::vec4(0.2f, 0.2f, 0.2f, 1.0f);
+		light4->m_col_ambient = glm::vec4(0.3f, 0.3f, 0.3f, 1.0f);
 
 		//use one light source
 		VELight *light1 = (VEDirectionalLight *)getSceneManagerPointer()->createLight("StandardDirLight", VELight::VE_LIGHT_TYPE_DIRECTIONAL, getRoot());     //new VEDirectionalLight("StandardDirLight");

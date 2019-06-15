@@ -164,7 +164,7 @@ namespace ve {
 			float stride = 300.0f;
 			static std::default_random_engine e{12345};
 			static std::uniform_real_distribution<> d{ 1.0f, stride }; 
-			static std::uniform_real_distribution<> dur{ 0.3f, 1.0f };
+			static std::uniform_real_distribution<> dur{ 0.3f, 1000.0f };
 
 			VEMesh *pMesh;
 			VECHECKPOINTER( pMesh = getSceneManagerPointer()->getMesh("models/test/crate0/cube.obj/cube") );
@@ -181,6 +181,26 @@ namespace ve {
 				registerEventListener( new BlinkListener("BlinkListener" + std::to_string(i), e2, dur(e) ), { veEvent::VE_EVENT_FRAME_STARTED, veEvent::VE_EVENT_DELETE_NODE });
 			}
 
+		}
+
+		///create many lights
+		void createLights(uint32_t n, VESceneNode *parent) {
+			float stride = 200.0f;
+			static std::default_random_engine e{ 12345 };
+			static std::uniform_real_distribution<> d{ 1.0f, stride };
+
+			for (uint32_t i = 0; i < n; i++) {
+				VELight *pLight;
+				VECHECKPOINTER(pLight = getSceneManagerPointer()->createLight("Light" + std::to_string(i), VELight::VE_LIGHT_TYPE_SPOT, parent));
+				pLight->m_col_diffuse = glm::vec4(0.7f, 0.7f, 0.7f, 1.0f);
+				pLight->m_col_specular = glm::vec4(0.3f, 0.3f, 0.3f, 1.0f);
+				pLight->m_param[0] = stride/3.0f;
+				//pLight->multiplyTransform(glm::translate(glm::vec3(d(e) - stride / 2.0f, d(e)/10.0f, d(e) - stride / 2.0f)));
+
+				pLight->lookAt(glm::vec3(d(e) - stride / 2.0f, d(e) / 30.0f, d(e) - stride / 2.0f), 
+					glm::vec3(d(e) - stride / 2.0f, 0.0f, d(e) - stride / 2.0f),
+					glm::vec3( 0.0f, 1.0f, 0.0f ));
+			}
 		}
 
 		///Load the first level into the game engine
@@ -229,6 +249,7 @@ namespace ve {
 			pScene->addChild(e1);
 
 			createCubes(40000, pScene);
+			//createLights(20, pScene );
 			//VESceneNode *pSponza = m_pSceneManager->loadModel("Sponza", "models/sponza", "sponza.dae", aiProcess_FlipWindingOrder);
 			//pSponza->setTransform(glm::scale(glm::mat4(1.0f), glm::vec3(0.1f, 0.1f, 0.1f)));
 

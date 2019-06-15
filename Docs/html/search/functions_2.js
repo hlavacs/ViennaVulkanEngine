@@ -23,6 +23,7 @@ var searchData=
   ['createentity',['createEntity',['../classve_1_1_v_e_scene_manager.html#a3c06807aa21254807363ef92639a7d52',1,'ve::VESceneManager::createEntity(std::string entityName, VEMesh *pMesh, VEMaterial *pMat, VESceneNode *parent, glm::mat4 transf=glm::mat4(1.0f))'],['../classve_1_1_v_e_scene_manager.html#a1b9b2117851761638442e562a93f9476',1,'ve::VESceneManager::createEntity(std::string entityName, VEEntity::veEntityType type, VEMesh *pMesh, VEMaterial *pMat, VESceneNode *parent, glm::mat4 transf=glm::mat4(1.0f))']]],
   ['createentity2',['createEntity2',['../classve_1_1_v_e_scene_manager.html#acdf964ec97e38cb8eea8154cc7cbbe24',1,'ve::VESceneManager']]],
   ['createlight',['createLight',['../classve_1_1_v_e_scene_manager.html#a067d300535ffe3210c55c70600e35c4a',1,'ve::VESceneManager']]],
+  ['createlights',['createLights',['../classve_1_1_my_vulkan_engine.html#afcfddd13328ce4fd5b040dca0eeaa378',1,'ve::MyVulkanEngine']]],
   ['creatematerials',['createMaterials',['../classve_1_1_v_e_scene_manager.html#a40cb40d0509a6db4730d8204d08a8c12',1,'ve::VESceneManager']]],
   ['createmeshes',['createMeshes',['../classve_1_1_v_e_scene_manager.html#a0dffe81f507aafc98ce88bde78f7c61a',1,'ve::VESceneManager']]],
   ['createrenderer',['createRenderer',['../classve_1_1_v_e_engine.html#a6090eb44fe9be9d7587006c79a661244',1,'ve::VEEngine']]],
