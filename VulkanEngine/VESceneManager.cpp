@@ -174,7 +174,7 @@ namespace ve {
 
 		copyAiNodes( pScene, meshes, materials, pScene->mRootNode, pMO);	//create scene nodes and entities from the file
 
-		sceneGraphChanged();	//notify renderer to rerecord the cmd buffers
+		sceneGraphChanged2();	//notify renderer to rerecord the cmd buffers
 		return pMO;
 	}
 
@@ -392,7 +392,7 @@ namespace ve {
 
 		VESceneNode *pMO = new VESceneNode(objectName, transf );
 		addSceneNodeAndChildren2( pMO, parent );
-		sceneGraphChanged();
+		sceneGraphChanged2();
 		return pMO;
 	}
 
@@ -455,7 +455,7 @@ namespace ve {
 		if (pMesh != nullptr && pMat != nullptr) {
 			getRendererPointer()->addEntityToSubrenderer(pEntity);
 		}
-		sceneGraphChanged();
+		sceneGraphChanged2();
 		return pEntity;
 	}
 
@@ -572,7 +572,7 @@ namespace ve {
 		VEEntity *pEntity = createEntity2(entityName, VEEntity::VE_ENTITY_TYPE_SKYPLANE, pMesh, pMat, parent );
 		pEntity->m_castsShadow = false;
 
-		sceneGraphChanged();
+		sceneGraphChanged2();
 		return pEntity;
 	}
 
@@ -638,7 +638,7 @@ namespace ve {
 		sp1->multiplyTransform(glm::translate(glm::mat4(1.0f), glm::vec3(-scale / 2.0f, 0.0f, 0.0f)));
 		sp1->m_castsShadow = false;
 
-		sceneGraphChanged();
+		sceneGraphChanged2();
 		return parent;
 	}
 
@@ -650,7 +650,15 @@ namespace ve {
 	* \brief This should be called whenever the scene graph ist changed
 	*/
 	void VESceneManager::sceneGraphChanged() {
-		if(m_autoRecord) getRendererPointer()->updateCmdBuffers();	//if no auto record then app has to trigger rerecording itself
+		getRendererPointer()->updateCmdBuffers();
+	}
+
+
+	/**
+	* \brief This should be called whenever the scene graph ist changed - internal version
+	*/
+	void VESceneManager::sceneGraphChanged2() {
+		if (m_autoRecord) getRendererPointer()->updateCmdBuffers();	//if no auto record then app has to trigger rerecording itself
 	}
 
 
@@ -663,14 +671,46 @@ namespace ve {
 	* \param[in] imageIndex Index of the swapchain image that is currently used.
 	*
 	*/
-	void VESceneManager::updateSceneNodes2(uint32_t imageIndex ) {
+	void VESceneManager::updateSceneNodes(uint32_t imageIndex ) {
 		std::lock_guard<std::mutex> lock(m_mutex);
-		m_rootSceneNode->update( imageIndex );
+
+		m_lights.clear();
+		updateSceneNodes2(getRoot(), glm::mat4(1.0f), imageIndex);
 
 		for (auto list : m_memoryBlockMap) {
 			vh::vhMemBlockUpdateBlockList(list.second, imageIndex );
 		}
 	}
+
+
+
+	/**
+	*
+	* \brief Update this node and all its children
+	*
+	* Makes this nodes and their children to copy their data to the GPU
+	*
+	* \param[in] pNode Pointer to the node to start updating
+	* \param[in] parentWorldMatrix World Matrix of the parent, used as a start
+	* \param[in] imageIndex Index of the swapchain image that is currently used.
+	*
+	*/
+	void VESceneManager::updateSceneNodes2(VESceneNode *pNode, glm::mat4 parentWorldMatrix, uint32_t imageIndex) {
+		glm::mat4 worldMatrix = parentWorldMatrix * pNode->getTransform();		//compute the world matrix
+
+		pNode->updateUBO(worldMatrix, imageIndex);				//copy UBO data to the GPU
+
+		if (pNode->getNodeType() == VESceneNode::VE_NODE_TYPE_SCENEOBJECT &&
+			((VESceneObject*)pNode)->getObjectType() == VESceneObject::VE_OBJECT_TYPE_LIGHT) {
+			m_lights.push_back( (VELight*)pNode );
+		}
+
+		for (auto pChild : pNode->m_children) {
+			updateSceneNodes2(pChild, worldMatrix, imageIndex);	//update the children by giving them the current worldMatrix
+		}
+
+	}
+
 
 
 
@@ -760,8 +800,8 @@ namespace ve {
 				if (pObject->getObjectType() == VESceneObject::VE_OBJECT_TYPE_CAMERA && m_camera == (VECamera*)pObject)
 					m_camera = nullptr;
 
-				if (pObject->getObjectType() == VESceneObject::VE_OBJECT_TYPE_LIGHT)
-					switchOffLight2( (VELight*)pObject );
+				//if (pObject->getObjectType() == VESceneObject::VE_OBJECT_TYPE_LIGHT)
+				//	switchOffLight2( (VELight*)pObject );
 
 				if( pObject->getObjectType() == VESceneObject::VE_OBJECT_TYPE_ENTITY )
 					getRendererPointer()->removeEntityFromSubrenderers((VEEntity*)pObject);
@@ -789,7 +829,7 @@ namespace ve {
 
 			delete pNode;
 		}
-		sceneGraphChanged();
+		sceneGraphChanged2();
 	}
 
 
@@ -913,98 +953,6 @@ namespace ve {
 
 
 	/**
-	*
-	* \brief Add a light to the m_lights list, thus switching it on
-	*
-	* A light must be also on the stage as entity in the scene manager's entity list. 
-	* but until it is member of this list, it will not be considered as a shining light.
-	*
-	* \param[in] light A pointer to the light to add to the shining lights
-	*
-	*/
-	void  VESceneManager::switchOnLight(VELight * light) {
-		if( isLightSwitchedOn(light) ) return;				//is synced
-
-		std::lock_guard<std::mutex> lock(m_mutex);
-		light->m_switchedOn = true;
-		m_lights.push_back(light);
-		sceneGraphChanged();
-	};
-
-
-	/**
-	*
-	* \brief Remove a light from the m_lights list, thus switching it off
-	*
-	* Removing this light does not remove it from the m_entities list.
-	* Removing it from the m_lights list causes the light to be switched off.
-	*
-	* \param[in] light A pointer to the light to switch off
-	*
-	*/
-	void  VESceneManager::switchOffLight(VELight *light) {
-		std::lock_guard<std::mutex> lock(m_mutex);
-		switchOffLight2(light);
-	}
-
-
-	/**
-	*
-	* \brief Remove a light from the m_lights list, thus switching it off
-	*
-	* Removing this light does not remove it from the m_entities list.
-	* Removing it from the m_lights list causes the light to be switched off.
-	*
-	* \param[in] light A pointer to the light to switch off
-	*
-	*/
-	void  VESceneManager::switchOffLight2(VELight *light) {
-		light->m_switchedOn = false;
-		for (uint32_t i = 0; i < m_lights.size(); i++) {
-			if (light == m_lights[i]) {
-				m_lights[i] = m_lights[m_lights.size() - 1];	//overwrite with last light
-				m_lights.pop_back();							//remove last light
-			}
-		}
-		sceneGraphChanged();
-	}
-
-
-	/**
-	*
-	* \brief Determine whether a light is switched on or not
-	*
-	* \param[in] pLight A pointer to the light to query
-	* \returns true if the light is switched on, else false
-	*
-	*/
-	bool VESceneManager::isLightSwitchedOn(VELight *pLight) {
-		if (pLight == nullptr) return false;
-
-		std::lock_guard<std::mutex> lock(m_mutex);
-		for (auto light : m_lights) {
-			if (light == pLight) return true;
-		}
-		return false;
-	}
-
-
-	/**
-	*
-	* \brief Determine whether a light is switched on or not
-	*
-	* \param[in] name The name of the light to query
-	* \returns true if the light is switched on, else false
-	*
-	*/
-	bool VESceneManager::isLightSwitchedOn(std::string name) {
-		VELight *pLight = (VELight*)getSceneNode(name);				//is synchronized
-		return isLightSwitchedOn(pLight);							//is synchronized
-	}
-
-
-
-	/**
 	* \brief Close down the scene manager and delete all its assets.
 	*/
 	void VESceneManager::closeSceneManager() {
@@ -1096,7 +1044,7 @@ namespace ve {
 		VESceneNode *pEntity = createEntity(entityName, entityType, pMesh, pMat, glm::mat4(1.0f), m_rootSceneNode);
 		pEntity->setTransform(glm::scale(glm::vec3(10000.0f, 10000.0f, 10000.0f)));
 
-		sceneGraphChanged();
+		sceneGraphChanged2();
 		return pEntity;
 	}*/
 
@@ -1147,7 +1095,7 @@ namespace ve {
 		pEntity->setTransform(glm::scale(glm::vec3(500.0f, 500.0f, 500.0f)));
 		pEntity->m_castsShadow = false;
 
-		sceneGraphChanged();
+		sceneGraphChanged2();
 		return pEntity;
 	}*/
 

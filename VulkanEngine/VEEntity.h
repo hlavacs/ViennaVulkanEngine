@@ -58,13 +58,8 @@ namespace ve {
 		//--------------------------------------------------------------------------------------
 		//UBO updates
 
-		virtual void update(uint32_t imageIndex);									//Copy the world matrix to the UBO
-		virtual void update(glm::mat4 parentWorldMatrix, uint32_t imageIndex);		//Copy the world matrix using the parent's world matrix
-		virtual void updateChildren(glm::mat4 worldMatrix, uint32_t imageIndex);	//Update all children
-
 		///Meant for subclasses to add data to the UBO, so this function does nothing in base class
 		virtual void updateUBO(glm::mat4 worldMatrix, uint32_t imageIndex) {};
-
 
 	public:
 

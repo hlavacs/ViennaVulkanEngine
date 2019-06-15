@@ -105,8 +105,6 @@ namespace ve {
 
 	///simple event listener for switching on/off light
 	class LightListener : public VEEventListener {
-		bool m_lightWeight = false;
-
 	public:
 		///Constructor
 		LightListener(std::string name) : VEEventListener(name) {};
@@ -116,17 +114,7 @@ namespace ve {
 			VELight *pLight = (VELight*)getSceneManagerPointer()->getSceneNode(name);
 			if (pLight == nullptr) return;
 
-			if (m_lightWeight) {
-				pLight->m_switchedOn = pLight->m_switchedOn ? false : true;
-				return;
-			}
-
-			if (getSceneManagerPointer()->isLightSwitchedOn(pLight)) {
-				getSceneManagerPointer()->switchOffLight(pLight);
-			}
-			else {
-				getSceneManagerPointer()->switchOnLight(pLight);
-			}
+			pLight->m_switchedOn = pLight->m_switchedOn ? false : true;
 		}
 
 		///load a new level when pressing numbers 1-3
@@ -145,11 +133,6 @@ namespace ve {
 
 			if (event.idata1 == GLFW_KEY_0 && event.idata3 == GLFW_PRESS) {
 				toggleLight("StandardSpotLight");
-				return true;
-			}
-
-			if (event.idata1 == GLFW_KEY_7 && event.idata3 == GLFW_PRESS) {
-				m_lightWeight = m_lightWeight ? false : true;
 				return true;
 			}
 

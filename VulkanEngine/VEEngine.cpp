@@ -529,7 +529,7 @@ namespace ve {
 			//update world matrices and send them to the GPU
 
 			t_now = vh::vhTimeNow();
-			getSceneManagerPointer()->updateSceneNodes2( getRendererPointer()->getImageIndex());	//update scene node UBOs
+			getSceneManagerPointer()->updateSceneNodes( getRendererPointer()->getImageIndex());	//update scene node UBOs
 			m_AvgUpdateTime = vh::vhAverage(vh::vhTimeDuration(t_now), m_AvgUpdateTime);
 
 			//----------------------------------------------------------------------------------
@@ -607,7 +607,6 @@ namespace ve {
 
 		VELight *light4 = (VESpotLight *)getSceneManagerPointer()->createLight("StandardAmbientLight", VELight::VE_LIGHT_TYPE_AMBIENT, camera);
 		light4->m_col_ambient = glm::vec4(0.1f, 0.1f, 0.1f, 1.0f);
-		getSceneManagerPointer()->switchOnLight(light4);
 
 		//use one light source
 		VELight *light1 = (VEDirectionalLight *)getSceneManagerPointer()->createLight("StandardDirLight", VELight::VE_LIGHT_TYPE_DIRECTIONAL, getRoot());     //new VEDirectionalLight("StandardDirLight");
@@ -615,7 +614,6 @@ namespace ve {
 		light1->m_col_ambient = glm::vec4(0.0f, 0.0f, 0.0f, 1.0f);
 		light1->m_col_diffuse = glm::vec4(0.9f, 0.9f, 0.9f, 1.0f);
 		light1->m_col_specular = glm::vec4(0.1f, 0.1f, 0.1f, 1.0f);
-		getSceneManagerPointer()->switchOnLight(light1);
 		
 		VELight *light3 = (VEPointLight *)getSceneManagerPointer()->createLight("StandardPointLight", VELight::VE_LIGHT_TYPE_POINT, camera); //new VEPointLight("StandardPointLight");		//sphere is attached to this!
 		light3->m_col_ambient = glm::vec4(0.0f, 0.0f, 0.0f, 1.0f);
@@ -623,7 +621,6 @@ namespace ve {
 		light3->m_col_specular = glm::vec4(0.0f, 0.0f, 0.0f, 1.0f);
 		light3->m_param[0] = 200.0f;
 		light3->multiplyTransform(glm::translate(glm::vec3(0.0f, 0.0f, 15.0f)));
-		getSceneManagerPointer()->switchOnLight(light3);
 
 		VELight *light2 = (VESpotLight *)getSceneManagerPointer()->createLight("StandardSpotLight", VELight::VE_LIGHT_TYPE_SPOT, camera);  
 		light2->m_col_ambient = glm::vec4(0.0f, 0.0f, 0.0f, 1.0f);
@@ -631,8 +628,6 @@ namespace ve {
 		light2->m_col_specular = glm::vec4(0.0f, 0.0f, 0.0f, 1.0f);
 		light2->m_param[0] = 200.0f;
 		light2->multiplyTransform(glm::translate(glm::vec3(5.0f, 0.0f, 0.0f)));
-		getSceneManagerPointer()->switchOnLight(light2);
-
 
 		registerEventListeners();	
 	}

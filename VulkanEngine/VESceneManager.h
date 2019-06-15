@@ -69,8 +69,10 @@ namespace ve {
 		void			deleteSceneNodeAndChildren2(std::string name);
 		void			createSceneNodeList2(VESceneNode *pObject, std::vector<std::string> &namelist);
 		VEEntity *		createSkyplane2(std::string entityName, std::string basedir, std::string texName, VESceneNode *parent);
-		void			updateSceneNodes2(uint32_t imageIndex);
-		void			switchOffLight2(VELight *light);		//Remove a light from the m_lights list
+		void			sceneGraphChanged2();					//tell renderer to rerecord the cmd buffers
+		void			updateSceneNodes(uint32_t imageIndex);
+		void			updateSceneNodes2(VESceneNode *pNode, glm::mat4 worldMatrix, uint32_t imageIndex);
+		//void			switchOffLight2(VELight *light);		//Remove a light from the m_lights list
 
 	public:
 		///Constructor of class VESceneManager
@@ -145,10 +147,10 @@ namespace ve {
 		void			setCamera( VECamera *cam) { m_camera = cam; };
 		///\returns a list with names of the current lights shining on the scene
 		std::vector<VELight*> & getLights() { return m_lights;  };
-		void			switchOnLight(VELight * pLight);		//Add a light to the m_lights list
-		void			switchOffLight(VELight *pLight);		//Remove a light from the m_lights list
-		bool			isLightSwitchedOn( VELight *pLight );
-		bool			isLightSwitchedOn( std::string name );
+		//void			switchOnLight(VELight * pLight);		//Add a light to the m_lights list
+		//void			switchOffLight(VELight *pLight);		//Remove a light from the m_lights list
+		//bool			isLightSwitchedOn( VELight *pLight );
+		//bool			isLightSwitchedOn( std::string name );
 
 		//-------------------------------------------------------------------------------------
 		//Print information about the tree of objects

@@ -210,54 +210,7 @@ namespace ve {
 		}
 	}
 
-	/**
-	*
-	* \brief Update the entity's UBO buffer with the current world matrix
-	*
-	* If there is a parent, get the parent's world matrix. If not, set the parent matrix to identity.
-	* Then call update(parentWorldMatrix) to do the job.
-	*
-	* \param[in] imageIndex The index of the swapchain image that is currently used
-	*
-	*/
-	void VESceneNode::update(uint32_t imageIndex) {
-		glm::mat4 parentWorldMatrix = glm::mat4(1.0);
-		if (m_parent != nullptr) {
-			parentWorldMatrix = m_parent->getWorldTransform();
-		}
-		update(parentWorldMatrix, imageIndex );
-	}
 
-	/**
-	*
-	* \brief Update the entity's UBO buffer with the current world matrix
-	*
-	* Calculate the new world matrix (and inv transpose matix to transform normal vectors).
-	* Then copy the struct content into the UBO. Then call all children to do the same.
-	*
-	* \param[in] parentWorldMatrix The parent's world matrix or an identity matrix.
-	* \param[in] imageIndex The index of the swapchain image that is currently used
-	*
-	*/
-	void VESceneNode::update(glm::mat4 parentWorldMatrix, uint32_t imageIndex ) {
-		glm::mat4 worldMatrix = parentWorldMatrix * getTransform();		//compute the world matrix
-		updateUBO( worldMatrix, imageIndex);					//call derived class for specific data like object color
-		updateChildren( worldMatrix, imageIndex);				//update all children
-	}
-
-
-	/**
-	* \brief Update the UBOs of all children of this entity
-	*
-	* \param[in] worldMatrix The world matrix or an identity matrix.
-	* \param[in] imageIndex The index of the swapchain image that is currently used
-	*
-	*/
-	void VESceneNode::updateChildren(glm::mat4 worldMatrix, uint32_t imageIndex) {
-		for (auto pObject : m_children) {
-			pObject->update(worldMatrix, imageIndex);	//update the children by giving them the current worldMatrix
-		}
-	}
 
 	/**
 	* \brief Get a default bounding sphere for this scene node
