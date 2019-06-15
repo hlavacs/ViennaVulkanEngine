@@ -45,6 +45,13 @@ namespace ve {
 	}
 
 
+	/**
+	* \brief Set the danymic pipeline stat, i.e. the blend constants to be used
+	*
+	* \param[in] commandBuffer The currently used command buffer
+	* \param[in] numPass The current pass number - in the forst pass, write over pixel colors, after this add pixel colors
+	*
+	*/
 	void VESubrenderFW_DN::setDynamicPipelineState(VkCommandBuffer commandBuffer, uint32_t numPass) {
 		if (numPass == 0) {
 			float blendConstants[4] = { 0.0f, 0.0f, 0.0f, 0.0f };

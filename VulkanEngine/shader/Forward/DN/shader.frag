@@ -9,6 +9,8 @@
 #include "../common_defines.glsl"
 #include "../light.glsl"
 
+layout(early_fragment_tests) in;
+
 layout(location = 0) in vec3 fragPosW;
 layout(location = 1) in vec3 fragNormalW;
 layout(location = 2) in vec3 fragTangentW;
