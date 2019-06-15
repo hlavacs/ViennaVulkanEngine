@@ -50,8 +50,8 @@ namespace ve {
 		VESceneNode						*	m_rootSceneNode;	///<The root node of the scene graph
 		std::map<VESceneObject::veObjectType, std::vector<vh::vhMemoryBlock*>> m_memoryBlockMap;	///<memory for the UBOs of the entities
 
-		VECamera *				m_camera = nullptr;			///<entity ptr of the current camera
-		std::vector<VELight*>	m_lights = {};				///<ptrs to the lights to use
+		VECamera *				m_camera = nullptr;			///<Ptr to the current camera
+		std::vector<VELight*>	m_lights = {};				///<ptrs to the lights to use - filled automatically
 		std::mutex				m_mutex;					///<Mutex for multithreading, locks the scene manager
 		bool					m_autoRecord = true;		///<if true, then scene graph changes automatically leasd to a cmd buffer rerecording
 
@@ -69,7 +69,7 @@ namespace ve {
 		void			deleteSceneNodeAndChildren2(VESceneNode *pNode);
 		void			createSceneNodeList2(VESceneNode *pObject, std::vector<std::string> &namelist);
 		VEEntity *		createSkyplane2(std::string entityName, std::string basedir, std::string texName, VESceneNode *parent);
-		void			sceneGraphChanged2();					//tell renderer to rerecord the cmd buffers
+		void			sceneGraphChanged2();					//tell renderer to rerecord the cmd buffers - internal
 		void			sceneGraphChanged3();					//tell renderer to rerecord the cmd buffers
 		void			updateSceneNodes(uint32_t imageIndex);
 		void			updateSceneNodes2(VESceneNode *pNode, glm::mat4 worldMatrix, uint32_t imageIndex);

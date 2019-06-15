@@ -503,11 +503,14 @@ namespace ve {
 		VELight *pLight = nullptr;
 		if (type == VELight::VE_LIGHT_TYPE_DIRECTIONAL) {
 			pLight = new VEDirectionalLight(lightName, transf );
-		} else 		if (type == VELight::VE_LIGHT_TYPE_POINT) {
+		} else if (type == VELight::VE_LIGHT_TYPE_POINT) {
 			pLight = new VEPointLight(lightName, transf );
 		}
-		else {
+		else  if (type == VELight::VE_LIGHT_TYPE_SPOT) {
 			pLight = new VESpotLight(lightName, transf );
+		}
+		else {
+			pLight = new VEAmbientLight(lightName );
 		}
 		
 		addSceneNodeAndChildren2(pLight, parent);

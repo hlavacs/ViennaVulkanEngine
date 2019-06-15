@@ -38,14 +38,8 @@ layout(set = 4, binding = 1) uniform sampler2D normalSamplerArray[RESOURCEARRAYL
 
 void main() {
 
-    int  lightType  = lightUBO.data.itype[0];
-
-    if( lightType == LIGHT_AMBIENT ) {
-      outColor = lightUBO.data.col_ambient;
-      return;
-    }
-
     //parameters
+    int  lightType  = lightUBO.data.itype[0];
     vec3 camPosW   = cameraUBO.data.camModel[3].xyz;
     vec3 lightPosW = lightUBO.data.lightModel[3].xyz;
     vec3 lightDirW = normalize( lightUBO.data.lightModel[2].xyz );
@@ -71,7 +65,7 @@ void main() {
     vec3 speccol = lightUBO.data.col_specular.xyz;
     vec3 fragColor = texture(texSamplerArray[resIdx], texCoord).xyz;
 
-    vec3 result = ambcol * fragColor;
+    vec3 result = vec3(0,0,0);
     int sIdx = 0;
     cameraData_t s = lightUBO.data.shadowCameras[0];
     float shadowFactor = 1.0;
@@ -113,6 +107,10 @@ void main() {
                               lightPosW, lightDirW, lightParam, shadowFactor,
                               ambcol, diffcol, speccol,
                               fragPosW, normalW, fragColor);
+    }
+
+    if( lightType == LIGHT_AMBIENT ) {
+        result += fragColor * ambcol;
     }
 
     outColor = vec4( result, 1.0 );
