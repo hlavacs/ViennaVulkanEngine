@@ -105,9 +105,8 @@ virtual&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="c
 <tr class="memitem:a92554d334c1bb0b2dd203c1f81ca6bae"><td class="memItemLeft" align="right" valign="top">virtual void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_subrender_f_w___d_n.html#a92554d334c1bb0b2dd203c1f81ca6bae">initSubrenderer</a> ()</td></tr>
 <tr class="memdesc:a92554d334c1bb0b2dd203c1f81ca6bae"><td class="mdescLeft">&#160;</td><td class="mdescRight">Initialize the subrenderer.  <a href="#a92554d334c1bb0b2dd203c1f81ca6bae">More...</a><br /></td></tr>
 <tr class="separator:a92554d334c1bb0b2dd203c1f81ca6bae"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a50421be758fef12c68e44ce6c319c397"><td class="memItemLeft" align="right" valign="top"><a id="a50421be758fef12c68e44ce6c319c397"></a>
-virtual void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_subrender_f_w___d_n.html#a50421be758fef12c68e44ce6c319c397">setDynamicPipelineState</a> (VkCommandBuffer commandBuffer, uint32_t numPass)</td></tr>
-<tr class="memdesc:a50421be758fef12c68e44ce6c319c397"><td class="mdescLeft">&#160;</td><td class="mdescRight">Set the dynamic state of the pipeline - does nothing for the base class. <br /></td></tr>
+<tr class="memitem:a50421be758fef12c68e44ce6c319c397"><td class="memItemLeft" align="right" valign="top">virtual void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_subrender_f_w___d_n.html#a50421be758fef12c68e44ce6c319c397">setDynamicPipelineState</a> (VkCommandBuffer commandBuffer, uint32_t numPass)</td></tr>
+<tr class="memdesc:a50421be758fef12c68e44ce6c319c397"><td class="mdescLeft">&#160;</td><td class="mdescRight">Set the danymic pipeline stat, i.e. the blend constants to be used.  <a href="#a50421be758fef12c68e44ce6c319c397">More...</a><br /></td></tr>
 <tr class="separator:a50421be758fef12c68e44ce6c319c397"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a982bd9ee57f0ba527b5310bf019ac4c8"><td class="memItemLeft" align="right" valign="top">virtual void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_subrender_f_w___d_n.html#a982bd9ee57f0ba527b5310bf019ac4c8">addEntity</a> (<a class="el" href="classve_1_1_v_e_entity.html">VEEntity</a> *pEntity)</td></tr>
 <tr class="memdesc:a982bd9ee57f0ba527b5310bf019ac4c8"><td class="mdescLeft">&#160;</td><td class="mdescRight">Add an entity to the subrenderer.  <a href="#a982bd9ee57f0ba527b5310bf019ac4c8">More...</a><br /></td></tr>
@@ -350,6 +349,53 @@ std::vector&lt; <a class="el" href="classve_1_1_v_e_entity.html">VEEntity</a> * 
 
 </div>
 </div>
+<a id="a50421be758fef12c68e44ce6c319c397"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a50421be758fef12c68e44ce6c319c397">&#9670;&nbsp;</a></span>setDynamicPipelineState()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">void ve::VESubrenderFW_DN::setDynamicPipelineState </td>
+          <td>(</td>
+          <td class="paramtype">VkCommandBuffer&#160;</td>
+          <td class="paramname"><em>commandBuffer</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">uint32_t&#160;</td>
+          <td class="paramname"><em>numPass</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">virtual</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Set the danymic pipeline stat, i.e. the blend constants to be used. </p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramdir">[in]</td><td class="paramname">commandBuffer</td><td>The currently used command buffer </td></tr>
+    <tr><td class="paramdir">[in]</td><td class="paramname">numPass</td><td>The current pass number - in the forst pass, write over pixel colors, after this add pixel colors </td></tr>
+  </table>
+  </dd>
+</dl>
+
+<p>Reimplemented from <a class="el" href="classve_1_1_v_e_subrender_f_w.html#a3a0f5c1fbafdbb0e6c4a4a38caead161">ve::VESubrenderFW</a>.</p>
+
+</div>
+</div>
 <hr/>The documentation for this class was generated from the following files:<ul>
 <li><a class="el" href="_v_e_subrender_f_w___d_n_8h_source.html">VESubrenderFW_DN.h</a></li>
 <li>VESubrenderFW_DN.cpp</li>
@@ -357,7 +403,7 @@ std::vector&lt; <a class="el" href="classve_1_1_v_e_entity.html">VEEntity</a> * 
 </div><!-- contents -->
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>
-Generated on Fri Jun 14 2019 13:37:59 for Vienna Vulkan Engine by &#160;<a href="http://www.doxygen.org/index.html">
+Generated on Sat Jun 15 2019 22:36:41 for Vienna Vulkan Engine by &#160;<a href="http://www.doxygen.org/index.html">
 <img class="footer" src="doxygen.png" alt="doxygen"/>
 </a> 1.8.15
 </small></address>

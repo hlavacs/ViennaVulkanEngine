@@ -90,12 +90,13 @@ Inheritance diagram for ve::VESceneNode:</div>
 <area href="classve_1_1_v_e_scene_object.html" title="Represents any object that has its own UBO." alt="ve::VESceneObject" shape="rect" coords="240,112,390,136"/>
 <area href="classve_1_1_v_e_camera.html" title="A camera that can be used to take photos of the scene." alt="ve::VECamera" shape="rect" coords="80,168,230,192"/>
 <area href="classve_1_1_v_e_entity.html" title="Represents any object that can be drawn." alt="ve::VEEntity" shape="rect" coords="240,168,390,192"/>
-<area href="classve_1_1_v_e_light.html" title="A VELight has a color and can be used to light a scene." alt="ve::VELight" shape="rect" coords="480,168,630,192"/>
+<area href="classve_1_1_v_e_light.html" title="A VELight has a color and can be used to light a scene." alt="ve::VELight" shape="rect" coords="560,168,710,192"/>
 <area href="classve_1_1_v_e_camera_ortho.html" title="Am ortho camera that can be used to take photos of the scene." alt="ve::VECameraOrtho" shape="rect" coords="0,224,150,248"/>
 <area href="classve_1_1_v_e_camera_projective.html" title="A projective camera that can be used to take photos of the scene." alt="ve::VECameraProjective" shape="rect" coords="160,224,310,248"/>
-<area href="classve_1_1_v_e_directional_light.html" title="Directional light class." alt="ve::VEDirectionalLight" shape="rect" coords="320,224,470,248"/>
-<area href="classve_1_1_v_e_point_light.html" title="Point light class." alt="ve::VEPointLight" shape="rect" coords="480,224,630,248"/>
-<area href="classve_1_1_v_e_spot_light.html" title="Spot light class." alt="ve::VESpotLight" shape="rect" coords="640,224,790,248"/>
+<area href="classve_1_1_v_e_ambient_light.html" title="Ambient light class." alt="ve::VEAmbientLight" shape="rect" coords="320,224,470,248"/>
+<area href="classve_1_1_v_e_directional_light.html" title="Directional light class." alt="ve::VEDirectionalLight" shape="rect" coords="480,224,630,248"/>
+<area href="classve_1_1_v_e_point_light.html" title="Point light class." alt="ve::VEPointLight" shape="rect" coords="640,224,790,248"/>
+<area href="classve_1_1_v_e_spot_light.html" title="Spot light class." alt="ve::VESpotLight" shape="rect" coords="800,224,950,248"/>
   </map>
 </div></div>
 <table class="memberdecls">
@@ -117,6 +118,8 @@ Public Member Functions</h2></td></tr>
 <tr class="separator:af7edca2d209a001ce1eb84c9eca8d100"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a7059b68055b77a3d0be0bb8b40bc501d"><td class="memItemLeft" align="right" valign="top">std::vector&lt; <a class="el" href="classve_1_1_v_e_scene_node.html">VESceneNode</a> * &gt; &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_scene_node.html#a7059b68055b77a3d0be0bb8b40bc501d">getChildrenList</a> ()</td></tr>
 <tr class="separator:a7059b68055b77a3d0be0bb8b40bc501d"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a9237f57d19343d913cf0c5aea0a3cdc3"><td class="memItemLeft" align="right" valign="top">std::vector&lt; <a class="el" href="classve_1_1_v_e_scene_node.html">VESceneNode</a> * &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_scene_node.html#a9237f57d19343d913cf0c5aea0a3cdc3">getChildrenCopy</a> ()</td></tr>
+<tr class="separator:a9237f57d19343d913cf0c5aea0a3cdc3"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a367fee6490278bbf70d33e9a8e17fee9"><td class="memItemLeft" align="right" valign="top"><a id="a367fee6490278bbf70d33e9a8e17fee9"></a>
 void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_scene_node.html#a367fee6490278bbf70d33e9a8e17fee9">setTransform</a> (glm::mat4 trans)</td></tr>
 <tr class="memdesc:a367fee6490278bbf70d33e9a8e17fee9"><td class="mdescLeft">&#160;</td><td class="mdescRight">Sets the scene node's local to parent transform. <br /></td></tr>
@@ -180,15 +183,6 @@ virtual&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="c
 <tr class="memitem:a0fc9cdc205b1a07806e2d3457178ad9b"><td class="memItemLeft" align="right" valign="top">glm::mat4&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_scene_node.html#a0fc9cdc205b1a07806e2d3457178ad9b">getWorldTransform2</a> ()</td></tr>
 <tr class="memdesc:a0fc9cdc205b1a07806e2d3457178ad9b"><td class="mdescLeft">&#160;</td><td class="mdescRight">An entity's world matrix is the local to parent transform multiplied by the parent's world matrix.  <a href="#a0fc9cdc205b1a07806e2d3457178ad9b">More...</a><br /></td></tr>
 <tr class="separator:a0fc9cdc205b1a07806e2d3457178ad9b"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aa97bd4ad3fb1efa02ec3df6ef679927d"><td class="memItemLeft" align="right" valign="top">virtual void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_scene_node.html#aa97bd4ad3fb1efa02ec3df6ef679927d">update</a> (uint32_t imageIndex)</td></tr>
-<tr class="memdesc:aa97bd4ad3fb1efa02ec3df6ef679927d"><td class="mdescLeft">&#160;</td><td class="mdescRight">Update the entity's UBO buffer with the current world matrix.  <a href="#aa97bd4ad3fb1efa02ec3df6ef679927d">More...</a><br /></td></tr>
-<tr class="separator:aa97bd4ad3fb1efa02ec3df6ef679927d"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a93199fd14bc3f52fd6346491be84afac"><td class="memItemLeft" align="right" valign="top">virtual void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_scene_node.html#a93199fd14bc3f52fd6346491be84afac">update</a> (glm::mat4 parentWorldMatrix, uint32_t imageIndex)</td></tr>
-<tr class="memdesc:a93199fd14bc3f52fd6346491be84afac"><td class="mdescLeft">&#160;</td><td class="mdescRight">Update the entity's UBO buffer with the current world matrix.  <a href="#a93199fd14bc3f52fd6346491be84afac">More...</a><br /></td></tr>
-<tr class="separator:a93199fd14bc3f52fd6346491be84afac"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:afeb3d92ef1a5bf684186b96b52d42b25"><td class="memItemLeft" align="right" valign="top">virtual void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_scene_node.html#afeb3d92ef1a5bf684186b96b52d42b25">updateChildren</a> (glm::mat4 worldMatrix, uint32_t imageIndex)</td></tr>
-<tr class="memdesc:afeb3d92ef1a5bf684186b96b52d42b25"><td class="mdescLeft">&#160;</td><td class="mdescRight">Update the UBOs of all children of this entity.  <a href="#afeb3d92ef1a5bf684186b96b52d42b25">More...</a><br /></td></tr>
-<tr class="separator:afeb3d92ef1a5bf684186b96b52d42b25"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ae042b8411d2a608155792c5f807bc6c9"><td class="memItemLeft" align="right" valign="top"><a id="ae042b8411d2a608155792c5f807bc6c9"></a>
 virtual void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_scene_node.html#ae042b8411d2a608155792c5f807bc6c9">updateUBO</a> (glm::mat4 worldMatrix, uint32_t imageIndex)</td></tr>
 <tr class="memdesc:ae042b8411d2a608155792c5f807bc6c9"><td class="mdescLeft">&#160;</td><td class="mdescRight">Meant for subclasses to add data to the UBO, so this function does nothing in base class. <br /></td></tr>
@@ -370,6 +364,32 @@ std::string&#160;</td><td class="memItemRight" valign="bottom"><a class="el" hre
 </dl>
 
 <p>Reimplemented in <a class="el" href="classve_1_1_v_e_camera.html#a74cb91079352b36c1c15e3ce6cad8cd0">ve::VECamera</a>, and <a class="el" href="classve_1_1_v_e_entity.html#a55e2e9159b18fcd72cf7dbb3bed04554">ve::VEEntity</a>.</p>
+
+</div>
+</div>
+<a id="a9237f57d19343d913cf0c5aea0a3cdc3"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a9237f57d19343d913cf0c5aea0a3cdc3">&#9670;&nbsp;</a></span>getChildrenCopy()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">std::vector&lt;<a class="el" href="classve_1_1_v_e_scene_node.html">VESceneNode</a> *&gt; ve::VESceneNode::getChildrenCopy </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+<dl class="section return"><dt>Returns</dt><dd>a copy children list of this scene node </dd></dl>
 
 </div>
 </div>
@@ -804,132 +824,6 @@ std::string&#160;</td><td class="memItemRight" valign="bottom"><a class="el" hre
 
 </div>
 </div>
-<a id="aa97bd4ad3fb1efa02ec3df6ef679927d"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#aa97bd4ad3fb1efa02ec3df6ef679927d">&#9670;&nbsp;</a></span>update() <span class="overload">[1/2]</span></h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">void ve::VESceneNode::update </td>
-          <td>(</td>
-          <td class="paramtype">uint32_t&#160;</td>
-          <td class="paramname"><em>imageIndex</em></td><td>)</td>
-          <td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">protected</span><span class="mlabel">virtual</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-
-<p>Update the entity's UBO buffer with the current world matrix. </p>
-<p>If there is a parent, get the parent's world matrix. If not, set the parent matrix to identity. Then call update(parentWorldMatrix) to do the job.</p>
-<dl class="params"><dt>Parameters</dt><dd>
-  <table class="params">
-    <tr><td class="paramdir">[in]</td><td class="paramname">imageIndex</td><td>The index of the swapchain image that is currently used </td></tr>
-  </table>
-  </dd>
-</dl>
-
-</div>
-</div>
-<a id="a93199fd14bc3f52fd6346491be84afac"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a93199fd14bc3f52fd6346491be84afac">&#9670;&nbsp;</a></span>update() <span class="overload">[2/2]</span></h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">void ve::VESceneNode::update </td>
-          <td>(</td>
-          <td class="paramtype">glm::mat4&#160;</td>
-          <td class="paramname"><em>parentWorldMatrix</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">uint32_t&#160;</td>
-          <td class="paramname"><em>imageIndex</em>&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">protected</span><span class="mlabel">virtual</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-
-<p>Update the entity's UBO buffer with the current world matrix. </p>
-<p>Calculate the new world matrix (and inv transpose matix to transform normal vectors). Then copy the struct content into the UBO. Then call all children to do the same.</p>
-<dl class="params"><dt>Parameters</dt><dd>
-  <table class="params">
-    <tr><td class="paramdir">[in]</td><td class="paramname">parentWorldMatrix</td><td>The parent's world matrix or an identity matrix. </td></tr>
-    <tr><td class="paramdir">[in]</td><td class="paramname">imageIndex</td><td>The index of the swapchain image that is currently used </td></tr>
-  </table>
-  </dd>
-</dl>
-
-</div>
-</div>
-<a id="afeb3d92ef1a5bf684186b96b52d42b25"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#afeb3d92ef1a5bf684186b96b52d42b25">&#9670;&nbsp;</a></span>updateChildren()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">void ve::VESceneNode::updateChildren </td>
-          <td>(</td>
-          <td class="paramtype">glm::mat4&#160;</td>
-          <td class="paramname"><em>worldMatrix</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">uint32_t&#160;</td>
-          <td class="paramname"><em>imageIndex</em>&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">protected</span><span class="mlabel">virtual</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-
-<p>Update the UBOs of all children of this entity. </p>
-<dl class="params"><dt>Parameters</dt><dd>
-  <table class="params">
-    <tr><td class="paramdir">[in]</td><td class="paramname">worldMatrix</td><td>The world matrix or an identity matrix. </td></tr>
-    <tr><td class="paramdir">[in]</td><td class="paramname">imageIndex</td><td>The index of the swapchain image that is currently used </td></tr>
-  </table>
-  </dd>
-</dl>
-
-</div>
-</div>
 <hr/>The documentation for this class was generated from the following files:<ul>
 <li><a class="el" href="_v_e_entity_8h_source.html">VEEntity.h</a></li>
 <li>VEEntity.cpp</li>
@@ -937,7 +831,7 @@ std::string&#160;</td><td class="memItemRight" valign="bottom"><a class="el" hre
 </div><!-- contents -->
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>
-Generated on Fri Jun 14 2019 13:37:59 for Vienna Vulkan Engine by &#160;<a href="http://www.doxygen.org/index.html">
+Generated on Sat Jun 15 2019 22:36:40 for Vienna Vulkan Engine by &#160;<a href="http://www.doxygen.org/index.html">
 <img class="footer" src="doxygen.png" alt="doxygen"/>
 </a> 1.8.15
 </small></address>

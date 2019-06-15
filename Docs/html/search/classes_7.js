@@ -1,5 +1,6 @@
 var searchData=
 [
+  ['veambientlight',['VEAmbientLight',['../classve_1_1_v_e_ambient_light.html',1,'ve']]],
   ['vecamera',['VECamera',['../classve_1_1_v_e_camera.html',1,'ve']]],
   ['vecameraortho',['VECameraOrtho',['../classve_1_1_v_e_camera_ortho.html',1,'ve']]],
   ['vecameraprojective',['VECameraProjective',['../classve_1_1_v_e_camera_projective.html',1,'ve']]],

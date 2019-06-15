@@ -18,6 +18,7 @@ var searchData=
   ['ve_5fevent_5fnone',['VE_EVENT_NONE',['../structve_1_1ve_event.html#a726c4f6879b113926d4bc38c2d1731ffa6b226b17517c4f726c617739841a01b4',1,'ve::veEvent']]],
   ['ve_5fevent_5fsubsystem_5fgeneric',['VE_EVENT_SUBSYSTEM_GENERIC',['../structve_1_1ve_event.html#a0addb8c4b54dcea16b57b10bf490a0a6a6b13d7241b63f9a92f4f356b43e072bc',1,'ve::veEvent']]],
   ['ve_5fevent_5fsubsystem_5fglfw',['VE_EVENT_SUBSYSTEM_GLFW',['../structve_1_1ve_event.html#a0addb8c4b54dcea16b57b10bf490a0a6aa00e966851e5427c5859fc3a5e64816b',1,'ve::veEvent']]],
+  ['ve_5flight_5ftype_5fambient',['VE_LIGHT_TYPE_AMBIENT',['../classve_1_1_v_e_light.html#abcedf7166341000b6d4512e9030f6b86af59a804a4ae83bf6d8c2a734746a924a',1,'ve::VELight']]],
   ['ve_5flight_5ftype_5fdirectional',['VE_LIGHT_TYPE_DIRECTIONAL',['../classve_1_1_v_e_light.html#abcedf7166341000b6d4512e9030f6b86abbd68077042b04dd039c381d52a27861',1,'ve::VELight']]],
   ['ve_5flight_5ftype_5fpoint',['VE_LIGHT_TYPE_POINT',['../classve_1_1_v_e_light.html#abcedf7166341000b6d4512e9030f6b86a1c6d87f8ef45f62e8f94d54a2fdf8bec',1,'ve::VELight']]],
   ['ve_5flight_5ftype_5fspot',['VE_LIGHT_TYPE_SPOT',['../classve_1_1_v_e_light.html#abcedf7166341000b6d4512e9030f6b86ac301ffd5b98c7114a1034eb3e8fde6bf',1,'ve::VELight']]],

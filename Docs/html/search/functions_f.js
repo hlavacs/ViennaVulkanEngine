@@ -1,15 +1,14 @@
 var searchData=
 [
-  ['scenegraphchanged2',['sceneGraphChanged2',['../classve_1_1_v_e_scene_manager.html#aa6929a5a216090f467a4daa5722173d5',1,'ve::VESceneManager']]],
-  ['setcamera',['setCamera',['../classve_1_1_v_e_scene_manager.html#acedf235e65ee027a0df5dc92163fcefe',1,'ve::VESceneManager']]],
-  ['setdirty',['setDirty',['../structvh_1_1vh_memory_block.html#a66b06573e5ac11726e8ec92a11f68d1f',1,'vh::vhMemoryBlock']]],
-  ['setdynamicpipelinestate',['setDynamicPipelineState',['../classve_1_1_v_e_subrender_f_w.html#a3a0f5c1fbafdbb0e6c4a4a38caead161',1,'ve::VESubrenderFW::setDynamicPipelineState()'],['../classve_1_1_v_e_subrender_f_w___d.html#a636aad249704039c5efd76dde7e2b9ec',1,'ve::VESubrenderFW_D::setDynamicPipelineState()'],['../classve_1_1_v_e_subrender_f_w___d_n.html#a50421be758fef12c68e44ce6c319c397',1,'ve::VESubrenderFW_DN::setDynamicPipelineState()']]],
-  ['setextent',['setExtent',['../classve_1_1_v_e_camera.html#ac1d0d445e1c2229c4dfd828194992ea8',1,'ve::VECamera::setExtent()'],['../classve_1_1_v_e_camera_projective.html#a530167ddd511114faeca445839687e67',1,'ve::VECameraProjective::setExtent()'],['../classve_1_1_v_e_camera_ortho.html#adc82fbea70bac3bdc613893891e1fd52',1,'ve::VECameraOrtho::setExtent()']]],
-  ['setparam',['setParam',['../classve_1_1_v_e_entity.html#a32e4adf007a6497ddcfb809e69424698',1,'ve::VEEntity']]],
-  ['setposition',['setPosition',['../classve_1_1_v_e_scene_node.html#a0af270114f93f89969f962f0f3b6f3af',1,'ve::VESceneNode']]],
-  ['setresourceidx',['setResourceIdx',['../classve_1_1_v_e_entity.html#a5f221b81d012c0970f313ecf6d4fe37c',1,'ve::VEEntity']]],
-  ['settransform',['setTransform',['../classve_1_1_v_e_scene_node.html#a367fee6490278bbf70d33e9a8e17fee9',1,'ve::VESceneNode']]],
-  ['switchofflight',['switchOffLight',['../classve_1_1_v_e_scene_manager.html#ac0f7488adfda84df259fc306e101629b',1,'ve::VESceneManager']]],
-  ['switchofflight2',['switchOffLight2',['../classve_1_1_v_e_scene_manager.html#a842af61c4ba07c19bbae9c9233be1f27',1,'ve::VESceneManager']]],
-  ['switchonlight',['switchOnLight',['../classve_1_1_v_e_scene_manager.html#ab3fd427388a5bce3a6f722b54c2a7497',1,'ve::VESceneManager']]]
+  ['recordcmdbuffers',['recordCmdBuffers',['../classve_1_1_v_e_renderer_forward.html#a6401c0d7863ac061c25ed79ae844296e',1,'ve::VERendererForward']]],
+  ['recreateresources',['recreateResources',['../classve_1_1_v_e_subrender.html#a7a8f44e5a58dc607d518046a88d7e477',1,'ve::VESubrender::recreateResources()'],['../classve_1_1_v_e_subrender_f_w.html#a0a7d3271e085a20391e034d2cee1bb0d',1,'ve::VESubrenderFW::recreateResources()']]],
+  ['recreateswapchain',['recreateSwapchain',['../classve_1_1_v_e_renderer.html#a4f905f216e6d0b611d2ed4d156537a18',1,'ve::VERenderer::recreateSwapchain()'],['../classve_1_1_v_e_renderer_forward.html#a0f4a14c3bf1fbd9f9d291db9fbbb2a36',1,'ve::VERendererForward::recreateSwapchain()']]],
+  ['registereventlistener',['registerEventListener',['../classve_1_1_v_e_engine.html#a3954309d6272f33393913416fe4ac472',1,'ve::VEEngine::registerEventListener(VEEventListener *lis)'],['../classve_1_1_v_e_engine.html#a8230efeca9f410ff49c42db8a98f7c0d',1,'ve::VEEngine::registerEventListener(VEEventListener *lis, std::vector&lt; veEvent::veEventType &gt; eventTypes)']]],
+  ['registereventlisteners',['registerEventListeners',['../classve_1_1_my_vulkan_engine.html#abc39b8bc126dc81cb9fc8bc2f05737ea',1,'ve::MyVulkanEngine::registerEventListeners()'],['../classve_1_1_v_e_engine.html#a31343a4726e1f746fb3a4cf347ecce7d',1,'ve::VEEngine::registerEventListeners()']]],
+  ['removechild',['removeChild',['../classve_1_1_v_e_scene_node.html#a1529634fd49e5c87fd5102eedf12265a',1,'ve::VESceneNode']]],
+  ['removeentity',['removeEntity',['../classve_1_1_v_e_subrender.html#a6c4ec37a5d7598effd43b92851dd1b26',1,'ve::VESubrender::removeEntity()'],['../classve_1_1_v_e_subrender_f_w.html#a00fc3ad5508f27a03436379eb2c38c0b',1,'ve::VESubrenderFW::removeEntity()']]],
+  ['removeentityfromsubrenderers',['removeEntityFromSubrenderers',['../classve_1_1_v_e_renderer.html#ab9b882c882cb555c469dfd74c8e70236',1,'ve::VERenderer']]],
+  ['removeeventlistener',['removeEventListener',['../classve_1_1_v_e_engine.html#aeb82d22efa554a6086b5452a24c33cc9',1,'ve::VEEngine::removeEventListener(std::string name)'],['../classve_1_1_v_e_engine.html#aa6c7d5ead79744ec8792ddd7cf44c2a3',1,'ve::VEEngine::removeEventListener(std::string name, std::vector&lt; VEEventListener * &gt; *list)']]],
+  ['rotatorlistener',['RotatorListener',['../classve_1_1_rotator_listener.html#a30c9874c0bf2a580bf1d5deb3f895e27',1,'ve::RotatorListener']]],
+  ['run',['run',['../classve_1_1_v_e_engine.html#a62fa2c32d1378dc445c4c7e19175b3bf',1,'ve::VEEngine']]]
 ];

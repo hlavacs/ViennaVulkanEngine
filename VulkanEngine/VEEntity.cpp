@@ -358,7 +358,7 @@ namespace ve {
 		if (pMesh != nullptr && pMat != nullptr) {
 			m_pMesh = pMesh;
 			m_pMaterial = pMat;
-			m_drawEntity = true;
+			m_visible = true;
 			m_castsShadow = true;
 		}
 	}
@@ -399,7 +399,7 @@ namespace ve {
 	void VEEntity::updateUBO( glm::mat4 worldMatrix, uint32_t imageIndex) {
 		veUBOPerObject_t ubo = {};
 
-		if (m_drawEntity) {
+		if (m_visible) {
 			ubo.model = worldMatrix;
 			ubo.modelInvTrans = glm::transpose(glm::inverse(worldMatrix));
 		}

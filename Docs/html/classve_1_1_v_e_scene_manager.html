@@ -119,6 +119,18 @@ Public Member Functions</h2></td></tr>
 <tr class="separator:adb596cddd13574ef55c944c0b4adcff4"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a0f1d754eb2b772fdd7d1fc7bc8d94625"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classve_1_1_v_e_scene_node.html">VESceneNode</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_scene_manager.html#a0f1d754eb2b772fdd7d1fc7bc8d94625">getRootSceneNode</a> ()</td></tr>
 <tr class="separator:a0f1d754eb2b772fdd7d1fc7bc8d94625"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a79e85e3bf75295ac40dbca5cbeb452ca"><td class="memItemLeft" align="right" valign="top"><a id="a79e85e3bf75295ac40dbca5cbeb452ca"></a>
+void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_scene_manager.html#a79e85e3bf75295ac40dbca5cbeb452ca">setAutoRecord</a> (bool flag)</td></tr>
+<tr class="memdesc:a79e85e3bf75295ac40dbca5cbeb452ca"><td class="mdescLeft">&#160;</td><td class="mdescRight">If true then scene graph changes automatically trigger a cmd buffer rerecording. <br /></td></tr>
+<tr class="separator:a79e85e3bf75295ac40dbca5cbeb452ca"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ac0ab8c69e5ea095eb394166db5b246bf"><td class="memItemLeft" align="right" valign="top"><a id="ac0ab8c69e5ea095eb394166db5b246bf"></a>
+void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_scene_manager.html#ac0ab8c69e5ea095eb394166db5b246bf">sceneGraphChanged</a> ()</td></tr>
+<tr class="memdesc:ac0ab8c69e5ea095eb394166db5b246bf"><td class="mdescLeft">&#160;</td><td class="mdescRight">This should be called whenever the scene graph ist changed - internal version called automatically after changes. <br /></td></tr>
+<tr class="separator:ac0ab8c69e5ea095eb394166db5b246bf"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aca072d49210df8f3a657e5176270c904"><td class="memItemLeft" align="right" valign="top"><a id="aca072d49210df8f3a657e5176270c904"></a>
+void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_scene_manager.html#aca072d49210df8f3a657e5176270c904">setVisibility</a> (<a class="el" href="classve_1_1_v_e_scene_node.html">VESceneNode</a> *pNode, bool flag)</td></tr>
+<tr class="memdesc:aca072d49210df8f3a657e5176270c904"><td class="mdescLeft">&#160;</td><td class="mdescRight">Set the visibility of a whole subtree. <br /></td></tr>
+<tr class="separator:aca072d49210df8f3a657e5176270c904"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a22dd9760111ca205cf97b2fdcfdbb6d7"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classve_1_1_v_e_scene_node.html">VESceneNode</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_scene_manager.html#a22dd9760111ca205cf97b2fdcfdbb6d7">getSceneNode</a> (std::string entityName)</td></tr>
 <tr class="memdesc:a22dd9760111ca205cf97b2fdcfdbb6d7"><td class="mdescLeft">&#160;</td><td class="mdescRight">Find an entity using its name.  <a href="#a22dd9760111ca205cf97b2fdcfdbb6d7">More...</a><br /></td></tr>
 <tr class="separator:a22dd9760111ca205cf97b2fdcfdbb6d7"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -150,18 +162,6 @@ Public Member Functions</h2></td></tr>
 <tr class="separator:acedf235e65ee027a0df5dc92163fcefe"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ad5e8d10dcab7cce48b9b5c28acda0ead"><td class="memItemLeft" align="right" valign="top">std::vector&lt; <a class="el" href="classve_1_1_v_e_light.html">VELight</a> * &gt; &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_scene_manager.html#ad5e8d10dcab7cce48b9b5c28acda0ead">getLights</a> ()</td></tr>
 <tr class="separator:ad5e8d10dcab7cce48b9b5c28acda0ead"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ab3fd427388a5bce3a6f722b54c2a7497"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_scene_manager.html#ab3fd427388a5bce3a6f722b54c2a7497">switchOnLight</a> (<a class="el" href="classve_1_1_v_e_light.html">VELight</a> *pLight)</td></tr>
-<tr class="memdesc:ab3fd427388a5bce3a6f722b54c2a7497"><td class="mdescLeft">&#160;</td><td class="mdescRight">Add a light to the m_lights list, thus switching it on.  <a href="#ab3fd427388a5bce3a6f722b54c2a7497">More...</a><br /></td></tr>
-<tr class="separator:ab3fd427388a5bce3a6f722b54c2a7497"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ac0f7488adfda84df259fc306e101629b"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_scene_manager.html#ac0f7488adfda84df259fc306e101629b">switchOffLight</a> (<a class="el" href="classve_1_1_v_e_light.html">VELight</a> *pLight)</td></tr>
-<tr class="memdesc:ac0f7488adfda84df259fc306e101629b"><td class="mdescLeft">&#160;</td><td class="mdescRight">Remove a light from the m_lights list, thus switching it off.  <a href="#ac0f7488adfda84df259fc306e101629b">More...</a><br /></td></tr>
-<tr class="separator:ac0f7488adfda84df259fc306e101629b"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ae1c8ac5618111935152c1c4162e265a0"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_scene_manager.html#ae1c8ac5618111935152c1c4162e265a0">isLightSwitchedOn</a> (<a class="el" href="classve_1_1_v_e_light.html">VELight</a> *pLight)</td></tr>
-<tr class="memdesc:ae1c8ac5618111935152c1c4162e265a0"><td class="mdescLeft">&#160;</td><td class="mdescRight">Determine whether a light is switched on or not.  <a href="#ae1c8ac5618111935152c1c4162e265a0">More...</a><br /></td></tr>
-<tr class="separator:ae1c8ac5618111935152c1c4162e265a0"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a4192543595368ee1d35663cc63dc61dd"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_scene_manager.html#a4192543595368ee1d35663cc63dc61dd">isLightSwitchedOn</a> (std::string name)</td></tr>
-<tr class="memdesc:a4192543595368ee1d35663cc63dc61dd"><td class="mdescLeft">&#160;</td><td class="mdescRight">Determine whether a light is switched on or not.  <a href="#a4192543595368ee1d35663cc63dc61dd">More...</a><br /></td></tr>
-<tr class="separator:a4192543595368ee1d35663cc63dc61dd"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ab8f64a8b8e2fbb1528cba99c6714fb20"><td class="memItemLeft" align="right" valign="top"><a id="ab8f64a8b8e2fbb1528cba99c6714fb20"></a>
 void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_scene_manager.html#ab8f64a8b8e2fbb1528cba99c6714fb20">printSceneNodes</a> ()</td></tr>
 <tr class="memdesc:ab8f64a8b8e2fbb1528cba99c6714fb20"><td class="mdescLeft">&#160;</td><td class="mdescRight">Print a list of all entities to the console. <br /></td></tr>
@@ -197,25 +197,36 @@ virtual void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" hr
 <tr class="memitem:a13d04ba7bd4af9ef0b351abc14a67aca"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_scene_manager.html#a13d04ba7bd4af9ef0b351abc14a67aca">addSceneNodeAndChildren2</a> (<a class="el" href="classve_1_1_v_e_scene_node.html">VESceneNode</a> *pNode, <a class="el" href="classve_1_1_v_e_scene_node.html">VESceneNode</a> *parent)</td></tr>
 <tr class="memdesc:a13d04ba7bd4af9ef0b351abc14a67aca"><td class="mdescLeft">&#160;</td><td class="mdescRight">Add a new scene node into the scene.  <a href="#a13d04ba7bd4af9ef0b351abc14a67aca">More...</a><br /></td></tr>
 <tr class="separator:a13d04ba7bd4af9ef0b351abc14a67aca"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a4dff64397db4c94fb4a302be6bddf260"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_scene_manager.html#a4dff64397db4c94fb4a302be6bddf260">deleteSceneNodeAndChildren2</a> (std::string name)</td></tr>
-<tr class="memdesc:a4dff64397db4c94fb4a302be6bddf260"><td class="mdescLeft">&#160;</td><td class="mdescRight">Delete a scene node and all its subentities.  <a href="#a4dff64397db4c94fb4a302be6bddf260">More...</a><br /></td></tr>
-<tr class="separator:a4dff64397db4c94fb4a302be6bddf260"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aeb3d36e87484587a20368624375f83f2"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_scene_manager.html#aeb3d36e87484587a20368624375f83f2">deleteSceneNodeAndChildren2</a> (<a class="el" href="classve_1_1_v_e_scene_node.html">VESceneNode</a> *pNode)</td></tr>
+<tr class="memdesc:aeb3d36e87484587a20368624375f83f2"><td class="mdescLeft">&#160;</td><td class="mdescRight">Delete a scene node and all its subentities.  <a href="#aeb3d36e87484587a20368624375f83f2">More...</a><br /></td></tr>
+<tr class="separator:aeb3d36e87484587a20368624375f83f2"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:adfc826a52baf88f30f2239a875052eea"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_scene_manager.html#adfc826a52baf88f30f2239a875052eea">createSceneNodeList2</a> (<a class="el" href="classve_1_1_v_e_scene_node.html">VESceneNode</a> *pObject, std::vector&lt; std::string &gt; &amp;namelist)</td></tr>
 <tr class="memdesc:adfc826a52baf88f30f2239a875052eea"><td class="mdescLeft">&#160;</td><td class="mdescRight">Create a list of all child entities of a given entity.  <a href="#adfc826a52baf88f30f2239a875052eea">More...</a><br /></td></tr>
 <tr class="separator:adfc826a52baf88f30f2239a875052eea"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ad250648db656e3ab87a8157df1e044a8"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classve_1_1_v_e_entity.html">VEEntity</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_scene_manager.html#ad250648db656e3ab87a8157df1e044a8">createSkyplane2</a> (std::string entityName, std::string basedir, std::string texName, <a class="el" href="classve_1_1_v_e_scene_node.html">VESceneNode</a> *parent)</td></tr>
 <tr class="memdesc:ad250648db656e3ab87a8157df1e044a8"><td class="mdescLeft">&#160;</td><td class="mdescRight">Create a plane that is projected to the far plane of the frustum.  <a href="#ad250648db656e3ab87a8157df1e044a8">More...</a><br /></td></tr>
 <tr class="separator:ad250648db656e3ab87a8157df1e044a8"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a7a55c27e941a05d5314aa5e30b28c7ed"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_scene_manager.html#a7a55c27e941a05d5314aa5e30b28c7ed">updateSceneNodes2</a> (uint32_t imageIndex)</td></tr>
-<tr class="memdesc:a7a55c27e941a05d5314aa5e30b28c7ed"><td class="mdescLeft">&#160;</td><td class="mdescRight">Find all scene nodes without a parent, then update them and their children.  <a href="#a7a55c27e941a05d5314aa5e30b28c7ed">More...</a><br /></td></tr>
-<tr class="separator:a7a55c27e941a05d5314aa5e30b28c7ed"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a842af61c4ba07c19bbae9c9233be1f27"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_scene_manager.html#a842af61c4ba07c19bbae9c9233be1f27">switchOffLight2</a> (<a class="el" href="classve_1_1_v_e_light.html">VELight</a> *light)</td></tr>
-<tr class="memdesc:a842af61c4ba07c19bbae9c9233be1f27"><td class="mdescLeft">&#160;</td><td class="mdescRight">Remove a light from the m_lights list, thus switching it off.  <a href="#a842af61c4ba07c19bbae9c9233be1f27">More...</a><br /></td></tr>
-<tr class="separator:a842af61c4ba07c19bbae9c9233be1f27"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aa6929a5a216090f467a4daa5722173d5"><td class="memItemLeft" align="right" valign="top"><a id="aa6929a5a216090f467a4daa5722173d5"></a>
 void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_scene_manager.html#aa6929a5a216090f467a4daa5722173d5">sceneGraphChanged2</a> ()</td></tr>
-<tr class="memdesc:aa6929a5a216090f467a4daa5722173d5"><td class="mdescLeft">&#160;</td><td class="mdescRight">This should be called whenever the scene graph ist changed. <br /></td></tr>
+<tr class="memdesc:aa6929a5a216090f467a4daa5722173d5"><td class="mdescLeft">&#160;</td><td class="mdescRight">This should be called whenever the scene graph ist changed - internal version called automatically after changes. <br /></td></tr>
 <tr class="separator:aa6929a5a216090f467a4daa5722173d5"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ab15a31c03423ccba2d50f312250a0e5d"><td class="memItemLeft" align="right" valign="top"><a id="ab15a31c03423ccba2d50f312250a0e5d"></a>
+void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_scene_manager.html#ab15a31c03423ccba2d50f312250a0e5d">sceneGraphChanged3</a> ()</td></tr>
+<tr class="memdesc:ab15a31c03423ccba2d50f312250a0e5d"><td class="mdescLeft">&#160;</td><td class="mdescRight">This should be called whenever the scene graph ist changed. <br /></td></tr>
+<tr class="separator:ab15a31c03423ccba2d50f312250a0e5d"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aaadccc0f574cd30019e940ab56acc832"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_scene_manager.html#aaadccc0f574cd30019e940ab56acc832">updateSceneNodes</a> (uint32_t imageIndex)</td></tr>
+<tr class="memdesc:aaadccc0f574cd30019e940ab56acc832"><td class="mdescLeft">&#160;</td><td class="mdescRight">Find all scene nodes without a parent, then update them and their children.  <a href="#aaadccc0f574cd30019e940ab56acc832">More...</a><br /></td></tr>
+<tr class="separator:aaadccc0f574cd30019e940ab56acc832"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aabcd94dbc425dd23d1c6b696c5c0fd16"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_scene_manager.html#aabcd94dbc425dd23d1c6b696c5c0fd16">updateSceneNodes2</a> (<a class="el" href="classve_1_1_v_e_scene_node.html">VESceneNode</a> *pNode, glm::mat4 worldMatrix, uint32_t imageIndex)</td></tr>
+<tr class="memdesc:aabcd94dbc425dd23d1c6b696c5c0fd16"><td class="mdescLeft">&#160;</td><td class="mdescRight">Update this node and all its children.  <a href="#aabcd94dbc425dd23d1c6b696c5c0fd16">More...</a><br /></td></tr>
+<tr class="separator:aabcd94dbc425dd23d1c6b696c5c0fd16"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a7a0e2b8122dc9e89dc62e24fec38b3e6"><td class="memItemLeft" align="right" valign="top"><a id="a7a0e2b8122dc9e89dc62e24fec38b3e6"></a>
+void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_scene_manager.html#a7a0e2b8122dc9e89dc62e24fec38b3e6">setVisibility2</a> (<a class="el" href="classve_1_1_v_e_scene_node.html">VESceneNode</a> *pNode, bool flag)</td></tr>
+<tr class="memdesc:a7a0e2b8122dc9e89dc62e24fec38b3e6"><td class="mdescLeft">&#160;</td><td class="mdescRight">Set the visibility of a whole subtree. <br /></td></tr>
+<tr class="separator:a7a0e2b8122dc9e89dc62e24fec38b3e6"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a2eb7c8d6b2a29bd322b575994c9b9933"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_scene_manager.html#a2eb7c8d6b2a29bd322b575994c9b9933">notifyEventListeners</a> (<a class="el" href="classve_1_1_v_e_scene_node.html">VESceneNode</a> *pNode)</td></tr>
+<tr class="memdesc:a2eb7c8d6b2a29bd322b575994c9b9933"><td class="mdescLeft">&#160;</td><td class="mdescRight">Notify event listeners that a scene node has been deleted.  <a href="#a2eb7c8d6b2a29bd322b575994c9b9933">More...</a><br /></td></tr>
+<tr class="separator:a2eb7c8d6b2a29bd322b575994c9b9933"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pro-attribs"></a>
 Protected Attributes</h2></td></tr>
@@ -231,6 +242,10 @@ std::map&lt; std::string, <a class="el" href="classve_1_1_v_e_material.html">VEM
 std::map&lt; std::string, <a class="el" href="classve_1_1_v_e_scene_node.html">VESceneNode</a> * &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_scene_manager.html#aaeedb9ee5317fcf9dcdca724dcb86b2b">m_sceneNodes</a> = {}</td></tr>
 <tr class="memdesc:aaeedb9ee5317fcf9dcdca724dcb86b2b"><td class="mdescLeft">&#160;</td><td class="mdescRight">Storage of all scene nodes currently in the engine. <br /></td></tr>
 <tr class="separator:aaeedb9ee5317fcf9dcdca724dcb86b2b"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a6aaf6d1d7514e861ca79cac07287798f"><td class="memItemLeft" align="right" valign="top"><a id="a6aaf6d1d7514e861ca79cac07287798f"></a>
+std::vector&lt; <a class="el" href="classve_1_1_v_e_scene_node.html">VESceneNode</a> * &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_scene_manager.html#a6aaf6d1d7514e861ca79cac07287798f">m_deletedSceneNodes</a> = {}</td></tr>
+<tr class="memdesc:a6aaf6d1d7514e861ca79cac07287798f"><td class="mdescLeft">&#160;</td><td class="mdescRight">List of deleted scene nodes and their children. <br /></td></tr>
+<tr class="separator:a6aaf6d1d7514e861ca79cac07287798f"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a2fee4d83dc3766d0e44fea509fc46e42"><td class="memItemLeft" align="right" valign="top"><a id="a2fee4d83dc3766d0e44fea509fc46e42"></a>
 <a class="el" href="classve_1_1_v_e_scene_node.html">VESceneNode</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_scene_manager.html#a2fee4d83dc3766d0e44fea509fc46e42">m_rootSceneNode</a></td></tr>
 <tr class="memdesc:a2fee4d83dc3766d0e44fea509fc46e42"><td class="mdescLeft">&#160;</td><td class="mdescRight">The root node of the scene graph. <br /></td></tr>
@@ -251,6 +266,10 @@ std::vector&lt; <a class="el" href="classve_1_1_v_e_light.html">VELight</a> * &g
 std::mutex&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_scene_manager.html#a8599d3a15f3fd43b31cd17cc4cfedc81">m_mutex</a></td></tr>
 <tr class="memdesc:a8599d3a15f3fd43b31cd17cc4cfedc81"><td class="mdescLeft">&#160;</td><td class="mdescRight">Mutex for multithreading, locks the scene manager. <br /></td></tr>
 <tr class="separator:a8599d3a15f3fd43b31cd17cc4cfedc81"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a7a26a0554de7906e1e046e7638c4977d"><td class="memItemLeft" align="right" valign="top"><a id="a7a26a0554de7906e1e046e7638c4977d"></a>
+bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_scene_manager.html#a7a26a0554de7906e1e046e7638c4977d">m_autoRecord</a> = true</td></tr>
+<tr class="memdesc:a7a26a0554de7906e1e046e7638c4977d"><td class="mdescLeft">&#160;</td><td class="mdescRight">if true, then scene graph changes automatically leasd to a cmd buffer rerecording <br /></td></tr>
+<tr class="separator:a7a26a0554de7906e1e046e7638c4977d"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <div class="textblock"><p>The scene Manager manages the objects that have been loaded and put into the world. </p>
@@ -1233,8 +1252,8 @@ std::mutex&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href
 
 </div>
 </div>
-<a id="a4dff64397db4c94fb4a302be6bddf260"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a4dff64397db4c94fb4a302be6bddf260">&#9670;&nbsp;</a></span>deleteSceneNodeAndChildren2()</h2>
+<a id="aeb3d36e87484587a20368624375f83f2"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aeb3d36e87484587a20368624375f83f2">&#9670;&nbsp;</a></span>deleteSceneNodeAndChildren2()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -1245,8 +1264,8 @@ std::mutex&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href
         <tr>
           <td class="memname">void ve::VESceneManager::deleteSceneNodeAndChildren2 </td>
           <td>(</td>
-          <td class="paramtype">std::string&#160;</td>
-          <td class="paramname"><em>name</em></td><td>)</td>
+          <td class="paramtype"><a class="el" href="classve_1_1_v_e_scene_node.html">VESceneNode</a> *&#160;</td>
+          <td class="paramname"><em>pNode</em></td><td>)</td>
           <td></td>
         </tr>
       </table>
@@ -1260,7 +1279,7 @@ std::mutex&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href
 <p>Delete a scene node and all its subentities. </p>
 <dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
-    <tr><td class="paramdir">[in]</td><td class="paramname">name</td><td>Name of the scene node. </td></tr>
+    <tr><td class="paramdir">[in]</td><td class="paramname">pNode</td><td>Pointer to the scene node to be deleted </td></tr>
   </table>
   </dd>
 </dl>
@@ -1454,60 +1473,6 @@ std::mutex&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href
 
 </div>
 </div>
-<a id="ae1c8ac5618111935152c1c4162e265a0"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ae1c8ac5618111935152c1c4162e265a0">&#9670;&nbsp;</a></span>isLightSwitchedOn() <span class="overload">[1/2]</span></h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">bool ve::VESceneManager::isLightSwitchedOn </td>
-          <td>(</td>
-          <td class="paramtype"><a class="el" href="classve_1_1_v_e_light.html">VELight</a> *&#160;</td>
-          <td class="paramname"><em>pLight</em></td><td>)</td>
-          <td></td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p>Determine whether a light is switched on or not. </p>
-<dl class="params"><dt>Parameters</dt><dd>
-  <table class="params">
-    <tr><td class="paramdir">[in]</td><td class="paramname">pLight</td><td>A pointer to the light to query </td></tr>
-  </table>
-  </dd>
-</dl>
-<dl class="section return"><dt>Returns</dt><dd>true if the light is switched on, else false </dd></dl>
-
-</div>
-</div>
-<a id="a4192543595368ee1d35663cc63dc61dd"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a4192543595368ee1d35663cc63dc61dd">&#9670;&nbsp;</a></span>isLightSwitchedOn() <span class="overload">[2/2]</span></h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">bool ve::VESceneManager::isLightSwitchedOn </td>
-          <td>(</td>
-          <td class="paramtype">std::string&#160;</td>
-          <td class="paramname"><em>name</em></td><td>)</td>
-          <td></td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p>Determine whether a light is switched on or not. </p>
-<dl class="params"><dt>Parameters</dt><dd>
-  <table class="params">
-    <tr><td class="paramdir">[in]</td><td class="paramname">name</td><td>The name of the light to query </td></tr>
-  </table>
-  </dd>
-</dl>
-<dl class="section return"><dt>Returns</dt><dd>true if the light is switched on, else false </dd></dl>
-
-</div>
-</div>
 <a id="afb42fdaf90df123a6fa6364191d0656b"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#afb42fdaf90df123a6fa6364191d0656b">&#9670;&nbsp;</a></span>loadAssets()</h2>
 
@@ -1626,6 +1591,41 @@ std::mutex&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href
 
 </div>
 </div>
+<a id="a2eb7c8d6b2a29bd322b575994c9b9933"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a2eb7c8d6b2a29bd322b575994c9b9933">&#9670;&nbsp;</a></span>notifyEventListeners()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">void ve::VESceneManager::notifyEventListeners </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="classve_1_1_v_e_scene_node.html">VESceneNode</a> *&#160;</td>
+          <td class="paramname"><em>pNode</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">protected</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Notify event listeners that a scene node has been deleted. </p>
+<p>Event listeners aswering true will also be deleted.</p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramdir">[in]</td><td class="paramname">pNode</td><td>Pointer to scene node that has been deleted </td></tr>
+  </table>
+  </dd>
+</dl>
+
+</div>
+</div>
 <a id="af59e458ea6b4d9ab6ceadfb0213f5f49"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#af59e458ea6b4d9ab6ceadfb0213f5f49">&#9670;&nbsp;</a></span>printTree()</h2>
 
@@ -1686,35 +1686,8 @@ std::mutex&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href
 
 </div>
 </div>
-<a id="ac0f7488adfda84df259fc306e101629b"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ac0f7488adfda84df259fc306e101629b">&#9670;&nbsp;</a></span>switchOffLight()</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">void ve::VESceneManager::switchOffLight </td>
-          <td>(</td>
-          <td class="paramtype"><a class="el" href="classve_1_1_v_e_light.html">VELight</a> *&#160;</td>
-          <td class="paramname"><em>light</em></td><td>)</td>
-          <td></td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p>Remove a light from the m_lights list, thus switching it off. </p>
-<p>Removing this light does not remove it from the m_entities list. Removing it from the m_lights list causes the light to be switched off.</p>
-<dl class="params"><dt>Parameters</dt><dd>
-  <table class="params">
-    <tr><td class="paramdir">[in]</td><td class="paramname">light</td><td>A pointer to the light to switch off </td></tr>
-  </table>
-  </dd>
-</dl>
-
-</div>
-</div>
-<a id="a842af61c4ba07c19bbae9c9233be1f27"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a842af61c4ba07c19bbae9c9233be1f27">&#9670;&nbsp;</a></span>switchOffLight2()</h2>
+<a id="aaadccc0f574cd30019e940ab56acc832"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aaadccc0f574cd30019e940ab56acc832">&#9670;&nbsp;</a></span>updateSceneNodes()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -1723,69 +1696,7 @@ std::mutex&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">void ve::VESceneManager::switchOffLight2 </td>
-          <td>(</td>
-          <td class="paramtype"><a class="el" href="classve_1_1_v_e_light.html">VELight</a> *&#160;</td>
-          <td class="paramname"><em>light</em></td><td>)</td>
-          <td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">protected</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-
-<p>Remove a light from the m_lights list, thus switching it off. </p>
-<p>Removing this light does not remove it from the m_entities list. Removing it from the m_lights list causes the light to be switched off.</p>
-<dl class="params"><dt>Parameters</dt><dd>
-  <table class="params">
-    <tr><td class="paramdir">[in]</td><td class="paramname">light</td><td>A pointer to the light to switch off </td></tr>
-  </table>
-  </dd>
-</dl>
-
-</div>
-</div>
-<a id="ab3fd427388a5bce3a6f722b54c2a7497"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ab3fd427388a5bce3a6f722b54c2a7497">&#9670;&nbsp;</a></span>switchOnLight()</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">void ve::VESceneManager::switchOnLight </td>
-          <td>(</td>
-          <td class="paramtype"><a class="el" href="classve_1_1_v_e_light.html">VELight</a> *&#160;</td>
-          <td class="paramname"><em>light</em></td><td>)</td>
-          <td></td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p>Add a light to the m_lights list, thus switching it on. </p>
-<p>A light must be also on the stage as entity in the scene manager's entity list. but until it is member of this list, it will not be considered as a shining light.</p>
-<dl class="params"><dt>Parameters</dt><dd>
-  <table class="params">
-    <tr><td class="paramdir">[in]</td><td class="paramname">light</td><td>A pointer to the light to add to the shining lights </td></tr>
-  </table>
-  </dd>
-</dl>
-
-</div>
-</div>
-<a id="a7a55c27e941a05d5314aa5e30b28c7ed"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a7a55c27e941a05d5314aa5e30b28c7ed">&#9670;&nbsp;</a></span>updateSceneNodes2()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">void ve::VESceneManager::updateSceneNodes2 </td>
+          <td class="memname">void ve::VESceneManager::updateSceneNodes </td>
           <td>(</td>
           <td class="paramtype">uint32_t&#160;</td>
           <td class="paramname"><em>imageIndex</em></td><td>)</td>
@@ -1810,6 +1721,59 @@ std::mutex&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href
 
 </div>
 </div>
+<a id="aabcd94dbc425dd23d1c6b696c5c0fd16"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aabcd94dbc425dd23d1c6b696c5c0fd16">&#9670;&nbsp;</a></span>updateSceneNodes2()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">void ve::VESceneManager::updateSceneNodes2 </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="classve_1_1_v_e_scene_node.html">VESceneNode</a> *&#160;</td>
+          <td class="paramname"><em>pNode</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">glm::mat4&#160;</td>
+          <td class="paramname"><em>parentWorldMatrix</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">uint32_t&#160;</td>
+          <td class="paramname"><em>imageIndex</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">protected</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Update this node and all its children. </p>
+<p>Makes this nodes and their children to copy their data to the GPU</p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramdir">[in]</td><td class="paramname">pNode</td><td>Pointer to the node to start updating </td></tr>
+    <tr><td class="paramdir">[in]</td><td class="paramname">parentWorldMatrix</td><td>World Matrix of the parent, used as a start </td></tr>
+    <tr><td class="paramdir">[in]</td><td class="paramname">imageIndex</td><td>Index of the swapchain image that is currently used. </td></tr>
+  </table>
+  </dd>
+</dl>
+
+</div>
+</div>
 <hr/>The documentation for this class was generated from the following files:<ul>
 <li><a class="el" href="_v_e_scene_manager_8h_source.html">VESceneManager.h</a></li>
 <li>VESceneManager.cpp</li>
@@ -1817,7 +1781,7 @@ std::mutex&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href
 </div><!-- contents -->
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>
-Generated on Fri Jun 14 2019 13:37:59 for Vienna Vulkan Engine by &#160;<a href="http://www.doxygen.org/index.html">
+Generated on Sat Jun 15 2019 22:36:40 for Vienna Vulkan Engine by &#160;<a href="http://www.doxygen.org/index.html">
 <img class="footer" src="doxygen.png" alt="doxygen"/>
 </a> 1.8.15
 </small></address>

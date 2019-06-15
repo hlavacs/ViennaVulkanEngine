@@ -647,18 +647,60 @@ namespace ve {
 	//scene management stuff
 
 	/**
-	* \brief This should be called whenever the scene graph ist changed
+	* \brief This should be called whenever the scene graph ist changed - internal version called automatically after changes
 	*/
 	void VESceneManager::sceneGraphChanged() {
+		std::lock_guard<std::mutex> lock(m_mutex);
+		sceneGraphChanged3();				//if no auto record then app has to trigger rerecording itself
+	}
+
+
+	/**
+	* \brief This should be called whenever the scene graph ist changed - internal version called automatically after changes
+	*/
+	void VESceneManager::sceneGraphChanged2() {
+		if (m_autoRecord) {
+			sceneGraphChanged3();				//if no auto record then app has to trigger rerecording itself
+		}
+	}
+
+
+	/**
+	* \brief This should be called whenever the scene graph ist changed
+	*/
+	void VESceneManager::sceneGraphChanged3() {
+
+		for (auto pNode : m_deletedSceneNodes) {
+			deleteSceneNodeAndChildren2(pNode);
+		}
+		m_deletedSceneNodes.clear();
+
 		getRendererPointer()->updateCmdBuffers();
 	}
 
 
 	/**
-	* \brief This should be called whenever the scene graph ist changed - internal version
+	* \brief Set the visibility of a whole subtree
 	*/
-	void VESceneManager::sceneGraphChanged2() {
-		if (m_autoRecord) getRendererPointer()->updateCmdBuffers();	//if no auto record then app has to trigger rerecording itself
+	void VESceneManager::setVisibility(VESceneNode *pNode, bool flag) {
+		std::lock_guard<std::mutex> lock(m_mutex);
+		setVisibility2(pNode, flag);
+	}
+
+
+	/**
+	* \brief Set the visibility of a whole subtree
+	*/
+	void VESceneManager::setVisibility2(VESceneNode *pNode, bool flag ) {
+		if (pNode->getNodeType() == VESceneNode::VE_NODE_TYPE_SCENEOBJECT &&
+			((VESceneObject*)pNode)->getObjectType() == VESceneObject::VE_OBJECT_TYPE_ENTITY) {
+			((VEEntity*)pNode)->m_visible = flag;
+		}
+
+		std::vector<VESceneNode*> children = pNode->getChildrenCopy();
+		for (auto pChild : children) {
+			setVisibility2(pNode, flag);
+		}
 	}
 
 
@@ -681,7 +723,6 @@ namespace ve {
 			vh::vhMemBlockUpdateBlockList(list.second, imageIndex );
 		}
 	}
-
 
 
 	/**
@@ -710,8 +751,6 @@ namespace ve {
 		}
 
 	}
-
-
 
 
 	/**
@@ -770,20 +809,54 @@ namespace ve {
 	*/
 	void VESceneManager::deleteSceneNodeAndChildren(std::string name) {
 		std::lock_guard<std::mutex> lock(m_mutex);
-		deleteSceneNodeAndChildren2(name);
+
+		if (m_sceneNodes.count(name) == 0) return;
+		VESceneNode * pNode = m_sceneNodes[name];
+
+		if (pNode->hasParent()) pNode->getParent()->removeChild(pNode);
+		m_deletedSceneNodes.push_back(pNode);
+		setVisibility2(pNode, false);
+		notifyEventListeners(pNode);
+		sceneGraphChanged2();
 	}
 
 
 	/**
 	*
-	* \brief Delete a scene node and all its subentities
+	* \brief Notify event listeners that a scene node has been deleted
 	*
-	* \param[in] name Name of the scene node.
+	* Event listeners aswering true will also be deleted.
+	*
+	* \param[in] pNode Pointer to scene node that has been deleted
 	*
 	*/
-	void VESceneManager::deleteSceneNodeAndChildren2(std::string name) {
-		if (m_sceneNodes.count(name) == 0) return;
-		VESceneNode * pNode = m_sceneNodes[name];
+	void VESceneManager::notifyEventListeners( VESceneNode *pNode ) {
+
+		//notify frame listeners that this node has been deleted
+		veEvent event(veEvent::VE_EVENT_SUBSYSTEM_GENERIC, veEvent::VE_EVENT_DELETE_NODE);
+		event.ptr = pNode;
+
+		std::vector<std::string> nameList;
+		std::vector<VEEventListener*> *listeners = getEnginePointer()->m_eventListeners[veEvent::VE_EVENT_DELETE_NODE];
+		for (auto listener : *listeners) {
+			if (listener->onSceneNodeDeleted(event)) {
+				nameList.push_back(listener->getName());
+			}
+		}
+		for (auto name : nameList) {
+			getEnginePointer()->deleteEventListener(name);
+		}
+
+	}
+
+	/**
+	*
+	* \brief Delete a scene node and all its subentities
+	*
+	* \param[in] pNode Pointer to the scene node to be deleted
+	*
+	*/
+	void VESceneManager::deleteSceneNodeAndChildren2(VESceneNode *pNode) {
 
 		if (pNode->hasParent()) pNode->getParent()->removeChild(pNode);
 
@@ -800,9 +873,6 @@ namespace ve {
 				if (pObject->getObjectType() == VESceneObject::VE_OBJECT_TYPE_CAMERA && m_camera == (VECamera*)pObject)
 					m_camera = nullptr;
 
-				//if (pObject->getObjectType() == VESceneObject::VE_OBJECT_TYPE_LIGHT)
-				//	switchOffLight2( (VELight*)pObject );
-
 				if( pObject->getObjectType() == VESceneObject::VE_OBJECT_TYPE_ENTITY )
 					getRendererPointer()->removeEntityFromSubrenderers((VEEntity*)pObject);
 
@@ -812,24 +882,10 @@ namespace ve {
 			}
 			m_sceneNodes.erase(namelist[i]);
 
-			//notify frame listeners that this node has been deleted
-			veEvent event(veEvent::VE_EVENT_SUBSYSTEM_GENERIC, veEvent::VE_EVENT_DELETE_NODE);
-			event.ptr = pNode;
-			//todo
-			std::vector<std::string> nameList;
-			std::vector<VEEventListener*> *listeners = getEnginePointer()->m_eventListeners[veEvent::VE_EVENT_DELETE_NODE];
-			for (auto listener : *listeners) {
-				if (listener->onSceneNodeDeleted(event)) {
-					nameList.push_back(listener->getName());
-				}
-			}
-			for (auto name : nameList) {
-				getEnginePointer()->deleteEventListener(name);
-			}
+			notifyEventListeners(pNode);
 
 			delete pNode;
 		}
-		sceneGraphChanged2();
 	}
 
 
@@ -840,19 +896,17 @@ namespace ve {
 	* Function will delete all children of the root scene node, bit not the root itself
 	*
 	*/
-
 	void  VESceneManager::deleteScene() {
 		std::lock_guard<std::mutex> lock(m_mutex);
 
-		getEnginePointer()->clearEventListenerList();
+		getEnginePointer()->clearEventListenerList();		//delete all event listeners, so we do not have to iterate through them
 
 		while (m_sceneNodes.size() > 0) {
 			std::map<std::string, VESceneNode*>::iterator first = m_sceneNodes.begin();
 
-			deleteSceneNodeAndChildren2(first->second->getName());
+			deleteSceneNodeAndChildren2( first->second );		//delete whole subtrees
 		}
-
-		return;
+		sceneGraphChanged3();
 	}
 
 

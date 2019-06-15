@@ -46,7 +46,7 @@ namespace ve {
 		std::map<std::string, VEMesh *>		m_meshes = {};		///<Storage of all meshes currently in the engine
 		std::map<std::string, VEMaterial*>	m_materials = {};	///<Storage of all materials currently in the engine
 		std::map<std::string, VESceneNode*>	m_sceneNodes = {};	///<Storage of all scene nodes currently in the engine
-		
+		std::vector<VESceneNode*>			m_deletedSceneNodes = {};  ///<List of deleted scene nodes and their children
 		VESceneNode						*	m_rootSceneNode;	///<The root node of the scene graph
 		std::map<VESceneObject::veObjectType, std::vector<vh::vhMemoryBlock*>> m_memoryBlockMap;	///<memory for the UBOs of the entities
 
@@ -66,13 +66,15 @@ namespace ve {
 		VESceneNode *	createSceneNode2(std::string name, VESceneNode *parent, glm::mat4 transf = glm::mat4(1.0f) );
 		VEEntity *		createEntity2(std::string entityName, VEEntity::veEntityType type, VEMesh *pMesh, VEMaterial *pMat, VESceneNode *parent, glm::mat4 transf = glm::mat4(1.0f) );
 		void			addSceneNodeAndChildren2(VESceneNode *pNode, VESceneNode *parent );
-		void			deleteSceneNodeAndChildren2(std::string name);
+		void			deleteSceneNodeAndChildren2(VESceneNode *pNode);
 		void			createSceneNodeList2(VESceneNode *pObject, std::vector<std::string> &namelist);
 		VEEntity *		createSkyplane2(std::string entityName, std::string basedir, std::string texName, VESceneNode *parent);
 		void			sceneGraphChanged2();					//tell renderer to rerecord the cmd buffers
+		void			sceneGraphChanged3();					//tell renderer to rerecord the cmd buffers
 		void			updateSceneNodes(uint32_t imageIndex);
 		void			updateSceneNodes2(VESceneNode *pNode, glm::mat4 worldMatrix, uint32_t imageIndex);
-		//void			switchOffLight2(VELight *light);		//Remove a light from the m_lights list
+		void			setVisibility2(VESceneNode *pNode, bool flag);			//set a whole subtree visible or not
+		void			notifyEventListeners(VESceneNode *pNode);
 
 	public:
 		///Constructor of class VESceneManager
@@ -116,7 +118,8 @@ namespace ve {
 
 		///\brief If true then scene graph changes automatically trigger a cmd buffer rerecording
 		void			setAutoRecord(bool flag) { m_autoRecord = flag; };
-		void			sceneGraphChanged();					//tell renderer to rerecord the cmd buffers
+		void			sceneGraphChanged();									//tell renderer to rerecord the cmd buffers
+		void			setVisibility(VESceneNode *pNode, bool flag);			//set a whole subtree visible or not
 
 		//----------------------------------------------------------------
 		//API that needs to by synchronized
@@ -147,10 +150,6 @@ namespace ve {
 		void			setCamera( VECamera *cam) { m_camera = cam; };
 		///\returns a list with names of the current lights shining on the scene
 		std::vector<VELight*> & getLights() { return m_lights;  };
-		//void			switchOnLight(VELight * pLight);		//Add a light to the m_lights list
-		//void			switchOffLight(VELight *pLight);		//Remove a light from the m_lights list
-		//bool			isLightSwitchedOn( VELight *pLight );
-		//bool			isLightSwitchedOn( std::string name );
 
 		//-------------------------------------------------------------------------------------
 		//Print information about the tree of objects

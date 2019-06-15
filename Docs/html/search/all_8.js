@@ -13,6 +13,5 @@ var searchData=
   ['iparam',['iparam',['../structve_1_1_v_e_entity_1_1ve_u_b_o_per_object__t.html#a5aa2bcd8762c20ee6ac25ad3f1d59e90',1,'ve::VEEntity::veUBOPerObject_t']]],
   ['iscomplete',['isComplete',['../structvh_1_1_queue_family_indices.html#a7828338663fb6c745fa219bfdfb9f32e',1,'vh::QueueFamilyIndices']]],
   ['isdevicesuitable',['isDeviceSuitable',['../namespacevh.html#a57c20b5524c517208b8984d3734f2aea',1,'vh']]],
-  ['islightswitchedon',['isLightSwitchedOn',['../classve_1_1_v_e_scene_manager.html#ae1c8ac5618111935152c1c4162e265a0',1,'ve::VESceneManager::isLightSwitchedOn(VELight *pLight)'],['../classve_1_1_v_e_scene_manager.html#a4192543595368ee1d35663cc63dc61dd',1,'ve::VESceneManager::isLightSwitchedOn(std::string name)']]],
   ['isrecording',['isRecording',['../classve_1_1_v_e_renderer_forward.html#aaaa84595c7e7ad25acc2f2d94666133b',1,'ve::VERendererForward']]]
 ];

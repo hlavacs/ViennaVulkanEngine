@@ -52,12 +52,7 @@ namespace ve {
 			double duration = t_now - t_last;
 
 			if (duration > m_blinkDuration) {
-
-				if (m_pEntity->m_drawEntity)
-					m_pEntity->m_drawEntity = false;
-				else
-					m_pEntity->m_drawEntity = true;
-
+				m_pEntity->m_visible = m_pEntity->m_visible ? false : true;	//toggle visibility
 				t_last = t_now;
 			}
 		}
@@ -233,7 +228,7 @@ namespace ve {
 			e1->multiplyTransform( glm::translate(glm::mat4(1.0f), glm::vec3(10.0f, 5.0f, 10.0f)));
 			pScene->addChild(e1);
 
-			createCubes(50000, pScene);
+			createCubes(40000, pScene);
 			//VESceneNode *pSponza = m_pSceneManager->loadModel("Sponza", "models/sponza", "sponza.dae", aiProcess_FlipWindingOrder);
 			//pSponza->setTransform(glm::scale(glm::mat4(1.0f), glm::vec3(0.1f, 0.1f, 0.1f)));
 

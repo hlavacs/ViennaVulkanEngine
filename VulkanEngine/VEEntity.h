@@ -74,6 +74,11 @@ namespace ve {
 		bool				hasParent() { return m_parent != nullptr; };
 		///\returns a reference to the children list of this scene node
 		std::vector<VESceneNode *> & getChildrenList() { return m_children;  };
+		///\returns a copy children list of this scene node
+		std::vector<VESceneNode *> getChildrenCopy() {
+			std::lock_guard<std::mutex> lock(m_mutex);
+			return m_children; 
+		};
 
 		//-------------------------------------------------------------------------------------
 		//transforms - must be synchronized with mutex
@@ -207,7 +212,7 @@ namespace ve {
 		VEMaterial *				m_pMaterial = nullptr;			///<Pointer to entity material
 
 		VESubrender *				m_pSubrenderer = nullptr;		///<subrenderer this entity is registered with / replace with a set
-		bool						m_drawEntity = false;			///<should it be drawn at all?
+		bool						m_visible = false;				///<should it be drawn at all?
 		bool						m_castsShadow = true;			///<draw in the shadow pass?
 
 		//-------------------------------------------------------------------------------------
@@ -600,11 +605,11 @@ namespace ve {
 	* An ambient light is constant throughout the scene
 	*
 	*/
-
 	class VEAmbientLight : public VELight {
 		friend VESceneManager;
 
 	protected:
+		///Constructor of Ambient Light class
 		VEAmbientLight(std::string name) : VELight( name ) {};
 
 		///Destructor of the spot light

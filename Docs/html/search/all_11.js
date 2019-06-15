@@ -1,6 +1,9 @@
 var searchData=
 [
+  ['scenegraphchanged',['sceneGraphChanged',['../classve_1_1_v_e_scene_manager.html#ac0ab8c69e5ea095eb394166db5b246bf',1,'ve::VESceneManager']]],
   ['scenegraphchanged2',['sceneGraphChanged2',['../classve_1_1_v_e_scene_manager.html#aa6929a5a216090f467a4daa5722173d5',1,'ve::VESceneManager']]],
+  ['scenegraphchanged3',['sceneGraphChanged3',['../classve_1_1_v_e_scene_manager.html#ab15a31c03423ccba2d50f312250a0e5d',1,'ve::VESceneManager']]],
+  ['setautorecord',['setAutoRecord',['../classve_1_1_v_e_scene_manager.html#a79e85e3bf75295ac40dbca5cbeb452ca',1,'ve::VESceneManager']]],
   ['setcamera',['setCamera',['../classve_1_1_v_e_scene_manager.html#acedf235e65ee027a0df5dc92163fcefe',1,'ve::VESceneManager']]],
   ['setdirty',['setDirty',['../structvh_1_1vh_memory_block.html#a66b06573e5ac11726e8ec92a11f68d1f',1,'vh::vhMemoryBlock']]],
   ['setdynamicpipelinestate',['setDynamicPipelineState',['../classve_1_1_v_e_subrender_f_w.html#a3a0f5c1fbafdbb0e6c4a4a38caead161',1,'ve::VESubrenderFW::setDynamicPipelineState()'],['../classve_1_1_v_e_subrender_f_w___d.html#a636aad249704039c5efd76dde7e2b9ec',1,'ve::VESubrenderFW_D::setDynamicPipelineState()'],['../classve_1_1_v_e_subrender_f_w___d_n.html#a50421be758fef12c68e44ce6c319c397',1,'ve::VESubrenderFW_DN::setDynamicPipelineState()']]],
@@ -9,13 +12,12 @@ var searchData=
   ['setposition',['setPosition',['../classve_1_1_v_e_scene_node.html#a0af270114f93f89969f962f0f3b6f3af',1,'ve::VESceneNode']]],
   ['setresourceidx',['setResourceIdx',['../classve_1_1_v_e_entity.html#a5f221b81d012c0970f313ecf6d4fe37c',1,'ve::VEEntity']]],
   ['settransform',['setTransform',['../classve_1_1_v_e_scene_node.html#a367fee6490278bbf70d33e9a8e17fee9',1,'ve::VESceneNode']]],
+  ['setvisibility',['setVisibility',['../classve_1_1_v_e_scene_manager.html#aca072d49210df8f3a657e5176270c904',1,'ve::VESceneManager']]],
+  ['setvisibility2',['setVisibility2',['../classve_1_1_v_e_scene_manager.html#a7a0e2b8122dc9e89dc62e24fec38b3e6',1,'ve::VESceneManager']]],
   ['shading',['shading',['../classve_1_1_v_e_material.html#a877af32c5e565db2d9696e1da783c2f5',1,'ve::VEMaterial']]],
   ['shadowcameras',['shadowCameras',['../structve_1_1_v_e_light_1_1ve_u_b_o_per_light__t.html#a8c88bcc2f0c93b97f469a5b79e5589f7',1,'ve::VELight::veUBOPerLight_t']]],
   ['sign',['sign',['../structcl_1_1cl_halfspace.html#ab43b18291f3382fb291d507147b6925f',1,'cl::clHalfspace']]],
   ['sizeentry',['sizeEntry',['../structvh_1_1vh_memory_block.html#adaf7853613a33899538d05d02cf4eb62',1,'vh::vhMemoryBlock']]],
   ['subsystem',['subsystem',['../structve_1_1ve_event.html#afeebae6769e84bbfea2d3916dc4ac67a',1,'ve::veEvent']]],
-  ['swapchainsupportdetails',['SwapChainSupportDetails',['../structvh_1_1_swap_chain_support_details.html',1,'vh']]],
-  ['switchofflight',['switchOffLight',['../classve_1_1_v_e_scene_manager.html#ac0f7488adfda84df259fc306e101629b',1,'ve::VESceneManager']]],
-  ['switchofflight2',['switchOffLight2',['../classve_1_1_v_e_scene_manager.html#a842af61c4ba07c19bbae9c9233be1f27',1,'ve::VESceneManager']]],
-  ['switchonlight',['switchOnLight',['../classve_1_1_v_e_scene_manager.html#ab3fd427388a5bce3a6f722b54c2a7497',1,'ve::VESceneManager']]]
+  ['swapchainsupportdetails',['SwapChainSupportDetails',['../structvh_1_1_swap_chain_support_details.html',1,'vh']]]
 ];
