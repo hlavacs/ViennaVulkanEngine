@@ -923,7 +923,10 @@ namespace ve {
 	*
 	*/
 	void  VESceneManager::switchOnLight(VELight * light) {
+		if( isLightSwitchedOn(light) ) return;				//is synced
+
 		std::lock_guard<std::mutex> lock(m_mutex);
+		light->m_switchedOn = true;
 		m_lights.push_back(light);
 		sceneGraphChanged();
 	};
@@ -956,6 +959,7 @@ namespace ve {
 	*
 	*/
 	void  VESceneManager::switchOffLight2(VELight *light) {
+		light->m_switchedOn = false;
 		for (uint32_t i = 0; i < m_lights.size(); i++) {
 			if (light == m_lights[i]) {
 				m_lights[i] = m_lights[m_lights.size() - 1];	//overwrite with last light

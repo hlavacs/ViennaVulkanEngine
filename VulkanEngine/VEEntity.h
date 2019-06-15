@@ -483,6 +483,7 @@ namespace ve {
 	public:
 		struct veUBOPerLight_t	m_ubo;						///<The UBO that is copied to the GPU
 		std::vector<VECamera*>	m_shadowCameras;			///<Up to 6 shadow cameras for this light
+		bool					m_switchedOn = true;		///<If false, then the colors are all zero
 
 		glm::vec4 m_col_ambient  = 0.3f * glm::vec4(1.0f, 1.0f, 1.0f, 1.0f);	///<Ambient color
 		glm::vec4 m_col_diffuse  = 0.5f * glm::vec4(1.0f, 1.0f, 1.0f, 1.0f);	///<Diffuse color

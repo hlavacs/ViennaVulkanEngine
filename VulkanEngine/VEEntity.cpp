@@ -837,9 +837,9 @@ namespace ve {
 
 		m_ubo.type[0] = getLightType();
 		m_ubo.model = worldMatrix;
-		m_ubo.col_ambient = m_col_ambient;
-		m_ubo.col_diffuse = m_col_diffuse;
-		m_ubo.col_specular = m_col_specular;
+		m_ubo.col_ambient = m_switchedOn ? m_col_ambient : glm::vec4(0.0f,0.0f,0.0f, 0.0f);
+		m_ubo.col_diffuse = m_switchedOn ? m_col_diffuse : glm::vec4(0.0f, 0.0f, 0.0f, 0.0f);
+		m_ubo.col_specular = m_switchedOn ? m_col_specular : glm::vec4(0.0f, 0.0f, 0.0f, 0.0f);
 		m_ubo.param = m_param;
 	}
 
