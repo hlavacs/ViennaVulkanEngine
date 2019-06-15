@@ -901,7 +901,8 @@ namespace ve {
 
 		getEnginePointer()->clearEventListenerList();		//delete all event listeners, so we do not have to iterate through them
 
-		for (auto pChild : m_rootSceneNode->m_children) {	//move children of root to the deleted nodes list
+		std::vector<VESceneNode*> children = m_rootSceneNode->getChildrenCopy();
+		for (auto pChild : children) {						//move children of root to the deleted nodes list
 			m_rootSceneNode->removeChild(pChild);
 			m_deletedSceneNodes.push_back(pChild);
 		}
