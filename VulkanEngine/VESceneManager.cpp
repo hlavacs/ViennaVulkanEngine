@@ -647,7 +647,7 @@ namespace ve {
 	//scene management stuff
 
 	/**
-	* \brief This should be called whenever the scene graph ist changed - internal version called automatically after changes
+	* \brief This should be called whenever the scene graph ist changed - public API
 	*/
 	void VESceneManager::sceneGraphChanged() {
 		std::lock_guard<std::mutex> lock(m_mutex);
@@ -876,7 +876,7 @@ namespace ve {
 				if( pObject->getObjectType() == VESceneObject::VE_OBJECT_TYPE_ENTITY )
 					getRendererPointer()->removeEntityFromSubrenderers((VEEntity*)pObject);
 
-				if (pObject->m_memoryHandle.owner != nullptr) {
+				if (pObject->m_memoryHandle.pMemBlock != nullptr) {
 					vh::vhMemBlockRemoveEntry(&pObject->m_memoryHandle);
 				}
 			}
@@ -901,10 +901,9 @@ namespace ve {
 
 		getEnginePointer()->clearEventListenerList();		//delete all event listeners, so we do not have to iterate through them
 
-		while (m_sceneNodes.size() > 0) {
-			std::map<std::string, VESceneNode*>::iterator first = m_sceneNodes.begin();
-
-			deleteSceneNodeAndChildren2( first->second );		//delete whole subtrees
+		for (auto pChild : m_rootSceneNode->m_children) {	//move children of root to the deleted nodes list
+			m_rootSceneNode->removeChild(pChild);
+			m_deletedSceneNodes.push_back(pChild);
 		}
 		sceneGraphChanged3();
 	}
