@@ -311,7 +311,7 @@ namespace ve {
 					paiMat->GetTexture(aiTextureType_DIFFUSE, i, &str);
 
 					std::string name(str.C_Str());
-					pMat->mapDiffuse = new VETexture(filekey + "/" + name, basedir, { name });
+					pMat->mapDiffuse = createTexture2(filekey + "/" + name, basedir, name );
 				}
 				for (uint32_t i = 0; i < paiMat->GetTextureCount(aiTextureType_SPECULAR); i++) {
 					aiString str;
@@ -326,21 +326,21 @@ namespace ve {
 					paiMat->GetTexture(aiTextureType_NORMALS, i, &str);
 
 					std::string name(str.C_Str());
-					if (pMat->mapNormal == nullptr) pMat->mapNormal = new VETexture(filekey + "/" + name, basedir, { name });
+					if (pMat->mapNormal == nullptr) pMat->mapNormal = createTexture2(filekey + "/" + name, basedir, name );
 				}
 				for (uint32_t i = 0; i < paiMat->GetTextureCount(aiTextureType_DISPLACEMENT); i++) {
 					aiString str;
 					paiMat->GetTexture(aiTextureType_DISPLACEMENT, i, &str);
 
 					std::string name(str.C_Str());
-					if (pMat->mapBump == nullptr) pMat->mapBump = new VETexture(filekey + "/" + name, basedir, { name });
+					if (pMat->mapBump == nullptr) pMat->mapBump = createTexture2(filekey + "/" + name, basedir, name );
 				}
 				for (uint32_t i = 0; i < paiMat->GetTextureCount(aiTextureType_HEIGHT); i++) {
 					aiString str;
 					paiMat->GetTexture(aiTextureType_HEIGHT, i, &str);
 
 					std::string name(str.C_Str());
-					if (pMat->mapHeight == nullptr) pMat->mapHeight = new VETexture(filekey + "/" + name, basedir, { name });
+					if (pMat->mapHeight == nullptr) pMat->mapHeight = createTexture2(filekey + "/" + name, basedir, name);
 				}
 			}
 			else {
@@ -1001,6 +1001,8 @@ namespace ve {
 	* \brief Create a new texture with a given name
 	*
 	* \param[in] name Name of the texture.
+	* \param[in] basedir Name of the directory the file is in
+	* \param[in] texName Filename of the texture file
 	* \returns a pointer to the new texture, or an old one if one with this name  was found
 	*
 	*/
@@ -1015,6 +1017,8 @@ namespace ve {
 	* \brief Create a new texture with a given name
 	*
 	* \param[in] name Name of the texture.
+	* \param[in] basedir Name of the directory the file is in
+	* \param[in] texName Filename of the texture file
 	* \returns a pointer to the new texture, or an old one if one with this name  was found
 	*
 	*/

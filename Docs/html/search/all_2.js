@@ -33,7 +33,10 @@ var searchData=
   ['createentity2',['createEntity2',['../classve_1_1_v_e_scene_manager.html#acdf964ec97e38cb8eea8154cc7cbbe24',1,'ve::VESceneManager']]],
   ['createlight',['createLight',['../classve_1_1_v_e_scene_manager.html#a067d300535ffe3210c55c70600e35c4a',1,'ve::VESceneManager']]],
   ['createlights',['createLights',['../classve_1_1_my_vulkan_engine.html#afcfddd13328ce4fd5b040dca0eeaa378',1,'ve::MyVulkanEngine']]],
+  ['creatematerial',['createMaterial',['../classve_1_1_v_e_scene_manager.html#acd9a23d8d6ae3b4494b4f9ead78ffc64',1,'ve::VESceneManager']]],
+  ['creatematerial2',['createMaterial2',['../classve_1_1_v_e_scene_manager.html#a1b8dbb32ba5f8a7be013cf410030ba4d',1,'ve::VESceneManager']]],
   ['creatematerials',['createMaterials',['../classve_1_1_v_e_scene_manager.html#a40cb40d0509a6db4730d8204d08a8c12',1,'ve::VESceneManager']]],
+  ['createmesh',['createMesh',['../classve_1_1_v_e_scene_manager.html#a7ad8836511f00f0099e3370dadce0fa7',1,'ve::VESceneManager']]],
   ['createmeshes',['createMeshes',['../classve_1_1_v_e_scene_manager.html#a0dffe81f507aafc98ce88bde78f7c61a',1,'ve::VESceneManager']]],
   ['createrenderer',['createRenderer',['../classve_1_1_v_e_engine.html#a6090eb44fe9be9d7587006c79a661244',1,'ve::VEEngine']]],
   ['createscenemanager',['createSceneManager',['../classve_1_1_v_e_engine.html#a69a9c4208fe77152afaba469f5e35b54',1,'ve::VEEngine']]],
@@ -47,6 +50,8 @@ var searchData=
   ['createsubrenderers',['createSubrenderers',['../classve_1_1_v_e_renderer.html#a60fcc5678fd0bc20da05c8dfe6b39300',1,'ve::VERenderer::createSubrenderers()'],['../classve_1_1_v_e_renderer_forward.html#a79404755faaf9f393770b290f2d6f598',1,'ve::VERendererForward::createSubrenderers()']]],
   ['createsurface',['createSurface',['../classve_1_1_v_e_window.html#a59133ac24eb6b03601a8058e6894f491',1,'ve::VEWindow::createSurface()'],['../classve_1_1_v_e_window_g_l_f_w.html#a0f2fcdd5800a0786871200aa4806e7aa',1,'ve::VEWindowGLFW::createSurface()']]],
   ['createsyncobjects',['createSyncObjects',['../classve_1_1_v_e_renderer_forward.html#a4d8baf6d34857f8792273ca1e53bd19a',1,'ve::VERendererForward']]],
+  ['createtexture',['createTexture',['../classve_1_1_v_e_scene_manager.html#a9b30cdace056808c79970a3037abcc4e',1,'ve::VESceneManager']]],
+  ['createtexture2',['createTexture2',['../classve_1_1_v_e_scene_manager.html#aec1823a1e5cd400b35b46ce2149e4177',1,'ve::VESceneManager']]],
   ['createwindow',['createWindow',['../classve_1_1_v_e_engine.html#a7717798142b0d639f39f84fe20f1e3e7',1,'ve::VEEngine']]],
   ['cursor_5fpos_5fcallbackglfw',['cursor_pos_callbackGLFW',['../classve_1_1_v_e_window_g_l_f_w.html#ab3e1995fdbb61f01179495de1185a7b5',1,'ve::VEWindowGLFW']]]
 ];

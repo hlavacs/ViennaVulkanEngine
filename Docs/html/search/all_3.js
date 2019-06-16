@@ -9,6 +9,7 @@ var searchData=
   ['deletescene',['deleteScene',['../classve_1_1_v_e_scene_manager.html#a71bced8579dccaf8567fa3dd5263af30',1,'ve::VESceneManager']]],
   ['deletescenenodeandchildren',['deleteSceneNodeAndChildren',['../classve_1_1_v_e_scene_manager.html#a4964068bea04034d723881b7551dd597',1,'ve::VESceneManager']]],
   ['deletescenenodeandchildren2',['deleteSceneNodeAndChildren2',['../classve_1_1_v_e_scene_manager.html#aeb3d36e87484587a20368624375f83f2',1,'ve::VESceneManager']]],
+  ['deletetexture',['deleteTexture',['../classve_1_1_v_e_scene_manager.html#adb6b73894110d4389ff194694b0140c7',1,'ve::VESceneManager']]],
   ['descriptorlayout',['descriptorLayout',['../structvh_1_1vh_memory_block.html#a8a34267a034ee26e221f4cd81da4f34f',1,'vh::vhMemoryBlock']]],
   ['descriptorpool',['descriptorPool',['../structvh_1_1vh_memory_block.html#ae8a03b54751b5c32d517c18db678546c',1,'vh::vhMemoryBlock']]],
   ['descriptorsets',['descriptorSets',['../structvh_1_1vh_memory_block.html#a96e835f1dbe73b341f39cd20bcf83cad',1,'vh::vhMemoryBlock']]],
