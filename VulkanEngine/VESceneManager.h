@@ -44,6 +44,7 @@ namespace ve {
 
 	protected:
 		std::map<std::string, VEMesh *>		m_meshes = {};		///<Storage of all meshes currently in the engine
+		std::map<std::string, VETexture *>	m_textures = {};	///<Storage of all textures
 		std::map<std::string, VEMaterial*>	m_materials = {};	///<Storage of all materials currently in the engine
 		std::map<std::string, VESceneNode*>	m_sceneNodes = {};	///<Storage of all scene nodes currently in the engine
 		std::vector<VESceneNode*>			m_deletedSceneNodes = {};  ///<List of deleted scene nodes and their children
@@ -69,6 +70,8 @@ namespace ve {
 		void			deleteSceneNodeAndChildren2(VESceneNode *pNode);
 		void			createSceneNodeList2(VESceneNode *pObject, std::vector<std::string> &namelist);
 		VEEntity *		createSkyplane2(std::string entityName, std::string basedir, std::string texName, VESceneNode *parent);
+		VETexture *		createTexture2(std::string name, std::string basedir, std::string texName);
+		VEMaterial *	createMaterial2(std::string name);
 		void			sceneGraphChanged2();					//tell renderer to rerecord the cmd buffers - internal
 		void			sceneGraphChanged3();					//tell renderer to rerecord the cmd buffers
 		void			updateSceneNodes(uint32_t imageIndex);
@@ -130,14 +133,15 @@ namespace ve {
 
 		//-------------------------------------------------------------------------------------
 		//Manage meshes, materials, cameras, lights
-
+		VEMesh *		createMesh(std::string name, std::vector<vh::vhVertex> &vertices, std::vector<uint32_t> &indices );
 		VEMesh *		getMesh(std::string name);
 		void			deleteMesh(std::string name);
-		/**
-		* \brief Find a material by its name and return a pointer to it
-		* \param[in] name The name of material
-		* \returns a material given its name
-		*/
+
+		VETexture *		createTexture(std::string name, std::string basedir, std::string texName );
+		VETexture *		getTexture(std::string name );
+		void			deleteTexture(std::string name);
+
+		VEMaterial *	createMaterial( std::string name );
 		VEMaterial *	getMaterial(std::string name);
 		void			deleteMaterial(std::string name);
 

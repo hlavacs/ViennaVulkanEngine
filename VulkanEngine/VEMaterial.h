@@ -34,6 +34,7 @@ namespace ve {
 
 		VETexture(std::string name, gli::texture_cube &texCube, VkImageCreateFlags flags = VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT, VkImageViewType viewType = VK_IMAGE_VIEW_TYPE_CUBE);
 		VETexture(std::string name, std::string &basedir, std::vector<std::string> texNames, VkImageCreateFlags flags = 0, VkImageViewType viewtype = VK_IMAGE_VIEW_TYPE_2D);
+
 		///Empty constructor
 		VETexture(std::string name) : VENamedClass(name) {};
 		~VETexture();
@@ -57,8 +58,8 @@ namespace ve {
 		VETexture *mapHeight = nullptr;					///<Height map
 		glm::vec4 color = glm::vec4(0.5f, 0.5f, 0.5f, 1.0f);	///<General color of the entity
 
-																///Constructor
-		VEMaterial(std::string name) : VENamedClass(name), mapDiffuse(nullptr), mapBump(nullptr), mapNormal(nullptr), mapHeight(nullptr), color(glm::vec4(0.5f, 0.5f, 0.5f, 1.0f)) {};
+		///Constructor
+		VEMaterial(std::string name) : VENamedClass(name), mapDiffuse(nullptr), mapBump(nullptr), mapNormal(nullptr), mapHeight(nullptr), color(glm::vec4(0.0f, 0.0f, 0.0f, 1.0f)) {};
 		~VEMaterial();
 	};
 
@@ -84,7 +85,7 @@ namespace ve {
 		float			m_boundingSphereRadius = 1.0;		///<Radius of bounding sphere in local space
 
 		VEMesh(std::string name, const aiMesh *paiMesh);
-		VEMesh(std::string name, std::vector<vh::vhVertex> vertices, std::vector<uint32_t> indices);
+		VEMesh(std::string name, std::vector<vh::vhVertex> &vertices, std::vector<uint32_t> &indices);
 		~VEMesh();
 	};
 }

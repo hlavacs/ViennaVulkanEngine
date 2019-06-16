@@ -27,7 +27,7 @@ namespace ve {
 	*
 	* \brief Initializes the scene manager.
 	*
-	* In this function the scene manager loads standard shapes like cubes and planes. 
+	* In this function the scene manager loads standard shapes like cubes and planes.
 	* Then it creates a standard camera system (camera + parent) and a standard light.
 	*
 	*/
@@ -92,29 +92,29 @@ namespace ve {
 	* \param[out] materials A list of pointers to the loaded materials
 	*
 	*/
-	const aiScene* VESceneManager::loadAssets(	std::string basedir, std::string filename, 
-												uint32_t aiFlags, 
-												std::vector<VEMesh*> &meshes, 
-												std::vector<VEMaterial*> &materials) {
-		
+	const aiScene* VESceneManager::loadAssets(std::string basedir, std::string filename,
+		uint32_t aiFlags,
+		std::vector<VEMesh*> &meshes,
+		std::vector<VEMaterial*> &materials) {
+
 		std::lock_guard<std::mutex> lock(m_mutex);
 
 		Assimp::Importer importer;
 
 		std::string filekey = basedir + "/" + filename;
 
-		const aiScene* pScene = importer.ReadFile( filekey, 
+		const aiScene* pScene = importer.ReadFile(filekey,
 			//aiProcess_FlipWindingOrder |
 			//aiProcess_RemoveRedundantMaterials |
 			//aiProcess_PreTransformVertices |
-			aiProcess_GenNormals | 
+			aiProcess_GenNormals |
 			aiProcess_CalcTangentSpace |
 			aiProcess_Triangulate |
 			//aiProcess_JoinIdenticalVertices | 
 			//aiProcess_FixInfacingNormals |
 			aiFlags);
 
-		VECHECKPOINTER( (void*)pScene );
+		VECHECKPOINTER((void*)pScene);
 
 		createMeshes(pScene, filekey, meshes);					//create new meshes if any
 		createMaterials(pScene, basedir, filekey, materials);	//create new materials if any
@@ -139,14 +139,14 @@ namespace ve {
 	*
 	*/
 	VESceneNode * VESceneManager::loadModel(std::string entityName,
-												std::string basedir, 
-												std::string filename,
-												uint32_t aiFlags, 
-												VESceneNode *parent) {
+		std::string basedir,
+		std::string filename,
+		uint32_t aiFlags,
+		VESceneNode *parent) {
 
 		std::lock_guard<std::mutex> lock(m_mutex);
 
-		if( m_sceneNodes.count( entityName)>0 ) return  m_sceneNodes[entityName];			//if an entity with this name exists return it
+		if (m_sceneNodes.count(entityName) > 0) return  m_sceneNodes[entityName];			//if an entity with this name exists return it
 
 		Assimp::Importer importer;
 
@@ -165,14 +165,14 @@ namespace ve {
 
 		VECHECKPOINTER((void*)pScene);
 
-		VESceneNode *pMO = createSceneNode2(entityName, parent );	//create a new scene node as parent of the whole scene
+		VESceneNode *pMO = createSceneNode2(entityName, parent);	//create a new scene node as parent of the whole scene
 
 		std::vector<VEMesh*> meshes;
 		createMeshes(pScene, filekey, meshes);					//create the new meshes if any
 		std::vector<VEMaterial*> materials;
 		createMaterials(pScene, basedir, filekey, materials);	//create the new materials if any
 
-		copyAiNodes( pScene, meshes, materials, pScene->mRootNode, pMO);	//create scene nodes and entities from the file
+		copyAiNodes(pScene, meshes, materials, pScene->mRootNode, pMO);	//create scene nodes and entities from the file
 
 		sceneGraphChanged2();	//notify renderer to rerecord the cmd buffers
 		return pMO;
@@ -194,13 +194,13 @@ namespace ve {
 	* \param[in] parent The parent entity of the new entity
 	*
 	*/
-	void VESceneManager::copyAiNodes(	const aiScene* pScene, 
-										std::vector<VEMesh*> &meshes, 
-										std::vector<VEMaterial*> &materials, 
-										aiNode* node, 
-										VESceneNode *parent ) {
+	void VESceneManager::copyAiNodes(const aiScene* pScene,
+		std::vector<VEMesh*> &meshes,
+		std::vector<VEMaterial*> &materials,
+		aiNode* node,
+		VESceneNode *parent) {
 
-		VESceneNode *pObject = createSceneNode2(parent->getName() + "/" + node->mName.C_Str(), parent );
+		VESceneNode *pObject = createSceneNode2(parent->getName() + "/" + node->mName.C_Str(), parent);
 
 		for (uint32_t i = 0; i < node->mNumMeshes; i++) {	//go through the meshes of the Assimp node
 
@@ -216,9 +216,9 @@ namespace ve {
 
 			glm::mat4 *pMatrix = (glm::mat4*) &node->mTransformation;
 
-			VEEntity *pEnt = createEntity2(	pObject->getName() + "/Entity_" + std::to_string(i), //create the new entity
-											VEEntity::VE_ENTITY_TYPE_NORMAL,
-											pMesh, pMaterial, pObject, *pMatrix );
+			VEEntity *pEnt = createEntity2(pObject->getName() + "/Entity_" + std::to_string(i), //create the new entity
+				VEEntity::VE_ENTITY_TYPE_NORMAL,
+				pMesh, pMaterial, pObject, *pMatrix);
 		}
 
 		for (uint32_t i = 0; i < node->mNumChildren; i++) {		//recursivly go down the node tree
@@ -231,7 +231,7 @@ namespace ve {
 	*
 	* \brief Create all VEMesh instances from a file loaded by Assimp
 	*
-	* Once Assimp loaded a file it offers a global list of meshes. The function just 
+	* Once Assimp loaded a file it offers a global list of meshes. The function just
 	* goes through this list and creates VEMesh instances, then stores pointers to the in the meshes list.
 	*
 	* \param[in] pScene Pointer to the Assimp scene.
@@ -248,7 +248,7 @@ namespace ve {
 			std::string name = filekey + "/" + paiMesh->mName.C_Str();
 
 			VEMesh *pMesh = nullptr;
-			if (m_meshes.count(name)==0 ) {
+			if (m_meshes.count(name) == 0) {
 				pMesh = new VEMesh(name, paiMesh);
 				m_meshes[name] = pMesh;
 			}
@@ -273,8 +273,8 @@ namespace ve {
 	* \param[out] materials List of new materials.
 	*
 	*/
-	void VESceneManager::createMaterials(	const aiScene* pScene, std::string basedir, std::string filekey, 
-											std::vector<VEMaterial*> &materials) {
+	void VESceneManager::createMaterials(const aiScene* pScene, std::string basedir, std::string filekey,
+		std::vector<VEMaterial*> &materials) {
 
 		for (uint32_t i = 0; i < pScene->mNumMaterials; i++) {
 			aiMaterial *paiMat = pScene->mMaterials[i];
@@ -283,9 +283,9 @@ namespace ve {
 
 			std::string name = filekey + "/" + matname.C_Str();
 			VEMaterial *pMat = nullptr;
-			if (m_materials.count(name)==0) {
-				pMat = new VEMaterial(name);
-				m_materials[name] = pMat;
+			if (m_materials.count(name) == 0) {
+				pMat = createMaterial2(name);
+
 				int mode;
 				paiMat->Get(AI_MATKEY_SHADING_MODEL, mode);
 				pMat->shading = (aiShadingMode)mode;
@@ -368,7 +368,7 @@ namespace ve {
 	*/
 	VESceneNode * VESceneManager::createSceneNode(std::string objectName, VESceneNode *parent, glm::mat4 transf) {
 		std::lock_guard<std::mutex> lock(m_mutex);
-		return createSceneNode2( objectName, parent, transf  );
+		return createSceneNode2(objectName, parent, transf);
 	}
 
 
@@ -384,14 +384,14 @@ namespace ve {
 	* \returns a pointer to the new scene node
 	*
 	*/
-	VESceneNode * VESceneManager::createSceneNode2(	std::string objectName,
-													VESceneNode *parent, 
-													glm::mat4 transf ) {
+	VESceneNode * VESceneManager::createSceneNode2(std::string objectName,
+		VESceneNode *parent,
+		glm::mat4 transf) {
 
-		if (m_sceneNodes.count(objectName)>0) return m_sceneNodes[objectName];
+		if (m_sceneNodes.count(objectName) > 0) return m_sceneNodes[objectName];
 
-		VESceneNode *pMO = new VESceneNode(objectName, transf );
-		addSceneNodeAndChildren2( pMO, parent );
+		VESceneNode *pMO = new VESceneNode(objectName, transf);
+		addSceneNodeAndChildren2(pMO, parent);
 		sceneGraphChanged2();
 		return pMO;
 	}
@@ -408,8 +408,8 @@ namespace ve {
 	* \returns a pointer to the new entity
 	*
 	*/
-	VEEntity * VESceneManager::createEntity(	std::string entityName, VEMesh *pMesh, VEMaterial *pMat,
-												VESceneNode *parent, glm::mat4 transf) {
+	VEEntity * VESceneManager::createEntity(std::string entityName, VEMesh *pMesh, VEMaterial *pMat,
+		VESceneNode *parent, glm::mat4 transf) {
 		return createEntity(entityName, VEEntity::VE_ENTITY_TYPE_NORMAL, pMesh, pMat, parent, transf);
 	}
 
@@ -427,7 +427,7 @@ namespace ve {
 	*
 	*/
 	VEEntity * VESceneManager::createEntity(std::string entityName, VEEntity::veEntityType type,
-											VEMesh *pMesh, VEMaterial *pMat, VESceneNode *parent, glm::mat4 transf) {
+		VEMesh *pMesh, VEMaterial *pMat, VESceneNode *parent, glm::mat4 transf) {
 
 		std::lock_guard<std::mutex> lock(m_mutex);
 		return createEntity2(entityName, type, pMesh, pMat, parent, transf);
@@ -446,11 +446,11 @@ namespace ve {
 	* \returns a pointer to the new entity
 	*
 	*/
-	VEEntity * VESceneManager::createEntity2(	std::string entityName, VEEntity::veEntityType type, 
-												VEMesh *pMesh, VEMaterial *pMat, VESceneNode *parent, 
-												glm::mat4 transf) {
-		VEEntity *pEntity = new VEEntity(entityName, type, pMesh, pMat, transf );
-		addSceneNodeAndChildren2(pEntity, parent );				// store entity in the entity array
+	VEEntity * VESceneManager::createEntity2(std::string entityName, VEEntity::veEntityType type,
+		VEMesh *pMesh, VEMaterial *pMat, VESceneNode *parent,
+		glm::mat4 transf) {
+		VEEntity *pEntity = new VEEntity(entityName, type, pMesh, pMat, transf);
+		addSceneNodeAndChildren2(pEntity, parent);				// store entity in the entity array
 
 		if (pMesh != nullptr && pMat != nullptr) {
 			getRendererPointer()->addEntityToSubrenderer(pEntity);
@@ -475,13 +475,13 @@ namespace ve {
 
 		VECamera *pCam = nullptr;
 		if (type == VECamera::VE_CAMERA_TYPE_PROJECTIVE) {
-			pCam = new VECameraProjective( cameraName, transf );
+			pCam = new VECameraProjective(cameraName, transf);
 		}
 		else {
-			pCam = new VECameraOrtho(cameraName, transf );
+			pCam = new VECameraOrtho(cameraName, transf);
 		}
 
-		addSceneNodeAndChildren2( pCam, parent );
+		addSceneNodeAndChildren2(pCam, parent);
 		return pCam;
 	}
 
@@ -502,17 +502,18 @@ namespace ve {
 
 		VELight *pLight = nullptr;
 		if (type == VELight::VE_LIGHT_TYPE_DIRECTIONAL) {
-			pLight = new VEDirectionalLight(lightName, transf );
-		} else if (type == VELight::VE_LIGHT_TYPE_POINT) {
-			pLight = new VEPointLight(lightName, transf );
+			pLight = new VEDirectionalLight(lightName, transf);
+		}
+		else if (type == VELight::VE_LIGHT_TYPE_POINT) {
+			pLight = new VEPointLight(lightName, transf);
 		}
 		else  if (type == VELight::VE_LIGHT_TYPE_SPOT) {
-			pLight = new VESpotLight(lightName, transf );
+			pLight = new VESpotLight(lightName, transf);
 		}
 		else {
-			pLight = new VEAmbientLight(lightName );
+			pLight = new VEAmbientLight(lightName);
 		}
-		
+
 		addSceneNodeAndChildren2(pLight, parent);
 		return pLight;
 	}
@@ -562,17 +563,15 @@ namespace ve {
 		VEMesh * pMesh = m_meshes[STANDARD_MESH_PLANE];
 
 		VEMaterial *pMat = nullptr;
-		if (m_materials.count(filekey)==0) {
-			pMat = new VEMaterial(filekey);
-			m_materials[filekey] = pMat;
-
-			pMat->mapDiffuse = new VETexture(entityName, basedir, { texName });
+		if (m_materials.count(filekey) == 0) {
+			pMat = createMaterial2(filekey);
+			pMat->mapDiffuse = createTexture2(filekey, basedir, texName);
 		}
 		else {
 			pMat = m_materials[filekey];
 		}
 
-		VEEntity *pEntity = createEntity2(entityName, VEEntity::VE_ENTITY_TYPE_SKYPLANE, pMesh, pMat, parent );
+		VEEntity *pEntity = createEntity2(entityName, VEEntity::VE_ENTITY_TYPE_SKYPLANE, pMesh, pMat, parent);
 		pEntity->m_castsShadow = false;
 
 		sceneGraphChanged2();
@@ -594,8 +593,8 @@ namespace ve {
 	* \returns a pointer to the new entity, which is the parent of the planes
 	*
 	*/
-	VESceneNode * VESceneManager::createSkybox(	std::string entityName, std::string basedir,
-												std::vector<std::string> texNames, VESceneNode *parent) {
+	VESceneNode * VESceneManager::createSkybox(std::string entityName, std::string basedir,
+		std::vector<std::string> texNames, VESceneNode *parent) {
 		std::lock_guard<std::mutex> lock(m_mutex);
 
 		std::string filekey = basedir + "/";
@@ -694,7 +693,7 @@ namespace ve {
 	/**
 	* \brief Set the visibility of a whole subtree
 	*/
-	void VESceneManager::setVisibility2(VESceneNode *pNode, bool flag ) {
+	void VESceneManager::setVisibility2(VESceneNode *pNode, bool flag) {
 		if (pNode->getNodeType() == VESceneNode::VE_NODE_TYPE_SCENEOBJECT &&
 			((VESceneObject*)pNode)->getObjectType() == VESceneObject::VE_OBJECT_TYPE_ENTITY) {
 			((VEEntity*)pNode)->m_visible = flag;
@@ -716,14 +715,14 @@ namespace ve {
 	* \param[in] imageIndex Index of the swapchain image that is currently used.
 	*
 	*/
-	void VESceneManager::updateSceneNodes(uint32_t imageIndex ) {
+	void VESceneManager::updateSceneNodes(uint32_t imageIndex) {
 		std::lock_guard<std::mutex> lock(m_mutex);
 
 		m_lights.clear();
 		updateSceneNodes2(getRoot(), glm::mat4(1.0f), imageIndex);
 
 		for (auto list : m_memoryBlockMap) {
-			vh::vhMemBlockUpdateBlockList(list.second, imageIndex );
+			vh::vhMemBlockUpdateBlockList(list.second, imageIndex);
 		}
 	}
 
@@ -746,7 +745,7 @@ namespace ve {
 
 		if (pNode->getNodeType() == VESceneNode::VE_NODE_TYPE_SCENEOBJECT &&
 			((VESceneObject*)pNode)->getObjectType() == VESceneObject::VE_OBJECT_TYPE_LIGHT) {
-			m_lights.push_back( (VELight*)pNode );
+			m_lights.push_back((VELight*)pNode);
 		}
 
 		for (auto pChild : pNode->m_children) {
@@ -776,13 +775,13 @@ namespace ve {
 			}
 		}
 
-		if (parent != nullptr ) {
+		if (parent != nullptr) {
 			parent->addChild(pNode);
-		} 
+		}
 		m_sceneNodes[pNode->getName()] = pNode;
 
 		for (auto pChild : pNode->getChildrenList()) {
-			addSceneNodeAndChildren2(pChild, pNode );
+			addSceneNodeAndChildren2(pChild, pNode);
 		}
 	}
 
@@ -833,7 +832,7 @@ namespace ve {
 	* \param[in] pNode Pointer to scene node that has been deleted
 	*
 	*/
-	void VESceneManager::notifyEventListeners( VESceneNode *pNode ) {
+	void VESceneManager::notifyEventListeners(VESceneNode *pNode) {
 
 		//notify frame listeners that this node has been deleted
 		veEvent event(veEvent::VE_EVENT_SUBSYSTEM_GENERIC, veEvent::VE_EVENT_DELETE_NODE);
@@ -876,7 +875,7 @@ namespace ve {
 				if (pObject->getObjectType() == VESceneObject::VE_OBJECT_TYPE_CAMERA && m_camera == (VECamera*)pObject)
 					m_camera = nullptr;
 
-				if( pObject->getObjectType() == VESceneObject::VE_OBJECT_TYPE_ENTITY )
+				if (pObject->getObjectType() == VESceneObject::VE_OBJECT_TYPE_ENTITY)
 					getRendererPointer()->removeEntityFromSubrenderers((VEEntity*)pObject);
 
 				if (pObject->m_memoryHandle.pMemBlock != nullptr) {
@@ -940,11 +939,29 @@ namespace ve {
 	void VESceneManager::createSceneNodeList2(VESceneNode *pObject, std::vector<std::string> &namelist) {
 		namelist.push_back(pObject->getName());
 
-		for( uint32_t i=0; i<pObject->getChildrenList().size(); i++ ) {
-			createSceneNodeList2(pObject->getChildrenList()[i], namelist );
+		for (uint32_t i = 0; i < pObject->getChildrenList().size(); i++) {
+			createSceneNodeList2(pObject->getChildrenList()[i], namelist);
 		}
 	}
 
+
+	/**
+	* \brief Create a new mesh with a certain name
+	*
+	* \param[in] name The name of mesh
+	* \param[in] vertices Vertices of the mesh
+	* \param[in] indices Indices of the mesh
+	* \returns a new mesh or an old one if it exists with this name
+	*
+	*/
+	VEMesh * VESceneManager::createMesh(std::string name, std::vector<vh::vhVertex> &vertices, std::vector<uint32_t> &indices) {
+		std::lock_guard<std::mutex> lock(m_mutex);
+		if (m_meshes.count(name) > 0) return m_meshes[name];
+
+		VEMesh *pMesh = new VEMesh(name, vertices, indices);
+		m_meshes[name] = pMesh;
+		return pMesh;
+	}
 
 
 	/**
@@ -976,6 +993,100 @@ namespace ve {
 			m_meshes.erase(name);
 			delete pMesh;
 		}
+	}
+
+
+	/**
+	*
+	* \brief Create a new texture with a given name
+	*
+	* \param[in] name Name of the texture.
+	* \returns a pointer to the new texture, or an old one if one with this name  was found
+	*
+	*/
+	VETexture * VESceneManager::createTexture(std::string name, std::string basedir, std::string texName ) {
+		std::lock_guard<std::mutex> lock(m_mutex);
+		return createTexture2(name, basedir, texName);
+	}
+
+
+	/**
+	*
+	* \brief Create a new texture with a given name
+	*
+	* \param[in] name Name of the texture.
+	* \returns a pointer to the new texture, or an old one if one with this name  was found
+	*
+	*/
+	VETexture * VESceneManager::createTexture2(std::string name, std::string basedir, std::string texName) {
+		if (m_textures.count(name) > 0) return m_textures[name];
+
+		VETexture *pTex = new VETexture(name, basedir, { texName });
+		m_textures[name] = pTex;
+		return pTex;
+	}
+
+	/**
+	*
+	* \brief Get a texture with a given name
+	*
+	* \param[in] name Name of the texture.
+	* \returns a pointer to the texture
+	*
+	*/
+	VETexture * VESceneManager::getTexture(std::string name) {
+		std::lock_guard<std::mutex> lock(m_mutex);
+		if (m_textures.count(name) == 0) return nullptr;
+		return m_textures[name];
+	}
+
+
+	/**
+	*
+	* \brief Delete a texture given its name
+	*
+	* \param[in] name Name of the texture to be deleted.
+	*
+	*/
+	void VESceneManager::deleteTexture(std::string name) {
+		std::lock_guard<std::mutex> lock(m_mutex);
+
+		if (m_textures.count(name)>0) {
+			VETexture * pTex = m_textures[name];
+			m_textures.erase(name);
+			delete pTex;
+		}
+	}
+
+
+	/**
+	*
+	* \brief Create a new material with a given name
+	*
+	* \param[in] name Name of the material.
+	* \returns a pointer to the new material, or an old one if one with this name  was found
+	*
+	*/
+	VEMaterial * VESceneManager::createMaterial(std::string name ) {
+		std::lock_guard<std::mutex> lock(m_mutex);
+		return createMaterial2( name );
+	}
+
+
+	/**
+	*
+	* \brief Create a new material with a given name
+	*
+	* \param[in] name Name of the material.
+	* \returns a pointer to the new material, or an old one if one with this name  was found
+	*
+	*/
+	VEMaterial * VESceneManager::createMaterial2(std::string name) {
+		if (m_materials.count(name) > 0) return m_materials[name];
+
+		VEMaterial *pMat = new VEMaterial(name);
+		m_materials[name] = pMat;
+		return pMat;
 	}
 
 
@@ -1018,6 +1129,7 @@ namespace ve {
 		delete m_rootSceneNode;
 		for (auto mesh : m_meshes) delete mesh.second;
 		for (auto mat : m_materials) delete mat.second;
+		for (auto tex : m_textures) delete tex.second;
 
 		for (auto list : m_memoryBlockMap) {
 			vh::vhMemBlockListClear(list.second);

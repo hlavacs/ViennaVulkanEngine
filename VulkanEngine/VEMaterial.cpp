@@ -97,14 +97,13 @@ namespace ve {
 	*
 	*/
 
-	VEMesh::VEMesh(std::string name, std::vector<vh::vhVertex> vertices, std::vector<uint32_t> indices) : VENamedClass(name) {
+	VEMesh::VEMesh(std::string name, std::vector<vh::vhVertex> &vertices, std::vector<uint32_t> &indices) : VENamedClass(name) {
 
 		//copy the mesh vertex data
 		m_vertexCount = (uint32_t)vertices.size();
 		m_boundingSphereRadius = 0.0f;
 		m_boundingSphereCenter = glm::vec3(0.0f, 0.0f, 0.0f);
-		for (uint32_t i = 0; i < vertices.size(); i++) {
-
+		for (uint32_t i = 0; i < vertices.size(); i++) {		//find max over all vertices
 			m_boundingSphereRadius = std::max (
 										std::max(	std::max( vertices[i].pos.x*vertices[i].pos.x, vertices[i].pos.y*vertices[i].pos.y ), 
 													vertices[i].pos.z*vertices[i].pos.z ), 
@@ -141,10 +140,10 @@ namespace ve {
 	* \brief Destroy the material textures
 	*/
 	VEMaterial::~VEMaterial() {
-		if (mapDiffuse != nullptr) delete mapDiffuse;
+		/*if (mapDiffuse != nullptr) delete mapDiffuse;
 		if (mapBump != nullptr) delete mapBump;
 		if (mapNormal != nullptr) delete mapNormal;
-		if (mapHeight != nullptr) delete mapHeight;
+		if (mapHeight != nullptr) delete mapHeight;*/
 	};
 
 
@@ -156,7 +155,7 @@ namespace ve {
 	* \brief VETexture constructor from a list of textures.
 	*
 	* Create a VETexture from a list of textures. The textures must lie in the same directory and are stored in a texture array.
-	* This can be used also as a cube map.
+	* This can be used also as a 2D texture or a cube map.
 	*
 	* \param[in] name The name of the mesh.
 	* \param[in] basedir Name of the directory the files are in.
@@ -180,6 +179,7 @@ namespace ve {
 
 		VECHECKRESULT(vh::vhBufCreateTextureSampler(getRendererPointer()->getDevice(), &m_imageInfo.sampler));
 	}
+
 
 	/**
 	*
