@@ -164,7 +164,7 @@ namespace ve {
 			float stride = 300.0f;
 			static std::default_random_engine e{12345};
 			static std::uniform_real_distribution<> d{ 1.0f, stride }; 
-			static std::uniform_real_distribution<> dur{ 0.3f, 1000.0f };
+			static std::uniform_real_distribution<> dur{ 900.3f, 1000.0f };
 
 			VEMesh *pMesh;
 			VECHECKPOINTER( pMesh = getSceneManagerPointer()->getMesh("models/test/crate0/cube.obj/cube") );

@@ -859,7 +859,7 @@ namespace ve {
 	*
 	*/
 	void VEDirectionalLight::updateShadowCameras(VECamera *pCamera, uint32_t imageIndex) {
-		std::vector<float> limits = { 0.0f, 0.05f, 0.15f, 0.50f, 1.0f };	//the frustum is split into 4 segments
+		std::vector<float> limits = { 0.0f, 0.05f, 0.15f, 0.30f, 1.0f };	//the frustum is split into 4 segments
 
 		glm::mat4 lightWorldMatrix = getWorldTransform2();
 		glm::mat4 invLightMatrix = glm::inverse(lightWorldMatrix);
