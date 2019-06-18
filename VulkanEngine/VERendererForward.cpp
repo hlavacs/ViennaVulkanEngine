@@ -421,7 +421,11 @@ namespace ve {
 
 		//go through all active lights in the scene
 
-		std::chrono::high_resolution_clock::time_point t_now;
+		std::chrono::high_resolution_clock::time_point t_start, t_now;
+
+		std::vector<std::future<VkCommandBuffer>> buffers;
+
+		t_start = vh::vhTimeNow();
 
 		for (uint32_t i = 0; i < getSceneManagerPointer()->getLights().size(); i++) {
 
@@ -454,6 +458,8 @@ namespace ve {
 
 			clearValuesLight.clear();		//since we blend the images onto each other, do not clear them for passes 2 and further
 		}
+
+		m_AvgRecordTime = vh::vhAverage(vh::vhTimeDuration(t_start), m_AvgRecordTime);
 
 		vkEndCommandBuffer(m_commandBuffers[m_imageIndex]);
 

@@ -74,6 +74,9 @@ namespace ve {
 			sprintf(outbuffer, "  Record light (ms): %4.1f", getRendererForwardPointer()->m_AvgCmdLightTime*1000.0f);
 			nk_label(ctx, outbuffer, NK_TEXT_LEFT);
 
+			nk_layout_row_dynamic(ctx, 30, 1);
+			sprintf(outbuffer, "  Record 1 buffer (ms): %4.1f", getRendererForwardPointer()->m_AvgRecordTime*1000.0f);
+			nk_label(ctx, outbuffer, NK_TEXT_LEFT);
 		}
 		nk_end(ctx);
 
