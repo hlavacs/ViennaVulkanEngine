@@ -49,7 +49,7 @@ namespace ve {
 
 		std::vector<const char*> instanceExtensions = getRequiredInstanceExtensions();
 		std::vector<const char*> validationLayers = getValidationLayers();
-		vhDevCreateInstance(instanceExtensions, validationLayers, &m_instance);
+		vh::vhDevCreateInstance(instanceExtensions, validationLayers, &m_instance);
 		
 		if( m_debug )
 			vh::vhSetupDebugCallback( m_instance, &callback );				//create a debug callback for printing debug information

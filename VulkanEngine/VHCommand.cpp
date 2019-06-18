@@ -24,6 +24,7 @@ namespace vh {
 	*/
 	VkResult vhCmdCreateCommandPool( VkPhysicalDevice physicalDevice, VkDevice device,
 								VkSurfaceKHR surface, VkCommandPool *commandPool) {
+
 		QueueFamilyIndices queueFamilyIndices = vhDevFindQueueFamilies(physicalDevice, surface);
 
 		VkCommandPoolCreateInfo poolInfo = {};
