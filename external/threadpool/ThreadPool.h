@@ -45,8 +45,11 @@ private:
   std::mutex m_conditional_mutex;
   std::condition_variable m_conditional_lock;
 public:
+  int m_n_threads;
+
   ThreadPool(const int n_threads)
     : m_threads(std::vector<std::thread>(n_threads)), m_shutdown(false) {
+      m_n_threads = n_threads;
   }
 
   ThreadPool(const ThreadPool &) = delete;

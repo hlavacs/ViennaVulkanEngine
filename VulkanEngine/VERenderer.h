@@ -52,7 +52,7 @@ namespace ve {
 		VkFormat m_swapChainImageFormat;						///<Swap chain image format
 		VkExtent2D m_swapChainExtent;							///<Image extent of the swap chain images
 		std::vector<VkImageView> m_swapChainImageViews;			///<Image views of the swap chain images
-		uint32_t imageIndex = 0;								///<Index of the current swapchain image
+		uint32_t m_imageIndex = 0;								///<Index of the current swapchain image
 
 		//subrenderers
 		std::vector<VESubrender*> m_subrenderers;				///<Subrenderers for lit objects
@@ -105,9 +105,9 @@ namespace ve {
 		///\returns the number of swap chain images
 		virtual uint32_t				getSwapChainNumber() { return (uint32_t)m_swapChainImages.size();  };
 		///\returns the index of the swap chain image that is current prepared for drawing
-		virtual uint32_t				getImageIndex() { return imageIndex;  };
+		virtual uint32_t				getImageIndex() { return m_imageIndex;  };
 		///\returns the current swap chain image
-		virtual VkImage					getSwapChainImage() { return m_swapChainImages[imageIndex]; };
+		virtual VkImage					getSwapChainImage() { return m_swapChainImages[m_imageIndex]; };
 		///\returns the overlay (GUI) subrenderer
 		virtual VESubrender *			getOverlay() { return m_subrenderOverlay; };
 		virtual void					addEntityToSubrenderer(VEEntity *pEntity);

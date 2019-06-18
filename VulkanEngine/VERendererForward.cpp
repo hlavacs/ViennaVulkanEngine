@@ -344,6 +344,24 @@ namespace ve {
 	}
 
 
+	void VERendererForward::recordRenderpass(	VkCommandBuffer *pCommandBuffer, VkRenderPass *pRenderPass, 
+												VkFramebuffer *pFrameBuffer, std::vector<VkClearValue> clearValues, VkExtent2D *pExtent2D,
+												uint32_t imageIndex, uint32_t numPass,
+												VECamera *pCamera, VELight *pLight, std::vector<VkDescriptorSet> descriptorSetsShadow) {
+
+		vh::vhRenderBeginRenderPass(*pCommandBuffer,
+									*pRenderPass,
+									*pFrameBuffer,
+									clearValues,
+									*pExtent2D);	//all shadow maps have the same extent
+
+		m_subrenderShadow->draw(*pCommandBuffer, imageIndex, numPass, pCamera, pLight, descriptorSetsShadow );
+
+		vkCmdEndRenderPass(*pCommandBuffer);
+
+	}
+
+
 	/**
 	* \brief Create a new command buffer and record the whole scene into it, then end it
 	*/
@@ -355,9 +373,9 @@ namespace ve {
 
 		vh::vhCmdCreateCommandBuffers(	m_device, m_commandPool,
 										VK_COMMAND_BUFFER_LEVEL_PRIMARY,
-										1, &m_commandBuffers[imageIndex]);
+										1, &m_commandBuffers[m_imageIndex]);
 
-		vh::vhCmdBeginCommandBuffer(m_device, m_commandBuffers[imageIndex], VK_COMMAND_BUFFER_USAGE_SIMULTANEOUS_USE_BIT);
+		vh::vhCmdBeginCommandBuffer(m_device, m_commandBuffers[m_imageIndex], VK_COMMAND_BUFFER_USAGE_SIMULTANEOUS_USE_BIT);
 
 		//vh::vhCmdCreateCommandBuffers(	m_device, m_commandPool, VK_COMMAND_BUFFER_LEVEL_SECONDARY, 1, &m_secondaryBuffers[imageIndex]);
 		//vh::vhCmdBeginCommandBuffer(m_device, m_renderPassShadow, 0, m_shadowFramebuffers[imageIndex][0], m_secondaryBuffers[imageIndex], VK_COMMAND_BUFFER_USAGE_SIMULTANEOUS_USE_BIT);
@@ -390,17 +408,23 @@ namespace ve {
 
 			t_now = vh::vhTimeNow();
 			{
-				for (unsigned i = 0; i < pLight->m_shadowCameras.size(); i++) {
+				for (unsigned j = 0; j < pLight->m_shadowCameras.size(); j++) {
 
-					vh::vhRenderBeginRenderPass(m_commandBuffers[imageIndex],
+					/*vh::vhRenderBeginRenderPass(m_commandBuffers[m_imageIndex],
 												m_renderPassShadow,
-												m_shadowFramebuffers[imageIndex][i],
+												m_shadowFramebuffers[m_imageIndex][j],
 												clearValuesShadow,
-												m_shadowMaps[0][i]->m_extent);	//all shadow maps have the same extent
+												m_shadowMaps[0][j]->m_extent);	//all shadow maps have the same extent
 
-					m_subrenderShadow->draw(m_commandBuffers[imageIndex], imageIndex, i, pLight->m_shadowCameras[i], pLight, {});
+					m_subrenderShadow->draw(m_commandBuffers[m_imageIndex], m_imageIndex, i, pLight->m_shadowCameras[j], pLight, {});
 
-					vkCmdEndRenderPass(m_commandBuffers[imageIndex]);
+					vkCmdEndRenderPass(m_commandBuffers[m_imageIndex]);
+					*/
+
+					recordRenderpass(	&m_commandBuffers[m_imageIndex], &m_renderPassShadow,
+										&m_shadowFramebuffers[m_imageIndex][j], clearValuesShadow, 
+										&m_shadowMaps[0][j]->m_extent, m_imageIndex, i, pLight->m_shadowCameras[j], pLight, {});
+
 				}
 			}
 			m_AvgCmdShadowTime = vh::vhAverage( vh::vhTimeDuration(t_now), m_AvgCmdShadowTime );
@@ -410,27 +434,27 @@ namespace ve {
 
 			t_now = vh::vhTimeNow();
 			{
-				vh::vhRenderBeginRenderPass(m_commandBuffers[imageIndex],
+				vh::vhRenderBeginRenderPass(m_commandBuffers[m_imageIndex],
 											i == 0 ? m_renderPassClear : m_renderPassLoad,
-											m_swapChainFramebuffers[imageIndex],
+											m_swapChainFramebuffers[m_imageIndex],
 											clearValuesLight,
 											m_swapChainExtent);
 
 				for (auto pSub : m_subrenderers) {
 					if (i == 0 || pSub->getClass() == VESubrender::VE_SUBRENDERER_CLASS_OBJECT) {
 						pSub->prepareDraw();
-						pSub->draw(m_commandBuffers[imageIndex], imageIndex, i, pCamera, pLight, m_descriptorSetsShadow);
+						pSub->draw(m_commandBuffers[m_imageIndex], m_imageIndex, i, pCamera, pLight, m_descriptorSetsShadow);
 					}
 				}
 
-				vkCmdEndRenderPass(m_commandBuffers[imageIndex]);
+				vkCmdEndRenderPass(m_commandBuffers[m_imageIndex]);
 			}
 			m_AvgCmdLightTime = vh::vhAverage( vh::vhTimeDuration(t_now), m_AvgCmdLightTime );
 
 			clearValuesLight.clear();		//since we blend the images onto each other, do not clear them for passes 2 and further
 		}
 
-		vkEndCommandBuffer(m_commandBuffers[imageIndex]);
+		vkEndCommandBuffer(m_commandBuffers[m_imageIndex]);
 
 		m_overlaySemaphores[m_currentFrame] = m_renderFinishedSemaphores[m_currentFrame];
 	}
@@ -449,7 +473,7 @@ namespace ve {
 
 		//acquire the next image
 		VkResult result = vkAcquireNextImageKHR(m_device, m_swapChain, std::numeric_limits<uint64_t>::max(),
-												m_imageAvailableSemaphores[m_currentFrame], VK_NULL_HANDLE, &imageIndex);
+												m_imageAvailableSemaphores[m_currentFrame], VK_NULL_HANDLE, &m_imageIndex);
 
 		if (result == VK_ERROR_OUT_OF_DATE_KHR) {
 			recreateSwapchain();
@@ -460,12 +484,12 @@ namespace ve {
 			exit(1);
 		}
 
-		if (m_commandBuffers[imageIndex] == VK_NULL_HANDLE ) {
+		if (m_commandBuffers[m_imageIndex] == VK_NULL_HANDLE ) {
 			recordCmdBuffers();
 		}
 
 		//submit the command buffers
-		vh::vhCmdSubmitCommandBuffer(	m_device, m_graphicsQueue, m_commandBuffers[imageIndex],
+		vh::vhCmdSubmitCommandBuffer(	m_device, m_graphicsQueue, m_commandBuffers[m_imageIndex],
 										m_imageAvailableSemaphores[m_currentFrame],
 										m_renderFinishedSemaphores[m_currentFrame],
 										m_inFlightFences[m_currentFrame]);
@@ -487,7 +511,7 @@ namespace ve {
 	void VERendererForward::drawOverlay() {
 		if (m_subrenderOverlay == nullptr) return;
 
-		m_overlaySemaphores[m_currentFrame] = m_subrenderOverlay->draw( imageIndex, m_renderFinishedSemaphores[m_currentFrame]);
+		m_overlaySemaphores[m_currentFrame] = m_subrenderOverlay->draw( m_imageIndex, m_renderFinishedSemaphores[m_currentFrame]);
 	}
 
 
@@ -500,7 +524,7 @@ namespace ve {
 			getSwapChainImage(), VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_ASPECT_COLOR_BIT, 1, 1,		//VK_IMAGE_LAYOUT_PRESENT_SRC_KHR
 			VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR);
 
-		VkResult result = vh::vhRenderPresentResult(m_presentQueue, m_swapChain, imageIndex,	//present it to the swap chain
+		VkResult result = vh::vhRenderPresentResult(m_presentQueue, m_swapChain, m_imageIndex,	//present it to the swap chain
 													m_overlaySemaphores[m_currentFrame]);
 
 		if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR || m_framebufferResized) {

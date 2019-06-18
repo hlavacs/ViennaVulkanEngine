@@ -65,6 +65,10 @@ namespace ve {
 		virtual void initRenderer();				//init the renderer
 		virtual void createSubrenderers();			//create the subrenderers
 		virtual void recordCmdBuffers();			//record the command buffers
+		virtual void recordRenderpass(	VkCommandBuffer *pCommandBuffer, VkRenderPass *pRenderPass,				//record one render pass into a command buffer
+										VkFramebuffer *pFrameBuffer, std::vector<VkClearValue> clearValues, VkExtent2D *pExtent2D,
+										uint32_t imageIndex, uint32_t numPass,
+										VECamera *pCamera, VELight *pLight, std::vector<VkDescriptorSet> descriptorSetsShadow);
 		virtual void drawFrame();					//draw one frame
 		virtual void prepareOverlay();				//prepare to draw the overlay
 		virtual void drawOverlay();					//Draw the overlay (GUI)
