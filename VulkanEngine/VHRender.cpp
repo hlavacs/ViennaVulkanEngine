@@ -431,7 +431,8 @@ namespace vh {
 	VkResult vhRenderBeginRenderPass(VkCommandBuffer commandBuffer,
 								 VkRenderPass renderPass, 
 								 VkFramebuffer frameBuffer, 
-								 VkExtent2D extent) {
+								 VkExtent2D extent,
+								 VkSubpassContents subPassContents ) {
 
 		std::vector<VkClearValue> clearValues = {};
 		VkClearValue cv1, cv2;
@@ -440,7 +441,7 @@ namespace vh {
 		cv2.depthStencil = { 1.0f, 0 };
 		clearValues.push_back(cv2);
 
-		return vhRenderBeginRenderPass(commandBuffer, renderPass, frameBuffer, clearValues, extent);
+		return vhRenderBeginRenderPass(commandBuffer, renderPass, frameBuffer, clearValues, extent, subPassContents);
 	}
 
 
@@ -461,7 +462,8 @@ namespace vh {
 									VkRenderPass renderPass,
 									VkFramebuffer frameBuffer,
 									std::vector<VkClearValue> &clearValues,
-									VkExtent2D extent) {
+									VkExtent2D extent,
+									VkSubpassContents subPassContents) {
 
 		VkRenderPassBeginInfo renderPassInfo = {};
 		renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
@@ -474,7 +476,7 @@ namespace vh {
 		if(clearValues.size()>0)
 			renderPassInfo.pClearValues = clearValues.data();
 
-		vkCmdBeginRenderPass(commandBuffer, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
+		vkCmdBeginRenderPass(commandBuffer, &renderPassInfo, subPassContents);
 		return VK_SUCCESS;
 	}
 

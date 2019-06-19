@@ -299,9 +299,9 @@ namespace vh {
 											uint32_t descriptorCount,
 											std::vector<std::vector<VkDescriptorImageInfo>> &maps);
 
-	VkResult vhRenderBeginRenderPass(VkCommandBuffer commandBuffer, VkRenderPass renderPass, VkFramebuffer frameBuffer, VkExtent2D extent);
+	VkResult vhRenderBeginRenderPass(VkCommandBuffer commandBuffer, VkRenderPass renderPass, VkFramebuffer frameBuffer, VkExtent2D extent, VkSubpassContents subPassContents);
 	VkResult vhRenderBeginRenderPass(VkCommandBuffer commandBuffer, VkRenderPass renderPass, VkFramebuffer frameBuffer,
-									std::vector<VkClearValue> &clearValues, VkExtent2D extent);
+									std::vector<VkClearValue> &clearValues, VkExtent2D extent, VkSubpassContents subPassContents);
 	VkResult vhRenderPresentResult(	VkQueue presentQueue, VkSwapchainKHR swapChain,
 									uint32_t imageIndex, VkSemaphore signalSemaphore);
 

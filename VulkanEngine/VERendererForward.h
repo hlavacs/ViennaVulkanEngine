@@ -33,7 +33,7 @@ namespace ve {
 		std::vector<VkCommandPool>	 m_commandPools;					///<Array of command pools so that each thread in the thread pool has its own pool
 
 		std::vector<VkCommandBuffer> m_commandBuffers = {};				///<the main command buffers for recording draw commands
-		std::vector<VkCommandBuffer> m_secondaryBuffers = {};			///<secondary buffers for parallel recording
+		std::vector<std::vector<VkCommandBuffer>> m_secondaryBuffers = {};	///<secondary buffers for parallel recording
 		
 		//per frame render resources
 		VkRenderPass				m_renderPassClear;					///<The first light render pass, clearing the framebuffers
@@ -67,9 +67,11 @@ namespace ve {
 		virtual void initRenderer();				//init the renderer
 		virtual void createSubrenderers();			//create the subrenderers
 		virtual void recordCmdBuffers();			//record the command buffers
-		virtual void recordRenderpass(	VkCommandBuffer *pCommandBuffer, VkRenderPass *pRenderPass,				//record one render pass into a command buffer
+		virtual VkCommandBuffer recordRenderpass(
+										int threadID,
+										VkRenderPass *pRenderPass,				//record one render pass into a command buffer
 										std::vector<VESubrender*> subRenderers,
-										VkFramebuffer *pFrameBuffer, std::vector<VkClearValue> clearValues, VkExtent2D *pExtent2D,
+										VkFramebuffer *pFrameBuffer,
 										uint32_t imageIndex, uint32_t numPass,
 										VECamera *pCamera, VELight *pLight, std::vector<VkDescriptorSet> descriptorSetsShadow);
 		virtual void drawFrame();					//draw one frame
