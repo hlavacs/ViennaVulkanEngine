@@ -69,7 +69,7 @@ public:
   void shutdown() {
     m_shutdown = true;
     m_conditional_lock.notify_all();
-    
+
     for (uint32_t i = 0; i < m_threads.size(); ++i) {
       if(m_threads[i].joinable()) {
         m_threads[i].join();
@@ -82,12 +82,12 @@ public:
   auto submit(F&& f, Args&&... args) -> std::future<decltype(f(args...))> {
     // Create a function with bounded parameters ready to execute
     std::function<decltype(f(args...))()> func = std::bind(std::forward<F>(f), std::forward<Args>(args)...);
-    // Encapsulate it into a shared ptr in order to be able to copy construct / assign 
+    // Encapsulate it into a shared ptr in order to be able to copy construct / assign
     auto task_ptr = std::make_shared<std::packaged_task<decltype(f(args...))()>>(func);
 
     // Wrap packaged task into void function
     std::function<void()> wrapper_func = [task_ptr]() {
-      (*task_ptr)(); 
+      (*task_ptr)();
     };
 
     // Enqueue generic wrapper function

@@ -29,12 +29,19 @@ namespace ve {
 	*/
 	class VERendererForward : public VERenderer {
 
+	public: 
+		struct veSecondaryCommandBuffer_t {
+			VkCommandBuffer buffer;
+			VkCommandPool	pool;
+		};
+
 	protected:
-		std::vector<VkCommandPool>	 m_commandPools;					///<Array of command pools so that each thread in the thread pool has its own pool
+		std::map<std::thread::id, VkCommandPool>	 m_commandPools;					///<Array of command pools so that each thread in the thread pool has its own pool
 
 		std::vector<VkCommandBuffer> m_commandBuffers = {};				///<the main command buffers for recording draw commands
-		std::vector<std::vector<VkCommandBuffer>> m_secondaryBuffers = {};	///<secondary buffers for parallel recording
-		
+		std::vector<std::vector<std::future<void>> > m_secondaryBuffersFutures = {};	///<secondary buffers for parallel recording
+		std::vector<std::vector<veSecondaryCommandBuffer_t>> m_secondaryBuffers = {};	///<secondary buffers for parallel recording
+
 		//per frame render resources
 		VkRenderPass				m_renderPassClear;					///<The first light render pass, clearing the framebuffers
 		VkRenderPass				m_renderPassLoad;					///<The second light render pass - no clearing of framebuffer
@@ -67,13 +74,16 @@ namespace ve {
 		virtual void initRenderer();				//init the renderer
 		virtual void createSubrenderers();			//create the subrenderers
 		virtual void recordCmdBuffers();			//record the command buffers
-		virtual VkCommandBuffer recordRenderpass(
+		virtual ve::VERendererForward::veSecondaryCommandBuffer_t 
+								recordRenderpass(
 										int threadID,
 										VkRenderPass *pRenderPass,				//record one render pass into a command buffer
 										std::vector<VESubrender*> subRenderers,
 										VkFramebuffer *pFrameBuffer,
 										uint32_t imageIndex, uint32_t numPass,
-										VECamera *pCamera, VELight *pLight, std::vector<VkDescriptorSet> descriptorSetsShadow);
+										VECamera *pCamera, VELight *pLight, 
+										std::vector<VkDescriptorSet> descriptorSetsShadow);
+
 		virtual void drawFrame();					//draw one frame
 		virtual void prepareOverlay();				//prepare to draw the overlay
 		virtual void drawOverlay();					//Draw the overlay (GUI)

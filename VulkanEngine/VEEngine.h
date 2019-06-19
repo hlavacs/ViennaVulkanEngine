@@ -73,7 +73,7 @@ namespace ve {
 		virtual std::vector<const char*> getValidationLayers();	//Returns a list of required Vulkan validation layers
 		void callListeners(double dt, veEvent event);	//Call all event listeners and give them certain event
 		void callListeners(double dt, veEvent event, std::vector<VEEventListener*> *list);	//Call all event listeners and give them certain event
-		void callListeners(double dt, veEvent event, std::vector<VEEventListener*> *list, uint32_t startIdx, uint32_t endIdx);
+		void callListeners2( double dt, veEvent event, std::vector<VEEventListener*> *list, uint32_t startIdx, uint32_t endIdx);
 		void processEvents(double dt);			//Start handling all events
 		void windowSizeChanged();				//Callback for window if window size has changed
 
