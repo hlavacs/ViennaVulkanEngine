@@ -51,7 +51,6 @@ namespace ve {
 		double m_dt = 0.0;								///<Delta time since the last loop
 		double m_time = 0.0;							///<Absolute game time since start of the render loop
 		uint32_t m_loopCount = 0;						///<Counts up the render loop
-		int m_maxThreads = 10;							///<max number of threads that the engine may start in parallel in its thread pool
 		ThreadPool *m_threadPool;						///<thread pool for parallel processing
 
 		//time statistics 
@@ -122,7 +121,7 @@ namespace ve {
 		//thread pool
 
 		///\returns the max number of threads that anybody may start during the render loop
-		uint32_t		getMaxThreads() { return m_maxThreads; };
+		uint32_t		getMaxThreads() { return (uint32_t)m_threadPool->threadCount(); };
 		///\returns a pointer to the threadpool
 		ThreadPool *	getThreadPool() { return m_threadPool; };
 

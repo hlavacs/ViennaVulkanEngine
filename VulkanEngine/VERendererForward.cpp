@@ -363,43 +363,57 @@ namespace ve {
 	* \param[in] descriptorSets List of descriptor sets for per objects resources
 	*
 	*/
-	ve::VERendererForward::veSecondaryCommandBuffer_t VERendererForward::recordRenderpass(int threadID,
-														VkRenderPass *pRenderPass, 
+	VERendererForward::secondaryCmdBuf_t VERendererForward::recordRenderpass(VkRenderPass *pRenderPass,
 														std::vector<VESubrender*> subRenderers,
 														VkFramebuffer *pFrameBuffer,
 														uint32_t imageIndex, uint32_t numPass,
 														VECamera *pCamera, VELight *pLight, 
 														std::vector<VkDescriptorSet> descriptorSets) {
+		static std::mutex lock;
+		secondaryCmdBuf_t buf;
 
 		std::thread::id myid = std::this_thread::get_id();
-		VkCommandPool pool = VK_NULL_HANDLE;
-		if (m_commandPools.count(myid) == 0) {
-			vh::vhCmdCreateCommandPool(m_physicalDevice, m_device, m_surface, &pool);
-			m_commandPools[myid] = pool;
-		}
-		else {
-			pool = m_commandPools[myid];
+		buf.pool = VK_NULL_HANDLE;
+
+		{
+			std::lock_guard<std::mutex> lock(lock);
+
+			if (m_commandPools.count(myid) == 0) {
+				vh::vhCmdCreateCommandPool(m_physicalDevice, m_device, m_surface, &buf.pool);
+				m_commandPools[myid] = buf.pool;
+			}
+			else {
+				buf.pool = m_commandPools[myid];
+			}
 		}
 
-		veSecondaryCommandBuffer_t buffer;
-		buffer.buffer = VK_NULL_HANDLE;
-		buffer.pool = pool;
-		vh::vhCmdCreateCommandBuffers(	m_device, pool,
+		vh::vhCmdCreateCommandBuffers(	m_device, buf.pool,
 										VK_COMMAND_BUFFER_LEVEL_SECONDARY,
-										1, &buffer.buffer);
+										1, &buf.buffer);
 
-		vh::vhCmdBeginCommandBuffer(m_device, *pRenderPass, 0, *pFrameBuffer, buffer.buffer, 
+		vh::vhCmdBeginCommandBuffer(m_device, *pRenderPass, 0, *pFrameBuffer, buf.buffer, 
 									VK_COMMAND_BUFFER_USAGE_RENDER_PASS_CONTINUE_BIT);
 
 		for (auto pSub : subRenderers) {
-			pSub->draw(buffer.buffer, imageIndex, numPass, pCamera, pLight, descriptorSets);
+			pSub->draw(buf.buffer, imageIndex, numPass, pCamera, pLight, descriptorSets);
 		}
 
-		vkEndCommandBuffer(buffer.buffer);
+		vkEndCommandBuffer(buf.buffer);
 
-		return buffer;
+		return buf;
 
 	}
+
+	VERendererForward::secondaryCmdBuf_t recordRenderpass2(	VkRenderPass *pRenderPass,
+										std::vector<VESubrender*> subRenderers,
+										VkFramebuffer *pFrameBuffer,
+										uint32_t imageIndex, uint32_t numPass,
+										VECamera *pCamera, VELight *pLight,
+										std::vector<VkDescriptorSet> descriptorSets) {
+
+		return getRendererForwardPointer()->recordRenderpass( pRenderPass, subRenderers, pFrameBuffer, imageIndex, numPass, pCamera, pLight, descriptorSets);
+	}
+
 
 
 	/**
@@ -437,21 +451,28 @@ namespace ve {
 					std::vector<VkDescriptorSet> empty = {};
 					std::vector<VESubrender*> subrender = { m_subrenderShadow };
 
-					auto func = std::bind( &VERendererForward::recordRenderpass, this, 
-												&m_renderPassShadow, subrender,
-												&m_shadowFramebuffers[m_imageIndex][j],
-												m_imageIndex, i, pLight->m_shadowCameras[j], 
-												pLight, empty );
+					auto func = std::bind( &recordRenderpass2, &m_renderPassShadow, subrender,
+															&m_shadowFramebuffers[m_imageIndex][j],
+															m_imageIndex, i, pLight->m_shadowCameras[j],
+															pLight, empty);
+					auto future = tp->add(func);
 
-					auto future = tp->submit(func);
+					/*auto future = tp->add([&]() { this->recordRenderpass(	&m_renderPassShadow, subrender,
+																	&m_shadowFramebuffers[m_imageIndex][j],
+																	m_imageIndex, i, pLight->m_shadowCameras[j],
+																	pLight, empty); } );
+																	*/
 
+					m_secondaryBuffersFutures[m_imageIndex].push_back(std::move(future));
 
-					/*ve::VERendererForward::veSecondaryCommandBuffer_t buffer =
-						recordRenderpass(	0, &m_renderPassShadow, { m_subrenderShadow },
-											&m_shadowFramebuffers[m_imageIndex][j],
-											m_imageIndex, i, pLight->m_shadowCameras[j], pLight, {});*/
+					//std::future<VkCommandBuffer> future = tp->enqueue(func);
+					
 
-					m_secondaryBuffers[m_imageIndex].push_back(future);
+					//VkCommandBuffer buffer = recordRenderpass(&m_renderPassShadow, { m_subrenderShadow },
+					//											&m_shadowFramebuffers[m_imageIndex][j],
+					//											m_imageIndex, i, pLight->m_shadowCameras[j], pLight, {});
+
+					//m_secondaryBuffers[m_imageIndex].push_back(future);
 				}
 			}
 			m_AvgCmdShadowTime = vh::vhAverage( vh::vhTimeDuration(t_now), m_AvgCmdShadowTime );
@@ -461,13 +482,26 @@ namespace ve {
 
 			t_now = vh::vhTimeNow();
 			{
-				ve::VERendererForward::veSecondaryCommandBuffer_t buffer =
-								recordRenderpass(	0, &(i == 0 ? m_renderPassClear : m_renderPassLoad), m_subrenderers,
-													&m_swapChainFramebuffers[m_imageIndex],
-													m_imageIndex, i, pCamera, pLight, m_descriptorSetsShadow);
 
-				m_secondaryBuffers[m_imageIndex].push_back(buffer);
+				auto func = std::bind(&recordRenderpass2, &(i == 0 ? m_renderPassClear : m_renderPassLoad), m_subrenderers,
+									&m_swapChainFramebuffers[m_imageIndex],
+									m_imageIndex, i, pCamera, pLight, m_descriptorSetsShadow);
+
+				auto future = tp->add(func);
+
+
+				//VERendererForward::secondaryCmdBuf_t buffer = recordRenderpass(	&(i == 0 ? m_renderPassClear : m_renderPassLoad), m_subrenderers,
+				//															&m_swapChainFramebuffers[m_imageIndex],
+				//															m_imageIndex, i, pCamera, pLight, m_descriptorSetsShadow);
+
+				m_secondaryBuffersFutures[m_imageIndex].push_back(std::move(future));
 			}
+
+			m_secondaryBuffersFutures[m_imageIndex].resize(m_secondaryBuffersFutures.size());
+			for (uint32_t i = 0; i < m_secondaryBuffersFutures.size(); i++) {
+				m_secondaryBuffers[m_imageIndex][i] = m_secondaryBuffersFutures[m_imageIndex][i].get();
+			}
+
 			m_AvgCmdLightTime = vh::vhAverage( vh::vhTimeDuration(t_now), m_AvgCmdLightTime );
 		}
 
@@ -503,7 +537,7 @@ namespace ve {
 				vkCmdEndRenderPass(m_commandBuffers[m_imageIndex]);
 			}
 			vh::vhRenderBeginRenderPass(m_commandBuffers[m_imageIndex], i == 0 ? m_renderPassClear : m_renderPassLoad, m_swapChainFramebuffers[m_imageIndex], clearValuesLight, m_swapChainExtent, VK_SUBPASS_CONTENTS_SECONDARY_COMMAND_BUFFERS);
-			vkCmdExecuteCommands(	m_commandBuffers[m_imageIndex], 1, &m_secondaryBuffers[m_imageIndex][bufferIdx++].buffer);
+			vkCmdExecuteCommands(m_commandBuffers[m_imageIndex], 1, &m_secondaryBuffers[m_imageIndex][bufferIdx++].buffer);
 			vkCmdEndRenderPass(m_commandBuffers[m_imageIndex]);
 
 			clearValuesLight.clear();		//since we blend the images onto each other, do not clear them for passes 2 and further

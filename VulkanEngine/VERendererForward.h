@@ -30,17 +30,23 @@ namespace ve {
 	class VERendererForward : public VERenderer {
 
 	public: 
-		struct veSecondaryCommandBuffer_t {
+		struct secondaryCmdBuf_t {
 			VkCommandBuffer buffer;
-			VkCommandPool	pool;
+			VkCommandPool pool;
+			secondaryCmdBuf_t & operator= (secondaryCmdBuf_t& right) {
+				buffer = right.buffer;
+				pool = right.pool;
+				return *this;
+			};
 		};
 
 	protected:
-		std::map<std::thread::id, VkCommandPool>	 m_commandPools;					///<Array of command pools so that each thread in the thread pool has its own pool
+		std::map<std::thread::id, VkCommandPool>	m_commandPools;	///<Array of command pools so that each thread in the thread pool has its own pool
+		std::map<VkCommandBuffer, VkCommandPool>	m_commandBufferMapping;
 
 		std::vector<VkCommandBuffer> m_commandBuffers = {};				///<the main command buffers for recording draw commands
-		std::vector<std::vector<std::future<void>> > m_secondaryBuffersFutures = {};	///<secondary buffers for parallel recording
-		std::vector<std::vector<veSecondaryCommandBuffer_t>> m_secondaryBuffers = {};	///<secondary buffers for parallel recording
+		std::vector<std::vector<std::future<secondaryCmdBuf_t>> > m_secondaryBuffersFutures = {};	///<secondary buffers for parallel recording
+		std::vector<std::vector<secondaryCmdBuf_t>> m_secondaryBuffers = {};	///<secondary buffers for parallel recording
 
 		//per frame render resources
 		VkRenderPass				m_renderPassClear;					///<The first light render pass, clearing the framebuffers
@@ -74,16 +80,6 @@ namespace ve {
 		virtual void initRenderer();				//init the renderer
 		virtual void createSubrenderers();			//create the subrenderers
 		virtual void recordCmdBuffers();			//record the command buffers
-		virtual ve::VERendererForward::veSecondaryCommandBuffer_t 
-								recordRenderpass(
-										int threadID,
-										VkRenderPass *pRenderPass,				//record one render pass into a command buffer
-										std::vector<VESubrender*> subRenderers,
-										VkFramebuffer *pFrameBuffer,
-										uint32_t imageIndex, uint32_t numPass,
-										VECamera *pCamera, VELight *pLight, 
-										std::vector<VkDescriptorSet> descriptorSetsShadow);
-
 		virtual void drawFrame();					//draw one frame
 		virtual void prepareOverlay();				//prepare to draw the overlay
 		virtual void drawOverlay();					//Draw the overlay (GUI)
@@ -95,6 +91,13 @@ namespace ve {
 		float m_AvgCmdShadowTime = 0.0f;			///<Average time for recording shadow maps
 		float m_AvgCmdLightTime = 0.0f;				///<Average time for recording light pass
 		float m_AvgRecordTime = 0.0f;				///<Average recording time of one command buffer
+
+		virtual VERendererForward::secondaryCmdBuf_t recordRenderpass(VkRenderPass *pRenderPass,				//record one render pass into a command buffer
+										std::vector<VESubrender*> subRenderers,
+										VkFramebuffer *pFrameBuffer,
+										uint32_t imageIndex, uint32_t numPass,
+										VECamera *pCamera, VELight *pLight, 
+										std::vector<VkDescriptorSet> descriptorSetsShadow);
 
 		///Constructor of class VERendererForward
 		VERendererForward();

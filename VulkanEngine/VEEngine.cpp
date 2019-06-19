@@ -43,9 +43,7 @@ namespace ve {
 		createWindow();						//create a window
 		m_pWindow->initWindow(800, 600);	//inittialize the window
 
-		m_maxThreads = 20;					//enable multithreading
-		m_threadPool = new ThreadPool(m_maxThreads); //worker threads
-		m_threadPool->init();
+		m_threadPool = new ThreadPool(0); //worker threads
 
 		std::vector<const char*> instanceExtensions = getRequiredInstanceExtensions();
 		std::vector<const char*> validationLayers = getValidationLayers();
@@ -110,7 +108,7 @@ namespace ve {
 	* \brief Close the engine, delete all resources.
 	*/
 	void VEEngine::closeEngine() {
-		m_threadPool->shutdown();
+		//m_threadPool->shutdown();
 		delete m_threadPool;
 
 		clearEventListenerList();
@@ -323,9 +321,9 @@ namespace ve {
 
 		using namespace std::placeholders;
 
-		if ( m_maxThreads>1 && !getRendererForwardPointer()->isRecording() && list->size()>200 ) {
+		if ( m_threadPool->threadCount()>1 && !getRendererForwardPointer()->isRecording() && list->size()>200 ) {
 			int div = 100;
-			uint32_t numThreads =  std::min((int)list->size()/div, (int)m_maxThreads);
+			uint32_t numThreads =  std::min((int)list->size()/div, (int)m_threadPool->threadCount());
 			uint32_t numListenerPerThread = (uint32_t)list->size() / numThreads;
 
 			uint32_t startIdx, endIdx;
@@ -336,7 +334,7 @@ namespace ve {
 				//auto func = std::bind( &VEEngine::callListeners2, this, dt, event, list, startIdx, endIdx);
 				//auto future = m_threadPool->submit(func);
 
-				auto future = m_threadPool->submit([=]() { this->callListeners2( dt, event, list, startIdx, endIdx);  });
+				auto future = m_threadPool->add([=]() { this->callListeners2( dt, event, list, startIdx, endIdx);  });
 				if (k == numThreads - 1) future.get();	//wait for the last thread to finish
 			}
 		}

@@ -1,102 +1,72 @@
-#pragma once
+#ifndef DBR_CC_THREAD_POOL_HPP
+#define DBR_CC_THREAD_POOL_HPP
 
-#include <functional>
-#include <future>
+#include <atomic>
 #include <mutex>
-#include <queue>
 #include <thread>
-#include <utility>
+#include <future>
 #include <vector>
+#include <functional>
+#include <condition_variable>
+#include <queue>
 
-#include "SafeQueue.h"
-
-class ThreadPool {
-private:
-  class ThreadWorker {
-  private:
-    int m_id;
-    ThreadPool * m_pool;
-  public:
-    ThreadWorker(ThreadPool * pool, const int id)
-      : m_pool(pool), m_id(id) {
-    }
-
-    void operator()() {
-      std::function<void()> func;
-      bool dequeued;
-      while (!m_pool->m_shutdown) {
-        {
-          std::unique_lock<std::mutex> lock(m_pool->m_conditional_mutex);
-          if (m_pool->m_queue.empty()) {
-            m_pool->m_conditional_lock.wait(lock);
-          }
-          dequeued = m_pool->m_queue.dequeue(func);
-        }
-        if (dequeued) {
-          func();
-        }
-      }
-    }
-  };
-
-  bool m_shutdown;
-  SafeQueue<std::function<void()>> m_queue;
-  std::vector<std::thread> m_threads;
-  std::mutex m_conditional_mutex;
-  std::condition_variable m_conditional_lock;
+class ThreadPool
+{
 public:
-  int m_n_threads;
-
-  ThreadPool(const int n_threads)
-    : m_threads(std::vector<std::thread>(n_threads)), m_shutdown(false) {
-      m_n_threads = n_threads;
-  }
-
-  ThreadPool(const ThreadPool &) = delete;
-  ThreadPool(ThreadPool &&) = delete;
-
-  ThreadPool & operator=(const ThreadPool &) = delete;
-  ThreadPool & operator=(ThreadPool &&) = delete;
-
-  // Inits thread pool
-  void init() {
-    for (uint32_t i = 0; i < m_threads.size(); ++i) {
-      m_threads[i] = std::thread(ThreadWorker(this, i));
-    }
-  }
-
-  // Waits until threads finish their current task and shutdowns the pool
-  void shutdown() {
-    m_shutdown = true;
-    m_conditional_lock.notify_all();
-
-    for (uint32_t i = 0; i < m_threads.size(); ++i) {
-      if(m_threads[i].joinable()) {
-        m_threads[i].join();
-      }
-    }
-  }
-
-  // Submit a function to be executed asynchronously by the pool
-  template<typename F, typename...Args>
-  auto submit(F&& f, Args&&... args) -> std::future<decltype(f(args...))> {
-    // Create a function with bounded parameters ready to execute
-    std::function<decltype(f(args...))()> func = std::bind(std::forward<F>(f), std::forward<Args>(args)...);
-    // Encapsulate it into a shared ptr in order to be able to copy construct / assign
-    auto task_ptr = std::make_shared<std::packaged_task<decltype(f(args...))()>>(func);
-
-    // Wrap packaged task into void function
-    std::function<void()> wrapper_func = [task_ptr]() {
-      (*task_ptr)();
-    };
-
-    // Enqueue generic wrapper function
-    m_queue.enqueue(wrapper_func);
-
-    // Wake up one thread if its waiting
-    m_conditional_lock.notify_one();
-
-    // Return future from promise
-    return task_ptr->get_future();
-  }
+    using Ids = std::vector<std::thread::id>;
+    // starts threadCount threads, waiting for jobs
+    // may throw a std::system_error if a thread could not be started
+    ThreadPool(std::size_t threadCount = 0);
+    // non-copyable,
+    ThreadPool(const ThreadPool&) = delete;
+    ThreadPool& operator=(const ThreadPool&) = delete;
+    // but movable
+    ThreadPool(ThreadPool&&) = default;
+    ThreadPool& operator=(ThreadPool&&) = default;
+    // clears job queue, then blocks until all threads are finished executing their current job
+    ~ThreadPool();
+    // add a function to be executed, along with any arguments for it
+    template<typename Func, typename... Args>
+    auto add(Func&& func, Args&&... args)->std::future<typename std::result_of<Func(Args...)>::type>;
+    // returns number of threads being used
+    std::size_t threadCount() const;
+    // returns the number of jobs waiting to be executed
+    std::size_t waitingJobs() const;
+    // returns a vector of ids of the threads used by the ThreadPool
+    Ids ids() const;
+    // clears currently queued jobs (jobs which are not currently running)
+    void clear();
+    // pause and resume job execution. Does not affect currently running jobs
+    void pause(bool state);
+    // blocks calling thread until job queue is empty
+    void wait();
+private:
+    using Job = std::function<void()>;
+    // function each thread performs
+    static void threadTask(ThreadPool* pool);
+    std::queue<Job> jobs;
+    mutable std::mutex jobsMutex;
+    // notification variable for waiting threads
+    std::condition_variable jobsAvailable;
+    std::vector<std::thread> threads;
+    std::atomic<std::size_t> threadsWaiting;
+    std::atomic<bool> terminate;
+    std::atomic<bool> paused;
 };
+template<typename Func, typename... Args>
+auto ThreadPool::add(Func&& func, Args&&... args) -> std::future<typename std::result_of<Func(Args...)>::type>
+{
+    using PackedTask = std::packaged_task<typename std::result_of<Func(Args...)>::type()>;
+    auto task = std::make_shared<PackedTask>(std::bind(std::forward<Func>(func), std::forward<Args>(args)...));
+    // get the future to return later
+    auto ret = task->get_future();
+    {
+        std::lock_guard<std::mutex> lock{ jobsMutex };
+        jobs.emplace([task]() { (*task)(); });
+    }
+    // let a waiting thread know there is an available job
+    jobsAvailable.notify_one();
+    return ret;
+}
+
+#endif

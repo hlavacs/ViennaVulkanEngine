@@ -110,6 +110,9 @@
     <ClInclude Include="VESubrenderFW.h">
       <Filter>Header Files\VESubrender</Filter>
     </ClInclude>
+    <ClInclude Include="..\external\threadpool\ThreadPool.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="VEEngine.cpp">
@@ -206,6 +209,9 @@
       <Filter>Source Files\VESubrender</Filter>
     </ClCompile>
     <ClCompile Include="VEDocumentation.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\external\threadpool\ThreadPool.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
