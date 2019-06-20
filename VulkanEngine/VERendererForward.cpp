@@ -53,9 +53,14 @@ namespace ve {
 									&m_swapChainImageFormat, &m_swapChainExtent);
 
 		//------------------------------------------------------------------------------------------------------------
-		//create a command pool and the command buffers
+		//create a command pools and the command buffers
 
 		vh::vhCmdCreateCommandPool(m_physicalDevice, m_device, m_surface, &m_commandPool);	//command pool for the main thread
+
+		m_commandPools.resize( getEnginePointer()->getThreadPool()->threadCount() );			//each thread in the thread pool gets its own command pool
+		for (uint32_t i = 0; i < m_commandPools.size(); i++) {
+			vh::vhCmdCreateCommandPool(m_physicalDevice, m_device, m_surface, &m_commandPools[i]);
+		}
 
 		m_commandBuffers.resize(m_swapChainImages.size() );
 		for (uint32_t i = 0; i < m_swapChainImages.size(); i++) m_commandBuffers[i] = VK_NULL_HANDLE;	//will be created later
@@ -64,7 +69,6 @@ namespace ve {
 		for (uint32_t i = 0; i < m_swapChainImages.size(); i++) m_secondaryBuffers[i] = {};	//will be created later
 
 		m_secondaryBuffersFutures.resize(m_swapChainImages.size());
-		//for (uint32_t i = 0; i < m_swapChainImages.size(); i++) m_secondaryBuffersFutures[i] = {};	//will be created later
 
 
 		//------------------------------------------------------------------------------------------------------------
@@ -267,7 +271,7 @@ namespace ve {
 
 		vkDestroyCommandPool(m_device, m_commandPool, nullptr);
 		for( auto pool : m_commandPools )
-			vkDestroyCommandPool(m_device, pool.second, nullptr);
+			vkDestroyCommandPool(m_device, pool, nullptr);
 
 		vmaDestroyAllocator(m_vmaAllocator);
 
@@ -353,12 +357,9 @@ namespace ve {
 	* \brief Delete all command buffers and set them to VK_NULL_HANDLE, so next time they have to be
 	* created and recorded again
 	*
-	* \param[in] pCommandBuffer Pointer to the command buffer that is recorded into
 	* \param[in] pRenderPass Pointer to the render pass that is executed
 	* \param[in] subRenderers List of subrenderers to call
 	* \param[in] pFrameBuffer Pointer to the framebuffer to be used
-	* \param[in] clearValues List of clear values to be used in the render pass
-	* \param[in] pExtent2D Extent of the frame buffer
 	* \param[in] imageIndex Index of the current swap chain image
 	* \param[in] numPass Number of the pass on this call, one for each light
 	* \param[in] pCamera Pointer to the cmaera to be used
@@ -372,23 +373,8 @@ namespace ve {
 														uint32_t imageIndex, uint32_t numPass,
 														VECamera *pCamera, VELight *pLight, 
 														std::vector<VkDescriptorSet> descriptorSets) {
-		static std::mutex lock;
 		secondaryCmdBuf_t buf;
-
-		std::thread::id myid = std::this_thread::get_id();
-		buf.pool = VK_NULL_HANDLE;
-
-		{
-			std::lock_guard<std::mutex> lock(lock);
-
-			if (m_commandPools.count(myid) == 0) {
-				vh::vhCmdCreateCommandPool(m_physicalDevice, m_device, m_surface, &buf.pool);
-				m_commandPools[myid] = buf.pool;
-			}
-			else {
-				buf.pool = m_commandPools[myid];
-			}
-		}
+		buf.pool = getThreadCommandPool();
 
 		vh::vhCmdCreateCommandBuffers(	m_device, buf.pool,
 										VK_COMMAND_BUFFER_LEVEL_SECONDARY,
@@ -406,17 +392,6 @@ namespace ve {
 		return buf;
 
 	}
-
-	VERendererForward::secondaryCmdBuf_t recordRenderpass2(	VkRenderPass *pRenderPass,
-										std::vector<VESubrender*> subRenderers,
-										VkFramebuffer *pFrameBuffer,
-										uint32_t imageIndex, uint32_t numPass,
-										VECamera *pCamera, VELight *pLight,
-										std::vector<VkDescriptorSet> descriptorSets) {
-
-		return getRendererForwardPointer()->recordRenderpass( pRenderPass, subRenderers, pFrameBuffer, imageIndex, numPass, pCamera, pLight, descriptorSets);
-	}
-
 
 
 	/**
@@ -437,6 +412,7 @@ namespace ve {
 		m_secondaryBuffersFutures[m_imageIndex].clear();
 
 		ThreadPool *tp = getEnginePointer()->getThreadPool();
+
 		//-----------------------------------------------------------------------------------------------------------------
 		//go through all active lights in the scene
 
@@ -455,28 +431,12 @@ namespace ve {
 					std::vector<VkDescriptorSet> empty = {};
 					std::vector<VESubrender*> subrender = { m_subrenderShadow };
 
-					auto func = std::bind( &recordRenderpass2, &m_renderPassShadow, subrender,
-															&m_shadowFramebuffers[m_imageIndex][j],
-															m_imageIndex, i, pLight->m_shadowCameras[j],
-															pLight, empty);
-					auto future = tp->add(func);
-
-					/*auto future = tp->add([&]() { this->recordRenderpass(	&m_renderPassShadow, subrender,
-																	&m_shadowFramebuffers[m_imageIndex][j],
-																	m_imageIndex, i, pLight->m_shadowCameras[j],
-																	pLight, empty); } );
-																	*/
+					auto future = tp->add( &VERendererForward::recordRenderpass, this, &m_renderPassShadow, subrender,
+												&m_shadowFramebuffers[m_imageIndex][j],
+												m_imageIndex, i, pLight->m_shadowCameras[j],
+												pLight, empty );
 
 					m_secondaryBuffersFutures[m_imageIndex].push_back(std::move(future));
-
-					//std::future<VkCommandBuffer> future = tp->enqueue(func);
-					
-
-					//VkCommandBuffer buffer = recordRenderpass(&m_renderPassShadow, { m_subrenderShadow },
-					//											&m_shadowFramebuffers[m_imageIndex][j],
-					//											m_imageIndex, i, pLight->m_shadowCameras[j], pLight, {});
-
-					//m_secondaryBuffers[m_imageIndex].push_back(future);
 				}
 			}
 			m_AvgCmdShadowTime = vh::vhAverage( vh::vhTimeDuration(t_now), m_AvgCmdShadowTime );
@@ -486,17 +446,9 @@ namespace ve {
 
 			t_now = vh::vhTimeNow();
 			{
-
-				auto func = std::bind(&recordRenderpass2, &(i == 0 ? m_renderPassClear : m_renderPassLoad), m_subrenderers,
-									&m_swapChainFramebuffers[m_imageIndex],
-									m_imageIndex, i, pCamera, pLight, m_descriptorSetsShadow);
-
-				auto future = tp->add(func);
-
-
-				//VERendererForward::secondaryCmdBuf_t buffer = recordRenderpass(	&(i == 0 ? m_renderPassClear : m_renderPassLoad), m_subrenderers,
-				//															&m_swapChainFramebuffers[m_imageIndex],
-				//															m_imageIndex, i, pCamera, pLight, m_descriptorSetsShadow);
+				auto future = tp->add( &VERendererForward::recordRenderpass, this, &(i == 0 ? m_renderPassClear : m_renderPassLoad), m_subrenderers,
+										&m_swapChainFramebuffers[m_imageIndex],
+										m_imageIndex, i, pCamera, pLight, m_descriptorSetsShadow);
 
 				m_secondaryBuffersFutures[m_imageIndex].push_back(std::move(future));
 			}
@@ -505,6 +457,7 @@ namespace ve {
 		}
 
 		//------------------------------------------------------------------------------------------
+		//wait for all threads to finish and copy secondary command buffers into the vector
 
 		m_secondaryBuffers[m_imageIndex].resize(m_secondaryBuffersFutures[m_imageIndex].size());
 		for (uint32_t i = 0; i < m_secondaryBuffersFutures[m_imageIndex].size(); i++) {
@@ -525,6 +478,10 @@ namespace ve {
 		clearValuesLight.push_back(cv1);
 		cv2.depthStencil = { 1.0f, 0 };
 		clearValuesLight.push_back(cv2);
+
+
+		//-----------------------------------------------------------------------------------------
+		//create a new primary command buffer and record all secondary buffers into it
 
 		vh::vhCmdCreateCommandBuffers(	m_device, m_commandPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY,
 										1, &m_commandBuffers[m_imageIndex]);

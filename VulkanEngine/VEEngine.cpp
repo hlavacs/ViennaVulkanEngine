@@ -319,24 +319,22 @@ namespace ve {
 	void VEEngine::callListeners(double dt, veEvent event, std::vector<VEEventListener*> *list ) {
 		event.dt = dt;
 
-		using namespace std::placeholders;
-
-		if ( m_threadPool->threadCount()>1 && !getRendererForwardPointer()->isRecording() && list->size()>200 ) {
+		if ( m_threadPool->threadCount()>1 && list->size()>200 ) {
 			int div = 100;
 			uint32_t numThreads =  std::min((int)list->size()/div, (int)m_threadPool->threadCount());
 			uint32_t numListenerPerThread = (uint32_t)list->size() / numThreads;
+			std::vector<std::future<void>> futures;
+			futures.resize(numThreads);
 
 			uint32_t startIdx, endIdx;
 			for (uint32_t k = 0; k < numThreads; k++) {
 				startIdx = k*numListenerPerThread;
 				endIdx = k == numThreads - 1 ? (uint32_t)list->size()-1 : (k+1)*numListenerPerThread-1;
 
-				//auto func = std::bind( &VEEngine::callListeners2, this, dt, event, list, startIdx, endIdx);
-				//auto future = m_threadPool->submit(func);
-
-				auto future = m_threadPool->add([=]() { this->callListeners2( dt, event, list, startIdx, endIdx);  });
-				if (k == numThreads - 1) future.get();	//wait for the last thread to finish
+				auto future = m_threadPool->add(&VEEngine::callListeners2, this, dt, event, list, startIdx, endIdx );
+				futures[k] = std::move(future);
 			}
+			for (uint32_t i = 0; i < futures.size(); i++) futures[i].get();
 		}
 		else {
 			if(list->size()>0) callListeners2( dt, event, list, 0, (uint32_t) list->size() - 1);

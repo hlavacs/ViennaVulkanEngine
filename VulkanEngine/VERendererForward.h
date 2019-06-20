@@ -41,10 +41,8 @@ namespace ve {
 		};
 
 	protected:
-		std::map<std::thread::id, VkCommandPool>	m_commandPools;	///<Array of command pools so that each thread in the thread pool has its own pool
-		std::map<VkCommandBuffer, VkCommandPool>	m_commandBufferMapping;
-
-		std::vector<VkCommandBuffer> m_commandBuffers = {};				///<the main command buffers for recording draw commands
+		std::vector<VkCommandPool>		m_commandPools = {};				///<Array of command pools so that each thread in the thread pool has its own pool
+		std::vector<VkCommandBuffer>	m_commandBuffers = {};				///<the main command buffers for recording draw commands
 		std::vector<std::vector<std::future<secondaryCmdBuf_t>> > m_secondaryBuffersFutures = {};	///<secondary buffers for parallel recording
 		std::vector<std::vector<secondaryCmdBuf_t>> m_secondaryBuffers = {};	///<secondary buffers for parallel recording
 
@@ -86,23 +84,24 @@ namespace ve {
 		virtual void presentFrame();				//Present the newly drawn frame
 		virtual void closeRenderer();				//close the renderer
 		virtual void recreateSwapchain();			//new swapchain due to window size change
+		virtual secondaryCmdBuf_t recordRenderpass(	VkRenderPass *pRenderPass,				//record one render pass into a command buffer
+													std::vector<VESubrender*> subRenderers,
+													VkFramebuffer *pFrameBuffer,
+													uint32_t imageIndex, uint32_t numPass,
+													VECamera *pCamera, VELight *pLight,
+													std::vector<VkDescriptorSet> descriptorSetsShadow);
 
 	public:
 		float m_AvgCmdShadowTime = 0.0f;			///<Average time for recording shadow maps
 		float m_AvgCmdLightTime = 0.0f;				///<Average time for recording light pass
 		float m_AvgRecordTime = 0.0f;				///<Average recording time of one command buffer
 
-		virtual VERendererForward::secondaryCmdBuf_t recordRenderpass(VkRenderPass *pRenderPass,				//record one render pass into a command buffer
-										std::vector<VESubrender*> subRenderers,
-										VkFramebuffer *pFrameBuffer,
-										uint32_t imageIndex, uint32_t numPass,
-										VECamera *pCamera, VELight *pLight, 
-										std::vector<VkDescriptorSet> descriptorSetsShadow);
-
 		///Constructor of class VERendererForward
 		VERendererForward();
 		///Destructor of class VERendererForward
 		virtual ~VERendererForward() {};
+		///\returns the command pool for this thread - each threads needs its own pool
+		virtual VkCommandPool getThreadCommandPool() { return m_commandPools[getEnginePointer()->getThreadPool()->threadNum[std::this_thread::get_id()]]; };
 		///called whenever the scene graph of the scene manager changes
 		virtual void updateCmdBuffers() { deleteCmdBuffers(); };
 		virtual void deleteCmdBuffers();

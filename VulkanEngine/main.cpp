@@ -154,7 +154,7 @@ namespace ve {
 			VEEngine::registerEventListeners();
 
 			registerEventListener(new LevelListener("LevelListener"), { veEvent::VE_EVENT_KEYBOARD });
-			registerEventListener(new LightListener("LevelListener"), { veEvent::VE_EVENT_KEYBOARD });
+			registerEventListener(new LightListener("LightListener"), { veEvent::VE_EVENT_KEYBOARD });
 			registerEventListener(new VEEventListenerNuklearDebug("NuklearDebugListener"), { veEvent::VE_EVENT_DRAW_OVERLAY});
 		};
 

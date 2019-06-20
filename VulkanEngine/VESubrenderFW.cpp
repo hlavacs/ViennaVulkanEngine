@@ -213,7 +213,7 @@ namespace ve {
 	* Variable offset denotes the start of such a chunk.
 	*
 	* \param[in] pEntity Pointer to the entity
-	* \param[in] newMaps List of 1..N maps to be added to this subrenderer, e.g. {diffuse texture}, or {diffuse, normal}
+	* \param[in] newMaps List of 1..N maps to be added to this subrenderer, e.g. {diffuse texture}, or {diffuse tex, normal}
 	*
 	*/
 	void VESubrenderFW::addMaps(VEEntity *pEntity, std::vector<VkDescriptorImageInfo> &newMaps) { 
