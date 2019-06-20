@@ -63,6 +63,9 @@ namespace ve {
 		m_secondaryBuffers.resize(m_swapChainImages.size());
 		for (uint32_t i = 0; i < m_swapChainImages.size(); i++) m_secondaryBuffers[i] = {};	//will be created later
 
+		m_secondaryBuffersFutures.resize(m_swapChainImages.size());
+		//for (uint32_t i = 0; i < m_swapChainImages.size(); i++) m_secondaryBuffersFutures[i] = {};	//will be created later
+
 
 		//------------------------------------------------------------------------------------------------------------
 		//create resources for light pass
@@ -431,6 +434,7 @@ namespace ve {
 		}
 		m_secondaryBuffers[m_imageIndex].clear();
 
+		m_secondaryBuffersFutures[m_imageIndex].clear();
 
 		ThreadPool *tp = getEnginePointer()->getThreadPool();
 		//-----------------------------------------------------------------------------------------------------------------
@@ -497,14 +501,15 @@ namespace ve {
 				m_secondaryBuffersFutures[m_imageIndex].push_back(std::move(future));
 			}
 
-			m_secondaryBuffersFutures[m_imageIndex].resize(m_secondaryBuffersFutures.size());
-			for (uint32_t i = 0; i < m_secondaryBuffersFutures.size(); i++) {
-				m_secondaryBuffers[m_imageIndex][i] = m_secondaryBuffersFutures[m_imageIndex][i].get();
-			}
-
 			m_AvgCmdLightTime = vh::vhAverage( vh::vhTimeDuration(t_now), m_AvgCmdLightTime );
 		}
 
+		//------------------------------------------------------------------------------------------
+
+		m_secondaryBuffers[m_imageIndex].resize(m_secondaryBuffersFutures[m_imageIndex].size());
+		for (uint32_t i = 0; i < m_secondaryBuffersFutures[m_imageIndex].size(); i++) {
+			m_secondaryBuffers[m_imageIndex][i] = m_secondaryBuffersFutures[m_imageIndex][i].get();
+		}
 
 		//-----------------------------------------------------------------------------------------
 		//set clear values for shadow and light passes

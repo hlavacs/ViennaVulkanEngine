@@ -9,6 +9,7 @@
 #include <functional>
 #include <condition_variable>
 #include <queue>
+#include <map>
 
 class ThreadPool
 {
@@ -40,6 +41,8 @@ public:
     void pause(bool state);
     // blocks calling thread until job queue is empty
     void wait();
+
+	std::map<std::thread::id, uint32_t> threadNum;
 private:
     using Job = std::function<void()>;
     // function each thread performs

@@ -13,6 +13,9 @@ ThreadPool::ThreadPool(std::size_t threadCount)
     // prevent potential reallocation, thereby screwing up all our hopes and dreams
     threads.reserve(threadCount);
     std::generate_n(std::back_inserter(threads), threadCount, [this]() { return std::thread{ threadTask, this }; });
+	for (uint32_t i = 0; i < threads.size(); i++) {
+		threadNum[threads[i].get_id()] = i;
+	}
 }
 ThreadPool::~ThreadPool()
 {
@@ -86,6 +89,6 @@ void ThreadPool::threadTask(ThreadPool* pool)
         auto job = std::move(pool->jobs.front());
         pool->jobs.pop();
         jobsLock.unlock();
-        job();
+		job();
     }
 }

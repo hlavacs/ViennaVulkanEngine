@@ -30,6 +30,9 @@
     <Filter Include="Source Files\VHelper">
       <UniqueIdentifier>{97507648-312a-4693-9a61-5563a8f0123b}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Header Files\VHelper">
+      <UniqueIdentifier>{6a52e981-61c4-42e0-aadb-431516ce8e9d}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="VEEngine.h">
@@ -104,14 +107,14 @@
     <ClInclude Include="VEEventListenerNuklearDebug.h">
       <Filter>Header Files\VEEventListener</Filter>
     </ClInclude>
-    <ClInclude Include="VHHelper.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="VESubrenderFW.h">
       <Filter>Header Files\VESubrender</Filter>
     </ClInclude>
     <ClInclude Include="..\external\threadpool\ThreadPool.h">
-      <Filter>Header Files</Filter>
+      <Filter>Header Files\VHelper</Filter>
+    </ClInclude>
+    <ClInclude Include="VHHelper.h">
+      <Filter>Header Files\VHelper</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -212,7 +215,7 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="..\external\threadpool\ThreadPool.cpp">
-      <Filter>Source Files</Filter>
+      <Filter>Source Files\VHelper</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>
