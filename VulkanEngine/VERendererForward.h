@@ -40,11 +40,26 @@ namespace ve {
 			};
 		};
 
+		struct secondaryCmdBufferLists_t {
+			std::vector<secondaryCmdBuf_t> shadowBuffers = {};
+			std::vector<secondaryCmdBuf_t> lightBuffers = {};
+			std::future<std::vector<secondaryCmdBuf_t>> shadowBuffersFutures = {};
+			std::future<std::vector<secondaryCmdBuf_t>> lightBuffersFutures = {};
+		};
+
+		struct lightBufferLists_t {
+			VELight *pLight = nullptr;
+			bool	seenThisLight = false;
+			std::vector<secondaryCmdBufferLists_t> bufferLists = {};
+		};
+
 	protected:
 		std::vector<VkCommandPool>		m_commandPools = {};				///<Array of command pools so that each thread in the thread pool has its own pool
 		std::vector<VkCommandBuffer>	m_commandBuffers = {};				///<the main command buffers for recording draw commands
 		std::vector<std::vector<std::future<secondaryCmdBuf_t>> > m_secondaryBuffersFutures = {};	///<secondary buffers for parallel recording
 		std::vector<std::vector<secondaryCmdBuf_t>> m_secondaryBuffers = {};	///<secondary buffers for parallel recording
+
+		std::map<VELight*, lightBufferLists_t> m_lightBufferLists;
 
 		//per frame render resources
 		VkRenderPass				m_renderPassClear;					///<The first light render pass, clearing the framebuffers
