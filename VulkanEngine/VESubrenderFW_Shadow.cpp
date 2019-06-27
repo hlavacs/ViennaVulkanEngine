@@ -99,17 +99,11 @@ namespace ve {
 		bindDescriptorSetsPerFrame(commandBuffer, imageIndex, pCamera, pLight, descriptorSetsShadow);
 
 		//go through all entities and draw them
-		for (auto object : getSceneManagerPointer()->m_sceneNodes) {
-			VESceneNode *pNode = object.second;
-			if (pNode->getNodeType() == VESceneNode::VE_NODE_TYPE_SCENEOBJECT) {
-				VESceneObject *pObject = (VESceneObject*) pNode;
-				if (pObject->getObjectType() == VESceneObject::VE_OBJECT_TYPE_ENTITY) {
-					VEEntity *pEntity = (VEEntity*)pObject;
-
-					if ( pEntity->m_castsShadow ) {  
-						bindDescriptorSetsPerEntity(commandBuffer, imageIndex, pEntity);	//bind the entity's descriptor sets
-						drawEntity(commandBuffer, imageIndex, pEntity);
-					}
+		for (auto subrender : getSubrenderers()) {
+			for (auto pEntity : subrender->getEntities()) {
+				if (pEntity->m_castsShadow) {
+					bindDescriptorSetsPerEntity(commandBuffer, imageIndex, pEntity);	//bind the entity's descriptor sets
+					drawEntity(commandBuffer, imageIndex, pEntity);
 				}
 			}
 		}

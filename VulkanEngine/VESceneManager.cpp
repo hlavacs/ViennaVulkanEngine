@@ -755,11 +755,11 @@ namespace ve {
 			m_lights.push_back((VELight*)pNode);				//put a light into the light vector
 		}
 
-		if (pNode->m_children.size() > 0) {
+		if ( pNode->m_children.size() > 0) {
 			ThreadPool *tp = getEnginePointer()->getThreadPool();
 
 			const uint32_t granularity = 200;
-			if (tp->threadCount() > 1 && pNode->m_children.size() > granularity) {
+			if ( tp->threadCount() > 1 && pNode->m_children.size() > granularity) {
 				uint32_t numThreads = std::min((int) ( pNode->m_children.size() / granularity ), (int)tp->threadCount());
 				uint32_t numChildrenPerThread = (uint32_t)pNode->m_children.size() / numThreads;
 
@@ -820,16 +820,16 @@ namespace ve {
 		if (pNode->getNodeType() == VESceneNode::VE_NODE_TYPE_SCENEOBJECT) {
 			VESceneObject *pObject = (VESceneObject*)pNode;
 			if (pObject->m_memoryHandle.owner == nullptr) {
-				vh::vhMemBlockListAdd(m_memoryBlockMap[pObject->getObjectType()], pObject, &pObject->m_memoryHandle);
+				vh::vhMemBlockListAdd(m_memoryBlockMap[pObject->getObjectType()], pObject, &pObject->m_memoryHandle);	//reserve a UBO
 			}
 		}
 
-		if (parent != nullptr) {
+		if (parent != nullptr) {							//attach to the parent
 			parent->addChild(pNode);
 		}
-		m_sceneNodes[pNode->getName()] = pNode;
+		m_sceneNodes[pNode->getName()] = pNode;				//store in scene node list
 
-		for (auto pChild : pNode->getChildrenList()) {
+		for (auto pChild : pNode->getChildrenList()) {		//do the same for all children
 			addSceneNodeAndChildren2(pChild, pNode);
 		}
 	}
@@ -862,13 +862,13 @@ namespace ve {
 		std::lock_guard<std::mutex> lock(m_mutex);
 
 		if (m_sceneNodes.count(name) == 0) return;
-		VESceneNode * pNode = m_sceneNodes[name];
+		VESceneNode * pNode = m_sceneNodes[name];							//pointer to the node
 
-		if (pNode->hasParent()) pNode->getParent()->removeChild(pNode);
-		m_deletedSceneNodes.push_back(pNode);
-		setVisibility2(pNode, false);
-		notifyEventListeners(pNode);
-		sceneGraphChanged2();
+		if (pNode->hasParent()) pNode->getParent()->removeChild(pNode);		//if it has a parent, remove from the children list
+		m_deletedSceneNodes.push_back(pNode);								//push it to the deleted scene nodes list
+		setVisibility2(pNode, false);										//make it invisible
+		notifyEventListeners(pNode);										//notify event listeners that this scene node will be deleted soon
+		sceneGraphChanged2();												//make scene graph update
 	}
 
 
@@ -888,13 +888,15 @@ namespace ve {
 		event.ptr = pNode;
 
 		std::vector<std::string> nameList;
-		std::vector<VEEventListener*> *listeners = getEnginePointer()->m_eventListeners[veEvent::VE_EVENT_DELETE_NODE];
-		for (auto listener : *listeners) {
-			if (listener->onSceneNodeDeleted(event)) {
-				nameList.push_back(listener->getName());
+		std::vector<VEEventListener*> *listeners = 
+			getEnginePointer()->m_eventListeners[veEvent::VE_EVENT_DELETE_NODE];	//list of event listeners interested in this event
+
+		for (auto listener : *listeners) {											//go through them and call onSceneNodeDeleted()
+			if (listener->onSceneNodeDeleted(event)) {								//if the listener answers with true, it wants to be destroyed
+				nameList.push_back(listener->getName());							//so save its name on a list
 			}
 		}
-		for (auto name : nameList) {
+		for (auto name : nameList) {												//delete the listeners that want to die
 			getEnginePointer()->deleteEventListener(name);
 		}
 
@@ -921,21 +923,21 @@ namespace ve {
 			if (pNode->getNodeType() == VESceneNode::VE_NODE_TYPE_SCENEOBJECT) {
 				VESceneObject *pObject = (VESceneObject*)pNode;
 
-				if (pObject->getObjectType() == VESceneObject::VE_OBJECT_TYPE_CAMERA && m_camera == (VECamera*)pObject)
+				if (pObject->getObjectType() == VESceneObject::VE_OBJECT_TYPE_CAMERA && m_camera == (VECamera*)pObject )	//is it the current camera?
 					m_camera = nullptr;
 
-				if (pObject->getObjectType() == VESceneObject::VE_OBJECT_TYPE_ENTITY)
-					getRendererPointer()->removeEntityFromSubrenderers((VEEntity*)pObject);
+				if (pObject->getObjectType() == VESceneObject::VE_OBJECT_TYPE_ENTITY)			//if its a object that is rendered
+					getRendererPointer()->removeEntityFromSubrenderers((VEEntity*)pObject);		//remove it from its subrenderer
 
-				if (pObject->m_memoryHandle.pMemBlock != nullptr) {
+				if (pObject->m_memoryHandle.pMemBlock != nullptr) {								//remove it from the UBO list
 					vh::vhMemBlockRemoveEntry(&pObject->m_memoryHandle);
 				}
 			}
-			m_sceneNodes.erase(namelist[i]);
+			m_sceneNodes.erase(namelist[i]);													//remove it from the scene node list
 
-			notifyEventListeners(pNode);
+			notifyEventListeners(pNode);		//notify all event listeners that this node will soon be deleted
 
-			delete pNode;
+			delete pNode;						//delete the scene node
 		}
 	}
 
@@ -989,7 +991,7 @@ namespace ve {
 		namelist.push_back(pObject->getName());
 
 		for (uint32_t i = 0; i < pObject->getChildrenList().size(); i++) {
-			createSceneNodeList2(pObject->getChildrenList()[i], namelist);
+			createSceneNodeList2(pObject->getChildrenList()[i], namelist);		//recursive call
 		}
 	}
 
@@ -1005,10 +1007,10 @@ namespace ve {
 	*/
 	VEMesh * VESceneManager::createMesh(std::string name, std::vector<vh::vhVertex> &vertices, std::vector<uint32_t> &indices) {
 		std::lock_guard<std::mutex> lock(m_mutex);
-		if (m_meshes.count(name) > 0) return m_meshes[name];
+		if (m_meshes.count(name) > 0) return m_meshes[name];	//if mesh already exists, resturn it
 
-		VEMesh *pMesh = new VEMesh(name, vertices, indices);
-		m_meshes[name] = pMesh;
+		VEMesh *pMesh = new VEMesh(name, vertices, indices);	//create the mesh
+		m_meshes[name] = pMesh;									//store in mesh map
 		return pMesh;
 	}
 
@@ -1029,7 +1031,10 @@ namespace ve {
 
 	/**
 	*
-	* \brief Delete a mesh given its name
+	* \brief Delete a mesh given its name.
+	*
+	* This function does NOT check whether the mesh is still used by some entity!
+	* It should be only called if this is certain, e.g. if the whole scene is deleted.
 	*
 	* \param[in] name Name of the mesh.
 	*
@@ -1038,9 +1043,9 @@ namespace ve {
 		std::lock_guard<std::mutex> lock(m_mutex);
 
 		if (m_meshes.count(name)>0) {
-			VEMesh * pMesh = m_meshes[name];
-			m_meshes.erase(name);
-			delete pMesh;
+			VEMesh * pMesh = m_meshes[name];			//get pointer to the mesh
+			m_meshes.erase(name);						//remove it from the mesh list
+			delete pMesh;								//delete the mesh
 		}
 	}
 
@@ -1072,10 +1077,10 @@ namespace ve {
 	*
 	*/
 	VETexture * VESceneManager::createTexture2(std::string name, std::string basedir, std::string texName) {
-		if (m_textures.count(name) > 0) return m_textures[name];
+		if (m_textures.count(name) > 0) return m_textures[name];		//if the texture already exists, return it
 
-		VETexture *pTex = new VETexture(name, basedir, { texName });
-		m_textures[name] = pTex;
+		VETexture *pTex = new VETexture(name, basedir, { texName });	//create the texture
+		m_textures[name] = pTex;										//store in texture list
 		return pTex;
 	}
 
@@ -1104,10 +1109,10 @@ namespace ve {
 	void VESceneManager::deleteTexture(std::string name) {
 		std::lock_guard<std::mutex> lock(m_mutex);
 
-		if (m_textures.count(name)>0) {
-			VETexture * pTex = m_textures[name];
-			m_textures.erase(name);
-			delete pTex;
+		if (m_textures.count(name)>0) {				//if the texture exists
+			VETexture * pTex = m_textures[name];	//get pointer to the texture
+			m_textures.erase(name);					//remove from the texture list
+			delete pTex;							//delete it
 		}
 	}
 
@@ -1135,11 +1140,11 @@ namespace ve {
 	*
 	*/
 	VEMaterial * VESceneManager::createMaterial2(std::string name) {
-		if (m_materials.count(name) > 0) return m_materials[name];
+		if (m_materials.count(name) > 0) return m_materials[name];	//if the material alredy exists, return it
 
-		VEMaterial *pMat = new VEMaterial(name);
-		m_materials[name] = pMat;
-		return pMat;
+		VEMaterial *pMat = new VEMaterial(name);					//create the material
+		m_materials[name] = pMat;									//store in material map
+		return pMat;												//return it
 	}
 
 
@@ -1165,10 +1170,10 @@ namespace ve {
 	void VESceneManager::deleteMaterial(std::string name) {
 		std::lock_guard<std::mutex> lock(m_mutex);
 
-		if (m_materials.count(name)>0) {
-			VEMaterial * pMat = m_materials[name];
-			m_materials.erase(name);
-			delete pMat;
+		if (m_materials.count(name)>0) {				//if the material exists
+			VEMaterial * pMat = m_materials[name];		//get a pointer to it
+			m_materials.erase(name);					//remove from material map
+			delete pMat;								//delete it
 		}
 	}
 

@@ -30,16 +30,17 @@ namespace ve {
 		std::vector<VkDescriptorSet>	m_descriptorSetsResources;							///<a list of resource descriptor set arrays, maps are condensed into these arrays of size K
 		std::vector<std::vector<VkDescriptorImageInfo>> m_maps;								///<descriptor write info for the  maps, m_maps[0] may contain all diffuse maps, m_maps[1] all normal maps etc
 		VkPipelineLayout				m_pipelineLayout = VK_NULL_HANDLE;					///<Pipeline layout
-		std::vector<VkPipeline>			m_pipelines;										///<Pipeline for light pass(es)
+		std::vector<VkPipeline>			m_pipelines;										///<Pipelines for light pass(es)
+		uint32_t						m_idxLastRecorded = 0;								///<Used for incremental command buffer recording, idx of last recorded entity
 
 	public:
 		///Constructor of subrender fw class
 		VESubrenderFW() {};
 		///Destructor of subrender fw class
 		virtual ~VESubrenderFW() {};
-		///\returns the class of the subrenderer
+		///\returns the class of the subrenderer, a very general description
 		virtual veSubrenderClass getClass() = 0;
-		///\returns the type of the subrenderer
+		///\returns the type of the subrenderer, specific type inside a class
 		virtual veSubrenderType getType() = 0;
 
 		//------------------------------------------------------------------------------------------------------------------
@@ -60,6 +61,7 @@ namespace ve {
 		//------------------------------------------------------------------------------------------------------------------
 		///Prepare to perform draw operation, e.g. for an overlay
 		virtual void		prepareDraw() {};
+		virtual void		afterDrawFinished();	//after all draw calls have been recorded
 
 		//Draw all entities that are managed by this subrenderer
 		virtual void		draw(	VkCommandBuffer commandBuffer, uint32_t imageIndex, uint32_t numPass,

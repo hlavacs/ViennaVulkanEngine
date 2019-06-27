@@ -31,7 +31,14 @@ namespace ve {
 		pEntity->m_pSubrenderer = this;
 	}
 
-
+	/**
+	*
+	* \returns the list with subrenderers from the renderer
+	*
+	*/
+	std::vector<VESubrender*> &VESubrender::getSubrenderers() {
+		return getRendererPointer()->m_subrenderers; 
+	};
 
 }
 

@@ -51,7 +51,8 @@ namespace ve {
 		};
 
 	protected:
-		std::vector<VEEntity *>			m_entities;											///<List of associated entities
+		std::vector<VEEntity *>			m_entities;			///<List of associated entities
+		std::vector<VESubrender*> &getSubrenderers();		///<return a list with the current subrenderers, used for shadows
 
 	public:
 		///Constructor of subrender class
@@ -73,10 +74,14 @@ namespace ve {
 		virtual void	addEntity(VEEntity *pEntity);
 		///\brief remove an entity from the subrenderer - empty base class function
 		virtual void	removeEntity(VEEntity *pEntity) {};
+		///\returns a reference the list with entities
+		std::vector<VEEntity *> &getEntities() { return m_entities; };
 
 		//------------------------------------------------------------------------------------------------------------------
 		///\brief Prepare to perform draw operation, e.g. for an overlay
 		virtual void	prepareDraw() {};
+		///\brief Called after all draw calls have been recorded. Used for incremental recording
+		virtual void	afterDrawFinished() {};
 
 		///\brief Draw all entities that are managed by this subrenderer
 		virtual void	draw(VkCommandBuffer commandBuffer, uint32_t imageIndex, uint32_t numPass,

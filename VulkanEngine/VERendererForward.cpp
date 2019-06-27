@@ -509,7 +509,17 @@ namespace ve {
 		vkEndCommandBuffer(m_commandBuffers[m_imageIndex]);
 
 		m_overlaySemaphores[m_currentFrame] = m_renderFinishedSemaphores[m_currentFrame];
+
+
+		//remember the last recorded entities, for incremental recording
+		for (auto subrender : m_subrenderers) {
+			subrender->afterDrawFinished();
+		}
 	}
+
+
+
+
 
 
 	/**

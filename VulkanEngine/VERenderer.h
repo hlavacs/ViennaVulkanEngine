@@ -29,6 +29,7 @@ namespace ve {
 	class VERenderer {
 		friend VEEngine;
 		friend VESceneManager;
+		friend VESubrender;
 
 	protected:
 		VkPhysicalDevice m_physicalDevice = VK_NULL_HANDLE;		///<Vulkan physical device handle

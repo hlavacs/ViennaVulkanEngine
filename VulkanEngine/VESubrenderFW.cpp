@@ -160,6 +160,7 @@ namespace ve {
 								std::vector<VkDescriptorSet> descriptorSetsShadow) {
 
 		if (m_entities.size() == 0) return;
+		m_idxLastRecorded = (uint32_t)m_entities.size() - 1;
 
 		if (numPass > 0 && getClass() != VE_SUBRENDERER_CLASS_OBJECT) return;
 
@@ -175,6 +176,18 @@ namespace ve {
 			drawEntity(commandBuffer, imageIndex, pEntity);
 		}
 	}
+
+
+	/**
+	* \brief Remember the last recorded entity
+	*
+	* Needed for incremental recording.
+	* 
+	*/
+	void VESubrenderFW::afterDrawFinished() {
+		m_idxLastRecorded = (uint32_t) m_entities.size() - 1;
+	}
+
 
 	/**
 	*
