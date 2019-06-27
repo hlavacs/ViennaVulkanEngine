@@ -66,6 +66,7 @@ $(function() {
 </div><!-- top -->
 <div class="header">
   <div class="summary">
+<a href="#nested-classes">Classes</a> &#124;
 <a href="#pub-methods">Public Member Functions</a> &#124;
 <a href="#pub-attribs">Public Attributes</a> &#124;
 <a href="#pro-methods">Protected Member Functions</a> &#124;
@@ -90,6 +91,18 @@ Inheritance diagram for ve::VERendererForward:</div>
   </map>
 </div></div>
 <table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="nested-classes"></a>
+Classes</h2></td></tr>
+<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structve_1_1_v_e_renderer_forward_1_1light_buffer_lists__t.html">lightBufferLists_t</a></td></tr>
+<tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">Shadow and light command buffers for one particular light.  <a href="structve_1_1_v_e_renderer_forward_1_1light_buffer_lists__t.html#details">More...</a><br /></td></tr>
+<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structve_1_1_v_e_renderer_forward_1_1secondary_cmd_buf__t.html">secondaryCmdBuf_t</a></td></tr>
+<tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">One secondary command buffer and the pool that it came from.  <a href="structve_1_1_v_e_renderer_forward_1_1secondary_cmd_buf__t.html#details">More...</a><br /></td></tr>
+<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structve_1_1_v_e_renderer_forward_1_1secondary_cmd_buffer_lists__t.html">secondaryCmdBufferLists_t</a></td></tr>
+<tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">lists of secondary command buffers, one for the shadow pass, one for the light pass  <a href="structve_1_1_v_e_renderer_forward_1_1secondary_cmd_buffer_lists__t.html#details">More...</a><br /></td></tr>
+<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-methods"></a>
 Public Member Functions</h2></td></tr>
 <tr class="memitem:ab7120dfd9a9bb2e5d723b8f6648ad173"><td class="memItemLeft" align="right" valign="top"><a id="ab7120dfd9a9bb2e5d723b8f6648ad173"></a>
@@ -100,6 +113,8 @@ Public Member Functions</h2></td></tr>
 virtual&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_renderer_forward.html#ab2a0faa086827ecdb8674aa61a3d384b">~VERendererForward</a> ()</td></tr>
 <tr class="memdesc:ab2a0faa086827ecdb8674aa61a3d384b"><td class="mdescLeft">&#160;</td><td class="mdescRight">Destructor of class <a class="el" href="classve_1_1_v_e_renderer_forward.html" title="A classical forward renderer.">VERendererForward</a>. <br /></td></tr>
 <tr class="separator:ab2a0faa086827ecdb8674aa61a3d384b"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a1cbe83d985ea83883daf4c6e620d43ce"><td class="memItemLeft" align="right" valign="top">virtual VkCommandPool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_renderer_forward.html#a1cbe83d985ea83883daf4c6e620d43ce">getThreadCommandPool</a> ()</td></tr>
+<tr class="separator:a1cbe83d985ea83883daf4c6e620d43ce"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:af8cb79ff5273dca7df9ef44f57243a1c"><td class="memItemLeft" align="right" valign="top"><a id="af8cb79ff5273dca7df9ef44f57243a1c"></a>
 virtual void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_renderer_forward.html#af8cb79ff5273dca7df9ef44f57243a1c">updateCmdBuffers</a> ()</td></tr>
 <tr class="memdesc:af8cb79ff5273dca7df9ef44f57243a1c"><td class="mdescLeft">&#160;</td><td class="mdescRight">called whenever the scene graph of the scene manager changes <br /></td></tr>
@@ -182,6 +197,10 @@ float&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="cla
 float&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_renderer_forward.html#ae61d43069d43d2725e09357c23f6ea44">m_AvgCmdLightTime</a> = 0.0f</td></tr>
 <tr class="memdesc:ae61d43069d43d2725e09357c23f6ea44"><td class="mdescLeft">&#160;</td><td class="mdescRight">Average time for recording light pass. <br /></td></tr>
 <tr class="separator:ae61d43069d43d2725e09357c23f6ea44"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aba8b0605c9c000ad12ca43673c1fa6c0"><td class="memItemLeft" align="right" valign="top"><a id="aba8b0605c9c000ad12ca43673c1fa6c0"></a>
+float&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_renderer_forward.html#aba8b0605c9c000ad12ca43673c1fa6c0">m_AvgRecordTime</a> = 0.0f</td></tr>
+<tr class="memdesc:aba8b0605c9c000ad12ca43673c1fa6c0"><td class="mdescLeft">&#160;</td><td class="mdescRight">Average recording time of one command buffer. <br /></td></tr>
+<tr class="separator:aba8b0605c9c000ad12ca43673c1fa6c0"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pro-methods"></a>
 Protected Member Functions</h2></td></tr>
@@ -204,9 +223,6 @@ virtual void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" hr
 virtual void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_renderer_forward.html#a6401c0d7863ac061c25ed79ae844296e">recordCmdBuffers</a> ()</td></tr>
 <tr class="memdesc:a6401c0d7863ac061c25ed79ae844296e"><td class="mdescLeft">&#160;</td><td class="mdescRight">Create a new command buffer and record the whole scene into it, then end it. <br /></td></tr>
 <tr class="separator:a6401c0d7863ac061c25ed79ae844296e"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aa80987a24f71943710bfefb250c4d77d"><td class="memItemLeft" align="right" valign="top">virtual void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_renderer_forward.html#aa80987a24f71943710bfefb250c4d77d">recordRenderpass</a> (VkCommandBuffer *pCommandBuffer, VkRenderPass *pRenderPass, std::vector&lt; <a class="el" href="classve_1_1_v_e_subrender.html">VESubrender</a> * &gt; subRenderers, VkFramebuffer *pFrameBuffer, std::vector&lt; VkClearValue &gt; clearValues, VkExtent2D *pExtent2D, uint32_t imageIndex, uint32_t numPass, <a class="el" href="classve_1_1_v_e_camera.html">VECamera</a> *pCamera, <a class="el" href="classve_1_1_v_e_light.html">VELight</a> *pLight, std::vector&lt; VkDescriptorSet &gt; descriptorSetsShadow)</td></tr>
-<tr class="memdesc:aa80987a24f71943710bfefb250c4d77d"><td class="mdescLeft">&#160;</td><td class="mdescRight">Delete all command buffers and set them to VK_NULL_HANDLE, so next time they have to be created and recorded again.  <a href="#aa80987a24f71943710bfefb250c4d77d">More...</a><br /></td></tr>
-<tr class="separator:aa80987a24f71943710bfefb250c4d77d"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a26ce6f5e6a517b21bc00b84a367b06ba"><td class="memItemLeft" align="right" valign="top">virtual void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_renderer_forward.html#a26ce6f5e6a517b21bc00b84a367b06ba">drawFrame</a> ()</td></tr>
 <tr class="memdesc:a26ce6f5e6a517b21bc00b84a367b06ba"><td class="mdescLeft">&#160;</td><td class="mdescRight">Draw the frame.  <a href="#a26ce6f5e6a517b21bc00b84a367b06ba">More...</a><br /></td></tr>
 <tr class="separator:a26ce6f5e6a517b21bc00b84a367b06ba"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -230,6 +246,9 @@ virtual void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" hr
 virtual void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_renderer_forward.html#a0f4a14c3bf1fbd9f9d291db9fbbb2a36">recreateSwapchain</a> ()</td></tr>
 <tr class="memdesc:a0f4a14c3bf1fbd9f9d291db9fbbb2a36"><td class="mdescLeft">&#160;</td><td class="mdescRight">recreate the swapchain because the window size has changed <br /></td></tr>
 <tr class="separator:a0f4a14c3bf1fbd9f9d291db9fbbb2a36"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a885d23022906f4e7ab8eea09723b16cd"><td class="memItemLeft" align="right" valign="top">virtual <a class="el" href="structve_1_1_v_e_renderer_forward_1_1secondary_cmd_buf__t.html">secondaryCmdBuf_t</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_renderer_forward.html#a885d23022906f4e7ab8eea09723b16cd">recordRenderpass</a> (VkRenderPass *pRenderPass, std::vector&lt; <a class="el" href="classve_1_1_v_e_subrender.html">VESubrender</a> * &gt; subRenderers, VkFramebuffer *pFrameBuffer, uint32_t imageIndex, uint32_t numPass, <a class="el" href="classve_1_1_v_e_camera.html">VECamera</a> *pCamera, <a class="el" href="classve_1_1_v_e_light.html">VELight</a> *pLight, std::vector&lt; VkDescriptorSet &gt; descriptorSetsShadow)</td></tr>
+<tr class="memdesc:a885d23022906f4e7ab8eea09723b16cd"><td class="mdescLeft">&#160;</td><td class="mdescRight">Delete all command buffers and set them to VK_NULL_HANDLE, so next time they have to be created and recorded again.  <a href="#a885d23022906f4e7ab8eea09723b16cd">More...</a><br /></td></tr>
+<tr class="separator:a885d23022906f4e7ab8eea09723b16cd"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="inherit_header pro_methods_classve_1_1_v_e_renderer"><td colspan="2" onclick="javascript:toggleInherit('pro_methods_classve_1_1_v_e_renderer')"><img src="closed.png" alt="-"/>&#160;Protected Member Functions inherited from <a class="el" href="classve_1_1_v_e_renderer.html">ve::VERenderer</a></td></tr>
 <tr class="memitem:a270fb91a971028bae9f6a8714fd46cf1 inherit pro_methods_classve_1_1_v_e_renderer"><td class="memItemLeft" align="right" valign="top">virtual void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_renderer.html#a270fb91a971028bae9f6a8714fd46cf1">addSubrenderer</a> (<a class="el" href="classve_1_1_v_e_subrender.html">VESubrender</a> *pSub)</td></tr>
 <tr class="memdesc:a270fb91a971028bae9f6a8714fd46cf1 inherit pro_methods_classve_1_1_v_e_renderer"><td class="mdescLeft">&#160;</td><td class="mdescRight">Initialize and register a subrenderer.  <a href="classve_1_1_v_e_renderer.html#a270fb91a971028bae9f6a8714fd46cf1">More...</a><br /></td></tr>
@@ -244,14 +263,26 @@ virtual void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" hr
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pro-attribs"></a>
 Protected Attributes</h2></td></tr>
+<tr class="memitem:ada0799a1013bc3faf3e20fb4739ba90f"><td class="memItemLeft" align="right" valign="top"><a id="ada0799a1013bc3faf3e20fb4739ba90f"></a>
+std::vector&lt; VkCommandPool &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_renderer_forward.html#ada0799a1013bc3faf3e20fb4739ba90f">m_commandPools</a> = {}</td></tr>
+<tr class="memdesc:ada0799a1013bc3faf3e20fb4739ba90f"><td class="mdescLeft">&#160;</td><td class="mdescRight">Array of command pools so that each thread in the thread pool has its own pool. <br /></td></tr>
+<tr class="separator:ada0799a1013bc3faf3e20fb4739ba90f"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a33462619a37c661bd9fb848af081257c"><td class="memItemLeft" align="right" valign="top"><a id="a33462619a37c661bd9fb848af081257c"></a>
 std::vector&lt; VkCommandBuffer &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_renderer_forward.html#a33462619a37c661bd9fb848af081257c">m_commandBuffers</a> = {}</td></tr>
 <tr class="memdesc:a33462619a37c661bd9fb848af081257c"><td class="mdescLeft">&#160;</td><td class="mdescRight">the main command buffers for recording draw commands <br /></td></tr>
 <tr class="separator:a33462619a37c661bd9fb848af081257c"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a9dcd6311e871ca602439ad071c0b1438"><td class="memItemLeft" align="right" valign="top"><a id="a9dcd6311e871ca602439ad071c0b1438"></a>
-std::vector&lt; VkCommandBuffer &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_renderer_forward.html#a9dcd6311e871ca602439ad071c0b1438">m_secondaryBuffers</a> = {}</td></tr>
-<tr class="memdesc:a9dcd6311e871ca602439ad071c0b1438"><td class="mdescLeft">&#160;</td><td class="mdescRight">secondary buffers for parallel recording <br /></td></tr>
-<tr class="separator:a9dcd6311e871ca602439ad071c0b1438"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a5981c76ad0f9ac0f32156578a25a771e"><td class="memItemLeft" align="right" valign="top"><a id="a5981c76ad0f9ac0f32156578a25a771e"></a>
+std::vector&lt; std::vector&lt; std::future&lt; <a class="el" href="structve_1_1_v_e_renderer_forward_1_1secondary_cmd_buf__t.html">secondaryCmdBuf_t</a> &gt; &gt; &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_renderer_forward.html#a5981c76ad0f9ac0f32156578a25a771e">m_secondaryBuffersFutures</a> = {}</td></tr>
+<tr class="memdesc:a5981c76ad0f9ac0f32156578a25a771e"><td class="mdescLeft">&#160;</td><td class="mdescRight">secondary buffers for parallel recording <br /></td></tr>
+<tr class="separator:a5981c76ad0f9ac0f32156578a25a771e"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a9ede5f78e481137239d351dd717ed188"><td class="memItemLeft" align="right" valign="top"><a id="a9ede5f78e481137239d351dd717ed188"></a>
+std::vector&lt; std::vector&lt; <a class="el" href="structve_1_1_v_e_renderer_forward_1_1secondary_cmd_buf__t.html">secondaryCmdBuf_t</a> &gt; &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_renderer_forward.html#a9ede5f78e481137239d351dd717ed188">m_secondaryBuffers</a> = {}</td></tr>
+<tr class="memdesc:a9ede5f78e481137239d351dd717ed188"><td class="mdescLeft">&#160;</td><td class="mdescRight">secondary buffers for parallel recording <br /></td></tr>
+<tr class="separator:a9ede5f78e481137239d351dd717ed188"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a160f5c4998e2c43d7354069b11c0475a"><td class="memItemLeft" align="right" valign="top"><a id="a160f5c4998e2c43d7354069b11c0475a"></a>
+std::map&lt; <a class="el" href="classve_1_1_v_e_light.html">VELight</a> *, <a class="el" href="structve_1_1_v_e_renderer_forward_1_1light_buffer_lists__t.html">lightBufferLists_t</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_renderer_forward.html#a160f5c4998e2c43d7354069b11c0475a">m_lightBufferLists</a></td></tr>
+<tr class="memdesc:a160f5c4998e2c43d7354069b11c0475a"><td class="mdescLeft">&#160;</td><td class="mdescRight">each light has its own command buffer list <br /></td></tr>
+<tr class="separator:a160f5c4998e2c43d7354069b11c0475a"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a7d06b07bbb207373274f274b9ddf16c5"><td class="memItemLeft" align="right" valign="top"><a id="a7d06b07bbb207373274f274b9ddf16c5"></a>
 VkRenderPass&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_renderer_forward.html#a7d06b07bbb207373274f274b9ddf16c5">m_renderPassClear</a></td></tr>
 <tr class="memdesc:a7d06b07bbb207373274f274b9ddf16c5"><td class="mdescLeft">&#160;</td><td class="mdescRight">The first light render pass, clearing the framebuffers. <br /></td></tr>
@@ -736,6 +767,32 @@ std::vector&lt; <a class="el" href="classve_1_1_v_e_subrender.html">VESubrender<
 
 </div>
 </div>
+<a id="a1cbe83d985ea83883daf4c6e620d43ce"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a1cbe83d985ea83883daf4c6e620d43ce">&#9670;&nbsp;</a></span>getThreadCommandPool()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">virtual VkCommandPool ve::VERendererForward::getThreadCommandPool </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span><span class="mlabel">virtual</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+<dl class="section return"><dt>Returns</dt><dd>the command pool for this thread - each threads needs its own pool </dd></dl>
+
+</div>
+</div>
 <a id="a6d5ab65f79b90035d77f05e27240d70f"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a6d5ab65f79b90035d77f05e27240d70f">&#9670;&nbsp;</a></span>initRenderer()</h2>
 
@@ -792,8 +849,8 @@ std::vector&lt; <a class="el" href="classve_1_1_v_e_subrender.html">VESubrender<
 
 </div>
 </div>
-<a id="aa80987a24f71943710bfefb250c4d77d"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#aa80987a24f71943710bfefb250c4d77d">&#9670;&nbsp;</a></span>recordRenderpass()</h2>
+<a id="a885d23022906f4e7ab8eea09723b16cd"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a885d23022906f4e7ab8eea09723b16cd">&#9670;&nbsp;</a></span>recordRenderpass()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -802,14 +859,8 @@ std::vector&lt; <a class="el" href="classve_1_1_v_e_subrender.html">VESubrender<
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">void ve::VERendererForward::recordRenderpass </td>
+          <td class="memname"><a class="el" href="structve_1_1_v_e_renderer_forward_1_1secondary_cmd_buf__t.html">VERendererForward::secondaryCmdBuf_t</a> ve::VERendererForward::recordRenderpass </td>
           <td>(</td>
-          <td class="paramtype">VkCommandBuffer *&#160;</td>
-          <td class="paramname"><em>pCommandBuffer</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
           <td class="paramtype">VkRenderPass *&#160;</td>
           <td class="paramname"><em>pRenderPass</em>, </td>
         </tr>
@@ -824,18 +875,6 @@ std::vector&lt; <a class="el" href="classve_1_1_v_e_subrender.html">VESubrender<
           <td></td>
           <td class="paramtype">VkFramebuffer *&#160;</td>
           <td class="paramname"><em>pFrameBuffer</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">std::vector&lt; VkClearValue &gt;&#160;</td>
-          <td class="paramname"><em>clearValues</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">VkExtent2D *&#160;</td>
-          <td class="paramname"><em>pExtent2D</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
@@ -883,12 +922,9 @@ std::vector&lt; <a class="el" href="classve_1_1_v_e_subrender.html">VESubrender<
 <p>Delete all command buffers and set them to VK_NULL_HANDLE, so next time they have to be created and recorded again. </p>
 <dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
-    <tr><td class="paramdir">[in]</td><td class="paramname">pCommandBuffer</td><td>Pointer to the command buffer that is recorded into </td></tr>
     <tr><td class="paramdir">[in]</td><td class="paramname">pRenderPass</td><td>Pointer to the render pass that is executed </td></tr>
     <tr><td class="paramdir">[in]</td><td class="paramname">subRenderers</td><td>List of subrenderers to call </td></tr>
     <tr><td class="paramdir">[in]</td><td class="paramname">pFrameBuffer</td><td>Pointer to the framebuffer to be used </td></tr>
-    <tr><td class="paramdir">[in]</td><td class="paramname">clearValues</td><td>List of clear values to be used in the render pass </td></tr>
-    <tr><td class="paramdir">[in]</td><td class="paramname">pExtent2D</td><td>Extent of the frame buffer </td></tr>
     <tr><td class="paramdir">[in]</td><td class="paramname">imageIndex</td><td>Index of the current swap chain image </td></tr>
     <tr><td class="paramdir">[in]</td><td class="paramname">numPass</td><td>Number of the pass on this call, one for each light </td></tr>
     <tr><td class="paramdir">[in]</td><td class="paramname">pCamera</td><td>Pointer to the cmaera to be used </td></tr>
@@ -907,7 +943,7 @@ std::vector&lt; <a class="el" href="classve_1_1_v_e_subrender.html">VESubrender<
 </div><!-- contents -->
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>
-Generated on Tue Jun 18 2019 16:38:41 for Vienna Vulkan Engine by &#160;<a href="http://www.doxygen.org/index.html">
+Generated on Thu Jun 27 2019 15:47:26 for Vienna Vulkan Engine by &#160;<a href="http://www.doxygen.org/index.html">
 <img class="footer" src="doxygen.png" alt="doxygen"/>
 </a> 1.8.15
 </small></address>

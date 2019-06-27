@@ -190,9 +190,9 @@ Additional Inherited Members</h2></td></tr>
 <tr class="memitem:a133e6324b68b12685502989d46f8f600 inherit pro_methods_classve_1_1_v_e_engine"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_engine.html#a133e6324b68b12685502989d46f8f600">callListeners</a> (double dt, <a class="el" href="structve_1_1ve_event.html">veEvent</a> event, std::vector&lt; <a class="el" href="classve_1_1_v_e_event_listener.html">VEEventListener</a> * &gt; *list)</td></tr>
 <tr class="memdesc:a133e6324b68b12685502989d46f8f600 inherit pro_methods_classve_1_1_v_e_engine"><td class="mdescLeft">&#160;</td><td class="mdescRight">Call all event listeners.  <a href="classve_1_1_v_e_engine.html#a133e6324b68b12685502989d46f8f600">More...</a><br /></td></tr>
 <tr class="separator:a133e6324b68b12685502989d46f8f600 inherit pro_methods_classve_1_1_v_e_engine"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aa7a980ba351d5c5e03d619b1d27a074d inherit pro_methods_classve_1_1_v_e_engine"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_engine.html#aa7a980ba351d5c5e03d619b1d27a074d">callListeners</a> (double dt, <a class="el" href="structve_1_1ve_event.html">veEvent</a> event, std::vector&lt; <a class="el" href="classve_1_1_v_e_event_listener.html">VEEventListener</a> * &gt; *list, uint32_t startIdx, uint32_t endIdx)</td></tr>
-<tr class="memdesc:aa7a980ba351d5c5e03d619b1d27a074d inherit pro_methods_classve_1_1_v_e_engine"><td class="mdescLeft">&#160;</td><td class="mdescRight">Call a subset of the listeners, which can be done in parallel.  <a href="classve_1_1_v_e_engine.html#aa7a980ba351d5c5e03d619b1d27a074d">More...</a><br /></td></tr>
-<tr class="separator:aa7a980ba351d5c5e03d619b1d27a074d inherit pro_methods_classve_1_1_v_e_engine"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:acbfe5e3e239f892dde97ce727a9f23ed inherit pro_methods_classve_1_1_v_e_engine"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_engine.html#acbfe5e3e239f892dde97ce727a9f23ed">callListeners2</a> (double dt, <a class="el" href="structve_1_1ve_event.html">veEvent</a> event, std::vector&lt; <a class="el" href="classve_1_1_v_e_event_listener.html">VEEventListener</a> * &gt; *list, uint32_t startIdx, uint32_t endIdx)</td></tr>
+<tr class="memdesc:acbfe5e3e239f892dde97ce727a9f23ed inherit pro_methods_classve_1_1_v_e_engine"><td class="mdescLeft">&#160;</td><td class="mdescRight">Call a subset of the listeners, which can be done in parallel.  <a href="classve_1_1_v_e_engine.html#acbfe5e3e239f892dde97ce727a9f23ed">More...</a><br /></td></tr>
+<tr class="separator:acbfe5e3e239f892dde97ce727a9f23ed inherit pro_methods_classve_1_1_v_e_engine"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:add12bec0a4ea3e3dfab6b8c4d8b8d121 inherit pro_methods_classve_1_1_v_e_engine"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_engine.html#add12bec0a4ea3e3dfab6b8c4d8b8d121">processEvents</a> (double dt)</td></tr>
 <tr class="memdesc:add12bec0a4ea3e3dfab6b8c4d8b8d121 inherit pro_methods_classve_1_1_v_e_engine"><td class="mdescLeft">&#160;</td><td class="mdescRight">Go through the event list, and call all listeners for it.  <a href="classve_1_1_v_e_engine.html#add12bec0a4ea3e3dfab6b8c4d8b8d121">More...</a><br /></td></tr>
 <tr class="separator:add12bec0a4ea3e3dfab6b8c4d8b8d121 inherit pro_methods_classve_1_1_v_e_engine"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -254,10 +254,6 @@ double&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="cl
 uint32_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_engine.html#a8b332a583a181820248f2e71752e5c4f">m_loopCount</a> = 0</td></tr>
 <tr class="memdesc:a8b332a583a181820248f2e71752e5c4f inherit pro_attribs_classve_1_1_v_e_engine"><td class="mdescLeft">&#160;</td><td class="mdescRight">Counts up the render loop. <br /></td></tr>
 <tr class="separator:a8b332a583a181820248f2e71752e5c4f inherit pro_attribs_classve_1_1_v_e_engine"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a2d16c0658a7b457faad343721c5670ea inherit pro_attribs_classve_1_1_v_e_engine"><td class="memItemLeft" align="right" valign="top"><a id="a2d16c0658a7b457faad343721c5670ea"></a>
-int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_engine.html#a2d16c0658a7b457faad343721c5670ea">m_maxThreads</a> = 10</td></tr>
-<tr class="memdesc:a2d16c0658a7b457faad343721c5670ea inherit pro_attribs_classve_1_1_v_e_engine"><td class="mdescLeft">&#160;</td><td class="mdescRight">max number of threads that the engine may start in parallel in its thread pool <br /></td></tr>
-<tr class="separator:a2d16c0658a7b457faad343721c5670ea inherit pro_attribs_classve_1_1_v_e_engine"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a5f1a7f6fad7aefacc97dbdac22a2402d inherit pro_attribs_classve_1_1_v_e_engine"><td class="memItemLeft" align="right" valign="top"><a id="a5f1a7f6fad7aefacc97dbdac22a2402d"></a>
 ThreadPool *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_engine.html#a5f1a7f6fad7aefacc97dbdac22a2402d">m_threadPool</a></td></tr>
 <tr class="memdesc:a5f1a7f6fad7aefacc97dbdac22a2402d inherit pro_attribs_classve_1_1_v_e_engine"><td class="mdescLeft">&#160;</td><td class="mdescRight">thread pool for parallel processing <br /></td></tr>
@@ -384,7 +380,7 @@ bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="clas
 </div><!-- contents -->
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>
-Generated on Tue Jun 18 2019 16:38:39 for Vienna Vulkan Engine by &#160;<a href="http://www.doxygen.org/index.html">
+Generated on Thu Jun 27 2019 15:47:25 for Vienna Vulkan Engine by &#160;<a href="http://www.doxygen.org/index.html">
 <img class="footer" src="doxygen.png" alt="doxygen"/>
 </a> 1.8.15
 </small></address>

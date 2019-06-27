@@ -36,7 +36,7 @@ namespace ve {
 
 		m_pipelines.resize(1);
 		vh::vhPipeCreateGraphicsPipeline(getRendererForwardPointer()->getDevice(),
-		{ "shader/Forward/Skyplane/vert.spv", "shader/Forward/Skyplane/frag.spv" },
+		{ "media/shader/Forward/Skyplane/vert.spv", "media/shader/Forward/Skyplane/frag.spv" },
 			getRendererForwardPointer()->getSwapChainExtent(),
 			m_pipelineLayout, getRendererForwardPointer()->getRenderPass(),
 			{ },

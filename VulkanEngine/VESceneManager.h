@@ -50,6 +50,7 @@ namespace ve {
 		std::vector<VESceneNode*>			m_deletedSceneNodes = {};  ///<List of deleted scene nodes and their children
 		VESceneNode						*	m_rootSceneNode;	///<The root node of the scene graph
 		std::map<VESceneObject::veObjectType, std::vector<vh::vhMemoryBlock*>> m_memoryBlockMap;	///<memory for the UBOs of the entities
+		std::queue<std::future<void>>		m_updateFutures;	///<we might do UBO updates in parallel, these are the futures to wait for
 
 		VECamera *				m_camera = nullptr;			///<Ptr to the current camera
 		std::vector<VELight*>	m_lights = {};				///<ptrs to the lights to use - filled automatically
@@ -76,6 +77,7 @@ namespace ve {
 		void			sceneGraphChanged3();					//tell renderer to rerecord the cmd buffers
 		void			updateSceneNodes(uint32_t imageIndex);
 		void			updateSceneNodes2(VESceneNode *pNode, glm::mat4 worldMatrix, uint32_t imageIndex);
+		void			updateSceneNodes3( std::vector<VESceneNode*> &children, glm::mat4 worldMatrix, uint32_t startIdx, uint32_t endIdx, uint32_t imageIndex);
 		void			setVisibility2(VESceneNode *pNode, bool flag);			//set a whole subtree visible or not
 		void			notifyEventListeners(VESceneNode *pNode);
 

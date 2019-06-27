@@ -28,7 +28,7 @@ namespace ve {
 
 		m_pipelines.resize(1);
 		vh::vhPipeCreateGraphicsShadowPipeline(getRendererForwardPointer()->getDevice(),
-			"shader/Forward/Shadow/vert.spv",
+			"media/shader/Forward/Shadow/vert.spv",
 			getRendererForwardPointer()->getShadowMapExtent(),
 			m_pipelineLayout, 
 			getRendererForwardPointer()->getRenderPassShadow(),

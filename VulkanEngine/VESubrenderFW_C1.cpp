@@ -28,7 +28,7 @@ namespace ve {
 
 		m_pipelines.resize(1);
 		vh::vhPipeCreateGraphicsPipeline(getRendererForwardPointer()->getDevice(),
-		{ "shader/Forward/C1/vert.spv", "shader/Forward/C1/frag.spv" },
+		{ "media/shader/Forward/C1/vert.spv", "media/shader/Forward/C1/frag.spv" },
 			getRendererForwardPointer()->getSwapChainExtent(),
 			m_pipelineLayout, getRendererForwardPointer()->getRenderPass(),
 			{ },

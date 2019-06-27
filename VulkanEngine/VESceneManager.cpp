@@ -8,10 +8,10 @@
 
 #include "VEInclude.h"
 
-#define STANDARD_MESH_CUBE		"models/standard/cube.obj/cube"
-#define STANDARD_MESH_INVCUBE	"models/standard/invcube.obj/cube"
-#define STANDARD_MESH_PLANE		"models/standard/plane.obj/plane"
-#define STANDARD_MESH_SPHERE	"models/standard/sphere.obj/sphere"
+#define STANDARD_MESH_CUBE		"media/models/standard/cube.obj/cube"
+#define STANDARD_MESH_INVCUBE	"media/models/standard/invcube.obj/cube"
+#define STANDARD_MESH_PLANE		"media/models/standard/plane.obj/plane"
+#define STANDARD_MESH_SPHERE	"media/models/standard/sphere.obj/sphere"
 
 
 namespace ve {
@@ -65,10 +65,10 @@ namespace ve {
 		std::vector<VEMesh*> meshes;
 		std::vector<VEMaterial*> materials;
 
-		loadAssets("models/standard", "cube.obj", 0, meshes, materials);
-		loadAssets("models/standard", "invcube.obj", aiProcess_FlipWindingOrder, meshes, materials);
-		loadAssets("models/standard", "plane.obj", 0, meshes, materials);
-		loadAssets("models/standard", "sphere.obj", 0, meshes, materials);
+		loadAssets("media/models/standard", "cube.obj", 0, meshes, materials);
+		loadAssets("media/models/standard", "invcube.obj", aiProcess_FlipWindingOrder, meshes, materials);
+		loadAssets("media/models/standard", "plane.obj", 0, meshes, materials);
+		loadAssets("media/models/standard", "sphere.obj", 0, meshes, materials);
 
 		m_rootSceneNode = new VESceneNode("RootSceneNode");
 
@@ -560,8 +560,9 @@ namespace ve {
 	VEEntity *	VESceneManager::createSkyplane2(std::string entityName, std::string basedir, std::string texName, VESceneNode *parent) {
 
 		std::string filekey = basedir + "/" + texName;
-		VEMesh * pMesh = m_meshes[STANDARD_MESH_PLANE];
-
+		VEMesh * pMesh;
+		VECHECKPOINTER( pMesh = m_meshes[STANDARD_MESH_PLANE] );
+		
 		VEMaterial *pMat = nullptr;
 		if (m_materials.count(filekey) == 0) {
 			pMat = createMaterial2(filekey);
@@ -718,10 +719,16 @@ namespace ve {
 	void VESceneManager::updateSceneNodes(uint32_t imageIndex) {
 		std::lock_guard<std::mutex> lock(m_mutex);
 
-		m_lights.clear();
+		m_lights.clear();												//light vector will be created dynamically 
+
 		updateSceneNodes2(getRoot(), glm::mat4(1.0f), imageIndex);
 
-		for (auto list : m_memoryBlockMap) {
+		while (m_updateFutures.size() > 0) {							//gets all futures from the threads and waits for them
+			m_updateFutures.front().get();
+			m_updateFutures.pop();
+		}
+
+		for (auto list : m_memoryBlockMap) {							//update all UBO buffers, i.e. copy them to the GPU
 			vh::vhMemBlockUpdateBlockList(list.second, imageIndex);
 		}
 	}
@@ -745,14 +752,56 @@ namespace ve {
 
 		if (pNode->getNodeType() == VESceneNode::VE_NODE_TYPE_SCENEOBJECT &&
 			((VESceneObject*)pNode)->getObjectType() == VESceneObject::VE_OBJECT_TYPE_LIGHT) {
-			m_lights.push_back((VELight*)pNode);
+			m_lights.push_back((VELight*)pNode);				//put a light into the light vector
 		}
 
-		for (auto pChild : pNode->m_children) {
-			updateSceneNodes2(pChild, worldMatrix, imageIndex);	//update the children by giving them the current worldMatrix
-		}
+		if (pNode->m_children.size() > 0) {
+			ThreadPool *tp = getEnginePointer()->getThreadPool();
 
+			const uint32_t granularity = 200;
+			if (tp->threadCount() > 1 && pNode->m_children.size() > granularity) {
+				uint32_t numThreads = std::min((int) ( pNode->m_children.size() / granularity ), (int)tp->threadCount());
+				uint32_t numChildrenPerThread = (uint32_t)pNode->m_children.size() / numThreads;
+
+				uint32_t startIdx, endIdx;
+				for (uint32_t k = 0; k < numThreads; k++) {
+					startIdx = k*numChildrenPerThread;																			//start index for parallel run
+					endIdx = k == numThreads - 1 ? (uint32_t)pNode->m_children.size() - 1 : (k + 1)*numChildrenPerThread - 1;	//end index
+
+					auto future = tp->add( &VESceneManager::updateSceneNodes3, this, pNode->m_children, worldMatrix, startIdx, endIdx, imageIndex);	//add to threadpool
+					{
+						static std::mutex mutex;
+						std::lock_guard<std::mutex> lock(mutex);
+						m_updateFutures.push(std::move(future));	//add to list of futures, so main thread can wait for completion
+					}
+				}
+			}
+			else {
+				updateSceneNodes3(pNode->m_children, worldMatrix, 0, (uint32_t)pNode->m_children.size() - 1, imageIndex);	//do sequential update
+			}
+		}
 	}
+
+
+	/**
+	*
+	* \brief Update a list of nodes and all their children
+	*
+	* This function can be called in parallel on subparts of a children list
+	*
+	* \param[in] children Reference to a list of children
+	* \param[in] worldMatrix Parent world matrix for the children
+	* \param[in] startIdx Start index pointing to the child to start at in the children list
+	* \param[in] endIdx End index pointing to the child to end with in the children list
+	* \param[in] imageIndex Index of the swapchain image that is currently used.
+	*
+	*/
+	void VESceneManager::updateSceneNodes3( std::vector<VESceneNode*> &children, glm::mat4 worldMatrix, uint32_t startIdx, uint32_t endIdx, uint32_t imageIndex) {
+		for (uint32_t i = startIdx; i <= endIdx; i++) {
+			updateSceneNodes2(children[i], worldMatrix, imageIndex);
+		}
+	}
+
 
 
 	/**

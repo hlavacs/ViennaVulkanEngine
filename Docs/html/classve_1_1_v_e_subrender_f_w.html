@@ -307,11 +307,11 @@ Additional Inherited Members</h2></td></tr>
 </div><div class="memdoc">
 
 <p>Add some maps of an entity to the map list of this subrenderer. </p>
-<p>m_maps is a list of map lists. Each entity may need 1-N maps, like diffuse, normal, etc. m_maps thus has N entries, one for such a map type. m_map[0] might hold all diffuse maps. If a new entity is added, then its maps are just appended to the N lists. However, we have descriptor sets, each set having N bindings (one binding for each map type), each binding describing an array of e.g. K textures. So we break each list into chunks of size K, and bind each chunk to one descriptor. Variable offset denotes the start of such a chunk.</p>
+<p>m_maps is a list of map lists. Each entity may need 1-N maps, like diffuse, normal, etc. m_maps thus has N entries, one for such a map type. m_map[0] might hold all diffuse maps. m_map[1] might hold all normal maps. m_map[2] might hold all specular maps. etc. If a new entity is added, then its maps are just appended to the N lists. However, we have descriptor sets, each set having N slot bindings (one binding for each map type), each binding describing an array of e.g. K textures. So we break each list into chunks of size K, and bind each chunk to one descriptor. Variable offset denotes the start of such a chunk.</p>
 <dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
     <tr><td class="paramdir">[in]</td><td class="paramname">pEntity</td><td>Pointer to the entity </td></tr>
-    <tr><td class="paramdir">[in]</td><td class="paramname">newMaps</td><td>List of 1..N maps to be added to this subrenderer, e.g. {diffuse texture}, or {diffuse, normal} </td></tr>
+    <tr><td class="paramdir">[in]</td><td class="paramname">newMaps</td><td>List of 1..N maps to be added to this subrenderer, e.g. {diffuse texture}, or {diffuse tex, normal} </td></tr>
   </table>
   </dd>
 </dl>
@@ -777,7 +777,7 @@ Additional Inherited Members</h2></td></tr>
 </div><!-- contents -->
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>
-Generated on Tue Jun 18 2019 16:38:42 for Vienna Vulkan Engine by &#160;<a href="http://www.doxygen.org/index.html">
+Generated on Thu Jun 27 2019 15:47:26 for Vienna Vulkan Engine by &#160;<a href="http://www.doxygen.org/index.html">
 <img class="footer" src="doxygen.png" alt="doxygen"/>
 </a> 1.8.15
 </small></address>

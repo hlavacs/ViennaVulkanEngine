@@ -320,9 +320,9 @@ namespace ve {
 		static std::vector<std::future<void>> futures;
 		event.dt = dt;
 
-		if ( m_threadPool->threadCount()>1 && list->size()>200 ) {
-			int div = 100;
-			uint32_t numThreads =  std::min((int)list->size()/div, (int)m_threadPool->threadCount());
+		const uint32_t granularity = 200;
+		if ( m_threadPool->threadCount()>1 && list->size() > granularity) {
+			uint32_t numThreads =  std::min((int) (list->size()/ granularity), (int)m_threadPool->threadCount());
 			uint32_t numListenerPerThread = (uint32_t)list->size() / numThreads;
 			futures.resize(numThreads);
 

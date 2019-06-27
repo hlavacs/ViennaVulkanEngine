@@ -30,27 +30,31 @@ namespace ve {
 	class VERendererForward : public VERenderer {
 
 	public: 
+
+		///\brief One secondary command buffer and the pool that it came from
 		struct secondaryCmdBuf_t {
-			VkCommandBuffer buffer;
-			VkCommandPool pool;
-			secondaryCmdBuf_t & operator= (secondaryCmdBuf_t& right) {
+			VkCommandBuffer buffer;										///<Vulkan cmd buffer handle
+			VkCommandPool pool;											///<Vulkan cmd buffer pool handle
+			secondaryCmdBuf_t & operator= (secondaryCmdBuf_t& right) {	///<copy operator
 				buffer = right.buffer;
 				pool = right.pool;
 				return *this;
 			};
 		};
 
+		///\brief lists of secondary command buffers, one for the shadow pass, one for the light pass
 		struct secondaryCmdBufferLists_t {
-			std::vector<secondaryCmdBuf_t> shadowBuffers = {};
-			std::vector<secondaryCmdBuf_t> lightBuffers = {};
-			std::future<std::vector<secondaryCmdBuf_t>> shadowBuffersFutures = {};
-			std::future<std::vector<secondaryCmdBuf_t>> lightBuffersFutures = {};
+			std::vector<secondaryCmdBuf_t> shadowBuffers = {};						///<list of secondary command buffers for the shadow pass
+			std::vector<secondaryCmdBuf_t> lightBuffers = {};						///<list of secondary command buffers for the light pass
+			std::future<std::vector<secondaryCmdBuf_t>> shadowBuffersFutures = {};	///<futures to wait for if the buffers have been created in parallel
+			std::future<std::vector<secondaryCmdBuf_t>> lightBuffersFutures = {};	///<futures to wait for 
 		};
 
+		///\brief Shadow and light command buffers for one particular light
 		struct lightBufferLists_t {
-			VELight *pLight = nullptr;
-			bool	seenThisLight = false;
-			std::vector<secondaryCmdBufferLists_t> bufferLists = {};
+			VELight *pLight = nullptr;									///<Pointer to the light that this buffer list belongs to
+			bool	seenThisLight = false;								///<This light has been rendered, so you do not have to remove this cmd buffer list
+			std::vector<secondaryCmdBufferLists_t> bufferLists = {};	///<cmd buffer lists of this light
 		};
 
 	protected:
@@ -59,7 +63,7 @@ namespace ve {
 		std::vector<std::vector<std::future<secondaryCmdBuf_t>> > m_secondaryBuffersFutures = {};	///<secondary buffers for parallel recording
 		std::vector<std::vector<secondaryCmdBuf_t>> m_secondaryBuffers = {};	///<secondary buffers for parallel recording
 
-		std::map<VELight*, lightBufferLists_t> m_lightBufferLists;
+		std::map<VELight*, lightBufferLists_t> m_lightBufferLists;			///<each light has its own command buffer list
 
 		//per frame render resources
 		VkRenderPass				m_renderPassClear;					///<The first light render pass, clearing the framebuffers

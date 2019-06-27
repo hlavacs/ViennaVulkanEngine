@@ -425,6 +425,7 @@ namespace vh {
 	* \param[in] renderPass The render pass that should be begun
 	* \param[in] frameBuffer The framebuffer for the render pass
 	* \param[in] extent Extent of the framebuffer images
+	* \param[in] subPassContents Specifies whether cmd buffers are inline or use secondary bufers
 	* \returns VK_SUCCESS or a Vulkan error code
 	*
 	*/
@@ -455,6 +456,7 @@ namespace vh {
 	* \param[in] frameBuffer The framebuffer for the render pass
 	* \param[in] clearValues A list of clear values to clear render targets 
 	* \param[in] extent Extent of the framebuffer images
+	* \param[in] subPassContents Specifies whether cmd buffers are inline or use secondary bufers
 	* \returns VK_SUCCESS or a Vulkan error code
 	*
 	*/

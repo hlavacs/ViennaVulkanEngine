@@ -246,7 +246,7 @@ namespace ve {
 
 			m_numScreenshot++;
 
-			std::string name("screenshots/screenshot" + std::to_string(m_numScreenshot-1) + ".jpg");
+			std::string name("media/screenshots/screenshot" + std::to_string(m_numScreenshot-1) + ".jpg");
 			stbi_write_jpg(name.c_str(), extent.width, extent.height, 4, dataImage, 4 * extent.width);
 			delete[] dataImage;
 
@@ -280,7 +280,7 @@ namespace ve {
 				}
 			}
 
-			std::string name("screenshots/screenshot" + std::to_string(m_numScreenshot) + ".jpg");
+			std::string name("media/screenshots/screenshot" + std::to_string(m_numScreenshot) + ".jpg");
 			stbi_write_jpg(name.c_str(), extent.width, extent.height, 1, dataImage2, extent.width);
 			delete[] dataImage;
 			delete[] dataImage2;

@@ -206,8 +206,9 @@ namespace ve {
 	*
 	* m_maps is a list of map lists. Each entity may need 1-N maps, like diffuse, normal, etc.
 	* m_maps thus has N entries, one for such a map type. m_map[0] might hold all diffuse maps.
+	* m_map[1] might hold all normal maps. m_map[2] might hold all specular maps. etc.
 	* If a new entity is added, then its maps are just appended to the N lists.
-	* However, we have descriptor sets, each set having N bindings (one binding for each map type), 
+	* However, we have descriptor sets, each set having N slot bindings (one binding for each map type), 
 	* each binding describing an array of e.g. K textures.
 	* So we break each list into chunks of size K, and bind each chunk to one descriptor.
 	* Variable offset denotes the start of such a chunk.
@@ -227,9 +228,9 @@ namespace ve {
 												getRendererForwardPointer()->getDescriptorPool(),
 												m_descriptorSetsResources);
 
-			offset = (uint32_t)m_maps[0].size();												//number of maps of first type, e.g. number of diffuse maps
+			offset = (uint32_t)m_maps[0].size();												//number of maps of first bind slot, e.g. number of diffuse maps
 
-			for (uint32_t i = 0; i < m_maps.size(); i++) {										//go through all map types , e.g. first diffuse, then normal, then...
+			for (uint32_t i = 0; i < m_maps.size(); i++) {										//go through all map bind slots , e.g. first diffuse, then normal, then specular, then ...
 				m_maps[i].resize(offset + m_resourceArrayLength);								//make room for the new array elements
 				for (uint32_t j = offset; j < offset + m_resourceArrayLength; j++) 				//have to fill the whole new array, even if there is only one map yet
 					m_maps[i][j] = newMaps[i];													//fill the new array up with copies of the first elemenet

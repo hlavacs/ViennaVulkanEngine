@@ -260,12 +260,12 @@ void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="name
 <tr class="memitem:a869d9fac1760fdf3ca8b7abcc2c143e9"><td class="memItemLeft" align="right" valign="top">VkResult&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacevh.html#a869d9fac1760fdf3ca8b7abcc2c143e9">vhRenderUpdateDescriptorSetMaps</a> (VkDevice device, VkDescriptorSet descriptorSet, uint32_t binding, uint32_t offset, uint32_t descriptorCount, std::vector&lt; std::vector&lt; VkDescriptorImageInfo &gt;&gt; &amp;maps)</td></tr>
 <tr class="memdesc:a869d9fac1760fdf3ca8b7abcc2c143e9"><td class="mdescLeft">&#160;</td><td class="mdescRight">Update a descriptor set being composed of arrays of textures.  <a href="#a869d9fac1760fdf3ca8b7abcc2c143e9">More...</a><br /></td></tr>
 <tr class="separator:a869d9fac1760fdf3ca8b7abcc2c143e9"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:af55f8f528f60a2f23383168b87f19663"><td class="memItemLeft" align="right" valign="top">VkResult&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacevh.html#af55f8f528f60a2f23383168b87f19663">vhRenderBeginRenderPass</a> (VkCommandBuffer commandBuffer, VkRenderPass renderPass, VkFramebuffer frameBuffer, VkExtent2D extent)</td></tr>
-<tr class="memdesc:af55f8f528f60a2f23383168b87f19663"><td class="mdescLeft">&#160;</td><td class="mdescRight">Start rendering in a command buffer.  <a href="#af55f8f528f60a2f23383168b87f19663">More...</a><br /></td></tr>
-<tr class="separator:af55f8f528f60a2f23383168b87f19663"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a80b1190ad4afc68a8da89a60ed2c048a"><td class="memItemLeft" align="right" valign="top">VkResult&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacevh.html#a80b1190ad4afc68a8da89a60ed2c048a">vhRenderBeginRenderPass</a> (VkCommandBuffer commandBuffer, VkRenderPass renderPass, VkFramebuffer frameBuffer, std::vector&lt; VkClearValue &gt; &amp;clearValues, VkExtent2D extent)</td></tr>
-<tr class="memdesc:a80b1190ad4afc68a8da89a60ed2c048a"><td class="mdescLeft">&#160;</td><td class="mdescRight">Start rendering in a command buffer.  <a href="#a80b1190ad4afc68a8da89a60ed2c048a">More...</a><br /></td></tr>
-<tr class="separator:a80b1190ad4afc68a8da89a60ed2c048a"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:afbe67797af87d26e35dc90d6432a3168"><td class="memItemLeft" align="right" valign="top">VkResult&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacevh.html#afbe67797af87d26e35dc90d6432a3168">vhRenderBeginRenderPass</a> (VkCommandBuffer commandBuffer, VkRenderPass renderPass, VkFramebuffer frameBuffer, VkExtent2D extent, VkSubpassContents subPassContents)</td></tr>
+<tr class="memdesc:afbe67797af87d26e35dc90d6432a3168"><td class="mdescLeft">&#160;</td><td class="mdescRight">Start rendering in a command buffer.  <a href="#afbe67797af87d26e35dc90d6432a3168">More...</a><br /></td></tr>
+<tr class="separator:afbe67797af87d26e35dc90d6432a3168"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ae47e43e06e94906f31442d1546a6d3a7"><td class="memItemLeft" align="right" valign="top">VkResult&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacevh.html#ae47e43e06e94906f31442d1546a6d3a7">vhRenderBeginRenderPass</a> (VkCommandBuffer commandBuffer, VkRenderPass renderPass, VkFramebuffer frameBuffer, std::vector&lt; VkClearValue &gt; &amp;clearValues, VkExtent2D extent, VkSubpassContents subPassContents)</td></tr>
+<tr class="memdesc:ae47e43e06e94906f31442d1546a6d3a7"><td class="mdescLeft">&#160;</td><td class="mdescRight">Start rendering in a command buffer.  <a href="#ae47e43e06e94906f31442d1546a6d3a7">More...</a><br /></td></tr>
+<tr class="separator:ae47e43e06e94906f31442d1546a6d3a7"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a4390e33b2435fdbf76124fdafe6fba2a"><td class="memItemLeft" align="right" valign="top">VkResult&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacevh.html#a4390e33b2435fdbf76124fdafe6fba2a">vhRenderPresentResult</a> (VkQueue presentQueue, VkSwapchainKHR swapChain, uint32_t imageIndex, VkSemaphore signalSemaphore)</td></tr>
 <tr class="memdesc:a4390e33b2435fdbf76124fdafe6fba2a"><td class="mdescLeft">&#160;</td><td class="mdescRight">Present the result of a render operation to a window.  <a href="#a4390e33b2435fdbf76124fdafe6fba2a">More...</a><br /></td></tr>
 <tr class="separator:a4390e33b2435fdbf76124fdafe6fba2a"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -3786,8 +3786,8 @@ void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="name
 
 </div>
 </div>
-<a id="af55f8f528f60a2f23383168b87f19663"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#af55f8f528f60a2f23383168b87f19663">&#9670;&nbsp;</a></span>vhRenderBeginRenderPass() <span class="overload">[1/2]</span></h2>
+<a id="afbe67797af87d26e35dc90d6432a3168"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#afbe67797af87d26e35dc90d6432a3168">&#9670;&nbsp;</a></span>vhRenderBeginRenderPass() <span class="overload">[1/2]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -3814,7 +3814,13 @@ void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="name
           <td class="paramkey"></td>
           <td></td>
           <td class="paramtype">VkExtent2D&#160;</td>
-          <td class="paramname"><em>extent</em>&#160;</td>
+          <td class="paramname"><em>extent</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">VkSubpassContents&#160;</td>
+          <td class="paramname"><em>subPassContents</em>&#160;</td>
         </tr>
         <tr>
           <td></td>
@@ -3831,6 +3837,7 @@ void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="name
     <tr><td class="paramdir">[in]</td><td class="paramname">renderPass</td><td>The render pass that should be begun </td></tr>
     <tr><td class="paramdir">[in]</td><td class="paramname">frameBuffer</td><td>The framebuffer for the render pass </td></tr>
     <tr><td class="paramdir">[in]</td><td class="paramname">extent</td><td>Extent of the framebuffer images </td></tr>
+    <tr><td class="paramdir">[in]</td><td class="paramname">subPassContents</td><td>Specifies whether cmd buffers are inline or use secondary bufers </td></tr>
   </table>
   </dd>
 </dl>
@@ -3838,8 +3845,8 @@ void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="name
 
 </div>
 </div>
-<a id="a80b1190ad4afc68a8da89a60ed2c048a"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a80b1190ad4afc68a8da89a60ed2c048a">&#9670;&nbsp;</a></span>vhRenderBeginRenderPass() <span class="overload">[2/2]</span></h2>
+<a id="ae47e43e06e94906f31442d1546a6d3a7"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ae47e43e06e94906f31442d1546a6d3a7">&#9670;&nbsp;</a></span>vhRenderBeginRenderPass() <span class="overload">[2/2]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -3872,7 +3879,13 @@ void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="name
           <td class="paramkey"></td>
           <td></td>
           <td class="paramtype">VkExtent2D&#160;</td>
-          <td class="paramname"><em>extent</em>&#160;</td>
+          <td class="paramname"><em>extent</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">VkSubpassContents&#160;</td>
+          <td class="paramname"><em>subPassContents</em>&#160;</td>
         </tr>
         <tr>
           <td></td>
@@ -3890,6 +3903,7 @@ void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="name
     <tr><td class="paramdir">[in]</td><td class="paramname">frameBuffer</td><td>The framebuffer for the render pass </td></tr>
     <tr><td class="paramdir">[in]</td><td class="paramname">clearValues</td><td>A list of clear values to clear render targets </td></tr>
     <tr><td class="paramdir">[in]</td><td class="paramname">extent</td><td>Extent of the framebuffer images </td></tr>
+    <tr><td class="paramdir">[in]</td><td class="paramname">subPassContents</td><td>Specifies whether cmd buffers are inline or use secondary bufers </td></tr>
   </table>
   </dd>
 </dl>
@@ -4567,7 +4581,7 @@ void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="name
 </div><!-- contents -->
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>
-Generated on Tue Jun 18 2019 16:38:43 for Vienna Vulkan Engine by &#160;<a href="http://www.doxygen.org/index.html">
+Generated on Thu Jun 27 2019 15:47:26 for Vienna Vulkan Engine by &#160;<a href="http://www.doxygen.org/index.html">
 <img class="footer" src="doxygen.png" alt="doxygen"/>
 </a> 1.8.15
 </small></address>

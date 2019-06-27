@@ -241,6 +241,9 @@ void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="clas
 <tr class="memitem:aabcd94dbc425dd23d1c6b696c5c0fd16"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_scene_manager.html#aabcd94dbc425dd23d1c6b696c5c0fd16">updateSceneNodes2</a> (<a class="el" href="classve_1_1_v_e_scene_node.html">VESceneNode</a> *pNode, glm::mat4 worldMatrix, uint32_t imageIndex)</td></tr>
 <tr class="memdesc:aabcd94dbc425dd23d1c6b696c5c0fd16"><td class="mdescLeft">&#160;</td><td class="mdescRight">Update this node and all its children.  <a href="#aabcd94dbc425dd23d1c6b696c5c0fd16">More...</a><br /></td></tr>
 <tr class="separator:aabcd94dbc425dd23d1c6b696c5c0fd16"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a26e02f9a8f6b823aa020e686f682b196"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_scene_manager.html#a26e02f9a8f6b823aa020e686f682b196">updateSceneNodes3</a> (std::vector&lt; <a class="el" href="classve_1_1_v_e_scene_node.html">VESceneNode</a> * &gt; &amp;children, glm::mat4 worldMatrix, uint32_t startIdx, uint32_t endIdx, uint32_t imageIndex)</td></tr>
+<tr class="memdesc:a26e02f9a8f6b823aa020e686f682b196"><td class="mdescLeft">&#160;</td><td class="mdescRight">Update a list of nodes and all their children.  <a href="#a26e02f9a8f6b823aa020e686f682b196">More...</a><br /></td></tr>
+<tr class="separator:a26e02f9a8f6b823aa020e686f682b196"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a7a0e2b8122dc9e89dc62e24fec38b3e6"><td class="memItemLeft" align="right" valign="top"><a id="a7a0e2b8122dc9e89dc62e24fec38b3e6"></a>
 void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_scene_manager.html#a7a0e2b8122dc9e89dc62e24fec38b3e6">setVisibility2</a> (<a class="el" href="classve_1_1_v_e_scene_node.html">VESceneNode</a> *pNode, bool flag)</td></tr>
 <tr class="memdesc:a7a0e2b8122dc9e89dc62e24fec38b3e6"><td class="mdescLeft">&#160;</td><td class="mdescRight">Set the visibility of a whole subtree. <br /></td></tr>
@@ -279,6 +282,10 @@ std::vector&lt; <a class="el" href="classve_1_1_v_e_scene_node.html">VESceneNode
 std::map&lt; <a class="el" href="classve_1_1_v_e_scene_object.html#a01743df3f6eb6b2edfc3940860e90d99">VESceneObject::veObjectType</a>, std::vector&lt; <a class="el" href="structvh_1_1vh_memory_block.html">vh::vhMemoryBlock</a> * &gt; &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_scene_manager.html#a7c9c3dc020e29b827005e3a676e7112d">m_memoryBlockMap</a></td></tr>
 <tr class="memdesc:a7c9c3dc020e29b827005e3a676e7112d"><td class="mdescLeft">&#160;</td><td class="mdescRight">memory for the UBOs of the entities <br /></td></tr>
 <tr class="separator:a7c9c3dc020e29b827005e3a676e7112d"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aaf2d6291204fad10a21c930485baadf0"><td class="memItemLeft" align="right" valign="top"><a id="aaf2d6291204fad10a21c930485baadf0"></a>
+std::queue&lt; std::future&lt; void &gt; &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_scene_manager.html#aaf2d6291204fad10a21c930485baadf0">m_updateFutures</a></td></tr>
+<tr class="memdesc:aaf2d6291204fad10a21c930485baadf0"><td class="mdescLeft">&#160;</td><td class="mdescRight">we might do UBO updates in parallel, these are the futures to wait for <br /></td></tr>
+<tr class="separator:aaf2d6291204fad10a21c930485baadf0"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ae3fbd394a2d6ff4797ecff2921d6cbcb"><td class="memItemLeft" align="right" valign="top"><a id="ae3fbd394a2d6ff4797ecff2921d6cbcb"></a>
 <a class="el" href="classve_1_1_v_e_camera.html">VECamera</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classve_1_1_v_e_scene_manager.html#ae3fbd394a2d6ff4797ecff2921d6cbcb">m_camera</a> = nullptr</td></tr>
 <tr class="memdesc:ae3fbd394a2d6ff4797ecff2921d6cbcb"><td class="mdescLeft">&#160;</td><td class="mdescRight">Ptr to the current camera. <br /></td></tr>
@@ -2057,6 +2064,73 @@ bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="clas
 
 </div>
 </div>
+<a id="a26e02f9a8f6b823aa020e686f682b196"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a26e02f9a8f6b823aa020e686f682b196">&#9670;&nbsp;</a></span>updateSceneNodes3()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">void ve::VESceneManager::updateSceneNodes3 </td>
+          <td>(</td>
+          <td class="paramtype">std::vector&lt; <a class="el" href="classve_1_1_v_e_scene_node.html">VESceneNode</a> * &gt; &amp;&#160;</td>
+          <td class="paramname"><em>children</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">glm::mat4&#160;</td>
+          <td class="paramname"><em>worldMatrix</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">uint32_t&#160;</td>
+          <td class="paramname"><em>startIdx</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">uint32_t&#160;</td>
+          <td class="paramname"><em>endIdx</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">uint32_t&#160;</td>
+          <td class="paramname"><em>imageIndex</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">protected</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Update a list of nodes and all their children. </p>
+<p>This function can be called in parallel on subparts of a children list</p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramdir">[in]</td><td class="paramname">children</td><td>Reference to a list of children </td></tr>
+    <tr><td class="paramdir">[in]</td><td class="paramname">worldMatrix</td><td>Parent world matrix for the children </td></tr>
+    <tr><td class="paramdir">[in]</td><td class="paramname">startIdx</td><td>Start index pointing to the child to start at in the children list </td></tr>
+    <tr><td class="paramdir">[in]</td><td class="paramname">endIdx</td><td>End index pointing to the child to end with in the children list </td></tr>
+    <tr><td class="paramdir">[in]</td><td class="paramname">imageIndex</td><td>Index of the swapchain image that is currently used. </td></tr>
+  </table>
+  </dd>
+</dl>
+
+</div>
+</div>
 <hr/>The documentation for this class was generated from the following files:<ul>
 <li><a class="el" href="_v_e_scene_manager_8h_source.html">VESceneManager.h</a></li>
 <li>VESceneManager.cpp</li>
@@ -2064,7 +2138,7 @@ bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="clas
 </div><!-- contents -->
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>
-Generated on Tue Jun 18 2019 16:38:42 for Vienna Vulkan Engine by &#160;<a href="http://www.doxygen.org/index.html">
+Generated on Thu Jun 27 2019 15:47:26 for Vienna Vulkan Engine by &#160;<a href="http://www.doxygen.org/index.html">
 <img class="footer" src="doxygen.png" alt="doxygen"/>
 </a> 1.8.15
 </small></address>
