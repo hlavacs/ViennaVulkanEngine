@@ -42,8 +42,9 @@ namespace ve {
 			};
 		};
 
-		///\brief lists of secondary command buffers, one for the shadow pass, one for the light pass
-		struct secondaryCmdBufferLists_t {
+
+		///\brief Shadow and light command buffers for one particular light
+		struct secondaryBufferLists_t {
 			std::vector<secondaryCmdBuf_t> shadowBuffers = {};						///<list of secondary command buffers for the shadow pass
 			std::vector<secondaryCmdBuf_t> lightBuffers = {};						///<list of secondary command buffers for the light pass
 			std::future<std::vector<secondaryCmdBuf_t>> shadowBuffersFutures = {};	///<futures to wait for if the buffers have been created in parallel
@@ -52,9 +53,8 @@ namespace ve {
 
 		///\brief Shadow and light command buffers for one particular light
 		struct lightBufferLists_t {
-			VELight *pLight = nullptr;									///<Pointer to the light that this buffer list belongs to
 			bool	seenThisLight = false;								///<This light has been rendered, so you do not have to remove this cmd buffer list
-			std::vector<secondaryCmdBufferLists_t> bufferLists = {};	///<cmd buffer lists of this light
+			std::vector<secondaryBufferLists_t> lightLists;				///<One list for each image in the swap chain
 		};
 
 	protected:
@@ -63,7 +63,7 @@ namespace ve {
 		std::vector<std::vector<std::future<secondaryCmdBuf_t>> > m_secondaryBuffersFutures = {};	///<secondary buffers for parallel recording
 		std::vector<std::vector<secondaryCmdBuf_t>> m_secondaryBuffers = {};	///<secondary buffers for parallel recording
 
-		std::map<VELight*, lightBufferLists_t> m_lightBufferLists;		///<each light has its own command buffer list
+		std::map<VELight*, lightBufferLists_t> m_lightBufferLists;		///<each light has its own command buffer list, one for each image in the swap chain
 
 		//per frame render resources
 		VkRenderPass				m_renderPassClear;					///<The first light render pass, clearing the framebuffers
@@ -96,6 +96,20 @@ namespace ve {
 		virtual void initRenderer();				//init the renderer
 		virtual void createSubrenderers();			//create the subrenderers
 		virtual void recordCmdBuffers();			//record the command buffers
+
+		void recordCmdBuffers2();
+		secondaryCmdBuf_t recordRenderpass2(VkRenderPass *pRenderPass,
+											std::vector<VESubrender*> subRenderers,
+											VkFramebuffer *pFrameBuffer,
+											uint32_t imageIndex, uint32_t numPass,
+											VECamera *pCamera, VELight *pLight,
+											std::vector<VkDescriptorSet> descriptorSets);
+		void VERendererForward::prepareRecording();
+		void VERendererForward::recordSecondaryBuffers();
+		void VERendererForward::recordSecondaryBuffersForLight( VELight *Light);
+		void VERendererForward::recordPrimaryBuffers();
+		void VERendererForward::afterRecordingSecondaryBuffers();
+
 		virtual void drawFrame();					//draw one frame
 		virtual void prepareOverlay();				//prepare to draw the overlay
 		virtual void drawOverlay();					//Draw the overlay (GUI)

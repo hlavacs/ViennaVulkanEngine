@@ -518,6 +518,101 @@ namespace ve {
 	}
 
 
+	//---------------------------------------------------------------------------------------------------------------
+
+	VERendererForward::secondaryCmdBuf_t VERendererForward::recordRenderpass2(VkRenderPass *pRenderPass,
+		std::vector<VESubrender*> subRenderers,
+		VkFramebuffer *pFrameBuffer,
+		uint32_t imageIndex, uint32_t numPass,
+		VECamera *pCamera, VELight *pLight,
+		std::vector<VkDescriptorSet> descriptorSets) {
+
+
+	}
+
+
+
+	void VERendererForward::prepareRecording() {
+		VECamera *pCamera;
+		VECHECKPOINTER(pCamera = getSceneManagerPointer()->getCamera());
+		pCamera->setExtent(getWindowPointer()->getExtent());
+
+		std::map<VELight*, lightBufferLists_t>::iterator it;
+		for (it = m_lightBufferLists.begin(); it != m_lightBufferLists.end(); it++) {
+			it->second.seenThisLight = false;
+
+			std::vector<secondaryCmdBuf_t> &lightBuffers = it->second.lightLists[m_imageIndex].lightBuffers;
+
+			for (uint32_t i = 0; i < lightBuffers.size(); i++) {
+				vkFreeCommandBuffers(m_device,
+					lightBuffers[i].pool,
+					1,
+					&(lightBuffers[i].buffer));
+			}
+		}
+	}
+
+
+	void VERendererForward::recordSecondaryBuffers() {
+		for (uint32_t i = 0; i < getSceneManagerPointer()->getLights().size(); i++) {
+			VELight * pLight = getSceneManagerPointer()->getLights()[i];
+			recordSecondaryBuffersForLight(pLight);
+		}
+	}
+
+
+	void VERendererForward::recordSecondaryBuffersForLight( VELight *pLight ) {
+
+
+		if (m_lightBufferLists.count(pLight) > 0) {
+
+		}
+		else {
+
+		}
+
+		ThreadPool *tp = getEnginePointer()->getThreadPool();
+
+
+
+		m_lightBufferLists[pLight].seenThisLight = true;
+
+
+	}
+
+
+	void VERendererForward::afterRecordingSecondaryBuffers() {
+
+		std::vector<VELight*> deleteList = {};
+
+		std::map<VELight*, lightBufferLists_t>::iterator it;
+		for (it = m_lightBufferLists.begin(); it != m_lightBufferLists.end(); it++) {
+			if (!it->second.seenThisLight) {
+				deleteList.push_back(it->first);
+			}
+		}
+
+		for (auto pLight : deleteList) {
+			m_lightBufferLists.erase(it->first);
+		}
+
+	}
+
+
+	void VERendererForward::recordPrimaryBuffers() {
+
+	}
+
+
+
+
+
+	void VERendererForward::recordCmdBuffers2() {
+		prepareRecording();
+		recordSecondaryBuffers();
+		afterRecordingSecondaryBuffers();
+		recordPrimaryBuffers();
+	}
 
 
 
