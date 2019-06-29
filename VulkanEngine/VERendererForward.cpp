@@ -43,8 +43,11 @@ namespace ve {
 		vh::vhDevPickPhysicalDevice(getEnginePointer()->getInstance(), m_surface, requiredDeviceExtensions, 
 									&m_physicalDevice, &m_deviceFeatures, &m_deviceLimits );
 		
-		vh::vhDevCreateLogicalDevice(m_physicalDevice, m_surface, requiredDeviceExtensions, requiredValidationLayers,
-									&m_device, &m_graphicsQueue, &m_presentQueue);
+		if (vh::vhDevCreateLogicalDevice(m_physicalDevice, m_surface, requiredDeviceExtensions, requiredValidationLayers,
+			&m_device, &m_graphicsQueue, &m_presentQueue) != VK_SUCCESS) {
+			assert(false);
+			exit(1);
+		}
 
 		vh::vhMemCreateVMAAllocator(m_physicalDevice, m_device, m_vmaAllocator);
 
@@ -520,15 +523,15 @@ namespace ve {
 
 	//---------------------------------------------------------------------------------------------------------------
 
-	VERendererForward::secondaryCmdBuf_t VERendererForward::recordRenderpass2(VkRenderPass *pRenderPass,
+	/*VERendererForward::secondaryCmdBuf_t VERendererForward::recordRenderpass2(VkRenderPass *pRenderPass,
 		std::vector<VESubrender*> subRenderers,
 		VkFramebuffer *pFrameBuffer,
 		uint32_t imageIndex, uint32_t numPass,
 		VECamera *pCamera, VELight *pLight,
 		std::vector<VkDescriptorSet> descriptorSets) {
 
-
-	}
+		return 0;
+	}*/
 
 
 

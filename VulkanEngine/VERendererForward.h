@@ -98,12 +98,13 @@ namespace ve {
 		virtual void recordCmdBuffers();			//record the command buffers
 
 		void recordCmdBuffers2();
-		secondaryCmdBuf_t recordRenderpass2(VkRenderPass *pRenderPass,
+		/*secondaryCmdBuf_t recordRenderpass2(VkRenderPass *pRenderPass,
 											std::vector<VESubrender*> subRenderers,
 											VkFramebuffer *pFrameBuffer,
 											uint32_t imageIndex, uint32_t numPass,
 											VECamera *pCamera, VELight *pLight,
-											std::vector<VkDescriptorSet> descriptorSets);
+											std::vector<VkDescriptorSet> descriptorSets);*/
+
 		void VERendererForward::prepareRecording();
 		void VERendererForward::recordSecondaryBuffers();
 		void VERendererForward::recordSecondaryBuffersForLight( VELight *Light);
