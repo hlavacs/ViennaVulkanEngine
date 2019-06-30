@@ -20,7 +20,7 @@ namespace ve {
 	public:
 		///Constructor
 		RotatorListener(std::string name, VESceneNode *pObject, float speed, glm::vec3 axis) :
-			VEEventListener(name), m_pObject(pObject), m_speed(speed), m_axis(axis) {};
+			VEEventListener(name), m_pObject(pObject), m_speed(speed), m_axis(glm::normalize(axis)) {};
 
 		void onFrameStarted(veEvent event) {
 			glm::mat4 rot = glm::rotate( glm::mat4(1.0f), m_speed*(float)event.dt, m_axis );
@@ -164,7 +164,11 @@ namespace ve {
 			float stride = 300.0f;
 			static std::default_random_engine e{12345};
 			static std::uniform_real_distribution<> d{ 1.0f, stride }; 
+			static std::uniform_real_distribution<> r{ -1.0f, 1.0f };
+			static std::uniform_real_distribution<> v{ 0.1f, 5.0f };
 			static std::uniform_real_distribution<> dur{ 900.3f, 1000.0f };
+
+
 
 			VEMesh *pMesh;
 			VECHECKPOINTER( pMesh = getSceneManagerPointer()->getMesh("media/models/test/crate0/cube.obj/cube") );
@@ -173,12 +177,15 @@ namespace ve {
 			VECHECKPOINTER( pMat = getSceneManagerPointer()->getMaterial("media/models/test/crate0/cube.obj/cube") );
 
 			for (uint32_t i = 0; i < n; i++) {		
-				VEEntity *e2;
-				VECHECKPOINTER( e2 = getSceneManagerPointer()->createEntity("The Cube" + std::to_string(i), pMesh, pMat, parent ) );
+				VESceneNode *pNode;
+				VECHECKPOINTER( pNode = getSceneManagerPointer()->createSceneNode("The Node" + std::to_string(i), parent) );
+				pNode->setTransform(glm::translate(glm::mat4(1.0f), glm::vec3( d(e) - stride/2.0f, d(e)/2.0f, d(e) - stride/2.0f)));
+				registerEventListener( new RotatorListener("RotatorListener" + std::to_string(i), pNode, 0.01f, glm::vec3(0.0f, 1.0f, 0.0f)), { veEvent::VE_EVENT_FRAME_STARTED, veEvent::VE_EVENT_DELETE_NODE } );
 
-				e2->setTransform(glm::translate(glm::mat4(1.0f), glm::vec3( d(e) - stride/2.0f, d(e)/2.0f, d(e) - stride/2.0f)));
-				registerEventListener( new RotatorListener("RotatorListener" + std::to_string(i), e2, 0.01f, glm::vec3(0.0f, 1.0f, 0.0f)), { veEvent::VE_EVENT_FRAME_STARTED, veEvent::VE_EVENT_DELETE_NODE } );
-				registerEventListener( new BlinkListener("BlinkListener" + std::to_string(i), e2, dur(e) ), { veEvent::VE_EVENT_FRAME_STARTED, veEvent::VE_EVENT_DELETE_NODE });
+				VEEntity *e2;
+				VECHECKPOINTER( e2 = getSceneManagerPointer()->createEntity("The Cube" + std::to_string(i), pMesh, pMat, pNode ) );
+				registerEventListener(new RotatorListener("RotatorListener2" + std::to_string(i), e2, v(e), glm::vec3(r(e), r(e), r(e))), { veEvent::VE_EVENT_FRAME_STARTED, veEvent::VE_EVENT_DELETE_NODE });
+				//registerEventListener( new BlinkListener("BlinkListener" + std::to_string(i), e2, dur(e) ), { veEvent::VE_EVENT_FRAME_STARTED, veEvent::VE_EVENT_DELETE_NODE });
 			}
 
 		}
