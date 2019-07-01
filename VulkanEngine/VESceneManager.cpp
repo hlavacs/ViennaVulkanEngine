@@ -642,7 +642,7 @@ namespace ve {
 		sp1->m_castsShadow = false;
 
 		sceneGraphChanged2();
-		return parent;
+		return skybox;
 	}
 
 
