@@ -168,8 +168,6 @@ namespace ve {
 			static std::uniform_real_distribution<> v{ 0.1f, 5.0f };
 			static std::uniform_real_distribution<> dur{ 900.3f, 1000.0f };
 
-
-
 			VEMesh *pMesh;
 			VECHECKPOINTER( pMesh = getSceneManagerPointer()->getMesh("media/models/test/crate0/cube.obj/cube") );
 

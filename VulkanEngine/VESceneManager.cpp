@@ -865,9 +865,16 @@ namespace ve {
 		VESceneNode * pNode = m_sceneNodes[name];							//pointer to the node
 
 		if (pNode->hasParent()) pNode->getParent()->removeChild(pNode);		//if it has a parent, remove from the children list
-		m_deletedSceneNodes.push_back(pNode);								//push it to the deleted scene nodes list
-		setVisibility2(pNode, false);										//make it invisible
-		notifyEventListeners(pNode);										//notify event listeners that this scene node will be deleted soon
+		setVisibility2(pNode, false);										//make it and all children invisible
+
+		std::vector<std::string> namelist;	//first create a list of all child names
+		createSceneNodeList2(pNode, namelist);
+
+		for (auto nodename : namelist) {
+			m_deletedSceneNodes.push_back(pNode);								//push it to the deleted scene nodes list
+			notifyEventListeners(pNode);										//notify event listeners that this scene node will be deleted soon
+		}
+
 		sceneGraphChanged2();												//make scene graph update
 	}
 
