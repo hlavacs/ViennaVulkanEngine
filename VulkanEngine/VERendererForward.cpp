@@ -544,47 +544,30 @@ namespace ve {
 		for (it = m_lightBufferLists.begin(); it != m_lightBufferLists.end(); it++) {
 			it->second.seenThisLight = false;
 
-			std::vector<secondaryCmdBuf_t> &lightBuffers = it->second.lightLists[m_imageIndex].lightBuffers;
-
-			for (uint32_t i = 0; i < lightBuffers.size(); i++) {
-				vkFreeCommandBuffers(m_device,
-					lightBuffers[i].pool,
-					1,
-					&(lightBuffers[i].buffer));
-			}
+			it->second.lightLists[m_imageIndex].lightBufferFutures.clear();
+			it->second.lightLists[m_imageIndex].lightBufferFutures.clear();
 		}
 	}
 
 
 	void VERendererForward::recordSecondaryBuffers() {
+
 		for (uint32_t i = 0; i < getSceneManagerPointer()->getLights().size(); i++) {
 			VELight * pLight = getSceneManagerPointer()->getLights()[i];
-			recordSecondaryBuffersForLight(pLight);
-		}
-	}
-
-
-	void VERendererForward::recordSecondaryBuffersForLight( VELight *pLight ) {
-
-
-		if (m_lightBufferLists.count(pLight) > 0) {
-
-		}
-		else {
-
+			recordSecondaryBuffersForLight(pLight, i);
 		}
 
-		ThreadPool *tp = getEnginePointer()->getThreadPool();
+		//------------------------------------------------------------------------------------------
+		//wait for all threads to finish and copy secondary command buffers into the vector
+
+		m_secondaryBuffers[m_imageIndex].resize(m_secondaryBuffersFutures[m_imageIndex].size());
+		for (uint32_t i = 0; i < m_secondaryBuffersFutures[m_imageIndex].size(); i++) {
+			m_secondaryBuffers[m_imageIndex][i] = m_secondaryBuffersFutures[m_imageIndex][i].get();
+		}
 
 
-
-		m_lightBufferLists[pLight].seenThisLight = true;
-
-
-	}
-
-
-	void VERendererForward::afterRecordingSecondaryBuffers() {
+		//------------------------------------------------------------------------------------------
+		//wait for all threads to finish and copy secondary command buffers into the vector
 
 		std::vector<VELight*> deleteList = {};
 
@@ -596,24 +579,116 @@ namespace ve {
 		}
 
 		for (auto pLight : deleteList) {
+			//TODO release secondary cmd buffers
 			m_lightBufferLists.erase(it->first);
 		}
 
 	}
 
 
-	void VERendererForward::recordPrimaryBuffers() {
+	void VERendererForward::recordSecondaryBuffersForLight( VELight *pLight, uint32_t numPass ) {
+		VECamera *pCamera;
+		VECHECKPOINTER(pCamera = getSceneManagerPointer()->getCamera());
 
+		if (m_lightBufferLists.count(pLight) > 0) {
+
+		}
+		else {
+
+		}
+
+		ThreadPool *tp = getEnginePointer()->getThreadPool();
+
+		//-----------------------------------------------------------------------------------------
+		//shadow passes
+
+		for (unsigned j = 0; j < pLight->m_shadowCameras.size(); j++) {
+			std::vector<VkDescriptorSet> empty = {};
+			std::vector<VESubrender*> subrender = { m_subrenderShadow };
+
+			auto future = tp->add(&VERendererForward::recordRenderpass, this, &m_renderPassShadow, subrender,
+				&m_shadowFramebuffers[m_imageIndex][j],
+				m_imageIndex, numPass, pLight->m_shadowCameras[j],
+				pLight, empty);
+
+			m_lightBufferLists[pLight].lightLists[m_imageIndex].shadowBufferFutures.push_back( std::move(future) );
+		}
+
+		//-----------------------------------------------------------------------------------------
+		//light pass
+
+		auto future = tp->add(&VERendererForward::recordRenderpass, this, &(numPass == 0 ? m_renderPassClear : m_renderPassLoad), m_subrenderers,
+			&m_swapChainFramebuffers[m_imageIndex],
+			m_imageIndex, numPass, pCamera, pLight, m_descriptorSetsShadow);
+
+		m_lightBufferLists[pLight].lightLists[m_imageIndex].lightBufferFutures.push_back( std::move(future) );
+
+		m_lightBufferLists[pLight].seenThisLight = true;
 	}
 
 
 
+	void VERendererForward::recordPrimaryBuffers() {
+
+		vkFreeCommandBuffers(m_device, m_commandPool, 1, &m_commandBuffers[m_imageIndex]);
+		m_commandBuffers[m_imageIndex] = VK_NULL_HANDLE;
+
+		//-----------------------------------------------------------------------------------------
+		//set clear values for shadow and light passes
+
+		std::vector<VkClearValue> clearValuesShadow = {};	//shadow map should be cleared every time
+		VkClearValue cv;
+		cv.depthStencil = { 1.0f, 0 };
+		clearValuesShadow.push_back(cv);
+
+		std::vector<VkClearValue> clearValuesLight = {};	//render target and depth buffer should be cleared only first time
+		VkClearValue cv1, cv2;
+		cv1.color = { 0.0f, 0.0f, 0.0f, 1.0f };
+		clearValuesLight.push_back(cv1);
+		cv2.depthStencil = { 1.0f, 0 };
+		clearValuesLight.push_back(cv2);
 
 
+		//-----------------------------------------------------------------------------------------
+		//create a new primary command buffer and record all secondary buffers into it
+
+		vh::vhCmdCreateCommandBuffers(m_device, m_commandPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY,	1, &m_commandBuffers[m_imageIndex]);
+
+		vh::vhCmdBeginCommandBuffer(m_device, m_commandBuffers[m_imageIndex], (VkCommandBufferUsageFlagBits)0);
+
+		uint32_t bufferIdx = 0;
+		for (uint32_t i = 0; i < getSceneManagerPointer()->getLights().size(); i++) {
+
+			VELight * pLight = getSceneManagerPointer()->getLights()[i];
+			secondaryBufferLists_t &lightList = m_lightBufferLists[pLight].lightLists[m_imageIndex];
+
+			for (uint32_t j = 0; j < pLight->m_shadowCameras.size(); j++) {
+				vh::vhRenderBeginRenderPass(m_commandBuffers[m_imageIndex], m_renderPassShadow, m_shadowFramebuffers[m_imageIndex][j], clearValuesShadow, m_shadowMaps[0][j]->m_extent, VK_SUBPASS_CONTENTS_SECONDARY_COMMAND_BUFFERS);
+				for (auto secBuf : lightList.shadowBuffers) {
+					vkCmdExecuteCommands(m_commandBuffers[m_imageIndex], 1, &secBuf.buffer);
+				}
+				vkCmdEndRenderPass(m_commandBuffers[m_imageIndex]);
+			}
+
+			vh::vhRenderBeginRenderPass(m_commandBuffers[m_imageIndex], i == 0 ? m_renderPassClear : m_renderPassLoad, m_swapChainFramebuffers[m_imageIndex], clearValuesLight, m_swapChainExtent, VK_SUBPASS_CONTENTS_SECONDARY_COMMAND_BUFFERS);
+			for (auto secBuf : lightList.lightBuffers) {
+				vkCmdExecuteCommands(m_commandBuffers[m_imageIndex], 1, &secBuf.buffer);
+			}
+			vkCmdEndRenderPass(m_commandBuffers[m_imageIndex]);
+
+			clearValuesLight.clear();		//since we blend the images onto each other, do not clear them for passes 2 and further
+		}
+
+		vkEndCommandBuffer(m_commandBuffers[m_imageIndex]);
+
+		m_overlaySemaphores[m_currentFrame] = m_renderFinishedSemaphores[m_currentFrame];
+
+	}
+
+	
 	void VERendererForward::recordCmdBuffers2() {
 		prepareRecording();
 		recordSecondaryBuffers();
-		afterRecordingSecondaryBuffers();
 		recordPrimaryBuffers();
 	}
 

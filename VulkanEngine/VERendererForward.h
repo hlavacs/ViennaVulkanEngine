@@ -47,8 +47,8 @@ namespace ve {
 		struct secondaryBufferLists_t {
 			std::vector<secondaryCmdBuf_t> shadowBuffers = {};						///<list of secondary command buffers for the shadow pass
 			std::vector<secondaryCmdBuf_t> lightBuffers = {};						///<list of secondary command buffers for the light pass
-			std::future<std::vector<secondaryCmdBuf_t>> shadowBuffersFutures = {};	///<futures to wait for if the buffers have been created in parallel
-			std::future<std::vector<secondaryCmdBuf_t>> lightBuffersFutures = {};	///<futures to wait for 
+			std::vector<std::future<secondaryCmdBuf_t>> shadowBufferFutures = {};	///<futures to wait for if the buffers have been created in parallel
+			std::vector<std::future<secondaryCmdBuf_t>> lightBufferFutures = {};	///<futures to wait for 
 		};
 
 		///\brief Shadow and light command buffers for one particular light
@@ -107,9 +107,8 @@ namespace ve {
 
 		void VERendererForward::prepareRecording();
 		void VERendererForward::recordSecondaryBuffers();
-		void VERendererForward::recordSecondaryBuffersForLight( VELight *Light);
+		void VERendererForward::recordSecondaryBuffersForLight( VELight *Light, uint32_t numPass);
 		void VERendererForward::recordPrimaryBuffers();
-		void VERendererForward::afterRecordingSecondaryBuffers();
 
 		virtual void drawFrame();					//draw one frame
 		virtual void prepareOverlay();				//prepare to draw the overlay
