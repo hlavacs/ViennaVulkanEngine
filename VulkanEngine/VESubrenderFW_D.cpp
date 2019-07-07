@@ -7,6 +7,8 @@
 
 
 #include "VEInclude.h"
+#include "VESubrenderFW_D.h"
+#include "VERendererForward.h"
 
 
 namespace ve {

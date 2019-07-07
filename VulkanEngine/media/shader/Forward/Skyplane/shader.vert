@@ -17,6 +17,7 @@ layout(location = 1) in vec3 inNormalL;
 layout(location = 2) in vec3 inTangentL;
 layout(location = 3) in vec2 inTexCoord;
 
+
 layout(location = 0) out vec2 fragTexCoord;
 
 out gl_PerVertex {
@@ -26,5 +27,5 @@ out gl_PerVertex {
 void main() {
     vec4 glp = cameraUBO.data.camProj        * cameraUBO.data.camView * objectUBO.data.model * vec4(inPositionL, 1.0);
     gl_Position = vec4( glp.x, glp.y, glp.z, glp.z*1.000001 );
-    fragTexCoord   = inTexCoord;
+    fragTexCoord   =  inTexCoord;
 }

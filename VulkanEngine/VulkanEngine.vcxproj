@@ -185,6 +185,7 @@
     <ClInclude Include="VEEventListenerNuklearDebug.h" />
     <ClInclude Include="VEMaterial.h" />
     <ClInclude Include="VERendererRT.h" />
+    <ClInclude Include="VERendererDeferred.h" />
     <ClInclude Include="VESubrenderFW.h" />
     <ClInclude Include="VESubrenderFW_Nuklear.h" />
     <ClInclude Include="VESubrenderFW_Skyplane.h" />
@@ -204,6 +205,16 @@
     <ClInclude Include="VESubrenderFW_Shadow.h" />
     <ClInclude Include="VESubrenderRT.h" />
     <ClInclude Include="VESubrenderRT_DN.h" />
+    <ClInclude Include="VERendererDeferred.h" />
+    <ClInclude Include="VERendererShader.h" />
+    <ClInclude Include="VESubrenderDF_C1.h" />
+    <ClInclude Include="VESubrenderDF_Composer.h" />
+    <ClInclude Include="VESubrenderDF_Cubemap.h" />
+    <ClInclude Include="VESubrenderDF_Cubemap2.h" />
+    <ClInclude Include="VESubrenderDF_D.h" />
+    <ClInclude Include="VESubrenderDF_DN.h" />
+    <ClInclude Include="VESubrenderDF_Shadow.h" />
+    <ClInclude Include="VESubrenderDF_Skyplane.h" />
     <ClInclude Include="VEWindow.h" />
     <ClInclude Include="VEWindowGLFW.h" />
     <ClInclude Include="VHFunctions.h" />
@@ -234,6 +245,7 @@
     <ClCompile Include="VEMaterial.cpp" />
     <ClCompile Include="VENamedClass.cpp" />
     <ClCompile Include="VERenderer.cpp" />
+    <ClCompile Include="VERendererDeferred.cpp" />
     <ClCompile Include="VERendererForward.cpp" />
     <ClCompile Include="VESceneManager.cpp" />
     <ClCompile Include="VESubrender.cpp" />
@@ -255,6 +267,15 @@
     <ClCompile Include="VHRender.cpp" />
     <ClCompile Include="VHSwapchain.cpp" />
     <ClCompile Include="VKHelpers.cpp" />
+    <ClInclude Include="VERendererDeferred.h" />
+    <ClInclude Include="VESubrenderDF_C1.h" />
+    <ClInclude Include="VESubrenderDF_Composer.h" />
+    <ClInclude Include="VESubrenderDF_Cubemap.h" />
+    <ClInclude Include="VESubrenderDF_Cubemap2.h" />
+    <ClInclude Include="VESubrenderDF_D.h" />
+    <ClInclude Include="VESubrenderDF_DN.h" />
+    <ClInclude Include="VESubrenderDF_Shadow.h" />
+    <ClInclude Include="VESubrenderDF_Skyplane.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="VHFunctions.inl" />

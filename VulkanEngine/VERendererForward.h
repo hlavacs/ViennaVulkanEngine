@@ -32,7 +32,7 @@ namespace ve {
 	*/
 	class VERendererForward : public VERenderer {
 
-	public: 
+	public:
 
 		///\brief One secondary command buffer and the pool that it came from
 		struct secondaryCmdBuf_t {
@@ -51,7 +51,7 @@ namespace ve {
 			std::vector<secondaryCmdBuf_t> shadowBuffers = {};						///<list of secondary command buffers for the shadow pass
 			std::vector<secondaryCmdBuf_t> lightBuffers = {};						///<list of secondary command buffers for the light pass
 			std::vector<std::future<secondaryCmdBuf_t>> shadowBufferFutures = {};	///<futures to wait for if the buffers have been created in parallel
-			std::vector<std::future<secondaryCmdBuf_t>> lightBufferFutures = {};	///<futures to wait for 
+			std::vector<std::future<secondaryCmdBuf_t>> lightBufferFutures = {};	///<futures to wait for
 		};
 
 		///\brief Shadow and light command buffers for one particular light

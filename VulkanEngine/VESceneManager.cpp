@@ -36,7 +36,7 @@ namespace ve {
 		std::vector<vh::vhMemoryBlock*> emptyList;
 
 		m_memoryBlockMap[VESceneObject::VE_OBJECT_TYPE_ENTITY] = emptyList;
-        
+
         VECHECKRESULT(vh::vhMemBlockListInit(getEnginePointer()->getRenderer()->getDevice(),
 			getEnginePointer()->getRenderer()->getVmaAllocator(),
 			getEnginePointer()->getRenderer()->getDescriptorPool(),
@@ -575,7 +575,7 @@ namespace ve {
 		std::string filekey = basedir + "/" + texName;
 		VEMesh * pMesh;
 		VECHECKPOINTER( pMesh = m_meshes[STANDARD_MESH_PLANE] );
-		
+
 		VEMaterial *pMat = nullptr;
 		if (m_materials.count(filekey) == 0) {
 			pMat = createMaterial2(filekey);
@@ -734,7 +734,7 @@ namespace ve {
 	void VESceneManager::updateSceneNodes(uint32_t imageIndex) {
 		std::lock_guard<std::mutex> lock(m_mutex);
 
-		m_lights.clear();												//light vector will be created dynamically 
+		m_lights.clear();												//light vector will be created dynamically
 
 		updateSceneNodes2(getRoot(), glm::mat4(1.0f), imageIndex);
 
@@ -910,7 +910,7 @@ namespace ve {
 		event.ptr = pNode;
 
 		std::vector<std::string> nameList;
-		std::vector<VEEventListener*> *listeners = 
+		std::vector<VEEventListener*> *listeners =
 			getEnginePointer()->m_eventListeners[veEvent::VE_EVENT_DELETE_NODE];	//list of event listeners interested in this event
 
 		for (auto listener : *listeners) {											//go through them and call onSceneNodeDeleted()

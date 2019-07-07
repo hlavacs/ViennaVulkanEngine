@@ -7,6 +7,8 @@
 
 
 #include "VEInclude.h"
+#include "VESubrenderFW_Shadow.h"
+#include "VERendererForward.h"
 
 
 namespace ve {

@@ -23,11 +23,14 @@ namespace ve {
 	class VEEngine;
 	class VERenderer;
 	class VERendererForward;
+	class VERendererDeferred;
 
 	class VESceneManager;
 	extern VESceneManager* g_pVESceneManagerSingleton;	///<Pointer to the only class instance 
 
 	class VESubrenderFW_Shadow;
+	class VESubrenderDF_Shadow;
+    class VESubrenderDF_Composer;
 
 	/**
 	*
@@ -41,7 +44,10 @@ namespace ve {
 		friend VEEngine;
 		friend VERenderer;
 		friend VERendererForward;
+		friend VERendererDeferred;
 		friend VESubrenderFW_Shadow;
+		friend VESubrenderDF_Shadow;
+        friend VESubrenderDF_Composer;
 
 	protected:
 		std::map<std::string, VEMesh *>		m_meshes = {};		///<Storage of all meshes currently in the engine

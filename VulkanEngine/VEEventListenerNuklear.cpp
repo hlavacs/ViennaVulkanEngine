@@ -6,6 +6,7 @@
 */
 
 #include "VEInclude.h"
+#include "VESubrenderFW_Nuklear.h"
 
 namespace ve {
 

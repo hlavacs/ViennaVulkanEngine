@@ -349,7 +349,7 @@ namespace ve {
 	* \param[in] sizeUBO Size of the object's UBO, if >0 then the object needs UBOs
 	*
 	*/
-	VESceneObject::VESceneObject(	std::string name, glm::mat4 transf, uint32_t sizeUBO ) : 
+	VESceneObject::VESceneObject(	std::string name, glm::mat4 transf, uint32_t sizeUBO ) :
 									VESceneNode(name, transf) {
 
 	}
@@ -375,7 +375,7 @@ namespace ve {
 	*
 	*/
 	void VESceneObject::updateUBO(void *pUBO, uint32_t sizeUBO, uint32_t imageIndex ) {
-		if( m_memoryHandle.pMemBlock != nullptr) 
+		if( m_memoryHandle.pMemBlock != nullptr)
 			vh::vhMemBlockUpdateEntry( &m_memoryHandle, pUBO );
 	}
 
@@ -500,7 +500,7 @@ namespace ve {
 	* \param[in] transf Transform of this camera, including orientation and position
 	*
 	*/
-	VECamera::VECamera(std::string name, glm::mat4 transf ) : 
+	VECamera::VECamera(std::string name, glm::mat4 transf ) :
 							VESceneObject(name, transf, (uint32_t)sizeof(veUBOPerCamera_t)) {
 	};
 
@@ -520,7 +520,7 @@ namespace ve {
 						float nearPlane, float farPlane,
 						float nearPlaneFraction, float farPlaneFraction,
 						glm::mat4 transf ) :
-							VESceneObject(name, transf, (uint32_t)sizeof(veUBOPerCamera_t)), 
+							VESceneObject(name, transf, (uint32_t)sizeof(veUBOPerCamera_t)),
 							m_nearPlane(nearPlane), m_farPlane(farPlane),
 							m_nearPlaneFraction(nearPlaneFraction), m_farPlaneFraction(farPlaneFraction) {
 	}
@@ -631,7 +631,7 @@ namespace ve {
 												VECamera(	name, 
 															nearPlane, farPlane, 
 															nearPlaneFraction, farPlaneFraction,
-															transf ), 
+															transf ),
 												m_aspectRatio(aspectRatio), m_fov(fov)   {
 	};
 
@@ -713,7 +713,7 @@ namespace ve {
 	* \param[in] transf Transform of this camera, including orientation and position
 	*
 	*/
-	VECameraOrtho::VECameraOrtho(std::string name, glm::mat4 transf ) : 
+	VECameraOrtho::VECameraOrtho(std::string name, glm::mat4 transf ) :
 						VECamera(name, transf ) {
 	};
 
@@ -739,7 +739,7 @@ namespace ve {
 										VECamera(	name, 
 													nearPlane, farPlane, 
 													nearPlaneFraction, farPlaneFraction,
-													transf), 
+													transf),
 										m_width(width), m_height(height) {
 	};
 
@@ -820,7 +820,7 @@ namespace ve {
 	* \param[in] transf Transform of this light, including orientation and position
 	*
 	*/
-	VELight::VELight(std::string name, glm::mat4 transf ) : 
+	VELight::VELight(std::string name, glm::mat4 transf ) :
 						VESceneObject(name, transf, (uint32_t)sizeof(veUBOPerLight_t)) {
 	};
 
@@ -861,7 +861,7 @@ namespace ve {
 
         if(!getEnginePointer()->isRayTracing())
         {
-            updateShadowCameras(pCam, imageIndex);						//copy shadow cam UBOs to GPU		
+            updateShadowCameras(pCam, imageIndex);						//copy shadow cam UBOs to GPU
             for(uint32_t i = 0; i < m_shadowCameras.size(); i++)
             {	//copy shadow cam UBOs to light UBO
                 m_ubo.shadowCameras[i] = m_shadowCameras[i]->m_ubo;

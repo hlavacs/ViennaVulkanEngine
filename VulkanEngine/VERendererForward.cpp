@@ -40,9 +40,9 @@ namespace ve {
 			"VK_LAYER_LUNARG_standard_validation"
 		};
 
-		vh::vhDevPickPhysicalDevice(getEnginePointer()->getInstance(), m_surface, requiredDeviceExtensions, 
+		vh::vhDevPickPhysicalDevice(getEnginePointer()->getInstance(), m_surface, requiredDeviceExtensions,
 									&m_physicalDevice, &m_deviceFeatures, &m_deviceLimits );
-		
+
 		if (vh::vhDevCreateLogicalDevice(getEnginePointer()->getInstance(), m_physicalDevice, m_surface, requiredDeviceExtensions, requiredValidationLayers,
 			&m_device, &m_graphicsQueue, &m_presentQueue) != VK_SUCCESS) {
 			assert(false);
@@ -87,8 +87,8 @@ namespace ve {
 
 		//depth map for light pass
 		vh::vhBufCreateDepthResources(	m_device, m_vmaAllocator, m_graphicsQueue, m_commandPool, 
-										m_swapChainExtent, m_depthMap->m_format, 
-										&m_depthMap->m_image, &m_depthMap->m_deviceAllocation, 
+										m_swapChainExtent, m_depthMap->m_format,
+										&m_depthMap->m_image, &m_depthMap->m_deviceAllocation,
 										&m_depthMap->m_imageInfo.imageView);
 
 		//frame buffers for light pass
@@ -191,7 +191,7 @@ namespace ve {
 		//------------------------------------------------------------------------------------------------------------
 
 		for (uint32_t i = 0; i < m_swapChainImages.size(); i++) {
-			vh::vhBufTransitionImageLayout(m_device, m_graphicsQueue, m_commandPool,				//transition the image layout to 
+			vh::vhBufTransitionImageLayout(m_device, m_graphicsQueue, m_commandPool,				//transition the image layout to
 				m_swapChainImages[i], VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_ASPECT_COLOR_BIT, 1, 1,	//VK_IMAGE_LAYOUT_PRESENT_SRC_KHR
 				VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR);
 		}
@@ -372,7 +372,7 @@ namespace ve {
 														std::vector<VESubrender*> subRenderers,
 														VkFramebuffer *pFrameBuffer,
 														uint32_t imageIndex, uint32_t numPass,
-														VECamera *pCamera, VELight *pLight, 
+														VECamera *pCamera, VELight *pLight,
 														std::vector<VkDescriptorSet> descriptorSets) {
 		secondaryCmdBuf_t buf;
 		buf.pool = getThreadCommandPool();
@@ -381,7 +381,7 @@ namespace ve {
 										VK_COMMAND_BUFFER_LEVEL_SECONDARY,
 										1, &buf.buffer);
 
-		vh::vhCmdBeginCommandBuffer(m_device, *pRenderPass, 0, *pFrameBuffer, buf.buffer, 
+		vh::vhCmdBeginCommandBuffer(m_device, *pRenderPass, 0, *pFrameBuffer, buf.buffer,
 									VK_COMMAND_BUFFER_USAGE_RENDER_PASS_CONTINUE_BIT);
 
 		for (auto pSub : subRenderers) {
@@ -683,7 +683,7 @@ namespace ve {
 
 	}
 
-	
+
 	void VERendererForward::recordCmdBuffers2() {
 		prepareRecording();
 		recordSecondaryBuffers();
@@ -721,7 +721,7 @@ namespace ve {
 			recordCmdBuffers();
 		}
 
-		vh::vhBufTransitionImageLayout(m_device, m_graphicsQueue, m_commandPool,				//transition the image layout to 
+		vh::vhBufTransitionImageLayout(m_device, m_graphicsQueue, m_commandPool,				//transition the image layout to
 			getSwapChainImage(), VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_ASPECT_COLOR_BIT, 1, 1,		//VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL
 			VK_IMAGE_LAYOUT_PRESENT_SRC_KHR, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL );
 

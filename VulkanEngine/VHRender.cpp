@@ -24,8 +24,8 @@ namespace vh {
 	*/
 
 	VkResult vhRenderCreateRenderPass(  VkDevice device,
-									VkFormat swapChainImageFormat, 
-									VkFormat depthFormat, 
+									VkFormat swapChainImageFormat,
+									VkFormat depthFormat,
 									VkAttachmentLoadOp loadOp,
 									VkRenderPass *renderPass) {
 
@@ -36,7 +36,7 @@ namespace vh {
 		colorAttachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
 		colorAttachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
 		colorAttachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-		
+
 		colorAttachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
 		if (loadOp == VK_ATTACHMENT_LOAD_OP_LOAD) {
 			colorAttachment.initialLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
@@ -46,8 +46,8 @@ namespace vh {
 		VkAttachmentDescription depthAttachment = {};
 		depthAttachment.format = depthFormat;
 		depthAttachment.samples = VK_SAMPLE_COUNT_1_BIT;
-		depthAttachment.loadOp = loadOp; 
-		depthAttachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE; 
+		depthAttachment.loadOp = loadOp;
+		depthAttachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
 		depthAttachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
 		depthAttachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
 
@@ -92,6 +92,186 @@ namespace vh {
 		return vkCreateRenderPass(device, &renderPassInfo, nullptr, renderPass);
 	}
 
+	//-------------------------------------------------------------------------------------------------------
+#	/**
+	*
+	* \brief Create a render pass for a g-buffer pass
+	* \param[in] device The logical Vulkan device
+	* \param[in] swapChainImageFormat The swap chain image format
+	* \param[in] depthFormat The depth map image format
+	* \param[out] renderPass The new render pass
+	*
+	*/
+
+    VkResult vhRenderCreateRenderPassGBuffer(VkDevice device, VkFormat swapChainImageFormat, VkFormat depthFormat,
+                                             VkAttachmentLoadOp loadOp, VkRenderPass *renderPass) {
+
+        VkAttachmentDescription colorAttachment = {};
+        colorAttachment.format = swapChainImageFormat;
+        colorAttachment.samples = VK_SAMPLE_COUNT_1_BIT;
+        colorAttachment.loadOp = loadOp;
+        colorAttachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
+        colorAttachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+        colorAttachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+
+        colorAttachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+        if(loadOp == VK_ATTACHMENT_LOAD_OP_LOAD) {
+            colorAttachment.initialLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+        }
+        colorAttachment.finalLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+
+		VkAttachmentDescription positionAttachment = {};
+		positionAttachment.format = VK_FORMAT_R16G16B16A16_SFLOAT;
+		positionAttachment.samples = VK_SAMPLE_COUNT_1_BIT;
+		positionAttachment.loadOp = loadOp;
+		positionAttachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
+		positionAttachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+		positionAttachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+		positionAttachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+        if(loadOp == VK_ATTACHMENT_LOAD_OP_LOAD) {
+            positionAttachment.initialLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+        }
+		positionAttachment.finalLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+
+		VkAttachmentDescription normalAttachment = {};
+		normalAttachment.format = VK_FORMAT_R16G16B16A16_SFLOAT;
+		normalAttachment.samples = VK_SAMPLE_COUNT_1_BIT;
+		normalAttachment.loadOp = loadOp;
+		normalAttachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
+		normalAttachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+		normalAttachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+		normalAttachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+        if(loadOp == VK_ATTACHMENT_LOAD_OP_LOAD) {
+            normalAttachment.initialLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+        }
+		normalAttachment.finalLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+
+		VkAttachmentDescription albedoAttachment = {};
+		albedoAttachment.format = swapChainImageFormat;
+		albedoAttachment.samples = VK_SAMPLE_COUNT_1_BIT;
+		albedoAttachment.loadOp = loadOp;
+		albedoAttachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
+		albedoAttachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+		albedoAttachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+		albedoAttachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+        if(loadOp == VK_ATTACHMENT_LOAD_OP_LOAD) {
+            albedoAttachment.initialLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+        }
+		albedoAttachment.finalLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+
+		VkAttachmentDescription depthAttachment = {};
+		depthAttachment.format = depthFormat;
+		depthAttachment.samples = VK_SAMPLE_COUNT_1_BIT;
+		depthAttachment.loadOp = loadOp;
+		depthAttachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE; // VK_ATTACHMENT_STORE_OP_DONT_CARE;
+		depthAttachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+		depthAttachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+
+		depthAttachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+        if(loadOp == VK_ATTACHMENT_LOAD_OP_LOAD) {
+            depthAttachment.initialLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+        }
+        depthAttachment.finalLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+
+        std::array<VkAttachmentDescription, 5> attachments = {colorAttachment, positionAttachment, normalAttachment, albedoAttachment, depthAttachment };
+
+		std::vector<VkAttachmentReference> references;
+        // first subpass (G-Buffer)
+        VkAttachmentReference colorAttachmentRef = {};
+        colorAttachmentRef.attachment = 0;
+        colorAttachmentRef.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+        references.push_back(colorAttachmentRef);
+
+		VkAttachmentReference positionAttachmentRef = {};
+		positionAttachmentRef.attachment = 1;
+		positionAttachmentRef.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+        references.push_back(positionAttachmentRef);
+
+		VkAttachmentReference normalAttachmentRef = {};
+		normalAttachmentRef.attachment = 2;
+		normalAttachmentRef.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+        references.push_back(normalAttachmentRef);
+
+		VkAttachmentReference albedoAttachmentRef = {};
+		albedoAttachmentRef.attachment = 3;
+		albedoAttachmentRef.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+        references.push_back(albedoAttachmentRef);
+
+		VkAttachmentReference depthAttachmentRef = {};
+		depthAttachmentRef.attachment = 4;
+		depthAttachmentRef.layout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+
+		VkSubpassDescription subpassGBuffer = {};
+        subpassGBuffer.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
+        subpassGBuffer.colorAttachmentCount = static_cast<uint32_t>(references.size());
+        subpassGBuffer.pColorAttachments = references.data();
+        subpassGBuffer.pDepthStencilAttachment = &depthAttachmentRef;
+
+        // second subpass (Composition)
+
+        std::vector<VkAttachmentReference>  referencesComp;
+
+        VkAttachmentReference positionAttachmentRefComp = {};
+        positionAttachmentRefComp.attachment = 1;
+        positionAttachmentRefComp.layout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+        referencesComp.push_back(positionAttachmentRefComp);
+
+        VkAttachmentReference normalAttachmentRefComp = {};
+        normalAttachmentRefComp.attachment = 2;
+        normalAttachmentRefComp.layout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+        referencesComp.push_back(normalAttachmentRefComp);
+
+        VkAttachmentReference albedoAttachmentRefComp = {};
+        albedoAttachmentRefComp.attachment = 3;
+        albedoAttachmentRefComp.layout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+        referencesComp.push_back(albedoAttachmentRefComp);
+
+        colorAttachmentRef.attachment = 0;
+        colorAttachmentRef.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+
+        VkSubpassDescription subpassComposition = {};
+        subpassComposition.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
+        subpassComposition.colorAttachmentCount = 1;
+        subpassComposition.pColorAttachments = &colorAttachmentRef;
+        subpassComposition.pDepthStencilAttachment = &depthAttachmentRef;
+        subpassComposition.pInputAttachments = referencesComp.data();
+        subpassComposition.inputAttachmentCount = static_cast<uint32_t>(referencesComp.size());
+
+        std::array<VkSubpassDescription, 2> subpasses = { subpassGBuffer, subpassComposition };
+
+        // from external to g-buffer
+		VkSubpassDependency dependency1 = {};
+		dependency1.srcSubpass = VK_SUBPASS_EXTERNAL;
+		dependency1.dstSubpass = 0;
+        dependency1.srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+        dependency1.srcAccessMask = 0;
+        dependency1.dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+        dependency1.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+		dependency1.dependencyFlags = VK_DEPENDENCY_BY_REGION_BIT;
+
+        // from g-buffer to composition
+        VkSubpassDependency dependency2 = {};
+        dependency2.srcSubpass = 0;
+        dependency2.dstSubpass = 1;
+        dependency2.srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+        dependency2.dstStageMask = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
+        dependency2.srcAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+        dependency2.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
+        dependency2.dependencyFlags = VK_DEPENDENCY_BY_REGION_BIT;
+
+
+		std::array<VkSubpassDependency, 2> dependencies = { dependency1, dependency2 };
+		VkRenderPassCreateInfo renderPassInfo = {};
+		renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
+		renderPassInfo.attachmentCount = static_cast<uint32_t>(attachments.size());
+		renderPassInfo.pAttachments = attachments.data();
+		renderPassInfo.subpassCount = static_cast<uint32_t>(subpasses.size());
+		renderPassInfo.pSubpasses = subpasses.data();
+		renderPassInfo.dependencyCount = static_cast<uint32_t>(dependencies.size());
+		renderPassInfo.pDependencies = dependencies.data();
+
+        return vkCreateRenderPass(device, &renderPassInfo, nullptr, renderPass);
+	}
 
 
 	/**
@@ -239,10 +419,10 @@ namespace vh {
 	* \returns VK_SUCCESS or a Vulkan error code
 	*
 	*/
-	VkResult vhRenderCreateDescriptorSets(	VkDevice device, 
+	VkResult vhRenderCreateDescriptorSets(	VkDevice device,
 											uint32_t numberDesc,
-											VkDescriptorSetLayout descriptorSetLayout, 	
-											VkDescriptorPool descriptorPool, 
+											VkDescriptorSetLayout descriptorSetLayout,
+											VkDescriptorPool descriptorPool,
 											std::vector<VkDescriptorSet> & descriptorSets) {
 
 		std::vector<VkDescriptorSetLayout> layouts(numberDesc, descriptorSetLayout);
@@ -290,7 +470,7 @@ namespace vh {
 				descriptorTypes.push_back(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
 		}
 
-		return vhRenderUpdateDescriptorSet(	device, descriptorSet, 
+		return vhRenderUpdateDescriptorSet(	device, descriptorSet,
 											descriptorTypes,
 											uniformBuffers,
 											bufferRanges,
@@ -308,7 +488,7 @@ namespace vh {
 	*
 	* \param[in] device Logical Vulkan device
 	* \param[in] descriptorSet The descriptor set to be updated
-	* \param[in] descriptorTypes A list with the descriptor types 
+	* \param[in] descriptorTypes A list with the descriptor types
 	* \param[in] uniformBuffers List of UBOs (can contain null handles)
 	* \param[in] bufferRanges List of buffer sizes
 	* \param[in] textureImageViews List of texture image views to be updated
@@ -360,7 +540,7 @@ namespace vh {
 					imageInfos[i].push_back(imageInfo);
 				}
 				
-				descriptorWrites[i].descriptorType = descriptorTypes[i], //VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+				descriptorWrites[i].descriptorType = descriptorTypes.size()>i? descriptorTypes[i]:VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
 				descriptorWrites[i].pImageInfo = imageInfos[i].data();
 				descriptorWrites[i].descriptorCount = (uint32_t)textureImageViews[i].size();
 			}
@@ -433,8 +613,8 @@ namespace vh {
 	*
 	*/
 	VkResult vhRenderBeginRenderPass(VkCommandBuffer commandBuffer,
-								 VkRenderPass renderPass, 
-								 VkFramebuffer frameBuffer, 
+								 VkRenderPass renderPass,
+								 VkFramebuffer frameBuffer,
 								 VkExtent2D extent,
 								 VkSubpassContents subPassContents ) {
 
@@ -588,14 +768,17 @@ namespace vh {
 	*
 	*/
 	VkResult vhPipeCreateGraphicsPipeline(	VkDevice device,
-											std::vector<std::string> shaderFileNames, 
+											std::vector<std::string> shaderFileNames,
 											VkExtent2D swapChainExtent,
 											VkPipelineLayout pipelineLayout,
 											VkRenderPass renderPass,
 											std::vector<VkDynamicState> dynamicStates,
-											VkPipeline *graphicsPipeline) {
+											VkPipeline *graphicsPipeline,
+                                            uint32_t subpass,
+                                            VkCullModeFlags cullMode,
+                                            int32_t blendAttachmentSize) {
 
-		std::vector<VkPipelineShaderStageCreateInfo> shaderStages; 
+		std::vector<VkPipelineShaderStageCreateInfo> shaderStages;
 
 		auto vertShaderCode = vhFileRead(shaderFileNames[0]);
 
@@ -665,7 +848,7 @@ namespace vh {
 		rasterizer.rasterizerDiscardEnable = VK_FALSE;
 		rasterizer.polygonMode = VK_POLYGON_MODE_FILL;
 		rasterizer.lineWidth = 1.0f;
-		rasterizer.cullMode = VK_CULL_MODE_BACK_BIT;
+		rasterizer.cullMode = cullMode;
 		rasterizer.frontFace = VK_FRONT_FACE_COUNTER_CLOCKWISE;
 		rasterizer.depthBiasEnable = VK_FALSE;
 
@@ -682,19 +865,25 @@ namespace vh {
 		depthStencil.depthBoundsTestEnable = VK_FALSE;
 		depthStencil.stencilTestEnable = VK_FALSE;
 
-		VkPipelineColorBlendAttachmentState colorBlendAttachment = {};
-		colorBlendAttachment.colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
-		colorBlendAttachment.blendEnable = VK_TRUE;
-		colorBlendAttachment.srcColorBlendFactor = VK_BLEND_FACTOR_ONE;
-		colorBlendAttachment.dstColorBlendFactor = VK_BLEND_FACTOR_CONSTANT_COLOR;
-		colorBlendAttachment.colorBlendOp = VK_BLEND_OP_ADD;
+        std::vector<VkPipelineColorBlendAttachmentState> colorBlendAttachments;
+        colorBlendAttachments.resize(blendAttachmentSize);
+        for(int i = 0; i < blendAttachmentSize; ++i)
+        {
+            VkPipelineColorBlendAttachmentState colorBlendAttachment;
+            colorBlendAttachment.colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
+            colorBlendAttachment.blendEnable = VK_TRUE;
+            colorBlendAttachment.srcColorBlendFactor = VK_BLEND_FACTOR_ONE;
+		    colorBlendAttachment.dstColorBlendFactor = VK_BLEND_FACTOR_CONSTANT_COLOR;
+		    colorBlendAttachment.colorBlendOp = VK_BLEND_OP_ADD;
+            colorBlendAttachments[i] = colorBlendAttachment;
+        }
 
 		VkPipelineColorBlendStateCreateInfo colorBlending = {};
 		colorBlending.sType = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO;
 		colorBlending.logicOpEnable = VK_FALSE;
 		colorBlending.logicOp = VK_LOGIC_OP_COPY;
-		colorBlending.attachmentCount = 1;
-		colorBlending.pAttachments = &colorBlendAttachment;
+		colorBlending.attachmentCount = (uint32_t)colorBlendAttachments.size();
+		colorBlending.pAttachments = colorBlendAttachments.data();
 		colorBlending.blendConstants[0] = 0.0f;
 		colorBlending.blendConstants[1] = 0.0f;
 		colorBlending.blendConstants[2] = 0.0f;
@@ -723,7 +912,7 @@ namespace vh {
 		}
 		pipelineInfo.layout = pipelineLayout;
 		pipelineInfo.renderPass = renderPass;
-		pipelineInfo.subpass = 0;
+		pipelineInfo.subpass = subpass;
 		pipelineInfo.basePipelineHandle = VK_NULL_HANDLE;
 
 		VHCHECKRESULT( vkCreateGraphicsPipelines(device, VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, graphicsPipeline) );
