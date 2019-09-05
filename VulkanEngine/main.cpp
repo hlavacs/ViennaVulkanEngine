@@ -253,7 +253,7 @@ namespace ve {
 			e1->multiplyTransform( glm::translate(glm::mat4(1.0f), glm::vec3(10.0f, 5.0f, 10.0f)));
 			pScene->addChild(e1);
 
-			createCubes(3500, pScene);
+			createCubes(2500, pScene);
 			//createLights(10, pScene );
 			//VESceneNode *pSponza = m_pSceneManager->loadModel("Sponza", "models/sponza", "sponza.dae", aiProcess_FlipWindingOrder);
 			//pSponza->setTransform(glm::scale(glm::mat4(1.0f), glm::vec3(0.1f, 0.1f, 0.1f)));
