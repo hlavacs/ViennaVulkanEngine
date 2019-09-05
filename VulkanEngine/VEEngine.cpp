@@ -141,7 +141,9 @@ namespace ve {
 		std::vector<const char*> validationLayers = {};
 		if (m_debug) {
 			validationLayers.push_back("VK_LAYER_KHRONOS_validation");
+			validationLayers.push_back("VK_LAYER_LUNARG_standard_validation");
 		}
+		validationLayers.push_back("VK_LAYER_LUNARG_monitor");
 		return validationLayers;
 	}
 
@@ -153,7 +155,7 @@ namespace ve {
 		std::vector<const char*> extensions = m_pWindow->getRequiredInstanceExtensions();
 		if (m_debug) {
 			extensions.push_back(VK_EXT_DEBUG_REPORT_EXTENSION_NAME);
-			extensions.push_back("VK_EXT_debug_report");
+			//extensions.push_back("VK_EXT_debug_report");
 		}
 		return extensions;
 	};
