@@ -698,7 +698,7 @@ namespace ve {
 	/**
 	* \brief Draw the frame.
 	*
-	*- wait for draw completion using a fence, so there is at least one frame in the swapchain
+	*- wait for draw completion using a fence of a previous cmd buffer
 	*- acquire the next image from the swap chain
 	*- if there is no command buffer yet, record one with the current scene
 	*- submit it to the queue
