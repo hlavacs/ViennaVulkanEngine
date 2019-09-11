@@ -36,6 +36,7 @@ namespace vh {
 					validationLayersFound.push_back(layerName);
 					break;
 				}
+				std::cout << "Warning! Validation Layer " << layerName << " not available\n";
 			}
 		}
 
