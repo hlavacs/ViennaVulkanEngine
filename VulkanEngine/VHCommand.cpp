@@ -206,8 +206,20 @@ namespace vh {
 	VkResult vhCmdEndSingleTimeCommands(VkDevice device, VkQueue graphicsQueue, VkCommandPool commandPool,
 										VkCommandBuffer commandBuffer) {
 
-		return vhCmdEndSingleTimeCommands(	device, graphicsQueue, commandPool, commandBuffer, 
-											VK_NULL_HANDLE, VK_NULL_HANDLE, VK_NULL_HANDLE );
+		VkFence waitFence;
+
+		VkFenceCreateInfo fenceInfo = {};
+		fenceInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
+		fenceInfo.flags = VK_FENCE_CREATE_SIGNALED_BIT;
+
+		vkCreateFence(device, &fenceInfo, nullptr, &waitFence);
+
+		VkResult result = vhCmdEndSingleTimeCommands(	device, graphicsQueue, commandPool, commandBuffer, 
+														VK_NULL_HANDLE, VK_NULL_HANDLE, waitFence );
+
+		vkDestroyFence(device, waitFence, nullptr);
+
+		return result;
 	}
 
 
@@ -256,7 +268,12 @@ namespace vh {
 		}
 
 		VHCHECKRESULT( vkQueueSubmit(graphicsQueue, 1, &submitInfo, waitFence) );
-		VHCHECKRESULT( vkQueueWaitIdle(graphicsQueue) );
+
+		if (waitFence != VK_NULL_HANDLE) {
+			VHCHECKRESULT(vkWaitForFences(device, 1, &waitFence, VK_TRUE, std::numeric_limits<uint64_t>::max()));
+		}
+		else
+			VHCHECKRESULT(vkQueueWaitIdle(graphicsQueue));
 
 		vkFreeCommandBuffers(device, commandPool, 1, &commandBuffer);
 
