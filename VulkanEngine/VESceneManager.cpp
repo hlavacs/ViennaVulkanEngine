@@ -40,7 +40,7 @@ namespace ve {
 			getRendererForwardPointer()->getVmaAllocator(),
 			getRendererForwardPointer()->getDescriptorPool(),
 			getRendererForwardPointer()->getDescriptorSetLayoutPerObject2(),
-			2048, sizeof(VEEntity::veUBOPerObject_t),
+			2048, sizeof(VEEntity::veUBOPerEntity_t),
 			getRendererForwardPointer()->getSwapChainNumber(),
 			m_memoryBlockMap[VESceneObject::VE_OBJECT_TYPE_ENTITY]);
 

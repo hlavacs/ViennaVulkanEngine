@@ -186,7 +186,7 @@ namespace ve {
 		};
 
 		///Data that is updated for each object
-		struct veUBOPerObject_t {
+		struct veUBOPerEntity_t {
 			glm::mat4 model;			///<Object model matrix
 			glm::mat4 modelInvTrans;	///<Inverse transpose
 			glm::vec4 color;			///<Uniform color if needed by shader
@@ -229,7 +229,7 @@ namespace ve {
 		//UBO
 
 		///\returns size of entity UBO
-		virtual uint32_t	getSizeUBO() { return sizeof(veUBOPerObject_t);  };
+		virtual uint32_t	getSizeUBO() { return sizeof(veUBOPerEntity_t);  };
 		void				setParam( glm::vec4 param);		//set the free parameter
 		/**
 		* \brief set the index into the subrenderer resource list

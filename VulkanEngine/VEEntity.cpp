@@ -353,7 +353,7 @@ namespace ve {
 	VEEntity::VEEntity(	std::string name, veEntityType type, 
 						VEMesh *pMesh, VEMaterial *pMat, 
 						glm::mat4 transf ) :
-							VESceneObject(name, transf, (uint32_t) sizeof(veUBOPerObject_t)), m_entityType( type ) {
+							VESceneObject(name, transf, (uint32_t) sizeof(veUBOPerEntity_t)), m_entityType( type ) {
 
 		if (pMesh != nullptr && pMat != nullptr) {
 			m_pMesh = pMesh;
@@ -397,7 +397,7 @@ namespace ve {
 	*
 	*/
 	void VEEntity::updateUBO( glm::mat4 worldMatrix, uint32_t imageIndex) {
-		veUBOPerObject_t ubo = {};
+		veUBOPerEntity_t ubo = {};
 
 		if (m_visible) {
 			ubo.model = worldMatrix;
@@ -414,7 +414,7 @@ namespace ve {
 			ubo.color = m_pMaterial->color;
 		};
 
-		VESceneObject::updateUBO((void*)&ubo, (uint32_t)sizeof(veUBOPerObject_t), imageIndex);
+		VESceneObject::updateUBO((void*)&ubo, (uint32_t)sizeof(veUBOPerEntity_t), imageIndex);
 	}
 
 
