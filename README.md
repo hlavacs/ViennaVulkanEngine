@@ -27,7 +27,8 @@ VVE features are:
 # Set up for Windows 10
 
 Clone the project, open the .sln file, compile, run.
-For Windows 10, all dependencies (including the Vulkan SDK) are in the external directory.
+For Windows 10, all non-Vulkan dependencies are in the external directory. The Vulkan SDK is supposed to be pointed at by the VULKAN_SDK environment variable.
+
 The project will be updated regularly, so it makes sense to download the source files once in a while, or clone the whole project. Make sure to keep your main.cpp or other files that you created.
 
 
