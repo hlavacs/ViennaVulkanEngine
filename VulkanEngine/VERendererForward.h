@@ -35,7 +35,7 @@ namespace ve {
 		struct secondaryCmdBuf_t {
 			VkCommandBuffer buffer;										///<Vulkan cmd buffer handle
 			VkCommandPool pool;											///<Vulkan cmd buffer pool handle
-			secondaryCmdBuf_t & operator= (secondaryCmdBuf_t& right) {	///<copy operator
+			secondaryCmdBuf_t & operator= (const secondaryCmdBuf_t& right) {	///<copy operator
 				buffer = right.buffer;
 				pool = right.pool;
 				return *this;

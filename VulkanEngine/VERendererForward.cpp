@@ -197,6 +197,12 @@ namespace ve {
 
 		//------------------------------------------------------------------------------------------------------------
 
+		for (uint32_t i = 0; i < m_swapChainImages.size(); i++) {
+			vh::vhBufTransitionImageLayout(m_device, m_graphicsQueue, m_commandPool,				//transition the image layout to 
+				m_swapChainImages[i], VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_ASPECT_COLOR_BIT, 1, 1,	//VK_IMAGE_LAYOUT_PRESENT_SRC_KHR
+				VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR);
+		}
+
 		createSyncObjects();
 
 		createSubrenderers();
@@ -722,6 +728,10 @@ namespace ve {
 		if (m_commandBuffers[m_imageIndex] == VK_NULL_HANDLE ) {
 			recordCmdBuffers();
 		}
+
+		vh::vhBufTransitionImageLayout(m_device, m_graphicsQueue, m_commandPool,				//transition the image layout to 
+			getSwapChainImage(), VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_ASPECT_COLOR_BIT, 1, 1,		//VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL
+			VK_IMAGE_LAYOUT_PRESENT_SRC_KHR, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL );
 
 		//submit the command buffers
 		vh::vhCmdSubmitCommandBuffer(	m_device, m_graphicsQueue, m_commandBuffers[m_imageIndex],
