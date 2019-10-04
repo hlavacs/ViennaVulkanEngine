@@ -706,7 +706,6 @@ namespace vh {
 		samplerInfo.compareEnable = VK_FALSE;
 		samplerInfo.compareOp = VK_COMPARE_OP_ALWAYS;
 		samplerInfo.mipmapMode = VK_SAMPLER_MIPMAP_MODE_LINEAR;
-
 		
 		 return vkCreateSampler( device, &samplerInfo, nullptr, textureSampler);
 	}
