@@ -390,8 +390,10 @@ namespace vh {
 		barrier.subresourceRange.baseArrayLayer = 0;
 		barrier.subresourceRange.layerCount = layerCount;
 
-		VkPipelineStageFlags sourceStage;
-		VkPipelineStageFlags destinationStage;
+		VkPipelineStageFlags sourceStage = VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT;
+		VkPipelineStageFlags destinationStage = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
+		barrier.srcAccessMask = 0;
+		barrier.dstAccessMask = 0;
 
 		if (oldLayout == VK_IMAGE_LAYOUT_UNDEFINED && newLayout == VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL) {
 			barrier.srcAccessMask = 0;
@@ -427,13 +429,6 @@ namespace vh {
 
 			sourceStage = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
 			destinationStage = VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT;
-		}
-		else  {
-			barrier.srcAccessMask = 0;
-			barrier.dstAccessMask = 0;
-
-			sourceStage = VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT;
-			destinationStage = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
 		}
 
 		vkCmdPipelineBarrier(
