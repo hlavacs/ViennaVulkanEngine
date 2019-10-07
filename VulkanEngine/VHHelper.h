@@ -35,7 +35,13 @@
 #define _USE_MATH_DEFINES
 #include <math.h>
 
+#define VK_NO_PROTOTYPES
+#include "vulkan/vulkan.h"
+#include "VHFunctions.h"
+
+#define VMA_STATIC_VULKAN_FUNCTIONS 1
 #include "vk_mem_alloc.h"
+
 #include <stb_image.h>
 #include <stb_image_write.h>
 #include <ThreadPool.h>
@@ -179,7 +185,9 @@ namespace vh {
 	}
 
 
+
 	//--------------------------------------------------------------------------------------------------------------------------------
+
 	//instance (device)
 
 	//create a Vulkan instance

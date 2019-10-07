@@ -116,6 +116,9 @@
     <ClInclude Include="VHHelper.h">
       <Filter>Header Files\VHelper</Filter>
     </ClInclude>
+    <ClInclude Include="VHFunctions.h">
+      <Filter>Header Files\VHelper</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="VEEngine.cpp">
@@ -217,5 +220,13 @@
     <ClCompile Include="..\external\threadpool\ThreadPool.cpp">
       <Filter>Source Files\VHelper</Filter>
     </ClCompile>
+    <ClCompile Include="VHFunctions.cpp">
+      <Filter>Source Files\VHelper</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="VHFunctions.inl">
+      <Filter>Header Files\VHelper</Filter>
+    </None>
   </ItemGroup>
 </Project>

@@ -26,6 +26,10 @@ namespace ve {
 	*/ 
 	VEEngine::VEEngine(bool debug) : m_debug(debug) {
 		g_pVEEngineSingleton = this; 
+
+		if (vhLoadVulkanLibrary() != VK_SUCCESS ) exit(-1);
+		if (vhLoadExportedEntryPoints() != VK_SUCCESS) exit(-1);
+		if (vhLoadGlobalLevelEntryPoints() != VK_SUCCESS) exit(-1);
 	}
 
 	//-------------------------------------------------------------------------------------------------------
@@ -48,6 +52,7 @@ namespace ve {
 		std::vector<const char*> instanceExtensions = getRequiredInstanceExtensions();
 		std::vector<const char*> validationLayers = getValidationLayers();
 		vh::vhDevCreateInstance(instanceExtensions, validationLayers, &m_instance);
+		if (vhLoadInstanceLevelEntryPoints(m_instance) != VK_SUCCESS) exit(-1);
 		
 		if( m_debug )
 			vh::vhSetupDebugCallback( m_instance, &callback );				//create a debug callback for printing debug information

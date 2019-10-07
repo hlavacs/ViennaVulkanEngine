@@ -85,7 +85,6 @@ namespace vh {
 
 
 
-
 	//-------------------------------------------------------------------------------------------------------
 	/**
 	*
@@ -378,6 +377,8 @@ namespace vh {
 		createInfo.ppEnabledLayerNames = requiredValidationLayers.data();
 
 		VHCHECKRESULT(vkCreateDevice(physicalDevice, &createInfo, nullptr, device) );
+
+		if (vhLoadDeviceLevelEntryPoints(*device) != VK_SUCCESS) exit(-1);
 
 		vkGetDeviceQueue(*device, indices.graphicsFamily, 0, graphicsQueue);
 		vkGetDeviceQueue(*device, indices.presentFamily, 0, presentQueue);
