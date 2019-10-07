@@ -1,4 +1,8 @@
 
+#if defined( _WIN32 )
+#define VK_USE_PLATFORM_WIN32_KHR
+#endif
+
 #include <iostream>
 
 #define VK_NO_PROTOTYPES
@@ -27,11 +31,11 @@ HMODULE VulkanLibrary;
 
 VkResult vhLoadVulkanLibrary() {
 
-	//#if defined(VK_USE_PLATFORM_WIN32_KHR)
+#if defined(VK_USE_PLATFORM_WIN32_KHR)
 	VulkanLibrary = LoadLibrary((LPCWSTR)L"vulkan-1.dll");
-	//#elif defined(VK_USE_PLATFORM_XCB_KHR) || defined(VK_USE_PLATFORM_XLIB_KHR)
-	//		VulkanLibrary = dlopen("libvulkan.so.1", RTLD_NOW);
-	//#endif
+#else
+	VulkanLibrary = dlopen("libvulkan.so.1", RTLD_NOW);
+#endif
 
 	if (VulkanLibrary == nullptr) {
 		std::cout << "Could not load Vulkan library!" << std::endl;
@@ -43,11 +47,11 @@ VkResult vhLoadVulkanLibrary() {
 
 VkResult vhLoadExportedEntryPoints() {
 
-	//#if defined(VK_USE_PLATFORM_WIN32_KHR)
-#define LoadProcAddress GetProcAddress
-	//#elif defined(VK_USE_PLATFORM_XCB_KHR) || defined(VK_USE_PLATFORM_XLIB_KHR)
-	//#define LoadProcAddress dlsym
-	//#endif
+#if defined(VK_USE_PLATFORM_WIN32_KHR)
+	#define LoadProcAddress GetProcAddress
+#else
+	#define LoadProcAddress dlsym
+#endif
 
 #define VK_EXPORTED_FUNCTION( fun )                                                   \
     if( !(fun = (PFN_##fun)LoadProcAddress( VulkanLibrary, #fun )) ) {                \
