@@ -205,7 +205,9 @@ namespace vh {
 
 	//--------------------------------------------------------------------------------------------------------------------------------
 	//logical device
-	VkResult vhDevCreateLogicalDevice(	VkPhysicalDevice physicalDevice, VkSurfaceKHR surface, 
+	VkResult vhDevCreateLogicalDevice(	VkInstance instance, 
+										VkPhysicalDevice physicalDevice, 
+										VkSurfaceKHR surface,
 										std::vector<const char*> requiredDeviceExtensions,
 										std::vector<const char*> requiredValidationLayers, 
 										VkDevice *device, VkQueue *graphicsQueue, VkQueue *presentQueue);

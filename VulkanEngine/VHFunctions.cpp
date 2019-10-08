@@ -91,9 +91,11 @@ VkResult vhLoadInstanceLevelEntryPoints( VkInstance instance ) {
 	return VK_SUCCESS;
 }
 
-VkResult vhLoadDeviceLevelEntryPoints( VkDevice device ) {
+    /*if( !(fun = (PFN_##fun)vkGetDeviceProcAddr( device, #fun )) ) {                \  */
+
+VkResult vhLoadDeviceLevelEntryPoints(VkInstance instance, VkDevice device ) {
 #define VK_DEVICE_LEVEL_FUNCTION( fun )                                                   \
-    if( !(fun = (PFN_##fun)vkGetDeviceProcAddr( device, #fun )) ) {                \
+    if( !(fun = (PFN_##fun)vkGetInstanceProcAddr( instance, #fun )) ) {              \
       std::cout << "Could not load device level function: " << #fun << "!" << std::endl;  \
       return VK_INCOMPLETE;                                                                       \
     }

@@ -13,6 +13,6 @@ VkResult vhLoadVulkanLibrary();
 VkResult vhLoadExportedEntryPoints();
 VkResult vhLoadGlobalLevelEntryPoints();
 VkResult vhLoadInstanceLevelEntryPoints( VkInstance instance );
-VkResult vhLoadDeviceLevelEntryPoints( VkDevice device );
+VkResult vhLoadDeviceLevelEntryPoints( VkInstance instance, VkDevice device );
 
 

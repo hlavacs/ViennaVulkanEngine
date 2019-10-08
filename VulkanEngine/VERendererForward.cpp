@@ -43,7 +43,7 @@ namespace ve {
 		vh::vhDevPickPhysicalDevice(getEnginePointer()->getInstance(), m_surface, requiredDeviceExtensions, 
 									&m_physicalDevice, &m_deviceFeatures, &m_deviceLimits );
 		
-		if (vh::vhDevCreateLogicalDevice(m_physicalDevice, m_surface, requiredDeviceExtensions, requiredValidationLayers,
+		if (vh::vhDevCreateLogicalDevice(getEnginePointer()->getInstance(), m_physicalDevice, m_surface, requiredDeviceExtensions, requiredValidationLayers,
 			&m_device, &m_graphicsQueue, &m_presentQueue) != VK_SUCCESS) {
 			assert(false);
 			exit(1);

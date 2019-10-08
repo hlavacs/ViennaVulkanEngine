@@ -247,6 +247,13 @@ namespace vh {
 		std::vector<VkPhysicalDevice> devices(deviceCount);
 		VHCHECKRESULT( vkEnumeratePhysicalDevices(instance, &deviceCount, devices.data()) );
 
+
+		for (const auto device : devices) {
+			VkPhysicalDeviceProperties properties;
+			vkGetPhysicalDeviceProperties(device, &properties);
+			uint32_t apiVersion = properties.apiVersion;
+		}
+
 		for (const auto device : devices) {
 			if (isDeviceSuitable(device, surface, requiredDeviceExtensions)) {
 				*physicalDevice = device;
@@ -330,7 +337,7 @@ namespace vh {
 	* \returns VK_SUCCESS or a Vulkan error code
 	*
 	*/
-	VkResult vhDevCreateLogicalDevice(	VkPhysicalDevice physicalDevice, VkSurfaceKHR surface,
+	VkResult vhDevCreateLogicalDevice(	VkInstance instance, VkPhysicalDevice physicalDevice, VkSurfaceKHR surface,
 									std::vector<const char*> requiredDeviceExtensions, 
 									std::vector<const char*> requiredValidationLayers, 
 									VkDevice *device, VkQueue *graphicsQueue, VkQueue *presentQueue) {
@@ -378,7 +385,7 @@ namespace vh {
 
 		VHCHECKRESULT(vkCreateDevice(physicalDevice, &createInfo, nullptr, device) );
 
-		if (vhLoadDeviceLevelEntryPoints(*device) != VK_SUCCESS) exit(-1);
+		if (vhLoadDeviceLevelEntryPoints(instance, *device) != VK_SUCCESS) exit(-1);
 
 		vkGetDeviceQueue(*device, indices.graphicsFamily, 0, graphicsQueue);
 		vkGetDeviceQueue(*device, indices.presentFamily, 0, presentQueue);
