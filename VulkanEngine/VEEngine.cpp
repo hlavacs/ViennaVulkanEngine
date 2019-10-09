@@ -255,7 +255,7 @@ namespace ve {
 	*
 	*/
 	void VEEngine::removeEventListener(std::string name) {
-		for each (auto list in  m_eventListeners) {
+		for( auto list :  m_eventListeners) {
 			removeEventListener(name, list.second);
 		}
 	};
