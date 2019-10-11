@@ -1,5 +1,4 @@
-#pragma once
-#pragma once
+
 
 /**
 The Vienna Vulkan Engine
@@ -11,7 +10,8 @@ Purpose: Declare VEEventListenerNuklear class
 @date 2019
 */
 
-#pragma once
+#ifndef VEEVENTLISTENERNUKLEARDEBUG_H
+#define VEEVENTLISTENERNUKLEARDEBUG_H
 
 namespace ve {
 
@@ -37,3 +37,5 @@ namespace ve {
 
 }
 
+
+#endif

@@ -5,11 +5,15 @@
 *
 */
 
-#pragma once
+#ifndef VEENGINE_H
+#define VEENGINE_H
+
 
 #ifndef getRendererPointer
 #define getEnginePointer() g_pVEEngineSingleton
 #endif
+
+
 
 namespace ve {
 
@@ -151,4 +155,5 @@ namespace ve {
 }
 
 
+#endif
 

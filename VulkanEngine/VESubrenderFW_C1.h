@@ -5,7 +5,8 @@
 *
 */
 
-#pragma once
+#ifndef VESUBRENDERFWC1_H
+#define VESUBRENDERFWC1_H
 
 namespace ve {
 
@@ -31,3 +32,5 @@ namespace ve {
 }
 
 
+
+#endif

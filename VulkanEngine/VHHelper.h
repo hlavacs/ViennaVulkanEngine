@@ -5,7 +5,8 @@
 *
 */
 
-#pragma once
+#ifndef VHHELPER_H
+#define VHHELPER_H
 
 
 
@@ -386,3 +387,4 @@ namespace vh {
 
 #include "nuklear-glfw-vulkan.h"
 
+#endif

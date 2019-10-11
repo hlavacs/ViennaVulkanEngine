@@ -1,4 +1,5 @@
-#pragma once
+#ifndef VHFUNCTIONS_H
+#define VHFUNCTIONS_H
 
 
 
@@ -15,4 +16,5 @@ VkResult vhLoadGlobalLevelEntryPoints();
 VkResult vhLoadInstanceLevelEntryPoints( VkInstance instance );
 VkResult vhLoadDeviceLevelEntryPoints( VkInstance instance, VkDevice device );
 
+#endif
 

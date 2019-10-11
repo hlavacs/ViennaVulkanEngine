@@ -5,7 +5,9 @@
 *
 */
 
-#pragma once
+#ifndef VEWINDOWGLFW_H
+#define VEWINDOWGLFW_H
+
 
 #define GLFW_INCLUDE_VULKAN
 #include <GLFW/glfw3.h>
@@ -57,3 +59,7 @@ namespace ve {
 	};
 
 }
+
+
+#endif
+

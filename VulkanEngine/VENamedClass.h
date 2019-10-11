@@ -5,7 +5,8 @@
 *
 */
 
-#pragma once
+#ifndef VENAMEDCLASS_H
+#define VENAMEDCLASS_H
 
 
 namespace ve {
@@ -31,3 +32,6 @@ namespace ve {
 
 
 }
+
+
+#endif

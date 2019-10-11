@@ -5,7 +5,8 @@
 *
 */
 
-#pragma once
+#ifndef VESUBRENDER_H
+#define VESUBRENDER_H
 
 class VERenderer;
 
@@ -99,3 +100,5 @@ namespace ve {
 
 
 }
+
+#endif

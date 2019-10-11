@@ -6,7 +6,8 @@
 */
 
 
-#pragma once
+#ifndef VEMATERIAL_H
+#define VEMATERIAL_H
 
 
 
@@ -89,4 +90,7 @@ namespace ve {
 		~VEMesh();
 	};
 }
+
+
+#endif
 

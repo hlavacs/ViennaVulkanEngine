@@ -5,7 +5,8 @@
 *
 */
 
-#pragma once
+#ifndef VEEVENTLISTENER_H
+#define VEEVENTLISTENER_H
 
 
 namespace ve {
@@ -136,3 +137,5 @@ namespace ve {
 		virtual ~VEEventListener();
 	};
 }
+
+#endif

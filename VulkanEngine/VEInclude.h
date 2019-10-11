@@ -5,7 +5,9 @@
 *
 */
 
-#pragma once
+#ifndef VEINCLUDE_H
+#define VEINCLUDE_H
+
 
 #include "VHHelper.h"
 
@@ -46,3 +48,5 @@
 	}
 
 
+
+#endif

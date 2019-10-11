@@ -5,7 +5,9 @@
 *
 */
 
-#pragma once
+#ifndef VERENDERER_H
+#define VERENDERER_H
+
 
 #ifndef getRendererPointer
 #define getRendererPointer() g_pVERendererSingleton
@@ -116,5 +118,9 @@ namespace ve {
 	};
 
 }
+
+
+
+#endif
 
 

@@ -8,7 +8,9 @@ Purpose: Declare VEEventListenerNuklear class
 @date 2019
 */
 
-#pragma once
+#ifndef VEEVENTLISTENERNUKLEAR_H
+#define VEEVENTLISTENERNUKLEAR_H
+
 
 namespace ve {
 
@@ -41,3 +43,5 @@ namespace ve {
 
 }
 
+
+#endif

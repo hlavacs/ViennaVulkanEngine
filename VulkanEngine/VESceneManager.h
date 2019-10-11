@@ -5,7 +5,8 @@
 *
 */
 
-#pragma once
+#ifndef VESCENEMANAGER_H
+#define VESCENEMANAGER_H
 
 
 #ifndef getSceneManagerPointer
@@ -171,4 +172,7 @@ namespace ve {
 	};
 
 }
+
+
+#endif
 

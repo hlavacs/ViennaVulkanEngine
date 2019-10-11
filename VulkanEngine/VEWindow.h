@@ -5,7 +5,9 @@
 *
 */
 
-#pragma once
+#ifndef VEWINDOW_H
+#define VEWINDOW_H
+
 
 #include <vector>
 
@@ -72,4 +74,7 @@ namespace ve {
 
 }
 
+
+
+#endif
 

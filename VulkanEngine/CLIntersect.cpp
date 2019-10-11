@@ -1,4 +1,8 @@
-#pragma once
+
+
+#ifndef CLINTERSECT_H
+#define CLINTERSECT_H
+
 
 
 #include "CLInclude.h"
@@ -259,4 +263,7 @@ namespace cl {
 
 };
 
+
+
+#endif
 

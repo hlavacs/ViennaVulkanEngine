@@ -1,4 +1,5 @@
-#pragma once
+#ifndef CLSHAPE_H
+#define CLSHAPE_H
 
 
 
@@ -88,3 +89,5 @@ namespace cl {
 };
 
 
+
+#endif

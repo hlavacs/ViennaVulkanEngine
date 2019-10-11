@@ -1,4 +1,6 @@
-#pragma once
+#ifndef CLINCLUDE_H
+#define CLINCLUDE_H
+
 
 #define GLM_FORCE_RADIANS
 #define GLM_FORCE_DEPTH_ZERO_TO_ONE
@@ -36,3 +38,4 @@ namespace cl {
 };
 
 
+#endif

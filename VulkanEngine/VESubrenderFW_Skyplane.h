@@ -5,7 +5,9 @@
 *
 */
 
-#pragma once
+#ifndef VESUBRENDERFWSKYPLANE_H
+#define VESUBRENDERFWSKYPLANE_H
+
 
 namespace ve {
 
@@ -33,3 +35,5 @@ namespace ve {
 
 
 
+
+#endif

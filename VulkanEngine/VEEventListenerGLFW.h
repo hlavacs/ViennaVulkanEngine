@@ -8,7 +8,8 @@
 	@date 2019
 */
 
-#pragma once
+#ifndef VEEVENTLISTENERGLFW_H
+#define VEEVENTLISTENERGLFW_H
 
 namespace ve {
 
@@ -45,3 +46,5 @@ namespace ve {
 	};
 }
 
+
+#endif

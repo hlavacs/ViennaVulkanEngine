@@ -5,7 +5,10 @@
 *
 */
 
-#pragma once
+#ifndef VERENDERERFORWARD_H
+#define VERENDERERFORWARD_H
+
+
 
 #ifndef getRendererForwardPointer
 #define getRendererForwardPointer() g_pVERendererForwardSingleton
@@ -164,4 +167,7 @@ namespace ve {
 }
 
 
+
+
+#endif
 

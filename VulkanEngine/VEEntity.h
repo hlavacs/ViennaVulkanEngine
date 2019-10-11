@@ -6,7 +6,9 @@
 */
 
 
-#pragma once
+#ifndef VEENTITY_H
+#define VEENTITY_H
+
 
 namespace ve {
 
@@ -629,3 +631,5 @@ namespace ve {
 }
 
 
+
+#endif
