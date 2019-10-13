@@ -158,18 +158,11 @@ namespace ve {
 											{ VK_SHADER_STAGE_FRAGMENT_BIT },
 											&m_descriptorSetLayoutShadow);
 
-		//set 3, binding 0 : UBO per scene object: camera, light, entity
-		vh::vhRenderCreateDescriptorSetLayout(	getRendererForwardPointer()->getDevice(),
-												{ 1 },
-												{ VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER },
-												{ VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT , },
-												&m_descriptorSetLayoutPerObject);
-
 		vh::vhRenderCreateDescriptorSetLayout(	getRendererForwardPointer()->getDevice(),
 												{ 1 },
 												{ VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC },
 												{ VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT , },
-												&m_descriptorSetLayoutPerObject2);
+												&m_descriptorSetLayoutPerObject);
 
 		vh::vhRenderCreateDescriptorSets(m_device, (uint32_t)m_swapChainImages.size(), m_descriptorSetLayoutShadow,   getDescriptorPool(), m_descriptorSetsShadow);
 
@@ -269,7 +262,6 @@ namespace ve {
 		//destroy per frame resources
 		vkDestroyDescriptorPool(m_device, m_descriptorPool, nullptr);
 		vkDestroyDescriptorSetLayout(m_device, m_descriptorSetLayoutPerObject, nullptr);
-		vkDestroyDescriptorSetLayout(m_device, m_descriptorSetLayoutPerObject2, nullptr);
 		vkDestroyDescriptorSetLayout(m_device, m_descriptorSetLayoutShadow, nullptr);
 
 		for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {

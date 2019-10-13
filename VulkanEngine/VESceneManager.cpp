@@ -39,7 +39,7 @@ namespace ve {
 		vh::vhMemBlockListInit(getRendererForwardPointer()->getDevice(),
 			getRendererForwardPointer()->getVmaAllocator(),
 			getRendererForwardPointer()->getDescriptorPool(),
-			getRendererForwardPointer()->getDescriptorSetLayoutPerObject2(),
+			getRendererForwardPointer()->getDescriptorSetLayoutPerObject(),
 			2048, sizeof(VEEntity::veUBOPerEntity_t),
 			getRendererForwardPointer()->getSwapChainNumber(),
 			m_memoryBlockMap[VESceneObject::VE_OBJECT_TYPE_ENTITY]);
@@ -48,7 +48,7 @@ namespace ve {
 		vh::vhMemBlockListInit(getRendererForwardPointer()->getDevice(),
 			getRendererForwardPointer()->getVmaAllocator(),
 			getRendererForwardPointer()->getDescriptorPool(),
-			getRendererForwardPointer()->getDescriptorSetLayoutPerObject2(),
+			getRendererForwardPointer()->getDescriptorSetLayoutPerObject(),
 			64, sizeof(VECamera::veUBOPerCamera_t),
 			getRendererForwardPointer()->getSwapChainNumber(),
 			m_memoryBlockMap[VESceneObject::VE_OBJECT_TYPE_CAMERA]);
@@ -57,7 +57,7 @@ namespace ve {
 		vh::vhMemBlockListInit(getRendererForwardPointer()->getDevice(),
 			getRendererForwardPointer()->getVmaAllocator(),
 			getRendererForwardPointer()->getDescriptorPool(),
-			getRendererForwardPointer()->getDescriptorSetLayoutPerObject2(),
+			getRendererForwardPointer()->getDescriptorSetLayoutPerObject(),
 			16, sizeof(VELight::veUBOPerLight_t),
 			getRendererForwardPointer()->getSwapChainNumber(),
 			m_memoryBlockMap[VESceneObject::VE_OBJECT_TYPE_LIGHT]);
