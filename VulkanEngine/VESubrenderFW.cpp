@@ -96,8 +96,8 @@ namespace ve {
 			pLight->m_memoryHandle.pMemBlock->descriptorSets[imageIndex]
 		};
 
-		uint32_t offsets[2] = { pCamera->m_memoryHandle.entryIndex * sizeof(VECamera::veUBOPerCamera_t),
-			pLight->m_memoryHandle.entryIndex * sizeof(VELight::veUBOPerLight_t) };
+		uint32_t offsets[2] = { (uint32_t)(pCamera->m_memoryHandle.entryIndex * sizeof(VECamera::veUBOPerCamera_t)),
+			(uint32_t)(pLight->m_memoryHandle.entryIndex * sizeof(VELight::veUBOPerLight_t)) };
 
 		if (descriptorSetsShadow.size()>0) {
 			set.push_back(descriptorSetsShadow[imageIndex]);

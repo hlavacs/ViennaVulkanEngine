@@ -193,7 +193,7 @@ namespace ve {
 	* \param[in] viewType Type for the image views
 	*
 	*/
-	VETexture::VETexture(std::string name, gli::texture_cube &texCube,
+	/*VETexture::VETexture(std::string name, gli::texture_cube &texCube,
 		VkImageCreateFlags flags, VkImageViewType viewType) : VENamedClass(name) {
 
 		VECHECKRESULT(vh::vhBufCreateTexturecubeImage(getRendererPointer()->getDevice(), getRendererPointer()->getVmaAllocator(),
@@ -207,7 +207,7 @@ namespace ve {
 							m_format, VK_IMAGE_VIEW_TYPE_CUBE, 6, VK_IMAGE_ASPECT_COLOR_BIT, &m_imageInfo.imageView));
 
 		VECHECKRESULT(vh::vhBufCreateTextureSampler(getRendererPointer()->getDevice(), &m_imageInfo.sampler));
-	}
+	}*/
 
 	/**
 	* \brief VETexture destructor - destroy the sampler, image view and image

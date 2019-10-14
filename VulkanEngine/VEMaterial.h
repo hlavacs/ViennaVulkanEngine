@@ -33,7 +33,7 @@ namespace ve {
 		VkExtent2D		m_extent = { 0,0 };						///<map extent
 		VkFormat		m_format;								///<texture format
 
-		VETexture(std::string name, gli::texture_cube &texCube, VkImageCreateFlags flags = VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT, VkImageViewType viewType = VK_IMAGE_VIEW_TYPE_CUBE);
+		//VETexture(std::string name, gli::texture_cube &texCube, VkImageCreateFlags flags = VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT, VkImageViewType viewType = VK_IMAGE_VIEW_TYPE_CUBE);
 		VETexture(std::string name, std::string &basedir, std::vector<std::string> texNames, VkImageCreateFlags flags = 0, VkImageViewType viewtype = VK_IMAGE_VIEW_TYPE_2D);
 
 		///Empty constructor

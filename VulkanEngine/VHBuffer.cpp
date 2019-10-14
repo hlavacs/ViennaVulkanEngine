@@ -499,8 +499,8 @@ namespace vh {
 											VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VMA_MEMORY_USAGE_CPU_ONLY,
 											&stagingBuffer, &stagingBufferAllocation ) );
 
-		gli::byte* mappedData;
-		gli::byte* memPointer;
+		/*gli::*/byte* mappedData;
+		/*gli::*/byte* memPointer;
 		VHCHECKRESULT( vmaMapMemory(allocator, stagingBufferAllocation, (void**)&mappedData) );
 		memPointer = mappedData;
 		for ( auto image : imageData ) {
@@ -578,7 +578,7 @@ namespace vh {
 	* \returns VK_SUCCESS or a Vulkan error code
 	*
 	*/
-	VkResult vhBufCreateTexturecubeImage(VkDevice device, VmaAllocator allocator, VkQueue graphicsQueue, VkCommandPool commandPool,
+	/*VkResult vhBufCreateTexturecubeImage(VkDevice device, VmaAllocator allocator, VkQueue graphicsQueue, VkCommandPool commandPool,
 									gli::texture_cube &texCube, VkImage *textureImage, VmaAllocation *textureImageAllocation, 
 									VkFormat *pFormat) {
 
@@ -674,7 +674,7 @@ namespace vh {
 
 		vmaDestroyBuffer(allocator, stagingBuffer, stagingBufferAllocation);
 		return VK_SUCCESS;
-	}
+	}*/
 
 
 
@@ -774,7 +774,7 @@ namespace vh {
 				VkQueue graphicsQueue, VkCommandPool commandPool, 
 				VkImage image, VkFormat format,
 				VkImageAspectFlagBits aspect, VkImageLayout layout,
-				gli::byte *bufferData, uint32_t width, uint32_t height, uint32_t imageSize) {
+				/*gli::*/byte *bufferData, uint32_t width, uint32_t height, uint32_t imageSize) {
 
 		VkBuffer stagingBuffer;
 		VmaAllocation stagingBufferAllocation;
@@ -799,10 +799,10 @@ namespace vh {
 		vmaUnmapMemory(allocator, stagingBufferAllocation);
 
 		for (uint32_t i = 0; i < width * height; i++) {
-			gli::byte r = bufferData[4 * i + 0];
-			gli::byte g = bufferData[4 * i + 1];
-			gli::byte b = bufferData[4 * i + 2];
-			gli::byte a = bufferData[4 * i + 3];
+			/*gli::*/byte r = bufferData[4 * i + 0];
+			/*gli::*/byte g = bufferData[4 * i + 1];
+			/*gli::*/byte b = bufferData[4 * i + 2];
+			/*gli::*/byte a = bufferData[4 * i + 3];
 
 			bufferData[4 * i + 0] = b;
 			bufferData[4 * i + 1] = g;
@@ -837,7 +837,7 @@ namespace vh {
 		VkCommandPool commandPool,
 		VkImage image, VkFormat format, 
 		VkImageAspectFlagBits aspect, VkImageLayout layout,
-		gli::byte *bufferData, uint32_t width, uint32_t height, uint32_t imageSize) {
+		/*gli::*/byte *bufferData, uint32_t width, uint32_t height, uint32_t imageSize) {
 
 		VkBuffer stagingBuffer;
 		VmaAllocation stagingBufferAllocation;

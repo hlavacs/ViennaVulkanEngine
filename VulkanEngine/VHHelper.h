@@ -48,7 +48,7 @@
 #include <stb_image.h>
 #include <stb_image_write.h>
 #include <ThreadPool.h>
-#include <gli/gli.hpp>
+//#include <gli/gli.hpp>
 #include "CLInclude.h"
 
 #include <assimp/Importer.hpp>
@@ -254,7 +254,7 @@ namespace vh {
 									VkImage image, VkFormat format, VkImageAspectFlagBits aspect, uint32_t miplevels, uint32_t layerCount,
 									VkImageLayout oldLayout, VkImageLayout newLayout);
 	VkResult vhBufCreateTextureImage(VkDevice device, VmaAllocator allocator, VkQueue graphicsQueue, VkCommandPool commandPool, std::string basedir, std::vector<std::string> names, VkImageCreateFlags flags, VkImage *textureImage, VmaAllocation *textureImageAllocation, VkExtent2D *extent);
-	VkResult vhBufCreateTexturecubeImage(VkDevice device, VmaAllocator allocator, VkQueue graphicsQueue, VkCommandPool commandPool, gli::texture_cube &cube, VkImage *textureImage, VmaAllocation *textureImageAllocation, VkFormat *pformat);
+	//VkResult vhBufCreateTexturecubeImage(VkDevice device, VmaAllocator allocator, VkQueue graphicsQueue, VkCommandPool commandPool, gli::texture_cube &cube, VkImage *textureImage, VmaAllocation *textureImageAllocation, VkFormat *pformat);
 	VkResult vhBufCreateTextureSampler(VkDevice device, VkSampler *textureSampler);
 	VkResult vhBufCreateFramebuffers(VkDevice device, std::vector<VkImageView> imageViews,
 									std::vector<VkImageView> depthImageViews, VkRenderPass renderPass, VkExtent2D extent,
@@ -263,12 +263,12 @@ namespace vh {
 											VkQueue graphicsQueue, 	VkCommandPool commandPool, 
 											VkImage image, VkFormat format,
 											VkImageAspectFlagBits aspect, VkImageLayout layout,
-											gli::byte *bufferData, 	uint32_t width, uint32_t height, uint32_t imageSize);
+											/*gli::*/byte *bufferData, 	uint32_t width, uint32_t height, uint32_t imageSize);
 	VkResult vhBufCopyImageToHost(	VkDevice device, VmaAllocator allocator, 
 									VkQueue graphicsQueue, VkCommandPool commandPool,
 									VkImage image, VkFormat format, 
 									VkImageAspectFlagBits aspect, VkImageLayout layout,
-									gli::byte *bufferData, uint32_t width, uint32_t height, uint32_t imageSize);
+									/*gli::*/byte *bufferData, uint32_t width, uint32_t height, uint32_t imageSize);
 	VkResult vhBufCreateVertexBuffer(VkDevice device, VmaAllocator allocator,
 									VkQueue graphicsQueue, VkCommandPool commandPool,
 									std::vector<vh::vhVertex> &vertices,

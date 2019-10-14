@@ -107,10 +107,10 @@ namespace ve {
 											VECamera *pCamera, VELight *pLight,
 											std::vector<VkDescriptorSet> descriptorSets);*/
 
-		void VERendererForward::prepareRecording();
-		void VERendererForward::recordSecondaryBuffers();
-		void VERendererForward::recordSecondaryBuffersForLight( VELight *Light, uint32_t numPass);
-		void VERendererForward::recordPrimaryBuffers();
+		void prepareRecording();
+		void recordSecondaryBuffers();
+		void recordSecondaryBuffersForLight( VELight *Light, uint32_t numPass);
+		void recordPrimaryBuffers();
 
 		virtual void drawFrame();					//draw one frame
 		virtual void prepareOverlay();				//prepare to draw the overlay
