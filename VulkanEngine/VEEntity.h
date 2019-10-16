@@ -194,7 +194,7 @@ namespace ve {
 			glm::vec4 color;			///<Uniform color if needed by shader
 			glm::vec4 param;			///<Texture scaling and animation: 0,1..scale 2,3...offset
 			glm::ivec4 iparam;			///<iparam[0] is the resource idx
-			glm::vec4 padding[5];		///<paddding to ensure that struct has size 256
+			glm::vec4 a,b,c,d,e;		///<paddding to ensure that struct has size 256
 		};
 
 	protected:
@@ -281,7 +281,7 @@ namespace ve {
 			glm::mat4 view;			///<Camera view matrix
 			glm::mat4 proj;			///<Camera projection matrix
 			glm::vec4 param;		///<param[0]: near plane param[1]: far plane distances - 2 and 3 are shadow depth fractions
-			glm::vec4 padding[3];	///<paddding to ensure that struct has size multiple of 256
+			glm::vec4 a,b,c;		///<paddding to ensure that struct has size multiple of 256
 		};
 
 		struct veUBOPerCamera_t m_ubo;		///<The UBO that is copied to the GPU
@@ -471,7 +471,7 @@ namespace ve {
 			glm::vec4	col_diffuse;						///<Diffuse color
 			glm::vec4	col_specular;						///<Specular color
 			glm::vec4	param;								///<Light parameters
-			glm::vec4	padding[7];							///<paddding to ensure that struct has size multiple of 256
+			glm::vec4	a,b,c,d,e,f,g;						///<paddding to ensure that struct has size multiple of 256
 			VECamera::veUBOPerCamera_t shadowCameras[6];	///<Up to 6 different shadows, each having its own camera and shadow map
 		};
 
