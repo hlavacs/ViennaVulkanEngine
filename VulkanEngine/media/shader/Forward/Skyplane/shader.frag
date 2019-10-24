@@ -2,7 +2,7 @@
 #extension GL_ARB_separate_shader_objects : enable
 #extension GL_GOOGLE_include_directive : enable
 
-#define RESOURCEARRAYLENGTH 4
+#define RESOURCEARRAYLENGTH 2
 
 #include "../common_defines.glsl"
 #include "../light.glsl"
