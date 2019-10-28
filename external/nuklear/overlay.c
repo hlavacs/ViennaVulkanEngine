@@ -64,8 +64,9 @@ VkSemaphore submit_overlay(struct overlay_settings* settings, uint32_t buffer_in
         {
 
             nk_layout_row_static(ctx, 30, 80, 1);
-            if (nk_button_label(ctx, "button"))
-                fprintf(stdout, "button pressed\n");
+            
+            /*if (nk_button_label(ctx, "button"))
+                fprintf(stdout, "button pressed\n");*/
 
             nk_layout_row_dynamic(ctx, 30, 2);
             if (nk_option_label(ctx, "up", settings->orientation == UP)) settings->orientation = UP;
