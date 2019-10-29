@@ -26,7 +26,7 @@
 #undef VK_INSTANCE_LEVEL_FUNCTION
 #undef VK_DEVICE_LEVEL_FUNCTION
 
-
+/*
 HMODULE VulkanLibrary;
 
 VkResult vhLoadVulkanLibrary() {
@@ -63,6 +63,7 @@ VkResult vhLoadExportedEntryPoints() {
 
 	return VK_SUCCESS;
 }
+*/
 
 
 VkResult vhLoadGlobalLevelEntryPoints() {
