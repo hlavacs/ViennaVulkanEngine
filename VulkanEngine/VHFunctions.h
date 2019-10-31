@@ -10,8 +10,8 @@
 
 #include "VHFunctions.inl"
 
-//VkResult vhLoadVulkanLibrary();
-//VkResult vhLoadExportedEntryPoints();
+VkResult vhLoadVulkanLibrary();
+VkResult vhLoadExportedEntryPoints();
 VkResult vhLoadGlobalLevelEntryPoints();
 VkResult vhLoadInstanceLevelEntryPoints( VkInstance instance );
 VkResult vhLoadDeviceLevelEntryPoints( VkInstance instance, VkDevice device );

@@ -207,10 +207,10 @@ namespace ve {
 	void VERendererForward::createSubrenderers() {
 		addSubrenderer(new VESubrenderFW_C1());
 		addSubrenderer(new VESubrenderFW_D());
-		addSubrenderer(new VESubrenderFW_DN());
+		//addSubrenderer(new VESubrenderFW_DN());
 		addSubrenderer(new VESubrenderFW_Skyplane());
 		addSubrenderer( new VESubrenderFW_Shadow());
-		addSubrenderer(new VESubrenderFW_Nuklear());
+		//addSubrenderer(new VESubrenderFW_Nuklear());
 	}
 
 
@@ -475,7 +475,7 @@ namespace ve {
 
 		std::vector<VkClearValue> clearValuesLight = {};	//render target and depth buffer should be cleared only first time
 		VkClearValue cv1, cv2;
-		cv1.color = { 0.0f, 0.0f, 0.0f, 1.0f };
+		cv1.color = { 0.5f, 0.5f, 0.8f, 1.0f };
 		clearValuesLight.push_back(cv1);
 		cv2.depthStencil = { 1.0f, 0 };
 		clearValuesLight.push_back(cv2);

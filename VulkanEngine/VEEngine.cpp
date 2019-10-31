@@ -27,8 +27,8 @@ namespace ve {
 	VEEngine::VEEngine(bool debug) : m_debug(debug) {
 		g_pVEEngineSingleton = this; 
 
-		//if (vhLoadVulkanLibrary() != VK_SUCCESS ) exit(-1);
-		//if (vhLoadExportedEntryPoints() != VK_SUCCESS) exit(-1);
+		if (vhLoadVulkanLibrary() != VK_SUCCESS ) exit(-1);
+		if (vhLoadExportedEntryPoints() != VK_SUCCESS) exit(-1);
 		if (vhLoadGlobalLevelEntryPoints() != VK_SUCCESS) exit(-1);
 	}
 

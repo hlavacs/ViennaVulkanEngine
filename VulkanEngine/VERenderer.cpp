@@ -93,8 +93,8 @@ namespace ve {
 			if (pEntity->m_pMaterial->mapDiffuse != nullptr) {
 
 				if (pEntity->m_pMaterial->mapNormal != nullptr) {
-					type = VESubrender::VE_SUBRENDERER_TYPE_DIFFUSEMAP_NORMALMAP;
-					break;
+					//type = VESubrender::VE_SUBRENDERER_TYPE_DIFFUSEMAP_NORMALMAP;
+					//break;
 				}
 
 				type = VESubrender::VE_SUBRENDERER_TYPE_DIFFUSEMAP;

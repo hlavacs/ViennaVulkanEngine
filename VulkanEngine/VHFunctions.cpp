@@ -26,15 +26,20 @@
 #undef VK_INSTANCE_LEVEL_FUNCTION
 #undef VK_DEVICE_LEVEL_FUNCTION
 
-/*
-HMODULE VulkanLibrary;
+#include <dlfcn.h>
+void *VulkanLibrary;
+
 
 VkResult vhLoadVulkanLibrary() {
 
 #if defined(VK_USE_PLATFORM_WIN32_KHR)
+ 
+    HMODULE VulkanLibrary;
+
 	VulkanLibrary = LoadLibrary((LPCWSTR)L"vulkan-1.dll");
 #else
-	VulkanLibrary = dlopen("libvulkan.so.1", RTLD_NOW);
+	//VulkanLibrary = dlopen("libvulkan.so.1", RTLD_NOW);
+    VulkanLibrary = dlopen("libvulkan.1.dylib", RTLD_LOCAL);
 #endif
 
 	if (VulkanLibrary == nullptr) {
@@ -63,7 +68,7 @@ VkResult vhLoadExportedEntryPoints() {
 
 	return VK_SUCCESS;
 }
-*/
+
 
 
 VkResult vhLoadGlobalLevelEntryPoints() {
