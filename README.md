@@ -117,3 +117,32 @@ Building and running
 -	https://formulae.brew.sh/formula/glm
 -	https://formulae.brew.sh/formula/assimp
 -	https://github.com/g-truc/gli
+
+
+# Setup of macOS branch in XCode
+### Step 1: clone / import project to xCode
+- cd to <project-dir>
+- git clone —branch macOS https://github.com/hlavacs/ViennaVulkanEngine.git
+- follow steps of this stack overflow post (https://stackoverflow.com/questions/18084928/import-project-from-git-in-xcode/50728567#50728567) to import project
+- Select „Command Line Tool“ when creating the XCode project
+- Important: When adding folders to Xcode using drag and drop, select “Copy items if needed” and select “Create groups” and mark the checkbox in „add to targets“
+
+### Step 2: install dependencies, link frameworks and libraries
+- most steps are documented in [this tutorial](https://vulkan-tutorial.com/Development_environment#page_MacOS)
+- Download the Vulkan SDK: https://vulkan.lunarg.com/
+- Install glfw3, glm and assimp using brew install
+- Set up the Header Search Paths and Library search paths as described in the tutorial
+- go to tab „Build Settings“
+- add „/usr/local/include“ (for the libs installed by brew) and „<vulkansdk>/macOS/include“ to Header Search paths (set both to non-recursive) [<vulkansdk> := the path to the vulkan sdk on your machine]
+- add the „external“ directory to header search paths (select „recursive“)
+- remove everything from Library Search Paths (if there is anything)
+- add „/usr/local/lib“ and „<vulkansdk>/macOS/lib“ to Library Search Paths
+- go to tab „Build Phases“ (we’ll add the dynamic libraries for vulkan / glfw3 / assimp now)
+- remove everything from the List „Link Binary with Frameworks“
+- from /usr/local/lib“, drag „libassimp.5.x.x.dylib“ & „libglfw3.x.dylib“ into Linked Frameworks and Libraries
+- from <vulkansdk>/macOS/lib, drag „libvulkan.1.dylib“ and „libvulkan.1.x.xx.dylib“ 
+Note: the „x“’s depend on the version of the libraries that you have installed ]
+- in Build Phases -> „Copy Files“, change Destination to "Frameworks", clear the subpath and deselect "Copy only when installing". Click on the "+" sign and add all frameworks here aswell.
+- Add the Metal Library: in „Link Binary With Libraries“, click ‚+‘, search for Metal.framework
+- Add the .cpp files from the project to the “Compile Sources” Build Phase (if they aren’t there by default)
+--> Open /VulkanEngine/VHHelper.h. If there are no errors in this file, all libs/frameworks are found.
