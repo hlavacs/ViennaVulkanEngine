@@ -141,7 +141,7 @@ Building and running
 - remove everything from the List „Link Binary with Frameworks“
 - from /usr/local/lib“, drag „libassimp.5.x.x.dylib“ & „libglfw3.x.dylib“ into Linked Frameworks and Libraries
 - from <vulkansdk>/macOS/lib, drag „libvulkan.1.dylib“ and „libvulkan.1.x.xx.dylib“ 
-Note: the „x“’s depend on the version of the libraries that you have installed ]
+- Note: the „x“’s depend on the version of the libraries that you have installed ]
 - in Build Phases -> „Copy Files“, change Destination to "Frameworks", clear the subpath and deselect "Copy only when installing". Click on the "+" sign and add all frameworks here aswell.
 - Add the Metal Library: in „Link Binary With Libraries“, click ‚+‘, search for Metal.framework
 - Add the .cpp files from the project to the “Compile Sources” Build Phase (if they aren’t there by default)
