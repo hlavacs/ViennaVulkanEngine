@@ -50,9 +50,11 @@ namespace ve {
 			break;
 		case GLFW_KEY_W:
 			translate = pCamera->getTransform() * glm::vec4(0.0, 0.0, 1.0, 1.0); //forward
+			translate.y = 0.0f;
 			break;
 		case GLFW_KEY_S:
 			translate = pCamera->getTransform() * glm::vec4(0.0, 0.0, -1.0, 1.0); //back
+			translate.y = 0.0f;
 			break;
 		case GLFW_KEY_Q:
 			translate = glm::vec4(0.0, -1.0, 0.0, 1.0); //down

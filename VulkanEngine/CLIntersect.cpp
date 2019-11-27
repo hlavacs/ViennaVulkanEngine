@@ -47,6 +47,7 @@ namespace cl {
 				clIntersect(p, halfspaces[3]);
 	}
 
+
 	/**
 	*
 	* \brief Test whether a point and a sphere intersect
