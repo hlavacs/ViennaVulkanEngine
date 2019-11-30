@@ -88,6 +88,8 @@ namespace ve {
 		virtual void closeEngine();				//Close down the engine
 
 	public:
+		irrklang::ISoundEngine* m_irrklangEngine = irrklang::createIrrKlangDevice();
+
 		VEEngine( bool debug = false );			//Only create ONE instance of the engine!
 		~VEEngine() {};
 

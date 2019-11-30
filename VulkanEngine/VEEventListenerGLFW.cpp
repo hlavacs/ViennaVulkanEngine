@@ -37,6 +37,7 @@ namespace ve {
 		glm::vec4 translate = glm::vec4(0.0, 0.0, 0.0, 1.0);	//total translation
 		glm::vec4 rot4 = glm::vec4(1.0);						//total rotation around the axes, is 4d !
 		float angle = 0.0;
+		float rotSpeed = 2.0;
 
 		VECamera *pCamera = getSceneManagerPointer()->getCamera();
 		VESceneNode *pParent = pCamera->getParent();
@@ -63,19 +64,19 @@ namespace ve {
 			translate = glm::vec4(0.0, 1.0, 0.0, 1.0);  //up
 			break;
 		case GLFW_KEY_LEFT:							//yaw rotation is already in parent space
-			angle = (float)event.dt * -1.0f;
+			angle = rotSpeed * (float)event.dt * -1.0f;
 			rot4 = glm::vec4(0.0, 1.0, 0.0, 1.0);
 			break;
 		case GLFW_KEY_RIGHT:						//yaw rotation is already in parent space
-			angle = (float)event.dt * 1.0f;
+			angle = rotSpeed * (float)event.dt * 1.0f;
 			rot4 = glm::vec4(0.0, 1.0, 0.0, 1.0);
 			break;
 		case GLFW_KEY_UP:							//pitch rotation is in cam/local space
-			angle = (float)event.dt * 1.0f;			//pitch angle
+			angle = rotSpeed * (float)event.dt * 1.0f;			//pitch angle
 			rot4 = pCamera->getTransform() * glm::vec4(1.0, 0.0, 0.0, 1.0); //x axis from local to parent space!
 			break;
 		case GLFW_KEY_DOWN:							//pitch rotation is in cam/local space
-			angle = (float)event.dt * -1.0f;		//pitch angle
+			angle = rotSpeed * (float)event.dt * -1.0f;		//pitch angle
 			rot4 = pCamera->getTransform() * glm::vec4(1.0, 0.0, 0.0, 1.0); //x axis from local to parent space!
 			break;
 

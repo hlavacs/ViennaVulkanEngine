@@ -13,8 +13,11 @@
 namespace ve {
 
 
-	uint32_t getScore();
+	uint32_t g_score = 0;
 
+	//
+	//Draw Score
+	//
 	class EventListenerGUI : public VEEventListener {
 	protected:
 		virtual void onDrawOverlay(veEvent event) {
@@ -29,7 +32,7 @@ namespace ve {
 			{
 				char outbuffer[100];
 				nk_layout_row_static(ctx, 30, 80, 1);
-				sprintf(outbuffer, "%03d", getScore());
+				sprintf(outbuffer, "%03d", g_score);
 				nk_label(ctx, outbuffer, NK_TEXT_LEFT);
 			}
 
@@ -45,10 +48,23 @@ namespace ve {
 	};
 
 
+	//
+	// Collision events
+	//
+	static std::default_random_engine e{ 12345 };
+	static std::uniform_real_distribution<> d{ -10.0f, 10.0f };
+
 	class EventListenerCollision : public VEEventListener {
 	protected:
 		virtual void onFrameStarted(veEvent event) {
+			glm::vec3 positionCube   = getSceneManagerPointer()->getSceneNode("The Cube")->getPosition();
+			glm::vec3 positionCamera = getSceneManagerPointer()->getSceneNode("StandardCameraParent")->getPosition();
 
+			float distance = glm::length(positionCube - positionCamera);
+			if (distance < 1) {
+				g_score++;
+				getSceneManagerPointer()->getSceneNode("The Cube")->setPosition(glm::vec3(d(e), 1.0f, d(e)));
+			}
 		};
 
 	public:
@@ -63,10 +79,7 @@ namespace ve {
 
 	///user defined manager class, derived from VEEngine
 	class MyVulkanEngine : public VEEngine {
-	protected:
-
 	public:
-		uint32_t m_score = 0;
 
 		/**
 		* \brief Constructor of my engine
@@ -79,33 +92,10 @@ namespace ve {
 		virtual void registerEventListeners() {
 			VEEngine::registerEventListeners();
 
+			registerEventListener(new EventListenerCollision("Collision"), { veEvent::VE_EVENT_FRAME_STARTED });
 			registerEventListener(new EventListenerGUI("GUI"), { veEvent::VE_EVENT_DRAW_OVERLAY});
 		};
 
-
-		///create many cubes
-		void createCubes(uint32_t n, VESceneNode *parent ) {
-
-			float stride = 300.0f;
-			static std::default_random_engine e{12345};
-			static std::uniform_real_distribution<> d{ 1.0f, stride }; 
-
-			VEMesh *pMesh;
-			VECHECKPOINTER( pMesh = getSceneManagerPointer()->getMesh("media/models/test/crate0/cube.obj/cube") );
-
-			VEMaterial *pMat;
-			VECHECKPOINTER( pMat = getSceneManagerPointer()->getMaterial("media/models/test/crate0/cube.obj/cube") );
-
-			for (uint32_t i = 0; i < n; i++) {		
-				VESceneNode *pNode;
-				VECHECKPOINTER( pNode = getSceneManagerPointer()->createSceneNode("The Node" + std::to_string(i), parent) );
-				pNode->setTransform(glm::translate(glm::mat4(1.0f), glm::vec3( d(e) - stride/2.0f, d(e)/2.0f, d(e) - stride/2.0f)));
-
-				VEEntity *e2;
-				VECHECKPOINTER( e2 = getSceneManagerPointer()->createEntity("The Cube" + std::to_string(i), pMesh, pMat, pNode ) );
-			}
-
-		}
 
 		///Load the first level into the game engine
 		///The engine uses Y-UP, Left-handed
@@ -131,16 +121,14 @@ namespace ve {
 			VECHECKPOINTER( pE4 = (VEEntity*)getSceneManagerPointer()->getSceneNode("The Plane/plane_t_n_s.obj/plane/Entity_0") );
 			pE4->setParam( glm::vec4(1000.0f, 1000.0f, 0.0f, 0.0f) );
 
-			std::vector<VEMesh*> meshes;
-			std::vector<VEMaterial*> materials;
-			getSceneManagerPointer()->loadAssets("media/models/test/crate0", "cube.obj", 0, meshes, materials);
+			VESceneNode *e1;
+			VECHECKPOINTER(e1 = getSceneManagerPointer()->loadModel("The Cube", "media/models/test/crate0", "cube.obj"));
+			e1->multiplyTransform(glm::translate(glm::mat4(1.0f), glm::vec3(-10.0f, 1.0f, 10.0f)));
+			pScene->addChild(e1);
 
 		};
 	};
 
-	uint32_t getScore() {
-		return ((MyVulkanEngine*)getEnginePointer())->m_score;
-	}
 
 }
 
