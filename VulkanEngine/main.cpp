@@ -80,6 +80,7 @@ namespace ve {
 				g_time = 30;
 				g_score = 0;
 				getSceneManagerPointer()->getSceneNode("The Cube")->setPosition(glm::vec3(d(e), 1.0f, d(e)));
+				getEnginePointer()->m_irrklangEngine->play2D("media/sounds/ophelia.mp3", true);
 				return;
 			}
 			if (g_gameLost) return;
@@ -101,7 +102,8 @@ namespace ve {
 			g_time -= event.dt;
 			if (g_time <= 0) {
 				g_gameLost = true;
-				getEnginePointer()->m_irrklangEngine->play2D("media/sounds/explosion.wav", false);
+				getEnginePointer()->m_irrklangEngine->removeAllSoundSources();
+				getEnginePointer()->m_irrklangEngine->play2D("media/sounds/gameover.wav", false);
 			}
 		};
 
