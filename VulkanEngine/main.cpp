@@ -14,6 +14,9 @@ namespace ve {
 
 
 	uint32_t g_score = 0;
+	double g_time = 30.0;
+	bool g_gameLost = false;
+	bool g_restart = false;
 
 	//
 	//Draw Score
@@ -26,18 +29,31 @@ namespace ve {
 
 			struct nk_context * ctx = pSubrender->getContext();
 
-			/* GUI */
-			if (nk_begin(ctx, "Score", nk_rect(0, 0, 200, 100),
-				NK_WINDOW_BORDER | NK_WINDOW_MOVABLE | NK_WINDOW_SCALABLE | NK_WINDOW_MINIMIZABLE | NK_WINDOW_TITLE))
-			{
-				char outbuffer[100];
-				nk_layout_row_static(ctx, 30, 80, 1);
-				sprintf(outbuffer, "%03d", g_score);
-				nk_label(ctx, outbuffer, NK_TEXT_LEFT);
+			if (!g_gameLost) {
+				if (nk_begin(ctx, "", nk_rect(0, 0, 200, 170), NK_WINDOW_BORDER )) {
+					char outbuffer[100];
+					nk_layout_row_dynamic(ctx, 45, 1);
+					sprintf(outbuffer, "Score: %03d", g_score);
+					nk_label(ctx, outbuffer, NK_TEXT_LEFT);
+
+					nk_layout_row_dynamic(ctx, 45, 1);
+					sprintf(outbuffer, "Time: %004.1lf", g_time);
+					nk_label(ctx, outbuffer, NK_TEXT_LEFT);
+				}
 			}
+			else {
+				if (nk_begin(ctx, "", nk_rect(500, 500, 200, 170), NK_WINDOW_BORDER )) {
+					nk_layout_row_dynamic(ctx, 45, 1);
+					nk_label(ctx, "Game Over", NK_TEXT_LEFT);
+					if (nk_button_label(ctx, "Restart")) {
+						g_restart = true;
+					}
+				}
+
+			};
 
 			nk_end(ctx);
-		};
+		}
 
 	public:
 		///Constructor of class EventListenerGUI
@@ -57,13 +73,35 @@ namespace ve {
 	class EventListenerCollision : public VEEventListener {
 	protected:
 		virtual void onFrameStarted(veEvent event) {
+
+			if (g_restart) {
+				g_gameLost = false;
+				g_restart = false;
+				g_time = 30;
+				g_score = 0;
+				getSceneManagerPointer()->getSceneNode("The Cube")->setPosition(glm::vec3(d(e), 1.0f, d(e)));
+				return;
+			}
+			if (g_gameLost) return;
+
 			glm::vec3 positionCube   = getSceneManagerPointer()->getSceneNode("The Cube")->getPosition();
 			glm::vec3 positionCamera = getSceneManagerPointer()->getSceneNode("StandardCameraParent")->getPosition();
 
 			float distance = glm::length(positionCube - positionCamera);
 			if (distance < 1) {
 				g_score++;
+				getEnginePointer()->m_irrklangEngine->play2D("media/sounds/explosion.wav", false);
+				if (g_score % 10 == 0) {
+					g_time = 30;
+					getEnginePointer()->m_irrklangEngine->play2D("media/sounds/bell.wav", false);
+				}
 				getSceneManagerPointer()->getSceneNode("The Cube")->setPosition(glm::vec3(d(e), 1.0f, d(e)));
+			}
+
+			g_time -= event.dt;
+			if (g_time <= 0) {
+				g_gameLost = true;
+				getEnginePointer()->m_irrklangEngine->play2D("media/sounds/explosion.wav", false);
 			}
 		};
 
@@ -126,6 +164,7 @@ namespace ve {
 			e1->multiplyTransform(glm::translate(glm::mat4(1.0f), glm::vec3(-10.0f, 1.0f, 10.0f)));
 			pScene->addChild(e1);
 
+			m_irrklangEngine->play2D("media/sounds/ophelia.mp3", true);
 		};
 	};
 
