@@ -110,7 +110,7 @@ namespace ve {
 			aiProcess_GenNormals |
 			aiProcess_CalcTangentSpace |
 			aiProcess_Triangulate |
-			//aiProcess_JoinIdenticalVertices | 
+			//aiProcess_JoinIdenticalVertices |
 			//aiProcess_FixInfacingNormals |
 			aiFlags);
 
@@ -562,7 +562,7 @@ namespace ve {
 		std::string filekey = basedir + "/" + texName;
 		VEMesh * pMesh;
 		VECHECKPOINTER( pMesh = m_meshes[STANDARD_MESH_PLANE] );
-		
+
 		VEMaterial *pMat = nullptr;
 		if (m_materials.count(filekey) == 0) {
 			pMat = createMaterial2(filekey);
@@ -702,7 +702,7 @@ namespace ve {
 
 		std::vector<VESceneNode*> children = pNode->getChildrenCopy();
 		for (auto pChild : children) {
-			setVisibility2(pNode, flag);
+			setVisibility2(pChild, flag);
 		}
 	}
 
@@ -719,7 +719,7 @@ namespace ve {
 	void VESceneManager::updateSceneNodes(uint32_t imageIndex) {
 		std::lock_guard<std::mutex> lock(m_mutex);
 
-		m_lights.clear();												//light vector will be created dynamically 
+		m_lights.clear();												//light vector will be created dynamically
 
 		updateSceneNodes2(getRoot(), glm::mat4(1.0f), imageIndex);
 
@@ -871,8 +871,8 @@ namespace ve {
 		createSceneNodeList2(pNode, namelist);
 
 		for (auto nodename : namelist) {
-			m_deletedSceneNodes.push_back(pNode);								//push it to the deleted scene nodes list
-			notifyEventListeners(pNode);										//notify event listeners that this scene node will be deleted soon
+			VESceneNode *pdelNode = m_sceneNodes[nodename];
+			m_deletedSceneNodes.push_back(pdelNode);						//push it to the deleted scene nodes list
 		}
 
 		sceneGraphChanged2();												//make scene graph update
@@ -895,7 +895,7 @@ namespace ve {
 		event.ptr = pNode;
 
 		std::vector<std::string> nameList;
-		std::vector<VEEventListener*> *listeners = 
+		std::vector<VEEventListener*> *listeners =
 			getEnginePointer()->m_eventListeners[veEvent::VE_EVENT_DELETE_NODE];	//list of event listeners interested in this event
 
 		for (auto listener : *listeners) {											//go through them and call onSceneNodeDeleted()
@@ -918,14 +918,14 @@ namespace ve {
 	*/
 	void VESceneManager::deleteSceneNodeAndChildren2(VESceneNode *pNode) {
 
-		if (pNode->hasParent()) pNode->getParent()->removeChild(pNode);
+		//if (pNode->hasParent()) pNode->getParent()->removeChild(pNode);
 
-		std::vector<std::string> namelist;	//first create a list of all child names
-		createSceneNodeList2(pNode, namelist);
+		//std::vector<std::string> namelist;	//first create a list of all child names
+		//createSceneNodeList2(pNode, namelist);
 
 		//go through the list and delete all children
-		for (uint32_t i = 0; i < namelist.size(); i++) {
-			pNode = m_sceneNodes[namelist[i]];
+		//for (uint32_t i = 0; i < namelist.size(); i++) {
+		//	pNode = m_sceneNodes[namelist[i]];
 
 			if (pNode->getNodeType() == VESceneNode::VE_NODE_TYPE_SCENEOBJECT) {
 				VESceneObject *pObject = (VESceneObject*)pNode;
@@ -940,12 +940,12 @@ namespace ve {
 					vh::vhMemBlockRemoveEntry(&pObject->m_memoryHandle);
 				}
 			}
-			m_sceneNodes.erase(namelist[i]);													//remove it from the scene node list
 
-			notifyEventListeners(pNode);		//notify all event listeners that this node will soon be deleted
+			notifyEventListeners(pNode);				//notify all event listeners that this node will soon be deleted
 
-			delete pNode;						//delete the scene node
-		}
+			m_sceneNodes.erase(pNode->getName());		//remove it from the scene node list
+			delete pNode;								//delete the scene node
+		//}
 	}
 
 
@@ -1189,7 +1189,7 @@ namespace ve {
 	* \brief Close down the scene manager and delete all its assets.
 	*/
 	void VESceneManager::closeSceneManager() {
-		for (auto ent : m_sceneNodes) 
+		for (auto ent : m_sceneNodes)
 			delete ent.second;
 		delete m_rootSceneNode;
 		for (auto mesh : m_meshes) delete mesh.second;
@@ -1335,4 +1335,3 @@ namespace ve {
 
 
 }
-
