@@ -74,19 +74,20 @@ namespace ve {
 	class EventListenerCollision : public VEEventListener {
 	protected:
 		virtual void onFrameStarted(veEvent event) {
+			static uint32_t cubeid = 0;
 
 			if (g_restart) {
 				g_gameLost = false;
 				g_restart = false;
 				g_time = 30;
 				g_score = 0;
-				getSceneManagerPointer()->getSceneNode("The Cube")->setPosition(glm::vec3(d(e), 1.0f, d(e)));
+				getSceneManagerPointer()->getSceneNode("The Cube Parent")->setPosition(glm::vec3(d(e), 1.0f, d(e)));
 				getEnginePointer()->m_irrklangEngine->play2D("media/sounds/ophelia.mp3", true);
 				return;
 			}
 			if (g_gameLost) return;
 
-			glm::vec3 positionCube   = getSceneManagerPointer()->getSceneNode("The Cube")->getPosition();
+			glm::vec3 positionCube   = getSceneManagerPointer()->getSceneNode("The Cube Parent")->getPosition();
 			glm::vec3 positionCamera = getSceneManagerPointer()->getSceneNode("StandardCameraParent")->getPosition();
 
 			float distance = glm::length(positionCube - positionCamera);
@@ -97,7 +98,12 @@ namespace ve {
 					g_time = 30;
 					getEnginePointer()->m_irrklangEngine->play2D("media/sounds/bell.wav", false);
 				}
-				getSceneManagerPointer()->getSceneNode("The Cube")->setPosition(glm::vec3(d(e), 1.0f, d(e)));
+
+				VESceneNode *eParent = getSceneManagerPointer()->getSceneNode("The Cube Parent");
+				eParent->setPosition(glm::vec3(d(e), 1.0f, d(e)));
+
+				getSceneManagerPointer()->deleteSceneNodeAndChildren("The Cube"+ std::to_string(cubeid));
+				VECHECKPOINTER(getSceneManagerPointer()->loadModel("The Cube"+ std::to_string(++cubeid)  , "media/models/test/crate0", "cube.obj", 0, eParent) );
 			}
 
 			g_time -= event.dt;
@@ -160,10 +166,11 @@ namespace ve {
 			VECHECKPOINTER( pE4 = (VEEntity*)getSceneManagerPointer()->getSceneNode("The Plane/plane_t_n_s.obj/plane/Entity_0") );
 			pE4->setParam( glm::vec4(1000.0f, 1000.0f, 0.0f, 0.0f) );
 
-			VESceneNode *e1;
-			VECHECKPOINTER(e1 = getSceneManagerPointer()->loadModel("The Cube", "media/models/test/crate0", "cube.obj"));
-			e1->multiplyTransform(glm::translate(glm::mat4(1.0f), glm::vec3(-10.0f, 1.0f, 10.0f)));
-			pScene->addChild(e1);
+			VESceneNode *e1,*eParent;
+			eParent = getSceneManagerPointer()->createSceneNode("The Cube Parent", pScene, glm::mat4(1.0));
+			VECHECKPOINTER(e1 = getSceneManagerPointer()->loadModel("The Cube0", "media/models/test/crate0", "cube.obj"));
+			eParent->multiplyTransform(glm::translate(glm::mat4(1.0f), glm::vec3(-10.0f, 1.0f, 10.0f)));
+			eParent->addChild(e1);
 
 			m_irrklangEngine->play2D("media/sounds/ophelia.mp3", true);
 		};

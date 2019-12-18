@@ -695,6 +695,8 @@ namespace ve {
 	* \brief Set the visibility of a whole subtree
 	*/
 	void VESceneManager::setVisibility2(VESceneNode *pNode, bool flag) {
+		//std::cout << "Deleting node " << pNode->getName() << "\n";
+
 		if (pNode->getNodeType() == VESceneNode::VE_NODE_TYPE_SCENEOBJECT &&
 			((VESceneObject*)pNode)->getObjectType() == VESceneObject::VE_OBJECT_TYPE_ENTITY) {
 			((VEEntity*)pNode)->m_visible = flag;
@@ -702,7 +704,7 @@ namespace ve {
 
 		std::vector<VESceneNode*> children = pNode->getChildrenCopy();
 		for (auto pChild : children) {
-			setVisibility2(pNode, flag);
+			setVisibility2(pChild, flag);
 		}
 	}
 
@@ -871,8 +873,8 @@ namespace ve {
 		createSceneNodeList2(pNode, namelist);
 
 		for (auto nodename : namelist) {
-			m_deletedSceneNodes.push_back(pNode);								//push it to the deleted scene nodes list
-			notifyEventListeners(pNode);										//notify event listeners that this scene node will be deleted soon
+			VESceneNode *pdelNode = m_sceneNodes[nodename];
+			m_deletedSceneNodes.push_back(pdelNode);						//push it to the deleted scene nodes list
 		}
 
 		sceneGraphChanged2();												//make scene graph update
@@ -918,14 +920,14 @@ namespace ve {
 	*/
 	void VESceneManager::deleteSceneNodeAndChildren2(VESceneNode *pNode) {
 
-		if (pNode->hasParent()) pNode->getParent()->removeChild(pNode);
+		//if (pNode->hasParent()) pNode->getParent()->removeChild(pNode);
 
-		std::vector<std::string> namelist;	//first create a list of all child names
-		createSceneNodeList2(pNode, namelist);
+		//std::vector<std::string> namelist;	//first create a list of all child names
+		//createSceneNodeList2(pNode, namelist);
 
 		//go through the list and delete all children
-		for (uint32_t i = 0; i < namelist.size(); i++) {
-			pNode = m_sceneNodes[namelist[i]];
+		//for (uint32_t i = 0; i < namelist.size(); i++) {
+		//	pNode = m_sceneNodes[namelist[i]];
 
 			if (pNode->getNodeType() == VESceneNode::VE_NODE_TYPE_SCENEOBJECT) {
 				VESceneObject *pObject = (VESceneObject*)pNode;
@@ -940,12 +942,12 @@ namespace ve {
 					vh::vhMemBlockRemoveEntry(&pObject->m_memoryHandle);
 				}
 			}
-			m_sceneNodes.erase(namelist[i]);													//remove it from the scene node list
 
-			notifyEventListeners(pNode);		//notify all event listeners that this node will soon be deleted
+			notifyEventListeners(pNode);				//notify all event listeners that this node will soon be deleted
 
-			delete pNode;						//delete the scene node
-		}
+			m_sceneNodes.erase(pNode->getName());		//remove it from the scene node list
+			delete pNode;								//delete the scene node
+		//}
 	}
 
 
