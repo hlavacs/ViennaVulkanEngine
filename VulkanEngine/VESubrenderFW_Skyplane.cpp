@@ -18,8 +18,6 @@ namespace ve {
 	*
 	*/
 	void VESubrenderFW_Skyplane::initSubrenderer() {
-		m_resourceArrayLength = 16;
-
 		VESubrender::initSubrenderer();
 
 		vh::vhRenderCreateDescriptorSetLayout(getRendererForwardPointer()->getDevice(),

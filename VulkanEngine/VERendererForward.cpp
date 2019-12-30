@@ -141,8 +141,8 @@ namespace ve {
 
 		uint32_t maxobjects = 100000;
 		vh::vhRenderCreateDescriptorPool(m_device,
-										{ VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER , VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER },
-										{ maxobjects, maxobjects, maxobjects },
+										{ VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER },
+										{ maxobjects, maxobjects },
 										&m_descriptorPool);
 
 		//set 0...cam UBO

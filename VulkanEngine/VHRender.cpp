@@ -285,7 +285,7 @@ namespace vh {
 
 		for (uint32_t i = 0; i < uniformBuffers.size(); i++) {
 			if (uniformBuffers[i] != VK_NULL_HANDLE)
-				descriptorTypes.push_back(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
+				descriptorTypes.push_back(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC);
 			else
 				descriptorTypes.push_back(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
 		}

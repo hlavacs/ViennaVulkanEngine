@@ -183,7 +183,7 @@ using namespace ve;
 
 int main() {
 
-	bool debug = false;
+	bool debug = true;
 
 	MyVulkanEngine mve(debug);	//enable or disable debugging (=callback, validation layers)
 
