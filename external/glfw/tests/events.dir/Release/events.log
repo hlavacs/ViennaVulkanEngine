@@ -1,0 +1,6 @@
+﻿  Building Custom Rule D:/data/Vulkan/ViennaVulkanEngine/external/glfw/tests/CMakeLists.txt
+  events.c
+  getopt.c
+  glad_gl.c
+  Code wird generiert...
+  events.vcxproj -> D:\data\Vulkan\ViennaVulkanEngine\external\glfw\tests\Release\events.exe

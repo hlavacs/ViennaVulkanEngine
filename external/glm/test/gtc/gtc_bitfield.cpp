@@ -103,11 +103,11 @@ namespace mask
 		std::clock_t TimeZero = Timestamp5 - Timestamp4;
 		std::clock_t TimeHalf = Timestamp6 - Timestamp5;
 
-		printf("mask[mix]: %d\n", static_cast<unsigned int>(TimeMix));
-		printf("mask[loop]: %d\n", static_cast<unsigned int>(TimeLoop));
-		printf("mask[default]: %d\n", static_cast<unsigned int>(TimeDefault));
-		printf("mask[zero]: %d\n", static_cast<unsigned int>(TimeZero));
-		printf("mask[half]: %d\n", static_cast<unsigned int>(TimeHalf));
+		std::printf("mask[mix]: %d\n", static_cast<unsigned int>(TimeMix));
+		std::printf("mask[loop]: %d\n", static_cast<unsigned int>(TimeLoop));
+		std::printf("mask[default]: %d\n", static_cast<unsigned int>(TimeDefault));
+		std::printf("mask[zero]: %d\n", static_cast<unsigned int>(TimeZero));
+		std::printf("mask[half]: %d\n", static_cast<unsigned int>(TimeHalf));
 
 		return TimeDefault < TimeLoop ? 0 : 1;
 	}
@@ -493,19 +493,29 @@ namespace bitfieldInterleave
 			for(glm::uint8 y = 0; y < 127; ++y)
 			for(glm::uint8 x = 0; x < 127; ++x)
 			{
-				glm::uint64 A(glm::bitfieldInterleave(glm::uint8(x), glm::uint8(y)));
-				glm::uint64 B(glm::bitfieldInterleave(glm::uint16(x), glm::uint16(y)));
-				glm::uint64 C(glm::bitfieldInterleave(glm::uint32(x), glm::uint32(y)));
+				glm::uint64 A(glm::bitfieldInterleave(glm::u8vec2(x, y)));
+				glm::uint64 B(glm::bitfieldInterleave(glm::u16vec2(x, y)));
+				glm::uint64 C(glm::bitfieldInterleave(glm::u32vec2(x, y)));
 
 				Error += A == B ? 0 : 1;
 				Error += A == C ? 0 : 1;
 
-				glm::int64 D(glm::bitfieldInterleave(glm::int8(x), glm::int8(y)));
-				glm::int64 E(glm::bitfieldInterleave(glm::int16(x), glm::int16(y)));
-				glm::int64 F(glm::bitfieldInterleave(glm::int32(x), glm::int32(y)));
+				glm::u32vec2 const& D = glm::bitfieldDeinterleave(C);
+				Error += D.x == x ? 0 : 1;
+				Error += D.y == y ? 0 : 1;
+			}
+		}
 
-				Error += D == E ? 0 : 1;
-				Error += D == F ? 0 : 1;
+		{
+			for(glm::uint8 y = 0; y < 127; ++y)
+			for(glm::uint8 x = 0; x < 127; ++x)
+			{
+				glm::int64 A(glm::bitfieldInterleave(glm::int8(x), glm::int8(y)));
+				glm::int64 B(glm::bitfieldInterleave(glm::int16(x), glm::int16(y)));
+				glm::int64 C(glm::bitfieldInterleave(glm::int32(x), glm::int32(y)));
+
+				Error += A == B ? 0 : 1;
+				Error += A == C ? 0 : 1;
 			}
 		}
 
@@ -531,7 +541,7 @@ namespace bitfieldInterleave
 
 			std::clock_t Time = std::clock() - LastTime;
 
-			std::printf("glm::bitfieldInterleave Time %d clocks\n", static_cast<unsigned int>(Time));
+			std::printf("glm::bitfieldInterleave Time %d clocks\n", static_cast<int>(Time));
 		}
 
 		{
@@ -542,7 +552,7 @@ namespace bitfieldInterleave
 
 			std::clock_t Time = std::clock() - LastTime;
 
-			std::printf("fastBitfieldInterleave Time %d clocks\n", static_cast<unsigned int>(Time));
+			std::printf("fastBitfieldInterleave Time %d clocks\n", static_cast<int>(Time));
 		}
 /*
 		{
@@ -553,7 +563,7 @@ namespace bitfieldInterleave
 
 			std::clock_t Time = std::clock() - LastTime;
 
-			std::printf("loopBitfieldInterleave Time %d clocks\n", static_cast<unsigned int>(Time));
+			std::printf("loopBitfieldInterleave Time %d clocks\n", static_cast<int>(Time));
 		}
 */
 		{
@@ -564,7 +574,7 @@ namespace bitfieldInterleave
 
 			std::clock_t Time = std::clock() - LastTime;
 
-			std::printf("interleaveBitfieldInterleave Time %d clocks\n", static_cast<unsigned int>(Time));
+			std::printf("interleaveBitfieldInterleave Time %d clocks\n", static_cast<int>(Time));
 		}
 
 #		if GLM_ARCH & GLM_ARCH_SSE2_BIT
@@ -576,7 +586,7 @@ namespace bitfieldInterleave
 
 			std::clock_t Time = std::clock() - LastTime;
 
-			std::printf("sseBitfieldInterleave Time %d clocks\n", static_cast<unsigned int>(Time));
+			std::printf("sseBitfieldInterleave Time %d clocks\n", static_cast<int>(Time));
 		}
 
 		{
@@ -587,7 +597,7 @@ namespace bitfieldInterleave
 
 			std::clock_t Time = std::clock() - LastTime;
 
-			std::printf("sseUnalignedBitfieldInterleave Time %d clocks\n", static_cast<unsigned int>(Time));
+			std::printf("sseUnalignedBitfieldInterleave Time %d clocks\n", static_cast<int>(Time));
 		}
 #		endif//GLM_ARCH & GLM_ARCH_SSE2_BIT
 
@@ -599,7 +609,7 @@ namespace bitfieldInterleave
 
 			std::clock_t Time = std::clock() - LastTime;
 
-			std::printf("glm::detail::bitfieldInterleave Time %d clocks\n", static_cast<unsigned int>(Time));
+			std::printf("glm::detail::bitfieldInterleave Time %d clocks\n", static_cast<int>(Time));
 		}
 
 #		if(GLM_ARCH & GLM_ARCH_SSE2_BIT && !(GLM_COMPILER & GLM_COMPILER_GCC))
@@ -619,7 +629,7 @@ namespace bitfieldInterleave
 
 			std::clock_t Time = std::clock() - LastTime;
 
-			std::printf("_mm_bit_interleave_si128 Time %d clocks\n", static_cast<unsigned int>(Time));
+			std::printf("_mm_bit_interleave_si128 Time %d clocks\n", static_cast<int>(Time));
 		}
 #		endif//GLM_ARCH & GLM_ARCH_SSE2_BIT
 
@@ -753,7 +763,7 @@ namespace bitfieldInterleave5
 
 		const std::clock_t EndTime = std::clock();
 
-		std::printf("glm::bitfieldInterleave<u8vec2> Time %d clocks\n", static_cast<unsigned int>(EndTime - BeginTime));
+		std::printf("glm::bitfieldInterleave<u8vec2> Time %d clocks\n", static_cast<int>(EndTime - BeginTime));
 
 		return Error;
 	}
@@ -771,7 +781,7 @@ namespace bitfieldInterleave5
 
 		const std::clock_t EndTime = std::clock();
 
-		std::printf("bitfieldInterleave_u8vec2 Time %d clocks\n", static_cast<unsigned int>(EndTime - BeginTime));
+		std::printf("bitfieldInterleave_u8vec2 Time %d clocks\n", static_cast<int>(EndTime - BeginTime));
 
 		return Error;
 	}
@@ -789,7 +799,7 @@ namespace bitfieldInterleave5
 
 		const std::clock_t EndTime = std::clock();
 
-		std::printf("glm::bitfieldInterleave<u8vec4> Time %d clocks\n", static_cast<unsigned int>(EndTime - BeginTime));
+		std::printf("glm::bitfieldInterleave<u8vec4> Time %d clocks\n", static_cast<int>(EndTime - BeginTime));
 
 		return Error;
 	}
@@ -807,7 +817,7 @@ namespace bitfieldInterleave5
 
 		const std::clock_t EndTime = std::clock();
 
-		std::printf("bitfieldInterleave_u8vec4 Time %d clocks\n", static_cast<unsigned int>(EndTime - BeginTime));
+		std::printf("bitfieldInterleave_u8vec4 Time %d clocks\n", static_cast<int>(EndTime - BeginTime));
 
 		return Error;
 	}
@@ -825,7 +835,7 @@ namespace bitfieldInterleave5
 
 		const std::clock_t EndTime = std::clock();
 
-		std::printf("glm::bitfieldInterleave<u16vec2> Time %d clocks\n", static_cast<unsigned int>(EndTime - BeginTime));
+		std::printf("glm::bitfieldInterleave<u16vec2> Time %d clocks\n", static_cast<int>(EndTime - BeginTime));
 
 		return Error;
 	}
@@ -843,7 +853,7 @@ namespace bitfieldInterleave5
 
 		const std::clock_t EndTime = std::clock();
 
-		std::printf("bitfieldInterleave_u16vec2 Time %d clocks\n", static_cast<unsigned int>(EndTime - BeginTime));
+		std::printf("bitfieldInterleave_u16vec2 Time %d clocks\n", static_cast<int>(EndTime - BeginTime));
 
 		return Error;
 	}
@@ -885,9 +895,26 @@ namespace bitfieldInterleave5
 
 }//namespace bitfieldInterleave5
 
+static int test_bitfieldRotateRight()
+{
+	glm::ivec4 const A = glm::bitfieldRotateRight(glm::ivec4(2), 1);
+	glm::ivec4 const B = glm::ivec4(2) >> 1;
+
+	return A == B;
+}
+
+static int test_bitfieldRotateLeft()
+{
+	glm::ivec4 const A = glm::bitfieldRotateLeft(glm::ivec4(2), 1);
+	glm::ivec4 const B = glm::ivec4(2) << 1;
+
+	return A == B;
+}
+
 int main()
 {
 	int Error = 0;
+
 /* Tests for a faster and to reserve bitfieldInterleave
 	Error += ::bitfieldInterleave5::test();
 	Error += ::bitfieldInterleave5::perf();
@@ -896,6 +923,9 @@ int main()
 	Error += ::bitfieldInterleave3::test();
 	Error += ::bitfieldInterleave4::test();
 	Error += ::bitfieldInterleave::test();
+
+	Error += test_bitfieldRotateRight();
+	Error += test_bitfieldRotateLeft();
 
 #	ifdef NDEBUG
 		Error += ::mask::perf();

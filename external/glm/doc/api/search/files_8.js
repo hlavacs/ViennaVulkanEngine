@@ -1,5 +1,6 @@
 var searchData=
 [
-  ['handed_5fcoordinate_5fspace_2ehpp',['handed_coordinate_space.hpp',['../a00037.html',1,'']]],
-  ['hash_2ehpp',['hash.hpp',['../a00038.html',1,'']]]
+  ['integer_2ehpp',['integer.hpp',['../a00043.html',1,'']]],
+  ['intersect_2ehpp',['intersect.hpp',['../a00044.html',1,'']]],
+  ['io_2ehpp',['io.hpp',['../a00045.html',1,'']]]
 ];

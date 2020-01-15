@@ -1,0 +1,13 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="16.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <CustomBuild Include="D:\data\Vulkan\ViennaVulkanEngine\external\glfw\CMakeFiles\b588e2d58ded67334edb2a289b4f288a\INSTALL_force.rule">
+      <Filter>CMake Rules</Filter>
+    </CustomBuild>
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="CMake Rules">
+      <UniqueIdentifier>{46DF2927-B870-3765-8916-13D33C7487D3}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+</Project>

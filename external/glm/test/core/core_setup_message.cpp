@@ -19,8 +19,26 @@ int test_compiler()
 		case GLM_COMPILER_VC15:
 			std::printf("Visual C++ 15 - 2017\n");
 			break;
+		case GLM_COMPILER_VC15_3:
+			std::printf("Visual C++ 15.3 - 2017\n");
+			break;
+		case GLM_COMPILER_VC15_5:
+			std::printf("Visual C++ 15.5 - 2017\n");
+			break;
+		case GLM_COMPILER_VC15_6:
+			std::printf("Visual C++ 15.6 - 2017\n");
+			break;
+		case GLM_COMPILER_VC15_7:
+			std::printf("Visual C++ 15.7 - 2017\n");
+			break;
+		case GLM_COMPILER_VC15_8:
+			std::printf("Visual C++ 15.8 - 2017\n");
+			break;
+		case GLM_COMPILER_VC15_9:
+			std::printf("Visual C++ 15.9 - 2017\n");
+			break;
 		case GLM_COMPILER_VC16:
-			std::printf("Visual C++ 16 - 20XX\n");
+			std::printf("Visual C++ 16 - 2019\n");
 			break;
 		default:
 			std::printf("Visual C++ version not detected\n");
@@ -153,8 +171,6 @@ int test_instruction_set()
 
 	std::printf("GLM_ARCH: ");
 
-	if(GLM_ARCH == GLM_ARCH_PURE)
-		std::printf("GLM_ARCH_PURE ");
 	if(GLM_ARCH & GLM_ARCH_ARM_BIT)
 		std::printf("ARM ");
 	if(GLM_ARCH & GLM_ARCH_NEON_BIT)
@@ -188,43 +204,27 @@ int test_cpp_version()
 
 int test_operators()
 {
-	glm::vec3 A(1.0f);
-	glm::vec3 B(1.0f);
+	glm::ivec3 A(1);
+	glm::ivec3 B(1);
 	bool R = A != B;
 	bool S = A == B;
 
 	return (S && !R) ? 0 : 1;
 }
 
-template<typename T>
-struct vec
-{
-
-};
-
-template<template<typename> class C, typename T>
-struct Class
-{
-
-};
-
-template<typename T>
-struct Class<vec, T>
-{
-
-};
-
 int main()
 {
-	//Class<vec, float> C;
-
 	int Error = 0;
 
-	Error += test_cpp_version();
-	Error += test_compiler();
-	Error += test_model();
-	Error += test_instruction_set();
-	Error += test_operators();
+#	if !defined(GLM_FORCE_PLATFORM_UNKNOWN) && !defined(GLM_FORCE_COMPILER_UNKNOWN) && !defined(GLM_FORCE_ARCH_UNKNOWN) && !defined(GLM_FORCE_CXX_UNKNOWN)
+		
+		Error += test_cpp_version();
+		Error += test_compiler();
+		Error += test_model();
+		Error += test_instruction_set();
+		Error += test_operators();
+
+#	endif
 	
 	return Error;
 }

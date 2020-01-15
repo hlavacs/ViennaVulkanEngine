@@ -1,0 +1,10 @@
+^D:\DATA\VULKAN\VIENNAVULKANENGINE\EXTERNAL\GLFW\CMAKEFILES\8BB658B10C80D40A0E96104A340287BF\GENERATE.STAMP.RULE
+setlocal
+"C:\Program Files\CMake\bin\cmake.exe" -SD:/data/Vulkan/ViennaVulkanEngine/external/glfw -BD:/data/Vulkan/ViennaVulkanEngine/external/glfw --check-stamp-list CMakeFiles/generate.stamp.list --vs-solution-file D:/data/Vulkan/ViennaVulkanEngine/external/glfw/GLFW.sln
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal & call :cmErrorLevel %errorlevel% & goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd

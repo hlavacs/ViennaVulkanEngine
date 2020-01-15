@@ -1,12 +1,11 @@
 /// @ref gtx_extended_min_max
-/// @file glm/gtx/extended_min_max.inl
 
 namespace glm
 {
 	template<typename T>
 	GLM_FUNC_QUALIFIER T min(
-		T const& x, 
-		T const& y, 
+		T const& x,
+		T const& y,
 		T const& z)
 	{
 		return glm::min(glm::min(x, y), z);
@@ -15,8 +14,8 @@ namespace glm
 	template<typename T, template<typename> class C>
 	GLM_FUNC_QUALIFIER C<T> min
 	(
-		C<T> const& x, 
-		typename C<T>::T const& y, 
+		C<T> const& x,
+		typename C<T>::T const& y,
 		typename C<T>::T const& z
 	)
 	{
@@ -26,8 +25,8 @@ namespace glm
 	template<typename T, template<typename> class C>
 	GLM_FUNC_QUALIFIER C<T> min
 	(
-		C<T> const& x, 
-		C<T> const& y, 
+		C<T> const& x,
+		C<T> const& y,
 		C<T> const& z
 	)
 	{
@@ -37,9 +36,9 @@ namespace glm
 	template<typename T>
 	GLM_FUNC_QUALIFIER T min
 	(
-		T const& x, 
-		T const& y, 
-		T const& z, 
+		T const& x,
+		T const& y,
+		T const& z,
 		T const& w
 	)
 	{
@@ -49,9 +48,9 @@ namespace glm
 	template<typename T, template<typename> class C>
 	GLM_FUNC_QUALIFIER C<T> min
 	(
-		C<T> const& x, 
-		typename C<T>::T const& y, 
-		typename C<T>::T const& z, 
+		C<T> const& x,
+		typename C<T>::T const& y,
+		typename C<T>::T const& z,
 		typename C<T>::T const& w
 	)
 	{
@@ -61,9 +60,9 @@ namespace glm
 	template<typename T, template<typename> class C>
 	GLM_FUNC_QUALIFIER C<T> min
 	(
-		C<T> const& x, 
-		C<T> const& y, 
-		C<T> const& z, 
+		C<T> const& x,
+		C<T> const& y,
+		C<T> const& z,
 		C<T> const& w
 	)
 	{
@@ -72,8 +71,8 @@ namespace glm
 
 	template<typename T>
 	GLM_FUNC_QUALIFIER T max(
-		T const& x, 
-		T const& y, 
+		T const& x,
+		T const& y,
 		T const& z)
 	{
 		return glm::max(glm::max(x, y), z);
@@ -82,8 +81,8 @@ namespace glm
 	template<typename T, template<typename> class C>
 	GLM_FUNC_QUALIFIER C<T> max
 	(
-		C<T> const& x, 
-		typename C<T>::T const& y, 
+		C<T> const& x,
+		typename C<T>::T const& y,
 		typename C<T>::T const& z
 	)
 	{
@@ -93,8 +92,8 @@ namespace glm
 	template<typename T, template<typename> class C>
 	GLM_FUNC_QUALIFIER C<T> max
 	(
-		C<T> const& x, 
-		C<T> const& y, 
+		C<T> const& x,
+		C<T> const& y,
 		C<T> const& z
 	)
 	{
@@ -104,9 +103,9 @@ namespace glm
 	template<typename T>
 	GLM_FUNC_QUALIFIER T max
 	(
-		T const& x, 
-		T const& y, 
-		T const& z, 
+		T const& x,
+		T const& y,
+		T const& z,
 		T const& w
 	)
 	{
@@ -116,9 +115,9 @@ namespace glm
 	template<typename T, template<typename> class C>
 	GLM_FUNC_QUALIFIER C<T> max
 	(
-		C<T> const& x, 
-		typename C<T>::T const& y, 
-		typename C<T>::T const& z, 
+		C<T> const& x,
+		typename C<T>::T const& y,
+		typename C<T>::T const& z,
 		typename C<T>::T const& w
 	)
 	{
@@ -128,9 +127,9 @@ namespace glm
 	template<typename T, template<typename> class C>
 	GLM_FUNC_QUALIFIER C<T> max
 	(
-		C<T> const& x, 
-		C<T> const& y, 
-		C<T> const& z, 
+		C<T> const& x,
+		C<T> const& y,
+		C<T> const& z,
 		C<T> const& w
 	)
 	{
@@ -158,13 +157,13 @@ namespace glm
 	template<length_t L, typename T, qualifier Q>
 	GLM_FUNC_QUALIFIER vec<L, T, Q> fmin(vec<L, T, Q> const& a, T b)
 	{
-		return detail::functor2<L, T, Q>::call(fmin, a, vec<L, T, Q>(b));
+		return detail::functor2<vec, L, T, Q>::call(fmin, a, vec<L, T, Q>(b));
 	}
 
 	template<length_t L, typename T, qualifier Q>
 	GLM_FUNC_QUALIFIER vec<L, T, Q> fmin(vec<L, T, Q> const& a, vec<L, T, Q> const& b)
 	{
-		return detail::functor2<L, T, Q>::call(fmin, a, b);
+		return detail::functor2<vec, L, T, Q>::call(fmin, a, b);
 	}
 
 	// fmax
@@ -188,13 +187,13 @@ namespace glm
 	template<length_t L, typename T, qualifier Q>
 	GLM_FUNC_QUALIFIER vec<L, T, Q> fmax(vec<L, T, Q> const& a, T b)
 	{
-		return detail::functor2<L, T, Q>::call(fmax, a, vec<L, T, Q>(b));
+		return detail::functor2<vec, L, T, Q>::call(fmax, a, vec<L, T, Q>(b));
 	}
 
 	template<length_t L, typename T, qualifier Q>
 	GLM_FUNC_QUALIFIER vec<L, T, Q> fmax(vec<L, T, Q> const& a, vec<L, T, Q> const& b)
 	{
-		return detail::functor2<L, T, Q>::call(fmax, a, b);
+		return detail::functor2<vec, L, T, Q>::call(fmax, a, b);
 	}
 
 	// fclamp

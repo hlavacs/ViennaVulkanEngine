@@ -1,6 +1,15 @@
 #include <glm/integer.hpp>
 #include <glm/vector_relational.hpp>
-#include <glm/gtc/vec1.hpp>
+#include <glm/ext/vector_int1.hpp>
+#include <glm/ext/vector_int2.hpp>
+#include <glm/ext/vector_int3.hpp>
+#include <glm/ext/vector_int4.hpp>
+#include <glm/ext/vector_uint1.hpp>
+#include <glm/ext/vector_uint2.hpp>
+#include <glm/ext/vector_uint3.hpp>
+#include <glm/ext/vector_uint4.hpp>
+#include <glm/ext/scalar_int_sized.hpp>
+#include <glm/ext/scalar_uint_sized.hpp>
 #include <vector>
 #include <ctime>
 #include <cstdio>
@@ -32,9 +41,9 @@ namespace bitfieldInsert
 		{0x00000000, 0xffffffff,  0, 32, 0xffffffff},
 		{0x00000000, 0xffffffff,  0, 31, 0x7fffffff},
 		{0x00000000, 0xffffffff,  0,  0, 0x00000000},
-		{0xff000000, 0x0000ff00,  8,  8, 0xff00ff00},
-		{0xffff0000, 0x0000ffff, 16, 16, 0x00000000},
-		{0x0000ffff, 0xffff0000, 16, 16, 0xffffffff}
+		{0xff000000, 0x000000ff,  8,  8, 0xff00ff00},
+		{0xffff0000, 0xffff0000, 16, 16, 0x00000000},
+		{0x0000ffff, 0x0000ffff, 16, 16, 0xffffffff}
 	};
 
 	static int test()
@@ -173,7 +182,7 @@ namespace bitfieldReverse
 		return bitfieldReverseLoop(glm::vec<1, T>(v)).x;
 	}
 
-	GLM_FUNC_QUALIFIER glm::uint32_t bitfieldReverseUint32(glm::uint32_t x)
+	GLM_FUNC_QUALIFIER glm::uint32 bitfieldReverseUint32(glm::uint32 x)
 	{
 		x = (x & 0x55555555) <<  1 | (x & 0xAAAAAAAA) >>  1;
 		x = (x & 0x33333333) <<  2 | (x & 0xCCCCCCCC) >>  2;
@@ -183,7 +192,7 @@ namespace bitfieldReverse
 		return x;
 	}
 
-	GLM_FUNC_QUALIFIER glm::uint64_t bitfieldReverseUint64(glm::uint64_t x)
+	GLM_FUNC_QUALIFIER glm::uint64 bitfieldReverseUint64(glm::uint64 x)
 	{
 		x = (x & 0x5555555555555555) <<  1 | (x & 0xAAAAAAAAAAAAAAAA) >>  1;
 		x = (x & 0x3333333333333333) <<  2 | (x & 0xCCCCCCCCCCCCCCCC) >>  2;
@@ -471,10 +480,10 @@ namespace bitfieldReverse
 
 		std::clock_t Timestamps4 = std::clock();
 
-		std::printf("glm::bitfieldReverse: %d clocks\n", static_cast<unsigned int>(Timestamps1 - Timestamps0));
-		std::printf("bitfieldReverseLoop: %d clocks\n", static_cast<unsigned int>(Timestamps2 - Timestamps1));
-		std::printf("bitfieldReverseUint32: %d clocks\n", static_cast<unsigned int>(Timestamps3 - Timestamps2));
-		std::printf("bitfieldReverseOps: %d clocks\n", static_cast<unsigned int>(Timestamps4 - Timestamps3));
+		std::printf("glm::bitfieldReverse: %d clocks\n", static_cast<int>(Timestamps1 - Timestamps0));
+		std::printf("bitfieldReverseLoop: %d clocks\n", static_cast<int>(Timestamps2 - Timestamps1));
+		std::printf("bitfieldReverseUint32: %d clocks\n", static_cast<int>(Timestamps3 - Timestamps2));
+		std::printf("bitfieldReverseOps: %d clocks\n", static_cast<int>(Timestamps4 - Timestamps3));
 
 		return Error;
 	}
@@ -508,10 +517,10 @@ namespace bitfieldReverse
 
 		std::clock_t Timestamps4 = std::clock();
 
-		std::printf("glm::bitfieldReverse - 64: %d clocks\n", static_cast<unsigned int>(Timestamps1 - Timestamps0));
-		std::printf("bitfieldReverseLoop - 64: %d clocks\n", static_cast<unsigned int>(Timestamps2 - Timestamps1));
-		std::printf("bitfieldReverseUint - 64: %d clocks\n", static_cast<unsigned int>(Timestamps3 - Timestamps2));
-		std::printf("bitfieldReverseOps - 64: %d clocks\n", static_cast<unsigned int>(Timestamps4 - Timestamps3));
+		std::printf("glm::bitfieldReverse - 64: %d clocks\n", static_cast<int>(Timestamps1 - Timestamps0));
+		std::printf("bitfieldReverseLoop - 64: %d clocks\n", static_cast<int>(Timestamps2 - Timestamps1));
+		std::printf("bitfieldReverseUint - 64: %d clocks\n", static_cast<int>(Timestamps3 - Timestamps2));
+		std::printf("bitfieldReverseOps - 64: %d clocks\n", static_cast<int>(Timestamps4 - Timestamps3));
 
 		return Error;
 	}
@@ -740,18 +749,18 @@ namespace findMSB
 			std::clock_t Timestamps7 = std::clock();
 #		endif
 
-		std::printf("glm::findMSB: %d clocks\n", static_cast<unsigned int>(Timestamps1 - Timestamps0));
-		std::printf("findMSB - nlz1: %d clocks\n", static_cast<unsigned int>(Timestamps2 - Timestamps1));
-		std::printf("findMSB - nlz2: %d clocks\n", static_cast<unsigned int>(Timestamps3 - Timestamps2));
-		std::printf("findMSB - 0.9.5: %d clocks\n", static_cast<unsigned int>(Timestamps4 - Timestamps3));
+		std::printf("glm::findMSB: %d clocks\n", static_cast<int>(Timestamps1 - Timestamps0));
+		std::printf("findMSB - nlz1: %d clocks\n", static_cast<int>(Timestamps2 - Timestamps1));
+		std::printf("findMSB - nlz2: %d clocks\n", static_cast<int>(Timestamps3 - Timestamps2));
+		std::printf("findMSB - 0.9.5: %d clocks\n", static_cast<int>(Timestamps4 - Timestamps3));
 
 #		if GLM_HAS_BITSCAN_WINDOWS
-			std::printf("findMSB - intrinsics: %d clocks\n", static_cast<unsigned int>(Timestamps5 - Timestamps4));
+			std::printf("findMSB - intrinsics: %d clocks\n", static_cast<int>(Timestamps5 - Timestamps4));
 #		endif//GLM_HAS_BITSCAN_WINDOWS
-		std::printf("findMSB - pop: %d clocks\n", static_cast<unsigned int>(Timestamps6 - Timestamps5));
+		std::printf("findMSB - pop: %d clocks\n", static_cast<int>(Timestamps6 - Timestamps5));
 
 #		if GLM_ARCH & GLM_ARCH_AVX && GLM_COMPILER & GLM_COMPILER_VC
-			std::printf("findMSB - avx tzcnt: %d clocks\n", static_cast<unsigned int>(Timestamps7 - Timestamps6));
+			std::printf("findMSB - avx tzcnt: %d clocks\n", static_cast<int>(Timestamps7 - Timestamps6));
 #		endif//GLM_ARCH & GLM_ARCH_AVX && GLM_PLATFORM & GLM_PLATFORM_WINDOWS
 
 		return Error;
@@ -1086,15 +1095,15 @@ namespace findLSB
 
 		std::clock_t Timestamps5 = std::clock();
 
-		std::printf("glm::findLSB: %d clocks\n", static_cast<unsigned int>(Timestamps1 - Timestamps0));
-		std::printf("findLSB - 0.9.5: %d clocks\n", static_cast<unsigned int>(Timestamps2 - Timestamps1));
+		std::printf("glm::findLSB: %d clocks\n", static_cast<int>(Timestamps1 - Timestamps0));
+		std::printf("findLSB - 0.9.5: %d clocks\n", static_cast<int>(Timestamps2 - Timestamps1));
 
 #		if GLM_HAS_BITSCAN_WINDOWS
-			std::printf("findLSB - intrinsics: %d clocks\n", static_cast<unsigned int>(Timestamps3 - Timestamps2));
+			std::printf("findLSB - intrinsics: %d clocks\n", static_cast<int>(Timestamps3 - Timestamps2));
 #		endif
 
-		std::printf("findLSB - ntz2: %d clocks\n", static_cast<unsigned int>(Timestamps4 - Timestamps3));
-		std::printf("findLSB - branchfree: %d clocks\n", static_cast<unsigned int>(Timestamps5 - Timestamps4));
+		std::printf("findLSB - ntz2: %d clocks\n", static_cast<int>(Timestamps4 - Timestamps3));
+		std::printf("findLSB - branchfree: %d clocks\n", static_cast<int>(Timestamps5 - Timestamps4));
 
 		return Error;
 	}
@@ -1485,11 +1494,11 @@ namespace bitCount
 
 		std::clock_t TimestampsF = std::clock();
 
-		std::printf("bitCount - TimeIf %d\n", static_cast<unsigned int>(TimestampsB - TimestampsA));
-		std::printf("bitCount - TimeVec %d\n", static_cast<unsigned int>(TimestampsC - TimestampsB));
-		std::printf("bitCount - TimeDefault %d\n", static_cast<unsigned int>(TimestampsD - TimestampsC));
-		std::printf("bitCount - TimeVec4 %d\n", static_cast<unsigned int>(TimestampsE - TimestampsD));
-		std::printf("bitCount - bitfield %d\n", static_cast<unsigned int>(TimestampsF - TimestampsE));
+		std::printf("bitCount - TimeIf %d\n", static_cast<int>(TimestampsB - TimestampsA));
+		std::printf("bitCount - TimeVec %d\n", static_cast<int>(TimestampsC - TimestampsB));
+		std::printf("bitCount - TimeDefault %d\n", static_cast<int>(TimestampsD - TimestampsC));
+		std::printf("bitCount - TimeVec4 %d\n", static_cast<int>(TimestampsE - TimestampsD));
+		std::printf("bitCount - bitfield %d\n", static_cast<int>(TimestampsF - TimestampsE));
 
 		return Error;
 	}

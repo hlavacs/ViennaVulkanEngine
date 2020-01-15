@@ -4,7 +4,7 @@
 <meta http-equiv="Content-Type" content="text/xhtml;charset=UTF-8"/>
 <meta http-equiv="X-UA-Compatible" content="IE=9"/>
 <meta name="generator" content="Doxygen 1.8.10"/>
-<title>0.9.9 API documenation: ext.hpp Source File</title>
+<title>0.9.9 API documentation: euler_angles.hpp Source File</title>
 <link href="tabs.css" rel="stylesheet" type="text/css"/>
 <script type="text/javascript" src="jquery.js"></script>
 <script type="text/javascript" src="dynsections.js"></script>
@@ -24,7 +24,7 @@
  <tr style="height: 56px;">
   <td id="projectlogo"><img alt="Logo" src="logo-mini.png"/></td>
   <td id="projectalign" style="padding-left: 0.5em;">
-   <div id="projectname">0.9.9 API documenation
+   <div id="projectname">0.9.9 API documentation
    </div>
   </td>
  </tr>
@@ -80,182 +80,295 @@ var searchBox = new SearchBox("searchBox", "search",false,'Search');
 
 <div id="nav-path" class="navpath">
   <ul>
-<li class="navelem"><a class="el" href="dir_934f46a345653ef2b3014a1b37a162c1.html">G:</a></li><li class="navelem"><a class="el" href="dir_98f7f9d41f9d3029bd68cf237526a774.html">Source</a></li><li class="navelem"><a class="el" href="dir_9344afb825aed5e2f5be1d2015dde43c.html">G-Truc</a></li><li class="navelem"><a class="el" href="dir_45973f864e07b2505003ae343b7c8af7.html">glm</a></li><li class="navelem"><a class="el" href="dir_304be5dfae1339a7705426c0b536faf2.html">glm</a></li>  </ul>
+<li class="navelem"><a class="el" href="dir_3a581ba30d25676e4b797b1f96d53b45.html">F:</a></li><li class="navelem"><a class="el" href="dir_9e5fe034a00e89334fd5186c3e7db156.html">G-Truc</a></li><li class="navelem"><a class="el" href="dir_d9496f0844b48bc7e53b5af8c99b9ab2.html">Source</a></li><li class="navelem"><a class="el" href="dir_a8bee7be44182a33f3820393ae0b105d.html">G-Truc</a></li><li class="navelem"><a class="el" href="dir_44e5e654415abd9ca6fdeaddaff8565e.html">glm</a></li><li class="navelem"><a class="el" href="dir_cef2d71d502cb69a9252bca2297d9549.html">glm</a></li><li class="navelem"><a class="el" href="dir_f35778ec600a1b9bbc4524e62e226aa2.html">gtx</a></li>  </ul>
 </div>
 </div><!-- top -->
 <div class="header">
   <div class="headertitle">
-<div class="title">ext.hpp</div>  </div>
+<div class="title">euler_angles.hpp</div>  </div>
 </div><!--header-->
 <div class="contents">
 <a href="a00025.html">Go to the documentation of this file.</a><div class="fragment"><div class="line"><a name="l00001"></a><span class="lineno">    1</span>&#160;</div>
-<div class="line"><a name="l00005"></a><span class="lineno">    5</span>&#160;<span class="preprocessor">#include &quot;<a class="code" href="a00094.html">detail/setup.hpp</a>&quot;</span></div>
-<div class="line"><a name="l00006"></a><span class="lineno">    6</span>&#160;</div>
-<div class="line"><a name="l00007"></a><span class="lineno">    7</span>&#160;<span class="preprocessor">#pragma once</span></div>
-<div class="line"><a name="l00008"></a><span class="lineno">    8</span>&#160;</div>
-<div class="line"><a name="l00009"></a><span class="lineno">    9</span>&#160;<span class="preprocessor">#include &quot;<a class="code" href="a00035.html">glm.hpp</a>&quot;</span></div>
-<div class="line"><a name="l00010"></a><span class="lineno">   10</span>&#160;</div>
-<div class="line"><a name="l00011"></a><span class="lineno">   11</span>&#160;<span class="preprocessor">#if GLM_MESSAGES == GLM_MESSAGES_ENABLED &amp;&amp; !defined(GLM_MESSAGE_EXT_INCLUDED_DISPLAYED)</span></div>
-<div class="line"><a name="l00012"></a><span class="lineno">   12</span>&#160;<span class="preprocessor">#       define GLM_MESSAGE_EXT_INCLUDED_DISPLAYED</span></div>
-<div class="line"><a name="l00013"></a><span class="lineno">   13</span>&#160;<span class="preprocessor">#       pragma message(&quot;GLM: All extensions included (not recommanded)&quot;)</span></div>
-<div class="line"><a name="l00014"></a><span class="lineno">   14</span>&#160;<span class="preprocessor">#endif//GLM_MESSAGES</span></div>
-<div class="line"><a name="l00015"></a><span class="lineno">   15</span>&#160;</div>
-<div class="line"><a name="l00016"></a><span class="lineno">   16</span>&#160;<span class="preprocessor">#include &quot;<a class="code" href="a00009.html">./gtc/bitfield.hpp</a>&quot;</span></div>
-<div class="line"><a name="l00017"></a><span class="lineno">   17</span>&#160;<span class="preprocessor">#include &quot;<a class="code" href="a00012.html">./gtc/color_space.hpp</a>&quot;</span></div>
-<div class="line"><a name="l00018"></a><span class="lineno">   18</span>&#160;<span class="preprocessor">#include &quot;<a class="code" href="a00020.html">./gtc/constants.hpp</a>&quot;</span></div>
-<div class="line"><a name="l00019"></a><span class="lineno">   19</span>&#160;<span class="preprocessor">#include &quot;<a class="code" href="a00022.html">./gtc/epsilon.hpp</a>&quot;</span></div>
-<div class="line"><a name="l00020"></a><span class="lineno">   20</span>&#160;<span class="preprocessor">#include &quot;<a class="code" href="a00039.html">./gtc/integer.hpp</a>&quot;</span></div>
-<div class="line"><a name="l00021"></a><span class="lineno">   21</span>&#160;<span class="preprocessor">#include &quot;<a class="code" href="a00056.html">./gtc/matrix_access.hpp</a>&quot;</span></div>
-<div class="line"><a name="l00022"></a><span class="lineno">   22</span>&#160;<span class="preprocessor">#include &quot;<a class="code" href="a00060.html">./gtc/matrix_integer.hpp</a>&quot;</span></div>
-<div class="line"><a name="l00023"></a><span class="lineno">   23</span>&#160;<span class="preprocessor">#include &quot;<a class="code" href="a00062.html">./gtc/matrix_inverse.hpp</a>&quot;</span></div>
-<div class="line"><a name="l00024"></a><span class="lineno">   24</span>&#160;<span class="preprocessor">#include &quot;<a class="code" href="a00066.html">./gtc/matrix_transform.hpp</a>&quot;</span></div>
-<div class="line"><a name="l00025"></a><span class="lineno">   25</span>&#160;<span class="preprocessor">#include &quot;<a class="code" href="a00069.html">./gtc/noise.hpp</a>&quot;</span></div>
-<div class="line"><a name="l00026"></a><span class="lineno">   26</span>&#160;<span class="preprocessor">#include &quot;<a class="code" href="a00076.html">./gtc/packing.hpp</a>&quot;</span></div>
-<div class="line"><a name="l00027"></a><span class="lineno">   27</span>&#160;<span class="preprocessor">#include &quot;<a class="code" href="a00083.html">./gtc/quaternion.hpp</a>&quot;</span></div>
-<div class="line"><a name="l00028"></a><span class="lineno">   28</span>&#160;<span class="preprocessor">#include &quot;<a class="code" href="a00085.html">./gtc/random.hpp</a>&quot;</span></div>
-<div class="line"><a name="l00029"></a><span class="lineno">   29</span>&#160;<span class="preprocessor">#include &quot;<a class="code" href="a00088.html">./gtc/reciprocal.hpp</a>&quot;</span></div>
-<div class="line"><a name="l00030"></a><span class="lineno">   30</span>&#160;<span class="preprocessor">#include &quot;<a class="code" href="a00091.html">./gtc/round.hpp</a>&quot;</span></div>
-<div class="line"><a name="l00031"></a><span class="lineno">   31</span>&#160;<span class="comment">//#include &quot;./gtc/type_aligned.hpp&quot;</span></div>
-<div class="line"><a name="l00032"></a><span class="lineno">   32</span>&#160;<span class="preprocessor">#include &quot;<a class="code" href="a00117.html">./gtc/type_precision.hpp</a>&quot;</span></div>
-<div class="line"><a name="l00033"></a><span class="lineno">   33</span>&#160;<span class="preprocessor">#include &quot;<a class="code" href="a00118.html">./gtc/type_ptr.hpp</a>&quot;</span></div>
-<div class="line"><a name="l00034"></a><span class="lineno">   34</span>&#160;<span class="preprocessor">#include &quot;<a class="code" href="a00125.html">./gtc/ulp.hpp</a>&quot;</span></div>
-<div class="line"><a name="l00035"></a><span class="lineno">   35</span>&#160;<span class="preprocessor">#include &quot;<a class="code" href="a00126.html">./gtc/vec1.hpp</a>&quot;</span></div>
-<div class="line"><a name="l00036"></a><span class="lineno">   36</span>&#160;<span class="preprocessor">#if GLM_HAS_ALIGNED_TYPE</span></div>
-<div class="line"><a name="l00037"></a><span class="lineno">   37</span>&#160;<span class="preprocessor">#       include &quot;<a class="code" href="a00101.html">./gtc/type_aligned.hpp</a>&quot;</span></div>
-<div class="line"><a name="l00038"></a><span class="lineno">   38</span>&#160;<span class="preprocessor">#endif</span></div>
+<div class="line"><a name="l00016"></a><span class="lineno">   16</span>&#160;<span class="preprocessor">#pragma once</span></div>
+<div class="line"><a name="l00017"></a><span class="lineno">   17</span>&#160;</div>
+<div class="line"><a name="l00018"></a><span class="lineno">   18</span>&#160;<span class="comment">// Dependency:</span></div>
+<div class="line"><a name="l00019"></a><span class="lineno">   19</span>&#160;<span class="preprocessor">#include &quot;../glm.hpp&quot;</span></div>
+<div class="line"><a name="l00020"></a><span class="lineno">   20</span>&#160;</div>
+<div class="line"><a name="l00021"></a><span class="lineno">   21</span>&#160;<span class="preprocessor">#if GLM_MESSAGES == GLM_ENABLE &amp;&amp; !defined(GLM_EXT_INCLUDED)</span></div>
+<div class="line"><a name="l00022"></a><span class="lineno">   22</span>&#160;<span class="preprocessor">#       ifndef GLM_ENABLE_EXPERIMENTAL</span></div>
+<div class="line"><a name="l00023"></a><span class="lineno">   23</span>&#160;<span class="preprocessor">#               pragma message(&quot;GLM: GLM_GTX_euler_angles is an experimental extension and may change in the future. Use #define GLM_ENABLE_EXPERIMENTAL before including it, if you really want to use it.&quot;)</span></div>
+<div class="line"><a name="l00024"></a><span class="lineno">   24</span>&#160;<span class="preprocessor">#       else</span></div>
+<div class="line"><a name="l00025"></a><span class="lineno">   25</span>&#160;<span class="preprocessor">#               pragma message(&quot;GLM: GLM_GTX_euler_angles extension included&quot;)</span></div>
+<div class="line"><a name="l00026"></a><span class="lineno">   26</span>&#160;<span class="preprocessor">#       endif</span></div>
+<div class="line"><a name="l00027"></a><span class="lineno">   27</span>&#160;<span class="preprocessor">#endif</span></div>
+<div class="line"><a name="l00028"></a><span class="lineno">   28</span>&#160;</div>
+<div class="line"><a name="l00029"></a><span class="lineno">   29</span>&#160;<span class="keyword">namespace </span><a class="code" href="a00236.html">glm</a></div>
+<div class="line"><a name="l00030"></a><span class="lineno">   30</span>&#160;{</div>
+<div class="line"><a name="l00033"></a><span class="lineno">   33</span>&#160;</div>
+<div class="line"><a name="l00036"></a><span class="lineno">   36</span>&#160;        <span class="keyword">template</span>&lt;<span class="keyword">typename</span> T&gt;</div>
+<div class="line"><a name="l00037"></a><span class="lineno">   37</span>&#160;        GLM_FUNC_DECL mat&lt;4, 4, T, defaultp&gt; <a class="code" href="a00319.html#gafba6282e4ed3ff8b5c75331abfba3489">eulerAngleX</a>(</div>
+<div class="line"><a name="l00038"></a><span class="lineno">   38</span>&#160;                T <span class="keyword">const</span>&amp; angleX);</div>
 <div class="line"><a name="l00039"></a><span class="lineno">   39</span>&#160;</div>
-<div class="line"><a name="l00040"></a><span class="lineno">   40</span>&#160;<span class="preprocessor">#ifdef GLM_ENABLE_EXPERIMENTAL</span></div>
-<div class="line"><a name="l00041"></a><span class="lineno">   41</span>&#160;<span class="preprocessor">#include &quot;<a class="code" href="a00007.html">./gtx/associated_min_max.hpp</a>&quot;</span></div>
-<div class="line"><a name="l00042"></a><span class="lineno">   42</span>&#160;<span class="preprocessor">#include &quot;<a class="code" href="a00008.html">./gtx/bit.hpp</a>&quot;</span></div>
-<div class="line"><a name="l00043"></a><span class="lineno">   43</span>&#160;<span class="preprocessor">#include &quot;<a class="code" href="a00010.html">./gtx/closest_point.hpp</a>&quot;</span></div>
-<div class="line"><a name="l00044"></a><span class="lineno">   44</span>&#160;<span class="preprocessor">#include &quot;<a class="code" href="a00011.html">./gtx/color_encoding.hpp</a>&quot;</span></div>
-<div class="line"><a name="l00045"></a><span class="lineno">   45</span>&#160;<span class="preprocessor">#include &quot;<a class="code" href="a00013.html">./gtx/color_space.hpp</a>&quot;</span></div>
-<div class="line"><a name="l00046"></a><span class="lineno">   46</span>&#160;<span class="preprocessor">#include &quot;<a class="code" href="a00014.html">./gtx/color_space_YCoCg.hpp</a>&quot;</span></div>
-<div class="line"><a name="l00047"></a><span class="lineno">   47</span>&#160;<span class="preprocessor">#include &quot;<a class="code" href="a00017.html">./gtx/compatibility.hpp</a>&quot;</span></div>
-<div class="line"><a name="l00048"></a><span class="lineno">   48</span>&#160;<span class="preprocessor">#include &quot;<a class="code" href="a00018.html">./gtx/component_wise.hpp</a>&quot;</span></div>
-<div class="line"><a name="l00049"></a><span class="lineno">   49</span>&#160;<span class="preprocessor">#include &quot;<a class="code" href="a00021.html">./gtx/dual_quaternion.hpp</a>&quot;</span></div>
-<div class="line"><a name="l00050"></a><span class="lineno">   50</span>&#160;<span class="preprocessor">#include &quot;<a class="code" href="a00023.html">./gtx/euler_angles.hpp</a>&quot;</span></div>
-<div class="line"><a name="l00051"></a><span class="lineno">   51</span>&#160;<span class="preprocessor">#include &quot;<a class="code" href="a00026.html">./gtx/extend.hpp</a>&quot;</span></div>
-<div class="line"><a name="l00052"></a><span class="lineno">   52</span>&#160;<span class="preprocessor">#include &quot;<a class="code" href="a00027.html">./gtx/extended_min_max.hpp</a>&quot;</span></div>
-<div class="line"><a name="l00053"></a><span class="lineno">   53</span>&#160;<span class="preprocessor">#include &quot;<a class="code" href="a00029.html">./gtx/fast_exponential.hpp</a>&quot;</span></div>
-<div class="line"><a name="l00054"></a><span class="lineno">   54</span>&#160;<span class="preprocessor">#include &quot;<a class="code" href="a00030.html">./gtx/fast_square_root.hpp</a>&quot;</span></div>
-<div class="line"><a name="l00055"></a><span class="lineno">   55</span>&#160;<span class="preprocessor">#include &quot;<a class="code" href="a00031.html">./gtx/fast_trigonometry.hpp</a>&quot;</span></div>
-<div class="line"><a name="l00056"></a><span class="lineno">   56</span>&#160;<span class="preprocessor">#include &quot;<a class="code" href="a00032.html">./gtx/functions.hpp</a>&quot;</span></div>
-<div class="line"><a name="l00057"></a><span class="lineno">   57</span>&#160;<span class="preprocessor">#include &quot;<a class="code" href="a00036.html">./gtx/gradient_paint.hpp</a>&quot;</span></div>
-<div class="line"><a name="l00058"></a><span class="lineno">   58</span>&#160;<span class="preprocessor">#include &quot;<a class="code" href="a00037.html">./gtx/handed_coordinate_space.hpp</a>&quot;</span></div>
-<div class="line"><a name="l00059"></a><span class="lineno">   59</span>&#160;<span class="preprocessor">#include &quot;<a class="code" href="a00040.html">./gtx/integer.hpp</a>&quot;</span></div>
-<div class="line"><a name="l00060"></a><span class="lineno">   60</span>&#160;<span class="preprocessor">#include &quot;<a class="code" href="a00042.html">./gtx/intersect.hpp</a>&quot;</span></div>
-<div class="line"><a name="l00061"></a><span class="lineno">   61</span>&#160;<span class="preprocessor">#include &quot;<a class="code" href="a00044.html">./gtx/log_base.hpp</a>&quot;</span></div>
-<div class="line"><a name="l00062"></a><span class="lineno">   62</span>&#160;<span class="preprocessor">#include &quot;<a class="code" href="a00057.html">./gtx/matrix_cross_product.hpp</a>&quot;</span></div>
-<div class="line"><a name="l00063"></a><span class="lineno">   63</span>&#160;<span class="preprocessor">#include &quot;<a class="code" href="a00061.html">./gtx/matrix_interpolation.hpp</a>&quot;</span></div>
-<div class="line"><a name="l00064"></a><span class="lineno">   64</span>&#160;<span class="preprocessor">#include &quot;<a class="code" href="a00063.html">./gtx/matrix_major_storage.hpp</a>&quot;</span></div>
-<div class="line"><a name="l00065"></a><span class="lineno">   65</span>&#160;<span class="preprocessor">#include &quot;<a class="code" href="a00064.html">./gtx/matrix_operation.hpp</a>&quot;</span></div>
-<div class="line"><a name="l00066"></a><span class="lineno">   66</span>&#160;<span class="preprocessor">#include &quot;<a class="code" href="a00065.html">./gtx/matrix_query.hpp</a>&quot;</span></div>
-<div class="line"><a name="l00067"></a><span class="lineno">   67</span>&#160;<span class="preprocessor">#include &quot;<a class="code" href="a00068.html">./gtx/mixed_product.hpp</a>&quot;</span></div>
-<div class="line"><a name="l00068"></a><span class="lineno">   68</span>&#160;<span class="preprocessor">#include &quot;<a class="code" href="a00070.html">./gtx/norm.hpp</a>&quot;</span></div>
-<div class="line"><a name="l00069"></a><span class="lineno">   69</span>&#160;<span class="preprocessor">#include &quot;<a class="code" href="a00071.html">./gtx/normal.hpp</a>&quot;</span></div>
-<div class="line"><a name="l00070"></a><span class="lineno">   70</span>&#160;<span class="preprocessor">#include &quot;<a class="code" href="a00072.html">./gtx/normalize_dot.hpp</a>&quot;</span></div>
-<div class="line"><a name="l00071"></a><span class="lineno">   71</span>&#160;<span class="preprocessor">#include &quot;<a class="code" href="a00073.html">./gtx/number_precision.hpp</a>&quot;</span></div>
-<div class="line"><a name="l00072"></a><span class="lineno">   72</span>&#160;<span class="preprocessor">#include &quot;<a class="code" href="a00074.html">./gtx/optimum_pow.hpp</a>&quot;</span></div>
-<div class="line"><a name="l00073"></a><span class="lineno">   73</span>&#160;<span class="preprocessor">#include &quot;<a class="code" href="a00075.html">./gtx/orthonormalize.hpp</a>&quot;</span></div>
-<div class="line"><a name="l00074"></a><span class="lineno">   74</span>&#160;<span class="preprocessor">#include &quot;<a class="code" href="a00079.html">./gtx/perpendicular.hpp</a>&quot;</span></div>
-<div class="line"><a name="l00075"></a><span class="lineno">   75</span>&#160;<span class="preprocessor">#include &quot;<a class="code" href="a00080.html">./gtx/polar_coordinates.hpp</a>&quot;</span></div>
-<div class="line"><a name="l00076"></a><span class="lineno">   76</span>&#160;<span class="preprocessor">#include &quot;<a class="code" href="a00081.html">./gtx/projection.hpp</a>&quot;</span></div>
-<div class="line"><a name="l00077"></a><span class="lineno">   77</span>&#160;<span class="preprocessor">#include &quot;<a class="code" href="a00084.html">./gtx/quaternion.hpp</a>&quot;</span></div>
-<div class="line"><a name="l00078"></a><span class="lineno">   78</span>&#160;<span class="preprocessor">#include &quot;<a class="code" href="a00087.html">./gtx/raw_data.hpp</a>&quot;</span></div>
-<div class="line"><a name="l00079"></a><span class="lineno">   79</span>&#160;<span class="preprocessor">#include &quot;<a class="code" href="a00090.html">./gtx/rotate_vector.hpp</a>&quot;</span></div>
-<div class="line"><a name="l00080"></a><span class="lineno">   80</span>&#160;<span class="preprocessor">#include &quot;<a class="code" href="a00095.html">./gtx/spline.hpp</a>&quot;</span></div>
-<div class="line"><a name="l00081"></a><span class="lineno">   81</span>&#160;<span class="preprocessor">#include &quot;<a class="code" href="a00096.html">./gtx/std_based_type.hpp</a>&quot;</span></div>
-<div class="line"><a name="l00082"></a><span class="lineno">   82</span>&#160;<span class="preprocessor">#if !(GLM_COMPILER &amp; GLM_COMPILER_CUDA)</span></div>
-<div class="line"><a name="l00083"></a><span class="lineno">   83</span>&#160;<span class="preprocessor">#       include &quot;<a class="code" href="a00097.html">./gtx/string_cast.hpp</a>&quot;</span></div>
-<div class="line"><a name="l00084"></a><span class="lineno">   84</span>&#160;<span class="preprocessor">#endif</span></div>
-<div class="line"><a name="l00085"></a><span class="lineno">   85</span>&#160;<span class="preprocessor">#include &quot;<a class="code" href="a00098.html">./gtx/transform.hpp</a>&quot;</span></div>
-<div class="line"><a name="l00086"></a><span class="lineno">   86</span>&#160;<span class="preprocessor">#include &quot;<a class="code" href="a00099.html">./gtx/transform2.hpp</a>&quot;</span></div>
-<div class="line"><a name="l00087"></a><span class="lineno">   87</span>&#160;<span class="preprocessor">#include &quot;<a class="code" href="a00130.html">./gtx/vec_swizzle.hpp</a>&quot;</span></div>
-<div class="line"><a name="l00088"></a><span class="lineno">   88</span>&#160;<span class="preprocessor">#include &quot;<a class="code" href="a00131.html">./gtx/vector_angle.hpp</a>&quot;</span></div>
-<div class="line"><a name="l00089"></a><span class="lineno">   89</span>&#160;<span class="preprocessor">#include &quot;<a class="code" href="a00132.html">./gtx/vector_query.hpp</a>&quot;</span></div>
-<div class="line"><a name="l00090"></a><span class="lineno">   90</span>&#160;<span class="preprocessor">#include &quot;<a class="code" href="a00134.html">./gtx/wrap.hpp</a>&quot;</span></div>
-<div class="line"><a name="l00091"></a><span class="lineno">   91</span>&#160;</div>
-<div class="line"><a name="l00092"></a><span class="lineno">   92</span>&#160;<span class="preprocessor">#if GLM_HAS_TEMPLATE_ALIASES</span></div>
-<div class="line"><a name="l00093"></a><span class="lineno">   93</span>&#160;<span class="preprocessor">#       include &quot;<a class="code" href="a00092.html">./gtx/scalar_multiplication.hpp</a>&quot;</span></div>
-<div class="line"><a name="l00094"></a><span class="lineno">   94</span>&#160;<span class="preprocessor">#endif</span></div>
-<div class="line"><a name="l00095"></a><span class="lineno">   95</span>&#160;</div>
-<div class="line"><a name="l00096"></a><span class="lineno">   96</span>&#160;<span class="preprocessor">#if GLM_HAS_RANGE_FOR</span></div>
-<div class="line"><a name="l00097"></a><span class="lineno">   97</span>&#160;<span class="preprocessor">#       include &quot;<a class="code" href="a00086.html">./gtx/range.hpp</a>&quot;</span></div>
-<div class="line"><a name="l00098"></a><span class="lineno">   98</span>&#160;<span class="preprocessor">#endif</span></div>
-<div class="line"><a name="l00099"></a><span class="lineno">   99</span>&#160;<span class="preprocessor">#endif//GLM_ENABLE_EXPERIMENTAL</span></div>
-<div class="ttc" id="a00022_html"><div class="ttname"><a href="a00022.html">epsilon.hpp</a></div><div class="ttdoc">GLM_GTC_epsilon </div></div>
-<div class="ttc" id="a00010_html"><div class="ttname"><a href="a00010.html">closest_point.hpp</a></div><div class="ttdoc">GLM_GTX_closest_point </div></div>
-<div class="ttc" id="a00068_html"><div class="ttname"><a href="a00068.html">mixed_product.hpp</a></div><div class="ttdoc">GLM_GTX_mixed_producte </div></div>
-<div class="ttc" id="a00039_html"><div class="ttname"><a href="a00039.html">integer.hpp</a></div><div class="ttdoc">GLM_GTC_integer </div></div>
-<div class="ttc" id="a00091_html"><div class="ttname"><a href="a00091.html">round.hpp</a></div><div class="ttdoc">GLM_GTC_round </div></div>
-<div class="ttc" id="a00056_html"><div class="ttname"><a href="a00056.html">matrix_access.hpp</a></div><div class="ttdoc">GLM_GTC_matrix_access </div></div>
-<div class="ttc" id="a00027_html"><div class="ttname"><a href="a00027.html">extended_min_max.hpp</a></div><div class="ttdoc">GLM_GTX_extented_min_max </div></div>
-<div class="ttc" id="a00044_html"><div class="ttname"><a href="a00044.html">log_base.hpp</a></div><div class="ttdoc">GLM_GTX_log_base </div></div>
-<div class="ttc" id="a00042_html"><div class="ttname"><a href="a00042.html">intersect.hpp</a></div><div class="ttdoc">GLM_GTX_intersect </div></div>
-<div class="ttc" id="a00030_html"><div class="ttname"><a href="a00030.html">fast_square_root.hpp</a></div><div class="ttdoc">GLM_GTX_fast_square_root </div></div>
-<div class="ttc" id="a00130_html"><div class="ttname"><a href="a00130.html">vec_swizzle.hpp</a></div><div class="ttdoc">GLM_GTX_vec_swizzle </div></div>
-<div class="ttc" id="a00088_html"><div class="ttname"><a href="a00088.html">reciprocal.hpp</a></div><div class="ttdoc">GLM_GTC_reciprocal </div></div>
-<div class="ttc" id="a00101_html"><div class="ttname"><a href="a00101.html">type_aligned.hpp</a></div><div class="ttdoc">GLM_GTC_type_aligned </div></div>
-<div class="ttc" id="a00076_html"><div class="ttname"><a href="a00076.html">packing.hpp</a></div><div class="ttdoc">GLM_GTC_packing </div></div>
-<div class="ttc" id="a00064_html"><div class="ttname"><a href="a00064.html">matrix_operation.hpp</a></div><div class="ttdoc">GLM_GTX_matrix_operation </div></div>
-<div class="ttc" id="a00035_html"><div class="ttname"><a href="a00035.html">glm.hpp</a></div><div class="ttdoc">Core features </div></div>
-<div class="ttc" id="a00062_html"><div class="ttname"><a href="a00062.html">matrix_inverse.hpp</a></div><div class="ttdoc">GLM_GTC_matrix_inverse </div></div>
-<div class="ttc" id="a00023_html"><div class="ttname"><a href="a00023.html">euler_angles.hpp</a></div><div class="ttdoc">GLM_GTX_euler_angles </div></div>
-<div class="ttc" id="a00021_html"><div class="ttname"><a href="a00021.html">dual_quaternion.hpp</a></div><div class="ttdoc">GLM_GTX_dual_quaternion </div></div>
-<div class="ttc" id="a00079_html"><div class="ttname"><a href="a00079.html">perpendicular.hpp</a></div><div class="ttdoc">GLM_GTX_perpendicular </div></div>
-<div class="ttc" id="a00096_html"><div class="ttname"><a href="a00096.html">std_based_type.hpp</a></div><div class="ttdoc">GLM_GTX_std_based_type </div></div>
-<div class="ttc" id="a00084_html"><div class="ttname"><a href="a00084.html">quaternion.hpp</a></div><div class="ttdoc">GLM_GTX_quaternion </div></div>
-<div class="ttc" id="a00018_html"><div class="ttname"><a href="a00018.html">component_wise.hpp</a></div><div class="ttdoc">GLM_GTX_component_wise </div></div>
-<div class="ttc" id="a00118_html"><div class="ttname"><a href="a00118.html">type_ptr.hpp</a></div><div class="ttdoc">GLM_GTC_type_ptr </div></div>
-<div class="ttc" id="a00070_html"><div class="ttname"><a href="a00070.html">norm.hpp</a></div><div class="ttdoc">GLM_GTX_norm </div></div>
-<div class="ttc" id="a00099_html"><div class="ttname"><a href="a00099.html">transform2.hpp</a></div><div class="ttdoc">GLM_GTX_transform2 </div></div>
-<div class="ttc" id="a00087_html"><div class="ttname"><a href="a00087.html">raw_data.hpp</a></div><div class="ttdoc">GLM_GTX_raw_data </div></div>
-<div class="ttc" id="a00075_html"><div class="ttname"><a href="a00075.html">orthonormalize.hpp</a></div><div class="ttdoc">GLM_GTX_orthonormalize </div></div>
-<div class="ttc" id="a00063_html"><div class="ttname"><a href="a00063.html">matrix_major_storage.hpp</a></div><div class="ttdoc">GLM_GTX_matrix_major_storage </div></div>
-<div class="ttc" id="a00009_html"><div class="ttname"><a href="a00009.html">bitfield.hpp</a></div><div class="ttdoc">GLM_GTC_bitfield </div></div>
-<div class="ttc" id="a00090_html"><div class="ttname"><a href="a00090.html">rotate_vector.hpp</a></div><div class="ttdoc">GLM_GTX_rotate_vector </div></div>
-<div class="ttc" id="a00061_html"><div class="ttname"><a href="a00061.html">matrix_interpolation.hpp</a></div><div class="ttdoc">GLM_GTX_matrix_interpolation </div></div>
-<div class="ttc" id="a00026_html"><div class="ttname"><a href="a00026.html">extend.hpp</a></div><div class="ttdoc">GLM_GTX_extend </div></div>
-<div class="ttc" id="a00126_html"><div class="ttname"><a href="a00126.html">vec1.hpp</a></div><div class="ttdoc">GLM_GTC_vec1 </div></div>
-<div class="ttc" id="a00014_html"><div class="ttname"><a href="a00014.html">color_space_YCoCg.hpp</a></div><div class="ttdoc">GLM_GTX_color_space_YCoCg </div></div>
-<div class="ttc" id="a00012_html"><div class="ttname"><a href="a00012.html">color_space.hpp</a></div><div class="ttdoc">GLM_GTC_color_space </div></div>
-<div class="ttc" id="a00095_html"><div class="ttname"><a href="a00095.html">spline.hpp</a></div><div class="ttdoc">GLM_GTX_spline </div></div>
-<div class="ttc" id="a00083_html"><div class="ttname"><a href="a00083.html">quaternion.hpp</a></div><div class="ttdoc">GLM_GTC_quaternion </div></div>
-<div class="ttc" id="a00029_html"><div class="ttname"><a href="a00029.html">fast_exponential.hpp</a></div><div class="ttdoc">GLM_GTX_fast_exponential </div></div>
-<div class="ttc" id="a00081_html"><div class="ttname"><a href="a00081.html">projection.hpp</a></div><div class="ttdoc">GLM_GTX_projection </div></div>
-<div class="ttc" id="a00017_html"><div class="ttname"><a href="a00017.html">compatibility.hpp</a></div><div class="ttdoc">GLM_GTX_compatibility </div></div>
-<div class="ttc" id="a00117_html"><div class="ttname"><a href="a00117.html">type_precision.hpp</a></div><div class="ttdoc">GLM_GTC_type_precision </div></div>
-<div class="ttc" id="a00134_html"><div class="ttname"><a href="a00134.html">wrap.hpp</a></div><div class="ttdoc">GLM_GTX_wrap </div></div>
-<div class="ttc" id="a00032_html"><div class="ttname"><a href="a00032.html">functions.hpp</a></div><div class="ttdoc">GLM_GTX_functions </div></div>
-<div class="ttc" id="a00132_html"><div class="ttname"><a href="a00132.html">vector_query.hpp</a></div><div class="ttdoc">GLM_GTX_vector_query </div></div>
-<div class="ttc" id="a00020_html"><div class="ttname"><a href="a00020.html">constants.hpp</a></div><div class="ttdoc">GLM_GTC_constants </div></div>
-<div class="ttc" id="a00066_html"><div class="ttname"><a href="a00066.html">matrix_transform.hpp</a></div><div class="ttdoc">GLM_GTC_matrix_transform </div></div>
-<div class="ttc" id="a00037_html"><div class="ttname"><a href="a00037.html">handed_coordinate_space.hpp</a></div><div class="ttdoc">GLM_GTX_handed_coordinate_space </div></div>
-<div class="ttc" id="a00125_html"><div class="ttname"><a href="a00125.html">ulp.hpp</a></div><div class="ttdoc">GLM_GTC_ulp </div></div>
-<div class="ttc" id="a00013_html"><div class="ttname"><a href="a00013.html">color_space.hpp</a></div><div class="ttdoc">GLM_GTX_color_space </div></div>
-<div class="ttc" id="a00040_html"><div class="ttname"><a href="a00040.html">integer.hpp</a></div><div class="ttdoc">GLM_GTX_integer </div></div>
-<div class="ttc" id="a00011_html"><div class="ttname"><a href="a00011.html">color_encoding.hpp</a></div><div class="ttdoc">GLM_GTX_color_encoding </div></div>
-<div class="ttc" id="a00098_html"><div class="ttname"><a href="a00098.html">transform.hpp</a></div><div class="ttdoc">GLM_GTX_transform </div></div>
-<div class="ttc" id="a00069_html"><div class="ttname"><a href="a00069.html">noise.hpp</a></div><div class="ttdoc">GLM_GTC_noise </div></div>
-<div class="ttc" id="a00086_html"><div class="ttname"><a href="a00086.html">range.hpp</a></div><div class="ttdoc">GLM_GTX_range </div></div>
-<div class="ttc" id="a00057_html"><div class="ttname"><a href="a00057.html">matrix_cross_product.hpp</a></div><div class="ttdoc">GLM_GTX_matrix_cross_product </div></div>
-<div class="ttc" id="a00074_html"><div class="ttname"><a href="a00074.html">optimum_pow.hpp</a></div><div class="ttdoc">GLM_GTX_optimum_pow </div></div>
-<div class="ttc" id="a00072_html"><div class="ttname"><a href="a00072.html">normalize_dot.hpp</a></div><div class="ttdoc">GLM_GTX_normalize_dot </div></div>
-<div class="ttc" id="a00008_html"><div class="ttname"><a href="a00008.html">bit.hpp</a></div><div class="ttdoc">GLM_GTX_bit </div></div>
-<div class="ttc" id="a00060_html"><div class="ttname"><a href="a00060.html">matrix_integer.hpp</a></div><div class="ttdoc">GLM_GTC_matrix_integer </div></div>
-<div class="ttc" id="a00031_html"><div class="ttname"><a href="a00031.html">fast_trigonometry.hpp</a></div><div class="ttdoc">GLM_GTX_fast_trigonometry </div></div>
-<div class="ttc" id="a00131_html"><div class="ttname"><a href="a00131.html">vector_angle.hpp</a></div><div class="ttdoc">GLM_GTX_vector_angle </div></div>
-<div class="ttc" id="a00094_html"><div class="ttname"><a href="a00094.html">setup.hpp</a></div><div class="ttdoc">Core features </div></div>
-<div class="ttc" id="a00065_html"><div class="ttname"><a href="a00065.html">matrix_query.hpp</a></div><div class="ttdoc">GLM_GTX_matrix_query </div></div>
-<div class="ttc" id="a00092_html"><div class="ttname"><a href="a00092.html">scalar_multiplication.hpp</a></div><div class="ttdoc">Experimental extensions </div></div>
-<div class="ttc" id="a00080_html"><div class="ttname"><a href="a00080.html">polar_coordinates.hpp</a></div><div class="ttdoc">GLM_GTX_polar_coordinates </div></div>
-<div class="ttc" id="a00097_html"><div class="ttname"><a href="a00097.html">string_cast.hpp</a></div><div class="ttdoc">GLM_GTX_string_cast </div></div>
-<div class="ttc" id="a00085_html"><div class="ttname"><a href="a00085.html">random.hpp</a></div><div class="ttdoc">GLM_GTC_random </div></div>
-<div class="ttc" id="a00073_html"><div class="ttname"><a href="a00073.html">number_precision.hpp</a></div><div class="ttdoc">GLM_GTX_number_precision </div></div>
-<div class="ttc" id="a00071_html"><div class="ttname"><a href="a00071.html">normal.hpp</a></div><div class="ttdoc">GLM_GTX_normal </div></div>
-<div class="ttc" id="a00036_html"><div class="ttname"><a href="a00036.html">gradient_paint.hpp</a></div><div class="ttdoc">GLM_GTX_gradient_paint </div></div>
-<div class="ttc" id="a00007_html"><div class="ttname"><a href="a00007.html">associated_min_max.hpp</a></div><div class="ttdoc">GLM_GTX_associated_min_max </div></div>
+<div class="line"><a name="l00042"></a><span class="lineno">   42</span>&#160;        <span class="keyword">template</span>&lt;<span class="keyword">typename</span> T&gt;</div>
+<div class="line"><a name="l00043"></a><span class="lineno">   43</span>&#160;        GLM_FUNC_DECL mat&lt;4, 4, T, defaultp&gt; <a class="code" href="a00319.html#gab84bf4746805fd69b8ecbb230e3974c5">eulerAngleY</a>(</div>
+<div class="line"><a name="l00044"></a><span class="lineno">   44</span>&#160;                T <span class="keyword">const</span>&amp; angleY);</div>
+<div class="line"><a name="l00045"></a><span class="lineno">   45</span>&#160;</div>
+<div class="line"><a name="l00048"></a><span class="lineno">   48</span>&#160;        <span class="keyword">template</span>&lt;<span class="keyword">typename</span> T&gt;</div>
+<div class="line"><a name="l00049"></a><span class="lineno">   49</span>&#160;        GLM_FUNC_DECL mat&lt;4, 4, T, defaultp&gt; <a class="code" href="a00319.html#ga5b3935248bb6c3ec6b0d9297d406e251">eulerAngleZ</a>(</div>
+<div class="line"><a name="l00050"></a><span class="lineno">   50</span>&#160;                T <span class="keyword">const</span>&amp; angleZ);</div>
+<div class="line"><a name="l00051"></a><span class="lineno">   51</span>&#160;</div>
+<div class="line"><a name="l00054"></a><span class="lineno">   54</span>&#160;        <span class="keyword">template</span> &lt;<span class="keyword">typename</span> T&gt;</div>
+<div class="line"><a name="l00055"></a><span class="lineno">   55</span>&#160;        GLM_FUNC_DECL mat&lt;4, 4, T, defaultp&gt; <a class="code" href="a00319.html#ga994b8186b3b80d91cf90bc403164692f">derivedEulerAngleX</a>(</div>
+<div class="line"><a name="l00056"></a><span class="lineno">   56</span>&#160;                T <span class="keyword">const</span> &amp; angleX, T <span class="keyword">const</span> &amp; angularVelocityX);</div>
+<div class="line"><a name="l00057"></a><span class="lineno">   57</span>&#160;</div>
+<div class="line"><a name="l00060"></a><span class="lineno">   60</span>&#160;        <span class="keyword">template</span> &lt;<span class="keyword">typename</span> T&gt;</div>
+<div class="line"><a name="l00061"></a><span class="lineno">   61</span>&#160;        GLM_FUNC_DECL mat&lt;4, 4, T, defaultp&gt; <a class="code" href="a00319.html#ga0a4c56ecce7abcb69508ebe6313e9d10">derivedEulerAngleY</a>(</div>
+<div class="line"><a name="l00062"></a><span class="lineno">   62</span>&#160;                T <span class="keyword">const</span> &amp; angleY, T <span class="keyword">const</span> &amp; angularVelocityY);</div>
+<div class="line"><a name="l00063"></a><span class="lineno">   63</span>&#160;</div>
+<div class="line"><a name="l00066"></a><span class="lineno">   66</span>&#160;        <span class="keyword">template</span> &lt;<span class="keyword">typename</span> T&gt;</div>
+<div class="line"><a name="l00067"></a><span class="lineno">   67</span>&#160;        GLM_FUNC_DECL mat&lt;4, 4, T, defaultp&gt; <a class="code" href="a00319.html#gae8b397348201c42667be983ba3f344df">derivedEulerAngleZ</a>(</div>
+<div class="line"><a name="l00068"></a><span class="lineno">   68</span>&#160;                T <span class="keyword">const</span> &amp; angleZ, T <span class="keyword">const</span> &amp; angularVelocityZ);</div>
+<div class="line"><a name="l00069"></a><span class="lineno">   69</span>&#160;</div>
+<div class="line"><a name="l00072"></a><span class="lineno">   72</span>&#160;        <span class="keyword">template</span>&lt;<span class="keyword">typename</span> T&gt;</div>
+<div class="line"><a name="l00073"></a><span class="lineno">   73</span>&#160;        GLM_FUNC_DECL mat&lt;4, 4, T, defaultp&gt; <a class="code" href="a00319.html#ga64036577ee17a2d24be0dbc05881d4e2">eulerAngleXY</a>(</div>
+<div class="line"><a name="l00074"></a><span class="lineno">   74</span>&#160;                T <span class="keyword">const</span>&amp; angleX,</div>
+<div class="line"><a name="l00075"></a><span class="lineno">   75</span>&#160;                T <span class="keyword">const</span>&amp; angleY);</div>
+<div class="line"><a name="l00076"></a><span class="lineno">   76</span>&#160;</div>
+<div class="line"><a name="l00079"></a><span class="lineno">   79</span>&#160;        <span class="keyword">template</span>&lt;<span class="keyword">typename</span> T&gt;</div>
+<div class="line"><a name="l00080"></a><span class="lineno">   80</span>&#160;        GLM_FUNC_DECL mat&lt;4, 4, T, defaultp&gt; <a class="code" href="a00319.html#ga4f57e6dd25c3cffbbd4daa6ef3f4486d">eulerAngleYX</a>(</div>
+<div class="line"><a name="l00081"></a><span class="lineno">   81</span>&#160;                T <span class="keyword">const</span>&amp; angleY,</div>
+<div class="line"><a name="l00082"></a><span class="lineno">   82</span>&#160;                T <span class="keyword">const</span>&amp; angleX);</div>
+<div class="line"><a name="l00083"></a><span class="lineno">   83</span>&#160;</div>
+<div class="line"><a name="l00086"></a><span class="lineno">   86</span>&#160;        <span class="keyword">template</span>&lt;<span class="keyword">typename</span> T&gt;</div>
+<div class="line"><a name="l00087"></a><span class="lineno">   87</span>&#160;        GLM_FUNC_DECL mat&lt;4, 4, T, defaultp&gt; <a class="code" href="a00319.html#gaa39bd323c65c2fc0a1508be33a237ce9">eulerAngleXZ</a>(</div>
+<div class="line"><a name="l00088"></a><span class="lineno">   88</span>&#160;                T <span class="keyword">const</span>&amp; angleX,</div>
+<div class="line"><a name="l00089"></a><span class="lineno">   89</span>&#160;                T <span class="keyword">const</span>&amp; angleZ);</div>
+<div class="line"><a name="l00090"></a><span class="lineno">   90</span>&#160;</div>
+<div class="line"><a name="l00093"></a><span class="lineno">   93</span>&#160;        <span class="keyword">template</span>&lt;<span class="keyword">typename</span> T&gt;</div>
+<div class="line"><a name="l00094"></a><span class="lineno">   94</span>&#160;        GLM_FUNC_DECL mat&lt;4, 4, T, defaultp&gt; <a class="code" href="a00319.html#ga483903115cd4059228961046a28d69b5">eulerAngleZX</a>(</div>
+<div class="line"><a name="l00095"></a><span class="lineno">   95</span>&#160;                T <span class="keyword">const</span>&amp; <a class="code" href="a00257.html#ga8aa248b31d5ade470c87304df5eb7bd8">angle</a>,</div>
+<div class="line"><a name="l00096"></a><span class="lineno">   96</span>&#160;                T <span class="keyword">const</span>&amp; angleX);</div>
+<div class="line"><a name="l00097"></a><span class="lineno">   97</span>&#160;</div>
+<div class="line"><a name="l00100"></a><span class="lineno">  100</span>&#160;        <span class="keyword">template</span>&lt;<span class="keyword">typename</span> T&gt;</div>
+<div class="line"><a name="l00101"></a><span class="lineno">  101</span>&#160;        GLM_FUNC_DECL mat&lt;4, 4, T, defaultp&gt; <a class="code" href="a00319.html#ga220379e10ac8cca55e275f0c9018fed9">eulerAngleYZ</a>(</div>
+<div class="line"><a name="l00102"></a><span class="lineno">  102</span>&#160;                T <span class="keyword">const</span>&amp; angleY,</div>
+<div class="line"><a name="l00103"></a><span class="lineno">  103</span>&#160;                T <span class="keyword">const</span>&amp; angleZ);</div>
+<div class="line"><a name="l00104"></a><span class="lineno">  104</span>&#160;</div>
+<div class="line"><a name="l00107"></a><span class="lineno">  107</span>&#160;        <span class="keyword">template</span>&lt;<span class="keyword">typename</span> T&gt;</div>
+<div class="line"><a name="l00108"></a><span class="lineno">  108</span>&#160;        GLM_FUNC_DECL mat&lt;4, 4, T, defaultp&gt; <a class="code" href="a00319.html#ga400b2bd5984999efab663f3a68e1d020">eulerAngleZY</a>(</div>
+<div class="line"><a name="l00109"></a><span class="lineno">  109</span>&#160;                T <span class="keyword">const</span>&amp; angleZ,</div>
+<div class="line"><a name="l00110"></a><span class="lineno">  110</span>&#160;                T <span class="keyword">const</span>&amp; angleY);</div>
+<div class="line"><a name="l00111"></a><span class="lineno">  111</span>&#160;</div>
+<div class="line"><a name="l00114"></a><span class="lineno">  114</span>&#160;    <span class="keyword">template</span>&lt;<span class="keyword">typename</span> T&gt;</div>
+<div class="line"><a name="l00115"></a><span class="lineno">  115</span>&#160;    GLM_FUNC_DECL mat&lt;4, 4, T, defaultp&gt; <a class="code" href="a00319.html#ga1975e0f0e9bed7f716dc9946da2ab645">eulerAngleXYZ</a>(</div>
+<div class="line"><a name="l00116"></a><span class="lineno">  116</span>&#160;        T <span class="keyword">const</span>&amp; t1,</div>
+<div class="line"><a name="l00117"></a><span class="lineno">  117</span>&#160;        T <span class="keyword">const</span>&amp; t2,</div>
+<div class="line"><a name="l00118"></a><span class="lineno">  118</span>&#160;        T <span class="keyword">const</span>&amp; t3);</div>
+<div class="line"><a name="l00119"></a><span class="lineno">  119</span>&#160;</div>
+<div class="line"><a name="l00122"></a><span class="lineno">  122</span>&#160;        <span class="keyword">template</span>&lt;<span class="keyword">typename</span> T&gt;</div>
+<div class="line"><a name="l00123"></a><span class="lineno">  123</span>&#160;        GLM_FUNC_DECL mat&lt;4, 4, T, defaultp&gt; <a class="code" href="a00319.html#gab8ba99a9814f6d9edf417b6c6d5b0c10">eulerAngleYXZ</a>(</div>
+<div class="line"><a name="l00124"></a><span class="lineno">  124</span>&#160;                T <span class="keyword">const</span>&amp; <a class="code" href="a00299.html#ga8da38cdfdc452dafa660c2f46506bad5">yaw</a>,</div>
+<div class="line"><a name="l00125"></a><span class="lineno">  125</span>&#160;                T <span class="keyword">const</span>&amp; <a class="code" href="a00299.html#ga7603e81477b46ddb448896909bc04928">pitch</a>,</div>
+<div class="line"><a name="l00126"></a><span class="lineno">  126</span>&#160;                T <span class="keyword">const</span>&amp; <a class="code" href="a00299.html#ga0cc5ad970d0b00829b139fe0fe5a1e13">roll</a>);</div>
+<div class="line"><a name="l00127"></a><span class="lineno">  127</span>&#160;</div>
+<div class="line"><a name="l00130"></a><span class="lineno">  130</span>&#160;        <span class="keyword">template</span> &lt;<span class="keyword">typename</span> T&gt;</div>
+<div class="line"><a name="l00131"></a><span class="lineno">  131</span>&#160;        GLM_FUNC_DECL mat&lt;4, 4, T, defaultp&gt; <a class="code" href="a00319.html#ga60171c79a17aec85d7891ae1d1533ec9">eulerAngleXZX</a>(</div>
+<div class="line"><a name="l00132"></a><span class="lineno">  132</span>&#160;                T <span class="keyword">const</span> &amp; t1,</div>
+<div class="line"><a name="l00133"></a><span class="lineno">  133</span>&#160;                T <span class="keyword">const</span> &amp; t2,</div>
+<div class="line"><a name="l00134"></a><span class="lineno">  134</span>&#160;                T <span class="keyword">const</span> &amp; t3);</div>
+<div class="line"><a name="l00135"></a><span class="lineno">  135</span>&#160;</div>
+<div class="line"><a name="l00138"></a><span class="lineno">  138</span>&#160;        <span class="keyword">template</span> &lt;<span class="keyword">typename</span> T&gt;</div>
+<div class="line"><a name="l00139"></a><span class="lineno">  139</span>&#160;        GLM_FUNC_DECL mat&lt;4, 4, T, defaultp&gt; <a class="code" href="a00319.html#ga29bd0787a28a6648159c0d6e69706066">eulerAngleXYX</a>(</div>
+<div class="line"><a name="l00140"></a><span class="lineno">  140</span>&#160;                T <span class="keyword">const</span> &amp; t1,</div>
+<div class="line"><a name="l00141"></a><span class="lineno">  141</span>&#160;                T <span class="keyword">const</span> &amp; t2,</div>
+<div class="line"><a name="l00142"></a><span class="lineno">  142</span>&#160;                T <span class="keyword">const</span> &amp; t3);</div>
+<div class="line"><a name="l00143"></a><span class="lineno">  143</span>&#160;</div>
+<div class="line"><a name="l00146"></a><span class="lineno">  146</span>&#160;        <span class="keyword">template</span> &lt;<span class="keyword">typename</span> T&gt;</div>
+<div class="line"><a name="l00147"></a><span class="lineno">  147</span>&#160;        GLM_FUNC_DECL mat&lt;4, 4, T, defaultp&gt; <a class="code" href="a00319.html#ga750fba9894117f87bcc529d7349d11de">eulerAngleYXY</a>(</div>
+<div class="line"><a name="l00148"></a><span class="lineno">  148</span>&#160;                T <span class="keyword">const</span> &amp; t1,</div>
+<div class="line"><a name="l00149"></a><span class="lineno">  149</span>&#160;                T <span class="keyword">const</span> &amp; t2,</div>
+<div class="line"><a name="l00150"></a><span class="lineno">  150</span>&#160;                T <span class="keyword">const</span> &amp; t3);</div>
+<div class="line"><a name="l00151"></a><span class="lineno">  151</span>&#160;</div>
+<div class="line"><a name="l00154"></a><span class="lineno">  154</span>&#160;        <span class="keyword">template</span> &lt;<span class="keyword">typename</span> T&gt;</div>
+<div class="line"><a name="l00155"></a><span class="lineno">  155</span>&#160;        GLM_FUNC_DECL mat&lt;4, 4, T, defaultp&gt; <a class="code" href="a00319.html#ga5e5e40abc27630749b42b3327c76d6e4">eulerAngleYZY</a>(</div>
+<div class="line"><a name="l00156"></a><span class="lineno">  156</span>&#160;                T <span class="keyword">const</span> &amp; t1,</div>
+<div class="line"><a name="l00157"></a><span class="lineno">  157</span>&#160;                T <span class="keyword">const</span> &amp; t2,</div>
+<div class="line"><a name="l00158"></a><span class="lineno">  158</span>&#160;                T <span class="keyword">const</span> &amp; t3);</div>
+<div class="line"><a name="l00159"></a><span class="lineno">  159</span>&#160;</div>
+<div class="line"><a name="l00162"></a><span class="lineno">  162</span>&#160;        <span class="keyword">template</span> &lt;<span class="keyword">typename</span> T&gt;</div>
+<div class="line"><a name="l00163"></a><span class="lineno">  163</span>&#160;        GLM_FUNC_DECL mat&lt;4, 4, T, defaultp&gt; <a class="code" href="a00319.html#gacd795f1dbecaf74974f9c76bbcca6830">eulerAngleZYZ</a>(</div>
+<div class="line"><a name="l00164"></a><span class="lineno">  164</span>&#160;                T <span class="keyword">const</span> &amp; t1,</div>
+<div class="line"><a name="l00165"></a><span class="lineno">  165</span>&#160;                T <span class="keyword">const</span> &amp; t2,</div>
+<div class="line"><a name="l00166"></a><span class="lineno">  166</span>&#160;                T <span class="keyword">const</span> &amp; t3);</div>
+<div class="line"><a name="l00167"></a><span class="lineno">  167</span>&#160;</div>
+<div class="line"><a name="l00170"></a><span class="lineno">  170</span>&#160;        <span class="keyword">template</span> &lt;<span class="keyword">typename</span> T&gt;</div>
+<div class="line"><a name="l00171"></a><span class="lineno">  171</span>&#160;        GLM_FUNC_DECL mat&lt;4, 4, T, defaultp&gt; <a class="code" href="a00319.html#ga178f966c52b01e4d65e31ebd007e3247">eulerAngleZXZ</a>(</div>
+<div class="line"><a name="l00172"></a><span class="lineno">  172</span>&#160;                T <span class="keyword">const</span> &amp; t1,</div>
+<div class="line"><a name="l00173"></a><span class="lineno">  173</span>&#160;                T <span class="keyword">const</span> &amp; t2,</div>
+<div class="line"><a name="l00174"></a><span class="lineno">  174</span>&#160;                T <span class="keyword">const</span> &amp; t3);</div>
+<div class="line"><a name="l00175"></a><span class="lineno">  175</span>&#160;</div>
+<div class="line"><a name="l00178"></a><span class="lineno">  178</span>&#160;        <span class="keyword">template</span> &lt;<span class="keyword">typename</span> T&gt;</div>
+<div class="line"><a name="l00179"></a><span class="lineno">  179</span>&#160;        GLM_FUNC_DECL mat&lt;4, 4, T, defaultp&gt; <a class="code" href="a00319.html#ga996dce12a60d8a674ba6737a535fa910">eulerAngleXZY</a>(</div>
+<div class="line"><a name="l00180"></a><span class="lineno">  180</span>&#160;                T <span class="keyword">const</span> &amp; t1,</div>
+<div class="line"><a name="l00181"></a><span class="lineno">  181</span>&#160;                T <span class="keyword">const</span> &amp; t2,</div>
+<div class="line"><a name="l00182"></a><span class="lineno">  182</span>&#160;                T <span class="keyword">const</span> &amp; t3);</div>
+<div class="line"><a name="l00183"></a><span class="lineno">  183</span>&#160;</div>
+<div class="line"><a name="l00186"></a><span class="lineno">  186</span>&#160;        <span class="keyword">template</span> &lt;<span class="keyword">typename</span> T&gt;</div>
+<div class="line"><a name="l00187"></a><span class="lineno">  187</span>&#160;        GLM_FUNC_DECL mat&lt;4, 4, T, defaultp&gt; <a class="code" href="a00319.html#ga08bef16357b8f9b3051b3dcaec4b7848">eulerAngleYZX</a>(</div>
+<div class="line"><a name="l00188"></a><span class="lineno">  188</span>&#160;                T <span class="keyword">const</span> &amp; t1,</div>
+<div class="line"><a name="l00189"></a><span class="lineno">  189</span>&#160;                T <span class="keyword">const</span> &amp; t2,</div>
+<div class="line"><a name="l00190"></a><span class="lineno">  190</span>&#160;                T <span class="keyword">const</span> &amp; t3);</div>
+<div class="line"><a name="l00191"></a><span class="lineno">  191</span>&#160;</div>
+<div class="line"><a name="l00194"></a><span class="lineno">  194</span>&#160;        <span class="keyword">template</span> &lt;<span class="keyword">typename</span> T&gt;</div>
+<div class="line"><a name="l00195"></a><span class="lineno">  195</span>&#160;        GLM_FUNC_DECL mat&lt;4, 4, T, defaultp&gt; <a class="code" href="a00319.html#ga2e61f1e39069c47530acab9167852dd6">eulerAngleZYX</a>(</div>
+<div class="line"><a name="l00196"></a><span class="lineno">  196</span>&#160;                T <span class="keyword">const</span> &amp; t1,</div>
+<div class="line"><a name="l00197"></a><span class="lineno">  197</span>&#160;                T <span class="keyword">const</span> &amp; t2,</div>
+<div class="line"><a name="l00198"></a><span class="lineno">  198</span>&#160;                T <span class="keyword">const</span> &amp; t3);</div>
+<div class="line"><a name="l00199"></a><span class="lineno">  199</span>&#160;</div>
+<div class="line"><a name="l00202"></a><span class="lineno">  202</span>&#160;        <span class="keyword">template</span> &lt;<span class="keyword">typename</span> T&gt;</div>
+<div class="line"><a name="l00203"></a><span class="lineno">  203</span>&#160;        GLM_FUNC_DECL mat&lt;4, 4, T, defaultp&gt; <a class="code" href="a00319.html#gab4505c54d2dd654df4569fd1f04c43aa">eulerAngleZXY</a>(</div>
+<div class="line"><a name="l00204"></a><span class="lineno">  204</span>&#160;                T <span class="keyword">const</span> &amp; t1,</div>
+<div class="line"><a name="l00205"></a><span class="lineno">  205</span>&#160;                T <span class="keyword">const</span> &amp; t2,</div>
+<div class="line"><a name="l00206"></a><span class="lineno">  206</span>&#160;                T <span class="keyword">const</span> &amp; t3);</div>
+<div class="line"><a name="l00207"></a><span class="lineno">  207</span>&#160;</div>
+<div class="line"><a name="l00210"></a><span class="lineno">  210</span>&#160;        <span class="keyword">template</span>&lt;<span class="keyword">typename</span> T&gt;</div>
+<div class="line"><a name="l00211"></a><span class="lineno">  211</span>&#160;        GLM_FUNC_DECL mat&lt;4, 4, T, defaultp&gt; <a class="code" href="a00319.html#gae6aa26ccb020d281b449619e419a609e">yawPitchRoll</a>(</div>
+<div class="line"><a name="l00212"></a><span class="lineno">  212</span>&#160;                T <span class="keyword">const</span>&amp; <a class="code" href="a00299.html#ga8da38cdfdc452dafa660c2f46506bad5">yaw</a>,</div>
+<div class="line"><a name="l00213"></a><span class="lineno">  213</span>&#160;                T <span class="keyword">const</span>&amp; <a class="code" href="a00299.html#ga7603e81477b46ddb448896909bc04928">pitch</a>,</div>
+<div class="line"><a name="l00214"></a><span class="lineno">  214</span>&#160;                T <span class="keyword">const</span>&amp; <a class="code" href="a00299.html#ga0cc5ad970d0b00829b139fe0fe5a1e13">roll</a>);</div>
+<div class="line"><a name="l00215"></a><span class="lineno">  215</span>&#160;</div>
+<div class="line"><a name="l00218"></a><span class="lineno">  218</span>&#160;        <span class="keyword">template</span>&lt;<span class="keyword">typename</span> T&gt;</div>
+<div class="line"><a name="l00219"></a><span class="lineno">  219</span>&#160;        GLM_FUNC_DECL mat&lt;2, 2, T, defaultp&gt; <a class="code" href="a00319.html#gae16738a9f1887cf4e4db6a124637608d">orientate2</a>(T <span class="keyword">const</span>&amp; <a class="code" href="a00257.html#ga8aa248b31d5ade470c87304df5eb7bd8">angle</a>);</div>
+<div class="line"><a name="l00220"></a><span class="lineno">  220</span>&#160;</div>
+<div class="line"><a name="l00223"></a><span class="lineno">  223</span>&#160;        <span class="keyword">template</span>&lt;<span class="keyword">typename</span> T&gt;</div>
+<div class="line"><a name="l00224"></a><span class="lineno">  224</span>&#160;        GLM_FUNC_DECL mat&lt;3, 3, T, defaultp&gt; <a class="code" href="a00319.html#ga7238c8e15c7720e3ca6a45ab151eeabb">orientate3</a>(T <span class="keyword">const</span>&amp; <a class="code" href="a00257.html#ga8aa248b31d5ade470c87304df5eb7bd8">angle</a>);</div>
+<div class="line"><a name="l00225"></a><span class="lineno">  225</span>&#160;</div>
+<div class="line"><a name="l00228"></a><span class="lineno">  228</span>&#160;        <span class="keyword">template</span>&lt;<span class="keyword">typename</span> T, qualifier Q&gt;</div>
+<div class="line"><a name="l00229"></a><span class="lineno">  229</span>&#160;        GLM_FUNC_DECL mat&lt;3, 3, T, Q&gt; <a class="code" href="a00319.html#ga7238c8e15c7720e3ca6a45ab151eeabb">orientate3</a>(vec&lt;3, T, Q&gt; <span class="keyword">const</span>&amp; angles);</div>
+<div class="line"><a name="l00230"></a><span class="lineno">  230</span>&#160;</div>
+<div class="line"><a name="l00233"></a><span class="lineno">  233</span>&#160;        <span class="keyword">template</span>&lt;<span class="keyword">typename</span> T, qualifier Q&gt;</div>
+<div class="line"><a name="l00234"></a><span class="lineno">  234</span>&#160;        GLM_FUNC_DECL mat&lt;4, 4, T, Q&gt; <a class="code" href="a00319.html#ga4a044653f71a4ecec68e0b623382b48a">orientate4</a>(vec&lt;3, T, Q&gt; <span class="keyword">const</span>&amp; angles);</div>
+<div class="line"><a name="l00235"></a><span class="lineno">  235</span>&#160;</div>
+<div class="line"><a name="l00238"></a><span class="lineno">  238</span>&#160;    <span class="keyword">template</span>&lt;<span class="keyword">typename</span> T&gt;</div>
+<div class="line"><a name="l00239"></a><span class="lineno">  239</span>&#160;    GLM_FUNC_DECL <span class="keywordtype">void</span> <a class="code" href="a00319.html#gacea701562f778c1da4d3a0a1cf091000">extractEulerAngleXYZ</a>(mat&lt;4, 4, T, defaultp&gt; <span class="keyword">const</span>&amp; M,</div>
+<div class="line"><a name="l00240"></a><span class="lineno">  240</span>&#160;                                            T &amp; t1,</div>
+<div class="line"><a name="l00241"></a><span class="lineno">  241</span>&#160;                                            T &amp; t2,</div>
+<div class="line"><a name="l00242"></a><span class="lineno">  242</span>&#160;                                            T &amp; t3);</div>
+<div class="line"><a name="l00243"></a><span class="lineno">  243</span>&#160;</div>
+<div class="line"><a name="l00246"></a><span class="lineno">  246</span>&#160;        <span class="keyword">template</span> &lt;<span class="keyword">typename</span> T&gt;</div>
+<div class="line"><a name="l00247"></a><span class="lineno">  247</span>&#160;        GLM_FUNC_DECL <span class="keywordtype">void</span> <a class="code" href="a00319.html#gaf0937518e63037335a0e8358b6f053c5">extractEulerAngleYXZ</a>(mat&lt;4, 4, T, defaultp&gt; <span class="keyword">const</span> &amp; M,</div>
+<div class="line"><a name="l00248"></a><span class="lineno">  248</span>&#160;                                                                                        T &amp; t1,</div>
+<div class="line"><a name="l00249"></a><span class="lineno">  249</span>&#160;                                                                                        T &amp; t2,</div>
+<div class="line"><a name="l00250"></a><span class="lineno">  250</span>&#160;                                                                                        T &amp; t3);</div>
+<div class="line"><a name="l00251"></a><span class="lineno">  251</span>&#160;</div>
+<div class="line"><a name="l00254"></a><span class="lineno">  254</span>&#160;        <span class="keyword">template</span> &lt;<span class="keyword">typename</span> T&gt;</div>
+<div class="line"><a name="l00255"></a><span class="lineno">  255</span>&#160;        GLM_FUNC_DECL <span class="keywordtype">void</span> <a class="code" href="a00319.html#gacf0bc6c031f25fa3ee0055b62c8260d0">extractEulerAngleXZX</a>(mat&lt;4, 4, T, defaultp&gt; <span class="keyword">const</span> &amp; M,</div>
+<div class="line"><a name="l00256"></a><span class="lineno">  256</span>&#160;                                                                                        T &amp; t1,</div>
+<div class="line"><a name="l00257"></a><span class="lineno">  257</span>&#160;                                                                                        T &amp; t2,</div>
+<div class="line"><a name="l00258"></a><span class="lineno">  258</span>&#160;                                                                                        T &amp; t3);</div>
+<div class="line"><a name="l00259"></a><span class="lineno">  259</span>&#160;</div>
+<div class="line"><a name="l00262"></a><span class="lineno">  262</span>&#160;        <span class="keyword">template</span> &lt;<span class="keyword">typename</span> T&gt;</div>
+<div class="line"><a name="l00263"></a><span class="lineno">  263</span>&#160;        GLM_FUNC_DECL <span class="keywordtype">void</span> <a class="code" href="a00319.html#gaf1077a72171d0f3b08f022ab5ff88af7">extractEulerAngleXYX</a>(mat&lt;4, 4, T, defaultp&gt; <span class="keyword">const</span> &amp; M,</div>
+<div class="line"><a name="l00264"></a><span class="lineno">  264</span>&#160;                                                                                        T &amp; t1,</div>
+<div class="line"><a name="l00265"></a><span class="lineno">  265</span>&#160;                                                                                        T &amp; t2,</div>
+<div class="line"><a name="l00266"></a><span class="lineno">  266</span>&#160;                                                                                        T &amp; t3);</div>
+<div class="line"><a name="l00267"></a><span class="lineno">  267</span>&#160;</div>
+<div class="line"><a name="l00270"></a><span class="lineno">  270</span>&#160;        <span class="keyword">template</span> &lt;<span class="keyword">typename</span> T&gt;</div>
+<div class="line"><a name="l00271"></a><span class="lineno">  271</span>&#160;        GLM_FUNC_DECL <span class="keywordtype">void</span> <a class="code" href="a00319.html#gaab8868556361a190db94374e9983ed39">extractEulerAngleYXY</a>(mat&lt;4, 4, T, defaultp&gt; <span class="keyword">const</span> &amp; M,</div>
+<div class="line"><a name="l00272"></a><span class="lineno">  272</span>&#160;                                                                                        T &amp; t1,</div>
+<div class="line"><a name="l00273"></a><span class="lineno">  273</span>&#160;                                                                                        T &amp; t2,</div>
+<div class="line"><a name="l00274"></a><span class="lineno">  274</span>&#160;                                                                                        T &amp; t3);</div>
+<div class="line"><a name="l00275"></a><span class="lineno">  275</span>&#160;</div>
+<div class="line"><a name="l00278"></a><span class="lineno">  278</span>&#160;        <span class="keyword">template</span> &lt;<span class="keyword">typename</span> T&gt;</div>
+<div class="line"><a name="l00279"></a><span class="lineno">  279</span>&#160;        GLM_FUNC_DECL <span class="keywordtype">void</span> <a class="code" href="a00319.html#ga11dad972c109e4bf8694c915017c44a6">extractEulerAngleYZY</a>(mat&lt;4, 4, T, defaultp&gt; <span class="keyword">const</span> &amp; M,</div>
+<div class="line"><a name="l00280"></a><span class="lineno">  280</span>&#160;                                                                                        T &amp; t1,</div>
+<div class="line"><a name="l00281"></a><span class="lineno">  281</span>&#160;                                                                                        T &amp; t2,</div>
+<div class="line"><a name="l00282"></a><span class="lineno">  282</span>&#160;                                                                                        T &amp; t3);</div>
+<div class="line"><a name="l00283"></a><span class="lineno">  283</span>&#160;</div>
+<div class="line"><a name="l00286"></a><span class="lineno">  286</span>&#160;        <span class="keyword">template</span> &lt;<span class="keyword">typename</span> T&gt;</div>
+<div class="line"><a name="l00287"></a><span class="lineno">  287</span>&#160;        GLM_FUNC_DECL <span class="keywordtype">void</span> <a class="code" href="a00319.html#gafdfa880a64b565223550c2d3938b1aeb">extractEulerAngleZYZ</a>(mat&lt;4, 4, T, defaultp&gt; <span class="keyword">const</span> &amp; M,</div>
+<div class="line"><a name="l00288"></a><span class="lineno">  288</span>&#160;                                                                                        T &amp; t1,</div>
+<div class="line"><a name="l00289"></a><span class="lineno">  289</span>&#160;                                                                                        T &amp; t2,</div>
+<div class="line"><a name="l00290"></a><span class="lineno">  290</span>&#160;                                                                                        T &amp; t3);</div>
+<div class="line"><a name="l00291"></a><span class="lineno">  291</span>&#160;</div>
+<div class="line"><a name="l00294"></a><span class="lineno">  294</span>&#160;        <span class="keyword">template</span> &lt;<span class="keyword">typename</span> T&gt;</div>
+<div class="line"><a name="l00295"></a><span class="lineno">  295</span>&#160;        GLM_FUNC_DECL <span class="keywordtype">void</span> <a class="code" href="a00319.html#ga59359fef9bad92afaca55e193f91e702">extractEulerAngleZXZ</a>(mat&lt;4, 4, T, defaultp&gt; <span class="keyword">const</span> &amp; M,</div>
+<div class="line"><a name="l00296"></a><span class="lineno">  296</span>&#160;                                                                                        T &amp; t1,</div>
+<div class="line"><a name="l00297"></a><span class="lineno">  297</span>&#160;                                                                                        T &amp; t2,</div>
+<div class="line"><a name="l00298"></a><span class="lineno">  298</span>&#160;                                                                                        T &amp; t3);</div>
+<div class="line"><a name="l00299"></a><span class="lineno">  299</span>&#160;</div>
+<div class="line"><a name="l00302"></a><span class="lineno">  302</span>&#160;        <span class="keyword">template</span> &lt;<span class="keyword">typename</span> T&gt;</div>
+<div class="line"><a name="l00303"></a><span class="lineno">  303</span>&#160;        GLM_FUNC_DECL <span class="keywordtype">void</span> <a class="code" href="a00319.html#gabe5a65d8eb1cd873c8de121cce1a15ed">extractEulerAngleXZY</a>(mat&lt;4, 4, T, defaultp&gt; <span class="keyword">const</span> &amp; M,</div>
+<div class="line"><a name="l00304"></a><span class="lineno">  304</span>&#160;                                                                                        T &amp; t1,</div>
+<div class="line"><a name="l00305"></a><span class="lineno">  305</span>&#160;                                                                                        T &amp; t2,</div>
+<div class="line"><a name="l00306"></a><span class="lineno">  306</span>&#160;                                                                                        T &amp; t3);</div>
+<div class="line"><a name="l00307"></a><span class="lineno">  307</span>&#160;</div>
+<div class="line"><a name="l00310"></a><span class="lineno">  310</span>&#160;        <span class="keyword">template</span> &lt;<span class="keyword">typename</span> T&gt;</div>
+<div class="line"><a name="l00311"></a><span class="lineno">  311</span>&#160;        GLM_FUNC_DECL <span class="keywordtype">void</span> <a class="code" href="a00319.html#ga9049b78466796c0de2971756e25b93d3">extractEulerAngleYZX</a>(mat&lt;4, 4, T, defaultp&gt; <span class="keyword">const</span> &amp; M,</div>
+<div class="line"><a name="l00312"></a><span class="lineno">  312</span>&#160;                                                                                        T &amp; t1,</div>
+<div class="line"><a name="l00313"></a><span class="lineno">  313</span>&#160;                                                                                        T &amp; t2,</div>
+<div class="line"><a name="l00314"></a><span class="lineno">  314</span>&#160;                                                                                        T &amp; t3);</div>
+<div class="line"><a name="l00315"></a><span class="lineno">  315</span>&#160;</div>
+<div class="line"><a name="l00318"></a><span class="lineno">  318</span>&#160;        <span class="keyword">template</span> &lt;<span class="keyword">typename</span> T&gt;</div>
+<div class="line"><a name="l00319"></a><span class="lineno">  319</span>&#160;        GLM_FUNC_DECL <span class="keywordtype">void</span> <a class="code" href="a00319.html#ga2d6c11a4abfa60c565483cee2d3f7665">extractEulerAngleZYX</a>(mat&lt;4, 4, T, defaultp&gt; <span class="keyword">const</span> &amp; M,</div>
+<div class="line"><a name="l00320"></a><span class="lineno">  320</span>&#160;                                                                                        T &amp; t1,</div>
+<div class="line"><a name="l00321"></a><span class="lineno">  321</span>&#160;                                                                                        T &amp; t2,</div>
+<div class="line"><a name="l00322"></a><span class="lineno">  322</span>&#160;                                                                                        T &amp; t3);</div>
+<div class="line"><a name="l00323"></a><span class="lineno">  323</span>&#160;</div>
+<div class="line"><a name="l00326"></a><span class="lineno">  326</span>&#160;        <span class="keyword">template</span> &lt;<span class="keyword">typename</span> T&gt;</div>
+<div class="line"><a name="l00327"></a><span class="lineno">  327</span>&#160;        GLM_FUNC_DECL <span class="keywordtype">void</span> <a class="code" href="a00319.html#ga81fbbca2ba0c778b9662d5355b4e2363">extractEulerAngleZXY</a>(mat&lt;4, 4, T, defaultp&gt; <span class="keyword">const</span> &amp; M,</div>
+<div class="line"><a name="l00328"></a><span class="lineno">  328</span>&#160;                                                                                        T &amp; t1,</div>
+<div class="line"><a name="l00329"></a><span class="lineno">  329</span>&#160;                                                                                        T &amp; t2,</div>
+<div class="line"><a name="l00330"></a><span class="lineno">  330</span>&#160;                                                                                        T &amp; t3);</div>
+<div class="line"><a name="l00331"></a><span class="lineno">  331</span>&#160;</div>
+<div class="line"><a name="l00333"></a><span class="lineno">  333</span>&#160;}<span class="comment">//namespace glm</span></div>
+<div class="line"><a name="l00334"></a><span class="lineno">  334</span>&#160;</div>
+<div class="line"><a name="l00335"></a><span class="lineno">  335</span>&#160;<span class="preprocessor">#include &quot;euler_angles.inl&quot;</span></div>
+<div class="ttc" id="a00319_html_ga64036577ee17a2d24be0dbc05881d4e2"><div class="ttname"><a href="a00319.html#ga64036577ee17a2d24be0dbc05881d4e2">glm::eulerAngleXY</a></div><div class="ttdeci">GLM_FUNC_DECL mat&lt; 4, 4, T, defaultp &gt; eulerAngleXY(T const &amp;angleX, T const &amp;angleY)</div><div class="ttdoc">Creates a 3D 4 * 4 homogeneous rotation matrix from euler angles (X * Y). </div></div>
+<div class="ttc" id="a00319_html_ga5e5e40abc27630749b42b3327c76d6e4"><div class="ttname"><a href="a00319.html#ga5e5e40abc27630749b42b3327c76d6e4">glm::eulerAngleYZY</a></div><div class="ttdeci">GLM_FUNC_DECL mat&lt; 4, 4, T, defaultp &gt; eulerAngleYZY(T const &amp;t1, T const &amp;t2, T const &amp;t3)</div><div class="ttdoc">Creates a 3D 4 * 4 homogeneous rotation matrix from euler angles (Y * Z * Y). </div></div>
+<div class="ttc" id="a00319_html_gaf0937518e63037335a0e8358b6f053c5"><div class="ttname"><a href="a00319.html#gaf0937518e63037335a0e8358b6f053c5">glm::extractEulerAngleYXZ</a></div><div class="ttdeci">GLM_FUNC_DECL void extractEulerAngleYXZ(mat&lt; 4, 4, T, defaultp &gt; const &amp;M, T &amp;t1, T &amp;t2, T &amp;t3)</div><div class="ttdoc">Extracts the (Y * X * Z) Euler angles from the rotation matrix M. </div></div>
+<div class="ttc" id="a00319_html_ga1975e0f0e9bed7f716dc9946da2ab645"><div class="ttname"><a href="a00319.html#ga1975e0f0e9bed7f716dc9946da2ab645">glm::eulerAngleXYZ</a></div><div class="ttdeci">GLM_FUNC_DECL mat&lt; 4, 4, T, defaultp &gt; eulerAngleXYZ(T const &amp;t1, T const &amp;t2, T const &amp;t3)</div><div class="ttdoc">Creates a 3D 4 * 4 homogeneous rotation matrix from euler angles (X * Y * Z). </div></div>
+<div class="ttc" id="a00319_html_ga996dce12a60d8a674ba6737a535fa910"><div class="ttname"><a href="a00319.html#ga996dce12a60d8a674ba6737a535fa910">glm::eulerAngleXZY</a></div><div class="ttdeci">GLM_FUNC_DECL mat&lt; 4, 4, T, defaultp &gt; eulerAngleXZY(T const &amp;t1, T const &amp;t2, T const &amp;t3)</div><div class="ttdoc">Creates a 3D 4 * 4 homogeneous rotation matrix from euler angles (X * Z * Y). </div></div>
+<div class="ttc" id="a00319_html_gae8b397348201c42667be983ba3f344df"><div class="ttname"><a href="a00319.html#gae8b397348201c42667be983ba3f344df">glm::derivedEulerAngleZ</a></div><div class="ttdeci">GLM_FUNC_DECL mat&lt; 4, 4, T, defaultp &gt; derivedEulerAngleZ(T const &amp;angleZ, T const &amp;angularVelocityZ)</div><div class="ttdoc">Creates a 3D 4 * 4 homogeneous derived matrix from the rotation matrix about Z-axis. </div></div>
+<div class="ttc" id="a00319_html_ga4f57e6dd25c3cffbbd4daa6ef3f4486d"><div class="ttname"><a href="a00319.html#ga4f57e6dd25c3cffbbd4daa6ef3f4486d">glm::eulerAngleYX</a></div><div class="ttdeci">GLM_FUNC_DECL mat&lt; 4, 4, T, defaultp &gt; eulerAngleYX(T const &amp;angleY, T const &amp;angleX)</div><div class="ttdoc">Creates a 3D 4 * 4 homogeneous rotation matrix from euler angles (Y * X). </div></div>
+<div class="ttc" id="a00319_html_gab84bf4746805fd69b8ecbb230e3974c5"><div class="ttname"><a href="a00319.html#gab84bf4746805fd69b8ecbb230e3974c5">glm::eulerAngleY</a></div><div class="ttdeci">GLM_FUNC_DECL mat&lt; 4, 4, T, defaultp &gt; eulerAngleY(T const &amp;angleY)</div><div class="ttdoc">Creates a 3D 4 * 4 homogeneous rotation matrix from an euler angle Y. </div></div>
+<div class="ttc" id="a00257_html_ga8aa248b31d5ade470c87304df5eb7bd8"><div class="ttname"><a href="a00257.html#ga8aa248b31d5ade470c87304df5eb7bd8">glm::angle</a></div><div class="ttdeci">GLM_FUNC_DECL T angle(qua&lt; T, Q &gt; const &amp;x)</div><div class="ttdoc">Returns the quaternion rotation angle. </div></div>
+<div class="ttc" id="a00319_html_gafdfa880a64b565223550c2d3938b1aeb"><div class="ttname"><a href="a00319.html#gafdfa880a64b565223550c2d3938b1aeb">glm::extractEulerAngleZYZ</a></div><div class="ttdeci">GLM_FUNC_DECL void extractEulerAngleZYZ(mat&lt; 4, 4, T, defaultp &gt; const &amp;M, T &amp;t1, T &amp;t2, T &amp;t3)</div><div class="ttdoc">Extracts the (Z * Y * Z) Euler angles from the rotation matrix M. </div></div>
+<div class="ttc" id="a00319_html_ga994b8186b3b80d91cf90bc403164692f"><div class="ttname"><a href="a00319.html#ga994b8186b3b80d91cf90bc403164692f">glm::derivedEulerAngleX</a></div><div class="ttdeci">GLM_FUNC_DECL mat&lt; 4, 4, T, defaultp &gt; derivedEulerAngleX(T const &amp;angleX, T const &amp;angularVelocityX)</div><div class="ttdoc">Creates a 3D 4 * 4 homogeneous derived matrix from the rotation matrix about X-axis. </div></div>
+<div class="ttc" id="a00319_html_gaf1077a72171d0f3b08f022ab5ff88af7"><div class="ttname"><a href="a00319.html#gaf1077a72171d0f3b08f022ab5ff88af7">glm::extractEulerAngleXYX</a></div><div class="ttdeci">GLM_FUNC_DECL void extractEulerAngleXYX(mat&lt; 4, 4, T, defaultp &gt; const &amp;M, T &amp;t1, T &amp;t2, T &amp;t3)</div><div class="ttdoc">Extracts the (X * Y * X) Euler angles from the rotation matrix M. </div></div>
+<div class="ttc" id="a00319_html_gab4505c54d2dd654df4569fd1f04c43aa"><div class="ttname"><a href="a00319.html#gab4505c54d2dd654df4569fd1f04c43aa">glm::eulerAngleZXY</a></div><div class="ttdeci">GLM_FUNC_DECL mat&lt; 4, 4, T, defaultp &gt; eulerAngleZXY(T const &amp;t1, T const &amp;t2, T const &amp;t3)</div><div class="ttdoc">Creates a 3D 4 * 4 homogeneous rotation matrix from euler angles (Z * X * Y). </div></div>
+<div class="ttc" id="a00299_html_ga0cc5ad970d0b00829b139fe0fe5a1e13"><div class="ttname"><a href="a00299.html#ga0cc5ad970d0b00829b139fe0fe5a1e13">glm::roll</a></div><div class="ttdeci">GLM_FUNC_DECL T roll(qua&lt; T, Q &gt; const &amp;x)</div><div class="ttdoc">Returns roll value of euler angles expressed in radians. </div></div>
+<div class="ttc" id="a00319_html_gafba6282e4ed3ff8b5c75331abfba3489"><div class="ttname"><a href="a00319.html#gafba6282e4ed3ff8b5c75331abfba3489">glm::eulerAngleX</a></div><div class="ttdeci">GLM_FUNC_DECL mat&lt; 4, 4, T, defaultp &gt; eulerAngleX(T const &amp;angleX)</div><div class="ttdoc">Creates a 3D 4 * 4 homogeneous rotation matrix from an euler angle X. </div></div>
+<div class="ttc" id="a00319_html_gae16738a9f1887cf4e4db6a124637608d"><div class="ttname"><a href="a00319.html#gae16738a9f1887cf4e4db6a124637608d">glm::orientate2</a></div><div class="ttdeci">GLM_FUNC_DECL mat&lt; 2, 2, T, defaultp &gt; orientate2(T const &amp;angle)</div><div class="ttdoc">Creates a 2D 2 * 2 rotation matrix from an euler angle. </div></div>
+<div class="ttc" id="a00319_html_ga29bd0787a28a6648159c0d6e69706066"><div class="ttname"><a href="a00319.html#ga29bd0787a28a6648159c0d6e69706066">glm::eulerAngleXYX</a></div><div class="ttdeci">GLM_FUNC_DECL mat&lt; 4, 4, T, defaultp &gt; eulerAngleXYX(T const &amp;t1, T const &amp;t2, T const &amp;t3)</div><div class="ttdoc">Creates a 3D 4 * 4 homogeneous rotation matrix from euler angles (X * Y * X). </div></div>
+<div class="ttc" id="a00319_html_gab8ba99a9814f6d9edf417b6c6d5b0c10"><div class="ttname"><a href="a00319.html#gab8ba99a9814f6d9edf417b6c6d5b0c10">glm::eulerAngleYXZ</a></div><div class="ttdeci">GLM_FUNC_DECL mat&lt; 4, 4, T, defaultp &gt; eulerAngleYXZ(T const &amp;yaw, T const &amp;pitch, T const &amp;roll)</div><div class="ttdoc">Creates a 3D 4 * 4 homogeneous rotation matrix from euler angles (Y * X * Z). </div></div>
+<div class="ttc" id="a00319_html_gacf0bc6c031f25fa3ee0055b62c8260d0"><div class="ttname"><a href="a00319.html#gacf0bc6c031f25fa3ee0055b62c8260d0">glm::extractEulerAngleXZX</a></div><div class="ttdeci">GLM_FUNC_DECL void extractEulerAngleXZX(mat&lt; 4, 4, T, defaultp &gt; const &amp;M, T &amp;t1, T &amp;t2, T &amp;t3)</div><div class="ttdoc">Extracts the (X * Z * X) Euler angles from the rotation matrix M. </div></div>
+<div class="ttc" id="a00299_html_ga8da38cdfdc452dafa660c2f46506bad5"><div class="ttname"><a href="a00299.html#ga8da38cdfdc452dafa660c2f46506bad5">glm::yaw</a></div><div class="ttdeci">GLM_FUNC_DECL T yaw(qua&lt; T, Q &gt; const &amp;x)</div><div class="ttdoc">Returns yaw value of euler angles expressed in radians. </div></div>
+<div class="ttc" id="a00319_html_gaab8868556361a190db94374e9983ed39"><div class="ttname"><a href="a00319.html#gaab8868556361a190db94374e9983ed39">glm::extractEulerAngleYXY</a></div><div class="ttdeci">GLM_FUNC_DECL void extractEulerAngleYXY(mat&lt; 4, 4, T, defaultp &gt; const &amp;M, T &amp;t1, T &amp;t2, T &amp;t3)</div><div class="ttdoc">Extracts the (Y * X * Y) Euler angles from the rotation matrix M. </div></div>
+<div class="ttc" id="a00319_html_ga81fbbca2ba0c778b9662d5355b4e2363"><div class="ttname"><a href="a00319.html#ga81fbbca2ba0c778b9662d5355b4e2363">glm::extractEulerAngleZXY</a></div><div class="ttdeci">GLM_FUNC_DECL void extractEulerAngleZXY(mat&lt; 4, 4, T, defaultp &gt; const &amp;M, T &amp;t1, T &amp;t2, T &amp;t3)</div><div class="ttdoc">Extracts the (Z * X * Y) Euler angles from the rotation matrix M. </div></div>
+<div class="ttc" id="a00319_html_gabe5a65d8eb1cd873c8de121cce1a15ed"><div class="ttname"><a href="a00319.html#gabe5a65d8eb1cd873c8de121cce1a15ed">glm::extractEulerAngleXZY</a></div><div class="ttdeci">GLM_FUNC_DECL void extractEulerAngleXZY(mat&lt; 4, 4, T, defaultp &gt; const &amp;M, T &amp;t1, T &amp;t2, T &amp;t3)</div><div class="ttdoc">Extracts the (X * Z * Y) Euler angles from the rotation matrix M. </div></div>
+<div class="ttc" id="a00319_html_ga9049b78466796c0de2971756e25b93d3"><div class="ttname"><a href="a00319.html#ga9049b78466796c0de2971756e25b93d3">glm::extractEulerAngleYZX</a></div><div class="ttdeci">GLM_FUNC_DECL void extractEulerAngleYZX(mat&lt; 4, 4, T, defaultp &gt; const &amp;M, T &amp;t1, T &amp;t2, T &amp;t3)</div><div class="ttdoc">Extracts the (Y * Z * X) Euler angles from the rotation matrix M. </div></div>
+<div class="ttc" id="a00319_html_ga60171c79a17aec85d7891ae1d1533ec9"><div class="ttname"><a href="a00319.html#ga60171c79a17aec85d7891ae1d1533ec9">glm::eulerAngleXZX</a></div><div class="ttdeci">GLM_FUNC_DECL mat&lt; 4, 4, T, defaultp &gt; eulerAngleXZX(T const &amp;t1, T const &amp;t2, T const &amp;t3)</div><div class="ttdoc">Creates a 3D 4 * 4 homogeneous rotation matrix from euler angles (X * Z * X). </div></div>
+<div class="ttc" id="a00319_html_ga2e61f1e39069c47530acab9167852dd6"><div class="ttname"><a href="a00319.html#ga2e61f1e39069c47530acab9167852dd6">glm::eulerAngleZYX</a></div><div class="ttdeci">GLM_FUNC_DECL mat&lt; 4, 4, T, defaultp &gt; eulerAngleZYX(T const &amp;t1, T const &amp;t2, T const &amp;t3)</div><div class="ttdoc">Creates a 3D 4 * 4 homogeneous rotation matrix from euler angles (Z * Y * X). </div></div>
+<div class="ttc" id="a00319_html_ga4a044653f71a4ecec68e0b623382b48a"><div class="ttname"><a href="a00319.html#ga4a044653f71a4ecec68e0b623382b48a">glm::orientate4</a></div><div class="ttdeci">GLM_FUNC_DECL mat&lt; 4, 4, T, Q &gt; orientate4(vec&lt; 3, T, Q &gt; const &amp;angles)</div><div class="ttdoc">Creates a 3D 4 * 4 homogeneous rotation matrix from euler angles (Y * X * Z). </div></div>
+<div class="ttc" id="a00319_html_ga2d6c11a4abfa60c565483cee2d3f7665"><div class="ttname"><a href="a00319.html#ga2d6c11a4abfa60c565483cee2d3f7665">glm::extractEulerAngleZYX</a></div><div class="ttdeci">GLM_FUNC_DECL void extractEulerAngleZYX(mat&lt; 4, 4, T, defaultp &gt; const &amp;M, T &amp;t1, T &amp;t2, T &amp;t3)</div><div class="ttdoc">Extracts the (Z * Y * X) Euler angles from the rotation matrix M. </div></div>
+<div class="ttc" id="a00319_html_ga5b3935248bb6c3ec6b0d9297d406e251"><div class="ttname"><a href="a00319.html#ga5b3935248bb6c3ec6b0d9297d406e251">glm::eulerAngleZ</a></div><div class="ttdeci">GLM_FUNC_DECL mat&lt; 4, 4, T, defaultp &gt; eulerAngleZ(T const &amp;angleZ)</div><div class="ttdoc">Creates a 3D 4 * 4 homogeneous rotation matrix from an euler angle Z. </div></div>
+<div class="ttc" id="a00319_html_ga750fba9894117f87bcc529d7349d11de"><div class="ttname"><a href="a00319.html#ga750fba9894117f87bcc529d7349d11de">glm::eulerAngleYXY</a></div><div class="ttdeci">GLM_FUNC_DECL mat&lt; 4, 4, T, defaultp &gt; eulerAngleYXY(T const &amp;t1, T const &amp;t2, T const &amp;t3)</div><div class="ttdoc">Creates a 3D 4 * 4 homogeneous rotation matrix from euler angles (Y * X * Y). </div></div>
+<div class="ttc" id="a00319_html_ga11dad972c109e4bf8694c915017c44a6"><div class="ttname"><a href="a00319.html#ga11dad972c109e4bf8694c915017c44a6">glm::extractEulerAngleYZY</a></div><div class="ttdeci">GLM_FUNC_DECL void extractEulerAngleYZY(mat&lt; 4, 4, T, defaultp &gt; const &amp;M, T &amp;t1, T &amp;t2, T &amp;t3)</div><div class="ttdoc">Extracts the (Y * Z * Y) Euler angles from the rotation matrix M. </div></div>
+<div class="ttc" id="a00319_html_gae6aa26ccb020d281b449619e419a609e"><div class="ttname"><a href="a00319.html#gae6aa26ccb020d281b449619e419a609e">glm::yawPitchRoll</a></div><div class="ttdeci">GLM_FUNC_DECL mat&lt; 4, 4, T, defaultp &gt; yawPitchRoll(T const &amp;yaw, T const &amp;pitch, T const &amp;roll)</div><div class="ttdoc">Creates a 3D 4 * 4 homogeneous rotation matrix from euler angles (Y * X * Z). </div></div>
+<div class="ttc" id="a00319_html_gaa39bd323c65c2fc0a1508be33a237ce9"><div class="ttname"><a href="a00319.html#gaa39bd323c65c2fc0a1508be33a237ce9">glm::eulerAngleXZ</a></div><div class="ttdeci">GLM_FUNC_DECL mat&lt; 4, 4, T, defaultp &gt; eulerAngleXZ(T const &amp;angleX, T const &amp;angleZ)</div><div class="ttdoc">Creates a 3D 4 * 4 homogeneous rotation matrix from euler angles (X * Z). </div></div>
+<div class="ttc" id="a00319_html_gacea701562f778c1da4d3a0a1cf091000"><div class="ttname"><a href="a00319.html#gacea701562f778c1da4d3a0a1cf091000">glm::extractEulerAngleXYZ</a></div><div class="ttdeci">GLM_FUNC_DECL void extractEulerAngleXYZ(mat&lt; 4, 4, T, defaultp &gt; const &amp;M, T &amp;t1, T &amp;t2, T &amp;t3)</div><div class="ttdoc">Extracts the (X * Y * Z) Euler angles from the rotation matrix M. </div></div>
+<div class="ttc" id="a00319_html_ga178f966c52b01e4d65e31ebd007e3247"><div class="ttname"><a href="a00319.html#ga178f966c52b01e4d65e31ebd007e3247">glm::eulerAngleZXZ</a></div><div class="ttdeci">GLM_FUNC_DECL mat&lt; 4, 4, T, defaultp &gt; eulerAngleZXZ(T const &amp;t1, T const &amp;t2, T const &amp;t3)</div><div class="ttdoc">Creates a 3D 4 * 4 homogeneous rotation matrix from euler angles (Z * X * Z). </div></div>
+<div class="ttc" id="a00319_html_ga08bef16357b8f9b3051b3dcaec4b7848"><div class="ttname"><a href="a00319.html#ga08bef16357b8f9b3051b3dcaec4b7848">glm::eulerAngleYZX</a></div><div class="ttdeci">GLM_FUNC_DECL mat&lt; 4, 4, T, defaultp &gt; eulerAngleYZX(T const &amp;t1, T const &amp;t2, T const &amp;t3)</div><div class="ttdoc">Creates a 3D 4 * 4 homogeneous rotation matrix from euler angles (Y * Z * X). </div></div>
+<div class="ttc" id="a00319_html_ga400b2bd5984999efab663f3a68e1d020"><div class="ttname"><a href="a00319.html#ga400b2bd5984999efab663f3a68e1d020">glm::eulerAngleZY</a></div><div class="ttdeci">GLM_FUNC_DECL mat&lt; 4, 4, T, defaultp &gt; eulerAngleZY(T const &amp;angleZ, T const &amp;angleY)</div><div class="ttdoc">Creates a 3D 4 * 4 homogeneous rotation matrix from euler angles (Z * Y). </div></div>
+<div class="ttc" id="a00319_html_gacd795f1dbecaf74974f9c76bbcca6830"><div class="ttname"><a href="a00319.html#gacd795f1dbecaf74974f9c76bbcca6830">glm::eulerAngleZYZ</a></div><div class="ttdeci">GLM_FUNC_DECL mat&lt; 4, 4, T, defaultp &gt; eulerAngleZYZ(T const &amp;t1, T const &amp;t2, T const &amp;t3)</div><div class="ttdoc">Creates a 3D 4 * 4 homogeneous rotation matrix from euler angles (Z * Y * Z). </div></div>
+<div class="ttc" id="a00319_html_ga220379e10ac8cca55e275f0c9018fed9"><div class="ttname"><a href="a00319.html#ga220379e10ac8cca55e275f0c9018fed9">glm::eulerAngleYZ</a></div><div class="ttdeci">GLM_FUNC_DECL mat&lt; 4, 4, T, defaultp &gt; eulerAngleYZ(T const &amp;angleY, T const &amp;angleZ)</div><div class="ttdoc">Creates a 3D 4 * 4 homogeneous rotation matrix from euler angles (Y * Z). </div></div>
+<div class="ttc" id="a00319_html_ga7238c8e15c7720e3ca6a45ab151eeabb"><div class="ttname"><a href="a00319.html#ga7238c8e15c7720e3ca6a45ab151eeabb">glm::orientate3</a></div><div class="ttdeci">GLM_FUNC_DECL mat&lt; 3, 3, T, Q &gt; orientate3(vec&lt; 3, T, Q &gt; const &amp;angles)</div><div class="ttdoc">Creates a 3D 3 * 3 rotation matrix from euler angles (Y * X * Z). </div></div>
+<div class="ttc" id="a00319_html_ga59359fef9bad92afaca55e193f91e702"><div class="ttname"><a href="a00319.html#ga59359fef9bad92afaca55e193f91e702">glm::extractEulerAngleZXZ</a></div><div class="ttdeci">GLM_FUNC_DECL void extractEulerAngleZXZ(mat&lt; 4, 4, T, defaultp &gt; const &amp;M, T &amp;t1, T &amp;t2, T &amp;t3)</div><div class="ttdoc">Extracts the (Z * X * Z) Euler angles from the rotation matrix M. </div></div>
+<div class="ttc" id="a00319_html_ga0a4c56ecce7abcb69508ebe6313e9d10"><div class="ttname"><a href="a00319.html#ga0a4c56ecce7abcb69508ebe6313e9d10">glm::derivedEulerAngleY</a></div><div class="ttdeci">GLM_FUNC_DECL mat&lt; 4, 4, T, defaultp &gt; derivedEulerAngleY(T const &amp;angleY, T const &amp;angularVelocityY)</div><div class="ttdoc">Creates a 3D 4 * 4 homogeneous derived matrix from the rotation matrix about Y-axis. </div></div>
+<div class="ttc" id="a00299_html_ga7603e81477b46ddb448896909bc04928"><div class="ttname"><a href="a00299.html#ga7603e81477b46ddb448896909bc04928">glm::pitch</a></div><div class="ttdeci">GLM_FUNC_DECL T pitch(qua&lt; T, Q &gt; const &amp;x)</div><div class="ttdoc">Returns pitch value of euler angles expressed in radians. </div></div>
+<div class="ttc" id="a00319_html_ga483903115cd4059228961046a28d69b5"><div class="ttname"><a href="a00319.html#ga483903115cd4059228961046a28d69b5">glm::eulerAngleZX</a></div><div class="ttdeci">GLM_FUNC_DECL mat&lt; 4, 4, T, defaultp &gt; eulerAngleZX(T const &amp;angle, T const &amp;angleX)</div><div class="ttdoc">Creates a 3D 4 * 4 homogeneous rotation matrix from euler angles (Z * X). </div></div>
+<div class="ttc" id="a00236_html"><div class="ttname"><a href="a00236.html">glm</a></div><div class="ttdef"><b>Definition:</b> <a href="a00015_source.html#l00020">common.hpp:20</a></div></div>
 </div><!-- fragment --></div><!-- contents -->
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>

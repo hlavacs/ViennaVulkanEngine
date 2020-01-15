@@ -1,0 +1,6 @@
+﻿  Building Custom Rule D:/data/Vulkan/ViennaVulkanEngine/external/glfw/tests/CMakeLists.txt
+  msaa.c
+  getopt.c
+  glad_gl.c
+  Code wird generiert...
+  msaa.vcxproj -> D:\data\Vulkan\ViennaVulkanEngine\external\glfw\tests\Release\msaa.exe
