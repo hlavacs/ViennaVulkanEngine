@@ -1,12 +1,16 @@
 
 #include <iostream>
 
-#include "VEEngine.h"
+#include <functional>
+
+#include "VEInclude.h"
 
 int main()
 {
     std::cout << "Hello World!\n";
-    ve::veInitEngine();
 
+    ve::initEngine();
+
+ 
 }
 

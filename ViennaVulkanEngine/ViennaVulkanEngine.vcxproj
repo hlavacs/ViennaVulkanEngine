@@ -109,6 +109,7 @@
       <ConformanceMode>true</ConformanceMode>
       <PrecompiledHeaderFile>
       </PrecompiledHeaderFile>
+      <AdditionalIncludeDirectories>$(SolutionDir)external\glm</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -144,6 +145,7 @@
       <ConformanceMode>true</ConformanceMode>
       <PrecompiledHeaderFile>
       </PrecompiledHeaderFile>
+      <AdditionalIncludeDirectories>$(SolutionDir)external\glm</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -153,10 +155,30 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="VEMemory.cpp" />
+    <ClCompile Include="VECollision.cpp" />
     <ClCompile Include="VEEngine.cpp" />
+    <ClCompile Include="VESysEvents.cpp" />
+    <ClCompile Include="VEFile.cpp" />
+    <ClCompile Include="VESysPhysics.cpp" />
+    <ClCompile Include="VESysScene.cpp" />
+    <ClCompile Include="VESysVulkan.cpp" />
+    <ClCompile Include="VESysWindow.cpp" />
+    <ClCompile Include="VESysWindowGLFW.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="VEDefines.h" />
+    <ClInclude Include="VEMemory.h" />
+    <ClInclude Include="VECollision.h" />
     <ClInclude Include="VEEngine.h" />
+    <ClInclude Include="VEInclude.h" />
+    <ClInclude Include="VESysEvents.h" />
+    <ClInclude Include="VEFile.h" />
+    <ClInclude Include="VESysPhysics.h" />
+    <ClInclude Include="VESysScene.h" />
+    <ClInclude Include="VESysVulkan.h" />
+    <ClInclude Include="VESysWindow.h" />
+    <ClInclude Include="VESysWindowGLFW.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

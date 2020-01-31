@@ -1,9 +1,18 @@
-#ifndef CLSHAPE_H
-#define CLSHAPE_H
+#ifndef CLINCLUDE_H
+#define CLINCLUDE_H
 
+
+#define GLM_FORCE_RADIANS
+#define GLM_FORCE_DEPTH_ZERO_TO_ONE
+#define GLM_ENABLE_EXPERIMENTAL
+#include <glm/glm.hpp>
+#include <glm/gtc/matrix_transform.hpp>
+#include <glm/gtx/hash.hpp>
+#include <glm/gtx/transform.hpp>
 
 
 namespace cl {
+
 
 	///An edge connects 2 points 
 	struct clEdge {
@@ -42,13 +51,13 @@ namespace cl {
 		///Constructor of struct clQuad
 		clQuad() {};
 		///Constructor of struct clQuad
-		clQuad( glm::vec3 p0, glm::vec3 p1, glm::vec3 p2, glm::vec3 p3 ) {
+		clQuad(glm::vec3 p0, glm::vec3 p1, glm::vec3 p2, glm::vec3 p3) {
 			points[0] = p0;
 			points[1] = p1;
 			points[2] = p2;
 			points[3] = p3;
 
-			plane = clPlane( p0, p1, p2 );
+			plane = clPlane(p0, p1, p2);
 		}
 	};
 
@@ -72,7 +81,7 @@ namespace cl {
 		struct clQuad quads[6];		///<6 quads bounding the frustum		
 
 		///Constructor of struct clFrustum
-		clFrustum( glm::vec3 vert[8] ) {
+		clFrustum(glm::vec3 vert[8]) {
 			for (uint32_t i = 0; i < 8; i++) vertices[i] = vert[i];
 
 			quads[0] = clQuad(vert[0], vert[1], vert[2], vert[3]);	//near plane
@@ -86,8 +95,34 @@ namespace cl {
 		};
 	};
 
-};
 
+
+
+
+
+
+
+
+	//---------------------------------------------------------------------
+	//Intersection tests
+
+	bool clIntersect(glm::vec3 &p, clQuad & q);
+	bool clIntersect(glm::vec3 &p, clSphere & s);
+	bool clIntersect(glm::vec3 &p, clHalfspace &h);
+	bool clIntersect(glm::vec3 &p, clFrustum &f);
+
+	bool clIntersect(clEdge &e, clSphere & s);
+	bool clIntersect(clEdge &e, clHalfspace &h);
+	bool clIntersect(clEdge &e, clFrustum &f);
+
+	bool clIntersect(clQuad &e, clSphere & s);
+	bool clIntersect(clQuad &e, clHalfspace &h);
+	bool clIntersect(clQuad &e, clFrustum &f);
+
+	bool clIntersect(clSphere &s0, clSphere &s1);
+	bool clIntersect(clSphere &s, clPlane &p);
+	bool clIntersect(clSphere &s, clFrustum &f);
+};
 
 
 #endif
