@@ -8,7 +8,7 @@ namespace ve {
 
 	void veInitEngine() {
 
-		std::cout << "init engine\n";
+		std::cout << "init engine 2\n";
 	}
 
 }
