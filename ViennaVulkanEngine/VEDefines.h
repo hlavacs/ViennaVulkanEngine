@@ -1,6 +1,10 @@
 #pragma once
 
 
-typedef uint64_t VEHANDLE;
+struct VEHANDLE {
+	uint32_t m_id = 0;
+	uint32_t m_hash = 0;
+};
+
 
 
