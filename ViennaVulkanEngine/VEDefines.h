@@ -1,10 +1,14 @@
 #pragma once
 
 
-struct VEHANDLE {
-	uint32_t m_id = 0;
-	uint32_t m_hash = 0;
-};
+#include <vector>
+#include <limits>
+#include <array>
+#include <map>
+#include <unordered_map>
+#include <iostream>
+
+typedef uint32_t VEHANDLE;
 
 
 

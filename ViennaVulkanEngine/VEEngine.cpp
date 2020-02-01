@@ -1,8 +1,8 @@
 
-#include <iostream>
-#include <vector>
+
 
 #include "VEDefines.h"
+
 #include "VEMemory.h"
 #include "VEEngine.h"
 #include "VESysVulkan.h"
@@ -22,7 +22,7 @@ namespace ve {
 
 		for (int i = 0; i < 100; i++) {
 			VEHANDLE handle = getNewHandle();
-			std::cout << handle.m_id << " " << handle.m_hash << "\n";
+			std::cout << handle << "\n";
 		}
 
 		syswin::initWindow();
@@ -39,10 +39,7 @@ namespace ve {
 
 	//-----------------------------------------------------------------------------------
 	VEHANDLE getNewHandle() {
-		VEHANDLE handle;
-		handle.m_id = (uint32_t)g_handle_counter.fetch_add(1);
-		handle.m_hash = (uint32_t)std::hash<uint64_t>()(handle.m_id);
-		return handle;
+		return (VEHANDLE)g_handle_counter.fetch_add(1);
 	};
 
 
