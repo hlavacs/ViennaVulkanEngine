@@ -5,7 +5,6 @@
 namespace mem {
 
 	const uint32_t VE_MEM_IDX_NULL = std::numeric_limits<uint32_t>::max();
-	const uint32_t VE_MEM_DEFAULT_INDEX_SIZE = 512;
 
 	struct TableFindIndex {
 		uint32_t									m_key_offset;	///offset in the entry struct that contains the 32 bit key
@@ -28,8 +27,8 @@ namespace mem {
 	template <typename T>
 	struct FixedSizeTable {
 		uint32_t					m_thread_id;			///id of thread that accesses to this table are scheduled to
-		std::vector<TableFindIndex>	m_find_index;			///vector of hashed indices for quickly finding entries
-		std::vector<TableSortIndex>	m_sort_index;			///vector of sorted indices for sorted iterating through entries
+		std::vector<TableFindIndex>	m_find_index;			///vector of hashed indices for quickly finding entries in O(1)
+		std::vector<TableSortIndex>	m_sort_index;			///vector of sorted keys for sorted iterating through entries
 		std::vector<T>				m_data;					///growable data table
 
 		FixedSizeTable( std::vector<uint32_t>& find_key_offsets, std::vector<uint32_t>& sort_key_offsets ) {
