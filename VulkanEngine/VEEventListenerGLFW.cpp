@@ -235,14 +235,14 @@ namespace ve {
 
 			VkExtent2D extent = getWindowPointer()->getExtent();
 			uint32_t imageSize = extent.width * extent.height * 4;
-			VkImage image = getRendererPointer()->getSwapChainImage();
+			VkImage image = getEnginePointer()->getRenderer()->getSwapChainImage();
 
 			uint8_t *dataImage = new uint8_t[imageSize];
 
-			vh::vhBufCopySwapChainImageToHost(getRendererPointer()->getDevice(), 
-				getRendererPointer()->getVmaAllocator(),
-				getRendererPointer()->getGraphicsQueue(), 
-				getRendererPointer()->getCommandPool(),
+			vh::vhBufCopySwapChainImageToHost(getEnginePointer()->getRenderer()->getDevice(),
+                getEnginePointer()->getRenderer()->getVmaAllocator(),
+                getEnginePointer()->getRenderer()->getGraphicsQueue(),
+                getEnginePointer()->getRenderer()->getCommandPool(),
 				image, VK_FORMAT_R8G8B8A8_UNORM,
 				VK_IMAGE_ASPECT_COLOR_BIT, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
 				dataImage, extent.width, extent.height, imageSize);
@@ -269,9 +269,9 @@ namespace ve {
 			float *dataImage = new float[imageSize];
 			/*gli::byte*/unsigned char*dataImage2 = new /*gli::byte*/unsigned char[imageSize];
 
-			vh::vhBufCopyImageToHost(getRendererPointer()->getDevice(), 
+			vh::vhBufCopyImageToHost(getRendererPointer()->getDevice(),
 				getRendererPointer()->getVmaAllocator(),
-				getRendererPointer()->getGraphicsQueue(), 
+				getRendererPointer()->getGraphicsQueue(),
 				getRendererPointer()->getCommandPool(),
 				image, map->m_format, VK_IMAGE_ASPECT_DEPTH_BIT, layout,
 				(/*gli::byte*/unsigned char*)dataImage, extent.width, extent.height, imageSize * 4);

@@ -277,7 +277,7 @@ namespace vh {
 	VkResult vhRenderUpdateDescriptorSet(	VkDevice device,
 											VkDescriptorSet descriptorSet,
 											std::vector<VkBuffer> uniformBuffers,
-											std::vector<uint32_t> bufferRanges,
+											std::vector<unsigned long long> bufferRanges,
 											std::vector<std::vector<VkImageView>> textureImageViews,
 											std::vector<std::vector<VkSampler>> textureSamplers) {
 
@@ -321,7 +321,7 @@ namespace vh {
 											VkDescriptorSet descriptorSet,
 											std::vector<VkDescriptorType> descriptorTypes,
 											std::vector<VkBuffer> uniformBuffers,
-											std::vector<uint32_t> bufferRanges,
+											std::vector<unsigned long long> bufferRanges,
 											std::vector<std::vector<VkImageView>> textureImageViews,
 											std::vector<std::vector<VkSampler>> textureSamplers) {
 
@@ -399,17 +399,20 @@ namespace vh {
 												std::vector<std::vector<VkDescriptorImageInfo>> &maps) {
 
 		std::vector<VkWriteDescriptorSet> descriptorWrites = {};
-		descriptorWrites.resize(maps.size());
 
 		for (uint32_t i = binding; i < maps.size(); i++) {
-
-			descriptorWrites[i].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-			descriptorWrites[i].dstSet = descriptorSet;
-			descriptorWrites[i].dstBinding = i;
-			descriptorWrites[i].dstArrayElement = 0;
-			descriptorWrites[i].descriptorCount = descriptorCount;
-			descriptorWrites[i].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-			descriptorWrites[i].pImageInfo = &maps[i][offset];
+            if(maps[i][offset].imageLayout != VK_IMAGE_LAYOUT_UNDEFINED)
+            {
+                VkWriteDescriptorSet dW = {};
+                dW.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+                dW.dstSet = descriptorSet;
+                dW.dstBinding = i;
+                dW.dstArrayElement = 0;
+                dW.descriptorCount = descriptorCount;
+                dW.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+                dW.pImageInfo = &maps[i][offset];
+                descriptorWrites.push_back(dW);
+            }
 		}
 
 		vkUpdateDescriptorSets(device, static_cast<uint32_t>(descriptorWrites.size()), descriptorWrites.data(), 0, nullptr);

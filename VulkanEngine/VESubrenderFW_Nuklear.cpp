@@ -28,18 +28,18 @@ namespace ve {
 		struct nk_font_atlas *atlas;
 
 		vh::QueueFamilyIndices queueFamilyIndices = 
-			vh::vhDevFindQueueFamilies(	getRendererPointer()->getPhysicalDevice(), 
-										getRendererPointer()->getSurface());
+			vh::vhDevFindQueueFamilies(	getEnginePointer()->getRenderer()->getPhysicalDevice(), 
+                getEnginePointer()->getRenderer()->getSurface());
 
 		m_ctx = nk_glfw3_init(((VEWindowGLFW*)getWindowPointer())->getWindowHandle(),
-							getRendererPointer()->getDevice(),
-							getRendererPointer()->getPhysicalDevice(),
-							getRendererPointer()->getGraphicsQueue(),
+                            getEnginePointer()->getRenderer()->getDevice(),
+                            getEnginePointer()->getRenderer()->getPhysicalDevice(),
+                            getEnginePointer()->getRenderer()->getGraphicsQueue(),
 							(uint32_t)queueFamilyIndices.graphicsFamily,
-							getRendererForwardPointer()->getSwapChainFrameBuffers().data(),
-							(uint32_t)getRendererForwardPointer()->getSwapChainFrameBuffers().size(),
-							getRendererForwardPointer()->getSwapChainImageFormat(),
-							getRendererForwardPointer()->getDepthMap()->m_format,
+                            getEnginePointer()->getRenderer()->getSwapChainFrameBuffers().data(),
+							(uint32_t)getEnginePointer()->getRenderer()->getSwapChainFrameBuffers().size(),
+                            getEnginePointer()->getRenderer()->getSwapChainImageFormat(),
+                            getEnginePointer()->getRenderer()->getDepthMap()->m_format,
 							NK_GLFW3_DEFAULT);
 
 		// /* Load Fonts: if none of these are loaded a default font will be used  */

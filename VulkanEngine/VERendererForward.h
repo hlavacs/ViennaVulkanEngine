@@ -82,9 +82,6 @@ namespace ve {
 		VkDescriptorSetLayout		 m_descriptorSetLayoutShadow;		///<Descriptor set layout for using shadow maps in the light pass
 		std::vector<VkDescriptorSet> m_descriptorSetsShadow;			///<Descriptor sets for usage of shadow maps in the light pass
 
-		VkDescriptorPool			m_descriptorPool;					///<Descriptor pool for creating descriptor sets
-		VkDescriptorSetLayout		m_descriptorSetLayoutPerObject;		///<Descriptor set layout for each scene object
-
 		std::vector<VkSemaphore>	m_imageAvailableSemaphores;			///<sem for waiting for the next swapchain image
 		std::vector<VkSemaphore>	m_renderFinishedSemaphores;			///<sem for signalling that rendering done
 		std::vector<VkSemaphore>	m_overlaySemaphores;				///<sem for signalling that rendering done
@@ -139,16 +136,13 @@ namespace ve {
 		///called whenever the scene graph of the scene manager changes
 		virtual void updateCmdBuffers() { deleteCmdBuffers(); };
 		virtual void deleteCmdBuffers();
-		///\returns the per frame descriptor set layout2 (dynamic buffer)
-		virtual VkDescriptorSetLayout	getDescriptorSetLayoutPerObject() { return m_descriptorSetLayoutPerObject; };
 		///\returns the shadow descriptor set layout for the shadow
 		virtual VkDescriptorSetLayout	getDescriptorSetLayoutShadow() { return m_descriptorSetLayoutShadow; };
 		///\returns the per frame descriptor set
 		virtual std::vector<VkDescriptorSet> &getDescriptorSetsShadow() { return m_descriptorSetsShadow; };
 		///\returns pointer to the swap chain framebuffer vector
 		virtual std::vector<VkFramebuffer> &getSwapChainFrameBuffers() { return m_swapChainFramebuffers;  };
-		///\returns the descriptor pool of the per frame descriptors
-		virtual VkDescriptorPool		getDescriptorPool() { return m_descriptorPool; };
+
 		///\returns the render pass
 		virtual VkRenderPass			getRenderPass() { return m_renderPassClear; };
 		///\returns the shadow render pass

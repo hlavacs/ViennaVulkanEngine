@@ -13,7 +13,7 @@ namespace ve {
 	*
 	*/
 	void VEEventListenerNuklearDebug::onDrawOverlay(veEvent event) {
-		VESubrenderFW_Nuklear * pSubrender = (VESubrenderFW_Nuklear*)getRendererPointer()->getOverlay();
+		VESubrenderFW_Nuklear * pSubrender = (VESubrenderFW_Nuklear*)getEnginePointer()->getRenderer()->getOverlay();
 		if (pSubrender == nullptr) return;
 
 		struct nk_context * ctx = pSubrender->getContext();
@@ -66,17 +66,6 @@ namespace ve {
 			nk_layout_row_dynamic(ctx, 30, 1);
 			nk_label(ctx, "RECORDING", NK_TEXT_LEFT);
 
-			nk_layout_row_dynamic(ctx, 30, 1);
-			sprintf(outbuffer, "  Record shadow (ms): %4.1f", getRendererForwardPointer()->m_AvgCmdShadowTime*1000.0f);
-			nk_label(ctx, outbuffer, NK_TEXT_LEFT);
-
-			nk_layout_row_dynamic(ctx, 30, 1);
-			sprintf(outbuffer, "  Record light (ms): %4.1f", getRendererForwardPointer()->m_AvgCmdLightTime*1000.0f);
-			nk_label(ctx, outbuffer, NK_TEXT_LEFT);
-
-			nk_layout_row_dynamic(ctx, 30, 1);
-			sprintf(outbuffer, "  Record 1 buffer (ms): %4.1f", getRendererForwardPointer()->m_AvgRecordTime*1000.0f);
-			nk_label(ctx, outbuffer, NK_TEXT_LEFT);
 		}
 		nk_end(ctx);
 

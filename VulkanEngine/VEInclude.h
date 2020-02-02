@@ -32,6 +32,10 @@
 #include "VESubrenderFW_Shadow.h"
 #include "VERenderer.h"
 #include "VERendererForward.h"
+#include "VERendererRT.h"
+#include "VESubrenderRT.h"
+#include "VESubrenderRT_DN.h"
+//#include "VESubrenderRT_Nuklear.h"
 
 
 //use this macro to check the function result, if its not VK_SUCCESS then return the error

@@ -8,16 +8,9 @@
 #ifndef VERENDERER_H
 #define VERENDERER_H
 
-
-#ifndef getRendererPointer
-#define getRendererPointer() g_pVERendererSingleton
-#endif
-
 namespace ve {
 	class VEEngine;
 	class VESceneManager;
-
-	extern VERenderer* g_pVERendererSingleton;	///<Pointer to the only class instance 
 
 	/**
 	*
@@ -54,8 +47,12 @@ namespace ve {
 		std::vector<VkImage> m_swapChainImages;					///<A list of the swap chain images
 		VkFormat m_swapChainImageFormat;						///<Swap chain image format
 		VkExtent2D m_swapChainExtent;							///<Image extent of the swap chain images
+        std::vector<VkFramebuffer>	m_swapChainFramebuffers;	///<Framebuffers for light pass
 		std::vector<VkImageView> m_swapChainImageViews;			///<Image views of the swap chain images
 		uint32_t m_imageIndex = 0;								///<Index of the current swapchain image
+
+		VkDescriptorPool			m_descriptorPool;					///<Descriptor pool for creating descriptor sets
+		VkDescriptorSetLayout		m_descriptorSetLayoutPerObject;		///<Descriptor set layout for each scene object
 
 		//subrenderers
 		std::vector<VESubrender*> m_subrenderers;				///<Subrenderers for lit objects
@@ -64,6 +61,8 @@ namespace ve {
 
 		///Initialize the base class
 		virtual void initRenderer() {};
+		// Ray Tracing acceletation structures, must be done, when all geometries created
+		virtual void initAccelerationStructures() {};
 		///Close the base class
 		virtual void closeRenderer() {};
 		///Base class does not create subrennderers directly
@@ -95,6 +94,10 @@ namespace ve {
 		virtual VkPhysicalDevice		getPhysicalDevice() { return m_physicalDevice; };
 		///\returns the Vulkan logical device
 		virtual VkDevice				getDevice() { return m_device;  };
+		///\returns the per frame descriptor set layout2 (dynamic buffer)
+		virtual VkDescriptorSetLayout	getDescriptorSetLayoutPerObject() { return m_descriptorSetLayoutPerObject; };
+		///\returns the descriptor pool of the per frame descriptors
+		virtual VkDescriptorPool		getDescriptorPool() { return m_descriptorPool; };
 		///\returns the KHR surface that connects the window to Vulkan
 		virtual VkSurfaceKHR			getSurface() { return m_surface; };
 		///\returns the Vulkan graphics queue
@@ -115,6 +118,11 @@ namespace ve {
 		virtual VESubrender *			getOverlay() { return m_subrenderOverlay; };
 		virtual void					addEntityToSubrenderer(VEEntity *pEntity);
 		virtual void					removeEntityFromSubrenderers(VEEntity *pEntity);
+
+        ///\returns pointer to the swap chain framebuffer vector
+        virtual std::vector<VkFramebuffer> &getSwapChainFrameBuffers() { return m_swapChainFramebuffers; };
+        ///\returns the depth map vector
+        virtual VETexture *getDepthMap() = 0;
 	};
 
 }

@@ -36,31 +36,32 @@ namespace ve {
 		std::vector<vh::vhMemoryBlock*> emptyList;
 
 		m_memoryBlockMap[VESceneObject::VE_OBJECT_TYPE_ENTITY] = emptyList;
-		vh::vhMemBlockListInit(getRendererForwardPointer()->getDevice(),
-			getRendererForwardPointer()->getVmaAllocator(),
-			getRendererForwardPointer()->getDescriptorPool(),
-			getRendererForwardPointer()->getDescriptorSetLayoutPerObject(),
+        
+        VECHECKRESULT(vh::vhMemBlockListInit(getEnginePointer()->getRenderer()->getDevice(),
+			getEnginePointer()->getRenderer()->getVmaAllocator(),
+			getEnginePointer()->getRenderer()->getDescriptorPool(),
+			getEnginePointer()->getRenderer()->getDescriptorSetLayoutPerObject(),
 			2048, sizeof(VEEntity::veUBOPerEntity_t),
-			getRendererForwardPointer()->getSwapChainNumber(),
-			m_memoryBlockMap[VESceneObject::VE_OBJECT_TYPE_ENTITY]);
+            getEnginePointer()->getRenderer()->getSwapChainNumber(),
+			m_memoryBlockMap[VESceneObject::VE_OBJECT_TYPE_ENTITY]));
 
 		m_memoryBlockMap[VESceneObject::VE_OBJECT_TYPE_CAMERA] = emptyList;
-		vh::vhMemBlockListInit(getRendererForwardPointer()->getDevice(),
-			getRendererForwardPointer()->getVmaAllocator(),
-			getRendererForwardPointer()->getDescriptorPool(),
-			getRendererForwardPointer()->getDescriptorSetLayoutPerObject(),
+        VECHECKRESULT(vh::vhMemBlockListInit(getEnginePointer()->getRenderer()->getDevice(),
+			getEnginePointer()->getRenderer()->getVmaAllocator(),
+			getEnginePointer()->getRenderer()->getDescriptorPool(),
+			getEnginePointer()->getRenderer()->getDescriptorSetLayoutPerObject(),
 			64, sizeof(VECamera::veUBOPerCamera_t),
-			getRendererForwardPointer()->getSwapChainNumber(),
-			m_memoryBlockMap[VESceneObject::VE_OBJECT_TYPE_CAMERA]);
+			getEnginePointer()->getRenderer()->getSwapChainNumber(),
+			m_memoryBlockMap[VESceneObject::VE_OBJECT_TYPE_CAMERA]));
 
 		m_memoryBlockMap[VESceneObject::VE_OBJECT_TYPE_LIGHT] = emptyList;
-		vh::vhMemBlockListInit(getRendererForwardPointer()->getDevice(),
-			getRendererForwardPointer()->getVmaAllocator(),
-			getRendererForwardPointer()->getDescriptorPool(),
-			getRendererForwardPointer()->getDescriptorSetLayoutPerObject(),
+        VECHECKRESULT(vh::vhMemBlockListInit(getEnginePointer()->getRenderer()->getDevice(),
+			getEnginePointer()->getRenderer()->getVmaAllocator(),
+			getEnginePointer()->getRenderer()->getDescriptorPool(),
+			getEnginePointer()->getRenderer()->getDescriptorSetLayoutPerObject(),
 			16, sizeof(VELight::veUBOPerLight_t),
-			getRendererForwardPointer()->getSwapChainNumber(),
-			m_memoryBlockMap[VESceneObject::VE_OBJECT_TYPE_LIGHT]);
+			getEnginePointer()->getRenderer()->getSwapChainNumber(),
+			m_memoryBlockMap[VESceneObject::VE_OBJECT_TYPE_LIGHT]));
 
 		std::vector<VEMesh*> meshes;
 		std::vector<VEMaterial*> materials;
@@ -163,6 +164,10 @@ namespace ve {
 			//aiProcess_FixInfacingNormals |
 			aiFlags);
 
+		if (!pScene)
+		{
+			std::string error = importer.GetErrorString();
+		}
 		VECHECKPOINTER((void*)pScene);
 
 		VESceneNode *pMO = createSceneNode2(entityName, parent);	//create a new scene node as parent of the whole scene
@@ -311,6 +316,8 @@ namespace ve {
 					paiMat->GetTexture(aiTextureType_DIFFUSE, i, &str);
 
 					std::string name(str.C_Str());
+                    if(name[0] == '*')
+                        continue;
 					pMat->mapDiffuse = createTexture2(filekey + "/" + name, basedir, name );
 				}
 				for (uint32_t i = 0; i < paiMat->GetTextureCount(aiTextureType_SPECULAR); i++) {
@@ -326,6 +333,8 @@ namespace ve {
 					paiMat->GetTexture(aiTextureType_NORMALS, i, &str);
 
 					std::string name(str.C_Str());
+                    if(name[0] == '*')
+                        continue;
 					if (pMat->mapNormal == nullptr) pMat->mapNormal = createTexture2(filekey + "/" + name, basedir, name );
 				}
 				for (uint32_t i = 0; i < paiMat->GetTextureCount(aiTextureType_DISPLACEMENT); i++) {
@@ -333,6 +342,8 @@ namespace ve {
 					paiMat->GetTexture(aiTextureType_DISPLACEMENT, i, &str);
 
 					std::string name(str.C_Str());
+                    if(name[0] == '*')
+                        continue;
 					if (pMat->mapBump == nullptr) pMat->mapBump = createTexture2(filekey + "/" + name, basedir, name );
 				}
 				for (uint32_t i = 0; i < paiMat->GetTextureCount(aiTextureType_HEIGHT); i++) {
@@ -340,6 +351,8 @@ namespace ve {
 					paiMat->GetTexture(aiTextureType_HEIGHT, i, &str);
 
 					std::string name(str.C_Str());
+                    if(name[0] == '*')
+                        continue;
 					if (pMat->mapHeight == nullptr) pMat->mapHeight = createTexture2(filekey + "/" + name, basedir, name);
 				}
 			}
@@ -453,7 +466,7 @@ namespace ve {
 		addSceneNodeAndChildren2(pEntity, parent);				// store entity in the entity array
 
 		if (pMesh != nullptr && pMat != nullptr) {
-			getRendererPointer()->addEntityToSubrenderer(pEntity);
+            getEnginePointer()->getRenderer()->addEntityToSubrenderer(pEntity);
 		}
 		sceneGraphChanged2();
 		return pEntity;
@@ -678,7 +691,7 @@ namespace ve {
 		}
 		m_deletedSceneNodes.clear();
 
-		getRendererPointer()->updateCmdBuffers();
+		getEnginePointer()->getRenderer()->updateCmdBuffers();
 	}
 
 
@@ -936,7 +949,7 @@ namespace ve {
 					m_camera = nullptr;
 
 				if (pObject->getObjectType() == VESceneObject::VE_OBJECT_TYPE_ENTITY)			//if its a object that is rendered
-					getRendererPointer()->removeEntityFromSubrenderers((VEEntity*)pObject);		//remove it from its subrenderer
+					getEnginePointer()->getRenderer()->removeEntityFromSubrenderers((VEEntity*)pObject);		//remove it from its subrenderer
 
 				if (pObject->m_memoryHandle.pMemBlock != nullptr) {								//remove it from the UBO list
 					vh::vhMemBlockRemoveEntry(&pObject->m_memoryHandle);

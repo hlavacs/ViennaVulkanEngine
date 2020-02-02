@@ -123,7 +123,7 @@ namespace ve {
 					pShadowMap->m_image, pShadowMap->m_format, VK_IMAGE_ASPECT_DEPTH_BIT, 1, 1,
 					VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
 
-				vh::vhBufCreateTextureSampler(getRendererPointer()->getDevice(), &pShadowMap->m_imageInfo.sampler);
+				vh::vhBufCreateTextureSampler(m_device, &pShadowMap->m_imageInfo.sampler);
 
 				m_shadowMaps[i].push_back(pShadowMap);
 
@@ -158,7 +158,7 @@ namespace ve {
 											{ VK_SHADER_STAGE_FRAGMENT_BIT },
 											&m_descriptorSetLayoutShadow);
 
-		vh::vhRenderCreateDescriptorSetLayout(	getRendererForwardPointer()->getDevice(),
+		vh::vhRenderCreateDescriptorSetLayout(	m_device,
 												{ 1 },
 												{ VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC },
 												{ VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT , },

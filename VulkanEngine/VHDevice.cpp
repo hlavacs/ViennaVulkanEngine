@@ -34,10 +34,11 @@ namespace vh {
 			for (const auto& layerProperties : availableLayers) {
 				if (strcmp(layerName, layerProperties.layerName) == 0) {
 					validationLayersFound.push_back(layerName);
+                    layerFound = true;
 					break;
 				}
-				std::cout << "Warning! Validation Layer " << layerName << " not available\n";
 			}
+            if(!layerFound) std::cout << "Warning! Validation Layer " << layerName << " not available\n";
 		}
 
 		validationLayers = validationLayersFound;
@@ -268,6 +269,17 @@ namespace vh {
 		VkPhysicalDeviceProperties properties;
 		vkGetPhysicalDeviceProperties( *physicalDevice, &properties);
 		*limits = properties.limits;
+
+		VkPhysicalDeviceRayTracingPropertiesNV nv_rt_properties = {};
+		nv_rt_properties.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_TRACING_PROPERTIES_NV;
+		nv_rt_properties.pNext = nullptr;
+		nv_rt_properties.maxRecursionDepth = 0;
+		nv_rt_properties.shaderGroupHandleSize = 0;
+		VkPhysicalDeviceProperties2 properties2;
+		properties2.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROPERTIES_2;
+		properties2.pNext = &nv_rt_properties;
+		properties2.properties = {};
+		vkGetPhysicalDeviceProperties2(*physicalDevice, &properties2);
 
 		vkGetPhysicalDeviceFeatures( *physicalDevice, pFeatures);
 

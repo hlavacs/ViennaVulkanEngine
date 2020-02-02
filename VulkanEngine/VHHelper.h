@@ -90,6 +90,7 @@ namespace vh {
 		glm::vec3 normal;		///<Vertex normal vector
 		glm::vec3 tangent;		///<Tangent vector
 		glm::vec2 texCoord;		///<Texture coordinates
+        int       entityId = 0; ///<for alignment
 
 		///\returns the binding description of this vertex data structure
 		static VkVertexInputBindingDescription getBindingDescription() {
@@ -102,8 +103,8 @@ namespace vh {
 		} 
 
 		///\returns the vertex attribute description of the vertex data
-		static std::array<VkVertexInputAttributeDescription, 4> getAttributeDescriptions() {
-			std::array<VkVertexInputAttributeDescription, 4> attributeDescriptions = {};
+		static std::array<VkVertexInputAttributeDescription, 5> getAttributeDescriptions() {
+			std::array<VkVertexInputAttributeDescription, 5> attributeDescriptions = {};
 
 			attributeDescriptions[0].binding = 0;
 			attributeDescriptions[0].location = 0;
@@ -125,12 +126,17 @@ namespace vh {
 			attributeDescriptions[3].format = VK_FORMAT_R32G32_SFLOAT;
 			attributeDescriptions[3].offset = offsetof(vhVertex, texCoord);
 
+            attributeDescriptions[4].binding = 0;
+            attributeDescriptions[4].location = 4;
+            attributeDescriptions[4].format = VK_FORMAT_R32_SINT;
+            attributeDescriptions[4].offset = offsetof(vhVertex, entityId);
+
 			return attributeDescriptions;
 		}
 
 		///Operator for comparing two vertices
 		bool operator==(const vhVertex& other) const {
-			return pos == other.pos && normal == other.normal && tangent == other.tangent && texCoord == other.texCoord;
+			return pos == other.pos && normal == other.normal && tangent == other.tangent && texCoord == other.texCoord && entityId == other.entityId;
 		}
 	};
 
@@ -294,13 +300,13 @@ namespace vh {
 											std::vector<VkDescriptorSet> & descriptorSets);
 	VkResult vhRenderUpdateDescriptorSet(	VkDevice device, VkDescriptorSet descriptorSet,
 											std::vector<VkBuffer> uniformBuffers,
-											std::vector<uint32_t> bufferRanges,
+											std::vector<unsigned long long> bufferRanges,
 											std::vector<std::vector<VkImageView>> textureImageViews,
 											std::vector<std::vector<VkSampler>> textureSamplers);
 	VkResult vhRenderUpdateDescriptorSet(VkDevice device, VkDescriptorSet descriptorSet,
 										std::vector<VkDescriptorType> descriptorTypes,
 										std::vector<VkBuffer> uniformBuffers,
-										std::vector<uint32_t> bufferRanges,
+										std::vector<unsigned long long> bufferRanges,
 										std::vector<std::vector<VkImageView>> textureImageViews,
 										std::vector<std::vector<VkSampler>> textureSamplers);
 
@@ -318,6 +324,7 @@ namespace vh {
 									uint32_t imageIndex, VkSemaphore signalSemaphore);
 
 	VkResult vhPipeCreateGraphicsPipelineLayout(VkDevice device, std::vector<VkDescriptorSetLayout> descriptorSetLayouts, std::vector<VkPushConstantRange> pushConstantRanges, VkPipelineLayout *pipelineLayout);
+	VkShaderModule vhPipeCreateShaderModule(VkDevice device, const std::vector<char>& code);
 	VkResult vhPipeCreateGraphicsPipeline(	VkDevice device, std::vector<std::string> shaderFileNames,
 											VkExtent2D swapChainExtent, VkPipelineLayout pipelineLayout, VkRenderPass renderPass,
 											std::vector<VkDynamicState> dynamicStates, VkPipeline *graphicsPipeline);

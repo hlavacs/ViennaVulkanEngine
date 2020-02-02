@@ -902,7 +902,7 @@ namespace vh {
 		vmaUnmapMemory(allocator, stagingBufferAllocation);
 
 		VHCHECKRESULT( vhBufCreateBuffer(	allocator, bufferSize, 
-											VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, 
+											VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
 											VMA_MEMORY_USAGE_GPU_ONLY, vertexBuffer, vertexBufferAllocation ) );
 
 		VHCHECKRESULT( vhBufCopyBuffer(device, graphicsQueue, commandPool, stagingBuffer, *vertexBuffer, bufferSize ) );
@@ -940,7 +940,7 @@ namespace vh {
 		vmaUnmapMemory(allocator, stagingBufferAllocation);
 
 		VHCHECKRESULT(	vhBufCreateBuffer(allocator, bufferSize, 
-						VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT, VMA_MEMORY_USAGE_GPU_ONLY, 
+						VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, VMA_MEMORY_USAGE_GPU_ONLY,
 						indexBuffer, indexBufferAllocation));
 
 		VHCHECKRESULT( vhBufCopyBuffer(device, graphicsQueue, commandPool, stagingBuffer, *indexBuffer, bufferSize ) );

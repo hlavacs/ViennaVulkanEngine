@@ -284,8 +284,11 @@ namespace ve {
 			glm::mat4 model;		///<Camera model (world) matrix, needed for camera world position
 			glm::mat4 view;			///<Camera view matrix
 			glm::mat4 proj;			///<Camera projection matrix
+            glm::mat4 modelInverse;	///<Camera model (world) inverse matrix (for ray tracing)
+            glm::mat4 viewInverse;	///<Camera view inverse matrix (for ray tracing)
+            glm::mat4 projInverse;	///<Camera projection inverse matrix (for ray tracing)
 			glm::vec4 param;		///<param[0]: near plane param[1]: far plane distances - 2 and 3 are shadow depth fractions
-			glm::vec4 a,b,c;		///<paddding to ensure that struct has size multiple of 256
+			glm::vec4 a,b,c,d,e,f,g;		///<paddding to ensure that struct has size multiple of 256
 		};
 
 		struct veUBOPerCamera_t m_ubo;		///<The UBO that is copied to the GPU

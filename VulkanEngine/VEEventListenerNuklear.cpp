@@ -17,7 +17,7 @@ namespace ve {
 	*
 	*/
 	void VEEventListenerNuklear::onDrawOverlay(veEvent event) {
-		VESubrenderFW_Nuklear * pSubrender = (VESubrenderFW_Nuklear*)getRendererPointer()->getOverlay();
+		VESubrenderFW_Nuklear * pSubrender = (VESubrenderFW_Nuklear*)getEnginePointer()->getRenderer()->getOverlay();
 		if (pSubrender == nullptr) return;
 
 		struct nk_context * ctx = pSubrender->getContext();

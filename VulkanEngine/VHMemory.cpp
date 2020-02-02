@@ -119,7 +119,8 @@ namespace vh {
 		pBlock->setDirty();										//default is dirty -> update the next time
 
 		VHCHECKRESULT( vhBufCreateUniformBuffers(allocator, numBuffers, sizeEntry*maxNumEntries, pBlock->buffers, pBlock->allocations) );
-		VHCHECKRESULT( vhRenderCreateDescriptorSets(device, numBuffers, descriptorLayout, descriptorPool, pBlock->descriptorSets) );
+        auto result = vhRenderCreateDescriptorSets(device, numBuffers, descriptorLayout, descriptorPool, pBlock->descriptorSets);
+		VHCHECKRESULT(result);
 
 		for (uint32_t i = 0; i < numBuffers; i++) {
 			VHCHECKRESULT( vhRenderUpdateDescriptorSet( device, pBlock->descriptorSets[i],
@@ -154,7 +155,7 @@ namespace vh {
 		}
 
 		if ( pMemBlock==nullptr ) {													//none found - create a new block
-			pMemBlock = new vhMemoryBlock;											//new block
+			pMemBlock = new vhMemoryBlock;										//new block
 			
 			//initialize the new block using the first block
 			VHCHECKRESULT( vhMemBlockInit(	blocklist[0]->device, 

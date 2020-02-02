@@ -174,11 +174,17 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="..\external\threadpool\ThreadPool.h" />
+    <ClInclude Include="BottomLevelASGenerator.h" />
     <ClInclude Include="CLInclude.h" />
     <ClInclude Include="CLShape.h" />
+    <ClInclude Include="DescriptorSetGenerator.h" />
+    <ClInclude Include="RaytracingPipelineGenerator.h" />
+    <ClInclude Include="ShaderBindingTableGenerator.h" />
+    <ClInclude Include="TopLevelASGenerator.h" />
     <ClInclude Include="VEEventListenerNuklear.h" />
     <ClInclude Include="VEEventListenerNuklearDebug.h" />
     <ClInclude Include="VEMaterial.h" />
+    <ClInclude Include="VERendererRT.h" />
     <ClInclude Include="VESubrenderFW.h" />
     <ClInclude Include="VESubrenderFW_Nuklear.h" />
     <ClInclude Include="VESubrenderFW_Skyplane.h" />
@@ -196,16 +202,27 @@
     <ClInclude Include="VESubrender.h" />
     <ClInclude Include="VESubrenderFW_D.h" />
     <ClInclude Include="VESubrenderFW_Shadow.h" />
+    <ClInclude Include="VESubrenderRT.h" />
+    <ClInclude Include="VESubrenderRT_DN.h" />
     <ClInclude Include="VEWindow.h" />
     <ClInclude Include="VEWindowGLFW.h" />
     <ClInclude Include="VHFunctions.h" />
     <ClInclude Include="VHHelper.h" />
+    <ClInclude Include="VKHelpers.h" />
     <ClInclude Include="vk_mem_alloc.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\external\threadpool\ThreadPool.cpp" />
+    <ClCompile Include="BottomLevelASGenerator.cpp" />
+    <ClCompile Include="DescriptorSetGenerator.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="CLIntersect.cpp" />
+    <ClCompile Include="RaytracingPipelineGenerator.cpp" />
+    <ClCompile Include="ShaderBindingTableGenerator.cpp" />
+    <ClCompile Include="TopLevelASGenerator.cpp" />
+    <ClCompile Include="VERendererRT.cpp" />
+    <ClCompile Include="VESubrenderRT.cpp" />
+    <ClCompile Include="VESubrenderRT_DN.cpp" />
     <ClCompile Include="VHFunctions.cpp" />
     <ClCompile Include="VEDocumentation.cpp" />
     <ClCompile Include="VEEngine.cpp" />
@@ -237,6 +254,7 @@
     <ClCompile Include="VHMemory.cpp" />
     <ClCompile Include="VHRender.cpp" />
     <ClCompile Include="VHSwapchain.cpp" />
+    <ClCompile Include="VKHelpers.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="VHFunctions.inl" />

@@ -118,7 +118,7 @@ namespace vh {
 		createInfo.imageColorSpace = surfaceFormat.colorSpace;
 		createInfo.imageExtent = swapextent;
 		createInfo.imageArrayLayers = 1;
-		createInfo.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT; //need for copying to host
+		createInfo.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_STORAGE_BIT; //need for copying to host
 
 		QueueFamilyIndices indices = vhDevFindQueueFamilies(physicalDevice, surface);
 		uint32_t queueFamilyIndices[] = { (uint32_t)indices.graphicsFamily, (uint32_t)indices.presentFamily };

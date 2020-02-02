@@ -14,7 +14,7 @@ namespace ve {
 
 
 	uint32_t g_score = 0;				//derzeitiger Punktestand
-	double g_time = 30.0;				//zeit die noch übrig ist
+	double g_time = 30.0;				//zeit die noch ï¿½brig ist
 	bool g_gameLost = false;			//true... das Spiel wurde verloren
 	bool g_restart = false;			//true...das Spiel soll neu gestartet werden
 
@@ -65,11 +65,11 @@ namespace ve {
 	};
 
 
-	static std::default_random_engine e{ 12345 };					//Für Zufallszahlen
-	static std::uniform_real_distribution<> d{ -10.0f, 10.0f };		//Für Zufallszahlen
+	static std::default_random_engine e{ 12345 };					//Fï¿½r Zufallszahlen
+	static std::uniform_real_distribution<> d{ -10.0f, 10.0f };		//Fï¿½r Zufallszahlen
 
 	//
-	// Überprüfen, ob die Kamera die Kiste berührt
+	// ï¿½berprï¿½fen, ob die Kamera die Kiste berï¿½hrt
 	//
 	class EventListenerCollision : public VEEventListener {
 	protected:

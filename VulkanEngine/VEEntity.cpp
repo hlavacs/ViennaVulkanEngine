@@ -232,7 +232,7 @@ namespace ve {
 			if(pObject->m_parent != nullptr ) pObject->m_parent->removeChild(pObject);
 			pObject->m_parent = this;
 			m_children.push_back(pObject);
-			getRendererPointer()->updateCmdBuffers();
+			getEnginePointer()->getRenderer()->updateCmdBuffers();
 		}
 	}
 
@@ -252,7 +252,7 @@ namespace ve {
 				m_children[i] = last;
 				m_children.pop_back();									//child is not destroyed
 				pNode->m_parent = nullptr;
-				getRendererPointer()->updateCmdBuffers();
+                getEnginePointer()->getRenderer()->updateCmdBuffers();
 				return;
 			}
 		}
@@ -534,10 +534,12 @@ namespace ve {
 	*/
 	void VECamera::updateLocalUBO(glm::mat4 worldMatrix) {
 		m_ubo = {};
-
-		m_ubo.model = worldMatrix;
-		m_ubo.view = glm::inverse(worldMatrix);
-		m_ubo.proj = getProjectionMatrix();
+        m_ubo.model = worldMatrix;
+        m_ubo.view = glm::inverse(worldMatrix);
+        m_ubo.proj = getProjectionMatrix();
+        m_ubo.modelInverse = glm::inverse(worldMatrix);
+        m_ubo.viewInverse = worldMatrix;
+        m_ubo.projInverse = glm::inverse(getProjectionMatrix());
 		m_ubo.param[0] = m_nearPlane;
 		m_ubo.param[1] = m_farPlane;
 		m_ubo.param[2] = m_nearPlaneFraction;		//needed only if this is a shadow cam
@@ -857,10 +859,14 @@ namespace ve {
 
 		VECamera *pCam = getSceneManagerPointer()->getCamera();
 
-		updateShadowCameras(pCam, imageIndex);						//copy shadow cam UBOs to GPU		
-		for (uint32_t i = 0; i < m_shadowCameras.size(); i++ ) {	//copy shadow cam UBOs to light UBO
-			m_ubo.shadowCameras[i] = m_shadowCameras[i]->m_ubo;
-		}
+        if(!getEnginePointer()->isRayTracing())
+        {
+            updateShadowCameras(pCam, imageIndex);						//copy shadow cam UBOs to GPU		
+            for(uint32_t i = 0; i < m_shadowCameras.size(); i++)
+            {	//copy shadow cam UBOs to light UBO
+                m_ubo.shadowCameras[i] = m_shadowCameras[i]->m_ubo;
+            }
+        }
 
 		VESceneObject::updateUBO((void*)&m_ubo, (uint32_t)sizeof(veUBOPerLight_t), imageIndex);
 	}

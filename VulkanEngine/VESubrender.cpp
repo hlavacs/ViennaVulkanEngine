@@ -37,7 +37,7 @@ namespace ve {
 	*
 	*/
 	std::vector<VESubrender*> &VESubrender::getSubrenderers() {
-		return getRendererPointer()->m_subrenderers; 
+		return getEnginePointer()->getRenderer()->m_subrenderers;
 	};
 
 }

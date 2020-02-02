@@ -35,7 +35,7 @@ namespace ve {
 				m_descriptorSetsResources);
 
 			for (uint32_t i = 0; i < size; i++) {
-				vh::vhRenderUpdateDescriptorSetMaps(getRendererPointer()->getDevice(),
+				vh::vhRenderUpdateDescriptorSetMaps(getRendererForwardPointer()->getDevice(),
 					m_descriptorSetsResources[i],
 					0, i*m_resourceArrayLength, m_resourceArrayLength, m_maps);
 			}
@@ -48,14 +48,14 @@ namespace ve {
 	void VESubrenderFW::closeSubrenderer() {
 
 		for (auto pipeline : m_pipelines) {
-			vkDestroyPipeline(getRendererPointer()->getDevice(), pipeline, nullptr);
+			vkDestroyPipeline(getRendererForwardPointer()->getDevice(), pipeline, nullptr);
 		}
 
 		if (m_pipelineLayout != VK_NULL_HANDLE)
-			vkDestroyPipelineLayout(getRendererPointer()->getDevice(), m_pipelineLayout, nullptr);
+			vkDestroyPipelineLayout(getRendererForwardPointer()->getDevice(), m_pipelineLayout, nullptr);
 
 		if (m_descriptorSetLayoutResources != VK_NULL_HANDLE)
-			vkDestroyDescriptorSetLayout(getRendererPointer()->getDevice(), m_descriptorSetLayoutResources, nullptr);
+			vkDestroyDescriptorSetLayout(getRendererForwardPointer()->getDevice(), m_descriptorSetLayoutResources, nullptr);
 
 	}
 
@@ -257,7 +257,7 @@ namespace ve {
 			}
 		}
 
-		vh::vhRenderUpdateDescriptorSetMaps(getRendererPointer()->getDevice(),					//update the descriptor that holds the map array
+		vh::vhRenderUpdateDescriptorSetMaps(getRendererForwardPointer()->getDevice(),					//update the descriptor that holds the map array
 											m_descriptorSetsResources[m_descriptorSetsResources.size() - 1],
 											0, 
 											offset,												//start offset of the current map arrays that should be updated
@@ -295,7 +295,7 @@ namespace ve {
 
 					//update the descriptor set where the entity was removed
 					uint32_t arrayIndex = (uint32_t)(i / m_resourceArrayLength);
-					vh::vhRenderUpdateDescriptorSetMaps(getRendererPointer()->getDevice(),
+					vh::vhRenderUpdateDescriptorSetMaps(getRendererForwardPointer()->getDevice(),
 						m_descriptorSetsResources[arrayIndex],
 						0,
 						arrayIndex*m_resourceArrayLength,

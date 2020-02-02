@@ -75,13 +75,13 @@ namespace ve {
 		}
 
 		//create the vertex buffer
-		VECHECKRESULT(vh::vhBufCreateVertexBuffer(getRendererPointer()->getDevice(), getRendererPointer()->getVmaAllocator(),
-			getRendererPointer()->getGraphicsQueue(), getRendererPointer()->getCommandPool(),
-			vertices, &m_vertexBuffer, &m_vertexBufferAllocation) );
+		VECHECKRESULT(vh::vhBufCreateVertexBuffer(  getEnginePointer()->getRenderer()->getDevice(), getEnginePointer()->getRenderer()->getVmaAllocator(),
+                                                    getEnginePointer()->getRenderer()->getGraphicsQueue(), getEnginePointer()->getRenderer()->getCommandPool(),
+			                                        vertices, &m_vertexBuffer, &m_vertexBufferAllocation) );
 
 		//create the index buffer
-		VECHECKRESULT( vh::vhBufCreateIndexBuffer(	getRendererPointer()->getDevice(), getRendererPointer()->getVmaAllocator(),
-													getRendererPointer()->getGraphicsQueue(), getRendererPointer()->getCommandPool(),
+		VECHECKRESULT( vh::vhBufCreateIndexBuffer(  getEnginePointer()->getRenderer()->getDevice(), getEnginePointer()->getRenderer()->getVmaAllocator(),
+                                                    getEnginePointer()->getRenderer()->getGraphicsQueue(), getEnginePointer()->getRenderer()->getCommandPool(),
 													indices, &m_indexBuffer, &m_indexBufferAllocation));
 
 	}
@@ -114,13 +114,13 @@ namespace ve {
 		m_indexCount = (uint32_t)indices.size();
 
 		//create the vertex buffer
-		VECHECKRESULT( vh::vhBufCreateVertexBuffer(	getRendererPointer()->getDevice(), getRendererPointer()->getVmaAllocator(),
-													getRendererPointer()->getGraphicsQueue(), getRendererPointer()->getCommandPool(),
+		VECHECKRESULT( vh::vhBufCreateVertexBuffer(getEnginePointer()->getRenderer()->getDevice(), getEnginePointer()->getRenderer()->getVmaAllocator(),
+            getEnginePointer()->getRenderer()->getGraphicsQueue(), getEnginePointer()->getRenderer()->getCommandPool(),
 													vertices, &m_vertexBuffer, &m_vertexBufferAllocation));
 
 		//create the index buffer
-		VECHECKRESULT( vh::vhBufCreateIndexBuffer(	getRendererPointer()->getDevice(), getRendererPointer()->getVmaAllocator(),
-													getRendererPointer()->getGraphicsQueue(), getRendererPointer()->getCommandPool(),
+		VECHECKRESULT( vh::vhBufCreateIndexBuffer(getEnginePointer()->getRenderer()->getDevice(), getEnginePointer()->getRenderer()->getVmaAllocator(),
+            getEnginePointer()->getRenderer()->getGraphicsQueue(), getEnginePointer()->getRenderer()->getCommandPool(),
 													indices, &m_indexBuffer, &m_indexBufferAllocation));
 	}
 
@@ -130,8 +130,8 @@ namespace ve {
 	* \brief Destroy the vertex and index buffers
 	*/
 	VEMesh::~VEMesh() {
-		vmaDestroyBuffer(getRendererPointer()->getVmaAllocator(), m_indexBuffer, m_indexBufferAllocation);
-		vmaDestroyBuffer(getRendererPointer()->getVmaAllocator(), m_vertexBuffer, m_vertexBufferAllocation);
+		vmaDestroyBuffer(getEnginePointer()->getRenderer()->getVmaAllocator(), m_indexBuffer, m_indexBufferAllocation);
+		vmaDestroyBuffer(getEnginePointer()->getRenderer()->getVmaAllocator(), m_vertexBuffer, m_vertexBufferAllocation);
 	}
 
 
@@ -171,15 +171,15 @@ namespace ve {
 							VkImageCreateFlags flags, VkImageViewType viewType) : VENamedClass(name) {
 		if (texNames.size() == 0) return;
 
-		VECHECKRESULT(vh::vhBufCreateTextureImage(getRendererPointer()->getDevice(), getRendererPointer()->getVmaAllocator(),
-							getRendererPointer()->getGraphicsQueue(), getRendererPointer()->getCommandPool(),
+		VECHECKRESULT(vh::vhBufCreateTextureImage(getEnginePointer()->getRenderer()->getDevice(), getEnginePointer()->getRenderer()->getVmaAllocator(),
+            getEnginePointer()->getRenderer()->getGraphicsQueue(), getEnginePointer()->getRenderer()->getCommandPool(),
 							basedir, texNames, flags, &m_image, &m_deviceAllocation, &m_extent) );
 
 		m_format = VK_FORMAT_R8G8B8A8_UNORM;
-		VECHECKRESULT(vh::vhBufCreateImageView(getRendererPointer()->getDevice(), m_image,
+		VECHECKRESULT(vh::vhBufCreateImageView(getEnginePointer()->getRenderer()->getDevice(), m_image,
 							m_format, viewType, (uint32_t)texNames.size(), VK_IMAGE_ASPECT_COLOR_BIT, &m_imageInfo.imageView));
 
-		VECHECKRESULT(vh::vhBufCreateTextureSampler(getRendererPointer()->getDevice(), &m_imageInfo.sampler));
+		VECHECKRESULT(vh::vhBufCreateTextureSampler(getEnginePointer()->getRenderer()->getDevice(), &m_imageInfo.sampler));
 	}
 
 
@@ -198,26 +198,26 @@ namespace ve {
 	/*VETexture::VETexture(std::string name, gli::texture_cube &texCube,
 		VkImageCreateFlags flags, VkImageViewType viewType) : VENamedClass(name) {
 
-		VECHECKRESULT(vh::vhBufCreateTexturecubeImage(getRendererPointer()->getDevice(), getRendererPointer()->getVmaAllocator(),
-							getRendererPointer()->getGraphicsQueue(), getRendererPointer()->getCommandPool(),
+		VECHECKRESULT(vh::vhBufCreateTexturecubeImage(getEnginePointer()->getRenderer()->getDevice(), getEnginePointer()->getRenderer()->getVmaAllocator(),
+            getEnginePointer()->getRenderer()->getGraphicsQueue(), getEnginePointer()->getRenderer()->getCommandPool(),
 							texCube, &m_image, &m_deviceAllocation, &m_format));
 
 		m_extent.width = texCube.extent().x;
 		m_extent.height = texCube.extent().y;
 
-		VECHECKRESULT(vh::vhBufCreateImageView(getRendererPointer()->getDevice(), m_image,
+		VECHECKRESULT(vh::vhBufCreateImageView(getEnginePointer()->getRenderer()->getDevice(), m_image,
 							m_format, VK_IMAGE_VIEW_TYPE_CUBE, 6, VK_IMAGE_ASPECT_COLOR_BIT, &m_imageInfo.imageView));
 
-		VECHECKRESULT(vh::vhBufCreateTextureSampler(getRendererPointer()->getDevice(), &m_imageInfo.sampler));
+		VECHECKRESULT(vh::vhBufCreateTextureSampler(getEnginePointer()->getRenderer()->getDevice(), &m_imageInfo.sampler));
 	}*/
 
 	/**
 	* \brief VETexture destructor - destroy the sampler, image view and image
 	*/
 	VETexture::~VETexture() {
-		if (m_imageInfo.sampler != VK_NULL_HANDLE) vkDestroySampler(getRendererPointer()->getDevice(), m_imageInfo.sampler, nullptr);
-		if (m_imageInfo.imageView != VK_NULL_HANDLE) vkDestroyImageView(getRendererPointer()->getDevice(), m_imageInfo.imageView, nullptr);
-		if (m_image != VK_NULL_HANDLE) vmaDestroyImage(getRendererPointer()->getVmaAllocator(), m_image, m_deviceAllocation);
+		if (m_imageInfo.sampler != VK_NULL_HANDLE) vkDestroySampler(getEnginePointer()->getRenderer()->getDevice(), m_imageInfo.sampler, nullptr);
+		if (m_imageInfo.imageView != VK_NULL_HANDLE) vkDestroyImageView(getEnginePointer()->getRenderer()->getDevice(), m_imageInfo.imageView, nullptr);
+		if (m_image != VK_NULL_HANDLE) vmaDestroyImage(getEnginePointer()->getRenderer()->getVmaAllocator(), m_image, m_deviceAllocation);
 	}
 
 

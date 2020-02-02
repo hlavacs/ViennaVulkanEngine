@@ -45,7 +45,7 @@ namespace ve {
 		createRenderer();					//create a renderer
 		createSceneManager();				//create a scene manager
 		createWindow();						//create a window
-		m_pWindow->initWindow(800, 600);	//inittialize the window
+		m_pWindow->initWindow(1280, 720);	//inittialize the window
 
 		m_threadPool = new ThreadPool(0); //worker threads
 
@@ -87,7 +87,16 @@ namespace ve {
 	*
 	*/
 	void VEEngine::createRenderer() {
-		m_pRenderer = new VERendererForward();
+        m_pForwardRenderer = new VERendererForward();
+        m_pRTRenderer = new VERendererRT();
+		if (m_ray_tracing)
+		{
+			m_pRenderer = m_pRTRenderer;
+		}
+		else
+		{
+			m_pRenderer = m_pForwardRenderer;
+		}
 	}
 
 	/**
@@ -160,6 +169,10 @@ namespace ve {
 		if (m_debug) {
 			extensions.push_back(VK_EXT_DEBUG_REPORT_EXTENSION_NAME);
 			//extensions.push_back("VK_EXT_debug_report");
+		}
+		if (m_ray_tracing)
+		{
+			extensions.push_back(VK_KHR_GET_PHYSICAL_DEVICE_PROPERTIES_2_EXTENSION_NAME);
 		}
 		return extensions;
 	};
@@ -248,7 +261,7 @@ namespace ve {
 	*
 	* \brief Remove an event listener.
 	*
-	* The event listener will be removed fróm the list but not destroyed.
+	* The event listener will be removed frï¿½m the list but not destroyed.
 	*
 	* \param[in] name The name of the event listener to be removed.
 	*
@@ -397,7 +410,7 @@ namespace ve {
 				//event.idata1 == m_eventlist[i].idata1 &&
 				event.idata2 == m_eventlist[i].idata2 //&&
 				//event.idata3 == m_eventlist[i].idata3 &&
-				//event.idata4 == m_eventlist[i].idata4 
+				//event.idata4 == m_eventlist[i].idata4
 				) {
 
 				uint32_t last = (uint32_t)m_eventlist.size() - 1;
@@ -506,6 +519,10 @@ namespace ve {
 		std::chrono::high_resolution_clock::time_point t_prev = t_start;
 		std::chrono::high_resolution_clock::time_point t_now;
 
+		if (m_ray_tracing)
+		{
+			m_pRenderer->initAccelerationStructures();
+		}
 		while ( !m_end_running) {
 			m_dt = vh::vhTimeDuration( t_prev );
 			m_AvgFrameTime = vh::vhAverage( (float)m_dt, m_AvgFrameTime );
@@ -538,7 +555,7 @@ namespace ve {
 			//update world matrices and send them to the GPU
 
 			t_now = vh::vhTimeNow();
-			getSceneManagerPointer()->updateSceneNodes( getRendererPointer()->getImageIndex());	//update scene node UBOs
+			getSceneManagerPointer()->updateSceneNodes( getEnginePointer()->getRenderer()->getImageIndex());	//update scene node UBOs
 			m_AvgUpdateTime = vh::vhAverage(vh::vhTimeDuration(t_now), m_AvgUpdateTime);
 
 			//----------------------------------------------------------------------------------
