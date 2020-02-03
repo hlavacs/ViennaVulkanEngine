@@ -26,19 +26,21 @@ namespace mem {
 
 	template <typename T>
 	struct FixedSizeTable {
+
 		uint32_t					m_thread_id;			///id of thread that accesses to this table are scheduled to
 		std::vector<TableFindIndex>	m_find_index;			///vector of hashed indices for quickly finding entries in O(1)
 		std::vector<TableSortIndex>	m_sort_index;			///vector of sorted keys for sorted iterating through entries
+		std::vector<uint32_t>		m_directory;			///1 level of indirection, naumbers are indices
 		std::vector<T>				m_data;					///growable data table
 
-		FixedSizeTable(std::vector<uint32_t>& find_key_offsets, std::vector<uint32_t>& sort_key_offsets) {
+#ifndef VE_PUBLIC_INTERFACE
+
+		FixedSizeTable(std::vector<uint32_t>&& find_key_offsets, std::vector<uint32_t>&& sort_key_offsets) {
 			for each (uint32_t offset in find_key_offsets) {
-				TableFindIndex tfi(offset);
-				m_find_index.emplace_back(tfi);
+				m_find_index.emplace_back(offset);
 			};
 			for each (uint32_t offset in sort_key_offsets) {
-				TableSortIndex tsi(offset);
-				m_sort_index.emplace_back(tsi);
+				m_sort_index.emplace_back(offset);
 			};
 		};
 
@@ -74,6 +76,11 @@ namespace mem {
 			}
 		}
 
+#endif
+
+		//------------------------------------------------------------------------------------------
+		//public interface
+
 		void addEntry(T& te) {
 			uint32_t idx = m_data.size();
 			m_data.emplace_back(te);
@@ -81,46 +88,49 @@ namespace mem {
 			addSortIndex(te, idx);
 		};
 
-		void removeEntries( uint32_t key, uint32_t index_nr ) {
-
+		std::vector<T>& getTable() {
+			return m_data;
 		}
 
-		auto& getUnorderedIndexIterator(uint32_t key, uint32_t index_nr) {
-			auto& map = m_find_index[index_nr].m_index;
-			return map.equal_range(key);
-		}
-
-		uint32_t findEntry(uint32_t key, uint32_t index_nr, T& entry ) {
-			uint32_t result = findEntryIndex(key, index_nr);
-			if (result != VE_MEM_IDX_NULL) entry = m_data[result];
-			return result;
-		}
-
-		uint32_t findEntryIndex(uint32_t key, uint32_t index_nr) {
+		uint32_t findEntry(uint32_t key, uint32_t index_nr, T& entry) {
 			auto& map = m_find_index[index_nr].m_index;
 			auto result = map.find(key);
 			if (result == map.end()) return VE_MEM_IDX_NULL;
+			entry = m_data[result->second()];
 			return result->second();
 		}
 
-		uint32_t findEntryIndices(uint32_t key, uint32_t index_nr, std::vector<uint32_t>& result) {
-			auto ret = m_find_index[index_nr].m_index.equal_range(key);
+		uint32_t findEntries(uint32_t key, uint32_t index_nr, std::vector<T>& result) {
+			auto ret = m_find_index[index_nr].m_index.equal_range(key);		//get pair of iterators begin, end
 			uint32_t num_result = 0;
-			for ( auto it = ret.first;	it != ret.second; ++it, ++num_result) {
+			for (auto it = ret.first; it != ret.second; ++it, ++num_result) {
 				result.emplace_back(it->second());
 			}
 			return num_result;
 		};
 
-		auto& getIndexForSortedEntryIndices( uint32_t key, uint32_t index_nr ) {
-			return m_sort_index[index_nr].m_index;
-		}
-
-		uint32_t getSortedEntryIndices(uint32_t key, uint32_t index_nr, std::vector<uint32_t>& result ) {
-			auto map = getIndexForSortedEntryIndices(key, index_nr);
+		uint32_t getSortedEntries(uint32_t key, uint32_t index_nr, std::vector<T>& result) {
+			auto map = m_sort_index[index_nr].m_index;
 			uint32_t num_indices = 0;
 			for (auto iter = map.begin(); iter != map.end(); ++iter, ++num_indices) result.emplace_back(iter->second);
 			return num_indices;
+		}
+
+		bool removeEntry(uint32_t key, uint32_t index_nr) {
+			auto& map = m_find_index[index_nr].m_index;
+			auto result = map.find(key);
+			if (result == map.end()) return false;
+			//
+			return true;
+		}
+
+		uint32_t removeEntries(uint32_t key, uint32_t index_nr) {
+			bool result;
+			uint32_t num_removed = 0;
+			do {
+				if ( result = removeEntry(key, index_nr) ) ++num_removed;
+			} while ( result );
+			return num_removed;
 		}
 	};
 

@@ -13,10 +13,10 @@ namespace ve {
 	void runGameLoop();
 
 	///private engine interface
-	#ifndef VE_PUBLIC_INTERFACE
+#ifndef VE_PUBLIC_INTERFACE
 	
 	VEHANDLE getNewHandle();
 
-	#endif
+#endif
 }
 

@@ -10,5 +10,6 @@
 
 typedef uint32_t VEHANDLE;
 
+const uint32_t VE_NULL_HANDLE = std::numeric_limits<uint32_t>::max();
 
 
