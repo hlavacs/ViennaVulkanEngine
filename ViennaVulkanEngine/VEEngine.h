@@ -15,7 +15,7 @@ namespace ve {
 	///private engine interface
 #ifndef VE_PUBLIC_INTERFACE
 	
-	VEHANDLE getNewHandle();
+	VeHandle getNewHandle();
 
 #endif
 }

@@ -21,7 +21,7 @@ namespace ve {
 		std::cout << "init engine 2\n";
 
 		for (int i = 0; i < 100; i++) {
-			VEHANDLE handle = getNewHandle();
+			VeHandle handle = getNewHandle();
 			std::cout << handle << "\n";
 		}
 
@@ -38,8 +38,8 @@ namespace ve {
 
 
 	//-----------------------------------------------------------------------------------
-	VEHANDLE getNewHandle() {
-		return (VEHANDLE)g_handle_counter.fetch_add(1);
+	VeHandle getNewHandle() {
+		return (VeHandle)g_handle_counter.fetch_add(1);
 	};
 
 

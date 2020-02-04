@@ -8,8 +8,8 @@
 #include <unordered_map>
 #include <iostream>
 
-typedef uint32_t VEHANDLE;
+typedef uint32_t VeHandle;
 
-const uint32_t VE_NULL_HANDLE = std::numeric_limits<uint32_t>::max();
+const uint32_t VE_NULL = std::numeric_limits<uint32_t>::max();
 
 
