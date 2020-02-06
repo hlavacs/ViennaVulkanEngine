@@ -12,8 +12,18 @@ namespace mem {
 		std::multimap<uint32_t, uint32_t> m_index;		///key value pairs, key is sorted, value is the entry idx in the table
 	};
 
+	enum TableTypes {
+
+	};
+
 	template <typename T>
 	struct FixedSizeTable {
+
+		struct TableInfo {
+			VeHandle	m_handle;		///table handle
+			uint32_t	m_thread_id;	///id of thread that accesses to this table are scheduled to
+			TableTypes	m_table_type;	///type of the table
+		};
 
 		struct IndexEntry {
 			uint32_t m_num_index = VE_NULL;	///number of index to put the key into
@@ -27,7 +37,7 @@ namespace mem {
 			std::vector<IndexEntry> m_sort_index;
 		};
 
-		uint32_t					m_thread_id;			///id of thread that accesses to this table are scheduled to
+		TableInfo					m_table_info;			///information about the table, must be the first variable
 		std::vector<TableFindIndex>	m_find_index;			///vector of hashed indices for quickly finding entries in O(1)
 		std::vector<TableSortIndex>	m_sort_index;			///vector of sorted keys for sorted iterating through entries
 		std::vector<DirectoryEntry>	m_directory;			///1 level of indirection, idx into the entry table
