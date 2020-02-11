@@ -16,13 +16,13 @@ namespace ve {
 
 
 	void createTables() {
-		using MapPtr = std::unique_ptr<mem::VeMap>;
+		using MapPtr = mem::VeMap*;
 
 		std::vector<MapPtr> maps = {
-			std::make_unique<mem::VeMap>( (mem::VeMap*) new mem::VeTypedMap<std::unordered_map<VeHandle, VeIndex>>(VE_NULL_INDEX) )
+			(MapPtr) new mem::VeTypedMap< std::unordered_map<VeHandle, VeIndex> >()
 		};
 
-		g_main_table = new mem::VeFixedSizeTypedTable<ve::VeMainTableEntry>( std::move(maps), 0 );
+		//g_main_table = new mem::VeFixedSizeTypedTable<ve::VeMainTableEntry>( std::move(maps), 0 );
 	}
 
 	void initEngine() {
