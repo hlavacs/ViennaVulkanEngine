@@ -2,7 +2,6 @@
 
 
 #include "VEDefines.h"
-
 #include "VEMemory.h"
 #include "VEEngine.h"
 #include "VESysVulkan.h"
@@ -13,18 +12,21 @@ namespace ve {
 
 	//-----------------------------------------------------------------------------------
 
-	std::atomic<uint32_t> g_handle_counter = 0;
-
 	bool g_goon = true;
+
+
+	void createTables() {
+		std::vector<mem::VeMap*> maps = {
+			(mem::VeMap*) new std::unordered_map<VeHandle, VeIndex>
+		};
+
+		g_main_table = new mem::VeFixedSizeTypedTable<ve::VeMainTableEntry>( std::move(maps) );
+	}
 
 	void initEngine() {
 		std::cout << "init engine 2\n";
 
-		for (int i = 0; i < 100; i++) {
-			VeHandle handle = getNewHandle();
-			std::cout << handle << "\n";
-		}
-
+		createTables();
 		syswin::initWindow();
 		sysvul::initVulkan();
 
@@ -37,10 +39,6 @@ namespace ve {
 	}
 
 
-	//-----------------------------------------------------------------------------------
-	VeHandle getNewHandle() {
-		return (VeHandle)g_handle_counter.fetch_add(1);
-	};
 
 
 

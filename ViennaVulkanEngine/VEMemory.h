@@ -48,6 +48,15 @@ namespace mem {
 		virtual void mapHandleToIndex(VeHandle key, VeIndex index) override {
 			m_map.try_emplace( key, index );
 		};
+
+		virtual void mapPairToIndex( std::pair<VeHandle,VeHandle> &pair, VeIndex index ) {
+			m_map.try_emplace(pair, index);
+		}
+
+		virtual void mapTripleToIndex(std::tuple<VeHandle, VeHandle, VeHandle> &triple, VeIndex index) {
+			m_map.try_emplace(triple, index);
+		}
+
 	};
 
 
@@ -68,8 +77,9 @@ namespace mem {
 		VeIndex							m_first_free = VE_NULL_INDEX;		///index of first free entry in directory
 
 	public:
-		VeDirectory(bool autocounter = false) { if (autocounter) m_auto_counter = 0; };
+		VeDirectory() {};
 		~VeDirectory() {};
+		void clearAutoCounter() { m_auto_counter = 0; };
 	};
 
 
@@ -77,15 +87,12 @@ namespace mem {
 
 	class VeFixedSizeTable {
 	protected:
-
-		VeIndex								m_thread_id;	///id of thread that accesses to this table are scheduled to
-		std::vector<std::unique_ptr<VeMap>>	m_maps;					///vector of hashed indices for quickly finding entries in O(1)
-		VeDirectory							m_directory;			///
+		VeIndex	m_thread_id;	///id of thread that accesses to this table are scheduled to
 
 	public:
-		VeFixedSizeTable( std::vector<std::unique_ptr<VeMap>> &&maps, VeIndex thread_id ) : m_maps(std::move(maps)), m_thread_id(thread_id) {};
-
+		VeFixedSizeTable( VeIndex thread_id ) : m_thread_id(thread_id) {};
 		virtual ~VeFixedSizeTable() {};
+		VeIndex	getThreadId() { return m_thread_id; };
 	};
 
 
@@ -94,12 +101,22 @@ namespace mem {
 	template <typename T>
 	class VeFixedSizeTypedTable : public VeFixedSizeTable {
 	protected:
-		std::vector<T>	m_table_entries;	///growable entry data table
+		std::vector<VeMap*>		m_maps;			///vector of hashed indices for quickly finding entries in O(1)
+		VeDirectory				m_directory;	///
+		std::vector<T>			m_table_entries;	///growable entry data table
 
 	public:
 
-		VeFixedSizeTypedTable( std::vector<std::unique_ptr<VeMap>> &&maps, VeIndex thread_id = VE_NULL_INDEX) :
-			VeFixedSizeTable(std::forward(maps), thread_id) {};
+		VeFixedSizeTypedTable( std::vector<VeMap*> &&maps, VeIndex thread_id = VE_NULL_INDEX) :
+			VeFixedSizeTable( thread_id ) {
+
+			if (maps.size() > 0) m_maps = std::move(maps);
+			else {
+				m_maps.emplace_back( (VeMap*) new std::unordered_map<VeHandle, VeIndex >(VE_NULL_INDEX) );
+				m_directory.clearAutoCounter();
+			}
+		
+		};
 		~VeFixedSizeTypedTable() {};
 
 		void addEntry(T& te) {
@@ -114,10 +131,10 @@ namespace mem {
 		uint32_t getSortedEntries(VeIndex num_map, std::vector<T>& result) {
 		};
 
-		bool deleteEntry(VeHandle key, uint32_t index_nr) {
+		bool deleteEntry(VeIndex num_map, VeHandle key ) {
 		};
 
-		uint32_t deleteEntries(VeHandle key, uint32_t index_nr) {
+		uint32_t deleteEntries( VeIndex num_map, VeHandle key ) {
 		};
 	};
 

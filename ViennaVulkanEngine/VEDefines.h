@@ -7,6 +7,9 @@
 #include <map>
 #include <unordered_map>
 #include <iostream>
+#include <functional>
+#include <atomic>
+
 
 typedef uint32_t VeIndex;
 constexpr uint32_t VE_NULL_INDEX = std::numeric_limits<uint32_t>::max();
