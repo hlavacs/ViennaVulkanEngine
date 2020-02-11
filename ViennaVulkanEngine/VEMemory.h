@@ -61,6 +61,46 @@ namespace mem {
 
 
 
+	template <typename N>
+	class VeTypedPairMap : public VeMap {
+	protected:
+		N m_map;		///key value pairs - value is the index of the entry in the table
+
+	public:
+		VeTypedPairMap(std::pair<VeIndex,VeIndex> offset, std::size_t num_bytes = sizeof(VeHandle)) : VeMap(offset, num_bytes) {};
+		virtual ~VeTypedPairMap() {};
+
+		virtual bool getMappedIndex(VeHandle key, VeIndex& index) override {
+			auto search = m_map.find(key);
+			if (search == m_map.end()) return false;
+			index = search->second;
+			return true;
+		}
+
+		virtual uint32_t getMappedIndex(VeHandle key, std::vector<VeIndex>& result) override {
+			uint32_t num = 0;
+			auto range = m_map.equal_range(key);
+			for (auto it = range.first; it != range.second; ++it) {
+				result.emplace_back(*it);
+			}
+			return num;
+		};
+
+		virtual void mapHandleToIndex(VeHandle key, VeIndex index) override {
+			m_map.try_emplace(key, index);
+		};
+
+		virtual void mapPairToIndex(std::pair<VeHandle, VeHandle>& pair, VeIndex index) {
+			m_map.try_emplace(pair, index);
+		}
+
+		virtual void mapTripleToIndex(std::tuple<VeHandle, VeHandle, VeHandle>& triple, VeIndex index) {
+			m_map.try_emplace(triple, index);
+		}
+
+	};
+
+
 	//------------------------------------------------------------------------------------------------------
 
 	class VeDirectory {
@@ -101,13 +141,14 @@ namespace mem {
 	template <typename T>
 	class VeFixedSizeTypedTable : public VeFixedSizeTable {
 	protected:
-		std::vector<VeMap*>		m_maps;			///vector of hashed indices for quickly finding entries in O(1)
-		VeDirectory				m_directory;	///
-		std::vector<T>			m_table_entries;	///growable entry data table
+		using MapPtr = std::unique_ptr<VeMap>;
+		std::vector<MapPtr>	m_maps;				///vector of hashed indices for quickly finding entries in O(1)
+		VeDirectory			m_directory;		///
+		std::vector<T>		m_table_entries;	///growable entry data table
 
 	public:
 
-		VeFixedSizeTypedTable( std::vector<VeMap*> &&maps, VeIndex thread_id = VE_NULL_INDEX) :
+		VeFixedSizeTypedTable( std::vector<MapPtr> &&maps, VeIndex thread_id = VE_NULL_INDEX) :
 			VeFixedSizeTable( thread_id ) {
 
 			if (maps.size() > 0) m_maps = std::move(maps);

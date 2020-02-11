@@ -1,1 +1,10 @@
 #pragma once
+
+
+namespace sysscene {
+
+
+
+}
+
+
