@@ -14,12 +14,12 @@ namespace mem {
 		virtual uint32_t	getMappedIndices(		VeHandle key, std::vector<VeIndex>& result) { return 0; };
 		virtual bool		getMappedPairIndex(		std::pair<VeHandle, VeHandle> &key, VeIndex& index) { return false; };
 		virtual uint32_t	getMappedPairIndices(	std::pair<VeHandle, VeHandle> &key, std::vector<VeIndex>& result) { return 0; };
-		virtual bool		getMappedTripleIndex(	std::tuple<VeHandle, VeHandle, VeHandle> &key, VeIndex& index) { return false; };
-		virtual uint32_t	getMappedTripleIndices(	std::tuple<VeHandle, VeHandle, VeHandle> &key, std::vector<VeIndex>& result) { return 0; };
+		virtual bool		getMappedStringIndex(	const std::string& key, VeIndex& index) { return false; };
+		virtual uint32_t	getMappedStringIndices( const std::string& key, std::vector<VeIndex>& result) { return 0; };
 
 		virtual void		mapHandleToIndex(		VeHandle key, VeIndex value) {};
 		virtual void		mapHandlePairToIndex(	std::pair<VeHandle, VeHandle> &key, VeIndex value) {};
-		virtual void		mapHandleTripleToIndex(	std::tuple<VeHandle, VeHandle, VeHandle> &key, VeIndex value) {};
+		virtual void		mapStringToIndex(		const std::string& key, VeIndex value) {};
 	};
 
 
@@ -89,37 +89,33 @@ namespace mem {
 	};
 
 
-	template <typename U>
-	class VeTypedTripleMap : public VeMap {
+	template <typename S>
+	class VeTypedStringMap : public VeMap {
 	protected:
-		std::tuple<VeIndex, VeIndex, VeIndex>				m_offset;
-		std::tuple<std::size_t, std::size_t, std::size_t>	m_num_bytes;
-		U													m_map;			///key value pairs - value is the index of the entry in the table
+		VeIndex		m_offset;			///
+		S			m_map;				///key value pairs - value is the index of the entry in the table
 
 	public:
-		VeTypedTripleMap(	std::tuple<VeIndex, VeIndex, VeIndex> offset				= {},
-							std::tuple<std::size_t, std::size_t, std::size_t> num_bytes = { sizeof(VeHandle),sizeof(VeHandle),sizeof(VeHandle) }) : 
-									VeMap(), m_offset(offset), m_num_bytes(num_bytes) {};
+		VeTypedStringMap(VeIndex offset = VE_NULL_INDEX ) : VeMap(), m_offset(offset) {};
+		virtual ~VeTypedStringMap() {};
 
-		virtual ~VeTypedTripleMap() {};
-
-		virtual bool getMappedTripleIndex(std::tuple<VeHandle, VeHandle, VeHandle>& key, VeIndex& index) override {
+		virtual bool getMappedStringIndex( const std::string& key, VeIndex& index) override {
 			auto search = m_map.find(key);
 			if (search == m_map.end()) return false;
 			index = search->second;
 			return true;
 		}
 
-		virtual uint32_t getMappedTripleIndices(std::tuple<VeHandle, VeHandle, VeHandle>& key, std::vector<VeIndex>& result) override {
+		virtual uint32_t getMappedStringIndices(const std::string& key, std::vector<VeIndex>& result) override {
 			uint32_t num = 0;
 			auto range = m_map.equal_range(key);
-			for (auto it = range.first; it != range.second; ++it) result.push_back( it->second );
+			for (auto it = range.first; it != range.second; ++it) result.push_back(it->second);
 			return num;
 		};
 
-		virtual void mapTripleToIndex(std::tuple<VeHandle, VeHandle, VeHandle>& triple, VeIndex index) override {
-			m_map.try_emplace(triple, index);
-		}
+		virtual void mapStringToIndex( const std::string& key, VeIndex index) override {
+			m_map.try_emplace(key, index);
+		};
 	};
 
 
@@ -142,7 +138,7 @@ namespace mem {
 	public:
 		VeDirectory() {};
 		~VeDirectory() {};
-		void clearAutoCounter() { m_auto_counter = 0; };
+		void enableAutoCounter() { m_auto_counter = 0; };
 	};
 
 
@@ -164,41 +160,52 @@ namespace mem {
 	template <typename T>
 	class VeFixedSizeTypedTable : public VeFixedSizeTable {
 	protected:
-		using MapPtr = VeMap*;
-		std::vector<MapPtr>	m_maps;				///vector of hashed indices for quickly finding entries in O(1)
+		std::vector<VeMap*>	m_maps;				///vector of maps for quickly finding or sorting entries
 		VeDirectory			m_directory;		///
-		std::vector<T>		m_table_entries;	///growable entry data table
+		std::vector<T>		m_data;				///growable entry data table
 
 	public:
 
-		VeFixedSizeTypedTable( std::vector<MapPtr> &&maps, VeIndex thread_id = VE_NULL_INDEX) :
+		VeFixedSizeTypedTable( std::vector<VeMap*> &&maps, VeIndex thread_id = VE_NULL_INDEX) :
 			VeFixedSizeTable( thread_id ) {
 
 			if (maps.size() > 0) m_maps = std::move(maps);
 			else {
 				m_maps.emplace_back( (VeMap*) new std::unordered_map<VeHandle, VeIndex >() );
-				m_directory.clearAutoCounter();
+				m_directory.enableAutoCounter();
 			}
 		
 		};
-		~VeFixedSizeTypedTable() {};
+
+		~VeFixedSizeTypedTable() { for (uint32_t i = 0; i < m_maps.size(); ++i ) delete m_maps[i]; };
+
+		std::vector<T>& getData() { return m_data; };
 
 		void addEntry(T& te) {
 		};
 
 		bool getEntry(VeIndex num_map, VeHandle key, T& entry) {
 		};
+		bool getEntry(VeIndex num_map, std::pair<VeHandle,VeHandle> &key, T& entry) {
+		};
+		bool getEntry(VeIndex num_map, std::string& key, T& entry) {
+		};
 
 		uint32_t getEntries(VeIndex num_map, VeHandle key, std::vector<T>& result) {
+		};
+		uint32_t getEntries(VeIndex num_map, std::pair<VeHandle, VeHandle>& key, std::vector<T>& result) {
+		};
+		uint32_t getEntries(VeIndex num_map, std::string& key, std::vector<T>& result) {
 		};
 
 		uint32_t getSortedEntries(VeIndex num_map, std::vector<T>& result) {
 		};
 
-		bool deleteEntry(VeIndex num_map, VeHandle key ) {
-		};
-
 		uint32_t deleteEntries( VeIndex num_map, VeHandle key ) {
+		};
+		uint32_t deleteEntries(VeIndex num_map, std::pair<VeHandle, VeHandle>& key) {
+		};
+		uint32_t deleteEntries(VeIndex num_map, std::string& key) {
 		};
 	};
 

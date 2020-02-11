@@ -6,11 +6,15 @@
 namespace ve {
 
 #ifndef VE_PUBLIC_INTERFACE
+
+	///
 	struct VeMainTableEntry {
-		std::shared_ptr<mem::VeFixedSizeTable> m_table_pointer;
+		mem::VeFixedSizeTable *	m_table_pointer;
+		std::string				m_name;
 	};
 
-	mem::VeFixedSizeTypedTable<ve::VeMainTableEntry> * g_main_table = nullptr;
+	mem::VeFixedSizeTypedTable<VeMainTableEntry> *	g_main_table = nullptr;
+	mem::VeFixedSizeTable*							getTablePointer(std::string name);
 
 #endif
 
