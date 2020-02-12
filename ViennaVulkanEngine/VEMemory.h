@@ -18,10 +18,36 @@ namespace mem {
 		virtual uint32_t	getMappedndices(	std::pair<VeHandle, VeHandle> &key, std::vector<VeIndex>& result) { assert(false); return 0; };
 		virtual bool		getMappedIndex(		std::string& key, VeIndex& index) { assert(false); return false; };
 		virtual uint32_t	getMappedIndices(	std::string& key, std::vector<VeIndex>& result) { assert(false); return 0; };
-		virtual void		mapHandleToIndex(	VeHandle & auto_id, void *entry, VeIndex &dir_index ) { assert(false); };
+		virtual uint32_t	getAllIndices(		std::vector<VeIndex>& result) { assert(false); return 0; };
+		virtual void		insertIntoMap(		VeHandle & auto_id, void *entry, VeIndex &dir_index ) { assert(false); };
 
-		VeHandle getHandle( void *entry, VeIndex offset ) {
+		VeHandle getIntFromEntry(void* entry, VeIndex offset, VeIndex num_bytes ) {
+			uint8_t* ptr = (uint8_t*)entry + offset;
 
+			if (num_bytes == 4) {
+				uint32_t* k1 = (uint32_t*)ptr;
+				return (VeHandle)*k1;
+			}
+			uint64_t* k2 = (uint64_t*)ptr;
+			return (VeHandle)*k2;
+		};
+
+		void getKey(VeHandle& auto_id, void* entry, VeIndex offset, VeIndex num_bytes, VeHandle& key) {
+			if (offset == VE_NULL_INDEX) { key = auto_id; return; }
+			key = getIntFromEntry( entry, offset, num_bytes );
+		};
+
+		void getKey(VeHandle& auto_id, void* entry, std::pair<VeIndex, VeIndex> offset, 
+					std::pair<VeIndex, VeIndex> num_bytes, std::pair<VeHandle, VeHandle>& key) {
+
+			key = std::pair<VeHandle, VeHandle>(getIntFromEntry(entry, offset.first,  num_bytes.first), 
+												getIntFromEntry(entry, offset.second, num_bytes.second));
+		}
+
+		void getKey(VeHandle& auto_id, void* entry, VeIndex offset, VeIndex num_bytes, std::string &key) {
+			uint8_t* ptr = (uint8_t*)entry + offset;
+			std::string* pstring = (std::string*)ptr;
+			key = *pstring;
 		}
 
 	};
@@ -49,12 +75,19 @@ namespace mem {
 		virtual uint32_t getMappedIndices(K & key, std::vector<VeIndex>& result) override {
 			uint32_t num = 0;
 			auto range = m_map.equal_range( key );
-			for (auto it = range.first; it != range.second; ++it) result.push_back( it->second );
+			for (auto it = range.first; it != range.second; ++it, ++num) result.push_back( it->second );
 			return num;
 		};
 
-		virtual void mapHandleToIndex( VeHandle& auto_counter, void* entry, VeIndex& dir_index ) override {
+		virtual uint32_t getAllIndices( std::vector<VeIndex>& result) override {
+			uint32_t num = 0;
+			for (auto entry : m_map) { ++num; result.emplace_back(entry.second); }
+			return num;
+		}
 
+		virtual void insertIntoMap( VeHandle& auto_id, void* entry, VeIndex& dir_index ) override {
+			K key;
+			getKey(auto_id, entry, m_offset, m_num_bytes, key);
 			m_map.try_emplace( key, dir_index );
 		};
 	};
@@ -162,7 +195,8 @@ namespace mem {
 		uint32_t getEntries(VeIndex num_map, std::pair<VeHandle, VeHandle>& key, std::vector<T>& result);
 		uint32_t getEntries(VeIndex num_map, std::string& key, std::vector<T>& result);
 
-		uint32_t getSortedEntries(VeIndex num_map, std::vector<T>& result);
+		uint32_t getTableIndices(VeIndex num_map, std::vector<VeIndex>& result);
+		uint32_t getTableEntries(VeIndex num_map, std::vector<T>& result);
 
 		uint32_t deleteEntries(VeIndex num_map, VeHandle key );
 		uint32_t deleteEntries(VeIndex num_map, std::pair<VeHandle, VeHandle>& key);
@@ -179,7 +213,7 @@ namespace mem {
 
 		m_tbl2dir.emplace_back(dir_index);
 
-		for (auto map : m_maps) map->mapHandleToIndex(auto_id, (void*)&te, dir_index);
+		for (auto map : m_maps) map->insertIntoMap(auto_id, (void*)&te, dir_index);
 	};
 
 	template<typename T> inline bool VeFixedSizeTypedTable<T>::getEntry(VeIndex num_map, VeHandle key, T& entry) {
@@ -204,22 +238,44 @@ namespace mem {
 	};
 
 	template<typename T> inline	uint32_t VeFixedSizeTypedTable<T>::getEntries(VeIndex num_map, VeHandle key, std::vector<T>& result) {
-		return 0;
+		std::vector<VeIndex> dir_indices;
+		uint32_t num = m_maps[num_map]->getMappedIndices(key, dir_indices);
+		for (auto dir_index : dir_indices) result.emplace_back( m_data[m_directory.getEntry(dir_index).m_table_index] );
+		return num;
 	};
 
-	template<typename T> inline	uint32_t VeFixedSizeTypedTable<T>::getEntries(VeIndex num_map, std::pair<VeHandle, VeHandle>& key, std::vector<T>& result) {
-		return 0;
+	template<typename T> inline	uint32_t VeFixedSizeTypedTable<T>::getEntries(	VeIndex num_map, 
+																				std::pair<VeHandle, VeHandle>& key, 
+																				std::vector<T>& result) {
+		std::vector<VeIndex> dir_indices;
+		uint32_t num = m_maps[num_map]->getMappedIndices(key, dir_indices);
+		for (auto dir_index : dir_indices) result.emplace_back(m_data[m_directory.getEntry(dir_index).m_table_index]);
+		return num;
 	};
 
 	template<typename T> inline	uint32_t VeFixedSizeTypedTable<T>::getEntries(VeIndex num_map, std::string& key, std::vector<T>& result) {
-		return 0;
+		std::vector<VeIndex> dir_indices;
+		uint32_t num = m_maps[num_map]->getMappedIndices(key, dir_indices);
+		for (auto dir_index : dir_indices) result.emplace_back(m_data[m_directory.getEntry(dir_index).m_table_index]);
+		return num;
 	};
 
-	template<typename T> inline	uint32_t VeFixedSizeTypedTable<T>::getSortedEntries(VeIndex num_map, std::vector<T>& result) {
-		return 0;
+	template<typename T> inline	uint32_t VeFixedSizeTypedTable<T>::getTableIndices( VeIndex num_map, std::vector<VeIndex>& result) {
+		std::vector<VeIndex> dir_indices;
+		uint32_t num = m_maps[num_map]->getAllIndices(dir_indices);
+		for (auto dir_index : dir_indices) result.emplace_back( m_directory.getEntry(dir_index).m_table_index );
+		return num;
+	};
+
+	template<typename T> inline	uint32_t VeFixedSizeTypedTable<T>::getTableEntries(VeIndex num_map, std::vector<T>& result) {
+		std::vector<VeIndex> dir_indices;
+		uint32_t num = m_maps[num_map]->getAllIndices(dir_indices);
+		for (auto dir_index : dir_indices) result.emplace_back( m_data[m_directory.getEntry(dir_index).m_table_index] );
+		return num;
 	};
 
 	template<typename T> inline	uint32_t VeFixedSizeTypedTable<T>::deleteEntries(VeIndex num_map, VeHandle key) {
+
 
 		return 0;
 	};

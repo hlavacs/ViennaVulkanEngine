@@ -35,7 +35,7 @@ namespace ve {
 		registerTablePointer(g_systems_table, "Systems Table");
 
 		VeMainTableEntry entry;
-		bool found = g_main_table->getEntry(1, std::string("Systems Table"), entry);
+		bool found = g_main_table->getEntry(1, std::string("Main Table"), entry);
 	}
 
 	void registerTablePointer(mem::VeFixedSizeTable* tptr, std::string name) {
