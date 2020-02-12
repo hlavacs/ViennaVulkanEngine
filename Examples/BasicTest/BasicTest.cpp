@@ -10,7 +10,7 @@ int main()
     std::cout << "Hello World!\n";
 
     ve::initEngine();
-    ve::runGameLoop();
+    ve::computeOneFrame();
     ve::closeEngine();
  
 }
