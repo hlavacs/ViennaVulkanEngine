@@ -7,114 +7,57 @@ namespace mem {
 	//------------------------------------------------------------------------------------------------------
 
 	class VeMap {
+	protected:
+
 	public:
 		VeMap() {};
 		virtual ~VeMap() {};
-		virtual bool		getMappedIndex(			VeHandle key, VeIndex& index) { return false; };
-		virtual uint32_t	getMappedIndices(		VeHandle key, std::vector<VeIndex>& result) { return 0; };
-		virtual bool		getMappedPairIndex(		std::pair<VeHandle, VeHandle> &key, VeIndex& index) { return false; };
-		virtual uint32_t	getMappedPairIndices(	std::pair<VeHandle, VeHandle> &key, std::vector<VeIndex>& result) { return 0; };
-		virtual bool		getMappedStringIndex(	const std::string& key, VeIndex& index) { return false; };
-		virtual uint32_t	getMappedStringIndices( const std::string& key, std::vector<VeIndex>& result) { return 0; };
+		virtual bool		getMappedIndex(		VeHandle& key, VeIndex& index) { assert(false); return false; };
+		virtual uint32_t	getMappedIndices(	VeHandle& key, std::vector<VeIndex>& result) { assert(false); return 0; };
+		virtual bool		getMappedIndex(		std::pair<VeHandle, VeHandle> &key, VeIndex& index) { assert(false); return false; };
+		virtual uint32_t	getMappedndices(	std::pair<VeHandle, VeHandle> &key, std::vector<VeIndex>& result) { assert(false); return 0; };
+		virtual bool		getMappedIndex(		std::string& key, VeIndex& index) { assert(false); return false; };
+		virtual uint32_t	getMappedIndices(	std::string& key, std::vector<VeIndex>& result) { assert(false); return 0; };
 
-		virtual void		mapHandleToIndex(		VeHandle key, VeIndex value) {};
-		virtual void		mapHandlePairToIndex(	std::pair<VeHandle, VeHandle> &key, VeIndex value) {};
-		virtual void		mapStringToIndex(		const std::string& key, VeIndex value) {};
+		virtual void		mapHandleToIndex(	VeHandle & key, VeIndex &value) { assert(false); };
+		virtual void		mapHandleToIndex(	std::pair<VeHandle, VeHandle> &key, VeIndex value) { assert(false); };
+		virtual void		mapHandleToIndex(	std::string& key, VeIndex &value) { assert(false); };
+
+		VeHandle getHandle( void *entry, VeIndex offset ) {
+
+		}
+
 	};
 
 
-	template <typename M>
+	template <typename M, typename K, typename I>
 	class VeTypedMap : public VeMap {
 	protected:
-		VeIndex		m_offset;			///
-		std::size_t	m_num_bytes;		///
-		M			m_map;				///key value pairs - value is the index of the entry in the table
+
+		I	m_offset;		///
+		I	m_num_bytes;	///
+		M	m_map;									///key value pairs - value is the index of the entry in the table
 
 	public:
-		VeTypedMap(	VeIndex offset			= VE_NULL_INDEX,
-					std::size_t num_bytes	= sizeof(VeHandle)) : VeMap(), m_offset(offset), m_num_bytes(num_bytes) {};
+		VeTypedMap(	I offset, I num_bytes ) : VeMap(), m_offset(offset), m_num_bytes(num_bytes) {};
 		virtual ~VeTypedMap() {};
 
-		virtual bool getMappedIndex( VeHandle key, VeIndex &index ) override {
+		virtual bool getMappedIndex( K & key, VeIndex &index ) override {
 			auto search = m_map.find(key);
 			if (search == m_map.end()) return false;
 			index = search->second;
 			return true;
 		}
 
-		virtual uint32_t getMappedIndices(VeHandle key, std::vector<VeIndex>& result) override {
+		virtual uint32_t getMappedIndices(K & key, std::vector<VeIndex>& result) override {
 			uint32_t num = 0;
 			auto range = m_map.equal_range( key );
 			for (auto it = range.first; it != range.second; ++it) result.push_back( it->second );
 			return num;
 		};
 
-		virtual void mapHandleToIndex(VeHandle key, VeIndex index) override {
+		virtual void mapHandleToIndex(K & key, VeIndex & index) override {
 			m_map.try_emplace( key, index );
-		};
-	};
-
-
-	template <typename N>
-	class VeTypedPairMap : public VeMap {
-	protected:
-		std::pair<VeIndex, VeIndex>			m_offset;
-		std::pair<std::size_t, std::size_t> m_num_bytes;
-		N									m_map;		///key value pairs - value is the index of the entry in the table
-
-	public:
-		VeTypedPairMap(	std::pair<VeIndex, VeIndex> offset				= { VE_NULL_INDEX, VE_NULL_INDEX },
-						std::pair<std::size_t, std::size_t> num_bytes	= {sizeof(VeHandle), sizeof(VeHandle)} ) : 
-							VeMap(), m_offset(offset), m_num_bytes(num_bytes) {};
-
-		virtual ~VeTypedPairMap() {};
-
-		virtual bool getMappedPairIndex( std::pair<VeHandle, VeHandle> &key, VeIndex& index) override {
-			auto search = m_map.find(key);
-			if (search == m_map.end()) return false;
-			index = search->second;
-			return true;
-		}
-
-		virtual uint32_t getMappedPairIndices( std::pair<VeHandle, VeHandle> &key, std::vector<VeIndex>& result) override {
-			uint32_t num = 0;
-			auto range = m_map.equal_range(key);
-			for (auto it = range.first; it != range.second; ++it) result.push_back( it->second );
-			return num;
-		};
-
-		virtual void mapHandlePairToIndex( std::pair<VeHandle, VeHandle> key, VeIndex index) override {
-			m_map.try_emplace(key, index);
-		};
-	};
-
-
-	template <typename S>
-	class VeTypedStringMap : public VeMap {
-	protected:
-		VeIndex		m_offset;			///
-		S			m_map;				///key value pairs - value is the index of the entry in the table
-
-	public:
-		VeTypedStringMap(VeIndex offset = VE_NULL_INDEX ) : VeMap(), m_offset(offset) {};
-		virtual ~VeTypedStringMap() {};
-
-		virtual bool getMappedStringIndex( const std::string& key, VeIndex& index) override {
-			auto search = m_map.find(key);
-			if (search == m_map.end()) return false;
-			index = search->second;
-			return true;
-		}
-
-		virtual uint32_t getMappedStringIndices(const std::string& key, std::vector<VeIndex>& result) override {
-			uint32_t num = 0;
-			auto range = m_map.equal_range(key);
-			for (auto it = range.first; it != range.second; ++it) result.push_back(it->second);
-			return num;
-		};
-
-		virtual void mapStringToIndex( const std::string& key, VeIndex index) override {
-			m_map.try_emplace(key, index);
 		};
 	};
 

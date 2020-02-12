@@ -10,6 +10,8 @@ int main()
     std::cout << "Hello World!\n";
 
     ve::initEngine();
+    ve::runGameLoop();
+    ve::closeEngine();
  
 }
 

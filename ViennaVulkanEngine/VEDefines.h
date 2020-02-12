@@ -9,12 +9,16 @@
 #include <iostream>
 #include <functional>
 #include <atomic>
+#include <assert.h>
 
 
 typedef uint32_t VeIndex;
-constexpr uint32_t VE_NULL_INDEX = std::numeric_limits<uint32_t>::max();
+constexpr VeIndex VE_NULL_INDEX = std::numeric_limits<VeIndex>::max();
 
 typedef uint64_t VeHandle;
-constexpr uint64_t VE_NULL_HANDLE = std::numeric_limits<uint64_t>::max();
+constexpr VeHandle VE_NULL_HANDLE = std::numeric_limits<VeHandle>::max();
+
+typedef std::size_t VeSize;
+constexpr VeSize VE_NULL_SIZE = std::numeric_limits<VeSize>::max();
 
 

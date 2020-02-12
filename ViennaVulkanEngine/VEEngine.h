@@ -1,26 +1,33 @@
 #pragma once
 
 
-#include "VEDefines.h"
 
 namespace ve {
+
+	struct VeMainTableEntry {
+		mem::VeFixedSizeTable* m_table_pointer;
+		std::string				m_name;
+	};
+
+	struct VeSysTableEntry {
+		std::function<void()>	m_tick;
+		std::function<void()>	m_close;
+		std::string				m_name;
+	};
 
 #ifndef VE_PUBLIC_INTERFACE
 
 	///
-	struct VeMainTableEntry {
-		mem::VeFixedSizeTable *	m_table_pointer;
-		std::string				m_name;
-	};
-
-	mem::VeFixedSizeTypedTable<VeMainTableEntry> *	g_main_table = nullptr;
-	mem::VeFixedSizeTable*							getTablePointer(std::string name);
+	void registerTablePointer( mem::VeFixedSizeTable* ptr, std::string name );
+	mem::VeFixedSizeTable* getTablePointer( std::string name );
 
 #endif
 
 	///Public engine interface
 	void initEngine();
 	void runGameLoop();
+	void computeOneFrame();
+	void closeEngine();
 
 }
 

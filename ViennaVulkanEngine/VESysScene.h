@@ -1,9 +1,12 @@
 #pragma once
 
 
-namespace sysscene {
+namespace syssce {
 
 
+	void initScene();
+	void tickScene();
+	void closeScene();
 
 }
 
