@@ -168,14 +168,14 @@ namespace mem {
 
 	//------------------------------------------------------------------------------------------------------
 
-	class VeFixedSizeTable {
+	class VeTable {
 	protected:
 		VeIndex	m_thread_id;	///id of thread that accesses to this table are scheduled to
 		bool	m_read_only = false;
 
 	public:
-		VeFixedSizeTable( VeIndex thread_id ) : m_thread_id(thread_id) {};
-		virtual ~VeFixedSizeTable() {};
+		VeTable( VeIndex thread_id = 0 ) : m_thread_id(thread_id) {};
+		virtual ~VeTable() {};
 		void	setThreadId(VeIndex id) { m_thread_id = id; };
 		VeIndex	getThreadId() { return m_thread_id; };
 		void	setReadOnly(bool ro) { m_read_only = ro; };
@@ -186,7 +186,7 @@ namespace mem {
 	//------------------------------------------------------------------------------------------------------
 
 	template <typename T>
-	class VeFixedSizeTypedTable : public VeFixedSizeTable {
+	class VeFixedSizeTypedTable : public VeTable {
 	protected:
 		std::vector<VeMap*>		m_maps;				///vector of maps for quickly finding or sorting entries
 		VeDirectory				m_directory;		///
@@ -207,12 +207,19 @@ namespace mem {
 
 	public:
 
-		VeFixedSizeTypedTable( std::vector<VeMap*> &&maps, VeIndex thread_id = VE_NULL_INDEX) : VeFixedSizeTable( thread_id ) {
+		VeFixedSizeTypedTable(VeIndex thread_id = VE_NULL_INDEX) : VeTable( thread_id) {};
+
+		VeFixedSizeTypedTable( std::vector<VeMap*> &&maps, VeIndex thread_id = VE_NULL_INDEX) : VeTable( thread_id ) {
 			m_maps = std::move(maps);	
+		};
+
+		VeFixedSizeTypedTable(std::vector<VeMap*>& maps, VeIndex thread_id = VE_NULL_INDEX) : VeTable(thread_id) {
+			m_maps = maps;
 		};
 
 		~VeFixedSizeTypedTable() { for (uint32_t i = 0; i < m_maps.size(); ++i ) delete m_maps[i]; };
 
+		void		addMap(VeMap* pmap) { m_maps.emplace_back(pmap); };
 		std::vector<T>& getData() { return m_data; };
 		void		sortTableByMap( VeIndex num_map );
 
@@ -443,13 +450,54 @@ namespace mem {
 
 	///-------------------------------------------------------------------------------
 
-	struct VariableSizeTable {
+	class VariableSizeTable : public VeTable {
 	protected:
-		std::vector<uint8_t> m_data;
+
+		struct VeDirectoryEntry {
+			VeIndex m_auto_id;
+			VeIndex m_start;
+			VeIndex m_size;
+
+			VeDirectoryEntry(VeIndex start, VeIndex size) : m_start(start), m_size(size) {};
+		};
+ 
+		VeIndex								m_auto_counter = 0;
+		std::map<VeIndex, VeDirectoryEntry> m_occupied;
+		std::map<VeIndex, VeDirectoryEntry> m_free;
+		std::vector<uint8_t>				m_data;
 
 	public:
-		VariableSizeTable(VeIndex size) { m_data.resize(size); };
+		VariableSizeTable(VeIndex size, VeIndex thread_id = 0 ) : VeTable( thread_id ) {
+			m_data.resize(size);
+			VeDirectoryEntry entry{ 0, size };
+			m_free.try_emplace(0, entry);
+		}
+
 		~VariableSizeTable() {};
+
+		bool insertBlob( uint8_t* ptr, VeIndex size ) {
+			for (auto it = m_free.begin(); it != m_free.end(); ) {
+				if (it->second.m_size >= size) {
+					VeDirectoryEntry new_entry{ it->second.m_start, size };
+					m_occupied.try_emplace(it->second.m_start, new_entry);
+					memcpy(&m_data[it->second.m_start], ptr, size);
+
+					it->second.m_size -= size;
+					if (it->second.m_size == 0) m_free.erase(it);
+				}
+				else ++it;
+			}
+			return false;
+		}
+
+		bool deleteBlob(VeIndex start) {
+			auto search = m_occupied.find(start);
+			if (search == m_occupied.end()) return false;
+			VeDirectoryEntry new_entry{ search->second.m_start, search->second.m_size };
+			m_free.try_emplace(search->second.m_start, new_entry);
+			m_occupied.erase(search);
+			return true;
+		}
 
 	};
 

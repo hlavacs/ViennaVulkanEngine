@@ -36,12 +36,12 @@ namespace ve {
 		bool found = g_main_table->getEntryFromMap(0, std::string("Main Table"), entry);
 	}
 
-	void registerTablePointer(mem::VeFixedSizeTable* tptr, std::string name) {
+	void registerTablePointer(mem::VeTable* tptr, std::string name) {
 		VeMainTableEntry entry = { tptr, name };
 		g_main_table->addEntry(entry);
 	}
 
-	mem::VeFixedSizeTable* getTablePointer(std::string name) {
+	mem::VeTable* getTablePointer(std::string name) {
 		std::vector<VeMainTableEntry>& data = g_main_table->getData();
 		for (uint32_t i = 0; i < data.size(); ++i) if (data[i].m_name == name) return data[i].m_table_pointer; 
 		return nullptr;
