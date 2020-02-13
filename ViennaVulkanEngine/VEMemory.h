@@ -132,7 +132,7 @@ namespace mem {
 			VeIndex auto_id = ++m_auto_counter;
 			VeIndex dir_index = (VeIndex)m_dir_entries.size();
 			m_dir_entries.emplace_back( auto_id, table_index, VE_NULL_INDEX);
-			return (VeHandle) auto_id << 32 & dir_index;
+			return getHandle(dir_index);
 		}
 
 		VeHandle writeOverOldEntry(VeIndex table_index) {
@@ -141,7 +141,7 @@ namespace mem {
 			VeIndex next_free			= m_dir_entries[dir_index].m_next_free;
 			m_dir_entries[dir_index]	= { auto_id, table_index, VE_NULL_INDEX };
 			m_first_free				= next_free;
-			return (VeHandle)auto_id << 32 & dir_index;
+			return getHandle(dir_index);
 		}
 
 	public:
@@ -154,6 +154,8 @@ namespace mem {
 		};
 
 		VeDirectoryEntry& getEntry( VeIndex dir_index) { return m_dir_entries[dir_index];  };
+
+		VeHandle getHandle(VeIndex dir_index) { return (VeHandle)m_dir_entries[dir_index].m_auto_id << 32 & dir_index; };
 
 		void updateTableIndex(VeIndex dir_index, VeIndex table_index) { m_dir_entries[dir_index].m_table_index = table_index; }
 
@@ -169,11 +171,15 @@ namespace mem {
 	class VeFixedSizeTable {
 	protected:
 		VeIndex	m_thread_id;	///id of thread that accesses to this table are scheduled to
+		bool	m_read_only = false;
 
 	public:
 		VeFixedSizeTable( VeIndex thread_id ) : m_thread_id(thread_id) {};
 		virtual ~VeFixedSizeTable() {};
+		void	setThreadId(VeIndex id) { m_thread_id = id; };
 		VeIndex	getThreadId() { return m_thread_id; };
+		void	setReadOnly(bool ro) { m_read_only = ro; };
+		bool	getReadOnly() { return m_read_only;  };
 	};
 
 
@@ -187,6 +193,18 @@ namespace mem {
 		std::vector<T>			m_data;				///growable entry data table
 		std::vector<VeIndex>	m_tbl2dir;
 
+		void swapEntriesByHandle( VeHandle h1, VeHandle h2 ) {
+			if (h1 == h2) return;
+			VeIndex first  = getIndexFromHandle(h1);
+			VeIndex second = getIndexFromHandle(h2);
+			std::swap(m_data[first],	m_data[second]);
+			std::swap(m_tbl2dir[first], m_tbl2dir[second]);
+			m_directory.updateTableIndex(m_tbl2dir[first], first);
+			m_directory.updateTableIndex(m_tbl2dir[second], second);
+		};
+
+		VeIndex initVecLen() { return (VeIndex)m_data.size() / 3; };
+
 	public:
 
 		VeFixedSizeTypedTable( std::vector<VeMap*> &&maps, VeIndex thread_id = VE_NULL_INDEX) : VeFixedSizeTable( thread_id ) {
@@ -196,6 +214,7 @@ namespace mem {
 		~VeFixedSizeTypedTable() { for (uint32_t i = 0; i < m_maps.size(); ++i ) delete m_maps[i]; };
 
 		std::vector<T>& getData() { return m_data; };
+		void		sortTableByMap( VeIndex num_map );
 
 		VeHandle	addEntry(T& te);
 		bool		getEntryFromHandle(VeHandle key, T& entry);
@@ -211,8 +230,13 @@ namespace mem {
 		uint32_t	getEntriesFromMap(VeIndex num_map, std::pair<VeHandle, VeHandle>& key, std::vector<T>& result);
 		uint32_t	getEntriesFromMap(VeIndex num_map, std::string& key, std::vector<T>& result);
 
-		uint32_t	getTableIndices(VeIndex num_map, std::vector<VeIndex>& result);
-		uint32_t	getTableEntries(VeIndex num_map, std::vector<T>& result);
+		uint32_t	getHandlesFromMap(VeIndex num_map, VeHandle key, std::vector<VeHandle>& result);
+		uint32_t	getHandlesFromMap(VeIndex num_map, std::pair<VeHandle, VeHandle>& key, std::vector<VeHandle>& result);
+		uint32_t	getHandlesFromMap(VeIndex num_map, std::string& key, std::vector<VeHandle>& result);
+
+		uint32_t	getAllIndicesFromMap(VeIndex num_map, std::vector<VeIndex>& result);
+		uint32_t	getAllEntriesFromMap(VeIndex num_map, std::vector<T>& result);
+		uint32_t	getAllHandlesFromMap(VeIndex num_map, std::vector<VeHandle>& result);
 
 		uint32_t	deleteEntriesByMap(VeIndex num_map, VeHandle key );
 		uint32_t	deleteEntriesByMap(VeIndex num_map, std::pair<VeHandle, VeHandle>& key);
@@ -221,7 +245,15 @@ namespace mem {
 
 	//--------------------------------------------------------------------------------------------------------------------------
 
+	template<typename T> inline void VeFixedSizeTypedTable<T>::sortTableByMap(VeIndex num_map) {
+		assert(!m_read_only);
+		std::vector<VeHandle> handles( m_data.size() );
+		getAllHandlesFromMap(num_map, handles);
+		for (uint32_t i = 0; i < m_data.size(); ++i) swapEntriesByHandle( getHandleFromIndex(i), handles[i]);
+	}
+
 	template<typename T> inline VeHandle VeFixedSizeTypedTable<T>::addEntry(T& te) {
+		assert(!m_read_only);
 		VeIndex table_index = (VeIndex)m_data.size();
 		m_data.emplace_back(te);
 
@@ -254,27 +286,23 @@ namespace mem {
 	template<typename T> inline VeHandle VeFixedSizeTypedTable<T>::getHandleFromIndex(VeIndex table_index) {
 		VeIndex dir_index	= m_tbl2dir[table_index];
 		VeIndex auto_id		= m_directory.getEntry(dir_index).m_auto_id;
-		return (VeHandle)auto_id << 32 & dir_index;
+		return m_directory.getHandle(dir_index);
 	};
 
 	template<typename T> inline bool VeFixedSizeTypedTable<T>::deleteEntryByHandle(VeHandle key) {
+		assert(!m_read_only);
 		VeIndex dir_index	= (VeIndex)(key & VE_NULL_INDEX);
 		VeIndex auto_id		= (VeIndex)(key >> 32);
 		auto dir_entry		= m_directory.getEntry(dir_index);
 		if (auto_id != dir_entry.m_auto_id) return false;
 
 		VeIndex table_index = dir_entry.m_table_index;
+		swapEntriesByIndex( table_index, m_data.size() - 1);
 
 		for (auto map : m_maps) map->deleteFromMap((void*)&m_data[table_index], dir_index);
-		m_directory.deleteEntry(dir_entry);
-
-		VeIndex last_index = m_data.size() - 1;
-		if (table_index < last_index) {
-			m_data[table_index] = m_data[last_index];
-			m_directory.updateTableIndex(m_tbl2dir[last_index], table_index);
-		}
-		
+		m_directory.deleteEntry(dir_entry);		
 		m_data.pop_back();
+		m_tbl2dir.pop_back();
 		return true;
 	};
 
@@ -304,23 +332,23 @@ namespace mem {
 	//--------------------------------------------------------------------------------------------------------------------------
 
 	template<typename T> inline	uint32_t VeFixedSizeTypedTable<T>::getEntriesFromMap(VeIndex num_map, VeHandle key, std::vector<T>& result) {
-		std::vector<VeIndex> dir_indices;
+		std::vector<VeIndex> dir_indices(initVecLen());
 		uint32_t num = m_maps[num_map]->getMappedIndices(key, dir_indices);
 		for (auto dir_index : dir_indices) result.emplace_back( m_data[m_directory.getEntry(dir_index).m_table_index] );
 		return num;
 	};
 
 	template<typename T> inline	uint32_t VeFixedSizeTypedTable<T>::getEntriesFromMap(	VeIndex num_map,
-																				std::pair<VeHandle, VeHandle>& key, 
-																				std::vector<T>& result) {
-		std::vector<VeIndex> dir_indices;
+																						std::pair<VeHandle, VeHandle>& key, 
+																						std::vector<T>& result) {
+		std::vector<VeIndex> dir_indices(initVecLen());
 		uint32_t num = m_maps[num_map]->getMappedIndices(key, dir_indices);
 		for (auto dir_index : dir_indices) result.emplace_back(m_data[m_directory.getEntry(dir_index).m_table_index]);
 		return num;
 	};
 
 	template<typename T> inline	uint32_t VeFixedSizeTypedTable<T>::getEntriesFromMap(VeIndex num_map, std::string& key, std::vector<T>& result) {
-		std::vector<VeIndex> dir_indices;
+		std::vector<VeIndex> dir_indices(initVecLen());
 		uint32_t num = m_maps[num_map]->getMappedIndices(key, dir_indices);
 		for (auto dir_index : dir_indices) result.emplace_back(m_data[m_directory.getEntry(dir_index).m_table_index]);
 		return num;
@@ -328,42 +356,101 @@ namespace mem {
 
 	//--------------------------------------------------------------------------------------------------------------------------
 
-	template<typename T> inline	uint32_t VeFixedSizeTypedTable<T>::getTableIndices( VeIndex num_map, std::vector<VeIndex>& result) {
-		std::vector<VeIndex> dir_indices;
+	template<typename T> inline	uint32_t VeFixedSizeTypedTable<T>::getHandlesFromMap(	VeIndex num_map, 
+																						VeHandle key, 
+																						std::vector<VeHandle>& result) {
+		std::vector<VeIndex> dir_indices(initVecLen());
+		uint32_t num = m_maps[num_map]->getMappedIndices(key, dir_indices);
+		for (auto dir_index : dir_indices) result.emplace_back( m_directory.getHandle(dir_index) );
+		return num;
+	};
+
+	template<typename T> inline	uint32_t VeFixedSizeTypedTable<T>::getHandlesFromMap(	VeIndex num_map,
+																						std::pair<VeHandle, VeHandle>& key,
+																						std::vector<VeHandle>& result) {
+		std::vector<VeIndex> dir_indices(initVecLen());
+		uint32_t num = m_maps[num_map]->getMappedIndices(key, dir_indices);
+		for (auto dir_index : dir_indices) result.emplace_back(m_directory.getHandle(dir_index));
+		return num;
+	};
+
+	template<typename T> inline	uint32_t VeFixedSizeTypedTable<T>::getHandlesFromMap(	VeIndex num_map, 
+																						std::string& key, 
+																						std::vector<VeHandle>& result) {
+		std::vector<VeIndex> dir_indices(initVecLen());
+		uint32_t num = m_maps[num_map]->getMappedIndices(key, dir_indices);
+		for (auto dir_index : dir_indices) result.emplace_back(m_directory.getHandle(dir_index));
+		return num;
+	};
+
+
+	//--------------------------------------------------------------------------------------------------------------------------
+
+	template<typename T> inline	uint32_t VeFixedSizeTypedTable<T>::getAllIndicesFromMap( VeIndex num_map, std::vector<VeIndex>& result) {
+		std::vector<VeIndex> dir_indices(m_data.size());
 		uint32_t num = m_maps[num_map]->getAllIndices(dir_indices);
 		for (auto dir_index : dir_indices) result.emplace_back( m_directory.getEntry(dir_index).m_table_index );
 		return num;
 	};
 
-	template<typename T> inline	uint32_t VeFixedSizeTypedTable<T>::getTableEntries(VeIndex num_map, std::vector<T>& result) {
-		std::vector<VeIndex> dir_indices;
+	template<typename T> inline	uint32_t VeFixedSizeTypedTable<T>::getAllEntriesFromMap(VeIndex num_map, std::vector<T>& result) {
+		std::vector<VeIndex> dir_indices(m_data.size());
 		uint32_t num = m_maps[num_map]->getAllIndices(dir_indices);
 		for (auto dir_index : dir_indices) result.emplace_back( m_data[m_directory.getEntry(dir_index).m_table_index] );
+		return num;
+	};
+
+	template<typename T> inline	uint32_t VeFixedSizeTypedTable<T>::getAllHandlesFromMap(VeIndex num_map, std::vector<VeHandle>& result) {
+		std::vector<VeIndex> dir_indices(m_data.size());
+		uint32_t num = m_maps[num_map]->getAllIndices(dir_indices);
+		for (auto dir_index : dir_indices) result.emplace_back(m_directory.getHandle(dir_index));
 		return num;
 	};
 
 	//--------------------------------------------------------------------------------------------------------------------------
 
 	template<typename T> inline	uint32_t VeFixedSizeTypedTable<T>::deleteEntriesByMap(VeIndex num_map, VeHandle key) {
-
-
-		return 0;
+		assert(!m_read_only);
+		std::vector<VeHandle> handles(initVecLen());
+		uint32_t res = 0;
+		if (getHandlesFromMap( num_map, key, handles ) > 0) { 
+			for (auto handle : handles) if (deleteEntryByHandle(handle)) ++res;
+		}
+		return res;
 	};
 
 	template<typename T> inline	uint32_t VeFixedSizeTypedTable<T>::deleteEntriesByMap(VeIndex num_map, std::pair<VeHandle, VeHandle>& key) {
-		return 0;
+		assert(!m_read_only);
+		std::vector<VeHandle> handles(initVecLen());
+		uint32_t res = 0;
+		if (getHandlesFromMap( num_map, key, handles ) > 0) {
+			for (auto handle : handles) if (deleteEntryByHandle(handle)) ++res;
+		}
+		return res;
 	};
 
 	template<typename T> inline	uint32_t VeFixedSizeTypedTable<T>::deleteEntriesByMap(VeIndex num_map, std::string& key) {
-		return 0;
+		assert(!m_read_only);
+		std::vector<VeHandle> handles(initVecLen());
+		uint32_t res = 0;
+		if (getHandlesFromMap( num_map, key, handles ) > 0) {
+			for (auto handle : handles) if (deleteEntryByHandle(handle)) ++res;
+		}
+		return res;
 	};
 
 
 
 	///-------------------------------------------------------------------------------
+
 	struct VariableSizeTable {
-		//TableSortIndex		m_indices;
-		std::vector<uint8_t>	m_data;
+	protected:
+		std::vector<uint8_t> m_data;
+
+	public:
+		VariableSizeTable(VeIndex size) { m_data.resize(size); };
+		~VariableSizeTable() {};
+
 	};
 
 
