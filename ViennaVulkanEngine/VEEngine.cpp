@@ -18,6 +18,7 @@ namespace ve {
 	bool g_goon = true;
 	mem::VeFixedSizeTypedTable<VeMainTableEntry>*	g_main_table = nullptr;
 	mem::VeFixedSizeTypedTable<VeSysTableEntry>*	g_systems_table = nullptr;
+	mem::VariableSizeTable*							g_meshes_table = nullptr;
 
 	void createTables() {
 		std::vector<mem::VeMap*> maps = {
@@ -34,6 +35,9 @@ namespace ve {
 
 		VeMainTableEntry entry;
 		bool found = g_main_table->getEntryFromMap(0, std::string("Main Table"), entry);
+
+		g_meshes_table = new mem::VariableSizeTable(1 << 20);
+
 	}
 
 	void registerTablePointer(mem::VeTable* tptr, std::string name) {

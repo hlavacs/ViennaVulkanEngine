@@ -53,6 +53,9 @@ namespace mem {
 	};
 
 
+	///M is the struct defining a row of the table
+	///I is the offset/length type, is either VeIndex or std::pair<VeIndex,VeIndex>
+	///K is the map key, is either VeHandle or std::string
 	template <typename M, typename K, typename I>
 	class VeTypedMap : public VeMap {
 	protected:
@@ -87,7 +90,7 @@ namespace mem {
 		virtual void insertIntoMap( void* entry, VeIndex& dir_index ) override {
 			K key;
 			getKey( entry, m_offset, m_num_bytes, key);
-			m_map.try_emplace( key, dir_index );
+			auto it = m_map.emplace( key, dir_index );
 		};
 
 		virtual uint32_t deleteFromMap(void* entry, VeIndex& dir_index) override {
@@ -454,48 +457,45 @@ namespace mem {
 	protected:
 
 		struct VeDirectoryEntry {
-			VeIndex m_auto_id;
 			VeIndex m_start;
 			VeIndex m_size;
+			VeIndex m_occupied;
 
-			VeDirectoryEntry(VeIndex start, VeIndex size) : m_start(start), m_size(size) {};
+			VeDirectoryEntry(VeIndex start, VeIndex size, VeIndex occupied) : m_start(start), m_size(size), m_occupied(occupied) {};
 		};
- 
-		VeIndex								m_auto_counter = 0;
-		std::map<VeIndex, VeDirectoryEntry> m_occupied;
-		std::map<VeIndex, VeDirectoryEntry> m_free;
-		std::vector<uint8_t>				m_data;
+
+		VeFixedSizeTypedTable<VeDirectoryEntry>*	m_pdirectory = nullptr;
+		std::vector<uint8_t>						m_data;
 
 	public:
 		VariableSizeTable(VeIndex size, VeIndex thread_id = 0 ) : VeTable( thread_id ) {
+
+			std::vector<mem::VeMap*> maps = {
+				(mem::VeMap*) new mem::VeTypedMap< std::map<VeHandle, VeIndex>, VeHandle, VeIndex >( offsetof(struct VeDirectoryEntry, m_start),sizeof(VeIndex) ),
+				(mem::VeMap*) new mem::VeTypedMap< 
+						std::multimap<std::pair<VeHandle,VeHandle>, VeIndex>, 
+						std::pair<VeHandle,VeHandle>, 
+						std::pair<VeIndex,VeIndex>>(
+							std::pair<VeIndex,VeIndex>( offsetof(struct VeDirectoryEntry, m_occupied), offsetof(struct VeDirectoryEntry, m_start) ) ,
+							std::pair<VeIndex,VeIndex>( sizeof(VeIndex),sizeof(VeIndex) ) 
+							)
+			};
+			m_pdirectory = new VeFixedSizeTypedTable<VeDirectoryEntry>( maps );
+
 			m_data.resize(size);
-			VeDirectoryEntry entry{ 0, size };
-			m_free.try_emplace(0, entry);
+			VeDirectoryEntry entry{ 0, size, 0 };
+			m_pdirectory->addEntry(entry);
 		}
 
-		~VariableSizeTable() {};
+		~VariableSizeTable() {
+			delete m_pdirectory;
+		};
 
 		bool insertBlob( uint8_t* ptr, VeIndex size ) {
-			for (auto it = m_free.begin(); it != m_free.end(); ) {
-				if (it->second.m_size >= size) {
-					VeDirectoryEntry new_entry{ it->second.m_start, size };
-					m_occupied.try_emplace(it->second.m_start, new_entry);
-					memcpy(&m_data[it->second.m_start], ptr, size);
-
-					it->second.m_size -= size;
-					if (it->second.m_size == 0) m_free.erase(it);
-				}
-				else ++it;
-			}
 			return false;
 		}
 
 		bool deleteBlob(VeIndex start) {
-			auto search = m_occupied.find(start);
-			if (search == m_occupied.end()) return false;
-			VeDirectoryEntry new_entry{ search->second.m_start, search->second.m_size };
-			m_free.try_emplace(search->second.m_start, new_entry);
-			m_occupied.erase(search);
 			return true;
 		}
 
