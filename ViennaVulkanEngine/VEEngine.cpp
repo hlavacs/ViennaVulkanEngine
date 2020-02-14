@@ -22,19 +22,19 @@ namespace ve {
 
 	void createTables() {
 		std::vector<mem::VeMap*> maps = {
-			(mem::VeMap*) new mem::VeTypedMap< std::unordered_map<std::string, VeIndex>, std::string, VeIndex >( offsetof(struct VeMainTableEntry, m_name ), 0)
+			(mem::VeMap*) new mem::VeTypedMap< std::unordered_map<std::string, VeIndex>, std::string, VeIndex >( (VeIndex)offsetof(struct VeMainTableEntry, m_name ), 0)
 		};
 		g_main_table = new mem::VeFixedSizeTypedTable<VeMainTableEntry>( std::move(maps), 0 );
 		registerTablePointer(g_main_table, "Main Table");
 
 		maps = {
-			(mem::VeMap*) new mem::VeTypedMap< std::unordered_map<std::string, VeIndex>, std::string, VeIndex >(offsetof(struct VeSysTableEntry, m_name), 0)
+			(mem::VeMap*) new mem::VeTypedMap< std::unordered_map<std::string, VeIndex>, std::string, VeIndex >( (VeIndex)offsetof(struct VeSysTableEntry, m_name), 0)
 		};
 		g_systems_table = new mem::VeFixedSizeTypedTable<VeSysTableEntry>(std::move(maps), 0);
 		registerTablePointer(g_systems_table, "Systems Table");
 
 		VeMainTableEntry entry;
-		bool found = g_main_table->getEntryFromMap(0, std::string("Main Table"), entry);
+		bool found = g_main_table->getEntryFromMap(0, (std::string&)std::string("Main Table"), entry);
 
 		g_meshes_table = new mem::VariableSizeTable(1 << 20);
 
