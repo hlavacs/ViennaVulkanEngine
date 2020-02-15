@@ -7,9 +7,11 @@ namespace mem {
 	//------------------------------------------------------------------------------------------------------
 
 	using VeTableKeyInt = VeHandle;
-	using VeTableKeyPair = std::pair<VeHandle, VeHandle>;
+	using VeTableKeyIntPair = std::pair<VeTableKeyInt, VeTableKeyInt>;
 	using VeTableKeyString = std::string;
-	using VeTableSize = std::size_t;
+	using VeTableIndex = VeIndex;
+	using VeTableIndexPair = std::pair<VeTableIndex, VeTableIndex>;
+	using VeTableSize = VeSize;
 
 	class VeMap {
 	protected:
@@ -19,8 +21,8 @@ namespace mem {
 		virtual ~VeMap() {};
 		virtual bool		getMappedIndex(		VeTableKeyInt& key, VeIndex& index) { assert(false); return false; };
 		virtual uint32_t	getMappedIndices(	VeTableKeyInt& key, std::vector<VeIndex>& result) { assert(false); return 0; };
-		virtual bool		getMappedIndex(		VeTableKeyPair& key, VeIndex& index) { assert(false); return false; };
-		virtual uint32_t	getMappedIndices(	VeTableKeyPair& key, std::vector<VeIndex>& result) { assert(false); return 0; };
+		virtual bool		getMappedIndex(		VeTableKeyIntPair& key, VeIndex& index) { assert(false); return false; };
+		virtual uint32_t	getMappedIndices(	VeTableKeyIntPair& key, std::vector<VeIndex>& result) { assert(false); return 0; };
 		virtual bool		getMappedIndex(		VeTableKeyString& key, VeIndex& index) { assert(false); return false; };
 		virtual uint32_t	getMappedIndices(	VeTableKeyString& key, std::vector<VeIndex>& result) { assert(false); return 0; };
 		virtual uint32_t	getAllIndices(		std::vector<VeIndex>& result) { assert(false); return 0; };
@@ -42,10 +44,9 @@ namespace mem {
 			key = getIntFromEntry( entry, offset, num_bytes );
 		};
 
-		void getKey(void* entry, std::pair<VeIndex, VeIndex> offset, 
-						std::pair<VeIndex, VeIndex> num_bytes, VeTableKeyPair& key) {
+		void getKey(void* entry, VeTableIndexPair offset, VeTableIndexPair num_bytes, VeTableKeyIntPair& key) {
 
-			key = VeTableKeyPair(	getIntFromEntry(entry, offset.first,  num_bytes.first),
+			key = VeTableKeyIntPair(getIntFromEntry(entry, offset.first,  num_bytes.first),
 									getIntFromEntry(entry, offset.second, num_bytes.second));
 		}
 
@@ -238,15 +239,15 @@ namespace mem {
 		bool		deleteEntryByHandle(VeHandle key);
 
 		bool		getEntryFromMap(VeIndex num_map, VeTableKeyInt key, T& entry);
-		bool		getEntryFromMap(VeIndex num_map, VeTableKeyPair &key, T& entry);
+		bool		getEntryFromMap(VeIndex num_map, VeTableKeyIntPair&key, T& entry);
 		bool		getEntryFromMap(VeIndex num_map, VeTableKeyString &key, T& entry);
 
 		uint32_t	getEntriesFromMap(VeIndex num_map, VeTableKeyInt key, std::vector<T>& result);
-		uint32_t	getEntriesFromMap(VeIndex num_map, VeTableKeyPair &key, std::vector<T>& result);
+		uint32_t	getEntriesFromMap(VeIndex num_map, VeTableKeyIntPair&key, std::vector<T>& result);
 		uint32_t	getEntriesFromMap(VeIndex num_map, VeTableKeyString &key, std::vector<T>& result);
 
 		uint32_t	getHandlesFromMap(VeIndex num_map, VeTableKeyInt key, std::vector<VeHandle>& result);
-		uint32_t	getHandlesFromMap(VeIndex num_map, VeTableKeyPair& key, std::vector<VeHandle>& result);
+		uint32_t	getHandlesFromMap(VeIndex num_map, VeTableKeyIntPair& key, std::vector<VeHandle>& result);
 		uint32_t	getHandlesFromMap(VeIndex num_map, VeTableKeyString& key, std::vector<VeHandle>& result);
 
 		uint32_t	getAllIndicesFromMap(VeIndex num_map, std::vector<VeIndex>& result);
@@ -254,7 +255,7 @@ namespace mem {
 		uint32_t	getAllHandlesFromMap(VeIndex num_map, std::vector<VeHandle>& result);
 
 		uint32_t	deleteEntriesByMap(VeIndex num_map, VeTableKeyInt key );
-		uint32_t	deleteEntriesByMap(VeIndex num_map, VeTableKeyPair& key);
+		uint32_t	deleteEntriesByMap(VeIndex num_map, VeTableKeyIntPair& key);
 		uint32_t	deleteEntriesByMap(VeIndex num_map, VeTableKeyString& key);
 	};
 
@@ -330,7 +331,7 @@ namespace mem {
 		return true;
 	};
 
-	template<typename T> inline bool VeFixedSizeTypedTable<T>::getEntryFromMap(VeIndex num_map, VeTableKeyPair& key, T& entry) {
+	template<typename T> inline bool VeFixedSizeTypedTable<T>::getEntryFromMap(VeIndex num_map, VeTableKeyIntPair& key, T& entry) {
 		VeIndex dir_index;
 		if (!m_maps[num_map]->getMappedIndex(key, dir_index)) return false;
 		entry = m_data[m_directory.getEntry(dir_index).m_table_index];
@@ -354,7 +355,7 @@ namespace mem {
 	};
 
 	template<typename T> inline	uint32_t VeFixedSizeTypedTable<T>::getEntriesFromMap(	VeIndex num_map,
-																						VeTableKeyPair& key,
+																						VeTableKeyIntPair& key,
 																						std::vector<T>& result) {
 		std::vector<VeIndex> dir_indices(initVecLen());
 		uint32_t num = m_maps[num_map]->getMappedIndices(key, dir_indices);
@@ -381,7 +382,7 @@ namespace mem {
 	};
 
 	template<typename T> inline	uint32_t VeFixedSizeTypedTable<T>::getHandlesFromMap(	VeIndex num_map,
-																						VeTableKeyPair& key,
+																						VeTableKeyIntPair& key,
 																						std::vector<VeHandle>& result) {
 		std::vector<VeIndex> dir_indices(initVecLen());
 		uint32_t num = m_maps[num_map]->getMappedIndices(key, dir_indices);
@@ -434,7 +435,7 @@ namespace mem {
 		return res;
 	};
 
-	template<typename T> inline	uint32_t VeFixedSizeTypedTable<T>::deleteEntriesByMap(VeIndex num_map, VeTableKeyPair& key) {
+	template<typename T> inline	uint32_t VeFixedSizeTypedTable<T>::deleteEntriesByMap(VeIndex num_map, VeTableKeyIntPair& key) {
 		assert(!m_read_only);
 		std::vector<VeHandle> handles(initVecLen());
 		uint32_t res = 0;
@@ -478,9 +479,9 @@ namespace mem {
 			std::vector<mem::VeMap*> maps = {
 				(mem::VeMap*) new mem::VeTypedMap< std::map<VeHandle, VeIndex>, VeHandle, VeIndex >( (VeIndex)offsetof(struct VeDirectoryEntry, m_start), (VeIndex)sizeof(VeIndex) ),
 				(mem::VeMap*) new mem::VeTypedMap< 
-						std::multimap<VeTableKeyPair, VeIndex>, VeTableKeyPair, std::pair<VeIndex,VeIndex>>(
-							std::pair<VeIndex,VeIndex>( (VeIndex)offsetof(struct VeDirectoryEntry, m_occupied), (VeIndex)offsetof(struct VeDirectoryEntry, m_start) ) ,
-							std::pair<VeIndex,VeIndex>( (VeIndex)sizeof(VeIndex),(VeIndex)sizeof(VeIndex) ) 
+						std::multimap<VeTableKeyIntPair, VeIndex>, VeTableKeyIntPair, std::pair<VeIndex,VeIndex>>(
+							VeTableIndexPair( (VeIndex)offsetof(struct VeDirectoryEntry, m_occupied), (VeIndex)offsetof(struct VeDirectoryEntry, m_start) ) ,
+							VeTableIndexPair( (VeIndex)sizeof(VeIndex),(VeIndex)sizeof(VeIndex) )
 							)
 			};
 			m_pdirectory = new VeFixedSizeTypedTable<VeDirectoryEntry>( maps );
