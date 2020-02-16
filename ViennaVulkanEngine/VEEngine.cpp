@@ -46,7 +46,7 @@ namespace ve {
 	}
 
 	mem::VeTable* getTablePointer(std::string name) {
-		std::vector<VeMainTableEntry>& data = g_main_table->getData();
+		const std::vector<VeMainTableEntry>& data = g_main_table->getData();
 		for (uint32_t i = 0; i < data.size(); ++i) if (data[i].m_name == name) return data[i].m_table_pointer; 
 		return nullptr;
 	}
