@@ -89,7 +89,13 @@ namespace mem {
 		testTable.sortTableByMap(3);
 		testTable.forAllEntries(std::bind(printEntry, std::placeholders::_1)); std::cout << std::endl;
 
+		std::vector<VeHandle> handles;
+		testTable.getHandlesFromMap(0, 5, handles);
+		auto [auto_id, dir_index] = VeDirectory::splitHandle(handles[0]);
 
+		handle = testTable.addEntry({ 8, 2, 3, "4" });
+		handle = testTable.addEntry({ 9, 4, 1, "3" });
+		testTable.forAllEntries(std::bind(printEntry, std::placeholders::_1)); std::cout << std::endl;
 
 
 	}

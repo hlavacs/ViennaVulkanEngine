@@ -316,8 +316,8 @@ namespace mem {
 		VeIndex		getSize() { return (VeIndex)m_data.size(); };
 		const std::vector<T>& getData() { return m_data; };
 		void		sortTableByMap( VeIndex num_map );
-		void		forAllEntries( VeIndex num_index, std::function<void(VeHandle)>& func );
-		void		forAllEntries( VeIndex num_index, std::function<void(VeHandle)>&& func ) { forAllEntries( num_index, func ); };
+		void		forAllEntries( VeIndex num_map, std::function<void(VeHandle)>& func );
+		void		forAllEntries( VeIndex num_map, std::function<void(VeHandle)>&& func ) { forAllEntries(num_map, func ); };
 		void		forAllEntries( std::function<void(VeHandle)>& func)  { forAllEntries( VE_NULL_INDEX, func ); };
 		void		forAllEntries( std::function<void(VeHandle)>&& func) { forAllEntries( VE_NULL_INDEX, func ); };
 
@@ -547,7 +547,7 @@ namespace mem {
 		VariableSizeTable(VeIndex size = 1<<20, VeIndex thread_id = VE_NULL_INDEX ) : VeTable( thread_id ) {
 
 			std::vector<mem::VeMap*> maps = {
-				(mem::VeMap*) new mem::VeTypedMap< std::map<VeTableKeyInt, VeTableIndex>, VeTableKeyInt, VeTableIndex >(
+				(mem::VeMap*) new mem::VeTypedMultimap< std::multimap<VeTableKeyInt, VeTableIndex>, VeTableKeyInt, VeTableIndex >(
 							(VeIndex)offsetof(struct VeDirectoryEntry, m_occupied), (VeIndex)sizeof(VeDirectoryEntry::m_occupied)),
 				(mem::VeMap*) new mem::VeTypedMap< std::map<VeTableKeyInt, VeIndex>, VeTableKeyInt, VeTableIndex >(
 							(VeIndex)offsetof(struct VeDirectoryEntry, m_start), (VeIndex)sizeof(VeDirectoryEntry::m_start)),
