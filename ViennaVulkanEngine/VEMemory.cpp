@@ -95,6 +95,7 @@ namespace mem {
 
 		handle = testTable.addEntry({ 8, 2, 3, "4" });
 		handle = testTable.addEntry({ 9, 4, 1, "3" });
+		testTable.sortTableByMap(0);
 		testTable.forAllEntries(std::bind(printEntry, std::placeholders::_1)); std::cout << std::endl;
 
 
