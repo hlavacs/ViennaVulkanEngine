@@ -59,6 +59,9 @@ namespace ve {
 	void initEngine() {
 		std::cout << "init engine 2\n";
 
+		mem::testTables();
+
+
 		createTables();
 		syswin::initWindow();
 		sysvul::initVulkan();

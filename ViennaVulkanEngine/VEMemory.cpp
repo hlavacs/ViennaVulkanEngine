@@ -9,33 +9,55 @@
 namespace mem {
 
 
+	constexpr uint32_t num_repeats = 200;
+	constexpr uint32_t n = 1000;
+	std::random_device rd;
+	std::mt19937 gen(rd());
+	std::uniform_int_distribution<> dis(1, 1 << 30);
+
+
 	struct TestEntry {
-		VeHandle handle;
-		VeIndex int1;
-		VeIndex int2;
-		std::string name;
+		VeHandle	m_int64;
+		VeIndex		m_int1;
+		VeIndex		m_int2;
+		std::string m_name;
+		TestEntry() : m_int64(VE_NULL_HANDLE), m_int1(VE_NULL_INDEX), m_int2(VE_NULL_INDEX), m_name("") {};
+		TestEntry( VeHandle handle, VeIndex int1, VeIndex int2, std::string name ): m_int64(handle), m_int1(int1), m_int2(int2), m_name(name) {};
 	};
 
-	void printEntry( TestEntry *pentry) {
-		auto [auto_id, dir_index] = VeDirectory::splitHandle(pentry->handle);
+	std::vector<mem::VeMap*> maps = {
+		(mem::VeMap*) new mem::VeTypedMap< std::map<VeTableKeyInt, VeTableIndex>, VeTableKeyInt, VeTableIndex >(
+			(VeIndex)offsetof(struct TestEntry, m_int64), (VeIndex)sizeof(TestEntry::m_int64)),
+		(mem::VeMap*) new mem::VeTypedMap< std::map<VeTableKeyInt, VeTableIndex>, VeTableKeyInt, VeTableIndex >(
+			(VeIndex)offsetof(struct TestEntry, m_int1), (VeIndex)sizeof(TestEntry::m_int1)),
+		(mem::VeMap*) new mem::VeTypedMap< std::map<VeTableKeyString, VeTableIndex>, VeTableKeyString, VeTableIndex >(
+			(VeIndex)offsetof(struct TestEntry, m_name), 0),
+		(mem::VeMap*) new mem::VeTypedMap< std::map<VeTableKeyIntPair, VeTableIndex>, VeTableKeyIntPair, VeTableIndexPair >(
+			VeTableIndexPair((VeIndex)offsetof(struct TestEntry, m_int1), (VeIndex)offsetof(struct TestEntry, m_int2)),
+			VeTableIndexPair((VeIndex)sizeof(TestEntry::m_int1), (VeIndex)sizeof(TestEntry::m_int2)))
+	};
+	VeFixedSizeTypedTable<TestEntry> testTable( maps );
 
-		std::cout << "Entry handle auto id" << auto_id << " dir index " << dir_index << 
-			" int1 " << pentry->int1 << " int2 " << pentry->int2 << " name " << pentry->name << std::endl;
+
+	void printEntry( VeHandle handle) {
+
+		TestEntry entry;
+		testTable.getEntry(handle, entry);
+
+		auto [auto_id, dir_index] = VeDirectory::splitHandle(handle);
+
+		std::cout << "Entry handle auto_id " << auto_id << " dir_index " << dir_index << 
+			" int64 " << entry.m_int64 << " int1 " << entry.m_int1 << " int2 " << entry.m_int2 << 
+			" name " << entry.m_name << std::endl;
 	}
 
 	void testTables() {
 
-		std::vector<mem::VeMap*> maps = {
-			(mem::VeMap*) new mem::VeTypedMap< std::map<VeTableKeyInt, VeTableIndex>, VeTableKeyInt, VeTableIndex >(
-				(VeIndex)offsetof(struct TestEntry, handle), (VeIndex)sizeof(TestEntry::handle)),
-			(mem::VeMap*) new mem::VeTypedMap< std::map<VeTableKeyInt, VeTableIndex>, VeTableKeyInt, VeTableIndex >(
-				(VeIndex)offsetof(struct TestEntry, int1), (VeIndex)sizeof(TestEntry::int1)),
-			(mem::VeMap*) new mem::VeTypedMap< std::map<VeTableKeyIntPair, VeTableIndex>, VeTableKeyIntPair, VeTableIndexPair >(
-				VeTableIndexPair((VeIndex)offsetof(struct TestEntry, int1),
-								 (VeIndex)offsetof(struct TestEntry, int2)),
-				VeTableIndexPair((VeIndex)sizeof(TestEntry::int1), (VeIndex)sizeof(TestEntry::int2)))
-		};
-		VeFixedSizeTypedTable<TestEntry> testTable( maps );
+
+		VeHandle handle;
+		handle = testTable.addEntry( { 1, 1, 1, "1" } );
+
+		testTable.forAllEntries( std::bind( printEntry, std::placeholders::_1) );
 
 
 
