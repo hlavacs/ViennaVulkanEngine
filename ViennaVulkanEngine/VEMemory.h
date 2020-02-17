@@ -254,6 +254,7 @@ namespace mem {
 		~VeFixedSizeTypedTable() { for (uint32_t i = 0; i < m_maps.size(); ++i ) delete m_maps[i]; };
 
 		void		addMap(VeMap* pmap) { m_maps.emplace_back(pmap); };
+		VeIndex		getSize() { return (VeIndex)m_data.size(); };
 		const std::vector<T>& getData() { return m_data; };
 		void		sortTableByMap( VeIndex num_map );
 		void		forAllEntries( VeIndex num_index, std::function<void(VeHandle)>& func );
@@ -269,25 +270,11 @@ namespace mem {
 		VeHandle	getHandleFromIndex(VeIndex table_index);
 		bool		deleteEntry(VeHandle key);
 
-		bool		getEntryFromMap(VeIndex num_map, VeTableKeyInt key, T& entry);
-		bool		getEntryFromMap(VeIndex num_map, VeTableKeyIntPair&key, T& entry);
-		bool		getEntryFromMap(VeIndex num_map, VeTableKeyString &key, T& entry);
-
-		uint32_t	getEntriesFromMap(VeIndex num_map, VeTableKeyInt key, std::vector<T>& result);
-		uint32_t	getEntriesFromMap(VeIndex num_map, VeTableKeyIntPair&key, std::vector<T>& result);
-		uint32_t	getEntriesFromMap(VeIndex num_map, VeTableKeyString &key, std::vector<T>& result);
-
 		uint32_t	getHandlesFromMap(VeIndex num_map, VeTableKeyInt key, std::vector<VeHandle>& result);
 		uint32_t	getHandlesFromMap(VeIndex num_map, VeTableKeyIntPair& key, std::vector<VeHandle>& result);
 		uint32_t	getHandlesFromMap(VeIndex num_map, VeTableKeyString& key, std::vector<VeHandle>& result);
 
-		uint32_t	getAllIndicesFromMap(VeIndex num_map, std::vector<VeIndex>& result);
-		uint32_t	getAllEntriesFromMap(VeIndex num_map, std::vector<T>& result);
 		uint32_t	getAllHandlesFromMap(VeIndex num_map, std::vector<VeHandle>& result);
-
-		uint32_t	deleteEntriesByMap(VeIndex num_map, VeTableKeyInt key );
-		uint32_t	deleteEntriesByMap(VeIndex num_map, VeTableKeyIntPair& key);
-		uint32_t	deleteEntriesByMap(VeIndex num_map, VeTableKeyString& key);
 	};
 
 	//--------------------------------------------------------------------------------------------------------------------------
@@ -377,77 +364,13 @@ namespace mem {
 		return dir_entry.m_table_index;
 	};
 
+
 	template<typename T> inline VeHandle VeFixedSizeTypedTable<T>::getHandleFromIndex(VeIndex table_index) {
 		VeIndex dir_index	= m_tbl2dir[table_index];
 		VeIndex auto_id		= m_directory.getEntry(dir_index).m_auto_id;
 		return m_directory.getHandle(dir_index);
 	};
 
-	//--------------------------------------------------------------------------------------------------------------------------
-
-	template<typename T> inline bool VeFixedSizeTypedTable<T>::getEntryFromMap(VeIndex num_map, VeTableKeyInt key, T& entry) {
-		assert(num_map < m_maps.size());
-		if (key == VE_NULL_HANDLE) return;
-		VeIndex dir_index;
-		if (!m_maps[num_map]->getMappedIndex(key, dir_index)) return false;
-		entry = m_data[m_directory.getEntry(dir_index).m_table_index];
-		return true;
-	};
-
-	template<typename T> inline bool VeFixedSizeTypedTable<T>::getEntryFromMap(VeIndex num_map, VeTableKeyIntPair& key, T& entry) {
-		assert(num_map < m_maps.size());
-		if (key.first == VE_NULL_HANDLE && key.second == VE_NULL_HANDLE) return false;
-		VeIndex dir_index;
-		if (!m_maps[num_map]->getMappedIndex(key, dir_index)) return false;
-		entry = m_data[m_directory.getEntry(dir_index).m_table_index];
-		return true;
-	};
-
-	template<typename T> inline	bool VeFixedSizeTypedTable<T>::getEntryFromMap(VeIndex num_map, VeTableKeyString &key, T& entry) {
-		assert(num_map < m_maps.size());
-		if (key.empty() || key.size() == 0) return false;
-		VeIndex dir_index;
-		if (!m_maps[num_map]->getMappedIndex(key, dir_index)) return false;
-		entry = m_data[m_directory.getEntry(dir_index).m_table_index];
-		return true;
-	};
-
-	//--------------------------------------------------------------------------------------------------------------------------
-
-	template<typename T> inline	uint32_t VeFixedSizeTypedTable<T>::getEntriesFromMap(VeIndex num_map, VeTableKeyInt key, std::vector<T>& result) {
-		assert(num_map < m_maps.size());
-		if (key == VE_NULL_HANDLE) return 0;
-		if (m_data.empty()) return 0;
-
-		std::vector<VeIndex> dir_indices; dir_indices.reserve(initVecLen());
-		uint32_t num = m_maps[num_map]->getMappedIndices(key, dir_indices);
-		for (auto dir_index : dir_indices) result.emplace_back( m_data[m_directory.getEntry(dir_index).m_table_index] );
-		return num;
-	};
-
-	template<typename T> inline	uint32_t VeFixedSizeTypedTable<T>::getEntriesFromMap(	VeIndex num_map,
-																						VeTableKeyIntPair& key,
-																						std::vector<T>& result) {
-		assert(num_map < m_maps.size());
-		if (key.first == VE_NULL_HANDLE && key.second == VE_NULL_HANDLE) return 0;
-		if (m_data.empty()) return 0;
-
-		std::vector<VeIndex> dir_indices; dir_indices.reserve(initVecLen());
-		uint32_t num = m_maps[num_map]->getMappedIndices(key, dir_indices);
-		for (auto dir_index : dir_indices) result.emplace_back(m_data[m_directory.getEntry(dir_index).m_table_index]);
-		return num;
-	};
-
-	template<typename T> inline	uint32_t VeFixedSizeTypedTable<T>::getEntriesFromMap(VeIndex num_map, VeTableKeyString& key, std::vector<T>& result) {
-		assert(num_map < m_maps.size());
-		if (key.empty() || key.size()==0) return 0;
-		if (m_data.empty()) return 0;
-
-		std::vector<VeIndex> dir_indices; dir_indices.reserve(initVecLen());
-		uint32_t num = m_maps[num_map]->getMappedIndices(key, dir_indices);
-		for (auto dir_index : dir_indices) result.emplace_back(m_data[m_directory.getEntry(dir_index).m_table_index]);
-		return num;
-	};
 
 	//--------------------------------------------------------------------------------------------------------------------------
 
@@ -493,83 +416,20 @@ namespace mem {
 
 	//--------------------------------------------------------------------------------------------------------------------------
 
-	template<typename T> inline	uint32_t VeFixedSizeTypedTable<T>::getAllIndicesFromMap( VeIndex num_map, std::vector<VeIndex>& result) {
-		assert(num_map < m_maps.size() || num_map == VE_NULL_INDEX );
-		if (m_data.empty()) return 0;
-
-		if (num_map == VE_NULL_INDEX) {
-			for (VeIndex i = 0; i < m_data.size(); ++i) result.emplace_back(i);
-			return (uint32_t)m_data.size();
-		}
-
-		std::vector<VeIndex> dir_indices; dir_indices.reserve(m_data.size()+1);
-		uint32_t num = m_maps[num_map]->getAllIndices(dir_indices);
-		for (auto dir_index : dir_indices) result.emplace_back(m_directory.getEntry(dir_index).m_table_index);
-		return num;
-	};
-
-	template<typename T> inline	uint32_t VeFixedSizeTypedTable<T>::getAllEntriesFromMap(VeIndex num_map, std::vector<T>& result) {
-		assert(num_map < m_maps.size() || num_map == VE_NULL_INDEX);
-		if (m_data.empty()) return 0;
-
-		std::vector<VeIndex> dir_indices; dir_indices.reserve(m_data.size()+1);
-		uint32_t num = m_maps[num_map]->getAllIndices(dir_indices);
-		for (auto dir_index : dir_indices) result.emplace_back( m_data[m_directory.getEntry(dir_index).m_table_index] );
-		return num;
-	};
 
 	template<typename T> inline	uint32_t VeFixedSizeTypedTable<T>::getAllHandlesFromMap(VeIndex num_map, std::vector<VeHandle>& result) {
 		assert(num_map < m_maps.size() || num_map == VE_NULL_INDEX);
 		if (m_data.empty()) return 0;
 
-		std::vector<VeIndex> table_indices; table_indices.reserve(m_data.size()+1);
-		getAllIndicesFromMap(num_map, table_indices);
-		for (auto table_index : table_indices) result.emplace_back( getHandleFromIndex(table_index) );
-		return (uint32_t)table_indices.size();
-	};
-
-	//--------------------------------------------------------------------------------------------------------------------------
-
-	template<typename T> inline	uint32_t VeFixedSizeTypedTable<T>::deleteEntriesByMap(VeIndex num_map, VeTableKeyInt key) {
-		assert(!m_read_only);
-		assert(num_map < m_maps.size());
-		if (key == VE_NULL_HANDLE) return 0;
-		if (m_data.empty()) return 0;
-
-		std::vector<VeHandle> handles; handles.reserve(initVecLen());
-		uint32_t res = 0;
-		if (getHandlesFromMap( num_map, key, handles ) > 0) { 
-			for (auto handle : handles) if (deleteEntryByHandle(handle)) ++res;
+		if (num_map == VE_NULL_INDEX) {
+			for (VeIndex i = 0; i < m_data.size(); ++i) result.emplace_back( getHandleFromIndex(i) );
+			return (uint32_t)m_data.size();
 		}
-		return res;
-	};
 
-	template<typename T> inline	uint32_t VeFixedSizeTypedTable<T>::deleteEntriesByMap(VeIndex num_map, VeTableKeyIntPair& key) {
-		assert(!m_read_only);
-		assert(num_map < m_maps.size());
-		if (key.first == VE_NULL_HANDLE && key.second == VE_NULL_HANDLE) return 0;
-		if (m_data.empty()) return 0;
-
-		std::vector<VeHandle> handles;  handles.reserve(initVecLen());
-		uint32_t res = 0;
-		if (getHandlesFromMap( num_map, key, handles ) > 0) {
-			for (auto handle : handles) if (deleteEntryByHandle(handle)) ++res;
-		}
-		return res;
-	};
-
-	template<typename T> inline	uint32_t VeFixedSizeTypedTable<T>::deleteEntriesByMap(VeIndex num_map, VeTableKeyString& key) {
-		assert(!m_read_only);
-		assert(num_map < m_maps.size());
-		if (key.empty() || key.size() == 0) return 0;
-		if (m_data.empty()) return 0;
-
-		std::vector<VeHandle> handles; handles.reserve(initVecLen());
-		uint32_t res = 0;
-		if (getHandlesFromMap( num_map, key, handles ) > 0) {
-			for (auto handle : handles) if (deleteEntryByHandle(handle)) ++res;
-		}
-		return res;
+		std::vector<VeIndex> dir_indices; dir_indices.reserve(m_data.size() + 1);
+		uint32_t num = m_maps[num_map]->getAllIndices(dir_indices);
+		for (auto dir_index : dir_indices) result.emplace_back( m_directory.getHandle(dir_index) );
+		return num;
 	};
 
 

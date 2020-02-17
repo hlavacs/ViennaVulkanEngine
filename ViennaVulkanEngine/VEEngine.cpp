@@ -35,8 +35,11 @@ namespace ve {
 		g_systems_table = new mem::VeFixedSizeTypedTable<VeSysTableEntry>(std::move(maps), 0);
 		registerTablePointer(g_systems_table, "Systems Table");
 
+		std::vector<VeHandle> handles;
+		g_main_table->getHandlesFromMap(0, (std::string&)std::string("Main Table"), handles);
+		
 		VeMainTableEntry entry;
-		bool found = g_main_table->getEntryFromMap(0, (std::string&)std::string("Main Table"), entry);
+		bool found = g_main_table->getEntry(handles[0], entry);
 
 		g_meshes_table = new mem::VariableSizeTable(1 << 20);
 
