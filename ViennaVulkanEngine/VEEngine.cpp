@@ -22,13 +22,15 @@ namespace ve {
 
 	void createTables() {
 		std::vector<mem::VeMap*> maps = {
-			(mem::VeMap*) new mem::VeTypedMap< std::unordered_map<std::string, VeIndex>, std::string, VeIndex >( (VeIndex)offsetof(struct VeMainTableEntry, m_name ), 0)
+			(mem::VeMap*) new mem::VeTypedMap< std::unordered_map<mem::VeTableKeyString, mem::VeTableIndex >, mem::VeTableKeyString, mem::VeTableIndex >(
+				(VeIndex)offsetof(struct VeMainTableEntry, m_name ), 0)
 		};
 		g_main_table = new mem::VeFixedSizeTypedTable<VeMainTableEntry>( std::move(maps), 0 );
 		registerTablePointer(g_main_table, "Main Table");
 
 		maps = {
-			(mem::VeMap*) new mem::VeTypedMap< std::unordered_map<std::string, VeIndex>, std::string, VeIndex >( (VeIndex)offsetof(struct VeSysTableEntry, m_name), 0)
+			(mem::VeMap*) new mem::VeTypedMap< std::unordered_map<mem::VeTableKeyString, mem::VeTableIndex >, mem::VeTableKeyString, mem::VeTableIndex >(
+				(VeIndex)offsetof(struct VeSysTableEntry, m_name), 0)
 		};
 		g_systems_table = new mem::VeFixedSizeTypedTable<VeSysTableEntry>(std::move(maps), 0);
 		registerTablePointer(g_systems_table, "Systems Table");
