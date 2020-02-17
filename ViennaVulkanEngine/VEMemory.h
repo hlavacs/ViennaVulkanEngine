@@ -200,15 +200,6 @@ namespace mem {
 	};
 
 
-
-
-
-
-
-
-
-
-
 	//------------------------------------------------------------------------------------------------------
 
 	class VeDirectory {
@@ -228,14 +219,14 @@ namespace mem {
 		VeIndex							m_first_free = VE_NULL_INDEX;	///index of first free entry in directory
 
 		VeHandle addNewEntry(VeIndex table_index ) {
-			VeIndex auto_id = ++m_auto_counter;
+			VeIndex auto_id = m_auto_counter; ++m_auto_counter;
 			VeIndex dir_index = (VeIndex)m_dir_entries.size();
 			m_dir_entries.emplace_back( auto_id, table_index, VE_NULL_INDEX);
 			return getHandle(dir_index);
 		}
 
 		VeHandle writeOverOldEntry(VeIndex table_index) {
-			VeIndex auto_id				= ++m_auto_counter;
+			VeIndex auto_id				= m_auto_counter; ++m_auto_counter;
 			VeIndex dir_index			= m_first_free;
 			VeIndex next_free			= m_dir_entries[dir_index].m_next_free;
 			m_dir_entries[dir_index]	= { auto_id, table_index, VE_NULL_INDEX };
@@ -261,7 +252,7 @@ namespace mem {
 		void updateTableIndex(VeIndex dir_index, VeIndex table_index) { m_dir_entries[dir_index].m_table_index = table_index; }
 
 		void deleteEntry( VeIndex dir_index ) {
-			m_dir_entries[m_first_free].m_next_free = m_first_free;
+			if (m_first_free != VE_NULL_INDEX) m_dir_entries[dir_index].m_next_free = m_first_free;
 			m_first_free = dir_index;
 		}
 	};
@@ -331,7 +322,7 @@ namespace mem {
 		void		forAllEntries( std::function<void(VeHandle)>&& func) { forAllEntries( VE_NULL_INDEX, func ); };
 
 		VeHandle	addEntry(T& entry);
-		VeHandle	addEntry(T&& entry) { return addEntry(entry); };
+		VeHandle	addEntry(T&& entry);
 		bool		getEntry(VeHandle key, T& entry);
 		bool		updateEntry(VeHandle key, T& entry);
 		VeIndex		getIndexFromHandle(VeHandle key);
@@ -376,6 +367,18 @@ namespace mem {
 		return handle;
 	};
 
+	template<typename T> inline VeHandle VeFixedSizeTypedTable<T>::addEntry(T&& entry) {
+		assert(!m_read_only);
+		VeIndex table_index = (VeIndex)m_data.size();
+		m_data.emplace_back( std::move(entry) );
+
+		VeHandle handle = m_directory.addEntry(table_index);
+		VeIndex dir_index = handle & VE_NULL_INDEX;
+		m_tbl2dir.emplace_back(dir_index);
+		for (auto map : m_maps) map->insertIntoMap((void*)&entry, dir_index);
+		return handle;
+	}
+
 	template<typename T> inline bool VeFixedSizeTypedTable<T>::getEntry( VeHandle key, T& entry ) {
 		if(key==VE_NULL_HANDLE) return false;
 		if (m_data.empty()) return false;
@@ -413,9 +416,9 @@ namespace mem {
 		if (auto_id != dir_entry.m_auto_id) return false;
 
 		VeIndex table_index = dir_entry.m_table_index;
-		swapEntriesByHandle( getHandleFromIndex(table_index), getHandleFromIndex((VeIndex)m_data.size() - 1) );
+		swapEntriesByHandle( key, getHandleFromIndex((VeIndex)m_data.size() - 1) );
 
-		for (auto map : m_maps) map->deleteFromMap((void*)&m_data[table_index], dir_index);
+		for (auto map : m_maps) map->deleteFromMap((void*)&m_data[(VeIndex)m_data.size() - 1], dir_index);
 		m_directory.deleteEntry(dir_index);
 		m_data.pop_back();
 		m_tbl2dir.pop_back();
