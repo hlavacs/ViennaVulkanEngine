@@ -26,13 +26,13 @@ namespace mem {
 	};
 
 	std::vector<mem::VeMap*> maps = {
-		(mem::VeMap*) new mem::VeTypedMap< std::map<VeTableKeyInt, VeTableIndex>, VeTableKeyInt, VeTableIndex >(
+		(mem::VeMap*) new mem::VeTypedMultimap< std::multimap<VeTableKeyInt, VeTableIndex>, VeTableKeyInt, VeTableIndex >(
 			(VeIndex)offsetof(struct TestEntry, m_int64), (VeIndex)sizeof(TestEntry::m_int64)),
-		(mem::VeMap*) new mem::VeTypedMap< std::map<VeTableKeyInt, VeTableIndex>, VeTableKeyInt, VeTableIndex >(
+		(mem::VeMap*) new mem::VeTypedMultimap< std::multimap<VeTableKeyInt, VeTableIndex>, VeTableKeyInt, VeTableIndex >(
 			(VeIndex)offsetof(struct TestEntry, m_int1), (VeIndex)sizeof(TestEntry::m_int1)),
-		(mem::VeMap*) new mem::VeTypedMap< std::map<VeTableKeyString, VeTableIndex>, VeTableKeyString, VeTableIndex >(
+		(mem::VeMap*) new mem::VeTypedMultimap< std::multimap<VeTableKeyString, VeTableIndex>, VeTableKeyString, VeTableIndex >(
 			(VeIndex)offsetof(struct TestEntry, m_name), 0),
-		(mem::VeMap*) new mem::VeTypedMap< std::map<VeTableKeyIntPair, VeTableIndex>, VeTableKeyIntPair, VeTableIndexPair >(
+		(mem::VeMap*) new mem::VeTypedMultimap< std::multimap<VeTableKeyIntPair, VeTableIndex>, VeTableKeyIntPair, VeTableIndexPair >(
 			VeTableIndexPair((VeIndex)offsetof(struct TestEntry, m_int1), (VeIndex)offsetof(struct TestEntry, m_int2)),
 			VeTableIndexPair((VeIndex)sizeof(TestEntry::m_int1), (VeIndex)sizeof(TestEntry::m_int2)))
 	};
@@ -53,13 +53,32 @@ namespace mem {
 
 	void testTables() {
 
-
 		VeHandle handle;
-		handle = testTable.addEntry( { 1, 1, 1, "1" } );
+		handle = testTable.addEntry( { 1, 2, 3, "4" } );
+		handle = testTable.addEntry({ 4, 2, 1, "3" });
+		handle = testTable.addEntry({ 2, 1, 3, "1" });
+		handle = testTable.addEntry({ 2, 4, 5, "2" });
+		handle = testTable.addEntry({ 1, 4, 2, "3" });
+		handle = testTable.addEntry({ 6, 3, 2, "2" });
 
 		testTable.forAllEntries( std::bind( printEntry, std::placeholders::_1) );
+		std::cout << std::endl;
 
+		testTable.sortTableByMap(0);
+		testTable.forAllEntries(std::bind(printEntry, std::placeholders::_1));
+		std::cout << std::endl;
 
+		testTable.sortTableByMap(1);
+		testTable.forAllEntries(std::bind(printEntry, std::placeholders::_1));
+		std::cout << std::endl;
+
+		testTable.sortTableByMap(2);
+		testTable.forAllEntries(std::bind(printEntry, std::placeholders::_1));
+		std::cout << std::endl;
+
+		testTable.sortTableByMap(3);
+		testTable.forAllEntries(std::bind(printEntry, std::placeholders::_1));
+		std::cout << std::endl;
 
 	}
 

@@ -81,9 +81,9 @@ namespace mem {
 	};
 
 
-	///M is the struct defining a row of the table
-	///I is the offset/length type, is either VeIndex or std::pair<VeIndex,VeIndex>
-	///K is the map key, is either VeHandle or std::string
+	///M is either std::map or std::unordered_map
+	///I is the offset/length type, is either VeTableIndex or VeTableIndexPair
+	///K is the map key, is either VeTableKeyInt, VeTableKeyIntPair, or VeTableKeyString
 	template <typename M, typename K, typename I>
 	class VeTypedMap : public VeMap {
 	protected:
@@ -105,8 +105,8 @@ namespace mem {
 
 		virtual uint32_t getMappedIndices(K& key, std::vector<VeIndex>& result) override {
 			uint32_t num = 0;
-			auto range = m_map.equal_range( key );
-			for (auto it = range.first; it != range.second; ++it, ++num) result.emplace_back( it->second );
+			auto range = m_map.equal_range(key);
+			for (auto it = range.first; it != range.second; ++it, ++num) result.emplace_back(it->second);
 			return num;
 		};
 
@@ -115,10 +115,11 @@ namespace mem {
 			return (uint32_t)m_map.size();
 		}
 
-		virtual void insertIntoMap( void* entry, VeIndex& dir_index ) override {
+		virtual void insertIntoMap(void* entry, VeIndex& dir_index) override {
 			K key;
-			getKey( entry, m_offset, m_num_bytes, key);
-			auto it = m_map.emplace( key, dir_index );
+			getKey(entry, m_offset, m_num_bytes, key);
+			auto [it,success] = m_map.try_emplace(key, dir_index);
+			assert(success);
 		};
 
 		virtual uint32_t deleteFromMap(void* entry, VeIndex& dir_index) override {
@@ -138,6 +139,73 @@ namespace mem {
 		};
 
 	};
+
+
+	///M is either std::multimap or std::unordered_multimap
+	///I is the offset/length type, is either VeTableIndex or VeTableIndexPair
+	///K is the map key, is either VeTableKeyInt, VeTableKeyIntPair, or VeTableKeyString
+	template <typename M, typename K, typename I>
+	class VeTypedMultimap : public VeMap {
+	protected:
+
+		I	m_offset;		///
+		I	m_num_bytes;	///
+		M	m_map;			///key value pairs - value is the index of the entry in the table
+
+	public:
+		VeTypedMultimap(I offset, I num_bytes) : VeMap(), m_offset(offset), m_num_bytes(num_bytes) {};
+		virtual ~VeTypedMultimap() {};
+
+		virtual bool getMappedIndex(K& key, VeIndex& index) override {
+			auto search = m_map.find(key);
+			if (search == m_map.end()) return false;
+			index = search->second;
+			return true;
+		}
+
+		virtual uint32_t getMappedIndices(K& key, std::vector<VeIndex>& result) override {
+			uint32_t num = 0;
+			auto range = m_map.equal_range(key);
+			for (auto it = range.first; it != range.second; ++it, ++num) result.emplace_back(it->second);
+			return num;
+		};
+
+		virtual uint32_t getAllIndices(std::vector<VeIndex>& result) override {
+			for (auto entry : m_map) result.emplace_back(entry.second);
+			return (uint32_t)m_map.size();
+		}
+
+		virtual void insertIntoMap(void* entry, VeIndex& dir_index) override {
+			K key;
+			getKey(entry, m_offset, m_num_bytes, key);
+			auto it= m_map.emplace(key, dir_index);
+		};
+
+		virtual uint32_t deleteFromMap(void* entry, VeIndex& dir_index) override {
+			K key;
+			getKey(entry, m_offset, m_num_bytes, key);
+
+			uint32_t num = 0;
+			auto range = m_map.equal_range(key);
+			for (auto it = range.first; it != range.second; ) {
+				if (it->second == dir_index) {
+					it = m_map.erase(it);
+					++num;
+				}
+				else ++it;
+			}
+			return num;
+		};
+
+	};
+
+
+
+
+
+
+
+
 
 
 
