@@ -2,37 +2,38 @@
 
 
 #include "VEDefines.h"
-#include "VEMemory.h"
-#include "VEEngine.h"
+#include "VETable.h"
+#include "VESysEngine.h"
 #include "VESysVulkan.h"
 #include "VESysWindow.h"
 #include "VESysEvents.h"
 #include "VESysPhysics.h"
+#include "VESysAssets.h"
 #include "VESysScene.h"
 
 
-namespace ve {
+namespace syseng {
 
 	//-----------------------------------------------------------------------------------
 
 	bool g_goon = true;
-	mem::VeFixedSizeTypedTable<VeMainTableEntry>*	g_main_table = nullptr;
-	mem::VeFixedSizeTypedTable<VeSysTableEntry>*	g_systems_table = nullptr;
-	mem::VariableSizeTable*							g_meshes_table = nullptr;
+	tab::VeFixedSizeTable<VeMainTableEntry>*	g_main_table = nullptr;
+	tab::VeFixedSizeTable<VeSysTableEntry>*		g_systems_table = nullptr;
+	tab::VeVariableSizeTable*					g_meshes_table = nullptr;
 
 	void createTables() {
-		std::vector<mem::VeMap*> maps = {
-			(mem::VeMap*) new mem::VeTypedMap< std::unordered_map<mem::VeTableKeyString, mem::VeTableIndex >, mem::VeTableKeyString, mem::VeTableIndex >(
+		std::vector<tab::VeMap*> maps = {
+			(tab::VeMap*) new tab::VeTypedMap< std::unordered_map<tab::VeTableKeyString, tab::VeTableIndex >, tab::VeTableKeyString, tab::VeTableIndex >(
 				(VeIndex)offsetof(struct VeMainTableEntry, m_name ), 0)
 		};
-		g_main_table = new mem::VeFixedSizeTypedTable<VeMainTableEntry>( std::move(maps), 0 );
+		g_main_table = new tab::VeFixedSizeTable<VeMainTableEntry>( std::move(maps), 0 );
 		registerTablePointer(g_main_table, "Main Table");
 
 		maps = {
-			(mem::VeMap*) new mem::VeTypedMap< std::unordered_map<mem::VeTableKeyString, mem::VeTableIndex >, mem::VeTableKeyString, mem::VeTableIndex >(
+			(tab::VeMap*) new tab::VeTypedMap< std::unordered_map<tab::VeTableKeyString, tab::VeTableIndex >, tab::VeTableKeyString, tab::VeTableIndex >(
 				(VeIndex)offsetof(struct VeSysTableEntry, m_name), 0)
 		};
-		g_systems_table = new mem::VeFixedSizeTypedTable<VeSysTableEntry>(std::move(maps), 0);
+		g_systems_table = new tab::VeFixedSizeTable<VeSysTableEntry>(std::move(maps), 0);
 		registerTablePointer(g_systems_table, "Systems Table");
 
 		std::vector<VeHandle> handles;
@@ -41,16 +42,16 @@ namespace ve {
 		VeMainTableEntry entry;
 		bool found = g_main_table->getEntry(handles[0], entry);
 
-		g_meshes_table = new mem::VariableSizeTable(1 << 20);
+		g_meshes_table = new tab::VeVariableSizeTable(1 << 20);
 
 	}
 
-	void registerTablePointer(mem::VeTable* tptr, std::string name) {
+	void registerTablePointer(tab::VeTable* tptr, std::string name) {
 		VeMainTableEntry entry = { tptr, name };
 		g_main_table->addEntry(entry);
 	}
 
-	mem::VeTable* getTablePointer(std::string name) {
+	tab::VeTable* getTablePointer(std::string name) {
 		const std::vector<VeMainTableEntry>& data = g_main_table->getData();
 		for (uint32_t i = 0; i < data.size(); ++i) if (data[i].m_name == name) return data[i].m_table_pointer; 
 		return nullptr;
@@ -62,13 +63,14 @@ namespace ve {
 	void initEngine() {
 		std::cout << "init engine 2\n";
 
-		mem::testTables();
+		tab::testTables();
 
 
 		createTables();
 		syswin::initWindow();
 		sysvul::initVulkan();
 		syseve::initEvents();
+		sysass::initAssets();
 		syssce::initScene();
 		sysphy::initPhysics();
 

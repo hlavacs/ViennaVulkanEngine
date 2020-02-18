@@ -10,9 +10,9 @@ int main()
 {
     std::cout << "Hello World!\n";
 
-    ve::initEngine();
-    ve::computeOneFrame();
-    ve::closeEngine();
+    syseng::initEngine();
+    syseng::computeOneFrame();
+    syseng::closeEngine();
  
 }
 

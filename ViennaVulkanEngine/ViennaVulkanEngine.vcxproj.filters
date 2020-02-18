@@ -11,16 +11,10 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="VEEngine.cpp">
-      <Filter>Quelldateien</Filter>
-    </ClCompile>
     <ClCompile Include="VESysVulkan.cpp">
       <Filter>Quelldateien</Filter>
     </ClCompile>
     <ClCompile Include="VESysWindow.cpp">
-      <Filter>Quelldateien</Filter>
-    </ClCompile>
-    <ClCompile Include="VEMemory.cpp">
       <Filter>Quelldateien</Filter>
     </ClCompile>
     <ClCompile Include="VESysScene.cpp">
@@ -41,11 +35,17 @@
     <ClCompile Include="VEFile.cpp">
       <Filter>Quelldateien</Filter>
     </ClCompile>
+    <ClCompile Include="VESysAssets.cpp">
+      <Filter>Quelldateien</Filter>
+    </ClCompile>
+    <ClCompile Include="VESysEngine.cpp">
+      <Filter>Quelldateien</Filter>
+    </ClCompile>
+    <ClCompile Include="VETable.cpp">
+      <Filter>Quelldateien</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="VEEngine.h">
-      <Filter>Headerdateien</Filter>
-    </ClInclude>
     <ClInclude Include="VEInclude.h">
       <Filter>Headerdateien</Filter>
     </ClInclude>
@@ -53,9 +53,6 @@
       <Filter>Headerdateien</Filter>
     </ClInclude>
     <ClInclude Include="VESysWindow.h">
-      <Filter>Headerdateien</Filter>
-    </ClInclude>
-    <ClInclude Include="VEMemory.h">
       <Filter>Headerdateien</Filter>
     </ClInclude>
     <ClInclude Include="VESysScene.h">
@@ -77,6 +74,15 @@
       <Filter>Headerdateien</Filter>
     </ClInclude>
     <ClInclude Include="VEFile.h">
+      <Filter>Headerdateien</Filter>
+    </ClInclude>
+    <ClInclude Include="VESysAssets.h">
+      <Filter>Headerdateien</Filter>
+    </ClInclude>
+    <ClInclude Include="VESysEngine.h">
+      <Filter>Headerdateien</Filter>
+    </ClInclude>
+    <ClInclude Include="VETable.h">
       <Filter>Headerdateien</Filter>
     </ClInclude>
   </ItemGroup>

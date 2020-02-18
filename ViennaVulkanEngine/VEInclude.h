@@ -6,6 +6,6 @@
 #define VE_PUBLIC_INTERFACE
 
 #include "VEDefines.h"
-#include "VEMemory.h"
-#include "VEEngine.h"
+#include "VETable.h"
+#include "VESysEngine.h"
 

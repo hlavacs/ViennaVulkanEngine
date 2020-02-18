@@ -3,10 +3,10 @@
 
 
 #include "VEDefines.h"
-#include "VEMemory.h"
+#include "VETable.h"
 
 
-namespace mem {
+namespace tab {
 
 
 	constexpr uint32_t num_repeats = 200;
@@ -25,18 +25,20 @@ namespace mem {
 		TestEntry( VeHandle handle, VeIndex int1, VeIndex int2, std::string name ): m_int64(handle), m_int1(int1), m_int2(int2), m_name(name) {};
 	};
 
-	std::vector<mem::VeMap*> maps = {
-		(mem::VeMap*) new mem::VeTypedMap< std::map<VeTableKeyInt, VeTableIndex>, VeTableKeyInt, VeTableIndex >(
+	std::vector<tab::VeMap*> maps = {
+		(tab::VeMap*) new tab::VeTypedMap< std::map<VeTableKeyInt, VeTableIndex>, VeTableKeyInt, VeTableIndex >(
 			(VeIndex)offsetof(struct TestEntry, m_int64), (VeIndex)sizeof(TestEntry::m_int64)),
-		(mem::VeMap*) new mem::VeTypedMultimap< std::multimap<VeTableKeyInt, VeTableIndex>, VeTableKeyInt, VeTableIndex >(
+		(tab::VeMap*) new tab::VeTypedMultimap< std::multimap<VeTableKeyInt, VeTableIndex>, VeTableKeyInt, VeTableIndex >(
 			(VeIndex)offsetof(struct TestEntry, m_int1), (VeIndex)sizeof(TestEntry::m_int1)),
-		(mem::VeMap*) new mem::VeTypedMultimap< std::multimap<VeTableKeyString, VeTableIndex>, VeTableKeyString, VeTableIndex >(
+		(tab::VeMap*) new tab::VeTypedMultimap< std::multimap<VeTableKeyString, VeTableIndex>, VeTableKeyString, VeTableIndex >(
 			(VeIndex)offsetof(struct TestEntry, m_name), 0),
-		(mem::VeMap*) new mem::VeTypedMultimap< std::multimap<VeTableKeyIntPair, VeTableIndex>, VeTableKeyIntPair, VeTableIndexPair >(
+		(tab::VeMap*) new tab::VeTypedMultimap< std::multimap<VeTableKeyIntPair, VeTableIndex>, VeTableKeyIntPair, VeTableIndexPair >(
 			VeTableIndexPair((VeIndex)offsetof(struct TestEntry, m_int1), (VeIndex)offsetof(struct TestEntry, m_int2)),
 			VeTableIndexPair((VeIndex)sizeof(TestEntry::m_int1), (VeIndex)sizeof(TestEntry::m_int2)))
 	};
-	VeFixedSizeTypedTable<TestEntry> testTable( maps );
+	VeFixedSizeTable<TestEntry> testTable( maps );
+
+
 
 
 	void printEntry( VeHandle handle) {

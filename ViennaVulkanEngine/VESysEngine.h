@@ -2,10 +2,10 @@
 
 
 
-namespace ve {
+namespace syseng {
 
 	struct VeMainTableEntry {
-		mem::VeTable*	m_table_pointer;
+		tab::VeTable*	m_table_pointer;
 		std::string		m_name;
 	};
 
@@ -18,8 +18,8 @@ namespace ve {
 #ifndef VE_PUBLIC_INTERFACE
 
 	///
-	void registerTablePointer( mem::VeTable* ptr, std::string name );
-	mem::VeTable* getTablePointer( std::string name );
+	void registerTablePointer(tab::VeTable* ptr, std::string name );
+	tab::VeTable* getTablePointer( std::string name );
 
 #endif
 
