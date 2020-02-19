@@ -2,7 +2,7 @@
 
 
 
-namespace sysvul {
+namespace vve::sysvul {
 
 	struct VulkanState {
 

@@ -7,7 +7,7 @@
 
 #include "VECollision.h"
 
-namespace cl {
+namespace vve::cl {
 
 	//------------------------------------------------------------------------
 

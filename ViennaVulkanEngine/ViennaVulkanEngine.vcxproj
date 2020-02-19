@@ -168,6 +168,7 @@
     <ClCompile Include="VESysVulkan.cpp" />
     <ClCompile Include="VESysWindow.cpp" />
     <ClCompile Include="VESysWindowGLFW.cpp" />
+    <ClCompile Include="VEVector.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="VEDefines.h" />
@@ -183,6 +184,7 @@
     <ClInclude Include="VESysVulkan.h" />
     <ClInclude Include="VESysWindow.h" />
     <ClInclude Include="VESysWindowGLFW.h" />
+    <ClInclude Include="VEVector.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

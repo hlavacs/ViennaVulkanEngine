@@ -11,7 +11,7 @@
 #include <glm/gtx/transform.hpp>
 
 
-namespace cl {
+namespace vve::cl {
 
 
 	///An edge connects 2 points 

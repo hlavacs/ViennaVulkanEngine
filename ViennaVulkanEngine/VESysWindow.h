@@ -1,7 +1,7 @@
 #pragma once
 
 
-namespace syswin {
+namespace vve::syswin {
 
 	void initWindow();
 

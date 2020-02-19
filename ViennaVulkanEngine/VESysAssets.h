@@ -3,9 +3,10 @@
 
 
 
-namespace sysass {
+namespace vve::sysass {
 
 	void initAssets();
+	void closeAssets();
 
 
 }

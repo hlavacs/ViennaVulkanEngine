@@ -1,12 +1,10 @@
 
 
-
-
 #include "VEDefines.h"
 #include "VETable.h"
 
 
-namespace tab {
+namespace vve::tab {
 
 
 	constexpr uint32_t num_repeats = 200;

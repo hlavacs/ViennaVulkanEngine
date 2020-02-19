@@ -6,7 +6,7 @@
 #include "VESysEvents.h"
 
 
-namespace syseve {
+namespace vve::syseve {
 
 
 	tab::VeFixedSizeTable<VeEventTableEntry>* g_event_table = nullptr;

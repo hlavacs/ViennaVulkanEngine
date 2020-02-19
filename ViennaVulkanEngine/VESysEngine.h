@@ -2,7 +2,7 @@
 
 
 
-namespace syseng {
+namespace vve::syseng {
 
 	struct VeMainTableEntry {
 		tab::VeTable*	m_table_pointer;

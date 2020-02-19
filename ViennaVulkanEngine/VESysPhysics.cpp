@@ -2,7 +2,7 @@
 
 #include "VESysPhysics.h"
 
-namespace sysphy {
+namespace vve::sysphy {
 
 
 	void initPhysics() {

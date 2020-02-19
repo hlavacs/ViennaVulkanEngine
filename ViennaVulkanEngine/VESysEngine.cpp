@@ -2,6 +2,7 @@
 
 
 #include "VEDefines.h"
+#include "VEVector.h"
 #include "VETable.h"
 #include "VESysEngine.h"
 #include "VESysVulkan.h"
@@ -12,7 +13,7 @@
 #include "VESysScene.h"
 
 
-namespace syseng {
+namespace vve::syseng {
 
 	//-----------------------------------------------------------------------------------
 
@@ -52,8 +53,9 @@ namespace syseng {
 	}
 
 	tab::VeTable* getTablePointer(std::string name) {
-		const std::vector<VeMainTableEntry>& data = g_main_table->getData();
-		for (uint32_t i = 0; i < data.size(); ++i) if (data[i].m_name == name) return data[i].m_table_pointer; 
+		auto data = g_main_table->getData();
+		for (uint32_t i = 0; i < data.size(); ++i) 
+			if (data[i].m_name == name) return data[i].m_table_pointer; 
 		return nullptr;
 	}
 
@@ -64,7 +66,7 @@ namespace syseng {
 		std::cout << "init engine 2\n";
 
 		tab::testTables();
-
+		testVector();
 
 		createTables();
 		syswin::initWindow();

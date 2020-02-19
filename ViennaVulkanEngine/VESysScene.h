@@ -1,7 +1,7 @@
 #pragma once
 
 
-namespace syssce {
+namespace vve::syssce {
 
 
 	void initScene();

@@ -1,7 +1,7 @@
 #pragma once
 
 
-namespace sysphy {
+namespace vve::sysphy {
 
 	void initPhysics();
 	void tickPhysics();

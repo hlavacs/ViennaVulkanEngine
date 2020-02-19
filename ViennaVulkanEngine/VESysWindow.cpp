@@ -2,7 +2,7 @@
 
 #include "VESysWindow.h"
 
-namespace syswin {
+namespace vve::syswin {
 
 
 	void initWindow() {

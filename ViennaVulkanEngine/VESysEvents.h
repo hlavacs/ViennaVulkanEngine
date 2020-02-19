@@ -1,7 +1,7 @@
 #pragma once
 
 
-namespace syseve {
+namespace vve::syseve {
 
 	struct VeEventTableEntry {
 		std::string m_name;

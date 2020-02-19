@@ -4,10 +4,15 @@
 #include "VESysAssets.h"
 
 
-namespace sysass {
+namespace vve::sysass {
 
 
 	void initAssets() {
+
+	}
+
+
+	void closeAssets() {
 
 	}
 

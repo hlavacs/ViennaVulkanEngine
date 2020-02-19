@@ -13,13 +13,17 @@
 #include <assert.h>
 
 
-typedef uint32_t VeIndex;
-constexpr VeIndex VE_NULL_INDEX = std::numeric_limits<VeIndex>::max();
+namespace vve {
+	typedef uint32_t VeIndex;
+	constexpr VeIndex VE_NULL_INDEX = std::numeric_limits<VeIndex>::max();
 
-typedef uint64_t VeHandle;
-constexpr VeHandle VE_NULL_HANDLE = std::numeric_limits<VeHandle>::max();
+	typedef uint64_t VeHandle;
+	constexpr VeHandle VE_NULL_HANDLE = std::numeric_limits<VeHandle>::max();
 
-typedef uint32_t VeSize;
-constexpr VeSize VE_NULL_SIZE = std::numeric_limits<VeSize>::max();
+	typedef uint32_t VeSize;
+	constexpr VeSize VE_NULL_SIZE = std::numeric_limits<VeSize>::max();
 
+}
+
+#include "VEVector.h"
 

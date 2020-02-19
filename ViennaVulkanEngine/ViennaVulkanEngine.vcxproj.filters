@@ -44,6 +44,9 @@
     <ClCompile Include="VETable.cpp">
       <Filter>Quelldateien</Filter>
     </ClCompile>
+    <ClCompile Include="VEVector.cpp">
+      <Filter>Quelldateien</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="VEInclude.h">
@@ -83,6 +86,9 @@
       <Filter>Headerdateien</Filter>
     </ClInclude>
     <ClInclude Include="VETable.h">
+      <Filter>Headerdateien</Filter>
+    </ClInclude>
+    <ClInclude Include="VEVector.h">
       <Filter>Headerdateien</Filter>
     </ClInclude>
   </ItemGroup>

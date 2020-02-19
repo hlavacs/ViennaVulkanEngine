@@ -2,7 +2,7 @@
 
 
 
-namespace tab {
+namespace vve::tab {
 
 	//------------------------------------------------------------------------------------------------------
 
@@ -291,7 +291,7 @@ namespace tab {
 	protected:
 		std::vector<VeMap*>		m_maps;				///vector of maps for quickly finding or sorting entries
 		VeDirectory				m_directory;		///
-		std::vector<T>			m_data;				///growable entry data table
+		VeVector<T>				m_data;				///growable entry data table
 		std::vector<VeIndex>	m_tbl2dir;
 
 		void swapEntriesByHandle( VeHandle h1, VeHandle h2 ) {
@@ -323,7 +323,7 @@ namespace tab {
 
 		void		addMap(VeMap* pmap) { m_maps.emplace_back(pmap); };
 		VeIndex		getSize() { return (VeIndex)m_data.size(); };
-		const std::vector<T>& getData() { return m_data; };
+		const VeVector<T>& getData() { return m_data; };
 		void		sortTableByMap( VeIndex num_map );
 		void		forAllEntries( VeIndex num_map, std::function<void(VeHandle)>& func );
 		void		forAllEntries( VeIndex num_map, std::function<void(VeHandle)>&& func ) { forAllEntries(num_map, func ); };
@@ -435,7 +435,6 @@ namespace tab {
 		return true;
 	};
 
-
 	template<typename T> inline VeIndex VeFixedSizeTable<T>::getIndexFromHandle(VeHandle key) {
 		if (key == VE_NULL_HANDLE) return VE_NULL_INDEX;
 		auto [auto_id, dir_index]	= m_directory.splitHandle(key);
@@ -444,7 +443,6 @@ namespace tab {
 		if (auto_id != dir_entry.m_auto_id) return VE_NULL_INDEX;
 		return dir_entry.m_table_index;
 	};
-
 
 	template<typename T> inline VeHandle VeFixedSizeTable<T>::getHandleFromIndex(VeIndex table_index) {
 		VeIndex dir_index	= m_tbl2dir[table_index];
@@ -456,8 +454,8 @@ namespace tab {
 	//--------------------------------------------------------------------------------------------------------------------------
 
 	template<typename T> inline	uint32_t VeFixedSizeTable<T>::getHandlesFromMap(	VeIndex num_map,
-																						VeTableKeyInt key,
-																						std::vector<VeHandle>& result) {
+																					VeTableKeyInt key,
+																					std::vector<VeHandle>& result) {
 		assert(num_map < m_maps.size());
 		if (key == VE_NULL_HANDLE) return 0;
 		if (m_data.empty()) return 0;
@@ -469,8 +467,8 @@ namespace tab {
 	};
 
 	template<typename T> inline	uint32_t VeFixedSizeTable<T>::getHandlesFromMap(	VeIndex num_map,
-																						VeTableKeyIntPair& key,
-																						std::vector<VeHandle>& result) {
+																					VeTableKeyIntPair& key,
+																					std::vector<VeHandle>& result) {
 		assert(num_map < m_maps.size());
 		if (key.first == VE_NULL_HANDLE || key.second == VE_NULL_HANDLE) return 0;
 		if (m_data.empty()) return 0;
@@ -482,8 +480,8 @@ namespace tab {
 	};
 
 	template<typename T> inline	uint32_t VeFixedSizeTable<T>::getHandlesFromMap(	VeIndex num_map,
-																						VeTableKeyIntTriple& key,
-																						std::vector<VeHandle>& result) {
+																					VeTableKeyIntTriple& key,
+																					std::vector<VeHandle>& result) {
 		assert(num_map < m_maps.size());
 		if ( std::get<0>(key) == VE_NULL_HANDLE || std::get<1>(key) == VE_NULL_HANDLE || std::get<2>(key) == VE_NULL_HANDLE) return 0;
 		if (m_data.empty()) return 0;
@@ -495,8 +493,8 @@ namespace tab {
 	};
 
 	template<typename T> inline	uint32_t VeFixedSizeTable<T>::getHandlesFromMap(	VeIndex num_map,
-																						VeTableKeyString& key,
-																						std::vector<VeHandle>& result) {
+																					VeTableKeyString& key,
+																					std::vector<VeHandle>& result) {
 		assert(num_map < m_maps.size());
 		if (key.empty() || key.size() == 0) return 0;
 		if (m_data.empty()) return 0;
@@ -509,7 +507,6 @@ namespace tab {
 
 
 	//--------------------------------------------------------------------------------------------------------------------------
-
 
 	template<typename T> inline	uint32_t VeFixedSizeTable<T>::getAllHandlesFromMap(VeIndex num_map, std::vector<VeHandle>& result) {
 		assert(num_map < m_maps.size() || num_map == VE_NULL_INDEX);
@@ -527,7 +524,6 @@ namespace tab {
 	};
 
 
-
 	///-------------------------------------------------------------------------------
 
 	class VeVariableSizeTable : public VeTable {
@@ -543,16 +539,18 @@ namespace tab {
 		};
 
 		VeFixedSizeTable<VeDirectoryEntry>*	m_pdirectory = nullptr;
-		std::vector<uint8_t>						m_data;
+		std::vector<uint8_t>				m_data;
+		VeIndex								m_align;
+		bool								m_immediateDefrag;
 
 
 		void defragment() {
-			std::vector<VeHandle> handles;  handles.reserve( m_pdirectory->getData().size() + 1 );
-			m_pdirectory->getAllHandlesFromMap(2, handles);
+			std::vector<VeHandle> handles;  handles.reserve( m_pdirectory->getSize() + 1 );
+			m_pdirectory->getAllHandlesFromMap(1, handles);
 			if (handles.size() < 2) return;
 
 			VeDirectoryEntry entry1;
-			if (!m_pdirectory->getEntry(handles[0],   entry1)) return;
+			if (!m_pdirectory->getEntry(handles[0], entry1)) return;
 
 			for (uint32_t i = 1; i < handles.size(); ++i ) {
 				VeDirectoryEntry entry2;
@@ -567,22 +565,28 @@ namespace tab {
 		}
 
 	public:
-		VeVariableSizeTable(VeIndex size = 1<<20, VeIndex thread_id = VE_NULL_INDEX ) : VeTable( thread_id ) {
+		VeVariableSizeTable(VeIndex size = 1<<20, VeIndex thread_id = VE_NULL_INDEX, VeIndex align = 16, bool immediateDefrag = false ) : 
+			VeTable( thread_id ), m_align(align), m_immediateDefrag(immediateDefrag) {
 
 			std::vector<tab::VeMap*> maps = {
 				(tab::VeMap*) new tab::VeTypedMultimap< std::multimap<VeTableKeyInt, VeTableIndex>, VeTableKeyInt, VeTableIndex >(
 							(VeIndex)offsetof(struct VeDirectoryEntry, m_occupied), (VeIndex)sizeof(VeDirectoryEntry::m_occupied)),
 				(tab::VeMap*) new tab::VeTypedMap< std::map<VeTableKeyInt, VeIndex>, VeTableKeyInt, VeTableIndex >(
-							(VeIndex)offsetof(struct VeDirectoryEntry, m_start), (VeIndex)sizeof(VeDirectoryEntry::m_start)),
-				(tab::VeMap*) new tab::VeTypedMap< std::map<VeTableKeyIntPair, VeTableIndex>, VeTableKeyIntPair, VeTableIndexPair > (
-							VeTableIndexPair((VeIndex)offsetof(struct VeDirectoryEntry, m_occupied), 
-											 (VeIndex)offsetof(struct VeDirectoryEntry, m_start)),
-							VeTableIndexPair((VeIndex)sizeof(VeDirectoryEntry::m_occupied), (VeIndex)sizeof(VeDirectoryEntry::m_start)) )
+							(VeIndex)offsetof(struct VeDirectoryEntry, m_start), (VeIndex)sizeof(VeDirectoryEntry::m_start))
+				//(tab::VeMap*) new tab::VeTypedMap< std::map<VeTableKeyIntPair, VeTableIndex>, VeTableKeyIntPair, VeTableIndexPair > (
+				//			VeTableIndexPair((VeIndex)offsetof(struct VeDirectoryEntry, m_occupied), 
+				//							 (VeIndex)offsetof(struct VeDirectoryEntry, m_start)),
+				//			VeTableIndexPair((VeIndex)sizeof(VeDirectoryEntry::m_occupied), (VeIndex)sizeof(VeDirectoryEntry::m_start)) )
 			};
 			m_pdirectory = new VeFixedSizeTable<VeDirectoryEntry>( maps );
 
-			m_data.resize(size);
-			VeDirectoryEntry entry{ 0, size, 0 };
+			m_data.resize(size + align);
+			uint64_t start = 0;
+			if (align > 1) {
+				uint64_t mod = ((uint64_t)m_data.data()) & (align-1);
+				if (mod > 0) start = align - mod;
+			}
+			VeDirectoryEntry entry{ (VeIndex)start, size, 0 };
 			m_pdirectory->addEntry(entry);
 		}
 
@@ -590,7 +594,12 @@ namespace tab {
 			delete m_pdirectory;
 		};
 
-		VeIndex insertBlob( uint8_t* ptr, VeIndex size, bool defrag = true ) {
+		VeHandle insertBlob( uint8_t* ptr, VeIndex size, bool defrag = true ) {
+			if (m_align > 1) {
+				VeIndex mod = size & (m_align - 1);
+				if (mod > 0) size += (m_align - mod);
+			}
+
 			std::vector<VeHandle> result;
 			m_pdirectory->getHandlesFromMap(0, 0, result );
 
@@ -598,7 +607,7 @@ namespace tab {
 			VeDirectoryEntry entry;
 			for (auto handle : result) if (m_pdirectory->getEntry(handle, entry) && entry.m_size >= size) {	h = handle; break; } 
 			if (h == VE_NULL_HANDLE) {
-				if( !defrag ) return VE_NULL_INDEX;
+				if (!defrag) return VE_NULL_HANDLE;
 				defragment();
 				return insertBlob(ptr, size, false);
 			}
@@ -610,19 +619,21 @@ namespace tab {
 			entry.m_size = size;
 			entry.m_occupied = 1;
 			m_pdirectory->updateEntry(h, entry);
-			return entry.m_start;
+			return h;
 		}
 
-		bool deleteBlob(VeIndex start ) {
-			std::vector<VeHandle> result;
-			m_pdirectory->getHandlesFromMap(1, start, result);
-			if (result.size() != 1) return false;
-
+		uint8_t* getPointer(VeHandle handle) {
 			VeDirectoryEntry entry;
-			if( !m_pdirectory->getEntry(result[0], entry) ) return false;
+			if (!m_pdirectory->getEntry(handle, entry ) ) return nullptr;
+			return m_data.data() + entry.m_start;
+		}
 
+		bool deleteBlob(VeHandle handle ) {
+			VeDirectoryEntry entry;
+			if (!m_pdirectory->getEntry(handle, entry ) ) return false;
 			entry.m_occupied = 0;
-			m_pdirectory->updateEntry(result[0], entry);
+			m_pdirectory->updateEntry(handle, entry);
+			if (m_immediateDefrag) defragment();
 			return true;
 		}
 

@@ -4,7 +4,7 @@
 #include "VESysVulkan.h"
 
 
-namespace sysvul {
+namespace vve::sysvul {
 
 	void initVulkan() {
 

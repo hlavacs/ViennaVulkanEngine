@@ -3,7 +3,7 @@
 #include "VESysScene.h"
 
 
-namespace syssce {
+namespace vve::syssce {
 
 
 	void initScene() {
