@@ -57,7 +57,7 @@ namespace vve {
 		}
 
 		void setNewCapacity( VeIndex newcapacity, uint8_t *start_src, VeIndex entry_size_src, VeIndex size_src ) {
-			newcapacity = newcapacity > size_src ? newcapacity : size_src;
+			newcapacity = std::max( newcapacity, size_src);
 			uint8_t* newmemptr = new uint8_t[newcapacity * m_entrySize + m_alignment];
 			uint8_t* newstartptr = (uint8_t*)alignBoundary((uint64_t)newmemptr, m_alignment);
 
@@ -141,8 +141,8 @@ namespace vve {
 	};
 
 	template<typename T> inline VeVector<T>::VeVector( VeIndex align, VeIndex capacity ) {
-		m_capacity	= capacity > 16 ? capacity : 16;
-		m_alignment = align > 16 ? align : 16;
+		m_capacity	= std::max(capacity, (VeIndex)16); 
+		m_alignment = std::max(align, (VeIndex)16);
 		m_entrySize = (VeIndex)alignBoundary( sizeof(T), m_alignment);
 		m_memptr	= new uint8_t[m_capacity * m_entrySize + m_alignment];
 		m_startptr	= (uint8_t*) alignBoundary( (uint64_t)m_memptr, m_alignment);
@@ -213,7 +213,6 @@ namespace vve {
 		else ptr = m_startptr;
 		return *(T*)ptr;
 	}
-
 
 	template<typename T> inline void VeVector<T>::swap(VeIndex a, VeIndex b) {
 		uint8_t* ptra = m_startptr + a * m_entrySize;
