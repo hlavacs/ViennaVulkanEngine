@@ -12,8 +12,8 @@ int main()
 {
     std::cout << "Hello World!\n";
 
-    //tab::testTables();
-    vec::testVector();
+    //vec::testVector();
+    tab::testTables();
     return 0;
 
     syseng::initEngine();

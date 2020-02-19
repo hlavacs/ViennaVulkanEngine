@@ -20,7 +20,7 @@ namespace vve::tab {
 		VeIndex		m_int2;
 		std::string m_name;
 		TestEntry() : m_int64(VE_NULL_HANDLE), m_int1(VE_NULL_INDEX), m_int2(VE_NULL_INDEX), m_name("") {};
-		TestEntry( VeHandle handle, VeIndex int1, VeIndex int2, std::string name ): m_int64(handle), m_int1(int1), m_int2(int2), m_name(name) {};
+		TestEntry(VeHandle handle, VeIndex int1, VeIndex int2, std::string name) : m_int64(handle), m_int1(int1), m_int2(int2), m_name(name) {};
 	};
 
 	std::vector<tab::VeMap*> maps = {
@@ -34,34 +34,32 @@ namespace vve::tab {
 			VeTableIndexPair((VeIndex)offsetof(struct TestEntry, m_int1), (VeIndex)offsetof(struct TestEntry, m_int2)),
 			VeTableIndexPair((VeIndex)sizeof(TestEntry::m_int1), (VeIndex)sizeof(TestEntry::m_int2)))
 	};
-	VeFixedSizeTable<TestEntry> testTable( maps );
+	VeFixedSizeTable<TestEntry> testTable(maps);
 
 
-
-
-	void printEntry( VeHandle handle) {
+	void printEntry(VeHandle handle) {
 
 		TestEntry entry;
 		testTable.getEntry(handle, entry);
 
 		auto [auto_id, dir_index] = VeDirectory::splitHandle(handle);
 
-		std::cout << "Entry handle auto_id " << auto_id << " dir_index " << dir_index << 
-			" int64 " << entry.m_int64 << " int1 " << entry.m_int1 << " int2 " << entry.m_int2 << 
+		std::cout << "Entry handle auto_id " << auto_id << " dir_index " << dir_index <<
+			" int64 " << entry.m_int64 << " int1 " << entry.m_int1 << " int2 " << entry.m_int2 <<
 			" name " << entry.m_name << std::endl;
 	}
 
-	void testTables() {
+	void testFixedTables() {
 
 		VeHandle handle;
-		handle = testTable.addEntry({ 1, 2, 3, "4" } );
+		handle = testTable.addEntry({ 1, 2, 3, "4" });
 		handle = testTable.addEntry({ 4, 2, 1, "3" });
 		handle = testTable.addEntry({ 2, 1, 3, "1" });
 		handle = testTable.addEntry({ 3, 4, 5, "2" });
 		handle = testTable.addEntry({ 5, 4, 2, "3" });
 		handle = testTable.addEntry({ 6, 3, 2, "2" });
 
-		testTable.forAllEntries( std::bind( printEntry, std::placeholders::_1) ); std::cout << std::endl;
+		testTable.forAllEntries(std::bind(printEntry, std::placeholders::_1)); std::cout << std::endl;
 
 		testTable.sortTableByMap(0);
 		testTable.forAllEntries(std::bind(printEntry, std::placeholders::_1)); std::cout << std::endl;
@@ -97,10 +95,30 @@ namespace vve::tab {
 		handle = testTable.addEntry({ 9, 4, 1, "3" });
 		testTable.sortTableByMap(0);
 		testTable.forAllEntries(std::bind(printEntry, std::placeholders::_1)); std::cout << std::endl;
+	}
 
+
+
+	VeVariableSizeTable testVarTable;
+
+	struct testVarTables1 {
+		VeHandle h1, h2, h3;
+		VeHandle a[10];
+	};
+
+	struct testVarTables2 {
+		VeHandle h1, h2, h3;
+		VeHandle a[10];
+	};
+
+	void testVarTables() {
 
 	}
 
+	void testTables() {
+		testFixedTables();
+		testVarTables();
+	}
 
 };
 
