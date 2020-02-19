@@ -5,6 +5,14 @@
 
 namespace vve {
 
+	uint64_t alignBoundary(uint64_t size, VeIndex alignment) {
+		uint64_t result = size;
+		if (alignment > 1) {
+			uint64_t mod = result & (alignment - 1);
+			if (mod > 0) result += alignment - mod;
+		}
+		return result;
+	}
 
 	struct TestEntry {
 		VeHandle	m_int64;

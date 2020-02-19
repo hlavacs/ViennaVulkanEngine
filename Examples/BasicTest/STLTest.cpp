@@ -7,6 +7,9 @@
 #include <unordered_map>
 #include <random>
 #include <tuple>
+#include <sstream>
+#include <iostream>
+#include <iomanip>
 
 #include "STLTest.h"
 
@@ -16,7 +19,7 @@ using namespace std::chrono;
 namespace stltest {
 
     constexpr uint32_t num_repeats = 200;
-    constexpr uint32_t n = 1000;
+    constexpr uint32_t n = 10000;
     std::random_device rd;
     std::mt19937 gen(rd());
     std::uniform_int_distribution<> dis(1, 1 << 30);
@@ -76,38 +79,24 @@ namespace stltest {
     }
 
 
-
-    void runTests() {
+    template< typename T>
+    void runTypedTests(std::string name ) {
        
-        auto [dur1, dmax1] = insertMap<std::map<uint64_t, uint32_t>>();
-        std::cout << "Emplace into           map for " << n << " objects: " << dur1 << " (" << dmax1 << ") seconds. Per object: " << dur1 / n << " seconds." << std::endl;
+        auto [dur1, dmax1] = insertMap<T>();
+        std::cout << "Emplace into " << std::setw(15) << name << " for " << n << " objects: " << dur1 << " (" << dmax1 << ") seconds. Per object: " << dur1 / n << " seconds." << std::endl;
 
-        auto [dur2, dmax2] = insertMap<std::unordered_map<uint64_t, uint32_t>>();
-        std::cout << "Emplace into      hash map for " << n << " objects: " << dur2 << " (" << dmax2 << ") seconds. Per object: " << dur2 / n << " seconds." << std::endl;
-
-        auto [dur3, dmax3] = insertMap<std::multimap<uint64_t, uint32_t>>();
-        std::cout << "Emplace into      multimap for " << n << " objects: " << dur3 << " (" << dmax3 << ") seconds. Per object: " << dur3 / n << " seconds." << std::endl;
-
-        auto [dur4, dmax4] = insertMap<std::unordered_multimap<uint64_t, uint32_t>>();
-        std::cout << "Emplace into hash multimap for " << n << " objects: " << dur4 << " (" << dmax4 << ") seconds. Per object: " << dur4 / n << " seconds." << std::endl;
-
-        //----------
-
-        auto [dur5, dmax5] = copyMap<std::map<uint64_t, uint32_t>>();
-        std::cout << "Copy           map for " << n << " objects: " << dur5 << " (" << dmax5 << ") seconds. Per object: " << dur5 / n << " seconds." << std::endl;
-
-        auto [dur6, dmax6] = copyMap<std::unordered_map<uint64_t, uint32_t>>();
-        std::cout << "Copy      hash map for " << n << " objects: " << dur6 << " (" << dmax6 << ") seconds. Per object: " << dur6 / n << " seconds." << std::endl;
-
-        auto [dur7, dmax7] = copyMap<std::multimap<uint64_t, uint32_t>>();
-        std::cout << "Copy      multimap for " << n << " objects: " << dur7 << " (" << dmax7 << ") seconds. Per object: " << dur7 / n << " seconds." << std::endl;
-
-        auto [dur8, dmax8] = copyMap<std::unordered_multimap<uint64_t, uint32_t>>();
-        std::cout << "Copy hash multimap for " << n << " objects: " << dur8 << " (" << dmax8 << ") seconds. Per object: " << dur8 / n << " seconds." << std::endl;
-
-
+        auto [dur5, dmax5] = copyMap<T>();
+        std::cout << "Copy from    " << std::setw(15) << name << " for " << n << " objects: " << dur5 << " (" << dmax5 << ") seconds. Per object: " << dur5 / n << " seconds." << std::endl;
     }
 
+
+    void runSTLTests() {
+
+        runTypedTests<std::map<uint64_t, uint32_t>>("map");
+        runTypedTests<std::unordered_map<uint64_t, uint32_t>>("hash map");
+        runTypedTests<std::multimap<uint64_t, uint32_t>>("multimap");
+        runTypedTests<std::unordered_multimap<uint64_t, uint32_t>>("hash multimap");
+    }
 
 }
 

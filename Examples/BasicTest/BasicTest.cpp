@@ -12,6 +12,9 @@ int main()
 {
     std::cout << "Hello World!\n";
 
+    stltest::runSTLTests();
+    return 0;
+
     syseng::initEngine();
     syseng::computeOneFrame();
     syseng::closeEngine();

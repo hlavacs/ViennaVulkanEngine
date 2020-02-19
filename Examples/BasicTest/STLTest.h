@@ -4,7 +4,7 @@
 
 namespace stltest {
 
-	void runTests();
+	void runSTLTests();
 	std::tuple<double, double> insertMap();
 	std::tuple<double, double> copyMap();
 

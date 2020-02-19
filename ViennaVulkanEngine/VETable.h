@@ -564,6 +564,7 @@ namespace vve::tab {
 			}
 		}
 
+
 	public:
 		VeVariableSizeTable(VeIndex size = 1<<20, VeIndex thread_id = VE_NULL_INDEX, VeIndex align = 16, bool immediateDefrag = false ) : 
 			VeTable( thread_id ), m_align(align), m_immediateDefrag(immediateDefrag) {
@@ -581,11 +582,7 @@ namespace vve::tab {
 			m_pdirectory = new VeFixedSizeTable<VeDirectoryEntry>( maps );
 
 			m_data.resize(size + align);
-			uint64_t start = 0;
-			if (align > 1) {
-				uint64_t mod = ((uint64_t)m_data.data()) & (align-1);
-				if (mod > 0) start = align - mod;
-			}
+			uint64_t start = (VeIndex)alignBoundary(size, align);
 			VeDirectoryEntry entry{ (VeIndex)start, size, 0 };
 			m_pdirectory->addEntry(entry);
 		}
@@ -595,10 +592,8 @@ namespace vve::tab {
 		};
 
 		VeHandle insertBlob( uint8_t* ptr, VeIndex size, bool defrag = true ) {
-			if (m_align > 1) {
-				VeIndex mod = size & (m_align - 1);
-				if (mod > 0) size += (m_align - mod);
-			}
+
+			size = (VeIndex)alignBoundary( size, m_align );
 
 			std::vector<VeHandle> result;
 			m_pdirectory->getHandlesFromMap(0, 0, result );
