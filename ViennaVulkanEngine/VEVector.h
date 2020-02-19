@@ -160,15 +160,15 @@ namespace vve {
 			typedef T* pointer;
 			typedef std::forward_iterator_tag iterator_category;
 			typedef int difference_type;
-			iterator(uint8_t* ptr, VeIndex entrySize) : ptr_((T*)ptr), m_entrySize(entrySize) { }
-			self_type operator++() { self_type i = *this; ptr_ = (T*) ((uint8_t*)ptr_ + m_entrySize); return i; }
-			self_type operator++(int junk) { ptr_ = (T*)((uint8_t*)ptr_ + m_entrySize); return *this; }
-			reference operator*() { return *ptr_; }
-			pointer operator->() { return ptr_; }
-			bool operator==(const self_type& rhs) { return ptr_ == rhs.ptr_; }
-			bool operator!=(const self_type& rhs) { return ptr_ != rhs.ptr_; }
+			iterator(uint8_t* ptr, VeIndex entrySize) : m_ptr((T*)ptr), m_entrySize(entrySize) { }
+			self_type operator++() { self_type i = *this; m_ptr = (T*) ((uint8_t*)m_ptr + m_entrySize); return i; }
+			self_type operator++(int junk) { m_ptr = (T*)((uint8_t*)m_ptr + m_entrySize); return *this; }
+			reference operator*() { return *m_ptr; }
+			pointer operator->() { return m_ptr; }
+			bool operator==(const self_type& rhs) { return m_ptr == rhs.m_ptr; }
+			bool operator!=(const self_type& rhs) { return m_ptr != rhs.m_ptr; }
 		private:
-			pointer ptr_;
+			pointer m_ptr;
 			VeIndex m_entrySize;
 		};
 
@@ -187,15 +187,15 @@ namespace vve {
 			typedef T* pointer;
 			typedef int difference_type;
 			typedef std::forward_iterator_tag iterator_category;
-			const_iterator(uint8_t *ptr, VeIndex entrySize) : ptr_((T*)ptr), m_entrySize(entrySize) { }
-			self_type operator++() { self_type i = *this; ptr_ = (T*)((uint8_t*)ptr_ + m_entrySize); return i; }
-			self_type operator++(int junk) { ptr_ = (T*)((uint8_t*)ptr_ + m_entrySize); return *this; }
-			const reference operator*() { return *ptr_; }
-			const pointer operator->() { return ptr_; }
-			bool operator==(const self_type& rhs) { return ptr_ == rhs.ptr_; }
-			bool operator!=(const self_type& rhs) { return ptr_ != rhs.ptr_; }
+			const_iterator(uint8_t *ptr, VeIndex entrySize) : m_ptr((T*)ptr), m_entrySize(entrySize) { }
+			self_type operator++() { self_type i = *this; m_ptr = (T*)((uint8_t*)m_ptr + m_entrySize); return i; }
+			self_type operator++(int junk) { m_ptr = (T*)((uint8_t*)m_ptr + m_entrySize); return *this; }
+			const reference operator*() { return *m_ptr; }
+			const pointer operator->() { return m_ptr; }
+			bool operator==(const self_type& rhs) { return m_ptr == rhs.m_ptr; }
+			bool operator!=(const self_type& rhs) { return m_ptr != rhs.m_ptr; }
 		private:
-			pointer ptr_;
+			pointer m_ptr;
 			VeIndex m_entrySize;
 		};
 
@@ -207,20 +207,20 @@ namespace vve {
 		void operator=( const VeVector & vec );					///<assignment operator
 
 		size_type size() { return m_size; };					///<returns number of entries in the vector
-		T& operator[](size_type index );
-		const T& operator[](size_type index) const;
-		iterator begin() { return iterator(m_startptr, m_entrySize ); }
-		iterator end() { return iterator( m_startptr + m_size * m_entrySize, m_entrySize); }
-		const_iterator begin() const { return const_iterator(m_startptr, m_entrySize); }
-		const_iterator end() const { return const_iterator(m_startptr + m_size * m_entrySize, m_entrySize);  }
+		T& operator[](size_type index );						///<operator to access entry
+		const T& operator[](size_type index) const;				///<const access operator
+		iterator begin() { return iterator(m_startptr, m_entrySize ); }	///<begin for iterator
+		iterator end() { return iterator( m_startptr + m_size * m_entrySize, m_entrySize); }	///<end for iterator
+		const_iterator begin() const { return const_iterator(m_startptr, m_entrySize); }		///<const iterator begin
+		const_iterator end() const { return const_iterator(m_startptr + m_size * m_entrySize, m_entrySize);  } ///<const iterator end
 
-		void emplace_back(T &entry);
-		void emplace_back(T &&entry);
-		void push_back(T& entry);
-		void push_back(T&& entry);
-		void pop_back();
-		void swap( VeIndex a, VeIndex b);
-		bool empty() { return m_size == 0; };
+		void emplace_back(T &entry);			///<add entry at end of vector
+		void emplace_back(T &&entry);			///<add entry at end of vector
+		void push_back(T& entry);				///<add entry at end of vector
+		void push_back(T&& entry);				///<add entry at end of vector
+		void pop_back();						///<remove last entry from back
+		void swap( VeIndex a, VeIndex b);		///<swap two entries
+		bool empty() { return m_size == 0; };	///<test whether vector is empty
 	};
 
 	template<typename T> inline VeVector<T>::VeVector( VeIndex align, VeIndex capacity ) {
@@ -263,7 +263,10 @@ namespace vve {
 	}
 
 	template<typename T> inline void VeVector<T>::emplace_back(T&& entry) {
-		emplace_back(entry);
+		if (m_size == m_capacity) doubleCapacity();
+		uint8_t* ptr = m_startptr + m_size * m_entrySize;
+		*(T*)ptr = std::move(entry);
+		++m_size;
 	}
 
 	template<typename T> inline void VeVector<T>::push_back(T& entry) {
@@ -271,7 +274,7 @@ namespace vve {
 	}
 
 	template<typename T> inline void VeVector<T>::push_back(T&& entry) {
-		emplace_back(entry);
+		emplace_back(std::forward<T>(entry));
 	}
 
 	template<typename T> inline void VeVector<T>::pop_back() {
