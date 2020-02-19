@@ -2,7 +2,10 @@
 
 namespace vve {
 
-	void testVector();
+	namespace vec {
+		void testVector();
+	}
+
 	uint64_t alignBoundary(uint64_t size, VeIndex alignment);
 
 
@@ -11,24 +14,50 @@ namespace vve {
 
 	protected:
 
-		uint8_t* m_memptr;
-		uint8_t* m_startptr;
-		VeIndex  m_entrySize;
-		VeIndex  m_size;
-		VeIndex  m_capacity;
-		VeIndex  m_alignment;
+		uint8_t* m_memptr;		///<address of the memory space that was allocated or nullptr 
+		uint8_t* m_startptr;	///<address where the first entry lies, or nullptr. Is memory aligned.
+		VeIndex  m_entrySize;	///<size of a entry, or more for alignment
+		VeIndex  m_size;		///<number of entries that are currently in the vector
+		VeIndex  m_capacity;	///<max number of entries that can be stored in the vector
+		VeIndex  m_alignment;	///<memory alignment of each entry, default is 16
 
+		/**
+		*
+		*	\brief When a vector of entries is created, the constructor must be called for all entries
+		*	in the vector. This calls construct() for all entries.
+		*
+		*/
 		void construct() {
-			construct(m_startptr, m_capacity);
+			construct(m_startptr, m_capacity);	//Call with whole range of entries
 		}
 
+		/**
+		*
+		*	\brief When a vector of entries is created, the constructor must be called for all entries
+		*	in the vector. This function goes through a number of entries and calls their constructor.
+		*
+		*	\param[in] startptr Points to the first entry
+		*	\param[in] capacity Number of entries that are constructed 
+		*
+		*/
 		void construct( uint8_t* startptr, VeIndex capacity ) {
-			for (uint32_t i = 0; i < capacity; ++i) {
-				uint8_t* ptr = startptr + i * m_entrySize;
-				T* tptr = new(ptr) T();
+			for (uint32_t i = 0; i < capacity; ++i) {		//go through all entries
+				uint8_t* ptr = startptr + i * m_entrySize;	//point to the entry address
+				T* tptr = new(ptr) T();						//call empty constructor on it
 			}
 		}
 
+		/**
+		*
+		*	\brief Constructs a set of entries by copying data from source entries of same type
+		*
+		*	\param[in] 
+		*	\param[in]
+		*	\param[in]
+		*	\param[in]
+		*	\param[in]
+		*
+		*/
 		void construct(uint8_t* start_dst, VeIndex entry_size_dst, uint8_t *start_src, VeIndex entry_size_src, VeIndex size_src) {
 			for (uint32_t i = 0; i < size_src; ++i) {
 				uint8_t* ptrd = start_dst + i * entry_size_dst;
@@ -37,14 +66,33 @@ namespace vve {
 			}
 		}
 
+		/**
+		*
+		*	\brief
+		*
+		*	\param[in]
+		*	\param[in]
+		*	\param[in]
+		*	\param[in]
+		*	\param[in]
+		*
+		*/
 		void copy(uint8_t* start_dst, VeIndex entry_size_dst, uint8_t* start_src, VeIndex entry_size_src, VeIndex size_src) {
 			for (uint32_t i = 0; i < size_src; ++i) {
 				uint8_t* ptrd = start_dst + i * entry_size_dst;
 				uint8_t* ptrs = start_src + i * entry_size_src;
 				*(T*)ptrd = *(T*)ptrs;
 			}
+			m_size = size_src;
 		}
 
+		/**
+		*
+		*	\brief 
+		*
+		*
+		*
+		*/
 		void destruct() {
 			if (m_memptr == nullptr || m_startptr == nullptr ) return;
 			for (uint32_t i = 0; i < m_capacity; ++i) {
@@ -56,6 +104,17 @@ namespace vve {
 			m_startptr = nullptr;
 		}
 
+		/**
+		*
+		*	\brief
+		*
+		*	\param[in]
+		*	\param[in]
+		*	\param[in]
+		*	\param[in]
+		*	\param[in]
+		*
+		*/
 		void setNewCapacity( VeIndex newcapacity, uint8_t *start_src, VeIndex entry_size_src, VeIndex size_src ) {
 			newcapacity = std::max( newcapacity, size_src);
 			uint8_t* newmemptr = new uint8_t[newcapacity * m_entrySize + m_alignment];
@@ -68,8 +127,16 @@ namespace vve {
 			m_memptr = newmemptr;
 			m_startptr = newstartptr;
 			m_capacity = newcapacity;
+			m_size = size_src;
 		}
 
+		/**
+		*
+		*	\brief
+		*
+		*
+		*
+		*/
 		void doubleCapacity() {
 			setNewCapacity(2 * m_capacity, m_startptr, m_entrySize, m_size );
 		}
@@ -78,6 +145,13 @@ namespace vve {
 
 		typedef VeIndex size_type;
 
+		/**
+		*
+		*	\brief
+		*
+		*
+		*
+		*/
 		class iterator {
 		public:
 			typedef iterator self_type;
@@ -86,17 +160,25 @@ namespace vve {
 			typedef T* pointer;
 			typedef std::forward_iterator_tag iterator_category;
 			typedef int difference_type;
-			iterator(uint8_t* ptr) : ptr_((T*)ptr) { }
-			self_type operator++() { self_type i = *this; ptr_++; return i; }
-			self_type operator++(int junk) { ptr_++; return *this; }
+			iterator(uint8_t* ptr, VeIndex entrySize) : ptr_((T*)ptr), m_entrySize(entrySize) { }
+			self_type operator++() { self_type i = *this; ptr_ = (T*) ((uint8_t*)ptr_ + m_entrySize); return i; }
+			self_type operator++(int junk) { ptr_ = (T*)((uint8_t*)ptr_ + m_entrySize); return *this; }
 			reference operator*() { return *ptr_; }
 			pointer operator->() { return ptr_; }
 			bool operator==(const self_type& rhs) { return ptr_ == rhs.ptr_; }
 			bool operator!=(const self_type& rhs) { return ptr_ != rhs.ptr_; }
 		private:
 			pointer ptr_;
+			VeIndex m_entrySize;
 		};
 
+		/**
+		*
+		*	\brief
+		*
+		*
+		*
+		*/
 		class const_iterator {
 		public:
 			typedef const_iterator self_type;
@@ -105,31 +187,32 @@ namespace vve {
 			typedef T* pointer;
 			typedef int difference_type;
 			typedef std::forward_iterator_tag iterator_category;
-			const_iterator(uint8_t *ptr) : ptr_((T*)ptr) { }
-			self_type operator++() { self_type i = *this; ptr_++; return i; }
-			self_type operator++(int junk) { ptr_++; return *this; }
+			const_iterator(uint8_t *ptr, VeIndex entrySize) : ptr_((T*)ptr), m_entrySize(entrySize) { }
+			self_type operator++() { self_type i = *this; ptr_ = (T*)((uint8_t*)ptr_ + m_entrySize); return i; }
+			self_type operator++(int junk) { ptr_ = (T*)((uint8_t*)ptr_ + m_entrySize); return *this; }
 			const reference operator*() { return *ptr_; }
 			const pointer operator->() { return ptr_; }
 			bool operator==(const self_type& rhs) { return ptr_ == rhs.ptr_; }
 			bool operator!=(const self_type& rhs) { return ptr_ != rhs.ptr_; }
 		private:
 			pointer ptr_;
+			VeIndex m_entrySize;
 		};
 
-		VeVector(VeIndex align = 16, VeIndex capacity = 16 );
-		VeVector(const VeVector& vec);
-		VeVector(const VeVector&& vec);
-		~VeVector() { destruct(); };
+		VeVector(VeIndex align = 16, VeIndex capacity = 16 );	///<Main vector constructor creates an empty vector
+		VeVector(const VeVector& vec);							///<Copy constructor
+		VeVector(const VeVector&& vec);							///<Copy constructor
+		~VeVector() { destruct(); };							///<Destructor destructs all structs, then deletes the memory
 
-		void operator=( const VeVector & vec );
+		void operator=( const VeVector & vec );					///<assignment operator
 
-		size_type size() { return m_size; };
+		size_type size() { return m_size; };					///<returns number of entries in the vector
 		T& operator[](size_type index );
 		const T& operator[](size_type index) const;
-		iterator begin() { return iterator(m_startptr); }
-		iterator end() { return iterator( m_startptr + m_size * m_entrySize ); }
-		const_iterator begin() const { return const_iterator(m_startptr); }
-		const_iterator end() const { return const_iterator(m_startptr + m_size * m_entrySize);  }
+		iterator begin() { return iterator(m_startptr, m_entrySize ); }
+		iterator end() { return iterator( m_startptr + m_size * m_entrySize, m_entrySize); }
+		const_iterator begin() const { return const_iterator(m_startptr, m_entrySize); }
+		const_iterator end() const { return const_iterator(m_startptr + m_size * m_entrySize, m_entrySize);  }
 
 		void emplace_back(T &entry);
 		void emplace_back(T &&entry);

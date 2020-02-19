@@ -65,9 +65,6 @@ namespace vve::syseng {
 	void initEngine() {
 		std::cout << "init engine 2\n";
 
-		tab::testTables();
-		testVector();
-
 		createTables();
 		syswin::initWindow();
 		sysvul::initVulkan();

@@ -12,12 +12,14 @@ int main()
 {
     std::cout << "Hello World!\n";
 
-    stltest::runSTLTests();
+    //tab::testTables();
+    vec::testVector();
     return 0;
 
     syseng::initEngine();
     syseng::computeOneFrame();
     syseng::closeEngine();
  
+    return 0;
 }
 
