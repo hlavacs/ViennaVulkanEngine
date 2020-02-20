@@ -103,20 +103,25 @@ namespace vve::tab {
 
 	struct testVarTables1 {
 		VeHandle h1, h2, h3;
-		VeHandle a[10];
+		VeHandle a[100];
 	};
 
 	struct testVarTables2 {
-		VeHandle h1, h2, h3;
-		VeHandle a[10];
+		VeHandle h1, h2;
+		VeHandle a[10000];
 	};
 
 	void testVarTables() {
+		testVarTables1 t1;
+		testVarTables2 t2;
+
+		VeHandle h1 = testVarTable.insertBlob((uint8_t*)&t1, sizeof(t1));
+		VeHandle h2 = testVarTable.insertBlob((uint8_t*)&t2, sizeof(t2));
 
 	}
 
 	void testTables() {
-		testFixedTables();
+		//testFixedTables();
 		testVarTables();
 	}
 

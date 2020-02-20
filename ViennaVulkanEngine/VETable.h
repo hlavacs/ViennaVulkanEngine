@@ -309,13 +309,16 @@ namespace vve::tab {
 
 	public:
 
-		VeFixedSizeTable(VeIndex thread_id = VE_NULL_INDEX) : VeTable( thread_id) {};
+		VeFixedSizeTable(VeIndex thread_id = VE_NULL_INDEX, bool memcopy = false, VeIndex align = 16, VeIndex capacity = 16) : 
+			VeTable( thread_id), m_data(memcopy, align, capacity) {};
 
-		VeFixedSizeTable( std::vector<VeMap*> &&maps, VeIndex thread_id = VE_NULL_INDEX) : VeTable( thread_id ) {
+		VeFixedSizeTable( std::vector<VeMap*> &&maps, VeIndex thread_id = VE_NULL_INDEX, bool memcopy = false,
+			VeIndex align = 16, VeIndex capacity = 16) : VeTable( thread_id ), m_data(memcopy, align, capacity) {
 			m_maps = std::move(maps);	
 		};
 
-		VeFixedSizeTable(std::vector<VeMap*>& maps, VeIndex thread_id = VE_NULL_INDEX) : VeTable(thread_id) {
+		VeFixedSizeTable(std::vector<VeMap*>& maps, VeIndex thread_id = VE_NULL_INDEX, bool memcopy = false,
+			VeIndex align = 16, VeIndex capacity = 16) : VeTable(thread_id), m_data(memcopy, align, capacity) {
 			m_maps = maps;
 		};
 
@@ -574,15 +577,11 @@ namespace vve::tab {
 							(VeIndex)offsetof(struct VeDirectoryEntry, m_occupied), (VeIndex)sizeof(VeDirectoryEntry::m_occupied)),
 				(tab::VeMap*) new tab::VeTypedMap< std::map<VeTableKeyInt, VeIndex>, VeTableKeyInt, VeTableIndex >(
 							(VeIndex)offsetof(struct VeDirectoryEntry, m_start), (VeIndex)sizeof(VeDirectoryEntry::m_start))
-				//(tab::VeMap*) new tab::VeTypedMap< std::map<VeTableKeyIntPair, VeTableIndex>, VeTableKeyIntPair, VeTableIndexPair > (
-				//			VeTableIndexPair((VeIndex)offsetof(struct VeDirectoryEntry, m_occupied), 
-				//							 (VeIndex)offsetof(struct VeDirectoryEntry, m_start)),
-				//			VeTableIndexPair((VeIndex)sizeof(VeDirectoryEntry::m_occupied), (VeIndex)sizeof(VeDirectoryEntry::m_start)) )
 			};
-			m_pdirectory = new VeFixedSizeTable<VeDirectoryEntry>( maps );
+			m_pdirectory = new VeFixedSizeTable<VeDirectoryEntry>( maps, true );
 
 			m_data.resize(size + align);
-			uint64_t start = (VeIndex)alignBoundary(size, align);
+			uint64_t start = (VeIndex) ( alignBoundary((uint64_t)m_data.data(), align) - (uint64_t)m_data.data() );
 			VeDirectoryEntry entry{ (VeIndex)start, size, 0 };
 			m_pdirectory->addEntry(entry);
 		}

@@ -44,7 +44,7 @@ namespace vve {
 				" name " << entry.m_name << std::endl;
 		}
 
-		void testVector() {
+		void testVector1() {
 			VeVector<TestEntry> vec;
 
 			vec.push_back({ 1, 2, 3, "4" });
@@ -86,6 +86,54 @@ namespace vve {
 
 
 		}
+
+		struct TestEntry2 {
+			VeHandle	m_int64;
+			VeIndex		m_int1;
+			VeIndex		m_int2;
+			TestEntry2() : m_int64(VE_NULL_HANDLE), m_int1(VE_NULL_INDEX), m_int2(VE_NULL_INDEX) {};
+			TestEntry2(VeHandle handle, VeIndex int1, VeIndex int2) : m_int64(handle), m_int1(int1), m_int2(int2) {};
+
+			TestEntry2& operator=(const TestEntry& entry) {
+				m_int64 = entry.m_int64;
+				m_int1 = entry.m_int1;
+				m_int2 = entry.m_int2;
+				return *this;
+			};
+
+		};
+
+
+		void printEntry2(TestEntry2& entry) {
+			std::cout << " int64 " << entry.m_int64 << " int1 " << entry.m_int1 << " int2 " << entry.m_int2 << std::endl;
+		}
+
+		void testVector2() {
+			VeVector<TestEntry2> vec( true );
+
+			vec.push_back({ 1, 2, 3 });
+			vec.push_back({ 2, 2, 1 });
+			vec.push_back({ 4, 2, 3 });
+			vec.push_back({ 1, 3, 3 });
+			vec.push_back({ 1, 2, 2 });
+			for (auto entry : vec) { printEntry2(entry); } std::cout << std::endl;
+
+			VeVector<TestEntry2> vec2(vec);
+			vec2.push_back({ 6, 3, 3 });
+			vec2.push_back({ 7, 2, 2 });
+			for (auto entry : vec2) { printEntry2(entry); } std::cout << std::endl;
+
+			VeVector<TestEntry2> vec3;
+			vec3 = vec2;
+			for (auto entry : vec3) { printEntry2(entry); } std::cout << std::endl;
+
+		}
+
+		void testVector() {
+			testVector2();
+
+		}
+
 	}
 
 
