@@ -108,7 +108,7 @@ namespace vve::tab {
 
 	struct testVarTables2 {
 		VeHandle h1, h2;
-		VeHandle a[10000];
+		VeHandle a[1000];
 	};
 
 	void testVarTables() {

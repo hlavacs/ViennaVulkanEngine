@@ -52,11 +52,11 @@ namespace vve {
 		*
 		*	\brief Constructs a set of entries by copying data from source entries of same type
 		*
-		*	\param[in] 
-		*	\param[in]
-		*	\param[in]
-		*	\param[in]
-		*	\param[in]
+		*	\param[in] start_dst Start address for destination.
+		*	\param[in] entry_size_dst Size of destination entry
+		*	\param[in] start_src Start address of source.
+		*	\param[in] entry_size_src Size of source entry.
+		*	\param[in] size_src Number of entries in the source vector
 		*
 		*/
 		void construct(uint8_t* start_dst, VeIndex entry_size_dst, uint8_t *start_src, VeIndex entry_size_src, VeIndex size_src) {
@@ -71,11 +71,11 @@ namespace vve {
 		*
 		*	\brief
 		*
-		*	\param[in]
-		*	\param[in]
-		*	\param[in]
-		*	\param[in]
-		*	\param[in]
+		*	\param[in] start_dst
+		*	\param[in] entry_size_dst
+		*	\param[in] start_src
+		*	\param[in] entry_size_src
+		*	\param[in] size_src
 		*
 		*/
 		void copy(uint8_t* start_dst, VeIndex entry_size_dst, uint8_t* start_src, VeIndex entry_size_src, VeIndex size_src) {
@@ -90,7 +90,6 @@ namespace vve {
 		/**
 		*
 		*	\brief 
-		*
 		*
 		*
 		*/
@@ -109,11 +108,10 @@ namespace vve {
 		*
 		*	\brief
 		*
-		*	\param[in]
-		*	\param[in]
-		*	\param[in]
-		*	\param[in]
-		*	\param[in]
+		*	\param[in] newcapacity
+		*	\param[in] start_src
+		*	\param[in] entry_size_src
+		*	\param[in] size_src
 		*
 		*/
 		void setNewCapacity( VeIndex newcapacity, uint8_t *start_src, VeIndex entry_size_src, VeIndex size_src ) {
@@ -141,7 +139,6 @@ namespace vve {
 		*	\brief
 		*
 		*
-		*
 		*/
 		void doubleCapacity() {
 			setNewCapacity(2 * m_capacity, m_startptr, m_entrySize, m_size );
@@ -154,8 +151,6 @@ namespace vve {
 		/**
 		*
 		*	\brief
-		*
-		*
 		*
 		*/
 		class iterator {
@@ -181,8 +176,6 @@ namespace vve {
 		/**
 		*
 		*	\brief
-		*
-		*
 		*
 		*/
 		class const_iterator {
@@ -229,6 +222,15 @@ namespace vve {
 		bool empty() { return m_size == 0; };	///<test whether vector is empty
 	};
 
+	/**
+	*
+	*	\brief
+	*
+	*	\param[in]
+	*	\param[in]
+	*	\param[in]
+	*
+	*/
 	template<typename T> inline VeVector<T>::VeVector(bool memcopy, VeIndex align, VeIndex capacity ) {
 		m_capacity	= std::max(capacity, (VeIndex)16); 
 		m_alignment = std::max(align, (VeIndex)16);
@@ -239,6 +241,13 @@ namespace vve {
 		if( !m_memcpy ) construct();
 	}
 
+	/**
+	*
+	*	\brief
+	*
+	*	\param[in]
+	*
+	*/
 	template<typename T> inline VeVector<T>::VeVector(const VeVector& vec) {
 		m_capacity	= vec.m_capacity;
 		m_size		= vec.m_size;
@@ -256,10 +265,24 @@ namespace vve {
 		}
 	}
 
+	/**
+	*
+	*	\brief
+	*
+	*	\param[in]
+	*
+	*/
 	template<typename T> inline VeVector<T>::VeVector( const VeVector&& vec) {
 		VeVector(vec);
 	}
 
+	/**
+	*
+	*	\brief
+	*
+	*	\param[in]
+	*
+	*/
 	template<typename T> inline void VeVector<T>::operator=(const VeVector& vec) {
 		if (m_capacity >= vec.m_size) {
 			if (m_memcpy && m_entrySize == vec.m_entrySize) memcpy(m_startptr, vec.m_startptr, vec.m_size * vec.m_entrySize);
@@ -269,6 +292,13 @@ namespace vve {
 		setNewCapacity(vec.m_capacity, vec.m_startptr, vec.m_entrySize, vec.m_size);		
 	}
 
+	/**
+	*
+	*	\brief
+	*
+	*	\param[in]
+	*
+	*/
 	template<typename T> inline void VeVector<T>::emplace_back(T &entry) {
 		if (m_size == m_capacity) doubleCapacity();
 		uint8_t* ptr = m_startptr + m_size * m_entrySize;
@@ -276,6 +306,13 @@ namespace vve {
 		++m_size;
 	}
 
+	/**
+	*
+	*	\brief
+	*
+	*	\param[in]
+	*
+	*/
 	template<typename T> inline void VeVector<T>::emplace_back(T&& entry) {
 		if (m_size == m_capacity) doubleCapacity();
 		uint8_t* ptr = m_startptr + m_size * m_entrySize;
@@ -283,19 +320,47 @@ namespace vve {
 		++m_size;
 	}
 
+	/**
+	*
+	*	\brief
+	*
+	*	\param[in]
+	*
+	*/
 	template<typename T> inline void VeVector<T>::push_back(T& entry) {
 		emplace_back(entry);
 	}
 
+	/**
+	*
+	*	\brief
+	*
+	*	\param[in]
+	*
+	*/
 	template<typename T> inline void VeVector<T>::push_back(T&& entry) {
 		emplace_back(std::forward<T>(entry));
 	}
 
+	/**
+	*
+	*	\brief
+	*
+	*	\param[in]
+	*
+	*/
 	template<typename T> inline void VeVector<T>::pop_back() {
 		assert(m_size > 0);
 		if (m_size > 0) --m_size;
 	}
 
+	/**
+	*
+	*	\brief
+	*
+	*	\param[in]
+	*
+	*/
 	template<typename T> inline T& VeVector<T>::operator[](size_type index) {
 		assert(index < m_size);
 		uint8_t* ptr;
@@ -305,6 +370,13 @@ namespace vve {
 		return *(T*)ptr;
 	}
 
+	/**
+	*
+	*	\brief
+	*
+	*	\param[in]
+	*
+	*/
 	template<typename T> inline const T &  VeVector<T>::operator[](size_type index) const {
 		assert(index < m_size);
 		uint8_t* ptr;
@@ -314,6 +386,14 @@ namespace vve {
 		return *(T*)ptr;
 	}
 
+	/**
+	*
+	*	\brief
+	*
+	*	\param[in]
+	*	\param[in]
+	*
+	*/
 	template<typename T> inline void VeVector<T>::swap(VeIndex a, VeIndex b) {
 		uint8_t* ptra = m_startptr + a * m_entrySize;
 		uint8_t* ptrb = m_startptr + b * m_entrySize;
