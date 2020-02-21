@@ -84,6 +84,10 @@ namespace vve {
 			vec = vec3;
 			for (auto entry : vec) { printEntry(entry); } std::cout << std::endl;
 
+			vec.clear();
+			for (auto entry : vec) { printEntry(entry); } std::cout << std::endl;
+
+
 
 		}
 

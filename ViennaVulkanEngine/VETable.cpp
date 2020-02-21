@@ -50,7 +50,7 @@ namespace vve {
 				" name " << entry.m_name << std::endl;
 		}
 
-		void testFixedTables() {
+		void testFixedTables1() {
 
 			VeHandle handle;
 			handle = testTable.addEntry({ 1, 2, 3, "4" });
@@ -97,9 +97,9 @@ namespace vve {
 			testTable.sortTableByMap(0);
 			testTable.forAllEntries(std::bind(printEntry, std::placeholders::_1)); std::cout << std::endl;
 
-
-
-
+			testTable.clear();
+			testTable.sortTableByMap(0);
+			testTable.forAllEntries(std::bind(printEntry, std::placeholders::_1)); std::cout << std::endl;
 		}
 
 
@@ -126,7 +126,7 @@ namespace vve {
 		}
 
 		void testTables() {
-			testFixedTables();
+			testFixedTables1();
 			testVarTables();
 		}
 	}
