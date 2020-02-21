@@ -12,7 +12,7 @@ int main()
 {
     std::cout << "Hello World!\n";
 
-    //vec::testVector();
+    vec::testVector();
     tab::testTables();
     return 0;
 

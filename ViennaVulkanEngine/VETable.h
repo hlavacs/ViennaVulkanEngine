@@ -2,7 +2,7 @@
 
 
 
-namespace vve::tab {
+namespace vve {
 
 	//------------------------------------------------------------------------------------------------------
 
@@ -13,9 +13,6 @@ namespace vve::tab {
 	using VeTableIndex = VeIndex;
 	using VeTableIndexPair = std::pair<VeTableIndex, VeTableIndex>;
 	using VeTableIndexTriple = std::tuple<VeTableIndex, VeTableIndex, VeTableIndex>;
-
-
-	void testTables();
 
 
 	/**
@@ -33,6 +30,7 @@ namespace vve::tab {
 	public:
 		VeMap() {};
 		virtual ~VeMap() {};
+		virtual void		operator=(const VeMap& map) { assert(false); return; };
 		virtual bool		getMappedIndex(		VeTableKeyInt& key, VeIndex& index) { assert(false); return false; };
 		virtual uint32_t	getMappedIndices(	VeTableKeyInt& key, std::vector<VeIndex>& result) { assert(false); return 0; };
 		virtual bool		getMappedIndex(		VeTableKeyIntPair& key, VeIndex& index) { assert(false); return false; };
@@ -44,6 +42,7 @@ namespace vve::tab {
 		virtual uint32_t	getAllIndices(		std::vector<VeIndex>& result) { assert(false); return 0; };
 		virtual void		insertIntoMap(		void *entry, VeIndex &dir_index ) { assert(false); };
 		virtual uint32_t	deleteFromMap(		void* entry, VeIndex& dir_index) { assert(false); return 0; };
+
 
 		/**
 		*
@@ -103,11 +102,17 @@ namespace vve::tab {
 
 	public:
 		VeTypedMap(	I offset, I num_bytes ) : VeMap(), m_offset(offset), m_num_bytes(num_bytes) {};
-		virtual ~VeTypedMap() {};
+		virtual	~VeTypedMap() {};
+		virtual void operator=(const VeTypedMap& map) {
+			m_offset	= map.m_offset;
+			m_num_bytes = map.m_num_bytes;
+			m_map		= map.m_map;
+		};
 
 		virtual bool getMappedIndex( K & key, VeIndex &index ) override {
 			auto search = m_map.find(key);
-			if (search == m_map.end()) return false;
+			if (search == m_map.end()) 
+				return false;
 			index = search->second;
 			return true;
 		}
@@ -115,12 +120,14 @@ namespace vve::tab {
 		virtual uint32_t getMappedIndices(K& key, std::vector<VeIndex>& result) override {
 			uint32_t num = 0;
 			auto range = m_map.equal_range(key);
-			for (auto it = range.first; it != range.second; ++it, ++num) result.emplace_back(it->second);
+			for (auto it = range.first; it != range.second; ++it, ++num) 
+				result.emplace_back(it->second);
 			return num;
 		};
 
 		virtual uint32_t getAllIndices( std::vector<VeIndex>& result) override {
-			for (auto entry : m_map) result.emplace_back(entry.second); 
+			for (auto entry : m_map) 
+				result.emplace_back(entry.second); 
 			return (uint32_t)m_map.size();
 		}
 
@@ -167,7 +174,8 @@ namespace vve::tab {
 
 		virtual bool getMappedIndex(K& key, VeIndex& index) override {
 			auto search = m_map.find(key);
-			if (search == m_map.end()) return false;
+			if (search == m_map.end()) 
+				return false;
 			index = search->second;
 			return true;
 		}
@@ -175,12 +183,14 @@ namespace vve::tab {
 		virtual uint32_t getMappedIndices(K& key, std::vector<VeIndex>& result) override {
 			uint32_t num = 0;
 			auto range = m_map.equal_range(key);
-			for (auto it = range.first; it != range.second; ++it, ++num) result.emplace_back(it->second);
+			for (auto it = range.first; it != range.second; ++it, ++num) 
+				result.emplace_back(it->second);
 			return num;
 		};
 
 		virtual uint32_t getAllIndices(std::vector<VeIndex>& result) override {
-			for (auto entry : m_map) result.emplace_back(entry.second);
+			for (auto entry : m_map) 
+				result.emplace_back(entry.second);
 			return (uint32_t)m_map.size();
 		}
 
@@ -219,18 +229,21 @@ namespace vve::tab {
 			VeIndex	m_table_index	= VE_NULL_INDEX;	///index into the entry table
 			VeIndex	m_next_free		= VE_NULL_INDEX;	///index of next free entry in directory
 
-			VeDirectoryEntry( VeIndex auto_id, VeIndex table_index, VeIndex next_free) : 
-				m_auto_id(auto_id), m_table_index(table_index), m_next_free(next_free) {}
+			VeDirectoryEntry() : m_auto_id(VE_NULL_INDEX), m_table_index(VE_NULL_INDEX), m_next_free(VE_NULL_INDEX) {}
+			VeDirectoryEntry(VeIndex auto_id, VeIndex table_index, VeIndex next_free) :
+				m_auto_id(auto_id), m_table_index(table_index), m_next_free(next_free) {};
+			VeDirectoryEntry(const VeDirectoryEntry & entry) : 
+				m_auto_id(entry.m_auto_id), m_table_index(entry.m_table_index), m_next_free(entry.m_next_free) {};
 		};
 
-		VeIndex							m_auto_counter = 0;				///
-		std::vector<VeDirectoryEntry>	m_dir_entries;					///1 level of indirection, idx into the entry table
-		VeIndex							m_first_free = VE_NULL_INDEX;	///index of first free entry in directory
+		VeIndex						m_auto_counter = 0;				///
+		VeVector<VeDirectoryEntry>	m_dir_entries;					///1 level of indirection, idx into the entry table
+		VeIndex						m_first_free = VE_NULL_INDEX;	///index of first free entry in directory
 
 		VeHandle addNewEntry(VeIndex table_index ) {
 			VeIndex auto_id = m_auto_counter; ++m_auto_counter;
 			VeIndex dir_index = (VeIndex)m_dir_entries.size();
-			m_dir_entries.emplace_back( auto_id, table_index, VE_NULL_INDEX);
+			m_dir_entries.emplace_back({ auto_id, table_index, VE_NULL_INDEX } );
 			return getHandle(dir_index);
 		}
 
@@ -244,8 +257,14 @@ namespace vve::tab {
 		}
 
 	public:
-		VeDirectory() {};
+		VeDirectory() : m_dir_entries(true, 0) {};
 		~VeDirectory() {};
+
+		void operator=( const VeDirectory& dir ) {
+			m_auto_counter	= dir.m_auto_counter;
+			m_dir_entries	= dir.m_dir_entries;
+			m_first_free	= dir.m_first_free;
+		}
 
 		VeHandle addEntry( VeIndex table_index ) {
 			if (m_first_free == VE_NULL_INDEX) return addNewEntry(table_index);
@@ -276,7 +295,9 @@ namespace vve::tab {
 
 	public:
 		VeTable( VeIndex thread_id = 0 ) : m_thread_id(thread_id) {};
+		VeTable(const VeTable& table) { m_thread_id = table.m_thread_id; m_read_only = table.m_read_only; };
 		virtual ~VeTable() {};
+		virtual void operator=(const VeTable& tab) {};
 		void	setThreadId(VeIndex id) { m_thread_id = id; };
 		VeIndex	getThreadId() { return m_thread_id; };
 		void	setReadOnly(bool ro) { m_read_only = ro; };
@@ -292,7 +313,7 @@ namespace vve::tab {
 		std::vector<VeMap*>		m_maps;				///vector of maps for quickly finding or sorting entries
 		VeDirectory				m_directory;		///
 		VeVector<T>				m_data;				///growable entry data table
-		std::vector<VeIndex>	m_tbl2dir;
+		VeVector<VeIndex>		m_tbl2dir;
 
 		void swapEntriesByHandle( VeHandle h1, VeHandle h2 ) {
 			if ( h1 == h2 || h1 == VE_NULL_HANDLE || h2 == VE_NULL_HANDLE ) return;
@@ -310,19 +331,24 @@ namespace vve::tab {
 	public:
 
 		VeFixedSizeTable(VeIndex thread_id = VE_NULL_INDEX, bool memcopy = false, VeIndex align = 16, VeIndex capacity = 16) : 
-			VeTable( thread_id), m_data(memcopy, align, capacity) {};
+			VeTable( thread_id), m_data(memcopy, align, capacity), m_tbl2dir(true) {};
 
 		VeFixedSizeTable( std::vector<VeMap*> &&maps, VeIndex thread_id = VE_NULL_INDEX, bool memcopy = false,
-			VeIndex align = 16, VeIndex capacity = 16) : VeTable( thread_id ), m_data(memcopy, align, capacity) {
+			VeIndex align = 16, VeIndex capacity = 16) : VeTable( thread_id ), m_data(memcopy, align, capacity), m_tbl2dir(true) {
 			m_maps = std::move(maps);	
 		};
 
 		VeFixedSizeTable(std::vector<VeMap*>& maps, VeIndex thread_id = VE_NULL_INDEX, bool memcopy = false,
-			VeIndex align = 16, VeIndex capacity = 16) : VeTable(thread_id), m_data(memcopy, align, capacity) {
+			VeIndex align = 16, VeIndex capacity = 16) : VeTable(thread_id), m_data(memcopy, align, capacity), m_tbl2dir(true)  {
 			m_maps = maps;
 		};
 
+		VeFixedSizeTable(const VeFixedSizeTable& table) :
+			VeTable(table), m_maps(table.m_maps), m_data(table.m_data), m_directory(table.m_directory), m_tbl2dir(table.m_tbl2dir) {};
+
 		~VeFixedSizeTable() { for (uint32_t i = 0; i < m_maps.size(); ++i ) delete m_maps[i]; };
+
+		void operator=( const VeFixedSizeTable& table);
 
 		void		addMap(VeMap* pmap) { m_maps.emplace_back(pmap); };
 		VeIndex		getSize() { return (VeIndex)m_data.size(); };
@@ -351,19 +377,28 @@ namespace vve::tab {
 
 	//--------------------------------------------------------------------------------------------------------------------------
 
+	template<typename T> inline void VeFixedSizeTable<T>::operator=(const VeFixedSizeTable& table) {
+		m_directory = table.m_directory;
+		m_data		= table.m_data;
+		m_maps		= table.m_maps;
+		m_tbl2dir	= table.m_tbl2dir;
+	}
+
 	template<typename T> inline void VeFixedSizeTable<T>::sortTableByMap(VeIndex num_map) {
 		assert(!m_read_only);
 		assert(num_map < m_maps.size());
 		std::vector<VeHandle> handles; handles.reserve(m_maps.size());
 		getAllHandlesFromMap(num_map, handles);
-		for (uint32_t i = 0; i < m_data.size(); ++i) swapEntriesByHandle( getHandleFromIndex(i), handles[i]);
+		for (uint32_t i = 0; i < m_data.size(); ++i) 
+			swapEntriesByHandle( getHandleFromIndex(i), handles[i]);
 	}
 
 	template<typename T> inline void VeFixedSizeTable<T>::forAllEntries(VeIndex num_map, std::function<void(VeHandle)>& func) {
 		assert(num_map < m_maps.size() || num_map == VE_NULL_INDEX );
 		if (m_data.empty()) return;
 
-		std::vector<VeHandle> handles; handles.reserve( m_data.size() + 1 );
+		std::vector<VeHandle> handles; 
+		handles.reserve( m_data.size() + 1 );
 		getAllHandlesFromMap(num_map, handles);
 		for (auto handle : handles) func(handle);
 	}
@@ -376,7 +411,8 @@ namespace vve::tab {
 		VeHandle handle		= m_directory.addEntry( table_index );
 		VeIndex dir_index	= handle & VE_NULL_INDEX;
 		m_tbl2dir.emplace_back(dir_index);
-		for (auto map : m_maps) map->insertIntoMap( (void*)&entry, dir_index );
+		for (auto map : m_maps) 
+			map->insertIntoMap( (void*)&entry, dir_index );
 		return handle;
 	};
 
@@ -388,7 +424,8 @@ namespace vve::tab {
 		VeHandle handle = m_directory.addEntry(table_index);
 		VeIndex dir_index = handle & VE_NULL_INDEX;
 		m_tbl2dir.emplace_back(dir_index);
-		for (auto map : m_maps) map->insertIntoMap((void*)&entry, dir_index);
+		for (auto map : m_maps) 
+			map->insertIntoMap((void*)&entry, dir_index);
 		return handle;
 	}
 
@@ -398,7 +435,8 @@ namespace vve::tab {
 
 		auto [auto_id, dir_index]	= m_directory.splitHandle( key );
 		auto dir_entry				= m_directory.getEntry(dir_index);
-		if ( auto_id != dir_entry.m_auto_id ) return false;
+		if ( auto_id != dir_entry.m_auto_id ) 
+			return false;
 
 		entry = m_data[dir_entry.m_table_index];
 		return true;
@@ -412,9 +450,11 @@ namespace vve::tab {
 		auto dir_entry				= m_directory.getEntry(dir_index);
 		if (auto_id != dir_entry.m_auto_id) return false;
 
-		for (auto map : m_maps) map->deleteFromMap((void*)&m_data[dir_entry.m_table_index], dir_index);
+		for (auto map : m_maps) 
+			map->deleteFromMap((void*)&m_data[dir_entry.m_table_index], dir_index);
 		m_data[dir_entry.m_table_index] = entry;
-		for (auto map : m_maps) map->insertIntoMap((void*)&entry, dir_index);
+		for (auto map : m_maps) 
+			map->insertIntoMap((void*)&entry, dir_index);
 
 		return true;
 	};
@@ -426,12 +466,14 @@ namespace vve::tab {
 		assert(!m_read_only);
 		auto [auto_id, dir_index]	= m_directory.splitHandle(key);
 		auto dir_entry				= m_directory.getEntry(dir_index);
-		if (auto_id != dir_entry.m_auto_id) return false;
+		if (auto_id != dir_entry.m_auto_id) 
+			return false;
 
 		VeIndex table_index = dir_entry.m_table_index;
 		swapEntriesByHandle( key, getHandleFromIndex((VeIndex)m_data.size() - 1) );
 
-		for (auto map : m_maps) map->deleteFromMap((void*)&m_data[(VeIndex)m_data.size() - 1], dir_index);
+		for (auto map : m_maps) 
+			map->deleteFromMap((void*)&m_data[(VeIndex)m_data.size() - 1], dir_index);
 		m_directory.deleteEntry(dir_index);
 		m_data.pop_back();
 		m_tbl2dir.pop_back();
@@ -443,7 +485,8 @@ namespace vve::tab {
 		auto [auto_id, dir_index]	= m_directory.splitHandle(key);
 		auto dir_entry				= m_directory.getEntry(dir_index);
 
-		if (auto_id != dir_entry.m_auto_id) return VE_NULL_INDEX;
+		if (auto_id != dir_entry.m_auto_id) 
+			return VE_NULL_INDEX;
 		return dir_entry.m_table_index;
 	};
 
@@ -463,9 +506,11 @@ namespace vve::tab {
 		if (key == VE_NULL_HANDLE) return 0;
 		if (m_data.empty()) return 0;
 
-		std::vector<VeIndex> dir_indices; dir_indices.reserve(initVecLen());
+		std::vector<VeIndex> dir_indices; 
+		dir_indices.reserve(initVecLen());
 		uint32_t num = m_maps[num_map]->getMappedIndices(key, dir_indices);
-		for (auto dir_index : dir_indices) result.emplace_back( m_directory.getHandle(dir_index) );
+		for (auto dir_index : dir_indices) 
+			result.emplace_back( m_directory.getHandle(dir_index) );
 		return num;
 	};
 
@@ -476,9 +521,11 @@ namespace vve::tab {
 		if (key.first == VE_NULL_HANDLE || key.second == VE_NULL_HANDLE) return 0;
 		if (m_data.empty()) return 0;
 
-		std::vector<VeIndex> dir_indices; dir_indices.reserve(initVecLen());
+		std::vector<VeIndex> dir_indices; 
+		dir_indices.reserve(initVecLen());
 		uint32_t num = m_maps[num_map]->getMappedIndices(key, dir_indices);
-		for (auto dir_index : dir_indices) result.emplace_back(m_directory.getHandle(dir_index));
+		for (auto dir_index : dir_indices) 
+			result.emplace_back(m_directory.getHandle(dir_index));
 		return num;
 	};
 
@@ -489,9 +536,11 @@ namespace vve::tab {
 		if ( std::get<0>(key) == VE_NULL_HANDLE || std::get<1>(key) == VE_NULL_HANDLE || std::get<2>(key) == VE_NULL_HANDLE) return 0;
 		if (m_data.empty()) return 0;
 
-		std::vector<VeIndex> dir_indices; dir_indices.reserve(initVecLen());
+		std::vector<VeIndex> dir_indices; 
+		dir_indices.reserve(initVecLen());
 		uint32_t num = m_maps[num_map]->getMappedIndices(key, dir_indices);
-		for (auto dir_index : dir_indices) result.emplace_back(m_directory.getHandle(dir_index));
+		for (auto dir_index : dir_indices) 
+			result.emplace_back(m_directory.getHandle(dir_index));
 		return num;
 	};
 
@@ -502,9 +551,11 @@ namespace vve::tab {
 		if (key.empty() || key.size() == 0) return 0;
 		if (m_data.empty()) return 0;
 
-		std::vector<VeIndex> dir_indices; dir_indices.reserve(initVecLen());
+		std::vector<VeIndex> dir_indices; 
+		dir_indices.reserve(initVecLen());
 		uint32_t num = m_maps[num_map]->getMappedIndices(key, dir_indices);
-		for (auto dir_index : dir_indices) result.emplace_back(m_directory.getHandle(dir_index));
+		for (auto dir_index : dir_indices) 
+			result.emplace_back(m_directory.getHandle(dir_index));
 		return num;
 	};
 
@@ -516,13 +567,16 @@ namespace vve::tab {
 		if (m_data.empty()) return 0;
 
 		if (num_map == VE_NULL_INDEX) {
-			for (VeIndex i = 0; i < m_data.size(); ++i) result.emplace_back( getHandleFromIndex(i) );
+			for (VeIndex i = 0; i < m_data.size(); ++i) 
+				result.emplace_back( getHandleFromIndex(i) );
 			return (uint32_t)m_data.size();
 		}
 
-		std::vector<VeIndex> dir_indices; dir_indices.reserve(m_data.size() + 1);
+		std::vector<VeIndex> dir_indices; 
+		dir_indices.reserve(m_data.size() + 1);
 		uint32_t num = m_maps[num_map]->getAllIndices(dir_indices);
-		for (auto dir_index : dir_indices) result.emplace_back( m_directory.getHandle(dir_index) );
+		for (auto dir_index : dir_indices) 
+			result.emplace_back( m_directory.getHandle(dir_index) );
 		return num;
 	};
 
@@ -548,22 +602,27 @@ namespace vve::tab {
 
 
 		void defragment() {
-			std::vector<VeHandle> handles;  handles.reserve( m_pdirectory->getSize() + 1 );
+			std::vector<VeHandle> handles;  
+			handles.reserve( m_pdirectory->getSize() + 1 );
 			m_pdirectory->getAllHandlesFromMap(1, handles);
-			if (handles.size() < 2) return;
+			if (handles.size() < 2) 
+				return;
 
 			VeDirectoryEntry entry1;
-			if (!m_pdirectory->getEntry(handles[0], entry1)) return;
+			if (!m_pdirectory->getEntry(handles[0], entry1)) 
+				return;
 
 			for (uint32_t i = 1; i < handles.size(); ++i ) {
 				VeDirectoryEntry entry2;
-				if (!m_pdirectory->getEntry(handles[i], entry2)) return;
+				if (!m_pdirectory->getEntry(handles[i], entry2)) 
+					return;
 
 				if (entry1.m_occupied == 0 && entry2.m_occupied == 0) {
 					entry1.m_size += entry2.m_size;
 					m_pdirectory->deleteEntry(handles[i]);
 				}
-				else { entry1 = entry2; }
+				else 
+					entry1 = entry2;
 			}
 		}
 
@@ -572,10 +631,10 @@ namespace vve::tab {
 		VeVariableSizeTable(VeIndex size = 1<<20, VeIndex thread_id = VE_NULL_INDEX, VeIndex align = 16, bool immediateDefrag = false ) : 
 			VeTable( thread_id ), m_align(align), m_immediateDefrag(immediateDefrag) {
 
-			std::vector<tab::VeMap*> maps = {
-				(tab::VeMap*) new tab::VeTypedMultimap< std::multimap<VeTableKeyInt, VeTableIndex>, VeTableKeyInt, VeTableIndex >(
+			std::vector<VeMap*> maps = {
+				(VeMap*) new VeTypedMultimap< std::multimap<VeTableKeyInt, VeTableIndex>, VeTableKeyInt, VeTableIndex >(
 							(VeIndex)offsetof(struct VeDirectoryEntry, m_occupied), (VeIndex)sizeof(VeDirectoryEntry::m_occupied)),
-				(tab::VeMap*) new tab::VeTypedMap< std::map<VeTableKeyInt, VeIndex>, VeTableKeyInt, VeTableIndex >(
+				(VeMap*) new VeTypedMap< std::map<VeTableKeyInt, VeIndex>, VeTableKeyInt, VeTableIndex >(
 							(VeIndex)offsetof(struct VeDirectoryEntry, m_start), (VeIndex)sizeof(VeDirectoryEntry::m_start))
 			};
 			m_pdirectory = new VeFixedSizeTable<VeDirectoryEntry>( maps, true );
@@ -599,9 +658,15 @@ namespace vve::tab {
 
 			VeHandle h = VE_NULL_HANDLE;
 			VeDirectoryEntry entry;
-			for (auto handle : result) if (m_pdirectory->getEntry(handle, entry) && entry.m_size >= size) {	h = handle; break; } 
+			for (auto handle : result) {
+				if (m_pdirectory->getEntry(handle, entry) && entry.m_size >= size) {
+					h = handle;
+					break;
+				}
+			}
 			if (h == VE_NULL_HANDLE) {
-				if (!defrag) return VE_NULL_HANDLE;
+				if (!defrag) 
+					return VE_NULL_HANDLE;
 				defragment();
 				return insertBlob(ptr, size, false);
 			}
@@ -618,21 +683,28 @@ namespace vve::tab {
 
 		uint8_t* getPointer(VeHandle handle) {
 			VeDirectoryEntry entry;
-			if (!m_pdirectory->getEntry(handle, entry ) ) return nullptr;
+			if (!m_pdirectory->getEntry(handle, entry ) ) 
+				return nullptr;
 			return m_data.data() + entry.m_start;
 		}
 
 		bool deleteBlob(VeHandle handle ) {
 			VeDirectoryEntry entry;
-			if (!m_pdirectory->getEntry(handle, entry ) ) return false;
+			if (!m_pdirectory->getEntry(handle, entry ) ) 
+				return false;
 			entry.m_occupied = 0;
 			m_pdirectory->updateEntry(handle, entry);
-			if (m_immediateDefrag) defragment();
+			if (m_immediateDefrag) 
+				defragment();
 			return true;
 		}
 
 	};
 
+
+	namespace tab {
+		void testTables();
+	}
 
 }
 

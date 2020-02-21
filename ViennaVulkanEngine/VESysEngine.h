@@ -5,7 +5,7 @@
 namespace vve::syseng {
 
 	struct VeMainTableEntry {
-		tab::VeTable*	m_table_pointer;
+		VeTable*	m_table_pointer;
 		std::string		m_name;
 	};
 
@@ -18,8 +18,8 @@ namespace vve::syseng {
 #ifndef VE_PUBLIC_INTERFACE
 
 	///
-	void registerTablePointer(tab::VeTable* ptr, std::string name );
-	tab::VeTable* getTablePointer( std::string name );
+	void registerTablePointer(VeTable* ptr, std::string name );
+	VeTable* getTablePointer( std::string name );
 
 #endif
 

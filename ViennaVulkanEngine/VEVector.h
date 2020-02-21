@@ -2,9 +2,6 @@
 
 namespace vve {
 
-	namespace vec {
-		void testVector();
-	}
 
 	uint64_t alignBoundary(uint64_t size, VeIndex alignment);
 
@@ -285,8 +282,10 @@ namespace vve {
 	*/
 	template<typename T> inline void VeVector<T>::operator=(const VeVector& vec) {
 		if (m_capacity >= vec.m_size) {
-			if (m_memcpy && m_entrySize == vec.m_entrySize) memcpy(m_startptr, vec.m_startptr, vec.m_size * vec.m_entrySize);
-			else copy(m_startptr, m_entrySize, vec.m_startptr, vec.m_entrySize, vec.m_size);
+			if (m_memcpy && m_entrySize == vec.m_entrySize) 
+				memcpy(m_startptr, vec.m_startptr, vec.m_size * vec.m_entrySize);
+			else 
+				copy(m_startptr, m_entrySize, vec.m_startptr, vec.m_entrySize, vec.m_size);
 			return;
 		}
 		setNewCapacity(vec.m_capacity, vec.m_startptr, vec.m_entrySize, vec.m_size);		
@@ -402,6 +401,11 @@ namespace vve {
 		*(T*)ptrb = *(T*)ptra;
 		*(T*)ptra = buf;
 	}
+
+	namespace vec {
+		void testVector();
+	}
+
 
 }
 

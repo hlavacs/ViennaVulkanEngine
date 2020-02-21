@@ -18,23 +18,23 @@ namespace vve::syseng {
 	//-----------------------------------------------------------------------------------
 
 	bool g_goon = true;
-	tab::VeFixedSizeTable<VeMainTableEntry>*	g_main_table = nullptr;
-	tab::VeFixedSizeTable<VeSysTableEntry>*		g_systems_table = nullptr;
-	tab::VeVariableSizeTable*					g_meshes_table = nullptr;
+	VeFixedSizeTable<VeMainTableEntry>*	g_main_table = nullptr;
+	VeFixedSizeTable<VeSysTableEntry>*		g_systems_table = nullptr;
+	VeVariableSizeTable*					g_meshes_table = nullptr;
 
 	void createTables() {
-		std::vector<tab::VeMap*> maps = {
-			(tab::VeMap*) new tab::VeTypedMap< std::unordered_map<tab::VeTableKeyString, tab::VeTableIndex >, tab::VeTableKeyString, tab::VeTableIndex >(
+		std::vector<VeMap*> maps = {
+			(VeMap*) new VeTypedMap< std::unordered_map<VeTableKeyString, VeTableIndex >, VeTableKeyString, VeTableIndex >(
 				(VeIndex)offsetof(struct VeMainTableEntry, m_name ), 0)
 		};
-		g_main_table = new tab::VeFixedSizeTable<VeMainTableEntry>( std::move(maps), 0 );
+		g_main_table = new VeFixedSizeTable<VeMainTableEntry>( std::move(maps), 0 );
 		registerTablePointer(g_main_table, "Main Table");
 
 		maps = {
-			(tab::VeMap*) new tab::VeTypedMap< std::unordered_map<tab::VeTableKeyString, tab::VeTableIndex >, tab::VeTableKeyString, tab::VeTableIndex >(
+			(VeMap*) new VeTypedMap< std::unordered_map<VeTableKeyString, VeTableIndex >, VeTableKeyString, VeTableIndex >(
 				(VeIndex)offsetof(struct VeSysTableEntry, m_name), 0)
 		};
-		g_systems_table = new tab::VeFixedSizeTable<VeSysTableEntry>(std::move(maps), 0);
+		g_systems_table = new VeFixedSizeTable<VeSysTableEntry>(std::move(maps), 0);
 		registerTablePointer(g_systems_table, "Systems Table");
 
 		std::vector<VeHandle> handles;
@@ -43,16 +43,16 @@ namespace vve::syseng {
 		VeMainTableEntry entry;
 		bool found = g_main_table->getEntry(handles[0], entry);
 
-		g_meshes_table = new tab::VeVariableSizeTable(1 << 20);
+		g_meshes_table = new VeVariableSizeTable(1 << 20);
 
 	}
 
-	void registerTablePointer(tab::VeTable* tptr, std::string name) {
+	void registerTablePointer(VeTable* tptr, std::string name) {
 		VeMainTableEntry entry = { tptr, name };
 		g_main_table->addEntry(entry);
 	}
 
-	tab::VeTable* getTablePointer(std::string name) {
+	VeTable* getTablePointer(std::string name) {
 		auto data = g_main_table->getData();
 		for (uint32_t i = 0; i < data.size(); ++i) 
 			if (data[i].m_name == name) return data[i].m_table_pointer; 

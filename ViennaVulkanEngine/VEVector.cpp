@@ -123,7 +123,7 @@ namespace vve {
 			vec2.push_back({ 7, 2, 2 });
 			for (auto entry : vec2) { printEntry2(entry); } std::cout << std::endl;
 
-			VeVector<TestEntry2> vec3;
+			VeVector<TestEntry2> vec3(true);
 			vec3 = vec2;
 			for (auto entry : vec3) { printEntry2(entry); } std::cout << std::endl;
 
