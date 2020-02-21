@@ -31,6 +31,7 @@ namespace vve {
 		VeMap() {};
 		virtual ~VeMap() {};
 		virtual void		operator=(const VeMap& map) { assert(false); return; };
+		virtual void		clear() { assert(false); return; };
 		virtual bool		getMappedIndex(		VeTableKeyInt& key, VeIndex& index) { assert(false); return false; };
 		virtual uint32_t	getMappedIndices(	VeTableKeyInt& key, std::vector<VeIndex>& result) { assert(false); return 0; };
 		virtual bool		getMappedIndex(		VeTableKeyIntPair& key, VeIndex& index) { assert(false); return false; };
@@ -103,11 +104,16 @@ namespace vve {
 	public:
 		VeTypedMap(	I offset, I num_bytes ) : VeMap(), m_offset(offset), m_num_bytes(num_bytes) {};
 		virtual	~VeTypedMap() {};
+
 		virtual void operator=(const VeTypedMap& map) {
 			m_offset	= map.m_offset;
 			m_num_bytes = map.m_num_bytes;
 			m_map		= map.m_map;
 		};
+
+		virtual void clear() {
+			m_map.clear();
+		}
 
 		virtual bool getMappedIndex( K & key, VeIndex &index ) override {
 			auto search = m_map.find(key);
@@ -171,6 +177,16 @@ namespace vve {
 	public:
 		VeTypedMultimap(I offset, I num_bytes) : VeMap(), m_offset(offset), m_num_bytes(num_bytes) {};
 		virtual ~VeTypedMultimap() {};
+
+		virtual void operator=(const VeTypedMultimap& map) {
+			m_offset = map.m_offset;
+			m_num_bytes = map.m_num_bytes;
+			m_map = map.m_map;
+		};
+
+		virtual void clear() {
+			m_map.clear();
+		}
 
 		virtual bool getMappedIndex(K& key, VeIndex& index) override {
 			auto search = m_map.find(key);
@@ -266,6 +282,11 @@ namespace vve {
 			m_first_free	= dir.m_first_free;
 		}
 
+		void clear() {
+			m_dir_entries.clear();
+			m_first_free = VE_NULL_INDEX;
+		}
+
 		VeHandle addEntry( VeIndex table_index ) {
 			if (m_first_free == VE_NULL_INDEX) return addNewEntry(table_index);
 			return writeOverOldEntry(table_index);
@@ -298,6 +319,7 @@ namespace vve {
 		VeTable(const VeTable& table) { m_thread_id = table.m_thread_id; m_read_only = table.m_read_only; };
 		virtual ~VeTable() {};
 		virtual void operator=(const VeTable& tab) {};
+		virtual void clear() {};
 		void	setThreadId(VeIndex id) { m_thread_id = id; };
 		VeIndex	getThreadId() { return m_thread_id; };
 		void	setReadOnly(bool ro) { m_read_only = ro; };
@@ -347,8 +369,8 @@ namespace vve {
 			VeTable(table), m_maps(table.m_maps), m_data(table.m_data), m_directory(table.m_directory), m_tbl2dir(table.m_tbl2dir) {};
 
 		~VeFixedSizeTable() { for (uint32_t i = 0; i < m_maps.size(); ++i ) delete m_maps[i]; };
-
-		void operator=( const VeFixedSizeTable& table);
+		virtual void operator=( const VeFixedSizeTable& table);
+		virtual void clear();
 
 		void		addMap(VeMap* pmap) { m_maps.emplace_back(pmap); };
 		VeIndex		getSize() { return (VeIndex)m_data.size(); };
@@ -496,6 +518,13 @@ namespace vve {
 		return m_directory.getHandle(dir_index);
 	};
 
+	template<typename T> inline void VeFixedSizeTable<T>::clear() {
+		for (auto map : m_maps) map->clear();
+		m_data.clear();
+		m_directory.clear();
+		m_tbl2dir.clear();
+	}
+
 
 	//--------------------------------------------------------------------------------------------------------------------------
 
@@ -600,7 +629,6 @@ namespace vve {
 		VeIndex								m_align;
 		bool								m_immediateDefrag;
 
-
 		void defragment() {
 			std::vector<VeHandle> handles;  
 			handles.reserve( m_pdirectory->getSize() + 1 );
@@ -639,8 +667,8 @@ namespace vve {
 			};
 			m_pdirectory = new VeFixedSizeTable<VeDirectoryEntry>( maps, true );
 
-			m_data.resize(size + align);
-			uint64_t start = (VeIndex) ( alignBoundary((uint64_t)m_data.data(), align) - (uint64_t)m_data.data() );
+			m_data.resize(size + m_align);
+			uint64_t start = (VeIndex) ( alignBoundary((uint64_t)m_data.data(), m_align) - (uint64_t)m_data.data() );
 			VeDirectoryEntry entry{ (VeIndex)start, size, 0 };
 			m_pdirectory->addEntry(entry);
 		}
@@ -648,6 +676,13 @@ namespace vve {
 		~VeVariableSizeTable() {
 			delete m_pdirectory;
 		};
+
+		void clear() {
+			m_pdirectory->clear();
+			uint64_t start = (VeIndex)(alignBoundary((uint64_t)m_data.data(), m_align) - (uint64_t)m_data.data());
+			VeDirectoryEntry entry{ (VeIndex)start, (VeIndex)(m_data.size() - m_align), 0 };
+			m_pdirectory->addEntry(entry);
+		}
 
 		VeHandle insertBlob( uint8_t* ptr, VeIndex size, bool defrag = true ) {
 

@@ -217,6 +217,7 @@ namespace vve {
 		void pop_back();						///<remove last entry from back
 		void swap( VeIndex a, VeIndex b);		///<swap two entries
 		bool empty() { return m_size == 0; };	///<test whether vector is empty
+		void clear();							///<delete all entries in the vector
 	};
 
 	/**
@@ -349,7 +350,6 @@ namespace vve {
 	*
 	*/
 	template<typename T> inline void VeVector<T>::pop_back() {
-		assert(m_size > 0);
 		if (m_size > 0) --m_size;
 	}
 
@@ -400,6 +400,16 @@ namespace vve {
 		T buf = *(T*)ptrb;
 		*(T*)ptrb = *(T*)ptra;
 		*(T*)ptra = buf;
+	}
+
+
+	/**
+	*
+	*	\brief
+	*
+	*/
+	template<typename T> inline void VeVector<T>::clear() {
+		m_size = 0;
 	}
 
 	namespace vec {
