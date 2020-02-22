@@ -1,17 +1,13 @@
 
-
+#include "VEDefines.h"
+#include "VESysEngine.h"
 #include "VESysScene.h"
 
 
 namespace vve::syssce {
 
 
-	void createTables() {
-
-	}
-
 	void init() {
-
 	}
 
 	void tick() {

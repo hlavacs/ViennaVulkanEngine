@@ -26,4 +26,6 @@ namespace vve {
 }
 
 #include "VEVector.h"
+#include "VETable.h"
+
 

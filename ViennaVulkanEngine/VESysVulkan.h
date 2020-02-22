@@ -13,7 +13,6 @@ namespace vve::sysvul {
 
 	void init();
 	void tick();
-	void createTables();
 	void close();
 
 

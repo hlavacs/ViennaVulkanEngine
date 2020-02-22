@@ -441,13 +441,14 @@ namespace vve {
 	template<typename T> inline VeHandle VeFixedSizeTable<T>::addEntry(T&& entry) {
 		assert(!m_read_only);
 		VeIndex table_index = (VeIndex)m_data.size();
-		m_data.emplace_back( std::move(entry) );
 
 		VeHandle handle = m_directory.addEntry(table_index);
 		VeIndex dir_index = handle & VE_NULL_INDEX;
 		m_tbl2dir.emplace_back(dir_index);
 		for (auto map : m_maps) 
 			map->insertIntoMap((void*)&entry, dir_index);
+
+		m_data.emplace_back( std::move(entry) );	///do this last because strin is moved
 		return handle;
 	}
 

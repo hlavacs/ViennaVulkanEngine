@@ -1,16 +1,12 @@
 
-
+#include "VEDefines.h"
+#include "VESysEngine.h"
 #include "VESysWindow.h"
 
 namespace vve::syswin {
 
 
-	void createTables() {
-
-	}
-
 	void init() {
-
 	}
 
 	void tick() {

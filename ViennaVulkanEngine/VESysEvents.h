@@ -11,7 +11,6 @@ namespace vve::syseve {
 #ifndef VE_PUBLIC_INTERFACE
 
 	void init();
-	void createTables();
 	void tick();
 	void close();
 

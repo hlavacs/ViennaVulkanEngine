@@ -6,7 +6,6 @@
 namespace vve::sysass {
 
 	void init();
-	void createTables();
 	void tick();
 	void close();
 

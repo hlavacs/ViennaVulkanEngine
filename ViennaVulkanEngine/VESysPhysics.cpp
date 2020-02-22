@@ -1,16 +1,12 @@
 
-
+#include "VEDefines.h"
+#include "VESysEngine.h"
 #include "VESysPhysics.h"
 
 namespace vve::sysphy {
 
 
-	void createTables() {
-
-	}
-
 	void init() {
-
 	}
 
 	void tick() {

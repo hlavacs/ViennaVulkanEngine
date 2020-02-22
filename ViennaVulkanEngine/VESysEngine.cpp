@@ -2,8 +2,6 @@
 
 
 #include "VEDefines.h"
-#include "VEVector.h"
-#include "VETable.h"
 #include "VESysEngine.h"
 #include "VESysVulkan.h"
 #include "VESysWindow.h"
@@ -18,11 +16,12 @@ namespace vve::syseng {
 	//-----------------------------------------------------------------------------------
 
 	struct VeMainTableEntry {
-		VeTable* m_table_pointer;
+		VeTable*		m_table_pointer;
 		std::string		m_name;
 	};
 
 	struct VeSysTableEntry {
+		std::function<void()>	m_init;
 		std::function<void()>	m_tick;
 		std::function<void()>	m_close;
 	};
@@ -32,6 +31,14 @@ namespace vve::syseng {
 	VeFixedSizeTable<VeMainTableEntry>*	g_main_table = nullptr;
 	VeFixedSizeTable<VeSysTableEntry>*	g_systems_table = nullptr;
 
+	void registerTablePointer(VeTable* tptr, std::string &&name) {
+		g_main_table->addEntry({ tptr, name });
+	}
+
+	void registerSystem(std::function<void()>&& init, std::function<void()>&& tick, std::function<void()>&& close) {
+		g_systems_table->addEntry( { init, tick, close } );
+	}
+
 	void createTables() {
 		std::vector<VeMap*> maps = {
 			(VeMap*) new VeTypedMap< std::unordered_map<VeTableKeyString, VeTableIndex >, VeTableKeyString, VeTableIndex >(
@@ -40,19 +47,8 @@ namespace vve::syseng {
 		g_main_table = new VeFixedSizeTable<VeMainTableEntry>( std::move(maps), 0 );
 		registerTablePointer(g_main_table, "Tables");
 
-		maps.clear();
-		g_systems_table = new VeFixedSizeTable<VeSysTableEntry>(std::move(maps), 0);
+		g_systems_table = new VeFixedSizeTable<VeSysTableEntry>();
 		registerTablePointer(g_systems_table, "Systems");
-	}
-
-	void registerTablePointer(VeTable* tptr, std::string name) {
-		VeMainTableEntry entry = { tptr, name };
-		g_main_table->addEntry(entry);
-	}
-
-	void registerSystem(std::function<void()>& tick, std::function<void()>& close) {
-		VeSysTableEntry entry = { tick, close };
-		g_systems_table->addEntry(entry);
 	}
 
 	VeTable* getTablePointer(std::string name) {
@@ -69,12 +65,15 @@ namespace vve::syseng {
 		std::cout << "init engine 2\n";
 
 		createTables();
-		syswin::init();
-		sysvul::init();
-		syseve::init();
-		sysass::init();
-		syssce::init();
-		sysphy::init();
+		registerSystem(syswin::init, syswin::tick, syswin::close);
+		registerSystem(sysvul::init, sysvul::tick, sysvul::close);
+		registerSystem(syseve::init, syseve::tick, syseve::close);
+		registerSystem(sysass::init, sysass::tick, sysass::close);
+		registerSystem(syssce::init, syssce::tick, syssce::close);
+		registerSystem(sysphy::init, sysphy::tick, sysphy::close);
+
+		for (auto entry : g_systems_table->getData()) 
+			entry.m_init();
 	}
 
 	void computeOneFrame() {
@@ -95,7 +94,8 @@ namespace vve::syseng {
 			g_goon = false;
 			return;
 		}
-		for (auto entry : g_systems_table->getData()) entry.m_close();
+		for (auto entry : g_systems_table->getData()) 
+			entry.m_close();
 	}
 
 }

@@ -1,14 +1,13 @@
 
 
+#include "VEDefines.h"
+#include "VESysEngine.h"
+#include "VESysWindowGLFW.h"
+
 namespace vve::syswin::glfw {
 
 
-	void createTables() {
-
-	}
-
 	void init() {
-
 	}
 
 	void tick() {
