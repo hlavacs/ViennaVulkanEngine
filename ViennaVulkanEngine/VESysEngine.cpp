@@ -18,12 +18,17 @@ namespace vve::syseng {
 	struct VeMainTableEntry {
 		VeTable*		m_table_pointer;
 		std::string		m_name;
+		VeMainTableEntry() : m_table_pointer(nullptr), m_name("") {};
+		VeMainTableEntry(VeTable* tptr, std::string name) : m_table_pointer(tptr), m_name(name) {};
 	};
 
 	struct VeSysTableEntry {
 		std::function<void()>	m_init;
 		std::function<void()>	m_tick;
 		std::function<void()>	m_close;
+		VeSysTableEntry() : m_init(), m_tick(), m_close() {};
+		VeSysTableEntry(std::function<void()> i, std::function<void()> t, std::function<void()> c) :
+			m_init(i), m_tick(t), m_close(c) {};
 	};
 
 	std::atomic<bool> g_loop = false;
@@ -31,12 +36,8 @@ namespace vve::syseng {
 	VeFixedSizeTable<VeMainTableEntry>*	g_main_table = nullptr;
 	VeFixedSizeTable<VeSysTableEntry>*	g_systems_table = nullptr;
 
-	void registerTablePointer(VeTable* tptr, std::string &&name) {
-		g_main_table->addEntry({ tptr, name });
-	}
-
-	void registerSystem(std::function<void()>&& init, std::function<void()>&& tick, std::function<void()>&& close) {
-		g_systems_table->addEntry( { init, tick, close } );
+	void registerTablePointer(VeTable* tptr, std::string name) {
+		g_main_table->addEntry({ tptr, name});
 	}
 
 	void createTables() {
@@ -45,9 +46,9 @@ namespace vve::syseng {
 				(VeIndex)offsetof(struct VeMainTableEntry, m_name ), 0)
 		};
 		g_main_table = new VeFixedSizeTable<VeMainTableEntry>( std::move(maps), 0 );
-		registerTablePointer(g_main_table, "Tables");
 
-		g_systems_table = new VeFixedSizeTable<VeSysTableEntry>();
+		maps.clear();
+		g_systems_table = new VeFixedSizeTable<VeSysTableEntry>(maps, 0);
 		registerTablePointer(g_systems_table, "Systems");
 	}
 
@@ -58,8 +59,9 @@ namespace vve::syseng {
 		return nullptr;
 	}
 
-
-	///public interface
+	void registerSystem(std::function<void()> init, std::function<void()> tick, std::function<void()> close) {
+		g_systems_table->addEntry({ init, tick, close });
+	}
 
 	void init() {
 		std::cout << "init engine 2\n";
@@ -74,10 +76,16 @@ namespace vve::syseng {
 
 		for (auto entry : g_systems_table->getData()) 
 			entry.m_init();
+
+		g_systems_table->setReadOnly(true);
+		g_main_table->setReadOnly(true);
 	}
 
 	void computeOneFrame() {
-		for (auto entry : g_systems_table->getData()) entry.m_tick();
+		for (auto entry : g_systems_table->getData()) 
+			entry.m_tick();
+
+		//copy state
 	}
 
 	void runGameLoop() {
@@ -96,7 +104,13 @@ namespace vve::syseng {
 		}
 		for (auto entry : g_systems_table->getData()) 
 			entry.m_close();
+
+		for (auto entry : g_main_table->getData())
+			delete entry.m_table_pointer;
+
+		delete g_main_table;
 	}
+
 
 }
 

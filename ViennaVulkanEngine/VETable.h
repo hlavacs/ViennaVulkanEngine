@@ -448,7 +448,7 @@ namespace vve {
 		for (auto map : m_maps) 
 			map->insertIntoMap((void*)&entry, dir_index);
 
-		m_data.emplace_back( std::move(entry) );	///do this last because strin is moved
+		m_data.emplace_back( entry );	///do this last because strin is moved
 		return handle;
 	}
 
