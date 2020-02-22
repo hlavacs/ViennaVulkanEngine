@@ -5,9 +5,23 @@
 namespace vve::syswin {
 
 
-	void initWindow() {
+	void createTables() {
 
 	}
+
+	void init() {
+
+	}
+
+	void tick() {
+
+	}
+
+	void close() {
+
+	}
+
+
 
 }
 

@@ -3,9 +3,11 @@
 
 namespace vve::sysphy {
 
-	void initPhysics();
-	void tickPhysics();
-	void closePhysics();
+	void init();
+	void createTables();
+	void tick();
+	void close();
+
 
 
 }

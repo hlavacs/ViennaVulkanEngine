@@ -4,9 +4,11 @@
 namespace vve::syssce {
 
 
-	void initScene();
-	void tickScene();
-	void closeScene();
+	void init();
+	void createTables();
+	void tick();
+	void close();
+
 
 }
 

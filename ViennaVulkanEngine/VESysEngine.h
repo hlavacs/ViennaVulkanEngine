@@ -4,30 +4,21 @@
 
 namespace vve::syseng {
 
-	struct VeMainTableEntry {
-		VeTable*	m_table_pointer;
-		std::string		m_name;
-	};
-
-	struct VeSysTableEntry {
-		std::function<void()>	m_tick;
-		std::function<void()>	m_close;
-		std::string				m_name;
-	};
 
 #ifndef VE_PUBLIC_INTERFACE
 
-	///
 	void registerTablePointer(VeTable* ptr, std::string name );
+	void registerSystem(std::function<void()>& tick, std::function<void()>& close);
 	VeTable* getTablePointer( std::string name );
+
+	void createTables();
 
 #endif
 
 	///Public engine interface
-	void initEngine();
+	void init();
 	void runGameLoop();
 	void computeOneFrame();
-	void closeEngine();
-
+	void close();
 }
 

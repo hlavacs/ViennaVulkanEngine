@@ -6,15 +6,19 @@
 namespace vve::syssce {
 
 
-	void initScene() {
+	void createTables() {
 
 	}
 
-	void tickScene() {
+	void init() {
 
 	}
 
-	void closeScene() {
+	void tick() {
+
+	}
+
+	void close() {
 
 	}
 

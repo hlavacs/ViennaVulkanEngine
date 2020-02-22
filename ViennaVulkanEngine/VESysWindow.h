@@ -3,7 +3,11 @@
 
 namespace vve::syswin {
 
-	void initWindow();
+	void init();
+	void createTables();
+	void tick();
+	void close();
+
 
 }
 

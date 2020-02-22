@@ -252,14 +252,14 @@ namespace vve {
 				m_auto_id(entry.m_auto_id), m_table_index(entry.m_table_index), m_next_free(entry.m_next_free) {};
 		};
 
-		VeIndex						m_auto_counter = 0;				///
-		VeVector<VeDirectoryEntry>	m_dir_entries;					///1 level of indirection, idx into the entry table
-		VeIndex						m_first_free = VE_NULL_INDEX;	///index of first free entry in directory
+		VeIndex							m_auto_counter = 0;				///
+		std::vector<VeDirectoryEntry>	m_dir_entries;					///1 level of indirection, idx into the entry table
+		VeIndex							m_first_free = VE_NULL_INDEX;	///index of first free entry in directory
 
 		VeHandle addNewEntry(VeIndex table_index ) {
 			VeIndex auto_id = m_auto_counter; ++m_auto_counter;
 			VeIndex dir_index = (VeIndex)m_dir_entries.size();
-			m_dir_entries.emplace_back({ auto_id, table_index, VE_NULL_INDEX } );
+			m_dir_entries.emplace_back( auto_id, table_index, VE_NULL_INDEX  );
 			return getHandle(dir_index);
 		}
 
@@ -273,7 +273,7 @@ namespace vve {
 		}
 
 	public:
-		VeDirectory() : m_dir_entries(true, 0) {};
+		VeDirectory() {};
 		~VeDirectory() {};
 
 		void operator=( const VeDirectory& dir ) {
@@ -335,7 +335,7 @@ namespace vve {
 		std::vector<VeMap*>		m_maps;				///vector of maps for quickly finding or sorting entries
 		VeDirectory				m_directory;		///
 		VeVector<T>				m_data;				///growable entry data table
-		VeVector<VeIndex>		m_tbl2dir;
+		std::vector<VeIndex>	m_tbl2dir;
 
 		void swapEntriesByHandle( VeHandle h1, VeHandle h2 ) {
 			if ( h1 == h2 || h1 == VE_NULL_HANDLE || h2 == VE_NULL_HANDLE ) return;

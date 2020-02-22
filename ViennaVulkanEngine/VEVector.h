@@ -218,6 +218,7 @@ namespace vve {
 		void swap( VeIndex a, VeIndex b);		///<swap two entries
 		bool empty() { return m_size == 0; };	///<test whether vector is empty
 		void clear();							///<delete all entries in the vector
+		void reserve( VeIndex n );
 	};
 
 	/**
@@ -411,6 +412,14 @@ namespace vve {
 	template<typename T> inline void VeVector<T>::clear() {
 		m_size = 0;
 	}
+
+
+	template<typename T> inline void VeVector<T>::reserve( VeIndex n) {
+		if( n > m_capacity )
+			setNewCapacity( n, m_startptr, m_entrySize, m_size);
+
+	}
+
 
 	namespace vec {
 		void testVector();

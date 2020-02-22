@@ -11,7 +11,11 @@ namespace vve::sysvul {
 
 	const VulkanState g_vulkan_state;
 
-	void initVulkan();
+	void init();
+	void tick();
+	void createTables();
+	void close();
+
 
 }
 

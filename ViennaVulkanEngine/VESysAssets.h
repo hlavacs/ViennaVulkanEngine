@@ -5,8 +5,10 @@
 
 namespace vve::sysass {
 
-	void initAssets();
-	void closeAssets();
+	void init();
+	void createTables();
+	void tick();
+	void close();
 
 
 }

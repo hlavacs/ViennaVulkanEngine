@@ -17,10 +17,20 @@ namespace vve::syseng {
 
 	//-----------------------------------------------------------------------------------
 
-	bool g_goon = true;
+	struct VeMainTableEntry {
+		VeTable* m_table_pointer;
+		std::string		m_name;
+	};
+
+	struct VeSysTableEntry {
+		std::function<void()>	m_tick;
+		std::function<void()>	m_close;
+	};
+
+	std::atomic<bool> g_loop = false;
+	std::atomic<bool> g_goon = true;
 	VeFixedSizeTable<VeMainTableEntry>*	g_main_table = nullptr;
 	VeFixedSizeTable<VeSysTableEntry>*	g_systems_table = nullptr;
-	VeVariableSizeTable*				g_meshes_table = nullptr;
 
 	void createTables() {
 		std::vector<VeMap*> maps = {
@@ -28,28 +38,21 @@ namespace vve::syseng {
 				(VeIndex)offsetof(struct VeMainTableEntry, m_name ), 0)
 		};
 		g_main_table = new VeFixedSizeTable<VeMainTableEntry>( std::move(maps), 0 );
-		registerTablePointer(g_main_table, "Main Table");
+		registerTablePointer(g_main_table, "Tables");
 
-		maps = {
-			(VeMap*) new VeTypedMap< std::unordered_map<VeTableKeyString, VeTableIndex >, VeTableKeyString, VeTableIndex >(
-				(VeIndex)offsetof(struct VeSysTableEntry, m_name), 0)
-		};
+		maps.clear();
 		g_systems_table = new VeFixedSizeTable<VeSysTableEntry>(std::move(maps), 0);
-		registerTablePointer(g_systems_table, "Systems Table");
-
-		std::vector<VeHandle> handles;
-		g_main_table->getHandlesFromMap(0, (std::string&)std::string("Main Table"), handles);
-		
-		VeMainTableEntry entry;
-		bool found = g_main_table->getEntry(handles[0], entry);
-
-		g_meshes_table = new VeVariableSizeTable(1 << 20);
-
+		registerTablePointer(g_systems_table, "Systems");
 	}
 
 	void registerTablePointer(VeTable* tptr, std::string name) {
 		VeMainTableEntry entry = { tptr, name };
 		g_main_table->addEntry(entry);
+	}
+
+	void registerSystem(std::function<void()>& tick, std::function<void()>& close) {
+		VeSysTableEntry entry = { tick, close };
+		g_systems_table->addEntry(entry);
 	}
 
 	VeTable* getTablePointer(std::string name) {
@@ -62,17 +65,16 @@ namespace vve::syseng {
 
 	///public interface
 
-	void initEngine() {
+	void init() {
 		std::cout << "init engine 2\n";
 
 		createTables();
-		syswin::initWindow();
-		sysvul::initVulkan();
-		syseve::initEvents();
-		sysass::initAssets();
-		syssce::initScene();
-		sysphy::initPhysics();
-
+		syswin::init();
+		sysvul::init();
+		syseve::init();
+		sysass::init();
+		syssce::init();
+		sysphy::init();
 	}
 
 	void computeOneFrame() {
@@ -80,12 +82,19 @@ namespace vve::syseng {
 	}
 
 	void runGameLoop() {
+		g_loop = true;
 		while (g_goon) {
 			computeOneFrame();
 		}
+		g_loop = false;
+		close();
 	}
 
-	void closeEngine() {
+	void close() {
+		if (g_loop) {
+			g_goon = false;
+			return;
+		}
 		for (auto entry : g_systems_table->getData()) entry.m_close();
 	}
 

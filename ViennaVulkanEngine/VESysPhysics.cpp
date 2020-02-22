@@ -5,18 +5,23 @@
 namespace vve::sysphy {
 
 
-	void initPhysics() {
+	void createTables() {
 
 	}
 
-	void tickPhysics() {
+	void init() {
 
 	}
 
-	void closePhysics() {
-
+	void tick() {
 
 	}
+
+	void close() {
+
+	}
+
+
 
 
 

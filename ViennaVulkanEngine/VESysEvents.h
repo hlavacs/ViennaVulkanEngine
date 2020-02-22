@@ -10,9 +10,11 @@ namespace vve::syseve {
 
 #ifndef VE_PUBLIC_INTERFACE
 
-	void initEvents();
-	void tickEvents();
-	void closeEvents();
+	void init();
+	void createTables();
+	void tick();
+	void close();
+
 
 #endif
 

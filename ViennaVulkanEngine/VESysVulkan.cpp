@@ -7,11 +7,21 @@
 namespace vve::sysvul {
 
 
-
-
-	void initVulkan() {
+	void createTables() {
 
 	}
+
+	void init() {
+
+	}
+
+	void tick() {
+
+	}
+	void close() {
+
+	}
+
 
 }
 
