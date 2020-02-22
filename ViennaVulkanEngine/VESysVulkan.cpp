@@ -6,6 +6,9 @@
 
 namespace vve::sysvul {
 
+
+
+
 	void initVulkan() {
 
 	}

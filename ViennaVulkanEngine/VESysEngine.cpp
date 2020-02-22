@@ -19,8 +19,8 @@ namespace vve::syseng {
 
 	bool g_goon = true;
 	VeFixedSizeTable<VeMainTableEntry>*	g_main_table = nullptr;
-	VeFixedSizeTable<VeSysTableEntry>*		g_systems_table = nullptr;
-	VeVariableSizeTable*					g_meshes_table = nullptr;
+	VeFixedSizeTable<VeSysTableEntry>*	g_systems_table = nullptr;
+	VeVariableSizeTable*				g_meshes_table = nullptr;
 
 	void createTables() {
 		std::vector<VeMap*> maps = {
