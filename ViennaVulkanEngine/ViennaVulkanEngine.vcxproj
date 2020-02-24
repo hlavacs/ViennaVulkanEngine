@@ -157,6 +157,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="VEGameJobSystem.cpp" />
     <ClCompile Include="VETable.cpp" />
     <ClCompile Include="VECollision.cpp" />
     <ClCompile Include="VESysEngine.cpp" />
@@ -172,6 +173,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="VEDefines.h" />
+    <ClInclude Include="VEGameJobSystem.h" />
     <ClInclude Include="VETable.h" />
     <ClInclude Include="VECollision.h" />
     <ClInclude Include="VESysEngine.h" />

@@ -47,6 +47,9 @@
     <ClCompile Include="VEVector.cpp">
       <Filter>Quelldateien</Filter>
     </ClCompile>
+    <ClCompile Include="VEGameJobSystem.cpp">
+      <Filter>Quelldateien</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="VEInclude.h">
@@ -89,6 +92,9 @@
       <Filter>Headerdateien</Filter>
     </ClInclude>
     <ClInclude Include="VEVector.h">
+      <Filter>Headerdateien</Filter>
+    </ClInclude>
+    <ClInclude Include="VEGameJobSystem.h">
       <Filter>Headerdateien</Filter>
     </ClInclude>
   </ItemGroup>
