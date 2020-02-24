@@ -13,7 +13,7 @@ int main()
     std::cout << "Hello World!\n";
 
     //vec::testVector();
-    //tab::testTables();
+    tab::testTables();
     //stltest::runSTLTests();
     //return 0;
 

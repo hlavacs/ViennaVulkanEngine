@@ -52,9 +52,16 @@ namespace vve {
 
 		void testFixedTables1() {
 
-			VeHandle handle;
-			handle = testTable.addEntry({ 1, 2, 3, "4" });
-			handle = testTable.addEntry({ 4, 2, 1, "3" });
+			VeHandle handle, handle1, handle2, handl3;
+			handle1 = testTable.addEntry({ 1, 2, 3, "4" });
+			handle2 = testTable.addEntry({ 4, 2, 1, "3" });
+			testTable.forAllEntries(std::bind(printEntry, std::placeholders::_1)); std::cout << std::endl;
+			testTable.swapEntriesByHandle(handle1, handle2);
+			testTable.forAllEntries(std::bind(printEntry, std::placeholders::_1)); std::cout << std::endl;
+
+			testTable.sortTableByMap(0);
+			testTable.forAllEntries(std::bind(printEntry, std::placeholders::_1)); std::cout << std::endl;
+
 			handle = testTable.addEntry({ 2, 1, 3, "1" });
 			handle = testTable.addEntry({ 3, 4, 5, "2" });
 			handle = testTable.addEntry({ 5, 4, 2, "3" });
