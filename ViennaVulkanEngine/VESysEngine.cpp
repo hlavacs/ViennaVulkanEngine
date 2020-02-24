@@ -16,10 +16,10 @@ namespace vve::syseng {
 	//-----------------------------------------------------------------------------------
 
 	struct VeMainTableEntry {
-		VeTable*		m_table_pointer;
-		std::string		m_name;
-		VeMainTableEntry() : m_table_pointer(nullptr), m_name("") {};
-		VeMainTableEntry(VeTable* tptr, std::string name) : m_table_pointer(tptr), m_name(name) {};
+		std::shared_ptr<VeTable>	m_table_pointer;
+		std::string					m_name;
+		VeMainTableEntry() : m_table_pointer(), m_name("") {};
+		VeMainTableEntry( VeTable* tptr, std::string name) : m_table_pointer(tptr), m_name(name) {};
 	};
 
 	struct VeSysTableEntry {
@@ -52,10 +52,11 @@ namespace vve::syseng {
 		registerTablePointer(g_systems_table, "Systems");
 	}
 
-	VeTable* getTablePointer(std::string name) {
+	std::shared_ptr<VeTable> getTablePointer(std::string name) {
 		auto data = g_main_table->getData();
 		for (uint32_t i = 0; i < data.size(); ++i) 
-			if (data[i].m_name == name) return data[i].m_table_pointer; 
+			if (data[i].m_name == name) 
+				return data[i].m_table_pointer; 
 		return nullptr;
 	}
 
@@ -105,10 +106,7 @@ namespace vve::syseng {
 		for (auto entry : g_systems_table->getData()) 
 			entry.m_close();
 
-		for (auto entry : g_main_table->getData())
-			delete entry.m_table_pointer;
-
-		delete g_main_table;
+		delete g_main_table;	//since all shared pointers will be deleted, all registered tables will be deleted
 	}
 
 

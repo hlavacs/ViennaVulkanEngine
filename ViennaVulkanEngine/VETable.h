@@ -407,7 +407,10 @@ namespace vve {
 		VeFixedSizeTable(const VeFixedSizeTable& table) :
 			VeTable(table), m_maps(table.m_maps), m_data(table.m_data), m_directory(table.m_directory), m_tbl2dir(table.m_tbl2dir) {};
 
-		~VeFixedSizeTable() { for (uint32_t i = 0; i < m_maps.size(); ++i ) delete m_maps[i]; };
+		~VeFixedSizeTable() { 
+			for (uint32_t i = 0; i < m_maps.size(); ++i ) 
+				delete m_maps[i]; 
+		};
 		virtual void operator=( const VeFixedSizeTable& table);
 		virtual void swapEntriesByHandle(VeHandle h1, VeHandle h2);
 		virtual void clear();
