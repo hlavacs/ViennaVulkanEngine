@@ -206,8 +206,6 @@ namespace vve {
 	};
 
 
-
-
 	//------------------------------------------------------------------------------------------------------
 
 	class VeDirectory {
@@ -759,14 +757,16 @@ namespace vve {
 		};
 
 		void clear() {
+			in();
 			m_pdirectory->clear();
 			uint64_t start = (VeIndex)(alignBoundary((uint64_t)m_data.data(), m_align) - (uint64_t)m_data.data());
 			VeDirectoryEntry entry{ (VeIndex)start, (VeIndex)(m_data.size() - m_align), 0 };
 			m_pdirectory->addEntry(entry);
+			out();
 		}
 
 		VeHandle insertBlob( uint8_t* ptr, VeIndex size, bool defrag = true ) {
-
+			in();
 			size = (VeIndex)alignBoundary( size, m_align );
 
 			std::vector<VeHandle> result;
@@ -781,9 +781,12 @@ namespace vve {
 				}
 			}
 			if (h == VE_NULL_HANDLE) {
-				if (!defrag) 
+				if (!defrag) {
+					out();
 					return VE_NULL_HANDLE;
+				}
 				defragment();
+				out();
 				return insertBlob(ptr, size, false);
 			}
 
@@ -794,24 +797,34 @@ namespace vve {
 			entry.m_size = size;
 			entry.m_occupied = 1;
 			m_pdirectory->updateEntry(h, entry);
+			out();
 			return h;
 		}
 
 		uint8_t* getPointer(VeHandle handle) {
+			in();
 			VeDirectoryEntry entry;
-			if (!m_pdirectory->getEntry(handle, entry ) ) 
+			if (!m_pdirectory->getEntry(handle, entry)) {
+				out();
 				return nullptr;
-			return m_data.data() + entry.m_start;
+			}
+			uint8_t* result = m_data.data() + entry.m_start;
+			out();
+			return result;
 		}
 
 		bool deleteBlob(VeHandle handle ) {
+			in();
 			VeDirectoryEntry entry;
-			if (!m_pdirectory->getEntry(handle, entry ) ) 
+			if (!m_pdirectory->getEntry(handle, entry)) {
+				out();
 				return false;
+			}
 			entry.m_occupied = 0;
 			m_pdirectory->updateEntry(handle, entry);
 			if (m_immediateDefrag) 
 				defragment();
+			out();
 			return true;
 		}
 
