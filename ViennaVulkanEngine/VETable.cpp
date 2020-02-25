@@ -95,9 +95,28 @@ namespace vve {
 			testTable.sortTableByMap(3);
 			testTable.forAllEntries(std::bind(printEntry, std::placeholders::_1)); std::cout << std::endl;
 
+			//--------
 			std::vector<VeHandle> handles;
 			testTable.getHandlesEqual(0, 5, handles);
 			auto [auto_id, dir_index] = VeDirectory::splitHandle(handles[0]);
+
+			handles.clear();
+			testTable.getHandlesEqual(2, "2", handles);
+
+			handles.clear();
+			testTable.getHandlesEqual(3, VeTableKeyIntPair(1,6), handles);
+
+			//--------
+
+			handles.clear();
+			testTable.getHandlesRange(0, 2, 5, handles);
+
+			handles.clear();
+			testTable.getHandlesRange(2, "2", "3", handles);
+
+			handles.clear();
+			testTable.getHandlesRange(3, VeTableKeyIntPair( 4, 0 ), VeTableKeyIntPair( 5, 0 ), handles);
+
 
 			handle = testTable.addEntry({ 8, 2, 3, "4" });
 			handle = testTable.addEntry({ 9, 4, 1, "3" });
