@@ -1,5 +1,6 @@
 #pragma once
 
+#include <type_traits>
 #include <iostream>
 #include <vector>
 #include <limits>
@@ -12,7 +13,6 @@
 #include <random>
 #include <assert.h>
 #include <chrono>
-
 
 
 namespace vve {
@@ -29,5 +29,5 @@ namespace vve {
 
 #include "VEVector.h"
 #include "VETable.h"
-
+#include "VEGameJobSystem.h"
 

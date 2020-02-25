@@ -32,17 +32,25 @@ namespace vve {
 		virtual ~VeMap() {};
 		virtual void		operator=(const VeMap& map) { assert(false); return; };
 		virtual void		clear() { assert(false); return; };
-		virtual bool		getMappedIndex(		VeTableKeyInt& key, VeIndex& index) { assert(false); return false; };
-		virtual uint32_t	getMappedIndices(	VeTableKeyInt& key, std::vector<VeIndex>& result) { assert(false); return 0; };
-		virtual bool		getMappedIndex(		VeTableKeyIntPair& key, VeIndex& index) { assert(false); return false; };
-		virtual uint32_t	getMappedIndices(	VeTableKeyIntPair& key, std::vector<VeIndex>& result) { assert(false); return 0; };
-		virtual bool		getMappedIndex(		VeTableKeyIntTriple& key, VeIndex& index) { assert(false); return false; };
-		virtual uint32_t	getMappedIndices(	VeTableKeyIntTriple& key, std::vector<VeIndex>& result) { assert(false); return 0; };
-		virtual bool		getMappedIndex(		VeTableKeyString& key, VeIndex& index) { assert(false); return false; };
-		virtual uint32_t	getMappedIndices(	VeTableKeyString& key, std::vector<VeIndex>& result) { assert(false); return 0; };
-		virtual uint32_t	getAllIndices(		std::vector<VeIndex>& result) { assert(false); return 0; };
-		virtual void		insertIntoMap(		void *entry, VeIndex &dir_index ) { assert(false); };
-		virtual uint32_t	deleteFromMap(		void* entry, VeIndex& dir_index) { assert(false); return 0; };
+		
+		virtual bool		getMappedIndexEqual(	VeTableKeyInt& key, VeIndex& index) { assert(false); return false; };
+		virtual bool		getMappedIndexEqual(	VeTableKeyIntPair& key, VeIndex& index) { assert(false); return false; };
+		virtual bool		getMappedIndexEqual(	VeTableKeyIntTriple& key, VeIndex& index) { assert(false); return false; };
+		virtual bool		getMappedIndexEqual(	VeTableKeyString& key, VeIndex& index) { assert(false); return false; };
+
+		virtual uint32_t	getMappedIndicesEqual(	VeTableKeyInt& key, std::vector<VeIndex>& result) { assert(false); return 0; };
+		virtual uint32_t	getMappedIndicesEqual(	VeTableKeyIntPair& key, std::vector<VeIndex>& result) { assert(false); return 0; };
+		virtual uint32_t	getMappedIndicesEqual(	VeTableKeyIntTriple& key, std::vector<VeIndex>& result) { assert(false); return 0; };
+		virtual uint32_t	getMappedIndicesEqual(	VeTableKeyString& key, std::vector<VeIndex>& result) { assert(false); return 0; };
+
+		virtual uint32_t	getMappedIndicesRange(	VeTableKeyInt& lower, VeTableKeyInt& upper, std::vector<VeIndex>& result) { assert(false); return 0; };
+		virtual uint32_t	getMappedIndicesRange(	VeTableKeyIntPair& lower, VeTableKeyIntPair& upper, std::vector<VeIndex>& result) { assert(false); return 0; };
+		virtual uint32_t	getMappedIndicesRange(	VeTableKeyIntTriple& lower, VeTableKeyIntTriple& upper, std::vector<VeIndex>& result) { assert(false); return 0; };
+		virtual uint32_t	getMappedIndicesRange(	VeTableKeyString& lower, VeTableKeyString& upper, std::vector<VeIndex>& result) { assert(false); return 0; };
+
+		virtual uint32_t	getAllIndices(	std::vector<VeIndex>& result) { assert(false); return 0; };
+		virtual bool		insertIntoMap(void* entry, VeIndex& dir_index) { assert(false); return false; };
+		virtual uint32_t	deleteFromMap(	void* entry, VeIndex& dir_index) { assert(false); return 0; };
 
 
 		/**
@@ -115,19 +123,46 @@ namespace vve {
 			m_map.clear();
 		}
 
-		virtual bool getMappedIndex( K & key, VeIndex &index ) override {
-			auto search = m_map.find(key);
-			if (search == m_map.end()) 
+		virtual bool getMappedIndexEqual( K & key, VeIndex &index ) override {
+			if constexpr (std::is_same_v< M, std::multimap<K, VeIndex > > || std::is_same_v< M, std::unordered_multimap<K, VeIndex > >) {
+				assert(false);
 				return false;
-			index = search->second;
+			} else {
+				auto search = m_map.find(key);
+				if (search == m_map.end())
+					return false;
+				index = search->second;
+			}
 			return true;
 		}
 
-		virtual uint32_t getMappedIndices(K& key, std::vector<VeIndex>& result) override {
+		virtual uint32_t getMappedIndicesEqual(K& key, std::vector<VeIndex>& result) override {
 			uint32_t num = 0;
-			auto range = m_map.equal_range(key);
-			for (auto it = range.first; it != range.second; ++it, ++num) 
-				result.emplace_back(it->second);
+			
+			if constexpr (std::is_same_v< M, std::map<K, VeIndex > > || std::is_same_v< M, std::unordered_map<K, VeIndex > >) {
+				assert(false);
+				return 0;
+			}
+			else {
+				auto range = m_map.equal_range(key);
+				for (auto it = range.first; it != range.second; ++it, ++num)
+					result.emplace_back(it->second);
+			}
+			return num;
+		};
+
+		virtual uint32_t getMappedIndicesRange(K& lower, K& upper, std::vector<VeIndex>& result) override {
+			uint32_t num = 0;
+
+			if constexpr (std::is_same_v< M, std::unordered_map<K, VeIndex > > || std::is_same_v< M, std::unordered_multimap<K, VeIndex > >) {
+				assert(false);
+				return false;
+			}
+			else {
+				auto range = m_map.lower_bound(lower);
+				for (auto it = range; it != m_map.end(); ++it, ++num)
+					result.emplace_back(it->second);
+			}
 			return num;
 		};
 
@@ -137,83 +172,19 @@ namespace vve {
 			return (uint32_t)m_map.size();
 		}
 
-		virtual void insertIntoMap(void* entry, VeIndex& dir_index) override {
-			K key;
-			getKey(entry, m_offset, m_num_bytes, key);
-			auto [it,success] = m_map.try_emplace(key, dir_index);
-			assert(success);
-		};
-
-		virtual uint32_t deleteFromMap(void* entry, VeIndex& dir_index) override {
+		virtual bool insertIntoMap(void* entry, VeIndex& dir_index) override {
 			K key;
 			getKey(entry, m_offset, m_num_bytes, key);
 
-			uint32_t num = 0;
-			auto range = m_map.equal_range(key);
-			for (auto it = range.first; it != range.second; ) {
-				if (it->second == dir_index) {
-					it = m_map.erase(it);
-					++num;
-				}
-				else ++it;
+			if constexpr (std::is_same_v< M, std::map<K, VeIndex > > || std::is_same_v< M, std::unordered_map<K, VeIndex > >) {
+				auto [it, success] = m_map.try_emplace(key, dir_index);
+				assert(success);
+				return success;
 			}
-			return num;
-		};
-
-	};
-
-
-	///M is either std::multimap or std::unordered_multimap
-	///I is the offset/length type, is either VeTableIndex or VeTableIndexPair
-	///K is the map key, is either VeTableKeyInt, VeTableKeyIntPair, or VeTableKeyString
-	template <typename M, typename K, typename I>
-	class VeTypedMultimap : public VeMap {
-	protected:
-
-		I	m_offset;		///
-		I	m_num_bytes;	///
-		M	m_map;			///key value pairs - value is the index of the entry in the table
-
-	public:
-		VeTypedMultimap(I offset, I num_bytes) : VeMap(), m_offset(offset), m_num_bytes(num_bytes) {};
-		virtual ~VeTypedMultimap() {};
-
-		virtual void operator=(const VeTypedMultimap& map) {
-			m_offset = map.m_offset;
-			m_num_bytes = map.m_num_bytes;
-			m_map = map.m_map;
-		};
-
-		virtual void clear() {
-			m_map.clear();
-		}
-
-		virtual bool getMappedIndex(K& key, VeIndex& index) override {
-			auto search = m_map.find(key);
-			if (search == m_map.end()) 
-				return false;
-			index = search->second;
+			else {
+				auto it = m_map.emplace(key, dir_index);
+			}
 			return true;
-		}
-
-		virtual uint32_t getMappedIndices(K& key, std::vector<VeIndex>& result) override {
-			uint32_t num = 0;
-			auto range = m_map.equal_range(key);
-			for (auto it = range.first; it != range.second; ++it, ++num) 
-				result.emplace_back(it->second);
-			return num;
-		};
-
-		virtual uint32_t getAllIndices(std::vector<VeIndex>& result) override {
-			for (auto entry : m_map) 
-				result.emplace_back(entry.second);
-			return (uint32_t)m_map.size();
-		}
-
-		virtual void insertIntoMap(void* entry, VeIndex& dir_index) override {
-			K key;
-			getKey(entry, m_offset, m_num_bytes, key);
-			auto it= m_map.emplace(key, dir_index);
 		};
 
 		virtual uint32_t deleteFromMap(void* entry, VeIndex& dir_index) override {
@@ -233,6 +204,8 @@ namespace vve {
 		};
 
 	};
+
+
 
 
 	//------------------------------------------------------------------------------------------------------
@@ -433,10 +406,15 @@ namespace vve {
 		bool		isValid(VeHandle handle);
 		bool		deleteEntry(VeHandle key);
 
-		uint32_t	getHandlesFromMap(VeIndex num_map, VeTableKeyInt key, std::vector<VeHandle>& result);
-		uint32_t	getHandlesFromMap(VeIndex num_map, VeTableKeyIntPair& key, std::vector<VeHandle>& result);
-		uint32_t	getHandlesFromMap(VeIndex num_map, VeTableKeyIntTriple& key, std::vector<VeHandle>& result);
-		uint32_t	getHandlesFromMap(VeIndex num_map, VeTableKeyString& key, std::vector<VeHandle>& result);
+		uint32_t	getHandlesEqual(VeIndex num_map, VeTableKeyInt key, std::vector<VeHandle>& result);
+		uint32_t	getHandlesEqual(VeIndex num_map, VeTableKeyIntPair& key, std::vector<VeHandle>& result);
+		uint32_t	getHandlesEqual(VeIndex num_map, VeTableKeyIntTriple& key, std::vector<VeHandle>& result);
+		uint32_t	getHandlesEqual(VeIndex num_map, VeTableKeyString& key, std::vector<VeHandle>& result);
+
+		uint32_t	getHandlesGreaterEqual(VeIndex num_map, VeTableKeyInt key, std::vector<VeHandle>& result);
+		uint32_t	getHandlesGreaterEqual(VeIndex num_map, VeTableKeyIntPair& key, std::vector<VeHandle>& result);
+		uint32_t	getHandlesGreaterEqual(VeIndex num_map, VeTableKeyIntTriple& key, std::vector<VeHandle>& result);
+		uint32_t	getHandlesGreaterEqual(VeIndex num_map, VeTableKeyString& key, std::vector<VeHandle>& result);
 
 		uint32_t	getAllHandlesFromMap(VeIndex num_map, std::vector<VeHandle>& result);
 	};
@@ -620,9 +598,9 @@ namespace vve {
 
 	//--------------------------------------------------------------------------------------------------------------------------
 
-	template<typename T> inline	uint32_t VeFixedSizeTable<T>::getHandlesFromMap(	VeIndex num_map,
-																					VeTableKeyInt key,
-																					std::vector<VeHandle>& result) {
+	template<typename T> inline	uint32_t VeFixedSizeTable<T>::getHandlesEqual(	VeIndex num_map,
+																				VeTableKeyInt key,
+																				std::vector<VeHandle>& result) {
 		assert(num_map < m_maps.size());
 		if (key == VE_NULL_HANDLE) return 0;
 		if (m_data.empty()) return 0;
@@ -630,16 +608,16 @@ namespace vve {
 		in();
 		std::vector<VeIndex> dir_indices; 
 		dir_indices.reserve(initVecLen());
-		uint32_t num = m_maps[num_map]->getMappedIndices(key, dir_indices);
+		uint32_t num = m_maps[num_map]->getMappedIndicesEqual(key, dir_indices);
 		for (auto dir_index : dir_indices) 
 			result.emplace_back( m_directory.getHandle(dir_index) );
 		out();
 		return num;
 	};
 
-	template<typename T> inline	uint32_t VeFixedSizeTable<T>::getHandlesFromMap(	VeIndex num_map,
-																					VeTableKeyIntPair& key,
-																					std::vector<VeHandle>& result) {
+	template<typename T> inline	uint32_t VeFixedSizeTable<T>::getHandlesEqual(	VeIndex num_map,
+																				VeTableKeyIntPair& key,
+																				std::vector<VeHandle>& result) {
 		assert(num_map < m_maps.size());
 		if (key.first == VE_NULL_HANDLE || key.second == VE_NULL_HANDLE) return 0;
 		if (m_data.empty()) return 0;
@@ -647,16 +625,16 @@ namespace vve {
 		in();
 		std::vector<VeIndex> dir_indices; 
 		dir_indices.reserve(initVecLen());
-		uint32_t num = m_maps[num_map]->getMappedIndices(key, dir_indices);
+		uint32_t num = m_maps[num_map]->getMappedIndicesEqual(key, dir_indices);
 		for (auto dir_index : dir_indices) 
 			result.emplace_back(m_directory.getHandle(dir_index));
 		out();
 		return num;
 	};
 
-	template<typename T> inline	uint32_t VeFixedSizeTable<T>::getHandlesFromMap(	VeIndex num_map,
-																					VeTableKeyIntTriple& key,
-																					std::vector<VeHandle>& result) {
+	template<typename T> inline	uint32_t VeFixedSizeTable<T>::getHandlesEqual(	VeIndex num_map,
+																				VeTableKeyIntTriple& key,
+																				std::vector<VeHandle>& result) {
 		assert(num_map < m_maps.size());
 		if ( std::get<0>(key) == VE_NULL_HANDLE || std::get<1>(key) == VE_NULL_HANDLE || std::get<2>(key) == VE_NULL_HANDLE) return 0;
 		if (m_data.empty()) return 0;
@@ -664,16 +642,16 @@ namespace vve {
 		in();
 		std::vector<VeIndex> dir_indices; 
 		dir_indices.reserve(initVecLen());
-		uint32_t num = m_maps[num_map]->getMappedIndices(key, dir_indices);
+		uint32_t num = m_maps[num_map]->getMappedIndicesEqual(key, dir_indices);
 		for (auto dir_index : dir_indices) 
 			result.emplace_back(m_directory.getHandle(dir_index));
 		out();
 		return num;
 	};
 
-	template<typename T> inline	uint32_t VeFixedSizeTable<T>::getHandlesFromMap(	VeIndex num_map,
-																					VeTableKeyString& key,
-																					std::vector<VeHandle>& result) {
+	template<typename T> inline	uint32_t VeFixedSizeTable<T>::getHandlesEqual(	VeIndex num_map,
+																				VeTableKeyString& key,
+																				std::vector<VeHandle>& result) {
 		assert(num_map < m_maps.size());
 		if (key.empty() || key.size() == 0) return 0;
 		if (m_data.empty()) return 0;
@@ -681,7 +659,7 @@ namespace vve {
 		in();
 		std::vector<VeIndex> dir_indices; 
 		dir_indices.reserve(initVecLen());
-		uint32_t num = m_maps[num_map]->getMappedIndices(key, dir_indices);
+		uint32_t num = m_maps[num_map]->getMappedIndicesEqual(key, dir_indices);
 		for (auto dir_index : dir_indices) 
 			result.emplace_back(m_directory.getHandle(dir_index));
 		out();
@@ -704,7 +682,7 @@ namespace vve {
 		}
 
 		std::vector<VeIndex> dir_indices; 
-		dir_indices.reserve(m_data.size() + 1);
+		dir_indices.reserve((VeIndex)m_data.size() + 1);
 		uint32_t num = m_maps[num_map]->getAllIndices(dir_indices);
 		for (auto dir_index : dir_indices) 
 			result.emplace_back( m_directory.getHandle(dir_index) );
@@ -734,7 +712,7 @@ namespace vve {
 
 		void defragment() {
 			std::vector<VeHandle> handles;  
-			handles.reserve( m_pdirectory->getSize() + 1 );
+			handles.reserve( (VeIndex)m_pdirectory->getSize() + 1 );
 			m_pdirectory->getAllHandlesFromMap(1, handles);
 			if (handles.size() < 2) 
 				return;
@@ -763,14 +741,14 @@ namespace vve {
 			VeTable( thread_id ), m_align(align), m_immediateDefrag(immediateDefrag) {
 
 			std::vector<VeMap*> maps = {
-				(VeMap*) new VeTypedMultimap< std::multimap<VeTableKeyInt, VeTableIndex>, VeTableKeyInt, VeTableIndex >(
+				(VeMap*) new VeTypedMap< std::multimap<VeTableKeyInt, VeTableIndex>, VeTableKeyInt, VeTableIndex >(
 							(VeIndex)offsetof(struct VeDirectoryEntry, m_occupied), (VeIndex)sizeof(VeDirectoryEntry::m_occupied)),
 				(VeMap*) new VeTypedMap< std::map<VeTableKeyInt, VeIndex>, VeTableKeyInt, VeTableIndex >(
 							(VeIndex)offsetof(struct VeDirectoryEntry, m_start), (VeIndex)sizeof(VeDirectoryEntry::m_start))
 			};
 			m_pdirectory = new VeFixedSizeTable<VeDirectoryEntry>( maps, true );
 
-			m_data.resize(size + m_align);
+			m_data.resize((VeIndex)size + m_align);
 			uint64_t start = (VeIndex) ( alignBoundary((uint64_t)m_data.data(), m_align) - (uint64_t)m_data.data() );
 			VeDirectoryEntry entry{ (VeIndex)start, size, 0 };
 			m_pdirectory->addEntry(entry);
@@ -792,7 +770,7 @@ namespace vve {
 			size = (VeIndex)alignBoundary( size, m_align );
 
 			std::vector<VeHandle> result;
-			m_pdirectory->getHandlesFromMap(0, 0, result );
+			m_pdirectory->getHandlesEqual(0, 0, result );
 
 			VeHandle h = VE_NULL_HANDLE;
 			VeDirectoryEntry entry;

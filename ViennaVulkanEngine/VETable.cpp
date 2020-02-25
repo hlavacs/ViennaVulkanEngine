@@ -27,11 +27,11 @@ namespace vve {
 		std::vector<VeMap*> maps = {
 			(VeMap*) new VeTypedMap< std::map<VeTableKeyInt, VeTableIndex>, VeTableKeyInt, VeTableIndex >(
 				(VeIndex)offsetof(struct TestEntry, m_int64), (VeIndex)sizeof(TestEntry::m_int64)),
-			(VeMap*) new VeTypedMultimap< std::multimap<VeTableKeyInt, VeTableIndex>, VeTableKeyInt, VeTableIndex >(
+			(VeMap*) new VeTypedMap< std::multimap<VeTableKeyInt, VeTableIndex>, VeTableKeyInt, VeTableIndex >(
 				(VeIndex)offsetof(struct TestEntry, m_int1), (VeIndex)sizeof(TestEntry::m_int1)),
-			(VeMap*) new VeTypedMultimap< std::multimap<VeTableKeyString, VeTableIndex>, VeTableKeyString, VeTableIndex >(
+			(VeMap*) new VeTypedMap< std::multimap<VeTableKeyString, VeTableIndex>, VeTableKeyString, VeTableIndex >(
 				(VeIndex)offsetof(struct TestEntry, m_name), 0),
-			(VeMap*) new VeTypedMultimap< std::multimap<VeTableKeyIntPair, VeTableIndex>, VeTableKeyIntPair, VeTableIndexPair >(
+			(VeMap*) new VeTypedMap< std::multimap<VeTableKeyIntPair, VeTableIndex>, VeTableKeyIntPair, VeTableIndexPair >(
 				VeTableIndexPair((VeIndex)offsetof(struct TestEntry, m_int1), (VeIndex)offsetof(struct TestEntry, m_int2)),
 				VeTableIndexPair((VeIndex)sizeof(TestEntry::m_int1), (VeIndex)sizeof(TestEntry::m_int2)))
 		};
@@ -52,7 +52,7 @@ namespace vve {
 
 		void testFixedTables1() {
 
-			VeHandle handle, handle1, handle2, handl3;
+			VeHandle handle, handle1, handle2;
 			handle1 = testTable.addEntry({ 1, 2, 3, "4" });
 			handle2 = testTable.addEntry({ 4, 2, 1, "3" });
 			testTable.forAllEntries(std::bind(printEntry, std::placeholders::_1)); std::cout << std::endl;
@@ -96,7 +96,7 @@ namespace vve {
 			testTable.forAllEntries(std::bind(printEntry, std::placeholders::_1)); std::cout << std::endl;
 
 			std::vector<VeHandle> handles;
-			testTable.getHandlesFromMap(0, 5, handles);
+			testTable.getHandlesEqual(0, 5, handles);
 			auto [auto_id, dir_index] = VeDirectory::splitHandle(handles[0]);
 
 			handle = testTable.addEntry({ 8, 2, 3, "4" });

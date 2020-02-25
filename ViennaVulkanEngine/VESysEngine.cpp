@@ -87,6 +87,7 @@ namespace vve::syseng {
 			entry.m_tick();
 
 		//copy state
+
 	}
 
 	void runGameLoop() {
@@ -106,7 +107,7 @@ namespace vve::syseng {
 		for (auto entry : g_systems_table->getData()) 
 			entry.m_close();
 
-		delete g_main_table;	//since all shared pointers will be deleted, all registered tables will be deleted
+		delete g_main_table;	//since all shared pointers are deleted, all registered tables will be deleted also
 	}
 
 

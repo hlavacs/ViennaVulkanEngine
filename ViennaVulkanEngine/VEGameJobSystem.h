@@ -103,7 +103,8 @@ namespace vgjs {
 	public:
 
 		Job() : m_nextInQueue(nullptr), m_poolNumber(0), m_parentJob(nullptr), m_numUnfinishedChildren(0), m_onFinishedJob(nullptr),
-				m_pFirstChild(nullptr), m_pNextSibling(nullptr), m_repeatJob(false), m_available(true) {};
+			m_pFirstChild(nullptr), m_pNextSibling(nullptr), m_repeatJob(false), m_available(true),
+			m_endPlayback(false), m_pLastChild(nullptr) {};
 		~Job() {};
 	};
 
@@ -769,10 +770,10 @@ namespace vgjs {
 
 }
 
-#elif
+#else
 
-extern JobMemory * JobMemory::pInstance;
-extern JobSystem * JobSystem::pInstance;
+//vgjs::JobMemory * vgjs::JobMemory::pInstance;
+//vgjs::JobSystem * vgjs::JobSystem::pInstance;
 
 
 #endif
