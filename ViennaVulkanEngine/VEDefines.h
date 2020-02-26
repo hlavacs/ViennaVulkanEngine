@@ -27,7 +27,11 @@ namespace vve {
 
 }
 
+#define VE_ENABLE_MULTITHREADING
+#include "VEGameJobSystem.h"
+
 #include "VEVector.h"
 #include "VETable.h"
-#include "VEGameJobSystem.h"
+
+
 

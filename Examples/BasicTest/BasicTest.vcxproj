@@ -160,9 +160,11 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="BasicTest.cpp" />
+    <ClCompile Include="jobSystemTest.cpp" />
     <ClCompile Include="STLTest.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="jobSystemTest.h" />
     <ClInclude Include="STLTest.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

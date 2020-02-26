@@ -4,3 +4,8 @@
 
 #include "VEGameJobSystem.h"
 
+
+namespace vgjs {
+
+
+}

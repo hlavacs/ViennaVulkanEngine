@@ -24,6 +24,34 @@ The library is a single include file, and can be used under MIT license.
 #include <assert.h>
 
 
+#ifdef VE_ENABLE_MULTITHREADING
+
+	#define ADDJOB( f )		vgjs::JobSystem::getInstance()->addJob( [=](){ f; } );
+	#define ADDCHILD( f )	vgjs::JobSystem::getInstance()->addChildJob( [=](){ f; } );
+	#define ONFINISHED( f )		vgjs::JobSystem::getInstance()->onFinishedAddJob( [=](){ f; } );
+
+	#define ADDJOBT( f, t )		vgjs::JobSystem::getInstance()->addJob( [=](){ f; }, t );
+	#define ADDCHILDT( f, t )	vgjs::JobSystem::getInstance()->addChildJob( [=](){ f; }, t );
+	#define ONFINISHEDT( f, t )	vgjs::JobSystem::getInstance()->onFinishedAddJob( [=](){ f; }, t );
+
+	#define ONFINREP vgjs::JobSystem::getInstance()->onFinishedRepeatJob();
+
+#else
+
+	#define ADDJOB( f ) f;
+	#define ADDCHILD( f ) f;
+	#define ONFINISHED( f ) f;
+
+	#define ADDJOBT( f, t ) f;
+	#define ADDCHILDT( f, t ) f;
+	#define ONFINISHEDT( f, t ) f;
+
+	#define ONFINREP assert(true);
+
+#endif
+
+
+
 namespace vgjs {
 
 	class JobMemory;
@@ -583,8 +611,8 @@ namespace vgjs {
 
 namespace vgjs {
 
-	JobMemory * JobMemory::pInstance = nullptr;
-	JobSystem * JobSystem::pInstance = nullptr;
+	JobMemory* JobMemory::pInstance = nullptr;
+	JobSystem* JobSystem::pInstance = nullptr;
 
 	//---------------------------------------------------------------------------
 	//This is run if the job is executed
@@ -630,8 +658,6 @@ namespace vgjs {
 
 #else
 
-inline vgjs::JobMemory * vgjs::JobMemory::pInstance = nullptr;
-inline vgjs::JobSystem * vgjs::JobSystem::pInstance = nullptr;
 
 
 #endif
