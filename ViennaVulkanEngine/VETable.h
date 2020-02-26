@@ -399,6 +399,9 @@ namespace vve {
 		bool		deleteEntry(VeHandle key);
 
 		template <typename K>
+		VeHandle	getHandleEqual(VeIndex num_map, K key );
+
+		template <typename K>
 		uint32_t	getHandlesEqual(VeIndex num_map, K key, std::vector<VeHandle>& result);
 
 		template <typename K>
@@ -585,6 +588,20 @@ namespace vve {
 
 
 	//--------------------------------------------------------------------------------------------------------------------------
+
+	template<typename T>
+	template<typename K>
+	inline VeHandle VeFixedSizeTable<T>::getHandleEqual(VeIndex num_map, K key ) {
+		assert(num_map < m_maps.size());
+		if (m_data.empty()) return VE_NULL_HANDLE;
+		in();
+		VeIndex dir_index;
+		bool found = m_maps[num_map]->getMappedIndexEqual(key, dir_index);
+		VeHandle result = m_directory.getHandle(dir_index);
+		out();
+		return result;
+	};
+
 
 	template<typename T>
 	template<typename K>

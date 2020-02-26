@@ -49,16 +49,14 @@ namespace vve::syseng {
 		};
 		g_main_table = new VeFixedSizeTable<VeMainTableEntry>( std::move(maps), 0 );
 
-		maps.clear();
-		g_systems_table = new VeFixedSizeTable<VeSysTableEntry>(maps, 0);
+		g_systems_table = new VeFixedSizeTable<VeSysTableEntry>();
 		registerTablePointer(g_systems_table, "Systems");
 	}
 
 	std::shared_ptr<VeTable> getTablePointer(std::string name) {
-		auto data = g_main_table->getData();
-		for (uint32_t i = 0; i < data.size(); ++i) 
-			if (data[i].m_name == name) 
-				return data[i].m_table_pointer; 
+		VeMainTableEntry entry;
+		if( g_main_table->getEntry(g_main_table->getHandleEqual(0, name), entry) )
+			return entry.m_table_pointer;
 		return nullptr;
 	}
 
@@ -89,7 +87,13 @@ namespace vve::syseng {
 			JADD( entry.m_tick() );
 	}
 
+	void sync() {
+		//might copy all new game states here
+	}
+
 	void computeOneFrame2() {
+		JADD(sync());
+
 		for (auto entry : g_systems_table->getData())
 			JADD(entry.m_sync());
 
@@ -119,8 +123,9 @@ namespace vve::syseng {
 	void close() {
 		g_goon = false;
 
-		for (auto entry : g_systems_table->getData()) 
-			entry.m_close();
+		auto data = g_systems_table->getData();
+		for (int32_t i = (int32_t)data.size() - 1; i >= 0; --i) 
+			data[i].m_close();
 
 		delete g_main_table;	//since all shared pointers are deleted, all registered tables will be deleted also
 	}

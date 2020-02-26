@@ -7,7 +7,6 @@
 
 namespace jst {
 
-
 	void testFunction1( uint32_t i) {
 		std::cout << i << std::endl;
 	}
@@ -15,9 +14,6 @@ namespace jst {
 	void testFunction2(uint32_t i) {
 		std::cout << "End " << i << std::endl << std::endl;
 	}
-
-
-
 
 	void jobSystemTest() {
 
@@ -29,7 +25,6 @@ namespace jst {
 		JDEP(testFunction2(5));
 
 	}
-
 
 }
 
