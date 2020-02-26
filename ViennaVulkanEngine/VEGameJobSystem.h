@@ -26,27 +26,27 @@ The library is a single include file, and can be used under MIT license.
 
 #ifdef VE_ENABLE_MULTITHREADING
 
-	#define ADDJOB( f )		vgjs::JobSystem::getInstance()->addJob( [=](){ f; } );
-	#define ADDCHILD( f )	vgjs::JobSystem::getInstance()->addChildJob( [=](){ f; } );
-	#define ONFINISHED( f )		vgjs::JobSystem::getInstance()->onFinishedAddJob( [=](){ f; } );
+	#define JADD( f )	vgjs::JobSystem::getInstance()->addJob( [=](){ f; } );
+	#define JCHILD( f )	vgjs::JobSystem::getInstance()->addChildJob( [=](){ f; } );
+	#define JDEP( f )	vgjs::JobSystem::getInstance()->onFinishedAddJob( [=](){ f; } );
 
-	#define ADDJOBT( f, t )		vgjs::JobSystem::getInstance()->addJob( [=](){ f; }, t );
-	#define ADDCHILDT( f, t )	vgjs::JobSystem::getInstance()->addChildJob( [=](){ f; }, t );
-	#define ONFINISHEDT( f, t )	vgjs::JobSystem::getInstance()->onFinishedAddJob( [=](){ f; }, t );
+	#define JADDT( f, t )	vgjs::JobSystem::getInstance()->addJob( [=](){ f; }, t );
+	#define JCHILDT( f, t )	vgjs::JobSystem::getInstance()->addChildJob( [=](){ f; }, t );
+	#define JDEPT( f, t )	vgjs::JobSystem::getInstance()->onFinishedAddJob( [=](){ f; }, t );
 
-	#define ONFINREP vgjs::JobSystem::getInstance()->onFinishedRepeatJob();
+	#define JREP vgjs::JobSystem::getInstance()->onFinishedRepeatJob();
 
 #else
 
-	#define ADDJOB( f ) f;
-	#define ADDCHILD( f ) f;
-	#define ONFINISHED( f ) f;
+	#define JADD( f ) f;
+	#define JCHILD( f ) f;
+	#define JDEP( f ) f;
 
-	#define ADDJOBT( f, t ) f;
-	#define ADDCHILDT( f, t ) f;
-	#define ONFINISHEDT( f, t ) f;
+	#define JADDT( f, t ) f;
+	#define JCHILDT( f, t ) f;
+	#define JDEPT( f, t ) f;
 
-	#define ONFINREP assert(true);
+	#define JREP assert(true);
 
 #endif
 
@@ -389,6 +389,7 @@ namespace vgjs {
 
 			m_jobQueues.resize(threadCount);							//reserve mem for job queue pointers
 			m_jobQueuesLocal.resize(threadCount);						//reserve mem for polling job queue pointers
+			m_jobQueuesLocalFIFO.resize(threadCount);					//reserve mem for polling job queue pointers
 			m_jobPointers.resize(threadCount);							//rerve mem for Job pointers
 			m_numMisses.resize(threadCount);
 			m_numLoops.resize(threadCount);

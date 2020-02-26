@@ -12,11 +12,17 @@ int main()
 {
     std::cout << "Hello World!\n";
 
-    jst::jobSystemTest();
+    JADD( jst::jobSystemTest() );
 
     //vec::testVector();
     //tab::testTables();
     //stltest::runSTLTests();
+
+    vgjs::JobSystem::getInstance()->wait();
+    vgjs::JobSystem::getInstance()->terminate();
+    vgjs::JobSystem::getInstance()->waitForTermination();
+
+
     return 0;
 
     syseng::init();
