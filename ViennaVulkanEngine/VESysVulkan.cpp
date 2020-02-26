@@ -15,6 +15,9 @@ namespace vve::sysvul {
 
 	}
 
+	void sync() {
+	}
+
 	void close() {
 
 	}

@@ -14,6 +14,9 @@ namespace vve::syssce {
 
 	}
 
+	void sync() {
+	}
+
 	void close() {
 
 	}

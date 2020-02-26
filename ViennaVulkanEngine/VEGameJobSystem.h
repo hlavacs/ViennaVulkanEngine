@@ -27,11 +27,9 @@ The library is a single include file, and can be used under MIT license.
 #ifdef VE_ENABLE_MULTITHREADING
 
 	#define JADD( f )	vgjs::JobSystem::getInstance()->addJob( [=](){ f; } );
-	#define JCHILD( f )	vgjs::JobSystem::getInstance()->addChildJob( [=](){ f; } );
 	#define JDEP( f )	vgjs::JobSystem::getInstance()->onFinishedAddJob( [=](){ f; } );
 
 	#define JADDT( f, t )	vgjs::JobSystem::getInstance()->addJob( [=](){ f; }, t );
-	#define JCHILDT( f, t )	vgjs::JobSystem::getInstance()->addChildJob( [=](){ f; }, t );
 	#define JDEPT( f, t )	vgjs::JobSystem::getInstance()->onFinishedAddJob( [=](){ f; }, t );
 
 	#define JREP vgjs::JobSystem::getInstance()->onFinishedRepeatJob();
@@ -39,11 +37,9 @@ The library is a single include file, and can be used under MIT license.
 #else
 
 	#define JADD( f ) f;
-	#define JCHILD( f ) f;
 	#define JDEP( f ) f;
 
 	#define JADDT( f, t ) f;
-	#define JCHILDT( f, t ) f;
 	#define JDEPT( f, t ) f;
 
 	#define JREP assert(true);
@@ -74,7 +70,7 @@ namespace vgjs {
 		Job *					m_parentJob;					//parent job, called if this job finishes
 		Job *					m_onFinishedJob;				//job to schedule once this job finshes
 		int32_t					m_thread_id;					//the id of the thread this job must be scheduled, or -1 if any thread
-		std::shared_ptr<Function> m_function;					//the function to carry out
+		Function				m_function;					//the function to carry out
 		std::atomic<uint32_t>	m_numUnfinishedChildren;		//number of unfinished jobs
 		std::atomic<bool>		m_available;					//is this job available after a pool reset?
 		bool					m_repeatJob;					//if true then the job will be rescheduled
@@ -101,7 +97,7 @@ namespace vgjs {
 
 		//---------------------------------------------------------------------------
 		//set the Job's function
-		void setFunction(std::shared_ptr<Function> func) {
+		void setFunction(Function& func) {
 			m_function = func;
 		};
 
@@ -482,7 +478,7 @@ namespace vgjs {
 		//wrapper for resetting a job pool in the job memory
 		//poolNumber Number of the pool to reset
 		//
-		void resetPool( uint32_t poolNumber ) {
+		void resetPool() {
 			JobMemory::pInstance->resetPool();
 		};
 		
@@ -519,39 +515,14 @@ namespace vgjs {
 			m_jobQueues[std::rand() % tsize]->push(pJob);					//put into random LIFO queue
 		};
 
-		//---------------------------------------------------------------------------
-
-		//func The function to schedule
-		//poolNumber Optional number of the pool, or -1
-		//id A name for the job for debugging
-		void addJob(Function& func, int32_t thread_id = -1 ) {
-			Job* pCurrentJob = getJobPointer();
-			if (pCurrentJob == nullptr) {		//called from main thread -> need a Job 
-				pCurrentJob = JobMemory::pInstance->allocateJob();
-				pCurrentJob->setFunction(std::make_shared<Function>(func));
-				pCurrentJob->setThreadId(thread_id);
-				addJob(pCurrentJob);
-				return;
-			}
-
-			Job* pJob = JobMemory::pInstance->allocateJob();	//no parent, so do not wait for its completion
-			pJob->setFunction(std::make_shared<Function>(func));
-			pJob->setThreadId(thread_id);
-			addJob(pJob);
-		}
-
-		void addJob(Function&& func, int32_t thread_id = -1 ) {
-			addJob( func, thread_id );
-		};
-
 
 		//---------------------------------------------------------------------------
 		//create a new child job in a job pool
 		//func The function to schedule, as rvalue reference
-		void addChildJob( Function& func, int32_t thread_id = -1 ) {
+		void addJob( Function& func, int32_t thread_id = -1 ) {
 			Job *pJob = JobMemory::pInstance->allocateJob();
-			pJob->setParentJob(getJobPointer(), true);			//set parent Job and notify parent
-			pJob->setFunction(std::make_shared<Function>(func));
+			pJob->setParentJob(getJobPointer(), true);				//set parent Job and notify parent
+			pJob->setFunction(func);
 			pJob->setThreadId(thread_id);
 			addJob(pJob);
 		};
@@ -559,8 +530,8 @@ namespace vgjs {
 		//func The function to schedule, as rvalue reference
 		//poolNumber Number of the pool
 		//id A name for the job for debugging
-		void addChildJob( Function&& func, int32_t thread_id = -1) {
-			addChildJob( func, thread_id );
+		void addJob( Function&& func, int32_t thread_id = -1) {
+			addJob( func, thread_id );
 		};
 
 		//---------------------------------------------------------------------------
@@ -574,7 +545,7 @@ namespace vgjs {
 			if (pCurrentJob == nullptr) return;			//is null if called by main thread
 			if (pCurrentJob->m_repeatJob) return;		//you cannot do both repeat and add job after finishing
 			Job *pNewJob = JobMemory::pInstance->allocateJob();			//new job has the same parent as current job
-			pNewJob->setFunction(std::make_shared<Function>(func));
+			pNewJob->setFunction(func);
 			pNewJob->setThreadId(thread_id);
 			pCurrentJob->setOnFinished(pNewJob);
 		};
@@ -620,7 +591,7 @@ namespace vgjs {
 	void Job::operator()() {
 		if (m_function == nullptr) return;				//no function bound -> return
 		m_numUnfinishedChildren = 1;					//number of children includes itself
-		(*m_function)();								//call the function
+		m_function();									//call the function
 		uint32_t numLeft = m_numUnfinishedChildren.fetch_sub(1);	//reduce number of running children by 1 (includes itself)
 		if (numLeft == 1) onFinished();								//this was the last child
 	};

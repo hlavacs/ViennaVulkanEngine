@@ -21,10 +21,10 @@ namespace jst {
 
 	void jobSystemTest() {
 
-		JCHILD(testFunction1(1));
-		JCHILD(testFunction1(2));
-		JCHILD(testFunction1(3));
-		JCHILD(testFunction1(4));
+		JADD(testFunction1(1));
+		JADD(testFunction1(2));
+		JADD(testFunction1(3));
+		JADD(testFunction1(4));
 
 		JDEP(testFunction2(5));
 

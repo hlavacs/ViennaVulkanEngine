@@ -23,6 +23,9 @@ namespace vve::syseve {
 
 	}
 
+	void sync() {
+	}
+
 	void close() {
 
 	}

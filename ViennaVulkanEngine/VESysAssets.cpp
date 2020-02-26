@@ -15,7 +15,9 @@ namespace vve::sysass {
 	}
 
 	void tick() {
+	}
 
+	void sync() {
 	}
 
 	void close() {

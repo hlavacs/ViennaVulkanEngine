@@ -13,6 +13,9 @@ namespace vve::syswin {
 
 	}
 
+	void sync() {
+	}
+
 	void close() {
 
 	}

@@ -12,21 +12,18 @@ int main()
 {
     std::cout << "Hello World!\n";
 
-    JADD( jst::jobSystemTest() );
+    //JADD( jst::jobSystemTest() );
 
     //vec::testVector();
     //tab::testTables();
     //stltest::runSTLTests();
 
-    vgjs::JobSystem::getInstance()->wait();
-    vgjs::JobSystem::getInstance()->terminate();
-    vgjs::JobSystem::getInstance()->waitForTermination();
-
-
-    return 0;
+    //vgjs::JobSystem::getInstance()->wait();
+    //vgjs::JobSystem::getInstance()->terminate();
+    //vgjs::JobSystem::getInstance()->waitForTermination();
 
     syseng::init();
-    syseng::computeOneFrame();
+    syseng::runGameLoop();
     syseng::close();
  
     return 0;

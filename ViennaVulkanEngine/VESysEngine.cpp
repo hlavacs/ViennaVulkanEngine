@@ -21,20 +21,22 @@ namespace vve::syseng {
 		VeMainTableEntry() : m_table_pointer(), m_name("") {};
 		VeMainTableEntry( VeTable* tptr, std::string name) : m_table_pointer(tptr), m_name(name) {};
 	};
+	VeFixedSizeTable<VeMainTableEntry>*	g_main_table = nullptr;
 
 	struct VeSysTableEntry {
 		std::function<void()>	m_init;
 		std::function<void()>	m_tick;
+		std::function<void()>	m_sync;
 		std::function<void()>	m_close;
-		VeSysTableEntry() : m_init(), m_tick(), m_close() {};
-		VeSysTableEntry(std::function<void()> i, std::function<void()> t, std::function<void()> c) :
-			m_init(i), m_tick(t), m_close(c) {};
+		VeSysTableEntry() : m_init(), m_tick(), m_sync(), m_close() {};
+		VeSysTableEntry(std::function<void()> init, std::function<void()> tick, 
+			std::function<void()> sync, std::function<void()> close) :
+			m_init(init), m_tick(tick), m_sync(sync), m_close(close) {};
 	};
-
-	std::atomic<bool> g_loop = false;
-	std::atomic<bool> g_goon = true;
-	VeFixedSizeTable<VeMainTableEntry>*	g_main_table = nullptr;
 	VeFixedSizeTable<VeSysTableEntry>*	g_systems_table = nullptr;
+
+
+	std::atomic<bool> g_goon = true;
 
 	void registerTablePointer(VeTable* tptr, std::string name) {
 		g_main_table->addEntry({ tptr, name});
@@ -60,20 +62,20 @@ namespace vve::syseng {
 		return nullptr;
 	}
 
-	void registerSystem(std::function<void()> init, std::function<void()> tick, std::function<void()> close) {
-		g_systems_table->addEntry({ init, tick, close });
+	void registerSystem(std::function<void()> init, std::function<void()> tick, std::function<void()> sync, std::function<void()> close) {
+		g_systems_table->addEntry({ init, tick, sync, close });
 	}
 
 	void init() {
 		std::cout << "init engine 2\n";
 
 		createTables();
-		registerSystem(syswin::init, syswin::tick, syswin::close);
-		registerSystem(sysvul::init, sysvul::tick, sysvul::close);
-		registerSystem(syseve::init, syseve::tick, syseve::close);
-		registerSystem(sysass::init, sysass::tick, sysass::close);
-		registerSystem(syssce::init, syssce::tick, syssce::close);
-		registerSystem(sysphy::init, sysphy::tick, sysphy::close);
+		registerSystem(syswin::init, syswin::tick, syswin::sync, syswin::close);
+		registerSystem(sysvul::init, sysvul::tick, sysvul::sync, sysvul::close);
+		registerSystem(syseve::init, syseve::tick, syseve::sync, syseve::close);
+		registerSystem(sysass::init, sysass::tick, sysass::sync, sysass::close);
+		registerSystem(syssce::init, syssce::tick, syssce::sync, syssce::close);
+		registerSystem(sysphy::init, sysphy::tick, sysphy::sync, sysphy::close);
 
 		for (auto entry : g_systems_table->getData()) 
 			entry.m_init();
@@ -82,28 +84,41 @@ namespace vve::syseng {
 		g_main_table->setReadOnly(true);
 	}
 
-	void computeOneFrame() {
+	void tick() {
 		for (auto entry : g_systems_table->getData()) 
-			entry.m_tick();
+			JADD( entry.m_tick() );
+	}
 
-		//copy state
+	void computeOneFrame2() {
+		for (auto entry : g_systems_table->getData())
+			JADD(entry.m_sync());
 
+		JDEP(tick());
+	}
+
+	void computeOneFrame() {
+		JADD(computeOneFrame2());
+
+#ifdef VE_ENABLE_MULTITHREADING
+		vgjs::JobSystem::getInstance()->wait();
+		vgjs::JobSystem::getInstance()->resetPool();
+#endif
 	}
 
 	void runGameLoop() {
-		g_loop = true;
 		while (g_goon) {
 			computeOneFrame();
 		}
-		g_loop = false;
-		close();
+
+#ifdef VE_ENABLE_MULTITHREADING
+		vgjs::JobSystem::getInstance()->terminate();
+		vgjs::JobSystem::getInstance()->waitForTermination();
+#endif
 	}
 
 	void close() {
-		if (g_loop) {
-			g_goon = false;
-			return;
-		}
+		g_goon = false;
+
 		for (auto entry : g_systems_table->getData()) 
 			entry.m_close();
 

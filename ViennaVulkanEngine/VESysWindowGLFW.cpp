@@ -14,6 +14,9 @@ namespace vve::syswin::glfw {
 
 	}
 
+	void sync() {
+	}
+
 	void close() {
 
 	}

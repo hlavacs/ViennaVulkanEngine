@@ -13,6 +13,9 @@ namespace vve::sysphy {
 
 	}
 
+	void sync() {
+	}
+
 	void close() {
 
 	}
