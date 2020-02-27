@@ -8,7 +8,7 @@
 namespace jst {
 
 	void testFunction1( uint32_t i) {
-		std::cout << i << std::endl;
+		std::cout << " " << i << " " << std::endl;
 	}
 
 	void testFunction2(uint32_t i) {
@@ -17,12 +17,11 @@ namespace jst {
 
 	void jobSystemTest() {
 
-		JADD(testFunction1(1));
-		JADD(testFunction1(2));
-		JADD(testFunction1(3));
-		JADD(testFunction1(4));
+		uint32_t i = 0;
+		for( ; i<30; ++i) 
+			JADD(testFunction1(i));
 
-		JDEP(testFunction2(5));
+		JDEPT( testFunction2(i+1) , vgjs::TID(0,1) );
 
 	}
 
