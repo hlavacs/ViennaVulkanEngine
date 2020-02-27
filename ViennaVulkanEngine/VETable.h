@@ -356,18 +356,8 @@ namespace vve {
 
 	public:
 
-		VeFixedSizeTable(VeIndex thread_id = VE_NULL_INDEX, bool memcopy = false, VeIndex align = 16, VeIndex capacity = 16) : 
+		VeFixedSizeTable(VeIndex thread_id = VE_NULL_INDEX, bool memcopy = false, VeIndex align = 0, VeIndex capacity = 16) : 
 			VeTable( thread_id), m_data(memcopy, align, capacity) {};
-
-		VeFixedSizeTable( std::vector<VeMap*> &&maps, VeIndex thread_id = VE_NULL_INDEX, bool memcopy = false,
-			VeIndex align = 16, VeIndex capacity = 16) : VeTable( thread_id ), m_data(memcopy, align, capacity) {
-			m_maps = std::move(maps);	
-		};
-
-		VeFixedSizeTable(std::vector<VeMap*>& maps, VeIndex thread_id = VE_NULL_INDEX, bool memcopy = false,
-			VeIndex align = 16, VeIndex capacity = 16) : VeTable(thread_id), m_data(memcopy, align, capacity)  {
-			m_maps = maps;
-		};
 
 		VeFixedSizeTable(const VeFixedSizeTable& table) :
 			VeTable(table), m_maps(table.m_maps), m_data(table.m_data), m_directory(table.m_directory), m_tbl2dir(table.m_tbl2dir) {};
@@ -712,30 +702,30 @@ namespace vve {
 			VeDirectoryEntry() : m_start(VE_NULL_INDEX), m_size(VE_NULL_INDEX), m_occupied(VE_NULL_INDEX) {};
 		};
 
-		VeFixedSizeTable<VeDirectoryEntry>*	m_pdirectory = nullptr;
+		VeFixedSizeTable<VeDirectoryEntry>	m_directory;
 		std::vector<uint8_t>				m_data;
 		VeIndex								m_align;
 		bool								m_immediateDefrag;
 
 		void defragment() {
 			std::vector<VeHandle> handles;  
-			handles.reserve( (VeIndex)m_pdirectory->getSize() + 1 );
-			m_pdirectory->getAllHandlesFromMap(1, handles);
+			handles.reserve( (VeIndex)m_directory.getSize() + 1 );
+			m_directory.getAllHandlesFromMap(1, handles);
 			if (handles.size() < 2) 
 				return;
 
 			VeDirectoryEntry entry1;
-			if (!m_pdirectory->getEntry(handles[0], entry1)) 
+			if (!m_directory.getEntry(handles[0], entry1)) 
 				return;
 
 			for (uint32_t i = 1; i < handles.size(); ++i ) {
 				VeDirectoryEntry entry2;
-				if (!m_pdirectory->getEntry(handles[i], entry2)) 
+				if (!m_directory.getEntry(handles[i], entry2)) 
 					return;
 
 				if (entry1.m_occupied == 0 && entry2.m_occupied == 0) {
 					entry1.m_size += entry2.m_size;
-					m_pdirectory->deleteEntry(handles[i]);
+					m_directory.deleteEntry(handles[i]);
 				}
 				else 
 					entry1 = entry2;
@@ -747,30 +737,26 @@ namespace vve {
 		VeVariableSizeTable(VeIndex size = 1<<20, VeIndex thread_id = VE_NULL_INDEX, VeIndex align = 16, bool immediateDefrag = false ) : 
 			VeTable( thread_id ), m_align(align), m_immediateDefrag(immediateDefrag) {
 
-			std::vector<VeMap*> maps = {
-				(VeMap*) new VeTypedMap< std::multimap<VeTableKeyInt, VeTableIndex>, VeTableKeyInt, VeTableIndex >(
-							(VeIndex)offsetof(struct VeDirectoryEntry, m_occupied), (VeIndex)sizeof(VeDirectoryEntry::m_occupied)),
-				(VeMap*) new VeTypedMap< std::map<VeTableKeyInt, VeIndex>, VeTableKeyInt, VeTableIndex >(
-							(VeIndex)offsetof(struct VeDirectoryEntry, m_start), (VeIndex)sizeof(VeDirectoryEntry::m_start))
-			};
-			m_pdirectory = new VeFixedSizeTable<VeDirectoryEntry>( maps, true );
-
+			m_directory.addMap((VeMap*) new VeTypedMap< std::multimap<VeTableKeyInt, VeTableIndex>, VeTableKeyInt, VeTableIndex >(
+				(VeIndex)offsetof(struct VeDirectoryEntry, m_occupied), (VeIndex)sizeof(VeDirectoryEntry::m_occupied)));
+			m_directory.addMap((VeMap*) new VeTypedMap< std::map<VeTableKeyInt, VeIndex>, VeTableKeyInt, VeTableIndex >(
+				(VeIndex)offsetof(struct VeDirectoryEntry, m_start), (VeIndex)sizeof(VeDirectoryEntry::m_start)));
+					   
 			m_data.resize((VeIndex)size + m_align);
 			uint64_t start = (VeIndex) ( alignBoundary((uint64_t)m_data.data(), m_align) - (uint64_t)m_data.data() );
 			VeDirectoryEntry entry{ (VeIndex)start, size, 0 };
-			m_pdirectory->addEntry(entry);
+			m_directory.addEntry(entry);
 		}
 
 		~VeVariableSizeTable() {
-			delete m_pdirectory;
 		};
 
 		void clear() {
 			in();
-			m_pdirectory->clear();
+			m_directory.clear();
 			uint64_t start = (VeIndex)(alignBoundary((uint64_t)m_data.data(), m_align) - (uint64_t)m_data.data());
 			VeDirectoryEntry entry{ (VeIndex)start, (VeIndex)(m_data.size() - m_align), 0 };
-			m_pdirectory->addEntry(entry);
+			m_directory.addEntry(entry);
 			out();
 		}
 
@@ -779,12 +765,12 @@ namespace vve {
 			size = (VeIndex)alignBoundary( size, m_align );
 
 			std::vector<VeHandle> result;
-			m_pdirectory->getHandlesEqual((VeIndex)0, (VeIndex)0, result );
+			m_directory.getHandlesEqual((VeIndex)0, (VeIndex)0, result );
 
 			VeHandle h = VE_NULL_HANDLE;
 			VeDirectoryEntry entry;
 			for (auto handle : result) {
-				if (m_pdirectory->getEntry(handle, entry) && entry.m_size >= size) {
+				if (m_directory.getEntry(handle, entry) && entry.m_size >= size) {
 					h = handle;
 					break;
 				}
@@ -801,11 +787,11 @@ namespace vve {
 
 			if (entry.m_size > size) { 
 				VeDirectoryEntry newentry{ entry.m_start + size, entry.m_size - size, 0 };
-				m_pdirectory->addEntry(newentry);
+				m_directory.addEntry(newentry);
 			}
 			entry.m_size = size;
 			entry.m_occupied = 1;
-			m_pdirectory->updateEntry(h, entry);
+			m_directory.updateEntry(h, entry);
 			out();
 			return h;
 		}
@@ -813,7 +799,7 @@ namespace vve {
 		uint8_t* getPointer(VeHandle handle) {
 			in();
 			VeDirectoryEntry entry;
-			if (!m_pdirectory->getEntry(handle, entry)) {
+			if (!m_directory.getEntry(handle, entry)) {
 				out();
 				return nullptr;
 			}
@@ -825,12 +811,12 @@ namespace vve {
 		bool deleteBlob(VeHandle handle ) {
 			in();
 			VeDirectoryEntry entry;
-			if (!m_pdirectory->getEntry(handle, entry)) {
+			if (!m_directory.getEntry(handle, entry)) {
 				out();
 				return false;
 			}
 			entry.m_occupied = 0;
-			m_pdirectory->updateEntry(handle, entry);
+			m_directory.updateEntry(handle, entry);
 			if (m_immediateDefrag) 
 				defragment();
 			out();

@@ -5,7 +5,9 @@
 namespace vve::sysvul {
 
 
-
+	struct VeStringTableEntry {
+		const char* m_string;
+	};
 
 
 	void init();

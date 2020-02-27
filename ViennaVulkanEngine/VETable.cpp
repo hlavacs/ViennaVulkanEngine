@@ -24,18 +24,21 @@ namespace vve {
 			TestEntry(VeHandle handle, VeIndex int1, VeIndex int2, std::string name) : m_int64(handle), m_int1(int1), m_int2(int2), m_name(name) {};
 		};
 
-		std::vector<VeMap*> maps = {
-			(VeMap*) new VeTypedMap< std::map<VeTableKeyInt, VeTableIndex>, VeTableKeyInt, VeTableIndex >(
-				(VeIndex)offsetof(struct TestEntry, m_int64), (VeIndex)sizeof(TestEntry::m_int64)),
-			(VeMap*) new VeTypedMap< std::multimap<VeTableKeyInt, VeTableIndex>, VeTableKeyInt, VeTableIndex >(
-				(VeIndex)offsetof(struct TestEntry, m_int1), (VeIndex)sizeof(TestEntry::m_int1)),
-			(VeMap*) new VeTypedMap< std::multimap<VeTableKeyString, VeTableIndex>, VeTableKeyString, VeTableIndex >(
-				(VeIndex)offsetof(struct TestEntry, m_name), 0),
-			(VeMap*) new VeTypedMap< std::multimap<VeTableKeyIntPair, VeTableIndex>, VeTableKeyIntPair, VeTableIndexPair >(
+
+		VeFixedSizeTable<TestEntry> testTable;
+
+		void createTable() {
+			testTable.addMap((VeMap*) new VeTypedMap< std::map<VeTableKeyInt, VeTableIndex>, VeTableKeyInt, VeTableIndex >(
+				(VeIndex)offsetof(struct TestEntry, m_int64), (VeIndex)sizeof(TestEntry::m_int64)));
+			testTable.addMap((VeMap*) new VeTypedMap< std::multimap<VeTableKeyInt, VeTableIndex>, VeTableKeyInt, VeTableIndex >(
+				(VeIndex)offsetof(struct TestEntry, m_int1), (VeIndex)sizeof(TestEntry::m_int1)));
+			testTable.addMap((VeMap*) new VeTypedMap< std::multimap<VeTableKeyString, VeTableIndex>, VeTableKeyString, VeTableIndex >(
+				(VeIndex)offsetof(struct TestEntry, m_name), 0));
+			testTable.addMap((VeMap*) new VeTypedMap< std::multimap<VeTableKeyIntPair, VeTableIndex>, VeTableKeyIntPair, VeTableIndexPair >(
 				VeTableIndexPair((VeIndex)offsetof(struct TestEntry, m_int1), (VeIndex)offsetof(struct TestEntry, m_int2)),
-				VeTableIndexPair((VeIndex)sizeof(TestEntry::m_int1), (VeIndex)sizeof(TestEntry::m_int2)))
-		};
-		VeFixedSizeTable<TestEntry> testTable(maps);
+				VeTableIndexPair((VeIndex)sizeof(TestEntry::m_int1), (VeIndex)sizeof(TestEntry::m_int2))));
+		}
+
 
 
 		void printEntry(VeHandle handle) {
@@ -152,6 +155,8 @@ namespace vve {
 		}
 
 		void testTables() {
+			createTable();
+
 			testFixedTables1();
 			testVarTables();
 		}

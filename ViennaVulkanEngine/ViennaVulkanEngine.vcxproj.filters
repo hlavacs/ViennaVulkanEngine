@@ -47,10 +47,10 @@
     <ClCompile Include="VEVector.cpp">
       <Filter>Quelldateien</Filter>
     </ClCompile>
-    <ClCompile Include="VEGameJobSystem.cpp">
+    <ClCompile Include="VESysVulkanFWSimple.cpp">
       <Filter>Quelldateien</Filter>
     </ClCompile>
-    <ClCompile Include="VESysVulkanFWSimple.cpp">
+    <ClCompile Include="VEDevice.cpp">
       <Filter>Quelldateien</Filter>
     </ClCompile>
   </ItemGroup>
@@ -101,6 +101,9 @@
       <Filter>Headerdateien</Filter>
     </ClInclude>
     <ClInclude Include="VESysVulkanFWSimple.h">
+      <Filter>Headerdateien</Filter>
+    </ClInclude>
+    <ClInclude Include="VEDevice.h">
       <Filter>Headerdateien</Filter>
     </ClInclude>
   </ItemGroup>

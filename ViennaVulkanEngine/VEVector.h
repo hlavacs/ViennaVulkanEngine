@@ -195,7 +195,7 @@ namespace vve {
 			VeIndex m_entrySize;
 		};
 
-		VeVector(bool memcopy = false, VeIndex align = 16, VeIndex capacity = 16 );	///<Main vector constructor creates an empty vector
+		VeVector(bool memcopy = false, VeIndex align = 0, VeIndex capacity = 16 );	///<Main vector constructor creates an empty vector
 		VeVector(const VeVector& vec);							///<Copy constructor
 		VeVector(const VeVector&& vec);							///<Copy constructor
 		~VeVector() { destruct(); };							///<Destructor destructs all structs, then deletes the memory
@@ -203,6 +203,7 @@ namespace vve {
 		void operator=( const VeVector & vec );					///<assignment operator
 
 		size_type size() { return m_size; };					///<returns number of entries in the vector
+		T* data() { return (T*)m_startptr; };
 		T& operator[](size_type index );						///<operator to access entry
 		const T& operator[](size_type index) const;				///<const access operator
 		iterator begin() { return iterator(m_startptr, m_entrySize ); }	///<begin for iterator

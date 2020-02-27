@@ -1,5 +1,6 @@
 
 
+#define IMPLEMENT_GAMEJOBSYSTEM
 
 #include "VEDefines.h"
 #include "VESysEngine.h"
@@ -35,8 +36,6 @@ namespace vve::syseng {
 	};
 	VeFixedSizeTable<VeSysTableEntry> g_systems_table;
 
-
-	std::atomic<bool> g_goon = true;
 
 	void registerTablePointer(VeTable* tptr, std::string name) {
 		g_main_table.addEntry({ tptr, name});
@@ -106,6 +105,8 @@ namespace vve::syseng {
 #endif
 	}
 
+	std::atomic<bool> g_goon = true;
+
 	void runGameLoop() {
 		while (g_goon) {
 			computeOneFrame();
@@ -129,7 +130,6 @@ namespace vve::syseng {
 		g_systems_table.clear();
 		g_main_table.clear();
 	}
-
 
 }
 
