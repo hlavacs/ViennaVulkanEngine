@@ -77,6 +77,7 @@
     <LinkIncremental>true</LinkIncremental>
     <IntDir>$(SolutionDir)bin\$(Platform)\$(Configuration)\</IntDir>
     <OutDir>$(SolutionDir)bin\$(Platform)\$(Configuration)\</OutDir>
+    <IncludePath>$(VK_SDK_PATH)\include\vulkan;$(IncludePath)</IncludePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <LinkIncremental>false</LinkIncremental>
@@ -85,6 +86,7 @@
     <LinkIncremental>false</LinkIncremental>
     <IntDir>$(SolutionDir)bin\$(Platform)\$(Configuration)\</IntDir>
     <OutDir>$(SolutionDir)bin\$(Platform)\$(Configuration)\</OutDir>
+    <IncludePath>$(VK_SDK_PATH)\include\vulkan;$(IncludePath)</IncludePath>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
@@ -158,6 +160,7 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="VEGameJobSystem.cpp" />
+    <ClCompile Include="VESysVulkanFWSimple.cpp" />
     <ClCompile Include="VETable.cpp" />
     <ClCompile Include="VECollision.cpp" />
     <ClCompile Include="VESysEngine.cpp" />
@@ -174,6 +177,7 @@
   <ItemGroup>
     <ClInclude Include="VEDefines.h" />
     <ClInclude Include="VEGameJobSystem.h" />
+    <ClInclude Include="VESysVulkanFWSimple.h" />
     <ClInclude Include="VETable.h" />
     <ClInclude Include="VECollision.h" />
     <ClInclude Include="VESysEngine.h" />

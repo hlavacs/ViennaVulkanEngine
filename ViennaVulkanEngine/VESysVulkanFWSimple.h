@@ -1,8 +1,9 @@
 #pragma once
 
 
-namespace vve::syswin::glfw {
 
+
+namespace vve::sysvul::fwsimple {
 
 	void init();
 	void tick();
@@ -10,6 +11,6 @@ namespace vve::syswin::glfw {
 	void close();
 
 
-}
 
+}
 

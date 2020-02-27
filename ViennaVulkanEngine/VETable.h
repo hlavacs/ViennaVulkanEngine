@@ -100,7 +100,7 @@ namespace vve {
 
 	///M is either std::map or std::unordered_map
 	///I is the offset/length type, is either VeTableIndex or VeTableIndexPair
-	///K is the map key, is either VeTableKeyInt, VeTableKeyIntPair, or VeTableKeyString
+	///K is the map key, is either VeTableKeyInt, VeTableKeyIntPair, VeTableKeyIntTriple, or VeTableKeyString
 	template <typename M, typename K, typename I>
 	class VeTypedMap : public VeMap {
 	protected:
@@ -218,7 +218,7 @@ namespace vve {
 		};
 
 		VeIndex							m_auto_counter = 0;				///
-		std::vector<VeDirectoryEntry>	m_dir_entries;					///1 level of indirection, idx into the entry table
+		std::vector<VeDirectoryEntry>	m_dir_entries;					///1 level of indirection, idx into the data table
 		VeIndex							m_first_free = VE_NULL_INDEX;	///index of first free entry in directory
 
 		VeHandle addNewEntry(VeIndex table_index ) {
@@ -418,6 +418,7 @@ namespace vve {
 
 	template<typename T> inline void VeFixedSizeTable<T>::operator=(const VeFixedSizeTable& table) {
 		in();
+		assert(!m_read_only);
 		m_directory = table.m_directory;
 		m_data		= table.m_data;
 		m_maps		= table.m_maps;
@@ -484,10 +485,12 @@ namespace vve {
 	}
 
 	template<typename T> inline bool VeFixedSizeTable<T>::getEntry( VeHandle key, T& entry ) {
-		if(key==VE_NULL_HANDLE) return false;
-		if (m_data.empty()) return false;
-
 		in();
+		if (key == VE_NULL_HANDLE || m_data.empty()) {
+			out();
+			return false;
+		}
+
 		auto [auto_id, dir_index]	= m_directory.splitHandle( key );
 		auto dir_entry				= m_directory.getEntry(dir_index);
 		if ( auto_id != dir_entry.m_auto_id ) 
@@ -499,15 +502,20 @@ namespace vve {
 	};
 
 	template<typename T> inline bool VeFixedSizeTable<T>::updateEntry(VeHandle handle, T& entry) {
-		if ( !isValid(handle) || m_data.empty() ) return false;
-
 		in();
+		assert(!m_read_only);
+		if (!isValid(handle) || m_data.empty()) {
+			out();
+			return false;
+		}
+
 		auto [auto_id, dir_index]	= m_directory.splitHandle(handle);
 		auto dir_entry				= m_directory.getEntry(dir_index);
 		if (auto_id != dir_entry.m_auto_id) {
 			out();
 			return false;
 		}
+
 		for (auto map : m_maps) 
 			map->deleteFromMap((void*)&m_data[dir_entry.m_table_index], dir_index);
 		m_data[dir_entry.m_table_index] = entry;
@@ -518,24 +526,35 @@ namespace vve {
 	};
 
 	template<typename T> inline void VeFixedSizeTable<T>::swapEntriesByHandle(VeHandle h1, VeHandle h2) {
-		if (h1 == h2 || !isValid(h1) || !isValid(h2) ) return;
+		in();
+		assert(!m_read_only);
+		if (h1 == h2 || !isValid(h1) || !isValid(h2)) {
+			out();
+			return;
+		}
 
 		VeIndex first = getIndexFromHandle(h1);
 		VeIndex second = getIndexFromHandle(h2);
-		if (first == VE_NULL_INDEX || second == VE_NULL_INDEX) return;
+		if (first == VE_NULL_INDEX || second == VE_NULL_INDEX) {
+			out();
+			return;
+		}
 		std::swap(m_data[first], m_data[second]);
 		std::swap(m_tbl2dir[first], m_tbl2dir[second]);
 		m_directory.updateTableIndex(m_tbl2dir[first], first);
 		m_directory.updateTableIndex(m_tbl2dir[second], second);
+		out();
 	};
 
 
 	template<typename T> inline bool VeFixedSizeTable<T>::deleteEntry(VeHandle key) {
-		if (key == VE_NULL_HANDLE) return false;
-		if (m_data.empty()) return false;
-
 		in();
 		assert(!m_read_only);
+		if (key == VE_NULL_HANDLE || m_data.empty()) {
+			out();
+			return false;
+		}
+
 		auto [auto_id, dir_index]	= m_directory.splitHandle(key);
 		auto dir_entry				= m_directory.getEntry(dir_index);
 		if (auto_id != dir_entry.m_auto_id) {
@@ -556,16 +575,20 @@ namespace vve {
 	};
 
 	template<typename T> inline VeIndex VeFixedSizeTable<T>::getIndexFromHandle(VeHandle key) {
-		if (key == VE_NULL_HANDLE) return VE_NULL_INDEX;
-
 		in();
+		if (key == VE_NULL_HANDLE) {
+			out();
+			return VE_NULL_INDEX;
+		}
+
 		auto [auto_id, dir_index]	= m_directory.splitHandle(key);
 		auto dir_entry				= m_directory.getEntry(dir_index);
-		out();
 
+		VeIndex result = dir_entry.m_table_index;
 		if (auto_id != dir_entry.m_auto_id) 
-			return VE_NULL_INDEX;
-		return dir_entry.m_table_index;
+			result = VE_NULL_INDEX;
+		out();
+		return result;
 	};
 
 	template<typename T> inline VeHandle VeFixedSizeTable<T>::getHandleFromIndex(VeIndex table_index) {
@@ -592,9 +615,12 @@ namespace vve {
 	template<typename T>
 	template<typename K>
 	inline VeHandle VeFixedSizeTable<T>::getHandleEqual(VeIndex num_map, K key ) {
-		assert(num_map < m_maps.size());
-		if (m_data.empty()) return VE_NULL_HANDLE;
 		in();
+		assert(num_map < m_maps.size());
+		if (m_data.empty()) {
+			out();
+			return VE_NULL_HANDLE;
+		}
 		VeIndex dir_index;
 		bool found = m_maps[num_map]->getMappedIndexEqual(key, dir_index);
 		VeHandle result = m_directory.getHandle(dir_index);
@@ -606,9 +632,12 @@ namespace vve {
 	template<typename T>
 	template<typename K>
 	inline uint32_t VeFixedSizeTable<T>::getHandlesEqual(VeIndex num_map, K key, std::vector<VeHandle>& result) {
-		assert(num_map < m_maps.size());
-		if (m_data.empty()) return 0;
 		in();
+		assert(num_map < m_maps.size());
+		if (m_data.empty()) {
+			out();
+			return 0;
+		}
 		uint32_t num = 0;
 		std::vector<VeIndex> dir_indices;
 		dir_indices.reserve(initVecLen());
@@ -624,9 +653,12 @@ namespace vve {
 	template <typename T>
 	template <typename K> 
 	inline uint32_t VeFixedSizeTable<T>::getHandlesRange(VeIndex num_map, K lower, K upper, std::vector<VeHandle>& result) {
-		assert(num_map < m_maps.size());
-		if (m_data.empty()) return 0;
 		in();
+		assert(num_map < m_maps.size());
+		if (m_data.empty()) {
+			out();
+			return 0;
+		}
 		uint32_t num = 0;
 		std::vector<VeIndex> dir_indices;
 		dir_indices.reserve(initVecLen());
@@ -642,10 +674,13 @@ namespace vve {
 	//--------------------------------------------------------------------------------------------------------------------------
 
 	template<typename T> inline	uint32_t VeFixedSizeTable<T>::getAllHandlesFromMap(VeIndex num_map, std::vector<VeHandle>& result) {
-		assert(num_map < m_maps.size() || num_map == VE_NULL_INDEX);
-		if (m_data.empty()) return 0;
-
 		in();
+		assert(num_map < m_maps.size() || num_map == VE_NULL_INDEX);
+		if (m_data.empty()) {
+			out();
+			return 0;
+		}
+
 		if (num_map == VE_NULL_INDEX) {
 			for (VeIndex i = 0; i < m_data.size(); ++i) 
 				result.emplace_back( getHandleFromIndex(i) );

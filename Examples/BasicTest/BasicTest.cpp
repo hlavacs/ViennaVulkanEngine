@@ -23,7 +23,7 @@ int main()
     //vec::testVector();
     //tab::testTables();
     //stltest::runSTLTests();
-
+    //return 0;
 
     syseng::init();
     syseng::runGameLoop();
