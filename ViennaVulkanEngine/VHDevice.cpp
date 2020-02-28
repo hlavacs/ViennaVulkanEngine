@@ -2,27 +2,31 @@
 #include "vulkan.h"
 
 #include "VEDefines.h"
-#include "VEDevice.h"
+#include "VHDevice.h"
 
 
 namespace vve::dev {
 
 
+	bool checkValidationLayerSupport(std::vector<const char*>& validationLayers) {
+		return true;
+	}
+
 
 	//-------------------------------------------------------------------------------------------------------
-/**
-*
-* \brief Create a Vulkan instance
-*
-* \param[in] extensions Requested layers
-* \param[in] validationLayers Requested validation layers
-* \param[out] instance The new instance
-* \returns VK_SUCCESS or a Vulkan error code
-*
-*/
-	VkResult vhDevCreateInstance(VeVector<const char*>& extensions, VeVector<const char*>& validationLayers, VkInstance *instance) {
+	/**
+	*
+	* \brief Create a Vulkan instance
+	*
+	* \param[in] extensions Requested layers
+	* \param[in] validationLayers Requested validation layers
+	* \param[out] instance The new instance
+	* \returns VK_SUCCESS or a Vulkan error code
+	*
+	*/
+	VkResult vhCreateInstance(std::vector<const char*>& extensions, std::vector<const char*>& validationLayers, VkInstance *instance) {
 
-		if (validationLayers.size() > 0 ) {   //&& !checkValidationLayerSupport(validationLayers)) {
+		if (validationLayers.size() > 0  && !checkValidationLayerSupport(validationLayers)) {
 			assert(false);
 			exit(1);
 		}

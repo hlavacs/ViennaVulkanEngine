@@ -1,5 +1,7 @@
 
 
+#include "vulkan.h"
+
 #define IMPLEMENT_GAMEJOBSYSTEM
 
 #include "VEDefines.h"
@@ -22,7 +24,11 @@ namespace vve::syseng {
 		VeMainTableEntry() : m_table_pointer(nullptr), m_name("") {};
 		VeMainTableEntry( VeTable* tptr, std::string name) : m_table_pointer(tptr), m_name(name) {};
 	};
-	VeFixedSizeTable<VeMainTableEntry> g_main_table;
+	std::vector<VeMap*> maps = {
+		(VeMap*) new VeTypedMap< std::unordered_map<VeTableKeyString, VeTableIndex >, VeTableKeyString, VeTableIndex >(
+		(VeIndex)offsetof(struct VeMainTableEntry, m_name), 0)
+	};
+	VeFixedSizeTable<VeMainTableEntry> g_main_table(maps);
 
 	struct VeSysTableEntry {
 		std::function<void()>	m_init;
@@ -42,10 +48,6 @@ namespace vve::syseng {
 	}
 
 	void createTables() {
-		g_main_table.addMap(
-			(VeMap*) new VeTypedMap< std::unordered_map<VeTableKeyString, VeTableIndex >, VeTableKeyString, VeTableIndex >(
-			(VeIndex)offsetof(struct VeMainTableEntry, m_name), 0) );
-
 		registerTablePointer(&g_systems_table, "Systems");
 	}
 

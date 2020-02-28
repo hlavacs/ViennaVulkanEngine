@@ -8,11 +8,13 @@
 namespace vve::syseve {
 
 
-	VeFixedSizeTable<VeEventTableEntry> g_event_table;
+	std::vector<VeMap*> maps = {
+		(VeMap*) new VeTypedMap< std::unordered_map<VeHandle, VeIndex>,		VeHandle,		VeIndex >(VE_NULL_INDEX,0),
+		(VeMap*) new VeTypedMap< std::unordered_map<std::string, VeIndex>,	std::string,	VeIndex >(offsetof(struct VeEventTableEntry, m_name), 0)
+	};
+	VeFixedSizeTable<VeEventTableEntry> g_event_table(maps);
 
 	void init() {
-		g_event_table.addMap((VeMap*) new VeTypedMap< std::unordered_map<VeHandle, VeIndex>,		VeHandle,		VeIndex >(VE_NULL_INDEX,0));
-		g_event_table.addMap((VeMap*) new VeTypedMap< std::unordered_map<std::string, VeIndex>,	std::string,	VeIndex >(offsetof(struct VeEventTableEntry, m_name), 0));
 		syseng::registerTablePointer( &g_event_table, "Event");
 	}
 

@@ -3,6 +3,7 @@
 #include "vulkan.h"
 
 #include "VEDefines.h"
+#include "VHDevice.h"
 #include "VESysEngine.h"
 #include "VESysVulkan.h"
 
@@ -10,8 +11,7 @@
 namespace vve::sysvul {
 
 
-	VkInstance g_instance = VK_NULL_HANDLE;
-	VkDevice g_device = VK_NULL_HANDLE;
+	VeVulkanState g_vulkan_state;
 
 	struct VeRendererTableEntry {
 		std::function<void()>	m_init;
@@ -25,45 +25,15 @@ namespace vve::sysvul {
 	};
 	VeFixedSizeTable<VeRendererTableEntry> g_renderers_table;
 
-	struct VePhysicalDeviceTableEntry {
-		VkPhysicalDevice m_physicalDevice;
-	};
-	VeFixedSizeTable<VePhysicalDeviceTableEntry> g_physical_devices_table;
-
-	struct VeQueueFamilyTableEntry {
-		VeHandle				m_physicalDeviceH;
-		VkQueueFamilyProperties m_familyProperties;
-	};
-	VeFixedSizeTable<VkQueueFamilyProperties> g_queue_families_table;
-
-	struct VeQueueTableEntry {
-		VkQueue		m_queue;
-		VeHandle	m_queueFamilyH;
-	};
-	VeFixedSizeTable<VeQueueTableEntry> g_queues_table;
-
-
-	VeFixedSizeTable<VeStringTableEntry> g_instance_extensions_table;
-	VeFixedSizeTable<VeStringTableEntry> g_instance_layers_table;
-	VeFixedSizeTable<VeStringTableEntry> g_device_extensions_table;
-
-	void createTables() {
-		syseng::registerTablePointer(&g_renderers_table, "Renderer");
-		syseng::registerTablePointer(&g_physical_devices_table, "Physical Devices");
-		syseng::registerTablePointer(&g_queue_families_table, "Queue Families");
-		syseng::registerTablePointer(&g_queues_table, "Queues");
-		syseng::registerTablePointer(&g_instance_extensions_table, "Instance Extensions");
-		syseng::registerTablePointer(&g_instance_layers_table, "Instance Layers");
-		syseng::registerTablePointer(&g_device_extensions_table, "Device Extensions");
-	}
 
 	void init() {
-		createTables();
+		std::vector<const char*> extensions = { "VK_EXT_debug_report" };
+		std::vector<const char*> layers = {
+			"VK_LAYER_KHRONOS_validation",  "VK_LAYER_LUNARG_monitor"
+		};
 
-		g_instance_extensions_table.addEntry({ "VK_EXT_debug_report" });
-		g_instance_layers_table.addEntry({ "VK_LAYER_KHRONOS_validation" });
-		g_instance_layers_table.addEntry({ "VK_LAYER_LUNARG_monitor" });
-		g_device_extensions_table.addEntry({ "VK_KHR_swapchain" });
+		dev::vhCreateInstance(extensions, layers, &g_vulkan_state.m_instance);
+
 		
 	}
 
@@ -75,6 +45,8 @@ namespace vve::sysvul {
 	}
 
 	void close() {
+
+		vkDestroyInstance(g_vulkan_state.m_instance, nullptr );
 
 	}
 

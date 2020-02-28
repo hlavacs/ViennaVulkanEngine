@@ -161,7 +161,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="VEDevice.cpp" />
+    <ClCompile Include="VHDevice.cpp" />
     <ClCompile Include="VESysVulkanFWSimple.cpp" />
     <ClCompile Include="VETable.cpp" />
     <ClCompile Include="VECollision.cpp" />
@@ -178,7 +178,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="VEDefines.h" />
-    <ClInclude Include="VEDevice.h" />
+    <ClInclude Include="VHDevice.h" />
     <ClInclude Include="VEGameJobSystem.h" />
     <ClInclude Include="VESysVulkanFWSimple.h" />
     <ClInclude Include="VETable.h" />

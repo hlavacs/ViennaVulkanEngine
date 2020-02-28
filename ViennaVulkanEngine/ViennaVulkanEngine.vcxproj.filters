@@ -50,7 +50,7 @@
     <ClCompile Include="VESysVulkanFWSimple.cpp">
       <Filter>Quelldateien</Filter>
     </ClCompile>
-    <ClCompile Include="VEDevice.cpp">
+    <ClCompile Include="VHDevice.cpp">
       <Filter>Quelldateien</Filter>
     </ClCompile>
   </ItemGroup>
@@ -103,7 +103,7 @@
     <ClInclude Include="VESysVulkanFWSimple.h">
       <Filter>Headerdateien</Filter>
     </ClInclude>
-    <ClInclude Include="VEDevice.h">
+    <ClInclude Include="VHDevice.h">
       <Filter>Headerdateien</Filter>
     </ClInclude>
   </ItemGroup>

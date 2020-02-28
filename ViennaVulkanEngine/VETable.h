@@ -305,7 +305,7 @@ namespace vve {
 
 	class VeTable {
 	protected:
-		VeIndex	m_thread_id;			///id of thread that accesses to this table are scheduled to
+		VeIndex	m_thread_id = 0;			///id of thread that accesses to this table are scheduled to
 		bool	m_read_only = false;
 		std::chrono::high_resolution_clock::time_point t1, t2;
 		double  m_sum_time = 0.0;
@@ -326,7 +326,7 @@ namespace vve {
 		};
 
 	public:
-		VeTable( VeIndex thread_id = 0 ) : m_thread_id(thread_id) {};
+		VeTable() {};
 		VeTable(const VeTable& table) { m_thread_id = table.m_thread_id; m_read_only = table.m_read_only; };
 		virtual ~VeTable() {};
 		virtual void operator=(const VeTable& tab) {};
@@ -356,8 +356,11 @@ namespace vve {
 
 	public:
 
-		VeFixedSizeTable(VeIndex thread_id = VE_NULL_INDEX, bool memcopy = false, VeIndex align = 0, VeIndex capacity = 16) : 
-			VeTable( thread_id), m_data(memcopy, align, capacity) {};
+		VeFixedSizeTable(bool memcopy = false, VeIndex align = 16, VeIndex capacity = 16) : 
+			VeTable(), m_data(memcopy, align, capacity) {};
+
+		VeFixedSizeTable( std::vector<VeMap*> &maps, bool memcopy = false, VeIndex align = 16, VeIndex capacity = 16) :
+			VeTable(), m_maps(maps), m_data(memcopy, align, capacity) {};
 
 		VeFixedSizeTable(const VeFixedSizeTable& table) :
 			VeTable(table), m_maps(table.m_maps), m_data(table.m_data), m_directory(table.m_directory), m_tbl2dir(table.m_tbl2dir) {};
@@ -734,8 +737,8 @@ namespace vve {
 
 
 	public:
-		VeVariableSizeTable(VeIndex size = 1<<20, VeIndex thread_id = VE_NULL_INDEX, VeIndex align = 16, bool immediateDefrag = false ) : 
-			VeTable( thread_id ), m_align(align), m_immediateDefrag(immediateDefrag) {
+		VeVariableSizeTable(VeIndex size = 1<<20, VeIndex align = 16, bool immediateDefrag = false ) : 
+			VeTable(), m_align(align), m_immediateDefrag(immediateDefrag) {
 
 			m_directory.addMap((VeMap*) new VeTypedMap< std::multimap<VeTableKeyInt, VeTableIndex>, VeTableKeyInt, VeTableIndex >(
 				(VeIndex)offsetof(struct VeDirectoryEntry, m_occupied), (VeIndex)sizeof(VeDirectoryEntry::m_occupied)));

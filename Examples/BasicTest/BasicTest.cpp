@@ -27,7 +27,7 @@ int main()
     //return 0;
 
     syseng::init();
-    syseng::runGameLoop();
+    syseng::computeOneFrame();
     syseng::close();
  
     return 0;
