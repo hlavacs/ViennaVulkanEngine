@@ -306,7 +306,7 @@ namespace vgjs {
 	private:
 		std::vector<std::thread>			m_threads;				//array of thread structures
 		std::vector<Job*>					m_jobPointers;			//each thread has a current Job that it may run, pointers point to them
-		std::map<std::thread::id, uint32_t> m_threadIndexMap;		//Each thread has an index number 0...Num Threads
+		std::unordered_map<std::thread::id, uint32_t> m_threadIndexMap;		//Each thread has an index number 0...Num Threads
 		std::atomic<bool>					m_terminate;			//Flag for terminating the pool
 		std::vector<JobQueue*>				m_jobQueues;			//Each thread has its own Job queue
 		std::vector<JobQueue*>				m_jobQueuesLocal;		//a secondary low priority FIFO queue for each thread, where polling jobs are parked

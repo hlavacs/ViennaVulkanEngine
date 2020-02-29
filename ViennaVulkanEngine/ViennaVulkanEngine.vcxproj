@@ -175,6 +175,7 @@
     <ClCompile Include="VESysWindow.cpp" />
     <ClCompile Include="VESysWindowGLFW.cpp" />
     <ClCompile Include="VEVector.cpp" />
+    <ClCompile Include="VHSwapchain.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="stb_image.h" />
@@ -197,6 +198,7 @@
     <ClInclude Include="VESysWindowGLFW.h" />
     <ClInclude Include="VEVector.h" />
     <ClInclude Include="VHInclude.h" />
+    <ClInclude Include="VHSwapchain.h" />
     <ClInclude Include="vk_mem_alloc.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

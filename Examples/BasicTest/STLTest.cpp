@@ -11,7 +11,7 @@
 #include <iostream>
 #include <iomanip>
 
-#include "VEDefines.h"
+#include "VEInclude.h"
 #include "VEVector.h"
 #include "STLTest.h"
 

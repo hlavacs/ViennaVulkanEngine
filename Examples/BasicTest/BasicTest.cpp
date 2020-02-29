@@ -6,7 +6,6 @@
 #include "STLTest.h"
 #include "VEInclude.h"
 
-using namespace vve;
 
 int main()
 {
@@ -26,9 +25,9 @@ int main()
     //stltest::runSTLTests();
     //return 0;
 
-    syseng::init();
-    syseng::computeOneFrame();
-    syseng::close();
+    vve::syseng::init();
+    vve::syseng::computeOneFrame();
+    vve::syseng::close();
  
     return 0;
 }

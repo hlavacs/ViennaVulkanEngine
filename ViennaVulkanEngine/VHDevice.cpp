@@ -9,7 +9,7 @@
 #include "VEDefines.h"
 #include "VHInclude.h"
 
-namespace vh {
+namespace vh::dev {
 
 	//-------------------------------------------------------------------------------------------------------
 	
@@ -58,7 +58,7 @@ namespace vh {
 	* \returns VK_SUCCESS or a Vulkan error code
 	*
 	*/
-	VkResult vhDevCreateInstance(std::vector<const char*> &extensions, std::vector<const char*> &validationLayers, VkInstance *instance) {
+	VkResult vhCreateInstance(std::vector<const char*> &extensions, std::vector<const char*> &validationLayers, VkInstance *instance) {
 
 		if (validationLayers.size() > 0 && !checkValidationLayerSupport(validationLayers) ) {
 			assert(false);
@@ -97,7 +97,7 @@ namespace vh {
 	* \returns a structure containing queue family indices of suitable families
 	*
 	*/
-	QueueFamilyIndices vhDevFindQueueFamilies(VkPhysicalDevice device, VkSurfaceKHR surface ) {
+	QueueFamilyIndices vhFindQueueFamilies(VkPhysicalDevice device, VkSurfaceKHR surface ) {
 		QueueFamilyIndices indices;
 
 		uint32_t queueFamilyCount = 0;
@@ -168,7 +168,7 @@ namespace vh {
 	* \returns a structure holding details about capabilities, formats and present modes offered by the device
 	*
 	*/
-	SwapChainSupportDetails vhDevQuerySwapChainSupport(VkPhysicalDevice device, VkSurfaceKHR surface ) {
+	SwapChainSupportDetails vhQuerySwapChainSupport(VkPhysicalDevice device, VkSurfaceKHR surface ) {
 		SwapChainSupportDetails details;
 
 		vkGetPhysicalDeviceSurfaceCapabilitiesKHR(device, surface, &details.capabilities);
@@ -203,13 +203,13 @@ namespace vh {
 	*
 	*/
 	bool isDeviceSuitable(VkPhysicalDevice device, VkSurfaceKHR surface, std::vector<const char*> requiredDeviceExtensions) {
-		QueueFamilyIndices indices = vhDevFindQueueFamilies(device, surface);
+		QueueFamilyIndices indices = vhFindQueueFamilies(device, surface);
 
 		bool extensionsSupported = checkDeviceExtensionSupport(device, requiredDeviceExtensions);
 
 		bool swapChainAdequate = false;
 		if (extensionsSupported) {
-			SwapChainSupportDetails swapChainSupport = vhDevQuerySwapChainSupport(device, surface);
+			SwapChainSupportDetails swapChainSupport = vhQuerySwapChainSupport(device, surface);
 			swapChainAdequate = !swapChainSupport.formats.empty() && !swapChainSupport.presentModes.empty();
 		}
 
@@ -233,7 +233,7 @@ namespace vh {
 	* \returns VK_SUCCESS or a Vulkan error code
 	*
 	*/
-	VkResult vhDevPickPhysicalDevice(VkInstance instance, VkSurfaceKHR surface,
+	VkResult vhPickPhysicalDevice(VkInstance instance, VkSurfaceKHR surface,
 								std::vector<const char*> requiredDeviceExtensions,
 								VkPhysicalDevice *physicalDevice, VkPhysicalDeviceFeatures* pFeatures, 
 								VkPhysicalDeviceLimits *limits) {
@@ -288,8 +288,8 @@ namespace vh {
 	* \returns a suitable format that is supported by the physical device
 	*
 	*/
-	VkFormat vhDevFindSupportedFormat(	VkPhysicalDevice physicalDevice, const std::vector<VkFormat>& candidates, 
-										VkImageTiling tiling, VkFormatFeatureFlags features) {
+	VkFormat vhFindSupportedFormat(	VkPhysicalDevice physicalDevice, const std::vector<VkFormat>& candidates, 
+									VkImageTiling tiling, VkFormatFeatureFlags features) {
 		for (VkFormat format : candidates) {
 			VkFormatProperties props;
 			vkGetPhysicalDeviceFormatProperties(physicalDevice, format, &props);
@@ -315,8 +315,8 @@ namespace vh {
 	* \returns a suitable format that is supported by the physical device
 	*
 	*/
-	VkFormat vhDevFindDepthFormat(VkPhysicalDevice physicalDevice) {
-		return vhDevFindSupportedFormat(physicalDevice,
+	VkFormat vhFindDepthFormat(VkPhysicalDevice physicalDevice) {
+		return vhFindSupportedFormat(physicalDevice,
 			{ VK_FORMAT_D32_SFLOAT, VK_FORMAT_D32_SFLOAT_S8_UINT, VK_FORMAT_D24_UNORM_S8_UINT },
 			VK_IMAGE_TILING_OPTIMAL,
 			VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT
@@ -339,11 +339,11 @@ namespace vh {
 	* \returns VK_SUCCESS or a Vulkan error code
 	*
 	*/
-	VkResult vhDevCreateLogicalDevice(	VkInstance instance, VkPhysicalDevice physicalDevice, VkSurfaceKHR surface,
+	VkResult vhCreateLogicalDevice(	VkInstance instance, VkPhysicalDevice physicalDevice, VkSurfaceKHR surface,
 									std::vector<const char*> requiredDeviceExtensions, 
 									std::vector<const char*> requiredValidationLayers, 
 									VkDevice *device, VkQueue *graphicsQueue, VkQueue *presentQueue) {
-		QueueFamilyIndices indices = vhDevFindQueueFamilies(physicalDevice, surface);
+		QueueFamilyIndices indices = vhFindQueueFamilies(physicalDevice, surface);
 
 		std::vector<VkDeviceQueueCreateInfo> queueCreateInfos;
 		std::set<int> uniqueQueueFamilies = { indices.graphicsFamily, indices.presentFamily };
@@ -394,4 +394,9 @@ namespace vh {
 
 		return VK_SUCCESS;
 	}
+
+
+
+
+
 }

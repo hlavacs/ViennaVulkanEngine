@@ -1,6 +1,6 @@
 
 
-#include "vulkan.h"
+#include "vulkan/vulkan.h"
 
 #include "VEDefines.h"
 #include "VHDevice.h"
@@ -32,7 +32,7 @@ namespace vve::sysvul {
 			"VK_LAYER_KHRONOS_validation",  "VK_LAYER_LUNARG_monitor"
 		};
 
-		dev::vhCreateInstance(extensions, layers, &g_vulkan_state.m_instance);
+		vh::dev::vhCreateInstance(extensions, layers, &g_vulkan_state.m_instance);
 
 		
 	}
