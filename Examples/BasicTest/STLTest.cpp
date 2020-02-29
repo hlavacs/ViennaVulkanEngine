@@ -1,5 +1,5 @@
 
-#include <iostream>
+/*#include <iostream>
 #include <ctime>
 #include <ratio>
 #include <chrono>
@@ -10,9 +10,9 @@
 #include <sstream>
 #include <iostream>
 #include <iomanip>
+*/
 
 #include "VEInclude.h"
-#include "VEVector.h"
 #include "STLTest.h"
 
 using namespace std::chrono;

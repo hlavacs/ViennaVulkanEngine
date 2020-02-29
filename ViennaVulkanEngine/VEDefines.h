@@ -13,6 +13,7 @@
 #include <random>
 #include <assert.h>
 #include <chrono>
+#include <iomanip>
 
 
 namespace vve {
@@ -27,7 +28,6 @@ namespace vve {
 
 }
 
-#ifndef VE_PUBLIC_INTERFACE
 
 #define VE_ENABLE_MULTITHREADING
 #include "VEGameJobSystem.h"
@@ -48,11 +48,12 @@ namespace vve {
 #include "stb_image.h"
 #include "stb_image_write.h"
 //#include <gli/gli.hpp>
+#include <irrKlang.h>
+
+#ifndef VE_PUBLIC_INTERFACE
 
 #define GLFW_INCLUDE_VULKAN
 #include <GLFW/glfw3.h>
 
-#include <irrKlang.h>
-
-
 #endif
+
