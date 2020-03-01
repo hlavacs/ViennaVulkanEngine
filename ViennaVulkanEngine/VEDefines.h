@@ -22,10 +22,6 @@ namespace vve {
 
 	typedef uint64_t VeHandle;
 	constexpr VeHandle VE_NULL_HANDLE = std::numeric_limits<VeHandle>::max();
-
-	typedef uint32_t VeSize;
-	constexpr VeSize VE_NULL_SIZE = std::numeric_limits<VeSize>::max();
-
 }
 
 

@@ -13,6 +13,16 @@ namespace vh::dev {
 
 	//-------------------------------------------------------------------------------------------------------
 	
+
+
+	struct comp_char {
+		bool operator() (const char * a, const char * b) const
+		{
+			std::string l(a), r(b);
+			return l < r;
+		}
+	};
+
 	/**
 	*
 	* \brief Check validation layers of the Vulkan instance
@@ -28,23 +38,18 @@ namespace vh::dev {
 		std::vector<VkLayerProperties> availableLayers(layerCount);
 		vkEnumerateInstanceLayerProperties(&layerCount, availableLayers.data());
 
-		std::vector<const char*> validationLayersFound;
-
-		for (const char* layerName : validationLayers) {
-			bool layerFound = false;
-
-			for (const auto& layerProperties : availableLayers) {
-				if (strcmp(layerName, layerProperties.layerName) == 0) {
-					validationLayersFound.push_back(layerName);
-					break;
-				}
-				std::cout << "Warning! Validation Layer " << layerName << " not available\n";
-			}
+		std::set<const char*, comp_char> layers;
+		for (auto layer : validationLayers) layers.insert(layer);
+		validationLayers.clear();
+		for (auto availableLayer : availableLayers) {
+			validationLayers.push_back(availableLayer.layerName);
+			layers.erase(availableLayer.layerName);
 		}
 
-		validationLayers = validationLayersFound;
+		if (layers.empty()) return true;
 
-		return true;
+		for( auto layer : layers ) std::cout << "Warning! Validation Layer " << layer << " not available\n";
+		return false;
 	}
 
 	//-------------------------------------------------------------------------------------------------------
