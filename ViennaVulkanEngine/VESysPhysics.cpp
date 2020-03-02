@@ -9,11 +9,11 @@ namespace vve::sysphy {
 	void init() {
 	}
 
-	void tick() {
-
+	void sync() {
 	}
 
-	void sync() {
+	void tick() {
+
 	}
 
 	void close() {

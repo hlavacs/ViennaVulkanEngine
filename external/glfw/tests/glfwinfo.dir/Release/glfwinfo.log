@@ -1,7 +1,0 @@
-﻿  Building Custom Rule D:/data/Vulkan/ViennaVulkanEngine/external/glfw/tests/CMakeLists.txt
-  glfwinfo.c
-  getopt.c
-  glad_gl.c
-  glad_vulkan.c
-  Code wird generiert...
-  glfwinfo.vcxproj -> D:\data\Vulkan\ViennaVulkanEngine\external\glfw\tests\Release\glfwinfo.exe

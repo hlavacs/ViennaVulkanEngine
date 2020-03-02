@@ -19,12 +19,12 @@ namespace vve::syswin {
 		glfw::init();
 	}
 
-	void tick() {
-		glfw::tick();
-	}
-
 	void sync() {
 		glfw::sync();
+	}
+
+	void tick() {
+		glfw::tick();
 	}
 
 	void close() {

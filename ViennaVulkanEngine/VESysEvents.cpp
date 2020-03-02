@@ -18,11 +18,11 @@ namespace vve::syseve {
 		syseng::registerTablePointer( &g_event_table, "Event");
 	}
 
-	void tick() {
-
+	void sync() {
 	}
 
-	void sync() {
+	void tick() {
+
 	}
 
 	void close() {

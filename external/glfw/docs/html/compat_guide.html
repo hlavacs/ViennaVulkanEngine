@@ -130,14 +130,14 @@ Vulkan loader and API</h1>
 Vulkan WSI extensions</h1>
 <p>The Vulkan WSI extensions are used to create Vulkan surfaces for GLFW windows on all supported platforms.</p>
 <p>GLFW uses the <code>VK_KHR_surface</code> and <code>VK_KHR_win32_surface</code> extensions to create surfaces on Microsoft Windows. If any of these extensions are not available, <a class="el" href="group__vulkan.html#ga1abcbe61033958f22f63ef82008874b1">glfwGetRequiredInstanceExtensions</a> will return an empty list and window surface creation will fail.</p>
-<p>GLFW uses the <code>VK_KHR_surface</code> and <code>VK_MVK_macos_surface</code> extensions to create surfaces on macOS. If any of these extensions are not available, <a class="el" href="group__vulkan.html#ga1abcbe61033958f22f63ef82008874b1">glfwGetRequiredInstanceExtensions</a> will return an empty list and window surface creation will fail.</p>
+<p>GLFW uses the <code>VK_KHR_surface</code> and either the <code>VK_MVK_macos_surface</code> or <code>VK_EXT_metal_surface</code> extensions to create surfaces on macOS. If any of these extensions are not available, <a class="el" href="group__vulkan.html#ga1abcbe61033958f22f63ef82008874b1">glfwGetRequiredInstanceExtensions</a> will return an empty list and window surface creation will fail.</p>
 <p>GLFW uses the <code>VK_KHR_surface</code> and either the <code>VK_KHR_xlib_surface</code> or <code>VK_KHR_xcb_surface</code> extensions to create surfaces on X11. If <code>VK_KHR_surface</code> or both <code>VK_KHR_xlib_surface</code> and <code>VK_KHR_xcb_surface</code> are not available, <a class="el" href="group__vulkan.html#ga1abcbe61033958f22f63ef82008874b1">glfwGetRequiredInstanceExtensions</a> will return an empty list and window surface creation will fail.</p>
 <p>GLFW uses the <code>VK_KHR_surface</code> and <code>VK_KHR_wayland_surface</code> extensions to create surfaces on Wayland. If any of these extensions are not available, <a class="el" href="group__vulkan.html#ga1abcbe61033958f22f63ef82008874b1">glfwGetRequiredInstanceExtensions</a> will return an empty list and window surface creation will fail. </p>
 </div></div><!-- contents -->
 </div><!-- PageDoc -->
 <address class="footer">
 <p>
-Last update on Wed Jan 1 2020 for GLFW 3.3.1
+Last update on Mon Jan 20 2020 for GLFW 3.3.2
 </p>
 </address>
 </body>

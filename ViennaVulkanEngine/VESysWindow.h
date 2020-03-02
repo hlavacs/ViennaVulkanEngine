@@ -7,8 +7,8 @@ namespace vve::syswin {
 	bool createSurface(VkInstance instance, VkSurfaceKHR* pSurface);
 
 	void init();
-	void tick();
 	void sync();
+	void tick();
 	void close();
 
 

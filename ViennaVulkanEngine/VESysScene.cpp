@@ -10,11 +10,11 @@ namespace vve::syssce {
 	void init() {
 	}
 
-	void tick() {
-
+	void sync() {
 	}
 
-	void sync() {
+	void tick() {
+
 	}
 
 	void close() {

@@ -16,18 +16,18 @@ namespace vve::sysvul {
 
 	struct VeRendererTableEntry {
 		std::function<void()>	m_init;
-		std::function<void()>	m_tick;
 		std::function<void()>	m_sync;
+		std::function<void()>	m_tick;
 		std::function<void()>	m_close;
-		VeRendererTableEntry() : m_init(), m_tick(), m_sync(), m_close() {};
-		VeRendererTableEntry(std::function<void()> init, std::function<void()> tick,
-			std::function<void()> sync, std::function<void()> close) :
-			m_init(init), m_tick(tick), m_sync(sync), m_close(close) {};
+		VeRendererTableEntry() : m_init(), m_sync(), m_tick(), m_close() {};
+		VeRendererTableEntry(std::function<void()> init, std::function<void()> sync, 
+			std::function<void()> tick,	std::function<void()> close) :
+			m_init(init), m_sync(sync), m_tick(tick), m_close(close) {};
 	};
 	VeFixedSizeTable<VeRendererTableEntry> g_renderers_table;
 
-	void registerRenderer(std::function<void()> init, std::function<void()> tick, std::function<void()> sync, std::function<void()> close) {
-		g_renderers_table.addEntry({ init, tick, sync, close });
+	void registerRenderer(std::function<void()> init, std::function<void()> sync, std::function<void()> tick, std::function<void()> close) {
+		g_renderers_table.addEntry({ init, sync, tick, close });
 	}
 
 
@@ -42,17 +42,15 @@ namespace vve::sysvul {
 		
 	}
 
+	void sync() {
+	}
+
 	void tick() {
 
 	}
 
-	void sync() {
-	}
-
 	void close() {
-
 		vkDestroyInstance(g_vulkan_state.m_instance, nullptr );
-
 	}
 
 

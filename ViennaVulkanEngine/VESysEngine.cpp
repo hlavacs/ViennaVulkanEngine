@@ -32,13 +32,13 @@ namespace vve::syseng {
 
 	struct VeSysTableEntry {
 		std::function<void()>	m_init;
-		std::function<void()>	m_tick;
 		std::function<void()>	m_sync;
+		std::function<void()>	m_tick;
 		std::function<void()>	m_close;
-		VeSysTableEntry() : m_init(), m_tick(), m_sync(), m_close() {};
-		VeSysTableEntry(std::function<void()> init, std::function<void()> tick, 
-			std::function<void()> sync, std::function<void()> close) :
-			m_init(init), m_tick(tick), m_sync(sync), m_close(close) {};
+		VeSysTableEntry() : m_init(), m_sync(), m_tick(), m_close() {};
+		VeSysTableEntry(std::function<void()> init, std::function<void()> sync,
+			std::function<void()> tick, std::function<void()> close) :
+			m_init(init), m_sync(sync), m_tick(tick), m_close(close) {};
 	};
 	VeFixedSizeTable<VeSysTableEntry> g_systems_table;
 
@@ -58,20 +58,20 @@ namespace vve::syseng {
 		return nullptr;
 	}
 
-	void registerSystem(std::function<void()> init, std::function<void()> tick, std::function<void()> sync, std::function<void()> close) {
-		g_systems_table.addEntry({ init, tick, sync, close });
+	void registerSystem(std::function<void()> init, std::function<void()> sync, std::function<void()> tick, std::function<void()> close) {
+		g_systems_table.addEntry({ init, sync, tick, close });
 	}
 
 	void init() {
 		std::cout << "init engine 2\n";
 
 		createTables();
-		registerSystem(syswin::init, syswin::tick, syswin::sync, syswin::close);	//first init window to get the surface!
-		registerSystem(sysvul::init, sysvul::tick, sysvul::sync, sysvul::close);
-		registerSystem(syseve::init, syseve::tick, syseve::sync, syseve::close);
-		registerSystem(sysass::init, sysass::tick, sysass::sync, sysass::close);
-		registerSystem(syssce::init, syssce::tick, syssce::sync, syssce::close);
-		registerSystem(sysphy::init, sysphy::tick, sysphy::sync, sysphy::close);
+		registerSystem(syswin::init, syswin::sync, syswin::tick, syswin::close);	//first init window to get the surface!
+		registerSystem(sysvul::init, sysvul::sync, sysvul::tick, sysvul::close);
+		registerSystem(syseve::init, syseve::sync, syseve::tick, syseve::close);
+		registerSystem(sysass::init, sysass::sync, sysass::tick, sysass::close);
+		registerSystem(syssce::init, syssce::sync, syssce::tick, syssce::close);
+		registerSystem(sysphy::init, sysphy::sync, sysphy::tick, sysphy::close);
 
 		for (auto entry : g_systems_table.getData()) 
 			entry.m_init();

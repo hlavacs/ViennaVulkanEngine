@@ -14,10 +14,10 @@ namespace vve::sysass {
 		syseng::registerTablePointer(g_meshes_table, "Meshes");
 	}
 
-	void tick() {
+	void sync() {
 	}
 
-	void sync() {
+	void tick() {
 	}
 
 	void close() {

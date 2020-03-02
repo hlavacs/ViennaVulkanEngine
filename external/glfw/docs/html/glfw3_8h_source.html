@@ -59,7 +59,7 @@ $(function() {
 
 <div id="nav-path" class="navpath">
   <ul>
-<li class="navelem"><a class="el" href="dir_cadcc4232541fc0fdfafe7052b4d94e2.html">glfw-3.3.1</a></li><li class="navelem"><a class="el" href="dir_c41baed9597671ff1a15b37f0402add0.html">include</a></li><li class="navelem"><a class="el" href="dir_8e024bada8281d1e35d4f557736ec981.html">GLFW</a></li>  </ul>
+<li class="navelem"><a class="el" href="dir_bc6505cac00d7a6291dbfd9af70666b7.html">glfw-3.3.2</a></li><li class="navelem"><a class="el" href="dir_a58ef735c5cc5a9a31d321e1abe7c42e.html">include</a></li><li class="navelem"><a class="el" href="dir_15a5176d7c9cc5c407ed4f611edf0684.html">GLFW</a></li>  </ul>
 </div>
 </div><!-- top -->
 <div class="header">
@@ -274,7 +274,7 @@ $(function() {
 <div class="line"><a name="l00260"></a><span class="lineno">  260</span>&#160; </div>
 <div class="line"><a name="l00266"></a><span class="lineno">  266</span>&#160;<span class="preprocessor">#define GLFW_VERSION_MINOR          3</span></div>
 <div class="line"><a name="l00267"></a><span class="lineno">  267</span>&#160; </div>
-<div class="line"><a name="l00273"></a><span class="lineno">  273</span>&#160;<span class="preprocessor">#define GLFW_VERSION_REVISION       1</span></div>
+<div class="line"><a name="l00273"></a><span class="lineno">  273</span>&#160;<span class="preprocessor">#define GLFW_VERSION_REVISION       2</span></div>
 <div class="line"><a name="l00274"></a><span class="lineno">  274</span>&#160; </div>
 <div class="line"><a name="l00284"></a><span class="lineno">  284</span>&#160;<span class="preprocessor">#define GLFW_TRUE                   1</span></div>
 <div class="line"><a name="l00285"></a><span class="lineno">  285</span>&#160; </div>
@@ -984,51 +984,51 @@ $(function() {
 <div class="line"><a name="l05622"></a><span class="lineno"> 5622</span>&#160; </div>
 <div class="line"><a name="l05649"></a><span class="lineno"> 5649</span>&#160;GLFWAPI <span class="keywordtype">int</span> <a class="code" href="group__vulkan.html#ga2e7f30931e02464b5bc8d0d4b6f9fe2b">glfwVulkanSupported</a>(<span class="keywordtype">void</span>);</div>
 <div class="line"><a name="l05650"></a><span class="lineno"> 5650</span>&#160; </div>
-<div class="line"><a name="l05696"></a><span class="lineno"> 5696</span>&#160;GLFWAPI <span class="keyword">const</span> <span class="keywordtype">char</span>** <a class="code" href="group__vulkan.html#ga1abcbe61033958f22f63ef82008874b1">glfwGetRequiredInstanceExtensions</a>(uint32_t* count);</div>
-<div class="line"><a name="l05697"></a><span class="lineno"> 5697</span>&#160; </div>
-<div class="line"><a name="l05698"></a><span class="lineno"> 5698</span>&#160;<span class="preprocessor">#if defined(VK_VERSION_1_0)</span></div>
-<div class="line"><a name="l05699"></a><span class="lineno"> 5699</span>&#160; </div>
-<div class="line"><a name="l05739"></a><span class="lineno"> 5739</span>&#160;GLFWAPI <a class="code" href="group__vulkan.html#ga70c01918dc9d233a4fbe0681a43018af">GLFWvkproc</a> <a class="code" href="group__vulkan.html#gadf228fac94c5fd8f12423ec9af9ff1e9">glfwGetInstanceProcAddress</a>(VkInstance instance, <span class="keyword">const</span> <span class="keywordtype">char</span>* procname);</div>
-<div class="line"><a name="l05740"></a><span class="lineno"> 5740</span>&#160; </div>
-<div class="line"><a name="l05776"></a><span class="lineno"> 5776</span>&#160;GLFWAPI <span class="keywordtype">int</span> <a class="code" href="group__vulkan.html#gaff3823355cdd7e2f3f9f4d9ea9518d92">glfwGetPhysicalDevicePresentationSupport</a>(VkInstance instance, VkPhysicalDevice device, uint32_t queuefamily);</div>
-<div class="line"><a name="l05777"></a><span class="lineno"> 5777</span>&#160; </div>
-<div class="line"><a name="l05837"></a><span class="lineno"> 5837</span>&#160;GLFWAPI VkResult <a class="code" href="group__vulkan.html#ga1a24536bec3f80b08ead18e28e6ae965">glfwCreateWindowSurface</a>(VkInstance instance, <a class="code" href="group__window.html#ga3c96d80d363e67d13a41b5d1821f3242">GLFWwindow</a>* window, <span class="keyword">const</span> VkAllocationCallbacks* allocator, VkSurfaceKHR* surface);</div>
-<div class="line"><a name="l05838"></a><span class="lineno"> 5838</span>&#160; </div>
-<div class="line"><a name="l05839"></a><span class="lineno"> 5839</span>&#160;<span class="preprocessor">#endif </span><span class="comment">/*VK_VERSION_1_0*/</span><span class="preprocessor"></span></div>
-<div class="line"><a name="l05840"></a><span class="lineno"> 5840</span>&#160; </div>
+<div class="line"><a name="l05697"></a><span class="lineno"> 5697</span>&#160;GLFWAPI <span class="keyword">const</span> <span class="keywordtype">char</span>** <a class="code" href="group__vulkan.html#ga1abcbe61033958f22f63ef82008874b1">glfwGetRequiredInstanceExtensions</a>(uint32_t* count);</div>
+<div class="line"><a name="l05698"></a><span class="lineno"> 5698</span>&#160; </div>
+<div class="line"><a name="l05699"></a><span class="lineno"> 5699</span>&#160;<span class="preprocessor">#if defined(VK_VERSION_1_0)</span></div>
+<div class="line"><a name="l05700"></a><span class="lineno"> 5700</span>&#160; </div>
+<div class="line"><a name="l05740"></a><span class="lineno"> 5740</span>&#160;GLFWAPI <a class="code" href="group__vulkan.html#ga70c01918dc9d233a4fbe0681a43018af">GLFWvkproc</a> <a class="code" href="group__vulkan.html#gadf228fac94c5fd8f12423ec9af9ff1e9">glfwGetInstanceProcAddress</a>(VkInstance instance, <span class="keyword">const</span> <span class="keywordtype">char</span>* procname);</div>
+<div class="line"><a name="l05741"></a><span class="lineno"> 5741</span>&#160; </div>
+<div class="line"><a name="l05777"></a><span class="lineno"> 5777</span>&#160;GLFWAPI <span class="keywordtype">int</span> <a class="code" href="group__vulkan.html#gaff3823355cdd7e2f3f9f4d9ea9518d92">glfwGetPhysicalDevicePresentationSupport</a>(VkInstance instance, VkPhysicalDevice device, uint32_t queuefamily);</div>
+<div class="line"><a name="l05778"></a><span class="lineno"> 5778</span>&#160; </div>
+<div class="line"><a name="l05838"></a><span class="lineno"> 5838</span>&#160;GLFWAPI VkResult <a class="code" href="group__vulkan.html#ga1a24536bec3f80b08ead18e28e6ae965">glfwCreateWindowSurface</a>(VkInstance instance, <a class="code" href="group__window.html#ga3c96d80d363e67d13a41b5d1821f3242">GLFWwindow</a>* window, <span class="keyword">const</span> VkAllocationCallbacks* allocator, VkSurfaceKHR* surface);</div>
+<div class="line"><a name="l05839"></a><span class="lineno"> 5839</span>&#160; </div>
+<div class="line"><a name="l05840"></a><span class="lineno"> 5840</span>&#160;<span class="preprocessor">#endif </span><span class="comment">/*VK_VERSION_1_0*/</span><span class="preprocessor"></span></div>
 <div class="line"><a name="l05841"></a><span class="lineno"> 5841</span>&#160; </div>
-<div class="line"><a name="l05842"></a><span class="lineno"> 5842</span>&#160;<span class="comment">/*************************************************************************</span></div>
-<div class="line"><a name="l05843"></a><span class="lineno"> 5843</span>&#160;<span class="comment"> * Global definition cleanup</span></div>
-<div class="line"><a name="l05844"></a><span class="lineno"> 5844</span>&#160;<span class="comment"> *************************************************************************/</span></div>
-<div class="line"><a name="l05845"></a><span class="lineno"> 5845</span>&#160; </div>
-<div class="line"><a name="l05846"></a><span class="lineno"> 5846</span>&#160;<span class="comment">/* ------------------- BEGIN SYSTEM/COMPILER SPECIFIC -------------------- */</span></div>
-<div class="line"><a name="l05847"></a><span class="lineno"> 5847</span>&#160; </div>
-<div class="line"><a name="l05848"></a><span class="lineno"> 5848</span>&#160;<span class="preprocessor">#ifdef GLFW_WINGDIAPI_DEFINED</span></div>
-<div class="line"><a name="l05849"></a><span class="lineno"> 5849</span>&#160;<span class="preprocessor"> #undef WINGDIAPI</span></div>
-<div class="line"><a name="l05850"></a><span class="lineno"> 5850</span>&#160;<span class="preprocessor"> #undef GLFW_WINGDIAPI_DEFINED</span></div>
-<div class="line"><a name="l05851"></a><span class="lineno"> 5851</span>&#160;<span class="preprocessor">#endif</span></div>
-<div class="line"><a name="l05852"></a><span class="lineno"> 5852</span>&#160; </div>
-<div class="line"><a name="l05853"></a><span class="lineno"> 5853</span>&#160;<span class="preprocessor">#ifdef GLFW_CALLBACK_DEFINED</span></div>
-<div class="line"><a name="l05854"></a><span class="lineno"> 5854</span>&#160;<span class="preprocessor"> #undef CALLBACK</span></div>
-<div class="line"><a name="l05855"></a><span class="lineno"><a class="line" href="glfw3_8h.html#aa97755eb47e4bf2727ad45d610e18206"> 5855</a></span>&#160;<span class="preprocessor"> #undef GLFW_CALLBACK_DEFINED</span></div>
-<div class="line"><a name="l05856"></a><span class="lineno"> 5856</span>&#160;<span class="preprocessor">#endif</span></div>
-<div class="line"><a name="l05857"></a><span class="lineno"> 5857</span>&#160; </div>
-<div class="line"><a name="l05858"></a><span class="lineno"> 5858</span>&#160;<span class="comment">/* Some OpenGL related headers need GLAPIENTRY, but it is unconditionally</span></div>
-<div class="line"><a name="l05859"></a><span class="lineno"> 5859</span>&#160;<span class="comment"> * defined by some gl.h variants (OpenBSD) so define it after if needed.</span></div>
-<div class="line"><a name="l05860"></a><span class="lineno"> 5860</span>&#160;<span class="comment"> */</span></div>
-<div class="line"><a name="l05861"></a><span class="lineno"> 5861</span>&#160;<span class="preprocessor">#ifndef GLAPIENTRY</span></div>
-<div class="line"><a name="l05862"></a><span class="lineno"> 5862</span>&#160;<span class="preprocessor"> #define GLAPIENTRY APIENTRY</span></div>
-<div class="line"><a name="l05863"></a><span class="lineno"> 5863</span>&#160;<span class="preprocessor">#endif</span></div>
-<div class="line"><a name="l05864"></a><span class="lineno"> 5864</span>&#160; </div>
-<div class="line"><a name="l05865"></a><span class="lineno"> 5865</span>&#160;<span class="comment">/* -------------------- END SYSTEM/COMPILER SPECIFIC --------------------- */</span></div>
-<div class="line"><a name="l05866"></a><span class="lineno"> 5866</span>&#160; </div>
+<div class="line"><a name="l05842"></a><span class="lineno"> 5842</span>&#160; </div>
+<div class="line"><a name="l05843"></a><span class="lineno"> 5843</span>&#160;<span class="comment">/*************************************************************************</span></div>
+<div class="line"><a name="l05844"></a><span class="lineno"> 5844</span>&#160;<span class="comment"> * Global definition cleanup</span></div>
+<div class="line"><a name="l05845"></a><span class="lineno"> 5845</span>&#160;<span class="comment"> *************************************************************************/</span></div>
+<div class="line"><a name="l05846"></a><span class="lineno"> 5846</span>&#160; </div>
+<div class="line"><a name="l05847"></a><span class="lineno"> 5847</span>&#160;<span class="comment">/* ------------------- BEGIN SYSTEM/COMPILER SPECIFIC -------------------- */</span></div>
+<div class="line"><a name="l05848"></a><span class="lineno"> 5848</span>&#160; </div>
+<div class="line"><a name="l05849"></a><span class="lineno"> 5849</span>&#160;<span class="preprocessor">#ifdef GLFW_WINGDIAPI_DEFINED</span></div>
+<div class="line"><a name="l05850"></a><span class="lineno"> 5850</span>&#160;<span class="preprocessor"> #undef WINGDIAPI</span></div>
+<div class="line"><a name="l05851"></a><span class="lineno"> 5851</span>&#160;<span class="preprocessor"> #undef GLFW_WINGDIAPI_DEFINED</span></div>
+<div class="line"><a name="l05852"></a><span class="lineno"> 5852</span>&#160;<span class="preprocessor">#endif</span></div>
+<div class="line"><a name="l05853"></a><span class="lineno"> 5853</span>&#160; </div>
+<div class="line"><a name="l05854"></a><span class="lineno"> 5854</span>&#160;<span class="preprocessor">#ifdef GLFW_CALLBACK_DEFINED</span></div>
+<div class="line"><a name="l05855"></a><span class="lineno"> 5855</span>&#160;<span class="preprocessor"> #undef CALLBACK</span></div>
+<div class="line"><a name="l05856"></a><span class="lineno"><a class="line" href="glfw3_8h.html#aa97755eb47e4bf2727ad45d610e18206"> 5856</a></span>&#160;<span class="preprocessor"> #undef GLFW_CALLBACK_DEFINED</span></div>
+<div class="line"><a name="l05857"></a><span class="lineno"> 5857</span>&#160;<span class="preprocessor">#endif</span></div>
+<div class="line"><a name="l05858"></a><span class="lineno"> 5858</span>&#160; </div>
+<div class="line"><a name="l05859"></a><span class="lineno"> 5859</span>&#160;<span class="comment">/* Some OpenGL related headers need GLAPIENTRY, but it is unconditionally</span></div>
+<div class="line"><a name="l05860"></a><span class="lineno"> 5860</span>&#160;<span class="comment"> * defined by some gl.h variants (OpenBSD) so define it after if needed.</span></div>
+<div class="line"><a name="l05861"></a><span class="lineno"> 5861</span>&#160;<span class="comment"> */</span></div>
+<div class="line"><a name="l05862"></a><span class="lineno"> 5862</span>&#160;<span class="preprocessor">#ifndef GLAPIENTRY</span></div>
+<div class="line"><a name="l05863"></a><span class="lineno"> 5863</span>&#160;<span class="preprocessor"> #define GLAPIENTRY APIENTRY</span></div>
+<div class="line"><a name="l05864"></a><span class="lineno"> 5864</span>&#160;<span class="preprocessor">#endif</span></div>
+<div class="line"><a name="l05865"></a><span class="lineno"> 5865</span>&#160; </div>
+<div class="line"><a name="l05866"></a><span class="lineno"> 5866</span>&#160;<span class="comment">/* -------------------- END SYSTEM/COMPILER SPECIFIC --------------------- */</span></div>
 <div class="line"><a name="l05867"></a><span class="lineno"> 5867</span>&#160; </div>
-<div class="line"><a name="l05868"></a><span class="lineno"> 5868</span>&#160;<span class="preprocessor">#ifdef __cplusplus</span></div>
-<div class="line"><a name="l05869"></a><span class="lineno"> 5869</span>&#160;}</div>
-<div class="line"><a name="l05870"></a><span class="lineno"> 5870</span>&#160;<span class="preprocessor">#endif</span></div>
-<div class="line"><a name="l05871"></a><span class="lineno"> 5871</span>&#160; </div>
-<div class="line"><a name="l05872"></a><span class="lineno"> 5872</span>&#160;<span class="preprocessor">#endif </span><span class="comment">/* _glfw3_h_ */</span><span class="preprocessor"></span></div>
-<div class="line"><a name="l05873"></a><span class="lineno"> 5873</span>&#160; </div>
+<div class="line"><a name="l05868"></a><span class="lineno"> 5868</span>&#160; </div>
+<div class="line"><a name="l05869"></a><span class="lineno"> 5869</span>&#160;<span class="preprocessor">#ifdef __cplusplus</span></div>
+<div class="line"><a name="l05870"></a><span class="lineno"> 5870</span>&#160;}</div>
+<div class="line"><a name="l05871"></a><span class="lineno"> 5871</span>&#160;<span class="preprocessor">#endif</span></div>
+<div class="line"><a name="l05872"></a><span class="lineno"> 5872</span>&#160; </div>
+<div class="line"><a name="l05873"></a><span class="lineno"> 5873</span>&#160;<span class="preprocessor">#endif </span><span class="comment">/* _glfw3_h_ */</span><span class="preprocessor"></span></div>
+<div class="line"><a name="l05874"></a><span class="lineno"> 5874</span>&#160; </div>
 </div><!-- fragment --></div><!-- contents -->
 <div class="ttc" id="agroup__input_html_ga06290acb7ed23895bf26b8e981827ebd"><div class="ttname"><a href="group__input.html#ga06290acb7ed23895bf26b8e981827ebd">glfwGetJoystickUserPointer</a></div><div class="ttdeci">void * glfwGetJoystickUserPointer(int jid)</div><div class="ttdoc">Returns the user pointer of the specified joystick.</div></div>
 <div class="ttc" id="agroup__input_html_gadccddea8bce6113fa459de379ddaf051"><div class="ttname"><a href="group__input.html#gadccddea8bce6113fa459de379ddaf051">glfwGetGamepadState</a></div><div class="ttdeci">int glfwGetGamepadState(int jid, GLFWgamepadstate *state)</div><div class="ttdoc">Retrieves the state of the specified joystick remapped as a gamepad.</div></div>
@@ -1199,7 +1199,7 @@ $(function() {
 <div class="ttc" id="agroup__vulkan_html_gadf228fac94c5fd8f12423ec9af9ff1e9"><div class="ttname"><a href="group__vulkan.html#gadf228fac94c5fd8f12423ec9af9ff1e9">glfwGetInstanceProcAddress</a></div><div class="ttdeci">GLFWvkproc glfwGetInstanceProcAddress(VkInstance instance, const char *procname)</div><div class="ttdoc">Returns the address of the specified Vulkan instance function.</div></div>
 <address class="footer">
 <p>
-Last update on Wed Jan 1 2020 for GLFW 3.3.1
+Last update on Mon Jan 20 2020 for GLFW 3.3.2
 </p>
 </address>
 </body>
