@@ -100,7 +100,7 @@ namespace vh::swap {
 								std::vector<VkImage> &swapChainImages, std::vector<VkImageView> &swapChainImageViews,
 								VkFormat *swapChainImageFormat, VkExtent2D *swapChainExtent) {
 
-		SwapChainSupportDetails swapChainSupport = vh::dev::vhQuerySwapChainSupport(physicalDevice, surface );
+		VhSwapChainSupportDetails swapChainSupport = vh::dev::vhQuerySwapChainSupport(physicalDevice, surface );
 
 		VkSurfaceFormatKHR surfaceFormat = chooseSwapSurfaceFormat(swapChainSupport.formats);
 		VkPresentModeKHR presentMode = chooseSwapPresentMode(swapChainSupport.presentModes);
@@ -122,7 +122,7 @@ namespace vh::swap {
 		createInfo.imageArrayLayers = 1;
 		createInfo.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT; //need for copying to host
 
-		QueueFamilyIndices indices = dev::vhFindQueueFamilies(physicalDevice, surface);
+		VhQueueFamilyIndices indices = dev::vhFindQueueFamilies(physicalDevice, surface);
 		uint32_t queueFamilyIndices[] = { (uint32_t)indices.graphicsFamily, (uint32_t)indices.presentFamily };
 
 		if (indices.graphicsFamily != indices.presentFamily) {

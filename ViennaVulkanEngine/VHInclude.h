@@ -31,9 +31,25 @@
 
 namespace vh {
 
+
+	struct VhVulkanState {
+		VkInstance					m_instance = VK_NULL_HANDLE;
+		VkPhysicalDevice			m_physicalDevice = VK_NULL_HANDLE;
+		VkPhysicalDeviceFeatures	m_physicalDeviceFeatures;
+		VkPhysicalDeviceLimits		m_physicalDeviceLimits;
+		VkSurfaceKHR				m_surface = VK_NULL_HANDLE;
+		VkSurfaceCapabilitiesKHR	m_surfaceCapabilities;
+		VkSurfaceCapabilities2KHR	m_surfaceCapabilities2;
+		VkDevice					m_device = VK_NULL_HANDLE;
+		std::vector<VkQueue>		m_graphicalQueues;
+		std::vector<VkQueue>		m_presentQueues;
+		std::vector<VkQueue>		m_computeQueues;
+	};
+
+
 	//--------------------------------------------------------------------------------------------------------------------------------
 	///need only for start up
-	struct QueueFamilyIndices {
+	struct VhQueueFamilyIndices {
 		int graphicsFamily = -1;	///<Index of graphics family
 		int presentFamily = -1;		///<Index of present family
 
@@ -44,7 +60,7 @@ namespace vh {
 	};
 
 	///need only for start up
-	struct SwapChainSupportDetails {
+	struct VhSwapChainSupportDetails {
 		VkSurfaceCapabilitiesKHR capabilities;			///<Surface capabilities
 		std::vector<VkSurfaceFormatKHR> formats;		///<Surface formats available
 		std::vector<VkPresentModeKHR> presentModes;		///<Possible present modes
@@ -62,14 +78,6 @@ namespace vh {
 		} \
 	}
 
-
-
-	//--------------------------------------------------------------------------------------------------------------------------------
-	//debug
-	VKAPI_ATTR VkBool32 VKAPI_CALL vhDebugCallback(VkDebugReportFlagsEXT flags, VkDebugReportObjectTypeEXT objType, uint64_t obj, size_t location, int32_t code, const char* layerPrefix, const char* msg, void* userData);
-	VkResult vhDebugCreateReportCallbackEXT(VkInstance instance, const VkDebugReportCallbackCreateInfoEXT* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkDebugReportCallbackEXT* pCallback);
-	void vhDebugDestroyReportCallbackEXT(VkInstance instance, VkDebugReportCallbackEXT callback, const VkAllocationCallbacks* pAllocator);
-	void vhSetupDebugCallback(VkInstance instance, VkDebugReportCallbackEXT *callback);
 
 }
 

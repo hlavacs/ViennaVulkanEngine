@@ -56,6 +56,9 @@
     <ClCompile Include="VHSwapchain.cpp">
       <Filter>Quelldateien</Filter>
     </ClCompile>
+    <ClCompile Include="VHDebug.cpp">
+      <Filter>Quelldateien</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="VEInclude.h">
@@ -122,6 +125,9 @@
       <Filter>Headerdateien</Filter>
     </ClInclude>
     <ClInclude Include="VHSwapchain.h">
+      <Filter>Headerdateien</Filter>
+    </ClInclude>
+    <ClInclude Include="VHDebug.h">
       <Filter>Headerdateien</Filter>
     </ClInclude>
   </ItemGroup>

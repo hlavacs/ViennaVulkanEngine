@@ -16,11 +16,7 @@ namespace vh::dev {
 
 
 	struct comp_char {
-		bool operator() (const char * a, const char * b) const
-		{
-			std::string l(a), r(b);
-			return l < r;
-		}
+		bool operator() (const char * a, const char * b) const {std::string l(a), r(b); return l < r; }
 	};
 
 	/**
@@ -63,7 +59,7 @@ namespace vh::dev {
 	* \returns VK_SUCCESS or a Vulkan error code
 	*
 	*/
-	VkResult vhCreateInstance(std::vector<const char*> &extensions, std::vector<const char*> &validationLayers, VkInstance *instance) {
+	VkResult vhCreateInstance(VhVulkanState& state, std::vector<const char*> &extensions, std::vector<const char*> &validationLayers) {
 
 		if (validationLayers.size() > 0 && !checkValidationLayerSupport(validationLayers) ) {
 			assert(false);
@@ -87,7 +83,7 @@ namespace vh::dev {
 		createInfo.enabledLayerCount = static_cast<uint32_t>(validationLayers.size());
 		createInfo.ppEnabledLayerNames = validationLayers.data();
 
-		return vkCreateInstance(&createInfo, nullptr, instance);
+		return vkCreateInstance(&createInfo, nullptr, &state.m_instance);
 	}
 
 
@@ -102,8 +98,8 @@ namespace vh::dev {
 	* \returns a structure containing queue family indices of suitable families
 	*
 	*/
-	QueueFamilyIndices vhFindQueueFamilies(VkPhysicalDevice device, VkSurfaceKHR surface ) {
-		QueueFamilyIndices indices;
+	VhQueueFamilyIndices vhFindQueueFamilies( VkPhysicalDevice device, VkSurfaceKHR surface) {
+		VhQueueFamilyIndices indices;
 
 		uint32_t queueFamilyCount = 0;
 		vkGetPhysicalDeviceQueueFamilyProperties(device, &queueFamilyCount, nullptr);
@@ -173,8 +169,8 @@ namespace vh::dev {
 	* \returns a structure holding details about capabilities, formats and present modes offered by the device
 	*
 	*/
-	SwapChainSupportDetails vhQuerySwapChainSupport(VkPhysicalDevice device, VkSurfaceKHR surface ) {
-		SwapChainSupportDetails details;
+	VhSwapChainSupportDetails vhQuerySwapChainSupport(VkPhysicalDevice device, VkSurfaceKHR surface) {
+		VhSwapChainSupportDetails details;
 
 		vkGetPhysicalDeviceSurfaceCapabilitiesKHR(device, surface, &details.capabilities);
 
@@ -208,13 +204,13 @@ namespace vh::dev {
 	*
 	*/
 	bool isDeviceSuitable(VkPhysicalDevice device, VkSurfaceKHR surface, std::vector<const char*> requiredDeviceExtensions) {
-		QueueFamilyIndices indices = vhFindQueueFamilies(device, surface);
+		VhQueueFamilyIndices indices = vhFindQueueFamilies(device, surface);
 
 		bool extensionsSupported = checkDeviceExtensionSupport(device, requiredDeviceExtensions);
 
 		bool swapChainAdequate = false;
 		if (extensionsSupported) {
-			SwapChainSupportDetails swapChainSupport = vhQuerySwapChainSupport(device, surface);
+			VhSwapChainSupportDetails swapChainSupport = vhQuerySwapChainSupport(device, surface);
 			swapChainAdequate = !swapChainSupport.formats.empty() && !swapChainSupport.presentModes.empty();
 		}
 
@@ -348,7 +344,7 @@ namespace vh::dev {
 									std::vector<const char*> requiredDeviceExtensions, 
 									std::vector<const char*> requiredValidationLayers, 
 									VkDevice *device, VkQueue *graphicsQueue, VkQueue *presentQueue) {
-		QueueFamilyIndices indices = vhFindQueueFamilies(physicalDevice, surface);
+		VhQueueFamilyIndices indices = vhFindQueueFamilies(physicalDevice, surface);
 
 		std::vector<VkDeviceQueueCreateInfo> queueCreateInfos;
 		std::set<int> uniqueQueueFamilies = { indices.graphicsFamily, indices.presentFamily };

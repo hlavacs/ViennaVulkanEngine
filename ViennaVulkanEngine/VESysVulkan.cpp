@@ -3,6 +3,7 @@
 #include "vulkan/vulkan.h"
 
 #include "VEDefines.h"
+#include "VHInclude.h"
 #include "VHDevice.h"
 #include "VESysEngine.h"
 #include "VESysVulkan.h"
@@ -11,7 +12,7 @@
 namespace vve::sysvul {
 
 
-	VeVulkanState g_vulkan_state;
+	vh::VhVulkanState g_vulkan_state;
 
 	struct VeRendererTableEntry {
 		std::function<void()>	m_init;
@@ -25,6 +26,10 @@ namespace vve::sysvul {
 	};
 	VeFixedSizeTable<VeRendererTableEntry> g_renderers_table;
 
+	void registerRenderer(std::function<void()> init, std::function<void()> tick, std::function<void()> sync, std::function<void()> close) {
+		g_renderers_table.addEntry({ init, tick, sync, close });
+	}
+
 
 	void init() {
 		std::vector<const char*> extensions = { "VK_EXT_debug_report" };
@@ -32,7 +37,7 @@ namespace vve::sysvul {
 			"VK_LAYER_KHRONOS_validation",  "VK_LAYER_LUNARG_monitor"
 		};
 
-		vh::dev::vhCreateInstance(extensions, layers, &g_vulkan_state.m_instance);
+		vh::dev::vhCreateInstance(g_vulkan_state, extensions, layers );
 
 		
 	}

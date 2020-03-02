@@ -5,9 +5,11 @@
 *
 */
 
-#include "VHHelper.h"
+#include "VHInclude.h"
+#include "VHDebug.h"
 
-namespace vh {
+
+namespace vh::deb {
 
 	//-------------------------------------------------------------------------------------------------------
 	//debugging functions

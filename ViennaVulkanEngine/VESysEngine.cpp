@@ -66,7 +66,7 @@ namespace vve::syseng {
 		std::cout << "init engine 2\n";
 
 		createTables();
-		registerSystem(syswin::init, syswin::tick, syswin::sync, syswin::close);
+		registerSystem(syswin::init, syswin::tick, syswin::sync, syswin::close);	//first init window to get the surface!
 		registerSystem(sysvul::init, sysvul::tick, sysvul::sync, sysvul::close);
 		registerSystem(syseve::init, syseve::tick, syseve::sync, syseve::close);
 		registerSystem(sysass::init, sysass::tick, sysass::sync, sysass::close);
