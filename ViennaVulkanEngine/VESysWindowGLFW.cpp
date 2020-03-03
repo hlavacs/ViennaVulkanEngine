@@ -2,6 +2,7 @@
 
 #include "VEDefines.h"
 #include "VESysEngine.h"
+#include "VESysWindow.h"
 #include "VESysWindowGLFW.h"
 
 namespace vve::syswin::glfw {
@@ -29,13 +30,23 @@ namespace vve::syswin::glfw {
 		glfwSetInputMode(g_window, GLFW_STICKY_MOUSE_BUTTONS, 1);
 	}
 
+	bool g_windowSizeChanged = false;
+
 	void sync() {
 	}
 
 	void tick() {
 		glfwPollEvents();		//inject GLFW events into the callbacks
+
+		if (g_windowSizeChanged) {
+			waitForWindowSizeChange();
+			g_windowSizeChanged = false;
+			windowSizeChanged();
+		}
+
 		if (glfwWindowShouldClose(g_window) != 0) {
-			//inject a close event
+			syseng::closeEngine();
+			return;
 		}
 	}
 
@@ -77,15 +88,7 @@ namespace vve::syswin::glfw {
 		return true;
 	}
 
-	///Wait for the window to finish size change
-	void waitForWindowSizeChange() {
-		int width = 0, height = 0;
-		while (width == 0 || height == 0) {
-			glfwGetFramebufferSize(g_window, &width, &height);
-			glfwWaitEvents();
-		}
-	}
-
+	VeIndex g_windowEventID = 0;
 	
 	/**
 	*
@@ -161,11 +164,17 @@ namespace vve::syswin::glfw {
 	*
 	*/
 	void framebufferResizeCallbackGLFW(GLFWwindow* window, int width, int height) {
-		waitForWindowSizeChange();
-
-		//TODO: schedule event to recreate swap chain here
+		g_windowSizeChanged = true;
 	}
 
+
+	void waitForWindowSizeChange() {
+		int w = 0, h = 0;
+		while (w == 0 || h == 0) {
+			glfwGetFramebufferSize(g_window, &w, &h);
+			glfwWaitEvents();
+		}
+	}
 
 }
 

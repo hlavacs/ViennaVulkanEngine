@@ -3,6 +3,7 @@
 #include "VESysEngine.h"
 #include "VESysWindow.h"
 #include "VESysWindowGLFW.h"
+#include "VESysVulkan.h"
 
 
 namespace vve::syswin {
@@ -31,7 +32,9 @@ namespace vve::syswin {
 		glfw::close();
 	}
 
-
+	void windowSizeChanged() {
+		sysvul::windowSizeChanged();
+	}
 
 }
 

@@ -11,7 +11,7 @@ namespace vve::syswin {
 	void tick();
 	void close();
 
-
+	void windowSizeChanged();
 }
 
 

@@ -6,6 +6,7 @@
 #include "jobSystemTest.h"
 #include "STLTest.h"
 
+using namespace vve;
 
 int main()
 {
@@ -25,9 +26,9 @@ int main()
     //stltest::runSTLTests();
     //return 0;
 
-    vve::syseng::init();
-    vve::syseng::computeOneFrame();
-    vve::syseng::close();
+    syseng::init();
+    syseng::runGameLoop();
+    syseng::close();
  
     return 0;
 }

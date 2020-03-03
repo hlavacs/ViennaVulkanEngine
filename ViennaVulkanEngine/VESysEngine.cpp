@@ -63,7 +63,7 @@ namespace vve::syseng {
 
 		registerTablePointer(&g_main_table, "Main Table");
 		registerTablePointer(&g_systems_table, "Systems Table");
-		registerSystem(syswin::init, syswin::sync, syswin::tick, syswin::close);	//first init window to get the surface!
+		registerSystem(syswin::init, syswin::sync, []() {},      syswin::close);	//first init window to get the surface!
 		registerSystem(sysvul::init, sysvul::sync, sysvul::tick, sysvul::close);
 		registerSystem(syseve::init, syseve::sync, syseve::tick, syseve::close);
 		registerSystem(sysass::init, sysass::sync, sysass::tick, sysass::close);
@@ -71,7 +71,7 @@ namespace vve::syseng {
 		registerSystem(sysphy::init, sysphy::sync, sysphy::tick, sysphy::close);
 
 #ifdef VE_ENABLE_MULTITHREADING
-		VeIndex i = 0, threadCount = vgjs::JobSystem::getInstance()->getThreadCount();
+		VeIndex i = 0, threadCount = (VeIndex)vgjs::JobSystem::getInstance()->getThreadCount();
 		for (auto table : g_main_table.getData()) {
 			table.m_table_pointer->setThreadId(i % threadCount);
 			++i;
@@ -85,21 +85,23 @@ namespace vve::syseng {
 		g_main_table.setReadOnly(true);
 	}
 
+
 	void sync() {
 		//might copy all new game states here
-
 		for (auto entry : g_systems_table.getData())
-			entry.m_sync();
+			JADD( entry.m_sync() );
 	}
 
 	void tick() {
 		for (auto entry : g_systems_table.getData()) 
 			JADD( entry.m_tick() );
+
+		JDEP(sync());
 	}
 
 	void computeOneFrame() {
-		sync();
-		tick();
+		syswin::tick();			//must poll GLFW events in the main thread
+		JADD(tick());			//start as child thread so there can be dependencies
 
 #ifdef VE_ENABLE_MULTITHREADING
 		vgjs::JobSystem::getInstance()->wait();
@@ -115,8 +117,11 @@ namespace vve::syseng {
 		}
 	}
 
-	void close() {
+	void closeEngine() {
 		g_goon = false;
+	}
+
+	void close() {
 
 #ifdef VE_ENABLE_MULTITHREADING
 		vgjs::JobSystem::getInstance()->terminate();

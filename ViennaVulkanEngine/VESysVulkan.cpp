@@ -39,18 +39,28 @@ namespace vve::sysvul {
 
 		vh::dev::vhCreateInstance(g_vulkan_state, extensions, layers );
 
-		
 	}
+
+	bool g_windowSizeChanged = false;
 
 	void sync() {
 	}
 
 	void tick() {
+		if (g_windowSizeChanged) {
+			g_windowSizeChanged = false;
+			//recreate swap chain, do not draw current frame
+		}
 
 	}
 
 	void close() {
 		vkDestroyInstance(g_vulkan_state.m_instance, nullptr );
+	}
+
+
+	void windowSizeChanged() {
+		g_windowSizeChanged = true;
 	}
 
 

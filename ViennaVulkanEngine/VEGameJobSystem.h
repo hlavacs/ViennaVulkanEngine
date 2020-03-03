@@ -455,9 +455,11 @@ namespace vgjs {
 		//returns as soon as there are no more jobs in the job queues
 		//
 		void wait() {
+			std::chrono::seconds sec(1);
+
 			while (getNumberJobs() > 0) {
 				std::unique_lock<std::mutex> lock(m_mainThreadMutex);
-				m_mainThreadCondVar.wait(lock);							//wait to be awakened
+				m_mainThreadCondVar.wait_for(lock, std::chrono::microseconds(500));		//wait to be awakened
 			}
 		};
 
