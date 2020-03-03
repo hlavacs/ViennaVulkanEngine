@@ -9,7 +9,7 @@ namespace vve::syswin::glfw {
 	GLFWwindow* g_window;	///<handle to the GLFW window
 
 	const uint32_t WIDTH = 800;
-	const uint32_t HEIGHT = 800;
+	const uint32_t HEIGHT = 600;
 	   	  
 	void init() {
 		glfwInit();

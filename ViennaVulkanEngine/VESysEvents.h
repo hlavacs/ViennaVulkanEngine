@@ -3,8 +3,17 @@
 
 namespace vve::syseve {
 
-	struct VeEventTableEntry {
+	struct VeEventTypeTableEntry {
+
 		std::string m_name;
+	};
+
+	struct VeEventTableEntry {
+		VeHandle m_type;
+	};
+
+	struct VeEventRegisteredHandlerTableEntry {
+		VeHandle m_type;
 	};
 
 

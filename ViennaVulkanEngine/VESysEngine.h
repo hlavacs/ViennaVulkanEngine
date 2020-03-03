@@ -10,7 +10,6 @@ namespace vve::syseng {
 	void registerTablePointer(VeTable* ptr, std::string name );
 	void registerSystem(std::function<void()> init, std::function<void()> tick, std::function<void()> sync, std::function<void()> close);
 	VeTable* getTablePointer( std::string name );
-
 	void createTables();
 
 #endif

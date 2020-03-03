@@ -47,10 +47,6 @@ namespace vve::syseng {
 		g_main_table.addEntry({ tptr, name});
 	}
 
-	void createTables() {
-		registerTablePointer(&g_systems_table, "Systems");
-	}
-
 	VeTable* getTablePointer(std::string name) {
 		VeMainTableEntry entry;
 		if( g_main_table.getEntry(g_main_table.getHandleEqual(0, name), entry) )
@@ -65,13 +61,22 @@ namespace vve::syseng {
 	void init() {
 		std::cout << "init engine 2\n";
 
-		createTables();
+		registerTablePointer(&g_main_table, "Main Table");
+		registerTablePointer(&g_systems_table, "Systems Table");
 		registerSystem(syswin::init, syswin::sync, syswin::tick, syswin::close);	//first init window to get the surface!
 		registerSystem(sysvul::init, sysvul::sync, sysvul::tick, sysvul::close);
 		registerSystem(syseve::init, syseve::sync, syseve::tick, syseve::close);
 		registerSystem(sysass::init, sysass::sync, sysass::tick, sysass::close);
 		registerSystem(syssce::init, syssce::sync, syssce::tick, syssce::close);
 		registerSystem(sysphy::init, sysphy::sync, sysphy::tick, sysphy::close);
+
+#ifdef VE_ENABLE_MULTITHREADING
+		VeIndex i = 0, threadCount = vgjs::JobSystem::getInstance()->getThreadCount();
+		for (auto table : g_main_table.getData()) {
+			table.m_table_pointer->setThreadId(i % threadCount);
+			++i;
+		}
+#endif
 
 		for (auto entry : g_systems_table.getData()) 
 			entry.m_init();
@@ -80,26 +85,21 @@ namespace vve::syseng {
 		g_main_table.setReadOnly(true);
 	}
 
+	void sync() {
+		//might copy all new game states here
+
+		for (auto entry : g_systems_table.getData())
+			entry.m_sync();
+	}
+
 	void tick() {
 		for (auto entry : g_systems_table.getData()) 
 			JADD( entry.m_tick() );
 	}
 
-	void sync() {
-		//might copy all new game states here
-	}
-
-	void computeOneFrame2() {
-		JADD(sync());
-
-		for (auto entry : g_systems_table.getData())
-			JADD(entry.m_sync());
-
-		JDEP(tick());
-	}
-
 	void computeOneFrame() {
-		JADD(computeOneFrame2());
+		sync();
+		tick();
 
 #ifdef VE_ENABLE_MULTITHREADING
 		vgjs::JobSystem::getInstance()->wait();
@@ -113,15 +113,15 @@ namespace vve::syseng {
 		while (g_goon) {
 			computeOneFrame();
 		}
+	}
+
+	void close() {
+		g_goon = false;
 
 #ifdef VE_ENABLE_MULTITHREADING
 		vgjs::JobSystem::getInstance()->terminate();
 		vgjs::JobSystem::getInstance()->waitForTermination();
 #endif
-	}
-
-	void close() {
-		g_goon = false;
 
 		auto data = g_systems_table.getData();
 		for (int32_t i = (int32_t)data.size() - 1; i >= 0; --i) 
