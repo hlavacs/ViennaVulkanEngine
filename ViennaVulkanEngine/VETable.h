@@ -372,24 +372,25 @@ namespace vve {
 		virtual void operator=( const VeFixedSizeTable& table);
 		virtual void swapEntriesByHandle(VeHandle h1, VeHandle h2);
 		virtual void clear();
+		virtual void sortTableByMap( VeIndex num_map );
 
 		void		addMap(VeMap* pmap) { in(); m_maps.emplace_back(pmap); out();  };
 		VeIndex		getSize() { return (VeIndex)m_data.size(); };
 		const VeVector<T>& getData() { return m_data; };
-		void		sortTableByMap( VeIndex num_map );
 		void		forAllEntries( VeIndex num_map, std::function<void(VeHandle)>& func );
 		void		forAllEntries( VeIndex num_map, std::function<void(VeHandle)>&& func ) { forAllEntries(num_map, func ); };
 		void		forAllEntries( std::function<void(VeHandle)>& func)  { forAllEntries( VE_NULL_INDEX, func ); };
 		void		forAllEntries( std::function<void(VeHandle)>&& func) { forAllEntries( VE_NULL_INDEX, func ); };
 
-		VeHandle	addEntry(T& entry);
-		VeHandle	addEntry(T&& entry);
-		bool		getEntry(VeHandle key, T& entry);
-		bool		updateEntry(VeHandle key, T& entry);
+		virtual VeHandle	addEntry(T& entry);
+		virtual VeHandle	addEntry(T&& entry);
+		virtual bool		getEntry(VeHandle key, T& entry);
+		virtual bool		updateEntry(VeHandle key, T& entry);
+		virtual bool		deleteEntry(VeHandle key);
+
 		VeIndex		getIndexFromHandle(VeHandle key);
 		VeHandle	getHandleFromIndex(VeIndex table_index);
 		bool		isValid(VeHandle handle);
-		bool		deleteEntry(VeHandle key);
 
 		template <typename K>
 		VeHandle	getHandleEqual(VeIndex num_map, K key );
@@ -689,6 +690,25 @@ namespace vve {
 		out();
 		return num;
 	};
+
+
+	///-------------------------------------------------------------------------------
+
+
+	template <typename T>
+	class VeFixedSizeTableDerived : public VeFixedSizeTable<T> {
+	protected:
+	public:
+		VeFixedSizeTableDerived() : VeFixedSizeTable<T>() {
+
+		};
+
+#ifdef VE_ENABLE_MULTITHREADING
+
+#endif
+
+	};
+
 
 
 	///-------------------------------------------------------------------------------
