@@ -7,21 +7,23 @@
 
 namespace vve::sysass {
 
-	VeVariableSizeTable* g_meshes_table = nullptr;
+	VeVariableSizeTableMT* g_meshes_table = nullptr;
+	VeVariableSizeTableMT* g_meshes_table2 = nullptr;
+
 
 	void init() {
-		g_meshes_table = new VeVariableSizeTable(1 << 20);
-		syseng::registerTablePointer(g_meshes_table, "Meshes");
-	}
+		g_meshes_table = new VeVariableSizeTableMT(1 << 20);
+		g_meshes_table2 = new VeVariableSizeTableMT( *g_meshes_table );	//companion table
 
-	void sync() {
+		syseng::registerTablePointer(g_meshes_table, "Meshes");
 	}
 
 	void tick() {
 	}
 
 	void close() {
-
+		delete g_meshes_table;
+		delete g_meshes_table2;
 	}
 
 }

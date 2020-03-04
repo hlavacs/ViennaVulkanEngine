@@ -43,9 +43,6 @@ namespace vve::sysvul {
 
 	bool g_windowSizeChanged = false;
 
-	void sync() {
-	}
-
 	void tick() {
 		if (g_windowSizeChanged) {
 			g_windowSizeChanged = false;

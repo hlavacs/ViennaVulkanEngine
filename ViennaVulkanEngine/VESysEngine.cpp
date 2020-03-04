@@ -32,19 +32,17 @@ namespace vve::syseng {
 
 	struct VeSysTableEntry {
 		std::function<void()>	m_init;
-		std::function<void()>	m_sync;
 		std::function<void()>	m_tick;
 		std::function<void()>	m_close;
-		VeSysTableEntry() : m_init(), m_sync(), m_tick(), m_close() {};
-		VeSysTableEntry(std::function<void()> init, std::function<void()> sync,
-			std::function<void()> tick, std::function<void()> close) :
-			m_init(init), m_sync(sync), m_tick(tick), m_close(close) {};
+		VeSysTableEntry() : m_init(), m_tick(), m_close() {};
+		VeSysTableEntry(std::function<void()> init, std::function<void()> tick, std::function<void()> close) : 
+			m_init(init), m_tick(tick), m_close(close) {};
 	};
 	VeFixedSizeTable<VeSysTableEntry> g_systems_table;
 
 
 	void registerTablePointer(VeTable* tptr, std::string name) {
-		g_main_table.VeFixedSizeTableBase<VeMainTableEntry>::addEntry({ tptr, name});
+		g_main_table.VeFixedSizeTable<VeMainTableEntry>::addEntry({ tptr, name});
 	}
 
 	VeTable* getTablePointer(std::string name) {
@@ -61,12 +59,12 @@ namespace vve::syseng {
 		registerTablePointer(&g_systems_table, "Systems Table");
 
 		//first init window to get the surface!
-		g_systems_table.VeFixedSizeTableBase<VeSysTableEntry>::addEntry({ syswin::init, syswin::sync, []() {},      syswin::close });
-		g_systems_table.VeFixedSizeTableBase<VeSysTableEntry>::addEntry({ sysvul::init, sysvul::sync, sysvul::tick, sysvul::close });
-		g_systems_table.VeFixedSizeTableBase<VeSysTableEntry>::addEntry({ syseve::init, syseve::sync, syseve::tick, syseve::close });
-		g_systems_table.VeFixedSizeTableBase<VeSysTableEntry>::addEntry({ sysass::init, sysass::sync, sysass::tick, sysass::close });
-		g_systems_table.VeFixedSizeTableBase<VeSysTableEntry>::addEntry({ syssce::init, syssce::sync, syssce::tick, syssce::close });
-		g_systems_table.VeFixedSizeTableBase<VeSysTableEntry>::addEntry({ sysphy::init, sysphy::sync, sysphy::tick, sysphy::close });
+		g_systems_table.addEntry({ syswin::init, []() {},      syswin::close });
+		g_systems_table.addEntry({ sysvul::init, sysvul::tick, sysvul::close });
+		g_systems_table.addEntry({ syseve::init, syseve::tick, syseve::close });
+		g_systems_table.addEntry({ sysass::init, sysass::tick, sysass::close });
+		g_systems_table.addEntry({ syssce::init, syssce::tick, syssce::close });
+		g_systems_table.addEntry({ sysphy::init, sysphy::tick, sysphy::close });
 
 #ifdef VE_ENABLE_MULTITHREADING
 		VeIndex i = 0, threadCount = (VeIndex)vgjs::JobSystem::getInstance()->getThreadCount();
@@ -86,17 +84,16 @@ namespace vve::syseng {
 	}
 
 
-	void sync() {
-		//might copy all new game states here
-		for (auto entry : g_systems_table.getData())
-			JADD( entry.m_sync() );
+	void swapTables() {
+		for (auto table : g_main_table.getData())
+			table.m_table_pointer->swapTables();
 	}
 
 	void tick() {
 		for (auto entry : g_systems_table.getData()) 
 			JADD( entry.m_tick() );
 
-		JDEP(sync());
+		JDEP(swapTables());
 	}
 
 	void computeOneFrame() {

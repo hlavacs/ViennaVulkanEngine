@@ -14,9 +14,6 @@ namespace vve::sysvul::fwsimple {
 
 	}
 
-	void sync() {
-	}
-
 	void tick() {
 
 	}

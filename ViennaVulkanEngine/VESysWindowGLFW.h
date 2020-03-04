@@ -5,7 +5,6 @@ namespace vve::syswin::glfw {
 
 
 	void init();
-	void sync();
 	void tick();
 	void close();
 

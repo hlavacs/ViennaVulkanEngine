@@ -24,9 +24,6 @@ namespace vve::syseve {
 		syseng::registerTablePointer( &g_event_types_table, "Event");
 	}
 
-	void sync() {
-	}
-
 	void tick() {
 
 	}

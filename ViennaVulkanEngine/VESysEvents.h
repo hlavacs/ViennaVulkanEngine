@@ -21,7 +21,6 @@ namespace vve::syseve {
 
 	void init();
 	void tick();
-	void sync();
 	void close();
 
 
