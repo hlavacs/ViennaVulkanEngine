@@ -44,7 +44,7 @@ namespace vve::syseng {
 
 
 	void registerTablePointer(VeTable* tptr, std::string name) {
-		g_main_table.addEntry({ tptr, name});
+		g_main_table.VeFixedSizeTableBase<VeMainTableEntry>::addEntry({ tptr, name});
 	}
 
 	VeTable* getTablePointer(std::string name) {
@@ -54,21 +54,18 @@ namespace vve::syseng {
 		return nullptr;
 	}
 
-	void registerSystem(std::function<void()> init, std::function<void()> sync, std::function<void()> tick, std::function<void()> close) {
-		g_systems_table.addEntry({ init, sync, tick, close });
-	}
-
 	void init() {
 		std::cout << "init engine 2\n";
 
 		registerTablePointer(&g_main_table, "Main Table");
 		registerTablePointer(&g_systems_table, "Systems Table");
-		registerSystem(syswin::init, syswin::sync, []() {},      syswin::close);	//first init window to get the surface!
-		registerSystem(sysvul::init, sysvul::sync, sysvul::tick, sysvul::close);
-		registerSystem(syseve::init, syseve::sync, syseve::tick, syseve::close);
-		registerSystem(sysass::init, sysass::sync, sysass::tick, sysass::close);
-		registerSystem(syssce::init, syssce::sync, syssce::tick, syssce::close);
-		registerSystem(sysphy::init, sysphy::sync, sysphy::tick, sysphy::close);
+
+		g_systems_table.VeFixedSizeTableBase<VeSysTableEntry>::addEntry({ syswin::init, syswin::sync, []() {},      syswin::close });	//first init window to get the surface!
+		g_systems_table.VeFixedSizeTableBase<VeSysTableEntry>::addEntry({ sysvul::init, sysvul::sync, sysvul::tick, sysvul::close });
+		g_systems_table.VeFixedSizeTableBase<VeSysTableEntry>::addEntry({ syseve::init, syseve::sync, syseve::tick, syseve::close });
+		g_systems_table.VeFixedSizeTableBase<VeSysTableEntry>::addEntry({ sysass::init, sysass::sync, sysass::tick, sysass::close });
+		g_systems_table.VeFixedSizeTableBase<VeSysTableEntry>::addEntry({ syssce::init, syssce::sync, syssce::tick, syssce::close });
+		g_systems_table.VeFixedSizeTableBase<VeSysTableEntry>::addEntry({ sysphy::init, sysphy::sync, sysphy::tick, sysphy::close });
 
 #ifdef VE_ENABLE_MULTITHREADING
 		VeIndex i = 0, threadCount = (VeIndex)vgjs::JobSystem::getInstance()->getThreadCount();
