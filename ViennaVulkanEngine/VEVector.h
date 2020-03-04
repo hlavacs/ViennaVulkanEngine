@@ -6,6 +6,12 @@ namespace vve {
 	uint64_t alignBoundary(uint64_t size, VeIndex alignment);
 
 
+	/**
+	*
+	* \brief
+	*
+	*
+	*/
 	template <typename T>
 	class VeVector {
 

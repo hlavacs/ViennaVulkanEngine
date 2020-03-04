@@ -19,9 +19,6 @@ namespace vve {
 	*
 	* \brief 
 	*
-	* \param[in] eye New position of the entity
-	* \param[in] point Entity looks at this point (= new local z axis)
-	* \param[in] up Up vector pointing up
 	*
 	*/
 	class VeMap {
@@ -75,21 +72,61 @@ namespace vve {
 			return (VeHandle)*k2;
 		};
 
+		/**
+		*
+		* \brief
+		*
+		* \param[in] entry
+		* \param[in] offset
+		* \param[in] numbytes
+		* \param[out] key
+		*
+		*/
 		void getKey( void* entry, VeIndex offset, VeIndex num_bytes, VeHandle& key) {
 			key = getIntFromEntry( entry, offset, num_bytes );
 		};
 
+		/**
+		*
+		* \brief
+		*
+		* \param[in] entry
+		* \param[in] offset
+		* \param[in] numbytes
+		* \returns
+		*
+		*/
 		void getKey(void* entry, VeTableIndexPair offset, VeTableIndexPair num_bytes, VeTableKeyIntPair& key) {
 			key = VeTableKeyIntPair(getIntFromEntry(entry, offset.first,  num_bytes.first),
 									getIntFromEntry(entry, offset.second, num_bytes.second));
 		}
 
+		/**
+		*
+		* \brief
+		*
+		* \param[in] entry
+		* \param[in] offset
+		* \param[in] numbytes
+		* \returns
+		*
+		*/
 		void getKey(void* entry, VeTableIndexTriple offset, VeTableIndexTriple num_bytes, VeTableKeyIntTriple& key) {
 			key = VeTableKeyIntTriple(	getIntFromEntry(entry, std::get<0>(offset), std::get<0>(num_bytes)),
 										getIntFromEntry(entry, std::get<1>(offset), std::get<1>(num_bytes)),
 										getIntFromEntry(entry, std::get<2>(offset), std::get<2>(num_bytes)));
 		}
 
+		/**
+		*
+		* \brief
+		*
+		* \param[in] entry
+		* \param[in] offset
+		* \param[in] numbytes
+		* \returns
+		*
+		*/
 		void getKey( void* entry, VeIndex offset, VeIndex num_bytes, std::string &key) {
 			uint8_t* ptr = (uint8_t*)entry + offset;
 			std::string* pstring = (std::string*)ptr;
@@ -99,9 +136,15 @@ namespace vve {
 	};
 
 
-	///M is either std::map or std::unordered_map
-	///I is the offset/length type, is either VeTableIndex or VeTableIndexPair
-	///K is the map key, is either VeTableKeyInt, VeTableKeyIntPair, VeTableKeyIntTriple, or VeTableKeyString
+	/**
+	*
+	* \brief
+	*
+	*	M is either std::map or std::unordered_map
+	*	I is the offset/length type, is either VeTableIndex or VeTableIndexPair
+	*	K is the map key, is either VeTableKeyInt, VeTableKeyIntPair, VeTableKeyIntTriple, or VeTableKeyString
+	*
+	*/
 	template <typename M, typename K, typename I>
 	class VeTypedMap : public VeMap {
 	protected:
@@ -210,6 +253,12 @@ namespace vve {
 
 	//------------------------------------------------------------------------------------------------------
 
+	/**
+	*
+	* \brief
+	*
+	*
+	*/
 	class VeDirectory {
 	protected:
 
@@ -311,6 +360,12 @@ namespace vve {
 
 	//------------------------------------------------------------------------------------------------------
 
+	/**
+	*
+	* \brief
+	*
+	*
+	*/
 	class VeTable {
 	protected:
 		VeIndex	m_thread_id = 0;			///id of thread that accesses to this table are scheduled to
@@ -325,6 +380,7 @@ namespace vve {
 			if (m_in > 1) return;
 			t1 = std::chrono::high_resolution_clock::now(); 
 		};
+
 		inline void out() {
 			--m_in;
 			if (m_in > 0) return;
@@ -335,7 +391,7 @@ namespace vve {
 
 	public:
 		VeTable() {};
-		VeTable(const VeTable& table) { m_thread_id = table.m_thread_id; m_read_only = table.m_read_only; };
+		VeTable(const VeTable& table) { m_thread_id = table.m_thread_id; m_read_only = !table.m_read_only; };
 		virtual ~VeTable() {};
 		virtual void operator=(const VeTable& tab) {};
 		virtual void clear() {};
@@ -354,6 +410,12 @@ namespace vve {
 
 	//------------------------------------------------------------------------------------------------------
 
+	/**
+	*
+	* \brief
+	*
+	*
+	*/
 	template <typename T>
 	class VeFixedSizeTable : public VeTable {
 	protected:
@@ -696,7 +758,12 @@ namespace vve {
 
 	///-------------------------------------------------------------------------------
 
-
+	/**
+	*
+	* \brief
+	*
+	*
+	*/
 	template <typename T>
 	class VeFixedSizeTableMT : public VeFixedSizeTable<T> {
 	protected:
@@ -793,6 +860,12 @@ namespace vve {
 
 	///-------------------------------------------------------------------------------
 
+	/**
+	*
+	* \brief
+	*
+	*
+	*/
 	class VeVariableSizeTable : public VeTable {
 	protected:
 
@@ -940,6 +1013,12 @@ namespace vve {
 
 	///-------------------------------------------------------------------------------
 
+	/**
+	*
+	* \brief
+	*
+	*
+	*/
 	class VeVariableSizeTableMT : public VeVariableSizeTable {
 	protected:
 
