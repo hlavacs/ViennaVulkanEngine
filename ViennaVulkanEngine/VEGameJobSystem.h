@@ -85,7 +85,7 @@ namespace vgjs {
 	
 		//---------------------------------------------------------------------------
 		//set pointer to parent job
-		void setParentJob(Job *parentJob, bool addToChildren ) {
+		void setParentJob(Job *parentJob ) {
 			m_parentJob = parentJob;				//set the pointer
 			if (parentJob == nullptr) return;
 			parentJob->m_numUnfinishedChildren++;	//tell parent that there is one more child
@@ -107,6 +107,10 @@ namespace vgjs {
 		//set the Job's function
 		void setFunction(Function& func) {
 			m_function = func;
+		};
+
+		void setFunction(Function&& func) {
+			m_function = std::move(func);
 		};
 
 		//---------------------------------------------------------------------------
@@ -547,7 +551,7 @@ namespace vgjs {
 		//func The function to schedule, as rvalue reference
 		void addJob( Function& func, VgjsThreadID thread_id = VGJS_NULL_THREAD_ID ) {
 			Job *pJob = JobMemory::pInstance->allocateJob();
-			pJob->setParentJob(getJobPointer(), true);	//set parent Job to notify on finished, or nullptr if main thread
+			pJob->setParentJob(getJobPointer());	//set parent Job to notify on finished, or nullptr if main thread
 			pJob->setFunction(func);
 			pJob->setThreadId(thread_id);
 			addJob(pJob);
@@ -557,7 +561,11 @@ namespace vgjs {
 		//poolNumber Number of the pool
 		//id A name for the job for debugging
 		void addJob( Function&& func, VgjsThreadID thread_id = VGJS_NULL_THREAD_ID ) {
-			addJob( func, thread_id );
+			Job* pJob = JobMemory::pInstance->allocateJob();
+			pJob->setParentJob(getJobPointer());	//set parent Job to notify on finished, or nullptr if main thread
+			pJob->setFunction(std::forward<std::function<void()>>(func));
+			pJob->setThreadId(thread_id);
+			addJob(pJob);
 		};
 
 		//---------------------------------------------------------------------------
@@ -644,7 +652,7 @@ namespace vgjs {
 
 		if (m_onFinishedJob != nullptr) {						//is there a successor Job?
 			if (m_parentJob != nullptr) 
-				m_onFinishedJob->setParentJob(  m_parentJob, false );
+				m_onFinishedJob->setParentJob(  m_parentJob );
 			JobSystem::pInstance->addJob(m_onFinishedJob);	//schedule it for running
 		}
 

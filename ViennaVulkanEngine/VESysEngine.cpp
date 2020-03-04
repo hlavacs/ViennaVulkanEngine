@@ -60,7 +60,8 @@ namespace vve::syseng {
 		registerTablePointer(&g_main_table, "Main Table");
 		registerTablePointer(&g_systems_table, "Systems Table");
 
-		g_systems_table.VeFixedSizeTableBase<VeSysTableEntry>::addEntry({ syswin::init, syswin::sync, []() {},      syswin::close });	//first init window to get the surface!
+		//first init window to get the surface!
+		g_systems_table.VeFixedSizeTableBase<VeSysTableEntry>::addEntry({ syswin::init, syswin::sync, []() {},      syswin::close });
 		g_systems_table.VeFixedSizeTableBase<VeSysTableEntry>::addEntry({ sysvul::init, sysvul::sync, sysvul::tick, sysvul::close });
 		g_systems_table.VeFixedSizeTableBase<VeSysTableEntry>::addEntry({ syseve::init, syseve::sync, syseve::tick, syseve::close });
 		g_systems_table.VeFixedSizeTableBase<VeSysTableEntry>::addEntry({ sysass::init, sysass::sync, sysass::tick, sysass::close });
@@ -70,8 +71,10 @@ namespace vve::syseng {
 #ifdef VE_ENABLE_MULTITHREADING
 		VeIndex i = 0, threadCount = (VeIndex)vgjs::JobSystem::getInstance()->getThreadCount();
 		for (auto table : g_main_table.getData()) {
-			table.m_table_pointer->setThreadId(i % threadCount);
-			++i;
+			if (!table.m_table_pointer->getReadOnly()) {
+				table.m_table_pointer->setThreadId(i % threadCount);
+				++i;
+			}
 		}
 #endif
 
@@ -98,7 +101,7 @@ namespace vve::syseng {
 
 	void computeOneFrame() {
 		syswin::tick();			//must poll GLFW events in the main thread
-		JADD(tick());			//start as child thread so there can be dependencies
+		JADD(tick());			//run tick() as child thread so there can be dependencies with JDEP
 
 #ifdef VE_ENABLE_MULTITHREADING
 		vgjs::JobSystem::getInstance()->wait();
