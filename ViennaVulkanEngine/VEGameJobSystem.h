@@ -337,17 +337,17 @@ namespace vgjs {
 
 				if (m_terminate) break;
 
-				Job * pJob = m_jobQueues[threadIndex]->pop();
+				Job * pJob = m_jobQueuesLocal[threadIndex]->pop();
 
 				if (m_terminate) break;
 
 				if( pJob == nullptr ) 
-					pJob = m_jobQueuesLocal[threadIndex]->pop();
+					pJob = m_jobQueuesLocalFIFO[threadIndex]->pop();
 
 				if (m_terminate) break;
 
 				if (pJob == nullptr)
-					pJob = m_jobQueuesLocalFIFO[threadIndex]->pop();
+					pJob = m_jobQueues[threadIndex]->pop();
 
 				if (m_terminate) break;
 

@@ -32,6 +32,7 @@ namespace vve {
 		virtual ~VeMap() {};
 		virtual void		operator=(const VeMap& map) { assert(false); return; };
 		virtual void		clear() { assert(false); return; };
+		virtual VeMap*		clone() { assert(false); return nullptr;};
 		
 		virtual bool		getMappedIndexEqual(	VeTableKeyInt key, VeIndex& index) { assert(false); return false; };
 		virtual bool		getMappedIndexEqual(	VeTableKeyIntPair key, VeIndex& index) { assert(false); return false; };
@@ -48,9 +49,9 @@ namespace vve {
 		virtual uint32_t	getMappedIndicesRange(	VeTableKeyIntTriple lower, VeTableKeyIntTriple upper, std::vector<VeIndex>& result) { assert(false); return 0; };
 		virtual uint32_t	getMappedIndicesRange(	VeTableKeyString lower, VeTableKeyString upper, std::vector<VeIndex>& result) { assert(false); return 0; };
 
-		virtual uint32_t	getAllIndices(	std::vector<VeIndex>& result) { assert(false); return 0; };
+		virtual uint32_t	getAllIndices(std::vector<VeIndex>& result) { assert(false); return 0; };
 		virtual bool		insertIntoMap(void* entry, VeIndex& dir_index) { assert(false); return false; };
-		virtual uint32_t	deleteFromMap(	void* entry, VeIndex& dir_index) { assert(false); return 0; };
+		virtual uint32_t	deleteFromMap(void* entry, VeIndex& dir_index) { assert(false); return 0; };
 
 
 		/**
@@ -109,14 +110,21 @@ namespace vve {
 		I	m_num_bytes;	///
 		M	m_map;			///key value pairs - value is the index of the entry in the table
 
+		VeTypedMap<M, K, I>* clone() {
+			VeTypedMap<M, K, I>* map = new VeTypedMap<M, K, I>(*this);
+			return map;
+		};
+
 	public:
-		VeTypedMap(	I offset, I num_bytes ) : VeMap(), m_offset(offset), m_num_bytes(num_bytes) {};
+		VeTypedMap(I offset, I num_bytes) : VeMap(), m_offset(offset), m_num_bytes(num_bytes) {};
+		VeTypedMap(const VeTypedMap<M,K,I> & map) : VeMap(), m_offset(map.m_offset), m_num_bytes(map.m_num_bytes), m_map(map.m_map) {};
 		virtual	~VeTypedMap() {};
 
-		virtual void operator=(const VeTypedMap& map) {
-			m_offset	= map.m_offset;
-			m_num_bytes = map.m_num_bytes;
-			m_map		= map.m_map;
+		virtual void operator=(const VeMap& basemap) {
+			VeTypedMap<M,K,I>* map = &((VeTypedMap<M, K, I> &)basemap);
+			m_offset	= map->m_offset;
+			m_num_bytes = map->m_num_bytes;
+			m_map		= map->m_map;
 		};
 
 		virtual void clear() {
@@ -363,20 +371,23 @@ namespace vve {
 		VeFixedSizeTable( std::vector<VeMap*> &maps, bool memcopy = false, VeIndex align = 16, VeIndex capacity = 16) :
 			VeTable(), m_maps(maps), m_data(memcopy, align, capacity) {};
 
-		VeFixedSizeTable(const VeFixedSizeTable& table) :
-			VeTable(table), m_maps(table.m_maps), m_data(table.m_data), m_directory(table.m_directory), m_tbl2dir(table.m_tbl2dir) {};
+		VeFixedSizeTable(const VeFixedSizeTable<T>& table) : VeTable(table), m_data(table.m_data), m_directory(table.m_directory), m_tbl2dir(table.m_tbl2dir) {
+			for (auto map : table.m_maps)
+				m_maps.emplace_back(map->clone());
+		};
 
 		virtual ~VeFixedSizeTable() { 
 			for (uint32_t i = 0; i < m_maps.size(); ++i ) 
 				delete m_maps[i]; 
 		};
 
-		virtual void operator=( const VeFixedSizeTable& table);
+		virtual void operator=( const VeFixedSizeTable<T>& table);
 		virtual void swapEntriesByHandle(VeHandle h1, VeHandle h2);
 		virtual void clear();
 		virtual void sortTableByMap( VeIndex num_map );
 
-		void		addMap(VeMap* pmap) { in(); m_maps.emplace_back(pmap); out();  };
+		void addMap(VeMap* pmap) { in(); m_maps.emplace_back(pmap); out(); };
+
 		VeIndex		getSize() { return (VeIndex)m_data.size(); };
 		const VeVector<T>& getData() { return m_data; };
 		void		forAllEntries( VeIndex num_map, std::function<void(VeHandle)>& func );
@@ -413,12 +424,13 @@ namespace vve {
 		return m_directory.isValid(handle);
 	}
 
-	template<typename T> inline void VeFixedSizeTable<T>::operator=(const VeFixedSizeTable& table) {
+	template<typename T> inline void VeFixedSizeTable<T>::operator=(const VeFixedSizeTable<T>& table) {
 		in();
 		assert(!m_read_only);
 		m_directory = table.m_directory;
 		m_data		= table.m_data;
-		m_maps		= table.m_maps;
+		for (uint32_t i = 0; i < table.m_maps.size(); ++i ) 
+			*(m_maps[i]) = *(table.m_maps[i]);
 		m_tbl2dir	= table.m_tbl2dir;
 		out();
 	}
@@ -706,7 +718,7 @@ namespace vve {
 		VeFixedSizeTableMT<T>(bool memcopy = false, VeIndex align = 16, VeIndex capacity = 16) :
 			VeFixedSizeTable<T>(memcopy, align, capacity) {};
 
-		VeFixedSizeTableMT<T>(std::vector<VeMap*>& maps, bool memcopy = false, VeIndex align = 16, VeIndex capacity = 16) :
+		VeFixedSizeTableMT<T>(std::vector<VeMap>& maps, bool memcopy = false, VeIndex align = 16, VeIndex capacity = 16) :
 			VeFixedSizeTable<T>(maps, memcopy, align, capacity) {};
 
 		VeFixedSizeTableMT<T>(const VeFixedSizeTableMT<T>& table) :
@@ -828,9 +840,9 @@ namespace vve {
 		VeVariableSizeTable(VeIndex size = 1<<20, VeIndex align = 16, bool immediateDefrag = false ) :
 			VeTable(), m_align(align), m_immediateDefrag(immediateDefrag) {
 
-			m_directory.addMap((VeMap*) new VeTypedMap< std::multimap<VeTableKeyInt, VeTableIndex>, VeTableKeyInt, VeTableIndex >(
+			m_directory.addMap(new VeTypedMap< std::multimap<VeTableKeyInt, VeTableIndex>, VeTableKeyInt, VeTableIndex >(
 				(VeIndex)offsetof(struct VeDirectoryEntry, m_occupied), (VeIndex)sizeof(VeDirectoryEntry::m_occupied)));
-			m_directory.addMap((VeMap*) new VeTypedMap< std::map<VeTableKeyInt, VeIndex>, VeTableKeyInt, VeTableIndex >(
+			m_directory.addMap(new VeTypedMap< std::map<VeTableKeyInt, VeIndex>, VeTableKeyInt, VeTableIndex >(
 				(VeIndex)offsetof(struct VeDirectoryEntry, m_start), (VeIndex)sizeof(VeDirectoryEntry::m_start)));
 					   
 			m_data.resize((VeIndex)size + m_align);
@@ -840,9 +852,7 @@ namespace vve {
 		}
 
 		VeVariableSizeTable(VeVariableSizeTable& table) :
-			VeTable(), m_align(table.m_align), m_immediateDefrag(table.m_immediateDefrag) {
-			m_directory = table.m_directory;
-			m_data = table.m_data;
+			VeTable(), m_directory(table.m_directory), m_data(table.m_data), m_align(table.m_align), m_immediateDefrag(table.m_immediateDefrag) {
 		};
 
 		virtual ~VeVariableSizeTable() {};
@@ -940,7 +950,7 @@ namespace vve {
 			VeVariableSizeTableMT* pSrc = getTablePtrWrite();
 			VeVariableSizeTableMT* pDst = getTablePtrRead();
 
-			pDst->VeVariableSizeTable::operator=( *pSrc );
+			*(VeVariableSizeTable*)pDst = *(VeVariableSizeTable*)pSrc;
 			pSrc->setReadOnly(false);
 			pDst->setReadOnly(true);
 		};
