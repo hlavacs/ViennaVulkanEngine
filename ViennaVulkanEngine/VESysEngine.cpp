@@ -51,15 +51,22 @@ namespace vve::syseng {
 		return nullptr;
 	}
 
+	std::chrono::time_point now_time			= std::chrono::high_resolution_clock::now();
+	std::chrono::time_point next_update_time	= std::chrono::high_resolution_clock::now();
+	auto time_delta = std::chrono::microseconds( (int)((1.0f/60.0)*1000000.0f) );
+
 	void init() {
 		std::cout << "init engine 2\n";
+
+		now_time = std::chrono::high_resolution_clock::now();
+		next_update_time = now_time + time_delta;
 
 		registerTablePointer(&g_main_table, "Main Table");
 		registerTablePointer(&g_systems_table, "Systems Table");
 
 		//first init window to get the surface!
 		g_systems_table.addEntry({ syswin::init, []() {},      syswin::close });
-		g_systems_table.addEntry({ sysvul::init, sysvul::tick, sysvul::close });
+		g_systems_table.addEntry({ sysvul::init, []() {}, sysvul::close });
 		g_systems_table.addEntry({ syseve::init, syseve::tick, syseve::close });
 		g_systems_table.addEntry({ sysass::init, sysass::tick, sysass::close });
 		g_systems_table.addEntry({ syssce::init, syssce::tick, syssce::close });
@@ -86,13 +93,22 @@ namespace vve::syseng {
 	void swapTables() {
 		for (auto table : g_main_table.getData())
 			table.m_table_pointer->swapTables();
+
+		JDEP(sysvul::tick());	//render the next frame
 	}
 
 	void tick() {
+		now_time = std::chrono::high_resolution_clock::now();
+		if (now_time < next_update_time) {
+			JADD(sysvul::tick());	//render the next frame
+			return;
+		}
+		next_update_time = now_time + time_delta;
+
 		for (auto entry : g_systems_table.getData()) 
 			JADD( entry.m_tick() );
 
-		JDEP(swapTables());
+		JDEP(swapTables());		//switch state tables and render the next frame
 	}
 
 	void computeOneFrame() {
