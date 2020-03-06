@@ -397,7 +397,7 @@ namespace vve {
 		virtual void clear() {};
 		void	setThreadId(VeIndex id) { m_thread_id = id; };
 		VeIndex	getThreadId() { return m_thread_id; };
-		void	setReadOnly(bool ro) { m_read_only = ro; };
+		virtual void setReadOnly(bool ro) { m_read_only = ro; };
 		bool	getReadOnly() { return m_read_only;  };
 		double  getAvgTime() { 
 			m_avg_time = 0.95 * m_avg_time + 0.05 * m_sum_time;
@@ -768,16 +768,16 @@ namespace vve {
 	class VeFixedSizeTableMT : public VeFixedSizeTable<T> {
 	protected:
 
-		VeFixedSizeTableMT* m_companion_table = nullptr;
+		VeFixedSizeTableMT<T>* m_companion_table = nullptr;
 
 		void swapWithCompanion() {
 			assert(m_companion_table != nullptr);
-			VeFixedSizeTableMT<T>* pSrc = getTablePtrRead;
-			VeFixedSizeTableMT<T>* pDst = getTablePtrWrite;
+			VeFixedSizeTableMT<T>* pSrc = getTablePtrRead();
+			VeFixedSizeTableMT<T>* pDst = getTablePtrWrite();
+			pDst->setReadOnly(false);
+			pSrc->setReadOnly(true);
 
 			pDst->VeFixedSizeTable<T>::operator=(*pSrc);
-			pSrc->setReadOnly(false);
-			pDst->setReadOnly(true);
 		}
 
 	public:
@@ -785,10 +785,10 @@ namespace vve {
 		VeFixedSizeTableMT<T>(bool memcopy = false, VeIndex align = 16, VeIndex capacity = 16) :
 			VeFixedSizeTable<T>(memcopy, align, capacity) {};
 
-		VeFixedSizeTableMT<T>(std::vector<VeMap>& maps, bool memcopy = false, VeIndex align = 16, VeIndex capacity = 16) :
+		VeFixedSizeTableMT<T>(std::vector<VeMap*>& maps, bool memcopy = false, VeIndex align = 16, VeIndex capacity = 16) :
 			VeFixedSizeTable<T>(maps, memcopy, align, capacity) {};
 
-		VeFixedSizeTableMT<T>(const VeFixedSizeTableMT<T>& table) :
+		VeFixedSizeTableMT<T>(VeFixedSizeTableMT<T>& table) :
 			VeFixedSizeTable<T>(table) {
 			assert(table.m_companion_table == nullptr);
 			m_companion_table = &table;
@@ -924,8 +924,9 @@ namespace vve {
 			m_directory.addEntry(entry);
 		}
 
-		VeVariableSizeTable(VeVariableSizeTable& table) :
-			VeTable(), m_directory(table.m_directory), m_data(table.m_data), m_align(table.m_align), m_immediateDefrag(table.m_immediateDefrag) {
+		VeVariableSizeTable(const VeVariableSizeTable& table) :
+			VeTable(table), m_directory(table.m_directory), m_data(table.m_data), m_align(table.m_align), 
+			m_immediateDefrag(table.m_immediateDefrag) {
 		};
 
 		virtual ~VeVariableSizeTable() {};
@@ -934,6 +935,11 @@ namespace vve {
 			m_directory = table.m_directory;
 			m_data = table.m_data;
 		}
+
+		virtual void setReadOnly(bool ro) { 
+			m_read_only = ro; 
+			m_directory.setReadOnly(ro);
+		};
 
 		virtual void clear() {
 			in();
@@ -1028,10 +1034,10 @@ namespace vve {
 			assert(m_companion_table != nullptr);
 			VeVariableSizeTableMT* pSrc = getTablePtrWrite();
 			VeVariableSizeTableMT* pDst = getTablePtrRead();
+			pDst->setReadOnly(false);
+			pSrc->setReadOnly(true);
 
 			*(VeVariableSizeTable*)pDst = *(VeVariableSizeTable*)pSrc;
-			pSrc->setReadOnly(false);
-			pDst->setReadOnly(true);
 		};
 
 	public:
@@ -1090,15 +1096,6 @@ namespace vve {
 	namespace tab {
 		void testTables();
 	}
-
-
-
-
-
-
-
-
-
 
 
 }

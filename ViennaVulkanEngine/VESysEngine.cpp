@@ -51,9 +51,12 @@ namespace vve::syseng {
 		return nullptr;
 	}
 
+	auto time_delta								= std::chrono::microseconds( (int)((1.0f/60.0)*1000000.0f) );
 	std::chrono::time_point now_time			= std::chrono::high_resolution_clock::now();
-	std::chrono::time_point next_update_time	= std::chrono::high_resolution_clock::now();
-	auto time_delta = std::chrono::microseconds( (int)((1.0f/60.0)*1000000.0f) );
+	std::chrono::time_point current_update_time = now_time;
+	std::chrono::time_point next_update_time	= current_update_time + time_delta;
+	std::chrono::time_point reached_time		= now_time;
+
 
 	void init() {
 		std::cout << "init engine 2\n";
@@ -66,7 +69,7 @@ namespace vve::syseng {
 
 		//first init window to get the surface!
 		g_systems_table.addEntry({ syswin::init, []() {},      syswin::close });
-		g_systems_table.addEntry({ sysvul::init, []() {}, sysvul::close });
+		g_systems_table.addEntry({ sysvul::init, []() {},      sysvul::close });
 		g_systems_table.addEntry({ syseve::init, syseve::tick, syseve::close });
 		g_systems_table.addEntry({ sysass::init, sysass::tick, sysass::close });
 		g_systems_table.addEntry({ syssce::init, syssce::tick, syssce::close });
@@ -90,30 +93,34 @@ namespace vve::syseng {
 	}
 
 
-	void swapTables() {
-		for (auto table : g_main_table.getData())
-			table.m_table_pointer->swapTables();
+	void tickSystems() {
+		for (auto entry : g_systems_table.getData()) //simulate one epoch
+			JADD( entry.m_tick() );
 
-		JDEP(sysvul::tick());	//render the next frame
+		if (now_time < next_update_time) {			//if now is reached, render frame
+			JDEP(reached_time = next_update_time; sysvul::tick(); );
+		} else
+			JDEP(reached_time = next_update_time; tick(); ); //else move one epoch further
 	}
 
 	void tick() {
-		now_time = std::chrono::high_resolution_clock::now();
-		if (now_time < next_update_time) {
-			JADD(sysvul::tick());	//render the next frame
-			return;
-		}
-		next_update_time = now_time + time_delta;
+		current_update_time = next_update_time;		//move one epoch further
+		next_update_time	= current_update_time + time_delta;
 
-		for (auto entry : g_systems_table.getData()) 
-			JADD( entry.m_tick() );
+		for (auto table : g_main_table.getData())	//swap tables
+			table.m_table_pointer->swapTables();
 
-		JDEP(swapTables());		//switch state tables and render the next frame
+		JDEP(tickSystems());						//simulate one epoch
 	}
 
 	void computeOneFrame() {
 		syswin::tick();			//must poll GLFW events in the main thread
-		JADD(tick());			//run tick() as child thread so there can be dependencies with JDEP
+
+		now_time = std::chrono::high_resolution_clock::now();
+		if (now_time < next_update_time) {		//if caught up with now
+			JADD(sysvul::tick());				//render the next frame
+		} else
+			JADD(tick());						//else bring simulation to now
 
 #ifdef VE_ENABLE_MULTITHREADING
 		vgjs::JobSystem::getInstance()->wait();
@@ -134,6 +141,7 @@ namespace vve::syseng {
 	}
 
 	void close() {
+		g_goon = false;
 
 #ifdef VE_ENABLE_MULTITHREADING
 		vgjs::JobSystem::getInstance()->terminate();

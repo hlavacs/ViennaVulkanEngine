@@ -1,6 +1,7 @@
 
 
 #include "VEDefines.h"
+#include "VESysEvents.h"
 #include "VESysEngine.h"
 #include "VESysWindow.h"
 #include "VESysWindowGLFW.h"
@@ -105,6 +106,12 @@ namespace vve::syswin::glfw {
 	*
 	*/
 	void key_callbackGLFW(GLFWwindow* window, int key, int scancode, int action, int mods) {
+		VeIndex ikey = key < 0 ? VE_NULL_INDEX : (uint32_t)key;
+		VeIndex iscancode = key < 0 ? VE_NULL_INDEX : (uint32_t)scancode;
+		VeIndex iaction = key < 0 ? VE_NULL_INDEX : (uint32_t)action;
+		VeIndex imods = key < 0 ? VE_NULL_INDEX : (uint32_t)mods;
+
+		syseve::addEvent( { syseve::VeEventType::VE_EVENT_TYPE_KEYBOARD, ikey, iscancode, iaction, imods});
 	}
 
 	/**

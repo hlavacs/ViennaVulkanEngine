@@ -208,7 +208,7 @@ namespace vve {
 
 		void operator=( const VeVector & vec );					///<assignment operator
 
-		size_type size() { return m_size; };					///<returns number of entries in the vector
+		size_type size() const { return m_size; };					///<returns number of entries in the vector
 		T* data() { return (T*)m_startptr; };
 		T& operator[](size_type index );						///<operator to access entry
 		const T& operator[](size_type index) const;				///<const access operator
