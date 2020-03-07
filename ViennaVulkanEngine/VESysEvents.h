@@ -51,6 +51,8 @@ namespace vve::syseve {
 
 	void addEvent(VeEventType type, VeEventTableEntry event);
 	void addHandler(std::function<void(VeEventTableEntry)> handler);
+	void addContinuousEvent(VeEventType type, VeEventTableEntry event);
+	void removeContinuousEvent(VeEventType type, VeEventTableEntry event);
 	void removeHandler(VeHandle handlerH);
 	void subscribeEvent(VeEventType type, VeHandle handlerH);
 	void unsubscribeEvent(VeHandle typeH, VeHandle handlerH);

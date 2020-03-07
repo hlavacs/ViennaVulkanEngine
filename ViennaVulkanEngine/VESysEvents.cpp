@@ -33,6 +33,17 @@ namespace vve::syseve {
 	VeFixedSizeTableMT<VeEventTableEntry> g_events_table(maps2, true, true, 0, 0);
 	VeFixedSizeTableMT<VeEventTableEntry> g_events_table2(g_events_table);
 
+	std::vector<VeMap*> maps3 = {
+		new VeTypedMap< std::multimap<VeTableKeyInt, VeTableIndex>, VeTableKeyInt, VeTableIndex >
+		(offsetof(VeEventTableEntry, m_typeH), sizeof(VeEventTableEntry::m_typeH)),
+
+		new VeTypedMap< std::map<VeTableKeyIntPair, VeTableIndex>, VeTableKeyIntPair, VeTableIndexPair >
+		(VeTableIndexPair{(VeIndex)offsetof(VeEventTableEntry, m_typeH), (VeIndex)offsetof(VeEventTableEntry, m_key_button)},
+		 VeTableIndexPair{(VeIndex)sizeof(VeEventTableEntry::m_typeH),    (VeIndex)sizeof(VeEventTableEntry::m_key_button)})
+	};
+	VeFixedSizeTableMT<VeEventTableEntry> g_continuous_events_table(maps3, true, false, 0, 0);
+	VeFixedSizeTableMT<VeEventTableEntry> g_continuous_events_table2(g_continuous_events_table);
+
 	//--------------------------------------------------------------------------------------------------
 	struct VeEventHandlerTableEntry {
 		std::function<void(VeEventTableEntry)> m_handler;
@@ -45,7 +56,7 @@ namespace vve::syseve {
 		VeHandle m_typeH;
 		VeHandle m_handlerH;
 	};
-	std::vector<VeMap*> maps3 = {
+	std::vector<VeMap*> maps4 = {
 		new VeTypedMap< std::multimap<VeTableKeyInt, VeTableIndex>, VeTableKeyInt, VeTableIndex >
 			(offsetof(VeEventSubscribeTableEntry, m_typeH), sizeof(VeEventSubscribeTableEntry::m_typeH)),
 		new VeTypedMap< std::multimap<VeTableKeyInt, VeTableIndex>, VeTableKeyInt, VeTableIndex >
@@ -54,7 +65,7 @@ namespace vve::syseve {
 			(VeTableIndexPair{(VeIndex)offsetof(VeEventSubscribeTableEntry, m_typeH), (VeIndex)offsetof(VeEventSubscribeTableEntry, m_handlerH)},
 			 VeTableIndexPair{(VeIndex)sizeof(VeEventSubscribeTableEntry::m_typeH),   (VeIndex)sizeof(VeEventSubscribeTableEntry::m_handlerH)})
 	};
-	VeFixedSizeTableMT<VeEventSubscribeTableEntry> g_subscribe_table(maps3, true, false, 0, 0);
+	VeFixedSizeTableMT<VeEventSubscribeTableEntry> g_subscribe_table(maps4, true, false, 0, 0);
 	VeFixedSizeTableMT<VeEventSubscribeTableEntry> g_subscribe_table2(g_subscribe_table);
 
 	void init() {
@@ -68,9 +79,8 @@ namespace vve::syseve {
 		syseng::registerTablePointer(&g_subscribe_table, "Event Subscribe Table");
 	}
 
-	void tick() {
-		return;
-		VeFixedSizeTableMT<VeEventTableEntry>*		  events_table = g_events_table.getTablePtrRead();
+
+	void callEvents(VeFixedSizeTableMT<VeEventTableEntry>* events_table) {
 		VeFixedSizeTableMT<VeEventHandlerTableEntry>* handler_table = g_handler_table.getTablePtrRead();
 		VeFixedSizeTableMT<VeEventSubscribeTableEntry>* subscribe_table = g_subscribe_table.getTablePtrRead();
 
@@ -87,16 +97,32 @@ namespace vve::syseve {
 		}
 	}
 
+	void tick() {
+		callEvents(g_events_table.getTablePtrRead());
+		callEvents(g_continuous_events_table.getTablePtrRead());
+	}
+
 	void close() {
 	}
 
 	void addEvent(VeEventType type, VeEventTableEntry event) {
 		event.m_typeH = g_event_types_table.getHandleEqual(0, type);
-		g_events_table.getTablePtrWrite()->addEntry( event );
+		g_events_table.addEntry( event );
+	}
+
+	void addContinuousEvent(VeEventType type, VeEventTableEntry event) {
+		event.m_typeH = g_event_types_table.getHandleEqual(0, type);
+		g_continuous_events_table.addEntry(event);
+	}
+
+	void removeContinuousEvent(VeEventType type, VeEventTableEntry event) {
+		event.m_typeH = g_event_types_table.getHandleEqual(0, type);
+		VeHandle eventH = g_continuous_events_table.getHandleEqual(1, VeTableKeyIntPair{ event.m_typeH, event.m_key_button });
+		g_continuous_events_table.deleteEntry(eventH);
 	}
 
 	void addHandler(std::function<void(VeEventTableEntry)> handler, VeHandle *pHandle) {
-		g_handler_table.getTablePtrWrite()->addEntry({handler});
+		g_handler_table.addEntry({handler}, pHandle);
 	}
 
 	void removeHandler(VeHandle handlerH) {
@@ -110,7 +136,7 @@ namespace vve::syseve {
 
 	void subscribeEvent(VeEventType type, VeHandle handlerH) {
 		VeHandle typeH = g_event_types_table.getHandleEqual(0, type);
-		g_subscribe_table.addEntry({ typeH, handlerH});
+		g_subscribe_table.addEntry({typeH, handlerH});
 	}
 
 	void unsubscribeEvent(VeHandle typeH, VeHandle handlerH) {

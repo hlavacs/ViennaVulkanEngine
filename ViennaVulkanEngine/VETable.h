@@ -889,8 +889,6 @@ namespace vve {
 			JADDT(swapWithCompanion(), this->m_thread_id);
 		}
 
-#ifdef VE_ENABLE_MULTITHREADING
-
 		virtual void operator=(const VeFixedSizeTable<T>& table) {
 			assert(!this->m_read_only);
 			JADDT(this->VeFixedSizeTable<T>::operator=(table), this->m_thread_id);
@@ -922,8 +920,6 @@ namespace vve {
 			JADDT(getTablePtrWrite()->VeFixedSizeTable<T>::deleteEntry(key), this->m_thread_id);
 			return true;
 		};
-
-#endif
 	};
 
 
@@ -1154,8 +1150,6 @@ namespace vve {
 			return pTable;
 		}
 
-#ifdef VE_ENABLE_MULTITHREADING
-
 		virtual void clear() {
 			JADDT(getTablePtrWrite()->VeVariableSizeTable::clear(), this->m_thread_id);
 		};
@@ -1169,8 +1163,6 @@ namespace vve {
 			JADDT(getTablePtrWrite()->VeVariableSizeTable::deleteBlob(handle), this->m_thread_id);
 			return true;
 		}
-#endif
-
 	};
 
 

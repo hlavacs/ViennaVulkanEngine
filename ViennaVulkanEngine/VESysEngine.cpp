@@ -125,6 +125,8 @@ namespace vve::syseng {
 	}
 
 	void computeOneFrame() {
+		syseve::addEvent(syseve::VeEventType::VE_EVENT_TYPE_FRAME_TICK, {});
+
 		syswin::tick();			//must poll GLFW events in the main thread
 
 		now_time = std::chrono::high_resolution_clock::now();
