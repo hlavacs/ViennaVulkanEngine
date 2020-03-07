@@ -13,6 +13,7 @@ namespace vve {
 	using VeTableIndex = VeIndex;
 	using VeTableIndexPair = std::pair<VeTableIndex, VeTableIndex>;
 	using VeTableIndexTriple = std::tuple<VeTableIndex, VeTableIndex, VeTableIndex>;
+	using VeTableHandlePair = std::pair<VeHandle, VeHandle>;
 
 
 	/**
@@ -703,12 +704,12 @@ namespace vve {
 	template<typename T>
 	template <typename M, typename K, typename I>
 	VeIndex VeFixedSizeTable<T>::leftJoin(	VeIndex own_map, VeTable* table, 
-											VeIndex other_map, std::vector<std::pair<VeHandle, VeHandle>>& result) {
+											VeIndex other_map, std::vector<VeTableHandlePair>& result) {
 		VeTypedMap<M, K, I>* l = (VeTypedMap<M, K, I>*)this->getMap(own_map);
 		VeTypedMap<M, K, I>* r = (VeTypedMap<M, K, I>*)table->getMap(other_map);
 
 		VeIndex num = 0;
-		std::vector<std::pair<VeIndex, VeIndex>> dir_indices;
+		std::vector<VeTableIndexPair> dir_indices;
 		l->leftJoin(*r, dir_indices);
 		for (auto [first, second] : dir_indices) {
 			result.emplace_back( this->m_directory.getHandle(first), table->getDirectory()->getHandle(second) );

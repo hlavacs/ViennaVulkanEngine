@@ -9,11 +9,16 @@ namespace vve::syseve {
 		VE_EVENT_TYPE_KEYBOARD,
 		VE_EVENT_TYPE_MOUSEMOVE,
 		VE_EVENT_TYPE_MOUSEBUTTON,
-		VE_EVENT_TYPE_MOUSESCROLL
+		VE_EVENT_TYPE_MOUSESCROLL,
+		VE_EVENT_TYPE_LAST,
+	};
+
+	struct VeEventTypeTableEntry {
+		VeIndex m_type;
 	};
 
 	struct VeEventTableEntry {
-		VeEventType m_type;
+		VeHandle	m_typeH;
 		VeIndex		m_key_button;
 		VeIndex		m_scancode;
 		VeIndex		m_action;
@@ -22,9 +27,13 @@ namespace vve::syseve {
 		double		m_y;
 	};
 
-	struct VeEventRegisteredHandlerTableEntry {
-		VeEventType m_type;
-		std::function<void(VeEventTableEntry ev)> m_handler;
+	struct VeEventSubscribeTableEntry {
+		VeHandle m_typeH;
+		VeHandle m_handlerH;
+	};
+
+	struct VeEventHandlerTableEntry {
+		std::function<void(VeEventTableEntry)> m_handler;
 	};
 
 
@@ -34,8 +43,11 @@ namespace vve::syseve {
 	void tick();
 	void close();
 
-	void addEvent(VeEventTableEntry event);
-	void addHandler(VeEventType type, std::function<void(VeHandle handle)> m_handler);
+	void addEvent(VeEventType type, VeEventTableEntry event);
+	void addHandler(std::function<void(VeEventTableEntry)> handler);
+	void removeHandler(VeHandle handlerH);
+	void subscribeEvent(VeEventType type, VeHandle handlerH);
+	void unsubscribeEvent(VeHandle typeH, VeHandle handlerH);
 
 
 #endif

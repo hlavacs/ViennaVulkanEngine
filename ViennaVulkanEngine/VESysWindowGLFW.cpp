@@ -111,7 +111,7 @@ namespace vve::syswin::glfw {
 		VeIndex iaction = key < 0 ? VE_NULL_INDEX : (uint32_t)action;
 		VeIndex imods = key < 0 ? VE_NULL_INDEX : (uint32_t)mods;
 
-		syseve::addEvent( { syseve::VeEventType::VE_EVENT_TYPE_KEYBOARD, ikey, iscancode, iaction, imods});
+		syseve::addEvent( syseve::VE_EVENT_TYPE_KEYBOARD, { syseve::VeEventType::VE_EVENT_TYPE_KEYBOARD, ikey, iscancode, iaction, imods});
 	}
 
 	/**

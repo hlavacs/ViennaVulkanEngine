@@ -7,54 +7,94 @@
 
 namespace vve::syseve {
 
-
 	std::vector<VeMap*> maps1 = {
-		new VeTypedMap< std::multimap<VeHandle, VeIndex>, VeHandle, VeIndex >(offsetof(struct VeEventTableEntry, m_type), sizeof(VeEventTableEntry::m_type))
+		new VeTypedMap< std::multimap<VeHandle, VeIndex>, VeHandle, VeIndex >
+		(offsetof(VeEventTypeTableEntry, m_type), sizeof(VeEventTypeTableEntry::m_type))
 	};
-	VeFixedSizeTableMT<VeEventTableEntry> g_events_table(maps1);
-	VeFixedSizeTableMT<VeEventTableEntry> g_events_table2(g_events_table);
+	VeFixedSizeTableMT<VeEventTypeTableEntry> g_event_types_table(maps1);
 
 	std::vector<VeMap*> maps2 = {
-		new VeTypedMap< std::unordered_multimap<VeHandle, VeIndex>, VeHandle, VeIndex >(offsetof(struct VeEventRegisteredHandlerTableEntry, m_type), sizeof(VeEventRegisteredHandlerTableEntry::m_type))
+		new VeTypedMap< std::multimap<VeHandle, VeIndex>, VeHandle, VeIndex >
+		(offsetof(VeEventTableEntry, m_typeH), sizeof(VeEventTableEntry::m_typeH))
 	};
-	VeFixedSizeTableMT<VeEventRegisteredHandlerTableEntry> g_event_handler_table(maps2);
-	VeFixedSizeTableMT<VeEventRegisteredHandlerTableEntry> g_event_handler_table2(g_event_handler_table);
+	VeFixedSizeTableMT<VeEventTableEntry> g_events_table(maps2);
+	VeFixedSizeTableMT<VeEventTableEntry> g_events_table2(g_events_table);
 
+	VeFixedSizeTableMT<VeEventHandlerTableEntry> g_handler_table;
+	VeFixedSizeTableMT<VeEventHandlerTableEntry> g_handler_table2(g_handler_table);
+
+	std::vector<VeMap*> maps3 = {
+		new VeTypedMap< std::multimap<VeTableKeyInt, VeTableIndex>, VeTableKeyInt, VeTableIndex >
+			(offsetof(VeEventSubscribeTableEntry, m_typeH), sizeof(VeEventSubscribeTableEntry::m_typeH)),
+		new VeTypedMap< std::multimap<VeTableKeyInt, VeTableIndex>, VeTableKeyInt, VeTableIndex >
+			(offsetof(VeEventSubscribeTableEntry, m_handlerH), sizeof(VeEventSubscribeTableEntry::m_handlerH)),
+		new VeTypedMap< std::multimap<VeTableKeyIntPair, VeTableIndex>, VeTableKeyIntPair, VeTableIndexPair >
+			(VeTableIndexPair{(VeIndex)offsetof(VeEventSubscribeTableEntry, m_typeH), (VeIndex)offsetof(VeEventSubscribeTableEntry, m_handlerH)},
+			 VeTableIndexPair{(VeIndex)sizeof(VeEventSubscribeTableEntry::m_typeH),   (VeIndex)sizeof(VeEventSubscribeTableEntry::m_handlerH)})
+	};
+	VeFixedSizeTableMT<VeEventSubscribeTableEntry> g_subscribe_table(maps3);
+	VeFixedSizeTableMT<VeEventSubscribeTableEntry> g_subscribe_table2(g_subscribe_table);
 
 	void init() {
+		syseng::registerTablePointer(&g_event_types_table, "Events Types Table");
+		for (uint32_t i = VE_EVENT_TYPE_NULL; i <= VE_EVENT_TYPE_LAST; ++i) {
+			g_event_types_table.addEntry({i});
+		}
+		g_event_types_table.setReadOnly(true);
+
 		syseng::registerTablePointer(&g_events_table, "Events Table");
-		syseng::registerTablePointer(&g_event_handler_table, "Event Handler Table");
+		syseng::registerTablePointer(&g_handler_table, "Event Handler Table");
+		syseng::registerTablePointer(&g_subscribe_table, "Event Subscribe Table");
 	}
 
-
 	void tick() {
-		VeFixedSizeTableMT<VeEventTableEntry>*					events_table = g_events_table.getTablePtrRead();
-		VeFixedSizeTableMT<VeEventRegisteredHandlerTableEntry>* handler_table = g_event_handler_table.getTablePtrRead();
+		VeFixedSizeTableMT<VeEventTableEntry>*		  events_table = g_events_table.getTablePtrRead();
+		VeFixedSizeTableMT<VeEventHandlerTableEntry>* handler_table = g_handler_table.getTablePtrRead();
+		VeFixedSizeTableMT<VeEventSubscribeTableEntry>* subscribe_table = g_subscribe_table.getTablePtrRead();
 
-		std::vector<std::pair<VeHandle,VeHandle>> handle_list;
-		events_table->leftJoin<std::multimap<VeHandle, VeIndex>, VeHandle, VeIndex>(0, handler_table, 0, handle_list);
-
-		for (auto [first, second] : handle_list) {
-			VeEventTableEntry event;
-			events_table->getEntry(first, event);
-			VeEventRegisteredHandlerTableEntry handler;
-			handler_table->getEntry(second, handler);
-			JADD( handler.m_handler(event));
+		std::vector<VeTableHandlePair> result;
+		events_table->leftJoin<std::multimap<VeHandle, VeIndex>, VeHandle, VeIndex>(0, subscribe_table, 0, result);
+		for( auto [eventhandle, subscribehandle] : result ) {
+			VeEventTableEntry eventData;
+			events_table->getEntry(eventhandle, eventData);
+			VeEventSubscribeTableEntry subscribeData;
+			subscribe_table->getEntry(subscribehandle, subscribeData);
+			VeEventHandlerTableEntry handlerData;
+			handler_table->getEntry(subscribeData.m_handlerH, handlerData);
+			JADD( handlerData.m_handler(eventData) );
 		}
 	}
 
 	void close() {
-
 	}
 
-	void addEvent(VeEventTableEntry event) {
+	void addEvent(VeEventType type, VeEventTableEntry event) {
+		event.m_typeH = g_event_types_table.getHandleEqual(0, type);
 		g_events_table.getTablePtrWrite()->addEntry( event );
 	}
 
-	void addHandler(VeEventType type, std::function<void( VeEventTableEntry)> handler) {
-		g_event_handler_table.getTablePtrWrite()->addEntry({ type, handler });
+	void addHandler(std::function<void(VeEventTableEntry)> handler, std::promise<VeHandle> &promise) {
+		promise.set_value( g_handler_table.getTablePtrWrite()->addEntry({handler}) );
 	}
 
+	void removeHandler(VeHandle handlerH) {
+		std::vector<VeHandle> result;
+		g_subscribe_table.getHandlesEqual(1, handlerH, result);
+		for (auto handle : result) {
+			g_subscribe_table.deleteEntry(handle);
+		}
+		g_handler_table.deleteEntry(handlerH);
+	}
+
+	void subscribeEvent(VeEventType type, VeHandle handlerH) {
+		VeHandle typeH = g_event_types_table.getHandleEqual(0, type);
+		g_subscribe_table.addEntry({ typeH, handlerH});
+	}
+
+	void unsubscribeEvent(VeHandle typeH, VeHandle handlerH) {
+		VeHandle subH = g_subscribe_table.getHandleEqual(2, VeTableKeyIntPair{ typeH, handlerH });
+		g_subscribe_table.deleteEntry(subH);
+	}
 
 }
 
