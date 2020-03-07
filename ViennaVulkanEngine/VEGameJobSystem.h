@@ -7,6 +7,16 @@ See documentation on how to use it at https://github.com/hlavacs/GameJobSystem
 The library is a single include file, and can be used under MIT license.
 */
 
+/**
+*
+* \file
+* \brief
+*
+* Details
+*
+*/
+
+
 #include <iostream>
 #include <cstdint>
 #include <atomic>
@@ -35,11 +45,11 @@ The library is a single include file, and can be used under MIT license.
 	#define JREP vgjs::JobSystem::getInstance()->onFinishedRepeatJob();
 
 #else
-	#define JADD( f ) f;
-	#define JDEP( f ) f;
+	#define JADD( f ) {f;}
+	#define JDEP( f ) {f;}
 
-	#define JADDT( f, t ) f;
-	#define JDEPT( f, t ) f;
+	#define JADDT( f, t ) {f;}
+	#define JDEPT( f, t ) {f;}
 
 	#define JREP assert(true);
 

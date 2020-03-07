@@ -1,6 +1,16 @@
 #pragma once
 
 
+/**
+*
+* \file
+* \brief
+*
+* Details
+*
+*/
+
+
 namespace vve::syswin {
 
 	std::vector<const char*> getRequiredInstanceExtensions();

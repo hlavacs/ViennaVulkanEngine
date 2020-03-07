@@ -1,8 +1,11 @@
-
-
-#ifndef CLINTERSECT_H
-#define CLINTERSECT_H
-
+/**
+*
+* \file
+* \brief
+*
+* Details
+*
+*/
 
 
 #include "VECollision.h"
@@ -265,6 +268,4 @@ namespace vve::cl {
 };
 
 
-
-#endif
 

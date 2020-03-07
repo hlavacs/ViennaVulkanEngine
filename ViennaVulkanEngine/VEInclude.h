@@ -1,7 +1,15 @@
 #pragma once
 
 
-/// public interface
+/**
+*
+* \file
+* \brief
+*
+* Details
+*
+*/
+
 
 #define VE_PUBLIC_INTERFACE
 

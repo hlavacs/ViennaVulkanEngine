@@ -1,40 +1,46 @@
 #pragma once
 
+/**
+*
+* \file
+* \brief
+*
+* Details
+*
+*/
+
 
 namespace vve::syseve {
 
 	enum VeEventType {
 		VE_EVENT_TYPE_NULL=0,
-		VE_EVENT_TYPE_FRAME_TICK,
-		VE_EVENT_TYPE_KEYBOARD,
+		VE_EVENT_TYPE_FRAME_TICK,			//per frame
+		VE_EVENT_TYPE_ENTITY_CREATED,		//per entity
+		VE_EVENT_TYPE_ENTITY_DESTROYED,
+		VE_EVENT_TYPE_ENTITY_COLLIDED,
+		VE_EVENT_TYPE_KEYBOARD,				//GLFW
 		VE_EVENT_TYPE_MOUSEMOVE,
 		VE_EVENT_TYPE_MOUSEBUTTON,
 		VE_EVENT_TYPE_MOUSESCROLL,
 		VE_EVENT_TYPE_LAST,
 	};
 
-	struct VeEventTypeTableEntry {
-		VeIndex m_type;
-	};
-
 	struct VeEventTableEntry {
-		VeHandle	m_typeH;
-		VeIndex		m_key_button;
-		VeIndex		m_scancode;
-		VeIndex		m_action;
-		VeIndex		m_mods;
-		double		m_x;
-		double		m_y;
+		VeHandle	m_typeH = VE_NULL_HANDLE;
+
+		//--------------------------------------------
+		VeHandle	m_entityH = VE_NULL_HANDLE;
+		VeHandle	m_entityOtherH = VE_NULL_HANDLE;
+
+		//--------------------------------------------
+		VeIndex		m_key_button = 0;
+		VeIndex		m_scancode = 0;
+		VeIndex		m_action = 0;
+		VeIndex		m_mods = 0;
+		double		m_x = 0.0;
+		double		m_y = 0.0;
 	};
 
-	struct VeEventSubscribeTableEntry {
-		VeHandle m_typeH;
-		VeHandle m_handlerH;
-	};
-
-	struct VeEventHandlerTableEntry {
-		std::function<void(VeEventTableEntry)> m_handler;
-	};
 
 
 #ifndef VE_PUBLIC_INTERFACE

@@ -1,4 +1,11 @@
-
+/**
+*
+* \file
+* \brief
+*
+* Details
+*
+*/
 
 #include "vulkan/vulkan.h"
 
@@ -27,7 +34,7 @@ namespace vve::syseng {
 	std::vector<VeMap*> maps = {
 		new VeTypedMap< std::unordered_map<VeTableKeyString, VeTableIndex >, VeTableKeyString, VeTableIndex >((VeIndex)offsetof(struct VeMainTableEntry, m_name), 0)
 	};
-	VeFixedSizeTable<VeMainTableEntry> g_main_table(maps);
+	VeFixedSizeTable<VeMainTableEntry> g_main_table(maps, false, false, 0, 0);
 
 	struct VeSysTableEntry {
 		std::function<void()>	m_init;
@@ -37,7 +44,7 @@ namespace vve::syseng {
 		VeSysTableEntry(std::function<void()> init, std::function<void()> tick, std::function<void()> close) : 
 			m_init(init), m_tick(tick), m_close(close) {};
 	};
-	VeFixedSizeTable<VeSysTableEntry> g_systems_table;
+	VeFixedSizeTable<VeSysTableEntry> g_systems_table(false, false, 0, 0);
 
 
 	void registerTablePointer(VeTable* tptr, std::string name) {
@@ -55,14 +62,16 @@ namespace vve::syseng {
 	std::chrono::time_point now_time			= std::chrono::high_resolution_clock::now();
 	std::chrono::time_point current_update_time = now_time;
 	std::chrono::time_point next_update_time	= current_update_time + time_delta;
-	std::chrono::time_point reached_time		= now_time;
+	std::chrono::time_point reached_time		= current_update_time;
 
 
 	void init() {
 		std::cout << "init engine 2\n";
 
 		now_time = std::chrono::high_resolution_clock::now();
-		next_update_time = now_time + time_delta;
+		current_update_time = now_time;
+		next_update_time = current_update_time + time_delta;
+		reached_time = current_update_time;
 
 		registerTablePointer(&g_main_table, "Main Table");
 		registerTablePointer(&g_systems_table, "Systems Table");
@@ -75,18 +84,19 @@ namespace vve::syseng {
 		g_systems_table.addEntry({ syssce::init, syssce::tick, syssce::close });
 		g_systems_table.addEntry({ sysphy::init, sysphy::tick, sysphy::close });
 
+		for (auto entry : g_systems_table.getData()) {
+			entry.m_init();
+		}
+
 #ifdef VE_ENABLE_MULTITHREADING
 		VeIndex i = 0, threadCount = (VeIndex)vgjs::JobSystem::getInstance()->getThreadCount();
 		for (auto table : g_main_table.getData()) {
 			if (!table.m_table_pointer->getReadOnly()) {
-				table.m_table_pointer->setThreadId(i % threadCount);
+				table.m_table_pointer->setThreadId(i);
 				++i;
 			}
 		}
 #endif
-
-		for (auto entry : g_systems_table.getData()) 
-			entry.m_init();
 
 		g_systems_table.setReadOnly(true);
 		g_main_table.setReadOnly(true);
@@ -94,11 +104,12 @@ namespace vve::syseng {
 
 
 	void tickSystems() {
-		for (auto entry : g_systems_table.getData()) //simulate one epoch
-			JADD( entry.m_tick() );
+		for (auto entry : g_systems_table.getData()) { //simulate one epoch
+			JADD(entry.m_tick());
+		}
 
 		if (now_time < next_update_time) {			//if now is reached, render frame
-			JDEP(reached_time = next_update_time; sysvul::tick(); );
+			JDEP(reached_time = next_update_time; sysvul::tick(););
 		} else
 			JDEP(reached_time = next_update_time; tick(); ); //else move one epoch further
 	}
@@ -107,9 +118,9 @@ namespace vve::syseng {
 		current_update_time = next_update_time;		//move one epoch further
 		next_update_time	= current_update_time + time_delta;
 
-		for (auto table : g_main_table.getData())	//swap tables
+		for (auto table : g_main_table.getData()) {	//swap tables
 			table.m_table_pointer->swapTables();
-
+		}
 		JDEP(tickSystems());						//simulate one epoch
 	}
 

@@ -1,4 +1,11 @@
-
+/**
+*
+* \file
+* \brief
+*
+* Details
+*
+*/
 
 #include "vulkan/vulkan.h"
 
@@ -16,18 +23,16 @@ namespace vve::sysvul {
 
 	struct VeRendererTableEntry {
 		std::function<void()>	m_init;
-		std::function<void()>	m_sync;
 		std::function<void()>	m_tick;
 		std::function<void()>	m_close;
-		VeRendererTableEntry() : m_init(), m_sync(), m_tick(), m_close() {};
-		VeRendererTableEntry(std::function<void()> init, std::function<void()> sync, 
-			std::function<void()> tick,	std::function<void()> close) :
-			m_init(init), m_sync(sync), m_tick(tick), m_close(close) {};
+		VeRendererTableEntry() : m_init(), m_tick(), m_close() {};
+		VeRendererTableEntry(std::function<void()> init, std::function<void()> tick,	std::function<void()> close) :
+			m_init(init), m_tick(tick), m_close(close) {};
 	};
-	VeFixedSizeTable<VeRendererTableEntry> g_renderers_table;
+	VeFixedSizeTable<VeRendererTableEntry> g_renderers_table(false, false, 0, 0 );
 
-	void registerRenderer(std::function<void()> init, std::function<void()> sync, std::function<void()> tick, std::function<void()> close) {
-		g_renderers_table.addEntry({ init, sync, tick, close });
+	void registerRenderer(std::function<void()> init, std::function<void()> tick, std::function<void()> close) {
+		g_renderers_table.addEntry({ init, tick, close });
 	}
 
 

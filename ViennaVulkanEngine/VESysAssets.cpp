@@ -1,4 +1,13 @@
 
+/**
+*
+* \file
+* \brief
+*
+* Details
+*
+*/
+
 
 #include "VEDefines.h"
 #include "VESysEngine.h"
@@ -7,23 +16,18 @@
 
 namespace vve::sysass {
 
-	VeVariableSizeTableMT* g_meshes_table = nullptr;
-	VeVariableSizeTableMT* g_meshes_table2 = nullptr;
+	VeVariableSizeTableMT g_meshes_table(1 << 20);
+	VeVariableSizeTableMT g_meshes_table2(g_meshes_table);
 
 
 	void init() {
-		g_meshes_table = new VeVariableSizeTableMT(1 << 20);
-		g_meshes_table2 = new VeVariableSizeTableMT( *g_meshes_table );	//companion table
-
-		syseng::registerTablePointer(g_meshes_table, "Meshes");
+		syseng::registerTablePointer(&g_meshes_table, "Meshes Table");
 	}
 
 	void tick() {
 	}
 
 	void close() {
-		delete g_meshes_table;
-		delete g_meshes_table2;
 	}
 
 }

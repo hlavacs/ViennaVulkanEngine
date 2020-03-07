@@ -1,3 +1,12 @@
+/**
+*
+* \file
+* \brief
+*
+* Details
+*
+*/
+
 
 #include "VEDefines.h"
 #include "VESysEngine.h"

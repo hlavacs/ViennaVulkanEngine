@@ -1,9 +1,13 @@
+
 /**
-* The Vienna Vulkan Engine
 *
-* (c) bei Helmut Hlavacs, University of Vienna
+* \file
+* \brief
+*
+* Details
 *
 */
+
 
 #ifndef VHINCLUDE_H
 #define VHINCLUDE_H

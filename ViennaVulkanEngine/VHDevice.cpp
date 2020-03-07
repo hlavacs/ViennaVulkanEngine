@@ -1,9 +1,13 @@
 /**
-* The Vienna Vulkan Engine
 *
-* (c) bei Helmut Hlavacs, University of Vienna
+* \file
+* \brief
+*
+* Details
 *
 */
+
+
 
 #include "vulkan/vulkan.h"
 #include "VEDefines.h"
