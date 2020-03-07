@@ -27,34 +27,20 @@ namespace vve::syseve {
 	}
 
 
-	void handleEvents( VeEventType type ) {
-
-	}
-
 	void tick() {
 		VeFixedSizeTableMT<VeEventTableEntry>*					events_table = g_events_table.getTablePtrRead();
 		VeFixedSizeTableMT<VeEventRegisteredHandlerTableEntry>* handler_table = g_event_handler_table.getTablePtrRead();
 
-		std::vector<VeHandle> event_list;
-		event_list.resize(events_table->getData().size());
-		events_table->getAllHandlesFromMap(0, event_list);
+		std::vector<std::pair<VeHandle,VeHandle>> handle_list;
+		events_table->leftJoin<std::multimap<VeHandle, VeIndex>, VeHandle, VeIndex>(0, handler_table, 0, handle_list);
 
-		std::vector<VeHandle> handler_list;
-
-		VeEventType type = syseve::VeEventType::VE_EVENT_TYPE_NULL;
-		for (auto event_handle : event_list) {
-			VeEventTableEntry ev;
-			events_table->getEntry(event_handle, ev);
-			if (ev.m_type != type) {
-				handler_table->getHandlesEqual(0, type, handler_list);
-			}
-			for (auto handler_handle : handler_list) {
-				VeEventRegisteredHandlerTableEntry handler;
-				handler_table->getEntry(handler_handle, handler);
-				handler.m_handler(ev);
-			}
+		for (auto [first, second] : handle_list) {
+			VeEventTableEntry event;
+			events_table->getEntry(first, event);
+			VeEventRegisteredHandlerTableEntry handler;
+			handler_table->getEntry(second, handler);
+			JADD( handler.m_handler(event));
 		}
-
 	}
 
 	void close() {

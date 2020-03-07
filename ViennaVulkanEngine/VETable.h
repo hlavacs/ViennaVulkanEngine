@@ -159,6 +159,7 @@ namespace vve {
 		};
 
 	public:
+
 		VeTypedMap(I offset, I num_bytes) : VeMap(), m_offset(offset), m_num_bytes(num_bytes) {};
 		VeTypedMap(const VeTypedMap<M,K,I> & map) : VeMap(), m_offset(map.m_offset), m_num_bytes(map.m_num_bytes), m_map(map.m_map) {};
 		virtual	~VeTypedMap() {};
@@ -215,6 +216,29 @@ namespace vve {
 			for (auto entry : m_map) 
 				result.emplace_back(entry.second); 
 			return (uint32_t)m_map.size();
+		}
+
+		uint32_t leftJoin(VeTypedMap& other, std::vector<std::pair<VeIndex,VeIndex>> result ) {
+			if (m_map.size() == 0 || other.m_map.size() == 0) return 0;
+			uint32_t num = 0;
+			std::vector <VeIndex> res_list;
+			auto iter = m_map.begin();
+			K key = iter->first;
+			other.getMappedIndicesEqual(key, res_list);
+
+			while (iter != m_map.end()) {
+				for (auto res : res_list) {
+					result.emplace_back(std::pair<VeIndex, VeIndex>(iter->second, res));
+					num++;
+				}
+				++iter;
+				if (iter != m_map.end() && key != iter->first) {
+					res_list.clear();
+					key = iter->first;
+					other.getMappedIndicesEqual(key, res_list);
+				}
+			}
+			return num;
 		}
 
 		virtual bool insertIntoMap(void* entry, VeIndex& dir_index) override {
@@ -405,6 +429,9 @@ namespace vve {
 			return m_avg_time;  
 		}
 		virtual void swapTables() {};
+		virtual VeMap* getMap(VeIndex num_map) { assert(false);  return nullptr; };
+		virtual VeDirectory* getDirectory() { assert(false);  return nullptr; };
+
 	};
 
 
@@ -449,6 +476,8 @@ namespace vve {
 		virtual void sortTableByMap( VeIndex num_map );
 
 		void addMap(VeMap* pmap) { in(); m_maps.emplace_back(pmap); out(); };
+		virtual VeMap* getMap(VeIndex num_map) { return m_maps[num_map]; };
+		virtual VeDirectory* getDirectory() { return &m_directory; };
 
 		VeIndex		getSize() { return (VeIndex)m_data.size(); };
 		const VeVector<T>& getData() { return m_data; };
@@ -465,6 +494,9 @@ namespace vve {
 		VeIndex		getIndexFromHandle(VeHandle key);
 		VeHandle	getHandleFromIndex(VeIndex table_index);
 		bool		isValid(VeHandle handle);
+
+		template <typename M, typename K, typename I>
+		VeIndex leftJoin(VeIndex own_map, VeTable* table, VeIndex other_map, std::vector<std::pair<VeHandle, VeHandle>>& result);
 
 		template <typename K>
 		VeHandle	getHandleEqual(VeIndex num_map, K key );	//use this in map
@@ -667,6 +699,24 @@ namespace vve {
 
 
 	//--------------------------------------------------------------------------------------------------------------------------
+
+	template<typename T>
+	template <typename M, typename K, typename I>
+	VeIndex VeFixedSizeTable<T>::leftJoin(	VeIndex own_map, VeTable* table, 
+											VeIndex other_map, std::vector<std::pair<VeHandle, VeHandle>>& result) {
+		VeTypedMap<M, K, I>* l = (VeTypedMap<M, K, I>*)this->getMap(own_map);
+		VeTypedMap<M, K, I>* r = (VeTypedMap<M, K, I>*)table->getMap(other_map);
+
+		VeIndex num = 0;
+		std::vector<std::pair<VeIndex, VeIndex>> dir_indices;
+		l->leftJoin(*r, dir_indices);
+		for (auto [first, second] : dir_indices) {
+			result.emplace_back( this->m_directory.getHandle(first), table->getDirectory()->getHandle(second) );
+			++num;
+		}
+
+		return num;
+	}
 
 	template<typename T>
 	template<typename K>
