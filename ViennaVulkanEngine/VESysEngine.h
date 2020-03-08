@@ -18,13 +18,18 @@ namespace vve::syseng {
 	void registerTablePointer(VeTable* ptr, std::string name );
 	VeTable* getTablePointer( std::string name );
 	void tick();
+	void cleanUp();
+	void forwardTime();
 
 #endif
-	double getTimeDelta();
-	double getNowTime();
-	double getCurrentUpdateTime();
-	double getNextUpdateTime();
-	double getReachedTime();
+
+	using namespace std::chrono;
+
+	duration<double, std::micro>	  getTimeDelta();
+	time_point<high_resolution_clock> getNowTime();
+	time_point<high_resolution_clock> getCurrentUpdateTime();
+	time_point<high_resolution_clock> getNextUpdateTime();
+	time_point<high_resolution_clock> getReachedTime();
 
 	///Public engine interface
 	void init();

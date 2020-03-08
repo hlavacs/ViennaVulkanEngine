@@ -55,6 +55,10 @@ namespace vve::syswin::glfw {
 		}
 	}
 
+	void cleanUp() {
+	}
+
+
 	void close() {
 		glfwDestroyWindow(g_window);
 		glfwTerminate();

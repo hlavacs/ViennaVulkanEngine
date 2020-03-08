@@ -25,6 +25,10 @@ namespace vve::sysvul::fwsimple {
 
 	}
 
+	void cleanUp() {
+
+	}
+
 	void close() {
 
 	}

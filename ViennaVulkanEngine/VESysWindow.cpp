@@ -33,6 +33,10 @@ namespace vve::syswin {
 		glfw::tick();
 	}
 
+	void cleanUp() {
+		glfw::cleanUp();
+	}
+
 	void close() {
 		glfw::close();
 	}

@@ -80,26 +80,26 @@ namespace vve::syseve {
 	}
 
 
-	void callEvents(VeFixedSizeTableMT<VeEventTableEntry>* events_table) {
-		VeFixedSizeTableMT<VeEventHandlerTableEntry>* handler_table = g_handler_table.getTablePtrRead();
-		VeFixedSizeTableMT<VeEventSubscribeTableEntry>* subscribe_table = g_subscribe_table.getTablePtrRead();
-
+	void callEvents(VeFixedSizeTable<VeEventTableEntry>& events_table) {
 		std::vector<VeTableHandlePair> result;
-		events_table->leftJoin<std::multimap<VeHandle, VeIndex>, VeHandle, VeIndex>(0, subscribe_table, 0, result);
+		events_table.leftJoin<std::multimap<VeTableKeyInt, VeTableIndex>, VeTableKeyInt, VeTableIndex>(0, g_subscribe_table, 0, result);
 		for( auto [eventhandle, subscribehandle] : result ) {
 			VeEventTableEntry eventData;
-			events_table->getEntry(eventhandle, eventData);
+			events_table.getEntry(eventhandle, eventData);
 			VeEventSubscribeTableEntry subscribeData;
-			subscribe_table->getEntry(subscribehandle, subscribeData);
+			g_subscribe_table.getEntry(subscribehandle, subscribeData);
 			VeEventHandlerTableEntry handlerData;
-			handler_table->getEntry(subscribeData.m_handlerH, handlerData);
+			g_handler_table.getEntry(subscribeData.m_handlerH, handlerData);
 			JADD( handlerData.m_handler(eventData) );
 		}
 	}
 
 	void tick() {
-		callEvents(g_events_table.getTablePtrRead());
-		callEvents(g_continuous_events_table.getTablePtrRead());
+		callEvents(g_events_table);
+		callEvents(g_continuous_events_table);
+	}
+
+	void cleanUp() {
 	}
 
 	void close() {
@@ -120,7 +120,7 @@ namespace vve::syseve {
 	void removeContinuousEvent(VeEventType type, VeEventTableEntry event) {
 		std::cout << "remove cont event type " << type << " action " << event.m_action << " key/button " << event.m_key_button << std::endl;
 		event.m_typeH = g_event_types_table.getHandleEqual(0, type);	//table is read only
-		VeHandle eventH = g_continuous_events_table.getTablePtrRead()->getHandleEqual(1, VeTableKeyIntPair{ event.m_typeH, event.m_key_button });
+		VeHandle eventH = g_continuous_events_table.getHandleEqual(1, VeTableKeyIntPair{ event.m_typeH, event.m_key_button });
 		g_continuous_events_table.deleteEntry(eventH);
 	}
 
@@ -130,7 +130,7 @@ namespace vve::syseve {
 
 	void removeHandler(VeHandle handlerH) {
 		std::vector<VeHandle> result;
-		g_subscribe_table.getTablePtrRead()->getHandlesEqual(1, handlerH, result);
+		g_subscribe_table.getHandlesEqual(1, handlerH, result);
 		for (auto handle : result) {
 			g_subscribe_table.deleteEntry(handle);
 		}
@@ -143,7 +143,7 @@ namespace vve::syseve {
 	}
 
 	void unsubscribeEvent(VeHandle typeH, VeHandle handlerH) {
-		VeHandle subH = g_subscribe_table.getTablePtrRead()->getHandleEqual(2, VeTableKeyIntPair{ typeH, handlerH });
+		VeHandle subH = g_subscribe_table.getHandleEqual(2, VeTableKeyIntPair{ typeH, handlerH });
 		g_subscribe_table.deleteEntry(subH);
 	}
 

@@ -27,6 +27,9 @@ namespace vve::sysass {
 	void tick() {
 	}
 
+	void cleanUp() {
+	}
+
 	void close() {
 	}
 

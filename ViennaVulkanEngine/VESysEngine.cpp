@@ -39,10 +39,11 @@ namespace vve::syseng {
 	struct VeSysTableEntry {
 		std::function<void()>	m_init;
 		std::function<void()>	m_tick;
+		std::function<void()>	m_cleanUp;
 		std::function<void()>	m_close;
-		VeSysTableEntry() : m_init(), m_tick(), m_close() {};
-		VeSysTableEntry(std::function<void()> init, std::function<void()> tick, std::function<void()> close) : 
-			m_init(init), m_tick(tick), m_close(close) {};
+		VeSysTableEntry() : m_init(), m_tick(), m_cleanUp(), m_close() {};
+		VeSysTableEntry(std::function<void()> init, std::function<void()> tick, std::function<void()> cleanUp, std::function<void()> close) :
+			m_init(init), m_tick(tick), m_cleanUp(), m_close(close) {};
 	};
 	VeFixedSizeTable<VeSysTableEntry> g_systems_table(false, false, 0, 0);
 
@@ -58,36 +59,32 @@ namespace vve::syseng {
 		return nullptr;
 	}
 
-	auto time_delta								= std::chrono::milliseconds( (int)((1.0f/60.0)*1000000.0f) );
-	std::chrono::time_point start_time			= std::chrono::high_resolution_clock::now();
-	std::chrono::time_point now_time			= std::chrono::high_resolution_clock::now();
-	std::chrono::time_point current_update_time = now_time;
-	std::chrono::time_point next_update_time	= current_update_time + time_delta;
-	std::chrono::time_point reached_time		= current_update_time;
+	using namespace std::chrono;
 
-	double getTimeDelta() {
-		std::chrono::duration<double, std::milli> dur = time_delta;
-		return dur.count();
+	duration<int,std::micro> time_delta = duration<int, std::micro>{16666};	
+	time_point<high_resolution_clock> now_time				= high_resolution_clock::now();
+	time_point<high_resolution_clock> current_update_time	= now_time;
+	time_point<high_resolution_clock> next_update_time		= current_update_time + time_delta;
+	time_point<high_resolution_clock> reached_time			= current_update_time;
+
+	duration<double, std::micro> getTimeDelta() {
+		return time_delta;
 	}
 
-	double getNowTime() { 
-		std::chrono::duration<double, std::milli> dur = now_time - start_time;
-		return dur.count();
+	high_resolution_clock::time_point getNowTime() {
+		return now_time;
 	};
 
-	double getCurrentUpdateTime() {
-		std::chrono::duration<double, std::milli> dur = current_update_time - start_time;
-		return dur.count();
+	high_resolution_clock::time_point getCurrentUpdateTime() {
+		return current_update_time;
 	};
 
-	double getNextUpdateTime() {
-		std::chrono::duration<double, std::milli> dur = next_update_time - start_time;
-		return dur.count();
+	high_resolution_clock::time_point getNextUpdateTime() {
+		return next_update_time;
 	};
 
-	double getReachedTime() {
-		std::chrono::duration<double, std::milli> dur = reached_time - start_time;
-		return dur.count();
+	high_resolution_clock::time_point getReachedTime() {
+		return reached_time;
 	};
 
 
@@ -103,12 +100,12 @@ namespace vve::syseng {
 		registerTablePointer(&g_systems_table, "Systems Table");
 
 		//first init window to get the surface!
-		g_systems_table.addEntry({ syswin::init, []() {},      syswin::close });
-		g_systems_table.addEntry({ sysvul::init, []() {},	   sysvul::close });
-		g_systems_table.addEntry({ syseve::init, syseve::tick, syseve::close });
-		g_systems_table.addEntry({ sysass::init, sysass::tick, sysass::close });
-		g_systems_table.addEntry({ syssce::init, syssce::tick, syssce::close });
-		g_systems_table.addEntry({ sysphy::init, sysphy::tick, sysphy::close });
+		g_systems_table.addEntry({ syswin::init, []() {},      syswin::cleanUp, syswin::close });
+		g_systems_table.addEntry({ sysvul::init, sysvul::tick, sysvul::cleanUp, sysvul::close });
+		g_systems_table.addEntry({ syseve::init, syseve::tick, syseve::cleanUp, syseve::close });
+		g_systems_table.addEntry({ sysass::init, sysass::tick, sysass::cleanUp, sysass::close });
+		g_systems_table.addEntry({ syssce::init, syssce::tick, syssce::cleanUp, syssce::close });
+		g_systems_table.addEntry({ sysphy::init, sysphy::tick, sysphy::cleanUp, sysphy::close });
 
 		for (auto entry : g_systems_table.getData()) {
 			entry.m_init();
@@ -129,38 +126,54 @@ namespace vve::syseng {
 	}
 
 
-	void tickSystems() {
-		for (auto entry : g_systems_table.getData()) {			//simulate one epoch
-			JADD(entry.m_tick());
+	void cleanUp() {
+		for (auto entry : g_systems_table.getData()) {			//clean after simulation
+			JADD(entry.m_cleanUp());							//includes render in the last interval
 		}
 
 		if (now_time > next_update_time) {						//if now is not reached yet
-			JDEP(reached_time = next_update_time; tick(); );	//move one epoch further
+			JDEP(reached_time = next_update_time; forwardTime(); );	//move one epoch further
 		}
 		else {
-			JDEP(reached_time = next_update_time; sysvul::tick();); //render after events to interpolate
+			JDEP(reached_time = next_update_time );				//remember reached time
 		}
 	}
 
 	void tick() {
-		syseve::addEvent(syseve::VeEventType::VE_EVENT_TYPE_EPOCH_TICK, {});
+		for (auto entry : g_systems_table.getData()) {			//simulate one epoch
+			JADD(entry.m_tick());
+		}
+		JDEP(cleanUp());
+	}
 
+	void swapTables() {
+		for (auto table : g_main_table.getData()) {	//swap tables
+			table.m_table_pointer->swapTables();	//might clear() some tables here
+		}
+		JDEP(tick());								//simulate one epoch
+	}
+
+	void forwardTime() {
 		current_update_time = next_update_time;		//move one epoch further
 		next_update_time	= current_update_time + time_delta;
 
-		for (auto table : g_main_table.getData()) {	//swap tables
-			table.m_table_pointer->swapTables();
-		}
-		JDEP(tickSystems());						//simulate one epoch
+		syseve::addEvent(syseve::VeEventType::VE_EVENT_TYPE_EPOCH_TICK, {});
+
+		JDEP(swapTables());						//simulate one epoch
 	}
 
 	void computeOneFrame() {
 		syseve::addEvent(syseve::VeEventType::VE_EVENT_TYPE_FRAME_TICK, {});
-		syswin::tick();						//must poll GLFW events in the main thread
+		syswin::tick();							//must poll GLFW events in the main thread
 
-		start_time	= current_update_time;	//measure relative to this time point
-		now_time	= std::chrono::high_resolution_clock::now();
-		JADD(tick());						//bring simulation to now
+		now_time = std::chrono::high_resolution_clock::now();
+
+		if (now_time < next_update_time) {		//still in the same time interval
+			JADD(tick());						//tick, process events and render one frame
+		}
+		else {
+			JADD(forwardTime());				//bring simulation to now
+		}
 
 #ifdef VE_ENABLE_MULTITHREADING
 		vgjs::JobSystem::getInstance()->wait();

@@ -48,13 +48,17 @@ namespace vve::sysvul {
 
 	bool g_windowSizeChanged = false;
 
+
 	void tick() {
+	}
+
+	void cleanUp() {
 		if (g_windowSizeChanged) {
 			g_windowSizeChanged = false;
 			//recreate swap chain, do not draw current frame
 		}
 
-		if (syseng::getNowTime() > syseng::getNextUpdateTime())
+		if (syseng::getNowTime() > syseng::getNextUpdateTime())	//have not reached the now time interval
 			return;
 
 	}

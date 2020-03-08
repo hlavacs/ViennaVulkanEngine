@@ -48,6 +48,7 @@ namespace vve::syseve {
 
 	void init();
 	void tick();
+	void cleanUp();
 	void close();
 
 	void addEvent(VeEventType type, VeEventTableEntry event);

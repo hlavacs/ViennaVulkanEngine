@@ -24,6 +24,7 @@ namespace vve::sysvul {
 
 	void init();
 	void tick();
+	void cleanUp();
 	void close();
 
 	void windowSizeChanged();

@@ -23,6 +23,9 @@ namespace vve::syssce {
 
 	}
 
+	void cleanUp() {
+	}
+
 	void close() {
 
 	}

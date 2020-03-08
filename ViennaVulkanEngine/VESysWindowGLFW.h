@@ -14,6 +14,7 @@ namespace vve::syswin::glfw {
 
 	void init();
 	void tick();
+	void cleanUp();
 	void close();
 
 	std::vector<const char*> getRequiredInstanceExtensions();			//return GLFW Vulkan extensions
