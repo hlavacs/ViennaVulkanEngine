@@ -481,30 +481,29 @@ namespace vve {
 				delete m_maps[i]; 
 		};
 
+		//startup operations
+		void addMap(VeMap* pmap) { in(); m_maps.emplace_back(pmap); out(); };
+
+		//write operations
 		virtual void operator=( const VeFixedSizeTable<T>& table);
 		virtual void swapEntriesByHandle(VeHandle h1, VeHandle h2);
 		virtual void clear();
 		virtual void sortTableByMap( VeIndex num_map );
-
-		void addMap(VeMap* pmap) { in(); m_maps.emplace_back(pmap); out(); };
-		virtual VeMap* getMap(VeIndex num_map) { return m_maps[num_map]; };
-		virtual VeDirectory* getDirectory() { return &m_directory; };
-
-		VeIndex		getSize() { return (VeIndex)m_data.size(); };
-		const VeVector<T>& getData() { return m_data; };
-		void		forAllEntries( VeIndex num_map, std::function<void(VeHandle)>& func );
-		void		forAllEntries( VeIndex num_map, std::function<void(VeHandle)>&& func ) { forAllEntries(num_map, func ); };
-		void		forAllEntries( std::function<void(VeHandle)>& func)  { forAllEntries( VE_NULL_INDEX, func ); };
-		void		forAllEntries( std::function<void(VeHandle)>&& func) { forAllEntries( VE_NULL_INDEX, func ); };
-
 		virtual VeHandle	addEntry(T entry, VeHandle *pHandle = nullptr );
-		bool				getEntry(VeHandle key, T& entry);
 		virtual bool		updateEntry(VeHandle key, T entry);
 		virtual bool		deleteEntry(VeHandle key);
 
+		// read operations
+		const VeVector<T>& getData() { return m_data; };
+		virtual VeMap* getMap(VeIndex num_map) { return m_maps[num_map]; };
+		virtual VeDirectory* getDirectory() { return &m_directory; };
+		VeIndex		getSize() { return (VeIndex)m_data.size(); };
+		bool		getEntry(VeHandle key, T& entry);
 		VeIndex		getIndexFromHandle(VeHandle key);
 		VeHandle	getHandleFromIndex(VeIndex table_index);
 		bool		isValid(VeHandle handle);
+		uint32_t	getAllHandles(std::vector<VeHandle>& result);
+		uint32_t	getAllHandlesFromMap(VeIndex num_map, std::vector<VeHandle>& result);	//makes sense for map/multimap
 
 		template <typename M, typename K, typename I>
 		VeIndex leftJoin(VeIndex own_map, VeTable* table, VeIndex other_map, std::vector<std::pair<VeHandle, VeHandle>>& result);
@@ -518,9 +517,10 @@ namespace vve {
 		template <typename K>
 		uint32_t	getHandlesRange(VeIndex num_map, K lower, K upper, std::vector<VeHandle>& result); //do not use in unordered map/multimap
 
-		uint32_t	getAllHandles(std::vector<VeHandle>& result);
-
-		uint32_t	getAllHandlesFromMap(VeIndex num_map, std::vector<VeHandle>& result);	//makes sense for map/multimap
+		void		forAllEntries(VeIndex num_map, std::function<void(VeHandle)>& func);
+		void		forAllEntries(VeIndex num_map, std::function<void(VeHandle)>&& func) { forAllEntries(num_map, func); };
+		void		forAllEntries(std::function<void(VeHandle)>& func) { forAllEntries(VE_NULL_INDEX, func); };
+		void		forAllEntries(std::function<void(VeHandle)>&& func) { forAllEntries(VE_NULL_INDEX, func); };
 	};
 
 	//--------------------------------------------------------------------------------------------------------------------------
@@ -834,15 +834,15 @@ namespace vve {
 
 		void swapWithCompanion() {
 			assert(m_companion_table != nullptr);
-			VeFixedSizeTableMT<T>* pRead = getTablePtrRead();
-			VeFixedSizeTableMT<T>* pWrite = getTablePtrWrite();
+			VeFixedSizeTable<T>* pRead = getTablePtrRead();    //call non MT functions!
+			VeFixedSizeTable<T>* pWrite = getTablePtrWrite();
 			pRead->setReadOnly(false);
 			pWrite->setReadOnly(true);
 
 			if (this->m_clear_on_swap) {
 				pRead->clear();
 			} else
-				*(VeFixedSizeTable<T>*)pRead = *(VeFixedSizeTable<T>*)pWrite;
+				*pRead = *pWrite;
 		}
 
 	public:
@@ -868,7 +868,7 @@ namespace vve {
 				m_companion_table->setThreadId(id);
 		}
 
-		VeFixedSizeTableMT<T>* getTablePtrWrite() {
+		VeFixedSizeTableMT<T>* getTablePtrWrite() { //call non MT functions!
 			VeFixedSizeTableMT<T> * pTable = this;
 			if (m_companion_table != nullptr && this->m_read_only)
 				pTable = m_companion_table;
@@ -876,7 +876,7 @@ namespace vve {
 			return pTable;
 		}
 
-		VeFixedSizeTableMT<T>* getTablePtrRead() {
+		VeFixedSizeTableMT<T>* getTablePtrRead() { //call non MT functions!
 			VeFixedSizeTableMT<T>* pTable = this;
 			if (m_companion_table != nullptr && !this->m_read_only)
 				pTable = m_companion_table;

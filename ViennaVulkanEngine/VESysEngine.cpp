@@ -104,7 +104,7 @@ namespace vve::syseng {
 
 		//first init window to get the surface!
 		g_systems_table.addEntry({ syswin::init, []() {},      syswin::close });
-		g_systems_table.addEntry({ sysvul::init, sysvul::tick, sysvul::close });
+		g_systems_table.addEntry({ sysvul::init, []() {},	   sysvul::close });
 		g_systems_table.addEntry({ syseve::init, syseve::tick, syseve::close });
 		g_systems_table.addEntry({ sysass::init, sysass::tick, sysass::close });
 		g_systems_table.addEntry({ syssce::init, syssce::tick, syssce::close });
@@ -130,7 +130,7 @@ namespace vve::syseng {
 
 
 	void tickSystems() {
-		for (auto entry : g_systems_table.getData()) { //simulate one epoch
+		for (auto entry : g_systems_table.getData()) {			//simulate one epoch
 			JADD(entry.m_tick());
 		}
 
@@ -138,7 +138,7 @@ namespace vve::syseng {
 			JDEP(reached_time = next_update_time; tick(); );	//move one epoch further
 		}
 		else {
-			JDEP(reached_time = next_update_time);
+			JDEP(reached_time = next_update_time; sysvul::tick();); //render after events to interpolate
 		}
 	}
 
