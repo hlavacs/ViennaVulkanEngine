@@ -58,11 +58,37 @@ namespace vve::syseng {
 		return nullptr;
 	}
 
-	auto time_delta								= std::chrono::microseconds( (int)((1.0f/60.0)*1000000.0f) );
+	auto time_delta								= std::chrono::milliseconds( (int)((1.0f/60.0)*1000000.0f) );
+	std::chrono::time_point start_time			= std::chrono::high_resolution_clock::now();
 	std::chrono::time_point now_time			= std::chrono::high_resolution_clock::now();
 	std::chrono::time_point current_update_time = now_time;
 	std::chrono::time_point next_update_time	= current_update_time + time_delta;
 	std::chrono::time_point reached_time		= current_update_time;
+
+	double getTimeDelta() {
+		std::chrono::duration<double, std::milli> dur = time_delta;
+		return dur.count();
+	}
+
+	double getNowTime() { 
+		std::chrono::duration<double, std::milli> dur = now_time - start_time;
+		return dur.count();
+	};
+
+	double getCurrentUpdateTime() {
+		std::chrono::duration<double, std::milli> dur = current_update_time - start_time;
+		return dur.count();
+	};
+
+	double getNextUpdateTime() {
+		std::chrono::duration<double, std::milli> dur = next_update_time - start_time;
+		return dur.count();
+	};
+
+	double getReachedTime() {
+		std::chrono::duration<double, std::milli> dur = reached_time - start_time;
+		return dur.count();
+	};
 
 
 	void init() {
@@ -78,7 +104,7 @@ namespace vve::syseng {
 
 		//first init window to get the surface!
 		g_systems_table.addEntry({ syswin::init, []() {},      syswin::close });
-		g_systems_table.addEntry({ sysvul::init, []() {},      sysvul::close });
+		g_systems_table.addEntry({ sysvul::init, sysvul::tick, sysvul::close });
 		g_systems_table.addEntry({ syseve::init, syseve::tick, syseve::close });
 		g_systems_table.addEntry({ sysass::init, sysass::tick, sysass::close });
 		g_systems_table.addEntry({ syssce::init, syssce::tick, syssce::close });
@@ -108,13 +134,17 @@ namespace vve::syseng {
 			JADD(entry.m_tick());
 		}
 
-		if (now_time < next_update_time) {			//if now is reached, render frame
-			JDEP(reached_time = next_update_time; sysvul::tick(););
-		} else
-			JDEP(reached_time = next_update_time; tick(); ); //else move one epoch further
+		if (now_time > next_update_time) {						//if now is not reached yet
+			JDEP(reached_time = next_update_time; tick(); );	//move one epoch further
+		}
+		else {
+			JDEP(reached_time = next_update_time);
+		}
 	}
 
 	void tick() {
+		syseve::addEvent(syseve::VeEventType::VE_EVENT_TYPE_EPOCH_TICK, {});
+
 		current_update_time = next_update_time;		//move one epoch further
 		next_update_time	= current_update_time + time_delta;
 
@@ -126,14 +156,11 @@ namespace vve::syseng {
 
 	void computeOneFrame() {
 		syseve::addEvent(syseve::VeEventType::VE_EVENT_TYPE_FRAME_TICK, {});
+		syswin::tick();						//must poll GLFW events in the main thread
 
-		syswin::tick();			//must poll GLFW events in the main thread
-
-		now_time = std::chrono::high_resolution_clock::now();
-		if (now_time < next_update_time) {		//if caught up with now
-			JADD(sysvul::tick());				//render the next frame
-		} else
-			JADD(tick());						//else bring simulation to now
+		start_time	= current_update_time;	//measure relative to this time point
+		now_time	= std::chrono::high_resolution_clock::now();
+		JADD(tick());						//bring simulation to now
 
 #ifdef VE_ENABLE_MULTITHREADING
 		vgjs::JobSystem::getInstance()->wait();

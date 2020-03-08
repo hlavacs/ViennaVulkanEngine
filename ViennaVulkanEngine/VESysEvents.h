@@ -15,6 +15,7 @@ namespace vve::syseve {
 	enum VeEventType {
 		VE_EVENT_TYPE_NULL=0,
 		VE_EVENT_TYPE_FRAME_TICK,			//per frame
+		VE_EVENT_TYPE_EPOCH_TICK,			//per epoch
 		VE_EVENT_TYPE_ENTITY_CREATED,		//per entity
 		VE_EVENT_TYPE_ENTITY_DESTROYED,
 		VE_EVENT_TYPE_ENTITY_COLLIDED,

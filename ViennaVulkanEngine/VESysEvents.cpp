@@ -106,18 +106,21 @@ namespace vve::syseve {
 	}
 
 	void addEvent(VeEventType type, VeEventTableEntry event) {
-		event.m_typeH = g_event_types_table.getHandleEqual(0, type);
+		std::cout << "add event type " << type << " action " << event.m_action << " key/button " << event.m_key_button << std::endl;
+		event.m_typeH = g_event_types_table.getHandleEqual(0, type);	//table is read only
 		g_events_table.addEntry( event );
 	}
 
 	void addContinuousEvent(VeEventType type, VeEventTableEntry event) {
-		event.m_typeH = g_event_types_table.getHandleEqual(0, type);
+		std::cout << "add cont event type " << type << " action " << event.m_action << " key/button " << event.m_key_button << std::endl;
+		event.m_typeH = g_event_types_table.getHandleEqual(0, type);	//table is read only
 		g_continuous_events_table.addEntry(event);
 	}
 
 	void removeContinuousEvent(VeEventType type, VeEventTableEntry event) {
-		event.m_typeH = g_event_types_table.getHandleEqual(0, type);
-		VeHandle eventH = g_continuous_events_table.getHandleEqual(1, VeTableKeyIntPair{ event.m_typeH, event.m_key_button });
+		std::cout << "remove cont event type " << type << " action " << event.m_action << " key/button " << event.m_key_button << std::endl;
+		event.m_typeH = g_event_types_table.getHandleEqual(0, type);	//table is read only
+		VeHandle eventH = g_continuous_events_table.getTablePtrRead()->getHandleEqual(1, VeTableKeyIntPair{ event.m_typeH, event.m_key_button });
 		g_continuous_events_table.deleteEntry(eventH);
 	}
 
@@ -127,7 +130,7 @@ namespace vve::syseve {
 
 	void removeHandler(VeHandle handlerH) {
 		std::vector<VeHandle> result;
-		g_subscribe_table.getHandlesEqual(1, handlerH, result);
+		g_subscribe_table.getTablePtrRead()->getHandlesEqual(1, handlerH, result);
 		for (auto handle : result) {
 			g_subscribe_table.deleteEntry(handle);
 		}
@@ -135,12 +138,12 @@ namespace vve::syseve {
 	}
 
 	void subscribeEvent(VeEventType type, VeHandle handlerH) {
-		VeHandle typeH = g_event_types_table.getHandleEqual(0, type);
+		VeHandle typeH = g_event_types_table.getHandleEqual(0, type);	//table is read only
 		g_subscribe_table.addEntry({typeH, handlerH});
 	}
 
 	void unsubscribeEvent(VeHandle typeH, VeHandle handlerH) {
-		VeHandle subH = g_subscribe_table.getHandleEqual(2, VeTableKeyIntPair{ typeH, handlerH });
+		VeHandle subH = g_subscribe_table.getTablePtrRead()->getHandleEqual(2, VeTableKeyIntPair{ typeH, handlerH });
 		g_subscribe_table.deleteEntry(subH);
 	}
 

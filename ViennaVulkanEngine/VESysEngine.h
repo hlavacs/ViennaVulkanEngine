@@ -20,6 +20,11 @@ namespace vve::syseng {
 	void tick();
 
 #endif
+	double getTimeDelta();
+	double getNowTime();
+	double getCurrentUpdateTime();
+	double getNextUpdateTime();
+	double getReachedTime();
 
 	///Public engine interface
 	void init();

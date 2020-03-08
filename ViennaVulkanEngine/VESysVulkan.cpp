@@ -54,6 +54,9 @@ namespace vve::sysvul {
 			//recreate swap chain, do not draw current frame
 		}
 
+		if (syseng::getNowTime() > syseng::getNextUpdateTime())
+			return;
+
 	}
 
 	void close() {
