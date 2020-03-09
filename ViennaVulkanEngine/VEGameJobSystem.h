@@ -333,12 +333,11 @@ namespace vgjs {
 
 		//---------------------------------------------------------------------------
 		// function each thread performs
-		void threadTask() {
-
-			static std::atomic<uint32_t> threadIndexCounter = 0;
-			uint32_t threadIndex = threadIndexCounter.fetch_add(1);
+		void threadTask( uint32_t threadIndex = 0 ) {
 			m_threadIndexMap[std::this_thread::get_id()] = threadIndex;	//map thread id to thread index
 
+			static std::atomic<uint32_t> threadIndexCounter = 0;
+			threadIndexCounter++;
 			while(threadIndexCounter < m_threads.size() )
 				std::this_thread::sleep_for(std::chrono::nanoseconds(10));
 
@@ -400,9 +399,10 @@ namespace vgjs {
 		//---------------------------------------------------------------------------
 		//class constructor
 		//threadCount Number of threads to start. If 0 then the number of hardware threads is used.
+		//start_idx is either 0, then the main thread is not part of the pool, or 1, then the main thread must join
 		//
 		static JobSystem *	pInstance;			//pointer to singleton
-		JobSystem(std::size_t threadCount = 0 ) : m_terminate(false), m_numJobs(0) {
+		JobSystem(std::size_t threadCount = 0, uint32_t start_idx = 0 ) : m_terminate(false), m_numJobs(0) {
 			pInstance = this;
 			JobMemory::getInstance();			//create the job memory
 
@@ -426,8 +426,8 @@ namespace vgjs {
 			}
 
 			m_threads.reserve(threadCount);										//reserve mem for the threads
-			for (uint32_t i = 0; i < threadCount; i++) {
-				m_threads.push_back(std::thread(&JobSystem::threadTask, this));	//spawn the pool threads
+			for (uint32_t i = start_idx; i < threadCount; i++) {
+				m_threads.push_back(std::thread( &JobSystem::threadTask, this, i ));	//spawn the pool threads
 			}
 
 			JobMemory::pInstance->resetPool();	//pre-allocate job pools
@@ -437,8 +437,8 @@ namespace vgjs {
 		//singleton access through class
 		//returns a pointer to the JobSystem instance
 		//
-		static JobSystem * getInstance() {
-			if (pInstance == nullptr) pInstance = new JobSystem();
+		static JobSystem * getInstance(std::size_t threadCount = 0, uint32_t start_idx = 0) {
+			if (pInstance == nullptr) pInstance = new JobSystem(threadCount, start_idx);
 			return pInstance;
 		};
 

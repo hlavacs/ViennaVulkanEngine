@@ -62,10 +62,10 @@ namespace vve::syseng {
 	using namespace std::chrono;
 
 	duration<int,std::micro> time_delta = duration<int, std::micro>{16666};	
-	time_point<high_resolution_clock> now_time				= high_resolution_clock::now();
-	time_point<high_resolution_clock> current_update_time	= now_time;
-	time_point<high_resolution_clock> next_update_time		= current_update_time + time_delta;
-	time_point<high_resolution_clock> reached_time			= current_update_time;
+	time_point<high_resolution_clock> now_time				= high_resolution_clock::now();			//now time
+	time_point<high_resolution_clock> current_update_time	= now_time;								//start of the current epoch
+	time_point<high_resolution_clock> next_update_time		= current_update_time + time_delta;		//end of the current epoch
+	time_point<high_resolution_clock> reached_time			= current_update_time;					//time the simulation has reached
 
 	duration<double, std::micro> getTimeDelta() {
 		return time_delta;
@@ -157,13 +157,13 @@ namespace vve::syseng {
 		current_update_time = next_update_time;		//move one epoch further
 		next_update_time	= current_update_time + time_delta;
 
-		syseve::addEvent(syseve::VeEventType::VE_EVENT_TYPE_EPOCH_TICK, {});
+		syseve::addEvent({syseve::VeEventType::VE_EVENT_TYPE_EPOCH_TICK});
 
 		JDEP(swapTables());						//simulate one epoch
 	}
 
 	void computeOneFrame() {
-		syseve::addEvent(syseve::VeEventType::VE_EVENT_TYPE_FRAME_TICK, {});
+		syseve::addEvent({syseve::VeEventType::VE_EVENT_TYPE_FRAME_TICK});
 		syswin::tick();							//must poll GLFW events in the main thread
 
 		now_time = std::chrono::high_resolution_clock::now();

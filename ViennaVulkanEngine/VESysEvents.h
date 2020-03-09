@@ -17,8 +17,8 @@ namespace vve::syseve {
 		VE_EVENT_TYPE_FRAME_TICK,			//per frame
 		VE_EVENT_TYPE_EPOCH_TICK,			//per epoch
 		VE_EVENT_TYPE_ENTITY_CREATED,		//per entity
-		VE_EVENT_TYPE_ENTITY_DESTROYED,
 		VE_EVENT_TYPE_ENTITY_COLLIDED,
+		VE_EVENT_TYPE_ENTITY_DESTROYED,
 		VE_EVENT_TYPE_KEYBOARD,				//GLFW
 		VE_EVENT_TYPE_MOUSEMOVE,
 		VE_EVENT_TYPE_MOUSEBUTTON,
@@ -27,7 +27,7 @@ namespace vve::syseve {
 	};
 
 	struct VeEventTableEntry {
-		VeHandle	m_typeH = VE_NULL_HANDLE;
+		VeEventType	m_type = VeEventType::VE_EVENT_TYPE_NULL;
 
 		//--------------------------------------------
 		VeHandle	m_entityH = VE_NULL_HANDLE;
@@ -51,10 +51,10 @@ namespace vve::syseve {
 	void cleanUp();
 	void close();
 
-	void addEvent(VeEventType type, VeEventTableEntry event);
-	void addHandler(std::function<void(VeEventTableEntry)> handler);
-	void addContinuousEvent(VeEventType type, VeEventTableEntry event);
-	void removeContinuousEvent(VeEventType type, VeEventTableEntry event);
+	void addEvent(VeEventTableEntry event);
+	void addHandler(std::function<void(VeEventTableEntry)> handler, VeHandle* pHandle);
+	void addContinuousEvent(VeEventTableEntry event);
+	void removeContinuousEvent(VeEventTableEntry event);
 	void removeHandler(VeHandle handlerH);
 	void subscribeEvent(VeEventType type, VeHandle handlerH);
 	void unsubscribeEvent(VeHandle typeH, VeHandle handlerH);

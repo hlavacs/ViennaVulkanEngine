@@ -121,20 +121,21 @@ namespace vve::syswin::glfw {
 			return;
 
 		syseve::VeEventTableEntry ev;
+		ev.m_type = syseve::VE_EVENT_TYPE_KEYBOARD;
 		ev.m_key_button = key < 0 ? VE_NULL_INDEX : (uint32_t)key;
 		ev.m_scancode	= scancode < 0 ? VE_NULL_INDEX : (uint32_t)scancode;
 		ev.m_action		= action < 0 ? VE_NULL_INDEX : (uint32_t)action;
 		ev.m_mods		= mods < 0 ? VE_NULL_INDEX : (uint32_t)mods;
 
-		syseve::addEvent(syseve::VE_EVENT_TYPE_KEYBOARD, ev);
+		syseve::addEvent(ev);
 
-		ev.m_action = GLFW_REPEAT;
+		/*ev.m_action = GLFW_REPEAT;
 		if (action == GLFW_PRESS) {
-			syseve::addContinuousEvent(syseve::VE_EVENT_TYPE_KEYBOARD, ev);
+			syseve::addContinuousEvent(ev);
 		}
 		if (action == GLFW_RELEASE) {
 			syseve::removeContinuousEvent(syseve::VE_EVENT_TYPE_KEYBOARD, ev);
-		}
+		}*/
 	}
 
 	/**
@@ -148,10 +149,11 @@ namespace vve::syswin::glfw {
 	*/
 	void cursor_pos_callbackGLFW(GLFWwindow* window, double xpos, double ypos) {
 		syseve::VeEventTableEntry ev;
+		ev.m_type = syseve::VE_EVENT_TYPE_MOUSEMOVE;
 		ev.m_x = xpos;
 		ev.m_y = ypos;
 
-		syseve::addEvent(syseve::VE_EVENT_TYPE_MOUSEMOVE, ev);
+		syseve::addEvent(ev);
 	}
 
 	/**
@@ -172,19 +174,20 @@ namespace vve::syswin::glfw {
 	*/
 	void mouse_button_callback(GLFWwindow* window, int button, int action, int mods) {
 		syseve::VeEventTableEntry ev;
+		ev.m_type = syseve::VE_EVENT_TYPE_MOUSEBUTTON;
 		ev.m_key_button = button < 0 ? VE_NULL_INDEX : (uint32_t)button;
 		ev.m_action = action < 0 ? VE_NULL_INDEX : (uint32_t)action;
 		ev.m_mods = mods < 0 ? VE_NULL_INDEX : (uint32_t)mods;
 
-		syseve::addEvent(syseve::VE_EVENT_TYPE_MOUSEBUTTON, ev);
+		syseve::addEvent(ev);
 
-		ev.m_action = GLFW_REPEAT;
+		/*ev.m_action = GLFW_REPEAT;
 		if (action == GLFW_PRESS) {
-			syseve::addContinuousEvent(syseve::VE_EVENT_TYPE_MOUSEBUTTON, ev);
+			syseve::addContinuousEvent(, ev);
 		}
 		if (action == GLFW_RELEASE) {
 			syseve::removeContinuousEvent(syseve::VE_EVENT_TYPE_MOUSEBUTTON, ev);
-		}
+		}*/
 	}
 
 	/**
@@ -198,10 +201,11 @@ namespace vve::syswin::glfw {
 	*/
 	void mouse_scroll_callback(GLFWwindow* window, double xoffset, double yoffset) {
 		syseve::VeEventTableEntry ev;
+		ev.m_type = syseve::VE_EVENT_TYPE_MOUSESCROLL;
 		ev.m_x = xoffset;
 		ev.m_y = yoffset;
 
-		syseve::addEvent(syseve::VE_EVENT_TYPE_MOUSESCROLL, ev);
+		syseve::addEvent(ev);
 	}
 
 

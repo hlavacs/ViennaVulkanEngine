@@ -483,7 +483,10 @@ namespace vve {
 			getCompanionTable()->swapPointers();
 
 			m_write_table->setReadOnly(false);
+			assert(!m_write_table->m_read_only);
+
 			m_read_table->setReadOnly(true);
+			assert(m_read_table->m_read_only);
 
 			if (m_clear_on_swap) {
 				m_write_table->clear();
@@ -1156,17 +1159,22 @@ namespace vve {
 			m_directory.swapPointers();
 			m_directory.getCompanionTable()->swapPointers();
 
-			m_write_table->setReadOnly(false);
-			m_read_table->setReadOnly(true);
+			VeVariableSizeTable* r = (VeVariableSizeTable*)m_read_table;
+			VeVariableSizeTable* w = (VeVariableSizeTable*)m_write_table;
+
+			w->VeVariableSizeTable::setReadOnly(false);
+			assert(!w->getReadOnly());
+			assert(!w->m_directory.getReadOnly());
+
+			r->VeVariableSizeTable::setReadOnly(true);
+			assert(r->getReadOnly());
+			assert(r->m_directory.getReadOnly());
 
 			if (m_clear_on_swap) {
-				m_write_table->clear();
+				w->clear();
 			}
 			else {
-				VeVariableSizeTable* r = (VeVariableSizeTable*)m_read_table;
-				VeVariableSizeTable* w = (VeVariableSizeTable*)m_write_table;
 				w->m_data = r->m_data;
-
 				*(m_directory.getWriteTablePtr()) = *(m_directory.getReadTablePtr());
 			}
 		};

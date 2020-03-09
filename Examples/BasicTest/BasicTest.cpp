@@ -8,11 +8,11 @@
 
 using namespace vve;
 
+
 int main()
 {
     std::cout << "Hello World!\n";
 
-    
     /*JADD( jst::jobSystemTest() );
 #ifdef VE_ENABLE_MULTITHREADING
     vgjs::JobSystem::getInstance()->wait();
