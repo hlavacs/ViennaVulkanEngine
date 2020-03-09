@@ -43,7 +43,7 @@ namespace vve::syseng {
 		std::function<void()>	m_close;
 		VeSysTableEntry() : m_init(), m_tick(), m_cleanUp(), m_close() {};
 		VeSysTableEntry(std::function<void()> init, std::function<void()> tick, std::function<void()> cleanUp, std::function<void()> close) :
-			m_init(init), m_tick(tick), m_cleanUp(), m_close(close) {};
+			m_init(init), m_tick(tick), m_cleanUp(cleanUp), m_close(close) {};
 	};
 	VeFixedSizeTable<VeSysTableEntry> g_systems_table(false, false, 0, 0);
 
