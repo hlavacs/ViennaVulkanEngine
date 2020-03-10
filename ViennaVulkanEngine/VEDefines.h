@@ -24,6 +24,7 @@
 #include <assert.h>
 #include <chrono>
 #include <iomanip>
+#include <typeinfo>
 
 
 namespace vve {
@@ -36,7 +37,7 @@ namespace vve {
 }
 
 
-#define VE_ENABLE_MULTITHREADING
+//#define VE_ENABLE_MULTITHREADING
 #include "VEGameJobSystem.h"
 #include "VEVector.h"
 #include "VETable.h"

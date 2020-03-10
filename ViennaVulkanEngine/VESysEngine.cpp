@@ -129,6 +129,7 @@ namespace vve::syseng {
 
 	void cleanUp() {
 		for (auto entry : g_systems_table.getData()) {			//clean after simulation
+			syseve::addEvent({ syseve::VeEventType::VE_EVENT_TYPE_FRAME_TICK });
 			JADD(entry.m_cleanUp());							//includes render in the last interval
 		}
 
@@ -165,7 +166,7 @@ namespace vve::syseng {
 	}
 
 	void computeOneFrame2() {
-		syseve::addEvent({syseve::VeEventType::VE_EVENT_TYPE_FRAME_TICK});
+		syseve::addEvent({syseve::VeEventType::VE_EVENT_TYPE_LOOP_TICK});
 		syswin::tick();							//must poll GLFW events in the main thread
 
 		now_time = std::chrono::high_resolution_clock::now();

@@ -227,24 +227,28 @@ namespace vve {
 			return (uint32_t)m_map.size();
 		}
 
-		uint32_t leftJoin(VeTypedMap& other, std::vector<std::pair<VeIndex,VeIndex>> result ) {
+		uint32_t leftJoin(K key, VeTypedMap& other, std::vector<std::pair<VeIndex, VeIndex>>& result) {
+			if (m_map.size() == 0 || other.m_map.size() == 0) return 0;
+			std::vector <VeIndex> res_list1, res_list2;
+			getMappedIndicesEqual(key, res_list1);
+			other.getMappedIndicesEqual(key, res_list2);
+			for (auto i1 : res_list1) {
+				for (auto i2 : res_list2) {
+					result.push_back(VeTableIndexPair(i1, i2));
+				}
+			}
+			return (uint32_t) (res_list1.size()*res_list2.size());
+		}
+
+		uint32_t leftJoin(VeTypedMap& other, std::vector<std::pair<VeIndex,VeIndex>> & result ) {
 			if (m_map.size() == 0 || other.m_map.size() == 0) return 0;
 			uint32_t num = 0;
-			std::vector <VeIndex> res_list;
-			auto iter = m_map.begin();
-			K key = iter->first;
-			other.getMappedIndicesEqual(key, res_list);
-
-			while (iter != m_map.end()) {
-				for (auto res : res_list) {
-					result.emplace_back(std::pair<VeIndex, VeIndex>(iter->second, res));
-					num++;
-				}
-				++iter;
-				if (iter != m_map.end() && key != iter->first) {
-					res_list.clear();
-					key = iter->first;
-					other.getMappedIndicesEqual(key, res_list);
+			K key = m_map.begin()->first;
+			num += leftJoin(key, other, result);
+			for (auto entry : m_map) {
+				if (key != entry.first) {
+					key = entry.first;
+					num += leftJoin(key, other, result);
 				}
 			}
 			return num;
@@ -584,7 +588,10 @@ namespace vve {
 		uint32_t	getAllHandlesFromMap(VeIndex num_map, std::vector<VeHandle>& result);	//makes sense for map/multimap
 
 		template <typename M, typename K, typename I>
-		VeIndex leftJoin(VeIndex own_map, VeTable& table, VeIndex other_map, std::vector<std::pair<VeHandle, VeHandle>>& result);
+		VeIndex leftJoin(VeIndex own_map, VeTable& other, VeIndex other_map, std::vector<std::pair<VeHandle, VeHandle>>& result);
+
+		template <typename M, typename K, typename I>
+		VeIndex leftJoin(VeIndex own_map, K key, VeTable& other, VeIndex other_map, std::vector<std::pair<VeHandle, VeHandle>>& result);
 
 		template <typename K>
 		VeHandle	getHandleEqual(VeIndex num_map, K key );	//use this in map
@@ -791,8 +798,7 @@ namespace vve {
 
 	template<typename T>
 	template <typename M, typename K, typename I>
-	VeIndex VeFixedSizeTable<T>::leftJoin(VeIndex own_map, VeTable& table,
-		VeIndex other_map, std::vector<VeTableHandlePair>& result) {
+	VeIndex VeFixedSizeTable<T>::leftJoin(VeIndex own_map, VeTable& table, VeIndex other_map, std::vector<VeTableHandlePair>& result) {
 		in();
 		VeFixedSizeTable<T>* other = (VeFixedSizeTable<T>*) & table;
 		VeTypedMap<M, K, I>* l = (VeTypedMap<M, K, I>*)m_maps[own_map];
@@ -808,6 +814,27 @@ namespace vve {
 		out();
 		return num;
 	}
+
+
+	template<typename T>
+	template <typename M, typename K, typename I>
+	VeIndex VeFixedSizeTable<T>::leftJoin(VeIndex own_map, K key, VeTable& table, VeIndex other_map, std::vector<VeTableHandlePair>& result) {
+		in();
+		VeFixedSizeTable<T>* other = (VeFixedSizeTable<T>*) & table;
+		VeTypedMap<M, K, I>* l = (VeTypedMap<M, K, I>*)m_maps[own_map];
+		VeTypedMap<M, K, I>* r = (VeTypedMap<M, K, I>*)other->m_maps[other_map];
+
+		VeIndex num = 0;
+		std::vector<VeTableIndexPair> dir_indices;
+		l->leftJoin(key, *r, dir_indices);
+		for (auto [first, second] : dir_indices) {
+			result.emplace_back(m_directory.getHandle(first), other->m_directory.getHandle(second));
+			++num;
+		}
+		out();
+		return num;
+	}
+
 
 	template<typename T>
 	template<typename K>
