@@ -61,10 +61,10 @@ namespace vve::syseve {
 		new VeTypedMap< std::multimap<VeTableKeyInt, VeTableIndex>, VeTableKeyInt, VeTableIndex >
 			(offsetof(VeEventSubscribeTableEntry, m_type), sizeof(VeEventSubscribeTableEntry::m_type)),
 
-		new VeTypedMap< std::multimap<VeTableKeyInt, VeTableIndex>, VeTableKeyInt, VeTableIndex >
+		new VeTypedMap< std::unordered_multimap<VeTableKeyInt, VeTableIndex>, VeTableKeyInt, VeTableIndex >
 			(offsetof(VeEventSubscribeTableEntry, m_handlerH), sizeof(VeEventSubscribeTableEntry::m_handlerH)),
 
-		new VeTypedMap< std::map<VeTableKeyIntPair, VeTableIndex>, VeTableKeyIntPair, VeTableIndexPair >
+		new VeTypedMap< std::unordered_map<VeTableKeyIntPair, VeTableIndex>, VeTableKeyIntPair, VeTableIndexPair >
 			(VeTableIndexPair{(VeIndex)offsetof(VeEventSubscribeTableEntry, m_type), (VeIndex)offsetof(VeEventSubscribeTableEntry, m_handlerH)},
 			 VeTableIndexPair{(VeIndex)sizeof(VeEventSubscribeTableEntry::m_type),   (VeIndex)sizeof(VeEventSubscribeTableEntry::m_handlerH)})
 	};
@@ -93,7 +93,7 @@ namespace vve::syseve {
 	}
 
 
-	void callEvents2(VeFixedSizeTableMT<VeEventTableEntry>* table, VeEventType type, VeIndex action) {
+	void callEventsKey(VeFixedSizeTableMT<VeEventTableEntry>* table, VeEventType type, VeIndex action) {
 		VeEventTableEntry eventData;
 		VeEventSubscribeTableEntry subscriptionData;
 		VeEventHandlerTableEntry handlerData;
@@ -111,7 +111,7 @@ namespace vve::syseve {
 	}
 
 	void callEvents(VeFixedSizeTableMT<VeEventTableEntry> *table, VeEventType type, VeIndex action) {
-		JADD(callEvents2( table, type, action));
+		JADD(callEventsKey( table, type, action));
 		//JDEP(callEventsInOrder( table, (VeEventType)(type + 1), action ));
 	}
 
