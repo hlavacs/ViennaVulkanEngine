@@ -112,8 +112,9 @@ namespace vve::syseng {
 		}
 
 #ifdef VE_ENABLE_MULTITHREADING
-		VeIndex i = 0, threadCount = (VeIndex)vgjs::JobSystem::getInstance()->getThreadCount();
+		VeIndex i = 0, threadCount = std::thread::hardware_concurrency();
 		for (auto table : g_main_table.getData()) {
+			table.m_table_pointer->setName(table.m_name);
 			if (!table.m_table_pointer->getReadOnly()) {
 				table.m_table_pointer->setThreadId(i);
 				++i;
@@ -148,6 +149,7 @@ namespace vve::syseng {
 
 	void swapTables() {
 		for (auto table : g_main_table.getData()) {	//swap tables
+			//std::cout << "swap table " << table.m_name << " " << std::endl;
 			table.m_table_pointer->swapTables();	//might clear() some tables here
 		}
 		JDEP(tick());								//simulate one epoch
@@ -162,18 +164,23 @@ namespace vve::syseng {
 		JDEP(swapTables());						//simulate one epoch
 	}
 
-	void computeOneFrame() {
+	void computeOneFrame2() {
 		syseve::addEvent({syseve::VeEventType::VE_EVENT_TYPE_FRAME_TICK});
 		syswin::tick();							//must poll GLFW events in the main thread
 
 		now_time = std::chrono::high_resolution_clock::now();
 
 		if (now_time < next_update_time) {		//still in the same time interval
-			JADD(tick());						//tick, process events and render one frame
+			JDEP(tick());						//tick, process events and render one frame
 		}
 		else {
-			JADD(forwardTime());				//bring simulation to now
+			JDEP(forwardTime());				//bring simulation to now
 		}
+	}
+
+	//can call this from the main thread if you have your own game loop
+	void computeOneFrame() {
+		computeOneFrame2();
 
 #ifdef VE_ENABLE_MULTITHREADING
 		vgjs::JobSystem::getInstance()->wait();
@@ -183,7 +190,23 @@ namespace vve::syseng {
 
 	std::atomic<bool> g_goon = true;
 
+	void runGameLoop2() {
+		vgjs::JobSystem::getInstance()->resetPool();
+		JADDT( computeOneFrame2(), vgjs::TID(0,2) );	 //run on main thread for polling!
+		if (g_goon) {
+			JREP;
+		}
+	}
+
 	void runGameLoop() {
+
+#ifdef VE_ENABLE_MULTITHREADING
+		vgjs::JobSystem::getInstance(0, 1); //create pool without thread 0
+		JADD(runGameLoop2());				//schedule the game loop
+		vgjs::JobSystem::getInstance()->threadTask(0);		//put main thread as first thread into pool
+		return;
+#endif
+
 		while (g_goon) {
 			computeOneFrame();
 		}
@@ -191,6 +214,11 @@ namespace vve::syseng {
 
 	void closeEngine() {
 		g_goon = false;
+
+#ifdef VE_ENABLE_MULTITHREADING
+		vgjs::JobSystem::getInstance()->terminate();
+#endif
+
 	}
 
 	void close() {

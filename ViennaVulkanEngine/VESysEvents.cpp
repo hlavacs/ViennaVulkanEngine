@@ -79,14 +79,9 @@ namespace vve::syseve {
 		}
 	}
 
-	struct VeEventSequence {
-		VeEventType m_type;
-		VeIndex		m_action;
-	};
-
 
 	void callEvents( VeEventType type, VeIndex action ) {
-
+		//TODO order event types here!!!
 	}
 
 

@@ -128,14 +128,6 @@ namespace vve::syswin::glfw {
 		ev.m_mods		= mods < 0 ? VE_NULL_INDEX : (uint32_t)mods;
 
 		syseve::addEvent(ev);
-
-		/*ev.m_action = GLFW_REPEAT;
-		if (action == GLFW_PRESS) {
-			syseve::addContinuousEvent(ev);
-		}
-		if (action == GLFW_RELEASE) {
-			syseve::removeContinuousEvent(syseve::VE_EVENT_TYPE_KEYBOARD, ev);
-		}*/
 	}
 
 	/**
@@ -180,14 +172,6 @@ namespace vve::syswin::glfw {
 		ev.m_mods = mods < 0 ? VE_NULL_INDEX : (uint32_t)mods;
 
 		syseve::addEvent(ev);
-
-		/*ev.m_action = GLFW_REPEAT;
-		if (action == GLFW_PRESS) {
-			syseve::addContinuousEvent(, ev);
-		}
-		if (action == GLFW_RELEASE) {
-			syseve::removeContinuousEvent(syseve::VE_EVENT_TYPE_MOUSEBUTTON, ev);
-		}*/
 	}
 
 	/**
