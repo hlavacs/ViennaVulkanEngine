@@ -32,15 +32,15 @@ namespace vve {
 		};
 
 		std::vector<VeMap*> maps = {
-			new VeTypedMap< std::map<VeTableKeyInt, VeTableIndex>, VeTableKeyInt, VeTableIndex >(
+			new VeTypedMap< std::map<VeHandle, VeIndex>, VeHandle, VeIndex >(
 				(VeIndex)offsetof(struct TestEntry, m_int64), (VeIndex)sizeof(TestEntry::m_int64)),
-			new VeTypedMap< std::multimap<VeTableKeyInt, VeTableIndex>, VeTableKeyInt, VeTableIndex >(
+			new VeTypedMap< std::multimap<VeHandle, VeIndex>, VeHandle, VeIndex >(
 				(VeIndex)offsetof(struct TestEntry, m_int1), (VeIndex)sizeof(TestEntry::m_int1)),
-			new VeTypedMap< std::multimap<VeTableKeyString, VeTableIndex>, VeTableKeyString, VeTableIndex >(
+			new VeTypedMap< std::multimap<std::string, VeIndex>, std::string, VeIndex >(
 				(VeIndex)offsetof(struct TestEntry, m_name), 0),
-			new VeTypedMap< std::multimap<VeTableKeyIntPair, VeTableIndex>, VeTableKeyIntPair, VeTableIndexPair >(
-				VeTableIndexPair((VeIndex)offsetof(TestEntry, m_int1), (VeIndex)offsetof(TestEntry, m_int2)),
-				VeTableIndexPair((VeIndex)sizeof(TestEntry::m_int1),   (VeIndex)sizeof(TestEntry::m_int2)))
+			new VeTypedMap< std::multimap<VeHandlePair, VeIndex>, VeHandlePair, VeIndexPair >(
+				VeIndexPair((VeIndex)offsetof(TestEntry, m_int1), (VeIndex)offsetof(TestEntry, m_int2)),
+				VeIndexPair((VeIndex)sizeof(TestEntry::m_int1),   (VeIndex)sizeof(TestEntry::m_int2)))
 		};
 		VeFixedSizeTable<TestEntry> testTable(maps);
 
@@ -103,7 +103,7 @@ namespace vve {
 			testTable.forAllEntries(std::bind(printEntry, std::placeholders::_1)); std::cout << std::endl;
 
 			//--------
-			std::vector<VeHandle, custom_alloc<VeHandle>> handles(testTable.getAllocator().m_handle);
+			std::vector<VeHandle, custom_alloc<VeHandle>> handles(&testTable.getAllocator());
 			testTable.getHandlesEqual(0, 5, handles);
 			auto [auto_id, dir_index] = VeDirectory::splitHandle(handles[0]);
 
@@ -111,7 +111,7 @@ namespace vve {
 			testTable.getHandlesEqual(2, "2", handles);
 
 			handles.clear();
-			testTable.getHandlesEqual(3, VeTableKeyIntPair(1,6), handles);
+			testTable.getHandlesEqual(3, VeHandlePair(1,6), handles);
 
 			//--------
 
@@ -122,7 +122,7 @@ namespace vve {
 			testTable.getHandlesRange(2, "2", "3", handles);
 
 			handles.clear();
-			testTable.getHandlesRange(3, VeTableKeyIntPair( 4, 0 ), VeTableKeyIntPair( 5, 0 ), handles);
+			testTable.getHandlesRange(3, VeHandlePair( 4, 0 ), VeHandlePair( 5, 0 ), handles);
 
 
 			handle = testTable.addEntry({ 8, 2, 3, "4" });

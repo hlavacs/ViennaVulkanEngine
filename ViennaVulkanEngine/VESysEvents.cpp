@@ -17,30 +17,30 @@ namespace vve::syseve {
 
 	//--------------------------------------------------------------------------------------------------
 	std::vector<VeMap*> maps2 = {
-		new VeTypedMap< std::multimap<VeTableKeyInt, VeTableIndex>, VeTableKeyInt, VeTableIndex >
+		new VeTypedMap< std::multimap<VeHandle, VeIndex>, VeHandle, VeIndex >
 		(offsetof(VeEventTableEntry, m_type), sizeof(VeEventTableEntry::m_type)),
 
-		new VeTypedMap< std::unordered_multimap<VeTableKeyInt, VeTableIndex>, VeTableKeyInt, VeTableIndex >
+		new VeTypedMap< std::unordered_multimap<VeHandle, VeIndex>, VeHandle, VeIndex >
 		(offsetof(VeEventTableEntry, m_type), sizeof(VeEventTableEntry::m_type)), 
 
-		new VeTypedMap< std::multimap<VeTableKeyIntTriple, VeTableIndex>, VeTableKeyIntTriple, VeTableIndexTriple >
-		(VeTableIndexTriple{(VeIndex)offsetof(VeEventTableEntry, m_type), (VeIndex)offsetof(VeEventTableEntry, m_key_button), (VeIndex)offsetof(VeEventTableEntry, m_action)},
-		 VeTableIndexTriple{(VeIndex)sizeof(VeEventTableEntry::m_type),   (VeIndex)sizeof(VeEventTableEntry::m_key_button),   (VeIndex)sizeof(VeEventTableEntry::m_action)})
+		new VeTypedMap< std::multimap<VeHandleTriple, VeIndex>, VeHandleTriple, VeIndexTriple >
+		(VeIndexTriple{(VeIndex)offsetof(VeEventTableEntry, m_type), (VeIndex)offsetof(VeEventTableEntry, m_key_button), (VeIndex)offsetof(VeEventTableEntry, m_action)},
+		 VeIndexTriple{(VeIndex)sizeof(VeEventTableEntry::m_type),   (VeIndex)sizeof(VeEventTableEntry::m_key_button),   (VeIndex)sizeof(VeEventTableEntry::m_action)})
 
 	};
 	VeFixedSizeTableMT<VeEventTableEntry> g_events_table(maps2, true, true, 0, 0);
 	VeFixedSizeTableMT<VeEventTableEntry> g_events_table2(g_events_table);
 
 	std::vector<VeMap*> maps3 = {
-		new VeTypedMap< std::multimap<VeTableKeyInt, VeTableIndex>, VeTableKeyInt, VeTableIndex >
+		new VeTypedMap< std::multimap<VeHandle, VeIndex>, VeHandle, VeIndex >
 		(offsetof(VeEventTableEntry, m_type), sizeof(VeEventTableEntry::m_type)),
 
-		new VeTypedMap< std::unordered_multimap<VeTableKeyInt, VeTableIndex>, VeTableKeyInt, VeTableIndex >
+		new VeTypedMap< std::unordered_multimap<VeHandle, VeIndex>, VeHandle, VeIndex >
 		(offsetof(VeEventTableEntry, m_type), sizeof(VeEventTableEntry::m_type)), 
 
-		new VeTypedMap< std::multimap<VeTableKeyIntTriple, VeTableIndex>, VeTableKeyIntTriple, VeTableIndexTriple >
-		(VeTableIndexTriple{(VeIndex)offsetof(VeEventTableEntry, m_type), (VeIndex)offsetof(VeEventTableEntry, m_key_button), (VeIndex)offsetof(VeEventTableEntry, m_action)},
-		 VeTableIndexTriple{(VeIndex)sizeof(VeEventTableEntry::m_type),   (VeIndex)sizeof(VeEventTableEntry::m_key_button),   (VeIndex)sizeof(VeEventTableEntry::m_action)})
+		new VeTypedMap< std::multimap<VeHandleTriple, VeIndex>, VeHandleTriple, VeIndexTriple >
+		(VeIndexTriple{(VeIndex)offsetof(VeEventTableEntry, m_type), (VeIndex)offsetof(VeEventTableEntry, m_key_button), (VeIndex)offsetof(VeEventTableEntry, m_action)},
+		 VeIndexTriple{(VeIndex)sizeof(VeEventTableEntry::m_type),   (VeIndex)sizeof(VeEventTableEntry::m_key_button),   (VeIndex)sizeof(VeEventTableEntry::m_action)})
 	};
 	VeFixedSizeTableMT<VeEventTableEntry> g_continuous_events_table(maps3, true, false, 0, 0);
 	VeFixedSizeTableMT<VeEventTableEntry> g_continuous_events_table2(g_continuous_events_table);
@@ -58,15 +58,15 @@ namespace vve::syseve {
 		VeHandle	m_handlerH;
 	};
 	std::vector<VeMap*> maps4 = {
-		new VeTypedMap< std::multimap<VeTableKeyInt, VeTableIndex>, VeTableKeyInt, VeTableIndex >
+		new VeTypedMap< std::multimap<VeHandle, VeIndex>, VeHandle, VeIndex >
 			(offsetof(VeEventSubscribeTableEntry, m_type), sizeof(VeEventSubscribeTableEntry::m_type)),
 
-		new VeTypedMap< std::unordered_multimap<VeTableKeyInt, VeTableIndex>, VeTableKeyInt, VeTableIndex >
+		new VeTypedMap< std::unordered_multimap<VeHandle, VeIndex>, VeHandle, VeIndex >
 			(offsetof(VeEventSubscribeTableEntry, m_handlerH), sizeof(VeEventSubscribeTableEntry::m_handlerH)),
 
-		new VeTypedMap< std::unordered_map<VeTableKeyIntPair, VeTableIndex>, VeTableKeyIntPair, VeTableIndexPair >
-			(VeTableIndexPair{(VeIndex)offsetof(VeEventSubscribeTableEntry, m_type), (VeIndex)offsetof(VeEventSubscribeTableEntry, m_handlerH)},
-			 VeTableIndexPair{(VeIndex)sizeof(VeEventSubscribeTableEntry::m_type),   (VeIndex)sizeof(VeEventSubscribeTableEntry::m_handlerH)})
+		new VeTypedMap< std::unordered_map<VeHandlePair, VeIndex>, VeHandlePair, VeIndexPair >
+			(VeIndexPair{(VeIndex)offsetof(VeEventSubscribeTableEntry, m_type), (VeIndex)offsetof(VeEventSubscribeTableEntry, m_handlerH)},
+			 VeIndexPair{(VeIndex)sizeof(VeEventSubscribeTableEntry::m_type),   (VeIndex)sizeof(VeEventSubscribeTableEntry::m_handlerH)})
 	};
 	VeFixedSizeTableMT<VeEventSubscribeTableEntry> g_subscribe_table(maps4, true, false, 0, 0);
 	VeFixedSizeTableMT<VeEventSubscribeTableEntry> g_subscribe_table2(g_subscribe_table);
@@ -78,12 +78,12 @@ namespace vve::syseve {
 	}
 
 	void callAllEvents(VeFixedSizeTable<VeEventTableEntry>& events_table) {
-		std::vector<VeTableHandlePair> result;
+		std::vector<VeHandlePair, custom_alloc<VeHandlePair>> result(&events_table.getAllocator());
 		VeEventTableEntry eventData;
 		VeEventSubscribeTableEntry subscribeData;
 		VeEventHandlerTableEntry handlerData;
 
-		events_table.leftJoin<std::multimap<VeTableKeyInt, VeTableIndex>, VeTableKeyInt, VeTableIndex>(0, g_subscribe_table, 0, result);
+		events_table.leftJoin<std::multimap<VeHandle, VeIndex>, VeHandle, VeIndex>(0, g_subscribe_table, 0, result);
 		for( auto [eventhandle, subscribehandle] : result ) {
 			events_table.getEntry(eventhandle, eventData);
 			g_subscribe_table.getEntry(subscribehandle, subscribeData);
@@ -98,8 +98,8 @@ namespace vve::syseve {
 		VeEventSubscribeTableEntry subscriptionData;
 		VeEventHandlerTableEntry handlerData;
 
-		std::vector<VeHandle, custom_alloc<VeHandle>> events(table->getAllocator().m_handle);
-		std::vector<VeHandle, custom_alloc<VeHandle>> subscriptions(table->getAllocator().m_handle);
+		std::vector<VeHandle, custom_alloc<VeHandle>> events(&table->getAllocator());
+		std::vector<VeHandle, custom_alloc<VeHandle>> subscriptions(&table->getAllocator());
 		table->getHandlesEqual(1, type, events);
 		for (auto evH : events) {
 			g_subscribe_table.getHandlesEqual(0, evH, subscriptions);
@@ -148,7 +148,7 @@ namespace vve::syseve {
 
 	void removeContinuousEvent(VeEventTableEntry event) {
 		std::cout << "remove cont event type " << event.m_type << " action " << event.m_action << " key/button " << event.m_key_button << std::endl;
-		VeHandle eventH = g_continuous_events_table.getHandleEqual(1, VeTableKeyIntTriple{ event.m_type, event.m_key_button, event.m_action });
+		VeHandle eventH = g_continuous_events_table.getHandleEqual(1, VeHandleTriple{ event.m_type, event.m_key_button, event.m_action });
 		assert(eventH != VE_NULL_HANDLE);
 		g_continuous_events_table.deleteEntry(eventH);
 	}
@@ -158,7 +158,7 @@ namespace vve::syseve {
 	}
 
 	void removeHandler(VeHandle handlerH) {
-		std::vector<VeHandle, custom_alloc<VeHandle>> result(g_subscribe_table.getAllocator().m_handle);
+		std::vector<VeHandle, custom_alloc<VeHandle>> result(&g_subscribe_table.getAllocator());
 		g_subscribe_table.getHandlesEqual(1, handlerH, result);
 		for (auto handle : result) {
 			g_subscribe_table.deleteEntry(handle);
@@ -171,7 +171,7 @@ namespace vve::syseve {
 	}
 
 	void unsubscribeEvent(VeHandle typeH, VeHandle handlerH) {
-		VeHandle subH = g_subscribe_table.getHandleEqual(2, VeTableKeyIntPair{ typeH, handlerH });
+		VeHandle subH = g_subscribe_table.getHandleEqual(2, VeHandlePair{ typeH, handlerH });
 		g_subscribe_table.deleteEntry(subH);
 	}
 

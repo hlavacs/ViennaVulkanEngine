@@ -32,7 +32,7 @@ namespace vve::syseng {
 		VeMainTableEntry( VeTable* tptr, std::string name) : m_table_pointer(tptr), m_name(name) {};
 	};
 	std::vector<VeMap*> maps = {
-		new VeTypedMap< std::unordered_map<VeTableKeyString, VeTableIndex >, VeTableKeyString, VeTableIndex >((VeIndex)offsetof(struct VeMainTableEntry, m_name), 0)
+		new VeTypedMap< std::unordered_map<std::string, VeIndex >, std::string, VeIndex >((VeIndex)offsetof(struct VeMainTableEntry, m_name), 0)
 	};
 	VeFixedSizeTable<VeMainTableEntry> g_main_table(maps, false, false, 0, 0);
 

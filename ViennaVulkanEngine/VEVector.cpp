@@ -159,9 +159,7 @@ namespace vve {
 
 			VeTempMemory mem;
 
-			custom_alloc<VeHandle> allocator(&mem);
-
-			std::vector < VeHandle, custom_alloc<VeHandle> > handles( allocator );
+			std::vector < VeHandle, custom_alloc<VeHandle> > handles( &mem );
 			handles.push_back(1);
 			handles.push_back(2);
 			handles.push_back(3);

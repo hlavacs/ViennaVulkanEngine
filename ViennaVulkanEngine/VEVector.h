@@ -545,22 +545,6 @@ namespace vve {
 		custom_alloc& operator=(const custom_alloc<U>& ver) : m_tempMemory(ver.m_tempMemory) { return *this; }
 	};
 
-	struct VeCustomMemoryAllocator {
-		VeTempMemory											m_temp_memory;
-		custom_alloc<VeHandle>									m_handle;
-		custom_alloc<std::pair<VeHandle,VeHandle>>				m_key_int_pair;
-		custom_alloc<std::tuple<VeHandle, VeHandle, VeHandle>>	m_key_int_triple;
-		custom_alloc<VeIndex>									m_index;
-		custom_alloc<std::pair<VeIndex,VeIndex>>				m_index_pair;
-		custom_alloc<std::tuple<VeIndex,VeIndex,VeIndex>>		m_index_triple;
-
-		VeCustomMemoryAllocator() : m_temp_memory(),
-			m_handle(&m_temp_memory), m_key_int_pair(&m_temp_memory), m_key_int_triple(&m_temp_memory),
-			m_index(&m_temp_memory), m_index_pair(&m_temp_memory), m_index_triple(&m_temp_memory) {};
-
-		void reset() { m_temp_memory.reset(); };
-	};
-
 
 	namespace vec {
 		void testVector();
