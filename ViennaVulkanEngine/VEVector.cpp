@@ -87,6 +87,12 @@ namespace vve {
 			vec3.push_back({ 6, 3, 2, "2" });
 			for (auto entry : vec3) { printEntry(entry); } std::cout << std::endl;
 
+			vec3.pop_back();
+			vec3.pop_back();
+			vec3.pop_back();
+			vec3.pop_back();
+			for (auto entry : vec3) { printEntry(entry); } std::cout << std::endl;
+
 			vec = vec2;
 			for (auto entry : vec) { printEntry(entry); } std::cout << std::endl;
 			vec = vec3;
@@ -139,9 +145,16 @@ namespace vve {
 			vec3 = vec2;
 			for (auto entry : vec3) { printEntry2(entry); } std::cout << std::endl;
 
+			vec3.pop_back();
+			vec3.pop_back();
+			vec3.pop_back();
+			vec3.pop_back();
+			for (auto entry : vec3) { printEntry2(entry); } std::cout << std::endl;
+
 		}
 
 		void testVector() {
+			testVector1();
 			testVector2();
 
 		}

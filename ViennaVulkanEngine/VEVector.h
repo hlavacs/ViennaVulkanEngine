@@ -36,15 +36,6 @@ namespace vve {
 		VeIndex  m_alignment;	///<memory alignment of each entry, default is 16
 		bool	 m_memcpy;		///<true...no need for constructors, can use memcpy, false...need constructors
 
-		/**
-		*
-		*	\brief When a vector of entries is created, the constructor must be called for all entries
-		*	in the vector. This calls construct() for all entries.
-		*
-		*/
-		void construct() {
-			construct(m_startptr, m_capacity);	//Call with whole range of entries
-		}
 
 		/**
 		*
@@ -55,31 +46,14 @@ namespace vve {
 		*	\param[in] capacity Number of entries that are constructed 
 		*
 		*/
-		void construct( uint8_t* startptr, VeIndex capacity ) {
-			for (uint32_t i = 0; i < capacity; ++i) {		//go through all entries
+		void construct( uint8_t* startptr, VeIndex size ) {
+			if (m_memcpy) return;
+			for (uint32_t i = 0; i < size; ++i) {		//go through all entries
 				uint8_t* ptr = startptr + i * m_entrySize;	//point to the entry address
 				T* tptr = new(ptr) T();						//call empty constructor on it
 			}
 		}
 
-		/**
-		*
-		*	\brief Constructs a set of entries by copying data from source entries of same type
-		*
-		*	\param[in] start_dst Start address for destination.
-		*	\param[in] entry_size_dst Size of destination entry
-		*	\param[in] start_src Start address of source.
-		*	\param[in] entry_size_src Size of source entry.
-		*	\param[in] size_src Number of entries in the source vector
-		*
-		*/
-		void construct(uint8_t* start_dst, VeIndex entry_size_dst, uint8_t *start_src, VeIndex entry_size_src, VeIndex size_src) {
-			for (uint32_t i = 0; i < size_src; ++i) {
-				uint8_t* ptrd = start_dst + i * entry_size_dst;
-				uint8_t* ptrs = start_src + i * entry_size_src;
-				T* tptrd = new(ptrd) T( (T&) *ptrs );
-			}
-		}
 
 		/**
 		*
@@ -93,6 +67,11 @@ namespace vve {
 		*
 		*/
 		void copy(uint8_t* start_dst, VeIndex entry_size_dst, uint8_t* start_src, VeIndex entry_size_src, VeIndex size_src) {
+			if (m_memcpy && entry_size_dst == entry_size_src) {
+				memcpy(m_startptr, start_src, size_src * entry_size_src);
+				return;
+			}
+
 			for (uint32_t i = 0; i < size_src; ++i) {
 				uint8_t* ptrd = start_dst + i * entry_size_dst;
 				uint8_t* ptrs = start_src + i * entry_size_src;
@@ -101,18 +80,32 @@ namespace vve {
 			m_size = size_src;
 		}
 
+
 		/**
 		*
-		*	\brief 
+		* \brief
+		*
+		*
+		*/
+		void destructElements( VeIndex startIdx, VeIndex endIdx ) {
+			if (m_memptr == nullptr || m_startptr == nullptr || m_memcpy) 
+				return;
+
+			for (uint32_t i = startIdx; i < m_size && i < endIdx; ++i) {
+				T* tptr = (T*)(m_startptr + i * m_entrySize);
+				tptr->~T();
+			}
+		}
+
+
+		/**
+		*
+		* \brief 
 		*
 		*
 		*/
 		void destruct() {
-			if (m_memptr == nullptr || m_startptr == nullptr ) return;
-			for (uint32_t i = 0; !m_memcpy && i < m_capacity; ++i) {
-				T* tptr = (T*)(m_startptr + i * m_entrySize);
-				tptr->~T();
-			}
+			destructElements(0, m_size);
 			delete[] m_memptr;
 			m_memptr = nullptr;
 			m_startptr = nullptr;
@@ -123,29 +116,22 @@ namespace vve {
 		*	\brief
 		*
 		*	\param[in] newcapacity
-		*	\param[in] start_src
-		*	\param[in] entry_size_src
-		*	\param[in] size_src
 		*
 		*/
-		void setNewCapacity( VeIndex newcapacity, uint8_t *start_src, VeIndex entry_size_src, VeIndex size_src ) {
-			newcapacity = std::max( newcapacity, size_src);
+		void setNewCapacity( VeIndex newcapacity) {
+			if (newcapacity <= m_capacity)
+				return;
+
 			uint8_t* newmemptr = new uint8_t[newcapacity * m_entrySize + m_alignment];
 			uint8_t* newstartptr = (uint8_t*)alignBoundary((uint64_t)newmemptr, m_alignment);
 
-			if (m_memcpy && m_entrySize == entry_size_src) {
-				memcpy(newstartptr, start_src, size_src * entry_size_src);
-			}
-			else {
-				construct(newstartptr, m_entrySize, start_src, entry_size_src, size_src);
-				construct(newstartptr + size_src * m_entrySize, newcapacity - size_src);
-			}
+			construct(newstartptr, m_size);
+			copy(newstartptr, m_entrySize, m_startptr, m_entrySize, m_size);
 			destruct();
 
 			m_memptr = newmemptr;
 			m_startptr = newstartptr;
 			m_capacity = newcapacity;
-			m_size = size_src;
 		}
 
 		/**
@@ -155,7 +141,7 @@ namespace vve {
 		*
 		*/
 		void doubleCapacity() {
-			setNewCapacity(2 * m_capacity, m_startptr, m_entrySize, m_size );
+			setNewCapacity(2 * m_capacity);
 		}
 
 	public:
@@ -228,6 +214,7 @@ namespace vve {
 		const_iterator begin() const { return const_iterator(m_startptr, m_entrySize); }		///<const iterator begin
 		const_iterator end() const { return const_iterator(m_startptr + m_size * m_entrySize, m_entrySize);  } ///<const iterator end
 
+		void resize(VeIndex new_size);			
 		void emplace_back(T &entry);			///<add entry at end of vector
 		void emplace_back(T &&entry);			///<add entry at end of vector
 		void push_back(T& entry);				///<add entry at end of vector
@@ -255,7 +242,6 @@ namespace vve {
 		m_memptr	= new uint8_t[m_capacity * m_entrySize + m_alignment];
 		m_startptr	= (uint8_t*) alignBoundary( (uint64_t)m_memptr, m_alignment);
 		m_memcpy	= memcopy;
-		if( !m_memcpy ) construct();
 	}
 
 	/**
@@ -273,13 +259,8 @@ namespace vve {
 		m_memcpy	= vec.m_memcpy;
 		m_memptr	= new uint8_t[m_capacity * m_entrySize + m_alignment];
 		m_startptr	= (uint8_t*)alignBoundary((uint64_t)m_memptr, m_alignment);
-		if (m_memcpy) {
-			memcpy(m_startptr, vec.m_startptr, m_size * m_entrySize);
-		}
-		else {
-			construct(m_startptr, m_entrySize, vec.m_startptr, vec.m_entrySize, vec.m_size);
-			construct(m_startptr + m_size * m_entrySize, m_capacity - m_size);
-		}
+		construct(m_startptr, m_size);
+		copy(m_startptr, m_entrySize, vec.m_startptr, vec.m_entrySize, vec.m_size);
 	}
 
 	/**
@@ -301,15 +282,24 @@ namespace vve {
 	*
 	*/
 	template<typename T> inline void VeVector<T>::operator=(const VeVector& vec) {
-		if (m_capacity >= vec.m_size) {
-			if (m_memcpy && m_entrySize == vec.m_entrySize) 
-				memcpy(m_startptr, vec.m_startptr, vec.m_size * vec.m_entrySize);
-			else 
-				copy(m_startptr, m_entrySize, vec.m_startptr, vec.m_entrySize, vec.m_size);
+		resize(vec.m_size);
+		copy(m_startptr, m_entrySize, vec.m_startptr, vec.m_entrySize, vec.m_size);
+	}
+
+
+	template<typename T> inline void VeVector<T>::resize(VeIndex new_size) {
+		if (m_size == new_size )
+			return;
+		if (m_size > new_size) {
+			destructElements(new_size, m_size);
+			m_size = new_size;
 			return;
 		}
-		setNewCapacity(vec.m_capacity, vec.m_startptr, vec.m_entrySize, vec.m_size);		
+		setNewCapacity(new_size);
+		construct(m_startptr + m_size * m_entrySize, new_size - m_size);
+		m_size = new_size;
 	}
+
 
 	/**
 	*
@@ -321,7 +311,7 @@ namespace vve {
 	template<typename T> inline void VeVector<T>::emplace_back(T &entry) {
 		if (m_size == m_capacity) doubleCapacity();
 		uint8_t* ptr = m_startptr + m_size * m_entrySize;
-		*(T*)ptr = entry;
+		new(ptr) T(entry);									//call constructor on it
 		++m_size;
 	}
 
@@ -335,7 +325,7 @@ namespace vve {
 	template<typename T> inline void VeVector<T>::emplace_back(T&& entry) {
 		if (m_size == m_capacity) doubleCapacity();
 		uint8_t* ptr = m_startptr + m_size * m_entrySize;
-		*(T*)ptr = std::move(entry);
+		new(ptr) T(std::move(entry));
 		++m_size;
 	}
 
@@ -369,7 +359,9 @@ namespace vve {
 	*
 	*/
 	template<typename T> inline void VeVector<T>::pop_back() {
-		if (m_size > 0) --m_size;
+		assert(m_size > 0);
+		destructElements(m_size - 1, m_size);
+		--m_size;
 	}
 
 	/**
@@ -413,6 +405,8 @@ namespace vve {
 	*
 	*/
 	template<typename T> inline void VeVector<T>::swap(VeIndex a, VeIndex b) {
+		assert(a < m_size && b < m_size);
+
 		uint8_t* ptra = m_startptr + a * m_entrySize;
 		uint8_t* ptrb = m_startptr + b * m_entrySize;
 
@@ -428,14 +422,12 @@ namespace vve {
 	*
 	*/
 	template<typename T> inline void VeVector<T>::clear() {
-		m_size = 0;
+		resize(0);
 	}
 
 
 	template<typename T> inline void VeVector<T>::reserve( VeIndex n) {
-		if( n > m_capacity )
-			setNewCapacity( n, m_startptr, m_entrySize, m_size);
-
+		setNewCapacity(n);
 	}
 
 
