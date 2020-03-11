@@ -16,7 +16,6 @@ namespace vve {
 
 	uint64_t alignBoundary(uint64_t size, VeIndex alignment);
 
-
 	/**
 	*
 	* \brief
@@ -431,10 +430,140 @@ namespace vve {
 	}
 
 
+	//----------------------------------------------------------------------------------
+
+
+	class VeTempMemory {
+
+		static const VeIndex m_stdSize = 1 << 13;
+
+		struct VePool {
+			std::vector<uint8_t>	m_pool;
+			std::size_t				m_next_free;
+			std::size_t				m_num_deallocated;
+
+			VePool(std::size_t size = m_stdSize) : m_pool(size), m_next_free(0), m_num_deallocated(0) {};
+
+			void* allocate(std::size_t size) {
+				if (m_pool.size() - m_next_free < size)
+					return nullptr;
+				void* ptr = &m_pool[m_next_free];
+				m_next_free += size;
+				return ptr;
+			};
+
+			void deallocate(std::size_t size) {
+				m_num_deallocated += size;
+				if (m_num_deallocated == m_next_free) {
+					reset();
+				}
+			}
+
+			void reset() {
+				m_next_free = 0;
+				m_num_deallocated = 0;
+			}
+		};
+
+		std::vector<VePool>	m_pools;
+
+	public:
+		VeTempMemory() : m_pools() {
+			m_pools.emplace_back(m_stdSize);
+		};
+
+		~VeTempMemory() {};
+
+		void reset() {
+			for (auto& pool : m_pools)
+				pool.reset();
+		};
+
+		void* allocate(std::size_t size) {
+			for (auto& pool : m_pools) {
+				void* ptr = pool.allocate(size);
+				if (ptr != nullptr)
+					return ptr;
+			}
+			m_pools.emplace_back(std::max((int)size, (int)m_stdSize));
+			return m_pools[m_pools.size() - 1].allocate(size);
+		};
+
+		void deallocate(void* p, std::size_t size) {
+			for (auto& pool : m_pools) {
+				if (pool.m_pool.data() <= p && p < pool.m_pool.data() + pool.m_pool.size()) {
+					pool.deallocate(size);
+				}
+			}
+		}
+	};
+
+
+	template <class T>
+	class custom_allocator : public std::allocator<T> {
+	public:
+		VeTempMemory* m_tempMemory;
+
+	public:
+		typedef size_t		size_type;
+		typedef ptrdiff_t	difference_type;
+		typedef T*			pointer;
+		typedef const T*	const_pointer;
+		typedef T&			reference;
+		typedef const T&	const_reference;
+		typedef T			value_type;
+
+		custom_allocator(VeTempMemory* tempMemory) : m_tempMemory(tempMemory) {}
+		custom_allocator(const custom_allocator& ver) : m_tempMemory(ver.m_tempMemory) {}
+
+		pointer allocate(size_type n, const void* = 0) {
+			T* t = (T*)m_tempMemory->allocate(n * sizeof(T));
+			return t;
+		};
+
+		void deallocate(void* p, size_type n) {
+			m_tempMemory->deallocate(p, n * sizeof(T));
+		};
+
+		pointer           address(reference x) const { return &x; }
+		const_pointer     address(const_reference x) const { return &x; }
+		custom_allocator<T>& operator=(const custom_allocator&) { return *this; }
+		void              construct(pointer p, const T& val) {
+			new ((T*)p) T(val);
+		};
+
+		void              destroy(pointer p) { p->~T(); }
+		size_type         max_size() const { return size_t(-1); }
+
+		template <class U>
+		struct rebind { typedef custom_allocator<U> other; };
+
+		template <class U>
+		custom_allocator(const custom_allocator<U>& ver) : m_tempMemory(ver.m_tempMemory) {}
+
+		template <class U>
+		custom_allocator& operator=(const custom_allocator<U>& ver) : m_tempMemory(ver.m_tempMemory) { return *this; }
+	};
+
+	struct VeCustomMemoryAllocator {
+		VeTempMemory												m_temp_memory;
+		custom_allocator<VeHandle>									m_handle;
+		custom_allocator<std::pair<VeHandle,VeHandle>>				m_key_int_pair;
+		custom_allocator<std::tuple<VeHandle, VeHandle, VeHandle>>	m_key_int_triple;
+		custom_allocator<VeIndex>									m_index;
+		custom_allocator<std::pair<VeIndex,VeIndex>>				m_index_pair;
+		custom_allocator<std::tuple<VeIndex,VeIndex,VeIndex>>		m_index_triple;
+		VeCustomMemoryAllocator() : m_temp_memory(),
+			m_handle(&m_temp_memory), m_key_int_pair(&m_temp_memory), m_key_int_triple(&m_temp_memory),
+			m_index(&m_temp_memory), m_index_pair(&m_temp_memory), m_index_triple(&m_temp_memory) {};
+
+		void reset() { m_temp_memory.reset(); };
+	};
+
+
 	namespace vec {
 		void testVector();
 	}
-
 
 }
 

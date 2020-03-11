@@ -22,7 +22,7 @@ namespace vve {
 	using VeTableIndexPair = std::pair<VeTableIndex, VeTableIndex>;
 	using VeTableIndexTriple = std::tuple<VeTableIndex, VeTableIndex, VeTableIndex>;
 	using VeTableHandlePair = std::pair<VeHandle, VeHandle>;
- 
+
 
 	//----------------------------------------------------------------------------------
 
@@ -51,6 +51,11 @@ namespace vve {
 		}
 	};
 
+
+	//----------------------------------------------------------------------------------
+
+	class VeTable;
+
 	/**
 	*
 	* \brief 
@@ -59,6 +64,7 @@ namespace vve {
 	*/
 	class VeMap {
 	protected:
+		VeTable*			m_table = nullptr;
 
 	public:
 		VeMap() {};
@@ -66,6 +72,7 @@ namespace vve {
 		virtual void		operator=(const VeMap& map) { assert(false); return; };
 		virtual void		clear() { assert(false); return; };
 		virtual VeMap*		clone() { assert(false); return nullptr;};
+		void				setTablePtr(VeTable* ptr) { m_table = ptr;  };
 		
 		virtual bool		getMappedIndexEqual(	VeTableKeyInt key, VeIndex& index) { assert(false); return false; };
 		virtual bool		getMappedIndexEqual(	VeTableKeyIntPair key, VeIndex& index) { assert(false); return false; };
@@ -170,6 +177,10 @@ namespace vve {
 		}
 
 	};
+
+
+	//----------------------------------------------------------------------------------
+
 
 
 	/**
@@ -432,13 +443,17 @@ namespace vve {
 	*/
 	class VeTable {
 	protected:
-		VeIndex		m_thread_id = 0;			///id of thread that accesses to this table are scheduled to
-		bool		m_read_only = false;
-		VeTable	*	m_companion_table = nullptr;
-		bool		m_clear_on_swap = false;
+		VeIndex			m_thread_id = 0;			///id of thread that accesses to this table are scheduled to
+		bool			m_read_only = false;
+		VeTable	*		m_companion_table = nullptr;
+		bool			m_clear_on_swap = false;
+		VeCustomMemoryAllocator m_alloc;
+
+		//for debugging
 		uint32_t	m_table_nr = 0;
 		std::string m_name;
 
+		//performance measurment
 		std::chrono::high_resolution_clock::time_point t1, t2;
 		double		m_sum_time = 0.0;
 		double		m_avg_time = 0.0;
@@ -459,10 +474,10 @@ namespace vve {
 		};
 
 	public:
-		VeTable(bool clear_on_swap = false) : m_clear_on_swap(clear_on_swap) {};
+		VeTable(bool clear_on_swap = false) : m_clear_on_swap(clear_on_swap), m_alloc() {};
 
 		VeTable(VeTable& table) : m_thread_id(table.m_thread_id), m_read_only(!table.m_read_only), 
-			m_companion_table(&table), m_clear_on_swap(table.m_clear_on_swap), m_name(table.m_name) {
+			m_companion_table(&table), m_clear_on_swap(table.m_clear_on_swap), m_name(table.m_name), m_alloc() {
 			table.m_companion_table = this;
 			m_table_nr = table.m_table_nr + 1;
 		};
@@ -471,6 +486,7 @@ namespace vve {
 
 		virtual void operator=(VeTable& tab) { assert(false);  return; };
 		virtual void clear() { assert(false);  return; };
+		VeCustomMemoryAllocator& getAllocator() { return m_alloc; };
 
 		void setThreadId(VeIndex id) {
 			if (m_thread_id == id)
@@ -545,6 +561,8 @@ namespace vve {
 			}
 			else
 				*getWriteTablePtr() = *getReadTablePtr();
+
+			getWriteTablePtr()->getAllocator().reset();
 		};
 
 		VeTable* getCompanionTable() {
@@ -576,11 +594,19 @@ namespace vve {
 			VeTable(clear_on_swap), m_data(memcopy, align, capacity) {};
 
 		VeFixedSizeTable( std::vector<VeMap*> &maps, bool memcopy = false, bool clear_on_swap = false, VeIndex align = 16, VeIndex capacity = 16) :
-			VeTable(clear_on_swap), m_maps(maps), m_data(memcopy, align, capacity) {};
+			VeTable(clear_on_swap), m_maps(maps), m_data(memcopy, align, capacity) {
+			for (auto map : m_maps) {
+				map->setTablePtr(this);
+			}
+		};
 
 		VeFixedSizeTable(VeFixedSizeTable<T>& table) : VeTable(table), m_data(table.m_data), m_directory(table.m_directory), m_tbl2dir(table.m_tbl2dir) {
-			for (auto map : table.m_maps)
+			for (auto map : table.m_maps) {
 				m_maps.emplace_back(map->clone());
+			}
+			for (auto map : m_maps) {
+				map->setTablePtr(this);
+			}
 		};
 
 		virtual ~VeFixedSizeTable() { 
@@ -890,7 +916,7 @@ namespace vve {
 		}
 		uint32_t num = 0;
 		std::vector<VeIndex> dir_indices;
-		dir_indices.reserve(initVecLen());
+		//dir_indices.reserve(initVecLen());
 
 		num = m_maps[num_map]->getMappedIndicesEqual( key, dir_indices);
 		for (auto dir_index : dir_indices)

@@ -157,6 +157,25 @@ namespace vve {
 			testVector1();
 			testVector2();
 
+			VeTempMemory mem;
+
+			custom_allocator<VeHandle> allocator(&mem);
+
+			std::vector < VeHandle, custom_allocator<VeHandle> > handles( allocator );
+			handles.push_back(1);
+			handles.push_back(2);
+			handles.push_back(3);
+			handles.pop_back();
+			handles.pop_back();
+			handles.pop_back();
+
+			handles.push_back(5);
+			handles.push_back(6);
+			handles.push_back(7);
+			handles.push_back(8);
+			handles.clear();
+
+
 		}
 
 	}
