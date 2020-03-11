@@ -500,7 +500,7 @@ namespace vve {
 
 
 	template <class T>
-	class custom_allocator : public std::allocator<T> {
+	class custom_alloc : public std::allocator<T> {
 	public:
 		VeTempMemory* m_tempMemory;
 
@@ -513,8 +513,8 @@ namespace vve {
 		typedef const T&	const_reference;
 		typedef T			value_type;
 
-		custom_allocator(VeTempMemory* tempMemory) : m_tempMemory(tempMemory) {}
-		custom_allocator(const custom_allocator& ver) : m_tempMemory(ver.m_tempMemory) {}
+		custom_alloc(VeTempMemory* tempMemory) : m_tempMemory(tempMemory) {}
+		custom_alloc(const custom_alloc& ver) : m_tempMemory(ver.m_tempMemory) {}
 
 		pointer allocate(size_type n, const void* = 0) {
 			T* t = (T*)m_tempMemory->allocate(n * sizeof(T));
@@ -527,7 +527,7 @@ namespace vve {
 
 		pointer           address(reference x) const { return &x; }
 		const_pointer     address(const_reference x) const { return &x; }
-		custom_allocator<T>& operator=(const custom_allocator&) { return *this; }
+		custom_alloc<T>& operator=(const custom_alloc&) { return *this; }
 		void              construct(pointer p, const T& val) {
 			new ((T*)p) T(val);
 		};
@@ -536,23 +536,24 @@ namespace vve {
 		size_type         max_size() const { return size_t(-1); }
 
 		template <class U>
-		struct rebind { typedef custom_allocator<U> other; };
+		struct rebind { typedef custom_alloc<U> other; };
 
 		template <class U>
-		custom_allocator(const custom_allocator<U>& ver) : m_tempMemory(ver.m_tempMemory) {}
+		custom_alloc(const custom_alloc<U>& ver) : m_tempMemory(ver.m_tempMemory) {}
 
 		template <class U>
-		custom_allocator& operator=(const custom_allocator<U>& ver) : m_tempMemory(ver.m_tempMemory) { return *this; }
+		custom_alloc& operator=(const custom_alloc<U>& ver) : m_tempMemory(ver.m_tempMemory) { return *this; }
 	};
 
 	struct VeCustomMemoryAllocator {
-		VeTempMemory												m_temp_memory;
-		custom_allocator<VeHandle>									m_handle;
-		custom_allocator<std::pair<VeHandle,VeHandle>>				m_key_int_pair;
-		custom_allocator<std::tuple<VeHandle, VeHandle, VeHandle>>	m_key_int_triple;
-		custom_allocator<VeIndex>									m_index;
-		custom_allocator<std::pair<VeIndex,VeIndex>>				m_index_pair;
-		custom_allocator<std::tuple<VeIndex,VeIndex,VeIndex>>		m_index_triple;
+		VeTempMemory											m_temp_memory;
+		custom_alloc<VeHandle>									m_handle;
+		custom_alloc<std::pair<VeHandle,VeHandle>>				m_key_int_pair;
+		custom_alloc<std::tuple<VeHandle, VeHandle, VeHandle>>	m_key_int_triple;
+		custom_alloc<VeIndex>									m_index;
+		custom_alloc<std::pair<VeIndex,VeIndex>>				m_index_pair;
+		custom_alloc<std::tuple<VeIndex,VeIndex,VeIndex>>		m_index_triple;
+
 		VeCustomMemoryAllocator() : m_temp_memory(),
 			m_handle(&m_temp_memory), m_key_int_pair(&m_temp_memory), m_key_int_triple(&m_temp_memory),
 			m_index(&m_temp_memory), m_index_pair(&m_temp_memory), m_index_triple(&m_temp_memory) {};
