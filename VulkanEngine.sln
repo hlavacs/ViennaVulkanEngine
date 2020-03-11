@@ -1,9 +1,11 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 14
-VisualStudioVersion = 14.0.25123.0
+# Visual Studio Version 16
+VisualStudioVersion = 16.0.29613.14
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "VulkanEngine", "VulkanEngine\VulkanEngine.vcxproj", "{F79C21D7-E79D-4EE7-A4EA-57FE14D1CFB7}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Assignment01", "Assignment01\Assignment01.vcxproj", "{770DBA4A-EF11-4702-A006-C11388046F32}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -21,8 +23,19 @@ Global
 		{F79C21D7-E79D-4EE7-A4EA-57FE14D1CFB7}.Release|x64.Build.0 = Release|x64
 		{F79C21D7-E79D-4EE7-A4EA-57FE14D1CFB7}.Release|x86.ActiveCfg = Release|Win32
 		{F79C21D7-E79D-4EE7-A4EA-57FE14D1CFB7}.Release|x86.Build.0 = Release|Win32
+		{770DBA4A-EF11-4702-A006-C11388046F32}.Debug|x64.ActiveCfg = Debug|x64
+		{770DBA4A-EF11-4702-A006-C11388046F32}.Debug|x64.Build.0 = Debug|x64
+		{770DBA4A-EF11-4702-A006-C11388046F32}.Debug|x86.ActiveCfg = Debug|Win32
+		{770DBA4A-EF11-4702-A006-C11388046F32}.Debug|x86.Build.0 = Debug|Win32
+		{770DBA4A-EF11-4702-A006-C11388046F32}.Release|x64.ActiveCfg = Release|x64
+		{770DBA4A-EF11-4702-A006-C11388046F32}.Release|x64.Build.0 = Release|x64
+		{770DBA4A-EF11-4702-A006-C11388046F32}.Release|x86.ActiveCfg = Release|Win32
+		{770DBA4A-EF11-4702-A006-C11388046F32}.Release|x86.Build.0 = Release|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {97EF60B4-5ECE-46AD-8A70-B2F21F02FE06}
 	EndGlobalSection
 EndGlobal
