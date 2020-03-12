@@ -88,6 +88,7 @@ namespace vve::syseng {
 	};
 
 
+
 	void init() {
 		std::cout << "init engine 2\n";
 
@@ -111,8 +112,11 @@ namespace vve::syseng {
 			entry.m_init();
 		}
 
+		uint32_t threadCount = 1;
+
 #ifdef VE_ENABLE_MULTITHREADING
-		VeIndex i = 0, threadCount = std::thread::hardware_concurrency();
+		VeIndex i = 0;
+		threadCount = std::thread::hardware_concurrency();
 		for (auto table : g_main_table.getData()) {
 			table.m_table_pointer->setName(table.m_name);
 			if (!table.m_table_pointer->getReadOnly()) {
@@ -121,6 +125,7 @@ namespace vve::syseng {
 			}
 		}
 #endif
+		createHeaps(threadCount);
 
 		g_systems_table.setReadOnly(true);
 		g_main_table.setReadOnly(true);
@@ -137,7 +142,7 @@ namespace vve::syseng {
 			JDEP(reached_time = next_update_time; forwardTime(); );	//move one epoch further
 		}
 		else {
-			JDEP(reached_time = next_update_time );				//remember reached time
+			JDEP(reached_time = next_update_time; resetHeaps(); );				//remember reached time
 		}
 	}
 
@@ -191,7 +196,7 @@ namespace vve::syseng {
 
 	std::atomic<bool> g_goon = true;
 
-	void runGameLoop2() {
+	void runGameLoopMT() {
 		vgjs::JobSystem::getInstance()->resetPool();
 		JADDT( computeOneFrame2(), vgjs::TID(0,2) );	 //run on main thread for polling!
 		if (g_goon) {
@@ -203,7 +208,7 @@ namespace vve::syseng {
 
 #ifdef VE_ENABLE_MULTITHREADING
 		vgjs::JobSystem::getInstance(0, 1); //create pool without thread 0
-		JADD(runGameLoop2());				//schedule the game loop
+		JADD(runGameLoopMT());				//schedule the game loop
 		vgjs::JobSystem::getInstance()->threadTask(0);		//put main thread as first thread into pool
 		return;
 #endif

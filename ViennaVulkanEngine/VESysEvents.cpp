@@ -78,7 +78,7 @@ namespace vve::syseve {
 	}
 
 	void callAllEvents(VeFixedSizeTable<VeEventTableEntry>& events_table) {
-		std::vector<VeHandlePair, custom_alloc<VeHandlePair>> result(&events_table.getAllocator());
+		std::vector<VeHandlePair, custom_alloc<VeHandlePair>> result(getHeap());
 		VeEventTableEntry eventData;
 		VeEventSubscribeTableEntry subscribeData;
 		VeEventHandlerTableEntry handlerData;
@@ -98,8 +98,8 @@ namespace vve::syseve {
 		VeEventSubscribeTableEntry subscriptionData;
 		VeEventHandlerTableEntry handlerData;
 
-		std::vector<VeHandle, custom_alloc<VeHandle>> events(&table->getAllocator());
-		std::vector<VeHandle, custom_alloc<VeHandle>> subscriptions(&table->getAllocator());
+		std::vector<VeHandle, custom_alloc<VeHandle>> events(getHeap());
+		std::vector<VeHandle, custom_alloc<VeHandle>> subscriptions(getHeap());
 		table->getHandlesEqual(1, type, events);
 		for (auto evH : events) {
 			g_subscribe_table.getHandlesEqual(0, evH, subscriptions);
@@ -158,7 +158,7 @@ namespace vve::syseve {
 	}
 
 	void removeHandler(VeHandle handlerH) {
-		std::vector<VeHandle, custom_alloc<VeHandle>> result(&g_subscribe_table.getAllocator());
+		std::vector<VeHandle, custom_alloc<VeHandle>> result(getHeap());
 		g_subscribe_table.getHandlesEqual(1, handlerH, result);
 		for (auto handle : result) {
 			g_subscribe_table.deleteEntry(handle);

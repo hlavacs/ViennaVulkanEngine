@@ -13,6 +13,29 @@
 
 namespace vve {
 
+	std::vector<VeTempMemory> g_temp_heap;
+
+	void createHeaps(uint32_t num) {
+		for (uint32_t i = 0; i < num; ++i)
+			g_temp_heap.emplace_back(VeTempMemory());
+	}
+
+	VeTempMemory* getHeap() {
+		VeIndex threadIdx = 0;
+#ifdef VE_ENABLE_MULTITHREADING
+		threadIdx = vgjs::JobSystem::getInstance()->getThreadIndex();
+#endif
+		return &g_temp_heap[threadIdx];
+	}
+
+	void resetHeaps() {
+		for (auto heap : g_temp_heap) {
+			heap.reset();
+		}
+	}
+
+
+
 
 	namespace tab {
 		constexpr uint32_t num_repeats = 200;
@@ -103,7 +126,7 @@ namespace vve {
 			testTable.forAllEntries(std::bind(printEntry, std::placeholders::_1)); std::cout << std::endl;
 
 			//--------
-			std::vector<VeHandle, custom_alloc<VeHandle>> handles(&testTable.getAllocator());
+			std::vector<VeHandle, custom_alloc<VeHandle>> handles(getHeap());
 			testTable.getHandlesEqual(0, 5, handles);
 			auto [auto_id, dir_index] = VeDirectory::splitHandle(handles[0]);
 

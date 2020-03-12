@@ -12,6 +12,10 @@
 
 namespace vve {
 
+	void createHeaps( uint32_t num );
+	VeTempMemory* getHeap();
+	void resetHeaps();
+
 
 	/**
 	*
@@ -20,16 +24,12 @@ namespace vve {
 	*
 	*/
 	class VeMap {
-	protected:
-		VeTempMemory*		m_alloc = nullptr;
-
 	public:
 		VeMap() {};
 		virtual ~VeMap() {};
 		virtual void		operator=(const VeMap& map) { assert(false); return; };
 		virtual void		clear() { assert(false); return; };
 		virtual VeMap*		clone() { assert(false); return nullptr;};
-		void				setAlloc(VeTempMemory* ptr) { m_alloc = ptr;  };
 		
 		virtual bool		getMappedIndexEqual(	VeHandle key, VeIndex& index) { assert(false); return false; };
 		virtual bool		getMappedIndexEqual(	VeHandlePair key, VeIndex& index) { assert(false); return false; };
@@ -224,8 +224,8 @@ namespace vve {
 
 		uint32_t leftJoin(K key, VeTypedMap& other, std::vector<VeIndexPair, custom_alloc<VeIndexPair>>& result) {
 			if (m_map.size() == 0 || other.m_map.size() == 0) return 0;
-			std::vector<VeIndex, custom_alloc<VeIndex>> res_list1(m_alloc);
-			std::vector<VeIndex, custom_alloc<VeIndex>> res_list2(m_alloc);
+			std::vector<VeIndex, custom_alloc<VeIndex>> res_list1(getHeap());
+			std::vector<VeIndex, custom_alloc<VeIndex>> res_list2(getHeap());
 			getMappedIndicesEqual(key, res_list1);
 			other.getMappedIndicesEqual(key, res_list2);
 			for (auto i1 : res_list1) {
@@ -405,7 +405,6 @@ namespace vve {
 		bool			m_read_only = false;
 		VeTable	*		m_companion_table = nullptr;
 		bool			m_clear_on_swap = false;
-		VeTempMemory	m_alloc;
 
 		//for debugging
 		uint32_t	m_table_nr = 0;
@@ -432,10 +431,10 @@ namespace vve {
 		};
 
 	public:
-		VeTable(bool clear_on_swap = false) : m_clear_on_swap(clear_on_swap), m_alloc() {};
+		VeTable(bool clear_on_swap = false) : m_clear_on_swap(clear_on_swap) {};
 
 		VeTable(VeTable& table) : m_thread_id(table.m_thread_id), m_read_only(!table.m_read_only), 
-			m_companion_table(&table), m_clear_on_swap(table.m_clear_on_swap), m_name(table.m_name), m_alloc() {
+			m_companion_table(&table), m_clear_on_swap(table.m_clear_on_swap), m_name(table.m_name) {
 			table.m_companion_table = this;
 			m_table_nr = table.m_table_nr + 1;
 		};
@@ -444,7 +443,6 @@ namespace vve {
 
 		virtual void operator=(VeTable& tab) { assert(false);  return; };
 		virtual void clear() { assert(false);  return; };
-		VeTempMemory& getAllocator() { return m_alloc; };
 
 		void setThreadId(VeIndex id) {
 			if (m_thread_id == id)
@@ -519,8 +517,6 @@ namespace vve {
 			}
 			else
 				*getWriteTablePtr() = *getReadTablePtr();
-
-			getWriteTablePtr()->getAllocator().reset();
 		};
 
 		VeTable* getCompanionTable() {
@@ -553,17 +549,11 @@ namespace vve {
 
 		VeFixedSizeTable( std::vector<VeMap*> &maps, bool memcopy = false, bool clear_on_swap = false, VeIndex align = 16, VeIndex capacity = 16) :
 			VeTable(clear_on_swap), m_maps(maps), m_data(memcopy, align, capacity) {
-			for (auto map : m_maps) {
-				map->setAlloc(&m_alloc);
-			}
 		};
 
 		VeFixedSizeTable(VeFixedSizeTable<T>& table) : VeTable(table), m_data(table.m_data), m_directory(table.m_directory), m_tbl2dir(table.m_tbl2dir) {
 			for (auto map : table.m_maps) {
 				m_maps.emplace_back(map->clone());
-			}
-			for (auto map : m_maps) {
-				map->setAlloc(&m_alloc);
 			}
 		};
 
@@ -649,8 +639,7 @@ namespace vve {
 	template<typename T> inline void VeFixedSizeTable<T>::sortTableByMap(VeIndex num_map) {
 		in();
 		assert(!m_read_only && num_map < m_maps.size());
-		std::vector<VeHandle, custom_alloc<VeHandle>> handles(&m_alloc);
-		//handles.reserve(m_maps.size());
+		std::vector<VeHandle, custom_alloc<VeHandle>> handles(getHeap());
 		getAllHandlesFromMap(num_map, handles);
 		for (uint32_t i = 0; i < m_data.size(); ++i) 
 			swapEntriesByHandle( getHandleFromIndex(i), handles[i]);
@@ -816,7 +805,7 @@ namespace vve {
 		VeTypedMap<M, K, I>* r = (VeTypedMap<M, K, I>*)other->m_maps[other_map];
 
 		VeIndex num = 0;
-		std::vector<VeIndexPair, custom_alloc<VeIndexPair>> dir_indices(&m_alloc);
+		std::vector<VeIndexPair, custom_alloc<VeIndexPair>> dir_indices(getHeap());
 		l->leftJoin(*r, dir_indices);
 		for (auto [first, second] : dir_indices) {
 			result.emplace_back(m_directory.getHandle(first), other->m_directory.getHandle(second) );
@@ -836,7 +825,7 @@ namespace vve {
 		VeTypedMap<M, K, I>* r = (VeTypedMap<M, K, I>*)other->m_maps[other_map];
 
 		VeIndex num = 0;
-		std::vector<VeIndexPair, custom_alloc<VeIndexPair>> dir_indices(&m_alloc);
+		std::vector<VeIndexPair, custom_alloc<VeIndexPair>> dir_indices(getHeap());
 		l->leftJoin(key, *r, dir_indices);
 		for (auto [first, second] : dir_indices) {
 			result.emplace_back(m_directory.getHandle(first), other->m_directory.getHandle(second));
@@ -873,7 +862,7 @@ namespace vve {
 			return 0;
 		}
 		uint32_t num = 0;
-		std::vector<VeIndex, custom_alloc<VeIndex>> dir_indices(&m_alloc);
+		std::vector<VeIndex, custom_alloc<VeIndex>> dir_indices(getHeap());
 
 		num = m_maps[num_map]->getMappedIndicesEqual( key, dir_indices);
 		for (auto dir_index : dir_indices)
@@ -892,7 +881,7 @@ namespace vve {
 			return 0;
 		}
 		uint32_t num = 0;
-		std::vector<VeIndex, custom_alloc<VeIndex>> dir_indices(&m_alloc);
+		std::vector<VeIndex, custom_alloc<VeIndex>> dir_indices(getHeap());
 
 		num = m_maps[num_map]->getMappedIndicesRange(lower, upper, dir_indices);
 		for (auto dir_index : dir_indices)
@@ -918,7 +907,7 @@ namespace vve {
 
 		in();
 		assert(num_map < m_maps.size());
-		std::vector<VeIndex, custom_alloc<VeIndex>> dir_indices(&m_alloc);
+		std::vector<VeIndex, custom_alloc<VeIndex>> dir_indices(getHeap());
 		uint32_t num = m_maps[num_map]->getAllIndices(dir_indices);
 		for (auto dir_index : dir_indices) 
 			result.emplace_back( m_directory.getHandle(dir_index) );
@@ -935,7 +924,7 @@ namespace vve {
 			return;
 		}
 
-		std::vector<VeHandle, custom_alloc<VeHandle>> handles(&m_alloc);
+		std::vector<VeHandle, custom_alloc<VeHandle>> handles(getHeap());
 		getAllHandlesFromMap(num_map, handles);
 		for (auto handle : handles)
 			func(handle);
@@ -1135,7 +1124,7 @@ namespace vve {
 		bool								m_immediateDefrag;
 
 		void defragment() {
-			std::vector<VeHandle, custom_alloc<VeHandle>> handles(&m_alloc);
+			std::vector<VeHandle, custom_alloc<VeHandle>> handles(getHeap());
 			handles.reserve( (VeIndex)m_directory.getSize() + 1 );
 			m_directory.getAllHandlesFromMap(1, handles);
 			if (handles.size() < 2) 
@@ -1227,7 +1216,7 @@ namespace vve {
 			in();
 			size = (VeIndex)alignBoundary( size, m_align );
 
-			std::vector<VeHandle, custom_alloc<VeHandle>> result(&m_alloc);
+			std::vector<VeHandle, custom_alloc<VeHandle>> result(getHeap());
 			m_directory.getHandlesEqual((VeIndex)0, (VeIndex)0, result );
 
 			VeHandle h = VE_NULL_HANDLE;

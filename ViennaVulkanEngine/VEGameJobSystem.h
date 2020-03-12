@@ -419,7 +419,8 @@ namespace vgjs {
 		//start_idx is either 0, then the main thread is not part of the pool, or 1, then the main thread must join
 		//
 		static JobSystem *	pInstance;			//pointer to singleton
-		JobSystem(uint32_t threadCount = 0, uint32_t start_idx = 0 ) : m_terminate(false), m_numJobs(0) {
+		JobSystem(uint32_t threadCount = 0, uint32_t start_idx = 0) : 
+			m_terminate(false), m_numJobs(0) {
 			pInstance = this;
 			JobMemory::getInstance();			//create the job memory
 
@@ -455,8 +456,9 @@ namespace vgjs {
 		//singleton access through class
 		//returns a pointer to the JobSystem instance
 		//
-		static JobSystem * getInstance(uint32_t threadCount = 0, uint32_t start_idx = 0) {
-			if (pInstance == nullptr) pInstance = new JobSystem(threadCount, start_idx);
+		static JobSystem* getInstance(uint32_t threadCount = 0, uint32_t start_idx = 0 ) {
+			if (pInstance == nullptr) 
+				pInstance = new JobSystem(threadCount, start_idx);
 			return pInstance;
 		};
 
