@@ -161,18 +161,39 @@ namespace vve {
 
 			std::vector < VeHandle, custom_alloc<VeHandle> > handles( &mem );
 			handles.push_back(1);
+			mem.print();
 			handles.push_back(2);
 			handles.push_back(3);
 			handles.push_back(4);
+			mem.print();
 			handles.pop_back();
 			handles.pop_back();
 			handles.pop_back();
+			mem.print();
 
 			handles.push_back(5);
 			handles.push_back(6);
 			handles.push_back(7);
 			handles.push_back(8);
+			mem.print();
 			handles.clear();
+			mem.print();
+
+			for (uint32_t i = 0; i < 1000; ++i) {
+				handles.push_back(std::rand());
+				if (i % 10 == 0) {
+					std::cout << "    i " << i << std::endl;
+					mem.print();
+				}
+			}
+			mem.print();
+			handles.clear();
+			mem.print();
+
+			for (uint32_t i = 0; i < 3000; ++i) {
+				handles.push_back(std::rand());
+			}
+			mem.print();
 
 
 		}

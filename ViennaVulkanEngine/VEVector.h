@@ -448,6 +448,7 @@ namespace vve {
 			VeIndex					m_first_free;
 
 			VePool(std::size_t size = m_stdSize) : m_pool(size), m_first_free(0) {
+				//std::cout << "new pool size " << size << std::endl;
 				VeMemBlock* block = (VeMemBlock*)m_pool.data();
 				block->m_free = true;
 				block->m_size = (VeIndex) (m_pool.size() - sizeof(VeMemBlock));
@@ -456,6 +457,18 @@ namespace vve {
 
 			VeMemBlock* getPtr( VeIndex index) {
 				return (VeMemBlock*)&m_pool[index];
+			};
+
+			void print() {
+				VeIndex size = 0;
+				std::cout << "first free " << m_first_free << std::endl;
+				for (VeIndex current_block = 0; current_block < m_pool.size(); ) {
+					VeMemBlock* pCurrent = getPtr(current_block);
+					std::cout << current_block << " " << pCurrent->m_free << " " << pCurrent->m_size << " next " << pCurrent->m_next << std::endl;
+					size += pCurrent->m_size + sizeof(VeMemBlock);
+					current_block += pCurrent->m_size + sizeof(VeMemBlock);
+				}
+				std::cout << "total size " << size << std::endl << std::endl;
 			};
 
 			void* makeAllocation( VeIndex prev_block, VeIndex free_block, std::size_t size ) {
@@ -480,7 +493,7 @@ namespace vve {
 
 					pFree->m_size = (VeIndex)size;
 				} else {
-					pFree->m_size -= sizeof(VeMemBlock);
+					//leave the size as it is
 				}
 
 				void* result = (uint8_t*)pFree + sizeof(VeMemBlock);
@@ -488,13 +501,17 @@ namespace vve {
 			};
 
 			void* allocate(std::size_t size) {
+				//std::cout << "allocate " << size << std::endl;
 				VeIndex prev_free = VE_NULL_INDEX;
 				for (VeIndex next_free = m_first_free; next_free != VE_NULL_INDEX; ) {
 					VeMemBlock* free_block = getPtr(next_free);
 					assert(free_block->m_free);
 
 					if (free_block->m_size >= size) {
-						return makeAllocation(prev_free, next_free, size);
+						//print();
+						void* ptr = makeAllocation(prev_free, next_free, size);
+						//print();
+						return ptr;
 					}
 					prev_free = next_free;
 					next_free = free_block->m_next;
@@ -503,11 +520,15 @@ namespace vve {
 			};
 
 			void deallocate(void* p, std::size_t size) {
+				//std::cout << "deallocate " << size << std::endl;
 				VeMemBlock* block = (VeMemBlock*)((uint8_t*)p - sizeof(VeMemBlock));
 				assert(!block->m_free);
 				block->m_free = true;
 				block->m_next = m_first_free;
 				m_first_free = (VeIndex)((uint8_t*)p - m_pool.data() - sizeof(VeMemBlock));
+				//print();
+				defragment();
+				//print();
 			};
 
 			void defragment() {
@@ -560,6 +581,13 @@ namespace vve {
 
 		~VeHeapMemory() {};
 
+		void print() {
+			for (uint32_t i = 0; i < m_pools.size(); ++i) {
+				std::cout << "pool " << i << " size " << m_pools[i].m_pool.size() << std::endl;
+				m_pools[i].print();
+			}
+		}
+
 		void reset() {
 			for (auto& pool : m_pools)
 				pool.reset();
@@ -571,7 +599,16 @@ namespace vve {
 				if (ptr != nullptr)
 					return ptr;
 			}
-			m_pools.emplace_back(std::max((int)size, (int)m_stdSize));
+			std::size_t ps = m_stdSize;
+			if (ps < size + sizeof(VeMemBlock) ) {
+#ifdef _MSC_VER
+				ps = 2*size + size/2 + 2*sizeof(VeMemBlock);
+#else
+				ps = 3 * size + 2 * sizeof(VeMemBlock);
+#endif
+			}
+
+			m_pools.emplace_back(ps);
 			return m_pools[m_pools.size() - 1].allocate(size);
 		};
 
