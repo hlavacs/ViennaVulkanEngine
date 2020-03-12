@@ -510,6 +510,38 @@ namespace vve {
 				m_first_free = (VeIndex)((uint8_t*)p - m_pool.data() - sizeof(VeMemBlock));
 			};
 
+			void defragment() {
+				m_first_free = VE_NULL_INDEX;
+				VeMemBlock* pPrev = nullptr;
+				for (VeIndex current_block = 0; current_block < m_pool.size(); ) {
+					VeMemBlock* pCurrent = getPtr(current_block);
+					VeIndex next_block = current_block + pCurrent->m_size + sizeof(VeMemBlock);
+
+					if (pCurrent->m_free) {
+
+						if (m_first_free == VE_NULL_INDEX) {
+							m_first_free = current_block;
+						}
+						else if (pPrev != nullptr ) {
+							pPrev->m_next = current_block;
+						}
+
+						pCurrent->m_next = VE_NULL_INDEX;
+
+						if (next_block < m_pool.size()) {
+							VeMemBlock* pNext = getPtr(next_block);
+							if (pNext->m_free) {
+								pCurrent->m_size += pNext->m_size + sizeof(VeMemBlock);
+								pCurrent = pPrev;
+								next_block = current_block;
+							}
+						}
+						pPrev = pCurrent;
+					}
+					current_block = next_block;
+				}
+			};
+
 			void reset() {
 				VeMemBlock* block = (VeMemBlock*)m_pool.data();
 				block->m_free = true;
