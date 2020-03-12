@@ -20,6 +20,9 @@ namespace vve::syseng {
 	void tick();
 	void cleanUp();
 	void forwardTime();
+	void createHeaps(uint32_t num);
+	VeHeapMemory* getHeap();
+	void resetHeaps();
 
 #endif
 

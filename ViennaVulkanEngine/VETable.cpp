@@ -9,31 +9,18 @@
 
 #include "VEDefines.h"
 #include "VETable.h"
+#include "VESysEngine.h"
 
 
 namespace vve {
 
-	std::vector<VeTempMemory> g_temp_heap;
-
-	void createHeaps(uint32_t num) {
-		for (uint32_t i = 0; i < num; ++i)
-			g_temp_heap.emplace_back(VeTempMemory());
-	}
-
-	VeTempMemory* getHeap() {
-		VeIndex threadIdx = 0;
-#ifdef VE_ENABLE_MULTITHREADING
-		threadIdx = vgjs::JobSystem::getInstance()->getThreadIndex();
-#endif
-		return &g_temp_heap[threadIdx];
+	VeHeapMemory* getHeap() {
+		return syseng::getHeap();
 	}
 
 	void resetHeaps() {
-		for (auto heap : g_temp_heap) {
-			heap.reset();
-		}
+		syseng::resetHeaps();
 	}
-
 
 
 

@@ -23,6 +23,26 @@
 
 namespace vve::syseng {
 
+	std::vector<VeHeapMemory> g_thread_heap;
+
+	void createHeaps(uint32_t num) {
+		for (uint32_t i = 0; i < num; ++i)
+			g_thread_heap.emplace_back(VeHeapMemory());
+	}
+
+	VeHeapMemory* getHeap() {
+		VeIndex threadIdx = 0;
+#ifdef VE_ENABLE_MULTITHREADING
+		threadIdx = vgjs::JobSystem::getInstance()->getThreadIndex();
+#endif
+		return &g_thread_heap[threadIdx];
+	}
+
+	void resetHeaps() {
+		for (auto heap : g_thread_heap) {
+			heap.reset();
+		}
+	}
 	//-----------------------------------------------------------------------------------
 
 	struct VeMainTableEntry {
@@ -142,7 +162,7 @@ namespace vve::syseng {
 			JDEP(reached_time = next_update_time; forwardTime(); );	//move one epoch further
 		}
 		else {
-			JDEP(reached_time = next_update_time; resetHeaps(); );				//remember reached time
+			JDEP(reached_time = next_update_time );				//remember reached time
 		}
 	}
 

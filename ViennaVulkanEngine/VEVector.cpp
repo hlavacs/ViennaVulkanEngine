@@ -157,12 +157,13 @@ namespace vve {
 			testVector1();
 			testVector2();
 
-			VeTempMemory mem;
+			VeHeapMemory mem;
 
 			std::vector < VeHandle, custom_alloc<VeHandle> > handles( &mem );
 			handles.push_back(1);
 			handles.push_back(2);
 			handles.push_back(3);
+			handles.push_back(4);
 			handles.pop_back();
 			handles.pop_back();
 			handles.pop_back();

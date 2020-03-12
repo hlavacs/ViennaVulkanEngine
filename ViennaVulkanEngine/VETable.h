@@ -13,7 +13,7 @@
 namespace vve {
 
 	void createHeaps( uint32_t num );
-	VeTempMemory* getHeap();
+	VeHeapMemory* getHeap();
 	void resetHeaps();
 
 
