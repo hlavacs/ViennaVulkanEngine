@@ -10,36 +10,39 @@
 */
 
 
-namespace vve::syseng {
+namespace vve {
 
+	VeHeapMemory* getHeap();
+
+	namespace syseng {
 
 #ifndef VE_PUBLIC_INTERFACE
 
-	void registerTablePointer(VeTable* ptr, std::string name );
-	VeTable* getTablePointer( std::string name );
-	void tick();
-	void cleanUp();
-	void forwardTime();
-	void createHeaps(uint32_t num);
-	VeHeapMemory* getHeap();
-	void resetHeaps();
+		void registerTablePointer(VeTable* ptr, std::string name);
+		VeTable* getTablePointer(std::string name);
+		void tick();
+		void cleanUp();
+		void forwardTime();
+		void createHeaps(uint32_t num);
+		VeHeapMemory* getHeap();
 
 #endif
 
-	using namespace std::chrono;
+		using namespace std::chrono;
 
-	duration<double, std::micro>	  getTimeDelta();
-	time_point<high_resolution_clock> getNowTime();
-	time_point<high_resolution_clock> getCurrentUpdateTime();
-	time_point<high_resolution_clock> getNextUpdateTime();
-	time_point<high_resolution_clock> getReachedTime();
+		duration<double, std::micro>	  getTimeDelta();
+		time_point<high_resolution_clock> getNowTime();
+		time_point<high_resolution_clock> getCurrentUpdateTime();
+		time_point<high_resolution_clock> getNextUpdateTime();
+		time_point<high_resolution_clock> getReachedTime();
 
-	///Public engine interface
-	void init();
-	void runGameLoop();
-	void computeOneFrame();
-	void close();
+		///Public engine interface
+		void init();
+		void runGameLoop();
+		void computeOneFrame();
+		void close();
 
-	void closeEngine();
+		void closeEngine();
+	}
 }
 
