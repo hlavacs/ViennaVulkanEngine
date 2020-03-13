@@ -22,9 +22,9 @@ int main()
     return 0;*/
 
     //vec::testVector();
-    //tab::testTables();
+    tab::testTables();
     //stltest::runSTLTests();
-    //return 0;
+    return 0;
 
     syseng::init();
     syseng::runGameLoop();

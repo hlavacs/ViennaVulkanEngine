@@ -23,7 +23,7 @@
 
 namespace vve {
 
-	std::vector<VeHeapMemory> g_thread_heap;
+	std::vector<VeHeapMemory> g_thread_heap(1);
 
 	VeHeapMemory* getHeap() {
 		return syseng::getHeap();
@@ -32,15 +32,17 @@ namespace vve {
 	namespace syseng {
 
 		VeHeapMemory* getHeap() {
-			VeIndex threadIdx = 0;
+			VeIndex heapIdx = 0;
 #ifdef VE_ENABLE_MULTITHREADING
-			threadIdx = vgjs::JobSystem::getInstance()->getThreadIndex();
+			uint32_t threadIdx = vgjs::JobSystem::getInstance()->getThreadIndex();
+			if (threadIdx < g_thread_heap.size())
+				heapIdx = threadIdx;
 #endif
-			return &g_thread_heap[threadIdx];
+			return &g_thread_heap[heapIdx];
 		}
 
 		void createHeaps(uint32_t num) {
-			for (uint32_t i = 0; i < num; ++i)
+			for (uint32_t i = (uint32_t)g_thread_heap.size() - 1; i < num; ++i)
 				g_thread_heap.emplace_back(VeHeapMemory());
 		}
 

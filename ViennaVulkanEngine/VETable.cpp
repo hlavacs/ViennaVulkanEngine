@@ -112,7 +112,7 @@ namespace vve {
 			testTable.getHandlesEqual(2, "2", handles);
 
 			handles.clear();
-			//testTable.getHandlesEqual(3, VeHandlePair(1,6), handles);
+			testTable.getHandlesEqual(3, VeHandlePair(1,6), handles);
 
 			//--------
 
@@ -123,7 +123,7 @@ namespace vve {
 			testTable.getHandlesRange(2, "2", "3", handles);
 
 			handles.clear();
-			//testTable.getHandlesRange(3, VeHandlePair( 4, 0 ), VeHandlePair( 5, 0 ), handles);
+			testTable.getHandlesRange(3, VeHandlePair( 4, 0 ), VeHandlePair( 5, 0 ), handles);
 
 
 			handle = testTable.addEntry({ 8, 2, 3, "4" });
