@@ -669,6 +669,27 @@ namespace vve {
 	};
 
 
+	using VeMapVeHandle				= std::map<      VeHandle, VeIndex, std::less<VeHandle>, custom_alloc<VeHandleIndexPair> >;
+	using VeMultimapVeHandle		= std::multimap< VeHandle, VeIndex, std::less<VeHandle>, custom_alloc<VeHandleIndexPair> >;
+	using VeMapVeHandlePair			= std::map<      VeHandlePair, VeIndex, std::less<VeHandlePair>, custom_alloc<std::pair< const VeHandlePair, VeIndex >> >;
+	using VeMultimapVeHandlePair	= std::multimap< VeHandlePair, VeIndex, std::less<VeHandlePair>, custom_alloc<std::pair< const VeHandlePair, VeIndex >> >;
+	using VeMapVeHandleTriple		= std::map<      VeHandleTriple, VeIndex, std::less<VeHandleTriple>, custom_alloc< std::pair<const VeHandleTriple, VeIndex>> >;
+	using VeMultimapVeHandleTriple	= std::multimap< VeHandleTriple, VeIndex, std::less<VeHandleTriple>, custom_alloc< std::pair<const VeHandleTriple, VeIndex>> >;
+
+	using VeUMapVeHandle			= std::unordered_map<      VeHandle, VeIndex, std::hash<VeHandle>, std::equal_to<VeHandle>, custom_alloc<VeHandleIndexPair> >;
+	using VeUMultimapVeHandle		= std::unordered_multimap< VeHandle, VeIndex, std::hash<VeHandle>, std::equal_to<VeHandle>, custom_alloc<VeHandleIndexPair> >;
+	using VeUMapVeHandlePair		= std::unordered_map<      VeHandlePair, VeIndex, std::hash<VeHandlePair>, std::equal_to<VeHandlePair>, custom_alloc<std::pair<const VeHandlePair, VeIndex>> >;
+	using VeUMultimapVeHandlePair	= std::unordered_multimap< VeHandlePair, VeIndex, std::hash<VeHandlePair>, std::equal_to<VeHandlePair>, custom_alloc<std::pair<const VeHandlePair, VeIndex>> >;
+	using VeUMapVeHandleTriple		= std::unordered_map<      VeHandleTriple, VeIndex, std::hash<VeHandleTriple>, std::equal_to<VeHandleTriple>, custom_alloc<std::pair<const VeHandleTriple, VeIndex>> >;
+	using VeUMultimapVeHandleTriple = std::unordered_multimap< VeHandleTriple, VeIndex, std::hash<VeHandleTriple>, std::equal_to<VeHandleTriple>, custom_alloc<std::pair<const VeHandleTriple, VeIndex>> >;
+
+	using VeMapString       = std::map<     std::string, VeIndex, std::less<std::string>, custom_alloc<VeStringIndexPair> >;
+	using VeMultimapString  = std::multimap<std::string, VeIndex, std::less<std::string>, custom_alloc<VeStringIndexPair> >;
+	using VeUMapString      = std::unordered_map<     std::string, VeIndex, std::hash<std::string>, std::equal_to<std::string>, custom_alloc<VeStringIndexPair> >;
+	using VeUMultimapString = std::unordered_multimap<std::string, VeIndex, std::hash<std::string>, std::equal_to<std::string>, custom_alloc<VeStringIndexPair> >;
+
+
+
 	namespace vec {
 		void testVector();
 	}
