@@ -33,13 +33,16 @@ namespace vve {
 		};
 
 		std::vector<VeMap*> maps = {
-			new VeTypedMap< std::map<     VeHandle,   VeIndex>, VeHandle, VeIndex >(
+			new VeTypedMap< std::map< VeHandle, VeIndex, std::less<VeHandle>, custom_alloc<VeHandleIndexPair> >, VeHandle, VeIndex >(
 				(VeIndex)offsetof(struct TestEntry, m_int64), (VeIndex)sizeof(TestEntry::m_int64)),
-			new VeTypedMap< std::multimap<VeHandle,   VeIndex>, VeHandle, VeIndex >(
+
+			new VeTypedMap< std::multimap<VeHandle, VeIndex, std::less<VeHandle>, custom_alloc<VeHandleIndexPair> >, VeHandle, VeIndex >(
 				(VeIndex)offsetof(struct TestEntry, m_int1), (VeIndex)sizeof(TestEntry::m_int1)),
-			new VeTypedMap< std::multimap<std::string, VeIndex>, std::string, VeIndex >(
+
+			new VeTypedMap< std::multimap<std::string, VeIndex, std::less<std::string>, custom_alloc<VeStringIndexPair> >, std::string, VeIndex >(
 				(VeIndex)offsetof(struct TestEntry, m_name), 0),
-			new VeTypedMap< std::multimap<VeHandlePair, VeIndex>, VeHandlePair, VeIndexPair >(
+
+			new VeTypedMap< std::multimap<VeHandlePair, VeIndex, std::less<VeHandlePair>, custom_alloc<std::pair< const VeHandlePair,VeIndex >> >, VeHandlePair, VeIndexPair >(
 				VeIndexPair((VeIndex)offsetof(TestEntry, m_int1), (VeIndex)offsetof(TestEntry, m_int2)),
 				VeIndexPair((VeIndex)sizeof(TestEntry::m_int1),   (VeIndex)sizeof(TestEntry::m_int2)))
 		};

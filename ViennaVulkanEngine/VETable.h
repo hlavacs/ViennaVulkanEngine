@@ -162,10 +162,8 @@ namespace vve {
 
 	public:
 
-		VeTypedMap(I offset, I num_bytes) :         VeMap(), m_map(), m_offset(offset), m_num_bytes(num_bytes) {};
-		VeTypedMap(const VeTypedMap<M,K,I> & map) : VeMap(), m_map(), m_offset(map.m_offset), m_num_bytes(map.m_num_bytes) {
-			m_map = map.m_map;
-		};
+		VeTypedMap(I offset, I num_bytes) :         VeMap(), m_map(&m_heap), m_offset(offset), m_num_bytes(num_bytes) {};
+		VeTypedMap(const VeTypedMap<M,K,I> & map) : VeMap(), m_map(map.m_map), m_offset(map.m_offset), m_num_bytes(map.m_num_bytes) {};
 		virtual	~VeTypedMap() {};
 
 		virtual void operator=(const VeMap& basemap) {
@@ -204,7 +202,9 @@ namespace vve {
 		virtual uint32_t getMappedIndicesRange(K lower, K upper, std::vector<VeIndex, custom_alloc<VeIndex>>& result) override {
 			uint32_t num = 0;
 
-			if constexpr (std::is_same_v< M, std::unordered_map<K, VeIndex > > || std::is_same_v< M, std::unordered_multimap<K, VeIndex > >) {
+			if constexpr (std::is_same_v< M, std::unordered_map<K, VeIndex> > || std::is_same_v< M, std::unordered_multimap<K, VeIndex > > ||
+				std::is_same_v < M, std::unordered_map < K, VeIndex, std::hash<K>, std::equal_to<K>, custom_alloc < std::pair<const K, VeIndex> > > > ||
+				std::is_same_v < M, std::unordered_multimap < K, VeIndex, std::hash<K>, std::equal_to<K>, custom_alloc < std::pair<const K, VeIndex> > > >) {
 				assert(false);
 				return false;
 			}
@@ -1154,10 +1154,10 @@ namespace vve {
 		VeVariableSizeTable(VeIndex size = 1<<20, bool clear_on_swap = false, VeIndex align = 16, bool immediateDefrag = false ) :
 			VeTable(clear_on_swap), m_align(align), m_immediateDefrag(immediateDefrag) {
 
-			m_directory.addMap(new VeTypedMap< std::multimap<VeHandle, VeIndex >, VeHandle, VeIndex >(
+			m_directory.addMap(new VeTypedMap< std::multimap< VeHandle, VeIndex, std::less<VeHandle>, custom_alloc<VeHandleIndexPair> >, VeHandle, VeIndex >(
 				(VeIndex)offsetof(struct VeDirectoryEntry, m_occupied), (VeIndex)sizeof(VeDirectoryEntry::m_occupied)));
 
-			m_directory.addMap(new VeTypedMap< std::map<     VeHandle, VeIndex >, VeHandle, VeIndex >(
+			m_directory.addMap(new VeTypedMap< std::map< VeHandle, VeIndex, std::less<VeHandle>, custom_alloc<VeHandleIndexPair> >, VeHandle, VeIndex >(
 				(VeIndex)offsetof(struct VeDirectoryEntry, m_start), (VeIndex)sizeof(VeDirectoryEntry::m_start)));
 					   
 			m_data.resize((VeIndex)size + m_align);

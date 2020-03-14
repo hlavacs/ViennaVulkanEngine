@@ -17,13 +17,13 @@ namespace vve::syseve {
 
 	//--------------------------------------------------------------------------------------------------
 	std::vector<VeMap*> maps2 = {
-		new VeTypedMap< std::multimap<VeHandle, VeIndex>, VeHandle, VeIndex >
+		new VeTypedMap< std::multimap<VeHandle, VeIndex, std::less<VeHandle>, custom_alloc<VeHandleIndexPair> >, VeHandle, VeIndex >
 		(offsetof(VeEventTableEntry, m_type), sizeof(VeEventTableEntry::m_type)),
 
-		new VeTypedMap< std::unordered_multimap<VeHandle, VeIndex>, VeHandle, VeIndex >
+		new VeTypedMap< std::unordered_multimap<VeHandle, VeIndex, std::hash<VeHandle>, std::equal_to<VeHandle>, custom_alloc<VeHandleIndexPair> >, VeHandle, VeIndex >
 		(offsetof(VeEventTableEntry, m_type), sizeof(VeEventTableEntry::m_type)), 
 
-		new VeTypedMap< std::multimap<VeHandleTriple, VeIndex>, VeHandleTriple, VeIndexTriple >
+		new VeTypedMap< std::multimap<VeHandleTriple, VeIndex, std::less<VeHandleTriple>, custom_alloc< std::pair<const VeHandleTriple, VeIndex>> >, VeHandleTriple, VeIndexTriple >
 		(VeIndexTriple{(VeIndex)offsetof(VeEventTableEntry, m_type), (VeIndex)offsetof(VeEventTableEntry, m_key_button), (VeIndex)offsetof(VeEventTableEntry, m_action)},
 		 VeIndexTriple{(VeIndex)sizeof(VeEventTableEntry::m_type),   (VeIndex)sizeof(VeEventTableEntry::m_key_button),   (VeIndex)sizeof(VeEventTableEntry::m_action)})
 
@@ -32,13 +32,13 @@ namespace vve::syseve {
 	VeFixedSizeTableMT<VeEventTableEntry> g_events_table2(g_events_table);
 
 	std::vector<VeMap*> maps3 = {
-		new VeTypedMap< std::multimap<VeHandle, VeIndex>, VeHandle, VeIndex >
+		new VeTypedMap< std::multimap<VeHandle, VeIndex, std::less<VeHandle>, custom_alloc<VeHandleIndexPair>>, VeHandle, VeIndex >
 		(offsetof(VeEventTableEntry, m_type), sizeof(VeEventTableEntry::m_type)),
 
-		new VeTypedMap< std::unordered_multimap<VeHandle, VeIndex>, VeHandle, VeIndex >
+		new VeTypedMap< std::unordered_multimap<VeHandle, VeIndex, std::hash<VeHandle>, std::equal_to<VeHandle>, custom_alloc<VeHandleIndexPair>>, VeHandle, VeIndex >
 		(offsetof(VeEventTableEntry, m_type), sizeof(VeEventTableEntry::m_type)), 
 
-		new VeTypedMap< std::multimap<VeHandleTriple, VeIndex>, VeHandleTriple, VeIndexTriple >
+		new VeTypedMap< std::multimap<VeHandleTriple, VeIndex, std::less<VeHandleTriple>, custom_alloc< std::pair<const VeHandleTriple, VeIndex>>>, VeHandleTriple, VeIndexTriple >
 		(VeIndexTriple{(VeIndex)offsetof(VeEventTableEntry, m_type), (VeIndex)offsetof(VeEventTableEntry, m_key_button), (VeIndex)offsetof(VeEventTableEntry, m_action)},
 		 VeIndexTriple{(VeIndex)sizeof(VeEventTableEntry::m_type),   (VeIndex)sizeof(VeEventTableEntry::m_key_button),   (VeIndex)sizeof(VeEventTableEntry::m_action)})
 	};
@@ -58,13 +58,13 @@ namespace vve::syseve {
 		VeHandle	m_handlerH;
 	};
 	std::vector<VeMap*> maps4 = {
-		new VeTypedMap< std::multimap<VeHandle, VeIndex>, VeHandle, VeIndex >
+		new VeTypedMap< std::multimap<VeHandle, VeIndex, std::less<VeHandle>, custom_alloc<VeHandleIndexPair> >, VeHandle, VeIndex >
 			(offsetof(VeEventSubscribeTableEntry, m_type), sizeof(VeEventSubscribeTableEntry::m_type)),
 
-		new VeTypedMap< std::unordered_multimap<VeHandle, VeIndex>, VeHandle, VeIndex >
+		new VeTypedMap< std::unordered_multimap<VeHandle, VeIndex, std::hash<VeHandle>, std::equal_to<VeHandle>, custom_alloc<VeHandleIndexPair> >, VeHandle, VeIndex >
 			(offsetof(VeEventSubscribeTableEntry, m_handlerH), sizeof(VeEventSubscribeTableEntry::m_handlerH)),
 
-		new VeTypedMap< std::unordered_map<VeHandlePair, VeIndex>, VeHandlePair, VeIndexPair >
+		new VeTypedMap< std::unordered_map<VeHandlePair, VeIndex, std::hash<VeHandlePair>, std::equal_to<VeHandlePair>, custom_alloc<std::pair<const VeHandlePair, VeIndex>> >, VeHandlePair, VeIndexPair >
 			(VeIndexPair{(VeIndex)offsetof(VeEventSubscribeTableEntry, m_type), (VeIndex)offsetof(VeEventSubscribeTableEntry, m_handlerH)},
 			 VeIndexPair{(VeIndex)sizeof(VeEventSubscribeTableEntry::m_type),   (VeIndex)sizeof(VeEventSubscribeTableEntry::m_handlerH)})
 	};

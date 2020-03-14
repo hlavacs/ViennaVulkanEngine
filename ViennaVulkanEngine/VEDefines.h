@@ -40,6 +40,10 @@ namespace vve {
 	using VeHandlePair = std::pair<VeHandle, VeHandle>;
 	using VeHandleTriple = std::tuple<VeHandle, VeHandle, VeHandle>;
 
+	using VeHandleIndexPair = std::pair<const VeHandle, VeIndex>;
+	using VeStringIndexPair = std::pair<const std::string, VeIndex>;
+
+
 	template<typename S, typename T>
 	struct std::hash<std::pair<S, T>>
 	{
@@ -64,6 +68,7 @@ namespace vve {
 			return seed;
 		}
 	};
+
 
 }
 
