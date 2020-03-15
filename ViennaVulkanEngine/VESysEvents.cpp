@@ -19,7 +19,7 @@ namespace vve::syseve {
 	std::vector<VeMap*> maps2 = {
 		new VeTypedMap< VeMultimapVeHandle, VeHandle, VeIndex >(offsetof(VeEventTableEntry, m_type), sizeof(VeEventTableEntry::m_type)),
 
-		new VeTypedMap< VeUMultimapVeHandle, VeHandle, VeIndex >(offsetof(VeEventTableEntry, m_type), sizeof(VeEventTableEntry::m_type)), 
+		new VeTypedMap< VeUMultimapVeHandle, VeHandle, VeIndex >(offsetof(VeEventTableEntry, m_type), sizeof(VeEventTableEntry::m_type)),
 
 		new VeTypedMap< VeMultimapVeHandleTriple, VeHandleTriple, VeIndexTriple >
 		(VeIndexTriple{(VeIndex)offsetof(VeEventTableEntry, m_type), (VeIndex)offsetof(VeEventTableEntry, m_key_button), (VeIndex)offsetof(VeEventTableEntry, m_action)},

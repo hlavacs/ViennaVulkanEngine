@@ -299,9 +299,7 @@ namespace vgjs {
 		void push(Job * pJob) {
 			pJob->m_nextInQueue = m_pHead.load(std::memory_order_relaxed);
 
-			while (! std::atomic_compare_exchange_strong_explicit(
-				&m_pHead, &pJob->m_nextInQueue, pJob, 
-				std::memory_order_release, std::memory_order_relaxed) ) {};
+			while (! std::atomic_compare_exchange_weak(&m_pHead, &pJob->m_nextInQueue, pJob) ) {};
 		};
 
 		//---------------------------------------------------------------------------
@@ -601,7 +599,7 @@ namespace vgjs {
 		void onFinishedAddJob(Function func, VgjsThreadID thread_id = VGJS_NULL_THREAD_ID ) {
 			Job *pCurrentJob = getJobPointer();			//should never be called by meain thread
 			if (pCurrentJob == nullptr) return;			//is null if called by main thread
-			if (pCurrentJob->m_repeatJob) return;		//you cannot do both repeat and add job after finishing
+			assert(!pCurrentJob->m_repeatJob);			//you cannot do both repeat and add job after finishing
 			Job *pNewJob = JobMemory::pInstance->allocateJob();			//new job has the same parent as current job
 			pNewJob->setFunction(func);
 			pNewJob->setThreadId(thread_id);
@@ -615,7 +613,7 @@ namespace vgjs {
 		void onFinishedRepeatJob() {
 			Job *pCurrentJob = getJobPointer();						//can be nullptr if called from main thread
 			if (pCurrentJob == nullptr) return;						//is null if called by main thread
-			if (pCurrentJob->m_onFinishedJob != nullptr) return;	//you cannot do both repeat and add job after finishing	
+			assert(pCurrentJob->m_onFinishedJob == nullptr);		//you cannot do both repeat and add job after finishing	
 			pCurrentJob->m_repeatJob = true;						//flag that in onFinished() the job will be rescheduled
 		}
 
@@ -696,7 +694,7 @@ namespace vgjs {
 
 		if (m_onFinishedJob != nullptr) {						//is there a successor Job?
 			if (m_parentJob != nullptr) 
-				m_onFinishedJob->setParentJob(  m_parentJob );
+				m_onFinishedJob->setParentJob(  m_parentJob );  //increases child num of parent by 1
 			JobSystem::pInstance->addJob(m_onFinishedJob);	//schedule it for running
 		}
 

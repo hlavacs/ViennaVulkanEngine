@@ -527,7 +527,7 @@ namespace vve {
 				block->m_next = m_first_free;
 				m_first_free = (VeIndex)((uint8_t*)p - m_pool.data() - sizeof(VeMemBlock));
 				//print();
-				defragment();
+				//defragment();
 				//print();
 			};
 
@@ -596,6 +596,12 @@ namespace vve {
 		void* allocate(std::size_t size) {
 			for (auto& pool : m_pools) {
 				void* ptr = pool.allocate(size);
+				if (ptr != nullptr)
+					return ptr;
+
+				pool.defragment();
+
+				ptr = pool.allocate(size);
 				if (ptr != nullptr)
 					return ptr;
 			}

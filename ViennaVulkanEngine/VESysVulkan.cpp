@@ -43,13 +43,14 @@ namespace vve::sysvul {
 		};
 
 		vh::dev::vhCreateInstance(g_vulkan_state, extensions, layers );
-
 	}
 
 	bool g_windowSizeChanged = false;
-
+	VeClock tickClock("Vulkan Clock");
 
 	void tick() {
+		//tickClock.tick();
+
 	}
 
 	void cleanUp() {

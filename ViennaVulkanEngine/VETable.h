@@ -406,36 +406,21 @@ namespace vve {
 		bool			m_read_only = false;
 		VeTable	*		m_companion_table = nullptr;
 		bool			m_clear_on_swap = false;
+		bool			m_swapping = false;
 
 		//for debugging
 		uint32_t	m_table_nr = 0;
 		std::string m_name;
+		VeClock		m_clock;
 
-		//performance measurment
-		std::chrono::high_resolution_clock::time_point t1, t2;
-		double		m_sum_time = 0.0;
-		double		m_avg_time = 0.0;
-		VeIndex		m_in = 0;
-
-		inline void in() { 
-			++m_in;
-			if (m_in > 1) return;
-			t1 = std::chrono::high_resolution_clock::now(); 
-		};
-
-		inline void out() {
-			--m_in;
-			if (m_in > 0) return;
-			t2 = std::chrono::high_resolution_clock::now();
-			std::chrono::duration<double> time_span = std::chrono::duration_cast<std::chrono::duration<double>>(t2 - t1);
-			m_sum_time += time_span.count();
-		};
+		inline void in() {};
+		inline void out() {};
 
 	public:
-		VeTable(bool clear_on_swap = false) : m_heap(), m_clear_on_swap(clear_on_swap) {};
+		VeTable(bool clear_on_swap = false) : m_heap(), m_clear_on_swap(clear_on_swap), m_clock("table clock", 100) {};
 
-		VeTable(VeTable& table) : m_heap(), m_thread_id(table.m_thread_id), m_read_only(!table.m_read_only), 
-			m_companion_table(&table), m_clear_on_swap(table.m_clear_on_swap), m_name(table.m_name) {
+		VeTable(VeTable& table) : m_heap(), m_thread_id(table.m_thread_id), m_read_only(!table.m_read_only),
+			m_companion_table(&table), m_clear_on_swap(table.m_clear_on_swap), m_name(table.m_name), m_clock(table.m_clock) {
 			table.m_companion_table = this;
 			m_table_nr = table.m_table_nr + 1;
 		};
@@ -471,12 +456,6 @@ namespace vve {
 		};
 		bool	getReadOnly() { return m_read_only;  };
 
-		double  getAvgTime() {
-			m_avg_time = 0.95 * m_avg_time + 0.05 * m_sum_time;
-			m_sum_time = 0.0;
-			return m_avg_time;
-		};
-
 		VeTable* getReadTablePtr() { 
 			if (m_companion_table == nullptr)
 				return this;
@@ -503,10 +482,17 @@ namespace vve {
 		};
 
 		virtual void swapTables() {
+			in();
+
 			//std::cout << "table " << m_name << " old read " << getReadTablePtr()->m_table_nr << " old write " << getWriteTablePtr()->m_table_nr << std::endl;
 
-			if (m_companion_table == nullptr)
+			if (m_companion_table == nullptr) {
+				out();
 				return;
+			}
+
+			m_swapping = true;
+			m_companion_table->m_swapping = true;
 
 			setReadOnly(!getReadOnly());
 			m_companion_table->setReadOnly(!m_companion_table->getReadOnly());
@@ -516,8 +502,14 @@ namespace vve {
 			if (m_clear_on_swap) {
 				getWriteTablePtr()->clear();
 			}
-			else
+			else {
 				*getWriteTablePtr() = *getReadTablePtr();
+			}
+
+			m_swapping = false;
+			m_companion_table->m_swapping = false;
+
+			out();
 		};
 
 		VeTable* getCompanionTable() {
@@ -787,7 +779,8 @@ namespace vve {
 
 	template<typename T> inline void VeFixedSizeTable<T>::clear() {
 		in();
-		for (auto map : m_maps) map->clear();
+		for (auto map : m_maps) 
+			map->clear();
 		m_data.clear();
 		m_directory.clear();
 		m_tbl2dir.clear();
@@ -961,6 +954,10 @@ namespace vve {
 		virtual void operator=(VeFixedSizeTableMT<T>& table) {
 			VeFixedSizeTable<T>* me = (VeFixedSizeTable<T>*)this->getWriteTablePtr();
 			VeFixedSizeTable<T>* other = (VeFixedSizeTable<T>*)&table;
+			if (this->m_swapping) {
+				me->VeFixedSizeTable<T>::operator=(*other);
+				return;
+			}
 			JADDT( me->VeFixedSizeTable<T>::operator=(*other), this->m_thread_id);
 		};
 
@@ -969,8 +966,18 @@ namespace vve {
 			JADDT(me->VeFixedSizeTable<T>::swapEntriesByHandle(h1,h2), this->m_thread_id);
 		};
 
+		//do not need this since swapping is done in cleanup
+		//virtual void swapTables() {
+		//	VeFixedSizeTable<T>* me = (VeFixedSizeTable<T>*)this;
+		//	JADDT(me->VeFixedSizeTable<T>::swapTables(), this->m_thread_id);
+		//};
+
 		virtual void clear() {
 			VeFixedSizeTable<T>* me = (VeFixedSizeTable<T>*)this->getWriteTablePtr();
+			if (this->m_swapping) {
+				me->VeFixedSizeTable<T>::clear();
+				return;
+			}
 			JADDT(me->VeFixedSizeTable<T>::clear(), this->m_thread_id);
 		};
 
@@ -1323,10 +1330,11 @@ namespace vve {
 			JADDT(me->VeVariableSizeTable::setReadOnly(ro), this->m_thread_id);
 		};
 
-		virtual void swapTables() {
-			VeVariableSizeTable* me = (VeVariableSizeTable*)this;
-			JADDT(me->VeVariableSizeTable::swapTables(), this->m_thread_id);
-		};
+		//do not need this since swapping is done in cleanup
+		//virtual void swapTables() {
+		//	VeVariableSizeTable* me = (VeVariableSizeTable*)this;
+		//	JADDT(me->VeVariableSizeTable::swapTables(), this->m_thread_id);
+		//};
 
 		virtual void clear() {
 			VeVariableSizeTable* me = (VeVariableSizeTable*)this->getWriteTablePtr();

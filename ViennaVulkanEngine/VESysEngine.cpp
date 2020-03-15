@@ -154,6 +154,9 @@ namespace vve {
 			g_main_table.setReadOnly(true);
 		}
 
+		VeClock tickClock("Game loop");
+		VeClock swapClock("Swap Clock", 100);
+		VeClock forwardClock("FW Clock", 100);
 
 		void cleanUp() {
 			for (auto entry : g_systems_table.getData()) {			//clean after simulation
@@ -177,20 +180,28 @@ namespace vve {
 		}
 
 		void swapTables() {
+			swapClock.start();
+
 			for (auto table : g_main_table.getData()) {	//swap tables
 				//std::cout << "swap table " << table.m_name << " " << std::endl;
-				table.m_table_pointer->swapTables();	//might clear() some tables here
+				if (table.m_table_pointer->getCompanionTable() != nullptr) {
+					//if( table.m_name == "Events Table")
+					JADD(table.m_table_pointer->swapTables());	//might clear() some tables here
+				}
 			}
-			JDEP(tick());								//simulate one epoch
+			
+			JDEP( swapClock.stop(); tick());			//simulate one epoch
 		}
 
 		void forwardTime() {
+			//forwardClock.start();
+
 			current_update_time = next_update_time;		//move one epoch further
 			next_update_time = current_update_time + time_delta;
 
 			syseve::addEvent({ syseve::VeEventType::VE_EVENT_TYPE_EPOCH_TICK });
 
-			JDEP(swapTables());						//simulate one epoch
+			JDEP( swapTables());						//simulate one epoch
 		}
 
 		void computeOneFrame2() {
@@ -220,6 +231,8 @@ namespace vve {
 		std::atomic<bool> g_goon = true;
 
 		void runGameLoopMT() {
+			//tickClock.tick();
+
 			vgjs::JobSystem::getInstance()->resetPool();
 			JADDT(computeOneFrame2(), vgjs::TID(0, 2));	 //run on main thread for polling!
 			if (g_goon) {
