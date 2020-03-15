@@ -93,7 +93,7 @@ namespace vve {
 			auto time_span = std::chrono::duration_cast<std::chrono::nanoseconds>(now - m_last);
 			m_sum_time += time_span.count();
 			++m_num_ticks;
-			if ( m_num_ticks > m_stat ) {
+			if ( m_num_ticks >= m_stat ) {
 				double avg = m_sum_time / (double)m_num_ticks;
 				m_avg_time = (1.0 - f) * m_avg_time + f * avg;
 				f = 0.9;
@@ -120,7 +120,7 @@ namespace vve {
 		};
 
 		void print() {
-			std::cout << m_name << " avg " << m_avg_time / 1000000.0 << " ms" << std::endl;
+			std::cout << m_name << " avg " << std::setw(7) <<  m_avg_time / 1000000.0 << " ms" << std::endl;
 		};
 
 	};
