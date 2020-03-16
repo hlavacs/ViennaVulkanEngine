@@ -11,6 +11,10 @@ namespace jst {
 
 	double g_res = 0;
 
+
+	// relation between number of jobs and depth of DAG
+	//how does the depth of the DAG influence scheduling time?
+
 	void dummy() {
 		double a = 0;
 		auto now = std::chrono::high_resolution_clock::now();
@@ -44,18 +48,55 @@ namespace jst {
 		}
 	}
 
-	void warmUp(uint32_t l, uint32_t i, uint32_t  k) {
-		for (uint32_t q = 0; q < 30000; ++q)
-			JADD( dummy() );
+	//how long does it take to schedule 1 job ?
 
-		JDEP(testFunction0(l, i, k));
+	vve::VeClock schedClock("Scheduling Clock", 500);
+
+	void job() {
+		schedClock.stop();
 	}
+
+	using namespace std::placeholders;
+
+	void jobClock(uint32_t j);
+
+	void testScheduling( uint32_t j) {
+		static std::function<void()> jobF( job );
+		static auto instance = vgjs::JobSystem::getInstance();
+
+		instance->resetPool();
+
+		schedClock.start();
+		JADD(job());
+		//instance->addJob(jobF);
+
+		if (j > 1) {
+			//instance->onFinishedAddJob( std::bind(jobClock, j) );
+			JDEP( std::this_thread::sleep_for(std::chrono::milliseconds(1)); testScheduling(j - 1) );
+		}
+		else {
+			JDEP(testFunction0(20, 11000, 1));
+		}
+	}
+
+	void jobClock( uint32_t j) {
+		std::this_thread::sleep_for(std::chrono::milliseconds(1)); 
+		testScheduling(j - 1);
+	}
+	
+	void warmUp() {
+		for (uint32_t q = 0; q < 30000; ++q)
+			JADD(dummy());
+
+		JDEP(testScheduling(5000));
+	}
+
 
 	void jobSystemTest() {
 		vgjs::JobSystem::getInstance();
 		std::this_thread::sleep_for(3s);
 
-		JADD(warmUp(20, 11000, 1));
+		JADD(warmUp());
 
 	}
 
