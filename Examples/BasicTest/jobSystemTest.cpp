@@ -53,7 +53,7 @@ namespace jst {
 	vve::VeClock schedClock("Scheduling Clock", 500);
 
 	void job() {
-		schedClock.stop();
+		//schedClock.stop();
 	}
 
 	using namespace std::placeholders;
@@ -66,16 +66,17 @@ namespace jst {
 
 		instance->resetPool();
 
-		schedClock.start();
+		//schedClock.start();
 		JADD(job());
 		//instance->addJob(jobF);
+		//schedClock.stop();
 
 		if (j > 1) {
 			//instance->onFinishedAddJob( std::bind(jobClock, j) );
 			JDEP( std::this_thread::sleep_for(std::chrono::milliseconds(1)); testScheduling(j - 1) );
 		}
 		else {
-			JDEP(testFunction0(20, 11000, 1));
+			//JDEP(testFunction0(20, 11000, 1));
 		}
 	}
 
@@ -85,8 +86,8 @@ namespace jst {
 	}
 	
 	void warmUp() {
-		for (uint32_t q = 0; q < 30000; ++q)
-			JADD(dummy());
+		//for (uint32_t q = 0; q < 30000; ++q)
+		//	JADD(dummy());
 
 		JDEP(testScheduling(5000));
 	}

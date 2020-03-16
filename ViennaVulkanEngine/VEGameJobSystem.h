@@ -181,6 +181,8 @@ namespace vgjs {
 
 	private:
 		JobPool m_jobPool;		//hols lists of segments, which are job containers
+		vve::VeClock m_clock;
+		JobMemory() : m_clock("JobMemory", 200) {};
 		~JobMemory() {};
 	
 	public:
@@ -211,9 +213,13 @@ namespace vgjs {
 		//get the first job that is available
 		Job* allocateJob( ) {
 			Job *pJob;
+
+			m_clock.start();
 			do {
 				pJob = getNextJob();						//get the next Job in the pool
 			} while ( !pJob->m_available );					//check whether it is available
+			m_clock.stop();
+
 			pJob->m_nextInQueue = nullptr;
 			pJob->m_available = false;
 			pJob->m_onFinishedJob = nullptr;				//no successor Job yet
@@ -326,7 +332,6 @@ namespace vgjs {
 		std::vector<std::thread>			m_threads;				//array of thread structures
 		uint32_t							m_threadCount;			//number of threads in the pool
 		std::vector<Job*>					m_jobPointers;			//each thread has a current Job that it may run, pointers point to them
-		std::unordered_map<std::thread::id, uint32_t> m_threadIndexMap;		//Each thread has an index number 0...Num Threads
 		std::atomic<bool>					m_terminate;			//Flag for terminating the pool
 		std::vector<JobQueue*>				m_jobQueues;			//Each thread has its own Job queue
 		std::vector<JobQueue*>				m_jobQueuesLocal;		//a secondary low priority FIFO queue for each thread, where polling jobs are parked
@@ -337,7 +342,9 @@ namespace vgjs {
 		std::mutex							m_mainThreadMutex;		//used for syncing with main thread
 		std::condition_variable				m_mainThreadCondVar;	//used for waking up main tread
 
+
 	public:
+		vve::VeClock						m_clock;
 
 		//---------------------------------------------------------------------------
 		// function each thread performs
@@ -345,10 +352,7 @@ namespace vgjs {
 			static std::mutex map_mutex;
 			static std::atomic<uint32_t> threadIndexCounter = 0;
 
-			map_mutex.lock();
-			//std::cout << "thread idx " << threadIndex << " id " << std::this_thread::get_id() << std::endl;
-			m_threadIndexMap[std::this_thread::get_id()] = threadIndex;	//map thread id to thread index
-			map_mutex.unlock();
+			getThreadIndex(true, threadIndex);
 
 			threadIndexCounter++;
 			while(threadIndexCounter.load() < m_threadCount )
@@ -417,8 +421,7 @@ namespace vgjs {
 		//start_idx is either 0, then the main thread is not part of the pool, or 1, then the main thread must join
 		//
 		static JobSystem *	pInstance;			//pointer to singleton
-		JobSystem(uint32_t threadCount = 0, uint32_t start_idx = 0) : 
-			m_terminate(false), m_numJobs(0) {
+		JobSystem(uint32_t threadCount = 0, uint32_t start_idx = 0) : m_terminate(false), m_numJobs(0), m_clock("Job System", 1000) {
 			pInstance = this;
 			JobMemory::getInstance();			//create the job memory
 
@@ -517,12 +520,12 @@ namespace vgjs {
 		//returns index of the thread that is calling this function
 		//can e.g. be used for allocating command buffers from command buffer pools in Vulkan
 		//
-		int32_t getThreadIndex() {
-			auto tidx = std::this_thread::get_id();
-			if (m_threadIndexMap.count(tidx) == 0) 
-				return -1;
-
-			return m_threadIndexMap[tidx];
+		int32_t getThreadIndex( bool set = false, uint32_t new_idx = 0 ) {
+			static thread_local uint32_t thread_index = 0;
+			if (set) {
+				thread_index = new_idx;
+			}
+			return thread_index;
 		};
 
 		//---------------------------------------------------------------------------

@@ -129,9 +129,9 @@ namespace vve {
 }
 
 
+#include "VEVector.h"
 #define VE_ENABLE_MULTITHREADING
 #include "VEGameJobSystem.h"
-#include "VEVector.h"
 #include "VETable.h"
 
 #define GLM_FORCE_RADIANS
