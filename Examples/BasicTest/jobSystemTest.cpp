@@ -66,13 +66,11 @@ namespace jst {
 
 		instance->resetPool();
 
-		//schedClock.start();
+		schedClock.start();
 		JADD(job());
-		//instance->addJob(jobF);
-		//schedClock.stop();
+		schedClock.stop();
 
 		if (j > 1) {
-			//instance->onFinishedAddJob( std::bind(jobClock, j) );
 			JDEP( std::this_thread::sleep_for(std::chrono::milliseconds(1)); testScheduling(j - 1) );
 		}
 		else {
