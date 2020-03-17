@@ -36,13 +36,18 @@ The library is a single include file, and can be used under MIT license.
 
 
 #ifdef VE_ENABLE_MULTITHREADING
-	#define JADD( f )	vgjs::JobSystem::getInstance()->addJob( [=](){ f; } );
-	#define JDEP( f )	vgjs::JobSystem::getInstance()->onFinishedAddJob( [=](){ f; } );
+	#define JADD( f )	vgjs::JobSystem::getInstance()->addJob( [=](){ f; } )
+	#define JDEP( f )	vgjs::JobSystem::getInstance()->onFinishedAddJob( [=](){ f; } )
 
-	#define JADDT( f, t )	vgjs::JobSystem::getInstance()->addJob( [=](){ f; }, t );
-	#define JDEPT( f, t )	vgjs::JobSystem::getInstance()->onFinishedAddJob( [=](){ f; }, t );
+	#define JADDT( f, t )	vgjs::JobSystem::getInstance()->addJob( [=](){ f; }, t )
+	#define JDEPT( f, t )	vgjs::JobSystem::getInstance()->onFinishedAddJob( [=](){ f; }, t )
 
-	#define JREP vgjs::JobSystem::getInstance()->onFinishedRepeatJob();
+	#define JREP vgjs::JobSystem::getInstance()->onFinishedRepeatJob()
+
+	#define JWAIT vgjs::JobSystem::getInstance()->wait()
+
+	#define JRESET vgjs::JobSystem::getInstance()->resetPool()
+
 
 #else
 	#define JADD( f ) {f;}
@@ -52,6 +57,10 @@ The library is a single include file, and can be used under MIT license.
 	#define JDEPT( f, t ) {f;}
 
 	#define JREP assert(true);
+
+	#define JWAIT 
+
+	#define JRESET
 
 #endif
 

@@ -210,7 +210,7 @@ namespace vve {
 
 			now_time = std::chrono::high_resolution_clock::now();
 
-			if (now_time < next_update_time) {		//still in the same time interval
+			if (now_time < next_update_time) {		//still in the same time epoch
 				JDEP(tick());						//tick, process events and render one frame
 			}
 			else {
@@ -222,10 +222,8 @@ namespace vve {
 		void computeOneFrame() {
 			computeOneFrame2();
 
-#ifdef VE_ENABLE_MULTITHREADING
-			vgjs::JobSystem::getInstance()->wait();
-			vgjs::JobSystem::getInstance()->resetPool();
-#endif
+			JWAIT;
+			JRESET;
 		}
 
 		std::atomic<bool> g_goon = true;
@@ -233,7 +231,7 @@ namespace vve {
 		void runGameLoopMT() {
 			//tickClock.tick();
 
-			vgjs::JobSystem::getInstance()->resetPool();
+			JRESET;
 			JADDT(computeOneFrame2(), vgjs::TID(0, 2));	 //run on main thread for polling!
 			if (g_goon) {
 				JREP;
