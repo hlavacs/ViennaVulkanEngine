@@ -46,7 +46,7 @@ namespace vve {
 				VeIndexPair((VeIndex)offsetof(TestEntry, m_int1), (VeIndex)offsetof(TestEntry, m_int2)),
 				VeIndexPair((VeIndex)sizeof(TestEntry::m_int1),   (VeIndex)sizeof(TestEntry::m_int2)))
 		};
-		VeFixedSizeTable<TestEntry> testTable(maps);
+		VeFixedSizeTable<TestEntry> testTable("Test Table", maps);
 
 
 		void printEntry(VeHandle handle) {
@@ -141,7 +141,7 @@ namespace vve {
 
 
 
-		VeVariableSizeTable testVarTable;
+		VeVariableSizeTable testVarTable("Test Var Table");
 
 		struct testVarTables1 {
 			VeHandle h1, h2, h3;

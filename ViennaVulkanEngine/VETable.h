@@ -417,7 +417,7 @@ namespace vve {
 		inline void out() {};
 
 	public:
-		VeTable(bool clear_on_swap = false) : m_heap(), m_clear_on_swap(clear_on_swap), m_clock("table clock", 100) {};
+		VeTable(std::string name, bool clear_on_swap = false) : m_name(name), m_heap(), m_clear_on_swap(clear_on_swap), m_clock("table clock", 100) {};
 
 		VeTable(VeTable& table) : m_heap(), m_thread_id(table.m_thread_id), m_read_only(!table.m_read_only),
 			m_companion_table(&table), m_clear_on_swap(table.m_clear_on_swap), m_name(table.m_name), m_clock(table.m_clock) {
@@ -426,7 +426,6 @@ namespace vve {
 		};
 
 		virtual ~VeTable() {};
-
 		virtual void operator=(VeTable& tab) { assert(false);  return; };
 		virtual void clear() { assert(false);  return; };
 
@@ -536,11 +535,11 @@ namespace vve {
 
 	public:
 
-		VeFixedSizeTable(bool memcopy = false, bool clear_on_swap = false, VeIndex align = 16, VeIndex capacity = 16) : 
-			VeTable(clear_on_swap), m_data(memcopy, align, capacity) {};
+		VeFixedSizeTable(std::string name, bool memcopy = false, bool clear_on_swap = false, VeIndex align = 16, VeIndex capacity = 16) : 
+			VeTable(name, clear_on_swap), m_data(memcopy, align, capacity) {};
 
-		VeFixedSizeTable( std::vector<VeMap*> &maps, bool memcopy = false, bool clear_on_swap = false, VeIndex align = 16, VeIndex capacity = 16) :
-			VeTable(clear_on_swap), m_maps(maps), m_data(memcopy, align, capacity) {
+		VeFixedSizeTable(std::string name, std::vector<VeMap*> &maps, bool memcopy = false, bool clear_on_swap = false, VeIndex align = 16, VeIndex capacity = 16) :
+			VeTable(name, clear_on_swap), m_maps(maps), m_data(memcopy, align, capacity) {
 		};
 
 		VeFixedSizeTable(VeFixedSizeTable<T>& table) : 
@@ -939,11 +938,11 @@ namespace vve {
 
 	public:
 
-		VeFixedSizeTableMT<T>(bool memcopy = false, bool clear_on_swap = false, VeIndex align = 16, VeIndex capacity = 16) :
-			VeFixedSizeTable<T>(memcopy, clear_on_swap, align, capacity) {};
+		VeFixedSizeTableMT<T>(std::string name, bool memcopy = false, bool clear_on_swap = false, VeIndex align = 16, VeIndex capacity = 16) :
+			VeFixedSizeTable<T>(name, memcopy, clear_on_swap, align, capacity) {};
 
-		VeFixedSizeTableMT<T>(std::vector<VeMap*>& maps, bool memcopy = false, bool clear_on_swap = false, VeIndex align = 16, VeIndex capacity = 16) :
-			VeFixedSizeTable<T>(maps, memcopy, clear_on_swap, align, capacity) {};
+		VeFixedSizeTableMT<T>(std::string name, std::vector<VeMap*>& maps, bool memcopy = false, bool clear_on_swap = false, VeIndex align = 16, VeIndex capacity = 16) :
+			VeFixedSizeTable<T>(name, maps, memcopy, clear_on_swap, align, capacity) {};
 
 		VeFixedSizeTableMT<T>(VeFixedSizeTable<T>& table) : VeFixedSizeTable<T>(table) {};
 
@@ -1158,8 +1157,8 @@ namespace vve {
 
 
 	public:
-		VeVariableSizeTable(VeIndex size = 1<<20, bool clear_on_swap = false, VeIndex align = 16, bool immediateDefrag = false ) :
-			VeTable(clear_on_swap), m_align(align), m_immediateDefrag(immediateDefrag) {
+		VeVariableSizeTable(std::string name, VeIndex size = 1<<20, bool clear_on_swap = false, VeIndex align = 16, bool immediateDefrag = false ) :
+			VeTable(name, clear_on_swap), m_directory(name), m_align(align), m_immediateDefrag(immediateDefrag) {
 
 			m_directory.addMap(new VeTypedMap< VeMultimapVeHandle , VeHandle, VeIndex >(
 				(VeIndex)offsetof(struct VeDirectoryEntry, m_occupied), (VeIndex)sizeof(VeDirectoryEntry::m_occupied)));
@@ -1300,8 +1299,8 @@ namespace vve {
 	protected:
 
 	public:
-		VeVariableSizeTableMT(VeIndex size = 1 << 20, bool clear_on_swap = false, VeIndex align = 16, bool immediateDefrag = false) :
-			VeVariableSizeTable(size, clear_on_swap, align, immediateDefrag) {};
+		VeVariableSizeTableMT(std::string name, VeIndex size = 1 << 20, bool clear_on_swap = false, VeIndex align = 16, bool immediateDefrag = false) :
+			VeVariableSizeTable(name, size, clear_on_swap, align, immediateDefrag) {};
 
 		VeVariableSizeTableMT(VeVariableSizeTableMT& table) : VeVariableSizeTable(table) {};
 

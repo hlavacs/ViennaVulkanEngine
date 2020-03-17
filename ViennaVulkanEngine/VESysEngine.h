@@ -18,7 +18,7 @@ namespace vve {
 
 #ifndef VE_PUBLIC_INTERFACE
 
-		void registerTablePointer(VeTable* ptr, std::string name);
+		void registerTablePointer(VeTable* ptr);
 		VeTable* getTablePointer(std::string name);
 		void tick();
 		void cleanUp();

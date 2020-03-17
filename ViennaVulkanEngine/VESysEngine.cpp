@@ -52,12 +52,12 @@ namespace vve {
 			VeTable* m_table_pointer;
 			std::string	m_name;
 			VeMainTableEntry() : m_table_pointer(nullptr), m_name("") {};
-			VeMainTableEntry(VeTable* tptr, std::string name) : m_table_pointer(tptr), m_name(name) {};
+			VeMainTableEntry(VeTable* tptr, std::string name) : m_table_pointer(tptr),  m_name(name) {};
 		};
 		std::vector<VeMap*> maps = {
 			new VeTypedMap< std::unordered_map<std::string, VeIndex, std::hash<std::string>, std::equal_to<std::string>, custom_alloc<VeStringIndexPair> >, std::string, VeIndex >((VeIndex)offsetof(struct VeMainTableEntry, m_name), 0)
 		};
-		VeFixedSizeTable<VeMainTableEntry> g_main_table(maps, false, false, 0, 0);
+		VeFixedSizeTable<VeMainTableEntry> g_main_table("Main Table", maps, false, false, 0, 0);
 
 		struct VeSysTableEntry {
 			std::function<void()>	m_init;
@@ -68,11 +68,11 @@ namespace vve {
 			VeSysTableEntry(std::function<void()> init, std::function<void()> tick, std::function<void()> cleanUp, std::function<void()> close) :
 				m_init(init), m_tick(tick), m_cleanUp(cleanUp), m_close(close) {};
 		};
-		VeFixedSizeTable<VeSysTableEntry> g_systems_table(false, false, 0, 0);
+		VeFixedSizeTable<VeSysTableEntry> g_systems_table( "Systems Table", false, false, 0, 0);
 
 
-		void registerTablePointer(VeTable* tptr, std::string name) {
-			g_main_table.VeFixedSizeTable<VeMainTableEntry>::addEntry({ tptr, name });
+		void registerTablePointer(VeTable* tptr) {
+			g_main_table.VeFixedSizeTable<VeMainTableEntry>::addEntry({ tptr, tptr->getName() });
 		}
 
 		VeTable* getTablePointer(std::string name) {
@@ -120,8 +120,8 @@ namespace vve {
 			next_update_time = current_update_time + time_delta;
 			reached_time = current_update_time;
 
-			registerTablePointer(&g_main_table, "Main Table");
-			registerTablePointer(&g_systems_table, "Systems Table");
+			registerTablePointer(&g_main_table);
+			registerTablePointer(&g_systems_table);
 
 			//first init window to get the surface!
 			g_systems_table.addEntry({ syswin::init, []() {},      syswin::cleanUp, syswin::close });

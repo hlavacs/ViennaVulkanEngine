@@ -204,11 +204,10 @@ namespace vgjs {
 		Job* allocateJob( ) {
 			Job *pJob;
 			
-			m_clock.start();
+			//m_clock.start();
 			do {
 				pJob = getNextJob();						//get the next Job in the pool
 			} while ( !pJob->m_available );					//check whether it is available
-			m_clock.stop();
 
 			pJob->m_available = false;
 			pJob->m_nextInQueue = nullptr;
@@ -218,6 +217,7 @@ namespace vgjs {
 			pJob->m_thread_idx = VGJS_NULL_THREAD_IDX;
 			pJob->m_thread_label = VGJS_NULL_THREAD_IDX;
 			pJob->m_exec_thread = VGJS_NULL_THREAD_IDX;
+			//m_clock.stop();
 			return pJob;
 		};
 
@@ -584,13 +584,13 @@ namespace vgjs {
 		//poolNumber Number of the pool
 		//id A name for the job for debugging
 		void addJob( Function&& func, VgjsThreadID thread_id = VGJS_NULL_THREAD_ID ) {
-			//m_clock.start();
 			Job* pJob = m_job_memory[m_thread_index]->allocateJob();
-			//m_clock.stop();
+			//m_clock.start();
 			pJob->setParentJob(getJobPointer());	//set parent Job to notify on finished, or nullptr if main thread
 			pJob->setFunction(std::forward<Function>(func));
 			pJob->setThreadId(thread_id);
 			addJob(pJob);
+			//m_clock.stop();
 		};
 
 		//---------------------------------------------------------------------------

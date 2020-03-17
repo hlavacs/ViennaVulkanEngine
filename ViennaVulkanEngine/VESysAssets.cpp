@@ -16,12 +16,12 @@
 
 namespace vve::sysass {
 
-	VeVariableSizeTableMT g_meshes_table(1 << 20);
+	VeVariableSizeTableMT g_meshes_table("Meshes Table", 1 << 20);
 	VeVariableSizeTableMT g_meshes_table2(g_meshes_table);
 
 
 	void init() {
-		syseng::registerTablePointer(&g_meshes_table, "Meshes Table");
+		syseng::registerTablePointer(&g_meshes_table);
 	}
 
 	void tick() {
