@@ -66,9 +66,9 @@ namespace jst {
 
 		instance->resetPool();
 
-		schedClock.start();
+		//schedClock.start();
 		JADD(job());
-		schedClock.stop();
+		//schedClock.stop();
 
 		if (j > 1) {
 			JDEP( std::this_thread::sleep_for(std::chrono::milliseconds(1)); testScheduling(j - 1) );

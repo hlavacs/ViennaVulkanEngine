@@ -95,7 +95,7 @@ namespace vgjs {
 		std::atomic<uint32_t>	m_numUnfinishedChildren;		//number of unfinished jobs
 		std::chrono::high_resolution_clock::time_point t1, t2;	//execution start and end
 		VgjsThreadIndex			m_exec_thread;					//thread that this job actually ran at
-		std::atomic<bool>		m_available;					//is this job available after a pool reset?
+		bool					m_available;					//is this job available after a pool reset?
 		bool					m_repeatJob;					//if true then the job will be rescheduled
 	
 		//---------------------------------------------------------------------------
@@ -145,10 +145,10 @@ namespace vgjs {
 
 	public:
 
-		Job() : m_nextInQueue(nullptr), m_parentJob(nullptr), m_thread_idx(VGJS_NULL_THREAD_IDX),
-			m_thread_label(VGJS_NULL_THREAD_IDX), t1(), t2(), m_exec_thread(VGJS_NULL_THREAD_IDX),
-			m_numUnfinishedChildren(0), m_onFinishedJob(nullptr),
-			m_repeatJob(false), m_available(true) {};
+		Job() : m_nextInQueue(nullptr), m_parentJob(nullptr), m_onFinishedJob(nullptr), 
+			m_thread_idx(VGJS_NULL_THREAD_IDX), m_thread_label(VGJS_NULL_THREAD_IDX),
+			t1(), t2(), m_exec_thread(VGJS_NULL_THREAD_IDX),
+			m_numUnfinishedChildren(0), m_repeatJob(false), m_available(true) {};
 		~Job() {};
 	};
 
@@ -203,12 +203,15 @@ namespace vgjs {
 		//get the first job that is available
 		Job* allocateJob( ) {
 			Job *pJob;
+			
+			m_clock.start();
 			do {
 				pJob = getNextJob();						//get the next Job in the pool
 			} while ( !pJob->m_available );					//check whether it is available
+			m_clock.stop();
 
-			pJob->m_nextInQueue = nullptr;
 			pJob->m_available = false;
+			pJob->m_nextInQueue = nullptr;
 			pJob->m_onFinishedJob = nullptr;				//no successor Job yet
 			pJob->m_parentJob = nullptr;					//default is no parent
 			pJob->m_repeatJob = false;						//default is no repeat
@@ -583,11 +586,11 @@ namespace vgjs {
 		void addJob( Function&& func, VgjsThreadID thread_id = VGJS_NULL_THREAD_ID ) {
 			//m_clock.start();
 			Job* pJob = m_job_memory[m_thread_index]->allocateJob();
+			//m_clock.stop();
 			pJob->setParentJob(getJobPointer());	//set parent Job to notify on finished, or nullptr if main thread
 			pJob->setFunction(std::forward<Function>(func));
 			pJob->setThreadId(thread_id);
 			addJob(pJob);
-			//m_clock.stop();
 		};
 
 		//---------------------------------------------------------------------------
