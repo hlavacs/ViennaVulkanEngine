@@ -130,6 +130,7 @@ namespace vve {
 
 
 #include "VEVector.h"
+
 #define VE_ENABLE_MULTITHREADING
 #include "VEGameJobSystem.h"
 #include "VETable.h"

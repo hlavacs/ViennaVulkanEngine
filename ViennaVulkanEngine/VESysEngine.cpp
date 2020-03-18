@@ -156,19 +156,12 @@ namespace vve {
 
 		VeClock tickClock("Game loop");
 		VeClock swapClock("Swap Clock", 100);
-		VeClock forwardClock("FW Clock", 100);
+		VeClock forwardClock("FW Clock", 2);
 
 		void cleanUp() {
 			for (auto entry : g_systems_table.getData()) {			//clean after simulation
 				syseve::addEvent({ syseve::VeEventType::VE_EVENT_TYPE_FRAME_TICK });
 				JADD(entry.m_cleanUp());							//includes render in the last interval
-			}
-
-			if (now_time > next_update_time) {						//if now is not reached yet
-				JDEP(reached_time = next_update_time; forwardTime(); );	//move one epoch further
-			}
-			else {
-				JDEP(reached_time = next_update_time);				//remember reached time
 			}
 		}
 
@@ -176,12 +169,9 @@ namespace vve {
 			for (auto entry : g_systems_table.getData()) {			//simulate one epoch
 				JADD(entry.m_tick());
 			}
-			JDEP(cleanUp());
 		}
 
 		void swapTables() {
-			swapClock.start();
-
 			for (auto table : g_main_table.getData()) {	//swap tables
 				//std::cout << "swap table " << table.m_name << " " << std::endl;
 				if (table.m_table_pointer->getCompanionTable() != nullptr) {
@@ -189,39 +179,67 @@ namespace vve {
 					JADD(table.m_table_pointer->swapTables());	//might clear() some tables here
 				}
 			}
-			
-			JDEP( swapClock.stop(); tick());			//simulate one epoch
 		}
 
 		void forwardTime() {
-			//forwardClock.start();
+			//forwardClock.tick();
 
 			current_update_time = next_update_time;		//move one epoch further
 			next_update_time = current_update_time + time_delta;
 
 			syseve::addEvent({ syseve::VeEventType::VE_EVENT_TYPE_EPOCH_TICK });
-
-			JDEP( swapTables());						//simulate one epoch
 		}
 
-		void computeOneFrame2() {
+		void computeOneFrame2(uint32_t step) {
+
+			if (step == 1) goto step1;
+			if (step == 2) goto step2;
+			if (step == 3) goto step3;
+			if (step == 4) goto step4;
+			if (step == 5) goto step5;
+
 			syseve::addEvent({ syseve::VeEventType::VE_EVENT_TYPE_LOOP_TICK });
 			syswin::tick();							//must poll GLFW events in the main thread
 
 			now_time = std::chrono::high_resolution_clock::now();
 
 			if (now_time < next_update_time) {		//still in the same time epoch
-				JDEP(tick());						//tick, process events and render one frame
+				goto step3;
 			}
-			else {
-				JDEP(forwardTime());				//bring simulation to now
+
+		step1:
+			forwardTime();
+
+		step2:
+			//swapClock.start();
+
+			swapTables();
+			JDEP(computeOneFrame2(3));		//wait for finishing, then do step3
+			return;
+
+		step3:
+			tick();
+			JDEP(computeOneFrame2(4));		//wait for finishing, then do step4
+			return;
+
+		step4:
+			cleanUp();
+			JDEP(computeOneFrame2(5));		//wait for finishing, then do step5
+			return;
+
+		step5: 
+			reached_time = next_update_time;
+
+			if (now_time > next_update_time) {	//if now is not reached yet
+				JDEP( computeOneFrame2(1); );	//move one epoch further
 			}
 		}
 
+
+
 		//can call this from the main thread if you have your own game loop
 		void computeOneFrame() {
-			computeOneFrame2();
-
+			computeOneFrame2(0);
 			JWAIT;
 			JRESET;
 		}
@@ -229,10 +247,10 @@ namespace vve {
 		std::atomic<bool> g_goon = true;
 
 		void runGameLoopMT() {
-			//tickClock.tick();
+			tickClock.tick();
 
 			JRESET;
-			JADDT(computeOneFrame2(), vgjs::TID(0, 2));	 //run on main thread for polling!
+			JADDT(computeOneFrame2(0), vgjs::TID(0, 2));	 //run on main thread for polling!
 			if (g_goon) {
 				JREP;
 			}
@@ -241,33 +259,28 @@ namespace vve {
 		void runGameLoop() {
 
 #ifdef VE_ENABLE_MULTITHREADING
-			vgjs::JobSystem::getInstance(0, 1); //create pool without thread 0
+			vgjs::JobSystem::getInstance(4, 1); //create pool without thread 0
 			JADD(runGameLoopMT());				//schedule the game loop
 			vgjs::JobSystem::getInstance()->threadTask(0);		//put main thread as first thread into pool
 			return;
 #endif
 
 			while (g_goon) {
+				tickClock.tick();
 				computeOneFrame();
 			}
 		}
 
 		void closeEngine() {
 			g_goon = false;
-
-#ifdef VE_ENABLE_MULTITHREADING
-			vgjs::JobSystem::getInstance()->terminate();
-#endif
-
+			JTERM;
 		}
 
 		void close() {
 			g_goon = false;
 
-#ifdef VE_ENABLE_MULTITHREADING
-			vgjs::JobSystem::getInstance()->terminate();
-			vgjs::JobSystem::getInstance()->waitForTermination();
-#endif
+			JTERM;
+			JWAITTERM;
 
 			auto data = g_systems_table.getData();
 			for (int32_t i = (int32_t)data.size() - 1; i >= 0; --i)

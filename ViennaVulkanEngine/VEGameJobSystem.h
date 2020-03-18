@@ -48,25 +48,26 @@ The library is a single include file, and can be used under MIT license.
 
 	#define JRESET vgjs::JobSystem::getInstance()->resetPool()
 
+	#define JTERM vgjs::JobSystem::getInstance()->terminate()
+	#define JWAITTERM vgjs::JobSystem::getInstance()->waitForTermination()
+
 
 #else
 	#define JADD( f ) {f;}
 	#define JDEP( f ) {f;}
-
 	#define JADDT( f, t ) {f;}
 	#define JDEPT( f, t ) {f;}
-
 	#define JREP assert(true);
-
 	#define JWAIT 
-
 	#define JRESET
-
+	#define JTERM
+	#define JWAITTERM
 #endif
 
 
 
 namespace vgjs {
+
 
 	class JobMemory;
 	class Job;
@@ -430,19 +431,19 @@ namespace vgjs {
 		JobSystem(uint32_t threadCount = 0, uint32_t start_idx = 0) : m_terminate(false), m_numJobs(0), m_clock("Job System", 100) {
 			pInstance = this;
 
-			if (threadCount == 0) {
-				threadCount = std::thread::hardware_concurrency();		//main thread is also running
-			}
 			m_threadCount = threadCount;
+			if (m_threadCount == 0) {
+				m_threadCount = std::thread::hardware_concurrency();		//main thread is also running
+			}
 
-			m_job_memory.resize(threadCount);
-			m_jobQueues.resize(threadCount);							//reserve mem for job queue pointers
-			m_jobQueuesLocal.resize(threadCount);						//reserve mem for polling job queue pointers
-			m_jobQueuesLocalFIFO.resize(threadCount);					//reserve mem for polling job queue pointers
-			m_jobPointers.resize(threadCount);							//rerve mem for Job pointers
-			m_numMisses.resize(threadCount);
-			m_numLoops.resize(threadCount);
-			for (uint32_t i = 0; i < threadCount; i++) {
+			m_job_memory.resize(m_threadCount);
+			m_jobQueues.resize(m_threadCount);								//reserve mem for job queue pointers
+			m_jobQueuesLocal.resize(m_threadCount);							//reserve mem for local job queue pointers
+			m_jobQueuesLocalFIFO.resize(m_threadCount);						//reserve mem for polling job queue pointers
+			m_jobPointers.resize(m_threadCount);							//rerve mem for Job pointers
+			m_numMisses.resize(m_threadCount);
+			m_numLoops.resize(m_threadCount);
+			for (uint32_t i = 0; i < m_threadCount; i++) {
 				m_job_memory[i]			= new JobMemory;
 				m_jobQueues[i]			= new JobQueueLockFree();			//job queue with work stealing
 				m_jobQueuesLocal[i]		= new JobQueueLockFree();			//job queue for local work
@@ -452,8 +453,8 @@ namespace vgjs {
 				m_numMisses[i]			= 0;
 			}
 
-			m_threads.reserve(threadCount);										//reserve mem for the threads
-			for (uint32_t i = start_idx; i < threadCount; i++) {
+			m_threads.reserve(m_threadCount);										//reserve mem for the threads
+			for (uint32_t i = start_idx; i < m_threadCount; i++) {
 				m_threads.push_back(std::thread( &JobSystem::threadTask, this, i ));	//spawn the pool threads
 			}
 		};

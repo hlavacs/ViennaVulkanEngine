@@ -29,7 +29,7 @@ namespace vve::sysvul {
 		VeRendererTableEntry(std::function<void()> init, std::function<void()> tick,	std::function<void()> close) :
 			m_init(init), m_tick(tick), m_close(close) {};
 	};
-	VeFixedSizeTable<VeRendererTableEntry> g_renderers_table(false, false, 0, 0 );
+	VeFixedSizeTable<VeRendererTableEntry> g_renderers_table("Renderer Table", false, false, 0, 0 );
 
 	void registerRenderer(std::function<void()> init, std::function<void()> tick, std::function<void()> close) {
 		g_renderers_table.addEntry({ init, tick, close });
