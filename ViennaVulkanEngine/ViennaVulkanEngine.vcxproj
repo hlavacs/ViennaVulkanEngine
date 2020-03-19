@@ -161,6 +161,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="VEMap.cpp" />
     <ClCompile Include="VHDebug.cpp" />
     <ClCompile Include="VHDevice.cpp" />
     <ClCompile Include="VESysVulkanFWSimple.cpp" />
@@ -182,6 +183,8 @@
     <ClInclude Include="stb_image.h" />
     <ClInclude Include="stb_image_write.h" />
     <ClInclude Include="VEDefines.h" />
+    <ClInclude Include="VEHeap.h" />
+    <ClInclude Include="VEMap.h" />
     <ClInclude Include="VHDebug.h" />
     <ClInclude Include="VHDevice.h" />
     <ClInclude Include="VEGameJobSystem.h" />

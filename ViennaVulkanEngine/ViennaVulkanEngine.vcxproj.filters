@@ -59,6 +59,9 @@
     <ClCompile Include="VHDebug.cpp">
       <Filter>Quelldateien</Filter>
     </ClCompile>
+    <ClCompile Include="VEMap.cpp">
+      <Filter>Quelldateien</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="VEInclude.h">
@@ -128,6 +131,12 @@
       <Filter>Headerdateien</Filter>
     </ClInclude>
     <ClInclude Include="VHDebug.h">
+      <Filter>Headerdateien</Filter>
+    </ClInclude>
+    <ClInclude Include="VEHeap.h">
+      <Filter>Headerdateien</Filter>
+    </ClInclude>
+    <ClInclude Include="VEMap.h">
       <Filter>Headerdateien</Filter>
     </ClInclude>
   </ItemGroup>

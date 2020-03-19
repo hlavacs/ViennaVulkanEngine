@@ -44,31 +44,6 @@ namespace vve {
 	using VeStringIndexPair = std::pair<const std::string, VeIndex>;
 
 
-	template<typename S, typename T>
-	struct std::hash<std::pair<S, T>>
-	{
-		inline size_t operator()(const std::pair<S, T>& val) const
-		{
-			size_t seed = 0;
-			seed ^= std::hash<S>()(val.first) + 0x9e3779b9 + (seed << 6) + (seed >> 2);
-			seed ^= std::hash<T>()(val.second) + 0x9e3779b9 + (seed << 6) + (seed >> 2);
-			return seed;
-		}
-	};
-
-	template<typename S, typename T, typename U>
-	struct std::hash<std::tuple<S, T, U>>
-	{
-		inline size_t operator()(const std::tuple<S, T, U>& val) const
-		{
-			size_t seed = 0;
-			seed ^= std::hash<S>()(std::get<0>(val)) + 0x9e3779b9 + (seed << 6) + (seed >> 2);
-			seed ^= std::hash<T>()(std::get<1>(val)) + 0x9e3779b9 + (seed << 6) + (seed >> 2);
-			seed ^= std::hash<T>()(std::get<2>(val)) + 0x9e3779b9 + (seed << 6) + (seed >> 2);
-			return seed;
-		}
-	};
-
 
 	class VeClock {
 		std::chrono::high_resolution_clock::time_point m_last;
@@ -129,10 +104,13 @@ namespace vve {
 }
 
 
+#include "VEHeap.h"
 #include "VEVector.h"
+#include "VEMap.h"
 
 #define VE_ENABLE_MULTITHREADING
 #include "VEGameJobSystem.h"
+
 #include "VETable.h"
 
 #define GLM_FORCE_RADIANS

@@ -154,9 +154,11 @@ namespace vve {
 			g_main_table.setReadOnly(true);
 		}
 
-		VeClock tickClock("Game loop");
-		VeClock swapClock("Swap Clock", 100);
-		VeClock forwardClock("FW Clock", 2);
+		VeClock loopClock(   "Game loop   ", 1);
+		VeClock swapClock(   "Swap Clock  ", 200);
+		VeClock forwardClock("FW Clock    ", 100);
+		VeClock tickClock(   "Tick Clock  ", 100000);
+		VeClock cleanClock(  "Clean Clock ", 100000);
 
 		void cleanUp() {
 			for (auto entry : g_systems_table.getData()) {			//clean after simulation
@@ -175,7 +177,7 @@ namespace vve {
 			for (auto table : g_main_table.getData()) {	//swap tables
 				//std::cout << "swap table " << table.m_name << " " << std::endl;
 				if (table.m_table_pointer->getCompanionTable() != nullptr) {
-					//if( table.m_name == "Events Table")
+					if( table.m_name == "Events Table")
 					JADD(table.m_table_pointer->swapTables());	//might clear() some tables here
 				}
 			}
@@ -211,20 +213,22 @@ namespace vve {
 			forwardTime();
 
 		step2:
-			//swapClock.start();
+			swapClock.start();
 
 			swapTables();
-			JDEP(computeOneFrame2(3));		//wait for finishing, then do step3
+			JDEP(swapClock.stop(); computeOneFrame2(3));		//wait for finishing, then do step3
 			return;
 
 		step3:
+			tickClock.start();
 			tick();
-			JDEP(computeOneFrame2(4));		//wait for finishing, then do step4
+			JDEP(tickClock.stop();  computeOneFrame2(4));		//wait for finishing, then do step4
 			return;
 
 		step4:
+			cleanClock.start();
 			cleanUp();
-			JDEP(computeOneFrame2(5));		//wait for finishing, then do step5
+			JDEP(cleanClock.stop(); computeOneFrame2(5));		//wait for finishing, then do step5
 			return;
 
 		step5: 
@@ -247,7 +251,7 @@ namespace vve {
 		std::atomic<bool> g_goon = true;
 
 		void runGameLoopMT() {
-			tickClock.tick();
+			//loopClock.tick();
 
 			JRESET;
 			JADDT(computeOneFrame2(0), vgjs::TID(0, 2));	 //run on main thread for polling!
