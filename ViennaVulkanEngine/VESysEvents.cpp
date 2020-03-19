@@ -17,8 +17,8 @@ namespace vve::syseve {
 
 	//--------------------------------------------------------------------------------------------------
 	std::vector<VeMap*> maps2 = {
-		new VeSortedMap< VeHandle, VeIndex >(offsetof(VeEventTableEntry, m_type), sizeof(VeEventTableEntry::m_type)),
-		new VeSortedMap< VeHandleTriple, VeIndexTriple >
+		new VeOrderedMultimap< VeHandle, VeIndex >(offsetof(VeEventTableEntry, m_type), sizeof(VeEventTableEntry::m_type)),
+		new VeOrderedMultimap< VeHandleTriple, VeIndexTriple >
 		(VeIndexTriple{(VeIndex)offsetof(VeEventTableEntry, m_type), (VeIndex)offsetof(VeEventTableEntry, m_key_button), (VeIndex)offsetof(VeEventTableEntry, m_action)},
 		 VeIndexTriple{(VeIndex)sizeof(VeEventTableEntry::m_type),   (VeIndex)sizeof(VeEventTableEntry::m_key_button),   (VeIndex)sizeof(VeEventTableEntry::m_action)})
 
@@ -27,11 +27,8 @@ namespace vve::syseve {
 	VeFixedSizeTableMT<VeEventTableEntry> g_events_table2(g_events_table);
 
 	std::vector<VeMap*> maps3 = {
-		new VeTypedMap< VeMultimapVeHandle, VeHandle, VeIndex >(offsetof(VeEventTableEntry, m_type), sizeof(VeEventTableEntry::m_type)),
-
-		new VeTypedMap< VeUMultimapVeHandle, VeHandle, VeIndex >(offsetof(VeEventTableEntry, m_type), sizeof(VeEventTableEntry::m_type)), 
-
-		new VeTypedMap< VeMultimapVeHandleTriple, VeHandleTriple, VeIndexTriple >
+		new VeOrderedMultimap< VeHandle, VeIndex >(offsetof(VeEventTableEntry, m_type), sizeof(VeEventTableEntry::m_type)),
+		new VeOrderedMultimap< VeHandleTriple, VeIndexTriple >
 		(VeIndexTriple{(VeIndex)offsetof(VeEventTableEntry, m_type), (VeIndex)offsetof(VeEventTableEntry, m_key_button), (VeIndex)offsetof(VeEventTableEntry, m_action)},
 		 VeIndexTriple{(VeIndex)sizeof(VeEventTableEntry::m_type),   (VeIndex)sizeof(VeEventTableEntry::m_key_button),   (VeIndex)sizeof(VeEventTableEntry::m_action)})
 	};
@@ -51,11 +48,9 @@ namespace vve::syseve {
 		VeHandle	m_handlerH;
 	};
 	std::vector<VeMap*> maps4 = {
-		new VeTypedMap< VeMultimapVeHandle, VeHandle, VeIndex >(offsetof(VeEventSubscribeTableEntry, m_type), sizeof(VeEventSubscribeTableEntry::m_type)),
-
-		new VeTypedMap< VeUMultimapVeHandle, VeHandle, VeIndex >(offsetof(VeEventSubscribeTableEntry, m_handlerH), sizeof(VeEventSubscribeTableEntry::m_handlerH)),
-
-		new VeTypedMap< VeUMapVeHandlePair, VeHandlePair, VeIndexPair >
+		new VeOrderedMultimap< VeHandle, VeIndex >(offsetof(VeEventSubscribeTableEntry, m_type), sizeof(VeEventSubscribeTableEntry::m_type)),
+		new VeOrderedMultimap< VeHandle, VeIndex >(offsetof(VeEventSubscribeTableEntry, m_handlerH), sizeof(VeEventSubscribeTableEntry::m_handlerH)),
+		new VeOrderedMultimap< VeHandlePair, VeIndexPair >
 			(VeIndexPair{(VeIndex)offsetof(VeEventSubscribeTableEntry, m_type), (VeIndex)offsetof(VeEventSubscribeTableEntry, m_handlerH)},
 			 VeIndexPair{(VeIndex)sizeof(VeEventSubscribeTableEntry::m_type),   (VeIndex)sizeof(VeEventSubscribeTableEntry::m_handlerH)})
 	};

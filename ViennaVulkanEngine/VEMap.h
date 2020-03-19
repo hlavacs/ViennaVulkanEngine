@@ -64,8 +64,8 @@ namespace vve {
 		virtual uint32_t	getMappedIndicesRange(std::string lower, std::string upper, std::vector<VeIndex, custom_alloc<VeIndex>>& result) { assert(false); return 0; };
 
 		virtual uint32_t	getAllIndices(std::vector<VeIndex, custom_alloc<VeIndex>>& result) { assert(false); return 0; };
-		virtual bool		insertIntoMap(void* entry, VeIndex& dir_index) { assert(false); return false; };
-		virtual uint32_t	deleteFromMap(void* entry, VeIndex& dir_index) { assert(false); return 0; };
+		virtual bool		insertIntoMap(void* entry, VeIndex dir_index) { assert(false); return false; };
+		virtual uint32_t	deleteFromMap(void* entry, VeIndex dir_index) { assert(false); return 0; };
 
 
 		/**
@@ -268,7 +268,7 @@ namespace vve {
 			return num;
 		}
 
-		virtual bool insertIntoMap(void* entry, VeIndex& dir_index) override {
+		virtual bool insertIntoMap(void* entry, VeIndex dir_index) override {
 			K key;
 			getKey(entry, m_offset, m_num_bytes, key);
 
@@ -283,7 +283,7 @@ namespace vve {
 			return true;
 		};
 
-		virtual uint32_t deleteFromMap(void* entry, VeIndex& dir_index) override {
+		virtual uint32_t deleteFromMap(void* entry, VeIndex dir_index) override {
 			K key;
 			getKey(entry, m_offset, m_num_bytes, key);
 
@@ -327,34 +327,34 @@ namespace vve {
 	//----------------------------------------------------------------------------------
 
 	template <typename K, typename I>
-	class VeSortedMap : public VeMap {
+	class VeOrderedMultimap : public VeMap {
 
 		struct VeMapEntry {
 			K			m_key;
 			VeIndex		m_value = VE_NULL_INDEX;
-			VeIndex		m_parent = VE_NULL_INDEX;	///<index of parent
 			VeIndex		m_next = VE_NULL_INDEX;		///<index of next sibling with the same key
+			VeIndex		m_parent = VE_NULL_INDEX;	///<index of parent
 			VeIndex		m_left = VE_NULL_INDEX;		///<index of first child with lower key
 			VeIndex		m_right = VE_NULL_INDEX;	///<index of first child with larger key
 
 			VeMapEntry() : m_key() {
 				m_value = VE_NULL_INDEX;
-				m_parent = VE_NULL_INDEX;	///<index of parent
 				m_next = VE_NULL_INDEX;		///<index of next sibling with the same key
+				m_parent = VE_NULL_INDEX;	///<index of parent
 				m_left = VE_NULL_INDEX;		///<index of first child with lower key
 				m_right = VE_NULL_INDEX;	///<index of first child with larger key
 			};
 
 			VeMapEntry( K key, VeIndex value ) : m_key(key), m_value(value) {
-				m_parent = VE_NULL_INDEX;	///<index of parent
 				m_next = VE_NULL_INDEX;		///<index of next sibling with the same key
+				m_parent = VE_NULL_INDEX;	///<index of parent
 				m_left = VE_NULL_INDEX;		///<index of first child with lower key
 				m_right = VE_NULL_INDEX;	///<index of first child with larger key
 			};
 		};
 
-		VeSortedMap<K, I>* clone() {
-			VeSortedMap<K, I>* map = new VeSortedMap<K, I>(*this);
+		VeOrderedMultimap<K, I>* clone() {
+			VeOrderedMultimap<K, I>* map = new VeOrderedMultimap<K, I>(*this);
 			return map;
 		};
 
@@ -366,7 +366,10 @@ namespace vve {
 
 
 		void insert( VeIndex root, VeIndex index ) {
-			assert(root != VE_NULL_INDEX);
+			if (root = VE_NULL_INDEX) {
+				m_root = index;
+				return;
+			}
 
 			if (m_map[index].m_key == m_map[root].m_key) {
 				m_map[index].m_next = m_map[root].m_next;
@@ -390,7 +393,8 @@ namespace vve {
 			m_map[index].m_parent = root;
 		};
 
-		VeIndex findLast(K& key, VeIndex root, VeIndex& last) {
+
+		VeIndex find(K& key, VeIndex root, VeIndex& last) {
 			if (root == VE_NULL_INDEX)
 				return VE_NULL_INDEX;
 
@@ -405,66 +409,172 @@ namespace vve {
 			return find(key, m_map[root].m_right, last);
 		};
 
+
 		VeIndex find(K& key, VeIndex root) {
 			VeIndex last = VE_NULL_INDEX;
 			return find(key, m_root, last);
 		};
 
 
-		void deleteIndex(VeIndex index) {
-			if (index == VE_NULL_INDEX)
+		VeIndex find(K& key) {
+			return find(key, m_root);
+		}
+
+		void replaceChild( VeIndex parent, VeIndex old_child, VeIndex new_child) {
+			m_map[new_child].m_parent = parent;
+
+			if (parent == VE_NULL_INDEX) {
+				m_root = new_child;
 				return;
+			}
 
-			assert(m_map.size() > index);
+			if (m_map[parent].m_left == old_child) {
+				m_map[parent].m_left = new_child;
+				return;
+			}
+			m_map[parent].m_right = new_child;
+		}
 
+
+		void deleteIndex(VeIndex index) {
 			VeIndex last = m_map.size() - 1;
 			if (index < last) {
 				m_map.swap(index, last);
-				VeIndex parent = m_map[index].m_parent;
+				replaceChild(m_map[index].m_parent, last, index);
+				replaceChild(index, m_map[index].m_left, m_map[index].m_left);
+				replaceChild(index, m_map[index].m_right, m_map[index].m_right);
+			}
+			m_map.pop_back();
+		}
 
-				if (m_root == last) {
-					m_root = index;
+		VeIndex deleteIndexValuePair(VeIndex index, VeIndex value) {
+			assert(m_map.size() > index);
+
+			VeIndex num = 0;
+			VeIndex first = index;
+			VeIndex last = VE_NULL_INDEX;
+
+			while (index != VE_NULL_INDEX) {
+				VeIndex next = m_map[index].m_next;
+				
+				if (m_map[index].m_value == value) {
+
+					if (last != VE_NULL_INDEX)
+						m_map[last].m_next = next;
+
+					if (first == index)
+						first = next;
+
+					deleteIndex(index);
+					++num;
+				} else {
+					last = index;
 				}
-
-				if (parent != VE_NULL_INDEX) {
-					if (m_map[parent].m_left == last) {
-						m_map[parent].m_left = index;
-					} else {
-						m_map[parent].m_right = index;
-					}
-				}
-
-				if (m_map[index].m_left != VE_NULL_INDEX)
-					m_map[m_map[index].m_left].m_parent = index;
-				if (m_map[index].m_right != VE_NULL_INDEX)
-					m_map[m_map[index].m_right].m_parent = index;
+				index = next;
 			}
 
-			VeIndex next = m_map[last].m_next;
-			m_map.pop_back();
-			deleteIndex(next);
+			return num;
 		};
 
 
-		void deleteKey( K & key ) {
-			VeIndex index = find(key, m_root);
+		VeIndex findMin(VeIndex root) {
+			assert( root != VE_NULL_INDEX);
+
+			VeIndex min_idx = root;
+			VeIndex left  = m_map[root].m_left;
+			VeIndex right = m_map[root].m_right;
+
+			if (left != VE_NULL_INDEX) {
+				VeIndex min_left = findMin(left);
+				if (m_map[min_left].m_key < m_map[min_idx].m_key)
+					min_idx = left;
+			}
+			if (right != VE_NULL_INDEX) {
+				VeIndex min_right = findMin(left);
+				if (m_map[min_right].m_key < m_map[min_idx].m_key)
+					min_idx = right;
+			}
+			return min_idx;
+		}
+
+
+		VeIndex deleteKeyValuePair( K & key, VeIndex value, VeIndex root ) {
+			VeIndex index = find(key, root);
 
 			if (index != VE_NULL_INDEX) {
+				VeIndex left = m_map[index].m_left;
+				VeIndex right = m_map[index].m_right;
 
+				if (left != VE_NULL_INDEX && right != VE_NULL_INDEX) {
+					VeIndex num = deleteIndexValuePair(m_map[index].m_next, value);
 
-				deleteIndex(index);
+					VeIndex min_key = findMin(right);
+					m_map[index].m_key = m_map[min_key].m_key;
+					m_map[index].m_value = m_map[min_key].m_value;
+					m_map[index].m_next = m_map[min_key].m_next;
+					m_map[min_key].m_next = VE_NULL_INDEX;
+					deleteKeyValuePair(m_map[min_key].m_key, value, right);
+					return num + 1;
+				} 
+
+				if (left != VE_NULL_INDEX)
+					replaceChild(m_map[index].m_parent, index, left);
+				if (right != VE_NULL_INDEX)
+					replaceChild(m_map[index].m_parent, index, right);
+
 			}
+			return deleteIndexValuePair(index, value);
 		};
+
+
+		VeIndex deleteKeyValuePair(K& key, VeIndex value) {
+			return deleteKeyValuePair(key, value, m_root);
+		}
+
+
+		VeIndex getAllIndices(VeIndex root, std::vector<VeIndex, custom_alloc<VeIndex>>& result) {
+			if (root == VE_NULL_INDEX)
+				return 0;
+
+			VeIndex num = getAllIndices(m_map[root].m_left, result);
+			result.push_back(m_map[root].m_value);
+			num += getAllIndices(m_map[root].m_right, result);
+			return num + 1;
+		}
+
+
+		VeIndex getMappedIndicesRange(VeIndex root, K& lower, K& upper, std::vector<VeIndex, custom_alloc<VeIndex>>& result) {
+			if (root == VE_NULL_INDEX)
+				return 0;
+
+			if (m_map[root].m_key < lower || m_map[root].m_key > upper)
+				return 0;
+
+			VeIndex num = 0;
+
+			if ( lower < m_map[root].m_key)
+				num += getMappedIndicesRange(m_map[root].m_left, lower, upper, result);
+
+			if (lower <= m_map[root].m_key && m_map[root].m_key <= upper) {
+				result.push_back(m_map[root].m_value);
+				++num;
+			}
+
+			if (upper > m_map[root].m_key)
+				num += getMappedIndicesRange(m_map[root].m_right, lower, upper, result);
+
+			return num;
+		}
 
 
 	public:
 
-		VeSortedMap(I offset, I num_bytes, bool memcopy = false) : VeMap(), m_map(memcopy), m_offset(offset), m_num_bytes(num_bytes) {};
-		VeSortedMap(const VeSortedMap<K, I>& map) : VeMap(), m_map(map.m_map), m_offset(map.m_offset), m_num_bytes(map.m_num_bytes) {};
-		virtual	~VeSortedMap() {};
+		VeOrderedMultimap(I offset, I num_bytes, bool memcopy = false) : VeMap(), m_map(memcopy), m_offset(offset), m_num_bytes(num_bytes) {};
+		VeOrderedMultimap(const VeOrderedMultimap<K, I>& map) : VeMap(), m_map(map.m_map), m_offset(map.m_offset), m_num_bytes(map.m_num_bytes) {};
+		virtual	~VeOrderedMultimap() {};
 
 		virtual void operator=(const VeMap& basemap) {
-			VeSortedMap<K, I>* map = &((VeSortedMap<K, I>&)basemap);
+			VeOrderedMultimap<K, I>* map = &((VeOrderedMultimap<K, I>&)basemap);
 			m_offset = map->m_offset;
 			m_num_bytes = map->m_num_bytes;
 			m_map = map->m_map;
@@ -476,64 +586,59 @@ namespace vve {
 		};
 
 		virtual bool getMappedIndexEqual(K key, VeIndex& index) override {
-
-			return true;
+			index = find(key);
+			return index == VE_NULL_INDEX ? VE_NULL_INDEX : m_map[index].m_value;
 		};
 
 		virtual uint32_t getMappedIndicesEqual(K key, std::vector<VeIndex, custom_alloc<VeIndex>>& result) override {
-			return 0;
+			VeIndex index = find(key);
+			VeIndex num = 0;
+			while (index != VE_NULL_INDEX) {
+				result.push_back(m_map[index].m_value);
+				index = m_map[index].m_next;
+				++num;
+			};
+			return num;
 		};
 
 		virtual uint32_t getMappedIndicesRange(K lower, K upper, std::vector<VeIndex, custom_alloc<VeIndex>>& result) override {
-			uint32_t num = 0;
-
-			return num;
+			return getMappedIndicesRange( m_root, lower, upper, result );
 		};
 
 		virtual uint32_t getAllIndices(std::vector<VeIndex, custom_alloc<VeIndex>>& result) override {
-			return 0;
+			return getAllIndices( m_root, result );
 		}
 
-		uint32_t leftJoin(K key, VeSortedMap& other, std::vector<VeIndexPair, custom_alloc<VeIndexPair>>& result) {
+		uint32_t leftJoin(K key, VeOrderedMultimap& other, std::vector<VeIndexPair, custom_alloc<VeIndexPair>>& result) {
 			return 0;
 		};
 
-		uint32_t leftJoin(VeSortedMap& other, std::vector<VeIndexPair, custom_alloc<VeIndexPair>>& result) {
+		uint32_t leftJoin(VeOrderedMultimap& other, std::vector<VeIndexPair, custom_alloc<VeIndexPair>>& result) {
 			uint32_t num = 0;
 			return num;
 		};
 
-		virtual bool insertIntoMap(void* entry, VeIndex& dir_index) override {
+		virtual bool insertIntoMap(void* entry, VeIndex dir_index) override {
 			K key;
 			getKey(entry, m_offset, m_num_bytes, key);
-
-			VeIndex index = m_map.size();
+			VeIndex last = m_map.size();
 			m_map.emplace_back({key, dir_index});
-
-			if (m_root == VE_NULL_INDEX) {
-				m_root = index;
-				return true;
-			}
-
-			insert(m_root, index);
-
+			insert(m_root, last);
 			return true;
 		};
 
-		virtual uint32_t deleteFromMap(void* entry, VeIndex& dir_index) override {
+		virtual uint32_t deleteFromMap(void* entry, VeIndex dir_index) override {
 			K key;
 			getKey(entry, m_offset, m_num_bytes, key);
-
-			uint32_t num = 0;
-			
-
-			return num;
+			return deleteKeyValuePair( key, dir_index );
 		};
-
 
 	};
 
 
+	namespace map {
+		void testMap();
+	}
 
 }
 

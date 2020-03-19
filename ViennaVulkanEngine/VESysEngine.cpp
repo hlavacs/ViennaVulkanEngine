@@ -55,7 +55,7 @@ namespace vve {
 			VeMainTableEntry(VeTable* tptr, std::string name) : m_table_pointer(tptr),  m_name(name) {};
 		};
 		std::vector<VeMap*> maps = {
-			new VeTypedMap< std::unordered_map<std::string, VeIndex, std::hash<std::string>, std::equal_to<std::string>, custom_alloc<VeStringIndexPair> >, std::string, VeIndex >((VeIndex)offsetof(struct VeMainTableEntry, m_name), 0)
+			new VeOrderedMultimap< std::string, VeIndex >((VeIndex)offsetof(struct VeMainTableEntry, m_name), 0)
 		};
 		VeFixedSizeTable<VeMainTableEntry> g_main_table("Main Table", maps, false, false, 0, 0);
 

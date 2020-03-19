@@ -33,16 +33,10 @@ namespace vve {
 		};
 
 		std::vector<VeMap*> maps = {
-			new VeTypedMap< VeMapVeHandle, VeHandle, VeIndex >(
-				(VeIndex)offsetof(struct TestEntry, m_int64), (VeIndex)sizeof(TestEntry::m_int64)),
-
-			new VeTypedMap< VeMultimapVeHandle, VeHandle, VeIndex >(
-				(VeIndex)offsetof(struct TestEntry, m_int1), (VeIndex)sizeof(TestEntry::m_int1)),
-
-			new VeTypedMap< VeMultimapString, std::string, VeIndex >(
-				(VeIndex)offsetof(struct TestEntry, m_name), 0),
-
-			new VeTypedMap< VeMultimapVeHandlePair, VeHandlePair, VeIndexPair >(
+			new VeOrderedMultimap< VeHandle, VeIndex >((VeIndex)offsetof(struct TestEntry, m_int64), (VeIndex)sizeof(TestEntry::m_int64)),
+			new VeOrderedMultimap< VeHandle, VeIndex >((VeIndex)offsetof(struct TestEntry, m_int1), (VeIndex)sizeof(TestEntry::m_int1)),
+			new VeOrderedMultimap< std::string, VeIndex >((VeIndex)offsetof(struct TestEntry, m_name), 0),
+			new VeOrderedMultimap< VeHandlePair, VeIndexPair >(
 				VeIndexPair((VeIndex)offsetof(TestEntry, m_int1), (VeIndex)offsetof(TestEntry, m_int2)),
 				VeIndexPair((VeIndex)sizeof(TestEntry::m_int1),   (VeIndex)sizeof(TestEntry::m_int2)))
 		};

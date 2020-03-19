@@ -137,6 +137,7 @@ namespace vve {
 		VeTable	*		m_companion_table = nullptr;
 		bool			m_clear_on_swap = false;
 		bool			m_swapping = false;
+		bool			m_dirty = false;
 
 		//for debugging
 		uint32_t	m_table_nr = 0;
@@ -891,10 +892,10 @@ namespace vve {
 		VeVariableSizeTable(std::string name, VeIndex size = 1<<20, bool clear_on_swap = false, VeIndex align = 16, bool immediateDefrag = false ) :
 			VeTable(name, clear_on_swap), m_directory(name), m_align(align), m_immediateDefrag(immediateDefrag) {
 
-			m_directory.addMap(new VeTypedMap< VeMultimapVeHandle , VeHandle, VeIndex >(
+			m_directory.addMap(new VeOrderedMultimap< VeHandle, VeIndex >(
 				(VeIndex)offsetof(struct VeDirectoryEntry, m_occupied), (VeIndex)sizeof(VeDirectoryEntry::m_occupied)));
 
-			m_directory.addMap(new VeTypedMap< VeMapVeHandle, VeHandle, VeIndex >(
+			m_directory.addMap(new VeOrderedMultimap< VeHandle, VeIndex >(
 				(VeIndex)offsetof(struct VeDirectoryEntry, m_start), (VeIndex)sizeof(VeDirectoryEntry::m_start)));
 					   
 			m_data.resize((VeIndex)size + m_align);
