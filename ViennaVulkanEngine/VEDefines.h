@@ -43,6 +43,39 @@ namespace vve {
 	using VeHandleIndexPair = std::pair<const VeHandle, VeIndex>;
 	using VeStringIndexPair = std::pair<const std::string, VeIndex>;
 
+	using my_pair = std::pair<int, int>;
+
+	inline std::ostream& operator<<(std::ostream& stream, VeHandlePair& pair) {
+		stream << pair.first;
+		stream << std::skipws;
+		stream << pair.second;
+		return stream;
+	};
+
+	inline std::ostream& operator<<(std::ostream& stream, VeIndexPair& pair) {
+		stream << pair.first;
+		stream << std::skipws;
+		stream << pair.second;
+		return stream;
+	};
+
+	inline std::ostream& operator<<(std::ostream& stream, VeHandleTriple& triple) {
+		stream << std::get<0>(triple);
+		stream << std::skipws;
+		stream << std::get<1>(triple);
+		stream << std::skipws;
+		stream << std::get<2>(triple);
+		return stream;
+	};
+
+	inline std::ostream& operator<<(std::ostream& stream, VeIndexTriple& triple) {
+		stream << std::get<0>(triple);
+		stream << std::skipws;
+		stream << std::get<1>(triple);
+		stream << std::skipws;
+		stream << std::get<2>(triple);
+		return stream;
+	};
 
 
 	class VeClock {

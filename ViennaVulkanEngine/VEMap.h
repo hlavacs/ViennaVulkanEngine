@@ -351,6 +351,12 @@ namespace vve {
 				m_left = VE_NULL_INDEX;		///<index of first child with lower key
 				m_right = VE_NULL_INDEX;	///<index of first child with larger key
 			};
+
+			void print(uint32_t i) {
+				std::cout << "IDX " << i;
+				std::cout << " KEY " << m_key << " VAL " << m_value << std::endl;
+				std::cout << " NEXT " << m_next << " PAR " << m_parent << " LEFT " << m_left << " RIGHT " << m_right << std::endl << std::endl;
+			};
 		};
 
 		VeOrderedMultimap<K, I>* clone() {
@@ -359,14 +365,14 @@ namespace vve {
 		};
 
 	protected:
-		I						m_offset;			///
-		I						m_num_bytes;		///
-		VeVector<VeMapEntry>	m_map;				///
-		VeIndex					m_root = 0;
+		I						m_offset;					///
+		I						m_num_bytes;				///
+		VeVector<VeMapEntry>	m_map;						///
+		VeIndex					m_root = VE_NULL_INDEX;
 
 
 		void insert( VeIndex root, VeIndex index ) {
-			if (root = VE_NULL_INDEX) {
+			if (root == VE_NULL_INDEX) {
 				m_root = index;
 				return;
 			}
@@ -418,70 +424,103 @@ namespace vve {
 
 		VeIndex find(K& key) {
 			return find(key, m_root);
-		}
+		};
 
-		void replaceChild( VeIndex parent, VeIndex old_child, VeIndex new_child) {
-			m_map[new_child].m_parent = parent;
 
+		void replaceChild(VeIndex parent, VeIndex old_child, VeIndex new_child) {
 			if (parent == VE_NULL_INDEX) {
 				m_root = new_child;
 				return;
 			}
+
+			if (new_child != VE_NULL_INDEX)
+				m_map[new_child].m_parent = parent;
+
+			if (old_child == VE_NULL_INDEX)
+				return;
 
 			if (m_map[parent].m_left == old_child) {
 				m_map[parent].m_left = new_child;
 				return;
 			}
 			m_map[parent].m_right = new_child;
-		}
+		};
 
 
 		void deleteIndex(VeIndex index) {
 			VeIndex last = m_map.size() - 1;
+
 			if (index < last) {
 				m_map.swap(index, last);
-				replaceChild(m_map[index].m_parent, last, index);
-				replaceChild(index, m_map[index].m_left, m_map[index].m_left);
-				replaceChild(index, m_map[index].m_right, m_map[index].m_right);
+
+				VeIndex parent = m_map[index].m_parent;
+				VeIndex left = m_map[index].m_left;
+				VeIndex right = m_map[index].m_right;
+
+				if (parent == VE_NULL_INDEX && left == VE_NULL_INDEX && right == VE_NULL_INDEX) { // a sibling
+					VeIndex kind = find(m_map[index].m_key);
+					while (kind != VE_NULL_INDEX) {
+						if (m_map[kind].m_next == last) {
+							m_map[kind].m_next = index;
+							break;
+						}
+						kind = m_map[kind].m_next;
+					}
+				}
+				else {
+					replaceChild(parent, last, index);
+					replaceChild(index, left, left);
+					replaceChild(index, right, right);
+				}
 			}
 			m_map.pop_back();
-		}
+		};
+	
 
-		VeIndex deleteIndexValuePair(VeIndex index, VeIndex value) {
+		//first: number deleted
+		//second: index of first survivor
+		std::pair<VeIndex,VeIndex> deleteIndexValuePair(VeIndex index, VeIndex value) {
+			if (index == VE_NULL_INDEX)
+				return {0, VE_NULL_INDEX };
+
 			assert(m_map.size() > index);
 
-			VeIndex num = 0;
 			VeIndex first = index;
 			VeIndex last = VE_NULL_INDEX;
 
 			while (index != VE_NULL_INDEX) {
 				VeIndex next = m_map[index].m_next;
 				
-				if (m_map[index].m_value == value) {
+				if (m_map[index].m_value == value) { //key, value pair found
+
+					//first, and no next - keep it
+					if (first == index && next == VE_NULL_INDEX)
+						return {0, first};
+
+					//first, and there are next , or not first - delete it
+					if (first == index && next != VE_NULL_INDEX)
+						first = next;
 
 					if (last != VE_NULL_INDEX)
 						m_map[last].m_next = next;
 
-					if (first == index)
-						first = next;
-
 					deleteIndex(index);
-					++num;
+					return { 1, first };
 				} else {
 					last = index;
 				}
+
 				index = next;
 			}
-
-			return num;
+			return { 0, first };
 		};
 
 
 		VeIndex findMin(VeIndex root) {
-			assert( root != VE_NULL_INDEX);
+			assert(root != VE_NULL_INDEX);
 
 			VeIndex min_idx = root;
-			VeIndex left  = m_map[root].m_left;
+			VeIndex left = m_map[root].m_left;
 			VeIndex right = m_map[root].m_right;
 
 			if (left != VE_NULL_INDEX) {
@@ -495,41 +534,62 @@ namespace vve {
 					min_idx = right;
 			}
 			return min_idx;
-		}
+		};
+
+
+		VeIndex copyMin(VeIndex index) {
+			VeIndex min_idx = findMin(m_map[index].m_right);
+			m_map[index].m_key = m_map[min_idx].m_key;
+			m_map[index].m_value = m_map[min_idx].m_value;
+			m_map[index].m_next = m_map[min_idx].m_next;
+			m_map[min_idx].m_next = VE_NULL_INDEX;
+			return min_idx;
+		};
 
 
 		VeIndex deleteKeyValuePair( K & key, VeIndex value, VeIndex root ) {
 			VeIndex index = find(key, root);
 
 			if (index != VE_NULL_INDEX) {
+				VeIndex parent = m_map[index].m_parent;
 				VeIndex left = m_map[index].m_left;
 				VeIndex right = m_map[index].m_right;
 
-				if (left != VE_NULL_INDEX && right != VE_NULL_INDEX) {
-					VeIndex num = deleteIndexValuePair(m_map[index].m_next, value);
+				auto [num, first] = deleteIndexValuePair(index, value);
 
-					VeIndex min_key = findMin(right);
-					m_map[index].m_key = m_map[min_key].m_key;
-					m_map[index].m_value = m_map[min_key].m_value;
-					m_map[index].m_next = m_map[min_key].m_next;
-					m_map[min_key].m_next = VE_NULL_INDEX;
-					deleteKeyValuePair(m_map[min_key].m_key, value, right);
+				m_map[first].m_parent = parent;
+				m_map[first].m_left = left;
+				m_map[first].m_right = right;
+
+				if ( m_map[first].m_value != value )	//one left with another value - leave it
+					return num;
+
+				//if m_value == value then this is the last entry with this key - remove from tree
+				if (left != VE_NULL_INDEX && right != VE_NULL_INDEX) {
+					VeIndex min_idx = copyMin(index);
+					deleteKeyValuePair(m_map[min_idx].m_key, value, right);
 					return num + 1;
 				} 
 
+				if (left == VE_NULL_INDEX && right == VE_NULL_INDEX)
+					replaceChild(m_map[index].m_parent, index, VE_NULL_INDEX);
+
 				if (left != VE_NULL_INDEX)
 					replaceChild(m_map[index].m_parent, index, left);
+
 				if (right != VE_NULL_INDEX)
 					replaceChild(m_map[index].m_parent, index, right);
 
+				deleteIndex(index);
+				return num + 1;
 			}
-			return deleteIndexValuePair(index, value);
+			return 0;
 		};
 
 
 		VeIndex deleteKeyValuePair(K& key, VeIndex value) {
 			return deleteKeyValuePair(key, value, m_root);
-		}
+		};
 
 
 		VeIndex getAllIndices(VeIndex root, std::vector<VeIndex, custom_alloc<VeIndex>>& result) {
@@ -540,7 +600,7 @@ namespace vve {
 			result.push_back(m_map[root].m_value);
 			num += getAllIndices(m_map[root].m_right, result);
 			return num + 1;
-		}
+		};
 
 
 		VeIndex getMappedIndicesRange(VeIndex root, K& lower, K& upper, std::vector<VeIndex, custom_alloc<VeIndex>>& result) {
@@ -552,7 +612,7 @@ namespace vve {
 
 			VeIndex num = 0;
 
-			if ( lower < m_map[root].m_key)
+			if (lower < m_map[root].m_key)
 				num += getMappedIndicesRange(m_map[root].m_left, lower, upper, result);
 
 			if (lower <= m_map[root].m_key && m_map[root].m_key <= upper) {
@@ -564,7 +624,24 @@ namespace vve {
 				num += getMappedIndicesRange(m_map[root].m_right, lower, upper, result);
 
 			return num;
-		}
+		};
+
+
+		void printTree(VeIndex root, VeIndex level) {
+			if (root == VE_NULL_INDEX)
+				return;
+
+			printTree(m_map[root].m_left, level + 1);
+
+			std::cout << std::setw(level) << " ";
+			VeIndex next = root;
+			while (next != VE_NULL_INDEX) {
+				std::cout << "KEY " << m_map[next].m_key << " VAL " << m_map[next].m_value << " ";
+				next = m_map[next].m_next;
+			}
+			std::cout << std::endl;
+			printTree(m_map[root].m_right, level + 1);
+		};
 
 
 	public:
@@ -584,6 +661,19 @@ namespace vve {
 			m_root = VE_NULL_INDEX;
 			m_map.clear();
 		};
+
+		void printTree() {
+			std::cout << "Root " << m_root << std::endl;
+			printTree(m_root, 1);
+			std::cout << std::endl;
+		}
+
+		void print() {
+			std::cout << "Root " << m_root << std::endl;
+			for (uint32_t i = 0; i < m_map.size(); ++i) {
+				m_map[i].print(i);
+			}
+		}
 
 		virtual bool getMappedIndexEqual(K key, VeIndex& index) override {
 			index = find(key);
@@ -622,7 +712,7 @@ namespace vve {
 			K key;
 			getKey(entry, m_offset, m_num_bytes, key);
 			VeIndex last = m_map.size();
-			m_map.emplace_back({key, dir_index});
+			m_map.emplace_back({ key, dir_index });
 			insert(m_root, last);
 			return true;
 		};
