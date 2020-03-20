@@ -54,10 +54,14 @@ namespace vve::map {
 
 		std::cout << std::endl;
 
+		testmap.rebalanceTree();
+		testmap.printTree();
+
 		testmap.deleteFromMap(&t3, 1);
 		testmap.print();
 		testmap.printTree();
 		testmap.deleteFromMap(&t4, 1);
+		testmap.print();
 		testmap.printTree();
 		testmap.deleteFromMap(&t4, 2);
 
@@ -72,6 +76,9 @@ namespace vve::map {
 		testmap.insertIntoMap(&t7, 0);
 		testmap.insertIntoMap(&t7, 1);
 		testmap.insertIntoMap(&t7, 2);
+		testmap.printTree();
+
+		testmap.rebalanceTree();
 		testmap.printTree();
 
 		testmap.deleteFromMap(&t11, 3);

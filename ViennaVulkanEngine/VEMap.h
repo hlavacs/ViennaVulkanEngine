@@ -400,6 +400,33 @@ namespace vve {
 		};
 
 
+		void copyTree( VeIndex index, std::vector<VeMapEntry, custom_alloc<VeMapEntry> >&result) {
+			if (index == VE_NULL_INDEX)
+				return;
+			copyTree(m_map[index].m_left, result);
+			VeIndex next = index;
+			while (next != VE_NULL_INDEX) {
+				result.push_back(m_map[next]);
+				next = m_map[next].m_next;
+			};
+			copyTree(m_map[index].m_right, result);
+		}
+
+
+		void insertRange(int first, int last, std::vector<VeMapEntry, custom_alloc<VeMapEntry> > &map) {
+			if (first > last)
+				return;
+
+			VeIndex middle = (first + last) / 2;
+
+			m_map.emplace_back({ map[middle].m_key, map[middle].m_value });
+			insert(m_root, (VeIndex)m_map.size()-1);
+
+			insertRange( first, middle - 1, map);
+			insertRange( middle + 1, last, map);
+		};
+
+
 		VeIndex find(K& key, VeIndex root, VeIndex& last) {
 			if (root == VE_NULL_INDEX)
 				return VE_NULL_INDEX;
@@ -660,6 +687,14 @@ namespace vve {
 		virtual void clear() {
 			m_root = VE_NULL_INDEX;
 			m_map.clear();
+		};
+
+		void rebalanceTree() {
+			std::vector<VeMapEntry, custom_alloc<VeMapEntry> > map(&m_heap);
+			map.reserve(m_map.size());
+			copyTree(m_root, map);
+			clear();
+			insertRange(0, (VeIndex)map.size() - 1, map);
 		};
 
 		void printTree() {
