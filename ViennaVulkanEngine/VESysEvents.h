@@ -49,7 +49,7 @@ namespace vve::syseve {
 #ifndef VE_PUBLIC_INTERFACE
 
 	void init();
-	void tick();
+	void update();
 	void cleanUp();
 	void close();
 

@@ -20,7 +20,7 @@ namespace vve {
 
 		void registerTablePointer(VeTable* ptr);
 		VeTable* getTablePointer(std::string name);
-		void tick();
+		void update();
 		void cleanUp();
 		void forwardTime();
 		void createHeaps(uint32_t num);

@@ -29,8 +29,8 @@ namespace vve::syswin {
 		glfw::init();
 	}
 
-	void tick() {
-		glfw::tick();
+	void update() {
+		glfw::update();
 	}
 
 	void cleanUp() {

@@ -18,7 +18,7 @@ namespace vve::sysphy {
 	void init() {
 	}
 
-	void tick() {
+	void update() {
 
 	}
 

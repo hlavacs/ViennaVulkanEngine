@@ -40,7 +40,7 @@ namespace vve::syswin::glfw {
 
 	bool g_windowSizeChanged = false;
 
-	void tick() {
+	void update() {
 		glfwPollEvents();		//inject GLFW events into the callbacks
 
 		if (g_windowSizeChanged) {

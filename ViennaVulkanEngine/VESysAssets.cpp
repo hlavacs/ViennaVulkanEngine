@@ -24,7 +24,7 @@ namespace vve::sysass {
 		syseng::registerTablePointer(&g_meshes_table);
 	}
 
-	void tick() {
+	void update() {
 	}
 
 	void cleanUp() {

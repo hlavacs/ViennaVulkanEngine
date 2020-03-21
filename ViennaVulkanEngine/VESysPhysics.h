@@ -13,7 +13,7 @@
 namespace vve::sysphy {
 
 	void init();
-	void tick();
+	void update();
 	void cleanUp();
 	void close();
 

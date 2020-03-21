@@ -17,7 +17,7 @@ namespace vve::syswin {
 	bool createSurface(VkInstance instance, VkSurfaceKHR* pSurface);
 
 	void init();
-	void tick();
+	void update();
 	void cleanUp();
 	void close();
 

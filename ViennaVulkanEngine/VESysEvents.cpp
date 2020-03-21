@@ -108,7 +108,7 @@ namespace vve::syseve {
 	}
 
 
-	void tick() {
+	void update() {
 		return;
 
 		JADD( callEventsInOrder( &g_events_table, VE_EVENT_TYPE_LOOP_TICK, VE_NULL_INDEX ) );

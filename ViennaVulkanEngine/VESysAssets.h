@@ -14,7 +14,7 @@
 namespace vve::sysass {
 
 	void init();
-	void tick();
+	void update();
 	void cleanUp();
 	void close();
 

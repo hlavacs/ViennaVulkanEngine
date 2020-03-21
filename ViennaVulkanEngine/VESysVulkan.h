@@ -23,7 +23,7 @@
 namespace vve::sysvul {
 
 	void init();
-	void tick();
+	void update();
 	void cleanUp();
 	void close();
 

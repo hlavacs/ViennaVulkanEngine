@@ -37,7 +37,7 @@ namespace vve {
 				m_auto_id(entry.m_auto_id), m_table_index(entry.m_table_index), m_next_free(entry.m_next_free) {};
 		};
 
-		VeIndex							m_auto_counter = 0;				///
+		VeCount							m_auto_counter = 0;				///
 		std::vector<VeDirectoryEntry>	m_dir_entries;					///1 level of indirection, idx into the data table
 		VeIndex							m_first_free = VE_NULL_INDEX;	///index of first free entry in directory
 
@@ -49,7 +49,8 @@ namespace vve {
 		}
 
 		VeHandle writeOverOldEntry(VeIndex table_index) {
-			VeIndex auto_id				= m_auto_counter; ++m_auto_counter;
+			VeCount auto_id				= m_auto_counter;
+			++m_auto_counter;
 			VeIndex dir_index			= m_first_free;
 			VeIndex next_free			= m_dir_entries[dir_index].m_next_free;
 			m_dir_entries[dir_index]	= { auto_id, table_index, VE_NULL_INDEX };
@@ -305,7 +306,7 @@ namespace vve {
 		VeMap&		getMap(VeIndex num_map) { return *m_maps[num_map]; };
 		VeDirectory& getDirectory() { return m_directory; };
 		std::vector<VeIndex>& getTable2dir() { return m_tbl2dir; };
-		VeIndex		getSize() { return (VeIndex)m_data.size(); };
+		VeCount		getSize() { return (VeIndex)m_data.size(); };
 		bool		getEntry(VeHandle key, T& entry);
 		VeIndex		getIndexFromHandle(VeHandle key);
 		VeHandle	getHandleFromIndex(VeIndex table_index);
@@ -313,24 +314,24 @@ namespace vve {
 		uint32_t	getAllHandlesFromMap(VeIndex num_map, std::vector<VeHandle, custom_alloc<VeHandle>>& result);	//makes sense for map/multimap
 
 		template <typename M, typename K, typename I>
-		VeIndex leftJoin(VeIndex own_map, VeTable& other, VeIndex other_map, std::vector<VeHandlePair, custom_alloc<VeHandlePair>>& result);
+		VeCount leftJoin(VeIndex own_map, VeTable& other, VeIndex other_map, std::vector<VeHandlePair, custom_alloc<VeHandlePair>>& result);
 
 		template <typename M, typename K, typename I>
-		VeIndex leftJoin(VeIndex own_map, K key, VeTable& other, VeIndex other_map, std::vector<VeHandlePair, custom_alloc<VeHandlePair>>& result);
+		VeCount leftJoin(VeIndex own_map, K key, VeTable& other, VeIndex other_map, std::vector<VeHandlePair, custom_alloc<VeHandlePair>>& result);
 
 		template <typename K>
 		VeHandle	getHandleEqual(VeIndex num_map, K key );	//use this in map
 
 		template <typename K>
-		uint32_t	getHandlesEqual(VeIndex num_map, K key, std::vector<VeHandle, custom_alloc<VeHandle>>& result);	//use this in multimap
+		VeCount	getHandlesEqual(VeIndex num_map, K key, std::vector<VeHandle, custom_alloc<VeHandle>>& result);	//use this in multimap
 
 		template <typename K>
-		uint32_t	getHandlesRange(VeIndex num_map, K lower, K upper, std::vector<VeHandle, custom_alloc<VeHandle>>& result); //do not use in unordered map/multimap
+		VeCount	getHandlesRange(VeIndex num_map, K lower, K upper, std::vector<VeHandle, custom_alloc<VeHandle>>& result); //do not use in unordered map/multimap
 
-		void		forAllEntries(VeIndex num_map, std::function<void(VeHandle)>& func);
-		void		forAllEntries(VeIndex num_map, std::function<void(VeHandle)>&& func) { forAllEntries(num_map, func); };
-		void		forAllEntries(std::function<void(VeHandle)>& func) { forAllEntries(VE_NULL_INDEX, func); };
-		void		forAllEntries(std::function<void(VeHandle)>&& func) { forAllEntries(VE_NULL_INDEX, func); };
+		void	forAllEntries(VeIndex num_map, std::function<void(VeHandle)>& func);
+		void	forAllEntries(VeIndex num_map, std::function<void(VeHandle)>&& func) { forAllEntries(num_map, func); };
+		void	forAllEntries(std::function<void(VeHandle)>& func) { forAllEntries(VE_NULL_INDEX, func); };
+		void	forAllEntries(std::function<void(VeHandle)>&& func) { forAllEntries(VE_NULL_INDEX, func); };
 	};
 
 	//--------------------------------------------------------------------------------------------------------------------------
@@ -531,11 +532,11 @@ namespace vve {
 	template <typename M, typename K, typename I>
 	VeCount VeFixedSizeTable<T>::leftJoin(VeIndex own_map, VeTable& table, VeIndex other_map, std::vector<VeHandlePair, custom_alloc<VeHandlePair>>& result) {
 		in();
-		/*VeFixedSizeTable<T>* other = (VeFixedSizeTable<T>*) & table;
-		VeTypedMap<M, K, I>* l = (VeTypedMap<M, K, I>*)m_maps[own_map];
-		VeTypedMap<M, K, I>* r = (VeTypedMap<M, K, I>*)other->m_maps[other_map];
+		VeFixedSizeTable<T>* other = (VeFixedSizeTable<T>*) & table;
+		VeMap* l = (VeMap*)m_maps[own_map];
+		VeMap* r = (VeMap*)other->m_maps[other_map];
 
-		VeIndex num = 0;
+		VeCount num = 0;
 		std::vector<VeIndexPair, custom_alloc<VeIndexPair>> dir_indices(&m_heap);
 		l->leftJoin(*r, dir_indices);
 		for (auto [first, second] : dir_indices) {
@@ -543,8 +544,7 @@ namespace vve {
 			++num;
 		}
 		out();
-		return num;*/
-		return 0;
+		return num;
 	}
 
 
@@ -552,11 +552,11 @@ namespace vve {
 	template <typename M, typename K, typename I>
 	VeIndex VeFixedSizeTable<T>::leftJoin(VeIndex own_map, K key, VeTable& table, VeIndex other_map, std::vector<VeHandlePair, custom_alloc<VeHandlePair>>& result) {
 		in();
-		/*VeFixedSizeTable<T>* other = (VeFixedSizeTable<T>*) & table;
-		VeTypedMap<M, K, I>* l = (VeTypedMap<M, K, I>*)m_maps[own_map];
-		VeTypedMap<M, K, I>* r = (VeTypedMap<M, K, I>*)other->m_maps[other_map];
+		VeFixedSizeTable<T>* other = (VeFixedSizeTable<T>*) & table;
+		VeMap* l = (VeMap*)m_maps[own_map];
+		VeMap* r = (VeMap*)other->m_maps[other_map];
 
-		VeIndex num = 0;
+		VeCount num = 0;
 		std::vector<VeIndexPair, custom_alloc<VeIndexPair>> dir_indices(&m_heap);
 		l->leftJoin(key, *r, dir_indices);
 		for (auto [first, second] : dir_indices) {
@@ -564,8 +564,7 @@ namespace vve {
 			++num;
 		}
 		out();
-		return num;*/
-		return 0;
+		return num;
 	}
 
 
@@ -587,14 +586,14 @@ namespace vve {
 
 	template<typename T>
 	template<typename K>
-	inline uint32_t VeFixedSizeTable<T>::getHandlesEqual(VeIndex num_map, K key, std::vector<VeHandle, custom_alloc<VeHandle>>& result) {
+	inline VeCount VeFixedSizeTable<T>::getHandlesEqual(VeIndex num_map, K key, std::vector<VeHandle, custom_alloc<VeHandle>>& result) {
 		in();
 		assert(num_map < m_maps.size());
 		if (m_data.empty()) {
 			out();
 			return 0;
 		}
-		uint32_t num = 0;
+		VeCount num = 0;
 		std::vector<VeIndex, custom_alloc<VeIndex>> dir_indices(&m_heap);
 
 		num = m_maps[num_map]->getMappedIndicesEqual( key, dir_indices);
@@ -606,14 +605,14 @@ namespace vve {
 
 	template <typename T>
 	template <typename K> 
-	inline uint32_t VeFixedSizeTable<T>::getHandlesRange(VeIndex num_map, K lower, K upper, std::vector<VeHandle, custom_alloc<VeHandle>>& result) {
+	inline VeCount VeFixedSizeTable<T>::getHandlesRange(VeIndex num_map, K lower, K upper, std::vector<VeHandle, custom_alloc<VeHandle>>& result) {
 		in();
 		assert(num_map < m_maps.size());
 		if (m_data.empty()) {
 			out();
 			return 0;
 		}
-		uint32_t num = 0;
+		VeCount num = 0;
 		std::vector<VeIndex, custom_alloc<VeIndex>> dir_indices(&m_heap);
 
 		num = m_maps[num_map]->getMappedIndicesRange(lower, upper, dir_indices);
@@ -623,15 +622,15 @@ namespace vve {
 		return num;
 	}
 
-	template<typename T> inline	uint32_t VeFixedSizeTable<T>::getAllHandles(std::vector<VeHandle, custom_alloc<VeHandle>>& result) {
+	template<typename T> inline	VeCount VeFixedSizeTable<T>::getAllHandles(std::vector<VeHandle, custom_alloc<VeHandle>>& result) {
 		in();
 		for (VeIndex i = 0; i < m_data.size(); ++i)
 			result.emplace_back(getHandleFromIndex(i));
 		out();
-		return (uint32_t)m_data.size();
+		return (VeCount)m_data.size();
 	}
 
-	template<typename T> inline	uint32_t VeFixedSizeTable<T>::getAllHandlesFromMap(VeIndex num_map, std::vector<VeHandle, custom_alloc<VeHandle>>& result) {
+	template<typename T> inline	VeCount VeFixedSizeTable<T>::getAllHandlesFromMap(VeIndex num_map, std::vector<VeHandle, custom_alloc<VeHandle>>& result) {
 		if (m_data.empty())
 			return 0;
 
@@ -641,7 +640,7 @@ namespace vve {
 		in();
 		assert(num_map < m_maps.size());
 		std::vector<VeIndex, custom_alloc<VeIndex>> dir_indices(&m_heap);
-		uint32_t num = m_maps[num_map]->getAllIndices(dir_indices);
+		VeCount num = m_maps[num_map]->getAllIndices(dir_indices);
 		for (auto dir_index : dir_indices) 
 			result.emplace_back( m_directory.getHandle(dir_index) );
 		out();
@@ -767,7 +766,7 @@ namespace vve {
 			return me->VeFixedSizeTable<T>::getDirectory();
 		};
 
-		VeIndex	getSize() { 
+		VeCount	getSize() {
 			VeFixedSizeTable<T>* me = (VeFixedSizeTable<T>*)this->getReadTablePtr();
 			return me->VeFixedSizeTable<T>::getSize();
 		};
@@ -787,18 +786,18 @@ namespace vve {
 			return me->VeFixedSizeTable<T>::getHandleFromIndex(table_index);
 		};
 
-		uint32_t getAllHandles(std::vector<VeHandle, custom_alloc<VeHandle>>& result) {
+		VeCount getAllHandles(std::vector<VeHandle, custom_alloc<VeHandle>>& result) {
 			VeFixedSizeTable<T>* me = (VeFixedSizeTable<T>*)this->getReadTablePtr();
 			return me->VeFixedSizeTable<T>::getAllHandles(result);
 		};
 
-		uint32_t getAllHandlesFromMap(VeIndex num_map, std::vector<VeHandle, custom_alloc<VeHandle>>& result) {
+		VeCount getAllHandlesFromMap(VeIndex num_map, std::vector<VeHandle, custom_alloc<VeHandle>>& result) {
 			VeFixedSizeTable<T>* me = (VeFixedSizeTable<T>*)this->getReadTablePtr();
 			return me->VeFixedSizeTable<T>::getAllHandlesFromMap(num_map, result);
 		};
 
 		template <typename M, typename K, typename I>
-		VeIndex leftJoin(VeIndex own_map, VeTable& table, VeIndex other_map, std::vector<VeHandlePair, custom_alloc<VeHandlePair>>& result) {
+		VeCount leftJoin(VeIndex own_map, VeTable& table, VeIndex other_map, std::vector<VeHandlePair, custom_alloc<VeHandlePair>>& result) {
 			VeFixedSizeTable<T>* me = (VeFixedSizeTable<T>*)this->getReadTablePtr();
 			VeFixedSizeTable<T>* other = (VeFixedSizeTable<T>*)table.getReadTablePtr();
 
@@ -812,13 +811,13 @@ namespace vve {
 		};
 
 		template <typename K>
-		uint32_t getHandlesEqual(VeIndex num_map, K key, std::vector<VeHandle, custom_alloc<VeHandle>>& result) {
+		VeCount getHandlesEqual(VeIndex num_map, K key, std::vector<VeHandle, custom_alloc<VeHandle>>& result) {
 			VeFixedSizeTable<T>* me = (VeFixedSizeTable<T>*)this->getReadTablePtr();
 			return me->VeFixedSizeTable<T>::getHandlesEqual(num_map, key, result);
 		};
 
 		template <typename K>
-		uint32_t getHandlesRange(VeIndex num_map, K lower, K upper, std::vector<VeHandle, custom_alloc<VeHandle>>& result) {
+		VeCount getHandlesRange(VeIndex num_map, K lower, K upper, std::vector<VeHandle, custom_alloc<VeHandle>>& result) {
 			VeFixedSizeTable<T>* me = (VeFixedSizeTable<T>*)this->getReadTablePtr();
 			return me->VeFixedSizeTable<T>::getHandlesRange(num_map, lower, upper, result);
 		};

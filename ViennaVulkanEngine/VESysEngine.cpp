@@ -61,12 +61,12 @@ namespace vve {
 
 		struct VeSysTableEntry {
 			std::function<void()>	m_init;
-			std::function<void()>	m_tick;
+			std::function<void()>	m_update;
 			std::function<void()>	m_cleanUp;
 			std::function<void()>	m_close;
-			VeSysTableEntry() : m_init(), m_tick(), m_cleanUp(), m_close() {};
+			VeSysTableEntry() : m_init(), m_update(), m_cleanUp(), m_close() {};
 			VeSysTableEntry(std::function<void()> init, std::function<void()> tick, std::function<void()> cleanUp, std::function<void()> close) :
-				m_init(init), m_tick(tick), m_cleanUp(cleanUp), m_close(close) {};
+				m_init(init), m_update(tick), m_cleanUp(cleanUp), m_close(close) {};
 		};
 		VeFixedSizeTable<VeSysTableEntry> g_systems_table( "Systems Table", false, false, 0, 0);
 
@@ -125,11 +125,11 @@ namespace vve {
 
 			//first init window to get the surface!
 			g_systems_table.addEntry({ syswin::init, []() {},      syswin::cleanUp, syswin::close });
-			g_systems_table.addEntry({ sysvul::init, sysvul::tick, sysvul::cleanUp, sysvul::close });
-			g_systems_table.addEntry({ syseve::init, syseve::tick, syseve::cleanUp, syseve::close });
-			g_systems_table.addEntry({ sysass::init, sysass::tick, sysass::cleanUp, sysass::close });
-			g_systems_table.addEntry({ syssce::init, syssce::tick, syssce::cleanUp, syssce::close });
-			g_systems_table.addEntry({ sysphy::init, sysphy::tick, sysphy::cleanUp, sysphy::close });
+			g_systems_table.addEntry({ sysvul::init, sysvul::update, sysvul::cleanUp, sysvul::close });
+			g_systems_table.addEntry({ syseve::init, syseve::update, syseve::cleanUp, syseve::close });
+			g_systems_table.addEntry({ sysass::init, sysass::update, sysass::cleanUp, sysass::close });
+			g_systems_table.addEntry({ syssce::init, syssce::update, syssce::cleanUp, syssce::close });
+			g_systems_table.addEntry({ sysphy::init, sysphy::update, sysphy::cleanUp, sysphy::close });
 
 			for (auto entry : g_systems_table.getData()) {
 				entry.m_init();
@@ -162,14 +162,14 @@ namespace vve {
 
 		void cleanUp() {
 			for (auto entry : g_systems_table.getData()) {			//clean after simulation
-				syseve::addEvent({ syseve::VeEventType::VE_EVENT_TYPE_FRAME_TICK });
+				//syseve::addEvent({ syseve::VeEventType::VE_EVENT_TYPE_FRAME_TICK });
 				JADD(entry.m_cleanUp());							//includes render in the last interval
 			}
 		}
 
-		void tick() {
+		void update() {
 			for (auto entry : g_systems_table.getData()) {			//simulate one epoch
-				JADD(entry.m_tick());
+				JADD(entry.m_update());
 			}
 		}
 
@@ -188,7 +188,7 @@ namespace vve {
 			current_update_time = next_update_time;		//move one epoch further
 			next_update_time = current_update_time + time_delta;
 
-			syseve::addEvent({ syseve::VeEventType::VE_EVENT_TYPE_EPOCH_TICK });
+			//syseve::addEvent({ syseve::VeEventType::VE_EVENT_TYPE_EPOCH_TICK });
 		}
 
 		void computeOneFrame2(uint32_t step) {
@@ -200,7 +200,7 @@ namespace vve {
 			if (step == 5) goto step5;
 
 			syseve::addEvent({ syseve::VeEventType::VE_EVENT_TYPE_LOOP_TICK });
-			syswin::tick();							//must poll GLFW events in the main thread
+			syswin::update();							//must poll GLFW events in the main thread
 
 			now_time = std::chrono::high_resolution_clock::now();
 
@@ -224,7 +224,7 @@ namespace vve {
 
 		step3:
 			tickClock.start();
-			tick();
+			update();
 			JDEP(tickClock.stop();  computeOneFrame2(4));		//wait for finishing, then do step4
 			return;
 

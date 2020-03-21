@@ -48,7 +48,7 @@ namespace vve::sysvul {
 	bool g_windowSizeChanged = false;
 	VeClock tickClock("Vulkan Clock");
 
-	void tick() {
+	void update() {
 		//tickClock.tick();
 
 	}

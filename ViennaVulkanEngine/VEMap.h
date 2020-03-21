@@ -67,6 +67,11 @@ namespace vve {
 		virtual bool	insertIntoMap(void* entry, VeIndex dir_index) { assert(false); return false; };
 		virtual VeCount	deleteFromMap(void* entry, VeIndex dir_index) { assert(false); return 0; };
 
+		virtual VeCount leftJoin(VeHandle key, VeMap& other, std::vector<VeIndexPair, custom_alloc<VeIndexPair>>& result) { assert(false); return 0; };
+		virtual VeCount leftJoin(VeHandlePair key, VeMap& other, std::vector<VeIndexPair, custom_alloc<VeIndexPair>>& result) { assert(false); return 0; };
+		virtual VeCount leftJoin(VeHandleTriple key, VeMap& other, std::vector<VeIndexPair, custom_alloc<VeIndexPair>>& result) { assert(false); return 0; };
+		virtual VeCount leftJoin(VeMap& other, std::vector<VeIndexPair, custom_alloc<VeIndexPair>>& result) { assert(false); return 0; };
+
 
 		/**
 		*
@@ -228,6 +233,7 @@ namespace vve {
 		I						m_num_bytes;				///
 		VeVector<VeMapEntry>	m_map;						///
 		VeIndex					m_root = VE_NULL_INDEX;
+		VeCount					m_change_count = 0;
 
 
 		//---------------------------------------------------------------------------
@@ -529,11 +535,46 @@ namespace vve {
 		}
 
 		VeCount leftJoin(K key, VeOrderedMultimap& other, std::vector<VeIndexPair, custom_alloc<VeIndexPair>>& result) {
-			return 0;
+			std::vector < VeIndex, custom_alloc<VeIndex> > result1(&m_heap);
+			getMappedIndicesEqual(key, result1);
+
+			std::vector < VeIndex, custom_alloc<VeIndex> > result2(&m_heap);
+			other.getMappedIndicesEqual(key, result2);
+
+			for (uint32_t i = 0; i < result1.size(); ++i) {
+				for (uint32_t j = 0; j < result2.size(); ++j) {
+					result.emplace_back({ result1[i], result2[j] });
+				}
+			}
+			return result1.size()*result2.size();
 		};
 
 		VeCount leftJoin(VeOrderedMultimap& other, std::vector<VeIndexPair, custom_alloc<VeIndexPair>>& result) {
-			uint32_t num = 0;
+			if (m_map.size() == 0 ||other.m_map.size()==0)
+				return 0;
+
+			VeCount num = 0;
+			std::vector<VeMapEntry, custom_alloc<VeMapEntry> > map1(&m_heap);
+			map1.reserve(m_map.size());
+			copyTree(m_root, map1);
+
+			K last = map1[0].m_key;
+			std::vector < VeIndex, custom_alloc<VeIndex> > result2(&m_heap);
+			other.getMappedIndicesEqual(last, result2);
+
+			for (uint32_t i = 0; i < map1.size(); ++i) {
+				K key = m_map[i].m_key;
+				if (key != last) {
+					result2.clear();
+					other.getMappedIndicesEqual(key, result2);
+					last = key;
+				}
+				for (uint32_t j = 0; j < result2.size(); ++j) {
+					result.emplace_back({ map1[i].m_value, result2[j]});
+					++num;
+				}
+			}
+
 			return num;
 		};
 
@@ -543,13 +584,15 @@ namespace vve {
 			VeIndex last = m_map.size();
 			m_map.emplace_back({ key, dir_index });
 			insert(m_root, last);
+			++m_change_count;
 			return true;
 		};
 
-		virtual uint32_t deleteFromMap(void* entry, VeIndex dir_index) override {
+		virtual VeCount deleteFromMap(void* entry, VeIndex dir_index) override {
 			K key;
 			getKey(entry, m_offset, m_num_bytes, key);
 			VeMapEntry mentry(key, dir_index);
+			++m_change_count;
 			return deleteEntry(mentry, m_root);
 		};
 

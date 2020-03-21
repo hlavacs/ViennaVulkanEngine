@@ -19,7 +19,7 @@ namespace vve::syssce {
 	void init() {
 	}
 
-	void tick() {
+	void update() {
 
 	}
 

@@ -21,7 +21,7 @@ namespace vve::sysvul::fwsimple {
 
 	}
 
-	void tick() {
+	void update() {
 
 	}
 
