@@ -55,6 +55,7 @@ namespace vve::map {
 		std::cout << std::endl;
 
 		testmap.rebalanceTree();
+		testmap.print();
 		testmap.printTree();
 
 		testmap.deleteFromMap(&t3, 1);
@@ -64,6 +65,8 @@ namespace vve::map {
 		testmap.print();
 		testmap.printTree();
 		testmap.deleteFromMap(&t4, 2);
+		testmap.print();
+		testmap.printTree();
 
 		testmap.insertIntoMap(&t12, 0);
 		testmap.insertIntoMap(&t11, 0);

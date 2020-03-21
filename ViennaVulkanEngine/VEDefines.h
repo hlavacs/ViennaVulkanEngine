@@ -30,6 +30,8 @@
 
 namespace vve {
 
+	typedef uint32_t VeCount;
+
 	typedef uint32_t VeIndex;
 	constexpr VeIndex VE_NULL_INDEX = std::numeric_limits<VeIndex>::max();
 	using VeIndexPair = std::pair<VeIndex, VeIndex>;

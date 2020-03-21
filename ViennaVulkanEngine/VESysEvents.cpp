@@ -21,7 +21,6 @@ namespace vve::syseve {
 		new VeOrderedMultimap< VeHandleTriple, VeIndexTriple >
 		(VeIndexTriple{(VeIndex)offsetof(VeEventTableEntry, m_type), (VeIndex)offsetof(VeEventTableEntry, m_key_button), (VeIndex)offsetof(VeEventTableEntry, m_action)},
 		 VeIndexTriple{(VeIndex)sizeof(VeEventTableEntry::m_type),   (VeIndex)sizeof(VeEventTableEntry::m_key_button),   (VeIndex)sizeof(VeEventTableEntry::m_action)})
-
 	};
 	VeFixedSizeTableMT<VeEventTableEntry> g_events_table( "Events Table", maps2, true, true, 0, 0);
 	VeFixedSizeTableMT<VeEventTableEntry> g_events_table2(g_events_table);
@@ -32,7 +31,7 @@ namespace vve::syseve {
 		(VeIndexTriple{(VeIndex)offsetof(VeEventTableEntry, m_type), (VeIndex)offsetof(VeEventTableEntry, m_key_button), (VeIndex)offsetof(VeEventTableEntry, m_action)},
 		 VeIndexTriple{(VeIndex)sizeof(VeEventTableEntry::m_type),   (VeIndex)sizeof(VeEventTableEntry::m_key_button),   (VeIndex)sizeof(VeEventTableEntry::m_action)})
 	};
-	VeFixedSizeTableMT<VeEventTableEntry> g_continuous_events_table("Continuous Events", maps3, true, false, 0, 0);
+	VeFixedSizeTableMT<VeEventTableEntry> g_continuous_events_table("Continuous Events Table", maps3, true, false, 0, 0);
 	VeFixedSizeTableMT<VeEventTableEntry> g_continuous_events_table2(g_continuous_events_table);
 
 	//--------------------------------------------------------------------------------------------------

@@ -232,9 +232,10 @@ namespace vve {
 			if (m_clear_on_swap) {
 				getWriteTablePtr()->clear();
 			}
-			else {
+			else if(getReadTablePtr()->m_dirty ) {
 				*getWriteTablePtr() = *getReadTablePtr();
 			}
+			m_dirty = false;
 
 			m_swapping = false;
 			m_companion_table->m_swapping = false;
@@ -362,6 +363,7 @@ namespace vve {
 	template<typename T> inline void VeFixedSizeTable<T>::sortTableByMap(VeIndex num_map) {
 		in();
 		assert(!m_read_only && num_map < m_maps.size());
+		m_dirty = true;
 		std::vector<VeHandle, custom_alloc<VeHandle>> handles(&m_heap);
 		getAllHandlesFromMap(num_map, handles);
 		for (uint32_t i = 0; i < m_data.size(); ++i) 
@@ -372,6 +374,7 @@ namespace vve {
 	template<typename T> inline VeHandle VeFixedSizeTable<T>::addEntry(T entry, VeHandle* pHandle) {
 		in();
 		assert(!m_read_only);
+		m_dirty = true;
 		VeIndex table_index = (VeIndex)m_data.size();
 		m_data.emplace_back(entry);
 
@@ -388,6 +391,7 @@ namespace vve {
 	template<typename T> inline bool VeFixedSizeTable<T>::updateEntry(VeHandle handle, T entry) {
 		in();
 		assert(!m_read_only);
+		m_dirty = true;
 		if (!isValid(handle) || m_data.empty()) {
 			out();
 			return false;
@@ -411,6 +415,7 @@ namespace vve {
 
 	template<typename T> inline void VeFixedSizeTable<T>::swapEntriesByHandle(VeHandle h1, VeHandle h2) {
 		in();
+		m_dirty = true;
 		assert(!m_read_only);
 		if (h1 == h2 || !isValid(h1) || !isValid(h2)) {
 			out();
@@ -432,6 +437,7 @@ namespace vve {
 
 	template<typename T> inline bool VeFixedSizeTable<T>::deleteEntry(VeHandle key) {
 		in();
+		m_dirty = true;
 		assert(!m_read_only);
 		if (key == VE_NULL_HANDLE || m_data.empty()) {
 			out();
@@ -523,9 +529,9 @@ namespace vve {
 
 	template<typename T>
 	template <typename M, typename K, typename I>
-	VeIndex VeFixedSizeTable<T>::leftJoin(VeIndex own_map, VeTable& table, VeIndex other_map, std::vector<VeHandlePair, custom_alloc<VeHandlePair>>& result) {
+	VeCount VeFixedSizeTable<T>::leftJoin(VeIndex own_map, VeTable& table, VeIndex other_map, std::vector<VeHandlePair, custom_alloc<VeHandlePair>>& result) {
 		in();
-		VeFixedSizeTable<T>* other = (VeFixedSizeTable<T>*) & table;
+		/*VeFixedSizeTable<T>* other = (VeFixedSizeTable<T>*) & table;
 		VeTypedMap<M, K, I>* l = (VeTypedMap<M, K, I>*)m_maps[own_map];
 		VeTypedMap<M, K, I>* r = (VeTypedMap<M, K, I>*)other->m_maps[other_map];
 
@@ -537,7 +543,8 @@ namespace vve {
 			++num;
 		}
 		out();
-		return num;
+		return num;*/
+		return 0;
 	}
 
 
@@ -545,7 +552,7 @@ namespace vve {
 	template <typename M, typename K, typename I>
 	VeIndex VeFixedSizeTable<T>::leftJoin(VeIndex own_map, K key, VeTable& table, VeIndex other_map, std::vector<VeHandlePair, custom_alloc<VeHandlePair>>& result) {
 		in();
-		VeFixedSizeTable<T>* other = (VeFixedSizeTable<T>*) & table;
+		/*VeFixedSizeTable<T>* other = (VeFixedSizeTable<T>*) & table;
 		VeTypedMap<M, K, I>* l = (VeTypedMap<M, K, I>*)m_maps[own_map];
 		VeTypedMap<M, K, I>* r = (VeTypedMap<M, K, I>*)other->m_maps[other_map];
 
@@ -557,7 +564,8 @@ namespace vve {
 			++num;
 		}
 		out();
-		return num;
+		return num;*/
+		return 0;
 	}
 
 
@@ -887,7 +895,6 @@ namespace vve {
 			}
 		}
 
-
 	public:
 		VeVariableSizeTable(std::string name, VeIndex size = 1<<20, bool clear_on_swap = false, VeIndex align = 16, bool immediateDefrag = false ) :
 			VeTable(name, clear_on_swap), m_directory(name), m_align(align), m_immediateDefrag(immediateDefrag) {
@@ -938,13 +945,23 @@ namespace vve {
 				((VeVariableSizeTable*)getWriteTablePtr())->clear();
 			}
 			else {
-				((VeVariableSizeTable*)getWriteTablePtr())->m_data = ((VeVariableSizeTable*)getReadTablePtr())->m_data;
-				*(m_directory.getWriteTablePtr()) = *(m_directory.getReadTablePtr());
+				auto pWrite = (VeVariableSizeTable*)getWriteTablePtr();
+				auto pRead = (VeVariableSizeTable*)getReadTablePtr();
+
+				if (pRead->m_dirty) {
+					if (pWrite->m_data.size() != pRead->m_data.size()) {
+						pWrite->m_data.resize(pRead->m_data.size());
+					}
+					memcpy(pWrite->m_data.data(), pRead->m_data.data(), pRead->m_data.size());
+					*(m_directory.getWriteTablePtr()) = *(m_directory.getReadTablePtr());
+				}
+				m_dirty = false;
 			}
 		};
 
 		virtual void clear() {
 			in();
+			m_dirty = true;
 			m_directory.clear();
 			uint64_t start = (VeIndex)(alignBoundary((uint64_t)m_data.data(), m_align) - (uint64_t)m_data.data());
 			VeDirectoryEntry entry{ (VeIndex)start, (VeIndex)(m_data.size() - m_align), 0 };
@@ -957,7 +974,7 @@ namespace vve {
 			size = (VeIndex)alignBoundary( size, m_align );
 
 			std::vector<VeHandle, custom_alloc<VeHandle>> result(&m_heap);
-			m_directory.getHandlesEqual((VeIndex)0, (VeIndex)0, result );
+			m_directory.getHandlesEqual((VeIndex)0, (VeIndex)0, result ); //map 0, all where occupied == false
 
 			VeHandle h = VE_NULL_HANDLE;
 			VeDirectoryEntry entry;
@@ -977,6 +994,7 @@ namespace vve {
 				return insertBlob(ptr, size, pHandle, false);
 			}
 
+			m_dirty = true;
 			if (entry.m_size > size) { 
 				VeDirectoryEntry newentry{ entry.m_start + size, entry.m_size - size, 0 };
 				m_directory.addEntry(newentry);
@@ -1008,6 +1026,7 @@ namespace vve {
 				out();
 				return false;
 			}
+			m_dirty = true;
 			entry.m_occupied = 0;
 			m_directory.updateEntry(handle, entry);
 			if (m_immediateDefrag) 

@@ -177,7 +177,6 @@ namespace vve {
 			for (auto table : g_main_table.getData()) {	//swap tables
 				//std::cout << "swap table " << table.m_name << " " << std::endl;
 				if (table.m_table_pointer->getCompanionTable() != nullptr) {
-					if( table.m_name == "Events Table")
 					JADD(table.m_table_pointer->swapTables());	//might clear() some tables here
 				}
 			}
@@ -208,9 +207,13 @@ namespace vve {
 			if (now_time < next_update_time) {		//still in the same time epoch
 				goto step3;
 			}
+			JDEP(computeOneFrame2(1));		//wait for finishing, then do step3
+			return;
 
 		step1:
 			forwardTime();
+			JDEP(computeOneFrame2(2));		//wait for finishing, then do step3
+			return;
 
 		step2:
 			swapClock.start();
