@@ -124,7 +124,7 @@ namespace vve {
 			registerTablePointer(&g_systems_table);
 
 			//first init window to get the surface!
-			g_systems_table.addEntry({ syswin::init, []() {},      syswin::cleanUp, syswin::close });
+			g_systems_table.addEntry({ syswin::init, []() {},        syswin::cleanUp, syswin::close });
 			g_systems_table.addEntry({ sysvul::init, sysvul::update, sysvul::cleanUp, sysvul::close });
 			g_systems_table.addEntry({ syseve::init, syseve::update, syseve::cleanUp, syseve::close });
 			g_systems_table.addEntry({ sysass::init, sysass::update, sysass::cleanUp, sysass::close });
@@ -139,7 +139,6 @@ namespace vve {
 
 #ifdef VE_ENABLE_MULTITHREADING
 			VeIndex i = 0;
-			threadCount = std::thread::hardware_concurrency();
 			for (auto table : g_main_table.getData()) {
 				table.m_table_pointer->setName(table.m_name);
 				if (!table.m_table_pointer->getReadOnly()) {
@@ -156,13 +155,13 @@ namespace vve {
 
 		VeClock loopClock(   "Game loop   ", 1);
 		VeClock swapClock(   "Swap Clock  ", 200);
-		VeClock forwardClock("FW Clock    ", 100);
-		VeClock tickClock(   "Tick Clock  ", 100000);
-		VeClock cleanClock(  "Clean Clock ", 100000);
+		VeClock forwardClock("FW Clock    ", 1);
+		VeClock tickClock(   "Tick Clock  ", 100);
+		VeClock cleanClock(  "Clean Clock ", 100);
 
 		void cleanUp() {
 			for (auto entry : g_systems_table.getData()) {			//clean after simulation
-				//syseve::addEvent({ syseve::VeEventType::VE_EVENT_TYPE_FRAME_TICK });
+				syseve::addEvent({ syseve::VeEventType::VE_EVENT_TYPE_FRAME_TICK });
 				JADD(entry.m_cleanUp());							//includes render in the last interval
 			}
 		}
@@ -183,12 +182,10 @@ namespace vve {
 		}
 
 		void forwardTime() {
-			//forwardClock.tick();
-
 			current_update_time = next_update_time;		//move one epoch further
 			next_update_time = current_update_time + time_delta;
 
-			//syseve::addEvent({ syseve::VeEventType::VE_EVENT_TYPE_EPOCH_TICK });
+			syseve::addEvent({ syseve::VeEventType::VE_EVENT_TYPE_EPOCH_TICK });
 		}
 
 		void computeOneFrame2(uint32_t step) {
@@ -198,50 +195,51 @@ namespace vve {
 			if (step == 3) goto step3;
 			if (step == 4) goto step4;
 			if (step == 5) goto step5;
+			if (step == 6) goto step6;
 
-			syseve::addEvent({ syseve::VeEventType::VE_EVENT_TYPE_LOOP_TICK });
 			syswin::update();							//must poll GLFW events in the main thread
 
 			now_time = std::chrono::high_resolution_clock::now();
 
 			if (now_time < next_update_time) {		//still in the same time epoch
-				goto step3;
+				JDEP(computeOneFrame2(6));		//wait for finishing, then do step3
+				return;
 			}
 			JDEP(computeOneFrame2(1));		//wait for finishing, then do step3
 			return;
 
 		step1:
+			//forwardClock.tick();
 			forwardTime();
 			JDEP(computeOneFrame2(2));		//wait for finishing, then do step3
 			return;
 
 		step2:
-			swapClock.start();
-
+			//swapClock.start();
 			swapTables();
-			JDEP(swapClock.stop(); computeOneFrame2(3));		//wait for finishing, then do step3
+			JDEP(computeOneFrame2(3));		//wait for finishing, then do step3
 			return;
 
 		step3:
-			tickClock.start();
+			//tickClock.start();
 			update();
-			JDEP(tickClock.stop();  computeOneFrame2(4));		//wait for finishing, then do step4
+			JDEP( computeOneFrame2(4));		//wait for finishing, then do step4
 			return;
 
 		step4:
-			cleanClock.start();
+			//cleanClock.start();
 			cleanUp();
-			JDEP(cleanClock.stop(); computeOneFrame2(5));		//wait for finishing, then do step5
+			JDEP(computeOneFrame2(5));		//wait for finishing, then do step5
 			return;
 
 		step5: 
 			reached_time = next_update_time;
 
+		step6:
 			if (now_time > next_update_time) {	//if now is not reached yet
 				JDEP( computeOneFrame2(1); );	//move one epoch further
 			}
 		}
-
 
 
 		//can call this from the main thread if you have your own game loop
@@ -254,7 +252,9 @@ namespace vve {
 		std::atomic<bool> g_goon = true;
 
 		void runGameLoopMT() {
-			//loopClock.tick();
+			loopClock.tick();
+
+			syseve::addEvent({ syseve::VeEventType::VE_EVENT_TYPE_LOOP_TICK });
 
 			JRESET;
 			JADDT(computeOneFrame2(0), vgjs::TID(0, 2));	 //run on main thread for polling!

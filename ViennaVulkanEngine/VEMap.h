@@ -585,6 +585,8 @@ namespace vve {
 			m_map.emplace_back({ key, dir_index });
 			insert(m_root, last);
 			++m_change_count;
+			if (m_change_count % 20 == 0)
+				rebalanceTree();
 			return true;
 		};
 
@@ -593,6 +595,8 @@ namespace vve {
 			getKey(entry, m_offset, m_num_bytes, key);
 			VeMapEntry mentry(key, dir_index);
 			++m_change_count;
+			if (m_change_count % 20 == 0)
+				rebalanceTree();
 			return deleteEntry(mentry, m_root);
 		};
 
