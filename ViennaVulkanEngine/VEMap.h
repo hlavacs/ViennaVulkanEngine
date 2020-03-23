@@ -166,18 +166,21 @@ namespace vve {
 		struct VeMapEntry {
 			K			m_key;
 			VeIndex		m_value = VE_NULL_INDEX;
+			int32_t		m_height = 0;				///<height of subtree rooting at this node
 			VeIndex		m_parent = VE_NULL_INDEX;	///<index of parent
 			VeIndex		m_left = VE_NULL_INDEX;		///<index of first child with lower key
 			VeIndex		m_right = VE_NULL_INDEX;	///<index of first child with larger key
 
 			VeMapEntry() : m_key() {
 				m_value = VE_NULL_INDEX;
+				m_height = 0;
 				m_parent = VE_NULL_INDEX;	///<index of parent
 				m_left = VE_NULL_INDEX;		///<index of first child with lower key
 				m_right = VE_NULL_INDEX;	///<index of first child with larger key
 			};
 
 			VeMapEntry( K key, VeIndex value ) : m_key(key), m_value(value) {
+				m_height = 0;
 				m_parent = VE_NULL_INDEX;	///<index of parent
 				m_left = VE_NULL_INDEX;		///<index of first child with lower key
 				m_right = VE_NULL_INDEX;	///<index of first child with larger key
@@ -186,6 +189,7 @@ namespace vve {
 			void operator=(const VeMapEntry& entry) {
 				m_key = entry.m_key;
 				m_value = entry.m_value;
+				m_height = entry.m_height;
 				m_parent = entry.m_parent;
 				m_left = entry.m_left;
 				m_right = entry.m_right;
@@ -218,7 +222,7 @@ namespace vve {
 
 			void print(uint32_t i) {
 				std::cout << "IDX " << i;
-				std::cout << " KEY " << m_key << " VAL " << m_value << std::endl;
+				std::cout << " KEY " << m_key << " VAL " << m_value << " HEIGHT " << m_height;
 				std::cout << " PAR " << m_parent << " LEFT " << m_left << " RIGHT " << m_right << std::endl << std::endl;
 			};
 		};
@@ -233,87 +237,151 @@ namespace vve {
 		I						m_num_bytes;				///
 		VeVector<VeMapEntry>	m_map;						///
 		VeIndex					m_root = VE_NULL_INDEX;
-		VeCount					m_change_count = 0;
 
+
+		//---------------------------------------------------------------------------
+		//subtree properties
+
+		int32_t getHeight(VeIndex node) {
+			if (node == VE_NULL_INDEX)
+				return 0;
+
+			return m_map[node].m_height;
+		}
+
+		int32_t getBalance(VeIndex node) {
+			if (node == VE_NULL_INDEX)
+				return 0;
+
+			return getHeight(m_map[node].m_left) - getHeight(m_map[node].m_right);
+		}
+
+		//---------------------------------------------------------------------------
+		//rotate subtrees
+
+		VeIndex rightRotate(VeIndex y) {
+			VeIndex x = m_map[y].m_left;
+			VeIndex T2 = m_map[x].m_right;
+
+			// Update children 
+			m_map[x].m_right = y;
+			m_map[y].m_left = T2;
+
+			// Update parents
+			if (m_root == y)
+				m_root = x;
+			m_map[x].m_parent = m_map[y].m_parent;
+			m_map[y].m_parent = x;
+
+			// Update heights  
+			m_map[y].m_height = std::max(getHeight(m_map[y].m_left), getHeight(m_map[y].m_right)) + 1;
+			m_map[x].m_height = std::max(getHeight(m_map[x].m_left), getHeight(m_map[x].m_right)) + 1;
+
+			// Return new root  
+			return x;
+		}
+
+		VeIndex leftRotate( VeIndex x ) {
+			VeIndex y = m_map[x].m_right;
+			VeIndex T2 = m_map[y].m_left;
+
+			// Update children
+			m_map[y].m_left = x;
+			m_map[x].m_right = T2;
+
+			// Update parents
+			if (m_root == x)
+				m_root = y;
+			m_map[y].m_parent = m_map[x].m_parent;
+			m_map[x].m_parent = y;
+
+			// Update heights  
+			m_map[x].m_height = std::max(getHeight(m_map[x].m_left), getHeight(m_map[x].m_right)) + 1;
+			m_map[y].m_height = std::max(getHeight(m_map[y].m_left), getHeight(m_map[y].m_right)) + 1;
+
+			// Return new root  
+			return y;
+		}
 
 		//---------------------------------------------------------------------------
 		//insert
 
-		bool insert( VeIndex root, VeIndex index ) {
-			if (m_root == VE_NULL_INDEX) {
+		VeIndex insert( VeIndex node, VeIndex index ) {
+			if (m_root == VE_NULL_INDEX)
 				m_root = index;
-				return false;
+
+			if (node == VE_NULL_INDEX) {
+				return index;
 			}
 
-			if (m_map[index] == m_map[root]) {
-				return false;
+			VeIndex& left  = m_map[node].m_left;
+			VeIndex& right = m_map[node].m_right;
+
+			if (m_map[index] < m_map[node]) {
+				left = insert(left, index);
+				m_map[left].m_parent = node;
+			}
+			else if (m_map[index] > m_map[node]) {
+				right = insert(right, index);
+				m_map[right].m_parent = node;
+			}
+			else {
+				return node;
 			}
 
-			if (m_map[index] < m_map[root]) {
-				if (m_map[root].m_left != VE_NULL_INDEX) {
-					return insert(m_map[root].m_left, index);
-				}
-				m_map[root].m_left = index;
-				m_map[index].m_parent = root;
-				return true;
+			m_map[node].m_height = 1 + std::max(getHeight(left), getHeight(right));
+
+			left = m_map[node].m_left;
+			right = m_map[node].m_right;
+
+			int32_t balance = getBalance(node);
+
+			// Left Left Case  
+			if (balance > 1 && m_map[index] < m_map[left]) {
+				return rightRotate(node);
 			}
 
-			if (m_map[root].m_right != VE_NULL_INDEX) {
-				return insert(m_map[root].m_right, index);
+				// Right Right Case  
+			if (balance < -1 && m_map[index] > m_map[right]) {
+				return leftRotate(node);
 			}
-			m_map[root].m_right = index;
-			m_map[index].m_parent = root;
-			return true;
+
+			// Left Right Case  
+			if (balance > 1 && m_map[index] > m_map[left]) {
+				left = leftRotate(left);
+				return rightRotate(node);
+			}
+
+			// Right Left Case  
+			if (balance < -1 && m_map[index] < m_map[right]) {
+				right = rightRotate(right);
+				return leftRotate(node);
+			}
+
+			return node;
 		};
 
-		//---------------------------------------------------------------------------
-		//rebalance
-
-		void copyTree(VeIndex index, std::vector<VeMapEntry, custom_alloc<VeMapEntry> >& result) {
-			if (index == VE_NULL_INDEX)
-				return;
-
-			copyTree(m_map[index].m_left, result);
-			result.push_back(m_map[index]);
-			copyTree(m_map[index].m_right, result);
-		};
-
-
-		void insertRange(int first, int last, std::vector<VeMapEntry, custom_alloc<VeMapEntry> > &map) {
-			if (first > last)
-				return;
-
-			VeIndex middle = (first + last) / 2;
-
-			m_map.emplace_back({ map[middle].m_key, map[middle].m_value });
-			insert(m_root, (VeIndex)m_map.size()-1);
-
-			insertRange( first, middle - 1, map);
-			insertRange( middle + 1, last, map);
-		};
 
 		//---------------------------------------------------------------------------
 		//find
 
-		VeIndex findEntry(VeMapEntry &entry, VeIndex root) {
-			if (root == VE_NULL_INDEX)
+		VeIndex findEntry(VeIndex node, VeMapEntry &entry ) {
+			if (node == VE_NULL_INDEX)
 				return VE_NULL_INDEX;
 
-			if (m_map[root] == entry )
-				return root;
+			if (m_map[node] == entry )
+				return node;
 
-			VeIndex left = m_map[root].m_left;
+			if (entry < m_map[node]) 
+				return findEntry(m_map[node].m_left, entry);
 
-			if (entry < m_map[root]) 
-				return findEntry(entry, left);
-
-			return findEntry(entry, m_map[root].m_right);
+			return findEntry(m_map[node].m_right, entry);
 		};
 
 
 		VeIndex find(K& key, VeIndex value) {
 			VeMapEntry entry{ key, value };
-			return findEntry(entry, m_root);
+			return findEntry(m_root, entry);
 		};
 
 
@@ -326,6 +394,8 @@ namespace vve {
 		//delete
 
 		void replaceChild(VeIndex parent, VeIndex old_child, VeIndex new_child) {
+			//print();
+
 			if (parent == VE_NULL_INDEX) {
 				m_root = new_child;
 				return;
@@ -334,7 +404,7 @@ namespace vve {
 			if (new_child != VE_NULL_INDEX)
 				m_map[new_child].m_parent = parent;
 
-			if (old_child == VE_NULL_INDEX)
+			if (old_child == VE_NULL_INDEX) //cannot identify right child so return
 				return;
 
 			if (m_map[parent].m_left == old_child) {
@@ -343,7 +413,6 @@ namespace vve {
 			}
 			m_map[parent].m_right = new_child;
 		};
-
 
 		void deleteIndex(VeIndex index) {
 			VeIndex last = m_map.size() - 1;
@@ -355,106 +424,148 @@ namespace vve {
 				VeIndex left = m_map[index].m_left;
 				VeIndex right = m_map[index].m_right;
 
-				replaceChild(parent, last, index);
-				replaceChild(index, left, left);
-				replaceChild(index, right, right);
+				replaceChild(parent, last, index);		//reset child
+				replaceChild(index, left, left);		//reset parent
+				replaceChild(index, right, right);		//reset parent
 			}
 			m_map.pop_back();
 		};
 
 
-		VeIndex findMin(VeIndex root) {
-			assert(root != VE_NULL_INDEX);
-			if (m_map[root].m_left == VE_NULL_INDEX) 
-				return root;
-			return findMin(m_map[root].m_left);
+		VeIndex findMin(VeIndex node) {
+			assert(node != VE_NULL_INDEX);
+			while (m_map[node].m_left != VE_NULL_INDEX) 
+				node = m_map[node].m_left;
+			return node;
 		};
 
+		void replaceKeyValue(VeIndex dst, VeIndex src) {
+			m_map[dst].m_key = m_map[src].m_key;
+			m_map[dst].m_value = m_map[src].m_value;
+		}
 
-		VeCount deleteEntry( VeMapEntry &entry, VeIndex root ) {
-			VeIndex index = findEntry( entry, root);
+		VeIndex deleteEntry(VeIndex node, VeMapEntry& entry, 
+							std::vector<VeIndex, custom_alloc<VeIndex>> &del_indices) {
 
-			if (index != VE_NULL_INDEX ) {
-				VeIndex parent = m_map[index].m_parent;
-				VeIndex left = m_map[index].m_left;
-				VeIndex right = m_map[index].m_right;
+			if (node == VE_NULL_INDEX)
+				return node;
 
-				if (left != VE_NULL_INDEX && right != VE_NULL_INDEX) {
-					VeIndex min_idx = findMin(m_map[index].m_right);
-					m_map[index].m_key = m_map[min_idx].m_key;
-					m_map[index].m_value = m_map[min_idx].m_value;
-					deleteEntry(m_map[min_idx], right);
-					return 1;
-				} 
+			VeIndex& parent = m_map[node].m_parent;
+			VeIndex& left = m_map[node].m_left;
+			VeIndex& right = m_map[node].m_right;
 
-				if (left == VE_NULL_INDEX && right == VE_NULL_INDEX)
-					replaceChild(m_map[index].m_parent, index, VE_NULL_INDEX);
-
-				if (left != VE_NULL_INDEX)
-					replaceChild(parent, index, left);
-
-				if (right != VE_NULL_INDEX)
-					replaceChild(parent, index, right);
-
-				deleteIndex(index);
-				return 1;
+			if (entry < m_map[node]) {
+				left = deleteEntry(left, entry, del_indices);
+				replaceChild(node, left, left);
 			}
-			return 0;
+			else if (m_map[node] < entry) {
+				right = deleteEntry(right, entry, del_indices);
+				replaceChild(node, right, right);
+			}
+			else {	//have found the node
+				if (left != VE_NULL_INDEX && right != VE_NULL_INDEX) {
+					VeIndex min_idx = findMin(right);
+					replaceKeyValue(node, min_idx);
+					deleteEntry(right, m_map[min_idx], del_indices);
+				}
+				else {
+					VeIndex temp = left != VE_NULL_INDEX ? left : right;
+					if (temp == VE_NULL_INDEX) {
+						del_indices.push_back(node);
+						return VE_NULL_INDEX;
+					}
+					replaceChild(parent, node, temp);					
+					del_indices.push_back(node);
+					node = temp;				//return successor
+				}
+			}
+
+			if (node == VE_NULL_INDEX)
+				return node;
+
+			m_map[node].m_height = 1 + std::max(getHeight(left), 
+												getHeight(right));
+
+			int balance = getBalance(node);
+
+			// If this node becomes unbalanced, then there are 4 cases  
+
+			// Left Left Case  
+			if (balance > 1 && getBalance(left) >= 0)
+				return rightRotate(node);
+
+			// Left Right Case  
+			if (balance > 1 && getBalance(left) < 0) {
+				left = leftRotate(left);
+				return rightRotate(node);
+			}
+
+			// Right Right Case  
+			if (balance < -1 && getBalance(right) <= 0)
+				return leftRotate(node);
+
+			// Right Left Case  
+			if (balance < -1 && getBalance(right) > 0) {
+				right = rightRotate(right);
+				return leftRotate(node);
+			}
+
+			return node;
 		};
 
 		//---------------------------------------------------------------------------
 		//get indices
 
-		VeCount getAllIndices(VeIndex root, std::vector<VeIndex, custom_alloc<VeIndex>>& result) {
-			if (root == VE_NULL_INDEX)
+		VeCount getAllIndices(VeIndex node, std::vector<VeIndex, custom_alloc<VeIndex>>& result) {
+			if (node == VE_NULL_INDEX)
 				return 0;
 
-			VeCount num = getAllIndices(m_map[root].m_left, result);
-			result.push_back(m_map[root].m_value);
-			num += getAllIndices(m_map[root].m_right, result);
+			VeCount num = getAllIndices(m_map[node].m_left, result);
+			result.push_back(m_map[node].m_value);
+			num += getAllIndices(m_map[node].m_right, result);
 			return num + 1;
 		};
 
 
-		VeCount getMappedIndicesEqual(VeIndex root, VeMapEntry &entry, std::vector<VeIndex, custom_alloc<VeIndex>>& result) {
-			if (root == VE_NULL_INDEX)
+		VeCount getMappedIndicesEqual(VeIndex node, VeMapEntry &entry, std::vector<VeIndex, custom_alloc<VeIndex>>& result) {
+			if (node == VE_NULL_INDEX)
 				return 0;
 
 			VeCount num = 0;
 
-			if(entry <= m_map[root])
-				num += getMappedIndicesEqual(m_map[root].m_left, entry, result);
+			if(entry <= m_map[node])
+				num += getMappedIndicesEqual(m_map[node].m_left, entry, result);
 
-			if (entry.m_key == m_map[root].m_key) {
-				result.push_back(root);
+			if (entry.m_key == m_map[node].m_key) {
+				result.push_back(node);
 				++num;
 			}
 
-			if (m_map[root] <= entry)
-				num += getMappedIndicesEqual(m_map[root].m_right, entry, result);
+			if (m_map[node] <= entry)
+				num += getMappedIndicesEqual(m_map[node].m_right, entry, result);
 			return num;
 		};
 
 
-		VeCount getMappedIndicesRange(VeIndex root, VeMapEntry& lower, VeMapEntry upper, std::vector<VeIndex, custom_alloc<VeIndex>>& result) {
-			if (root == VE_NULL_INDEX)
+		VeCount getMappedIndicesRange(VeIndex node, VeMapEntry& lower, VeMapEntry upper, std::vector<VeIndex, custom_alloc<VeIndex>>& result) {
+			if (node == VE_NULL_INDEX)
 				return 0;
 
-			if (m_map[root] < lower || m_map[root] > upper)
+			if (m_map[node] < lower || m_map[node] > upper)
 				return 0;
 
 			VeCount num = 0;
 
-			if (lower < m_map[root])
-				num += getMappedIndicesRange(m_map[root].m_left, lower, upper, result);
+			if (lower < m_map[node])
+				num += getMappedIndicesRange(m_map[node].m_left, lower, upper, result);
 
-			if (lower <= m_map[root] && m_map[root] <= upper) {
-				result.push_back(m_map[root].m_value);
+			if (lower <= m_map[node] && m_map[node] <= upper) {
+				result.push_back(m_map[node].m_value);
 				++num;
 			}
 
-			if (m_map[root] < upper)
-				num += getMappedIndicesRange(m_map[root].m_right, lower, upper, result);
+			if (m_map[node] < upper)
+				num += getMappedIndicesRange(m_map[node].m_right, lower, upper, result);
 
 			return num;
 		};
@@ -463,16 +574,16 @@ namespace vve {
 		//---------------------------------------------------------------------------
 		//debug
 
-		void printTree(VeIndex root, VeIndex level) {
-			if (root == VE_NULL_INDEX)
+		void printTree(VeIndex node, VeIndex level) {
+			if (node == VE_NULL_INDEX)
 				return;
 
-			printTree(m_map[root].m_left, level + 1);
+			printTree(m_map[node].m_left, level + 1);
 
 			std::cout << std::setw(level) << " ";
-			std::cout << "KEY " << m_map[root].m_key << " VAL " << m_map[root].m_value << std::endl;
+			std::cout << "KEY " << m_map[node].m_key << " VAL " << m_map[node].m_value << std::endl;
 
-			printTree(m_map[root].m_right, level + 1);
+			printTree(m_map[node].m_right, level + 1);
 		};
 
 
@@ -489,31 +600,27 @@ namespace vve {
 			m_map = map->m_map;
 		};
 
+		const VeVector<VeMapEntry>& data() {
+			return m_map;
+		};
+
 		virtual void clear() {
 			m_root = VE_NULL_INDEX;
 			m_map.clear();
-		};
-
-		void rebalanceTree() {
-			std::vector<VeMapEntry, custom_alloc<VeMapEntry> > map(&m_heap);
-			map.reserve(m_map.size());
-			copyTree(m_root, map);
-			clear();
-			insertRange(0, (VeIndex)map.size() - 1, map);
 		};
 
 		void printTree() {
 			std::cout << "Root " << m_root << std::endl;
 			printTree(m_root, 1);
 			std::cout << std::endl;
-		}
+		};
 
 		void print() {
-			std::cout << "Root " << m_root << std::endl;
+			std::cout << "Num " << m_map.size() << " Root " << m_root << std::endl;
 			for (uint32_t i = 0; i < m_map.size(); ++i) {
 				m_map[i].print(i);
 			}
-		}
+		};
 
 		virtual bool getMappedIndexEqual(K key, VeIndex& index) override {
 			index = find(key);
@@ -531,8 +638,8 @@ namespace vve {
 		};
 
 		virtual VeCount getAllIndices(std::vector<VeIndex, custom_alloc<VeIndex>>& result) override {
-			return getAllIndices( m_root, result );
-		}
+			return getAllIndices(m_root, result);
+		};
 
 		VeCount leftJoin(K key, VeOrderedMultimap& other, std::vector<VeIndexPair, custom_alloc<VeIndexPair>>& result) {
 			std::vector < VeIndex, custom_alloc<VeIndex> > result1(&m_heap);
@@ -584,9 +691,6 @@ namespace vve {
 			VeIndex last = m_map.size();
 			m_map.emplace_back({ key, dir_index });
 			insert(m_root, last);
-			++m_change_count;
-			if (m_change_count % 20 == 0)
-				rebalanceTree();
 			return true;
 		};
 
@@ -594,10 +698,11 @@ namespace vve {
 			K key;
 			getKey(entry, m_offset, m_num_bytes, key);
 			VeMapEntry mentry(key, dir_index);
-			++m_change_count;
-			if (m_change_count % 20 == 0)
-				rebalanceTree();
-			return deleteEntry(mentry, m_root);
+			std::vector<VeIndex, custom_alloc<VeIndex>> del_indices(&m_heap);
+			VeCount res = deleteEntry(m_root, mentry, del_indices );
+			for (auto idx : del_indices)
+				deleteIndex(idx);
+			return res;
 		};
 
 	};
@@ -605,7 +710,7 @@ namespace vve {
 
 	namespace map {
 		void testMap();
-	}
+	};
 
 }
 

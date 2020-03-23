@@ -188,6 +188,7 @@ namespace vve {
 			syseve::addEvent({ syseve::VeEventType::VE_EVENT_TYPE_EPOCH_TICK });
 		}
 
+		//acts like a co-routine
 		void computeOneFrame2(uint32_t step) {
 
 			if (step == 1) goto step1;
@@ -195,14 +196,12 @@ namespace vve {
 			if (step == 3) goto step3;
 			if (step == 4) goto step4;
 			if (step == 5) goto step5;
-			if (step == 6) goto step6;
 
-			syswin::update();							//must poll GLFW events in the main thread
+			syswin::update();		//must poll GLFW events in the main thread
 
 			now_time = std::chrono::high_resolution_clock::now();
 
 			if (now_time < next_update_time) {		//still in the same time epoch
-				JDEP(computeOneFrame2(6));		//wait for finishing, then do step3
 				return;
 			}
 			JDEP(computeOneFrame2(1));		//wait for finishing, then do step3
@@ -235,7 +234,6 @@ namespace vve {
 		step5: 
 			reached_time = next_update_time;
 
-		step6:
 			if (now_time > next_update_time) {	//if now is not reached yet
 				JDEP( computeOneFrame2(1); );	//move one epoch further
 			}

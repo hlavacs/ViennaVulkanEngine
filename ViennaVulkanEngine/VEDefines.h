@@ -34,18 +34,15 @@ namespace vve {
 
 	typedef uint32_t VeIndex;
 	constexpr VeIndex VE_NULL_INDEX = std::numeric_limits<VeIndex>::max();
+	constexpr VeIndex VE_MAX_INDEX = VE_NULL_INDEX - 1;
 	using VeIndexPair = std::pair<VeIndex, VeIndex>;
 	using VeIndexTriple = std::tuple<VeIndex, VeIndex, VeIndex>;
 
 	typedef uint64_t VeHandle;
 	constexpr VeHandle VE_NULL_HANDLE = std::numeric_limits<VeHandle>::max();
+	constexpr VeHandle VE_MAX_HANDLE = VE_NULL_HANDLE - 1;
 	using VeHandlePair = std::pair<VeHandle, VeHandle>;
 	using VeHandleTriple = std::tuple<VeHandle, VeHandle, VeHandle>;
-
-	using VeHandleIndexPair = std::pair<const VeHandle, VeIndex>;
-	using VeStringIndexPair = std::pair<const std::string, VeIndex>;
-
-	using my_pair = std::pair<int, int>;
 
 	inline std::ostream& operator<<(std::ostream& stream, VeHandlePair& pair) {
 		stream << pair.first;
