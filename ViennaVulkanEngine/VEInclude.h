@@ -15,6 +15,7 @@
 
 #include "VEDefines.h"
 #include "VEVector.h"
+#include "VEMap.h"
 #include "VETable.h"
 #include "VESysEngine.h"
 #include "VEGameJobSystem.h"

@@ -28,6 +28,7 @@
 #include <functional>
 
 
+
 namespace vve {
 
 	typedef uint32_t VeCount;
@@ -162,6 +163,7 @@ namespace vve {
 #include <irrKlang.h>
 
 #ifndef VE_PUBLIC_INTERFACE
+
 
 #define GLFW_INCLUDE_VULKAN
 #include <GLFW/glfw3.h>

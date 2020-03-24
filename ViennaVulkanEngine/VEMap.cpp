@@ -31,37 +31,47 @@ namespace vve::map {
 		TestEntry t12{ 12, 1, 2, "A" };
 
 		testmap.insertIntoMap( &t1, 1 );
+		testmap.print();
 		testmap.printTree();
-		std::cout << std::endl;
 		testmap.insertIntoMap(&t2, 0);
+		testmap.print();
 		testmap.printTree();
-		std::cout << std::endl;
 		testmap.deleteFromMap(&t2, 0);
+		testmap.print();
 		testmap.printTree();
-		std::cout << std::endl;
 
 		testmap.insertIntoMap(&t3, 0);
+		testmap.print();
 		testmap.printTree();
 		testmap.insertIntoMap(&t3, 1);
+		testmap.print();
 		testmap.printTree();
 		testmap.insertIntoMap(&t3, 2);
+		testmap.print();
 		testmap.printTree();
 
 		testmap.deleteFromMap(&t3, 1);
+		testmap.print();
 		testmap.printTree();
 		testmap.insertIntoMap(&t3, 1);
+		testmap.print();
 		testmap.printTree();
 
 
 		testmap.insertIntoMap(&t5, 0);
+		testmap.print();
 		testmap.printTree();
 		testmap.insertIntoMap(&t6, 0);
+		testmap.print();
 		testmap.printTree();
 		testmap.insertIntoMap(&t4, 0);
+		testmap.print();
 		testmap.printTree();
 		testmap.insertIntoMap(&t4, 1);
+		testmap.print();
 		testmap.printTree();
 		testmap.insertIntoMap(&t4, 2);
+		testmap.print();
 		testmap.printTree();
 		testmap.insertIntoMap(&t4, 3);
 		testmap.printTree();
@@ -94,18 +104,29 @@ namespace vve::map {
 		testmap.deleteFromMap(&t11, 0);
 		testmap.printTree();
 
+		testmap.clear();
+
 		for (uint32_t i = 0; i < 50; ++i) {
-			TestEntry t1{ std::rand(), 1, 2, "A" };
+			TestEntry t1{ (VeIndex)std::rand(), 1, 2, "A" };
 			testmap.insertIntoMap(&t1, i);
 		}
+		testmap.printTree();
+
 
 		for (uint32_t i = 0; i < 1000; ++i) {
-			TestEntry t1{ std::rand(), 1, 2, "B" };
-			testmap.insertIntoMap(&t1, i);
-			uint32_t idx = std::rand() % testmap.data().size();
-			testmap.deleteFromMap(&t1, i);
+			//std::cout << "i=" << i << std::endl;
 
+			TestEntry t1{ i, 1, 2, "B" };
+			testmap.insertIntoMap(&t1, i);
+			
+			uint32_t idx = std::rand() % testmap.size();
+
+			auto [key, value] = testmap.getKeyValuePair(idx);
+			t1.m_int1 = (VeIndex)key;
+			testmap.deleteFromMap(&t1, value);
 		}
+		testmap.print();
+		testmap.printTree();
 
 
 	}

@@ -220,10 +220,10 @@ namespace vve {
 				return !(*this == entry || *this < entry);
 			};
 
-			void print(uint32_t i) {
-				std::cout << "IDX " << i;
+			void print(uint32_t node, uint32_t level = 1) {
+				std::cout << "L " << level << " IDX " << node;
 				std::cout << " KEY " << m_key << " VAL " << m_value << " HEIGHT " << m_height;
-				std::cout << " PAR " << m_parent << " LEFT " << m_left << " RIGHT " << m_right << std::endl << std::endl;
+				std::cout << " PAR " << m_parent << " LEFT " << m_left << " RIGHT " << m_right << std::endl;
 			};
 		};
 
@@ -259,19 +259,50 @@ namespace vve {
 		//---------------------------------------------------------------------------
 		//rotate subtrees
 
+		void replaceChild(VeIndex parent, VeIndex old_child, VeIndex new_child) {
+			if (parent == VE_NULL_INDEX) {
+				m_root = new_child;
+				return;
+			}
+
+			if (new_child != VE_NULL_INDEX)
+				m_map[new_child].m_parent = parent;
+
+			if (old_child == VE_NULL_INDEX) //cannot identify right child so return
+				return;
+
+			if (m_map[parent].m_left == old_child) {
+				m_map[parent].m_left = new_child;
+				return;
+			}
+			m_map[parent].m_right = new_child;
+		};
+
+		void replaceLeftChild(VeIndex parent, VeIndex new_child) {
+			if (parent == VE_NULL_INDEX)
+				return;
+			m_map[parent].m_left = new_child;
+			if (new_child == VE_NULL_INDEX)
+				return;
+			m_map[new_child].m_parent = parent;
+		};
+
+		void replaceRightChild(VeIndex parent, VeIndex new_child) {
+			if (parent == VE_NULL_INDEX)
+				return;
+			m_map[parent].m_right = new_child;
+			if (new_child == VE_NULL_INDEX)
+				return;
+			m_map[new_child].m_parent = parent;
+		};
+
 		VeIndex rightRotate(VeIndex y) {
 			VeIndex x = m_map[y].m_left;
 			VeIndex T2 = m_map[x].m_right;
+			VeIndex z = m_map[y].m_parent;
 
-			// Update children 
-			m_map[x].m_right = y;
-			m_map[y].m_left = T2;
-
-			// Update parents
-			if (m_root == y)
-				m_root = x;
-			m_map[x].m_parent = m_map[y].m_parent;
-			m_map[y].m_parent = x;
+			replaceRightChild(x, y);
+			replaceLeftChild(y, T2);
 
 			// Update heights  
 			m_map[y].m_height = std::max(getHeight(m_map[y].m_left), getHeight(m_map[y].m_right)) + 1;
@@ -284,16 +315,10 @@ namespace vve {
 		VeIndex leftRotate( VeIndex x ) {
 			VeIndex y = m_map[x].m_right;
 			VeIndex T2 = m_map[y].m_left;
+			VeIndex z = m_map[x].m_parent;
 
-			// Update children
-			m_map[y].m_left = x;
-			m_map[x].m_right = T2;
-
-			// Update parents
-			if (m_root == x)
-				m_root = y;
-			m_map[y].m_parent = m_map[x].m_parent;
-			m_map[x].m_parent = y;
+			replaceRightChild(x, T2);
+			replaceLeftChild(y, x);
 
 			// Update heights  
 			m_map[x].m_height = std::max(getHeight(m_map[x].m_left), getHeight(m_map[x].m_right)) + 1;
@@ -307,10 +332,8 @@ namespace vve {
 		//insert
 
 		VeIndex insert( VeIndex node, VeIndex index ) {
-			if (m_root == VE_NULL_INDEX)
-				m_root = index;
-
 			if (node == VE_NULL_INDEX) {
+				m_map[index].m_height = 1;
 				return index;
 			}
 
@@ -318,21 +341,16 @@ namespace vve {
 			VeIndex& right = m_map[node].m_right;
 
 			if (m_map[index] < m_map[node]) {
-				left = insert(left, index);
-				m_map[left].m_parent = node;
+				replaceLeftChild(node, insert(left, index) );
 			}
 			else if (m_map[index] > m_map[node]) {
-				right = insert(right, index);
-				m_map[right].m_parent = node;
+				replaceRightChild(node, right = insert(right, index) );
 			}
 			else {
 				return node;
 			}
 
 			m_map[node].m_height = 1 + std::max(getHeight(left), getHeight(right));
-
-			left = m_map[node].m_left;
-			right = m_map[node].m_right;
 
 			int32_t balance = getBalance(node);
 
@@ -348,13 +366,13 @@ namespace vve {
 
 			// Left Right Case  
 			if (balance > 1 && m_map[index] > m_map[left]) {
-				left = leftRotate(left);
+				replaceLeftChild( node, leftRotate(left) );
 				return rightRotate(node);
 			}
 
 			// Right Left Case  
-			if (balance < -1 && m_map[index] < m_map[right]) {
-				right = rightRotate(right);
+			if (balance < -1 && m_map[node] < m_map[right]) {
+				replaceRightChild( node, rightRotate(right) );
 				return leftRotate(node);
 			}
 
@@ -393,26 +411,7 @@ namespace vve {
 		//---------------------------------------------------------------------------
 		//delete
 
-		void replaceChild(VeIndex parent, VeIndex old_child, VeIndex new_child) {
-			//print();
 
-			if (parent == VE_NULL_INDEX) {
-				m_root = new_child;
-				return;
-			}
-
-			if (new_child != VE_NULL_INDEX)
-				m_map[new_child].m_parent = parent;
-
-			if (old_child == VE_NULL_INDEX) //cannot identify right child so return
-				return;
-
-			if (m_map[parent].m_left == old_child) {
-				m_map[parent].m_left = new_child;
-				return;
-			}
-			m_map[parent].m_right = new_child;
-		};
 
 		void deleteIndex(VeIndex index) {
 			VeIndex last = m_map.size() - 1;
@@ -455,18 +454,16 @@ namespace vve {
 			VeIndex& right = m_map[node].m_right;
 
 			if (entry < m_map[node]) {
-				left = deleteEntry(left, entry, del_indices);
-				replaceChild(node, left, left);
+				replaceLeftChild(node, deleteEntry(left, entry, del_indices));
 			}
 			else if (m_map[node] < entry) {
-				right = deleteEntry(right, entry, del_indices);
-				replaceChild(node, right, right);
+				replaceRightChild(node, deleteEntry(right, entry, del_indices));
 			}
 			else {	//have found the node
 				if (left != VE_NULL_INDEX && right != VE_NULL_INDEX) {
 					VeIndex min_idx = findMin(right);
 					replaceKeyValue(node, min_idx);
-					deleteEntry(right, m_map[min_idx], del_indices);
+					replaceRightChild(node, deleteEntry(right, m_map[min_idx], del_indices) );
 				}
 				else {
 					VeIndex temp = left != VE_NULL_INDEX ? left : right;
@@ -496,7 +493,7 @@ namespace vve {
 
 			// Left Right Case  
 			if (balance > 1 && getBalance(left) < 0) {
-				left = leftRotate(left);
+				replaceLeftChild( node, leftRotate(left) );
 				return rightRotate(node);
 			}
 
@@ -506,7 +503,7 @@ namespace vve {
 
 			// Right Left Case  
 			if (balance < -1 && getBalance(right) > 0) {
-				right = rightRotate(right);
+				replaceRightChild(node, rightRotate(right));
 				return leftRotate(node);
 			}
 
@@ -581,7 +578,8 @@ namespace vve {
 			printTree(m_map[node].m_left, level + 1);
 
 			std::cout << std::setw(level) << " ";
-			std::cout << "KEY " << m_map[node].m_key << " VAL " << m_map[node].m_value << std::endl;
+			m_map[node].print(node, level);
+			//std::cout << "IDX " << node << " KEY " << m_map[node].m_key << " VAL " << m_map[node].m_value << std::endl;
 
 			printTree(m_map[node].m_right, level + 1);
 		};
@@ -600,13 +598,23 @@ namespace vve {
 			m_map = map->m_map;
 		};
 
-		const VeVector<VeMapEntry>& data() {
-			return m_map;
-		};
+		//const VeVector<VeMapEntry>& data() {
+		//	return m_map;
+		//};
 
 		virtual void clear() {
 			m_root = VE_NULL_INDEX;
 			m_map.clear();
+		};
+
+		VeCount size() {
+			return m_map.size();
+		};
+
+		std::pair<K, VeIndex> getKeyValuePair(VeIndex num) {
+			VeIndex value;
+			getMappedIndexEqual(m_map[num].m_key, value);
+			return { m_map[num].m_key, value};
 		};
 
 		void printTree() {
@@ -620,6 +628,7 @@ namespace vve {
 			for (uint32_t i = 0; i < m_map.size(); ++i) {
 				m_map[i].print(i);
 			}
+			std::cout << std::endl;
 		};
 
 		virtual bool getMappedIndexEqual(K key, VeIndex& index) override {
@@ -690,7 +699,8 @@ namespace vve {
 			getKey(entry, m_offset, m_num_bytes, key);
 			VeIndex last = m_map.size();
 			m_map.emplace_back({ key, dir_index });
-			insert(m_root, last);
+			m_root = insert(m_root, last);
+			m_map[m_root].m_parent = VE_NULL_INDEX;
 			return true;
 		};
 
@@ -699,10 +709,15 @@ namespace vve {
 			getKey(entry, m_offset, m_num_bytes, key);
 			VeMapEntry mentry(key, dir_index);
 			std::vector<VeIndex, custom_alloc<VeIndex>> del_indices(&m_heap);
-			VeCount res = deleteEntry(m_root, mentry, del_indices );
+			VeCount res = m_map.size();
+			m_root = deleteEntry(m_root, mentry, del_indices );
+			if( m_root != VE_NULL_INDEX)
+				m_map[m_root].m_parent = VE_NULL_INDEX;
+
 			for (auto idx : del_indices)
 				deleteIndex(idx);
-			return res;
+
+			return res - m_map.size();	//so many elements have been deleted
 		};
 
 	};
