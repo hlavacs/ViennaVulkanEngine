@@ -4,31 +4,6 @@
 
 namespace vve {
 
-	template<typename S, typename T>
-	struct std::hash<std::pair<S, T>>
-	{
-		inline size_t operator()(const std::pair<S, T>& val) const
-		{
-			size_t seed = 0;
-			seed ^= std::hash<S>()(val.first) + 0x9e3779b9 + (seed << 6) + (seed >> 2);
-			seed ^= std::hash<T>()(val.second) + 0x9e3779b9 + (seed << 6) + (seed >> 2);
-			return seed;
-		}
-	};
-
-	template<typename S, typename T, typename U>
-	struct std::hash<std::tuple<S, T, U>>
-	{
-		inline size_t operator()(const std::tuple<S, T, U>& val) const
-		{
-			size_t seed = 0;
-			seed ^= std::hash<S>()(std::get<0>(val)) + 0x9e3779b9 + (seed << 6) + (seed >> 2);
-			seed ^= std::hash<T>()(std::get<1>(val)) + 0x9e3779b9 + (seed << 6) + (seed >> 2);
-			seed ^= std::hash<T>()(std::get<2>(val)) + 0x9e3779b9 + (seed << 6) + (seed >> 2);
-			return seed;
-		}
-	};
-
 
 	/**
 	*
@@ -166,7 +141,7 @@ namespace vve {
 		struct VeMapEntry {
 			K			m_key;
 			VeIndex		m_value = VE_NULL_INDEX;
-			int32_t		m_height = 0;				///<height of subtree rooting at this node
+			int32_t		m_height = 1;				///<height of subtree rooting at this node
 			VeIndex		m_parent = VE_NULL_INDEX;	///<index of parent
 			VeIndex		m_left = VE_NULL_INDEX;		///<index of first child with lower key
 			VeIndex		m_right = VE_NULL_INDEX;	///<index of first child with larger key
@@ -721,6 +696,258 @@ namespace vve {
 		};
 
 	};
+
+
+	//----------------------------------------------------------------------------------
+
+	template<typename S, typename T>
+	struct std::hash<std::pair<S, T>>
+	{
+		inline size_t operator()(const std::pair<S, T>& val) const
+		{
+			size_t seed = 0;
+			seed ^= std::hash<S>()(val.first) + 0x9e3779b9 + (seed << 6) + (seed >> 2);
+			seed ^= std::hash<T>()(val.second) + 0x9e3779b9 + (seed << 6) + (seed >> 2);
+			return seed;
+		}
+	};
+
+	template<typename S, typename T, typename U>
+	struct std::hash<std::tuple<S, T, U>>
+	{
+		inline size_t operator()(const std::tuple<S, T, U>& val) const
+		{
+			size_t seed = 0;
+			seed ^= std::hash<S>()(std::get<0>(val)) + 0x9e3779b9 + (seed << 6) + (seed >> 2);
+			seed ^= std::hash<T>()(std::get<1>(val)) + 0x9e3779b9 + (seed << 6) + (seed >> 2);
+			seed ^= std::hash<T>()(std::get<2>(val)) + 0x9e3779b9 + (seed << 6) + (seed >> 2);
+			return seed;
+		}
+	};
+
+
+	//----------------------------------------------------------------------------------
+
+	template <typename K, typename I>
+	class VeHashedMultimap : public VeMap {
+
+		struct VeMapEntry {
+			K			m_key;
+			VeIndex		m_value = VE_NULL_INDEX;
+			VeIndex		m_next = VE_NULL_INDEX;		///<next node with same hash value or free
+
+			VeMapEntry() : m_key() {
+				m_value = VE_NULL_INDEX;
+				m_next = VE_NULL_INDEX;
+			};
+
+			VeMapEntry(K key, VeIndex value) : m_key(key), m_value(value) {
+				m_next = VE_NULL_INDEX;
+			};
+
+			void operator=(const VeMapEntry& entry) {
+				m_key = entry.m_key;
+				m_value = entry.m_value;
+				m_next = entry.m_next;
+			};
+
+			bool operator==(const VeMapEntry& entry) {
+				if (m_value != VE_NULL_INDEX && entry.m_value != VE_NULL_INDEX)
+					return m_key == entry.m_key && m_value == entry.m_value;
+
+				return m_key == entry.m_key;
+			};
+
+			void print(uint32_t node, uint32_t level = 1) {
+				std::cout << "L " << level << " IDX " << node;
+				std::cout << " KEY " << m_key << " VAL " << m_value << " NEXT " << m_next << std::endl;
+			};
+		};
+
+		VeHashedMultimap<K, I>* clone() {
+			VeHashedMultimap<K, I>* map = new VeHashedMultimap<K, I>(*this);
+			return map;
+		};
+
+	protected:
+		I						m_offset;			///
+		I						m_num_bytes;		///
+		VeCount					m_num_entries = 0;
+		VeVector<VeMapEntry>	m_entries;			///
+		VeIndex					m_first_free_entry = VE_NULL_INDEX;
+		VeVector<VeIndex>		m_map;
+
+	public:
+
+		VeHashedMultimap(I offset, I num_bytes, bool memcopy = false) : 
+			VeMap(), m_num_entries(0), m_map(memcopy), m_offset(offset), m_num_bytes(num_bytes) {
+			VeIndex size = 1 << 10;
+			m_entries.reserve(size);
+			m_map.reserve(size);
+			for (VeIndex i = 0; i < size; ++i)
+				m_map.push_back((VeIndex)VE_NULL_INDEX);
+		};
+
+		VeHashedMultimap(const VeHashedMultimap<K, I>& map) : 
+			VeMap(), m_num_entries(map.m_num_entries), m_entries(map.m_entries), m_first_free_entry(map.m_first_free_entry),
+			m_map(map.m_map), m_offset(map.m_offset), m_num_bytes(map.m_num_bytes) {
+		};
+
+		virtual	~VeHashedMultimap() {};
+
+		virtual void operator=(const VeMap& basemap) {
+			VeHashedMultimap<K, I>* map = &((VeHashedMultimap<K, I>&)basemap);
+			m_offset = map->m_offset;
+			m_num_bytes = map->m_num_bytes;
+			m_entries = map->m_entries;
+			m_first_free_entry = map->m_first_free_entry;
+			m_map = map->m_map;
+		};
+
+		virtual void clear() {
+			m_entries.clear();
+			m_first_free_entry = VE_NULL_INDEX;
+			for (VeIndex i = 0; i < m_map.size(); ++i)
+				m_map[i] = VE_NULL_INDEX;
+		};
+
+		VeCount size() {
+			return m_num_entries;
+		};
+
+		void print() {
+		};
+
+		virtual bool getMappedIndexEqual(K key, VeIndex& index) override {
+			VeIndex idx = std::hash<K>()(key) % m_map.size();
+			for (VeIndex index = m_map[idx]; index != VE_NULL_INDEX; index = m_entries[index].m_next) {
+				if (m_entries[index].m_key == key) {
+					return m_entries[index].m_value;
+				}
+			}
+			return VE_NULL_INDEX;
+		};
+
+		virtual VeCount getMappedIndicesEqual(K key, std::vector<VeIndex, custom_alloc<VeIndex>>& result) override {
+			VeCount num = 0;
+			VeIndex idx = std::hash<K>()(key) % m_map.size();
+			for (VeIndex index = m_map[idx]; index != VE_NULL_INDEX; index = m_entries[index].m_next) {
+				if (m_entries[index].m_key == key) {
+					result.push_back(m_entries[index].m_value);
+					++num;
+				}
+			}
+			return num;
+		};
+
+		virtual VeCount getAllIndices(std::vector<VeIndex, custom_alloc<VeIndex>>& result) override {
+			VeCount num = 0;
+			std::for_each(m_map.begin(), m_map.end(), [&]( VeIndex index ) {
+				while (index != VE_NULL_INDEX) {
+					result.push_back( m_entries[index].m_value );
+					++num;
+				};
+			});
+			return num;
+		};
+
+		VeCount leftJoin(K key, VeHashedMultimap& other, std::vector<VeIndexPair, custom_alloc<VeIndexPair>>& result) {
+			std::vector < VeIndex, custom_alloc<VeIndex> > result1(&m_heap);
+			getMappedIndicesEqual(key, result1);
+
+			std::vector < VeIndex, custom_alloc<VeIndex> > result2(&m_heap);
+			other.getMappedIndicesEqual(key, result2);
+
+			for (uint32_t i = 0; i < result1.size(); ++i) {
+				for (uint32_t j = 0; j < result2.size(); ++j) {
+					result.emplace_back({ result1[i], result2[j] });
+				}
+			}
+			return result1.size() * result2.size();
+		};
+
+		VeCount leftJoin(VeHashedMultimap& other, std::vector<VeIndexPair, custom_alloc<VeIndexPair>>& result) {
+			if (m_map.size() == 0 || other.m_map.size() == 0)
+				return 0;
+
+			VeCount num = 0;
+			std::vector<VeMapEntry, custom_alloc<VeMapEntry> > map1(&m_heap);
+			map1.reserve(m_map.size());
+			//copyTree(m_root, map1);
+
+			K last = map1[0].m_key;
+			std::vector < VeIndex, custom_alloc<VeIndex> > result2(&m_heap);
+			other.getMappedIndicesEqual(last, result2);
+
+			for (uint32_t i = 0; i < map1.size(); ++i) {
+				K key = m_map[i].m_key;
+				if (key != last) {
+					result2.clear();
+					other.getMappedIndicesEqual(key, result2);
+					last = key;
+				}
+				for (uint32_t j = 0; j < result2.size(); ++j) {
+					result.emplace_back({ map1[i].m_value, result2[j] });
+					++num;
+				}
+			}
+
+			return num;
+		};
+
+		virtual bool insertIntoMap(void* entry, VeIndex dir_index) override {
+			K key;
+			getKey(entry, m_offset, m_num_bytes, key);
+			VeIndex idx = std::hash<K>()(key) % m_map.size();
+
+			VeMapEntry nentry(key, dir_index);
+			VeIndex new_index = m_first_free_entry;
+			if (m_first_free_entry != VE_NULL_INDEX) {
+				m_first_free_entry = m_entries[new_index].m_next;
+				m_entries[new_index] = nentry;
+			} else {
+				m_entries.emplace_back(nentry);
+				new_index = m_entries.size() - 1;
+			}
+			
+			++m_num_entries;
+			if (m_map[idx] == VE_NULL_INDEX) {
+				m_map[idx] = new_index;
+				return true;
+			}
+			m_entries[new_index].m_next = m_map[idx];
+			m_map[idx] = new_index;
+			return true;
+		};
+
+		virtual VeCount deleteFromMap(void* entry, VeIndex dir_index) override {
+			K key;
+			getKey(entry, m_offset, m_num_bytes, key);
+			VeIndex hidx = std::hash<K>()(key) % m_map.size();
+			VeIndex index = m_map[hidx];
+			VeIndex last = VE_NULL_INDEX;
+			while (index != VE_NULL_INDEX) {
+				if (m_entries[index].m_key == key && m_entries[index].m_value == dir_index) {
+					if (index == m_map[hidx]) {
+						m_map[hidx] = m_entries[index].m_next;
+					}
+					else {
+						m_entries[last].m_next = m_entries[index].m_next;
+					}
+					m_entries[index].m_next = m_first_free_entry;
+					m_first_free_entry = index;
+					m_num_entries--;
+					return 1;
+				}
+				last = index;
+				index = m_entries[index].m_next;
+			};
+			return 0;
+		};
+
+	};
+
+
 
 
 	namespace map {

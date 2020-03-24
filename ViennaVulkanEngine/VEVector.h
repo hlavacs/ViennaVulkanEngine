@@ -213,7 +213,9 @@ namespace vve {
 		const_iterator begin() const { return const_iterator(m_startptr, m_entrySize); }		///<const iterator begin
 		const_iterator end() const { return const_iterator(m_startptr + m_size * m_entrySize, m_entrySize);  } ///<const iterator end
 
-		void resize(VeIndex new_size);			
+		void resize(VeIndex new_size);		
+		void insert(T& entry);					///<add entry at end of vector
+		void insert(T&& entry);					///<add entry at end of vector
 		void emplace_back(T &entry);			///<add entry at end of vector
 		void emplace_back(T &&entry);			///<add entry at end of vector
 		void push_back(T& entry);				///<add entry at end of vector
@@ -300,6 +302,8 @@ namespace vve {
 	}
 
 
+
+
 	/**
 	*
 	*	\brief
@@ -347,6 +351,28 @@ namespace vve {
 	*
 	*/
 	template<typename T> inline void VeVector<T>::push_back(T&& entry) {
+		emplace_back(std::move(entry));
+	}
+
+	/**
+	*
+	*	\brief
+	*
+	*	\param[in]
+	*
+	*/
+	template<typename T> inline void VeVector<T>::insert(T& entry) {
+		emplace_back(entry);
+	}
+
+	/**
+	*
+	*	\brief
+	*
+	*	\param[in]
+	*
+	*/
+	template<typename T> inline void VeVector<T>::insert(T&& entry) {
 		emplace_back(std::forward<T>(entry));
 	}
 

@@ -15,7 +15,7 @@ namespace vve::map {
 
 	VeOrderedMultimap<VeHandle, VeIndex> testmap(offsetof(TestEntry, m_int1), sizeof(TestEntry::m_int1));
 
-	void testMap() {
+	void testOrderedMap() {
 		TestEntry t1{ 1, 1, 2, "A" };
 		TestEntry t2{ 2, 1, 2, "A" };
 		TestEntry t3{ 3, 1, 2, "A" };
@@ -106,31 +106,66 @@ namespace vve::map {
 
 		testmap.clear();
 
-		for (uint32_t i = 0; i < 50; ++i) {
+		for (uint32_t i = 0; i < 1000; ++i) {
 			TestEntry t1{ (VeIndex)std::rand(), 1, 2, "A" };
 			testmap.insertIntoMap(&t1, i);
 		}
-		testmap.printTree();
+		//testmap.printTree();
 
-
+		VeClock mapClock("Map Clock", 1);
+		mapClock.start();
 		for (uint32_t i = 0; i < 1000; ++i) {
 			//std::cout << "i=" << i << std::endl;
 
-			TestEntry t1{ i, 1, 2, "B" };
-			testmap.insertIntoMap(&t1, i);
+			//TestEntry t1{ i, 1, 2, "B" };
+			//testmap.insertIntoMap(&t1, i);
 			
-			uint32_t idx = std::rand() % testmap.size();
-
-			auto [key, value] = testmap.getKeyValuePair(idx);
-			t1.m_int1 = (VeIndex)key;
-			testmap.deleteFromMap(&t1, value);
+			//uint32_t idx = std::rand() % testmap.size();
+			auto [key, value] = testmap.getKeyValuePair(i % testmap.size());
+			//t1.m_int1 = (VeIndex)key;
+			//testmap.deleteFromMap(&t1, value);
 		}
-		testmap.print();
-		testmap.printTree();
+		mapClock.stop();
+
+		//testmap.print();
+		//testmap.printTree();
 
 
 	}
 
+
+	VeHashedMultimap<VeHandle, VeIndex> testmap2(offsetof(TestEntry, m_int1), sizeof(TestEntry::m_int1));
+
+	void testHashedMap() {
+		TestEntry t1{ 1, 1, 2, "A" };
+		TestEntry t2{ 2, 1, 2, "A" };
+		TestEntry t3{ 3, 1, 2, "A" };
+		TestEntry t4{ 4, 1, 2, "A" };
+		TestEntry t5{ 5, 1, 2, "A" };
+		TestEntry t6{ 6, 1, 2, "A" };
+
+		TestEntry t7{ 7, 1, 2, "A" };
+		TestEntry t8{ 8, 1, 2, "A" };
+		TestEntry t9{ 9, 1, 2, "A" };
+		TestEntry t10{ 10, 1, 2, "A" };
+		TestEntry t11{ 11, 1, 2, "A" };
+		TestEntry t12{ 12, 1, 2, "A" };
+
+		testmap2.insertIntoMap(&t1, 1);
+		testmap2.insertIntoMap(&t2, 1);
+		testmap2.insertIntoMap(&t3, 1);
+		testmap2.insertIntoMap(&t4, 1);
+		testmap2.insertIntoMap(&t5, 1);
+		testmap2.insertIntoMap(&t6, 1);
+
+
+	}
+
+
+	void testMap() {
+		//testOrderedMap();
+		testHashedMap();
+	}
 
 }
 
