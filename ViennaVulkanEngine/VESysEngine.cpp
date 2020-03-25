@@ -47,6 +47,7 @@ namespace vve {
 		}
 
 		//-----------------------------------------------------------------------------------
+		//registered tables
 
 		struct VeMainTableEntry {
 			VeTable* m_table_pointer;
@@ -58,6 +59,21 @@ namespace vve {
 			new VeOrderedMultimap< std::string, VeIndex >((VeIndex)offsetof(struct VeMainTableEntry, m_name), 0)
 		};
 		VeFixedSizeTable<VeMainTableEntry> g_main_table("Main Table", maps, false, false, 0, 0);
+
+		void registerTablePointer(VeTable* tptr) {
+			g_main_table.VeFixedSizeTable<VeMainTableEntry>::insert({ tptr, tptr->getName() });
+		}
+
+		VeTable* getTablePointer(const std::string name) {
+			VeMainTableEntry entry;
+			if (g_main_table.getEntry(g_main_table.find(name, 0), entry))
+				return entry.m_table_pointer;
+			return nullptr;
+		}
+
+
+		//----------------------------------------------------------------------------------------------------
+		//registered systems
 
 		struct VeSysTableEntry {
 			std::function<void()>	m_init;
@@ -71,16 +87,32 @@ namespace vve {
 		VeFixedSizeTable<VeSysTableEntry> g_systems_table( "Systems Table", false, false, 0, 0);
 
 
-		void registerTablePointer(VeTable* tptr) {
-			g_main_table.VeFixedSizeTable<VeMainTableEntry>::insert({ tptr, tptr->getName() });
+		//----------------------------------------------------------------------------------------------------
+		//entities register here their names
+
+		struct VeEntityTableEntry {
+			std::string m_name;
+		};
+		std::vector<VeMap*> maps2 = {
+			new VeHashedMultimap< std::string, VeIndex >((VeIndex)offsetof(struct VeEntityTableEntry, m_name), 0)
+		};
+		VeFixedSizeTableMT<VeEntityTableEntry> g_entities_table("Entities Table", maps2, false, false, 0, 0);
+
+		void registerSystem(const std::string& name) {
+			g_entities_table.VeFixedSizeTable<VeEntityTableEntry>::insert({ name });
 		}
 
-		VeTable* getTablePointer(std::string name) {
-			VeMainTableEntry entry;
-			if (g_main_table.getEntry(g_main_table.find(name, 0), entry))
-				return entry.m_table_pointer;
-			return nullptr;
+		void registerEntity(const std::string& name) {
+			g_entities_table.insert({ name });
 		}
+
+		VeHandle getEntityHandle(const std::string &name ) {
+			return g_entities_table.find(name, 0);
+		}
+
+
+		//----------------------------------------------------------------------------------------------------
+		//wall clock times for advancing the simulation
 
 		using namespace std::chrono;
 
@@ -110,7 +142,9 @@ namespace vve {
 			return reached_time;
 		};
 
+		//----------------------------------------------------------------------------------------------------
 
+		const std::string VE_SYSTEM_NAME = "VE SYSTEM ENGINE";
 
 		void init() {
 			std::cout << "init engine 2\n";
@@ -131,6 +165,8 @@ namespace vve {
 			g_systems_table.insert({ syssce::init, syssce::update, syssce::cleanUp, syssce::close });
 			g_systems_table.insert({ sysphy::init, sysphy::update, sysphy::cleanUp, sysphy::close });
 
+
+			registerSystem(VE_SYSTEM_NAME);
 			for (auto entry : g_systems_table.getData()) {
 				entry.m_init();
 			}

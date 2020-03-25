@@ -18,6 +18,7 @@
 
 namespace vve::sysvul {
 
+	const std::string VE_SYSTEM_NAME = "VE SYSTEM VULKAN";
 
 	vh::VhVulkanState g_vulkan_state;
 
@@ -37,6 +38,8 @@ namespace vve::sysvul {
 
 
 	void init() {
+		syseng::registerSystem(VE_SYSTEM_NAME);
+
 		std::vector<const char*> extensions = { "VK_EXT_debug_report" };
 		std::vector<const char*> layers = {
 			"VK_LAYER_KHRONOS_validation",  "VK_LAYER_LUNARG_monitor"

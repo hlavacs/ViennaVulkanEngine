@@ -21,8 +21,8 @@ int main()
 #endif
     return 0;*/
 
-    vec::testVector();
-    map::testMap();
+    //vec::testVector();
+    //map::testMap();
     //tab::testTables();
     //stltest::runSTLTests();
     //return 0;

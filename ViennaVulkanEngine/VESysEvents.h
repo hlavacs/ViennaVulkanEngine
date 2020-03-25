@@ -23,14 +23,14 @@ namespace vve::syseve {
 		VE_EVENT_TYPE_MOUSEBUTTON,
 		VE_EVENT_TYPE_MOUSESCROLL,
 		VE_EVENT_TYPE_CLOSE,
-		VE_EVENT_TYPE_LAST,
+		VE_EVENT_TYPE_LAST
 	};
 
 	struct VeEventTableEntry {
 		VeEventType	m_type = VeEventType::VE_EVENT_TYPE_NULL;
 		VeHandle	m_senderH = VE_NULL_HANDLE;
 		VeHandle	m_receiverH = VE_NULL_HANDLE;
-		VeHandle	m_dataH;
+		VeHandle	m_dataH = VE_NULL_HANDLE;
 
 		//--------------------------------------------
 		VeIndex		m_key_button = 0;
@@ -55,8 +55,8 @@ namespace vve::syseve {
 	void addContinuousEvent(VeEventTableEntry event);
 	void removeContinuousEvent(VeEventTableEntry event);
 	void removeHandler(VeHandle handlerH);
-	void subscribeEvent(VeEventType type, VeHandle handlerH);
-	void unsubscribeEvent(VeHandle typeH, VeHandle handlerH);
+	void subscribeEvent(VeHandle senderH, VeHandle receiverH, VeHandle handlerH, VeIndex thread_id);
+	void unsubscribeEvent(VeHandle senderH, VeHandle handlerH);
 
 
 #endif

@@ -15,12 +15,17 @@
 
 namespace vve::syswin::glfw {
 
+	const std::string VE_SYSTEM_NAME = "VE SYSTEM WINDOW GLFW";
+
+
 	GLFWwindow* g_window;	///<handle to the GLFW window
 
 	const uint32_t WIDTH = 800;
 	const uint32_t HEIGHT = 600;
 	   	  
 	void init() {
+		syseng::registerSystem(VE_SYSTEM_NAME);
+
 		glfwInit();
 		glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
 		g_window = glfwCreateWindow(WIDTH, HEIGHT, "Vienna Vulkan Engine", nullptr, nullptr);

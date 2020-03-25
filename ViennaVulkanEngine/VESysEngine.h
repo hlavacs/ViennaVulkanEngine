@@ -18,8 +18,11 @@ namespace vve {
 
 #ifndef VE_PUBLIC_INTERFACE
 
+		void registerSystem(const std::string& name);
+		void registerEntity(const std::string& name);
+		VeHandle getEntityHandle(const std::string& name);
 		void registerTablePointer(VeTable* ptr);
-		VeTable* getTablePointer(std::string name);
+		VeTable* getTablePointer(const std::string name);
 		void update();
 		void cleanUp();
 		void forwardTime();
