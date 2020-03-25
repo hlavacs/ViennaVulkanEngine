@@ -15,16 +15,15 @@
 
 namespace vve::syswin::glfw {
 
-	const std::string VE_SYSTEM_NAME = "VE SYSTEM WINDOW GLFW";
-
-
 	GLFWwindow* g_window;	///<handle to the GLFW window
 
 	const uint32_t WIDTH = 800;
 	const uint32_t HEIGHT = 600;
 	   	  
+
 	void init() {
-		syseng::registerSystem(VE_SYSTEM_NAME);
+		syseng::registerEntity(VE_SYSTEM_NAME);
+		VE_SYSTEM_HANDLE = syseng::getEntityHandle(VE_SYSTEM_NAME);
 
 		glfwInit();
 		glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
@@ -127,6 +126,8 @@ namespace vve::syswin::glfw {
 
 		syseve::VeEventTableEntry ev;
 		ev.m_type = syseve::VeEventType::VE_EVENT_TYPE_KEYBOARD;
+		ev.m_senderH = VE_SYSTEM_HANDLE;
+
 		ev.m_key_button = key < 0 ? VE_NULL_INDEX : (uint32_t)key;
 		ev.m_scancode	= scancode < 0 ? VE_NULL_INDEX : (uint32_t)scancode;
 		ev.m_action		= action < 0 ? VE_NULL_INDEX : (uint32_t)action;
@@ -147,6 +148,8 @@ namespace vve::syswin::glfw {
 	void cursor_pos_callbackGLFW(GLFWwindow* window, double xpos, double ypos) {
 		syseve::VeEventTableEntry ev;
 		ev.m_type = syseve::VeEventType::VE_EVENT_TYPE_MOUSEMOVE;
+		ev.m_senderH = VE_SYSTEM_HANDLE;
+
 		ev.m_x = xpos;
 		ev.m_y = ypos;
 
@@ -172,6 +175,8 @@ namespace vve::syswin::glfw {
 	void mouse_button_callback(GLFWwindow* window, int button, int action, int mods) {
 		syseve::VeEventTableEntry ev;
 		ev.m_type = syseve::VeEventType::VE_EVENT_TYPE_MOUSEBUTTON;
+		ev.m_senderH = VE_SYSTEM_HANDLE;
+
 		ev.m_key_button = button < 0 ? VE_NULL_INDEX : (uint32_t)button;
 		ev.m_action = action < 0 ? VE_NULL_INDEX : (uint32_t)action;
 		ev.m_mods = mods < 0 ? VE_NULL_INDEX : (uint32_t)mods;
@@ -191,6 +196,8 @@ namespace vve::syswin::glfw {
 	void mouse_scroll_callback(GLFWwindow* window, double xoffset, double yoffset) {
 		syseve::VeEventTableEntry ev;
 		ev.m_type = syseve::VeEventType::VE_EVENT_TYPE_MOUSESCROLL;
+		ev.m_senderH = VE_SYSTEM_HANDLE;
+
 		ev.m_x = xoffset;
 		ev.m_y = yoffset;
 

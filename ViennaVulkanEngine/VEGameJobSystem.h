@@ -469,6 +469,10 @@ namespace vgjs {
 			return pInstance;
 		};
 
+		static bool isInstanceCreated() {
+			return pInstance != nullptr;
+		};
+
 		JobSystem(const JobSystem&) = delete;				// non-copyable,
 		JobSystem& operator=(const JobSystem&) = delete;
 		JobSystem(JobSystem&&) = default;					// but movable

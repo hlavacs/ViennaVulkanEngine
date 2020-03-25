@@ -17,8 +17,6 @@
 
 namespace vve::syswin {
 
-	const std::string VE_SYSTEM_NAME = "VE SYSTEM WINDOW";
-
 
 	std::vector<const char*> getRequiredInstanceExtensions() {
 		return glfw::getRequiredInstanceExtensions();
@@ -29,7 +27,9 @@ namespace vve::syswin {
 	}
 
 	void init() {
-		syseng::registerSystem(VE_SYSTEM_NAME);
+		syseng::registerEntity(VE_SYSTEM_NAME);
+		VE_SYSTEM_HANDLE = syseng::getEntityHandle(VE_SYSTEM_NAME);
+
 		glfw::init();
 	}
 

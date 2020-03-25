@@ -16,9 +16,11 @@ namespace vve {
 
 	namespace syseng {
 
+		inline const std::string VE_SYSTEM_NAME = "VE SYSTEM ENGINE";
+		inline VeHandle VE_SYSTEM_HANDLE = VE_NULL_HANDLE;
+
 #ifndef VE_PUBLIC_INTERFACE
 
-		void registerSystem(const std::string& name);
 		void registerEntity(const std::string& name);
 		VeHandle getEntityHandle(const std::string& name);
 		void registerTablePointer(VeTable* ptr);

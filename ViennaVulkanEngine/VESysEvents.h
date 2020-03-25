@@ -12,6 +12,9 @@
 
 namespace vve::syseve {
 
+	inline const std::string VE_SYSTEM_NAME = "VE SYSTEM MESSAGES";
+	inline VeHandle VE_SYSTEM_HANDLE = VE_NULL_HANDLE;
+
 	enum class VeEventType {
 		VE_EVENT_TYPE_NULL=0,
 		VE_EVENT_TYPE_UPDATE,				//per rendered frame

@@ -15,20 +15,19 @@
 
 namespace vve::syseve {
 
-	const std::string VE_SYSTEM_NAME = "VE SYSTEM MESSAGES";
 
 	//--------------------------------------------------------------------------------------------------
 	//events 
 
 	std::vector<VeMap*> maps1 = {
-		new VeOrderedMultimap< VeHandle, VeIndex >(offsetof(VeEventTableEntry, m_senderH), sizeof(VeEventTableEntry::m_senderH)),
+		new VeHashedMultimap< VeHandle, VeIndex >(offsetof(VeEventTableEntry, m_senderH), sizeof(VeEventTableEntry::m_senderH)),
 	};
 	VeFixedSizeTableMT<VeEventTableEntry> g_events_table( "Events Table", maps1, true, true, 0, 0);
 	VeFixedSizeTableMT<VeEventTableEntry> g_events_table2(g_events_table);
 
 
 	std::vector<VeMap*> maps2 = {
-		new VeOrderedMultimap< VeHandle, VeIndex >(offsetof(VeEventTableEntry, m_senderH), sizeof(VeEventTableEntry::m_senderH)),
+		new VeHashedMultimap< VeHandle, VeIndex >(offsetof(VeEventTableEntry, m_senderH), sizeof(VeEventTableEntry::m_senderH)),
 	};
 	VeFixedSizeTableMT<VeEventTableEntry> g_continuous_events_table("Continuous Events Table", maps2, true, false, 0, 0);
 	VeFixedSizeTableMT<VeEventTableEntry> g_continuous_events_table2(g_continuous_events_table);
@@ -51,13 +50,13 @@ namespace vve::syseve {
 		VeHandle	m_senderH;		//handle of the sending entity
 		VeHandle	m_receiverH;	//handle of the receiver entity
 		VeHandle	m_handlerH;		//handler of this message
+		VeEventType	m_type;
 		VeIndex		m_thread_id;	//run handler function in this thread or NULL
 	};
-
 	std::vector<VeMap*> maps4 = {
-		new VeOrderedMultimap< VeHandle, VeIndex >(offsetof(VeEventSubscribeTableEntry, m_senderH), sizeof(VeEventSubscribeTableEntry::m_senderH)),
-		new VeOrderedMultimap< VeHandle, VeIndex >(offsetof(VeEventSubscribeTableEntry, m_handlerH), sizeof(VeEventSubscribeTableEntry::m_handlerH)),
-		new VeOrderedMultimap< VeHandlePair, VeIndexPair >
+		new VeHashedMultimap< VeHandle, VeIndex >(offsetof(VeEventSubscribeTableEntry, m_senderH), sizeof(VeEventSubscribeTableEntry::m_senderH)),
+		new VeHashedMultimap< VeHandle, VeIndex >(offsetof(VeEventSubscribeTableEntry, m_handlerH), sizeof(VeEventSubscribeTableEntry::m_handlerH)),
+		new VeHashedMultimap< VeHandlePair, VeIndexPair >
 			(VeIndexPair{(VeIndex)offsetof(VeEventSubscribeTableEntry, m_senderH), (VeIndex)offsetof(VeEventSubscribeTableEntry, m_handlerH)},
 			 VeIndexPair{(VeIndex)sizeof(VeEventSubscribeTableEntry::m_senderH),   (VeIndex)sizeof(VeEventSubscribeTableEntry::m_handlerH)})
 	};
@@ -69,7 +68,8 @@ namespace vve::syseve {
 	//functions
 
 	void init() {
-		syseng::registerSystem(VE_SYSTEM_NAME);
+		syseng::registerEntity(VE_SYSTEM_NAME);
+		VE_SYSTEM_HANDLE = syseng::getEntityHandle(VE_SYSTEM_NAME);
 
 		syseng::registerTablePointer(&g_events_table);
 		syseng::registerTablePointer(&g_continuous_events_table);
@@ -87,13 +87,15 @@ namespace vve::syseve {
 		for( auto [eventhandle, subscribehandle] : result ) {
 			events_table.getEntry(eventhandle, eventData);
 			g_subscribe_table.getEntry(subscribehandle, subscribeData);
-			g_handler_table.getEntry(subscribeData.m_handlerH, handlerData);
-			JADD( handlerData.m_handler(eventData) );
+
+			if (subscribeData.m_type == VeEventType::VE_EVENT_TYPE_NULL || subscribeData.m_type == eventData.m_type) {
+				g_handler_table.getEntry(subscribeData.m_handlerH, handlerData);
+				JADD(handlerData.m_handler(eventData));
+			}
 		}
 	}
 
 	void update() {
-		return;
 		callAllEvents(g_events_table);
 		callAllEvents(g_continuous_events_table);
 	}
@@ -106,7 +108,7 @@ namespace vve::syseve {
 
 	void addEvent(VeEventTableEntry event) {
 		//std::cout << "add event type " << event.m_type << " action " << event.m_action << " key/button " << event.m_key_button << std::endl;
-		//g_events_table.insert( event );
+		g_events_table.insert( event );
 	}
 
 	void addContinuousEvent(VeEventTableEntry event) {
@@ -134,8 +136,10 @@ namespace vve::syseve {
 		g_handler_table.erase(handlerH);
 	}
 
-	void subscribeEvent(VeHandle senderH, VeHandle receiverH, VeHandle handlerH, VeIndex thread_id = VE_NULL_INDEX ) {
-		g_subscribe_table.insert({senderH, receiverH, handlerH, thread_id });
+	void subscribeEvent(VeHandle senderH, VeHandle receiverH, VeHandle handlerH, 
+						VeEventType type = VeEventType::VE_EVENT_TYPE_NULL, VeIndex thread_id = VE_NULL_INDEX ) {
+
+		g_subscribe_table.insert({senderH, receiverH, handlerH, type, thread_id });
 	}
 
 	void unsubscribeEvent(VeHandle senderH, VeHandle receiverH) {

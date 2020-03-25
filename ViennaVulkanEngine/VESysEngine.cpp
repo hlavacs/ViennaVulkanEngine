@@ -144,8 +144,6 @@ namespace vve {
 
 		//----------------------------------------------------------------------------------------------------
 
-		const std::string VE_SYSTEM_NAME = "VE SYSTEM ENGINE";
-
 		void init() {
 			std::cout << "init engine 2\n";
 
@@ -165,8 +163,9 @@ namespace vve {
 			g_systems_table.insert({ syssce::init, syssce::update, syssce::cleanUp, syssce::close });
 			g_systems_table.insert({ sysphy::init, sysphy::update, sysphy::cleanUp, sysphy::close });
 
+			registerEntity(VE_SYSTEM_NAME);
+			VE_SYSTEM_HANDLE = getEntityHandle(VE_SYSTEM_NAME);
 
-			registerSystem(VE_SYSTEM_NAME);
 			for (auto entry : g_systems_table.getData()) {
 				entry.m_init();
 			}

@@ -11,6 +11,8 @@
 
 namespace vve::syswin::glfw {
 
+	inline const std::string VE_SYSTEM_NAME = "VE SYSTEM WINDOW GLFW";
+	inline VeHandle VE_SYSTEM_HANDLE = VE_NULL_HANDLE;
 
 	void init();
 	void update();

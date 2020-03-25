@@ -687,12 +687,18 @@ namespace vve {
 				me->VeFixedSizeTable<T>::operator=(*other);
 				return;
 			}
-			JADDT( me->VeFixedSizeTable<T>::operator=(*other), this->m_thread_id);
+			if( vgjs::JobSystem::isInstanceCreated())
+				JADDT( me->VeFixedSizeTable<T>::operator=(*other), this->m_thread_id);
+			else 
+				me->VeFixedSizeTable<T>::operator=(*other);
 		};
 
 		virtual void swap(VeHandle h1, VeHandle h2) {
 			VeFixedSizeTable<T>* me = (VeFixedSizeTable<T>*)this->getWriteTablePtr();
-			JADDT(me->VeFixedSizeTable<T>::swap(h1,h2), this->m_thread_id);
+			if (vgjs::JobSystem::isInstanceCreated())
+				JADDT(me->VeFixedSizeTable<T>::swap(h1, h2), this->m_thread_id);
+			else
+				me->VeFixedSizeTable<T>::swap(h1, h2);
 		};
 
 		//do not need this since swapping is done in cleanup
@@ -707,30 +713,45 @@ namespace vve {
 				me->VeFixedSizeTable<T>::clear();
 				return;
 			}
-			JADDT(me->VeFixedSizeTable<T>::clear(), this->m_thread_id);
+			if (vgjs::JobSystem::isInstanceCreated())
+				JADDT(me->VeFixedSizeTable<T>::clear(), this->m_thread_id);
+			else
+				me->VeFixedSizeTable<T>::clear();
 		};
 
 		virtual void sort(VeIndex num_map) {
 			VeFixedSizeTable<T>* me = (VeFixedSizeTable<T>*)this->getWriteTablePtr();
-			JADDT(me->VeFixedSizeTable<T>::sort(num_map), this->m_thread_id);
+			if (vgjs::JobSystem::isInstanceCreated())
+				JADDT(me->VeFixedSizeTable<T>::sort(num_map), this->m_thread_id);
+			else
+				me->VeFixedSizeTable<T>::sort(num_map);
 		};
 
 		virtual VeHandle insert(T entry, VeHandle* pHandle = nullptr) {
 			VeFixedSizeTable<T>* me = (VeFixedSizeTable<T>*)this->getWriteTablePtr();
-			JADDT(me->VeFixedSizeTable<T>::insert(entry, pHandle), this->m_thread_id);
-			return VE_NULL_HANDLE;
+			if (vgjs::JobSystem::isInstanceCreated()) {
+				JADDT(me->VeFixedSizeTable<T>::insert(entry, pHandle), this->m_thread_id);
+				return VE_NULL_HANDLE;
+			}
+			return me->VeFixedSizeTable<T>::insert(entry, pHandle);
 		};
 
 		virtual bool update(VeHandle key, T entry) {
 			VeFixedSizeTable<T>* me = (VeFixedSizeTable<T>*)this->getWriteTablePtr();
-			JADDT(me->VeFixedSizeTable<T>::update(key, entry), this->m_thread_id);
-			return true;
+			if (vgjs::JobSystem::isInstanceCreated()) {
+				JADDT(me->VeFixedSizeTable<T>::update(key, entry), this->m_thread_id);
+				return true;
+			}
+			return me->VeFixedSizeTable<T>::update(key, entry);
 		};
 
 		virtual bool erase(VeHandle key) {
 			VeFixedSizeTable<T>* me = (VeFixedSizeTable<T>*)this->getWriteTablePtr();
-			JADDT(me->VeFixedSizeTable<T>::erase(key), this->m_thread_id);
-			return true;
+			if (vgjs::JobSystem::isInstanceCreated()) {
+				JADDT(me->VeFixedSizeTable<T>::erase(key), this->m_thread_id);
+				return true;
+			}
+			return me->VeFixedSizeTable<T>::erase(key);
 		};
 
 
