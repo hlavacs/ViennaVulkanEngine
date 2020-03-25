@@ -9,6 +9,7 @@
 
 #include "VEDefines.h"
 #include "VESysEngine.h"
+#include "VESysEvents.h"
 #include "VESysVulkanFWSimple.h"
 
 

@@ -11,6 +11,7 @@
 
 #include "VEDefines.h"
 #include "VESysEngine.h"
+#include "VESysEvents.h"
 #include "VESysAssets.h"
 
 
@@ -27,7 +28,7 @@ namespace vve::sysass {
 		syseng::registerTablePointer(&g_meshes_table);
 	}
 
-	void update() {
+	void update(syseve::VeEventTableEntry e) {
 	}
 
 	void cleanUp() {

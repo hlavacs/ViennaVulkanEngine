@@ -10,6 +10,7 @@
 
 #include "VEDefines.h"
 #include "VESysEngine.h"
+#include "VESysEvents.h"
 #include "VESysPhysics.h"
 
 namespace vve::sysphy {

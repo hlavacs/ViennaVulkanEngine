@@ -10,6 +10,7 @@
 
 #include "VEDefines.h"
 #include "VESysEngine.h"
+#include "VESysEvents.h"
 #include "VESysWindow.h"
 #include "VESysWindowGLFW.h"
 #include "VESysVulkan.h"
@@ -33,8 +34,7 @@ namespace vve::syswin {
 		glfw::init();
 	}
 
-	void update() {
-		glfw::update();
+	void update(syseve::VeEventTableEntry e) {
 	}
 
 	void cleanUp() {

@@ -8,8 +8,8 @@
 */
 
 #include "VEDefines.h"
-#include "VESysEvents.h"
 #include "VESysEngine.h"
+#include "VESysEvents.h"
 #include "VESysWindow.h"
 #include "VESysWindowGLFW.h"
 
@@ -20,10 +20,15 @@ namespace vve::syswin::glfw {
 	const uint32_t WIDTH = 800;
 	const uint32_t HEIGHT = 600;
 	   	  
+	VeHandle updateHandle;
 
 	void init() {
 		syseng::registerEntity(VE_SYSTEM_NAME);
 		VE_SYSTEM_HANDLE = syseng::getEntityHandle(VE_SYSTEM_NAME);
+
+		updateHandle = syseve::addHandler( std::bind( update, std::placeholders::_1 ) );
+		syseve::subscribeEvent(	syseve::VE_SYSTEM_HANDLE, VE_SYSTEM_HANDLE, updateHandle, 
+								syseve::VeEventType::VE_EVENT_TYPE_UPDATE, 0);
 
 		glfwInit();
 		glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
@@ -44,7 +49,7 @@ namespace vve::syswin::glfw {
 
 	bool g_windowSizeChanged = false;
 
-	void update() {
+	void update(syseve::VeEventTableEntry e) {
 		glfwPollEvents();		//inject GLFW events into the callbacks
 
 		if (g_windowSizeChanged) {

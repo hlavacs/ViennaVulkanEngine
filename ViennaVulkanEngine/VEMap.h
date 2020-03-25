@@ -911,26 +911,18 @@ namespace vve {
 			if (size() == 0 || other.size() == 0)
 				return 0;
 
+			std::vector<std::pair<K, VeIndex>, custom_alloc<std::pair<K, VeIndex>> > map1(&m_heap);
+			map1.reserve(size());
+			getAllKeyValuePairs(map1);
+
+			std::set<K, std::less<K>, custom_alloc<K>> keys(&m_heap);
+			for (auto kvp : map1) {
+				keys.insert(kvp.first);
+			}
+
 			VeCount num = 0;
-			std::vector<VeMapEntry, custom_alloc<VeMapEntry> > map1(&m_heap);
-			map1.reserve(m_map.size());
-			//copyTree(m_root, map1);
-
-			K last = map1[0].m_key;
-			std::vector < VeIndex, custom_alloc<VeIndex> > result2(&m_heap);
-			other.equal_range(last, result2);
-
-			for (uint32_t i = 0; i < map1.size(); ++i) {
-				K key = m_entries[i].m_key;
-				if (key != last) {
-					result2.clear();
-					other.equal_range(key, result2);
-					last = key;
-				}
-				for (uint32_t j = 0; j < result2.size(); ++j) {
-					result.emplace_back( map1[i].m_value, result2[j] );
-					++num;
-				}
+			for (auto key : keys) {
+				num += leftJoin(key, other, result);
 			}
 
 			return num;

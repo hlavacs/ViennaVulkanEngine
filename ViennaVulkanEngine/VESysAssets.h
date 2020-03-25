@@ -18,7 +18,7 @@ namespace vve::sysass {
 
 
 	void init();
-	void update();
+	void update(syseve::VeEventTableEntry e);
 	void cleanUp();
 	void close();
 

@@ -17,7 +17,7 @@ namespace vve::sysvul::fwsimple {
 
 	void init();
 	void update();
-	void cleanUp();
+	void cleanUp(syseve::VeEventTableEntry e);
 	void close();
 
 

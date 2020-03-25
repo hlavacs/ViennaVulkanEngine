@@ -16,7 +16,7 @@ namespace vve::sysphy {
 	inline VeHandle VE_SYSTEM_HANDLE = VE_NULL_HANDLE;
 
 	void init();
-	void update();
+	void update(syseve::VeEventTableEntry e);
 	void cleanUp();
 	void close();
 

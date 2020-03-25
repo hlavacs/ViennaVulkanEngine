@@ -13,6 +13,7 @@
 #include "VHInclude.h"
 #include "VHDevice.h"
 #include "VESysEngine.h"
+#include "VESysEvents.h"
 #include "VESysVulkan.h"
 
 

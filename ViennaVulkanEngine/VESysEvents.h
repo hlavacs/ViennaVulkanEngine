@@ -53,12 +53,12 @@ namespace vve::syseve {
 	void cleanUp();
 	void close();
 
-	void addEvent(VeEventTableEntry event);
-	void addHandler(std::function<void(VeEventTableEntry)> handler, VeHandle* pHandle);
-	void addContinuousEvent(VeEventTableEntry event);
+	VeHandle addEvent(VeEventTableEntry event, VeHandle *pHandle = nullptr);
+	VeHandle addHandler(std::function<void(VeEventTableEntry)> handler, VeHandle* pHandle = nullptr);
+	VeHandle addContinuousEvent(VeEventTableEntry event, VeHandle* pHandle = nullptr);
 	void removeContinuousEvent(VeEventTableEntry event);
 	void removeHandler(VeHandle handlerH);
-	void subscribeEvent(VeHandle senderH, VeHandle receiverH, VeHandle handlerH, VeIndex thread_id);
+	void subscribeEvent(VeHandle senderH, VeHandle receiverH, VeHandle handlerH, VeEventType type = VeEventType::VE_EVENT_TYPE_NULL, VeIndex thread_id = VE_NULL_INDEX);
 	void unsubscribeEvent(VeHandle senderH, VeHandle handlerH);
 
 
