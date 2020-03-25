@@ -77,7 +77,7 @@ namespace vve {
 
 		VeTable* getTablePointer(std::string name) {
 			VeMainTableEntry entry;
-			if (g_main_table.getEntry(g_main_table.find(0, name), entry))
+			if (g_main_table.getEntry(g_main_table.find(name, 0), entry))
 				return entry.m_table_pointer;
 			return nullptr;
 		}
@@ -161,7 +161,6 @@ namespace vve {
 
 		void cleanUp() {
 			for (auto entry : g_systems_table.getData()) {			//clean after simulation
-				syseve::addEvent({ syseve::VeEventType::VE_EVENT_TYPE_FRAME_TICK });
 				JADD(entry.m_cleanUp());							//includes render in the last interval
 			}
 		}
@@ -185,7 +184,7 @@ namespace vve {
 			current_update_time = next_update_time;		//move one epoch further
 			next_update_time = current_update_time + time_delta;
 
-			syseve::addEvent({ syseve::VeEventType::VE_EVENT_TYPE_EPOCH_TICK });
+			syseve::addEvent({ syseve::VeEventType::VE_EVENT_TYPE_UPDATE });
 		}
 
 		//acts like a co-routine
@@ -251,8 +250,6 @@ namespace vve {
 
 		void runGameLoopMT() {
 			loopClock.tick();
-
-			syseve::addEvent({ syseve::VeEventType::VE_EVENT_TYPE_LOOP_TICK });
 
 			JRESET;
 			JADDT(computeOneFrame2(0), vgjs::TID(0, 2));	 //run on main thread for polling!

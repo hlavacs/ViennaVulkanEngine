@@ -12,11 +12,9 @@
 
 namespace vve::syseve {
 
-	enum VeEventType {
+	enum class VeEventType {
 		VE_EVENT_TYPE_NULL=0,
-		VE_EVENT_TYPE_LOOP_TICK,			//once every game loop
-		VE_EVENT_TYPE_EPOCH_TICK,			//per 1/60s epoch
-		VE_EVENT_TYPE_FRAME_TICK,			//per rendered frame
+		VE_EVENT_TYPE_UPDATE,				//per rendered frame
 		VE_EVENT_TYPE_ENTITY_CREATED,		//per entity
 		VE_EVENT_TYPE_ENTITY_COLLIDED,
 		VE_EVENT_TYPE_ENTITY_DESTROYED,
@@ -24,16 +22,15 @@ namespace vve::syseve {
 		VE_EVENT_TYPE_MOUSEMOVE,
 		VE_EVENT_TYPE_MOUSEBUTTON,
 		VE_EVENT_TYPE_MOUSESCROLL,
+		VE_EVENT_TYPE_CLOSE,
 		VE_EVENT_TYPE_LAST,
 	};
 
 	struct VeEventTableEntry {
 		VeEventType	m_type = VeEventType::VE_EVENT_TYPE_NULL;
-		//std::chrono::time_point<std::chrono::high_resolution_clock> m_eventTime = std::chrono::high_resolution_clock::now();
-
-		//--------------------------------------------
-		VeHandle	m_entityH = VE_NULL_HANDLE;
-		VeHandle	m_entityOtherH = VE_NULL_HANDLE;
+		VeHandle	m_senderH = VE_NULL_HANDLE;
+		VeHandle	m_receiverH = VE_NULL_HANDLE;
+		VeHandle	m_dataH;
 
 		//--------------------------------------------
 		VeIndex		m_key_button = 0;

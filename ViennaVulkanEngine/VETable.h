@@ -313,12 +313,12 @@ namespace vve {
 		uint32_t	getAllHandles(std::vector<VeHandle, custom_alloc<VeHandle>>& result);
 		uint32_t	getAllHandlesFromMap(VeIndex num_map, std::vector<VeHandle, custom_alloc<VeHandle>>& result);	//makes sense for map/multimap
 
-		template <typename M, typename K, typename I> VeCount leftJoin(VeIndex own_map, VeTable& other, VeIndex other_map, std::vector<VeHandlePair, custom_alloc<VeHandlePair>>& result);
-		template <typename M, typename K, typename I> VeCount leftJoin(VeIndex own_map, K key, VeTable& other, VeIndex other_map, std::vector<VeHandlePair, custom_alloc<VeHandlePair>>& result);
-
-		template <typename K> VeHandle find(VeIndex num_map, K key );	//use this in map
+		template <typename K> VeHandle find(K key, VeIndex num_map );	//use this in map
 		template <typename K> VeCount getHandlesEqual(VeIndex num_map, K key, std::vector<VeHandle, custom_alloc<VeHandle>>& result);	//use this in multimap
 		template <typename K> VeCount getHandlesRange(VeIndex num_map, K lower, K upper, std::vector<VeHandle, custom_alloc<VeHandle>>& result); //do not use in unordered map/multimap
+
+		template <typename M, typename K, typename I> VeCount leftJoin(VeIndex own_map, VeTable& other, VeIndex other_map, std::vector<VeHandlePair, custom_alloc<VeHandlePair>>& result);
+		template <typename M, typename K, typename I> VeCount leftJoin(VeIndex own_map, K key, VeTable& other, VeIndex other_map, std::vector<VeHandlePair, custom_alloc<VeHandlePair>>& result);
 
 		void	forAllEntries(VeIndex num_map, std::function<void(VeHandle)>& func);
 		void	forAllEntries(VeIndex num_map, std::function<void(VeHandle)>&& func) { forAllEntries(num_map, func); };
@@ -562,7 +562,7 @@ namespace vve {
 
 	template<typename T>
 	template<typename K>
-	inline VeHandle VeFixedSizeTable<T>::find(VeIndex num_map, K key ) {
+	inline VeHandle VeFixedSizeTable<T>::find(K key, VeIndex num_map ) {
 		in();
 		assert(num_map < m_maps.size());
 		if (m_data.empty()) {
@@ -796,9 +796,9 @@ namespace vve {
 		};
 
 		template <typename K>
-		VeHandle find(VeIndex num_map, K key) {
+		VeHandle find(K key, VeIndex num_map ) {
 			VeFixedSizeTable<T>* me = (VeFixedSizeTable<T>*)this->getReadTablePtr();
-			return me->VeFixedSizeTable<T>::find(num_map, key);
+			return me->VeFixedSizeTable<T>::find(key, num_map );
 		};
 
 		template <typename K>
