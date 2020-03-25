@@ -32,7 +32,7 @@ namespace vve::sysvul {
 	VeFixedSizeTable<VeRendererTableEntry> g_renderers_table("Renderer Table", false, false, 0, 0 );
 
 	void registerRenderer(std::function<void()> init, std::function<void()> tick, std::function<void()> close) {
-		g_renderers_table.addEntry({ init, tick, close });
+		g_renderers_table.insert({ init, tick, close });
 	}
 
 

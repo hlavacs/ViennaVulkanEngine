@@ -290,15 +290,15 @@ namespace vve {
 		//neutral operations
 		void addMap(VeMap* pmap) { in(); m_maps.emplace_back(pmap); out(); };
 
-		//write operations - must be run in a job
+		//write operations - must be run in a job when multithreaded
 		void operator=(VeFixedSizeTable<T>& table);
 		virtual void operator=(VeTable& table);
-		void		swapEntriesByHandle(VeHandle h1, VeHandle h2);
+		void		swap(VeHandle h1, VeHandle h2);
 		virtual void clear();
-		void		sortTableByMap( VeIndex num_map );
-		VeHandle	addEntry(T entry, VeHandle *pHandle = nullptr );
-		bool		updateEntry(VeHandle key, T entry);
-		bool		deleteEntry(VeHandle key);
+		void		sort( VeIndex num_map );
+		VeHandle	insert(T entry, VeHandle *pHandle = nullptr );
+		bool		update(VeHandle key, T entry);
+		bool		erase(VeHandle key);
 
 		// read operations
 		bool		isValid(VeHandle handle);
@@ -306,27 +306,19 @@ namespace vve {
 		VeMap&		getMap(VeIndex num_map) { return *m_maps[num_map]; };
 		VeDirectory& getDirectory() { return m_directory; };
 		std::vector<VeIndex>& getTable2dir() { return m_tbl2dir; };
-		VeCount		getSize() { return (VeIndex)m_data.size(); };
+		VeCount		size() { return (VeIndex)m_data.size(); };
 		bool		getEntry(VeHandle key, T& entry);
 		VeIndex		getIndexFromHandle(VeHandle key);
 		VeHandle	getHandleFromIndex(VeIndex table_index);
 		uint32_t	getAllHandles(std::vector<VeHandle, custom_alloc<VeHandle>>& result);
 		uint32_t	getAllHandlesFromMap(VeIndex num_map, std::vector<VeHandle, custom_alloc<VeHandle>>& result);	//makes sense for map/multimap
 
-		template <typename M, typename K, typename I>
-		VeCount leftJoin(VeIndex own_map, VeTable& other, VeIndex other_map, std::vector<VeHandlePair, custom_alloc<VeHandlePair>>& result);
+		template <typename M, typename K, typename I> VeCount leftJoin(VeIndex own_map, VeTable& other, VeIndex other_map, std::vector<VeHandlePair, custom_alloc<VeHandlePair>>& result);
+		template <typename M, typename K, typename I> VeCount leftJoin(VeIndex own_map, K key, VeTable& other, VeIndex other_map, std::vector<VeHandlePair, custom_alloc<VeHandlePair>>& result);
 
-		template <typename M, typename K, typename I>
-		VeCount leftJoin(VeIndex own_map, K key, VeTable& other, VeIndex other_map, std::vector<VeHandlePair, custom_alloc<VeHandlePair>>& result);
-
-		template <typename K>
-		VeHandle	getHandleEqual(VeIndex num_map, K key );	//use this in map
-
-		template <typename K>
-		VeCount	getHandlesEqual(VeIndex num_map, K key, std::vector<VeHandle, custom_alloc<VeHandle>>& result);	//use this in multimap
-
-		template <typename K>
-		VeCount	getHandlesRange(VeIndex num_map, K lower, K upper, std::vector<VeHandle, custom_alloc<VeHandle>>& result); //do not use in unordered map/multimap
+		template <typename K> VeHandle find(VeIndex num_map, K key );	//use this in map
+		template <typename K> VeCount getHandlesEqual(VeIndex num_map, K key, std::vector<VeHandle, custom_alloc<VeHandle>>& result);	//use this in multimap
+		template <typename K> VeCount getHandlesRange(VeIndex num_map, K lower, K upper, std::vector<VeHandle, custom_alloc<VeHandle>>& result); //do not use in unordered map/multimap
 
 		void	forAllEntries(VeIndex num_map, std::function<void(VeHandle)>& func);
 		void	forAllEntries(VeIndex num_map, std::function<void(VeHandle)>&& func) { forAllEntries(num_map, func); };
@@ -361,18 +353,18 @@ namespace vve {
 
 	//--------------------------------------------------------------------------------------------------------------------------
 
-	template<typename T> inline void VeFixedSizeTable<T>::sortTableByMap(VeIndex num_map) {
+	template<typename T> inline void VeFixedSizeTable<T>::sort(VeIndex num_map) {
 		in();
 		assert(!m_read_only && num_map < m_maps.size());
 		m_dirty = true;
 		std::vector<VeHandle, custom_alloc<VeHandle>> handles(&m_heap);
 		getAllHandlesFromMap(num_map, handles);
 		for (uint32_t i = 0; i < m_data.size(); ++i) 
-			swapEntriesByHandle( getHandleFromIndex(i), handles[i]);
+			swap( getHandleFromIndex(i), handles[i]);
 		out();
 	}
 
-	template<typename T> inline VeHandle VeFixedSizeTable<T>::addEntry(T entry, VeHandle* pHandle) {
+	template<typename T> inline VeHandle VeFixedSizeTable<T>::insert(T entry, VeHandle* pHandle) {
 		in();
 		assert(!m_read_only);
 		m_dirty = true;
@@ -383,13 +375,13 @@ namespace vve {
 		auto [auto_id, dir_index] = VeDirectory::splitHandle( handle );
 		m_tbl2dir.emplace_back(dir_index);
 		for (auto map : m_maps) 
-			map->insertIntoMap( (void*)&entry, dir_index );
+			map->insert( (void*)&entry, dir_index );
 		out();
 		if (pHandle != nullptr) *pHandle = handle;
 		return handle;
 	};
 
-	template<typename T> inline bool VeFixedSizeTable<T>::updateEntry(VeHandle handle, T entry) {
+	template<typename T> inline bool VeFixedSizeTable<T>::update(VeHandle handle, T entry) {
 		in();
 		assert(!m_read_only);
 		m_dirty = true;
@@ -406,15 +398,15 @@ namespace vve {
 		}
 
 		for (auto map : m_maps) 
-			map->deleteFromMap((void*)&m_data[dir_entry.m_table_index], dir_index);
+			map->erase((void*)&m_data[dir_entry.m_table_index], dir_index);
 		m_data[dir_entry.m_table_index] = entry;
 		for (auto map : m_maps) 
-			map->insertIntoMap((void*)&entry, dir_index);
+			map->insert((void*)&entry, dir_index);
 		out();
 		return true;
 	};
 
-	template<typename T> inline void VeFixedSizeTable<T>::swapEntriesByHandle(VeHandle h1, VeHandle h2) {
+	template<typename T> inline void VeFixedSizeTable<T>::swap(VeHandle h1, VeHandle h2) {
 		in();
 		m_dirty = true;
 		assert(!m_read_only);
@@ -436,7 +428,7 @@ namespace vve {
 		out();
 	};
 
-	template<typename T> inline bool VeFixedSizeTable<T>::deleteEntry(VeHandle key) {
+	template<typename T> inline bool VeFixedSizeTable<T>::erase(VeHandle key) {
 		in();
 		m_dirty = true;
 		assert(!m_read_only);
@@ -453,10 +445,10 @@ namespace vve {
 		}
 
 		VeIndex table_index = dir_entry.m_table_index;
-		swapEntriesByHandle( key, getHandleFromIndex((VeIndex)m_data.size() - 1) );
+		swap( key, getHandleFromIndex((VeIndex)m_data.size() - 1) );
 
 		for (auto map : m_maps) 
-			map->deleteFromMap((void*)&m_data[(VeIndex)m_data.size() - 1], dir_index);
+			map->erase((void*)&m_data[(VeIndex)m_data.size() - 1], dir_index);
 		m_directory.deleteEntry(dir_index);
 		m_data.pop_back();
 		m_tbl2dir.pop_back();
@@ -570,15 +562,14 @@ namespace vve {
 
 	template<typename T>
 	template<typename K>
-	inline VeHandle VeFixedSizeTable<T>::getHandleEqual(VeIndex num_map, K key ) {
+	inline VeHandle VeFixedSizeTable<T>::find(VeIndex num_map, K key ) {
 		in();
 		assert(num_map < m_maps.size());
 		if (m_data.empty()) {
 			out();
 			return VE_NULL_HANDLE;
 		}
-		VeIndex dir_index;
-		bool found = m_maps[num_map]->getMappedIndexEqual(key, dir_index);
+		VeIndex dir_index = m_maps[num_map]->find(key);
 		VeHandle result = m_directory.getHandle(dir_index);
 		out();
 		return result;
@@ -596,7 +587,7 @@ namespace vve {
 		VeCount num = 0;
 		std::vector<VeIndex, custom_alloc<VeIndex>> dir_indices(&m_heap);
 
-		num = m_maps[num_map]->getMappedIndicesEqual( key, dir_indices);
+		num = m_maps[num_map]->equal_range( key, dir_indices);
 		for (auto dir_index : dir_indices)
 			result.emplace_back(m_directory.getHandle(dir_index));
 		out();
@@ -615,7 +606,7 @@ namespace vve {
 		VeCount num = 0;
 		std::vector<VeIndex, custom_alloc<VeIndex>> dir_indices(&m_heap);
 
-		num = m_maps[num_map]->getMappedIndicesRange(lower, upper, dir_indices);
+		num = m_maps[num_map]->range(lower, upper, dir_indices);
 		for (auto dir_index : dir_indices)
 			result.emplace_back(m_directory.getHandle(dir_index));
 		out();
@@ -699,9 +690,9 @@ namespace vve {
 			JADDT( me->VeFixedSizeTable<T>::operator=(*other), this->m_thread_id);
 		};
 
-		virtual void swapEntriesByHandle(VeHandle h1, VeHandle h2) {
+		virtual void swap(VeHandle h1, VeHandle h2) {
 			VeFixedSizeTable<T>* me = (VeFixedSizeTable<T>*)this->getWriteTablePtr();
-			JADDT(me->VeFixedSizeTable<T>::swapEntriesByHandle(h1,h2), this->m_thread_id);
+			JADDT(me->VeFixedSizeTable<T>::swap(h1,h2), this->m_thread_id);
 		};
 
 		//do not need this since swapping is done in cleanup
@@ -719,26 +710,26 @@ namespace vve {
 			JADDT(me->VeFixedSizeTable<T>::clear(), this->m_thread_id);
 		};
 
-		virtual void sortTableByMap(VeIndex num_map) {
+		virtual void sort(VeIndex num_map) {
 			VeFixedSizeTable<T>* me = (VeFixedSizeTable<T>*)this->getWriteTablePtr();
-			JADDT(me->VeFixedSizeTable<T>::sortTableByMap(num_map), this->m_thread_id);
+			JADDT(me->VeFixedSizeTable<T>::sort(num_map), this->m_thread_id);
 		};
 
-		virtual VeHandle addEntry(T entry, VeHandle* pHandle = nullptr) {
+		virtual VeHandle insert(T entry, VeHandle* pHandle = nullptr) {
 			VeFixedSizeTable<T>* me = (VeFixedSizeTable<T>*)this->getWriteTablePtr();
-			JADDT(me->VeFixedSizeTable<T>::addEntry(entry, pHandle), this->m_thread_id);
+			JADDT(me->VeFixedSizeTable<T>::insert(entry, pHandle), this->m_thread_id);
 			return VE_NULL_HANDLE;
 		};
 
-		virtual bool updateEntry(VeHandle key, T entry) {
+		virtual bool update(VeHandle key, T entry) {
 			VeFixedSizeTable<T>* me = (VeFixedSizeTable<T>*)this->getWriteTablePtr();
-			JADDT(me->VeFixedSizeTable<T>::updateEntry(key, entry), this->m_thread_id);
+			JADDT(me->VeFixedSizeTable<T>::update(key, entry), this->m_thread_id);
 			return true;
 		};
 
-		virtual bool deleteEntry(VeHandle key) {
+		virtual bool erase(VeHandle key) {
 			VeFixedSizeTable<T>* me = (VeFixedSizeTable<T>*)this->getWriteTablePtr();
-			JADDT(me->VeFixedSizeTable<T>::deleteEntry(key), this->m_thread_id);
+			JADDT(me->VeFixedSizeTable<T>::erase(key), this->m_thread_id);
 			return true;
 		};
 
@@ -766,9 +757,9 @@ namespace vve {
 			return me->VeFixedSizeTable<T>::getDirectory();
 		};
 
-		VeCount	getSize() {
+		VeCount	size() {
 			VeFixedSizeTable<T>* me = (VeFixedSizeTable<T>*)this->getReadTablePtr();
-			return me->VeFixedSizeTable<T>::getSize();
+			return me->VeFixedSizeTable<T>::size();
 		};
 
 		bool getEntry(VeHandle key, T& entry) {
@@ -805,9 +796,9 @@ namespace vve {
 		};
 
 		template <typename K>
-		VeHandle getHandleEqual(VeIndex num_map, K key) {
+		VeHandle find(VeIndex num_map, K key) {
 			VeFixedSizeTable<T>* me = (VeFixedSizeTable<T>*)this->getReadTablePtr();
-			return me->VeFixedSizeTable<T>::getHandleEqual(num_map, key);
+			return me->VeFixedSizeTable<T>::find(num_map, key);
 		};
 
 		template <typename K>
@@ -871,7 +862,7 @@ namespace vve {
 
 		void defragment() {
 			std::vector<VeHandle, custom_alloc<VeHandle>> handles(&m_heap);
-			handles.reserve( (VeIndex)m_directory.getSize() + 1 );
+			handles.reserve( (VeIndex)m_directory.size() + 1 );
 			m_directory.getAllHandlesFromMap(1, handles);
 			if (handles.size() < 2) 
 				return;
@@ -887,7 +878,7 @@ namespace vve {
 
 				if (entry1.m_occupied == 0 && entry2.m_occupied == 0) {
 					entry1.m_size += entry2.m_size;
-					m_directory.deleteEntry(handles[i]);
+					m_directory.erase(handles[i]);
 				}
 				else 
 					entry1 = entry2;
@@ -907,7 +898,7 @@ namespace vve {
 			m_data.resize((VeIndex)size + m_align);
 			uint64_t start = (VeIndex) ( alignBoundary((uint64_t)m_data.data(), m_align) - (uint64_t)m_data.data() );
 			VeDirectoryEntry entry{ (VeIndex)start, size, 0 };
-			m_directory.addEntry(entry);
+			m_directory.insert(entry);
 		}
 
 		VeVariableSizeTable( VeVariableSizeTable& table) :
@@ -964,7 +955,7 @@ namespace vve {
 			m_directory.clear();
 			uint64_t start = (VeIndex)(alignBoundary((uint64_t)m_data.data(), m_align) - (uint64_t)m_data.data());
 			VeDirectoryEntry entry{ (VeIndex)start, (VeIndex)(m_data.size() - m_align), 0 };
-			m_directory.addEntry(entry);
+			m_directory.insert(entry);
 			out();
 		}
 
@@ -996,11 +987,11 @@ namespace vve {
 			m_dirty = true;
 			if (entry.m_size > size) { 
 				VeDirectoryEntry newentry{ entry.m_start + size, entry.m_size - size, 0 };
-				m_directory.addEntry(newentry);
+				m_directory.insert(newentry);
 			}
 			entry.m_size = size;
 			entry.m_occupied = 1;
-			m_directory.updateEntry(h, entry);
+			m_directory.update(h, entry);
 			out();
 			if (pHandle != nullptr) *pHandle = h;
 			return h;
@@ -1027,7 +1018,7 @@ namespace vve {
 			}
 			m_dirty = true;
 			entry.m_occupied = 0;
-			m_directory.updateEntry(handle, entry);
+			m_directory.update(handle, entry);
 			if (m_immediateDefrag) 
 				defragment();
 			out();

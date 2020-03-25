@@ -124,41 +124,41 @@ namespace vve::syseve {
 
 	void addEvent(VeEventTableEntry event) {
 		//std::cout << "add event type " << event.m_type << " action " << event.m_action << " key/button " << event.m_key_button << std::endl;
-		g_events_table.addEntry( event );
+		g_events_table.insert( event );
 	}
 
 	void addContinuousEvent(VeEventTableEntry event) {
 		std::cout << "add cont event type " << event.m_type << " action " << event.m_action << " key/button " << event.m_key_button << std::endl;
-		g_continuous_events_table.addEntry(event);
+		g_continuous_events_table.insert(event);
 	}
 
 	void removeContinuousEvent(VeEventTableEntry event) {
 		std::cout << "remove cont event type " << event.m_type << " action " << event.m_action << " key/button " << event.m_key_button << std::endl;
-		VeHandle eventH = g_continuous_events_table.getHandleEqual(1, VeHandleTriple{ event.m_type, event.m_key_button, event.m_action });
+		VeHandle eventH = g_continuous_events_table.find(1, VeHandleTriple{ event.m_type, event.m_key_button, event.m_action });
 		assert(eventH != VE_NULL_HANDLE);
-		g_continuous_events_table.deleteEntry(eventH);
+		g_continuous_events_table.erase(eventH);
 	}
 
 	void addHandler(std::function<void(VeEventTableEntry)> handler, VeHandle *pHandle) {
-		g_handler_table.addEntry({handler}, pHandle);
+		g_handler_table.insert({handler}, pHandle);
 	}
 
 	void removeHandler(VeHandle handlerH) {
 		std::vector<VeHandle, custom_alloc<VeHandle>> result(getHeap());
 		g_subscribe_table.getHandlesEqual(1, handlerH, result);
 		for (auto handle : result) {
-			g_subscribe_table.deleteEntry(handle);
+			g_subscribe_table.erase(handle);
 		}
-		g_handler_table.deleteEntry(handlerH);
+		g_handler_table.erase(handlerH);
 	}
 
 	void subscribeEvent(VeEventType type, VeHandle handlerH) {
-		g_subscribe_table.addEntry({type, handlerH});
+		g_subscribe_table.insert({type, handlerH});
 	}
 
 	void unsubscribeEvent(VeHandle typeH, VeHandle handlerH) {
-		VeHandle subH = g_subscribe_table.getHandleEqual(2, VeHandlePair{ typeH, handlerH });
-		g_subscribe_table.deleteEntry(subH);
+		VeHandle subH = g_subscribe_table.find(2, VeHandlePair{ typeH, handlerH });
+		g_subscribe_table.erase(subH);
 	}
 
 }

@@ -72,12 +72,12 @@ namespace vve {
 
 
 		void registerTablePointer(VeTable* tptr) {
-			g_main_table.VeFixedSizeTable<VeMainTableEntry>::addEntry({ tptr, tptr->getName() });
+			g_main_table.VeFixedSizeTable<VeMainTableEntry>::insert({ tptr, tptr->getName() });
 		}
 
 		VeTable* getTablePointer(std::string name) {
 			VeMainTableEntry entry;
-			if (g_main_table.getEntry(g_main_table.getHandleEqual(0, name), entry))
+			if (g_main_table.getEntry(g_main_table.find(0, name), entry))
 				return entry.m_table_pointer;
 			return nullptr;
 		}
@@ -124,12 +124,12 @@ namespace vve {
 			registerTablePointer(&g_systems_table);
 
 			//first init window to get the surface!
-			g_systems_table.addEntry({ syswin::init, []() {},        syswin::cleanUp, syswin::close });
-			g_systems_table.addEntry({ sysvul::init, sysvul::update, sysvul::cleanUp, sysvul::close });
-			g_systems_table.addEntry({ syseve::init, syseve::update, syseve::cleanUp, syseve::close });
-			g_systems_table.addEntry({ sysass::init, sysass::update, sysass::cleanUp, sysass::close });
-			g_systems_table.addEntry({ syssce::init, syssce::update, syssce::cleanUp, syssce::close });
-			g_systems_table.addEntry({ sysphy::init, sysphy::update, sysphy::cleanUp, sysphy::close });
+			g_systems_table.insert({ syswin::init, []() {},        syswin::cleanUp, syswin::close });
+			g_systems_table.insert({ sysvul::init, sysvul::update, sysvul::cleanUp, sysvul::close });
+			g_systems_table.insert({ syseve::init, syseve::update, syseve::cleanUp, syseve::close });
+			g_systems_table.insert({ sysass::init, sysass::update, sysass::cleanUp, sysass::close });
+			g_systems_table.insert({ syssce::init, syssce::update, syssce::cleanUp, syssce::close });
+			g_systems_table.insert({ sysphy::init, sysphy::update, sysphy::cleanUp, sysphy::close });
 
 			for (auto entry : g_systems_table.getData()) {
 				entry.m_init();

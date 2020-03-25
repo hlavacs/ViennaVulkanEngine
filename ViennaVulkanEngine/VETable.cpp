@@ -58,46 +58,46 @@ namespace vve {
 		void testFixedTables1() {
 
 			VeHandle handle, handle1, handle2;
-			handle1 = testTable.addEntry({ 1, 2, 3, "4" });
-			handle2 = testTable.addEntry({ 4, 2, 1, "3" });
+			handle1 = testTable.insert({ 1, 2, 3, "4" });
+			handle2 = testTable.insert({ 4, 2, 1, "3" });
 			testTable.forAllEntries(std::bind(printEntry, std::placeholders::_1)); std::cout << std::endl;
-			testTable.swapEntriesByHandle(handle1, handle2);
-			testTable.forAllEntries(std::bind(printEntry, std::placeholders::_1)); std::cout << std::endl;
-
-			testTable.sortTableByMap(0);
+			testTable.swap(handle1, handle2);
 			testTable.forAllEntries(std::bind(printEntry, std::placeholders::_1)); std::cout << std::endl;
 
-			handle = testTable.addEntry({ 2, 1, 3, "1" });
-			handle = testTable.addEntry({ 3, 4, 5, "2" });
-			handle = testTable.addEntry({ 5, 4, 2, "3" });
-			handle = testTable.addEntry({ 6, 3, 2, "2" });
+			testTable.sort(0);
+			testTable.forAllEntries(std::bind(printEntry, std::placeholders::_1)); std::cout << std::endl;
+
+			handle = testTable.insert({ 2, 1, 3, "1" });
+			handle = testTable.insert({ 3, 4, 5, "2" });
+			handle = testTable.insert({ 5, 4, 2, "3" });
+			handle = testTable.insert({ 6, 3, 2, "2" });
 
 			testTable.forAllEntries(std::bind(printEntry, std::placeholders::_1)); std::cout << std::endl;
 
-			testTable.sortTableByMap(0);
+			testTable.sort(0);
 			testTable.forAllEntries(std::bind(printEntry, std::placeholders::_1)); std::cout << std::endl;
 
-			testTable.sortTableByMap(1);
+			testTable.sort(1);
 			testTable.forAllEntries(std::bind(printEntry, std::placeholders::_1)); std::cout << std::endl;
 
-			testTable.sortTableByMap(2);
+			testTable.sort(2);
 			testTable.forAllEntries(std::bind(printEntry, std::placeholders::_1)); std::cout << std::endl;
 
-			testTable.sortTableByMap(3);
+			testTable.sort(3);
 			testTable.forAllEntries(std::bind(printEntry, std::placeholders::_1)); std::cout << std::endl;
 
-			testTable.deleteEntry(handle);
+			testTable.erase(handle);
 			testTable.forAllEntries(std::bind(printEntry, std::placeholders::_1)); std::cout << std::endl;
 
-			handle = testTable.addEntry({ 7, 1, 6, "5" });
+			handle = testTable.insert({ 7, 1, 6, "5" });
 			testTable.forAllEntries(std::bind(printEntry, std::placeholders::_1)); std::cout << std::endl;
 
-			testTable.sortTableByMap(3);
+			testTable.sort(3);
 			testTable.forAllEntries(std::bind(printEntry, std::placeholders::_1)); std::cout << std::endl;
 
-			testTable.deleteEntry(testTable.getHandleFromIndex(2));
-			testTable.deleteEntry(testTable.getHandleFromIndex(3));
-			testTable.sortTableByMap(3);
+			testTable.erase(testTable.getHandleFromIndex(2));
+			testTable.erase(testTable.getHandleFromIndex(3));
+			testTable.sort(3);
 			testTable.forAllEntries(std::bind(printEntry, std::placeholders::_1)); std::cout << std::endl;
 
 			//--------
@@ -123,13 +123,13 @@ namespace vve {
 			testTable.getHandlesRange(3, VeHandlePair( 4, 0 ), VeHandlePair( 5, 0 ), handles);
 
 
-			handle = testTable.addEntry({ 8, 2, 3, "4" });
-			handle = testTable.addEntry({ 9, 4, 1, "3" });
-			testTable.sortTableByMap(0);
+			handle = testTable.insert({ 8, 2, 3, "4" });
+			handle = testTable.insert({ 9, 4, 1, "3" });
+			testTable.sort(0);
 			testTable.forAllEntries(std::bind(printEntry, std::placeholders::_1)); std::cout << std::endl;
 
 			testTable.clear();
-			testTable.sortTableByMap(0);
+			testTable.sort(0);
 			testTable.forAllEntries(std::bind(printEntry, std::placeholders::_1)); std::cout << std::endl;
 		}
 

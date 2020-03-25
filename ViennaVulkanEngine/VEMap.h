@@ -19,34 +19,48 @@ namespace vve {
 	public:
 		VeMap() : m_heap(), m_clock("Map Clock", 100) {};
 		virtual ~VeMap() {};
-		virtual void		operator=(const VeMap& map) { assert(false); return; };
-		virtual void		clear() { assert(false); return; };
-		virtual VeMap* clone() { assert(false); return nullptr; };
+		virtual void	operator=(const VeMap& map) { assert(false); return; };
+		virtual void	clear() { assert(false); return; };
+		virtual VeCount size() { assert(false); return 0; };
+		bool			empty() { return size() == 0; };
+		virtual VeMap*	clone() { assert(false); return nullptr; };
+		virtual bool	insert(void* entry, VeIndex dir_index) { assert(false); return false; };
+		virtual VeCount	erase(void* entry, VeIndex dir_index) { assert(false); return 0; };
 
-		virtual bool	getMappedIndexEqual(VeHandle key, VeIndex& index) { assert(false); return false; };
-		virtual bool	getMappedIndexEqual(VeHandlePair key, VeIndex& index) { assert(false); return false; };
-		virtual bool	getMappedIndexEqual(VeHandleTriple key, VeIndex& index) { assert(false); return false; };
-		virtual bool	getMappedIndexEqual(std::string key, VeIndex& index) { assert(false); return false; };
+		virtual VeIndex	find(VeHandle key) { assert(false); return VE_NULL_INDEX; };
+		virtual VeIndex	find(VeHandlePair key) { assert(false); return VE_NULL_INDEX; };
+		virtual VeIndex	find(VeHandleTriple key) { assert(false); return VE_NULL_INDEX; };
+		virtual VeIndex	find(std::string key) { assert(false); return VE_NULL_INDEX; };
 
-		virtual VeCount	getMappedIndicesEqual(VeHandle key, std::vector<VeIndex, custom_alloc<VeIndex>>& result) { assert(false); return 0; };
-		virtual VeCount	getMappedIndicesEqual(VeHandlePair key, std::vector<VeIndex, custom_alloc<VeIndex>>& result) { assert(false); return 0; };
-		virtual VeCount	getMappedIndicesEqual(VeHandleTriple key, std::vector<VeIndex, custom_alloc<VeIndex>>& result) { assert(false); return 0; };
-		virtual VeCount	getMappedIndicesEqual(std::string key, std::vector<VeIndex, custom_alloc<VeIndex>>& result) { assert(false); return 0; };
+		virtual VeIndex operator[](const VeHandle &key) { return find(key); };
+		virtual VeIndex operator[](const VeHandlePair &key) { return find(key); };
+		virtual VeIndex operator[](const VeHandleTriple &key) { return find(key); };
+		virtual VeIndex operator[](const std::string &key) { return find(key); };
 
-		virtual VeCount	getMappedIndicesRange(VeHandle lower, VeHandle upper, std::vector<VeIndex, custom_alloc<VeIndex>>& result) { assert(false); return 0; };
-		virtual VeCount	getMappedIndicesRange(VeHandlePair lower, VeHandlePair upper, std::vector<VeIndex, custom_alloc<VeIndex>>& result) { assert(false); return 0; };
-		virtual VeCount	getMappedIndicesRange(VeHandleTriple lower, VeHandleTriple upper, std::vector<VeIndex, custom_alloc<VeIndex>>& result) { assert(false); return 0; };
-		virtual VeCount	getMappedIndicesRange(std::string lower, std::string upper, std::vector<VeIndex, custom_alloc<VeIndex>>& result) { assert(false); return 0; };
+		virtual VeCount	equal_range(VeHandle key, std::vector<VeIndex, custom_alloc<VeIndex>>& result) { assert(false); return 0; };
+		virtual VeCount	equal_range(VeHandlePair key, std::vector<VeIndex, custom_alloc<VeIndex>>& result) { assert(false); return 0; };
+		virtual VeCount	equal_range(VeHandleTriple key, std::vector<VeIndex, custom_alloc<VeIndex>>& result) { assert(false); return 0; };
+		virtual VeCount	equal_range(std::string key, std::vector<VeIndex, custom_alloc<VeIndex>>& result) { assert(false); return 0; };
+
+		virtual VeCount	range(VeHandle lower, VeHandle upper, std::vector<VeIndex, custom_alloc<VeIndex>>& result) { assert(false); return 0; };
+		virtual VeCount	range(VeHandlePair lower, VeHandlePair upper, std::vector<VeIndex, custom_alloc<VeIndex>>& result) { assert(false); return 0; };
+		virtual VeCount	range(VeHandleTriple lower, VeHandleTriple upper, std::vector<VeIndex, custom_alloc<VeIndex>>& result) { assert(false); return 0; };
+		virtual VeCount	range(std::string lower, std::string upper, std::vector<VeIndex, custom_alloc<VeIndex>>& result) { assert(false); return 0; };
 
 		virtual VeCount	getAllIndices(std::vector<VeIndex, custom_alloc<VeIndex>>& result) { assert(false); return 0; };
-		virtual bool	insertIntoMap(void* entry, VeIndex dir_index) { assert(false); return false; };
-		virtual VeCount	deleteFromMap(void* entry, VeIndex dir_index) { assert(false); return 0; };
+
+		virtual VeCount getAllKeyValuePairs(std::vector<std::pair<VeHandle, VeIndex>, custom_alloc<std::pair<VeHandle, VeIndex>>>& result) { assert(false); return 0; };
+		virtual VeCount getAllKeyValuePairs(std::vector<std::pair<VeHandlePair, VeIndex>, custom_alloc<std::pair<VeHandlePair, VeIndex>>>& result) { assert(false); return 0; };
+		virtual VeCount getAllKeyValuePairs(std::vector<std::pair<VeHandleTriple, VeIndex>, custom_alloc<std::pair<VeHandleTriple, VeIndex>>>& result) { assert(false); return 0; };
+		virtual VeCount getAllKeyValuePairs(std::vector<std::pair<std::string, VeIndex>, custom_alloc<std::pair<std::string, VeIndex>>>& result) { assert(false); return 0; };
 
 		virtual VeCount leftJoin(VeHandle key, VeMap& other, std::vector<VeIndexPair, custom_alloc<VeIndexPair>>& result) { assert(false); return 0; };
 		virtual VeCount leftJoin(VeHandlePair key, VeMap& other, std::vector<VeIndexPair, custom_alloc<VeIndexPair>>& result) { assert(false); return 0; };
 		virtual VeCount leftJoin(VeHandleTriple key, VeMap& other, std::vector<VeIndexPair, custom_alloc<VeIndexPair>>& result) { assert(false); return 0; };
+		virtual VeCount leftJoin(std::string key, VeMap& other, std::vector<VeIndexPair, custom_alloc<VeIndexPair>>& result) { assert(false); return 0; };
 		virtual VeCount leftJoin(VeMap& other, std::vector<VeIndexPair, custom_alloc<VeIndexPair>>& result) { assert(false); return 0; };
 
+		virtual void	print() { assert(false); return; };
 
 		/**
 		*
@@ -94,8 +108,8 @@ namespace vve {
 		*
 		*/
 		void getKey(void* entry, VeIndexPair offset, VeIndexPair num_bytes, VeHandlePair& key) {
-			key = VeHandlePair(getIntFromEntry(entry, offset.first, num_bytes.first),
-				getIntFromEntry(entry, offset.second, num_bytes.second));
+			key = VeHandlePair(	getIntFromEntry(entry, offset.first, num_bytes.first),
+								getIntFromEntry(entry, offset.second, num_bytes.second));
 		}
 
 		/**
@@ -109,9 +123,9 @@ namespace vve {
 		*
 		*/
 		void getKey(void* entry, VeIndexTriple offset, VeIndexTriple num_bytes, VeHandleTriple& key) {
-			key = VeHandleTriple(getIntFromEntry(entry, std::get<0>(offset), std::get<0>(num_bytes)),
-				getIntFromEntry(entry, std::get<1>(offset), std::get<1>(num_bytes)),
-				getIntFromEntry(entry, std::get<2>(offset), std::get<2>(num_bytes)));
+			key = VeHandleTriple(	getIntFromEntry(entry, std::get<0>(offset), std::get<0>(num_bytes)),
+									getIntFromEntry(entry, std::get<1>(offset), std::get<1>(num_bytes)),
+									getIntFromEntry(entry, std::get<2>(offset), std::get<2>(num_bytes)));
 		}
 
 		/**
@@ -372,14 +386,14 @@ namespace vve {
 		};
 
 
-		VeIndex find(K& key, VeIndex value) {
+		VeIndex findKeyValue(K& key, VeIndex value) {
 			VeMapEntry entry{ key, value };
 			return findEntry(m_root, entry);
 		};
 
 
-		VeIndex find(K& key) {
-			return find(key, VE_NULL_INDEX);
+		VeIndex findKey(K& key) {
+			return findKeyValue(key, VE_NULL_INDEX);
 		};
 
 
@@ -498,15 +512,24 @@ namespace vve {
 			return num + 1;
 		};
 
+		VeCount getAllKeyValuePairs(VeIndex node, std::vector<std::pair<K,VeIndex>, custom_alloc<std::pair<K, VeIndex>>>& result) {
+			if (node == VE_NULL_INDEX)
+				return 0;
 
-		VeCount getMappedIndicesEqual(VeIndex node, VeMapEntry &entry, std::vector<VeIndex, custom_alloc<VeIndex>>& result) {
+			VeCount num = getAllKeyValuePairs(m_map[node].m_left, result);
+			result.push_back( std::pair<K,VeIndex>(m_map[node].m_key, m_map[node].m_value) );
+			num += getAllKeyValuePairs(m_map[node].m_right, result);
+			return num + 1;
+		};
+
+		VeCount equal_range(VeIndex node, VeMapEntry &entry, std::vector<VeIndex, custom_alloc<VeIndex>>& result) {
 			if (node == VE_NULL_INDEX)
 				return 0;
 
 			VeCount num = 0;
 
 			if(entry <= m_map[node])
-				num += getMappedIndicesEqual(m_map[node].m_left, entry, result);
+				num += equal_range(m_map[node].m_left, entry, result);
 
 			if (entry.m_key == m_map[node].m_key) {
 				result.push_back(node);
@@ -514,12 +537,12 @@ namespace vve {
 			}
 
 			if (m_map[node] <= entry)
-				num += getMappedIndicesEqual(m_map[node].m_right, entry, result);
+				num += equal_range(m_map[node].m_right, entry, result);
 			return num;
 		};
 
 
-		VeCount getMappedIndicesRange(VeIndex node, VeMapEntry& lower, VeMapEntry upper, std::vector<VeIndex, custom_alloc<VeIndex>>& result) {
+		VeCount range(VeIndex node, VeMapEntry& lower, VeMapEntry upper, std::vector<VeIndex, custom_alloc<VeIndex>>& result) {
 			if (node == VE_NULL_INDEX)
 				return 0;
 
@@ -529,7 +552,7 @@ namespace vve {
 			VeCount num = 0;
 
 			if (lower < m_map[node])
-				num += getMappedIndicesRange(m_map[node].m_left, lower, upper, result);
+				num += range(m_map[node].m_left, lower, upper, result);
 
 			if (lower <= m_map[node] && m_map[node] <= upper) {
 				result.push_back(m_map[node].m_value);
@@ -537,7 +560,7 @@ namespace vve {
 			}
 
 			if (m_map[node] < upper)
-				num += getMappedIndicesRange(m_map[node].m_right, lower, upper, result);
+				num += range(m_map[node].m_right, lower, upper, result);
 
 			return num;
 		};
@@ -566,29 +589,24 @@ namespace vve {
 		VeOrderedMultimap(const VeOrderedMultimap<K, I>& map) : VeMap(), m_map(map.m_map), m_offset(map.m_offset), m_num_bytes(map.m_num_bytes) {};
 		virtual	~VeOrderedMultimap() {};
 
-		virtual void operator=(const VeMap& basemap) {
+		virtual void operator=(const VeMap& basemap) override {
 			VeOrderedMultimap<K, I>* map = &((VeOrderedMultimap<K, I>&)basemap);
 			m_offset = map->m_offset;
 			m_num_bytes = map->m_num_bytes;
 			m_map = map->m_map;
 		};
 
-		//const VeVector<VeMapEntry>& data() {
-		//	return m_map;
-		//};
-
-		virtual void clear() {
+		virtual void clear() override {
 			m_root = VE_NULL_INDEX;
 			m_map.clear();
 		};
 
-		VeCount size() {
+		VeCount size() override {
 			return m_map.size();
 		};
 
 		std::pair<K, VeIndex> getKeyValuePair(VeIndex num) {
-			VeIndex value;
-			getMappedIndexEqual(m_map[num].m_key, value);
+			VeIndex value = find(m_map[num].m_key);
 			return { m_map[num].m_key, value};
 		};
 
@@ -598,7 +616,7 @@ namespace vve {
 			std::cout << std::endl;
 		};
 
-		void print() {
+		void print() override {
 			std::cout << "Num " << m_map.size() << " Root " << m_root << std::endl;
 			for (uint32_t i = 0; i < m_map.size(); ++i) {
 				m_map[i].print(i);
@@ -606,62 +624,66 @@ namespace vve {
 			std::cout << std::endl;
 		};
 
-		virtual bool getMappedIndexEqual(K key, VeIndex& index) override {
-			index = find(key);
+		virtual VeIndex find(K key) override {
+			VeIndex index = findKey(key);
 			return index == VE_NULL_INDEX ? VE_NULL_INDEX : m_map[index].m_value;
 		};
 
-		virtual VeCount getMappedIndicesEqual(K key, std::vector<VeIndex, custom_alloc<VeIndex>>& result) override {
+		virtual VeCount equal_range(K key, std::vector<VeIndex, custom_alloc<VeIndex>>& result) override {
 			VeMapEntry entry(key, VE_NULL_INDEX);
-			return getMappedIndicesEqual(m_root, entry, result);
+			return equal_range(m_root, entry, result);
 		};
 
-		virtual VeCount getMappedIndicesRange(K lower, K upper, std::vector<VeIndex, custom_alloc<VeIndex>>& result) override {
+		virtual VeCount range(K lower, K upper, std::vector<VeIndex, custom_alloc<VeIndex>>& result) override {
 			VeMapEntry mlower(lower, VE_NULL_INDEX), mupper(upper, VE_NULL_INDEX);
-			return getMappedIndicesRange(m_root, mlower, mupper, result);
+			return range(m_root, mlower, mupper, result);
 		};
 
 		virtual VeCount getAllIndices(std::vector<VeIndex, custom_alloc<VeIndex>>& result) override {
 			return getAllIndices(m_root, result);
 		};
 
-		VeCount leftJoin(K key, VeOrderedMultimap& other, std::vector<VeIndexPair, custom_alloc<VeIndexPair>>& result) {
+		virtual VeCount getAllKeyValuePairs(std::vector<std::pair<K, VeIndex>, custom_alloc<std::pair<K, VeIndex>>>& result) override { 
+			return getAllKeyValuePairs(m_root, result);
+		};
+
+		virtual VeCount leftJoin(K key, VeMap& other, std::vector<VeIndexPair, custom_alloc<VeIndexPair>>& result) override {
 			std::vector < VeIndex, custom_alloc<VeIndex> > result1(&m_heap);
-			getMappedIndicesEqual(key, result1);
+			equal_range(key, result1);
 
 			std::vector < VeIndex, custom_alloc<VeIndex> > result2(&m_heap);
-			other.getMappedIndicesEqual(key, result2);
+			other.equal_range(key, result2);
 
 			for (uint32_t i = 0; i < result1.size(); ++i) {
 				for (uint32_t j = 0; j < result2.size(); ++j) {
-					result.emplace_back({ result1[i], result2[j] });
+					result.emplace_back( result1[i], result2[j] );
 				}
 			}
-			return result1.size()*result2.size();
+			return (VeCount)(result1.size()*result2.size());
 		};
 
-		VeCount leftJoin(VeOrderedMultimap& other, std::vector<VeIndexPair, custom_alloc<VeIndexPair>>& result) {
-			if (m_map.size() == 0 ||other.m_map.size()==0)
+		virtual VeCount leftJoin(VeMap& other, std::vector<VeIndexPair, custom_alloc<VeIndexPair>>& result) override {
+			if (size() == 0 ||other.size()==0)
 				return 0;
 
 			VeCount num = 0;
-			std::vector<VeMapEntry, custom_alloc<VeMapEntry> > map1(&m_heap);
-			map1.reserve(m_map.size());
-			copyTree(m_root, map1);
+			std::vector<std::pair<K,VeIndex>, custom_alloc<std::pair<K, VeIndex>> > map1(&m_heap);
+			map1.reserve(size());
+			getAllKeyValuePairs(map1);
 
-			K last = map1[0].m_key;
+			K last = map1[0].first;
 			std::vector < VeIndex, custom_alloc<VeIndex> > result2(&m_heap);
-			other.getMappedIndicesEqual(last, result2);
+			other.equal_range(last, result2);
 
 			for (uint32_t i = 0; i < map1.size(); ++i) {
-				K key = m_map[i].m_key;
+				K key = map1[i].first;
 				if (key != last) {
 					result2.clear();
-					other.getMappedIndicesEqual(key, result2);
+					other.equal_range(key, result2);
 					last = key;
 				}
 				for (uint32_t j = 0; j < result2.size(); ++j) {
-					result.emplace_back({ map1[i].m_value, result2[j]});
+					result.emplace_back( map1[i].second, result2[j] );
 					++num;
 				}
 			}
@@ -669,7 +691,7 @@ namespace vve {
 			return num;
 		};
 
-		virtual bool insertIntoMap(void* entry, VeIndex dir_index) override {
+		virtual bool insert(void* entry, VeIndex dir_index) override {
 			K key;
 			getKey(entry, m_offset, m_num_bytes, key);
 			VeIndex last = m_map.size();
@@ -679,7 +701,7 @@ namespace vve {
 			return true;
 		};
 
-		virtual VeCount deleteFromMap(void* entry, VeIndex dir_index) override {
+		virtual VeCount erase(void* entry, VeIndex dir_index) override {
 			K key;
 			getKey(entry, m_offset, m_num_bytes, key);
 			VeMapEntry mentry(key, dir_index);
@@ -804,21 +826,27 @@ namespace vve {
 			m_map = map->m_map;
 		};
 
-		virtual void clear() {
+		void clear() override {
 			m_entries.clear();
 			m_first_free_entry = VE_NULL_INDEX;
 			for (VeIndex i = 0; i < m_map.size(); ++i)
 				m_map[i] = VE_NULL_INDEX;
 		};
 
-		VeCount size() {
+		VeCount size() override {
 			return m_num_entries;
 		};
 
-		void print() {
+		void print() override {
+			std::vector<std::pair<K, VeIndex>, custom_alloc<std::pair<K, VeIndex>>> result(&m_heap);
+			getAllKeyValuePairs(result);
+			for (auto p : result) {
+				std::cout << "KEY " << p.first << " VAL " << p.second << std::endl;
+			}
+			std::cout << std::endl;
 		};
 
-		virtual bool getMappedIndexEqual(K key, VeIndex& index) override {
+		virtual VeIndex find(K key) override {
 			VeIndex idx = std::hash<K>()(key) % m_map.size();
 			for (VeIndex index = m_map[idx]; index != VE_NULL_INDEX; index = m_entries[index].m_next) {
 				if (m_entries[index].m_key == key) {
@@ -828,7 +856,7 @@ namespace vve {
 			return VE_NULL_INDEX;
 		};
 
-		virtual VeCount getMappedIndicesEqual(K key, std::vector<VeIndex, custom_alloc<VeIndex>>& result) override {
+		virtual VeCount equal_range(K key, std::vector<VeIndex, custom_alloc<VeIndex>>& result) override {
 			VeCount num = 0;
 			VeIndex idx = std::hash<K>()(key) % m_map.size();
 			for (VeIndex index = m_map[idx]; index != VE_NULL_INDEX; index = m_entries[index].m_next) {
@@ -844,30 +872,43 @@ namespace vve {
 			VeCount num = 0;
 			std::for_each(m_map.begin(), m_map.end(), [&]( VeIndex index ) {
 				while (index != VE_NULL_INDEX) {
-					result.push_back( m_entries[index].m_value );
+					result.emplace_back( m_entries[index].m_value );
 					++num;
+					index = m_entries[index].m_next;
 				};
 			});
 			return num;
 		};
 
-		VeCount leftJoin(K key, VeHashedMultimap& other, std::vector<VeIndexPair, custom_alloc<VeIndexPair>>& result) {
+		virtual VeCount getAllKeyValuePairs(std::vector<std::pair<K, VeIndex>, custom_alloc<std::pair<K, VeIndex>>>& result) override {
+			VeCount num = 0;
+			std::for_each(m_map.begin(), m_map.end(), [&](VeIndex index) {
+				while (index != VE_NULL_INDEX) {
+					result.emplace_back(m_entries[index].m_key, m_entries[index].m_value);
+					++num;
+					index = m_entries[index].m_next;
+				};
+			});
+			return num;;
+		};
+
+		virtual VeCount leftJoin(K key, VeMap& other, std::vector<VeIndexPair, custom_alloc<VeIndexPair>>& result) override {
 			std::vector < VeIndex, custom_alloc<VeIndex> > result1(&m_heap);
-			getMappedIndicesEqual(key, result1);
+			equal_range(key, result1);
 
 			std::vector < VeIndex, custom_alloc<VeIndex> > result2(&m_heap);
-			other.getMappedIndicesEqual(key, result2);
+			other.equal_range(key, result2);
 
 			for (uint32_t i = 0; i < result1.size(); ++i) {
 				for (uint32_t j = 0; j < result2.size(); ++j) {
-					result.emplace_back({ result1[i], result2[j] });
+					result.emplace_back( result1[i], result2[j] );
 				}
 			}
-			return result1.size() * result2.size();
+			return (VeCount)(result1.size() * result2.size());
 		};
 
-		VeCount leftJoin(VeHashedMultimap& other, std::vector<VeIndexPair, custom_alloc<VeIndexPair>>& result) {
-			if (m_map.size() == 0 || other.m_map.size() == 0)
+		virtual VeCount leftJoin(VeMap& other, std::vector<VeIndexPair, custom_alloc<VeIndexPair>>& result) override {
+			if (size() == 0 || other.size() == 0)
 				return 0;
 
 			VeCount num = 0;
@@ -877,17 +918,17 @@ namespace vve {
 
 			K last = map1[0].m_key;
 			std::vector < VeIndex, custom_alloc<VeIndex> > result2(&m_heap);
-			other.getMappedIndicesEqual(last, result2);
+			other.equal_range(last, result2);
 
 			for (uint32_t i = 0; i < map1.size(); ++i) {
-				K key = m_map[i].m_key;
+				K key = m_entries[i].m_key;
 				if (key != last) {
 					result2.clear();
-					other.getMappedIndicesEqual(key, result2);
+					other.equal_range(key, result2);
 					last = key;
 				}
 				for (uint32_t j = 0; j < result2.size(); ++j) {
-					result.emplace_back({ map1[i].m_value, result2[j] });
+					result.emplace_back( map1[i].m_value, result2[j] );
 					++num;
 				}
 			}
@@ -895,7 +936,7 @@ namespace vve {
 			return num;
 		};
 
-		virtual bool insertIntoMap(void* entry, VeIndex dir_index) override {
+		virtual bool insert(void* entry, VeIndex dir_index) override {
 			K key;
 			getKey(entry, m_offset, m_num_bytes, key);
 			VeIndex idx = std::hash<K>()(key) % m_map.size();
@@ -920,7 +961,7 @@ namespace vve {
 			return true;
 		};
 
-		virtual VeCount deleteFromMap(void* entry, VeIndex dir_index) override {
+		virtual VeCount erase(void* entry, VeIndex dir_index) override {
 			K key;
 			getKey(entry, m_offset, m_num_bytes, key);
 			VeIndex hidx = std::hash<K>()(key) % m_map.size();
@@ -930,8 +971,7 @@ namespace vve {
 				if (m_entries[index].m_key == key && m_entries[index].m_value == dir_index) {
 					if (index == m_map[hidx]) {
 						m_map[hidx] = m_entries[index].m_next;
-					}
-					else {
+					} else {
 						m_entries[last].m_next = m_entries[index].m_next;
 					}
 					m_entries[index].m_next = m_first_free_entry;
@@ -946,8 +986,6 @@ namespace vve {
 		};
 
 	};
-
-
 
 
 	namespace map {

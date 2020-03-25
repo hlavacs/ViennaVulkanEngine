@@ -104,7 +104,7 @@ namespace vve {
 			if ( m_num_ticks >= m_stat ) {
 				double avg = m_sum_time / (double)m_num_ticks;
 				m_avg_time = (1.0 - f) * m_avg_time + f * avg;
-				f = 0.9;
+				f = f - (f - 0.9)/100.0;
 				m_sum_time = 0;
 				m_num_ticks = 0;
 				print();
@@ -120,7 +120,7 @@ namespace vve {
 			if (m_sum_time > m_stat * std::exp(9.0 * std::log(10.0)) ) {
 				double avg = m_sum_time / m_num_ticks;
 				m_avg_time = (1.0 - f) * m_avg_time + f * avg;
-				f = 0.9;
+				f = f - (f - 0.9) / 100.0;
 				m_sum_time = 0;
 				m_num_ticks = 0;
 				print();

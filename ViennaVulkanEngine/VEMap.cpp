@@ -30,85 +30,85 @@ namespace vve::map {
 		TestEntry t11{ 11, 1, 2, "A" };
 		TestEntry t12{ 12, 1, 2, "A" };
 
-		testmap.insertIntoMap( &t1, 1 );
+		testmap.insert( &t1, 1 );
 		testmap.print();
 		testmap.printTree();
-		testmap.insertIntoMap(&t2, 0);
+		testmap.insert(&t2, 0);
 		testmap.print();
 		testmap.printTree();
-		testmap.deleteFromMap(&t2, 0);
-		testmap.print();
-		testmap.printTree();
-
-		testmap.insertIntoMap(&t3, 0);
-		testmap.print();
-		testmap.printTree();
-		testmap.insertIntoMap(&t3, 1);
-		testmap.print();
-		testmap.printTree();
-		testmap.insertIntoMap(&t3, 2);
+		testmap.erase(&t2, 0);
 		testmap.print();
 		testmap.printTree();
 
-		testmap.deleteFromMap(&t3, 1);
+		testmap.insert(&t3, 0);
 		testmap.print();
 		testmap.printTree();
-		testmap.insertIntoMap(&t3, 1);
+		testmap.insert(&t3, 1);
+		testmap.print();
+		testmap.printTree();
+		testmap.insert(&t3, 2);
+		testmap.print();
+		testmap.printTree();
+
+		testmap.erase(&t3, 1);
+		testmap.print();
+		testmap.printTree();
+		testmap.insert(&t3, 1);
 		testmap.print();
 		testmap.printTree();
 
 
-		testmap.insertIntoMap(&t5, 0);
+		testmap.insert(&t5, 0);
 		testmap.print();
 		testmap.printTree();
-		testmap.insertIntoMap(&t6, 0);
+		testmap.insert(&t6, 0);
 		testmap.print();
 		testmap.printTree();
-		testmap.insertIntoMap(&t4, 0);
+		testmap.insert(&t4, 0);
 		testmap.print();
 		testmap.printTree();
-		testmap.insertIntoMap(&t4, 1);
+		testmap.insert(&t4, 1);
 		testmap.print();
 		testmap.printTree();
-		testmap.insertIntoMap(&t4, 2);
+		testmap.insert(&t4, 2);
 		testmap.print();
 		testmap.printTree();
-		testmap.insertIntoMap(&t4, 3);
+		testmap.insert(&t4, 3);
 		testmap.printTree();
 
 		std::cout << std::endl;
 
-		testmap.deleteFromMap(&t3, 1);
+		testmap.erase(&t3, 1);
 		testmap.printTree();
-		testmap.deleteFromMap(&t4, 1);
+		testmap.erase(&t4, 1);
 		testmap.printTree();
-		testmap.deleteFromMap(&t4, 2);
-		testmap.printTree();
-
-		testmap.insertIntoMap(&t12, 0);
-		testmap.insertIntoMap(&t11, 0);
-		testmap.insertIntoMap(&t10, 0);
-		testmap.printTree();
-		testmap.insertIntoMap(&t11, 1);
-		testmap.insertIntoMap(&t11, 2);
-		testmap.insertIntoMap(&t11, 3);
-		testmap.printTree();
-		testmap.insertIntoMap(&t7, 0);
-		testmap.insertIntoMap(&t7, 1);
-		testmap.insertIntoMap(&t7, 2);
+		testmap.erase(&t4, 2);
 		testmap.printTree();
 
-		testmap.deleteFromMap(&t11, 3);
-		testmap.deleteFromMap(&t11, 2);
-		testmap.deleteFromMap(&t11, 1);
-		testmap.deleteFromMap(&t11, 0);
+		testmap.insert(&t12, 0);
+		testmap.insert(&t11, 0);
+		testmap.insert(&t10, 0);
+		testmap.printTree();
+		testmap.insert(&t11, 1);
+		testmap.insert(&t11, 2);
+		testmap.insert(&t11, 3);
+		testmap.printTree();
+		testmap.insert(&t7, 0);
+		testmap.insert(&t7, 1);
+		testmap.insert(&t7, 2);
+		testmap.printTree();
+
+		testmap.erase(&t11, 3);
+		testmap.erase(&t11, 2);
+		testmap.erase(&t11, 1);
+		testmap.erase(&t11, 0);
 		testmap.printTree();
 
 		testmap.clear();
 
 		for (uint32_t i = 0; i < 1000; ++i) {
 			TestEntry t1{ (VeIndex)std::rand(), 1, 2, "A" };
-			testmap.insertIntoMap(&t1, i);
+			testmap.insert(&t1, i);
 		}
 		//testmap.printTree();
 
@@ -118,12 +118,12 @@ namespace vve::map {
 			//std::cout << "i=" << i << std::endl;
 
 			//TestEntry t1{ i, 1, 2, "B" };
-			//testmap.insertIntoMap(&t1, i);
+			//testmap.insert(&t1, i);
 			
 			//uint32_t idx = std::rand() % testmap.size();
 			auto [key, value] = testmap.getKeyValuePair(i % testmap.size());
 			//t1.m_int1 = (VeIndex)key;
-			//testmap.deleteFromMap(&t1, value);
+			//testmap.erase(&t1, value);
 		}
 		mapClock.stop();
 
@@ -151,12 +151,51 @@ namespace vve::map {
 		TestEntry t11{ 11, 1, 2, "A" };
 		TestEntry t12{ 12, 1, 2, "A" };
 
-		testmap2.insertIntoMap(&t1, 1);
-		testmap2.insertIntoMap(&t2, 1);
-		testmap2.insertIntoMap(&t3, 1);
-		testmap2.insertIntoMap(&t4, 1);
-		testmap2.insertIntoMap(&t5, 1);
-		testmap2.insertIntoMap(&t6, 1);
+		testmap2.insert(&t1, 1);
+		testmap2.insert(&t2, 1);
+		testmap2.insert(&t3, 1);
+		testmap2.insert(&t3, 2);
+		testmap2.insert(&t3, 3);
+		testmap2.insert(&t3, 4);
+		testmap2.insert(&t4, 1);
+		testmap2.insert(&t5, 1);
+		testmap2.insert(&t6, 1);
+		testmap2.insert(&t6, 2);
+		testmap2.insert(&t6, 3);
+
+		testmap2.print();
+
+		testmap2.erase(&t1, 1);
+		testmap2.erase(&t3, 1);
+		testmap2.erase(&t3, 2);
+
+		testmap2.print();
+
+		testmap2.clear();
+
+		constexpr VeIndex NUM = 10000;
+		for (uint32_t i = 0; i < NUM; ++i) {
+			TestEntry t1{ i, 1, 2, "A" };
+			testmap2.insert(&t1, i);
+		}
+		//testmap2.print();
+
+		VeClock mapClock("Map Clock", 1);
+		mapClock.start();
+		for (uint32_t i = 0; i < 1000; ++i) {
+			//std::cout << "i=" << i << std::endl;
+
+			//TestEntry t1{ i, 1, 2, "B" };
+			//testmap2.insert(&t1, i);
+
+			uint32_t key = std::rand() % NUM;
+			auto index = testmap.find(key);
+
+			//t1.m_int1 = (VeIndex)key;
+			//testmap2.erase(&t1, value);
+		}
+		mapClock.stop();
+
 
 
 	}
