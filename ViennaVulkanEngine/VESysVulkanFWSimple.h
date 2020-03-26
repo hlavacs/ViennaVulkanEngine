@@ -16,9 +16,8 @@ namespace vve::sysvul::fwsimple {
 	inline VeHandle VE_SYSTEM_HANDLE = VE_NULL_HANDLE;
 
 	void init();
-	void update();
-	void cleanUp(syseve::VeEventTableEntry e);
-	void close();
+	void update(syseve::VeEventTableEntry e);
+	void close(syseve::VeEventTableEntry e);
 
 
 

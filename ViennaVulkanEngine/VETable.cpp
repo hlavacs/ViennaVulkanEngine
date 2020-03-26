@@ -9,6 +9,7 @@
 
 #include "VEDefines.h"
 #include "VETable.h"
+#include "VESysEvents.h"
 #include "VESysEngine.h"
 
 

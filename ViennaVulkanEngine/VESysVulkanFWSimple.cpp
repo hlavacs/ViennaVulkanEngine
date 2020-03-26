@@ -8,13 +8,13 @@
 */
 
 #include "VEDefines.h"
-#include "VESysEngine.h"
 #include "VESysEvents.h"
+#include "VESysEngine.h"
+#include "VESysWindow.h"
 #include "VESysVulkanFWSimple.h"
 
 
 namespace vve::sysvul::fwsimple {
-
 
 	void init() {
 		syseng::registerEntity(VE_SYSTEM_NAME);
@@ -25,15 +25,11 @@ namespace vve::sysvul::fwsimple {
 
 	}
 
-	void update() {
+	void update(syseve::VeEventTableEntry e) {
 
 	}
 
-	void cleanUp() {
-
-	}
-
-	void close() {
+	void close(syseve::VeEventTableEntry e) {
 
 	}
 

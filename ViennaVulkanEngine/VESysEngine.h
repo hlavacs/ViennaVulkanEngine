@@ -25,11 +25,9 @@ namespace vve {
 		VeHandle getEntityHandle(const std::string& name);
 		void registerTablePointer(VeTable* ptr);
 		VeTable* getTablePointer(const std::string name);
-		void update();
-		void cleanUp();
-		void forwardTime();
 		void createHeaps(uint32_t num);
 		VeHeapMemory* getHeap();
+		void forwardTime();
 
 #endif
 
@@ -46,8 +44,6 @@ namespace vve {
 		void runGameLoop();
 		void computeOneFrame();
 		void close();
-
-		void closeEngine();
 	}
 }
 

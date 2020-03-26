@@ -17,8 +17,7 @@ namespace vve::sysphy {
 
 	void init();
 	void update(syseve::VeEventTableEntry e);
-	void cleanUp();
-	void close();
+	void close(syseve::VeEventTableEntry e);
 
 
 

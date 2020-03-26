@@ -9,8 +9,8 @@
 
 
 #include "VEDefines.h"
-#include "VESysEngine.h"
 #include "VESysEvents.h"
+#include "VESysEngine.h"
 
 
 namespace vve::syseve {
@@ -20,7 +20,7 @@ namespace vve::syseve {
 	//events 
 
 	std::vector<VeMap*> maps1 = {
-		new VeHashedMultimap< VeHandle, VeIndex >(offsetof(VeEventTableEntry, m_senderH), sizeof(VeEventTableEntry::m_senderH)),
+		new VeHashedMultimap< VeHandle, VeIndex >((VeIndex)offsetof(VeEventTableEntry, m_senderH), (VeIndex)sizeof(VeEventTableEntry::m_senderH)),
 		new VeHashedMultimap< VeHandlePair, VeIndexPair >(
 			VeIndexPair((VeIndex)offsetof(VeEventTableEntry, m_senderH), (VeIndex)offsetof(VeEventTableEntry, m_receiverH) ),
 			VeIndexPair((VeIndex)sizeof(VeEventTableEntry::m_senderH), (VeIndex)sizeof(VeEventTableEntry::m_receiverH) ) )
@@ -30,7 +30,7 @@ namespace vve::syseve {
 
 
 	std::vector<VeMap*> maps2 = {
-		new VeHashedMultimap< VeHandle, VeIndex >(offsetof(VeEventTableEntry, m_senderH), sizeof(VeEventTableEntry::m_senderH)),
+		new VeHashedMultimap< VeHandle, VeIndex >((VeIndex)offsetof(VeEventTableEntry, m_senderH), (VeIndex)sizeof(VeEventTableEntry::m_senderH)),
 		new VeHashedMultimap< VeHandlePair, VeIndexPair >(
 			VeIndexPair((VeIndex)offsetof(VeEventTableEntry, m_senderH), (VeIndex)offsetof(VeEventTableEntry, m_receiverH)),
 			VeIndexPair((VeIndex)sizeof(VeEventTableEntry::m_senderH), (VeIndex)sizeof(VeEventTableEntry::m_receiverH)))
@@ -60,8 +60,8 @@ namespace vve::syseve {
 		VeIndex		m_thread_id;	//run handler function in this thread or NULL
 	};
 	std::vector<VeMap*> maps4 = {
-		new VeHashedMultimap< VeHandle, VeIndex >(offsetof(VeEventSubscribeTableEntry, m_senderH), sizeof(VeEventSubscribeTableEntry::m_senderH)),
-		new VeHashedMultimap< VeHandle, VeIndex >(offsetof(VeEventSubscribeTableEntry, m_handlerH), sizeof(VeEventSubscribeTableEntry::m_handlerH)),
+		new VeHashedMultimap< VeHandle, VeIndex >((VeIndex)offsetof(VeEventSubscribeTableEntry, m_senderH), (VeIndex)sizeof(VeEventSubscribeTableEntry::m_senderH)),
+		new VeHashedMultimap< VeHandle, VeIndex >((VeIndex)offsetof(VeEventSubscribeTableEntry, m_handlerH), (VeIndex)sizeof(VeEventSubscribeTableEntry::m_handlerH)),
 		new VeHashedMultimap< VeHandlePair, VeIndexPair >
 			(VeIndexPair{(VeIndex)offsetof(VeEventSubscribeTableEntry, m_senderH), (VeIndex)offsetof(VeEventSubscribeTableEntry, m_handlerH)},
 			 VeIndexPair{(VeIndex)sizeof(VeEventSubscribeTableEntry::m_senderH),   (VeIndex)sizeof(VeEventSubscribeTableEntry::m_handlerH)})
@@ -89,12 +89,14 @@ namespace vve::syseve {
 		VeEventSubscribeTableEntry subscribeData;
 		VeEventHandlerTableEntry handlerData;
 
-		events_table.leftJoin<std::multimap<VeHandle, VeIndex>, VeHandle, VeIndex>(0, g_subscribe_table, 0, result);
+		events_table.leftJoin(0, g_subscribe_table, 0, result);
 		for( auto [eventhandle, subscribehandle] : result ) {
 			events_table.getEntry(eventhandle, eventData);
 			g_subscribe_table.getEntry(subscribehandle, subscribeData);
 
-			if (subscribeData.m_type == VeEventType::VE_EVENT_TYPE_NULL || subscribeData.m_type == eventData.m_type) {
+			bool recvOK = (subscribeData.m_receiverH == VE_NULL_HANDLE || subscribeData.m_receiverH == eventData.m_receiverH);
+			bool typeOK = (subscribeData.m_type == VeEventType::VE_EVENT_TYPE_NULL || subscribeData.m_type == eventData.m_type);
+			if ( recvOK && typeOK) {
 				g_handler_table.getEntry(subscribeData.m_handlerH, handlerData);
 				JADD(handlerData.m_handler(eventData));
 			}
@@ -102,11 +104,8 @@ namespace vve::syseve {
 	}
 
 	void update() {
-		callAllEvents(g_events_table);
+		callAllEvents(*(VeFixedSizeTable<VeEventTableEntry>*)g_events_table.getReadTablePtr());
 		callAllEvents(g_continuous_events_table);
-	}
-
-	void cleanUp() {
 	}
 
 	void close() {

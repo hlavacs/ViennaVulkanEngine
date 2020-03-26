@@ -50,7 +50,6 @@ namespace vve::syseve {
 
 	void init();
 	void update();
-	void cleanUp();
 	void close();
 
 	VeHandle addEvent(VeEventTableEntry event, VeHandle *pHandle = nullptr);

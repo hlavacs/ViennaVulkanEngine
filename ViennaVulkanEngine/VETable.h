@@ -258,12 +258,15 @@ namespace vve {
 	*
 	*
 	*/
+
+	#define VECTOR VeVector<T>
+
 	template <typename T>
 	class VeFixedSizeTable : public VeTable {
 	protected:
 		std::vector<VeMap*>		m_maps;				///vector of maps for quickly finding or sorting entries
 		VeDirectory				m_directory;		///
-		VeVector<T>				m_data;				///growable entry data table
+		VECTOR					m_data;				///growable entry data table
 		std::vector<VeIndex>	m_tbl2dir;
 
 	public:
@@ -302,7 +305,7 @@ namespace vve {
 
 		// read operations
 		bool		isValid(VeHandle handle);
-		const VeVector<T>& getData() { return m_data; };
+		const VECTOR& getData() { return m_data; };
 		VeMap&		getMap(VeIndex num_map) { return *m_maps[num_map]; };
 		VeDirectory& getDirectory() { return m_directory; };
 		std::vector<VeIndex>& getTable2dir() { return m_tbl2dir; };
@@ -317,8 +320,8 @@ namespace vve {
 		template <typename K> VeCount getHandlesEqual(VeIndex num_map, K key, std::vector<VeHandle, custom_alloc<VeHandle>>& result);	//use this in multimap
 		template <typename K> VeCount getHandlesRange(VeIndex num_map, K lower, K upper, std::vector<VeHandle, custom_alloc<VeHandle>>& result); //do not use in unordered map/multimap
 
-		template <typename M, typename K, typename I> VeCount leftJoin(VeIndex own_map, VeTable& other, VeIndex other_map, std::vector<VeHandlePair, custom_alloc<VeHandlePair>>& result);
-		template <typename M, typename K, typename I> VeCount leftJoin(VeIndex own_map, K key, VeTable& other, VeIndex other_map, std::vector<VeHandlePair, custom_alloc<VeHandlePair>>& result);
+		VeCount leftJoin(VeIndex own_map, VeTable& other, VeIndex other_map, std::vector<VeHandlePair, custom_alloc<VeHandlePair>>& result);
+		template <typename K> VeCount leftJoin(VeIndex own_map, K key, VeTable& other, VeIndex other_map, std::vector<VeHandlePair, custom_alloc<VeHandlePair>>& result);
 
 		void	forAllEntries(VeIndex num_map, std::function<void(VeHandle)>& func);
 		void	forAllEntries(VeIndex num_map, std::function<void(VeHandle)>&& func) { forAllEntries(num_map, func); };
@@ -521,7 +524,6 @@ namespace vve {
 	//--------------------------------------------------------------------------------------------------------------------------
 
 	template<typename T>
-	template <typename M, typename K, typename I>
 	VeCount VeFixedSizeTable<T>::leftJoin(VeIndex own_map, VeTable& table, VeIndex other_map, std::vector<VeHandlePair, custom_alloc<VeHandlePair>>& result) {
 		in();
 		VeFixedSizeTable<T>* other = (VeFixedSizeTable<T>*) & table;
@@ -541,7 +543,7 @@ namespace vve {
 
 
 	template<typename T>
-	template <typename M, typename K, typename I>
+	template <typename K>
 	VeIndex VeFixedSizeTable<T>::leftJoin(VeIndex own_map, K key, VeTable& table, VeIndex other_map, std::vector<VeHandlePair, custom_alloc<VeHandlePair>>& result) {
 		in();
 		VeFixedSizeTable<T>* other = (VeFixedSizeTable<T>*) & table;
@@ -808,12 +810,23 @@ namespace vve {
 			return me->VeFixedSizeTable<T>::getAllHandlesFromMap(num_map, result);
 		};
 
-		template <typename M, typename K, typename I>
-		VeCount leftJoin(VeIndex own_map, VeTable& table, VeIndex other_map, std::vector<VeHandlePair, custom_alloc<VeHandlePair>>& result) {
+		template <typename K> 
+		VeCount leftJoin(	VeIndex own_map, K key, VeTable& table, VeIndex other_map,
+							std::vector<VeHandlePair, custom_alloc<VeHandlePair>>& result) {
+
 			VeFixedSizeTable<T>* me = (VeFixedSizeTable<T>*)this->getReadTablePtr();
 			VeFixedSizeTable<T>* other = (VeFixedSizeTable<T>*)table.getReadTablePtr();
 
-			return me->VeFixedSizeTable<T>::leftJoin<M,K,I>(own_map, *other, other_map, result);
+			return me->VeFixedSizeTable<T>::leftJoin<K>(own_map, key, *other, other_map, result);
+		};
+
+		VeCount leftJoin(	VeIndex own_map, VeTable& table, VeIndex other_map, 
+							std::vector<VeHandlePair, custom_alloc<VeHandlePair>>& result) {
+
+			VeFixedSizeTable<T>* me = (VeFixedSizeTable<T>*)this->getReadTablePtr();
+			VeFixedSizeTable<T>* other = (VeFixedSizeTable<T>*)table.getReadTablePtr();
+
+			return me->VeFixedSizeTable<T>::leftJoin(own_map, *other, other_map, result);
 		};
 
 		template <typename K>

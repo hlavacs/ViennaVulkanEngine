@@ -71,22 +71,6 @@ namespace vve {
 			return nullptr;
 		}
 
-
-		//----------------------------------------------------------------------------------------------------
-		//registered systems
-
-		struct VeSysTableEntry {
-			std::function<void()>	m_init;
-			std::function<void()>	m_update;
-			std::function<void()>	m_cleanUp;
-			std::function<void()>	m_close;
-			VeSysTableEntry() : m_init(), m_update(), m_cleanUp(), m_close() {};
-			VeSysTableEntry(std::function<void()> init, std::function<void()> tick, std::function<void()> cleanUp, std::function<void()> close) :
-				m_init(init), m_update(tick), m_cleanUp(cleanUp), m_close(close) {};
-		};
-		VeFixedSizeTable<VeSysTableEntry> g_systems_table( "Systems Table", false, false, 0, 0);
-
-
 		//----------------------------------------------------------------------------------------------------
 		//entities register here their names
 
@@ -140,6 +124,9 @@ namespace vve {
 
 		//----------------------------------------------------------------------------------------------------
 
+		void closeEngine(syseve::VeEventTableEntry e);
+		VeHandle g_closeHandle;
+
 		void init() {
 			std::cout << "init engine 2\n";
 
@@ -149,30 +136,20 @@ namespace vve {
 			reached_time = current_update_time;
 
 			registerTablePointer(&g_main_table);
-			registerTablePointer(&g_systems_table);
 
-			//first init window to get the surface!
+			registerEntity(VE_SYSTEM_NAME);
+			VE_SYSTEM_HANDLE = getEntityHandle(VE_SYSTEM_NAME);
 
-			syswin::init();
+			syswin::init();	//init window to get the surface!
 			sysvul::init();
 			syseve::init();
 			sysass::init();
 			syssce::init();
 			sysphy::init();
 
-			g_systems_table.insert({ syswin::init, []() {}, syswin::cleanUp, syswin::close });
-			g_systems_table.insert({ sysvul::init, []() {}, sysvul::cleanUp, sysvul::close });
-			g_systems_table.insert({ syseve::init, []() {}, syseve::cleanUp, syseve::close });
-			g_systems_table.insert({ sysass::init, []() {}, sysass::cleanUp, sysass::close });
-			g_systems_table.insert({ syssce::init, []() {}, syssce::cleanUp, syssce::close });
-			g_systems_table.insert({ sysphy::init, []() {}, sysphy::cleanUp, sysphy::close });
-
-			registerEntity(VE_SYSTEM_NAME);
-			VE_SYSTEM_HANDLE = getEntityHandle(VE_SYSTEM_NAME);
-
-			//for (auto entry : g_systems_table.getData()) {
-			//	entry.m_init();
-			//}
+			g_closeHandle = syseve::addHandler( std::bind(closeEngine, std::placeholders::_1));
+			syseve::subscribeEvent(	syswin::VE_SYSTEM_HANDLE, VE_NULL_HANDLE, g_closeHandle,
+									syseve::VeEventType::VE_EVENT_TYPE_CLOSE);
 
 			uint32_t threadCount = 1;
 
@@ -187,8 +164,6 @@ namespace vve {
 			}
 #endif
 			createHeaps(threadCount);
-
-			g_systems_table.setReadOnly(true);
 			g_main_table.setReadOnly(true);
 		}
 
@@ -197,18 +172,6 @@ namespace vve {
 		VeClock forwardClock("FW Clock    ", 1);
 		VeClock tickClock(   "Tick Clock  ", 100);
 		VeClock cleanClock(  "Clean Clock ", 100);
-
-		void cleanUp() {
-			for (auto entry : g_systems_table.getData()) {			//clean after simulation
-				JADD(entry.m_cleanUp());							//includes render in the last interval
-			}
-		}
-
-		void update() {
-			for (auto entry : g_systems_table.getData()) {			//simulate one epoch
-				JADD(entry.m_update());
-			}
-		}
 
 		void swapTables() {
 			for (auto table : g_main_table.getData()) {	//swap tables
@@ -223,7 +186,7 @@ namespace vve {
 			current_update_time = next_update_time;		//move one epoch further
 			next_update_time = current_update_time + time_delta;
 
-			syseve::addEvent({ syseve::VeEventType::VE_EVENT_TYPE_UPDATE });
+			syseve::addEvent({ syseve::VeEventType::VE_EVENT_TYPE_UPDATE, VE_SYSTEM_HANDLE });
 		}
 
 		//acts like a co-routine
@@ -233,17 +196,12 @@ namespace vve {
 			if (step == 2) goto step2;
 			if (step == 3) goto step3;
 			if (step == 4) goto step4;
-			if (step == 5) goto step5;
-
-			//syswin::update();		//must poll GLFW events in the main thread
 
 			now_time = std::chrono::high_resolution_clock::now();
 
 			if (now_time < next_update_time) {		//still in the same time epoch
 				return;
 			}
-			//JDEP(computeOneFrame2(1));		//wait for finishing, then do step3
-			//return;
 
 		step1:
 			//forwardClock.tick();
@@ -264,12 +222,6 @@ namespace vve {
 			return;
 
 		step4:
-			//cleanClock.start();
-			cleanUp();
-			JDEP(computeOneFrame2(5));		//wait for finishing, then do step5
-			return;
-
-		step5: 
 			reached_time = next_update_time;
 
 			if (now_time > next_update_time) {	//if now is not reached yet
@@ -287,6 +239,7 @@ namespace vve {
 
 		std::atomic<bool> g_goon = true;
 
+
 		void runGameLoopMT() {
 			loopClock.tick();
 
@@ -294,7 +247,9 @@ namespace vve {
 			JADDT(computeOneFrame2(0), vgjs::TID(0, 2));	 //run on main thread for polling!
 			if (g_goon) {
 				JREP;
+				return;
 			}
+			JTERM;
 		}
 
 		void runGameLoop() {
@@ -312,31 +267,17 @@ namespace vve {
 			}
 		}
 
-		void closeEngine() {
+		void closeEngine(syseve::VeEventTableEntry e) {
 			g_goon = false;
-			JTERM;
 		}
 
 		void close() {
-			g_goon = false;
-
 			JTERM;
 			JWAITTERM;
 
-			syswin::close();
-			sysvul::close();
-			syseve::close();
-			sysass::close();
-			syssce::close();
-			sysphy::close();
-
-			/*auto data = g_systems_table.getData();
-			for (int32_t i = (int32_t)data.size() - 1; i >= 0; --i)
-				data[i].m_close();*/
-
-			g_systems_table.setReadOnly(false);
+			g_entities_table.setReadOnly(false);
+			g_entities_table.clear();
 			g_main_table.setReadOnly(false);
-			g_systems_table.clear();
 			g_main_table.clear();
 		}
 

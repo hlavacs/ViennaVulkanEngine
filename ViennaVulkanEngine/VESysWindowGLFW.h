@@ -16,8 +16,7 @@ namespace vve::syswin::glfw {
 
 	void init();
 	void update(syseve::VeEventTableEntry e);
-	void cleanUp();
-	void close();
+	void close(syseve::VeEventTableEntry e);
 
 	std::vector<const char*> getRequiredInstanceExtensions();			//return GLFW Vulkan extensions
 	bool createSurface(VkInstance instance, VkSurfaceKHR* pSurface);	//create a Vulkan surface
