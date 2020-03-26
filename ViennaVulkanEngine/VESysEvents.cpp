@@ -83,13 +83,13 @@ namespace vve::syseve {
 		syseng::registerTablePointer(&g_subscribe_table);
 	}
 
-	void callAllEvents(VeFixedSizeTable<VeEventTableEntry>& events_table) {
+	void callAllEvents(	VeFixedSizeTableMT<VeEventTableEntry>& events_table ) {
 		std::vector<VeHandlePair, custom_alloc<VeHandlePair>> result(getHeap());
 		VeEventTableEntry eventData;
 		VeEventSubscribeTableEntry subscribeData;
 		VeEventHandlerTableEntry handlerData;
 
-		events_table.leftJoin(0, g_subscribe_table, 0, result);
+		events_table.leftJoin(0, &g_subscribe_table, 0, result);
 		for( auto [eventhandle, subscribehandle] : result ) {
 			events_table.getEntry(eventhandle, eventData);
 			g_subscribe_table.getEntry(subscribehandle, subscribeData);
@@ -104,8 +104,8 @@ namespace vve::syseve {
 	}
 
 	void update() {
-		callAllEvents(*(VeFixedSizeTable<VeEventTableEntry>*)g_events_table.getReadTablePtr());
-		callAllEvents(g_continuous_events_table);
+		callAllEvents( g_events_table );
+		callAllEvents( g_continuous_events_table );
 	}
 
 	void close() {

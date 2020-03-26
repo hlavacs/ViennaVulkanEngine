@@ -795,9 +795,9 @@ namespace vve {
 		I						m_offset;			///
 		I						m_num_bytes;		///
 		VeCount					m_num_entries = 0;
-		VeVector<VeMapEntry>	m_entries;			///
+		std::vector<VeMapEntry>	m_entries;			///
 		VeIndex					m_first_free_entry = VE_NULL_INDEX;
-		VeVector<VeIndex>		m_map;
+		std::vector<VeIndex>	m_map;
 
 	public:
 
@@ -821,6 +821,7 @@ namespace vve {
 			VeHashedMultimap<K, I>* map = &((VeHashedMultimap<K, I>&)basemap);
 			m_offset = map->m_offset;
 			m_num_bytes = map->m_num_bytes;
+			m_num_entries = map->m_num_entries;
 			m_entries = map->m_entries;
 			m_first_free_entry = map->m_first_free_entry;
 			m_map = map->m_map;
@@ -847,7 +848,7 @@ namespace vve {
 		};
 
 		virtual VeIndex find(K key) override {
-			VeIndex idx = std::hash<K>()(key) % m_map.size();
+			VeIndex idx = std::hash<K>()(key) % (VeIndex)m_map.size();
 			for (VeIndex index = m_map[idx]; index != VE_NULL_INDEX; index = m_entries[index].m_next) {
 				if (m_entries[index].m_key == key) {
 					return m_entries[index].m_value;
@@ -858,7 +859,7 @@ namespace vve {
 
 		virtual VeCount equal_range(K key, std::vector<VeIndex, custom_alloc<VeIndex>>& result) override {
 			VeCount num = 0;
-			VeIndex idx = std::hash<K>()(key) % m_map.size();
+			VeIndex idx = std::hash<K>()(key) % (VeIndex)m_map.size();
 			for (VeIndex index = m_map[idx]; index != VE_NULL_INDEX; index = m_entries[index].m_next) {
 				if (m_entries[index].m_key == key) {
 					result.push_back(m_entries[index].m_value);
@@ -931,7 +932,7 @@ namespace vve {
 		virtual bool insert(void* entry, VeIndex dir_index) override {
 			K key;
 			getKey(entry, m_offset, m_num_bytes, key);
-			VeIndex idx = std::hash<K>()(key) % m_map.size();
+			VeIndex idx = std::hash<K>()(key) % (VeIndex)m_map.size();
 
 			VeMapEntry nentry(key, dir_index);
 			VeIndex new_index = m_first_free_entry;
@@ -940,7 +941,7 @@ namespace vve {
 				m_entries[new_index] = nentry;
 			} else {
 				m_entries.emplace_back(nentry);
-				new_index = m_entries.size() - 1;
+				new_index = (VeIndex)m_entries.size() - 1;
 			}
 			
 			++m_num_entries;
@@ -956,7 +957,7 @@ namespace vve {
 		virtual VeCount erase(void* entry, VeIndex dir_index) override {
 			K key;
 			getKey(entry, m_offset, m_num_bytes, key);
-			VeIndex hidx = std::hash<K>()(key) % m_map.size();
+			VeIndex hidx = std::hash<K>()(key) % (VeIndex)m_map.size();
 			VeIndex index = m_map[hidx];
 			VeIndex last = VE_NULL_INDEX;
 			while (index != VE_NULL_INDEX) {

@@ -160,6 +160,8 @@ namespace vve {
 		virtual ~VeTable() {};
 		virtual void operator=(VeTable& tab) { assert(false);  return; };
 		virtual void clear() { assert(false);  return; };
+		virtual VeMap* getMap(VeIndex num_map) { assert(false);  return nullptr; };
+		virtual VeDirectory* getDirectory() { assert(false);  return nullptr; };
 
 		void setThreadId(VeIndex id) {
 			if (m_thread_id == id)
@@ -259,7 +261,7 @@ namespace vve {
 	*
 	*/
 
-	#define VECTOR VeVector<T>
+	#define VECTOR std::vector<T>
 
 	template <typename T>
 	class VeFixedSizeTable : public VeTable {
@@ -271,11 +273,11 @@ namespace vve {
 
 	public:
 
-		VeFixedSizeTable(std::string name, bool memcopy = false, bool clear_on_swap = false, VeIndex align = 16, VeIndex capacity = 16) : 
-			VeTable(name, clear_on_swap), m_data(memcopy, align, capacity) {};
+		VeFixedSizeTable(std::string name, bool memcopy = false, bool clear_on_swap = false, VeIndex align = 16, VeIndex capacity = 16) :
+			VeTable(name, clear_on_swap), m_data() {}; //m_data(memcopy, align, capacity) {};
 
 		VeFixedSizeTable(std::string name, std::vector<VeMap*> &maps, bool memcopy = false, bool clear_on_swap = false, VeIndex align = 16, VeIndex capacity = 16) :
-			VeTable(name, clear_on_swap), m_maps(maps), m_data(memcopy, align, capacity) {
+			VeTable(name, clear_on_swap), m_maps(maps), m_data() { // m_data(memcopy, align, capacity) {
 		};
 
 		VeFixedSizeTable(VeFixedSizeTable<T>& table) : 
@@ -306,8 +308,8 @@ namespace vve {
 		// read operations
 		bool		isValid(VeHandle handle);
 		const VECTOR& getData() { return m_data; };
-		VeMap&		getMap(VeIndex num_map) { return *m_maps[num_map]; };
-		VeDirectory& getDirectory() { return m_directory; };
+		VeMap*		getMap(VeIndex num_map) override { return m_maps[num_map]; };
+		VeDirectory* getDirectory() override { return &m_directory; };
 		std::vector<VeIndex>& getTable2dir() { return m_tbl2dir; };
 		VeCount		size() { return (VeIndex)m_data.size(); };
 		bool		getEntry(VeHandle key, T& entry);
@@ -320,8 +322,9 @@ namespace vve {
 		template <typename K> VeCount getHandlesEqual(VeIndex num_map, K key, std::vector<VeHandle, custom_alloc<VeHandle>>& result);	//use this in multimap
 		template <typename K> VeCount getHandlesRange(VeIndex num_map, K lower, K upper, std::vector<VeHandle, custom_alloc<VeHandle>>& result); //do not use in unordered map/multimap
 
-		VeCount leftJoin(VeIndex own_map, VeTable& other, VeIndex other_map, std::vector<VeHandlePair, custom_alloc<VeHandlePair>>& result);
-		template <typename K> VeCount leftJoin(VeIndex own_map, K key, VeTable& other, VeIndex other_map, std::vector<VeHandlePair, custom_alloc<VeHandlePair>>& result);
+		VeCount leftJoin(VeIndex own_map, VeTable* other, VeIndex other_map, std::vector<VeHandlePair, custom_alloc<VeHandlePair>>& result);
+		template <typename K> 
+		VeCount leftJoin(VeIndex own_map, K key, VeTable* other, VeIndex other_map, std::vector<VeHandlePair, custom_alloc<VeHandlePair>>& result);
 
 		void	forAllEntries(VeIndex num_map, std::function<void(VeHandle)>& func);
 		void	forAllEntries(VeIndex num_map, std::function<void(VeHandle)>&& func) { forAllEntries(num_map, func); };
@@ -524,17 +527,16 @@ namespace vve {
 	//--------------------------------------------------------------------------------------------------------------------------
 
 	template<typename T>
-	VeCount VeFixedSizeTable<T>::leftJoin(VeIndex own_map, VeTable& table, VeIndex other_map, std::vector<VeHandlePair, custom_alloc<VeHandlePair>>& result) {
+	VeCount VeFixedSizeTable<T>::leftJoin(VeIndex own_map, VeTable* other, VeIndex other_map, std::vector<VeHandlePair, custom_alloc<VeHandlePair>>& result) {
 		in();
-		VeFixedSizeTable<T>* other = (VeFixedSizeTable<T>*) & table;
 		VeMap* l = (VeMap*)m_maps[own_map];
-		VeMap* r = (VeMap*)other->m_maps[other_map];
+		VeMap* r = (VeMap*)other->getMap(other_map);
 
 		VeCount num = 0;
 		std::vector<VeIndexPair, custom_alloc<VeIndexPair>> dir_indices(&m_heap);
 		l->leftJoin(*r, dir_indices);
 		for (auto [first, second] : dir_indices) {
-			result.emplace_back(m_directory.getHandle(first), other->m_directory.getHandle(second) );
+			result.emplace_back(m_directory.getHandle(first), other->getDirectory()->getHandle(second) );
 			++num;
 		}
 		out();
@@ -544,17 +546,16 @@ namespace vve {
 
 	template<typename T>
 	template <typename K>
-	VeIndex VeFixedSizeTable<T>::leftJoin(VeIndex own_map, K key, VeTable& table, VeIndex other_map, std::vector<VeHandlePair, custom_alloc<VeHandlePair>>& result) {
+	VeIndex VeFixedSizeTable<T>::leftJoin(VeIndex own_map, K key, VeTable* other, VeIndex other_map, std::vector<VeHandlePair, custom_alloc<VeHandlePair>>& result) {
 		in();
-		VeFixedSizeTable<T>* other = (VeFixedSizeTable<T>*) & table;
 		VeMap* l = (VeMap*)m_maps[own_map];
-		VeMap* r = (VeMap*)other->m_maps[other_map];
+		VeMap* r = (VeMap*)other->getMap(other_map);
 
 		VeCount num = 0;
 		std::vector<VeIndexPair, custom_alloc<VeIndexPair>> dir_indices(&m_heap);
 		l->leftJoin(key, *r, dir_indices);
 		for (auto [first, second] : dir_indices) {
-			result.emplace_back(m_directory.getHandle(first), other->m_directory.getHandle(second));
+			result.emplace_back(m_directory.getHandle(first), other->getDirectory()->getHandle(second));
 			++num;
 		}
 		out();
@@ -811,22 +812,22 @@ namespace vve {
 		};
 
 		template <typename K> 
-		VeCount leftJoin(	VeIndex own_map, K key, VeTable& table, VeIndex other_map,
+		VeCount leftJoin(	VeIndex own_map, K key, VeTable* table, VeIndex other_map,
 							std::vector<VeHandlePair, custom_alloc<VeHandlePair>>& result) {
 
 			VeFixedSizeTable<T>* me = (VeFixedSizeTable<T>*)this->getReadTablePtr();
-			VeFixedSizeTable<T>* other = (VeFixedSizeTable<T>*)table.getReadTablePtr();
+			VeTable* other = table->getReadTablePtr();
 
-			return me->VeFixedSizeTable<T>::leftJoin<K>(own_map, key, *other, other_map, result);
+			return me->VeFixedSizeTable<T>::leftJoin<K>(own_map, key, other, other_map, result);
 		};
 
-		VeCount leftJoin(	VeIndex own_map, VeTable& table, VeIndex other_map, 
+		VeCount leftJoin(	VeIndex own_map, VeTable* table, VeIndex other_map,
 							std::vector<VeHandlePair, custom_alloc<VeHandlePair>>& result) {
 
-			VeFixedSizeTable<T>* me = (VeFixedSizeTable<T>*)this->getReadTablePtr();
-			VeFixedSizeTable<T>* other = (VeFixedSizeTable<T>*)table.getReadTablePtr();
+			VeFixedSizeTableMT<T>* me  = dynamic_cast<VeFixedSizeTableMT<T>*>(this->getReadTablePtr());
+			VeTable* other = (VeTable*)table->getReadTablePtr();
 
-			return me->VeFixedSizeTable<T>::leftJoin(own_map, *other, other_map, result);
+			return me->VeFixedSizeTable<T>::leftJoin(own_map, other, other_map, result);
 		};
 
 		template <typename K>
