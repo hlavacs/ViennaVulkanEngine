@@ -8,7 +8,7 @@
 */
 
 #include "VEDefines.h"
-#include "VESysEvents.h"
+#include "VESysMessages.h"
 #include "VESysEngine.h"
 #include "VESysWindow.h"
 #include "VESysWindowGLFW.h"
@@ -43,7 +43,7 @@ namespace vve::syswin::glfw {
 
 	bool g_windowSizeChanged = false;
 
-	void update(syseve::VeEventTableEntry e) {
+	void update(sysmes::VeMessageTableEntry e) {
 		glfwPollEvents();		//inject GLFW events into the callbacks
 
 		if (g_windowSizeChanged) {
@@ -59,7 +59,7 @@ namespace vve::syswin::glfw {
 	}
 
 
-	void close(syseve::VeEventTableEntry e) {
+	void close(sysmes::VeMessageTableEntry e) {
 		glfwDestroyWindow(g_window);
 		glfwTerminate();
 	}
@@ -97,7 +97,7 @@ namespace vve::syswin::glfw {
 		return true;
 	}
 
-	VeIndex g_windowEventID = 0;
+	VeIndex g_windowMessageID = 0;
 	
 	/**
 	*
@@ -120,8 +120,8 @@ namespace vve::syswin::glfw {
 		if (action == GLFW_REPEAT) 
 			return;
 
-		syseve::VeEventTableEntry ev;
-		ev.m_type = syseve::VeEventType::VE_EVENT_TYPE_KEYBOARD;
+		sysmes::VeMessageTableEntry ev;
+		ev.m_type = sysmes::VeMessageType::VE_MESSAGE_TYPE_KEYBOARD;
 		ev.m_senderH = VE_SYSTEM_HANDLE;
 
 		ev.m_key_button = key < 0 ? VE_NULL_INDEX : (uint32_t)key;
@@ -129,7 +129,7 @@ namespace vve::syswin::glfw {
 		ev.m_action		= action < 0 ? VE_NULL_INDEX : (uint32_t)action;
 		ev.m_mods		= mods < 0 ? VE_NULL_INDEX : (uint32_t)mods;
 
-		syseve::addEvent(ev);
+		sysmes::addMessage(ev);
 	}
 
 	/**
@@ -142,14 +142,14 @@ namespace vve::syswin::glfw {
 	*
 	*/
 	void cursor_pos_callbackGLFW(GLFWwindow* window, double xpos, double ypos) {
-		syseve::VeEventTableEntry ev;
-		ev.m_type = syseve::VeEventType::VE_EVENT_TYPE_MOUSEMOVE;
+		sysmes::VeMessageTableEntry ev;
+		ev.m_type = sysmes::VeMessageType::VE_MESSAGE_TYPE_MOUSEMOVE;
 		ev.m_senderH = VE_SYSTEM_HANDLE;
 
 		ev.m_x = xpos;
 		ev.m_y = ypos;
 
-		syseve::addEvent(ev);
+		sysmes::addMessage(ev);
 	}
 
 	/**
@@ -169,15 +169,15 @@ namespace vve::syswin::glfw {
 	*
 	*/
 	void mouse_button_callback(GLFWwindow* window, int button, int action, int mods) {
-		syseve::VeEventTableEntry ev;
-		ev.m_type = syseve::VeEventType::VE_EVENT_TYPE_MOUSEBUTTON;
+		sysmes::VeMessageTableEntry ev;
+		ev.m_type = sysmes::VeMessageType::VE_MESSAGE_TYPE_MOUSEBUTTON;
 		ev.m_senderH = VE_SYSTEM_HANDLE;
 
 		ev.m_key_button = button < 0 ? VE_NULL_INDEX : (uint32_t)button;
 		ev.m_action = action < 0 ? VE_NULL_INDEX : (uint32_t)action;
 		ev.m_mods = mods < 0 ? VE_NULL_INDEX : (uint32_t)mods;
 
-		syseve::addEvent(ev);
+		sysmes::addMessage(ev);
 	}
 
 	/**
@@ -190,14 +190,14 @@ namespace vve::syswin::glfw {
 	*
 	*/
 	void mouse_scroll_callback(GLFWwindow* window, double xoffset, double yoffset) {
-		syseve::VeEventTableEntry ev;
-		ev.m_type = syseve::VeEventType::VE_EVENT_TYPE_MOUSESCROLL;
+		sysmes::VeMessageTableEntry ev;
+		ev.m_type = sysmes::VeMessageType::VE_MESSAGE_TYPE_MOUSESCROLL;
 		ev.m_senderH = VE_SYSTEM_HANDLE;
 
 		ev.m_x = xoffset;
 		ev.m_y = yoffset;
 
-		syseve::addEvent(ev);
+		sysmes::addMessage(ev);
 	}
 
 

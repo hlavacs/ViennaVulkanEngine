@@ -6,9 +6,11 @@
 * Details
 *
 */
+#include "vulkan/vulkan.h"
+
 
 #include "VEDefines.h"
-#include "VESysEvents.h"
+#include "VESysMessages.h"
 #include "VESysEngine.h"
 #include "VESysWindow.h"
 #include "VESysVulkanFWSimple.h"
@@ -25,11 +27,11 @@ namespace vve::sysvul::fwsimple {
 
 	}
 
-	void update(syseve::VeEventTableEntry e) {
+	void update(sysmes::VeMessageTableEntry e) {
 
 	}
 
-	void close(syseve::VeEventTableEntry e) {
+	void close(sysmes::VeMessageTableEntry e) {
 
 	}
 

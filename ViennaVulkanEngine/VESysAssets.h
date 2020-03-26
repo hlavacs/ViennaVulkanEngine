@@ -18,8 +18,8 @@ namespace vve::sysass {
 
 
 	void init();
-	void update(syseve::VeEventTableEntry e);
-	void close(syseve::VeEventTableEntry e);
+	void update(sysmes::VeMessageTableEntry e);
+	void close(sysmes::VeMessageTableEntry e);
 
 
 }

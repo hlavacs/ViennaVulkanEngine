@@ -12,7 +12,7 @@
 #include "VEDefines.h"
 #include "VHInclude.h"
 #include "VHDevice.h"
-#include "VESysEvents.h"
+#include "VESysMessages.h"
 #include "VESysEngine.h"
 #include "VESysWindow.h"
 #include "VESysVulkan.h"
@@ -45,13 +45,13 @@ namespace vve::sysvul {
 		syseng::registerEntity(VE_SYSTEM_NAME);
 		VE_SYSTEM_HANDLE = syseng::getEntityHandle(VE_SYSTEM_NAME);
 
-		g_updateHandle = syseve::addHandler(std::bind(update, std::placeholders::_1));
-		syseve::subscribeEvent(	syseng::VE_SYSTEM_HANDLE, VE_NULL_HANDLE, g_updateHandle,
-								syseve::VeEventType::VE_EVENT_TYPE_UPDATE);
+		g_updateHandle = sysmes::addHandler(std::bind(update, std::placeholders::_1));
+		sysmes::subscribeMessage(	syseng::VE_SYSTEM_HANDLE, VE_NULL_HANDLE, g_updateHandle,
+									sysmes::VeMessageType::VE_MESSAGE_TYPE_UPDATE);
 
-		g_closeHandle = syseve::addHandler(std::bind(close, std::placeholders::_1));
-		syseve::subscribeEvent(	syswin::VE_SYSTEM_HANDLE, VE_NULL_HANDLE, g_closeHandle,
-								syseve::VeEventType::VE_EVENT_TYPE_CLOSE);
+		g_closeHandle = sysmes::addHandler(std::bind(close, std::placeholders::_1));
+		sysmes::subscribeMessage(	syswin::VE_SYSTEM_HANDLE, VE_NULL_HANDLE, g_closeHandle,
+									sysmes::VeMessageType::VE_MESSAGE_TYPE_CLOSE);
 
 		std::vector<const char*> extensions = { "VK_EXT_debug_report" };
 		std::vector<const char*> layers = {
@@ -64,7 +64,7 @@ namespace vve::sysvul {
 	bool g_windowSizeChanged = false;
 	VeClock tickClock("Vulkan Clock");
 
-	void update(syseve::VeEventTableEntry e) {
+	void update(sysmes::VeMessageTableEntry e) {
 		//tickClock.tick();
 		fwsimple::update(e);
 	}
@@ -80,7 +80,7 @@ namespace vve::sysvul {
 
 	}
 
-	void close(syseve::VeEventTableEntry e) {
+	void close(sysmes::VeMessageTableEntry e) {
 		fwsimple::close(e);
 		vkDestroyInstance(g_vulkan_state.m_instance, nullptr );
 	}

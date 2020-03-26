@@ -138,14 +138,15 @@ namespace vve {
 }
 
 
-#include "VEHeap.h"
-#include "VEVector.h"
-#include "VEMap.h"
+#include "VEDoxygen.h"
+#include "VEMemHeap.h"
+#include "VEMemVector.h"
+#include "VEMemMap.h"
 
 #define VE_ENABLE_MULTITHREADING
 #include "VEGameJobSystem.h"
 
-#include "VETable.h"
+#include "VEMemTable.h"
 
 #define GLM_FORCE_RADIANS
 #define GLM_FORCE_DEPTH_ZERO_TO_ONE

@@ -12,7 +12,7 @@
 #define IMPLEMENT_GAMEJOBSYSTEM
 
 #include "VEDefines.h"
-#include "VESysEvents.h"
+#include "VESysMessages.h"
 #include "VESysEngine.h"
 #include "VESysVulkan.h"
 #include "VESysWindow.h"
@@ -124,7 +124,7 @@ namespace vve {
 
 		//----------------------------------------------------------------------------------------------------
 
-		void closeEngine(syseve::VeEventTableEntry e);
+		void closeEngine(sysmes::VeMessageTableEntry e);
 		VeHandle g_closeHandle;
 
 		void init() {
@@ -142,14 +142,14 @@ namespace vve {
 
 			syswin::init();	//init window to get the surface!
 			sysvul::init();
-			syseve::init();
+			sysmes::init();
 			sysass::init();
 			syssce::init();
 			sysphy::init();
 
-			g_closeHandle = syseve::addHandler( std::bind(closeEngine, std::placeholders::_1));
-			syseve::subscribeEvent(	syswin::VE_SYSTEM_HANDLE, VE_NULL_HANDLE, g_closeHandle,
-									syseve::VeEventType::VE_EVENT_TYPE_CLOSE);
+			g_closeHandle = sysmes::addHandler( std::bind(closeEngine, std::placeholders::_1));
+			sysmes::subscribeMessage(	syswin::VE_SYSTEM_HANDLE, VE_NULL_HANDLE, g_closeHandle,
+										sysmes::VeMessageType::VE_MESSAGE_TYPE_CLOSE);
 
 			uint32_t threadCount = 1;
 
@@ -186,7 +186,7 @@ namespace vve {
 			current_update_time = next_update_time;		//move one epoch further
 			next_update_time = current_update_time + time_delta;
 
-			syseve::addEvent({ syseve::VeEventType::VE_EVENT_TYPE_UPDATE, VE_SYSTEM_HANDLE });
+			sysmes::addMessage({ sysmes::VeMessageType::VE_MESSAGE_TYPE_UPDATE, VE_SYSTEM_HANDLE });
 		}
 
 		//acts like a co-routine
@@ -217,7 +217,7 @@ namespace vve {
 
 		step3:
 			//tickClock.start();
-			JADD( syseve::update() );
+			JADD( sysmes::update() );
 			JDEP( computeOneFrame2(4));		//wait for finishing, then do step4
 			return;
 
@@ -267,7 +267,7 @@ namespace vve {
 			}
 		}
 
-		void closeEngine(syseve::VeEventTableEntry e) {
+		void closeEngine(sysmes::VeMessageTableEntry e) {
 			g_goon = false;
 		}
 

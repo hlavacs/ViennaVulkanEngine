@@ -161,47 +161,48 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="VEMap.cpp" />
+    <ClCompile Include="VEMemMap.cpp" />
     <ClCompile Include="VHDebug.cpp" />
     <ClCompile Include="VHDevice.cpp" />
     <ClCompile Include="VESysVulkanFWSimple.cpp" />
-    <ClCompile Include="VETable.cpp" />
+    <ClCompile Include="VEMemTable.cpp" />
     <ClCompile Include="VECollision.cpp" />
     <ClCompile Include="VESysEngine.cpp" />
     <ClCompile Include="VESysAssets.cpp" />
-    <ClCompile Include="VESysEvents.cpp" />
+    <ClCompile Include="VESysMessages.cpp" />
     <ClCompile Include="VEFile.cpp" />
     <ClCompile Include="VESysPhysics.cpp" />
     <ClCompile Include="VESysScene.cpp" />
     <ClCompile Include="VESysVulkan.cpp" />
     <ClCompile Include="VESysWindow.cpp" />
     <ClCompile Include="VESysWindowGLFW.cpp" />
-    <ClCompile Include="VEVector.cpp" />
+    <ClCompile Include="VEMemVector.cpp" />
     <ClCompile Include="VHSwapchain.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="stb_image.h" />
     <ClInclude Include="stb_image_write.h" />
     <ClInclude Include="VEDefines.h" />
-    <ClInclude Include="VEHeap.h" />
-    <ClInclude Include="VEMap.h" />
+    <ClInclude Include="VEDoxygen.h" />
+    <ClInclude Include="VEMemHeap.h" />
+    <ClInclude Include="VEMemMap.h" />
     <ClInclude Include="VHDebug.h" />
     <ClInclude Include="VHDevice.h" />
     <ClInclude Include="VEGameJobSystem.h" />
     <ClInclude Include="VESysVulkanFWSimple.h" />
-    <ClInclude Include="VETable.h" />
+    <ClInclude Include="VEMemTable.h" />
     <ClInclude Include="VECollision.h" />
     <ClInclude Include="VESysEngine.h" />
     <ClInclude Include="VEInclude.h" />
     <ClInclude Include="VESysAssets.h" />
-    <ClInclude Include="VESysEvents.h" />
+    <ClInclude Include="VESysMessages.h" />
     <ClInclude Include="VEFile.h" />
     <ClInclude Include="VESysPhysics.h" />
     <ClInclude Include="VESysScene.h" />
     <ClInclude Include="VESysVulkan.h" />
     <ClInclude Include="VESysWindow.h" />
     <ClInclude Include="VESysWindowGLFW.h" />
-    <ClInclude Include="VEVector.h" />
+    <ClInclude Include="VEMemVector.h" />
     <ClInclude Include="VHInclude.h" />
     <ClInclude Include="VHSwapchain.h" />
     <ClInclude Include="vk_mem_alloc.h" />
