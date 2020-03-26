@@ -182,17 +182,17 @@ namespace vve::map {
 
 		VeClock mapClock("Map Clock", 1);
 		mapClock.start();
-		for (uint32_t i = 0; i < 1000; ++i) {
+		for (uint32_t i = 0; i < 10000; ++i) {
 			//std::cout << "i=" << i << std::endl;
 
-			//TestEntry t1{ i, 1, 2, "B" };
-			//testmap2.insert(&t1, i);
+			TestEntry t1{ i+100000, 1, 2, "B" };
+			testmap2.insert(&t1, i+100000);
 
-			uint32_t key = std::rand() % NUM;
+			uint32_t key = std::rand() % testmap2.size();
 			auto index = testmap.find(key);
 
-			//t1.m_int1 = (VeIndex)key;
-			//testmap2.erase(&t1, value);
+			t1.m_int1 = (VeIndex)key;
+			testmap2.erase(&t1, key);
 		}
 		mapClock.stop();
 

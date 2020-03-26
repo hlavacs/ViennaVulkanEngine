@@ -7,8 +7,6 @@
 *
 */
 
-#include "vulkan/vulkan.h"
-
 #include "VEDefines.h"
 #include "VHInclude.h"
 #include "VHDevice.h"

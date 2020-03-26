@@ -720,38 +720,12 @@ namespace vve {
 	};
 
 
-	//----------------------------------------------------------------------------------
-
-	template<typename S, typename T>
-	struct std::hash<std::pair<S, T>>
-	{
-		inline size_t operator()(const std::pair<S, T>& val) const
-		{
-			size_t seed = 0;
-			seed ^= std::hash<S>()(val.first) + 0x9e3779b9 + (seed << 6) + (seed >> 2);
-			seed ^= std::hash<T>()(val.second) + 0x9e3779b9 + (seed << 6) + (seed >> 2);
-			return seed;
-		}
-	};
-
-	template<typename S, typename T, typename U>
-	struct std::hash<std::tuple<S, T, U>>
-	{
-		inline size_t operator()(const std::tuple<S, T, U>& val) const
-		{
-			size_t seed = 0;
-			seed ^= std::hash<S>()(std::get<0>(val)) + 0x9e3779b9 + (seed << 6) + (seed >> 2);
-			seed ^= std::hash<T>()(std::get<1>(val)) + 0x9e3779b9 + (seed << 6) + (seed >> 2);
-			seed ^= std::hash<T>()(std::get<2>(val)) + 0x9e3779b9 + (seed << 6) + (seed >> 2);
-			return seed;
-		}
-	};
-
 
 	//----------------------------------------------------------------------------------
 
 	template <typename K, typename I>
 	class VeHashedMultimap : public VeMap {
+	protected:
 
 		struct VeMapEntry {
 			K			m_key;
@@ -786,18 +760,59 @@ namespace vve {
 			};
 		};
 
-		VeHashedMultimap<K, I>* clone() {
-			VeHashedMultimap<K, I>* map = new VeHashedMultimap<K, I>(*this);
-			return map;
-		};
-
-	protected:
 		I						m_offset;			///
 		I						m_num_bytes;		///
 		VeCount					m_num_entries = 0;
 		VeVector<VeMapEntry>	m_entries;			///
 		VeIndex					m_first_free_entry = VE_NULL_INDEX;
 		VeVector<VeIndex>		m_map;
+
+
+		bool insertIntoMap(VeIndex map_idx, VeIndex entry_idx ) {
+			if (m_map[map_idx] == VE_NULL_INDEX) {
+				m_map[map_idx] = entry_idx;
+				return true;
+			}
+			m_entries[entry_idx].m_next = m_map[map_idx];
+			m_map[map_idx] = entry_idx;
+			return true;
+		};
+
+
+		bool resizeMap() {
+			std::vector<VeIndex, custom_alloc<VeIndex>> result(&m_heap);
+			result.reserve(m_num_entries);
+
+			std::for_each(m_map.begin(), m_map.end(), [&](VeIndex index) {
+				while (index != VE_NULL_INDEX) {
+					auto next = m_entries[index].m_next;
+					m_entries[index].m_next = VE_NULL_INDEX;
+					result.emplace_back(index);
+					index = next;
+				};
+				});
+
+			m_map.resize(2 * m_map.size());
+			for(uint32_t i=0;i<m_map.size();++i)
+				m_map[i] = VE_NULL_INDEX;
+
+			for (auto entry_idx : result) {
+				K key;
+				getKey(&m_entries[entry_idx], m_offset, m_num_bytes, key);
+				VeIndex map_idx = std::hash<K>()(key) % (VeIndex)m_map.size();
+				insertIntoMap(map_idx, entry_idx);
+			};
+			return true;
+		};
+
+		float fill() {
+			return m_num_entries / (float)m_map.size();
+		};
+
+		VeHashedMultimap<K, I>* clone() {
+			VeHashedMultimap<K, I>* map = new VeHashedMultimap<K, I>(*this);
+			return map;
+		};
 
 	public:
 
@@ -830,6 +845,7 @@ namespace vve {
 		void clear() override {
 			m_entries.clear();
 			m_first_free_entry = VE_NULL_INDEX;
+			m_num_entries = 0;
 			for (VeIndex i = 0; i < m_map.size(); ++i)
 				m_map[i] = VE_NULL_INDEX;
 		};
@@ -930,6 +946,9 @@ namespace vve {
 		};
 
 		virtual bool insert(void* entry, VeIndex dir_index) override {
+			if (fill() > 0.9f)
+				resizeMap();
+
 			K key;
 			getKey(entry, m_offset, m_num_bytes, key);
 			VeIndex idx = std::hash<K>()(key) % (VeIndex)m_map.size();
@@ -945,13 +964,7 @@ namespace vve {
 			}
 			
 			++m_num_entries;
-			if (m_map[idx] == VE_NULL_INDEX) {
-				m_map[idx] = new_index;
-				return true;
-			}
-			m_entries[new_index].m_next = m_map[idx];
-			m_map[idx] = new_index;
-			return true;
+			return insertIntoMap(idx, new_index);
 		};
 
 		virtual VeCount erase(void* entry, VeIndex dir_index) override {

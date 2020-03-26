@@ -1,18 +1,14 @@
 #pragma once
 
-/*
-The Vienna Game Job System (VGJS)
-Designed and implemented by Prof. Helmut Hlavacs, Faculty of Computer Science, University of Vienna
-See documentation on how to use it at https://github.com/hlavacs/GameJobSystem
-The library is a single include file, and can be used under MIT license.
-*/
 
 /**
 *
 * \file
-* \brief
+* \brief The Vienna Game Job System (VGJS)
 *
-* Details
+* Designed and implemented by Prof. Helmut Hlavacs, Faculty of Computer Science, University of Vienna
+* See documentation on how to use it at https://github.com/hlavacs/GameJobSystem
+* The library is a single include file, and can be used under MIT license.
 *
 */
 

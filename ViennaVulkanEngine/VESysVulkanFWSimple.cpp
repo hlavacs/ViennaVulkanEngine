@@ -6,8 +6,6 @@
 * Details
 *
 */
-#include "vulkan/vulkan.h"
-
 
 #include "VEDefines.h"
 #include "VESysMessages.h"

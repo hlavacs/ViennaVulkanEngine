@@ -20,16 +20,10 @@
     <ClCompile Include="VESysScene.cpp">
       <Filter>Quelldateien</Filter>
     </ClCompile>
-    <ClCompile Include="VECollision.cpp">
-      <Filter>Quelldateien</Filter>
-    </ClCompile>
     <ClCompile Include="VESysPhysics.cpp">
       <Filter>Quelldateien</Filter>
     </ClCompile>
     <ClCompile Include="VESysWindowGLFW.cpp">
-      <Filter>Quelldateien</Filter>
-    </ClCompile>
-    <ClCompile Include="VEFile.cpp">
       <Filter>Quelldateien</Filter>
     </ClCompile>
     <ClCompile Include="VESysAssets.cpp">
@@ -62,6 +56,12 @@
     <ClCompile Include="VEMemVector.cpp">
       <Filter>Quelldateien</Filter>
     </ClCompile>
+    <ClCompile Include="VEUtilFile.cpp">
+      <Filter>Quelldateien</Filter>
+    </ClCompile>
+    <ClCompile Include="VEUtilCollision.cpp">
+      <Filter>Quelldateien</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="VEInclude.h">
@@ -79,16 +79,10 @@
     <ClInclude Include="VEDefines.h">
       <Filter>Headerdateien</Filter>
     </ClInclude>
-    <ClInclude Include="VECollision.h">
-      <Filter>Headerdateien</Filter>
-    </ClInclude>
     <ClInclude Include="VESysPhysics.h">
       <Filter>Headerdateien</Filter>
     </ClInclude>
     <ClInclude Include="VESysWindowGLFW.h">
-      <Filter>Headerdateien</Filter>
-    </ClInclude>
-    <ClInclude Include="VEFile.h">
       <Filter>Headerdateien</Filter>
     </ClInclude>
     <ClInclude Include="VESysAssets.h">
@@ -140,6 +134,15 @@
       <Filter>Headerdateien</Filter>
     </ClInclude>
     <ClInclude Include="VEDoxygen.h">
+      <Filter>Headerdateien</Filter>
+    </ClInclude>
+    <ClInclude Include="VEUtilCollision.h">
+      <Filter>Headerdateien</Filter>
+    </ClInclude>
+    <ClInclude Include="VEUtilFile.h">
+      <Filter>Headerdateien</Filter>
+    </ClInclude>
+    <ClInclude Include="VEUtilClock.h">
       <Filter>Headerdateien</Filter>
     </ClInclude>
   </ItemGroup>
