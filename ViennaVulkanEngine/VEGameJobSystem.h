@@ -31,33 +31,98 @@
 
 
 
-#ifdef VE_ENABLE_MULTITHREADING
+#if defined(VE_ENABLE_MULTITHREADING) || defined(DOXYGEN)
+	/**
+	* \defgroup VGJS_Macros
+	* \brief Main job system macros encapsulating interactions for multithreading.
+	* @{
+	*/
+	
+	/**
+	* \brief Add a function as a job to the jobsystem.
+	*
+	* In multithreaded operations, this macro adds a function as job to the job system.
+	* In singlethreaded mode, this macro simply calls the function.
+	*
+	* \param[in] f The function to be added or called.
+	*/
 	#define JADD( f )	vgjs::JobSystem::getInstance()->addJob( [=](){ f; } )
+
+	/**
+	* \brief Add a dependent job to the jobsystem. The job will run only after all previous jobs have ended.
+	*
+	* In multithreaded operations, this macro adds a function as job to the job system after all other child jobs have finished.
+	* In singlethreaded mode, this macro simply calls the function.
+	*
+	* \param[in] f The function to be added or called.
+	*/
 	#define JDEP( f )	vgjs::JobSystem::getInstance()->onFinishedAddJob( [=](){ f; } )
 
+	/**
+	* \brief Add a job to the jobsystem, schedule to a particular thread.
+	*
+	* In multithreaded operations, this macro adds a function as job to the job system and schedule it to the given thread.
+	* In singlethreaded mode, this macro simply calls the function.
+	*
+	* \param[in] f The function to be added or called.
+	* \param[in] t The thread that the job should go to.
+	*/
 	#define JADDT( f, t )	vgjs::JobSystem::getInstance()->addJob( [=](){ f; }, t )
+
+	/**
+	* \brief Add a dependent job to the jobsystem, schedule to a particular thread. The job will run only after all previous jobs have ended.
+	*
+	* In multithreaded operations, this macro adds a function as job to the job system and schedule it to the given thread.
+	* The job will run after all other child jobs have finished.
+	* In singlethreaded mode, this macro simply calls the function.
+	*
+	* \param[in] f The function to be added or called.
+	* \param[in] t The thread that the job should go to.
+	*/
 	#define JDEPT( f, t )	vgjs::JobSystem::getInstance()->onFinishedAddJob( [=](){ f; }, t )
 
+	/**
+	* \brief After the job has finished, reschedule it.
+	*/
 	#define JREP vgjs::JobSystem::getInstance()->onFinishedRepeatJob()
 
+	/**
+	* \brief Wait for all jobs in the job system to have finished and that there are no more jobs.
+	*/
 	#define JWAIT vgjs::JobSystem::getInstance()->wait()
 
+	/**
+	* \brief Reset the memory for allocating jobs. Should be done once every game loop.
+	*/
 	#define JRESET vgjs::JobSystem::getInstance()->resetPool()
 
+	/**
+	* \brief Tell all threads to end. The main thread will return to the point where it entered the job system.
+	*/
 	#define JTERM vgjs::JobSystem::getInstance()->terminate()
+
+	/**
+	* \brief Wait for all threads to have terminated.
+	*/
 	#define JWAITTERM vgjs::JobSystem::getInstance()->waitForTermination()
+	///@}
+#endif
 
-
-#else
+#if !defined(VE_ENABLE_MULTITHREADING) || defined(DOXYGEN)
+	/**
+	* \defgroup VGJS_Macros
+	* @{
+	*/
 	#define JADD( f ) {f;}
 	#define JDEP( f ) {f;}
 	#define JADDT( f, t ) {f;}
 	#define JDEPT( f, t ) {f;}
-	#define JREP assert(true);
+	#define JREP
 	#define JWAIT 
 	#define JRESET
 	#define JTERM
 	#define JWAITTERM
+	///@}
 #endif
 
 
@@ -327,6 +392,7 @@ namespace vgjs {
 	private:
 		std::vector<std::thread>			m_threads;				//array of thread structures
 		uint32_t							m_threadCount;			//number of threads in the pool
+		uint32_t							m_start_idx = 0;		//idx of first thread that is created
 		static thread_local int32_t			m_thread_index;
 		std::vector<JobMemory*>				m_job_memory;
 		std::vector<Job*>					m_jobPointers;			//each thread has a current Job that it may run, pointers point to them
@@ -427,6 +493,7 @@ namespace vgjs {
 		JobSystem(uint32_t threadCount = 0, uint32_t start_idx = 0) : m_terminate(false), m_numJobs(0), m_clock("Job System", 100) {
 			pInstance = this;
 
+			m_start_idx = start_idx;
 			m_threadCount = threadCount;
 			if (m_threadCount == 0) {
 				m_threadCount = std::thread::hardware_concurrency();		//main thread is also running
@@ -511,7 +578,7 @@ namespace vgjs {
 		//returns as soon as all threads have exited
 		//
 		void waitForTermination() {
-			for (uint32_t i = 0; i < m_threads.size(); i++ ) {
+			for (uint32_t i = m_start_idx; i < m_threads.size(); i++ ) {
 				m_threads[i].join();
 			}
 		};

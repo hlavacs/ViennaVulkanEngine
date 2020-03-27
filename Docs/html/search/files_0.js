@@ -1,11 +1,7 @@
 var searchData=
 [
-  ['vecollision_2ecpp',['VECollision.cpp',['../_v_e_collision_8cpp.html',1,'']]],
-  ['vecollision_2eh',['VECollision.h',['../_v_e_collision_8h.html',1,'']]],
   ['vedefines_2eh',['VEDefines.h',['../_v_e_defines_8h.html',1,'']]],
   ['vedoxygen_2eh',['VEDoxygen.h',['../_v_e_doxygen_8h.html',1,'']]],
-  ['vefile_2ecpp',['VEFile.cpp',['../_v_e_file_8cpp.html',1,'']]],
-  ['vefile_2eh',['VEFile.h',['../_v_e_file_8h.html',1,'']]],
   ['vegamejobsystem_2eh',['VEGameJobSystem.h',['../_v_e_game_job_system_8h.html',1,'']]],
   ['veinclude_2eh',['VEInclude.h',['../_v_e_include_8h.html',1,'']]],
   ['vememtable_2ecpp',['VEMemTable.cpp',['../_v_e_mem_table_8cpp.html',1,'']]],
@@ -30,6 +26,10 @@ var searchData=
   ['vesyswindow_2eh',['VESysWindow.h',['../_v_e_sys_window_8h.html',1,'']]],
   ['vesyswindowglfw_2ecpp',['VESysWindowGLFW.cpp',['../_v_e_sys_window_g_l_f_w_8cpp.html',1,'']]],
   ['vesyswindowglfw_2eh',['VESysWindowGLFW.h',['../_v_e_sys_window_g_l_f_w_8h.html',1,'']]],
+  ['veutilcollision_2ecpp',['VEUtilCollision.cpp',['../_v_e_util_collision_8cpp.html',1,'']]],
+  ['veutilcollision_2eh',['VEUtilCollision.h',['../_v_e_util_collision_8h.html',1,'']]],
+  ['veutilfile_2ecpp',['VEUtilFile.cpp',['../_v_e_util_file_8cpp.html',1,'']]],
+  ['veutilfile_2eh',['VEUtilFile.h',['../_v_e_util_file_8h.html',1,'']]],
   ['vhdebug_2ecpp',['VHDebug.cpp',['../_v_h_debug_8cpp.html',1,'']]],
   ['vhdebug_2eh',['VHDebug.h',['../_v_h_debug_8h.html',1,'']]],
   ['vhdevice_2ecpp',['VHDevice.cpp',['../_v_h_device_8cpp.html',1,'']]],

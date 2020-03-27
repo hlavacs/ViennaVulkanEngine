@@ -72,7 +72,7 @@ $(function() {
 </div><!--header-->
 <div class="contents">
 
-<p>Details.  
+<p>The Vienna Game Job System (VGJS)  
 <a href="#details">More...</a></p>
 <div class="textblock"><code>#include &lt;iostream&gt;</code><br />
 <code>#include &lt;cstdint&gt;</code><br />
@@ -109,33 +109,70 @@ Classes</h2></td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="define-members"></a>
 Macros</h2></td></tr>
-<tr class="memitem:aba0a82ba1d055b9db8b01839e37ede7b"><td class="memItemLeft" align="right" valign="top"><a id="aba0a82ba1d055b9db8b01839e37ede7b"></a>
-#define&#160;</td><td class="memItemRight" valign="bottom"><b>JADD</b>(f)&#160;&#160;&#160;{f;}</td></tr>
-<tr class="separator:aba0a82ba1d055b9db8b01839e37ede7b"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a2a4a6fbc140f355e291ef88959277d49"><td class="memItemLeft" align="right" valign="top"><a id="a2a4a6fbc140f355e291ef88959277d49"></a>
-#define&#160;</td><td class="memItemRight" valign="bottom"><b>JDEP</b>(f)&#160;&#160;&#160;{f;}</td></tr>
-<tr class="separator:a2a4a6fbc140f355e291ef88959277d49"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aa8e7085aa960b02479c0534d8488eb43"><td class="memItemLeft" align="right" valign="top"><a id="aa8e7085aa960b02479c0534d8488eb43"></a>
-#define&#160;</td><td class="memItemRight" valign="bottom"><b>JADDT</b>(f,  t)&#160;&#160;&#160;{f;}</td></tr>
-<tr class="separator:aa8e7085aa960b02479c0534d8488eb43"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aae1d547af3719a5b8fffe2f1493c96a7"><td class="memItemLeft" align="right" valign="top"><a id="aae1d547af3719a5b8fffe2f1493c96a7"></a>
-#define&#160;</td><td class="memItemRight" valign="bottom"><b>JDEPT</b>(f,  t)&#160;&#160;&#160;{f;}</td></tr>
-<tr class="separator:aae1d547af3719a5b8fffe2f1493c96a7"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:af5cb90c16c4400b8fd33794d560fb2c5"><td class="memItemLeft" align="right" valign="top"><a id="af5cb90c16c4400b8fd33794d560fb2c5"></a>
-#define&#160;</td><td class="memItemRight" valign="bottom"><b>JREP</b>&#160;&#160;&#160;assert(true);</td></tr>
-<tr class="separator:af5cb90c16c4400b8fd33794d560fb2c5"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aec805687bfcb1aabc463520fbc260be9"><td class="memItemLeft" align="right" valign="top"><a id="aec805687bfcb1aabc463520fbc260be9"></a>
-#define&#160;</td><td class="memItemRight" valign="bottom"><b>JWAIT</b></td></tr>
-<tr class="separator:aec805687bfcb1aabc463520fbc260be9"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:af0f3d04de9c82a5b5085a654bfc91a01"><td class="memItemLeft" align="right" valign="top"><a id="af0f3d04de9c82a5b5085a654bfc91a01"></a>
-#define&#160;</td><td class="memItemRight" valign="bottom"><b>JRESET</b></td></tr>
-<tr class="separator:af0f3d04de9c82a5b5085a654bfc91a01"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a1f17147018148e5245005b048b55d27f"><td class="memItemLeft" align="right" valign="top"><a id="a1f17147018148e5245005b048b55d27f"></a>
-#define&#160;</td><td class="memItemRight" valign="bottom"><b>JTERM</b></td></tr>
-<tr class="separator:a1f17147018148e5245005b048b55d27f"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ad2b33de652b2b4839bf2d7ea9e38d71e"><td class="memItemLeft" align="right" valign="top"><a id="ad2b33de652b2b4839bf2d7ea9e38d71e"></a>
-#define&#160;</td><td class="memItemRight" valign="bottom"><b>JWAITTERM</b></td></tr>
-<tr class="separator:ad2b33de652b2b4839bf2d7ea9e38d71e"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gaba0a82ba1d055b9db8b01839e37ede7b"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___v_g_j_s___macros.html#gaba0a82ba1d055b9db8b01839e37ede7b">JADD</a>(f)&#160;&#160;&#160;vgjs::JobSystem::getInstance()-&gt;addJob( [=](){ f; } )</td></tr>
+<tr class="memdesc:gaba0a82ba1d055b9db8b01839e37ede7b"><td class="mdescLeft">&#160;</td><td class="mdescRight">Add a function as a job to the jobsystem.  <a href="group___v_g_j_s___macros.html#gaba0a82ba1d055b9db8b01839e37ede7b">More...</a><br /></td></tr>
+<tr class="separator:gaba0a82ba1d055b9db8b01839e37ede7b"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga2a4a6fbc140f355e291ef88959277d49"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___v_g_j_s___macros.html#ga2a4a6fbc140f355e291ef88959277d49">JDEP</a>(f)&#160;&#160;&#160;vgjs::JobSystem::getInstance()-&gt;onFinishedAddJob( [=](){ f; } )</td></tr>
+<tr class="memdesc:ga2a4a6fbc140f355e291ef88959277d49"><td class="mdescLeft">&#160;</td><td class="mdescRight">Add a dependent job to the jobsystem. The job will run only after all previous jobs have ended.  <a href="group___v_g_j_s___macros.html#ga2a4a6fbc140f355e291ef88959277d49">More...</a><br /></td></tr>
+<tr class="separator:ga2a4a6fbc140f355e291ef88959277d49"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gaa8e7085aa960b02479c0534d8488eb43"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___v_g_j_s___macros.html#gaa8e7085aa960b02479c0534d8488eb43">JADDT</a>(f,  t)&#160;&#160;&#160;vgjs::JobSystem::getInstance()-&gt;addJob( [=](){ f; }, t )</td></tr>
+<tr class="memdesc:gaa8e7085aa960b02479c0534d8488eb43"><td class="mdescLeft">&#160;</td><td class="mdescRight">Add a job to the jobsystem, schedule to a particular thread.  <a href="group___v_g_j_s___macros.html#gaa8e7085aa960b02479c0534d8488eb43">More...</a><br /></td></tr>
+<tr class="separator:gaa8e7085aa960b02479c0534d8488eb43"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gaae1d547af3719a5b8fffe2f1493c96a7"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___v_g_j_s___macros.html#gaae1d547af3719a5b8fffe2f1493c96a7">JDEPT</a>(f,  t)&#160;&#160;&#160;vgjs::JobSystem::getInstance()-&gt;onFinishedAddJob( [=](){ f; }, t )</td></tr>
+<tr class="memdesc:gaae1d547af3719a5b8fffe2f1493c96a7"><td class="mdescLeft">&#160;</td><td class="mdescRight">Add a dependent job to the jobsystem, schedule to a particular thread. The job will run only after all previous jobs have ended.  <a href="group___v_g_j_s___macros.html#gaae1d547af3719a5b8fffe2f1493c96a7">More...</a><br /></td></tr>
+<tr class="separator:gaae1d547af3719a5b8fffe2f1493c96a7"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gaf5cb90c16c4400b8fd33794d560fb2c5"><td class="memItemLeft" align="right" valign="top">
+#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___v_g_j_s___macros.html#gaf5cb90c16c4400b8fd33794d560fb2c5">JREP</a>&#160;&#160;&#160;vgjs::JobSystem::getInstance()-&gt;onFinishedRepeatJob()</td></tr>
+<tr class="memdesc:gaf5cb90c16c4400b8fd33794d560fb2c5"><td class="mdescLeft">&#160;</td><td class="mdescRight">After the job has finished, reschedule it. <br /></td></tr>
+<tr class="separator:gaf5cb90c16c4400b8fd33794d560fb2c5"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gaec805687bfcb1aabc463520fbc260be9"><td class="memItemLeft" align="right" valign="top">
+#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___v_g_j_s___macros.html#gaec805687bfcb1aabc463520fbc260be9">JWAIT</a>&#160;&#160;&#160;vgjs::JobSystem::getInstance()-&gt;wait()</td></tr>
+<tr class="memdesc:gaec805687bfcb1aabc463520fbc260be9"><td class="mdescLeft">&#160;</td><td class="mdescRight">Wait for all jobs in the job system to have finished and that there are no more jobs. <br /></td></tr>
+<tr class="separator:gaec805687bfcb1aabc463520fbc260be9"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gaf0f3d04de9c82a5b5085a654bfc91a01"><td class="memItemLeft" align="right" valign="top">
+#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___v_g_j_s___macros.html#gaf0f3d04de9c82a5b5085a654bfc91a01">JRESET</a>&#160;&#160;&#160;vgjs::JobSystem::getInstance()-&gt;resetPool()</td></tr>
+<tr class="memdesc:gaf0f3d04de9c82a5b5085a654bfc91a01"><td class="mdescLeft">&#160;</td><td class="mdescRight">Reset the memory for allocating jobs. Should be done once every game loop. <br /></td></tr>
+<tr class="separator:gaf0f3d04de9c82a5b5085a654bfc91a01"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga1f17147018148e5245005b048b55d27f"><td class="memItemLeft" align="right" valign="top">
+#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___v_g_j_s___macros.html#ga1f17147018148e5245005b048b55d27f">JTERM</a>&#160;&#160;&#160;vgjs::JobSystem::getInstance()-&gt;terminate()</td></tr>
+<tr class="memdesc:ga1f17147018148e5245005b048b55d27f"><td class="mdescLeft">&#160;</td><td class="mdescRight">Tell all threads to end. The main thread will return to the point where it entered the job system. <br /></td></tr>
+<tr class="separator:ga1f17147018148e5245005b048b55d27f"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gad2b33de652b2b4839bf2d7ea9e38d71e"><td class="memItemLeft" align="right" valign="top">
+#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___v_g_j_s___macros.html#gad2b33de652b2b4839bf2d7ea9e38d71e">JWAITTERM</a>&#160;&#160;&#160;vgjs::JobSystem::getInstance()-&gt;waitForTermination()</td></tr>
+<tr class="memdesc:gad2b33de652b2b4839bf2d7ea9e38d71e"><td class="mdescLeft">&#160;</td><td class="mdescRight">Wait for all threads to have terminated. <br /></td></tr>
+<tr class="separator:gad2b33de652b2b4839bf2d7ea9e38d71e"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gaba0a82ba1d055b9db8b01839e37ede7b"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___v_g_j_s___macros.html#gaba0a82ba1d055b9db8b01839e37ede7b">JADD</a>(f)&#160;&#160;&#160;{f;}</td></tr>
+<tr class="memdesc:gaba0a82ba1d055b9db8b01839e37ede7b"><td class="mdescLeft">&#160;</td><td class="mdescRight">Add a function as a job to the jobsystem.  <a href="group___v_g_j_s___macros.html#gaba0a82ba1d055b9db8b01839e37ede7b">More...</a><br /></td></tr>
+<tr class="separator:gaba0a82ba1d055b9db8b01839e37ede7b"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga2a4a6fbc140f355e291ef88959277d49"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___v_g_j_s___macros.html#ga2a4a6fbc140f355e291ef88959277d49">JDEP</a>(f)&#160;&#160;&#160;{f;}</td></tr>
+<tr class="memdesc:ga2a4a6fbc140f355e291ef88959277d49"><td class="mdescLeft">&#160;</td><td class="mdescRight">Add a dependent job to the jobsystem. The job will run only after all previous jobs have ended.  <a href="group___v_g_j_s___macros.html#ga2a4a6fbc140f355e291ef88959277d49">More...</a><br /></td></tr>
+<tr class="separator:ga2a4a6fbc140f355e291ef88959277d49"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gaa8e7085aa960b02479c0534d8488eb43"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___v_g_j_s___macros.html#gaa8e7085aa960b02479c0534d8488eb43">JADDT</a>(f,  t)&#160;&#160;&#160;{f;}</td></tr>
+<tr class="memdesc:gaa8e7085aa960b02479c0534d8488eb43"><td class="mdescLeft">&#160;</td><td class="mdescRight">Add a job to the jobsystem, schedule to a particular thread.  <a href="group___v_g_j_s___macros.html#gaa8e7085aa960b02479c0534d8488eb43">More...</a><br /></td></tr>
+<tr class="separator:gaa8e7085aa960b02479c0534d8488eb43"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gaae1d547af3719a5b8fffe2f1493c96a7"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___v_g_j_s___macros.html#gaae1d547af3719a5b8fffe2f1493c96a7">JDEPT</a>(f,  t)&#160;&#160;&#160;{f;}</td></tr>
+<tr class="memdesc:gaae1d547af3719a5b8fffe2f1493c96a7"><td class="mdescLeft">&#160;</td><td class="mdescRight">Add a dependent job to the jobsystem, schedule to a particular thread. The job will run only after all previous jobs have ended.  <a href="group___v_g_j_s___macros.html#gaae1d547af3719a5b8fffe2f1493c96a7">More...</a><br /></td></tr>
+<tr class="separator:gaae1d547af3719a5b8fffe2f1493c96a7"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gaf5cb90c16c4400b8fd33794d560fb2c5"><td class="memItemLeft" align="right" valign="top">
+#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___v_g_j_s___macros.html#gaf5cb90c16c4400b8fd33794d560fb2c5">JREP</a></td></tr>
+<tr class="memdesc:gaf5cb90c16c4400b8fd33794d560fb2c5"><td class="mdescLeft">&#160;</td><td class="mdescRight">After the job has finished, reschedule it. <br /></td></tr>
+<tr class="separator:gaf5cb90c16c4400b8fd33794d560fb2c5"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gaec805687bfcb1aabc463520fbc260be9"><td class="memItemLeft" align="right" valign="top">
+#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___v_g_j_s___macros.html#gaec805687bfcb1aabc463520fbc260be9">JWAIT</a></td></tr>
+<tr class="memdesc:gaec805687bfcb1aabc463520fbc260be9"><td class="mdescLeft">&#160;</td><td class="mdescRight">Wait for all jobs in the job system to have finished and that there are no more jobs. <br /></td></tr>
+<tr class="separator:gaec805687bfcb1aabc463520fbc260be9"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gaf0f3d04de9c82a5b5085a654bfc91a01"><td class="memItemLeft" align="right" valign="top">
+#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___v_g_j_s___macros.html#gaf0f3d04de9c82a5b5085a654bfc91a01">JRESET</a></td></tr>
+<tr class="memdesc:gaf0f3d04de9c82a5b5085a654bfc91a01"><td class="mdescLeft">&#160;</td><td class="mdescRight">Reset the memory for allocating jobs. Should be done once every game loop. <br /></td></tr>
+<tr class="separator:gaf0f3d04de9c82a5b5085a654bfc91a01"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga1f17147018148e5245005b048b55d27f"><td class="memItemLeft" align="right" valign="top">
+#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___v_g_j_s___macros.html#ga1f17147018148e5245005b048b55d27f">JTERM</a></td></tr>
+<tr class="memdesc:ga1f17147018148e5245005b048b55d27f"><td class="mdescLeft">&#160;</td><td class="mdescRight">Tell all threads to end. The main thread will return to the point where it entered the job system. <br /></td></tr>
+<tr class="separator:ga1f17147018148e5245005b048b55d27f"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gad2b33de652b2b4839bf2d7ea9e38d71e"><td class="memItemLeft" align="right" valign="top">
+#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___v_g_j_s___macros.html#gad2b33de652b2b4839bf2d7ea9e38d71e">JWAITTERM</a></td></tr>
+<tr class="memdesc:gad2b33de652b2b4839bf2d7ea9e38d71e"><td class="mdescLeft">&#160;</td><td class="mdescRight">Wait for all threads to have terminated. <br /></td></tr>
+<tr class="separator:gad2b33de652b2b4839bf2d7ea9e38d71e"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="typedef-members"></a>
 Typedefs</h2></td></tr>
@@ -171,11 +208,12 @@ constexpr VgjsThreadID&#160;</td><td class="memItemRight" valign="bottom"><b>vgj
 <tr class="separator:ab024480f8d7efb3b4aebcbe9b7aa6434"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
-<div class="textblock"><p>Details. </p>
+<div class="textblock"><p>The Vienna Game Job System (VGJS) </p>
+<p>Designed and implemented by Prof. Helmut Hlavacs, Faculty of Computer Science, University of Vienna See documentation on how to use it at <a href="https://github.com/hlavacs/GameJobSystem">https://github.com/hlavacs/GameJobSystem</a> The library is a single include file, and can be used under MIT license. </p>
 </div></div><!-- contents -->
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>
-Generated on Thu Mar 26 2020 12:54:34 for Vienna Vulkan Engine by &#160;<a href="http://www.doxygen.org/index.html">
+Generated on Fri Mar 27 2020 08:24:02 for Vienna Vulkan Engine by &#160;<a href="http://www.doxygen.org/index.html">
 <img class="footer" src="doxygen.png" alt="doxygen"/>
 </a> 1.8.15
 </small></address>

@@ -63,6 +63,7 @@ $(function() {
 <div class="header">
   <div class="summary">
 <a href="#nested-classes">Classes</a> &#124;
+<a href="#namespaces">Namespaces</a> &#124;
 <a href="#define-members">Macros</a> &#124;
 <a href="#func-members">Functions</a> &#124;
 <a href="#var-members">Variables</a>  </div>
@@ -73,8 +74,7 @@ $(function() {
 
 <p>Details.  
 <a href="#details">More...</a></p>
-<div class="textblock"><code>#include &quot;vulkan/vulkan.h&quot;</code><br />
-<code>#include &quot;<a class="el" href="_v_e_defines_8h_source.html">VEDefines.h</a>&quot;</code><br />
+<div class="textblock"><code>#include &quot;<a class="el" href="_v_e_defines_8h_source.html">VEDefines.h</a>&quot;</code><br />
 <code>#include &quot;<a class="el" href="_v_e_sys_messages_8h_source.html">VESysMessages.h</a>&quot;</code><br />
 <code>#include &quot;<a class="el" href="_v_e_sys_engine_8h_source.html">VESysEngine.h</a>&quot;</code><br />
 <code>#include &quot;<a class="el" href="_v_e_sys_vulkan_8h_source.html">VESysVulkan.h</a>&quot;</code><br />
@@ -88,6 +88,12 @@ Classes</h2></td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structvve_1_1syseng_1_1_ve_main_table_entry.html">vve::syseng::VeMainTableEntry</a></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structvve_1_1syseng_1_1_ve_entity_table_entry.html">vve::syseng::VeEntityTableEntry</a></td></tr>
+<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table><table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="namespaces"></a>
+Namespaces</h2></td></tr>
+<tr class="memitem:namespacevve"><td class="memItemLeft" align="right" valign="top"> &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacevve.html">vve</a></td></tr>
+<tr class="memdesc:namespacevve"><td class="mdescLeft">&#160;</td><td class="mdescRight">include STL <br /></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="func-members"></a>
@@ -223,7 +229,8 @@ std::atomic&lt; bool &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>
         </tr>
       </table>
 </div><div class="memdoc">
-<b>Initial value:</b><div class="fragment"><div class="line">= {</div><div class="line">            <span class="keyword">new</span> VeOrderedMultimap&lt; std::string, VeIndex &gt;((VeIndex)offsetof(<span class="keyword">struct</span> VeMainTableEntry, m_name), 0)</div><div class="line">        }</div></div><!-- fragment -->
+<b>Initial value:</b><div class="fragment"><div class="line">= {</div><div class="line">            <span class="keyword">new</span> VeOrderedMultimap&lt; std::string, VeIndex &gt;((<a class="code" href="namespacevve.html#a1eb8d816d3112a806cbcd809004a5266">VeIndex</a>)offsetof(<span class="keyword">struct</span> VeMainTableEntry, m_name), 0)</div><div class="line">        }</div><div class="ttc" id="namespacevve_html_a1eb8d816d3112a806cbcd809004a5266"><div class="ttname"><a href="namespacevve.html#a1eb8d816d3112a806cbcd809004a5266">vve::VeIndex</a></div><div class="ttdeci">uint32_t VeIndex</div><div class="ttdoc">for indexing in lage data collections</div><div class="ttdef"><b>Definition:</b> VEDefines.h:41</div></div>
+</div><!-- fragment -->
 </div>
 </div>
 <a id="file_a8ee014c96d06f97ac2b2a34782ed08ce"></a>
@@ -237,13 +244,14 @@ std::atomic&lt; bool &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>
         </tr>
       </table>
 </div><div class="memdoc">
-<b>Initial value:</b><div class="fragment"><div class="line">= {</div><div class="line">            <span class="keyword">new</span> VeHashedMultimap&lt; std::string, VeIndex &gt;((VeIndex)offsetof(<span class="keyword">struct</span> VeEntityTableEntry, m_name), 0)</div><div class="line">        }</div></div><!-- fragment -->
+<b>Initial value:</b><div class="fragment"><div class="line">= {</div><div class="line">            <span class="keyword">new</span> VeHashedMultimap&lt; std::string, VeIndex &gt;((<a class="code" href="namespacevve.html#a1eb8d816d3112a806cbcd809004a5266">VeIndex</a>)offsetof(<span class="keyword">struct</span> VeEntityTableEntry, m_name), 0)</div><div class="line">        }</div><div class="ttc" id="namespacevve_html_a1eb8d816d3112a806cbcd809004a5266"><div class="ttname"><a href="namespacevve.html#a1eb8d816d3112a806cbcd809004a5266">vve::VeIndex</a></div><div class="ttdeci">uint32_t VeIndex</div><div class="ttdoc">for indexing in lage data collections</div><div class="ttdef"><b>Definition:</b> VEDefines.h:41</div></div>
+</div><!-- fragment -->
 </div>
 </div>
 </div><!-- contents -->
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>
-Generated on Thu Mar 26 2020 12:54:34 for Vienna Vulkan Engine by &#160;<a href="http://www.doxygen.org/index.html">
+Generated on Fri Mar 27 2020 08:24:02 for Vienna Vulkan Engine by &#160;<a href="http://www.doxygen.org/index.html">
 <img class="footer" src="doxygen.png" alt="doxygen"/>
 </a> 1.8.15
 </small></address>

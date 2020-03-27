@@ -68,29 +68,35 @@ $(function() {
 <div class="textblock"><p>The Vienna Vulkan Engine is an experimental, multithreaded game engine. Its purpose is teaching and researching new, out-of-the-box approaches. You are free to use the engine or parts of it. Please cite the project, the author or some project publication if you do. Documentation is based on Doxygen. If you discover any error, typo etc., please send them to the author.</p>
 <h1><a class="anchor" id="label_struct"></a>
 Engine Structure</h1>
-<p>Following the design pattern of separation of concerns, the engine is made up of several different parts or layers. Engine state is stored on tables only, forming up a relational database at the engine core. This way, there is only one unified way of storing state, and data access can be done in parallel. Tables are always owned by a system. Thus, only systems store engine state, all other modules provide only functionality. Some parts are designed to be used independent from the engine. Interested persons can simply copy and paste them and use them in their own engines.</p>
-<p>You can compile the engine for single-threaded or multithreaded operation. You can switch this by commenting or enabling VE_ENABLE_MULTITHREADING in <a class="el" href="_v_e_defines_8h.html" title="Details.">VEDefines.h</a>. Simply recompile the engine if you change this. One important design feature is its job-only architecture. This means that if the engine is running in multithreaded mode, there is no main thread. <a class="el" href="_v_e_game_job_system_8h.html" title="Details.">VEGameJobSystem.h</a> provides simple macros that let users make use of submitting jobs.</p>
-<h1><a class="anchor" id="label_util"></a>
-Utility Layer</h1>
-<h1><a class="anchor" id="label_helper"></a>
-Vulkan Helper Layer</h1>
-<h1><a class="anchor" id="label_engine"></a>
-Engine Layer</h1>
-<h2><a class="anchor" id="label_mem"></a>
-Memory Part</h2>
-<h2><a class="anchor" id="label_systemspart"></a>
-Systems Part</h2>
+<p>Following the design pattern of separation of concerns, the engine is made up of several different parts or layers. Engine state is stored on tables only, forming up a relational database at the engine core. This way, there is only one unified way of storing state, and data access can be done in parallel. Tables are always owned by a system. Thus, only systems store engine state, all other modules provide only functionality.</p>
+<p>An important decision made during design is not to use the singleton pattern for storing state in the systems, but use global variables instead. Use of global variables is dicouraged generally, because during the life time of an engine, new programmers might refer to or change them in unexpected ways. Arcgitecture is always about enabling easy learning and making changes in the future. The VVE tackles this problem by keeping globals "local" in the sense that they are only to be used within the same file, not from other files using the extern decoration.</p>
+<p>Some parts are designed to be used independent from the engine. Interested persons can simply copy and paste them and use them in their own engines.</p>
+<p>You can compile the engine for single-threaded or multithreaded operation. You can switch this by commenting or enabling VE_ENABLE_MULTITHREADING in <a class="el" href="_v_e_defines_8h.html" title="All includes of external sources are funneled through this include file.">VEDefines.h</a>. Simply recompile the engine if you change this. One important design feature is its job-only architecture. This means that if the engine is running in multithreaded mode, there is no main thread. <a class="el" href="_v_e_game_job_system_8h.html" title="The Vienna Game Job System (VGJS)">VEGameJobSystem.h</a> provides simple macros that let users make use of submitting jobs.</p>
+<h2><a class="anchor" id="label_util"></a>
+Utility Layer</h2>
+<p>This layer includes files that do not belong to any of the below described categories. These files provide some basic functionality that does not fit anywehere else. This includes <a class="el" href="_v_e_util_clock_8h_source.html">VEUtilClock.h</a>, <a class="el" href="_v_e_util_file_8h.html" title="Details.">VEUtilFile.h</a>, or <a class="el" href="_v_e_util_collision_8h.html" title="Details.">VEUtilCollision.h</a>. <a class="el" href="_v_e_util_collision_8h.html" title="Details.">VEUtilCollision.h</a> provides data structures and functionality for testing collisions between game objects. This can be used for physics, but also camera culling during the rendering process.</p>
+<h2><a class="anchor" id="label_helper"></a>
+Vulkan Helper Layer</h2>
+<p>This is a collection of C-functions that build an abstraction layer above Vulkan. Goal is to reduce the number of lines to program. Essentially, helper functions act as macros that transform input variables into one or several Vulkan calls. Function names begin with "VH" and do not save any state, i.e. they are "true functions". Ideally, there are only very few calls from the engine directly to Vulkan (e.g. when destroying objects). Most interactions between the engine and Vulkan should go over the helper layer.</p>
+<h2><a class="anchor" id="label_engine"></a>
+Engine Layer</h2>
+<p>The engine layer holds the whole engine state in a collection of related tables. The main function of the engine is to orchestrate all processes without dealing too much with details. The goal of the engine structure is to produce a small number of code lines using calls to a thin but powerful abstraction layer.</p>
+<h1><a class="anchor" id="label_mem"></a>
+Memory Part</h1>
+<p>The memory part of the engine provides functionality for managing data and memory. <a class="el" href="_v_e_mem_heap_8h_source.html">VEMemHeap.h</a> provides a heap class that is used by other classes to obtain memory for storing transient data, e.g. for storing handles in a vector. Heaps are mainly used in a custom allocator for std::vector. <a class="el" href="_v_e_mem_vector_8h.html" title="Details.">VeMemVector.h</a> offers a VeVector class that is similar to std::vector, but is designed to offer fast copying, arbitrarily aligned object allocation, and optional use without constructors/destructors. VeVectors are used to store data in VeTables and VeMaps. <a class="el" href="_v_e_mem_map_8h_source.html">VEMemMap.h</a> provides ordered and hashed maps to be used as search and ordering indices in tables. VeOrderedMap implements a self-balancing AVL tree, VeHashedMap uses a growable hash map for fast lookups. VeTable is the main data structure of the engine. In its core it implements a slot map, storing arbitrary objects. Additionally, it can be assigned arbitrary VeMaps to create search and ordering indices for single, pairs, or triples of integers (32 and 64 bits), and std::string. VeTable offers a left join operation to merge its data to the data of another table, via two VeMaps, one in each table.</p>
 <h1><a class="anchor" id="label_systems"></a>
-Engine Systems</h1>
+Systems Part</h1>
+<p>A system is a part of the engine managing a certain aspect. It is located in a certain file, and holds all global state for its part. Systems can manage entity components, the scene, etc., and are essentially a collection of functions that can be run as jobs. Data is persisted in tables. System names start with VESys.</p>
 <h2><a class="anchor" id="label_assets"></a>
-Asset Management</h2>
+Assets</h2>
+<p>TODO</p>
 <h2><a class="anchor" id="label_scene"></a>
-Scene Management</h2>
+Scene</h2>
+<p>TODO</p>
 <h2><a class="anchor" id="label_scene"></a>
-Scene Management</h2>
-<h2><a class="anchor" id="label_job"></a>
-The Job System</h2>
-<h1><a class="anchor" id="label_dynamics"></a>
+Scene</h2>
+<p>TODO</p>
+<h1><a class="anchor" id="label_loop"></a>
 The Game Loop</h1>
 <h1><a class="anchor" id="label_usage"></a>
 Using the Engine</h1>
@@ -98,7 +104,7 @@ Using the Engine</h1>
 </div><!-- contents -->
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>
-Generated on Thu Mar 26 2020 12:54:35 for Vienna Vulkan Engine by &#160;<a href="http://www.doxygen.org/index.html">
+Generated on Fri Mar 27 2020 08:24:03 for Vienna Vulkan Engine by &#160;<a href="http://www.doxygen.org/index.html">
 <img class="footer" src="doxygen.png" alt="doxygen"/>
 </a> 1.8.15
 </small></address>
