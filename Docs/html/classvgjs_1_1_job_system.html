@@ -75,11 +75,16 @@ $(function() {
 <div class="title">vgjs::JobSystem Class Reference</div>  </div>
 </div><!--header-->
 <div class="contents">
+
+<p>The main <a class="el" href="classvgjs_1_1_job_system.html" title="The main JobSystem class manages the whole VGJS job system.">JobSystem</a> class manages the whole VGJS job system.  
+ <a href="classvgjs_1_1_job_system.html#details">More...</a></p>
+
+<p><code>#include &lt;<a class="el" href="_v_e_game_job_system_8h_source.html">VEGameJobSystem.h</a>&gt;</code></p>
 <table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-methods"></a>
 Public Member Functions</h2></td></tr>
-<tr class="memitem:ab1415dcc624f44af41031d338f8cb4a7"><td class="memItemLeft" align="right" valign="top"><a id="ab1415dcc624f44af41031d338f8cb4a7"></a>
-void&#160;</td><td class="memItemRight" valign="bottom"><b>threadTask</b> (uint32_t threadIndex=0)</td></tr>
+<tr class="memitem:ab1415dcc624f44af41031d338f8cb4a7"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classvgjs_1_1_job_system.html#ab1415dcc624f44af41031d338f8cb4a7">threadTask</a> (uint32_t threadIndex=0)</td></tr>
+<tr class="memdesc:ab1415dcc624f44af41031d338f8cb4a7"><td class="mdescLeft">&#160;</td><td class="mdescRight">every thread runs in this function  <a href="#ab1415dcc624f44af41031d338f8cb4a7">More...</a><br /></td></tr>
 <tr class="separator:ab1415dcc624f44af41031d338f8cb4a7"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a11c790746f2736dffce5426d9fe95e52"><td class="memItemLeft" align="right" valign="top"><a id="a11c790746f2736dffce5426d9fe95e52"></a>
 &#160;</td><td class="memItemRight" valign="bottom"><b>JobSystem</b> (uint32_t threadCount=0, uint32_t start_idx=0)</td></tr>
@@ -124,13 +129,13 @@ void&#160;</td><td class="memItemRight" valign="bottom"><b>resetPool</b> ()</td>
 void&#160;</td><td class="memItemRight" valign="bottom"><b>addJob</b> (<a class="el" href="classvgjs_1_1_job.html">Job</a> *pJob)</td></tr>
 <tr class="separator:a44032879c80d4a3696ddecab7799c6c2"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aac05960065e69742eb3a376e6ddde0c9"><td class="memItemLeft" align="right" valign="top"><a id="aac05960065e69742eb3a376e6ddde0c9"></a>
-void&#160;</td><td class="memItemRight" valign="bottom"><b>addJob</b> (Function &amp;func, VgjsThreadID thread_id=VGJS_NULL_THREAD_ID)</td></tr>
+void&#160;</td><td class="memItemRight" valign="bottom"><b>addJob</b> (<a class="el" href="_v_e_game_job_system_8h.html#ad7fe1d9f2740f7471891c3b32228e8d2">Function</a> &amp;func, <a class="el" href="_v_e_game_job_system_8h.html#a647995c583b87728a32f753fcaa27063">VgjsThreadID</a> thread_id=VGJS_NULL_THREAD_ID)</td></tr>
 <tr class="separator:aac05960065e69742eb3a376e6ddde0c9"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a931082ab2e8547e6a04ea5e968979a6e"><td class="memItemLeft" align="right" valign="top"><a id="a931082ab2e8547e6a04ea5e968979a6e"></a>
-void&#160;</td><td class="memItemRight" valign="bottom"><b>addJob</b> (Function &amp;&amp;func, VgjsThreadID thread_id=VGJS_NULL_THREAD_ID)</td></tr>
+void&#160;</td><td class="memItemRight" valign="bottom"><b>addJob</b> (<a class="el" href="_v_e_game_job_system_8h.html#ad7fe1d9f2740f7471891c3b32228e8d2">Function</a> &amp;&amp;func, <a class="el" href="_v_e_game_job_system_8h.html#a647995c583b87728a32f753fcaa27063">VgjsThreadID</a> thread_id=VGJS_NULL_THREAD_ID)</td></tr>
 <tr class="separator:a931082ab2e8547e6a04ea5e968979a6e"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aeea78eb1e4fa5119b22b19f256ec7e5a"><td class="memItemLeft" align="right" valign="top"><a id="aeea78eb1e4fa5119b22b19f256ec7e5a"></a>
-void&#160;</td><td class="memItemRight" valign="bottom"><b>onFinishedAddJob</b> (Function func, VgjsThreadID thread_id=VGJS_NULL_THREAD_ID)</td></tr>
+void&#160;</td><td class="memItemRight" valign="bottom"><b>onFinishedAddJob</b> (<a class="el" href="_v_e_game_job_system_8h.html#ad7fe1d9f2740f7471891c3b32228e8d2">Function</a> func, <a class="el" href="_v_e_game_job_system_8h.html#a647995c583b87728a32f753fcaa27063">VgjsThreadID</a> thread_id=VGJS_NULL_THREAD_ID)</td></tr>
 <tr class="separator:aeea78eb1e4fa5119b22b19f256ec7e5a"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a461d6d8cc92f7caaf76aae9749c83397"><td class="memItemLeft" align="right" valign="top"><a id="a461d6d8cc92f7caaf76aae9749c83397"></a>
 void&#160;</td><td class="memItemRight" valign="bottom"><b>onFinishedRepeatJob</b> ()</td></tr>
@@ -154,7 +159,8 @@ static bool&#160;</td><td class="memItemRight" valign="bottom"><b>isInstanceCrea
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-attribs"></a>
 Public Attributes</h2></td></tr>
 <tr class="memitem:a7e51963756562df45ac9c0b7f5f03252"><td class="memItemLeft" align="right" valign="top"><a id="a7e51963756562df45ac9c0b7f5f03252"></a>
-<a class="el" href="classvve_1_1_ve_clock.html">vve::VeClock</a>&#160;</td><td class="memItemRight" valign="bottom"><b>m_clock</b></td></tr>
+<a class="el" href="classvve_1_1_ve_clock.html">vve::VeClock</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classvgjs_1_1_job_system.html#a7e51963756562df45ac9c0b7f5f03252">m_clock</a></td></tr>
+<tr class="memdesc:a7e51963756562df45ac9c0b7f5f03252"><td class="mdescLeft">&#160;</td><td class="mdescRight">Clock for time measurements. <br /></td></tr>
 <tr class="separator:a7e51963756562df45ac9c0b7f5f03252"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-static-attribs"></a>
@@ -163,13 +169,76 @@ Static Public Attributes</h2></td></tr>
 static <a class="el" href="classvgjs_1_1_job_system.html">JobSystem</a> *&#160;</td><td class="memItemRight" valign="bottom"><b>pInstance</b></td></tr>
 <tr class="separator:a7c081407cfdf02009ffabb93b86a6c84"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
+<a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
+<div class="textblock"><p>The main <a class="el" href="classvgjs_1_1_job_system.html" title="The main JobSystem class manages the whole VGJS job system.">JobSystem</a> class manages the whole VGJS job system. </p>
+<p>The <a class="el" href="classvgjs_1_1_job_system.html" title="The main JobSystem class manages the whole VGJS job system.">JobSystem</a> starts N threads and provides them with data structures. It can add new jobs, and wait until they are done. </p>
+</div><h2 class="groupheader">Member Function Documentation</h2>
+<a id="ab1415dcc624f44af41031d338f8cb4a7"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ab1415dcc624f44af41031d338f8cb4a7">&#9670;&nbsp;</a></span>threadTask()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">void vgjs::JobSystem::threadTask </td>
+          <td>(</td>
+          <td class="paramtype">uint32_t&#160;</td>
+          <td class="paramname"><em>threadIndex</em> = <code>0</code></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>every thread runs in this function </p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramdir">[in]</td><td class="paramname">threadIndex</td><td>Number of this thread </td></tr>
+  </table>
+  </dd>
+</dl>
+<p>&lt;Used for resetting the pool</p>
+<p>&lt;Counted up when started</p>
+<p>&lt;Remember your own thread number</p>
+<p>&lt;count up at start</p>
+<p>&lt;Continuous only if all threads are running</p>
+<p>&lt;Run until the job system is terminated</p>
+<p>&lt;Count up the number of loops run</p>
+<p>&lt;Possibly reset your job memory</p>
+<p>&lt;Test for termination</p>
+<p>&lt;Try to get a job from local queue</p>
+<p>&lt;If no job found</p>
+<p>&lt;Try to get a job from local FIFO queue</p>
+<p>&lt;Try to get a job from the general job queue</p>
+<p>&lt;try to steal one from another thread</p>
+<p>&lt; std::rand() % tsize;</p>
+<p>&lt;Max number of tries to steal one</p>
+<p>&lt;loop until found or retry own</p>
+<p>&lt;Try to steal one</p>
+<p>&lt;If found a job</p>
+<p>&lt;make pointer to the <a class="el" href="classvgjs_1_1_job.html" title="This class holds a single job, including a function object and other info.">Job</a> structure accessible!</p>
+<p>&lt;time of execution</p>
+<p>&lt;run the job</p>
+<p>&lt;time of finishing</p>
+<p>&lt;thread idx this job was executed on</p>
+<p>&lt;Increase miss counter, possibly sleep or wait for a signal </p>
+
+</div>
+</div>
 <hr/>The documentation for this class was generated from the following file:<ul>
 <li><a class="el" href="_v_e_game_job_system_8h_source.html">VEGameJobSystem.h</a></li>
 </ul>
 </div><!-- contents -->
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>
-Generated on Fri Mar 27 2020 08:24:02 for Vienna Vulkan Engine by &#160;<a href="http://www.doxygen.org/index.html">
+Generated on Fri Mar 27 2020 17:55:55 for Vienna Vulkan Engine by &#160;<a href="http://www.doxygen.org/index.html">
 <img class="footer" src="doxygen.png" alt="doxygen"/>
 </a> 1.8.15
 </small></address>

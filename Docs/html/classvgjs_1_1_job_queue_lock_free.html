@@ -72,42 +72,149 @@ $(function() {
 <div class="title">vgjs::JobQueueLockFree Class Reference</div>  </div>
 </div><!--header-->
 <div class="contents">
+
+<p>A lockfree LIFO stack.  
+ <a href="classvgjs_1_1_job_queue_lock_free.html#details">More...</a></p>
+
+<p><code>#include &lt;<a class="el" href="_v_e_game_job_system_8h_source.html">VEGameJobSystem.h</a>&gt;</code></p>
 <div class="dynheader">
 Inheritance diagram for vgjs::JobQueueLockFree:</div>
 <div class="dyncontent">
  <div class="center">
   <img src="classvgjs_1_1_job_queue_lock_free.png" usemap="#vgjs::JobQueueLockFree_map" alt=""/>
   <map id="vgjs::JobQueueLockFree_map" name="vgjs::JobQueueLockFree_map">
-<area href="classvgjs_1_1_job_queue.html" alt="vgjs::JobQueue" shape="rect" coords="0,0,154,24"/>
+<area href="classvgjs_1_1_job_queue.html" title="Base class for job queues, provides a single interface." alt="vgjs::JobQueue" shape="rect" coords="0,0,154,24"/>
   </map>
 </div></div>
 <table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-methods"></a>
 Public Member Functions</h2></td></tr>
-<tr class="memitem:a38799c243d99ec038f7dbac574fbb9f2"><td class="memItemLeft" align="right" valign="top"><a id="a38799c243d99ec038f7dbac574fbb9f2"></a>
-void&#160;</td><td class="memItemRight" valign="bottom"><b>push</b> (<a class="el" href="classvgjs_1_1_job.html">Job</a> *pJob)</td></tr>
+<tr class="memitem:a38799c243d99ec038f7dbac574fbb9f2"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classvgjs_1_1_job_queue_lock_free.html#a38799c243d99ec038f7dbac574fbb9f2">push</a> (<a class="el" href="classvgjs_1_1_job.html">Job</a> *pJob)</td></tr>
+<tr class="memdesc:a38799c243d99ec038f7dbac574fbb9f2"><td class="mdescLeft">&#160;</td><td class="mdescRight"><a class="el" href="classvgjs_1_1_job_queue_lock_free.html" title="A lockfree LIFO stack.">JobQueueLockFree</a> class constructor.  <a href="#a38799c243d99ec038f7dbac574fbb9f2">More...</a><br /></td></tr>
 <tr class="separator:a38799c243d99ec038f7dbac574fbb9f2"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aeeab2bba4763ebc93f360caf33ff2262"><td class="memItemLeft" align="right" valign="top"><a id="aeeab2bba4763ebc93f360caf33ff2262"></a>
-<a class="el" href="classvgjs_1_1_job.html">Job</a> *&#160;</td><td class="memItemRight" valign="bottom"><b>pop</b> ()</td></tr>
+<tr class="memitem:aeeab2bba4763ebc93f360caf33ff2262"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classvgjs_1_1_job.html">Job</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classvgjs_1_1_job_queue_lock_free.html#aeeab2bba4763ebc93f360caf33ff2262">pop</a> ()</td></tr>
+<tr class="memdesc:aeeab2bba4763ebc93f360caf33ff2262"><td class="mdescLeft">&#160;</td><td class="mdescRight">Pops a job from the queue.  <a href="#aeeab2bba4763ebc93f360caf33ff2262">More...</a><br /></td></tr>
 <tr class="separator:aeeab2bba4763ebc93f360caf33ff2262"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ac32a40938d71839fef87190b179cec08"><td class="memItemLeft" align="right" valign="top"><a id="ac32a40938d71839fef87190b179cec08"></a>
-<a class="el" href="classvgjs_1_1_job.html">Job</a> *&#160;</td><td class="memItemRight" valign="bottom"><b>steal</b> ()</td></tr>
+<tr class="memitem:ac32a40938d71839fef87190b179cec08"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classvgjs_1_1_job.html">Job</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classvgjs_1_1_job_queue_lock_free.html#ac32a40938d71839fef87190b179cec08">steal</a> ()</td></tr>
+<tr class="memdesc:ac32a40938d71839fef87190b179cec08"><td class="mdescLeft">&#160;</td><td class="mdescRight">Another thread wants to steal a job.  <a href="#ac32a40938d71839fef87190b179cec08">More...</a><br /></td></tr>
 <tr class="separator:ac32a40938d71839fef87190b179cec08"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="inherited"></a>
 Additional Inherited Members</h2></td></tr>
 <tr class="inherit_header pro_attribs_classvgjs_1_1_job_queue"><td colspan="2" onclick="javascript:toggleInherit('pro_attribs_classvgjs_1_1_job_queue')"><img src="closed.png" alt="-"/>&#160;Protected Attributes inherited from <a class="el" href="classvgjs_1_1_job_queue.html">vgjs::JobQueue</a></td></tr>
 <tr class="memitem:a4d983d53da92e4a85b402e0e11962b77 inherit pro_attribs_classvgjs_1_1_job_queue"><td class="memItemLeft" align="right" valign="top"><a id="a4d983d53da92e4a85b402e0e11962b77"></a>
-<a class="el" href="classvve_1_1_ve_clock.html">vve::VeClock</a>&#160;</td><td class="memItemRight" valign="bottom"><b>m_clock</b></td></tr>
+<a class="el" href="classvve_1_1_ve_clock.html">vve::VeClock</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classvgjs_1_1_job_queue.html#a4d983d53da92e4a85b402e0e11962b77">m_clock</a></td></tr>
+<tr class="memdesc:a4d983d53da92e4a85b402e0e11962b77 inherit pro_attribs_classvgjs_1_1_job_queue"><td class="mdescLeft">&#160;</td><td class="mdescRight">Clock for measuring time. <br /></td></tr>
 <tr class="separator:a4d983d53da92e4a85b402e0e11962b77 inherit pro_attribs_classvgjs_1_1_job_queue"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
+<a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
+<div class="textblock"><p>A lockfree LIFO stack. </p>
+<p>This queue can be accessed by any thread, it is synchronized by STL CAS operations. However it is only a LIFO stack, not a FIFO queue. </p>
+</div><h2 class="groupheader">Member Function Documentation</h2>
+<a id="aeeab2bba4763ebc93f360caf33ff2262"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aeeab2bba4763ebc93f360caf33ff2262">&#9670;&nbsp;</a></span>pop()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="classvgjs_1_1_job.html">Job</a>* vgjs::JobQueueLockFree::pop </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span><span class="mlabel">virtual</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Pops a job from the queue. </p>
+<dl class="section return"><dt>Returns</dt><dd>a job or nullptr </dd></dl>
+
+<p>Implements <a class="el" href="classvgjs_1_1_job_queue.html#ac75def9846762fac94026786094f2d0c">vgjs::JobQueue</a>.</p>
+
+</div>
+</div>
+<a id="a38799c243d99ec038f7dbac574fbb9f2"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a38799c243d99ec038f7dbac574fbb9f2">&#9670;&nbsp;</a></span>push()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">void vgjs::JobQueueLockFree::push </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="classvgjs_1_1_job.html">Job</a> *&#160;</td>
+          <td class="paramname"><em>pJob</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span><span class="mlabel">virtual</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p><a class="el" href="classvgjs_1_1_job_queue_lock_free.html" title="A lockfree LIFO stack.">JobQueueLockFree</a> class constructor. </p>
+<p>Pushes a job onto the queue</p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramdir">[in]</td><td class="paramname">pJob</td><td>The job to be pushed into the queue </td></tr>
+  </table>
+  </dd>
+</dl>
+
+<p>Implements <a class="el" href="classvgjs_1_1_job_queue.html#a0041d643a030d3b509a9ca503c5a611e">vgjs::JobQueue</a>.</p>
+
+</div>
+</div>
+<a id="ac32a40938d71839fef87190b179cec08"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ac32a40938d71839fef87190b179cec08">&#9670;&nbsp;</a></span>steal()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="classvgjs_1_1_job.html">Job</a>* vgjs::JobQueueLockFree::steal </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span><span class="mlabel">virtual</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Another thread wants to steal a job. </p>
+<dl class="section return"><dt>Returns</dt><dd>a job or nullptr </dd></dl>
+
+<p>Implements <a class="el" href="classvgjs_1_1_job_queue.html#adfb390f0496f17935ffbb8f34eccde31">vgjs::JobQueue</a>.</p>
+
+</div>
+</div>
 <hr/>The documentation for this class was generated from the following file:<ul>
 <li><a class="el" href="_v_e_game_job_system_8h_source.html">VEGameJobSystem.h</a></li>
 </ul>
 </div><!-- contents -->
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>
-Generated on Fri Mar 27 2020 08:24:02 for Vienna Vulkan Engine by &#160;<a href="http://www.doxygen.org/index.html">
+Generated on Fri Mar 27 2020 17:55:55 for Vienna Vulkan Engine by &#160;<a href="http://www.doxygen.org/index.html">
 <img class="footer" src="doxygen.png" alt="doxygen"/>
 </a> 1.8.15
 </small></address>

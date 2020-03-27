@@ -2,6 +2,7 @@ var searchData=
 [
   ['m_5falignment',['m_alignment',['../classvve_1_1_ve_vector.html#a404ff58656eb4d90fc9689fd74cfb5b0',1,'vve::VeVector']]],
   ['m_5fcapacity',['m_capacity',['../classvve_1_1_ve_vector.html#a3a1ececefa577ad094a67e4860a6f8b8',1,'vve::VeVector']]],
+  ['m_5fclock',['m_clock',['../classvgjs_1_1_job_queue.html#a4d983d53da92e4a85b402e0e11962b77',1,'vgjs::JobQueue::m_clock()'],['../classvgjs_1_1_job_system.html#a7e51963756562df45ac9c0b7f5f03252',1,'vgjs::JobSystem::m_clock()']]],
   ['m_5fdirectory',['m_directory',['../classvve_1_1_ve_fixed_size_table.html#a174f5581146d5c0a9c20627feddd0216',1,'vve::VeFixedSizeTable']]],
   ['m_5fentrysize',['m_entrySize',['../classvve_1_1_ve_vector.html#a574cd7e0009565a53772dc99f064f114',1,'vve::VeVector']]],
   ['m_5ffirst_5ffree',['m_first_free',['../classvve_1_1_ve_directory.html#ad465e47da170c15cff3ab274a91510e6',1,'vve::VeDirectory']]],

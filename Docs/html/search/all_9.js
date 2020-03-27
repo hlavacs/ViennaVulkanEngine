@@ -5,7 +5,7 @@ var searchData=
   ['jdep',['JDEP',['../group___v_g_j_s___macros.html#ga2a4a6fbc140f355e291ef88959277d49',1,'JDEP():&#160;VEGameJobSystem.h'],['../group___v_g_j_s___macros.html#ga2a4a6fbc140f355e291ef88959277d49',1,'JDEP():&#160;VEGameJobSystem.h']]],
   ['jdept',['JDEPT',['../group___v_g_j_s___macros.html#gaae1d547af3719a5b8fffe2f1493c96a7',1,'JDEPT():&#160;VEGameJobSystem.h'],['../group___v_g_j_s___macros.html#gaae1d547af3719a5b8fffe2f1493c96a7',1,'JDEPT():&#160;VEGameJobSystem.h']]],
   ['job',['Job',['../classvgjs_1_1_job.html',1,'vgjs']]],
-  ['jobmemory',['JobMemory',['../classvgjs_1_1_job_memory.html',1,'vgjs']]],
+  ['jobmemory',['JobMemory',['../classvgjs_1_1_job_memory.html',1,'vgjs::JobMemory'],['../classvgjs_1_1_job_memory.html#a39b7152b540783435890abb9022b6462',1,'vgjs::JobMemory::JobMemory()']]],
   ['jobqueue',['JobQueue',['../classvgjs_1_1_job_queue.html',1,'vgjs']]],
   ['jobqueuefifo',['JobQueueFIFO',['../classvgjs_1_1_job_queue_f_i_f_o.html',1,'vgjs']]],
   ['jobqueuelockfree',['JobQueueLockFree',['../classvgjs_1_1_job_queue_lock_free.html',1,'vgjs']]],

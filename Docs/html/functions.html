@@ -67,6 +67,9 @@ $(function() {
 <li>addNewEntry()
 : <a class="el" href="classvve_1_1_ve_directory.html#ab42f92c9e203cedd50eb1d8c2bd215f2">vve::VeDirectory</a>
 </li>
+<li>allocateJob()
+: <a class="el" href="classvgjs_1_1_job_memory.html#a63fc5521930b377448c7d4d9f03ff7b7">vgjs::JobMemory</a>
+</li>
 </ul>
 
 
@@ -94,10 +97,10 @@ $(function() {
 : <a class="el" href="structvve_1_1cl_1_1cl_frustum.html#a2ad1d3869516af72d9f44aeec763a0e6">vve::cl::clFrustum</a>
 </li>
 <li>clPlane()
-: <a class="el" href="structvve_1_1cl_1_1cl_plane.html#aebcf493c9f2bde300123c4a41447e4cc">vve::cl::clPlane</a>
+: <a class="el" href="structvve_1_1cl_1_1cl_plane.html#ab4fe8406925562d720029564224706ff">vve::cl::clPlane</a>
 </li>
 <li>clQuad()
-: <a class="el" href="structvve_1_1cl_1_1cl_quad.html#afbc250e68ddb52ba886c81dd9c63b827">vve::cl::clQuad</a>
+: <a class="el" href="structvve_1_1cl_1_1cl_quad.html#a502b53460d445f7882af8c8aeb7690a9">vve::cl::clQuad</a>
 </li>
 <li>construct()
 : <a class="el" href="classvve_1_1_ve_vector.html#aaefb91a63ed333d609a04523337db3cd">vve::VeVector&lt; T &gt;</a>
@@ -142,6 +145,9 @@ $(function() {
 <li>getKey()
 : <a class="el" href="classvve_1_1_ve_map.html#ad0559cd5687919dab1e322d9fff30f16">vve::VeMap</a>
 </li>
+<li>getNextJob()
+: <a class="el" href="classvgjs_1_1_job_memory.html#a4c15c5d75096c393efe56edb07112bdc">vgjs::JobMemory</a>
+</li>
 <li>graphicsFamily
 : <a class="el" href="structvh_1_1_vh_queue_family_indices.html#a64c5ed336da55dbde1556142f44f092b">vh::VhQueueFamilyIndices</a>
 </li>
@@ -158,12 +164,23 @@ $(function() {
 </ul>
 
 
+<h3><a id="index_j"></a>- j -</h3><ul>
+<li>JobMemory()
+: <a class="el" href="classvgjs_1_1_job_memory.html#a39b7152b540783435890abb9022b6462">vgjs::JobMemory</a>
+</li>
+</ul>
+
+
 <h3><a id="index_m"></a>- m -</h3><ul>
 <li>m_alignment
 : <a class="el" href="classvve_1_1_ve_vector.html#a404ff58656eb4d90fc9689fd74cfb5b0">vve::VeVector&lt; T &gt;</a>
 </li>
 <li>m_capacity
 : <a class="el" href="classvve_1_1_ve_vector.html#a3a1ececefa577ad094a67e4860a6f8b8">vve::VeVector&lt; T &gt;</a>
+</li>
+<li>m_clock
+: <a class="el" href="classvgjs_1_1_job_queue.html#a4d983d53da92e4a85b402e0e11962b77">vgjs::JobQueue</a>
+, <a class="el" href="classvgjs_1_1_job_system.html#a7e51963756562df45ac9c0b7f5f03252">vgjs::JobSystem</a>
 </li>
 <li>m_directory
 : <a class="el" href="classvve_1_1_ve_fixed_size_table.html#a174f5581146d5c0a9c20627feddd0216">vve::VeFixedSizeTable&lt; T &gt;</a>
@@ -213,7 +230,7 @@ $(function() {
 : <a class="el" href="classvve_1_1_ve_vector.html#ac2273d910b0fd627adab6570eedf3d6c">vve::VeVector&lt; T &gt;</a>
 </li>
 <li>operator[]()
-: <a class="el" href="classvve_1_1_ve_vector.html#a422c3aaa31ac35a70ca8914cd1592b36">vve::VeVector&lt; T &gt;</a>
+: <a class="el" href="classvve_1_1_ve_vector.html#ac358b5c3a95307268cac802f35850d25">vve::VeVector&lt; T &gt;</a>
 </li>
 </ul>
 
@@ -227,6 +244,11 @@ $(function() {
 : <a class="el" href="structvve_1_1cl_1_1cl_edge.html#a2d8de9db9ddf290ee58a206fb6131fe4">vve::cl::clEdge</a>
 , <a class="el" href="structvve_1_1cl_1_1cl_quad.html#afbc8ebcea53f54cf89cdee4b833b25c7">vve::cl::clQuad</a>
 </li>
+<li>pop()
+: <a class="el" href="classvgjs_1_1_job_queue.html#ac75def9846762fac94026786094f2d0c">vgjs::JobQueue</a>
+, <a class="el" href="classvgjs_1_1_job_queue_f_i_f_o.html#a0dbad31284d8be142d17945ce70c3a83">vgjs::JobQueueFIFO</a>
+, <a class="el" href="classvgjs_1_1_job_queue_lock_free.html#aeeab2bba4763ebc93f360caf33ff2262">vgjs::JobQueueLockFree</a>
+</li>
 <li>pop_back()
 : <a class="el" href="classvve_1_1_ve_vector.html#ae41793541ce4b985c50fa4f140791847">vve::VeVector&lt; T &gt;</a>
 </li>
@@ -236,8 +258,13 @@ $(function() {
 <li>presentModes
 : <a class="el" href="structvh_1_1_vh_swap_chain_support_details.html#a279e48d887cd366d3ef685301847bd75">vh::VhSwapChainSupportDetails</a>
 </li>
+<li>push()
+: <a class="el" href="classvgjs_1_1_job_queue.html#a0041d643a030d3b509a9ca503c5a611e">vgjs::JobQueue</a>
+, <a class="el" href="classvgjs_1_1_job_queue_f_i_f_o.html#a6d9213090a8f6eecf4c8cec6c3f4cba0">vgjs::JobQueueFIFO</a>
+, <a class="el" href="classvgjs_1_1_job_queue_lock_free.html#a38799c243d99ec038f7dbac574fbb9f2">vgjs::JobQueueLockFree</a>
+</li>
 <li>push_back()
-: <a class="el" href="classvve_1_1_ve_vector.html#a252fb3693f6847b20622ab576a69a1e4">vve::VeVector&lt; T &gt;</a>
+: <a class="el" href="classvve_1_1_ve_vector.html#a40b163fd8c848bf1ddf7f88d504b9abc">vve::VeVector&lt; T &gt;</a>
 </li>
 </ul>
 
@@ -253,6 +280,9 @@ $(function() {
 <li>radius
 : <a class="el" href="structvve_1_1cl_1_1cl_sphere.html#af92e4afe24df34f8a36890d875a9a982">vve::cl::clSphere</a>
 </li>
+<li>resetPool()
+: <a class="el" href="classvgjs_1_1_job_memory.html#af31f787e3ac0dc6ced759b7ef9c2097e">vgjs::JobMemory</a>
+</li>
 </ul>
 
 
@@ -263,8 +293,20 @@ $(function() {
 <li>sign
 : <a class="el" href="structvve_1_1cl_1_1cl_halfspace.html#a9f1ada4eeb4abe202ddf6b6ce6602bd7">vve::cl::clHalfspace</a>
 </li>
+<li>steal()
+: <a class="el" href="classvgjs_1_1_job_queue.html#adfb390f0496f17935ffbb8f34eccde31">vgjs::JobQueue</a>
+, <a class="el" href="classvgjs_1_1_job_queue_f_i_f_o.html#aabdc6da218605f4eff94c111b785222c">vgjs::JobQueueFIFO</a>
+, <a class="el" href="classvgjs_1_1_job_queue_lock_free.html#ac32a40938d71839fef87190b179cec08">vgjs::JobQueueLockFree</a>
+</li>
 <li>swap()
 : <a class="el" href="classvve_1_1_ve_vector.html#a83787fef7a7f7947cc6489bcaf0a4ded">vve::VeVector&lt; T &gt;</a>
+</li>
+</ul>
+
+
+<h3><a id="index_t"></a>- t -</h3><ul>
+<li>threadTask()
+: <a class="el" href="classvgjs_1_1_job_system.html#ab1415dcc624f44af41031d338f8cb4a7">vgjs::JobSystem</a>
 </li>
 </ul>
 
@@ -277,13 +319,23 @@ $(function() {
 : <a class="el" href="structvve_1_1cl_1_1cl_frustum.html#a34163c502b62369a1701f7212cb63161">vve::cl::clFrustum</a>
 </li>
 <li>VeVector()
-: <a class="el" href="classvve_1_1_ve_vector.html#a5acca02b45774def7026e78684defb38">vve::VeVector&lt; T &gt;</a>
+: <a class="el" href="classvve_1_1_ve_vector.html#adbdc11caf2f9b98f47f37768475a63bf">vve::VeVector&lt; T &gt;</a>
+</li>
+</ul>
+
+
+<h3><a id="index__7E"></a>- ~ -</h3><ul>
+<li>~Job()
+: <a class="el" href="classvgjs_1_1_job.html#ab588feba7736c518a7299bf322c2b428">vgjs::Job</a>
+</li>
+<li>~JobMemory()
+: <a class="el" href="classvgjs_1_1_job_memory.html#ac6d32df1568b3373dca9ece044ec6000">vgjs::JobMemory</a>
 </li>
 </ul>
 </div><!-- contents -->
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>
-Generated on Fri Mar 27 2020 08:24:03 for Vienna Vulkan Engine by &#160;<a href="http://www.doxygen.org/index.html">
+Generated on Fri Mar 27 2020 17:55:55 for Vienna Vulkan Engine by &#160;<a href="http://www.doxygen.org/index.html">
 <img class="footer" src="doxygen.png" alt="doxygen"/>
 </a> 1.8.15
 </small></address>

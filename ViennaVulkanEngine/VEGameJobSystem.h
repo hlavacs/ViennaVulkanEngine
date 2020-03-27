@@ -280,51 +280,34 @@ namespace vgjs {
 
 		const static std::uint32_t	m_listLength = 2048;	///<Default length of a segment
 		using JobList = std::vector<Job>;
-
-		/**
-		* \brief The JobPool class manages a list of job lists
-		*
-		* This struct manages the memory for new jobs. Since each thread has its own 
-		* JobMemory, there is no need for synchronizing with other threads.
-		* Hence we just use a simple unprotected counter.
-		*
-		*/
-		struct JobPool {
-			uint32_t				jobIndex;		///<index of next job to allocate, or number of jobs to playback
-			std::vector<JobList*>	jobLists;		///<list of Job structures
-
-			JobPool() : jobIndex(0) {	///<JobPool struct constructor
-				jobLists.reserve(10);
-				jobLists.emplace_back(new JobList(m_listLength));
-			};
-
-			~JobPool() {				///<JobPool struct destructor 
-				for (uint32_t i = 0; i < jobLists.size(); i++) {
-					delete jobLists[i];
-				}
-			};
-		};
-
-	private:
-		JobPool m_jobPool;		///<Holds lists of segments, which are job containers
-		vve::VeClock m_clock;	///<A clock for measuring execution times
+		uint32_t				jobIndex;		///<index of next job to allocate, or number of jobs to playback
+		std::vector<JobList*>	jobLists;		///<list of Job structures
+		vve::VeClock m_clock;					///<A clock for measuring execution times
 
 	public:
-		JobMemory() : m_clock("JobMemory", 200) {};	///<JobMemory class constructor
-		~JobMemory() {};							///<JobMemory class destructor
+		JobMemory() : m_clock("JobMemory", 200) {	///<JobMemory class constructor
+			jobLists.reserve(10);
+			jobLists.emplace_back(new JobList(m_listLength));
+
+		};
+		~JobMemory() {								///<JobMemory class destructor
+			for (uint32_t i = 0; i < jobLists.size(); i++) {
+				delete jobLists[i];
+			}
+		};
 	
 		/**
 		* \brief Get a new empty job from the job memory - if necessary add another job list
 		*/
 		Job * getNextJob() {
-			uint32_t index = m_jobPool.jobIndex;	///<Use this index
-			m_jobPool.jobIndex++;					///<increase counter by 1
+			uint32_t index = jobIndex;	///<Use this index
+			jobIndex++;					///<increase counter by 1
 
-			if (index > m_jobPool.jobLists.size() * m_listLength - 1) {		///<do we need a new segment?
-				m_jobPool.jobLists.emplace_back(new JobList(m_listLength));	///<create a new segment
+			if (index > jobLists.size() * m_listLength - 1) {		///<do we need a new segment?
+				jobLists.emplace_back(new JobList(m_listLength));	///<create a new segment
 			}
 
-			return &(*m_jobPool.jobLists[index / m_listLength])[index % m_listLength];	///<get modulus of number of last job list
+			return &(*jobLists[index / m_listLength])[index % m_listLength];	///<get modulus of number of last job list
 		};
 
 		/**
@@ -339,95 +322,129 @@ namespace vgjs {
 			} while ( !pJob->m_available );		///<check whether it is available
 
 			pJob->m_available = false;			///<Mark this job as unavailable
-			pJob->m_nextInQueue = nullptr;		///<
-			pJob->m_onFinishedJob = nullptr;				//no successor Job yet
-			pJob->m_parentJob = nullptr;					//default is no parent
-			pJob->m_repeatJob = false;						//default is no repeat
-			pJob->m_thread_idx = VGJS_NULL_THREAD_IDX;
+			pJob->m_nextInQueue = nullptr;		///<For storing in a queue
+			pJob->m_onFinishedJob = nullptr;				///<no successor Job yet
+			pJob->m_parentJob = nullptr;					///<default is no parent
+			pJob->m_repeatJob = false;						///<default is no repeat
+			pJob->m_thread_idx = VGJS_NULL_THREAD_IDX;		///<can run oon any thread
 			pJob->m_thread_label = VGJS_NULL_THREAD_IDX;
 			pJob->m_exec_thread = VGJS_NULL_THREAD_IDX;
 			//m_clock.stop();
 			return pJob;
 		};
 
-		//---------------------------------------------------------------------------
-		//reset index for new frame, start with 0 again
+		/**
+		* \brief Reset index for new frame, start with 0 again
+		*/
 		void resetPool() { 
-			m_jobPool.jobIndex = 0;
-		};
-
-		JobPool* getPoolPointer() {
-			return &m_jobPool;
+			jobIndex = 0;
 		};
 	};
 
 
-	//---------------------------------------------------------------------------
-	//queue class
-	//will be changed for lock free queues
+	/**
+	* \brief Base class for job queues, provides a single interface
+	*/
 	class JobQueue {
 	protected:
-		vve::VeClock m_clock;
+		vve::VeClock m_clock;	///<Clock for measuring time
+
 	public:
-		JobQueue() : m_clock("Job Queue", 200) {};
-		virtual void push(Job * pJob) = 0;
-		virtual Job * pop() = 0;
-		virtual Job *steal() = 0;
+		JobQueue() : m_clock("Job Queue", 200) {};	///<JobQueue class constructor
+		virtual void push(Job * pJob) = 0;	///<Pushes a new job onto the queue
+		virtual Job * pop() = 0;			///<Pop the next job from the queue
+		virtual Job *steal() = 0;			///<Steal a job by another thread
 	};
 
 
-	//---------------------------------------------------------------------------
-	//queue class
-	//will be changed for lock free queues
+	/**
+	*
+	* \brief A simple FIFO queue for thread local operation.
+	*
+	* This queue is not synchronized, so it can only run thread local. 
+	* I.e., it belongs to a thread and only this thread is allowed to access it.
+	*
+	*/
 	class JobQueueFIFO : public JobQueue {
-		std::queue<Job*> m_queue;	//conventional queue by now
+		std::queue<Job*> m_queue;	///<Conventional STL queue by now
 
 	public:
 		//---------------------------------------------------------------------------
-		JobQueueFIFO() {};
+		JobQueueFIFO() {};	///<JobQueueFIFO class constructor
 
-		//---------------------------------------------------------------------------
+		/**
+		*
+		* \brief Pushes a job onto the queue
+		*
+		* \param[in] pJob The job to be pushed into the queue
+		*
+		*/
 		void push(Job * pJob) {
 			m_queue.push(pJob);
 		};
 
-		//---------------------------------------------------------------------------
+		/**
+		*
+		* \brief Pops a job from the queue
+		*
+		* \returns a job or nullptr
+		*
+		*/
 		Job * pop() {
-			if (m_queue.size() == 0) {
-				return nullptr;
+			if (m_queue.size() == 0) {		///<if no jobs available
+				return nullptr;				///<return nullptr
 			};
-			Job* pJob = m_queue.front();
-			m_queue.pop();
-			return pJob;
+			Job* pJob = m_queue.front();	///<get next job from front
+			m_queue.pop();					///<delete it from the queue
+			return pJob;					///<return it
 		};
 
-		//---------------------------------------------------------------------------
+		/**
+		*
+		* \brief Another thread wants to steal a job (should never happen with this queue)
+		*
+		* \returns a job or nullptr
+		*
+		*/
 		Job *steal() {
 			return pop();
 		};
 	};
 
 
-
-
-	//---------------------------------------------------------------------------
-	//queue class
-	//lock free queue
+	/**
+	* \brief A lockfree LIFO stack
+	*
+	* This queue can be accessed by any thread, it is synchronized by STL CAS operations.
+	* However it is only a LIFO stack, not a FIFO queue.
+	*
+	*/
 	class JobQueueLockFree : public JobQueue {
 
-		std::atomic<Job *> m_pHead = nullptr;
+		std::atomic<Job *> m_pHead = nullptr;	///<Head of the stack
 
 	public:
-		//---------------------------------------------------------------------------
-		JobQueueLockFree() {};
+		JobQueueLockFree() {};	///<JobQueueLockFree class constructor
 
-		//---------------------------------------------------------------------------
+		/**
+		*
+		* \brief Pushes a job onto the queue
+		*
+		* \param[in] pJob The job to be pushed into the queue
+		*
+		*/
 		void push(Job * pJob) {
 			pJob->m_nextInQueue = m_pHead.load(std::memory_order_relaxed);
 			while (! std::atomic_compare_exchange_weak(&m_pHead, &pJob->m_nextInQueue, pJob) ) {};
 		};
 
-		//---------------------------------------------------------------------------
+		/**
+		*
+		* \brief Pops a job from the queue
+		*
+		* \returns a job or nullptr
+		*
+		*/
 		Job * pop() {
 			Job * head = m_pHead.load(std::memory_order_relaxed);
 			if (head == nullptr) return nullptr;
@@ -435,7 +452,13 @@ namespace vgjs {
 			return head;
 		};
 
-		//---------------------------------------------------------------------------
+		/**
+		*
+		* \brief Another thread wants to steal a job 
+		*
+		* \returns a job or nullptr
+		*
+		*/
 		Job *steal() {
 			return pop();
 		};
@@ -443,7 +466,14 @@ namespace vgjs {
 
 
 
-	//---------------------------------------------------------------------------
+	/**
+	*
+	* \brief The main JobSystem class manages the whole VGJS job system
+	*
+	* The JobSystem starts N threads and provides them with data structures.
+	* It can add new jobs, and wait until they are done.
+	*
+	*/
 	class JobSystem {
 		friend Job;
 
@@ -466,55 +496,60 @@ namespace vgjs {
 		std::condition_variable				m_mainThreadCondVar;	///<used for waking up main tread
 
 	public:
-		vve::VeClock						m_clock;
+		vve::VeClock						m_clock;				///<Clock for time measurements
 
-		//---------------------------------------------------------------------------
-		// function each thread performs
+		/**
+		*
+		* \brief every thread runs in this function
+		*
+		* \param[in] threadIndex Number of this thread
+		*
+		*/
 		void threadTask( uint32_t threadIndex = 0 ) {
-			thread_local uint32_t memory_reset_counter = 0;
-			static std::atomic<uint32_t> threadIndexCounter = 0;
+			thread_local uint32_t memory_reset_counter = 0;			///<Used for resetting the pool
+			static std::atomic<uint32_t> threadIndexCounter = 0;	///<Counted up when started
 
-			m_thread_index = threadIndex;
+			m_thread_index = threadIndex;	///<Remember your own thread number
 
-			threadIndexCounter++;
-			while(threadIndexCounter.load() < m_threadCount )
+			threadIndexCounter++;			///<count up at start
+			while(threadIndexCounter.load() < m_threadCount )	///<Continuous only if all threads are running
 				std::this_thread::sleep_for(std::chrono::nanoseconds(10));
 
-			uint32_t counter = 1;
+			//uint32_t counter = 1;
 
-			while (!m_terminate) {
-				m_numLoops[threadIndex]++;
+			while (!m_terminate) {			///<Run until the job system is terminated
+				m_numLoops[threadIndex]++;	///<Count up the number of loops run
 
-				if (m_memory_reset_counter > memory_reset_counter) {
+				if (m_memory_reset_counter > memory_reset_counter) { ///<Possibly reset your job memory
 					m_job_memory[m_thread_index]->resetPool();
 					memory_reset_counter = m_memory_reset_counter;
 				}
 
+				if (m_terminate) break;	///<Test for termination
+
+				Job * pJob = m_jobQueuesLocal[threadIndex]->pop();	///<Try to get a job from local queue
+
 				if (m_terminate) break;
 
-				Job * pJob = m_jobQueuesLocal[threadIndex]->pop();
-
-				if (m_terminate) break;
-
-				if( pJob == nullptr ) 
-					pJob = m_jobQueuesLocalFIFO[threadIndex]->pop();
+				if( pJob == nullptr )			///<If no job found
+					pJob = m_jobQueuesLocalFIFO[threadIndex]->pop(); ///<Try to get a job from local FIFO queue
 
 				if (m_terminate) break;
 
 				if (pJob == nullptr)
-					pJob = m_jobQueues[threadIndex]->pop();
+					pJob = m_jobQueues[threadIndex]->pop(); ///<Try to get a job from the general job queue
 
 				if (m_terminate) break;
 
-				uint32_t tsize = (uint32_t)m_threadCount;
-				if (pJob == nullptr && tsize > 1) {
-					uint32_t idx = std::rand() % tsize;
-					uint32_t max = tsize;
+				//uint32_t tsize = (uint32_t)m_threadCount;	///<If non popped 
+				if (pJob == nullptr && m_threadCount > 1) {	///<try to steal one from another thread
+					uint32_t idx = m_threadCount / 2;		///< std::rand() % tsize;
+					uint32_t max = m_threadCount;			///<Max number of tries to steal one
 
-					while (pJob == nullptr) {
+					while (pJob == nullptr) {				///<loop until found or retry own 
 						if (idx != threadIndex)
-							pJob = m_jobQueues[idx]->steal();
-						idx = (idx+1) % tsize;
+							pJob = m_jobQueues[idx]->steal();	///<Try to steal one
+						idx = (idx+1) % m_threadCount;
 						max--;
 						if (max == 0) break;
 						if (m_terminate) break;
@@ -523,17 +558,17 @@ namespace vgjs {
 
 				if (m_terminate) break;
 
-				if (pJob != nullptr) {
+				if (pJob != nullptr) {	///<If found a job
 					//std::cout << "start job on thread idx " << threadIndex << " with label " << pJob->m_thread_label << std::endl;
 
-					m_jobPointers[threadIndex] = pJob;						//make pointer to the Job structure accessible!
-					pJob->t1 = std::chrono::high_resolution_clock::now();	//time of execution
-					(*pJob)();												//run the job
-					pJob->t2 = std::chrono::high_resolution_clock::now();	//time of finishing
-					pJob->m_exec_thread = threadIndex;						//thread idx this job was executed on
+					m_jobPointers[threadIndex] = pJob;						///<make pointer to the Job structure accessible!
+					pJob->t1 = std::chrono::high_resolution_clock::now();	///<time of execution
+					(*pJob)();												///<run the job
+					pJob->t2 = std::chrono::high_resolution_clock::now();	///<time of finishing
+					pJob->m_exec_thread = threadIndex;						///<thread idx this job was executed on
 				}
 				else {
-					m_numMisses[threadIndex]++;
+					m_numMisses[threadIndex]++;	///<Increase miss counter, possibly sleep or wait for a signal
 					//std::this_thread::sleep_for(std::chrono::nanoseconds(1));
 					//std::this_thread::yield();
 				};

@@ -1,5 +1,6 @@
 var searchData=
 [
-  ['pop_5fback',['pop_back',['../classvve_1_1_ve_vector.html#ae41793541ce4b985c50fa4f140791847',1,'vve::VeVector']]],
-  ['push_5fback',['push_back',['../classvve_1_1_ve_vector.html#a252fb3693f6847b20622ab576a69a1e4',1,'vve::VeVector::push_back(T &amp;entry)'],['../classvve_1_1_ve_vector.html#a40b163fd8c848bf1ddf7f88d504b9abc',1,'vve::VeVector::push_back(T &amp;&amp;entry)']]]
+  ['operator_3c_3c',['operator&lt;&lt;',['../namespacevve.html#a2d853aa11d2bae66383eb0b97ca40d69',1,'vve::operator&lt;&lt;(std::ostream &amp;stream, VeHandlePair &amp;pair)'],['../namespacevve.html#a53f70c456088913feb0aab9f11d2158d',1,'vve::operator&lt;&lt;(std::ostream &amp;stream, VeIndexPair &amp;pair)'],['../namespacevve.html#a32b02de697a5488ff4fdf10851f5f402',1,'vve::operator&lt;&lt;(std::ostream &amp;stream, VeHandleTriple &amp;triple)'],['../namespacevve.html#acf4100751e126a506ee5d359cf9bd86b',1,'vve::operator&lt;&lt;(std::ostream &amp;stream, VeIndexTriple &amp;triple)']]],
+  ['operator_3d',['operator=',['../classvve_1_1_ve_vector.html#ac2273d910b0fd627adab6570eedf3d6c',1,'vve::VeVector']]],
+  ['operator_5b_5d',['operator[]',['../classvve_1_1_ve_vector.html#a422c3aaa31ac35a70ca8914cd1592b36',1,'vve::VeVector::operator[](size_type index)'],['../classvve_1_1_ve_vector.html#ac358b5c3a95307268cac802f35850d25',1,'vve::VeVector::operator[](size_type index) const']]]
 ];
