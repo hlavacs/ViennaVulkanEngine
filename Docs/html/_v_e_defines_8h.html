@@ -91,10 +91,10 @@ $(function() {
 <code>#include &lt;iomanip&gt;</code><br />
 <code>#include &lt;typeinfo&gt;</code><br />
 <code>#include &quot;<a class="el" href="_v_e_doxygen_8h_source.html">VEDoxygen.h</a>&quot;</code><br />
-<code>#include &quot;VEUtilClock.h&quot;</code><br />
-<code>#include &quot;VEMemHeap.h&quot;</code><br />
+<code>#include &quot;<a class="el" href="_v_e_util_clock_8h_source.html">VEUtilClock.h</a>&quot;</code><br />
+<code>#include &quot;<a class="el" href="_v_e_mem_heap_8h_source.html">VEMemHeap.h</a>&quot;</code><br />
 <code>#include &quot;<a class="el" href="_v_e_mem_vector_8h_source.html">VEMemVector.h</a>&quot;</code><br />
-<code>#include &quot;VEMemMap.h&quot;</code><br />
+<code>#include &quot;<a class="el" href="_v_e_mem_map_8h_source.html">VEMemMap.h</a>&quot;</code><br />
 <code>#include &quot;<a class="el" href="_v_e_game_job_system_8h_source.html">VEGameJobSystem.h</a>&quot;</code><br />
 <code>#include &quot;<a class="el" href="_v_e_mem_table_8h_source.html">VEMemTable.h</a>&quot;</code><br />
 <code>#include &quot;glm/glm.hpp&quot;</code><br />
@@ -102,8 +102,8 @@ $(function() {
 <code>#include &quot;glm/gtx/hash.hpp&quot;</code><br />
 <code>#include &quot;glm/gtx/transform.hpp&quot;</code><br />
 <code>#include &lt;math.h&gt;</code><br />
-<code>#include &quot;stb_image.h&quot;</code><br />
-<code>#include &quot;stb_image_write.h&quot;</code><br />
+<code>#include &quot;<a class="el" href="stb__image_8h_source.html">stb_image.h</a>&quot;</code><br />
+<code>#include &quot;<a class="el" href="stb__image__write_8h_source.html">stb_image_write.h</a>&quot;</code><br />
 <code>#include &lt;irrKlang.h&gt;</code><br />
 <code>#include &lt;GLFW/glfw3.h&gt;</code><br />
 <code>#include &quot;vulkan/vulkan.h&quot;</code><br />
@@ -128,61 +128,46 @@ Namespaces</h2></td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="define-members"></a>
 Macros</h2></td></tr>
-<tr class="memitem:a26f4cc9688ea3e5bb203c80263a18d7d"><td class="memItemLeft" align="right" valign="top"><a id="a26f4cc9688ea3e5bb203c80263a18d7d"></a>
-#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="_v_e_defines_8h.html#a26f4cc9688ea3e5bb203c80263a18d7d">VE_ENABLE_MULTITHREADING</a></td></tr>
-<tr class="memdesc:a26f4cc9688ea3e5bb203c80263a18d7d"><td class="mdescLeft">&#160;</td><td class="mdescRight">if this is defined then the engine runs in multithreaded mode. If not, in single thread mode <br /></td></tr>
+<tr class="memitem:a26f4cc9688ea3e5bb203c80263a18d7d"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="_v_e_defines_8h.html#a26f4cc9688ea3e5bb203c80263a18d7d">VE_ENABLE_MULTITHREADING</a></td></tr>
+<tr class="memdesc:a26f4cc9688ea3e5bb203c80263a18d7d"><td class="mdescLeft">&#160;</td><td class="mdescRight">if this is defined then the engine runs in multithreaded mode. If not, in single thread mode  <a href="#a26f4cc9688ea3e5bb203c80263a18d7d">More...</a><br /></td></tr>
 <tr class="separator:a26f4cc9688ea3e5bb203c80263a18d7d"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a816ab7d5c2ce1f0a01216042837beb93"><td class="memItemLeft" align="right" valign="top"><a id="a816ab7d5c2ce1f0a01216042837beb93"></a>
-#define&#160;</td><td class="memItemRight" valign="bottom"><b>GLM_FORCE_RADIANS</b></td></tr>
+<tr class="memitem:a816ab7d5c2ce1f0a01216042837beb93"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="_v_e_defines_8h.html#a816ab7d5c2ce1f0a01216042837beb93">GLM_FORCE_RADIANS</a></td></tr>
 <tr class="separator:a816ab7d5c2ce1f0a01216042837beb93"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aa53e0967978ad7a8792f6961156ec968"><td class="memItemLeft" align="right" valign="top"><a id="aa53e0967978ad7a8792f6961156ec968"></a>
-#define&#160;</td><td class="memItemRight" valign="bottom"><b>GLM_FORCE_DEPTH_ZERO_TO_ONE</b></td></tr>
+<tr class="memitem:aa53e0967978ad7a8792f6961156ec968"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="_v_e_defines_8h.html#aa53e0967978ad7a8792f6961156ec968">GLM_FORCE_DEPTH_ZERO_TO_ONE</a></td></tr>
 <tr class="separator:aa53e0967978ad7a8792f6961156ec968"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:abd75661fe7969e19439052a5f69ba5d1"><td class="memItemLeft" align="right" valign="top"><a id="abd75661fe7969e19439052a5f69ba5d1"></a>
-#define&#160;</td><td class="memItemRight" valign="bottom"><b>GLM_ENABLE_EXPERIMENTAL</b></td></tr>
+<tr class="memitem:abd75661fe7969e19439052a5f69ba5d1"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="_v_e_defines_8h.html#abd75661fe7969e19439052a5f69ba5d1">GLM_ENABLE_EXPERIMENTAL</a></td></tr>
 <tr class="separator:abd75661fe7969e19439052a5f69ba5d1"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a525335710b53cb064ca56b936120431e"><td class="memItemLeft" align="right" valign="top"><a id="a525335710b53cb064ca56b936120431e"></a>
-#define&#160;</td><td class="memItemRight" valign="bottom"><b>_USE_MATH_DEFINES</b></td></tr>
+<tr class="memitem:a525335710b53cb064ca56b936120431e"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="_v_e_defines_8h.html#a525335710b53cb064ca56b936120431e">_USE_MATH_DEFINES</a></td></tr>
 <tr class="separator:a525335710b53cb064ca56b936120431e"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ab91f325a54d3e35fe831a86d6382c2a9"><td class="memItemLeft" align="right" valign="top"><a id="ab91f325a54d3e35fe831a86d6382c2a9"></a>
-#define&#160;</td><td class="memItemRight" valign="bottom"><b>GLFW_INCLUDE_VULKAN</b></td></tr>
+<tr class="memitem:ab91f325a54d3e35fe831a86d6382c2a9"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="_v_e_defines_8h.html#ab91f325a54d3e35fe831a86d6382c2a9">GLFW_INCLUDE_VULKAN</a></td></tr>
 <tr class="separator:ab91f325a54d3e35fe831a86d6382c2a9"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a95b1c7528a1c18cffad6ec26332213a5"><td class="memItemLeft" align="right" valign="top"><a id="a95b1c7528a1c18cffad6ec26332213a5"></a>
-#define&#160;</td><td class="memItemRight" valign="bottom"><b>VMA_STATIC_VULKAN_FUNCTIONS</b>&#160;&#160;&#160;1</td></tr>
+<tr class="memitem:a95b1c7528a1c18cffad6ec26332213a5"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="_v_e_defines_8h.html#a95b1c7528a1c18cffad6ec26332213a5">VMA_STATIC_VULKAN_FUNCTIONS</a>&#160;&#160;&#160;1</td></tr>
 <tr class="separator:a95b1c7528a1c18cffad6ec26332213a5"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a2a624a765564411c0db3a2bee940f8bc"><td class="memItemLeft" align="right" valign="top"><a id="a2a624a765564411c0db3a2bee940f8bc"></a>
-#define&#160;</td><td class="memItemRight" valign="bottom"><b>extern</b></td></tr>
+<tr class="memitem:a2a624a765564411c0db3a2bee940f8bc"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="_v_e_defines_8h.html#a2a624a765564411c0db3a2bee940f8bc">extern</a></td></tr>
 <tr class="separator:a2a624a765564411c0db3a2bee940f8bc"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="typedef-members"></a>
 Typedefs</h2></td></tr>
-<tr class="memitem:a08b50fce7713104897496c0db0bde197"><td class="memItemLeft" align="right" valign="top"><a id="a08b50fce7713104897496c0db0bde197"></a>
-typedef uint32_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacevve.html#a08b50fce7713104897496c0db0bde197">vve::VeCount</a></td></tr>
-<tr class="memdesc:a08b50fce7713104897496c0db0bde197"><td class="mdescLeft">&#160;</td><td class="mdescRight">for counting objects <br /></td></tr>
+<tr class="memitem:a08b50fce7713104897496c0db0bde197"><td class="memItemLeft" align="right" valign="top">typedef uint32_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacevve.html#a08b50fce7713104897496c0db0bde197">vve::VeCount</a></td></tr>
+<tr class="memdesc:a08b50fce7713104897496c0db0bde197"><td class="mdescLeft">&#160;</td><td class="mdescRight">for counting objects  <a href="namespacevve.html#a08b50fce7713104897496c0db0bde197">More...</a><br /></td></tr>
 <tr class="separator:a08b50fce7713104897496c0db0bde197"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a1eb8d816d3112a806cbcd809004a5266"><td class="memItemLeft" align="right" valign="top"><a id="a1eb8d816d3112a806cbcd809004a5266"></a>
-typedef uint32_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacevve.html#a1eb8d816d3112a806cbcd809004a5266">vve::VeIndex</a></td></tr>
-<tr class="memdesc:a1eb8d816d3112a806cbcd809004a5266"><td class="mdescLeft">&#160;</td><td class="mdescRight">for indexing in lage data collections <br /></td></tr>
+<tr class="memitem:a1eb8d816d3112a806cbcd809004a5266"><td class="memItemLeft" align="right" valign="top">typedef uint32_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacevve.html#a1eb8d816d3112a806cbcd809004a5266">vve::VeIndex</a></td></tr>
+<tr class="memdesc:a1eb8d816d3112a806cbcd809004a5266"><td class="mdescLeft">&#160;</td><td class="mdescRight">for indexing in lage data collections  <a href="namespacevve.html#a1eb8d816d3112a806cbcd809004a5266">More...</a><br /></td></tr>
 <tr class="separator:a1eb8d816d3112a806cbcd809004a5266"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a502c75a2105d9a033d72d9f1d00d66f8"><td class="memItemLeft" align="right" valign="top"><a id="a502c75a2105d9a033d72d9f1d00d66f8"></a>
-using&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacevve.html#a502c75a2105d9a033d72d9f1d00d66f8">vve::VeIndexPair</a> = std::pair&lt; VeIndex, VeIndex &gt;</td></tr>
-<tr class="memdesc:a502c75a2105d9a033d72d9f1d00d66f8"><td class="mdescLeft">&#160;</td><td class="mdescRight">a pair of indices <br /></td></tr>
+<tr class="memitem:a502c75a2105d9a033d72d9f1d00d66f8"><td class="memItemLeft" align="right" valign="top">using&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacevve.html#a502c75a2105d9a033d72d9f1d00d66f8">vve::VeIndexPair</a> = std::pair&lt; VeIndex, VeIndex &gt;</td></tr>
+<tr class="memdesc:a502c75a2105d9a033d72d9f1d00d66f8"><td class="mdescLeft">&#160;</td><td class="mdescRight">a pair of indices  <a href="namespacevve.html#a502c75a2105d9a033d72d9f1d00d66f8">More...</a><br /></td></tr>
 <tr class="separator:a502c75a2105d9a033d72d9f1d00d66f8"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aaecf99f6c770e7c50c506d53eb7d7280"><td class="memItemLeft" align="right" valign="top"><a id="aaecf99f6c770e7c50c506d53eb7d7280"></a>
-using&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacevve.html#aaecf99f6c770e7c50c506d53eb7d7280">vve::VeIndexTriple</a> = std::tuple&lt; VeIndex, VeIndex, VeIndex &gt;</td></tr>
-<tr class="memdesc:aaecf99f6c770e7c50c506d53eb7d7280"><td class="mdescLeft">&#160;</td><td class="mdescRight">a triplet of indices <br /></td></tr>
+<tr class="memitem:aaecf99f6c770e7c50c506d53eb7d7280"><td class="memItemLeft" align="right" valign="top">using&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacevve.html#aaecf99f6c770e7c50c506d53eb7d7280">vve::VeIndexTriple</a> = std::tuple&lt; VeIndex, VeIndex, VeIndex &gt;</td></tr>
+<tr class="memdesc:aaecf99f6c770e7c50c506d53eb7d7280"><td class="mdescLeft">&#160;</td><td class="mdescRight">a triplet of indices  <a href="namespacevve.html#aaecf99f6c770e7c50c506d53eb7d7280">More...</a><br /></td></tr>
 <tr class="separator:aaecf99f6c770e7c50c506d53eb7d7280"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:af8d69bd6cc8b81ae8d99808df878280a"><td class="memItemLeft" align="right" valign="top"><a id="af8d69bd6cc8b81ae8d99808df878280a"></a>
-typedef uint64_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacevve.html#af8d69bd6cc8b81ae8d99808df878280a">vve::VeHandle</a></td></tr>
-<tr class="memdesc:af8d69bd6cc8b81ae8d99808df878280a"><td class="mdescLeft">&#160;</td><td class="mdescRight">64 bit handle for uniquely identifying objects in tables <br /></td></tr>
+<tr class="memitem:af8d69bd6cc8b81ae8d99808df878280a"><td class="memItemLeft" align="right" valign="top">typedef uint64_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacevve.html#af8d69bd6cc8b81ae8d99808df878280a">vve::VeHandle</a></td></tr>
+<tr class="memdesc:af8d69bd6cc8b81ae8d99808df878280a"><td class="mdescLeft">&#160;</td><td class="mdescRight">64 bit handle for uniquely identifying objects in tables  <a href="namespacevve.html#af8d69bd6cc8b81ae8d99808df878280a">More...</a><br /></td></tr>
 <tr class="separator:af8d69bd6cc8b81ae8d99808df878280a"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a41862a165b0d0713103d08beb17f96cb"><td class="memItemLeft" align="right" valign="top"><a id="a41862a165b0d0713103d08beb17f96cb"></a>
-using&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacevve.html#a41862a165b0d0713103d08beb17f96cb">vve::VeHandlePair</a> = std::pair&lt; VeHandle, VeHandle &gt;</td></tr>
-<tr class="memdesc:a41862a165b0d0713103d08beb17f96cb"><td class="mdescLeft">&#160;</td><td class="mdescRight">a pair of handles <br /></td></tr>
+<tr class="memitem:a41862a165b0d0713103d08beb17f96cb"><td class="memItemLeft" align="right" valign="top">using&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacevve.html#a41862a165b0d0713103d08beb17f96cb">vve::VeHandlePair</a> = std::pair&lt; VeHandle, VeHandle &gt;</td></tr>
+<tr class="memdesc:a41862a165b0d0713103d08beb17f96cb"><td class="mdescLeft">&#160;</td><td class="mdescRight">a pair of handles  <a href="namespacevve.html#a41862a165b0d0713103d08beb17f96cb">More...</a><br /></td></tr>
 <tr class="separator:a41862a165b0d0713103d08beb17f96cb"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a85f8d99c311c41f691c473e8c93f2cef"><td class="memItemLeft" align="right" valign="top"><a id="a85f8d99c311c41f691c473e8c93f2cef"></a>
-using&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacevve.html#a85f8d99c311c41f691c473e8c93f2cef">vve::VeHandleTriple</a> = std::tuple&lt; VeHandle, VeHandle, VeHandle &gt;</td></tr>
-<tr class="memdesc:a85f8d99c311c41f691c473e8c93f2cef"><td class="mdescLeft">&#160;</td><td class="mdescRight">a triplet of handles <br /></td></tr>
+<tr class="memitem:a85f8d99c311c41f691c473e8c93f2cef"><td class="memItemLeft" align="right" valign="top">using&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacevve.html#a85f8d99c311c41f691c473e8c93f2cef">vve::VeHandleTriple</a> = std::tuple&lt; VeHandle, VeHandle, VeHandle &gt;</td></tr>
+<tr class="memdesc:a85f8d99c311c41f691c473e8c93f2cef"><td class="mdescLeft">&#160;</td><td class="mdescRight">a triplet of handles  <a href="namespacevve.html#a85f8d99c311c41f691c473e8c93f2cef">More...</a><br /></td></tr>
 <tr class="separator:a85f8d99c311c41f691c473e8c93f2cef"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="func-members"></a>
@@ -205,25 +190,138 @@ Variables</h2></td></tr>
 <tr class="memitem:a04407d8f74610f3ec419f02a1c1264d2"><td class="memItemLeft" align="right" valign="top">constexpr VeIndex&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacevve.html#a04407d8f74610f3ec419f02a1c1264d2">vve::VE_NULL_INDEX</a></td></tr>
 <tr class="memdesc:a04407d8f74610f3ec419f02a1c1264d2"><td class="mdescLeft">&#160;</td><td class="mdescRight">a null index pointing nowhere  <a href="namespacevve.html#a04407d8f74610f3ec419f02a1c1264d2">More...</a><br /></td></tr>
 <tr class="separator:a04407d8f74610f3ec419f02a1c1264d2"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a259ef5ce98658efd1e194f5c99c58343"><td class="memItemLeft" align="right" valign="top"><a id="a259ef5ce98658efd1e194f5c99c58343"></a>
-constexpr VeIndex&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacevve.html#a259ef5ce98658efd1e194f5c99c58343">vve::VE_MAX_INDEX</a> = VE_NULL_INDEX - 1</td></tr>
-<tr class="memdesc:a259ef5ce98658efd1e194f5c99c58343"><td class="mdescLeft">&#160;</td><td class="mdescRight">largest possible index <br /></td></tr>
+<tr class="memitem:a259ef5ce98658efd1e194f5c99c58343"><td class="memItemLeft" align="right" valign="top">constexpr VeIndex&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacevve.html#a259ef5ce98658efd1e194f5c99c58343">vve::VE_MAX_INDEX</a> = VE_NULL_INDEX - 1</td></tr>
+<tr class="memdesc:a259ef5ce98658efd1e194f5c99c58343"><td class="mdescLeft">&#160;</td><td class="mdescRight">largest possible index  <a href="namespacevve.html#a259ef5ce98658efd1e194f5c99c58343">More...</a><br /></td></tr>
 <tr class="separator:a259ef5ce98658efd1e194f5c99c58343"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aa38907c72d81417800c89834f3cf06e3"><td class="memItemLeft" align="right" valign="top">constexpr VeHandle&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacevve.html#aa38907c72d81417800c89834f3cf06e3">vve::VE_NULL_HANDLE</a></td></tr>
 <tr class="memdesc:aa38907c72d81417800c89834f3cf06e3"><td class="mdescLeft">&#160;</td><td class="mdescRight">an empty handle pointing to no objects  <a href="namespacevve.html#aa38907c72d81417800c89834f3cf06e3">More...</a><br /></td></tr>
 <tr class="separator:aa38907c72d81417800c89834f3cf06e3"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ada928a4fb52b0857a242e0e517998ab5"><td class="memItemLeft" align="right" valign="top"><a id="ada928a4fb52b0857a242e0e517998ab5"></a>
-constexpr VeHandle&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacevve.html#ada928a4fb52b0857a242e0e517998ab5">vve::VE_MAX_HANDLE</a> = VE_NULL_HANDLE - 1</td></tr>
-<tr class="memdesc:ada928a4fb52b0857a242e0e517998ab5"><td class="mdescLeft">&#160;</td><td class="mdescRight">the maximum handle possible <br /></td></tr>
+<tr class="memitem:ada928a4fb52b0857a242e0e517998ab5"><td class="memItemLeft" align="right" valign="top">constexpr VeHandle&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacevve.html#ada928a4fb52b0857a242e0e517998ab5">vve::VE_MAX_HANDLE</a> = VE_NULL_HANDLE - 1</td></tr>
+<tr class="memdesc:ada928a4fb52b0857a242e0e517998ab5"><td class="mdescLeft">&#160;</td><td class="mdescRight">the maximum handle possible  <a href="namespacevve.html#ada928a4fb52b0857a242e0e517998ab5">More...</a><br /></td></tr>
 <tr class="separator:ada928a4fb52b0857a242e0e517998ab5"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <div class="textblock"><p>All includes of external sources are funneled through this include file. </p>
 <p>This is the basic include file of all engine parts. It includes external include files, defines all basic data types, and defines operators for output and hashing for them. </p>
-</div></div><!-- contents -->
+</div><h2 class="groupheader">Macro Definition Documentation</h2>
+<a id="a525335710b53cb064ca56b936120431e"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a525335710b53cb064ca56b936120431e">&#9670;&nbsp;</a></span>_USE_MATH_DEFINES</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">#define _USE_MATH_DEFINES</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="a2a624a765564411c0db3a2bee940f8bc"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a2a624a765564411c0db3a2bee940f8bc">&#9670;&nbsp;</a></span>extern</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">#define extern</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="ab91f325a54d3e35fe831a86d6382c2a9"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ab91f325a54d3e35fe831a86d6382c2a9">&#9670;&nbsp;</a></span>GLFW_INCLUDE_VULKAN</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">#define GLFW_INCLUDE_VULKAN</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="abd75661fe7969e19439052a5f69ba5d1"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#abd75661fe7969e19439052a5f69ba5d1">&#9670;&nbsp;</a></span>GLM_ENABLE_EXPERIMENTAL</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">#define GLM_ENABLE_EXPERIMENTAL</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="aa53e0967978ad7a8792f6961156ec968"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aa53e0967978ad7a8792f6961156ec968">&#9670;&nbsp;</a></span>GLM_FORCE_DEPTH_ZERO_TO_ONE</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">#define GLM_FORCE_DEPTH_ZERO_TO_ONE</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="a816ab7d5c2ce1f0a01216042837beb93"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a816ab7d5c2ce1f0a01216042837beb93">&#9670;&nbsp;</a></span>GLM_FORCE_RADIANS</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">#define GLM_FORCE_RADIANS</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="a26f4cc9688ea3e5bb203c80263a18d7d"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a26f4cc9688ea3e5bb203c80263a18d7d">&#9670;&nbsp;</a></span>VE_ENABLE_MULTITHREADING</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">#define VE_ENABLE_MULTITHREADING</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>if this is defined then the engine runs in multithreaded mode. If not, in single thread mode </p>
+
+</div>
+</div>
+<a id="a95b1c7528a1c18cffad6ec26332213a5"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a95b1c7528a1c18cffad6ec26332213a5">&#9670;&nbsp;</a></span>VMA_STATIC_VULKAN_FUNCTIONS</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">#define VMA_STATIC_VULKAN_FUNCTIONS&#160;&#160;&#160;1</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+</div>
+</div>
+</div><!-- contents -->
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>
-Generated on Fri Mar 27 2020 17:55:54 for Vienna Vulkan Engine by &#160;<a href="http://www.doxygen.org/index.html">
+Generated on Fri Mar 27 2020 22:12:24 for Vienna Vulkan Engine by &#160;<a href="http://www.doxygen.org/index.html">
 <img class="footer" src="doxygen.png" alt="doxygen"/>
 </a> 1.8.15
 </small></address>

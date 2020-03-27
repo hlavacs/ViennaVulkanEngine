@@ -75,6 +75,8 @@ $(function() {
 <div class="title">vve::custom_alloc&lt; T &gt; Class Template Reference</div>  </div>
 </div><!--header-->
 <div class="contents">
+
+<p><code>#include &lt;<a class="el" href="_v_e_mem_heap_8h_source.html">VEMemHeap.h</a>&gt;</code></p>
 <div class="dynheader">
 Inheritance diagram for vve::custom_alloc&lt; T &gt;:</div>
 <div class="dyncontent">
@@ -89,82 +91,563 @@ Classes</h2></td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-types"></a>
 Public Types</h2></td></tr>
-<tr class="memitem:afa55e09428ede5b21ccef38bc9bc3329"><td class="memItemLeft" align="right" valign="top"><a id="afa55e09428ede5b21ccef38bc9bc3329"></a>
-typedef size_t&#160;</td><td class="memItemRight" valign="bottom"><b>size_type</b></td></tr>
+<tr class="memitem:afa55e09428ede5b21ccef38bc9bc3329"><td class="memItemLeft" align="right" valign="top">typedef size_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classvve_1_1custom__alloc.html#afa55e09428ede5b21ccef38bc9bc3329">size_type</a></td></tr>
 <tr class="separator:afa55e09428ede5b21ccef38bc9bc3329"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ad060c56eb2e651d9298cd1b7bc96e70c"><td class="memItemLeft" align="right" valign="top"><a id="ad060c56eb2e651d9298cd1b7bc96e70c"></a>
-typedef ptrdiff_t&#160;</td><td class="memItemRight" valign="bottom"><b>difference_type</b></td></tr>
+<tr class="memitem:ad060c56eb2e651d9298cd1b7bc96e70c"><td class="memItemLeft" align="right" valign="top">typedef ptrdiff_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classvve_1_1custom__alloc.html#ad060c56eb2e651d9298cd1b7bc96e70c">difference_type</a></td></tr>
 <tr class="separator:ad060c56eb2e651d9298cd1b7bc96e70c"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aa5a326e0e528e295004260b6b21bbdc6"><td class="memItemLeft" align="right" valign="top"><a id="aa5a326e0e528e295004260b6b21bbdc6"></a>
-typedef T *&#160;</td><td class="memItemRight" valign="bottom"><b>pointer</b></td></tr>
+<tr class="memitem:aa5a326e0e528e295004260b6b21bbdc6"><td class="memItemLeft" align="right" valign="top">typedef T *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classvve_1_1custom__alloc.html#aa5a326e0e528e295004260b6b21bbdc6">pointer</a></td></tr>
 <tr class="separator:aa5a326e0e528e295004260b6b21bbdc6"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a3e9fec58c18a3419d3ad560490c176d5"><td class="memItemLeft" align="right" valign="top"><a id="a3e9fec58c18a3419d3ad560490c176d5"></a>
-typedef const T *&#160;</td><td class="memItemRight" valign="bottom"><b>const_pointer</b></td></tr>
+<tr class="memitem:a3e9fec58c18a3419d3ad560490c176d5"><td class="memItemLeft" align="right" valign="top">typedef const T *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classvve_1_1custom__alloc.html#a3e9fec58c18a3419d3ad560490c176d5">const_pointer</a></td></tr>
 <tr class="separator:a3e9fec58c18a3419d3ad560490c176d5"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a665c7402e37db761c9cfd6740404ecdf"><td class="memItemLeft" align="right" valign="top"><a id="a665c7402e37db761c9cfd6740404ecdf"></a>
-typedef T &amp;&#160;</td><td class="memItemRight" valign="bottom"><b>reference</b></td></tr>
+<tr class="memitem:a665c7402e37db761c9cfd6740404ecdf"><td class="memItemLeft" align="right" valign="top">typedef T &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classvve_1_1custom__alloc.html#a665c7402e37db761c9cfd6740404ecdf">reference</a></td></tr>
 <tr class="separator:a665c7402e37db761c9cfd6740404ecdf"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a64bfbd3dba506c402d9db0e1ebfc8c9b"><td class="memItemLeft" align="right" valign="top"><a id="a64bfbd3dba506c402d9db0e1ebfc8c9b"></a>
-typedef const T &amp;&#160;</td><td class="memItemRight" valign="bottom"><b>const_reference</b></td></tr>
+<tr class="memitem:a64bfbd3dba506c402d9db0e1ebfc8c9b"><td class="memItemLeft" align="right" valign="top">typedef const T &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classvve_1_1custom__alloc.html#a64bfbd3dba506c402d9db0e1ebfc8c9b">const_reference</a></td></tr>
 <tr class="separator:a64bfbd3dba506c402d9db0e1ebfc8c9b"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a8382a26f92a4ae8ec697df9d3cf24059"><td class="memItemLeft" align="right" valign="top"><a id="a8382a26f92a4ae8ec697df9d3cf24059"></a>
-typedef T&#160;</td><td class="memItemRight" valign="bottom"><b>value_type</b></td></tr>
+<tr class="memitem:a8382a26f92a4ae8ec697df9d3cf24059"><td class="memItemLeft" align="right" valign="top">typedef T&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classvve_1_1custom__alloc.html#a8382a26f92a4ae8ec697df9d3cf24059">value_type</a></td></tr>
 <tr class="separator:a8382a26f92a4ae8ec697df9d3cf24059"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-methods"></a>
 Public Member Functions</h2></td></tr>
-<tr class="memitem:a5314d494b4df30e3590d6803c3583b2a"><td class="memItemLeft" align="right" valign="top"><a id="a5314d494b4df30e3590d6803c3583b2a"></a>
-&#160;</td><td class="memItemRight" valign="bottom"><b>custom_alloc</b> (<a class="el" href="classvve_1_1_ve_heap_memory.html">VeHeapMemory</a> *heap)</td></tr>
+<tr class="memitem:a5314d494b4df30e3590d6803c3583b2a"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classvve_1_1custom__alloc.html#a5314d494b4df30e3590d6803c3583b2a">custom_alloc</a> (<a class="el" href="classvve_1_1_ve_heap_memory.html">VeHeapMemory</a> *heap)</td></tr>
 <tr class="separator:a5314d494b4df30e3590d6803c3583b2a"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a1c935bc7c7031db3109cf66c3d9b134a"><td class="memItemLeft" align="right" valign="top"><a id="a1c935bc7c7031db3109cf66c3d9b134a"></a>
-&#160;</td><td class="memItemRight" valign="bottom"><b>custom_alloc</b> (const <a class="el" href="classvve_1_1custom__alloc.html">custom_alloc</a> &amp;ver)</td></tr>
+<tr class="memitem:a1c935bc7c7031db3109cf66c3d9b134a"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classvve_1_1custom__alloc.html#a1c935bc7c7031db3109cf66c3d9b134a">custom_alloc</a> (const <a class="el" href="classvve_1_1custom__alloc.html">custom_alloc</a> &amp;ver)</td></tr>
 <tr class="separator:a1c935bc7c7031db3109cf66c3d9b134a"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a007e84513444c192aefd9e479915ead6"><td class="memItemLeft" align="right" valign="top"><a id="a007e84513444c192aefd9e479915ead6"></a>
-pointer&#160;</td><td class="memItemRight" valign="bottom"><b>allocate</b> (size_type n, const void *=0)</td></tr>
+<tr class="memitem:a007e84513444c192aefd9e479915ead6"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classvve_1_1custom__alloc.html#aa5a326e0e528e295004260b6b21bbdc6">pointer</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classvve_1_1custom__alloc.html#a007e84513444c192aefd9e479915ead6">allocate</a> (<a class="el" href="classvve_1_1custom__alloc.html#afa55e09428ede5b21ccef38bc9bc3329">size_type</a> n, const void *=0)</td></tr>
 <tr class="separator:a007e84513444c192aefd9e479915ead6"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a284b0a63128f0031e800cf35bc3d0fcb"><td class="memItemLeft" align="right" valign="top"><a id="a284b0a63128f0031e800cf35bc3d0fcb"></a>
-void&#160;</td><td class="memItemRight" valign="bottom"><b>deallocate</b> (void *p, size_type n)</td></tr>
+<tr class="memitem:a284b0a63128f0031e800cf35bc3d0fcb"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classvve_1_1custom__alloc.html#a284b0a63128f0031e800cf35bc3d0fcb">deallocate</a> (void *p, <a class="el" href="classvve_1_1custom__alloc.html#afa55e09428ede5b21ccef38bc9bc3329">size_type</a> n)</td></tr>
 <tr class="separator:a284b0a63128f0031e800cf35bc3d0fcb"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:afac2adffce2480da695b52ddd1e0c979"><td class="memItemLeft" align="right" valign="top"><a id="afac2adffce2480da695b52ddd1e0c979"></a>
-pointer&#160;</td><td class="memItemRight" valign="bottom"><b>address</b> (reference x) const</td></tr>
+<tr class="memitem:afac2adffce2480da695b52ddd1e0c979"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classvve_1_1custom__alloc.html#aa5a326e0e528e295004260b6b21bbdc6">pointer</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classvve_1_1custom__alloc.html#afac2adffce2480da695b52ddd1e0c979">address</a> (<a class="el" href="classvve_1_1custom__alloc.html#a665c7402e37db761c9cfd6740404ecdf">reference</a> x) const</td></tr>
 <tr class="separator:afac2adffce2480da695b52ddd1e0c979"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ad7a4b3aa8cb4d12b01e35159fca986e0"><td class="memItemLeft" align="right" valign="top"><a id="ad7a4b3aa8cb4d12b01e35159fca986e0"></a>
-const_pointer&#160;</td><td class="memItemRight" valign="bottom"><b>address</b> (const_reference x) const</td></tr>
+<tr class="memitem:ad7a4b3aa8cb4d12b01e35159fca986e0"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classvve_1_1custom__alloc.html#a3e9fec58c18a3419d3ad560490c176d5">const_pointer</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classvve_1_1custom__alloc.html#ad7a4b3aa8cb4d12b01e35159fca986e0">address</a> (<a class="el" href="classvve_1_1custom__alloc.html#a64bfbd3dba506c402d9db0e1ebfc8c9b">const_reference</a> x) const</td></tr>
 <tr class="separator:ad7a4b3aa8cb4d12b01e35159fca986e0"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a41b02e929ffc519c9e11b4c3314731ea"><td class="memItemLeft" align="right" valign="top"><a id="a41b02e929ffc519c9e11b4c3314731ea"></a>
-<a class="el" href="classvve_1_1custom__alloc.html">custom_alloc</a>&lt; T &gt; &amp;&#160;</td><td class="memItemRight" valign="bottom"><b>operator=</b> (const <a class="el" href="classvve_1_1custom__alloc.html">custom_alloc</a> &amp;)</td></tr>
+<tr class="memitem:a41b02e929ffc519c9e11b4c3314731ea"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classvve_1_1custom__alloc.html">custom_alloc</a>&lt; T &gt; &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classvve_1_1custom__alloc.html#a41b02e929ffc519c9e11b4c3314731ea">operator=</a> (const <a class="el" href="classvve_1_1custom__alloc.html">custom_alloc</a> &amp;)</td></tr>
 <tr class="separator:a41b02e929ffc519c9e11b4c3314731ea"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aea34b377ad15a84fded9d2918b8b3fe1"><td class="memItemLeft" align="right" valign="top"><a id="aea34b377ad15a84fded9d2918b8b3fe1"></a>
-void&#160;</td><td class="memItemRight" valign="bottom"><b>construct</b> (pointer p, const T &amp;val)</td></tr>
+<tr class="memitem:aea34b377ad15a84fded9d2918b8b3fe1"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classvve_1_1custom__alloc.html#aea34b377ad15a84fded9d2918b8b3fe1">construct</a> (<a class="el" href="classvve_1_1custom__alloc.html#aa5a326e0e528e295004260b6b21bbdc6">pointer</a> p, const T &amp;val)</td></tr>
 <tr class="separator:aea34b377ad15a84fded9d2918b8b3fe1"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a0a9cde78bac928012c991346e9576fef"><td class="memItemLeft" align="right" valign="top"><a id="a0a9cde78bac928012c991346e9576fef"></a>
-void&#160;</td><td class="memItemRight" valign="bottom"><b>destroy</b> (pointer p)</td></tr>
+<tr class="memitem:a0a9cde78bac928012c991346e9576fef"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classvve_1_1custom__alloc.html#a0a9cde78bac928012c991346e9576fef">destroy</a> (<a class="el" href="classvve_1_1custom__alloc.html#aa5a326e0e528e295004260b6b21bbdc6">pointer</a> p)</td></tr>
 <tr class="separator:a0a9cde78bac928012c991346e9576fef"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ac64a3597835df2b4d04e5a5a4ef82315"><td class="memItemLeft" align="right" valign="top"><a id="ac64a3597835df2b4d04e5a5a4ef82315"></a>
-size_type&#160;</td><td class="memItemRight" valign="bottom"><b>max_size</b> () const</td></tr>
+<tr class="memitem:ac64a3597835df2b4d04e5a5a4ef82315"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classvve_1_1custom__alloc.html#afa55e09428ede5b21ccef38bc9bc3329">size_type</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classvve_1_1custom__alloc.html#ac64a3597835df2b4d04e5a5a4ef82315">max_size</a> () const</td></tr>
 <tr class="separator:ac64a3597835df2b4d04e5a5a4ef82315"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ab94fdaed72655aa5fde1e001251f74ab"><td class="memTemplParams" colspan="2"><a id="ab94fdaed72655aa5fde1e001251f74ab"></a>
-template&lt;class U &gt; </td></tr>
-<tr class="memitem:ab94fdaed72655aa5fde1e001251f74ab"><td class="memTemplItemLeft" align="right" valign="top">&#160;</td><td class="memTemplItemRight" valign="bottom"><b>custom_alloc</b> (const <a class="el" href="classvve_1_1custom__alloc.html">custom_alloc</a>&lt; U &gt; &amp;ver)</td></tr>
+<tr class="memitem:ab94fdaed72655aa5fde1e001251f74ab"><td class="memTemplParams" colspan="2">template&lt;class U &gt; </td></tr>
+<tr class="memitem:ab94fdaed72655aa5fde1e001251f74ab"><td class="memTemplItemLeft" align="right" valign="top">&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="classvve_1_1custom__alloc.html#ab94fdaed72655aa5fde1e001251f74ab">custom_alloc</a> (const <a class="el" href="classvve_1_1custom__alloc.html">custom_alloc</a>&lt; U &gt; &amp;ver)</td></tr>
 <tr class="separator:ab94fdaed72655aa5fde1e001251f74ab"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a069e71f55ceb5247775f49406f216d87"><td class="memTemplParams" colspan="2"><a id="a069e71f55ceb5247775f49406f216d87"></a>
-template&lt;class U &gt; </td></tr>
-<tr class="memitem:a069e71f55ceb5247775f49406f216d87"><td class="memTemplItemLeft" align="right" valign="top"><a class="el" href="classvve_1_1custom__alloc.html">custom_alloc</a> &amp;&#160;</td><td class="memTemplItemRight" valign="bottom"><b>operator=</b> (const <a class="el" href="classvve_1_1custom__alloc.html">custom_alloc</a>&lt; U &gt; &amp;ver)</td></tr>
+<tr class="memitem:a069e71f55ceb5247775f49406f216d87"><td class="memTemplParams" colspan="2">template&lt;class U &gt; </td></tr>
+<tr class="memitem:a069e71f55ceb5247775f49406f216d87"><td class="memTemplItemLeft" align="right" valign="top"><a class="el" href="classvve_1_1custom__alloc.html">custom_alloc</a> &amp;&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="classvve_1_1custom__alloc.html#a069e71f55ceb5247775f49406f216d87">operator=</a> (const <a class="el" href="classvve_1_1custom__alloc.html">custom_alloc</a>&lt; U &gt; &amp;ver)</td></tr>
 <tr class="separator:a069e71f55ceb5247775f49406f216d87"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-attribs"></a>
 Public Attributes</h2></td></tr>
-<tr class="memitem:ac986b39e2f121121bed03913cdca07ff"><td class="memItemLeft" align="right" valign="top"><a id="ac986b39e2f121121bed03913cdca07ff"></a>
-<a class="el" href="classvve_1_1_ve_heap_memory.html">VeHeapMemory</a> *&#160;</td><td class="memItemRight" valign="bottom"><b>m_heap</b></td></tr>
+<tr class="memitem:ac986b39e2f121121bed03913cdca07ff"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classvve_1_1_ve_heap_memory.html">VeHeapMemory</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classvve_1_1custom__alloc.html#ac986b39e2f121121bed03913cdca07ff">m_heap</a></td></tr>
 <tr class="separator:ac986b39e2f121121bed03913cdca07ff"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
+<h2 class="groupheader">Member Typedef Documentation</h2>
+<a id="a3e9fec58c18a3419d3ad560490c176d5"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a3e9fec58c18a3419d3ad560490c176d5">&#9670;&nbsp;</a></span>const_pointer</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;class T&gt; </div>
+      <table class="memname">
+        <tr>
+          <td class="memname">typedef const T* <a class="el" href="classvve_1_1custom__alloc.html">vve::custom_alloc</a>&lt; T &gt;::<a class="el" href="classvve_1_1custom__alloc.html#a3e9fec58c18a3419d3ad560490c176d5">const_pointer</a></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="a64bfbd3dba506c402d9db0e1ebfc8c9b"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a64bfbd3dba506c402d9db0e1ebfc8c9b">&#9670;&nbsp;</a></span>const_reference</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;class T&gt; </div>
+      <table class="memname">
+        <tr>
+          <td class="memname">typedef const T&amp; <a class="el" href="classvve_1_1custom__alloc.html">vve::custom_alloc</a>&lt; T &gt;::<a class="el" href="classvve_1_1custom__alloc.html#a64bfbd3dba506c402d9db0e1ebfc8c9b">const_reference</a></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="ad060c56eb2e651d9298cd1b7bc96e70c"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ad060c56eb2e651d9298cd1b7bc96e70c">&#9670;&nbsp;</a></span>difference_type</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;class T&gt; </div>
+      <table class="memname">
+        <tr>
+          <td class="memname">typedef ptrdiff_t <a class="el" href="classvve_1_1custom__alloc.html">vve::custom_alloc</a>&lt; T &gt;::<a class="el" href="classvve_1_1custom__alloc.html#ad060c56eb2e651d9298cd1b7bc96e70c">difference_type</a></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="aa5a326e0e528e295004260b6b21bbdc6"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aa5a326e0e528e295004260b6b21bbdc6">&#9670;&nbsp;</a></span>pointer</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;class T&gt; </div>
+      <table class="memname">
+        <tr>
+          <td class="memname">typedef T* <a class="el" href="classvve_1_1custom__alloc.html">vve::custom_alloc</a>&lt; T &gt;::<a class="el" href="classvve_1_1custom__alloc.html#aa5a326e0e528e295004260b6b21bbdc6">pointer</a></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="a665c7402e37db761c9cfd6740404ecdf"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a665c7402e37db761c9cfd6740404ecdf">&#9670;&nbsp;</a></span>reference</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;class T&gt; </div>
+      <table class="memname">
+        <tr>
+          <td class="memname">typedef T&amp; <a class="el" href="classvve_1_1custom__alloc.html">vve::custom_alloc</a>&lt; T &gt;::<a class="el" href="classvve_1_1custom__alloc.html#a665c7402e37db761c9cfd6740404ecdf">reference</a></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="afa55e09428ede5b21ccef38bc9bc3329"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#afa55e09428ede5b21ccef38bc9bc3329">&#9670;&nbsp;</a></span>size_type</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;class T&gt; </div>
+      <table class="memname">
+        <tr>
+          <td class="memname">typedef size_t <a class="el" href="classvve_1_1custom__alloc.html">vve::custom_alloc</a>&lt; T &gt;::<a class="el" href="classvve_1_1custom__alloc.html#afa55e09428ede5b21ccef38bc9bc3329">size_type</a></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="a8382a26f92a4ae8ec697df9d3cf24059"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a8382a26f92a4ae8ec697df9d3cf24059">&#9670;&nbsp;</a></span>value_type</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;class T&gt; </div>
+      <table class="memname">
+        <tr>
+          <td class="memname">typedef T <a class="el" href="classvve_1_1custom__alloc.html">vve::custom_alloc</a>&lt; T &gt;::<a class="el" href="classvve_1_1custom__alloc.html#a8382a26f92a4ae8ec697df9d3cf24059">value_type</a></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<h2 class="groupheader">Constructor &amp; Destructor Documentation</h2>
+<a id="a5314d494b4df30e3590d6803c3583b2a"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a5314d494b4df30e3590d6803c3583b2a">&#9670;&nbsp;</a></span>custom_alloc() <span class="overload">[1/3]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;class T&gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="classvve_1_1custom__alloc.html">vve::custom_alloc</a>&lt; T &gt;::<a class="el" href="classvve_1_1custom__alloc.html">custom_alloc</a> </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="classvve_1_1_ve_heap_memory.html">VeHeapMemory</a> *&#160;</td>
+          <td class="paramname"><em>heap</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="a1c935bc7c7031db3109cf66c3d9b134a"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a1c935bc7c7031db3109cf66c3d9b134a">&#9670;&nbsp;</a></span>custom_alloc() <span class="overload">[2/3]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;class T&gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="classvve_1_1custom__alloc.html">vve::custom_alloc</a>&lt; T &gt;::<a class="el" href="classvve_1_1custom__alloc.html">custom_alloc</a> </td>
+          <td>(</td>
+          <td class="paramtype">const <a class="el" href="classvve_1_1custom__alloc.html">custom_alloc</a>&lt; T &gt; &amp;&#160;</td>
+          <td class="paramname"><em>ver</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="ab94fdaed72655aa5fde1e001251f74ab"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ab94fdaed72655aa5fde1e001251f74ab">&#9670;&nbsp;</a></span>custom_alloc() <span class="overload">[3/3]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;class T&gt; </div>
+<div class="memtemplate">
+template&lt;class U &gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="classvve_1_1custom__alloc.html">vve::custom_alloc</a>&lt; T &gt;::<a class="el" href="classvve_1_1custom__alloc.html">custom_alloc</a> </td>
+          <td>(</td>
+          <td class="paramtype">const <a class="el" href="classvve_1_1custom__alloc.html">custom_alloc</a>&lt; U &gt; &amp;&#160;</td>
+          <td class="paramname"><em>ver</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<h2 class="groupheader">Member Function Documentation</h2>
+<a id="afac2adffce2480da695b52ddd1e0c979"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#afac2adffce2480da695b52ddd1e0c979">&#9670;&nbsp;</a></span>address() <span class="overload">[1/2]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;class T&gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="classvve_1_1custom__alloc.html#aa5a326e0e528e295004260b6b21bbdc6">pointer</a> <a class="el" href="classvve_1_1custom__alloc.html">vve::custom_alloc</a>&lt; T &gt;::address </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="classvve_1_1custom__alloc.html#a665c7402e37db761c9cfd6740404ecdf">reference</a>&#160;</td>
+          <td class="paramname"><em>x</em></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="ad7a4b3aa8cb4d12b01e35159fca986e0"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ad7a4b3aa8cb4d12b01e35159fca986e0">&#9670;&nbsp;</a></span>address() <span class="overload">[2/2]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;class T&gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="classvve_1_1custom__alloc.html#a3e9fec58c18a3419d3ad560490c176d5">const_pointer</a> <a class="el" href="classvve_1_1custom__alloc.html">vve::custom_alloc</a>&lt; T &gt;::address </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="classvve_1_1custom__alloc.html#a64bfbd3dba506c402d9db0e1ebfc8c9b">const_reference</a>&#160;</td>
+          <td class="paramname"><em>x</em></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="a007e84513444c192aefd9e479915ead6"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a007e84513444c192aefd9e479915ead6">&#9670;&nbsp;</a></span>allocate()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;class T&gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="classvve_1_1custom__alloc.html#aa5a326e0e528e295004260b6b21bbdc6">pointer</a> <a class="el" href="classvve_1_1custom__alloc.html">vve::custom_alloc</a>&lt; T &gt;::allocate </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="classvve_1_1custom__alloc.html#afa55e09428ede5b21ccef38bc9bc3329">size_type</a>&#160;</td>
+          <td class="paramname"><em>n</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const void *&#160;</td>
+          <td class="paramname"> = <code>0</code>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="aea34b377ad15a84fded9d2918b8b3fe1"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aea34b377ad15a84fded9d2918b8b3fe1">&#9670;&nbsp;</a></span>construct()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;class T&gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">void <a class="el" href="classvve_1_1custom__alloc.html">vve::custom_alloc</a>&lt; T &gt;::construct </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="classvve_1_1custom__alloc.html#aa5a326e0e528e295004260b6b21bbdc6">pointer</a>&#160;</td>
+          <td class="paramname"><em>p</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const T &amp;&#160;</td>
+          <td class="paramname"><em>val</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="a284b0a63128f0031e800cf35bc3d0fcb"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a284b0a63128f0031e800cf35bc3d0fcb">&#9670;&nbsp;</a></span>deallocate()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;class T&gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">void <a class="el" href="classvve_1_1custom__alloc.html">vve::custom_alloc</a>&lt; T &gt;::deallocate </td>
+          <td>(</td>
+          <td class="paramtype">void *&#160;</td>
+          <td class="paramname"><em>p</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="classvve_1_1custom__alloc.html#afa55e09428ede5b21ccef38bc9bc3329">size_type</a>&#160;</td>
+          <td class="paramname"><em>n</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="a0a9cde78bac928012c991346e9576fef"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a0a9cde78bac928012c991346e9576fef">&#9670;&nbsp;</a></span>destroy()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;class T&gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">void <a class="el" href="classvve_1_1custom__alloc.html">vve::custom_alloc</a>&lt; T &gt;::destroy </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="classvve_1_1custom__alloc.html#aa5a326e0e528e295004260b6b21bbdc6">pointer</a>&#160;</td>
+          <td class="paramname"><em>p</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="ac64a3597835df2b4d04e5a5a4ef82315"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ac64a3597835df2b4d04e5a5a4ef82315">&#9670;&nbsp;</a></span>max_size()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;class T&gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="classvve_1_1custom__alloc.html#afa55e09428ede5b21ccef38bc9bc3329">size_type</a> <a class="el" href="classvve_1_1custom__alloc.html">vve::custom_alloc</a>&lt; T &gt;::max_size </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="a41b02e929ffc519c9e11b4c3314731ea"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a41b02e929ffc519c9e11b4c3314731ea">&#9670;&nbsp;</a></span>operator=() <span class="overload">[1/2]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;class T&gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="classvve_1_1custom__alloc.html">custom_alloc</a>&lt;T&gt;&amp; <a class="el" href="classvve_1_1custom__alloc.html">vve::custom_alloc</a>&lt; T &gt;::operator= </td>
+          <td>(</td>
+          <td class="paramtype">const <a class="el" href="classvve_1_1custom__alloc.html">custom_alloc</a>&lt; T &gt; &amp;&#160;</td>
+          <td class="paramname"></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="a069e71f55ceb5247775f49406f216d87"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a069e71f55ceb5247775f49406f216d87">&#9670;&nbsp;</a></span>operator=() <span class="overload">[2/2]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;class T&gt; </div>
+<div class="memtemplate">
+template&lt;class U &gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="classvve_1_1custom__alloc.html">custom_alloc</a>&amp; <a class="el" href="classvve_1_1custom__alloc.html">vve::custom_alloc</a>&lt; T &gt;::operator= </td>
+          <td>(</td>
+          <td class="paramtype">const <a class="el" href="classvve_1_1custom__alloc.html">custom_alloc</a>&lt; U &gt; &amp;&#160;</td>
+          <td class="paramname"><em>ver</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<h2 class="groupheader">Member Data Documentation</h2>
+<a id="ac986b39e2f121121bed03913cdca07ff"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ac986b39e2f121121bed03913cdca07ff">&#9670;&nbsp;</a></span>m_heap</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;class T&gt; </div>
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="classvve_1_1_ve_heap_memory.html">VeHeapMemory</a>* <a class="el" href="classvve_1_1custom__alloc.html">vve::custom_alloc</a>&lt; T &gt;::m_heap</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+</div>
+</div>
 <hr/>The documentation for this class was generated from the following file:<ul>
 <li><a class="el" href="_v_e_mem_heap_8h_source.html">VEMemHeap.h</a></li>
 </ul>
 </div><!-- contents -->
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>
-Generated on Fri Mar 27 2020 17:55:55 for Vienna Vulkan Engine by &#160;<a href="http://www.doxygen.org/index.html">
+Generated on Fri Mar 27 2020 22:12:24 for Vienna Vulkan Engine by &#160;<a href="http://www.doxygen.org/index.html">
 <img class="footer" src="doxygen.png" alt="doxygen"/>
 </a> 1.8.15
 </small></address>

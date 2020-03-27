@@ -1,5 +1,4 @@
 var searchData=
 [
-  ['capabilities',['capabilities',['../structvh_1_1_vh_swap_chain_support_details.html#a1b996f6fb561ab6fabe8add265ec18a6',1,'vh::VhSwapChainSupportDetails']]],
-  ['center',['center',['../structvve_1_1cl_1_1cl_sphere.html#a6a06348d2b45d8f70058349ff259fe10',1,'vve::cl::clSphere']]]
+  ['a',['a',['../structvve_1_1tab_1_1test_var_tables1.html#a6d3b3f84cf8c21d5931e527c5b441fbd',1,'vve::tab::testVarTables1::a()'],['../structvve_1_1tab_1_1test_var_tables2.html#aa32c21fca877a642187d5eda65add3d1',1,'vve::tab::testVarTables2::a()']]]
 ];

@@ -68,34 +68,264 @@ $(function() {
   <div class="summary">
 <a href="#nested-classes">Classes</a> &#124;
 <a href="#pub-methods">Public Member Functions</a> &#124;
+<a href="#pri-attribs">Private Attributes</a> &#124;
+<a href="#pri-static-attribs">Static Private Attributes</a> &#124;
 <a href="classvve_1_1_ve_heap_memory-members.html">List of all members</a>  </div>
   <div class="headertitle">
 <div class="title">vve::VeHeapMemory Class Reference</div>  </div>
 </div><!--header-->
 <div class="contents">
+
+<p><code>#include &lt;<a class="el" href="_v_e_mem_heap_8h_source.html">VEMemHeap.h</a>&gt;</code></p>
 <table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="nested-classes"></a>
+Classes</h2></td></tr>
+<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structvve_1_1_ve_heap_memory_1_1_ve_mem_block.html">VeMemBlock</a></td></tr>
+<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structvve_1_1_ve_heap_memory_1_1_ve_pool.html">VePool</a></td></tr>
+<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-methods"></a>
 Public Member Functions</h2></td></tr>
-<tr class="memitem:ab7accbd99dc52a1d9d9ef38fd66ba1e0"><td class="memItemLeft" align="right" valign="top"><a id="ab7accbd99dc52a1d9d9ef38fd66ba1e0"></a>
-void&#160;</td><td class="memItemRight" valign="bottom"><b>print</b> ()</td></tr>
+<tr class="memitem:ac95958c86808b795ea3ef111a3f3f417"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classvve_1_1_ve_heap_memory.html#ac95958c86808b795ea3ef111a3f3f417">VeHeapMemory</a> ()</td></tr>
+<tr class="separator:ac95958c86808b795ea3ef111a3f3f417"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a5b6d5ce53e39259cd80e2660ac26a546"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classvve_1_1_ve_heap_memory.html#a5b6d5ce53e39259cd80e2660ac26a546">~VeHeapMemory</a> ()</td></tr>
+<tr class="separator:a5b6d5ce53e39259cd80e2660ac26a546"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ab7accbd99dc52a1d9d9ef38fd66ba1e0"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classvve_1_1_ve_heap_memory.html#ab7accbd99dc52a1d9d9ef38fd66ba1e0">print</a> ()</td></tr>
 <tr class="separator:ab7accbd99dc52a1d9d9ef38fd66ba1e0"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a1fe958ad0cedee9bb3c1f96a563dfad6"><td class="memItemLeft" align="right" valign="top"><a id="a1fe958ad0cedee9bb3c1f96a563dfad6"></a>
-void&#160;</td><td class="memItemRight" valign="bottom"><b>reset</b> ()</td></tr>
+<tr class="memitem:a1fe958ad0cedee9bb3c1f96a563dfad6"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classvve_1_1_ve_heap_memory.html#a1fe958ad0cedee9bb3c1f96a563dfad6">reset</a> ()</td></tr>
 <tr class="separator:a1fe958ad0cedee9bb3c1f96a563dfad6"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a92fe3241fd67516ebbacb2670140100a"><td class="memItemLeft" align="right" valign="top"><a id="a92fe3241fd67516ebbacb2670140100a"></a>
-void *&#160;</td><td class="memItemRight" valign="bottom"><b>allocate</b> (std::size_t size)</td></tr>
+<tr class="memitem:a92fe3241fd67516ebbacb2670140100a"><td class="memItemLeft" align="right" valign="top">void *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classvve_1_1_ve_heap_memory.html#a92fe3241fd67516ebbacb2670140100a">allocate</a> (std::size_t size)</td></tr>
 <tr class="separator:a92fe3241fd67516ebbacb2670140100a"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aee97b798f6c9c9df2f654d3062ba9156"><td class="memItemLeft" align="right" valign="top"><a id="aee97b798f6c9c9df2f654d3062ba9156"></a>
-void&#160;</td><td class="memItemRight" valign="bottom"><b>deallocate</b> (void *p, std::size_t size)</td></tr>
+<tr class="memitem:aee97b798f6c9c9df2f654d3062ba9156"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classvve_1_1_ve_heap_memory.html#aee97b798f6c9c9df2f654d3062ba9156">deallocate</a> (void *p, std::size_t size)</td></tr>
 <tr class="separator:aee97b798f6c9c9df2f654d3062ba9156"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table><table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pri-attribs"></a>
+Private Attributes</h2></td></tr>
+<tr class="memitem:ad1f8ca989670eac74023a168997b6f0a"><td class="memItemLeft" align="right" valign="top">std::vector&lt; <a class="el" href="structvve_1_1_ve_heap_memory_1_1_ve_pool.html">VePool</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classvve_1_1_ve_heap_memory.html#ad1f8ca989670eac74023a168997b6f0a">m_pools</a></td></tr>
+<tr class="separator:ad1f8ca989670eac74023a168997b6f0a"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table><table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pri-static-attribs"></a>
+Static Private Attributes</h2></td></tr>
+<tr class="memitem:a5b511316b5ee0d55f94f7205548cf4fd"><td class="memItemLeft" align="right" valign="top">static const <a class="el" href="namespacevve.html#a1eb8d816d3112a806cbcd809004a5266">VeIndex</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classvve_1_1_ve_heap_memory.html#a5b511316b5ee0d55f94f7205548cf4fd">m_stdSize</a> = 1 &lt;&lt; 13</td></tr>
+<tr class="separator:a5b511316b5ee0d55f94f7205548cf4fd"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
+<h2 class="groupheader">Constructor &amp; Destructor Documentation</h2>
+<a id="ac95958c86808b795ea3ef111a3f3f417"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ac95958c86808b795ea3ef111a3f3f417">&#9670;&nbsp;</a></span>VeHeapMemory()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">vve::VeHeapMemory::VeHeapMemory </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="a5b6d5ce53e39259cd80e2660ac26a546"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a5b6d5ce53e39259cd80e2660ac26a546">&#9670;&nbsp;</a></span>~VeHeapMemory()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">vve::VeHeapMemory::~VeHeapMemory </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<h2 class="groupheader">Member Function Documentation</h2>
+<a id="a92fe3241fd67516ebbacb2670140100a"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a92fe3241fd67516ebbacb2670140100a">&#9670;&nbsp;</a></span>allocate()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">void* vve::VeHeapMemory::allocate </td>
+          <td>(</td>
+          <td class="paramtype">std::size_t&#160;</td>
+          <td class="paramname"><em>size</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="aee97b798f6c9c9df2f654d3062ba9156"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aee97b798f6c9c9df2f654d3062ba9156">&#9670;&nbsp;</a></span>deallocate()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">void vve::VeHeapMemory::deallocate </td>
+          <td>(</td>
+          <td class="paramtype">void *&#160;</td>
+          <td class="paramname"><em>p</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">std::size_t&#160;</td>
+          <td class="paramname"><em>size</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="ab7accbd99dc52a1d9d9ef38fd66ba1e0"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ab7accbd99dc52a1d9d9ef38fd66ba1e0">&#9670;&nbsp;</a></span>print()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">void vve::VeHeapMemory::print </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="a1fe958ad0cedee9bb3c1f96a563dfad6"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a1fe958ad0cedee9bb3c1f96a563dfad6">&#9670;&nbsp;</a></span>reset()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">void vve::VeHeapMemory::reset </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<h2 class="groupheader">Member Data Documentation</h2>
+<a id="ad1f8ca989670eac74023a168997b6f0a"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ad1f8ca989670eac74023a168997b6f0a">&#9670;&nbsp;</a></span>m_pools</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">std::vector&lt;<a class="el" href="structvve_1_1_ve_heap_memory_1_1_ve_pool.html">VePool</a>&gt; vve::VeHeapMemory::m_pools</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">private</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="a5b511316b5ee0d55f94f7205548cf4fd"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a5b511316b5ee0d55f94f7205548cf4fd">&#9670;&nbsp;</a></span>m_stdSize</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">const <a class="el" href="namespacevve.html#a1eb8d816d3112a806cbcd809004a5266">VeIndex</a> vve::VeHeapMemory::m_stdSize = 1 &lt;&lt; 13</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">static</span><span class="mlabel">private</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
 <hr/>The documentation for this class was generated from the following file:<ul>
 <li><a class="el" href="_v_e_mem_heap_8h_source.html">VEMemHeap.h</a></li>
 </ul>
 </div><!-- contents -->
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>
-Generated on Fri Mar 27 2020 17:55:55 for Vienna Vulkan Engine by &#160;<a href="http://www.doxygen.org/index.html">
+Generated on Fri Mar 27 2020 22:12:24 for Vienna Vulkan Engine by &#160;<a href="http://www.doxygen.org/index.html">
 <img class="footer" src="doxygen.png" alt="doxygen"/>
 </a> 1.8.15
 </small></address>

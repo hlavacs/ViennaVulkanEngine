@@ -136,14 +136,14 @@ namespace vgjs {
 	class JobQueueFIFO;
 	class JobQueueLockFree;
 
-	using Function = std::function<void()>;	///<Standard function that can be put into a job
+	using Function = std::function<void()>;	///< Standard function that can be put into a job
 
-	typedef uint32_t VgjsThreadIndex;					///<Use for index into job arrays
-	constexpr VgjsThreadIndex VGJS_NULL_THREAD_IDX =	///<No index given
+	typedef uint32_t VgjsThreadIndex;					///< Use for index into job arrays
+	constexpr VgjsThreadIndex VGJS_NULL_THREAD_IDX =	///< No index given
 		std::numeric_limits<VgjsThreadIndex>::max();
 
-	typedef uint64_t VgjsThreadID;					///<An id contains an index and a label
-	constexpr VgjsThreadID VGJS_NULL_THREAD_ID =	///<No ID given
+	typedef uint64_t VgjsThreadID;					///< An id contains an index and a label
+	constexpr VgjsThreadID VGJS_NULL_THREAD_ID =	///< No ID given
 		std::numeric_limits<VgjsThreadID>::max();
 
 	VgjsThreadIndex getThreadIndexFromID(VgjsThreadID thread_id);
@@ -161,17 +161,17 @@ namespace vgjs {
 		friend JobQueueLockFree;
 
 	private:
-		Job *					m_nextInQueue;					///<next in the current queue
-		Job *					m_parentJob;					///<parent job, called if this job finishes
-		Job *					m_onFinishedJob;				///<job to schedule once this job finshes
-		VgjsThreadIndex			m_thread_idx;					///<the id of the thread this job must be scheduled, or -1 if any thread
-		VgjsThreadIndex			m_thread_label;					///<label for performance evaluation
-		Function				m_function;						///<the function to carry out
-		std::atomic<uint32_t>	m_numUnfinishedChildren;		///<number of unfinished jobs
-		std::chrono::high_resolution_clock::time_point t1, t2;	///<execution start and end
-		VgjsThreadIndex			m_exec_thread;					///<thread that this job actually ran at
-		bool					m_available;					///<is this job available after a pool reset?
-		bool					m_repeatJob;					///<if true then the job will be rescheduled
+		Job *					m_nextInQueue;					///< next in the current queue
+		Job *					m_parentJob;					///< parent job, called if this job finishes
+		Job *					m_onFinishedJob;				///< job to schedule once this job finshes
+		VgjsThreadIndex			m_thread_idx;					///< the id of the thread this job must be scheduled, or -1 if any thread
+		VgjsThreadIndex			m_thread_label;					///< label for performance evaluation
+		Function				m_function;						///< the function to carry out
+		std::atomic<uint32_t>	m_numUnfinishedChildren;		///< number of unfinished jobs
+		std::chrono::high_resolution_clock::time_point t1, t2;	///< execution start and end
+		VgjsThreadIndex			m_exec_thread;					///< thread that this job actually ran at
+		bool					m_available;					///< is this job available after a pool reset?
+		bool					m_repeatJob;					///< if true then the job will be rescheduled
 	
 		/**
 		*
@@ -245,20 +245,20 @@ namespace vgjs {
 		*/
 		void childFinished() {
 			uint32_t numLeft = m_numUnfinishedChildren.fetch_sub(1);
-			if (numLeft == 1) onFinished();					//this was the last child
+			if (numLeft == 1) onFinished();					///< this was the last child
 		};
 
 		/**
 		* \brief Run the packages task.
 		*/
-		void operator()();		//does not know JobMemory yet, so define later
+		void operator()();		///< does not know JobMemory yet, so define later
 
 	public:
 
 		Job() : m_nextInQueue(nullptr), m_parentJob(nullptr), m_onFinishedJob(nullptr), 
 			m_thread_idx(VGJS_NULL_THREAD_IDX), m_thread_label(VGJS_NULL_THREAD_IDX),
 			t1(), t2(), m_exec_thread(VGJS_NULL_THREAD_IDX),
-			m_numUnfinishedChildren(0), m_repeatJob(false), m_available(true) {}; ///<Job class constructor
+			m_numUnfinishedChildren(0), m_repeatJob(false), m_available(true) {}; ///< Job class constructor
 		~Job() {};	///<Job class desctructor
 	};
 
@@ -278,11 +278,11 @@ namespace vgjs {
 		friend JobSystem;
 		friend Job;
 
-		const static std::uint32_t	m_listLength = 2048;	///<Default length of a segment
+		const static std::uint32_t	m_listLength = 2048;	///< Default length of a segment
 		using JobList = std::vector<Job>;
-		uint32_t				jobIndex;		///<index of next job to allocate, or number of jobs to playback
-		std::vector<JobList*>	jobLists;		///<list of Job structures
-		vve::VeClock m_clock;					///<A clock for measuring execution times
+		uint32_t				jobIndex;		///< index of next job to allocate, or number of jobs to playback
+		std::vector<JobList*>	jobLists;		///< list of Job structures
+		vve::VeClock m_clock;					///< A clock for measuring execution times
 
 	public:
 		JobMemory() : m_clock("JobMemory", 200) {	///<JobMemory class constructor
@@ -300,33 +300,33 @@ namespace vgjs {
 		* \brief Get a new empty job from the job memory - if necessary add another job list
 		*/
 		Job * getNextJob() {
-			uint32_t index = jobIndex;	///<Use this index
-			jobIndex++;					///<increase counter by 1
+			uint32_t index = jobIndex;	///< Use this index
+			jobIndex++;					///< increase counter by 1
 
-			if (index > jobLists.size() * m_listLength - 1) {		///<do we need a new segment?
-				jobLists.emplace_back(new JobList(m_listLength));	///<create a new segment
+			if (index > jobLists.size() * m_listLength - 1) {		///< do we need a new segment?
+				jobLists.emplace_back(new JobList(m_listLength));	///< create a new segment
 			}
 
-			return &(*jobLists[index / m_listLength])[index % m_listLength];	///<get modulus of number of last job list
+			return &(*jobLists[index / m_listLength])[index % m_listLength];	///< get modulus of number of last job list
 		};
 
 		/**
 		* \brief Get the first job that is available
 		*/
 		Job* allocateJob( ) {
-			Job *pJob;						///<Pointer to the new job
+			Job *pJob;						///< Pointer to the new job
 			
 			//m_clock.start();
 			do {
-				pJob = getNextJob();			///<get the next Job in the pool
-			} while ( !pJob->m_available );		///<check whether it is available
+				pJob = getNextJob();			///< get the next Job in the pool
+			} while ( !pJob->m_available );		///< check whether it is available
 
-			pJob->m_available = false;			///<Mark this job as unavailable
-			pJob->m_nextInQueue = nullptr;		///<For storing in a queue
-			pJob->m_onFinishedJob = nullptr;				///<no successor Job yet
-			pJob->m_parentJob = nullptr;					///<default is no parent
-			pJob->m_repeatJob = false;						///<default is no repeat
-			pJob->m_thread_idx = VGJS_NULL_THREAD_IDX;		///<can run oon any thread
+			pJob->m_available = false;			///< Mark this job as unavailable
+			pJob->m_nextInQueue = nullptr;		///< For storing in a queue
+			pJob->m_onFinishedJob = nullptr;				///< no successor Job yet
+			pJob->m_parentJob = nullptr;					///< default is no parent
+			pJob->m_repeatJob = false;						///< default is no repeat
+			pJob->m_thread_idx = VGJS_NULL_THREAD_IDX;		///< can run oon any thread
 			pJob->m_thread_label = VGJS_NULL_THREAD_IDX;
 			pJob->m_exec_thread = VGJS_NULL_THREAD_IDX;
 			//m_clock.stop();
@@ -366,11 +366,11 @@ namespace vgjs {
 	*
 	*/
 	class JobQueueFIFO : public JobQueue {
-		std::queue<Job*> m_queue;	///<Conventional STL queue by now
+		std::queue<Job*> m_queue;	///< Conventional STL queue by now
 
 	public:
 		//---------------------------------------------------------------------------
-		JobQueueFIFO() {};	///<JobQueueFIFO class constructor
+		JobQueueFIFO() {};	///< JobQueueFIFO class constructor
 
 		/**
 		*
@@ -391,12 +391,12 @@ namespace vgjs {
 		*
 		*/
 		Job * pop() {
-			if (m_queue.size() == 0) {		///<if no jobs available
-				return nullptr;				///<return nullptr
+			if (m_queue.size() == 0) {		///< if no jobs available
+				return nullptr;				///< return nullptr
 			};
-			Job* pJob = m_queue.front();	///<get next job from front
-			m_queue.pop();					///<delete it from the queue
-			return pJob;					///<return it
+			Job* pJob = m_queue.front();	///< get next job from front
+			m_queue.pop();					///< delete it from the queue
+			return pJob;					///< return it
 		};
 
 		/**
@@ -421,7 +421,7 @@ namespace vgjs {
 	*/
 	class JobQueueLockFree : public JobQueue {
 
-		std::atomic<Job *> m_pHead = nullptr;	///<Head of the stack
+		std::atomic<Job *> m_pHead = nullptr;	///< Head of the stack
 
 	public:
 		JobQueueLockFree() {};	///<JobQueueLockFree class constructor
@@ -478,25 +478,25 @@ namespace vgjs {
 		friend Job;
 
 	private:
-		std::vector<std::thread>			m_threads;				///<array of thread structures
-		uint32_t							m_threadCount;			///<number of threads in the pool
-		uint32_t							m_start_idx = 0;		///<idx of first thread that is created
-		static thread_local int32_t			m_thread_index;			///<each thread has its own number
-		std::vector<JobMemory*>				m_job_memory;			///<each thread has its own job memory
-		std::vector<Job*>					m_jobPointers;			///<each thread has a current Job that it may run, pointers point to them
-		uint32_t							m_memory_reset_counter = 0; ///<signals each thread when to reset its memory
-		std::atomic<bool>					m_terminate;			///<Flag for terminating the pool
-		std::vector<JobQueue*>				m_jobQueues;			///<Each thread has its own Job queue
-		std::vector<JobQueue*>				m_jobQueuesLocal;		///<a secondary low priority FIFO queue for each thread, where polling jobs are parked
-		std::vector<JobQueue*>				m_jobQueuesLocalFIFO;	///<a secondary low priority FIFO queue for each thread, where polling jobs are parked
-		std::atomic<uint32_t>				m_numJobs;				///<total number of jobs in the system
-		std::vector<uint64_t>				m_numLoops;				///<number of loops the task has done so far
-		std::vector<uint64_t>				m_numMisses;			///<number of times the task did not get a job
-		std::mutex							m_mainThreadMutex;		///<used for syncing with main thread
-		std::condition_variable				m_mainThreadCondVar;	///<used for waking up main tread
+		std::vector<std::thread>			m_threads;				///< array of thread structures
+		uint32_t							m_threadCount;			///< number of threads in the pool
+		uint32_t							m_start_idx = 0;		///< idx of first thread that is created
+		static thread_local int32_t			m_thread_index;			///< each thread has its own number
+		std::vector<JobMemory*>				m_job_memory;			///< each thread has its own job memory
+		std::vector<Job*>					m_jobPointers;			///< each thread has a current Job that it may run, pointers point to them
+		uint32_t							m_memory_reset_counter = 0; ///< signals each thread when to reset its memory
+		std::atomic<bool>					m_terminate;			///< Flag for terminating the pool
+		std::vector<JobQueue*>				m_jobQueues;			///< Each thread has its own Job queue
+		std::vector<JobQueue*>				m_jobQueuesLocal;		///< a secondary low priority FIFO queue for each thread, where polling jobs are parked
+		std::vector<JobQueue*>				m_jobQueuesLocalFIFO;	///< a secondary low priority FIFO queue for each thread, where polling jobs are parked
+		std::atomic<uint32_t>				m_numJobs;				///< total number of jobs in the system
+		std::vector<uint64_t>				m_numLoops;				///< number of loops the task has done so far
+		std::vector<uint64_t>				m_numMisses;			///< number of times the task did not get a job
+		std::mutex							m_mainThreadMutex;		///< used for syncing with main thread
+		std::condition_variable				m_mainThreadCondVar;	///< used for waking up main tread
 
 	public:
-		vve::VeClock						m_clock;				///<Clock for time measurements
+		vve::VeClock						m_clock;				///< Clock for time measurements
 
 		/**
 		*
@@ -506,49 +506,49 @@ namespace vgjs {
 		*
 		*/
 		void threadTask( uint32_t threadIndex = 0 ) {
-			thread_local uint32_t memory_reset_counter = 0;			///<Used for resetting the pool
-			static std::atomic<uint32_t> threadIndexCounter = 0;	///<Counted up when started
+			thread_local uint32_t memory_reset_counter = 0;			//Used for resetting the pool
+			static std::atomic<uint32_t> threadIndexCounter = 0;	//Counted up when started
 
-			m_thread_index = threadIndex;	///<Remember your own thread number
+			m_thread_index = threadIndex;	//Remember your own thread number
 
-			threadIndexCounter++;			///<count up at start
-			while(threadIndexCounter.load() < m_threadCount )	///<Continuous only if all threads are running
+			threadIndexCounter++;			//count up at start
+			while(threadIndexCounter.load() < m_threadCount )	//Continuous only if all threads are running
 				std::this_thread::sleep_for(std::chrono::nanoseconds(10));
 
 			//uint32_t counter = 1;
 
-			while (!m_terminate) {			///<Run until the job system is terminated
-				m_numLoops[threadIndex]++;	///<Count up the number of loops run
+			while (!m_terminate) {			//Run until the job system is terminated
+				m_numLoops[threadIndex]++;	//Count up the number of loops run
 
-				if (m_memory_reset_counter > memory_reset_counter) { ///<Possibly reset your job memory
+				if (m_memory_reset_counter > memory_reset_counter) { //Possibly reset your job memory
 					m_job_memory[m_thread_index]->resetPool();
 					memory_reset_counter = m_memory_reset_counter;
 				}
 
-				if (m_terminate) break;	///<Test for termination
+				if (m_terminate) break;	//Test for termination
 
-				Job * pJob = m_jobQueuesLocal[threadIndex]->pop();	///<Try to get a job from local queue
+				Job * pJob = m_jobQueuesLocal[threadIndex]->pop();	//Try to get a job from local queue
 
 				if (m_terminate) break;
 
-				if( pJob == nullptr )			///<If no job found
-					pJob = m_jobQueuesLocalFIFO[threadIndex]->pop(); ///<Try to get a job from local FIFO queue
+				if( pJob == nullptr )			//If no job found
+					pJob = m_jobQueuesLocalFIFO[threadIndex]->pop(); //Try to get a job from local FIFO queue
 
 				if (m_terminate) break;
 
 				if (pJob == nullptr)
-					pJob = m_jobQueues[threadIndex]->pop(); ///<Try to get a job from the general job queue
+					pJob = m_jobQueues[threadIndex]->pop(); //Try to get a job from the general job queue
 
 				if (m_terminate) break;
 
-				//uint32_t tsize = (uint32_t)m_threadCount;	///<If non popped 
-				if (pJob == nullptr && m_threadCount > 1) {	///<try to steal one from another thread
-					uint32_t idx = m_threadCount / 2;		///< std::rand() % tsize;
-					uint32_t max = m_threadCount;			///<Max number of tries to steal one
+				//uint32_t tsize = (uint32_t)m_threadCount;	//If non popped 
+				if (pJob == nullptr && m_threadCount > 1) {	//try to steal one from another thread
+					uint32_t idx = m_threadCount / 2;		//std::rand() % tsize;
+					uint32_t max = m_threadCount;			//Max number of tries to steal one
 
-					while (pJob == nullptr) {				///<loop until found or retry own 
+					while (pJob == nullptr) {				//loop until found or retry own 
 						if (idx != threadIndex)
-							pJob = m_jobQueues[idx]->steal();	///<Try to steal one
+							pJob = m_jobQueues[idx]->steal();	//Try to steal one
 						idx = (idx+1) % m_threadCount;
 						max--;
 						if (max == 0) break;
@@ -558,17 +558,17 @@ namespace vgjs {
 
 				if (m_terminate) break;
 
-				if (pJob != nullptr) {	///<If found a job
+				if (pJob != nullptr) {	//f found a job
 					//std::cout << "start job on thread idx " << threadIndex << " with label " << pJob->m_thread_label << std::endl;
 
-					m_jobPointers[threadIndex] = pJob;						///<make pointer to the Job structure accessible!
-					pJob->t1 = std::chrono::high_resolution_clock::now();	///<time of execution
-					(*pJob)();												///<run the job
-					pJob->t2 = std::chrono::high_resolution_clock::now();	///<time of finishing
-					pJob->m_exec_thread = threadIndex;						///<thread idx this job was executed on
+					m_jobPointers[threadIndex] = pJob;						//make pointer to the Job structure accessible!
+					pJob->t1 = std::chrono::high_resolution_clock::now();	//time of execution
+					(*pJob)();												//run the job
+					pJob->t2 = std::chrono::high_resolution_clock::now();	//time of finishing
+					pJob->m_exec_thread = threadIndex;						//thread idx this job was executed on
 				}
 				else {
-					m_numMisses[threadIndex]++;	///<Increase miss counter, possibly sleep or wait for a signal
+					m_numMisses[threadIndex]++;	///< Increase miss counter, possibly sleep or wait for a signal
 					//std::this_thread::sleep_for(std::chrono::nanoseconds(1));
 					//std::this_thread::yield();
 				};
@@ -577,19 +577,24 @@ namespace vgjs {
 			m_mainThreadCondVar.notify_all();		//make sure to wake up a waiting main thread
 		};
 
-		//---------------------------------------------------------------------------
-		//class constructor
-		//threadCount Number of threads to start. If 0 then the number of hardware threads is used.
-		//start_idx is either 0, then the main thread is not part of the pool, or 1, then the main thread must join
-		//
 		static JobSystem *	pInstance;			//pointer to singleton
-		JobSystem(uint32_t threadCount = 0, uint32_t start_idx = 0) : m_terminate(false), m_numJobs(0), m_clock("Job System", 100) {
+
+		/**
+		*
+		* \brief JobSystem class constructor
+		*
+		* \param[in] threadIndex Number of this thread
+		* \param[in] start_idx Number of first thread, if 1 then the main thread should enter as thread 0 
+		*
+		*/
+		JobSystem(uint32_t threadCount = 0, uint32_t start_idx = 0) : 
+			m_terminate(false), m_numJobs(0), m_clock("Job System", 100) {
 			pInstance = this;
 
 			m_start_idx = start_idx;
 			m_threadCount = threadCount;
 			if (m_threadCount == 0) {
-				m_threadCount = std::thread::hardware_concurrency();		//main thread is also running
+				m_threadCount = std::thread::hardware_concurrency();		///< main thread is also running
 			}
 
 			m_job_memory.resize(m_threadCount);
@@ -597,10 +602,10 @@ namespace vgjs {
 			m_jobQueuesLocal.resize(m_threadCount);							//reserve mem for local job queue pointers
 			m_jobQueuesLocalFIFO.resize(m_threadCount);						//reserve mem for polling job queue pointers
 			m_jobPointers.resize(m_threadCount);							//rerve mem for Job pointers
-			m_numMisses.resize(m_threadCount);
-			m_numLoops.resize(m_threadCount);
+			m_numMisses.resize(m_threadCount);								//each threads counts its own misses
+			m_numLoops.resize(m_threadCount);								//each tread counts its own loops
 			for (uint32_t i = 0; i < m_threadCount; i++) {
-				m_job_memory[i]			= new JobMemory;
+				m_job_memory[i]			= new JobMemory;					//Each thread has its own job memory
 				m_jobQueues[i]			= new JobQueueLockFree();			//job queue with work stealing
 				m_jobQueuesLocal[i]		= new JobQueueLockFree();			//job queue for local work
 				m_jobQueuesLocalFIFO[i] = new JobQueueFIFO();				//job queue for local polling work
@@ -615,16 +620,28 @@ namespace vgjs {
 			}
 		};
 
-		//---------------------------------------------------------------------------
-		//singleton access through class
-		//returns a pointer to the JobSystem instance
-		//
+		/**
+		*
+		* \brief Singleton access through class
+		*
+		* \param[in] threadIndex Number of threads in the system
+		* \param[in] start_idx Number of first thread, if 1 then the main thread should enter as thread 0
+		* \returns a pointer to the JobSystem instance
+		*
+		*/
 		static JobSystem* getInstance(uint32_t threadCount = 0, uint32_t start_idx = 0 ) {
 			if (pInstance == nullptr) 
 				pInstance = new JobSystem(threadCount, start_idx);
 			return pInstance;
 		};
 
+		/**
+		*
+		* \brief Test whether the job system has been started yet
+		*
+		* \returns true if the instance exists, else false
+		*
+		*/
 		static bool isInstanceCreated() {
 			return pInstance != nullptr;
 		};
@@ -633,76 +650,110 @@ namespace vgjs {
 		JobSystem& operator=(const JobSystem&) = delete;
 		JobSystem(JobSystem&&) = default;					// but movable
 		JobSystem& operator=(JobSystem&&) = default;
+
+		/**
+		* \brief JobSystem class destructor
+		*/
 		~JobSystem() {
 			m_threads.clear();
 			for (auto pmem : m_job_memory)
 				delete pmem;
 		};
 
-		//---------------------------------------------------------------------------
-		//sets a flag to terminate all running threads
-		//
+		/**
+		* \brief Terminate the job system
+		*/
 		void terminate() {
 			m_terminate = true;					//let threads terminate
 		};
 
-		//---------------------------------------------------------------------------
-		//returns total number of jobs in the system
-		//
+		/**
+		* \brief Get the number of jobs in the system
+		*
+		* \returns total number of jobs in the system
+		*/
 		uint32_t getNumberJobs() {
 			return m_numJobs;
 		};
 
-		//---------------------------------------------------------------------------
-		//can be called by the main thread to wait for the completion of all jobs in the system
-		//returns as soon as there are no more jobs in the job queues
-		//
+		/**
+		*
+		* \brief Wait for completion of all jobs
+		*
+		* Can be called by the main thread to wait for the completion of all jobs in the system.
+		* Returns as soon as there are no more jobs in the job queues.
+		*
+		*/
 		void wait() {
-			std::chrono::seconds sec(1);
-
 			while (getNumberJobs() > 0) {
 				std::unique_lock<std::mutex> lock(m_mainThreadMutex);
 				m_mainThreadCondVar.wait_for(lock, std::chrono::microseconds(500));		//wait to be awakened
 			}
 		};
 
-		//---------------------------------------------------------------------------
-		//can be called by the main thread to wait for all threads to terminate
-		//returns as soon as all threads have exited
-		//
+		/**
+		*
+		* \brief Wait for termination of all jobs
+		*
+		* Can be called by the main thread to wait for all threads to terminate.
+		* Returns as soon as all threads have exited.
+		*
+		*/
 		void waitForTermination() {
 			for (uint32_t i = m_start_idx; i < m_threads.size(); i++ ) {
 				m_threads[i].join();
 			}
 		};
 
-		//---------------------------------------------------------------------------
-		// returns number of threads in the thread pool
-		//
+		/**
+		*
+		* \brief Get the number of jobs in the job system
+		*
+		* \returns number of threads in the job system
+		*
+		*/
 		std::size_t getThreadCount() const { 
 			return m_threadCount; 
 		};
 
-		//---------------------------------------------------------------------------
-		//each thread has a unique index between 0 and numThreads - 1
-		//returns index of the thread that is calling this function
-		//can e.g. be used for allocating command buffers from command buffer pools in Vulkan
-		//
+		/**
+		*
+		* \brief Get the number of jobs in the job system
+		*
+		* Each thread has a unique index between 0 and numThreads - 1.
+		* Returns index of the thread that is calling this function.
+		* Can e.g. be used for allocating command buffers from command buffer pools in Vulkan.
+		*
+		* \returns the index of this thread
+		*
+		*/
 		int32_t getThreadIndex() {
 			return m_thread_index;
 		};
 
-		//---------------------------------------------------------------------------
-		//wrapper for resetting a job pool in the job memory
-		//poolNumber Number of the pool to reset
-		//
+		/**
+		*
+		* \brief Reset all pool memory counters to zero
+		*
+		* Wrapper for resetting a job pool in the job memory.
+		* poolNumber Number of the pool to reset.
+		*
+		*/
 		void resetPool() {
 			m_memory_reset_counter++;
 		};
 		
-		//---------------------------------------------------------------------------
-		//returns a pointer to the job of the current task
-		//
+		/**
+		*
+		* \brief Get the job instance this job runs in.
+		*
+		* Every job runs in a job instance. This function provides a pointer to the instance.
+		* When starting a new child job, the child job must know its parent instance.
+		* So this function provides this information.
+		* 
+		* \returns a pointer to the job instance of the current task
+		*
+		*/
 		Job *getJobPointer() {
 			int32_t threadNumber = getThreadIndex();
 			if (threadNumber < 0) 
@@ -710,13 +761,16 @@ namespace vgjs {
 			return m_jobPointers[threadNumber];
 		};
 
-		//---------------------------------------------------------------------------
-		//add a job to a queue
-		//pJob Pointer to the job to schedule
-		//queue Selects the queue, the lock free queue is LIFO, the polling queue is FIFO
-		//
+		/**
+		*
+		* \brief Add a job to a queue.
+		*
+		* \param[in] pJob Pointer to the new job to add to a queue
+		* \returns a pointer to the job instance of the current task
+		*
+		*/
 		void addJob( Job *pJob ) {
-			thread_local static uint32_t next_thread = 0;
+			thread_local static uint32_t next_thread = 0;	///< counter for distributing jjobs to threads evenly
 
 			assert(pJob != nullptr);
 			++m_numJobs;	//keep track of the number of jobs in the system to sync with main thread
@@ -735,13 +789,18 @@ namespace vgjs {
 			}
 
 			++next_thread;
-			m_jobQueues[next_thread % m_threadCount]->push(pJob);					//put into random LIFO queue
+			m_jobQueues[next_thread % m_threadCount]->push(pJob);	//put into random LIFO queue
 
 		};
 
-		//---------------------------------------------------------------------------
-		//create a new child job in a job pool
-		//func The function to schedule, as rvalue reference
+		/**
+		*
+		* \brief Create a new child job
+		*
+		* \param[in] func The function to schedule, as rvalue reference
+		* \param[in] thread_id The ID of the job, consist of the thread index and a label
+		*
+		*/
 		void addJob( Function& func, VgjsThreadID thread_id = VGJS_NULL_THREAD_ID ) {
 			Job* pJob = m_job_memory[m_thread_index]->allocateJob();
 			pJob->setParentJob(getJobPointer());	//set parent Job to notify on finished, or nullptr if main thread
@@ -750,9 +809,14 @@ namespace vgjs {
 			addJob(pJob);
 		};
 
-		//func The function to schedule, as rvalue reference
-		//poolNumber Number of the pool
-		//id A name for the job for debugging
+		/**
+		*
+		* \brief Create a new child job
+		*
+		* \param[in] func The function to schedule, as rvalue reference
+		* \param[in] thread_id The ID of the job, consist of the thread index and a label
+		*
+		*/
 		void addJob( Function&& func, VgjsThreadID thread_id = VGJS_NULL_THREAD_ID ) {
 			Job* pJob = m_job_memory[m_thread_index]->allocateJob();
 			//m_clock.start();
@@ -763,12 +827,17 @@ namespace vgjs {
 			//m_clock.stop();
 		};
 
-		//---------------------------------------------------------------------------
-		//create a successor job for this job, will be added to the queue after 
-		//the current job finished (i.e. all children have finished)
-		//func The function to schedule
-		//id A name for the job for debugging
-		//
+		/**
+		*
+		* \brief Create a successor job for the current job
+		*
+		* Create a successor job for this job, will be added to the queue after 
+		* the current job finished (i.e. all children have finished).
+		*
+		* \param[in] func The function to schedule, as rvalue reference
+		* \param[in] thread_id The ID of the job, consist of the thread index and a label
+		*
+		*/
 		void onFinishedAddJob(Function func, VgjsThreadID thread_id = VGJS_NULL_THREAD_ID ) {
 			Job *pCurrentJob = getJobPointer();			//should never be called by meain thread
 			if (pCurrentJob == nullptr) return;			//is null if called by main thread
@@ -779,10 +848,14 @@ namespace vgjs {
 			pCurrentJob->setOnFinished(pNewJob);
 		};
 
-		//---------------------------------------------------------------------------
-		//Once the Job finished, it will be rescheduled  and repeated
-		//This also includes all children, which will be recreated and run
-		//
+		/**
+		*
+		* \brief Repeat this job after it has finished
+		*
+		* Once the Job finished, it will be reschedule and repeated.
+		* This also includes all children, which will be recreated and run.
+		*
+		*/
 		void onFinishedRepeatJob() {
 			Job *pCurrentJob = getJobPointer();						//can be nullptr if called from main thread
 			if (pCurrentJob == nullptr) return;						//is null if called by main thread
@@ -790,15 +863,13 @@ namespace vgjs {
 			pCurrentJob->m_repeatJob = true;						//flag that in onFinished() the job will be rescheduled
 		}
 
-		//---------------------------------------------------------------------------
-		//wait for all children to finish and then terminate the pool
-		void onFinishedTerminatePool() {
-			onFinishedAddJob( std::bind(&JobSystem::terminate, this) );
-		};
-
-		//---------------------------------------------------------------------------
-		//Print deubg information, this is synchronized so that text is not confused on the console
-		//s The string to print to the console
+		/**
+		*
+		* \brief Print debug information, this is synchronized so that text is not confused on the console
+		*
+		* \param[in] s The string to print to the console
+		*
+		*/
 		void printDebug(std::string s) {
 			static std::mutex lmutex;
 			std::lock_guard<std::mutex> lock(lmutex);
@@ -811,32 +882,52 @@ namespace vgjs {
 
 
 
-#ifdef IMPLEMENT_GAMEJOBSYSTEM
+#if defined(IMPLEMENT_GAMEJOBSYSTEM) || defined(DOXYGEN)
 
 namespace vgjs {
 
-	JobSystem* JobSystem::pInstance = nullptr;
-	thread_local int32_t JobSystem::m_thread_index = 0;
+	JobSystem* JobSystem::pInstance = nullptr;				///< Singleton instance of the JobSystem
+	thread_local int32_t JobSystem::m_thread_index = 0;		///< Thread local index of the thread
 
 
+	/**
+	*
+	* \brief Break down an ID into its components and return the thread index
+	*
+	* \param[in] thread_id ID of the thread
+	*
+	*/
 	VgjsThreadIndex getThreadIndexFromID(VgjsThreadID thread_id) {
 		return (VgjsThreadIndex)(thread_id & VGJS_NULL_THREAD_IDX);
 	}
 
+	/**
+	*
+	* \brief Break down an ID into its components and return the thread label
+	*
+	* \param[in] thread_id ID of the thread
+	*
+	*/
 	VgjsThreadIndex getThreadLabelFromID(VgjsThreadID thread_id) {
 		return (VgjsThreadIndex)(thread_id >> 32);
 	}
 
+	/**
+	*
+	* \brief Construct an ID from index and label
+	*
+	* \param[in] thread_idx Index of the thread
+	* \param[in] label Label of the thread
+	*
+	*/
 	VgjsThreadID TID(VgjsThreadIndex thread_idx, VgjsThreadIndex label) {
 		return (VgjsThreadID)label << 32 | (VgjsThreadID)thread_idx;
 	}
 
-	//---------------------------------------------------------------------------
-	//This is run if the job is executed
+	/**
+	* \brief The call operator of a job, calling the stored function object
+	*/
 	void Job::operator()() {
-		if (m_function == nullptr) 
-			return;				//no function bound -> return
-
 		m_numUnfinishedChildren = 1;					//number of children includes itself
 
 		//std::cout << "call job with label " << m_thread_label << " children left " << m_numUnfinishedChildren << std::endl;
@@ -852,8 +943,9 @@ namespace vgjs {
 	};
 
 
-	//---------------------------------------------------------------------------
-	//This call back is called once a Job and all its children are finished
+	/**
+	* \brief This call back is called once a Job and all its children are finished
+	*/
 	void Job::onFinished() {
 
 		//std::cout << "finished job with label " << m_thread_label << std::endl;
@@ -885,10 +977,6 @@ namespace vgjs {
 
 
 }
-
-#else
-
-
 
 #endif
 

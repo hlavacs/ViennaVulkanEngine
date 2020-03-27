@@ -61,12 +61,15 @@ $(function() {
 
 <div id="nav-path" class="navpath">
   <ul>
-<li class="navelem"><b>vgjs</b></li><li class="navelem"><a class="el" href="classvgjs_1_1_job_memory.html">JobMemory</a></li>  </ul>
+<li class="navelem"><a class="el" href="namespacevgjs.html">vgjs</a></li><li class="navelem"><a class="el" href="classvgjs_1_1_job_memory.html">JobMemory</a></li>  </ul>
 </div>
 </div><!-- top -->
 <div class="header">
   <div class="summary">
 <a href="#pub-methods">Public Member Functions</a> &#124;
+<a href="#pri-types">Private Types</a> &#124;
+<a href="#pri-attribs">Private Attributes</a> &#124;
+<a href="#pri-static-attribs">Static Private Attributes</a> &#124;
 <a href="classvgjs_1_1_job_memory-members.html">List of all members</a>  </div>
   <div class="headertitle">
 <div class="title">vgjs::JobMemory Class Reference</div>  </div>
@@ -90,15 +93,64 @@ Public Member Functions</h2></td></tr>
 <tr class="memitem:a63fc5521930b377448c7d4d9f03ff7b7"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classvgjs_1_1_job.html">Job</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classvgjs_1_1_job_memory.html#a63fc5521930b377448c7d4d9f03ff7b7">allocateJob</a> ()</td></tr>
 <tr class="memdesc:a63fc5521930b377448c7d4d9f03ff7b7"><td class="mdescLeft">&#160;</td><td class="mdescRight">Get the first job that is available.  <a href="#a63fc5521930b377448c7d4d9f03ff7b7">More...</a><br /></td></tr>
 <tr class="separator:a63fc5521930b377448c7d4d9f03ff7b7"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:af31f787e3ac0dc6ced759b7ef9c2097e"><td class="memItemLeft" align="right" valign="top"><a id="af31f787e3ac0dc6ced759b7ef9c2097e"></a>
-void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classvgjs_1_1_job_memory.html#af31f787e3ac0dc6ced759b7ef9c2097e">resetPool</a> ()</td></tr>
-<tr class="memdesc:af31f787e3ac0dc6ced759b7ef9c2097e"><td class="mdescLeft">&#160;</td><td class="mdescRight">Reset index for new frame, start with 0 again. <br /></td></tr>
+<tr class="memitem:af31f787e3ac0dc6ced759b7ef9c2097e"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classvgjs_1_1_job_memory.html#af31f787e3ac0dc6ced759b7ef9c2097e">resetPool</a> ()</td></tr>
+<tr class="memdesc:af31f787e3ac0dc6ced759b7ef9c2097e"><td class="mdescLeft">&#160;</td><td class="mdescRight">Reset index for new frame, start with 0 again.  <a href="#af31f787e3ac0dc6ced759b7ef9c2097e">More...</a><br /></td></tr>
 <tr class="separator:af31f787e3ac0dc6ced759b7ef9c2097e"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table><table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pri-types"></a>
+Private Types</h2></td></tr>
+<tr class="memitem:a312761d4ef46c8f87b41224b3a82b97a"><td class="memItemLeft" align="right" valign="top">using&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classvgjs_1_1_job_memory.html#a312761d4ef46c8f87b41224b3a82b97a">JobList</a> = std::vector&lt; <a class="el" href="classvgjs_1_1_job.html">Job</a> &gt;</td></tr>
+<tr class="separator:a312761d4ef46c8f87b41224b3a82b97a"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table><table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pri-attribs"></a>
+Private Attributes</h2></td></tr>
+<tr class="memitem:a43919bc5de9923012879a7ca7a474e40"><td class="memItemLeft" align="right" valign="top">friend&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classvgjs_1_1_job_memory.html#a43919bc5de9923012879a7ca7a474e40">JobSystem</a></td></tr>
+<tr class="separator:a43919bc5de9923012879a7ca7a474e40"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aede75f7f8bbfedcec67aa781921d624f"><td class="memItemLeft" align="right" valign="top">friend&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classvgjs_1_1_job_memory.html#aede75f7f8bbfedcec67aa781921d624f">Job</a></td></tr>
+<tr class="separator:aede75f7f8bbfedcec67aa781921d624f"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a15b3f23ecf898990ae5a658cf5fc85c9"><td class="memItemLeft" align="right" valign="top">uint32_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classvgjs_1_1_job_memory.html#a15b3f23ecf898990ae5a658cf5fc85c9">jobIndex</a></td></tr>
+<tr class="memdesc:a15b3f23ecf898990ae5a658cf5fc85c9"><td class="mdescLeft">&#160;</td><td class="mdescRight">index of next job to allocate, or number of jobs to playback  <a href="#a15b3f23ecf898990ae5a658cf5fc85c9">More...</a><br /></td></tr>
+<tr class="separator:a15b3f23ecf898990ae5a658cf5fc85c9"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a87527f57a49d875d77e0295c36158f91"><td class="memItemLeft" align="right" valign="top">std::vector&lt; <a class="el" href="classvgjs_1_1_job_memory.html#a312761d4ef46c8f87b41224b3a82b97a">JobList</a> * &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classvgjs_1_1_job_memory.html#a87527f57a49d875d77e0295c36158f91">jobLists</a></td></tr>
+<tr class="memdesc:a87527f57a49d875d77e0295c36158f91"><td class="mdescLeft">&#160;</td><td class="mdescRight">list of <a class="el" href="classvgjs_1_1_job.html" title="This class holds a single job, including a function object and other info.">Job</a> structures  <a href="#a87527f57a49d875d77e0295c36158f91">More...</a><br /></td></tr>
+<tr class="separator:a87527f57a49d875d77e0295c36158f91"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a5c090a4cfa917f9cd2cbe7cc4ee5cf19"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classvve_1_1_ve_clock.html">vve::VeClock</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classvgjs_1_1_job_memory.html#a5c090a4cfa917f9cd2cbe7cc4ee5cf19">m_clock</a></td></tr>
+<tr class="memdesc:a5c090a4cfa917f9cd2cbe7cc4ee5cf19"><td class="mdescLeft">&#160;</td><td class="mdescRight">A clock for measuring execution times.  <a href="#a5c090a4cfa917f9cd2cbe7cc4ee5cf19">More...</a><br /></td></tr>
+<tr class="separator:a5c090a4cfa917f9cd2cbe7cc4ee5cf19"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table><table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pri-static-attribs"></a>
+Static Private Attributes</h2></td></tr>
+<tr class="memitem:af1ff1d2b3e64e1ed5e60021bcfbf7972"><td class="memItemLeft" align="right" valign="top">static const std::uint32_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classvgjs_1_1_job_memory.html#af1ff1d2b3e64e1ed5e60021bcfbf7972">m_listLength</a> = 2048</td></tr>
+<tr class="memdesc:af1ff1d2b3e64e1ed5e60021bcfbf7972"><td class="mdescLeft">&#160;</td><td class="mdescRight">Default length of a segment.  <a href="#af1ff1d2b3e64e1ed5e60021bcfbf7972">More...</a><br /></td></tr>
+<tr class="separator:af1ff1d2b3e64e1ed5e60021bcfbf7972"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <div class="textblock"><p>Hold memory for the <a class="el" href="classvgjs_1_1_job.html" title="This class holds a single job, including a function object and other info.">Job</a> class instances. </p>
 <p>The <a class="el" href="classvgjs_1_1_job_memory.html" title="Hold memory for the Job class instances.">JobMemory</a> class manages memory for storing allocated jobs. Allocation is done linearly, using a counter. No need for synchronization because each thread has its own job memory and allocates only locally. Since the memory grows continuously, it must be reset periodically. Typically this is done once every game loop. Resetting can be done during normal operation, since jobs still in use are protected by a boolean. </p>
-</div><h2 class="groupheader">Constructor &amp; Destructor Documentation</h2>
+</div><h2 class="groupheader">Member Typedef Documentation</h2>
+<a id="a312761d4ef46c8f87b41224b3a82b97a"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a312761d4ef46c8f87b41224b3a82b97a">&#9670;&nbsp;</a></span>JobList</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">using <a class="el" href="classvgjs_1_1_job_memory.html#a312761d4ef46c8f87b41224b3a82b97a">vgjs::JobMemory::JobList</a> =  std::vector&lt;<a class="el" href="classvgjs_1_1_job.html">Job</a>&gt;</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">private</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<h2 class="groupheader">Constructor &amp; Destructor Documentation</h2>
 <a id="a39b7152b540783435890abb9022b6462"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a39b7152b540783435890abb9022b6462">&#9670;&nbsp;</a></span>JobMemory()</h2>
 
@@ -176,15 +228,15 @@ void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="clas
 </div><div class="memdoc">
 
 <p>Get the first job that is available. </p>
-<p>&lt;Pointer to the new job</p>
-<p>&lt;get the next <a class="el" href="classvgjs_1_1_job.html" title="This class holds a single job, including a function object and other info.">Job</a> in the pool</p>
-<p>&lt;check whether it is available</p>
-<p>&lt;Mark this job as unavailable</p>
-<p>&lt;For storing in a queue</p>
-<p>&lt;no successor <a class="el" href="classvgjs_1_1_job.html" title="This class holds a single job, including a function object and other info.">Job</a> yet</p>
-<p>&lt;default is no parent</p>
-<p>&lt;default is no repeat</p>
-<p>&lt;can run oon any thread </p>
+<p>&lt; Pointer to the new job</p>
+<p>&lt; get the next <a class="el" href="classvgjs_1_1_job.html" title="This class holds a single job, including a function object and other info.">Job</a> in the pool</p>
+<p>&lt; check whether it is available</p>
+<p>&lt; Mark this job as unavailable</p>
+<p>&lt; For storing in a queue</p>
+<p>&lt; no successor <a class="el" href="classvgjs_1_1_job.html" title="This class holds a single job, including a function object and other info.">Job</a> yet</p>
+<p>&lt; default is no parent</p>
+<p>&lt; default is no repeat</p>
+<p>&lt; can run oon any thread </p>
 
 </div>
 </div>
@@ -212,11 +264,179 @@ void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="clas
 </div><div class="memdoc">
 
 <p>Get a new empty job from the job memory - if necessary add another job list. </p>
-<p>&lt;Use this index</p>
-<p>&lt;increase counter by 1</p>
-<p>&lt;do we need a new segment?</p>
-<p>&lt;create a new segment</p>
-<p>&lt;get modulus of number of last job list </p>
+<p>&lt; Use this index</p>
+<p>&lt; increase counter by 1</p>
+<p>&lt; do we need a new segment?</p>
+<p>&lt; create a new segment</p>
+<p>&lt; get modulus of number of last job list </p>
+
+</div>
+</div>
+<a id="af31f787e3ac0dc6ced759b7ef9c2097e"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#af31f787e3ac0dc6ced759b7ef9c2097e">&#9670;&nbsp;</a></span>resetPool()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">void vgjs::JobMemory::resetPool </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Reset index for new frame, start with 0 again. </p>
+
+</div>
+</div>
+<h2 class="groupheader">Member Data Documentation</h2>
+<a id="aede75f7f8bbfedcec67aa781921d624f"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aede75f7f8bbfedcec67aa781921d624f">&#9670;&nbsp;</a></span>Job</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">friend vgjs::JobMemory::Job</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">private</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="a15b3f23ecf898990ae5a658cf5fc85c9"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a15b3f23ecf898990ae5a658cf5fc85c9">&#9670;&nbsp;</a></span>jobIndex</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">uint32_t vgjs::JobMemory::jobIndex</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">private</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>index of next job to allocate, or number of jobs to playback </p>
+
+</div>
+</div>
+<a id="a87527f57a49d875d77e0295c36158f91"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a87527f57a49d875d77e0295c36158f91">&#9670;&nbsp;</a></span>jobLists</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">std::vector&lt;<a class="el" href="classvgjs_1_1_job_memory.html#a312761d4ef46c8f87b41224b3a82b97a">JobList</a>*&gt; vgjs::JobMemory::jobLists</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">private</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>list of <a class="el" href="classvgjs_1_1_job.html" title="This class holds a single job, including a function object and other info.">Job</a> structures </p>
+
+</div>
+</div>
+<a id="a43919bc5de9923012879a7ca7a474e40"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a43919bc5de9923012879a7ca7a474e40">&#9670;&nbsp;</a></span>JobSystem</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">friend vgjs::JobMemory::JobSystem</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">private</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="a5c090a4cfa917f9cd2cbe7cc4ee5cf19"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a5c090a4cfa917f9cd2cbe7cc4ee5cf19">&#9670;&nbsp;</a></span>m_clock</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="classvve_1_1_ve_clock.html">vve::VeClock</a> vgjs::JobMemory::m_clock</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">private</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>A clock for measuring execution times. </p>
+
+</div>
+</div>
+<a id="af1ff1d2b3e64e1ed5e60021bcfbf7972"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#af1ff1d2b3e64e1ed5e60021bcfbf7972">&#9670;&nbsp;</a></span>m_listLength</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">const std::uint32_t vgjs::JobMemory::m_listLength = 2048</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">static</span><span class="mlabel">private</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Default length of a segment. </p>
 
 </div>
 </div>
@@ -226,7 +446,7 @@ void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="clas
 </div><!-- contents -->
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>
-Generated on Fri Mar 27 2020 17:55:54 for Vienna Vulkan Engine by &#160;<a href="http://www.doxygen.org/index.html">
+Generated on Fri Mar 27 2020 22:12:24 for Vienna Vulkan Engine by &#160;<a href="http://www.doxygen.org/index.html">
 <img class="footer" src="doxygen.png" alt="doxygen"/>
 </a> 1.8.15
 </small></address>

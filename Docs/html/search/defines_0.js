@@ -1,4 +1,4 @@
 var searchData=
 [
-  ['ve_5fenable_5fmultithreading',['VE_ENABLE_MULTITHREADING',['../_v_e_defines_8h.html#a26f4cc9688ea3e5bb203c80263a18d7d',1,'VEDefines.h']]]
+  ['_5fuse_5fmath_5fdefines',['_USE_MATH_DEFINES',['../_v_e_defines_8h.html#a525335710b53cb064ca56b936120431e',1,'VEDefines.h']]]
 ];

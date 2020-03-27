@@ -61,7 +61,7 @@ $(function() {
 
 <div id="nav-path" class="navpath">
   <ul>
-<li class="navelem"><b>vgjs</b></li><li class="navelem"><a class="el" href="classvgjs_1_1_job_queue.html">JobQueue</a></li>  </ul>
+<li class="navelem"><a class="el" href="namespacevgjs.html">vgjs</a></li><li class="navelem"><a class="el" href="classvgjs_1_1_job_queue.html">JobQueue</a></li>  </ul>
 </div>
 </div><!-- top -->
 <div class="header">
@@ -91,28 +91,82 @@ Inheritance diagram for vgjs::JobQueue:</div>
 <table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-methods"></a>
 Public Member Functions</h2></td></tr>
+<tr class="memitem:a6aea331e1151ec3fefc91391b7c20925"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classvgjs_1_1_job_queue.html#a6aea331e1151ec3fefc91391b7c20925">JobQueue</a> ()</td></tr>
+<tr class="separator:a6aea331e1151ec3fefc91391b7c20925"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a0041d643a030d3b509a9ca503c5a611e"><td class="memItemLeft" align="right" valign="top">virtual void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classvgjs_1_1_job_queue.html#a0041d643a030d3b509a9ca503c5a611e">push</a> (<a class="el" href="classvgjs_1_1_job.html">Job</a> *pJob)=0</td></tr>
 <tr class="memdesc:a0041d643a030d3b509a9ca503c5a611e"><td class="mdescLeft">&#160;</td><td class="mdescRight"><a class="el" href="classvgjs_1_1_job_queue.html" title="Base class for job queues, provides a single interface.">JobQueue</a> class constructor.  <a href="#a0041d643a030d3b509a9ca503c5a611e">More...</a><br /></td></tr>
 <tr class="separator:a0041d643a030d3b509a9ca503c5a611e"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ac75def9846762fac94026786094f2d0c"><td class="memItemLeft" align="right" valign="top"><a id="ac75def9846762fac94026786094f2d0c"></a>
-virtual <a class="el" href="classvgjs_1_1_job.html">Job</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classvgjs_1_1_job_queue.html#ac75def9846762fac94026786094f2d0c">pop</a> ()=0</td></tr>
-<tr class="memdesc:ac75def9846762fac94026786094f2d0c"><td class="mdescLeft">&#160;</td><td class="mdescRight">Pop the next job from the queue. <br /></td></tr>
+<tr class="memitem:ac75def9846762fac94026786094f2d0c"><td class="memItemLeft" align="right" valign="top">virtual <a class="el" href="classvgjs_1_1_job.html">Job</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classvgjs_1_1_job_queue.html#ac75def9846762fac94026786094f2d0c">pop</a> ()=0</td></tr>
+<tr class="memdesc:ac75def9846762fac94026786094f2d0c"><td class="mdescLeft">&#160;</td><td class="mdescRight">Pop the next job from the queue.  <a href="#ac75def9846762fac94026786094f2d0c">More...</a><br /></td></tr>
 <tr class="separator:ac75def9846762fac94026786094f2d0c"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:adfb390f0496f17935ffbb8f34eccde31"><td class="memItemLeft" align="right" valign="top"><a id="adfb390f0496f17935ffbb8f34eccde31"></a>
-virtual <a class="el" href="classvgjs_1_1_job.html">Job</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classvgjs_1_1_job_queue.html#adfb390f0496f17935ffbb8f34eccde31">steal</a> ()=0</td></tr>
-<tr class="memdesc:adfb390f0496f17935ffbb8f34eccde31"><td class="mdescLeft">&#160;</td><td class="mdescRight">Steal a job by another thread. <br /></td></tr>
+<tr class="memitem:adfb390f0496f17935ffbb8f34eccde31"><td class="memItemLeft" align="right" valign="top">virtual <a class="el" href="classvgjs_1_1_job.html">Job</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classvgjs_1_1_job_queue.html#adfb390f0496f17935ffbb8f34eccde31">steal</a> ()=0</td></tr>
+<tr class="memdesc:adfb390f0496f17935ffbb8f34eccde31"><td class="mdescLeft">&#160;</td><td class="mdescRight">Steal a job by another thread.  <a href="#adfb390f0496f17935ffbb8f34eccde31">More...</a><br /></td></tr>
 <tr class="separator:adfb390f0496f17935ffbb8f34eccde31"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pro-attribs"></a>
 Protected Attributes</h2></td></tr>
-<tr class="memitem:a4d983d53da92e4a85b402e0e11962b77"><td class="memItemLeft" align="right" valign="top"><a id="a4d983d53da92e4a85b402e0e11962b77"></a>
-<a class="el" href="classvve_1_1_ve_clock.html">vve::VeClock</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classvgjs_1_1_job_queue.html#a4d983d53da92e4a85b402e0e11962b77">m_clock</a></td></tr>
-<tr class="memdesc:a4d983d53da92e4a85b402e0e11962b77"><td class="mdescLeft">&#160;</td><td class="mdescRight">Clock for measuring time. <br /></td></tr>
+<tr class="memitem:a4d983d53da92e4a85b402e0e11962b77"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classvve_1_1_ve_clock.html">vve::VeClock</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classvgjs_1_1_job_queue.html#a4d983d53da92e4a85b402e0e11962b77">m_clock</a></td></tr>
+<tr class="memdesc:a4d983d53da92e4a85b402e0e11962b77"><td class="mdescLeft">&#160;</td><td class="mdescRight">Clock for measuring time.  <a href="#a4d983d53da92e4a85b402e0e11962b77">More...</a><br /></td></tr>
 <tr class="separator:a4d983d53da92e4a85b402e0e11962b77"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <div class="textblock"><p>Base class for job queues, provides a single interface. </p>
-</div><h2 class="groupheader">Member Function Documentation</h2>
+</div><h2 class="groupheader">Constructor &amp; Destructor Documentation</h2>
+<a id="a6aea331e1151ec3fefc91391b7c20925"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a6aea331e1151ec3fefc91391b7c20925">&#9670;&nbsp;</a></span>JobQueue()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">vgjs::JobQueue::JobQueue </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<h2 class="groupheader">Member Function Documentation</h2>
+<a id="ac75def9846762fac94026786094f2d0c"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ac75def9846762fac94026786094f2d0c">&#9670;&nbsp;</a></span>pop()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">virtual <a class="el" href="classvgjs_1_1_job.html">Job</a>* vgjs::JobQueue::pop </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">pure virtual</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Pop the next job from the queue. </p>
+
+<p>Implemented in <a class="el" href="classvgjs_1_1_job_queue_lock_free.html#aeeab2bba4763ebc93f360caf33ff2262">vgjs::JobQueueLockFree</a>, and <a class="el" href="classvgjs_1_1_job_queue_f_i_f_o.html#a0dbad31284d8be142d17945ce70c3a83">vgjs::JobQueueFIFO</a>.</p>
+
+</div>
+</div>
 <a id="a0041d643a030d3b509a9ca503c5a611e"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a0041d643a030d3b509a9ca503c5a611e">&#9670;&nbsp;</a></span>push()</h2>
 
@@ -144,13 +198,67 @@ Protected Attributes</h2></td></tr>
 
 </div>
 </div>
+<a id="adfb390f0496f17935ffbb8f34eccde31"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#adfb390f0496f17935ffbb8f34eccde31">&#9670;&nbsp;</a></span>steal()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">virtual <a class="el" href="classvgjs_1_1_job.html">Job</a>* vgjs::JobQueue::steal </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">pure virtual</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Steal a job by another thread. </p>
+
+<p>Implemented in <a class="el" href="classvgjs_1_1_job_queue_lock_free.html#ac32a40938d71839fef87190b179cec08">vgjs::JobQueueLockFree</a>, and <a class="el" href="classvgjs_1_1_job_queue_f_i_f_o.html#aabdc6da218605f4eff94c111b785222c">vgjs::JobQueueFIFO</a>.</p>
+
+</div>
+</div>
+<h2 class="groupheader">Member Data Documentation</h2>
+<a id="a4d983d53da92e4a85b402e0e11962b77"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a4d983d53da92e4a85b402e0e11962b77">&#9670;&nbsp;</a></span>m_clock</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="classvve_1_1_ve_clock.html">vve::VeClock</a> vgjs::JobQueue::m_clock</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">protected</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Clock for measuring time. </p>
+
+</div>
+</div>
 <hr/>The documentation for this class was generated from the following file:<ul>
 <li><a class="el" href="_v_e_game_job_system_8h_source.html">VEGameJobSystem.h</a></li>
 </ul>
 </div><!-- contents -->
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>
-Generated on Fri Mar 27 2020 17:55:55 for Vienna Vulkan Engine by &#160;<a href="http://www.doxygen.org/index.html">
+Generated on Fri Mar 27 2020 22:12:24 for Vienna Vulkan Engine by &#160;<a href="http://www.doxygen.org/index.html">
 <img class="footer" src="doxygen.png" alt="doxygen"/>
 </a> 1.8.15
 </small></address>

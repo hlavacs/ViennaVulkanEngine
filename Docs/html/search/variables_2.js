@@ -1,4 +1,4 @@
 var searchData=
 [
-  ['formats',['formats',['../structvh_1_1_vh_swap_chain_support_details.html#a6e0d0681902cb5d675200df091e98aec',1,'vh::VhSwapChainSupportDetails']]]
+  ['d',['d',['../structvve_1_1cl_1_1cl_plane.html#af53c91e97cba9bca962fa9e0ce842f83',1,'vve::cl::clPlane']]]
 ];
