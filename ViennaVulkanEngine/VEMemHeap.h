@@ -1,34 +1,70 @@
 #pragma once
 
-
-
-//----------------------------------------------------------------------------------
+/**
+*
+* \file
+* \brief Declares and defines the VeHeapMemory class 
+*
+*/
 
 
 namespace vve {
 
+	/**
+	* \brief This class manages fast cache memory for temporary data, e.g. handling handles in searches
+	*
+	* VeHeapMemory organizes memory allocations intrinsically, i.e. the management information
+	* is part of the allocated memory. Memory id allocated from system heap as large chunks called pools.
+	* In each pool, there can be suballocations as blocks of contiguous memory. At the head of each block,
+	* there is one VeMemBlock struct. Freed blocks are linked into a free list and can be reused in O(1).
+	* If there is no free space in a pool, then first the pool runs a defragmentation operations,
+	* merging neigbouring free blocks into larger free blocks. If there is still no free space then
+	* the next pool is tried. If there is no memory available, then eventually a new pool is allocated
+	* that holds enough space.
+	* VeHeaps do not release their memory, but keep it until the end of the program.
+	* 
+	*/
 	class VeHeapMemory {
 
-		static const VeIndex m_stdSize = 1 << 13;
+		static const VeIndex m_stdSize = 1 << 12;	///< Default size of one block
 
+		/**
+		* \brief One contiguous block of memory.
+		*/
 		struct VeMemBlock {
-			bool	m_free = true;
-			VeIndex m_size = 0;
-			VeIndex m_next = VE_NULL_INDEX;
+			bool	m_free = true;				///< if true then this block is free
+			VeIndex m_size = 0;					///< size of the block
+			VeIndex m_next = VE_NULL_INDEX;		///< if free, then points to the next free block
 		};
 
+		/**
+		* \brief A memory pool containing N suballocated blocks
+		*/
 		struct VePool {
-			std::vector<uint8_t>	m_pool;
-			VeIndex					m_first_free;
+			std::vector<uint8_t>	m_pool;			///< bare memory made of unsigned bytes
+			VeIndex					m_first_free;	///< first block in the free list
 
+			/**
+			* \brief VePool class constructor
+			*
+			* \param[in] size Size of the pool to be allocated
+			* 
+			*/
 			VePool(std::size_t size = m_stdSize) : m_pool(size), m_first_free(0) {
 				//std::cout << "new pool size " << size << std::endl;
-				VeMemBlock* block = (VeMemBlock*)m_pool.data();
-				block->m_free = true;
+				VeMemBlock* block = (VeMemBlock*)m_pool.data();					///< points to the pool memory
+				block->m_free = true;											// create one single free block at the start
 				block->m_size = (VeIndex)(m_pool.size() - sizeof(VeMemBlock));
 				block->m_next = VE_NULL_INDEX;
 			};
 
+			/**
+			* \brief Get the first block of a given memory pool. Used for iterating over
+			*
+			* \param[in] index Index of the pool 
+			* \returns a pointer to the first block of the given pool
+			*
+			*/
 			VeMemBlock* getPtr(VeIndex index) {
 				return (VeMemBlock*)&m_pool[index];
 			};

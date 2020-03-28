@@ -400,8 +400,6 @@ namespace vve {
 		//---------------------------------------------------------------------------
 		//delete
 
-
-
 		void deleteIndex(VeIndex index) {
 			VeIndex last = m_map.size() - 1;
 
@@ -720,6 +718,24 @@ namespace vve {
 	};
 
 
+	//----------------------------------------------------------------------------------
+
+	template <typename K, typename I>
+	class VeOrderedMap : public VeOrderedMultimap<K,I> {
+	public:
+		VeOrderedMap(I offset, I num_bytes, bool memcopy = false) : VeOrderedMultimap<K,I>(offset, num_bytes, memcopy) {};
+		VeOrderedMap(const VeOrderedMap<K, I>& map) : VeOrderedMultimap<K,I>((const VeOrderedMultimap<K,I>&)map) {};
+		virtual	~VeOrderedMap() {};
+
+		virtual bool insert(void* entry, VeIndex dir_index) override {
+			K key;
+			getKey(entry, this->m_offset, this->m_num_bytes, key);
+			if (find(key) == VE_NULL_INDEX)
+				return VeOrderedMultimap<K, I>::insert(entry, dir_index);
+			return false;
+		}
+	};
+
 
 	//----------------------------------------------------------------------------------
 
@@ -990,6 +1006,25 @@ namespace vve {
 			};
 			return 0;
 		};
+
+		//----------------------------------------------------------------------------------
+
+		template <typename K, typename I>
+		class VeHashedMap : public VeHashedMultimap<K, I> {
+		public:
+			VeHashedMap(I offset, I num_bytes, bool memcopy = false) : VeHashedMultimap<K, I>(offset, num_bytes, memcopy) {};
+			VeHashedMap(const VeHashedMap<K, I>& map) : VeHashedMultimap<K, I>((const VeHashedMultimap<K, I>&)map) {};
+			virtual	~VeHashedMap() {};
+
+			virtual bool insert(void* entry, VeIndex dir_index) override {
+				K key;
+				getKey(entry, this->m_offset, this->m_num_bytes, key);
+				if (find(key) == VE_NULL_INDEX)
+					return VeHashedMultimap<K, I>::insert(entry, dir_index);
+				return false;
+			}
+		};
+
 
 	};
 
