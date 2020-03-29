@@ -113,7 +113,6 @@ Public Member Functions</h2></td></tr>
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pro-methods"></a>
 Protected Member Functions</h2></td></tr>
 <tr class="memitem:ab42f92c9e203cedd50eb1d8c2bd215f2"><td class="memItemLeft" align="right" valign="top"><a class="el" href="namespacevve.html#af8d69bd6cc8b81ae8d99808df878280a">VeHandle</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classvve_1_1_ve_directory.html#ab42f92c9e203cedd50eb1d8c2bd215f2">addNewEntry</a> (<a class="el" href="namespacevve.html#a1eb8d816d3112a806cbcd809004a5266">VeIndex</a> table_index)</td></tr>
-<tr class="memdesc:ab42f92c9e203cedd50eb1d8c2bd215f2"><td class="mdescLeft">&#160;</td><td class="mdescRight">index of first free entry in directory  <a href="#ab42f92c9e203cedd50eb1d8c2bd215f2">More...</a><br /></td></tr>
 <tr class="separator:ab42f92c9e203cedd50eb1d8c2bd215f2"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ac7d74a836b6154e25433e9f133a5ac25"><td class="memItemLeft" align="right" valign="top"><a class="el" href="namespacevve.html#af8d69bd6cc8b81ae8d99808df878280a">VeHandle</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classvve_1_1_ve_directory.html#ac7d74a836b6154e25433e9f133a5ac25">writeOverOldEntry</a> (<a class="el" href="namespacevve.html#a1eb8d816d3112a806cbcd809004a5266">VeIndex</a> table_index)</td></tr>
 <tr class="separator:ac7d74a836b6154e25433e9f133a5ac25"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -123,9 +122,10 @@ Protected Attributes</h2></td></tr>
 <tr class="memitem:ab67178624753c11c459218d567f32fdb"><td class="memItemLeft" align="right" valign="top"><a class="el" href="namespacevve.html#a08b50fce7713104897496c0db0bde197">VeCount</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classvve_1_1_ve_directory.html#ab67178624753c11c459218d567f32fdb">m_auto_counter</a> = 0</td></tr>
 <tr class="separator:ab67178624753c11c459218d567f32fdb"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a2b26d1eb0e4d3d74da7a9a8fd3470005"><td class="memItemLeft" align="right" valign="top">std::vector&lt; <a class="el" href="structvve_1_1_ve_directory_1_1_ve_directory_entry.html">VeDirectoryEntry</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classvve_1_1_ve_directory.html#a2b26d1eb0e4d3d74da7a9a8fd3470005">m_dir_entries</a></td></tr>
+<tr class="memdesc:a2b26d1eb0e4d3d74da7a9a8fd3470005"><td class="mdescLeft">&#160;</td><td class="mdescRight">1 level of indirection, idx into the data table  <a href="#a2b26d1eb0e4d3d74da7a9a8fd3470005">More...</a><br /></td></tr>
 <tr class="separator:a2b26d1eb0e4d3d74da7a9a8fd3470005"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ad465e47da170c15cff3ab274a91510e6"><td class="memItemLeft" align="right" valign="top"><a class="el" href="namespacevve.html#a1eb8d816d3112a806cbcd809004a5266">VeIndex</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classvve_1_1_ve_directory.html#ad465e47da170c15cff3ab274a91510e6">m_first_free</a> = <a class="el" href="namespacevve.html#a04407d8f74610f3ec419f02a1c1264d2">VE_NULL_INDEX</a></td></tr>
-<tr class="memdesc:ad465e47da170c15cff3ab274a91510e6"><td class="mdescLeft">&#160;</td><td class="mdescRight">1 level of indirection, idx into the data table  <a href="#ad465e47da170c15cff3ab274a91510e6">More...</a><br /></td></tr>
+<tr class="memdesc:ad465e47da170c15cff3ab274a91510e6"><td class="mdescLeft">&#160;</td><td class="mdescRight">index of first free entry in directory  <a href="#ad465e47da170c15cff3ab274a91510e6">More...</a><br /></td></tr>
 <tr class="separator:ad465e47da170c15cff3ab274a91510e6"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <h2 class="groupheader">Constructor &amp; Destructor Documentation</h2>
@@ -229,8 +229,6 @@ Protected Attributes</h2></td></tr>
   </tr>
 </table>
 </div><div class="memdoc">
-
-<p>index of first free entry in directory </p>
 
 </div>
 </div>
@@ -546,6 +544,8 @@ Protected Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
+<p>1 level of indirection, idx into the data table </p>
+
 </div>
 </div>
 <a id="ad465e47da170c15cff3ab274a91510e6"></a>
@@ -568,7 +568,7 @@ Protected Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p>1 level of indirection, idx into the data table </p>
+<p>index of first free entry in directory </p>
 
 </div>
 </div>
@@ -578,7 +578,7 @@ Protected Attributes</h2></td></tr>
 </div><!-- contents -->
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>
-Generated on Fri Mar 27 2020 22:12:24 for Vienna Vulkan Engine by &#160;<a href="http://www.doxygen.org/index.html">
+Generated on Sun Mar 29 2020 16:04:59 for Vienna Vulkan Engine by &#160;<a href="http://www.doxygen.org/index.html">
 <img class="footer" src="doxygen.png" alt="doxygen"/>
 </a> 1.8.15
 </small></address>

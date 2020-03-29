@@ -7,69 +7,77 @@ namespace vve {
 
 	/**
 	*
-	* \brief
+	* \brief Base class of all VeMaps
 	*
+	* VeMap is the base class of all maps used in tables. Maps are used for sorting and quickly finding items
+	* based on their keys. The base class offers the whole interface for all possible key types, but does not
+	* implement them. This interface is similar to STL containers, but VeMaps are not STL compatible - as of yet.
+	*
+	* VeMaps are different to STL containers because in principle not the key, but the values must be unique.
+	* The values store indices of directory enntries in tables, and these are unique. Keys do not have to be unique,
+	* though some derived classes enforce this. Since values must be unique, so are (key,value) tuples.
+	* Thus, when deleting an entry, this mmust be done via the (key,value) tuple, at least in Multimaps.
 	*
 	*/
 	class VeMap {
 	protected:
-		VeHeapMemory		m_heap;
-		VeClock				m_clock;
+		VeHeapMemory		m_heap;		///< scrap memory for temporary sorting, merging containers
+		VeClock				m_clock;	///< a clock for measuring timings
 
 	public:
-		VeMap() : m_heap(), m_clock("Map Clock", 100) {};
-		virtual ~VeMap() {};
-		virtual void	operator=(const VeMap& map) { assert(false); return; };
-		virtual void	clear() { assert(false); return; };
-		virtual VeCount size() { assert(false); return 0; };
-		bool			empty() { return size() == 0; };
-		virtual VeMap*	clone() { assert(false); return nullptr; };
-		virtual bool	insert(void* entry, VeIndex dir_index) { assert(false); return false; };
-		virtual VeCount	erase(void* entry, VeIndex dir_index) { assert(false); return 0; };
+		VeMap() : m_heap(), m_clock("Map Clock", 100) {};	///< VeMap class constructor
+		virtual ~VeMap() {};								///< VeMap class destructor
+		virtual void	operator=(const VeMap& map) { assert(false); return; }; ///< assignment operator
+		virtual void	clear() { assert(false); return; };						///< delete all entries in the map
+		virtual VeCount size() { assert(false); return 0; };					///< \returns number of entries in the map
+		bool			empty() { return size() == 0; };						///<  true, if the map is empty
+		virtual VeMap*	clone() { assert(false); return nullptr; };				///< create a clone of this map
+		virtual bool	insert(void* entry, VeIndex dir_index) { assert(false); return false; };	///< insert a key-value pair into the map
+		virtual VeCount	erase(void* entry, VeIndex dir_index) { assert(false); return 0; };	///< delete a (key,value) pair from the map
 
-		virtual VeIndex	find(VeHandle key) { assert(false); return VE_NULL_INDEX; };
-		virtual VeIndex	find(VeHandlePair key) { assert(false); return VE_NULL_INDEX; };
-		virtual VeIndex	find(VeHandleTriple key) { assert(false); return VE_NULL_INDEX; };
-		virtual VeIndex	find(std::string key) { assert(false); return VE_NULL_INDEX; };
+		virtual VeIndex	find(VeHandle key) { assert(false); return VE_NULL_INDEX; }; ///< find an entry, \returns its handle
+		virtual VeIndex	find(VeHandlePair key) { assert(false); return VE_NULL_INDEX; }; ///< find an entry, \returns its handle
+		virtual VeIndex	find(VeHandleTriple key) { assert(false); return VE_NULL_INDEX; }; ///< find an entry, \returns its handle
+		virtual VeIndex	find(std::string key) { assert(false); return VE_NULL_INDEX; }; ///< find an , \returns its handle
 
-		virtual VeIndex operator[](const VeHandle &key) { return find(key); };
-		virtual VeIndex operator[](const VeHandlePair &key) { return find(key); };
-		virtual VeIndex operator[](const VeHandleTriple &key) { return find(key); };
-		virtual VeIndex operator[](const std::string &key) { return find(key); };
+		virtual VeIndex operator[](const VeHandle &key) { return find(key); };  ///< find an entry, \returns its handle
+		virtual VeIndex operator[](const VeHandlePair &key) { return find(key); }; ///< find an entry, \returns its handle
+		virtual VeIndex operator[](const VeHandleTriple &key) { return find(key); }; ///< find an entry, \returns its handle
+		virtual VeIndex operator[](const std::string &key) { return find(key); }; ///< find an, \returns its handle
 
-		virtual VeCount	equal_range(VeHandle key, std::vector<VeIndex, custom_alloc<VeIndex>>& result) { assert(false); return 0; };
-		virtual VeCount	equal_range(VeHandlePair key, std::vector<VeIndex, custom_alloc<VeIndex>>& result) { assert(false); return 0; };
-		virtual VeCount	equal_range(VeHandleTriple key, std::vector<VeIndex, custom_alloc<VeIndex>>& result) { assert(false); return 0; };
-		virtual VeCount	equal_range(std::string key, std::vector<VeIndex, custom_alloc<VeIndex>>& result) { assert(false); return 0; };
+		virtual VeCount	equal_range(VeHandle key, std::vector<VeIndex, custom_alloc<VeIndex>>& result) { assert(false); return 0; }; ///<  find entries
+		virtual VeCount	equal_range(VeHandlePair key, std::vector<VeIndex, custom_alloc<VeIndex>>& result) { assert(false); return 0; }; ///<  find entries
+		virtual VeCount	equal_range(VeHandleTriple key, std::vector<VeIndex, custom_alloc<VeIndex>>& result) { assert(false); return 0; }; ///<  find entries
+		virtual VeCount	equal_range(std::string key, std::vector<VeIndex, custom_alloc<VeIndex>>& result) { assert(false); return 0; }; ///<  find entries
 
-		virtual VeCount	range(VeHandle lower, VeHandle upper, std::vector<VeIndex, custom_alloc<VeIndex>>& result) { assert(false); return 0; };
-		virtual VeCount	range(VeHandlePair lower, VeHandlePair upper, std::vector<VeIndex, custom_alloc<VeIndex>>& result) { assert(false); return 0; };
-		virtual VeCount	range(VeHandleTriple lower, VeHandleTriple upper, std::vector<VeIndex, custom_alloc<VeIndex>>& result) { assert(false); return 0; };
-		virtual VeCount	range(std::string lower, std::string upper, std::vector<VeIndex, custom_alloc<VeIndex>>& result) { assert(false); return 0; };
+		virtual VeCount	range(VeHandle lower, VeHandle upper, std::vector<VeIndex, custom_alloc<VeIndex>>& result) { assert(false); return 0; }; ///<  find entries
+		virtual VeCount	range(VeHandlePair lower, VeHandlePair upper, std::vector<VeIndex, custom_alloc<VeIndex>>& result) { assert(false); return 0; }; ///<  find entries
+		virtual VeCount	range(VeHandleTriple lower, VeHandleTriple upper, std::vector<VeIndex, custom_alloc<VeIndex>>& result) { assert(false); return 0; }; ///<  find entries
+		virtual VeCount	range(std::string lower, std::string upper, std::vector<VeIndex, custom_alloc<VeIndex>>& result) { assert(false); return 0; }; ///<  find entries
 
-		virtual VeCount	getAllIndices(std::vector<VeIndex, custom_alloc<VeIndex>>& result) { assert(false); return 0; };
+		virtual VeCount	getAllIndices(std::vector<VeIndex, custom_alloc<VeIndex>>& result) { assert(false); return 0; }; ///< return all indices
 
-		virtual VeCount getAllKeyValuePairs(std::vector<std::pair<VeHandle, VeIndex>, custom_alloc<std::pair<VeHandle, VeIndex>>>& result) { assert(false); return 0; };
-		virtual VeCount getAllKeyValuePairs(std::vector<std::pair<VeHandlePair, VeIndex>, custom_alloc<std::pair<VeHandlePair, VeIndex>>>& result) { assert(false); return 0; };
-		virtual VeCount getAllKeyValuePairs(std::vector<std::pair<VeHandleTriple, VeIndex>, custom_alloc<std::pair<VeHandleTriple, VeIndex>>>& result) { assert(false); return 0; };
-		virtual VeCount getAllKeyValuePairs(std::vector<std::pair<std::string, VeIndex>, custom_alloc<std::pair<std::string, VeIndex>>>& result) { assert(false); return 0; };
+		virtual VeCount getAllKeyValuePairs(std::vector<std::pair<VeHandle, VeIndex>, custom_alloc<std::pair<VeHandle, VeIndex>>>& result) { assert(false); return 0; }; ///< return all key-value pairs
+		virtual VeCount getAllKeyValuePairs(std::vector<std::pair<VeHandlePair, VeIndex>, custom_alloc<std::pair<VeHandlePair, VeIndex>>>& result) { assert(false); return 0; }; ///< return all key-value pairs
+		virtual VeCount getAllKeyValuePairs(std::vector<std::pair<VeHandleTriple, VeIndex>, custom_alloc<std::pair<VeHandleTriple, VeIndex>>>& result) { assert(false); return 0; }; ///< return all key-value pairs
+		virtual VeCount getAllKeyValuePairs(std::vector<std::pair<std::string, VeIndex>, custom_alloc<std::pair<std::string, VeIndex>>>& result) { assert(false); return 0; }; ///< return all key-value pairs
 
-		virtual VeCount leftJoin(VeHandle key, VeMap& other, std::vector<VeIndexPair, custom_alloc<VeIndexPair>>& result) { assert(false); return 0; };
-		virtual VeCount leftJoin(VeHandlePair key, VeMap& other, std::vector<VeIndexPair, custom_alloc<VeIndexPair>>& result) { assert(false); return 0; };
-		virtual VeCount leftJoin(VeHandleTriple key, VeMap& other, std::vector<VeIndexPair, custom_alloc<VeIndexPair>>& result) { assert(false); return 0; };
-		virtual VeCount leftJoin(std::string key, VeMap& other, std::vector<VeIndexPair, custom_alloc<VeIndexPair>>& result) { assert(false); return 0; };
-		virtual VeCount leftJoin(VeMap& other, std::vector<VeIndexPair, custom_alloc<VeIndexPair>>& result) { assert(false); return 0; };
+		virtual VeCount leftJoin(VeHandle key, VeMap& other, std::vector<VeIndexPair, custom_alloc<VeIndexPair>>& result) { assert(false); return 0; }; ///< left join another map
+		virtual VeCount leftJoin(VeHandlePair key, VeMap& other, std::vector<VeIndexPair, custom_alloc<VeIndexPair>>& result) { assert(false); return 0; }; ///< left join another map
+		virtual VeCount leftJoin(VeHandleTriple key, VeMap& other, std::vector<VeIndexPair, custom_alloc<VeIndexPair>>& result) { assert(false); return 0; }; ///< left join another map
+		virtual VeCount leftJoin(std::string key, VeMap& other, std::vector<VeIndexPair, custom_alloc<VeIndexPair>>& result) { assert(false); return 0; }; ///< left join another map
+		virtual VeCount leftJoin(VeMap& other, std::vector<VeIndexPair, custom_alloc<VeIndexPair>>& result) { assert(false); return 0; }; ///< left join another map
 
-		virtual void	print() { assert(false); return; };
+		virtual void	print() { assert(false); return; }; ///< print debug information
 
 		/**
 		*
-		* \brief
+		* \brief Extract an uint value from an entry
 		*
-		* \param[in] entry
-		* \param[in] offset
-		* \param[in] numbytes
-		* \returns
+		* \param[in] entry Pointer to the entry
+		* \param[in] offset Number of bytes the uint is away from the start
+		* \param[in] numbytes Size in bytes if the uint. Can be 4 or 8.
+		* \returns the value of the uint.
 		*
 		*/
 		VeHandle getIntFromEntry(void* entry, VeIndex offset, VeIndex num_bytes) {
@@ -85,12 +93,12 @@ namespace vve {
 
 		/**
 		*
-		* \brief
+		* \brief Get value of a uint key from a table entry. 
 		*
-		* \param[in] entry
-		* \param[in] offset
-		* \param[in] numbytes
-		* \param[out] key
+		* \param[in] entry Pointer to the entry
+		* \param[in] offset Number of bytes the uint is away from the start
+		* \param[in] numbytes Size in bytes if the uint. Can be 4 or 8.
+		* \param[out] key The value of the uint.
 		*
 		*/
 		void getKey(void* entry, VeIndex offset, VeIndex num_bytes, VeHandle& key) {
@@ -99,12 +107,12 @@ namespace vve {
 
 		/**
 		*
-		* \brief
+		* \brief Get key value of a VeHandle pair from a table entry
 		*
-		* \param[in] entry
-		* \param[in] offset
-		* \param[in] numbytes
-		* \returns
+		* \param[in] entry Pointer to the entry
+		* \param[in] offset Number of bytes the uints are away from the start
+		* \param[in] numbytes Sizes in bytes if the uints. Can be 4 or 8.
+		* \param[out] key The values of the uints.
 		*
 		*/
 		void getKey(void* entry, VeIndexPair offset, VeIndexPair num_bytes, VeHandlePair& key) {
@@ -114,12 +122,12 @@ namespace vve {
 
 		/**
 		*
-		* \brief
+		* \brief Get key value of a VeHandle triple from a table entry
 		*
-		* \param[in] entry
-		* \param[in] offset
-		* \param[in] numbytes
-		* \returns
+		* \param[in] entry Pointer to the entry
+		* \param[in] offset Number of bytes the uints are away from the start
+		* \param[in] numbytes Sizes in bytes if the uints. Can be 4 or 8.
+		* \param[out] key The values of the uints.
 		*
 		*/
 		void getKey(void* entry, VeIndexTriple offset, VeIndexTriple num_bytes, VeHandleTriple& key) {
@@ -130,12 +138,12 @@ namespace vve {
 
 		/**
 		*
-		* \brief
+		* \brief Get the string value of a key from a table entry
 		*
-		* \param[in] entry
-		* \param[in] offset
-		* \param[in] numbytes
-		* \returns
+		* \param[in] entry Pointer to the table entry.
+		* \param[in] offset Offset from start of the string.
+		* \param[in] numbytes Must be 0 for a string.
+		* \returns the string found there.
 		*
 		*/
 		void getKey(void* entry, VeIndex offset, VeIndex num_bytes, std::string& key) {

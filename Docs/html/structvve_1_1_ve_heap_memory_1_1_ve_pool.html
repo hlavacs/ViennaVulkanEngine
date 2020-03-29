@@ -73,34 +73,52 @@ $(function() {
 <div class="title">vve::VeHeapMemory::VePool Struct Reference</div>  </div>
 </div><!--header-->
 <div class="contents">
+
+<p>A memory pool containing N suballocated blocks.  
+ <a href="structvve_1_1_ve_heap_memory_1_1_ve_pool.html#details">More...</a></p>
 <table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-methods"></a>
 Public Member Functions</h2></td></tr>
 <tr class="memitem:a3e75a33dbc0b6f91c4e09ea27c2ab766"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structvve_1_1_ve_heap_memory_1_1_ve_pool.html#a3e75a33dbc0b6f91c4e09ea27c2ab766">VePool</a> (std::size_t size=<a class="el" href="classvve_1_1_ve_heap_memory.html#a5b511316b5ee0d55f94f7205548cf4fd">m_stdSize</a>)</td></tr>
+<tr class="memdesc:a3e75a33dbc0b6f91c4e09ea27c2ab766"><td class="mdescLeft">&#160;</td><td class="mdescRight"><a class="el" href="structvve_1_1_ve_heap_memory_1_1_ve_pool.html" title="A memory pool containing N suballocated blocks.">VePool</a> class constructor.  <a href="#a3e75a33dbc0b6f91c4e09ea27c2ab766">More...</a><br /></td></tr>
 <tr class="separator:a3e75a33dbc0b6f91c4e09ea27c2ab766"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:af5838376fce8afea15da176c62508340"><td class="memItemLeft" align="right" valign="top"><a class="el" href="structvve_1_1_ve_heap_memory_1_1_ve_mem_block.html">VeMemBlock</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structvve_1_1_ve_heap_memory_1_1_ve_pool.html#af5838376fce8afea15da176c62508340">getPtr</a> (<a class="el" href="namespacevve.html#a1eb8d816d3112a806cbcd809004a5266">VeIndex</a> index)</td></tr>
+<tr class="memdesc:af5838376fce8afea15da176c62508340"><td class="mdescLeft">&#160;</td><td class="mdescRight">Turn an index into a pool into a <a class="el" href="structvve_1_1_ve_heap_memory_1_1_ve_mem_block.html" title="One contiguous block of memory.">VeMemBlock</a> pointer.  <a href="#af5838376fce8afea15da176c62508340">More...</a><br /></td></tr>
 <tr class="separator:af5838376fce8afea15da176c62508340"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a0e2a43f694990c4166298ad353f2f52b"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structvve_1_1_ve_heap_memory_1_1_ve_pool.html#a0e2a43f694990c4166298ad353f2f52b">print</a> ()</td></tr>
+<tr class="memdesc:a0e2a43f694990c4166298ad353f2f52b"><td class="mdescLeft">&#160;</td><td class="mdescRight">Print debug information.  <a href="#a0e2a43f694990c4166298ad353f2f52b">More...</a><br /></td></tr>
 <tr class="separator:a0e2a43f694990c4166298ad353f2f52b"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ac21e2a86931640871bf2554cabf75a5e"><td class="memItemLeft" align="right" valign="top">void *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structvve_1_1_ve_heap_memory_1_1_ve_pool.html#ac21e2a86931640871bf2554cabf75a5e">makeAllocation</a> (<a class="el" href="namespacevve.html#a1eb8d816d3112a806cbcd809004a5266">VeIndex</a> prev_block, <a class="el" href="namespacevve.html#a1eb8d816d3112a806cbcd809004a5266">VeIndex</a> free_block, std::size_t size)</td></tr>
+<tr class="memdesc:ac21e2a86931640871bf2554cabf75a5e"><td class="mdescLeft">&#160;</td><td class="mdescRight">Alocate a block with given size from a free block that is large enough.  <a href="#ac21e2a86931640871bf2554cabf75a5e">More...</a><br /></td></tr>
 <tr class="separator:ac21e2a86931640871bf2554cabf75a5e"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a8b13512c5767e90760f578d226727a2f"><td class="memItemLeft" align="right" valign="top">void *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structvve_1_1_ve_heap_memory_1_1_ve_pool.html#a8b13512c5767e90760f578d226727a2f">allocate</a> (std::size_t size)</td></tr>
+<tr class="memdesc:a8b13512c5767e90760f578d226727a2f"><td class="mdescLeft">&#160;</td><td class="mdescRight">Allocate a block with given size from the pool.  <a href="#a8b13512c5767e90760f578d226727a2f">More...</a><br /></td></tr>
 <tr class="separator:a8b13512c5767e90760f578d226727a2f"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a909d65124839db90018d679a342df4f0"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structvve_1_1_ve_heap_memory_1_1_ve_pool.html#a909d65124839db90018d679a342df4f0">deallocate</a> (void *p, std::size_t size)</td></tr>
+<tr class="memdesc:a909d65124839db90018d679a342df4f0"><td class="mdescLeft">&#160;</td><td class="mdescRight">Deallocate a block pointed at by a pointer.  <a href="#a909d65124839db90018d679a342df4f0">More...</a><br /></td></tr>
 <tr class="separator:a909d65124839db90018d679a342df4f0"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aed181594a6a983bf90de8353f540cb76"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structvve_1_1_ve_heap_memory_1_1_ve_pool.html#aed181594a6a983bf90de8353f540cb76">defragment</a> ()</td></tr>
+<tr class="memdesc:aed181594a6a983bf90de8353f540cb76"><td class="mdescLeft">&#160;</td><td class="mdescRight">Defragment the pool by merging neighbouring free blocks into larger free blocks.  <a href="#aed181594a6a983bf90de8353f540cb76">More...</a><br /></td></tr>
 <tr class="separator:aed181594a6a983bf90de8353f540cb76"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a36313629954c3d8e0bc8191977571bbc"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structvve_1_1_ve_heap_memory_1_1_ve_pool.html#a36313629954c3d8e0bc8191977571bbc">reset</a> ()</td></tr>
-<tr class="separator:a36313629954c3d8e0bc8191977571bbc"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a619a43c87319d7f14c798b5539c6cdf5"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structvve_1_1_ve_heap_memory_1_1_ve_pool.html#a619a43c87319d7f14c798b5539c6cdf5">clear</a> ()</td></tr>
+<tr class="memdesc:a619a43c87319d7f14c798b5539c6cdf5"><td class="mdescLeft">&#160;</td><td class="mdescRight">Clears all memory allocations of the pool.  <a href="#a619a43c87319d7f14c798b5539c6cdf5">More...</a><br /></td></tr>
+<tr class="separator:a619a43c87319d7f14c798b5539c6cdf5"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-attribs"></a>
 Public Attributes</h2></td></tr>
 <tr class="memitem:a337e0db6a6b7d32ced0447bf803bdbae"><td class="memItemLeft" align="right" valign="top">std::vector&lt; uint8_t &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structvve_1_1_ve_heap_memory_1_1_ve_pool.html#a337e0db6a6b7d32ced0447bf803bdbae">m_pool</a></td></tr>
+<tr class="memdesc:a337e0db6a6b7d32ced0447bf803bdbae"><td class="mdescLeft">&#160;</td><td class="mdescRight">bare memory made of unsigned bytes  <a href="#a337e0db6a6b7d32ced0447bf803bdbae">More...</a><br /></td></tr>
 <tr class="separator:a337e0db6a6b7d32ced0447bf803bdbae"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a6e8a47186b34ae57e7f74898065f8f86"><td class="memItemLeft" align="right" valign="top"><a class="el" href="namespacevve.html#a1eb8d816d3112a806cbcd809004a5266">VeIndex</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structvve_1_1_ve_heap_memory_1_1_ve_pool.html#a6e8a47186b34ae57e7f74898065f8f86">m_first_free</a></td></tr>
+<tr class="memdesc:a6e8a47186b34ae57e7f74898065f8f86"><td class="mdescLeft">&#160;</td><td class="mdescRight">first block in the free list  <a href="#a6e8a47186b34ae57e7f74898065f8f86">More...</a><br /></td></tr>
 <tr class="separator:a6e8a47186b34ae57e7f74898065f8f86"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a3b5d0c68018cd34d80ad88de10aa4fd5"><td class="memItemLeft" align="right" valign="top"><a class="el" href="namespacevve.html#a1eb8d816d3112a806cbcd809004a5266">VeIndex</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structvve_1_1_ve_heap_memory_1_1_ve_pool.html#a3b5d0c68018cd34d80ad88de10aa4fd5">m_free_bytes</a></td></tr>
+<tr class="memdesc:a3b5d0c68018cd34d80ad88de10aa4fd5"><td class="mdescLeft">&#160;</td><td class="mdescRight">Number of free bytes in the pool.  <a href="#a3b5d0c68018cd34d80ad88de10aa4fd5">More...</a><br /></td></tr>
+<tr class="separator:a3b5d0c68018cd34d80ad88de10aa4fd5"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
-<h2 class="groupheader">Constructor &amp; Destructor Documentation</h2>
+<a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
+<div class="textblock"><p>A memory pool containing N suballocated blocks. </p>
+</div><h2 class="groupheader">Constructor &amp; Destructor Documentation</h2>
 <a id="a3e75a33dbc0b6f91c4e09ea27c2ab766"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a3e75a33dbc0b6f91c4e09ea27c2ab766">&#9670;&nbsp;</a></span>VePool()</h2>
 
@@ -124,6 +142,15 @@ Public Attributes</h2></td></tr>
   </tr>
 </table>
 </div><div class="memdoc">
+
+<p><a class="el" href="structvve_1_1_ve_heap_memory_1_1_ve_pool.html" title="A memory pool containing N suballocated blocks.">VePool</a> class constructor. </p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramdir">[in]</td><td class="paramname">size</td><td>Size of the pool to be allocated </td></tr>
+  </table>
+  </dd>
+</dl>
+<p>&lt; points to the pool memory </p>
 
 </div>
 </div>
@@ -151,6 +178,46 @@ Public Attributes</h2></td></tr>
   </tr>
 </table>
 </div><div class="memdoc">
+
+<p>Allocate a block with given size from the pool. </p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramdir">[in]</td><td class="paramname">size</td><td>Size of the block to allocate </td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>Returns</dt><dd>a pointer to the newly allocated memory of given size </dd></dl>
+<p>&lt; Index of previous free block</p>
+<p>&lt; Pointer to next free block</p>
+<p>&lt; if yes then make an allocation </p>
+
+</div>
+</div>
+<a id="a619a43c87319d7f14c798b5539c6cdf5"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a619a43c87319d7f14c798b5539c6cdf5">&#9670;&nbsp;</a></span>clear()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">void vve::VeHeapMemory::VePool::clear </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Clears all memory allocations of the pool. </p>
+<p>&lt; Insert one free block at the start </p>
 
 </div>
 </div>
@@ -188,6 +255,16 @@ Public Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
+<p>Deallocate a block pointed at by a pointer. </p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramdir">[in]</td><td class="paramname">p</td><td>Pointer to the memory of a</td></tr>
+    <tr><td class="paramdir">[in]</td><td class="paramname">size</td><td>Not used </td></tr>
+  </table>
+  </dd>
+</dl>
+<p>&lt; pointer to block header </p>
+
 </div>
 </div>
 <a id="aed181594a6a983bf90de8353f540cb76"></a>
@@ -212,6 +289,10 @@ Public Attributes</h2></td></tr>
   </tr>
 </table>
 </div><div class="memdoc">
+
+<p>Defragment the pool by merging neighbouring free blocks into larger free blocks. </p>
+<p>&lt; points to previous block for list linking</p>
+<p>&lt; Pointer to next block in pool </p>
 
 </div>
 </div>
@@ -238,6 +319,15 @@ Public Attributes</h2></td></tr>
   </tr>
 </table>
 </div><div class="memdoc">
+
+<p>Turn an index into a pool into a <a class="el" href="structvve_1_1_ve_heap_memory_1_1_ve_mem_block.html" title="One contiguous block of memory.">VeMemBlock</a> pointer. </p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramdir">[in]</td><td class="paramname">index</td><td>Index of the pool </td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>Returns</dt><dd>a pointer to the location pointed at by index of type VeMemBlock* </dd></dl>
 
 </div>
 </div>
@@ -281,6 +371,19 @@ Public Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
+<p>Alocate a block with given size from a free block that is large enough. </p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramdir">[in]</td><td class="paramname">prev_block</td><td>Pointer to previous free block (that was not large enough), used for relinking the free list </td></tr>
+    <tr><td class="paramdir">[in]</td><td class="paramname">free_block</td><td>A block from the free list that is large enough </td></tr>
+    <tr><td class="paramdir">[in]</td><td class="paramname">size</td><td>Size of the block to allocate, turn the rest into a free block </td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>Returns</dt><dd>a pointer to the allocated memory </dd></dl>
+<p>&lt; Pointer to this free block</p>
+<p>&lt; Index of next free block </p>
+
 </div>
 </div>
 <a id="a0e2a43f694990c4166298ad353f2f52b"></a>
@@ -306,30 +409,7 @@ Public Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-</div>
-</div>
-<a id="a36313629954c3d8e0bc8191977571bbc"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a36313629954c3d8e0bc8191977571bbc">&#9670;&nbsp;</a></span>reset()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">void vve::VeHeapMemory::VePool::reset </td>
-          <td>(</td>
-          <td class="paramname"></td><td>)</td>
-          <td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
+<p>Print debug information. </p>
 
 </div>
 </div>
@@ -346,6 +426,24 @@ Public Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
+<p>first block in the free list </p>
+
+</div>
+</div>
+<a id="a3b5d0c68018cd34d80ad88de10aa4fd5"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a3b5d0c68018cd34d80ad88de10aa4fd5">&#9670;&nbsp;</a></span>m_free_bytes</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="namespacevve.html#a1eb8d816d3112a806cbcd809004a5266">VeIndex</a> vve::VeHeapMemory::VePool::m_free_bytes</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Number of free bytes in the pool. </p>
+
 </div>
 </div>
 <a id="a337e0db6a6b7d32ced0447bf803bdbae"></a>
@@ -360,6 +458,8 @@ Public Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
+<p>bare memory made of unsigned bytes </p>
+
 </div>
 </div>
 <hr/>The documentation for this struct was generated from the following file:<ul>
@@ -368,7 +468,7 @@ Public Attributes</h2></td></tr>
 </div><!-- contents -->
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>
-Generated on Fri Mar 27 2020 22:12:24 for Vienna Vulkan Engine by &#160;<a href="http://www.doxygen.org/index.html">
+Generated on Sun Mar 29 2020 16:04:59 for Vienna Vulkan Engine by &#160;<a href="http://www.doxygen.org/index.html">
 <img class="footer" src="doxygen.png" alt="doxygen"/>
 </a> 1.8.15
 </small></address>

@@ -300,7 +300,7 @@ namespace vve {
 
 
 	/**
-	* \brief custom_alloc is a custom allocator for STL containers, tha uses VeHeap
+	* \brief custom_alloc is a custom allocator for STL containers, that uses VeHeap
 	*/
 	template <class T>
 	class custom_alloc : public std::allocator<T> {
@@ -316,37 +316,105 @@ namespace vve {
 		typedef const T&	const_reference;	///< const reference type
 		typedef T			value_type;			///< value type
 
-		custom_alloc(VeHeapMemory* heap) : m_heap(heap) {}
-		custom_alloc(const custom_alloc& ver) : m_heap(ver.m_heap) {}
+		custom_alloc(VeHeapMemory* heap) : m_heap(heap) {}				///< VeHeapMemory class constructor
+		custom_alloc(const custom_alloc& ver) : m_heap(ver.m_heap) {}	///< VeHeapMemory class constructor
 
+		/**
+		* \brief Allocate n elements of the bound type T
+		*
+		* \param[in] n Number of elements to allocate
+		* \param[in] void* Not used
+		* \returns pointe to the newly allocated memory
+		*
+		*/
 		pointer allocate(size_type n, const void* = 0) {
-			T* t = (T*)m_heap->allocate(n * sizeof(T));
+			T* t = (T*)m_heap->allocate(n * sizeof(T));		//allocate them in the heap
 			return t;
 		};
 
+		/**
+		* \brief Deallocate n elements of the bound type T
+		*
+		* \param[in] p Pointer to the elements
+		* \param[in] n Number of elements
+		*
+		*/
 		void deallocate(void* p, size_type n) {
-			m_heap->deallocate(p, n * sizeof(T));
+			m_heap->deallocate(p, n * sizeof(T));		//deallocat on eheap
 		};
 
-		pointer           address(reference x) const { return &x; }
-		const_pointer     address(const_reference x) const { return &x; }
-		custom_alloc<T>& operator=(const custom_alloc&) { return *this; }
-		void              construct(pointer p, const T& val) {
+		/**
+		* \brief Get the address of a reference to an instance of type T
+		*
+		* \param[in] x Reference whose address is sought
+		* \returns the address if the reference
+		*
+		*/
+		pointer address(reference x) const {
+			return &x;
+		};
+
+		/**
+		* \brief Get the address of a reference to an instance of type T
+		*
+		* \param[in] x Reference whose address is sought
+		* \returns the address if the reference
+		*
+		*/
+		const_pointer address(const_reference x) const {
+			return &x;
+		};
+
+		/**
+		* \brief Pas on this allocator to other STL containers
+		*
+		* \returns a reference to this allocator
+		*
+		*/
+		custom_alloc<T>& operator=(const custom_alloc&) {
+			return *this;
+		};
+
+		/**
+		* \brief Constructs an instance of type T in place
+		*
+		* \param[in] p Pointer to the memory where the instance should be constructed
+		* \param[in] val Initialize the instance to this value
+		* \returns
+		*
+		*/
+		void construct(pointer p, const T& val) {
 			new ((T*)p) T(val);
 		};
 
-		void              destroy(pointer p) { p->~T(); };
+		/**
+		* \brief Destroy an instance of type T in place
+		*
+		* \param[in] p Pointer to the instance
+		*
+		*/
+		void destroy(pointer p) { 
+			p->~T(); 
+		};
 
-		size_type         max_size() const { return size_t(-1); }
+		/**
+		* \brief Get the maximum size that can be allocated
+		*
+		* \returns -1 (no max size)
+		*
+		*/
+		size_type max_size() const {
+			return size_t(-1);
+		};
 
 		template <class U>
-		struct rebind { typedef custom_alloc<U> other; };
+		struct rebind { typedef custom_alloc<U> other; };	//rebind to another type for allocating management structs
 
 		template <class U>
-		custom_alloc(const custom_alloc<U>& ver) : m_heap(ver.m_heap) {}
+		custom_alloc(const custom_alloc<U>& ver) : m_heap(ver.m_heap) {} ///< Constructor for another type
 
 		template <class U>
-		custom_alloc& operator=(const custom_alloc<U>& ver) : m_heap(ver.m_heap) { return *this; }
+		custom_alloc& operator=(const custom_alloc<U>& ver) : m_heap(ver.m_heap) { return *this; } ///< pass on this allocator
 	};
 
 

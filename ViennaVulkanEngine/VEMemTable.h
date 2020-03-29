@@ -27,8 +27,8 @@ namespace vve {
 
 		struct VeDirectoryEntry {
 			VeIndex	m_auto_id		= VE_NULL_INDEX;
-			VeIndex	m_table_index	= VE_NULL_INDEX;	///index into the entry table
-			VeIndex	m_next_free		= VE_NULL_INDEX;	///index of next free entry in directory
+			VeIndex	m_table_index	= VE_NULL_INDEX;	///< index into the entry table
+			VeIndex	m_next_free		= VE_NULL_INDEX;	///< index of next free entry in directory
 
 			VeDirectoryEntry() : m_auto_id(VE_NULL_INDEX), m_table_index(VE_NULL_INDEX), m_next_free(VE_NULL_INDEX) {}
 			VeDirectoryEntry(VeIndex auto_id, VeIndex table_index, VeIndex next_free) :
@@ -37,9 +37,9 @@ namespace vve {
 				m_auto_id(entry.m_auto_id), m_table_index(entry.m_table_index), m_next_free(entry.m_next_free) {};
 		};
 
-		VeCount							m_auto_counter = 0;				///
-		std::vector<VeDirectoryEntry>	m_dir_entries;					///1 level of indirection, idx into the data table
-		VeIndex							m_first_free = VE_NULL_INDEX;	///index of first free entry in directory
+		VeCount							m_auto_counter = 0;				///< 
+		std::vector<VeDirectoryEntry>	m_dir_entries;					///< 1 level of indirection, idx into the data table
+		VeIndex							m_first_free = VE_NULL_INDEX;	///< index of first free entry in directory
 
 		VeHandle addNewEntry(VeIndex table_index ) {
 			VeIndex auto_id = m_auto_counter; ++m_auto_counter;
@@ -137,7 +137,7 @@ namespace vve {
 		bool			m_read_only = false;
 		VeTable	*		m_companion_table = nullptr;
 		bool			m_clear_on_swap = false;
-		bool			m_swapping = false;
+		std::atomic<bool> m_swapping = false;
 		bool			m_dirty = false;
 
 		//for debugging
@@ -149,10 +149,13 @@ namespace vve {
 		inline void out() {};
 
 	public:
-		VeTable(std::string name, bool clear_on_swap = false) : m_name(name), m_heap(), m_clear_on_swap(clear_on_swap), m_clock("table clock", 100) {};
+		VeTable(std::string name, bool clear_on_swap = false) : 
+			m_name(name), m_heap(), m_clear_on_swap(clear_on_swap), m_clock("table clock", 100) {};
 
-		VeTable(VeTable& table) : m_heap(), m_thread_id(table.m_thread_id), m_read_only(!table.m_read_only),
-			m_companion_table(&table), m_clear_on_swap(table.m_clear_on_swap), m_name(table.m_name), m_clock(table.m_clock) {
+		VeTable(VeTable& table) : m_heap(), m_thread_id(table.m_thread_id), 
+			m_read_only(!table.m_read_only), m_companion_table(&table), 
+			m_clear_on_swap(table.m_clear_on_swap), 
+			m_name(table.m_name), m_clock(table.m_clock) {
 			table.m_companion_table = this;
 			m_table_nr = table.m_table_nr + 1;
 		};
@@ -520,6 +523,7 @@ namespace vve {
 		m_data.clear();
 		m_directory.clear();
 		m_tbl2dir.clear();
+		m_heap.clear();
 		out();
 	}
 
@@ -930,7 +934,7 @@ namespace vve {
 			m_directory.addMap(new VeOrderedMultimap< VeHandle, VeIndex >(
 				(VeIndex)offsetof(struct VeDirectoryEntry, m_start), (VeIndex)sizeof(VeDirectoryEntry::m_start)));
 					   
-			m_data.resize((VeIndex)(size + m_align));
+			m_data.resize((VeIndex)size + (VeIndex)m_align);
 			uint64_t start = (VeIndex) ( alignBoundary((uint64_t)m_data.data(), m_align) - (uint64_t)m_data.data() );
 			VeDirectoryEntry entry{ (VeIndex)start, size, 0 };
 			m_directory.insert(entry);

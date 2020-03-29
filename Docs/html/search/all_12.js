@@ -17,7 +17,6 @@ var searchData=
   ['replaceleftchild',['replaceLeftChild',['../classvve_1_1_ve_ordered_multimap.html#a5190bca19a82a6e1cf73278959bd7c7d',1,'vve::VeOrderedMultimap']]],
   ['replacerightchild',['replaceRightChild',['../classvve_1_1_ve_ordered_multimap.html#a6703456d75eb8ae95652fe81470171d1',1,'vve::VeOrderedMultimap']]],
   ['reserve',['reserve',['../classvve_1_1_ve_vector.html#a78c008b125fdbb3bcf4b8ac5cc45bc45',1,'vve::VeVector']]],
-  ['reset',['reset',['../structvve_1_1_ve_heap_memory_1_1_ve_pool.html#a36313629954c3d8e0bc8191977571bbc',1,'vve::VeHeapMemory::VePool::reset()'],['../classvve_1_1_ve_heap_memory.html#a1fe958ad0cedee9bb3c1f96a563dfad6',1,'vve::VeHeapMemory::reset()']]],
   ['resetpool',['resetPool',['../classvgjs_1_1_job_memory.html#af31f787e3ac0dc6ced759b7ef9c2097e',1,'vgjs::JobMemory::resetPool()'],['../classvgjs_1_1_job_system.html#ab342b9190eb846a385f4fed86122eedb',1,'vgjs::JobSystem::resetPool()']]],
   ['resize',['resize',['../classvve_1_1_ve_vector.html#a4e2cdfa3463897a94a340978fed8aea1',1,'vve::VeVector']]],
   ['resizemap',['resizeMap',['../classvve_1_1_ve_hashed_multimap.html#a1dccf6b9be43916f6b1ff18b908fc5f4',1,'vve::VeHashedMultimap']]],

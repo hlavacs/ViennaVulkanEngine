@@ -69,17 +69,24 @@ $(function() {
 </div><!--header-->
 <div class="contents">
 
+<p>Declares and defines the VeHeapMemory class and a custom allocator for STL containers.  
+<a href="#details">More...</a></p>
+
 <p><a href="_v_e_mem_heap_8h_source.html">Go to the source code of this file.</a></p>
 <table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="nested-classes"></a>
 Classes</h2></td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classvve_1_1_ve_heap_memory.html">vve::VeHeapMemory</a></td></tr>
+<tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">This class manages fast cache memory for temporary data, e.g. handling handles in searches.  <a href="classvve_1_1_ve_heap_memory.html#details">More...</a><br /></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structvve_1_1_ve_heap_memory_1_1_ve_mem_block.html">vve::VeHeapMemory::VeMemBlock</a></td></tr>
+<tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">One contiguous block of memory.  <a href="structvve_1_1_ve_heap_memory_1_1_ve_mem_block.html#details">More...</a><br /></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structvve_1_1_ve_heap_memory_1_1_ve_pool.html">vve::VeHeapMemory::VePool</a></td></tr>
+<tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">A memory pool containing N suballocated blocks.  <a href="structvve_1_1_ve_heap_memory_1_1_ve_pool.html#details">More...</a><br /></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classvve_1_1custom__alloc.html">vve::custom_alloc&lt; T &gt;</a></td></tr>
+<tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight"><a class="el" href="classvve_1_1custom__alloc.html" title="custom_alloc is a custom allocator for STL containers, that uses VeHeap">custom_alloc</a> is a custom allocator for STL containers, that uses VeHeap  <a href="classvve_1_1custom__alloc.html#details">More...</a><br /></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structvve_1_1custom__alloc_1_1rebind.html">vve::custom_alloc&lt; T &gt;::rebind&lt; U &gt;</a></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -90,10 +97,12 @@ Namespaces</h2></td></tr>
 <tr class="memdesc:namespacevve"><td class="mdescLeft">&#160;</td><td class="mdescRight">include STL <br /></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
-</div><!-- contents -->
+<a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
+<div class="textblock"><p>Declares and defines the VeHeapMemory class and a custom allocator for STL containers. </p>
+</div></div><!-- contents -->
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>
-Generated on Fri Mar 27 2020 22:12:24 for Vienna Vulkan Engine by &#160;<a href="http://www.doxygen.org/index.html">
+Generated on Sun Mar 29 2020 16:04:59 for Vienna Vulkan Engine by &#160;<a href="http://www.doxygen.org/index.html">
 <img class="footer" src="doxygen.png" alt="doxygen"/>
 </a> 1.8.15
 </small></address>

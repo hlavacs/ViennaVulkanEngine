@@ -97,7 +97,7 @@ namespace stltest {
         uint32_t i32;
         uint64_t i64;
         uint64_t a[5];
-        VectorTestStruct() : i32(0), i64(0) {};
+        VectorTestStruct() : i32(0), i64(0), a{0,0,0,0,0} {};
         VectorTestStruct(uint32_t v32, uint64_t v64) : i32(v32), i64(v64), a{0,0,0,0,0} {};
         //void operator=(const VectorTestStruct& src) {
         //    memcpy(this, &src, sizeof(VectorTestStruct));

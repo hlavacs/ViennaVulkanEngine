@@ -236,7 +236,7 @@ namespace vve {
 	*	\param[in]
 	*
 	*/
-	template<typename T> inline VeVector<T>::VeVector(bool memcopy, VeIndex align, VeIndex capacity ) {
+	template<typename T> inline VeVector<T>::VeVector(bool memcopy, VeIndex align, VeIndex capacity ) : m_size(0) {
 		m_capacity	= std::max(capacity, (VeIndex)16); 
 		m_alignment = align;
 		m_entrySize = (VeIndex)alignBoundary( sizeof(T), m_alignment);
