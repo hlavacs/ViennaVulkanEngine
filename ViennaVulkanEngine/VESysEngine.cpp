@@ -254,7 +254,7 @@ namespace vve {
 		void runGameLoop() {
 
 #ifdef VE_ENABLE_MULTITHREADING
-			vgjs::JobSystem::getInstance(4, 1); //create pool without thread 0
+			vgjs::JobSystem::getInstance(0, 1); //create pool without thread 0
 			JADD(runGameLoopMT());				//schedule the game loop
 			vgjs::JobSystem::getInstance()->threadTask(0);		//put main thread as first thread into pool
 			return;

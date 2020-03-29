@@ -285,7 +285,7 @@ namespace vgjs {
 		vve::VeClock m_clock;					///< A clock for measuring execution times
 
 	public:
-		JobMemory() : m_clock("JobMemory", 200) {	///<JobMemory class constructor
+		JobMemory() : m_clock("JobMemory", 200), jobIndex(0), jobLists() {	///<JobMemory class constructor
 			jobLists.reserve(10);
 			jobLists.emplace_back(new JobList(m_listLength));
 
@@ -568,9 +568,11 @@ namespace vgjs {
 					pJob->m_exec_thread = threadIndex;						//thread idx this job was executed on
 				}
 				else {
-					m_numMisses[threadIndex]++;	///< Increase miss counter, possibly sleep or wait for a signal
-					//std::this_thread::sleep_for(std::chrono::nanoseconds(1));
-					//std::this_thread::yield();
+					m_numMisses[threadIndex]++;	//Increase miss counter, possibly sleep or wait for a signal
+					if (m_thread_index > 0) {	//Thread 0 has higher privileges (might run the GUI)
+						std::this_thread::sleep_for(std::chrono::nanoseconds(100));
+						std::this_thread::yield();
+					}
 				};
 			}
 			m_numJobs = 0;

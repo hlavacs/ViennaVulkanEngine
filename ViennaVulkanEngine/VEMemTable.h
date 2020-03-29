@@ -897,7 +897,7 @@ namespace vve {
 
 		void defragment() {
 			std::vector<VeHandle, custom_alloc<VeHandle>> handles(&m_heap);
-			handles.reserve( (VeIndex)m_directory.size() + 1 );
+			handles.reserve( (VeIndex)(m_directory.size() + 1) );
 			m_directory.getAllHandlesFromMap(1, handles);
 			if (handles.size() < 2) 
 				return;
@@ -930,7 +930,7 @@ namespace vve {
 			m_directory.addMap(new VeOrderedMultimap< VeHandle, VeIndex >(
 				(VeIndex)offsetof(struct VeDirectoryEntry, m_start), (VeIndex)sizeof(VeDirectoryEntry::m_start)));
 					   
-			m_data.resize((VeIndex)size + m_align);
+			m_data.resize((VeIndex)(size + m_align));
 			uint64_t start = (VeIndex) ( alignBoundary((uint64_t)m_data.data(), m_align) - (uint64_t)m_data.data() );
 			VeDirectoryEntry entry{ (VeIndex)start, size, 0 };
 			m_directory.insert(entry);

@@ -3,7 +3,7 @@
 /**
 *
 * \file
-* \brief Declares and defines the VeHeapMemory class 
+* \brief Declares and defines the VeHeapMemory class and a custom allocator for STL containers.
 *
 */
 
@@ -34,7 +34,7 @@ namespace vve {
 		struct VeMemBlock {
 			bool	m_free = true;				///< if true then this block is free
 			VeIndex m_size = 0;					///< size of the block
-			VeIndex m_next = VE_NULL_INDEX;		///< if free, then points to the next free block
+			VeIndex m_next = VE_NULL_INDEX;		///< if free, then index to the next free block
 		};
 
 		/**
@@ -43,6 +43,7 @@ namespace vve {
 		struct VePool {
 			std::vector<uint8_t>	m_pool;			///< bare memory made of unsigned bytes
 			VeIndex					m_first_free;	///< first block in the free list
+			VeIndex					m_free_bytes;	///< Number of free bytes in the pool
 
 			/**
 			* \brief VePool class constructor
@@ -50,7 +51,7 @@ namespace vve {
 			* \param[in] size Size of the pool to be allocated
 			* 
 			*/
-			VePool(std::size_t size = m_stdSize) : m_pool(size), m_first_free(0) {
+			VePool(std::size_t size = m_stdSize) : m_pool(size), m_first_free(0), m_free_bytes((VeIndex)size - sizeof(VeMemBlock)) {
 				//std::cout << "new pool size " << size << std::endl;
 				VeMemBlock* block = (VeMemBlock*)m_pool.data();					///< points to the pool memory
 				block->m_free = true;											// create one single free block at the start
@@ -59,16 +60,19 @@ namespace vve {
 			};
 
 			/**
-			* \brief Get the first block of a given memory pool. Used for iterating over
+			* \brief Turn an index into a pool into a VeMemBlock pointer
 			*
 			* \param[in] index Index of the pool 
-			* \returns a pointer to the first block of the given pool
+			* \returns a pointer to the location pointed at by index of type VeMemBlock*
 			*
 			*/
 			VeMemBlock* getPtr(VeIndex index) {
 				return (VeMemBlock*)&m_pool[index];
 			};
 
+			/**
+			* \brief Print debug information
+			*/
 			void print() {
 				VeIndex size = 0;
 				std::cout << "first free " << m_first_free << std::endl;
@@ -81,116 +85,153 @@ namespace vve {
 				std::cout << "total size " << size << std::endl << std::endl;
 			};
 
+			/**
+			* \brief Alocate a block with given size from a free block that is large enough
+			*
+			* \param[in] prev_block Pointer to previous free block (that was not large enough), used for relinking the free list
+			* \param[in] free_block A block from the free list that is large enough
+			* \param[in] size Size of the block to allocate, turn the rest into a free block
+			* \returns a pointer to the allocated memory
+			*
+			*/
 			void* makeAllocation(VeIndex prev_block, VeIndex free_block, std::size_t size) {
-				VeMemBlock* pFree = getPtr(free_block);
-				VeIndex next = pFree->m_next;
-				if (prev_block == VE_NULL_INDEX) {
-					m_first_free = next;
+				VeMemBlock* pFree = getPtr(free_block);		///< Pointer to this free block
+				VeIndex next = pFree->m_next;				///< Index of next free block
+				if (prev_block == VE_NULL_INDEX) {			//if first free block in free list
+					m_first_free = next;					//relink with free list start
 				}
 				else {
-					getPtr(prev_block)->m_next = next;
+					getPtr(prev_block)->m_next = next;		//relink with previous free block
 				}
 
-				pFree->m_free = false;
+				pFree->m_free = false;				//block is no longer free
+				m_free_bytes -= pFree->m_size;		//reduce number of free bytes through allocation of this block
 
-				if (pFree->m_size - size >= sizeof(VeMemBlock)) {
-					VeIndex leftOver = (VeIndex)(free_block + sizeof(VeMemBlock) + size);
+				if (pFree->m_size - size >= sizeof(VeMemBlock)) {	//if larger than size split rest and make it a new free block 
+					VeIndex leftOver = (VeIndex)(free_block + sizeof(VeMemBlock) + size);	//index of new block containing left over bytes
 
-					VeMemBlock* block = (VeMemBlock*)getPtr(leftOver);
-					block->m_free = true;
-					block->m_size = (VeIndex)(pFree->m_size - size - sizeof(VeMemBlock));
-					block->m_next = m_first_free;
-					m_first_free = leftOver;
+					VeMemBlock* block = (VeMemBlock*)getPtr(leftOver);						//new free block
+					block->m_free = true;													//is free
+					block->m_size = (VeIndex)(pFree->m_size - size - sizeof(VeMemBlock));	//size is left over
+					block->m_next = m_first_free;											//relink with start
+					m_first_free = leftOver;												//relink with start
+					m_free_bytes += block->m_size;											//account for free bytes
 
-					pFree->m_size = (VeIndex)size;
+					pFree->m_size = (VeIndex)size;	//set size of newly allocated block
 				}
 				else {
 					//leave the size as it is
 				}
 
-				void* result = (uint8_t*)pFree + sizeof(VeMemBlock);
+				void* result = (uint8_t*)pFree + sizeof(VeMemBlock);	//actual memory if start of block + header size
 				return result;
 			};
 
+			/**
+			* \brief Allocate a block with given size from the pool
+			*
+			* \param[in] size Size of the block to allocate
+			* \returns a pointer to the newly allocated memory of given size
+			*
+			*/
 			void* allocate(std::size_t size) {
 				//std::cout << "allocate " << size << std::endl;
-				VeIndex prev_free = VE_NULL_INDEX;
-				for (VeIndex next_free = m_first_free; next_free != VE_NULL_INDEX; ) {
-					VeMemBlock* free_block = getPtr(next_free);
+				VeIndex prev_free = VE_NULL_INDEX;										///< Index of previous free block
+				for (VeIndex next_free = m_first_free; next_free != VE_NULL_INDEX; ) {	//iterate through all free blocks
+					VeMemBlock* free_block = getPtr(next_free);							///< Pointer to next free block
 					assert(free_block->m_free);
 
-					if (free_block->m_size >= size) {
+					if (free_block->m_size >= size) {	//is the block large enough?
 						//print();
-						void* ptr = makeAllocation(prev_free, next_free, size);
+						void* ptr = makeAllocation(prev_free, next_free, size);	///< if yes then make an allocation 
 						//print();
-						return ptr;
+						return ptr;	//return result
 					}
-					prev_free = next_free;
-					next_free = free_block->m_next;
+					prev_free = next_free;			//not large enough, remember last free block
+					next_free = free_block->m_next;	//use next free block
 				}
-				return nullptr;
+				return nullptr;	//none free found that is large enough - return nullptr
 			};
 
+			/**
+			* \brief Deallocate a block pointed at by a pointer
+			*
+			* \param[in] p Pointer to the memory of a 			
+			* \param[in] size Not used
+			*
+			*/
 			void deallocate(void* p, std::size_t size) {
 				//std::cout << "deallocate " << size << std::endl;
-				VeMemBlock* block = (VeMemBlock*)((uint8_t*)p - sizeof(VeMemBlock));
+				VeMemBlock* block = (VeMemBlock*)((uint8_t*)p - sizeof(VeMemBlock));	///< pointer to block header
 				assert(!block->m_free);
-				block->m_free = true;
-				block->m_next = m_first_free;
-				m_first_free = (VeIndex)((uint8_t*)p - m_pool.data() - sizeof(VeMemBlock));
+				block->m_free = true;			//set to free
+				block->m_next = m_first_free;	//relink into free list
+				m_first_free = (VeIndex)((uint8_t*)p - m_pool.data() - sizeof(VeMemBlock)); //relink into free list 
+				m_free_bytes += block->m_size;	//account for the free bytes of the block
 				//print();
 			};
 
+			/**
+			* \brief Defragment the pool by merging neighbouring free blocks into larger free blocks
+			*/
 			void defragment() {
-				m_first_free = VE_NULL_INDEX;
-				VeMemBlock* pPrev = nullptr;
-				for (VeIndex current_block = 0; current_block < m_pool.size(); ) {
-					VeMemBlock* pCurrent = getPtr(current_block);
-					VeIndex next_block = current_block + pCurrent->m_size + sizeof(VeMemBlock);
+				m_first_free = VE_NULL_INDEX;	//reset the whole free list
+				VeMemBlock* pPrev = nullptr;	///< points to previous block for list linking
+				for (VeIndex current_block = 0; current_block < m_pool.size(); ) {	//go through all blocks linearly
+					VeMemBlock* pCurrent = getPtr(current_block);					//pointer to current block
+					VeIndex next_block = current_block + pCurrent->m_size + sizeof(VeMemBlock); //index of next block
 
-					if (pCurrent->m_free) {
+					if (pCurrent->m_free) {						//is current block free?
 
-						if (m_first_free == VE_NULL_INDEX) {
+						if (m_first_free == VE_NULL_INDEX) {	//if first free block, set as first free block of the pool
 							m_first_free = current_block;
 						}
-						else if (pPrev != nullptr) {
-							pPrev->m_next = current_block;
+						else if (pPrev != nullptr) {			//if not first block, relink with previous free block
+							pPrev->m_next = current_block;	
 						}
 
-						pCurrent->m_next = VE_NULL_INDEX;
+						pCurrent->m_next = VE_NULL_INDEX;		//set next free block tu NULL
 
-						if (next_block < m_pool.size()) {
-							VeMemBlock* pNext = getPtr(next_block);
-							if (pNext->m_free) {
-								pCurrent->m_size += pNext->m_size + sizeof(VeMemBlock);
-								pCurrent = pPrev;
-								next_block = current_block;
+						if (next_block < m_pool.size()) {			//is there a next block?
+							VeMemBlock* pNext = getPtr(next_block); ///< Pointer to next block in pool
+							if (pNext->m_free) {					//is the next block also free?
+								pCurrent->m_size += pNext->m_size + sizeof(VeMemBlock);	//if yes then merge it into the current block
+								m_free_bytes += sizeof(VeMemBlock); //just got more free memory because one less block header
+								pCurrent = pPrev;				//make sure that the iterator goes to the current block again
+								next_block = current_block;		//iterator will stay on this block
 							}
 						}
-						pPrev = pCurrent;
+						pPrev = pCurrent;			//pointer to previous block (or same if there was a merge)
 					}
-					current_block = next_block;
+					current_block = next_block;		//index of next block (or same if there was a merge)
 				}
 			};
 
-			void reset() {
-				VeMemBlock* block = (VeMemBlock*)m_pool.data();
-				block->m_free = true;
-				block->m_size = (VeIndex)(m_pool.size() - sizeof(VeMemBlock));
-				block->m_next = VE_NULL_INDEX;
-				m_first_free = 0;
+			/**
+			* \brief Clears all memory allocations of the pool
+			*/
+			void clear() {
+				VeMemBlock* block = (VeMemBlock*)m_pool.data();					///< Insert one free block at the start
+				block->m_free = true;											//set to free
+				block->m_size = (VeIndex)(m_pool.size() - sizeof(VeMemBlock));	//size of data part
+				block->m_next = VE_NULL_INDEX;									//no successor in free list
+				m_first_free = 0;												//start of first free block is start of pool
+				m_free_bytes = (VeIndex)m_pool.size() - sizeof(VeMemBlock);				//number of free bytes in the pool
 			}
 		};
 
-		std::vector<VePool>	m_pools;
+		std::vector<VePool>	m_pools;	///< A vector containing all existing pools for this heap
 
 	public:
-		VeHeapMemory() : m_pools() {
-			m_pools.emplace_back(m_stdSize);
+		VeHeapMemory() : m_pools() {			///< VeHeapMemory class constructor
+			m_pools.emplace_back(m_stdSize);	//insert one pool with default size
 		};
 
-		~VeHeapMemory() {};
+		~VeHeapMemory() {};	///< VeHeapMemory class destructor
 
+		/**
+		* \brief Print debug information for all pools
+		*/
 		void print() {
 			for (uint32_t i = 0; i < m_pools.size(); ++i) {
 				std::cout << "pool " << i << " size " << m_pools[i].m_pool.size() << std::endl;
@@ -198,59 +239,82 @@ namespace vve {
 			}
 		}
 
-		void reset() {
+		/**
+		* \brief Clears all memory allocations of all pools
+		*/
+		void clear() {
 			for (auto& pool : m_pools)
-				pool.reset();
+				pool.clear();
 		};
 
+		/**
+		* \brief Public interface for allocating memory of this heap
+		*
+		* \param[in] size Size of the memory block that should be allocated
+		* \returns a pointer to the newly allocated memory
+		*
+		*/
 		void* allocate(std::size_t size) {
-			for (auto& pool : m_pools) {
-				void* ptr = pool.allocate(size);
-				if (ptr != nullptr)
-					return ptr;
+			for (auto& pool : m_pools) {				//go through all pools and find a memory block large enough
+				if (pool.m_free_bytes >= size) {		//are there enough free bytes in the pool?
+					void* ptr = pool.allocate(size);	//ask the pool for memory
+					if (ptr != nullptr)					//if found return the memory
+						return ptr;
 
-				pool.defragment();
+					pool.defragment();					//if not found try to defragment the pool
 
-				ptr = pool.allocate(size);
-				if (ptr != nullptr)
-					return ptr;
+					ptr = pool.allocate(size);			//and try again to allocate the memory
+					if (ptr != nullptr)
+						return ptr;
+				}
 			}
-			std::size_t ps = m_stdSize;
-			if (ps < size + sizeof(VeMemBlock)) {
+			//not found a free pool, allocate a new pool
+			std::size_t ps = m_stdSize;					//default pool size
+			if (ps < size + sizeof(VeMemBlock)) {		//if desired memory would not fit into a standard pool -> make it larger
 #ifdef _WIN32
-				ps = 2 * size + size / 2 + 2 * sizeof(VeMemBlock);
+				ps = 2 * size + size / 2 + 2 * sizeof(VeMemBlock); //std::vector reallocation strategy on Windows 
 #else
-				ps = 3 * size + 2 * sizeof(VeMemBlock);
+				ps = 3 * size + 2 * sizeof(VeMemBlock); //std::vector reallocation strategy on Unix-like
 #endif
 			}
 
-			m_pools.emplace_back(ps);
-			return m_pools[m_pools.size() - 1].allocate(size);
+			m_pools.emplace_back(ps);							//put new pool into list of pools
+			return m_pools[m_pools.size() - 1].allocate(size);	//allocate the block from the new pool
 		};
 
+		/**
+		* \brief Public interface for deallocating memory
+		*
+		* \param[in] p Pointer to the memory to be deallocated
+		* \param[in] size Not used
+		*
+		*/
 		void deallocate(void* p, std::size_t size) {
-			for (auto& pool : m_pools) {
+			for (auto& pool : m_pools) {	//find pool that this pointer points to
 				if (pool.m_pool.data() <= p && p < pool.m_pool.data() + pool.m_pool.size()) {
-					pool.deallocate(p, size);
+					pool.deallocate(p, size);	//if found, deallocate the memory
 				}
 			}
 		}
 	};
 
 
+	/**
+	* \brief custom_alloc is a custom allocator for STL containers, tha uses VeHeap
+	*/
 	template <class T>
 	class custom_alloc : public std::allocator<T> {
 	public:
-		VeHeapMemory* m_heap;
+		VeHeapMemory* m_heap;	//< Pointer to the heap memory to be used
 
 	public:
-		typedef size_t		size_type;
-		typedef ptrdiff_t	difference_type;
-		typedef T* pointer;
-		typedef const T* const_pointer;
-		typedef T& reference;
-		typedef const T& const_reference;
-		typedef T			value_type;
+		typedef size_t		size_type;			///< size type
+		typedef ptrdiff_t	difference_type;	///< pointer difference type
+		typedef T*			pointer;			///< pointer type
+		typedef const T*	const_pointer;		///< const pointer type
+		typedef T&			reference;			///< reference type
+		typedef const T&	const_reference;	///< const reference type
+		typedef T			value_type;			///< value type
 
 		custom_alloc(VeHeapMemory* heap) : m_heap(heap) {}
 		custom_alloc(const custom_alloc& ver) : m_heap(ver.m_heap) {}
