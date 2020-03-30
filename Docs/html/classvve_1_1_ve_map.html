@@ -74,6 +74,9 @@ $(function() {
 </div><!--header-->
 <div class="contents">
 
+<p>Base class of all VeMaps.  
+ <a href="classvve_1_1_ve_map.html#details">More...</a></p>
+
 <p><code>#include &lt;<a class="el" href="_v_e_mem_map_8h_source.html">VEMemMap.h</a>&gt;</code></p>
 <div class="dynheader">
 Inheritance diagram for vve::VeMap:</div>
@@ -82,7 +85,7 @@ Inheritance diagram for vve::VeMap:</div>
   <img src="classvve_1_1_ve_map.png" usemap="#vve::VeMap_map" alt=""/>
   <map id="vve::VeMap_map" name="vve::VeMap_map">
 <area href="classvve_1_1_ve_hashed_multimap.html" alt="vve::VeHashedMultimap&lt; K, I &gt;" shape="rect" coords="0,56,326,80"/>
-<area href="classvve_1_1_ve_ordered_multimap.html" alt="vve::VeOrderedMultimap&lt; K, I &gt;" shape="rect" coords="336,56,662,80"/>
+<area href="classvve_1_1_ve_ordered_multimap.html" title="A multi map storing key-value pairs, ordered with an AVL tree." alt="vve::VeOrderedMultimap&lt; K, I &gt;" shape="rect" coords="336,56,662,80"/>
 <area href="classvve_1_1_ve_hashed_multimap_1_1_ve_hashed_map.html" alt="vve::VeHashedMultimap&lt; K, I &gt;::VeHashedMap&lt; K, I &gt;" shape="rect" coords="0,112,326,136"/>
 <area href="classvve_1_1_ve_ordered_map.html" alt="vve::VeOrderedMap&lt; K, I &gt;" shape="rect" coords="336,112,662,136"/>
   </map>
@@ -93,94 +96,139 @@ Public Member Functions</h2></td></tr>
 <tr class="memitem:a5bcdd01d8b41f8379336245c6ed90e67"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classvve_1_1_ve_map.html#a5bcdd01d8b41f8379336245c6ed90e67">VeMap</a> ()</td></tr>
 <tr class="separator:a5bcdd01d8b41f8379336245c6ed90e67"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a344d5c5daf74b7900b32cc7b6db1668d"><td class="memItemLeft" align="right" valign="top">virtual&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classvve_1_1_ve_map.html#a344d5c5daf74b7900b32cc7b6db1668d">~VeMap</a> ()</td></tr>
+<tr class="memdesc:a344d5c5daf74b7900b32cc7b6db1668d"><td class="mdescLeft">&#160;</td><td class="mdescRight"><a class="el" href="classvve_1_1_ve_map.html" title="Base class of all VeMaps.">VeMap</a> class constructor.  <a href="#a344d5c5daf74b7900b32cc7b6db1668d">More...</a><br /></td></tr>
 <tr class="separator:a344d5c5daf74b7900b32cc7b6db1668d"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a0f4c016caf6108791dc304ddc5246836"><td class="memItemLeft" align="right" valign="top">virtual void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classvve_1_1_ve_map.html#a0f4c016caf6108791dc304ddc5246836">operator=</a> (const <a class="el" href="classvve_1_1_ve_map.html">VeMap</a> &amp;map)</td></tr>
+<tr class="memdesc:a0f4c016caf6108791dc304ddc5246836"><td class="mdescLeft">&#160;</td><td class="mdescRight"><a class="el" href="classvve_1_1_ve_map.html" title="Base class of all VeMaps.">VeMap</a> class destructor.  <a href="#a0f4c016caf6108791dc304ddc5246836">More...</a><br /></td></tr>
 <tr class="separator:a0f4c016caf6108791dc304ddc5246836"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a7a696286906c487c905f5ce40381d4b0"><td class="memItemLeft" align="right" valign="top">virtual void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classvve_1_1_ve_map.html#a7a696286906c487c905f5ce40381d4b0">clear</a> ()</td></tr>
+<tr class="memdesc:a7a696286906c487c905f5ce40381d4b0"><td class="mdescLeft">&#160;</td><td class="mdescRight">assignment operator  <a href="#a7a696286906c487c905f5ce40381d4b0">More...</a><br /></td></tr>
 <tr class="separator:a7a696286906c487c905f5ce40381d4b0"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a744ae6211a624fd965eeb8151c15fd4d"><td class="memItemLeft" align="right" valign="top">virtual <a class="el" href="namespacevve.html#a08b50fce7713104897496c0db0bde197">VeCount</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classvve_1_1_ve_map.html#a744ae6211a624fd965eeb8151c15fd4d">size</a> ()</td></tr>
+<tr class="memdesc:a744ae6211a624fd965eeb8151c15fd4d"><td class="mdescLeft">&#160;</td><td class="mdescRight">delete all entries in the map  <a href="#a744ae6211a624fd965eeb8151c15fd4d">More...</a><br /></td></tr>
 <tr class="separator:a744ae6211a624fd965eeb8151c15fd4d"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a10422caa89b79f6df9d7faf88fab8c03"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classvve_1_1_ve_map.html#a10422caa89b79f6df9d7faf88fab8c03">empty</a> ()</td></tr>
 <tr class="separator:a10422caa89b79f6df9d7faf88fab8c03"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a748f889a39119112b7ad12fb38f8e3fc"><td class="memItemLeft" align="right" valign="top">virtual <a class="el" href="classvve_1_1_ve_map.html">VeMap</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classvve_1_1_ve_map.html#a748f889a39119112b7ad12fb38f8e3fc">clone</a> ()</td></tr>
+<tr class="memdesc:a748f889a39119112b7ad12fb38f8e3fc"><td class="mdescLeft">&#160;</td><td class="mdescRight">true, if the map is empty  <a href="#a748f889a39119112b7ad12fb38f8e3fc">More...</a><br /></td></tr>
 <tr class="separator:a748f889a39119112b7ad12fb38f8e3fc"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a064006bf66fe39e10efff64bae1e097c"><td class="memItemLeft" align="right" valign="top">virtual bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classvve_1_1_ve_map.html#a064006bf66fe39e10efff64bae1e097c">insert</a> (void *entry, <a class="el" href="namespacevve.html#a1eb8d816d3112a806cbcd809004a5266">VeIndex</a> dir_index)</td></tr>
+<tr class="memdesc:a064006bf66fe39e10efff64bae1e097c"><td class="mdescLeft">&#160;</td><td class="mdescRight">create a clone of this map  <a href="#a064006bf66fe39e10efff64bae1e097c">More...</a><br /></td></tr>
 <tr class="separator:a064006bf66fe39e10efff64bae1e097c"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a75b8b40a7d3549dca7b2ce8fca57521c"><td class="memItemLeft" align="right" valign="top">virtual <a class="el" href="namespacevve.html#a08b50fce7713104897496c0db0bde197">VeCount</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classvve_1_1_ve_map.html#a75b8b40a7d3549dca7b2ce8fca57521c">erase</a> (void *entry, <a class="el" href="namespacevve.html#a1eb8d816d3112a806cbcd809004a5266">VeIndex</a> dir_index)</td></tr>
+<tr class="memdesc:a75b8b40a7d3549dca7b2ce8fca57521c"><td class="mdescLeft">&#160;</td><td class="mdescRight">insert a key-value pair into the map  <a href="#a75b8b40a7d3549dca7b2ce8fca57521c">More...</a><br /></td></tr>
 <tr class="separator:a75b8b40a7d3549dca7b2ce8fca57521c"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aeb3d36dde4f295049bcc8cd0b22d776a"><td class="memItemLeft" align="right" valign="top">virtual <a class="el" href="namespacevve.html#a1eb8d816d3112a806cbcd809004a5266">VeIndex</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classvve_1_1_ve_map.html#aeb3d36dde4f295049bcc8cd0b22d776a">find</a> (<a class="el" href="namespacevve.html#af8d69bd6cc8b81ae8d99808df878280a">VeHandle</a> key)</td></tr>
+<tr class="memdesc:aeb3d36dde4f295049bcc8cd0b22d776a"><td class="mdescLeft">&#160;</td><td class="mdescRight">delete a (key,value) pair from the map  <a href="#aeb3d36dde4f295049bcc8cd0b22d776a">More...</a><br /></td></tr>
 <tr class="separator:aeb3d36dde4f295049bcc8cd0b22d776a"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:af2fd53d38b43646fe2499cd73ba6f914"><td class="memItemLeft" align="right" valign="top">virtual <a class="el" href="namespacevve.html#a1eb8d816d3112a806cbcd809004a5266">VeIndex</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classvve_1_1_ve_map.html#af2fd53d38b43646fe2499cd73ba6f914">find</a> (<a class="el" href="namespacevve.html#a41862a165b0d0713103d08beb17f96cb">VeHandlePair</a> key)</td></tr>
+<tr class="memdesc:af2fd53d38b43646fe2499cd73ba6f914"><td class="mdescLeft">&#160;</td><td class="mdescRight">find an entry,  <a href="#af2fd53d38b43646fe2499cd73ba6f914">More...</a><br /></td></tr>
 <tr class="separator:af2fd53d38b43646fe2499cd73ba6f914"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a68b3db190527fb82836c9cb3305ed3b5"><td class="memItemLeft" align="right" valign="top">virtual <a class="el" href="namespacevve.html#a1eb8d816d3112a806cbcd809004a5266">VeIndex</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classvve_1_1_ve_map.html#a68b3db190527fb82836c9cb3305ed3b5">find</a> (<a class="el" href="namespacevve.html#a85f8d99c311c41f691c473e8c93f2cef">VeHandleTriple</a> key)</td></tr>
+<tr class="memdesc:a68b3db190527fb82836c9cb3305ed3b5"><td class="mdescLeft">&#160;</td><td class="mdescRight">find an entry,  <a href="#a68b3db190527fb82836c9cb3305ed3b5">More...</a><br /></td></tr>
 <tr class="separator:a68b3db190527fb82836c9cb3305ed3b5"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a63eb1101d6dd6b966b9831fe4b706fa7"><td class="memItemLeft" align="right" valign="top">virtual <a class="el" href="namespacevve.html#a1eb8d816d3112a806cbcd809004a5266">VeIndex</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classvve_1_1_ve_map.html#a63eb1101d6dd6b966b9831fe4b706fa7">find</a> (std::string key)</td></tr>
+<tr class="memdesc:a63eb1101d6dd6b966b9831fe4b706fa7"><td class="mdescLeft">&#160;</td><td class="mdescRight">find an entry,  <a href="#a63eb1101d6dd6b966b9831fe4b706fa7">More...</a><br /></td></tr>
 <tr class="separator:a63eb1101d6dd6b966b9831fe4b706fa7"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a1a7f572fde428526c5ce8e880ebc4ad7"><td class="memItemLeft" align="right" valign="top">virtual <a class="el" href="namespacevve.html#a1eb8d816d3112a806cbcd809004a5266">VeIndex</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classvve_1_1_ve_map.html#a1a7f572fde428526c5ce8e880ebc4ad7">operator[]</a> (const <a class="el" href="namespacevve.html#af8d69bd6cc8b81ae8d99808df878280a">VeHandle</a> &amp;key)</td></tr>
+<tr class="memdesc:a1a7f572fde428526c5ce8e880ebc4ad7"><td class="mdescLeft">&#160;</td><td class="mdescRight">find an ,  <a href="#a1a7f572fde428526c5ce8e880ebc4ad7">More...</a><br /></td></tr>
 <tr class="separator:a1a7f572fde428526c5ce8e880ebc4ad7"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ab4f4e86c55b0f6903f94d97c36d85d29"><td class="memItemLeft" align="right" valign="top">virtual <a class="el" href="namespacevve.html#a1eb8d816d3112a806cbcd809004a5266">VeIndex</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classvve_1_1_ve_map.html#ab4f4e86c55b0f6903f94d97c36d85d29">operator[]</a> (const <a class="el" href="namespacevve.html#a41862a165b0d0713103d08beb17f96cb">VeHandlePair</a> &amp;key)</td></tr>
+<tr class="memdesc:ab4f4e86c55b0f6903f94d97c36d85d29"><td class="mdescLeft">&#160;</td><td class="mdescRight">find an entry,  <a href="#ab4f4e86c55b0f6903f94d97c36d85d29">More...</a><br /></td></tr>
 <tr class="separator:ab4f4e86c55b0f6903f94d97c36d85d29"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a78a1c382419839f0df515ff5117376dc"><td class="memItemLeft" align="right" valign="top">virtual <a class="el" href="namespacevve.html#a1eb8d816d3112a806cbcd809004a5266">VeIndex</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classvve_1_1_ve_map.html#a78a1c382419839f0df515ff5117376dc">operator[]</a> (const <a class="el" href="namespacevve.html#a85f8d99c311c41f691c473e8c93f2cef">VeHandleTriple</a> &amp;key)</td></tr>
+<tr class="memdesc:a78a1c382419839f0df515ff5117376dc"><td class="mdescLeft">&#160;</td><td class="mdescRight">find an entry,  <a href="#a78a1c382419839f0df515ff5117376dc">More...</a><br /></td></tr>
 <tr class="separator:a78a1c382419839f0df515ff5117376dc"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a345474dc98fec5f37f01c76e839dd198"><td class="memItemLeft" align="right" valign="top">virtual <a class="el" href="namespacevve.html#a1eb8d816d3112a806cbcd809004a5266">VeIndex</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classvve_1_1_ve_map.html#a345474dc98fec5f37f01c76e839dd198">operator[]</a> (const std::string &amp;key)</td></tr>
+<tr class="memdesc:a345474dc98fec5f37f01c76e839dd198"><td class="mdescLeft">&#160;</td><td class="mdescRight">find an entry,  <a href="#a345474dc98fec5f37f01c76e839dd198">More...</a><br /></td></tr>
 <tr class="separator:a345474dc98fec5f37f01c76e839dd198"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a117b71374ff31275cf49de2b2cb9b05d"><td class="memItemLeft" align="right" valign="top">virtual <a class="el" href="namespacevve.html#a08b50fce7713104897496c0db0bde197">VeCount</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classvve_1_1_ve_map.html#a117b71374ff31275cf49de2b2cb9b05d">equal_range</a> (<a class="el" href="namespacevve.html#af8d69bd6cc8b81ae8d99808df878280a">VeHandle</a> key, std::vector&lt; <a class="el" href="namespacevve.html#a1eb8d816d3112a806cbcd809004a5266">VeIndex</a>, <a class="el" href="classvve_1_1custom__alloc.html">custom_alloc</a>&lt; <a class="el" href="namespacevve.html#a1eb8d816d3112a806cbcd809004a5266">VeIndex</a> &gt;&gt; &amp;result)</td></tr>
+<tr class="memdesc:a117b71374ff31275cf49de2b2cb9b05d"><td class="mdescLeft">&#160;</td><td class="mdescRight">find an,  <a href="#a117b71374ff31275cf49de2b2cb9b05d">More...</a><br /></td></tr>
 <tr class="separator:a117b71374ff31275cf49de2b2cb9b05d"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:af17335f28cab3ed5347daa63d41cd22a"><td class="memItemLeft" align="right" valign="top">virtual <a class="el" href="namespacevve.html#a08b50fce7713104897496c0db0bde197">VeCount</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classvve_1_1_ve_map.html#af17335f28cab3ed5347daa63d41cd22a">equal_range</a> (<a class="el" href="namespacevve.html#a41862a165b0d0713103d08beb17f96cb">VeHandlePair</a> key, std::vector&lt; <a class="el" href="namespacevve.html#a1eb8d816d3112a806cbcd809004a5266">VeIndex</a>, <a class="el" href="classvve_1_1custom__alloc.html">custom_alloc</a>&lt; <a class="el" href="namespacevve.html#a1eb8d816d3112a806cbcd809004a5266">VeIndex</a> &gt;&gt; &amp;result)</td></tr>
+<tr class="memdesc:af17335f28cab3ed5347daa63d41cd22a"><td class="mdescLeft">&#160;</td><td class="mdescRight">find entries  <a href="#af17335f28cab3ed5347daa63d41cd22a">More...</a><br /></td></tr>
 <tr class="separator:af17335f28cab3ed5347daa63d41cd22a"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a6855e0305cd127d000d41d14e67746ed"><td class="memItemLeft" align="right" valign="top">virtual <a class="el" href="namespacevve.html#a08b50fce7713104897496c0db0bde197">VeCount</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classvve_1_1_ve_map.html#a6855e0305cd127d000d41d14e67746ed">equal_range</a> (<a class="el" href="namespacevve.html#a85f8d99c311c41f691c473e8c93f2cef">VeHandleTriple</a> key, std::vector&lt; <a class="el" href="namespacevve.html#a1eb8d816d3112a806cbcd809004a5266">VeIndex</a>, <a class="el" href="classvve_1_1custom__alloc.html">custom_alloc</a>&lt; <a class="el" href="namespacevve.html#a1eb8d816d3112a806cbcd809004a5266">VeIndex</a> &gt;&gt; &amp;result)</td></tr>
+<tr class="memdesc:a6855e0305cd127d000d41d14e67746ed"><td class="mdescLeft">&#160;</td><td class="mdescRight">find entries  <a href="#a6855e0305cd127d000d41d14e67746ed">More...</a><br /></td></tr>
 <tr class="separator:a6855e0305cd127d000d41d14e67746ed"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a69c9465d8fa6463553ae140ab2bea56f"><td class="memItemLeft" align="right" valign="top">virtual <a class="el" href="namespacevve.html#a08b50fce7713104897496c0db0bde197">VeCount</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classvve_1_1_ve_map.html#a69c9465d8fa6463553ae140ab2bea56f">equal_range</a> (std::string key, std::vector&lt; <a class="el" href="namespacevve.html#a1eb8d816d3112a806cbcd809004a5266">VeIndex</a>, <a class="el" href="classvve_1_1custom__alloc.html">custom_alloc</a>&lt; <a class="el" href="namespacevve.html#a1eb8d816d3112a806cbcd809004a5266">VeIndex</a> &gt;&gt; &amp;result)</td></tr>
+<tr class="memdesc:a69c9465d8fa6463553ae140ab2bea56f"><td class="mdescLeft">&#160;</td><td class="mdescRight">find entries  <a href="#a69c9465d8fa6463553ae140ab2bea56f">More...</a><br /></td></tr>
 <tr class="separator:a69c9465d8fa6463553ae140ab2bea56f"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a49465399264419d21c653da37c795548"><td class="memItemLeft" align="right" valign="top">virtual <a class="el" href="namespacevve.html#a08b50fce7713104897496c0db0bde197">VeCount</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classvve_1_1_ve_map.html#a49465399264419d21c653da37c795548">range</a> (<a class="el" href="namespacevve.html#af8d69bd6cc8b81ae8d99808df878280a">VeHandle</a> lower, <a class="el" href="namespacevve.html#af8d69bd6cc8b81ae8d99808df878280a">VeHandle</a> upper, std::vector&lt; <a class="el" href="namespacevve.html#a1eb8d816d3112a806cbcd809004a5266">VeIndex</a>, <a class="el" href="classvve_1_1custom__alloc.html">custom_alloc</a>&lt; <a class="el" href="namespacevve.html#a1eb8d816d3112a806cbcd809004a5266">VeIndex</a> &gt;&gt; &amp;result)</td></tr>
+<tr class="memdesc:a49465399264419d21c653da37c795548"><td class="mdescLeft">&#160;</td><td class="mdescRight">find entries  <a href="#a49465399264419d21c653da37c795548">More...</a><br /></td></tr>
 <tr class="separator:a49465399264419d21c653da37c795548"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a9dfe5f3931e903b6bf2d53131625bd99"><td class="memItemLeft" align="right" valign="top">virtual <a class="el" href="namespacevve.html#a08b50fce7713104897496c0db0bde197">VeCount</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classvve_1_1_ve_map.html#a9dfe5f3931e903b6bf2d53131625bd99">range</a> (<a class="el" href="namespacevve.html#a41862a165b0d0713103d08beb17f96cb">VeHandlePair</a> lower, <a class="el" href="namespacevve.html#a41862a165b0d0713103d08beb17f96cb">VeHandlePair</a> upper, std::vector&lt; <a class="el" href="namespacevve.html#a1eb8d816d3112a806cbcd809004a5266">VeIndex</a>, <a class="el" href="classvve_1_1custom__alloc.html">custom_alloc</a>&lt; <a class="el" href="namespacevve.html#a1eb8d816d3112a806cbcd809004a5266">VeIndex</a> &gt;&gt; &amp;result)</td></tr>
+<tr class="memdesc:a9dfe5f3931e903b6bf2d53131625bd99"><td class="mdescLeft">&#160;</td><td class="mdescRight">find entries  <a href="#a9dfe5f3931e903b6bf2d53131625bd99">More...</a><br /></td></tr>
 <tr class="separator:a9dfe5f3931e903b6bf2d53131625bd99"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aa52232bbc3b27ac59a2e3bf9647c45c1"><td class="memItemLeft" align="right" valign="top">virtual <a class="el" href="namespacevve.html#a08b50fce7713104897496c0db0bde197">VeCount</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classvve_1_1_ve_map.html#aa52232bbc3b27ac59a2e3bf9647c45c1">range</a> (<a class="el" href="namespacevve.html#a85f8d99c311c41f691c473e8c93f2cef">VeHandleTriple</a> lower, <a class="el" href="namespacevve.html#a85f8d99c311c41f691c473e8c93f2cef">VeHandleTriple</a> upper, std::vector&lt; <a class="el" href="namespacevve.html#a1eb8d816d3112a806cbcd809004a5266">VeIndex</a>, <a class="el" href="classvve_1_1custom__alloc.html">custom_alloc</a>&lt; <a class="el" href="namespacevve.html#a1eb8d816d3112a806cbcd809004a5266">VeIndex</a> &gt;&gt; &amp;result)</td></tr>
+<tr class="memdesc:aa52232bbc3b27ac59a2e3bf9647c45c1"><td class="mdescLeft">&#160;</td><td class="mdescRight">find entries  <a href="#aa52232bbc3b27ac59a2e3bf9647c45c1">More...</a><br /></td></tr>
 <tr class="separator:aa52232bbc3b27ac59a2e3bf9647c45c1"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a790529ce7b8abe80dcd2bd16f9cc2542"><td class="memItemLeft" align="right" valign="top">virtual <a class="el" href="namespacevve.html#a08b50fce7713104897496c0db0bde197">VeCount</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classvve_1_1_ve_map.html#a790529ce7b8abe80dcd2bd16f9cc2542">range</a> (std::string lower, std::string upper, std::vector&lt; <a class="el" href="namespacevve.html#a1eb8d816d3112a806cbcd809004a5266">VeIndex</a>, <a class="el" href="classvve_1_1custom__alloc.html">custom_alloc</a>&lt; <a class="el" href="namespacevve.html#a1eb8d816d3112a806cbcd809004a5266">VeIndex</a> &gt;&gt; &amp;result)</td></tr>
+<tr class="memdesc:a790529ce7b8abe80dcd2bd16f9cc2542"><td class="mdescLeft">&#160;</td><td class="mdescRight">find entries  <a href="#a790529ce7b8abe80dcd2bd16f9cc2542">More...</a><br /></td></tr>
 <tr class="separator:a790529ce7b8abe80dcd2bd16f9cc2542"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:abf039d66966f3f4aff20c822ac522fd0"><td class="memItemLeft" align="right" valign="top">virtual <a class="el" href="namespacevve.html#a08b50fce7713104897496c0db0bde197">VeCount</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classvve_1_1_ve_map.html#abf039d66966f3f4aff20c822ac522fd0">getAllIndices</a> (std::vector&lt; <a class="el" href="namespacevve.html#a1eb8d816d3112a806cbcd809004a5266">VeIndex</a>, <a class="el" href="classvve_1_1custom__alloc.html">custom_alloc</a>&lt; <a class="el" href="namespacevve.html#a1eb8d816d3112a806cbcd809004a5266">VeIndex</a> &gt;&gt; &amp;result)</td></tr>
+<tr class="memdesc:abf039d66966f3f4aff20c822ac522fd0"><td class="mdescLeft">&#160;</td><td class="mdescRight">find entries  <a href="#abf039d66966f3f4aff20c822ac522fd0">More...</a><br /></td></tr>
 <tr class="separator:abf039d66966f3f4aff20c822ac522fd0"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:af416c5715f4ea7da3443e9df274814ec"><td class="memItemLeft" align="right" valign="top">virtual <a class="el" href="namespacevve.html#a08b50fce7713104897496c0db0bde197">VeCount</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classvve_1_1_ve_map.html#af416c5715f4ea7da3443e9df274814ec">getAllKeyValuePairs</a> (std::vector&lt; std::pair&lt; <a class="el" href="namespacevve.html#af8d69bd6cc8b81ae8d99808df878280a">VeHandle</a>, <a class="el" href="namespacevve.html#a1eb8d816d3112a806cbcd809004a5266">VeIndex</a> &gt;, <a class="el" href="classvve_1_1custom__alloc.html">custom_alloc</a>&lt; std::pair&lt; <a class="el" href="namespacevve.html#af8d69bd6cc8b81ae8d99808df878280a">VeHandle</a>, <a class="el" href="namespacevve.html#a1eb8d816d3112a806cbcd809004a5266">VeIndex</a> &gt;&gt;&gt; &amp;result)</td></tr>
+<tr class="memdesc:af416c5715f4ea7da3443e9df274814ec"><td class="mdescLeft">&#160;</td><td class="mdescRight">return all indices  <a href="#af416c5715f4ea7da3443e9df274814ec">More...</a><br /></td></tr>
 <tr class="separator:af416c5715f4ea7da3443e9df274814ec"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a7d241e947883394cd9763b55affc694c"><td class="memItemLeft" align="right" valign="top">virtual <a class="el" href="namespacevve.html#a08b50fce7713104897496c0db0bde197">VeCount</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classvve_1_1_ve_map.html#a7d241e947883394cd9763b55affc694c">getAllKeyValuePairs</a> (std::vector&lt; std::pair&lt; <a class="el" href="namespacevve.html#a41862a165b0d0713103d08beb17f96cb">VeHandlePair</a>, <a class="el" href="namespacevve.html#a1eb8d816d3112a806cbcd809004a5266">VeIndex</a> &gt;, <a class="el" href="classvve_1_1custom__alloc.html">custom_alloc</a>&lt; std::pair&lt; <a class="el" href="namespacevve.html#a41862a165b0d0713103d08beb17f96cb">VeHandlePair</a>, <a class="el" href="namespacevve.html#a1eb8d816d3112a806cbcd809004a5266">VeIndex</a> &gt;&gt;&gt; &amp;result)</td></tr>
+<tr class="memdesc:a7d241e947883394cd9763b55affc694c"><td class="mdescLeft">&#160;</td><td class="mdescRight">return all key-value pairs  <a href="#a7d241e947883394cd9763b55affc694c">More...</a><br /></td></tr>
 <tr class="separator:a7d241e947883394cd9763b55affc694c"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a4fbd28b63064861f122f7586fbc27d4f"><td class="memItemLeft" align="right" valign="top">virtual <a class="el" href="namespacevve.html#a08b50fce7713104897496c0db0bde197">VeCount</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classvve_1_1_ve_map.html#a4fbd28b63064861f122f7586fbc27d4f">getAllKeyValuePairs</a> (std::vector&lt; std::pair&lt; <a class="el" href="namespacevve.html#a85f8d99c311c41f691c473e8c93f2cef">VeHandleTriple</a>, <a class="el" href="namespacevve.html#a1eb8d816d3112a806cbcd809004a5266">VeIndex</a> &gt;, <a class="el" href="classvve_1_1custom__alloc.html">custom_alloc</a>&lt; std::pair&lt; <a class="el" href="namespacevve.html#a85f8d99c311c41f691c473e8c93f2cef">VeHandleTriple</a>, <a class="el" href="namespacevve.html#a1eb8d816d3112a806cbcd809004a5266">VeIndex</a> &gt;&gt;&gt; &amp;result)</td></tr>
+<tr class="memdesc:a4fbd28b63064861f122f7586fbc27d4f"><td class="mdescLeft">&#160;</td><td class="mdescRight">return all key-value pairs  <a href="#a4fbd28b63064861f122f7586fbc27d4f">More...</a><br /></td></tr>
 <tr class="separator:a4fbd28b63064861f122f7586fbc27d4f"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aace58d9d757fef6eacbd7971e63b3633"><td class="memItemLeft" align="right" valign="top">virtual <a class="el" href="namespacevve.html#a08b50fce7713104897496c0db0bde197">VeCount</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classvve_1_1_ve_map.html#aace58d9d757fef6eacbd7971e63b3633">getAllKeyValuePairs</a> (std::vector&lt; std::pair&lt; std::string, <a class="el" href="namespacevve.html#a1eb8d816d3112a806cbcd809004a5266">VeIndex</a> &gt;, <a class="el" href="classvve_1_1custom__alloc.html">custom_alloc</a>&lt; std::pair&lt; std::string, <a class="el" href="namespacevve.html#a1eb8d816d3112a806cbcd809004a5266">VeIndex</a> &gt;&gt;&gt; &amp;result)</td></tr>
+<tr class="memdesc:aace58d9d757fef6eacbd7971e63b3633"><td class="mdescLeft">&#160;</td><td class="mdescRight">return all key-value pairs  <a href="#aace58d9d757fef6eacbd7971e63b3633">More...</a><br /></td></tr>
 <tr class="separator:aace58d9d757fef6eacbd7971e63b3633"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a5a884cf0eb8e547ddcfcd0c6915ec65b"><td class="memItemLeft" align="right" valign="top">virtual <a class="el" href="namespacevve.html#a08b50fce7713104897496c0db0bde197">VeCount</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classvve_1_1_ve_map.html#a5a884cf0eb8e547ddcfcd0c6915ec65b">leftJoin</a> (<a class="el" href="namespacevve.html#af8d69bd6cc8b81ae8d99808df878280a">VeHandle</a> key, <a class="el" href="classvve_1_1_ve_map.html">VeMap</a> &amp;other, std::vector&lt; <a class="el" href="namespacevve.html#a502c75a2105d9a033d72d9f1d00d66f8">VeIndexPair</a>, <a class="el" href="classvve_1_1custom__alloc.html">custom_alloc</a>&lt; <a class="el" href="namespacevve.html#a502c75a2105d9a033d72d9f1d00d66f8">VeIndexPair</a> &gt;&gt; &amp;result)</td></tr>
+<tr class="memdesc:a5a884cf0eb8e547ddcfcd0c6915ec65b"><td class="mdescLeft">&#160;</td><td class="mdescRight">return all key-value pairs  <a href="#a5a884cf0eb8e547ddcfcd0c6915ec65b">More...</a><br /></td></tr>
 <tr class="separator:a5a884cf0eb8e547ddcfcd0c6915ec65b"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a8039ee8acd1fa002927e2b881f1d6413"><td class="memItemLeft" align="right" valign="top">virtual <a class="el" href="namespacevve.html#a08b50fce7713104897496c0db0bde197">VeCount</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classvve_1_1_ve_map.html#a8039ee8acd1fa002927e2b881f1d6413">leftJoin</a> (<a class="el" href="namespacevve.html#a41862a165b0d0713103d08beb17f96cb">VeHandlePair</a> key, <a class="el" href="classvve_1_1_ve_map.html">VeMap</a> &amp;other, std::vector&lt; <a class="el" href="namespacevve.html#a502c75a2105d9a033d72d9f1d00d66f8">VeIndexPair</a>, <a class="el" href="classvve_1_1custom__alloc.html">custom_alloc</a>&lt; <a class="el" href="namespacevve.html#a502c75a2105d9a033d72d9f1d00d66f8">VeIndexPair</a> &gt;&gt; &amp;result)</td></tr>
+<tr class="memdesc:a8039ee8acd1fa002927e2b881f1d6413"><td class="mdescLeft">&#160;</td><td class="mdescRight">left join another map  <a href="#a8039ee8acd1fa002927e2b881f1d6413">More...</a><br /></td></tr>
 <tr class="separator:a8039ee8acd1fa002927e2b881f1d6413"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a1bde0cb57112bc0f45c77093b2e5ac92"><td class="memItemLeft" align="right" valign="top">virtual <a class="el" href="namespacevve.html#a08b50fce7713104897496c0db0bde197">VeCount</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classvve_1_1_ve_map.html#a1bde0cb57112bc0f45c77093b2e5ac92">leftJoin</a> (<a class="el" href="namespacevve.html#a85f8d99c311c41f691c473e8c93f2cef">VeHandleTriple</a> key, <a class="el" href="classvve_1_1_ve_map.html">VeMap</a> &amp;other, std::vector&lt; <a class="el" href="namespacevve.html#a502c75a2105d9a033d72d9f1d00d66f8">VeIndexPair</a>, <a class="el" href="classvve_1_1custom__alloc.html">custom_alloc</a>&lt; <a class="el" href="namespacevve.html#a502c75a2105d9a033d72d9f1d00d66f8">VeIndexPair</a> &gt;&gt; &amp;result)</td></tr>
+<tr class="memdesc:a1bde0cb57112bc0f45c77093b2e5ac92"><td class="mdescLeft">&#160;</td><td class="mdescRight">left join another map  <a href="#a1bde0cb57112bc0f45c77093b2e5ac92">More...</a><br /></td></tr>
 <tr class="separator:a1bde0cb57112bc0f45c77093b2e5ac92"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aa2679956ae6432451605b3d00222a31c"><td class="memItemLeft" align="right" valign="top">virtual <a class="el" href="namespacevve.html#a08b50fce7713104897496c0db0bde197">VeCount</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classvve_1_1_ve_map.html#aa2679956ae6432451605b3d00222a31c">leftJoin</a> (std::string key, <a class="el" href="classvve_1_1_ve_map.html">VeMap</a> &amp;other, std::vector&lt; <a class="el" href="namespacevve.html#a502c75a2105d9a033d72d9f1d00d66f8">VeIndexPair</a>, <a class="el" href="classvve_1_1custom__alloc.html">custom_alloc</a>&lt; <a class="el" href="namespacevve.html#a502c75a2105d9a033d72d9f1d00d66f8">VeIndexPair</a> &gt;&gt; &amp;result)</td></tr>
+<tr class="memdesc:aa2679956ae6432451605b3d00222a31c"><td class="mdescLeft">&#160;</td><td class="mdescRight">left join another map  <a href="#aa2679956ae6432451605b3d00222a31c">More...</a><br /></td></tr>
 <tr class="separator:aa2679956ae6432451605b3d00222a31c"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a18b297dcb70d8014532ef99be002771b"><td class="memItemLeft" align="right" valign="top">virtual <a class="el" href="namespacevve.html#a08b50fce7713104897496c0db0bde197">VeCount</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classvve_1_1_ve_map.html#a18b297dcb70d8014532ef99be002771b">leftJoin</a> (<a class="el" href="classvve_1_1_ve_map.html">VeMap</a> &amp;other, std::vector&lt; <a class="el" href="namespacevve.html#a502c75a2105d9a033d72d9f1d00d66f8">VeIndexPair</a>, <a class="el" href="classvve_1_1custom__alloc.html">custom_alloc</a>&lt; <a class="el" href="namespacevve.html#a502c75a2105d9a033d72d9f1d00d66f8">VeIndexPair</a> &gt;&gt; &amp;result)</td></tr>
+<tr class="memdesc:a18b297dcb70d8014532ef99be002771b"><td class="mdescLeft">&#160;</td><td class="mdescRight">left join another map  <a href="#a18b297dcb70d8014532ef99be002771b">More...</a><br /></td></tr>
 <tr class="separator:a18b297dcb70d8014532ef99be002771b"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a71d55c230f60f2a034c29c8dd852d09a"><td class="memItemLeft" align="right" valign="top">virtual void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classvve_1_1_ve_map.html#a71d55c230f60f2a034c29c8dd852d09a">print</a> ()</td></tr>
+<tr class="memdesc:a71d55c230f60f2a034c29c8dd852d09a"><td class="mdescLeft">&#160;</td><td class="mdescRight">left join another map  <a href="#a71d55c230f60f2a034c29c8dd852d09a">More...</a><br /></td></tr>
 <tr class="separator:a71d55c230f60f2a034c29c8dd852d09a"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ab5d83d6f2733474273a0a5c53b56e16d"><td class="memItemLeft" align="right" valign="top"><a class="el" href="namespacevve.html#af8d69bd6cc8b81ae8d99808df878280a">VeHandle</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classvve_1_1_ve_map.html#ab5d83d6f2733474273a0a5c53b56e16d">getIntFromEntry</a> (void *entry, <a class="el" href="namespacevve.html#a1eb8d816d3112a806cbcd809004a5266">VeIndex</a> offset, <a class="el" href="namespacevve.html#a1eb8d816d3112a806cbcd809004a5266">VeIndex</a> num_bytes)</td></tr>
+<tr class="memdesc:ab5d83d6f2733474273a0a5c53b56e16d"><td class="mdescLeft">&#160;</td><td class="mdescRight">print debug information  <a href="#ab5d83d6f2733474273a0a5c53b56e16d">More...</a><br /></td></tr>
 <tr class="separator:ab5d83d6f2733474273a0a5c53b56e16d"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ad0559cd5687919dab1e322d9fff30f16"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classvve_1_1_ve_map.html#ad0559cd5687919dab1e322d9fff30f16">getKey</a> (void *entry, <a class="el" href="namespacevve.html#a1eb8d816d3112a806cbcd809004a5266">VeIndex</a> offset, <a class="el" href="namespacevve.html#a1eb8d816d3112a806cbcd809004a5266">VeIndex</a> num_bytes, <a class="el" href="namespacevve.html#af8d69bd6cc8b81ae8d99808df878280a">VeHandle</a> &amp;key)</td></tr>
+<tr class="memdesc:ad0559cd5687919dab1e322d9fff30f16"><td class="mdescLeft">&#160;</td><td class="mdescRight">Get value of a uint key from a table entry.  <a href="#ad0559cd5687919dab1e322d9fff30f16">More...</a><br /></td></tr>
 <tr class="separator:ad0559cd5687919dab1e322d9fff30f16"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a311f8f80105b1d8226a16688caf7fff4"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classvve_1_1_ve_map.html#a311f8f80105b1d8226a16688caf7fff4">getKey</a> (void *entry, <a class="el" href="namespacevve.html#a502c75a2105d9a033d72d9f1d00d66f8">VeIndexPair</a> offset, <a class="el" href="namespacevve.html#a502c75a2105d9a033d72d9f1d00d66f8">VeIndexPair</a> num_bytes, <a class="el" href="namespacevve.html#a41862a165b0d0713103d08beb17f96cb">VeHandlePair</a> &amp;key)</td></tr>
+<tr class="memdesc:a311f8f80105b1d8226a16688caf7fff4"><td class="mdescLeft">&#160;</td><td class="mdescRight">Get key value of a VeHandle pair from a table entry.  <a href="#a311f8f80105b1d8226a16688caf7fff4">More...</a><br /></td></tr>
 <tr class="separator:a311f8f80105b1d8226a16688caf7fff4"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a2f78a3a49b6bf42220064c9143903c2e"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classvve_1_1_ve_map.html#a2f78a3a49b6bf42220064c9143903c2e">getKey</a> (void *entry, <a class="el" href="namespacevve.html#aaecf99f6c770e7c50c506d53eb7d7280">VeIndexTriple</a> offset, <a class="el" href="namespacevve.html#aaecf99f6c770e7c50c506d53eb7d7280">VeIndexTriple</a> num_bytes, <a class="el" href="namespacevve.html#a85f8d99c311c41f691c473e8c93f2cef">VeHandleTriple</a> &amp;key)</td></tr>
+<tr class="memdesc:a2f78a3a49b6bf42220064c9143903c2e"><td class="mdescLeft">&#160;</td><td class="mdescRight">Get key value of a VeHandle triple from a table entry.  <a href="#a2f78a3a49b6bf42220064c9143903c2e">More...</a><br /></td></tr>
 <tr class="separator:a2f78a3a49b6bf42220064c9143903c2e"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a06fd1142a13252ccbf1e8cf61d77f3c9"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classvve_1_1_ve_map.html#a06fd1142a13252ccbf1e8cf61d77f3c9">getKey</a> (void *entry, <a class="el" href="namespacevve.html#a1eb8d816d3112a806cbcd809004a5266">VeIndex</a> offset, <a class="el" href="namespacevve.html#a1eb8d816d3112a806cbcd809004a5266">VeIndex</a> num_bytes, std::string &amp;key)</td></tr>
+<tr class="memdesc:a06fd1142a13252ccbf1e8cf61d77f3c9"><td class="mdescLeft">&#160;</td><td class="mdescRight">Get the string value of a key from a table entry.  <a href="#a06fd1142a13252ccbf1e8cf61d77f3c9">More...</a><br /></td></tr>
 <tr class="separator:a06fd1142a13252ccbf1e8cf61d77f3c9"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pro-attribs"></a>
 Protected Attributes</h2></td></tr>
 <tr class="memitem:a452e40e49679073fb8982e9709184caf"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classvve_1_1_ve_heap_memory.html">VeHeapMemory</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classvve_1_1_ve_map.html#a452e40e49679073fb8982e9709184caf">m_heap</a></td></tr>
+<tr class="memdesc:a452e40e49679073fb8982e9709184caf"><td class="mdescLeft">&#160;</td><td class="mdescRight">scrap memory for temporary sorting, merging containers  <a href="#a452e40e49679073fb8982e9709184caf">More...</a><br /></td></tr>
 <tr class="separator:a452e40e49679073fb8982e9709184caf"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a766fa6baa8561da9add422d4f99e8c87"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classvve_1_1_ve_clock.html">VeClock</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classvve_1_1_ve_map.html#a766fa6baa8561da9add422d4f99e8c87">m_clock</a></td></tr>
+<tr class="memdesc:a766fa6baa8561da9add422d4f99e8c87"><td class="mdescLeft">&#160;</td><td class="mdescRight">a clock for measuring timings  <a href="#a766fa6baa8561da9add422d4f99e8c87">More...</a><br /></td></tr>
 <tr class="separator:a766fa6baa8561da9add422d4f99e8c87"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
-<h2 class="groupheader">Constructor &amp; Destructor Documentation</h2>
+<a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
+<div class="textblock"><p>Base class of all VeMaps. </p>
+<p><a class="el" href="classvve_1_1_ve_map.html" title="Base class of all VeMaps.">VeMap</a> is the base class of all maps used in tables. Maps are used for sorting and quickly finding items based on their keys. The base class offers the whole interface for all possible key types, but does not implement them. This interface is similar to STL containers, but VeMaps are not STL compatible - as of yet.</p>
+<p>VeMaps are different to STL containers because in principle not the key, but the values must be unique. The values store indices of directory enntries in tables, and these are unique. Keys do not have to be unique, though some derived classes enforce this. Since values must be unique, so are (key,value) tuples. Thus, when deleting an entry, this mmust be done via the (key,value) tuple, at least in Multimaps. </p>
+</div><h2 class="groupheader">Constructor &amp; Destructor Documentation</h2>
 <a id="a5bcdd01d8b41f8379336245c6ed90e67"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a5bcdd01d8b41f8379336245c6ed90e67">&#9670;&nbsp;</a></span>VeMap()</h2>
 
@@ -229,6 +277,8 @@ Protected Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
+<p><a class="el" href="classvve_1_1_ve_map.html" title="Base class of all VeMaps.">VeMap</a> class constructor. </p>
+
 </div>
 </div>
 <h2 class="groupheader">Member Function Documentation</h2>
@@ -254,6 +304,8 @@ Protected Attributes</h2></td></tr>
   </tr>
 </table>
 </div><div class="memdoc">
+
+<p>assignment operator </p>
 
 <p>Reimplemented in <a class="el" href="classvve_1_1_ve_hashed_multimap.html#aa29f422aecc00326e54aad1aa360d008">vve::VeHashedMultimap&lt; K, I &gt;</a>, and <a class="el" href="classvve_1_1_ve_ordered_multimap.html#a2371324a557d9947f215b58950a92060">vve::VeOrderedMultimap&lt; K, I &gt;</a>.</p>
 
@@ -282,6 +334,8 @@ Protected Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
+<p>true, if the map is empty </p>
+
 <p>Reimplemented in <a class="el" href="classvve_1_1_ve_hashed_multimap.html#af4bac4e3da78a7e5959baef8e3386ea9">vve::VeHashedMultimap&lt; K, I &gt;</a>, and <a class="el" href="classvve_1_1_ve_ordered_multimap.html#aaeebcd0ddeab1fd53895fe7923c0af2c">vve::VeOrderedMultimap&lt; K, I &gt;</a>.</p>
 
 </div>
@@ -308,6 +362,7 @@ Protected Attributes</h2></td></tr>
   </tr>
 </table>
 </div><div class="memdoc">
+<dl class="section return"><dt>Returns</dt><dd>number of entries in the map </dd></dl>
 
 </div>
 </div>
@@ -345,6 +400,9 @@ Protected Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
+<p>find an, </p>
+<dl class="section return"><dt>Returns</dt><dd>its handle </dd></dl>
+
 </div>
 </div>
 <a id="af17335f28cab3ed5347daa63d41cd22a"></a>
@@ -380,6 +438,8 @@ Protected Attributes</h2></td></tr>
   </tr>
 </table>
 </div><div class="memdoc">
+
+<p>find entries </p>
 
 </div>
 </div>
@@ -417,6 +477,8 @@ Protected Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
+<p>find entries </p>
+
 </div>
 </div>
 <a id="a69c9465d8fa6463553ae140ab2bea56f"></a>
@@ -452,6 +514,8 @@ Protected Attributes</h2></td></tr>
   </tr>
 </table>
 </div><div class="memdoc">
+
+<p>find entries </p>
 
 </div>
 </div>
@@ -489,6 +553,8 @@ Protected Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
+<p>insert a key-value pair into the map </p>
+
 <p>Reimplemented in <a class="el" href="classvve_1_1_ve_hashed_multimap.html#a6fb10e362bcc197105ed8e73de281aa3">vve::VeHashedMultimap&lt; K, I &gt;</a>, and <a class="el" href="classvve_1_1_ve_ordered_multimap.html#ab739f1ef6bc1c7c042ce635f94c1a85c">vve::VeOrderedMultimap&lt; K, I &gt;</a>.</p>
 
 </div>
@@ -517,6 +583,8 @@ Protected Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
+<p>delete a (key,value) pair from the map </p>
+
 </div>
 </div>
 <a id="af2fd53d38b43646fe2499cd73ba6f914"></a>
@@ -542,6 +610,9 @@ Protected Attributes</h2></td></tr>
   </tr>
 </table>
 </div><div class="memdoc">
+
+<p>find an entry, </p>
+<dl class="section return"><dt>Returns</dt><dd>its handle </dd></dl>
 
 </div>
 </div>
@@ -569,6 +640,9 @@ Protected Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
+<p>find an entry, </p>
+<dl class="section return"><dt>Returns</dt><dd>its handle </dd></dl>
+
 </div>
 </div>
 <a id="a63eb1101d6dd6b966b9831fe4b706fa7"></a>
@@ -595,6 +669,9 @@ Protected Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
+<p>find an entry, </p>
+<dl class="section return"><dt>Returns</dt><dd>its handle </dd></dl>
+
 </div>
 </div>
 <a id="abf039d66966f3f4aff20c822ac522fd0"></a>
@@ -620,6 +697,8 @@ Protected Attributes</h2></td></tr>
   </tr>
 </table>
 </div><div class="memdoc">
+
+<p>find entries </p>
 
 <p>Reimplemented in <a class="el" href="classvve_1_1_ve_hashed_multimap.html#a0158b3aa1f435c3d4d1e84a228f2ea05">vve::VeHashedMultimap&lt; K, I &gt;</a>, and <a class="el" href="classvve_1_1_ve_ordered_multimap.html#a1861ff3d09706e28caa6f97e025bea67">vve::VeOrderedMultimap&lt; K, I &gt;</a>.</p>
 
@@ -649,6 +728,8 @@ Protected Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
+<p>return all indices </p>
+
 </div>
 </div>
 <a id="a7d241e947883394cd9763b55affc694c"></a>
@@ -674,6 +755,8 @@ Protected Attributes</h2></td></tr>
   </tr>
 </table>
 </div><div class="memdoc">
+
+<p>return all key-value pairs </p>
 
 </div>
 </div>
@@ -701,6 +784,8 @@ Protected Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
+<p>return all key-value pairs </p>
+
 </div>
 </div>
 <a id="aace58d9d757fef6eacbd7971e63b3633"></a>
@@ -726,6 +811,8 @@ Protected Attributes</h2></td></tr>
   </tr>
 </table>
 </div><div class="memdoc">
+
+<p>return all key-value pairs </p>
 
 </div>
 </div>
@@ -768,15 +855,18 @@ Protected Attributes</h2></td></tr>
   </tr>
 </table>
 </div><div class="memdoc">
+
+<p>print debug information </p>
+<p>Extract an uint value from an entry</p>
 <dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
-    <tr><td class="paramdir">[in]</td><td class="paramname">entry</td><td></td></tr>
-    <tr><td class="paramdir">[in]</td><td class="paramname">offset</td><td></td></tr>
-    <tr><td class="paramdir">[in]</td><td class="paramname">numbytes</td><td></td></tr>
+    <tr><td class="paramdir">[in]</td><td class="paramname">entry</td><td>Pointer to the entry </td></tr>
+    <tr><td class="paramdir">[in]</td><td class="paramname">offset</td><td>Number of bytes the uint is away from the start </td></tr>
+    <tr><td class="paramdir">[in]</td><td class="paramname">numbytes</td><td>Size in bytes if the uint. Can be 4 or 8. </td></tr>
   </table>
   </dd>
 </dl>
-<dl class="section return"><dt>Returns</dt><dd></dd></dl>
+<dl class="section return"><dt>Returns</dt><dd>the value of the uint. </dd></dl>
 
 </div>
 </div>
@@ -825,12 +915,14 @@ Protected Attributes</h2></td></tr>
   </tr>
 </table>
 </div><div class="memdoc">
+
+<p>Get value of a uint key from a table entry. </p>
 <dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
-    <tr><td class="paramdir">[in]</td><td class="paramname">entry</td><td></td></tr>
-    <tr><td class="paramdir">[in]</td><td class="paramname">offset</td><td></td></tr>
-    <tr><td class="paramdir">[in]</td><td class="paramname">numbytes</td><td></td></tr>
-    <tr><td class="paramdir">[out]</td><td class="paramname">key</td><td></td></tr>
+    <tr><td class="paramdir">[in]</td><td class="paramname">entry</td><td>Pointer to the entry </td></tr>
+    <tr><td class="paramdir">[in]</td><td class="paramname">offset</td><td>Number of bytes the uint is away from the start </td></tr>
+    <tr><td class="paramdir">[in]</td><td class="paramname">numbytes</td><td>Size in bytes if the uint. Can be 4 or 8. </td></tr>
+    <tr><td class="paramdir">[out]</td><td class="paramname">key</td><td>The value of the uint. </td></tr>
   </table>
   </dd>
 </dl>
@@ -882,15 +974,17 @@ Protected Attributes</h2></td></tr>
   </tr>
 </table>
 </div><div class="memdoc">
+
+<p>Get key value of a VeHandle pair from a table entry. </p>
 <dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
-    <tr><td class="paramdir">[in]</td><td class="paramname">entry</td><td></td></tr>
-    <tr><td class="paramdir">[in]</td><td class="paramname">offset</td><td></td></tr>
-    <tr><td class="paramdir">[in]</td><td class="paramname">numbytes</td><td></td></tr>
+    <tr><td class="paramdir">[in]</td><td class="paramname">entry</td><td>Pointer to the entry </td></tr>
+    <tr><td class="paramdir">[in]</td><td class="paramname">offset</td><td>Number of bytes the uints are away from the start </td></tr>
+    <tr><td class="paramdir">[in]</td><td class="paramname">numbytes</td><td>Sizes in bytes if the uints. Can be 4 or 8. </td></tr>
+    <tr><td class="paramdir">[out]</td><td class="paramname">key</td><td>The values of the uints. </td></tr>
   </table>
   </dd>
 </dl>
-<dl class="section return"><dt>Returns</dt><dd></dd></dl>
 
 </div>
 </div>
@@ -939,15 +1033,17 @@ Protected Attributes</h2></td></tr>
   </tr>
 </table>
 </div><div class="memdoc">
+
+<p>Get key value of a VeHandle triple from a table entry. </p>
 <dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
-    <tr><td class="paramdir">[in]</td><td class="paramname">entry</td><td></td></tr>
-    <tr><td class="paramdir">[in]</td><td class="paramname">offset</td><td></td></tr>
-    <tr><td class="paramdir">[in]</td><td class="paramname">numbytes</td><td></td></tr>
+    <tr><td class="paramdir">[in]</td><td class="paramname">entry</td><td>Pointer to the entry </td></tr>
+    <tr><td class="paramdir">[in]</td><td class="paramname">offset</td><td>Number of bytes the uints are away from the start </td></tr>
+    <tr><td class="paramdir">[in]</td><td class="paramname">numbytes</td><td>Sizes in bytes if the uints. Can be 4 or 8. </td></tr>
+    <tr><td class="paramdir">[out]</td><td class="paramname">key</td><td>The values of the uints. </td></tr>
   </table>
   </dd>
 </dl>
-<dl class="section return"><dt>Returns</dt><dd></dd></dl>
 
 </div>
 </div>
@@ -996,15 +1092,17 @@ Protected Attributes</h2></td></tr>
   </tr>
 </table>
 </div><div class="memdoc">
+
+<p>Get the string value of a key from a table entry. </p>
 <dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
-    <tr><td class="paramdir">[in]</td><td class="paramname">entry</td><td></td></tr>
-    <tr><td class="paramdir">[in]</td><td class="paramname">offset</td><td></td></tr>
-    <tr><td class="paramdir">[in]</td><td class="paramname">numbytes</td><td></td></tr>
+    <tr><td class="paramdir">[in]</td><td class="paramname">entry</td><td>Pointer to the table entry. </td></tr>
+    <tr><td class="paramdir">[in]</td><td class="paramname">offset</td><td>Offset from start of the string. </td></tr>
+    <tr><td class="paramdir">[in]</td><td class="paramname">numbytes</td><td>Must be 0 for a string. </td></tr>
   </table>
   </dd>
 </dl>
-<dl class="section return"><dt>Returns</dt><dd></dd></dl>
+<dl class="section return"><dt>Returns</dt><dd>the string found there. </dd></dl>
 
 </div>
 </div>
@@ -1041,6 +1139,8 @@ Protected Attributes</h2></td></tr>
   </tr>
 </table>
 </div><div class="memdoc">
+
+<p>create a clone of this map </p>
 
 <p>Reimplemented in <a class="el" href="classvve_1_1_ve_hashed_multimap_1_1_ve_hashed_map.html#a7e885002088a2237d36b21219f6d39b6">vve::VeHashedMultimap&lt; K, I &gt;::VeHashedMap&lt; K, I &gt;</a>, <a class="el" href="classvve_1_1_ve_hashed_multimap.html#a66f98818a56701b3e0ec2933ff9ff689">vve::VeHashedMultimap&lt; K, I &gt;</a>, <a class="el" href="classvve_1_1_ve_ordered_map.html#a7768d6d2f17ae11bf30cfd6cec7d3388">vve::VeOrderedMap&lt; K, I &gt;</a>, and <a class="el" href="classvve_1_1_ve_ordered_multimap.html#a4a2145be2c7affdc29649b171757e42a">vve::VeOrderedMultimap&lt; K, I &gt;</a>.</p>
 
@@ -1086,6 +1186,8 @@ Protected Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
+<p>return all key-value pairs </p>
+
 </div>
 </div>
 <a id="a8039ee8acd1fa002927e2b881f1d6413"></a>
@@ -1127,6 +1229,8 @@ Protected Attributes</h2></td></tr>
   </tr>
 </table>
 </div><div class="memdoc">
+
+<p>left join another map </p>
 
 </div>
 </div>
@@ -1170,6 +1274,8 @@ Protected Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
+<p>left join another map </p>
+
 </div>
 </div>
 <a id="aa2679956ae6432451605b3d00222a31c"></a>
@@ -1212,6 +1318,8 @@ Protected Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
+<p>left join another map </p>
+
 </div>
 </div>
 <a id="a18b297dcb70d8014532ef99be002771b"></a>
@@ -1248,6 +1356,8 @@ Protected Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
+<p>left join another map </p>
+
 <p>Reimplemented in <a class="el" href="classvve_1_1_ve_hashed_multimap.html#a354ada14b9c64af5541b42e73a3e4370">vve::VeHashedMultimap&lt; K, I &gt;</a>, and <a class="el" href="classvve_1_1_ve_ordered_multimap.html#abcfceae9320e6707aa5fc8f85fad9bf8">vve::VeOrderedMultimap&lt; K, I &gt;</a>.</p>
 
 </div>
@@ -1275,6 +1385,8 @@ Protected Attributes</h2></td></tr>
   </tr>
 </table>
 </div><div class="memdoc">
+
+<p><a class="el" href="classvve_1_1_ve_map.html" title="Base class of all VeMaps.">VeMap</a> class destructor. </p>
 
 <p>Reimplemented in <a class="el" href="classvve_1_1_ve_hashed_multimap.html#aededdb657335ae0557af3398d06f273f">vve::VeHashedMultimap&lt; K, I &gt;</a>, and <a class="el" href="classvve_1_1_ve_ordered_multimap.html#a092fb474765b83b8f3b21f8a6e9693ec">vve::VeOrderedMultimap&lt; K, I &gt;</a>.</p>
 
@@ -1304,6 +1416,9 @@ Protected Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
+<p>find an , </p>
+<dl class="section return"><dt>Returns</dt><dd>its handle </dd></dl>
+
 </div>
 </div>
 <a id="ab4f4e86c55b0f6903f94d97c36d85d29"></a>
@@ -1329,6 +1444,9 @@ Protected Attributes</h2></td></tr>
   </tr>
 </table>
 </div><div class="memdoc">
+
+<p>find an entry, </p>
+<dl class="section return"><dt>Returns</dt><dd>its handle </dd></dl>
 
 </div>
 </div>
@@ -1356,6 +1474,9 @@ Protected Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
+<p>find an entry, </p>
+<dl class="section return"><dt>Returns</dt><dd>its handle </dd></dl>
+
 </div>
 </div>
 <a id="a345474dc98fec5f37f01c76e839dd198"></a>
@@ -1382,6 +1503,9 @@ Protected Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
+<p>find an entry, </p>
+<dl class="section return"><dt>Returns</dt><dd>its handle </dd></dl>
+
 </div>
 </div>
 <a id="a71d55c230f60f2a034c29c8dd852d09a"></a>
@@ -1406,6 +1530,8 @@ Protected Attributes</h2></td></tr>
   </tr>
 </table>
 </div><div class="memdoc">
+
+<p>left join another map </p>
 
 <p>Reimplemented in <a class="el" href="classvve_1_1_ve_hashed_multimap.html#a5e349cd246c253f1e4df260120a36798">vve::VeHashedMultimap&lt; K, I &gt;</a>, and <a class="el" href="classvve_1_1_ve_ordered_multimap.html#ad6fbe9411a32ca1ba4604ab07843aecc">vve::VeOrderedMultimap&lt; K, I &gt;</a>.</p>
 
@@ -1451,6 +1577,8 @@ Protected Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
+<p>find entries </p>
+
 </div>
 </div>
 <a id="a9dfe5f3931e903b6bf2d53131625bd99"></a>
@@ -1492,6 +1620,8 @@ Protected Attributes</h2></td></tr>
   </tr>
 </table>
 </div><div class="memdoc">
+
+<p>find entries </p>
 
 </div>
 </div>
@@ -1535,6 +1665,8 @@ Protected Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
+<p>find entries </p>
+
 </div>
 </div>
 <a id="a790529ce7b8abe80dcd2bd16f9cc2542"></a>
@@ -1577,6 +1709,8 @@ Protected Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
+<p>find entries </p>
+
 </div>
 </div>
 <a id="a744ae6211a624fd965eeb8151c15fd4d"></a>
@@ -1601,6 +1735,8 @@ Protected Attributes</h2></td></tr>
   </tr>
 </table>
 </div><div class="memdoc">
+
+<p>delete all entries in the map </p>
 
 <p>Reimplemented in <a class="el" href="classvve_1_1_ve_hashed_multimap.html#a0149904ed118ebce977fd8e69f9a3a7c">vve::VeHashedMultimap&lt; K, I &gt;</a>, and <a class="el" href="classvve_1_1_ve_ordered_multimap.html#afcc2cd8db9d06f7cb94f8a91fb6acd5a">vve::VeOrderedMultimap&lt; K, I &gt;</a>.</p>
 
@@ -1627,6 +1763,8 @@ Protected Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
+<p>a clock for measuring timings </p>
+
 </div>
 </div>
 <a id="a452e40e49679073fb8982e9709184caf"></a>
@@ -1649,6 +1787,8 @@ Protected Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
+<p>scrap memory for temporary sorting, merging containers </p>
+
 </div>
 </div>
 <hr/>The documentation for this class was generated from the following file:<ul>
@@ -1657,7 +1797,7 @@ Protected Attributes</h2></td></tr>
 </div><!-- contents -->
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>
-Generated on Sun Mar 29 2020 16:04:59 for Vienna Vulkan Engine by &#160;<a href="http://www.doxygen.org/index.html">
+Generated on Mon Mar 30 2020 11:30:07 for Vienna Vulkan Engine by &#160;<a href="http://www.doxygen.org/index.html">
 <img class="footer" src="doxygen.png" alt="doxygen"/>
 </a> 1.8.15
 </small></address>

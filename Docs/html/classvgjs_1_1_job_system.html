@@ -147,9 +147,9 @@ Public Member Functions</h2></td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-static-methods"></a>
 Static Public Member Functions</h2></td></tr>
-<tr class="memitem:a8cd20a06e149ed4761abcfc2caad7930"><td class="memItemLeft" align="right" valign="top">static <a class="el" href="classvgjs_1_1_job_system.html">JobSystem</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classvgjs_1_1_job_system.html#a8cd20a06e149ed4761abcfc2caad7930">getInstance</a> (uint32_t threadCount=0, uint32_t start_idx=0)</td></tr>
-<tr class="memdesc:a8cd20a06e149ed4761abcfc2caad7930"><td class="mdescLeft">&#160;</td><td class="mdescRight">Singleton access through class.  <a href="#a8cd20a06e149ed4761abcfc2caad7930">More...</a><br /></td></tr>
-<tr class="separator:a8cd20a06e149ed4761abcfc2caad7930"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a32433394998b4cd99ab30838e1556724"><td class="memItemLeft" align="right" valign="top">static std::unique_ptr&lt; <a class="el" href="classvgjs_1_1_job_system.html">JobSystem</a> &gt; &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classvgjs_1_1_job_system.html#a32433394998b4cd99ab30838e1556724">getInstance</a> (uint32_t threadCount=0, uint32_t start_idx=0)</td></tr>
+<tr class="memdesc:a32433394998b4cd99ab30838e1556724"><td class="mdescLeft">&#160;</td><td class="mdescRight">Singleton access through class.  <a href="#a32433394998b4cd99ab30838e1556724">More...</a><br /></td></tr>
+<tr class="separator:a32433394998b4cd99ab30838e1556724"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a3b2209be305b172880905dc85ea68961"><td class="memItemLeft" align="right" valign="top">static bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classvgjs_1_1_job_system.html#a3b2209be305b172880905dc85ea68961">isInstanceCreated</a> ()</td></tr>
 <tr class="memdesc:a3b2209be305b172880905dc85ea68961"><td class="mdescLeft">&#160;</td><td class="mdescRight">Test whether the job system has been started yet.  <a href="#a3b2209be305b172880905dc85ea68961">More...</a><br /></td></tr>
 <tr class="separator:a3b2209be305b172880905dc85ea68961"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -162,26 +162,25 @@ Public Attributes</h2></td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-static-attribs"></a>
 Static Public Attributes</h2></td></tr>
-<tr class="memitem:abf3206533631b39f43fe57fefbe0d6da"><td class="memItemLeft" align="right" valign="top">static <a class="el" href="classvgjs_1_1_job_system.html">JobSystem</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classvgjs_1_1_job_system.html#abf3206533631b39f43fe57fefbe0d6da">pInstance</a> = nullptr</td></tr>
-<tr class="memdesc:abf3206533631b39f43fe57fefbe0d6da"><td class="mdescLeft">&#160;</td><td class="mdescRight">Singleton instance of the <a class="el" href="classvgjs_1_1_job_system.html" title="The main JobSystem class manages the whole VGJS job system.">JobSystem</a>.  <a href="#abf3206533631b39f43fe57fefbe0d6da">More...</a><br /></td></tr>
-<tr class="separator:abf3206533631b39f43fe57fefbe0d6da"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aa81d0b2b651d988faa021dc3f5109e03"><td class="memItemLeft" align="right" valign="top">static std::unique_ptr&lt; <a class="el" href="classvgjs_1_1_job_system.html">JobSystem</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classvgjs_1_1_job_system.html#aa81d0b2b651d988faa021dc3f5109e03">pInstance</a></td></tr>
+<tr class="separator:aa81d0b2b651d988faa021dc3f5109e03"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pri-attribs"></a>
 Private Attributes</h2></td></tr>
 <tr class="memitem:a95dfce45d9e757d3400e05e9b3eb618b"><td class="memItemLeft" align="right" valign="top">friend&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classvgjs_1_1_job_system.html#a95dfce45d9e757d3400e05e9b3eb618b">Job</a></td></tr>
 <tr class="separator:a95dfce45d9e757d3400e05e9b3eb618b"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a60845632e804b5d3154153dddaaa1065"><td class="memItemLeft" align="right" valign="top">std::vector&lt; std::thread &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classvgjs_1_1_job_system.html#a60845632e804b5d3154153dddaaa1065">m_threads</a></td></tr>
-<tr class="memdesc:a60845632e804b5d3154153dddaaa1065"><td class="mdescLeft">&#160;</td><td class="mdescRight">array of thread structures  <a href="#a60845632e804b5d3154153dddaaa1065">More...</a><br /></td></tr>
-<tr class="separator:a60845632e804b5d3154153dddaaa1065"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:af4edbfb5e4019127b8cdf76059d54527"><td class="memItemLeft" align="right" valign="top">std::vector&lt; std::unique_ptr&lt; std::thread &gt; &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classvgjs_1_1_job_system.html#af4edbfb5e4019127b8cdf76059d54527">m_threads</a></td></tr>
+<tr class="memdesc:af4edbfb5e4019127b8cdf76059d54527"><td class="mdescLeft">&#160;</td><td class="mdescRight">array of thread structures  <a href="#af4edbfb5e4019127b8cdf76059d54527">More...</a><br /></td></tr>
+<tr class="separator:af4edbfb5e4019127b8cdf76059d54527"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a7695fd830afe4a78ea1f7720c30e3b32"><td class="memItemLeft" align="right" valign="top">uint32_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classvgjs_1_1_job_system.html#a7695fd830afe4a78ea1f7720c30e3b32">m_threadCount</a></td></tr>
 <tr class="memdesc:a7695fd830afe4a78ea1f7720c30e3b32"><td class="mdescLeft">&#160;</td><td class="mdescRight">number of threads in the pool  <a href="#a7695fd830afe4a78ea1f7720c30e3b32">More...</a><br /></td></tr>
 <tr class="separator:a7695fd830afe4a78ea1f7720c30e3b32"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a0028984e9cca32a9cdcf804b12f8b8eb"><td class="memItemLeft" align="right" valign="top">uint32_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classvgjs_1_1_job_system.html#a0028984e9cca32a9cdcf804b12f8b8eb">m_start_idx</a> = 0</td></tr>
 <tr class="memdesc:a0028984e9cca32a9cdcf804b12f8b8eb"><td class="mdescLeft">&#160;</td><td class="mdescRight">idx of first thread that is created  <a href="#a0028984e9cca32a9cdcf804b12f8b8eb">More...</a><br /></td></tr>
 <tr class="separator:a0028984e9cca32a9cdcf804b12f8b8eb"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a59e6670249f783227e557d1ce05499a6"><td class="memItemLeft" align="right" valign="top">std::vector&lt; <a class="el" href="classvgjs_1_1_job_memory.html">JobMemory</a> * &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classvgjs_1_1_job_system.html#a59e6670249f783227e557d1ce05499a6">m_job_memory</a></td></tr>
-<tr class="memdesc:a59e6670249f783227e557d1ce05499a6"><td class="mdescLeft">&#160;</td><td class="mdescRight">each thread has its own job memory  <a href="#a59e6670249f783227e557d1ce05499a6">More...</a><br /></td></tr>
-<tr class="separator:a59e6670249f783227e557d1ce05499a6"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a81f4e41ee988f0bc6cb1b53fffa423f5"><td class="memItemLeft" align="right" valign="top">std::vector&lt; std::unique_ptr&lt; <a class="el" href="classvgjs_1_1_job_memory.html">JobMemory</a> &gt; &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classvgjs_1_1_job_system.html#a81f4e41ee988f0bc6cb1b53fffa423f5">m_job_memory</a></td></tr>
+<tr class="memdesc:a81f4e41ee988f0bc6cb1b53fffa423f5"><td class="mdescLeft">&#160;</td><td class="mdescRight">each thread has its own job memory  <a href="#a81f4e41ee988f0bc6cb1b53fffa423f5">More...</a><br /></td></tr>
+<tr class="separator:a81f4e41ee988f0bc6cb1b53fffa423f5"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a064f963a910a304d8825ed2bdb38e54c"><td class="memItemLeft" align="right" valign="top">std::vector&lt; <a class="el" href="classvgjs_1_1_job.html">Job</a> * &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classvgjs_1_1_job_system.html#a064f963a910a304d8825ed2bdb38e54c">m_jobPointers</a></td></tr>
 <tr class="memdesc:a064f963a910a304d8825ed2bdb38e54c"><td class="mdescLeft">&#160;</td><td class="mdescRight">each thread has a current <a class="el" href="classvgjs_1_1_job.html" title="This class holds a single job, including a function object and other info.">Job</a> that it may run, pointers point to them  <a href="#a064f963a910a304d8825ed2bdb38e54c">More...</a><br /></td></tr>
 <tr class="separator:a064f963a910a304d8825ed2bdb38e54c"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -191,15 +190,15 @@ Private Attributes</h2></td></tr>
 <tr class="memitem:a7bc399efb2f93754ea172bc59f6600b7"><td class="memItemLeft" align="right" valign="top">std::atomic&lt; bool &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classvgjs_1_1_job_system.html#a7bc399efb2f93754ea172bc59f6600b7">m_terminate</a></td></tr>
 <tr class="memdesc:a7bc399efb2f93754ea172bc59f6600b7"><td class="mdescLeft">&#160;</td><td class="mdescRight">Flag for terminating the pool.  <a href="#a7bc399efb2f93754ea172bc59f6600b7">More...</a><br /></td></tr>
 <tr class="separator:a7bc399efb2f93754ea172bc59f6600b7"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a595647d4cf4c1fe261bc95b7e803892f"><td class="memItemLeft" align="right" valign="top">std::vector&lt; <a class="el" href="classvgjs_1_1_job_queue.html">JobQueue</a> * &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classvgjs_1_1_job_system.html#a595647d4cf4c1fe261bc95b7e803892f">m_jobQueues</a></td></tr>
-<tr class="memdesc:a595647d4cf4c1fe261bc95b7e803892f"><td class="mdescLeft">&#160;</td><td class="mdescRight">Each thread has its own <a class="el" href="classvgjs_1_1_job.html" title="This class holds a single job, including a function object and other info.">Job</a> queue.  <a href="#a595647d4cf4c1fe261bc95b7e803892f">More...</a><br /></td></tr>
-<tr class="separator:a595647d4cf4c1fe261bc95b7e803892f"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a4a06a98276c7a94e8bc96b0813461a1a"><td class="memItemLeft" align="right" valign="top">std::vector&lt; <a class="el" href="classvgjs_1_1_job_queue.html">JobQueue</a> * &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classvgjs_1_1_job_system.html#a4a06a98276c7a94e8bc96b0813461a1a">m_jobQueuesLocal</a></td></tr>
-<tr class="memdesc:a4a06a98276c7a94e8bc96b0813461a1a"><td class="mdescLeft">&#160;</td><td class="mdescRight">a secondary low priority FIFO queue for each thread, where polling jobs are parked  <a href="#a4a06a98276c7a94e8bc96b0813461a1a">More...</a><br /></td></tr>
-<tr class="separator:a4a06a98276c7a94e8bc96b0813461a1a"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a25cbc437a3cf5c4cd2b360ca0038fe1c"><td class="memItemLeft" align="right" valign="top">std::vector&lt; <a class="el" href="classvgjs_1_1_job_queue.html">JobQueue</a> * &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classvgjs_1_1_job_system.html#a25cbc437a3cf5c4cd2b360ca0038fe1c">m_jobQueuesLocalFIFO</a></td></tr>
-<tr class="memdesc:a25cbc437a3cf5c4cd2b360ca0038fe1c"><td class="mdescLeft">&#160;</td><td class="mdescRight">a secondary low priority FIFO queue for each thread, where polling jobs are parked  <a href="#a25cbc437a3cf5c4cd2b360ca0038fe1c">More...</a><br /></td></tr>
-<tr class="separator:a25cbc437a3cf5c4cd2b360ca0038fe1c"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ae191294d2e357c1af1e49979c8f5c9a0"><td class="memItemLeft" align="right" valign="top">std::vector&lt; std::unique_ptr&lt; <a class="el" href="classvgjs_1_1_job_queue.html">JobQueue</a> &gt; &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classvgjs_1_1_job_system.html#ae191294d2e357c1af1e49979c8f5c9a0">m_jobQueues</a></td></tr>
+<tr class="memdesc:ae191294d2e357c1af1e49979c8f5c9a0"><td class="mdescLeft">&#160;</td><td class="mdescRight">Each thread has its own <a class="el" href="classvgjs_1_1_job.html" title="This class holds a single job, including a function object and other info.">Job</a> queue.  <a href="#ae191294d2e357c1af1e49979c8f5c9a0">More...</a><br /></td></tr>
+<tr class="separator:ae191294d2e357c1af1e49979c8f5c9a0"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a3114286d0f742bf4ee1ec7d922804c18"><td class="memItemLeft" align="right" valign="top">std::vector&lt; std::unique_ptr&lt; <a class="el" href="classvgjs_1_1_job_queue.html">JobQueue</a> &gt; &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classvgjs_1_1_job_system.html#a3114286d0f742bf4ee1ec7d922804c18">m_jobQueuesLocal</a></td></tr>
+<tr class="memdesc:a3114286d0f742bf4ee1ec7d922804c18"><td class="mdescLeft">&#160;</td><td class="mdescRight">a secondary low priority FIFO queue for each thread, where polling jobs are parked  <a href="#a3114286d0f742bf4ee1ec7d922804c18">More...</a><br /></td></tr>
+<tr class="separator:a3114286d0f742bf4ee1ec7d922804c18"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a29b142edf0fbab778bd84bf52de06495"><td class="memItemLeft" align="right" valign="top">std::vector&lt; std::unique_ptr&lt; <a class="el" href="classvgjs_1_1_job_queue.html">JobQueue</a> &gt; &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classvgjs_1_1_job_system.html#a29b142edf0fbab778bd84bf52de06495">m_jobQueuesLocalFIFO</a></td></tr>
+<tr class="memdesc:a29b142edf0fbab778bd84bf52de06495"><td class="mdescLeft">&#160;</td><td class="mdescRight">a secondary low priority FIFO queue for each thread, where polling jobs are parked  <a href="#a29b142edf0fbab778bd84bf52de06495">More...</a><br /></td></tr>
+<tr class="separator:a29b142edf0fbab778bd84bf52de06495"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ac60ad8c30c5a8997cc81d00804a2552e"><td class="memItemLeft" align="right" valign="top">std::atomic&lt; uint32_t &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classvgjs_1_1_job_system.html#ac60ad8c30c5a8997cc81d00804a2552e">m_numJobs</a></td></tr>
 <tr class="memdesc:ac60ad8c30c5a8997cc81d00804a2552e"><td class="mdescLeft">&#160;</td><td class="mdescRight">total number of jobs in the system  <a href="#ac60ad8c30c5a8997cc81d00804a2552e">More...</a><br /></td></tr>
 <tr class="separator:ac60ad8c30c5a8997cc81d00804a2552e"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -478,8 +477,8 @@ Static Private Attributes</h2></td></tr>
 
 </div>
 </div>
-<a id="a8cd20a06e149ed4761abcfc2caad7930"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a8cd20a06e149ed4761abcfc2caad7930">&#9670;&nbsp;</a></span>getInstance()</h2>
+<a id="a32433394998b4cd99ab30838e1556724"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a32433394998b4cd99ab30838e1556724">&#9670;&nbsp;</a></span>getInstance()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -488,7 +487,7 @@ Static Private Attributes</h2></td></tr>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">static <a class="el" href="classvgjs_1_1_job_system.html">JobSystem</a>* vgjs::JobSystem::getInstance </td>
+          <td class="memname">static std::unique_ptr&lt;<a class="el" href="classvgjs_1_1_job_system.html">JobSystem</a>&gt;&amp; vgjs::JobSystem::getInstance </td>
           <td>(</td>
           <td class="paramtype">uint32_t&#160;</td>
           <td class="paramname"><em>threadCount</em> = <code>0</code>, </td>
@@ -1010,8 +1009,8 @@ Static Private Attributes</h2></td></tr>
 
 </div>
 </div>
-<a id="a59e6670249f783227e557d1ce05499a6"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a59e6670249f783227e557d1ce05499a6">&#9670;&nbsp;</a></span>m_job_memory</h2>
+<a id="a81f4e41ee988f0bc6cb1b53fffa423f5"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a81f4e41ee988f0bc6cb1b53fffa423f5">&#9670;&nbsp;</a></span>m_job_memory</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -1020,7 +1019,7 @@ Static Private Attributes</h2></td></tr>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">std::vector&lt;<a class="el" href="classvgjs_1_1_job_memory.html">JobMemory</a>*&gt; vgjs::JobSystem::m_job_memory</td>
+          <td class="memname">std::vector&lt;std::unique_ptr&lt;<a class="el" href="classvgjs_1_1_job_memory.html">JobMemory</a>&gt; &gt; vgjs::JobSystem::m_job_memory</td>
         </tr>
       </table>
   </td>
@@ -1058,8 +1057,8 @@ Static Private Attributes</h2></td></tr>
 
 </div>
 </div>
-<a id="a595647d4cf4c1fe261bc95b7e803892f"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a595647d4cf4c1fe261bc95b7e803892f">&#9670;&nbsp;</a></span>m_jobQueues</h2>
+<a id="ae191294d2e357c1af1e49979c8f5c9a0"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ae191294d2e357c1af1e49979c8f5c9a0">&#9670;&nbsp;</a></span>m_jobQueues</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -1068,7 +1067,7 @@ Static Private Attributes</h2></td></tr>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">std::vector&lt;<a class="el" href="classvgjs_1_1_job_queue.html">JobQueue</a>*&gt; vgjs::JobSystem::m_jobQueues</td>
+          <td class="memname">std::vector&lt;std::unique_ptr&lt;<a class="el" href="classvgjs_1_1_job_queue.html">JobQueue</a>&gt; &gt; vgjs::JobSystem::m_jobQueues</td>
         </tr>
       </table>
   </td>
@@ -1082,8 +1081,8 @@ Static Private Attributes</h2></td></tr>
 
 </div>
 </div>
-<a id="a4a06a98276c7a94e8bc96b0813461a1a"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a4a06a98276c7a94e8bc96b0813461a1a">&#9670;&nbsp;</a></span>m_jobQueuesLocal</h2>
+<a id="a3114286d0f742bf4ee1ec7d922804c18"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a3114286d0f742bf4ee1ec7d922804c18">&#9670;&nbsp;</a></span>m_jobQueuesLocal</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -1092,7 +1091,7 @@ Static Private Attributes</h2></td></tr>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">std::vector&lt;<a class="el" href="classvgjs_1_1_job_queue.html">JobQueue</a>*&gt; vgjs::JobSystem::m_jobQueuesLocal</td>
+          <td class="memname">std::vector&lt;std::unique_ptr&lt;<a class="el" href="classvgjs_1_1_job_queue.html">JobQueue</a>&gt; &gt; vgjs::JobSystem::m_jobQueuesLocal</td>
         </tr>
       </table>
   </td>
@@ -1106,8 +1105,8 @@ Static Private Attributes</h2></td></tr>
 
 </div>
 </div>
-<a id="a25cbc437a3cf5c4cd2b360ca0038fe1c"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a25cbc437a3cf5c4cd2b360ca0038fe1c">&#9670;&nbsp;</a></span>m_jobQueuesLocalFIFO</h2>
+<a id="a29b142edf0fbab778bd84bf52de06495"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a29b142edf0fbab778bd84bf52de06495">&#9670;&nbsp;</a></span>m_jobQueuesLocalFIFO</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -1116,7 +1115,7 @@ Static Private Attributes</h2></td></tr>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">std::vector&lt;<a class="el" href="classvgjs_1_1_job_queue.html">JobQueue</a>*&gt; vgjs::JobSystem::m_jobQueuesLocalFIFO</td>
+          <td class="memname">std::vector&lt;std::unique_ptr&lt;<a class="el" href="classvgjs_1_1_job_queue.html">JobQueue</a>&gt; &gt; vgjs::JobSystem::m_jobQueuesLocalFIFO</td>
         </tr>
       </table>
   </td>
@@ -1371,8 +1370,8 @@ Static Private Attributes</h2></td></tr>
 
 </div>
 </div>
-<a id="a60845632e804b5d3154153dddaaa1065"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a60845632e804b5d3154153dddaaa1065">&#9670;&nbsp;</a></span>m_threads</h2>
+<a id="af4edbfb5e4019127b8cdf76059d54527"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#af4edbfb5e4019127b8cdf76059d54527">&#9670;&nbsp;</a></span>m_threads</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -1381,7 +1380,7 @@ Static Private Attributes</h2></td></tr>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">std::vector&lt;std::thread&gt; vgjs::JobSystem::m_threads</td>
+          <td class="memname">std::vector&lt;std::unique_ptr&lt;std::thread&gt; &gt; vgjs::JobSystem::m_threads</td>
         </tr>
       </table>
   </td>
@@ -1395,8 +1394,8 @@ Static Private Attributes</h2></td></tr>
 
 </div>
 </div>
-<a id="abf3206533631b39f43fe57fefbe0d6da"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#abf3206533631b39f43fe57fefbe0d6da">&#9670;&nbsp;</a></span>pInstance</h2>
+<a id="aa81d0b2b651d988faa021dc3f5109e03"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aa81d0b2b651d988faa021dc3f5109e03">&#9670;&nbsp;</a></span>pInstance</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -1405,7 +1404,7 @@ Static Private Attributes</h2></td></tr>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname"><a class="el" href="classvgjs_1_1_job_system.html">JobSystem</a> * vgjs::JobSystem::pInstance = nullptr</td>
+          <td class="memname">std::unique_ptr&lt; <a class="el" href="classvgjs_1_1_job_system.html">JobSystem</a> &gt; vgjs::JobSystem::pInstance</td>
         </tr>
       </table>
   </td>
@@ -1415,8 +1414,6 @@ Static Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p>Singleton instance of the <a class="el" href="classvgjs_1_1_job_system.html" title="The main JobSystem class manages the whole VGJS job system.">JobSystem</a>. </p>
-
 </div>
 </div>
 <hr/>The documentation for this class was generated from the following file:<ul>
@@ -1425,7 +1422,7 @@ Static Private Attributes</h2></td></tr>
 </div><!-- contents -->
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>
-Generated on Sun Mar 29 2020 16:04:59 for Vienna Vulkan Engine by &#160;<a href="http://www.doxygen.org/index.html">
+Generated on Mon Mar 30 2020 11:30:07 for Vienna Vulkan Engine by &#160;<a href="http://www.doxygen.org/index.html">
 <img class="footer" src="doxygen.png" alt="doxygen"/>
 </a> 1.8.15
 </small></address>

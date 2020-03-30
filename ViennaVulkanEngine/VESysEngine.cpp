@@ -243,7 +243,7 @@ namespace vve {
 			loopClock.tick();
 
 			JRESET;
-			JADDT(computeOneFrame2(0), vgjs::TID(0, 2));	 //run on main thread for polling!
+			JADDT(computeOneFrame2(0), vgjs::TID(0, 1));	 //run on main thread for polling!
 			if (g_goon) {
 				JREP;
 				return;

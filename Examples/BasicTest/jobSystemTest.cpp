@@ -62,7 +62,7 @@ namespace jst {
 
 	void testScheduling( uint32_t j) {
 		static std::function<void()> jobF( job );
-		static auto instance = vgjs::JobSystem::getInstance();
+		std::unique_ptr<vgjs::JobSystem>& instance = vgjs::JobSystem::getInstance();
 
 		instance->resetPool();
 

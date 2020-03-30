@@ -157,32 +157,59 @@ namespace vve {
 
 	//----------------------------------------------------------------------------------
 
+	/**
+	* \brief A multi map storing key-value pairs, ordered with an AVL tree
+	*
+	* An AVL tree is a binary search tree. It starts with a root, and every node
+	* can have a left and a right successor (or both or none).
+	* AVL tress are always perfectly balanced. When ever e new node is inserted or
+	* deleted, it checks whether the balance has been compromised, and then
+	* rebalances by one or several subtree rotations.
+	* See https://www.geeksforgeeks.org/avl-tree-set-1-insertion/
+	*
+	*/
 	template <typename K, typename I>
 	class VeOrderedMultimap : public VeMap {
-
+		/**
+		* A node of the AVL tree
+		*/
 		struct VeMapEntry {
-			K			m_key;
-			VeIndex		m_value = VE_NULL_INDEX;
+			K			m_key;						///<key stored in map
+			VeIndex		m_value = VE_NULL_INDEX;	///<value 
 			int32_t		m_height = 1;				///<height of subtree rooting at this node
 			VeIndex		m_parent = VE_NULL_INDEX;	///<index of parent
 			VeIndex		m_left = VE_NULL_INDEX;		///<index of first child with lower key
 			VeIndex		m_right = VE_NULL_INDEX;	///<index of first child with larger key
 
+			/**
+			* \brief Constructor ot the struct
+			*/
 			VeMapEntry() : m_key() {
-				m_value = VE_NULL_INDEX;
-				m_height = 0;
-				m_parent = VE_NULL_INDEX;	///<index of parent
-				m_left = VE_NULL_INDEX;		///<index of first child with lower key
-				m_right = VE_NULL_INDEX;	///<index of first child with larger key
+				m_value = VE_NULL_INDEX;	//no value
+				m_height = 0;				//no height
+				m_parent = VE_NULL_INDEX;	//index of parent
+				m_left = VE_NULL_INDEX;		//index of first child with lower key
+				m_right = VE_NULL_INDEX;	//index of first child with larger key
 			};
 
+			/**
+			* \brief Constructor ot the struct
+			*
+			* \param[in]
+			* \param[in]
+			*/
 			VeMapEntry( K key, VeIndex value ) : m_key(key), m_value(value) {
 				m_height = 0;
-				m_parent = VE_NULL_INDEX;	///<index of parent
-				m_left = VE_NULL_INDEX;		///<index of first child with lower key
-				m_right = VE_NULL_INDEX;	///<index of first child with larger key
+				m_parent = VE_NULL_INDEX;	//index of parent
+				m_left = VE_NULL_INDEX;		//index of first child with lower key
+				m_right = VE_NULL_INDEX;	//index of first child with larger key
 			};
 
+			/**
+			* \brief Copy operator
+			*
+			* \param[in]
+			*/
 			void operator=(const VeMapEntry& entry) {
 				m_key = entry.m_key;
 				m_value = entry.m_value;
@@ -192,6 +219,14 @@ namespace vve {
 				m_right = entry.m_right;
 			};
 
+			///compare is equal operator
+			/**
+			* \brief
+			*
+			* \param[in]
+			* \returns
+			* 
+			*/
 			bool operator==( const VeMapEntry& entry) {
 				if( m_value != VE_NULL_INDEX && entry.m_value != VE_NULL_INDEX  )
 					return m_key == entry.m_key && m_value == entry.m_value;
@@ -199,6 +234,14 @@ namespace vve {
 				return m_key == entry.m_key;
 			};
 
+			///copmare less operator
+			/**
+			* \brief
+			*
+			* \param[in]
+			* \returns
+			*
+			*/
 			bool operator<(const VeMapEntry& entry) {
 				if (m_value != VE_NULL_INDEX && entry.m_value != VE_NULL_INDEX)
 					return m_key < entry.m_key || (m_key == entry.m_key && m_value < entry.m_value);
@@ -209,14 +252,38 @@ namespace vve {
 				return m_key < entry.m_key;
 			};
 
+			///compare less or equal operator
+			/**
+			* \brief
+			*
+			* \param[in]
+			* \returns
+			*
+			*/
 			bool operator<=(const VeMapEntry& entry) {
 				return *this < entry || *this == entry;
 			};
 
+			///copare larger operator
+			/**
+			* \brief
+			*
+			* \param[in]
+			* \returns
+			*
+			*/
 			bool operator>(const VeMapEntry& entry) {
 				return !(*this == entry || *this < entry);
 			};
 
+			///print debug information
+			/**
+			* \brief
+			*
+			* \param[in]
+			* \returns
+			*
+			*/
 			void print(uint32_t node, uint32_t level = 1) {
 				std::cout << "L " << level << " IDX " << node;
 				std::cout << " KEY " << m_key << " VAL " << m_value << " HEIGHT " << m_height;
@@ -224,21 +291,30 @@ namespace vve {
 			};
 		};
 
+		///clone this map
+		/**
+		* \brief
+		*
+		* \param[in]
+		* \returns
+		*
+		*/
 		VeOrderedMultimap<K, I>* clone() {
 			VeOrderedMultimap<K, I>* map = new VeOrderedMultimap<K, I>(*this);
 			return map;
 		};
 
 	protected:
-		I						m_offset;					///
-		I						m_num_bytes;				///
-		VeVector<VeMapEntry>	m_map;						///
-		VeIndex					m_root = VE_NULL_INDEX;
+		I						m_offset;					///<offsets into table entry
+		I						m_num_bytes;				///<size in bytes of the key values
+		VeVector<VeMapEntry>	m_map;						///<storage for the AVL nodes
+		VeIndex					m_root = VE_NULL_INDEX;		///<index of the tree root
 
 
 		//---------------------------------------------------------------------------
 		//subtree properties
 
+		///get the heigth of a sub tree
 		int32_t getHeight(VeIndex node) {
 			if (node == VE_NULL_INDEX)
 				return 0;
@@ -246,6 +322,7 @@ namespace vve {
 			return m_map[node].m_height;
 		}
 
+		///compute the balance of a sub tree
 		int32_t getBalance(VeIndex node) {
 			if (node == VE_NULL_INDEX)
 				return 0;
@@ -256,6 +333,7 @@ namespace vve {
 		//---------------------------------------------------------------------------
 		//rotate subtrees
 
+		///replace a child of a parent
 		void replaceChild(VeIndex parent, VeIndex old_child, VeIndex new_child) {
 			if (parent == VE_NULL_INDEX) {
 				m_root = new_child;
@@ -275,6 +353,7 @@ namespace vve {
 			m_map[parent].m_right = new_child;
 		};
 
+		///replace the left child of a parent
 		void replaceLeftChild(VeIndex parent, VeIndex new_child) {
 			if (parent == VE_NULL_INDEX)
 				return;
@@ -284,6 +363,7 @@ namespace vve {
 			m_map[new_child].m_parent = parent;
 		};
 
+		///replace the right child of a parent
 		void replaceRightChild(VeIndex parent, VeIndex new_child) {
 			if (parent == VE_NULL_INDEX)
 				return;
@@ -293,6 +373,7 @@ namespace vve {
 			m_map[new_child].m_parent = parent;
 		};
 
+		///AVL right rotation
 		VeIndex rightRotate(VeIndex y) {
 			VeIndex x = m_map[y].m_left;
 			VeIndex T2 = m_map[x].m_right;
@@ -309,6 +390,7 @@ namespace vve {
 			return x;
 		}
 
+		///AVL left rotation 
 		VeIndex leftRotate( VeIndex x ) {
 			VeIndex y = m_map[x].m_right;
 			VeIndex T2 = m_map[y].m_left;
@@ -328,6 +410,7 @@ namespace vve {
 		//---------------------------------------------------------------------------
 		//insert
 
+		///insert a new node into the tree, might cause imbalance
 		VeIndex insert( VeIndex node, VeIndex index ) {
 			if (node == VE_NULL_INDEX) {
 				m_map[index].m_height = 1;
@@ -380,6 +463,7 @@ namespace vve {
 		//---------------------------------------------------------------------------
 		//find
 
+		///find an entry (key, value), start searching at node
 		VeIndex findEntry(VeIndex node, VeMapEntry &entry ) {
 			if (node == VE_NULL_INDEX)
 				return VE_NULL_INDEX;
@@ -394,12 +478,14 @@ namespace vve {
 		};
 
 
+		///find an entry (key, value), start searching at root node
 		VeIndex findKeyValue(K& key, VeIndex value) {
 			VeMapEntry entry{ key, value };
 			return findEntry(m_root, entry);
 		};
 
 
+		///find a key
 		VeIndex findKey(K& key) {
 			return findKeyValue(key, VE_NULL_INDEX);
 		};
@@ -408,6 +494,7 @@ namespace vve {
 		//---------------------------------------------------------------------------
 		//delete
 
+		///delete an index, i.e. copy last entry over it and relink the tree
 		void deleteIndex(VeIndex index) {
 			VeIndex last = m_map.size() - 1;
 
@@ -426,6 +513,7 @@ namespace vve {
 		};
 
 
+		///find the minimum node of a subtree
 		VeIndex findMin(VeIndex node) {
 			assert(node != VE_NULL_INDEX);
 			while (m_map[node].m_left != VE_NULL_INDEX) 
@@ -433,11 +521,13 @@ namespace vve {
 			return node;
 		};
 
+		///copy key and value to enother entry
 		void replaceKeyValue(VeIndex dst, VeIndex src) {
 			m_map[dst].m_key = m_map[src].m_key;
 			m_map[dst].m_value = m_map[src].m_value;
 		}
 
+		///delete an entry given in entry, start search at node
 		VeIndex deleteEntry(VeIndex node, VeMapEntry& entry, 
 							std::vector<VeIndex, custom_alloc<VeIndex>> &del_indices) {
 
@@ -448,37 +538,37 @@ namespace vve {
 			VeIndex& left = m_map[node].m_left;
 			VeIndex& right = m_map[node].m_right;
 
-			if (entry < m_map[node]) {
+			if (entry < m_map[node]) {	//go left down the tree
 				replaceLeftChild(node, deleteEntry(left, entry, del_indices));
 			}
-			else if (m_map[node] < entry) {
+			else if (m_map[node] < entry) { //go right down the tree
 				replaceRightChild(node, deleteEntry(right, entry, del_indices));
 			}
 			else {	//have found the node
-				if (left != VE_NULL_INDEX && right != VE_NULL_INDEX) {
+				if (left != VE_NULL_INDEX && right != VE_NULL_INDEX) { //has two children?
 					VeIndex min_idx = findMin(right);
 					replaceKeyValue(node, min_idx);
 					replaceRightChild(node, deleteEntry(right, m_map[min_idx], del_indices) );
 				}
 				else {
-					VeIndex temp = left != VE_NULL_INDEX ? left : right;
+					VeIndex temp = left != VE_NULL_INDEX ? left : right; //has one child
 					if (temp == VE_NULL_INDEX) {
 						del_indices.push_back(node);
 						return VE_NULL_INDEX;
 					}
-					replaceChild(parent, node, temp);					
-					del_indices.push_back(node);
-					node = temp;				//return successor
+					replaceChild(parent, node, temp);	//a leaf node	
+					del_indices.push_back(node);		//store for later deletion
+					node = temp;						//return successor
 				}
 			}
 
 			if (node == VE_NULL_INDEX)
 				return node;
 
-			m_map[node].m_height = 1 + std::max(getHeight(left), 
+			m_map[node].m_height = 1 + std::max(getHeight(left),	//recompute subtree height
 												getHeight(right));
 
-			int balance = getBalance(node);
+			int balance = getBalance(node);	//might be imbalanced
 
 			// If this node becomes unbalanced, then there are 4 cases  
 

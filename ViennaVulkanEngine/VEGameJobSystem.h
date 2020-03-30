@@ -478,25 +478,25 @@ namespace vgjs {
 		friend Job;
 
 	private:
-		std::vector<std::thread>			m_threads;				///< array of thread structures
-		uint32_t							m_threadCount;			///< number of threads in the pool
-		uint32_t							m_start_idx = 0;		///< idx of first thread that is created
-		static thread_local int32_t			m_thread_index;			///< each thread has its own number
-		std::vector<JobMemory*>				m_job_memory;			///< each thread has its own job memory
-		std::vector<Job*>					m_jobPointers;			///< each thread has a current Job that it may run, pointers point to them
-		uint32_t							m_memory_reset_counter = 0; ///< signals each thread when to reset its memory
-		std::atomic<bool>					m_terminate;			///< Flag for terminating the pool
-		std::vector<JobQueue*>				m_jobQueues;			///< Each thread has its own Job queue
-		std::vector<JobQueue*>				m_jobQueuesLocal;		///< a secondary low priority FIFO queue for each thread, where polling jobs are parked
-		std::vector<JobQueue*>				m_jobQueuesLocalFIFO;	///< a secondary low priority FIFO queue for each thread, where polling jobs are parked
-		std::atomic<uint32_t>				m_numJobs;				///< total number of jobs in the system
-		std::vector<uint64_t>				m_numLoops;				///< number of loops the task has done so far
-		std::vector<uint64_t>				m_numMisses;			///< number of times the task did not get a job
-		std::mutex							m_mainThreadMutex;		///< used for syncing with main thread
-		std::condition_variable				m_mainThreadCondVar;	///< used for waking up main tread
+		std::vector<std::unique_ptr<std::thread>>	m_threads;				///< array of thread structures
+		uint32_t									m_threadCount;			///< number of threads in the pool
+		uint32_t									m_start_idx = 0;		///< idx of first thread that is created
+		static thread_local int32_t					m_thread_index;			///< each thread has its own number
+		std::vector<std::unique_ptr<JobMemory>>		m_job_memory;			///< each thread has its own job memory
+		std::vector<Job*>							m_jobPointers;			///< each thread has a current Job that it may run, pointers point to them
+		uint32_t									m_memory_reset_counter = 0; ///< signals each thread when to reset its memory
+		std::atomic<bool>							m_terminate;			///< Flag for terminating the pool
+		std::vector<std::unique_ptr<JobQueue>>		m_jobQueues;			///< Each thread has its own Job queue
+		std::vector<std::unique_ptr<JobQueue>>		m_jobQueuesLocal;		///< a secondary low priority FIFO queue for each thread, where polling jobs are parked
+		std::vector<std::unique_ptr<JobQueue>>		m_jobQueuesLocalFIFO;	///< a secondary low priority FIFO queue for each thread, where polling jobs are parked
+		std::atomic<uint32_t>						m_numJobs;				///< total number of jobs in the system
+		std::vector<uint64_t>						m_numLoops;				///< number of loops the task has done so far
+		std::vector<uint64_t>						m_numMisses;			///< number of times the task did not get a job
+		std::mutex									m_mainThreadMutex;		///< used for syncing with main thread
+		std::condition_variable						m_mainThreadCondVar;	///< used for waking up main tread
 
 	public:
-		vve::VeClock						m_clock;				///< Clock for time measurements
+		vve::VeClock m_clock;				///< Clock for time measurements
 
 		/**
 		*
@@ -579,7 +579,7 @@ namespace vgjs {
 			m_mainThreadCondVar.notify_all();		//make sure to wake up a waiting main thread
 		};
 
-		static JobSystem *	pInstance;			//pointer to singleton
+		static std::unique_ptr<JobSystem> pInstance;			//pointer to singleton
 
 		/**
 		*
@@ -591,7 +591,6 @@ namespace vgjs {
 		*/
 		JobSystem(uint32_t threadCount = 0, uint32_t start_idx = 0) : 
 			m_terminate(false), m_numJobs(0), m_clock("Job System", 100) {
-			pInstance = this;
 
 			m_start_idx = start_idx;
 			m_threadCount = threadCount;
@@ -607,18 +606,17 @@ namespace vgjs {
 			m_numMisses.resize(m_threadCount);								//each threads counts its own misses
 			m_numLoops.resize(m_threadCount);								//each tread counts its own loops
 			for (uint32_t i = 0; i < m_threadCount; i++) {
-				m_job_memory[i]			= new JobMemory;					//Each thread has its own job memory
-				m_jobQueues[i]			= new JobQueueLockFree();			//job queue with work stealing
-				m_jobQueuesLocal[i]		= new JobQueueLockFree();			//job queue for local work
-				m_jobQueuesLocalFIFO[i] = new JobQueueFIFO();				//job queue for local polling work
+				m_job_memory[i]			= std::make_unique<JobMemory>();			//Each thread has its own job memory
+				m_jobQueues[i]			= std::make_unique<JobQueueLockFree>();		//job queue with work stealing
+				m_jobQueuesLocal[i]		= std::make_unique<JobQueueLockFree>();		//job queue for local work
+				m_jobQueuesLocalFIFO[i] = std::make_unique<JobQueueFIFO>();			//job queue for local polling work
 				m_jobPointers[i]		= nullptr;							//pointer to current Job structure
 				m_numLoops[i]			= 0;								//for accounting per thread statistics
 				m_numMisses[i]			= 0;
 			}
 
-			m_threads.reserve(m_threadCount);										//reserve mem for the threads
 			for (uint32_t i = start_idx; i < m_threadCount; i++) {
-				m_threads.push_back(std::thread( &JobSystem::threadTask, this, i ));	//spawn the pool threads
+				m_threads.push_back(std::make_unique<std::thread>( &JobSystem::threadTask, this, i ));	//spawn the pool threads
 			}
 		};
 
@@ -631,9 +629,9 @@ namespace vgjs {
 		* \returns a pointer to the JobSystem instance
 		*
 		*/
-		static JobSystem* getInstance(uint32_t threadCount = 0, uint32_t start_idx = 0 ) {
-			if (pInstance == nullptr) 
-				pInstance = new JobSystem(threadCount, start_idx);
+		static std::unique_ptr<JobSystem>& getInstance(uint32_t threadCount = 0, uint32_t start_idx = 0 ) {
+			static std::once_flag once;
+			std::call_once(once, [&]() { pInstance = std::make_unique<JobSystem>(threadCount, start_idx); });
 			return pInstance;
 		};
 
@@ -645,7 +643,8 @@ namespace vgjs {
 		*
 		*/
 		static bool isInstanceCreated() {
-			return pInstance != nullptr;
+			if (pInstance) return true;
+			return false;
 		};
 
 		JobSystem(const JobSystem&) = delete;				// non-copyable,
@@ -657,9 +656,7 @@ namespace vgjs {
 		* \brief JobSystem class destructor
 		*/
 		~JobSystem() {
-			m_threads.clear();
-			for (auto pmem : m_job_memory)
-				delete pmem;
+			
 		};
 
 		/**
@@ -702,8 +699,8 @@ namespace vgjs {
 		*
 		*/
 		void waitForTermination() {
-			for (uint32_t i = m_start_idx; i < m_threads.size(); i++ ) {
-				m_threads[i].join();
+			for (std::unique_ptr<std::thread>& pThread : m_threads ) {
+				pThread->join();
 			}
 		};
 
@@ -888,7 +885,9 @@ namespace vgjs {
 
 namespace vgjs {
 
-	JobSystem* JobSystem::pInstance = nullptr;				///< Singleton instance of the JobSystem
+	std::unique_ptr<JobSystem> JobSystem::pInstance;			//pointer to singleton
+
+	//JobSystem* JobSystem::pInstance = nullptr;				///< Singleton instance of the JobSystem
 	thread_local int32_t JobSystem::m_thread_index = 0;		///< Thread local index of the thread
 
 
