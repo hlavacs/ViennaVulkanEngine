@@ -383,8 +383,16 @@ namespace vve {
 		VeHandle handle		= m_directory.addEntry( table_index );
 		auto [auto_id, dir_index] = VeDirectory::splitHandle( handle );
 		m_tbl2dir.emplace_back(dir_index);
-		for (auto map : m_maps) 
-			map->insert( (void*)&entry, dir_index );
+		
+		bool success = true;
+		for (auto map : m_maps) {
+			success = success && map->insert((void*)&entry, dir_index);
+		}
+		if (!success) {
+			erase(handle);
+			handle = VE_NULL_HANDLE;
+		}
+
 		out();
 		if (pHandle != nullptr) *pHandle = handle;
 		return handle;

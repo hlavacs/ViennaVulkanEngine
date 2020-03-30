@@ -70,6 +70,37 @@ namespace vve::sysmes {
 	VeFixedSizeTableMT<VeMessageSubscribeTableEntry> g_subscribe_table2(g_subscribe_table);
 
 
+
+	//--------------------------------------------------------------------------------------------------
+	//received messages
+
+	struct VeMessageReceiveTableEntry {
+		VeHandle	m_messageH;		//handle of message
+		VeHandle	m_receiverH;	//handle of the receiver entity
+	};
+	std::vector<VeMap*> maps5 = {
+		new VeHashedMultimap< VeHandle, VeIndex >((VeIndex)offsetof(VeMessageReceiveTableEntry, m_receiverH), (VeIndex)sizeof(VeMessageReceiveTableEntry::m_receiverH))
+	};
+	VeFixedSizeTableMT<VeMessageReceiveTableEntry> g_receive_table("Message Receive Table", maps5, true, false, 0, 0);
+	VeFixedSizeTableMT<VeMessageReceiveTableEntry> g_receive_table2(g_receive_table);
+
+
+	//--------------------------------------------------------------------------------------------------
+	//handler calls
+
+	struct VeMessagrCallTableEntry {
+		VeHandle	m_receiverH;	//handle of the receiver entity
+		VeHandle	m_handlerH;		//handler of message
+	};
+	std::vector<VeMap*> maps6 = {
+		new VeHashedMultimap< VeHandlePair, VeIndexPair >(
+			VeIndexPair((VeIndex)offsetof(VeMessagrCallTableEntry, m_receiverH),(VeIndex)offsetof(VeMessagrCallTableEntry, m_handlerH)),
+			VeIndexPair((VeIndex)sizeof(VeMessagrCallTableEntry::m_receiverH),  (VeIndex)sizeof(VeMessagrCallTableEntry::m_handlerH) ) )
+	};
+	VeFixedSizeTableMT<VeMessagrCallTableEntry> g_calls_table("Message Calls Table", true, false, 0, 0);
+	VeFixedSizeTableMT<VeMessagrCallTableEntry> g_calls_table2(g_calls_table);
+
+
 	//--------------------------------------------------------------------------------------------------
 	//functions
 
@@ -81,6 +112,8 @@ namespace vve::sysmes {
 		syseng::registerTablePointer(&g_continuous_messages_table);
 		syseng::registerTablePointer(&g_handler_table);
 		syseng::registerTablePointer(&g_subscribe_table);
+		syseng::registerTablePointer(&g_receive_table);
+		syseng::registerTablePointer(&g_calls_table);
 	}
 
 	void callAllMessages(	VeFixedSizeTableMT<VeMessageTableEntry>& messages_table ) {

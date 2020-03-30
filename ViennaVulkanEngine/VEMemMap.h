@@ -193,10 +193,11 @@ namespace vve {
 			};
 
 			/**
+			*
 			* \brief Constructor ot the struct
 			*
-			* \param[in]
-			* \param[in]
+			* \param[in] key The key of the node
+			* \param[in] value The value of the node
 			*/
 			VeMapEntry( K key, VeIndex value ) : m_key(key), m_value(value) {
 				m_height = 0;
@@ -206,9 +207,10 @@ namespace vve {
 			};
 
 			/**
+			*
 			* \brief Copy operator
 			*
-			* \param[in]
+			* \param[in] entry Source for the copy
 			*/
 			void operator=(const VeMapEntry& entry) {
 				m_key = entry.m_key;
@@ -219,12 +221,12 @@ namespace vve {
 				m_right = entry.m_right;
 			};
 
-			///compare is equal operator
 			/**
-			* \brief
 			*
-			* \param[in]
-			* \returns
+			* \brief Compare is equal operator
+			*
+			* \param[in] entry The other entry
+			* \returns true if the two nodes are equal.
 			* 
 			*/
 			bool operator==( const VeMapEntry& entry) {
@@ -234,12 +236,12 @@ namespace vve {
 				return m_key == entry.m_key;
 			};
 
-			///copmare less operator
 			/**
-			* \brief
 			*
-			* \param[in]
-			* \returns
+			* \brief Compare less operator
+			*
+			* \param[in] entry The other entry
+			* \returns true if this entry is less than the other entry
 			*
 			*/
 			bool operator<(const VeMapEntry& entry) {
@@ -252,36 +254,36 @@ namespace vve {
 				return m_key < entry.m_key;
 			};
 
-			///compare less or equal operator
 			/**
-			* \brief
 			*
-			* \param[in]
-			* \returns
+			* \brief Compare less or equal operator
+			*
+			* \param[in] entry The other entry
+			* \returns true if this entry is less or equal to the other entry
 			*
 			*/
 			bool operator<=(const VeMapEntry& entry) {
 				return *this < entry || *this == entry;
 			};
 
-			///copare larger operator
 			/**
-			* \brief
 			*
-			* \param[in]
-			* \returns
+			* \brief Compare larger operator
+			*
+			* \param[in] entry The other entry
+			* \returns true if this entry is larger than the other entry
 			*
 			*/
 			bool operator>(const VeMapEntry& entry) {
 				return !(*this == entry || *this < entry);
 			};
 
-			///print debug information
 			/**
-			* \brief
 			*
-			* \param[in]
-			* \returns
+			* \brief Print debug information
+			*
+			* \param[in] node Index of a node
+			* \param[in] level Level of the node
 			*
 			*/
 			void print(uint32_t node, uint32_t level = 1) {
@@ -291,12 +293,11 @@ namespace vve {
 			};
 		};
 
-		///clone this map
 		/**
-		* \brief
 		*
-		* \param[in]
-		* \returns
+		* \brief Clone this map
+		*
+		* \returns a clone of this map
 		*
 		*/
 		VeOrderedMultimap<K, I>* clone() {
@@ -314,7 +315,14 @@ namespace vve {
 		//---------------------------------------------------------------------------
 		//subtree properties
 
-		///get the heigth of a sub tree
+		/**
+		*
+		* \brief Get the heigth of a sub tree
+		*
+		* \param[in] node Index of the node whos height is sought
+		* \returns the height of the subtree starting with node
+		*
+		*/
 		int32_t getHeight(VeIndex node) {
 			if (node == VE_NULL_INDEX)
 				return 0;
@@ -322,7 +330,14 @@ namespace vve {
 			return m_map[node].m_height;
 		}
 
-		///compute the balance of a sub tree
+		/**
+		*
+		* \brief Compute the balance of a sub tree
+		*
+		* \param[in] node Index of the root of the subtree whos balance is sought
+		* \returns balance of the subtree rooted at node
+		*
+		*/
 		int32_t getBalance(VeIndex node) {
 			if (node == VE_NULL_INDEX)
 				return 0;
@@ -333,7 +348,15 @@ namespace vve {
 		//---------------------------------------------------------------------------
 		//rotate subtrees
 
-		///replace a child of a parent
+		/**
+		*
+		* \brief Replace a child of a parent. This relinks subtrees.
+		*
+		* \param[in] parent The parent with the child to change.
+		* \param[in] old_child The child to change.
+		* \param[in] new_child The new child to replace the old child.
+		*
+		*/
 		void replaceChild(VeIndex parent, VeIndex old_child, VeIndex new_child) {
 			if (parent == VE_NULL_INDEX) {
 				m_root = new_child;
@@ -343,37 +366,58 @@ namespace vve {
 			if (new_child != VE_NULL_INDEX)
 				m_map[new_child].m_parent = parent;
 
-			if (old_child == VE_NULL_INDEX) //cannot identify right child so return
+			if (old_child == VE_NULL_INDEX)				//cannot identify right child so return
 				return;
 
-			if (m_map[parent].m_left == old_child) {
+			if (m_map[parent].m_left == old_child) {	//if old child is left, replace lelt
 				m_map[parent].m_left = new_child;
 				return;
 			}
-			m_map[parent].m_right = new_child;
+			m_map[parent].m_right = new_child;	//else replace right
 		};
 
-		///replace the left child of a parent
+		/**
+		*
+		* \brief Replace the left child of a parent
+		*
+		* \param[in] parent The parent of the child to replace.
+		* \param[in] new_child The new left child.
+		*
+		*/
 		void replaceLeftChild(VeIndex parent, VeIndex new_child) {
 			if (parent == VE_NULL_INDEX)
 				return;
-			m_map[parent].m_left = new_child;
+			m_map[parent].m_left = new_child;	//replace child
 			if (new_child == VE_NULL_INDEX)
 				return;
-			m_map[new_child].m_parent = parent;
+			m_map[new_child].m_parent = parent; //replace parent of child
 		};
 
-		///replace the right child of a parent
+		/**
+		*
+		* \brief Replace the right child of a parent
+		*
+		* \param[in] parent The parent of the child to replace.
+		* \param[in] new_child The new right child.
+		*
+		*/
 		void replaceRightChild(VeIndex parent, VeIndex new_child) {
 			if (parent == VE_NULL_INDEX)
 				return;
-			m_map[parent].m_right = new_child;
+			m_map[parent].m_right = new_child;	//replace child
 			if (new_child == VE_NULL_INDEX)
 				return;
-			m_map[new_child].m_parent = parent;
+			m_map[new_child].m_parent = parent; //replace parent of child
 		};
 
-		///AVL right rotation
+		/**
+		*
+		* \brief AVL right rotation
+		*
+		* \param[in] y Index node that is the pivot for a right rotation.
+		* \returns the new node that replaces y.
+		*
+		*/
 		VeIndex rightRotate(VeIndex y) {
 			VeIndex x = m_map[y].m_left;
 			VeIndex T2 = m_map[x].m_right;
@@ -390,7 +434,14 @@ namespace vve {
 			return x;
 		}
 
-		///AVL left rotation 
+		/**
+		*
+		* \brief AVL left rotation
+		*
+		* \param[in] y Index node that is the pivot for a left rotation.
+		* \returns the new node that replaces y.
+		*
+		*/
 		VeIndex leftRotate( VeIndex x ) {
 			VeIndex y = m_map[x].m_right;
 			VeIndex T2 = m_map[y].m_left;
@@ -410,7 +461,15 @@ namespace vve {
 		//---------------------------------------------------------------------------
 		//insert
 
-		///insert a new node into the tree, might cause imbalance
+		/**
+		*
+		* \brief Insert a new node into the tree, might cause imbalance
+		*
+		* \param[in] node The root of the subtree where the new node should be inserted.
+		* \param[in] index The index of the new node
+		* \returns index to the new node.
+		*
+		*/
 		VeIndex insert( VeIndex node, VeIndex index ) {
 			if (node == VE_NULL_INDEX) {
 				m_map[index].m_height = 1;
@@ -463,7 +522,15 @@ namespace vve {
 		//---------------------------------------------------------------------------
 		//find
 
-		///find an entry (key, value), start searching at node
+		/**
+		*
+		* \brief Find an entry (key, value), start searching at node
+		*
+		* \param[in] node Root node where to start the search.
+		* \param[in] entry The entry holding key and value of the node to find
+		* \returns
+		*
+		*/
 		VeIndex findEntry(VeIndex node, VeMapEntry &entry ) {
 			if (node == VE_NULL_INDEX)
 				return VE_NULL_INDEX;
@@ -478,14 +545,29 @@ namespace vve {
 		};
 
 
-		///find an entry (key, value), start searching at root node
+		/**
+		*
+		* \brief Find an entry (key, value), start searching at root node
+		*
+		* \param[in] key The key looked for.
+		* \param[in] value The value looked ofr
+		* \returns the index of the found node or VE_NULL_INDEX
+		*
+		*/
 		VeIndex findKeyValue(K& key, VeIndex value) {
 			VeMapEntry entry{ key, value };
 			return findEntry(m_root, entry);
 		};
 
 
-		///find a key
+		/**
+		*
+		* \brief Find a key
+		*
+		* \param[in] key The key that is looked for
+		* \returns the index of the found node.
+		*
+		*/
 		VeIndex findKey(K& key) {
 			return findKeyValue(key, VE_NULL_INDEX);
 		};
@@ -494,7 +576,13 @@ namespace vve {
 		//---------------------------------------------------------------------------
 		//delete
 
-		///delete an index, i.e. copy last entry over it and relink the tree
+		/**
+		*
+		* \brief Delete an index, i.e. copy last entry over it and relink the tree
+		*
+		* \param[in] index The index of the entry to delete.
+		*
+		*/
 		void deleteIndex(VeIndex index) {
 			VeIndex last = m_map.size() - 1;
 
@@ -513,7 +601,14 @@ namespace vve {
 		};
 
 
-		///find the minimum node of a subtree
+		/**
+		*
+		* \brief Find the minimum node of a subtree
+		*
+		* \param[in] node Root of the subtree to start the search.
+		* \returns the index of the node with the minimum key-value pair.
+		*
+		*/
 		VeIndex findMin(VeIndex node) {
 			assert(node != VE_NULL_INDEX);
 			while (m_map[node].m_left != VE_NULL_INDEX) 
@@ -522,13 +617,29 @@ namespace vve {
 		};
 
 		///copy key and value to enother entry
+		/**
+		*
+		* \brief
+		*
+		* \param[in]
+		* \returns
+		*
+		*/
 		void replaceKeyValue(VeIndex dst, VeIndex src) {
 			m_map[dst].m_key = m_map[src].m_key;
 			m_map[dst].m_value = m_map[src].m_value;
 		}
 
 		///delete an entry given in entry, start search at node
-		VeIndex deleteEntry(VeIndex node, VeMapEntry& entry, 
+		/**
+		*
+		* \brief
+		*
+		* \param[in]
+		* \returns
+		*
+		*/
+		VeIndex deleteEntry(VeIndex node, VeMapEntry& entry,
 							std::vector<VeIndex, custom_alloc<VeIndex>> &del_indices) {
 
 			if (node == VE_NULL_INDEX)
@@ -598,6 +709,14 @@ namespace vve {
 		//---------------------------------------------------------------------------
 		//get indices
 
+		/**
+		*
+		* \brief
+		*
+		* \param[in]
+		* \returns
+		*
+		*/
 		VeCount getAllIndices(VeIndex node, std::vector<VeIndex, custom_alloc<VeIndex>>& result) {
 			if (node == VE_NULL_INDEX)
 				return 0;
@@ -608,6 +727,14 @@ namespace vve {
 			return num + 1;
 		};
 
+		/**
+		*
+		* \brief
+		*
+		* \param[in]
+		* \returns
+		*
+		*/
 		VeCount getAllKeyValuePairs(VeIndex node, std::vector<std::pair<K,VeIndex>, custom_alloc<std::pair<K, VeIndex>>>& result) {
 			if (node == VE_NULL_INDEX)
 				return 0;
@@ -618,6 +745,14 @@ namespace vve {
 			return num + 1;
 		};
 
+		/**
+		*
+		* \brief
+		*
+		* \param[in]
+		* \returns
+		*
+		*/
 		VeCount equal_range(VeIndex node, VeMapEntry &entry, std::vector<VeIndex, custom_alloc<VeIndex>>& result) {
 			if (node == VE_NULL_INDEX)
 				return 0;
@@ -638,6 +773,14 @@ namespace vve {
 		};
 
 
+		/**
+		*
+		* \brief
+		*
+		* \param[in]
+		* \returns
+		*
+		*/
 		VeCount range(VeIndex node, VeMapEntry& lower, VeMapEntry upper, std::vector<VeIndex, custom_alloc<VeIndex>>& result) {
 			if (node == VE_NULL_INDEX)
 				return 0;
@@ -665,6 +808,14 @@ namespace vve {
 		//---------------------------------------------------------------------------
 		//debug
 
+		/**
+		*
+		* \brief
+		*
+		* \param[in]
+		* \returns
+		*
+		*/
 		void printTree(VeIndex node, VeIndex level) {
 			if (node == VE_NULL_INDEX)
 				return;
@@ -681,10 +832,46 @@ namespace vve {
 
 	public:
 
-		VeOrderedMultimap(I offset, I num_bytes, bool memcopy = false) : VeMap(), m_map(memcopy), m_offset(offset), m_num_bytes(num_bytes) {};
-		VeOrderedMultimap(const VeOrderedMultimap<K, I>& map) : VeMap(), m_map(map.m_map), m_offset(map.m_offset), m_num_bytes(map.m_num_bytes) {};
+		/**
+		*
+		* \brief
+		*
+		* \param[in]
+		* \returns
+		*
+		*/
+		VeOrderedMultimap(I offset, I num_bytes, bool memcopy = false) :
+			VeMap(), m_map(memcopy), m_offset(offset), m_num_bytes(num_bytes) {};
+
+		/**
+		*
+		* \brief
+		*
+		* \param[in]
+		* \returns
+		*
+		*/
+		VeOrderedMultimap(const VeOrderedMultimap<K, I>& map) :
+			VeMap(), m_map(map.m_map), m_offset(map.m_offset), m_num_bytes(map.m_num_bytes) {};
+
+		/**
+		*
+		* \brief
+		*
+		* \param[in]
+		* \returns
+		*
+		*/
 		virtual	~VeOrderedMultimap() {};
 
+		/**
+		*
+		* \brief
+		*
+		* \param[in]
+		* \returns
+		*
+		*/
 		virtual void operator=(const VeMap& basemap) override {
 			VeOrderedMultimap<K, I>* map = &((VeOrderedMultimap<K, I>&)basemap);
 			m_offset = map->m_offset;
@@ -692,26 +879,66 @@ namespace vve {
 			m_map = map->m_map;
 		};
 
+		/**
+		*
+		* \brief
+		*
+		* \param[in]
+		* \returns
+		*
+		*/
 		virtual void clear() override {
 			m_root = VE_NULL_INDEX;
 			m_map.clear();
 		};
 
+		/**
+		*
+		* \brief
+		*
+		* \param[in]
+		* \returns
+		*
+		*/
 		VeCount size() override {
 			return m_map.size();
 		};
 
+		/**
+		*
+		* \brief
+		*
+		* \param[in]
+		* \returns
+		*
+		*/
 		std::pair<K, VeIndex> getKeyValuePair(VeIndex num) {
 			VeIndex value = find(m_map[num].m_key);
 			return { m_map[num].m_key, value};
 		};
 
+		/**
+		*
+		* \brief
+		*
+		* \param[in]
+		* \returns
+		*
+		*/
 		void printTree() {
 			std::cout << "Root " << m_root << std::endl;
 			printTree(m_root, 1);
 			std::cout << std::endl;
 		};
 
+		/**
+		*
+		* \brief
+		*
+		* \param[in]
+		* \returns
+		*
+		*/
 		void print() override {
 			std::cout << "Num " << m_map.size() << " Root " << m_root << std::endl;
 			for (uint32_t i = 0; i < m_map.size(); ++i) {
@@ -720,29 +947,77 @@ namespace vve {
 			std::cout << std::endl;
 		};
 
+		/**
+		*
+		* \brief
+		*
+		* \param[in]
+		* \returns
+		*
+		*/
 		virtual VeIndex find(K key) override {
 			VeIndex index = findKey(key);
 			return index == VE_NULL_INDEX ? VE_NULL_INDEX : m_map[index].m_value;
 		};
 
+		/**
+		*
+		* \brief
+		*
+		* \param[in]
+		* \returns
+		*
+		*/
 		virtual VeCount equal_range(K key, std::vector<VeIndex, custom_alloc<VeIndex>>& result) override {
 			VeMapEntry entry(key, VE_NULL_INDEX);
 			return equal_range(m_root, entry, result);
 		};
 
+		/**
+		*
+		* \brief
+		*
+		* \param[in]
+		* \returns
+		*
+		*/
 		virtual VeCount range(K lower, K upper, std::vector<VeIndex, custom_alloc<VeIndex>>& result) override {
 			VeMapEntry mlower(lower, VE_NULL_INDEX), mupper(upper, VE_NULL_INDEX);
 			return range(m_root, mlower, mupper, result);
 		};
 
+		/**
+		*
+		* \brief
+		*
+		* \param[in]
+		* \returns
+		*
+		*/
 		virtual VeCount getAllIndices(std::vector<VeIndex, custom_alloc<VeIndex>>& result) override {
 			return getAllIndices(m_root, result);
 		};
 
-		virtual VeCount getAllKeyValuePairs(std::vector<std::pair<K, VeIndex>, custom_alloc<std::pair<K, VeIndex>>>& result) override { 
+		/**
+		*
+		* \brief
+		*
+		* \param[in]
+		* \returns
+		*
+		*/
+		virtual VeCount getAllKeyValuePairs(std::vector<std::pair<K, VeIndex>, custom_alloc<std::pair<K, VeIndex>>>& result) override {
 			return getAllKeyValuePairs(m_root, result);
 		};
 
+		/**
+		*
+		* \brief
+		*
+		* \param[in]
+		* \returns
+		*
+		*/
 		virtual VeCount leftJoin(K key, VeMap& other, std::vector<VeIndexPair, custom_alloc<VeIndexPair>>& result) override {
 			std::vector < VeIndex, custom_alloc<VeIndex> > result1(&m_heap);
 			equal_range(key, result1);
@@ -758,6 +1033,14 @@ namespace vve {
 			return (VeCount)(result1.size()*result2.size());
 		};
 
+		/**
+		*
+		* \brief
+		*
+		* \param[in]
+		* \returns
+		*
+		*/
 		virtual VeCount leftJoin(VeMap& other, std::vector<VeIndexPair, custom_alloc<VeIndexPair>>& result) override {
 			if (size() == 0 ||other.size()==0)
 				return 0;
@@ -787,6 +1070,14 @@ namespace vve {
 			return num;
 		};
 
+		/**
+		*
+		* \brief
+		*
+		* \param[in]
+		* \returns
+		*
+		*/
 		virtual bool insert(void* entry, VeIndex dir_index) override {
 			K key;
 			getKey(entry, m_offset, m_num_bytes, key);
@@ -797,6 +1088,14 @@ namespace vve {
 			return true;
 		};
 
+		/**
+		*
+		* \brief
+		*
+		* \param[in]
+		* \returns
+		*
+		*/
 		virtual VeCount erase(void* entry, VeIndex dir_index) override {
 			K key;
 			getKey(entry, m_offset, m_num_bytes, key);
