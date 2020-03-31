@@ -44,12 +44,10 @@ namespace vve::sysvul {
 		VE_SYSTEM_HANDLE = syseng::getEntityHandle(VE_SYSTEM_NAME);
 
 		g_updateHandle = sysmes::addHandler(std::bind(update, std::placeholders::_1));
-		sysmes::subscribeMessage(	syseng::VE_SYSTEM_HANDLE, VE_NULL_HANDLE, g_updateHandle,
-									sysmes::VeMessageType::VE_MESSAGE_TYPE_UPDATE);
+		sysmes::subscribeMessage(syseng::VE_SYSTEM_HANDLE, VE_NULL_HANDLE, g_updateHandle, sysmes::VeMessageType::VE_MESSAGE_TYPE_UPDATE);
 
 		g_closeHandle = sysmes::addHandler(std::bind(close, std::placeholders::_1));
-		sysmes::subscribeMessage(	syswin::VE_SYSTEM_HANDLE, VE_NULL_HANDLE, g_closeHandle,
-									sysmes::VeMessageType::VE_MESSAGE_TYPE_CLOSE);
+		sysmes::subscribeMessage(syswin::VE_SYSTEM_HANDLE, VE_NULL_HANDLE, g_closeHandle, sysmes::VeMessageType::VE_MESSAGE_TYPE_CLOSE);
 
 		std::vector<const char*> extensions = { "VK_EXT_debug_report" };
 		std::vector<const char*> layers = {
@@ -62,11 +60,6 @@ namespace vve::sysvul {
 	bool g_windowSizeChanged = false;
 	VeClock tickClock("Vulkan Clock");
 
-	void update(sysmes::VeMessageTableEntry e) {
-		//tickClock.tick();
-		fwsimple::update(e);
-	}
-
 	void cleanUp() {
 		if (g_windowSizeChanged) {
 			g_windowSizeChanged = false;
@@ -78,10 +71,15 @@ namespace vve::sysvul {
 
 	}
 
-	void close(sysmes::VeMessageTableEntry e) {
-		fwsimple::close(e);
-		vkDestroyInstance(g_vulkan_state.m_instance, nullptr );
+	void update(VeHandle receiverID) {
+		fwsimple::update(receiverID);
 	}
+
+	void close(VeHandle receiverID) {
+		fwsimple::close(receiverID);
+		vkDestroyInstance(g_vulkan_state.m_instance, nullptr);
+	}
+
 
 
 	void windowSizeChanged() {

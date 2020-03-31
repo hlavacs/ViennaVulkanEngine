@@ -20,8 +20,9 @@ namespace vve::syswin {
 	bool createSurface(VkInstance instance, VkSurfaceKHR* pSurface);
 
 	void init();
-	void update(sysmes::VeMessageTableEntry e);
-	void close(sysmes::VeMessageTableEntry e);
+	void update(VeHandle receiverID);
+	void close(VeHandle receiverID);
+
 	void closeWin();
 
 	void windowSizeChanged();

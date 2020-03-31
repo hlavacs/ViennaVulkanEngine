@@ -43,7 +43,7 @@ namespace vve::syswin::glfw {
 
 	bool g_windowSizeChanged = false;
 
-	void update(sysmes::VeMessageTableEntry e) {
+	void update(VeHandle receiverID) {
 		glfwPollEvents();		//inject GLFW events into the callbacks
 
 		if (g_windowSizeChanged) {
@@ -59,10 +59,11 @@ namespace vve::syswin::glfw {
 	}
 
 
-	void close(sysmes::VeMessageTableEntry e) {
+	void close(VeHandle receiverID) {
 		glfwDestroyWindow(g_window);
 		glfwTerminate();
 	}
+
 
 
 	///\returns the required Vulkan instance extensions to interact with the local window system
@@ -122,14 +123,14 @@ namespace vve::syswin::glfw {
 
 		sysmes::VeMessageTableEntry ev;
 		ev.m_type = sysmes::VeMessageType::VE_MESSAGE_TYPE_KEYBOARD;
-		ev.m_senderH = VE_SYSTEM_HANDLE;
+		ev.m_senderID = VE_SYSTEM_HANDLE;
 
 		ev.m_key_button = key < 0 ? VE_NULL_INDEX : (uint32_t)key;
 		ev.m_scancode	= scancode < 0 ? VE_NULL_INDEX : (uint32_t)scancode;
 		ev.m_action		= action < 0 ? VE_NULL_INDEX : (uint32_t)action;
 		ev.m_mods		= mods < 0 ? VE_NULL_INDEX : (uint32_t)mods;
 
-		sysmes::addMessage(ev);
+		sysmes::sendMessage(ev);
 	}
 
 	/**
@@ -144,12 +145,12 @@ namespace vve::syswin::glfw {
 	void cursor_pos_callbackGLFW(GLFWwindow* window, double xpos, double ypos) {
 		sysmes::VeMessageTableEntry ev;
 		ev.m_type = sysmes::VeMessageType::VE_MESSAGE_TYPE_MOUSEMOVE;
-		ev.m_senderH = VE_SYSTEM_HANDLE;
+		ev.m_senderID = VE_SYSTEM_HANDLE;
 
 		ev.m_x = xpos;
 		ev.m_y = ypos;
 
-		sysmes::addMessage(ev);
+		sysmes::sendMessage(ev);
 	}
 
 	/**
@@ -171,13 +172,13 @@ namespace vve::syswin::glfw {
 	void mouse_button_callback(GLFWwindow* window, int button, int action, int mods) {
 		sysmes::VeMessageTableEntry ev;
 		ev.m_type = sysmes::VeMessageType::VE_MESSAGE_TYPE_MOUSEBUTTON;
-		ev.m_senderH = VE_SYSTEM_HANDLE;
+		ev.m_senderID = VE_SYSTEM_HANDLE;
 
 		ev.m_key_button = button < 0 ? VE_NULL_INDEX : (uint32_t)button;
 		ev.m_action = action < 0 ? VE_NULL_INDEX : (uint32_t)action;
 		ev.m_mods = mods < 0 ? VE_NULL_INDEX : (uint32_t)mods;
 
-		sysmes::addMessage(ev);
+		sysmes::sendMessage(ev);
 	}
 
 	/**
@@ -192,12 +193,12 @@ namespace vve::syswin::glfw {
 	void mouse_scroll_callback(GLFWwindow* window, double xoffset, double yoffset) {
 		sysmes::VeMessageTableEntry ev;
 		ev.m_type = sysmes::VeMessageType::VE_MESSAGE_TYPE_MOUSESCROLL;
-		ev.m_senderH = VE_SYSTEM_HANDLE;
+		ev.m_senderID = VE_SYSTEM_HANDLE;
 
 		ev.m_x = xoffset;
 		ev.m_y = yoffset;
 
-		sysmes::addMessage(ev);
+		sysmes::sendMessage(ev);
 	}
 
 

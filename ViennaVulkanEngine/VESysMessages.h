@@ -31,9 +31,9 @@ namespace vve::sysmes {
 
 	struct VeMessageTableEntry {
 		VeMessageType	m_type = VeMessageType::VE_MESSAGE_TYPE_NULL;
-		VeHandle	m_senderH = VE_NULL_HANDLE;
-		VeHandle	m_receiverH = VE_NULL_HANDLE;
-		VeHandle	m_dataH = VE_NULL_HANDLE;
+		VeHandle		m_senderID = VE_NULL_HANDLE;
+		VeHandle		m_receiverID = VE_NULL_HANDLE;
+		VeHandle		m_dataID = VE_NULL_HANDLE;
 
 		//--------------------------------------------
 		VeIndex		m_key_button = 0;
@@ -52,13 +52,15 @@ namespace vve::sysmes {
 	void update();
 	void close();
 
-	VeHandle addMessage(VeMessageTableEntry message, VeHandle *pHandle = nullptr);
-	VeHandle addContinuousMessage(VeMessageTableEntry message, VeHandle* pHandle = nullptr);
+	VeHandle sendMessage(VeMessageTableEntry message);
+	void receiveMessages( VeHandle receiverID, std::vector<VeHandle, custom_alloc<VeHandle>> &result);
+	bool getMessage(VeHandle messageID, VeMessageTableEntry &entry);
+	VeHandle addContinuousMessage(VeMessageTableEntry message);
 	void removeContinuousMessage(VeMessageTableEntry message);
-	VeHandle addHandler(std::function<void(VeMessageTableEntry)> handler, VeHandle* pHandle = nullptr);
-	void removeHandler(VeHandle handlerH);
-	void subscribeMessage(VeHandle senderH, VeHandle receiverH, VeHandle handlerH, VeMessageType type = VeMessageType::VE_MESSAGE_TYPE_NULL, VeIndex thread_id = VE_NULL_INDEX);
-	void unsubscribeMessage(VeHandle senderH, VeHandle handlerH);
+	VeHandle addHandler(std::function<void(VeHandle)> handler);
+	void removeHandler(VeHandle handlerID);
+	void subscribeMessage(VeHandle senderID, VeHandle receiverID, VeHandle handlerID, VeMessageType type = VeMessageType::VE_MESSAGE_TYPE_NULL, VeIndex thread_id = VE_NULL_INDEX);
+	void unsubscribeMessage(VeHandle senderID, VeHandle handlerID, VeMessageType type = VeMessageType::VE_MESSAGE_TYPE_NULL);
 
 
 #endif

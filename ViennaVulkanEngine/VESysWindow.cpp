@@ -30,32 +30,32 @@ namespace vve::syswin {
 	VeHandle g_updateHandle;
 	VeHandle g_closeHandle;
 
+
 	void init() {
 		syseng::registerEntity(VE_SYSTEM_NAME);
 		VE_SYSTEM_HANDLE = syseng::getEntityHandle(VE_SYSTEM_NAME);
 
 		g_updateHandle = sysmes::addHandler(std::bind(update, std::placeholders::_1));
-		sysmes::subscribeMessage(	syseng::VE_SYSTEM_HANDLE, VE_NULL_HANDLE, g_updateHandle,
-								sysmes::VeMessageType::VE_MESSAGE_TYPE_UPDATE, 0);
+		sysmes::subscribeMessage(syseng::VE_SYSTEM_HANDLE, VE_NULL_HANDLE, g_updateHandle, sysmes::VeMessageType::VE_MESSAGE_TYPE_UPDATE);
 
 		g_closeHandle = sysmes::addHandler(std::bind(close, std::placeholders::_1));
-		sysmes::subscribeMessage(	VE_SYSTEM_HANDLE, VE_NULL_HANDLE, g_closeHandle,
-								sysmes::VeMessageType::VE_MESSAGE_TYPE_CLOSE, 0);
+		sysmes::subscribeMessage(syswin::VE_SYSTEM_HANDLE, VE_NULL_HANDLE, g_closeHandle, sysmes::VeMessageType::VE_MESSAGE_TYPE_CLOSE);
 
 		glfw::init();
 	}
 
-	void update(sysmes::VeMessageTableEntry e) {
-		glfw::update(e);
-	}
-
 	void closeWin() {
-		sysmes::addMessage({ sysmes::VeMessageType::VE_MESSAGE_TYPE_CLOSE, VE_SYSTEM_HANDLE });
+		sysmes::sendMessage({ sysmes::VeMessageType::VE_MESSAGE_TYPE_CLOSE, VE_SYSTEM_HANDLE });
 	}
 
-	void close(sysmes::VeMessageTableEntry e) {
-		glfw::close(e);
+	void update(VeHandle receiverID) {
+		glfw::update(receiverID);
 	}
+
+	void close(VeHandle receiverID) {
+		glfw::close(receiverID);
+	}
+
 
 	void windowSizeChanged() {
 		sysvul::windowSizeChanged();

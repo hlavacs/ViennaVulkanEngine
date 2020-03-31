@@ -25,13 +25,12 @@ namespace vve::sysvul::fwsimple {
 
 	}
 
-	void update(sysmes::VeMessageTableEntry e) {
-
+	void update(VeHandle receiverID) {
 	}
 
-	void close(sysmes::VeMessageTableEntry e) {
-
+	void close(VeHandle receiverID) {
 	}
+
 
 }
 

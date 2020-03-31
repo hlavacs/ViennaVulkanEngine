@@ -23,8 +23,9 @@ namespace vve::sysvul {
 	inline VeHandle VE_SYSTEM_HANDLE = VE_NULL_HANDLE;
 
 	void init();
-	void update(sysmes::VeMessageTableEntry e);
-	void close(sysmes::VeMessageTableEntry e);
+	void update(VeHandle receiverID);
+	void close(VeHandle receiverID);
+
 
 	void windowSizeChanged();
 

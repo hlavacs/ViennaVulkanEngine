@@ -29,22 +29,22 @@ namespace vve::sysass {
 		VE_SYSTEM_HANDLE = syseng::getEntityHandle(VE_SYSTEM_NAME);
 
 		g_updateHandle = sysmes::addHandler(std::bind(update, std::placeholders::_1));
-		sysmes::subscribeMessage( syseng::VE_SYSTEM_HANDLE, VE_NULL_HANDLE, g_updateHandle,
-								sysmes::VeMessageType::VE_MESSAGE_TYPE_UPDATE);
+		sysmes::subscribeMessage(syseng::VE_SYSTEM_HANDLE, VE_NULL_HANDLE, g_updateHandle, sysmes::VeMessageType::VE_MESSAGE_TYPE_UPDATE);
 
 		g_closeHandle = sysmes::addHandler(std::bind(close, std::placeholders::_1));
-		sysmes::subscribeMessage(	syswin::VE_SYSTEM_HANDLE, VE_NULL_HANDLE, g_closeHandle,
-								sysmes::VeMessageType::VE_MESSAGE_TYPE_CLOSE);
-
+		sysmes::subscribeMessage(syswin::VE_SYSTEM_HANDLE, VE_NULL_HANDLE, g_closeHandle, sysmes::VeMessageType::VE_MESSAGE_TYPE_CLOSE);
 
 		syseng::registerTablePointer(&g_meshes_table);
 	}
 
-	void update(sysmes::VeMessageTableEntry e) {
+	void update(VeHandle receiverID) {
 	}
 
-	void close(sysmes::VeMessageTableEntry e) {
+	void close(VeHandle receiverID) {
 	}
+
+
+
 
 }
 

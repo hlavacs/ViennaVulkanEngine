@@ -1403,33 +1403,31 @@ namespace vve {
 			};
 			return 0;
 		};
-
-		//----------------------------------------------------------------------------------
-
-		template <typename K, typename I>
-		class VeHashedMap : public VeHashedMultimap<K, I> {
-		public:
-			VeHashedMap(I offset, I num_bytes, bool memcopy = false) : VeHashedMultimap<K, I>(offset, num_bytes, memcopy) {};
-			VeHashedMap(const VeHashedMap<K, I>& map) : VeHashedMultimap<K, I>((const VeHashedMultimap<K, I>&)map) {};
-			virtual	~VeHashedMap() {};
-
-			virtual bool insert(void* entry, VeIndex dir_index) override {
-				K key;
-				getKey(entry, this->m_offset, this->m_num_bytes, key);
-				if (find(key) == VE_NULL_INDEX)
-					return VeHashedMultimap<K, I>::insert(entry, dir_index);
-				return false;
-			}
-		};
-
-
 	};
 
+	//----------------------------------------------------------------------------------
+
+	template <typename K, typename I>
+	class VeHashedMap : public VeHashedMultimap<K, I> {
+	public:
+		VeHashedMap(I offset, I num_bytes, bool memcopy = false) : VeHashedMultimap<K, I>(offset, num_bytes, memcopy) {};
+		VeHashedMap(const VeHashedMap<K, I>& map) : VeHashedMultimap<K, I>((const VeHashedMultimap<K, I>&)map) {};
+		virtual	~VeHashedMap() {};
+
+		virtual bool insert(void* entry, VeIndex dir_index) override {
+			K key;
+			this->getKey(entry, this->m_offset, this->m_num_bytes, key);
+			if (this->find(key) == VE_NULL_INDEX)
+				return VeHashedMultimap<K, I>::insert(entry, dir_index);
+			return false;
+		}
+	};
 
 	namespace map {
 		void testMap();
 	};
 
-}
+};
+
 
 

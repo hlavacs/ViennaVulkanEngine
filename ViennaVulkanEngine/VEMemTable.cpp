@@ -30,6 +30,9 @@ namespace vve {
 			std::string m_name;
 			TestEntry() : m_int64(VE_NULL_HANDLE), m_int1(VE_NULL_INDEX), m_int2(VE_NULL_INDEX), m_name("") {};
 			TestEntry(VeHandle handle, VeIndex int1, VeIndex int2, std::string name) : m_int64(handle), m_int1(int1), m_int2(int2), m_name(name) {};
+			void print() {
+				std::cout << " int64 " << m_int64 << " int1 " << m_int1 << " int2 " << m_int2 << " name " << m_name << std::endl;
+			};
 		};
 
 		std::vector<VeMap*> maps = {
@@ -55,50 +58,56 @@ namespace vve {
 				" name " << entry.m_name << std::endl;
 		}
 
+		void print1( ) {
+			for (auto entry : testTable.data()) {
+				entry.print();
+			}
+		}
+
 		void testFixedTables1() {
 
 			VeHandle handle, handle1, handle2;
 			handle1 = testTable.insert({ 1, 2, 3, "4" });
 			handle2 = testTable.insert({ 4, 2, 1, "3" });
-			testTable.forAllEntries(std::bind(printEntry, std::placeholders::_1)); std::cout << std::endl;
+			print1();
 			testTable.swap(handle1, handle2);
-			testTable.forAllEntries(std::bind(printEntry, std::placeholders::_1)); std::cout << std::endl;
+			print1();
 
 			testTable.sort(0);
-			testTable.forAllEntries(std::bind(printEntry, std::placeholders::_1)); std::cout << std::endl;
+			print1();
 
 			handle = testTable.insert({ 2, 1, 3, "1" });
 			handle = testTable.insert({ 3, 4, 5, "2" });
 			handle = testTable.insert({ 5, 4, 2, "3" });
 			handle = testTable.insert({ 6, 3, 2, "2" });
 
-			testTable.forAllEntries(std::bind(printEntry, std::placeholders::_1)); std::cout << std::endl;
+			print1();
 
 			testTable.sort(0);
-			testTable.forAllEntries(std::bind(printEntry, std::placeholders::_1)); std::cout << std::endl;
+			print1();
 
 			testTable.sort(1);
-			testTable.forAllEntries(std::bind(printEntry, std::placeholders::_1)); std::cout << std::endl;
+			print1();
 
 			testTable.sort(2);
-			testTable.forAllEntries(std::bind(printEntry, std::placeholders::_1)); std::cout << std::endl;
+			print1();
 
 			testTable.sort(3);
-			testTable.forAllEntries(std::bind(printEntry, std::placeholders::_1)); std::cout << std::endl;
+			print1();
 
 			testTable.erase(handle);
-			testTable.forAllEntries(std::bind(printEntry, std::placeholders::_1)); std::cout << std::endl;
+			print1();
 
 			handle = testTable.insert({ 7, 1, 6, "5" });
-			testTable.forAllEntries(std::bind(printEntry, std::placeholders::_1)); std::cout << std::endl;
+			print1();
 
 			testTable.sort(3);
-			testTable.forAllEntries(std::bind(printEntry, std::placeholders::_1)); std::cout << std::endl;
+			print1();
 
 			testTable.erase(testTable.getHandleFromIndex(2));
 			testTable.erase(testTable.getHandleFromIndex(3));
 			testTable.sort(3);
-			testTable.forAllEntries(std::bind(printEntry, std::placeholders::_1)); std::cout << std::endl;
+			print1();
 
 			//--------
 			std::vector<VeHandle, custom_alloc<VeHandle>> handles(getHeap());
@@ -106,31 +115,31 @@ namespace vve {
 			auto [auto_id, dir_index] = VeDirectory::splitHandle(handles[0]);
 
 			handles.clear();
-			testTable.getHandlesEqual(2, "2", handles);
+			testTable.getHandlesEqual("2", 2, handles);
 
 			handles.clear();
-			testTable.getHandlesEqual(3, VeHandlePair(1,6), handles);
+			testTable.getHandlesEqual(VeHandlePair(1,6), 3, handles);
 
 			//--------
 
 			handles.clear();
-			testTable.getHandlesRange(0, 2, 5, handles);
+			testTable.getHandlesRange(2, 5, 0, handles);
 
 			handles.clear();
-			testTable.getHandlesRange(2, "2", "3", handles);
+			testTable.getHandlesRange("2", "3", 2, handles);
 
 			handles.clear();
-			testTable.getHandlesRange(3, VeHandlePair( 4, 0 ), VeHandlePair( 5, 0 ), handles);
+			testTable.getHandlesRange(VeHandlePair( 4, 0 ), VeHandlePair( 5, 0 ), 3, handles);
 
 
 			handle = testTable.insert({ 8, 2, 3, "4" });
 			handle = testTable.insert({ 9, 4, 1, "3" });
 			testTable.sort(0);
-			testTable.forAllEntries(std::bind(printEntry, std::placeholders::_1)); std::cout << std::endl;
+			print1();
 
 			testTable.clear();
 			testTable.sort(0);
-			testTable.forAllEntries(std::bind(printEntry, std::placeholders::_1)); std::cout << std::endl;
+			print1();
 		}
 
 

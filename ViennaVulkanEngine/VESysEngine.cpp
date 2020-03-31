@@ -82,7 +82,7 @@ namespace vve {
 		VeFixedSizeTableMT<VeEntityTableEntry> g_entities_table("Entities Table", maps2, false, false, 0, 0);
 
 		void registerEntity(const std::string& name) {
-			g_entities_table.insert({ name });
+			g_entities_table.insert(VeEntityTableEntry{ name });
 		}
 
 		VeHandle getEntityHandle(const std::string &name ) {
@@ -123,7 +123,7 @@ namespace vve {
 
 		//----------------------------------------------------------------------------------------------------
 
-		void closeEngine(sysmes::VeMessageTableEntry e);
+		void closeEngine(VeHandle h);
 		VeHandle g_closeHandle;
 
 		void init() {
@@ -146,18 +146,17 @@ namespace vve {
 			syssce::init();
 			sysphy::init();
 
-			g_closeHandle = sysmes::addHandler( std::bind(closeEngine, std::placeholders::_1));
-			sysmes::subscribeMessage(	syswin::VE_SYSTEM_HANDLE, VE_NULL_HANDLE, g_closeHandle,
-										sysmes::VeMessageType::VE_MESSAGE_TYPE_CLOSE);
+			g_closeHandle = sysmes::addHandler(std::bind(closeEngine, std::placeholders::_1));
+			sysmes::subscribeMessage(syswin::VE_SYSTEM_HANDLE, VE_NULL_HANDLE, g_closeHandle, sysmes::VeMessageType::VE_MESSAGE_TYPE_CLOSE);
 
 			uint32_t threadCount = 1;
 
 #ifdef VE_ENABLE_MULTITHREADING
 			VeIndex i = 0;
-			for (auto table : g_main_table.getData()) {
+			for (auto table : g_main_table.data()) {
 				table.m_table_pointer->setName(table.m_name);
 				if (!table.m_table_pointer->getReadOnly()) {
-					table.m_table_pointer->setThreadId(i);
+					table.m_table_pointer->setThreadIdx(i);
 					++i;
 				}
 			}
@@ -173,7 +172,7 @@ namespace vve {
 		VeClock cleanClock(  "Clean Clock ", 100);
 
 		void swapTables() {
-			for (auto table : g_main_table.getData()) {	//swap tables
+			for (auto table : g_main_table.data()) {	//swap tables
 				//std::cout << "swap table " << table.m_name << " " << std::endl;
 				if (table.m_table_pointer->getCompanionTable() != nullptr) {
 					JADD(table.m_table_pointer->swapTables());	//might clear() some tables here
@@ -185,7 +184,7 @@ namespace vve {
 			current_update_time = next_update_time;		//move one epoch further
 			next_update_time = current_update_time + time_delta;
 
-			sysmes::addMessage({ sysmes::VeMessageType::VE_MESSAGE_TYPE_UPDATE, VE_SYSTEM_HANDLE });
+			sysmes::sendMessage({ sysmes::VeMessageType::VE_MESSAGE_TYPE_UPDATE, VE_SYSTEM_HANDLE });
 		}
 
 		//acts like a co-routine
@@ -266,7 +265,7 @@ namespace vve {
 			}
 		}
 
-		void closeEngine(sysmes::VeMessageTableEntry e) {
+		void closeEngine( VeHandle receiver) {
 			g_goon = false;
 		}
 

@@ -1,0 +1,17 @@
+-r
+D:\Data\Vulkan\ViennaVulkanEngine\Examples\BasicTest\VTune Profiler Results\BasicTest\r002hs
+--itt-config=frame
+--data-limit-mb=1000
+--disk-space-limit=0
+--mrte-type=java,dotnet
+--gpu-profiling-type=none
+--event-config=CPU_CLK_UNHALTED.THREAD,CPU_CLK_UNHALTED.REF_TSC:sample:sa=2800000,INST_RETIRED.ANY:sample:sa=2800000,CPU_CLK_UNHALTED.REF_XCLK,CPU_CLK_UNHALTED.ONE_THREAD_ACTIVE,UOPS_RETIRED.RETIRE_SLOTS:sample:sa=2000003,FP_ARITH_INST_RETIRED.SCALAR_SINGLE,FP_ARITH_INST_RETIRED.128B_PACKED_SINGLE,FP_ARITH_INST_RETIRED.256B_PACKED_SINGLE,FP_ARITH_INST_RETIRED.SCALAR_DOUBLE,FP_ARITH_INST_RETIRED.128B_PACKED_DOUBLE,FP_ARITH_INST_RETIRED.256B_PACKED_DOUBLE,UOPS_EXECUTED.X87,UOPS_RETIRED.RETIRE_SLOTS,UOPS_EXECUTED.THREAD
+--platform-type=117
+--event-based-counts
+--event-mux-trigger=CPU_CLK_UNHALTED.REF_TSC
+--uncore-sampling-interval=10
+--mrte-mode=auto
+--itt-config=task,event,counter
+--etw-config=clr,js
+--
+D:\Data\Vulkan\ViennaVulkanEngine\bin\x64\Release\BasicTest.exe

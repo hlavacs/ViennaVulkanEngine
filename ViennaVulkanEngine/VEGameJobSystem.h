@@ -38,6 +38,8 @@
 	* @{
 	*/
 	
+	#define JIDX vgjs::JobSystem::getInstance()->getThreadIndex()
+
 	/**
 	* \brief Add a function as a job to the jobsystem.
 	*
@@ -113,6 +115,7 @@
 	* \defgroup VGJS_Macros
 	* @{
 	*/
+	#define JIDX 0
 	#define JADD( f ) {f;}
 	#define JDEP( f ) {f;}
 	#define JADDT( f, t ) {f;}
@@ -515,8 +518,6 @@ namespace vgjs {
 			while(threadIndexCounter.load() < m_threadCount )	//Continuous only if all threads are running
 				std::this_thread::sleep_for(std::chrono::nanoseconds(10));
 
-			//uint32_t counter = 1;
-
 			while (!m_terminate) {			//Run until the job system is terminated
 				m_numLoops[threadIndex]++;	//Count up the number of loops run
 
@@ -571,7 +572,7 @@ namespace vgjs {
 					m_numMisses[threadIndex]++;	//Increase miss counter, possibly sleep or wait for a signal
 					if (m_thread_index > 0) {	//Thread 0 has higher privileges (might run the GUI)
 						std::this_thread::sleep_for(std::chrono::nanoseconds(100));
-						std::this_thread::yield();
+						//std::this_thread::yield();
 					}
 				};
 			}

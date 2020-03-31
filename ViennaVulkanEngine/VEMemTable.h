@@ -133,7 +133,7 @@ namespace vve {
 	class VeTable {
 	protected:
 		VeHeapMemory	m_heap;
-		VeIndex			m_thread_id = 0;			///id of thread that accesses to this table are scheduled to
+		VeIndex			m_thread_idx = 0;			///id of thread that accesses to this table are scheduled to
 		bool			m_read_only = false;
 		VeTable	*		m_companion_table = nullptr;
 		bool			m_clear_on_swap = false;
@@ -152,7 +152,7 @@ namespace vve {
 		VeTable(std::string name, bool clear_on_swap = false) : 
 			m_name(name), m_heap(), m_clear_on_swap(clear_on_swap), m_clock("table clock", 100) {};
 
-		VeTable(VeTable& table) : m_heap(), m_thread_id(table.m_thread_id), 
+		VeTable(VeTable& table) : m_heap(), m_thread_idx(table.m_thread_idx), 
 			m_read_only(!table.m_read_only), m_companion_table(&table), 
 			m_clear_on_swap(table.m_clear_on_swap), 
 			m_name(table.m_name), m_clock(table.m_clock) {
@@ -166,16 +166,16 @@ namespace vve {
 		virtual VeMap* getMap(VeIndex num_map) { assert(false);  return nullptr; };
 		virtual VeDirectory* getDirectory() { assert(false);  return nullptr; };
 
-		void setThreadId(VeIndex id) {
-			if (m_thread_id == id)
+		void setThreadIdx(VeIndex id) {
+			if (m_thread_idx == id)
 				return;
 
-			m_thread_id = id;
+			m_thread_idx = id;
 			VeTable* companion_table = getCompanionTable();
 			if (companion_table != nullptr)
-				companion_table->setThreadId(id);
+				companion_table->setThreadIdx(id);
 		};
-		VeIndex	getThreadId() { return m_thread_id; };
+		VeIndex	getThreadIdx() { return m_thread_idx; };
 
 		void setName( std::string name, bool set_companion = true ) {
 			m_name = name;
@@ -277,22 +277,23 @@ namespace vve {
 	public:
 
 		VeFixedSizeTable(std::string name, bool memcopy = false, bool clear_on_swap = false, VeIndex align = 16, VeIndex capacity = 16) :
-			VeTable(name, clear_on_swap), m_data(memcopy, align, capacity) {};
+			VeTable(name, clear_on_swap), m_data(memcopy, align, capacity) {
+		};
 
-		VeFixedSizeTable(std::string name, std::vector<VeMap*> &maps, bool memcopy = false, bool clear_on_swap = false, VeIndex align = 16, VeIndex capacity = 16) :
+		VeFixedSizeTable(std::string name, std::vector<VeMap*>& maps, bool memcopy = false, bool clear_on_swap = false, VeIndex align = 16, VeIndex capacity = 16) :
 			VeTable(name, clear_on_swap), m_maps(maps), m_data(memcopy, align, capacity) {
 		};
 
-		VeFixedSizeTable(VeFixedSizeTable<T>& table) : 
+		VeFixedSizeTable(VeFixedSizeTable<T>& table) :
 			VeTable(table), m_data(table.m_data), m_directory(table.m_directory), m_tbl2dir(table.m_tbl2dir) {
 			for (auto map : table.m_maps) {
 				m_maps.emplace_back(map->clone());
 			}
 		};
 
-		virtual ~VeFixedSizeTable() { 
-			for (uint32_t i = 0; i < m_maps.size(); ++i ) 
-				delete m_maps[i]; 
+		virtual ~VeFixedSizeTable() {
+			for (uint32_t i = 0; i < m_maps.size(); ++i)
+				delete m_maps[i];
 		};
 
 		//neutral operations
@@ -303,15 +304,16 @@ namespace vve {
 		virtual void operator=(VeTable& table);
 		void		swap(VeHandle h1, VeHandle h2);
 		virtual void clear();
-		void		sort( VeIndex num_map );
-		VeHandle	insert(T entry, VeHandle *pHandle = nullptr );
+		void		sort(VeIndex num_map);
+		VeHandle	insert(T entry, std::promise<VeHandle>* pPromise);
+		VeHandle	insert(T entry) { return insert(entry, nullptr); };
 		bool		update(VeHandle key, T entry);
 		bool		erase(VeHandle key);
 
 		// read operations
 		bool		isValid(VeHandle handle);
-		const VECTOR& getData() { return m_data; };
-		VeMap*		getMap(VeIndex num_map) override { return m_maps[num_map]; };
+		const VECTOR& data() { return m_data; };
+		VeMap* getMap(VeIndex num_map) override { return m_maps[num_map]; };
 		VeDirectory* getDirectory() override { return &m_directory; };
 		std::vector<VeIndex>& getTable2dir() { return m_tbl2dir; };
 		VeCount		size() { return (VeIndex)m_data.size(); };
@@ -321,18 +323,13 @@ namespace vve {
 		uint32_t	getAllHandles(std::vector<VeHandle, custom_alloc<VeHandle>>& result);
 		uint32_t	getAllHandlesFromMap(VeIndex num_map, std::vector<VeHandle, custom_alloc<VeHandle>>& result);	//makes sense for map/multimap
 
-		template <typename K> VeHandle find(K key, VeIndex num_map );	//use this in map
-		template <typename K> VeCount getHandlesEqual(VeIndex num_map, K key, std::vector<VeHandle, custom_alloc<VeHandle>>& result);	//use this in multimap
-		template <typename K> VeCount getHandlesRange(VeIndex num_map, K lower, K upper, std::vector<VeHandle, custom_alloc<VeHandle>>& result); //do not use in unordered map/multimap
+		template <typename K> VeHandle find(K key, VeIndex num_map);	//use this in map
+		template <typename K> VeCount getHandlesEqual(K key, VeIndex num_map, std::vector<VeHandle, custom_alloc<VeHandle>>& result);	//use this in multimap
+		template <typename K> VeCount getHandlesRange(K lower, K upper, VeIndex num_map, std::vector<VeHandle, custom_alloc<VeHandle>>& result); //do not use in unordered map/multimap
 
 		VeCount leftJoin(VeIndex own_map, VeTable* other, VeIndex other_map, std::vector<VeHandlePair, custom_alloc<VeHandlePair>>& result);
-		template <typename K> 
+		template <typename K>
 		VeCount leftJoin(VeIndex own_map, K key, VeTable* other, VeIndex other_map, std::vector<VeHandlePair, custom_alloc<VeHandlePair>>& result);
-
-		void	forAllEntries(VeIndex num_map, std::function<void(VeHandle)>& func);
-		void	forAllEntries(VeIndex num_map, std::function<void(VeHandle)>&& func) { forAllEntries(num_map, func); };
-		void	forAllEntries(std::function<void(VeHandle)>& func) { forAllEntries(VE_NULL_INDEX, func); };
-		void	forAllEntries(std::function<void(VeHandle)>&& func) { forAllEntries(VE_NULL_INDEX, func); };
 	};
 
 	//--------------------------------------------------------------------------------------------------------------------------
@@ -373,7 +370,7 @@ namespace vve {
 		out();
 	}
 
-	template<typename T> inline VeHandle VeFixedSizeTable<T>::insert(T entry, VeHandle* pHandle) {
+	template<typename T> inline VeHandle VeFixedSizeTable<T>::insert(T entry, std::promise<VeHandle>* pPromise) {
 		in();
 		assert(!m_read_only);
 		m_dirty = true;
@@ -394,7 +391,8 @@ namespace vve {
 		}
 
 		out();
-		if (pHandle != nullptr) *pHandle = handle;
+		if (pPromise != nullptr) 
+			pPromise->set_value(handle);
 		return handle;
 	};
 
@@ -592,7 +590,7 @@ namespace vve {
 
 	template<typename T>
 	template<typename K>
-	inline VeCount VeFixedSizeTable<T>::getHandlesEqual(VeIndex num_map, K key, std::vector<VeHandle, custom_alloc<VeHandle>>& result) {
+	inline VeCount VeFixedSizeTable<T>::getHandlesEqual(K key, VeIndex num_map, std::vector<VeHandle, custom_alloc<VeHandle>>& result) {
 		in();
 		assert(num_map < m_maps.size());
 		if (m_data.empty()) {
@@ -611,7 +609,7 @@ namespace vve {
 
 	template <typename T>
 	template <typename K> 
-	inline VeCount VeFixedSizeTable<T>::getHandlesRange(VeIndex num_map, K lower, K upper, std::vector<VeHandle, custom_alloc<VeHandle>>& result) {
+	inline VeCount VeFixedSizeTable<T>::getHandlesRange(K lower, K upper, VeIndex num_map, std::vector<VeHandle, custom_alloc<VeHandle>>& result) {
 		in();
 		assert(num_map < m_maps.size());
 		if (m_data.empty()) {
@@ -654,21 +652,6 @@ namespace vve {
 	};
 
 
-	template<typename T> inline void VeFixedSizeTable<T>::forAllEntries(VeIndex num_map, std::function<void(VeHandle)>& func) {
-		in();
-		assert(num_map == VE_NULL_INDEX || num_map < m_maps.size());
-		if (m_data.empty()) {
-			out();
-			return;
-		}
-
-		std::vector<VeHandle, custom_alloc<VeHandle>> handles(&m_heap);
-		getAllHandlesFromMap(num_map, handles);
-		for (auto handle : handles)
-			func(handle);
-		out();
-	}
-
 
 	//------------------------------------------------------------------------------------------------------
 
@@ -702,16 +685,16 @@ namespace vve {
 				me->VeFixedSizeTable<T>::operator=(*other);
 				return;
 			}
-			if( vgjs::JobSystem::isInstanceCreated())
-				JADDT( me->VeFixedSizeTable<T>::operator=(*other), this->m_thread_id);
+			if( vgjs::JobSystem::isInstanceCreated() && this->m_thread_idx != JIDX)
+				JADDT( me->VeFixedSizeTable<T>::operator=(*other), this->m_thread_idx);
 			else 
 				me->VeFixedSizeTable<T>::operator=(*other);
 		};
 
 		virtual void swap(VeHandle h1, VeHandle h2) {
 			VeFixedSizeTable<T>* me = (VeFixedSizeTable<T>*)this->getWriteTablePtr();
-			if (vgjs::JobSystem::isInstanceCreated())
-				JADDT(me->VeFixedSizeTable<T>::swap(h1, h2), this->m_thread_id);
+			if (vgjs::JobSystem::isInstanceCreated() && this->m_thread_idx != JIDX)
+				JADDT(me->VeFixedSizeTable<T>::swap(h1, h2), this->m_thread_idx);
 			else
 				me->VeFixedSizeTable<T>::swap(h1, h2);
 		};
@@ -728,33 +711,37 @@ namespace vve {
 				me->VeFixedSizeTable<T>::clear();
 				return;
 			}
-			if (vgjs::JobSystem::isInstanceCreated())
-				JADDT(me->VeFixedSizeTable<T>::clear(), this->m_thread_id);
+			if (!this->m_swapping && vgjs::JobSystem::isInstanceCreated() && this->m_thread_idx != JIDX)
+				JADDT(me->VeFixedSizeTable<T>::clear(), this->m_thread_idx);
 			else
 				me->VeFixedSizeTable<T>::clear();
 		};
 
 		virtual void sort(VeIndex num_map) {
 			VeFixedSizeTable<T>* me = (VeFixedSizeTable<T>*)this->getWriteTablePtr();
-			if (vgjs::JobSystem::isInstanceCreated())
-				JADDT(me->VeFixedSizeTable<T>::sort(num_map), this->m_thread_id);
+			if (vgjs::JobSystem::isInstanceCreated() && this->m_thread_idx != JIDX)
+				JADDT(me->VeFixedSizeTable<T>::sort(num_map), this->m_thread_idx);
 			else
 				me->VeFixedSizeTable<T>::sort(num_map);
 		};
 
-		virtual VeHandle insert(T entry, VeHandle* pHandle = nullptr) {
+		virtual VeHandle insert(T entry, std::promise<VeHandle>* pPromise) {
 			VeFixedSizeTable<T>* me = (VeFixedSizeTable<T>*)this->getWriteTablePtr();
-			if (vgjs::JobSystem::isInstanceCreated()) {
-				JADDT(me->VeFixedSizeTable<T>::insert(entry, pHandle), this->m_thread_id);
+			if (vgjs::JobSystem::isInstanceCreated() && this->m_thread_idx != JIDX ) {
+				JADDT(me->VeFixedSizeTable<T>::insert(entry, pPromise), this->m_thread_idx);
 				return VE_NULL_HANDLE;
 			}
-			return me->VeFixedSizeTable<T>::insert(entry, pHandle);
+			return me->VeFixedSizeTable<T>::insert(entry, pPromise);
+		};
+
+		virtual VeHandle insert(T entry) {
+			return insert(entry, nullptr);
 		};
 
 		virtual bool update(VeHandle key, T entry) {
 			VeFixedSizeTable<T>* me = (VeFixedSizeTable<T>*)this->getWriteTablePtr();
-			if (vgjs::JobSystem::isInstanceCreated()) {
-				JADDT(me->VeFixedSizeTable<T>::update(key, entry), this->m_thread_id);
+			if (vgjs::JobSystem::isInstanceCreated() && this->m_thread_idx != JIDX) {
+				JADDT(me->VeFixedSizeTable<T>::update(key, entry), this->m_thread_idx);
 				return true;
 			}
 			return me->VeFixedSizeTable<T>::update(key, entry);
@@ -762,8 +749,8 @@ namespace vve {
 
 		virtual bool erase(VeHandle key) {
 			VeFixedSizeTable<T>* me = (VeFixedSizeTable<T>*)this->getWriteTablePtr();
-			if (vgjs::JobSystem::isInstanceCreated()) {
-				JADDT(me->VeFixedSizeTable<T>::erase(key), this->m_thread_id);
+			if (vgjs::JobSystem::isInstanceCreated() && this->m_thread_idx != JIDX) {
+				JADDT(me->VeFixedSizeTable<T>::erase(key), this->m_thread_idx);
 				return true;
 			}
 			return me->VeFixedSizeTable<T>::erase(key);
@@ -778,9 +765,9 @@ namespace vve {
 			return me->VeFixedSizeTable<T>::isValid(handle);
 		};
 
-		const VeVector<T>& getData() { 
+		const VECTOR& data() { 
 			VeFixedSizeTable<T>* me = (VeFixedSizeTable<T>*)this->getReadTablePtr();
-			return me->VeFixedSizeTable<T>::getData();
+			return me->VeFixedSizeTable<T>::data();
 		};
 
 		VeMap* getMap(VeIndex num_map) { 
@@ -849,32 +836,15 @@ namespace vve {
 		};
 
 		template <typename K>
-		VeCount getHandlesEqual(VeIndex num_map, K key, std::vector<VeHandle, custom_alloc<VeHandle>>& result) {
+		VeCount getHandlesEqual(K key, VeIndex num_map, std::vector<VeHandle, custom_alloc<VeHandle>>& result) {
 			VeFixedSizeTable<T>* me = (VeFixedSizeTable<T>*)this->getReadTablePtr();
-			return me->VeFixedSizeTable<T>::getHandlesEqual(num_map, key, result);
+			return me->VeFixedSizeTable<T>::getHandlesEqual(key, num_map, result);
 		};
 
 		template <typename K>
-		VeCount getHandlesRange(VeIndex num_map, K lower, K upper, std::vector<VeHandle, custom_alloc<VeHandle>>& result) {
+		VeCount getHandlesRange(K lower, K upper, VeIndex num_map, std::vector<VeHandle, custom_alloc<VeHandle>>& result) {
 			VeFixedSizeTable<T>* me = (VeFixedSizeTable<T>*)this->getReadTablePtr();
-			return me->VeFixedSizeTable<T>::getHandlesRange(num_map, lower, upper, result);
-		};
-
-		void forAllEntries(VeIndex num_map, std::function<void(VeHandle)>& func) {
-			VeFixedSizeTable<T>* me = (VeFixedSizeTable<T>*)this->getReadTablePtr();
-			me->VeFixedSizeTable<T>::forAllEntries(num_map, func);
-		};
-
-		void forAllEntries(VeIndex num_map, std::function<void(VeHandle)>&& func) { 
-			forAllEntries(num_map, func); 
-		};
-
-		void forAllEntries(std::function<void(VeHandle)>& func) { 
-			forAllEntries(VE_NULL_INDEX, func); 
-		};
-
-		void forAllEntries(std::function<void(VeHandle)>&& func) { 
-			forAllEntries(VE_NULL_INDEX, func); 
+			return me->VeFixedSizeTable<T>::getHandlesRange(lower, upper, num_map, result);
 		};
 
 	};
@@ -945,7 +915,7 @@ namespace vve {
 			m_data.resize((VeIndex)size + (VeIndex)m_align);
 			uint64_t start = (VeIndex) ( alignBoundary((uint64_t)m_data.data(), m_align) - (uint64_t)m_data.data() );
 			VeDirectoryEntry entry{ (VeIndex)start, size, 0 };
-			m_directory.insert(entry);
+			m_directory.insert(entry, nullptr);
 		}
 
 		VeVariableSizeTable( VeVariableSizeTable& table) :
@@ -1002,7 +972,7 @@ namespace vve {
 			m_directory.clear();
 			uint64_t start = (VeIndex)(alignBoundary((uint64_t)m_data.data(), m_align) - (uint64_t)m_data.data());
 			VeDirectoryEntry entry{ (VeIndex)start, (VeIndex)(m_data.size() - m_align), 0 };
-			m_directory.insert(entry);
+			m_directory.insert(entry, nullptr);
 			out();
 		}
 
@@ -1034,7 +1004,7 @@ namespace vve {
 			m_dirty = true;
 			if (entry.m_size > size) { 
 				VeDirectoryEntry newentry{ entry.m_start + size, entry.m_size - size, 0 };
-				m_directory.insert(newentry);
+				m_directory.insert(newentry, nullptr);
 			}
 			entry.m_size = size;
 			entry.m_occupied = 1;
@@ -1102,19 +1072,19 @@ namespace vve {
 			VeVariableSizeTable* me = (VeVariableSizeTable*)this->getWriteTablePtr();
 			VeVariableSizeTable* other = (VeVariableSizeTable*)other_tab->getReadTablePtr();
 
-			JADDT(me->VeVariableSizeTable::operator=(*other), this->m_thread_id);
+			JADDT(me->VeVariableSizeTable::operator=(*other), this->m_thread_idx);
 		}
 
 		void operator=(VeVariableSizeTableMT& table) {
 			VeVariableSizeTable* me = (VeVariableSizeTable*)this->getWriteTablePtr();
 			VeVariableSizeTable* other = (VeVariableSizeTable*)table.getReadTablePtr();
 
-			JADDT( me->VeVariableSizeTable::operator=(*other), this->m_thread_id );
+			JADDT( me->VeVariableSizeTable::operator=(*other), this->m_thread_idx );
 		}
 
 		virtual void setReadOnly(bool ro) {
 			VeVariableSizeTable* me = (VeVariableSizeTable*)this;
-			JADDT(me->VeVariableSizeTable::setReadOnly(ro), this->m_thread_id);
+			JADDT(me->VeVariableSizeTable::setReadOnly(ro), this->m_thread_idx);
 		};
 
 		//do not need this since swapping is done in cleanup
@@ -1125,17 +1095,17 @@ namespace vve {
 
 		virtual void clear() {
 			VeVariableSizeTable* me = (VeVariableSizeTable*)this->getWriteTablePtr();
-			JADDT(me->VeVariableSizeTable::clear(), this->m_thread_id);
+			JADDT(me->VeVariableSizeTable::clear(), this->m_thread_idx);
 		}
 
 		VeHandle insertBlob(uint8_t* ptr, VeIndex size, VeHandle* pHandle = nullptr, bool defrag = true) {
 			VeVariableSizeTable* me = (VeVariableSizeTable*)this->getWriteTablePtr();
-			JADDT(me->VeVariableSizeTable::insertBlob(ptr, size, pHandle, defrag), this->m_thread_id);
+			JADDT(me->VeVariableSizeTable::insertBlob(ptr, size, pHandle, defrag), this->m_thread_idx);
 		}
 
 		bool deleteBlob(VeHandle handle) {
 			VeVariableSizeTable* me = (VeVariableSizeTable*)this->getWriteTablePtr();
-			JADDT(me->VeVariableSizeTable::deleteBlob(handle), this->m_thread_id);
+			JADDT(me->VeVariableSizeTable::deleteBlob(handle), this->m_thread_idx);
 		}
 
 		//---------------------------------------------------------------------------------
@@ -1150,9 +1120,9 @@ namespace vve {
 
 	namespace tab {
 		void testTables();
-	}
+	};
 
 
-}
+};
 
 

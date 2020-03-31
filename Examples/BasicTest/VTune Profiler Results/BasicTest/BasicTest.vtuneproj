@@ -417,7 +417,7 @@
    </workloads>
   </target_settings>
   <analysis_type_settings>
-   <selected_analysis_type_path>C:\Program Files (x86)\IntelSWTools\VTune Profiler 2020\config\analysis_type\memory_access.cfg</selected_analysis_type_path>
+   <selected_analysis_type_path>C:\Program Files (x86)\IntelSWTools\VTune Profiler 2020\config\analysis_type\hotspots.cfg</selected_analysis_type_path>
    <localhost>
     <launch>
      <at_start_point>
@@ -449,7 +449,7 @@
        </contextValue>
        <contextValue>
         <id>samplingMode</id>
-        <value>sw</value>
+        <value>hw</value>
        </contextValue>
        <contextValue>
         <id>slowGoodFrameThreshold</id>

@@ -168,7 +168,8 @@ namespace vve {
 			return seed;
 		}
 	};
-}
+};
+
 
 
 #include "VEDoxygen.h"
