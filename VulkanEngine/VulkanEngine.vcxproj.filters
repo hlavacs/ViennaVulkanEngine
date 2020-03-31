@@ -228,5 +228,6 @@
     <None Include="VHFunctions.inl">
       <Filter>Header Files\VHelper</Filter>
     </None>
+    <None Include="cpp.hint" />
   </ItemGroup>
 </Project>
