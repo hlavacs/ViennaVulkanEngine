@@ -60,11 +60,13 @@ namespace vve::sysmes {
 		VeIndex			m_thread_idx;	//run handler function in this thread or NULL
 	};
 	std::vector<VeMap*> maps4 = {
-		new VeHashedMultimap< VeHandle, VeIndex >((VeIndex)offsetof(VeMessageSubscribeTableEntry, m_senderID), (VeIndex)sizeof(VeMessageSubscribeTableEntry::m_senderID)),
-		new VeHashedMultimap< VeHandle, VeIndex >((VeIndex)offsetof(VeMessageSubscribeTableEntry, m_receiverID), (VeIndex)sizeof(VeMessageSubscribeTableEntry::m_receiverID)),
-		new VeHashedMultimap< VeHandleTriple, VeIndexTriple >
-			(VeIndexTriple{(VeIndex)offsetof(VeMessageSubscribeTableEntry, m_senderID), (VeIndex)offsetof(VeMessageSubscribeTableEntry, m_receiverID), (VeIndex)offsetof(VeMessageSubscribeTableEntry, m_type)},
-			 VeIndexTriple{(VeIndex)sizeof(VeMessageSubscribeTableEntry::m_senderID),   (VeIndex)sizeof(VeMessageSubscribeTableEntry::m_receiverID),   (VeIndex)sizeof(VeMessageSubscribeTableEntry::m_type)})
+		new VeHashedMultimap< VeHandlePair, VeIndexPair >(
+			VeIndexPair((VeIndex)offsetof(VeMessageSubscribeTableEntry, m_receiverID),	(VeIndex)offsetof(VeMessageSubscribeTableEntry, m_type)),
+			VeIndexPair((VeIndex)sizeof(VeMessageSubscribeTableEntry::m_receiverID),	(VeIndex)sizeof(VeMessageSubscribeTableEntry::m_type))),
+		new VeHashedMultimap< VeHandle, VeIndex >((VeIndex)offsetof(VeMessageSubscribeTableEntry, m_handlerID), (VeIndex)sizeof(VeMessageSubscribeTableEntry::m_handlerID)),
+		new VeHashedMultimap< VeHandlePair, VeIndexPair >(
+			VeIndexPair((VeIndex)offsetof(VeMessageSubscribeTableEntry, m_senderID),	(VeIndex)offsetof(VeMessageSubscribeTableEntry, m_type)),
+			VeIndexPair((VeIndex)sizeof(VeMessageSubscribeTableEntry::m_senderID),		(VeIndex)sizeof(VeMessageSubscribeTableEntry::m_type))),
 	};
 	VeFixedSizeTableMT<VeMessageSubscribeTableEntry> g_subscribe_table("Message Subscribe Table", maps4, true, false, 0, 0);
 	VeFixedSizeTableMT<VeMessageSubscribeTableEntry> g_subscribe_table2(g_subscribe_table);
@@ -125,8 +127,8 @@ namespace vve::sysmes {
 
 	void update() {
 		callAllMessages2();
-		//for (auto message : g_continuous_messages_table.data())
-		//	sendMessage(message);
+		for (auto message : g_continuous_messages_table.data())
+			sendMessage(message);
 	}
 
 	void close() {
@@ -134,7 +136,6 @@ namespace vve::sysmes {
 
 
 	VeHandle sendMessage( VeMessageTableEntry message ) {
-
 		if (JIDX != g_messages_table.getThreadIdx()) {
 			JADDT( sendMessage(message), g_messages_table.getThreadIdx());
 			return VE_NULL_HANDLE;
@@ -148,16 +149,17 @@ namespace vve::sysmes {
 		//find all subscriptions fitting to this message
 		std::vector<VeHandle, custom_alloc<VeHandle>> result(getHeap());
 		if (message.m_receiverID == VE_NULL_HANDLE) {
-			g_subscribe_table.getHandlesEqual(VeHandleTriple{ message.m_senderID, VE_NULL_HANDLE, (VeHandle)message.m_type }, 2, result);
+			g_subscribe_table.getHandlesEqual(VeHandlePair{ message.m_senderID,   (VeHandle)message.m_type }, 2, result);
 		} else {
-			g_subscribe_table.getHandlesEqual(VeHandleTriple{ message.m_senderID, message.m_receiverID, (VeHandle)message.m_type }, 2, result);
+			g_subscribe_table.getHandlesEqual(VeHandlePair{ message.m_receiverID, (VeHandle)VeMessageType::VE_MESSAGE_TYPE_NULL }, 0, result);
+			g_subscribe_table.getHandlesEqual(VeHandlePair{ message.m_receiverID, (VeHandle)message.m_type }, 0, result);
 		}
 
 		for (VeHandle& handle : result) {
 			VeMessageSubscribeTableEntry subscribeData;
 			g_subscribe_table.getEntry(handle, subscribeData);
 			g_receive_table.insert({ messageID, subscribeData.m_receiverID }); //accumulate messages for each receiver
-			g_calls_table.insert({ message.m_receiverID, subscribeData.m_handlerID }); //will be added only once due to map
+			g_calls_table.insert({ subscribeData.m_receiverID, subscribeData.m_handlerID }); //will be added only once due to map
 		}
 
 		return messageID;

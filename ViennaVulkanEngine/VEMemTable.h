@@ -265,6 +265,7 @@ namespace vve {
 	*/
 
 	#define VECTOR VeVector<T>
+	#define VECTORPAR memcopy,align,capacity
 
 	template <typename T>
 	class VeFixedSizeTable : public VeTable {
@@ -277,11 +278,11 @@ namespace vve {
 	public:
 
 		VeFixedSizeTable(std::string name, bool memcopy = false, bool clear_on_swap = false, VeIndex align = 16, VeIndex capacity = 16) :
-			VeTable(name, clear_on_swap), m_data(memcopy, align, capacity) {
+			VeTable(name, clear_on_swap), m_data(VECTORPAR) {
 		};
 
 		VeFixedSizeTable(std::string name, std::vector<VeMap*>& maps, bool memcopy = false, bool clear_on_swap = false, VeIndex align = 16, VeIndex capacity = 16) :
-			VeTable(name, clear_on_swap), m_maps(maps), m_data(memcopy, align, capacity) {
+			VeTable(name, clear_on_swap), m_maps(maps), m_data(VECTORPAR) {
 		};
 
 		VeFixedSizeTable(VeFixedSizeTable<T>& table) :

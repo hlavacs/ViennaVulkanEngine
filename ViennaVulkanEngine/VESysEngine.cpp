@@ -147,7 +147,7 @@ namespace vve {
 			sysphy::init();
 
 			g_closeHandle = sysmes::addHandler(std::bind(closeEngine, std::placeholders::_1));
-			sysmes::subscribeMessage(syswin::VE_SYSTEM_HANDLE, VE_NULL_HANDLE, g_closeHandle, sysmes::VeMessageType::VE_MESSAGE_TYPE_CLOSE);
+			sysmes::subscribeMessage(syswin::VE_SYSTEM_HANDLE, VE_SYSTEM_HANDLE, g_closeHandle, sysmes::VeMessageType::VE_MESSAGE_TYPE_CLOSE);
 
 			uint32_t threadCount = 1;
 
@@ -215,7 +215,7 @@ namespace vve {
 
 		step3:
 			//tickClock.start();
-			JADD( sysmes::update() );
+			sysmes::update();
 			JDEP( computeOneFrame2(4));		//wait for finishing, then do step4
 			return;
 
