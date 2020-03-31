@@ -133,3 +133,29 @@
 [0331/160144.827:ERROR:ssl_client_socket_impl.cc(962)] handshake failed; returned -1, SSL error code 1, net_error -202
 [0331/160144.863:ERROR:ssl_client_socket_impl.cc(962)] handshake failed; returned -1, SSL error code 1, net_error -202
 [0331/160144.945:ERROR:ssl_client_socket_impl.cc(962)] handshake failed; returned -1, SSL error code 1, net_error -202
+[0331/222918.737:ERROR:ssl_client_socket_impl.cc(962)] handshake failed; returned -1, SSL error code 1, net_error -202
+[0331/222918.877:ERROR:ssl_client_socket_impl.cc(962)] handshake failed; returned -1, SSL error code 1, net_error -202
+[0331/222918.881:ERROR:ssl_client_socket_impl.cc(962)] handshake failed; returned -1, SSL error code 1, net_error -202
+[0331/222918.905:ERROR:ssl_client_socket_impl.cc(962)] handshake failed; returned -1, SSL error code 1, net_error -202
+[0331/222918.917:ERROR:ssl_client_socket_impl.cc(962)] handshake failed; returned -1, SSL error code 1, net_error -202
+[0331/222918.933:ERROR:ssl_client_socket_impl.cc(962)] handshake failed; returned -1, SSL error code 1, net_error -202
+[0331/222918.949:ERROR:ssl_client_socket_impl.cc(962)] handshake failed; returned -1, SSL error code 1, net_error -202
+[0331/222918.961:ERROR:ssl_client_socket_impl.cc(962)] handshake failed; returned -1, SSL error code 1, net_error -202
+[0331/222918.977:ERROR:ssl_client_socket_impl.cc(962)] handshake failed; returned -1, SSL error code 1, net_error -202
+[0331/222918.997:ERROR:ssl_client_socket_impl.cc(962)] handshake failed; returned -1, SSL error code 1, net_error -202
+[0331/222919.017:ERROR:ssl_client_socket_impl.cc(962)] handshake failed; returned -1, SSL error code 1, net_error -202
+[0331/222919.037:ERROR:ssl_client_socket_impl.cc(962)] handshake failed; returned -1, SSL error code 1, net_error -202
+[0331/222919.057:ERROR:ssl_client_socket_impl.cc(962)] handshake failed; returned -1, SSL error code 1, net_error -202
+[0331/222919.081:ERROR:ssl_client_socket_impl.cc(962)] handshake failed; returned -1, SSL error code 1, net_error -202
+[0331/222919.101:ERROR:ssl_client_socket_impl.cc(962)] handshake failed; returned -1, SSL error code 1, net_error -202
+[0331/222920.169:INFO:CONSOLE(0)] "Uncaught (in promise) #<Object>", source: https://127.0.0.1:57486/login/passphrase?passphrase=cfc4c547-a7ce-41eb-993a-75f7036517eb (0)
+[0331/222920.197:ERROR:ssl_client_socket_impl.cc(962)] handshake failed; returned -1, SSL error code 1, net_error -202
+[0331/222920.257:ERROR:ssl_client_socket_impl.cc(962)] handshake failed; returned -1, SSL error code 1, net_error -202
+[0331/222921.181:INFO:CONSOLE(0)] "Access to XMLHttpRequest at 'https://software.intel.com/sites/products/vtune/news.json?id=1585686560547' from origin 'https://127.0.0.1:57486' has been blocked by CORS policy: Request header field csrf-token is not allowed by Access-Control-Allow-Headers in preflight response.", source: https://127.0.0.1:57486/extension-ui/Session-1-1585686556075?passphrase=cfc4c547-a7ce-41eb-993a-75f7036517eb (0)
+[0331/222925.438:ERROR:ssl_client_socket_impl.cc(962)] handshake failed; returned -1, SSL error code 1, net_error -202
+[0331/222925.438:ERROR:ssl_client_socket_impl.cc(962)] handshake failed; returned -1, SSL error code 1, net_error -202
+[0331/222925.462:ERROR:ssl_client_socket_impl.cc(962)] handshake failed; returned -1, SSL error code 1, net_error -202
+[0331/222925.474:ERROR:ssl_client_socket_impl.cc(962)] handshake failed; returned -1, SSL error code 1, net_error -202
+[0331/222926.122:ERROR:ssl_client_socket_impl.cc(962)] handshake failed; returned -1, SSL error code 1, net_error -202
+[0331/222926.170:ERROR:ssl_client_socket_impl.cc(962)] handshake failed; returned -1, SSL error code 1, net_error -202
+[0331/222926.390:ERROR:ssl_client_socket_impl.cc(962)] handshake failed; returned -1, SSL error code 1, net_error -202

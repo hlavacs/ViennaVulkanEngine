@@ -151,7 +151,6 @@ namespace vve::sysmes {
 		if (message.m_receiverID == VE_NULL_HANDLE) {
 			g_subscribe_table.getHandlesEqual(VeHandlePair{ message.m_senderID,   (VeHandle)message.m_type }, 2, result);
 		} else {
-			g_subscribe_table.getHandlesEqual(VeHandlePair{ message.m_receiverID, (VeHandle)VeMessageType::VE_MESSAGE_TYPE_NULL }, 0, result);
 			g_subscribe_table.getHandlesEqual(VeHandlePair{ message.m_receiverID, (VeHandle)message.m_type }, 0, result);
 		}
 
@@ -183,8 +182,7 @@ namespace vve::sysmes {
 	void removeContinuousMessage(VeMessageTableEntry message) {
 		//std::cout << "remove cont message type " << message.m_type << " action " << message.m_action << " key/button " << message.m_key_button << std::endl;
 
-		VeHandle messageID = g_continuous_messages_table.find(VeHandlePair{  }, 1);
-
+		VeHandle messageID = g_continuous_messages_table.find(VeHandlePair{message.m_senderID, message.m_receiverID }, 0);
 		assert(messageID != VE_NULL_HANDLE);
 		g_continuous_messages_table.erase(messageID);
 	}
@@ -207,8 +205,8 @@ namespace vve::sysmes {
 	}
 
 	void unsubscribeMessage(VeHandle senderID, VeHandle receiverID, VeMessageType type) {
-		VeHandle subH = g_subscribe_table.find(VeHandleTriple{ senderID, receiverID, (VeHandle)type }, 2);
-		g_subscribe_table.erase(subH);
+		VeHandle subID = g_subscribe_table.find(VeHandleTriple{ senderID, receiverID, (VeHandle)type }, 2);
+		g_subscribe_table.erase(subID);
 	}
 
 }
