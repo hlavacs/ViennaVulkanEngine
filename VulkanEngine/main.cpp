@@ -221,7 +221,7 @@ namespace ve {
 
 			VESceneNode* e1, * eParent;
 			eParent = getSceneManagerPointer()->createSceneNode("Character Parent", pScene, glm::mat4(1.0));
-			VECHECKPOINTER(e1 = getSceneManagerPointer()->loadModel("Character", "media/models/free/", "al.obj"));
+			VECHECKPOINTER(e1 = getSceneManagerPointer()->loadModel("Character", "media/models/free/", "al.obj", aiProcess_FlipWindingOrder));
 			eParent->multiplyTransform(glm::scale(glm::mat4(1.0f), glm::vec3(0.5f,0.5f,0.5f)));
 			eParent->multiplyTransform(glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 2.2f, 0.0f)));
 			glm::vec4 rot4Character = glm::vec4(0.0f, 1.0f, 0.0f, 1.0f);
@@ -242,7 +242,7 @@ namespace ve {
 
 			VESceneNode* goalParent, * goalObj;
 			goalParent = getSceneManagerPointer()->createSceneNode("Goal Parent", pScene, glm::mat4(1.0));
-			VECHECKPOINTER(goalObj = getSceneManagerPointer()->loadModel("Goal", "media/models/free/", "skyscraper.obj"));
+			VECHECKPOINTER(goalObj = getSceneManagerPointer()->loadModel("Goal", "media/models/free/", "skyscraper.obj", aiProcess_FlipWindingOrder);
 			goalParent->multiplyTransform(glm::scale(glm::mat4(1.0f), glm::vec3(0.1f, 0.1f, 0.1f)));
 			goalParent->multiplyTransform(glm::translate(glm::mat4(1.0f), g_goalPosition));
 			goalParent->setTransform(glm::rotate(goalParent->getTransform(), -0.25f*glm::pi<float>(), glm::vec3(0.0f, 1.0f, 0.0f)));
