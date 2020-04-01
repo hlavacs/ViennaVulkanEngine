@@ -50,6 +50,7 @@ namespace vve {
 				m_num_ticks = 0;
 				print();
 			}
+			m_last = std::chrono::high_resolution_clock::now();
 		};
 
 		void print() {

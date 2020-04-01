@@ -107,6 +107,12 @@
 	* \brief Wait for all threads to have terminated.
 	*/
 	#define JWAITTERM vgjs::JobSystem::getInstance()->waitForTermination()
+
+	/**
+	* \brief A wrapper over return, is empty in singlethreaded use
+	*/
+	#define JRET return;
+
 	///@}
 #endif
 
@@ -125,6 +131,7 @@
 	#define JRESET
 	#define JTERM
 	#define JWAITTERM
+	#define JRET
 	///@}
 #endif
 
@@ -281,23 +288,19 @@ namespace vgjs {
 		friend JobSystem;
 		friend Job;
 
-		const static std::uint32_t	m_listLength = 2048;	///< Default length of a segment
-		using JobList = std::vector<Job>;
+		constexpr static std::uint32_t	m_listLength = 2048;			///< Default length of a segment
+		constexpr static std::uint32_t  m_listmask = m_listLength - 1;
+
+		using JobList = std::unique_ptr<std::vector<Job>>;
 		uint32_t				jobIndex;		///< index of next job to allocate, or number of jobs to playback
-		std::vector<JobList*>	jobLists;		///< list of Job structures
+		std::vector<JobList>	jobLists;		///< list of Job structures
 		vve::VeClock m_clock;					///< A clock for measuring execution times
 
 	public:
 		JobMemory() : m_clock("JobMemory", 200), jobIndex(0), jobLists() {	///<JobMemory class constructor
-			jobLists.reserve(10);
-			jobLists.emplace_back(new JobList(m_listLength));
-
+			jobLists.emplace_back(std::make_unique<std::vector<Job>>(m_listLength));
 		};
-		~JobMemory() {								///<JobMemory class destructor
-			for (uint32_t i = 0; i < jobLists.size(); i++) {
-				delete jobLists[i];
-			}
-		};
+		~JobMemory() {};
 	
 		/**
 		* \brief Get a new empty job from the job memory - if necessary add another job list
@@ -307,10 +310,10 @@ namespace vgjs {
 			jobIndex++;					///< increase counter by 1
 
 			if (index > jobLists.size() * m_listLength - 1) {		///< do we need a new segment?
-				jobLists.emplace_back(new JobList(m_listLength));	///< create a new segment
+				jobLists.emplace_back(std::make_unique<std::vector<Job>>(m_listLength));	///< create a new segment
 			}
 
-			return &(*jobLists[index / m_listLength])[index % m_listLength];	///< get modulus of number of last job list
+			return &(*jobLists[index / m_listLength])[index & m_listmask];	///< get modulus of number of last job list
 		};
 
 		/**
@@ -519,62 +522,50 @@ namespace vgjs {
 				std::this_thread::sleep_for(std::chrono::nanoseconds(10));
 
 			while (!m_terminate) {			//Run until the job system is terminated
-				m_numLoops[threadIndex]++;	//Count up the number of loops run
+				//m_numLoops[threadIndex]++;	//Count up the number of loops run
 
 				if (m_memory_reset_counter > memory_reset_counter) { //Possibly reset your job memory
-					m_job_memory[m_thread_index]->resetPool();
 					memory_reset_counter = m_memory_reset_counter;
+					m_job_memory[m_thread_index]->resetPool();
 				}
 
 				if (m_terminate) break;	//Test for termination
 
 				Job * pJob = m_jobQueuesLocal[threadIndex]->pop();	//Try to get a job from local queue
 
-				if (m_terminate) break;
-
-				if( pJob == nullptr )			//If no job found
-					pJob = m_jobQueuesLocalFIFO[threadIndex]->pop(); //Try to get a job from local FIFO queue
-
-				if (m_terminate) break;
-
 				if (pJob == nullptr)
 					pJob = m_jobQueues[threadIndex]->pop(); //Try to get a job from the general job queue
 
-				if (m_terminate) break;
-
-				//uint32_t tsize = (uint32_t)m_threadCount;	//If non popped 
 				if (pJob == nullptr && m_threadCount > 1) {	//try to steal one from another thread
-					uint32_t idx = m_threadCount / 2;		//std::rand() % tsize;
-					uint32_t max = m_threadCount;			//Max number of tries to steal one
+					uint32_t idx = threadIndex + 1;		//std::rand() % tsize;
+					uint32_t max = m_threadCount - 1;		//Max number of tries to steal one
 
-					while (pJob == nullptr) {				//loop until found or retry own 
-						if (idx != threadIndex)
-							pJob = m_jobQueues[idx]->steal();	//Try to steal one
-						idx = (idx+1) % m_threadCount;
+					while (pJob == nullptr && max > 0) {				//loop until found or retry own 
+						if (idx >= m_threadCount)
+							idx = 0;
+						pJob = m_jobQueues[idx]->steal();	//Try to steal one
+						++idx;
 						max--;
-						if (max == 0) break;
-						if (m_terminate) break;
 					}
 				}
 
-				if (m_terminate) break;
+				if (pJob == nullptr)			//If no job found
+					pJob = m_jobQueuesLocalFIFO[threadIndex]->pop(); //Try to get a job from local FIFO queue
 
 				if (pJob != nullptr) {	//f found a job
 					//std::cout << "start job on thread idx " << threadIndex << " with label " << pJob->m_thread_label << std::endl;
 
 					m_jobPointers[threadIndex] = pJob;						//make pointer to the Job structure accessible!
-					pJob->t1 = std::chrono::high_resolution_clock::now();	//time of execution
+					//pJob->t1 = std::chrono::high_resolution_clock::now();	//time of execution
 					(*pJob)();												//run the job
-					pJob->t2 = std::chrono::high_resolution_clock::now();	//time of finishing
+					//pJob->t2 = std::chrono::high_resolution_clock::now();	//time of finishing
 					pJob->m_exec_thread = threadIndex;						//thread idx this job was executed on
 				}
 				else {
-					m_numMisses[threadIndex]++;	//Increase miss counter, possibly sleep or wait for a signal
-					if (m_thread_index > 0) {	//Thread 0 has higher privileges (might run the GUI)
-						std::this_thread::sleep_for(std::chrono::nanoseconds(100));
-						//std::this_thread::yield();
-					}
-				};
+					//m_numMisses[threadIndex]++;	//Increase miss counter, possibly sleep or wait for a signal
+					//std::this_thread::sleep_for(std::chrono::nanoseconds(1));
+					//std::this_thread::yield();
+				}
 			}
 			m_numJobs = 0;
 			m_mainThreadCondVar.notify_all();		//make sure to wake up a waiting main thread
@@ -775,21 +766,23 @@ namespace vgjs {
 			assert(pJob != nullptr);
 			++m_numJobs;	//keep track of the number of jobs in the system to sync with main thread
 
-			if (pJob->m_thread_idx != VGJS_NULL_THREAD_IDX )  {
-				//uint32_t threadNumber = getThreadIndex();
+			if (pJob->m_thread_idx != VGJS_NULL_THREAD_IDX)  {
+				uint32_t threadNumber = getThreadIndex();
 
 				VgjsThreadIndex thread_idx = pJob->m_thread_idx % m_threadCount;
 
-				/*if(thread_idx == threadNumber )
+				if(thread_idx == threadNumber )
 					m_jobQueuesLocalFIFO[thread_idx]->push(pJob);	//put into thread local FIFO queue
-				else*/
-
-				m_jobQueuesLocal[thread_idx]->push(pJob);		//put into thread local LIFO queue
+				else
+					m_jobQueuesLocal[thread_idx]->push(pJob);		//put into thread local LIFO queue
 				return;
 			}
 
 			++next_thread;
-			m_jobQueues[next_thread % m_threadCount]->push(pJob);	//put into random LIFO queue
+			if (next_thread >= m_threadCount)
+				next_thread = next_thread % m_threadCount;
+
+			m_jobQueues[next_thread]->push(pJob);	//put into random LIFO queue
 
 		};
 
@@ -882,7 +875,7 @@ namespace vgjs {
 
 
 
-#if defined(IMPLEMENT_GAMEJOBSYSTEM) || defined(DOXYGEN)
+#if (defined(VE_ENABLE_MULTITHREADING) && defined(VE_IMPLEMENT_GAMEJOBSYSTEM)) || defined(DOXYGEN)
 
 namespace vgjs {
 

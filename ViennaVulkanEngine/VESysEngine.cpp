@@ -8,7 +8,7 @@
 */
 
 
-#define IMPLEMENT_GAMEJOBSYSTEM
+#define VE_IMPLEMENT_GAMEJOBSYSTEM
 
 #include "VEDefines.h"
 #include "VESysMessages.h"
@@ -95,11 +95,12 @@ namespace vve {
 
 		using namespace std::chrono;
 
-		duration<int, std::micro> time_delta = duration<int, std::micro>{ 16666 };
-		time_point<high_resolution_clock> now_time = high_resolution_clock::now();			//now time
-		time_point<high_resolution_clock> current_update_time = now_time;								//start of the current epoch
-		time_point<high_resolution_clock> next_update_time = current_update_time + time_delta;		//end of the current epoch
-		time_point<high_resolution_clock> reached_time = current_update_time;					//time the simulation has reached
+		constexpr uint32_t epoch_duration = 1000000 / 60;
+		duration<int, std::micro>			time_delta = duration<int, std::micro>{ epoch_duration };	//1/60 seconds
+		time_point<high_resolution_clock>	now_time = high_resolution_clock::now();					//now time
+		time_point<high_resolution_clock>	current_update_time = now_time;								//start of the current epoch
+		time_point<high_resolution_clock>	next_update_time = current_update_time + time_delta;		//end of the current epoch
+		time_point<high_resolution_clock>	reached_time = current_update_time;							//time the simulation has reached
 
 		duration<double, std::micro> getTimeDelta() {
 			return time_delta;
@@ -230,39 +231,37 @@ namespace vve {
 
 		//can call this from the main thread if you have your own game loop
 		void computeOneFrame() {
+			JRESET;
 			computeOneFrame2(0);
 			JWAIT;
-			JRESET;
 		}
 
 		std::atomic<bool> g_goon = true;
 
-
-		void runGameLoopMT() {
+		void runGameLoop2() {
 			loopClock.tick();
 
-			JRESET;
-			JADDT(computeOneFrame2(0), vgjs::TID(0, 1));	 //run on main thread for polling!
-			if (g_goon) {
+			while (g_goon) {
+				JRESET;
+				JADD(computeOneFrame2(0));	 //run on main thread for polling!
 				JREP;
-				return;
+				JRET;
 			}
 			JTERM;
 		}
 
 		void runGameLoop() {
 
-#ifdef VE_ENABLE_MULTITHREADING
+			#ifdef VE_ENABLE_MULTITHREADING
 			vgjs::JobSystem::getInstance(0, 1); //create pool without thread 0
-			JADD(runGameLoopMT());				//schedule the game loop
+			#endif
+
+			JADD(runGameLoop2());				//schedule the game loop
+
+			#ifdef VE_ENABLE_MULTITHREADING
 			vgjs::JobSystem::getInstance()->threadTask(0);		//put main thread as first thread into pool
 			return;
-#endif
-
-			while (g_goon) {
-				tickClock.tick();
-				computeOneFrame();
-			}
+#			endif
 		}
 
 		void closeEngine( VeHandle receiver) {

@@ -91,7 +91,8 @@ namespace vve::sysmes {
 
 	struct VeMessagrCallTableEntry {
 		VeHandle	m_receiverID;	//handle of the receiver entity
-		VeHandle	m_handlerID;		//handler of message
+		VeHandle	m_handlerID;	//handler of message
+		VeIndex		m_thread_idx;	//special thread to run on
 	};
 	std::vector<VeMap*> maps6 = {
 		new VeHashedMap< VeHandlePair, VeIndexPair >(
@@ -121,7 +122,7 @@ namespace vve::sysmes {
 		for (auto call : g_calls_table.data()) {
 			VeMessageHandlerTableEntry handlerData;
 			g_handler_table.getEntry(call.m_handlerID, handlerData);
-			JADD( handlerData.m_handler(call.m_receiverID) );
+			JADDT( handlerData.m_handler(call.m_receiverID), call.m_thread_idx );
 		}
 	}
 
@@ -158,7 +159,7 @@ namespace vve::sysmes {
 			VeMessageSubscribeTableEntry subscribeData;
 			g_subscribe_table.getEntry(handle, subscribeData);
 			g_receive_table.insert({ messageID, subscribeData.m_receiverID }); //accumulate messages for each receiver
-			g_calls_table.insert({ subscribeData.m_receiverID, subscribeData.m_handlerID }); //will be added only once due to map
+			g_calls_table.insert({ subscribeData.m_receiverID, subscribeData.m_handlerID, subscribeData.m_thread_idx }); //will be added only once due to map
 		}
 
 		return messageID;
