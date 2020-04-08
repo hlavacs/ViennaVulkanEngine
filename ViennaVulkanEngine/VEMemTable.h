@@ -26,15 +26,15 @@ namespace vve {
 	protected:
 
 		struct VeDirectoryEntry {
-			VeIndex	m_auto_id		= VE_NULL_INDEX;
+			VeIndex	m_guid		= VE_NULL_INDEX;
 			VeIndex	m_table_index	= VE_NULL_INDEX;	///< index into the entry table
 			VeIndex	m_next_free		= VE_NULL_INDEX;	///< index of next free entry in directory
 
-			VeDirectoryEntry() : m_auto_id(VE_NULL_INDEX), m_table_index(VE_NULL_INDEX), m_next_free(VE_NULL_INDEX) {}
-			VeDirectoryEntry(VeIndex auto_id, VeIndex table_index, VeIndex next_free) :
-				m_auto_id(auto_id), m_table_index(table_index), m_next_free(next_free) {};
+			VeDirectoryEntry() : m_guid(VE_NULL_INDEX), m_table_index(VE_NULL_INDEX), m_next_free(VE_NULL_INDEX) {}
+			VeDirectoryEntry(VeIndex guid, VeIndex table_index, VeIndex next_free) :
+				m_guid(guid), m_table_index(table_index), m_next_free(next_free) {};
 			VeDirectoryEntry(const VeDirectoryEntry & entry) : 
-				m_auto_id(entry.m_auto_id), m_table_index(entry.m_table_index), m_next_free(entry.m_next_free) {};
+				m_guid(entry.m_guid), m_table_index(entry.m_table_index), m_next_free(entry.m_next_free) {};
 		};
 
 		VeCount							m_auto_counter = 0;				///< 
@@ -42,18 +42,18 @@ namespace vve {
 		VeIndex							m_first_free = VE_NULL_INDEX;	///< index of first free entry in directory
 
 		VeHandle addNewEntry(VeIndex table_index ) {
-			VeIndex auto_id = m_auto_counter; ++m_auto_counter;
+			VeIndex guid = m_auto_counter; ++m_auto_counter;
 			VeIndex dir_index = (VeIndex)m_dir_entries.size();
-			m_dir_entries.emplace_back( auto_id, table_index, VE_NULL_INDEX  );
+			m_dir_entries.emplace_back( guid, table_index, VE_NULL_INDEX  );
 			return getHandle(dir_index);
 		}
 
 		VeHandle writeOverOldEntry(VeIndex table_index) {
-			VeCount auto_id				= m_auto_counter;
+			VeCount guid				= m_auto_counter;
 			++m_auto_counter;
 			VeIndex dir_index			= m_first_free;
 			VeIndex next_free			= m_dir_entries[dir_index].m_next_free;
-			m_dir_entries[dir_index]	= { auto_id, table_index, VE_NULL_INDEX };
+			m_dir_entries[dir_index]	= { guid, table_index, VE_NULL_INDEX };
 			m_first_free				= next_free;
 			return getHandle(dir_index);
 		}
@@ -87,7 +87,7 @@ namespace vve {
 		VeHandle getHandle(VeIndex dir_index) { 
 			if (!isValid(dir_index)) 
 				return VE_NULL_HANDLE;
-			return (VeHandle)m_dir_entries[dir_index].m_auto_id | ((VeHandle)dir_index << 32);  
+			return (VeHandle)m_dir_entries[dir_index].m_guid | ((VeHandle)dir_index << 32);  
 		};
 
 		static::std::tuple<VeIndex,VeIndex> splitHandle(VeHandle key ) { 
@@ -102,8 +102,8 @@ namespace vve {
 
 		bool isValid(VeHandle handle) {
 			if (handle == VE_NULL_HANDLE) return false;
-			auto [auto_id, dir_index] = splitHandle(handle);
-			if (!isValid(dir_index) || auto_id != m_dir_entries[dir_index].m_auto_id) 
+			auto [guid, dir_index] = splitHandle(handle);
+			if (!isValid(dir_index) || guid != m_dir_entries[dir_index].m_guid) 
 				return false;
 			return true;
 		}
@@ -273,7 +273,7 @@ namespace vve {
 		std::vector<VeMap*>		m_maps;				///vector of maps for quickly finding or sorting entries
 		VeDirectory				m_directory;		///
 		VECTOR					m_data;				///growable entry data table
-		std::vector<VeIndex>	m_tbl2dir;
+		std::vector<VeIndex>	m_idx2dir;
 
 	public:
 
@@ -286,7 +286,7 @@ namespace vve {
 		};
 
 		VeFixedSizeTable(VeFixedSizeTable<T>& table) :
-			VeTable(table), m_data(table.m_data), m_directory(table.m_directory), m_tbl2dir(table.m_tbl2dir) {
+			VeTable(table), m_data(table.m_data), m_directory(table.m_directory), m_idx2dir(table.m_idx2dir) {
 			for (auto map : table.m_maps) {
 				m_maps.emplace_back(map->clone());
 			}
@@ -316,7 +316,7 @@ namespace vve {
 		const VECTOR& data() { return m_data; };
 		VeMap* getMap(VeIndex num_map) override { return m_maps[num_map]; };
 		VeDirectory* getDirectory() override { return &m_directory; };
-		std::vector<VeIndex>& getTable2dir() { return m_tbl2dir; };
+		std::vector<VeIndex>& getTable2dir() { return m_idx2dir; };
 		VeCount		size() { return (VeIndex)m_data.size(); };
 		bool		getEntry(VeHandle key, T& entry);
 		VeIndex		getIndexFromHandle(VeHandle key);
@@ -342,7 +342,7 @@ namespace vve {
 		m_data		= table.m_data;
 		for (uint32_t i = 0; i < table.m_maps.size(); ++i ) 
 			*(m_maps[i]) = *(table.m_maps[i]);
-		m_tbl2dir	= table.m_tbl2dir;
+		m_idx2dir	= table.m_idx2dir;
 		out();
 	}
 
@@ -354,7 +354,7 @@ namespace vve {
 		m_data = other->m_data;
 		for (uint32_t i = 0; i < other->m_maps.size(); ++i)
 			*(m_maps[i]) = *(other->m_maps[i]);
-		m_tbl2dir = other->m_tbl2dir;
+		m_idx2dir = other->m_idx2dir;
 		out();
 	}
 
@@ -379,8 +379,8 @@ namespace vve {
 		m_data.emplace_back(entry);
 
 		VeHandle handle		= m_directory.addEntry( table_index );
-		auto [auto_id, dir_index] = VeDirectory::splitHandle( handle );
-		m_tbl2dir.emplace_back(dir_index);
+		auto [guid, dir_index] = VeDirectory::splitHandle( handle );
+		m_idx2dir.emplace_back(dir_index);
 		
 		bool success = true;
 		for (auto map : m_maps) {
@@ -406,9 +406,9 @@ namespace vve {
 			return false;
 		}
 
-		auto [auto_id, dir_index]	= m_directory.splitHandle(handle);
+		auto [guid, dir_index]	= m_directory.splitHandle(handle);
 		auto dir_entry				= m_directory.getEntry(dir_index);
-		if (auto_id != dir_entry.m_auto_id) {
+		if (guid != dir_entry.m_guid) {
 			out();
 			return false;
 		}
@@ -438,9 +438,9 @@ namespace vve {
 			return;
 		}
 		std::swap(m_data[first], m_data[second]);
-		std::swap(m_tbl2dir[first], m_tbl2dir[second]);
-		m_directory.updateTableIndex(m_tbl2dir[first], first);
-		m_directory.updateTableIndex(m_tbl2dir[second], second);
+		std::swap(m_idx2dir[first], m_idx2dir[second]);
+		m_directory.updateTableIndex(m_idx2dir[first], first);
+		m_directory.updateTableIndex(m_idx2dir[second], second);
 		out();
 	};
 
@@ -453,9 +453,9 @@ namespace vve {
 			return false;
 		}
 
-		auto [auto_id, dir_index]	= m_directory.splitHandle(key);
+		auto [guid, dir_index]	= m_directory.splitHandle(key);
 		auto dir_entry				= m_directory.getEntry(dir_index);
-		if (auto_id != dir_entry.m_auto_id) {
+		if (guid != dir_entry.m_guid) {
 			out();
 			return false;
 		}
@@ -467,7 +467,7 @@ namespace vve {
 			map->erase((void*)&m_data[(VeIndex)m_data.size() - 1], dir_index);
 		m_directory.deleteEntry(dir_index);
 		m_data.pop_back();
-		m_tbl2dir.pop_back();
+		m_idx2dir.pop_back();
 		out();
 		return true;
 	};
@@ -486,11 +486,11 @@ namespace vve {
 			return VE_NULL_INDEX;
 		}
 
-		auto [auto_id, dir_index]	= m_directory.splitHandle(key);
+		auto [guid, dir_index]	= m_directory.splitHandle(key);
 		auto dir_entry				= m_directory.getEntry(dir_index);
 
 		VeIndex result = dir_entry.m_table_index;
-		if (auto_id != dir_entry.m_auto_id) 
+		if (guid != dir_entry.m_guid) 
 			result = VE_NULL_INDEX;
 		out();
 		return result;
@@ -503,9 +503,9 @@ namespace vve {
 			return false;
 		}
 
-		auto [auto_id, dir_index] = m_directory.splitHandle(key);
+		auto [guid, dir_index] = m_directory.splitHandle(key);
 		auto dir_entry = m_directory.getEntry(dir_index);
-		if (auto_id != dir_entry.m_auto_id)
+		if (guid != dir_entry.m_guid)
 			return false;
 
 		entry = m_data[dir_entry.m_table_index];
@@ -515,8 +515,8 @@ namespace vve {
 
 	template<typename T> inline VeHandle VeFixedSizeTable<T>::getHandleFromIndex(VeIndex table_index) {
 		in();
-		VeIndex dir_index	= m_tbl2dir[table_index];
-		VeIndex auto_id		= m_directory.getEntry(dir_index).m_auto_id;
+		VeIndex dir_index	= m_idx2dir[table_index];
+		VeIndex guid		= m_directory.getEntry(dir_index).m_guid;
 		VeHandle handle		= m_directory.getHandle(dir_index);
 		out();
 		return handle;
@@ -529,7 +529,7 @@ namespace vve {
 
 		m_data.clear();
 		m_directory.clear();
-		m_tbl2dir.clear();
+		m_idx2dir.clear();
 		m_heap.clear();
 		out();
 	}
