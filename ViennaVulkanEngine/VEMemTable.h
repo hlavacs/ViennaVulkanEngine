@@ -101,7 +101,7 @@ namespace vve {
 		};
 
 		static::std::tuple<VeIndex,VeIndex> splitHandle(VeHandle key ) { 
-			return { VeIndex(key) & VE_NULL_INDEX , (VeIndex)((uint64_t)key >> 32) };
+			return { VeIndex(key) & 0xFFFFFFFF , (VeIndex)((uint64_t)key >> 32) };
 		};
 
 		bool isValid(VeIndex dir_index) {
