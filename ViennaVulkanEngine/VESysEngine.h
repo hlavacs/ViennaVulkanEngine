@@ -24,6 +24,8 @@ namespace vve {
 		void		registerTablePointer(VeTable* ptr);
 		VeTable*	getTablePointer(const std::string name);
 
+		VeHandle getGUID();
+
 		void		createHeaps(uint32_t num);
 		VeHeapMemory* getHeap();
 		VeHeapMemory* getTmpHeap();
@@ -44,6 +46,10 @@ namespace vve {
 		void computeOneFrame();
 		void close();
 	}
+
+	inline VeHandle getGUID() {
+		return syseng::getGUID();
+	};
 
 	inline 	VeHeapMemory* getHeap() {
 		return syseng::getHeap();

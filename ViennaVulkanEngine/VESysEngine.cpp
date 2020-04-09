@@ -24,6 +24,18 @@ namespace vve {
 
 	namespace syseng {
 
+		//-----------------------------------------------------------------------------------
+		//create GUIDs
+
+		std::atomic<uint64_t> g_guid = 0;
+
+		VeHandle getGUID() {
+			return g_guid.fetch_add(1);
+		}
+
+		//-----------------------------------------------------------------------------------
+		//heaps
+
 		std::vector<std::unique_ptr<VeHeapMemory>> g_thread_heap;
 		std::vector<std::unique_ptr<VeHeapMemory>> g_thread_tmp_heap;
 
@@ -137,10 +149,16 @@ namespace vve {
 			return reached_time;
 		};
 
-		//----------------------------------------------------------------------------------------------------
 
-		void closeEngine(VeHandle h);
+		//-----------------------------------------------------------------------------------
+		//engine operations
+
+		std::atomic<bool> g_goon = true;
 		VeHandle g_closeHandle;
+
+		void closeEngine(VeHandle receiver) {
+			g_goon = false;
+		}
 
 		void init() {
 			std::cout << "init engine 2\n";
@@ -183,11 +201,27 @@ namespace vve {
 			g_main_table.setReadOnly(true);
 		}
 
+		void close() {
+			JTERM;
+			JWAITTERM;
+
+			g_entities_table.setReadOnly(false);
+			g_entities_table.clear();
+			g_main_table.setReadOnly(false);
+			g_main_table.clear();
+		}
+
+		//-----------------------------------------------------------------------------------
+		//clocks for measuring time
+
 		VeClock loopClock(   "Game loop   ", 1);
 		VeClock swapClock(   "Swap Clock  ", 200);
 		VeClock forwardClock("FW Clock    ", 1);
 		VeClock tickClock(   "Tick Clock  ", 100);
 		VeClock cleanClock(  "Clean Clock ", 100);
+
+		//-----------------------------------------------------------------------------------
+		//game loop functions
 
 		void swapTables() {
 			for (auto table : g_main_table.data()) {	//swap tables
@@ -253,7 +287,6 @@ namespace vve {
 			JWAIT;
 		}
 
-		std::atomic<bool> g_goon = true;
 
 		void runGameLoop2() {
 			loopClock.tick();
@@ -279,21 +312,7 @@ namespace vve {
 			#ifdef VE_ENABLE_MULTITHREADING
 			vgjs::JobSystem::getInstance()->threadTask(0);		//put main thread as first thread into pool
 			return;
-#			endif
-		}
-
-		void closeEngine( VeHandle receiver) {
-			g_goon = false;
-		}
-
-		void close() {
-			JTERM;
-			JWAITTERM;
-
-			g_entities_table.setReadOnly(false);
-			g_entities_table.clear();
-			g_main_table.setReadOnly(false);
-			g_main_table.clear();
+			#endif
 		}
 
 	}
