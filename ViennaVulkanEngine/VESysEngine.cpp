@@ -108,8 +108,8 @@ namespace vve {
 		};
 		VeFixedSizeTableMT<VeEntityTableEntry> g_entities_table("Entities Table", maps2, false, false, 0, 0);
 
-		void registerEntity(const std::string& name) {
-			g_entities_table.insert(VeEntityTableEntry{ name });
+		VeHandle registerEntity(const std::string& name) {
+			return g_entities_table.insert(VeEntityTableEntry{ name });
 		}
 
 		VeHandle getEntityHandle(const std::string &name ) {
