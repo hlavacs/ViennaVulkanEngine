@@ -36,16 +36,20 @@ namespace vve {
 	//----------------------------------------------------------------------------------
 	//basic data types
 
-	typedef uint32_t VeCount;												///<for counting objects
+	enum class VeCount : uint64_t { };										///<for counting objects
+	inline VeCount operator+(VeCount count, VeCount rcount) { return VeCount((uint64_t)count + (uint64_t)rcount); };
+	inline VeCount operator-(VeCount count, VeCount rcount) { return VeCount((uint64_t)count - (uint64_t)rcount); };
+	inline VeCount operator++(VeCount count) { count = VeCount((uint64_t)count + 1); return count; };
+	inline VeCount operator--(VeCount count) { count = VeCount((uint64_t)count - 1); return count; };
 
-	typedef uint32_t VeIndex;												///<for indexing in lage data collections
+	typedef uint32_t VeIndex;												///<for indexing in large data collections
 	constexpr VeIndex VE_NULL_INDEX =										///<a null index pointing nowhere
 		std::numeric_limits<VeIndex>::max();
 	constexpr VeIndex VE_MAX_INDEX = VE_NULL_INDEX - 1;						///<largest possible index
 	using VeIndexPair = std::pair<VeIndex, VeIndex>;						///<a pair of indices
 	using VeIndexTriple = std::tuple<VeIndex, VeIndex, VeIndex>;			///<a triplet of indices
 
-	typedef uint64_t VeHandle;							///<64 bit handle for uniquely identifying objects in tables
+	typedef uint64_t VeHandle;												///<64 bit handle for uniquely identifying objects in tables
 	constexpr VeHandle VE_NULL_HANDLE =										///<an empty handle pointing to no objects
 		std::numeric_limits<VeHandle>::max();
 	constexpr VeHandle VE_MAX_HANDLE = VE_NULL_HANDLE - 1;					///<the maximum handle possible

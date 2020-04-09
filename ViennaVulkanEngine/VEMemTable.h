@@ -26,23 +26,33 @@ namespace vve {
 	protected:
 
 		struct VeDirectoryEntry {
-			VeIndex	m_guid		= VE_NULL_INDEX;
-			VeIndex	m_table_index	= VE_NULL_INDEX;	///< index into the entry table
-			VeIndex	m_next_free		= VE_NULL_INDEX;	///< index of next free entry in directory
+			VeIndex	m_guid = VE_NULL_INDEX;
+			VeIndex	m_table_index = VE_NULL_INDEX;	///< index into the entry table
+			VeIndex	m_next_free = VE_NULL_INDEX;	///< index of next free entry in directory
 
-			VeDirectoryEntry() : m_guid(VE_NULL_INDEX), m_table_index(VE_NULL_INDEX), m_next_free(VE_NULL_INDEX) {}
+			VeDirectoryEntry() : m_guid(VE_NULL_INDEX), m_table_index(VE_NULL_INDEX), m_next_free(VE_NULL_INDEX) {};
+
 			VeDirectoryEntry(VeIndex guid, VeIndex table_index, VeIndex next_free) :
 				m_guid(guid), m_table_index(table_index), m_next_free(next_free) {};
-			VeDirectoryEntry(const VeDirectoryEntry & entry) : 
+
+			VeDirectoryEntry(const VeDirectoryEntry& entry) :
 				m_guid(entry.m_guid), m_table_index(entry.m_table_index), m_next_free(entry.m_next_free) {};
+
+			VeDirectoryEntry& operator=(const VeDirectoryEntry& entry) {
+				m_guid = entry.m_guid;
+				m_table_index = entry.m_table_index;
+				m_next_free = entry.m_next_free;
+				return *this;
+			};
 		};
 
-		VeCount							m_auto_counter = 0;				///< 
+		VeCount							m_auto_counter = VeCount(0);	///< 
 		std::vector<VeDirectoryEntry>	m_dir_entries;					///< 1 level of indirection, idx into the data table
 		VeIndex							m_first_free = VE_NULL_INDEX;	///< index of first free entry in directory
 
 		VeHandle addNewEntry(VeIndex table_index ) {
-			VeIndex guid = m_auto_counter; ++m_auto_counter;
+			VeIndex guid = (VeIndex)m_auto_counter; 
+			++m_auto_counter;
 			VeIndex dir_index = (VeIndex)m_dir_entries.size();
 			m_dir_entries.emplace_back( guid, table_index, VE_NULL_INDEX  );
 			return getHandle(dir_index);
@@ -53,7 +63,7 @@ namespace vve {
 			++m_auto_counter;
 			VeIndex dir_index			= m_first_free;
 			VeIndex next_free			= m_dir_entries[dir_index].m_next_free;
-			m_dir_entries[dir_index]	= { guid, table_index, VE_NULL_INDEX };
+			m_dir_entries[dir_index]	= { (VeIndex)guid, table_index, VE_NULL_INDEX };
 			m_first_free				= next_free;
 			return getHandle(dir_index);
 		}
@@ -317,12 +327,12 @@ namespace vve {
 		VeMap* getMap(VeIndex num_map) override { return m_maps[num_map]; };
 		VeDirectory* getDirectory() override { return &m_directory; };
 		std::vector<VeIndex>& getTable2dir() { return m_idx2dir; };
-		VeCount		size() { return (VeIndex)m_data.size(); };
+		VeCount		size() { return (VeCount)m_data.size(); };
 		bool		getEntry(VeHandle key, T& entry);
 		VeIndex		getIndexFromHandle(VeHandle key);
 		VeHandle	getHandleFromIndex(VeIndex table_index);
-		uint32_t	getAllHandles(std::vector<VeHandle, custom_alloc<VeHandle>>& result);
-		uint32_t	getAllHandlesFromMap(VeIndex num_map, std::vector<VeHandle, custom_alloc<VeHandle>>& result);	//makes sense for map/multimap
+		VeCount		getAllHandles(std::vector<VeHandle, custom_alloc<VeHandle>>& result);
+		VeCount		getAllHandlesFromMap(VeIndex num_map, std::vector<VeHandle, custom_alloc<VeHandle>>& result);	//makes sense for map/multimap
 
 		template <typename K> VeHandle find(K key, VeIndex num_map);	//use this in map
 		template <typename K> VeCount getHandlesEqual(K key, VeIndex num_map, std::vector<VeHandle, custom_alloc<VeHandle>>& result);	//use this in multimap
@@ -558,7 +568,7 @@ namespace vve {
 
 	template<typename T>
 	template <typename K>
-	VeIndex VeFixedSizeTable<T>::leftJoin(VeIndex own_map, K key, VeTable* other, VeIndex other_map, std::vector<VeHandlePair, custom_alloc<VeHandlePair>>& result) {
+	VeCount VeFixedSizeTable<T>::leftJoin(VeIndex own_map, K key, VeTable* other, VeIndex other_map, std::vector<VeHandlePair, custom_alloc<VeHandlePair>>& result) {
 		in();
 		VeMap* l = (VeMap*)m_maps[own_map];
 		VeMap* r = (VeMap*)other->getMap(other_map);
@@ -597,9 +607,9 @@ namespace vve {
 		assert(num_map < m_maps.size());
 		if (m_data.empty()) {
 			out();
-			return 0;
+			return VeCount(0);
 		}
-		VeCount num = 0;
+		VeCount num = VeCount(0);
 		std::vector<VeIndex, custom_alloc<VeIndex>> dir_indices(&m_heap);
 
 		num = m_maps[num_map]->equal_range( key, dir_indices);
@@ -616,9 +626,9 @@ namespace vve {
 		assert(num_map < m_maps.size());
 		if (m_data.empty()) {
 			out();
-			return 0;
+			return VeCount(0);
 		}
-		VeCount num = 0;
+		VeCount num = VeCount(0);
 		std::vector<VeIndex, custom_alloc<VeIndex>> dir_indices(&m_heap);
 
 		num = m_maps[num_map]->range(lower, upper, dir_indices);
@@ -638,7 +648,7 @@ namespace vve {
 
 	template<typename T> inline	VeCount VeFixedSizeTable<T>::getAllHandlesFromMap(VeIndex num_map, std::vector<VeHandle, custom_alloc<VeHandle>>& result) {
 		if (m_data.empty())
-			return 0;
+			return VeCount(0);
 
 		if (num_map == VE_NULL_INDEX)
 			return getAllHandles( result );
@@ -875,7 +885,7 @@ namespace vve {
 
 		void defragment() {
 			std::vector<VeHandle, custom_alloc<VeHandle>> handles(&m_heap);
-			handles.reserve( (VeIndex)(m_directory.size() + 1) );
+			handles.reserve( (VeIndex)((uint64_t)m_directory.size() + 1) );
 			m_directory.getAllHandlesFromMap(1, handles);
 			if (handles.size() < 2) 
 				return;

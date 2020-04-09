@@ -121,7 +121,7 @@ namespace vve::map {
 			//testmap.insert(&t1, i);
 			
 			//uint32_t idx = std::rand() % testmap.size();
-			auto [key, value] = testmap.getKeyValuePair(i % testmap.size());
+			auto [key, value] = testmap.getKeyValuePair(i % (uint64_t)testmap.size());
 			//t1.m_int1 = (VeIndex)key;
 			//testmap.erase(&t1, value);
 		}
@@ -188,7 +188,7 @@ namespace vve::map {
 			TestEntry t1{ i+100000, 1, 2, "B" };
 			testmap2.insert(&t1, i+100000);
 
-			uint32_t key = std::rand() % testmap2.size();
+			uint32_t key = std::rand() % (uint64_t)testmap2.size();
 			auto index = testmap.find(key);
 
 			t1.m_int1 = (VeIndex)key;
