@@ -148,7 +148,7 @@ namespace vve::sysmes {
 		VeHandle messageID = g_messages_table.insert(message);
 
 		//find all subscriptions fitting to this message
-		std::vector<VeHandle, custom_alloc<VeHandle>> result(getHeap());
+		std::vector<VeHandle, custom_alloc<VeHandle>> result(getTmpHeap());
 		if (message.m_receiverID == VE_NULL_HANDLE) {
 			g_subscribe_table.getHandlesEqual(VeHandlePair{ message.m_senderID,   (VeHandle)message.m_type }, 2, result);
 		} else {
@@ -193,7 +193,7 @@ namespace vve::sysmes {
 	}
 
 	void removeHandler(VeHandle handlerID) {
-		std::vector<VeHandle, custom_alloc<VeHandle>> result(getHeap());
+		std::vector<VeHandle, custom_alloc<VeHandle>> result(getTmpHeap());
 		g_subscribe_table.getHandlesEqual(handlerID, 1, result);
 		for (auto handle : result) {
 			g_subscribe_table.erase(handle);

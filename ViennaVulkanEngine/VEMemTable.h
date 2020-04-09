@@ -515,6 +515,7 @@ namespace vve {
 
 	template<typename T> inline VeHandle VeFixedSizeTable<T>::getHandleFromIndex(VeIndex table_index) {
 		in();
+		assert(table_index < m_idx2dir.size());
 		VeIndex dir_index	= m_idx2dir[table_index];
 		VeIndex guid		= m_directory.getEntry(dir_index).m_guid;
 		VeHandle handle		= m_directory.getHandle(dir_index);
@@ -699,12 +700,6 @@ namespace vve {
 			else
 				me->VeFixedSizeTable<T>::swap(h1, h2);
 		};
-
-		//do not need this since swapping is done in cleanup
-		//virtual void swapTables() {
-		//	VeFixedSizeTable<T>* me = (VeFixedSizeTable<T>*)this;
-		//	JADDT(me->VeFixedSizeTable<T>::swapTables(), this->m_thread_id);
-		//};
 
 		virtual void clear() {
 			VeFixedSizeTable<T>* me = (VeFixedSizeTable<T>*)this->getWriteTablePtr();

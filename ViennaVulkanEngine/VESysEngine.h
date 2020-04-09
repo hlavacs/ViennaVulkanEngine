@@ -12,13 +12,11 @@
 
 namespace vve {
 
-	VeHeapMemory* getHeap();
 
 	namespace syseng {
 
 		inline const std::string VE_SYSTEM_NAME = "VE SYSTEM ENGINE";
 		inline VeHandle VE_SYSTEM_HANDLE = VE_NULL_HANDLE;
-
 
 		void		registerEntity(const std::string& name);
 		VeHandle	getEntityHandle(const std::string& name);
@@ -28,6 +26,7 @@ namespace vve {
 
 		void		createHeaps(uint32_t num);
 		VeHeapMemory* getHeap();
+		VeHeapMemory* getTmpHeap();
 
 		void		forwardTime();
 
@@ -45,5 +44,14 @@ namespace vve {
 		void computeOneFrame();
 		void close();
 	}
+
+	inline 	VeHeapMemory* getHeap() {
+		return syseng::getHeap();
+	};
+
+	inline 	VeHeapMemory* getTmpHeap() {
+		return syseng::getTmpHeap();
+	};
+
 }
 

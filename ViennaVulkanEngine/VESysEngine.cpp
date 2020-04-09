@@ -22,27 +22,42 @@
 
 namespace vve {
 
-	std::vector<VeHeapMemory> g_thread_heap(1);
-
-	VeHeapMemory* getHeap() {
-		return syseng::getHeap();
-	}
-
 	namespace syseng {
+
+		std::vector<std::unique_ptr<VeHeapMemory>> g_thread_heap;
+		std::vector<std::unique_ptr<VeHeapMemory>> g_thread_tmp_heap;
 
 		VeHeapMemory* getHeap() {
 			VeIndex heapIdx = 0;
 #ifdef VE_ENABLE_MULTITHREADING
-			uint32_t threadIdx = vgjs::JobSystem::getInstance()->getThreadIndex();
+			uint32_t threadIdx = JIDX;
 			if (threadIdx < g_thread_heap.size())
 				heapIdx = threadIdx;
 #endif
-			return &g_thread_heap[heapIdx];
+			return g_thread_heap[heapIdx].get();
+		}
+
+		VeHeapMemory* getTmpHeap() {
+			VeIndex heapIdx = 0;
+#ifdef VE_ENABLE_MULTITHREADING
+			uint32_t threadIdx = JIDX;
+			if (threadIdx < g_thread_tmp_heap.size())
+				heapIdx = threadIdx;
+#endif
+			return g_thread_tmp_heap[heapIdx].get();
 		}
 
 		void createHeaps(uint32_t num) {
-			for (uint32_t i = (uint32_t)g_thread_heap.size() - 1; i < num; ++i)
-				g_thread_heap.emplace_back(VeHeapMemory());
+			for (uint32_t i = 0; i < num; ++i) {
+				g_thread_heap.emplace_back(std::make_unique<VeHeapMemory>());
+				g_thread_tmp_heap.emplace_back(std::make_unique<VeHeapMemory>());
+			}
+		}
+
+		void clearTmpHeaps() {
+			for (auto& heap : g_thread_tmp_heap ) {
+				heap->clear();
+			}
 		}
 
 		//-----------------------------------------------------------------------------------
@@ -130,6 +145,8 @@ namespace vve {
 		void init() {
 			std::cout << "init engine 2\n";
 
+			createHeaps(1);
+
 			now_time = std::chrono::high_resolution_clock::now();
 			current_update_time = now_time;
 			next_update_time = current_update_time + time_delta;
@@ -162,7 +179,7 @@ namespace vve {
 				}
 			}
 #endif
-			createHeaps(threadCount);
+			createHeaps(threadCount - 1);
 			g_main_table.setReadOnly(true);
 		}
 
@@ -243,6 +260,7 @@ namespace vve {
 
 			while (g_goon) {
 				JRESET;
+				clearTmpHeaps();
 				JADD(computeOneFrame2(0));	 //run on main thread for polling!
 				JREP;
 				JRET;
