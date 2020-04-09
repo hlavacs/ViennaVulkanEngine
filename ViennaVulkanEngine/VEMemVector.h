@@ -90,7 +90,7 @@ namespace vve {
 			if (m_memptr == nullptr || m_startptr == nullptr || m_memcpy) 
 				return;
 
-			for (uint32_t i = startIdx; i < m_size && i < endIdx; ++i) {
+			for (VeIndex i = startIdx; i < m_size && i < endIdx; ++i) {
 				T* tptr = (T*)(m_startptr + (uint64_t)i * m_entrySize);
 				tptr->~T();
 			}

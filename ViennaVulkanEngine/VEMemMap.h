@@ -286,7 +286,7 @@ namespace vve {
 			* \param[in] level Level of the node
 			*
 			*/
-			void print(uint32_t node, uint32_t level = 1) {
+			void print(VeIndex node, VeIndex level = 1) {
 				std::cout << "L " << level << " IDX " << node;
 				std::cout << " KEY " << m_key << " VAL " << m_value << " HEIGHT " << m_height;
 				std::cout << " PAR " << m_parent << " LEFT " << m_left << " RIGHT " << m_right << std::endl;
@@ -941,7 +941,7 @@ namespace vve {
 		*/
 		void print() override {
 			std::cout << "Num " << m_map.size() << " Root " << m_root << std::endl;
-			for (uint32_t i = 0; i < m_map.size(); ++i) {
+			for (VeIndex i = 0; i < m_map.size(); ++i) {
 				m_map[i].print(i);
 			}
 			std::cout << std::endl;

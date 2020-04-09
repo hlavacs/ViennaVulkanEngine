@@ -16,19 +16,19 @@ namespace vve::map {
 	VeOrderedMultimap<VeHandle, VeIndex> testmap(offsetof(TestEntry, m_int1), sizeof(TestEntry::m_int1));
 
 	void testOrderedMap() {
-		TestEntry t1{ 1, 1, 2, "A" };
-		TestEntry t2{ 2, 1, 2, "A" };
-		TestEntry t3{ 3, 1, 2, "A" };
-		TestEntry t4{ 4, 1, 2, "A" };
-		TestEntry t5{ 5, 1, 2, "A" };
-		TestEntry t6{ 6, 1, 2, "A" };
+		TestEntry t1{ 1, 1, 2_Hd, "A" };
+		TestEntry t2{ 2, 1, 2_Hd, "A" };
+		TestEntry t3{ 3, 1, 2_Hd, "A" };
+		TestEntry t4{ 4, 1, 2_Hd, "A" };
+		TestEntry t5{ 5, 1, 2_Hd, "A" };
+		TestEntry t6{ 6, 1, 2_Hd, "A" };
 
-		TestEntry t7{ 7, 1, 2, "A" };
-		TestEntry t8{ 8, 1, 2, "A" };
-		TestEntry t9{ 9, 1, 2, "A" };
-		TestEntry t10{ 10, 1, 2, "A" };
-		TestEntry t11{ 11, 1, 2, "A" };
-		TestEntry t12{ 12, 1, 2, "A" };
+		TestEntry t7{ 7, 1, 2_Hd, "A" };
+		TestEntry t8{ 8, 1, 2_Hd, "A" };
+		TestEntry t9{ 9, 1, 2_Hd, "A" };
+		TestEntry t10{ 10, 1, 2_Hd, "A" };
+		TestEntry t11{ 11, 1, 2_Hd, "A" };
+		TestEntry t12{ 12, 1, 2_Hd, "A" };
 
 		testmap.insert( &t1, 1 );
 		testmap.print();
@@ -107,7 +107,7 @@ namespace vve::map {
 		testmap.clear();
 
 		for (uint32_t i = 0; i < 1000; ++i) {
-			TestEntry t1{ (VeIndex)std::rand(), 1, 2, "A" };
+			TestEntry t1{ (VeIndex)std::rand(), 1, 2_Hd, "A" };
 			testmap.insert(&t1, i);
 		}
 		//testmap.printTree();
@@ -137,19 +137,19 @@ namespace vve::map {
 	VeHashedMultimap<VeHandle, VeIndex> testmap2(offsetof(TestEntry, m_int1), sizeof(TestEntry::m_int1));
 
 	void testHashedMap() {
-		TestEntry t1{ 1, 1, 2, "A" };
-		TestEntry t2{ 2, 1, 2, "A" };
-		TestEntry t3{ 3, 1, 2, "A" };
-		TestEntry t4{ 4, 1, 2, "A" };
-		TestEntry t5{ 5, 1, 2, "A" };
-		TestEntry t6{ 6, 1, 2, "A" };
+		TestEntry t1{ 1, 1, 2_Hd, "A" };
+		TestEntry t2{ 2, 1, 2_Hd, "A" };
+		TestEntry t3{ 3, 1, 2_Hd, "A" };
+		TestEntry t4{ 4, 1, 2_Hd, "A" };
+		TestEntry t5{ 5, 1, 2_Hd, "A" };
+		TestEntry t6{ 6, 1, 2_Hd, "A" };
 
-		TestEntry t7{ 7, 1, 2, "A" };
-		TestEntry t8{ 8, 1, 2, "A" };
-		TestEntry t9{ 9, 1, 2, "A" };
-		TestEntry t10{ 10, 1, 2, "A" };
-		TestEntry t11{ 11, 1, 2, "A" };
-		TestEntry t12{ 12, 1, 2, "A" };
+		TestEntry t7{ 7, 1, 2_Hd, "A" };
+		TestEntry t8{ 8, 1, 2_Hd, "A" };
+		TestEntry t9{ 9, 1, 2_Hd, "A" };
+		TestEntry t10{ 10, 1, 2_Hd, "A" };
+		TestEntry t11{ 11, 1, 2_Hd, "A" };
+		TestEntry t12{ 12, 1, 2_Hd, "A" };
 
 		testmap2.insert(&t1, 1);
 		testmap2.insert(&t2, 1);
@@ -175,7 +175,7 @@ namespace vve::map {
 
 		constexpr VeIndex NUM = 10000;
 		for (uint32_t i = 0; i < NUM; ++i) {
-			TestEntry t1{ i, 1, 2, "A" };
+			TestEntry t1{ i, 1, 2_Hd, "A" };
 			testmap2.insert(&t1, i);
 		}
 		//testmap2.print();
@@ -185,11 +185,11 @@ namespace vve::map {
 		for (uint32_t i = 0; i < 10000; ++i) {
 			//std::cout << "i=" << i << std::endl;
 
-			TestEntry t1{ i+100000, 1, 2, "B" };
+			TestEntry t1{ i+100000, 1, 2_Hd, "B" };
 			testmap2.insert(&t1, i+100000);
 
 			uint32_t key = std::rand() % (uint64_t)testmap2.size();
-			auto index = testmap.find(key);
+			auto index = testmap.find(VeHandle(key));
 
 			t1.m_int1 = (VeIndex)key;
 			testmap2.erase(&t1, key);

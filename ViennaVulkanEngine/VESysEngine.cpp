@@ -30,7 +30,7 @@ namespace vve {
 		std::atomic<uint64_t> g_guid = 0;
 
 		VeHandle getGUID() {
-			return g_guid.fetch_add(1);
+			return VeHandle(g_guid.fetch_add(1));
 		}
 
 		//-----------------------------------------------------------------------------------

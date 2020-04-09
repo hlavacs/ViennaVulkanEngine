@@ -55,36 +55,36 @@ namespace vve {
 		void testVector1() {
 			VeVector<TestEntry> vec;
 
-			vec.push_back({ 1, 2, 3, "4" });
-			vec.push_back({ 4, 2, 1, "3" });
-			vec.push_back({ 2, 1, 3, "1" });
-			vec.push_back({ 3, 4, 5, "2" });
-			vec.push_back({ 5, 4, 2, "3" });
-			vec.push_back({ 6, 3, 2, "2" });
-			vec.push_back({ 5, 4, 2, "3" });
-			vec.push_back({ 6, 3, 2, "2" });
-			vec.push_back({ 1, 2, 3, "4" });
-			vec.push_back({ 4, 2, 1, "3" });
-			vec.push_back({ 2, 1, 3, "1" });
-			vec.push_back({ 3, 4, 5, "2" });
-			vec.push_back({ 5, 4, 2, "3" });
-			vec.push_back({ 6, 3, 2, "2" });
-			vec.push_back({ 5, 4, 2, "3" });
-			vec.push_back({ 6, 3, 2, "2" });
+			vec.push_back({ 1_Hd, 2, 3, "4" });
+			vec.push_back({ 4_Hd, 2, 1, "3" });
+			vec.push_back({ 2_Hd, 1, 3, "1" });
+			vec.push_back({ 3_Hd, 4, 5, "2" });
+			vec.push_back({ 5_Hd, 4, 2, "3" });
+			vec.push_back({ 6_Hd, 3, 2, "2" });
+			vec.push_back({ 5_Hd, 4, 2, "3" });
+			vec.push_back({ 6_Hd, 3, 2, "2" });
+			vec.push_back({ 1_Hd, 2, 3, "4" });
+			vec.push_back({ 4_Hd, 2, 1, "3" });
+			vec.push_back({ 2_Hd, 1, 3, "1" });
+			vec.push_back({ 3_Hd, 4, 5, "2" });
+			vec.push_back({ 5_Hd, 4, 2, "3" });
+			vec.push_back({ 6_Hd, 3, 2, "2" });
+			vec.push_back({ 5_Hd, 4, 2, "3" });
+			vec.push_back({ 6_Hd, 3, 2, "2" });
 			for (auto entry : vec) { printEntry(entry); } std::cout << std::endl;
 
-			vec.push_back({ 1, 2, 3, "4" });
+			vec.push_back({ 1_Hd, 2, 3, "4" });
 			for (auto entry : vec) { printEntry(entry); } std::cout << std::endl;
 
 			VeVector<TestEntry> vec2(vec);
 			for (auto entry : vec2) { printEntry(entry); } std::cout << std::endl;
 
 			VeVector<TestEntry> vec3;
-			vec3.push_back({ 3, 4, 5, "2" });
-			vec3.push_back({ 5, 4, 2, "3" });
-			vec3.push_back({ 6, 3, 2, "2" });
-			vec3.push_back({ 5, 4, 2, "3" });
-			vec3.push_back({ 6, 3, 2, "2" });
+			vec3.push_back({ 3_Hd, 4, 5, "2" });
+			vec3.push_back({ 5_Hd, 4, 2, "3" });
+			vec3.push_back({ 6_Hd, 3, 2, "2" });
+			vec3.push_back({ 5_Hd, 4, 2, "3" });
+			vec3.push_back({ 6_Hd, 3, 2, "2" });
 			for (auto entry : vec3) { printEntry(entry); } std::cout << std::endl;
 
 			vec3.pop_back();
@@ -129,16 +129,16 @@ namespace vve {
 		void testVector2() {
 			VeVector<TestEntry2> vec( true );
 
-			vec.push_back({ 1, 2, 3 });
-			vec.push_back({ 2, 2, 1 });
-			vec.push_back({ 4, 2, 3 });
-			vec.push_back({ 1, 3, 3 });
-			vec.push_back({ 1, 2, 2 });
+			vec.push_back({ 1_Hd, 2, 3 });
+			vec.push_back({ 2_Hd, 2, 1 });
+			vec.push_back({ 4_Hd, 2, 3 });
+			vec.push_back({ 1_Hd, 3, 3 });
+			vec.push_back({ 1_Hd, 2, 2 });
 			for (auto entry : vec) { printEntry2(entry); } std::cout << std::endl;
 
 			VeVector<TestEntry2> vec2(vec);
-			vec2.push_back({ 6, 3, 3 });
-			vec2.push_back({ 7, 2, 2 });
+			vec2.push_back({ 6_Hd, 3, 3 });
+			vec2.push_back({ 7_Hd, 2, 2 });
 			for (auto entry : vec2) { printEntry2(entry); } std::cout << std::endl;
 
 			VeVector<TestEntry2> vec3(true);
@@ -160,27 +160,27 @@ namespace vve {
 			VeHeapMemory mem;
 
 			std::vector < VeHandle, custom_alloc<VeHandle> > handles( &mem );
-			handles.push_back(1);
+			handles.push_back(1_Hd);
 			mem.print();
-			handles.push_back(2);
-			handles.push_back(3);
-			handles.push_back(4);
+			handles.push_back(2_Hd);
+			handles.push_back(3_Hd);
+			handles.push_back(4_Hd);
 			mem.print();
 			handles.pop_back();
 			handles.pop_back();
 			handles.pop_back();
 			mem.print();
 
-			handles.push_back(5);
-			handles.push_back(6);
-			handles.push_back(7);
-			handles.push_back(8);
+			handles.push_back(5_Hd);
+			handles.push_back(6_Hd);
+			handles.push_back(7_Hd);
+			handles.push_back(8_Hd);
 			mem.print();
 			handles.clear();
 			mem.print();
 
 			for (uint32_t i = 0; i < 1000; ++i) {
-				handles.push_back(std::rand());
+				handles.push_back(VeHandle(std::rand()));
 				if (i % 10 == 0) {
 					std::cout << "    i " << i << std::endl;
 					mem.print();
@@ -191,7 +191,7 @@ namespace vve {
 			mem.print();
 
 			for (uint32_t i = 0; i < 3000; ++i) {
-				handles.push_back(std::rand());
+				handles.push_back(VeHandle(std::rand()));
 			}
 			mem.print();
 

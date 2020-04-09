@@ -43,18 +43,20 @@ namespace vve {
 	inline VeCount operator--(VeCount count) { count = VeCount((uint64_t)count - 1); return count; };
 
 	typedef uint32_t VeIndex;												///<for indexing in large data collections
-	constexpr VeIndex VE_NULL_INDEX =										///<a null index pointing nowhere
-		std::numeric_limits<VeIndex>::max();
-	constexpr VeIndex VE_MAX_INDEX = VE_NULL_INDEX - 1;						///<largest possible index
+	constexpr VeIndex VE_NULL_INDEX = std::numeric_limits<VeIndex>::max();	///<a null index pointing nowhere
 	using VeIndexPair = std::pair<VeIndex, VeIndex>;						///<a pair of indices
 	using VeIndexTriple = std::tuple<VeIndex, VeIndex, VeIndex>;			///<a triplet of indices
 
-	typedef uint64_t VeHandle;												///<64 bit handle for uniquely identifying objects in tables
-	constexpr VeHandle VE_NULL_HANDLE =										///<an empty handle pointing to no objects
-		std::numeric_limits<VeHandle>::max();
-	constexpr VeHandle VE_MAX_HANDLE = VE_NULL_HANDLE - 1;					///<the maximum handle possible
+	enum class VeHandle : uint64_t {};										///<64 bit handle for uniquely identifying objects in tables
+	constexpr VeHandle VE_NULL_HANDLE = VeHandle(std::numeric_limits<uint64_t>::max());				///<an empty handle pointing to no objects
 	using VeHandlePair = std::pair<VeHandle, VeHandle>;						///<a pair of handles
-	using VeHandleTriple = std::tuple<VeHandle, VeHandle, VeHandle>;		///<a triplet of handles
+	using VeHandleTriple = std::tuple<VeHandle, VeHandle, VeHandle>;		///<a tripuint64_t let of hanVeHandle l, int r dle return l + r; s;
+	inline uint64_t operator+(VeHandle l, int r) { return (uint64_t)l + r; };
+	inline VeHandle operator""_Hd(uint64_t val) { return VeHandle(val); };
+	inline std::ostream& operator<<(std::ostream& stream, VeHandle& handle) {
+		stream << handle + 0;
+		return stream;
+	};
 
 
 	//----------------------------------------------------------------------------------
@@ -70,9 +72,9 @@ namespace vve {
 	*
 	*/
 	inline std::ostream& operator<<(std::ostream& stream, VeHandlePair& pair) {
-		stream << pair.first;
+		stream << pair.first+0;
 		stream << std::skipws;
-		stream << pair.second;
+		stream << pair.second+0;
 		return stream;
 	};
 
@@ -102,11 +104,11 @@ namespace vve {
 	*
 	*/
 	inline std::ostream& operator<<(std::ostream& stream, VeHandleTriple& triple) {
-		stream << std::get<0>(triple);
+		stream << std::get<0>(triple)+0;
 		stream << std::skipws;
-		stream << std::get<1>(triple);
+		stream << std::get<1>(triple)+0;
 		stream << std::skipws;
-		stream << std::get<2>(triple);
+		stream << std::get<2>(triple)+0;
 		return stream;
 	};
 

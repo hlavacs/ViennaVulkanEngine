@@ -97,11 +97,11 @@ namespace vve {
 		VeHandle getHandle(VeIndex dir_index) { 
 			if (!isValid(dir_index)) 
 				return VE_NULL_HANDLE;
-			return (VeHandle)m_dir_entries[dir_index].m_guid | ((VeHandle)dir_index << 32);  
+			return VeHandle( m_dir_entries[dir_index].m_guid | ((uint64_t)dir_index << 32) );  
 		};
 
 		static::std::tuple<VeIndex,VeIndex> splitHandle(VeHandle key ) { 
-			return { (VeIndex)(key & VE_NULL_INDEX ), (VeIndex)(key >> 32) };
+			return { VeIndex(key) & VE_NULL_INDEX , (VeIndex)((uint64_t)key >> 32) };
 		};
 
 		bool isValid(VeIndex dir_index) {
@@ -987,7 +987,7 @@ namespace vve {
 			size = (VeIndex)alignBoundary( size, m_align );
 
 			std::vector<VeHandle, custom_alloc<VeHandle>> result(&m_heap);
-			m_directory.getHandlesEqual((VeIndex)0, (VeIndex)0, result ); //map 0, all where occupied == false
+			m_directory.getHandlesEqual(0_Hd, 0, result ); //map 0, all where occupied == false
 
 			VeHandle h = VE_NULL_HANDLE;
 			VeDirectoryEntry entry;
