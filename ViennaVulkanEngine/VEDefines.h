@@ -41,6 +41,8 @@ namespace vve {
 	inline VeCount operator-(VeCount count, VeCount rcount) { return VeCount((uint64_t)count - (uint64_t)rcount); };
 	inline VeCount operator++(VeCount count) { count = VeCount((uint64_t)count + 1); return count; };
 	inline VeCount operator--(VeCount count) { count = VeCount((uint64_t)count - 1); return count; };
+	inline VeCount operator""_Cnt(uint64_t val) { return VeCount(val); };
+	inline uint64_t operator+(VeCount l, int r) { return (uint64_t)l + r; };
 
 	typedef uint32_t VeIndex;												///<for indexing in large data collections
 	constexpr VeIndex VE_NULL_INDEX = std::numeric_limits<VeIndex>::max();	///<a null index pointing nowhere
@@ -51,7 +53,7 @@ namespace vve {
 	constexpr VeHandle VE_NULL_HANDLE = VeHandle(std::numeric_limits<uint64_t>::max());				///<an empty handle pointing to no objects
 	using VeHandlePair = std::pair<VeHandle, VeHandle>;						///<a pair of handles
 	using VeHandleTriple = std::tuple<VeHandle, VeHandle, VeHandle>;		///<a tripuint64_t let of hanVeHandle l, int r dle return l + r; s;
-	inline uint64_t operator+(VeHandle l, int r) { return (uint64_t)l + r; };
+	inline uint64_t operator+(VeHandle l, uint64_t r) { return (uint64_t)l + r; };
 	inline VeHandle operator""_Hd(uint64_t val) { return VeHandle(val); };
 	inline std::ostream& operator<<(std::ostream& stream, VeHandle& handle) {
 		stream << handle + 0;
