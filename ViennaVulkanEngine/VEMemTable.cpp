@@ -36,10 +36,10 @@ namespace vve {
 		};
 
 		std::vector<VeMap*> maps = {
-			new VeOrderedMultimap< VeHandle, VeIndex >((VeIndex)offsetof(struct TestEntry, m_int64), (VeIndex)sizeof(TestEntry::m_int64)),
-			new VeOrderedMultimap< VeHandle, VeIndex >((VeIndex)offsetof(struct TestEntry, m_int1), (VeIndex)sizeof(TestEntry::m_int1)),
+			new VeOrderedMultimap< VeKey, VeIndex >((VeIndex)offsetof(struct TestEntry, m_int64), (VeIndex)sizeof(TestEntry::m_int64)),
+			new VeOrderedMultimap< VeKey, VeIndex >((VeIndex)offsetof(struct TestEntry, m_int1), (VeIndex)sizeof(TestEntry::m_int1)),
 			new VeOrderedMultimap< std::string, VeIndex >((VeIndex)offsetof(struct TestEntry, m_name), 0),
-			new VeOrderedMultimap< VeHandlePair, VeIndexPair >(
+			new VeOrderedMultimap< VeKeyPair, VeIndexPair >(
 				VeIndexPair((VeIndex)offsetof(TestEntry, m_int1), (VeIndex)offsetof(TestEntry, m_int2)),
 				VeIndexPair((VeIndex)sizeof(TestEntry::m_int1),   (VeIndex)sizeof(TestEntry::m_int2)))
 		};
@@ -111,25 +111,25 @@ namespace vve {
 
 			//--------
 			std::vector<VeHandle, custom_alloc<VeHandle>> handles(getTmpHeap());
-			testTable.getHandlesEqual(0_Hd, 5, handles);
+			testTable.getHandlesEqual(0_Ke, 5, handles);
 			auto [auto_id, dir_index] = VeDirectory::splitHandle(handles[0]);
 
 			handles.clear();
 			testTable.getHandlesEqual("2", 2, handles);
 
 			handles.clear();
-			testTable.getHandlesEqual(VeHandlePair(1_Hd,6_Hd), 3, handles);
+			testTable.getHandlesEqual(VeKeyPair(1_Ke,6_Ke), 3, handles);
 
 			//--------
 
 			handles.clear();
-			testTable.getHandlesRange(2_Hd, 5_Hd, 0, handles);
+			testTable.getHandlesRange(2_Ke, 5_Ke, 0, handles);
 
 			handles.clear();
 			testTable.getHandlesRange("2", "3", 2, handles);
 
 			handles.clear();
-			testTable.getHandlesRange(VeHandlePair( 4_Hd, 0_Hd), VeHandlePair( 5_Hd, 0_Hd), 3, handles);
+			testTable.getHandlesRange(VeKeyPair( 4_Ke, 0_Ke), VeKeyPair( 5_Ke, 0_Ke), 3, handles);
 
 
 			handle = testTable.insert({ 8_Hd, 2, 3, "4" });

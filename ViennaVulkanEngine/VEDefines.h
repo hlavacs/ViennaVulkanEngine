@@ -48,17 +48,86 @@ namespace vve {
 	constexpr VeIndex VE_NULL_INDEX = std::numeric_limits<VeIndex>::max();	///<a null index pointing nowhere
 	using VeIndexPair = std::pair<VeIndex, VeIndex>;						///<a pair of indices
 	using VeIndexTriple = std::tuple<VeIndex, VeIndex, VeIndex>;			///<a triplet of indices
+	inline std::ostream& operator<<(std::ostream& stream, VeIndexPair& pair) {
+		stream << pair.first;
+		stream << std::skipws;
+		stream << pair.second;
+		return stream;
+	};
+	inline std::ostream& operator<<(std::ostream& stream, VeIndexTriple& triple) {
+		stream << std::get<0>(triple);
+		stream << std::skipws;
+		stream << std::get<1>(triple);
+		stream << std::skipws;
+		stream << std::get<2>(triple);
+		return stream;
+	};
 
 	enum class VeHandle : uint64_t {};										///<64 bit handle for uniquely identifying objects in tables
 	constexpr VeHandle VE_NULL_HANDLE = VeHandle(std::numeric_limits<uint64_t>::max());				///<an empty handle pointing to no objects
 	using VeHandlePair = std::pair<VeHandle, VeHandle>;						///<a pair of handles
 	using VeHandleTriple = std::tuple<VeHandle, VeHandle, VeHandle>;		///<a tripuint64_t let of hanVeHandle l, int r dle return l + r; s;
 	inline uint64_t operator+(VeHandle l, uint64_t r) { return (uint64_t)l + r; };
+	inline bool operator<(VeHandle l, VeHandle r) { return (uint64_t)l < (uint64_t)r; };
+	inline bool operator<=(VeHandle l, VeHandle r) { return (uint64_t)l <= (uint64_t)r; };
 	inline VeHandle operator""_Hd(uint64_t val) { return VeHandle(val); };
 	inline std::ostream& operator<<(std::ostream& stream, VeHandle& handle) {
 		stream << handle + 0;
 		return stream;
 	};
+	inline std::ostream& operator<<(std::ostream& stream, VeHandlePair& pair) {
+		stream << pair.first + 0;
+		stream << std::skipws;
+		stream << pair.second + 0;
+		return stream;
+	};
+	inline std::ostream& operator<<(std::ostream& stream, VeHandleTriple& triple) {
+		stream << std::get<0>(triple) + 0;
+		stream << std::skipws;
+		stream << std::get<1>(triple) + 0;
+		stream << std::skipws;
+		stream << std::get<2>(triple) + 0;
+		return stream;
+	};
+
+	enum class VeKey : uint64_t {};														///<64 bit handle for uniquely identifying objects in tables
+	constexpr VeKey VE_NULL_KEY = VeKey(std::numeric_limits<uint64_t>::max());		///<an empty handle pointing to no objects
+	using VeKeyPair = std::pair<VeKey, VeKey>;						///<a pair of handles
+	using VeKeyTriple = std::tuple<VeKey, VeKey, VeKey>;		///<a tripuint64_t let of hanVeHandle l, int r dle return l + r; s;
+	inline uint64_t operator+(VeKey l, uint64_t r) { return (uint64_t)l + r; };
+	inline bool operator<(VeKey l, VeKey r) { return (uint64_t)l < (uint64_t)r; };
+	inline bool operator<=(VeKey l, VeKey r) { return (uint64_t)l <= (uint64_t)r; };
+	inline VeKey operator""_Ke(uint64_t val) { return VeKey(val); };
+	inline std::ostream& operator<<(std::ostream& stream, VeKey& key) {
+		stream << key + 0;
+		return stream;
+	};
+	inline std::ostream& operator<<(std::ostream& stream, VeKeyPair& pair) {
+		stream << pair.first + 0;
+		stream << std::skipws;
+		stream << pair.second + 0;
+		return stream;
+	};
+	inline std::ostream& operator<<(std::ostream& stream, VeKeyTriple& triple) {
+		stream << std::get<0>(triple) + 0;
+		stream << std::skipws;
+		stream << std::get<1>(triple) + 0;
+		stream << std::skipws;
+		stream << std::get<2>(triple) + 0;
+		return stream;
+	};
+
+	enum class VeValue : uint64_t {};														///<64 bit handle for uniquely identifying objects in tables
+	constexpr VeValue VE_NULL_VALUE = VeValue(std::numeric_limits<uint64_t>::max());		///<an empty handle pointing to no objects
+	inline uint64_t operator+(VeValue l, uint64_t r) { return (uint64_t)l + r; };
+	inline bool operator<(VeValue l, VeValue r) { return (uint64_t)l < (uint64_t)r; };
+	inline bool operator<=(VeValue l, VeValue r) { return (uint64_t)l <= (uint64_t)r; };
+	inline VeValue operator""_Va(uint64_t val) { return VeValue(val); };
+	inline std::ostream& operator<<(std::ostream& stream, VeValue& value) {
+		stream << value + 0;
+		return stream;
+	};
+
 
 
 	//----------------------------------------------------------------------------------
@@ -73,12 +142,6 @@ namespace vve {
 	*	\returns altered output stream.
 	*
 	*/
-	inline std::ostream& operator<<(std::ostream& stream, VeHandlePair& pair) {
-		stream << pair.first+0;
-		stream << std::skipws;
-		stream << pair.second+0;
-		return stream;
-	};
 
 	/**
 	*
@@ -89,12 +152,6 @@ namespace vve {
 	*	\returns altered output stream.
 	*
 	*/
-	inline std::ostream& operator<<(std::ostream& stream, VeIndexPair& pair) {
-		stream << pair.first;
-		stream << std::skipws;
-		stream << pair.second;
-		return stream;
-	};
 
 	/**
 	*
@@ -105,14 +162,6 @@ namespace vve {
 	*	\returns altered output stream.
 	*
 	*/
-	inline std::ostream& operator<<(std::ostream& stream, VeHandleTriple& triple) {
-		stream << std::get<0>(triple)+0;
-		stream << std::skipws;
-		stream << std::get<1>(triple)+0;
-		stream << std::skipws;
-		stream << std::get<2>(triple)+0;
-		return stream;
-	};
 
 	/**
 	*
@@ -123,14 +172,6 @@ namespace vve {
 	*	\returns altered output stream.
 	*
 	*/
-	inline std::ostream& operator<<(std::ostream& stream, VeIndexTriple& triple) {
-		stream << std::get<0>(triple);
-		stream << std::skipws;
-		stream << std::get<1>(triple);
-		stream << std::skipws;
-		stream << std::get<2>(triple);
-		return stream;
-	};
 
 
 	//----------------------------------------------------------------------------------

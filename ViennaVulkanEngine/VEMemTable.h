@@ -394,7 +394,7 @@ namespace vve {
 		
 		bool success = true;
 		for (auto map : m_maps) {
-			success = success && map->insert((void*)&entry, dir_index);
+			success = success && map->insert((void*)&entry, VeValue(dir_index));
 		}
 		if (!success) {
 			erase(handle);
@@ -424,10 +424,10 @@ namespace vve {
 		}
 
 		for (auto map : m_maps) 
-			map->erase((void*)&m_data[dir_entry.m_table_index], dir_index);
+			map->erase((void*)&m_data[dir_entry.m_table_index], VeValue(dir_index));
 		m_data[dir_entry.m_table_index] = entry;
 		for (auto map : m_maps) 
-			map->insert((void*)&entry, dir_index);
+			map->insert((void*)&entry, VeValue(dir_index));
 		out();
 		return true;
 	};
@@ -474,7 +474,7 @@ namespace vve {
 		swap( key, getHandleFromIndex((VeIndex)m_data.size() - 1) );
 
 		for (auto map : m_maps) 
-			map->erase((void*)&m_data[(VeIndex)m_data.size() - 1], dir_index);
+			map->erase((void*)&m_data[(VeIndex)m_data.size() - 1], VeValue(dir_index));
 		m_directory.deleteEntry(dir_index);
 		m_data.pop_back();
 		m_idx2dir.pop_back();
@@ -594,8 +594,8 @@ namespace vve {
 			out();
 			return VE_NULL_HANDLE;
 		}
-		VeIndex dir_index = m_maps[num_map]->find(key);
-		VeHandle result = m_directory.getHandle(dir_index);
+		VeValue dir_index = m_maps[num_map]->find(key);
+		VeHandle result = m_directory.getHandle(VeIndex(dir_index));
 		out();
 		return result;
 	};
@@ -610,11 +610,11 @@ namespace vve {
 			return VeCount(0);
 		}
 		VeCount num = VeCount(0);
-		std::vector<VeIndex, custom_alloc<VeIndex>> dir_indices(&m_heap);
+		std::vector<VeValue, custom_alloc<VeValue>> dir_indices(&m_heap);
 
 		num = m_maps[num_map]->equal_range( key, dir_indices);
 		for (auto dir_index : dir_indices)
-			result.emplace_back(m_directory.getHandle(dir_index));
+			result.emplace_back(m_directory.getHandle(VeIndex(dir_index)));
 		out();
 		return num;
 	};
@@ -629,11 +629,11 @@ namespace vve {
 			return VeCount(0);
 		}
 		VeCount num = VeCount(0);
-		std::vector<VeIndex, custom_alloc<VeIndex>> dir_indices(&m_heap);
+		std::vector<VeValue, custom_alloc<VeValue>> dir_indices(&m_heap);
 
 		num = m_maps[num_map]->range(lower, upper, dir_indices);
 		for (auto dir_index : dir_indices)
-			result.emplace_back(m_directory.getHandle(dir_index));
+			result.emplace_back(m_directory.getHandle(VeIndex(dir_index)));
 		out();
 		return num;
 	}
@@ -655,10 +655,10 @@ namespace vve {
 
 		in();
 		assert(num_map < m_maps.size());
-		std::vector<VeIndex, custom_alloc<VeIndex>> dir_indices(&m_heap);
-		VeCount num = m_maps[num_map]->getAllIndices(dir_indices);
+		std::vector<VeValue, custom_alloc<VeValue>> dir_indices(&m_heap);
+		VeCount num = m_maps[num_map]->getAllValues(dir_indices);
 		for (auto dir_index : dir_indices) 
-			result.emplace_back( m_directory.getHandle(dir_index) );
+			result.emplace_back( m_directory.getHandle(VeIndex(dir_index)) );
 		out();
 		return num;
 	};
@@ -912,10 +912,10 @@ namespace vve {
 		VeVariableSizeTable(std::string name, VeIndex size = 1<<20, bool clear_on_swap = false, VeIndex align = 16, bool immediateDefrag = false ) :
 			VeTable(name, clear_on_swap), m_directory(name), m_align(align), m_immediateDefrag(immediateDefrag) {
 
-			m_directory.addMap(new VeOrderedMultimap< VeHandle, VeIndex >(
+			m_directory.addMap(new VeOrderedMultimap< VeKey, VeIndex >(
 				(VeIndex)offsetof(struct VeDirectoryEntry, m_occupied), (VeIndex)sizeof(VeDirectoryEntry::m_occupied)));
 
-			m_directory.addMap(new VeOrderedMultimap< VeHandle, VeIndex >(
+			m_directory.addMap(new VeOrderedMultimap< VeKey, VeIndex >(
 				(VeIndex)offsetof(struct VeDirectoryEntry, m_start), (VeIndex)sizeof(VeDirectoryEntry::m_start)));
 					   
 			m_data.resize((VeIndex)size + (VeIndex)m_align);
@@ -987,7 +987,7 @@ namespace vve {
 			size = (VeIndex)alignBoundary( size, m_align );
 
 			std::vector<VeHandle, custom_alloc<VeHandle>> result(&m_heap);
-			m_directory.getHandlesEqual(0_Hd, 0, result ); //map 0, all where occupied == false
+			m_directory.getHandlesEqual(0_Ke, 0, result ); //map 0, all where occupied == false
 
 			VeHandle h = VE_NULL_HANDLE;
 			VeDirectoryEntry entry;
