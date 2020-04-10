@@ -44,22 +44,16 @@ namespace vve {
 	inline VeCount operator""_Cnt(uint64_t val) { return VeCount(val); };
 	inline uint64_t operator+(VeCount l, int r) { return (uint64_t)l + r; };
 
-	typedef uint32_t VeIndex;												///<for indexing in large data collections
+	typedef uint64_t VeIndex;												///<for indexing in large data collections
 	constexpr VeIndex VE_NULL_INDEX = std::numeric_limits<VeIndex>::max();	///<a null index pointing nowhere
 	using VeIndexPair = std::pair<VeIndex, VeIndex>;						///<a pair of indices
 	using VeIndexTriple = std::tuple<VeIndex, VeIndex, VeIndex>;			///<a triplet of indices
 	inline std::ostream& operator<<(std::ostream& stream, VeIndexPair& pair) {
-		stream << pair.first;
-		stream << std::skipws;
-		stream << pair.second;
+		stream << pair.first << std::skipws << pair.second;
 		return stream;
 	};
 	inline std::ostream& operator<<(std::ostream& stream, VeIndexTriple& triple) {
-		stream << std::get<0>(triple);
-		stream << std::skipws;
-		stream << std::get<1>(triple);
-		stream << std::skipws;
-		stream << std::get<2>(triple);
+		stream << std::get<0>(triple) << std::skipws << std::get<1>(triple) << std::skipws << std::get<2>(triple);
 		return stream;
 	};
 
@@ -76,17 +70,11 @@ namespace vve {
 		return stream;
 	};
 	inline std::ostream& operator<<(std::ostream& stream, VeHandlePair& pair) {
-		stream << pair.first + 0;
-		stream << std::skipws;
-		stream << pair.second + 0;
+		stream << pair.first + 0 << std::skipws << pair.second + 0;
 		return stream;
 	};
 	inline std::ostream& operator<<(std::ostream& stream, VeHandleTriple& triple) {
-		stream << std::get<0>(triple) + 0;
-		stream << std::skipws;
-		stream << std::get<1>(triple) + 0;
-		stream << std::skipws;
-		stream << std::get<2>(triple) + 0;
+		stream << std::get<0>(triple) + 0 << std::skipws << std::get<1>(triple) + 0 << std::skipws << std::get<2>(triple) + 0;
 		return stream;
 	};
 
@@ -103,17 +91,11 @@ namespace vve {
 		return stream;
 	};
 	inline std::ostream& operator<<(std::ostream& stream, VeKeyPair& pair) {
-		stream << pair.first + 0;
-		stream << std::skipws;
-		stream << pair.second + 0;
+		stream << pair.first + 0 << std::skipws << pair.second + 0;
 		return stream;
 	};
 	inline std::ostream& operator<<(std::ostream& stream, VeKeyTriple& triple) {
-		stream << std::get<0>(triple) + 0;
-		stream << std::skipws;
-		stream << std::get<1>(triple) + 0;
-		stream << std::skipws;
-		stream << std::get<2>(triple) + 0;
+		stream << std::get<0>(triple) + 0 << std::skipws << std::get<1>(triple) + 0 << std::skipws << std::get<2>(triple) + 0;
 		return stream;
 	};
 
@@ -127,51 +109,6 @@ namespace vve {
 		stream << value + 0;
 		return stream;
 	};
-
-
-
-	//----------------------------------------------------------------------------------
-	//operators for console output
-
-	/**
-	*
-	*	\brief Operator to output handle pairs
-	*
-	*	\param[in] stream The stream that is output into.
-	*	\param[in] pair The handle pair to be output
-	*	\returns altered output stream.
-	*
-	*/
-
-	/**
-	*
-	*	\brief Operator to output index pairs
-	*
-	*	\param[in] stream The stream that is output into.
-	*	\param[in] pair The index pair to be output
-	*	\returns altered output stream.
-	*
-	*/
-
-	/**
-	*
-	*	\brief Operator to output handle triplets
-	*
-	*	\param[in] stream The stream that is output into.
-	*	\param[in] pair The handle triple to be output
-	*	\returns altered output stream.
-	*
-	*/
-
-	/**
-	*
-	*	\brief Operator to output index triplets
-	*
-	*	\param[in] stream The stream that is output into.
-	*	\param[in] pair The index triple to be output
-	*	\returns altered output stream.
-	*
-	*/
 
 
 	//----------------------------------------------------------------------------------
