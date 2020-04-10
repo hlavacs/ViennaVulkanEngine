@@ -42,7 +42,7 @@ namespace vve {
 		VeHeapMemory* getHeap() {
 			VeIndex heapIdx = 0;
 #ifdef VE_ENABLE_MULTITHREADING
-			uint32_t threadIdx = JIDX;
+			uint32_t threadIdx = (uint32_t)JIDX;
 			if (threadIdx < g_thread_heap.size())
 				heapIdx = threadIdx;
 #endif
@@ -52,7 +52,7 @@ namespace vve {
 		VeHeapMemory* getTmpHeap() {
 			VeIndex heapIdx = 0;
 #ifdef VE_ENABLE_MULTITHREADING
-			uint32_t threadIdx = JIDX;
+			uint32_t threadIdx = (uint32_t)JIDX;
 			if (threadIdx < g_thread_tmp_heap.size())
 				heapIdx = threadIdx;
 #endif
@@ -194,7 +194,7 @@ namespace vve {
 			for (auto table : g_main_table.data()) {
 				table.m_table_pointer->setName(table.m_name);
 				if (!table.m_table_pointer->getReadOnly()) {
-					table.m_table_pointer->setThreadIdx(i % threadCount);
+					table.m_table_pointer->setThreadIdx((vgjs::VgjsThreadIndex)(i % threadCount));
 					++i;
 				}
 			}
@@ -309,7 +309,7 @@ namespace vve {
 			JADD(runGameLoop2());				//schedule the game loop
 
 			#ifdef VE_ENABLE_MULTITHREADING
-			vgjs::JobSystem::getInstance()->threadTask(0);		//put main thread as first thread into pool
+			vgjs::JobSystem::getInstance()->threadTask(vgjs::VgjsThreadIndex(0));		//put main thread as first thread into pool
 			return;
 			#endif
 		}
