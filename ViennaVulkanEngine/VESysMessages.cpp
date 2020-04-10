@@ -53,11 +53,11 @@ namespace vve::sysmes {
 	//subscribers
 
 	struct VeMessageSubscribeTableEntry {
-		VeHandle		m_senderID;		//handle of the sending entity
-		VeHandle		m_receiverID;	//handle of the receiver entity
-		VeMessageType	m_type;			//filter on type of message
-		VeHandle		m_handlerID;	//handler of this message
-		VeIndex			m_thread_idx;	//run handler function in this thread or NULL
+		VeHandle				m_senderID;		//handle of the sending entity
+		VeHandle				m_receiverID;	//handle of the receiver entity
+		VeMessageType			m_type;			//filter on type of message
+		VeHandle				m_handlerID;	//handler of this message
+		vgjs::VgjsThreadIndex	m_thread_idx;	//run handler function in this thread or NULL
 	};
 	std::vector<VeMap*> maps4 = {
 		new VeHashedMultimap< VeKeyPair, VeIndexPair >(
@@ -90,9 +90,9 @@ namespace vve::sysmes {
 	//handler calls
 
 	struct VeMessagrCallTableEntry {
-		VeHandle	m_receiverID;	//handle of the receiver entity
-		VeHandle	m_handlerID;	//handler of message
-		VeIndex		m_thread_idx;	//special thread to run on
+		VeHandle				m_receiverID;	//handle of the receiver entity
+		VeHandle				m_handlerID;	//handler of message
+		vgjs::VgjsThreadIndex	m_thread_idx;	//special thread to run on
 	};
 	std::vector<VeMap*> maps6 = {
 		new VeHashedMap< VeKeyPair, VeIndexPair >(
@@ -122,7 +122,7 @@ namespace vve::sysmes {
 		for (auto call : g_calls_table.data()) {
 			VeMessageHandlerTableEntry handlerData;
 			g_handler_table.getEntry(call.m_handlerID, handlerData);
-			JADDT( handlerData.m_handler(call.m_receiverID), call.m_thread_idx );
+			JADDT( handlerData.m_handler(call.m_receiverID), vgjs::TID(call.m_thread_idx) );
 		}
 	}
 
@@ -138,7 +138,7 @@ namespace vve::sysmes {
 
 	VeHandle sendMessage( VeMessageTableEntry message ) {
 		if (JIDX != g_messages_table.getThreadIdx()) {
-			JADDT( sendMessage(message), g_messages_table.getThreadIdx());
+			JADDT( sendMessage(message), vgjs::TID(g_messages_table.getThreadIdx()));
 			return VE_NULL_HANDLE;
 		};
 
@@ -201,7 +201,7 @@ namespace vve::sysmes {
 		g_handler_table.erase(handlerID);
 	}
 
-	void subscribeMessage(VeHandle senderID, VeHandle receiverID, VeHandle handlerID, VeMessageType type, VeIndex thread_idx) {
+	void subscribeMessage(VeHandle senderID, VeHandle receiverID, VeHandle handlerID, VeMessageType type, vgjs::VgjsThreadIndex thread_idx) {
 		g_subscribe_table.insert({ senderID, receiverID, type, handlerID, thread_idx });
 	}
 

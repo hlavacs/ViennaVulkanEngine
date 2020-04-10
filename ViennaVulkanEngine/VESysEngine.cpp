@@ -185,19 +185,21 @@ namespace vve {
 			g_closeHandle = sysmes::addHandler(std::bind(closeEngine, std::placeholders::_1));
 			sysmes::subscribeMessage(syswin::VE_SYSTEM_HANDLE, VE_SYSTEM_HANDLE, g_closeHandle, sysmes::VeMessageType::VE_MESSAGE_TYPE_CLOSE);
 
-			uint32_t threadCount = 1;
 
 #ifdef VE_ENABLE_MULTITHREADING
+			uint32_t threadCount = (uint32_t)vgjs::JobSystem::getInstance(0, 1)->getThreadCount();
+			createHeaps(threadCount - 1);
+
 			VeIndex i = 0;
 			for (auto table : g_main_table.data()) {
 				table.m_table_pointer->setName(table.m_name);
 				if (!table.m_table_pointer->getReadOnly()) {
-					table.m_table_pointer->setThreadIdx(i);
+					table.m_table_pointer->setThreadIdx(i % threadCount);
 					++i;
 				}
 			}
 #endif
-			createHeaps(threadCount - 1);
+
 			g_main_table.setReadOnly(true);
 		}
 
@@ -303,9 +305,6 @@ namespace vve {
 
 		void runGameLoop() {
 
-			#ifdef VE_ENABLE_MULTITHREADING
-			vgjs::JobSystem::getInstance(0, 1); //create pool without thread 0
-			#endif
 
 			JADD(runGameLoop2());				//schedule the game loop
 

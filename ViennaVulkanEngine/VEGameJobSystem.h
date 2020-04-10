@@ -150,6 +150,7 @@
 namespace vgjs {
 
 
+
 	class JobMemory;
 	class Job;
 	class JobSystem;
@@ -162,13 +163,25 @@ namespace vgjs {
 	constexpr VgjsThreadIndex VGJS_NULL_THREAD_IDX =	///< No index given
 		std::numeric_limits<VgjsThreadIndex>::max();
 
+	typedef uint32_t VgjsThreadLabel;					///< Use for index into job arrays
+	constexpr VgjsThreadLabel VGJS_NULL_THREAD_LABEL =	///< No index given
+		std::numeric_limits<VgjsThreadLabel>::max();
+
 	typedef uint64_t VgjsThreadID;					///< An id contains an index and a label
 	constexpr VgjsThreadID VGJS_NULL_THREAD_ID =	///< No ID given
 		std::numeric_limits<VgjsThreadID>::max();
 
-	VgjsThreadIndex getThreadIndexFromID(VgjsThreadID thread_id);
-	VgjsThreadIndex getThreadLabelFromID(VgjsThreadID thread_id);
-	VgjsThreadID TID(VgjsThreadIndex index, VgjsThreadIndex label);
+	inline VgjsThreadIndex getThreadIndexFromID(VgjsThreadID thread_id) {
+		return (VgjsThreadIndex)(thread_id & VGJS_NULL_THREAD_IDX);
+	}
+
+	inline VgjsThreadLabel getThreadLabelFromID(VgjsThreadID thread_id) {
+		return (VgjsThreadLabel)(thread_id >> 32);
+	}
+
+	inline VgjsThreadID TID(VgjsThreadIndex thread_idx, VgjsThreadLabel label = VGJS_NULL_THREAD_IDX) {
+		return (VgjsThreadID)label << 32 | (VgjsThreadID)thread_idx;
+	}
 
 
 	/**
@@ -804,23 +817,11 @@ namespace vgjs {
 		* \param[in] thread_id The ID of the job, consist of the thread index and a label
 		*
 		*/
-		void addJob( Function& func, VgjsThreadID thread_id = VGJS_NULL_THREAD_ID ) {
-			Job* pJob = m_job_memory[m_thread_index]->allocateJob();
-			pJob->setParentJob(getJobPointer());	//set parent Job to notify on finished, or nullptr if main thread
-			pJob->setFunction(func);
-			pJob->setThreadId(thread_id);
-			addJob(pJob);
-		};
-
-		/**
-		*
-		* \brief Create a new child job
-		*
-		* \param[in] func The function to schedule, as rvalue reference
-		* \param[in] thread_id The ID of the job, consist of the thread index and a label
-		*
-		*/
 		void addJob( Function&& func, VgjsThreadID thread_id = VGJS_NULL_THREAD_ID ) {
+			/*std::cout << "addJob index " << getThreadIndexFromID(thread_id) << " label " << getThreadLabelFromID(thread_id) << std::endl;
+			if (getThreadLabelFromID(thread_id) == 0) {
+				uint32_t u = 0;
+			}*/
 			Job* pJob = m_job_memory[m_thread_index]->allocateJob();
 			//m_clock.start();
 			pJob->setParentJob(getJobPointer());	//set parent Job to notify on finished, or nullptr if main thread
@@ -841,7 +842,7 @@ namespace vgjs {
 		* \param[in] thread_id The ID of the job, consist of the thread index and a label
 		*
 		*/
-		void onFinishedAddJob(Function func, VgjsThreadID thread_id = VGJS_NULL_THREAD_ID ) {
+		void onFinishedAddJob(Function &&func, VgjsThreadID thread_id = VGJS_NULL_THREAD_ID ) {
 			Job *pCurrentJob = getJobPointer();			//should never be called by meain thread
 			if (pCurrentJob == nullptr) return;			//is null if called by main thread
 			assert(!pCurrentJob->m_repeatJob);			//you cannot do both repeat and add job after finishing
@@ -890,44 +891,8 @@ namespace vgjs {
 namespace vgjs {
 
 	std::unique_ptr<JobSystem> JobSystem::pInstance;			//pointer to singleton
-
-	//JobSystem* JobSystem::pInstance = nullptr;				///< Singleton instance of the JobSystem
 	thread_local int32_t JobSystem::m_thread_index = 0;		///< Thread local index of the thread
 
-
-	/**
-	*
-	* \brief Break down an ID into its components and return the thread index
-	*
-	* \param[in] thread_id ID of the thread
-	*
-	*/
-	VgjsThreadIndex getThreadIndexFromID(VgjsThreadID thread_id) {
-		return (VgjsThreadIndex)(thread_id & VGJS_NULL_THREAD_IDX);
-	}
-
-	/**
-	*
-	* \brief Break down an ID into its components and return the thread label
-	*
-	* \param[in] thread_id ID of the thread
-	*
-	*/
-	VgjsThreadIndex getThreadLabelFromID(VgjsThreadID thread_id) {
-		return (VgjsThreadIndex)(thread_id >> 32);
-	}
-
-	/**
-	*
-	* \brief Construct an ID from index and label
-	*
-	* \param[in] thread_idx Index of the thread
-	* \param[in] label Label of the thread
-	*
-	*/
-	VgjsThreadID TID(VgjsThreadIndex thread_idx, VgjsThreadIndex label) {
-		return (VgjsThreadID)label << 32 | (VgjsThreadID)thread_idx;
-	}
 
 	/**
 	* \brief The call operator of a job, calling the stored function object

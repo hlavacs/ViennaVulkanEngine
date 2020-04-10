@@ -142,13 +142,13 @@ namespace vve {
 	*/
 	class VeTable {
 	protected:
-		VeHeapMemory	m_heap;
-		VeIndex			m_thread_idx = 0;			///id of thread that accesses to this table are scheduled to
-		bool			m_read_only = false;
-		VeTable	*		m_companion_table = nullptr;
-		bool			m_clear_on_swap = false;
-		std::atomic<bool> m_swapping = false;
-		bool			m_dirty = false;
+		VeHeapMemory			m_heap;
+		vgjs::VgjsThreadIndex	m_thread_idx = 0;			///id of thread that accesses to this table are scheduled to
+		bool					m_read_only = false;
+		VeTable	*				m_companion_table = nullptr;
+		bool					m_clear_on_swap = false;
+		std::atomic<bool>		m_swapping = false;
+		bool					m_dirty = false;
 
 		//for debugging
 		uint32_t	m_table_nr = 0;
@@ -176,7 +176,7 @@ namespace vve {
 		virtual VeMap* getMap(VeIndex num_map) { assert(false);  return nullptr; };
 		virtual VeDirectory* getDirectory() { assert(false);  return nullptr; };
 
-		void setThreadIdx(VeIndex id) {
+		void setThreadIdx(vgjs::VgjsThreadIndex id) {
 			if (m_thread_idx == id)
 				return;
 
@@ -185,7 +185,7 @@ namespace vve {
 			if (companion_table != nullptr)
 				companion_table->setThreadIdx(id);
 		};
-		VeIndex	getThreadIdx() { return m_thread_idx; };
+		vgjs::VgjsThreadIndex	getThreadIdx() { return m_thread_idx; };
 
 		void setName( std::string name, bool set_companion = true ) {
 			m_name = name;
@@ -698,7 +698,7 @@ namespace vve {
 				return;
 			}
 			if( vgjs::JobSystem::isInstanceCreated() && this->m_thread_idx != JIDX)
-				JADDT( me->VeFixedSizeTable<T>::operator=(*other), this->m_thread_idx);
+				JADDT( me->VeFixedSizeTable<T>::operator=(*other), vgjs::TID(this->m_thread_idx));
 			else 
 				me->VeFixedSizeTable<T>::operator=(*other);
 		};
@@ -706,7 +706,7 @@ namespace vve {
 		virtual void swap(VeHandle h1, VeHandle h2) {
 			VeFixedSizeTable<T>* me = (VeFixedSizeTable<T>*)this->getWriteTablePtr();
 			if (vgjs::JobSystem::isInstanceCreated() && this->m_thread_idx != JIDX)
-				JADDT(me->VeFixedSizeTable<T>::swap(h1, h2), this->m_thread_idx);
+				JADDT(me->VeFixedSizeTable<T>::swap(h1, h2), vgjs::TID(this->m_thread_idx));
 			else
 				me->VeFixedSizeTable<T>::swap(h1, h2);
 		};
@@ -718,7 +718,7 @@ namespace vve {
 				return;
 			}
 			if (!this->m_swapping && vgjs::JobSystem::isInstanceCreated() && this->m_thread_idx != JIDX)
-				JADDT(me->VeFixedSizeTable<T>::clear(), this->m_thread_idx);
+				JADDT(me->VeFixedSizeTable<T>::clear(), vgjs::TID(this->m_thread_idx));
 			else
 				me->VeFixedSizeTable<T>::clear();
 		};
@@ -726,7 +726,7 @@ namespace vve {
 		virtual void sort(VeIndex num_map) {
 			VeFixedSizeTable<T>* me = (VeFixedSizeTable<T>*)this->getWriteTablePtr();
 			if (vgjs::JobSystem::isInstanceCreated() && this->m_thread_idx != JIDX)
-				JADDT(me->VeFixedSizeTable<T>::sort(num_map), this->m_thread_idx);
+				JADDT(me->VeFixedSizeTable<T>::sort(num_map), vgjs::TID(this->m_thread_idx));
 			else
 				me->VeFixedSizeTable<T>::sort(num_map);
 		};
@@ -734,7 +734,7 @@ namespace vve {
 		virtual VeHandle insert(T entry, std::promise<VeHandle>* pPromise) {
 			VeFixedSizeTable<T>* me = (VeFixedSizeTable<T>*)this->getWriteTablePtr();
 			if (vgjs::JobSystem::isInstanceCreated() && this->m_thread_idx != JIDX ) {
-				JADDT(me->VeFixedSizeTable<T>::insert(entry, pPromise), this->m_thread_idx);
+				JADDT(me->VeFixedSizeTable<T>::insert(entry, pPromise), vgjs::TID(this->m_thread_idx));
 				return VE_NULL_HANDLE;
 			}
 			return me->VeFixedSizeTable<T>::insert(entry, pPromise);
@@ -747,7 +747,7 @@ namespace vve {
 		virtual bool update(VeHandle key, T entry) {
 			VeFixedSizeTable<T>* me = (VeFixedSizeTable<T>*)this->getWriteTablePtr();
 			if (vgjs::JobSystem::isInstanceCreated() && this->m_thread_idx != JIDX) {
-				JADDT(me->VeFixedSizeTable<T>::update(key, entry), this->m_thread_idx);
+				JADDT(me->VeFixedSizeTable<T>::update(key, entry), vgjs::TID(this->m_thread_idx));
 				return true;
 			}
 			return me->VeFixedSizeTable<T>::update(key, entry);
@@ -756,7 +756,7 @@ namespace vve {
 		virtual bool erase(VeHandle key) {
 			VeFixedSizeTable<T>* me = (VeFixedSizeTable<T>*)this->getWriteTablePtr();
 			if (vgjs::JobSystem::isInstanceCreated() && this->m_thread_idx != JIDX) {
-				JADDT(me->VeFixedSizeTable<T>::erase(key), this->m_thread_idx);
+				JADDT(me->VeFixedSizeTable<T>::erase(key), vgjs::TID(this->m_thread_idx));
 				return true;
 			}
 			return me->VeFixedSizeTable<T>::erase(key);
@@ -1078,40 +1078,34 @@ namespace vve {
 			VeVariableSizeTable* me = (VeVariableSizeTable*)this->getWriteTablePtr();
 			VeVariableSizeTable* other = (VeVariableSizeTable*)other_tab->getReadTablePtr();
 
-			JADDT(me->VeVariableSizeTable::operator=(*other), this->m_thread_idx);
+			JADDT(me->VeVariableSizeTable::operator=(*other), vgjs::TID(this->m_thread_idx));
 		}
 
 		void operator=(VeVariableSizeTableMT& table) {
 			VeVariableSizeTable* me = (VeVariableSizeTable*)this->getWriteTablePtr();
 			VeVariableSizeTable* other = (VeVariableSizeTable*)table.getReadTablePtr();
 
-			JADDT( me->VeVariableSizeTable::operator=(*other), this->m_thread_idx );
+			JADDT( me->VeVariableSizeTable::operator=(*other), vgjs::TID(this->m_thread_idx));
 		}
 
 		virtual void setReadOnly(bool ro) {
 			VeVariableSizeTable* me = (VeVariableSizeTable*)this;
-			JADDT(me->VeVariableSizeTable::setReadOnly(ro), this->m_thread_idx);
+			JADDT(me->VeVariableSizeTable::setReadOnly(ro), vgjs::TID(this->m_thread_idx));
 		};
-
-		//do not need this since swapping is done in cleanup
-		//virtual void swapTables() {
-		//	VeVariableSizeTable* me = (VeVariableSizeTable*)this;
-		//	JADDT(me->VeVariableSizeTable::swapTables(), this->m_thread_id);
-		//};
 
 		virtual void clear() {
 			VeVariableSizeTable* me = (VeVariableSizeTable*)this->getWriteTablePtr();
-			JADDT(me->VeVariableSizeTable::clear(), this->m_thread_idx);
+			JADDT(me->VeVariableSizeTable::clear(), vgjs::TID(this->m_thread_idx));
 		}
 
 		VeHandle insertBlob(uint8_t* ptr, VeIndex size, VeHandle* pHandle = nullptr, bool defrag = true) {
 			VeVariableSizeTable* me = (VeVariableSizeTable*)this->getWriteTablePtr();
-			JADDT(me->VeVariableSizeTable::insertBlob(ptr, size, pHandle, defrag), this->m_thread_idx);
+			JADDT(me->VeVariableSizeTable::insertBlob(ptr, size, pHandle, defrag), vgjs::TID(this->m_thread_idx));
 		}
 
 		bool deleteBlob(VeHandle handle) {
 			VeVariableSizeTable* me = (VeVariableSizeTable*)this->getWriteTablePtr();
-			JADDT(me->VeVariableSizeTable::deleteBlob(handle), this->m_thread_idx);
+			JADDT(me->VeVariableSizeTable::deleteBlob(handle), vgjs::TID(this->m_thread_idx));
 		}
 
 		//---------------------------------------------------------------------------------

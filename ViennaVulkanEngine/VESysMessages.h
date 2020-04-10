@@ -59,7 +59,8 @@ namespace vve::sysmes {
 	void removeContinuousMessage(VeMessageTableEntry message);
 	VeHandle addHandler(std::function<void(VeHandle)> handler);
 	void removeHandler(VeHandle handlerID);
-	void subscribeMessage(VeHandle senderID, VeHandle receiverID, VeHandle handlerID, VeMessageType type = VeMessageType::VE_MESSAGE_TYPE_NULL, VeIndex thread_id = VE_NULL_INDEX);
+	void subscribeMessage(VeHandle senderID, VeHandle receiverID, VeHandle handlerID, 
+		VeMessageType type = VeMessageType::VE_MESSAGE_TYPE_NULL, vgjs::VgjsThreadIndex thread_id = vgjs::VGJS_NULL_THREAD_IDX);
 	void unsubscribeMessage(VeHandle senderID, VeHandle handlerID, VeMessageType type = VeMessageType::VE_MESSAGE_TYPE_NULL);
 
 

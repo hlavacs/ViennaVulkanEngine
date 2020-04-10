@@ -37,7 +37,7 @@ namespace vve::syswin {
 
 		g_updateHandle = sysmes::addHandler(std::bind(update, std::placeholders::_1));
 		sysmes::subscribeMessage(	syseng::VE_SYSTEM_HANDLE, VE_SYSTEM_HANDLE, g_updateHandle, 
-									sysmes::VeMessageType::VE_MESSAGE_TYPE_UPDATE, 0);
+									sysmes::VeMessageType::VE_MESSAGE_TYPE_UPDATE, vgjs::VgjsThreadIndex(0));
 
 		g_closeHandle = sysmes::addHandler(std::bind(close, std::placeholders::_1));
 		sysmes::subscribeMessage(	syswin::VE_SYSTEM_HANDLE, VE_SYSTEM_HANDLE, g_closeHandle, 
