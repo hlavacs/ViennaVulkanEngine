@@ -23,7 +23,9 @@ namespace vve::sysvul {
 	inline VeHandle VE_SYSTEM_HANDLE = VE_NULL_HANDLE;
 
 	void init();
+	void preupdate(VeHandle receiverID);
 	void update(VeHandle receiverID);
+	void postupdate(VeHandle receiverID);
 	void close(VeHandle receiverID);
 
 

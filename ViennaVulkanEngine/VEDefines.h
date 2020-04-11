@@ -157,7 +157,6 @@ namespace vve {
 };
 
 
-
 #include "VEDoxygen.h"
 #include "VEUtilClock.h"
 #include "VEMemHeap.h"
@@ -169,6 +168,7 @@ namespace vve {
 #include "VEGameJobSystem.h"
 
 #include "VEMemTable.h"
+#include "VESystem.h"
 
 #define GLM_FORCE_RADIANS
 #define GLM_FORCE_DEPTH_ZERO_TO_ONE
@@ -199,7 +199,4 @@ namespace vve {
 
 #endif
 
-//prevent modules to access globals in other modules with extern - by defining it away
-//do not include any extern include file after here, or disable this statement
-#define extern
 

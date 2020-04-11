@@ -50,8 +50,16 @@ namespace vve::syswin {
 		sysmes::recordMessage({ sysmes::VeMessageType::VE_MESSAGE_TYPE_CLOSE, VE_SYSTEM_HANDLE });
 	}
 
+	void preupdate(VeHandle receiverID) {
+		glfw::preupdate(receiverID);
+	}
+
 	void update(VeHandle receiverID) {
 		glfw::update(receiverID);
+	}
+
+	void postupdate(VeHandle receiverID) {
+		glfw::postupdate(receiverID);
 	}
 
 	void close(VeHandle receiverID) {

@@ -37,7 +37,13 @@ namespace vve::sysass {
 		//syseng::registerTablePointer(&g_meshes_table);
 	}
 
+	void preupdate(VeHandle receiverID) {
+	}
+
 	void update(VeHandle receiverID) {
+	}
+
+	void postupdate(VeHandle receiverID) {
 	}
 
 	void close(VeHandle receiverID) {

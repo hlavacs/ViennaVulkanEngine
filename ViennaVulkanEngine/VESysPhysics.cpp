@@ -32,10 +32,15 @@ namespace vve::sysphy {
 
 	}
 
+	void preupdate(VeHandle receiverID) {
+	}
+
 	void update(VeHandle e) {
 
 	}
 
+	void postupdate(VeHandle receiverID) {
+	}
 
 	void close(VeHandle e) {
 

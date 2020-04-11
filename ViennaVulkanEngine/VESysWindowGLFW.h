@@ -15,9 +15,10 @@ namespace vve::syswin::glfw {
 	inline VeHandle VE_SYSTEM_HANDLE = VE_NULL_HANDLE;
 
 	void init();
+	void preupdate(VeHandle receiverID);
 	void update(VeHandle receiverID);
+	void postupdate(VeHandle receiverID);
 	void close(VeHandle receiverID);
-
 
 	std::vector<const char*> getRequiredInstanceExtensions();			//return GLFW Vulkan extensions
 	bool createSurface(VkInstance instance, VkSurfaceKHR* pSurface);	//create a Vulkan surface

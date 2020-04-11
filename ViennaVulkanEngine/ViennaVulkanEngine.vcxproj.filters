@@ -166,5 +166,8 @@
     <ClInclude Include="VEMemMapSlot.h">
       <Filter>Headerdateien</Filter>
     </ClInclude>
+    <ClInclude Include="VESystem.h">
+      <Filter>Headerdateien</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

@@ -36,15 +36,24 @@ namespace vve::sysvul {
 		g_renderers_table.insert({ init, tick, close });
 	}
 
+
+	VeHandle g_preupdateHandle;
 	VeHandle g_updateHandle;
+	VeHandle g_postupdateHandle;
 	VeHandle g_closeHandle;
 
 	void init() {
 		syseng::registerEntity(VE_SYSTEM_NAME);
 		VE_SYSTEM_HANDLE = syseng::getEntityHandle(VE_SYSTEM_NAME);
 
+		g_updateHandle = sysmes::addHandler(std::bind(preupdate, std::placeholders::_1));
+		sysmes::subscribeMessage(syseng::VE_SYSTEM_HANDLE, VE_SYSTEM_HANDLE, g_preupdateHandle, sysmes::VeMessageType::VE_MESSAGE_TYPE_PREUPDATE);
+
 		g_updateHandle = sysmes::addHandler(std::bind(update, std::placeholders::_1));
 		sysmes::subscribeMessage(syseng::VE_SYSTEM_HANDLE, VE_SYSTEM_HANDLE, g_updateHandle, sysmes::VeMessageType::VE_MESSAGE_TYPE_UPDATE);
+
+		g_updateHandle = sysmes::addHandler(std::bind(postupdate, std::placeholders::_1));
+		sysmes::subscribeMessage(syseng::VE_SYSTEM_HANDLE, VE_SYSTEM_HANDLE, g_postupdateHandle, sysmes::VeMessageType::VE_MESSAGE_TYPE_POSTUPDATE);
 
 		g_closeHandle = sysmes::addHandler(std::bind(close, std::placeholders::_1));
 		sysmes::subscribeMessage(syswin::VE_SYSTEM_HANDLE, VE_SYSTEM_HANDLE, g_closeHandle, sysmes::VeMessageType::VE_MESSAGE_TYPE_CLOSE);
@@ -60,19 +69,24 @@ namespace vve::sysvul {
 	bool g_windowSizeChanged = false;
 	VeClock tickClock("Vulkan Clock");
 
-	void cleanUp() {
+	void preupdate(VeHandle receiverID) {
 		if (g_windowSizeChanged) {
 			g_windowSizeChanged = false;
 			//recreate swap chain, do not draw current frame
 		}
 
-		if (syseng::getNowTime() > syseng::getNextUpdateTime())	//have not reached the now time interval
-			return;
-
+		fwsimple::preupdate(receiverID);
 	}
 
 	void update(VeHandle receiverID) {
+		if (syseng::getNowTime() > syseng::getNextUpdateTime())	//have not reached the now time interval
+			return;
+
 		fwsimple::update(receiverID);
+	}
+
+	void postupdate(VeHandle receiverID) {
+		fwsimple::postupdate(receiverID);
 	}
 
 	void close(VeHandle receiverID) {

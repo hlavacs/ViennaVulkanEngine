@@ -18,7 +18,9 @@ namespace vve::sysass {
 
 
 	void init();
+	void preupdate(VeHandle receiverID);
 	void update(VeHandle receiverID);
+	void postupdate(VeHandle receiverID);
 	void close(VeHandle receiverID);
 
 

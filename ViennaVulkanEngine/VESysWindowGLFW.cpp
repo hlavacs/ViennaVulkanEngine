@@ -43,6 +43,9 @@ namespace vve::syswin::glfw {
 
 	bool g_windowSizeChanged = false;
 
+	void preupdate(VeHandle receiverID) {
+	}
+
 	void update(VeHandle receiverID) {
 		glfwPollEvents();		//inject GLFW events into the callbacks
 
@@ -58,6 +61,8 @@ namespace vve::syswin::glfw {
 		}
 	}
 
+	void postupdate(VeHandle receiverID) {
+	}
 
 	void close(VeHandle receiverID) {
 		glfwDestroyWindow(g_window);
