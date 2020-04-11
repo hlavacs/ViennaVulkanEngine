@@ -121,7 +121,7 @@ namespace vve::syswin::glfw {
 		if (action == GLFW_REPEAT) 
 			return;
 
-		sysmes::VeMessageTableEntry ev;
+		sysmes::VeMessage ev;
 		ev.m_type = sysmes::VeMessageType::VE_MESSAGE_TYPE_KEYBOARD;
 		ev.m_senderID = VE_SYSTEM_HANDLE;
 
@@ -143,7 +143,7 @@ namespace vve::syswin::glfw {
 	*
 	*/
 	void cursor_pos_callbackGLFW(GLFWwindow* window, double xpos, double ypos) {
-		sysmes::VeMessageTableEntry ev;
+		sysmes::VeMessage ev;
 		ev.m_type = sysmes::VeMessageType::VE_MESSAGE_TYPE_MOUSEMOVE;
 		ev.m_senderID = VE_SYSTEM_HANDLE;
 
@@ -170,7 +170,7 @@ namespace vve::syswin::glfw {
 	*
 	*/
 	void mouse_button_callback(GLFWwindow* window, int button, int action, int mods) {
-		sysmes::VeMessageTableEntry ev;
+		sysmes::VeMessage ev;
 		ev.m_type = sysmes::VeMessageType::VE_MESSAGE_TYPE_MOUSEBUTTON;
 		ev.m_senderID = VE_SYSTEM_HANDLE;
 
@@ -191,7 +191,7 @@ namespace vve::syswin::glfw {
 	*
 	*/
 	void mouse_scroll_callback(GLFWwindow* window, double xoffset, double yoffset) {
-		sysmes::VeMessageTableEntry ev;
+		sysmes::VeMessage ev;
 		ev.m_type = sysmes::VeMessageType::VE_MESSAGE_TYPE_MOUSESCROLL;
 		ev.m_senderID = VE_SYSTEM_HANDLE;
 

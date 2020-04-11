@@ -15,33 +15,33 @@ namespace vve::sysmes {
 	inline const std::string VE_SYSTEM_NAME = "VE SYSTEM MESSAGES";
 	inline VeHandle VE_SYSTEM_HANDLE = VE_NULL_HANDLE;
 
-
 	enum class VeMessagePhase {
-		VE_MESSAGE_PHASE_NULL = 0,
-		VE_MESSAGE_PHASE_PREUPDATE,
-		VE_MESSAGE_PHASE_UPDATE,	
-		VE_MESSAGE_PHASE_POSTUPDATE,	
-		VE_MESSAGE_PHASE_LAST
+		VE_MESSAGE_PHASE_UPDATE = 0,	
+		VE_MESSAGE_PHASE_PREUPDATE = 1,
+		VE_MESSAGE_PHASE_POSTUPDATE = 2,	
 	};
-
 
 	enum class VeMessageType {
 		VE_MESSAGE_TYPE_NULL = 0,
-		VE_MESSAGE_TYPE_PREUPDATE,
 		VE_MESSAGE_TYPE_UPDATE,				//per rendered frame
 		VE_MESSAGE_TYPE_ENTITY_CREATED,		//per entity
 		VE_MESSAGE_TYPE_ENTITY_COLLIDED,
-		VE_MESSAGE_TYPE_ENTITY_DESTROYED,
+		VE_MESSAGE_TYPE_ENTITY_DESTROY,
 		VE_MESSAGE_TYPE_KEYBOARD,				//GLFW
 		VE_MESSAGE_TYPE_MOUSEMOVE,
 		VE_MESSAGE_TYPE_MOUSEBUTTON,
 		VE_MESSAGE_TYPE_MOUSESCROLL,
-		VE_MESSAGE_TYPE_POSTUPDATE,				//per rendered frame
 		VE_MESSAGE_TYPE_CLOSE,
+		VE_MESSAGE_TYPE_PREUPDATE = 16,
+		VE_MESSAGE_TYPE_POSTUPDATE = 17,			//per rendered frame
 		VE_MESSAGE_TYPE_LAST
 	};
 
-	struct VeMessageTableEntry {
+	inline VeMessagePhase getPhaseFromType(VeMessageType type) {
+		return (VeMessagePhase)((uint32_t)type >> 4);
+	};
+
+	struct VeMessage {
 		VeMessageType	m_type = VeMessageType::VE_MESSAGE_TYPE_NULL;
 		VeHandle		m_senderID = VE_NULL_HANDLE;
 		VeHandle		m_receiverID = VE_NULL_HANDLE;
@@ -57,18 +57,19 @@ namespace vve::sysmes {
 	};
 
 
-
 #ifndef VE_PUBLIC_INTERFACE
 
 	void init();
+	void preupdate();
 	void update();
+	void postupdate();
 	void close();
 
-	VeHandle	recordMessage(VeMessageTableEntry message);
+	VeHandle	recordMessage(VeMessage message);
 	void		receiveMessages( VeHandle receiverID, std::vector<VeHandle, custom_alloc<VeHandle>> &result);
-	bool		getMessage(VeHandle messageID, VeMessageTableEntry &entry);
-	VeHandle	addContinuousMessage(VeMessageTableEntry message);
-	void		removeContinuousMessage(VeMessageTableEntry message);
+	bool		getMessage(VeHandle messageID, VeMessage&entry);
+	VeHandle	addContinuousMessage(VeMessage message);
+	void		removeContinuousMessage(VeMessage message);
 	VeHandle	addHandler(std::function<void(VeHandle)> handler);
 	void		removeHandler(VeHandle handlerID);
 	void		subscribeMessage(VeHandle senderID, VeHandle receiverID, VeHandle handlerID, 

@@ -39,7 +39,7 @@ namespace vve {
 		std::vector<std::unique_ptr<VeHeapMemory>> g_thread_heap;
 		std::vector<std::unique_ptr<VeHeapMemory>> g_thread_tmp_heap;
 
-		VeHeapMemory* getHeap() {
+		VeHeapMemory* getThreadHeap() {
 			VeIndex heapIdx = 0;
 #ifdef VE_ENABLE_MULTITHREADING
 			uint32_t threadIdx = (uint32_t)JIDX;
@@ -49,7 +49,7 @@ namespace vve {
 			return g_thread_heap[heapIdx].get();
 		}
 
-		VeHeapMemory* getTmpHeap() {
+		VeHeapMemory* getThreadTmpHeap() {
 			VeIndex heapIdx = 0;
 #ifdef VE_ENABLE_MULTITHREADING
 			uint32_t threadIdx = (uint32_t)JIDX;

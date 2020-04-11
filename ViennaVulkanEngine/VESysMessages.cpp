@@ -20,23 +20,23 @@ namespace vve::sysmes {
 	//messages 
 
 	std::vector<VeMap*> maps1 = {
-		new VeHashedMultimap< VeKey, VeIndex >((VeIndex)offsetof(VeMessageTableEntry, m_senderID), (VeIndex)sizeof(VeMessageTableEntry::m_senderID)),
-		new VeHashedMultimap< VeKey, VeIndex >((VeIndex)offsetof(VeMessageTableEntry, m_receiverID), (VeIndex)sizeof(VeMessageTableEntry::m_receiverID)),
+		new VeHashedMultimap< VeKey, VeIndex >((VeIndex)offsetof(VeMessage, m_senderID), (VeIndex)sizeof(VeMessage::m_senderID)),
+		new VeHashedMultimap< VeKey, VeIndex >((VeIndex)offsetof(VeMessage, m_receiverID), (VeIndex)sizeof(VeMessage::m_receiverID)),
 		new VeHashedMultimap< VeKeyPair, VeIndexPair >(
-			VeIndexPair((VeIndex)offsetof(VeMessageTableEntry, m_senderID), (VeIndex)offsetof(VeMessageTableEntry, m_receiverID) ),
-			VeIndexPair((VeIndex)sizeof(VeMessageTableEntry::m_senderID), (VeIndex)sizeof(VeMessageTableEntry::m_receiverID) ) )
+			VeIndexPair((VeIndex)offsetof(VeMessage, m_senderID), (VeIndex)offsetof(VeMessage, m_receiverID) ),
+			VeIndexPair((VeIndex)sizeof(VeMessage::m_senderID), (VeIndex)sizeof(VeMessage::m_receiverID) ) )
 	};
-	VeFixedSizeTableMT<VeMessageTableEntry> g_messages_table( "Messages Table", maps1, true, true, 0, 0);
-	VeFixedSizeTableMT<VeMessageTableEntry> g_messages_table2(g_messages_table);
+	VeFixedSizeTableMT<VeMessage> g_messages_table( "Messages Table", maps1, true, true, 0, 0);
+	VeFixedSizeTableMT<VeMessage> g_messages_table2(g_messages_table);
 
 
 	std::vector<VeMap*> maps2 = {
 		new VeHashedMultimap< VeKeyPair, VeIndexPair >(
-			VeIndexPair((VeIndex)offsetof(VeMessageTableEntry, m_senderID), (VeIndex)offsetof(VeMessageTableEntry, m_receiverID)),
-			VeIndexPair((VeIndex)sizeof(VeMessageTableEntry::m_senderID), (VeIndex)sizeof(VeMessageTableEntry::m_receiverID)))
+			VeIndexPair((VeIndex)offsetof(VeMessage, m_senderID), (VeIndex)offsetof(VeMessage, m_receiverID)),
+			VeIndexPair((VeIndex)sizeof(VeMessage::m_senderID), (VeIndex)sizeof(VeMessage::m_receiverID)))
 	};
-	VeFixedSizeTableMT<VeMessageTableEntry> g_continuous_messages_table("Continuous Messages Table", maps2, true, false, 0, 0);
-	VeFixedSizeTableMT<VeMessageTableEntry> g_continuous_messages_table2(g_continuous_messages_table);
+	VeFixedSizeTableMT<VeMessage> g_continuous_messages_table("Continuous Messages Table", maps2, true, false, 0, 0);
+	VeFixedSizeTableMT<VeMessage> g_continuous_messages_table2(g_continuous_messages_table);
 
 
 	//--------------------------------------------------------------------------------------------------
@@ -76,8 +76,9 @@ namespace vve::sysmes {
 	//received messages
 
 	struct VeMessageReceiveTableEntry {
-		VeHandle	m_messageID;	//handle of message
-		VeHandle	m_receiverID;	//handle of the receiver entity
+		VeMessagePhase	m_phase;
+		VeHandle		m_receiverID;	//handle of the receiver entity
+		VeHandle		m_messageID;	//handle of message
 	};
 	std::vector<VeMap*> maps5 = {
 		new VeHashedMultimap< VeKey, VeIndex >((VeIndex)offsetof(VeMessageReceiveTableEntry, m_receiverID), (VeIndex)sizeof(VeMessageReceiveTableEntry::m_receiverID))
@@ -90,6 +91,7 @@ namespace vve::sysmes {
 	//handler calls
 
 	struct VeMessagrCallTableEntry {
+		VeMessagePhase			m_phase;
 		VeHandle				m_receiverID;	//handle of the receiver entity
 		VeHandle				m_handlerID;	//handler of message
 		vgjs::VgjsThreadIndex	m_thread_idx;	//special thread to run on
@@ -118,7 +120,7 @@ namespace vve::sysmes {
 		syseng::registerTablePointer(&g_calls_table);
 	}
 
-	void callAllMessages2() {
+	void callAllMessages() {
 		for (auto call : g_calls_table.data()) {
 			VeMessageHandlerTableEntry handlerData;
 			g_handler_table.getEntry(call.m_handlerID, handlerData);
@@ -126,8 +128,15 @@ namespace vve::sysmes {
 		}
 	}
 
+	void preupdate() {
+		//swap tables
+	}
+
 	void update() {
-		callAllMessages2();
+		callAllMessages();
+	}
+
+	void postupdate() {
 		for (auto message : g_continuous_messages_table.data())
 			recordMessage(message);
 	}
@@ -136,7 +145,7 @@ namespace vve::sysmes {
 	}
 
 
-	VeHandle recordMessage( VeMessageTableEntry message ) {
+	VeHandle recordMessage(VeMessage message ) {
 		if (JIDX != g_messages_table.getThreadIdx()) {
 			JADDT(recordMessage(message), vgjs::TID(g_messages_table.getThreadIdx()));
 			return VE_NULL_HANDLE;
@@ -148,7 +157,7 @@ namespace vve::sysmes {
 		VeHandle messageID = g_messages_table.insert(message);
 
 		//find all subscriptions fitting to this message
-		std::vector<VeHandle, custom_alloc<VeHandle>> result(getTmpHeap());
+		std::vector<VeHandle, custom_alloc<VeHandle>> result(getThreadTmpHeap());
 		if (message.m_receiverID == VE_NULL_HANDLE) {
 			g_subscribe_table.getHandlesEqual(VeKeyPair{ (VeKey)message.m_senderID,   (VeKey)message.m_type }, 2, result);
 		} else {
@@ -158,8 +167,8 @@ namespace vve::sysmes {
 		for (VeHandle& handle : result) {
 			VeMessageSubscribeTableEntry subscribeData;
 			g_subscribe_table.getEntry(handle, subscribeData);
-			g_receive_table.insert({ messageID, subscribeData.m_receiverID }); //accumulate messages for each receiver
-			g_calls_table.insert({ subscribeData.m_receiverID, subscribeData.m_handlerID, subscribeData.m_thread_idx }); //will be added only once due to map
+			g_receive_table.insert({ getPhaseFromType(message.m_type), messageID, subscribeData.m_receiverID }); //accumulate messages for each receiver
+			g_calls_table.insert({ getPhaseFromType(message.m_type), subscribeData.m_receiverID, subscribeData.m_handlerID, subscribeData.m_thread_idx }); //will be added only once due to map
 		}
 
 		return messageID;
@@ -170,17 +179,17 @@ namespace vve::sysmes {
 		g_messages_table.getHandlesEqual((VeKey)receiverID, 1, result);
 	}
 
-	bool getMessage(VeHandle messageID, VeMessageTableEntry& entry) {
+	bool getMessage(VeHandle messageID, VeMessage& entry) {
 		return g_messages_table.getEntry(messageID, entry);
 	}
 
 
-	VeHandle addContinuousMessage(VeMessageTableEntry message ) {
+	VeHandle addContinuousMessage(VeMessage message ) {
 		//std::cout << "add cont message type " << message.m_type << " action " << message.m_action << " key/button " << message.m_key_button << std::endl;
 		return g_continuous_messages_table.insert(message);
 	}
 
-	void removeContinuousMessage(VeMessageTableEntry message) {
+	void removeContinuousMessage(VeMessage message) {
 		//std::cout << "remove cont message type " << message.m_type << " action " << message.m_action << " key/button " << message.m_key_button << std::endl;
 
 		VeHandle messageID = g_continuous_messages_table.find(VeKeyPair{ (VeKey)message.m_senderID, (VeKey)message.m_receiverID }, 0);
@@ -193,7 +202,7 @@ namespace vve::sysmes {
 	}
 
 	void removeHandler(VeHandle handlerID) {
-		std::vector<VeHandle, custom_alloc<VeHandle>> result(getTmpHeap());
+		std::vector<VeHandle, custom_alloc<VeHandle>> result(getThreadTmpHeap());
 		g_subscribe_table.getHandlesEqual((VeKey)handlerID, 1, result);
 		for (auto handle : result) {
 			g_subscribe_table.erase(handle);

@@ -110,7 +110,7 @@ namespace vve {
 			print1();
 
 			//--------
-			std::vector<VeHandle, custom_alloc<VeHandle>> handles(getTmpHeap());
+			std::vector<VeHandle, custom_alloc<VeHandle>> handles(getThreadTmpHeap());
 			testTable.getHandlesEqual(0_Ke, 5, handles);
 			auto [auto_id, dir_index] = VeDirectory::splitHandle(handles[0]);
 

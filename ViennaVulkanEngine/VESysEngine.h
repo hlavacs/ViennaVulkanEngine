@@ -20,8 +20,8 @@ namespace vve {
 
 		VeHandle		getGUID();
 		void			createHeaps(uint32_t num);
-		VeHeapMemory*	getHeap();
-		VeHeapMemory*	getTmpHeap();
+		VeHeapMemory*	getThreadHeap();
+		VeHeapMemory*	getThreadTmpHeap();
 
 		VeHandle	registerEntity(const std::string& name);
 		VeHandle	getEntityHandle(const std::string& name);
@@ -45,12 +45,12 @@ namespace vve {
 		return syseng::getGUID();
 	};
 
-	inline 	VeHeapMemory* getHeap() {
-		return syseng::getHeap();
+	inline 	VeHeapMemory* getThreadHeap() {
+		return syseng::getThreadHeap();
 	};
 
-	inline 	VeHeapMemory* getTmpHeap() {
-		return syseng::getTmpHeap();
+	inline 	VeHeapMemory* getThreadTmpHeap() {
+		return syseng::getThreadTmpHeap();
 	};
 
 }
