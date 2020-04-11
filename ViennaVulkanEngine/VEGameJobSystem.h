@@ -159,14 +159,6 @@ namespace vgjs {
 
 	using Function = std::function<void()>;	///< Standard function that can be put into a job
 
-	/*typedef uint32_t VgjsThreadIndex;					///< Use for index into job arrays
-	constexpr VgjsThreadIndex VGJS_NULL_THREAD_IDX = std::numeric_limits<VgjsThreadIndex>::max();	///< No index given
-	typedef uint32_t VgjsThreadLabel;					///< Use for index into job arrays
-	constexpr VgjsThreadLabel VGJS_NULL_THREAD_LABEL =	std::numeric_limits<VgjsThreadLabel>::max(); ///< No label given
-	typedef uint64_t VgjsThreadID;					///< An id contains an index and a label
-	constexpr VgjsThreadID VGJS_NULL_THREAD_ID =	std::numeric_limits<VgjsThreadID>::max();	///< No ID given
-	*/
-
 	enum class VgjsThreadIndex : uint32_t {};
 	constexpr VgjsThreadIndex VGJS_NULL_THREAD_IDX = VgjsThreadIndex(std::numeric_limits<uint32_t>::max());	///< No index given
 

@@ -129,16 +129,16 @@ namespace vve::sysmes {
 	void update() {
 		callAllMessages2();
 		for (auto message : g_continuous_messages_table.data())
-			sendMessage(message);
+			recordMessage(message);
 	}
 
 	void close() {
 	}
 
 
-	VeHandle sendMessage( VeMessageTableEntry message ) {
+	VeHandle recordMessage( VeMessageTableEntry message ) {
 		if (JIDX != g_messages_table.getThreadIdx()) {
-			JADDT( sendMessage(message), vgjs::TID(g_messages_table.getThreadIdx()));
+			JADDT(recordMessage(message), vgjs::TID(g_messages_table.getThreadIdx()));
 			return VE_NULL_HANDLE;
 		};
 

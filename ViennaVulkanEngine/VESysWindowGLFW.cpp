@@ -130,7 +130,7 @@ namespace vve::syswin::glfw {
 		ev.m_action		= action < 0 ? VE_NULL_INDEX : (uint32_t)action;
 		ev.m_mods		= mods < 0 ? VE_NULL_INDEX : (uint32_t)mods;
 
-		sysmes::sendMessage(ev);
+		sysmes::recordMessage(ev);
 	}
 
 	/**
@@ -150,7 +150,7 @@ namespace vve::syswin::glfw {
 		ev.m_x = xpos;
 		ev.m_y = ypos;
 
-		sysmes::sendMessage(ev);
+		sysmes::recordMessage(ev);
 	}
 
 	/**
@@ -178,7 +178,7 @@ namespace vve::syswin::glfw {
 		ev.m_action = action < 0 ? VE_NULL_INDEX : (uint32_t)action;
 		ev.m_mods = mods < 0 ? VE_NULL_INDEX : (uint32_t)mods;
 
-		sysmes::sendMessage(ev);
+		sysmes::recordMessage(ev);
 	}
 
 	/**
@@ -198,7 +198,7 @@ namespace vve::syswin::glfw {
 		ev.m_x = xoffset;
 		ev.m_y = yoffset;
 
-		sysmes::sendMessage(ev);
+		sysmes::recordMessage(ev);
 	}
 
 

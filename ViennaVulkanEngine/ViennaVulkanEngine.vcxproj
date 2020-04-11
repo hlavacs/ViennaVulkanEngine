@@ -185,6 +185,12 @@
     <ClInclude Include="VEDoxygen.h" />
     <ClInclude Include="VEMemHeap.h" />
     <ClInclude Include="VEMemMap.h" />
+    <ClInclude Include="VeMemMapHashed.h" />
+    <ClInclude Include="VeMemMapOrdered.h" />
+    <ClInclude Include="VEMemMapSlot.h" />
+    <ClInclude Include="VeMemMapSTL.h" />
+    <ClInclude Include="VEMemTableFixed.h" />
+    <ClInclude Include="VEMemTableVar.h" />
     <ClInclude Include="VEUtilClock.h" />
     <ClInclude Include="VHDebug.h" />
     <ClInclude Include="VHDevice.h" />

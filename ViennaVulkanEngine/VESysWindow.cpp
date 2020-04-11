@@ -47,7 +47,7 @@ namespace vve::syswin {
 	}
 
 	void closeWin() {
-		sysmes::sendMessage({ sysmes::VeMessageType::VE_MESSAGE_TYPE_CLOSE, VE_SYSTEM_HANDLE });
+		sysmes::recordMessage({ sysmes::VeMessageType::VE_MESSAGE_TYPE_CLOSE, VE_SYSTEM_HANDLE });
 	}
 
 	void update(VeHandle receiverID) {

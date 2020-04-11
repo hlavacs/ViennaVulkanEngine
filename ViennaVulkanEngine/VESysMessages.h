@@ -52,16 +52,16 @@ namespace vve::sysmes {
 	void update();
 	void close();
 
-	VeHandle sendMessage(VeMessageTableEntry message);
-	void receiveMessages( VeHandle receiverID, std::vector<VeHandle, custom_alloc<VeHandle>> &result);
-	bool getMessage(VeHandle messageID, VeMessageTableEntry &entry);
-	VeHandle addContinuousMessage(VeMessageTableEntry message);
-	void removeContinuousMessage(VeMessageTableEntry message);
-	VeHandle addHandler(std::function<void(VeHandle)> handler);
-	void removeHandler(VeHandle handlerID);
-	void subscribeMessage(VeHandle senderID, VeHandle receiverID, VeHandle handlerID, 
-		VeMessageType type = VeMessageType::VE_MESSAGE_TYPE_NULL, vgjs::VgjsThreadIndex thread_id = vgjs::VGJS_NULL_THREAD_IDX);
-	void unsubscribeMessage(VeHandle senderID, VeHandle handlerID, VeMessageType type = VeMessageType::VE_MESSAGE_TYPE_NULL);
+	VeHandle	recordMessage(VeMessageTableEntry message);
+	void		receiveMessages( VeHandle receiverID, std::vector<VeHandle, custom_alloc<VeHandle>> &result);
+	bool		getMessage(VeHandle messageID, VeMessageTableEntry &entry);
+	VeHandle	addContinuousMessage(VeMessageTableEntry message);
+	void		removeContinuousMessage(VeMessageTableEntry message);
+	VeHandle	addHandler(std::function<void(VeHandle)> handler);
+	void		removeHandler(VeHandle handlerID);
+	void		subscribeMessage(VeHandle senderID, VeHandle receiverID, VeHandle handlerID, 
+					VeMessageType type = VeMessageType::VE_MESSAGE_TYPE_NULL, vgjs::VgjsThreadIndex thread_id = vgjs::VGJS_NULL_THREAD_IDX);
+	void		unsubscribeMessage(VeHandle senderID, VeHandle handlerID, VeMessageType type = VeMessageType::VE_MESSAGE_TYPE_NULL);
 
 
 #endif

@@ -238,7 +238,7 @@ namespace vve {
 			current_update_time = next_update_time;		//move one epoch further
 			next_update_time = current_update_time + time_delta;
 
-			sysmes::sendMessage({ sysmes::VeMessageType::VE_MESSAGE_TYPE_UPDATE, VE_SYSTEM_HANDLE });
+			sysmes::recordMessage({ sysmes::VeMessageType::VE_MESSAGE_TYPE_UPDATE, VE_SYSTEM_HANDLE });
 		}
 
 		//acts like a co-routine
