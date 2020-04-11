@@ -104,7 +104,9 @@ namespace vve {
 			std::string m_name;
 		};
 		std::vector<VeMap*> maps2 = {
-			new VeHashedMultimap< std::string, VeIndex >((VeIndex)offsetof(struct VeEntityTableEntry, m_name), 0)
+			new VeHashedMultimap< std::string, VeIndex >((VeIndex)offsetof(struct VeEntityTableEntry, m_name), 0),
+			new VeSTLMap< std::unordered_multimap<std::string, VeValue>, std::string, VeIndex >
+			((VeIndex)offsetof(struct VeEntityTableEntry, m_name), 0)
 		};
 		VeFixedSizeTableMT<VeEntityTableEntry> g_entities_table("Entities Table", maps2, false, false, 0, 0);
 
