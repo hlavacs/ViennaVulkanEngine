@@ -83,6 +83,7 @@ namespace vve {
 			new VeOrderedMultimap< std::string, VeIndex >((VeIndex)offsetof(struct VeMainTableEntry, m_name), 0)
 		};
 		VeFixedSizeTable<VeMainTableEntry> g_main_table("Main Table", maps, false, false, 0, 0);
+		VeFixedSizeTable<VeMainTableEntry> g_main_table2(g_main_table);
 
 		void registerTablePointer(VeTable* tptr) {
 			g_main_table.VeFixedSizeTable<VeMainTableEntry>::insert({ tptr, tptr->getName() });
@@ -193,23 +194,22 @@ namespace vve {
 			VeIndex i = 0;
 			for (auto table : g_main_table.data()) {
 				table.m_table_pointer->setName(table.m_name);
-				if (!table.m_table_pointer->getReadOnly()) {
+				if (!table.m_table_pointer->isCurrentState()) {
 					table.m_table_pointer->setThreadIdx((vgjs::VgjsThreadIndex)(i % threadCount));
 					++i;
 				}
 			}
 #endif
 
-			g_main_table.setReadOnly(true);
 		}
 
 		void close() {
 			JTERM;
 			JWAITTERM;
 
-			g_entities_table.setReadOnly(false);
+			g_entities_table.setCurrentState(false);
 			g_entities_table.clear();
-			g_main_table.setReadOnly(false);
+			g_main_table.setCurrentState(false);
 			g_main_table.clear();
 		}
 

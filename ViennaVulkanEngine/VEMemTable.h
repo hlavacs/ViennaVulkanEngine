@@ -27,7 +27,7 @@ namespace vve {
 	protected:
 		VeHeapMemory			m_heap;
 		vgjs::VgjsThreadIndex	m_thread_idx = vgjs::VGJS_NULL_THREAD_IDX;	///id of thread that accesses to this table are scheduled to
-		bool					m_read_only = false;
+		bool					m_current_state = false;
 		VeTable	*				m_companion_table = nullptr;
 		bool					m_clear_on_swap = false;
 		std::atomic<bool>		m_swapping = false;
@@ -46,7 +46,7 @@ namespace vve {
 			m_name(name), m_heap(), m_clear_on_swap(clear_on_swap), m_clock("table clock", 100) {};
 
 		VeTable(VeTable& table) : m_heap(), m_thread_idx(table.m_thread_idx), 
-			m_read_only(!table.m_read_only), m_companion_table(&table), 
+			m_current_state(!table.m_current_state), m_companion_table(&table),
 			m_clear_on_swap(table.m_clear_on_swap), 
 			m_name(table.m_name), m_clock(table.m_clock) {
 			table.m_companion_table = this;
@@ -80,29 +80,29 @@ namespace vve {
 			return m_name;
 		}
 
-		virtual void setReadOnly(bool ro) { 
-			m_read_only = ro; 
+		virtual void setCurrentState(bool ro) { 
+			m_current_state = ro;
 		};
-		bool	getReadOnly() { return m_read_only;  };
+		bool isCurrentState() { return m_current_state;  };
 
-		VeTable* getReadTablePtr() { 
+		VeTable* getCurrentStatePtr() { 
 			if (m_companion_table == nullptr)
 				return this;
 
 			VeTable* table = this;
-			if (!m_read_only) {
+			if (!m_current_state) {
 				table = m_companion_table;
 			}
 			assert(table->getReadOnly());
 			return table;
 		};
 
-		VeTable* getWriteTablePtr() { 
+		VeTable* getNextStatePtr() { 
 			if (m_companion_table == nullptr)
 				return this;
 
 			VeTable* table = this;
-			if (m_read_only) {
+			if (m_current_state) {
 				table = m_companion_table;
 			}
 			assert(!table->getReadOnly());
@@ -123,16 +123,16 @@ namespace vve {
 			m_swapping = true;
 			m_companion_table->m_swapping = true;
 
-			setReadOnly(!getReadOnly());
-			m_companion_table->setReadOnly(!m_companion_table->getReadOnly());
+			setCurrentState(!isCurrentState());
+			m_companion_table->setCurrentState(!m_companion_table->isCurrentState());
 
 			//std::cout << "table " << m_name << " new read " << getReadTablePtr()->m_table_nr << " new write " << getWriteTablePtr()->m_table_nr << std::endl;
 
 			if (m_clear_on_swap) {
-				getWriteTablePtr()->clear();
+				getNextStatePtr()->clear();
 			}
-			else if(getReadTablePtr()->m_dirty ) {
-				*getWriteTablePtr() = *getReadTablePtr();
+			else if(getCurrentStatePtr()->m_dirty ) {
+				*getNextStatePtr() = *getCurrentStatePtr();
 			}
 			m_dirty = false;
 

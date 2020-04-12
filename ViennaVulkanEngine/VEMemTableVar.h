@@ -90,31 +90,31 @@ namespace vve {
 			m_data = table.m_data;
 		}
 
-		virtual void setReadOnly(bool ro) {
-			m_read_only = ro;
-			m_directory.setReadOnly(ro);
+		virtual void setCurrentState(bool ro) {
+			m_current_state = ro;
+			m_directory.setCurrentState(ro);
 		};
 
 		virtual void swapTables() {
 			if (m_companion_table == nullptr)
 				return;
 
-			VeVariableSizeTable::setReadOnly(!getReadOnly());
-			((VeVariableSizeTable*)m_companion_table)->VeVariableSizeTable::setReadOnly(!m_companion_table->getReadOnly());
+			VeVariableSizeTable::setCurrentState(!isCurrentState());
+			((VeVariableSizeTable*)m_companion_table)->VeVariableSizeTable::setCurrentState(!m_companion_table->isCurrentState());
 
 			if (m_clear_on_swap) {
-				((VeVariableSizeTable*)getWriteTablePtr())->clear();
+				((VeVariableSizeTable*)getNextStatePtr())->clear();
 			}
 			else {
-				auto pWrite = (VeVariableSizeTable*)getWriteTablePtr();
-				auto pRead = (VeVariableSizeTable*)getReadTablePtr();
+				auto pWrite = (VeVariableSizeTable*)getNextStatePtr();
+				auto pRead = (VeVariableSizeTable*)getCurrentStatePtr();
 
 				if (pRead->m_dirty) {
 					if (pWrite->m_data.size() != pRead->m_data.size()) {
 						pWrite->m_data.resize(pRead->m_data.size());
 					}
 					memcpy(pWrite->m_data.data(), pRead->m_data.data(), pRead->m_data.size());
-					*(m_directory.getWriteTablePtr()) = *(m_directory.getReadTablePtr());
+					*(m_directory.getNextStatePtr()) = *(m_directory.getCurrentStatePtr());
 				}
 				m_dirty = false;
 			}
@@ -223,43 +223,43 @@ namespace vve {
 		void operator=(VeTable& table) {
 			VeVariableSizeTable* other_tab = (VeVariableSizeTable*)&table;
 
-			VeVariableSizeTable* me = (VeVariableSizeTable*)this->getWriteTablePtr();
-			VeVariableSizeTable* other = (VeVariableSizeTable*)other_tab->getReadTablePtr();
+			VeVariableSizeTable* me = (VeVariableSizeTable*)this->getNextStatePtr();
+			VeVariableSizeTable* other = (VeVariableSizeTable*)other_tab->getCurrentStatePtr();
 
 			JADDT(me->VeVariableSizeTable::operator=(*other), vgjs::TID(this->m_thread_idx));
 		}
 
 		void operator=(VeVariableSizeTableMT& table) {
-			VeVariableSizeTable* me = (VeVariableSizeTable*)this->getWriteTablePtr();
-			VeVariableSizeTable* other = (VeVariableSizeTable*)table.getReadTablePtr();
+			VeVariableSizeTable* me = (VeVariableSizeTable*)this->getNextStatePtr();
+			VeVariableSizeTable* other = (VeVariableSizeTable*)table.getCurrentStatePtr();
 
 			JADDT(me->VeVariableSizeTable::operator=(*other), vgjs::TID(this->m_thread_idx));
 		}
 
 		virtual void setReadOnly(bool ro) {
 			VeVariableSizeTable* me = (VeVariableSizeTable*)this;
-			JADDT(me->VeVariableSizeTable::setReadOnly(ro), vgjs::TID(this->m_thread_idx));
+			JADDT(me->VeVariableSizeTable::setCurrentState(ro), vgjs::TID(this->m_thread_idx));
 		};
 
 		virtual void clear() {
-			VeVariableSizeTable* me = (VeVariableSizeTable*)this->getWriteTablePtr();
+			VeVariableSizeTable* me = (VeVariableSizeTable*)this->getNextStatePtr();
 			JADDT(me->VeVariableSizeTable::clear(), vgjs::TID(this->m_thread_idx));
 		}
 
 		VeHandle insertBlob(uint8_t* ptr, VeIndex size, VeHandle* pHandle = nullptr, bool defrag = true) {
-			VeVariableSizeTable* me = (VeVariableSizeTable*)this->getWriteTablePtr();
+			VeVariableSizeTable* me = (VeVariableSizeTable*)this->getNextStatePtr();
 			JADDT(me->VeVariableSizeTable::insertBlob(ptr, size, pHandle, defrag), vgjs::TID(this->m_thread_idx));
 		}
 
 		bool deleteBlob(VeHandle handle) {
-			VeVariableSizeTable* me = (VeVariableSizeTable*)this->getWriteTablePtr();
+			VeVariableSizeTable* me = (VeVariableSizeTable*)this->getNextStatePtr();
 			JADDT(me->VeVariableSizeTable::deleteBlob(handle), vgjs::TID(this->m_thread_idx));
 		}
 
 		//---------------------------------------------------------------------------------
 
 		uint8_t* getPointer(VeHandle handle) {
-			VeVariableSizeTable* me = (VeVariableSizeTable*)this->getReadTablePtr();
+			VeVariableSizeTable* me = (VeVariableSizeTable*)this->getCurrentStatePtr();
 			return me->VeVariableSizeTable::getPointer(handle);
 		};
 
