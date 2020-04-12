@@ -172,9 +172,9 @@ namespace vgjs {
 	* \defgroup VGJS_Macros
 	* @{
 	*/
-	#define JIDX 0
-	#define JLABEL 0
-	#define JSETT(t)
+	#define JIDX vgjs::VGJS_NULL_THREAD_IDX
+	#define JLABEL vgjs::VGJS_NULL_JOB_LABEL
+	#define JSETT(f, t, r)
 	#define JADD( f ) {f;}
 	#define JDEP( f ) {f;}
 	#define JADDT( f, t ) {f;}
@@ -1007,10 +1007,8 @@ namespace vgjs {
 	};
 
 
-#if defined(VE_ENABLE_MULTITHREADING) || defined(DOXYGEN)
 	inline std::unique_ptr<JobSystem> JobSystem::pInstance;			//pointer to singleton
 	inline thread_local VgjsThreadIndex JobSystem::m_thread_index = VgjsThreadIndex(0);		///< Thread local index of the thread
-#endif
 
 }
 

@@ -438,16 +438,18 @@ namespace vve {
 				me->VeFixedSizeTable<T>::operator=(*other);
 				return;
 			}
-			if (vgjs::JobSystem::isInstanceCreated() && this->m_thread_idx != JIDX)
+			if (vgjs::JobSystem::isInstanceCreated() && this->m_thread_idx != JIDX) {
 				JADDT(me->VeFixedSizeTable<T>::operator=(*other), vgjs::TID(this->m_thread_idx));
+			}
 			else
 				me->VeFixedSizeTable<T>::operator=(*other);
 		};
 
 		virtual void swap(VeHandle h1, VeHandle h2) {
 			VeFixedSizeTable<T>* me = (VeFixedSizeTable<T>*)this->getWriteTablePtr();
-			if (vgjs::JobSystem::isInstanceCreated() && this->m_thread_idx != JIDX)
+			if (vgjs::JobSystem::isInstanceCreated() && this->m_thread_idx != JIDX) {
 				JADDT(me->VeFixedSizeTable<T>::swap(h1, h2), vgjs::TID(this->m_thread_idx));
+			}
 			else
 				me->VeFixedSizeTable<T>::swap(h1, h2);
 		};
@@ -458,16 +460,18 @@ namespace vve {
 				me->VeFixedSizeTable<T>::clear();
 				return;
 			}
-			if (!this->m_swapping && vgjs::JobSystem::isInstanceCreated() && this->m_thread_idx != JIDX)
+			if (!this->m_swapping && vgjs::JobSystem::isInstanceCreated() && this->m_thread_idx != JIDX) {
 				JADDT(me->VeFixedSizeTable<T>::clear(), vgjs::TID(this->m_thread_idx));
+			}
 			else
 				me->VeFixedSizeTable<T>::clear();
 		};
 
 		virtual void sort(VeIndex num_map) {
 			VeFixedSizeTable<T>* me = (VeFixedSizeTable<T>*)this->getWriteTablePtr();
-			if (vgjs::JobSystem::isInstanceCreated() && this->m_thread_idx != JIDX)
+			if (vgjs::JobSystem::isInstanceCreated() && this->m_thread_idx != JIDX) {
 				JADDT(me->VeFixedSizeTable<T>::sort(num_map), vgjs::TID(this->m_thread_idx));
+			}
 			else
 				me->VeFixedSizeTable<T>::sort(num_map);
 		};
