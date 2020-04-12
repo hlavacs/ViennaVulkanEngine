@@ -57,7 +57,7 @@ namespace vve {
 		virtual void operator=(VeTable& tab) { assert(false);  return; };
 		virtual void clear() { assert(false);  return; };
 		virtual VeMap* getMap(VeIndex num_map) { assert(false);  return nullptr; };
-		virtual VeDirectory* getDirectory() { assert(false);  return nullptr; };
+		virtual VeSlotMap* getDirectory() { assert(false);  return nullptr; };
 
 		void setThreadIdx(vgjs::VgjsThreadIndex id) {
 			if (m_thread_idx == id)

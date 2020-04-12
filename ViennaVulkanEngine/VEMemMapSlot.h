@@ -13,23 +13,23 @@ namespace vve {
 *
 *
 */
-	class VeDirectory {
+	class VeSlotMap {
 	protected:
 
-		struct VeDirectoryEntry {
+		struct VeSlotEntry {
 			VeIndex	m_guid = VE_NULL_INDEX;
 			VeIndex	m_table_index = VE_NULL_INDEX;	///< index into the entry table
 			VeIndex	m_next_free = VE_NULL_INDEX;	///< index of next free entry in directory
 
-			VeDirectoryEntry() : m_guid(VE_NULL_INDEX), m_table_index(VE_NULL_INDEX), m_next_free(VE_NULL_INDEX) {};
+			VeSlotEntry() : m_guid(VE_NULL_INDEX), m_table_index(VE_NULL_INDEX), m_next_free(VE_NULL_INDEX) {};
 
-			VeDirectoryEntry(VeIndex guid, VeIndex table_index, VeIndex next_free) :
+			VeSlotEntry(VeIndex guid, VeIndex table_index, VeIndex next_free) :
 				m_guid(guid), m_table_index(table_index), m_next_free(next_free) {};
 
-			VeDirectoryEntry(const VeDirectoryEntry& entry) :
+			VeSlotEntry(const VeSlotEntry& entry) :
 				m_guid(entry.m_guid), m_table_index(entry.m_table_index), m_next_free(entry.m_next_free) {};
 
-			VeDirectoryEntry& operator=(const VeDirectoryEntry& entry) {
+			VeSlotEntry& operator=(const VeSlotEntry& entry) {
 				m_guid = entry.m_guid;
 				m_table_index = entry.m_table_index;
 				m_next_free = entry.m_next_free;
@@ -37,9 +37,9 @@ namespace vve {
 			};
 		};
 
-		VeCount							m_auto_counter = VeCount(0);	///< 
-		std::vector<VeDirectoryEntry>	m_dir_entries;					///< 1 level of indirection, idx into the data table
-		VeIndex							m_first_free = VE_NULL_INDEX;	///< index of first free entry in directory
+		VeCount						m_auto_counter = VeCount(0);	///< 
+		std::vector<VeSlotEntry>	m_dir_entries;					///< 1 level of indirection, idx into the data table
+		VeIndex						m_first_free = VE_NULL_INDEX;	///< index of first free entry in directory
 
 		VeHandle addNewEntry(VeIndex table_index) {
 			VeIndex guid = (VeIndex)m_auto_counter;
@@ -60,10 +60,10 @@ namespace vve {
 		}
 
 	public:
-		VeDirectory() {};
-		~VeDirectory() {};
+		VeSlotMap() {};
+		~VeSlotMap() {};
 
-		void operator=(const VeDirectory& dir) {
+		void operator=(const VeSlotMap& dir) {
 			m_auto_counter = dir.m_auto_counter;
 			m_dir_entries = dir.m_dir_entries;
 			m_first_free = dir.m_first_free;
@@ -80,7 +80,7 @@ namespace vve {
 			return writeOverOldEntry(table_index);
 		};
 
-		VeDirectoryEntry& getEntry(VeIndex dir_index) {
+		VeSlotEntry& getEntry(VeIndex dir_index) {
 			assert(isValid(dir_index));
 			return m_dir_entries[dir_index];
 		};

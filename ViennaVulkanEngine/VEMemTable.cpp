@@ -51,7 +51,7 @@ namespace vve {
 			TestEntry entry;
 			testTable.getEntry(handle, entry);
 
-			auto [auto_id, dir_index] = VeDirectory::splitHandle(handle);
+			auto [auto_id, dir_index] = VeSlotMap::splitHandle(handle);
 
 			std::cout << "Entry handle auto_id " << auto_id << " dir_index " << dir_index <<
 				" int64 " << entry.m_int64+0 << " int1 " << entry.m_int1 << " int2 " << entry.m_int2 <<
@@ -112,7 +112,7 @@ namespace vve {
 			//--------
 			std::vector<VeHandle, custom_alloc<VeHandle>> handles(getThreadTmpHeap());
 			testTable.getHandlesEqual(0_Ke, 5, handles);
-			auto [auto_id, dir_index] = VeDirectory::splitHandle(handles[0]);
+			auto [auto_id, dir_index] = VeSlotMap::splitHandle(handles[0]);
 
 			handles.clear();
 			testTable.getHandlesEqual("2", 2, handles);

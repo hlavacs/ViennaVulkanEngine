@@ -21,7 +21,7 @@ namespace vve {
 	class VeFixedSizeTable : public VeTable {
 	protected:
 		std::vector<VeMap*>		m_maps;				///vector of maps for quickly finding or sorting entries
-		VeDirectory				m_directory;		///
+		VeSlotMap				m_directory;		///
 		VECTOR					m_data;				///growable entry data table
 		std::vector<VeIndex>	m_idx2dir;
 
@@ -65,7 +65,7 @@ namespace vve {
 		bool		isValid(VeHandle handle);
 		const VECTOR& data() { return m_data; };
 		VeMap* getMap(VeIndex num_map) override { return m_maps[num_map]; };
-		VeDirectory* getDirectory() override { return &m_directory; };
+		VeSlotMap* getDirectory() override { return &m_directory; };
 		std::vector<VeIndex>& getTable2dir() { return m_idx2dir; };
 		VeCount		size() { return (VeCount)m_data.size(); };
 		bool		getEntry(VeHandle key, T& entry);
@@ -129,7 +129,7 @@ namespace vve {
 		m_data.emplace_back(entry);
 
 		VeHandle handle = m_directory.addEntry(table_index);
-		auto [guid, dir_index] = VeDirectory::splitHandle(handle);
+		auto [guid, dir_index] = VeSlotMap::splitHandle(handle);
 		m_idx2dir.emplace_back(dir_index);
 
 		bool success = true;
@@ -521,7 +521,7 @@ namespace vve {
 			return me->VeFixedSizeTable<T>::getMap(num_map);
 		};
 
-		VeDirectory* getDirectory() {
+		VeSlotMap* getDirectory() {
 			VeFixedSizeTable<T>* me = (VeFixedSizeTable<T>*)this->getReadTablePtr();
 			return me->VeFixedSizeTable<T>::getDirectory();
 		};
