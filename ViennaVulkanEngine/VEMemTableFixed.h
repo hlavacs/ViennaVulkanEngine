@@ -7,16 +7,17 @@ namespace vve {
 
 	//------------------------------------------------------------------------------------------------------
 
-/**
-*
-* \brief
-*
-*
-*/
 
 #define VECTOR VeVector<T>
 #define VECTORPAR memcopy,align,capacity
 
+
+	/**
+	*
+	* \brief
+	*
+	*
+	*/
 	template <typename T>
 	class VeFixedSizeTable : public VeTable {
 	protected:
@@ -253,11 +254,14 @@ namespace vve {
 	//read operations
 
 	template<typename T> inline bool VeFixedSizeTable<T>::isValid(VeHandle handle) {
+		WITHCURRENTSTATE(isValid(handle));
 		return m_directory.isValid(handle);
 	}
 
 	template<typename T> inline VeIndex VeFixedSizeTable<T>::getIndexFromHandle(VeHandle key) {
 		in();
+		WITHCURRENTSTATE(getIndexFromHandle(key));
+
 		if (key == VE_NULL_HANDLE) {
 			out();
 			return VE_NULL_INDEX;
@@ -275,6 +279,8 @@ namespace vve {
 
 	template<typename T> inline bool VeFixedSizeTable<T>::getEntry(VeHandle key, T& entry) {
 		in();
+		WITHCURRENTSTATE(getEntry(key, entry));
+
 		if (key == VE_NULL_HANDLE || m_data.empty()) {
 			out();
 			return false;
@@ -292,6 +298,8 @@ namespace vve {
 
 	template<typename T> inline VeHandle VeFixedSizeTable<T>::getHandleFromIndex(VeIndex table_index) {
 		in();
+		WITHCURRENTSTATE(getHandleFromIndex(table_index));
+
 		assert(table_index < m_idx2dir.size());
 		VeIndex dir_index = m_idx2dir[table_index];
 		VeIndex guid = m_directory.getEntry(dir_index).m_guid;
@@ -304,6 +312,8 @@ namespace vve {
 	template<typename T>
 	VeCount VeFixedSizeTable<T>::leftJoin(VeIndex own_map, VeTable* other, VeIndex other_map, std::vector<VeHandlePair, custom_alloc<VeHandlePair>>& result) {
 		in();
+		WITHCURRENTSTATE(leftJoin(own_map, other, other_map, result));
+
 		VeMap* l = (VeMap*)m_maps[own_map];
 		VeMap* r = (VeMap*)other->getMap(other_map);
 
@@ -323,6 +333,8 @@ namespace vve {
 	template <typename K>
 	VeCount VeFixedSizeTable<T>::leftJoin(VeIndex own_map, K key, VeTable* other, VeIndex other_map, std::vector<VeHandlePair, custom_alloc<VeHandlePair>>& result) {
 		in();
+		WITHCURRENTSTATE(leftJoin(own_map, key, other, other_map, result));
+
 		VeMap* l = (VeMap*)m_maps[own_map];
 		VeMap* r = (VeMap*)other->getMap(other_map);
 
@@ -342,7 +354,9 @@ namespace vve {
 	template<typename K>
 	inline VeHandle VeFixedSizeTable<T>::find(K key, VeIndex num_map) {
 		in();
+		WITHCURRENTSTATE(find(key, num_map));
 		assert(num_map < m_maps.size());
+
 		if (m_data.empty()) {
 			out();
 			return VE_NULL_HANDLE;
@@ -357,7 +371,9 @@ namespace vve {
 	template<typename K>
 	inline VeCount VeFixedSizeTable<T>::getHandlesEqual(K key, VeIndex num_map, std::vector<VeHandle, custom_alloc<VeHandle>>& result) {
 		in();
+		WITHCURRENTSTATE(getHandlesEqual(key, num_map, result));
 		assert(num_map < m_maps.size());
+
 		if (m_data.empty()) {
 			out();
 			return VeCount(0);
@@ -376,7 +392,9 @@ namespace vve {
 	template <typename K>
 	inline VeCount VeFixedSizeTable<T>::getHandlesRange(K lower, K upper, VeIndex num_map, std::vector<VeHandle, custom_alloc<VeHandle>>& result) {
 		in();
+		WITHCURRENTSTATE(getHandlesRange(lower, upper, num_map, result));
 		assert(num_map < m_maps.size());
+
 		if (m_data.empty()) {
 			out();
 			return VeCount(0);
@@ -393,6 +411,8 @@ namespace vve {
 
 	template<typename T> inline	VeCount VeFixedSizeTable<T>::getAllHandles(std::vector<VeHandle, custom_alloc<VeHandle>>& result) {
 		in();
+		WITHCURRENTSTATE(getAllHandles(result));
+
 		for (VeIndex i = 0; i < m_data.size(); ++i)
 			result.emplace_back(getHandleFromIndex(i));
 		out();
@@ -400,6 +420,8 @@ namespace vve {
 	}
 
 	template<typename T> inline	VeCount VeFixedSizeTable<T>::getAllHandlesFromMap(VeIndex num_map, std::vector<VeHandle, custom_alloc<VeHandle>>& result) {
+		WITHCURRENTSTATE(getAllHandlesFromMap(num_map, result));
+
 		if (m_data.empty())
 			return VeCount(0);
 
@@ -415,141 +437,6 @@ namespace vve {
 		out();
 		return num;
 	};
-
-
-
-	//------------------------------------------------------------------------------------------------------
-
-	/**
-	*
-	* \brief
-	*
-	*
-	*/
-	template <typename T>
-	class VeFixedSizeTableMT : public VeFixedSizeTable<T> {
-
-	public:
-
-		VeFixedSizeTableMT<T>(std::string name, bool memcopy = false, bool clear_on_swap = false, VeIndex align = 16, VeIndex capacity = 16) :
-			VeFixedSizeTable<T>(name, memcopy, clear_on_swap, align, capacity) {};
-
-		VeFixedSizeTableMT<T>(std::string name, std::vector<VeMap*>& maps, bool memcopy = false, bool clear_on_swap = false, VeIndex align = 16, VeIndex capacity = 16) :
-			VeFixedSizeTable<T>(name, maps, memcopy, clear_on_swap, align, capacity) {};
-
-		VeFixedSizeTableMT<T>(VeFixedSizeTable<T>& table) : VeFixedSizeTable<T>(table) {};
-
-		virtual ~VeFixedSizeTableMT<T>() {};
-
-		//----------------------------------------------------------------------------
-
-		/*virtual void operator=(VeFixedSizeTableMT<T>& table) {
-			VeFixedSizeTable<T>* me = (VeFixedSizeTable<T>*)this->getNextStatePtr();
-			VeFixedSizeTable<T>* other = (VeFixedSizeTable<T>*) & table;
-			if (this->m_swapping) {
-				me->VeFixedSizeTable<T>::operator=(*other);
-				return;
-			}
-			if (vgjs::JobSystem::isInstanceCreated() && this->m_thread_idx != JIDX) {
-				JADDT(me->VeFixedSizeTable<T>::operator=(*other), vgjs::TID(this->m_thread_idx));
-			}
-			else
-				me->VeFixedSizeTable<T>::operator=(*other);
-		};*/
-
-
-		//----------------------------------------------------------------------------
-
-		// read operations
-		bool isValid(VeHandle handle) {
-			VeFixedSizeTable<T>* me = (VeFixedSizeTable<T>*)this->getCurrentStatePtr();
-			return me->VeFixedSizeTable<T>::isValid(handle);
-		};
-
-		const VECTOR& data() {
-			VeFixedSizeTable<T>* me = (VeFixedSizeTable<T>*)this->getCurrentStatePtr();
-			return me->VeFixedSizeTable<T>::data();
-		};
-
-		VeMap* getMap(VeIndex num_map) {
-			VeFixedSizeTable<T>* me = (VeFixedSizeTable<T>*)this->getCurrentStatePtr();
-			return me->VeFixedSizeTable<T>::getMap(num_map);
-		};
-
-		VeSlotMap* getDirectory() {
-			VeFixedSizeTable<T>* me = (VeFixedSizeTable<T>*)this->getCurrentStatePtr();
-			return me->VeFixedSizeTable<T>::getDirectory();
-		};
-
-		VeCount	size() {
-			VeFixedSizeTable<T>* me = (VeFixedSizeTable<T>*)this->getCurrentStatePtr();
-			return me->VeFixedSizeTable<T>::size();
-		};
-
-		bool getEntry(VeHandle key, T& entry) {
-			VeFixedSizeTable<T>* me = (VeFixedSizeTable<T>*)this->getCurrentStatePtr();
-			return me->VeFixedSizeTable<T>::getEntry(key, entry);
-		};
-
-		VeIndex	getIndexFromHandle(VeHandle key) {
-			VeFixedSizeTable<T>* me = (VeFixedSizeTable<T>*)this->getCurrentStatePtr();
-			return me->VeFixedSizeTable<T>::getIndexFromHandle(key);
-		};
-
-		VeHandle getHandleFromIndex(VeIndex table_index) {
-			VeFixedSizeTable<T>* me = (VeFixedSizeTable<T>*)this->getCurrentStatePtr();
-			return me->VeFixedSizeTable<T>::getHandleFromIndex(table_index);
-		};
-
-		VeCount getAllHandles(std::vector<VeHandle, custom_alloc<VeHandle>>& result) {
-			VeFixedSizeTable<T>* me = (VeFixedSizeTable<T>*)this->getCurrentStatePtr();
-			return me->VeFixedSizeTable<T>::getAllHandles(result);
-		};
-
-		VeCount getAllHandlesFromMap(VeIndex num_map, std::vector<VeHandle, custom_alloc<VeHandle>>& result) {
-			VeFixedSizeTable<T>* me = (VeFixedSizeTable<T>*)this->getCurrentStatePtr();
-			return me->VeFixedSizeTable<T>::getAllHandlesFromMap(num_map, result);
-		};
-
-		template <typename K>
-		VeCount leftJoin(VeIndex own_map, K key, VeTable* table, VeIndex other_map,
-			std::vector<VeHandlePair, custom_alloc<VeHandlePair>>& result) {
-
-			VeFixedSizeTable<T>* me = (VeFixedSizeTable<T>*)this->getCurrentStatePtr();
-			VeTable* other = table->getCurrentStatePtr();
-
-			return me->VeFixedSizeTable<T>::leftJoin<K>(own_map, key, other, other_map, result);
-		};
-
-		VeCount leftJoin(VeIndex own_map, VeTable* table, VeIndex other_map,
-			std::vector<VeHandlePair, custom_alloc<VeHandlePair>>& result) {
-
-			VeFixedSizeTableMT<T>* me = dynamic_cast<VeFixedSizeTableMT<T>*>(this->getCurrentStatePtr());
-			VeTable* other = (VeTable*)table->getCurrentStatePtr();
-
-			return me->VeFixedSizeTable<T>::leftJoin(own_map, other, other_map, result);
-		};
-
-		template <typename K>
-		VeHandle find(K key, VeIndex num_map) {
-			VeFixedSizeTable<T>* me = (VeFixedSizeTable<T>*)this->getCurrentStatePtr();
-			return me->VeFixedSizeTable<T>::find(key, num_map);
-		};
-
-		template <typename K>
-		VeCount getHandlesEqual(K key, VeIndex num_map, std::vector<VeHandle, custom_alloc<VeHandle>>& result) {
-			VeFixedSizeTable<T>* me = (VeFixedSizeTable<T>*)this->getCurrentStatePtr();
-			return me->VeFixedSizeTable<T>::getHandlesEqual(key, num_map, result);
-		};
-
-		template <typename K>
-		VeCount getHandlesRange(K lower, K upper, VeIndex num_map, std::vector<VeHandle, custom_alloc<VeHandle>>& result) {
-			VeFixedSizeTable<T>* me = (VeFixedSizeTable<T>*)this->getCurrentStatePtr();
-			return me->VeFixedSizeTable<T>::getHandlesRange(lower, upper, num_map, result);
-		};
-
-	};
-
 
 
 };

@@ -31,8 +31,8 @@ namespace vve::sysmes {
 			VeIndexPair((VeIndex)offsetof(VeMessage, m_senderID), (VeIndex)offsetof(VeMessage, m_receiverID) ),
 			VeIndexPair((VeIndex)sizeof(VeMessage::m_senderID), (VeIndex)sizeof(VeMessage::m_receiverID) ) )
 	};
-	VeFixedSizeTableMT<VeMessage> g_messages_table( "Messages Table", maps1, true, true, 0, 0);
-	VeFixedSizeTableMT<VeMessage> g_messages_table2(g_messages_table);
+	VeFixedSizeTable<VeMessage> g_messages_table( "Messages Table", maps1, true, true, 0, 0);
+	VeFixedSizeTable<VeMessage> g_messages_table2(g_messages_table);
 
 
 	enum class g_continuous_messages_map : uint32_t {
@@ -45,8 +45,8 @@ namespace vve::sysmes {
 			VeIndexPair((VeIndex)offsetof(VeMessage, m_senderID), (VeIndex)offsetof(VeMessage, m_receiverID)),
 			VeIndexPair((VeIndex)sizeof(VeMessage::m_senderID), (VeIndex)sizeof(VeMessage::m_receiverID)))
 	};
-	VeFixedSizeTableMT<VeMessage> g_continuous_messages_table("Continuous Messages Table", maps2, true, false, 0, 0);
-	VeFixedSizeTableMT<VeMessage> g_continuous_messages_table2(g_continuous_messages_table);
+	VeFixedSizeTable<VeMessage> g_continuous_messages_table("Continuous Messages Table", maps2, true, false, 0, 0);
+	VeFixedSizeTable<VeMessage> g_continuous_messages_table2(g_continuous_messages_table);
 
 
 	//--------------------------------------------------------------------------------------------------
@@ -55,8 +55,8 @@ namespace vve::sysmes {
 	struct VeMessageHandlerTableEntry {
 		std::function<void(VeHandle)> m_handler;
 	};
-	VeFixedSizeTableMT<VeMessageHandlerTableEntry> g_handler_table("Message Handler Table", false, false, 0, 0);
-	VeFixedSizeTableMT<VeMessageHandlerTableEntry> g_handler_table2(g_handler_table);
+	VeFixedSizeTable<VeMessageHandlerTableEntry> g_handler_table("Message Handler Table", false, false, 0, 0);
+	VeFixedSizeTable<VeMessageHandlerTableEntry> g_handler_table2(g_handler_table);
 
 
 	//--------------------------------------------------------------------------------------------------
@@ -87,8 +87,8 @@ namespace vve::sysmes {
 			VeIndexTriple((VeIndex)offsetof(VeMessageSubscribeTableEntry, m_senderID),	(VeIndex)offsetof(VeMessageSubscribeTableEntry, m_receiverID), (VeIndex)offsetof(VeMessageSubscribeTableEntry, m_type)),
 			VeIndexTriple((VeIndex)sizeof(VeMessageSubscribeTableEntry::m_senderID), (VeIndex)sizeof(VeMessageSubscribeTableEntry::m_receiverID), (VeIndex)sizeof(VeMessageSubscribeTableEntry::m_type))),
 	};
-	VeFixedSizeTableMT<VeMessageSubscribeTableEntry> g_subscribe_table("Message Subscribe Table", maps4, true, false, 0, 0);
-	VeFixedSizeTableMT<VeMessageSubscribeTableEntry> g_subscribe_table2(g_subscribe_table);
+	VeFixedSizeTable<VeMessageSubscribeTableEntry> g_subscribe_table("Message Subscribe Table", maps4, true, false, 0, 0);
+	VeFixedSizeTable<VeMessageSubscribeTableEntry> g_subscribe_table2(g_subscribe_table);
 
 
 	//--------------------------------------------------------------------------------------------------
@@ -107,8 +107,8 @@ namespace vve::sysmes {
 			VeIndexPair((VeIndex)offsetof(VeMessageReceiveTableEntry, m_phase), (VeIndex)offsetof(VeMessageReceiveTableEntry, m_receiverID)),
 			VeIndexPair((VeIndex)sizeof(VeMessageReceiveTableEntry::m_phase),   (VeIndex)sizeof(VeMessageReceiveTableEntry::m_receiverID)))
 	};
-	VeFixedSizeTableMT<VeMessageReceiveTableEntry> g_receive_table("Message Receive Table", maps5, true, true, 0, 0);
-	VeFixedSizeTableMT<VeMessageReceiveTableEntry> g_receive_table2(g_receive_table);
+	VeFixedSizeTable<VeMessageReceiveTableEntry> g_receive_table("Message Receive Table", maps5, true, true, 0, 0);
+	VeFixedSizeTable<VeMessageReceiveTableEntry> g_receive_table2(g_receive_table);
 
 
 	//--------------------------------------------------------------------------------------------------
@@ -130,8 +130,8 @@ namespace vve::sysmes {
 			VeIndexTriple((VeIndex)offsetof(VeMessageCallTableEntry, m_phase), (VeIndex)offsetof(VeMessageCallTableEntry, m_receiverID), (VeIndex)offsetof(VeMessageCallTableEntry, m_handlerID)),
 			VeIndexTriple((VeIndex)sizeof(VeMessageCallTableEntry::m_phase),   (VeIndex)sizeof(VeMessageCallTableEntry::m_receiverID),   (VeIndex)sizeof(VeMessageCallTableEntry::m_handlerID) ) )
 	};
-	VeFixedSizeTableMT<VeMessageCallTableEntry> g_calls_table("Message Calls Table", maps6, true, true, 0, 0);
-	VeFixedSizeTableMT<VeMessageCallTableEntry> g_calls_table2(g_calls_table);
+	VeFixedSizeTable<VeMessageCallTableEntry> g_calls_table("Message Calls Table", maps6, true, true, 0, 0);
+	VeFixedSizeTable<VeMessageCallTableEntry> g_calls_table2(g_calls_table);
 
 
 	//--------------------------------------------------------------------------------------------------

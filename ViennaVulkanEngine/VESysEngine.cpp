@@ -107,7 +107,7 @@ namespace vve {
 			new VeSTLMap< std::unordered_multimap<std::string, VeValue>, std::string, VeIndex >
 			((VeIndex)offsetof(struct VeEntityTableEntry, m_name), 0)
 		};
-		VeFixedSizeTableMT<VeEntityTableEntry> g_entities_table("Entities Table", maps2, false, false, 0, 0);
+		VeFixedSizeTable<VeEntityTableEntry> g_entities_table("Entities Table", maps2, false, false, 0, 0);
 
 		VeHandle registerEntity(const std::string& name) {
 			return g_entities_table.insert(VeEntityTableEntry{ name });
