@@ -26,7 +26,7 @@ namespace vve {
 	class VeTable {
 	protected:
 		VeHeapMemory			m_heap;
-		vgjs::VgjsThreadIndex	m_thread_idx = vgjs::VgjsThreadIndex(0);	///id of thread that accesses to this table are scheduled to
+		vgjs::VgjsThreadIndex	m_thread_idx = vgjs::VGJS_NULL_THREAD_IDX;	///id of thread that accesses to this table are scheduled to
 		bool					m_read_only = false;
 		VeTable	*				m_companion_table = nullptr;
 		bool					m_clear_on_swap = false;

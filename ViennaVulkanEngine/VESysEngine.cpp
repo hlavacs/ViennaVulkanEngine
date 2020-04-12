@@ -8,8 +8,6 @@
 */
 
 
-#define VE_IMPLEMENT_GAMEJOBSYSTEM
-
 #include "VEDefines.h"
 #include "VESysMessages.h"
 #include "VESysEngine.h"
