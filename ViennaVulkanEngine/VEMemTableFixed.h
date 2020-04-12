@@ -87,7 +87,6 @@ namespace vve {
 
 	template<typename T> inline void VeFixedSizeTable<T>::operator=(VeFixedSizeTable<T>& table) {
 		in();
-		assert(!m_read_only);
 		m_directory = table.m_directory;
 		m_data = table.m_data;
 		for (uint32_t i = 0; i < table.m_maps.size(); ++i)
@@ -98,7 +97,6 @@ namespace vve {
 
 	template<typename T> inline void VeFixedSizeTable<T>::operator=(VeTable& table) {
 		in();
-		assert(!m_read_only);
 		VeFixedSizeTable<T>* other = (VeFixedSizeTable<T>*) & table;
 		m_directory = other->m_directory;
 		m_data = other->m_data;
@@ -113,7 +111,10 @@ namespace vve {
 
 	template<typename T> inline void VeFixedSizeTable<T>::sort(VeIndex num_map) {
 		in();
-		assert(!m_read_only && num_map < m_maps.size());
+		JSETT(sort(num_map), vgjs::TID(m_thread_idx, JLABEL), return);
+		WITHNEXTSTATE(sort(num_map));
+		assert(num_map < m_maps.size());
+
 		m_dirty = true;
 		std::vector<VeHandle, custom_alloc<VeHandle>> handles(&m_heap);
 		getAllHandlesFromMap(num_map, handles);
@@ -124,7 +125,9 @@ namespace vve {
 
 	template<typename T> inline VeHandle VeFixedSizeTable<T>::insert(T entry, std::promise<VeHandle>* pPromise) {
 		in();
-		assert(!m_read_only);
+		JSETT(insert(entry, pPromise), vgjs::TID(m_thread_idx, JLABEL), return VE_NULL_HANDLE);
+		WITHNEXTSTATE(insert(entry, pPromise));
+
 		m_dirty = true;
 		VeIndex table_index = (VeIndex)m_data.size();
 		m_data.emplace_back(entry);
@@ -150,7 +153,9 @@ namespace vve {
 
 	template<typename T> inline bool VeFixedSizeTable<T>::update(VeHandle handle, T entry) {
 		in();
-		assert(!m_read_only);
+		JSETT(update(handle, entry), vgjs::TID(m_thread_idx, JLABEL), return false);
+		WITHNEXTSTATE(update(handle, entry));
+
 		m_dirty = true;
 		if (!isValid(handle) || m_data.empty()) {
 			out();
@@ -175,8 +180,10 @@ namespace vve {
 
 	template<typename T> inline void VeFixedSizeTable<T>::swap(VeHandle h1, VeHandle h2) {
 		in();
+		JSETT(swap(h1, h2), vgjs::TID(m_thread_idx, JLABEL), return);
+		WITHNEXTSTATE(swap(h1, h2));
+
 		m_dirty = true;
-		assert(!m_read_only);
 		if (h1 == h2 || !isValid(h1) || !isValid(h2)) {
 			out();
 			return;
@@ -197,8 +204,10 @@ namespace vve {
 
 	template<typename T> inline bool VeFixedSizeTable<T>::erase(VeHandle key) {
 		in();
+		JSETT(erase(key), vgjs::TID(m_thread_idx, JLABEL), return false);
+		WITHNEXTSTATE(erase(key));
+
 		m_dirty = true;
-		assert(!m_read_only);
 		if (key == VE_NULL_HANDLE || m_data.empty()) {
 			out();
 			return false;
@@ -225,6 +234,9 @@ namespace vve {
 
 	template<typename T> inline void VeFixedSizeTable<T>::clear() {
 		in();
+		JSETT(clear(), vgjs::TID(m_thread_idx, JLABEL), return);
+		WITHNEXTSTATE(clear());
+
 		for (auto map : m_maps)
 			map->clear();
 
@@ -431,7 +443,7 @@ namespace vve {
 
 		//----------------------------------------------------------------------------
 
-		virtual void operator=(VeFixedSizeTableMT<T>& table) {
+		/*virtual void operator=(VeFixedSizeTableMT<T>& table) {
 			VeFixedSizeTable<T>* me = (VeFixedSizeTable<T>*)this->getNextStatePtr();
 			VeFixedSizeTable<T>* other = (VeFixedSizeTable<T>*) & table;
 			if (this->m_swapping) {
@@ -443,69 +455,7 @@ namespace vve {
 			}
 			else
 				me->VeFixedSizeTable<T>::operator=(*other);
-		};
-
-		virtual void swap(VeHandle h1, VeHandle h2) {
-			VeFixedSizeTable<T>* me = (VeFixedSizeTable<T>*)this->getNextStatePtr();
-			if (vgjs::JobSystem::isInstanceCreated() && this->m_thread_idx != JIDX) {
-				JADDT(me->VeFixedSizeTable<T>::swap(h1, h2), vgjs::TID(this->m_thread_idx));
-			}
-			else
-				me->VeFixedSizeTable<T>::swap(h1, h2);
-		};
-
-		virtual void clear() {
-			VeFixedSizeTable<T>* me = (VeFixedSizeTable<T>*)this->getNextStatePtr();
-			if (this->m_swapping) {
-				me->VeFixedSizeTable<T>::clear();
-				return;
-			}
-			if (!this->m_swapping && vgjs::JobSystem::isInstanceCreated() && this->m_thread_idx != JIDX) {
-				JADDT(me->VeFixedSizeTable<T>::clear(), vgjs::TID(this->m_thread_idx));
-			}
-			else
-				me->VeFixedSizeTable<T>::clear();
-		};
-
-		virtual void sort(VeIndex num_map) {
-			VeFixedSizeTable<T>* me = (VeFixedSizeTable<T>*)this->getNextStatePtr();
-			if (vgjs::JobSystem::isInstanceCreated() && this->m_thread_idx != JIDX) {
-				JADDT(me->VeFixedSizeTable<T>::sort(num_map), vgjs::TID(this->m_thread_idx));
-			}
-			else
-				me->VeFixedSizeTable<T>::sort(num_map);
-		};
-
-		virtual VeHandle insert(T entry, std::promise<VeHandle>* pPromise) {
-			VeFixedSizeTable<T>* me = (VeFixedSizeTable<T>*)this->getNextStatePtr();
-			if (vgjs::JobSystem::isInstanceCreated() && this->m_thread_idx != JIDX) {
-				JADDT(me->VeFixedSizeTable<T>::insert(entry, pPromise), vgjs::TID(this->m_thread_idx));
-				return VE_NULL_HANDLE;
-			}
-			return me->VeFixedSizeTable<T>::insert(entry, pPromise);
-		};
-
-		virtual VeHandle insert(T entry) {
-			return insert(entry, nullptr);
-		};
-
-		virtual bool update(VeHandle key, T entry) {
-			VeFixedSizeTable<T>* me = (VeFixedSizeTable<T>*)this->getNextStatePtr();
-			if (vgjs::JobSystem::isInstanceCreated() && this->m_thread_idx != JIDX) {
-				JADDT(me->VeFixedSizeTable<T>::update(key, entry), vgjs::TID(this->m_thread_idx));
-				return true;
-			}
-			return me->VeFixedSizeTable<T>::update(key, entry);
-		};
-
-		virtual bool erase(VeHandle key) {
-			VeFixedSizeTable<T>* me = (VeFixedSizeTable<T>*)this->getNextStatePtr();
-			if (vgjs::JobSystem::isInstanceCreated() && this->m_thread_idx != JIDX) {
-				JADDT(me->VeFixedSizeTable<T>::erase(key), vgjs::TID(this->m_thread_idx));
-				return true;
-			}
-			return me->VeFixedSizeTable<T>::erase(key);
-		};
+		};*/
 
 
 		//----------------------------------------------------------------------------

@@ -13,7 +13,8 @@
 namespace vve {
 
 
-
+	#define WITHCURRENTSTATE(f) if ( vgjs::JobSystem::isInstanceCreated() && m_companion_table != nullptr && !isCurrentState() ) { return ((VeFixedSizeTable*)getCurrentStatePtr())->f; } 
+	#define WITHNEXTSTATE(f) if ( vgjs::JobSystem::isInstanceCreated() && m_companion_table != nullptr && isCurrentState() ) { return ((VeFixedSizeTable*)getNextStatePtr())->f; } 
 
 	//------------------------------------------------------------------------------------------------------
 
@@ -93,7 +94,7 @@ namespace vve {
 			if (!m_current_state) {
 				table = m_companion_table;
 			}
-			assert(table->getReadOnly());
+			assert(table->isCurrentState());
 			return table;
 		};
 
@@ -105,7 +106,7 @@ namespace vve {
 			if (m_current_state) {
 				table = m_companion_table;
 			}
-			assert(!table->getReadOnly());
+			assert(!table->isCurrentState());
 			return table;
 
 		};

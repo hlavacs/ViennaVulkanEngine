@@ -64,7 +64,7 @@ namespace vgjs {
 	* \returns the index of the thread running this job
 	*
 	*/
-	#define JIDX vgjs::JobSystem::getInstance()->getThreadIndex()
+	#define JIDX (vgjs::JobSystem::isInstanceCreated() ? vgjs::JobSystem::getInstance()->getThreadIndex() : vgjs::VGJS_NULL_THREAD_IDX)
 
 	/**
 	*
@@ -73,7 +73,7 @@ namespace vgjs {
 	* \returns the label of the current job
 	*
 	*/
-	#define JLABEL vgjs::JobSystem::getInstance()->getJobPointer()->getJobLabel()
+	#define JLABEL (vgjs::JobSystem::isInstanceCreated() ? vgjs::JobSystem::getInstance()->getJobPointer()->getJobLabel() : vgjs::VGJS_NULL_JOB_LABEL)
 
 	/**
 	*
