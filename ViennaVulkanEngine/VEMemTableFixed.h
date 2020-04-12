@@ -109,6 +109,7 @@ namespace vve {
 	}
 
 	//--------------------------------------------------------------------------------------------------------------------------
+	//write operations
 
 	template<typename T> inline void VeFixedSizeTable<T>::sort(VeIndex num_map) {
 		in();
@@ -222,8 +223,22 @@ namespace vve {
 		return true;
 	};
 
+	template<typename T> inline void VeFixedSizeTable<T>::clear() {
+		in();
+		for (auto map : m_maps)
+			map->clear();
+
+		m_data.clear();
+		m_directory.clear();
+		m_idx2dir.clear();
+		m_heap.clear();
+		out();
+	}
+
+
 
 	//----------------------------------------------------------------------------------------
+	//read operations
 
 	template<typename T> inline bool VeFixedSizeTable<T>::isValid(VeHandle handle) {
 		return m_directory.isValid(handle);
@@ -273,20 +288,6 @@ namespace vve {
 		return handle;
 	};
 
-	template<typename T> inline void VeFixedSizeTable<T>::clear() {
-		in();
-		for (auto map : m_maps)
-			map->clear();
-
-		m_data.clear();
-		m_directory.clear();
-		m_idx2dir.clear();
-		m_heap.clear();
-		out();
-	}
-
-
-	//--------------------------------------------------------------------------------------------------------------------------
 
 	template<typename T>
 	VeCount VeFixedSizeTable<T>::leftJoin(VeIndex own_map, VeTable* other, VeIndex other_map, std::vector<VeHandlePair, custom_alloc<VeHandlePair>>& result) {

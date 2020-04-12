@@ -68,6 +68,15 @@ namespace vgjs {
 
 	/**
 	*
+	* \brief Get the label of the current job
+	*
+	* \returns the label of the current job
+	*
+	*/
+	#define JLABEL vgjs::JobSystem::getInstance()->getJobPointer()->getJobLabel()
+
+	/**
+	*
 	* \brief Move the current job to a specific thread. NUllifies any JDEP!!
 	*
 	*/
@@ -164,6 +173,7 @@ namespace vgjs {
 	* @{
 	*/
 	#define JIDX 0
+	#define JLABEL 0
 	#define JSETT(t)
 	#define JADD( f ) {f;}
 	#define JDEP( f ) {f;}

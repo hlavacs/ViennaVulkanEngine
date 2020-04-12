@@ -192,7 +192,7 @@ namespace vve::sysmes {
 
 
 	VeHandle recordMessage(VeMessage message ) {
-		JSETT( recordMessage(message), vgjs::TID(g_messages_table.getThreadIdx(),vgjs::JobSystem::getInstance()->getJobPointer()->getJobLabel()), return VE_NULL_HANDLE );
+		JSETT( recordMessage(message), vgjs::TID(g_messages_table.getThreadIdx(), JLABEL), return VE_NULL_HANDLE );
 
 		//std::cout << "add message type " << (VeIndex)message.m_type << " action " << message.m_action << " key/button " << message.m_key_button << std::endl;
 
