@@ -30,6 +30,25 @@
 #include <assert.h>
 
 
+namespace vgjs {
+
+	class JobMemory;
+	class Job;
+	class JobSystem;
+	class JobQueueFIFO;
+	class JobQueueLockFree;
+
+	using Function = std::function<void()>;	///< Standard function that can be put into a job
+
+	enum class VgjsThreadIndex : uint32_t {};
+	constexpr VgjsThreadIndex VGJS_NULL_THREAD_IDX = VgjsThreadIndex(std::numeric_limits<uint32_t>::max());	///< No index given
+
+	enum class VgjsThreadLabel : uint32_t {};				///< Use for index into job arrays
+	constexpr VgjsThreadLabel VGJS_NULL_THREAD_LABEL = VgjsThreadLabel(std::numeric_limits<uint32_t>::max());	///< No index given
+
+	enum class VgjsThreadID : uint64_t {};				///< An id contains an index and a label
+	constexpr VgjsThreadID VGJS_NULL_THREAD_ID = VgjsThreadID(std::numeric_limits<uint64_t>::max());	///< No ID given
+
 
 #if defined(VE_ENABLE_MULTITHREADING) || defined(DOXYGEN)
 	/**
@@ -52,7 +71,8 @@
 	* \brief Move the current job to a specific thread. NUllifies any JDEP!!
 	*
 	*/
-	#define JSETT(t) vgjs::JSETTIMPL(t)
+	#define JSETT(f, t, r ) if ( vgjs::getThreadIndexFromID(t) != vgjs::VGJS_NULL_THREAD_IDX && vgjs::getThreadIndexFromID(t) != vgjs::JobSystem::getInstance()->getThreadIndex() ) { \
+								vgjs::JobSystem::getInstance()->addJob( [=](){ f; }, t ); r; }
 
 	/**
 	*
@@ -160,26 +180,6 @@
 
 
 
-namespace vgjs {
-
-	class JobMemory;
-	class Job;
-	class JobSystem;
-	class JobQueueFIFO;
-	class JobQueueLockFree;
-
-	using Function = std::function<void()>;	///< Standard function that can be put into a job
-
-	enum class VgjsThreadIndex : uint32_t {};
-	constexpr VgjsThreadIndex VGJS_NULL_THREAD_IDX = VgjsThreadIndex(std::numeric_limits<uint32_t>::max());	///< No index given
-
-	enum class VgjsThreadLabel : uint32_t {};				///< Use for index into job arrays
-	constexpr VgjsThreadLabel VGJS_NULL_THREAD_LABEL = VgjsThreadLabel(std::numeric_limits<uint32_t>::max());	///< No index given
-
-	enum class VgjsThreadID : uint64_t {};				///< An id contains an index and a label
-	constexpr VgjsThreadID VGJS_NULL_THREAD_ID = VgjsThreadID(std::numeric_limits<uint64_t>::max());	///< No ID given
-
-	bool JSETTIMPL(VgjsThreadIndex t);
 
 	/**
 	*
@@ -287,16 +287,6 @@ namespace vgjs {
 		VgjsThreadIndex getExecThread() {
 			return m_exec_thread;
 		}
-		/**
-		*
-		* \brief Set the Job's function
-		*
-		* \param[in] func The function object containing the job function
-		*
-		*/
-		//void setFunction(Function& func) {
-		//	m_function = func;
-		//};
 
 		/**
 		*
@@ -334,9 +324,9 @@ namespace vgjs {
 	public:
 
 		Job() : m_nextInQueue(nullptr), m_parentJob(nullptr), m_onFinishedJob(nullptr), 
-			m_thread_idx(VGJS_NULL_THREAD_IDX), m_thread_label(VGJS_NULL_THREAD_LABEL),
-			t1(), t2(), m_exec_thread(VGJS_NULL_THREAD_IDX),
-			m_numUnfinishedChildren(0), m_repeatJob(false), m_available(true) {}; ///< Job class constructor
+				m_thread_idx(VGJS_NULL_THREAD_IDX), m_thread_label(VGJS_NULL_THREAD_LABEL),
+				t1(), t2(), m_exec_thread(VGJS_NULL_THREAD_IDX),
+				m_numUnfinishedChildren(0), m_repeatJob(false), m_available(true) {}; ///< Job class constructor
 		~Job() {};	///<Job class desctructor
 	};
 
@@ -935,23 +925,6 @@ namespace vgjs {
 	std::unique_ptr<JobSystem> JobSystem::pInstance;			//pointer to singleton
 	thread_local VgjsThreadIndex JobSystem::m_thread_index = VgjsThreadIndex(0);		///< Thread local index of the thread
 
-
-	/**
-	*
-	* \brief Move a running job to another thread
-	*
-	* \param[in] t The thread that this job should be moved to
-	* \return true if the job is already running on the thread, else false. Upon false, the current job should return.
-	*
-	*/
-	bool JSETTIMPL(VgjsThreadIndex t) {
-		if( JIDX != t) {
-			JobSystem::getInstance()->getJobPointer()->setThreadIdx(t);
-			JREP;
-			return false;
-		} 
-		return true; 
-	};
 
 
 	/**
