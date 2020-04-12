@@ -192,11 +192,8 @@ namespace vve::sysmes {
 
 
 	VeHandle recordMessage(VeMessage message ) {
-		if (JIDX != g_messages_table.getThreadIdx()) {
-			JADDT(recordMessage(message), vgjs::TID(g_messages_table.getThreadIdx()));
-			return VE_NULL_HANDLE;
-		};
-
+		if( !JSETT(g_messages_table.getThreadIdx()) ) return VE_NULL_HANDLE;	//move job to table thread
+			 
 		//std::cout << "add message type " << (VeIndex)message.m_type << " action " << message.m_action << " key/button " << message.m_key_button << std::endl;
 
 		//insert into messages table and get a messageID

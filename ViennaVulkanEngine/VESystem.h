@@ -17,8 +17,8 @@ namespace vve::sysvul {
 	public:
 		VeSystem( std::string name, bool subscribe = true) {
 			m_systemName = name;
-			syseng::registerEntity(m_systemName);
-			m_systemHandle = syseng::getEntityHandle(m_systemName);
+			//syseng::registerEntity(m_systemName);
+			//m_systemHandle = syseng::getEntityHandle(m_systemName);
 
 			if (subscribe) {
 

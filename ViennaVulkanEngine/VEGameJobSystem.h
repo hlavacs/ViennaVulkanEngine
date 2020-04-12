@@ -39,6 +39,7 @@
 	*/
 	
 	/**
+	*
 	* \brief Get index of the thread running this job
 	*
 	* \returns the index of the thread running this job
@@ -47,6 +48,14 @@
 	#define JIDX vgjs::JobSystem::getInstance()->getThreadIndex()
 
 	/**
+	*
+	* \brief Move the current job to a specific thread. NUllifies any JDEP!!
+	*
+	*/
+	#define JSETT(t) vgjs::JSETTIMPL(t)
+
+	/**
+	*
 	* \brief Add a function as a job to the jobsystem.
 	*
 	* In multithreaded operations, this macro adds a function as job to the job system.
@@ -58,6 +67,7 @@
 	#define JADD( f )	vgjs::JobSystem::getInstance()->addJob( [=](){ f; } )
 
 	/**
+	*
 	* \brief Add a dependent job to the jobsystem. The job will run only after all previous jobs have ended.
 	*
 	* In multithreaded operations, this macro adds a function as job to the job system after all other child jobs have finished.
@@ -69,6 +79,7 @@
 	#define JDEP( f )	vgjs::JobSystem::getInstance()->onFinishedAddJob( [=](){ f; } )
 
 	/**
+	*
 	* \brief Add a job to the jobsystem, schedule to a particular thread.
 	*
 	* In multithreaded operations, this macro adds a function as job to the job system and schedule it to the given thread.
@@ -81,6 +92,7 @@
 	#define JADDT( f, t )	vgjs::JobSystem::getInstance()->addJob( [=](){ f; }, t )
 
 	/**
+	*
 	* \brief Add a dependent job to the jobsystem, schedule to a particular thread. The job will run only after all previous jobs have ended.
 	*
 	* In multithreaded operations, this macro adds a function as job to the job system and schedule it to the given thread.
@@ -132,6 +144,7 @@
 	* @{
 	*/
 	#define JIDX 0
+	#define JSETT(t)
 	#define JADD( f ) {f;}
 	#define JDEP( f ) {f;}
 	#define JADDT( f, t ) {f;}
@@ -148,8 +161,6 @@
 
 
 namespace vgjs {
-
-
 
 	class JobMemory;
 	class Job;
@@ -168,6 +179,7 @@ namespace vgjs {
 	enum class VgjsThreadID : uint64_t {};				///< An id contains an index and a label
 	constexpr VgjsThreadID VGJS_NULL_THREAD_ID = VgjsThreadID(std::numeric_limits<uint64_t>::max());	///< No ID given
 
+	bool JSETTIMPL(VgjsThreadIndex t);
 
 	/**
 	*
@@ -226,6 +238,7 @@ namespace vgjs {
 		bool					m_available;					///< is this job available after a pool reset?
 		bool					m_repeatJob;					///< if true then the job will be rescheduled
 	
+	public:
 		/**
 		*
 		* \brief Set a pointer to the parent of a job
@@ -262,6 +275,18 @@ namespace vgjs {
 			m_thread_label = getThreadLabelFromID(thread_id);
 		}
 
+		void setThreadIdx(VgjsThreadIndex thread_idx) {
+			m_thread_idx = thread_idx;
+		}
+
+
+		Function getFunction() {
+			return m_function;
+		}
+
+		VgjsThreadIndex getExecThread() {
+			return m_exec_thread;
+		}
 		/**
 		*
 		* \brief Set the Job's function
@@ -269,9 +294,9 @@ namespace vgjs {
 		* \param[in] func The function object containing the job function
 		*
 		*/
-		void setFunction(Function& func) {
-			m_function = func;
-		};
+		//void setFunction(Function& func) {
+		//	m_function = func;
+		//};
 
 		/**
 		*
@@ -598,11 +623,11 @@ namespace vgjs {
 				if (pJob != nullptr) {	//f found a job
 					//std::cout << "start job on thread idx " << threadIndex << " with label " << pJob->m_thread_label << std::endl;
 
-					m_jobPointers[(uint32_t)threadIndex] = pJob;						//make pointer to the Job structure accessible!
+					pJob->m_exec_thread = threadIndex;						//thread idx this job is executed on
+					m_jobPointers[(uint32_t)threadIndex] = pJob;			//make pointer to the Job structure accessible!
 					//pJob->t1 = std::chrono::high_resolution_clock::now();	//time of execution
 					(*pJob)();												//run the job
 					//pJob->t2 = std::chrono::high_resolution_clock::now();	//time of finishing
-					pJob->m_exec_thread = threadIndex;						//thread idx this job was executed on
 				}
 				else {
 					//m_numMisses[threadIndex]++;	//Increase miss counter, possibly sleep or wait for a signal
@@ -864,7 +889,7 @@ namespace vgjs {
 			if (pCurrentJob == nullptr) return;			//is null if called by main thread
 			assert(!pCurrentJob->m_repeatJob);			//you cannot do both repeat and add job after finishing
 			Job* pNewJob = m_job_memory[(uint32_t)m_thread_index]->allocateJob();
-			pNewJob->setFunction(func);
+			pNewJob->setFunction(std::move(func));
 			pNewJob->setThreadId(thread_id);
 			pCurrentJob->setOnFinished(pNewJob);
 		};
@@ -909,6 +934,24 @@ namespace vgjs {
 
 	std::unique_ptr<JobSystem> JobSystem::pInstance;			//pointer to singleton
 	thread_local VgjsThreadIndex JobSystem::m_thread_index = VgjsThreadIndex(0);		///< Thread local index of the thread
+
+
+	/**
+	*
+	* \brief Move a running job to another thread
+	*
+	* \param[in] t The thread that this job should be moved to
+	* \return true if the job is already running on the thread, else false. Upon false, the current job should return.
+	*
+	*/
+	bool JSETTIMPL(VgjsThreadIndex t) {
+		if( JIDX != t) {
+			JobSystem::getInstance()->getJobPointer()->setThreadIdx(t);
+			JREP;
+			return false;
+		} 
+		return true; 
+	};
 
 
 	/**
