@@ -13,6 +13,7 @@
 ///include STL 
 #include <type_traits>
 #include <iostream>
+#include <fstream>
 #include <vector>
 #include <limits>
 #include <array>
@@ -28,6 +29,7 @@
 #include <iomanip>
 #include <typeinfo>
 #include <functional>
+#include <string>
 
 
 #define VECTOR std::vector<T>
@@ -49,6 +51,7 @@ namespace vve {
 	inline VeCount operator--(VeCount &count) { count = VeCount((uint64_t)count - 1); return count; };
 	inline VeCount operator""_Cnt(uint64_t val) { return VeCount(val); };
 	inline uint64_t operator+(VeCount l, int r) { return (uint64_t)l + r; };
+	inline uint64_t operator-(VeCount l, int r) { return (uint64_t)l - r; };
 
 	typedef uint64_t VeIndex;												///<for indexing in large data collections
 	constexpr VeIndex VE_NULL_INDEX = std::numeric_limits<VeIndex>::max();	///<a null index pointing nowhere
@@ -173,6 +176,7 @@ namespace vve {
 #define VE_ENABLE_MULTITHREADING
 #include "VEGameJobSystem.h"
 
+#include "VELabels.h"
 #include "VEMemTable.h"
 #include "VESystem.h"
 

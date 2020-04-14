@@ -169,5 +169,8 @@
     <ClInclude Include="VESystem.h">
       <Filter>Headerdateien</Filter>
     </ClInclude>
+    <ClInclude Include="VELabels.h">
+      <Filter>Headerdateien</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

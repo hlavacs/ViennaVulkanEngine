@@ -161,12 +161,79 @@ namespace vve {
 			g_goon = false;
 		}
 
+
+		void saveJob(	std::ofstream& out, std::string cat, uint64_t pid, uint64_t tid, 
+						uint64_t ts, int64_t dur,
+						std::string ph, std::string name, std::string args) {
+
+			char time[50];
+			std::sprintf(time, "%.3lf", ts / 1000.0);
+			char duration[50];
+			std::sprintf(duration, "%.3lf", dur / 1000.0);
+			out << "{";
+			out << "\"cat\": " << cat << ", ";
+			out << "\"pid\": " << pid << ", ";
+			out << "\"tid\": " << tid << ", ";
+			out << "\"ts\": " << time << ", ";
+			out << "\"dur\": " << duration << ", ";
+			out << "\"ph\": " << ph << ", ";
+			out << "\"name\": " << name << ", ";
+			out << "\"args\": {" << args << "}";
+			out << "}";
+		}
+
 		VeHandle g_keyboardHandle;
+		void saveLogfile();
+		time_point<high_resolution_clock> start_time = high_resolution_clock::now();					//time when program started
+
 		void keyboard(VeHandle receiver) {
 			std::cout << "Keyboard" << std::endl;
 
-			bool logging = vgjs::JobSystem::getInstance()->isLogging();
-			vgjs::JobSystem::getInstance()->setLogging(!logging);
+			if (vgjs::JobSystem::getInstance()->isLogging()) {
+				vgjs::JobSystem::getInstance()->setLogging(false);
+				saveLogfile();
+				return;
+			}
+
+			vgjs::JobSystem::getInstance()->setLogging(true);
+		}
+
+		void saveLogfile() {
+			std::vector<std::vector<vgjs::JobSystem::VgjsJobLog>>& logs = vgjs::JobSystem::getInstance()->getLogs();
+			std::ofstream outdata;
+			outdata.open("log.json"); 
+			if (outdata) { 
+				outdata << "{" << std::endl;
+				outdata << "\"traceEvents\": [" << std::endl;
+				bool comma = false;
+				for (uint32_t i = 0; i < vgjs::JobSystem::getInstance()->getThreadCount(); ++i) {
+					if (i > 0 && logs[i-1].empty()) comma = false;
+					if (comma) outdata << "," << std::endl;
+					comma = true;
+
+					bool comma2 = false;
+					for (auto& ev : logs[i]) {
+						if (ev.m_t1 >= start_time && ev.m_t2 >= ev.m_t1) {
+							if( comma2 ) outdata << "," << std::endl;
+							comma2 = true;
+							auto it = g_job_labels.find((VeJobLabel)ev.m_label);
+							std::string name = "-";
+							if (it != g_job_labels.end()) name = it->second;
+
+							saveJob(outdata, "\"cat\"", 0, (uint32_t)ev.m_exec_thread,
+								duration_cast<nanoseconds>(ev.m_t1 - start_time).count(),
+								duration_cast<nanoseconds>(ev.m_t2 - ev.m_t1).count(),
+								"\"X\"", "\"" + name + "\"", "\"finished\": " + std::to_string(ev.m_finished));
+						}
+						bool comma2 = false; 
+					}
+				}
+				outdata << "]," << std::endl;
+				outdata << "\"displayTimeUnit\": \"ns\"" << std::endl;
+				outdata << "}" << std::endl;
+			}
+			outdata.close();
+			vgjs::JobSystem::getInstance()->clearLogs();
 		}
 
 		void init() {
@@ -240,7 +307,7 @@ namespace vve {
 			for (auto table : g_main_table.data()) {	//swap tables
 				//std::cout << "swap table " << table.m_name << " " << std::endl;
 				if (table.m_table_pointer->getCompanionTable() != nullptr) {
-					JADD(table.m_table_pointer->swapTables());	//might clear() some tables here
+					JADDT(table.m_table_pointer->swapTables(), vgjs::TID(vgjs::VGJS_NULL_THREAD_IDX, (vgjs::VgjsJobLabel)VE_JOB_LABEL_VETABLE_SWAPTABLES));	//might clear() some tables here
 				}
 			}
 		}
@@ -269,26 +336,26 @@ namespace vve {
 		step1:
 			//forwardClock.tick();
 			forwardTime();
-			JDEP(computeOneFrame2(2));		//wait for finishing, then do step3
+			JDEPT(computeOneFrame2(2), vgjs::TID(vgjs::VGJS_NULL_THREAD_IDX, (vgjs::VgjsJobLabel)VE_JOB_LABEL_SYSENG_COMPUTEONEFRAME2));
 			return;
 
 		step2:
 			//swapClock.start();
 			swapTables();
-			JDEP(computeOneFrame2(3));		//wait for finishing, then do step3
+			JDEPT(computeOneFrame2(3), vgjs::TID(vgjs::VGJS_NULL_THREAD_IDX, (vgjs::VgjsJobLabel)VE_JOB_LABEL_SYSENG_COMPUTEONEFRAME2));
 			return;
 
 		step3:
 			//tickClock.start();
 			sysmes::update();
-			JDEP( computeOneFrame2(4));		//wait for finishing, then do step4
+			JDEPT(computeOneFrame2(4), vgjs::TID(vgjs::VGJS_NULL_THREAD_IDX, (vgjs::VgjsJobLabel)VE_JOB_LABEL_SYSENG_COMPUTEONEFRAME2));
 			return;
 
 		step4:
 			reached_time = next_update_time;
 
 			if (now_time > next_update_time) {	//if now is not reached yet
-				JDEP( computeOneFrame2(1); );	//move one epoch further
+				JDEPT(computeOneFrame2(1), vgjs::TID(vgjs::VGJS_NULL_THREAD_IDX, (vgjs::VgjsJobLabel)VE_JOB_LABEL_SYSENG_COMPUTEONEFRAME2));
 			}
 		}
 
@@ -296,6 +363,7 @@ namespace vve {
 		//can call this from the main thread if you have your own game loop
 		void computeOneFrame() {
 			JRESET;
+			clearTmpHeaps();
 			computeOneFrame2(0);
 			JWAIT;
 		}
@@ -304,13 +372,14 @@ namespace vve {
 		uint64_t loopCount = 0;
 		void runGameLoop2() {
 			++loopCount;
-
 			loopClock.tick();
 
 			while (g_goon) {
+
 				JRESET;
 				clearTmpHeaps();
-				JADD(computeOneFrame2(0));	 //run on main thread for polling!
+
+				JADDT(computeOneFrame2(0), vgjs::TID(vgjs::VGJS_NULL_THREAD_IDX, (vgjs::VgjsJobLabel)VE_JOB_LABEL_SYSENG_COMPUTEONEFRAME2_START) );
 				JREP;
 				JRET;
 			}
