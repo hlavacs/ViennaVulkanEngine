@@ -28,6 +28,7 @@
 #include <iterator>
 #include <algorithm>
 #include <assert.h>
+#include <chrono>
 
 
 namespace vgjs {
@@ -583,6 +584,15 @@ namespace vgjs {
 	class JobSystem {
 		friend Job;
 
+		struct VgjsJobLog {
+			std::chrono::high_resolution_clock::time_point m_t1, m_t2;	///< execution start and end
+			VgjsJobLabel m_label;
+			VgjsJobLog(	std::chrono::high_resolution_clock::time_point &t1, 
+						std::chrono::high_resolution_clock::time_point &t2, 
+						VgjsJobLabel label) : m_t1(t1), m_t2(t2), m_label(label) {
+			};
+		};
+
 	private:
 		std::vector<std::unique_ptr<std::thread>>	m_threads;				///< array of thread structures
 		uint32_t									m_threadCount;			///< number of threads in the pool
@@ -595,6 +605,7 @@ namespace vgjs {
 		std::vector<std::unique_ptr<JobQueue>>		m_jobQueues;			///< Each thread has its own Job queue
 		std::vector<std::unique_ptr<JobQueue>>		m_jobQueuesLocal;		///< a secondary low priority FIFO queue for each thread, where polling jobs are parked
 		std::vector<std::unique_ptr<JobQueue>>		m_jobQueuesLocalFIFO;	///< a secondary low priority FIFO queue for each thread, where polling jobs are parked
+		std::atomic<bool>							m_enableLogging;		///< Flag for starting ad stopping job logging
 		std::atomic<uint32_t>						m_numJobs;				///< total number of jobs in the system
 		std::vector<uint64_t>						m_numLoops;				///< number of loops the task has done so far
 		std::vector<uint64_t>						m_numMisses;			///< number of times the task did not get a job
@@ -602,6 +613,7 @@ namespace vgjs {
 		std::condition_variable						m_mainThreadCondVar;	///< used for waking up main tread
 
 	public:
+		std::vector<std::vector<VgjsJobLog>>		m_jobLogs;				///< log the start and stop times of jobs
 		vve::VeClock m_clock;				///< Clock for time measurements
 
 		/**
@@ -657,9 +669,18 @@ namespace vgjs {
 
 					pJob->m_exec_thread = threadIndex;						//thread idx this job is executed on
 					m_jobPointers[(uint32_t)threadIndex] = pJob;			//make pointer to the Job structure accessible!
-					//pJob->t1 = std::chrono::high_resolution_clock::now();	//time of execution
+
+					std::chrono::high_resolution_clock::time_point t1, t2;	///< execution start and end
+					if (m_enableLogging) {
+						t1 = std::chrono::high_resolution_clock::now();		//time of execution
+					}
+
 					(*pJob)();												//run the job
-					//pJob->t2 = std::chrono::high_resolution_clock::now();	//time of finishing
+
+					if (m_enableLogging) {
+						t2 = std::chrono::high_resolution_clock::now();		//time of finishing
+						m_jobLogs[(uint32_t)m_thread_index].emplace_back(t1, t2, pJob->getJobLabel());
+					}
 				}
 				else {
 					//m_numMisses[threadIndex]++;	//Increase miss counter, possibly sleep or wait for a signal
@@ -682,7 +703,7 @@ namespace vgjs {
 		*
 		*/
 		JobSystem(uint32_t threadCount = 0, uint32_t start_idx = 0) : 
-			m_terminate(false), m_numJobs(0), m_clock("Job System", 100) {
+			m_terminate(false), m_numJobs(0), m_enableLogging(false), m_clock("Job System", 100) {
 
 			m_start_idx = start_idx;
 			m_threadCount = threadCount;
@@ -697,6 +718,7 @@ namespace vgjs {
 			m_jobPointers.resize(m_threadCount);							//rerve mem for Job pointers
 			m_numMisses.resize(m_threadCount);								//each threads counts its own misses
 			m_numLoops.resize(m_threadCount);								//each tread counts its own loops
+			m_jobLogs.resize(m_threadCount);
 			for (uint32_t i = 0; i < m_threadCount; i++) {
 				m_job_memory[i]			= std::make_unique<JobMemory>();			//Each thread has its own job memory
 				m_jobQueues[i]			= std::make_unique<JobQueueLockFree>();		//job queue with work stealing
@@ -821,6 +843,20 @@ namespace vgjs {
 		VgjsThreadIndex getThreadIndex() {
 			return m_thread_index;
 		};
+
+		void clearLogs() {
+			for (uint32_t i = 0; i < m_threadCount; ++i) {
+				m_jobLogs[i].clear();
+			}
+		}
+
+		void setLogging(bool flag) {
+			m_enableLogging = flag;
+		}
+
+		bool isLogging() {
+			return m_enableLogging;
+		}
 
 		/**
 		*
