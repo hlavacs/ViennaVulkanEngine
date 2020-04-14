@@ -8,10 +8,6 @@ namespace vve {
 	//------------------------------------------------------------------------------------------------------
 
 
-#define VECTOR VeVector<T>
-#define VECTORPAR memcopy,align,capacity
-
-
 	/**
 	*
 	* \brief

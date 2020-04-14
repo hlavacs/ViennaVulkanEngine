@@ -201,9 +201,66 @@ namespace vve::map {
 	}
 
 
+	struct TestEntry3 {
+		VeIndex m_int1;
+		VeIndex m_int2;
+		VeHandle m_handle;
+		std::string m_name;
+	};
+
+	VeHashedMultimap<VeKeyPair, VeIndexPair> testmap3(
+		VeIndexPair(offsetof(TestEntry, m_int1), offsetof(TestEntry, m_int2)),
+		VeIndexPair(sizeof(TestEntry::m_int1), sizeof(TestEntry::m_int2) ) );
+
+	void testHashedMap3() {
+		TestEntry t1{ 1, 1, 2_Hd, "A" };
+		TestEntry t2{ 2, 1, 2_Hd, "A" };
+		TestEntry t3{ 3, 1, 2_Hd, "A" };
+		TestEntry t4{ 4, 1, 2_Hd, "A" };
+		TestEntry t5{ 5, 1, 2_Hd, "A" };
+		TestEntry t6{ 6, 1, 2_Hd, "A" };
+
+		TestEntry t7{ 7, 1, 2_Hd, "A" };
+		TestEntry t8{ 8, 1, 2_Hd, "A" };
+		TestEntry t9{ 9, 1, 2_Hd, "A" };
+		TestEntry t10{ 10, 1, 2_Hd, "A" };
+		TestEntry t11{ 11, 1, 2_Hd, "A" };
+		TestEntry t12{ 12, 1, 2_Hd, "A" };
+
+		testmap3.insert(&t1, 1_Va);
+		testmap3.insert(&t2, 1_Va);
+		testmap3.insert(&t3, 1_Va);
+		testmap3.insert(&t3, 2_Va);
+		testmap3.insert(&t3, 3_Va);
+		testmap3.insert(&t3, 4_Va);
+		testmap3.insert(&t4, 1_Va);
+		testmap3.insert(&t5, 1_Va);
+		testmap3.insert(&t6, 1_Va);
+		testmap3.insert(&t6, 2_Va);
+		testmap3.insert(&t6, 3_Va);
+
+		testmap3.print();
+
+		testmap3.erase(&t1, 1_Va);
+		testmap3.erase(&t3, 1_Va);
+		testmap3.erase(&t3, 2_Va);
+
+		testmap3.print();
+
+		VeHeapMemory heap;
+		std::vector<VeValue, custom_alloc<VeValue>> result(&heap);
+		VeCount num = testmap3.equal_range(VeKeyPair(VeKey(3), VeKey(1)), result);
+
+		testmap3.clear();
+
+		testmap3.print();
+
+	}
+
 	void testMap() {
 		//testOrderedMap();
-		testHashedMap();
+		//testHashedMap();
+		testHashedMap3();
 	}
 
 }

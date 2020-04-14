@@ -30,17 +30,23 @@
 #include <functional>
 
 
+#define VECTOR std::vector<T>
+#define VECTORPAR  //memcopy,align,capacity
+#define VECTORPAR2 //memcopy
 
 namespace vve {
+
 
 	//----------------------------------------------------------------------------------
 	//basic data types
 
+	//typedef uint64_t VeCount;
+	//inline VeCount operator""_Cnt(uint64_t val) { return VeCount(val); };
 	enum class VeCount : uint64_t { };										///<for counting objects
 	inline VeCount operator+(VeCount count, VeCount rcount) { return VeCount((uint64_t)count + (uint64_t)rcount); };
 	inline VeCount operator-(VeCount count, VeCount rcount) { return VeCount((uint64_t)count - (uint64_t)rcount); };
-	inline VeCount operator++(VeCount count) { count = VeCount((uint64_t)count + 1); return count; };
-	inline VeCount operator--(VeCount count) { count = VeCount((uint64_t)count - 1); return count; };
+	inline VeCount operator++(VeCount &count) { count = VeCount((uint64_t)count + 1); return count; };
+	inline VeCount operator--(VeCount &count) { count = VeCount((uint64_t)count - 1); return count; };
 	inline VeCount operator""_Cnt(uint64_t val) { return VeCount(val); };
 	inline uint64_t operator+(VeCount l, int r) { return (uint64_t)l + r; };
 
@@ -49,11 +55,11 @@ namespace vve {
 	using VeIndexPair = std::pair<VeIndex, VeIndex>;						///<a pair of indices
 	using VeIndexTriple = std::tuple<VeIndex, VeIndex, VeIndex>;			///<a triplet of indices
 	inline std::ostream& operator<<(std::ostream& stream, VeIndexPair& pair) {
-		stream << pair.first << std::skipws << pair.second;
+		stream << pair.first << " " << std::skipws << pair.second;
 		return stream;
 	};
 	inline std::ostream& operator<<(std::ostream& stream, VeIndexTriple& triple) {
-		stream << std::get<0>(triple) << std::skipws << std::get<1>(triple) << std::skipws << std::get<2>(triple);
+		stream << std::get<0>(triple) << " " << std::skipws << std::get<1>(triple) << " " << std::skipws << std::get<2>(triple);
 		return stream;
 	};
 
@@ -70,11 +76,11 @@ namespace vve {
 		return stream;
 	};
 	inline std::ostream& operator<<(std::ostream& stream, VeHandlePair& pair) {
-		stream << pair.first + 0 << std::skipws << pair.second + 0;
+		stream << pair.first + 0 << " " << std::skipws << pair.second + 0;
 		return stream;
 	};
 	inline std::ostream& operator<<(std::ostream& stream, VeHandleTriple& triple) {
-		stream << std::get<0>(triple) + 0 << std::skipws << std::get<1>(triple) + 0 << std::skipws << std::get<2>(triple) + 0;
+		stream << std::get<0>(triple) + 0 << " " << std::skipws << std::get<1>(triple) + 0 << " " << std::skipws << std::get<2>(triple) + 0;
 		return stream;
 	};
 
@@ -91,11 +97,11 @@ namespace vve {
 		return stream;
 	};
 	inline std::ostream& operator<<(std::ostream& stream, VeKeyPair& pair) {
-		stream << pair.first + 0 << std::skipws << pair.second + 0;
+		stream << pair.first + 0 << " " << std::skipws << pair.second + 0;
 		return stream;
 	};
 	inline std::ostream& operator<<(std::ostream& stream, VeKeyTriple& triple) {
-		stream << std::get<0>(triple) + 0 << std::skipws << std::get<1>(triple) + 0 << std::skipws << std::get<2>(triple) + 0;
+		stream << std::get<0>(triple) + 0 << " " << std::skipws << std::get<1>(triple) + 0 << " " << std::skipws << std::get<2>(triple) + 0;
 		return stream;
 	};
 

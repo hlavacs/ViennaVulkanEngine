@@ -161,6 +161,14 @@ namespace vve {
 			g_goon = false;
 		}
 
+		VeHandle g_keyboardHandle;
+		void keyboard(VeHandle receiver) {
+			std::cout << "Keyboard" << std::endl;
+
+			bool logging = vgjs::JobSystem::getInstance()->isLogging();
+			vgjs::JobSystem::getInstance()->setLogging(!logging);
+		}
+
 		void init() {
 			std::cout << "init engine 2\n";
 
@@ -185,6 +193,9 @@ namespace vve {
 
 			g_closeHandle = sysmes::addHandler(std::bind(closeEngine, std::placeholders::_1));
 			sysmes::subscribeMessage(syswin::VE_SYSTEM_HANDLE, VE_SYSTEM_HANDLE, g_closeHandle, sysmes::VeMessageType::VE_MESSAGE_TYPE_CLOSE);
+
+			g_keyboardHandle = sysmes::addHandler(std::bind(keyboard, std::placeholders::_1));
+			sysmes::subscribeMessage(syswin::VE_SYSTEM_HANDLE, VE_NULL_HANDLE, g_keyboardHandle, sysmes::VeMessageType::VE_MESSAGE_TYPE_KEYBOARD);
 
 
 #ifdef VE_ENABLE_MULTITHREADING
@@ -290,7 +301,10 @@ namespace vve {
 		}
 
 
+		uint64_t loopCount = 0;
 		void runGameLoop2() {
+			++loopCount;
+
 			loopClock.tick();
 
 			while (g_goon) {
@@ -304,8 +318,6 @@ namespace vve {
 		}
 
 		void runGameLoop() {
-
-
 			JADD(runGameLoop2());				//schedule the game loop
 
 			#ifdef VE_ENABLE_MULTITHREADING
