@@ -253,7 +253,7 @@ namespace vve::map {
 
 		testmap3.clear();
 
-		testmap3.print();
+		testmap3.print(); 
 
 	}
 
