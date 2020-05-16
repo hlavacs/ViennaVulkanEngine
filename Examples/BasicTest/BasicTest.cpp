@@ -3,6 +3,9 @@
 #include <tuple>
 #include <array>
 #include <map>
+#include <type_traits>
+#include <utility>
+
 
 #include "VEInclude.h"
 #include "jobSystemTest.h"
@@ -108,29 +111,24 @@ auto tfun(VeIndex16 arg) {
     return arg;
 }
 
-template < typename T, int idx = 0>
-struct getter {
-    auto getKey(T& t) {
-        return std::get<idx>(t);
-    }
 
-    using U = typename std::tuple_element<idx, T>::type;
-
-    void setKey(T& t, U&& u) {
-        get<idx>(t) = u;
-    }
-};
+template <typename T, int... Is>
+auto makeKey(T& t) {
+    auto ret = std::tuple_cat( std::tuple(std::get<Is>(t)) ...);
+    return ret;
+}
 
 
-
-template <typename T, typename U, typename K>
+template <typename T, int... Is>
 struct typed_map {
-    U mygetter;
-    std::map<K, int> m;
 
-    typed_map() : mygetter(), m() {};
+    using type = std::tuple<typename std::tuple_element<Is, T>::type...>;
+
+    std::map<type,int> m;
+    typed_map() : m() {};
+
     void mapValue( T& t, int val) {
-        K key = { std::get<0>(mygetter).getKey(t), std::get<1>(mygetter).getKey(t) };
+        auto key = makeKey<T, Is...>(t);
         m[key] = val; 
     };
 
@@ -147,26 +145,12 @@ int main()
 
     VeIndex16 idx(17);
     uint16_t i = idx;
-
     tfun(idx);
 
-
-    std::tuple<int> k1 = { 1 };
-    std::tuple<int, std::string> k2 = { 2, "A"};
-
-    getter<std::tuple<int>,0> g0;
-    getter<std::tuple<int, std::string>,1> g1;
- 
-    int r = g0.getKey(k1);
-    std::string s = g1.getKey(k2);
-    g0.setKey(k1, 2);
-    g1.setKey(k2, "B");
-
-
     table_info k3 = { 4.0f, "C", 6 };
-    typed_map<table_info, std::tuple< getter<table_info, 2>, getter<table_info, 1> >,  std::tuple<int, std::string>> map1;
+    typed_map<table_info, 2, 1 > map2;
 
-    map1.mapValue(k3, 5);
+    map2.mapValue(k3, 5);
 
 
     std::cout << "Hello World!\n";
