@@ -114,8 +114,7 @@ auto tfun(VeIndex16 arg) {
 
 template <typename T, int... Is>
 auto makeKey(T& t) {
-    auto ret = std::tuple_cat( std::tuple(std::get<Is>(t)) ...);
-    return ret;
+    return std::tuple_cat( std::tuple(std::get<Is>(t)) ...);
 }
 
 
@@ -149,8 +148,10 @@ int main()
 
     table_info k3 = { 4.0f, "C", 6 };
     typed_map<table_info, 2, 1 > map2;
+    typed_map<table_info, 0, 1 > map3;
 
     map2.mapValue(k3, 5);
+    map3.mapValue(k3, 6);
 
 
     std::cout << "Hello World!\n";
