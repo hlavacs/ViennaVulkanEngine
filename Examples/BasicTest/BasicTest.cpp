@@ -148,7 +148,7 @@ int main()
 
     table_info k3 = { 4.0f, "C", 6 };
     typed_map<table_info, 2, 1 > map2;
-    typed_map<table_info, 0, 1 > map3;
+    typed_map<table_info, 0, 1, 2 > map3;
 
     map2.mapValue(k3, 5);
     map3.mapValue(k3, 6);
