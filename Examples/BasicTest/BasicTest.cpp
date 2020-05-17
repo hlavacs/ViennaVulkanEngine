@@ -114,7 +114,7 @@ auto tfun(VeIndex16 arg) {
 
 template <typename T, int... Is>
 auto makeKey(T& t) {
-    return std::tuple_cat( std::tuple(std::get<Is>(t)) ...);
+    return std::tuple( std::get<Is>(t) ...);
 }
 
 
