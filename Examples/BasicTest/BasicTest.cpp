@@ -153,6 +153,7 @@ int main()
     map2.mapValue(k3, 5);
     map3.mapValue(k3, 6);
 
+    std::cout << sizeof std::tuple<VeIndex64> << "\n";
 
     std::cout << "Hello World!\n";
 
