@@ -47,14 +47,18 @@
 #include <filesystem>
 #include <experimental/generator>
 
+
 ///VVE engine includes 
 #include "VETypes.h"
 #include "VEDoxygen.h"
 #include "VEUtilClock.h"
 
+#include "VETable.h"
+
 ///if this is defined then the engine runs in multithreaded mode. If not, in single thread mode
 #define VE_ENABLE_MULTITHREADING
 #include "VEGameJobSystem.h"
+
 
 #define GLM_FORCE_RADIANS
 #define GLM_FORCE_DEPTH_ZERO_TO_ONE

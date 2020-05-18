@@ -114,6 +114,9 @@
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
       <AdditionalIncludeDirectories>$(SolutionDir)external\glm;$(SolutionDir)external\glfw\include;$(SolutionDir)external\irrKlang\include;$(SolutionDir)external\nuklear;$(VK_SDK_PATH)\include</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpplatest</LanguageStandard>
+      <EnableModules>true</EnableModules>
+      <DisableLanguageExtensions>true</DisableLanguageExtensions>
+      <AdditionalOptions>/await</AdditionalOptions>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -150,6 +153,9 @@
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
       <AdditionalIncludeDirectories>$(SolutionDir)external\glm;$(SolutionDir)external\glfw\include;$(SolutionDir)external\irrKlang\include;$(SolutionDir)external\nuklear;$(VK_SDK_PATH)\include</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpplatest</LanguageStandard>
+      <EnableModules>true</EnableModules>
+      <DisableLanguageExtensions>true</DisableLanguageExtensions>
+      <AdditionalOptions>/await</AdditionalOptions>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -161,6 +167,7 @@
   <ItemGroup>
     <ClInclude Include="stb_image.h" />
     <ClInclude Include="stb_image_write.h" />
+    <ClInclude Include="VeMap.h" />
     <ClInclude Include="VETable.h" />
     <ClInclude Include="VETypes.h" />
     <ClInclude Include="VEDoxygen.h" />
@@ -169,6 +176,9 @@
     <ClInclude Include="VEInclude.h" />
     <ClInclude Include="vk_mem_alloc.h" />
     <ClInclude Include="VVE.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="VETablecpp.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

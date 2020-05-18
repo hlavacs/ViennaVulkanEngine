@@ -41,5 +41,13 @@
     <ClInclude Include="VETable.h">
       <Filter>Headerdateien</Filter>
     </ClInclude>
+    <ClInclude Include="VeMap.h">
+      <Filter>Headerdateien</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="VETablecpp.cpp">
+      <Filter>Quelldateien</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>

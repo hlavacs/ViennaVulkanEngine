@@ -51,8 +51,7 @@ namespace vve {
 	};
 
 	template <class T, class B = detail::empty_base<T> >
-	struct equality_comparable1 : B
-	{
+	struct equality_comparable1 : B {
 		friend bool operator!=(const T& x, const T& y) { return !(x == y); }
 	};
 
@@ -93,37 +92,27 @@ namespace vve {
 
 	   
 	//----------------------------------------------------------------------------------
-	//hashing specialization for tuples
+	//hashing for tuples
 
-	///combining two hashes
-	template <class T>
-	inline void hash_combine(std::size_t& seed, T const& v) {
-		seed ^= hash_tuple::hash<T>()(v) + 0x9e3779b9 + (seed << 6) + (seed >> 2);
-	};
-
-	///recursive tuple definition - combine Nth with N-1st element
-	template <class Tuple, size_t Index = std::tuple_size<Tuple>::value - 1>
-	struct HashValueImpl {
-		static void apply(size_t& seed, Tuple const& tuple) {
-			HashValueImpl<Tuple, Index - 1>::apply(seed, tuple);
-			hash_combine(seed, std::get<Index>(tuple));
-		}
-	};
-
-	template <class Tuple>
-	struct HashValueImpl<Tuple, 0> {
-		static void apply(size_t& seed, Tuple const& tuple) {
-			hash_combine(seed, std::get<0>(tuple));
-		}
-	};
-
-	template <typename ... TT>
-	struct std::hash<std::tuple<TT...>> {
-		size_t operator()(std::tuple<TT...> const& tt) const {
-			size_t seed = 0;
-			HashValueImpl<std::tuple<TT...> >::apply(seed, tt);
-			return seed;
+	class hash_tuple {
+		template<class T>
+		struct component {
+			const T& value;
+			component(const T& value) : value(value) {}
+			uintmax_t operator,(uintmax_t n) const {
+				n ^= std::hash<T>()(value);
+				n ^= n << (sizeof(uintmax_t) * 4 - 1);
+				return n ^ std::hash<uintmax_t>()(n);
+			}
 		};
+
+	public:
+		template<class Tuple>
+		size_t operator()(const Tuple& tuple) const {
+			return std::hash<uintmax_t>()(
+				std::apply([](const auto& ... xs) { return (component(xs), ..., 0); }, tuple)
+			);
+		}
 	};
 
 };
