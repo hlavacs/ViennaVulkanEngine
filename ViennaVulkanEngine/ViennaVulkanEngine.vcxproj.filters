@@ -11,93 +11,10 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="VESysVulkan.cpp">
-      <Filter>Quelldateien</Filter>
-    </ClCompile>
-    <ClCompile Include="VESysWindow.cpp">
-      <Filter>Quelldateien</Filter>
-    </ClCompile>
-    <ClCompile Include="VESysScene.cpp">
-      <Filter>Quelldateien</Filter>
-    </ClCompile>
-    <ClCompile Include="VESysPhysics.cpp">
-      <Filter>Quelldateien</Filter>
-    </ClCompile>
-    <ClCompile Include="VESysWindowGLFW.cpp">
-      <Filter>Quelldateien</Filter>
-    </ClCompile>
-    <ClCompile Include="VESysAssets.cpp">
-      <Filter>Quelldateien</Filter>
-    </ClCompile>
-    <ClCompile Include="VESysEngine.cpp">
-      <Filter>Quelldateien</Filter>
-    </ClCompile>
-    <ClCompile Include="VESysVulkanFWSimple.cpp">
-      <Filter>Quelldateien</Filter>
-    </ClCompile>
-    <ClCompile Include="VHDevice.cpp">
-      <Filter>Quelldateien</Filter>
-    </ClCompile>
-    <ClCompile Include="VHSwapchain.cpp">
-      <Filter>Quelldateien</Filter>
-    </ClCompile>
-    <ClCompile Include="VHDebug.cpp">
-      <Filter>Quelldateien</Filter>
-    </ClCompile>
-    <ClCompile Include="VESysMessages.cpp">
-      <Filter>Quelldateien</Filter>
-    </ClCompile>
-    <ClCompile Include="VEMemMap.cpp">
-      <Filter>Quelldateien</Filter>
-    </ClCompile>
-    <ClCompile Include="VEMemTable.cpp">
-      <Filter>Quelldateien</Filter>
-    </ClCompile>
-    <ClCompile Include="VEMemVector.cpp">
-      <Filter>Quelldateien</Filter>
-    </ClCompile>
-    <ClCompile Include="VEUtilFile.cpp">
-      <Filter>Quelldateien</Filter>
-    </ClCompile>
-    <ClCompile Include="VEUtilCollision.cpp">
-      <Filter>Quelldateien</Filter>
-    </ClCompile>
-  </ItemGroup>
-  <ItemGroup>
     <ClInclude Include="VEInclude.h">
       <Filter>Headerdateien</Filter>
     </ClInclude>
-    <ClInclude Include="VESysVulkan.h">
-      <Filter>Headerdateien</Filter>
-    </ClInclude>
-    <ClInclude Include="VESysWindow.h">
-      <Filter>Headerdateien</Filter>
-    </ClInclude>
-    <ClInclude Include="VESysScene.h">
-      <Filter>Headerdateien</Filter>
-    </ClInclude>
-    <ClInclude Include="VEDefines.h">
-      <Filter>Headerdateien</Filter>
-    </ClInclude>
-    <ClInclude Include="VESysPhysics.h">
-      <Filter>Headerdateien</Filter>
-    </ClInclude>
-    <ClInclude Include="VESysWindowGLFW.h">
-      <Filter>Headerdateien</Filter>
-    </ClInclude>
-    <ClInclude Include="VESysAssets.h">
-      <Filter>Headerdateien</Filter>
-    </ClInclude>
-    <ClInclude Include="VESysEngine.h">
-      <Filter>Headerdateien</Filter>
-    </ClInclude>
     <ClInclude Include="VEGameJobSystem.h">
-      <Filter>Headerdateien</Filter>
-    </ClInclude>
-    <ClInclude Include="VESysVulkanFWSimple.h">
-      <Filter>Headerdateien</Filter>
-    </ClInclude>
-    <ClInclude Include="VHDevice.h">
       <Filter>Headerdateien</Filter>
     </ClInclude>
     <ClInclude Include="vk_mem_alloc.h">
@@ -109,67 +26,19 @@
     <ClInclude Include="stb_image_write.h">
       <Filter>Headerdateien</Filter>
     </ClInclude>
-    <ClInclude Include="VHInclude.h">
-      <Filter>Headerdateien</Filter>
-    </ClInclude>
-    <ClInclude Include="VHSwapchain.h">
-      <Filter>Headerdateien</Filter>
-    </ClInclude>
-    <ClInclude Include="VHDebug.h">
-      <Filter>Headerdateien</Filter>
-    </ClInclude>
-    <ClInclude Include="VESysMessages.h">
-      <Filter>Headerdateien</Filter>
-    </ClInclude>
-    <ClInclude Include="VEMemHeap.h">
-      <Filter>Headerdateien</Filter>
-    </ClInclude>
-    <ClInclude Include="VEMemMap.h">
-      <Filter>Headerdateien</Filter>
-    </ClInclude>
-    <ClInclude Include="VEMemVector.h">
-      <Filter>Headerdateien</Filter>
-    </ClInclude>
-    <ClInclude Include="VEMemTable.h">
-      <Filter>Headerdateien</Filter>
-    </ClInclude>
     <ClInclude Include="VEDoxygen.h">
-      <Filter>Headerdateien</Filter>
-    </ClInclude>
-    <ClInclude Include="VEUtilCollision.h">
-      <Filter>Headerdateien</Filter>
-    </ClInclude>
-    <ClInclude Include="VEUtilFile.h">
       <Filter>Headerdateien</Filter>
     </ClInclude>
     <ClInclude Include="VEUtilClock.h">
       <Filter>Headerdateien</Filter>
     </ClInclude>
-    <ClInclude Include="pch.h">
+    <ClInclude Include="VETypes.h">
       <Filter>Headerdateien</Filter>
     </ClInclude>
-    <ClInclude Include="VeMemMapHashed.h">
+    <ClInclude Include="VVE.h">
       <Filter>Headerdateien</Filter>
     </ClInclude>
-    <ClInclude Include="VeMemMapOrdered.h">
-      <Filter>Headerdateien</Filter>
-    </ClInclude>
-    <ClInclude Include="VeMemMapSTL.h">
-      <Filter>Headerdateien</Filter>
-    </ClInclude>
-    <ClInclude Include="VEMemTableFixed.h">
-      <Filter>Headerdateien</Filter>
-    </ClInclude>
-    <ClInclude Include="VEMemTableVar.h">
-      <Filter>Headerdateien</Filter>
-    </ClInclude>
-    <ClInclude Include="VEMemMapSlot.h">
-      <Filter>Headerdateien</Filter>
-    </ClInclude>
-    <ClInclude Include="VESystem.h">
-      <Filter>Headerdateien</Filter>
-    </ClInclude>
-    <ClInclude Include="VELabels.h">
+    <ClInclude Include="VETable.h">
       <Filter>Headerdateien</Filter>
     </ClInclude>
   </ItemGroup>

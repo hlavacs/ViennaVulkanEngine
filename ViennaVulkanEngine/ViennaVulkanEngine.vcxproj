@@ -159,61 +159,16 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="VEMemMap.cpp" />
-    <ClCompile Include="VHDebug.cpp" />
-    <ClCompile Include="VHDevice.cpp" />
-    <ClCompile Include="VESysVulkanFWSimple.cpp" />
-    <ClCompile Include="VEMemTable.cpp" />
-    <ClCompile Include="VEUtilCollision.cpp" />
-    <ClCompile Include="VESysEngine.cpp" />
-    <ClCompile Include="VESysAssets.cpp" />
-    <ClCompile Include="VESysMessages.cpp" />
-    <ClCompile Include="VEUtilFile.cpp" />
-    <ClCompile Include="VESysPhysics.cpp" />
-    <ClCompile Include="VESysScene.cpp" />
-    <ClCompile Include="VESysVulkan.cpp" />
-    <ClCompile Include="VESysWindow.cpp" />
-    <ClCompile Include="VESysWindowGLFW.cpp" />
-    <ClCompile Include="VEMemVector.cpp" />
-    <ClCompile Include="VHSwapchain.cpp" />
-  </ItemGroup>
-  <ItemGroup>
-    <ClInclude Include="pch.h" />
     <ClInclude Include="stb_image.h" />
     <ClInclude Include="stb_image_write.h" />
-    <ClInclude Include="VEDefines.h" />
+    <ClInclude Include="VETable.h" />
+    <ClInclude Include="VETypes.h" />
     <ClInclude Include="VEDoxygen.h" />
-    <ClInclude Include="VELabels.h" />
-    <ClInclude Include="VEMemHeap.h" />
-    <ClInclude Include="VEMemMap.h" />
-    <ClInclude Include="VeMemMapHashed.h" />
-    <ClInclude Include="VeMemMapOrdered.h" />
-    <ClInclude Include="VEMemMapSlot.h" />
-    <ClInclude Include="VeMemMapSTL.h" />
-    <ClInclude Include="VEMemTableFixed.h" />
-    <ClInclude Include="VEMemTableVar.h" />
-    <ClInclude Include="VESystem.h" />
     <ClInclude Include="VEUtilClock.h" />
-    <ClInclude Include="VHDebug.h" />
-    <ClInclude Include="VHDevice.h" />
     <ClInclude Include="VEGameJobSystem.h" />
-    <ClInclude Include="VESysVulkanFWSimple.h" />
-    <ClInclude Include="VEMemTable.h" />
-    <ClInclude Include="VEUtilCollision.h" />
-    <ClInclude Include="VESysEngine.h" />
     <ClInclude Include="VEInclude.h" />
-    <ClInclude Include="VESysAssets.h" />
-    <ClInclude Include="VESysMessages.h" />
-    <ClInclude Include="VEUtilFile.h" />
-    <ClInclude Include="VESysPhysics.h" />
-    <ClInclude Include="VESysScene.h" />
-    <ClInclude Include="VESysVulkan.h" />
-    <ClInclude Include="VESysWindow.h" />
-    <ClInclude Include="VESysWindowGLFW.h" />
-    <ClInclude Include="VEMemVector.h" />
-    <ClInclude Include="VHInclude.h" />
-    <ClInclude Include="VHSwapchain.h" />
     <ClInclude Include="vk_mem_alloc.h" />
+    <ClInclude Include="VVE.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

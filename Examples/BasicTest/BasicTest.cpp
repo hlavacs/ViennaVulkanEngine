@@ -8,8 +8,7 @@
 
 
 #include "VEInclude.h"
-#include "jobSystemTest.h"
-#include "STLTest.h"
+
 
 #include <memory_resource>
 #include <experimental/coroutine>
@@ -171,10 +170,6 @@ int main()
     //stltest::runSTLTests();
     //return 0;
 
-    syseng::init();
-    syseng::runGameLoop();
-    syseng::close();
- 
     return 0;
 }
 
