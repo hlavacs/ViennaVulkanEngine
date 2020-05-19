@@ -62,7 +62,7 @@ namespace vve {
 	struct totally_ordered1 : less_than_comparable1<T, equality_comparable1<T, B> > {};
 
 
-	#define SAFE_TYPEDEF(T, D)                                      \
+#define SAFE_TYPEDEF(T, D)                                      \
 	struct D : totally_ordered1< D, totally_ordered2< D, T > >      \
 	{                                                               \
 		T t;                                                        \
@@ -81,15 +81,36 @@ namespace vve {
 	//----------------------------------------------------------------------------------
 	//basic data types
 
-	SAFE_TYPEDEF(std::uint16_t, VeIndex16);
-	SAFE_TYPEDEF(std::uint32_t, VeIndex32);
-	SAFE_TYPEDEF(std::uint64_t, VeIndex64);
-	SAFE_TYPEDEF(std::uint32_t, VeGuid32);
-	SAFE_TYPEDEF(std::uint64_t, VeGuid64);
+	SAFE_TYPEDEF(uint16_t, VeIndex16);
+	SAFE_TYPEDEF(uint32_t, VeIndex32);
+	SAFE_TYPEDEF(uint64_t, VeIndex64);
+	SAFE_TYPEDEF(uint32_t, VeGuid32);
+	SAFE_TYPEDEF(uint64_t, VeGuid64);
 
-	using VeHandle64_t = std::tuple<VeIndex16, VeIndex16, VeGuid32>;
-	SAFE_TYPEDEF(VeHandle64_t, VeHandle64);
+	SAFE_TYPEDEF(uint32_t, VePackedIntegers32);
+	SAFE_TYPEDEF(uint64_t, VePackedIntegers64);
 
+
+	template<typename Pack, typename T, uint32_t Bits, T upper_bits, T lower_bits>
+	T getUpperPackInt(Pack& pack) {
+		return (pack & lower_bits) >> Bits;
+	};
+
+	template<typename Pack, typename T, uint32_t Bits, T upper_bits, T lower_bits>
+	void setUpperPackInt(T value, Pack& pack) {
+		pack = VePackedIntegers32((pack & upper_bits) | (value << Bits));
+	};
+
+
+	struct VeHandle_t {
+		VePackedIntegers64	d_handle64; //chunkId, TableIdx, GUID
+
+		VeIndex16	getTableIdx() { return VeIndex16(0); };
+		void		setTableIdx() {};
+
+		VeIndex16	getChunkIdx() { return VeIndex16(); };
+		void		setChunkIdx(VeIndex16 idx) { };
+	};
 	   
 	//----------------------------------------------------------------------------------
 	//hashing for tuples

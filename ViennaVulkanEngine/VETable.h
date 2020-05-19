@@ -26,8 +26,8 @@ namespace vve {
 
 	template<typename... Args>
 	struct VeTableToAChunk {
-		using tuple_data = std::tuple<Args...>;
-		static const uint32_t c_max_size = (VE_TABLE_CHUNK_SIZE - sizeof(size_t)) / sizeof(tuple_data);
+		static constexpr uint32_t tuple_size = (sizeof(Args) + ...);
+		static constexpr uint32_t c_max_size = (VE_TABLE_CHUNK_SIZE - sizeof(size_t)) / tuple_size;
 		using type = std::tuple<std::array<Args, c_max_size>...>;
 		size_t	d_size = 0;
 		type	d_tuple_of_array;
@@ -37,7 +37,7 @@ namespace vve {
 	template<typename... Args>
 	class VeTableToA {
 		using tuple_data = std::tuple<Args...>;
-		static const uint32_t c_max_size = (VE_TABLE_CHUNK_SIZE - sizeof(size_t)) / sizeof(tuple_data);
+		static constexpr uint32_t c_max_size = (VE_TABLE_CHUNK_SIZE - sizeof(size_t)) / sizeof(tuple_data);
 		using chunk_type = VeTableToAChunk<Args...>;
 
 		std::vector<std::unique_ptr<chunk_type>> m_chunks;
@@ -60,7 +60,7 @@ namespace vve {
 	template<typename... Args>
 	struct VeTableAoTChunk {
 		using tuple_data = std::tuple<Args...>;
-		static const uint32_t c_max_size = (VE_TABLE_CHUNK_SIZE - sizeof(size_t)) / sizeof(tuple_data);
+		static constexpr uint32_t c_max_size = (VE_TABLE_CHUNK_SIZE - sizeof(size_t)) / sizeof(tuple_data);
 		using type = std::array<tuple_data, c_max_size>;
 		size_t	d_size = 0;
 		type	d_array_of_tuples;
