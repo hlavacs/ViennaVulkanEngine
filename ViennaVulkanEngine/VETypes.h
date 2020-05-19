@@ -83,7 +83,13 @@ namespace vve {
 
 	SAFE_TYPEDEF(uint16_t, VeIndex16);
 	SAFE_TYPEDEF(uint32_t, VeIndex32);
-	SAFE_TYPEDEF(uint64_t, VeIndex64);
+
+	SAFE_TYPEDEF(uint16_t, VeChunkIndex16);
+	SAFE_TYPEDEF(uint32_t, VeChunkIndex32);
+
+	SAFE_TYPEDEF(uint16_t, VeTableIndex16);
+	SAFE_TYPEDEF(uint32_t, VeTableIndex32);
+
 	SAFE_TYPEDEF(uint32_t, VeGuid32);
 	SAFE_TYPEDEF(uint64_t, VeGuid64);
 
@@ -91,25 +97,52 @@ namespace vve {
 	SAFE_TYPEDEF(uint64_t, VePackedIntegers64);
 
 
-	template<typename Pack, typename T, uint32_t Bits, T upper_bits, T lower_bits>
-	T getUpperPackInt(Pack& pack) {
-		return (pack & lower_bits) >> Bits;
+	template<typename PackedType>
+	struct VePackedInt {
+
+		using T = typename std::conditional < std::is_same<PackedType, uint32_t>::value, uint16_t, uint32_t >::type;
+		static const uint32_t bits			= std::is_same<PackedType, uint32_t>::value ? 16 : 32;
+		static const uint32_t upper_bits	= std::is_same<PackedType, uint32_t>::value ? 0xFF00 : 0xFFFF0000;
+		static const uint32_t lower_bits	= std::is_same<PackedType, uint32_t>::value ? 0x00FF : 0x0000FFFF;
+
+		PackedType d_int;
+
+		auto getUpper() {
+			return T((d_int & upper_bits) >> bits);
+		};
+
+		void setUpper(T value) {
+			d_int = Pack((d_int & lower_bits) | (value << bits));
+		};
+
+		auto getLower() {
+			return T( d_int & lower_bits );
+		};
+
+		void setLower(T value) {
+			d_int = Pack((d_int & upper_bits) | value );
+		};
 	};
 
-	template<typename Pack, typename T, uint32_t Bits, T upper_bits, T lower_bits>
-	void setUpperPackInt(T value, Pack& pack) {
-		pack = VePackedIntegers32((pack & upper_bits) | (value << Bits));
-	};
 
+	template<typename GuidType>
+	struct VeHandle {
+		using PackedType = typename std::conditional < std::is_same<GuidType, VeGuid32>::value, uint32_t, uint64_t >::type;
+		using IndexType  = typename std::conditional < std::is_same<GuidType, VeGuid32>::value, VeIndex16, VeIndex32 >::type;
 
-	struct VeHandle_t {
-		VePackedIntegers64	d_handle64; //chunkId, TableIdx, GUID
+		VePackedInt<PackedType>	d_chunk_and_table_idx;
+		GuidType				d_guid;
 
-		VeIndex16	getTableIdx() { return VeIndex16(0); };
-		void		setTableIdx() {};
+		VeHandle(IndexType chunk_index, IndexType )
 
-		VeIndex16	getChunkIdx() { return VeIndex16(); };
-		void		setChunkIdx(VeIndex16 idx) { };
+		auto	getChunkIdx() { return IndexType(d_chunk_and_table_idx.getUpper()); };
+		void	setChunkIdx(IndexType idx) { d_chunk_and_table_idx.setUpper(idx); };
+
+		auto	getTableIdx() { return IndexType(d_chunk_and_table_idx.getLower()); };
+		void	setTableIdx(IndexType idx) { d_chunk_and_table_idx.setLower(idx); };
+
+		auto	getGuid() { return d_guid; };
+		void	setGuid(GuidType guid) { d_guid = guid; };
 	};
 	   
 	//----------------------------------------------------------------------------------
