@@ -8,7 +8,7 @@ namespace vve {
 
 
 	//----------------------------------------------------------------------------------
-	//create tuple of arrays from tuple
+	//create tuple of arrays from tuple (experimental)
 
 	template<class Tuple, std::size_t... Is>
 	auto ToA_impl(const Tuple& t, std::index_sequence<Is...>) {

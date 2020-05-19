@@ -107,6 +107,8 @@ namespace vve {
 
 		PackedType d_int;
 
+		VePackedInt() : d_int(0) {};
+
 		auto getUpper() {
 			return T((d_int & upper_bits) >> bits);
 		};
@@ -128,18 +130,24 @@ namespace vve {
 	template<typename GuidType>
 	struct VeHandle {
 		using PackedType = typename std::conditional < std::is_same<GuidType, VeGuid32>::value, uint32_t, uint64_t >::type;
-		using IndexType  = typename std::conditional < std::is_same<GuidType, VeGuid32>::value, VeIndex16, VeIndex32 >::type;
+		using ChunkIndexType = typename std::conditional < std::is_same<GuidType, VeGuid32>::value, VeChunkIndex16, VeChunkIndex32 >::type;
+		using TableIndexType = typename std::conditional < std::is_same<GuidType, VeGuid32>::value, VeChunkIndex16, VeChunkIndex32 >::type;
 
 		VePackedInt<PackedType>	d_chunk_and_table_idx;
 		GuidType				d_guid;
 
-		VeHandle(IndexType chunk_index, IndexType )
+		VeHandle() : d_chunk_and_table_idx(), d_guid() {};
 
-		auto	getChunkIdx() { return IndexType(d_chunk_and_table_idx.getUpper()); };
-		void	setChunkIdx(IndexType idx) { d_chunk_and_table_idx.setUpper(idx); };
+		explicit VeHandle(ChunkIndexType chunk_index, TableIndexType table_index, GuidType guid) : d_chunk_and_table_idx(0), d_guid(guid) {
+			setChunkIdx(chunk_index);
+			setTableIdx(table_index);
+		};
 
-		auto	getTableIdx() { return IndexType(d_chunk_and_table_idx.getLower()); };
-		void	setTableIdx(IndexType idx) { d_chunk_and_table_idx.setLower(idx); };
+		auto	getChunkIdx() { return ChunkIndexType(d_chunk_and_table_idx.getUpper()); };
+		void	setChunkIdx(ChunkIndexType idx) { d_chunk_and_table_idx.setUpper(idx); };
+
+		auto	getTableIdx() { return TableIndexType(d_chunk_and_table_idx.getLower()); };
+		void	setTableIdx(TableIndexType idx) { d_chunk_and_table_idx.setLower(idx); };
 
 		auto	getGuid() { return d_guid; };
 		void	setGuid(GuidType guid) { d_guid = guid; };
@@ -148,28 +156,27 @@ namespace vve {
 	//----------------------------------------------------------------------------------
 	//hashing for tuples
 
-	class hash_tuple {
-		template<class T>
-		struct component {
-			const T& value;
-			component(const T& value) : value(value) {}
-			uintmax_t operator,(uintmax_t n) const {
-				n ^= std::hash<T>()(value);
-				n ^= n << (sizeof(uintmax_t) * 4 - 1);
-				return n ^ std::hash<uintmax_t>()(n);
-			}
-		};
 
-	public:
-		template<class Tuple>
-		size_t operator()(const Tuple& tuple) const {
-			return std::hash<uintmax_t>()(
-				std::apply([](const auto& ... xs) { return (component(xs), ..., 0); }, tuple)
-			);
-		}
-	};
+	template <class T>
+	inline auto hash_combine(std::size_t& seed, T v) {
+		seed ^= std::hash<T>()(v) + 0x9e3779b9 + (seed << 6) + (seed >> 2);
+		return seed;
+	}
+
+	template<typename T, std::size_t... Is>
+	auto hash_impl(T const& t, std::index_sequence<Is...> const&) {
+		size_t seed = 0;
+		(hash_combine(seed, std::get<Is>(t)) + ... + 0);
+		return seed;
+	}
+
+	template<typename... Args>
+	std::size_t hash(std::tuple<Args...> const& value) {
+		return hash_impl(value, std::make_index_sequence<sizeof...(Args)>());
+	}
 
 };
+
 
 
 #endif
