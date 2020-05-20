@@ -43,9 +43,9 @@ export namespace vve {
 		static constexpr uint32_t c_max_size = (VE_TABLE_CHUNK_SIZE - sizeof(size_t)) / sizeof(tuple_data);
 		using chunk_type = VeTableToAChunk<Args...>;
 
-		std::vector<std::unique_ptr<chunk_type>> m_chunks;
-		std::set<VeIndex32> m_free_chunks;
-		std::set<VeIndex32> m_deleted_chunks;
+		std::vector<std::unique_ptr<chunk_type>> m_chunks;		///pointers to table chunks
+		std::set<VeChunkIndex32> m_free_chunks;					///chunks that are not full
+		std::set<VeChunkIndex32> m_deleted_chunks;				///chunks that do not exist yet
 
 	public:
 		VeTableToA() {
@@ -53,6 +53,8 @@ export namespace vve {
 		};
 
 		~VeTableToA() {};
+
+
 
 	};
 

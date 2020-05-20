@@ -114,7 +114,7 @@ export namespace vve {
 		};
 
 		auto getLower() {
-			return T( d_int & lower_bits );
+			return T(d_int & lower_bits);
 		};
 
 		void setLower(T value) {
@@ -125,9 +125,9 @@ export namespace vve {
 
 	template<typename GuidType>
 	struct VeHandle {
-		using PackedType = typename std::conditional < std::is_same<GuidType, VeGuid32>::value, uint32_t, uint64_t >::type;
-		using ChunkIndexType = typename std::conditional < std::is_same<GuidType, VeGuid32>::value, VeChunkIndex16, VeChunkIndex32 >::type;
-		using TableIndexType = typename std::conditional < std::is_same<GuidType, VeGuid32>::value, VeChunkIndex16, VeChunkIndex32 >::type;
+		using PackedType		= typename std::conditional < std::is_same<GuidType, VeGuid32>::value, uint32_t, uint64_t >::type;
+		using ChunkIndexType	= typename std::conditional < std::is_same<GuidType, VeGuid32>::value, VeChunkIndex16, VeChunkIndex32 >::type;
+		using TableIndexType	= typename std::conditional < std::is_same<GuidType, VeGuid32>::value, VeChunkIndex16, VeChunkIndex32 >::type;
 
 		VePackedInt<PackedType>	d_chunk_and_table_idx;
 		GuidType				d_guid;
