@@ -9,9 +9,24 @@
       <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
       <Extensions>h;hh;hpp;hxx;hm;inl;inc;ipp;xsd</Extensions>
     </Filter>
+    <Filter Include="Interfaces">
+      <UniqueIdentifier>{b4a7bbbd-0e01-45be-8f80-c6f33d6263ad}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="VEInclude.h">
+      <Filter>Headerdateien</Filter>
+    </ClInclude>
+    <ClInclude Include="VVE.ixx">
+      <Filter>Interfaces</Filter>
+    </ClInclude>
+    <ClInclude Include="VeMap.ixx">
+      <Filter>Interfaces</Filter>
+    </ClInclude>
+    <ClInclude Include="stb_image.h">
+      <Filter>Headerdateien</Filter>
+    </ClInclude>
+    <ClInclude Include="stb_image_write.h">
       <Filter>Headerdateien</Filter>
     </ClInclude>
     <ClInclude Include="VEGameJobSystem.h">
@@ -20,34 +35,16 @@
     <ClInclude Include="vk_mem_alloc.h">
       <Filter>Headerdateien</Filter>
     </ClInclude>
-    <ClInclude Include="stb_image.h">
-      <Filter>Headerdateien</Filter>
-    </ClInclude>
-    <ClInclude Include="stb_image_write.h">
-      <Filter>Headerdateien</Filter>
-    </ClInclude>
-    <ClInclude Include="VEDoxygen.h">
-      <Filter>Headerdateien</Filter>
-    </ClInclude>
-    <ClInclude Include="VEUtilClock.h">
-      <Filter>Headerdateien</Filter>
-    </ClInclude>
-    <ClInclude Include="VETypes.h">
-      <Filter>Headerdateien</Filter>
-    </ClInclude>
-    <ClInclude Include="VVE.h">
-      <Filter>Headerdateien</Filter>
-    </ClInclude>
-    <ClInclude Include="VETable.h">
-      <Filter>Headerdateien</Filter>
-    </ClInclude>
-    <ClInclude Include="VeMap.h">
-      <Filter>Headerdateien</Filter>
-    </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="VETablecpp.cpp">
-      <Filter>Quelldateien</Filter>
+    <ClCompile Include="VETable.ixx">
+      <Filter>Interfaces</Filter>
+    </ClCompile>
+    <ClCompile Include="VEUtilClock.ixx">
+      <Filter>Interfaces</Filter>
+    </ClCompile>
+    <ClCompile Include="VETypes.ixx">
+      <Filter>Interfaces</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

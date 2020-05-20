@@ -1,8 +1,11 @@
-#ifndef VETABLE_H
-#define VETABLE_H
+export module VVE:VeTable;
 
+import std.core;
+#include <tuple>
 
-namespace vve {
+import :VeTypes;
+
+export namespace vve {
 
 	constexpr uint32_t VE_TABLE_CHUNK_SIZE = 1 << 14;
 
@@ -68,11 +71,7 @@ namespace vve {
 	};
 
 
-
-
-
 };
 
 
-#endif
 

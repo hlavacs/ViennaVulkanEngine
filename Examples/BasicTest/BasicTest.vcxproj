@@ -74,7 +74,7 @@
     <LinkIncremental>false</LinkIncremental>
     <IntDir>$(SolutionDir)bin\$(Platform)\$(Configuration)\</IntDir>
     <OutDir>$(SolutionDir)bin\$(Platform)\$(Configuration)\</OutDir>
-    <LibraryPath>$(VK_SDK_PATH)\lib;$(SolutionDir)\external\glfw\lib;$(LibraryPath)</LibraryPath>
+    <LibraryPath>$(VK_SDK_PATH)\lib;$(SolutionDir)\external\glfw\lib;$(SolutionDir)bin\$(Platform)\$(Configuration)\;$(LibraryPath)</LibraryPath>
     <IncludePath>$(VK_SDK_PATH)\include;$(IncludePath)</IncludePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
@@ -84,7 +84,7 @@
     <LinkIncremental>true</LinkIncremental>
     <IntDir>$(SolutionDir)bin\$(Platform)\$(Configuration)\</IntDir>
     <OutDir>$(SolutionDir)bin\$(Platform)\$(Configuration)\</OutDir>
-    <LibraryPath>$(VK_SDK_PATH)\lib;$(SolutionDir)\external\glfw\lib;$(LibraryPath)</LibraryPath>
+    <LibraryPath>$(VK_SDK_PATH)\lib;$(SolutionDir)\external\glfw\lib;$(SolutionDir)bin\$(Platform)\$(Configuration)\;$(LibraryPath)</LibraryPath>
     <IncludePath>$(VK_SDK_PATH)\include;$(IncludePath)</IncludePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
@@ -146,6 +146,7 @@
       <RuntimeTypeInfo>true</RuntimeTypeInfo>
       <EnableModules>true</EnableModules>
       <AdditionalOptions>/await</AdditionalOptions>
+      <ExceptionHandling>Sync</ExceptionHandling>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>

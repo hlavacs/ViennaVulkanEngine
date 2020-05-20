@@ -1,15 +1,6 @@
-#include <iostream>
-#include <functional>
-#include <tuple>
-#include <array>
-#include <map>
-#include <type_traits>
-#include <utility>
+import std.core;
 
-
-#include "VVE.h"
-
-
+import VVE;
 
 
 int main()
@@ -23,8 +14,8 @@ int main()
     std::cout << sizeof AoTChunk << "\n";
 
 
-    std::tuple tuple1(1);
-    std::tuple tuple2(1, 3.4, "333");
+    auto tuple1 = std::make_tuple(1);
+    auto tuple2 = std::make_tuple(1, 3.4, "333");
     
     std::cout << hash(tuple1) << " " << hash(tuple2) << "\n";
 

@@ -1,7 +1,3 @@
-#ifndef VEINCLUDE_H
-#define VEINCLUDE_H
-
-
 /**
 *
 * \file
@@ -11,49 +7,6 @@
 *
 */
 
-
-///type traits
-#include <type_traits>
-#include <typeinfo>
-
-///IO
-#include <iostream>
-#include <fstream>
-#include <iomanip>
-
-///STL 
-#include <vector>
-#include <array>
-#include <map>
-#include <unordered_map>
-#include <set>
-#include <string>
-#include <tuple>
-
-///C++ stuff
-#include <functional>
-#include <atomic>
-#include <random>
-#include <assert.h>
-#include <chrono>
-#include <limits>
-#include <utility>
-#define _USE_MATH_DEFINES
-#include <math.h>
-
-//C++20
-#include <memory_resource>
-#include <experimental/coroutine>
-#include <filesystem>
-#include <experimental/generator>
-
-
-///VVE engine includes 
-#include "VETypes.h"
-#include "VEDoxygen.h"
-#include "VEUtilClock.h"
-
-#include "VETable.h"
 
 ///if this is defined then the engine runs in multithreaded mode. If not, in single thread mode
 #define VE_ENABLE_MULTITHREADING
@@ -88,7 +41,4 @@
 
 
 
-
-
-#endif
 

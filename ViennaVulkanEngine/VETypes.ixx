@@ -1,20 +1,10 @@
-#ifndef VETYPES_H
-#define VETYPES_H
+export module VVE:VeTypes;
 
+import std.core;
 
-/**
-*
-* \file
-* \brief All includes of external sources are funneled through this include file.
-*
-* This is the basic include file of all engine parts. It includes external include files, 
-* defines all basic data types, and defines operators for output and hashing for them.
-*
-*/
+export namespace vve {
 
-
-
-namespace vve {
+	typedef int GUID1;
 
 	//----------------------------------------------------------------------------------
 	//lifted from Boost, to convert integers into strong types
@@ -62,7 +52,7 @@ namespace vve {
 	struct totally_ordered1 : less_than_comparable1<T, equality_comparable1<T, B> > {};
 
 
-#define SAFE_TYPEDEF(T, D)                                      \
+#define SAFE_TYPEDEF(T, D)                                          \
 	struct D : totally_ordered1< D, totally_ordered2< D, T > >      \
 	{                                                               \
 		T t;                                                        \
@@ -97,7 +87,13 @@ namespace vve {
 	SAFE_TYPEDEF(uint64_t, VePackedIntegers64);
 
 
-	template<typename PackedType>
+	//----------------------------------------------------------------------------------
+	//packing 2 integers into a larger unsigned integer
+
+	template<typename T>
+	concept Packable = std::is_same<T, uint32_t>::value || std::is_same<T, uint64_t>::value;
+
+	template<Packable PackedType>
 	struct VePackedInt {
 
 		using T = typename std::conditional < std::is_same<PackedType, uint32_t>::value, uint16_t, uint32_t >::type;
@@ -153,11 +149,16 @@ namespace vve {
 		void	setGuid(GuidType guid) { d_guid = guid; };
 	};
 	   
+
 	//----------------------------------------------------------------------------------
-	//hashing for tuples
+	//hashing for tuples of hashable types
 
+	template<typename T>
+	concept Hashable = requires(T a) {
+		{ std::hash<T>{}(a) }->std::convertible_to<std::size_t>;
+	};
 
-	template <class T>
+	template <Hashable T>
 	inline auto hash_combine(std::size_t& seed, T v) {
 		seed ^= std::hash<T>()(v) + 0x9e3779b9 + (seed << 6) + (seed >> 2);
 		return seed;
@@ -178,7 +179,5 @@ namespace vve {
 };
 
 
-
-#endif
 
 

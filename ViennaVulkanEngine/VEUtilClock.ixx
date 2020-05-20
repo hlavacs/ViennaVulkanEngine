@@ -1,6 +1,8 @@
-#pragma once
+export module VVE:VeUtilClock;
 
-namespace vve {
+import std.core;
+
+export namespace vve {
 
 
 	class VeClock {
