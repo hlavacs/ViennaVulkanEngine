@@ -17,12 +17,6 @@
     <ClInclude Include="VEInclude.h">
       <Filter>Headerdateien</Filter>
     </ClInclude>
-    <ClInclude Include="VVE.ixx">
-      <Filter>Interfaces</Filter>
-    </ClInclude>
-    <ClInclude Include="VeMap.ixx">
-      <Filter>Interfaces</Filter>
-    </ClInclude>
     <ClInclude Include="stb_image.h">
       <Filter>Headerdateien</Filter>
     </ClInclude>
@@ -46,5 +40,22 @@
     <ClCompile Include="VETypes.ixx">
       <Filter>Interfaces</Filter>
     </ClCompile>
+    <ClCompile Include="VVE.ixx">
+      <Filter>Interfaces</Filter>
+    </ClCompile>
+    <ClCompile Include="VEMemory.ixx">
+      <Filter>Interfaces</Filter>
+    </ClCompile>
+    <ClCompile Include="VEEngine.ixx">
+      <Filter>Interfaces</Filter>
+    </ClCompile>
+    <ClCompile Include="VEGameJobSystem.ixx">
+      <Filter>Interfaces</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="VEMap.ixx">
+      <Filter>Interfaces</Filter>
+    </None>
   </ItemGroup>
 </Project>

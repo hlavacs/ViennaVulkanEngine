@@ -13,24 +13,6 @@
 */
 
 
-#include <iostream>
-#include <cstdint>
-#include <atomic>
-#include <mutex>
-#include <thread>
-#include <future>
-#include <vector>
-#include <functional>
-#include <condition_variable>
-#include <queue>
-#include <map>
-#include <set>
-#include <iterator>
-#include <algorithm>
-#include <assert.h>
-#include <chrono>
-
-
 namespace vgjs {
 
 	class JobMemory;
@@ -908,7 +890,7 @@ namespace vgjs {
 		void addJob( Job *pJob ) {
 			thread_local static uint32_t next_thread = 0;	///< counter for distributing jjobs to threads evenly
 
-			assert(pJob != nullptr);
+			//assert(pJob != nullptr);
 			++m_numJobs;	//keep track of the number of jobs in the system to sync with main thread
 
 			if (pJob->m_thread_idx != VGJS_NULL_THREAD_IDX)  {
@@ -964,7 +946,7 @@ namespace vgjs {
 		void onFinishedAddJob(Function &&func, VgjsJobID thread_id = VGJS_NULL_JOB_ID ) {
 			Job *pCurrentJob = getJobPointer();			//should never be called by meain thread
 			if (pCurrentJob == nullptr) return;			//is null if called by main thread
-			assert(!pCurrentJob->m_repeatJob);			//you cannot do both repeat and add job after finishing
+			//assert(!pCurrentJob->m_repeatJob);			//you cannot do both repeat and add job after finishing
 			Job* pNewJob = m_job_memory[(uint32_t)m_thread_index]->allocateJob();
 			pNewJob->setFunction(std::move(func));
 			pNewJob->setJobId(thread_id);
@@ -982,7 +964,7 @@ namespace vgjs {
 		void onFinishedRepeatJob() {
 			Job *pCurrentJob = getJobPointer();						//can be nullptr if called from main thread
 			if (pCurrentJob == nullptr) return;						//is null if called by main thread
-			assert(pCurrentJob->m_onFinishedJob == nullptr);		//you cannot do both repeat and add job after finishing	
+			//assert(pCurrentJob->m_onFinishedJob == nullptr);		//you cannot do both repeat and add job after finishing	
 			pCurrentJob->m_repeatJob = true;						//flag that in onFinished() the job will be rescheduled
 		}
 
