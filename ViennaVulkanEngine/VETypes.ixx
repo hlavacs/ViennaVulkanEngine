@@ -55,6 +55,7 @@ export namespace vve {
 	#define SAFE_TYPEDEF(T, D)                                      \
 	struct D : totally_ordered1< D, totally_ordered2< D, T > >      \
 	{                                                               \
+		const T NULL = std::numeric_limits<T>::max();				\
 		T t;                                                        \
 		explicit D(const T& t_) : t(t_) {};                         \
 	    explicit D(T&& t_) : t(std::move(t_)) {};                   \

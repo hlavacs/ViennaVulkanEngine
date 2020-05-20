@@ -7,12 +7,11 @@ int main()
 {
     using namespace vve;
 
-    VeTableToAChunk<uint64_t, float, uint64_t> ToAChunk;
+    VeTableChunk<uint64_t, float, uint64_t> ToAChunk;
     std::cout << sizeof ToAChunk << "\n";
 
-    VeTableAoTChunk<uint64_t, float, uint64_t, float> AoTChunk;
+    VeTableChunk< std::tuple<uint64_t, float, uint64_t>> AoTChunk;
     std::cout << sizeof AoTChunk << "\n";
-
 
     auto tuple1 = std::make_tuple(1);
     auto tuple2 = std::make_tuple(1, 3.4, "333");
