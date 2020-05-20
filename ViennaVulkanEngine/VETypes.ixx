@@ -52,7 +52,7 @@ export namespace vve {
 	struct totally_ordered1 : less_than_comparable1<T, equality_comparable1<T, B> > {};
 
 
-#define SAFE_TYPEDEF(T, D)                                          \
+	#define SAFE_TYPEDEF(T, D)                                      \
 	struct D : totally_ordered1< D, totally_ordered2< D, T > >      \
 	{                                                               \
 		T t;                                                        \

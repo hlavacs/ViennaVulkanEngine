@@ -1,14 +1,11 @@
 export module VVE:VeTable;
 
 import std.core;
-#include <tuple>
-
 import :VeTypes;
 
-export namespace vve {
 
-	constexpr uint32_t VE_TABLE_CHUNK_SIZE = 1 << 14;
-
+namespace vve {
+	const uint32_t VE_TABLE_CHUNK_SIZE = 1 << 14;
 
 	//----------------------------------------------------------------------------------
 	//create tuple of arrays from tuple (experimental)
@@ -24,6 +21,11 @@ export namespace vve {
 		return ToA_impl(t, std::index_sequence_for<Args...>{});
 	}
 
+};
+
+
+export namespace vve {
+
 	//----------------------------------------------------------------------------------
 	//create tuple of arrays from type list
 
@@ -34,11 +36,12 @@ export namespace vve {
 		using type = std::tuple<std::array<Args, c_max_size>...>;
 		size_t	d_size = 0;
 		type	d_tuple_of_array;
-		size_t	size() { return d_size;  };
+		size_t	size() { return d_size; };
 	};
 
 	template<typename... Args>
 	class VeTableToA {
+
 		using tuple_data = std::tuple<Args...>;
 		static constexpr uint32_t c_max_size = (VE_TABLE_CHUNK_SIZE - sizeof(size_t)) / sizeof(tuple_data);
 		using chunk_type = VeTableToAChunk<Args...>;
@@ -48,15 +51,21 @@ export namespace vve {
 		std::set<VeChunkIndex32> m_deleted_chunks;				///chunks that do not exist yet
 
 	public:
-		VeTableToA() {
-			m_chunks.emplace_back(std::make_unique<chunk_type>());
-		};
-
-		~VeTableToA() {};
+		VeTableToA();
+		~VeTableToA();
 
 
 
 	};
+
+	template<typename... Args>
+	VeTableToA<Args...>::VeTableToA() {
+		m_chunks.emplace_back(std::make_unique<chunk_type>());
+	};
+
+	template<typename... Args>
+	VeTableToA<Args...>::~VeTableToA() {};
+
 
 
 	//----------------------------------------------------------------------------------
@@ -71,7 +80,6 @@ export namespace vve {
 		type	d_array_of_tuples;
 		size_t	size() { return d_size; };
 	};
-
 
 };
 
