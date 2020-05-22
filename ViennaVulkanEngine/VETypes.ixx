@@ -52,21 +52,21 @@ export namespace vve {
 	struct totally_ordered1 : less_than_comparable1<T, equality_comparable1<T, B> > {};
 
 
-	#define SAFE_TYPEDEF(T, D)                                      \
-	struct D : totally_ordered1< D, totally_ordered2< D, T > >      \
-	{                                                               \
-		const T NULL = std::numeric_limits<T>::max();				\
-		T t;                                                        \
-		explicit D(const T& t_) : t(t_) {};                         \
-	    explicit D(T&& t_) : t(std::move(t_)) {};                   \
-	    D() = default;                                              \
-	    D(const D & t_) = default;                                  \
-	    D(D&&) = default;                                           \
-	    D& operator=(const D & rhs) = default;                      \
-	    D& operator=(D&&) = default;                                \
-	    operator T& () { return t; }                                \
-	    bool operator==(const D & rhs) const { return t == rhs.t; } \
-	    bool operator<(const D & rhs) const { return t < rhs.t; }   \
+	#define SAFE_TYPEDEF(T, D)												\
+	struct D : totally_ordered1< D, totally_ordered2< D, T > >				\
+	{																		\
+		static D NULL() { return D(std::numeric_limits<T>::max()); };		\
+		T t;																\
+		explicit D(const T& t_) : t(t_) {};									\
+	    explicit D(T&& t_) : t(std::move(t_)) {};							\
+	    D() = default;														\
+	    D(const D & t_) = default;											\
+	    D(D&&) = default;													\
+	    D& operator=(const D & rhs) = default;								\
+	    D& operator=(D&&) = default;										\
+	    operator T& () { return t; }										\
+	    bool operator==(const D & rhs) const { return t == rhs.t; }			\
+	    bool operator<(const D & rhs) const { return t < rhs.t; }			\
 	};
 
 	//----------------------------------------------------------------------------------

@@ -43,7 +43,7 @@ export namespace vve {
 	template<typename... Args>
 	class VeTable {
 
-		enum class VeClearOnSwap {yes,no};
+		enum class VeClearOnSwap {CLEAR, NOCLEAR};
 
 		VeIndex32			m_thread_idx;
 		bool				m_current_state;
@@ -59,7 +59,7 @@ export namespace vve {
 		std::set<VeChunkIndex32> m_deleted_chunks;				///chunks that do not exist yet
 
 	public:
-		VeTable(VeTable<Args...>* other = nullptr, VeClearOnSwap clear = no );
+		VeTable(VeTable<Args...>* other = nullptr, VeClearOnSwap clear = VeClearOnSwap::NOCLEAR );
 		~VeTable();
 
 		//-------------------------------------------------------------------------------
@@ -82,7 +82,7 @@ export namespace vve {
 	VeTable<Args...>::VeTable(VeTable<Args...>* other, VeClearOnSwap clear) : 
 		m_other(other), m_clear_on_swap(clear), m_current_state(true) {
 
-		m_thread_idx = VeIndex32::NULL;
+		m_thread_idx = VeIndex32::NULL();
 		if (other != nullptr) {
 			m_current_state = false;
 			other->m_other = this;
