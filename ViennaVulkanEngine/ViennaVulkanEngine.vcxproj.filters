@@ -52,10 +52,8 @@
     <ClCompile Include="VEGameJobSystem.ixx">
       <Filter>Interfaces</Filter>
     </ClCompile>
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="VEMap.ixx">
+    <ClCompile Include="VEMap.ixx">
       <Filter>Interfaces</Filter>
-    </None>
+    </ClCompile>
   </ItemGroup>
 </Project>

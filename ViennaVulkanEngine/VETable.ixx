@@ -2,6 +2,7 @@ export module VVE:VeTable;
 
 import std.core;
 import :VeTypes;
+import :VeMap;
 
 
 namespace vve {
@@ -26,17 +27,16 @@ namespace vve {
 
 export namespace vve {
 
-
 	//----------------------------------------------------------------------------------
 	//create tuple of arrays from type list
 
 	template<typename... Args>
 	struct VeTableChunk {
-		static constexpr uint32_t tuple_size = (sizeof(Args) + ...);
-		static constexpr uint32_t c_max_size = (VE_TABLE_CHUNK_SIZE - sizeof(size_t)) / tuple_size;
+		static const uint32_t tuple_size = (sizeof(Args) + ...);
+		static const uint32_t c_max_size = (VE_TABLE_CHUNK_SIZE - sizeof(size_t)) / tuple_size;
 		using type = std::tuple<std::array<Args, c_max_size>...>;
 		size_t	d_size = 0;
-		type	d_tuple_of_array;
+		type	d_tuple_of_arrays;
 		size_t	size() { return d_size; };
 	};
 
@@ -51,7 +51,6 @@ export namespace vve {
 		VeClearOnSwap		m_clear_on_swap;
 
 		using tuple_data = std::tuple<Args...>;
-		static constexpr uint32_t c_max_size = (VE_TABLE_CHUNK_SIZE - sizeof(size_t)) / sizeof(tuple_data);
 		using chunk_type = VeTableChunk<Args...>;
 
 		std::vector<std::unique_ptr<chunk_type>> m_chunks;		///pointers to table chunks
