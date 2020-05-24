@@ -29,29 +29,12 @@ export namespace vve {
     template<int... Is>
     struct VeMap : VeMapBase {
         static constexpr auto s_indices = std::make_tuple(Is...);
-        using type = std::tuple<decltype(Is)...>;
-            
-        type d_data = std::make_tuple(Is...);
+        static const uint32_t initial_size = 64;
+        std::vector<VeIndex16> d_array;
+        VeMap<Is...>() : d_array(initial_size, VeIndex16(0) ) {}
     };
 
 
-    // A template to hold a parameter pack
-    template < typename... > 
-    struct Typelist {};
-
-    // Declaration of a template
-    template< typename... Types> struct VeMapTable;
-
-    template< typename... TypesOne, typename... TypesTwo>
-    struct VeMapTable< Typelist < TypesOne... >, Typelist < TypesTwo... > > {
-
-        using TupleTypeOne = std::tuple< TypesOne... >;
-        using TupleTypeTwo = std::tuple< TypesTwo... >;
-
-        TupleTypeOne d_one;
-        TupleTypeTwo d_two;
-
-    };
 
 
 };

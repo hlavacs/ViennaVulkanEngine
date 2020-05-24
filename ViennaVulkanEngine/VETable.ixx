@@ -38,48 +38,59 @@ export namespace vve {
 		size_t	d_size = 0;
 		type	d_tuple_of_arrays;
 		size_t	size() { return d_size; };
-	};
+	};		
+	
+	// A template to hold a parameter pack
+	template < typename... >
+	struct Typelist {};
 
-	template<typename... Args>
-	class VeTable {
+	// Declaration of a template
+	template< typename... Types> struct VeTable;
 
-		enum class VeClearOnSwap {CLEAR, NOCLEAR};
+	template< typename GuidType, typename... TypesOne, typename... TypesTwo>
+	struct VeTable< GuidType, Typelist < TypesOne... >, Typelist < TypesTwo... > > {
+		using type = VeTable< GuidType, Typelist < TypesOne... >, Typelist < TypesTwo... > >;
 
-		VeIndex32			m_thread_idx;
-		bool				m_current_state;
-		VeTable<Args...>*	m_other;
-		VeClearOnSwap		m_clear_on_swap;
+		enum class VeOnSwapDo {CLEAR, COPY};
 
-		using tuple_data = std::tuple<Args...>;
-		using chunk_type = VeTableChunk<Args...>;
+		VeIndex32	m_thread_idx;
+		bool		m_current_state;
+		type*		m_other;
+		VeOnSwapDo	m_on_swap_do;
+
+		using tuple_type = std::tuple<TypesOne...>;
+		using chunk_type = VeTableChunk<TypesOne...>;
 
 		std::vector<std::unique_ptr<chunk_type>> m_chunks;		///pointers to table chunks
 		std::set<VeChunkIndex32> m_free_chunks;					///chunks that are not full
-		std::set<VeChunkIndex32> m_deleted_chunks;				///chunks that do not exist yet
+		std::set<VeChunkIndex32> m_deleted_chunks;				///chunks that have been deleted -> empty slot
+
+		using map_type = std::tuple<VeMap<0>, TypesTwo...>;
+		map_type m_maps;
 
 	public:
-		VeTable(VeTable<Args...>* other = nullptr, VeClearOnSwap clear = VeClearOnSwap::NOCLEAR );
-		~VeTable();
+		VeTable(VeOnSwapDo on_swap = VeOnSwapDo::COPY, type* other = nullptr );
+		~VeTable() = default;
 
 		//-------------------------------------------------------------------------------
 		//read operations
 
 		VeIndex32 getThreadIdx();
-		VeTable<Args...>* getCurrentState();
-		VeTable<Args...>* getNextState();
+		auto* getCurrentState();
+		auto* getNextState();
 
 		//-------------------------------------------------------------------------------
 		//write operations
 
 		void setThreadIdx( VeIndex32 idx);
 		void swapTables();
-		void operator=(const VeTable<Args...>& rhs);
+		void operator=(const type& rhs);
 		void clear();
 	};
 
-	template<typename... Args>
-	VeTable<Args...>::VeTable(VeTable<Args...>* other, VeClearOnSwap clear) : 
-		m_other(other), m_clear_on_swap(clear), m_current_state(true) {
+	template<typename GuidType, typename... TypesOne, typename... TypesTwo>
+	VeTable< GuidType, Typelist < TypesOne... >, Typelist < TypesTwo... > >::VeTable(VeOnSwapDo on_swap, type* other) :
+		m_other(other), m_on_swap_do(on_swap), m_current_state(true), m_maps() {
 
 		m_thread_idx = VeIndex32::NULL();
 		if (other != nullptr) {
@@ -89,39 +100,37 @@ export namespace vve {
 		m_chunks.emplace_back(std::make_unique<chunk_type>());
 	};
 
-	template<typename... Args>
-	VeTable<Args...>::~VeTable() {};
 
 	//-------------------------------------------------------------------------------
 	//read operations
 
-	template<typename... Args>
-	VeIndex32 VeTable<Args...>::getThreadIdx() {
+	template<typename GuidType, typename... TypesOne, typename... TypesTwo>
+	VeIndex32 VeTable< GuidType, Typelist < TypesOne... >, Typelist < TypesTwo... > >::getThreadIdx() {
 		return m_thread_idx;
 	}
 
-	template<typename... Args>
-	VeTable<Args...>* VeTable<Args...>::getCurrentState() {
+	template<typename GuidType, typename... TypesOne, typename... TypesTwo>
+	auto* VeTable< GuidType, Typelist < TypesOne... >, Typelist < TypesTwo... > >::getCurrentState() {
 		if (m_current_state) return this;
 		return m_other;
 	}
 
-	template<typename... Args>
-	VeTable<Args...>* VeTable<Args...>::getNextState() {
+	template<typename GuidType, typename... TypesOne, typename... TypesTwo>
+	auto* VeTable< GuidType, Typelist < TypesOne... >, Typelist < TypesTwo... > >::getNextState() {
 		if (!m_current_state) return this;
 		return m_other;
 	}
 
-	template<typename... Args>
-	void VeTable<Args...>::setThreadIdx(VeIndex32 idx) {
+	template<typename GuidType, typename... TypesOne, typename... TypesTwo>
+	void VeTable< GuidType, Typelist < TypesOne... >, Typelist < TypesTwo... > >::setThreadIdx(VeIndex32 idx) {
 		m_thread_idx = idx;
 	}
 
 	//-------------------------------------------------------------------------------
 	//write operations
 
-	template<typename... Args>
-	void VeTable<Args...>::swapTables() {
+	template<typename GuidType, typename... TypesOne, typename... TypesTwo>
+	void VeTable< GuidType, Typelist < TypesOne... >, Typelist < TypesTwo... > >::swapTables() {
 		if (m_other == nullptr) return;
 
 		std::swap( m_current_state, m_other->m_current_state );
@@ -130,7 +139,7 @@ export namespace vve {
 			return m_other->swapTables();
 		}
 
-		if (m_clear_on_swap) {
+		if (m_on_swap_do = VeOnSwapDo::COPY) {
 			*this = *m_other;
 		}
 		else {
@@ -138,13 +147,13 @@ export namespace vve {
 		}
 	}
 
-	template<typename... Args>
-	void VeTable<Args...>::operator=(const VeTable<Args...>& rhs) {
+	template<typename GuidType, typename... TypesOne, typename... TypesTwo>
+	void VeTable< GuidType, Typelist < TypesOne... >, Typelist < TypesTwo... > >::operator=(const type& rhs) {
 
 	}
 
-	template<typename... Args>
-	void VeTable<Args...>::clear() {
+	template<typename GuidType, typename... TypesOne, typename... TypesTwo>
+	void VeTable< GuidType, Typelist < TypesOne... >, Typelist < TypesTwo... > >::clear() {
 
 	}
 
