@@ -23,8 +23,10 @@ int main()
 
     VeMap<1,2,3> map;
 
-    auto t = decltype(map)::s_indices;
-
+    VeMapTable< Typelist<int, int>, Typelist<VeMap<1,2,3>, VeMap<1,3>> > my_table;
+    
+    auto vrt = std::get<0>(my_table.d_two);
+    auto idx0 = std::get<0>(vrt.d_data);
 
     VeTableChunk<uint64_t, float, uint64_t> ToAChunk;
     std::cout << sizeof ToAChunk << "\n";

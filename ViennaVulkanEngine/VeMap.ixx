@@ -29,21 +29,30 @@ export namespace vve {
     template<int... Is>
     struct VeMap : VeMapBase {
         static constexpr auto s_indices = std::make_tuple(Is...);
+        using type = std::tuple<decltype(Is)...>;
+            
+        type d_data = std::make_tuple(Is...);
     };
 
 
-    template<typename T>
-    struct VeMap_impl {
-        //static type = std::tuple<T>;
+    // A template to hold a parameter pack
+    template < typename... > 
+    struct Typelist {};
+
+    // Declaration of a template
+    template< typename... Types> struct VeMapTable;
+
+    template< typename... TypesOne, typename... TypesTwo>
+    struct VeMapTable< Typelist < TypesOne... >, Typelist < TypesTwo... > > {
+
+        using TupleTypeOne = std::tuple< TypesOne... >;
+        using TupleTypeTwo = std::tuple< TypesTwo... >;
+
+        TupleTypeOne d_one;
+        TupleTypeTwo d_two;
+
     };
 
-    template<typename T, typename... Args>
-    struct VeMap_impl1 {
-       // if conditional is_same_v
-
-        //static type = std::tuple<T, VeMap_impl<Args>::type>;
-
-    };
 
 };
 
