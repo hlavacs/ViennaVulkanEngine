@@ -28,6 +28,7 @@ export namespace vve {
     };
 
     struct VeSlotMapBase : VeMapBase {
+
         //----------------------------------------------------------------------------------
         //a chunk index consists of a next free index and an in-chunk index, both packed into one integer
 
@@ -41,8 +42,8 @@ export namespace vve {
             void				setNextIndex(VeNextIndexType idx) { d_next_and_in_chunk_index.setUpper(idx); };
             VeInChunkIndexType	getInChunkIndex() { return VeInChunkIndexType(d_next_and_in_chunk_index.getLower()); };
             void				setInChunkIndex(VeInChunkIndexType idx) { d_next_and_in_chunk_index.setLower(idx); };
-        };        
-        
+        };  
+
         struct slot_map_t {
             VeGuid			d_guid;
             VeChunkIndex	d_chunk_index;		//next index and in chunk index combined to save memory
