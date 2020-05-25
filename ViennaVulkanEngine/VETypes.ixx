@@ -78,8 +78,8 @@ export namespace vve {
 	SAFE_TYPEDEF(uint16_t, VeChunkIndex16);
 	SAFE_TYPEDEF(uint32_t, VeChunkIndex32);
 
-	SAFE_TYPEDEF(uint16_t, VeTableIndex16);
-	SAFE_TYPEDEF(uint32_t, VeTableIndex32);
+	SAFE_TYPEDEF(uint16_t, VeInChunkIndex16);
+	SAFE_TYPEDEF(uint32_t, VeInChunkIndex32);
 
 	SAFE_TYPEDEF(uint32_t, VeGuid32);
 	SAFE_TYPEDEF(uint64_t, VeGuid64);
@@ -111,7 +111,7 @@ export namespace vve {
 		};
 
 		void setUpper(T value) {
-			d_int = Pack((d_int & lower_bits) | (value << bits));
+			d_int = PackedType((d_int & lower_bits) | (value << bits));
 		};
 
 		auto getLower() {
@@ -119,32 +119,65 @@ export namespace vve {
 		};
 
 		void setLower(T value) {
-			d_int = Pack((d_int & upper_bits) | value );
+			d_int = PackedType((d_int & upper_bits) | value );
 		};
 	};
 
+
+	//----------------------------------------------------------------------------------
+	//a table index consists of a chunk index and an in-chunk index, both packed into one integer
+
+	template<typename GuidType>
+	struct VeTableIndex {
+		using PackedType = typename std::conditional < std::is_same<GuidType, VeGuid32>::value, uint32_t, uint64_t >::type;
+		using ChunkIndexType = typename std::conditional < std::is_same<GuidType, VeGuid32>::value, VeChunkIndex16, VeChunkIndex32 >::type;
+		using InChunkIndexType = typename std::conditional < std::is_same<GuidType, VeGuid32>::value, VeInChunkIndex16, VeInChunkIndex32 >::type;
+
+		VePackedInt<PackedType>	d_chunk_and_in_chunk_idx;
+
+		VeTableIndex() : d_chunk_and_in_chunk_idx() {
+			setChunkIdx(ChunkIndexType::NULL());
+			setInChunkIdx(InChunkIndexType::NULL());
+		};
+
+		VeTableIndex(ChunkIndexType chunk_index, InChunkIndexType in_chunk_index) {
+			setChunkIdx(chunk_index);
+			setInChunkIdx(in_chunk_index);
+		};
+
+
+		ChunkIndexType		getChunkIdx() { return ChunkIndexType(d_chunk_and_in_chunk_idx.getUpper()); };
+		void				setChunkIdx(ChunkIndexType idx) { d_chunk_and_in_chunk_idx.setUpper(idx); };
+
+		InChunkIndexType	getInChunkIdx() { return InChunkIndexType(d_chunk_and_in_chunk_idx.getLower()); };
+		void				setInChunkIdx(InChunkIndexType idx) { d_chunk_and_in_chunk_idx.setLower(idx); };
+	};
+
+
+	//----------------------------------------------------------------------------------
+	//a handle consists of a GUID and an table index 
 
 	template<typename GuidType>
 	struct VeHandle {
 		using PackedType		= typename std::conditional < std::is_same<GuidType, VeGuid32>::value, uint32_t, uint64_t >::type;
 		using ChunkIndexType	= typename std::conditional < std::is_same<GuidType, VeGuid32>::value, VeChunkIndex16, VeChunkIndex32 >::type;
-		using TableIndexType	= typename std::conditional < std::is_same<GuidType, VeGuid32>::value, VeChunkIndex16, VeChunkIndex32 >::type;
+		using InChunkIndexType	= typename std::conditional < std::is_same<GuidType, VeGuid32>::value, VeInChunkIndex16, VeInChunkIndex32 >::type;
 
-		VePackedInt<PackedType>	d_chunk_and_table_idx;
+		VeTableIndex<GuidType>	d_table_idx;
 		GuidType				d_guid;
 
-		VeHandle() : d_chunk_and_table_idx(), d_guid() {};
+		VeHandle() {};
 
-		explicit VeHandle(ChunkIndexType chunk_index, TableIndexType table_index, GuidType guid) : d_chunk_and_table_idx(0), d_guid(guid) {
+		explicit VeHandle(ChunkIndexType chunk_index, InChunkIndexType in_chunk_index, GuidType guid) : d_table_idx(0), d_guid(guid) {
 			setChunkIdx(chunk_index);
-			setTableIdx(table_index);
+			setInChunkIdx(in_chunk_index);
 		};
 
-		auto	getChunkIdx() { return ChunkIndexType(d_chunk_and_table_idx.getUpper()); };
-		void	setChunkIdx(ChunkIndexType idx) { d_chunk_and_table_idx.setUpper(idx); };
+		ChunkIndexType	getChunkIdx() { return d_table_idx.getChunkIdx(); };
+		void			setChunkIdx(ChunkIndexType idx) { d_table_idx.setChunkIdx(idx); };
 
-		auto	getTableIdx() { return TableIndexType(d_chunk_and_table_idx.getLower()); };
-		void	setTableIdx(TableIndexType idx) { d_chunk_and_table_idx.setLower(idx); };
+		InChunkIndexType	getInChunkIdx() { return d_table_idx.getInChunkIdx(); };
+		void				setInChunkIdx(InChunkIndexType idx) { d_table_idx.setInChunkIdx(idx); };
 
 		auto	getGuid() { return d_guid; };
 		void	setGuid(GuidType guid) { d_guid = guid; };

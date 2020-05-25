@@ -3,7 +3,7 @@ export module VVE:VeTable;
 import std.core;
 import :VeTypes;
 import :VeMap;
-
+import :VeMemory;
 
 namespace vve {
 	const uint32_t VE_TABLE_CHUNK_SIZE = 1 << 14;
@@ -44,22 +44,24 @@ export namespace vve {
 	template < typename... >
 	struct Typelist {};
 
-	// Declaration of a template
+	// Delare VeTable
 	template< typename... Types> struct VeTable;
 
+	#define VeTableType VeTable< GuidType, Typelist < TypesOne... >, Typelist < TypesTwo... > >
+
+	// Specialization of VeTable
 	template< typename GuidType, typename... TypesOne, typename... TypesTwo>
-	struct VeTable< GuidType, Typelist < TypesOne... >, Typelist < TypesTwo... > > {
-		using type = VeTable< GuidType, Typelist < TypesOne... >, Typelist < TypesTwo... > >;
+	struct VeTableType {
 
 		enum class VeOnSwapDo {CLEAR, COPY};
 
-		VeIndex32	m_thread_idx;
-		bool		m_current_state;
-		type*		m_other;
-		VeOnSwapDo	m_on_swap_do;
+		VeIndex32		m_thread_idx;
+		bool			m_current_state;
+		VeTableType*	m_other;
+		VeOnSwapDo		m_on_swap_do;
 
-		using tuple_type = std::tuple<TypesOne...>;
-		using chunk_type = VeTableChunk<TypesOne...>;
+		using tuple_type = std::tuple<GuidType, TypesOne...>;
+		using chunk_type = VeTableChunk<GuidType, TypesOne...>;
 
 		std::vector<std::unique_ptr<chunk_type>> m_chunks;		///pointers to table chunks
 		std::set<VeChunkIndex32> m_free_chunks;					///chunks that are not full
@@ -69,7 +71,7 @@ export namespace vve {
 		map_type m_maps;
 
 	public:
-		VeTable(VeOnSwapDo on_swap = VeOnSwapDo::COPY, type* other = nullptr );
+		VeTable(VeOnSwapDo on_swap = VeOnSwapDo::COPY, VeTableType* other = nullptr );
 		~VeTable() = default;
 
 		//-------------------------------------------------------------------------------
@@ -84,12 +86,12 @@ export namespace vve {
 
 		void setThreadIdx( VeIndex32 idx);
 		void swapTables();
-		void operator=(const type& rhs);
+		void operator=(const VeTableType& rhs);
 		void clear();
 	};
 
 	template<typename GuidType, typename... TypesOne, typename... TypesTwo>
-	VeTable< GuidType, Typelist < TypesOne... >, Typelist < TypesTwo... > >::VeTable(VeOnSwapDo on_swap, type* other) :
+	VeTableType::VeTable(VeOnSwapDo on_swap, VeTableType* other) :
 		m_other(other), m_on_swap_do(on_swap), m_current_state(true), m_maps() {
 
 		m_thread_idx = VeIndex32::NULL();
@@ -105,24 +107,24 @@ export namespace vve {
 	//read operations
 
 	template<typename GuidType, typename... TypesOne, typename... TypesTwo>
-	VeIndex32 VeTable< GuidType, Typelist < TypesOne... >, Typelist < TypesTwo... > >::getThreadIdx() {
+	VeIndex32 VeTableType::getThreadIdx() {
 		return m_thread_idx;
 	}
 
 	template<typename GuidType, typename... TypesOne, typename... TypesTwo>
-	auto* VeTable< GuidType, Typelist < TypesOne... >, Typelist < TypesTwo... > >::getCurrentState() {
+	auto* VeTableType::getCurrentState() {
 		if (m_current_state) return this;
 		return m_other;
 	}
 
 	template<typename GuidType, typename... TypesOne, typename... TypesTwo>
-	auto* VeTable< GuidType, Typelist < TypesOne... >, Typelist < TypesTwo... > >::getNextState() {
+	auto* VeTableType::getNextState() {
 		if (!m_current_state) return this;
 		return m_other;
 	}
 
 	template<typename GuidType, typename... TypesOne, typename... TypesTwo>
-	void VeTable< GuidType, Typelist < TypesOne... >, Typelist < TypesTwo... > >::setThreadIdx(VeIndex32 idx) {
+	void VeTableType::setThreadIdx(VeIndex32 idx) {
 		m_thread_idx = idx;
 	}
 
@@ -130,7 +132,7 @@ export namespace vve {
 	//write operations
 
 	template<typename GuidType, typename... TypesOne, typename... TypesTwo>
-	void VeTable< GuidType, Typelist < TypesOne... >, Typelist < TypesTwo... > >::swapTables() {
+	void VeTableType::swapTables() {
 		if (m_other == nullptr) return;
 
 		std::swap( m_current_state, m_other->m_current_state );
@@ -148,12 +150,12 @@ export namespace vve {
 	}
 
 	template<typename GuidType, typename... TypesOne, typename... TypesTwo>
-	void VeTable< GuidType, Typelist < TypesOne... >, Typelist < TypesTwo... > >::operator=(const type& rhs) {
+	void VeTableType::operator=(const VeTableType& rhs) {
 
 	}
 
 	template<typename GuidType, typename... TypesOne, typename... TypesTwo>
-	void VeTable< GuidType, Typelist < TypesOne... >, Typelist < TypesTwo... > >::clear() {
+	void VeTableType::clear() {
 
 	}
 

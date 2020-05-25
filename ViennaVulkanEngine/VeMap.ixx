@@ -2,6 +2,7 @@ export module VVE:VeMap;
 
 import std.core;
 import :VeTypes;
+import :VeMemory;
 
 
 export namespace vve { 
@@ -30,8 +31,10 @@ export namespace vve {
     struct VeMap : VeMapBase {
         static constexpr auto s_indices = std::make_tuple(Is...);
         static const uint32_t initial_size = 64;
-        std::vector<VeIndex16> d_array;
-        VeMap<Is...>() : d_array(initial_size, VeIndex16(0) ) {}
+        using type = std::tuple<VeChunkIndex16, VeInChunkIndex16>;
+
+        std::vector<VeIndex16> d_hash_table;
+        VeMap<Is...>() : d_hash_table(initial_size, VeIndex16(0) ) {}
     };
 
 
