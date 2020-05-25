@@ -59,7 +59,7 @@ export namespace vve {
 		T t;																\
 		explicit D(const T& t_) : t(t_) {};									\
 	    explicit D(T&& t_) : t(std::move(t_)) {};							\
-	    D() = default;														\
+	    D() { t = NULL();};													\
 	    D(const D & t_) = default;											\
 	    D(D&&) = default;													\
 	    D& operator=(const D & rhs) = default;								\
@@ -140,6 +140,8 @@ export namespace vve {
 			setInChunkIdx(InChunkIndexType::NULL());
 		};
 
+		VeTableIndex(VeTableIndex&& table_index) = default;
+
 		VeTableIndex(ChunkIndexType chunk_index, InChunkIndexType in_chunk_index) {
 			setChunkIdx(chunk_index);
 			setInChunkIdx(in_chunk_index);
@@ -163,24 +165,19 @@ export namespace vve {
 		using ChunkIndexType	= typename std::conditional < std::is_same<GuidType, VeGuid32>::value, VeChunkIndex16, VeChunkIndex32 >::type;
 		using InChunkIndexType	= typename std::conditional < std::is_same<GuidType, VeGuid32>::value, VeInChunkIndex16, VeInChunkIndex32 >::type;
 
-		VeTableIndex<GuidType>	d_table_idx;
+		VeTableIndex<GuidType>	d_table_index;
 		GuidType				d_guid;
 
-		VeHandle() {};
+		VeHandle() = default;
 
-		explicit VeHandle(ChunkIndexType chunk_index, InChunkIndexType in_chunk_index, GuidType guid) : d_table_idx(0), d_guid(guid) {
+		explicit VeHandle(ChunkIndexType chunk_index, InChunkIndexType in_chunk_index, GuidType guid) : d_guid(guid) {
 			setChunkIdx(chunk_index);
 			setInChunkIdx(in_chunk_index);
 		};
 
-		ChunkIndexType	getChunkIdx() { return d_table_idx.getChunkIdx(); };
-		void			setChunkIdx(ChunkIndexType idx) { d_table_idx.setChunkIdx(idx); };
+		explicit VeHandle(VeTableIndex<GuidType> &&table_index, InChunkIndexType in_chunk_index, GuidType guid) : 
+			d_table_index(table_index), d_guid(guid) {};
 
-		InChunkIndexType	getInChunkIdx() { return d_table_idx.getInChunkIdx(); };
-		void				setInChunkIdx(InChunkIndexType idx) { d_table_idx.setInChunkIdx(idx); };
-
-		auto	getGuid() { return d_guid; };
-		void	setGuid(GuidType guid) { d_guid = guid; };
 	};
 	   
 
