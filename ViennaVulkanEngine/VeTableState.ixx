@@ -26,7 +26,8 @@ export namespace vve {
 		static_assert(sizeof(chunk_type) <= VE_TABLE_CHUNK_SIZE);
 
 		std::vector<std::unique_ptr<chunk_type>>	m_chunks;				///pointers to table chunks
-		std::set<VeChunkIndex32>					m_free_chunks;			///chunks that are not full
+		std::set<VeChunkIndex32>					m_full_chunks;			///chunks that are used and full
+		std::set<VeChunkIndex32>					m_free_chunks;			///chunks that are used and not full
 		std::set<VeChunkIndex32>					m_deleted_chunks;		///chunks that have been deleted -> empty slot
 
 		using map_type = std::tuple<VeHashMap<0>, TypesTwo...>;

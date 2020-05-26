@@ -30,10 +30,14 @@ export namespace vve {
 
     template<int NUM>
     struct VeSlotMap : VeMapBase {
+        VeInChunkIndex			        d_first_free;
+
         std::array<VeGuid, NUM>			d_slot_guid;
         std::array<VeInChunkIndex, NUM>	d_slot_next_index;
         std::array<VeInChunkIndex, NUM>	d_hash_map;
         std::array<VeInChunkIndex, NUM>	d_slot_map_index;
+
+        VeSlotMap() : d_first_free(VeInChunkIndex(0)) {};
     };
 
 

@@ -53,7 +53,14 @@ export namespace vve {
 	#define SAFE_TYPEDEF(T, D)												\
 	struct D : totally_ordered1< D, totally_ordered2< D, T > >				\
 	{																		\
-		static D NULL() { return D(std::numeric_limits<T>::max()); };		\
+		static D NULL() { 													\
+			if constexpr (std::is_integral_v<T>) {							\
+				return D(std::numeric_limits<T>::max());					\
+			}																\
+			else {															\
+				return T();													\
+			}																\
+		};																	\
 		T t;																\
 		explicit D(const T& t_) : t(t_) {};									\
 	    explicit D(T&& t_) : t(std::move(t_)) {};							\
