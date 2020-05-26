@@ -74,6 +74,9 @@ export namespace vve {
 	SAFE_TYPEDEF(uint32_t, VeIndex32);
 	SAFE_TYPEDEF(uint32_t, VeIndex64);
 
+	SAFE_TYPEDEF(uint16_t, VeNextIndex16);
+	SAFE_TYPEDEF(uint32_t, VeNextIndex32);
+
 	SAFE_TYPEDEF(uint16_t, VeChunkIndex16);
 	SAFE_TYPEDEF(uint32_t, VeChunkIndex32);
 
@@ -110,7 +113,7 @@ export namespace vve {
 	};
 
 	//----------------------------------------------------------------------------------
-	//a handle consists of a GUID and an table index 
+	//a handle consists of a GUID and an table index
 
 	struct VeHandle {
 		VeGuid			d_guid;
@@ -150,7 +153,3 @@ export namespace vve {
 	struct Typelist {};
 
 };
-
-
-
-

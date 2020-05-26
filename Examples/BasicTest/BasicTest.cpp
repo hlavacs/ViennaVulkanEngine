@@ -27,13 +27,12 @@ int main()
 
     auto tuple1 = std::make_tuple(1);
     auto tuple2 = std::make_tuple(1, 3.4, "333");
-    
+
     std::cout << hash(tuple1) << " " << hash(tuple2) << "\n";
 
     VeHandle handle;
 
     std::cout << "Hello World!\n";
-    
+
     return 0;
 }
-

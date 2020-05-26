@@ -5,7 +5,7 @@ import :VeTypes;
 import :VeMemory;
 
 
-export namespace vve { 
+export namespace vve {
     template <typename T, int... Is>
     auto makeKey(T& t) {
         return std::tuple(std::get<Is>(t) ...);
@@ -60,8 +60,3 @@ export namespace vve {
 
 
 };
-
-
-
-
-
