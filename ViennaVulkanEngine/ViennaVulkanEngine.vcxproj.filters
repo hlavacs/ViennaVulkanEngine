@@ -55,5 +55,11 @@
     <ClCompile Include="VEMap.ixx">
       <Filter>Interfaces</Filter>
     </ClCompile>
+    <ClCompile Include="VeTableChunk.ixx">
+      <Filter>Interfaces</Filter>
+    </ClCompile>
+    <ClCompile Include="VeTableState.ixx">
+      <Filter>Interfaces</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>

@@ -4,8 +4,6 @@ import std.core;
 
 export namespace vve {
 
-	typedef int GUID1;
-
 	//----------------------------------------------------------------------------------
 	//lifted from Boost, to convert integers into strong types
 
@@ -59,7 +57,7 @@ export namespace vve {
 		T t;																\
 		explicit D(const T& t_) : t(t_) {};									\
 	    explicit D(T&& t_) : t(std::move(t_)) {};							\
-	    D() = default;														\
+	    D() { t = NULL();};													\
 	    D(const D & t_) = default;											\
 	    D(D&&) = default;													\
 	    D& operator=(const D & rhs) = default;								\
@@ -74,82 +72,50 @@ export namespace vve {
 
 	SAFE_TYPEDEF(uint16_t, VeIndex16);
 	SAFE_TYPEDEF(uint32_t, VeIndex32);
+	SAFE_TYPEDEF(uint32_t, VeIndex64);
 
 	SAFE_TYPEDEF(uint16_t, VeChunkIndex16);
 	SAFE_TYPEDEF(uint32_t, VeChunkIndex32);
 
-	SAFE_TYPEDEF(uint16_t, VeTableIndex16);
-	SAFE_TYPEDEF(uint32_t, VeTableIndex32);
+	SAFE_TYPEDEF(uint16_t, VeInChunkIndex16);
+	SAFE_TYPEDEF(uint32_t, VeInChunkIndex32);
+
+	SAFE_TYPEDEF(uint32_t, VeSize32);
+	SAFE_TYPEDEF(uint64_t, VeSize64);
 
 	SAFE_TYPEDEF(uint32_t, VeGuid32);
 	SAFE_TYPEDEF(uint64_t, VeGuid64);
 
-	SAFE_TYPEDEF(uint32_t, VePackedIntegers32);
-	SAFE_TYPEDEF(uint64_t, VePackedIntegers64);
+
+	//----------------------------------------------------------------------------------
+	//define the size of GUIDs - either 32 or 64
+
+	using VeGuid = VeGuid32; //or VeGuid64
+
+	//----------------------------------------------------------------------------------
+	//the other data structures follow
+
+	using VeIndex = typename std::conditional < std::is_same<VeGuid, VeGuid32>::value, VeIndex32, VeIndex64 >::type;
+	using VeSize = typename std::conditional < std::is_same<VeGuid, VeGuid32>::value, VeSize32, VeSize64 >::type;
+	using VeChunkIndex		= typename std::conditional < std::is_same<VeGuid, VeGuid32>::value, VeChunkIndex16, VeChunkIndex32 >::type;
+	using VeInChunkIndex	= typename std::conditional < std::is_same<VeGuid, VeGuid32>::value, VeInChunkIndex16, VeInChunkIndex32 >::type;
 
 
 	//----------------------------------------------------------------------------------
-	//packing 2 integers into a larger unsigned integer
+	//a table index consists of a chunk index and an in-chunk index, both packed into one integer
 
-	template<typename T>
-	concept Packable = std::is_same<T, uint32_t>::value || std::is_same<T, uint64_t>::value;
-
-	template<Packable PackedType>
-	struct VePackedInt {
-
-		using T = typename std::conditional < std::is_same<PackedType, uint32_t>::value, uint16_t, uint32_t >::type;
-		static const uint32_t bits			= std::is_same<PackedType, uint32_t>::value ? 16 : 32;
-		static const uint32_t upper_bits	= std::is_same<PackedType, uint32_t>::value ? 0xFF00 : 0xFFFF0000;
-		static const uint32_t lower_bits	= std::is_same<PackedType, uint32_t>::value ? 0x00FF : 0x0000FFFF;
-
-		PackedType d_int;
-
-		VePackedInt() : d_int(0) {};
-
-		auto getUpper() {
-			return T((d_int & upper_bits) >> bits);
-		};
-
-		void setUpper(T value) {
-			d_int = Pack((d_int & lower_bits) | (value << bits));
-		};
-
-		auto getLower() {
-			return T(d_int & lower_bits);
-		};
-
-		void setLower(T value) {
-			d_int = Pack((d_int & upper_bits) | value );
-		};
+	struct VeTableIndex {
+		VeChunkIndex	d_chunk_index;
+		VeInChunkIndex	d_in_chunk_index;
 	};
 
+	//----------------------------------------------------------------------------------
+	//a handle consists of a GUID and an table index 
 
-	template<typename GuidType>
 	struct VeHandle {
-		using PackedType		= typename std::conditional < std::is_same<GuidType, VeGuid32>::value, uint32_t, uint64_t >::type;
-		using ChunkIndexType	= typename std::conditional < std::is_same<GuidType, VeGuid32>::value, VeChunkIndex16, VeChunkIndex32 >::type;
-		using TableIndexType	= typename std::conditional < std::is_same<GuidType, VeGuid32>::value, VeChunkIndex16, VeChunkIndex32 >::type;
-
-		VePackedInt<PackedType>	d_chunk_and_table_idx;
-		GuidType				d_guid;
-
-		VeHandle() : d_chunk_and_table_idx(), d_guid() {};
-
-		explicit VeHandle(ChunkIndexType chunk_index, TableIndexType table_index, GuidType guid) : d_chunk_and_table_idx(0), d_guid(guid) {
-			setChunkIdx(chunk_index);
-			setTableIdx(table_index);
-		};
-
-		auto	getChunkIdx() { return ChunkIndexType(d_chunk_and_table_idx.getUpper()); };
-		void	setChunkIdx(ChunkIndexType idx) { d_chunk_and_table_idx.setUpper(idx); };
-
-		auto	getTableIdx() { return TableIndexType(d_chunk_and_table_idx.getLower()); };
-		void	setTableIdx(TableIndexType idx) { d_chunk_and_table_idx.setLower(idx); };
-
-		auto	getGuid() { return d_guid; };
-		void	setGuid(GuidType guid) { d_guid = guid; };
+		VeGuid			d_guid;
+		VeTableIndex	d_table_index;
 	};
-	   
 
 	//----------------------------------------------------------------------------------
 	//hashing for tuples of hashable types
@@ -176,6 +142,12 @@ export namespace vve {
 	std::size_t hash(std::tuple<Args...> const& value) {
 		return hash_impl(value, std::make_index_sequence<sizeof...(Args)>());
 	}
+
+
+	//----------------------------------------------------------------------------------
+	// A template to hold a parameter pack
+	template < typename... >
+	struct Typelist {};
 
 };
 

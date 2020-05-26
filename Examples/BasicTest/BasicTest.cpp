@@ -4,42 +4,33 @@ import VVE;
 
 
 
-template<int a>
-int Sum() {
-    return a;
-}
-
-template<int a, int b, int... args>
-int Sum() {
-    return Sum<b, args...>() + a;
-}
-
-
 int main()
 {
     using namespace vve;
 
-    int s = Sum<1, 2, 3>();
+    std::cout << sizeof(VeTableIndex) << std::endl;
+    std::cout << sizeof(VeHandle) << std::endl;
 
-    VeMap<1,2,3> map;
+    std::cout << sizeof(VeSlotMap<1>) << std::endl;
+    std::cout << sizeof(VeSlotMap<511>)/511 << std::endl;
 
-    auto t = decltype(map)::s_indices;
-
+    VeHashMap<1, 2, 3> map;
+    auto vrt = decltype(map)::s_indices;
 
     VeTableChunk<uint64_t, float, uint64_t> ToAChunk;
     std::cout << sizeof ToAChunk << "\n";
-    VeTable<uint64_t, float, uint64_t> ToATable;
+    VeTable< Typelist< uint64_t, float, uint64_t>, Typelist< VeHashMap< 1, 2, 3>, VeHashMap< 1, 3 >> > ToATable;
 
     VeTableChunk< std::tuple<uint64_t, float, uint64_t>> AoTChunk;
     std::cout << sizeof AoTChunk << "\n";
-    VeTable< std::tuple<uint64_t, float, uint64_t>> AoTTable;
+    VeTable< Typelist< std::tuple<uint64_t, float, uint64_t> >, Typelist<VeHashMap< 1, 2, 3>, VeHashMap<2, 3>> > AoTTable;
 
     auto tuple1 = std::make_tuple(1);
     auto tuple2 = std::make_tuple(1, 3.4, "333");
     
     std::cout << hash(tuple1) << " " << hash(tuple2) << "\n";
 
-    VeHandle<VeGuid32> handle;
+    VeHandle handle;
 
     std::cout << "Hello World!\n";
     
