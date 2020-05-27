@@ -34,9 +34,6 @@
     <ClCompile Include="VETable.ixx">
       <Filter>Interfaces</Filter>
     </ClCompile>
-    <ClCompile Include="VEUtilClock.ixx">
-      <Filter>Interfaces</Filter>
-    </ClCompile>
     <ClCompile Include="VETypes.ixx">
       <Filter>Interfaces</Filter>
     </ClCompile>
@@ -59,6 +56,9 @@
       <Filter>Interfaces</Filter>
     </ClCompile>
     <ClCompile Include="VeTableState.ixx">
+      <Filter>Interfaces</Filter>
+    </ClCompile>
+    <ClCompile Include="VEUtil.ixx">
       <Filter>Interfaces</Filter>
     </ClCompile>
   </ItemGroup>

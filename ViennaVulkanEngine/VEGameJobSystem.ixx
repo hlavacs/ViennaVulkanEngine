@@ -2,7 +2,7 @@ export module VVE:VeGameJobSystem;
 
 import std.core;
 
-import :VeUtilClock;
+import :VeUtil;
 
 export {
 

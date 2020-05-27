@@ -2,6 +2,7 @@ export module VVE:VeTable;
 
 import std.core;
 import :VeTypes;
+import :VeUtil;
 import :VeMap;
 import :VeMemory;
 import :VeTableChunk;
@@ -10,19 +11,7 @@ import :VeTableState;
 
 namespace vve {
 
-	//----------------------------------------------------------------------------------
-	//create tuple of arrays from tuple (experimental)
 
-	template<class Tuple, std::size_t... Is>
-	auto ToA_impl(const Tuple& t, std::index_sequence<Is...>) {
-		return std::make_tuple(std::array<std::tuple_element<Is, Tuple>::type, 10>{} ...);
-	}
-
-	template<class... Args>
-	auto ToA(const std::tuple<Args...>& t) {
-		const uint32_t VE_TABLE_CHUNK_NUMBER = VE_TABLE_CHUNK_SIZE / sizeof(t);
-		return ToA_impl(t, std::index_sequence_for<Args...>{});
-	}
 
 };
 
@@ -35,7 +24,6 @@ export namespace vve {
 		VeTableBase() = default;
 		~VeTableBase() = default;
 	};
-
 
 
 	//-------------------------------------------------------------------------------

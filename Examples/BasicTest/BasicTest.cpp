@@ -21,6 +21,8 @@ int main()
     std::cout << sizeof(ToAChunk) << "\n";
     VeHandle handle = ToAChunk.insert(VeGuid(0), { 4, 2.5f, 97 });
 
+    auto tuple = ToAChunk.find(handle);
+
     VeTable< Typelist< uint64_t, float, uint64_t>, Typelist< VeHashMap< 1, 2, 3>, VeHashMap< 1, 3 >> > ToATable;
 
     VeTableChunk< std::tuple<uint64_t, float, uint64_t>> AoTChunk;

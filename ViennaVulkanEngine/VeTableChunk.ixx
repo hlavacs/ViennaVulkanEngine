@@ -2,19 +2,12 @@ export module VVE:VeTableChunk;
 
 import std.core;
 import :VeTypes;
+import :VeUtil;
 import :VeMap;
 import :VeMemory;
 
 namespace vve {
-	template <typename T, T Begin, class Func, T ...Is>
-	constexpr void static_for_impl(Func&& f, std::integer_sequence<T, Is...>) {
-		(f(std::integral_constant<T, Begin + Is>{ }), ...);
-	}
 
-	template <typename T, T Begin, T End, class Func >
-	constexpr void static_for(Func&& f) {
-		static_for_impl<T, Begin>(std::forward<Func>(f), std::make_integer_sequence<T, End - Begin>{ });
-	}
 };
 
 export namespace vve {
@@ -67,8 +60,7 @@ export namespace vve {
 			std::get<i>(d_data)[d_size] = std::get<i>(entry); 
 		});
 
-		++d_size;
-		return VeHandle{ guid, {d_chunk_index, VeInChunkIndex(d_size - 1)} };
+		return VeHandle{ guid, {d_chunk_index, VeInChunkIndex(d_size++)} };
 	}
 
 	template<typename... Args>
@@ -77,18 +69,16 @@ export namespace vve {
 			std::get<i>(d_data)[d_size] = std::get<i>(entry);
 		});
 
-		auto ret =  VeHandle{ guid, {d_chunk_index, d_size} };
-		*handle = ret;
-		++d_size;
-		return ret;
+		return *handle = VeHandle{ guid, {d_chunk_index, d_size++} } ;
 	}
 
 	template<typename... Args>
 	std::optional<std::tuple<Args...>> VeTableChunk<Args...>::find(VeHandle handle) {
 		if (handle.d_table_index.d_in_chunk_index < d_size) {
 			tuple_type tuple;
-			//std::make_integer_sequence<Is...>(std::get<Is>(tuple) = std::get<Is>(d_data[handle.d_table_index.d_in_chunk_index]), 0);
-			//std::apply([]() {std::get<Is>(tuple) = std::get<Is>(d_data[handle.d_table_index.d_in_chunk_index]); }, Is...);
+			static_for<std::size_t, 0, std::tuple_size_v<tuple_type>>([&, this](auto i) {
+				std::get<i>(tuple) = std::get<i>(d_data)[handle.d_table_index.d_in_chunk_index];
+			});
 
 			return std::optional<tuple_type>(tuple);
 		}
@@ -97,12 +87,20 @@ export namespace vve {
 
 	template<typename... Args>
 	void VeTableChunk<Args...>::erase(VeHandle handle) {
-		if (handle.d_table_index.d_in_chunk_index < d_size - 1) {
-			//std::make_integer_sequence<Is...>(std::get<Is>(tuple) = std::get<Is>(d_data[handle.d_table_index.d_in_chunk_index]), 0);
+		VeInChunkIndex idx = handle.d_table_index.d_in_chunk_index;
 
-		}
+		if (!((uint32_t)(idx) < d_size)) { static_assert(std::false_type); }
 
+		--d_size;
 
+		if (idx == d_size) return;
+
+		static_for<std::size_t, 0, std::tuple_size_v<tuple_type>>([&, this](auto i) {
+			std::swap(	std::get<i>(d_data)[idx],
+						std::get<i>(d_data)[d_size]);
+		});
+
+		std::swap(d_slot_map_index[idx], d_slot_map_index[d_size]);
 	}
 
 
