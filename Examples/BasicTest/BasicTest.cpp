@@ -18,7 +18,9 @@ int main()
     auto vrt = decltype(map)::s_indices;
 
     VeTableChunk<uint64_t, float, uint64_t> ToAChunk;
-    std::cout << sizeof ToAChunk << "\n";
+    std::cout << sizeof(ToAChunk) << "\n";
+    VeHandle handle = ToAChunk.insert(VeGuid(0), { 4, 2.5f, 97 });
+
     VeTable< Typelist< uint64_t, float, uint64_t>, Typelist< VeHashMap< 1, 2, 3>, VeHashMap< 1, 3 >> > ToATable;
 
     VeTableChunk< std::tuple<uint64_t, float, uint64_t>> AoTChunk;
@@ -29,8 +31,6 @@ int main()
     auto tuple2 = std::make_tuple(1, 3.4, "333");
 
     std::cout << hash(tuple1) << " " << hash(tuple2) << "\n";
-
-    VeHandle handle;
 
     std::cout << "Hello World!\n";
 

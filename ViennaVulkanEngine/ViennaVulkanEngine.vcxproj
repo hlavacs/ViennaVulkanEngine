@@ -124,8 +124,7 @@
       <GenerateDebugInformation>true</GenerateDebugInformation>
     </Link>
     <PostBuildEvent>
-      <Command>
-      </Command>
+      <Command>copy *.ifc $(SolutionDir)Examples\BasicTest</Command>
     </PostBuildEvent>
     <PreBuildEvent>
       <Command>
@@ -173,8 +172,7 @@
       <GenerateDebugInformation>true</GenerateDebugInformation>
     </Link>
     <PostBuildEvent>
-      <Command>
-      </Command>
+      <Command>copy *.ifc $(SolutionDir)Examples\BasicTest</Command>
     </PostBuildEvent>
     <PreBuildEvent>
       <Command>
