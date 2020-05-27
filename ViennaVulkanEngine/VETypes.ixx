@@ -49,40 +49,36 @@ export namespace vve {
 	template <class T, class B = detail::empty_base<T> >
 	struct totally_ordered1 : less_than_comparable1<T, equality_comparable1<T, B> > {};
 
-
 	#define SAFE_TYPEDEF(T, D)												\
 	struct D : totally_ordered1< D, totally_ordered2< D, T > >				\
 	{																		\
-		auto NULL() { 														\
+		static T NULL() {													\
 			if constexpr (std::is_integral_v<T>) {							\
-				return D(std::numeric_limits<T>::max());					\
+				return std::numeric_limits<T>::max();						\
 			}																\
 			else {															\
-				return std::nullopt;										\
+				return T();													\
 			}																\
 		};																	\
-		T t;																\
-		explicit D(const T& t_) : t(t_) {};									\
-	    explicit D(T&& t_) : t(std::move(t_)) {};							\
-	    D() { t = NULL();};													\
+		T value;															\
+		explicit D(const T& t_) : value(t_) {};								\
+	    explicit D(T&& t_) : value(std::move(t_)) {};						\
+	    D() { value = NULL(); };											\
 	    D(const D & t_) = default;											\
 	    D(D&&) = default;													\
 	    D& operator=(const D & rhs) = default;								\
 	    D& operator=(D&&) = default;										\
-	    operator T& () { return t; }										\
-	    bool operator==(const D & rhs) const { return t == rhs.t; }			\
-	    bool operator<(const D & rhs) const { return t < rhs.t; }			\
+	    operator T& () { return value; }									\
+	    bool operator==(const D & rhs) const { return value == rhs.value; }	\
+	    bool operator<(const D & rhs) const { return value < rhs.value; }	\
 	};
+
 
 	//----------------------------------------------------------------------------------
 	//basic data types
 
-	SAFE_TYPEDEF(uint16_t, VeIndex16);
 	SAFE_TYPEDEF(uint32_t, VeIndex32);
 	SAFE_TYPEDEF(uint32_t, VeIndex64);
-
-	SAFE_TYPEDEF(uint16_t, VeNextIndex16);
-	SAFE_TYPEDEF(uint32_t, VeNextIndex32);
 
 	SAFE_TYPEDEF(uint16_t, VeChunkIndex16);
 	SAFE_TYPEDEF(uint32_t, VeChunkIndex32);
@@ -90,12 +86,8 @@ export namespace vve {
 	SAFE_TYPEDEF(uint16_t, VeInChunkIndex16);
 	SAFE_TYPEDEF(uint32_t, VeInChunkIndex32);
 
-	SAFE_TYPEDEF(uint32_t, VeSize32);
-	SAFE_TYPEDEF(uint64_t, VeSize64);
-
 	SAFE_TYPEDEF(uint32_t, VeGuid32);
 	SAFE_TYPEDEF(uint64_t, VeGuid64);
-
 
 	//----------------------------------------------------------------------------------
 	//define the size of GUIDs - either 32 or 64
@@ -105,11 +97,9 @@ export namespace vve {
 	//----------------------------------------------------------------------------------
 	//the other data structures follow
 
-	using VeIndex = typename std::conditional < std::is_same<VeGuid, VeGuid32>::value, VeIndex32, VeIndex64 >::type;
-	using VeSize = typename std::conditional < std::is_same<VeGuid, VeGuid32>::value, VeSize32, VeSize64 >::type;
-	using VeChunkIndex		= typename std::conditional < std::is_same<VeGuid, VeGuid32>::value, VeChunkIndex16, VeChunkIndex32 >::type;
-	using VeInChunkIndex	= typename std::conditional < std::is_same<VeGuid, VeGuid32>::value, VeInChunkIndex16, VeInChunkIndex32 >::type;
-
+	using VeIndex = typename std::conditional < std::is_same_v<VeGuid, VeGuid32>, VeIndex32, VeIndex64 >::type;
+	using VeChunkIndex = typename std::conditional < std::is_same_v<VeGuid, VeGuid32>, VeChunkIndex16, VeChunkIndex32 >::type;
+	using VeInChunkIndex = typename std::conditional < std::is_same_v<VeGuid, VeGuid32>, VeInChunkIndex16, VeInChunkIndex32 >::type;
 
 	//----------------------------------------------------------------------------------
 	//a table index consists of a chunk index and an in-chunk index, both packed into one integer
@@ -123,8 +113,8 @@ export namespace vve {
 	//a handle consists of a GUID and an table index
 
 	struct VeHandle {
-		VeGuid			d_guid;
-		VeTableIndex	d_table_index;
+		VeGuid	d_guid;
+		VeIndex	d_table_index;
 	};
 
 	//----------------------------------------------------------------------------------

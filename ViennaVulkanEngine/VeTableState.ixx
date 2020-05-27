@@ -6,10 +6,7 @@ import :VeMap;
 import :VeMemory;
 import :VeTableChunk;
 
-
-
 export namespace vve {
-
 
 	//----------------------------------------------------------------------------------
 	// Delare VeTableState
@@ -31,7 +28,9 @@ export namespace vve {
 		std::set<VeChunkIndex32>					m_free_chunks;			///chunks that are used and not full
 		std::set<VeChunkIndex32>					m_deleted_chunks;		///chunks that have been deleted -> empty slot
 
-		using map_type = std::tuple<VeHashMap<0>, TypesTwo...>;
+		VeSlotMap d_slot_map;
+
+		using map_type = std::tuple<TypesTwo...>;
 		map_type m_maps;
 
 	public:

@@ -13,16 +13,41 @@ export namespace vve {
     };
 
 
-    template<int NUM>
     struct VeSlotMap : VeMapBase {
-        VeInChunkIndex			        d_first_free;
+        VeIndex d_first_free;
 
-        std::array<VeGuid, NUM>			d_slot_guid;
-        std::array<VeInChunkIndex, NUM>	d_slot_next_index;
-        std::array<VeInChunkIndex, NUM>	d_hash_map;
+        struct slot_map_t {
+            VeGuid          d_guid;             //guid of entry
+            VeIndex         d_next;             //next free or next with same GUID hash map index
+            VeTableIndex    d_table_index;      //points to chunk and in chunk entry
+        };
 
-        VeSlotMap() : d_first_free(VeInChunkIndex(0)) {};
+        std::vector<slot_map_t>	d_slot_map;
+        std::vector<VeIndex>    d_hash_map;
+
+        VeSlotMap() : d_first_free() {};
+        VeIndex         insert( VeGuid guid, VeTableIndex table_index );
+        VeTableIndex    at(VeIndex index);
+        void            erase(VeIndex index);
     };
+
+    VeIndex VeSlotMap::insert(VeGuid guid, VeTableIndex table_index) {
+        VeIndex idx = d_first_free;
+        if (d_first_free != VeIndex::NULL()) {
+            d_first_free = d_slot_map[idx].d_next;
+        }
+        return idx;
+    }
+
+    VeTableIndex VeSlotMap::at(VeIndex index) {
+        return VeTableIndex();
+    }
+
+
+    void VeSlotMap::erase(VeIndex index) {
+
+    }
+
 
 
     template<int... Is>

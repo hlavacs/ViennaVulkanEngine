@@ -11,17 +11,21 @@ int main()
     std::cout << sizeof(VeTableIndex) << std::endl;
     std::cout << sizeof(VeHandle) << std::endl;
 
-    std::cout << sizeof(VeSlotMap<1>) << std::endl;
-    std::cout << sizeof(VeSlotMap<511>)/511 << std::endl;
-
     VeHashMap<1, 2, 3> map;
     auto vrt = decltype(map)::s_indices;
 
     VeTableChunk<uint64_t, float, uint64_t> ToAChunk;
     std::cout << sizeof(ToAChunk) << "\n";
-    VeHandle handle = ToAChunk.insert(VeGuid(0), { 4, 2.5f, 97 });
+    auto idx1 = ToAChunk.insert( { 4, 2.0f, 90 }, VeIndex32(1));
+    auto idx = ToAChunk.insert( { 5, 2.5f, 97 }, VeIndex32(2));
+    idx = ToAChunk.insert({ 6, 2.5f, 97 }, VeIndex32(3));
+    idx = ToAChunk.insert({ 7, 2.5f, 97 }, VeIndex32(4));
+    idx = ToAChunk.insert({ 8, 2.5f, 97 }, VeIndex32(5));
+    idx = ToAChunk.insert({ 9, 2.5f, 97 }, VeIndex32(6));
 
-    auto tuple = ToAChunk.find(handle);
+    auto tuple = ToAChunk.at(idx1);
+    ToAChunk.erase(idx1);
+    ToAChunk.erase(idx);
 
     VeTable< Typelist< uint64_t, float, uint64_t>, Typelist< VeHashMap< 1, 2, 3>, VeHashMap< 1, 3 >> > ToATable;
 

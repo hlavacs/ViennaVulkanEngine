@@ -6,10 +6,6 @@ import :VeUtil;
 import :VeMap;
 import :VeMemory;
 
-namespace vve {
-
-};
-
 export namespace vve {
 
 	const uint32_t VE_TABLE_CHUNK_SIZE = 1 << 14;
@@ -40,10 +36,11 @@ export namespace vve {
 		VeTableChunk( const VeTableChunk &) = delete;
 		~VeTableChunk() = default;
 
-		VeHandle insert(VeGuid guid, tuple_type entry);
-		VeHandle insert(VeGuid guid, tuple_type entry, std::shared_ptr<VeHandle> handle);
-		std::optional<tuple_type> find(VeHandle handle);
-		void erase(VeHandle handle);
+		VeInChunkIndex				insert(tuple_type entry, VeIndex32 slot_index);
+		void						update(tuple_type entry, VeInChunkIndex in_chunk_index);
+		std::optional<tuple_type>	at(VeInChunkIndex in_chunk_index);
+		void						erase(VeInChunkIndex in_chunk_index);
+		auto						data();
 	};
 
 	template<typename... Args>
@@ -55,29 +52,32 @@ export namespace vve {
 	}
 	
 	template<typename... Args>
-	VeHandle VeTableChunk<Args...>::insert(VeGuid guid, tuple_type entry) {
+	VeInChunkIndex VeTableChunk<Args...>::insert(tuple_type entry, VeIndex32 slot_index) {
 		static_for<std::size_t, 0, std::tuple_size_v<tuple_type>>( [&,this](auto i) { 
 			std::get<i>(d_data)[d_size] = std::get<i>(entry); 
 		});
+		d_slot_map_index[d_size] = slot_index;
 
-		return VeHandle{ guid, {d_chunk_index, VeInChunkIndex(d_size++)} };
+		return VeInChunkIndex(d_size++);
 	}
 
 	template<typename... Args>
-	VeHandle VeTableChunk<Args...>::insert(VeGuid guid, tuple_type entry, std::shared_ptr<VeHandle> handle) {
+	void VeTableChunk<Args...>::update(tuple_type entry, VeInChunkIndex in_chunk_index) {
+		if(!(in_chunk_index.value < d_size)) return;
+
 		static_for<std::size_t, 0, std::tuple_size_v<tuple_type>>([&, this](auto i) {
-			std::get<i>(d_data)[d_size] = std::get<i>(entry);
+			std::get<i>(d_data)[in_chunk_index] = std::get<i>(entry);
 		});
 
-		return *handle = VeHandle{ guid, {d_chunk_index, d_size++} } ;
+		return VeInChunkIndex(d_size++);
 	}
 
 	template<typename... Args>
-	std::optional<std::tuple<Args...>> VeTableChunk<Args...>::find(VeHandle handle) {
-		if (handle.d_table_index.d_in_chunk_index < d_size) {
+	std::optional<std::tuple<Args...>> VeTableChunk<Args...>::at(VeInChunkIndex in_chunk_index) {
+		if ( in_chunk_index < d_size) {
 			tuple_type tuple;
 			static_for<std::size_t, 0, std::tuple_size_v<tuple_type>>([&, this](auto i) {
-				std::get<i>(tuple) = std::get<i>(d_data)[handle.d_table_index.d_in_chunk_index];
+				std::get<i>(tuple) = std::get<i>(d_data)[in_chunk_index];
 			});
 
 			return std::optional<tuple_type>(tuple);
@@ -86,23 +86,25 @@ export namespace vve {
 	}
 
 	template<typename... Args>
-	void VeTableChunk<Args...>::erase(VeHandle handle) {
-		VeInChunkIndex idx = handle.d_table_index.d_in_chunk_index;
-
-		if (!((uint32_t)(idx) < d_size)) { static_assert(std::false_type); }
+	void VeTableChunk<Args...>::erase(VeInChunkIndex in_chunk_index ) {
+		if (!(in_chunk_index < d_size)) { return; }
 
 		--d_size;
 
-		if (idx == d_size) return;
+		if (in_chunk_index == d_size) return;
 
 		static_for<std::size_t, 0, std::tuple_size_v<tuple_type>>([&, this](auto i) {
-			std::swap(	std::get<i>(d_data)[idx],
+			std::swap(	std::get<i>(d_data)[in_chunk_index],
 						std::get<i>(d_data)[d_size]);
 		});
 
-		std::swap(d_slot_map_index[idx], d_slot_map_index[d_size]);
+		std::swap(d_slot_map_index[in_chunk_index], d_slot_map_index[d_size]);
 	}
 
+	template<typename... Args>
+	auto VeTableChunk<Args...>::data() {
+		return &d_data;
+	}
 
 };
 
