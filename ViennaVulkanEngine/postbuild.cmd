@@ -1,1 +1,2 @@
-move $(ProjectDir)*.ifc $(SolutionDir)bin\$(Platform)\$(Configuration)\
+copy *.ifc ..\Examples\BasicTest
+

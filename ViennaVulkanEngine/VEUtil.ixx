@@ -1,9 +1,58 @@
-export module VVE:VeUtilClock;
+export module VVE:VeUtil;
 
 import std.core;
 
 export namespace vve {
 
+	//----------------------------------------------------------------------------------
+	//static for loop
+
+	template <typename T, T Begin, class Func, T ...Is>
+	constexpr void static_for_impl(Func&& f, std::integer_sequence<T, Is...>) {
+		(f(std::integral_constant<T, Begin + Is>{ }), ...);
+	}
+
+	template <typename T, T Begin, T End, class Func >
+	constexpr void static_for(Func&& f) {
+		static_for_impl<T, Begin>(std::forward<Func>(f), std::make_integer_sequence<T, End - Begin>{ });
+	}
+
+	//----------------------------------------------------------------------------------
+	//extract sub tuple
+
+	template <typename T, int... Is>
+	auto makeKey(T& t) {
+		return std::tuple(std::get<Is>(t) ...);
+	}
+
+	template <typename T, int... Is>
+	struct typed_map {
+
+		std::map<T, int> m;
+		typed_map() : m() {};
+
+		void mapValue(T& t, int val) {
+			auto key = makeKey<T, Is...>(t);
+			m[key] = val;
+		};
+	};
+
+	//----------------------------------------------------------------------------------
+	//create tuple of arrays from tuple (experimental)
+
+	template<class Tuple, std::size_t... Is>
+	auto ToA_impl(const Tuple& t, std::index_sequence<Is...>) {
+		return std::make_tuple(std::array<std::tuple_element<Is, Tuple>::type, 10>{} ...);
+	}
+
+	template<class... Args>
+	auto ToA(const std::tuple<Args...>& t) {
+		const uint32_t VE_TABLE_CHUNK_NUMBER = 1 << 14 / sizeof(t);
+		return ToA_impl(t, std::index_sequence_for<Args...>{});
+	}
+
+	//----------------------------------------------------------------------------------
+	//clock class
 
 	class VeClock {
 		std::chrono::high_resolution_clock::time_point m_last;

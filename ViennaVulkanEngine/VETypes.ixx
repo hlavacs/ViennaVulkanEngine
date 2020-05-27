@@ -53,12 +53,12 @@ export namespace vve {
 	#define SAFE_TYPEDEF(T, D)												\
 	struct D : totally_ordered1< D, totally_ordered2< D, T > >				\
 	{																		\
-		static D NULL() { 													\
+		auto NULL() { 														\
 			if constexpr (std::is_integral_v<T>) {							\
 				return D(std::numeric_limits<T>::max());					\
 			}																\
 			else {															\
-				return T();													\
+				return std::nullopt;										\
 			}																\
 		};																	\
 		T t;																\
@@ -156,6 +156,7 @@ export namespace vve {
 
 	//----------------------------------------------------------------------------------
 	// A template to hold a parameter pack
+
 	template < typename... >
 	struct Typelist {};
 

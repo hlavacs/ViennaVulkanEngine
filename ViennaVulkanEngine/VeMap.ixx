@@ -6,22 +6,7 @@ import :VeMemory;
 
 
 export namespace vve {
-    template <typename T, int... Is>
-    auto makeKey(T& t) {
-        return std::tuple(std::get<Is>(t) ...);
-    }
 
-    template <typename T, int... Is>
-    struct typed_map {
-
-        std::map<T, int> m;
-        typed_map() : m() {};
-
-        void mapValue(T& t, int val) {
-            auto key = makeKey<T, Is...>(t);
-            m[key] = val;
-        };
-    };
 
 
     struct VeMapBase {
@@ -35,7 +20,6 @@ export namespace vve {
         std::array<VeGuid, NUM>			d_slot_guid;
         std::array<VeInChunkIndex, NUM>	d_slot_next_index;
         std::array<VeInChunkIndex, NUM>	d_hash_map;
-        std::array<VeInChunkIndex, NUM>	d_slot_map_index;
 
         VeSlotMap() : d_first_free(VeInChunkIndex(0)) {};
     };
