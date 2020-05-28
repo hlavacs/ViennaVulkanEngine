@@ -52,12 +52,12 @@ export namespace vve {
 	#define SAFE_TYPEDEF(T, D)												\
 	struct D : totally_ordered1< D, totally_ordered2< D, T > >				\
 	{																		\
-		static T NULL() {													\
+		static D NULL() {													\
 			if constexpr (std::is_integral_v<T>) {							\
-				return std::numeric_limits<T>::max();						\
+				return D(std::numeric_limits<T>::max());						\
 			}																\
 			else {															\
-				return T();													\
+				return D();													\
 			}																\
 		};																	\
 		T value;															\
@@ -71,14 +71,18 @@ export namespace vve {
 	    operator T& () { return value; }									\
 	    bool operator==(const D & rhs) const { return value == rhs.value; }	\
 	    bool operator<(const D & rhs) const { return value < rhs.value; }	\
-	};
+	}; 
+	//template<typename D>					\
+	//std::size_t hash(D const& val) {		\
+	//	return std::hash(val.value);		\
+	//};
 
 
 	//----------------------------------------------------------------------------------
 	//basic data types
 
 	SAFE_TYPEDEF(uint32_t, VeIndex32);
-	SAFE_TYPEDEF(uint32_t, VeIndex64);
+	SAFE_TYPEDEF(uint64_t, VeIndex64);
 
 	SAFE_TYPEDEF(uint16_t, VeChunkIndex16);
 	SAFE_TYPEDEF(uint32_t, VeChunkIndex32);
