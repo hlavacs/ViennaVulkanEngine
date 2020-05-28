@@ -54,10 +54,10 @@ export namespace vve {
 	{																		\
 		static D NULL() {													\
 			if constexpr (std::is_integral_v<T>) {							\
-				return D(std::numeric_limits<T>::max());						\
+				return D(std::numeric_limits<T>::max());					\
 			}																\
 			else {															\
-				return D();													\
+				return D(T());												\
 			}																\
 		};																	\
 		T value;															\
@@ -72,10 +72,6 @@ export namespace vve {
 	    bool operator==(const D & rhs) const { return value == rhs.value; }	\
 	    bool operator<(const D & rhs) const { return value < rhs.value; }	\
 	}; 
-	//template<typename D>					\
-	//std::size_t hash(D const& val) {		\
-	//	return std::hash(val.value);		\
-	//};
 
 
 	//----------------------------------------------------------------------------------
