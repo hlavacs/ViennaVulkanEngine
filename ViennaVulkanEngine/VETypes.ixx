@@ -4,82 +4,11 @@ import std.core;
 
 export namespace vve {
 
-	//----------------------------------------------------------------------------------
-	//lifted from Boost, to convert integers into strong types
-
-	namespace detail {
-		template <typename T> class empty_base {};
-	}
-
-	template <class T, class U, class B = detail::empty_base<T> >
-	struct less_than_comparable2 : B
-	{
-		friend bool operator<=(const T& x, const U& y) { return !(x > y); }
-		friend bool operator>=(const T& x, const U& y) { return !(x < y); }
-		friend bool operator>(const U& x, const T& y) { return y < x; }
-		friend bool operator<(const U& x, const T& y) { return y > x; }
-		friend bool operator<=(const U& x, const T& y) { return !(y < x); }
-		friend bool operator>=(const U& x, const T& y) { return !(y > x); }
-	};
-
-	template <class T, class B = detail::empty_base<T> >
-	struct less_than_comparable1 : B
-	{
-		friend bool operator>(const T& x, const T& y) { return y < x; }
-		friend bool operator<=(const T& x, const T& y) { return !(y < x); }
-		friend bool operator>=(const T& x, const T& y) { return !(x < y); }
-	};
-
-	template <class T, class U, class B = detail::empty_base<T> >
-	struct equality_comparable2 : B
-	{
-		friend bool operator==(const U& y, const T& x) { return x == y; }
-		friend bool operator!=(const U& y, const T& x) { return !(x == y); }
-		friend bool operator!=(const T& y, const U& x) { return !(y == x); }
-	};
-
-	template <class T, class B = detail::empty_base<T> >
-	struct equality_comparable1 : B {
-		friend bool operator!=(const T& x, const T& y) { return !(x == y); }
-	};
-
-	template <class T, class U, class B = detail::empty_base<T> >
-	struct totally_ordered2 : less_than_comparable2<T, U, equality_comparable2<T, U, B> > {};
-
-	template <class T, class B = detail::empty_base<T> >
-	struct totally_ordered1 : less_than_comparable1<T, equality_comparable1<T, B> > {};
-
-
-	#define SAFE_TYPEDEF(T, D)												\
-	struct D : totally_ordered1< D, totally_ordered2< D, T > >				\
-	{																		\
-		static D NULL() {													\
-			if constexpr (std::is_integral_v<T>) {							\
-				return D(std::numeric_limits<T>::max());					\
-			}																\
-			else {															\
-				return D(T());												\
-			}																\
-		};																	\
-		T value;															\
-	    D() { value = NULL(); };											\
-		explicit D(const T& t_) : value((T)t_) {};							\
-		explicit D(T& t_) : value((T)t_) {};								\
-	    explicit D(T&& t_) : value(std::move((T)t_)) {};					\
-	    D(const D & t_) = default;											\
-	    D(D&&) = default;													\
-	    D& operator=(const D & rhs) = default;								\
-	    D& operator=(D&&) = default;										\
-	    operator T& () { return value; }									\
-	    bool operator==(const D & rhs) const { return value == rhs.value; }	\
-	    auto operator<(const D & rhs) const { return value < rhs.value; }	\
-	}; 
 
 	//----------------------------------------------------------------------------------
 	//basic data types
 
-
-	template<typename T>
+	template<typename T, typename Phantom>
 	struct IntType {
 		static T NULL() { return T(std::numeric_limits<T>::max()); };
 		T value;
@@ -90,31 +19,23 @@ export namespace vve {
 		auto operator<=>(const T& v) { return value <=> v; };
 	};
 
-	using VeIndex = IntType<uint32_t>;
-
-	SAFE_TYPEDEF(uint32_t, VeIndex32);
-	SAFE_TYPEDEF(uint64_t, VeIndex64);
-
-	SAFE_TYPEDEF(uint16_t, VeChunkIndex16);
-	SAFE_TYPEDEF(uint32_t, VeChunkIndex32);
-
-	SAFE_TYPEDEF(uint16_t, VeInChunkIndex16);
-	SAFE_TYPEDEF(uint32_t, VeInChunkIndex32);
-
-	SAFE_TYPEDEF(uint32_t, VeGuid32);
-	SAFE_TYPEDEF(uint64_t, VeGuid64);
-
 	//----------------------------------------------------------------------------------
 	//define the size of GUIDs - either 32 or 64
 
-	using VeGuid = VeGuid32; //or VeGuid64
+	struct P0 {};
+	struct P1 {};
+	struct P2 {};
+	struct P3 {};
 
-	//----------------------------------------------------------------------------------
-	//the other data structures follow
+	using VeGuid = IntType<uint32_t, P0>;
+	using VeIndex = IntType<uint32_t, P1>;
+	using VeChunkIndex = IntType<uint16_t, P2>;
+	using VeInChunkIndex = IntType<uint16_t, P3>;
 
-	//using VeIndex = typename std::conditional < std::is_same_v<VeGuid, VeGuid32>, VeIndex32, VeIndex64 >::type;
-	using VeChunkIndex = typename std::conditional < std::is_same_v<VeGuid, VeGuid32>, VeChunkIndex16, VeChunkIndex32 >::type;
-	using VeInChunkIndex = typename std::conditional < std::is_same_v<VeGuid, VeGuid32>, VeInChunkIndex16, VeInChunkIndex32 >::type;
+	/*using VeGuid = IntType<uint64_t, P0>;
+	using VeIndex = IntType<uint32_t, P1>;
+	using VeChunkIndex = IntType<uint32_t, P2>;
+	using VeInChunkIndex = IntType<uint32_t, P3>;*/
 
 	//----------------------------------------------------------------------------------
 	//a table index consists of a chunk index and an in-chunk index, both packed into one integer
@@ -124,7 +45,8 @@ export namespace vve {
 		VeChunkIndex	d_chunk_index;
 		VeInChunkIndex	d_in_chunk_index;
 		VeTableIndex() : d_chunk_index(VeChunkIndex::NULL()), d_in_chunk_index(VeInChunkIndex::NULL()) {};
-		auto operator<=>(const VeTableIndex&) const = default;
+		auto operator==(const VeTableIndex& v) { return d_chunk_index == v.d_chunk_index && d_in_chunk_index == v.d_in_chunk_index; };
+		auto operator!=(const VeTableIndex& v) { return !(d_chunk_index == v.d_chunk_index && d_in_chunk_index == v.d_in_chunk_index); };
 	};
 
 	//----------------------------------------------------------------------------------
@@ -135,7 +57,9 @@ export namespace vve {
 		VeGuid	d_guid;
 		VeIndex	d_index;
 		VeHandle() : d_guid(VeGuid::NULL()), d_index(VeIndex::NULL()) {};
-		auto operator<=>(const VeHandle&) const = default;
+		VeHandle(const VeHandle& v) : d_guid(v.d_guid), d_index(v.d_index) {};
+		auto operator==(const VeHandle& v) { return d_guid.value == v.d_guid.value; };
+		auto operator!=(const VeHandle& v) { return !(d_guid.value == v.d_guid.value); };
 	};
 
 	//----------------------------------------------------------------------------------

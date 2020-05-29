@@ -12,6 +12,11 @@ int main()
 
     test(3);
 
+    VeHandle handle1;
+    VeHandle handle2;
+
+    //if (handle1 == handle2) return 0;
+
     std::cout << sizeof(VeTableIndex) << std::endl;
     std::cout << sizeof(VeHandle) << std::endl;
 

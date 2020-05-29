@@ -42,7 +42,7 @@ export namespace vve {
 		enum class VeNumStates { ONE, TWO };
 		enum class VeOnSwapDo { CLEAR, COPY };
 
-		VeIndex32							m_thread_idx;
+		VeIndex								m_thread_idx;
 		std::unique_ptr<VeTableStateType>	m_current_state;
 		std::unique_ptr<VeTableStateType>	m_next_state;
 		VeOnSwapDo							m_on_swap_do;
@@ -54,7 +54,7 @@ export namespace vve {
 		//-------------------------------------------------------------------------------
 		//read operations
 
-		VeIndex32 getThreadIdx();
+		VeIndex getThreadIdx();
 		auto getCurrentState();
 		auto getNextState();
 		auto find( VeHandle handle );
@@ -62,7 +62,7 @@ export namespace vve {
 		//-------------------------------------------------------------------------------
 		//write operations
 
-		void setThreadIdx(VeIndex32 idx);
+		void setThreadIdx(VeIndex idx);
 		void clear();
 		auto insert(VeGuid guid, tuple_type entry);
 		auto insert(VeGuid guid, tuple_type entry, std::shared_ptr<VeHandle> handle);
@@ -80,7 +80,7 @@ export namespace vve {
 	//read operations
 
 	template<typename... TypesOne, typename... TypesTwo>
-	VeIndex32 VeTableType::getThreadIdx() {
+	VeIndex VeTableType::getThreadIdx() {
 		return m_thread_idx;
 	}
 
@@ -100,7 +100,7 @@ export namespace vve {
 	//write operations
 
 	template<typename... TypesOne, typename... TypesTwo>
-	void VeTableType::setThreadIdx(VeIndex32 idx) {
+	void VeTableType::setThreadIdx(VeIndex idx) {
 		m_thread_idx = idx;
 	}
 

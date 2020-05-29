@@ -26,9 +26,9 @@ export namespace vve {
 		using map_type = std::tuple<TypesTwo...>;
 
 		std::vector<chunk_ptr>		m_chunks;				///pointers to table chunks
-		std::set<VeChunkIndex32>	m_full_chunks;			///chunks that are used and full
-		std::set<VeChunkIndex32>	m_free_chunks;			///chunks that are used and not full
-		std::set<VeChunkIndex32>	m_deleted_chunks;		///chunks that have been deleted -> empty slot
+		std::set<VeChunkIndex>	m_full_chunks;			///chunks that are used and full
+		std::set<VeChunkIndex>	m_free_chunks;			///chunks that are used and not full
+		std::set<VeChunkIndex>	m_deleted_chunks;		///chunks that have been deleted -> empty slot
 
 		VeSlotMap	d_slot_map;
 		map_type	m_maps;

@@ -119,7 +119,7 @@ export namespace vve {
 
 		--d_size;
 
-		if (in_chunk_index == d_size) return VeIndex::NULL();
+		if (in_chunk_index.value == d_size) return VeIndex::NULL();
 
 		static_for<std::size_t, 0, std::tuple_size_v<tuple_type>>([&, this](auto i) {
 			std::swap(	std::get<i>(d_data)[in_chunk_index],

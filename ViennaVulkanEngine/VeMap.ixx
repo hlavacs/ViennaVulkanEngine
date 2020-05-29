@@ -91,12 +91,12 @@ export namespace vve {
 
         struct slot_map_t {
             VeTableIndex d_table_index;     ///points to table entry
-            VeIndex32    d_next_index;      ///next entry with same hashed slot value
-            VeIndex32    d_next_free;
+            VeIndex    d_next_index;      ///next entry with same hashed slot value
+            VeIndex    d_next_free;
         };
 
         std::vector<slot_map_t> d_slot_map;     //slot map points to table entry
-        std::vector<VeIndex32>  d_hash_map;     //hashed value points to slot map
+        std::vector<VeIndex>  d_hash_map;     //hashed value points to slot map
 
         VeHashMap() : d_slot_map(initial_hash_map_size), d_hash_map(initial_hash_map_size) {
             d_slot_map.clear();
