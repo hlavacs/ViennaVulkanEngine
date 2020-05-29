@@ -2,11 +2,15 @@ import std.core;
 
 import VVE;
 
+void test(vve::VeIndex idx) {
 
+}
 
 int main()
 {
     using namespace vve;
+
+    test(3);
 
     std::cout << sizeof(VeTableIndex) << std::endl;
     std::cout << sizeof(VeHandle) << std::endl;
@@ -16,12 +20,12 @@ int main()
 
     VeTableChunk<uint64_t, float, uint64_t> ToAChunk;
     std::cout << sizeof(ToAChunk) << "\n";
-    auto idx1 = ToAChunk.insert( { 4, 2.0f, 90 }, VeIndex32(1));
-    auto idx = ToAChunk.insert( { 5, 2.5f, 97 }, VeIndex32(2));
-    idx = ToAChunk.insert({ 6, 2.5f, 97 }, VeIndex32(3));
-    idx = ToAChunk.insert({ 7, 2.5f, 97 }, VeIndex32(4));
-    idx = ToAChunk.insert({ 8, 2.5f, 97 }, VeIndex32(5));
-    idx = ToAChunk.insert({ 9, 2.5f, 97 }, VeIndex32(6));
+    auto idx1 = ToAChunk.insert( { 4, 2.0f, 90 }, VeIndex(1));
+    auto idx = ToAChunk.insert( { 5, 2.5f, 97 }, VeIndex(2));
+    idx = ToAChunk.insert({ 6, 2.5f, 97 }, VeIndex(3));
+    idx = ToAChunk.insert({ 7, 2.5f, 97 }, VeIndex(4));
+    idx = ToAChunk.insert({ 8, 2.5f, 97 }, VeIndex(5));
+    idx = ToAChunk.insert({ 9, 2.5f, 97 }, VeIndex(6));
 
     auto tuple = ToAChunk.at(idx1);
     ToAChunk.erase(idx1);

@@ -4,7 +4,6 @@ import std.core;
 import :VeTypes;
 import :VeMemory;
 
-
 export namespace vve {
 
     ///----------------------------------------------------------------------------------
@@ -21,6 +20,8 @@ export namespace vve {
 
     struct VeSlotMap : VeMapBase {
         VeIndex d_first_free;
+        static const uint32_t initial_hash_map_size = 64;
+
 
         struct slot_map_t {
             VeGuid          d_guid;             ///guid of entry
@@ -31,43 +32,42 @@ export namespace vve {
         };
 
         std::vector<slot_map_t>	d_slot_map;     ///map pointing to entries in chunks
-        std::vector<VeIndex>    d_hash_map;     ///hashed GUIDs pointing to indices in the slot map
 
-        VeSlotMap() : d_first_free(VeIndex::NULL()), d_slot_map(), d_hash_map() {};
-        VeIndex         insert( VeGuid guid, VeTableIndex table_index );
-        VeTableIndex    at(VeHandle handle);
-        void            erase(VeHandle handle);
+        VeSlotMap() : d_first_free(VeIndex::NULL()), d_slot_map() {};
+        VeIndex                     insert( VeGuid guid, VeTableIndex table_index );
+        std::optional<VeTableIndex> at(VeHandle handle);
+        void                        erase(VeHandle handle);
     };
 
     ///----------------------------------------------------------------------------------
     /// \brief Insert a new item into the slot map and the hash map
     /// \param[in] guid The GUID of the new item
-    /// \param[in] table_index The table index of the item that ias inserted
+    /// \param[in] table_index The table index of the item that is inserted
     /// \returns the fixed slot map index of the new item to be stored in handles and other maps
     ///----------------------------------------------------------------------------------
     VeIndex VeSlotMap::insert(VeGuid guid, VeTableIndex table_index) {
-        VeIndex idx;
-        //VeIndex hash_index = VeIndex( std::hash<decltype(guid)>()(guid) );
-
-        if (d_first_free != VeIndex::NULL()) {      //there is a free slot
-            idx = d_first_free;                     //point to the slot to use
-            d_first_free = d_slot_map[idx].d_next;  //point to the next free slot or NULL
-            d_slot_map[idx] = { guid, table_index, VeIndex::NULL() };
+        VeIndex new_slot;
+ 
+        if (d_first_free != VeIndex::NULL()) {              //there is a free slot in the slot map
+            new_slot = d_first_free;                        //point to the free slot to use
+            d_first_free = d_slot_map[new_slot].d_next;     //let first_free point to the next free slot or NULL
+            d_slot_map[new_slot] = { guid, table_index, VeIndex::NULL() };
         }
         else {
-            idx = VeIndex(d_slot_map.size());       //point to the new slot
-            d_slot_map.emplace_back(guid, table_index, VeIndex::NULL()); //create the new slot
+            new_slot = VeIndex((decltype(VeIndex::value))d_slot_map.size());    //point to the new slot
+            d_slot_map.emplace_back(guid, table_index, VeIndex::NULL());        //create the new slot
         }
-
-        return idx;
+        return new_slot;
     }
 
     ///----------------------------------------------------------------------------------
     /// \brief
     ///----------------------------------------------------------------------------------
-    VeTableIndex VeSlotMap::at(VeHandle handle) {
+    std::optional<VeTableIndex> VeSlotMap::at(VeHandle handle) {
+        if(!(handle.d_index < d_slot_map.size())) return std::nullopt;
 
-        return VeTableIndex();
+        if (d_slot_map[handle.d_index].d_guid == handle.d_guid) return d_slot_map[handle.d_index].d_table_index;
+        return std::nullopt;
     }
 
 
@@ -87,7 +87,7 @@ export namespace vve {
     template<int... Is>
     struct VeHashMap : VeMapBase {
         static constexpr auto s_indices = std::make_tuple(Is...);
-        static const uint32_t initial_size = 64;
+        static const uint32_t initial_hash_map_size = 64;
 
         struct slot_map_t {
             VeTableIndex d_table_index;     ///points to table entry
@@ -98,7 +98,7 @@ export namespace vve {
         std::vector<slot_map_t> d_slot_map;     //slot map points to table entry
         std::vector<VeIndex32>  d_hash_map;     //hashed value points to slot map
 
-        VeHashMap() : d_slot_map(initial_size), d_hash_map(initial_size) {
+        VeHashMap() : d_slot_map(initial_hash_map_size), d_hash_map(initial_hash_map_size) {
             d_slot_map.clear();
         }
     };
