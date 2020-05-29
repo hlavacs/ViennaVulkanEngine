@@ -26,7 +26,7 @@ export namespace vve {
         struct slot_map_t {
             VeGuid          d_guid;             ///guid of entry
             VeTableIndex    d_table_index;      ///points to chunk and in chunk entry
-            VeIndex         d_next;             ///next free or next with same GUID hash map index
+            VeIndex         d_next;             ///next free slot or NULL
             slot_map_t(VeGuid guid, VeTableIndex table_index, VeIndex next) : ///in place consturctor
                 d_guid(guid), d_table_index(table_index), d_next(next) {};
         };
@@ -34,9 +34,9 @@ export namespace vve {
         std::vector<slot_map_t>	d_slot_map;     ///map pointing to entries in chunks
 
         VeSlotMap() : d_first_free(VeIndex::NULL()), d_slot_map() {};
-        VeIndex                     insert( VeGuid guid, VeTableIndex table_index );
-        std::optional<VeTableIndex> at(VeHandle handle);
-        void                        erase(VeHandle handle);
+        VeIndex         insert( VeGuid guid, VeTableIndex table_index );
+        VeTableIndex    at(VeHandle handle);
+        bool            erase(VeHandle handle);
     };
 
     ///----------------------------------------------------------------------------------
@@ -61,21 +61,30 @@ export namespace vve {
     }
 
     ///----------------------------------------------------------------------------------
-    /// \brief
+    /// \brief Get a table index from the slot map
+    /// \param[in] A handle holding the index to the slot map
+    /// \returns the table index or NULL
     ///----------------------------------------------------------------------------------
-    std::optional<VeTableIndex> VeSlotMap::at(VeHandle handle) {
-        if(!(handle.d_index < d_slot_map.size())) return std::nullopt;
+    VeTableIndex VeSlotMap::at(VeHandle handle) {
+        if(!(handle.d_index < d_slot_map.size())) return VeTableIndex::NULL();
 
         if (d_slot_map[handle.d_index].d_guid == handle.d_guid) return d_slot_map[handle.d_index].d_table_index;
-        return std::nullopt;
+        return VeTableIndex::NULL();
     }
 
-
     ///----------------------------------------------------------------------------------
-    /// \brief
+    /// \brief Erase an entry from the slot map
+    /// \param[in] The handle holding an index to the slot map
+    /// \returns true if the entry was found and removed, else false
     ///----------------------------------------------------------------------------------
-    void VeSlotMap::erase(VeHandle handle) {
-
+    bool VeSlotMap::erase(VeHandle handle) {
+        if (!(handle.d_index < d_slot_map.size())) return false;
+        if (d_slot_map[handle.d_index].d_guid == handle.d_guid) {
+            d_slot_map[handle.d_index] = { VeIndex::NULL(), VeTableIndex::NULL(), d_first_free };
+            d_first_free = handle.d_index;
+            return true;
+        }
+        return false;
     }
 
 
