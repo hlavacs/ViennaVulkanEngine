@@ -5,6 +5,32 @@ import std.core;
 export namespace vve {
 
 	//----------------------------------------------------------------------------------
+	//hashing for tuples of hashable types
+
+	template<typename T>
+	concept Hashable = requires(T a) {
+		{ std::hash<T>{}(a) }->std::convertible_to<std::size_t>;
+	};
+
+	template <Hashable T>
+	inline auto hash_combine(std::size_t& seed, T v) {
+		seed ^= std::hash<T>()(v) + 0x9e3779b9 + (seed << 6) + (seed >> 2);
+		return seed;
+	}
+
+	template<typename T, std::size_t... Is>
+	auto hash_impl(T const& t, std::index_sequence<Is...> const&) {
+		size_t seed = 0;
+		(hash_combine(seed, std::get<Is>(t)) + ... + 0);
+		return seed;
+	}
+
+	template<typename... Args>
+	std::size_t hash(std::tuple<Args...> const& value) {
+		return hash_impl(value, std::make_index_sequence<sizeof...(Args)>());
+	}
+
+	//----------------------------------------------------------------------------------
 	//static for loop
 
 	template <typename T, T Begin, class Func, T ...Is>

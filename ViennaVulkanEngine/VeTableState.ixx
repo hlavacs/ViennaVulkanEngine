@@ -21,17 +21,20 @@ export namespace vve {
 
 		using tuple_type = std::tuple<TypesOne...>;
 		using chunk_type = VeTableChunk<TypesOne...>;
-		using chunk_ptr  = std::unique_ptr<chunk_type>;
 		static_assert(sizeof(chunk_type) <= VE_TABLE_CHUNK_SIZE);
-		using map_type = std::tuple<TypesTwo...>;
+		using chunk_ptr  = std::unique_ptr<chunk_type>;
+		//using map_type = std::tuple <TypesTwo... > ;
+		using map_type = std::unordered_map<std::size_t, VeIndex>;
 
-		std::vector<chunk_ptr>		m_chunks;				///pointers to table chunks
-		std::set<VeChunkIndex>	m_full_chunks;			///chunks that are used and full
-		std::set<VeChunkIndex>	m_free_chunks;			///chunks that are used and not full
-		std::set<VeChunkIndex>	m_deleted_chunks;		///chunks that have been deleted -> empty slot
+		//chunks
+		std::vector<chunk_ptr>		m_chunks;					///pointers to table chunks
+		std::stack<VeChunkIndex>	m_full_chunks;				///chunks that are used and full
+		std::stack<VeChunkIndex>	m_free_chunks;				///chunks that are used and not full
+		std::stack<VeChunkIndex>	m_deleted_chunks;			///chunks that have been deleted -> empty slot
 
-		VeSlotMap	d_slot_map;
-		map_type	m_maps;
+		//maps
+		std::unordered_map<VeHandle, VeTableIndex, VeHandle_hash>	m_slot_map;
+		std::array<map_type,sizeof...(TypesTwo)>	m_maps;
 
 	public:
 

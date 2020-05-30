@@ -1,6 +1,8 @@
 export module VVE:VeTypes;
 
 import std.core;
+import :VeUtil;
+
 
 export namespace vve {
 
@@ -17,6 +19,13 @@ export namespace vve {
 		IntType(const T& t) : value(t) {};
 		auto operator<=>(const IntType& v) const = default;
 		auto operator<=>(const T& v) { return value <=> v; };
+	};
+
+	struct InType_hash {
+		template<typename T, typename P>
+		std::size_t operator()(const IntType<T, P> & v) const {
+			return std::hash<decltype(v.value)>()(v.value);
+		}
 	};
 
 	//----------------------------------------------------------------------------------
@@ -49,6 +58,7 @@ export namespace vve {
 		auto operator!=(const VeTableIndex& v) { return !(d_chunk_index == v.d_chunk_index && d_in_chunk_index == v.d_in_chunk_index); };
 	};
 
+
 	//----------------------------------------------------------------------------------
 	//a handle consists of a GUID and an table index
 
@@ -58,36 +68,15 @@ export namespace vve {
 		VeIndex	d_index;
 		VeHandle() : d_guid(VeGuid::NULL()), d_index(VeIndex::NULL()) {};
 		VeHandle(const VeHandle& v) : d_guid(v.d_guid), d_index(v.d_index) {};
-		auto operator==(const VeHandle& v) { return d_guid.value == v.d_guid.value; };
-		auto operator!=(const VeHandle& v) { return !(d_guid.value == v.d_guid.value); };
+		bool operator==(const VeHandle& v) const { return d_guid.value == v.d_guid.value; };
+		bool operator!=(const VeHandle& v) const { return !(d_guid.value == v.d_guid.value); };
 	};
 
-	//----------------------------------------------------------------------------------
-	//hashing for tuples of hashable types
-
-	template<typename T>
-	concept Hashable = requires(T a) {
-		{ std::hash<T>{}(a) }->std::convertible_to<std::size_t>;
+	struct VeHandle_hash {
+		std::size_t operator()(const VeHandle& v) const {
+			return std::hash<decltype(v.d_guid.value)>()(v.d_guid.value);
+		}
 	};
-
-	template <Hashable T>
-	inline auto hash_combine(std::size_t& seed, T v) {
-		seed ^= std::hash<T>()(v) + 0x9e3779b9 + (seed << 6) + (seed >> 2);
-		return seed;
-	}
-
-	template<typename T, std::size_t... Is>
-	auto hash_impl(T const& t, std::index_sequence<Is...> const&) {
-		size_t seed = 0;
-		(hash_combine(seed, std::get<Is>(t)) + ... + 0);
-		return seed;
-	}
-
-	template<typename... Args>
-	std::size_t hash(std::tuple<Args...> const& value) {
-		return hash_impl(value, std::make_index_sequence<sizeof...(Args)>());
-	}
-
 
 	//----------------------------------------------------------------------------------
 	// A template to hold a parameter pack
@@ -95,4 +84,20 @@ export namespace vve {
 	template < typename... >
 	struct Typelist {};
 
+	template < int... >
+	struct Intlist {};
+
 };
+
+
+namespace std {
+
+	template<>
+	struct hash<vve::VeHandle> {
+		size_t operator()(const vve::VeHandle& v) const {
+			return hash<decltype(v.d_guid.value)>()(v.d_guid.value);
+		}
+	};
+
+}
+

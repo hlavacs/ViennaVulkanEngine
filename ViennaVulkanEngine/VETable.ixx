@@ -1,8 +1,8 @@
 export module VVE:VeTable;
 
 import std.core;
-import :VeTypes;
 import :VeUtil;
+import :VeTypes;
 import :VeMap;
 import :VeMemory;
 import :VeTableChunk;
