@@ -5,11 +5,17 @@
 
 namespace std {
 
+    template<typename... Args>
+    struct hash<tuple<Args...>> {
+        size_t operator()(const tuple<Args...> & v) {
+            return vve::hash_impl(v, make_index_sequence<sizeof...(Args)>());
+        }
+    };
 
     template<typename T, typename P>
     struct hash<vve::IntType<T,P>> {
-        std::size_t operator()(const vve::IntType<T, P>& v) const {
-            return std::hash<decltype(v.value)>()(v.value);
+        size_t operator()(const vve::IntType<T, P>& v) const {
+            return hash<decltype(v.value)>()(v.value);
         }
     };
 

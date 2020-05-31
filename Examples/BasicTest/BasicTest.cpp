@@ -54,7 +54,7 @@ int main()
     auto tuple1 = std::make_tuple(1);
     auto tuple2 = std::make_tuple(1, 3.4, "333");
 
-    std::cout << hash(tuple1) << " " << hash(tuple2) << "\n";
+    std::cout << std::hash<decltype(tuple1)>()(tuple1) << " " << std::hash<decltype(tuple2)>()(tuple2) << "\n";
 
     std::cout << "Hello World!\n";
 

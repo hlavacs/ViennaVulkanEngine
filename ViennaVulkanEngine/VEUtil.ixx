@@ -25,10 +25,6 @@ export namespace vve {
 		return seed;
 	}
 
-	template<typename... Args>
-	std::size_t hash(std::tuple<Args...> const& value) {
-		return hash_impl(value, std::make_index_sequence<sizeof...(Args)>());
-	}
 
 	//----------------------------------------------------------------------------------
 	//static for loop
