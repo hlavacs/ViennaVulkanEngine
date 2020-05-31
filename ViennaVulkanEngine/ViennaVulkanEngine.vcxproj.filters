@@ -29,6 +29,9 @@
     <ClInclude Include="vk_mem_alloc.h">
       <Filter>Headerdateien</Filter>
     </ClInclude>
+    <ClInclude Include="VETypes.h">
+      <Filter>Headerdateien</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="VETable.ixx">

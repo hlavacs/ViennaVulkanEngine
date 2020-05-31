@@ -21,12 +21,6 @@ export namespace vve {
 		auto operator<=>(const T& v) { return value <=> v; };
 	};
 
-	struct InType_hash {
-		template<typename T, typename P>
-		std::size_t operator()(const IntType<T, P> & v) const {
-			return std::hash<decltype(v.value)>()(v.value);
-		}
-	};
 
 	//----------------------------------------------------------------------------------
 	//define the size of GUIDs - either 32 or 64
@@ -72,11 +66,6 @@ export namespace vve {
 		bool operator!=(const VeHandle& v) const { return !(d_guid.value == v.d_guid.value); };
 	};
 
-	struct VeHandle_hash {
-		std::size_t operator()(const VeHandle& v) const {
-			return std::hash<decltype(v.d_guid.value)>()(v.d_guid.value);
-		}
-	};
 
 	//----------------------------------------------------------------------------------
 	// A template to hold a parameter pack
@@ -90,14 +79,7 @@ export namespace vve {
 };
 
 
-namespace std {
 
-	template<>
-	struct hash<vve::VeHandle> {
-		size_t operator()(const vve::VeHandle& v) const {
-			return hash<decltype(v.d_guid.value)>()(v.d_guid.value);
-		}
-	};
 
-}
+
 

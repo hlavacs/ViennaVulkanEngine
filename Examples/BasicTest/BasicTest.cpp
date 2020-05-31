@@ -1,16 +1,18 @@
 import std.core;
 
 import VVE;
+#include "VETypes.h"
 
 void test(vve::VeIndex idx) {
 
 }
 
 
+using namespace vve;
+
 
 int main()
 {
-    using namespace vve;
 
     test(3);
 
@@ -21,6 +23,8 @@ int main()
     VeIndex vidx1(1);
     VeIndex vidx2(2);
     if (vidx1 > vidx2) return 0;
+
+    std::unordered_map<VeGuid, int> wmap;
 
     std::cout << sizeof(VeTableIndex) << std::endl;
     std::cout << sizeof(VeHandle) << std::endl;

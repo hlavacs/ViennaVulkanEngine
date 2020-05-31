@@ -33,7 +33,7 @@ export namespace vve {
 		std::stack<VeChunkIndex>	m_deleted_chunks;			///chunks that have been deleted -> empty slot
 
 		//maps
-		std::unordered_map<VeHandle, VeTableIndex, VeHandle_hash>	m_slot_map;
+		std::unordered_map<VeHandle, VeTableIndex>	m_slot_map;
 		std::array<map_type,sizeof...(TypesTwo)>	m_maps;
 
 	public:

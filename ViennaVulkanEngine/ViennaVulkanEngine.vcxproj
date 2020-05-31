@@ -204,6 +204,7 @@
       <FileType>CppHeader</FileType>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">false</ExcludedFromBuild>
     </ClCompile>
+    <ClInclude Include="VETypes.h" />
     <ClInclude Include="vk_mem_alloc.h" />
   </ItemGroup>
   <ItemGroup>
