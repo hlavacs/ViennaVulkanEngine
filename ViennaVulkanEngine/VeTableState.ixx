@@ -1,6 +1,8 @@
 export module VVE:VeTableState;
 
 import std.core;
+import std.memory;
+
 import :VeTypes;
 import :VeMap;
 import :VeMemory;
@@ -24,21 +26,21 @@ export namespace vve {
 		static_assert(sizeof(chunk_type) <= VE_TABLE_CHUNK_SIZE);
 		using chunk_ptr  = std::unique_ptr<chunk_type>;
 		using map_type = std::tuple <TypesTwo... > ;
-		//using map_type = std::unordered_map<std::size_t, VeIndex>;
+		using allocator_type = std::pmr::polymorphic_allocator<std::byte>;
 
 		//chunks
-		std::vector<chunk_ptr>		m_chunks;					///pointers to table chunks
-		std::stack<VeChunkIndex>	m_full_chunks;				///chunks that are used and full
-		std::stack<VeChunkIndex>	m_free_chunks;				///chunks that are used and not full
-		std::stack<VeChunkIndex>	m_deleted_chunks;			///chunks that have been deleted -> empty slot
+		std::pmr::vector<chunk_ptr>		d_chunks;					///pointers to table chunks
+		std::pmr::vector<VeChunkIndex>	d_full_chunks;				///chunks that are used and full
+		std::pmr::vector<VeChunkIndex>	d_free_chunks;				///chunks that are used and not full
+		std::pmr::vector<VeChunkIndex>	d_deleted_chunks;			///chunks that have been deleted -> empty slot
 
 		//maps
-		VeSlotMap									m_slot_map;
-		std::array<map_type,sizeof...(TypesTwo)>	m_maps;
+		VeSlotMap									d_slot_map;
+		std::array<map_type,sizeof...(TypesTwo)>	d_maps;
 
 	public:
 
-		VeTableState();
+		VeTableState(allocator_type alloc = {});
 		~VeTableState() = default;
 
 		//-------------------------------------------------------------------------------
@@ -55,6 +57,13 @@ export namespace vve {
 		void		erase(VeHandle handle);
 		void		operator=(const VeTableStateType& rhs);
 		void		clear();
+	};
+
+	//----------------------------------------------------------------------------------
+	template<typename... TypesOne, typename... TypesTwo>
+	VeTableStateType::VeTableState(allocator_type alloc) : 
+		d_chunks(alloc), d_full_chunks(alloc), d_free_chunks(alloc), d_deleted_chunks(alloc), d_maps() {
+		d_chunks.emplace_back(std::make_unique<chunk_type>());
 	};
 
 
@@ -89,12 +98,6 @@ export namespace vve {
 	void VeTableStateType::erase(VeHandle handle) {
 
 	}
-
-	//----------------------------------------------------------------------------------
-	template<typename... TypesOne, typename... TypesTwo>
-	VeTableStateType::VeTableState() : m_maps() {
-		m_chunks.emplace_back(std::make_unique<chunk_type>());
-	};
 
 
 	//-------------------------------------------------------------------------------

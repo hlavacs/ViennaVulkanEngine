@@ -1,6 +1,8 @@
 export module VVE:VeMap;
 
 import std.core;
+import std.memory;
+
 import :VeTypes;
 import :VeMemory;
 #include "VETypes.h"
@@ -16,6 +18,7 @@ export namespace vve {
     protected:
         static const uint32_t initial_bucket_size = 64;
         uint64_t m_hash_mask = 64 - 1; //use this to AND away hash index
+        using allocator_type = std::pmr::polymorphic_allocator<std::byte>;
 
         struct map_t {
             KeyT     d_key;     ///guid of entry
@@ -30,13 +33,13 @@ export namespace vve {
         VeIndex                                 eraseFromHashMap(KeyT key);  //remove an entry from the hash map
         void                                    increaseBuckets();           //increase the number of buckets and rehash the hash map
 
-        std::size_t             d_size;         ///number of mappings in the map
-        VeIndex                 d_first_free;   ///first free entry in slot map
-        std::vector<map_t>	    d_map;          ///map pointing to entries in chunks or simple hash entries
-        std::vector<VeIndex>    d_bucket;       ///hashed value points to slot map
+        std::size_t                 d_size;         ///number of mappings in the map
+        VeIndex                     d_first_free;   ///first free entry in slot map
+        std::pmr::vector<map_t>     d_map;          ///map pointing to entries in chunks or simple hash entries
+        std::pmr::vector<VeIndex>   d_bucket;       ///hashed value points to slot map
 
     public:
-        VeMap();
+        VeMap(allocator_type alloc = {});
         VeIndex     insert(KeyT key, ValueT value);
         bool        update(KeyT key, ValueT value, VeIndex index = VeIndex::NULL());
         ValueT      at(KeyT key, VeIndex index = VeIndex::NULL());
@@ -50,7 +53,7 @@ export namespace vve {
     /// \brief Constructor of VeMap class
     ///----------------------------------------------------------------------------------
     template<typename KeyT, typename ValueT>
-    VeMap<KeyT, ValueT>::VeMap() : d_size(0), d_first_free(VeIndex::NULL()), d_map(), d_bucket(initial_bucket_size) {
+    VeMap<KeyT, ValueT>::VeMap(allocator_type alloc) : d_size(0), d_first_free(VeIndex::NULL()), d_map(alloc), d_bucket(initial_bucket_size, {}, alloc) {
         d_bucket.clear();
     };
 
@@ -195,7 +198,9 @@ export namespace vve {
 
     class VeSlotMap : public VeMap<VeIndex64, VeTableIndex> {
     public:
-        VeSlotMap() : VeMap<VeIndex64, VeTableIndex>() {};
+        using allocator_type = std::pmr::polymorphic_allocator<std::byte>;
+
+        VeSlotMap(allocator_type alloc = {}) : VeMap<VeIndex64, VeTableIndex>(alloc) {};
         auto insert(VeHandle handle, VeTableIndex table_index);
         auto update(VeHandle handle, VeTableIndex table_index);
         auto at(VeHandle handle);
@@ -248,8 +253,9 @@ export namespace vve {
     template<int... Is>
     class VeHashMap : public VeMap<VeIndex64, VeIndex> {
     public:
+        using allocator_type = std::pmr::polymorphic_allocator<std::byte>;
         static constexpr auto s_indices = std::make_tuple(Is...);
-        VeHashMap() : VeMap<VeIndex64, VeIndex>() {};
+        VeHashMap(allocator_type alloc = {}) : VeMap<VeIndex64, VeIndex>(alloc) {};
     };
 
 

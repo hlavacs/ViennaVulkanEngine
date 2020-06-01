@@ -1,4 +1,8 @@
 import std.core;
+import std.regex;
+import std.filesystem;
+import std.memory;
+import std.threading;
 
 import VVE;
 #include "VETypes.h"
