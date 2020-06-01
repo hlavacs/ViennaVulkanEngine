@@ -10,13 +10,14 @@ export namespace vve {
 	//----------------------------------------------------------------------------------
 	//basic data types
 
-	template<typename T, typename Phantom>
+	template<typename T, typename P>
 	struct IntType {
-		static T NULL() { return T(std::numeric_limits<T>::max()); };
+		static IntType<T, P> NULL() { return IntType<T,P>(); };
 		T value;
 		operator T& () { return value; }
-		IntType() : value(IntType::NULL()) {};
+		IntType() : value(T(std::numeric_limits<T>::max())) {};
 		IntType(const T& t) : value(t) {};
+		IntType(const IntType<T,P>& t) : value(t.value) {};
 		auto operator<=>(const IntType& v) const = default;
 		auto operator<=>(const T& v) { return value <=> v; };
 	};
@@ -48,10 +49,10 @@ export namespace vve {
 		VeChunkIndex	d_chunk_index;
 		VeInChunkIndex	d_in_chunk_index;
 		VeTableIndex() : d_chunk_index(VeChunkIndex::NULL()), d_in_chunk_index(VeInChunkIndex::NULL()) {};
+		VeTableIndex(const VeTableIndex &v) : d_chunk_index(v.d_chunk_index), d_in_chunk_index(v.d_in_chunk_index) {};
 		auto operator==(const VeTableIndex& v) { return d_chunk_index == v.d_chunk_index && d_in_chunk_index == v.d_in_chunk_index; };
 		auto operator!=(const VeTableIndex& v) { return !(d_chunk_index == v.d_chunk_index && d_in_chunk_index == v.d_in_chunk_index); };
 	};
-
 
 	//----------------------------------------------------------------------------------
 	//a handle consists of a GUID and an table index
@@ -65,7 +66,6 @@ export namespace vve {
 		bool operator==(const VeHandle& v) const { return d_guid.value == v.d_guid.value; };
 		bool operator!=(const VeHandle& v) const { return !(d_guid.value == v.d_guid.value); };
 	};
-
 
 	//----------------------------------------------------------------------------------
 	// A template to hold a parameter pack

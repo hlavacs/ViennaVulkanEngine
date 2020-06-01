@@ -23,8 +23,8 @@ export namespace vve {
 		using chunk_type = VeTableChunk<TypesOne...>;
 		static_assert(sizeof(chunk_type) <= VE_TABLE_CHUNK_SIZE);
 		using chunk_ptr  = std::unique_ptr<chunk_type>;
-		//using map_type = std::tuple <TypesTwo... > ;
-		using map_type = std::unordered_map<std::size_t, VeIndex>;
+		using map_type = std::tuple <TypesTwo... > ;
+		//using map_type = std::unordered_map<std::size_t, VeIndex>;
 
 		//chunks
 		std::vector<chunk_ptr>		m_chunks;					///pointers to table chunks
@@ -33,7 +33,7 @@ export namespace vve {
 		std::stack<VeChunkIndex>	m_deleted_chunks;			///chunks that have been deleted -> empty slot
 
 		//maps
-		std::unordered_map<VeHandle, VeTableIndex>	m_slot_map;
+		VeSlotMap									m_slot_map;
 		std::array<map_type,sizeof...(TypesTwo)>	m_maps;
 
 	public:

@@ -16,19 +16,19 @@ export namespace vve {
 
 	template<typename... Args>
 	class VeTableChunk {
-		static const uint32_t data_size = (sizeof(Args) + ...);
+		static const uint32_t data_size = (sizeof(Args) + ...) + sizeof(VeIndex);
 		static const uint32_t manage_size = sizeof(uint32_t) + sizeof(VeChunkIndex);
 		static const uint32_t c_max_size = (VE_TABLE_CHUNK_SIZE - manage_size) / data_size;
 
 		using data_arrays = std::tuple<std::array<Args, c_max_size>...>;
 		using tuple_type = std::tuple<Args...>;
-		//using slot_map_array = std::array<VeIndex, c_max_size>;
-		//using Is = std::index_sequence_for<Args...>;
+		using slot_map_array = std::array<VeIndex, c_max_size>;
+		using Is = std::index_sequence_for<Args...>;
 
 		data_arrays		d_data;				///arrays of data items
 		uint32_t		d_size;				///number of array slots used currently
 		VeChunkIndex	d_chunk_index;		///index of this chunk in the chunks vector of the table state
-		//slot_map_array	d_slot_map_index;	///index of the slot map entry that points to this slot
+		slot_map_array	d_slot_map_index;	///index of the slot map entry that points to this slot
 
 	public:
 		VeTableChunk();
@@ -39,7 +39,7 @@ export namespace vve {
 		VeInChunkIndex				insert(tuple_type entry, VeIndex slot_index);
 		bool						update(VeInChunkIndex in_chunk_index, tuple_type entry);
 		std::optional<tuple_type>	at(VeInChunkIndex in_chunk_index);
-		auto						erase(VeInChunkIndex in_chunk_index);
+		VeIndex						erase(VeInChunkIndex in_chunk_index);
 		auto						data();
 	};
 
@@ -114,8 +114,8 @@ export namespace vve {
 	/// \returns the slot map index of the entry thas was moved to the empty entry to fill the gap
 	///----------------------------------------------------------------------------------
 	template<typename... Args>
-	auto VeTableChunk<Args...>::erase(VeInChunkIndex in_chunk_index ) {
-		if (!(in_chunk_index < d_size)) { return VeIndex::NULL(); }
+	VeIndex VeTableChunk<Args...>::erase(VeInChunkIndex in_chunk_index ) {
+		if (!(in_chunk_index < d_size)) { return VeIndex(); }
 
 		--d_size;
 
@@ -126,8 +126,8 @@ export namespace vve {
 						std::get<i>(d_data)[d_size]);
 		});
 
-		//std::swap(d_slot_map_index[in_chunk_index], d_slot_map_index[d_size]);
-		//return d_slot_map_index[in_chunk_index];
+		std::swap(d_slot_map_index[in_chunk_index], d_slot_map_index[d_size]);
+		return d_slot_map_index[in_chunk_index];
 	}
 
 	///----------------------------------------------------------------------------------

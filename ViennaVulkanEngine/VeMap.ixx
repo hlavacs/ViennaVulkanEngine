@@ -3,6 +3,7 @@ export module VVE:VeMap;
 import std.core;
 import :VeTypes;
 import :VeMemory;
+#include "VETypes.h"
 
 export namespace vve {
 
@@ -19,10 +20,12 @@ export namespace vve {
             VeIndex         d_next;     ///next free slot or next slot with same hash index or NULL
 
             slot_map_t(VeGuid guid, VeTableIndex table_index, VeIndex next) : 
-                d_guid(guid), d_next(next), d_table_index( VeTableIndex::NULL() ) {};
+                d_guid(guid), d_table_index(table_index), d_next(next) {};
+
+
         };
 
-        VeIndex                 d_first_free;
+        VeIndex                 d_first_free;   ///first free entry in slot map
         std::vector<slot_map_t>	d_slot_map;  ///map pointing to entries in chunks
         std::vector<VeIndex>    d_hash_map;     ///hashed value points to slot map
 
@@ -45,7 +48,7 @@ export namespace vve {
     ///----------------------------------------------------------------------------------
     VeIndex VeSlotMap::insert(VeGuid guid, VeTableIndex table_index) {
         VeIndex new_slot;
-        VeIndex hash_index = (decltype(hash_index.value))std::hash<decltype(guid.value)>()(guid.value);
+        VeIndex hash_index = (decltype(hash_index.value))std::hash<decltype(guid)>()(guid);
 
         if (d_first_free != VeIndex::NULL()) {              //there is a free slot in the slot map
             new_slot = d_first_free;                        //point to the free slot to use
@@ -68,7 +71,7 @@ export namespace vve {
     VeTableIndex VeSlotMap::at(VeHandle handle) {
         VeIndex index = handle.d_index;
         if (index.value == VeIndex::NULL()) {
-            index = (decltype(index.value))std::hash<decltype(handle.d_guid.value)>()(handle.d_guid.value) % d_hash_map.size();
+            index = (decltype(index.value))std::hash<decltype(handle)>()(handle) % d_hash_map.size();
             while (index != VeIndex::NULL() && d_slot_map[index].d_guid != handle.d_guid) {
                 index = d_slot_map[index].d_next;
             }
@@ -89,7 +92,7 @@ export namespace vve {
         VeIndex prev = VeIndex::NULL();
 
         if (d_slot_map[handle.d_index].d_guid == handle.d_guid) {
-            d_slot_map[handle.d_index] = { VeIndex::NULL(), VeTableIndex::NULL(), d_first_free };
+            d_slot_map[handle.d_index] = { VeGuid::NULL(), VeTableIndex::NULL(), d_first_free };
             d_first_free = handle.d_index;
             return true;
         }
