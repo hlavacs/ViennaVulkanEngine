@@ -15,6 +15,7 @@ export namespace vve {
     class VeMap {
     protected:
         static const uint32_t initial_bucket_size = 64;
+        uint64_t m_hash_mask = 64 - 1; //use this to AND away hash index
 
         struct map_t {
             KeyT     d_key;     ///guid of entry
@@ -60,7 +61,7 @@ export namespace vve {
     ///----------------------------------------------------------------------------------
     template<typename KeyT, typename ValueT>
     std::tuple<VeIndex, VeIndex, VeIndex> VeMap<KeyT, ValueT>::findInHashMap(KeyT key) {
-        VeIndex hashidx = (decltype(hashidx.value))(std::hash<decltype(key)>()(key) % d_bucket.size()); //use hash map to find it
+        VeIndex hashidx = (decltype(hashidx.value))key & m_hash_mask; //  % d_bucket.size(); //use hash map to find it
         VeIndex prev = VeIndex::NULL();
 
         VeIndex index = d_bucket[hashidx];
@@ -98,9 +99,11 @@ export namespace vve {
     template<typename KeyT, typename ValueT>
     void VeMap<KeyT, ValueT>::increaseBuckets() {
         d_bucket.resize(2 * d_bucket.size(), VeIndex::NULL());
+        m_hash_mask = 2 * (m_hash_mask + 1) - 1;    //must be power of 2 minus one
+
         for (uint32_t i = 0; i < d_map.size(); ++i) {
             if (d_map[i].d_key != KeyT::NULL()) {
-                VeIndex hash_index = (decltype(hash_index.value))std::hash<decltype(d_map[i].d_key)>()(d_map[i].d_key); //hash map index
+                VeIndex hash_index = (decltype(hash_index.value))d_map[i].d_key & m_hash_mask; //% d_bucket.size();
                 d_map[i].d_next = d_bucket[hash_index];
                 d_bucket[hash_index] = i;
             }
@@ -118,7 +121,7 @@ export namespace vve {
         if (loadFactor() > 0.9f) increaseBuckets();
 
         VeIndex new_slot = d_first_free;   //point to the free slot to use if there is one
-        VeIndex hash_index = (decltype(hash_index.value))std::hash<decltype(key)>()(key); //hash map index
+        VeIndex hash_index = (decltype(hash_index.value))key & m_hash_mask; //% d_bucket.size(); //hash map index
 
         if (new_slot != VeIndex::NULL()) {                              //there is a free slot in the slot map
             d_first_free = d_map[new_slot].d_next;                      //let first_free point to the next free slot or NULL
