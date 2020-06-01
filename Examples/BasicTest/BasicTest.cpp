@@ -29,7 +29,7 @@ int main()
     std::cout << sizeof(VeTableIndex) << std::endl;
     std::cout << sizeof(VeHandle) << std::endl;
 
-    VeHashMap<1, 2, 3> map;
+    VeHashMap< 1, 2, 3> map;
     auto vrt = decltype(map)::s_indices;
 
     VeTableChunk<uint64_t, float, uint64_t> ToAChunk;
