@@ -37,6 +37,8 @@ export namespace vve {
 		std::array<VeHashMap,sizeof...(TypesTwo)>	d_maps;
 		inline static map_type 						d_indices = TupleOfLists<TypesTwo...>();
 
+		VeTableIndex getTableIndexFromHandle( VeHandle handle);
+
 	public:
 
 		VeTableState(allocator_type alloc = {});
@@ -65,18 +67,28 @@ export namespace vve {
 	};
 
 
+	template<typename... TypesOne, typename... TypesTwo>
+	VeTableIndex VeTableStateType::getTableIndexFromHandle(VeHandle handle) {
+		VeTableIndex table_index = d_slot_map.at(handle);
+
+		if (table_index == VeTableIndex::NULL() ||
+			!(table_index.d_chunk_index < d_chunks.size()) ||
+			!d_chunks[table_index.d_chunk_index]) {
+			return VeTableIndex::NULL();
+		}
+		return table_index;
+	}
+
+
 	//-------------------------------------------------------------------------------
 	//read operations
 
 	template< typename... TypesOne, typename... TypesTwo>
 	std::optional<std::tuple<TypesOne...>> VeTableStateType::at(VeHandle handle) {
-		VeTableIndex table_index = d_slot_map.at(handle);
-
-		if(	table_index == VeTableIndex::NULL() || 
-			!(table_index.d_chunk_index < d_chunks.size()) || 
-			!d_chunks[table_index.d_chunk_index] )  { return std::nullopt; }
-
-		return d_chunks[table_index.d_chunk_index]->at(table_index.d_in_chunk_index);
+		VeTableIndex table_index = getTableIndexFromHandle(handle);
+		if( table_index == VeTableIndex::NULL() )  { return std::nullopt; }
+		VeIndex slot_map_index;
+		return d_chunks[table_index.d_chunk_index]->at(table_index.d_in_chunk_index, slot_map_index);
 	}
 
 
@@ -103,20 +115,27 @@ export namespace vve {
 
 	template< typename... TypesOne, typename... TypesTwo>
 	bool VeTableStateType::update(VeHandle handle, tuple_type &entry) {
-		VeTableIndex table_index = d_slot_map.at(handle);
-		if(	table_index == VeTableIndex::NULL() ||
-			!(table_index.d_chunk_index < d_chunks.size())) { return false; }
-
+		VeTableIndex table_index = getTableIndexFromHandle(handle);
+		if (table_index == VeTableIndex::NULL()) { return false; }
 		return d_chunks[table_index.d_chunk_index].update( handle, entry);
 	}
 
 	template< typename... TypesOne, typename... TypesTwo>
 	bool VeTableStateType::erase(VeHandle handle) {
-		VeTableIndex table_index = d_slot_map.at(handle);
-		if (table_index == VeTableIndex::NULL() ||
-			!(table_index.d_chunk_index < d_chunks.size())) {return false;}
+		VeTableIndex table_index = getTableIndexFromHandle(handle);
+		if (table_index == VeTableIndex::NULL()) { return false; }
 
-		return d_chunks[table_index.d_chunk_index].erase(handle);
+		//swap with last element of the last chunk
+		VeTableIndex last_index = { .d_chunk_index = d_chunks.size() - 1, .d_in_chunk_index = d_chunks[d_chunks.size() - 1].size() - 1 };
+		VeIndex slot_map_index_last;
+		std::tuple<TypesOne...> last_tuple = d_chunks[last_index.d_chunk_index]->at(last_index.d_in_chunk_index, slot_map_index_last);
+		VeIndex slot_map_index = d_chunks[table_index.d_chunk_index]->slotMapIndex(table_index.d_in_chunk_index);
+
+		d_chunks[table_index.d_chunk_index]->update(slot_map_index_last, table_index.d_in_chunk_index, last_tuple);
+		//d_slot_map[slot_map_index_last] = table_index;
+
+
+
 	}
 
 	template<typename... TypesOne, typename... TypesTwo>
@@ -126,11 +145,13 @@ export namespace vve {
 
 	template<typename... TypesOne, typename... TypesTwo>
 	void VeTableStateType::clear() {
-		d_chunks.clear();
+		while (d_chunks.size() > 1) {
+			d_chunks.pop_back();
+		}
+		d_chunks[0].clear();
 		d_slot_map.clear();
 		for (auto& map : d_maps) { map.clear(); }
 	}
-
 
 
 };
