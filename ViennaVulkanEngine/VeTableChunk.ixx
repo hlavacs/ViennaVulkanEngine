@@ -38,11 +38,12 @@ export namespace vve {
 		VeTableChunk( const VeTableChunk &) = delete;
 		~VeTableChunk() = default;
 
-		VeInChunkIndex				insert(tuple_type entry, VeIndex slot_index);
+		VeInChunkIndex				insert(tuple_type entry);
 		bool						update(VeInChunkIndex in_chunk_index, tuple_type entry);
 		std::optional<tuple_type>	at(VeInChunkIndex in_chunk_index);
 		VeIndex						erase(VeInChunkIndex in_chunk_index);
 		auto						data();
+		bool						full();
 	};
 
 	///----------------------------------------------------------------------------------
@@ -62,16 +63,13 @@ export namespace vve {
 	///----------------------------------------------------------------------------------
 	/// \brief Insert a new entry into the chunk
 	/// \param[in] entry The tuple that is to be added to this chunk
-	/// \param[in] slot_index Index of the table state slot map that points to this entry
 	/// \returns the in chunk index of the new entry in this chunk 
 	///----------------------------------------------------------------------------------
 	template<typename... Args>
-	VeInChunkIndex VeTableChunk<Args...>::insert(tuple_type entry, VeIndex slot_index) {
+	VeInChunkIndex VeTableChunk<Args...>::insert(tuple_type entry) {
 		static_for<std::size_t, 0, std::tuple_size_v<tuple_type>>( [&,this](auto i) { 
 			std::get<i>(d_data)[d_size] = std::get<i>(entry); 
 		});
-		//d_slot_map_index[d_size] = slot_index;
-
 		return VeInChunkIndex(d_size++);
 	}
 
@@ -130,6 +128,16 @@ export namespace vve {
 
 		std::swap(d_slot_map_index[in_chunk_index], d_slot_map_index[d_size]);
 		return d_slot_map_index[in_chunk_index];
+	}
+
+
+	///----------------------------------------------------------------------------------
+	/// \brief Returns whether the chunk is full or whether it can hold more items
+	/// \returns true if chunk is full, else false
+	///----------------------------------------------------------------------------------
+	template<typename... Args>
+	bool VeTableChunk<Args...>::full() {
+		return d_size >= c_max_size;
 	}
 
 	///----------------------------------------------------------------------------------

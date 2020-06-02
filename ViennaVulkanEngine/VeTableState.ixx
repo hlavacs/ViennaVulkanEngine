@@ -30,15 +30,12 @@ export namespace vve {
 		using allocator_type = std::pmr::polymorphic_allocator<std::byte>;
 
 		//chunks
-		std::pmr::vector<chunk_ptr>		d_chunks;					///pointers to table chunks
-		std::pmr::vector<VeChunkIndex>	d_full_chunks;				///chunks that are used and full
-		std::pmr::vector<VeChunkIndex>	d_free_chunks;				///chunks that are used and not full
-		std::pmr::vector<VeChunkIndex>	d_deleted_chunks;			///chunks that have been deleted -> empty slot
+		std::pmr::vector<chunk_ptr>	d_chunks;	///pointers to table chunks
 
 		//maps
 		VeSlotMap									d_slot_map;
 		std::array<VeHashMap,sizeof...(TypesTwo)>	d_maps;
-		map_type									d_indices;
+		inline static map_type 						d_indices = TupleOfLists<TypesTwo...>();
 
 	public:
 
@@ -53,20 +50,18 @@ export namespace vve {
 		//-------------------------------------------------------------------------------
 		//write operations
 
-		VeHandle	insert(tuple_type entry);
-		VeHandle	insert(tuple_type entry, std::shared_ptr<VeHandle> handle);
-		void		update(VeHandle handle, tuple_type entry);
-		void		erase(VeHandle handle);
+		VeHandle	insert(VeGuid guid, tuple_type &entry);
+		VeHandle	insert(VeGuid guid, tuple_type &entry, std::shared_ptr<VeHandle> handle);
+		bool		update(VeHandle handle, tuple_type &entry);
+		bool		erase(VeHandle handle);
 		void		operator=(const VeTableStateType& rhs);
 		void		clear();
 	};
 
 	//----------------------------------------------------------------------------------
 	template<typename... TypesOne, typename... TypesTwo>
-	VeTableStateType::VeTableState(allocator_type alloc) : 
-		d_chunks(alloc), d_full_chunks(alloc), d_free_chunks(alloc), d_deleted_chunks(alloc), d_maps(), d_indices() {
-		d_chunks.emplace_back(std::make_unique<chunk_type>());
-		d_indices = TupleOfLists<TypesTwo...>();
+	VeTableStateType::VeTableState(allocator_type alloc) : d_chunks(alloc), d_maps() {
+		d_chunks.emplace_back(std::make_unique<chunk_type>());	//create one chunk
 	};
 
 
@@ -75,7 +70,13 @@ export namespace vve {
 
 	template< typename... TypesOne, typename... TypesTwo>
 	std::optional<std::tuple<TypesOne...>> VeTableStateType::at(VeHandle handle) {
-		
+		VeTableIndex table_index = d_slot_map.at(handle);
+
+		if(	table_index == VeTableIndex::NULL() || 
+			!(table_index.d_chunk_index < d_chunks.size()) || 
+			!d_chunks[table_index.d_chunk_index] )  { return std::nullopt; }
+
+		return d_chunks[table_index.d_chunk_index]->at(table_index.d_in_chunk_index);
 	}
 
 
@@ -83,28 +84,40 @@ export namespace vve {
 	//write operations
 
 	template< typename... TypesOne, typename... TypesTwo>
-	VeHandle VeTableStateType::insert(tuple_type entry) {
+	VeHandle VeTableStateType::insert(VeGuid guid, tuple_type &entry) {
+		VeIndex last = d_chunks.size() - 1;		//index of last chunk
+		if (d_chunks[last].full()) {			//if its full we need a new chunk
+			d_chunks.emplace_back(std::make_unique<chunk_type>());	//create a new chunk
+			last = d_chunks.size() - 1;
+		}
 
+		VeInChunkIndex in_chunk_index = d_chunks[last].insert(entry);	//insert data into the chunk
+		return { .d_guid = guid, .d_table_index = { .d_chunk_index = last, .d_in_chunk_index = in_chunk_index} };
 	}
 
 	template< typename... TypesOne, typename... TypesTwo>
-	VeHandle VeTableStateType::insert(tuple_type entry, std::shared_ptr<VeHandle> handle) {
-
+	VeHandle VeTableStateType::insert(VeGuid guid, tuple_type &entry, std::shared_ptr<VeHandle> handle) {
+		*handle = insert(guid, entry);
+		return *handle;
 	}
 
 	template< typename... TypesOne, typename... TypesTwo>
-	void VeTableStateType::update(VeHandle handle, tuple_type entry) {
+	bool VeTableStateType::update(VeHandle handle, tuple_type &entry) {
+		VeTableIndex table_index = d_slot_map.at(handle);
+		if(	table_index == VeTableIndex::NULL() ||
+			!(table_index.d_chunk_index < d_chunks.size())) { return false; }
 
+		return d_chunks[table_index.d_chunk_index].update( handle, entry);
 	}
 
 	template< typename... TypesOne, typename... TypesTwo>
-	void VeTableStateType::erase(VeHandle handle) {
+	bool VeTableStateType::erase(VeHandle handle) {
+		VeTableIndex table_index = d_slot_map.at(handle);
+		if (table_index == VeTableIndex::NULL() ||
+			!(table_index.d_chunk_index < d_chunks.size())) {return false;}
 
+		return d_chunks[table_index.d_chunk_index].erase(handle);
 	}
-
-
-	//-------------------------------------------------------------------------------
-	//write operations
 
 	template<typename... TypesOne, typename... TypesTwo>
 	void VeTableStateType::operator=(const VeTableStateType& rhs) {
@@ -113,7 +126,9 @@ export namespace vve {
 
 	template<typename... TypesOne, typename... TypesTwo>
 	void VeTableStateType::clear() {
-
+		d_chunks.clear();
+		d_slot_map.clear();
+		for (auto& map : d_maps) { map.clear(); }
 	}
 
 

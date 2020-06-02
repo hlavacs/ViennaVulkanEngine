@@ -40,8 +40,7 @@ export namespace vve {
 		using tuple_type = std::tuple<TypesOne...>;
 		using allocator_type = std::pmr::polymorphic_allocator<std::byte>;
 
-		enum class VeNumStates { ONE, TWO };
-		enum class VeOnSwapDo { CLEAR, COPY };
+		enum class VeOnSwapDo { SINGLE, CLEAR, COPY };
 
 		VeIndex								d_thread_idx;
 		std::unique_ptr<VeTableStateType>	d_current_state;
@@ -50,8 +49,7 @@ export namespace vve {
 
 	public:
 		VeTable(allocator_type alloc = {});
-		VeTable(VeNumStates num_states, allocator_type alloc = {});
-		VeTable(VeNumStates num_states, VeOnSwapDo on_swap, allocator_type alloc = {});
+		VeTable(VeOnSwapDo on_swap, allocator_type alloc = {});
 		~VeTable() = default;
 
 		//-------------------------------------------------------------------------------
@@ -74,15 +72,12 @@ export namespace vve {
 
 
 	template<typename... TypesOne, typename... TypesTwo>
-	VeTableType::VeTable(allocator_type alloc) : VeTable(VeNumStates::ONE, VeOnSwapDo::COPY, alloc) {}
+	VeTableType::VeTable(allocator_type alloc) : VeTable( VeOnSwapDo::SINGLE, alloc) {}
 
 	template<typename... TypesOne, typename... TypesTwo>
-	VeTableType::VeTable(VeNumStates num_states, allocator_type alloc) : VeTable( num_states, VeOnSwapDo::COPY, alloc) {}
-
-	template<typename... TypesOne, typename... TypesTwo>
-	VeTableType::VeTable(VeNumStates num_states, VeOnSwapDo on_swap, allocator_type alloc ) :  d_on_swap_do(on_swap) {
+	VeTableType::VeTable(VeOnSwapDo on_swap, allocator_type alloc ) :  d_on_swap_do(on_swap) {
 		d_current_state = std::unique_ptr<VeTableStateType>(new VeTableStateType(alloc));
-		if (num_states == VeNumStates::ONE) return;
+		if (on_swap == VeOnSwapDo::SINGLE) return;
 		d_next_state = std::unique_ptr<VeTableStateType>(new VeTableStateType(alloc));
 	}
 

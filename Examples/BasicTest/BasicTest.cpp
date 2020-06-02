@@ -38,12 +38,12 @@ int main()
 
     VeTableChunk<uint64_t, float, uint64_t> ToAChunk;
     std::cout << sizeof(ToAChunk) << "\n";
-    auto idx1 = ToAChunk.insert( { 4, 2.0f, 90 }, VeIndex(1));
-    auto idx = ToAChunk.insert( { 5, 2.5f, 97 }, VeIndex(2));
-    idx = ToAChunk.insert({ 6, 2.5f, 97 }, VeIndex(3));
-    idx = ToAChunk.insert({ 7, 2.5f, 97 }, VeIndex(4));
-    idx = ToAChunk.insert({ 8, 2.5f, 97 }, VeIndex(5));
-    idx = ToAChunk.insert({ 9, 2.5f, 97 }, VeIndex(6));
+    auto idx1 = ToAChunk.insert( { 4, 2.0f, 90 });
+    auto idx = ToAChunk.insert( { 5, 2.5f, 97 });
+    idx = ToAChunk.insert({ 6, 2.5f, 97 });
+    idx = ToAChunk.insert({ 7, 2.5f, 97 });
+    idx = ToAChunk.insert({ 8, 2.5f, 97 });
+    idx = ToAChunk.insert({ 9, 2.5f, 97 });
 
     auto tuple = ToAChunk.at(idx1);
     ToAChunk.erase(idx1);
