@@ -66,9 +66,7 @@ export namespace vve {
 	VeTableStateType::VeTableState(allocator_type alloc) : 
 		d_chunks(alloc), d_full_chunks(alloc), d_free_chunks(alloc), d_deleted_chunks(alloc), d_maps(), d_indices() {
 		d_chunks.emplace_back(std::make_unique<chunk_type>());
-
 		d_indices = TupleOfLists<TypesTwo...>();
-
 	};
 
 

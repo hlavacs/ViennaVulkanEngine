@@ -71,8 +71,6 @@ export namespace vve {
 
 	template < int... Is >
 	struct Intlist {
-		using type = std::tuple<int, int>;
-
 		auto getTuple() {
 			return std::make_tuple(Is...);
 		}
