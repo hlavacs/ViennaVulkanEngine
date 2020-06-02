@@ -1,7 +1,6 @@
 export module VVE:VeTypes;
 
 import std.core;
-import :VeUtil;
 
 
 export namespace vve {
@@ -67,11 +66,19 @@ export namespace vve {
 	//----------------------------------------------------------------------------------
 	// A template to hold a parameter pack
 
-	template < typename... >
+	template < typename... Ts>
 	struct Typelist {};
 
-	template < int... >
-	struct Intlist {};
+	template < int... Is >
+	struct Intlist {
+		using type = std::tuple<int, int>;
+
+		auto getTuple() {
+			return std::make_tuple(Is...);
+		}
+	};
+
+
 
 };
 

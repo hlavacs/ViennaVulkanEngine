@@ -1,6 +1,7 @@
 export module VVE:VeUtil;
 
 import std.core;
+import :VeTypes;
 
 export namespace vve {
 
@@ -72,6 +73,22 @@ export namespace vve {
 		const uint32_t VE_TABLE_CHUNK_NUMBER = 1 << 14 / sizeof(t);
 		return ToA_impl(t, std::index_sequence_for<Args...>{});
 	}
+
+
+	//----------------------------------------------------------------------------------
+	//Turn List of List of Integers into Tuple of Lists of Integers
+
+	template<typename T>
+	constexpr auto TupleOfLists_impl() {
+		T list;
+		return list.getTuple();
+	}
+
+	template<typename... Ts> 
+	constexpr auto TupleOfLists( ) {
+		return std::make_tuple( TupleOfLists_impl<Ts>()... );
+	}
+
 
 	//----------------------------------------------------------------------------------
 	//clock class

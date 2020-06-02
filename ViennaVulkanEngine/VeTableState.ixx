@@ -4,6 +4,7 @@ import std.core;
 import std.memory;
 
 import :VeTypes;
+import :VeUtil;
 import :VeMap;
 import :VeMemory;
 import :VeTableChunk;
@@ -25,7 +26,7 @@ export namespace vve {
 		using chunk_type = VeTableChunk<TypesOne...>;
 		static_assert(sizeof(chunk_type) <= VE_TABLE_CHUNK_SIZE);
 		using chunk_ptr  = std::unique_ptr<chunk_type>;
-		using map_type = std::tuple <TypesTwo... > ;
+		using map_type = decltype(TupleOfLists<TypesTwo...>());
 		using allocator_type = std::pmr::polymorphic_allocator<std::byte>;
 
 		//chunks
@@ -36,7 +37,8 @@ export namespace vve {
 
 		//maps
 		VeSlotMap									d_slot_map;
-		std::array<map_type,sizeof...(TypesTwo)>	d_maps;
+		std::array<VeHashMap,sizeof...(TypesTwo)>	d_maps;
+		map_type									d_indices;
 
 	public:
 
@@ -62,8 +64,11 @@ export namespace vve {
 	//----------------------------------------------------------------------------------
 	template<typename... TypesOne, typename... TypesTwo>
 	VeTableStateType::VeTableState(allocator_type alloc) : 
-		d_chunks(alloc), d_full_chunks(alloc), d_free_chunks(alloc), d_deleted_chunks(alloc), d_maps() {
+		d_chunks(alloc), d_full_chunks(alloc), d_free_chunks(alloc), d_deleted_chunks(alloc), d_maps(), d_indices() {
 		d_chunks.emplace_back(std::make_unique<chunk_type>());
+
+		d_indices = TupleOfLists<TypesTwo...>();
+
 	};
 
 

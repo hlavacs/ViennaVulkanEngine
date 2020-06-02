@@ -4,6 +4,7 @@ import std.core;
 import std.memory;
 
 import :VeTypes;
+import :VeUtil;
 import :VeMemory;
 #include "VETypes.h"
 
@@ -250,11 +251,12 @@ export namespace vve {
     /// \brief Hash map
     ///----------------------------------------------------------------------------------
 
-    template<int... Is>
+    //template<int... Is>
     class VeHashMap : public VeMap<VeIndex64, VeIndex> {
     public:
         using allocator_type = std::pmr::polymorphic_allocator<std::byte>;
-        static constexpr auto s_indices = std::make_tuple(Is...);
+        //static constexpr auto s_indices = std::make_tuple(Is...);
+
         VeHashMap(allocator_type alloc = {}) : VeMap<VeIndex64, VeIndex>(alloc) {};
     };
 
