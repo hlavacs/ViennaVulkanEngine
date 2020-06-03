@@ -1,8 +1,8 @@
-export module VVE:VeGameJobSystem;
+export module VVE:VEGameJobSystem;
 
 import std.core;
 
-import :VeUtil;
+import :VEUtil;
 
 export {
 

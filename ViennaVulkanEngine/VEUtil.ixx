@@ -1,7 +1,7 @@
-export module VVE:VeUtil;
+export module VVE:VEUtil;
 
 import std.core;
-import :VeTypes;
+import :VETypes;
 
 export namespace vve {
 

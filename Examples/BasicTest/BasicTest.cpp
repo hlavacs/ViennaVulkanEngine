@@ -49,11 +49,11 @@ int main()
     auto tuple = ToAChunk.at(idx1, slotmap);
     ToAChunk.pop_back();
 
-    VeTable< Typelist< uint64_t, float, uint64_t>, Typelist< Intlist< 1, 2, 3>, Intlist< 1, 3 >> > ToATable;
+    VeTable< Typelist< uint64_t, float, uint64_t>, Typelist< Hashlist< 1, 2, 3>, Hashlist< 1, 3 >> > ToATable;
 
     VeTableChunk< std::tuple<uint64_t, float, uint64_t>> AoTChunk;
     std::cout << sizeof AoTChunk << "\n";
-    VeTable< Typelist< std::tuple<uint64_t, float, uint64_t> >, Typelist< Intlist<3>, Intlist< 1, 2, 3>, Intlist<2, 3>, Intlist<1, 3>> > AoTTable;
+    VeTable< Typelist< std::tuple<uint64_t, float, uint64_t> >, Typelist< Hashlist<3>, Hashlist< 1, 2, 3>, Hashlist<2, 3>, Hashlist<1, 3>> > AoTTable;
 
     auto tuple1 = std::make_tuple(1);
     auto tuple2 = std::make_tuple(1, 3.4, "333");

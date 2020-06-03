@@ -1,12 +1,12 @@
-export module VVE:VeTable;
+export module VVE:VETable;
 
 import std.core;
-import :VeUtil;
-import :VeTypes;
-import :VeMap;
-import :VeMemory;
-import :VeTableChunk;
-import :VeTableState;
+import :VEUtil;
+import :VETypes;
+import :VEMap;
+import :VEMemory;
+import :VETableChunk;
+import :VETableState;
 
 
 namespace vve {

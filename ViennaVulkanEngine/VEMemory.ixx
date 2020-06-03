@@ -1,4 +1,4 @@
-export module VVE:VeMemory;
+export module VVE:VEMemory;
 
 import std.core;
 import std.memory;

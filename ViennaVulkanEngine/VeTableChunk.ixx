@@ -1,12 +1,12 @@
-export module VVE:VeTableChunk;
+export module VVE:VETableChunk;
 
 import std.core;
 import std.memory;
 
-import :VeUtil;
-import :VeTypes;
-import :VeMap;
-import :VeMemory;
+import :VEUtil;
+import :VETypes;
+import :VEMap;
+import :VEMemory;
 
 export namespace vve {
 

@@ -1,15 +1,34 @@
-export module VVE:VeTableState;
+export module VVE:VETableState;
 
 import std.core;
 import std.memory;
 
-import :VeTypes;
-import :VeUtil;
-import :VeMap;
-import :VeMemory;
-import :VeTableChunk;
+import :VETypes;
+import :VEUtil;
+import :VEMap;
+import :VEMemory;
+import :VETableChunk;
 
 export namespace vve {
+
+	//----------------------------------------------------------------------------------
+	template < int... Is >
+	struct Hashlist {
+		using map_type = VeHashMap;
+
+		auto getTuple() {
+			return std::make_tuple(Is...);
+		}
+	};
+
+	template < int... Is >
+	struct Sortlist {
+		using map_type = VeHashMap;
+
+		auto getTuple() {
+			return std::make_tuple(Is...);
+		}
+	};
 
 	//----------------------------------------------------------------------------------
 	// Delare VeTableState

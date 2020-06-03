@@ -1,7 +1,6 @@
-export module VVE:VeTypes;
+export module VVE:VETypes;
 
 import std.core;
-
 
 export namespace vve {
 
@@ -69,12 +68,7 @@ export namespace vve {
 	template < typename... Ts>
 	struct Typelist {};
 
-	template < int... Is >
-	struct Intlist {
-		auto getTuple() {
-			return std::make_tuple(Is...);
-		}
-	};
+
 
 
 
