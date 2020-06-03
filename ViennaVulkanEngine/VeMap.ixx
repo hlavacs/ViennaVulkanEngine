@@ -43,7 +43,7 @@ export namespace vve {
         VeHashMapBase(allocator_type alloc = {});
         VeIndex     insert(KeyT key, ValueT value);
         bool        update(KeyT key, ValueT value, VeIndex index = VeIndex::NULL());
-        ValueT      at(KeyT key, VeIndex index = VeIndex::NULL());
+        ValueT      find(KeyT key, VeIndex index = VeIndex::NULL());
         bool        erase(KeyT key);
         std::size_t size() { return d_size; };
         float       loadFactor() { return (float)d_size / d_bucket.size();  };
@@ -165,7 +165,7 @@ export namespace vve {
     /// \returns the value or NULL
     ///----------------------------------------------------------------------------------
     template<typename KeyT, typename ValueT>
-    ValueT VeHashMapBase<KeyT, ValueT>::at(KeyT key, VeIndex index) {
+    ValueT VeHashMapBase<KeyT, ValueT>::find(KeyT key, VeIndex index) {
         if (index == VeIndex::NULL()) {
             index = std::get<1>(findInHashMap(key));                    //if NULL find in hash map
             if (index == VeIndex::NULL() ) return ValueT::NULL();        //still not found -> return NULL
@@ -204,7 +204,7 @@ export namespace vve {
         VeSlotMap(allocator_type alloc = {}) : VeHashMapBase<VeIndex64, VeTableIndex>(alloc) {};
         auto insert(VeHandle handle, VeTableIndex table_index);
         auto update(VeHandle handle, VeTableIndex table_index);
-        auto at(VeHandle handle);
+        auto find(VeHandle handle);
         auto erase(VeHandle handle);
     };
 
@@ -233,8 +233,8 @@ export namespace vve {
     /// \param[in] handle The handle holding an index to the slot map
     /// \returns the table index for this handle
     ///----------------------------------------------------------------------------------
-    auto VeSlotMap::at(VeHandle handle) {
-        return VeHashMapBase<VeIndex64, VeTableIndex>::at(std::hash<VeHandle>()(handle), handle.d_index);
+    auto VeSlotMap::find(VeHandle handle) {
+        return VeHashMapBase<VeIndex64, VeTableIndex>::find(std::hash<VeHandle>()(handle), handle.d_index);
     }
 
     ///----------------------------------------------------------------------------------
