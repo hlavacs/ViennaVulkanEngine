@@ -44,7 +44,7 @@ export namespace vve {
 	//extract sub tuple
 
 	template <typename T, int... Is>
-	auto makeKey(T& t) {
+	constexpr auto makeKey(T& t) {
 		return std::tuple(std::get<Is>(t) ...);
 	}
 

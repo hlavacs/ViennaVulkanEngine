@@ -260,4 +260,14 @@ export namespace vve {
     };
 
 
+
+    template< typename tuple_type, int... Is>
+    class VeHashMap2 : public VeHashMapBase<VeIndex64, VeIndex> {
+    public:
+        using allocator_type = std::pmr::polymorphic_allocator<std::byte>;
+        //static constexpr auto s_indices = std::make_tuple(Is...);
+
+        VeHashMap2(allocator_type alloc = {}) : VeHashMapBase<VeIndex64, VeIndex>(alloc) {};
+    };
+
 };

@@ -14,21 +14,41 @@ export namespace vve {
 	//----------------------------------------------------------------------------------
 	template < int... Is >
 	struct Hashlist {
-		using map_type = VeHashMap;
 
 		auto getTuple() {
 			return std::make_tuple(Is...);
 		}
+
+		template<typename tuple_type>
+		auto getTuple2() {
+			using sub_type = std::tuple< std::tuple_element<Is, tuple_type>::type ... >;
+
+			return std::make_tuple(VeHashMap2<sub_type, Is...>());
+		}
 	};
 
-	template < int... Is >
+	/*template < int... Is >
 	struct Sortlist {
-		using map_type = VeHashMap;
-
+		template<typename tuple_type>
 		auto getTuple() {
 			return std::make_tuple(Is...);
 		}
-	};
+	};*/
+
+	//----------------------------------------------------------------------------------
+	//Turn List of Integers into maps
+
+	template<typename tuple_type, typename T>
+	constexpr auto TupleOfMaps_impl() {
+		T map;
+		return map.getTuple2<tuple_type>();
+	}
+
+	template<typename tuple_type, typename... Ts>
+	constexpr auto TupleOfMaps() {
+		return std::make_tuple(TupleOfMaps_impl<tuple_type, Ts>()...);
+	}
+
 
 	//----------------------------------------------------------------------------------
 	// Delare VeTableState
@@ -46,6 +66,9 @@ export namespace vve {
 		static_assert(sizeof(chunk_type) <= VE_TABLE_CHUNK_SIZE);
 		using chunk_ptr  = std::unique_ptr<chunk_type>;
 		using map_type = decltype(TupleOfLists<TypesTwo...>());
+
+		using map_type2 = decltype(TupleOfMaps<tuple_type, TypesTwo...>());
+
 		using allocator_type = std::pmr::polymorphic_allocator<std::byte>;
 
 		//chunks
@@ -55,6 +78,7 @@ export namespace vve {
 		VeSlotMap									d_slot_map;
 		std::array<VeHashMap,sizeof...(TypesTwo)>	d_maps;
 		inline static map_type 						d_indices = TupleOfLists<TypesTwo...>();
+		map_type2									d_m2;
 
 		VeTableIndex getTableIndexFromHandle( VeHandle handle);
 

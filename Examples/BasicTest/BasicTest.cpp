@@ -24,6 +24,9 @@ int main()
     VeHandle handle2;
     //if (handle1 == handle2) return 0;
 
+    std::tuple<VeHandle, VeHandle> ht;
+
+
     VeIndex vidx1(1);
     VeIndex vidx2(2);
     if (vidx1 > vidx2) return 0;
@@ -49,11 +52,11 @@ int main()
     auto tuple = ToAChunk.at(idx1, slotmap);
     ToAChunk.pop_back();
 
-    VeTable< Typelist< uint64_t, float, uint64_t>, Typelist< Hashlist< 1, 2, 3>, Hashlist< 1, 3 >> > ToATable;
+    VeTable< Typelist< uint64_t, float, uint64_t, char>, Typelist< Hashlist< 0, 1, 2>, Hashlist< 1, 2 >> > ToATable;
 
     VeTableChunk< std::tuple<uint64_t, float, uint64_t>> AoTChunk;
     std::cout << sizeof AoTChunk << "\n";
-    VeTable< Typelist< std::tuple<uint64_t, float, uint64_t> >, Typelist< Hashlist<3>, Hashlist< 1, 2, 3>, Hashlist<2, 3>, Hashlist<1, 3>> > AoTTable;
+    VeTable< Typelist< std::tuple<uint64_t, float, uint64_t>, char, char >, Typelist< Hashlist<0>, Hashlist< 0, 1, 2>, Hashlist<0, 2>, Hashlist<1, 2>> > AoTTable;
 
     auto tuple1 = std::make_tuple(1);
     auto tuple2 = std::make_tuple(1, 3.4, "333");
