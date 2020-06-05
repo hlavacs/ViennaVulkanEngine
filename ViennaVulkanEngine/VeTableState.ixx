@@ -11,15 +11,6 @@ import :VETableChunk;
 
 export namespace vve {
 
-
-
-
-
-
-
-	/*
-
-
 	//----------------------------------------------------------------------------------
 	template < int... Is >
 	struct Hashlist {
@@ -50,7 +41,7 @@ export namespace vve {
 	template<typename tuple_type, typename T>
 	constexpr auto TupleOfMaps_impl() {
 		T map;
-		return map.getTuple2<tuple_type>();
+		return map.getTuple2<tuple_type>(); //calls Hashlist::getTuple2
 	}
 
 	template<typename tuple_type, typename... Ts>
@@ -59,6 +50,8 @@ export namespace vve {
 	}
 
 
+
+	/*
 	//----------------------------------------------------------------------------------
 	// Delare VeTableState
 	template< typename... Types> struct VeTableState;

@@ -12,18 +12,6 @@ export namespace vve {
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
     /*
 
     ///----------------------------------------------------------------------------------
@@ -38,12 +26,11 @@ export namespace vve {
         using allocator_type = std::pmr::polymorphic_allocator<std::byte>;
 
         struct map_t {
-            KeyT     d_key;     ///guid of entry
+            KeyT     d_key;     ///guid of entry or hash of the tuples
             ValueT   d_value;   ///points to chunk and in chunk entry
             VeIndex  d_next;    ///next free slot or next slot with same hash index or NULL
 
-            map_t(KeyT key, ValueT value, VeIndex next) : 
-                d_key(key), d_value(value), d_next(next) {};
+            map_t(KeyT key, ValueT value, VeIndex next) : d_key(key), d_value(value), d_next(next) {};
         };
 
         std::tuple<VeIndex, VeIndex, VeIndex>   findInHashMap(KeyT key);     //if no index is given, find the slot map inded through the hash map
