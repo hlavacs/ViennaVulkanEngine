@@ -9,15 +9,14 @@ import :VETableChunk;
 import :VETableState;
 
 
-namespace vve {
-
-
-
-};
-
 
 export namespace vve {
 
+
+
+
+
+	/*
 	//----------------------------------------------------------------------------------
 	class VeTableBase {
 	public:
@@ -115,5 +114,5 @@ export namespace vve {
 	}
 
 
-
+	*/
 };

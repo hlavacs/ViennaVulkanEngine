@@ -11,6 +11,15 @@ import :VETableChunk;
 
 export namespace vve {
 
+
+
+
+
+
+
+	/*
+
+
 	//----------------------------------------------------------------------------------
 	template < int... Is >
 	struct Hashlist {
@@ -27,13 +36,13 @@ export namespace vve {
 		}
 	};
 
-	/*template < int... Is >
-	struct Sortlist {
-		template<typename tuple_type>
-		auto getTuple() {
-			return std::make_tuple(Is...);
-		}
-	};*/
+	//template < int... Is >
+	//struct Sortlist {
+	//	template<typename tuple_type>
+	//	auto getTuple() {
+	//		return std::make_tuple(Is...);
+	//	}
+	//};
 
 	//----------------------------------------------------------------------------------
 	//Turn List of Integers into maps
@@ -196,7 +205,7 @@ export namespace vve {
 		for (auto& map : d_maps) { map.clear(); }
 	}
 
-
+	*/
 };
 
 

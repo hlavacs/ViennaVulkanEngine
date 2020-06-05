@@ -10,6 +10,22 @@ import :VEMemory;
 
 export namespace vve {
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    /*
+
     ///----------------------------------------------------------------------------------
     /// Base map class
     ///----------------------------------------------------------------------------------
@@ -269,5 +285,7 @@ export namespace vve {
 
         VeHashMap2(allocator_type alloc = {}) : VeHashMapBase<VeIndex64, VeIndex>(alloc) {};
     };
+
+    */
 
 };
