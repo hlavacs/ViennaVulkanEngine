@@ -26,15 +26,17 @@ export namespace vve {
 
 	using VeGuid = IntType<uint32_t, struct P0>;
 	using VeIndex = IntType<uint32_t, struct P1>;
-	using VeIndex64 = IntType<uint64_t, struct P2>;
-	using VeChunkIndex = IntType<uint16_t, struct P3>;
-	using VeInChunkIndex = IntType<uint16_t, struct P4>;
+	using VeChunkIndex = IntType<uint16_t, struct P2>;
+	using VeInChunkIndex = IntType<uint16_t, struct P3>;
+	using VeHash = IntType<uint64_t, struct P4>;
 
 
-	/*using VeGuid = IntType<uint64_t, P0>;
-	using VeIndex = IntType<uint32_t, P1>;
+	/*
+	using VeGuid = IntType<uint64_t, P0>;
+	using VeIndex = IntType<uint64_t, P1>;
 	using VeChunkIndex = IntType<uint32_t, P2>;
-	using VeInChunkIndex = IntType<uint32_t, P3>;*/
+	using VeInChunkIndex = IntType<uint32_t, P3>;
+	*/
 
 	//----------------------------------------------------------------------------------
 	//a table index consists of a chunk index and an in-chunk index, both packed into one integer

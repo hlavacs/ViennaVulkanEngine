@@ -5,7 +5,7 @@ import std.memory;
 import std.threading;
 
 import VVE;
-#include "VETypes.h"
+#include "VEHash.h"
 
 void test(vve::VeIndex idx) {
 
@@ -36,7 +36,7 @@ int main()
     std::cout << sizeof(VeTableIndex) << std::endl;
     std::cout << sizeof(VeHandle) << std::endl;
 
-    /*VeTableChunk<uint64_t, float, uint64_t> ToAChunk;
+    VeTableChunk<uint64_t, float, uint64_t> ToAChunk;
     std::cout << sizeof(ToAChunk) << "\n";
     auto idx1 = ToAChunk.insert( 1, { 4, 2.0f, 90 });
     auto idx = ToAChunk.insert( 2, { 5, 2.5f, 97 });
@@ -49,6 +49,11 @@ int main()
     auto tuple = ToAChunk.at(idx1, slotmap);
     ToAChunk.pop_back();
 
+
+    VeTableState< Typelist< uint64_t, float, uint64_t, char>, Typelist< Hashlist< 0, 1, 2>, Hashlist< 1, 2 >> > ToATableState;
+
+
+    /*
     VeTable< Typelist< uint64_t, float, uint64_t, char>, Typelist< Hashlist< 0, 1, 2>, Hashlist< 1, 2 >> > ToATable;
 
     VeTableChunk< std::tuple<uint64_t, float, uint64_t>> AoTChunk;

@@ -22,9 +22,24 @@ namespace std {
     template<>
     struct hash<vve::VeHandle> {
         size_t operator()(const vve::VeHandle& v) const {
-            return hash<decltype(v.d_guid)>()(v.d_guid);
+            return hash<decltype(v.d_guid.value)>()(v.d_guid.value);
         }
     };
+
+    template<>
+    struct hash<vve::VeGuid> {
+        size_t operator()(const vve::VeGuid& v) const {
+            return hash<decltype(v.value)>()(v.value);
+        }
+    };
+
+    template<>
+    struct hash<vve::VeHash> {
+        size_t operator()(const vve::VeHash& v) const {
+            return v.value;
+        }
+    };
+
 };
 
 
