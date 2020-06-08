@@ -46,8 +46,6 @@ export namespace vve {
 	}
 
 
-
-
 	//----------------------------------------------------------------------------------
 	// Delare VeTableState
 	template< typename... Types> struct VeTableState;
@@ -63,19 +61,15 @@ export namespace vve {
 		using chunk_type = VeTableChunk<TypesOne...>;
 		static_assert(sizeof(chunk_type) <= VE_TABLE_CHUNK_SIZE);
 		using chunk_ptr  = std::unique_ptr<chunk_type>;
-
-		//using map_type = decltype(TupleOfLists<TypesTwo...>());
-
 		using map_type = decltype(TupleOfMaps<tuple_type, TypesTwo...>());
-
 		using allocator_type = std::pmr::polymorphic_allocator<std::byte>;
 
 		//chunks
 		std::pmr::vector<chunk_ptr>	d_chunks;	///pointers to table chunks
 
 		//maps
-		VeSlotMap									d_slot_map;
-		map_type									d_maps;
+		VeSlotMap	d_slot_map;		//the table slot map
+		map_type	d_maps;			//the search maps
 
 		VeTableIndex getTableIndexFromHandle( VeHandle handle);
 
@@ -87,7 +81,7 @@ export namespace vve {
 		//-------------------------------------------------------------------------------
 		//read operations
 
-		std::optional<tuple_type> at(VeHandle handle);
+		std::optional<tuple_type> find(VeHandle handle);
 
 		//-------------------------------------------------------------------------------
 		//write operations
@@ -124,7 +118,7 @@ export namespace vve {
 	//read operations
 
 	template< typename... TypesOne, typename... TypesTwo>
-	std::optional<std::tuple<TypesOne...>> VeTableStateType::at(VeHandle handle) {
+	std::optional<std::tuple<TypesOne...>> VeTableStateType::find(VeHandle handle) {
 		VeTableIndex table_index = getTableIndexFromHandle(handle);
 		if( table_index == VeTableIndex::NULL() )  { return std::nullopt; }
 		VeIndex slot_map_index;
@@ -185,10 +179,7 @@ export namespace vve {
 
 	template<typename... TypesOne, typename... TypesTwo>
 	void VeTableStateType::clear() {
-		while (d_chunks.size() > 1) {
-			d_chunks.pop_back();
-		}
-		d_chunks[0].clear();
+		d_chunks.clear();
 		d_slot_map.clear();
 		for (auto& map : d_maps) { map.clear(); }
 	}

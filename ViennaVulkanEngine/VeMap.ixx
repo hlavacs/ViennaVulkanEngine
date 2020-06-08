@@ -214,7 +214,7 @@ export namespace vve {
     };
 
     ///----------------------------------------------------------------------------------
-    /// \brief Overload of the update member function
+    /// \brief Overload of the insert member function
     /// \param[in] handle The handle holding an index to the slot map
     /// \param[in] table_index The new table_index to be stored in the slot map
     /// \returns true if the entry was found and updated, else false
@@ -234,9 +234,9 @@ export namespace vve {
     }
 
     ///----------------------------------------------------------------------------------
-    /// \brief Overload of the at member function
+    /// \brief Overload of the find member function
     /// \param[in] handle The handle holding an index to the slot map
-    /// \returns the table index for this handle
+    /// \returns the value if found, or NULL
     ///----------------------------------------------------------------------------------
     auto VeSlotMap::find(VeHandle &handle) {
         return VeHashMapBase<VeGuid, VeTableIndex>::find(handle.d_guid, handle.d_index);
@@ -274,24 +274,47 @@ export namespace vve {
         auto erase(tuple_type &data);
     };
 
+    ///----------------------------------------------------------------------------------
+    /// \brief Overload of the insert member function
+    /// \param[in] data The key tuple to insert into the hash map
+    /// \param[in] index The value to insert
+    /// \returns the slot map index of this new item
+    ///----------------------------------------------------------------------------------
     template< typename tuple_type, int... Is>
     auto VeHashMap<tuple_type, Is...>::insert(tuple_type &data, VeIndex index) {
-        return VeHashMapBase<VeHash, VeIndex>::insert( std::hash<sub_type>()(std::make_tuple(std::tuple_element<Is, data> ...)), index );
+        //return VeHashMapBase<VeHash, VeIndex>::insert(std::hash<sub_type>()(std::make_tuple(std::tuple_element<Is, data> ...)), index);
+        return VeHashMapBase<VeHash, VeIndex>::insert( hash_impl(data, std::integer_sequence<int, Is...>) , index );
     }
 
+    ///----------------------------------------------------------------------------------
+    /// \brief Overload of the update member function
+    /// \param[in] data The key tuple to update into the hash map
+    /// \param[in] index The value to update
+    /// \returns true if the item was found and updated, else false
+    ///----------------------------------------------------------------------------------
     template< typename tuple_type, int... Is>
     auto VeHashMap<tuple_type, Is...>::update(tuple_type &data, VeIndex index) {
-        return VeHashMapBase<VeHash, VeIndex>::update(std::hash<sub_type>()(std::make_tuple(std::tuple_element<Is, data> ...)), index);
+        return VeHashMapBase<VeHash, VeIndex>::update(hash_impl(data, std::integer_sequence<int, Is...>), index);
     }
 
+    ///----------------------------------------------------------------------------------
+    /// \brief Overload of the find member function
+    /// \param[in] data The key tuple to update into the hash map
+    /// \returns the value if found, or NULL
+    ///----------------------------------------------------------------------------------
     template< typename tuple_type, int... Is>
     auto VeHashMap<tuple_type, Is...>::find(tuple_type &data) {
-        return VeHashMapBase<VeHash, VeIndex>::find(std::hash<sub_type>()(std::make_tuple(std::tuple_element<Is, data> ...)));
+        return VeHashMapBase<VeHash, VeIndex>::find(hash_impl(data, std::integer_sequence<int, Is...>));
     }
 
+    ///----------------------------------------------------------------------------------
+    /// \brief Overload of the erase member function
+    /// \param[in] data The key tuple to erase
+    /// \returns true if the item was foudn and erased, else false
+    ///----------------------------------------------------------------------------------
     template< typename tuple_type, int... Is>
     auto VeHashMap<tuple_type, Is...>::erase(tuple_type &data) {
-        return VeHashMapBase<VeHash, VeIndex>::erase(std::hash<sub_type>()(std::make_tuple(std::tuple_element<Is, data> ...)));
+        return VeHashMapBase<VeHash, VeIndex>::erase(hash_impl(data, std::integer_sequence<int, Is...>));
     }
 
 };
