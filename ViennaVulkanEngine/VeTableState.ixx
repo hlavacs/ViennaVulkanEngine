@@ -74,7 +74,6 @@ export namespace vve {
 		VeTableIndex getTableIndexFromHandle( VeHandle handle);
 
 	public:
-
 		VeTableState(allocator_type alloc = {});
 		~VeTableState() = default;
 
