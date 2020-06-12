@@ -86,7 +86,7 @@ export namespace vve {
 		//write operations
 
 		VeHandle	insert(VeGuid guid, tuple_type &entry);
-		VeHandle	insert(VeGuid guid, tuple_type &entry, std::shared_ptr<VeHandle> handle);
+		VeHandle	insert(VeGuid guid, tuple_type &entry, std::promise<VeHandle> handle);
 		bool		update(VeHandle handle, tuple_type &entry);
 		bool		erase(VeHandle handle);
 		void		operator=(const VeTableStateType& rhs);
@@ -141,9 +141,10 @@ export namespace vve {
 	}
 
 	template< typename... TypesOne, typename... TypesTwo>
-	VeHandle VeTableStateType::insert(VeGuid guid, tuple_type &entry, std::shared_ptr<VeHandle> handle) {
-		*handle = insert(guid, entry);
-		return *handle;
+	VeHandle VeTableStateType::insert(VeGuid guid, tuple_type &entry, std::promise<VeHandle> prom) {
+		VeHandle handle = insert(guid, entry);
+		prom.set_value(handle);
+		return handle;
 	}
 
 	template< typename... TypesOne, typename... TypesTwo>

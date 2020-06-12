@@ -36,21 +36,23 @@ int main()
     std::cout << sizeof(VeTableIndex) << std::endl;
     std::cout << sizeof(VeHandle) << std::endl;
 
-    VeTableChunk<uint64_t, float, uint64_t> ToAChunk;
+    VeTableChunk<uint64_t, float, uint32_t> ToAChunk;
     std::cout << sizeof(ToAChunk) << "\n";
     auto idx1 = ToAChunk.insert( 1, { 4, 2.0f, 90 });
-    auto idx = ToAChunk.insert( 2, { 5, 2.5f, 97 });
-    idx = ToAChunk.insert( 3, { 6, 2.5f, 97 });
-    idx = ToAChunk.insert( 4, { 7, 2.5f, 97 });
-    idx = ToAChunk.insert( 5, { 8, 2.5f, 97 });
-    idx = ToAChunk.insert( 6, { 9, 2.5f, 97 });
+    auto idx2 = ToAChunk.insert( 2, { 5, 2.5f, 97 });
+    auto idx3 = ToAChunk.insert( 3, { 6, 2.5f, 97 });
+    auto idx4 = ToAChunk.insert( 4, { 7, 2.5f, 91 });
+    auto idx5 = ToAChunk.insert( 5, { 8, 2.5f, 92 });
+    auto idx6 = ToAChunk.insert( 6, { 9, 2.5f, 93 });
 
     VeIndex slotmap;
     auto tuple = ToAChunk.at(idx1, slotmap);
     ToAChunk.pop_back();
 
 
-    VeTableState< Typelist< uint64_t, float, uint64_t, char>, Typelist< Hashlist< 0, 1, 2>, Hashlist< 1, 2 >> > ToATableState;
+    VeTableState< Typelist< uint64_t, float, uint32_t, char>, Typelist< Hashlist< 0, 1, 2>, Hashlist< 1, 2 >> > ToATableState;
+    auto h1 = ToATableState.insert(1, std::make_tuple( 4, 2.0f, 90, 'a' ));
+
 
 
     /*
