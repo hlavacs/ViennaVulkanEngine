@@ -46,6 +46,7 @@ export namespace vve {
 		VeChunkIndex	d_chunk_index;
 		VeInChunkIndex	d_in_chunk_index;
 		VeTableIndex() : d_chunk_index(VeChunkIndex::NULL()), d_in_chunk_index(VeInChunkIndex::NULL()) {};
+		VeTableIndex(VeChunkIndex chunk_index, VeInChunkIndex in_chunk_index) : d_chunk_index(chunk_index), d_in_chunk_index(in_chunk_index) {};
 		VeTableIndex(const VeTableIndex &v) : d_chunk_index(v.d_chunk_index), d_in_chunk_index(v.d_in_chunk_index) {};
 		auto operator==(const VeTableIndex& v) { return d_chunk_index == v.d_chunk_index && d_in_chunk_index == v.d_in_chunk_index; };
 		auto operator!=(const VeTableIndex& v) { return !(d_chunk_index == v.d_chunk_index && d_in_chunk_index == v.d_in_chunk_index); };
@@ -59,6 +60,7 @@ export namespace vve {
 		VeGuid	d_guid;
 		VeIndex	d_index;
 		VeHandle() : d_guid(VeGuid::NULL()), d_index(VeIndex::NULL()) {};
+		VeHandle(VeGuid guid, VeIndex index) : d_guid(guid), d_index(index) {};
 		VeHandle(const VeHandle& v) : d_guid(v.d_guid), d_index(v.d_index) {};
 		bool operator==(const VeHandle& v) const { return d_guid.value == v.d_guid.value; };
 		bool operator!=(const VeHandle& v) const { return !(d_guid.value == v.d_guid.value); };

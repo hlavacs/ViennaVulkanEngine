@@ -3,7 +3,19 @@ export module VVE:VEUtil;
 import std.core;
 import :VETypes;
 
+
+namespace vve {
+	inline std::atomic<uint64_t> g_guid = 0;
+}
+
+
 export namespace vve {
+
+	//----------------------------------------------------------------------------------
+	//produces unique guids
+	VeGuid newGuid() {
+		return VeGuid( (decltype(std::declval<VeGuid>().value)) g_guid.fetch_add(1) );
+	}
 
 	//----------------------------------------------------------------------------------
 	//hashing for tuples of hashable types
@@ -87,6 +99,15 @@ export namespace vve {
 	template<typename... Ts> 
 	constexpr auto TupleOfLists( ) {
 		return std::make_tuple( TupleOfLists_impl<Ts>()... );
+	}
+
+	//----------------------------------------------------------------------------------
+	//assert function
+	inline void VeAssert(bool pred) {
+		if (!pred) {
+			std::cerr << "Assertion failed!\n";
+			exit(1);
+		}
 	}
 
 

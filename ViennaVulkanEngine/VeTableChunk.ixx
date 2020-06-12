@@ -18,10 +18,12 @@ export namespace vve {
 
 	template<typename... Args>
 	class VeTableChunk {
+	public:
 		static const uint32_t data_size = (sizeof(Args) + ...) + sizeof(VeIndex); //d_data + slot_map_array
 		static const uint32_t manage_size = sizeof(VeGuid) + sizeof(uint32_t) + sizeof(VeChunkIndex);
 		static const uint32_t c_max_size = (VE_TABLE_CHUNK_SIZE - manage_size) / data_size;
 
+	private:
 		using data_arrays = std::tuple<std::array<Args, c_max_size>...>;	//tuple of arrays
 		using tuple_type = std::tuple<Args...>;								//basic tuple type
 		using slot_map_array = std::array<VeIndex, c_max_size>;				//index of slot map
@@ -38,7 +40,7 @@ export namespace vve {
 		VeTableChunk( const VeTableChunk &) = delete;
 		~VeTableChunk() = default;
 
-		VeInChunkIndex	insert(VeIndex slot_map_index, tuple_type entry);
+		VeInChunkIndex	insert(VeIndex slot_map_index, tuple_type&& entry);
 		bool			update(VeInChunkIndex in_chunk_index, tuple_type entry);
 		bool			update(VeIndex slot_map_index, VeInChunkIndex in_chunk_index, tuple_type entry);
 		tuple_type		at(VeInChunkIndex in_chunk_index, VeIndex &slot_map_index);
@@ -47,7 +49,9 @@ export namespace vve {
 		bool			full();
 		VeGuid			guid();
 		std::size_t		size();
-		VeIndex			slotMapIndex(VeInChunkIndex);
+		std::size_t		capacity();
+		VeIndex			swap(VeInChunkIndex index, VeTableChunk<Args...>& other_chunk, VeInChunkIndex other_index);
+		VeIndex			slot(VeInChunkIndex);
 	};
 
 	///----------------------------------------------------------------------------------
@@ -69,7 +73,7 @@ export namespace vve {
 	/// \returns the in chunk index of the new entry in this chunk 
 	///----------------------------------------------------------------------------------
 	template<typename... Args>
-	VeInChunkIndex VeTableChunk<Args...>::insert(VeIndex slot_map_index, tuple_type entry) {
+	VeInChunkIndex VeTableChunk<Args...>::insert(VeIndex slot_map_index, tuple_type &&entry) {
 		static_for<std::size_t, 0, std::tuple_size_v<tuple_type>>( [&,this](auto i) { //copy tuple into the chunk
 			std::get<i>(d_data)[d_size] = std::get<i>(entry); 
 		});
@@ -176,11 +180,38 @@ export namespace vve {
 	}
 
 	///----------------------------------------------------------------------------------
+	/// \brief Get the capacity if this chunk type
+	/// \returns the number of entries this chunk type can store
+	///----------------------------------------------------------------------------------
+	template<typename... Args>
+	std::size_t VeTableChunk<Args...>::capacity() {
+		return c_max_size;
+	}
+
+	///----------------------------------------------------------------------------------
+	/// \brief Swap an entry of this chunk with another entry, possibly in another chunk
+	/// Can be done when erasing an entry from the table. Then first the entry is swapped with the last
+	/// entry of the last chunk, then this last entry is simply popped away.
+	/// \returns slot map index of the second entry, so we can swap in the slot map also
+	///----------------------------------------------------------------------------------
+	template<typename... Args>
+	VeIndex VeTableChunk<Args...>::swap(VeInChunkIndex in_chunk_index, VeTableChunk<Args...> &other_chunk, VeInChunkIndex other_index) {
+		if (in_chunk_index < d_size && other_index < other_chunk.d_size ) {
+			static_for<std::size_t, 0, std::tuple_size_v<tuple_type>>([&, this](auto i) { //copy tuple from arrays
+				std::swap( std::get<i>(d_data)[in_chunk_index], std::get<i>(other_chunk.d_data)[other_index] );
+				});
+
+			std::swap( d_slot_map_index[in_chunk_index], other_chunk.d_slot_map_index[other_index] );
+		}
+		return d_slot_map_index[in_chunk_index];
+	}
+
+	///----------------------------------------------------------------------------------
 	/// \brief Get the slot map index of a given entry
 	/// \returns the slot map index of an entry
 	///----------------------------------------------------------------------------------
 	template<typename... Args>
-	VeIndex	VeTableChunk<Args...>::slotMapIndex(VeInChunkIndex in_chunk_index) {
+	VeIndex	VeTableChunk<Args...>::slot(VeInChunkIndex in_chunk_index) {
 		if (!(in_chunk_index < d_slot_map_index.size())) { return VeIndex::NULL(); }
 		return d_slot_map_index[in_chunk_index];
 	}
