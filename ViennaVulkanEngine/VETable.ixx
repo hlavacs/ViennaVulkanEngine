@@ -28,7 +28,7 @@ export namespace vve {
 	//-------------------------------------------------------------------------------
 	//main table class
 
-	template< typename... Types> struct VeTable;
+	template< typename... Types> class VeTable;
 
 	#define VeTableStateType VeTableState< Typelist < TypesOne... >, Typelist < TypesTwo... > >
 	#define VeTableType VeTable< Typelist < TypesOne... >, Typelist < TypesTwo... > >

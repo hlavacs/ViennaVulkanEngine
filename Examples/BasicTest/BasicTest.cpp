@@ -1,3 +1,4 @@
+
 import std.core;
 import std.regex;
 import std.filesystem;
@@ -51,10 +52,10 @@ int main()
 
 
     VeTableState< Typelist< uint64_t, float, uint32_t, char>, Typelist< Hashlist< 0, 1, 2>, Hashlist< 1, 2 >> > ToATableState;
-    auto h1 = ToATableState.insert( newGuid(), std::make_tuple( 4, 2.0f, 90, 'a' ) );
+    auto h1 = ToATableState.insert( std::make_tuple( 4, 2.0f, 90, 'a' ) );
     VeAssert(ToATableState.size() == 1);
     for (int i = 0; i < 10000; i++) {
-        auto h = ToATableState.insert(newGuid(), std::make_tuple( i, 2.0f*i, i*5, 'a' ) );
+        auto h = ToATableState.insert( std::make_tuple( i, 2.0f*i, i*5, 'a' ) );
     }
     VeAssert(ToATableState.size() == 10001);
 

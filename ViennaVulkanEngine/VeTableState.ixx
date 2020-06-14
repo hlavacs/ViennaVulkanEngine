@@ -47,8 +47,17 @@ export namespace vve {
 
 
 	//----------------------------------------------------------------------------------
+	// Delare VeTable to be friend for calling private function
+	template< typename... Types> class VeTable;
+
+	//----------------------------------------------------------------------------------
+	// Specialization of VeTable
+	template< typename... TypesOne, typename... TypesTwo>
+	class VeTable<Typelist<TypesOne... >, Typelist<TypesTwo...>>;
+
+	//----------------------------------------------------------------------------------
 	// Delare VeTableState
-	template< typename... Types> struct VeTableState;
+	template< typename... Types> class VeTableState;
 
 	#define VeTableStateType VeTableState< Typelist < TypesOne... >, Typelist < TypesTwo... > >
 
@@ -56,6 +65,7 @@ export namespace vve {
 	// Specialization of VeTableState
 	template< typename... TypesOne, typename... TypesTwo>
 	class VeTableStateType {
+		friend class VeTable < Typelist<TypesOne... >, Typelist<TypesTwo...> >;
 
 		using tuple_type = std::tuple<TypesOne...>;
 		using chunk_type = VeTableChunk<TypesOne...>;
@@ -72,6 +82,8 @@ export namespace vve {
 		map_type	d_maps;			//the search maps
 
 		VeTableIndex getTableIndexFromHandle( VeHandle &handle);
+		VeHandle	insert(VeGuid guid, tuple_type &&entry);
+		VeHandle	insert(VeGuid guid, tuple_type &&entry, std::promise<VeHandle> handle);
 
 	public:
 		VeTableState(allocator_type alloc = {});
@@ -88,13 +100,12 @@ export namespace vve {
 
 		VeHandle	insert(tuple_type&& entry);
 		VeHandle	insert(tuple_type&& entry, std::promise<VeHandle> handle);
-		VeHandle	insert(VeGuid guid, tuple_type &&entry);
-		VeHandle	insert(VeGuid guid, tuple_type &&entry, std::promise<VeHandle> handle);
 		bool		update(VeHandle handle, tuple_type &entry);
 		bool		erase(VeHandle handle);
 		void		operator=(const VeTableStateType& rhs);
 		void		clear();
 	};
+
 
 	///----------------------------------------------------------------------------------
 	/// \brief Constructor
