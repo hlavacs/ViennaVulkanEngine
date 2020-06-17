@@ -59,13 +59,13 @@ export namespace vve {
 	// Delare VeTableState
 	template< typename... Types> class VeTableState;
 
-	#define VeTableStateType VeTableState< Typelist < TypesOne... >, Typelist < TypesTwo... > >
+	#define VeTableStateType VeTableState< Typelist < TypesOne... >, Maplist < TypesTwo... > >
 
 	//----------------------------------------------------------------------------------
 	// Specialization of VeTableState
 	template< typename... TypesOne, typename... TypesTwo>
-	class VeTableStateType {
-		friend class VeTable < Typelist<TypesOne... >, Typelist<TypesTwo...> >;
+	class VeTableState< Typelist < TypesOne... >, Maplist < TypesTwo... > > {
+		friend class VeTable < Typelist<TypesOne... >, Maplist<TypesTwo...> >;
 
 		using tuple_type = std::tuple<TypesOne...>;
 		using chunk_type = VeTableChunk<TypesOne...>;
@@ -258,7 +258,10 @@ export namespace vve {
 	void VeTableStateType::clear() {
 		d_chunks.clear();
 		d_slot_map.clear();
-		for (auto& map : d_maps) { map.clear(); }
+
+		static_for<std::size_t, 0, std::tuple_size_v<map_type>>([&, this](auto i) { //copy tuple into the chunk
+			std::get<i>(d_maps).clear();
+			});
 	}
 
 };

@@ -51,20 +51,22 @@ int main()
     ToAChunk.pop_back();
 
 
-    VeTableState< Typelist< uint64_t, float, uint32_t, char>, Typelist< Hashlist< 0, 1, 2>, Hashlist< 1, 2 >> > ToATableState;
+    VeTableState< Typelist< uint64_t, float, uint32_t, char>, Maplist< Hashlist< 0, 1, 2>, Hashlist< 1, 2 >> > ToATableState;
     auto h1 = ToATableState.insert( std::make_tuple( 4, 2.0f, 90, 'a' ) );
     VeAssert(ToATableState.size() == 1);
     for (int i = 0; i < 10000; i++) {
         auto h = ToATableState.insert( std::make_tuple( i, 2.0f*i, i*5, 'a' ) );
     }
     VeAssert(ToATableState.size() == 10001);
+    ToATableState.clear();
+
 
     /*
-    VeTable< Typelist< uint64_t, float, uint64_t, char>, Typelist< Hashlist< 0, 1, 2>, Hashlist< 1, 2 >> > ToATable;
+    VeTable< Typelist< uint64_t, float, uint64_t, char>, Maplist< Hashlist< 0, 1, 2>, Hashlist< 1, 2 >> > ToATable;
 
     VeTableChunk< std::tuple<uint64_t, float, uint64_t>> AoTChunk;
     std::cout << sizeof AoTChunk << "\n";
-    VeTable< Typelist< std::tuple<uint64_t, float, uint64_t>, char, char >, Typelist< Hashlist<0>, Hashlist< 0, 1, 2>, Hashlist<0, 2>, Hashlist<1, 2>> > AoTTable;
+    VeTable< Typelist< std::tuple<uint64_t, float, uint64_t>, char, char >, Maplist< Hashlist<0>, Hashlist< 0, 1, 2>, Hashlist<0, 2>, Hashlist<1, 2>> > AoTTable;
     */
 
 

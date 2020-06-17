@@ -17,6 +17,14 @@ export namespace vve {
 		return VeGuid( (decltype(std::declval<VeGuid>().value)) g_guid.fetch_add(1) );
 	}
 
+	template<typename T>
+	concept has_size = requires(T t) { t.size(); };
+
+	template<has_size T>
+	bool isInArray(std::size_t index, const T& container) {
+		return index < container.size();
+	}
+
 	//----------------------------------------------------------------------------------
 	//hashing for tuples of hashable types
 
@@ -105,7 +113,7 @@ export namespace vve {
 	//assert function
 	inline void VeAssert(bool pred) {
 		if (!pred) {
-			std::cerr << "Assertion failed!\n";
+			std::cerr << "File " << __FILE__ << " line " << __LINE__ << ": Assertion failed!\n";
 			exit(1);
 		}
 	}

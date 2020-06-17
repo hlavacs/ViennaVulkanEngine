@@ -9,14 +9,14 @@ export namespace vve {
 	//basic data types
 
 	template<typename T, typename P>
-	struct IntType {
-		static IntType<T, P> NULL() { return IntType<T,P>(); };
-		T value;
+	struct NumType {
+		static NumType<T, P> NULL() { return NumType<T,P>(); };
+		T value{};
 		operator T& () { return value; }
-		IntType() : value(T(std::numeric_limits<T>::max())) {};
-		IntType(const T& t) : value(t) {};
-		IntType(const IntType<T,P>& t) : value(t.value) {};
-		auto operator<=>(const IntType& v) const = default;
+		NumType() : value(T(std::numeric_limits<T>::max())) {};
+		NumType(const T& t) : value(t) {};
+		NumType(const NumType<T,P>& t) : value(t.value) {};
+		auto operator<=>(const NumType& v) const = default;
 		auto operator<=>(const T& v) { return value <=> v; };
 	};
 
@@ -24,11 +24,11 @@ export namespace vve {
 	//----------------------------------------------------------------------------------
 	//define the size of GUIDs - either 32 or 64
 
-	using VeGuid = IntType<uint32_t, struct P0>;
-	using VeIndex = IntType<uint32_t, struct P1>;
-	using VeChunkIndex = IntType<uint16_t, struct P2>;
-	using VeInChunkIndex = IntType<uint16_t, struct P3>;
-	using VeHash = IntType<uint64_t, struct P4>;
+	using VeGuid = NumType<uint32_t, struct P0>;
+	using VeIndex = NumType<uint32_t, struct P1>;
+	using VeChunkIndex = NumType<uint16_t, struct P2>;
+	using VeInChunkIndex = NumType<uint16_t, struct P3>;
+	using VeHash = NumType<uint64_t, struct P4>;
 
 
 	/*

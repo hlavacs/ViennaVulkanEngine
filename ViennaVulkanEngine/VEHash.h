@@ -13,8 +13,8 @@ namespace std {
     };
 
     template<typename T, typename P>
-    struct hash<vve::IntType<T,P>> {
-        size_t operator()(const vve::IntType<T, P>& v) const {
+    struct hash<vve::NumType<T,P>> {
+        size_t operator()(const vve::NumType<T, P>& v) const {
             return hash<decltype(v.value)>()(v.value);
         }
     };
