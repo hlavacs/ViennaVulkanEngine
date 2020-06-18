@@ -50,6 +50,9 @@ export namespace vve {
 		VeHandle	insert(VeGuid guid, tuple_type &&entry);
 		VeHandle	insert(VeGuid guid, tuple_type &&entry, std::promise<VeHandle> handle);
 
+		VeHandle	insert(VeGuid guid, TypesOne... args);
+		VeHandle	insert(VeGuid guid, std::promise<VeHandle> handle, TypesOne... args);
+
 	public:
 		VeTableState(allocator_type alloc = {});
 		~VeTableState() = default;
@@ -64,10 +67,11 @@ export namespace vve {
 		//write operations
 
 		VeHandle	insert(tuple_type&& entry);
+		VeHandle	insert(tuple_type&& entry, std::promise<VeHandle> handle);
 
 		VeHandle	insert(TypesOne... data);
+		VeHandle	insert(std::promise<VeHandle> handle, TypesOne... data);
 
-		VeHandle	insert(tuple_type&& entry, std::promise<VeHandle> handle);
 		bool		update(VeHandle handle, tuple_type &entry);
 		bool		erase(VeHandle handle);
 		void		operator=(const VeTableStateType& rhs);
@@ -131,9 +135,45 @@ export namespace vve {
 	//write operations
 
 	template< typename... TypesOne, typename... TypesTwo>
-	VeHandle VeTableStateType::insert( TypesOne... data ) {
-		return 0;
+	VeHandle VeTableStateType::insert(VeGuid guid, TypesOne... args ) {
+
+		VeChunkIndex last = (decltype(std::declval<VeIndex>().value))(d_chunks.size() - 1);		//index of last chunk
+		if (d_chunks[last]->full()) {												//if its full we need a new chunk
+			d_chunks.emplace_back(std::make_unique<chunk_type>());					//create a new chunk
+			last = (decltype(std::declval<VeIndex>().value))d_chunks.size() - 1;
+		}
+
+		VeTableIndex table_index{ last, VeInChunkIndex::NULL() };		//no in_chunk_index yet
+		VeHandle handle{ guid, d_slot_map.insert(guid, table_index) };	//handle of the new item
+
+		table_index.d_in_chunk_index = d_chunks[last]->
+			insert(handle.d_index, args...);				//insert data into the chunk, get in_chunk_index
+
+		d_slot_map.update(handle, table_index);				//update slot map table index with new in_chunk_index
+
+		//insert into the search maps
+		return handle;
+
 	}
+
+	template< typename... TypesOne, typename... TypesTwo>
+	VeHandle VeTableStateType::insert(VeGuid guid, std::promise<VeHandle> prom, TypesOne... args) {
+		VeHandle handle = insert(guid, args...);
+		prom.set_value(handle);
+		return handle;
+
+	}
+
+	template< typename... TypesOne, typename... TypesTwo>
+	VeHandle VeTableStateType::insert(TypesOne... args) {
+		return insert(newGuid(), args...);
+	}
+
+	template< typename... TypesOne, typename... TypesTwo>
+	VeHandle VeTableStateType::insert(std::promise<VeHandle> prom, TypesOne... args) {
+		return insert(newGuid(), prom, args...);
+	}
+
 
 
 	///----------------------------------------------------------------------------------
@@ -194,6 +234,14 @@ export namespace vve {
 		prom.set_value(handle);
 		return handle;
 	}
+
+
+
+
+
+
+
+
 
 	///----------------------------------------------------------------------------------
 	/// \brief Update an existing entry with new data

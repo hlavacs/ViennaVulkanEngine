@@ -84,11 +84,16 @@ export namespace vve {
 		return VeInChunkIndex(d_size++);				//increase size and return in chunk index
 	}
 
+
+
+
 	template<typename... Args>
 	VeInChunkIndex VeTableChunk<Args...>::insert(VeIndex slot_map_index, Args... args) {
-		int i = 0;
-		auto loop = [&, this](auto&& data) { std::get<++i>(d_data)[d_size] = data; ++i;	};
-		(loop(args), ...);
+		auto f = [&, this]<int i>(auto t) { std::get<i>(this->d_data)[this->d_size] = t; };
+		callFunc<0>(f, args...);
+
+		d_slot_map_index[d_size] = slot_map_index;		//index of the slot map that points to this entry
+		return VeInChunkIndex(d_size++);				//increase size and return in chunk index
 	}
 
 	///----------------------------------------------------------------------------------

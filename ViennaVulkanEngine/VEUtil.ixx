@@ -129,6 +129,22 @@ export namespace vve {
 		return std::make_tuple(TupleOfInstances_impl<tuple_type, Ts>()...); //return a tuple of instances
 	}
 
+	//----------------------------------------------------------------------------------
+	
+	template<int i, class Func, typename... Args>
+	void callFunc(Func&& f, Args... args) {};
+
+	template<int i, class Func, typename T >
+	void callFunc(Func&& f, T t) { 
+		f.template operator() < i > (t);
+	};
+
+	template<int i, class Func, typename T, typename... Args>
+	void callFunc(Func&& f, T t, Args... args) { 
+		f.template operator() <i>(t);
+		callFunc<i+1>(f, args...);
+	};
+
 
 	//----------------------------------------------------------------------------------
 	//assert function
