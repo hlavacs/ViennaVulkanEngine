@@ -33,12 +33,24 @@ export namespace vve {
             map_t(KeyT key, ValueT value, VeIndex next) : d_key(key), d_value(value), d_next(next) {};
         };
 
+    private:
+        ///----------------------------------------------------------------------------------
+        /// Private members
+        ///----------------------------------------------------------------------------------
         std::size_t                 d_size;         ///number of mappings in the map
         VeIndex                     d_first_free;   ///first free entry in slot map
         std::pmr::vector<map_t>     d_map;          ///map pointing to entries in chunks or simple hash entries
         std::pmr::vector<VeIndex>   d_bucket;       ///hashed value points to slot map
 
+        std::tuple<VeIndex, VeIndex, VeIndex>   findInHashMap(KeyT& key);     //if no index is given, find the slot map index through the hash map
+        VeIndex                                 eraseFromHashMap(KeyT& key);  //remove an entry from the hash map
+        void                                    increaseBuckets();           //increase the number of buckets and rehash the hash map
 
+    public:
+
+        ///----------------------------------------------------------------------------------
+        /// Iterator
+        ///----------------------------------------------------------------------------------
         template<bool Const>
         class map_iterator_t {
             friend class map_iterator_t<!Const>;
@@ -47,15 +59,15 @@ export namespace vve {
             VeHashMapBase<KeyT,ValueT>* d_hash_map;
             VeIndex                     d_slot_index;
 
+        public:
             explicit map_iterator_t(VeHashMapBase<KeyT, ValueT>* map, VeIndex slot_index = VeIndex::NULL() ) : d_hash_map(map), d_slot_index(slot_index) {
                 while (isInArray(d_slot_index, d_hash_map->d_map) && d_hash_map->d_map[d_slot_index].d_key == KeyT::NULL()) { ++d_slot_index; }
                 if (isInArray(d_slot_index, d_hash_map->d_map)) { return; }
                 d_slot_index = VeIndex::NULL();
             };
 
-        public:
             using difference_type = std::ptrdiff_t;     // Member typedefs required by std::iterator_traits
-            using value_type = int;
+            using value_type = map_t;
             using pointer = std::conditional_t<Const, const map_t*, map_t*>;
             using reference = std::conditional_t<Const, const map_t&, map_t&>;
             using iterator_category = std::forward_iterator_tag;
@@ -64,26 +76,17 @@ export namespace vve {
                 return d_hash_map.d_map[d_slot_index];
             }
             auto& operator++() {
-                do {
-                    ++d_slot_index;
-                } while (isInArray(d_slot_index, d_hash_map->d_map) && d_hash_map->d_map[d_slot_index] == KeyT::NULL());
+                do { ++d_slot_index; } 
+                while (isInArray(d_slot_index, d_hash_map->d_map) && d_hash_map->d_map[d_slot_index] == KeyT::NULL());
                 if ( !isInArray(d_slot_index, d_hash_map->d_map)) { d_slot_index = VeIndex::NULL(); }
                 return *this; 
             }
-            auto operator++(int) {
-                auto result = *this; ++* this; return result;
-            }            
+            auto operator++(int) { auto result = *this; ++* this; return result; }            
             template<bool R>    // Support comparison between iterator and const_iterator types
-            bool operator==(const map_iterator_t<R>& rhs) const {
-                return d_hash_map == rhs.d_hash_map && d_slot_index == rhs.d_slot_index;
-            }
+            bool operator==(const map_iterator_t<R>& rhs) const { return d_hash_map == rhs.d_hash_map && d_slot_index == rhs.d_slot_index; }
             template<bool R>
-            bool operator!=(const map_iterator_t<R>& rhs) const {
-                return !(d_hash_map == rhs.d_hash_map && d_slot_index == rhs.d_slot_index);
-            }
-            operator map_iterator_t<false>() const { // Support implicit conversion of iterator to const_iterator (but not vice versa)
-                return map_iterator_t<true>{d_hash_map, d_slot_index};
-            }
+            bool operator!=(const map_iterator_t<R>& rhs) const { return !(d_hash_map == rhs.d_hash_map && d_slot_index == rhs.d_slot_index); }
+            operator map_iterator_t<false>() const { return map_iterator_t<true>{d_hash_map, d_slot_index}; }
         };
 
         using iterator = map_iterator_t < false >;
@@ -91,11 +94,6 @@ export namespace vve {
         friend iterator;
         friend const_iterator;
 
-        std::tuple<VeIndex, VeIndex, VeIndex>   findInHashMap(KeyT &key);     //if no index is given, find the slot map index through the hash map
-        VeIndex                                 eraseFromHashMap(KeyT &key);  //remove an entry from the hash map
-        void                                    increaseBuckets();           //increase the number of buckets and rehash the hash map
-
-    public:
         VeHashMapBase(allocator_type alloc = {});
         VeIndex     insert( KeyT &key, ValueT value);
         bool        update( KeyT &key, ValueT value, VeIndex& index);
@@ -104,8 +102,10 @@ export namespace vve {
         void        clear();
         std::size_t size() { return d_size; };
         float       loadFactor() { return (float)d_size / d_bucket.size();  };
-        auto        begin();
-        auto        end();
+        iterator begin();
+        iterator end();
+        const_iterator cbegin() const;
+        const_iterator cend() const;
     };
 
 
@@ -259,13 +259,23 @@ export namespace vve {
     }
 
     template<typename KeyT, typename ValueT>
-    auto VeHashMapBase<KeyT, ValueT>::begin() {
+    typename VeHashMapBase<KeyT, ValueT>::iterator VeHashMapBase<KeyT, ValueT>::begin() {
         return iterator{ this, 0 };
     }
 
     template<typename KeyT, typename ValueT>
-    auto VeHashMapBase<KeyT, ValueT>::end() {
+    typename VeHashMapBase<KeyT, ValueT>::iterator VeHashMapBase<KeyT, ValueT>::end() {
        return iterator{ this };
+    }
+
+    template<typename KeyT, typename ValueT>
+    typename VeHashMapBase<KeyT, ValueT>::const_iterator VeHashMapBase<KeyT, ValueT>::cbegin() const {
+        return const_iterator{ (VeHashMapBase<KeyT, ValueT>*)this, 0 };
+    }
+
+    template<typename KeyT, typename ValueT>
+    typename VeHashMapBase<KeyT, ValueT>::const_iterator VeHashMapBase<KeyT, ValueT>::cend() const {
+        return const_iterator{ (VeHashMapBase<KeyT, ValueT>*)this };
     }
 
 
@@ -289,6 +299,8 @@ export namespace vve {
         void clear();
         auto begin();
         auto end();
+        auto begin() const;
+        auto end() const;
     };
 
     ///----------------------------------------------------------------------------------
@@ -347,7 +359,15 @@ export namespace vve {
     }
 
     auto VeSlotMap::end() {
-        return VeHashMapBase<VeGuid, VeTableIndex>::begin();
+        return VeHashMapBase<VeGuid, VeTableIndex>::end();
+    }
+
+    auto VeSlotMap::begin() const {
+        return VeHashMapBase<VeGuid, VeTableIndex>::cbegin();
+    }
+
+    auto VeSlotMap::end() const {
+        return VeHashMapBase<VeGuid, VeTableIndex>::cend();
     }
 
 
@@ -374,6 +394,8 @@ export namespace vve {
         void clear();
         auto begin();
         auto end();
+        auto begin() const;
+        auto end() const;
     };
 
     ///----------------------------------------------------------------------------------
@@ -432,6 +454,16 @@ export namespace vve {
     template< typename tuple_type, int... Is>
     auto VeHashMap<tuple_type, Is...>::end() {
         return VeHashMapBase<VeGuid, VeTableIndex>::begin();
+    }
+
+    template< typename tuple_type, int... Is>
+    auto VeHashMap<tuple_type, Is...>::begin() const {
+        return VeHashMapBase<VeGuid, VeTableIndex>::cbegin();
+    }
+
+    template< typename tuple_type, int... Is>
+    auto VeHashMap<tuple_type, Is...>::end() const {
+        return VeHashMapBase<VeGuid, VeTableIndex>::cbegin();
     }
 
 
