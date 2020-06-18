@@ -77,6 +77,9 @@ export namespace vve {
 		auto getTuple() {
 			return std::make_tuple(Is...);
 		}
+		template<typename tuple_type>
+		auto getInstance() {
+		}
 	};
 
 

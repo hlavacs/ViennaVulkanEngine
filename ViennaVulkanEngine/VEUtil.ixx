@@ -17,6 +17,9 @@ export namespace vve {
 		return VeGuid( (decltype(std::declval<VeGuid>().value)) g_guid.fetch_add(1) );
 	}
 
+	//----------------------------------------------------------------------------------
+	//Test whether an index for an array is within bounds
+
 	template<typename T>
 	concept has_size = requires(T t) { t.size(); };
 
@@ -108,6 +111,24 @@ export namespace vve {
 	constexpr auto TupleOfLists( ) {
 		return std::make_tuple( TupleOfLists_impl<Ts>()... );
 	}
+
+	//----------------------------------------------------------------------------------
+	//Turn tuple of types and list of integers into tuple of instances
+
+	//template<typename T>
+	//concept has_getInstance = requires(T t) { t.getInstance(); };
+
+	template<typename tuple_type, typename T>
+	constexpr auto TupleOfInstances_impl() {
+		T t;
+		return t.getInstance<tuple_type>(); //calls Listtype::getInstance or other map type
+	}
+
+	template<typename tuple_type, typename... Ts>
+	constexpr auto TupleOfInstances() {
+		return std::make_tuple(TupleOfInstances_impl<tuple_type, Ts>()...); //return a tuple of instances
+	}
+
 
 	//----------------------------------------------------------------------------------
 	//assert function

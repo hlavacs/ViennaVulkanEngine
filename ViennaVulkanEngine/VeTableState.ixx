@@ -11,40 +11,6 @@ import :VETableChunk;
 
 export namespace vve {
 
-	//----------------------------------------------------------------------------------
-	template < int... Is >
-	struct Hashlist {
-
-		template<typename tuple_type>
-		auto getMap() {
-			//using sub_type = std::tuple< std::tuple_element<Is, tuple_type>::type ... >;
-			//return std::make_tuple(VeHashMap<tuple_type, Is...>());
-			return VeHashMap<tuple_type, Is...>();
-		}
-	};
-
-	//template < int... Is >
-	//struct Sortlist {
-	//	template<typename tuple_type>
-	//	auto getTuple() {
-	//		return std::make_tuple(Is...);
-	//	}
-	//};
-
-	//----------------------------------------------------------------------------------
-	//Turn List of Integers into maps
-
-	template<typename tuple_type, typename T>
-	constexpr auto TupleOfMaps_impl() {
-		T map;
-		return map.getMap<tuple_type>(); //calls Hashlist::getTuple2
-	}
-
-	template<typename tuple_type, typename... Ts>
-	constexpr auto TupleOfMaps() {
-		return std::make_tuple(TupleOfMaps_impl<tuple_type, Ts>()...); //return a tuple of maps
-	}
-
 
 	//----------------------------------------------------------------------------------
 	// Delare VeTable to be friend for calling private function
@@ -67,19 +33,18 @@ export namespace vve {
 	class VeTableState< Typelist < TypesOne... >, Maplist < TypesTwo... > > {
 		friend class VeTable < Typelist<TypesOne... >, Maplist<TypesTwo...> >;
 
+	public:
 		using tuple_type = std::tuple<TypesOne...>;
 		using chunk_type = VeTableChunk<TypesOne...>;
 		static_assert(sizeof(chunk_type) <= VE_TABLE_CHUNK_SIZE);
 		using chunk_ptr  = std::unique_ptr<chunk_type>;
-		using map_type = decltype(TupleOfMaps<tuple_type, TypesTwo...>());
+		using map_type = decltype(TupleOfInstances<tuple_type, TypesTwo...>());
 		using allocator_type = std::pmr::polymorphic_allocator<std::byte>;
 
-		//chunks
-		std::pmr::vector<chunk_ptr>	d_chunks;	///pointers to table chunks
-
-		//maps
-		VeSlotMap	d_slot_map;		//the table slot map
-		map_type	d_maps;			//the search maps
+	private:
+		std::pmr::vector<chunk_ptr>	d_chunks;	//pointers to table chunks
+		VeSlotMap	d_slot_map;					//the table slot map
+		map_type	d_maps;						//the search maps
 
 		VeTableIndex getTableIndexFromHandle( VeHandle &handle);
 		VeHandle	insert(VeGuid guid, tuple_type &&entry);
