@@ -64,6 +64,9 @@ export namespace vve {
 		//write operations
 
 		VeHandle	insert(tuple_type&& entry);
+
+		VeHandle	insert(TypesOne... data);
+
 		VeHandle	insert(tuple_type&& entry, std::promise<VeHandle> handle);
 		bool		update(VeHandle handle, tuple_type &entry);
 		bool		erase(VeHandle handle);
@@ -126,6 +129,12 @@ export namespace vve {
 
 	//-------------------------------------------------------------------------------
 	//write operations
+
+	template< typename... TypesOne, typename... TypesTwo>
+	VeHandle VeTableStateType::insert( TypesOne... data ) {
+		return 0;
+	}
+
 
 	///----------------------------------------------------------------------------------
 	/// \brief Insert a new entry into the table

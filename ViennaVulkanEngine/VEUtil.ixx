@@ -115,8 +115,8 @@ export namespace vve {
 	//----------------------------------------------------------------------------------
 	//Turn tuple of types and list of integers into tuple of instances
 
-	//template<typename T>
-	//concept has_getInstance = requires(T t) { t.getInstance(); };
+	template<typename T>
+	concept has_getInstance = requires(T t) { t.getInstance(); };
 
 	template<typename tuple_type, typename T>
 	constexpr auto TupleOfInstances_impl() {

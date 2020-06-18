@@ -41,6 +41,9 @@ export namespace vve {
 		~VeTableChunk() = default;
 
 		VeInChunkIndex	insert(VeIndex slot_map_index, tuple_type&& entry);
+
+		VeInChunkIndex	insert(VeIndex slot_map_index, Args... args);
+
 		bool			update(VeInChunkIndex in_chunk_index, tuple_type entry);
 		bool			update(VeIndex slot_map_index, VeInChunkIndex in_chunk_index, tuple_type entry);
 		tuple_type		at(VeInChunkIndex in_chunk_index, VeIndex &slot_map_index);
@@ -79,6 +82,13 @@ export namespace vve {
 		});
 		d_slot_map_index[d_size] = slot_map_index;		//index of the slot map that points to this entry
 		return VeInChunkIndex(d_size++);				//increase size and return in chunk index
+	}
+
+	template<typename... Args>
+	VeInChunkIndex VeTableChunk<Args...>::insert(VeIndex slot_map_index, Args... args) {
+		int i = 0;
+		auto loop = [&, this](auto&& data) { std::get<++i>(d_data)[d_size] = data; ++i;	};
+		(loop(args), ...);
 	}
 
 	///----------------------------------------------------------------------------------
