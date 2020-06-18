@@ -40,10 +40,9 @@ export namespace vve {
 		VeTableChunk( const VeTableChunk &) = delete;
 		~VeTableChunk() = default;
 
-		VeInChunkIndex	insert(VeIndex slot_map_index, tuple_type&& entry);
 		VeInChunkIndex	insert(VeIndex slot_map_index, Args... args);
-		bool			update(VeInChunkIndex in_chunk_index, tuple_type entry);
-		bool			update(VeIndex slot_map_index, VeInChunkIndex in_chunk_index, tuple_type entry);
+		bool			update(VeInChunkIndex in_chunk_index, Args... args);
+		bool			update(VeIndex slot_map_index, VeInChunkIndex in_chunk_index, Args... args);
 		tuple_type		at(VeInChunkIndex in_chunk_index, VeIndex &slot_map_index);
 		void			pop_back();
 		auto			data();
@@ -70,21 +69,9 @@ export namespace vve {
 	///----------------------------------------------------------------------------------
 	/// \brief Insert a new entry into the chunk
 	/// \param[in] slot_map_index The index of the slot map that points to this entry
-	/// \param[in] entry The tuple that is to be added to this chunk
+	/// \param[in] args The data that is to be added to this chunk
 	/// \returns the in chunk index of the new entry in this chunk 
 	///----------------------------------------------------------------------------------
-	template<typename... Args>
-	VeInChunkIndex VeTableChunk<Args...>::insert(VeIndex slot_map_index, tuple_type &&entry) {
-		static_for<std::size_t, 0, std::tuple_size_v<tuple_type>>( [&,this](auto i) { //copy tuple into the chunk
-			std::get<i>(d_data)[d_size] = std::get<i>(entry); 
-		});
-		d_slot_map_index[d_size] = slot_map_index;		//index of the slot map that points to this entry
-		return VeInChunkIndex(d_size++);				//increase size and return in chunk index
-	}
-
-
-
-
 	template<typename... Args>
 	VeInChunkIndex VeTableChunk<Args...>::insert(VeIndex slot_map_index, Args... args) {
 		auto f = [&, this]<int i>(auto t) { std::get<i>(this->d_data)[this->d_size] = t; };
@@ -97,33 +84,31 @@ export namespace vve {
 	///----------------------------------------------------------------------------------
 	/// \brief Update an existing entry of this chunk
 	/// \param[in] in_chunk_index Index of the entry in the data arrays
-	/// \param[in] entry The tuple that is to be updated in this chunk
+	/// \param[in] args The data that is to be updated in this chunk
 	/// \returns whether the operation was successful
 	///----------------------------------------------------------------------------------
 	template<typename... Args>
-	bool VeTableChunk<Args...>::update(VeInChunkIndex in_chunk_index, tuple_type entry) {
-		return update( VeIndex::NULL(), in_chunk_index, entry );
+	bool VeTableChunk<Args...>::update(VeInChunkIndex in_chunk_index, Args... args) {
+		return update(VeIndex::NULL(), in_chunk_index, args...);
 	}
 
 	///----------------------------------------------------------------------------------
 	/// \brief Update an existing entry of this chunk
 	/// \param[in] slot_map_index New index from the slot map that points to this entry
 	/// \param[in] in_chunk_index Index of the entry in the data arrays
-	/// \param[in] entry The tuple that is to be updated in this chunk
+	/// \param[in] args The data that is to be updated in this chunk
 	/// \returns whether the operation was successful
 	///----------------------------------------------------------------------------------
 	template<typename... Args>
-	bool VeTableChunk<Args...>::update(VeIndex slot_map_index, VeInChunkIndex in_chunk_index, tuple_type entry) {
+	bool VeTableChunk<Args...>::update(VeIndex slot_map_index, VeInChunkIndex in_chunk_index, Args... args) {
 		if (!(in_chunk_index.value < d_size)) return false;
 
-		static_for<std::size_t, 0, std::tuple_size_v<tuple_type>>([&, this](auto i) { //copy tuple over old chunk entry
-			std::get<i>(d_data)[in_chunk_index] = std::get<i>(entry);
-			});
+		auto f = [&, this]<int i>(auto t) { std::get<i>(this->d_data)[in_chunk_index] = t; };
+		callFunc<0>(f, args...);
 
 		if (slot_map_index != VeIndex::NULL()) { d_slot_map_index[in_chunk_index] = slot_map_index; }
 		return true;
 	}
-
 
 	///----------------------------------------------------------------------------------
 	/// \brief Retrieve the data at a certain index from this chunk

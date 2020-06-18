@@ -47,9 +47,6 @@ export namespace vve {
 		map_type	d_maps;						//the search maps
 
 		VeTableIndex getTableIndexFromHandle( VeHandle &handle);
-		VeHandle	insert(VeGuid guid, tuple_type &&entry);
-		VeHandle	insert(VeGuid guid, tuple_type &&entry, std::promise<VeHandle> handle);
-
 		VeHandle	insert(VeGuid guid, TypesOne... args);
 		VeHandle	insert(VeGuid guid, std::promise<VeHandle> handle, TypesOne... args);
 
@@ -66,13 +63,9 @@ export namespace vve {
 		//-------------------------------------------------------------------------------
 		//write operations
 
-		VeHandle	insert(tuple_type&& entry);
-		VeHandle	insert(tuple_type&& entry, std::promise<VeHandle> handle);
-
-		VeHandle	insert(TypesOne... data);
-		VeHandle	insert(std::promise<VeHandle> handle, TypesOne... data);
-
-		bool		update(VeHandle handle, tuple_type &entry);
+		VeHandle	insert(TypesOne... args);
+		VeHandle	insert(std::promise<VeHandle> handle, TypesOne... args);
+		bool		update(VeHandle handle, TypesOne... args);
 		bool		erase(VeHandle handle);
 		void		operator=(const VeTableStateType& rhs);
 		void		clear();
@@ -134,6 +127,12 @@ export namespace vve {
 	//-------------------------------------------------------------------------------
 	//write operations
 
+	///----------------------------------------------------------------------------------
+	/// \brief Insert a new entry into the table
+	/// \param[in] guid The GUID of this new entry
+	/// \param[in] args The new data
+	/// \returns a new unique handle describing the entry
+	///----------------------------------------------------------------------------------
 	template< typename... TypesOne, typename... TypesTwo>
 	VeHandle VeTableStateType::insert(VeGuid guid, TypesOne... args ) {
 
@@ -156,104 +155,52 @@ export namespace vve {
 
 	}
 
+	///----------------------------------------------------------------------------------
+	/// \brief Insert a new entry into the table
+	/// \param[in] guid The GUID of this new entry
+	/// \param[in] prom A promise for the new handle
+	/// \param[in] args The data
+	/// \returns a new unique handle describing the entry
+	///----------------------------------------------------------------------------------
 	template< typename... TypesOne, typename... TypesTwo>
 	VeHandle VeTableStateType::insert(VeGuid guid, std::promise<VeHandle> prom, TypesOne... args) {
 		VeHandle handle = insert(guid, args...);
 		prom.set_value(handle);
 		return handle;
-
 	}
 
+	///----------------------------------------------------------------------------------
+	/// \brief Insert a new entry into the table
+	/// \param[in] args The data
+	/// \returns a new unique handle describing the entry
+	///----------------------------------------------------------------------------------
 	template< typename... TypesOne, typename... TypesTwo>
 	VeHandle VeTableStateType::insert(TypesOne... args) {
 		return insert(newGuid(), args...);
 	}
 
+	///----------------------------------------------------------------------------------
+	/// \brief Insert a new entry into the table
+	/// \param[in] prom A promise for the new handle
+	/// \param[in] entry The data
+	/// \returns a new unique handle describing the entry
+	///----------------------------------------------------------------------------------
 	template< typename... TypesOne, typename... TypesTwo>
 	VeHandle VeTableStateType::insert(std::promise<VeHandle> prom, TypesOne... args) {
 		return insert(newGuid(), prom, args...);
 	}
 
-
-
-	///----------------------------------------------------------------------------------
-	/// \brief Insert a new entry into the table
-	/// \param[in] entry A typed tuple containing the data
-	/// \returns a new unique handle describing the entry
-	///----------------------------------------------------------------------------------
-	template< typename... TypesOne, typename... TypesTwo>
-	VeHandle VeTableStateType::insert(tuple_type&& entry) {
-		return insert(newGuid(), std::forward<tuple_type>(entry));
-	}
-
-	///----------------------------------------------------------------------------------
-	/// \brief Insert a new entry into the table
-	/// \param[in] guid The GUID of this new entry
-	/// \param[in] entry A typed tuple containing the data
-	/// \returns a new unique handle describing the entry
-	///----------------------------------------------------------------------------------
-	template< typename... TypesOne, typename... TypesTwo>
-	VeHandle VeTableStateType::insert(VeGuid guid, tuple_type &&entry) {
-
-		VeChunkIndex last = (decltype(std::declval<VeIndex>().value))(d_chunks.size() - 1);		//index of last chunk
-		if (d_chunks[last]->full()) {												//if its full we need a new chunk
-			d_chunks.emplace_back(std::make_unique<chunk_type>());					//create a new chunk
-			last = (decltype(std::declval<VeIndex>().value))d_chunks.size() - 1;
-		}
-
-		VeTableIndex table_index{ last, VeInChunkIndex::NULL() };												//no in_chunk_index yet
-		VeHandle handle{ guid, d_slot_map.insert(guid, table_index) };											//handle of the new item
-		table_index.d_in_chunk_index = d_chunks[last]->insert(handle.d_index, std::forward<tuple_type>(entry));	//insert data into the chunk, get in_chunk_index
-		d_slot_map.update(handle, table_index);																	//update slot map table index with new in_chunk_index
-
-		//insert into the search maps
-		return handle;
-	}
-
-	///----------------------------------------------------------------------------------
-	/// \brief Insert a new entry into the table
-	/// \param[in] entry A typed tuple containing the data
-	/// \param[in] prom A promise for the new handle
-	/// \returns a new unique handle describing the entry
-	///----------------------------------------------------------------------------------
-	template< typename... TypesOne, typename... TypesTwo>
-	VeHandle VeTableStateType::insert(tuple_type&& entry, std::promise<VeHandle> prom) {
-		return insert(newGuid(), std::forward<tuple_type>(entry), prom);
-	}
-
-	///----------------------------------------------------------------------------------
-	/// \brief Insert a new entry into the table
-	/// \param[in] guid The GUID of this new entry
-	/// \param[in] entry A typed tuple containing the data
-	/// \param[in] prom A promise for the new handle
-	/// \returns a new unique handle describing the entry
-	///----------------------------------------------------------------------------------
-	template< typename... TypesOne, typename... TypesTwo>
-	VeHandle VeTableStateType::insert(VeGuid guid, tuple_type &&entry, std::promise<VeHandle> prom) {
-		VeHandle handle = insert(guid, std::forward<tuple_type>(entry));
-		prom.set_value(handle);
-		return handle;
-	}
-
-
-
-
-
-
-
-
-
 	///----------------------------------------------------------------------------------
 	/// \brief Update an existing entry with new data
 	/// \param[in] handle The handle describing the entry
-	/// \param[in] entry A typed tuple containing the new data
+	/// \param[in] args A data containing the new data
 	/// \returns true if the entry was updated, else false
 	///----------------------------------------------------------------------------------
 	template< typename... TypesOne, typename... TypesTwo>
-	bool VeTableStateType::update(VeHandle handle, tuple_type &entry) {
+	bool VeTableStateType::update(VeHandle handle, TypesOne... args) {
 		VeTableIndex table_index = getTableIndexFromHandle(handle);
 		if (table_index == VeTableIndex::NULL()) { return false; }
-		return d_chunks[table_index.d_chunk_index]->update( handle, entry);
+		return d_chunks[table_index.d_chunk_index]->update(table_index.d_in_chunk_index, args...);
 	}
 
 	///----------------------------------------------------------------------------------
