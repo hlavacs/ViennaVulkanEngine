@@ -54,6 +54,11 @@ int main()
     VeTableState< Typelist< uint64_t, float, uint32_t, char>, Maplist< Hashlist< 0, 1, 2>, Hashlist< 1, 2 >> > ToATableState;
     auto h1 = ToATableState.insert(  4, 2.0f, 90, 'a' );
     ToATableState.update(h1, 5, 3.0f, 91, 'b');
+    std::promise<VeHandle> prom;
+    auto fut = prom.get_future();
+    auto h2 = ToATableState.insert( std::move(prom), 40, 20.0f, 900, 'c');
+    auto h3 = fut.get();
+
     VeAssert(ToATableState.size() == 1);
     for (uint64_t i = 0; i < 10000; i++) {
         auto h = ToATableState.insert( i, 2.0f*i, (uint32_t)i*5, 'a' );

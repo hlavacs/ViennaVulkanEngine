@@ -64,7 +64,7 @@ export namespace vve {
 		//write operations
 
 		VeHandle	insert(TypesOne... args);
-		VeHandle	insert(std::promise<VeHandle> handle, TypesOne... args);
+		VeHandle	insert(std::promise<VeHandle> prom, TypesOne... args);
 		bool		update(VeHandle handle, TypesOne... args);
 		bool		erase(VeHandle handle);
 		void		operator=(const VeTableStateType& rhs);
@@ -187,7 +187,7 @@ export namespace vve {
 	///----------------------------------------------------------------------------------
 	template< typename... TypesOne, typename... TypesTwo>
 	VeHandle VeTableStateType::insert(std::promise<VeHandle> prom, TypesOne... args) {
-		return insert(newGuid(), prom, args...);
+		return insert(newGuid(), std::move(prom), args...);
 	}
 
 	///----------------------------------------------------------------------------------
