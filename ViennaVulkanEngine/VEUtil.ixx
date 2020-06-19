@@ -53,14 +53,41 @@ export namespace vve {
 	//----------------------------------------------------------------------------------
 	//hashing of arbitrary arguments
 
-	size_t ve_hash() {
-		return 0;
+	//----------------------------------------------------------------------------------
+	//hashing of arbitrary arguments
+
+	template<typename... Args>
+	struct ve_hash {
+		size_t operator()() { return 0; };
 	};
 
-	template<typename T, typename... Args>
-	size_t ve_hash(const T t, Args... args) {
-			return hash_combine(hash(t), ve_hash(args...));
-	}
+	template<typename i, typename... Args>
+	struct ve_hash< i, Typelist<>, Args...> {
+		size_t operator()() {
+			return 0;
+		};
+	};
+
+
+	template<typename i, typename I, typename T>
+	struct ve_hash< i, Typelist<I>, T> {
+		size_t operator()(T const t) {
+			static_assert(i == I);
+			return 0;
+		};
+	};
+
+	template<typename i, typename I, typename... Is, typename T, typename... Args>
+	struct ve_hash<i, Typelist<I, Is...>, T, Args... > {
+		size_t operator()(T const t, Args... args) {
+			if constexpr (i == I) {
+				return hash_combine(hash(t), ve_hash<i + 1, Typelist<Is...>, Args...>(args...));
+			}
+			else {
+				return ve_hash<i + 1, Typelist<I, Is...>>(t, args...);
+			}
+		};
+	};
 
 	//----------------------------------------------------------------------------------
 	//static for loop
