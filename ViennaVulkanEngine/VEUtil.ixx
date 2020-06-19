@@ -51,6 +51,18 @@ export namespace vve {
 
 
 	//----------------------------------------------------------------------------------
+	//hashing of arbitrary arguments
+
+	size_t ve_hash() {
+		return 0;
+	};
+
+	template<typename T, typename... Args>
+	size_t ve_hash(const T t, Args... args) {
+			return hash_combine(hash(t), ve_hash(args...));
+	}
+
+	//----------------------------------------------------------------------------------
 	//static for loop
 
 	template <typename T, T Begin, class Func, T ...Is>

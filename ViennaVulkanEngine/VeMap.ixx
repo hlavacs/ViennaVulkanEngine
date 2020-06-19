@@ -13,7 +13,8 @@ export namespace vve {
     template < typename... Ts>
     struct Maplist {};
 
-
+    template<typename KeyT, typename ValueT, bool Const>
+    class map_iterator;
 
     ///----------------------------------------------------------------------------------
     /// Base map class
@@ -46,36 +47,10 @@ export namespace vve {
 
     public:
 
-        ///----------------------------------------------------------------------------------
-        /// Iterator
-        ///----------------------------------------------------------------------------------
-        template<bool Const>
-        class map_iterator_t {
-            friend class map_iterator_t<!Const>;
-            friend class VeHashMapBase<KeyT, ValueT>;
-            VeHashMapBase<KeyT,ValueT>* d_hash_map;
-            VeIndex                     d_slot_index;
-        public:
-            using difference_type = std::ptrdiff_t;     // Member typedefs required by std::iterator_traits
-            using value_type = map_t;
-            using pointer = std::conditional_t<Const, const map_t*, map_t*>;
-            using reference = std::conditional_t<Const, const map_t&, map_t&>;
-            using iterator_category = std::forward_iterator_tag;
-            
-            explicit map_iterator_t(VeHashMapBase<KeyT, ValueT>* map, VeIndex slot_index = VeIndex::NULL() ) 
-                : d_hash_map(map) { d_slot_index = d_hash_map->nextSlot(slot_index); };
-            reference operator*() const { return d_slot_index == VeIndex::NULL() ? map_t() : d_hash_map.d_map[d_slot_index]; }
-            auto& operator++() { d_slot_index = d_hash_map->nextSlot(++d_slot_index); return *this; }
-            auto operator++(int) { auto result = *this; ++* this; return result; }            
-            template<bool R> // Support comparison between iterator and const_iterator types
-            bool operator==(const map_iterator_t<R>& rhs) const { return d_hash_map == rhs.d_hash_map && d_slot_index == rhs.d_slot_index; }
-            template<bool R> // Support comparison between iterator and const_iterator types
-            bool operator!=(const map_iterator_t<R>& rhs) const { return !(d_hash_map == rhs.d_hash_map && d_slot_index == rhs.d_slot_index); }
-            operator map_iterator_t<false>() const { return map_iterator_t<true>{d_hash_map, d_slot_index}; }
-        };
-
-        using iterator = map_iterator_t < false >;
-        using const_iterator = map_iterator_t < true >;
+        using iterator = map_iterator< KeyT, ValueT, false >;
+        using const_iterator = map_iterator< KeyT, ValueT, true >;
+        using range = std::pair<iterator, iterator>;
+        using crange = std::pair<const_iterator, const_iterator>;
         friend iterator;
         friend const_iterator;
 
@@ -83,7 +58,8 @@ export namespace vve {
         VeIndex     insert( KeyT &key, ValueT value);
         bool        update( KeyT &key, ValueT value, VeIndex& index);
         ValueT      find(KeyT& key, VeIndex& index); 
-        bool        erase(  KeyT &key);
+        range       equal_range(KeyT& key);
+        bool        erase( KeyT &key);
         void        clear();
         std::size_t size();
         float       loadFactor();
@@ -221,6 +197,13 @@ export namespace vve {
         }
         if( !(index.value < d_map.size()) || d_map[index].d_key != key ) return ValueT::NULL();      //if not allowed -> return NULL
         return d_map[index].d_value;                                    //return value of the map
+    }
+
+    template<typename KeyT, typename ValueT>
+    typename VeHashMapBase<KeyT, ValueT>::range VeHashMapBase<KeyT, ValueT>::equal_range(KeyT& key) {
+        VeIndex index = std::get<1>(findInHashMap(key)); 
+        if (index == VeIndex::NULL() || index.value >= d_map.size()) return std::make_pair(end(),end()); 
+        return std::make_pair( iterator{this, index, key }, end());
     }
 
     ///----------------------------------------------------------------------------------
@@ -429,6 +412,64 @@ export namespace vve {
     //-----------------------------------------------------------------------------------
 
 
+    template<typename... Args>
+    class VeHashMap2 : public VeHashMapBase<VeHash, VeIndex> {
+    public:
+        using allocator_type = std::pmr::polymorphic_allocator<std::byte>;
+
+        VeHashMap2(allocator_type alloc = {}) : VeHashMapBase<VeHash, VeIndex>(alloc) {};
+        auto insert(VeIndex value, Args... args);
+        auto update(VeIndex value, Args... args);
+        auto find(Args... args);
+        auto erase(Args... args);
+    };
+
+    ///----------------------------------------------------------------------------------
+    /// \brief Overload of the insert member function
+    /// \param[in] data The key tuple to insert into the hash map
+    /// \param[in] index The value to insert
+    /// \returns the slot map index of this new item
+    ///----------------------------------------------------------------------------------
+    template<typename... Args>
+    auto VeHashMap2<Args...>::insert(VeIndex value, Args... args) {      
+        return VeHashMapBase<VeHash, VeIndex>::insert(ve_hash(args...), value);
+    }
+
+    ///----------------------------------------------------------------------------------
+    /// \brief Overload of the update member function
+    /// \param[in] data The key tuple to update into the hash map
+    /// \param[in] index The value to update
+    /// \returns true if the item was found and updated, else false
+    ///----------------------------------------------------------------------------------
+    template<typename... Args>
+    auto VeHashMap2<Args...>::update(VeIndex value, Args... args) {
+        return VeHashMapBase<VeHash, VeIndex>::update(ve_hash(args...), value);
+    }
+
+    ///----------------------------------------------------------------------------------
+    /// \brief Overload of the find member function
+    /// \param[in] data The key tuple to update into the hash map
+    /// \returns the value if found, or NULL
+    ///----------------------------------------------------------------------------------
+    template<typename... Args>
+    auto VeHashMap2<Args...>::find(Args... args) {
+        return VeHashMapBase<VeHash, VeIndex>::find(ve_hash(args...), VeIndex::NULL());
+    }
+
+    ///----------------------------------------------------------------------------------
+    /// \brief Overload of the erase member function
+    /// \param[in] data The key tuple to erase
+    /// \returns true if the item was foudn and erased, else false
+    ///----------------------------------------------------------------------------------
+    template<typename... Args>
+    auto VeHashMap2<Args...>::erase(Args... args) {
+        return VeHashMapBase<VeHash, VeIndex>::erase(ve_hash(args...));
+    }
+
+
+    //-----------------------------------------------------------------------------------
+
+
     //----------------------------------------------------------------------------------
     //Lists containing integer indices used for creating maps
 
@@ -440,6 +481,87 @@ export namespace vve {
         }
     };
 
+
+    ///----------------------------------------------------------------------------------
+    /// Iterator
+    ///----------------------------------------------------------------------------------
+    template<typename KeyT, typename ValueT, bool Const>
+    class map_iterator {
+        using map_other = typename map_iterator<typename KeyT, typename ValueT, !Const>;
+        using map_base = typename VeHashMapBase<typename KeyT, typename ValueT>;
+        using map_t = typename VeHashMapBase<typename KeyT, typename ValueT>::map_t;
+
+        friend class map_other;
+        friend class map_base;
+        map_base*   d_hash_map;
+        KeyT        d_key;
+        VeIndex     d_slot_index;
+    public:
+        using difference_type = std::ptrdiff_t;     // Member typedefs required by std::iterator_traits
+        using value_type = typename VeHashMapBase<typename KeyT, typename ValueT>::map_t;
+        using pointer = std::conditional_t<Const, const map_t*, map_t*>;
+        using reference = std::conditional_t<Const, const map_t&, map_t&>;
+        using iterator_category = std::forward_iterator_tag;
+
+        explicit map_iterator(VeHashMapBase<KeyT, ValueT>* map, VeIndex slot_index = VeIndex::NULL(), KeyT key = KeyT::NULL());
+        reference operator*() const;
+        auto& operator++();
+        auto operator++(int);
+        template<bool R>
+        bool operator==(const map_iterator<KeyT, ValueT, R>& rhs) const;
+        template<bool R>
+        bool operator!=(const map_iterator<KeyT, ValueT, R>& rhs) const;
+        operator map_iterator<KeyT, ValueT, false>() const;
+    };
+
+    template<typename KeyT, typename ValueT, bool Const>
+    map_iterator<KeyT,ValueT,Const>::map_iterator(VeHashMapBase<KeyT, ValueT>* map, VeIndex slot_index, KeyT key) : d_hash_map(map), d_key(key) {
+        d_slot_index = d_hash_map->nextSlot(slot_index);
+    };
+
+    template<typename KeyT, typename ValueT, bool Const>
+    typename map_iterator<KeyT, ValueT, Const>::reference map_iterator<KeyT, ValueT, Const>::operator*() const {
+        return d_slot_index == VeIndex::NULL() ? map_t() : d_hash_map.d_map[d_slot_index]; 
+    }
+
+    template<typename KeyT, typename ValueT, bool Const>
+    auto& map_iterator<KeyT, ValueT, Const>::operator++() {
+        if (d_slot_index == VeIndex::NULL()) return *this;
+        if (d_key != KeyT::NULL()) {
+            do { d_slot_index = d_hash_map->d_map[d_slot_index].d_next; } 
+            while (d_slot_index != VeIndex::NULL() && d_hash_map->d_map[d_slot_index].d_key != d_key);
+        } else {
+            d_slot_index = d_hash_map->nextSlot(++d_slot_index);
+        }
+        return *this; 
+    }
+
+    template<typename KeyT, typename ValueT, bool Const>
+    auto map_iterator<KeyT, ValueT, Const>::operator++(int) {
+        auto result = *this; 
+        ++* this; 
+        return result; 
+    }
+
+    // Support comparison between iterator and const_iterator types
+    template<typename KeyT, typename ValueT, bool Const>
+    template<bool R> 
+    bool map_iterator<KeyT, ValueT, Const>::operator==(const map_iterator<KeyT, ValueT, R>& rhs) const {
+        return d_hash_map == rhs.d_hash_map && d_slot_index == rhs.d_slot_index && d_key == rhs.d_key; 
+    }
+
+    // Support comparison between iterator and const_iterator types    
+    template<typename KeyT, typename ValueT, bool Const>
+    template<bool R>
+    bool map_iterator<KeyT, ValueT, Const>::operator!=(const map_iterator<KeyT, ValueT, R>& rhs) const {
+        return !(d_hash_map == rhs.d_hash_map && d_slot_index == rhs.d_slot_index && d_key == rhs.d_key);
+    }
+
+    //Support conversion of iterator to const_iterator, but not vice versa
+    template<typename KeyT, typename ValueT, bool Const>
+    map_iterator<KeyT, ValueT, Const>::operator map_iterator<KeyT, ValueT, false>() const {
+        return map_iterator<KeyT, ValueT, true>{d_hash_map, d_slot_index}; 
+    }
 
 
 };
