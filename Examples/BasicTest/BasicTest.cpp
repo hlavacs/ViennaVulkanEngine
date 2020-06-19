@@ -46,7 +46,7 @@ int main()
     auto idx5 = ToAChunk.insert( 5, 8, 2.5f, 92 );
     auto idx6 = ToAChunk.insert( 6, 9, 2.5f, 93 );
 
-    VeIndex slotmap;
+    VeIndex slotmap; 
     auto tuple = ToAChunk.at(idx1, slotmap);
     ToAChunk.pop_back();
 
