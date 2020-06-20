@@ -34,34 +34,34 @@
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="VETable.ixx">
-      <Filter>Interfaces</Filter>
-    </ClCompile>
-    <ClCompile Include="VETypes.ixx">
-      <Filter>Interfaces</Filter>
-    </ClCompile>
-    <ClCompile Include="VVE.ixx">
-      <Filter>Interfaces</Filter>
-    </ClCompile>
-    <ClCompile Include="VEMemory.ixx">
-      <Filter>Interfaces</Filter>
-    </ClCompile>
-    <ClCompile Include="VEEngine.ixx">
-      <Filter>Interfaces</Filter>
-    </ClCompile>
     <ClCompile Include="VEGameJobSystem.ixx">
       <Filter>Interfaces</Filter>
     </ClCompile>
-    <ClCompile Include="VEMap.ixx">
+    <ClCompile Include="010_VETypes.ixx">
       <Filter>Interfaces</Filter>
     </ClCompile>
-    <ClCompile Include="VeTableChunk.ixx">
+    <ClCompile Include="020_VEUtil.ixx">
       <Filter>Interfaces</Filter>
     </ClCompile>
-    <ClCompile Include="VeTableState.ixx">
+    <ClCompile Include="030_VEMemory.ixx">
       <Filter>Interfaces</Filter>
     </ClCompile>
-    <ClCompile Include="VEUtil.ixx">
+    <ClCompile Include="040_VEMap.ixx">
+      <Filter>Interfaces</Filter>
+    </ClCompile>
+    <ClCompile Include="050_VeTableChunk.ixx">
+      <Filter>Interfaces</Filter>
+    </ClCompile>
+    <ClCompile Include="060_VeTableState.ixx">
+      <Filter>Interfaces</Filter>
+    </ClCompile>
+    <ClCompile Include="070_VETable.ixx">
+      <Filter>Interfaces</Filter>
+    </ClCompile>
+    <ClCompile Include="080_VEEngine.ixx">
+      <Filter>Interfaces</Filter>
+    </ClCompile>
+    <ClCompile Include="090_VVE.ixx">
       <Filter>Interfaces</Filter>
     </ClCompile>
   </ItemGroup>
