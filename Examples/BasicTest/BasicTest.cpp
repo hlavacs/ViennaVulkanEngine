@@ -62,7 +62,7 @@ int main()
     //auto it = ToATableState.begin();
     //auto [handle1, a, b, c, d] = *it;
 
-    VeAssert(ToATableState.size() == 1);
+    VeAssert(ToATableState.size() == 2);
     for (uint64_t i = 0; i < 10000; i++) {
         auto h = ToATableState.insert( i, 2.0f*i, (uint32_t)i*5, 'a' );
     }

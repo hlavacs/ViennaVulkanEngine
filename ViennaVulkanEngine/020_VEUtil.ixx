@@ -185,14 +185,7 @@ export namespace vve {
 	};
 
 
-	//----------------------------------------------------------------------------------
-	//assert function
-	inline void VeAssert(bool pred) {
-		if (!pred) {
-			std::cerr << "File " << __FILE__ << " line " << __LINE__ << ": Assertion failed!\n";
-			exit(1);
-		}
-	}
+
 
 
 	//----------------------------------------------------------------------------------

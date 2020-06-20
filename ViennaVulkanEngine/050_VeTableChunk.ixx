@@ -74,20 +74,18 @@ export namespace vve {
 	///----------------------------------------------------------------------------------
 	template<typename... Args>
 	VeInChunkIndex VeTableChunk<Args...>::insert(VeIndex slot_map_index, Args... args) {
-		auto f = [&, this]<int i>(auto t) { std::get<i>(this->d_data)[this->d_size] = t; };
-		callFunc<0>(f, args...);
-
-		/*auto f = [&, this]<int i, typename T>(T t) {
+		/*auto f = [&, this]<int i, typename T, typename... Bs>(auto& self, T t, Bs... bs) {
 			std::get<i>(this->d_data)[this->d_size] = t; 
-		};
-
-		auto g = [&, this]<int i, auto S, auto O, auto T, typename... Args>(S& self, O& other, T t, Args... args) {
-			other.template operator() <i>(t);
-			if constexpr (sizeof... (Args) > 0) {
-				self.template operator() < i + 1, Args... > (self, other, args...);
+			if constexpr (sizeof... (Bs) > 0) {
+				self.template operator() < i + 1, Bs... > (self, bs...);
 			}
 		};
-		g.template operator() <0>(g, f, args...);*/
+		f.template operator() <0>(f, args...);*/
+
+		auto f = [&, this]<std::size_t... Idx, typename... Bs>(std::index_sequence<Idx...>, Bs... bs) {
+			std::initializer_list<int>{ (std::get<Idx>(this->d_data)[this->d_size] = bs, 0 ) ...};
+		};
+		f(std::make_index_sequence<sizeof...(Args)>{}, args...);
 
 		d_slot_map_index[d_size] = slot_map_index;		//index of the slot map that points to this entry
 		return VeInChunkIndex(d_size++);				//increase size and return in chunk index
@@ -115,8 +113,10 @@ export namespace vve {
 	bool VeTableChunk<Args...>::update(VeIndex slot_map_index, VeInChunkIndex in_chunk_index, Args... args) {
 		if (!(in_chunk_index.value < d_size)) return false;
 
-		auto f = [&, this]<int i>(auto t) { std::get<i>(this->d_data)[in_chunk_index] = t; };
-		callFunc<0>(f, args...);
+		auto f = [&, this]<std::size_t... Idx, typename... Bs>(std::index_sequence<Idx...>, Bs... bs) {
+			std::initializer_list<int>{ (std::get<Idx>(this->d_data)[in_chunk_index] = bs, 0) ...};
+		};
+		f(std::make_index_sequence<sizeof...(Args)>{}, args...);
 
 		if (slot_map_index != VeIndex::NULL()) { d_slot_map_index[in_chunk_index] = slot_map_index; }
 		return true;
