@@ -19,7 +19,7 @@ export namespace vve {
 	//----------------------------------------------------------------------------------
 	// Specialization of VeTable
 	template< typename... TypesOne, typename... TypesTwo>
-	class VeTable<Typelist<TypesOne... >, Typelist<TypesTwo...>>;
+	class VeTable<Typelist<TypesOne... >, Maplist<TypesTwo...>>;
 
 	//----------------------------------------------------------------------------------
 	// Delare VeTableState
@@ -30,7 +30,7 @@ export namespace vve {
 	//----------------------------------------------------------------------------------
 	// Specialization of VeTableState
 	template< typename... TypesOne, typename... TypesTwo>
-	class VeTableState< Typelist < TypesOne... >, Maplist < TypesTwo... > > {
+	class VeTableStateType {
 		friend class VeTable < Typelist<TypesOne... >, Maplist<TypesTwo...> >;
 
 	public:
@@ -237,13 +237,16 @@ export namespace vve {
 	///----------------------------------------------------------------------------------
 	/// Iterator
 	///----------------------------------------------------------------------------------
+	
+	//----------------------------------------------------------------------------------
+	// Declare VeTableStateIterator
+	template<bool Const, typename... Types> class VeTableStateIterator;
 
-	#define VeTableStateIteratorType table_state_iterator<Const, Typelist<TypesOne>, Maplist<TypesTwo>>
+	#define VeTableStateIteratorType VeTableStateIterator< Const, Typelist<TypesOne...>, Maplist<TypesTwo...> >
 
-	/*template< bool Const, typename... TypesOne, typename... TypesTwo>
+	template< bool Const, typename... TypesOne, typename... TypesTwo>
 	class VeTableStateIteratorType {
-		using table_state_other = typename table_state_iterator<!Const, >;
-
+		using table_state_other = typename VeTableStateIterator<!Const, Typelist<TypesOne...>, Maplist<TypesTwo...>>;
 		friend class table_state_other;
 		friend class VeTableStateType;
 
@@ -256,70 +259,58 @@ export namespace vve {
 		using reference = std::conditional_t<Const, const VeHandle&, VeHandle&>;
 		using iterator_category = std::forward_iterator_tag;
 
-		explicit table_state_iterator(VeTableStateType *table_state, VeTableIndex table_index = VeIndex::NULL());
+		explicit VeTableStateIterator(VeTableStateType *table_state, VeTableIndex table_index = VeIndex::NULL());
 		reference operator*() const;
 		auto& operator++();
 		auto operator++(int);
 
-		template<bool R, typename... TypesOne, typename... TypesTwo>
-		bool operator==(const table_state_iterator<R, Typelist<TypesOne>, Maplist<TypesTwo> >& rhs) const;
+		//template<bool R, typename... TypesOne, typename... TypesTwo>
+		//bool operator==(const VeTableStateIterator<R, Typelist<TypesOne...>, Maplist<TypesTwo...> >& rhs) const;
 
-		template<bool R, typename... TypesOne, typename... TypesTwo>
-		bool operator!=(const table_state_iterator<R, Typelist<TypesOne>, Maplist<TypesTwo>>& rhs) const;
+		//template<bool R, typename... TypesOne, typename... TypesTwo>
+		//bool operator!=(const VeTableStateIterator<R, Typelist<TypesOne...>, Maplist<TypesTwo...>>& rhs) const;
 
-		operator table_state_iterator<false, Typelist<TypesOne>, Maplist<TypesTwo>>() const;
+		operator VeTableStateIterator<false, Typelist<TypesOne...>, Maplist<TypesTwo...>>() const;
 	};
 
 	template< bool Const, typename... TypesOne, typename... TypesTwo>
-	table_state_iterator<Const, Typelist<TypesOne>, Maplist<TypesTwo>>::table_state_iterator(VeTableStateType* table_state, VeTableIndex table_index) 
-		: d_hash_map(map), d_key(key) {
-		d_slot_index = d_hash_map->nextSlot(slot_index);
-	};
+	VeTableStateIteratorType::VeTableStateIterator(VeTableStateType* table_state, VeTableIndex table_index)
+		: d_table_state(table_state), d_table_index(table_index) {};
 
 	template< bool Const, typename... TypesOne, typename... TypesTwo>
-	typename map_iterator<KeyT, ValueT, Const>::reference map_iterator<KeyT, ValueT, Const>::operator*() const {
-		return d_slot_index == VeIndex::NULL() ? map_t() : d_hash_map.d_map[d_slot_index];
+	typename VeTableStateIteratorType::reference VeTableStateIteratorType::operator*() const {
+		return 0;
 	}
 
 	template< bool Const, typename... TypesOne, typename... TypesTwo>
-	auto& map_iterator<KeyT, ValueT, Const>::operator++() {
-		if (d_slot_index == VeIndex::NULL()) return *this;
-		if (d_key != KeyT::NULL()) {
-			do { d_slot_index = d_hash_map->d_map[d_slot_index].d_next; } while (d_slot_index != VeIndex::NULL() && d_hash_map->d_map[d_slot_index].d_key != d_key);
-		}
-		else {
-			d_slot_index = d_hash_map->nextSlot(++d_slot_index);
-		}
+	auto& VeTableStateIteratorType::operator++() {
 		return *this;
 	}
 
 	template< bool Const, typename... TypesOne, typename... TypesTwo>
-	auto map_iterator<KeyT, ValueT, Const>::operator++(int) {
+	auto VeTableStateIteratorType::operator++(int) {
 		auto result = *this;
 		++* this;
 		return result;
 	}
 
-	// Support comparison between iterator and const_iterator types
-	template< bool Const, typename... TypesOne, typename... TypesTwo>
+	/*template<bool Const, typename... TypesOne, typename... TypesTwo>
 	template<bool R>
-	bool map_iterator<KeyT, ValueT, Const>::operator==(const map_iterator<KeyT, ValueT, R>& rhs) const {
-		return d_hash_map == rhs.d_hash_map && d_slot_index == rhs.d_slot_index && d_key == rhs.d_key;
+	bool VeTableStateIteratorType::operator==(const VeTableStateIterator<R, Typelist<TypesOne...>, Maplist<TypesTwo...> >& rhs) const {
+		return true;
 	}
 
-	// Support comparison between iterator and const_iterator types    
-	template< bool Const, typename... TypesOne, typename... TypesTwo>
+	template<bool Const, typename... TypesOne, typename... TypesTwo>
 	template<bool R>
-	bool map_iterator<KeyT, ValueT, Const>::operator!=(const map_iterator<KeyT, ValueT, R>& rhs) const {
-		return !(d_hash_map == rhs.d_hash_map && d_slot_index == rhs.d_slot_index && d_key == rhs.d_key);
-	}
+	bool VeTableStateIteratorType::operator!=(const VeTableStateIterator<R, Typelist<TypesOne...>, Maplist<TypesTwo...> >& rhs) const {
+		return true;
+	}*/
 
-	//Support conversion of iterator to const_iterator, but not vice versa
 	template< bool Const, typename... TypesOne, typename... TypesTwo>
-	map_iterator<KeyT, ValueT, Const>::operator map_iterator<KeyT, ValueT, false>() const {
-		return map_iterator<KeyT, ValueT, true>{d_hash_map, d_slot_index};
+	VeTableStateIteratorType::operator VeTableStateIterator<false, Typelist<TypesOne...>, Maplist<TypesTwo...>>() const {
+		return VeTableStateIterator<true, Typelist<TypesOne...>, Maplist<TypesTwo...>>{d_table_state, d_table_index};
 	}
-	*/
+	
 
 };
 

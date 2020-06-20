@@ -53,9 +53,6 @@ export namespace vve {
 	//----------------------------------------------------------------------------------
 	//hashing of arbitrary arguments
 
-	//----------------------------------------------------------------------------------
-	//hashing of arbitrary arguments
-
 	template<typename... Args>
 	struct ve_hash {
 		size_t operator()() { return 0; };

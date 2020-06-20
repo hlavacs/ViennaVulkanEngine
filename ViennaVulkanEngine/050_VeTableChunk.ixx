@@ -88,7 +88,7 @@ export namespace vve {
 		f(std::make_index_sequence<sizeof...(Args)>{}, args...);
 
 		d_slot_map_index[d_size] = slot_map_index;		//index of the slot map that points to this entry
-		return VeInChunkIndex(d_size++);				//increase size and return in chunk index
+		return VeInChunkIndex(d_size++);				//increase size and return old size as in chunk index
 	}
 
 	///----------------------------------------------------------------------------------
