@@ -77,6 +77,18 @@ export namespace vve {
 		auto f = [&, this]<int i>(auto t) { std::get<i>(this->d_data)[this->d_size] = t; };
 		callFunc<0>(f, args...);
 
+		/*auto f = [&, this]<int i, typename T>(T t) {
+			std::get<i>(this->d_data)[this->d_size] = t; 
+		};
+
+		auto g = [&, this]<int i, auto S, auto O, auto T, typename... Args>(S& self, O& other, T t, Args... args) {
+			other.template operator() <i>(t);
+			if constexpr (sizeof... (Args) > 0) {
+				self.template operator() < i + 1, Args... > (self, other, args...);
+			}
+		};
+		g.template operator() <0>(g, f, args...);*/
+
 		d_slot_map_index[d_size] = slot_map_index;		//index of the slot map that points to this entry
 		return VeInChunkIndex(d_size++);				//increase size and return in chunk index
 	}
