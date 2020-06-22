@@ -62,13 +62,22 @@ int main()
     //auto it = ToATableState.begin();
     //auto [handle1, a, b, c, d] = *it;
 
+    const int N = 1000;
     VeAssert(ToATableState.size() == 2);
-    for (uint64_t i = 0; i < 10000; i++) {
+    for (uint64_t i = 0; i < N; i++) {
         auto h = ToATableState.insert( i, 2.0f*i, (uint32_t)i*5, 'a' );
     }
-    VeAssert(ToATableState.size() == 10001);
-    ToATableState.clear();
+    VeAssert(ToATableState.size() == N+2);
 
+    auto [i64, fl, i32, ch] = ToATableState.find(h1);
+    auto [i64b, flb, i32b, chb] = ToATableState.find(h3);
+
+    for (auto it = ToATableState.begin(); it != ToATableState.end(); ++it) {
+        auto [i64c, flc, i32c, chc] = *it;
+        std::cout << i64c << " " << flc << " " << i32c << " " << chc << std::endl;
+    }
+
+    ToATableState.clear();
  
     /*
     VeTable< Typelist< uint64_t, float, uint64_t, char>, Maplist< Hashlist< 0, 1, 2>, Hashlist< 1, 2 >> > ToATable;

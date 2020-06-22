@@ -43,7 +43,8 @@ export namespace vve {
 		VeInChunkIndex	insert(VeIndex slot_map_index, Args... args);
 		bool			update(VeInChunkIndex in_chunk_index, Args... args);
 		bool			update(VeIndex slot_map_index, VeInChunkIndex in_chunk_index, Args... args);
-		tuple_type		at(VeInChunkIndex in_chunk_index, VeIndex &slot_map_index);
+		tuple_type		at(VeInChunkIndex in_chunk_index);
+		tuple_type		at(VeInChunkIndex in_chunk_index, VeIndex& slot_map_index);
 		void			pop_back();
 		auto			data();
 		bool			full();
@@ -128,6 +129,12 @@ export namespace vve {
 	/// \param[out] slot_map_index The slot map index or NULL if the item was not found
 	/// \returns the data as tuple or an empty tuple
 	///----------------------------------------------------------------------------------
+	template<typename... Args>
+	std::tuple<Args...> VeTableChunk<Args...>::at(VeInChunkIndex in_chunk_index) {
+		VeIndex idx;
+		return at(in_chunk_index, idx);
+	}
+
 	template<typename... Args>
 	std::tuple<Args...> VeTableChunk<Args...>::at(VeInChunkIndex in_chunk_index, VeIndex& slot_map_index) {
 		tuple_type tuple;
