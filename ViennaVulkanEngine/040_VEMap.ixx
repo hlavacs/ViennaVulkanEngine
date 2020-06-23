@@ -61,6 +61,7 @@ export namespace vve {
         range       equal_range(KeyT& key);
         bool        erase( KeyT &key);
         void        clear();
+        auto        map();
         std::size_t size();
         float       loadFactor();
         iterator    begin();
@@ -232,6 +233,11 @@ export namespace vve {
         d_size = 0;
         d_first_free = VeIndex::NULL();
         std::fill(d_bucket.begin(), d_bucket.end(), VeIndex::NULL());
+    }
+
+    template<typename KeyT, typename ValueT>
+    auto VeHashMapBase<KeyT, ValueT>::map() {
+        return &d_map;
     }
 
     ///----------------------------------------------------------------------------------

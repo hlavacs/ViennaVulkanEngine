@@ -55,6 +55,7 @@ export namespace vve {
 		VeSlotMap					d_slot_map;		//the table slot map
 		map_type					d_maps;			//the search maps
 
+		bool			isValid( VeTableIndex table_index );
 		VeTableIndex	getTableIndexFromHandle( VeHandle &handle);
 		VeHandle		insertGUID(VeGuid guid, TypesOne... args);
 		VeHandle		insertGUID(VeGuid guid, std::promise<VeHandle> handle, TypesOne... args);
@@ -68,6 +69,7 @@ export namespace vve {
 
 		tuple_type	at(VeHandle &handle);
 		std::size_t	size();
+		VeHandle	handle( VeTableIndex table_index );
 
 		//-------------------------------------------------------------------------------
 		//write operations
@@ -98,6 +100,17 @@ export namespace vve {
 	VeTableStateType::VeTableState(allocator_type alloc) : 
 		d_guid(newGuid()), d_read_only(false), d_chunks(alloc), d_slot_map(), d_maps() {};
 
+
+	template<typename... TypesOne, typename... TypesTwo>
+	bool VeTableStateType::isValid(VeTableIndex table_index) {
+		if (table_index == VeTableIndex::NULL() ||
+			table_index.d_chunk_index >= d_chunks.size() ||
+			table_index.d_chunk_index >= d_chunks[table_index.d_chunk_index]->size() ) {
+			return false;
+		}
+		return true;
+	}
+
 	///----------------------------------------------------------------------------------
 	/// \brief Return the table index for a given handle from the table slot map
 	/// \param[in] handle The handle to be found
@@ -106,14 +119,10 @@ export namespace vve {
 	template<typename... TypesOne, typename... TypesTwo>
 	VeTableIndex VeTableStateType::getTableIndexFromHandle(VeHandle &handle) {
 		VeTableIndex table_index = d_slot_map.find(handle);
-
-		if (table_index == VeTableIndex::NULL() ||
-			!(table_index.d_chunk_index < d_chunks.size()) ||
-			!d_chunks[table_index.d_chunk_index]) {
-			return VeTableIndex::NULL();
-		}
+		if (!isValid(table_index) ) { return VeTableIndex::NULL(); }
 		return table_index;
 	}
+
 
 
 	//-------------------------------------------------------------------------------
@@ -127,7 +136,7 @@ export namespace vve {
 	template< typename... TypesOne, typename... TypesTwo>
 	typename VeTableStateType::tuple_type VeTableStateType::at(VeHandle &handle) {
 		VeTableIndex table_index = getTableIndexFromHandle(handle);
-		if (table_index == VeTableIndex::NULL()) { 
+		if (!isValid(table_index)) {
 			handle = VeHandle::NULL();
 			return tuple_type{}; 
 		}
@@ -142,6 +151,14 @@ export namespace vve {
 	std::size_t VeTableStateType::size() {
 		return d_chunks.size()> 0 ? (d_chunks.size() - 1) * chunk_type::c_max_size + d_chunks[d_chunks.size() - 1]->size() : 0;
 	}
+
+	template< typename... TypesOne, typename... TypesTwo>
+	VeHandle VeTableStateType::handle(VeTableIndex table_index) {
+		if (!isValid(table_index)) { return VeHandle::NULL(); }
+		VeIndex slot = d_chunks[table_index.d_chunk_index]->slot(table_index.d_in_chunk_index);
+		return VeHandle{ d_slot_map.map()[slot].d_key, slot };
+	}
+
 
 	//-------------------------------------------------------------------------------
 	//write operations
@@ -221,7 +238,7 @@ export namespace vve {
 	template< typename... TypesOne, typename... TypesTwo>
 	bool VeTableStateType::update(VeHandle handle, TypesOne... args) {
 		VeTableIndex table_index = getTableIndexFromHandle(handle);
-		if (table_index == VeTableIndex::NULL()) { return false; }
+		if (!isValid(table_index)) { return false; }
 
 		d_guid = newGuid();
 
@@ -236,8 +253,7 @@ export namespace vve {
 	template< typename... TypesOne, typename... TypesTwo>
 	bool VeTableStateType::erase(VeHandle handle) {
 		VeTableIndex table_index = getTableIndexFromHandle(handle);
-		
-		if (table_index == VeTableIndex::NULL()) { return false; }
+		if (!isValid(table_index)) { return false; }
 
 		d_guid = newGuid();
 
@@ -360,8 +376,9 @@ export namespace vve {
 		explicit VeTableStateIterator(VeTableStateType *table_state, VeTableIndex table_index = VeIndex::NULL());
 		void operator*(value_type& arg);
 		value_type operator*() const;
+		VeHandle operator*(int) const;
 		template<int N>
-		auto operator*() const;
+		auto& operator*() const;
 		auto& operator++();
 		auto operator++(int);
 
@@ -387,10 +404,16 @@ export namespace vve {
 
 	template< bool Const, typename... TypesOne, typename... TypesTwo>
 	template<int i>
-	auto VeTableStateIteratorType::operator*() const {
+	auto& VeTableStateIteratorType::operator*() const {
 		auto data = d_table_state->d_chunks[d_table_index.d_chunk_index.value]->data();
 		return std::get<i>(*data)[d_table_index.d_in_chunk_index.value];
 	}
+
+	template< bool Const, typename... TypesOne, typename... TypesTwo>
+	VeHandle VeTableStateIteratorType::operator*(int i) const {
+		return d_table_state->handle(d_table_index);
+	}
+
 
 	///----------------------------------------------------------------------------------
 	/// write data

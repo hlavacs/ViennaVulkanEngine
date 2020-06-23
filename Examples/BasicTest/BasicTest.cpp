@@ -74,10 +74,12 @@ int main()
 
     for (auto it = ToATableState.begin(); it != ToATableState.end(); ++it) {
         auto [i64c, flc, i32c, chc] = *it;
-        //f.template operator() < i > (t);
 
-        auto first = it.operator*<2>();
-        std::cout << first << " " << i64c << " " << flc << " " << i32c << " " << chc << std::endl;
+        std::cout << i64c << " " << flc << " " << i32c << " " << chc << std::endl;
+        it.operator*<2>() = 11;
+        std::cout << it.operator*<0>() << " " << it.operator*<1>() << " " << it.operator*<2>() << " " << it.operator*<3>() << std::endl;
+        VeHandle h = it.operator*(0);
+
     }
     ToATableState.erase(h1);
     ToATableState.erase(h2);
