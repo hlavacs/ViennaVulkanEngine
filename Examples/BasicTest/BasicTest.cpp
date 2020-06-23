@@ -62,22 +62,39 @@ int main()
     //auto it = ToATableState.begin();
     //auto [handle1, a, b, c, d] = *it;
 
-    const int N = 1000;
+    const int N = 100;
     VeAssert(ToATableState.size() == 2);
     for (uint64_t i = 0; i < N; i++) {
         auto h = ToATableState.insert( i, 2.0f*i, (uint32_t)i*5, 'a' );
     }
     VeAssert(ToATableState.size() == N+2);
 
-    auto [i64, fl, i32, ch] = ToATableState.find(h1);
-    auto [i64b, flb, i32b, chb] = ToATableState.find(h3);
+    auto [i64, fl, i32, ch] = ToATableState.at(h1);
+    auto [i64b, flb, i32b, chb] = ToATableState.at(h3);
 
     for (auto it = ToATableState.begin(); it != ToATableState.end(); ++it) {
         auto [i64c, flc, i32c, chc] = *it;
-        std::cout << i64c << " " << flc << " " << i32c << " " << chc << std::endl;
+        //f.template operator() < i > (t);
+
+        auto first = it.operator*<2>();
+        std::cout << first << " " << i64c << " " << flc << " " << i32c << " " << chc << std::endl;
     }
+    ToATableState.erase(h1);
+    ToATableState.erase(h2);
+    ToATableState.erase(h3);
 
     ToATableState.clear();
+
+    h1 = ToATableState.insert(  4, 2.0f, 90, 'a' );
+    h2 = ToATableState.insert( 40, 20.0f, 900, 'b');
+    h3 = ToATableState.insert( 80, 30.0f, 1800, 'c');
+
+
+    VeTableState< Typelist< uint64_t, float, uint32_t, char>, Maplist< Hashlist< 0, 1, 2>, Hashlist< 1, 2 >> > ToATableState2;
+
+    ToATableState2 = ToATableState;
+
+
  
     /*
     VeTable< Typelist< uint64_t, float, uint64_t, char>, Maplist< Hashlist< 0, 1, 2>, Hashlist< 1, 2 >> > ToATable;

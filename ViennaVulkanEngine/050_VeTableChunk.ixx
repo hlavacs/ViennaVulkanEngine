@@ -49,10 +49,12 @@ export namespace vve {
 		auto			data();
 		bool			full();
 		VeGuid			guid();
-		std::size_t		size();
-		std::size_t		capacity();
+		size_t			size();
+		size_t			capacity();
 		VeIndex			swap(VeInChunkIndex index, VeTableChunk<Args...>& other_chunk, VeInChunkIndex other_index);
 		VeIndex			slot(VeInChunkIndex);
+		void			operator=(const VeTableChunk<Args...>& rhs);
+
 	};
 
 	///----------------------------------------------------------------------------------
@@ -65,7 +67,8 @@ export namespace vve {
 	// \brief Constructor with chunk index
 	///----------------------------------------------------------------------------------
 	template<typename... Args>
-	VeTableChunk<Args...>::VeTableChunk(VeChunkIndex chunk_index) : d_size(0), d_chunk_index(chunk_index) {}
+	VeTableChunk<Args...>::VeTableChunk(VeChunkIndex chunk_index) : 
+		d_guid(newGuid()), d_size(0), d_chunk_index(chunk_index) {}
 	
 	///----------------------------------------------------------------------------------
 	/// \brief Insert a new entry into the chunk
@@ -122,6 +125,7 @@ export namespace vve {
 		if (slot_map_index != VeIndex::NULL()) { d_slot_map_index[in_chunk_index] = slot_map_index; }
 		return true;
 	}
+
 
 	///----------------------------------------------------------------------------------
 	/// \brief Retrieve the data at a certain index from this chunk
@@ -231,6 +235,20 @@ export namespace vve {
 	VeIndex	VeTableChunk<Args...>::slot(VeInChunkIndex in_chunk_index) {
 		if (!(in_chunk_index < d_slot_map_index.size())) { return VeIndex::NULL(); }
 		return d_slot_map_index[in_chunk_index];
+	}
+
+	///----------------------------------------------------------------------------------
+	/// \brief Copy a chunk over this chunk
+	/// \param[in] the chunk to be copied
+	///----------------------------------------------------------------------------------
+	template<typename... Args>
+	void VeTableChunk<Args...>::operator=(VeTableChunk<Args...> const& rhs) {
+		static_for<std::size_t, 0, std::tuple_size_v<tuple_type>>([&, this](auto i) { //copy tuple from arrays
+			std::get<i>(d_data) = std::get<i>(rhs.d_data);
+			});
+		d_slot_map_index = rhs.d_slot_map_index;
+		d_size = rhs.d_size;
+		d_guid = rhs.d_guid;
 	}
 
 };
