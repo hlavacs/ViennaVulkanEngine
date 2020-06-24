@@ -172,9 +172,7 @@ export namespace vve {
 	template< typename... TypesOne, typename... TypesTwo>
 	VeHandle VeTableStateType::insertGUID(VeGuid guid, TypesOne... args ) {
 		d_guid = newGuid();
-
 		if(d_chunks.size() == 0) { d_chunks.emplace_back(std::make_unique<chunk_type>());} 
-
 		VeChunkIndex last = (decltype(std::declval<VeIndex>().value))(d_chunks.size() - 1);		//index of last chunk
 
 		if (d_chunks[last]->full()) {												//if its full we need a new chunk
@@ -189,7 +187,11 @@ export namespace vve {
 
 		d_slot_map.update(handle, table_index);		//update slot map table index with new in_chunk_index
 
-		//insert into the search maps
+		auto tup = std::make_tuple(args...);
+		static_for<std::size_t, 0, std::tuple_size_v<map_type>>([&, this](auto i) { //copy tuple from arrays
+			std::get<i>(d_maps).insert(tup, handle.d_index);
+			});
+
 		return handle;
 
 	}
@@ -242,6 +244,16 @@ export namespace vve {
 
 		d_guid = newGuid();
 
+		auto old_tup = at(handle);
+		static_for<std::size_t, 0, std::tuple_size_v<map_type>>([&, this](auto i) { //remove old binding from maps
+			std::get<i>(d_maps).erase(old_tup);
+			});
+
+		auto new_tup = std::make_tuple(args...);
+		static_for<std::size_t, 0, std::tuple_size_v<map_type>>([&, this](auto i) { //insert new binding
+			std::get<i>(d_maps).update(new_tup, handle.d_index);
+			});
+
 		return d_chunks[table_index.d_chunk_index]->update(table_index.d_in_chunk_index, args...);
 	}
 
@@ -265,7 +277,12 @@ export namespace vve {
 						 
 		d_chunks[last]->pop_back();
 		if (d_chunks[last]->size() == 0) { d_chunks.pop_back(); }
-		
+
+		auto old_tup = at(handle);
+		static_for<std::size_t, 0, std::tuple_size_v<map_type>>([&, this](auto i) { //remove old binding from maps
+			std::get<i>(d_maps).erase(old_tup);
+			});
+
 		return true;
 	};
 

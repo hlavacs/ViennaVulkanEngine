@@ -43,8 +43,8 @@ export namespace vve {
 	}
 
 	template<typename T, std::size_t... Is>
-	auto hash_impl(T const& t, std::index_sequence<Is...> const&) {
-		size_t seed = 0;
+	auto hash_impl(T const& t, std::index_sequence<Is...>) {
+	size_t seed = 0;
 		(hash_combine(seed, std::get<Is>(t)) + ... + 0);
 		return seed;
 	}

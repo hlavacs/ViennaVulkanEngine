@@ -33,6 +33,7 @@ export namespace vve {
             VeIndex  d_next;    ///next free slot or next slot with same hash index or NULL
 
             map_t(KeyT key, ValueT value, VeIndex next) : d_key(key), d_value(value), d_next(next) {};
+            map_t() : d_key(KeyT::NULL()), d_value(ValueT::NULL()), d_next(VeIndex::NULL()) {};
         };
 
         std::size_t                 d_size;         ///number of mappings in the map
@@ -43,7 +44,7 @@ export namespace vve {
         VeIndex                                 nextSlot( VeIndex start);
         std::tuple<VeIndex, VeIndex, VeIndex>   findInHashMap(KeyT& key);     //if no index is given, find the slot map index through the hash map
         VeIndex                                 eraseFromHashMap(KeyT& key);  //remove an entry from the hash map
-        void                                    increaseBuckets();           //increase the number of buckets and rehash the hash map
+        void                                    increaseBuckets();            //increase the number of buckets and rehash the hash map
 
     public:
 
@@ -55,11 +56,11 @@ export namespace vve {
         friend const_iterator;
 
         VeHashMapBase(allocator_type alloc = {});
-        VeIndex                     insert( KeyT &key, ValueT value);
-        bool                        update( KeyT &key, ValueT value, VeIndex& index);
-        ValueT                      find(KeyT& key, VeIndex& index); 
-        range                       equal_range(KeyT& key);
-        bool                        erase( KeyT &key);
+        VeIndex                     insert( KeyT key, ValueT value);
+        bool                        update( KeyT key, ValueT value, VeIndex& index);
+        ValueT                      find( KeyT key, VeIndex& index); 
+        range                       equal_range(KeyT key);
+        bool                        erase( KeyT key);
         void                        clear();
         std::pmr::vector<map_t>&    map();
         std::size_t                 size();
@@ -147,7 +148,7 @@ export namespace vve {
     /// \returns the fixed slot map index of the new item to be stored in handles and other maps
     ///----------------------------------------------------------------------------------
     template<typename KeyT, typename ValueT>
-    VeIndex VeHashMapBase<KeyT, ValueT>::insert(KeyT &key, ValueT value) {
+    VeIndex VeHashMapBase<KeyT, ValueT>::insert(KeyT key, ValueT value) {
         if (loadFactor() > 0.9f) increaseBuckets();
 
         VeIndex new_slot = d_first_free;   //point to the free slot to use if there is one
@@ -174,7 +175,7 @@ export namespace vve {
     /// \returns true if the value was changed, else false
     ///----------------------------------------------------------------------------------
     template<typename KeyT, typename ValueT>
-    bool VeHashMapBase<KeyT, ValueT>::update(KeyT &key, ValueT value, VeIndex& index ) {
+    bool VeHashMapBase<KeyT, ValueT>::update(KeyT key, ValueT value, VeIndex& index ) {
         if (index == VeIndex::NULL()) {
             index = std::get<1>(findInHashMap(key));           //if NULL find in hash map
             if (index == VeIndex::NULL()) return false;        //still not found -> return false
@@ -191,7 +192,7 @@ export namespace vve {
     /// \returns the value or NULL
     ///----------------------------------------------------------------------------------
     template<typename KeyT, typename ValueT>
-    ValueT VeHashMapBase<KeyT, ValueT>::find(KeyT &key, VeIndex &index) {
+    ValueT VeHashMapBase<KeyT, ValueT>::find(KeyT key, VeIndex &index) {
         if (index == VeIndex::NULL()) {
             index = std::get<1>(findInHashMap(key));                    //if NULL find in hash map
             if (index == VeIndex::NULL() ) return ValueT::NULL();        //still not found -> return NULL
@@ -201,7 +202,7 @@ export namespace vve {
     }
 
     template<typename KeyT, typename ValueT>
-    typename VeHashMapBase<KeyT, ValueT>::range VeHashMapBase<KeyT, ValueT>::equal_range(KeyT& key) {
+    typename VeHashMapBase<KeyT, ValueT>::range VeHashMapBase<KeyT, ValueT>::equal_range(KeyT key) {
         VeIndex index = std::get<1>(findInHashMap(key)); 
         if (index == VeIndex::NULL() || index.value >= d_map.size()) return std::make_pair(end(),end()); 
         return std::make_pair( iterator{this, index, key }, end());
@@ -213,7 +214,7 @@ export namespace vve {
     /// \returns true if the entry was found and removed, else false
     ///----------------------------------------------------------------------------------
     template<typename KeyT, typename ValueT>
-    bool VeHashMapBase<KeyT, ValueT>::erase(KeyT &key) {
+    bool VeHashMapBase<KeyT, ValueT>::erase(KeyT key) {
         VeIndex index = eraseFromHashMap(key);     //erase from hash map and get map index
 
         if (index == VeIndex::NULL() || !(index.value < d_map.size()))
@@ -232,6 +233,7 @@ export namespace vve {
     void VeHashMapBase<KeyT, ValueT>::clear() {
         d_size = 0;
         d_first_free = VeIndex::NULL();
+        std::fill(d_map.begin(), d_map.end(), map_t{});
         std::fill(d_bucket.begin(), d_bucket.end(), VeIndex::NULL());
     }
 
@@ -380,7 +382,7 @@ export namespace vve {
     template< typename tuple_type, int... Is>
     auto VeHashMap<tuple_type, Is...>::insert(tuple_type &data, VeIndex index) {
         //return VeHashMapBase<VeHash, VeIndex>::insert(std::hash<sub_type>()(std::make_tuple(std::tuple_element<Is, data> ...)), index);
-        return VeHashMapBase<VeHash, VeIndex>::insert( hash_impl(data, std::integer_sequence<int, Is...>) , index );
+        return VeHashMapBase<VeHash, VeIndex>::insert(hash_impl(data, std::integer_sequence<size_t, Is...>{}), index);
     }
 
     ///----------------------------------------------------------------------------------
@@ -391,7 +393,8 @@ export namespace vve {
     ///----------------------------------------------------------------------------------
     template< typename tuple_type, int... Is>
     auto VeHashMap<tuple_type, Is...>::update(tuple_type &data, VeIndex index) {
-        return VeHashMapBase<VeHash, VeIndex>::update(hash_impl(data, std::integer_sequence<int, Is...>), index);
+        VeIndex slot_index;
+        return VeHashMapBase<VeHash, VeIndex>::update(hash_impl(data, std::integer_sequence<size_t, Is...>{}), index, slot_index);
     }
 
     ///----------------------------------------------------------------------------------
@@ -401,7 +404,7 @@ export namespace vve {
     ///----------------------------------------------------------------------------------
     template< typename tuple_type, int... Is>
     auto VeHashMap<tuple_type, Is...>::find(tuple_type &data) {
-        return VeHashMapBase<VeHash, VeIndex>::find(hash_impl(data, std::integer_sequence<int, Is...>), VeIndex::NULL());
+        return VeHashMapBase<VeHash, VeIndex>::find(hash_impl(data, std::integer_sequence<size_t, Is...>{}), VeIndex::NULL());
     }
 
     ///----------------------------------------------------------------------------------
@@ -411,7 +414,7 @@ export namespace vve {
     ///----------------------------------------------------------------------------------
     template< typename tuple_type, int... Is>
     auto VeHashMap<tuple_type, Is...>::erase(tuple_type &data) {
-        return VeHashMapBase<VeHash, VeIndex>::erase(hash_impl(data, std::integer_sequence<int, Is...>));
+        return VeHashMapBase<VeHash, VeIndex>::erase( hash_impl(data, std::integer_sequence<size_t, Is...>{}) );
     }
 
 
