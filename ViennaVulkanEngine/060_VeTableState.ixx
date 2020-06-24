@@ -71,6 +71,9 @@ export namespace vve {
 		std::size_t	size();
 		VeHandle	handle( VeTableIndex table_index );
 
+		template<int map, typename... Args>
+		tuple_type find(Args... args);
+
 		//-------------------------------------------------------------------------------
 		//write operations
 
@@ -78,6 +81,7 @@ export namespace vve {
 		VeHandle	insert(std::promise<VeHandle> prom, TypesOne... args);
 		bool		update(VeHandle handle, TypesOne... args);
 		bool		erase(VeHandle handle);
+
 		template<int map, typename... Args>
 		std::pair<iterator, iterator> equal_range( Args... args );
 		void		operator=(const VeTableStateType& rhs);
@@ -159,6 +163,16 @@ export namespace vve {
 		if (!isValid(table_index)) { return VeHandle::NULL(); }
 		VeIndex slot = d_chunks[table_index.d_chunk_index]->slot(table_index.d_in_chunk_index);
 		return VeHandle{ d_slot_map.map()[slot].d_key, slot };
+	}
+
+	template< typename... TypesOne, typename... TypesTwo>
+	template<int i, typename... Args>
+	typename VeTableStateType::tuple_type VeTableStateType::find(Args... args) {
+		using sub_type = typename decltype(std::get<i>(d_maps))::sub_type;
+
+		sub_type  tup = std::make_tuple(args...);
+		auto [first, second] = std::get<i>(d_maps).equal_range(tup);
+		return *first;
 	}
 
 

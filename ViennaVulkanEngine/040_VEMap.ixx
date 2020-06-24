@@ -411,12 +411,12 @@ export namespace vve {
     /// \returns the value if found, or NULL
     ///----------------------------------------------------------------------------------
     template< typename tuple_type, int... Is>
-    auto VeHashMap<tuple_type, Is...>::find(sub_type &data) {
+    auto VeHashMap<tuple_type, Is...>::find(VeHashMap<tuple_type, Is...>::sub_type &data) {
         return VeHashMapBase<VeHash, VeIndex>::find(hash_impl(data, std::index_sequence_for<typename VeHashMap<tuple_type, Is...>::sub_type>{}), VeIndex::NULL());
     }
 
     template< typename tuple_type, int... Is>
-    auto VeHashMap<tuple_type, Is...>::equal_range(sub_type& data) {
+    auto VeHashMap<tuple_type, Is...>::equal_range(typename VeHashMap<tuple_type, Is...>::sub_type& data) {
         return VeHashMapBase<VeHash, VeIndex>::equal_range(hash_impl(data, std::index_sequence_for<typename VeHashMap<tuple_type, Is...>::sub_type>{}));
     }
 
