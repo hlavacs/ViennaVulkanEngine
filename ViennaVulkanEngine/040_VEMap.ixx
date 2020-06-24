@@ -57,6 +57,7 @@ export namespace vve {
 
         VeHashMapBase(allocator_type alloc = {});
         VeIndex                     insert( KeyT key, ValueT value);
+        bool                        update(KeyT key, ValueT value);
         bool                        update( KeyT key, ValueT value, VeIndex& index);
         ValueT                      find( KeyT key, VeIndex& index); 
         range                       equal_range(KeyT key);
@@ -165,6 +166,13 @@ export namespace vve {
         ++d_size;                           ///increase size
         d_bucket[hash_index] = new_slot;    //let hash map point to the new entry
         return new_slot;                    //return the index of the new entry
+    }
+
+
+    template<typename KeyT, typename ValueT>
+    bool VeHashMapBase<KeyT, ValueT>::update(KeyT key, ValueT value) {
+        VeIndex index;
+        return update(key, value, index);
     }
 
     ///----------------------------------------------------------------------------------
@@ -393,8 +401,7 @@ export namespace vve {
     ///----------------------------------------------------------------------------------
     template< typename tuple_type, int... Is>
     auto VeHashMap<tuple_type, Is...>::update(tuple_type &data, VeIndex index) {
-        VeIndex slot_index;
-        return VeHashMapBase<VeHash, VeIndex>::update(hash_impl(data, std::integer_sequence<size_t, Is...>{}), index, slot_index);
+        return VeHashMapBase<VeHash, VeIndex>::update(hash_impl(data, std::integer_sequence<size_t, Is...>{}), index);
     }
 
     ///----------------------------------------------------------------------------------
