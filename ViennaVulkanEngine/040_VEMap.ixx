@@ -55,19 +55,19 @@ export namespace vve {
         friend const_iterator;
 
         VeHashMapBase(allocator_type alloc = {});
-        VeIndex     insert( KeyT &key, ValueT value);
-        bool        update( KeyT &key, ValueT value, VeIndex& index);
-        ValueT      find(KeyT& key, VeIndex& index); 
-        range       equal_range(KeyT& key);
-        bool        erase( KeyT &key);
-        void        clear();
-        auto        map();
-        std::size_t size();
-        float       loadFactor();
-        iterator    begin();
-        iterator    end();
-        const_iterator begin() const;
-        const_iterator end() const;
+        VeIndex                     insert( KeyT &key, ValueT value);
+        bool                        update( KeyT &key, ValueT value, VeIndex& index);
+        ValueT                      find(KeyT& key, VeIndex& index); 
+        range                       equal_range(KeyT& key);
+        bool                        erase( KeyT &key);
+        void                        clear();
+        std::pmr::vector<map_t>&    map();
+        std::size_t                 size();
+        float                       loadFactor();
+        iterator                    begin();
+        iterator                    end();
+        const_iterator              begin() const;
+        const_iterator              end() const;
     };
 
     ///----------------------------------------------------------------------------------
@@ -236,8 +236,8 @@ export namespace vve {
     }
 
     template<typename KeyT, typename ValueT>
-    auto VeHashMapBase<KeyT, ValueT>::map() {
-        return &d_map;
+    std::pmr::vector<typename VeHashMapBase<KeyT, ValueT>::map_t>& VeHashMapBase<KeyT, ValueT>::map() {
+        return d_map;
     }
 
     ///----------------------------------------------------------------------------------
@@ -412,64 +412,6 @@ export namespace vve {
     template< typename tuple_type, int... Is>
     auto VeHashMap<tuple_type, Is...>::erase(tuple_type &data) {
         return VeHashMapBase<VeHash, VeIndex>::erase(hash_impl(data, std::integer_sequence<int, Is...>));
-    }
-
-
-    //-----------------------------------------------------------------------------------
-
-
-    template<typename... Args>
-    class VeHashMap2 : public VeHashMapBase<VeHash, VeIndex> {
-    public:
-        using allocator_type = std::pmr::polymorphic_allocator<std::byte>;
-
-        VeHashMap2(allocator_type alloc = {}) : VeHashMapBase<VeHash, VeIndex>(alloc) {};
-        auto insert(VeIndex value, Args... args);
-        auto update(VeIndex value, Args... args);
-        auto find(Args... args);
-        auto erase(Args... args);
-    };
-
-    ///----------------------------------------------------------------------------------
-    /// \brief Overload of the insert member function
-    /// \param[in] data The key tuple to insert into the hash map
-    /// \param[in] index The value to insert
-    /// \returns the slot map index of this new item
-    ///----------------------------------------------------------------------------------
-    template<typename... Args>
-    auto VeHashMap2<Args...>::insert(VeIndex value, Args... args) {      
-        return VeHashMapBase<VeHash, VeIndex>::insert(ve_hash(args...), value);
-    }
-
-    ///----------------------------------------------------------------------------------
-    /// \brief Overload of the update member function
-    /// \param[in] data The key tuple to update into the hash map
-    /// \param[in] index The value to update
-    /// \returns true if the item was found and updated, else false
-    ///----------------------------------------------------------------------------------
-    template<typename... Args>
-    auto VeHashMap2<Args...>::update(VeIndex value, Args... args) {
-        return VeHashMapBase<VeHash, VeIndex>::update(ve_hash(args...), value);
-    }
-
-    ///----------------------------------------------------------------------------------
-    /// \brief Overload of the find member function
-    /// \param[in] data The key tuple to update into the hash map
-    /// \returns the value if found, or NULL
-    ///----------------------------------------------------------------------------------
-    template<typename... Args>
-    auto VeHashMap2<Args...>::find(Args... args) {
-        return VeHashMapBase<VeHash, VeIndex>::find(ve_hash(args...), VeIndex::NULL());
-    }
-
-    ///----------------------------------------------------------------------------------
-    /// \brief Overload of the erase member function
-    /// \param[in] data The key tuple to erase
-    /// \returns true if the item was foudn and erased, else false
-    ///----------------------------------------------------------------------------------
-    template<typename... Args>
-    auto VeHashMap2<Args...>::erase(Args... args) {
-        return VeHashMapBase<VeHash, VeIndex>::erase(ve_hash(args...));
     }
 
 

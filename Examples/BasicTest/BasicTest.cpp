@@ -71,6 +71,7 @@ int main()
 
     auto [i64, fl, i32, ch] = ToATableState.at(h1);
     auto [i64b, flb, i32b, chb] = ToATableState.at(h3);
+    VeHandle h;
 
     for (auto it = ToATableState.begin(); it != ToATableState.end(); ++it) {
         auto [i64c, flc, i32c, chc] = *it;
@@ -78,8 +79,7 @@ int main()
         std::cout << i64c << " " << flc << " " << i32c << " " << chc << std::endl;
         it.operator*<2>() = 11;
         std::cout << it.operator*<0>() << " " << it.operator*<1>() << " " << it.operator*<2>() << " " << it.operator*<3>() << std::endl;
-        VeHandle h = it.operator*(0);
-
+        h = it.operator*(0);
     }
     ToATableState.erase(h1);
     ToATableState.erase(h2);
