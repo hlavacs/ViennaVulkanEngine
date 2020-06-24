@@ -216,6 +216,7 @@ export namespace vve {
         return std::make_pair( iterator{this, index, key }, end());
     }
 
+
     ///----------------------------------------------------------------------------------
     /// \brief Erase an entry from the slot map
     /// \param[in] The handle holding an index to the slot map
@@ -377,7 +378,8 @@ export namespace vve {
         VeHashMap(allocator_type alloc = {}) : VeHashMapBase<VeHash, VeIndex>(alloc) {};
         auto insert(tuple_type &data, VeIndex index);
         auto update(tuple_type &data, VeIndex index);
-        auto find(tuple_type &data);
+        auto find(sub_type &data);
+        auto equal_range(sub_type& data);
         auto erase(tuple_type &data);
     };
 
@@ -389,7 +391,6 @@ export namespace vve {
     ///----------------------------------------------------------------------------------
     template< typename tuple_type, int... Is>
     auto VeHashMap<tuple_type, Is...>::insert(tuple_type &data, VeIndex index) {
-        //return VeHashMapBase<VeHash, VeIndex>::insert(std::hash<sub_type>()(std::make_tuple(std::tuple_element<Is, data> ...)), index);
         return VeHashMapBase<VeHash, VeIndex>::insert(hash_impl(data, std::integer_sequence<size_t, Is...>{}), index);
     }
 
@@ -410,8 +411,13 @@ export namespace vve {
     /// \returns the value if found, or NULL
     ///----------------------------------------------------------------------------------
     template< typename tuple_type, int... Is>
-    auto VeHashMap<tuple_type, Is...>::find(tuple_type &data) {
-        return VeHashMapBase<VeHash, VeIndex>::find(hash_impl(data, std::integer_sequence<size_t, Is...>{}), VeIndex::NULL());
+    auto VeHashMap<tuple_type, Is...>::find(sub_type &data) {
+        return VeHashMapBase<VeHash, VeIndex>::find(hash_impl(data, std::index_sequence_for<typename VeHashMap<tuple_type, Is...>::sub_type>{}), VeIndex::NULL());
+    }
+
+    template< typename tuple_type, int... Is>
+    auto VeHashMap<tuple_type, Is...>::equal_range(sub_type& data) {
+        return VeHashMapBase<VeHash, VeIndex>::equal_range(hash_impl(data, std::index_sequence_for<typename VeHashMap<tuple_type, Is...>::sub_type>{}));
     }
 
     ///----------------------------------------------------------------------------------
@@ -439,7 +445,6 @@ export namespace vve {
         }
     };
 
-
     ///----------------------------------------------------------------------------------
     /// Iterator
     ///----------------------------------------------------------------------------------
@@ -451,10 +456,12 @@ export namespace vve {
 
         friend class map_other;
         friend class map_base;
+
+    public:
         map_base*   d_hash_map;
         KeyT        d_key;
         VeIndex     d_slot_index;
-    public:
+
         using difference_type = std::ptrdiff_t;     // Member typedefs required by std::iterator_traits
         using value_type = typename VeHashMapBase<typename KeyT, typename ValueT>::map_t;
         using pointer = std::conditional_t<Const, const map_t*, map_t*>;
@@ -462,6 +469,7 @@ export namespace vve {
         using iterator_category = std::forward_iterator_tag;
 
         explicit map_iterator(VeHashMapBase<KeyT, ValueT>* map, VeIndex slot_index = VeIndex::NULL(), KeyT key = KeyT::NULL());
+        explicit map_iterator();
         reference operator*() const;
         auto& operator++();
         auto operator++(int);
@@ -471,6 +479,9 @@ export namespace vve {
         bool operator!=(const map_iterator<KeyT, ValueT, R>& rhs) const;
         operator map_iterator<KeyT, ValueT, false>() const;
     };
+
+    template<typename KeyT, typename ValueT, bool Const>
+    map_iterator<KeyT, ValueT, Const>::map_iterator() : d_hash_map(nullptr), d_key(KeyT::NULL()), d_slot_index(VeIndex::NULL()) {};
 
     template<typename KeyT, typename ValueT, bool Const>
     map_iterator<KeyT,ValueT,Const>::map_iterator(VeHashMapBase<KeyT, ValueT>* map, VeIndex slot_index, KeyT key) : d_hash_map(map), d_key(key) {

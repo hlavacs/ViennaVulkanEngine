@@ -78,6 +78,8 @@ export namespace vve {
 		VeHandle	insert(std::promise<VeHandle> prom, TypesOne... args);
 		bool		update(VeHandle handle, TypesOne... args);
 		bool		erase(VeHandle handle);
+		template<int map, typename... Args>
+		std::pair<iterator, iterator> equal_range( Args... args );
 		void		operator=(const VeTableStateType& rhs);
 		void		clear();
 
@@ -286,6 +288,15 @@ export namespace vve {
 		return true;
 	};
 
+
+	template< typename... TypesOne, typename... TypesTwo>
+	template<int i, typename... Args>
+	typename VeTableStateType::range VeTableStateType::equal_range(Args... args) {
+		auto [first, second] = std::get<i>(d_maps).equal_range(args...);
+		return std::make_pair<typename VeTableStateType::iterator, typename VeTableStateType::iterator>	( iterator(this, first ), iterator(this, second));
+	}
+
+
 	///----------------------------------------------------------------------------------
 	/// \brief Copy another table state over this state
 	/// \param[in] rhs The new state to copy
@@ -377,11 +388,14 @@ export namespace vve {
 	template< bool Const, typename... TypesOne, typename... TypesTwo>
 	class VeTableStateIteratorType {
 		using table_state_other = typename VeTableStateIterator<!Const, Typelist<TypesOne...>, Maplist<TypesTwo...>>;
+		using map_iterator = map_iterator<VeHash, VeIndex, Const>;
 		friend class table_state_other;
 		friend class VeTableStateType;
 
-		VeTableStateType* d_table_state;
-		VeTableIndex      d_table_index;
+		VeTableStateType*	d_table_state;
+		VeTableIndex		d_table_index;
+		map_iterator		d_map_it;
+
 	public:
 		using difference_type = std::ptrdiff_t;     // Member typedefs required by std::iterator_traits
 		using value_type = typename VeTableStateType::tuple_type;
@@ -390,7 +404,9 @@ export namespace vve {
 		using reference = std::conditional_t<Const, const VeHandle&, VeHandle&>;
 		using iterator_category = std::forward_iterator_tag;
 
-		explicit VeTableStateIterator(VeTableStateType *table_state, VeTableIndex table_index = VeIndex::NULL());
+		explicit VeTableStateIterator(VeTableStateType* table_state, VeTableIndex table_index = VeIndex::NULL());
+		explicit VeTableStateIterator(VeTableStateType* table_state, map_iterator &map_it);
+
 		void operator*(value_type& arg);
 		value_type operator*() const;
 		VeHandle operator*(int) const;
@@ -410,7 +426,11 @@ export namespace vve {
 
 	template< bool Const, typename... TypesOne, typename... TypesTwo>
 	VeTableStateIteratorType::VeTableStateIterator(VeTableStateType* table_state, VeTableIndex table_index)
-		: d_table_state(table_state), d_table_index(table_index) {};
+		: d_table_state(table_state), d_table_index(table_index), d_map_it() {};
+
+	template< bool Const, typename... TypesOne, typename... TypesTwo>
+	VeTableStateIteratorType::VeTableStateIterator(VeTableStateType* table_state, typename VeTableStateIteratorType::map_iterator& map_it ) 
+		: d_table_state(table_state), d_table_index(VeTableIndex::NULL()), d_map_it(map_it) {};
 
 	///----------------------------------------------------------------------------------
 	/// read data
@@ -473,9 +493,13 @@ export namespace vve {
 	template<bool Const, typename... TypesOne, typename... TypesTwo>
 	template<bool R>
 	bool VeTableStateIteratorType::operator==(const VeTableStateIterator<R, Typelist<TypesOne...>, Maplist<TypesTwo...> >& rhs) const {
-		return d_table_state == rhs.d_table_state && 
-			d_table_index.d_chunk_index == rhs.d_table_index.d_chunk_index && 
-			d_table_index.d_in_chunk_index == rhs.d_table_index.d_in_chunk_index;
+		if (d_map_it.d_hash_map == nullptr) {
+			return	d_table_state == rhs.d_table_state &&
+					d_table_index.d_chunk_index == rhs.d_table_index.d_chunk_index &&
+					d_table_index.d_in_chunk_index == rhs.d_table_index.d_in_chunk_index;
+		};
+		
+		return d_table_state == rhs.d_table_state && d_map_it == rhs.d_map_it;
 	}
 
 	template<bool Const, typename... TypesOne, typename... TypesTwo>
