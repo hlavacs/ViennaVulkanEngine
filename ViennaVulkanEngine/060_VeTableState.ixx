@@ -168,11 +168,8 @@ export namespace vve {
 	template< typename... TypesOne, typename... TypesTwo>
 	template<int i, typename... Args>
 	typename VeTableStateType::tuple_type VeTableStateType::find(Args... args) {
-		using sub_type = typename decltype(std::get<i>(d_maps))::sub_type;
-
-		sub_type  tup = std::make_tuple(args...);
-		auto [first, second] = std::get<i>(d_maps).equal_range(tup);
-		return *first;
+		auto [first, second] = std::get<i>(d_maps).equal_range(args...);
+		auto slot = d_slot_map.find(*first);
 	}
 
 

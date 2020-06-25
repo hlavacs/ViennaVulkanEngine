@@ -378,8 +378,10 @@ export namespace vve {
         VeHashMap(allocator_type alloc = {}) : VeHashMapBase<VeHash, VeIndex>(alloc) {};
         auto insert(tuple_type &data, VeIndex index);
         auto update(tuple_type &data, VeIndex index);
-        auto find(sub_type &data);
-        auto equal_range(sub_type& data);
+        template<typename... Args>
+        auto find(Args... args);
+        template<typename... Args>
+        auto equal_range(Args... args);
         auto erase(tuple_type &data);
     };
 
@@ -411,13 +413,17 @@ export namespace vve {
     /// \returns the value if found, or NULL
     ///----------------------------------------------------------------------------------
     template< typename tuple_type, int... Is>
-    auto VeHashMap<tuple_type, Is...>::find(VeHashMap<tuple_type, Is...>::sub_type &data) {
-        return VeHashMapBase<VeHash, VeIndex>::find(hash_impl(data, std::index_sequence_for<typename VeHashMap<tuple_type, Is...>::sub_type>{}), VeIndex::NULL());
+    template<typename... Args>
+    auto VeHashMap<tuple_type, Is...>::find(Args... args) {
+        auto tup = std::make_tuple(args...);
+        return VeHashMapBase<VeHash, VeIndex>::find((VeHash)std::hash<decltype(tup)>()(tup), VeIndex::NULL());
     }
 
     template< typename tuple_type, int... Is>
-    auto VeHashMap<tuple_type, Is...>::equal_range(typename VeHashMap<tuple_type, Is...>::sub_type& data) {
-        return VeHashMapBase<VeHash, VeIndex>::equal_range(hash_impl(data, std::index_sequence_for<typename VeHashMap<tuple_type, Is...>::sub_type>{}));
+    template<typename... Args>
+    auto VeHashMap<tuple_type, Is...>::equal_range(Args... args) {
+        auto tup = std::make_tuple(args...);
+        return VeHashMapBase<VeHash, VeIndex>::equal_range( (VeHash)std::hash<decltype(tup)>()(tup));
     }
 
     ///----------------------------------------------------------------------------------
