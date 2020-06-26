@@ -11,39 +11,38 @@ import :VETableChunk;
 
 export namespace vve {
 
-	const uint32_t VE_TABLE_CHUNK_SIZE = 1 << 14;
 
 	//----------------------------------------------------------------------------------
 	// Delare VeTable to be friend for calling private function
-	template< typename... Types> class VeTable;
+	template< int Size, typename... Types> class VeTable;
 
 	//----------------------------------------------------------------------------------
 	// Declare VeTableStateIterator
 
-	template<bool Const, typename... Types> class VeTableStateIterator;
+	template<bool Const, int Size, typename... Types> class VeTableStateIterator;
 
 	//----------------------------------------------------------------------------------
 	// Delare VeTableState
-	template< typename... Types> class VeTableState;
+	template< int Size, typename... Types> class VeTableState;
 
-	#define VeTableStateType VeTableState< Typelist < TypesOne... >, Maplist < TypesTwo... > >
+	#define VeTableStateType VeTableState< Size, Typelist < TypesOne... >, Maplist < TypesTwo... > >
 
 	//----------------------------------------------------------------------------------
 	// Specialization of VeTableState
-	template< typename... TypesOne, typename... TypesTwo>
+	template<int Size, typename... TypesOne, typename... TypesTwo>
 	class VeTableStateType {
-		friend class VeTable < Typelist<TypesOne... >, Maplist<TypesTwo...> >;
+		friend class VeTable < Size, Typelist<TypesOne... >, Maplist<TypesTwo...> >;
 
 	public:
 		using tuple_type = std::tuple<TypesOne...>;
-		using chunk_type = VeTableChunk<VE_TABLE_CHUNK_SIZE, TypesOne...>;
-		static_assert(sizeof(chunk_type) <= VE_TABLE_CHUNK_SIZE);
+		using chunk_type = VeTableChunk<Size, TypesOne...>;
+		static_assert(sizeof(chunk_type) <= Size);
 		using chunk_ptr  = std::unique_ptr<chunk_type>;
 		using map_type = decltype(TupleOfInstances<tuple_type, TypesTwo...>());
 		using allocator_type = std::pmr::polymorphic_allocator<std::byte>;
 
-		using iterator = VeTableStateIterator< false, Typelist<TypesOne...>, Maplist<TypesTwo...> >;
-		using const_iterator = VeTableStateIterator< true, Typelist<TypesOne...>, Maplist<TypesTwo...> >;
+		using iterator = VeTableStateIterator< false, Size, Typelist<TypesOne...>, Maplist<TypesTwo...> >;
+		using const_iterator = VeTableStateIterator< true, Size, Typelist<TypesOne...>, Maplist<TypesTwo...> >;
 		using range = std::pair<iterator, iterator>;
 		using crange = std::pair<const_iterator, const_iterator>;
 		friend iterator;
@@ -98,12 +97,12 @@ export namespace vve {
 	/// \brief Constructor
 	/// \param[in] alloc PMR allocator to be used
 	///----------------------------------------------------------------------------------
-	template<typename... TypesOne, typename... TypesTwo>
-	VeTableStateType::VeTableState(allocator_type alloc) : 
+	template<int Size, typename... TypesOne, typename... TypesTwo>
+	VeTableStateType::VeTableState(allocator_type alloc) :
 		d_guid(newGuid()), d_read_only(false), d_chunks(alloc), d_slot_map(), d_maps() {};
 
 
-	template<typename... TypesOne, typename... TypesTwo>
+	template<int Size, typename... TypesOne, typename... TypesTwo>
 	bool VeTableStateType::isValid(VeTableIndex table_index) {
 		if (table_index == VeTableIndex::NULL() ||
 			table_index.d_chunk_index >= d_chunks.size() ||
@@ -118,7 +117,7 @@ export namespace vve {
 	/// \param[in] handle The handle to be found
 	/// \returns the table index that is stored in the slot map 
 	///----------------------------------------------------------------------------------
-	template<typename... TypesOne, typename... TypesTwo>
+	template<int Size, typename... TypesOne, typename... TypesTwo>
 	VeTableIndex VeTableStateType::getTableIndexFromHandle(VeHandle &handle) {
 		VeTableIndex table_index = d_slot_map.find( std::forward<VeHandle>(handle) );
 		if (!isValid(table_index) ) { return VeTableIndex::NULL(); }
@@ -135,7 +134,7 @@ export namespace vve {
 	/// \param[in/out] handle The handle for the data entry. If the entry does not exist then it is changed to NULL()
 	/// \returns the data tuple that is stored in the table or std::nullopt if not found
 	///----------------------------------------------------------------------------------
-	template< typename... TypesOne, typename... TypesTwo>
+	template<int Size, typename... TypesOne, typename... TypesTwo>
 	typename VeTableStateType::tuple_type VeTableStateType::at(VeHandle &handle) {
 		VeTableIndex table_index = getTableIndexFromHandle(handle);
 		if (!isValid(table_index)) {
@@ -149,7 +148,7 @@ export namespace vve {
 	/// \brief Return the number of entries in this table
 	/// \returns the number of entries currently stored in this table
 	///----------------------------------------------------------------------------------
-	template< typename... TypesOne, typename... TypesTwo>
+	template<int Size, typename... TypesOne, typename... TypesTwo>
 	std::size_t VeTableStateType::size() {
 		return d_chunks.size()> 0 ? (d_chunks.size() - 1) * chunk_type::c_max_size + d_chunks[d_chunks.size() - 1]->size() : 0;
 	}
@@ -159,7 +158,7 @@ export namespace vve {
 	/// \param[in] table_index The table index to be looked up
 	/// \returns the handle
 	///----------------------------------------------------------------------------------
-	template< typename... TypesOne, typename... TypesTwo>
+	template<int Size, typename... TypesOne, typename... TypesTwo>
 	VeHandle VeTableStateType::handle(VeTableIndex table_index) {
 		if (!isValid(table_index)) { return VeHandle::NULL(); }
 		VeIndex slot = d_chunks[table_index.d_chunk_index]->slot(table_index.d_in_chunk_index);
@@ -171,7 +170,7 @@ export namespace vve {
 	/// \param[in] args The arguments to be found
 	/// \returns the data entry if found, else an empty tuple
 	///----------------------------------------------------------------------------------
-	template< typename... TypesOne, typename... TypesTwo>
+	template<int Size, typename... TypesOne, typename... TypesTwo>
 	template<int i, typename... Args>
 	typename VeTableStateType::tuple_type VeTableStateType::find(Args... args) {
 		VeIndex slot_index = std::get<i>(d_maps).find(args...);
@@ -189,7 +188,7 @@ export namespace vve {
 	/// \param[in] args The new data
 	/// \returns a new unique handle describing the entry
 	///----------------------------------------------------------------------------------
-	template< typename... TypesOne, typename... TypesTwo>
+	template<int Size, typename... TypesOne, typename... TypesTwo>
 	VeHandle VeTableStateType::insertGUID(VeGuid guid, TypesOne... args ) {
 		d_guid = newGuid();
 		if(d_chunks.size() == 0) { d_chunks.emplace_back(std::make_unique<chunk_type>());} 
@@ -223,7 +222,7 @@ export namespace vve {
 	/// \param[in] args The data
 	/// \returns a new unique handle describing the entry
 	///----------------------------------------------------------------------------------
-	template< typename... TypesOne, typename... TypesTwo>
+	template<int Size, typename... TypesOne, typename... TypesTwo>
 	VeHandle VeTableStateType::insertGUID(VeGuid guid, std::promise<VeHandle> prom, TypesOne... args) {
 		VeHandle handle = insertGUID(guid, args...);
 		prom.set_value(handle);
@@ -235,7 +234,7 @@ export namespace vve {
 	/// \param[in] args The data
 	/// \returns a new unique handle describing the entry
 	///----------------------------------------------------------------------------------
-	template< typename... TypesOne, typename... TypesTwo>
+	template<int Size, typename... TypesOne, typename... TypesTwo>
 	VeHandle VeTableStateType::insert(TypesOne... args) {
 		return insertGUID(newGuid(), args...);
 	}
@@ -246,7 +245,7 @@ export namespace vve {
 	/// \param[in] entry The data
 	/// \returns a new unique handle describing the entry
 	///----------------------------------------------------------------------------------
-	template< typename... TypesOne, typename... TypesTwo>
+	template<int Size, typename... TypesOne, typename... TypesTwo>
 	VeHandle VeTableStateType::insert(std::promise<VeHandle> prom, TypesOne... args) {
 		return insertGUID(newGuid(), std::move(prom), args...);
 	}
@@ -257,7 +256,7 @@ export namespace vve {
 	/// \param[in] args A data containing the new data
 	/// \returns true if the entry was updated, else false
 	///----------------------------------------------------------------------------------
-	template< typename... TypesOne, typename... TypesTwo>
+	template<int Size, typename... TypesOne, typename... TypesTwo>
 	bool VeTableStateType::update(VeHandle handle, TypesOne... args) {
 		VeTableIndex table_index = getTableIndexFromHandle(handle);
 		if (!isValid(table_index)) { return false; }
@@ -279,7 +278,7 @@ export namespace vve {
 	/// \param[in] handle The handle describing the entry
 	/// \returns true if the entry was erased, else false
 	///----------------------------------------------------------------------------------
-	template< typename... TypesOne, typename... TypesTwo>
+	template<int Size, typename... TypesOne, typename... TypesTwo>
 	bool VeTableStateType::erase(VeHandle handle) {
 		VeTableIndex table_index = getTableIndexFromHandle(handle);
 		if (!isValid(table_index)) { return false; }
@@ -305,7 +304,7 @@ export namespace vve {
 	/// \brief Find all entries with a certain profile
 	/// \returns an iterator going through all found entities
 	///----------------------------------------------------------------------------------
-	template< typename... TypesOne, typename... TypesTwo>
+	template<int Size, typename... TypesOne, typename... TypesTwo>
 	template<int i, typename... Args>
 	typename VeTableStateType::range VeTableStateType::equal_range(Args... args) {
 		static_assert(std::is_same_v(tuple_type, std::make_tuple(args...)));
@@ -318,7 +317,7 @@ export namespace vve {
 	/// \brief Copy another table state over this state
 	/// \param[in] rhs The new state to copy
 	///----------------------------------------------------------------------------------
-	template<typename... TypesOne, typename... TypesTwo>
+	template<int Size, typename... TypesOne, typename... TypesTwo>
 	void VeTableStateType::operator=(const VeTableStateType& rhs) {
 		if (d_guid == rhs.d_guid) return;
 
@@ -338,7 +337,7 @@ export namespace vve {
 	///----------------------------------------------------------------------------------
 	/// \brief Delete all data from this table state
 	///----------------------------------------------------------------------------------
-	template<typename... TypesOne, typename... TypesTwo>
+	template<int Size, typename... TypesOne, typename... TypesTwo>
 	void VeTableStateType::clear() {
 		d_guid = newGuid();
 		d_chunks.clear();
@@ -353,7 +352,7 @@ export namespace vve {
 	/// \brief Return an iterator for this table state
 	/// \returns a non-const iterator
 	///----------------------------------------------------------------------------------
-	template<typename... TypesOne, typename... TypesTwo>
+	template<int Size, typename... TypesOne, typename... TypesTwo>
 	typename VeTableStateType::iterator VeTableStateType::begin() {
 		if (size() == 0) {
 			return iterator(this, VeTableIndex::NULL());
@@ -368,7 +367,7 @@ export namespace vve {
 	/// \brief Return an end iterator for this table state
 	/// \returns a non-const end iterator
 	///----------------------------------------------------------------------------------
-	template<typename... TypesOne, typename... TypesTwo>
+	template<int Size, typename... TypesOne, typename... TypesTwo>
 	typename VeTableStateType::iterator VeTableStateType::end() {
 		return iterator(this, VeTableIndex::NULL());
 	}
@@ -377,7 +376,7 @@ export namespace vve {
 	/// \brief Return a const iterator for this table state
 	/// \returns a const iterator
 	///----------------------------------------------------------------------------------
-	template<typename... TypesOne, typename... TypesTwo>
+	template<int Size, typename... TypesOne, typename... TypesTwo>
 	typename VeTableStateType::const_iterator VeTableStateType::begin() const {
 		if (size() == 0) {
 			return iterator(this, VeTableIndex::NULL());
@@ -389,7 +388,7 @@ export namespace vve {
 	/// \brief Return an end const iterator for this table state
 	/// \returns a const end iterator
 	///----------------------------------------------------------------------------------
-	template<typename... TypesOne, typename... TypesTwo>
+	template<int Size, typename... TypesOne, typename... TypesTwo>
 	typename VeTableStateType::const_iterator VeTableStateType::end() const {
 		return const_iterator(this, VeTableIndex::NULL());
 	}
@@ -400,11 +399,11 @@ export namespace vve {
 	/// Iterator
 	///----------------------------------------------------------------------------------
 	
-	#define VeTableStateIteratorType VeTableStateIterator< Const, Typelist<TypesOne...>, Maplist<TypesTwo...> >
+	#define VeTableStateIteratorType VeTableStateIterator< Const, Size, Typelist<TypesOne...>, Maplist<TypesTwo...> >
 
-	template< bool Const, typename... TypesOne, typename... TypesTwo>
+	template< bool Const, int Size, typename... TypesOne, typename... TypesTwo>
 	class VeTableStateIteratorType {
-		using table_state_other = typename VeTableStateIterator<!Const, Typelist<TypesOne...>, Maplist<TypesTwo...>>;
+		using table_state_other = typename VeTableStateIterator<!Const, Size, Typelist<TypesOne...>, Maplist<TypesTwo...>>;
 		using map_iterator = map_iterator<VeHash, VeIndex, Const>;
 		friend class table_state_other;
 		friend class VeTableStateType;
@@ -433,37 +432,37 @@ export namespace vve {
 		auto operator++(int);
 
 		template<bool R>
-		bool operator==(const VeTableStateIterator<R, Typelist<TypesOne...>, Maplist<TypesTwo...> >& rhs) const;
+		bool operator==(const VeTableStateIterator<R, Size, Typelist<TypesOne...>, Maplist<TypesTwo...> >& rhs) const;
 
 		template<bool R>
-		bool operator!=(const VeTableStateIterator<R, Typelist<TypesOne...>, Maplist<TypesTwo...>>& rhs) const;
+		bool operator!=(const VeTableStateIterator<R, Size, Typelist<TypesOne...>, Maplist<TypesTwo...>>& rhs) const;
 
-		operator VeTableStateIterator<false, Typelist<TypesOne...>, Maplist<TypesTwo...>>() const;
+		operator VeTableStateIterator<false, Size, Typelist<TypesOne...>, Maplist<TypesTwo...>>() const;
 	};
 
-	template< bool Const, typename... TypesOne, typename... TypesTwo>
+	template< bool Const, int Size, typename... TypesOne, typename... TypesTwo>
 	VeTableStateIteratorType::VeTableStateIterator(VeTableStateType* table_state, VeTableIndex table_index)
 		: d_table_state(table_state), d_table_index(table_index), d_map_it() {};
 
-	template< bool Const, typename... TypesOne, typename... TypesTwo>
+	template< bool Const, int Size, typename... TypesOne, typename... TypesTwo>
 	VeTableStateIteratorType::VeTableStateIterator(VeTableStateType* table_state, typename VeTableStateIteratorType::map_iterator& map_it ) 
 		: d_table_state(table_state), d_table_index(VeTableIndex::NULL()), d_map_it(map_it) {};
 
 	///----------------------------------------------------------------------------------
 	/// read data
-	template< bool Const, typename... TypesOne, typename... TypesTwo>
+	template< bool Const, int Size, typename... TypesOne, typename... TypesTwo>
 	typename VeTableStateIteratorType::value_type VeTableStateIteratorType::operator*() const {
 		return d_table_state->d_chunks[d_table_index.d_chunk_index.value]->at(d_table_index.d_in_chunk_index);
 	}
 
-	template< bool Const, typename... TypesOne, typename... TypesTwo>
+	template< bool Const, int Size, typename... TypesOne, typename... TypesTwo>
 	template<int i>
 	auto& VeTableStateIteratorType::operator*() const {
 		auto data = d_table_state->d_chunks[d_table_index.d_chunk_index.value]->data();
 		return std::get<i>(*data)[d_table_index.d_in_chunk_index.value];
 	}
 
-	template< bool Const, typename... TypesOne, typename... TypesTwo>
+	template< bool Const, int Size, typename... TypesOne, typename... TypesTwo>
 	VeHandle VeTableStateIteratorType::operator*(int i) const {
 		return d_table_state->handle(d_table_index);
 	}
@@ -471,7 +470,7 @@ export namespace vve {
 
 	///----------------------------------------------------------------------------------
 	/// write data
-	template< bool Const, typename... TypesOne, typename... TypesTwo>
+	template< bool Const, int Size, typename... TypesOne, typename... TypesTwo>
 	void VeTableStateIteratorType::operator*(typename VeTableStateIteratorType::value_type& args) {
 		auto& data = d_table_state->d_chunks[d_table_index.d_chunk_index.value].data();
 		static_for<std::size_t, 0, std::tuple_size_v<value_type>>([&, this](auto i) { //copy tuple from arrays
@@ -479,7 +478,7 @@ export namespace vve {
 			});
 	}
 
-	template< bool Const, typename... TypesOne, typename... TypesTwo>
+	template< bool Const, int Size, typename... TypesOne, typename... TypesTwo>
 	auto& VeTableStateIteratorType::operator++() {
 		if (d_table_state == nullptr || d_table_index == VeTableIndex::NULL()) { return *this; }
 		if (d_table_index.d_chunk_index >=d_table_state->d_chunks.size() ) { d_table_index = VeTableIndex::NULL(); return *this; }
@@ -500,16 +499,16 @@ export namespace vve {
 		return *this;
 	}
 
-	template< bool Const, typename... TypesOne, typename... TypesTwo>
+	template< bool Const, int Size, typename... TypesOne, typename... TypesTwo>
 	auto VeTableStateIteratorType::operator++(int) {
 		auto result = *this;
 		++* this;
 		return result;
 	}
 
-	template<bool Const, typename... TypesOne, typename... TypesTwo>
+	template<bool Const, int Size, typename... TypesOne, typename... TypesTwo>
 	template<bool R>
-	bool VeTableStateIteratorType::operator==(const VeTableStateIterator<R, Typelist<TypesOne...>, Maplist<TypesTwo...> >& rhs) const {
+	bool VeTableStateIteratorType::operator==(const VeTableStateIterator<R, Size,Typelist<TypesOne...>, Maplist<TypesTwo...> >& rhs) const {
 		if (d_map_it.d_hash_map == nullptr) {
 			return	d_table_state == rhs.d_table_state &&
 					d_table_index.d_chunk_index == rhs.d_table_index.d_chunk_index &&
@@ -519,15 +518,15 @@ export namespace vve {
 		return d_table_state == rhs.d_table_state && d_map_it == rhs.d_map_it;
 	}
 
-	template<bool Const, typename... TypesOne, typename... TypesTwo>
+	template<bool Const, int Size, typename... TypesOne, typename... TypesTwo>
 	template<bool R>
-	bool VeTableStateIteratorType::operator!=(const VeTableStateIterator<R, Typelist<TypesOne...>, Maplist<TypesTwo...> >& rhs) const {
+	bool VeTableStateIteratorType::operator!=(const VeTableStateIterator<R, Size, Typelist<TypesOne...>, Maplist<TypesTwo...> >& rhs) const {
 		return !( *this == rhs );
 	}
 
-	template< bool Const, typename... TypesOne, typename... TypesTwo>
-	VeTableStateIteratorType::operator VeTableStateIterator<false, Typelist<TypesOne...>, Maplist<TypesTwo...>>() const {
-		return VeTableStateIterator<true, Typelist<TypesOne...>, Maplist<TypesTwo...>>{d_table_state, d_table_index};
+	template< bool Const, int Size, typename... TypesOne, typename... TypesTwo>
+	VeTableStateIteratorType::operator VeTableStateIterator<false, Size, Typelist<TypesOne...>, Maplist<TypesTwo...>>() const {
+		return VeTableStateIterator<true, Size, Typelist<TypesOne...>, Maplist<TypesTwo...>>{d_table_state, d_table_index};
 	}
 	
 

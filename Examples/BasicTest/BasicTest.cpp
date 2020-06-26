@@ -51,7 +51,7 @@ int main()
     ToAChunk.pop_back();
 
 
-    VeTableState< Typelist< uint64_t, float, uint32_t, char>, Maplist< Hashlist< 0, 1, 2>, Hashlist< 1, 2 >> > ToATableState;
+    VeTableState<1<<14, Typelist< uint64_t, float, uint32_t, char>, Maplist< Hashlist< 0, 1, 2>, Hashlist< 1, 2 >> > ToATableState;
     auto h1 = ToATableState.insert(  4, 2.0f, 90, 'a' );
     ToATableState.update(h1, 5, 3.0f, 91, 'b');
     std::promise<VeHandle> prom;
@@ -94,7 +94,7 @@ int main()
     auto [a, b, c, d] = ToATableState.find<0>((uint64_t)4,2.0f, (uint32_t)90);
 
 
-    VeTableState< Typelist< uint64_t, float, uint32_t, char>, Maplist< Hashlist< 0, 1, 2>, Hashlist< 1, 2 >> > ToATableState2;
+    VeTableState<1<<14, Typelist< uint64_t, float, uint32_t, char>, Maplist< Hashlist< 0, 1, 2>, Hashlist< 1, 2 >> > ToATableState2;
 
     ToATableState2 = ToATableState;
 

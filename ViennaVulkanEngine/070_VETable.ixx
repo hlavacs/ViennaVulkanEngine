@@ -15,13 +15,13 @@ export namespace vve {
 	//-------------------------------------------------------------------------------
 	//main table class
 
-	template< typename... Types> class VeTable;
+	template< int Size, typename... Types> class VeTable;
 
-	#define VeTableStateType VeTableState< Typelist < TypesOne... >, Typelist < TypesTwo... > >
+	#define VeTableStateType VeTableState< Size, Typelist < TypesOne... >, Typelist < TypesTwo... > >
 
-	#define VeTableType VeTable< Typelist < TypesOne... >, Typelist < TypesTwo... > >
+	#define VeTableType VeTable< Size, Typelist < TypesOne... >, Typelist < TypesTwo... > >
 
-	template< typename... TypesOne, typename... TypesTwo>
+	template<  int Size, typename... TypesOne, typename... TypesTwo>
 	class VeTableType  {
 
 		using tuple_type = std::tuple<TypesOne...>;
@@ -59,7 +59,7 @@ export namespace vve {
 		void commitAndCopy();
 	};
 
-	template<typename... TypesOne, typename... TypesTwo>
+	template< int Size, typename... TypesOne, typename... TypesTwo>
 	VeTableType::VeTable(allocator_type alloc ) {
 		d_current_state = std::unique_ptr<VeTableStateType>(new VeTableStateType(alloc));
 		d_next_state = std::unique_ptr<VeTableStateType>(new VeTableStateType(alloc));
@@ -68,17 +68,17 @@ export namespace vve {
 	//-------------------------------------------------------------------------------
 	//read operations
 
-	template<typename... TypesOne, typename... TypesTwo>
+	template< int Size, typename... TypesOne, typename... TypesTwo>
 	VeIndex VeTableType::getThreadIdx() {
 		return d_thread_idx;
 	}
 
-	template<typename... TypesOne, typename... TypesTwo>
+	template< int Size, typename... TypesOne, typename... TypesTwo>
 	auto VeTableType::getCurrentState() {
 		return d_current_state;
 	}
 
-	template<typename... TypesOne, typename... TypesTwo>
+	template< int Size, typename... TypesOne, typename... TypesTwo>
 	auto VeTableType::getNextState() {
 		if( d_next_state ) return d_next_state;
 		return d_current_state;
@@ -88,12 +88,12 @@ export namespace vve {
 	//-------------------------------------------------------------------------------
 	//write operations
 
-	template<typename... TypesOne, typename... TypesTwo>
+	template< int Size, typename... TypesOne, typename... TypesTwo>
 	void VeTableType::setThreadIdx(VeIndex idx) {
 		d_thread_idx = idx;
 	}
 
-	template<typename... TypesOne, typename... TypesTwo>
+	template< int Size, typename... TypesOne, typename... TypesTwo>
 	void VeTableType::clear() {
 
 	}
@@ -101,13 +101,13 @@ export namespace vve {
 	//-------------------------------------------------------------------------------
 	//commit
 
-	template<typename... TypesOne, typename... TypesTwo>
+	template< int Size, typename... TypesOne, typename... TypesTwo>
 	void VeTableType::commitAndClear() {
 		std::swap(d_current_state, d_next_state);
 		d_next_state->clear();
 	}
 
-	template<typename... TypesOne, typename... TypesTwo>
+	template< int Size, typename... TypesOne, typename... TypesTwo>
 	void VeTableType::commitAndCopy() {
 		std::swap(d_current_state, d_next_state);
 		d_next_state = d_current_state;
