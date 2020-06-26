@@ -59,7 +59,8 @@ export namespace vve {
         VeIndex                     insert(KeyT key, ValueT value);
         bool                        update(KeyT key, ValueT value);
         bool                        update(KeyT key, ValueT value, VeIndex& index);
-        ValueT                      find(KeyT key, VeIndex& index); 
+        ValueT                      find(KeyT key);
+        ValueT                      find(KeyT key, VeIndex& index);
         range                       equal_range(KeyT key);
         bool                        erase(KeyT key);
         void                        clear();
@@ -207,6 +208,12 @@ export namespace vve {
         }
         if( !(index.value < d_map.size()) || d_map[index].d_key != key ) return ValueT::NULL();      //if not allowed -> return NULL
         return d_map[index].d_value;                                    //return value of the map
+    }
+
+    template<typename KeyT, typename ValueT>
+    ValueT VeHashMapBase<KeyT, ValueT>::find(KeyT key) {
+        VeIndex index;
+        return find(key, index);
     }
 
     template<typename KeyT, typename ValueT>
@@ -373,17 +380,16 @@ export namespace vve {
     class VeHashMap : public VeHashMapBase<VeHash, VeIndex> {
     public:
         using allocator_type = std::pmr::polymorphic_allocator<std::byte>;
-        template <typename D = tuple_type>
-        using sub_type = std::tuple< std::tuple_element<Is, D>... >;
+        using sub_type = std::tuple< std::tuple_element_t<Is, tuple_type>... >;
 
         VeHashMap(allocator_type alloc = {}) : VeHashMapBase<VeHash, VeIndex>(alloc) {};
-        auto insert(tuple_type&& data, VeIndex index);
-        auto update(tuple_type&& data, VeIndex index);
+        VeIndex insert(tuple_type&& data, VeIndex index);
+        bool    update(tuple_type&& data, VeIndex index);
         template<typename... Args>
-        auto find(Args... args);
+        VeIndex find(Args... args);
         template<typename... Args>
-        auto equal_range(Args... args);
-        auto erase(tuple_type&& data);
+        auto    equal_range(Args... args);
+        bool    erase(tuple_type&& data);
     };
 
     ///----------------------------------------------------------------------------------
@@ -393,7 +399,7 @@ export namespace vve {
     /// \returns the slot map index of this new item
     ///----------------------------------------------------------------------------------
     template< typename tuple_type, int... Is>
-    auto VeHashMap<tuple_type, Is...>::insert(tuple_type&& data, VeIndex index) {
+    VeIndex VeHashMap<tuple_type, Is...>::insert(tuple_type&& data, VeIndex index) {
         return VeHashMapBase<VeHash, VeIndex>::insert(hash_impl(data, std::integer_sequence<size_t, Is...>{}), index);
     }
 
@@ -404,26 +410,33 @@ export namespace vve {
     /// \returns true if the item was found and updated, else false
     ///----------------------------------------------------------------------------------
     template< typename tuple_type, int... Is>
-    auto VeHashMap<tuple_type, Is...>::update(tuple_type&& data, VeIndex index) {
+    bool VeHashMap<tuple_type, Is...>::update(tuple_type&& data, VeIndex index) {
         return VeHashMapBase<VeHash, VeIndex>::update( hash_impl(data, std::integer_sequence<size_t, Is...>{}), index);
     }
 
     ///----------------------------------------------------------------------------------
     /// \brief Overload of the find member function
-    /// \param[in] data The key tuple to update into the hash map
+    /// \param[in] data The key data to update into the hash map
     /// \returns the value if found, or NULL
     ///----------------------------------------------------------------------------------
     template< typename tuple_type, int... Is>
     template< typename... Args>
-    auto VeHashMap<tuple_type, Is...>::find(Args... args) {
+    VeIndex VeHashMap<tuple_type, Is...>::find(Args... args) {
         auto tup = std::make_tuple(args...);
-        return VeHashMapBase<VeHash, VeIndex>::find((VeHash)std::hash<decltype(tup)>()(tup), VeIndex::NULL());
+        static_assert(std::is_same_v<typename VeHashMap<tuple_type, Is...>::sub_type, std::tuple<Args...>>);
+        return VeHashMapBase<VeHash, VeIndex>::find((VeHash)std::hash<decltype(tup)>()(tup));
     }
 
+    ///----------------------------------------------------------------------------------
+    /// \brief Overload of the equal_range member function
+    /// \param[in] data The key data to update into the hash map
+    /// \returns the begin and end iterators if found, else end iterators
+    ///----------------------------------------------------------------------------------
     template< typename tuple_type, int... Is>
     template< typename... Args>
     auto VeHashMap<tuple_type, Is...>::equal_range(Args... args) {
-        auto tup = std::make_tuple(args...);
+        auto tup = std::make_tuple(args...);       
+        static_assert( std::is_same_v<typename VeHashMap<tuple_type, Is...>::sub_type, std::tuple<Args...>>);
         return VeHashMapBase<VeHash, VeIndex>::equal_range( (VeHash)std::hash<decltype(tup)>()(tup));
     }
 
@@ -433,7 +446,7 @@ export namespace vve {
     /// \returns true if the item was foudn and erased, else false
     ///----------------------------------------------------------------------------------
     template< typename tuple_type, int... Is>
-    auto VeHashMap<tuple_type, Is...>::erase(tuple_type&& data) {
+    bool VeHashMap<tuple_type, Is...>::erase(tuple_type&& data) {
         return VeHashMapBase<VeHash, VeIndex>::erase( hash_impl(data, std::integer_sequence<size_t, Is...>{}) );
     }
 

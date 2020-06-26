@@ -91,7 +91,7 @@ int main()
     h2 = ToATableState.insert( 40, 20.0f, 900, 'b');
     h3 = ToATableState.insert( 80, 30.0f, 1800, 'c');
 
-    auto [a, b, c, d] = ToATableState.find<0>(4,2.0f,90);
+    auto [a, b, c, d] = ToATableState.find<0>((uint64_t)4,2.0f, (uint32_t)90);
 
 
     VeTableState< Typelist< uint64_t, float, uint32_t, char>, Maplist< Hashlist< 0, 1, 2>, Hashlist< 1, 2 >> > ToATableState2;

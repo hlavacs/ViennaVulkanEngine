@@ -168,8 +168,12 @@ export namespace vve {
 	template< typename... TypesOne, typename... TypesTwo>
 	template<int i, typename... Args>
 	typename VeTableStateType::tuple_type VeTableStateType::find(Args... args) {
-		auto [first, second] = std::get<i>(d_maps).equal_range( args... );
-		VeTableIndex table_index = d_slot_map.find( VeHandle{VeGuid::NULL(), (*first).d_value } );
+		//auto [first, second] = std::get<i>(d_maps).equal_range( args... );
+		//VeTableIndex table_index = d_slot_map.find( VeHandle{VeGuid::NULL(), (*first).d_value } );
+
+		VeIndex slot_index = std::get<i>(d_maps).find(args...);
+		VeTableIndex table_index = d_slot_map.find(VeHandle{ VeGuid::NULL(), slot_index });
+
 		return d_chunks[table_index.d_chunk_index]->at(table_index.d_in_chunk_index);
 	}
 
@@ -295,10 +299,14 @@ export namespace vve {
 		return true;
 	};
 
-
+	///----------------------------------------------------------------------------------
+	/// \brief Find all entries with a certain profile
+	/// \returns an iterator going through all found entities
+	///----------------------------------------------------------------------------------
 	template< typename... TypesOne, typename... TypesTwo>
 	template<int i, typename... Args>
 	typename VeTableStateType::range VeTableStateType::equal_range(Args... args) {
+		static_assert(std::is_same_v(tuple_type, std::make_tuple(args...)));
 		auto [first, second] = std::get<i>(d_maps).equal_range(args...);
 		return std::make_pair<typename VeTableStateType::iterator, typename VeTableStateType::iterator>	( iterator(this, first ), iterator(this, second));
 	}
