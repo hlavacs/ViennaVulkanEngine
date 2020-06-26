@@ -168,7 +168,7 @@ export namespace vve {
 	template< typename... TypesOne, typename... TypesTwo>
 	template<int i, typename... Args>
 	typename VeTableStateType::tuple_type VeTableStateType::find(Args... args) {
-		auto [first, second] = std::get<i>(d_maps).equal_range(args...);
+		auto [first, second] = std::get<i>(d_maps).equal_range( args... );
 		VeTableIndex table_index = d_slot_map.find( VeHandle{VeGuid::NULL(), (*first).d_value } );
 		return d_chunks[table_index.d_chunk_index]->at(table_index.d_in_chunk_index);
 	}
@@ -255,17 +255,14 @@ export namespace vve {
 	bool VeTableStateType::update(VeHandle handle, TypesOne... args) {
 		VeTableIndex table_index = getTableIndexFromHandle(handle);
 		if (!isValid(table_index)) { return false; }
-
 		d_guid = newGuid();
 
-		auto old_tup = at(handle);
 		static_for<std::size_t, 0, std::tuple_size_v<map_type>>([&, this](auto i) { //remove old binding from maps
-			std::get<i>(d_maps).erase(old_tup);
+			std::get<i>(d_maps).erase(at(handle));
 			});
 
-		auto new_tup = std::make_tuple(args...);
 		static_for<std::size_t, 0, std::tuple_size_v<map_type>>([&, this](auto i) { //insert new binding
-			std::get<i>(d_maps).update(std::forward<tuple_type>(new_tup), handle.d_index);
+			std::get<i>(d_maps).update( tuple_type(args...), handle.d_index );
 			});
 
 		return d_chunks[table_index.d_chunk_index]->update(table_index.d_in_chunk_index, args...);
@@ -280,9 +277,7 @@ export namespace vve {
 	bool VeTableStateType::erase(VeHandle handle) {
 		VeTableIndex table_index = getTableIndexFromHandle(handle);
 		if (!isValid(table_index)) { return false; }
-
 		d_guid = newGuid();
-
 		VeChunkIndex last = (decltype(VeChunkIndex::value))(d_chunks.size() - 1);
 
 		VeIndex other = d_chunks[table_index.d_chunk_index.value]->swap( 
@@ -294,7 +289,7 @@ export namespace vve {
 
 		auto old_tup = at(handle);
 		static_for<std::size_t, 0, std::tuple_size_v<map_type>>([&, this](auto i) { //remove old binding from maps
-			std::get<i>(d_maps).erase(old_tup);
+			std::get<i>(d_maps).erase(std::forward<tuple_type>(old_tup));
 			});
 
 		return true;
