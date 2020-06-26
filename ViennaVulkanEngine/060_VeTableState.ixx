@@ -158,6 +158,11 @@ export namespace vve {
 		return d_chunks.size()> 0 ? (d_chunks.size() - 1) * chunk_type::c_max_size + d_chunks[d_chunks.size() - 1]->size() : 0;
 	}
 
+	///----------------------------------------------------------------------------------
+	/// \brief Return a handle for a given table index
+	/// \param[in] table_index The table index to be looked up
+	/// \returns the handle
+	///----------------------------------------------------------------------------------
 	template< typename... TypesOne, typename... TypesTwo>
 	VeHandle VeTableStateType::handle(VeTableIndex table_index) {
 		if (!isValid(table_index)) { return VeHandle::NULL(); }
@@ -165,15 +170,16 @@ export namespace vve {
 		return VeHandle{ d_slot_map.map()[slot].d_key, slot };
 	}
 
+	///----------------------------------------------------------------------------------
+	/// \brief Find a data entry for a given list of arguments
+	/// \param[in] args The arguments to be found
+	/// \returns the data entry if found, else an empty tuple
+	///----------------------------------------------------------------------------------
 	template< typename... TypesOne, typename... TypesTwo>
 	template<int i, typename... Args>
 	typename VeTableStateType::tuple_type VeTableStateType::find(Args... args) {
-		//auto [first, second] = std::get<i>(d_maps).equal_range( args... );
-		//VeTableIndex table_index = d_slot_map.find( VeHandle{VeGuid::NULL(), (*first).d_value } );
-
 		VeIndex slot_index = std::get<i>(d_maps).find(args...);
 		VeTableIndex table_index = d_slot_map.find(VeHandle{ VeGuid::NULL(), slot_index });
-
 		return d_chunks[table_index.d_chunk_index]->at(table_index.d_in_chunk_index);
 	}
 

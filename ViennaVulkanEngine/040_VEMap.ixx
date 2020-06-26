@@ -170,6 +170,12 @@ export namespace vve {
     }
 
 
+    ///----------------------------------------------------------------------------------
+    /// \brief Update the value for a given key
+    /// \param[in] key The item key for which the value should be updated
+    /// \param[in] value The new value to be saved
+    /// \returns true if the value was changed, else false
+    ///----------------------------------------------------------------------------------
     template<typename KeyT, typename ValueT>
     bool VeHashMapBase<KeyT, ValueT>::update(KeyT key, ValueT value) {
         VeIndex index;
@@ -186,8 +192,8 @@ export namespace vve {
     template<typename KeyT, typename ValueT>
     bool VeHashMapBase<KeyT, ValueT>::update(KeyT key, ValueT value, VeIndex& index ) {
         if (index == VeIndex::NULL()) {
-            index = std::get<1>(findInHashMap(key));           //if NULL find in hash map
-            if (index == VeIndex::NULL()) return false;        //still not found -> return false
+            index = std::get<1>(findInHashMap(key));     //if NULL find in hash map and return it
+            if (index == VeIndex::NULL()) return false;  //still not found -> return false
         }
         if (!(index.value < d_map.size()) || d_map[index].d_key != key) return false;    //if not allowed -> return false
         d_map[index].d_value = value;      //change the value
@@ -451,9 +457,6 @@ export namespace vve {
     }
 
 
-    //-----------------------------------------------------------------------------------
-
-
     //----------------------------------------------------------------------------------
     //Lists containing integer indices used for creating maps
 
@@ -464,6 +467,10 @@ export namespace vve {
             return VeHashMap<tuple_type, Is...>();
         }
     };
+
+
+    //-----------------------------------------------------------------------------------
+
 
     ///----------------------------------------------------------------------------------
     /// Iterator
