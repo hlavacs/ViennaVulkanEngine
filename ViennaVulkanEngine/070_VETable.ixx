@@ -12,43 +12,27 @@ import :VETableState;
 
 export namespace vve {
 
-
-
-
-
-	/*
-	//----------------------------------------------------------------------------------
-	class VeTableBase {
-	public:
-		VeTableBase() = default;
-		~VeTableBase() = default;
-	};
-
-
 	//-------------------------------------------------------------------------------
 	//main table class
 
 	template< typename... Types> class VeTable;
 
 	#define VeTableStateType VeTableState< Typelist < TypesOne... >, Typelist < TypesTwo... > >
+
 	#define VeTableType VeTable< Typelist < TypesOne... >, Typelist < TypesTwo... > >
 
 	template< typename... TypesOne, typename... TypesTwo>
-	class VeTableType : VeTableBase {
+	class VeTableType  {
 
 		using tuple_type = std::tuple<TypesOne...>;
 		using allocator_type = std::pmr::polymorphic_allocator<std::byte>;
 
-		enum class VeOnSwapDo { SINGLE, CLEAR, COPY };
-
 		VeIndex								d_thread_idx;
 		std::unique_ptr<VeTableStateType>	d_current_state;
 		std::unique_ptr<VeTableStateType>	d_next_state;
-		VeOnSwapDo							d_on_swap_do;
 
 	public:
 		VeTable(allocator_type alloc = {});
-		VeTable(VeOnSwapDo on_swap, allocator_type alloc = {});
 		~VeTable() = default;
 
 		//-------------------------------------------------------------------------------
@@ -67,16 +51,17 @@ export namespace vve {
 		auto insert(VeGuid guid, tuple_type entry);
 		auto insert(VeGuid guid, tuple_type entry, std::shared_ptr<VeHandle> handle);
 		void erase( VeHandle handle );
+
+		//-------------------------------------------------------------------------------
+		//commit
+
+		void commitAndClear();
+		void commitAndCopy();
 	};
 
-
 	template<typename... TypesOne, typename... TypesTwo>
-	VeTableType::VeTable(allocator_type alloc) : VeTable( VeOnSwapDo::SINGLE, alloc) {}
-
-	template<typename... TypesOne, typename... TypesTwo>
-	VeTableType::VeTable(VeOnSwapDo on_swap, allocator_type alloc ) :  d_on_swap_do(on_swap) {
+	VeTableType::VeTable(allocator_type alloc ) {
 		d_current_state = std::unique_ptr<VeTableStateType>(new VeTableStateType(alloc));
-		if (on_swap == VeOnSwapDo::SINGLE) return;
 		d_next_state = std::unique_ptr<VeTableStateType>(new VeTableStateType(alloc));
 	}
 
@@ -113,6 +98,20 @@ export namespace vve {
 
 	}
 
+	//-------------------------------------------------------------------------------
+	//commit
 
-	*/
+	template<typename... TypesOne, typename... TypesTwo>
+	void VeTableType::commitAndClear() {
+		std::swap(d_current_state, d_next_state);
+		d_next_state->clear();
+	}
+
+	template<typename... TypesOne, typename... TypesTwo>
+	void VeTableType::commitAndCopy() {
+		std::swap(d_current_state, d_next_state);
+		d_next_state = d_current_state;
+	}
+
+
 };

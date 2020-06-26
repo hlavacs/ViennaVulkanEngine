@@ -37,7 +37,7 @@ int main()
     std::cout << sizeof(VeTableIndex) << std::endl;
     std::cout << sizeof(VeHandle) << std::endl;
 
-    VeTableChunk<uint64_t, float, uint32_t> ToAChunk;
+    VeTableChunk< (1<<14), uint64_t, float, uint32_t> ToAChunk;
     std::cout << sizeof(ToAChunk) << "\n";
     auto idx1 = ToAChunk.insert( 1, 4, 2.0f, 90 );
     auto idx2 = ToAChunk.insert( 2, 5, 2.5f, 97 );

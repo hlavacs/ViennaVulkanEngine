@@ -11,6 +11,7 @@ import :VETableChunk;
 
 export namespace vve {
 
+	const uint32_t VE_TABLE_CHUNK_SIZE = 1 << 14;
 
 	//----------------------------------------------------------------------------------
 	// Delare VeTable to be friend for calling private function
@@ -35,7 +36,7 @@ export namespace vve {
 
 	public:
 		using tuple_type = std::tuple<TypesOne...>;
-		using chunk_type = VeTableChunk<TypesOne...>;
+		using chunk_type = VeTableChunk<VE_TABLE_CHUNK_SIZE, TypesOne...>;
 		static_assert(sizeof(chunk_type) <= VE_TABLE_CHUNK_SIZE);
 		using chunk_ptr  = std::unique_ptr<chunk_type>;
 		using map_type = decltype(TupleOfInstances<tuple_type, TypesTwo...>());
@@ -70,9 +71,7 @@ export namespace vve {
 		tuple_type	at(VeHandle &handle);
 		std::size_t	size();
 		VeHandle	handle( VeTableIndex table_index );
-
-		template<int map, typename... Args>
-		tuple_type find(Args... args);
+		template<int map, typename... Args> tuple_type find(Args... args);
 
 		//-------------------------------------------------------------------------------
 		//write operations
@@ -81,9 +80,7 @@ export namespace vve {
 		VeHandle	insert(std::promise<VeHandle> prom, TypesOne... args);
 		bool		update(VeHandle handle, TypesOne... args);
 		bool		erase(VeHandle handle);
-
-		template<int map, typename... Args>
-		std::pair<iterator, iterator> equal_range( Args... args );
+		template<int map, typename... Args> std::pair<iterator, iterator> equal_range( Args... args );
 		void		operator=(const VeTableStateType& rhs);
 		void		clear();
 
@@ -94,7 +91,6 @@ export namespace vve {
 		iterator end();
 		const_iterator begin() const;
 		const_iterator end() const;
-
 	};
 
 

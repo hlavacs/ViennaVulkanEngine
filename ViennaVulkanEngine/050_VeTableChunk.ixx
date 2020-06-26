@@ -10,18 +10,17 @@ import :VEMemory;
 
 export namespace vve {
 
-	const uint32_t VE_TABLE_CHUNK_SIZE = 1 << 14;
 
 	///----------------------------------------------------------------------------------
 	/// \brief table states are cut into chunks of equal size
 	///----------------------------------------------------------------------------------
 
-	template<typename... Args>
+	template<int Size, typename... Args>
 	class VeTableChunk {
 	public:
 		static const uint32_t data_size = (sizeof(Args) + ...) + sizeof(VeIndex); //d_data + slot_map_array
 		static const uint32_t manage_size = sizeof(VeGuid) + sizeof(uint32_t) + sizeof(VeChunkIndex);
-		static const uint32_t c_max_size = (VE_TABLE_CHUNK_SIZE - manage_size) / data_size;
+		static const uint32_t c_max_size = (Size - manage_size) / data_size;
 
 	private:
 		using data_arrays = std::tuple<std::array<Args, c_max_size>...>;	//tuple of arrays
@@ -51,23 +50,23 @@ export namespace vve {
 		VeGuid			guid();
 		size_t			size();
 		size_t			capacity();
-		VeIndex			swap(VeInChunkIndex index, VeTableChunk<Args...>& other_chunk, VeInChunkIndex other_index);
+		VeIndex			swap(VeInChunkIndex index, VeTableChunk<Size, Args...>& other_chunk, VeInChunkIndex other_index);
 		VeIndex			slot(VeInChunkIndex);
-		void			operator=(const VeTableChunk<Args...>& rhs);
+		void			operator=(const VeTableChunk<Size, Args...>& rhs);
 
 	};
 
 	///----------------------------------------------------------------------------------
 	/// \brief Default Constructor
 	///----------------------------------------------------------------------------------
-	template<typename... Args>
-	VeTableChunk<Args...>::VeTableChunk() : d_size(0), d_chunk_index(VeChunkIndex::NULL()) {}
+	template<int Size, typename... Args>
+	VeTableChunk<Size, Args...>::VeTableChunk() : d_size(0), d_chunk_index(VeChunkIndex::NULL()) {}
 
 	///----------------------------------------------------------------------------------
 	// \brief Constructor with chunk index
 	///----------------------------------------------------------------------------------
-	template<typename... Args>
-	VeTableChunk<Args...>::VeTableChunk(VeChunkIndex chunk_index) : 
+	template<int Size, typename... Args>
+	VeTableChunk<Size, Args...>::VeTableChunk(VeChunkIndex chunk_index) :
 		d_guid(newGuid()), d_size(0), d_chunk_index(chunk_index) {}
 	
 	///----------------------------------------------------------------------------------
@@ -76,8 +75,8 @@ export namespace vve {
 	/// \param[in] args The data that is to be added to this chunk
 	/// \returns the in chunk index of the new entry in this chunk 
 	///----------------------------------------------------------------------------------
-	template<typename... Args>
-	VeInChunkIndex VeTableChunk<Args...>::insert(VeIndex slot_map_index, Args... args) {
+	template<int Size, typename... Args>
+	VeInChunkIndex VeTableChunk<Size, Args...>::insert(VeIndex slot_map_index, Args... args) {
 		/*auto f = [&, this]<int i, typename T, typename... Bs>(auto& self, T t, Bs... bs) {
 			std::get<i>(this->d_data)[this->d_size] = t; 
 			if constexpr (sizeof... (Bs) > 0) {
@@ -101,8 +100,8 @@ export namespace vve {
 	/// \param[in] args The data that is to be updated in this chunk
 	/// \returns whether the operation was successful
 	///----------------------------------------------------------------------------------
-	template<typename... Args>
-	bool VeTableChunk<Args...>::update(VeInChunkIndex in_chunk_index, Args... args) {
+	template<int Size, typename... Args>
+	bool VeTableChunk<Size, Args...>::update(VeInChunkIndex in_chunk_index, Args... args) {
 		return update(VeIndex::NULL(), in_chunk_index, args...);
 	}
 
@@ -113,8 +112,8 @@ export namespace vve {
 	/// \param[in] args The data that is to be updated in this chunk
 	/// \returns whether the operation was successful
 	///----------------------------------------------------------------------------------
-	template<typename... Args>
-	bool VeTableChunk<Args...>::update(VeIndex slot_map_index, VeInChunkIndex in_chunk_index, Args... args) {
+	template<int Size, typename... Args>
+	bool VeTableChunk<Size, Args...>::update(VeIndex slot_map_index, VeInChunkIndex in_chunk_index, Args... args) {
 		if (!(in_chunk_index.value < d_size)) return false;
 
 		auto f = [&, this]<std::size_t... Idx, typename... Bs>(std::index_sequence<Idx...>, Bs... bs) {
@@ -133,14 +132,14 @@ export namespace vve {
 	/// \param[out] slot_map_index The slot map index or NULL if the item was not found
 	/// \returns the data as tuple or an empty tuple
 	///----------------------------------------------------------------------------------
-	template<typename... Args>
-	std::tuple<Args...> VeTableChunk<Args...>::at(VeInChunkIndex in_chunk_index) {
+	template<int Size, typename... Args>
+	std::tuple<Args...> VeTableChunk<Size, Args...>::at(VeInChunkIndex in_chunk_index) {
 		VeIndex idx;
 		return at(in_chunk_index, idx);
 	}
 
-	template<typename... Args>
-	std::tuple<Args...> VeTableChunk<Args...>::at(VeInChunkIndex in_chunk_index, VeIndex& slot_map_index) {
+	template<int Size, typename... Args>
+	std::tuple<Args...> VeTableChunk<Size, Args...>::at(VeInChunkIndex in_chunk_index, VeIndex& slot_map_index) {
 		tuple_type tuple;
 		slot_map_index = VeIndex::NULL();
 
@@ -158,8 +157,8 @@ export namespace vve {
 	/// \param[in] in_chunk_index Index of the entry in the data arrays to be erased
 	/// \returns the slot map index of the entry thas was moved to the empty entry to fill the gap
 	///----------------------------------------------------------------------------------
-	template<typename... Args>
-	void VeTableChunk<Args...>::pop_back() {
+	template<int Size, typename... Args>
+	void VeTableChunk<Size, Args...>::pop_back() {
 		if (d_size == 0) return;
 		--d_size;									//reduce size by 1
 	}
@@ -168,8 +167,8 @@ export namespace vve {
 	/// \brief Returns whether the chunk is full or whether it can hold more items
 	/// \returns true if chunk is full, else false
 	///----------------------------------------------------------------------------------
-	template<typename... Args>
-	bool VeTableChunk<Args...>::full() {
+	template<int Size, typename... Args>
+	bool VeTableChunk<Size, Args...>::full() {
 		return d_size >= c_max_size;
 	}
 
@@ -177,8 +176,8 @@ export namespace vve {
 	/// \brief Get a pointer to the raw chunk data
 	/// \returns a pointer to the tuple containing the arrays of data items of this chunk
 	///----------------------------------------------------------------------------------
-	template<typename... Args>
-	auto VeTableChunk<Args...>::data() {
+	template<int Size, typename... Args>
+	auto VeTableChunk<Size, Args...>::data() {
 		return &d_data;
 	}
 
@@ -186,8 +185,8 @@ export namespace vve {
 	/// \brief Get the current GUID of the chunk
 	/// \returns the current GUID reflecting the chunk state
 	///----------------------------------------------------------------------------------
-	template<typename... Args>
-	VeGuid VeTableChunk<Args...>::guid() {
+	template<int Size, typename... Args>
+	VeGuid VeTableChunk<Size, Args...>::guid() {
 		return d_guid;
 	}
 
@@ -195,8 +194,8 @@ export namespace vve {
 	/// \brief Get the number of entries in the chunk
 	/// \returns the number of entries in this chunk
 	///----------------------------------------------------------------------------------
-	template<typename... Args>
-	std::size_t VeTableChunk<Args...>::size() {
+	template<int Size, typename... Args>
+	std::size_t VeTableChunk<Size, Args...>::size() {
 		return d_size;
 	}
 
@@ -204,8 +203,8 @@ export namespace vve {
 	/// \brief Get the capacity if this chunk type
 	/// \returns the number of entries this chunk type can store
 	///----------------------------------------------------------------------------------
-	template<typename... Args>
-	std::size_t VeTableChunk<Args...>::capacity() {
+	template<int Size, typename... Args>
+	std::size_t VeTableChunk<Size, Args...>::capacity() {
 		return c_max_size;
 	}
 
@@ -215,8 +214,8 @@ export namespace vve {
 	/// entry of the last chunk, then this last entry is simply popped away.
 	/// \returns slot map index of the second entry, so we can swap in the slot map also
 	///----------------------------------------------------------------------------------
-	template<typename... Args>
-	VeIndex VeTableChunk<Args...>::swap(VeInChunkIndex in_chunk_index, VeTableChunk<Args...> &other_chunk, VeInChunkIndex other_index) {
+	template<int Size, typename... Args>
+	VeIndex VeTableChunk<Size, Args...>::swap(VeInChunkIndex in_chunk_index, VeTableChunk<Size, Args...> &other_chunk, VeInChunkIndex other_index) {
 		if (in_chunk_index < d_size && other_index < other_chunk.d_size ) {
 			static_for<std::size_t, 0, std::tuple_size_v<tuple_type>>([&, this](auto i) { //copy tuple from arrays
 				std::swap( std::get<i>(d_data)[in_chunk_index], std::get<i>(other_chunk.d_data)[other_index] );
@@ -231,8 +230,8 @@ export namespace vve {
 	/// \brief Get the slot map index of a given entry
 	/// \returns the slot map index of an entry
 	///----------------------------------------------------------------------------------
-	template<typename... Args>
-	VeIndex	VeTableChunk<Args...>::slot(VeInChunkIndex in_chunk_index) {
+	template<int Size, typename... Args>
+	VeIndex	VeTableChunk<Size, Args...>::slot(VeInChunkIndex in_chunk_index) {
 		if (!(in_chunk_index < d_slot_map_index.size())) { return VeIndex::NULL(); }
 		return d_slot_map_index[in_chunk_index];
 	}
@@ -241,8 +240,8 @@ export namespace vve {
 	/// \brief Copy a chunk over this chunk
 	/// \param[in] the chunk to be copied
 	///----------------------------------------------------------------------------------
-	template<typename... Args>
-	void VeTableChunk<Args...>::operator=(VeTableChunk<Args...> const& rhs) {
+	template<int Size, typename... Args>
+	void VeTableChunk<Size, Args...>::operator=(VeTableChunk<Size, Args...> const& rhs) {
 		static_for<std::size_t, 0, std::tuple_size_v<tuple_type>>([&, this](auto i) { //copy tuple from arrays
 			std::get<i>(d_data) = std::get<i>(rhs.d_data);
 			});
