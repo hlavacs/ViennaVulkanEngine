@@ -318,9 +318,9 @@ export namespace vve {
         using allocator_type = std::pmr::polymorphic_allocator<std::byte>;
 
         VeSlotMap(allocator_type alloc = {}) : VeHashMapBase<VeGuid, VeTableIndex>(alloc) {};
-        auto update(VeHandle &handle, VeTableIndex table_index);
-        auto find(VeHandle &handle);
-        auto erase(VeHandle &handle);
+        auto update(VeHandle&& handle, VeTableIndex table_index);
+        auto find(VeHandle&& handle);
+        auto erase(VeHandle&& handle);
         void swap( VeIndex first, VeIndex second);
     };
 
@@ -330,7 +330,7 @@ export namespace vve {
     /// \param[in] table_index The new table_index to be stored in the slot map
     /// \returns true if the entry was found and updated, else false
     ///----------------------------------------------------------------------------------
-    auto VeSlotMap::update(VeHandle &handle, VeTableIndex table_index) {
+    auto VeSlotMap::update(VeHandle&& handle, VeTableIndex table_index) {
         return VeHashMapBase<VeGuid, VeTableIndex>::update(handle.d_guid, table_index, handle.d_index);
     }
 
@@ -339,7 +339,7 @@ export namespace vve {
     /// \param[in] handle The handle holding an index to the slot map
     /// \returns the value if found, or NULL
     ///----------------------------------------------------------------------------------
-    auto VeSlotMap::find(VeHandle &handle) {
+    auto VeSlotMap::find(VeHandle&& handle) {
         return VeHashMapBase<VeGuid, VeTableIndex>::find(handle.d_guid, handle.d_index);
     }
 
@@ -348,7 +348,7 @@ export namespace vve {
     /// \param[in] handle The handle holding an index to the slot map
     /// \returns true if the item was erased, else false
     ///----------------------------------------------------------------------------------
-    auto VeSlotMap::erase(VeHandle &handle) {
+    auto VeSlotMap::erase(VeHandle&& handle) {
         return VeHashMapBase<VeGuid, VeTableIndex>::erase(handle.d_guid);
     }
 
@@ -373,11 +373,15 @@ export namespace vve {
     class VeHashMap : public VeHashMapBase<VeHash, VeIndex> {
     public:
         using allocator_type = std::pmr::polymorphic_allocator<std::byte>;
-        using sub_type = std::tuple< std::tuple_element<Is, tuple_type>... >;
+
+        //using sub_type = std::tuple< std::tuple_element<Is, tuple_type>... >;
+
+        template <typename D = tuple_type>
+        using sub_type = std::tuple< std::tuple_element<Is, D>... >;
 
         VeHashMap(allocator_type alloc = {}) : VeHashMapBase<VeHash, VeIndex>(alloc) {};
-        auto insert(tuple_type &data, VeIndex index);
-        auto update(tuple_type &data, VeIndex index);
+        auto insert(tuple_type &&data, VeIndex index);
+        auto update(tuple_type &&data, VeIndex index);
         template<typename... Args>
         auto find(Args... args);
         template<typename... Args>
@@ -392,7 +396,7 @@ export namespace vve {
     /// \returns the slot map index of this new item
     ///----------------------------------------------------------------------------------
     template< typename tuple_type, int... Is>
-    auto VeHashMap<tuple_type, Is...>::insert(tuple_type &data, VeIndex index) {
+    auto VeHashMap<tuple_type, Is...>::insert(tuple_type &&data, VeIndex index) {
         return VeHashMapBase<VeHash, VeIndex>::insert(hash_impl(data, std::integer_sequence<size_t, Is...>{}), index);
     }
 
@@ -403,7 +407,7 @@ export namespace vve {
     /// \returns true if the item was found and updated, else false
     ///----------------------------------------------------------------------------------
     template< typename tuple_type, int... Is>
-    auto VeHashMap<tuple_type, Is...>::update(tuple_type &data, VeIndex index) {
+    auto VeHashMap<tuple_type, Is...>::update(tuple_type &&data, VeIndex index) {
         return VeHashMapBase<VeHash, VeIndex>::update(hash_impl(data, std::integer_sequence<size_t, Is...>{}), index);
     }
 
@@ -476,7 +480,7 @@ export namespace vve {
 
         explicit map_iterator(VeHashMapBase<KeyT, ValueT>* map, VeIndex slot_index = VeIndex::NULL(), KeyT key = KeyT::NULL());
         explicit map_iterator();
-        reference operator*() const;
+        value_type operator*() const;
         auto& operator++();
         auto operator++(int);
         template<bool R>
@@ -495,8 +499,8 @@ export namespace vve {
     };
 
     template<typename KeyT, typename ValueT, bool Const>
-    typename map_iterator<KeyT, ValueT, Const>::reference map_iterator<KeyT, ValueT, Const>::operator*() const {
-        return d_slot_index == VeIndex::NULL() ? map_t() : d_hash_map.d_map[d_slot_index]; 
+    typename map_iterator<KeyT, ValueT, Const>::value_type map_iterator<KeyT, ValueT, Const>::operator*() const {
+        return d_slot_index == VeIndex::NULL() ? map_t() : d_hash_map->d_map[d_slot_index.value]; 
     }
 
     template<typename KeyT, typename ValueT, bool Const>

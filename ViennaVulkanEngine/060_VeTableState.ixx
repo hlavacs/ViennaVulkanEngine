@@ -124,7 +124,7 @@ export namespace vve {
 	///----------------------------------------------------------------------------------
 	template<typename... TypesOne, typename... TypesTwo>
 	VeTableIndex VeTableStateType::getTableIndexFromHandle(VeHandle &handle) {
-		VeTableIndex table_index = d_slot_map.find(handle);
+		VeTableIndex table_index = d_slot_map.find( std::forward<VeHandle>(handle) );
 		if (!isValid(table_index) ) { return VeTableIndex::NULL(); }
 		return table_index;
 	}
@@ -169,7 +169,8 @@ export namespace vve {
 	template<int i, typename... Args>
 	typename VeTableStateType::tuple_type VeTableStateType::find(Args... args) {
 		auto [first, second] = std::get<i>(d_maps).equal_range(args...);
-		auto slot = d_slot_map.find(*first);
+		VeTableIndex table_index = d_slot_map.find( VeHandle{VeGuid::NULL(), (*first).d_value } );
+		return d_chunks[table_index.d_chunk_index]->at(table_index.d_in_chunk_index);
 	}
 
 
@@ -198,11 +199,11 @@ export namespace vve {
 
 		table_index.d_in_chunk_index = d_chunks[last]->insert(handle.d_index, args...);	//insert data into the chunk, get in_chunk_index
 
-		d_slot_map.update(handle, table_index);		//update slot map table index with new in_chunk_index
+		d_slot_map.update( std::forward<VeHandle>(handle), table_index);		//update slot map table index with new in_chunk_index
 
 		auto tup = std::make_tuple(args...);
 		static_for<std::size_t, 0, std::tuple_size_v<map_type>>([&, this](auto i) { //copy tuple from arrays
-			std::get<i>(d_maps).insert(tup, handle.d_index);
+			std::get<i>(d_maps).insert(std::forward<tuple_type>(tup), handle.d_index);
 			});
 
 		return handle;
@@ -264,7 +265,7 @@ export namespace vve {
 
 		auto new_tup = std::make_tuple(args...);
 		static_for<std::size_t, 0, std::tuple_size_v<map_type>>([&, this](auto i) { //insert new binding
-			std::get<i>(d_maps).update(new_tup, handle.d_index);
+			std::get<i>(d_maps).update(std::forward<tuple_type>(new_tup), handle.d_index);
 			});
 
 		return d_chunks[table_index.d_chunk_index]->update(table_index.d_in_chunk_index, args...);
