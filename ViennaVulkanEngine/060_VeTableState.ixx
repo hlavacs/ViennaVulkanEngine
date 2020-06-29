@@ -1,5 +1,7 @@
 export module VVE:VETableState;
 
+#include "VEAssert.h"
+
 import std.core;
 import std.memory;
 
@@ -35,6 +37,7 @@ export namespace vve {
 
 	public:
 		using tuple_type = std::tuple<TypesOne...>;
+		using value_type = std::tuple<TypesOne..., VeHandle >;
 		using chunk_type = VeTableChunk<Size, TypesOne...>;
 		static_assert(sizeof(chunk_type) <= Size);
 		using chunk_ptr  = std::unique_ptr<chunk_type>;
@@ -64,6 +67,8 @@ export namespace vve {
 	public:
 		VeTableState(allocator_type alloc = {});
 		~VeTableState() = default;
+		bool getReadOnly() { return d_read_only; };
+		void setReadOnly( bool ro) { d_read_only = ro; };
 
 		//-------------------------------------------------------------------------------
 		//read operations
@@ -71,17 +76,18 @@ export namespace vve {
 		tuple_type	at(VeHandle &handle);
 		std::size_t	size();
 		VeHandle	handle( VeTableIndex table_index );
-		template<int map, typename... Args> tuple_type find(Args... args);
-
-		//-------------------------------------------------------------------------------
-		//write operations
-
-		VeHandle	insert(TypesOne... args);
-		VeHandle	insert(std::promise<VeHandle> prom, TypesOne... args);
-		bool		update(VeHandle handle, TypesOne... args);
-		bool		erase(VeHandle handle);
+		template<int map, typename... Args> 
+		value_type	find(Args... args);
 		template<int map, typename... Args> 
 		range		equal_range( Args... args );
+
+		//-------------------------------------------------------------------------------
+		//write operations - only allowed if not read only
+
+		VeHandle	insert(TypesOne... args) { return insertGUID(newGuid(), args...); };
+		VeHandle	insert(std::promise<VeHandle> prom, TypesOne... args) { return insertGUID(newGuid(), std::move(prom), args...); };
+		bool		update(VeHandle handle, TypesOne... args);
+		bool		erase(VeHandle handle);
 		void		operator=(const VeTableStateType& rhs);
 		void		clear();
 
@@ -170,17 +176,28 @@ export namespace vve {
 	///----------------------------------------------------------------------------------
 	/// \brief Find a data entry for a given list of arguments
 	/// \param[in] args The arguments to be found
-	/// \returns the data entry if found, else an empty tuple
+	/// \returns (handle, data entry) as one tuple if found, else an empty tuple
 	///----------------------------------------------------------------------------------
 	template<int Size, typename... TypesOne, typename... TypesTwo>
 	template<int i, typename... Args>
-	typename VeTableStateType::tuple_type VeTableStateType::find(Args... args) {
+	typename VeTableStateType::value_type VeTableStateType::find(Args... args) {
 		VeIndex slot_index = std::get<i>(d_maps).find(args...);
 		VeTableIndex table_index = d_slot_map.find(VeGuid::NULL(), slot_index );
-		if (table_index == VeTableIndex::NULL()) return typename VeTableStateType::tuple_type();
-		return d_chunks[table_index.d_chunk_index]->at(table_index.d_in_chunk_index);
+		if (table_index == VeTableIndex::NULL()) return	std::tuple_cat( typename VeTableStateType::tuple_type(), std::make_tuple(VeHandle::NULL()) );
+		return std::tuple_cat( d_chunks[table_index.d_chunk_index]->at(table_index.d_in_chunk_index),	std::make_tuple(handle(table_index)) );
 	}
 
+	///----------------------------------------------------------------------------------
+	/// \brief Find all entries with a certain profile
+	/// \returns an iterator going through all found entities
+	///----------------------------------------------------------------------------------
+	template<int Size, typename... TypesOne, typename... TypesTwo>
+	template<int i, typename... Args>
+	typename VeTableStateType::range VeTableStateType::equal_range(Args... args) {
+		static_assert(std::is_same_v(tuple_type, std::make_tuple(args...)));
+		auto [first, second] = std::get<i>(d_maps).equal_range(args...);
+		return std::make_pair<typename VeTableStateType::iterator, typename VeTableStateType::iterator>(iterator(this, first), iterator(this, second));
+	}
 
 	//-------------------------------------------------------------------------------
 	//write operations
@@ -193,6 +210,7 @@ export namespace vve {
 	///----------------------------------------------------------------------------------
 	template<int Size, typename... TypesOne, typename... TypesTwo>
 	VeHandle VeTableStateType::insertGUID(VeGuid guid, TypesOne... args ) {
+		VeAssert((!d_read_only));
 		d_guid = newGuid();
 		if(d_chunks.size() == 0) { d_chunks.emplace_back(std::make_unique<chunk_type>());} 
 		VeChunkIndex last = (decltype(std::declval<VeIndex>().value))(d_chunks.size() - 1);		//index of last chunk
@@ -233,27 +251,6 @@ export namespace vve {
 	}
 
 	///----------------------------------------------------------------------------------
-	/// \brief Insert a new entry into the table
-	/// \param[in] args The data
-	/// \returns a new unique handle describing the entry
-	///----------------------------------------------------------------------------------
-	template<int Size, typename... TypesOne, typename... TypesTwo>
-	VeHandle VeTableStateType::insert(TypesOne... args) {
-		return insertGUID(newGuid(), args...);
-	}
-
-	///----------------------------------------------------------------------------------
-	/// \brief Insert a new entry into the table
-	/// \param[in] prom A promise for the new handle
-	/// \param[in] entry The data
-	/// \returns a new unique handle describing the entry
-	///----------------------------------------------------------------------------------
-	template<int Size, typename... TypesOne, typename... TypesTwo>
-	VeHandle VeTableStateType::insert(std::promise<VeHandle> prom, TypesOne... args) {
-		return insertGUID(newGuid(), std::move(prom), args...);
-	}
-
-	///----------------------------------------------------------------------------------
 	/// \brief Update an existing entry with new data
 	/// \param[in] handle The handle describing the entry
 	/// \param[in] args A data containing the new data
@@ -261,6 +258,7 @@ export namespace vve {
 	///----------------------------------------------------------------------------------
 	template<int Size, typename... TypesOne, typename... TypesTwo>
 	bool VeTableStateType::update(VeHandle handle, TypesOne... args) {
+		VeAssert((!d_read_only));
 		VeTableIndex table_index = getTableIndexFromHandle(handle);
 		if (!isValid(table_index)) { return false; }
 		d_guid = newGuid();
@@ -283,6 +281,7 @@ export namespace vve {
 	///----------------------------------------------------------------------------------
 	template<int Size, typename... TypesOne, typename... TypesTwo>
 	bool VeTableStateType::erase(VeHandle handle) {
+		VeAssert((!d_read_only));
 		VeTableIndex table_index = getTableIndexFromHandle(handle);
 		if (!isValid(table_index)) { return false; }
 		d_guid = newGuid();
@@ -304,24 +303,12 @@ export namespace vve {
 	};
 
 	///----------------------------------------------------------------------------------
-	/// \brief Find all entries with a certain profile
-	/// \returns an iterator going through all found entities
-	///----------------------------------------------------------------------------------
-	template<int Size, typename... TypesOne, typename... TypesTwo>
-	template<int i, typename... Args>
-	typename VeTableStateType::range VeTableStateType::equal_range(Args... args) {
-		static_assert(std::is_same_v(tuple_type, std::make_tuple(args...)));
-		auto [first, second] = std::get<i>(d_maps).equal_range(args...);
-		return std::make_pair<typename VeTableStateType::iterator, typename VeTableStateType::iterator>	( iterator(this, first ), iterator(this, second));
-	}
-
-
-	///----------------------------------------------------------------------------------
 	/// \brief Copy another table state over this state
 	/// \param[in] rhs The new state to copy
 	///----------------------------------------------------------------------------------
 	template<int Size, typename... TypesOne, typename... TypesTwo>
 	void VeTableStateType::operator=(const VeTableStateType& rhs) {
+		VeAssert((!d_read_only));
 		if (d_guid == rhs.d_guid) return;
 
 		if (d_chunks.size() != rhs.d_chunks.size()) { 
@@ -342,6 +329,7 @@ export namespace vve {
 	///----------------------------------------------------------------------------------
 	template<int Size, typename... TypesOne, typename... TypesTwo>
 	void VeTableStateType::clear() {
+		VeAssert((!d_read_only));
 		d_guid = newGuid();
 		d_chunks.clear();
 		d_slot_map.clear();
@@ -357,6 +345,7 @@ export namespace vve {
 	///----------------------------------------------------------------------------------
 	template<int Size, typename... TypesOne, typename... TypesTwo>
 	typename VeTableStateType::iterator VeTableStateType::begin() {
+		VeAssert((!d_read_only));
 		if (size() == 0) {
 			return iterator(this, VeTableIndex::NULL());
 		}
@@ -372,6 +361,7 @@ export namespace vve {
 	///----------------------------------------------------------------------------------
 	template<int Size, typename... TypesOne, typename... TypesTwo>
 	typename VeTableStateType::iterator VeTableStateType::end() {
+		VeAssert((!d_read_only));
 		return iterator(this, VeTableIndex::NULL());
 	}
 
@@ -417,8 +407,8 @@ export namespace vve {
 
 	public:
 		using difference_type = std::ptrdiff_t;     // Member typedefs required by std::iterator_traits
-		using value_type = typename VeTableStateType::tuple_type;
-		using tuple_type = value_type;
+		using tuple_type = typename VeTableStateType::tuple_type;
+		using value_type = std::tuple<TypesOne..., VeHandle >;
 		using pointer = std::conditional_t<Const, const VeHandle*, VeHandle*>;
 		using reference = std::conditional_t<Const, const VeHandle&, VeHandle&>;
 		using iterator_category = std::forward_iterator_tag;
@@ -426,9 +416,8 @@ export namespace vve {
 		explicit VeTableStateIterator(VeTableStateType* table_state, VeTableIndex table_index = VeIndex::NULL());
 		explicit VeTableStateIterator(VeTableStateType* table_state, map_iterator &map_it);
 
-		void operator*(value_type& arg);
+		void operator*(tuple_type& arg);
 		value_type operator*() const;
-		VeHandle operator*(int) const;
 		template<int N>
 		auto& operator*() const;
 		auto& operator++();
@@ -455,7 +444,8 @@ export namespace vve {
 	/// read data
 	template< bool Const, int Size, typename... TypesOne, typename... TypesTwo>
 	typename VeTableStateIteratorType::value_type VeTableStateIteratorType::operator*() const {
-		return d_table_state->d_chunks[d_table_index.d_chunk_index.value]->at(d_table_index.d_in_chunk_index);
+		return std::tuple_cat(	d_table_state->d_chunks[d_table_index.d_chunk_index.value]->at(d_table_index.d_in_chunk_index),
+								std::make_tuple(d_table_state->handle(d_table_index)) );
 	}
 
 	template< bool Const, int Size, typename... TypesOne, typename... TypesTwo>
@@ -465,18 +455,12 @@ export namespace vve {
 		return std::get<i>(*data)[d_table_index.d_in_chunk_index.value];
 	}
 
-	template< bool Const, int Size, typename... TypesOne, typename... TypesTwo>
-	VeHandle VeTableStateIteratorType::operator*(int i) const {
-		return d_table_state->handle(d_table_index);
-	}
-
-
 	///----------------------------------------------------------------------------------
 	/// write data
 	template< bool Const, int Size, typename... TypesOne, typename... TypesTwo>
-	void VeTableStateIteratorType::operator*(typename VeTableStateIteratorType::value_type& args) {
+	void VeTableStateIteratorType::operator*(typename VeTableStateIteratorType::tuple_type& args) {
 		auto& data = d_table_state->d_chunks[d_table_index.d_chunk_index.value].data();
-		static_for<std::size_t, 0, std::tuple_size_v<value_type>>([&, this](auto i) { //copy tuple from arrays
+		static_for<std::size_t, 0, std::tuple_size_v<tuple_type>>([&, this](auto i) { //copy tuple from arrays
 			std::get<i>(data)[d_table_index.d_in_chunk_index] = std::get<i>(args);
 			});
 	}

@@ -6,7 +6,9 @@ import std.memory;
 import std.threading;
 
 import VVE;
+#include "VEAssert.h"
 #include "VEHash.h"
+
 
 void test(vve::VeIndex idx) {
 
@@ -59,27 +61,23 @@ int main()
     auto h2 = ToATableState.insert( std::move(prom), 40, 20.0f, 900, 'c');
     auto h3 = fut.get();
 
-    //auto it = ToATableState.begin();
-    //auto [handle1, a, b, c, d] = *it;
-
     const int N = 100;
-    VeAssert(ToATableState.size() == 2);
+    VeAssert( (ToATableState.size() == 2) );
     for (uint64_t i = 0; i < N; i++) {
         auto h = ToATableState.insert( i, 2.0f*i, (uint32_t)i*5, 'a' );
     }
-    VeAssert(ToATableState.size() == N+2);
+    VeAssert( (ToATableState.size() == N+2 ));
 
     auto [i64, fl, i32, ch] = ToATableState.at(h1);
     auto [i64b, flb, i32b, chb] = ToATableState.at(h3);
     VeHandle h;
 
     for (auto it = ToATableState.begin(); it != ToATableState.end(); ++it) {
-        auto [i64c, flc, i32c, chc] = *it;
+        auto [i64c, flc, i32c, chc, han] = *it;
 
         std::cout << i64c << " " << flc << " " << i32c << " " << chc << std::endl;
         it.operator*<2>() = 11;
         std::cout << it.operator*<0>() << " " << it.operator*<1>() << " " << it.operator*<2>() << " " << it.operator*<3>() << std::endl;
-        h = it.operator*(0);
     }
     ToATableState.erase(h1);
     ToATableState.erase(h2);
@@ -91,8 +89,7 @@ int main()
     h2 = ToATableState.insert( 40, 20.0f, 900, 'b');
     h3 = ToATableState.insert( 80, 30.0f, 1800, 'c');
 
-    auto [a, b, c, d] = ToATableState.find<0>((uint64_t)4,2.0f, (uint32_t)90);
-
+    auto res = ToATableState.find<0>((uint64_t)4,2.0f, (uint32_t)90);
 
     VeTableState<1<<14, Typelist< uint64_t, float, uint32_t, char>, Maplist< Hashlist< 0, 1, 2>, Hashlist< 1, 2 >> > ToATableState2;
 

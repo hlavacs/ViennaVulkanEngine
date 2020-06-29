@@ -32,6 +32,9 @@
     <ClInclude Include="VEHash.h">
       <Filter>Headerdateien</Filter>
     </ClInclude>
+    <ClInclude Include="VEAssert.h">
+      <Filter>Headerdateien</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="VEGameJobSystem.ixx">
