@@ -40,6 +40,7 @@ export namespace vve {
 		using chunk_ptr  = std::unique_ptr<chunk_type>;
 		using map_type = decltype(TupleOfInstances<tuple_type, TypesTwo...>());
 		using allocator_type = std::pmr::polymorphic_allocator<std::byte>;
+		using slot_map = VeHashMapBase<VeGuid, VeTableIndex>;
 
 		using iterator = VeTableStateIterator< false, Size, Typelist<TypesOne...>, Maplist<TypesTwo...> >;
 		using const_iterator = VeTableStateIterator< true, Size, Typelist<TypesOne...>, Maplist<TypesTwo...> >;
@@ -52,7 +53,7 @@ export namespace vve {
 		VeGuid						d_guid;			//current GUID reflecting the state of the table state
 		bool						d_read_only;	//if true then iterators are always const
 		std::pmr::vector<chunk_ptr>	d_chunks;		//pointers to table chunks
-		VeSlotMap					d_slot_map;		//the table slot map
+		slot_map					d_slot_map;		//the table slot map
 		map_type					d_maps;			//the search maps
 
 		bool			isValid( VeTableIndex table_index );
@@ -79,7 +80,8 @@ export namespace vve {
 		VeHandle	insert(std::promise<VeHandle> prom, TypesOne... args);
 		bool		update(VeHandle handle, TypesOne... args);
 		bool		erase(VeHandle handle);
-		template<int map, typename... Args> std::pair<iterator, iterator> equal_range( Args... args );
+		template<int map, typename... Args> 
+		range		equal_range( Args... args );
 		void		operator=(const VeTableStateType& rhs);
 		void		clear();
 
@@ -114,12 +116,12 @@ export namespace vve {
 
 	///----------------------------------------------------------------------------------
 	/// \brief Return the table index for a given handle from the table slot map
-	/// \param[in] handle The handle to be found
+	/// \param[in,out] handle The handle to be found, d_index can change due to find function
 	/// \returns the table index that is stored in the slot map 
 	///----------------------------------------------------------------------------------
 	template<int Size, typename... TypesOne, typename... TypesTwo>
 	VeTableIndex VeTableStateType::getTableIndexFromHandle(VeHandle &handle) {
-		VeTableIndex table_index = d_slot_map.find( std::forward<VeHandle>(handle) );
+		VeTableIndex table_index = d_slot_map.find( handle.d_guid, handle.d_index );
 		if (!isValid(table_index) ) { return VeTableIndex::NULL(); }
 		return table_index;
 	}
@@ -174,7 +176,8 @@ export namespace vve {
 	template<int i, typename... Args>
 	typename VeTableStateType::tuple_type VeTableStateType::find(Args... args) {
 		VeIndex slot_index = std::get<i>(d_maps).find(args...);
-		VeTableIndex table_index = d_slot_map.find(VeHandle{ VeGuid::NULL(), slot_index });
+		VeTableIndex table_index = d_slot_map.find(VeGuid::NULL(), slot_index );
+		if (table_index == VeTableIndex::NULL()) return typename VeTableStateType::tuple_type();
 		return d_chunks[table_index.d_chunk_index]->at(table_index.d_in_chunk_index);
 	}
 
@@ -204,7 +207,7 @@ export namespace vve {
 
 		table_index.d_in_chunk_index = d_chunks[last]->insert(handle.d_index, args...);	//insert data into the chunk, get in_chunk_index
 
-		d_slot_map.update( std::forward<VeHandle>(handle), table_index);		//update slot map table index with new in_chunk_index
+		d_slot_map.update( handle.d_guid, table_index, handle.d_index);		//update slot map table index with new in_chunk_index
 
 		auto tup = std::make_tuple(args...);
 		static_for<std::size_t, 0, std::tuple_size_v<map_type>>([&, this](auto i) { //copy tuple from arrays
