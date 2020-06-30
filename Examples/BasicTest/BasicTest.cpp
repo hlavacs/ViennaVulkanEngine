@@ -6,7 +6,7 @@ import std.memory;
 import std.threading;
 
 import VVE;
-#include "VEAssert.h"
+#include "VEDefine.h"
 #include "VEHash.h"
 
 

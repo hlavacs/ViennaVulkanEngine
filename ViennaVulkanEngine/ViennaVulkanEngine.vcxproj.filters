@@ -29,10 +29,10 @@
     <ClInclude Include="vk_mem_alloc.h">
       <Filter>Headerdateien</Filter>
     </ClInclude>
-    <ClInclude Include="VEHash.h">
+    <ClInclude Include="VEDefine.h">
       <Filter>Headerdateien</Filter>
     </ClInclude>
-    <ClInclude Include="VEAssert.h">
+    <ClInclude Include="VEHash.h">
       <Filter>Headerdateien</Filter>
     </ClInclude>
   </ItemGroup>

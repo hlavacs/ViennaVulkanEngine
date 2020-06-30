@@ -197,15 +197,15 @@
     </ClCompile>
     <ClInclude Include="stb_image.h" />
     <ClInclude Include="stb_image_write.h" />
-    <ClInclude Include="VEAssert.h" />
+    <ClInclude Include="VEDefine.h" />
     <ClInclude Include="VEGameJobSystem.h" />
+    <ClInclude Include="VEHash.h" />
     <ClInclude Include="VEInclude.h" />
     <ClCompile Include="050_VeTableChunk.ixx">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</ExcludedFromBuild>
       <FileType>CppHeader</FileType>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">false</ExcludedFromBuild>
     </ClCompile>
-    <ClInclude Include="VEHash.h" />
     <ClInclude Include="vk_mem_alloc.h" />
   </ItemGroup>
   <ItemGroup>

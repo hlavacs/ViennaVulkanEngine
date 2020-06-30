@@ -1,6 +1,6 @@
 export module VVE:VETableState;
 
-#include "VEAssert.h"
+#include "VEDefine.h"
 
 import std.core;
 import std.memory;

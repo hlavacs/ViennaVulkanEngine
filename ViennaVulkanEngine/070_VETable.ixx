@@ -48,20 +48,22 @@ export namespace vve {
 
 		VeIndex getThreadIdx() { return d_thread_idx; };
 		void setThreadIdx(VeIndex idx) { d_thread_idx = idx; };
-		auto getCurrentState() { return d_current_state.get(); };
-		auto getNextState() { return d_next_state.get(); };
 		void commitAndClear();
 		void commitAndCopy();
 
 		//-------------------------------------------------------------------------------
 		//read operations
 
-		tuple_type	at(VeHandle& handle) { return d_current_state->at(handle); };
-		std::size_t	size() { return d_current_state->size(); };
+		tuple_type		at(VeHandle& handle) { return d_current_state->at(handle); };
+		std::size_t		size() { return d_current_state->size(); };
 		template<int map, typename... Args>
-		value_type	find(Args... args) { return d_current_state->find<map>(args...); };
+		value_type		find(Args... args) { return d_current_state->find<map>(args...); };
 		template<int map, typename... Args>
-		range		equal_range(Args... args) { return d_current_state->equal_range<map>(args...); };
+		range			equal_range(Args... args) { return d_current_state->equal_range<map>(args...); };
+		iterator		begin() { return d_current_state->begin(); };
+		iterator		end() { return d_current_state->end(); };
+		const_iterator	begin() const { return d_current_state->begin(); };
+		const_iterator	end() const { return d_current_state->end(); };
 
 		//-------------------------------------------------------------------------------
 		//write operations
@@ -98,7 +100,6 @@ export namespace vve {
 	//-------------------------------------------------------------------------------
 	//write operations
 
-
 	template< int Size, typename... TypesOne, typename... TypesTwo>
 	VeHandle VeTableType::insert(TypesOne... args) {
 		return d_next_state->insert(args...);
@@ -121,7 +122,8 @@ export namespace vve {
 
 	template< int Size, typename... TypesOne, typename... TypesTwo>
 	void VeTableType::operator=(const VeTableStateType& rhs) {
-
+		*d_current_state = *rhs.d_current_state;
+		*d_next_state = *rhs.d_next_state;
 	}
 
 

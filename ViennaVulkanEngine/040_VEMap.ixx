@@ -1,12 +1,14 @@
 export module VVE:VEMap;
 
+#include "VEDefine.h"
+
 import std.core;
 import std.memory;
 
 import :VETypes;
 import :VEUtil;
 import :VEMemory;
-#include "VEHash.h"
+
 
 export namespace vve {
 
