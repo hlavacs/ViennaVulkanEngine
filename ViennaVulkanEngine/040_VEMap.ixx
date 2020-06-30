@@ -1,9 +1,10 @@
 export module VVE:VEMap;
 
-#include "VEDefine.h"
 
 import std.core;
 import std.memory;
+
+#include "VEDefine.h"
 
 import :VETypes;
 import :VEUtil;
