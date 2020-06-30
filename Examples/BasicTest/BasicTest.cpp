@@ -1,22 +1,22 @@
 
 
-import std.core;
+/*import std.core;
 import std.regex;
 import std.filesystem;
 import std.memory;
 import std.threading;
-
+*/
 //#include <experimental/coroutine>
 
-import VVE;
+//import VVE;
 
-#include "VEDefine.h"
-#include "VEHash.h"
+//#include "VEDefine.h"
+//#include "VEHash.h"
 
-#include "tables.h"
+//#include "tables.h"
 #include "MT.h"
 
-using namespace vve;
+//using namespace vve;
 
 
 int main()

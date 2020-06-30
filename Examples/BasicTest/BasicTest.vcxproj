@@ -99,7 +99,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>$(SolutionDir)\ViennaVulkanEngine;$(SolutionDir)\external\glm;$(SolutionDir)\external\irrklang\include</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)\ViennaVulkanEngine;$(SolutionDir)\external\glm;$(SolutionDir)\external\irrklang\include;$(SolutionDir)\external\cppcoro\include</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpplatest</LanguageStandard>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
       <DisableLanguageExtensions>true</DisableLanguageExtensions>
@@ -139,7 +139,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>$(SolutionDir)\ViennaVulkanEngine;$(SolutionDir)\external\glm;$(SolutionDir)\external\irrklang\include</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)\ViennaVulkanEngine;$(SolutionDir)\external\glm;$(SolutionDir)\external\irrklang\include;$(SolutionDir)\external\cppcoro\include</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpplatest</LanguageStandard>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
       <DisableLanguageExtensions>true</DisableLanguageExtensions>

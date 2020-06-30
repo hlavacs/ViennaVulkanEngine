@@ -3,12 +3,18 @@
 #include <type_traits>
 
 #define _NODISCARD [[nodiscard]]
-#include <experimental/generator>
+//#include <experimental/generator>
+
+#include <cppcoro/sync_wait.hpp>
+#include <cppcoro/task.hpp>
+#include <cppcoro/static_thread_pool.hpp>
+#include <cppcoro/when_all.hpp>
 
 
 namespace MT {
 
-    using namespace vve;
+    //using namespace vve;
+    /*
     using namespace std::experimental;
 
     generator<double> fibonacci(const double ceiling) {
@@ -58,11 +64,11 @@ namespace MT {
         g();
         return 0;
     }
-
+    */
 
     int test() {
 
-        testFib2();
+        //testFib2();
         return 0;
     }
 
