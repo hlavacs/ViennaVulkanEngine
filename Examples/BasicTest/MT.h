@@ -3,21 +3,19 @@
 #include <type_traits>
 
 #define _NODISCARD [[nodiscard]]
-//#include <experimental/generator>
+#include <experimental/coroutine>
+#include <experimental/generator>
 
-#include <cppcoro/sync_wait.hpp>
-#include <cppcoro/task.hpp>
-#include <cppcoro/static_thread_pool.hpp>
-#include <cppcoro/when_all.hpp>
-
+#include <future>
+#include <iostream>
 
 namespace MT {
 
-    //using namespace vve;
-    /*
+    using namespace vve;
+    
     using namespace std::experimental;
 
-    generator<double> fibonacci(const double ceiling) {
+    inline generator<double> fibonacci(const double ceiling) {
         double i = 0;
         while (i <= ceiling) {
             co_yield i;
@@ -25,7 +23,7 @@ namespace MT {
         } 
     }
 
-    int testFib() {
+    inline int testFib() {
 
         const double demo_ceiling = 10;
 
@@ -41,12 +39,12 @@ namespace MT {
         return 0;
     }
 
-    void g1(typename decltype(fibonacci(1))::iterator& iter) {
+    inline void g1(typename decltype(fibonacci(1))::iterator& iter) {
         iter++;
     }
 
 
-    int testFib2() {
+    inline int testFib2() {
 
         const double demo_ceiling = 10;
 
@@ -64,11 +62,19 @@ namespace MT {
         g();
         return 0;
     }
-    */
 
-    int test() {
+    
+    inline void foo() {
+        std::cout << "Hello" << std::endl;
+        co_await suspend_never{};
+        std::cout << "World" << std::endl;
+    }
 
-        //testFib2();
+
+
+    inline int test() {
+
+        testFib2();
         return 0;
     }
 
