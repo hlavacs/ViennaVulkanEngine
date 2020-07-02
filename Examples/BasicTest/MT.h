@@ -2,12 +2,35 @@
 
 #include <type_traits>
 
+
 #define _NODISCARD [[nodiscard]]
 #include <experimental/coroutine>
+#include <experimental/resumable>
 #include <experimental/generator>
 
 #include <future>
 #include <iostream>
+
+
+namespace std::experimental {
+
+    template <>
+    struct coroutine_traits<void> {
+        struct promise_type {
+            using coro_handle = std::experimental::coroutine_handle<promise_type>;
+            auto get_return_object() {
+                return coro_handle::from_promise(*this);
+            }
+            auto initial_suspend() { return std::experimental::suspend_always(); }
+            auto final_suspend() { return std::experimental::suspend_always(); }
+            void return_void() {}
+            void unhandled_exception() {
+                std::terminate();
+            }
+        };
+    };
+
+};
 
 namespace MT {
 
@@ -63,10 +86,12 @@ namespace MT {
         return 0;
     }
 
+
+
     
     inline void foo() {
         std::cout << "Hello" << std::endl;
-        co_await suspend_never{};
+        co_await suspend_always{};
         std::cout << "World" << std::endl;
     }
 
@@ -74,7 +99,8 @@ namespace MT {
 
     inline int test() {
 
-        testFib2();
+        //testFib2();
+        foo();
         return 0;
     }
 
