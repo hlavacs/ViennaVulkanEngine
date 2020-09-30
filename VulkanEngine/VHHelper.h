@@ -263,12 +263,12 @@ namespace vh {
 											VkQueue graphicsQueue, 	VkCommandPool commandPool, 
 											VkImage image, VkFormat format,
 											VkImageAspectFlagBits aspect, VkImageLayout layout,
-											/*gli::*/byte *bufferData, 	uint32_t width, uint32_t height, uint32_t imageSize);
+											/*gli::byte*/ unsigned char*bufferData, 	uint32_t width, uint32_t height, uint32_t imageSize);
 	VkResult vhBufCopyImageToHost(	VkDevice device, VmaAllocator allocator, 
 									VkQueue graphicsQueue, VkCommandPool commandPool,
 									VkImage image, VkFormat format, 
 									VkImageAspectFlagBits aspect, VkImageLayout layout,
-									/*gli::*/byte *bufferData, uint32_t width, uint32_t height, uint32_t imageSize);
+									/*gli::byte*/unsigned char*bufferData, uint32_t width, uint32_t height, uint32_t imageSize);
 	VkResult vhBufCreateVertexBuffer(VkDevice device, VmaAllocator allocator,
 									VkQueue graphicsQueue, VkCommandPool commandPool,
 									std::vector<vh::vhVertex> &vertices,
