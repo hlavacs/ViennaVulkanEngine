@@ -147,6 +147,7 @@
       <EnableModules>true</EnableModules>
       <AdditionalOptions>/await</AdditionalOptions>
       <ExceptionHandling>Sync</ExceptionHandling>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
