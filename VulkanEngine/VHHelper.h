@@ -42,7 +42,6 @@
 #include "vulkan/vulkan.h"
 #include "VHFunctions.h"
 
-#define VMA_STATIC_VULKAN_FUNCTIONS 1
 #include "vk_mem_alloc.h"
 
 #include <stb_image.h>
@@ -355,7 +354,7 @@ namespace vh {
 	//--------------------------------------------------------------------------------------------------------------------------------
 	//memory
 	uint32_t vhMemFindMemoryType(VkPhysicalDevice physicalDevice, uint32_t typeFilter, VkMemoryPropertyFlags properties);
-	VkResult vhMemCreateVMAAllocator(VkPhysicalDevice physicalDevice, VkDevice device, VmaAllocator &allocator);
+	VkResult vhMemCreateVMAAllocator(VkInstance instance, VkPhysicalDevice physicalDevice, VkDevice device, VmaAllocator &allocator);
 	//Memory blocks
 	VkResult vhMemBlockListInit(VkDevice device, VmaAllocator allocator, 
 								VkDescriptorPool descriptorPool, VkDescriptorSetLayout descriptorLayout,

@@ -49,7 +49,7 @@ namespace ve {
 			exit(1);
 		}
 
-		vh::vhMemCreateVMAAllocator(m_physicalDevice, m_device, m_vmaAllocator);
+		vh::vhMemCreateVMAAllocator(getEnginePointer()->getInstance(), m_physicalDevice, m_device, m_vmaAllocator);
 
 		vh::vhSwapCreateSwapChain(	m_physicalDevice, m_surface, m_device, getWindowPointer()->getExtent(),
 									&m_swapChain, m_swapChainImages, m_swapChainImageViews,

@@ -46,10 +46,11 @@ namespace vh {
 	* \returns VK_SUCCESS or a Vulkan error code
 	*
 	*/
-	VkResult vhMemCreateVMAAllocator( VkPhysicalDevice physicalDevice, VkDevice device, VmaAllocator &allocator) {
+	VkResult vhMemCreateVMAAllocator(VkInstance instance, VkPhysicalDevice physicalDevice, VkDevice device, VmaAllocator &allocator) {
 		VmaAllocatorCreateInfo allocatorInfo = {};
 		allocatorInfo.physicalDevice = physicalDevice;
 		allocatorInfo.device = device;
+		allocatorInfo.instance = instance;
 
 		return vmaCreateAllocator(&allocatorInfo, &allocator);
 	}
