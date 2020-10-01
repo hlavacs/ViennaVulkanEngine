@@ -5,7 +5,8 @@
     <DebuggerFlavor>WindowsLocalDebugger</DebuggerFlavor>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
-    <LocalDebuggerEnvironment>PATH=%PATH%;;$(SolutionDir)\external\irrKlang\bin;$(SolutionDir)\external\Assimp\lib\x64\Release;$(LocalDebuggerEnvironment)</LocalDebuggerEnvironment>
+    <LocalDebuggerEnvironment>PATH=%PATH%;;C:\Users\hlavacs\Documents\GitHub\ViennaVulkanEngine\\external\irrKlang\bin;C:\Users\hlavacs\Documents\GitHub\ViennaVulkanEngine\\external\Assimp\lib\x64\Release;
+$(LocalDebuggerEnvironment)</LocalDebuggerEnvironment>
     <DebuggerFlavor>WindowsLocalDebugger</DebuggerFlavor>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">

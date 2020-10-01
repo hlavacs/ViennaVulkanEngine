@@ -82,7 +82,7 @@ namespace ve {
 				g_time = 30;
 				g_score = 0;
 				getSceneManagerPointer()->getSceneNode("The Cube Parent")->setPosition(glm::vec3(d(e), 1.0f, d(e)));
-				getEnginePointer()->m_irrklangEngine->play2D("media/sounds/ophelia.mp3", true);
+				getEnginePointer()->m_irrklangEngine->play2D("media/sounds/ophelia.wav", true);
 				return;
 			}
 			if (g_gameLost) return;
@@ -172,7 +172,7 @@ namespace ve {
 			eParent->multiplyTransform(glm::translate(glm::mat4(1.0f), glm::vec3(-10.0f, 1.0f, 10.0f)));
 			eParent->addChild(e1);
 
-			m_irrklangEngine->play2D("media/sounds/ophelia.mp3", true);
+			m_irrklangEngine->play2D("media/sounds/ophelia.wav", true);
 		};
 	};
 
