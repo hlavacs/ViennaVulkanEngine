@@ -31,6 +31,7 @@ namespace ve {
 		glfwSetCursorPosCallback(m_window, cursor_pos_callbackGLFW);
 		glfwSetMouseButtonCallback(m_window, mouse_button_callback);
 		glfwSetScrollCallback(m_window, mouse_scroll_callback);
+		glfwSetWindowCloseCallback(m_window, window_close_callback);
 
 		//never miss these events
 		glfwSetInputMode(m_window, GLFW_STICKY_KEYS, 1);
@@ -210,6 +211,11 @@ namespace ve {
 
 		app->processEvent(event);
 	}
+
+	void VEWindowGLFW::window_close_callback(GLFWwindow* window) {
+		getEnginePointer()->end();
+	}
+
 
 
 	/**

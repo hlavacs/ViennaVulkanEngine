@@ -38,6 +38,8 @@ namespace ve {
 		static void	cursor_pos_callbackGLFW(GLFWwindow* window, double xpos, double ypos);
 		static void mouse_button_callback(GLFWwindow* window, int button, int action, int mods);
 		static void mouse_scroll_callback(GLFWwindow* window, double xoffset, double yoffset);
+		static void window_close_callback(GLFWwindow* window);
+
 
 		virtual void		initWindow( int width, int height );						//create the window
 		virtual std::vector<const char*> getRequiredInstanceExtensions();				//return GLFW Vulkan extensions
