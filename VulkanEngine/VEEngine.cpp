@@ -394,10 +394,11 @@ namespace ve {
 		for (uint32_t i = 0; i < m_eventlist.size(); i++) {
 			if (event.type == m_eventlist[i].type &&
 				event.subsystem == m_eventlist[i].subsystem &&
-				event.idata1 == m_eventlist[i].idata1 &&
-				event.idata2 == m_eventlist[i].idata2 &&
-				event.idata3 == m_eventlist[i].idata3 &&
-				event.idata4 == m_eventlist[i].idata4 ) {
+				//event.idata1 == m_eventlist[i].idata1 &&
+				event.idata2 == m_eventlist[i].idata2 //&&
+				//event.idata3 == m_eventlist[i].idata3 &&
+				//event.idata4 == m_eventlist[i].idata4 
+				) {
 
 				uint32_t last = (uint32_t)m_eventlist.size() - 1;
 				m_eventlist[i] = m_eventlist[last];
