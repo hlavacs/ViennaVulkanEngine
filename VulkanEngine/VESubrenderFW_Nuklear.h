@@ -39,6 +39,8 @@ namespace ve {
 
 		///\returns the Nuklear context
 		virtual struct nk_context *getContext() { return m_ctx; };
+		///\returns texture handle
+		void *addTexture(VETexture* texture);
 
 	};
 }

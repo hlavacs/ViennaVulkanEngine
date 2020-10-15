@@ -91,6 +91,8 @@ struct nk_vulkan_adapter {
     VkDescriptorPool descriptor_pool;
     VkDescriptorSetLayout descriptor_set_layout;
     VkDescriptorSet descriptor_set;
+    VkDescriptorSet image_descriptor_set[1000];
+    size_t current_image_descriptor_set;
 };
 
 struct nk_glfw_vertex {
@@ -115,6 +117,11 @@ static struct nk_glfw {
     struct nk_vec2 double_click_pos;
 } glfw;
 
+struct nk_glfw_image_info {
+    VkSampler sampler;
+    VkImageView image_view;
+};
+
 VkPipelineShaderStageCreateInfo create_shader(struct nk_vulkan_adapter* adapter, unsigned char* spv_shader, uint32_t size, VkShaderStageFlagBits stage_bit) {
 	VkShaderModuleCreateInfo create_info = {};
 	create_info.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
@@ -136,15 +143,15 @@ VkPipelineShaderStageCreateInfo create_shader(struct nk_vulkan_adapter* adapter,
 void prepare_descriptor_pool(struct nk_vulkan_adapter* adapter) {
 	VkDescriptorPoolSize pool_sizes[2] = {};
 	pool_sizes[0].type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-	pool_sizes[0].descriptorCount = 1;
+	pool_sizes[0].descriptorCount = 1000;
 	pool_sizes[1].type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-	pool_sizes[1].descriptorCount = 1;
+	pool_sizes[1].descriptorCount = 1000;
 
 	VkDescriptorPoolCreateInfo pool_info = {};
 	pool_info.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
 	pool_info.poolSizeCount = 2;
 	pool_info.pPoolSizes = pool_sizes;
-	pool_info.maxSets = 1;
+	pool_info.maxSets = 1000;
 
 	VkResult res = vkCreateDescriptorPool(adapter->logical_device, &pool_info, VK_NULL_HANDLE, &adapter->descriptor_pool);
     assert( res == VK_SUCCESS);
@@ -170,18 +177,26 @@ void prepare_descriptor_set_layout(struct nk_vulkan_adapter* adapter) {
 	assert( res == VK_SUCCESS); 
 }
 
-void prepare_descriptor_set(struct nk_vulkan_adapter* adapter) {
+void prepare_descriptor_set(struct nk_vulkan_adapter* adapter, bool is_font = true) {
 	VkDescriptorSetAllocateInfo allocate_info = {};
 	allocate_info.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
 	allocate_info.descriptorPool = adapter->descriptor_pool;
 	allocate_info.descriptorSetCount = 1;
 	allocate_info.pSetLayouts = &adapter->descriptor_set_layout;
-
-	VkResult res = vkAllocateDescriptorSets(adapter->logical_device, &allocate_info, &adapter->descriptor_set);
-    assert( res == VK_SUCCESS);
+    
+    VkResult res;
+    if (is_font) {
+        res = vkAllocateDescriptorSets(adapter->logical_device, &allocate_info, &adapter->descriptor_set);
+    }
+    else {
+        res = vkAllocateDescriptorSets(adapter->logical_device, &allocate_info,
+            &adapter->image_descriptor_set[adapter->current_image_descriptor_set]);
+        adapter->current_image_descriptor_set++;
+    }
+    assert(res == VK_SUCCESS);
 }
 
-void update_write_descriptor_sets(struct nk_vulkan_adapter* adapter) {
+void update_write_descriptor_sets(struct nk_vulkan_adapter* adapter, struct nk_glfw_image_info *info = nullptr) {
 	VkDescriptorBufferInfo buffer_info = {};
 	buffer_info.buffer = adapter->uniform_buffer;
 	buffer_info.offset = 0;
@@ -189,13 +204,22 @@ void update_write_descriptor_sets(struct nk_vulkan_adapter* adapter) {
 
 	VkDescriptorImageInfo image_info = {};
 	image_info.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-	image_info.imageView = adapter->font_image_view;
-	image_info.sampler = adapter->font_tex;
+    if (info == nullptr) {
+        image_info.imageView = adapter->font_image_view;
+        image_info.sampler = adapter->font_tex;
+    }
+    else {
+        image_info.imageView = info->image_view;
+        image_info.sampler = info->sampler;
+    }
 
 	VkWriteDescriptorSet descriptor_writes[2] = {};
     memset(descriptor_writes, 0, sizeof(VkWriteDescriptorSet) * 2);
     descriptor_writes[0].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-    descriptor_writes[0].dstSet = adapter->descriptor_set;
+    if (info == nullptr)
+        descriptor_writes[0].dstSet = adapter->descriptor_set;
+    else
+        descriptor_writes[0].dstSet = adapter->image_descriptor_set[adapter->current_image_descriptor_set - 1];
     descriptor_writes[0].dstBinding = 0;
     descriptor_writes[0].dstArrayElement = 0;
     descriptor_writes[0].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
@@ -203,10 +227,13 @@ void update_write_descriptor_sets(struct nk_vulkan_adapter* adapter) {
     descriptor_writes[0].pBufferInfo = &buffer_info;
 
     uint32_t descriptor_write_count = 1;
-    if (adapter->font_tex != VK_NULL_HANDLE) {
+    if ((info == nullptr ? adapter->font_tex : info->sampler) != VK_NULL_HANDLE) {
         descriptor_write_count++;
         descriptor_writes[1].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-        descriptor_writes[1].dstSet = adapter->descriptor_set;
+        if (info == nullptr)
+            descriptor_writes[1].dstSet = adapter->descriptor_set;
+        else
+            descriptor_writes[1].dstSet = adapter->image_descriptor_set[adapter->current_image_descriptor_set - 1];
         descriptor_writes[1].dstBinding = 1;
         descriptor_writes[1].dstArrayElement = 0;
         descriptor_writes[1].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
@@ -720,12 +747,25 @@ nk_glfw3_font_stash_end(void)
     const void *image; int w, h;
     image = nk_font_atlas_bake(&glfw.atlas, &w, &h, NK_FONT_ATLAS_RGBA32);
     nk_glfw3_device_upload_atlas(image, w, h);
-    nk_font_atlas_end(&glfw.atlas, nk_handle_ptr((void*)dev->font_tex), &glfw.adapter.null);
+    nk_font_atlas_end(&glfw.atlas, nk_handle_ptr((void*)dev->descriptor_set), &glfw.adapter.null);
     if (glfw.atlas.default_font) {
         nk_style_set_font(&glfw.ctx, &glfw.atlas.default_font->handle);
     }
     
     update_write_descriptor_sets(dev);
+}
+
+NK_API void*
+nk_glfw3_add_image(VkSampler sampler, VkImageView image_view)
+{
+    struct nk_glfw_image_info info = {};
+    info.sampler = sampler;
+    info.image_view = image_view;
+    struct nk_vulkan_adapter* dev = &glfw.adapter;
+
+    prepare_descriptor_set(dev, false);
+    update_write_descriptor_sets(dev, &info);
+    return (void *)dev->image_descriptor_set[dev->current_image_descriptor_set - 1];
 }
 
 NK_API void
@@ -855,7 +895,6 @@ VkSemaphore nk_glfw3_render(enum nk_anti_aliasing AA, uint32_t buffer_index, VkS
     vkCmdSetViewport(command_buffer, 0, 1, &viewport);
 
     vkCmdBindPipeline(command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, adapter->pipeline);
-    vkCmdBindDescriptorSets(command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, adapter->pipeline_layout, 0, 1, &adapter->descriptor_set, 0, VK_NULL_HANDLE);
     {
         /* convert from command queue into draw list and draw to screen */
         const struct nk_draw_command *cmd;
@@ -903,6 +942,7 @@ VkSemaphore nk_glfw3_render(enum nk_anti_aliasing AA, uint32_t buffer_index, VkS
         {
             if (!cmd->elem_count) continue;
 
+            vkCmdBindDescriptorSets(command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, adapter->pipeline_layout, 0, 1, (VkDescriptorSet*)&cmd->texture.ptr, 0, VK_NULL_HANDLE);
 			VkRect2D scissor = {};
 			scissor.extent = { (uint32_t)(cmd->clip_rect.w * glfw.fb_scale.x), (uint32_t)(cmd->clip_rect.h * glfw.fb_scale.y)  };
 			scissor.offset = { std::max((int)(cmd->clip_rect.x * glfw.fb_scale.x), (int)0), std::max((int)(cmd->clip_rect.y * glfw.fb_scale.y), (int)0) };
