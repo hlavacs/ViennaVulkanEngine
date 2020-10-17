@@ -61,7 +61,7 @@ namespace vh {
 	float vhTimeDuration(std::chrono::high_resolution_clock::time_point t_prev) {
 		std::chrono::duration<double> time_span =
 			std::chrono::duration_cast<std::chrono::duration<double>>(vhTimeNow() - t_prev);
-		return std::chrono::duration_cast<std::chrono::milliseconds>(time_span).count() / 1000.0f;
+		return std::chrono::duration_cast<std::chrono::microseconds>(time_span).count() / 1.0e6f;
 	}
 
 	/**
