@@ -56,6 +56,7 @@ namespace ve {
 
 		//--------------------------------------------------------------------------------------
 		glm::mat4	getWorldTransform2();				//Compute the world matrix
+		glm::mat4	getWorldRotation2();				//Compute the world rotation matrix
 
 		//--------------------------------------------------------------------------------------
 		//UBO updates
@@ -87,6 +88,7 @@ namespace ve {
 
 		void		setTransform(glm::mat4 trans);		//Overwrite the transform and copy it to the UBO
 		glm::mat4	getTransform();						//Return local transform
+		glm::mat4	getRotation();						//Return local rotation
 		void		setPosition(glm::vec3 pos);			//Set the position of the entity
 		glm::vec3	getPosition();						//Return the current position in parent space
 		glm::vec3	getXAxis();							//Return local x-axis in parent space
@@ -94,6 +96,7 @@ namespace ve {
 		glm::vec3	getZAxis();							//Return local z-axis in parent space
 		void		multiplyTransform(glm::mat4 trans); //Multiply the transform, e.g. translate, scale, rotate 
 		glm::mat4	getWorldTransform();				//Compute the world matrix
+		glm::mat4	getWorldRotation();					//Compute the world matrix, only rotations
 		void		lookAt(glm::vec3 eye, glm::vec3 point, glm::vec3 up); //LookAt function for left handed system
 
 		//--------------------------------------------------------------------------------------

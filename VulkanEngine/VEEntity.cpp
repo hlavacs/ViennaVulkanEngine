@@ -37,6 +37,21 @@ namespace ve {
 		return m_transform;
 	}
 
+
+	/**
+	* \returns the scene node's local to parent transform - only rotation part
+	*/
+	glm::mat4 VESceneNode::getRotation() {
+		std::lock_guard<std::mutex> lock(m_mutex);
+
+		auto transform = m_transform;
+		transform[3].x = 0.0;
+		transform[3].y = 0.0;
+		transform[3].z = 0.0;
+
+		return transform;
+	}
+
 	/**
 	* \brief Sets the scene node's local to parent transform.
 	*/
@@ -136,6 +151,35 @@ namespace ve {
 		if (m_parent != nullptr) return m_parent->getWorldTransform() * m_transform;
 
 		if( this == getRoot() ) return m_transform;
+
+		return glm::mat4(0.0f);
+	};
+
+
+	/**
+	*
+	* \brief An entity's world matrix is the local to parent rotation multiplied by the parent's world rotation matrix.
+	*
+	* \returns the entity's world (aka model) rotation matrix.
+	*
+	*/
+	glm::mat4 VESceneNode::getWorldRotation() {
+		std::lock_guard<std::mutex> lock(m_mutex);
+
+		return getWorldRotation2();
+	};
+
+	/**
+	*
+	* \brief An entity's world matrix is the local to parent transform multiplied by the parent's world matrix.
+	*
+	* \returns the entity's world (aka model) rotation matrix.
+	*
+	*/
+	glm::mat4 VESceneNode::getWorldRotation2() {
+		if (m_parent != nullptr) return m_parent->getWorldRotation() * getRotation();
+
+		if (this == getRoot()) return getRotation();
 
 		return glm::mat4(0.0f);
 	};
