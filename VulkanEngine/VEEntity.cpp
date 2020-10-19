@@ -44,6 +44,10 @@ namespace ve {
 	glm::mat4 VESceneNode::getRotation() {
 		std::lock_guard<std::mutex> lock(m_mutex);
 
+		return getRotation2();
+	}
+
+	glm::mat4 VESceneNode::getRotation2() {
 		auto transform = m_transform;
 		transform[3].x = 0.0;
 		transform[3].y = 0.0;
@@ -177,9 +181,9 @@ namespace ve {
 	*
 	*/
 	glm::mat4 VESceneNode::getWorldRotation2() {
-		if (m_parent != nullptr) return m_parent->getWorldRotation() * getRotation();
+		if (m_parent != nullptr) return m_parent->getWorldRotation() * getRotation2();
 
-		if (this == getRoot()) return getRotation();
+		if (this == getRoot()) return getRotation2();
 
 		return glm::mat4(0.0f);
 	};

@@ -57,6 +57,7 @@ namespace ve {
 		//--------------------------------------------------------------------------------------
 		glm::mat4	getWorldTransform2();				//Compute the world matrix
 		glm::mat4	getWorldRotation2();				//Compute the world rotation matrix
+		glm::mat4	getRotation2();						//Return local rotation
 
 		//--------------------------------------------------------------------------------------
 		//UBO updates
