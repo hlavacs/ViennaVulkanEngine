@@ -10,6 +10,7 @@
 #include <condition_variable>
 #include <queue>
 #include <map>
+#include <type_traits>
 
 class ThreadPool
 {
@@ -28,7 +29,10 @@ public:
     ~ThreadPool();
     // add a function to be executed, along with any arguments for it
     template<typename Func, typename... Args>
-    auto add(Func&& func, Args&&... args)->std::future<typename std::result_of<Func(Args...)>::type>;
+    auto add(Func&& func, Args&&... args)->std::future<typename std::invoke_result<Func, Args...>::type>;
+
+    //auto add(Func&& func, Args&&... args)->std::future<typename std::result_of<Func(Args...)>::type>;
+
     // returns number of threads being used
     std::size_t threadCount() const;
     // returns the number of jobs waiting to be executed
@@ -57,9 +61,9 @@ private:
     std::atomic<bool> paused;
 };
 template<typename Func, typename... Args>
-auto ThreadPool::add(Func&& func, Args&&... args) -> std::future<typename std::result_of<Func(Args...)>::type>
+auto ThreadPool::add(Func&& func, Args&&... args) -> std::future<typename std::invoke_result<Func, Args...>::type>
 {
-    using PackedTask = std::packaged_task<typename std::result_of<Func(Args...)>::type()>;
+    using PackedTask = std::packaged_task<typename std::invoke_result<Func, Args...>::type()>;
     auto task = std::make_shared<PackedTask>(std::bind(std::forward<Func>(func), std::forward<Args>(args)...));
     // get the future to return later
     auto ret = task->get_future();

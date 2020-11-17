@@ -176,10 +176,10 @@ namespace cl {
 			if (clIntersect(q.points[i], s)) return true;
 		}
 
-		if (clIntersect(clEdge(q.points[0], q.points[1]), s)) return true;	//intersection with one of the quad edges?
-		if (clIntersect(clEdge(q.points[1], q.points[2]), s)) return true;
-		if (clIntersect(clEdge(q.points[2], q.points[3]), s)) return true;
-		if (clIntersect(clEdge(q.points[3], q.points[0]), s)) return true;
+		//if (clIntersect(clEdge(q.points[0], q.points[1]), s)) return true;	//intersection with one of the quad edges?
+		//if (clIntersect(clEdge(q.points[1], q.points[2]), s)) return true;
+		//if (clIntersect(clEdge(q.points[2], q.points[3]), s)) return true;
+		//if (clIntersect(clEdge(q.points[3], q.points[0]), s)) return true;
 
 		return clIntersect(s.center, q );	//intersection between projected center and quad in plane?
 	}
