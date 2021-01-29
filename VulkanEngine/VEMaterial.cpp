@@ -111,6 +111,8 @@ namespace ve {
 		}
 		m_boundingSphereRadius = sqrt(m_boundingSphereRadius);
 
+		m_indexCount = (uint32_t)indices.size();
+
 		//create the vertex buffer
 		VECHECKRESULT( vh::vhBufCreateVertexBuffer(	getRendererPointer()->getDevice(), getRendererPointer()->getVmaAllocator(),
 													getRendererPointer()->getGraphicsQueue(), getRendererPointer()->getCommandPool(),
