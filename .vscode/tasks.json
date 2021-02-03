@@ -1,0 +1,49 @@
+{
+	"version": "2.0.0",
+	"tasks": [
+		{
+			"type": "shell",
+			"label": "C/C++: nmake",
+			"command": "nmake.exe",
+			"options": {
+				"cwd": "${workspaceFolder}"
+			},
+			"problemMatcher": [
+				"$msCompile"
+			],
+			"group": {
+				"kind": "build",
+				"isDefault": true
+			}
+		},	
+		{
+			"type": "shell",
+			"label": "C/C++: cl.exe build debug",
+			"command": "cl.exe",
+			"args": [
+				"/Zi",
+				"/EHsc",
+				"/Fe:",
+				"${workspaceFolder}\\tutorial.exe",
+				"${workspaceFolder}\\*.cpp",
+				"/std:c++17",
+				"/Istb",
+				"/Iglm",
+				"/Iglfw/glfw-3.2.1.bin.WIN64/include",
+				"/I${env:VULKAN_SDK}\\include",
+				"${env:VULKAN_SDK}\\Lib\\vulkan-1.lib",
+				"glfw\\glfw-3.2.1.bin.WIN64\\lib-vc2015\\glfw3dll.lib"
+			],
+			"options": {
+				"cwd": "${workspaceFolder}"
+			},
+			"problemMatcher": [
+				"$msCompile"
+			],
+			"group": {
+				"kind": "build",
+				"isDefault": true
+			}
+		}
+	]
+}
