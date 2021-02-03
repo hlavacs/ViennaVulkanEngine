@@ -1,0 +1,2 @@
+C:\Users\hlavacs\Documents\GitHub\ViennaVulkanEngine\src\Debug\vve.pdb
+C:\Users\hlavacs\Documents\GitHub\ViennaVulkanEngine\src\vve.dir\Debug\vve.pdb
