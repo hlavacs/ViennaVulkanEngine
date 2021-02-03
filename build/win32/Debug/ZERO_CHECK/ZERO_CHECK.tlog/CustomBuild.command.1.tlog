@@ -1,0 +1,10 @@
+^C:\USERS\HLAVACS\DOCUMENTS\GITHUB\VIENNAVULKANENGINE\BUILD\CMAKEFILES\69E87DF403449FBC7640E97F39776E49\GENERATE.STAMP.RULE
+setlocal
+"C:\Program Files\CMake\bin\cmake.exe" -SC:/Users/hlavacs/Documents/GitHub/ViennaVulkanEngine -BC:/Users/hlavacs/Documents/GitHub/ViennaVulkanEngine/build --check-stamp-list CMakeFiles/generate.stamp.list --vs-solution-file C:/Users/hlavacs/Documents/GitHub/ViennaVulkanEngine/build/VVE.sln
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal & call :cmErrorLevel %errorlevel% & goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd

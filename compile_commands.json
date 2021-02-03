@@ -1,0 +1,12 @@
+[
+{
+  "directory": "C:/Users/hlavacs/Documents/GitHub/ViennaVulkanEngine/src",
+  "command": "C:\\PROGRA~2\\MICROS~1\\2019\\COMMUN~1\\VC\\Tools\\MSVC\\1428~1.293\\bin\\Hostx64\\x64\\cl.exe  /nologo /TP  -IC:\\Users\\hlavacs\\Documents\\GitHub\\ViennaVulkanEngine\\include  /DWIN32 /D_WINDOWS /W3 /GR /EHsc /MDd /Zi /Ob0 /Od /RTC1   /FoCMakeFiles\\vve.dir\\vve.cpp.obj /FdCMakeFiles\\vve.dir\\vve.pdb /FS -c C:\\Users\\hlavacs\\Documents\\GitHub\\ViennaVulkanEngine\\src\\vve.cpp",
+  "file": "C:/Users/hlavacs/Documents/GitHub/ViennaVulkanEngine/src/vve.cpp"
+},
+{
+  "directory": "C:/Users/hlavacs/Documents/GitHub/ViennaVulkanEngine/examples/basic_test",
+  "command": "C:\\PROGRA~2\\MICROS~1\\2019\\COMMUN~1\\VC\\Tools\\MSVC\\1428~1.293\\bin\\Hostx64\\x64\\cl.exe  /nologo /TP  -IC:\\Users\\hlavacs\\Documents\\GitHub\\ViennaVulkanEngine\\include  /DWIN32 /D_WINDOWS /W3 /GR /EHsc /MDd /Zi /Ob0 /Od /RTC1   /FoCMakeFiles\\basic_test.dir\\basic_test.cpp.obj /FdCMakeFiles\\basic_test.dir\\ /FS -c C:\\Users\\hlavacs\\Documents\\GitHub\\ViennaVulkanEngine\\examples\\basic_test\\basic_test.cpp",
+  "file": "C:/Users/hlavacs/Documents/GitHub/ViennaVulkanEngine/examples/basic_test/basic_test.cpp"
+}
+]

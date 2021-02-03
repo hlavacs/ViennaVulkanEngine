@@ -9,7 +9,7 @@ The output was:
 Microsoft (R)-Build-Engine, Version 16.8.3+39993bd9d für .NET Framework
 Copyright (C) Microsoft Corporation. Alle Rechte vorbehalten.
 
-Der Buildvorgang wurde am 03.02.2021 19:51:31 gestartet.
+Der Buildvorgang wurde am 03.02.2021 21:32:33 gestartet.
 Projekt "C:\Users\hlavacs\Documents\GitHub\ViennaVulkanEngine\build\CMakeFiles\3.17.0\CompilerIdC\CompilerIdC.vcxproj" auf Knoten "1" (Standardziele).
 PrepareForBuild:
   Das Verzeichnis "Debug\" wird erstellt.
@@ -35,7 +35,7 @@ Der Buildvorgang wurde erfolgreich ausgeführt.
     0 Warnung(en)
     0 Fehler
 
-Verstrichene Zeit 00:00:02.75
+Verstrichene Zeit 00:00:00.74
 
 
 Compilation of the C compiler identification source "CMakeCCompilerId.c" produced "CompilerIdC.exe"
@@ -54,7 +54,7 @@ The output was:
 Microsoft (R)-Build-Engine, Version 16.8.3+39993bd9d für .NET Framework
 Copyright (C) Microsoft Corporation. Alle Rechte vorbehalten.
 
-Der Buildvorgang wurde am 03.02.2021 19:51:34 gestartet.
+Der Buildvorgang wurde am 03.02.2021 21:32:33 gestartet.
 Projekt "C:\Users\hlavacs\Documents\GitHub\ViennaVulkanEngine\build\CMakeFiles\3.17.0\CompilerIdCXX\CompilerIdCXX.vcxproj" auf Knoten "1" (Standardziele).
 PrepareForBuild:
   Das Verzeichnis "Debug\" wird erstellt.
@@ -80,7 +80,7 @@ Der Buildvorgang wurde erfolgreich ausgeführt.
     0 Warnung(en)
     0 Fehler
 
-Verstrichene Zeit 00:00:00.78
+Verstrichene Zeit 00:00:00.60
 
 
 Compilation of the CXX compiler identification source "CMakeCXXCompilerId.cpp" produced "CompilerIdCXX.exe"
@@ -92,56 +92,56 @@ The CXX compiler identification is MSVC, found in "C:/Users/hlavacs/Documents/Gi
 Determining if the C compiler works passed with the following output:
 Change Dir: C:/Users/hlavacs/Documents/GitHub/ViennaVulkanEngine/build/CMakeFiles/CMakeTmp
 
-Run Build Command(s):C:/Program Files (x86)/Microsoft Visual Studio/2019/Community/MSBuild/Current/Bin/MSBuild.exe cmTC_fbb6d.vcxproj /p:Configuration=Debug /p:Platform=win32 /p:VisualStudioVersion=16.0 /v:m && Microsoft (R)-Build-Engine, Version 16.8.3+39993bd9d für .NET Framework
+Run Build Command(s):C:/Program Files (x86)/Microsoft Visual Studio/2019/Community/MSBuild/Current/Bin/MSBuild.exe cmTC_3920e.vcxproj /p:Configuration=Debug /p:Platform=win32 /p:VisualStudioVersion=16.0 /v:m && Microsoft (R)-Build-Engine, Version 16.8.3+39993bd9d für .NET Framework
 Copyright (C) Microsoft Corporation. Alle Rechte vorbehalten.
 
   Microsoft (R) C/C++-Optimierungscompiler Version 19.28.29336 für x86
   Copyright (C) Microsoft Corporation. Alle Rechte vorbehalten.
   testCCompiler.c
-  cl /c /Zi /W3 /WX- /diagnostics:column /Od /Ob0 /Oy- /D WIN32 /D _WINDOWS /D "CMAKE_INTDIR=\"Debug\"" /D _MBCS /Gm- /RTC1 /MDd /GS /fp:precise /Zc:wchar_t /Zc:forScope /Zc:inline /Fo"cmTC_fbb6d.dir\Debug\\" /Fd"cmTC_fbb6d.dir\Debug\vc142.pdb" /Gd /TC /analyze- /errorReport:queue C:\Users\hlavacs\Documents\GitHub\ViennaVulkanEngine\build\CMakeFiles\CMakeTmp\testCCompiler.c
-  cmTC_fbb6d.vcxproj -> C:\Users\hlavacs\Documents\GitHub\ViennaVulkanEngine\build\CMakeFiles\CMakeTmp\Debug\cmTC_fbb6d.exe
+  cl /c /Zi /W3 /WX- /diagnostics:column /Od /Ob0 /Oy- /D WIN32 /D _WINDOWS /D "CMAKE_INTDIR=\"Debug\"" /D _MBCS /Gm- /RTC1 /MDd /GS /fp:precise /Zc:wchar_t /Zc:forScope /Zc:inline /Fo"cmTC_3920e.dir\Debug\\" /Fd"cmTC_3920e.dir\Debug\vc142.pdb" /Gd /TC /analyze- /errorReport:queue C:\Users\hlavacs\Documents\GitHub\ViennaVulkanEngine\build\CMakeFiles\CMakeTmp\testCCompiler.c
+  cmTC_3920e.vcxproj -> C:\Users\hlavacs\Documents\GitHub\ViennaVulkanEngine\build\CMakeFiles\CMakeTmp\Debug\cmTC_3920e.exe
 
 
 
 Detecting C compiler ABI info compiled with the following output:
 Change Dir: C:/Users/hlavacs/Documents/GitHub/ViennaVulkanEngine/build/CMakeFiles/CMakeTmp
 
-Run Build Command(s):C:/Program Files (x86)/Microsoft Visual Studio/2019/Community/MSBuild/Current/Bin/MSBuild.exe cmTC_d55e5.vcxproj /p:Configuration=Debug /p:Platform=win32 /p:VisualStudioVersion=16.0 /v:m && Microsoft (R)-Build-Engine, Version 16.8.3+39993bd9d für .NET Framework
+Run Build Command(s):C:/Program Files (x86)/Microsoft Visual Studio/2019/Community/MSBuild/Current/Bin/MSBuild.exe cmTC_39250.vcxproj /p:Configuration=Debug /p:Platform=win32 /p:VisualStudioVersion=16.0 /v:m && Microsoft (R)-Build-Engine, Version 16.8.3+39993bd9d für .NET Framework
 Copyright (C) Microsoft Corporation. Alle Rechte vorbehalten.
 
   Microsoft (R) C/C++-Optimierungscompiler Version 19.28.29336 für x86
   Copyright (C) Microsoft Corporation. Alle Rechte vorbehalten.
   CMakeCCompilerABI.c
-  cl /c /Zi /W3 /WX- /diagnostics:column /Od /Ob0 /Oy- /D WIN32 /D _WINDOWS /D "CMAKE_INTDIR=\"Debug\"" /D _MBCS /Gm- /RTC1 /MDd /GS /fp:precise /Zc:wchar_t /Zc:forScope /Zc:inline /Fo"cmTC_d55e5.dir\Debug\\" /Fd"cmTC_d55e5.dir\Debug\vc142.pdb" /Gd /TC /analyze- /errorReport:queue "C:\Program Files\CMake\share\cmake-3.17\Modules\CMakeCCompilerABI.c"
-  cmTC_d55e5.vcxproj -> C:\Users\hlavacs\Documents\GitHub\ViennaVulkanEngine\build\CMakeFiles\CMakeTmp\Debug\cmTC_d55e5.exe
+  cl /c /Zi /W3 /WX- /diagnostics:column /Od /Ob0 /Oy- /D WIN32 /D _WINDOWS /D "CMAKE_INTDIR=\"Debug\"" /D _MBCS /Gm- /RTC1 /MDd /GS /fp:precise /Zc:wchar_t /Zc:forScope /Zc:inline /Fo"cmTC_39250.dir\Debug\\" /Fd"cmTC_39250.dir\Debug\vc142.pdb" /Gd /TC /analyze- /errorReport:queue "C:\Program Files\CMake\share\cmake-3.17\Modules\CMakeCCompilerABI.c"
+  cmTC_39250.vcxproj -> C:\Users\hlavacs\Documents\GitHub\ViennaVulkanEngine\build\CMakeFiles\CMakeTmp\Debug\cmTC_39250.exe
 
 
 
 Determining if the CXX compiler works passed with the following output:
 Change Dir: C:/Users/hlavacs/Documents/GitHub/ViennaVulkanEngine/build/CMakeFiles/CMakeTmp
 
-Run Build Command(s):C:/Program Files (x86)/Microsoft Visual Studio/2019/Community/MSBuild/Current/Bin/MSBuild.exe cmTC_22fe8.vcxproj /p:Configuration=Debug /p:Platform=win32 /p:VisualStudioVersion=16.0 /v:m && Microsoft (R)-Build-Engine, Version 16.8.3+39993bd9d für .NET Framework
+Run Build Command(s):C:/Program Files (x86)/Microsoft Visual Studio/2019/Community/MSBuild/Current/Bin/MSBuild.exe cmTC_6c2fe.vcxproj /p:Configuration=Debug /p:Platform=win32 /p:VisualStudioVersion=16.0 /v:m && Microsoft (R)-Build-Engine, Version 16.8.3+39993bd9d für .NET Framework
 Copyright (C) Microsoft Corporation. Alle Rechte vorbehalten.
 
   Microsoft (R) C/C++-Optimierungscompiler Version 19.28.29336 für x86
   Copyright (C) Microsoft Corporation. Alle Rechte vorbehalten.
   testCXXCompiler.cxx
-  cl /c /Zi /W3 /WX- /diagnostics:column /Od /Ob0 /Oy- /D WIN32 /D _WINDOWS /D "CMAKE_INTDIR=\"Debug\"" /D _MBCS /Gm- /EHsc /RTC1 /MDd /GS /fp:precise /Zc:wchar_t /Zc:forScope /Zc:inline /GR /Fo"cmTC_22fe8.dir\Debug\\" /Fd"cmTC_22fe8.dir\Debug\vc142.pdb" /Gd /TP /analyze- /errorReport:queue C:\Users\hlavacs\Documents\GitHub\ViennaVulkanEngine\build\CMakeFiles\CMakeTmp\testCXXCompiler.cxx
-  cmTC_22fe8.vcxproj -> C:\Users\hlavacs\Documents\GitHub\ViennaVulkanEngine\build\CMakeFiles\CMakeTmp\Debug\cmTC_22fe8.exe
+  cl /c /Zi /W3 /WX- /diagnostics:column /Od /Ob0 /Oy- /D WIN32 /D _WINDOWS /D "CMAKE_INTDIR=\"Debug\"" /D _MBCS /Gm- /EHsc /RTC1 /MDd /GS /fp:precise /Zc:wchar_t /Zc:forScope /Zc:inline /GR /Fo"cmTC_6c2fe.dir\Debug\\" /Fd"cmTC_6c2fe.dir\Debug\vc142.pdb" /Gd /TP /analyze- /errorReport:queue C:\Users\hlavacs\Documents\GitHub\ViennaVulkanEngine\build\CMakeFiles\CMakeTmp\testCXXCompiler.cxx
+  cmTC_6c2fe.vcxproj -> C:\Users\hlavacs\Documents\GitHub\ViennaVulkanEngine\build\CMakeFiles\CMakeTmp\Debug\cmTC_6c2fe.exe
 
 
 
 Detecting CXX compiler ABI info compiled with the following output:
 Change Dir: C:/Users/hlavacs/Documents/GitHub/ViennaVulkanEngine/build/CMakeFiles/CMakeTmp
 
-Run Build Command(s):C:/Program Files (x86)/Microsoft Visual Studio/2019/Community/MSBuild/Current/Bin/MSBuild.exe cmTC_6dfe0.vcxproj /p:Configuration=Debug /p:Platform=win32 /p:VisualStudioVersion=16.0 /v:m && Microsoft (R)-Build-Engine, Version 16.8.3+39993bd9d für .NET Framework
+Run Build Command(s):C:/Program Files (x86)/Microsoft Visual Studio/2019/Community/MSBuild/Current/Bin/MSBuild.exe cmTC_2c721.vcxproj /p:Configuration=Debug /p:Platform=win32 /p:VisualStudioVersion=16.0 /v:m && Microsoft (R)-Build-Engine, Version 16.8.3+39993bd9d für .NET Framework
 Copyright (C) Microsoft Corporation. Alle Rechte vorbehalten.
 
   Microsoft (R) C/C++-Optimierungscompiler Version 19.28.29336 für x86
   Copyright (C) Microsoft Corporation. Alle Rechte vorbehalten.
   CMakeCXXCompilerABI.cpp
-  cl /c /Zi /W3 /WX- /diagnostics:column /Od /Ob0 /Oy- /D WIN32 /D _WINDOWS /D "CMAKE_INTDIR=\"Debug\"" /D _MBCS /Gm- /EHsc /RTC1 /MDd /GS /fp:precise /Zc:wchar_t /Zc:forScope /Zc:inline /GR /Fo"cmTC_6dfe0.dir\Debug\\" /Fd"cmTC_6dfe0.dir\Debug\vc142.pdb" /Gd /TP /analyze- /errorReport:queue "C:\Program Files\CMake\share\cmake-3.17\Modules\CMakeCXXCompilerABI.cpp"
-  cmTC_6dfe0.vcxproj -> C:\Users\hlavacs\Documents\GitHub\ViennaVulkanEngine\build\CMakeFiles\CMakeTmp\Debug\cmTC_6dfe0.exe
+  cl /c /Zi /W3 /WX- /diagnostics:column /Od /Ob0 /Oy- /D WIN32 /D _WINDOWS /D "CMAKE_INTDIR=\"Debug\"" /D _MBCS /Gm- /EHsc /RTC1 /MDd /GS /fp:precise /Zc:wchar_t /Zc:forScope /Zc:inline /GR /Fo"cmTC_2c721.dir\Debug\\" /Fd"cmTC_2c721.dir\Debug\vc142.pdb" /Gd /TP /analyze- /errorReport:queue "C:\Program Files\CMake\share\cmake-3.17\Modules\CMakeCXXCompilerABI.cpp"
+  cmTC_2c721.vcxproj -> C:\Users\hlavacs\Documents\GitHub\ViennaVulkanEngine\build\CMakeFiles\CMakeTmp\Debug\cmTC_2c721.exe
 
 
 

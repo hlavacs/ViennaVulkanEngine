@@ -50,48 +50,147 @@ The CXX compiler identification is MSVC, found in "C:/Users/hlavacs/Documents/Gi
 Determining if the C compiler works passed with the following output:
 Change Dir: C:/Users/hlavacs/Documents/GitHub/ViennaVulkanEngine/CMakeFiles/CMakeTmp
 
-Run Build Command(s):nmake /nologo cmTC_2ef14\fast && 	"C:\Program Files (x86)\Microsoft Visual Studio\2019\Community\VC\Tools\MSVC\14.28.29333\bin\HostX64\x64\nmake.exe" -f CMakeFiles\cmTC_2ef14.dir\build.make /nologo -L                  CMakeFiles\cmTC_2ef14.dir\build
-Building C object CMakeFiles/cmTC_2ef14.dir/testCCompiler.c.obj
-	C:\PROGRA~2\MICROS~1\2019\COMMUN~1\VC\Tools\MSVC\1428~1.293\bin\Hostx64\x64\cl.exe @C:\Users\hlavacs\AppData\Local\Temp\nm9365.tmp
+Run Build Command(s):nmake /nologo cmTC_00720\fast && 	"C:\Program Files (x86)\Microsoft Visual Studio\2019\Community\VC\Tools\MSVC\14.28.29333\bin\HostX64\x64\nmake.exe" -f CMakeFiles\cmTC_00720.dir\build.make /nologo -L                  CMakeFiles\cmTC_00720.dir\build
+Building C object CMakeFiles/cmTC_00720.dir/testCCompiler.c.obj
+	C:\PROGRA~2\MICROS~1\2019\COMMUN~1\VC\Tools\MSVC\1428~1.293\bin\Hostx64\x64\cl.exe @C:\Users\hlavacs\AppData\Local\Temp\nmEFB1.tmp
 testCCompiler.c
-Linking C executable cmTC_2ef14.exe
-	"C:\Program Files\CMake\bin\cmake.exe" -E vs_link_exe --intdir=CMakeFiles\cmTC_2ef14.dir --rc=C:\PROGRA~2\WI3CF2~1\10\bin\100183~1.0\x64\rc.exe --mt=C:\PROGRA~2\WI3CF2~1\10\bin\100183~1.0\x64\mt.exe --manifests  -- C:\PROGRA~2\MICROS~1\2019\COMMUN~1\VC\Tools\MSVC\1428~1.293\bin\Hostx64\x64\link.exe /nologo @CMakeFiles\cmTC_2ef14.dir\objects1.rsp @C:\Users\hlavacs\AppData\Local\Temp\nm94AE.tmp
+Linking C executable cmTC_00720.exe
+	"C:\Program Files\CMake\bin\cmake.exe" -E vs_link_exe --intdir=CMakeFiles\cmTC_00720.dir --rc=C:\PROGRA~2\WI3CF2~1\10\bin\100183~1.0\x64\rc.exe --mt=C:\PROGRA~2\WI3CF2~1\10\bin\100183~1.0\x64\mt.exe --manifests  -- C:\PROGRA~2\MICROS~1\2019\COMMUN~1\VC\Tools\MSVC\1428~1.293\bin\Hostx64\x64\link.exe /nologo @CMakeFiles\cmTC_00720.dir\objects1.rsp @C:\Users\hlavacs\AppData\Local\Temp\nmEFF1.tmp
 
 
 
 Detecting C compiler ABI info compiled with the following output:
 Change Dir: C:/Users/hlavacs/Documents/GitHub/ViennaVulkanEngine/CMakeFiles/CMakeTmp
 
-Run Build Command(s):nmake /nologo cmTC_a42a5\fast && 	"C:\Program Files (x86)\Microsoft Visual Studio\2019\Community\VC\Tools\MSVC\14.28.29333\bin\HostX64\x64\nmake.exe" -f CMakeFiles\cmTC_a42a5.dir\build.make /nologo -L                  CMakeFiles\cmTC_a42a5.dir\build
-Building C object CMakeFiles/cmTC_a42a5.dir/CMakeCCompilerABI.c.obj
-	C:\PROGRA~2\MICROS~1\2019\COMMUN~1\VC\Tools\MSVC\1428~1.293\bin\Hostx64\x64\cl.exe @C:\Users\hlavacs\AppData\Local\Temp\nm95C6.tmp
+Run Build Command(s):nmake /nologo cmTC_9e4d4\fast && 	"C:\Program Files (x86)\Microsoft Visual Studio\2019\Community\VC\Tools\MSVC\14.28.29333\bin\HostX64\x64\nmake.exe" -f CMakeFiles\cmTC_9e4d4.dir\build.make /nologo -L                  CMakeFiles\cmTC_9e4d4.dir\build
+Building C object CMakeFiles/cmTC_9e4d4.dir/CMakeCCompilerABI.c.obj
+	C:\PROGRA~2\MICROS~1\2019\COMMUN~1\VC\Tools\MSVC\1428~1.293\bin\Hostx64\x64\cl.exe @C:\Users\hlavacs\AppData\Local\Temp\nmF148.tmp
 CMakeCCompilerABI.c
-Linking C executable cmTC_a42a5.exe
-	"C:\Program Files\CMake\bin\cmake.exe" -E vs_link_exe --intdir=CMakeFiles\cmTC_a42a5.dir --rc=C:\PROGRA~2\WI3CF2~1\10\bin\100183~1.0\x64\rc.exe --mt=C:\PROGRA~2\WI3CF2~1\10\bin\100183~1.0\x64\mt.exe --manifests  -- C:\PROGRA~2\MICROS~1\2019\COMMUN~1\VC\Tools\MSVC\1428~1.293\bin\Hostx64\x64\link.exe /nologo @CMakeFiles\cmTC_a42a5.dir\objects1.rsp @C:\Users\hlavacs\AppData\Local\Temp\nm9606.tmp
+Linking C executable cmTC_9e4d4.exe
+	"C:\Program Files\CMake\bin\cmake.exe" -E vs_link_exe --intdir=CMakeFiles\cmTC_9e4d4.dir --rc=C:\PROGRA~2\WI3CF2~1\10\bin\100183~1.0\x64\rc.exe --mt=C:\PROGRA~2\WI3CF2~1\10\bin\100183~1.0\x64\mt.exe --manifests  -- C:\PROGRA~2\MICROS~1\2019\COMMUN~1\VC\Tools\MSVC\1428~1.293\bin\Hostx64\x64\link.exe /nologo @CMakeFiles\cmTC_9e4d4.dir\objects1.rsp @C:\Users\hlavacs\AppData\Local\Temp\nmF187.tmp
 
 
 
 Determining if the CXX compiler works passed with the following output:
 Change Dir: C:/Users/hlavacs/Documents/GitHub/ViennaVulkanEngine/CMakeFiles/CMakeTmp
 
-Run Build Command(s):nmake /nologo cmTC_aa647\fast && 	"C:\Program Files (x86)\Microsoft Visual Studio\2019\Community\VC\Tools\MSVC\14.28.29333\bin\HostX64\x64\nmake.exe" -f CMakeFiles\cmTC_aa647.dir\build.make /nologo -L                  CMakeFiles\cmTC_aa647.dir\build
-Building CXX object CMakeFiles/cmTC_aa647.dir/testCXXCompiler.cxx.obj
-	C:\PROGRA~2\MICROS~1\2019\COMMUN~1\VC\Tools\MSVC\1428~1.293\bin\Hostx64\x64\cl.exe @C:\Users\hlavacs\AppData\Local\Temp\nm973D.tmp
+Run Build Command(s):nmake /nologo cmTC_071fb\fast && 	"C:\Program Files (x86)\Microsoft Visual Studio\2019\Community\VC\Tools\MSVC\14.28.29333\bin\HostX64\x64\nmake.exe" -f CMakeFiles\cmTC_071fb.dir\build.make /nologo -L                  CMakeFiles\cmTC_071fb.dir\build
+Building CXX object CMakeFiles/cmTC_071fb.dir/testCXXCompiler.cxx.obj
+	C:\PROGRA~2\MICROS~1\2019\COMMUN~1\VC\Tools\MSVC\1428~1.293\bin\Hostx64\x64\cl.exe @C:\Users\hlavacs\AppData\Local\Temp\nmF30D.tmp
 testCXXCompiler.cxx
-Linking CXX executable cmTC_aa647.exe
-	"C:\Program Files\CMake\bin\cmake.exe" -E vs_link_exe --intdir=CMakeFiles\cmTC_aa647.dir --rc=C:\PROGRA~2\WI3CF2~1\10\bin\100183~1.0\x64\rc.exe --mt=C:\PROGRA~2\WI3CF2~1\10\bin\100183~1.0\x64\mt.exe --manifests  -- C:\PROGRA~2\MICROS~1\2019\COMMUN~1\VC\Tools\MSVC\1428~1.293\bin\Hostx64\x64\link.exe /nologo @CMakeFiles\cmTC_aa647.dir\objects1.rsp @C:\Users\hlavacs\AppData\Local\Temp\nm977D.tmp
+Linking CXX executable cmTC_071fb.exe
+	"C:\Program Files\CMake\bin\cmake.exe" -E vs_link_exe --intdir=CMakeFiles\cmTC_071fb.dir --rc=C:\PROGRA~2\WI3CF2~1\10\bin\100183~1.0\x64\rc.exe --mt=C:\PROGRA~2\WI3CF2~1\10\bin\100183~1.0\x64\mt.exe --manifests  -- C:\PROGRA~2\MICROS~1\2019\COMMUN~1\VC\Tools\MSVC\1428~1.293\bin\Hostx64\x64\link.exe /nologo @CMakeFiles\cmTC_071fb.dir\objects1.rsp @C:\Users\hlavacs\AppData\Local\Temp\nmF35C.tmp
 
 
 
 Detecting CXX compiler ABI info compiled with the following output:
 Change Dir: C:/Users/hlavacs/Documents/GitHub/ViennaVulkanEngine/CMakeFiles/CMakeTmp
 
-Run Build Command(s):nmake /nologo cmTC_a3700\fast && 	"C:\Program Files (x86)\Microsoft Visual Studio\2019\Community\VC\Tools\MSVC\14.28.29333\bin\HostX64\x64\nmake.exe" -f CMakeFiles\cmTC_a3700.dir\build.make /nologo -L                  CMakeFiles\cmTC_a3700.dir\build
-Building CXX object CMakeFiles/cmTC_a3700.dir/CMakeCXXCompilerABI.cpp.obj
-	C:\PROGRA~2\MICROS~1\2019\COMMUN~1\VC\Tools\MSVC\1428~1.293\bin\Hostx64\x64\cl.exe @C:\Users\hlavacs\AppData\Local\Temp\nm98A4.tmp
+Run Build Command(s):nmake /nologo cmTC_0558d\fast && 	"C:\Program Files (x86)\Microsoft Visual Studio\2019\Community\VC\Tools\MSVC\14.28.29333\bin\HostX64\x64\nmake.exe" -f CMakeFiles\cmTC_0558d.dir\build.make /nologo -L                  CMakeFiles\cmTC_0558d.dir\build
+Building CXX object CMakeFiles/cmTC_0558d.dir/CMakeCXXCompilerABI.cpp.obj
+	C:\PROGRA~2\MICROS~1\2019\COMMUN~1\VC\Tools\MSVC\1428~1.293\bin\Hostx64\x64\cl.exe @C:\Users\hlavacs\AppData\Local\Temp\nmF4A3.tmp
 CMakeCXXCompilerABI.cpp
-Linking CXX executable cmTC_a3700.exe
-	"C:\Program Files\CMake\bin\cmake.exe" -E vs_link_exe --intdir=CMakeFiles\cmTC_a3700.dir --rc=C:\PROGRA~2\WI3CF2~1\10\bin\100183~1.0\x64\rc.exe --mt=C:\PROGRA~2\WI3CF2~1\10\bin\100183~1.0\x64\mt.exe --manifests  -- C:\PROGRA~2\MICROS~1\2019\COMMUN~1\VC\Tools\MSVC\1428~1.293\bin\Hostx64\x64\link.exe /nologo @CMakeFiles\cmTC_a3700.dir\objects1.rsp @C:\Users\hlavacs\AppData\Local\Temp\nm98E4.tmp
+Linking CXX executable cmTC_0558d.exe
+	"C:\Program Files\CMake\bin\cmake.exe" -E vs_link_exe --intdir=CMakeFiles\cmTC_0558d.dir --rc=C:\PROGRA~2\WI3CF2~1\10\bin\100183~1.0\x64\rc.exe --mt=C:\PROGRA~2\WI3CF2~1\10\bin\100183~1.0\x64\mt.exe --manifests  -- C:\PROGRA~2\MICROS~1\2019\COMMUN~1\VC\Tools\MSVC\1428~1.293\bin\Hostx64\x64\link.exe /nologo @CMakeFiles\cmTC_0558d.dir\objects1.rsp @C:\Users\hlavacs\AppData\Local\Temp\nmF4E3.tmp
+
+
+
+The system is: Windows - 10.0.19041 - AMD64
+The system is: Windows - 10.0.19041 - AMD64
+The system is: Windows - 10.0.19041 - AMD64
+Compiling the C compiler identification source file "CMakeCCompilerId.c" succeeded.
+Compiler: C:/Program Files (x86)/Microsoft Visual Studio/2019/Community/VC/Tools/MSVC/14.28.29333/bin/Hostx64/x64/cl.exe 
+Build flags: 
+Id flags:  
+
+The output was:
+0
+Microsoft (R) C/C++-Optimierungscompiler Version 19.28.29336 für x64
+Copyright (C) Microsoft Corporation. Alle Rechte vorbehalten.
+
+CMakeCCompilerId.c
+Microsoft (R) Incremental Linker Version 14.28.29336.0
+Copyright (C) Microsoft Corporation.  All rights reserved.
+
+/out:CMakeCCompilerId.exe 
+CMakeCCompilerId.obj 
+
+
+Compilation of the C compiler identification source "CMakeCCompilerId.c" produced "CMakeCCompilerId.exe"
+
+Compilation of the C compiler identification source "CMakeCCompilerId.c" produced "CMakeCCompilerId.obj"
+
+The C compiler identification is MSVC, found in "C:/Users/hlavacs/Documents/GitHub/ViennaVulkanEngine/CMakeFiles/3.17.0/CompilerIdC/CMakeCCompilerId.exe"
+
+Compiling the CXX compiler identification source file "CMakeCXXCompilerId.cpp" succeeded.
+Compiler: C:/Program Files (x86)/Microsoft Visual Studio/2019/Community/VC/Tools/MSVC/14.28.29333/bin/Hostx64/x64/cl.exe 
+Build flags: 
+Id flags:  
+
+The output was:
+0
+Microsoft (R) C/C++-Optimierungscompiler Version 19.28.29336 für x64
+Copyright (C) Microsoft Corporation. Alle Rechte vorbehalten.
+
+CMakeCXXCompilerId.cpp
+Microsoft (R) Incremental Linker Version 14.28.29336.0
+Copyright (C) Microsoft Corporation.  All rights reserved.
+
+/out:CMakeCXXCompilerId.exe 
+CMakeCXXCompilerId.obj 
+
+
+Compilation of the CXX compiler identification source "CMakeCXXCompilerId.cpp" produced "CMakeCXXCompilerId.exe"
+
+Compilation of the CXX compiler identification source "CMakeCXXCompilerId.cpp" produced "CMakeCXXCompilerId.obj"
+
+The CXX compiler identification is MSVC, found in "C:/Users/hlavacs/Documents/GitHub/ViennaVulkanEngine/CMakeFiles/3.17.0/CompilerIdCXX/CMakeCXXCompilerId.exe"
+
+Determining if the C compiler works passed with the following output:
+Change Dir: C:/Users/hlavacs/Documents/GitHub/ViennaVulkanEngine/CMakeFiles/CMakeTmp
+
+Run Build Command(s):nmake /nologo cmTC_c7da2\fast && 	"C:\Program Files (x86)\Microsoft Visual Studio\2019\Community\VC\Tools\MSVC\14.28.29333\bin\HostX64\x64\nmake.exe" -f CMakeFiles\cmTC_c7da2.dir\build.make /nologo -L                  CMakeFiles\cmTC_c7da2.dir\build
+Building C object CMakeFiles/cmTC_c7da2.dir/testCCompiler.c.obj
+	C:\PROGRA~2\MICROS~1\2019\COMMUN~1\VC\Tools\MSVC\1428~1.293\bin\Hostx64\x64\cl.exe @C:\Users\hlavacs\AppData\Local\Temp\nm898F.tmp
+testCCompiler.c
+Linking C executable cmTC_c7da2.exe
+	"C:\Program Files\CMake\bin\cmake.exe" -E vs_link_exe --intdir=CMakeFiles\cmTC_c7da2.dir --rc=C:\PROGRA~2\WI3CF2~1\10\bin\100183~1.0\x64\rc.exe --mt=C:\PROGRA~2\WI3CF2~1\10\bin\100183~1.0\x64\mt.exe --manifests  -- C:\PROGRA~2\MICROS~1\2019\COMMUN~1\VC\Tools\MSVC\1428~1.293\bin\Hostx64\x64\link.exe /nologo @CMakeFiles\cmTC_c7da2.dir\objects1.rsp @C:\Users\hlavacs\AppData\Local\Temp\nm8AC9.tmp
+
+
+
+Detecting C compiler ABI info compiled with the following output:
+Change Dir: C:/Users/hlavacs/Documents/GitHub/ViennaVulkanEngine/CMakeFiles/CMakeTmp
+
+Run Build Command(s):nmake /nologo cmTC_baec1\fast && 	"C:\Program Files (x86)\Microsoft Visual Studio\2019\Community\VC\Tools\MSVC\14.28.29333\bin\HostX64\x64\nmake.exe" -f CMakeFiles\cmTC_baec1.dir\build.make /nologo -L                  CMakeFiles\cmTC_baec1.dir\build
+Building C object CMakeFiles/cmTC_baec1.dir/CMakeCCompilerABI.c.obj
+	C:\PROGRA~2\MICROS~1\2019\COMMUN~1\VC\Tools\MSVC\1428~1.293\bin\Hostx64\x64\cl.exe @C:\Users\hlavacs\AppData\Local\Temp\nm8C00.tmp
+CMakeCCompilerABI.c
+Linking C executable cmTC_baec1.exe
+	"C:\Program Files\CMake\bin\cmake.exe" -E vs_link_exe --intdir=CMakeFiles\cmTC_baec1.dir --rc=C:\PROGRA~2\WI3CF2~1\10\bin\100183~1.0\x64\rc.exe --mt=C:\PROGRA~2\WI3CF2~1\10\bin\100183~1.0\x64\mt.exe --manifests  -- C:\PROGRA~2\MICROS~1\2019\COMMUN~1\VC\Tools\MSVC\1428~1.293\bin\Hostx64\x64\link.exe /nologo @CMakeFiles\cmTC_baec1.dir\objects1.rsp @C:\Users\hlavacs\AppData\Local\Temp\nm8C40.tmp
+
+
+
+Determining if the CXX compiler works passed with the following output:
+Change Dir: C:/Users/hlavacs/Documents/GitHub/ViennaVulkanEngine/CMakeFiles/CMakeTmp
+
+Run Build Command(s):nmake /nologo cmTC_33001\fast && 	"C:\Program Files (x86)\Microsoft Visual Studio\2019\Community\VC\Tools\MSVC\14.28.29333\bin\HostX64\x64\nmake.exe" -f CMakeFiles\cmTC_33001.dir\build.make /nologo -L                  CMakeFiles\cmTC_33001.dir\build
+Building CXX object CMakeFiles/cmTC_33001.dir/testCXXCompiler.cxx.obj
+	C:\PROGRA~2\MICROS~1\2019\COMMUN~1\VC\Tools\MSVC\1428~1.293\bin\Hostx64\x64\cl.exe @C:\Users\hlavacs\AppData\Local\Temp\nm8D87.tmp
+testCXXCompiler.cxx
+Linking CXX executable cmTC_33001.exe
+	"C:\Program Files\CMake\bin\cmake.exe" -E vs_link_exe --intdir=CMakeFiles\cmTC_33001.dir --rc=C:\PROGRA~2\WI3CF2~1\10\bin\100183~1.0\x64\rc.exe --mt=C:\PROGRA~2\WI3CF2~1\10\bin\100183~1.0\x64\mt.exe --manifests  -- C:\PROGRA~2\MICROS~1\2019\COMMUN~1\VC\Tools\MSVC\1428~1.293\bin\Hostx64\x64\link.exe /nologo @CMakeFiles\cmTC_33001.dir\objects1.rsp @C:\Users\hlavacs\AppData\Local\Temp\nm8DC7.tmp
+
+
+
+Detecting CXX compiler ABI info compiled with the following output:
+Change Dir: C:/Users/hlavacs/Documents/GitHub/ViennaVulkanEngine/CMakeFiles/CMakeTmp
+
+Run Build Command(s):nmake /nologo cmTC_46ad7\fast && 	"C:\Program Files (x86)\Microsoft Visual Studio\2019\Community\VC\Tools\MSVC\14.28.29333\bin\HostX64\x64\nmake.exe" -f CMakeFiles\cmTC_46ad7.dir\build.make /nologo -L                  CMakeFiles\cmTC_46ad7.dir\build
+Building CXX object CMakeFiles/cmTC_46ad7.dir/CMakeCXXCompilerABI.cpp.obj
+	C:\PROGRA~2\MICROS~1\2019\COMMUN~1\VC\Tools\MSVC\1428~1.293\bin\Hostx64\x64\cl.exe @C:\Users\hlavacs\AppData\Local\Temp\nm8EEE.tmp
+CMakeCXXCompilerABI.cpp
+Linking CXX executable cmTC_46ad7.exe
+	"C:\Program Files\CMake\bin\cmake.exe" -E vs_link_exe --intdir=CMakeFiles\cmTC_46ad7.dir --rc=C:\PROGRA~2\WI3CF2~1\10\bin\100183~1.0\x64\rc.exe --mt=C:\PROGRA~2\WI3CF2~1\10\bin\100183~1.0\x64\mt.exe --manifests  -- C:\PROGRA~2\MICROS~1\2019\COMMUN~1\VC\Tools\MSVC\1428~1.293\bin\Hostx64\x64\link.exe /nologo @CMakeFiles\cmTC_46ad7.dir\objects1.rsp @C:\Users\hlavacs\AppData\Local\Temp\nm8F2E.tmp
 
 
 
@@ -147,48 +246,48 @@ The CXX compiler identification is MSVC, found in "C:/Users/hlavacs/Documents/Gi
 Determining if the C compiler works passed with the following output:
 Change Dir: C:/Users/hlavacs/Documents/GitHub/ViennaVulkanEngine/CMakeFiles/CMakeTmp
 
-Run Build Command(s):nmake /nologo cmTC_2a41f\fast && 	"C:\Program Files (x86)\Microsoft Visual Studio\2019\Community\VC\Tools\MSVC\14.28.29333\bin\HostX64\x64\nmake.exe" -f CMakeFiles\cmTC_2a41f.dir\build.make /nologo -L                  CMakeFiles\cmTC_2a41f.dir\build
-Building C object CMakeFiles/cmTC_2a41f.dir/testCCompiler.c.obj
-	C:\PROGRA~2\MICROS~1\2019\COMMUN~1\VC\Tools\MSVC\1428~1.293\bin\Hostx64\x64\cl.exe @C:\Users\hlavacs\AppData\Local\Temp\nm4EA1.tmp
+Run Build Command(s):nmake /nologo cmTC_2a346\fast && 	"C:\Program Files (x86)\Microsoft Visual Studio\2019\Community\VC\Tools\MSVC\14.28.29333\bin\HostX64\x64\nmake.exe" -f CMakeFiles\cmTC_2a346.dir\build.make /nologo -L                  CMakeFiles\cmTC_2a346.dir\build
+Building C object CMakeFiles/cmTC_2a346.dir/testCCompiler.c.obj
+	C:\PROGRA~2\MICROS~1\2019\COMMUN~1\VC\Tools\MSVC\1428~1.293\bin\Hostx64\x64\cl.exe @C:\Users\hlavacs\AppData\Local\Temp\nmC83A.tmp
 testCCompiler.c
-Linking C executable cmTC_2a41f.exe
-	"C:\Program Files\CMake\bin\cmake.exe" -E vs_link_exe --intdir=CMakeFiles\cmTC_2a41f.dir --rc=C:\PROGRA~2\WI3CF2~1\10\bin\100183~1.0\x64\rc.exe --mt=C:\PROGRA~2\WI3CF2~1\10\bin\100183~1.0\x64\mt.exe --manifests  -- C:\PROGRA~2\MICROS~1\2019\COMMUN~1\VC\Tools\MSVC\1428~1.293\bin\Hostx64\x64\link.exe /nologo @CMakeFiles\cmTC_2a41f.dir\objects1.rsp @C:\Users\hlavacs\AppData\Local\Temp\nm4EE1.tmp
+Linking C executable cmTC_2a346.exe
+	"C:\Program Files\CMake\bin\cmake.exe" -E vs_link_exe --intdir=CMakeFiles\cmTC_2a346.dir --rc=C:\PROGRA~2\WI3CF2~1\10\bin\100183~1.0\x64\rc.exe --mt=C:\PROGRA~2\WI3CF2~1\10\bin\100183~1.0\x64\mt.exe --manifests  -- C:\PROGRA~2\MICROS~1\2019\COMMUN~1\VC\Tools\MSVC\1428~1.293\bin\Hostx64\x64\link.exe /nologo @CMakeFiles\cmTC_2a346.dir\objects1.rsp @C:\Users\hlavacs\AppData\Local\Temp\nmC869.tmp
 
 
 
 Detecting C compiler ABI info compiled with the following output:
 Change Dir: C:/Users/hlavacs/Documents/GitHub/ViennaVulkanEngine/CMakeFiles/CMakeTmp
 
-Run Build Command(s):nmake /nologo cmTC_3e6b0\fast && 	"C:\Program Files (x86)\Microsoft Visual Studio\2019\Community\VC\Tools\MSVC\14.28.29333\bin\HostX64\x64\nmake.exe" -f CMakeFiles\cmTC_3e6b0.dir\build.make /nologo -L                  CMakeFiles\cmTC_3e6b0.dir\build
-Building C object CMakeFiles/cmTC_3e6b0.dir/CMakeCCompilerABI.c.obj
-	C:\PROGRA~2\MICROS~1\2019\COMMUN~1\VC\Tools\MSVC\1428~1.293\bin\Hostx64\x64\cl.exe @C:\Users\hlavacs\AppData\Local\Temp\nm4FF9.tmp
+Run Build Command(s):nmake /nologo cmTC_5bd05\fast && 	"C:\Program Files (x86)\Microsoft Visual Studio\2019\Community\VC\Tools\MSVC\14.28.29333\bin\HostX64\x64\nmake.exe" -f CMakeFiles\cmTC_5bd05.dir\build.make /nologo -L                  CMakeFiles\cmTC_5bd05.dir\build
+Building C object CMakeFiles/cmTC_5bd05.dir/CMakeCCompilerABI.c.obj
+	C:\PROGRA~2\MICROS~1\2019\COMMUN~1\VC\Tools\MSVC\1428~1.293\bin\Hostx64\x64\cl.exe @C:\Users\hlavacs\AppData\Local\Temp\nmC991.tmp
 CMakeCCompilerABI.c
-Linking C executable cmTC_3e6b0.exe
-	"C:\Program Files\CMake\bin\cmake.exe" -E vs_link_exe --intdir=CMakeFiles\cmTC_3e6b0.dir --rc=C:\PROGRA~2\WI3CF2~1\10\bin\100183~1.0\x64\rc.exe --mt=C:\PROGRA~2\WI3CF2~1\10\bin\100183~1.0\x64\mt.exe --manifests  -- C:\PROGRA~2\MICROS~1\2019\COMMUN~1\VC\Tools\MSVC\1428~1.293\bin\Hostx64\x64\link.exe /nologo @CMakeFiles\cmTC_3e6b0.dir\objects1.rsp @C:\Users\hlavacs\AppData\Local\Temp\nm5039.tmp
+Linking C executable cmTC_5bd05.exe
+	"C:\Program Files\CMake\bin\cmake.exe" -E vs_link_exe --intdir=CMakeFiles\cmTC_5bd05.dir --rc=C:\PROGRA~2\WI3CF2~1\10\bin\100183~1.0\x64\rc.exe --mt=C:\PROGRA~2\WI3CF2~1\10\bin\100183~1.0\x64\mt.exe --manifests  -- C:\PROGRA~2\MICROS~1\2019\COMMUN~1\VC\Tools\MSVC\1428~1.293\bin\Hostx64\x64\link.exe /nologo @CMakeFiles\cmTC_5bd05.dir\objects1.rsp @C:\Users\hlavacs\AppData\Local\Temp\nmC9C1.tmp
 
 
 
 Determining if the CXX compiler works passed with the following output:
 Change Dir: C:/Users/hlavacs/Documents/GitHub/ViennaVulkanEngine/CMakeFiles/CMakeTmp
 
-Run Build Command(s):nmake /nologo cmTC_08098\fast && 	"C:\Program Files (x86)\Microsoft Visual Studio\2019\Community\VC\Tools\MSVC\14.28.29333\bin\HostX64\x64\nmake.exe" -f CMakeFiles\cmTC_08098.dir\build.make /nologo -L                  CMakeFiles\cmTC_08098.dir\build
-Building CXX object CMakeFiles/cmTC_08098.dir/testCXXCompiler.cxx.obj
-	C:\PROGRA~2\MICROS~1\2019\COMMUN~1\VC\Tools\MSVC\1428~1.293\bin\Hostx64\x64\cl.exe @C:\Users\hlavacs\AppData\Local\Temp\nm5170.tmp
+Run Build Command(s):nmake /nologo cmTC_d2aa5\fast && 	"C:\Program Files (x86)\Microsoft Visual Studio\2019\Community\VC\Tools\MSVC\14.28.29333\bin\HostX64\x64\nmake.exe" -f CMakeFiles\cmTC_d2aa5.dir\build.make /nologo -L                  CMakeFiles\cmTC_d2aa5.dir\build
+Building CXX object CMakeFiles/cmTC_d2aa5.dir/testCXXCompiler.cxx.obj
+	C:\PROGRA~2\MICROS~1\2019\COMMUN~1\VC\Tools\MSVC\1428~1.293\bin\Hostx64\x64\cl.exe @C:\Users\hlavacs\AppData\Local\Temp\nmCAF9.tmp
 testCXXCompiler.cxx
-Linking CXX executable cmTC_08098.exe
-	"C:\Program Files\CMake\bin\cmake.exe" -E vs_link_exe --intdir=CMakeFiles\cmTC_08098.dir --rc=C:\PROGRA~2\WI3CF2~1\10\bin\100183~1.0\x64\rc.exe --mt=C:\PROGRA~2\WI3CF2~1\10\bin\100183~1.0\x64\mt.exe --manifests  -- C:\PROGRA~2\MICROS~1\2019\COMMUN~1\VC\Tools\MSVC\1428~1.293\bin\Hostx64\x64\link.exe /nologo @CMakeFiles\cmTC_08098.dir\objects1.rsp @C:\Users\hlavacs\AppData\Local\Temp\nm51B0.tmp
+Linking CXX executable cmTC_d2aa5.exe
+	"C:\Program Files\CMake\bin\cmake.exe" -E vs_link_exe --intdir=CMakeFiles\cmTC_d2aa5.dir --rc=C:\PROGRA~2\WI3CF2~1\10\bin\100183~1.0\x64\rc.exe --mt=C:\PROGRA~2\WI3CF2~1\10\bin\100183~1.0\x64\mt.exe --manifests  -- C:\PROGRA~2\MICROS~1\2019\COMMUN~1\VC\Tools\MSVC\1428~1.293\bin\Hostx64\x64\link.exe /nologo @CMakeFiles\cmTC_d2aa5.dir\objects1.rsp @C:\Users\hlavacs\AppData\Local\Temp\nmCB38.tmp
 
 
 
 Detecting CXX compiler ABI info compiled with the following output:
 Change Dir: C:/Users/hlavacs/Documents/GitHub/ViennaVulkanEngine/CMakeFiles/CMakeTmp
 
-Run Build Command(s):nmake /nologo cmTC_7fb59\fast && 	"C:\Program Files (x86)\Microsoft Visual Studio\2019\Community\VC\Tools\MSVC\14.28.29333\bin\HostX64\x64\nmake.exe" -f CMakeFiles\cmTC_7fb59.dir\build.make /nologo -L                  CMakeFiles\cmTC_7fb59.dir\build
-Building CXX object CMakeFiles/cmTC_7fb59.dir/CMakeCXXCompilerABI.cpp.obj
-	C:\PROGRA~2\MICROS~1\2019\COMMUN~1\VC\Tools\MSVC\1428~1.293\bin\Hostx64\x64\cl.exe @C:\Users\hlavacs\AppData\Local\Temp\nm52D8.tmp
+Run Build Command(s):nmake /nologo cmTC_f17d6\fast && 	"C:\Program Files (x86)\Microsoft Visual Studio\2019\Community\VC\Tools\MSVC\14.28.29333\bin\HostX64\x64\nmake.exe" -f CMakeFiles\cmTC_f17d6.dir\build.make /nologo -L                  CMakeFiles\cmTC_f17d6.dir\build
+Building CXX object CMakeFiles/cmTC_f17d6.dir/CMakeCXXCompilerABI.cpp.obj
+	C:\PROGRA~2\MICROS~1\2019\COMMUN~1\VC\Tools\MSVC\1428~1.293\bin\Hostx64\x64\cl.exe @C:\Users\hlavacs\AppData\Local\Temp\nmCC60.tmp
 CMakeCXXCompilerABI.cpp
-Linking CXX executable cmTC_7fb59.exe
-	"C:\Program Files\CMake\bin\cmake.exe" -E vs_link_exe --intdir=CMakeFiles\cmTC_7fb59.dir --rc=C:\PROGRA~2\WI3CF2~1\10\bin\100183~1.0\x64\rc.exe --mt=C:\PROGRA~2\WI3CF2~1\10\bin\100183~1.0\x64\mt.exe --manifests  -- C:\PROGRA~2\MICROS~1\2019\COMMUN~1\VC\Tools\MSVC\1428~1.293\bin\Hostx64\x64\link.exe /nologo @CMakeFiles\cmTC_7fb59.dir\objects1.rsp @C:\Users\hlavacs\AppData\Local\Temp\nm5317.tmp
+Linking CXX executable cmTC_f17d6.exe
+	"C:\Program Files\CMake\bin\cmake.exe" -E vs_link_exe --intdir=CMakeFiles\cmTC_f17d6.dir --rc=C:\PROGRA~2\WI3CF2~1\10\bin\100183~1.0\x64\rc.exe --mt=C:\PROGRA~2\WI3CF2~1\10\bin\100183~1.0\x64\mt.exe --manifests  -- C:\PROGRA~2\MICROS~1\2019\COMMUN~1\VC\Tools\MSVC\1428~1.293\bin\Hostx64\x64\link.exe /nologo @CMakeFiles\cmTC_f17d6.dir\objects1.rsp @C:\Users\hlavacs\AppData\Local\Temp\nmCCA0.tmp
 
 
 
@@ -244,48 +343,48 @@ The CXX compiler identification is MSVC, found in "C:/Users/hlavacs/Documents/Gi
 Determining if the C compiler works passed with the following output:
 Change Dir: C:/Users/hlavacs/Documents/GitHub/ViennaVulkanEngine/CMakeFiles/CMakeTmp
 
-Run Build Command(s):nmake /nologo cmTC_b8f30\fast && 	"C:\Program Files (x86)\Microsoft Visual Studio\2019\Community\VC\Tools\MSVC\14.28.29333\bin\HostX64\x64\nmake.exe" -f CMakeFiles\cmTC_b8f30.dir\build.make /nologo -L                  CMakeFiles\cmTC_b8f30.dir\build
-Building C object CMakeFiles/cmTC_b8f30.dir/testCCompiler.c.obj
-	C:\PROGRA~2\MICROS~1\2019\COMMUN~1\VC\Tools\MSVC\1428~1.293\bin\Hostx64\x64\cl.exe @C:\Users\hlavacs\AppData\Local\Temp\nm32C3.tmp
+Run Build Command(s):nmake /nologo cmTC_c9b68\fast && 	"C:\Program Files (x86)\Microsoft Visual Studio\2019\Community\VC\Tools\MSVC\14.28.29333\bin\HostX64\x64\nmake.exe" -f CMakeFiles\cmTC_c9b68.dir\build.make /nologo -L                  CMakeFiles\cmTC_c9b68.dir\build
+Building C object CMakeFiles/cmTC_c9b68.dir/testCCompiler.c.obj
+	C:\PROGRA~2\MICROS~1\2019\COMMUN~1\VC\Tools\MSVC\1428~1.293\bin\Hostx64\x64\cl.exe @C:\Users\hlavacs\AppData\Local\Temp\nmD119.tmp
 testCCompiler.c
-Linking C executable cmTC_b8f30.exe
-	"C:\Program Files\CMake\bin\cmake.exe" -E vs_link_exe --intdir=CMakeFiles\cmTC_b8f30.dir --rc=C:\PROGRA~2\WI3CF2~1\10\bin\100183~1.0\x64\rc.exe --mt=C:\PROGRA~2\WI3CF2~1\10\bin\100183~1.0\x64\mt.exe --manifests  -- C:\PROGRA~2\MICROS~1\2019\COMMUN~1\VC\Tools\MSVC\1428~1.293\bin\Hostx64\x64\link.exe /nologo @CMakeFiles\cmTC_b8f30.dir\objects1.rsp @C:\Users\hlavacs\AppData\Local\Temp\nm32F3.tmp
+Linking C executable cmTC_c9b68.exe
+	"C:\Program Files\CMake\bin\cmake.exe" -E vs_link_exe --intdir=CMakeFiles\cmTC_c9b68.dir --rc=C:\PROGRA~2\WI3CF2~1\10\bin\100183~1.0\x64\rc.exe --mt=C:\PROGRA~2\WI3CF2~1\10\bin\100183~1.0\x64\mt.exe --manifests  -- C:\PROGRA~2\MICROS~1\2019\COMMUN~1\VC\Tools\MSVC\1428~1.293\bin\Hostx64\x64\link.exe /nologo @CMakeFiles\cmTC_c9b68.dir\objects1.rsp @C:\Users\hlavacs\AppData\Local\Temp\nmD159.tmp
 
 
 
 Detecting C compiler ABI info compiled with the following output:
 Change Dir: C:/Users/hlavacs/Documents/GitHub/ViennaVulkanEngine/CMakeFiles/CMakeTmp
 
-Run Build Command(s):nmake /nologo cmTC_4f44b\fast && 	"C:\Program Files (x86)\Microsoft Visual Studio\2019\Community\VC\Tools\MSVC\14.28.29333\bin\HostX64\x64\nmake.exe" -f CMakeFiles\cmTC_4f44b.dir\build.make /nologo -L                  CMakeFiles\cmTC_4f44b.dir\build
-Building C object CMakeFiles/cmTC_4f44b.dir/CMakeCCompilerABI.c.obj
-	C:\PROGRA~2\MICROS~1\2019\COMMUN~1\VC\Tools\MSVC\1428~1.293\bin\Hostx64\x64\cl.exe @C:\Users\hlavacs\AppData\Local\Temp\nm341B.tmp
+Run Build Command(s):nmake /nologo cmTC_a59fe\fast && 	"C:\Program Files (x86)\Microsoft Visual Studio\2019\Community\VC\Tools\MSVC\14.28.29333\bin\HostX64\x64\nmake.exe" -f CMakeFiles\cmTC_a59fe.dir\build.make /nologo -L                  CMakeFiles\cmTC_a59fe.dir\build
+Building C object CMakeFiles/cmTC_a59fe.dir/CMakeCCompilerABI.c.obj
+	C:\PROGRA~2\MICROS~1\2019\COMMUN~1\VC\Tools\MSVC\1428~1.293\bin\Hostx64\x64\cl.exe @C:\Users\hlavacs\AppData\Local\Temp\nmD271.tmp
 CMakeCCompilerABI.c
-Linking C executable cmTC_4f44b.exe
-	"C:\Program Files\CMake\bin\cmake.exe" -E vs_link_exe --intdir=CMakeFiles\cmTC_4f44b.dir --rc=C:\PROGRA~2\WI3CF2~1\10\bin\100183~1.0\x64\rc.exe --mt=C:\PROGRA~2\WI3CF2~1\10\bin\100183~1.0\x64\mt.exe --manifests  -- C:\PROGRA~2\MICROS~1\2019\COMMUN~1\VC\Tools\MSVC\1428~1.293\bin\Hostx64\x64\link.exe /nologo @CMakeFiles\cmTC_4f44b.dir\objects1.rsp @C:\Users\hlavacs\AppData\Local\Temp\nm344B.tmp
+Linking C executable cmTC_a59fe.exe
+	"C:\Program Files\CMake\bin\cmake.exe" -E vs_link_exe --intdir=CMakeFiles\cmTC_a59fe.dir --rc=C:\PROGRA~2\WI3CF2~1\10\bin\100183~1.0\x64\rc.exe --mt=C:\PROGRA~2\WI3CF2~1\10\bin\100183~1.0\x64\mt.exe --manifests  -- C:\PROGRA~2\MICROS~1\2019\COMMUN~1\VC\Tools\MSVC\1428~1.293\bin\Hostx64\x64\link.exe /nologo @CMakeFiles\cmTC_a59fe.dir\objects1.rsp @C:\Users\hlavacs\AppData\Local\Temp\nmD2B1.tmp
 
 
 
 Determining if the CXX compiler works passed with the following output:
 Change Dir: C:/Users/hlavacs/Documents/GitHub/ViennaVulkanEngine/CMakeFiles/CMakeTmp
 
-Run Build Command(s):nmake /nologo cmTC_09c77\fast && 	"C:\Program Files (x86)\Microsoft Visual Studio\2019\Community\VC\Tools\MSVC\14.28.29333\bin\HostX64\x64\nmake.exe" -f CMakeFiles\cmTC_09c77.dir\build.make /nologo -L                  CMakeFiles\cmTC_09c77.dir\build
-Building CXX object CMakeFiles/cmTC_09c77.dir/testCXXCompiler.cxx.obj
-	C:\PROGRA~2\MICROS~1\2019\COMMUN~1\VC\Tools\MSVC\1428~1.293\bin\Hostx64\x64\cl.exe @C:\Users\hlavacs\AppData\Local\Temp\nm3592.tmp
+Run Build Command(s):nmake /nologo cmTC_9aefa\fast && 	"C:\Program Files (x86)\Microsoft Visual Studio\2019\Community\VC\Tools\MSVC\14.28.29333\bin\HostX64\x64\nmake.exe" -f CMakeFiles\cmTC_9aefa.dir\build.make /nologo -L                  CMakeFiles\cmTC_9aefa.dir\build
+Building CXX object CMakeFiles/cmTC_9aefa.dir/testCXXCompiler.cxx.obj
+	C:\PROGRA~2\MICROS~1\2019\COMMUN~1\VC\Tools\MSVC\1428~1.293\bin\Hostx64\x64\cl.exe @C:\Users\hlavacs\AppData\Local\Temp\nmD3E8.tmp
 testCXXCompiler.cxx
-Linking CXX executable cmTC_09c77.exe
-	"C:\Program Files\CMake\bin\cmake.exe" -E vs_link_exe --intdir=CMakeFiles\cmTC_09c77.dir --rc=C:\PROGRA~2\WI3CF2~1\10\bin\100183~1.0\x64\rc.exe --mt=C:\PROGRA~2\WI3CF2~1\10\bin\100183~1.0\x64\mt.exe --manifests  -- C:\PROGRA~2\MICROS~1\2019\COMMUN~1\VC\Tools\MSVC\1428~1.293\bin\Hostx64\x64\link.exe /nologo @CMakeFiles\cmTC_09c77.dir\objects1.rsp @C:\Users\hlavacs\AppData\Local\Temp\nm35D1.tmp
+Linking CXX executable cmTC_9aefa.exe
+	"C:\Program Files\CMake\bin\cmake.exe" -E vs_link_exe --intdir=CMakeFiles\cmTC_9aefa.dir --rc=C:\PROGRA~2\WI3CF2~1\10\bin\100183~1.0\x64\rc.exe --mt=C:\PROGRA~2\WI3CF2~1\10\bin\100183~1.0\x64\mt.exe --manifests  -- C:\PROGRA~2\MICROS~1\2019\COMMUN~1\VC\Tools\MSVC\1428~1.293\bin\Hostx64\x64\link.exe /nologo @CMakeFiles\cmTC_9aefa.dir\objects1.rsp @C:\Users\hlavacs\AppData\Local\Temp\nmD428.tmp
 
 
 
 Detecting CXX compiler ABI info compiled with the following output:
 Change Dir: C:/Users/hlavacs/Documents/GitHub/ViennaVulkanEngine/CMakeFiles/CMakeTmp
 
-Run Build Command(s):nmake /nologo cmTC_09911\fast && 	"C:\Program Files (x86)\Microsoft Visual Studio\2019\Community\VC\Tools\MSVC\14.28.29333\bin\HostX64\x64\nmake.exe" -f CMakeFiles\cmTC_09911.dir\build.make /nologo -L                  CMakeFiles\cmTC_09911.dir\build
-Building CXX object CMakeFiles/cmTC_09911.dir/CMakeCXXCompilerABI.cpp.obj
-	C:\PROGRA~2\MICROS~1\2019\COMMUN~1\VC\Tools\MSVC\1428~1.293\bin\Hostx64\x64\cl.exe @C:\Users\hlavacs\AppData\Local\Temp\nm36E9.tmp
+Run Build Command(s):nmake /nologo cmTC_f6a96\fast && 	"C:\Program Files (x86)\Microsoft Visual Studio\2019\Community\VC\Tools\MSVC\14.28.29333\bin\HostX64\x64\nmake.exe" -f CMakeFiles\cmTC_f6a96.dir\build.make /nologo -L                  CMakeFiles\cmTC_f6a96.dir\build
+Building CXX object CMakeFiles/cmTC_f6a96.dir/CMakeCXXCompilerABI.cpp.obj
+	C:\PROGRA~2\MICROS~1\2019\COMMUN~1\VC\Tools\MSVC\1428~1.293\bin\Hostx64\x64\cl.exe @C:\Users\hlavacs\AppData\Local\Temp\nmD54F.tmp
 CMakeCXXCompilerABI.cpp
-Linking CXX executable cmTC_09911.exe
-	"C:\Program Files\CMake\bin\cmake.exe" -E vs_link_exe --intdir=CMakeFiles\cmTC_09911.dir --rc=C:\PROGRA~2\WI3CF2~1\10\bin\100183~1.0\x64\rc.exe --mt=C:\PROGRA~2\WI3CF2~1\10\bin\100183~1.0\x64\mt.exe --manifests  -- C:\PROGRA~2\MICROS~1\2019\COMMUN~1\VC\Tools\MSVC\1428~1.293\bin\Hostx64\x64\link.exe /nologo @CMakeFiles\cmTC_09911.dir\objects1.rsp @C:\Users\hlavacs\AppData\Local\Temp\nm3729.tmp
+Linking CXX executable cmTC_f6a96.exe
+	"C:\Program Files\CMake\bin\cmake.exe" -E vs_link_exe --intdir=CMakeFiles\cmTC_f6a96.dir --rc=C:\PROGRA~2\WI3CF2~1\10\bin\100183~1.0\x64\rc.exe --mt=C:\PROGRA~2\WI3CF2~1\10\bin\100183~1.0\x64\mt.exe --manifests  -- C:\PROGRA~2\MICROS~1\2019\COMMUN~1\VC\Tools\MSVC\1428~1.293\bin\Hostx64\x64\link.exe /nologo @CMakeFiles\cmTC_f6a96.dir\objects1.rsp @C:\Users\hlavacs\AppData\Local\Temp\nmD58F.tmp
 
 
 
@@ -341,48 +440,48 @@ The CXX compiler identification is MSVC, found in "C:/Users/hlavacs/Documents/Gi
 Determining if the C compiler works passed with the following output:
 Change Dir: C:/Users/hlavacs/Documents/GitHub/ViennaVulkanEngine/CMakeFiles/CMakeTmp
 
-Run Build Command(s):nmake /nologo cmTC_6b522\fast && 	"C:\Program Files (x86)\Microsoft Visual Studio\2019\Community\VC\Tools\MSVC\14.28.29333\bin\HostX64\x64\nmake.exe" -f CMakeFiles\cmTC_6b522.dir\build.make /nologo -L                  CMakeFiles\cmTC_6b522.dir\build
-Building C object CMakeFiles/cmTC_6b522.dir/testCCompiler.c.obj
-	C:\PROGRA~2\MICROS~1\2019\COMMUN~1\VC\Tools\MSVC\1428~1.293\bin\Hostx64\x64\cl.exe @C:\Users\hlavacs\AppData\Local\Temp\nm1C0C.tmp
+Run Build Command(s):nmake /nologo cmTC_5eeb1\fast && 	"C:\Program Files (x86)\Microsoft Visual Studio\2019\Community\VC\Tools\MSVC\14.28.29333\bin\HostX64\x64\nmake.exe" -f CMakeFiles\cmTC_5eeb1.dir\build.make /nologo -L                  CMakeFiles\cmTC_5eeb1.dir\build
+Building C object CMakeFiles/cmTC_5eeb1.dir/testCCompiler.c.obj
+	C:\PROGRA~2\MICROS~1\2019\COMMUN~1\VC\Tools\MSVC\1428~1.293\bin\Hostx64\x64\cl.exe @C:\Users\hlavacs\AppData\Local\Temp\nm3496.tmp
 testCCompiler.c
-Linking C executable cmTC_6b522.exe
-	"C:\Program Files\CMake\bin\cmake.exe" -E vs_link_exe --intdir=CMakeFiles\cmTC_6b522.dir --rc=C:\PROGRA~2\WI3CF2~1\10\bin\100183~1.0\x64\rc.exe --mt=C:\PROGRA~2\WI3CF2~1\10\bin\100183~1.0\x64\mt.exe --manifests  -- C:\PROGRA~2\MICROS~1\2019\COMMUN~1\VC\Tools\MSVC\1428~1.293\bin\Hostx64\x64\link.exe /nologo @CMakeFiles\cmTC_6b522.dir\objects1.rsp @C:\Users\hlavacs\AppData\Local\Temp\nm1C4C.tmp
+Linking C executable cmTC_5eeb1.exe
+	"C:\Program Files\CMake\bin\cmake.exe" -E vs_link_exe --intdir=CMakeFiles\cmTC_5eeb1.dir --rc=C:\PROGRA~2\WI3CF2~1\10\bin\100183~1.0\x64\rc.exe --mt=C:\PROGRA~2\WI3CF2~1\10\bin\100183~1.0\x64\mt.exe --manifests  -- C:\PROGRA~2\MICROS~1\2019\COMMUN~1\VC\Tools\MSVC\1428~1.293\bin\Hostx64\x64\link.exe /nologo @CMakeFiles\cmTC_5eeb1.dir\objects1.rsp @C:\Users\hlavacs\AppData\Local\Temp\nm34D6.tmp
 
 
 
 Detecting C compiler ABI info compiled with the following output:
 Change Dir: C:/Users/hlavacs/Documents/GitHub/ViennaVulkanEngine/CMakeFiles/CMakeTmp
 
-Run Build Command(s):nmake /nologo cmTC_27c2c\fast && 	"C:\Program Files (x86)\Microsoft Visual Studio\2019\Community\VC\Tools\MSVC\14.28.29333\bin\HostX64\x64\nmake.exe" -f CMakeFiles\cmTC_27c2c.dir\build.make /nologo -L                  CMakeFiles\cmTC_27c2c.dir\build
-Building C object CMakeFiles/cmTC_27c2c.dir/CMakeCCompilerABI.c.obj
-	C:\PROGRA~2\MICROS~1\2019\COMMUN~1\VC\Tools\MSVC\1428~1.293\bin\Hostx64\x64\cl.exe @C:\Users\hlavacs\AppData\Local\Temp\nm1D64.tmp
+Run Build Command(s):nmake /nologo cmTC_361a2\fast && 	"C:\Program Files (x86)\Microsoft Visual Studio\2019\Community\VC\Tools\MSVC\14.28.29333\bin\HostX64\x64\nmake.exe" -f CMakeFiles\cmTC_361a2.dir\build.make /nologo -L                  CMakeFiles\cmTC_361a2.dir\build
+Building C object CMakeFiles/cmTC_361a2.dir/CMakeCCompilerABI.c.obj
+	C:\PROGRA~2\MICROS~1\2019\COMMUN~1\VC\Tools\MSVC\1428~1.293\bin\Hostx64\x64\cl.exe @C:\Users\hlavacs\AppData\Local\Temp\nm35EE.tmp
 CMakeCCompilerABI.c
-Linking C executable cmTC_27c2c.exe
-	"C:\Program Files\CMake\bin\cmake.exe" -E vs_link_exe --intdir=CMakeFiles\cmTC_27c2c.dir --rc=C:\PROGRA~2\WI3CF2~1\10\bin\100183~1.0\x64\rc.exe --mt=C:\PROGRA~2\WI3CF2~1\10\bin\100183~1.0\x64\mt.exe --manifests  -- C:\PROGRA~2\MICROS~1\2019\COMMUN~1\VC\Tools\MSVC\1428~1.293\bin\Hostx64\x64\link.exe /nologo @CMakeFiles\cmTC_27c2c.dir\objects1.rsp @C:\Users\hlavacs\AppData\Local\Temp\nm1DA4.tmp
+Linking C executable cmTC_361a2.exe
+	"C:\Program Files\CMake\bin\cmake.exe" -E vs_link_exe --intdir=CMakeFiles\cmTC_361a2.dir --rc=C:\PROGRA~2\WI3CF2~1\10\bin\100183~1.0\x64\rc.exe --mt=C:\PROGRA~2\WI3CF2~1\10\bin\100183~1.0\x64\mt.exe --manifests  -- C:\PROGRA~2\MICROS~1\2019\COMMUN~1\VC\Tools\MSVC\1428~1.293\bin\Hostx64\x64\link.exe /nologo @CMakeFiles\cmTC_361a2.dir\objects1.rsp @C:\Users\hlavacs\AppData\Local\Temp\nm361E.tmp
 
 
 
 Determining if the CXX compiler works passed with the following output:
 Change Dir: C:/Users/hlavacs/Documents/GitHub/ViennaVulkanEngine/CMakeFiles/CMakeTmp
 
-Run Build Command(s):nmake /nologo cmTC_1596b\fast && 	"C:\Program Files (x86)\Microsoft Visual Studio\2019\Community\VC\Tools\MSVC\14.28.29333\bin\HostX64\x64\nmake.exe" -f CMakeFiles\cmTC_1596b.dir\build.make /nologo -L                  CMakeFiles\cmTC_1596b.dir\build
-Building CXX object CMakeFiles/cmTC_1596b.dir/testCXXCompiler.cxx.obj
-	C:\PROGRA~2\MICROS~1\2019\COMMUN~1\VC\Tools\MSVC\1428~1.293\bin\Hostx64\x64\cl.exe @C:\Users\hlavacs\AppData\Local\Temp\nm1EDB.tmp
+Run Build Command(s):nmake /nologo cmTC_e408f\fast && 	"C:\Program Files (x86)\Microsoft Visual Studio\2019\Community\VC\Tools\MSVC\14.28.29333\bin\HostX64\x64\nmake.exe" -f CMakeFiles\cmTC_e408f.dir\build.make /nologo -L                  CMakeFiles\cmTC_e408f.dir\build
+Building CXX object CMakeFiles/cmTC_e408f.dir/testCXXCompiler.cxx.obj
+	C:\PROGRA~2\MICROS~1\2019\COMMUN~1\VC\Tools\MSVC\1428~1.293\bin\Hostx64\x64\cl.exe @C:\Users\hlavacs\AppData\Local\Temp\nm3765.tmp
 testCXXCompiler.cxx
-Linking CXX executable cmTC_1596b.exe
-	"C:\Program Files\CMake\bin\cmake.exe" -E vs_link_exe --intdir=CMakeFiles\cmTC_1596b.dir --rc=C:\PROGRA~2\WI3CF2~1\10\bin\100183~1.0\x64\rc.exe --mt=C:\PROGRA~2\WI3CF2~1\10\bin\100183~1.0\x64\mt.exe --manifests  -- C:\PROGRA~2\MICROS~1\2019\COMMUN~1\VC\Tools\MSVC\1428~1.293\bin\Hostx64\x64\link.exe /nologo @CMakeFiles\cmTC_1596b.dir\objects1.rsp @C:\Users\hlavacs\AppData\Local\Temp\nm1F1B.tmp
+Linking CXX executable cmTC_e408f.exe
+	"C:\Program Files\CMake\bin\cmake.exe" -E vs_link_exe --intdir=CMakeFiles\cmTC_e408f.dir --rc=C:\PROGRA~2\WI3CF2~1\10\bin\100183~1.0\x64\rc.exe --mt=C:\PROGRA~2\WI3CF2~1\10\bin\100183~1.0\x64\mt.exe --manifests  -- C:\PROGRA~2\MICROS~1\2019\COMMUN~1\VC\Tools\MSVC\1428~1.293\bin\Hostx64\x64\link.exe /nologo @CMakeFiles\cmTC_e408f.dir\objects1.rsp @C:\Users\hlavacs\AppData\Local\Temp\nm37A4.tmp
 
 
 
 Detecting CXX compiler ABI info compiled with the following output:
 Change Dir: C:/Users/hlavacs/Documents/GitHub/ViennaVulkanEngine/CMakeFiles/CMakeTmp
 
-Run Build Command(s):nmake /nologo cmTC_ddee9\fast && 	"C:\Program Files (x86)\Microsoft Visual Studio\2019\Community\VC\Tools\MSVC\14.28.29333\bin\HostX64\x64\nmake.exe" -f CMakeFiles\cmTC_ddee9.dir\build.make /nologo -L                  CMakeFiles\cmTC_ddee9.dir\build
-Building CXX object CMakeFiles/cmTC_ddee9.dir/CMakeCXXCompilerABI.cpp.obj
-	C:\PROGRA~2\MICROS~1\2019\COMMUN~1\VC\Tools\MSVC\1428~1.293\bin\Hostx64\x64\cl.exe @C:\Users\hlavacs\AppData\Local\Temp\nm2043.tmp
+Run Build Command(s):nmake /nologo cmTC_d7993\fast && 	"C:\Program Files (x86)\Microsoft Visual Studio\2019\Community\VC\Tools\MSVC\14.28.29333\bin\HostX64\x64\nmake.exe" -f CMakeFiles\cmTC_d7993.dir\build.make /nologo -L                  CMakeFiles\cmTC_d7993.dir\build
+Building CXX object CMakeFiles/cmTC_d7993.dir/CMakeCXXCompilerABI.cpp.obj
+	C:\PROGRA~2\MICROS~1\2019\COMMUN~1\VC\Tools\MSVC\1428~1.293\bin\Hostx64\x64\cl.exe @C:\Users\hlavacs\AppData\Local\Temp\nm38DC.tmp
 CMakeCXXCompilerABI.cpp
-Linking CXX executable cmTC_ddee9.exe
-	"C:\Program Files\CMake\bin\cmake.exe" -E vs_link_exe --intdir=CMakeFiles\cmTC_ddee9.dir --rc=C:\PROGRA~2\WI3CF2~1\10\bin\100183~1.0\x64\rc.exe --mt=C:\PROGRA~2\WI3CF2~1\10\bin\100183~1.0\x64\mt.exe --manifests  -- C:\PROGRA~2\MICROS~1\2019\COMMUN~1\VC\Tools\MSVC\1428~1.293\bin\Hostx64\x64\link.exe /nologo @CMakeFiles\cmTC_ddee9.dir\objects1.rsp @C:\Users\hlavacs\AppData\Local\Temp\nm2082.tmp
+Linking CXX executable cmTC_d7993.exe
+	"C:\Program Files\CMake\bin\cmake.exe" -E vs_link_exe --intdir=CMakeFiles\cmTC_d7993.dir --rc=C:\PROGRA~2\WI3CF2~1\10\bin\100183~1.0\x64\rc.exe --mt=C:\PROGRA~2\WI3CF2~1\10\bin\100183~1.0\x64\mt.exe --manifests  -- C:\PROGRA~2\MICROS~1\2019\COMMUN~1\VC\Tools\MSVC\1428~1.293\bin\Hostx64\x64\link.exe /nologo @CMakeFiles\cmTC_d7993.dir\objects1.rsp @C:\Users\hlavacs\AppData\Local\Temp\nm391B.tmp
 
 
 
@@ -438,48 +537,48 @@ The CXX compiler identification is MSVC, found in "C:/Users/hlavacs/Documents/Gi
 Determining if the C compiler works passed with the following output:
 Change Dir: C:/Users/hlavacs/Documents/GitHub/ViennaVulkanEngine/CMakeFiles/CMakeTmp
 
-Run Build Command(s):nmake /nologo cmTC_5fb49\fast && 	"C:\Program Files (x86)\Microsoft Visual Studio\2019\Community\VC\Tools\MSVC\14.28.29333\bin\HostX64\x64\nmake.exe" -f CMakeFiles\cmTC_5fb49.dir\build.make /nologo -L                  CMakeFiles\cmTC_5fb49.dir\build
-Building C object CMakeFiles/cmTC_5fb49.dir/testCCompiler.c.obj
-	C:\PROGRA~2\MICROS~1\2019\COMMUN~1\VC\Tools\MSVC\1428~1.293\bin\Hostx64\x64\cl.exe @C:\Users\hlavacs\AppData\Local\Temp\nm9C36.tmp
+Run Build Command(s):nmake /nologo cmTC_ef854\fast && 	"C:\Program Files (x86)\Microsoft Visual Studio\2019\Community\VC\Tools\MSVC\14.28.29333\bin\HostX64\x64\nmake.exe" -f CMakeFiles\cmTC_ef854.dir\build.make /nologo -L                  CMakeFiles\cmTC_ef854.dir\build
+Building C object CMakeFiles/cmTC_ef854.dir/testCCompiler.c.obj
+	C:\PROGRA~2\MICROS~1\2019\COMMUN~1\VC\Tools\MSVC\1428~1.293\bin\Hostx64\x64\cl.exe @C:\Users\hlavacs\AppData\Local\Temp\nm34A7.tmp
 testCCompiler.c
-Linking C executable cmTC_5fb49.exe
-	"C:\Program Files\CMake\bin\cmake.exe" -E vs_link_exe --intdir=CMakeFiles\cmTC_5fb49.dir --rc=C:\PROGRA~2\WI3CF2~1\10\bin\100183~1.0\x64\rc.exe --mt=C:\PROGRA~2\WI3CF2~1\10\bin\100183~1.0\x64\mt.exe --manifests  -- C:\PROGRA~2\MICROS~1\2019\COMMUN~1\VC\Tools\MSVC\1428~1.293\bin\Hostx64\x64\link.exe /nologo @CMakeFiles\cmTC_5fb49.dir\objects1.rsp @C:\Users\hlavacs\AppData\Local\Temp\nm9C65.tmp
+Linking C executable cmTC_ef854.exe
+	"C:\Program Files\CMake\bin\cmake.exe" -E vs_link_exe --intdir=CMakeFiles\cmTC_ef854.dir --rc=C:\PROGRA~2\WI3CF2~1\10\bin\100183~1.0\x64\rc.exe --mt=C:\PROGRA~2\WI3CF2~1\10\bin\100183~1.0\x64\mt.exe --manifests  -- C:\PROGRA~2\MICROS~1\2019\COMMUN~1\VC\Tools\MSVC\1428~1.293\bin\Hostx64\x64\link.exe /nologo @CMakeFiles\cmTC_ef854.dir\objects1.rsp @C:\Users\hlavacs\AppData\Local\Temp\nm34E7.tmp
 
 
 
 Detecting C compiler ABI info compiled with the following output:
 Change Dir: C:/Users/hlavacs/Documents/GitHub/ViennaVulkanEngine/CMakeFiles/CMakeTmp
 
-Run Build Command(s):nmake /nologo cmTC_50804\fast && 	"C:\Program Files (x86)\Microsoft Visual Studio\2019\Community\VC\Tools\MSVC\14.28.29333\bin\HostX64\x64\nmake.exe" -f CMakeFiles\cmTC_50804.dir\build.make /nologo -L                  CMakeFiles\cmTC_50804.dir\build
-Building C object CMakeFiles/cmTC_50804.dir/CMakeCCompilerABI.c.obj
-	C:\PROGRA~2\MICROS~1\2019\COMMUN~1\VC\Tools\MSVC\1428~1.293\bin\Hostx64\x64\cl.exe @C:\Users\hlavacs\AppData\Local\Temp\nm9D7E.tmp
+Run Build Command(s):nmake /nologo cmTC_b31c3\fast && 	"C:\Program Files (x86)\Microsoft Visual Studio\2019\Community\VC\Tools\MSVC\14.28.29333\bin\HostX64\x64\nmake.exe" -f CMakeFiles\cmTC_b31c3.dir\build.make /nologo -L                  CMakeFiles\cmTC_b31c3.dir\build
+Building C object CMakeFiles/cmTC_b31c3.dir/CMakeCCompilerABI.c.obj
+	C:\PROGRA~2\MICROS~1\2019\COMMUN~1\VC\Tools\MSVC\1428~1.293\bin\Hostx64\x64\cl.exe @C:\Users\hlavacs\AppData\Local\Temp\nm360E.tmp
 CMakeCCompilerABI.c
-Linking C executable cmTC_50804.exe
-	"C:\Program Files\CMake\bin\cmake.exe" -E vs_link_exe --intdir=CMakeFiles\cmTC_50804.dir --rc=C:\PROGRA~2\WI3CF2~1\10\bin\100183~1.0\x64\rc.exe --mt=C:\PROGRA~2\WI3CF2~1\10\bin\100183~1.0\x64\mt.exe --manifests  -- C:\PROGRA~2\MICROS~1\2019\COMMUN~1\VC\Tools\MSVC\1428~1.293\bin\Hostx64\x64\link.exe /nologo @CMakeFiles\cmTC_50804.dir\objects1.rsp @C:\Users\hlavacs\AppData\Local\Temp\nm9DBD.tmp
+Linking C executable cmTC_b31c3.exe
+	"C:\Program Files\CMake\bin\cmake.exe" -E vs_link_exe --intdir=CMakeFiles\cmTC_b31c3.dir --rc=C:\PROGRA~2\WI3CF2~1\10\bin\100183~1.0\x64\rc.exe --mt=C:\PROGRA~2\WI3CF2~1\10\bin\100183~1.0\x64\mt.exe --manifests  -- C:\PROGRA~2\MICROS~1\2019\COMMUN~1\VC\Tools\MSVC\1428~1.293\bin\Hostx64\x64\link.exe /nologo @CMakeFiles\cmTC_b31c3.dir\objects1.rsp @C:\Users\hlavacs\AppData\Local\Temp\nm363E.tmp
 
 
 
 Determining if the CXX compiler works passed with the following output:
 Change Dir: C:/Users/hlavacs/Documents/GitHub/ViennaVulkanEngine/CMakeFiles/CMakeTmp
 
-Run Build Command(s):nmake /nologo cmTC_a0dc7\fast && 	"C:\Program Files (x86)\Microsoft Visual Studio\2019\Community\VC\Tools\MSVC\14.28.29333\bin\HostX64\x64\nmake.exe" -f CMakeFiles\cmTC_a0dc7.dir\build.make /nologo -L                  CMakeFiles\cmTC_a0dc7.dir\build
-Building CXX object CMakeFiles/cmTC_a0dc7.dir/testCXXCompiler.cxx.obj
-	C:\PROGRA~2\MICROS~1\2019\COMMUN~1\VC\Tools\MSVC\1428~1.293\bin\Hostx64\x64\cl.exe @C:\Users\hlavacs\AppData\Local\Temp\nm9EF5.tmp
+Run Build Command(s):nmake /nologo cmTC_93425\fast && 	"C:\Program Files (x86)\Microsoft Visual Studio\2019\Community\VC\Tools\MSVC\14.28.29333\bin\HostX64\x64\nmake.exe" -f CMakeFiles\cmTC_93425.dir\build.make /nologo -L                  CMakeFiles\cmTC_93425.dir\build
+Building CXX object CMakeFiles/cmTC_93425.dir/testCXXCompiler.cxx.obj
+	C:\PROGRA~2\MICROS~1\2019\COMMUN~1\VC\Tools\MSVC\1428~1.293\bin\Hostx64\x64\cl.exe @C:\Users\hlavacs\AppData\Local\Temp\nm3785.tmp
 testCXXCompiler.cxx
-Linking CXX executable cmTC_a0dc7.exe
-	"C:\Program Files\CMake\bin\cmake.exe" -E vs_link_exe --intdir=CMakeFiles\cmTC_a0dc7.dir --rc=C:\PROGRA~2\WI3CF2~1\10\bin\100183~1.0\x64\rc.exe --mt=C:\PROGRA~2\WI3CF2~1\10\bin\100183~1.0\x64\mt.exe --manifests  -- C:\PROGRA~2\MICROS~1\2019\COMMUN~1\VC\Tools\MSVC\1428~1.293\bin\Hostx64\x64\link.exe /nologo @CMakeFiles\cmTC_a0dc7.dir\objects1.rsp @C:\Users\hlavacs\AppData\Local\Temp\nm9F44.tmp
+Linking CXX executable cmTC_93425.exe
+	"C:\Program Files\CMake\bin\cmake.exe" -E vs_link_exe --intdir=CMakeFiles\cmTC_93425.dir --rc=C:\PROGRA~2\WI3CF2~1\10\bin\100183~1.0\x64\rc.exe --mt=C:\PROGRA~2\WI3CF2~1\10\bin\100183~1.0\x64\mt.exe --manifests  -- C:\PROGRA~2\MICROS~1\2019\COMMUN~1\VC\Tools\MSVC\1428~1.293\bin\Hostx64\x64\link.exe /nologo @CMakeFiles\cmTC_93425.dir\objects1.rsp @C:\Users\hlavacs\AppData\Local\Temp\nm37B5.tmp
 
 
 
 Detecting CXX compiler ABI info compiled with the following output:
 Change Dir: C:/Users/hlavacs/Documents/GitHub/ViennaVulkanEngine/CMakeFiles/CMakeTmp
 
-Run Build Command(s):nmake /nologo cmTC_298f9\fast && 	"C:\Program Files (x86)\Microsoft Visual Studio\2019\Community\VC\Tools\MSVC\14.28.29333\bin\HostX64\x64\nmake.exe" -f CMakeFiles\cmTC_298f9.dir\build.make /nologo -L                  CMakeFiles\cmTC_298f9.dir\build
-Building CXX object CMakeFiles/cmTC_298f9.dir/CMakeCXXCompilerABI.cpp.obj
-	C:\PROGRA~2\MICROS~1\2019\COMMUN~1\VC\Tools\MSVC\1428~1.293\bin\Hostx64\x64\cl.exe @C:\Users\hlavacs\AppData\Local\Temp\nmA05C.tmp
+Run Build Command(s):nmake /nologo cmTC_1d63b\fast && 	"C:\Program Files (x86)\Microsoft Visual Studio\2019\Community\VC\Tools\MSVC\14.28.29333\bin\HostX64\x64\nmake.exe" -f CMakeFiles\cmTC_1d63b.dir\build.make /nologo -L                  CMakeFiles\cmTC_1d63b.dir\build
+Building CXX object CMakeFiles/cmTC_1d63b.dir/CMakeCXXCompilerABI.cpp.obj
+	C:\PROGRA~2\MICROS~1\2019\COMMUN~1\VC\Tools\MSVC\1428~1.293\bin\Hostx64\x64\cl.exe @C:\Users\hlavacs\AppData\Local\Temp\nm38DD.tmp
 CMakeCXXCompilerABI.cpp
-Linking CXX executable cmTC_298f9.exe
-	"C:\Program Files\CMake\bin\cmake.exe" -E vs_link_exe --intdir=CMakeFiles\cmTC_298f9.dir --rc=C:\PROGRA~2\WI3CF2~1\10\bin\100183~1.0\x64\rc.exe --mt=C:\PROGRA~2\WI3CF2~1\10\bin\100183~1.0\x64\mt.exe --manifests  -- C:\PROGRA~2\MICROS~1\2019\COMMUN~1\VC\Tools\MSVC\1428~1.293\bin\Hostx64\x64\link.exe /nologo @CMakeFiles\cmTC_298f9.dir\objects1.rsp @C:\Users\hlavacs\AppData\Local\Temp\nmA09C.tmp
+Linking CXX executable cmTC_1d63b.exe
+	"C:\Program Files\CMake\bin\cmake.exe" -E vs_link_exe --intdir=CMakeFiles\cmTC_1d63b.dir --rc=C:\PROGRA~2\WI3CF2~1\10\bin\100183~1.0\x64\rc.exe --mt=C:\PROGRA~2\WI3CF2~1\10\bin\100183~1.0\x64\mt.exe --manifests  -- C:\PROGRA~2\MICROS~1\2019\COMMUN~1\VC\Tools\MSVC\1428~1.293\bin\Hostx64\x64\link.exe /nologo @CMakeFiles\cmTC_1d63b.dir\objects1.rsp @C:\Users\hlavacs\AppData\Local\Temp\nm391D.tmp
 
 
 
@@ -535,48 +634,146 @@ The CXX compiler identification is MSVC, found in "C:/Users/hlavacs/Documents/Gi
 Determining if the C compiler works passed with the following output:
 Change Dir: C:/Users/hlavacs/Documents/GitHub/ViennaVulkanEngine/CMakeFiles/CMakeTmp
 
-Run Build Command(s):nmake /nologo cmTC_c5ca4\fast && 	"C:\Program Files (x86)\Microsoft Visual Studio\2019\Community\VC\Tools\MSVC\14.28.29333\bin\HostX64\x64\nmake.exe" -f CMakeFiles\cmTC_c5ca4.dir\build.make /nologo -L                  CMakeFiles\cmTC_c5ca4.dir\build
-Building C object CMakeFiles/cmTC_c5ca4.dir/testCCompiler.c.obj
-	C:\PROGRA~2\MICROS~1\2019\COMMUN~1\VC\Tools\MSVC\1428~1.293\bin\Hostx64\x64\cl.exe @C:\Users\hlavacs\AppData\Local\Temp\nm4310.tmp
+Run Build Command(s):nmake /nologo cmTC_72cba\fast && 	"C:\Program Files (x86)\Microsoft Visual Studio\2019\Community\VC\Tools\MSVC\14.28.29333\bin\HostX64\x64\nmake.exe" -f CMakeFiles\cmTC_72cba.dir\build.make /nologo -L                  CMakeFiles\cmTC_72cba.dir\build
+Building C object CMakeFiles/cmTC_72cba.dir/testCCompiler.c.obj
+	C:\PROGRA~2\MICROS~1\2019\COMMUN~1\VC\Tools\MSVC\1428~1.293\bin\Hostx64\x64\cl.exe @C:\Users\hlavacs\AppData\Local\Temp\nm73ED.tmp
 testCCompiler.c
-Linking C executable cmTC_c5ca4.exe
-	"C:\Program Files\CMake\bin\cmake.exe" -E vs_link_exe --intdir=CMakeFiles\cmTC_c5ca4.dir --rc=C:\PROGRA~2\WI3CF2~1\10\bin\100183~1.0\x64\rc.exe --mt=C:\PROGRA~2\WI3CF2~1\10\bin\100183~1.0\x64\mt.exe --manifests  -- C:\PROGRA~2\MICROS~1\2019\COMMUN~1\VC\Tools\MSVC\1428~1.293\bin\Hostx64\x64\link.exe /nologo @CMakeFiles\cmTC_c5ca4.dir\objects1.rsp @C:\Users\hlavacs\AppData\Local\Temp\nm434F.tmp
+Linking C executable cmTC_72cba.exe
+	"C:\Program Files\CMake\bin\cmake.exe" -E vs_link_exe --intdir=CMakeFiles\cmTC_72cba.dir --rc=C:\PROGRA~2\WI3CF2~1\10\bin\100183~1.0\x64\rc.exe --mt=C:\PROGRA~2\WI3CF2~1\10\bin\100183~1.0\x64\mt.exe --manifests  -- C:\PROGRA~2\MICROS~1\2019\COMMUN~1\VC\Tools\MSVC\1428~1.293\bin\Hostx64\x64\link.exe /nologo @CMakeFiles\cmTC_72cba.dir\objects1.rsp @C:\Users\hlavacs\AppData\Local\Temp\nm741D.tmp
 
 
 
 Detecting C compiler ABI info compiled with the following output:
 Change Dir: C:/Users/hlavacs/Documents/GitHub/ViennaVulkanEngine/CMakeFiles/CMakeTmp
 
-Run Build Command(s):nmake /nologo cmTC_34384\fast && 	"C:\Program Files (x86)\Microsoft Visual Studio\2019\Community\VC\Tools\MSVC\14.28.29333\bin\HostX64\x64\nmake.exe" -f CMakeFiles\cmTC_34384.dir\build.make /nologo -L                  CMakeFiles\cmTC_34384.dir\build
-Building C object CMakeFiles/cmTC_34384.dir/CMakeCCompilerABI.c.obj
-	C:\PROGRA~2\MICROS~1\2019\COMMUN~1\VC\Tools\MSVC\1428~1.293\bin\Hostx64\x64\cl.exe @C:\Users\hlavacs\AppData\Local\Temp\nm4467.tmp
+Run Build Command(s):nmake /nologo cmTC_8a0bc\fast && 	"C:\Program Files (x86)\Microsoft Visual Studio\2019\Community\VC\Tools\MSVC\14.28.29333\bin\HostX64\x64\nmake.exe" -f CMakeFiles\cmTC_8a0bc.dir\build.make /nologo -L                  CMakeFiles\cmTC_8a0bc.dir\build
+Building C object CMakeFiles/cmTC_8a0bc.dir/CMakeCCompilerABI.c.obj
+	C:\PROGRA~2\MICROS~1\2019\COMMUN~1\VC\Tools\MSVC\1428~1.293\bin\Hostx64\x64\cl.exe @C:\Users\hlavacs\AppData\Local\Temp\nm7545.tmp
 CMakeCCompilerABI.c
-Linking C executable cmTC_34384.exe
-	"C:\Program Files\CMake\bin\cmake.exe" -E vs_link_exe --intdir=CMakeFiles\cmTC_34384.dir --rc=C:\PROGRA~2\WI3CF2~1\10\bin\100183~1.0\x64\rc.exe --mt=C:\PROGRA~2\WI3CF2~1\10\bin\100183~1.0\x64\mt.exe --manifests  -- C:\PROGRA~2\MICROS~1\2019\COMMUN~1\VC\Tools\MSVC\1428~1.293\bin\Hostx64\x64\link.exe /nologo @CMakeFiles\cmTC_34384.dir\objects1.rsp @C:\Users\hlavacs\AppData\Local\Temp\nm44A7.tmp
+Linking C executable cmTC_8a0bc.exe
+	"C:\Program Files\CMake\bin\cmake.exe" -E vs_link_exe --intdir=CMakeFiles\cmTC_8a0bc.dir --rc=C:\PROGRA~2\WI3CF2~1\10\bin\100183~1.0\x64\rc.exe --mt=C:\PROGRA~2\WI3CF2~1\10\bin\100183~1.0\x64\mt.exe --manifests  -- C:\PROGRA~2\MICROS~1\2019\COMMUN~1\VC\Tools\MSVC\1428~1.293\bin\Hostx64\x64\link.exe /nologo @CMakeFiles\cmTC_8a0bc.dir\objects1.rsp @C:\Users\hlavacs\AppData\Local\Temp\nm7575.tmp
 
 
 
 Determining if the CXX compiler works passed with the following output:
 Change Dir: C:/Users/hlavacs/Documents/GitHub/ViennaVulkanEngine/CMakeFiles/CMakeTmp
 
-Run Build Command(s):nmake /nologo cmTC_3e887\fast && 	"C:\Program Files (x86)\Microsoft Visual Studio\2019\Community\VC\Tools\MSVC\14.28.29333\bin\HostX64\x64\nmake.exe" -f CMakeFiles\cmTC_3e887.dir\build.make /nologo -L                  CMakeFiles\cmTC_3e887.dir\build
-Building CXX object CMakeFiles/cmTC_3e887.dir/testCXXCompiler.cxx.obj
-	C:\PROGRA~2\MICROS~1\2019\COMMUN~1\VC\Tools\MSVC\1428~1.293\bin\Hostx64\x64\cl.exe @C:\Users\hlavacs\AppData\Local\Temp\nm45DE.tmp
+Run Build Command(s):nmake /nologo cmTC_c04f6\fast && 	"C:\Program Files (x86)\Microsoft Visual Studio\2019\Community\VC\Tools\MSVC\14.28.29333\bin\HostX64\x64\nmake.exe" -f CMakeFiles\cmTC_c04f6.dir\build.make /nologo -L                  CMakeFiles\cmTC_c04f6.dir\build
+Building CXX object CMakeFiles/cmTC_c04f6.dir/testCXXCompiler.cxx.obj
+	C:\PROGRA~2\MICROS~1\2019\COMMUN~1\VC\Tools\MSVC\1428~1.293\bin\Hostx64\x64\cl.exe @C:\Users\hlavacs\AppData\Local\Temp\nm76AD.tmp
 testCXXCompiler.cxx
-Linking CXX executable cmTC_3e887.exe
-	"C:\Program Files\CMake\bin\cmake.exe" -E vs_link_exe --intdir=CMakeFiles\cmTC_3e887.dir --rc=C:\PROGRA~2\WI3CF2~1\10\bin\100183~1.0\x64\rc.exe --mt=C:\PROGRA~2\WI3CF2~1\10\bin\100183~1.0\x64\mt.exe --manifests  -- C:\PROGRA~2\MICROS~1\2019\COMMUN~1\VC\Tools\MSVC\1428~1.293\bin\Hostx64\x64\link.exe /nologo @CMakeFiles\cmTC_3e887.dir\objects1.rsp @C:\Users\hlavacs\AppData\Local\Temp\nm461E.tmp
+Linking CXX executable cmTC_c04f6.exe
+	"C:\Program Files\CMake\bin\cmake.exe" -E vs_link_exe --intdir=CMakeFiles\cmTC_c04f6.dir --rc=C:\PROGRA~2\WI3CF2~1\10\bin\100183~1.0\x64\rc.exe --mt=C:\PROGRA~2\WI3CF2~1\10\bin\100183~1.0\x64\mt.exe --manifests  -- C:\PROGRA~2\MICROS~1\2019\COMMUN~1\VC\Tools\MSVC\1428~1.293\bin\Hostx64\x64\link.exe /nologo @CMakeFiles\cmTC_c04f6.dir\objects1.rsp @C:\Users\hlavacs\AppData\Local\Temp\nm76EC.tmp
 
 
 
 Detecting CXX compiler ABI info compiled with the following output:
 Change Dir: C:/Users/hlavacs/Documents/GitHub/ViennaVulkanEngine/CMakeFiles/CMakeTmp
 
-Run Build Command(s):nmake /nologo cmTC_f48ed\fast && 	"C:\Program Files (x86)\Microsoft Visual Studio\2019\Community\VC\Tools\MSVC\14.28.29333\bin\HostX64\x64\nmake.exe" -f CMakeFiles\cmTC_f48ed.dir\build.make /nologo -L                  CMakeFiles\cmTC_f48ed.dir\build
-Building CXX object CMakeFiles/cmTC_f48ed.dir/CMakeCXXCompilerABI.cpp.obj
-	C:\PROGRA~2\MICROS~1\2019\COMMUN~1\VC\Tools\MSVC\1428~1.293\bin\Hostx64\x64\cl.exe @C:\Users\hlavacs\AppData\Local\Temp\nm4746.tmp
+Run Build Command(s):nmake /nologo cmTC_4c176\fast && 	"C:\Program Files (x86)\Microsoft Visual Studio\2019\Community\VC\Tools\MSVC\14.28.29333\bin\HostX64\x64\nmake.exe" -f CMakeFiles\cmTC_4c176.dir\build.make /nologo -L                  CMakeFiles\cmTC_4c176.dir\build
+Building CXX object CMakeFiles/cmTC_4c176.dir/CMakeCXXCompilerABI.cpp.obj
+	C:\PROGRA~2\MICROS~1\2019\COMMUN~1\VC\Tools\MSVC\1428~1.293\bin\Hostx64\x64\cl.exe @C:\Users\hlavacs\AppData\Local\Temp\nm7814.tmp
 CMakeCXXCompilerABI.cpp
-Linking CXX executable cmTC_f48ed.exe
-	"C:\Program Files\CMake\bin\cmake.exe" -E vs_link_exe --intdir=CMakeFiles\cmTC_f48ed.dir --rc=C:\PROGRA~2\WI3CF2~1\10\bin\100183~1.0\x64\rc.exe --mt=C:\PROGRA~2\WI3CF2~1\10\bin\100183~1.0\x64\mt.exe --manifests  -- C:\PROGRA~2\MICROS~1\2019\COMMUN~1\VC\Tools\MSVC\1428~1.293\bin\Hostx64\x64\link.exe /nologo @CMakeFiles\cmTC_f48ed.dir\objects1.rsp @C:\Users\hlavacs\AppData\Local\Temp\nm4785.tmp
+Linking CXX executable cmTC_4c176.exe
+	"C:\Program Files\CMake\bin\cmake.exe" -E vs_link_exe --intdir=CMakeFiles\cmTC_4c176.dir --rc=C:\PROGRA~2\WI3CF2~1\10\bin\100183~1.0\x64\rc.exe --mt=C:\PROGRA~2\WI3CF2~1\10\bin\100183~1.0\x64\mt.exe --manifests  -- C:\PROGRA~2\MICROS~1\2019\COMMUN~1\VC\Tools\MSVC\1428~1.293\bin\Hostx64\x64\link.exe /nologo @CMakeFiles\cmTC_4c176.dir\objects1.rsp @C:\Users\hlavacs\AppData\Local\Temp\nm7863.tmp
+
+
+
+The system is: Windows - 10.0.19041 - AMD64
+The system is: Windows - 10.0.19041 - AMD64
+Compiling the C compiler identification source file "CMakeCCompilerId.c" succeeded.
+Compiler: C:/Program Files (x86)/Microsoft Visual Studio/2019/Community/VC/Tools/MSVC/14.28.29333/bin/Hostx64/x64/cl.exe 
+Build flags: 
+Id flags:  
+
+The output was:
+0
+Microsoft (R) C/C++-Optimierungscompiler Version 19.28.29336 für x64
+Copyright (C) Microsoft Corporation. Alle Rechte vorbehalten.
+
+CMakeCCompilerId.c
+Microsoft (R) Incremental Linker Version 14.28.29336.0
+Copyright (C) Microsoft Corporation.  All rights reserved.
+
+/out:CMakeCCompilerId.exe 
+CMakeCCompilerId.obj 
+
+
+Compilation of the C compiler identification source "CMakeCCompilerId.c" produced "CMakeCCompilerId.exe"
+
+Compilation of the C compiler identification source "CMakeCCompilerId.c" produced "CMakeCCompilerId.obj"
+
+The C compiler identification is MSVC, found in "C:/Users/hlavacs/Documents/GitHub/ViennaVulkanEngine/CMakeFiles/3.17.0/CompilerIdC/CMakeCCompilerId.exe"
+
+Compiling the CXX compiler identification source file "CMakeCXXCompilerId.cpp" succeeded.
+Compiler: C:/Program Files (x86)/Microsoft Visual Studio/2019/Community/VC/Tools/MSVC/14.28.29333/bin/Hostx64/x64/cl.exe 
+Build flags: 
+Id flags:  
+
+The output was:
+0
+Microsoft (R) C/C++-Optimierungscompiler Version 19.28.29336 für x64
+Copyright (C) Microsoft Corporation. Alle Rechte vorbehalten.
+
+CMakeCXXCompilerId.cpp
+Microsoft (R) Incremental Linker Version 14.28.29336.0
+Copyright (C) Microsoft Corporation.  All rights reserved.
+
+/out:CMakeCXXCompilerId.exe 
+CMakeCXXCompilerId.obj 
+
+
+Compilation of the CXX compiler identification source "CMakeCXXCompilerId.cpp" produced "CMakeCXXCompilerId.exe"
+
+Compilation of the CXX compiler identification source "CMakeCXXCompilerId.cpp" produced "CMakeCXXCompilerId.obj"
+
+The CXX compiler identification is MSVC, found in "C:/Users/hlavacs/Documents/GitHub/ViennaVulkanEngine/CMakeFiles/3.17.0/CompilerIdCXX/CMakeCXXCompilerId.exe"
+
+Determining if the C compiler works passed with the following output:
+Change Dir: C:/Users/hlavacs/Documents/GitHub/ViennaVulkanEngine/CMakeFiles/CMakeTmp
+
+Run Build Command(s):nmake /nologo cmTC_2c1f8\fast && 	"C:\Program Files (x86)\Microsoft Visual Studio\2019\Community\VC\Tools\MSVC\14.28.29333\bin\HostX64\x64\nmake.exe" -f CMakeFiles\cmTC_2c1f8.dir\build.make /nologo -L                  CMakeFiles\cmTC_2c1f8.dir\build
+Building C object CMakeFiles/cmTC_2c1f8.dir/testCCompiler.c.obj
+	C:\PROGRA~2\MICROS~1\2019\COMMUN~1\VC\Tools\MSVC\1428~1.293\bin\Hostx64\x64\cl.exe @C:\Users\hlavacs\AppData\Local\Temp\nm5024.tmp
+testCCompiler.c
+Linking C executable cmTC_2c1f8.exe
+	"C:\Program Files\CMake\bin\cmake.exe" -E vs_link_exe --intdir=CMakeFiles\cmTC_2c1f8.dir --rc=C:\PROGRA~2\WI3CF2~1\10\bin\100183~1.0\x64\rc.exe --mt=C:\PROGRA~2\WI3CF2~1\10\bin\100183~1.0\x64\mt.exe --manifests  -- C:\PROGRA~2\MICROS~1\2019\COMMUN~1\VC\Tools\MSVC\1428~1.293\bin\Hostx64\x64\link.exe /nologo @CMakeFiles\cmTC_2c1f8.dir\objects1.rsp @C:\Users\hlavacs\AppData\Local\Temp\nm5064.tmp
+
+
+
+Detecting C compiler ABI info compiled with the following output:
+Change Dir: C:/Users/hlavacs/Documents/GitHub/ViennaVulkanEngine/CMakeFiles/CMakeTmp
+
+Run Build Command(s):nmake /nologo cmTC_7112a\fast && 	"C:\Program Files (x86)\Microsoft Visual Studio\2019\Community\VC\Tools\MSVC\14.28.29333\bin\HostX64\x64\nmake.exe" -f CMakeFiles\cmTC_7112a.dir\build.make /nologo -L                  CMakeFiles\cmTC_7112a.dir\build
+Building C object CMakeFiles/cmTC_7112a.dir/CMakeCCompilerABI.c.obj
+	C:\PROGRA~2\MICROS~1\2019\COMMUN~1\VC\Tools\MSVC\1428~1.293\bin\Hostx64\x64\cl.exe @C:\Users\hlavacs\AppData\Local\Temp\nm517C.tmp
+CMakeCCompilerABI.c
+Linking C executable cmTC_7112a.exe
+	"C:\Program Files\CMake\bin\cmake.exe" -E vs_link_exe --intdir=CMakeFiles\cmTC_7112a.dir --rc=C:\PROGRA~2\WI3CF2~1\10\bin\100183~1.0\x64\rc.exe --mt=C:\PROGRA~2\WI3CF2~1\10\bin\100183~1.0\x64\mt.exe --manifests  -- C:\PROGRA~2\MICROS~1\2019\COMMUN~1\VC\Tools\MSVC\1428~1.293\bin\Hostx64\x64\link.exe /nologo @CMakeFiles\cmTC_7112a.dir\objects1.rsp @C:\Users\hlavacs\AppData\Local\Temp\nm51BC.tmp
+
+
+
+Determining if the CXX compiler works passed with the following output:
+Change Dir: C:/Users/hlavacs/Documents/GitHub/ViennaVulkanEngine/CMakeFiles/CMakeTmp
+
+Run Build Command(s):nmake /nologo cmTC_18d73\fast && 	"C:\Program Files (x86)\Microsoft Visual Studio\2019\Community\VC\Tools\MSVC\14.28.29333\bin\HostX64\x64\nmake.exe" -f CMakeFiles\cmTC_18d73.dir\build.make /nologo -L                  CMakeFiles\cmTC_18d73.dir\build
+Building CXX object CMakeFiles/cmTC_18d73.dir/testCXXCompiler.cxx.obj
+	C:\PROGRA~2\MICROS~1\2019\COMMUN~1\VC\Tools\MSVC\1428~1.293\bin\Hostx64\x64\cl.exe @C:\Users\hlavacs\AppData\Local\Temp\nm5303.tmp
+testCXXCompiler.cxx
+Linking CXX executable cmTC_18d73.exe
+	"C:\Program Files\CMake\bin\cmake.exe" -E vs_link_exe --intdir=CMakeFiles\cmTC_18d73.dir --rc=C:\PROGRA~2\WI3CF2~1\10\bin\100183~1.0\x64\rc.exe --mt=C:\PROGRA~2\WI3CF2~1\10\bin\100183~1.0\x64\mt.exe --manifests  -- C:\PROGRA~2\MICROS~1\2019\COMMUN~1\VC\Tools\MSVC\1428~1.293\bin\Hostx64\x64\link.exe /nologo @CMakeFiles\cmTC_18d73.dir\objects1.rsp @C:\Users\hlavacs\AppData\Local\Temp\nm5342.tmp
+
+
+
+Detecting CXX compiler ABI info compiled with the following output:
+Change Dir: C:/Users/hlavacs/Documents/GitHub/ViennaVulkanEngine/CMakeFiles/CMakeTmp
+
+Run Build Command(s):nmake /nologo cmTC_74d6c\fast && 	"C:\Program Files (x86)\Microsoft Visual Studio\2019\Community\VC\Tools\MSVC\14.28.29333\bin\HostX64\x64\nmake.exe" -f CMakeFiles\cmTC_74d6c.dir\build.make /nologo -L                  CMakeFiles\cmTC_74d6c.dir\build
+Building CXX object CMakeFiles/cmTC_74d6c.dir/CMakeCXXCompilerABI.cpp.obj
+	C:\PROGRA~2\MICROS~1\2019\COMMUN~1\VC\Tools\MSVC\1428~1.293\bin\Hostx64\x64\cl.exe @C:\Users\hlavacs\AppData\Local\Temp\nm546A.tmp
+CMakeCXXCompilerABI.cpp
+Linking CXX executable cmTC_74d6c.exe
+	"C:\Program Files\CMake\bin\cmake.exe" -E vs_link_exe --intdir=CMakeFiles\cmTC_74d6c.dir --rc=C:\PROGRA~2\WI3CF2~1\10\bin\100183~1.0\x64\rc.exe --mt=C:\PROGRA~2\WI3CF2~1\10\bin\100183~1.0\x64\mt.exe --manifests  -- C:\PROGRA~2\MICROS~1\2019\COMMUN~1\VC\Tools\MSVC\1428~1.293\bin\Hostx64\x64\link.exe /nologo @CMakeFiles\cmTC_74d6c.dir\objects1.rsp @C:\Users\hlavacs\AppData\Local\Temp\nm54AA.tmp
 
 
 
@@ -632,48 +829,48 @@ The CXX compiler identification is MSVC, found in "C:/Users/hlavacs/Documents/Gi
 Determining if the C compiler works passed with the following output:
 Change Dir: C:/Users/hlavacs/Documents/GitHub/ViennaVulkanEngine/CMakeFiles/CMakeTmp
 
-Run Build Command(s):nmake /nologo cmTC_ab251\fast && 	"C:\Program Files (x86)\Microsoft Visual Studio\2019\Community\VC\Tools\MSVC\14.28.29333\bin\HostX64\x64\nmake.exe" -f CMakeFiles\cmTC_ab251.dir\build.make /nologo -L                  CMakeFiles\cmTC_ab251.dir\build
-Building C object CMakeFiles/cmTC_ab251.dir/testCCompiler.c.obj
-	C:\PROGRA~2\MICROS~1\2019\COMMUN~1\VC\Tools\MSVC\1428~1.293\bin\Hostx64\x64\cl.exe @C:\Users\hlavacs\AppData\Local\Temp\nm4435.tmp
+Run Build Command(s):nmake /nologo cmTC_d6ee3\fast && 	"C:\Program Files (x86)\Microsoft Visual Studio\2019\Community\VC\Tools\MSVC\14.28.29333\bin\HostX64\x64\nmake.exe" -f CMakeFiles\cmTC_d6ee3.dir\build.make /nologo -L                  CMakeFiles\cmTC_d6ee3.dir\build
+Building C object CMakeFiles/cmTC_d6ee3.dir/testCCompiler.c.obj
+	C:\PROGRA~2\MICROS~1\2019\COMMUN~1\VC\Tools\MSVC\1428~1.293\bin\Hostx64\x64\cl.exe @C:\Users\hlavacs\AppData\Local\Temp\nm8444.tmp
 testCCompiler.c
-Linking C executable cmTC_ab251.exe
-	"C:\Program Files\CMake\bin\cmake.exe" -E vs_link_exe --intdir=CMakeFiles\cmTC_ab251.dir --rc=C:\PROGRA~2\WI3CF2~1\10\bin\100183~1.0\x64\rc.exe --mt=C:\PROGRA~2\WI3CF2~1\10\bin\100183~1.0\x64\mt.exe --manifests  -- C:\PROGRA~2\MICROS~1\2019\COMMUN~1\VC\Tools\MSVC\1428~1.293\bin\Hostx64\x64\link.exe /nologo @CMakeFiles\cmTC_ab251.dir\objects1.rsp @C:\Users\hlavacs\AppData\Local\Temp\nm4475.tmp
+Linking C executable cmTC_d6ee3.exe
+	"C:\Program Files\CMake\bin\cmake.exe" -E vs_link_exe --intdir=CMakeFiles\cmTC_d6ee3.dir --rc=C:\PROGRA~2\WI3CF2~1\10\bin\100183~1.0\x64\rc.exe --mt=C:\PROGRA~2\WI3CF2~1\10\bin\100183~1.0\x64\mt.exe --manifests  -- C:\PROGRA~2\MICROS~1\2019\COMMUN~1\VC\Tools\MSVC\1428~1.293\bin\Hostx64\x64\link.exe /nologo @CMakeFiles\cmTC_d6ee3.dir\objects1.rsp @C:\Users\hlavacs\AppData\Local\Temp\nm8474.tmp
 
 
 
 Detecting C compiler ABI info compiled with the following output:
 Change Dir: C:/Users/hlavacs/Documents/GitHub/ViennaVulkanEngine/CMakeFiles/CMakeTmp
 
-Run Build Command(s):nmake /nologo cmTC_f0207\fast && 	"C:\Program Files (x86)\Microsoft Visual Studio\2019\Community\VC\Tools\MSVC\14.28.29333\bin\HostX64\x64\nmake.exe" -f CMakeFiles\cmTC_f0207.dir\build.make /nologo -L                  CMakeFiles\cmTC_f0207.dir\build
-Building C object CMakeFiles/cmTC_f0207.dir/CMakeCCompilerABI.c.obj
-	C:\PROGRA~2\MICROS~1\2019\COMMUN~1\VC\Tools\MSVC\1428~1.293\bin\Hostx64\x64\cl.exe @C:\Users\hlavacs\AppData\Local\Temp\nm458D.tmp
+Run Build Command(s):nmake /nologo cmTC_a364d\fast && 	"C:\Program Files (x86)\Microsoft Visual Studio\2019\Community\VC\Tools\MSVC\14.28.29333\bin\HostX64\x64\nmake.exe" -f CMakeFiles\cmTC_a364d.dir\build.make /nologo -L                  CMakeFiles\cmTC_a364d.dir\build
+Building C object CMakeFiles/cmTC_a364d.dir/CMakeCCompilerABI.c.obj
+	C:\PROGRA~2\MICROS~1\2019\COMMUN~1\VC\Tools\MSVC\1428~1.293\bin\Hostx64\x64\cl.exe @C:\Users\hlavacs\AppData\Local\Temp\nm85AC.tmp
 CMakeCCompilerABI.c
-Linking C executable cmTC_f0207.exe
-	"C:\Program Files\CMake\bin\cmake.exe" -E vs_link_exe --intdir=CMakeFiles\cmTC_f0207.dir --rc=C:\PROGRA~2\WI3CF2~1\10\bin\100183~1.0\x64\rc.exe --mt=C:\PROGRA~2\WI3CF2~1\10\bin\100183~1.0\x64\mt.exe --manifests  -- C:\PROGRA~2\MICROS~1\2019\COMMUN~1\VC\Tools\MSVC\1428~1.293\bin\Hostx64\x64\link.exe /nologo @CMakeFiles\cmTC_f0207.dir\objects1.rsp @C:\Users\hlavacs\AppData\Local\Temp\nm45CC.tmp
+Linking C executable cmTC_a364d.exe
+	"C:\Program Files\CMake\bin\cmake.exe" -E vs_link_exe --intdir=CMakeFiles\cmTC_a364d.dir --rc=C:\PROGRA~2\WI3CF2~1\10\bin\100183~1.0\x64\rc.exe --mt=C:\PROGRA~2\WI3CF2~1\10\bin\100183~1.0\x64\mt.exe --manifests  -- C:\PROGRA~2\MICROS~1\2019\COMMUN~1\VC\Tools\MSVC\1428~1.293\bin\Hostx64\x64\link.exe /nologo @CMakeFiles\cmTC_a364d.dir\objects1.rsp @C:\Users\hlavacs\AppData\Local\Temp\nm85DB.tmp
 
 
 
 Determining if the CXX compiler works passed with the following output:
 Change Dir: C:/Users/hlavacs/Documents/GitHub/ViennaVulkanEngine/CMakeFiles/CMakeTmp
 
-Run Build Command(s):nmake /nologo cmTC_358db\fast && 	"C:\Program Files (x86)\Microsoft Visual Studio\2019\Community\VC\Tools\MSVC\14.28.29333\bin\HostX64\x64\nmake.exe" -f CMakeFiles\cmTC_358db.dir\build.make /nologo -L                  CMakeFiles\cmTC_358db.dir\build
-Building CXX object CMakeFiles/cmTC_358db.dir/testCXXCompiler.cxx.obj
-	C:\PROGRA~2\MICROS~1\2019\COMMUN~1\VC\Tools\MSVC\1428~1.293\bin\Hostx64\x64\cl.exe @C:\Users\hlavacs\AppData\Local\Temp\nm4704.tmp
+Run Build Command(s):nmake /nologo cmTC_157bc\fast && 	"C:\Program Files (x86)\Microsoft Visual Studio\2019\Community\VC\Tools\MSVC\14.28.29333\bin\HostX64\x64\nmake.exe" -f CMakeFiles\cmTC_157bc.dir\build.make /nologo -L                  CMakeFiles\cmTC_157bc.dir\build
+Building CXX object CMakeFiles/cmTC_157bc.dir/testCXXCompiler.cxx.obj
+	C:\PROGRA~2\MICROS~1\2019\COMMUN~1\VC\Tools\MSVC\1428~1.293\bin\Hostx64\x64\cl.exe @C:\Users\hlavacs\AppData\Local\Temp\nm8723.tmp
 testCXXCompiler.cxx
-Linking CXX executable cmTC_358db.exe
-	"C:\Program Files\CMake\bin\cmake.exe" -E vs_link_exe --intdir=CMakeFiles\cmTC_358db.dir --rc=C:\PROGRA~2\WI3CF2~1\10\bin\100183~1.0\x64\rc.exe --mt=C:\PROGRA~2\WI3CF2~1\10\bin\100183~1.0\x64\mt.exe --manifests  -- C:\PROGRA~2\MICROS~1\2019\COMMUN~1\VC\Tools\MSVC\1428~1.293\bin\Hostx64\x64\link.exe /nologo @CMakeFiles\cmTC_358db.dir\objects1.rsp @C:\Users\hlavacs\AppData\Local\Temp\nm4743.tmp
+Linking CXX executable cmTC_157bc.exe
+	"C:\Program Files\CMake\bin\cmake.exe" -E vs_link_exe --intdir=CMakeFiles\cmTC_157bc.dir --rc=C:\PROGRA~2\WI3CF2~1\10\bin\100183~1.0\x64\rc.exe --mt=C:\PROGRA~2\WI3CF2~1\10\bin\100183~1.0\x64\mt.exe --manifests  -- C:\PROGRA~2\MICROS~1\2019\COMMUN~1\VC\Tools\MSVC\1428~1.293\bin\Hostx64\x64\link.exe /nologo @CMakeFiles\cmTC_157bc.dir\objects1.rsp @C:\Users\hlavacs\AppData\Local\Temp\nm8762.tmp
 
 
 
 Detecting CXX compiler ABI info compiled with the following output:
 Change Dir: C:/Users/hlavacs/Documents/GitHub/ViennaVulkanEngine/CMakeFiles/CMakeTmp
 
-Run Build Command(s):nmake /nologo cmTC_9ca40\fast && 	"C:\Program Files (x86)\Microsoft Visual Studio\2019\Community\VC\Tools\MSVC\14.28.29333\bin\HostX64\x64\nmake.exe" -f CMakeFiles\cmTC_9ca40.dir\build.make /nologo -L                  CMakeFiles\cmTC_9ca40.dir\build
-Building CXX object CMakeFiles/cmTC_9ca40.dir/CMakeCXXCompilerABI.cpp.obj
-	C:\PROGRA~2\MICROS~1\2019\COMMUN~1\VC\Tools\MSVC\1428~1.293\bin\Hostx64\x64\cl.exe @C:\Users\hlavacs\AppData\Local\Temp\nm486B.tmp
+Run Build Command(s):nmake /nologo cmTC_fdae0\fast && 	"C:\Program Files (x86)\Microsoft Visual Studio\2019\Community\VC\Tools\MSVC\14.28.29333\bin\HostX64\x64\nmake.exe" -f CMakeFiles\cmTC_fdae0.dir\build.make /nologo -L                  CMakeFiles\cmTC_fdae0.dir\build
+Building CXX object CMakeFiles/cmTC_fdae0.dir/CMakeCXXCompilerABI.cpp.obj
+	C:\PROGRA~2\MICROS~1\2019\COMMUN~1\VC\Tools\MSVC\1428~1.293\bin\Hostx64\x64\cl.exe @C:\Users\hlavacs\AppData\Local\Temp\nm887A.tmp
 CMakeCXXCompilerABI.cpp
-Linking CXX executable cmTC_9ca40.exe
-	"C:\Program Files\CMake\bin\cmake.exe" -E vs_link_exe --intdir=CMakeFiles\cmTC_9ca40.dir --rc=C:\PROGRA~2\WI3CF2~1\10\bin\100183~1.0\x64\rc.exe --mt=C:\PROGRA~2\WI3CF2~1\10\bin\100183~1.0\x64\mt.exe --manifests  -- C:\PROGRA~2\MICROS~1\2019\COMMUN~1\VC\Tools\MSVC\1428~1.293\bin\Hostx64\x64\link.exe /nologo @CMakeFiles\cmTC_9ca40.dir\objects1.rsp @C:\Users\hlavacs\AppData\Local\Temp\nm48AB.tmp
+Linking CXX executable cmTC_fdae0.exe
+	"C:\Program Files\CMake\bin\cmake.exe" -E vs_link_exe --intdir=CMakeFiles\cmTC_fdae0.dir --rc=C:\PROGRA~2\WI3CF2~1\10\bin\100183~1.0\x64\rc.exe --mt=C:\PROGRA~2\WI3CF2~1\10\bin\100183~1.0\x64\mt.exe --manifests  -- C:\PROGRA~2\MICROS~1\2019\COMMUN~1\VC\Tools\MSVC\1428~1.293\bin\Hostx64\x64\link.exe /nologo @CMakeFiles\cmTC_fdae0.dir\objects1.rsp @C:\Users\hlavacs\AppData\Local\Temp\nm88BA.tmp
 
 
 
@@ -729,48 +926,48 @@ The CXX compiler identification is MSVC, found in "C:/Users/hlavacs/Documents/Gi
 Determining if the C compiler works passed with the following output:
 Change Dir: C:/Users/hlavacs/Documents/GitHub/ViennaVulkanEngine/CMakeFiles/CMakeTmp
 
-Run Build Command(s):nmake /nologo cmTC_e0715\fast && 	"C:\Program Files (x86)\Microsoft Visual Studio\2019\Community\VC\Tools\MSVC\14.28.29333\bin\HostX64\x64\nmake.exe" -f CMakeFiles\cmTC_e0715.dir\build.make /nologo -L                  CMakeFiles\cmTC_e0715.dir\build
-Building C object CMakeFiles/cmTC_e0715.dir/testCCompiler.c.obj
-	C:\PROGRA~2\MICROS~1\2019\COMMUN~1\VC\Tools\MSVC\1428~1.293\bin\Hostx64\x64\cl.exe @C:\Users\hlavacs\AppData\Local\Temp\nm26C5.tmp
+Run Build Command(s):nmake /nologo cmTC_6595d\fast && 	"C:\Program Files (x86)\Microsoft Visual Studio\2019\Community\VC\Tools\MSVC\14.28.29333\bin\HostX64\x64\nmake.exe" -f CMakeFiles\cmTC_6595d.dir\build.make /nologo -L                  CMakeFiles\cmTC_6595d.dir\build
+Building C object CMakeFiles/cmTC_6595d.dir/testCCompiler.c.obj
+	C:\PROGRA~2\MICROS~1\2019\COMMUN~1\VC\Tools\MSVC\1428~1.293\bin\Hostx64\x64\cl.exe @C:\Users\hlavacs\AppData\Local\Temp\nm586D.tmp
 testCCompiler.c
-Linking C executable cmTC_e0715.exe
-	"C:\Program Files\CMake\bin\cmake.exe" -E vs_link_exe --intdir=CMakeFiles\cmTC_e0715.dir --rc=C:\PROGRA~2\WI3CF2~1\10\bin\100183~1.0\x64\rc.exe --mt=C:\PROGRA~2\WI3CF2~1\10\bin\100183~1.0\x64\mt.exe --manifests  -- C:\PROGRA~2\MICROS~1\2019\COMMUN~1\VC\Tools\MSVC\1428~1.293\bin\Hostx64\x64\link.exe /nologo @CMakeFiles\cmTC_e0715.dir\objects1.rsp @C:\Users\hlavacs\AppData\Local\Temp\nm2705.tmp
+Linking C executable cmTC_6595d.exe
+	"C:\Program Files\CMake\bin\cmake.exe" -E vs_link_exe --intdir=CMakeFiles\cmTC_6595d.dir --rc=C:\PROGRA~2\WI3CF2~1\10\bin\100183~1.0\x64\rc.exe --mt=C:\PROGRA~2\WI3CF2~1\10\bin\100183~1.0\x64\mt.exe --manifests  -- C:\PROGRA~2\MICROS~1\2019\COMMUN~1\VC\Tools\MSVC\1428~1.293\bin\Hostx64\x64\link.exe /nologo @CMakeFiles\cmTC_6595d.dir\objects1.rsp @C:\Users\hlavacs\AppData\Local\Temp\nm589D.tmp
 
 
 
 Detecting C compiler ABI info compiled with the following output:
 Change Dir: C:/Users/hlavacs/Documents/GitHub/ViennaVulkanEngine/CMakeFiles/CMakeTmp
 
-Run Build Command(s):nmake /nologo cmTC_a0b04\fast && 	"C:\Program Files (x86)\Microsoft Visual Studio\2019\Community\VC\Tools\MSVC\14.28.29333\bin\HostX64\x64\nmake.exe" -f CMakeFiles\cmTC_a0b04.dir\build.make /nologo -L                  CMakeFiles\cmTC_a0b04.dir\build
-Building C object CMakeFiles/cmTC_a0b04.dir/CMakeCCompilerABI.c.obj
-	C:\PROGRA~2\MICROS~1\2019\COMMUN~1\VC\Tools\MSVC\1428~1.293\bin\Hostx64\x64\cl.exe @C:\Users\hlavacs\AppData\Local\Temp\nm281D.tmp
+Run Build Command(s):nmake /nologo cmTC_c5271\fast && 	"C:\Program Files (x86)\Microsoft Visual Studio\2019\Community\VC\Tools\MSVC\14.28.29333\bin\HostX64\x64\nmake.exe" -f CMakeFiles\cmTC_c5271.dir\build.make /nologo -L                  CMakeFiles\cmTC_c5271.dir\build
+Building C object CMakeFiles/cmTC_c5271.dir/CMakeCCompilerABI.c.obj
+	C:\PROGRA~2\MICROS~1\2019\COMMUN~1\VC\Tools\MSVC\1428~1.293\bin\Hostx64\x64\cl.exe @C:\Users\hlavacs\AppData\Local\Temp\nm59B5.tmp
 CMakeCCompilerABI.c
-Linking C executable cmTC_a0b04.exe
-	"C:\Program Files\CMake\bin\cmake.exe" -E vs_link_exe --intdir=CMakeFiles\cmTC_a0b04.dir --rc=C:\PROGRA~2\WI3CF2~1\10\bin\100183~1.0\x64\rc.exe --mt=C:\PROGRA~2\WI3CF2~1\10\bin\100183~1.0\x64\mt.exe --manifests  -- C:\PROGRA~2\MICROS~1\2019\COMMUN~1\VC\Tools\MSVC\1428~1.293\bin\Hostx64\x64\link.exe /nologo @CMakeFiles\cmTC_a0b04.dir\objects1.rsp @C:\Users\hlavacs\AppData\Local\Temp\nm285C.tmp
+Linking C executable cmTC_c5271.exe
+	"C:\Program Files\CMake\bin\cmake.exe" -E vs_link_exe --intdir=CMakeFiles\cmTC_c5271.dir --rc=C:\PROGRA~2\WI3CF2~1\10\bin\100183~1.0\x64\rc.exe --mt=C:\PROGRA~2\WI3CF2~1\10\bin\100183~1.0\x64\mt.exe --manifests  -- C:\PROGRA~2\MICROS~1\2019\COMMUN~1\VC\Tools\MSVC\1428~1.293\bin\Hostx64\x64\link.exe /nologo @CMakeFiles\cmTC_c5271.dir\objects1.rsp @C:\Users\hlavacs\AppData\Local\Temp\nm59F4.tmp
 
 
 
 Determining if the CXX compiler works passed with the following output:
 Change Dir: C:/Users/hlavacs/Documents/GitHub/ViennaVulkanEngine/CMakeFiles/CMakeTmp
 
-Run Build Command(s):nmake /nologo cmTC_db891\fast && 	"C:\Program Files (x86)\Microsoft Visual Studio\2019\Community\VC\Tools\MSVC\14.28.29333\bin\HostX64\x64\nmake.exe" -f CMakeFiles\cmTC_db891.dir\build.make /nologo -L                  CMakeFiles\cmTC_db891.dir\build
-Building CXX object CMakeFiles/cmTC_db891.dir/testCXXCompiler.cxx.obj
-	C:\PROGRA~2\MICROS~1\2019\COMMUN~1\VC\Tools\MSVC\1428~1.293\bin\Hostx64\x64\cl.exe @C:\Users\hlavacs\AppData\Local\Temp\nm2994.tmp
+Run Build Command(s):nmake /nologo cmTC_1f040\fast && 	"C:\Program Files (x86)\Microsoft Visual Studio\2019\Community\VC\Tools\MSVC\14.28.29333\bin\HostX64\x64\nmake.exe" -f CMakeFiles\cmTC_1f040.dir\build.make /nologo -L                  CMakeFiles\cmTC_1f040.dir\build
+Building CXX object CMakeFiles/cmTC_1f040.dir/testCXXCompiler.cxx.obj
+	C:\PROGRA~2\MICROS~1\2019\COMMUN~1\VC\Tools\MSVC\1428~1.293\bin\Hostx64\x64\cl.exe @C:\Users\hlavacs\AppData\Local\Temp\nm5B2C.tmp
 testCXXCompiler.cxx
-Linking CXX executable cmTC_db891.exe
-	"C:\Program Files\CMake\bin\cmake.exe" -E vs_link_exe --intdir=CMakeFiles\cmTC_db891.dir --rc=C:\PROGRA~2\WI3CF2~1\10\bin\100183~1.0\x64\rc.exe --mt=C:\PROGRA~2\WI3CF2~1\10\bin\100183~1.0\x64\mt.exe --manifests  -- C:\PROGRA~2\MICROS~1\2019\COMMUN~1\VC\Tools\MSVC\1428~1.293\bin\Hostx64\x64\link.exe /nologo @CMakeFiles\cmTC_db891.dir\objects1.rsp @C:\Users\hlavacs\AppData\Local\Temp\nm29D3.tmp
+Linking CXX executable cmTC_1f040.exe
+	"C:\Program Files\CMake\bin\cmake.exe" -E vs_link_exe --intdir=CMakeFiles\cmTC_1f040.dir --rc=C:\PROGRA~2\WI3CF2~1\10\bin\100183~1.0\x64\rc.exe --mt=C:\PROGRA~2\WI3CF2~1\10\bin\100183~1.0\x64\mt.exe --manifests  -- C:\PROGRA~2\MICROS~1\2019\COMMUN~1\VC\Tools\MSVC\1428~1.293\bin\Hostx64\x64\link.exe /nologo @CMakeFiles\cmTC_1f040.dir\objects1.rsp @C:\Users\hlavacs\AppData\Local\Temp\nm5B6B.tmp
 
 
 
 Detecting CXX compiler ABI info compiled with the following output:
 Change Dir: C:/Users/hlavacs/Documents/GitHub/ViennaVulkanEngine/CMakeFiles/CMakeTmp
 
-Run Build Command(s):nmake /nologo cmTC_0313f\fast && 	"C:\Program Files (x86)\Microsoft Visual Studio\2019\Community\VC\Tools\MSVC\14.28.29333\bin\HostX64\x64\nmake.exe" -f CMakeFiles\cmTC_0313f.dir\build.make /nologo -L                  CMakeFiles\cmTC_0313f.dir\build
-Building CXX object CMakeFiles/cmTC_0313f.dir/CMakeCXXCompilerABI.cpp.obj
-	C:\PROGRA~2\MICROS~1\2019\COMMUN~1\VC\Tools\MSVC\1428~1.293\bin\Hostx64\x64\cl.exe @C:\Users\hlavacs\AppData\Local\Temp\nm2AFB.tmp
+Run Build Command(s):nmake /nologo cmTC_d091b\fast && 	"C:\Program Files (x86)\Microsoft Visual Studio\2019\Community\VC\Tools\MSVC\14.28.29333\bin\HostX64\x64\nmake.exe" -f CMakeFiles\cmTC_d091b.dir\build.make /nologo -L                  CMakeFiles\cmTC_d091b.dir\build
+Building CXX object CMakeFiles/cmTC_d091b.dir/CMakeCXXCompilerABI.cpp.obj
+	C:\PROGRA~2\MICROS~1\2019\COMMUN~1\VC\Tools\MSVC\1428~1.293\bin\Hostx64\x64\cl.exe @C:\Users\hlavacs\AppData\Local\Temp\nm5C84.tmp
 CMakeCXXCompilerABI.cpp
-Linking CXX executable cmTC_0313f.exe
-	"C:\Program Files\CMake\bin\cmake.exe" -E vs_link_exe --intdir=CMakeFiles\cmTC_0313f.dir --rc=C:\PROGRA~2\WI3CF2~1\10\bin\100183~1.0\x64\rc.exe --mt=C:\PROGRA~2\WI3CF2~1\10\bin\100183~1.0\x64\mt.exe --manifests  -- C:\PROGRA~2\MICROS~1\2019\COMMUN~1\VC\Tools\MSVC\1428~1.293\bin\Hostx64\x64\link.exe /nologo @CMakeFiles\cmTC_0313f.dir\objects1.rsp @C:\Users\hlavacs\AppData\Local\Temp\nm2B3B.tmp
+Linking CXX executable cmTC_d091b.exe
+	"C:\Program Files\CMake\bin\cmake.exe" -E vs_link_exe --intdir=CMakeFiles\cmTC_d091b.dir --rc=C:\PROGRA~2\WI3CF2~1\10\bin\100183~1.0\x64\rc.exe --mt=C:\PROGRA~2\WI3CF2~1\10\bin\100183~1.0\x64\mt.exe --manifests  -- C:\PROGRA~2\MICROS~1\2019\COMMUN~1\VC\Tools\MSVC\1428~1.293\bin\Hostx64\x64\link.exe /nologo @CMakeFiles\cmTC_d091b.dir\objects1.rsp @C:\Users\hlavacs\AppData\Local\Temp\nm5CC3.tmp
 
 
 
@@ -826,51 +1023,436 @@ The CXX compiler identification is MSVC, found in "C:/Users/hlavacs/Documents/Gi
 Determining if the C compiler works passed with the following output:
 Change Dir: C:/Users/hlavacs/Documents/GitHub/ViennaVulkanEngine/CMakeFiles/CMakeTmp
 
-Run Build Command(s):nmake /nologo cmTC_c04cf\fast && 	"C:\Program Files (x86)\Microsoft Visual Studio\2019\Community\VC\Tools\MSVC\14.28.29333\bin\HostX64\x64\nmake.exe" -f CMakeFiles\cmTC_c04cf.dir\build.make /nologo -L                  CMakeFiles\cmTC_c04cf.dir\build
-Building C object CMakeFiles/cmTC_c04cf.dir/testCCompiler.c.obj
-	C:\PROGRA~2\MICROS~1\2019\COMMUN~1\VC\Tools\MSVC\1428~1.293\bin\Hostx64\x64\cl.exe @C:\Users\hlavacs\AppData\Local\Temp\nm3CCC.tmp
+Run Build Command(s):nmake /nologo cmTC_2a75a\fast && 	"C:\Program Files (x86)\Microsoft Visual Studio\2019\Community\VC\Tools\MSVC\14.28.29333\bin\HostX64\x64\nmake.exe" -f CMakeFiles\cmTC_2a75a.dir\build.make /nologo -L                  CMakeFiles\cmTC_2a75a.dir\build
+Building C object CMakeFiles/cmTC_2a75a.dir/testCCompiler.c.obj
+	C:\PROGRA~2\MICROS~1\2019\COMMUN~1\VC\Tools\MSVC\1428~1.293\bin\Hostx64\x64\cl.exe @C:\Users\hlavacs\AppData\Local\Temp\nm7F25.tmp
 testCCompiler.c
-Linking C executable cmTC_c04cf.exe
-	"C:\Program Files\CMake\bin\cmake.exe" -E vs_link_exe --intdir=CMakeFiles\cmTC_c04cf.dir --rc=C:\PROGRA~2\WI3CF2~1\10\bin\100183~1.0\x64\rc.exe --mt=C:\PROGRA~2\WI3CF2~1\10\bin\100183~1.0\x64\mt.exe --manifests  -- C:\PROGRA~2\MICROS~1\2019\COMMUN~1\VC\Tools\MSVC\1428~1.293\bin\Hostx64\x64\link.exe /nologo @CMakeFiles\cmTC_c04cf.dir\objects1.rsp @C:\Users\hlavacs\AppData\Local\Temp\nm3D0B.tmp
+Linking C executable cmTC_2a75a.exe
+	"C:\Program Files\CMake\bin\cmake.exe" -E vs_link_exe --intdir=CMakeFiles\cmTC_2a75a.dir --rc=C:\PROGRA~2\WI3CF2~1\10\bin\100183~1.0\x64\rc.exe --mt=C:\PROGRA~2\WI3CF2~1\10\bin\100183~1.0\x64\mt.exe --manifests  -- C:\PROGRA~2\MICROS~1\2019\COMMUN~1\VC\Tools\MSVC\1428~1.293\bin\Hostx64\x64\link.exe /nologo @CMakeFiles\cmTC_2a75a.dir\objects1.rsp @C:\Users\hlavacs\AppData\Local\Temp\nm7F55.tmp
 
 
 
 Detecting C compiler ABI info compiled with the following output:
 Change Dir: C:/Users/hlavacs/Documents/GitHub/ViennaVulkanEngine/CMakeFiles/CMakeTmp
 
-Run Build Command(s):nmake /nologo cmTC_8632d\fast && 	"C:\Program Files (x86)\Microsoft Visual Studio\2019\Community\VC\Tools\MSVC\14.28.29333\bin\HostX64\x64\nmake.exe" -f CMakeFiles\cmTC_8632d.dir\build.make /nologo -L                  CMakeFiles\cmTC_8632d.dir\build
-Building C object CMakeFiles/cmTC_8632d.dir/CMakeCCompilerABI.c.obj
-	C:\PROGRA~2\MICROS~1\2019\COMMUN~1\VC\Tools\MSVC\1428~1.293\bin\Hostx64\x64\cl.exe @C:\Users\hlavacs\AppData\Local\Temp\nm3E23.tmp
+Run Build Command(s):nmake /nologo cmTC_7d6a3\fast && 	"C:\Program Files (x86)\Microsoft Visual Studio\2019\Community\VC\Tools\MSVC\14.28.29333\bin\HostX64\x64\nmake.exe" -f CMakeFiles\cmTC_7d6a3.dir\build.make /nologo -L                  CMakeFiles\cmTC_7d6a3.dir\build
+Building C object CMakeFiles/cmTC_7d6a3.dir/CMakeCCompilerABI.c.obj
+	C:\PROGRA~2\MICROS~1\2019\COMMUN~1\VC\Tools\MSVC\1428~1.293\bin\Hostx64\x64\cl.exe @C:\Users\hlavacs\AppData\Local\Temp\nm807D.tmp
 CMakeCCompilerABI.c
-Linking C executable cmTC_8632d.exe
-	"C:\Program Files\CMake\bin\cmake.exe" -E vs_link_exe --intdir=CMakeFiles\cmTC_8632d.dir --rc=C:\PROGRA~2\WI3CF2~1\10\bin\100183~1.0\x64\rc.exe --mt=C:\PROGRA~2\WI3CF2~1\10\bin\100183~1.0\x64\mt.exe --manifests  -- C:\PROGRA~2\MICROS~1\2019\COMMUN~1\VC\Tools\MSVC\1428~1.293\bin\Hostx64\x64\link.exe /nologo @CMakeFiles\cmTC_8632d.dir\objects1.rsp @C:\Users\hlavacs\AppData\Local\Temp\nm3E63.tmp
+Linking C executable cmTC_7d6a3.exe
+	"C:\Program Files\CMake\bin\cmake.exe" -E vs_link_exe --intdir=CMakeFiles\cmTC_7d6a3.dir --rc=C:\PROGRA~2\WI3CF2~1\10\bin\100183~1.0\x64\rc.exe --mt=C:\PROGRA~2\WI3CF2~1\10\bin\100183~1.0\x64\mt.exe --manifests  -- C:\PROGRA~2\MICROS~1\2019\COMMUN~1\VC\Tools\MSVC\1428~1.293\bin\Hostx64\x64\link.exe /nologo @CMakeFiles\cmTC_7d6a3.dir\objects1.rsp @C:\Users\hlavacs\AppData\Local\Temp\nm80BC.tmp
 
 
 
 Determining if the CXX compiler works passed with the following output:
 Change Dir: C:/Users/hlavacs/Documents/GitHub/ViennaVulkanEngine/CMakeFiles/CMakeTmp
 
-Run Build Command(s):nmake /nologo cmTC_52fa5\fast && 	"C:\Program Files (x86)\Microsoft Visual Studio\2019\Community\VC\Tools\MSVC\14.28.29333\bin\HostX64\x64\nmake.exe" -f CMakeFiles\cmTC_52fa5.dir\build.make /nologo -L                  CMakeFiles\cmTC_52fa5.dir\build
-Building CXX object CMakeFiles/cmTC_52fa5.dir/testCXXCompiler.cxx.obj
-	C:\PROGRA~2\MICROS~1\2019\COMMUN~1\VC\Tools\MSVC\1428~1.293\bin\Hostx64\x64\cl.exe @C:\Users\hlavacs\AppData\Local\Temp\nm3F9A.tmp
+Run Build Command(s):nmake /nologo cmTC_d8c64\fast && 	"C:\Program Files (x86)\Microsoft Visual Studio\2019\Community\VC\Tools\MSVC\14.28.29333\bin\HostX64\x64\nmake.exe" -f CMakeFiles\cmTC_d8c64.dir\build.make /nologo -L                  CMakeFiles\cmTC_d8c64.dir\build
+Building CXX object CMakeFiles/cmTC_d8c64.dir/testCXXCompiler.cxx.obj
+	C:\PROGRA~2\MICROS~1\2019\COMMUN~1\VC\Tools\MSVC\1428~1.293\bin\Hostx64\x64\cl.exe @C:\Users\hlavacs\AppData\Local\Temp\nm81F4.tmp
 testCXXCompiler.cxx
-Linking CXX executable cmTC_52fa5.exe
-	"C:\Program Files\CMake\bin\cmake.exe" -E vs_link_exe --intdir=CMakeFiles\cmTC_52fa5.dir --rc=C:\PROGRA~2\WI3CF2~1\10\bin\100183~1.0\x64\rc.exe --mt=C:\PROGRA~2\WI3CF2~1\10\bin\100183~1.0\x64\mt.exe --manifests  -- C:\PROGRA~2\MICROS~1\2019\COMMUN~1\VC\Tools\MSVC\1428~1.293\bin\Hostx64\x64\link.exe /nologo @CMakeFiles\cmTC_52fa5.dir\objects1.rsp @C:\Users\hlavacs\AppData\Local\Temp\nm3FDA.tmp
+Linking CXX executable cmTC_d8c64.exe
+	"C:\Program Files\CMake\bin\cmake.exe" -E vs_link_exe --intdir=CMakeFiles\cmTC_d8c64.dir --rc=C:\PROGRA~2\WI3CF2~1\10\bin\100183~1.0\x64\rc.exe --mt=C:\PROGRA~2\WI3CF2~1\10\bin\100183~1.0\x64\mt.exe --manifests  -- C:\PROGRA~2\MICROS~1\2019\COMMUN~1\VC\Tools\MSVC\1428~1.293\bin\Hostx64\x64\link.exe /nologo @CMakeFiles\cmTC_d8c64.dir\objects1.rsp @C:\Users\hlavacs\AppData\Local\Temp\nm8233.tmp
 
 
 
 Detecting CXX compiler ABI info compiled with the following output:
 Change Dir: C:/Users/hlavacs/Documents/GitHub/ViennaVulkanEngine/CMakeFiles/CMakeTmp
 
-Run Build Command(s):nmake /nologo cmTC_5f0f6\fast && 	"C:\Program Files (x86)\Microsoft Visual Studio\2019\Community\VC\Tools\MSVC\14.28.29333\bin\HostX64\x64\nmake.exe" -f CMakeFiles\cmTC_5f0f6.dir\build.make /nologo -L                  CMakeFiles\cmTC_5f0f6.dir\build
-Building CXX object CMakeFiles/cmTC_5f0f6.dir/CMakeCXXCompilerABI.cpp.obj
-	C:\PROGRA~2\MICROS~1\2019\COMMUN~1\VC\Tools\MSVC\1428~1.293\bin\Hostx64\x64\cl.exe @C:\Users\hlavacs\AppData\Local\Temp\nm4102.tmp
+Run Build Command(s):nmake /nologo cmTC_67372\fast && 	"C:\Program Files (x86)\Microsoft Visual Studio\2019\Community\VC\Tools\MSVC\14.28.29333\bin\HostX64\x64\nmake.exe" -f CMakeFiles\cmTC_67372.dir\build.make /nologo -L                  CMakeFiles\cmTC_67372.dir\build
+Building CXX object CMakeFiles/cmTC_67372.dir/CMakeCXXCompilerABI.cpp.obj
+	C:\PROGRA~2\MICROS~1\2019\COMMUN~1\VC\Tools\MSVC\1428~1.293\bin\Hostx64\x64\cl.exe @C:\Users\hlavacs\AppData\Local\Temp\nm834C.tmp
 CMakeCXXCompilerABI.cpp
-Linking CXX executable cmTC_5f0f6.exe
-	"C:\Program Files\CMake\bin\cmake.exe" -E vs_link_exe --intdir=CMakeFiles\cmTC_5f0f6.dir --rc=C:\PROGRA~2\WI3CF2~1\10\bin\100183~1.0\x64\rc.exe --mt=C:\PROGRA~2\WI3CF2~1\10\bin\100183~1.0\x64\mt.exe --manifests  -- C:\PROGRA~2\MICROS~1\2019\COMMUN~1\VC\Tools\MSVC\1428~1.293\bin\Hostx64\x64\link.exe /nologo @CMakeFiles\cmTC_5f0f6.dir\objects1.rsp @C:\Users\hlavacs\AppData\Local\Temp\nm4141.tmp
+Linking CXX executable cmTC_67372.exe
+	"C:\Program Files\CMake\bin\cmake.exe" -E vs_link_exe --intdir=CMakeFiles\cmTC_67372.dir --rc=C:\PROGRA~2\WI3CF2~1\10\bin\100183~1.0\x64\rc.exe --mt=C:\PROGRA~2\WI3CF2~1\10\bin\100183~1.0\x64\mt.exe --manifests  -- C:\PROGRA~2\MICROS~1\2019\COMMUN~1\VC\Tools\MSVC\1428~1.293\bin\Hostx64\x64\link.exe /nologo @CMakeFiles\cmTC_67372.dir\objects1.rsp @C:\Users\hlavacs\AppData\Local\Temp\nm838B.tmp
 
 
 
 The system is: Windows - 10.0.19041 - AMD64
+Compiling the C compiler identification source file "CMakeCCompilerId.c" succeeded.
+Compiler: C:/Program Files (x86)/Microsoft Visual Studio/2019/Community/VC/Tools/MSVC/14.28.29333/bin/Hostx64/x64/cl.exe 
+Build flags: 
+Id flags:  
+
+The output was:
+0
+Microsoft (R) C/C++-Optimierungscompiler Version 19.28.29336 für x64
+Copyright (C) Microsoft Corporation. Alle Rechte vorbehalten.
+
+CMakeCCompilerId.c
+Microsoft (R) Incremental Linker Version 14.28.29336.0
+Copyright (C) Microsoft Corporation.  All rights reserved.
+
+/out:CMakeCCompilerId.exe 
+CMakeCCompilerId.obj 
+
+
+Compilation of the C compiler identification source "CMakeCCompilerId.c" produced "CMakeCCompilerId.exe"
+
+Compilation of the C compiler identification source "CMakeCCompilerId.c" produced "CMakeCCompilerId.obj"
+
+The C compiler identification is MSVC, found in "C:/Users/hlavacs/Documents/GitHub/ViennaVulkanEngine/CMakeFiles/3.17.0/CompilerIdC/CMakeCCompilerId.exe"
+
+Compiling the CXX compiler identification source file "CMakeCXXCompilerId.cpp" succeeded.
+Compiler: C:/Program Files (x86)/Microsoft Visual Studio/2019/Community/VC/Tools/MSVC/14.28.29333/bin/Hostx64/x64/cl.exe 
+Build flags: 
+Id flags:  
+
+The output was:
+0
+Microsoft (R) C/C++-Optimierungscompiler Version 19.28.29336 für x64
+Copyright (C) Microsoft Corporation. Alle Rechte vorbehalten.
+
+CMakeCXXCompilerId.cpp
+Microsoft (R) Incremental Linker Version 14.28.29336.0
+Copyright (C) Microsoft Corporation.  All rights reserved.
+
+/out:CMakeCXXCompilerId.exe 
+CMakeCXXCompilerId.obj 
+
+
+Compilation of the CXX compiler identification source "CMakeCXXCompilerId.cpp" produced "CMakeCXXCompilerId.exe"
+
+Compilation of the CXX compiler identification source "CMakeCXXCompilerId.cpp" produced "CMakeCXXCompilerId.obj"
+
+The CXX compiler identification is MSVC, found in "C:/Users/hlavacs/Documents/GitHub/ViennaVulkanEngine/CMakeFiles/3.17.0/CompilerIdCXX/CMakeCXXCompilerId.exe"
+
+Determining if the C compiler works passed with the following output:
+Change Dir: C:/Users/hlavacs/Documents/GitHub/ViennaVulkanEngine/CMakeFiles/CMakeTmp
+
+Run Build Command(s):nmake /nologo cmTC_644d6\fast && 	"C:\Program Files (x86)\Microsoft Visual Studio\2019\Community\VC\Tools\MSVC\14.28.29333\bin\HostX64\x64\nmake.exe" -f CMakeFiles\cmTC_644d6.dir\build.make /nologo -L                  CMakeFiles\cmTC_644d6.dir\build
+Building C object CMakeFiles/cmTC_644d6.dir/testCCompiler.c.obj
+	C:\PROGRA~2\MICROS~1\2019\COMMUN~1\VC\Tools\MSVC\1428~1.293\bin\Hostx64\x64\cl.exe @C:\Users\hlavacs\AppData\Local\Temp\nm8D49.tmp
+testCCompiler.c
+Linking C executable cmTC_644d6.exe
+	"C:\Program Files\CMake\bin\cmake.exe" -E vs_link_exe --intdir=CMakeFiles\cmTC_644d6.dir --rc=C:\PROGRA~2\WI3CF2~1\10\bin\100183~1.0\x64\rc.exe --mt=C:\PROGRA~2\WI3CF2~1\10\bin\100183~1.0\x64\mt.exe --manifests  -- C:\PROGRA~2\MICROS~1\2019\COMMUN~1\VC\Tools\MSVC\1428~1.293\bin\Hostx64\x64\link.exe /nologo @CMakeFiles\cmTC_644d6.dir\objects1.rsp @C:\Users\hlavacs\AppData\Local\Temp\nm8D79.tmp
+
+
+
+Detecting C compiler ABI info compiled with the following output:
+Change Dir: C:/Users/hlavacs/Documents/GitHub/ViennaVulkanEngine/CMakeFiles/CMakeTmp
+
+Run Build Command(s):nmake /nologo cmTC_72555\fast && 	"C:\Program Files (x86)\Microsoft Visual Studio\2019\Community\VC\Tools\MSVC\14.28.29333\bin\HostX64\x64\nmake.exe" -f CMakeFiles\cmTC_72555.dir\build.make /nologo -L                  CMakeFiles\cmTC_72555.dir\build
+Building C object CMakeFiles/cmTC_72555.dir/CMakeCCompilerABI.c.obj
+	C:\PROGRA~2\MICROS~1\2019\COMMUN~1\VC\Tools\MSVC\1428~1.293\bin\Hostx64\x64\cl.exe @C:\Users\hlavacs\AppData\Local\Temp\nm8E91.tmp
+CMakeCCompilerABI.c
+Linking C executable cmTC_72555.exe
+	"C:\Program Files\CMake\bin\cmake.exe" -E vs_link_exe --intdir=CMakeFiles\cmTC_72555.dir --rc=C:\PROGRA~2\WI3CF2~1\10\bin\100183~1.0\x64\rc.exe --mt=C:\PROGRA~2\WI3CF2~1\10\bin\100183~1.0\x64\mt.exe --manifests  -- C:\PROGRA~2\MICROS~1\2019\COMMUN~1\VC\Tools\MSVC\1428~1.293\bin\Hostx64\x64\link.exe /nologo @CMakeFiles\cmTC_72555.dir\objects1.rsp @C:\Users\hlavacs\AppData\Local\Temp\nm8ED1.tmp
+
+
+
+Determining if the CXX compiler works passed with the following output:
+Change Dir: C:/Users/hlavacs/Documents/GitHub/ViennaVulkanEngine/CMakeFiles/CMakeTmp
+
+Run Build Command(s):nmake /nologo cmTC_c1d8d\fast && 	"C:\Program Files (x86)\Microsoft Visual Studio\2019\Community\VC\Tools\MSVC\14.28.29333\bin\HostX64\x64\nmake.exe" -f CMakeFiles\cmTC_c1d8d.dir\build.make /nologo -L                  CMakeFiles\cmTC_c1d8d.dir\build
+Building CXX object CMakeFiles/cmTC_c1d8d.dir/testCXXCompiler.cxx.obj
+	C:\PROGRA~2\MICROS~1\2019\COMMUN~1\VC\Tools\MSVC\1428~1.293\bin\Hostx64\x64\cl.exe @C:\Users\hlavacs\AppData\Local\Temp\nm9018.tmp
+testCXXCompiler.cxx
+Linking CXX executable cmTC_c1d8d.exe
+	"C:\Program Files\CMake\bin\cmake.exe" -E vs_link_exe --intdir=CMakeFiles\cmTC_c1d8d.dir --rc=C:\PROGRA~2\WI3CF2~1\10\bin\100183~1.0\x64\rc.exe --mt=C:\PROGRA~2\WI3CF2~1\10\bin\100183~1.0\x64\mt.exe --manifests  -- C:\PROGRA~2\MICROS~1\2019\COMMUN~1\VC\Tools\MSVC\1428~1.293\bin\Hostx64\x64\link.exe /nologo @CMakeFiles\cmTC_c1d8d.dir\objects1.rsp @C:\Users\hlavacs\AppData\Local\Temp\nm9058.tmp
+
+
+
+Detecting CXX compiler ABI info compiled with the following output:
+Change Dir: C:/Users/hlavacs/Documents/GitHub/ViennaVulkanEngine/CMakeFiles/CMakeTmp
+
+Run Build Command(s):nmake /nologo cmTC_f97f6\fast && 	"C:\Program Files (x86)\Microsoft Visual Studio\2019\Community\VC\Tools\MSVC\14.28.29333\bin\HostX64\x64\nmake.exe" -f CMakeFiles\cmTC_f97f6.dir\build.make /nologo -L                  CMakeFiles\cmTC_f97f6.dir\build
+Building CXX object CMakeFiles/cmTC_f97f6.dir/CMakeCXXCompilerABI.cpp.obj
+	C:\PROGRA~2\MICROS~1\2019\COMMUN~1\VC\Tools\MSVC\1428~1.293\bin\Hostx64\x64\cl.exe @C:\Users\hlavacs\AppData\Local\Temp\nm917F.tmp
+CMakeCXXCompilerABI.cpp
+Linking CXX executable cmTC_f97f6.exe
+	"C:\Program Files\CMake\bin\cmake.exe" -E vs_link_exe --intdir=CMakeFiles\cmTC_f97f6.dir --rc=C:\PROGRA~2\WI3CF2~1\10\bin\100183~1.0\x64\rc.exe --mt=C:\PROGRA~2\WI3CF2~1\10\bin\100183~1.0\x64\mt.exe --manifests  -- C:\PROGRA~2\MICROS~1\2019\COMMUN~1\VC\Tools\MSVC\1428~1.293\bin\Hostx64\x64\link.exe /nologo @CMakeFiles\cmTC_f97f6.dir\objects1.rsp @C:\Users\hlavacs\AppData\Local\Temp\nm91BF.tmp
+
+
+
 The system is: Windows - 10.0.19041 - AMD64
+Compiling the C compiler identification source file "CMakeCCompilerId.c" succeeded.
+Compiler: C:/Program Files (x86)/Microsoft Visual Studio/2019/Community/VC/Tools/MSVC/14.28.29333/bin/Hostx64/x64/cl.exe 
+Build flags: 
+Id flags:  
+
+The output was:
+0
+Microsoft (R) C/C++-Optimierungscompiler Version 19.28.29336 für x64
+Copyright (C) Microsoft Corporation. Alle Rechte vorbehalten.
+
+CMakeCCompilerId.c
+Microsoft (R) Incremental Linker Version 14.28.29336.0
+Copyright (C) Microsoft Corporation.  All rights reserved.
+
+/out:CMakeCCompilerId.exe 
+CMakeCCompilerId.obj 
+
+
+Compilation of the C compiler identification source "CMakeCCompilerId.c" produced "CMakeCCompilerId.exe"
+
+Compilation of the C compiler identification source "CMakeCCompilerId.c" produced "CMakeCCompilerId.obj"
+
+The C compiler identification is MSVC, found in "C:/Users/hlavacs/Documents/GitHub/ViennaVulkanEngine/CMakeFiles/3.17.0/CompilerIdC/CMakeCCompilerId.exe"
+
+Compiling the CXX compiler identification source file "CMakeCXXCompilerId.cpp" succeeded.
+Compiler: C:/Program Files (x86)/Microsoft Visual Studio/2019/Community/VC/Tools/MSVC/14.28.29333/bin/Hostx64/x64/cl.exe 
+Build flags: 
+Id flags:  
+
+The output was:
+0
+Microsoft (R) C/C++-Optimierungscompiler Version 19.28.29336 für x64
+Copyright (C) Microsoft Corporation. Alle Rechte vorbehalten.
+
+CMakeCXXCompilerId.cpp
+Microsoft (R) Incremental Linker Version 14.28.29336.0
+Copyright (C) Microsoft Corporation.  All rights reserved.
+
+/out:CMakeCXXCompilerId.exe 
+CMakeCXXCompilerId.obj 
+
+
+Compilation of the CXX compiler identification source "CMakeCXXCompilerId.cpp" produced "CMakeCXXCompilerId.exe"
+
+Compilation of the CXX compiler identification source "CMakeCXXCompilerId.cpp" produced "CMakeCXXCompilerId.obj"
+
+The CXX compiler identification is MSVC, found in "C:/Users/hlavacs/Documents/GitHub/ViennaVulkanEngine/CMakeFiles/3.17.0/CompilerIdCXX/CMakeCXXCompilerId.exe"
+
+Determining if the C compiler works passed with the following output:
+Change Dir: C:/Users/hlavacs/Documents/GitHub/ViennaVulkanEngine/CMakeFiles/CMakeTmp
+
+Run Build Command(s):nmake /nologo cmTC_2950d\fast && 	"C:\Program Files (x86)\Microsoft Visual Studio\2019\Community\VC\Tools\MSVC\14.28.29333\bin\HostX64\x64\nmake.exe" -f CMakeFiles\cmTC_2950d.dir\build.make /nologo -L                  CMakeFiles\cmTC_2950d.dir\build
+Building C object CMakeFiles/cmTC_2950d.dir/testCCompiler.c.obj
+	C:\PROGRA~2\MICROS~1\2019\COMMUN~1\VC\Tools\MSVC\1428~1.293\bin\Hostx64\x64\cl.exe @C:\Users\hlavacs\AppData\Local\Temp\nmE30A.tmp
+testCCompiler.c
+Linking C executable cmTC_2950d.exe
+	"C:\Program Files\CMake\bin\cmake.exe" -E vs_link_exe --intdir=CMakeFiles\cmTC_2950d.dir --rc=C:\PROGRA~2\WI3CF2~1\10\bin\100183~1.0\x64\rc.exe --mt=C:\PROGRA~2\WI3CF2~1\10\bin\100183~1.0\x64\mt.exe --manifests  -- C:\PROGRA~2\MICROS~1\2019\COMMUN~1\VC\Tools\MSVC\1428~1.293\bin\Hostx64\x64\link.exe /nologo @CMakeFiles\cmTC_2950d.dir\objects1.rsp @C:\Users\hlavacs\AppData\Local\Temp\nmE33A.tmp
+
+
+
+Detecting C compiler ABI info compiled with the following output:
+Change Dir: C:/Users/hlavacs/Documents/GitHub/ViennaVulkanEngine/CMakeFiles/CMakeTmp
+
+Run Build Command(s):nmake /nologo cmTC_4d36f\fast && 	"C:\Program Files (x86)\Microsoft Visual Studio\2019\Community\VC\Tools\MSVC\14.28.29333\bin\HostX64\x64\nmake.exe" -f CMakeFiles\cmTC_4d36f.dir\build.make /nologo -L                  CMakeFiles\cmTC_4d36f.dir\build
+Building C object CMakeFiles/cmTC_4d36f.dir/CMakeCCompilerABI.c.obj
+	C:\PROGRA~2\MICROS~1\2019\COMMUN~1\VC\Tools\MSVC\1428~1.293\bin\Hostx64\x64\cl.exe @C:\Users\hlavacs\AppData\Local\Temp\nmE453.tmp
+CMakeCCompilerABI.c
+Linking C executable cmTC_4d36f.exe
+	"C:\Program Files\CMake\bin\cmake.exe" -E vs_link_exe --intdir=CMakeFiles\cmTC_4d36f.dir --rc=C:\PROGRA~2\WI3CF2~1\10\bin\100183~1.0\x64\rc.exe --mt=C:\PROGRA~2\WI3CF2~1\10\bin\100183~1.0\x64\mt.exe --manifests  -- C:\PROGRA~2\MICROS~1\2019\COMMUN~1\VC\Tools\MSVC\1428~1.293\bin\Hostx64\x64\link.exe /nologo @CMakeFiles\cmTC_4d36f.dir\objects1.rsp @C:\Users\hlavacs\AppData\Local\Temp\nmE492.tmp
+
+
+
+Determining if the CXX compiler works passed with the following output:
+Change Dir: C:/Users/hlavacs/Documents/GitHub/ViennaVulkanEngine/CMakeFiles/CMakeTmp
+
+Run Build Command(s):nmake /nologo cmTC_709a1\fast && 	"C:\Program Files (x86)\Microsoft Visual Studio\2019\Community\VC\Tools\MSVC\14.28.29333\bin\HostX64\x64\nmake.exe" -f CMakeFiles\cmTC_709a1.dir\build.make /nologo -L                  CMakeFiles\cmTC_709a1.dir\build
+Building CXX object CMakeFiles/cmTC_709a1.dir/testCXXCompiler.cxx.obj
+	C:\PROGRA~2\MICROS~1\2019\COMMUN~1\VC\Tools\MSVC\1428~1.293\bin\Hostx64\x64\cl.exe @C:\Users\hlavacs\AppData\Local\Temp\nmE5CA.tmp
+testCXXCompiler.cxx
+Linking CXX executable cmTC_709a1.exe
+	"C:\Program Files\CMake\bin\cmake.exe" -E vs_link_exe --intdir=CMakeFiles\cmTC_709a1.dir --rc=C:\PROGRA~2\WI3CF2~1\10\bin\100183~1.0\x64\rc.exe --mt=C:\PROGRA~2\WI3CF2~1\10\bin\100183~1.0\x64\mt.exe --manifests  -- C:\PROGRA~2\MICROS~1\2019\COMMUN~1\VC\Tools\MSVC\1428~1.293\bin\Hostx64\x64\link.exe /nologo @CMakeFiles\cmTC_709a1.dir\objects1.rsp @C:\Users\hlavacs\AppData\Local\Temp\nmE609.tmp
+
+
+
+Detecting CXX compiler ABI info compiled with the following output:
+Change Dir: C:/Users/hlavacs/Documents/GitHub/ViennaVulkanEngine/CMakeFiles/CMakeTmp
+
+Run Build Command(s):nmake /nologo cmTC_b3ed7\fast && 	"C:\Program Files (x86)\Microsoft Visual Studio\2019\Community\VC\Tools\MSVC\14.28.29333\bin\HostX64\x64\nmake.exe" -f CMakeFiles\cmTC_b3ed7.dir\build.make /nologo -L                  CMakeFiles\cmTC_b3ed7.dir\build
+Building CXX object CMakeFiles/cmTC_b3ed7.dir/CMakeCXXCompilerABI.cpp.obj
+	C:\PROGRA~2\MICROS~1\2019\COMMUN~1\VC\Tools\MSVC\1428~1.293\bin\Hostx64\x64\cl.exe @C:\Users\hlavacs\AppData\Local\Temp\nmE721.tmp
+CMakeCXXCompilerABI.cpp
+Linking CXX executable cmTC_b3ed7.exe
+	"C:\Program Files\CMake\bin\cmake.exe" -E vs_link_exe --intdir=CMakeFiles\cmTC_b3ed7.dir --rc=C:\PROGRA~2\WI3CF2~1\10\bin\100183~1.0\x64\rc.exe --mt=C:\PROGRA~2\WI3CF2~1\10\bin\100183~1.0\x64\mt.exe --manifests  -- C:\PROGRA~2\MICROS~1\2019\COMMUN~1\VC\Tools\MSVC\1428~1.293\bin\Hostx64\x64\link.exe /nologo @CMakeFiles\cmTC_b3ed7.dir\objects1.rsp @C:\Users\hlavacs\AppData\Local\Temp\nmE770.tmp
+
+
+
 The system is: Windows - 10.0.19041 - AMD64
+Compiling the C compiler identification source file "CMakeCCompilerId.c" succeeded.
+Compiler: C:/Program Files (x86)/Microsoft Visual Studio/2019/Community/VC/Tools/MSVC/14.28.29333/bin/Hostx64/x64/cl.exe 
+Build flags: 
+Id flags:  
+
+The output was:
+0
+Microsoft (R) C/C++-Optimierungscompiler Version 19.28.29336 für x64
+Copyright (C) Microsoft Corporation. Alle Rechte vorbehalten.
+
+CMakeCCompilerId.c
+Microsoft (R) Incremental Linker Version 14.28.29336.0
+Copyright (C) Microsoft Corporation.  All rights reserved.
+
+/out:CMakeCCompilerId.exe 
+CMakeCCompilerId.obj 
+
+
+Compilation of the C compiler identification source "CMakeCCompilerId.c" produced "CMakeCCompilerId.exe"
+
+Compilation of the C compiler identification source "CMakeCCompilerId.c" produced "CMakeCCompilerId.obj"
+
+The C compiler identification is MSVC, found in "C:/Users/hlavacs/Documents/GitHub/ViennaVulkanEngine/CMakeFiles/3.17.0/CompilerIdC/CMakeCCompilerId.exe"
+
+Compiling the CXX compiler identification source file "CMakeCXXCompilerId.cpp" succeeded.
+Compiler: C:/Program Files (x86)/Microsoft Visual Studio/2019/Community/VC/Tools/MSVC/14.28.29333/bin/Hostx64/x64/cl.exe 
+Build flags: 
+Id flags:  
+
+The output was:
+0
+Microsoft (R) C/C++-Optimierungscompiler Version 19.28.29336 für x64
+Copyright (C) Microsoft Corporation. Alle Rechte vorbehalten.
+
+CMakeCXXCompilerId.cpp
+Microsoft (R) Incremental Linker Version 14.28.29336.0
+Copyright (C) Microsoft Corporation.  All rights reserved.
+
+/out:CMakeCXXCompilerId.exe 
+CMakeCXXCompilerId.obj 
+
+
+Compilation of the CXX compiler identification source "CMakeCXXCompilerId.cpp" produced "CMakeCXXCompilerId.exe"
+
+Compilation of the CXX compiler identification source "CMakeCXXCompilerId.cpp" produced "CMakeCXXCompilerId.obj"
+
+The CXX compiler identification is MSVC, found in "C:/Users/hlavacs/Documents/GitHub/ViennaVulkanEngine/CMakeFiles/3.17.0/CompilerIdCXX/CMakeCXXCompilerId.exe"
+
+Determining if the C compiler works passed with the following output:
+Change Dir: C:/Users/hlavacs/Documents/GitHub/ViennaVulkanEngine/CMakeFiles/CMakeTmp
+
+Run Build Command(s):nmake /nologo cmTC_c07bb\fast && 	"C:\Program Files (x86)\Microsoft Visual Studio\2019\Community\VC\Tools\MSVC\14.28.29333\bin\HostX64\x64\nmake.exe" -f CMakeFiles\cmTC_c07bb.dir\build.make /nologo -L                  CMakeFiles\cmTC_c07bb.dir\build
+Building C object CMakeFiles/cmTC_c07bb.dir/testCCompiler.c.obj
+	C:\PROGRA~2\MICROS~1\2019\COMMUN~1\VC\Tools\MSVC\1428~1.293\bin\Hostx64\x64\cl.exe @C:\Users\hlavacs\AppData\Local\Temp\nmCDB9.tmp
+testCCompiler.c
+Linking C executable cmTC_c07bb.exe
+	"C:\Program Files\CMake\bin\cmake.exe" -E vs_link_exe --intdir=CMakeFiles\cmTC_c07bb.dir --rc=C:\PROGRA~2\WI3CF2~1\10\bin\100183~1.0\x64\rc.exe --mt=C:\PROGRA~2\WI3CF2~1\10\bin\100183~1.0\x64\mt.exe --manifests  -- C:\PROGRA~2\MICROS~1\2019\COMMUN~1\VC\Tools\MSVC\1428~1.293\bin\Hostx64\x64\link.exe /nologo @CMakeFiles\cmTC_c07bb.dir\objects1.rsp @C:\Users\hlavacs\AppData\Local\Temp\nmCDE8.tmp
+
+
+
+Detecting C compiler ABI info compiled with the following output:
+Change Dir: C:/Users/hlavacs/Documents/GitHub/ViennaVulkanEngine/CMakeFiles/CMakeTmp
+
+Run Build Command(s):nmake /nologo cmTC_b3c4b\fast && 	"C:\Program Files (x86)\Microsoft Visual Studio\2019\Community\VC\Tools\MSVC\14.28.29333\bin\HostX64\x64\nmake.exe" -f CMakeFiles\cmTC_b3c4b.dir\build.make /nologo -L                  CMakeFiles\cmTC_b3c4b.dir\build
+Building C object CMakeFiles/cmTC_b3c4b.dir/CMakeCCompilerABI.c.obj
+	C:\PROGRA~2\MICROS~1\2019\COMMUN~1\VC\Tools\MSVC\1428~1.293\bin\Hostx64\x64\cl.exe @C:\Users\hlavacs\AppData\Local\Temp\nmCF10.tmp
+CMakeCCompilerABI.c
+Linking C executable cmTC_b3c4b.exe
+	"C:\Program Files\CMake\bin\cmake.exe" -E vs_link_exe --intdir=CMakeFiles\cmTC_b3c4b.dir --rc=C:\PROGRA~2\WI3CF2~1\10\bin\100183~1.0\x64\rc.exe --mt=C:\PROGRA~2\WI3CF2~1\10\bin\100183~1.0\x64\mt.exe --manifests  -- C:\PROGRA~2\MICROS~1\2019\COMMUN~1\VC\Tools\MSVC\1428~1.293\bin\Hostx64\x64\link.exe /nologo @CMakeFiles\cmTC_b3c4b.dir\objects1.rsp @C:\Users\hlavacs\AppData\Local\Temp\nmCF40.tmp
+
+
+
+Determining if the CXX compiler works passed with the following output:
+Change Dir: C:/Users/hlavacs/Documents/GitHub/ViennaVulkanEngine/CMakeFiles/CMakeTmp
+
+Run Build Command(s):nmake /nologo cmTC_87075\fast && 	"C:\Program Files (x86)\Microsoft Visual Studio\2019\Community\VC\Tools\MSVC\14.28.29333\bin\HostX64\x64\nmake.exe" -f CMakeFiles\cmTC_87075.dir\build.make /nologo -L                  CMakeFiles\cmTC_87075.dir\build
+Building CXX object CMakeFiles/cmTC_87075.dir/testCXXCompiler.cxx.obj
+	C:\PROGRA~2\MICROS~1\2019\COMMUN~1\VC\Tools\MSVC\1428~1.293\bin\Hostx64\x64\cl.exe @C:\Users\hlavacs\AppData\Local\Temp\nmD078.tmp
+testCXXCompiler.cxx
+Linking CXX executable cmTC_87075.exe
+	"C:\Program Files\CMake\bin\cmake.exe" -E vs_link_exe --intdir=CMakeFiles\cmTC_87075.dir --rc=C:\PROGRA~2\WI3CF2~1\10\bin\100183~1.0\x64\rc.exe --mt=C:\PROGRA~2\WI3CF2~1\10\bin\100183~1.0\x64\mt.exe --manifests  -- C:\PROGRA~2\MICROS~1\2019\COMMUN~1\VC\Tools\MSVC\1428~1.293\bin\Hostx64\x64\link.exe /nologo @CMakeFiles\cmTC_87075.dir\objects1.rsp @C:\Users\hlavacs\AppData\Local\Temp\nmD0B7.tmp
+
+
+
+Detecting CXX compiler ABI info compiled with the following output:
+Change Dir: C:/Users/hlavacs/Documents/GitHub/ViennaVulkanEngine/CMakeFiles/CMakeTmp
+
+Run Build Command(s):nmake /nologo cmTC_5f9dd\fast && 	"C:\Program Files (x86)\Microsoft Visual Studio\2019\Community\VC\Tools\MSVC\14.28.29333\bin\HostX64\x64\nmake.exe" -f CMakeFiles\cmTC_5f9dd.dir\build.make /nologo -L                  CMakeFiles\cmTC_5f9dd.dir\build
+Building CXX object CMakeFiles/cmTC_5f9dd.dir/CMakeCXXCompilerABI.cpp.obj
+	C:\PROGRA~2\MICROS~1\2019\COMMUN~1\VC\Tools\MSVC\1428~1.293\bin\Hostx64\x64\cl.exe @C:\Users\hlavacs\AppData\Local\Temp\nmD1DF.tmp
+CMakeCXXCompilerABI.cpp
+Linking CXX executable cmTC_5f9dd.exe
+	"C:\Program Files\CMake\bin\cmake.exe" -E vs_link_exe --intdir=CMakeFiles\cmTC_5f9dd.dir --rc=C:\PROGRA~2\WI3CF2~1\10\bin\100183~1.0\x64\rc.exe --mt=C:\PROGRA~2\WI3CF2~1\10\bin\100183~1.0\x64\mt.exe --manifests  -- C:\PROGRA~2\MICROS~1\2019\COMMUN~1\VC\Tools\MSVC\1428~1.293\bin\Hostx64\x64\link.exe /nologo @CMakeFiles\cmTC_5f9dd.dir\objects1.rsp @C:\Users\hlavacs\AppData\Local\Temp\nmD21F.tmp
+
+
+
+The system is: Windows - 10.0.19041 - AMD64
+Compiling the C compiler identification source file "CMakeCCompilerId.c" succeeded.
+Compiler: C:/Program Files (x86)/Microsoft Visual Studio/2019/Community/VC/Tools/MSVC/14.28.29333/bin/Hostx64/x64/cl.exe 
+Build flags: 
+Id flags:  
+
+The output was:
+0
+Microsoft (R) C/C++-Optimierungscompiler Version 19.28.29336 für x64
+Copyright (C) Microsoft Corporation. Alle Rechte vorbehalten.
+
+CMakeCCompilerId.c
+Microsoft (R) Incremental Linker Version 14.28.29336.0
+Copyright (C) Microsoft Corporation.  All rights reserved.
+
+/out:CMakeCCompilerId.exe 
+CMakeCCompilerId.obj 
+
+
+Compilation of the C compiler identification source "CMakeCCompilerId.c" produced "CMakeCCompilerId.exe"
+
+Compilation of the C compiler identification source "CMakeCCompilerId.c" produced "CMakeCCompilerId.obj"
+
+The C compiler identification is MSVC, found in "C:/Users/hlavacs/Documents/GitHub/ViennaVulkanEngine/CMakeFiles/3.17.0/CompilerIdC/CMakeCCompilerId.exe"
+
+Compiling the CXX compiler identification source file "CMakeCXXCompilerId.cpp" succeeded.
+Compiler: C:/Program Files (x86)/Microsoft Visual Studio/2019/Community/VC/Tools/MSVC/14.28.29333/bin/Hostx64/x64/cl.exe 
+Build flags: 
+Id flags:  
+
+The output was:
+0
+Microsoft (R) C/C++-Optimierungscompiler Version 19.28.29336 für x64
+Copyright (C) Microsoft Corporation. Alle Rechte vorbehalten.
+
+CMakeCXXCompilerId.cpp
+Microsoft (R) Incremental Linker Version 14.28.29336.0
+Copyright (C) Microsoft Corporation.  All rights reserved.
+
+/out:CMakeCXXCompilerId.exe 
+CMakeCXXCompilerId.obj 
+
+
+Compilation of the CXX compiler identification source "CMakeCXXCompilerId.cpp" produced "CMakeCXXCompilerId.exe"
+
+Compilation of the CXX compiler identification source "CMakeCXXCompilerId.cpp" produced "CMakeCXXCompilerId.obj"
+
+The CXX compiler identification is MSVC, found in "C:/Users/hlavacs/Documents/GitHub/ViennaVulkanEngine/CMakeFiles/3.17.0/CompilerIdCXX/CMakeCXXCompilerId.exe"
+
+Determining if the C compiler works passed with the following output:
+Change Dir: C:/Users/hlavacs/Documents/GitHub/ViennaVulkanEngine/CMakeFiles/CMakeTmp
+
+Run Build Command(s):nmake /nologo cmTC_29183\fast && 	"C:\Program Files (x86)\Microsoft Visual Studio\2019\Community\VC\Tools\MSVC\14.28.29333\bin\HostX64\x64\nmake.exe" -f CMakeFiles\cmTC_29183.dir\build.make /nologo -L                  CMakeFiles\cmTC_29183.dir\build
+Building C object CMakeFiles/cmTC_29183.dir/testCCompiler.c.obj
+	C:\PROGRA~2\MICROS~1\2019\COMMUN~1\VC\Tools\MSVC\1428~1.293\bin\Hostx64\x64\cl.exe @C:\Users\hlavacs\AppData\Local\Temp\nm819E.tmp
+testCCompiler.c
+Linking C executable cmTC_29183.exe
+	"C:\Program Files\CMake\bin\cmake.exe" -E vs_link_exe --intdir=CMakeFiles\cmTC_29183.dir --rc=C:\PROGRA~2\WI3CF2~1\10\bin\100183~1.0\x64\rc.exe --mt=C:\PROGRA~2\WI3CF2~1\10\bin\100183~1.0\x64\mt.exe --manifests  -- C:\PROGRA~2\MICROS~1\2019\COMMUN~1\VC\Tools\MSVC\1428~1.293\bin\Hostx64\x64\link.exe /nologo @CMakeFiles\cmTC_29183.dir\objects1.rsp @C:\Users\hlavacs\AppData\Local\Temp\nm81CD.tmp
+
+
+
+Detecting C compiler ABI info compiled with the following output:
+Change Dir: C:/Users/hlavacs/Documents/GitHub/ViennaVulkanEngine/CMakeFiles/CMakeTmp
+
+Run Build Command(s):nmake /nologo cmTC_4eed5\fast && 	"C:\Program Files (x86)\Microsoft Visual Studio\2019\Community\VC\Tools\MSVC\14.28.29333\bin\HostX64\x64\nmake.exe" -f CMakeFiles\cmTC_4eed5.dir\build.make /nologo -L                  CMakeFiles\cmTC_4eed5.dir\build
+Building C object CMakeFiles/cmTC_4eed5.dir/CMakeCCompilerABI.c.obj
+	C:\PROGRA~2\MICROS~1\2019\COMMUN~1\VC\Tools\MSVC\1428~1.293\bin\Hostx64\x64\cl.exe @C:\Users\hlavacs\AppData\Local\Temp\nm82E6.tmp
+CMakeCCompilerABI.c
+Linking C executable cmTC_4eed5.exe
+	"C:\Program Files\CMake\bin\cmake.exe" -E vs_link_exe --intdir=CMakeFiles\cmTC_4eed5.dir --rc=C:\PROGRA~2\WI3CF2~1\10\bin\100183~1.0\x64\rc.exe --mt=C:\PROGRA~2\WI3CF2~1\10\bin\100183~1.0\x64\mt.exe --manifests  -- C:\PROGRA~2\MICROS~1\2019\COMMUN~1\VC\Tools\MSVC\1428~1.293\bin\Hostx64\x64\link.exe /nologo @CMakeFiles\cmTC_4eed5.dir\objects1.rsp @C:\Users\hlavacs\AppData\Local\Temp\nm8325.tmp
+
+
+
+Determining if the CXX compiler works passed with the following output:
+Change Dir: C:/Users/hlavacs/Documents/GitHub/ViennaVulkanEngine/CMakeFiles/CMakeTmp
+
+Run Build Command(s):nmake /nologo cmTC_60bc4\fast && 	"C:\Program Files (x86)\Microsoft Visual Studio\2019\Community\VC\Tools\MSVC\14.28.29333\bin\HostX64\x64\nmake.exe" -f CMakeFiles\cmTC_60bc4.dir\build.make /nologo -L                  CMakeFiles\cmTC_60bc4.dir\build
+Building CXX object CMakeFiles/cmTC_60bc4.dir/testCXXCompiler.cxx.obj
+	C:\PROGRA~2\MICROS~1\2019\COMMUN~1\VC\Tools\MSVC\1428~1.293\bin\Hostx64\x64\cl.exe @C:\Users\hlavacs\AppData\Local\Temp\nm845D.tmp
+testCXXCompiler.cxx
+Linking CXX executable cmTC_60bc4.exe
+	"C:\Program Files\CMake\bin\cmake.exe" -E vs_link_exe --intdir=CMakeFiles\cmTC_60bc4.dir --rc=C:\PROGRA~2\WI3CF2~1\10\bin\100183~1.0\x64\rc.exe --mt=C:\PROGRA~2\WI3CF2~1\10\bin\100183~1.0\x64\mt.exe --manifests  -- C:\PROGRA~2\MICROS~1\2019\COMMUN~1\VC\Tools\MSVC\1428~1.293\bin\Hostx64\x64\link.exe /nologo @CMakeFiles\cmTC_60bc4.dir\objects1.rsp @C:\Users\hlavacs\AppData\Local\Temp\nm849C.tmp
+
+
+
+Detecting CXX compiler ABI info compiled with the following output:
+Change Dir: C:/Users/hlavacs/Documents/GitHub/ViennaVulkanEngine/CMakeFiles/CMakeTmp
+
+Run Build Command(s):nmake /nologo cmTC_cb3d8\fast && 	"C:\Program Files (x86)\Microsoft Visual Studio\2019\Community\VC\Tools\MSVC\14.28.29333\bin\HostX64\x64\nmake.exe" -f CMakeFiles\cmTC_cb3d8.dir\build.make /nologo -L                  CMakeFiles\cmTC_cb3d8.dir\build
+Building CXX object CMakeFiles/cmTC_cb3d8.dir/CMakeCXXCompilerABI.cpp.obj
+	C:\PROGRA~2\MICROS~1\2019\COMMUN~1\VC\Tools\MSVC\1428~1.293\bin\Hostx64\x64\cl.exe @C:\Users\hlavacs\AppData\Local\Temp\nm85B4.tmp
+CMakeCXXCompilerABI.cpp
+Linking CXX executable cmTC_cb3d8.exe
+	"C:\Program Files\CMake\bin\cmake.exe" -E vs_link_exe --intdir=CMakeFiles\cmTC_cb3d8.dir --rc=C:\PROGRA~2\WI3CF2~1\10\bin\100183~1.0\x64\rc.exe --mt=C:\PROGRA~2\WI3CF2~1\10\bin\100183~1.0\x64\mt.exe --manifests  -- C:\PROGRA~2\MICROS~1\2019\COMMUN~1\VC\Tools\MSVC\1428~1.293\bin\Hostx64\x64\link.exe /nologo @CMakeFiles\cmTC_cb3d8.dir\objects1.rsp @C:\Users\hlavacs\AppData\Local\Temp\nm8604.tmp
+
+
+

@@ -1,9 +1,9 @@
 file(REMOVE_RECURSE
+  "../../bin/basic_test.exe"
+  "../../bin/basic_test.exe.manifest"
+  "../../bin/basic_test.lib"
+  "../../bin/basic_test.pdb"
   "CMakeFiles/basic_test.dir/basic_test.cpp.obj"
-  "basic_test.exe"
-  "basic_test.exe.manifest"
-  "basic_test.lib"
-  "basic_test.pdb"
 )
 
 # Per-language clean rules from dependency scanning.
