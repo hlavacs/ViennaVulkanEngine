@@ -97,7 +97,7 @@ bin\basic_test.exe: examples\basic_test\CMakeFiles\basic_test.dir\objects1.rsp
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --bold --progress-dir=C:\Users\hlavacs\Documents\GitHub\ViennaVulkanEngine\CMakeFiles --progress-num=$(CMAKE_PROGRESS_2) "Linking CXX executable ..\..\bin\basic_test.exe"
 	cd C:\Users\hlavacs\Documents\GitHub\ViennaVulkanEngine\examples\basic_test
 	"C:\Program Files\CMake\bin\cmake.exe" -E vs_link_exe --intdir=CMakeFiles\basic_test.dir --rc=C:\PROGRA~2\WI3CF2~1\10\bin\100183~1.0\x64\rc.exe --mt=C:\PROGRA~2\WI3CF2~1\10\bin\100183~1.0\x64\mt.exe --manifests  -- C:\PROGRA~2\MICROS~1\2019\COMMUN~1\VC\Tools\MSVC\1428~1.293\bin\Hostx64\x64\link.exe /nologo @CMakeFiles\basic_test.dir\objects1.rsp @<<
- /out:..\..\bin\basic_test.exe /implib:..\..\bin\basic_test.lib /pdb:C:\Users\hlavacs\Documents\GitHub\ViennaVulkanEngine\bin\basic_test.pdb /version:0.0  /machine:x64 /debug /INCREMENTAL /subsystem:console  ..\..\src\vve.lib kernel32.lib user32.lib gdi32.lib winspool.lib shell32.lib ole32.lib oleaut32.lib uuid.lib comdlg32.lib advapi32.lib 
+ /out:..\..\bin\basic_test.exe /implib:..\..\bin\basic_test.lib /pdb:C:\Users\hlavacs\Documents\GitHub\ViennaVulkanEngine\bin\basic_test.pdb /version:0.0  /machine:x64 /debug /INCREMENTAL /subsystem:console  ..\..\src\vve.lib $(VULKAN_SDK)/Lib/vulkan-1.lib kernel32.lib user32.lib gdi32.lib winspool.lib shell32.lib ole32.lib oleaut32.lib uuid.lib comdlg32.lib advapi32.lib 
 <<
 	cd C:\Users\hlavacs\Documents\GitHub\ViennaVulkanEngine
 
