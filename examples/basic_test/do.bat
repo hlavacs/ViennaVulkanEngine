@@ -1,0 +1,1 @@
+cmake -G "NMake Makefiles" .

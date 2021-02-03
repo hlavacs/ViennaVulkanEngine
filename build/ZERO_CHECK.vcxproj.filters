@@ -1,0 +1,13 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="16.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <CustomBuild Include="C:\Users\hlavacs\Documents\GitHub\ViennaVulkanEngine\build\CMakeFiles\69e87df403449fbc7640e97f39776e49\generate.stamp.rule">
+      <Filter>CMake Rules</Filter>
+    </CustomBuild>
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="CMake Rules">
+      <UniqueIdentifier>{F80A485F-9611-3661-9A86-46F57CF74471}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+</Project>
