@@ -1,4 +1,5 @@
 
 add_library (vve vve.cpp)
 
-target_include_directories (include PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
+
+target_include_directories (vve PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/..)

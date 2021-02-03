@@ -1,0 +1,8 @@
+C:/Users/hlavacs/Documents/GitHub/ViennaVulkanEngine/CMakeFiles/edit_cache.dir
+C:/Users/hlavacs/Documents/GitHub/ViennaVulkanEngine/CMakeFiles/rebuild_cache.dir
+C:/Users/hlavacs/Documents/GitHub/ViennaVulkanEngine/src/CMakeFiles/edit_cache.dir
+C:/Users/hlavacs/Documents/GitHub/ViennaVulkanEngine/src/CMakeFiles/vve.dir
+C:/Users/hlavacs/Documents/GitHub/ViennaVulkanEngine/src/CMakeFiles/rebuild_cache.dir
+C:/Users/hlavacs/Documents/GitHub/ViennaVulkanEngine/examples/basic_test/CMakeFiles/basic_test.dir
+C:/Users/hlavacs/Documents/GitHub/ViennaVulkanEngine/examples/basic_test/CMakeFiles/edit_cache.dir
+C:/Users/hlavacs/Documents/GitHub/ViennaVulkanEngine/examples/basic_test/CMakeFiles/rebuild_cache.dir

@@ -1,3 +1,0 @@
-C:/Users/hlavacs/Documents/GitHub/ViennaVulkanEngine/examples/basic_test/CMakeFiles/basic_test.dir
-C:/Users/hlavacs/Documents/GitHub/ViennaVulkanEngine/examples/basic_test/CMakeFiles/edit_cache.dir
-C:/Users/hlavacs/Documents/GitHub/ViennaVulkanEngine/examples/basic_test/CMakeFiles/rebuild_cache.dir
