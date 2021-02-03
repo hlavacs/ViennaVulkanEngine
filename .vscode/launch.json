@@ -5,24 +5,24 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "(Windows) Starten",
+            "name": "Exe starten",
             "type": "cppvsdbg",
             "request": "launch",
-            "program": "${workspaceFolder}\\tutorial.exe",
+            "program": "${workspaceFolder}\\examples\\basic_test\\basic_test.exe",
             "args": [],
             "stopAtEntry": false,
-            "cwd": "${workspaceFolder}",
+            "cwd": "${workspaceFolder}\\examples\\basic_test",
             "environment": [],
             "externalConsole": false
         },
         {
-            "name": "cl.exe - (Windows) exe erstellen und debuggen",
+            "name": "Exe erstellen und debuggen",
             "type": "cppvsdbg",
             "request": "launch",
-            "program": "${workspaceFolder}\\tutorial.exe",
+            "program": "${workspaceFolder}\\examples\\basic_test\\basic_test.exe",
             "args": [],
             "stopAtEntry": false,
-            "cwd": "${workspaceFolder}",
+            "cwd": "${workspaceFolder}\\examples\\basic_test",
             "environment": [],
             "externalConsole": false,
             "preLaunchTask": "C/C++: nmake"
