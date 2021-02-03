@@ -5,7 +5,7 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "Exe starten",
+            "name": "Debug",
             "type": "cppvsdbg",
             "request": "launch",
             "program": "${workspaceFolder}\\bin\\basic_test.exe",
@@ -16,7 +16,7 @@
             "externalConsole": false
         },
         {
-            "name": "Exe erstellen und debuggen",
+            "name": "Compile and debug",
             "type": "cppvsdbg",
             "request": "launch",
             "program": "${workspaceFolder}\\bin\\basic_test.exe",

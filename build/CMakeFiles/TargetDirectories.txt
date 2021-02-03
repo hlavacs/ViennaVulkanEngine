@@ -1,4 +1,0 @@
-C:/Users/hlavacs/Documents/GitHub/ViennaVulkanEngine/build/CMakeFiles/ALL_BUILD.dir
-C:/Users/hlavacs/Documents/GitHub/ViennaVulkanEngine/build/CMakeFiles/ZERO_CHECK.dir
-C:/Users/hlavacs/Documents/GitHub/ViennaVulkanEngine/build/src/CMakeFiles/vve.dir
-C:/Users/hlavacs/Documents/GitHub/ViennaVulkanEngine/build/examples/basic_test/CMakeFiles/basic_test.dir
