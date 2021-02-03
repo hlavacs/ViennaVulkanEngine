@@ -6,3 +6,11 @@
 
 #IncludeRegexTransform: 
 
+C:/Users/hlavacs/Documents/GitHub/ViennaVulkanEngine/examples/basic_test/basic_test.cpp
+iostream
+-
+vve.h
+C:/Users/hlavacs/Documents/GitHub/ViennaVulkanEngine/examples/basic_test/vve.h
+
+include/vve.h
+

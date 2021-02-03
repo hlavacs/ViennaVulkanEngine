@@ -1,4 +1,0 @@
-﻿  Building Custom Rule C:/Users/hlavacs/Documents/GitHub/ViennaVulkanEngine/examples/basic_test/CMakeLists.txt
-  basic_test.cpp
-C:\Users\hlavacs\Documents\GitHub\ViennaVulkanEngine\examples\basic_test\basic_test.cpp(6,13): warning C4326: Der Rückgabetyp von "main" sollte "int" und nicht "void" sein
-  basic_test.vcxproj -> C:\Users\hlavacs\Documents\GitHub\ViennaVulkanEngine\bin\Debug\basic_test.exe
