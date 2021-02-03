@@ -3,10 +3,11 @@
 
 #include "vve.h"
 
-void main() {
+int main() {
 
     function(2);
 
     std::cout << "Hello world\n";
+    return 0;
 }
 
