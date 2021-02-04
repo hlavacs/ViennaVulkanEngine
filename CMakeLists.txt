@@ -9,6 +9,7 @@ add_compile_options(/EHsc)
 
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 set(EXECUTABLE_OUTPUT_PATH ${CMAKE_HOME_DIRECTORY}/bin)
+set(LIBRARY_OUTPUT_PATH ${CMAKE_HOME_DIRECTORY}/bin)
 set(CMAKE_VS_PLATFORM_NAME "x64")
 
 SET(INCLUDE ${CMAKE_HOME_DIRECTORY}/include)
@@ -19,9 +20,10 @@ add_subdirectory (examples/basic_test)
 
 find_package(Doxygen)
 if (DOXYGEN_FOUND)
-  set(DOXYGEN_USE_MDFILE_AS_MAINPAGE "${CMAKE_SOURCE_DIR}/README.md")
+  set(DOXYGEN_USE_MDFILE_AS_MAINPAGE "README.md")  
   doxygen_add_docs(doxygen 
-	${CMAKE_SOURCE_DIR}/include
+    ${CMAKE_SOURCE_DIR}/README.md
+    ${CMAKE_SOURCE_DIR}/include
 	${CMAKE_SOURCE_DIR}/src
   )
 endif(DOXYGEN_FOUND)
