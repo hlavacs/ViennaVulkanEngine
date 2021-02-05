@@ -1,5 +1,5 @@
 
-add_library (vve vve.cpp)
+add_library (vve vve.cpp vve.h)
 
 target_include_directories (vve PUBLIC ${CMAKE_HOME_DIRECTORY}/include ${VULKAN_SDK}/include)
 
