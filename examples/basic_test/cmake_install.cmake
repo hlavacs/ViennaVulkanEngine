@@ -1,8 +1,8 @@
-# Install script for directory: C:/Users/hlavacs/Documents/GitHub/ViennaVulkanEngine/examples/basic_test
+# Install script for directory: D:/data/Vulkan/ViennaVulkanEngine/Examples/basic_test
 
 # Set the install prefix
 if(NOT DEFINED CMAKE_INSTALL_PREFIX)
-  set(CMAKE_INSTALL_PREFIX "C:/Program Files (x86)/VVE")
+  set(CMAKE_INSTALL_PREFIX "C:/Program Files/VVE")
 endif()
 string(REGEX REPLACE "/$" "" CMAKE_INSTALL_PREFIX "${CMAKE_INSTALL_PREFIX}")
 

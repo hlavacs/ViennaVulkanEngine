@@ -2,10 +2,10 @@
 <Project>
   <ProjectOutputs>
     <ProjectOutput>
-      <FullPath>C:\Users\hlavacs\Documents\GitHub\ViennaVulkanEngine\x64\Debug\ZERO_CHECK</FullPath>
+      <FullPath>D:\data\Vulkan\ViennaVulkanEngine\x64\Debug\ZERO_CHECK</FullPath>
     </ProjectOutput>
     <ProjectOutput>
-      <FullPath>C:\Users\hlavacs\Documents\GitHub\ViennaVulkanEngine\bin\Debug\basic_test.exe</FullPath>
+      <FullPath>D:\data\Vulkan\ViennaVulkanEngine\bin\Debug\basic_test.exe</FullPath>
     </ProjectOutput>
   </ProjectOutputs>
   <ContentFiles />

@@ -10,6 +10,7 @@ html/
 CMakeLists.txt.user
 CMakeCache.txt
 **/CMakeFiles
+**/CMakeFiles/*
 CMakeScripts
 Testing
 Makefile
@@ -23,6 +24,7 @@ _deps
 **/examples.dir
 **/*.dir
 **/*.cmake
+**/*.depend
 
 # MSVC cmake project files
 # ALL_BUILD.vcxproj
