@@ -1,9 +1,20 @@
 
-add_library (vve vve.cpp)
+set(TARGET vve)
 
-target_include_directories (vve PUBLIC ${CMAKE_HOME_DIRECTORY}/include ${VULKAN_SDK}/include)
+set(SOURCE
+  VEEngine.cpp
+  VEImgui.cpp
+)
 
-target_compile_features(vve PUBLIC cxx_std_20)
+set(HEADERS
+  ${INCLUDE}/VGJS.h
+  ${INCLUDE}/VGJSCoro.h
+  ${INCLUDE}/VVE.h
+  ${INCLUDE}/VEEngine.h
+)
 
-target_link_libraries(vve LINK_INTERFACE_LIBRARIES $(VULKAN_SDK)/Lib/vulkan-1.lib)
+add_library (${TARGET} ${SOURCE} ${HEADERS})
 
+target_compile_features(${TARGET} PUBLIC cxx_std_20)
+
+target_link_libraries(${TARGET} LINK_INTERFACE_LIBRARIES $(VULKAN_SDK)/Lib/vulkan-1.lib)
