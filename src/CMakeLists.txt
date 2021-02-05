@@ -1,8 +1,10 @@
 
-add_library (vve vve.cpp)
+set(TARGET vve)
 
-target_include_directories (vve PUBLIC ${CMAKE_HOME_DIRECTORY}/include ${VULKAN_SDK}/include)
+set(SOURCE vve.cpp)
 
-target_compile_features(vve PUBLIC cxx_std_20)
+add_library (${TARGET} ${SOURCE} ${HEADERS})
 
-target_link_libraries(vve LINK_INTERFACE_LIBRARIES $(VULKAN_SDK)/Lib/vulkan-1.lib)
+target_compile_features(${TARGET} PUBLIC cxx_std_20)
+
+target_link_libraries(${TARGET} LINK_INTERFACE_LIBRARIES $(VULKAN_SDK)/Lib/vulkan-1.lib)

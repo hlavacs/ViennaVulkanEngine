@@ -1,9 +1,12 @@
 
-add_executable(basic_test basic_test.cpp)
+set(TARGET basic_test)
 
-target_link_libraries (basic_test PUBLIC vve)
+set(SOURCE basic_test.cpp)
 
-target_include_directories (basic_test PUBLIC ${CMAKE_HOME_DIRECTORY}/include ${VULKAN_SDK}/include)
+set(MYHEADERS basic_test.h)
 
-target_compile_features(basic_test PUBLIC cxx_std_20)
+add_executable(${TARGET} ${SOURCE} ${MYHEADERS})
 
+target_compile_features(${TARGET} PUBLIC cxx_std_20)
+
+target_link_libraries (${TARGET} PUBLIC vve)

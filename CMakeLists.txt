@@ -1,5 +1,5 @@
 
-cmake_minimum_required (VERSION 3.1.0)
+cmake_minimum_required (VERSION 3.0.0)
 project (VVE)
 
 if (MSVC)
@@ -11,8 +11,11 @@ endif(MSVC)
 
 set(EXECUTABLE_OUTPUT_PATH ${CMAKE_HOME_DIRECTORY}/bin)
 set(LIBRARY_OUTPUT_PATH ${CMAKE_HOME_DIRECTORY}/bin)
-SET(INCLUDE ${CMAKE_HOME_DIRECTORY}/include)
+set(INCLUDE ${CMAKE_HOME_DIRECTORY}/include)
+set(HEADERS ${INCLUDE}/VGJS.h ${INCLUDE}/VGJSCoro.h ${INCLUDE}/vve.h)
 include_directories (${INCLUDE})
+include_directories ($ENV{VULKAN_SDK}/include)
+include_directories ($ENV{VULKAN_SDK}/include/vulkan)
 
 add_subdirectory (src)
 add_subdirectory (examples/basic_test)
@@ -23,6 +26,6 @@ if (DOXYGEN_FOUND)
   doxygen_add_docs(doxygen
     ${CMAKE_SOURCE_DIR}/README.md
     ${CMAKE_SOURCE_DIR}/include
-	${CMAKE_SOURCE_DIR}/src
+	  ${CMAKE_SOURCE_DIR}/src
   )
 endif(DOXYGEN_FOUND)
