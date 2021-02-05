@@ -1,5 +1,0 @@
-C:/Users/hlavacs/Documents/GitHub/ViennaVulkanEngine/CMakeFiles/doxygen.dir
-C:/Users/hlavacs/Documents/GitHub/ViennaVulkanEngine/CMakeFiles/ALL_BUILD.dir
-C:/Users/hlavacs/Documents/GitHub/ViennaVulkanEngine/CMakeFiles/ZERO_CHECK.dir
-C:/Users/hlavacs/Documents/GitHub/ViennaVulkanEngine/src/CMakeFiles/vve.dir
-C:/Users/hlavacs/Documents/GitHub/ViennaVulkanEngine/examples/basic_test/CMakeFiles/basic_test.dir
