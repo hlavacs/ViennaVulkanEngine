@@ -3,9 +3,9 @@ set(TARGET basic_test)
 
 set(SOURCE basic_test.cpp)
 
-set(MYHEADERS basic_test.h)
+set(HEADERS basic_test.h)
 
-add_executable(${TARGET} ${SOURCE} ${MYHEADERS})
+add_executable(${TARGET} ${SOURCE} ${HEADERS})
 
 target_compile_features(${TARGET} PUBLIC cxx_std_20)
 

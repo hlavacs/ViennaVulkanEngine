@@ -1,7 +1,17 @@
 
 set(TARGET vve)
 
-set(SOURCE vve.cpp)
+set(SOURCE 
+  vve.cpp
+  VEEngine.cpp
+)
+
+set(HEADERS 
+  ${INCLUDE}/VGJS.h 
+  ${INCLUDE}/VGJSCoro.h 
+  ${INCLUDE}/vve.h
+  VEEngine.h
+)
 
 add_library (${TARGET} ${SOURCE} ${HEADERS})
 
