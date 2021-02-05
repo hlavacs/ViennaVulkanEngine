@@ -1,13 +1,13 @@
 
 #include <iostream>
-#include "vulkan.h"
-#include "vve.h"
+#include "vulkan/vulkan.h"
+#include "VVE.h"
 #include "basic_test.h"
 
+int imgui();
+
 int main() {
-
-    function(2);
-
+    imgui();
     std::cout << "Hello world\n";
     return 0;
 }

@@ -12,9 +12,12 @@ endif(MSVC)
 set(EXECUTABLE_OUTPUT_PATH ${CMAKE_HOME_DIRECTORY}/bin)
 set(LIBRARY_OUTPUT_PATH ${CMAKE_HOME_DIRECTORY}/bin)
 set(INCLUDE ${CMAKE_HOME_DIRECTORY}/include)
+set(EXTERNAL ${CMAKE_HOME_DIRECTORY}/external)
+
 include_directories (${INCLUDE})
+include_directories (${CMAKE_HOME_DIRECTORY}/external/glfw/include)
+include_directories (${CMAKE_HOME_DIRECTORY}/external/imgui)
 include_directories ($ENV{VULKAN_SDK}/include)
-include_directories ($ENV{VULKAN_SDK}/include/vulkan)
 
 add_subdirectory (src)
 add_subdirectory (examples/basic_test)
