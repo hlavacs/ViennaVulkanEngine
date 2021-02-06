@@ -47,6 +47,7 @@ namespace vve {
 		void					reserve(size_t n) noexcept;
 	};
 
+
 }
 
 

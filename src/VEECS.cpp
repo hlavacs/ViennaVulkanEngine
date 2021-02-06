@@ -2,8 +2,15 @@
 #include "VEECS.h"
 
 
-namespace ve {
+namespace vve {
 
+	VeHandle VeEntityManager::create() {
+		return {};
+	}
+
+	void VeEntityManager::erase(VeHandle& h) {
+
+	}
 
 
 }

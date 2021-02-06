@@ -2,23 +2,32 @@
 #define VEENGINE_H
 
 #include <limits>
+#include <typeinfo>
+#include <typeindex>
 #include "glm.hpp"
+#include "gtc/quaternion.hpp"
 #include "VGJS.h"
 #include "VETable.h"
 
 namespace vve {
 
-
-	template<typename T>
-	struct VeComponent {
+	enum class VeComponentType {
+		Position,
+		Orientation
 	};
 
-	struct VePosition : public VeComponent<VePosition>{
+	template<typename T, auto ID>
+	struct VeComponent {
+	public:
+		static constexpr std::size_t type = static_cast<std::size_t>(ID);
+	};
+
+	struct VePosition : VeComponent<VePosition, VeComponentType::Position> {
 		glm::vec3 m_position;
 	};
 
-	struct VeOrientation : public VeComponent<VeOrientation> {
-
+	struct VeOrientation : VeComponent<VeOrientation, VeComponentType::Orientation> {
+		glm::quat m_orientation;
 	};
 
 
