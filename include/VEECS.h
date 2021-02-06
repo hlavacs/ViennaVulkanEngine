@@ -2,11 +2,4 @@
 #define VEENGINE_H
 
 
-
-namespace vve {
-
-}
-
-
 #endif
-

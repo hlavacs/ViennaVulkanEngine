@@ -9,8 +9,9 @@ set(SOURCE
 set(HEADERS
   ${INCLUDE}/VGJS.h
   ${INCLUDE}/VGJSCoro.h
-  ${INCLUDE}/VVE.h
+  ${INCLUDE}/vve.h
   ${INCLUDE}/VEEngine.h
+  ${INCLUDE}/VEECS.h
 )
 
 add_library (${TARGET} ${SOURCE} ${HEADERS})
