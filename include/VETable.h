@@ -4,13 +4,14 @@
 #include <assert.h>
 #include <memory_resource>
 #include <shared_mutex>
+#include <optional>
+#include <array>
 
 namespace vve {
 
-
-	template<typename T, size_t L>
+	template<typename T, size_t L = 8, bool SHRINK = false>
 	class VeTable {
-	private:
+	protected:
 		static const size_t N = 1 << L;
 		const uint64_t BIT_MASK = (0xFFFFFFFFFFFFFFFF >> L) << L;
 
@@ -28,20 +29,22 @@ namespace vve {
 		std::atomic<bool>			m_read_only = false;
 
 		T* address(size_t) noexcept;
-		void set_read_only(bool flag) { m_read_only = flag; };
+		void set_read_only(bool flag) noexcept { m_read_only = flag; };
 		size_t push_back2(T&&) noexcept;
+		size_t push_back3(T&&) noexcept;
 
 	public:
 		VeTable(std::pmr::memory_resource* mr = std::pmr::new_delete_resource())  noexcept 
 			: m_mr{ mr }, m_segments{mr}  {};
 		std::optional<T>		at(size_t n) noexcept;
-		void					set(size_t n, T& v) noexcept;
+		void					set(size_t n, T&& v) noexcept;
 		size_t					size() const noexcept { return m_size; };
 		std::optional<size_t>	push_back(T&&) noexcept;
 		std::optional<T>		pop_back() noexcept;
 		void					erase(size_t n) noexcept;
 		void					swap(size_t n1, size_t n2) noexcept;
-		bool					get_read_only() { return m_read_only; };
+		bool					get_read_only() noexcept { return m_read_only; } ;
+		void					reserve(size_t n) noexcept;
 	};
 
 }

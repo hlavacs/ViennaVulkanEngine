@@ -62,7 +62,7 @@ namespace vgjs {
     class Job_base;
     class JobSystem;
 
-    template<typename T, typename P, long int D = -1>
+    template<typename T, typename P, auto D = -1>
     struct int_type {
         using type_name = T;
         const T null = static_cast<T>(D);

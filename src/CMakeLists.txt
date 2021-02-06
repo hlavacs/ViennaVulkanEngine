@@ -4,6 +4,8 @@ set(TARGET vve)
 set(SOURCE
   VEEngine.cpp
   VEImgui.cpp
+  VETable.cpp
+  VEECS.cpp
 )
 
 set(HEADERS
