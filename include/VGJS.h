@@ -87,14 +87,18 @@ namespace vgjs {
         struct equal_to {
             constexpr bool operator()(const T& lhs, const T& rhs) const { return lhs == rhs; };
         };
+
+        bool is_null() {
+            return value == null;
+        }
     };
 
-    using parent_t = int_type<int, struct P0, -1>;
     using thread_index_t = int_type<int, struct P0, -1>;
     using thread_id_t = int_type<int, struct P1, -1>;
     using thread_type_t = int_type<int, struct P2, -1>;
     using thread_count_t = int_type<int, struct P3, -1>;
     using tag_t = int_type<int, struct P4, -1>;
+    using parent_t = int_type<int, struct P5, -1>;
 
     bool is_logging();
     void log_data(  std::chrono::high_resolution_clock::time_point& t1

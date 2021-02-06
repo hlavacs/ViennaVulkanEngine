@@ -12,6 +12,7 @@ set(HEADERS
   ${INCLUDE}/vve.h
   ${INCLUDE}/VEEngine.h
   ${INCLUDE}/VEECS.h
+  ${INCLUDE}/VETable.h
 )
 
 add_library (${TARGET} ${SOURCE} ${HEADERS})
