@@ -1,43 +1,27 @@
-# Example usage:
-#  mkdir build
-#  cd build
-#  cmake -g "Visual Studio 16 2019" -A x64 .
 
-cmake_minimum_required(VERSION 2.8)
-project(imgui_example_glfw_vulkan C CXX)
+set(TARGET imgui)
 
-if(NOT CMAKE_BUILD_TYPE)
-  set(CMAKE_BUILD_TYPE Debug CACHE STRING "" FORCE)
-endif()
+set(SOURCE
+  imgui.cpp
+  imgui_demo.cpp
+  imgui_draw.cpp
+  imgui_impl_glfw.cpp
+  imgui_impl_vulkan.cpp
+  imgui_tables.cpp
+  imgui_widgets.cpp
+)
 
-set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DVK_PROTOTYPES")
-set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DVK_PROTOTYPES")
+set(HEADERS
+  ${EXTERNAL}/imgui/imconfig.h
+  ${EXTERNAL}/imgui/imgui.h
+  ${EXTERNAL}/imgui/imgui_impl_glfw.h
+  ${EXTERNAL}/imgui/imgui_impl_vulkan.h
+  ${EXTERNAL}/imgui/imgui_internal.h
+  ${EXTERNAL}/imgui/imstb_rectpack.h
+  ${EXTERNAL}/imgui/imstb_textedit.h
+  ${EXTERNAL}/imgui/imstb_truetype.h
+)
 
-# GLFW
-set(GLFW_DIR ../glfw) # Set this to point to an up-to-date GLFW repo
-option(GLFW_BUILD_EXAMPLES "Build the GLFW example programs" OFF)
-option(GLFW_BUILD_TESTS "Build the GLFW test programs" OFF)
-option(GLFW_BUILD_DOCS "Build the GLFW documentation" OFF)
-option(GLFW_INSTALL "Generate installation target" OFF)
-option(GLFW_DOCUMENT_INTERNALS "Include internals in documentation" OFF)
-add_subdirectory(${GLFW_DIR} binary_dir EXCLUDE_FROM_ALL)
-include_directories(${GLFW_DIR}/include)
+add_library (${TARGET} ${SOURCE} ${HEADERS})
 
-# Dear ImGui
-set(IMGUI_DIR .)
-include_directories(${IMGUI_DIR} ${IMGUI_DIR}/backends ..)
-
-# Libraries
-find_package(Vulkan REQUIRED)
-#find_library(VULKAN_LIBRARY
-  #NAMES vulkan vulkan-1)
-#set(LIBRARIES "glfw;${VULKAN_LIBRARY}")
-set(LIBRARIES "glfw;Vulkan::Vulkan")
-
-# Use vulkan headers from glfw:
-include_directories(${GLFW_DIR}/deps)
-
-file(GLOB sources *.cpp)
-
-add_executable(example_glfw_vulkan ${sources} ${IMGUI_DIR}/backends/imgui_impl_glfw.cpp ${IMGUI_DIR}/backends/imgui_impl_vulkan.cpp ${IMGUI_DIR}/imgui.cpp ${IMGUI_DIR}/imgui_draw.cpp ${IMGUI_DIR}/imgui_demo.cpp ${IMGUI_DIR}/imgui_tables.cpp ${IMGUI_DIR}/imgui_widgets.cpp)
-target_link_libraries(example_glfw_vulkan ${LIBRARIES})
+target_compile_features(${TARGET} PUBLIC cxx_std_20)

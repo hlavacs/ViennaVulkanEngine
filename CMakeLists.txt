@@ -20,6 +20,7 @@ include_directories (${CMAKE_HOME_DIRECTORY}/external/imgui)
 include_directories ($ENV{VULKAN_SDK}/include)
 
 add_subdirectory (src)
+add_subdirectory (external/imgui)
 add_subdirectory (examples/basic_test)
 
 find_package(Doxygen)
