@@ -78,7 +78,7 @@
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <ClCompile>
-      <AdditionalIncludeDirectories>C:\Users\hlavacs\Documents\GitHub\ViennaVulkanEngine\include;\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>C:\Users\hlavacs\Documents\GitHub\ViennaVulkanEngine\include;C:\Users\hlavacs\Documents\GitHub\ViennaVulkanEngine\external\glfw\include;C:\Users\hlavacs\Documents\GitHub\ViennaVulkanEngine\external\imgui;C:\Programme\VulkanSDK\1.2.148.1\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <AdditionalOptions>%(AdditionalOptions) /await</AdditionalOptions>
       <AssemblerListingLocation>$(IntDir)</AssemblerListingLocation>
       <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
@@ -98,10 +98,10 @@
     </ClCompile>
     <ResourceCompile>
       <PreprocessorDefinitions>WIN32;_DEBUG;_WINDOWS;CMAKE_INTDIR=\"Debug\";%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>C:\Users\hlavacs\Documents\GitHub\ViennaVulkanEngine\include;\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>C:\Users\hlavacs\Documents\GitHub\ViennaVulkanEngine\include;C:\Users\hlavacs\Documents\GitHub\ViennaVulkanEngine\external\glfw\include;C:\Users\hlavacs\Documents\GitHub\ViennaVulkanEngine\external\imgui;C:\Programme\VulkanSDK\1.2.148.1\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ResourceCompile>
     <Midl>
-      <AdditionalIncludeDirectories>C:\Users\hlavacs\Documents\GitHub\ViennaVulkanEngine\include;\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>C:\Users\hlavacs\Documents\GitHub\ViennaVulkanEngine\include;C:\Users\hlavacs\Documents\GitHub\ViennaVulkanEngine\external\glfw\include;C:\Users\hlavacs\Documents\GitHub\ViennaVulkanEngine\external\imgui;C:\Programme\VulkanSDK\1.2.148.1\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <OutputDirectory>$(ProjectDir)/$(IntDir)</OutputDirectory>
       <HeaderFileName>%(Filename).h</HeaderFileName>
       <TypeLibraryName>%(Filename).tlb</TypeLibraryName>
@@ -114,7 +114,7 @@
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <ClCompile>
-      <AdditionalIncludeDirectories>C:\Users\hlavacs\Documents\GitHub\ViennaVulkanEngine\include;\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>C:\Users\hlavacs\Documents\GitHub\ViennaVulkanEngine\include;C:\Users\hlavacs\Documents\GitHub\ViennaVulkanEngine\external\glfw\include;C:\Users\hlavacs\Documents\GitHub\ViennaVulkanEngine\external\imgui;C:\Programme\VulkanSDK\1.2.148.1\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <AdditionalOptions>%(AdditionalOptions) /await</AdditionalOptions>
       <AssemblerListingLocation>$(IntDir)</AssemblerListingLocation>
       <CompileAs>CompileAsCpp</CompileAs>
@@ -132,10 +132,10 @@
     </ClCompile>
     <ResourceCompile>
       <PreprocessorDefinitions>WIN32;_WINDOWS;CMAKE_INTDIR=\"Release\";%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>C:\Users\hlavacs\Documents\GitHub\ViennaVulkanEngine\include;\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>C:\Users\hlavacs\Documents\GitHub\ViennaVulkanEngine\include;C:\Users\hlavacs\Documents\GitHub\ViennaVulkanEngine\external\glfw\include;C:\Users\hlavacs\Documents\GitHub\ViennaVulkanEngine\external\imgui;C:\Programme\VulkanSDK\1.2.148.1\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ResourceCompile>
     <Midl>
-      <AdditionalIncludeDirectories>C:\Users\hlavacs\Documents\GitHub\ViennaVulkanEngine\include;\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>C:\Users\hlavacs\Documents\GitHub\ViennaVulkanEngine\include;C:\Users\hlavacs\Documents\GitHub\ViennaVulkanEngine\external\glfw\include;C:\Users\hlavacs\Documents\GitHub\ViennaVulkanEngine\external\imgui;C:\Programme\VulkanSDK\1.2.148.1\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <OutputDirectory>$(ProjectDir)/$(IntDir)</OutputDirectory>
       <HeaderFileName>%(Filename).h</HeaderFileName>
       <TypeLibraryName>%(Filename).tlb</TypeLibraryName>
@@ -148,7 +148,7 @@
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">
     <ClCompile>
-      <AdditionalIncludeDirectories>C:\Users\hlavacs\Documents\GitHub\ViennaVulkanEngine\include;\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>C:\Users\hlavacs\Documents\GitHub\ViennaVulkanEngine\include;C:\Users\hlavacs\Documents\GitHub\ViennaVulkanEngine\external\glfw\include;C:\Users\hlavacs\Documents\GitHub\ViennaVulkanEngine\external\imgui;C:\Programme\VulkanSDK\1.2.148.1\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <AdditionalOptions>%(AdditionalOptions) /await</AdditionalOptions>
       <AssemblerListingLocation>$(IntDir)</AssemblerListingLocation>
       <CompileAs>CompileAsCpp</CompileAs>
@@ -168,10 +168,10 @@
     </ClCompile>
     <ResourceCompile>
       <PreprocessorDefinitions>WIN32;_WINDOWS;NDEBUG;CMAKE_INTDIR=\"MinSizeRel\";%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>C:\Users\hlavacs\Documents\GitHub\ViennaVulkanEngine\include;\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>C:\Users\hlavacs\Documents\GitHub\ViennaVulkanEngine\include;C:\Users\hlavacs\Documents\GitHub\ViennaVulkanEngine\external\glfw\include;C:\Users\hlavacs\Documents\GitHub\ViennaVulkanEngine\external\imgui;C:\Programme\VulkanSDK\1.2.148.1\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ResourceCompile>
     <Midl>
-      <AdditionalIncludeDirectories>C:\Users\hlavacs\Documents\GitHub\ViennaVulkanEngine\include;\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>C:\Users\hlavacs\Documents\GitHub\ViennaVulkanEngine\include;C:\Users\hlavacs\Documents\GitHub\ViennaVulkanEngine\external\glfw\include;C:\Users\hlavacs\Documents\GitHub\ViennaVulkanEngine\external\imgui;C:\Programme\VulkanSDK\1.2.148.1\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <OutputDirectory>$(ProjectDir)/$(IntDir)</OutputDirectory>
       <HeaderFileName>%(Filename).h</HeaderFileName>
       <TypeLibraryName>%(Filename).tlb</TypeLibraryName>
@@ -184,7 +184,7 @@
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">
     <ClCompile>
-      <AdditionalIncludeDirectories>C:\Users\hlavacs\Documents\GitHub\ViennaVulkanEngine\include;\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>C:\Users\hlavacs\Documents\GitHub\ViennaVulkanEngine\include;C:\Users\hlavacs\Documents\GitHub\ViennaVulkanEngine\external\glfw\include;C:\Users\hlavacs\Documents\GitHub\ViennaVulkanEngine\external\imgui;C:\Programme\VulkanSDK\1.2.148.1\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <AdditionalOptions>%(AdditionalOptions) /await</AdditionalOptions>
       <AssemblerListingLocation>$(IntDir)</AssemblerListingLocation>
       <CompileAs>CompileAsCpp</CompileAs>
@@ -203,10 +203,10 @@
     </ClCompile>
     <ResourceCompile>
       <PreprocessorDefinitions>WIN32;_WINDOWS;NDEBUG;CMAKE_INTDIR=\"RelWithDebInfo\";%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>C:\Users\hlavacs\Documents\GitHub\ViennaVulkanEngine\include;\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>C:\Users\hlavacs\Documents\GitHub\ViennaVulkanEngine\include;C:\Users\hlavacs\Documents\GitHub\ViennaVulkanEngine\external\glfw\include;C:\Users\hlavacs\Documents\GitHub\ViennaVulkanEngine\external\imgui;C:\Programme\VulkanSDK\1.2.148.1\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ResourceCompile>
     <Midl>
-      <AdditionalIncludeDirectories>C:\Users\hlavacs\Documents\GitHub\ViennaVulkanEngine\include;\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>C:\Users\hlavacs\Documents\GitHub\ViennaVulkanEngine\include;C:\Users\hlavacs\Documents\GitHub\ViennaVulkanEngine\external\glfw\include;C:\Users\hlavacs\Documents\GitHub\ViennaVulkanEngine\external\imgui;C:\Programme\VulkanSDK\1.2.148.1\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <OutputDirectory>$(ProjectDir)/$(IntDir)</OutputDirectory>
       <HeaderFileName>%(Filename).h</HeaderFileName>
       <TypeLibraryName>%(Filename).tlb</TypeLibraryName>
@@ -274,7 +274,12 @@ if %errorlevel% neq 0 goto :VCEnd</Command>
     </CustomBuild>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="C:\Users\hlavacs\Documents\GitHub\ViennaVulkanEngine\src\vve.cpp" />
+    <ClCompile Include="C:\Users\hlavacs\Documents\GitHub\ViennaVulkanEngine\src\VEEngine.cpp" />
+    <ClCompile Include="C:\Users\hlavacs\Documents\GitHub\ViennaVulkanEngine\src\VEImgui.cpp" />
+    <ClInclude Include="C:\Users\hlavacs\Documents\GitHub\ViennaVulkanEngine\include\VGJS.h" />
+    <ClInclude Include="C:\Users\hlavacs\Documents\GitHub\ViennaVulkanEngine\include\VGJSCoro.h" />
+    <ClInclude Include="C:\Users\hlavacs\Documents\GitHub\ViennaVulkanEngine\include\vve.h" />
+    <ClInclude Include="C:\Users\hlavacs\Documents\GitHub\ViennaVulkanEngine\include\VEEngine.h" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="C:\Users\hlavacs\Documents\GitHub\ViennaVulkanEngine\ZERO_CHECK.vcxproj">

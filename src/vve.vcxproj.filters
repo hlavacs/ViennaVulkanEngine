@@ -1,14 +1,34 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="16.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
-    <ClCompile Include="C:\Users\hlavacs\Documents\GitHub\ViennaVulkanEngine\src\vve.cpp">
+    <ClCompile Include="C:\Users\hlavacs\Documents\GitHub\ViennaVulkanEngine\src\VEEngine.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="C:\Users\hlavacs\Documents\GitHub\ViennaVulkanEngine\src\VEImgui.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="C:\Users\hlavacs\Documents\GitHub\ViennaVulkanEngine\include\VGJS.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\hlavacs\Documents\GitHub\ViennaVulkanEngine\include\VGJSCoro.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\hlavacs\Documents\GitHub\ViennaVulkanEngine\include\vve.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\hlavacs\Documents\GitHub\ViennaVulkanEngine\include\VEEngine.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <CustomBuild Include="C:\Users\hlavacs\Documents\GitHub\ViennaVulkanEngine\src\CMakeLists.txt" />
   </ItemGroup>
   <ItemGroup>
+    <Filter Include="Header Files">
+      <UniqueIdentifier>{9E59244A-2E55-3690-90AA-DDFFBDF0146C}</UniqueIdentifier>
+    </Filter>
     <Filter Include="Source Files">
       <UniqueIdentifier>{D6B2C9A4-E9AC-357B-A112-C340EEC5AA32}</UniqueIdentifier>
     </Filter>
