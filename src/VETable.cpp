@@ -4,6 +4,10 @@
 
 namespace vve {
 
+
+	//---------------------------------------------------------------------------
+	//VeVector
+
 	template<typename T, size_t L, bool S>
 	T* VeVector<T, L, S>::address(size_t n) noexcept {
 		assert(n < m_size && m_size != 0);
@@ -99,7 +103,7 @@ namespace vve {
 	}
 
 	//---------------------------------------------------------------------------
-
+	//VeTable
 
 	template<typename T, size_t L, bool S>
 	T* VeTable<T, L, S>::address(size_t n) noexcept {

@@ -1,2 +1,1 @@
-cmake -g "Unix Makefiles" .
-
+cmake -T llvm -g "Unix Makefiles" .
