@@ -69,7 +69,7 @@ namespace vgjs {
 
         T value{};
         int_type() {
-            static_assert(!(std::is_unsigned_v<T> && static_cast<int>(D) < 0));
+            static_assert(!(std::is_unsigned_v<T> && std::is_signed_v<decltype(D)> && static_cast<int>(D) < 0));
             value = static_cast<T>(D);
         };
         explicit int_type(const T& t) : value(t) {};
