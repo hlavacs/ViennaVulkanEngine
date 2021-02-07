@@ -5,6 +5,7 @@
 namespace vve {
 
 	VeHandle VeEntityManager::create() {
+
 		return {};
 	}
 

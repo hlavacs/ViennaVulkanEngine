@@ -18,14 +18,18 @@ namespace vve {
 		static const size_t N = 1 << L;
 		const uint64_t BIT_MASK = (0xFFFFFFFFFFFFFFFF >> L) << L;
 
+		struct VeTableEntry {
+			T m_data;
+		};
+
 		struct VeTableSegment {
-			std::array<T, N> m_data;
+			std::array<VeTableEntry, N> m_entry;
 		};
 
 		using seg_ptr = std::unique_ptr<VeTableSegment>;
 
 		std::pmr::memory_resource*	m_mr = nullptr;
-		std::pmr::vector<seg_ptr>	m_segments;
+		std::pmr::vector<seg_ptr>	m_segment;
 		std::atomic<size_t>			m_size = 0;
 		std::shared_timed_mutex 	m_mutex;		//guard reads and writes
 		std::mutex 					m_mutex_append;	//guard reads and writes
@@ -38,7 +42,7 @@ namespace vve {
 
 	public:
 		VeVector(std::pmr::memory_resource* mr = std::pmr::new_delete_resource())  noexcept
-			: m_mr{ mr }, m_segments{mr}  {};
+			: m_mr{ mr }, m_segment{mr}  {};
 		std::optional<T>		at(size_t n) noexcept;
 		void					set(size_t n, T&& v) noexcept;
 		size_t					size() const noexcept { return m_size; };
@@ -61,16 +65,20 @@ namespace vve {
 		const uint64_t BIT_MASK = (0xFFFFFFFFFFFFFFFF >> L) << L;
 		using index_t = vgjs::int_type<size_t, struct P0, std::numeric_limits<size_t>::max()>;
 
+		struct VeTableEntry {
+			T		m_data;
+			index_t m_next{};
+		};
+
 		struct VeTableSegment {
-			std::array<T, N> m_data;
-			size_t			 m_size = 0;
-			index_t			 m_next{};
+			std::array<VeTableEntry, N> m_entry;
+			size_t						m_size = 0;
 		};
 
 		using seg_ptr = std::unique_ptr<VeTableSegment>;
 
 		std::pmr::memory_resource*  m_mr = nullptr;
-		std::pmr::vector<seg_ptr>	m_segments;
+		std::pmr::vector<seg_ptr>	m_segment;
 		std::atomic<size_t>			m_size = 0;
 		index_t						m_first_free{};
 		std::shared_timed_mutex 	m_mutex;		//guard reads and writes
@@ -84,7 +92,7 @@ namespace vve {
 
 	public:
 		VeTable(std::pmr::memory_resource* mr = std::pmr::new_delete_resource())  noexcept
-			: m_mr{ mr }, m_segments{ mr }  {};
+			: m_mr{ mr }, m_segment{ mr }  {};
 		std::optional<T>		at(size_t n) noexcept;
 		void					set(size_t n, T&& v) noexcept;
 		size_t					size() const noexcept { return m_size; };

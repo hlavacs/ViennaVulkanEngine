@@ -7,7 +7,7 @@ namespace vve {
 	template<typename T, size_t L, bool S>
 	T* VeVector<T, L, S>::address(size_t n) noexcept {
 		assert(n < m_size && m_size != 0);
-		return &m_segments[n >> L]->m_data[n & BIT_MASK];
+		return &m_segment[n >> L]->m_entry[n & BIT_MASK].m_data;
 	}
 
 	template<typename T, size_t L, bool S>
@@ -22,17 +22,17 @@ namespace vve {
 	size_t VeVector<T, L, S>::push_back2(T&& value) noexcept {
 		std::lock_guard<std::shared_timed_mutex> writerLock(m_mutex_append); //block other writers
 
-		if (m_size < m_segments.size() * N) {	//append within last segment
+		if (m_size < m_segment.size() * N) {	//append within last segment
 			return push_back3(value);
 		}
 
-		if (m_size < m_segments.capacity() * N) { //append new segment, no reallocation
-			m_segments.push_back({});
+		if (m_size < m_segment.capacity() * N) { //append new segment, no reallocation
+			m_segment.push_back({});
 			return push_back3(value);
 		}
 
 		std::lock_guard<std::shared_timed_mutex> writerLock2(m_mutex); //reallocation -> block readers
-		m_segments.push_back({});	//reallocate vector
+		m_segment.push_back({});	//reallocate vector
 		return push_back3(value);
 	}
 
@@ -66,7 +66,7 @@ namespace vve {
 		auto element = *address(m_size);
 		--m_size;
 		if constexpr (S) {
-			if (m_size < (m_segments.size() - 1) * N) m_segments.pop_back();
+			if (m_size < (m_segment.size() - 1) * N) m_segment.pop_back();
 		}
 		return element;
 	}
@@ -79,7 +79,7 @@ namespace vve {
 		if( n < m_size-1) *address(n) = *address(m_size-1);
 		--m_size;
 		if constexpr (S) {
-			if (m_size < (m_segments.size() - 1) * N) m_segments.pop_back();
+			if (m_size < (m_segment.size() - 1) * N) m_segment.pop_back();
 		}
 	}
 
@@ -95,7 +95,7 @@ namespace vve {
 	void VeVector<T, L, S>::reserve(size_t n) noexcept {
 		if (m_read_only) return;
 		std::lock_guard<std::shared_timed_mutex> writerLock(m_mutex);
-		while(m_segments.size() * N < n) m_segments.push_back({});
+		while(m_segment.size() * N < n) m_segment.push_back({});
 	}
 
 	//---------------------------------------------------------------------------
@@ -104,13 +104,14 @@ namespace vve {
 	template<typename T, size_t L, bool S>
 	T* VeTable<T, L, S>::address(size_t n) noexcept {
 		assert(n < m_size&& m_size != 0);
-		return &m_segments[n >> L]->m_data[n & BIT_MASK];
+		return &m_segment[n >> L]->m_entry[n & BIT_MASK].m_data;
 	}
 
 	template<typename T, size_t L, bool S>
 	size_t VeTable<T, L, S>::push_back3(T&& value) noexcept {
 		size_t idx = m_size;
 		*address(idx) = value;
+		m_segment[idx >> L]->m_size++;
 		m_size++;
 		return idx;
 	}
@@ -119,27 +120,27 @@ namespace vve {
 	size_t VeTable<T, L, S>::add2(T&& value) noexcept {
 		std::lock_guard<std::shared_timed_mutex> writerLock(m_mutex_append); //block other writers
 
-		if (!m_first_free.is_null()) {
+		if (!m_first_free.is_null()) {		//there is an empty slot in the table
 			auto free = m_first_free;
-			auto addr = address(free.value);
-			m_first_free = addr->m_next;
-			*addr = value;
+			auto ptr = address(free.value);
+			m_first_free = ptr->m_next;
+			*ptr = value;
+			m_segment[free.value >> L]->m_size++;
 			m_size++;
-			m_segments[free.value >> L]->m_size++;
 			return free.value;
 		}
 
-		if (m_size < m_segments.size() * N) {	//append within last segment
+		if (m_size < m_segment.size() * N) {	//append within last segment
 			return push_back3(value);
 		}
 
-		if (m_size < m_segments.capacity() * N) { //append new segment, no reallocation
-			m_segments.push_back({});
+		if (m_size < m_segment.capacity() * N) { //append new segment, no reallocation
+			m_segment.push_back({});
 			return push_back3(value);
 		}
 
 		std::lock_guard<std::shared_timed_mutex> writerLock2(m_mutex); //reallocation -> block readers
-		m_segments.push_back({});	//reallocate vector
+		m_segment.push_back({});	//reallocate vector
 		return push_back3(value);
 	}
 
@@ -173,7 +174,7 @@ namespace vve {
 		if (n >= m_size || m_size == 0) return;
 		address(n)->m_next = m_first_free;
 		m_first_free.value = n;
-		m_segments[n >> L]->m_size--;
+		m_segment[n >> L]->m_size--;
 		--m_size;
 	}
 
@@ -189,7 +190,7 @@ namespace vve {
 	void VeTable<T, L, S>::reserve(size_t n) noexcept {
 		if (m_read_only) return;
 		std::lock_guard<std::shared_timed_mutex> writerLock(m_mutex);
-		while (m_segments.size() * N < n) m_segments.push_back({});
+		while (m_segment.size() * N < n) m_segment.push_back({});
 	}
 
 

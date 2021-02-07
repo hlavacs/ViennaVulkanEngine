@@ -45,12 +45,12 @@ namespace vve {
 		struct VeEntityData;
 
 		struct VeHandle {
-			VeEntityData*	m_id = nullptr;
-			uint32_t		m_generation = 0;
+			VeEntityData*	m_ptr = nullptr;
+			uint32_t		m_counter = 0;
 		};
 
 		struct VeEntityData {
-			uint32_t		m_generation = 0;
+			uint32_t		m_counter = 0;
 			VeEntityData*	m_next = nullptr;
 		};
 
