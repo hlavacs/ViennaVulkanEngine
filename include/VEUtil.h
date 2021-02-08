@@ -19,9 +19,17 @@ namespace vve {
 	struct crtp {
 		T& underlying() { return static_cast<T&>(*this); }
 		T const& underlying() const { return static_cast<T const&>(*this); }
-	private:
+
+	protected:
 		crtp() {}
 		friend crtpType<T>;
+		static inline std::atomic<uint32_t> m_init_counter = 0;
+		bool init() {
+			if (m_init_counter > 0) false;
+			auto cnt = m_init_counter.fetch_add(1);
+			if (cnt > 0) false;
+			return true;
+		};
 	};
 
 	namespace tl {

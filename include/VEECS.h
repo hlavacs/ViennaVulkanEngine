@@ -67,16 +67,23 @@ namespace vve {
 	//component type list, pointer, pool
 
 	using VeComponentTypeList = tl::cat<tl::type_list<
-		  VeComponentPosition, VeComponentOrientation, VeComponentTransform, VeComponentMaterial, VeComponentGeometry
-		, VeComponentAnimation, VeComponentCollisionShape, VeComponentBody >, 	VeComponentTypeListUser>;
+			  VeComponentPosition
+			, VeComponentOrientation
+			, VeComponentTransform
+			, VeComponentMaterial
+			, VeComponentGeometry
+			, VeComponentAnimation
+			, VeComponentCollisionShape
+			, VeComponentBody >,
+		VeComponentTypeListUser>;
 	using VeComponentPtr = tl::variant_type<tl::to_ptr<VeComponentTypeList>>;
 
 	template<typename T>
-	class VeComponentPool {
+	class VeComponentPool : crtp<VeComponentPool<T>, VeComponentPool> {
 	protected:
+		using base_crtp = crtp<VeComponentPool<T>, VeComponentPool>;
 		using VeComponentPoolPtr = tl::variant_type<tl::to_ptr<tl::transform<VeComponentTypeList, VeComponentPool>>>;
 		static inline std::vector<T> m_data;
-		static inline std::atomic<uint32_t> m_init_counter = 0;
 
 	public:
 		VeComponentPool();
@@ -94,6 +101,7 @@ namespace vve {
 	using VeEntityNode = VeEntity<VeComponentPosition, VeComponentOrientation, VeComponentTransform>;
 	using VeEntityDraw = VeEntity<VeComponentMaterial, VeComponentGeometry>;
 	using VeEntityAnimation = VeEntity<VeComponentMaterial, VeComponentGeometry>;
+
 	using VeEntityTypeList = tl::cat<tl::type_list<VeEntity<>, VeEntityNode, VeEntityDraw, VeEntityAnimation>, VeEntityTypeListUser>;
 	using VeEntityPtr = tl::variant_type<tl::to_ptr<tl::transform<VeEntityTypeList, VeEntity>>>;
 
@@ -101,14 +109,12 @@ namespace vve {
 	//-------------------------------------------------------------------------
 	//systems use CRTP
 
-	template<typename T, typename L = tl::type_list<>>
+	template<typename T, typename Seq = tl::type_list<>>
 	class VeSystem : public crtp<T, VeSystem> {
 	protected:
-		static inline std::atomic<uint32_t> m_init_counter = 0;
 	public:
-		VeSystem();
+		VeSystem() = default;
 	};
-
 
 
 	struct VeEntityData;
@@ -130,25 +136,20 @@ namespace vve {
 	};*/
 
 
-	template <typename Seq>
-	struct VeEntityManager;
+	//-------------------------------------------------------------------------
+	//entity manager
 
-	template<template <typename...> typename Seq, typename... Ts>
-	class VeEntityManager<Seq<Ts...>> {
+	template<typename T>
+	class VeEntityManager : public VeSystem<VeEntityManager<T>> {
+	protected:
+		using base_crtp = crtp<VeEntityManager<T>, VeEntityManager>;
+		static inline VeTable<VeEntityData> m_data;
+
 	public:
-		VeEntityManager( size_t reserve) {
-			if (m_init_counter > 0) return;
-			auto cnt = m_init_counter.fetch_add(1);
-			if (cnt > 0) return;
-			m_data.reserve(1<<10);
-		};
+		VeEntityManager(size_t reserve = 1 << 10);
 		std::optional<VeHandle> create();
 		void erase(VeHandle& h);
 
-	protected:
-		static inline std::atomic<uint32_t> m_init_counter = 0;
-		static inline VeTable<VeEntityData> m_data;
-		static inline std::atomic<bool>		m_init = false;
 	};
 
 }
