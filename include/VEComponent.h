@@ -44,6 +44,14 @@ namespace vve {
 	};
 
 	using VeComponentTypeList = type_list<VePosition, VeOrientation, VeTransform, VeMaterial, VeGeometry>;
+
+}
+
+
+#include "VeComponentUser.h" 
+
+namespace vve {
+
 	using VeComponentPtr = variant_type<to_ptr<VeComponentTypeList>>;
 
 }

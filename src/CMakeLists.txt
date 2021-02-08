@@ -6,16 +6,19 @@ set(SOURCE
   VEImgui.cpp
   VEContainer.cpp
   VEECS.cpp
+  VEComponent.cpp
 )
 
 set(HEADERS
   ${INCLUDE}/VGJS.h
   ${INCLUDE}/VGJSCoro.h
   ${INCLUDE}/vve.h
+  ${INCLUDE}/VEUtil.h
   ${INCLUDE}/VEEngine.h
   ${INCLUDE}/VEECS.h
   ${INCLUDE}/VEContainer.h
   ${INCLUDE}/VEComponent.h
+  ${INCLUDE}/VEComponentUser.h
 )
 
 add_library (${TARGET} ${SOURCE} ${HEADERS})

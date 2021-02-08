@@ -173,6 +173,21 @@ namespace vve {
 	//-------------------------------------------------------------------------
 	//static for
 	namespace detail {
+		template<typename List, template<class> class Fun>
+		struct typelist_transform_impl;
+
+		template<typename ...List, template<class> class Fun>
+		struct typelist_transform_impl<type_list<List...>, Fun> {
+			using type = type_list<Fun<List>...>;
+		};
+	}
+	template <typename Seq, template<class> class Fun>
+	using typelist_transform = typename detail::typelist_transform_impl<Seq, Fun>::type;
+
+
+	//-------------------------------------------------------------------------
+	//static for
+	namespace detail {
 		template <typename T, T Begin, class Func, T ...Is>
 		constexpr void static_for_impl(Func&& f, std::integer_sequence<T, Is...>) {
 			(f(std::integral_constant<T, Begin + Is>{ }), ...);

@@ -14,8 +14,13 @@
 
 namespace vve {
 
-	template<typename... Ts>
+	template<typename T>
 	struct VeEntity;
+
+	template <template <typename...> class Seq, typename... Ts>
+	struct VeEntity<Seq<Ts...>> {
+
+	};
 
 	template<typename T, typename... Ts>
 	class VeSystem {
@@ -41,24 +46,16 @@ namespace vve {
 	template<typename T>
 	class VeComponentPool {
 	protected:
+		using VeComponentPoolPtr = variant_type<to_ptr<typelist_transform<VeComponentTypeList, VeComponentPool>>>;
 		VeVector<T> m_data;
 	public:
 
 	};
 
-	namespace detail {
-		template <typename Seq>
-		struct to_pool_impl;
+	using VeComponentPoolPtr = variant_type<to_ptr<typelist_transform<VeComponentTypeList, VeComponentPool>>>;
 
-		template <template <typename...> class Seq, typename... Ts>
-		struct to_pool_impl<Seq<Ts...>> {
-			using type = type_list<VeComponentPool<Ts>...>;
-		};
-	}
-	template <typename Seq>
-	using to_pool = typename detail::to_pool_impl<Seq>::type;
-
-	using VeComponentPoolPtr = variant_type<to_ptr<to_pool<VeComponentTypeList>>>;
+	VeComponentPool<VePosition> p1;
+	VeComponentPoolPtr pp1{&p1};
 
 	struct VeComponentHandle {
 		VeComponentPoolPtr m_pool;
