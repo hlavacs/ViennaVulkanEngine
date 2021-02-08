@@ -5,13 +5,9 @@
 
 namespace vve {
 
-	enum class VeComponentTypeUser : uint32_t {
-		UserComponentType1 = VeComponentType::Last,
-		Last
-	};
 
 	//declare your own entity components
-	struct UserComponentType1 : VeComponent<UserComponentType1, VeComponentTypeUser::UserComponentType1> {
+	struct UserComponentType1 : VeComponent<UserComponentType1> {
 		//..
 	};
 

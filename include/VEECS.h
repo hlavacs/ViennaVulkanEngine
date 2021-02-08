@@ -16,58 +16,45 @@ namespace vve {
 	//-------------------------------------------------------------------------
 	//components
 
-	enum class VeComponentType : uint32_t {
-		Position,
-		Orientation,
-		Transform,
-		Material,
-		Geometry,
-		Animation,
-		CollisionShape,
-		Body,
-		Last
+	template<typename T>
+	struct VeComponent : crtp<T, VeComponent> {
 	};
 
-	template<typename T, auto ID>
-	struct VeComponent {
-		using type = std::integral_constant<std::size_t, static_cast<std::size_t>(ID)>;
-	};
-
-	struct VeComponentPosition : VeComponent<VeComponentPosition, VeComponentType::Position> {
+	struct VeComponentPosition : VeComponent<VeComponentPosition> {
 		glm::vec3 m_position;
 	};
 
-	struct VeComponentOrientation : VeComponent<VeComponentOrientation, VeComponentType::Orientation> {
+	struct VeComponentOrientation : VeComponent<VeComponentOrientation> {
 		glm::quat m_orientation;
 	};
 
-	struct VeComponentTransform : VeComponent<VeComponentTransform, VeComponentType::Transform> {
+	struct VeComponentTransform : VeComponent<VeComponentTransform> {
 		glm::mat4 m_transform;
 	};
 
-	struct VeComponentMaterial : VeComponent<VeComponentMaterial, VeComponentType::Material> {
+	struct VeComponentMaterial : VeComponent<VeComponentMaterial> {
 	};
 
-	struct VeComponentGeometry : VeComponent<VeComponentGeometry, VeComponentType::Geometry> {
+	struct VeComponentGeometry : VeComponent<VeComponentGeometry> {
 	};
 
-	struct VeComponentAnimation : VeComponent<VeComponentAnimation, VeComponentType::Animation> {
+	struct VeComponentAnimation : VeComponent<VeComponentAnimation> {
 	};
 
-	struct VeComponentCollisionShape : VeComponent<VeComponentCollisionShape, VeComponentType::CollisionShape> {
+	struct VeComponentCollisionShape : VeComponent<VeComponentCollisionShape> {
 	};
 
-	struct VeComponentBody : VeComponent<VeComponentBody, VeComponentType::Body> {
+	struct VeComponentBody : VeComponent<VeComponentBody> {
 	};
 
 	//-------------------------------------------------------------------------
 	//entities
 
 	template <typename... Ts>
-	struct VeEntity {};
+	struct VeEntity;
 
 	template <>
-	struct VeEntity<> {};
+	struct VeEntity<>;
 }
 
 //user defined component types and entity types
@@ -114,13 +101,9 @@ namespace vve {
 	//-------------------------------------------------------------------------
 	//systems use CRTP
 
-	template<typename... Ts>
-	class VeSystem;
-
-	template<typename T>
-	class VeSystem<T> {
+	template<typename T, typename L = tl::type_list<>>
+	class VeSystem : public crtp<T, VeSystem> {
 	protected:
-		//auto derived = static_cast<T&>(*this);
 		static inline std::atomic<uint32_t> m_init_counter = 0;
 	public:
 		VeSystem();

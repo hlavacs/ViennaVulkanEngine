@@ -6,10 +6,9 @@
 
 namespace vve {
 
-	//VeComponentPosition, VeComponentOrientation, VeComponentTransform, VeComponentCollisionShape, VeComponentBody
-	template<typename... Ts>
-	class VePhysicsSystem : public VeSystem<VePhysicsSystem<Ts...>> {
-
+	using VePhysicsSystemComponentList = tl::type_list<VeComponentPosition, VeComponentOrientation, VeComponentTransform, VeComponentCollisionShape, VeComponentBody>;
+	
+	class VePhysicsSystem : public VeSystem<VePhysicsSystem, VePhysicsSystemComponentList> {
 	protected:
 
 	public:

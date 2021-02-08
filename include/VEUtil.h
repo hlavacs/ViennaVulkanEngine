@@ -13,8 +13,20 @@ namespace vve {
 
 	using index_t = vgjs::int_type<size_t, struct P0, std::numeric_limits<size_t>::max()>;
 
+	//https://www.fluentcpp.com/2017/05/19/crtp-helper/
+
+	template <typename T, template<typename> class crtpType>
+	struct crtp {
+		T& underlying() { return static_cast<T&>(*this); }
+		T const& underlying() const { return static_cast<T const&>(*this); }
+	private:
+		crtp() {}
+		friend crtpType<T>;
+	};
+
 	namespace tl {
 		//https://nilsdeppe.com/posts/tmpl-part2
+		//https://ericniebler.com/2014/11/13/tiny-metaprogramming-library/
 
 		template <typename... Ts>
 		struct type_list {
