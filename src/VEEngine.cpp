@@ -6,15 +6,7 @@
 
 namespace vve {
 
-	class VeEngine {
-	protected:
 
-	public:
-		VeEngine() {
-
-			
-		}
-	};
 
 }
 

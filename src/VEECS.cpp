@@ -1,8 +1,18 @@
 
+
 #include "VEECS.h"
 
 
 namespace vve {
+
+	template<typename T>
+	VeComponentPool<T>::VeComponentPool() {
+		if (m_init_counter > 0) return;
+		auto cnt = m_init_counter.fetch_add(1);
+		if (cnt > 0) return;
+
+	}
+
 
 	template<template <typename...> typename Seq, typename... Ts>
 	std::optional<VeHandle> VeEntityManager<Seq<Ts...>>::create() {
