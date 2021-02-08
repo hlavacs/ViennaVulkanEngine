@@ -123,7 +123,7 @@ namespace vve {
 	struct VeEntityData;
 
 	struct VeHandle {
-		VeEntityData* m_ptr = nullptr;
+		int* m_ptr = nullptr;
 		uint32_t	  m_counter = 0;
 	};
 
@@ -142,18 +142,18 @@ namespace vve {
 	//-------------------------------------------------------------------------
 	//entity manager
 
-	template<typename T>
-	class VeEntityManager : public VeSystem<VeEntityManager<T>> {
+	class VeEntityManager : public VeSystem<VeEntityManager> {
 	protected:
-		using base_crtp		= crtp<VeEntityManager<T>, VeEntityManager>;
-		using base_system	= VeSystem<VeComponentPool<T>>;
+		using base_system = VeSystem<VeEntityManager>;
 
-		static inline VeTable<VeEntityData> m_entity;
+		static inline std::vector<VeHandle> m_entity;
 
 	public:
 		VeEntityManager(size_t reserve = 1 << 10);
-		VeHandle	create();
-		void		erase(VeHandle& h);
+
+		template<typename E>
+		VeHandle create();
+		void	 erase(VeHandle& h);
 	};
 
 }

@@ -20,25 +20,20 @@ namespace vve {
 	//-------------------------------------------------------------------------
 	//entity manager
 
-	template<typename T>
-	VeEntityManager<T>::VeEntityManager( size_t reserve) : VeSystem() {
+	VeEntityManager::VeEntityManager( size_t reserve) : VeSystem() {
 		if (!this->init()) return;
 		m_entity.reserve(reserve);
 	}
 
-	template<typename T>
-	VeHandle VeEntityManager<T>::create() {
-		auto h = m_entity.add({});
-		if (h.has_value()) {
-			auto idx = h.value();
+	template<typename E>
+	VeHandle VeEntityManager::create() {
+		auto h = m_entity.push_back({});
+		//auto idx = h.value();
 
-		}
-
-		return {};
+		return h;
 	}
 
-	template<typename T>
-	void VeEntityManager<T>::erase(VeHandle& h) {
+	void VeEntityManager::erase(VeHandle& h) {
 
 	}
 
