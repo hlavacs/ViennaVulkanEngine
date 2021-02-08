@@ -55,6 +55,8 @@ namespace vve {
 
 	template <>
 	struct VeEntity<>;
+
+	struct VeHandle;
 }
 
 //user defined component types and entity types
@@ -83,7 +85,8 @@ namespace vve {
 	protected:
 		using base_crtp		= crtp<VeComponentPool<T>, VeComponentPool>;
 		using VeComponentPoolPtr = tl::variant_type<tl::to_ptr<tl::transform<VeComponentTypeList, VeComponentPool>>>;
-		static inline std::vector<T> m_data;
+
+		static inline VeSlotMap<T, VeHandle> m_component;
 
 	public:
 		VeComponentPool();
