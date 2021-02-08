@@ -5,6 +5,7 @@
 #include <typeinfo>
 #include <typeindex>
 #include <type_traits>
+#include <variant>
 #include "VGJS.h"
 
 
@@ -155,21 +156,6 @@ namespace vve {
 	using to_ptr = typename detail::to_ptr_impl<Seq>::type;
 
 	//-------------------------------------------------------------------------
-
-	namespace detail {
-		template <class C, typename Seq>
-		struct to_class_impl;
-
-		template <template<typename> class C, template <typename...> class Seq, typename... Ts>
-		struct to_class_impl<C<Ts...>, Seq<Ts...>> {
-			using type = Seq<C<Ts>...>;
-		};
-	}
-
-	template <typename C, typename Seq>
-	using to_class = typename detail::to_class_impl<C, Seq>::type;
-
-	//-------------------------------------------------------------------------
 	//variant type
 	namespace detail {
 		template <typename Seq>
@@ -177,7 +163,7 @@ namespace vve {
 
 		template <template <typename...> class Seq, typename... Ts>
 		struct variant_type_impl<Seq<Ts...>> {
-			using type = Seq<Ts...>;
+			using type = std::variant<Ts...>;
 		};
 	}  // namespace detail
 

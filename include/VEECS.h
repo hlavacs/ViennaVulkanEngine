@@ -4,6 +4,7 @@
 #include <limits>
 #include <typeinfo>
 #include <typeindex>
+#include <variant>
 #include "glm.hpp"
 #include "gtc/quaternion.hpp"
 #include "VGJS.h"
@@ -40,19 +41,30 @@ namespace vve {
 	template<typename T>
 	class VeComponentPool {
 	protected:
-		using VeComponentPoolPtr = variant_type<to_ptr<to_class<VeComponentPool,VeComponentTypeList>>>;
-
-		struct VeComponentData {
-			T					m_component;
-			VeComponentPoolPtr	m_next_pool;
-		};
-
-		VeVector<VeComponentData> m_data;
-		
+		VeVector<T> m_data;
 	public:
 
 	};
 
+	namespace detail {
+		template <typename Seq>
+		struct to_pool_impl;
+
+		template <template <typename...> class Seq, typename... Ts>
+		struct to_pool_impl<Seq<Ts...>> {
+			using type = type_list<VeComponentPool<Ts>...>;
+		};
+	}
+	template <typename Seq>
+	using to_pool = typename detail::to_pool_impl<Seq>::type;
+
+	using VeComponentPoolPtr = variant_type<to_ptr<to_pool<VeComponentTypeList>>>;
+
+	struct VeComponentHandle {
+		VeComponentPoolPtr m_pool;
+		index_t m_index;
+		VeHandle m_entity;
+	};
 
 
 	template <typename Seq>

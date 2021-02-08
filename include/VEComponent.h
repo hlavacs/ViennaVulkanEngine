@@ -44,8 +44,7 @@ namespace vve {
 	};
 
 	using VeComponentTypeList = type_list<VePosition, VeOrientation, VeTransform, VeMaterial, VeGeometry>;
-
-
+	using VeComponentPtr = variant_type<to_ptr<VeComponentTypeList>>;
 
 }
 
