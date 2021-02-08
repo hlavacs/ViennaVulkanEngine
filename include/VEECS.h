@@ -81,7 +81,7 @@ namespace vve {
 	template<typename T>
 	class VeComponentPool : crtp<VeComponentPool<T>, VeComponentPool> {
 	protected:
-		using base_crtp = crtp<VeComponentPool<T>, VeComponentPool>;
+		using base_crtp		= crtp<VeComponentPool<T>, VeComponentPool>;
 		using VeComponentPoolPtr = tl::variant_type<tl::to_ptr<tl::transform<VeComponentTypeList, VeComponentPool>>>;
 		static inline std::vector<T> m_data;
 
@@ -142,14 +142,15 @@ namespace vve {
 	template<typename T>
 	class VeEntityManager : public VeSystem<VeEntityManager<T>> {
 	protected:
-		using base_crtp = crtp<VeEntityManager<T>, VeEntityManager>;
-		static inline VeTable<VeEntityData> m_data;
+		using base_crtp		= crtp<VeEntityManager<T>, VeEntityManager>;
+		using base_system	= VeSystem<VeComponentPool<T>>;
+
+		static inline VeTable<VeEntityData> m_entity;
 
 	public:
 		VeEntityManager(size_t reserve = 1 << 10);
-		std::optional<VeHandle> create();
-		void erase(VeHandle& h);
-
+		VeHandle	create();
+		void		erase(VeHandle& h);
 	};
 
 }

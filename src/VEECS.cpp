@@ -10,7 +10,7 @@ namespace vve {
 
 	template<typename T>
 	VeComponentPool<T>::VeComponentPool() {
-		if (!base_crtp::init()) return;
+		if (!this->init()) return;
 	}
 
 	//-------------------------------------------------------------------------
@@ -22,13 +22,13 @@ namespace vve {
 
 	template<typename T>
 	VeEntityManager<T>::VeEntityManager( size_t reserve) : VeSystem() {
-		if (!base_crtp::init()) return;
-		m_data.reserve(reserve);
+		if (!this->init()) return;
+		m_entity.reserve(reserve);
 	}
 
 	template<typename T>
-	std::optional<VeHandle> VeEntityManager<T>::create() {
-		auto h = m_data.add({});
+	VeHandle VeEntityManager<T>::create() {
+		auto h = m_entity.add({});
 		if (h.has_value()) {
 			auto idx = h.value();
 
