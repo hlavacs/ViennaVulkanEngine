@@ -4,7 +4,7 @@ set(TARGET vve)
 set(SOURCE
   VEEngine.cpp
   VEImgui.cpp
-  VETable.cpp
+  VEContainer.cpp
   VEECS.cpp
 )
 
@@ -14,7 +14,8 @@ set(HEADERS
   ${INCLUDE}/vve.h
   ${INCLUDE}/VEEngine.h
   ${INCLUDE}/VEECS.h
-  ${INCLUDE}/VETable.h
+  ${INCLUDE}/VEContainer.h
+  ${INCLUDE}/VEComponent.h
 )
 
 add_library (${TARGET} ${SOURCE} ${HEADERS})

@@ -33,6 +33,8 @@
 #include <chrono>
 #include <string>
 #include <sstream>
+#include <compare>
+#include <unordered_map>
 
 using namespace std::chrono;
 
