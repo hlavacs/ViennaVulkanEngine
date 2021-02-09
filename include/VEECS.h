@@ -96,7 +96,7 @@ namespace vve {
 
 	template<typename T>
 	inline void VeComponentPool<T>::add(VeHandle& h, T&& component) {
-
+		int i = 0;
 	}
 
 	using VeComponentPoolPtr = tl::variant_type<tl::to_ptr<tl::transform<VeComponentTypeList, VeComponentPool>>>;
@@ -150,11 +150,13 @@ namespace vve {
 		VeEntityManager(size_t reserve = 1 << 10);
 
 		template<typename... Ts>
+		//requires (tl::is_same_tl<E, Ts...>::value == true)
 		VeHandle create(Ts&&... args);
 
 		void erase(VeHandle& h);
 	};
 
+	//template<typename E>
 	template<typename... Ts>
 	//requires (tl::is_same_tl<E, Ts...>::value == true)
 	inline VeHandle VeEntityManager::create(Ts&&... args) {
