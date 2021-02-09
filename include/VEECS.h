@@ -107,7 +107,7 @@ namespace vve {
 
 	template<typename E>
 	struct VeHandle_t {
-		index_t		m_index{ typeid(std::decay_t<E>).hash_code() };		//the slot of the entity in the entity list
+		index_t		m_entity_index{ typeid(std::decay_t<E>).hash_code() };		//the slot of the entity in the entity list
 		counter_t	m_counter{};	//generation counter
 	};
 
@@ -237,8 +237,8 @@ namespace vve {
 	protected:
 
 		struct entry_t {
-			VeHandle	m_handle{};	//entity handle
-			index_t		m_index{};	//next free slot or index of reference table
+			VeHandle	m_handle{};				//entity handle
+			index_t		m_next_free_or_ref{};	//next free slot or index of reference table
 		};
 
 		static inline std::vector<entry_t>	m_entity_table;
@@ -274,7 +274,7 @@ namespace vve {
 		index_t idx{};
 		if (!m_first_free.is_null()) {
 			idx = m_first_free;
-			m_first_free = m_entity_table[m_first_free.value].m_index;
+			m_first_free = m_entity_table[m_first_free.value].m_next_free_or_ref;
 		}
 		else {
 			idx.value = m_entity_table.size();	//index of new entity
@@ -294,8 +294,8 @@ namespace vve {
 
 		auto erase_references = [&]<typename E>(VeHandle_t<E> & h) {
 			VeComponentReferenceTable<E> reftable;
-			erase_components(reftable.get(m_entity_table[h.m_index.value].m_index), h);
-			reftable.erase(m_entity_table[h.m_index.value].m_index);
+			erase_components( reftable.get( m_entity_table[h.m_entity_index.value].m_next_free_or_ref ), h );
+			reftable.erase( m_entity_table[h.m_entity_index.value].m_next_free_or_ref );
 		};
 
 		std::visit(erase_references, handle);
