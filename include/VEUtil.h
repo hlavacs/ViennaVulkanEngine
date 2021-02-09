@@ -144,17 +144,17 @@ namespace vve {
 			struct index_of_impl {};
 
 			// Index Of base case: found the type we're looking for.
-			template <typename T, typename... Ts>
-			struct index_of_impl<T, type_list<T, Ts...>> : std::integral_constant<std::size_t, 0> {
+			template <typename T, template <typename...> class Seq, typename... Ts>
+			struct index_of_impl<T, Seq<T, Ts...>> : std::integral_constant<std::size_t, 0> {
 				using type = std::integral_constant<std::size_t, 0>;
 			};
 
 			// Index Of recursive case: 1 + Index Of the rest of the types.
-			template <typename T, typename TOther, typename... Ts>
-			struct index_of_impl<T, type_list<TOther, Ts...>>
-				: std::integral_constant<std::size_t, 1 + index_of_impl<T, type_list<Ts...>>::value>
+			template <typename T, typename TOther, template <typename...> class Seq, typename... Ts>
+			struct index_of_impl<T, Seq<TOther, Ts...>>
+				: std::integral_constant<std::size_t, 1 + index_of_impl<T, Seq<Ts...>>::value>
 			{
-				using type = std::integral_constant<std::size_t, 1 + index_of_impl<T, type_list<Ts...>>::value>;
+				using type = std::integral_constant<std::size_t, 1 + index_of_impl<T, Seq<Ts...>>::value>;
 			};
 		}
 
@@ -174,18 +174,18 @@ namespace vve {
 			struct cat_impl;
 
 			template <template <typename...> class Seq, typename... Ts>
-			struct cat_impl<type_list<>, Seq<Ts...>> {
-				using type = type_list<Ts...>;
+			struct cat_impl<Seq<>, Seq<Ts...>> {
+				using type = Seq<Ts...>;
 			};
 
 			template <template <typename...> class Seq, typename... Ts>
-			struct cat_impl<Seq<Ts...>, type_list<>> {
-				using type = type_list<Ts...>;
+			struct cat_impl<Seq<Ts...>, Seq<>> {
+				using type = Seq<Ts...>;
 			};
 
 			template <template <typename...> class Seq1, typename... Ts1, template <typename...> class Seq2, typename T, typename... Ts2>
 			struct cat_impl<Seq1<Ts1...>, Seq2<T, Ts2...>> {
-				using type = typename cat_impl<type_list<Ts1..., T>, type_list<Ts2...>>::type;
+				using type = typename cat_impl<Seq1<Ts1..., T>, Seq2<Ts2...>>::type;
 			};
 		}
 
@@ -228,9 +228,9 @@ namespace vve {
 			template<typename List, template<class> class Fun>
 			struct transform_impl;
 
-			template<typename ...List, template<class> class Fun>
-			struct transform_impl<type_list<List...>, Fun> {
-				using type = type_list<Fun<List>...>;
+			template<template <typename...> class Seq, typename ...Ts, template<class> class Fun>
+			struct transform_impl<Seq<Ts...>, Fun> {
+				using type = Seq<Fun<Ts>...>;
 			};
 		}
 		template <typename Seq, template<class> class Fun>
@@ -240,34 +240,18 @@ namespace vve {
 		//static for
 		namespace detail {
 			template<typename Seq, typename... Args>
-			struct is_same_tl_impl {
-				const bool value = false;
+			struct is_same_impl {
+				static const bool value = false;
 			};
 
-			template<typename... Ts, typename... Args>
-			struct is_same_tl_impl<type_list<Ts...>, Args...> {
-				const bool value = sizeof...<Ts> == sizeof...<Args>;// && (is_same_v<std::decay_t<Ts>, std::decay_t<Args>> && ...);
+			template<template <typename...> class Seq, typename... Ts, typename... Args>
+			struct is_same_impl<Seq<Ts...>, Args...> {
+				static const bool value = (sizeof...(Ts) == sizeof...(Args) && (std::is_same_v<std::decay_t<Ts>, std::decay_t<Args>> && ... && true) );
 			};
-
-
-			/*template<typename T, typename... Ts, typename A, typename... Args>
-			struct is_same_impl<type_list<T, Ts...>, A, Args...> {
-				const bool value = std::is_same_v<T,A> && is_same_impl<type_list<Ts...>, Args...>;
-			};
-
-			template<typename... Args>
-			struct is_same_impl<type_list<>, Args...> {
-				const bool value = sizeof...(Args) == 0;
-			};
-
-			template<>
-			struct is_same_impl<type_list<>> {
-				const bool value = true;
-			};*/
 		}
 		template <typename Seq, typename... Args>
-		struct is_same_tl {
-			static const bool value = true; // detail::is_same_impl<Seq, Args...>::value;
+		struct is_same {
+			static const bool value = detail::is_same_impl<Seq, Args...>::value;
 		};
 
 

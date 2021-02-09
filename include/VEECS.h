@@ -51,10 +51,7 @@ namespace vve {
 	//entities
 
 	template <typename... Ts>
-	struct VeEntity;
-
-	template <>
-	struct VeEntity<>;
+	using VeEntity = tl::type_list<Ts...>;
 
 	struct VeHandle;
 }
@@ -149,17 +146,16 @@ namespace vve {
 	public:
 		VeEntityManager(size_t reserve = 1 << 10);
 
-		template<typename... Ts>
-		//requires (tl::is_same_tl<E, Ts...>::value == true)
-		VeHandle create(Ts&&... args);
+		template<typename E, typename... Ts>
+		requires tl::is_same<E, Ts...>::value
+		VeHandle create(E&& e, Ts&&... args);
 
 		void erase(VeHandle& h);
 	};
 
-	//template<typename E>
-	template<typename... Ts>
-	//requires (tl::is_same_tl<E, Ts...>::value == true)
-	inline VeHandle VeEntityManager::create(Ts&&... args) {
+	template<typename E, typename... Ts>
+	requires tl::is_same<E, Ts...>::value
+	inline VeHandle VeEntityManager::create(E&& e, Ts&&... args) {
 		index_t idx{};
 		if (!m_next_free.is_null()) {
 			idx = m_next_free;

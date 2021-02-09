@@ -1,5 +1,6 @@
 
 #include <iostream>
+#include <utility>
 #include "vulkan/vulkan.h"
 #include "vve.h"
 #include "basic_test.h"
@@ -11,7 +12,7 @@ using namespace vve;
 int main() {
     VeEntityManager et;
 
-    et.create(VeComponentPosition{}, VeComponentOrientation{}, VeComponentTransform{});
+    et.create(VeEntityNode{}, VeComponentPosition{}, VeComponentOrientation{}, VeComponentTransform{});
 
 
     imgui();
