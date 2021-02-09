@@ -122,8 +122,9 @@ namespace vve {
 	protected:
 
 		struct entry_t {
-			C m_component;
+			C		 m_component;
 			VeHandle m_handle;
+			index_t& m_ref_index;
 		};
 
 		static inline std::vector<entry_t> m_component;
@@ -131,12 +132,24 @@ namespace vve {
 	public:
 		VeComponentVector() = default;
 		void add(VeHandle&& h, C&& component);
+		void erase(VeHandle& h, index_t comp_index);
 	};
 
 	template<typename C>
 	inline void VeComponentVector<C>::add(VeHandle&& h, C&& component) {
 		int i = 0;
 	}
+
+	template<typename C>
+	inline void VeComponentVector<C>::erase(VeHandle& h, index_t comp_index) {
+		if (m_component.size() == 0) return;
+		if (comp_index.value < m_component.size()-1) {
+			m_component[comp_index.value] = m_component[m_component.size() - 1];
+			m_component[comp_index.value].m_ref_index = comp_index;
+		}
+		m_component.pop_back();
+	}
+
 
 	using VeComponentVectorPtr = tl::variant_type<tl::to_ptr<tl::transform<VeComponentTypeList, VeComponentVector>>>;
 
@@ -166,7 +179,8 @@ namespace vve {
 		template<typename U >
 		requires std::is_same_v<std::decay_t<U>, typename VeComponentReferenceTable<E>::tuple_type>
 		index_t add(VeHandle& h, U&& ref);
-		void erase(VeHandle_t<E>& h);
+		tuple_type& get(index_t index);
+		void erase(index_t idx);
 	};
 
 
@@ -193,11 +207,15 @@ namespace vve {
 		return idx;
 	};
 
+	template<typename E>
+	inline typename VeComponentReferenceTable<E>::tuple_type& VeComponentReferenceTable<E>::get(index_t index) {
+		return m_ref_index[index.value].m_entry;
+	}
 
 	template<typename E>
-	void VeComponentReferenceTable<E>::erase(VeHandle_t<E>& h) {
-		m_ref_index[h.m_index.value].m_next = m_first_free;
-		m_first_free = h.m_index;
+	void VeComponentReferenceTable<E>::erase(index_t index) {
+		m_ref_index[index.value].m_next = m_first_free;
+		m_first_free = index;
 	}
 
 
@@ -220,7 +238,7 @@ namespace vve {
 
 		struct entry_t {
 			VeHandle	m_handle{};	//entity handle
-			index_t		m_index{};	//next free slot or index of reference pool
+			index_t		m_index{};	//next free slot or index of reference table
 		};
 
 		static inline std::vector<entry_t>	m_entity_table;
@@ -269,13 +287,15 @@ namespace vve {
 
 
 	inline void VeEntityManager::erase(VeHandle& handle) {
-		auto erase_components = [&]<typename E, typename... Ts>(VeComponentReferenceTable<E> &&refpool, VeHandle_t<VeEntity<Ts...>> &h) {
+		auto erase_components = [&]<typename... Ts>( std::tuple<Ts&...>& reftup, VeHandle_t<VeEntity<Ts...>> &h) {
+			
 			//(VeComponentVector<Ts>().erase(h), ...);
 		};
 
 		auto erase_references = [&]<typename E>(VeHandle_t<E> & h) {
-			erase_components(VeComponentReferenceTable<E>(), h);
-			VeComponentReferenceTable<E>().erase(h);
+			VeComponentReferenceTable<E> reftable;
+			erase_components(reftable.get(m_entity_table[h.m_index.value].m_index), h);
+			reftable.erase(m_entity_table[h.m_index.value].m_index);
 		};
 
 		std::visit(erase_references, handle);
