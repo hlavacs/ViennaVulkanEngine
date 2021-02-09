@@ -107,16 +107,11 @@ namespace vve {
 
 	template<typename E>
 	struct VeHandle_t {
-		index_t		m_index{ typeid(E).hash_code() };		//the slot of the entity in the entity list
+		index_t		m_index{ typeid(std::decay_t<E>).hash_code() };		//the slot of the entity in the entity list
 		counter_t	m_counter{};	//generation counter
 	};
 
 	using VeHandle = tl::variant_type<tl::transform<VeEntityTypeList, VeHandle_t>>;
-		//tl::variant_type< tl::type_list<VeHandle_t<VeEntityNode>, VeHandle_t<VeEntityDraw>, VeHandle_t<VeEntityAnimation>>>;
-
-		//std::variant<VeHandle_t<VeEntityNode>, VeHandle_t<VeEntityDraw>>;
-		
-		//tl::variant_type<tl::transform<VeEntityTypeList, VeHandle_t>>;
 
 
 	//-------------------------------------------------------------------------
@@ -125,10 +120,13 @@ namespace vve {
 	template<typename C>
 	class VeComponentPool : public crtp<VeComponentPool<C>, VeComponentPool> {
 	protected:
-		using base_crtp		= crtp<VeComponentPool<C>, VeComponentPool>;
-		using VeComponentPoolPtr = tl::variant_type<tl::to_ptr<tl::transform<VeComponentTypeList, VeComponentPool>>>;
 
-		//static inline VeSlotMap<C, VeHandle_t<C>> m_component;
+		struct entry_t {
+			C m_component;
+			VeHandle m_handle;
+		};
+
+		static inline std::vector<entry_t> m_component;
 
 	public:
 		VeComponentPool() = default;
@@ -152,24 +150,29 @@ namespace vve {
 	template<typename E>
 	class VeComponentReferencePool : public crtp<VeComponentReferencePool<E>, VeComponentReferencePool> {
 	protected:
-		using base_crtp = crtp<VeComponentReferencePool<E>, VeComponentReferencePool>;
-		using VeComponentPoolPtr = tl::variant_type<tl::to_ptr<tl::transform<VeComponentTypeList, VeComponentPool>>>;
 		using tuple_type = typename tl::to_ref_tuple<E>::type;
 
-		struct VeRefPoolEntry {
+		struct entry_t {
 			tuple_type m_entry;
 			index_t m_next{};
 		};
 
-		static inline std::vector<VeRefPoolEntry>	m_ref_index;
-		static inline index_t						m_first_free{};
+		static inline std::vector<entry_t>	m_ref_index;
+		static inline index_t				m_first_free{};
 
 	public:
-		VeComponentReferencePool(size_t r);
+		VeComponentReferencePool(size_t r = 1 << 10);
 
 		template<typename U >
 		requires std::is_same_v<std::decay_t<U>, typename VeComponentReferencePool<E>::tuple_type>
 		index_t add(VeHandle& h, U&& ref);
+	};
+
+
+	template<typename T>
+	inline VeComponentReferencePool<T>::VeComponentReferencePool(size_t r) {
+		if (!this->init()) return;
+		m_ref_index.reserve(r);
 	};
 
 
@@ -207,15 +210,16 @@ namespace vve {
 
 	class VeEntityManager : public VeSystem<VeEntityManager> {
 	protected:
-		using base_system = VeSystem<VeEntityManager>;
 
-		struct VeEntityData {
+		struct entry_t {
 			VeHandle	m_handle{};	//entity handle
-			index_t		m_next{};	//next free slot or index of reference pool
+			index_t		m_index{};	//next free slot or index of reference pool
 		};
 
-		static inline std::vector<VeEntityData> m_entity;
-		static inline index_t m_first_free{};
+		static inline std::vector<entry_t>	m_entity;
+		static inline index_t				m_first_free{};
+
+		index_t get_ref_pool_index(VeHandle& h);
 
 	public:
 		VeEntityManager(size_t reserve = 1 << 10);
@@ -228,13 +232,18 @@ namespace vve {
 	};
 
 
+	inline index_t VeEntityManager::get_ref_pool_index(VeHandle& h) {
+		return {};
+	}
+
+
 	template<typename E, typename... Ts>
 	requires tl::is_same<E, Ts...>::value
 	inline VeHandle VeEntityManager::create(E&& e, Ts&&... args) {
 		index_t idx{};
 		if (!m_first_free.is_null()) {
 			idx = m_first_free;
-			m_first_free = m_entity[m_first_free.value].m_next;
+			m_first_free = m_entity[m_first_free.value].m_index;
 		}
 		else {
 			idx.value = m_entity.size();	//index of new entity
