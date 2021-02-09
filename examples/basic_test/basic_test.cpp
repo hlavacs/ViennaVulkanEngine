@@ -12,8 +12,8 @@ using namespace vve;
 int main() {
     VeEntityManager et;
 
-    et.create(VeEntityNode{}, VeComponentPosition{}, VeComponentOrientation{}, VeComponentTransform{});
-
+    VeHandle h = et.create(VeEntityNode{}, VeComponentPosition{}, VeComponentOrientation{}, VeComponentTransform{});
+    et.erase(h);
 
     imgui();
     std::cout << "Hello world\n";

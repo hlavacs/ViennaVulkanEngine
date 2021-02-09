@@ -183,9 +183,9 @@ namespace vve {
 				using type = Seq<Ts...>;
 			};
 
-			template <template <typename...> class Seq1, typename... Ts1, template <typename...> class Seq2, typename T, typename... Ts2>
-			struct cat_impl<Seq1<Ts1...>, Seq2<T, Ts2...>> {
-				using type = typename cat_impl<Seq1<Ts1..., T>, Seq2<Ts2...>>::type;
+			template <template <typename...> class Seq, typename... Ts1, typename T, typename... Ts2>
+			struct cat_impl<Seq<Ts1...>, Seq<T, Ts2...>> {
+				using type = typename cat_impl<Seq<Ts1..., T>, Seq<Ts2...>>::type;
 			};
 		}
 
@@ -215,7 +215,7 @@ namespace vve {
 
 			template <template <typename...> class Seq, typename... Ts>
 			struct variant_type_impl<Seq<Ts...>> {
-				using type = std::variant<std::monostate, Ts...>;
+				using type = std::variant<Ts...>;
 			};
 		}  // namespace detail
 
