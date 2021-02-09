@@ -19,11 +19,11 @@ namespace vve {
 
 	VeEntityManager::VeEntityManager( size_t r) : VeSystem() {
 		if (!this->init()) return;
-		//m_entity.reserve(r);
+		m_entity.reserve(r);
 	}
 
-
-	void VeEntityManager::erase(VeHandle& h) {
+	template<typename T>
+	void VeEntityManager::erase(VeHandle_t<T>& h) {
 
 	}
 

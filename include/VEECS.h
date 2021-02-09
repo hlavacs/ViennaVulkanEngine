@@ -53,7 +53,8 @@ namespace vve {
 	template <typename... Ts>
 	using VeEntity = tl::type_list<Ts...>;
 
-	struct VeHandle;
+	template<typename T>
+	struct VeHandle_t;
 }
 
 //user defined component types and entity types
@@ -77,31 +78,6 @@ namespace vve {
 		VeComponentTypeListUser>;
 	using VeComponentPtr = tl::variant_type<tl::to_ptr<VeComponentTypeList>>;
 
-
-	template<typename T>
-	class VeComponentPool : public crtp<VeComponentPool<T>, VeComponentPool> {
-	protected:
-		using base_crtp		= crtp<VeComponentPool<T>, VeComponentPool>;
-		using VeComponentPoolPtr = tl::variant_type<tl::to_ptr<tl::transform<VeComponentTypeList, VeComponentPool>>>;
-
-		static inline VeSlotMap<T, VeHandle> m_component;
-
-	public:
-		VeComponentPool() = default;
-		void add(VeHandle& h, T&& component);
-	};
-
-	template<typename T>
-	inline void VeComponentPool<T>::add(VeHandle& h, T&& component) {
-		int i = 0;
-	}
-
-	using VeComponentPoolPtr = tl::variant_type<tl::to_ptr<tl::transform<VeComponentTypeList, VeComponentPool>>>;
-
-	inline VeComponentPool<VeComponentPosition> p1;
-	inline VeComponentPoolPtr pp1{ &p1 };
-
-
 	//-------------------------------------------------------------------------
 	//entity type list and pointer
 
@@ -111,6 +87,41 @@ namespace vve {
 
 	using VeEntityTypeList = tl::cat<tl::type_list<VeEntity<>, VeEntityNode, VeEntityDraw, VeEntityAnimation>, VeEntityTypeListUser>;
 	using VeEntityPtr = tl::variant_type<tl::to_ptr<tl::transform<VeEntityTypeList, VeEntity>>>;
+
+	template<typename T>
+	struct VeHandle_t {
+		index_t		m_index{};		//the slot of the entity in the entity list
+		counter_t	m_counter{};	//generation counter
+	};
+
+	using VeHandle = tl::variant_type<tl::transform<VeEntityTypeList, VeHandle_t>>;
+
+
+	//-------------------------------------------------------------------------
+	//component pool
+
+	template<typename T>
+	class VeComponentPool : public crtp<VeComponentPool<T>, VeComponentPool> {
+	protected:
+		using base_crtp		= crtp<VeComponentPool<T>, VeComponentPool>;
+		using VeComponentPoolPtr = tl::variant_type<tl::to_ptr<tl::transform<VeComponentTypeList, VeComponentPool>>>;
+
+		static inline VeSlotMap<T, VeHandle_t<T>> m_component;
+
+	public:
+		VeComponentPool() = default;
+		void add(VeHandle&& h, T&& component);
+	};
+
+	template<typename T>
+	inline void VeComponentPool<T>::add(VeHandle&& h, T&& component) {
+		int i = 0;
+	}
+
+	using VeComponentPoolPtr = tl::variant_type<tl::to_ptr<tl::transform<VeComponentTypeList, VeComponentPool>>>;
+
+	inline VeComponentPool<VeComponentPosition> p1;
+	inline VeComponentPoolPtr pp1{ &p1 };
 
 
 	//-------------------------------------------------------------------------
@@ -123,10 +134,6 @@ namespace vve {
 		VeSystem() = default;
 	};
 
-	struct VeHandle {
-		index_t		m_index{};		//the slot of the entity in the entity list
-		counter_t	m_counter{};	//generation counter
-	};
 
 	//-------------------------------------------------------------------------
 	//entity manager
@@ -146,16 +153,17 @@ namespace vve {
 	public:
 		VeEntityManager(size_t reserve = 1 << 10);
 
-		template<typename E, typename... Ts>
-		requires tl::is_same<E, Ts...>::value
-		VeHandle create(E&& e, Ts&&... args);
+		template<typename T, typename... Ts>
+		requires tl::is_same<T, Ts...>::value
+		VeHandle_t<T> create(T&& e, Ts&&... args);
 
-		void erase(VeHandle& h);
+		template<typename T>
+		void erase(VeHandle_t<T>& h);
 	};
 
-	template<typename E, typename... Ts>
-	requires tl::is_same<E, Ts...>::value
-	inline VeHandle VeEntityManager::create(E&& e, Ts&&... args) {
+	template<typename T, typename... Ts>
+	requires tl::is_same<T, Ts...>::value
+	inline VeHandle_t<T> VeEntityManager::create(T&& e, Ts&&... args) {
 		index_t idx{};
 		if (!m_next_free.is_null()) {
 			idx = m_next_free;
@@ -165,8 +173,8 @@ namespace vve {
 			idx.value = m_entity.size();	//index of new entity
 			m_entity.push_back({}); //start with counter 0
 		}
-		VeHandle h{ idx, counter_t{0} };
-		( VeComponentPool<Ts>().add(h, std::forward<Ts>(args)), ... );
+		VeHandle_t<T> h{ idx, counter_t{0} };
+		(VeComponentPool<Ts>().add(VeHandle_t{ h }, std::forward<Ts>(args)), ...);
 		return h;
 	};
 
