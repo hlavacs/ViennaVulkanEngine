@@ -8,10 +8,7 @@ namespace vve {
 	//-------------------------------------------------------------------------
 	//component pool
 
-	template<typename T>
-	VeComponentPool<T>::VeComponentPool() {
-		if (!this->init()) return;
-	}
+
 
 	//-------------------------------------------------------------------------
 	//system
@@ -20,18 +17,11 @@ namespace vve {
 	//-------------------------------------------------------------------------
 	//entity manager
 
-	VeEntityManager::VeEntityManager( size_t reserve) : VeSystem() {
+	VeEntityManager::VeEntityManager( size_t r) : VeSystem() {
 		if (!this->init()) return;
-		m_entity.reserve(reserve);
+		//m_entity.reserve(r);
 	}
 
-	template<typename E>
-	VeHandle VeEntityManager::create() {
-		auto h = m_entity.push_back({});
-		//auto idx = h.value();
-
-		return h;
-	}
 
 	void VeEntityManager::erase(VeHandle& h) {
 

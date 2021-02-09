@@ -12,6 +12,7 @@
 namespace vve {
 
 	using index_t = vgjs::int_type<size_t, struct P0, std::numeric_limits<size_t>::max()>;
+	using counter_t = vgjs::int_type<size_t, struct P1, std::numeric_limits<size_t>::max()>;
 
 	//https://www.fluentcpp.com/2017/05/19/crtp-helper/
 
@@ -20,9 +21,9 @@ namespace vve {
 		T& underlying() { return static_cast<T&>(*this); }
 		T const& underlying() const { return static_cast<T const&>(*this); }
 
+		crtp() {};
+
 	protected:
-		crtp() {}
-		friend crtpType<T>;
 		static inline std::atomic<uint32_t> m_init_counter = 0;
 		bool init() {
 			if (m_init_counter > 0) false;
@@ -234,6 +235,40 @@ namespace vve {
 		}
 		template <typename Seq, template<class> class Fun>
 		using transform = typename detail::transform_impl<Seq, Fun>::type;
+
+		//-------------------------------------------------------------------------
+		//static for
+		namespace detail {
+			template<typename Seq, typename... Args>
+			struct is_same_tl_impl {
+				const bool value = false;
+			};
+
+			template<typename... Ts, typename... Args>
+			struct is_same_tl_impl<type_list<Ts...>, Args...> {
+				const bool value = sizeof...<Ts> == sizeof...<Args>;// && (is_same_v<std::decay_t<Ts>, std::decay_t<Args>> && ...);
+			};
+
+
+			/*template<typename T, typename... Ts, typename A, typename... Args>
+			struct is_same_impl<type_list<T, Ts...>, A, Args...> {
+				const bool value = std::is_same_v<T,A> && is_same_impl<type_list<Ts...>, Args...>;
+			};
+
+			template<typename... Args>
+			struct is_same_impl<type_list<>, Args...> {
+				const bool value = sizeof...(Args) == 0;
+			};
+
+			template<>
+			struct is_same_impl<type_list<>> {
+				const bool value = true;
+			};*/
+		}
+		template <typename Seq, typename... Args>
+		struct is_same_tl {
+			static const bool value = true; // detail::is_same_impl<Seq, Args...>::value;
+		};
 
 
 		//-------------------------------------------------------------------------

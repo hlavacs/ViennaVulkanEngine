@@ -80,8 +80,9 @@ namespace vve {
 		VeComponentTypeListUser>;
 	using VeComponentPtr = tl::variant_type<tl::to_ptr<VeComponentTypeList>>;
 
+
 	template<typename T>
-	class VeComponentPool : crtp<VeComponentPool<T>, VeComponentPool> {
+	class VeComponentPool : public crtp<VeComponentPool<T>, VeComponentPool> {
 	protected:
 		using base_crtp		= crtp<VeComponentPool<T>, VeComponentPool>;
 		using VeComponentPoolPtr = tl::variant_type<tl::to_ptr<tl::transform<VeComponentTypeList, VeComponentPool>>>;
@@ -89,8 +90,14 @@ namespace vve {
 		static inline VeSlotMap<T, VeHandle> m_component;
 
 	public:
-		VeComponentPool();
+		VeComponentPool() = default;
+		void add(VeHandle& h, T&& component);
 	};
+
+	template<typename T>
+	inline void VeComponentPool<T>::add(VeHandle& h, T&& component) {
+
+	}
 
 	using VeComponentPoolPtr = tl::variant_type<tl::to_ptr<tl::transform<VeComponentTypeList, VeComponentPool>>>;
 
@@ -119,25 +126,10 @@ namespace vve {
 		VeSystem() = default;
 	};
 
-
-	struct VeEntityData;
-
 	struct VeHandle {
-		int* m_ptr = nullptr;
-		uint32_t	  m_counter = 0;
+		index_t		m_index{};		//the slot of the entity in the entity list
+		counter_t	m_counter{};	//generation counter
 	};
-
-	/*struct VeEntityData {
-		uint32_t	  m_counter = 0;
-		VeEntityData* m_next = nullptr;
-	};
-
-	struct VeComponentHandle {
-		VeComponentPoolPtr m_pool;
-		index_t m_index;
-		VeHandle m_entity;
-	};*/
-
 
 	//-------------------------------------------------------------------------
 	//entity manager
@@ -146,14 +138,38 @@ namespace vve {
 	protected:
 		using base_system = VeSystem<VeEntityManager>;
 
-		static inline std::vector<VeHandle> m_entity;
+		struct VeEntityData {
+			counter_t	m_counter{0};	//generation counter
+			index_t		m_next{};		//next free slot
+		};
+
+		static inline std::vector<VeEntityData> m_entity;
+		static inline index_t m_next_free{};
 
 	public:
 		VeEntityManager(size_t reserve = 1 << 10);
 
-		template<typename E>
-		VeHandle create();
-		void	 erase(VeHandle& h);
+		template<typename... Ts>
+		VeHandle create(Ts&&... args);
+
+		void erase(VeHandle& h);
+	};
+
+	template<typename... Ts>
+	//requires (tl::is_same_tl<E, Ts...>::value == true)
+	inline VeHandle VeEntityManager::create(Ts&&... args) {
+		index_t idx{};
+		if (!m_next_free.is_null()) {
+			idx = m_next_free;
+			m_next_free = m_entity[m_next_free.value].m_next;
+		}
+		else {
+			idx.value = m_entity.size();	//index of new entity
+			m_entity.push_back({}); //start with counter 0
+		}
+		VeHandle h{ idx, counter_t{0} };
+		( VeComponentPool<Ts>().add(h, std::forward<Ts>(args)), ... );
+		return h;
 	};
 
 }

@@ -9,6 +9,9 @@ int imgui();
 using namespace vve;
 
 int main() {
+    VeEntityManager et;
+
+    et.create(VeComponentPosition{}, VeComponentOrientation{}, VeComponentTransform{});
 
 
     imgui();
