@@ -262,19 +262,16 @@ namespace vve {
 
 			template<template <typename...> class Seq>
 			struct to_ref_tuple_impl<Seq<>> {
-				//static inline const auto value = std::make_tuple();
-				using type = std::tuple<>; // decltype(value);
+				using type = std::tuple<>;
 			};
 
 			template<template <typename...> class Seq, typename... Ts>
 			struct to_ref_tuple_impl<Seq<Ts...>> {
-				//static inline const auto value = std::declval(std::tuple<Ts&...>);
 				using type = std::tuple<Ts&...>;
 			};
 		}
 		template <typename Seq>
 		struct to_ref_tuple {
-			//static inline const auto value = detail::to_ref_tuple_impl<Seq>::value;
 			using type = typename detail::to_ref_tuple_impl<Seq>::type;
 		};
 

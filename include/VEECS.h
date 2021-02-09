@@ -124,30 +124,33 @@ namespace vve {
 		struct entry_t {
 			C		 m_component;
 			VeHandle m_handle;
-			index_t& m_ref_index;
+			index_t* m_ref_index;
 		};
 
-		static inline std::vector<entry_t> m_component;
+		static inline std::vector<entry_t> m_component_vector;
 
 	public:
 		VeComponentVector() = default;
-		void add(VeHandle&& h, C&& component);
+		C& add(VeHandle h, C&& component);
 		void erase(VeHandle& h, index_t comp_index);
 	};
 
+
 	template<typename C>
-	inline void VeComponentVector<C>::add(VeHandle&& h, C&& component) {
-		int i = 0;
+	inline C& VeComponentVector<C>::add(VeHandle h, C&& component) {
+		m_component_vector.push_back({ component, h, nullptr });
+		return m_component_vector[m_component_vector.size() - 1 ].m_component;
 	}
+
 
 	template<typename C>
 	inline void VeComponentVector<C>::erase(VeHandle& h, index_t comp_index) {
-		if (m_component.size() == 0) return;
-		if (comp_index.value < m_component.size()-1) {
-			m_component[comp_index.value] = m_component[m_component.size() - 1];
-			m_component[comp_index.value].m_ref_index = comp_index;
+		if (m_component_vector.size() == 0) return;
+		if (comp_index.value < m_component_vector.size()-1) {
+			m_component_vector[comp_index.value] = m_component_vector[m_component_vector.size() - 1];
+			m_component_vector[comp_index.value].m_ref_index = comp_index;
 		}
-		m_component.pop_back();
+		m_component_vector.pop_back();
 	}
 
 
@@ -175,10 +178,7 @@ namespace vve {
 
 	public:
 		VeComponentReferenceTable(size_t r = 1 << 10);
-
-		template<typename U >
-		requires std::is_same_v<std::decay_t<U>, typename VeComponentReferenceTable<E>::tuple_type>
-		index_t add(VeHandle& h, U&& ref);
+		tuple_type& create(VeHandle h);
 		tuple_type& get(index_t index);
 		void erase(index_t idx);
 	};
@@ -192,26 +192,25 @@ namespace vve {
 
 
 	template<typename E>
-	template<typename U>
-	requires std::is_same_v<std::decay_t<U>, typename VeComponentReferenceTable<E>::tuple_type>
-	index_t VeComponentReferenceTable<E>::add(VeHandle& h, U&& ref) {
+	typename VeComponentReferenceTable<E>::tuple_type& VeComponentReferenceTable<E>::create(VeHandle h) {
 		index_t idx{};
 		if (!m_first_free.is_null()) {
 			idx = m_first_free;
 			m_first_free = m_ref_component[m_first_free.value].m_next;
-			m_ref_component[idx.value].m_entry = ref;
 		}
 		else {
-			idx.value = m_ref_component.size();		//
-			m_ref_component.push_back({ ref, {} }); //
+			idx.value = m_ref_component.size();			//
+			m_ref_component.push_back(tuple_type{});	//
 		}
-		return idx;
+		return m_ref_component[idx.value];
 	};
+
 
 	template<typename E>
 	inline typename VeComponentReferenceTable<E>::tuple_type& VeComponentReferenceTable<E>::get(index_t index) {
 		return m_ref_component[index.value].m_entry;
 	}
+
 
 	template<typename E>
 	void VeComponentReferenceTable<E>::erase(index_t index) {
@@ -281,9 +280,12 @@ namespace vve {
 			idx.value = m_entity_table.size();	//index of new entity
 			m_entity_table.push_back({}); //start with counter 0
 		}
-		VeHandle_t<E> h{ idx, counter_t{0} };
-		(VeComponentVector<Ts>().add(VeHandle{ h }, std::forward<Ts>(args)), ...);
-		return { h };
+		VeHandle_t<E> he{ idx, counter_t{0} };
+		VeHandle h{ he };
+		auto reftup = std::tuple_cat( std::make_tuple( VeComponentVector<Ts>().add(h, std::forward<Ts>(args)) )...);
+		//VeComponentReferenceTable<E>().create(h);
+
+		return h;
 	};
 
 
