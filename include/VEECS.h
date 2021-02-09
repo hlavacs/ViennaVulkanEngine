@@ -107,8 +107,8 @@ namespace vve {
 
 	template<typename E>
 	struct VeHandle_t {
-		index_t		m_entity_index{ typeid(std::decay_t<E>).hash_code() };		//the slot of the entity in the entity list
-		counter_t	m_counter{};	//generation counter
+		index_t		m_entity_index{};	//the slot of the entity in the entity list
+		counter_t	m_counter{};		//generation counter
 	};
 
 	using VeHandle = tl::variant_type<tl::transform<VeEntityTypeList, VeHandle_t>>;
@@ -178,7 +178,8 @@ namespace vve {
 
 	public:
 		VeComponentReferenceTable(size_t r = 1 << 10);
-		tuple_type& create(VeHandle h);
+
+		tuple_type& add(VeHandle h, tuple_type&& ref);
 		tuple_type& get(index_t index);
 		void erase(index_t idx);
 	};
@@ -190,19 +191,20 @@ namespace vve {
 		m_ref_component.reserve(r);
 	};
 
-
 	template<typename E>
-	typename VeComponentReferenceTable<E>::tuple_type& VeComponentReferenceTable<E>::create(VeHandle h) {
+	typename VeComponentReferenceTable<E>::tuple_type& 
+						VeComponentReferenceTable<E>::add(VeHandle h, typename VeComponentReferenceTable<E>::tuple_type&& ref) {
 		index_t idx{};
 		if (!m_first_free.is_null()) {
 			idx = m_first_free;
 			m_first_free = m_ref_component[m_first_free.value].m_next;
+			m_ref_component[idx.value].m_entry = ref;
 		}
 		else {
 			idx.value = m_ref_component.size();			//
-			m_ref_component.push_back(tuple_type{});	//
+			m_ref_component.push_back({ ref, {} });	//
 		}
-		return m_ref_component[idx.value];
+		return m_ref_component[idx.value].m_entry;
 	};
 
 
@@ -282,8 +284,8 @@ namespace vve {
 		}
 		VeHandle_t<E> he{ idx, counter_t{0} };
 		VeHandle h{ he };
-		auto reftup = std::tuple_cat( std::make_tuple( VeComponentVector<Ts>().add(h, std::forward<Ts>(args)) )...);
-		//VeComponentReferenceTable<E>().create(h);
+		decltype(auto) reftup = std::make_tuple( std::ref(VeComponentVector<Ts>().add(h, std::forward<Ts>(args)))... );
+		VeComponentReferenceTable<E>().add(h, std::move(reftup));
 
 		return h;
 	};

@@ -14,11 +14,11 @@ int main() {
 
     VeHandle h1 = et.create(VeEntityNode{}, VeComponentPosition{}, VeComponentOrientation{}, VeComponentTransform{});
     std::cout << typeid(VeEntityNode).hash_code() << " " << typeid(VeEntityNode).name() << std::endl;
-    et.erase(h1);
+    //et.erase(h1);
 
     VeHandle h2 = et.create(VeEntityDraw{}, VeComponentMaterial{}, VeComponentGeometry{});
     std::cout << typeid(VeEntityDraw).hash_code() << " " << typeid(VeEntityDraw).name() << std::endl;
-    et.erase(h2);
+    //et.erase(h2);
 
 
     imgui();
