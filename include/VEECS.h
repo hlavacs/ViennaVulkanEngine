@@ -158,7 +158,7 @@ namespace vve {
 
 
 	//-------------------------------------------------------------------------
-	//systems
+	//references to components - each entity has them
 
 	template<typename E>
 	class VeComponentReferenceTable : public crtp<VeComponentReferenceTable<E>, VeComponentReferenceTable> {
@@ -166,11 +166,11 @@ namespace vve {
 		using tuple_type = typename tl::to_ref_tuple<E>::type;
 
 		struct entry_t {
-			tuple_type m_entry;
-			index_t m_next{};
+			tuple_type	m_entry;
+			index_t		m_next{};
 		};
 
-		static inline std::vector<entry_t>	m_ref_index;
+		static inline std::vector<entry_t>	m_ref_component;
 		static inline index_t				m_first_free{};
 
 	public:
@@ -187,7 +187,7 @@ namespace vve {
 	template<typename T>
 	inline VeComponentReferenceTable<T>::VeComponentReferenceTable(size_t r) {
 		if (!this->init()) return;
-		m_ref_index.reserve(r);
+		m_ref_component.reserve(r);
 	};
 
 
@@ -198,23 +198,24 @@ namespace vve {
 		index_t idx{};
 		if (!m_first_free.is_null()) {
 			idx = m_first_free;
-			m_first_free = m_ref_index[m_first_free.value].m_next;
+			m_first_free = m_ref_component[m_first_free.value].m_next;
+			m_ref_component[idx.value].m_entry = ref;
 		}
 		else {
-			idx.value = m_ref_index.size();	//index of new entity
-			m_ref_index.push_back({}); //start with counter 0
+			idx.value = m_ref_component.size();		//
+			m_ref_component.push_back({ ref, {} }); //
 		}
 		return idx;
 	};
 
 	template<typename E>
 	inline typename VeComponentReferenceTable<E>::tuple_type& VeComponentReferenceTable<E>::get(index_t index) {
-		return m_ref_index[index.value].m_entry;
+		return m_ref_component[index.value].m_entry;
 	}
 
 	template<typename E>
 	void VeComponentReferenceTable<E>::erase(index_t index) {
-		m_ref_index[index.value].m_next = m_first_free;
+		m_ref_component[index.value].m_next = m_first_free;
 		m_first_free = index;
 	}
 
