@@ -215,7 +215,7 @@ namespace vve {
 
 			template <template <typename...> class Seq, typename... Ts>
 			struct variant_type_impl<Seq<Ts...>> {
-				using type = std::variant<Ts...>;
+				using type = std::variant<std::monostate, Ts...>;
 			};
 		}  // namespace detail
 

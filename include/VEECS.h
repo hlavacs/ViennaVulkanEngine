@@ -74,9 +74,13 @@ namespace vve {
 			, VeComponentGeometry
 			, VeComponentAnimation
 			, VeComponentCollisionShape
-			, VeComponentBody >,
-		VeComponentTypeListUser>;
+			, VeComponentBody 
+			//, ...
+		>,
+		VeComponentTypeListUser
+	>;
 	using VeComponentPtr = tl::variant_type<tl::to_ptr<VeComponentTypeList>>;
+
 
 	//-------------------------------------------------------------------------
 	//entity type list and pointer
@@ -84,9 +88,22 @@ namespace vve {
 	using VeEntityNode = VeEntity<VeComponentPosition, VeComponentOrientation, VeComponentTransform>;
 	using VeEntityDraw = VeEntity<VeComponentMaterial, VeComponentGeometry>;
 	using VeEntityAnimation = VeEntity<VeComponentMaterial, VeComponentGeometry>;
+	//...
 
-	using VeEntityTypeList = tl::cat<tl::type_list<VeEntity<>, VeEntityNode, VeEntityDraw, VeEntityAnimation>, VeEntityTypeListUser>;
+	using VeEntityTypeList = tl::cat<tl::type_list<
+			VeEntity<>
+			, VeEntityNode
+			, VeEntityDraw
+			, VeEntityAnimation
+			// ,... 
+		>
+		, VeEntityTypeListUser
+	>;
 	using VeEntityPtr = tl::variant_type<tl::to_ptr<tl::transform<VeEntityTypeList, VeEntity>>>;
+
+
+	//-------------------------------------------------------------------------
+	//entity handle
 
 	template<typename T>
 	struct VeHandle_t {
@@ -125,7 +142,27 @@ namespace vve {
 
 
 	//-------------------------------------------------------------------------
-	//systems use CRTP
+	//systems
+
+	template<typename I>
+	class VeComponentReferencePool : public crtp<VeComponentReferencePool<I>, VeComponentReferencePool> {
+	protected:
+		//using base_crtp = crtp<VeComponentPool<T>, VeComponentPool>;
+		using VeComponentPoolPtr = tl::variant_type<tl::to_ptr<tl::transform<VeComponentTypeList, VeComponentPool>>>;
+
+		//static inline VeSlotMap<T, VeHandle_t<T>> m_component;
+		static inline std::vector<std::array<index_t, I::value>> m_index;
+
+	public:
+		VeComponentReferencePool() = default;
+
+		template<typename... Ts >
+		void add(VeHandle& h, Ts&&... components ) {};
+	};
+
+
+	//-------------------------------------------------------------------------
+	//systems
 
 	template<typename T, typename Seq = tl::type_list<>>
 	class VeSystem : public crtp<T, VeSystem> {
@@ -143,8 +180,8 @@ namespace vve {
 		using base_system = VeSystem<VeEntityManager>;
 
 		struct VeEntityData {
-			counter_t	m_counter{0};	//generation counter
-			index_t		m_next{};		//next free slot
+			VeHandle	m_handle{};	//entity handle
+			index_t		m_next{};	//next free slot
 		};
 
 		static inline std::vector<VeEntityData> m_entity;
@@ -155,15 +192,16 @@ namespace vve {
 
 		template<typename T, typename... Ts>
 		requires tl::is_same<T, Ts...>::value
-		VeHandle_t<T> create(T&& e, Ts&&... args);
+		VeHandle create(T&& e, Ts&&... args);
 
 		template<typename T>
-		void erase(VeHandle_t<T>& h);
+		void erase(VeHandle& h);
 	};
+
 
 	template<typename T, typename... Ts>
 	requires tl::is_same<T, Ts...>::value
-	inline VeHandle_t<T> VeEntityManager::create(T&& e, Ts&&... args) {
+	inline VeHandle VeEntityManager::create(T&& e, Ts&&... args) {
 		index_t idx{};
 		if (!m_next_free.is_null()) {
 			idx = m_next_free;
@@ -175,8 +213,18 @@ namespace vve {
 		}
 		VeHandle_t<T> h{ idx, counter_t{0} };
 		(VeComponentPool<Ts>().add(VeHandle_t{ h }, std::forward<Ts>(args)), ...);
-		return h;
+		return { h };
 	};
+
+	template<typename T>
+	inline void VeEntityManager::erase(VeHandle& handle) {
+		auto erase_handle = [this]<typename T>(T & h) {
+
+		};
+
+		std::visit( erase_handle, handle);
+	}
+
 
 }
 

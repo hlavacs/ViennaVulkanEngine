@@ -22,10 +22,6 @@ namespace vve {
 		m_entity.reserve(r);
 	}
 
-	template<typename T>
-	void VeEntityManager::erase(VeHandle_t<T>& h) {
-
-	}
 
 
 }
