@@ -254,6 +254,24 @@ namespace vve {
 			static const bool value = detail::is_same_impl<Seq, Args...>::value;
 		};
 
+		//-------------------------------------------------------------------------
+		//to tuple
+		namespace detail {
+			template<typename Seq>
+			struct to_ref_tuple_impl;
+
+			template<template <typename...> class Seq, typename... Ts>
+			struct to_ref_tuple_impl<Seq<Ts...>> {
+				static const auto value = std::tuple<Ts&...>;
+				using type = decltype(std::tuple<Ts&...>);
+			};
+		}
+		template <typename Seq>
+		struct to_ref_tuple {
+			static const auto value = detail::to_ref_tuple_impl<Seq>::value;
+			using type = typename detail::to_ref_tuple_impl<Seq>::type;
+		};
+
 
 		//-------------------------------------------------------------------------
 		//static for
