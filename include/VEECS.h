@@ -166,6 +166,7 @@ namespace vve {
 		template<typename U >
 		requires std::is_same_v<std::decay_t<U>, typename VeComponentReferencePool<E>::tuple_type>
 		index_t add(VeHandle& h, U&& ref);
+		void erase(VeHandle_t<E>& h);
 	};
 
 
@@ -192,6 +193,11 @@ namespace vve {
 		return idx;
 	};
 
+
+	template<typename E>
+	void VeComponentReferencePool<E>::erase(VeHandle_t<E>& h) {
+
+	}
 
 
 	//-------------------------------------------------------------------------
@@ -232,6 +238,12 @@ namespace vve {
 	};
 
 
+	inline VeEntityManager::VeEntityManager(size_t r) : VeSystem() {
+		if (!this->init()) return;
+		m_entity.reserve(r);
+	}
+
+
 	inline index_t VeEntityManager::get_ref_pool_index(VeHandle& h) {
 		return {};
 	}
@@ -257,7 +269,7 @@ namespace vve {
 
 	inline void VeEntityManager::erase(VeHandle& handle) {
 		auto erase_handle = [this]<typename E>(VeHandle_t<E> & h) {
-			//VeComponentReferencePool<E>().erase(h.m_next);
+			VeComponentReferencePool<E>().erase(h);
 		};
 
 		std::visit(erase_handle, handle);
