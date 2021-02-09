@@ -87,31 +87,36 @@ namespace vve {
 
 	using VeEntityNode = VeEntity<VeComponentPosition, VeComponentOrientation, VeComponentTransform>;
 	using VeEntityDraw = VeEntity<VeComponentMaterial, VeComponentGeometry>;
-	using VeEntityAnimation = VeEntity<VeComponentMaterial, VeComponentGeometry>;
+	using VeEntityAnimation = VeEntity<VeComponentAnimation>;
 	//...
 
-	using VeEntityTypeList = tl::cat<tl::type_list<
-			VeEntity<>
-			, VeEntityNode
-			, VeEntityDraw
-			, VeEntityAnimation
-			// ,... 
-		>
-		, VeEntityTypeListUser
+	using VeEntityTypeList_1 = tl::type_list<
+		VeEntity<>
+		, VeEntityNode
+		, VeEntityDraw
+		, VeEntityAnimation
+		// ,... 
 	>;
+
+	using VeEntityTypeList = tl::cat< VeEntityTypeList_1, VeEntityTypeListUser >;
 	using VeEntityPtr = tl::variant_type<tl::to_ptr<tl::transform<VeEntityTypeList, VeEntity>>>;
 
 
 	//-------------------------------------------------------------------------
 	//entity handle
 
-	template<typename T>
+	template<typename E>
 	struct VeHandle_t {
-		index_t		m_index{};		//the slot of the entity in the entity list
+		index_t		m_index{ typeid(E).hash_code() };		//the slot of the entity in the entity list
 		counter_t	m_counter{};	//generation counter
 	};
 
 	using VeHandle = tl::variant_type<tl::transform<VeEntityTypeList, VeHandle_t>>;
+		//tl::variant_type< tl::type_list<VeHandle_t<VeEntityNode>, VeHandle_t<VeEntityDraw>, VeHandle_t<VeEntityAnimation>>>;
+
+		//std::variant<VeHandle_t<VeEntityNode>, VeHandle_t<VeEntityDraw>>;
+		
+		//tl::variant_type<tl::transform<VeEntityTypeList, VeHandle_t>>;
 
 
 	//-------------------------------------------------------------------------
@@ -215,16 +220,17 @@ namespace vve {
 	public:
 		VeEntityManager(size_t reserve = 1 << 10);
 
-		template<typename T, typename... Ts>
-		requires tl::is_same<T, Ts...>::value
-		VeHandle create(T&& e, Ts&&... args);
+		template<typename E, typename... Ts>
+		requires tl::is_same<E, Ts...>::value
+		VeHandle create(E&& e, Ts&&... args);
+
 		void erase(VeHandle& h);
 	};
 
 
-	template<typename T, typename... Ts>
-	requires tl::is_same<T, Ts...>::value
-	inline VeHandle VeEntityManager::create(T&& e, Ts&&... args) {
+	template<typename E, typename... Ts>
+	requires tl::is_same<E, Ts...>::value
+	inline VeHandle VeEntityManager::create(E&& e, Ts&&... args) {
 		index_t idx{};
 		if (!m_first_free.is_null()) {
 			idx = m_first_free;
@@ -234,8 +240,8 @@ namespace vve {
 			idx.value = m_entity.size();	//index of new entity
 			m_entity.push_back({}); //start with counter 0
 		}
-		VeHandle_t<T> h{ idx, counter_t{0} };
-		(VeComponentPool<Ts>().add(VeHandle_t{ h }, std::forward<Ts>(args)), ...);
+		VeHandle_t<E> h{ idx, counter_t{0} };
+		(VeComponentPool<Ts>().add(VeHandle{ h }, std::forward<Ts>(args)), ...);
 		return { h };
 	};
 

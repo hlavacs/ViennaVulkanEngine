@@ -18,7 +18,7 @@ namespace vve {
 	//using VeEntityTypeListUser = tl::type_list<
 	//	VeEntity<VePosition, VeOrientation, VeTransform, UserComponentType1>
 	//>;
-	using VeEntityTypeListUser = tl::type_list <>;
+	using VeEntityTypeListUser = tl::type_list<>;
 
 }
 
