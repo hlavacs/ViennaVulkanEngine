@@ -153,7 +153,7 @@ namespace vve {
 
 			template <template <typename...> typename Seq1, template <typename...> typename Seq2, typename... Ts>
 			struct cat_impl<Seq1<>, Seq2<Ts...>> {
-				using type = Seq1<Ts...>;
+				using type = Seq2<Ts...>;
 			};
 
 			template <template <typename...> typename Seq1, template <typename...> typename Seq2, typename... Ts>
