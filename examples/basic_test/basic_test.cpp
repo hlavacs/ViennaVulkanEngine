@@ -16,8 +16,19 @@ int main() {
     std::mutex m2;
     std::atomic<uint32_t> ai;
     VeReadWriteMutex sm;
-
     std::cout << sizeof(m1) << " " << sizeof(m2) << " " << sizeof(sm) << " " << sizeof(ai) << std::endl;
+
+    int a = 11;
+    int b = 55;
+    auto tup = std::make_tuple( std::ref(a) );
+
+    std::cout << std::get<0>(tup) << std::endl;
+    std::get<0>(tup) = 22;
+    std::cout << std::get<0>(tup) << std::endl;
+    std::get<0>(tup) = std::ref(b);
+    std::cout << std::get<0>(tup) << std::endl;
+    b = 66;
+    std::cout << std::get<0>(tup) << std::endl;
 
     VeHandle h1 = et.create(VeEntityTypeNode{}, VeComponentPosition{}, VeComponentOrientation{}, VeComponentTransform{});
     std::cout << typeid(VeEntityTypeNode).hash_code() << " " << typeid(VeEntityTypeNode).name() << std::endl;

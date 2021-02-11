@@ -20,11 +20,12 @@ namespace vve {
 
 		//-------------------------------------------------------------------------
 		//size
+
 		namespace detail {
 			template <typename Seq>
 			struct size_impl;
 
-			template <template <typename...> class Seq, typename... Ts>
+			template <template <typename...> typename Seq, typename... Ts>
 			struct size_impl<Seq<Ts...>> {
 				using type = std::integral_constant<std::size_t, sizeof...(Ts)>;
 			};
@@ -37,11 +38,12 @@ namespace vve {
 
 		//-------------------------------------------------------------------------
 		//front
+
 		namespace detail {
 			template <typename Seq>
 			struct front_impl;
 
-			template <template <typename...> class Seq, typename T, typename... Ts>
+			template <template <typename...> typename Seq, typename T, typename... Ts>
 			struct front_impl<Seq<T, Ts...>> {
 				using type = T;
 			};
@@ -56,11 +58,12 @@ namespace vve {
 
 		//-------------------------------------------------------------------------
 		//pop front
+
 		namespace detail {
 			template <typename Seq>
 			struct pop_front_impl;
 
-			template <template <typename...> class Seq, typename T, typename... Ts>
+			template <template <typename...> typename Seq, typename T, typename... Ts>
 			struct pop_front_impl<Seq<T, Ts...>> {
 				using type = Seq<Ts...>;
 			};
@@ -75,11 +78,12 @@ namespace vve {
 
 		//-------------------------------------------------------------------------
 		//push front
+
 		namespace detail {
 			template <typename Seq, typename T>
 			struct push_front_impl;
 
-			template <template <typename...> class Seq, typename T, typename... Ts>
+			template <template <typename...> typename Seq, typename T, typename... Ts>
 			struct push_front_impl<Seq<Ts...>, T> {
 				using type = Seq<T, Ts...>;
 			};
@@ -95,11 +99,12 @@ namespace vve {
 
 		//-------------------------------------------------------------------------
 		//Nth type element
+
 		namespace detail {
 			template <int N, typename Seq>
 			struct Nth_type_impl;
 
-			template <int N, template <typename...> class Seq, typename... Ts>
+			template <int N, template <typename...> typename Seq, typename... Ts>
 			struct Nth_type_impl<N, Seq<Ts...>> {
 				using type = typename std::tuple_element<N, std::tuple<Ts...>>::type;
 			};
@@ -110,18 +115,19 @@ namespace vve {
 
 		//-------------------------------------------------------------------------
 		//index of
+
 		namespace detail {
 			template<typename, typename>
 			struct index_of_impl {};
 
 			// Index Of base case: found the type we're looking for.
-			template <typename T, template <typename...> class Seq, typename... Ts>
+			template <typename T, template <typename...> typename Seq, typename... Ts>
 			struct index_of_impl<T, Seq<T, Ts...>> : std::integral_constant<std::size_t, 0> {
 				using type = std::integral_constant<std::size_t, 0>;
 			};
 
 			// Index Of recursive case: 1 + Index Of the rest of the types.
-			template <typename T, typename TOther, template <typename...> class Seq, typename... Ts>
+			template <typename T, typename TOther, template <typename...> typename Seq, typename... Ts>
 			struct index_of_impl<T, Seq<TOther, Ts...>>
 				: std::integral_constant<std::size_t, 1 + index_of_impl<T, Seq<Ts...>>::value>
 			{
@@ -145,19 +151,19 @@ namespace vve {
 			template <typename Seq1, typename Seq2>
 			struct cat_impl;
 
-			template <template <typename...> class Seq, typename... Ts>
-			struct cat_impl<Seq<>, Seq<Ts...>> {
-				using type = Seq<Ts...>;
+			template <template <typename...> typename Seq1, template <typename...> typename Seq2, typename... Ts>
+			struct cat_impl<Seq1<>, Seq2<Ts...>> {
+				using type = Seq1<Ts...>;
 			};
 
-			template <template <typename...> class Seq, typename... Ts>
-			struct cat_impl<Seq<Ts...>, Seq<>> {
-				using type = Seq<Ts...>;
+			template <template <typename...> typename Seq1, template <typename...> typename Seq2, typename... Ts>
+			struct cat_impl<Seq1<Ts...>, Seq2<>> {
+				using type = Seq1<Ts...>;
 			};
 
-			template <template <typename...> class Seq, typename... Ts1, typename T, typename... Ts2>
-			struct cat_impl<Seq<Ts1...>, Seq<T, Ts2...>> {
-				using type = typename cat_impl<Seq<Ts1..., T>, Seq<Ts2...>>::type;
+			template <template <typename...> typename Seq1, typename... Ts1, template <typename...> typename Seq2, typename T, typename... Ts2>
+			struct cat_impl<Seq1<Ts1...>, Seq2<T, Ts2...>> {
+				using type = typename cat_impl<Seq1<Ts1..., T>, Seq2<Ts2...>>::type;
 			};
 		}
 
@@ -171,7 +177,7 @@ namespace vve {
 			template <typename Seq>
 			struct to_ptr_impl;
 
-			template <template <typename...> class Seq, typename... Ts>
+			template <template <typename...> typename Seq, typename... Ts>
 			struct to_ptr_impl<Seq<Ts...>> {
 				using type = Seq<Ts*...>;
 			};
@@ -187,7 +193,7 @@ namespace vve {
 			template <typename Seq>
 			struct variant_type_impl;
 
-			template <template <typename...> class Seq, typename... Ts>
+			template <template <typename...> typename Seq, typename... Ts>
 			struct variant_type_impl<Seq<Ts...>> {
 				using type = std::variant<Ts...>;
 			};
@@ -200,16 +206,54 @@ namespace vve {
 		//transform a list of types into a list of F<types>
 
 		namespace detail {
-			template<typename List, template<class> class Fun>
+			template<typename List, template<typename> typename Fun>
 			struct transform_impl;
 
-			template<template <typename...> class Seq, typename ...Ts, template<class> class Fun>
+			template<template <typename...> typename Seq, typename ...Ts, template<typename> typename Fun>
 			struct transform_impl<Seq<Ts...>, Fun> {
 				using type = Seq<Fun<Ts>...>;
 			};
 		}
-		template <typename Seq, template<class> class Fun>
+		template <typename Seq, template<typename> typename Fun>
 		using transform = typename detail::transform_impl<Seq, Fun>::type;
+
+		//-------------------------------------------------------------------------
+		//substitue
+
+		namespace detail {
+			template<typename List, typename Fun>
+			struct substitute_impl;
+
+			template<template <typename...> typename Seq, typename... Ts, template<typename...> typename Fun>
+			struct substitute_impl<Seq<Ts...>, Fun> {
+				using type = Fun<Ts...>;
+			};
+		}
+		template <typename Seq, typename Fun>
+		using substitute = typename detail::substitute_impl<Seq, Fun>::type;
+
+		//-------------------------------------------------------------------------
+		//transfer a list of types1 into a list of types2
+
+		namespace detail {
+			template<typename List, typename Fun>
+			struct transfer_impl;
+
+			template<template <typename...> typename Seq, template<typename...> typename Fun>
+			struct transfer_impl<Seq<>, Fun> {
+				using type = type_list<>;
+			};
+
+			template<template <typename...> typename Seq, typename T, typename... Ts, template<typename...> typename Fun>
+			struct transfer_impl<Seq<T, Ts...>, Fun> {
+				//using type = cat< type_list< substitute<T, Fun> >, transfer_impl< Seq<Ts...>, Fun> >;
+				using type1 = type_list< substitute<T, Fun> >;
+				using type2 = transfer_impl< Seq<Ts...>, Fun>;
+				using type = cat< type1, type2>;
+			};
+		}
+		template <typename Seq, typename Fun>
+		using transfer = typename detail::transfer_impl<Seq, Fun>::type;
 
 		//-------------------------------------------------------------------------
 		//test if a list is the same as given types
@@ -250,6 +294,28 @@ namespace vve {
 		template <typename Seq>
 		struct to_ref_tuple {
 			using type = typename detail::to_ref_tuple_impl<Seq>::type;
+		};
+
+		//-------------------------------------------------------------------------
+		//turn a list into a tuple of pointer type
+
+		namespace detail {
+			template<typename Seq>
+			struct to_ptr_tuple_impl;
+
+			template<template <typename...> class Seq>
+			struct to_ptr_tuple_impl<Seq<>> {
+				using type = std::tuple<>;
+			};
+
+			template<template <typename...> class Seq, typename... Ts>
+			struct to_ptr_tuple_impl<Seq<Ts...>> {
+				using type = std::tuple<Ts*...>;
+			};
+		}
+		template <typename Seq>
+		struct to_ptr_tuple {
+			using type = typename detail::to_ptr_tuple_impl<Seq>::type;
 		};
 
 		//-------------------------------------------------------------------------
