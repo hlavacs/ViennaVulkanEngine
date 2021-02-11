@@ -12,6 +12,13 @@ using namespace vve;
 int main() {
     VeEntityManager et;
 
+    std::shared_timed_mutex m1;
+    std::mutex m2;
+    std::atomic<uint32_t> ai;
+    VeReadWriteMutex sm;
+
+    std::cout << sizeof(m1) << " " << sizeof(m2) << " " << sizeof(sm) << " " << sizeof(ai) << std::endl;
+
     VeHandle h1 = et.create(VeEntityNode{}, VeComponentPosition{}, VeComponentOrientation{}, VeComponentTransform{});
     std::cout << typeid(VeEntityNode).hash_code() << " " << typeid(VeEntityNode).name() << std::endl;
     //et.erase(h1);

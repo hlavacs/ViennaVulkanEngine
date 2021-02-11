@@ -12,10 +12,12 @@ set(HEADERS
   ${INCLUDE}/VGJS.h
   ${INCLUDE}/VGJSCoro.h
   ${INCLUDE}/vve.h
+  ${INCLUDE}/VETypeList.h
   ${INCLUDE}/VEUtil.h
-  ${INCLUDE}/VEEngine.h
-  ${INCLUDE}/VEECS.h
   ${INCLUDE}/VEContainer.h
+  ${INCLUDE}/VEComponent.h
+  ${INCLUDE}/VEECS.h
+  ${INCLUDE}/VEEngine.h
   ${INCLUDE}/VEECSUser.h
 )
 

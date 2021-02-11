@@ -7,55 +7,12 @@
 #include <variant>
 #include "glm.hpp"
 #include "gtc/quaternion.hpp"
+
 #include "VGJS.h"
 #include "VEContainer.h"
 #include "VEUtil.h"
-
-namespace vve {
-
-	//-------------------------------------------------------------------------
-	//components
-
-	template<typename T>
-	struct VeComponent : crtp<T, VeComponent> {
-	};
-
-	struct VeComponentPosition : VeComponent<VeComponentPosition> {
-		glm::vec3 m_position;
-	};
-
-	struct VeComponentOrientation : VeComponent<VeComponentOrientation> {
-		glm::quat m_orientation;
-	};
-
-	struct VeComponentTransform : VeComponent<VeComponentTransform> {
-		glm::mat4 m_transform;
-	};
-
-	struct VeComponentMaterial : VeComponent<VeComponentMaterial> {
-	};
-
-	struct VeComponentGeometry : VeComponent<VeComponentGeometry> {
-	};
-
-	struct VeComponentAnimation : VeComponent<VeComponentAnimation> {
-	};
-
-	struct VeComponentCollisionShape : VeComponent<VeComponentCollisionShape> {
-	};
-
-	struct VeComponentBody : VeComponent<VeComponentBody> {
-	};
-
-	//-------------------------------------------------------------------------
-	//entities
-
-	template <typename... Ts>
-	using VeEntity = tl::type_list<Ts...>;
-
-	template<typename T>
-	struct VeHandle_t;
-}
+#include "VETypeList.h"
+#include "VEComponent.h"
 
 //user defined component types and entity types
 #include "VEECSUser.h" 
@@ -108,7 +65,7 @@ namespace vve {
 	template<typename E>
 	struct VeHandle_t {
 		index_t		m_entity_index{};	//the slot of the entity in the entity list
-		counter_t	m_counter{};		//generation counter
+		counter_t	m_generation_counter{};		//generation counter
 	};
 
 	using VeHandle = tl::variant_type<tl::transform<VeEntityTypeList, VeHandle_t>>;
@@ -118,7 +75,7 @@ namespace vve {
 	//component pool
 
 	template<typename C>
-	class VeComponentVector : public crtp<VeComponentVector<C>, VeComponentVector> {
+	class VeComponentVector : public VeMonostate {
 	protected:
 
 		struct entry_t {
@@ -164,7 +121,7 @@ namespace vve {
 	//references to components - each entity has them
 
 	template<typename E>
-	class VeComponentReferenceTable : public crtp<VeComponentReferenceTable<E>, VeComponentReferenceTable> {
+	class VeComponentReferenceTable : public VeMonostate {
 	protected:
 		using tuple_type = typename tl::to_ref_tuple<E>::type;
 
@@ -224,8 +181,8 @@ namespace vve {
 	//-------------------------------------------------------------------------
 	//system
 
-	template<typename T, typename Seq = tl::type_list<>>
-	class VeSystem : public crtp<T, VeSystem> {
+	template<typename T, typename VeSystemComponentTypeList = tl::type_list<>>
+	class VeSystem : public VeMonostate, public VeCRTP<T, VeSystem> {
 	protected:
 	public:
 		VeSystem() = default;
@@ -233,17 +190,22 @@ namespace vve {
 
 
 	//-------------------------------------------------------------------------
-	//entity manager
+	//entity manager is a system, and thus uses CRTP
 
 	class VeEntityManager : public VeSystem<VeEntityManager> {
 	protected:
 
 		struct entry_t {
-			VeHandle	m_handle{};				//entity handle
-			index_t		m_next_free_or_ref{};	//next free slot or index of reference table
+			counter_t			m_generation_counter{0};	//generation counter starts with 0
+			index_t				m_next_free_or_ref{};		//next free slot or index of reference table
+			VeReadWriteMutex	m_mutex;					//per entity synchronization
+
+			entry_t() {};
+			entry_t(const entry_t& other) {};
+			entry_t& operator=(const entry_t& other) {};
 		};
 
-		static inline std::vector<entry_t>	m_entity_table;
+		static inline std::pmr::vector<entry_t>	m_entity_table;
 		static inline index_t				m_first_free{};
 
 		index_t get_ref_pool_index(VeHandle& h);
@@ -280,11 +242,11 @@ namespace vve {
 		}
 		else {
 			idx.value = m_entity_table.size();	//index of new entity
-			m_entity_table.push_back({}); //start with counter 0
+			m_entity_table.emplace_back(); //start with counter 0
 		}
-		VeHandle_t<E> he{ idx, counter_t{0} };
-		VeHandle h{ he };
-		decltype(auto) reftup = std::make_tuple( std::ref(VeComponentVector<Ts>().add(h, std::forward<Ts>(args)))... );
+
+		VeHandle h{ VeHandle_t<E>{ idx, m_entity_table[idx.value].m_generation_counter } };
+		auto reftup = std::make_tuple( std::ref(VeComponentVector<Ts>().add(h, std::forward<Ts>(args)))... );
 		VeComponentReferenceTable<E>().add(h, std::move(reftup));
 
 		return h;
