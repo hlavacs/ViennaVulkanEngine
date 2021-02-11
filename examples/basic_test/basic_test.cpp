@@ -19,12 +19,12 @@ int main() {
 
     std::cout << sizeof(m1) << " " << sizeof(m2) << " " << sizeof(sm) << " " << sizeof(ai) << std::endl;
 
-    VeHandle h1 = et.create(VeEntityNode{}, VeComponentPosition{}, VeComponentOrientation{}, VeComponentTransform{});
-    std::cout << typeid(VeEntityNode).hash_code() << " " << typeid(VeEntityNode).name() << std::endl;
+    VeHandle h1 = et.create(VeEntityTypeNode{}, VeComponentPosition{}, VeComponentOrientation{}, VeComponentTransform{});
+    std::cout << typeid(VeEntityTypeNode).hash_code() << " " << typeid(VeEntityTypeNode).name() << std::endl;
     //et.erase(h1);
 
-    VeHandle h2 = et.create(VeEntityDraw{}, VeComponentMaterial{}, VeComponentGeometry{});
-    std::cout << typeid(VeEntityDraw).hash_code() << " " << typeid(VeEntityDraw).name() << std::endl;
+    VeHandle h2 = et.create(VeEntityTypeDraw{}, VeComponentMaterial{}, VeComponentGeometry{});
+    std::cout << typeid(VeEntityTypeDraw).hash_code() << " " << typeid(VeEntityTypeDraw).name() << std::endl;
     //et.erase(h2);
 
 

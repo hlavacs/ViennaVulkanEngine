@@ -5,9 +5,6 @@
 #include <typeinfo>
 #include <typeindex>
 #include <variant>
-#include "glm.hpp"
-#include "gtc/quaternion.hpp"
-
 #include "VGJS.h"
 #include "VEContainer.h"
 #include "VEUtil.h"
@@ -31,10 +28,10 @@ namespace vve {
 			, VeComponentGeometry
 			, VeComponentAnimation
 			, VeComponentCollisionShape
-			, VeComponentBody 
+			, VeComponentRigidBody
 			//, ...
-		>,
-		VeComponentTypeListUser
+		>
+		, VeComponentTypeListUser	//components defined by the user
 	>;
 	using VeComponentPtr = tl::variant_type<tl::to_ptr<VeComponentTypeList>>;
 
@@ -42,21 +39,21 @@ namespace vve {
 	//-------------------------------------------------------------------------
 	//entity type list and pointer
 
-	using VeEntityNode = VeEntity<VeComponentPosition, VeComponentOrientation, VeComponentTransform>;
-	using VeEntityDraw = VeEntity<VeComponentMaterial, VeComponentGeometry>;
-	using VeEntityAnimation = VeEntity<VeComponentAnimation>;
+	using VeEntityTypeNode		= VeEntityType<VeComponentPosition, VeComponentOrientation, VeComponentTransform>;
+	using VeEntityTypeDraw		= VeEntityType<VeComponentMaterial, VeComponentGeometry>;
+	using VeEntityTypeAnimation = VeEntityType<VeComponentAnimation>;
 	//...
 
-	using VeEntityTypeList_1 = tl::type_list<
-		VeEntity<>
-		, VeEntityNode
-		, VeEntityDraw
-		, VeEntityAnimation
-		// ,... 
-	>;
+	using VeEntityTypeList = tl::cat< tl::type_list<
+			VeEntityType<>
+			, VeEntityTypeNode
+			, VeEntityTypeDraw
+			, VeEntityTypeAnimation
+			// ,... 
+		>
+		, VeEntityTypeListUser >;
 
-	using VeEntityTypeList = tl::cat< VeEntityTypeList_1, VeEntityTypeListUser >;
-	using VeEntityPtr = tl::variant_type<tl::to_ptr<tl::transform<VeEntityTypeList, VeEntity>>>;
+	using VeEntityPtr = tl::variant_type<tl::to_ptr<VeEntityTypeList>>;
 
 
 	//-------------------------------------------------------------------------
@@ -254,7 +251,7 @@ namespace vve {
 
 
 	inline void VeEntityManager::erase(VeHandle& handle) {
-		auto erase_components = [&]<typename... Ts>( std::tuple<Ts&...>& reftup, VeHandle_t<VeEntity<Ts...>> &h) {
+		auto erase_components = [&]<typename... Ts>( std::tuple<Ts&...>& reftup, VeHandle_t<VeEntityType<Ts...>> &h) {
 			
 			//(VeComponentVector<Ts>().erase(h), ...);
 		};

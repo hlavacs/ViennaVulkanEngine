@@ -1,49 +1,52 @@
 #ifndef VECOMPONENT_H
 #define VECOMPONENT_H
 
+#include "glm.hpp"
+#include "gtc/quaternion.hpp"
+
 #include "VETypeList.h"
 
 
 namespace vve {
 
 	//-------------------------------------------------------------------------
-	//components
+	//component types
 
-	template<typename T>
 	struct VeComponent {};
 
-	struct VeComponentPosition : VeComponent<VeComponentPosition> {
+	struct VeComponentPosition : VeComponent {
 		glm::vec3 m_position;
 	};
 
-	struct VeComponentOrientation : VeComponent<VeComponentOrientation> {
+	struct VeComponentOrientation : VeComponent {
 		glm::quat m_orientation;
 	};
 
-	struct VeComponentTransform : VeComponent<VeComponentTransform> {
+	struct VeComponentTransform : VeComponent {
 		glm::mat4 m_transform;
 	};
 
-	struct VeComponentMaterial : VeComponent<VeComponentMaterial> {
+	struct VeComponentMaterial : VeComponent {
 	};
 
-	struct VeComponentGeometry : VeComponent<VeComponentGeometry> {
+	struct VeComponentGeometry : VeComponent {
 	};
 
-	struct VeComponentAnimation : VeComponent<VeComponentAnimation> {
+	struct VeComponentAnimation : VeComponent {
 	};
 
-	struct VeComponentCollisionShape : VeComponent<VeComponentCollisionShape> {
+	struct VeComponentCollisionShape : VeComponent {
 	};
 
-	struct VeComponentBody : VeComponent<VeComponentBody> {
+	struct VeComponentRigidBody : VeComponent {
 	};
+
 
 	//-------------------------------------------------------------------------
-	//entities
+	//entity types
 
 	template <typename... Ts>
-	using VeEntity = tl::type_list<Ts...>;
+	using VeEntityType = tl::type_list<Ts...>;
 
 	template<typename T>
 	struct VeHandle_t;

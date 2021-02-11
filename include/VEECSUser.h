@@ -7,18 +7,19 @@ namespace vve {
 
 
 	//declare your own entity components
-	struct UserComponentType1 : VeComponent<UserComponentType1> {
+	struct UserComponent1 : VeComponent {
 		//..
 	};
+	//...
 
-	//using VeComponentTypeListUser = tl::type_list<UserComponentType1>; //include all into this list
-	using VeComponentTypeListUser = tl::type_list<>;
+	//using VeComponentTypeListUser = tl::type_list<UserComponent1>; //include all into this list
+	using VeComponentTypeListUser = tl::type_list<>; //default is no user define components
 
 
 	//using VeEntityTypeListUser = tl::type_list<
-	//	VeEntity<VePosition, VeOrientation, VeTransform, UserComponentType1>
+	//	VeEntityType<VeComponentPosition, VeComponentOrientation, VeComponentTransform, UserComponent1>
 	//>;
-	using VeEntityTypeListUser = tl::type_list<>;
+	using VeEntityTypeListUser = tl::type_list<>; //default is empty
 
 }
 
