@@ -1,6 +1,8 @@
 #ifndef VETYPELIST_H
 #define VETYPELIST_H
 
+#include <tuple>
+#include "VeUtil.h"
 
 namespace vve {
 
@@ -314,6 +316,46 @@ namespace vve {
 		struct to_ptr_tuple {
 			using type = typename detail::to_ptr_tuple_impl<Seq>::type;
 		};
+
+		//-------------------------------------------------------------------------
+		//turn a list into a tuple of uint32_t type
+
+		template <typename T, size_t N>
+		struct N_tuple {
+			template <typename U>
+			struct impl;
+
+			template <size_t... Is>
+			struct impl<std::index_sequence<Is...>> {
+				template <size_t >
+				using wrap = T;
+
+				using type = std::tuple<wrap<Is>...>;
+			};
+
+		public:
+			using type = typename impl<std::make_index_sequence<N>>::type;
+		};
+
+		namespace detail {
+			template<typename Seq>
+			struct to_index_tuple_impl;
+
+			template<template <typename...> class Seq>
+			struct to_index_tuple_impl<Seq<>> {
+				using type = std::tuple<>;
+			};
+
+			template<template <typename...> class Seq, typename... Ts>
+			struct to_index_tuple_impl<Seq<Ts...>> {
+				using type = typename N_tuple<index_t, sizeof...(Ts)>::type;
+			};
+		}
+		template <typename Seq>
+		struct to_index_tuple {
+			using type = typename detail::to_index_tuple_impl<Seq>::type;
+		};
+
 
 		//-------------------------------------------------------------------------
 		//static for
