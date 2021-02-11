@@ -125,14 +125,14 @@ namespace vve {
 	template<typename E>
 	class VeComponentMapTable : public VeMonostate {
 	protected:
-		using tuple_type = typename tl::to_ref_tuple<E>::type;
+		using tuple_type = typename tl::to_ptr_tuple<E>::type;
 
 		struct entry_t {
 			tuple_type	m_entry;
 			index_t		m_next{};
 		};
 
-		static inline std::vector<entry_t>	m_ref_component;
+		static inline std::vector<entry_t>	m_ptr_component;
 		static inline index_t				m_first_free{};
 
 	public:
@@ -147,7 +147,7 @@ namespace vve {
 	template<typename T>
 	inline VeComponentMapTable<T>::VeComponentMapTable(size_t r) {
 		if (!this->init()) return;
-		m_ref_component.reserve(r);
+		m_ptr_component.reserve(r);
 	};
 
 
@@ -157,26 +157,26 @@ namespace vve {
 		index_t idx{};
 		if (!m_first_free.is_null()) {
 			idx = m_first_free;
-			m_first_free = m_ref_component[m_first_free.value].m_next;
-			m_ref_component[idx.value].m_entry = ref;
+			m_first_free = m_ptr_component[m_first_free.value].m_next;
+			m_ptr_component[idx.value].m_entry = ref;
 		}
 		else {
-			idx.value = m_ref_component.size();			//
-			m_ref_component.push_back({ ref, {} });	//
+			idx.value = m_ptr_component.size();			//
+			m_ptr_component.push_back({ ref, {} });	//
 		}
-		return m_ref_component[idx.value].m_entry;
+		return m_ptr_component[idx.value].m_entry;
 	};
 
 
 	template<typename E>
 	inline typename VeComponentMapTable<E>::tuple_type& VeComponentMapTable<E>::get(index_t index) {
-		return m_ref_component[index.value].m_entry;
+		return m_ptr_component[index.value].m_entry;
 	}
 
 
 	template<typename E>
 	void VeComponentMapTable<E>::erase(index_t index) {
-		m_ref_component[index.value].m_next = m_first_free;
+		m_ptr_component[index.value].m_next = m_first_free;
 		m_first_free = index;
 	}
 
@@ -209,7 +209,7 @@ namespace vve {
 		};
 
 		static inline std::pmr::vector<entry_t>	m_entity_table;
-		static inline index_t				m_first_free{};
+		static inline index_t					m_first_free{};
 
 		index_t get_ref_pool_index(VeHandle& h);
 
@@ -249,15 +249,15 @@ namespace vve {
 		}
 
 		VeHandle h{ VeHandle_t<E>{ idx, m_entity_table[idx.value].m_generation_counter } };
-		auto reftup = std::make_tuple( std::ref(VeComponentVector<Ts>().add(h, std::forward<Ts>(args)))... );
-		VeComponentMapTable<E>().add(h, std::move(reftup));
+		//auto reftup = std::make_tuple( std::ref(VeComponentVector<Ts>().add(h, std::forward<Ts>(args)))... );
+		//VeComponentMapTable<E>().add(h, std::move(reftup));
 
 		return h;
 	};
 
 
 	inline void VeEntityManager::erase(VeHandle& handle) {
-		auto erase_components = [&]<typename... Ts>( std::tuple<Ts&...>& reftup, VeHandle_t<VeEntityType<Ts...>> &h) {
+		auto erase_components = [&]<typename... Ts>( std::tuple<Ts*...>& ptrtup, VeHandle_t<VeEntityType<Ts...>> &h) {
 			
 			//(VeComponentVector<Ts>().erase(h), ...);
 		};
