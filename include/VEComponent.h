@@ -46,7 +46,7 @@ namespace vve {
 	//entity types
 
 	template <typename... Ts>
-	using VeEntityType = tl::type_list<Ts...>;
+	struct VeEntityType;
 
 
 	//-------------------------------------------------------------------------

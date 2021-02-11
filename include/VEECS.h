@@ -52,6 +52,11 @@ namespace vve {
 		>
 		, VeEntityTypeListUser >;
 
+
+	template <typename... Ts>
+	struct VeEntityType {};
+
+
 	using VeEntityPtr = tl::variant_type<tl::to_ptr<VeEntityTypeList>>;
 
 
@@ -68,7 +73,7 @@ namespace vve {
 
 
 	//-------------------------------------------------------------------------
-	//component pool
+	//component vector
 
 	template<typename C>
 	class VeComponentVector : public VeMonostate {
@@ -143,6 +148,7 @@ namespace vve {
 		if (!this->init()) return;
 		m_ref_component.reserve(r);
 	};
+
 
 	template<typename E>
 	typename VeComponentMapTable<E>::tuple_type& 

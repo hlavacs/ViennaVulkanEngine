@@ -197,7 +197,7 @@ namespace vve {
 		using variant_type = typename detail::variant_type_impl<Seq>::type;
 
 		//-------------------------------------------------------------------------
-		//transform a list of types into a list of F(types)
+		//transform a list of types into a list of F<types>
 
 		namespace detail {
 			template<typename List, template<class> class Fun>
