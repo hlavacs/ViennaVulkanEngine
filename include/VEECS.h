@@ -44,8 +44,8 @@ namespace vve {
 	//...
 
 	using VeEntityTypeList = tl::cat< tl::type_list<
-			//VeEntityType<>,
-			VeEntityTypeNode
+			VeEntityType<>
+			, VeEntityTypeNode
 			, VeEntityTypeDraw
 			, VeEntityTypeAnimation
 			// ,... 
@@ -54,16 +54,12 @@ namespace vve {
 
 
 	template <typename... Ts>
-	struct VeEntityType {};
-
-	template <typename... Ts>
 	struct VeEntity {
 		std::tuple<Ts...> m_components;
 	};
 
-	//using VeEntityPtr = tl::variant_type<tl::to_ptr<tl::transfer<VeEntityTypeList, VeEntity>>>;
-	//using VeEntityPtr = tl::substitute< VeEntityTypeNode, VeEntity >;
-
+	using VeEntityPtr = tl::variant_type<tl::to_ptr<tl::transfer<VeEntityTypeList, VeEntity>>>;
+	
 
 	//-------------------------------------------------------------------------
 	//entity handle

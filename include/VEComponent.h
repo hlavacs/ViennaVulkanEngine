@@ -46,7 +46,7 @@ namespace vve {
 	//entity types
 
 	template <typename... Ts>
-	struct VeEntityType;
+	struct VeEntityType {};
 
 
 	//-------------------------------------------------------------------------

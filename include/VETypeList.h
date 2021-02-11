@@ -153,7 +153,7 @@ namespace vve {
 
 			template <template <typename...> typename Seq1, template <typename...> typename Seq2, typename... Ts>
 			struct cat_impl<Seq1<>, Seq2<Ts...>> {
-				using type = Seq2<Ts...>;
+				using type = Seq1<Ts...>;
 			};
 
 			template <template <typename...> typename Seq1, template <typename...> typename Seq2, typename... Ts>
@@ -246,10 +246,7 @@ namespace vve {
 
 			template<template <typename...> typename Seq, typename T, typename... Ts, template<typename...> typename Fun>
 			struct transfer_impl<Seq<T, Ts...>, Fun> {
-				using type = cat< type_list< substitute<T, Fun> >, transfer_impl< Seq<Ts...>, Fun> >;
-				//using type1 = type_list< substitute<T, Fun> >;
-				//using type2 = transfer_impl< Seq<Ts...>, Fun>;
-				//using type = cat< type1, type2>;
+				using type = cat< type_list< substitute<T, Fun> >, typename transfer_impl< Seq<Ts...>, Fun>::type >;
 			};
 		}
 		template <typename Seq, template<typename> typename Fun>
