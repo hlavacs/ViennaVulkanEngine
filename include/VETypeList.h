@@ -318,7 +318,7 @@ namespace vve {
 		};
 
 		//-------------------------------------------------------------------------
-		//turn a list into a tuple of uint32_t type
+		//turn a list into a tuple of index_t type
 
 		template <typename T, size_t N>
 		struct N_tuple {

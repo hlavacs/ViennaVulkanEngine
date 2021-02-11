@@ -76,9 +76,12 @@ namespace vve {
 	//-------------------------------------------------------------------------
 	//component vector
 
+	class VeEntityManager;
+
 	template<typename C>
 	class VeComponentVector : public VeMonostate {
 	protected:
+		friend VeEntityManager;
 
 		struct entry_t {
 			C			m_component;
@@ -90,15 +93,15 @@ namespace vve {
 
 	public:
 		VeComponentVector() = default;
-		index_t	add(VeHandle h, C&& component, index_t* map_pointer);
+		index_t	add( VeHandle h, C&& component );
 		void	erase(VeHandle& h, index_t comp_index);
 	};
 
 
 	template<typename C>
-	inline index_t VeComponentVector<C>::add(VeHandle h, C&& component, index_t* map_pointer) {
-		m_component_vector.push_back({ component, h, map_pointer });
-		return { m_component_vector.size() - 1 };
+	inline index_t VeComponentVector<C>::add(VeHandle h, C&& component) {
+		m_component_vector.push_back({ component, h, nullptr });
+		return index_t{ m_component_vector.size() - 1 };
 	}
 
 
@@ -243,14 +246,14 @@ namespace vve {
 
 		VeHandle h{ VeHandle_t<E>{ idx, m_entity_table[idx.value].m_generation_counter } };
 
-		auto map = VeComponentMapTable<E>().add(h); //reference to map entry
-
-		//auto tup = std::make_tuple( &VeComponentVector<Ts>().add(h, std::forward<Ts>(args))... );
-
+		auto map = VeComponentMapTable<E>().add(h); //reference to map entry, a tuple of index_t
+		auto tup = std::make_tuple( VeComponentVector<Ts>().add( h, std::forward<Ts>(args) )... ); //tuple with indices of the components
 
 		tl::static_for<int, 0, sizeof...(Ts)-1 >(
 			[&](auto i) { 
-				//VeComponentVector<Ts>().add(h, std::forward<Ts>(args), &std::get<i>(map));
+				std::get<i>(map) = std::get<i>(tup);
+				using type = typename std::tuple_element<i, std::tuple<Ts...>>::type;
+				VeComponentVector<type>().m_component_vector[std::get<i>(tup).value].m_map_pointer = &std::get<i>(map);
 			} 
 		);
 
