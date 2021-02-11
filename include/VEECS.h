@@ -138,9 +138,9 @@ namespace vve {
 	public:
 		VeComponentMapTable(size_t r = 1 << 10);
 
-		tuple_type& add(VeHandle h, tuple_type&& ref);
-		tuple_type& get(index_t index);
-		void erase(index_t idx);
+		void		add(VeHandle h, tuple_type&& ref);
+		tuple_type&	get(index_t index);
+		void		erase(index_t idx);
 	};
 
 
@@ -152,8 +152,7 @@ namespace vve {
 
 
 	template<typename E>
-	typename VeComponentMapTable<E>::tuple_type& 
-						VeComponentMapTable<E>::add(VeHandle h, typename VeComponentMapTable<E>::tuple_type&& ref) {
+	void VeComponentMapTable<E>::add(VeHandle h, typename VeComponentMapTable<E>::tuple_type&& ref) {
 		index_t idx{};
 		if (!m_first_free.is_null()) {
 			idx = m_first_free;
@@ -164,7 +163,7 @@ namespace vve {
 			idx.value = m_ptr_component.size();			//
 			m_ptr_component.push_back({ ref, {} });	//
 		}
-		return m_ptr_component[idx.value].m_entry;
+		return;
 	};
 
 
@@ -249,8 +248,8 @@ namespace vve {
 		}
 
 		VeHandle h{ VeHandle_t<E>{ idx, m_entity_table[idx.value].m_generation_counter } };
-		//auto reftup = std::make_tuple( std::ref(VeComponentVector<Ts>().add(h, std::forward<Ts>(args)))... );
-		//VeComponentMapTable<E>().add(h, std::move(reftup));
+		auto ptrtup = std::make_tuple( &VeComponentVector<Ts>().add(h, std::forward<Ts>(args))... );
+		VeComponentMapTable<E>().add(h, std::move(ptrtup));
 
 		return h;
 	};
