@@ -48,6 +48,15 @@ namespace vve {
 	template <typename... Ts>
 	using VeEntityType = tl::type_list<Ts...>;
 
+
+	//-------------------------------------------------------------------------
+	//engine entity types
+
+	using VeEntityTypeNode = VeEntityType<VeComponentPosition, VeComponentOrientation, VeComponentTransform>;
+	using VeEntityTypeDraw = VeEntityType<VeComponentMaterial, VeComponentGeometry>;
+	using VeEntityTypeAnimation = VeEntityType<VeComponentAnimation>;
+	//...
+
 	template<typename T>
 	struct VeHandle_t;
 }
