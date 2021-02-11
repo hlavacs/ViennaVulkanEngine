@@ -57,12 +57,12 @@ namespace vve {
 	struct VeEntityType {};
 
 	template <typename... Ts>
-	struct VeEntity : VeEntityType<Ts...> {
+	struct VeEntity {
 		std::tuple<Ts...> m_components;
 	};
 
 	//using VeEntityPtr = tl::variant_type<tl::to_ptr<tl::transfer<VeEntityTypeList, VeEntity>>>;
-	//using VeEntityPtr = tl::transfer< tl::type_list<VeEntityTypeNode>, VeEntity >;
+	//using VeEntityPtr = tl::substitute< VeEntityTypeNode, VeEntity >;
 
 
 	//-------------------------------------------------------------------------

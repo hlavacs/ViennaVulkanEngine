@@ -221,7 +221,7 @@ namespace vve {
 		//substitue
 
 		namespace detail {
-			template<typename List, typename Fun>
+			template<typename List, template<typename> typename Fun>
 			struct substitute_impl;
 
 			template<template <typename...> typename Seq, typename... Ts, template<typename...> typename Fun>
@@ -229,14 +229,14 @@ namespace vve {
 				using type = Fun<Ts...>;
 			};
 		}
-		template <typename Seq, typename Fun>
+		template <typename Seq, template<typename> typename Fun>
 		using substitute = typename detail::substitute_impl<Seq, Fun>::type;
 
 		//-------------------------------------------------------------------------
 		//transfer a list of types1 into a list of types2
 
 		namespace detail {
-			template<typename List, typename Fun>
+			template<typename List, template<typename> typename Fun>
 			struct transfer_impl;
 
 			template<template <typename...> typename Seq, template<typename...> typename Fun>
@@ -246,13 +246,13 @@ namespace vve {
 
 			template<template <typename...> typename Seq, typename T, typename... Ts, template<typename...> typename Fun>
 			struct transfer_impl<Seq<T, Ts...>, Fun> {
-				//using type = cat< type_list< substitute<T, Fun> >, transfer_impl< Seq<Ts...>, Fun> >;
-				using type1 = type_list< substitute<T, Fun> >;
-				using type2 = transfer_impl< Seq<Ts...>, Fun>;
-				using type = cat< type1, type2>;
+				using type = cat< type_list< substitute<T, Fun> >, transfer_impl< Seq<Ts...>, Fun> >;
+				//using type1 = type_list< substitute<T, Fun> >;
+				//using type2 = transfer_impl< Seq<Ts...>, Fun>;
+				//using type = cat< type1, type2>;
 			};
 		}
-		template <typename Seq, typename Fun>
+		template <typename Seq, template<typename> typename Fun>
 		using transfer = typename detail::transfer_impl<Seq, Fun>::type;
 
 		//-------------------------------------------------------------------------
