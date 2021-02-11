@@ -2,7 +2,6 @@
 #define VETYPELIST_H
 
 #include <tuple>
-#include "VeUtil.h"
 
 namespace vve {
 
@@ -114,6 +113,27 @@ namespace vve {
 
 		template <int N, typename Seq>
 		using Nth_type = typename detail::Nth_type_impl<N, Seq>::type;
+
+		//-------------------------------------------------------------------------
+		//size of
+
+		namespace detail {
+			template <typename Seq>
+			struct size_of_impl;
+
+			template< template <typename...> typename Seq>
+			struct size_of_impl<Seq<>> {
+				using type = std::integral_constant<std::size_t, 0>;
+			};
+
+			template< template <typename...> typename Seq, typename... Ts>
+			struct size_of_impl<Seq<Ts...>> {
+				using type = std::integral_constant<std::size_t, sizeof...(Ts)>;
+			};
+		}
+
+		template <typename Seq>
+		using size_of = typename detail::size_of_impl<Seq>::type;
 
 		//-------------------------------------------------------------------------
 		//index of
@@ -325,6 +345,11 @@ namespace vve {
 			template <typename U>
 			struct impl;
 
+			template <>
+			struct impl<std::integer_sequence<std::size_t>> {
+				using type = std::tuple<>;
+			};
+
 			template <size_t... Is>
 			struct impl<std::index_sequence<Is...>> {
 				template <size_t >
@@ -339,21 +364,21 @@ namespace vve {
 
 		namespace detail {
 			template<typename Seq>
-			struct to_index_tuple_impl;
+			struct to_uint32_tuple_impl;
 
 			template<template <typename...> class Seq>
-			struct to_index_tuple_impl<Seq<>> {
+			struct to_uint32_tuple_impl<Seq<>> {
 				using type = std::tuple<>;
 			};
 
 			template<template <typename...> class Seq, typename... Ts>
-			struct to_index_tuple_impl<Seq<Ts...>> {
+			struct to_uint32_tuple_impl<Seq<Ts...>> {
 				using type = typename N_tuple<index_t, sizeof...(Ts)>::type;
 			};
 		}
 		template <typename Seq>
-		struct to_index_tuple {
-			using type = typename detail::to_index_tuple_impl<Seq>::type;
+		struct to_uint32_tuple {
+			using type = typename detail::to_uint32_tuple_impl<Seq>::type;
 		};
 
 

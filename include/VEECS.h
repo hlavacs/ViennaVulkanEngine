@@ -128,14 +128,14 @@ namespace vve {
 	template<typename E>
 	class VeComponentMapTable : public VeMonostate {
 	protected:
-		using tuple_type = typename tl::to_index_tuple<E>::type;
+		using tuple_type = typename tl::N_tuple<index_t, tl::size_of<E>::value >::type; 
 
 		struct entry_t {
 			tuple_type	m_index_tuple;
 			index_t		m_next{};
 		};
 
-		static inline std::vector<entry_t>	m_ptr_component;
+		static inline std::vector<entry_t>	m_index_component;
 		static inline index_t				m_first_free{};
 
 	public:
@@ -150,7 +150,7 @@ namespace vve {
 	template<typename T>
 	inline VeComponentMapTable<T>::VeComponentMapTable(size_t r) {
 		if (!this->init()) return;
-		m_ptr_component.reserve(r);
+		m_index_component.reserve(r);
 	};
 
 
@@ -159,27 +159,25 @@ namespace vve {
 		index_t idx{};
 		if (!m_first_free.is_null()) {
 			idx = m_first_free;
-			m_first_free = m_ptr_component[m_first_free.value].m_next;
-			//m_ptr_component[idx.value].m_entry = ref;
+			m_first_free = m_index_component[m_first_free.value].m_next;
 		}
 		else {
-			idx.value = m_ptr_component.size();			//
-			//m_ptr_component.push_back({ std::move(ref), {} });	//
-			m_ptr_component.push_back({ {}, {} });	//
+			idx.value = m_index_component.size();			//
+			m_index_component.push_back({ {}, {} });	//
 		}
-		return m_ptr_component[idx.value].m_index_tuple;
+		return m_index_component[idx.value].m_index_tuple;
 	};
 
 
 	template<typename E>
 	inline typename VeComponentMapTable<E>::tuple_type& VeComponentMapTable<E>::get(index_t index) {
-		return m_ptr_component[index.value].m_index_tuple;
+		return m_index_component[index.value].m_index_tuple;
 	}
 
 
 	template<typename E>
 	void VeComponentMapTable<E>::erase(index_t index) {
-		m_ptr_component[index.value].m_next = m_first_free;
+		m_index_component[index.value].m_next = m_first_free;
 		m_first_free = index;
 	}
 
