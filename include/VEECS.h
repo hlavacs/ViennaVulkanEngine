@@ -101,7 +101,7 @@ namespace vve {
 	template<typename C>
 	inline index_t VeComponentVector<C>::add(VeHandle h, C&& component) {
 		m_component_vector.push_back({ component, h, nullptr });
-		return index_t{ m_component_vector.size() - 1 };
+		return index_t{ static_cast<typename index_t::type_name>(m_component_vector.size() - 1) };
 	}
 
 
@@ -163,7 +163,7 @@ namespace vve {
 			m_first_free = m_index_component[m_first_free.value].m_next;
 		}
 		else {
-			idx.value = m_index_component.size();			//
+			idx.value = static_cast<typename index_t::type_name>(m_index_component.size());			//
 			m_index_component.push_back({ {}, {} });	//
 		}
 		return m_index_component[idx.value].m_index_tuple;
@@ -239,7 +239,7 @@ namespace vve {
 			m_first_free = m_entity_table[m_first_free.value].m_next_free_or_map_index;
 		}
 		else {
-			idx.value = m_entity_table.size();	//index of new entity
+			idx.value = static_cast<typename index_t::type_name>(m_entity_table.size());	//index of new entity
 			m_entity_table.emplace_back();		//start with counter 0
 		}
 

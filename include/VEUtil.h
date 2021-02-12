@@ -10,8 +10,8 @@
 
 namespace vve {
 
-	using index_t = vgjs::int_type<size_t, struct P0, std::numeric_limits<size_t>::max()>;
-	using counter_t = vgjs::int_type<size_t, struct P1, std::numeric_limits<size_t>::max()>;
+	using index_t = vgjs::int_type<uint32_t, struct P0, std::numeric_limits<uint32_t>::max()>;
+	using counter_t = vgjs::int_type<uint32_t, struct P1, std::numeric_limits<uint32_t>::max()>;
 
 
 	class VeMonostate {

@@ -12,6 +12,8 @@ using namespace vve;
 int main() {
     VeEntityManager et;
 
+    std::cout << sizeof(VeHandle) << " "  << sizeof(VeHandle_t<VeEntity<>>) << " " << sizeof(index_t) << std::endl;
+
     VeHandle h1 = et.create(VeEntityTypeNode{}, VeComponentPosition{}, VeComponentOrientation{}, VeComponentTransform{});
     std::cout << typeid(VeEntityTypeNode).hash_code() << " " << typeid(VeEntityTypeNode).name() << std::endl;
     //et.erase(h1);
