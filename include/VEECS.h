@@ -94,7 +94,7 @@ namespace vve {
 	public:
 		VeComponentVector() = default;
 		index_t	add( VeHandle h, C&& component );
-		void	erase(VeHandle&& h, index_t comp_index);
+		void	erase(const VeHandle& h, index_t comp_index);
 	};
 
 
@@ -106,10 +106,10 @@ namespace vve {
 
 
 	template<typename C>
-	inline void VeComponentVector<C>::erase(VeHandle&& h, index_t comp_index) {
+	inline void VeComponentVector<C>::erase(const VeHandle& h, index_t comp_index) {
 		if (m_component_vector.size() == 0) return;
 		if (comp_index.value < m_component_vector.size()-1) {
-			assert(h == m_component_vector[comp_index.value].m_handle);
+			//assert(h == m_component_vector[comp_index.value].m_handle);
 			m_component_vector[comp_index.value] = m_component_vector[m_component_vector.size() - 1];
 			*m_component_vector[comp_index.value].m_map_pointer = comp_index;
 		}
@@ -126,11 +126,12 @@ namespace vve {
 	//-------------------------------------------------------------------------
 	//references to components - each entity has them
 
-	template<int I>
+	template<typename E>
 	class VeComponentMapTable : public VeMonostate {
-	protected:
-		using tuple_type = typename tl::N_tuple<index_t, I >::type; 
+	public:
+		using tuple_type = typename tl::N_tuple<index_t, tl::size_of<E>::value>::type;
 
+	protected:
 		struct entry_t {
 			tuple_type	m_index_tuple;
 			index_t		m_next{};
@@ -148,15 +149,15 @@ namespace vve {
 	};
 
 
-	template<int I>
-	inline VeComponentMapTable<I>::VeComponentMapTable(size_t r) {
+	template<typename E>
+	inline VeComponentMapTable<E>::VeComponentMapTable(size_t r) {
 		if (!this->init()) return;
 		m_index_component.reserve(r);
 	};
 
 
-	template<int I>
-	typename VeComponentMapTable<I>::tuple_type& VeComponentMapTable<I>::add(VeHandle h) {
+	template<typename E>
+	typename VeComponentMapTable<E>::tuple_type& VeComponentMapTable<E>::add(VeHandle h) {
 		index_t idx{};
 		if (!m_first_free.is_null()) {
 			idx = m_first_free;
@@ -170,14 +171,14 @@ namespace vve {
 	};
 
 
-	template<int I>
-	inline typename VeComponentMapTable<I>::tuple_type& VeComponentMapTable<I>::get(index_t index) {
+	template<typename E>
+	inline typename VeComponentMapTable<E>::tuple_type& VeComponentMapTable<E>::get(index_t index) {
 		return m_index_component[index.value].m_index_tuple;
 	}
 
 
-	template<int I>
-	void VeComponentMapTable<I>::erase(index_t index) {
+	template<typename T>
+	void VeComponentMapTable<T>::erase(index_t index) {
 		m_index_component[index.value].m_next = m_first_free;
 		m_first_free = index;
 	}
@@ -220,7 +221,14 @@ namespace vve {
 		requires tl::is_same<E, Ts...>::value
 		VeHandle create(E&& e, Ts&&... args);
 
-		void erase(VeHandle& h);
+		template<typename T>
+		void erase(T& handle);
+
+		template<typename E>
+		void erase(VeHandle_t<E>& handle);
+
+		template<>
+		void erase<VeHandle>(VeHandle& handle);
 	};
 	
 
@@ -245,7 +253,7 @@ namespace vve {
 
 		VeHandle h{ VeHandle_t<E>{ idx, m_entity_table[idx.value].m_generation_counter } };
 
-		auto map = VeComponentMapTable<tl::size_of<E>::value>().add(h); //reference to map entry, a tuple of index_t
+		auto map = VeComponentMapTable<E>().add(h); //reference to map entry, a tuple of index_t
 		auto tup = std::make_tuple( VeComponentVector<Ts>().add( h, std::forward<Ts>(args) )... ); //tuple with indices of the components
 
 		tl::static_for<int, 0, sizeof...(Ts) - 1 >(
@@ -260,34 +268,35 @@ namespace vve {
 	};
 
 
-	inline void VeEntityManager::erase(VeHandle& handle) {
+	template<typename E>
+	inline void VeEntityManager::erase(VeHandle_t<E>& handle) {
+		VeHandle h{handle};
+		VeComponentMapTable<E> map;
+		auto mapidx = m_entity_table[ handle.m_entity_index.value].m_next_free_or_map_index;
+		auto indextup = map.get(mapidx);
+
+		tl::static_for<size_t, 0, tl::size_of<E>::value >(
+			[&](auto i) {
+				using type = tl::Nth_type<i, E>;
+				VeComponentVector<type>().erase( h, std::get<i>(indextup) );
+			}
+		);
+
+		map.erase(mapidx);
+	}
 
 
-		/*auto erase_components = [&]<typename... Ts>( 
-			typename tl::N_tuple<index_t, sizeof...(Ts)>::type& indextup, VeHandle_t<VeEntityType<Ts...>> &h) {
+	template<>
+	inline void VeEntityManager::erase<VeHandle>(VeHandle& handle) {
 
-			tl::static_for<size_t, 0, sizeof...(Ts) - 1 >(
-				[&](auto i) {
-					( VeComponentVector<Ts>().erase( VeHandle{ h }, std::get<i>(indextup) ), ... );
+		tl::static_for<size_t, 0, tl::size_of<VeEntityTypeList>::value >(
+			[&](auto i) {
+				using type = tl::Nth_type<i, VeEntityTypeList>;
+				if (std::holds_alternative<VeHandle_t<type>>(handle)) {
+					erase<type>(std::get<VeHandle_t<type>>(handle));
 				}
-			);
-
-		};*/
-
-		auto erase_indices_lambda = [this]<typename E>( VeHandle_t<E> h ) {
-			VeComponentMapTable<E> map;
-
-			auto mapidx = m_entity_table[h.m_entity_index.value].m_next_free_or_map_index;
-
-			//VeHandle hand{ h };
-			//erase_comp<E>().erase(map.get(mapidx), hand);
-
-			//erase_components( map.get(idx), h );
-
-			map.erase(mapidx);
-			return;
-		};
-
+			}
+		);
 	}
 
 
