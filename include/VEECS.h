@@ -32,7 +32,7 @@ namespace vve {
 		>
 		, VeComponentTypeListUser	//components defined by the user
 	>;
-	using VeComponentPtr = tl::variant_type<tl::to_ptr<VeComponentTypeList>>;
+	using VeComponentTypePtr = tl::variant_type<tl::to_ptr<VeComponentTypeList>>;
 
 
 	//-------------------------------------------------------------------------
@@ -54,13 +54,20 @@ namespace vve {
 
 
 	template <typename E>
-	struct VeEntity {
+	struct VeEntity_t {
 		using tuple_type = tl::to_tuple<E>;
 		tuple_type m_tuple;
+
+		template<typename C>
+		C& get() {
+			return std::get<tl::index_of<C, E>>(m_tuple);
+		};
 	};
 
-	using VeEntityPtr = tl::variant_type<tl::to_ptr<tl::transform<VeEntityTypeList, VeEntity>>>;
-	
+	using VeEntityTypePtr = tl::variant_type<tl::to_ptr<tl::transform<VeEntityTypeList, VeEntity_t>>>;
+
+	using VeEntity = tl::variant_type<tl::transform<VeEntityTypeList, VeEntity_t>>;
+
 
 	//-------------------------------------------------------------------------
 	//entity handle
@@ -221,6 +228,12 @@ namespace vve {
 		template<typename E, typename... Ts>
 		requires tl::is_same<E, Ts...>::value
 		VeHandle create(Ts&&... args);
+
+		template<typename E>
+		VeEntity_t<E> get(VeHandle_t<E>& h);
+
+		template<typename E>
+		VeEntity get(VeHandle_t<E>& h);
 
 		template<typename T>
 		void erase(T& handle);
