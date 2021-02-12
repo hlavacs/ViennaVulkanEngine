@@ -53,28 +53,6 @@ namespace vve {
 		, VeEntityTypeListUser >;
 
 
-	template <typename E>
-	struct VeEntity_t {
-		using tuple_type = typename tl::to_tuple<E>::type;
-		tuple_type m_tuple;
-
-		template<typename C>
-		C& get() {
-			return std::get<tl::index_of<C, E>::value>(m_tuple);
-		};
-
-		template<typename C>
-		void set( C&& comp ) {
-			std::get<tl::index_of<C, E>::value>(m_tuple) = comp;
-		};
-
-	};
-
-	using VeEntityTypePtr = tl::variant_type<tl::to_ptr<tl::transform<VeEntityTypeList, VeEntity_t>>>;
-
-	using VeEntity = tl::variant_type<tl::transform<VeEntityTypeList, VeEntity_t>>;
-
-
 	//-------------------------------------------------------------------------
 	//entity handle
 
@@ -85,6 +63,32 @@ namespace vve {
 	};
 
 	using VeHandle = tl::variant_type<tl::transform<VeEntityTypeList, VeHandle_t>>;
+
+
+	template <typename E>
+	struct VeEntity_t {
+		using tuple_type = typename tl::to_tuple<E>::type;
+		VeHandle	m_handle;
+		tuple_type	m_tuple;
+
+		template<typename C>
+		C& get() {
+			return std::get<tl::index_of<C, E>::value>(m_tuple);
+		};
+
+		template<typename C>
+		void set(C&& comp ) {
+			std::get<tl::index_of<C, E>::value>(m_tuple) = comp;
+		};
+
+		std::string name() {
+			return typeid(E).name();
+		};
+	};
+
+	using VeEntityTypePtr = tl::variant_type<tl::to_ptr<tl::transform<VeEntityTypeList, VeEntity_t>>>;
+
+	using VeEntity = tl::variant_type<tl::transform<VeEntityTypeList, VeEntity_t>>;
 
 
 	//-------------------------------------------------------------------------
@@ -247,10 +251,10 @@ namespace vve {
 		VeEntity get(T& handle);
 
 		template<typename E>
-		VeEntity_t<E> get(VeHandle_t<E>& h);
+		VeEntity_t<E> get(VeHandle& h);
 
 		template<>
-		VeEntity get<VeHandle>(VeHandle& h);
+		VeEntity get<>(VeHandle& h);
 
 		//------------------------------------------------------------
 
@@ -258,10 +262,10 @@ namespace vve {
 		void erase(T& handle);
 
 		template<typename E>
-		void erase(VeHandle_t<E>& handle);
+		void erase(VeHandle& handle);
 
 		template<>
-		void erase<VeHandle>(VeHandle& handle);
+		void erase<>(VeHandle& handle);
 	};
 	
 
@@ -304,9 +308,9 @@ namespace vve {
 
 
 	template<typename E>
-	inline VeEntity_t<E> VeEntityManager::get( VeHandle_t<E>& handle) {
+	inline VeEntity_t<E> VeEntityManager::get( VeHandle& h) {
+		VeHandle_t<E> handle = std::get<VeHandle_t<E>>(h);
 		VeEntity_t<E> e;
-		VeHandle h{ handle };
 		VeComponentMapTable<E> map;
 		auto mapidx = m_entity_table[handle.m_entity_index.value].m_next_free_or_map_index;
 		auto indextup = map.get(mapidx);
@@ -323,7 +327,7 @@ namespace vve {
 
 
 	template<>
-	inline VeEntity VeEntityManager::get<VeHandle>(VeHandle& handle) {
+	inline VeEntity VeEntityManager::get(VeHandle& handle) {
 		VeEntity e;
 
 		std::cout << tl::size_of<VeEntityTypeList>::value << std::endl;
@@ -332,7 +336,7 @@ namespace vve {
 			[&](auto i) {
 				using type = tl::Nth_type<i, VeEntityTypeList>;
 				if (std::holds_alternative<VeHandle_t<type>>(handle)) {
-					e = VeEntity{ get<type>(std::get<VeHandle_t<type>>(handle)) };
+					e = VeEntity{ get<type>(handle) };
 				}
 			}
 		);
@@ -341,8 +345,8 @@ namespace vve {
 
 
 	template<typename E>
-	inline void VeEntityManager::erase(VeHandle_t<E>& handle) {
-		VeHandle h{handle};
+	inline void VeEntityManager::erase(VeHandle& h) {
+		VeHandle_t<E> handle = std::get<VeHandle_t<E>>(h);
 		VeComponentMapTable<E> map;
 		auto mapidx = m_entity_table[ handle.m_entity_index.value].m_next_free_or_map_index;
 		auto indextup = map.get(mapidx);
@@ -359,13 +363,13 @@ namespace vve {
 
 
 	template<>
-	inline void VeEntityManager::erase<VeHandle>(VeHandle& handle) {
+	inline void VeEntityManager::erase<>(VeHandle& handle) {
 
 		tl::static_for<size_t, 0, tl::size_of<VeEntityTypeList>::value >(
 			[&](auto i) {
 				using type = tl::Nth_type<i, VeEntityTypeList>;
 				if (std::holds_alternative<VeHandle_t<type>>(handle)) {
-					erase<type>(std::get<VeHandle_t<type>>(handle));
+					erase<type>(handle);
 				}
 			}
 		);

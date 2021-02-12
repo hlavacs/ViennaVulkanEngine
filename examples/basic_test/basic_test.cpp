@@ -20,12 +20,17 @@ int main() {
     VeHandle h1 = et.insert<VeEntityTypeNode>(VeComponentPosition{ glm::vec3{1.0f, 2.0f, 3.0f} }, VeComponentOrientation{}, VeComponentTransform{});
     std::cout << typeid(VeEntityTypeNode).hash_code() << " " << typeid(VeEntityTypeNode).name() << std::endl;
 
-    auto data = et.get(h1);
+    auto data1  = et.get(h1);
+    auto data1b = et.get<VeEntityTypeNode>(h1);
 
     et.erase(h1);
 
     VeHandle h2 = et.insert<VeEntityTypeDraw>( VeComponentMaterial{}, VeComponentGeometry{});
     std::cout << typeid(VeEntityTypeDraw).hash_code() << " " << typeid(VeEntityTypeDraw).name() << std::endl;
+
+    auto data2 = et.get(h2);
+    auto data2b = et.get<VeEntityTypeDraw>(h2);
+
     et.erase(h2);
 
 
