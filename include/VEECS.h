@@ -55,13 +55,19 @@ namespace vve {
 
 	template <typename E>
 	struct VeEntity_t {
-		using tuple_type = tl::to_tuple<E>;
+		using tuple_type = typename tl::to_tuple<E>::type;
 		tuple_type m_tuple;
 
 		template<typename C>
 		C& get() {
-			return std::get<tl::index_of<C, E>>(m_tuple);
+			return std::get<tl::index_of<C, E>::value>(m_tuple);
 		};
+
+		template<typename C>
+		void set( C&& comp ) {
+			std::get<tl::index_of<C, E>::value>(m_tuple) = comp;
+		};
+
 	};
 
 	using VeEntityTypePtr = tl::variant_type<tl::to_ptr<tl::transform<VeEntityTypeList, VeEntity_t>>>;
@@ -102,6 +108,7 @@ namespace vve {
 	public:
 		VeComponentVector() = default;
 		index_t	add( VeHandle h, C&& component );
+		C		get( VeHandle h, index_t comp_index);
 		void	erase(const VeHandle& h, index_t comp_index);
 	};
 
@@ -110,6 +117,11 @@ namespace vve {
 	inline index_t VeComponentVector<C>::add(VeHandle h, C&& component) {
 		m_component_vector.push_back({ component, h, nullptr });
 		return index_t{ static_cast<typename index_t::type_name>(m_component_vector.size() - 1) };
+	}
+
+	template<typename C>
+	C VeComponentVector<C>::get(VeHandle h, index_t comp_index) {
+		return m_component_vector[comp_index.value].m_component;
 	}
 
 
@@ -229,11 +241,18 @@ namespace vve {
 		requires tl::is_same<E, Ts...>::value
 		VeHandle create(Ts&&... args);
 
+		//------------------------------------------------------------
+
+		template<typename T>
+		VeEntity get(T& handle);
+
 		template<typename E>
 		VeEntity_t<E> get(VeHandle_t<E>& h);
 
-		template<typename E>
-		VeEntity get(VeHandle_t<E>& h);
+		template<>
+		VeEntity get<VeHandle>(VeHandle& h);
+
+		//------------------------------------------------------------
 
 		template<typename T>
 		void erase(T& handle);
@@ -280,6 +299,40 @@ namespace vve {
 
 		return h;
 	};
+
+
+	template<typename E>
+	inline VeEntity_t<E> VeEntityManager::get( VeHandle_t<E>& handle) {
+		VeEntity_t<E> e;
+		VeHandle h{ handle };
+		VeComponentMapTable<E> map;
+		auto mapidx = m_entity_table[handle.m_entity_index.value].m_next_free_or_map_index;
+		auto indextup = map.get(mapidx);
+
+		tl::static_for<size_t, 0, tl::size_of<E>::value >(
+			[&](auto i) {
+				using type = tl::Nth_type<i, E>;
+				e.set(VeComponentVector<type>().get(h, std::get<i>(indextup)));
+			}
+		);
+
+		return e;
+	}
+
+
+	template<>
+	inline VeEntity VeEntityManager::get<VeHandle>(VeHandle& handle) {
+		VeEntity e;
+		tl::static_for<size_t, 0, tl::size_of<VeEntityTypeList>::value >(
+			[&](auto i) {
+				using type = tl::Nth_type<i, VeEntityTypeList>;
+				if (std::holds_alternative<VeHandle_t<type>>(handle)) {
+					e = VeEntity{ get<type>(std::get<VeHandle_t<type>>(handle)) };
+				}
+			}
+		);
+		return e;
+	}
 
 
 	template<typename E>
