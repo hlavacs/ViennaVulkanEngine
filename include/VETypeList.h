@@ -294,6 +294,28 @@ namespace vve {
 		};
 
 		//-------------------------------------------------------------------------
+		//turn a list into a tuple
+
+		namespace detail {
+			template<typename Seq>
+			struct to_tuple_impl;
+
+			template<template <typename...> class Seq>
+			struct to_tuple_impl<Seq<>> {
+				using type = std::tuple<>;
+			};
+
+			template<template <typename...> class Seq, typename... Ts>
+			struct to_tuple_impl<Seq<Ts...>> {
+				using type = std::tuple<Ts...>;
+			};
+		}
+		template <typename Seq>
+		struct to_tuple {
+			using type = typename detail::to_tuple_impl<Seq>::type;
+		};
+
+		//-------------------------------------------------------------------------
 		//turn a list into a tuple of references type
 
 		namespace detail {

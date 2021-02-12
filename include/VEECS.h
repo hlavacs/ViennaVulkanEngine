@@ -53,12 +53,13 @@ namespace vve {
 		, VeEntityTypeListUser >;
 
 
-	template <typename... Ts>
+	template <typename E>
 	struct VeEntity {
-		std::tuple<Ts...> m_components;
+		//using tuple_type = tl::to_tuple<E>;
+		//tuple_type m_components;
 	};
 
-	using VeEntityPtr = tl::variant_type<tl::to_ptr<tl::transfer<VeEntityTypeList, VeEntity>>>;
+	//using VeEntityPtr = tl::variant_type<tl::to_ptr<tl::transfer<VeEntityTypeList, VeEntity>>>;
 	
 
 	//-------------------------------------------------------------------------
@@ -219,7 +220,7 @@ namespace vve {
 
 		template<typename E, typename... Ts>
 		requires tl::is_same<E, Ts...>::value
-		VeHandle create(E&& e, Ts&&... args);
+		VeHandle create(Ts&&... args);
 
 		template<typename T>
 		void erase(T& handle);
@@ -240,7 +241,7 @@ namespace vve {
 
 	template<typename E, typename... Ts>
 	requires tl::is_same<E, Ts...>::value
-	inline VeHandle VeEntityManager::create(E&& e, Ts&&... args) {
+	inline VeHandle VeEntityManager::create(Ts&&... args) {
 		index_t idx{};
 		if (!m_first_free.is_null()) {
 			idx = m_first_free;
@@ -259,7 +260,7 @@ namespace vve {
 		tl::static_for<int, 0, sizeof...(Ts) - 1 >(
 			[&](auto i) { 
 				std::get<i>(map) = std::get<i>(tup);
-				using type = typename std::tuple_element<i, std::tuple<Ts...>>::type;
+				using type = tl::Nth_type<i, E>; //  typename std::tuple_element<i, std::tuple<Ts...>>::type;
 				VeComponentVector<type>().m_component_vector[std::get<i>(tup).value].m_map_pointer = &std::get<i>(map);
 			} 
 		);
