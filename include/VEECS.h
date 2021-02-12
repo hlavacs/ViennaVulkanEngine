@@ -55,11 +55,11 @@ namespace vve {
 
 	template <typename E>
 	struct VeEntity {
-		//using tuple_type = tl::to_tuple<E>;
-		//tuple_type m_components;
+		using tuple_type = tl::to_tuple<E>;
+		tuple_type m_tuple;
 	};
 
-	//using VeEntityPtr = tl::variant_type<tl::to_ptr<tl::transfer<VeEntityTypeList, VeEntity>>>;
+	using VeEntityPtr = tl::variant_type<tl::to_ptr<tl::transform<VeEntityTypeList, VeEntity>>>;
 	
 
 	//-------------------------------------------------------------------------
