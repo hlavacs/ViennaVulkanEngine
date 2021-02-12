@@ -14,31 +14,31 @@ namespace vve {
 
 	struct VeComponent {};
 
-	struct VeComponentPosition : VeComponent {
+	struct VeComponentPosition {
 		glm::vec3 m_position;
 	};
 
-	struct VeComponentOrientation : VeComponent {
+	struct VeComponentOrientation {
 		glm::quat m_orientation;
 	};
 
-	struct VeComponentTransform : VeComponent {
+	struct VeComponentTransform {
 		glm::mat4 m_transform;
 	};
 
-	struct VeComponentMaterial : VeComponent {
+	struct VeComponentMaterial {
 	};
 
-	struct VeComponentGeometry : VeComponent {
+	struct VeComponentGeometry {
 	};
 
-	struct VeComponentAnimation : VeComponent {
+	struct VeComponentAnimation {
 	};
 
-	struct VeComponentCollisionShape : VeComponent {
+	struct VeComponentCollisionShape {
 	};
 
-	struct VeComponentRigidBody : VeComponent {
+	struct VeComponentRigidBody {
 	};
 
 

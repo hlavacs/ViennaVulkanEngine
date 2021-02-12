@@ -163,9 +163,9 @@ namespace vve {
 	public:
 		VeComponentMapTable(size_t r = 1 << 10);
 
-		tuple_type& add(VeHandle h);
-		tuple_type&	get(index_t index);
-		void		erase(index_t idx);
+		std::tuple<tuple_type&, index_t> add();
+		tuple_type&						 get(index_t index);
+		void							 erase(index_t idx);
 	};
 
 
@@ -177,7 +177,7 @@ namespace vve {
 
 
 	template<typename E>
-	typename VeComponentMapTable<E>::tuple_type& VeComponentMapTable<E>::add(VeHandle h) {
+	std::tuple<typename VeComponentMapTable<E>::tuple_type&, index_t> VeComponentMapTable<E>::add() {
 		index_t idx{};
 		if (!m_first_free.is_null()) {
 			idx = m_first_free;
@@ -187,7 +187,7 @@ namespace vve {
 			idx.value = static_cast<typename index_t::type_name>(m_index_component.size());			//
 			m_index_component.push_back({ {}, {} });	//
 		}
-		return m_index_component[idx.value].m_index_tuple;
+		return std::make_tuple( std::ref(m_index_component[idx.value].m_index_tuple), idx );
 	};
 
 
@@ -285,17 +285,19 @@ namespace vve {
 		}
 
 		VeHandle h{ VeHandle_t<E>{ idx, m_entity_table[idx.value].m_generation_counter } };
+		auto [map, mapidx]	= VeComponentMapTable<E>().add();										//add map data, a tuple of index_t
+		m_entity_table[idx.value].m_next_free_or_map_index = mapidx;	//index in component map 
+		auto tup			= std::make_tuple( VeComponentVector<Ts>().add( h, std::forward<Ts>(args) )... ); //tuple with indices of the components
 
-		auto map = VeComponentMapTable<E>().add(h); //reference to map entry, a tuple of index_t
-		auto tup = std::make_tuple( VeComponentVector<Ts>().add( h, std::forward<Ts>(args) )... ); //tuple with indices of the components
-
-		tl::static_for<int, 0, sizeof...(Ts) - 1 >(
+		tl::static_for<int, 0, sizeof...(Ts) >(
 			[&](auto i) { 
 				std::get<i>(map) = std::get<i>(tup);
 				using type = tl::Nth_type<i, E>; //  typename std::tuple_element<i, std::tuple<Ts...>>::type;
 				VeComponentVector<type>().m_component_vector[std::get<i>(tup).value].m_map_pointer = &std::get<i>(map);
 			} 
 		);
+		using type = tl::Nth_type<0, E>;
+		auto comp = VeComponentVector<type>().m_component_vector[std::get<0>(tup).value];
 
 		return h;
 	};
@@ -323,6 +325,9 @@ namespace vve {
 	template<>
 	inline VeEntity VeEntityManager::get<VeHandle>(VeHandle& handle) {
 		VeEntity e;
+
+		std::cout << tl::size_of<VeEntityTypeList>::value << std::endl;
+
 		tl::static_for<size_t, 0, tl::size_of<VeEntityTypeList>::value >(
 			[&](auto i) {
 				using type = tl::Nth_type<i, VeEntityTypeList>;
