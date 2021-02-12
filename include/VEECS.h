@@ -239,7 +239,7 @@ namespace vve {
 
 		template<typename E, typename... Ts>
 		requires tl::is_same<E, Ts...>::value
-		VeHandle create(Ts&&... args);
+		VeHandle insert(Ts&&... args);
 
 		//------------------------------------------------------------
 
@@ -273,7 +273,7 @@ namespace vve {
 
 	template<typename E, typename... Ts>
 	requires tl::is_same<E, Ts...>::value
-	inline VeHandle VeEntityManager::create(Ts&&... args) {
+	inline VeHandle VeEntityManager::insert(Ts&&... args) {
 		index_t idx{};
 		if (!m_first_free.is_null()) {
 			idx = m_first_free;
