@@ -58,7 +58,7 @@ namespace vve {
 
 	template<typename E>
 	struct VeHandle_t {
-		index_t		m_entity_index{};	//the slot of the entity in the entity list
+		index_t		m_entity_index{};			//the slot of the entity in the entity list
 		counter_t	m_generation_counter{};		//generation counter
 	};
 
@@ -103,7 +103,7 @@ namespace vve {
 
 		struct entry_t {
 			C			m_component;
-			VeHandle	m_handle;
+			counter_t	m_generation_counter;
 			index_t*	m_map_pointer;
 		};
 
@@ -111,29 +111,31 @@ namespace vve {
 
 	public:
 		VeComponentVector() = default;
-		index_t	add( VeHandle h, C&& component );
-		C		get( VeHandle h, index_t comp_index);
-		void	erase(const VeHandle& h, index_t comp_index);
+		index_t	add( counter_t, C&& component );
+		C		get( counter_t, index_t comp_index);
+		void	erase(counter_t, index_t comp_index);
 	};
 
 
 	template<typename C>
-	inline index_t VeComponentVector<C>::add(VeHandle h, C&& component) {
-		m_component_vector.push_back({ component, h, nullptr });
+	inline index_t VeComponentVector<C>::add(counter_t counter, C&& component) {
+		m_component_vector.push_back({ component, counter, nullptr });
 		return index_t{ static_cast<typename index_t::type_name>(m_component_vector.size() - 1) };
 	}
 
+
 	template<typename C>
-	C VeComponentVector<C>::get(VeHandle h, index_t comp_index) {
+	C VeComponentVector<C>::get(counter_t counter, index_t comp_index) {
+		assert(counter == m_component_vector[comp_index.value].m_generation_counter);
 		return m_component_vector[comp_index.value].m_component;
 	}
 
 
 	template<typename C>
-	inline void VeComponentVector<C>::erase(const VeHandle& h, index_t comp_index) {
+	inline void VeComponentVector<C>::erase(counter_t counter, index_t comp_index) {
 		if (m_component_vector.size() == 0) return;
 		if (comp_index.value < m_component_vector.size()-1) {
-			//assert(h == m_component_vector[comp_index.value].m_handle);
+			assert(counter == m_component_vector[comp_index.value].m_generation_counter);
 			m_component_vector[comp_index.value] = m_component_vector[m_component_vector.size() - 1];
 			*m_component_vector[comp_index.value].m_map_pointer = comp_index;
 		}
@@ -288,10 +290,10 @@ namespace vve {
 			m_entity_table.emplace_back();		//start with counter 0
 		}
 
-		VeHandle h{ VeHandle_t<E>{ idx, m_entity_table[idx.value].m_generation_counter } };
+		VeHandle_t<E> handle{ idx, m_entity_table[idx.value].m_generation_counter };
 		auto [map, mapidx]	= VeComponentMapTable<E>().add();										//add map data, a tuple of index_t
 		m_entity_table[idx.value].m_next_free_or_map_index = mapidx;	//index in component map 
-		auto tup			= std::make_tuple( VeComponentVector<Ts>().add( h, std::forward<Ts>(args) )... ); //tuple with indices of the components
+		auto tup			= std::make_tuple( VeComponentVector<Ts>().add( handle.m_generation_counter, std::forward<Ts>(args) )... ); //tuple with indices of the components
 
 		tl::static_for<int, 0, sizeof...(Ts) >(
 			[&](auto i) { 
@@ -303,7 +305,7 @@ namespace vve {
 		using type = tl::Nth_type<0, E>;
 		auto comp = VeComponentVector<type>().m_component_vector[std::get<0>(tup).value];
 
-		return h;
+		return {handle};
 	};
 
 
@@ -318,7 +320,7 @@ namespace vve {
 		tl::static_for<size_t, 0, tl::size_of<E>::value >(
 			[&](auto i) {
 				using type = tl::Nth_type<i, E>;
-				e.set(VeComponentVector<type>().get(h, std::get<i>(indextup)));
+				e.set(VeComponentVector<type>().get(handle.m_generation_counter, std::get<i>(indextup)));
 			}
 		);
 
@@ -347,14 +349,17 @@ namespace vve {
 	template<typename E>
 	inline void VeEntityManager::erase(VeHandle& h) {
 		VeHandle_t<E> handle = std::get<VeHandle_t<E>>(h);
+		
+		m_entity_table[handle.m_entity_index.value].m_generation_counter.value++;		//>invalidate the entity handle
+
 		VeComponentMapTable<E> map;
-		auto mapidx = m_entity_table[ handle.m_entity_index.value].m_next_free_or_map_index;
+		auto mapidx = m_entity_table[handle.m_entity_index.value].m_next_free_or_map_index;
 		auto indextup = map.get(mapidx);
 
 		tl::static_for<size_t, 0, tl::size_of<E>::value >(
 			[&](auto i) {
 				using type = tl::Nth_type<i, E>;
-				VeComponentVector<type>().erase( h, std::get<i>(indextup) );
+				VeComponentVector<type>().erase( handle.m_generation_counter, std::get<i>(indextup) );
 			}
 		);
 
