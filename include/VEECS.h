@@ -195,7 +195,7 @@ namespace vve {
 
 		virtual bool component(index_t component_index, void**ptr, size_t size);
 
-		virtual bool entity(VeHandle& handle, std::optional<VeEntity>& res) {};
+		virtual std::optional<VeEntity> entityE(VeHandle& handle) { return {}; };
 
 	public:
 		VeEntityTableBaseClass( size_t r = 1 << 10 );
@@ -203,7 +203,7 @@ namespace vve {
 		template<typename... Ts>
 		VeHandle insert(Ts&&... args);
 
-		std::optional <VeEntity> entity( VeHandle &handle);
+		std::optional<VeEntity> entity( VeHandle &handle);
 
 		virtual bool contains(VeHandle& handle);
 
@@ -215,9 +215,7 @@ namespace vve {
 
 
 	std::optional<VeEntity> VeEntityTableBaseClass::entity(VeHandle& handle) {
-		std::optional<VeEntity> res;
-		m_dispatch[handle.index()]->entity(handle, res);
-		return res;
+		return m_dispatch[handle.index()]->entityE(handle);
 	}
 
 	bool VeEntityTableBaseClass::contains(VeHandle& handle) {
@@ -243,7 +241,7 @@ namespace vve {
 
 		virtual bool get(index_t component_index, void** ptr, size_t size);
 
-		virtual void entityE(VeHandle& handle, std::optional<VeEntity>& res);
+		virtual std::optional<VeEntity> entityE(VeHandle& handle);
 
 	public:
 		VeEntityTable(size_t r = 1 << 10) : VeEntityTableBaseClass(r) {};
@@ -266,12 +264,11 @@ namespace vve {
 
 
 	template<typename E>
-	void VeEntityTable<E>::entityE(VeHandle& handle, std::optional<VeEntity>& res) {
+	std::optional<VeEntity> VeEntityTable<E>::entityE(VeHandle& handle) {
 		std::optional<VeEntity_t<E>> ent = entity(handle);
-		if (ent.has_value()) res = { VeEntity{ *ent } };
-		res = {};
+		if (ent.has_value()) return { VeEntity{ *ent } };
+		return {};
 	}
-
 
 
 	template<typename E>
