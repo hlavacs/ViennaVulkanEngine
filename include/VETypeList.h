@@ -19,6 +19,18 @@ namespace vve {
 			using size = std::integral_constant<std::size_t, 0>;
 		};
 
+		namespace detail {
+			template <typename... Ts>
+			struct type_list2 {
+				using size = std::integral_constant<std::size_t, sizeof...(Ts)>;
+			};
+
+			template <>
+			struct type_list2<> {
+				using size = std::integral_constant<std::size_t, 0>;
+			};
+		}
+
 		//-------------------------------------------------------------------------
 		//size
 
@@ -114,6 +126,10 @@ namespace vve {
 		template <int N, typename Seq>
 		using Nth_type = typename detail::Nth_type_impl<N, Seq>::type;
 
+		static_assert(
+			std::is_same<Nth_type<1, type_list<double, char, bool, double>>, char>::value,
+			"The implementation of Nth_type is bad");
+
 		//-------------------------------------------------------------------------
 		//size of
 
@@ -134,6 +150,10 @@ namespace vve {
 
 		template <typename Seq>
 		using size_of = typename detail::size_of_impl<Seq>::type;
+
+		static_assert(
+			size_of<type_list<double, char, bool, double>>::value == 4,
+			"The implementation of size_of is bad");
 
 		//-------------------------------------------------------------------------
 		//index of
@@ -192,6 +212,10 @@ namespace vve {
 		template <typename Seq1, typename Seq2>
 		using cat = typename detail::cat_impl<Seq1, Seq2>::type;
 
+		static_assert(
+			std::is_same_v< cat< type_list<double, int>, type_list<char, float> >, type_list<double, int, char, float> >,
+			"The implementation of cat is bad");
+
 		//-------------------------------------------------------------------------
 		//turn elements into pointers
 
@@ -208,6 +232,10 @@ namespace vve {
 		template <typename Seq>
 		using to_ptr = typename detail::to_ptr_impl<Seq>::type;
 
+		static_assert(
+			std::is_same_v< to_ptr< type_list<double, int> >, type_list<double*, int*> >,
+			"The implementation of to_ptr is bad");
+
 		//-------------------------------------------------------------------------
 		//make a summary variant type
 
@@ -219,10 +247,14 @@ namespace vve {
 			struct variant_type_impl<Seq<Ts...>> {
 				using type = std::variant<Ts...>;
 			};
-		}  // namespace detail
+		} 
 
 		template <typename Seq>
 		using variant_type = typename detail::variant_type_impl<Seq>::type;
+
+		static_assert(
+			std::is_same_v< variant_type< type_list<double, int, char> >, std::variant<double, int, char> >,
+			"The implementation of variant_type is bad");
 
 		//-------------------------------------------------------------------------
 		//transform a list of types into a list of F<types>
@@ -239,6 +271,10 @@ namespace vve {
 		template <typename Seq, template<typename> typename Fun>
 		using transform = typename detail::transform_impl<Seq, Fun>::type;
 
+		static_assert(
+			std::is_same_v< transform< type_list<double, int>, type_list >, type_list<type_list<double>, type_list<int>> >,
+			"The implementation of transform is bad");
+
 		//-------------------------------------------------------------------------
 		//substitue
 
@@ -254,6 +290,10 @@ namespace vve {
 		template <typename Seq, template<typename> typename Fun>
 		using substitute = typename detail::substitute_impl<Seq, Fun>::type;
 
+		static_assert(
+			std::is_same_v< substitute< type_list<double, int, char>, detail::type_list2 >, detail::type_list2<double, int, char> >,
+			"The implementation of substitute is bad");
+
 		//-------------------------------------------------------------------------
 		//transfer a list of types1 into a list of types2
 
@@ -263,16 +303,20 @@ namespace vve {
 
 			template<template <typename...> typename Seq, template<typename...> typename Fun>
 			struct transfer_impl<Seq<>, Fun> {
-				using type = type_list<>;
+				using type = Seq<>;
 			};
 
 			template<template <typename...> typename Seq, typename T, typename... Ts, template<typename...> typename Fun>
 			struct transfer_impl<Seq<T, Ts...>, Fun> {
-				using type = cat< type_list< substitute<T, Fun> >, typename transfer_impl< Seq<Ts...>, Fun>::type >;
+				using type = cat< Seq< substitute<T, Fun> >, typename transfer_impl< Seq<Ts...>, Fun>::type >;
 			};
 		}
 		template <typename Seq, template<typename> typename Fun>
 		using transfer = typename detail::transfer_impl<Seq, Fun>::type;
+
+		static_assert(
+			std::is_same_v< transfer<type_list<type_list<double, int>>, detail::type_list2 >, type_list<detail::type_list2<double, int>> >,
+			"The implementation of transfer is bad");
 
 		//-------------------------------------------------------------------------
 		//test if a list is the same as given types
@@ -292,6 +336,8 @@ namespace vve {
 		struct is_same {
 			static const bool value = detail::is_same_impl<Seq, Args...>::value;
 		};
+
+		static_assert( is_same<type_list<double, int>, double, int>::value, "The implementation of is_same is bad");
 
 		//-------------------------------------------------------------------------
 		//turn a list into a tuple
@@ -315,6 +361,10 @@ namespace vve {
 			using type = typename detail::to_tuple_impl<Seq>::type;
 		};
 
+		static_assert(
+			std::is_same_v< to_tuple<type_list<double, int>>::type, std::tuple<double, int> >,
+			"The implementation of to_tuple is bad");
+
 		//-------------------------------------------------------------------------
 		//turn a list into a tuple of references type
 
@@ -336,6 +386,12 @@ namespace vve {
 		struct to_ref_tuple {
 			using type = typename detail::to_ref_tuple_impl<Seq>::type;
 		};
+
+		static_assert(
+			std::is_same_v< to_ref_tuple<type_list<double, int>>::type, std::tuple<double&, int&> >,
+			"The implementation of to_ref_tuple is bad");
+
+
 
 		//-------------------------------------------------------------------------
 		//turn a list into a tuple of pointer type
@@ -359,6 +415,10 @@ namespace vve {
 			using type = typename detail::to_ptr_tuple_impl<Seq>::type;
 		};
 
+		static_assert(
+			std::is_same_v< to_ptr_tuple<type_list<double, int>>::type, std::tuple<double*, int*> >,
+			"The implementation of to_ptr_tuple is bad");
+
 		//-------------------------------------------------------------------------
 		//check whether a tuple contains a type
 
@@ -380,6 +440,9 @@ namespace vve {
 		struct has_type {
 			static const bool value = detail::has_type_impl<Seq, T>::value;
 		};
+
+		static_assert( has_type<type_list<double, int, char>, char>::value, "The implementation of has_type is bad");
+		static_assert( !has_type<type_list<double, int, char>, float>::value, "The implementation of has_type is bad");
 
 		//-------------------------------------------------------------------------
 		//turn a list into a tuple of T type with lenght N
@@ -404,6 +467,8 @@ namespace vve {
 		public:
 			using type = typename impl<std::make_index_sequence<N>>::type;
 		};
+
+		static_assert( std::is_same_v< N_tuple<int,4>::type, std::tuple<int,int,int,int> >, "The implementation of N_tuple is bad");
 
 		//-------------------------------------------------------------------------
 		//static for
