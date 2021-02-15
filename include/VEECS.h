@@ -71,8 +71,10 @@ namespace vve {
 	template <typename E>
 	struct VeEntity_t {
 		using tuple_type = typename tl::to_tuple<E>::type;
-		VeHandle	m_handle;
-		tuple_type	m_tuple;
+		VeHandle_t<E>	m_handle;
+		tuple_type		m_tuple;
+
+		VeEntity_t(VeHandle_t<E>& h, tuple_type& tup) : m_handle{ h }, m_tuple{ tup } {};
 
 		template<typename C>
 		std::optional<C&> get() {
@@ -191,9 +193,9 @@ namespace vve {
 
 		std::array<std::unique_ptr<VeEntityTableBaseClass>, tl::size_of<VeEntityTypeList>::value> m_dispatch;
 
-		virtual bool get(index_t component_index, void**ptr, size_t size);
+		virtual bool component(index_t component_index, void**ptr, size_t size);
 
-		virtual VeEntity findE(VeHandle& handle);
+		virtual bool entity(VeHandle& handle, std::optional<VeEntity>& res) {};
 
 	public:
 		VeEntityTableBaseClass( size_t r = 1 << 10 );
@@ -201,19 +203,35 @@ namespace vve {
 		template<typename... Ts>
 		VeHandle insert(Ts&&... args);
 
-		VeEntity entity( VeHandle &handle);
+		std::optional <VeEntity> entity( VeHandle &handle);
 
-		virtual bool contains( VeHandle& handle);
+		virtual bool contains(VeHandle& handle);
 
 		template<typename C>
 		std::optional<C> component(VeHandle& handle);
 
-		virtual void erase( VeHandle& handle);
+		virtual void erase(VeHandle& handle);
 	};
 
 
+	std::optional<VeEntity> VeEntityTableBaseClass::entity(VeHandle& handle) {
+		std::optional<VeEntity> res;
+		m_dispatch[handle.index()]->entity(handle, res);
+		return res;
+	}
 
+	bool VeEntityTableBaseClass::contains(VeHandle& handle) {
+		return m_dispatch[handle.index()]->contains(handle);
+	}
 
+	template<typename C>
+	std::optional<C> VeEntityTableBaseClass::component(VeHandle& handle) {
+
+	}
+
+	void VeEntityTableBaseClass::erase(VeHandle& handle) {
+		m_dispatch[handle.index()]->erase(handle);
+	}
 
 
 	//-------------------------------------------------------------------------
@@ -225,7 +243,7 @@ namespace vve {
 
 		virtual bool get(index_t component_index, void** ptr, size_t size);
 
-		virtual VeEntity findE(VeHandle& handle);
+		virtual void entityE(VeHandle& handle, std::optional<VeEntity>& res);
 
 	public:
 		VeEntityTable(size_t r = 1 << 10) : VeEntityTableBaseClass(r) {};
@@ -245,6 +263,15 @@ namespace vve {
 
 		void erase(VeHandle& handle);
 	};
+
+
+	template<typename E>
+	void VeEntityTable<E>::entityE(VeHandle& handle, std::optional<VeEntity>& res) {
+		std::optional<VeEntity_t<E>> ent = entity(handle);
+		if (ent.has_value()) res = { VeEntity{ *ent } };
+		res = {};
+	}
+
 
 
 	template<typename E>
@@ -280,7 +307,8 @@ namespace vve {
 	inline std::optional<VeEntity_t<E>> VeEntityTable<E>::entity(VeHandle& handle) {
 		if (!contains(handle)) return {};
 		VeHandle_t<E> h = std::get<VeHandle_t<E>>(handle);
-		return { h, VeComponentVector<E>.at(m_entity_table[h.m_entity_index.value].m_next_free_or_comp_index.value)};
+		VeEntity_t<E> res( h, VeComponentVector<E>().at(m_entity_table[h.m_entity_index.value].m_next_free_or_comp_index).m_component_data );
+		return { res };
 	}
 
 
@@ -292,7 +320,7 @@ namespace vve {
 		VeHandle_t<E> h = std::get<VeHandle_t<E>>(handle);
 
 		auto compidx = m_entity_table[h.m_entity_index.value].m_next_free_or_comp_index;
-		auto tuple = VeComponentVector<E>.at(compidx).m_component_data;
+		auto tuple = VeComponentVector<E>().at(compidx).m_component_data;
 		return std::get<tl::index_of<C, E>::value>(tuple);
 	}
 
@@ -339,6 +367,11 @@ namespace vve {
 	}
 
 
+	template<typename... Ts>
+	inline VeHandle VeEntityTableBaseClass::insert(Ts&&... args) {
+		static_assert(tl::has_type(VeEntityTypeList, VeEntityType<Ts...>));
+		return VeEntityTable<VeEntityType<Ts...>>().insert(std::forward<Ts>(args)...);
+	}
 
 
 
