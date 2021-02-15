@@ -16,7 +16,7 @@ int main() {
     VeEntityTable et;
 
     std::cout << sizeof(VeHandle) << " "  << sizeof(VeHandle_t<VeEntityType<>>) << " " << sizeof(index_t) << std::endl;
-    std::cout << tl::size_of<VeEntityTypeList>::value << std::endl;
+    std::cout << tl::size<VeEntityTypeList>::value << std::endl;
 
     VeHandle h1 = et.insert(VeComponentPosition{ glm::vec3{1.0f, 2.0f, 3.0f} }, VeComponentOrientation{}, VeComponentTransform{});
     std::cout << typeid(VeEntityTypeNode).hash_code() << " " << typeid(VeEntityTypeNode).name() << std::endl;

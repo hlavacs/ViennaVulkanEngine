@@ -191,7 +191,7 @@ namespace vve {
 		static inline std::vector<entry_t>	m_entity_table;
 		static inline index_t				m_first_free{};
 
-		std::array<std::unique_ptr<VeEntityTableBaseClass>, tl::size_of<VeEntityTypeList>::value> m_dispatch;
+		std::array<std::unique_ptr<VeEntityTableBaseClass>, tl::size<VeEntityTypeList>::value> m_dispatch;
 
 		virtual std::optional<VeEntity> entityE(const VeHandle& handle) { return {}; };
 
@@ -409,7 +409,7 @@ namespace vve {
 		if (!this->init()) return;
 		m_entity_table.reserve(r);
 
-		tl::static_for<size_t, 0, tl::size_of<VeEntityTypeList>::value >(
+		tl::static_for<size_t, 0, tl::size<VeEntityTypeList>::value >(
 			[this](auto i) {
 				using type = tl::Nth_type<i, VeEntityTypeList>;
 				m_dispatch[i] = std::make_unique<VeEntityTable<type>>();
