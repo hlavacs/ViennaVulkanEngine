@@ -13,7 +13,7 @@ using namespace vve;
 
 int main() {
     
-    VeEntityTable<> et;
+    VeEntityTable et;
 
     std::cout << sizeof(VeHandle) << " "  << sizeof(VeHandle_t<VeEntityType<>>) << " " << sizeof(index_t) << std::endl;
     std::cout << tl::size_of<VeEntityTypeList>::value << std::endl;

@@ -374,7 +374,7 @@ namespace vve {
 		};
 
 		//-------------------------------------------------------------------------
-		//turn a list into a tuple of index_t type
+		//turn a list into a tuple of T type with lenght N
 
 		template <typename T, size_t N>
 		struct N_tuple {
@@ -390,33 +390,12 @@ namespace vve {
 			struct impl<std::index_sequence<Is...>> {
 				template <size_t >
 				using wrap = T;
-
 				using type = std::tuple<wrap<Is>...>;
 			};
 
 		public:
 			using type = typename impl<std::make_index_sequence<N>>::type;
 		};
-
-		namespace detail {
-			template<typename Seq>
-			struct to_uint32_tuple_impl;
-
-			template<template <typename...> class Seq>
-			struct to_uint32_tuple_impl<Seq<>> {
-				using type = std::tuple<>;
-			};
-
-			template<template <typename...> class Seq, typename... Ts>
-			struct to_uint32_tuple_impl<Seq<Ts...>> {
-				using type = typename N_tuple<index_t, sizeof...(Ts)>::type;
-			};
-		}
-		template <typename Seq>
-		struct to_uint32_tuple {
-			using type = typename detail::to_uint32_tuple_impl<Seq>::type;
-		};
-
 
 		//-------------------------------------------------------------------------
 		//static for
