@@ -363,14 +363,22 @@ namespace vve {
 		//check whether a tuple contains a type
 
 		namespace detail {
-			template<typename U, typename... Ts>
-			constexpr bool contains(std::tuple<Ts...>) {
-				return (std::is_same_v<U, Ts> || ...);
-			}
+			template<typename Seq, typename T>
+			struct has_type_impl;
+
+			template<template <typename...> class Seq, typename T>
+			struct has_type_impl<Seq<>,T> {
+				static const bool value = false;
+			};
+
+			template<template <typename...> class Seq, typename... Ts, typename T>
+			struct has_type_impl<Seq<Ts...>, T> {
+				static const bool value = (std::is_same_v<T, Ts> || ...);
+			};
 		}
 		template <typename Seq, typename T>
 		struct has_type {
-			static const bool value = detail::contains(to_tuple<Seq>, T);
+			static const bool value = detail::has_type_impl<Seq, T>::value;
 		};
 
 		//-------------------------------------------------------------------------

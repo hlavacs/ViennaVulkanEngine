@@ -77,7 +77,7 @@ namespace vve {
 		VeEntity_t(VeHandle_t<E>& h, tuple_type& tup) : m_handle{ h }, m_component_data{ tup } {};
 
 		template<typename C>
-		std::optional<C&> get() {
+		std::optional<C&> component() {
 			if constexpr (tl::has_type<E,C>::value) {
 				{ std::get<tl::index_of<C, E>::value>(m_component_data); }
 			}
@@ -85,7 +85,7 @@ namespace vve {
 		};
 
 		template<typename C>
-		void set(C&& comp ) {
+		void update(C&& comp ) {
 			if constexpr (tl::has_type<E, C>::value) {
 				std::get<tl::index_of<C, E>::value>(m_component_data) = comp;
 			}
@@ -286,7 +286,7 @@ namespace vve {
 		bool update(const VeHandle& handle, VeEntity_t<E>& ent);
 
 		template<typename C>
-		//requires tl::has_type<VeComponentTypeList, C>::value
+		requires (tl::has_type<VeComponentTypeList, C>::value)
 		bool update(const VeHandle& handle, C& comp);
 
 		bool contains(const VeHandle& handle);
@@ -368,7 +368,7 @@ namespace vve {
 
 	template<typename E>
 	template<typename C>
-	//requires tl::has_type<VeComponentTypeList, C>::value
+	requires (tl::has_type<VeComponentTypeList, C>::value)
 	inline bool VeEntityTable<E>::update(const VeHandle& handle, C& comp) {
 		if (!contains(handle)) return false;
 		VeHandle_t<E> h = std::get<VeHandle_t<E>>(handle);
