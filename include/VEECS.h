@@ -206,14 +206,27 @@ namespace vve {
 		template<typename E>
 		std::optional<VeEntity_t<E>> entity(const VeHandle_t<E>& handle);
 
+		template<typename C>
+		std::optional<C> component(const VeHandle& handle);
+
 		virtual bool contains(const VeHandle& handle);
 
 		virtual void erase(const VeHandle& handle);
 	};
 
+	template<typename... Ts>
+	inline VeHandle VeEntityTableBaseClass::insert(Ts&&... args) {
+		static_assert(tl::is_same<VeEntityType<Ts...>, Ts...>::value);
+		return VeEntityTable<VeEntityType<Ts...>>().insert(std::forward<Ts>(args)...);
+	}
 
 	inline std::optional<VeEntity> VeEntityTableBaseClass::entity(const VeHandle& handle) {
 		return m_dispatch[handle.index()]->entityE(handle);
+	}
+
+	template<typename C>
+	std::optional<C> VeEntityTableBaseClass::component(const VeHandle& handle) {
+		return m_dispatch[handle.index()]->component<C>(handle);
 	}
 
 	inline bool VeEntityTableBaseClass::contains(const VeHandle& handle) {
@@ -353,12 +366,6 @@ namespace vve {
 		);
 	}
 
-
-	template<typename... Ts>
-	inline VeHandle VeEntityTableBaseClass::insert(Ts&&... args) {
-		//static_assert(tl::has_type(VeEntityTypeList, VeEntityType<Ts...>));
-		return VeEntityTable<VeEntityType<Ts...>>().insert(std::forward<Ts>(args)...);
-	}
 
 
 	template<typename E>
