@@ -72,14 +72,14 @@ namespace vve {
 	struct VeEntity_t {
 		using tuple_type = typename tl::to_tuple<E>::type;
 		VeHandle_t<E>	m_handle;
-		tuple_type		m_tuple;
+		tuple_type		m_component_data;
 
-		VeEntity_t(VeHandle_t<E>& h, tuple_type& tup) : m_handle{ h }, m_tuple{ tup } {};
+		VeEntity_t(VeHandle_t<E>& h, tuple_type& tup) : m_handle{ h }, m_component_data{ tup } {};
 
 		template<typename C>
 		std::optional<C&> get() {
 			if constexpr (tl::has_type<E,C>::value) {
-				{ std::get<tl::index_of<C, E>::value>(m_tuple); }
+				{ std::get<tl::index_of<C, E>::value>(m_component_data); }
 			}
 			return {};
 		};
@@ -87,7 +87,7 @@ namespace vve {
 		template<typename C>
 		void set(C&& comp ) {
 			if constexpr (tl::has_type<E, C>::value) {
-				std::get<tl::index_of<C, E>::value>(m_tuple) = comp;
+				std::get<tl::index_of<C, E>::value>(m_component_data) = comp;
 			}
 			return;
 		};
@@ -362,7 +362,7 @@ namespace vve {
 		if (!contains(handle)) return false;
 		VeHandle_t<E> h = std::get<VeHandle_t<E>>(handle);
 		auto entry = VeComponentVector<E>().at(h.m_entity_index);
-		entry.m_component_data = ent.m_tuple;
+		entry.m_component_data = ent.m_component_data;
 		return true;
 	}
 
