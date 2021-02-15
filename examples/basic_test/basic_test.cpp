@@ -12,7 +12,8 @@ int imgui();
 using namespace vve;
 
 int main() {
-    VeEntityManager et;
+    
+    /*VeEntityManager et;
 
     std::cout << sizeof(VeHandle) << " "  << sizeof(VeHandle_t<VeEntityType<>>) << " " << sizeof(index_t) << std::endl;
     std::cout << tl::size_of<VeEntityTypeList>::value << std::endl;
@@ -31,7 +32,7 @@ int main() {
     auto data2 = et.get(h2);
     auto data2b = et.get<VeEntityTypeDraw>(h2);
 
-    et.erase(h2);
+    et.erase(h2);*/
 
 
     imgui();

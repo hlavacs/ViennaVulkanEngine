@@ -5,6 +5,9 @@
 #include <typeinfo>
 #include <typeindex>
 #include <variant>
+#include <array>
+#include <memory>
+#include <optional>
 #include "VGJS.h"
 #include "VEUtil.h"
 #include "VETypeList.h"
@@ -72,13 +75,19 @@ namespace vve {
 		tuple_type	m_tuple;
 
 		template<typename C>
-		C& get() {
-			return std::get<tl::index_of<C, E>::value>(m_tuple);
+		std::optional<C&> get() {
+			if constexpr (tl::has_type<E,C>::value) {
+				{ std::get<tl::index_of<C, E>::value>(m_tuple); }
+			}
+			return {};
 		};
 
 		template<typename C>
 		void set(C&& comp ) {
-			std::get<tl::index_of<C, E>::value>(m_tuple) = comp;
+			if constexpr (tl::has_type<E, C>::value) {
+				std::get<tl::index_of<C, E>::value>(m_tuple) = comp;
+			}
+			return;
 		};
 
 		std::string name() {
@@ -92,8 +101,242 @@ namespace vve {
 
 
 	//-------------------------------------------------------------------------
-	//component vector
+	//system
 
+	template<typename T, typename VeSystemComponentTypeList = tl::type_list<>>
+	class VeSystem : public VeMonostate, public VeCRTP<T, VeSystem> {
+	protected:
+	public:
+		VeSystem() = default;
+	};
+
+
+	//-------------------------------------------------------------------------
+	//component vector - each entity type has them
+
+	template<typename E>
+	class VeComponentVector : public VeMonostate {
+	public:
+		using tuple_type = typename tl::to_tuple<E>::type;
+
+	protected:
+		struct entry_t {
+			VeHandle_t<E>	m_handle;
+			tuple_type		m_component_data;
+		};
+
+		static inline std::vector<entry_t>	m_components;
+
+	public:
+		VeComponentVector(size_t r = 1 << 10);
+
+		index_t								insert(VeHandle_t<E>&& handle, tuple_type&& tuple);
+		entry_t&							at(index_t index);
+		std::pair<VeHandle_t<E>, index_t>	erase(index_t idx);
+	};
+
+
+	template<typename E>
+	inline VeComponentVector<E>::VeComponentVector(size_t r) {
+		if (!this->init()) return;
+		m_components.reserve(r);
+	};
+
+
+	template<typename E>
+	index_t VeComponentVector<E>::insert(VeHandle_t<E>&& handle, tuple_type&& tuple) {
+		m_components.emplace_back(handle, tuple);
+		return { m_components.size() - 1 };
+	};
+
+
+	template<typename E>
+	inline typename VeComponentVector<E>::entry_t& VeComponentVector<E>::at(index_t index) {
+		assert(index.value < m_components.size());
+		return m_components[index.value];
+	}
+
+
+	template<typename E>
+	std::pair<VeHandle_t<E>, index_t> VeComponentVector<E>::erase(index_t index) {
+		assert(index.value < m_components.size());
+		if (index.value < m_components.size() - 1) {
+			std::swap(m_components[index_t.value], m_components[m_components.size() - 1]);
+			m_components.pop_back();
+			return std::make_pair(m_components[index_t.value].m_handle, index);
+		}
+		m_components.pop_back();
+		return std::make_pair(VeHandle_t<E>{}, index_t{});
+	}
+
+
+	//-------------------------------------------------------------------------
+	//entity manager base class
+
+	class VeEntityTableBaseClass {
+	protected:
+
+		struct entry_t {
+			counter_t			m_generation_counter{ 0 };		//generation counter starts with 0
+			index_t				m_next_free_or_comp_index{};	//next free slot or index of component table
+			VeReadWriteMutex	m_mutex;						//per entity synchronization
+
+			entry_t() {};
+			entry_t(const entry_t& other) {};
+			entry_t& operator=(const entry_t& other) {};
+		};
+
+		static inline std::vector<entry_t>	m_entity_table;
+		static inline index_t				m_first_free{};
+
+		std::array<std::unique_ptr<VeEntityTableBaseClass>, tl::size_of<VeEntityTypeList>::value> m_dispatch;
+
+		virtual bool get(index_t component_index, void**ptr, size_t size);
+
+		virtual VeEntity findE(VeHandle& handle);
+
+	public:
+		VeEntityTableBaseClass();
+
+		template<typename... Ts>
+		VeHandle insert(Ts&&... args);
+
+		VeEntity entity( VeHandle &handle);
+
+		virtual bool contains( VeHandle& handle);
+
+		template<typename C>
+		std::optional<C> component(VeHandle& handle);
+
+		virtual void erase( VeHandle& handle);
+	};
+
+
+	//-------------------------------------------------------------------------
+	//entity table
+
+	template<typename E>
+	class VeEntityTable : public VeEntityTableBaseClass {
+	protected:
+
+		virtual bool get(index_t component_index, void** ptr, size_t size);
+
+		virtual VeEntity findE(VeHandle& handle);
+
+	public:
+		VeEntityTable(size_t reserve = 1 << 10);
+
+		//------------------------------------------------------------
+
+		template<typename... Ts>
+		requires tl::is_same<E, Ts...>::value
+		VeHandle insert(Ts&&... args);
+
+		std::optional<VeEntity_t<E>> entity(VeHandle& h);
+
+		template<typename C>
+		std::optional<C> component(VeHandle& handle);
+
+		bool contains(VeHandle& handle);
+
+		void erase(VeHandle& handle);
+	};
+
+	template<typename E>
+	inline VeEntityTable<E>::VeEntityTable(size_t r) : VeSystem() {
+		if (!this->init()) return;
+		m_entity_table.reserve(r);
+	}
+
+
+	template<typename E>
+	template<typename... Ts>
+	requires tl::is_same<E, Ts...>::value
+	inline VeHandle VeEntityTable<E>::insert(Ts&&... args) {
+		index_t idx{};
+		if (!m_first_free.is_null()) {
+			idx = m_first_free;
+			m_first_free = m_entity_table[m_first_free.value].m_next_free_or_comp_index;
+		}
+		else {
+			idx.value = static_cast<typename index_t::type_name>(m_entity_table.size());	//index of new entity
+			m_entity_table.emplace_back();		//start with counter 0
+		}
+
+		VeHandle_t<E> handle{ idx, m_entity_table[idx.value].m_generation_counter };
+		auto compidx = VeComponentVector<E>().add(handle, std::forward_as_tuple<Ts...>);	//add data as tuple
+		m_entity_table[idx.value].m_next_free_or_comp_index = compidx;						//index in component vector 
+		return { handle };
+	};
+
+
+	template<typename E>
+	inline bool VeEntityTable<E>::contains(VeHandle& handle) {
+		VeHandle_t<E> h = std::get<VeHandle_t<E>>(handle);
+		VeEntity_t<E> ht = m_entity_table[h.m_entity_index.value];
+		if (h.m_generation_counter != ht.m_generation_counter) return false;
+		return true;
+	}
+
+
+	template<typename E>
+	inline std::optional<VeEntity_t<E>> VeEntityTable<E>::entity(VeHandle& handle) {
+		if (!contains(handle)) return {};
+		VeHandle_t<E> h = std::get<VeHandle_t<E>>(handle);
+		return { h, VeComponentVector<E>.at(m_entity_table[h.m_entity_index.value].m_next_free_or_comp_index.value)};
+	}
+
+
+	template<typename E>
+	template<typename C>
+	inline std::optional<C> VeEntityTable<E>::component(VeHandle& handle) {
+		if constexpr (!tl::has_type<E,C>::value) { return {}; }
+		if (!contains(handle)) return {};
+		VeHandle_t<E> h = std::get<VeHandle_t<E>>(handle);
+
+		auto compidx = m_entity_table[h.m_entity_index.value].m_next_free_or_comp_index;
+		auto tuple = VeComponentVector<E>.at(compidx).m_component_data;
+		return std::get<tl::index_of<C, E>::value>(tuple);
+	}
+
+
+	template<typename E>
+	inline void VeEntityTable<E>::erase(VeHandle& handle) {
+		if (!contains(handle)) return {};
+		VeHandle_t<E> h = std::get<VeHandle_t<E>>(handle);
+
+		auto [ch, index] = VeComponentVector<E>.erase(m_entity_table[h.m_entity_index.value].m_next_free_or_comp_index);
+		if (!index::is_null()) { m_entity_table[ch.m_entity_index.value].m_next_free_or_comp_index = index; }
+
+		m_entity_table[h.m_entity_index.value].m_generation_counter.value++;		//>invalidate the entity handle
+		h.m_entity_index.m_next_free_or_comp_index = m_first_free;
+		m_first_free = h.m_entity_index;
+	}
+
+
+
+	//-------------------------------------------------------------------------
+	//entity manager specialization for void
+
+
+	template<>
+	class VeEntityTable<void> : public VeEntityTableBaseClass {
+
+	};
+
+
+
+
+
+
+
+
+
+
+
+
+
+	/*
 	class VeEntityManager;
 
 	template<typename C>
@@ -379,7 +622,7 @@ namespace vve {
 			}
 		);
 	}
-
+	*/
 
 }
 
