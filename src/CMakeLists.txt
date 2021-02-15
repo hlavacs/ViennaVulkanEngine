@@ -5,7 +5,6 @@ set(SOURCE
   VEEngine.cpp
   VEImgui.cpp
   VEContainer.cpp
-  VEECS.cpp
 )
 
 set(HEADERS
