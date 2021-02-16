@@ -27,6 +27,7 @@ namespace vve {
 	};
 
 	struct VeComponentMaterial {
+		int i;
 	};
 
 	struct VeComponentGeometry {

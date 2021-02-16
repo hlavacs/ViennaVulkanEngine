@@ -14,20 +14,6 @@ namespace vve {
 	using counter_t = vgjs::int_type<uint32_t, struct P1, std::numeric_limits<uint32_t>::max()>;
 
 
-	class VeMonostate {
-	protected:
-		static inline std::atomic<uint32_t> m_init_counter = 0;
-
-		bool init() {
-			if (m_init_counter > 0) return false;
-			auto cnt = m_init_counter.fetch_add(1);
-			if (cnt > 0) return false;
-			return true;
-		};
-
-	};
-
-
 	//https://www.fluentcpp.com/2017/05/19/crtp-helper/
 
 	template <typename T, template<typename...> class crtpType>
@@ -40,6 +26,20 @@ namespace vve {
 		friend crtpType<T>;
 	};
 
+
+	template<typename T>
+	class VeMonostate : VeCRTP<T,VeMonostate> {
+	protected:
+		static inline std::atomic<uint32_t> m_init_counter = 0;
+
+		bool init() {
+			if (m_init_counter > 0) return false;
+			auto cnt = m_init_counter.fetch_add(1);
+			if (cnt > 0) return false;
+			return true;
+		};
+
+	};
 
 
 	class VeSpinLockRead;

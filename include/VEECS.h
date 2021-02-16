@@ -67,7 +67,6 @@ namespace vve {
 
 	using VeHandle = tl::variant_type<tl::transform<VeEntityTypeList, VeHandle_t>>;
 
-
 	template <typename E>
 	struct VeEntity_t {
 		using tuple_type = typename tl::to_tuple<E>::type;
@@ -106,7 +105,7 @@ namespace vve {
 	//system
 
 	template<typename T, typename VeSystemComponentTypeList = tl::type_list<>>
-	class VeSystem : public VeMonostate, public VeCRTP<T, VeSystem> {
+	class VeSystem : public VeMonostate<VeSystem<T>> {
 	protected:
 	public:
 		VeSystem() = default;
@@ -116,8 +115,18 @@ namespace vve {
 	//-------------------------------------------------------------------------
 	//component vector - each entity type has them
 
+	class VeEntityTableBaseClass;
+
 	template<typename E>
-	class VeComponentVector : public VeMonostate {
+	class VeEntityTable;
+
+	template<typename E>
+	class VeComponentVector : public VeMonostate<VeComponentVector<E>> {
+		friend class VeEntityTableBaseClass;
+
+		template<typename E>
+		friend class VeEntityTable;
+
 	public:
 		using tuple_type = typename tl::to_tuple<E>::type;
 
@@ -127,7 +136,13 @@ namespace vve {
 			tuple_type		m_component_data;
 		};
 
-		static inline std::vector<entry_t>	m_components;
+		static inline std::vector<entry_t> m_components;
+
+		static inline std::array<std::unique_ptr<VeComponentVector<E>>, tl::size<VeComponentTypeList>::value> m_dispatch; //one for each component type
+
+		virtual bool componentE(index_t entidx, size_t compidx, void* ptr, size_t size) { 
+			return m_dispatch[compidx]->componentE(entidx, compidx, ptr, size);
+		}
 
 	public:
 		VeComponentVector(size_t r = 1 << 10);
@@ -137,27 +152,17 @@ namespace vve {
 		std::tuple<VeHandle_t<E>, index_t>	erase(const index_t idx);
 	};
 
-
-	template<typename E>
-	inline VeComponentVector<E>::VeComponentVector(size_t r) {
-		if (!this->init()) return;
-		m_components.reserve(r);
-	};
-
-
 	template<typename E>
 	inline index_t VeComponentVector<E>::insert(VeHandle_t<E>& handle, tuple_type&& tuple) {
 		m_components.emplace_back(handle, tuple);
 		return index_t{ static_cast<typename index_t::type_name>(m_components.size() - 1) };
 	};
 
-
 	template<typename E>
 	inline typename VeComponentVector<E>::entry_t& VeComponentVector<E>::at(const index_t index) {
 		assert(index.value < m_components.size());
 		return m_components[index.value];
 	}
-
 
 	template<typename E>
 	inline std::tuple<VeHandle_t<E>, index_t> VeComponentVector<E>::erase(const index_t index) {
@@ -173,9 +178,42 @@ namespace vve {
 
 
 	//-------------------------------------------------------------------------
+	//comnponent vector derived class
+
+	template<typename E, typename C>
+	class VeComponentVectorDerived : public VeComponentVector<E> {
+	public:
+		VeComponentVectorDerived( size_t res = 1 << 10 ) : VeComponentVector<E>(res) {};
+
+		bool componentE(index_t entidx, size_t compidx, void* ptr, size_t size) {
+			if constexpr (tl::has_type<E,C>::value) {
+				memcpy(ptr, (void*)&std::get<tl::index_of<C, E>::value>(this->m_components[entidx.value].m_component_data), size);
+				return true;
+			}
+			return false;
+		};
+	};
+
+
+	template<typename E>
+	inline VeComponentVector<E>::VeComponentVector(size_t r) {
+		if (!this->init()) return;
+		m_components.reserve(r);
+
+		tl::static_for<size_t, 0, tl::size<VeComponentTypeList>::value >(
+			[&](auto i) {
+				using type = tl::Nth_type<i, VeComponentTypeList>;
+				m_dispatch[i] = std::make_unique<VeComponentVectorDerived<E,type>>(r);
+			}
+		);
+	};
+
+
+
+	//-------------------------------------------------------------------------
 	//entity table base class
 
-	class VeEntityTableBaseClass : public VeMonostate {
+	class VeEntityTableBaseClass : public VeMonostate<VeEntityTableBaseClass> {
 	protected:
 
 		struct entry_t {
@@ -191,74 +229,61 @@ namespace vve {
 		static inline std::vector<entry_t>	m_entity_table;
 		static inline index_t				m_first_free{};
 
-		std::array<std::unique_ptr<VeEntityTableBaseClass>, tl::size<VeEntityTypeList>::value> m_dispatch;
+		static inline std::array<std::unique_ptr<VeEntityTableBaseClass>, tl::size<VeEntityTypeList>::value> m_dispatch;
 
 		virtual std::optional<VeEntity> entityE(const VeHandle& handle) { return {}; };
 
 		virtual bool updateE(const VeHandle& handle, VeEntity& ent) { return false; };
 
+		virtual bool componentE(const VeHandle& handle, size_t compidx, void*ptr, size_t size) { return false; };
+
 	public:
 		VeEntityTableBaseClass( size_t r = 1 << 10 );
 
 		template<typename... Ts>
-		VeHandle insert(Ts&&... args);
+		VeHandle insert(Ts&&... args) {
+			static_assert(tl::is_same<VeEntityType<Ts...>, Ts...>::value);
+			return VeEntityTable<VeEntityType<Ts...>>().insert(std::forward<Ts>(args)...);
+		}
 
-		std::optional<VeEntity> entity( const VeHandle &handle);
+		std::optional<VeEntity> entity( const VeHandle &handle) {
+			return m_dispatch[handle.index()]->entityE(handle);
+		}
 
 		template<typename E>
 		std::optional<VeEntity_t<E>> entity(const VeHandle_t<E>& handle);
 
 		template<typename C>
 		requires tl::has_type<VeComponentTypeList, C>::value
-		std::optional<C> component(const VeHandle& handle);
+		std::optional<C> component(const VeHandle& handle) {
+			C res;
+			if (m_dispatch[handle.index()]->componentE(handle, tl::index_of<C, VeComponentTypeList>::value, (void*)&res, sizeof(C))) {
+				return { res };
+			}
+			return {};
+		}
 
-		bool update(const VeHandle& handle, VeEntity& ent);
+		bool update(const VeHandle& handle, VeEntity& ent) {
+			return m_dispatch[handle.index()]->updateE(handle, ent);
+		}
 
 		template<typename E>
 		bool update(const VeHandle_t<E>& handle, VeEntity_t<E>& ent);
 
 		template<typename C>
 		requires tl::has_type<VeComponentTypeList, C>::value
-		bool update(const VeHandle& handle, C& comp);
+		bool update(const VeHandle& handle, C& comp) {
+			return m_dispatch[handle.index()]->update<C>(handle, comp);
+		}
 
-		virtual bool contains(const VeHandle& handle);
+		virtual bool contains(const VeHandle& handle) {
+			return m_dispatch[handle.index()]->contains(handle);
+		}
 
-		virtual void erase(const VeHandle& handle);
+		virtual void erase(const VeHandle& handle) {
+			m_dispatch[handle.index()]->erase(handle);
+		}
 	};
-
-	template<typename... Ts>
-	inline VeHandle VeEntityTableBaseClass::insert(Ts&&... args) {
-		static_assert(tl::is_same<VeEntityType<Ts...>, Ts...>::value);
-		return VeEntityTable<VeEntityType<Ts...>>().insert(std::forward<Ts>(args)...);
-	}
-
-	inline std::optional<VeEntity> VeEntityTableBaseClass::entity(const VeHandle& handle) {
-		return m_dispatch[handle.index()]->entityE(handle);
-	}
-
-	template<typename C>
-	requires tl::has_type<VeComponentTypeList, C>::value
-	inline std::optional<C> VeEntityTableBaseClass::component(const VeHandle& handle) {
-		return m_dispatch[handle.index()]->component<C>(handle);
-	}
-
-	inline bool VeEntityTableBaseClass::update(const VeHandle& handle, VeEntity& ent) {
-		return m_dispatch[handle.index()]->updateE(handle, ent);
-	}
-
-	template<typename C>
-	requires tl::has_type<VeComponentTypeList, C>::value
-	inline bool VeEntityTableBaseClass::update(const VeHandle& handle, C& comp) {
-		return m_dispatch[handle.index()]->update<C>(handle, comp);
-	}
-
-	inline bool VeEntityTableBaseClass::contains(const VeHandle& handle) {
-		return m_dispatch[handle.index()]->contains(handle);
-	}
-
-	inline void VeEntityTableBaseClass::erase(const VeHandle& handle) {
-		m_dispatch[handle.index()]->erase(handle);
-	}
 
 
 	//-------------------------------------------------------------------------
@@ -267,9 +292,9 @@ namespace vve {
 	template<typename E = void>
 	class VeEntityTable : public VeEntityTableBaseClass {
 	protected:
-		virtual std::optional<VeEntity> entityE(const VeHandle& handle);
-
-		virtual bool updateE(const VeHandle& handle, VeEntity& ent);
+		std::optional<VeEntity> entityE(const VeHandle& handle);
+		bool					updateE(const VeHandle& handle, VeEntity& ent);
+		bool					componentE(const VeHandle& handle, size_t compidx, void* ptr, size_t size);
 
 	public:
 		VeEntityTable(size_t r = 1 << 10);
@@ -308,6 +333,13 @@ namespace vve {
 	template<typename E>
 	inline bool VeEntityTable<E>::updateE(const VeHandle& handle, VeEntity& ent) {
 		return update( std::get<VeHandle_t<E>>(handle), std::get<VeEntity_t<E>>(ent));
+	}
+
+	template<typename E>
+	inline bool VeEntityTable<E>::componentE(const VeHandle& handle, size_t compidx, void* ptr, size_t size) {
+		if (!contains(handle)) return {};
+		VeHandle_t<E> h = std::get<VeHandle_t<E>>(handle);
+		return VeComponentVector<E>().componentE( m_entity_table[h.m_entity_index.value].m_next_free_or_comp_index, compidx, ptr, size );
 	}
 
 	template<typename E>
@@ -410,13 +442,12 @@ namespace vve {
 		m_entity_table.reserve(r);
 
 		tl::static_for<size_t, 0, tl::size<VeEntityTypeList>::value >(
-			[this](auto i) {
+			[&](auto i) {
 				using type = tl::Nth_type<i, VeEntityTypeList>;
 				m_dispatch[i] = std::make_unique<VeEntityTable<type>>();
 			}
 		);
 	}
-
 
 	template<typename E>
 	inline std::optional<VeEntity_t<E>> VeEntityTableBaseClass::entity(const VeHandle_t<E>& handle) {
