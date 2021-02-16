@@ -140,6 +140,10 @@ namespace vve {
 
 		static inline std::array<std::unique_ptr<VeComponentVector<E>>, tl::size<VeComponentTypeList>::value> m_dispatch; //one for each component type
 
+		virtual bool updateC(index_t entidx, size_t compidx, void* ptr, size_t size) {
+			return m_dispatch[compidx]->updateC(entidx, compidx, ptr, size);
+		}
+
 		virtual bool componentE(index_t entidx, size_t compidx, void* ptr, size_t size) { 
 			return m_dispatch[compidx]->componentE(entidx, compidx, ptr, size);
 		}
@@ -184,6 +188,14 @@ namespace vve {
 	class VeComponentVectorDerived : public VeComponentVector<E> {
 	public:
 		VeComponentVectorDerived( size_t res = 1 << 10 ) : VeComponentVector<E>(res) {};
+
+		bool updateC(index_t entidx, size_t compidx, void* ptr, size_t size) {
+			if constexpr (tl::has_type<E, C>::value) {
+				memcpy((void*)&std::get<tl::index_of<C, E>::value>(this->m_components[entidx.value].m_component_data), ptr, size);
+				return true;
+			}
+			return false;
+		};
 
 		bool componentE(index_t entidx, size_t compidx, void* ptr, size_t size) {
 			if constexpr (tl::has_type<E,C>::value) {
@@ -232,9 +244,8 @@ namespace vve {
 		static inline std::array<std::unique_ptr<VeEntityTableBaseClass>, tl::size<VeEntityTypeList>::value> m_dispatch;
 
 		virtual std::optional<VeEntity> entityE(const VeHandle& handle) { return {}; };
-
 		virtual bool updateE(const VeHandle& handle, VeEntity& ent) { return false; };
-
+		virtual bool updateC(const VeHandle& handle, size_t compidx, void* ptr, size_t size) { return false; };
 		virtual bool componentE(const VeHandle& handle, size_t compidx, void*ptr, size_t size) { return false; };
 
 	public:
@@ -273,7 +284,7 @@ namespace vve {
 		template<typename C>
 		requires tl::has_type<VeComponentTypeList, C>::value
 		bool update(const VeHandle& handle, C& comp) {
-			return m_dispatch[handle.index()]->update<C>(handle, comp);
+			return m_dispatch[handle.index()]->updateC(handle, tl::index_of<C, VeComponentTypeList>::value, (void*)&comp, sizeof(C));
 		}
 
 		virtual bool contains(const VeHandle& handle) {
@@ -294,6 +305,7 @@ namespace vve {
 	protected:
 		std::optional<VeEntity> entityE(const VeHandle& handle);
 		bool					updateE(const VeHandle& handle, VeEntity& ent);
+		bool					updateC(const VeHandle& handle, size_t compidx, void* ptr, size_t size);
 		bool					componentE(const VeHandle& handle, size_t compidx, void* ptr, size_t size);
 
 	public:
@@ -333,6 +345,13 @@ namespace vve {
 	template<typename E>
 	inline bool VeEntityTable<E>::updateE(const VeHandle& handle, VeEntity& ent) {
 		return update( std::get<VeHandle_t<E>>(handle), std::get<VeEntity_t<E>>(ent));
+	}
+
+	template<typename E>
+	inline bool VeEntityTable<E>::updateC(const VeHandle& handle, size_t compidx, void* ptr, size_t size) {
+		if (!contains(handle)) return {};
+		VeHandle_t<E> h = std::get<VeHandle_t<E>>(handle);
+		return VeComponentVector<E>().updateC(m_entity_table[h.m_entity_index.value].m_next_free_or_comp_index, compidx, ptr, size);
 	}
 
 	template<typename E>
