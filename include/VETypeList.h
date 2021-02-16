@@ -118,21 +118,19 @@ namespace vve {
 
 			// Index Of base case: found the type we're looking for.
 			template <typename T, template <typename...> typename Seq, typename... Ts>
-			struct index_of_impl<Seq<T, Ts...>, T> : std::integral_constant<std::size_t, 0> {
+			struct index_of_impl<Seq<T, Ts...>,T> : std::integral_constant<std::size_t, 0> {
 				using type = std::integral_constant<std::size_t, 0>;
 			};
 
 			// Index Of recursive case: 1 + Index Of the rest of the types.
 			template <typename T, typename TOther, template <typename...> typename Seq, typename... Ts>
-			struct index_of_impl<Seq<TOther, Ts...>, T>
-				: std::integral_constant<std::size_t, 1 + index_of_impl<Seq<Ts...>, T>::value>
-			{
-				using type = std::integral_constant<std::size_t, 1 + index_of_impl<Seq<Ts...>, T>::value>;
+			struct index_of_impl<Seq<TOther, Ts...>,T> : std::integral_constant<std::size_t, 1 + index_of_impl<Seq<Ts...>,T>::value> {
+				using type = std::integral_constant<std::size_t, 1 + index_of_impl<Seq<Ts...>,T>::value>;
 			};
 		}
 
 		template <typename Seq, typename T>
-		using index_of = typename detail::index_of_impl<Seq, T>::type;
+		using index_of = typename detail::index_of_impl<Seq,T>::type;
 
 		static_assert(index_of< type_list<double, char, bool, double>, char >::value == 1);
 
@@ -227,7 +225,7 @@ namespace vve {
 		using transform = typename detail::transform_impl<Seq, Fun>::type;
 
 		static_assert(
-			std::is_same_v< transform< type_list<double, int>, type_list >, type_list<type_list<double>, type_list<int>> >,
+			std::is_same_v< transform< type_list<double, int>, detail::type_list2 >, type_list<detail::type_list2<double>, detail::type_list2<int>> >,
 			"The implementation of transform is bad");
 
 		//-------------------------------------------------------------------------
