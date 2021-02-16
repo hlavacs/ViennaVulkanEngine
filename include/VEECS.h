@@ -78,7 +78,7 @@ namespace vve {
 		template<typename C>
 		std::optional<C&> component() {
 			if constexpr (tl::has_type<E,C>::value) {
-				{ std::get<tl::index_of<C, E>::value>(m_component_data); }
+				{ std::get<tl::index_of<E,C>::value>(m_component_data); }
 			}
 			return {};
 		};
@@ -86,7 +86,7 @@ namespace vve {
 		template<typename C>
 		void update(C&& comp ) {
 			if constexpr (tl::has_type<E, C>::value) {
-				std::get<tl::index_of<C, E>::value>(m_component_data) = comp;
+				std::get<tl::index_of<E,C>::value>(m_component_data) = comp;
 			}
 			return;
 		};
@@ -191,7 +191,7 @@ namespace vve {
 
 		bool updateC(index_t entidx, size_t compidx, void* ptr, size_t size) {
 			if constexpr (tl::has_type<E, C>::value) {
-				memcpy((void*)&std::get<tl::index_of<C, E>::value>(this->m_components[entidx.value].m_component_data), ptr, size);
+				memcpy((void*)&std::get<tl::index_of<E,C>::value>(this->m_components[entidx.value].m_component_data), ptr, size);
 				return true;
 			}
 			return false;
@@ -199,7 +199,7 @@ namespace vve {
 
 		bool componentE(index_t entidx, size_t compidx, void* ptr, size_t size) {
 			if constexpr (tl::has_type<E,C>::value) {
-				memcpy(ptr, (void*)&std::get<tl::index_of<C, E>::value>(this->m_components[entidx.value].m_component_data), size);
+				memcpy(ptr, (void*)&std::get<tl::index_of<E,C>::value>(this->m_components[entidx.value].m_component_data), size);
 				return true;
 			}
 			return false;
@@ -274,7 +274,7 @@ namespace vve {
 		requires tl::has_type<VeComponentTypeList, C>::value
 		std::optional<C> component(const VeHandle& handle) {
 			C res;
-			if (m_dispatch[handle.index()]->componentE(handle, tl::index_of<C, VeComponentTypeList>::value, (void*)&res, sizeof(C))) {
+			if (m_dispatch[handle.index()]->componentE(handle, tl::index_of<VeComponentTypeList, C>::value, (void*)&res, sizeof(C))) {
 				return { res };
 			}
 			return {};
@@ -293,7 +293,7 @@ namespace vve {
 		template<typename C>
 		requires tl::has_type<VeComponentTypeList, C>::value
 		bool update(const VeHandle& handle, C& comp) {
-			return m_dispatch[handle.index()]->updateC(handle, tl::index_of<C, VeComponentTypeList>::value, (void*)&comp, sizeof(C));
+			return m_dispatch[handle.index()]->updateC(handle, tl::index_of<VeComponentTypeList,C>::value, (void*)&comp, sizeof(C));
 		}
 
 		//-------------------------------------------------------------------------
@@ -429,7 +429,7 @@ namespace vve {
 
 		auto compidx = m_entity_table[h.m_entity_index.value].m_next_free_or_comp_index;
 		auto tuple = VeComponentVector<E>().at(compidx).m_component_data;
-		return std::get<tl::index_of<C, E>::value>(tuple);
+		return std::get<tl::index_of<E,C>::value>(tuple);
 	}
 
 	template<typename E>
@@ -448,7 +448,7 @@ namespace vve {
 		if (!contains(handle)) return false;
 		VeHandle_t<E> h = std::get<VeHandle_t<E>>(handle);
 		auto entry = VeComponentVector<E>().at(h.m_entity_index);
-		std::get<tl::index_of<C, E>::value>(entry.m_component_data) = comp;
+		std::get<tl::index_of<E,C>::value>(entry.m_component_data) = comp;
 		return true;
 	}
 
