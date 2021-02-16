@@ -476,14 +476,6 @@ namespace vve {
 		if (!contains(handle)) return false;
 		VeHandle_t<E> h = std::get<VeHandle_t<E>>(handle);
 		//VeComponentVector<E>().update(h.m_entity_index, std::forward<VeEntity_t<E>>(ent)); /////////
-
-		tl::static_for<size_t, 0, tl::size<E>::value >(
-			[&](auto i) {
-				using type = tl::Nth_type<E, i>;
-				VeComponentVector<E>().update<type>(h.m_entity_index, std::forward<type>(ent.component<type>()));
-			}
-		);
-
 		return true;
 	}
 
