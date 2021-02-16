@@ -214,7 +214,7 @@ namespace vve {
 
 		tl::static_for<size_t, 0, tl::size<VeComponentTypeList>::value >(
 			[&](auto i) {
-				using type = tl::Nth_type<i, VeComponentTypeList>;
+				using type = tl::Nth_type<VeComponentTypeList, i>;
 				m_dispatch[i] = std::make_unique<VeComponentVectorDerived<E,type>>(r);
 			}
 		);
@@ -251,18 +251,24 @@ namespace vve {
 	public:
 		VeEntityTableBaseClass( size_t r = 1 << 10 );
 
+		//-------------------------------------------------------------------------
+		//insert data
+
 		template<typename... Ts>
 		VeHandle insert(Ts&&... args) {
 			static_assert(tl::is_same<VeEntityType<Ts...>, Ts...>::value);
 			return VeEntityTable<VeEntityType<Ts...>>().insert(std::forward<Ts>(args)...);
 		}
 
+		//-------------------------------------------------------------------------
+		//get data
+
 		std::optional<VeEntity> entity( const VeHandle &handle) {
 			return m_dispatch[handle.index()]->entityE(handle);
 		}
 
 		template<typename E>
-		std::optional<VeEntity_t<E>> entity(const VeHandle_t<E>& handle);
+		std::optional<VeEntity_t<E>> entity(const VeHandle& handle);
 
 		template<typename C>
 		requires tl::has_type<VeComponentTypeList, C>::value
@@ -274,18 +280,24 @@ namespace vve {
 			return {};
 		}
 
+		//-------------------------------------------------------------------------
+		//update data
+
 		bool update(const VeHandle& handle, VeEntity& ent) {
 			return m_dispatch[handle.index()]->updateE(handle, ent);
 		}
 
 		template<typename E>
-		bool update(const VeHandle_t<E>& handle, VeEntity_t<E>& ent);
+		bool update(const VeHandle& handle, VeEntity_t<E>& ent);
 
 		template<typename C>
 		requires tl::has_type<VeComponentTypeList, C>::value
 		bool update(const VeHandle& handle, C& comp) {
 			return m_dispatch[handle.index()]->updateC(handle, tl::index_of<C, VeComponentTypeList>::value, (void*)&comp, sizeof(C));
 		}
+
+		//-------------------------------------------------------------------------
+		//utility
 
 		virtual bool contains(const VeHandle& handle) {
 			return m_dispatch[handle.index()]->contains(handle);
@@ -311,20 +323,32 @@ namespace vve {
 	public:
 		VeEntityTable(size_t r = 1 << 10);
 
+		//-------------------------------------------------------------------------
+		//insert data
+
 		template<typename... Cs>
 		requires tl::is_same<E, Cs...>::value
 		VeHandle insert(Cs&&... args);
+
+		//-------------------------------------------------------------------------
+		//get data
 
 		std::optional<VeEntity_t<E>> entity(const VeHandle& h);
 
 		template<typename C>
 		std::optional<C> component(const VeHandle& handle);
 
+		//-------------------------------------------------------------------------
+		//update data
+
 		bool update(const VeHandle& handle, VeEntity_t<E>& ent);
 
 		template<typename C>
 		requires (tl::has_type<VeComponentTypeList, C>::value)
 		bool update(const VeHandle& handle, C& comp);
+
+		//-------------------------------------------------------------------------
+		//utility
 
 		bool contains(const VeHandle& handle);
 
@@ -462,19 +486,19 @@ namespace vve {
 
 		tl::static_for<size_t, 0, tl::size<VeEntityTypeList>::value >(
 			[&](auto i) {
-				using type = tl::Nth_type<i, VeEntityTypeList>;
+				using type = tl::Nth_type<VeEntityTypeList, i>;
 				m_dispatch[i] = std::make_unique<VeEntityTable<type>>();
 			}
 		);
 	}
 
 	template<typename E>
-	inline std::optional<VeEntity_t<E>> VeEntityTableBaseClass::entity(const VeHandle_t<E>& handle) {
-		return VeEntityTable<E>().entity({handle});
+	inline std::optional<VeEntity_t<E>> VeEntityTableBaseClass::entity(const VeHandle& handle) {
+		return VeEntityTable<E>().entity(handle);
 	}
 
 	template<typename E>
-	bool VeEntityTableBaseClass::update(const VeHandle_t<E>& handle, VeEntity_t<E>& ent) {
+	bool VeEntityTableBaseClass::update(const VeHandle& handle, VeEntity_t<E>& ent) {
 		VeEntityTable<E>().update({ handle }, ent);
 	}
 

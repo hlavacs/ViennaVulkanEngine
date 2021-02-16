@@ -93,20 +93,20 @@ namespace vve {
 		//get the Nth element from a type list
 
 		namespace detail {
-			template <int N, typename Seq>
+			template <typename Seq, size_t N>
 			struct Nth_type_impl;
 
 			template <int N, template <typename...> typename Seq, typename... Ts>
-			struct Nth_type_impl<N, Seq<Ts...>> {
+			struct Nth_type_impl<Seq<Ts...>, N> {
 				using type = typename std::tuple_element<N, std::tuple<Ts...>>::type;
 			};
 		}  
 
-		template <int N, typename Seq>
-		using Nth_type = typename detail::Nth_type_impl<N, Seq>::type;
+		template <typename Seq, size_t N>
+		using Nth_type = typename detail::Nth_type_impl<Seq, N>::type;
 
 		static_assert(
-			std::is_same<Nth_type<1, type_list<double, char, bool, double>>, char>::value,
+			std::is_same<Nth_type<type_list<double, char, bool, double>, 1>, char>::value,
 			"The implementation of Nth_type is bad");
 
 		//-------------------------------------------------------------------------

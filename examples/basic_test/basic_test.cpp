@@ -22,7 +22,7 @@ int main() {
     std::cout << typeid(VeEntityTypeNode).hash_code() << " " << typeid(VeEntityTypeNode).name() << std::endl;
 
     auto data1  = et.entity(h1);
-    auto data1b = et.entity( std::get<VeHandle_t<VeEntityTypeNode>>(h1));
+    auto data1b = et.entity<VeEntityTypeNode>( h1);
     auto comp1 = et.component<VeComponentPosition>(h1);
     auto comp1_2 = et.component<VeComponentMaterial>(h1);
 
@@ -32,7 +32,7 @@ int main() {
     std::cout << typeid(VeEntityTypeDraw).hash_code() << " " << typeid(VeEntityTypeDraw).name() << std::endl;
 
     auto data2 = et.entity(h2);
-    auto data2b = et.entity(std::get<VeHandle_t<VeEntityTypeDraw>>(h2));
+    auto data2b = et.entity<VeEntityTypeDraw>(h2);
     auto comp2 = et.component<VeComponentMaterial>(h2);
 
     et.erase(h2);
