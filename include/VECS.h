@@ -552,6 +552,7 @@ namespace vecs {
 		virtual int operator<=>(const VeComponentIteratorBase<Cs...>& v) const = 0; ///
 	};
 
+
 	template<typename E, typename... Cs>
 	class VeComponentIterator : public VeComponentIteratorBase<Cs...> {
 	protected:
@@ -565,11 +566,12 @@ namespace vecs {
 		int operator<=>(const VeComponentIteratorBase<Cs...>& v) const {}; ///
 	};
 
+
 	template<typename... Cs>
 	class VeIterator {
 	protected:
 		using value_type = std::tuple<Cs...>;
-		using entity_types = VeEntityTypeList;
+		using entity_types = vtl::filter2<VeEntityTypeList,vtl::type_list<Cs...>>;
 
 		std::array<std::unique_ptr<VeComponentIteratorBase<Cs...>>, vtl::size<entity_types>::value> m_dispatch;
 		index_t m_current_iterator{0};
@@ -622,12 +624,12 @@ namespace vecs {
 
 	template<typename... Cs>
 	VeIterator<Cs...> VeEntityTableBaseClass::begin() {
-		return VeIterator<true, Cs...>();
+		return VeIterator<Cs...>();
 	}
 
 	template<typename... Cs>
 	VeIterator<Cs...> VeEntityTableBaseClass::end() {
-		return VeIterator<false, Cs...>(true);
+		return VeIterator<Cs...>(true);
 	}
 
 	//-------------------------------------------------------------------------

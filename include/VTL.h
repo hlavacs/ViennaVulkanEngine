@@ -344,7 +344,6 @@ namespace vtl {
 		"The implementation of to_ref_tuple is bad");
 
 
-
 	//-------------------------------------------------------------------------
 	//turn a list into a tuple of pointer types
 
@@ -370,6 +369,65 @@ namespace vtl {
 	static_assert(
 		std::is_same_v< to_ptr_tuple<type_list<double, int>>::type, std::tuple<double*, int*> >,
 		"The implementation of to_ptr_tuple is bad");
+
+	//-------------------------------------------------------------------------
+	//filter elements that have a specific type
+
+	namespace detail {
+		template<typename Seq1, typename Seq2>
+		struct filter1_impl;
+
+		template<template <typename...> typename Seq1, typename C>
+		struct filter1_impl<Seq1<>, C> {
+			using type = Seq1<>;
+		};
+
+		template<template <typename...> typename Seq1, typename T, typename... Ts1, typename C>
+		requires has_type<T, C>::value
+		struct filter1_impl<Seq1<T, Ts1...>, C> {
+			using type = cat< Seq1<T>, filter1_impl<Seq1<Ts1...>, C>>;
+		};
+
+		template<template <typename...> typename Seq1, typename T, typename... Ts1, typename C>
+		requires (!has_type<T, C>::value)
+			struct filter1_impl<Seq1<T, Ts1...>, C> {
+			using type = filter1_impl<Seq1<Ts1...>, C>;
+		};
+	}
+	template <typename Seq1, typename C>
+	struct filter1 {
+		using type = typename detail::filter1_impl<Seq1, C>::type;
+	};
+
+
+	namespace detail {
+		template<typename Seq1, typename Seq2>
+		struct filter2_impl;
+
+		template<template <typename...> typename Seq1, template <typename...> typename Seq2, typename... Ts2 >
+		struct filter2_impl<Seq1<>, Seq2<Ts2...>> {
+			using type = Seq1<>;
+		};
+
+		template<template <typename...> typename Seq1, typename... Ts1, template <typename...> typename Seq2>
+		struct filter2_impl<Seq1<Ts1...>, Seq2<>> {
+			using type = Seq1<>;
+		};
+
+		template<template <typename...> typename Seq1, typename... Ts1, template <typename...> typename Seq2, typename T, typename... Ts2>
+		struct filter2_impl<Seq1<Ts1...>, Seq2<T, Ts2...>> {
+			using type = cat< filter1<Seq1<Ts1...>,T>, filter2_impl<Seq1<Ts1...>, Seq2<Ts2...>>  >;
+		};
+	}
+	template <typename Seq1, typename Seq2>
+	struct filter2 {
+		using type = typename detail::filter2_impl<Seq1, Seq2>::type;
+	};
+
+	/*static_assert(
+		std::is_same_v< >,
+		"The implementation of to_ptr_tuple is bad");*/
+
 
 	//-------------------------------------------------------------------------
 	//check whether a type list contains a type
