@@ -371,7 +371,7 @@ namespace vtl {
 		"The implementation of to_ptr_tuple is bad");
 
 	//-------------------------------------------------------------------------
-	//filter elements that have a specific type
+	//filter type lists Ts that have a specific type C as member
 
 	namespace detail {
 		template<typename Seq1, typename Seq2>
@@ -390,7 +390,7 @@ namespace vtl {
 
 		template<template <typename...> typename Seq1, typename T, typename... Ts1, typename C>
 		requires (!has_type<T, C>::value)
-			struct filter1_impl<Seq1<T, Ts1...>, C> {
+		struct filter1_impl<Seq1<T, Ts1...>, C> {
 			using type = filter1_impl<Seq1<Ts1...>, C>;
 		};
 	}
@@ -399,24 +399,26 @@ namespace vtl {
 		using type = typename detail::filter1_impl<Seq1, C>::type;
 	};
 
+	//-------------------------------------------------------------------------
+	//filter type lists Ts that have a specific types Cs as member
 
 	namespace detail {
 		template<typename Seq1, typename Seq2>
 		struct filter2_impl;
 
-		template<template <typename...> typename Seq1, template <typename...> typename Seq2, typename... Ts2 >
-		struct filter2_impl<Seq1<>, Seq2<Ts2...>> {
+		template<template <typename...> typename Seq1, template <typename...> typename Seq2, typename... Cs >
+		struct filter2_impl<Seq1<>, Seq2<Cs...>> {
 			using type = Seq1<>;
 		};
 
-		template<template <typename...> typename Seq1, typename... Ts1, template <typename...> typename Seq2>
-		struct filter2_impl<Seq1<Ts1...>, Seq2<>> {
+		template<template <typename...> typename Seq1, typename... Ts, template <typename...> typename Seq2>
+		struct filter2_impl<Seq1<Ts...>, Seq2<>> {
 			using type = Seq1<>;
 		};
 
-		template<template <typename...> typename Seq1, typename... Ts1, template <typename...> typename Seq2, typename T, typename... Ts2>
-		struct filter2_impl<Seq1<Ts1...>, Seq2<T, Ts2...>> {
-			using type = cat< filter1<Seq1<Ts1...>,T>, filter2_impl<Seq1<Ts1...>, Seq2<Ts2...>>  >;
+		template<template <typename...> typename Seq1, typename... Ts, template <typename...> typename Seq2, typename C, typename... Cs>
+		struct filter2_impl<Seq1<Ts...>, Seq2<C, Cs...>> {
+			using type = cat< filter1<Seq1<Ts...>, C>, filter2_impl<Seq1<Ts...>, Seq2<Cs...>>  >;
 		};
 	}
 	template <typename Seq1, typename Seq2>
