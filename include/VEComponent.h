@@ -4,7 +4,7 @@
 #include "glm.hpp"
 #include "gtc/quaternion.hpp"
 
-#include "VETypeList.h"
+#include "VTL.h"
 
 
 namespace vve {
@@ -42,6 +42,17 @@ namespace vve {
 	struct VeComponentRigidBody {
 	};
 
+	using VeComponentTypeListSystem = vtl::type_list<
+		VeComponentPosition
+		, VeComponentOrientation
+		, VeComponentTransform
+		, VeComponentMaterial
+		, VeComponentGeometry
+		, VeComponentAnimation
+		, VeComponentCollisionShape
+		, VeComponentRigidBody
+		//, ...
+	>;
 
 	//-------------------------------------------------------------------------
 	//entity types
@@ -53,13 +64,18 @@ namespace vve {
 	//-------------------------------------------------------------------------
 	//engine entity types
 
-	using VeEntityTypeNode = VeEntityType<VeComponentPosition, VeComponentOrientation, VeComponentTransform>;
-	using VeEntityTypeDraw = VeEntityType<VeComponentMaterial, VeComponentGeometry>;
-	using VeEntityTypeAnimation = VeEntityType<VeComponentAnimation>;
+	using VeEntityNode = VeEntityType<VeComponentPosition, VeComponentOrientation, VeComponentTransform>;
+	using VeEntityDraw = VeEntityType<VeComponentMaterial, VeComponentGeometry>;
+	using VeEntityAnimation = VeEntityType<VeComponentAnimation>;
 	//...
 
-	template<typename T>
-	struct VeHandle_t;
+	using VeEntityTypeListSystem = vtl::type_list<
+		  VeEntityNode
+		, VeEntityDraw
+		, VeEntityAnimation
+		// ,... 
+	>;
+
 }
 
 #endif

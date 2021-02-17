@@ -16,13 +16,13 @@ int main() {
     VeEntityTable et;
 
     std::cout << sizeof(VeHandle) << " "  << sizeof(VeHandle_t<VeEntityType<>>) << " " << sizeof(index_t) << std::endl;
-    std::cout << tl::size<VeEntityTypeList>::value << std::endl;
+    std::cout << vtl::size<VeEntityTypeList>::value << std::endl;
 
     VeHandle h1 = et.insert(VeComponentPosition{ glm::vec3{9.0f, 2.0f, 3.0f} }, VeComponentOrientation{}, VeComponentTransform{});
-    std::cout << typeid(VeEntityTypeNode).hash_code() << " " << typeid(VeEntityTypeNode).name() << std::endl;
+    std::cout << typeid(VeEntityNode).hash_code() << " " << typeid(VeEntityNode).name() << std::endl;
 
     auto data1  = et.entity(h1);
-    auto data1b = et.entity<VeEntityTypeNode>(h1).value();
+    auto data1b = et.entity<VeEntityNode>(h1).value();
     auto comp1_1 = data1b.component<VeComponentPosition>();
 
     auto comp1_2 = et.component<VeComponentPosition>(h1);
@@ -38,13 +38,13 @@ int main() {
     et.erase(h1);
 
 
-    auto data1c = et.entity<VeEntityTypeNode>(h1);
+    auto data1c = et.entity<VeEntityNode>(h1);
 
     VeHandle h2 = et.insert(VeComponentMaterial{ 99 }, VeComponentGeometry{});
-    std::cout << typeid(VeEntityTypeDraw).hash_code() << " " << typeid(VeEntityTypeDraw).name() << std::endl;
+    std::cout << typeid(VeEntityDraw).hash_code() << " " << typeid(VeEntityDraw).name() << std::endl;
 
     auto data2 = et.entity(h2);
-    auto data2b = et.entity<VeEntityTypeDraw>(h2);
+    auto data2b = et.entity<VeEntityDraw>(h2);
     auto comp2_1 = data2b.value().component<VeComponentMaterial>();
     auto comp2_2 = et.component<VeComponentMaterial>(h2);
 

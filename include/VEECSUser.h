@@ -16,7 +16,7 @@ namespace vve {
 
 	//using VeComponentTypeListUser = tl::type_list<VeComponentUser1>; //include all user components into this list
 	
-	using VeComponentTypeListUser = tl::type_list<>; //default is no user define components
+	using VeComponentTypeListUser = vtl::type_list<>; //default is no user define components
 
 
 	//-------------------------------------------------------------------------
@@ -29,7 +29,7 @@ namespace vve {
 	//  , ...  
 	//>;
 
-	using VeEntityTypeListUser = tl::type_list<>; //default is no user entity types 
+	using VeEntityTypeListUser = vtl::type_list<>; //default is no user entity types 
 
 }
 

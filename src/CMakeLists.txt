@@ -11,7 +11,7 @@ set(HEADERS
   ${INCLUDE}/VGJS.h
   ${INCLUDE}/VGJSCoro.h
   ${INCLUDE}/vve.h
-  ${INCLUDE}/VETypeList.h
+  ${INCLUDE}/VTL.h
   ${INCLUDE}/VEUtil.h
   ${INCLUDE}/VEContainer.h
   ${INCLUDE}/VEComponent.h
