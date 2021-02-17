@@ -35,13 +35,27 @@ namespace vecs {
 	//-------------------------------------------------------------------------
 	//entity handle
 
+	/**
+	* \brief Handles are IDs of entities. Use them to access entitites.
+	* VeHandle_t<E> are used to ID entities opf type E.
+	*/
+
 	template<typename E>
 	struct VeHandle_t {
 		index_t		m_entity_index{};			//the slot of the entity in the entity list
 		counter_t	m_generation_counter{};		//generation counter
 	};
 
+	/**
+	* \brief A summary handle type that can be used to ID any entity type.
+	*/
+
 	using VeHandle = vtl::variant_type<vtl::transform<VeEntityTypeList, VeHandle_t>>;
+
+	/**
+	* \brief This struct can hold the data of an entity of type E. This includes its handle
+	* and all components.
+	*/
 
 	template <typename E>
 	struct VeEntity_t {
@@ -83,6 +97,10 @@ namespace vecs {
 
 	template<typename E>
 	class VeEntityTable;
+
+	/**
+	* \brief This class stores all components of entities of type E
+	*/
 
 	template<typename E>
 	class VeComponentVector : public VeMonostate<VeComponentVector<E>> {
@@ -188,6 +206,11 @@ namespace vecs {
 	//-------------------------------------------------------------------------
 	//comnponent vector derived class
 
+	/**
+	* \brief This class is derived from the compoentn vector and is used to update or
+	* return components C of entities of type E
+	*/
+
 	template<typename E, typename C>
 	class VeComponentVectorDerived : public VeComponentVector<E> {
 	public:
@@ -238,6 +261,15 @@ namespace vecs {
 
 	//-------------------------------------------------------------------------
 	//entity table base class
+
+	template<typename... Cs>
+	class VeIterator;
+
+
+	/**
+	* \brief This class stores all generalized handles of all entities, and can be used
+	* to insert, update, read and delete all entity types.
+	*/
 
 	class VeEntityTableBaseClass : public VeMonostate<VeEntityTableBaseClass> {
 	protected:
@@ -314,6 +346,12 @@ namespace vecs {
 		//-------------------------------------------------------------------------
 		//utility
 
+		template<typename... Cs>
+		VeIterator<Cs...> begin();
+
+		template<typename... Cs>
+		VeIterator<Cs...> end();
+
 		virtual bool contains(const VeHandle& handle) {
 			return m_dispatch[handle.index()]->contains(handle);
 		}
@@ -326,6 +364,10 @@ namespace vecs {
 
 	//-------------------------------------------------------------------------
 	//entity table
+
+	/**
+	* \brief This class is used as access interface for all entities of type E
+	*/
 
 	template<typename E = void>
 	class VeEntityTable : public VeEntityTableBaseClass {
@@ -484,10 +526,71 @@ namespace vecs {
 	//-------------------------------------------------------------------------
 	//entity table specialization for void
 
+	/**
+	* \brief A specialized class to act as convenient access interface instead of the base class.
+	*/
+
 	template<>
 	class VeEntityTable<void> : public VeEntityTableBaseClass {
 	public:
 		VeEntityTable(size_t r = 1 << 10) : VeEntityTableBaseClass(r) {};
+	};
+
+
+	//-------------------------------------------------------------------------
+	//iterator
+
+	template<typename... Cs>
+	class VeComponentIteratorBase {
+	public:
+		using value_type = std::tuple<Cs...>;
+
+		VeComponentIteratorBase() {};
+		virtual value_type operator*() = 0;
+		virtual void operator++() = 0;
+		virtual void operator++(int) = 0;
+		virtual int operator<=>(const VeComponentIteratorBase<Cs...>& v) const = 0; ///
+	};
+
+	template<typename E, typename... Cs>
+	class VeComponentIterator : public VeComponentIteratorBase<Cs...> {
+	protected:
+		index_t m_current_index{ 0 };
+
+	public:
+		VeComponentIterator() {};
+		typename VeComponentIteratorBase<Cs...>::value_type operator*() {};
+		void operator++() {};
+		void operator++(int) {};
+		int operator<=>(const VeComponentIteratorBase<Cs...>& v) const {}; ///
+	};
+
+	template<typename... Cs>
+	class VeIterator {
+	protected:
+		using value_type = std::tuple<Cs...>;
+		using entity_types = VeEntityTypeList;
+
+		std::array<std::unique_ptr<VeComponentIteratorBase<Cs...>>, vtl::size<entity_types>::value> m_dispatch;
+		index_t m_current_iterator{0};
+		bool m_is_end;
+
+	public:
+		VeIterator( bool end = true);
+		value_type operator*() {};
+		void operator++() {};
+		void operator++(int) {};
+		auto operator<=>(const VeIterator<Cs...>& v) const {};
+	};
+
+	template<typename... Cs>
+	VeIterator<Cs...>::VeIterator(bool is_end) : m_is_end{is_end} {
+		vtl::static_for<size_t, 0, vtl::size<entity_types>::value >(
+			[&](auto i) {
+				using type = vtl::Nth_type<entity_types, i>;
+				m_dispatch[i] = std::make_unique<VeComponentIterator<type, Cs...>>();
+			}
+		);
 	};
 
 
@@ -513,13 +616,26 @@ namespace vecs {
 
 	template<typename E>
 	requires vtl::has_type<VeEntityTypeList, E>::value
-	bool VeEntityTableBaseClass::update(const VeHandle& handle, VeEntity_t<E>&& ent) {
+		bool VeEntityTableBaseClass::update(const VeHandle& handle, VeEntity_t<E>&& ent) {
 		return VeEntityTable<E>().update({ handle }, std::forward<VeEntity_t<E>>(ent));
 	}
 
+	template<typename... Cs>
+	VeIterator<Cs...> VeEntityTableBaseClass::begin() {
+		return VeIterator<true, Cs...>();
+	}
+
+	template<typename... Cs>
+	VeIterator<Cs...> VeEntityTableBaseClass::end() {
+		return VeIterator<false, Cs...>(true);
+	}
 
 	//-------------------------------------------------------------------------
 	//system
+
+	/**
+	* \brief Systems can access all components in sequence
+	*/
 
 	template<typename T, typename VeSystemComponentTypeList = vtl::type_list<>>
 	class VeSystem : public VeMonostate<VeSystem<T>> {
