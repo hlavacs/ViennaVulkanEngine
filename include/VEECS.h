@@ -73,20 +73,22 @@ namespace vve {
 		VeHandle_t<E>	m_handle;
 		tuple_type		m_component_data;
 
-		VeEntity_t(VeHandle_t<E>& h, tuple_type& tup) : m_handle{ h }, m_component_data{ tup } {};
+		VeEntity_t() {};
+		VeEntity_t(const VeHandle_t<E>& h, const tuple_type& tup) noexcept : m_handle{ h }, m_component_data{ tup } {};
+		~VeEntity_t() {};
 
 		template<typename C>
-		std::optional<C&> component() {
+		std::optional<C> component() {
 			if constexpr (tl::has_type<E,C>::value) {
-				{ std::get<tl::index_of<E,C>::value>(m_component_data); }
+				{ return std::get<tl::index_of<E,C>::value>(m_component_data); }
 			}
 			return {};
 		};
 
 		template<typename C>
 		void update(C&& comp ) {
-			if constexpr (tl::has_type<E, C>::value) {
-				std::get<tl::index_of<E,C>::value>(m_component_data) = comp;
+			if constexpr (tl::has_type<E,C>::value) {
+				return std::get<tl::index_of<E,C>::value>(m_component_data) = comp;
 			}
 			return;
 		};
