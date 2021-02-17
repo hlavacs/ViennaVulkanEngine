@@ -1,5 +1,5 @@
-#ifndef VEECS_H
-#define VEECS_H
+#ifndef VECS_H
+#define VECS_H
 
 #include <limits>
 #include <typeinfo>
@@ -14,7 +14,7 @@
 #include "VEComponent.h"
 
 //user defined component types and entity types
-#include "VEECSUser.h" 
+#include "VECSUser.h" 
 
 
 namespace vecs {

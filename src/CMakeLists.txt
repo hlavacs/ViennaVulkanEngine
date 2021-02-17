@@ -15,9 +15,9 @@ set(HEADERS
   ${INCLUDE}/VEUtil.h
   ${INCLUDE}/VEContainer.h
   ${INCLUDE}/VEComponent.h
-  ${INCLUDE}/VEECS.h
+  ${INCLUDE}/VECS.h
   ${INCLUDE}/VEEngine.h
-  ${INCLUDE}/VEECSUser.h
+  ${INCLUDE}/VECSUser.h
 )
 
 add_library (${TARGET} ${SOURCE} ${HEADERS})

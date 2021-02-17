@@ -1,3 +1,7 @@
+#ifndef VECSUSER_H
+#define VECSUSER_H
+
+
 #include <limits>
 #include <typeinfo>
 #include <typeindex>
@@ -33,4 +37,5 @@ namespace vecs {
 
 }
 
+#endif
 
