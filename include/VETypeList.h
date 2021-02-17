@@ -227,7 +227,7 @@ namespace vve {
 		using transform = typename detail::transform_impl<Seq, Fun>::type;
 
 		static_assert(
-			std::is_same_v< transform< type_list<double, int>, type_list >, type_list<type_list<double>, type_list<int>> >,
+			std::is_same_v< transform< type_list<double, int>, detail::type_list2 >, type_list<detail::type_list2<double>, detail::type_list2<int>> >,
 			"The implementation of transform is bad");
 
 		//-------------------------------------------------------------------------
