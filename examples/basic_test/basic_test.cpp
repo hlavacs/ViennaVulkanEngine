@@ -22,13 +22,22 @@ int main() {
     std::cout << typeid(VeEntityTypeNode).hash_code() << " " << typeid(VeEntityTypeNode).name() << std::endl;
 
     auto data1  = et.entity(h1);
-    auto data1b = et.entity<VeEntityTypeNode>(h1);
-    auto comp1_1 = data1b.value().component<VeComponentPosition>();
+    auto data1b = et.entity<VeEntityTypeNode>(h1).value();
+    auto comp1_1 = data1b.component<VeComponentPosition>();
 
     auto comp1_2 = et.component<VeComponentPosition>(h1);
     auto comp1_3 = et.component<VeComponentMaterial>(h1);
 
+    et.update<VeComponentPosition>(h1, VeComponentPosition{ glm::vec3{-9.0f, -2.0f, -3.0f} });
+    auto comp1_4 = et.component<VeComponentPosition>(h1);
+
+    data1b.update<VeComponentPosition>(VeComponentPosition{ glm::vec3{-999.0f, -2.0f, -3.0f} });
+    et.update(h1, data1b);
+    auto comp1_5 = et.component<VeComponentPosition>(h1);
+
     et.erase(h1);
+
+
     auto data1c = et.entity<VeEntityTypeNode>(h1);
 
     VeHandle h2 = et.insert(VeComponentMaterial{ 99 }, VeComponentGeometry{});
