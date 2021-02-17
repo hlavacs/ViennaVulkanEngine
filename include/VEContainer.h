@@ -9,7 +9,7 @@
 #include "VGJS.h"
 #include "VEUtil.h"
 
-namespace vve {
+namespace vecs {
 
 	template<typename T, size_t L = 8, int SYNC = 2, bool SHRINK = false>
 	class VeVector {

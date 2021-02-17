@@ -8,7 +8,7 @@
 #include <variant>
 
 
-namespace vve {
+namespace vecs {
 
 	using index_t = vgjs::int_type<uint32_t, struct P0, std::numeric_limits<uint32_t>::max()>;
 	using counter_t = vgjs::int_type<uint32_t, struct P1, std::numeric_limits<uint32_t>::max()>;

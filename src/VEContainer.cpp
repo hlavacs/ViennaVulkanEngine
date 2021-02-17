@@ -2,7 +2,7 @@
 #include <optional>
 #include "VEContainer.h"
 
-namespace vve {
+namespace vecs {
 
 
 	//---------------------------------------------------------------------------

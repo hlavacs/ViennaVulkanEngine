@@ -7,7 +7,7 @@
 #include "VTL.h"
 
 
-namespace vve {
+namespace vecs {
 
 	//-------------------------------------------------------------------------
 	//component types

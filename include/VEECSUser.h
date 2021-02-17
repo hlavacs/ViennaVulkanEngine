@@ -3,7 +3,7 @@
 #include <typeindex>
 #include "VEUtil.h"
 
-namespace vve {
+namespace vecs {
 
 	//-------------------------------------------------------------------------
 	//define user components here

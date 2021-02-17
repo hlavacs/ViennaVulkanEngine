@@ -9,7 +9,7 @@
 
 int imgui();
 
-using namespace vve;
+using namespace vecs;
 
 int main() {
     

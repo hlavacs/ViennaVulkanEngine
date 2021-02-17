@@ -17,7 +17,7 @@
 #include "VEECSUser.h" 
 
 
-namespace vve {
+namespace vecs {
 
 	//-------------------------------------------------------------------------
 	//component type list, pointer, pool
