@@ -1,5 +1,5 @@
-#ifndef VECONTAINER_H
-#define VECONTAINER_H
+#ifndef VECSCONTAINER_H
+#define VECSCONTAINER_H
 
 #include <assert.h>
 #include <memory_resource>
@@ -7,7 +7,7 @@
 #include <optional>
 #include <array>
 #include "VGJS.h"
-#include "VEUtil.h"
+#include "VECSUtil.h"
 
 namespace vecs {
 

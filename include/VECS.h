@@ -9,7 +9,7 @@
 #include <memory>
 #include <optional>
 #include "VGJS.h"
-#include "VEUtil.h"
+#include "VECSUtil.h"
 #include "VTL.h"
 #include "VEComponent.h"
 

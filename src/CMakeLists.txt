@@ -12,8 +12,8 @@ set(HEADERS
   ${INCLUDE}/VGJSCoro.h
   ${INCLUDE}/vve.h
   ${INCLUDE}/VTL.h
-  ${INCLUDE}/VEUtil.h
-  ${INCLUDE}/VEContainer.h
+  ${INCLUDE}/VECSUtil.h
+  ${INCLUDE}/VECSContainer.h
   ${INCLUDE}/VEComponent.h
   ${INCLUDE}/VECS.h
   ${INCLUDE}/VEEngine.h

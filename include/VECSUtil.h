@@ -1,5 +1,5 @@
-#ifndef VEUTIL_H
-#define VEUTIL_H
+#ifndef VECSUTIL_H
+#define VECSUTIL_H
 
 #include <limits>
 #include <typeinfo>
