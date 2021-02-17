@@ -13,7 +13,7 @@ namespace vecs {
 	//define user components here
 
 	//declare your own entity components
-	struct VeComponentUser1 : VeComponent {
+	struct VeComponentUser1 {
 		//..
 	};
 	//...
@@ -26,10 +26,10 @@ namespace vecs {
 	//-------------------------------------------------------------------------
 	//define user entity types here
 
-	using VeEntityTypeUser1 = VeEntityType<VeComponentPosition, VeComponentUser1>; //can be any mix of component types
+	using VeEntityUser1 = VeEntityType<VeComponentPosition, VeComponentUser1>; //can be any mix of component types
 
 	//using VeEntityTypeListUser = tl::type_list<
-	//	VeEntityTypeUser1
+	//	VeEntityeUser1
 	//  , ...  
 	//>;
 

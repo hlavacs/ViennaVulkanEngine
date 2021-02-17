@@ -20,14 +20,14 @@
 namespace vecs {
 
 	//-------------------------------------------------------------------------
-	//component type list, pointer, pool
+	//component type list and pointer
 
 	using VeComponentTypeList = vtl::cat< VeComponentTypeListSystem, VeComponentTypeListUser >;
-	using VeComponentTypePtr = vtl::variant_type<vtl::to_ptr<VeComponentTypeList>>;
+	using VeComponentPtr = vtl::variant_type<vtl::to_ptr<VeComponentTypeList>>;
 
 
 	//-------------------------------------------------------------------------
-	//entity type list and pointer
+	//entity type list
 
 	using VeEntityTypeList = vtl::cat< VeEntityTypeListSystem, VeEntityTypeListUser >;
 
@@ -72,20 +72,8 @@ namespace vecs {
 		};
 	};
 
-	using VeEntityTypePtr = vtl::variant_type<vtl::to_ptr<vtl::transform<VeEntityTypeList, VeEntity_t>>>;
-
 	using VeEntity = vtl::variant_type<vtl::transform<VeEntityTypeList, VeEntity_t>>;
-
-
-	//-------------------------------------------------------------------------
-	//system
-
-	template<typename T, typename VeSystemComponentTypeList = vtl::type_list<>>
-	class VeSystem : public VeMonostate<VeSystem<T>> {
-	protected:
-	public:
-		VeSystem() = default;
-	};
+	using VeEntityPtr = vtl::variant_type<vtl::to_ptr<vtl::transform<VeEntityTypeList, VeEntity_t>>>;
 
 
 	//-------------------------------------------------------------------------
@@ -528,6 +516,19 @@ namespace vecs {
 	bool VeEntityTableBaseClass::update(const VeHandle& handle, VeEntity_t<E>&& ent) {
 		return VeEntityTable<E>().update({ handle }, std::forward<VeEntity_t<E>>(ent));
 	}
+
+
+	//-------------------------------------------------------------------------
+	//system
+
+	template<typename T, typename VeSystemComponentTypeList = vtl::type_list<>>
+	class VeSystem : public VeMonostate<VeSystem<T>> {
+	protected:
+	public:
+		VeSystem() = default;
+	};
+
+
 
 
 }

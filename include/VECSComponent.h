@@ -12,8 +12,6 @@ namespace vecs {
 	//-------------------------------------------------------------------------
 	//component types
 
-	struct VeComponent {};
-
 	struct VeComponentPosition {
 		glm::vec3 m_position;
 	};
