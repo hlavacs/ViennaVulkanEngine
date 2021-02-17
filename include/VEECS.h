@@ -193,7 +193,8 @@ namespace vve {
 	inline bool VeComponentVector<E>::update(const index_t index, VeEntity_t<E>&& ent) {
 		tl::static_for<size_t, 0, tl::size<E>::value >(
 			[&](auto i) {
-				std::get<i>(m_components2)[index.value] = ent.component<tl::Nth_type<E,i>>();
+				using type = tl::Nth_type<E, i>;
+				std::get<i>(m_components2)[index.value] = ent.component<type>().value();
 			}
 		);
 		return true;
@@ -475,7 +476,7 @@ namespace vve {
 	inline bool VeEntityTable<E>::update(const VeHandle& handle, VeEntity_t<E>&& ent) {
 		if (!contains(handle)) return false;
 		VeHandle_t<E> h = std::get<VeHandle_t<E>>(handle);
-		//VeComponentVector<E>().update(h.m_entity_index, std::forward<VeEntity_t<E>>(ent)); /////////
+		VeComponentVector<E>().update(h.m_entity_index, std::forward<VeEntity_t<E>>(ent)); /////////
 		return true;
 	}
 
@@ -537,7 +538,7 @@ namespace vve {
 
 	template<typename E>
 	bool VeEntityTableBaseClass::update(const VeHandle& handle, VeEntity_t<E>&& ent) {
-		VeEntityTable<E>().update({ handle }, std::forward<VeEntity_t<E>>(ent));
+		return VeEntityTable<E>().update({ handle }, std::forward<VeEntity_t<E>>(ent));
 	}
 
 
