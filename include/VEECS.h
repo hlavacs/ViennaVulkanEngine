@@ -130,18 +130,15 @@ namespace vve {
 	public:
 		using tuple_type	 = typename tl::to_tuple<E>::type;
 		using tuple_type_ref = typename tl::to_ref_tuple<E>::type;
-		using tuple_type_ptr = typename tl::to_ptr_tuple<E>::type;
 		using tuple_type_vec = typename tl::to_tuple<tl::transform<E,std::pmr::vector>>::type;
 
 	protected:
 		struct entry_t {
 			VeHandle_t<E>	m_handle;
-			//tuple_type		m_component_data;
 		};
 
-		static inline std::vector<entry_t> m_components;
-
-		static inline tuple_type_vec m_components2;
+		static inline std::vector<entry_t>	m_handles;
+		static inline tuple_type_vec		m_components;
 
 		static inline std::array<std::unique_ptr<VeComponentVector<E>>, tl::size<VeComponentTypeList>::value> m_dispatch; //one for each component type
 
@@ -166,39 +163,38 @@ namespace vve {
 
 	template<typename E>
 	inline index_t VeComponentVector<E>::insert(VeHandle_t<E>& handle, tuple_type&& tuple) {
-		m_components.emplace_back(handle);
+		m_handles.emplace_back(handle);
 
 		tl::static_for<size_t, 0, tl::size<E>::value >(
 			[&](auto i) {
-				std::get<i>(m_components2).push_back(std::get<i>(tuple));
+				std::get<i>(m_components).push_back(std::get<i>(tuple));
 			}
 		);
 
-		return index_t{ static_cast<typename index_t::type_name>(m_components.size() - 1) };
+		return index_t{ static_cast<typename index_t::type_name>(m_handles.size() - 1) };
 	};
 
 
 	template<typename E>
 	inline typename VeComponentVector<E>::tuple_type VeComponentVector<E>::values(const index_t index) {
-		assert(index.value < m_components.size());
+		assert(index.value < m_handles.size());
 
 		auto f = [&]<typename... Cs>(std::tuple<std::pmr::vector<Cs>...>& tup) {
 			return std::make_tuple(std::get<tl::index_of<E, Cs>::value>(tup)[index.value]...);
 		};
 
-		return f(m_components2);
+		return f(m_components);
 	}
-
 
 	template<typename E>
 	inline typename VeComponentVector<E>::tuple_type_ref VeComponentVector<E>::references(const index_t index) {
-		assert(index.value < m_components.size());
+		assert(index.value < m_handles.size());
 
 		auto f = [&]<typename... Cs>(std::tuple<std::pmr::vector<Cs>...>& tup) {
 			return std::tie( std::get<tl::index_of<E,Cs>::value>(tup)[index.value]... );
 		};
 
-		return f(m_components2);
+		return f(m_components);
 	}
 
 	template<typename E>
@@ -206,7 +202,7 @@ namespace vve {
 		tl::static_for<size_t, 0, tl::size<E>::value >(
 			[&](auto i) {
 				using type = tl::Nth_type<E, i>;
-				std::get<i>(m_components2)[index.value] = ent.component<type>().value();
+				std::get<i>(m_components)[index.value] = ent.component<type>().value();
 			}
 		);
 		return true;
@@ -214,13 +210,13 @@ namespace vve {
 
 	template<typename E>
 	inline std::tuple<VeHandle_t<E>, index_t> VeComponentVector<E>::erase(const index_t index) {
-		assert(index.value < m_components.size());
-		if (index.value < m_components.size() - 1) {
-			std::swap(m_components[index.value], m_components[m_components.size() - 1]);
-			m_components.pop_back();
-			return std::make_pair(m_components[index.value].m_handle, index);
+		assert(index.value < m_handles.size());
+		if (index.value < m_handles.size() - 1) {
+			std::swap(m_handles[index.value], m_handles[m_handles.size() - 1]);
+			m_handles.pop_back();
+			return std::make_pair(m_handles[index.value].m_handle, index);
 		}
-		m_components.pop_back();
+		m_handles.pop_back();
 		return std::make_tuple(VeHandle_t<E>{}, index_t{});
 	}
 
@@ -235,7 +231,7 @@ namespace vve {
 
 		bool update(const index_t index, C&& comp) {
 			if constexpr (tl::has_type<E, C>::value) {
-				std::get< tl::index_of<E, C>::type::value >(this->m_components2)[index.value] = comp;
+				std::get< tl::index_of<E, C>::type::value >(this->m_components)[index.value] = comp;
 				return true;
 			}
 			return false;
@@ -264,7 +260,7 @@ namespace vve {
 	template<typename E>
 	inline VeComponentVector<E>::VeComponentVector(size_t r) {
 		if (!this->init()) return;
-		m_components.reserve(r);
+		m_handles.reserve(r);
 
 		tl::static_for<size_t, 0, tl::size<VeComponentTypeList>::value >(
 			[&](auto i) {
