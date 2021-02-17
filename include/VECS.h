@@ -11,7 +11,7 @@
 #include "VGJS.h"
 #include "VECSUtil.h"
 #include "VTL.h"
-#include "VEComponent.h"
+#include "VECSComponent.h"
 
 //user defined component types and entity types
 #include "VECSUser.h" 

@@ -14,7 +14,7 @@ set(HEADERS
   ${INCLUDE}/VTL.h
   ${INCLUDE}/VECSUtil.h
   ${INCLUDE}/VECSContainer.h
-  ${INCLUDE}/VEComponent.h
+  ${INCLUDE}/VECSComponent.h
   ${INCLUDE}/VECS.h
   ${INCLUDE}/VEEngine.h
   ${INCLUDE}/VECSUser.h
