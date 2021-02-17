@@ -571,7 +571,7 @@ namespace vecs {
 	class VeIterator {
 	protected:
 		using value_type = std::tuple<Cs...>;
-		using entity_types = vtl::filter2<VeEntityTypeList,vtl::type_list<Cs...>>;
+		using entity_types = vtl::filter2< VeEntityTypeList, vtl::type_list<Cs...> >;
 
 		std::array<std::unique_ptr<VeComponentIteratorBase<Cs...>>, vtl::size<entity_types>::value> m_dispatch;
 		index_t m_current_iterator{0};

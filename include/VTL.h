@@ -371,33 +371,90 @@ namespace vtl {
 		"The implementation of to_ptr_tuple is bad");
 
 	//-------------------------------------------------------------------------
-	//filter type lists Ts that have a specific type C as member
+	//check whether a type list contains a type
+
+	namespace detail {
+		template<typename Seq, typename T>
+		struct has_type_impl;
+
+		template<template <typename...> typename Seq, typename T>
+		struct has_type_impl<Seq<>, T> {
+			static const bool value = false;
+		};
+
+		template<template <typename...> typename Seq, typename... Ts, typename T>
+		struct has_type_impl<Seq<Ts...>, T> {
+			static const bool value = (std::is_same_v<T, Ts> || ... );
+		};
+	}
+	template <typename Seq, typename T>
+	struct has_type {
+		static const bool value = detail::has_type_impl<Seq, T>::value;
+	};
+
+	static_assert(has_type<type_list<double, int, char, double>, char>::value, "The implementation of has_type is bad");
+	static_assert(!has_type<type_list<double, int, char, double>, float>::value, "The implementation of has_type is bad");
+
+	//-------------------------------------------------------------------------
+	//check whether a type list contains any type of a second typelist
 
 	namespace detail {
 		template<typename Seq1, typename Seq2>
-		struct filter1_impl;
+		struct has_any_type_impl;
 
-		template<template <typename...> typename Seq1, typename C>
-		struct filter1_impl<Seq1<>, C> {
-			using type = Seq1<>;
+		template<template <typename...> typename Seq1, typename... Ts, template <typename...> typename Seq2, typename T>
+		struct has_any_type_impl<Seq1<Ts...>, Seq2<T>> {
+			static const bool value = has_type<Seq1<Ts...>, T>::value;
 		};
 
-		template<template <typename...> typename Seq1, typename T, typename... Ts1, typename C>
-		requires has_type<T, C>::value
-		struct filter1_impl<Seq1<T, Ts1...>, C> {
-			using type = cat< Seq1<T>, filter1_impl<Seq1<Ts1...>, C>>;
-		};
-
-		template<template <typename...> typename Seq1, typename T, typename... Ts1, typename C>
-		requires (!has_type<T, C>::value)
-		struct filter1_impl<Seq1<T, Ts1...>, C> {
-			using type = filter1_impl<Seq1<Ts1...>, C>;
+		template<template <typename...> typename Seq1, typename... Ts1, template <typename...> typename Seq2, typename... Ts2>
+		struct has_any_type_impl<Seq1<Ts1...>, Seq2<Ts2...>> {
+			static const bool value = (has_type<Seq1<Ts1...>, Ts2>::value || ...);
 		};
 	}
-	template <typename Seq1, typename C>
-	struct filter1 {
-		using type = typename detail::filter1_impl<Seq1, C>::type;
+	template <typename Seq1, typename Seq2>
+	struct has_any_type {
+		static const bool value = detail::has_any_type_impl<Seq1, Seq2>::value;
 	};
+
+	static_assert(has_any_type<type_list<double, int, char>, type_list<int>>::value, "The implementation of has_any_type is bad");
+	static_assert(!has_any_type<type_list<double, int, char>, type_list<float>>::value, "The implementation of has_any_type is bad");
+
+
+	//-------------------------------------------------------------------------
+	//filter type lists Ts that have a specific type C as member
+
+	namespace detail {
+		template< typename Seq, typename C>
+		struct filter1_impl;
+
+		template<template <typename...> typename Seq, typename C>
+		struct filter1_impl<Seq<>, C> {
+			using type = Seq<>;
+		};
+
+		template<template <typename...> typename Seq, typename T, typename... Ts, typename C>
+		struct filter1_impl<Seq<T, Ts...>, C> {
+			using type1 = cat< Seq<T>, typename filter1_impl<Seq<Ts...>, C>::type>;
+			using type2 = typename filter1_impl<Seq<Ts...>, C>::type;
+
+			using type = typename std::conditional< has_type<T, C>::value, type1, type2 >::type;
+		};
+	}
+	template <typename Seq, typename C>
+	struct filter1 {
+		using type = typename detail::filter1_impl<Seq, C>::type;
+	};
+
+	static_assert(std::is_same_v<
+		typename filter1< type_list< type_list<char, float> >, float >::type, type_list< type_list<char, float> > >,
+		"The implementation of filter1 is bad");
+
+	static_assert(	std::is_same_v<
+		typename filter1< type_list< type_list<char, float>, type_list<bool, double>, type_list<float, double> >, float >::type, 
+				 type_list< type_list<char, float>, type_list<float, double>> >,
+		"The implementation of filter1 is bad");
+
 
 	//-------------------------------------------------------------------------
 	//filter type lists Ts that have a specific types Cs as member
@@ -411,14 +468,11 @@ namespace vtl {
 			using type = Seq1<>;
 		};
 
-		template<template <typename...> typename Seq1, typename... Ts, template <typename...> typename Seq2>
-		struct filter2_impl<Seq1<Ts...>, Seq2<>> {
-			using type = Seq1<>;
-		};
-
-		template<template <typename...> typename Seq1, typename... Ts, template <typename...> typename Seq2, typename C, typename... Cs>
-		struct filter2_impl<Seq1<Ts...>, Seq2<C, Cs...>> {
-			using type = cat< filter1<Seq1<Ts...>, C>, filter2_impl<Seq1<Ts...>, Seq2<Cs...>>  >;
+		template<template <typename...> typename Seq1, typename T, typename... Ts, template <typename...> typename Seq2, typename... Cs>
+		struct filter2_impl<Seq1<T, Ts...>, Seq2<Cs...>> {
+			using type1 = cat< Seq1<T>, typename filter2_impl<Seq1<Ts...>, Seq2<Cs...>>::type  >;
+			using type2 = typename filter2_impl<Seq1<Ts...>, Seq2<Cs...>>::type;
+			using type = typename std::conditional< has_any_type<T, Seq2<Cs...>>::value, type1, type2 >::type;
 		};
 	}
 	template <typename Seq1, typename Seq2>
@@ -426,35 +480,14 @@ namespace vtl {
 		using type = typename detail::filter2_impl<Seq1, Seq2>::type;
 	};
 
-	/*static_assert(
-		std::is_same_v< >,
-		"The implementation of to_ptr_tuple is bad");*/
+	static_assert(
+		std::is_same_v< 
+			typename filter2< type_list< type_list<char, float>, type_list<bool, double>, type_list<float, double> >
+							, type_list< char, int, float>  >::type,
 
+					 type_list< type_list<char, float>, type_list<float, double> > >,
+		"The implementation of filter2 is bad");
 
-	//-------------------------------------------------------------------------
-	//check whether a type list contains a type
-
-	namespace detail {
-		template<typename Seq, typename T>
-		struct has_type_impl;
-
-		template<template <typename...> class Seq, typename T>
-		struct has_type_impl<Seq<>,T> {
-			static const bool value = false;
-		};
-
-		template<template <typename...> class Seq, typename... Ts, typename T>
-		struct has_type_impl<Seq<Ts...>, T> {
-			static const bool value = (std::is_same_v<T, Ts> || ...);
-		};
-	}
-	template <typename Seq, typename T>
-	struct has_type {
-		static const bool value = detail::has_type_impl<Seq, T>::value;
-	};
-
-	static_assert( has_type<type_list<double, int, char>, char>::value, "The implementation of has_type is bad");
-	static_assert( !has_type<type_list<double, int, char>, float>::value, "The implementation of has_type is bad");
 
 	//-------------------------------------------------------------------------
 	//Make a tuple containing a type T N times
