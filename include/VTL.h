@@ -451,8 +451,8 @@ namespace vtl {
 		"The implementation of filter1 is bad");
 
 	static_assert(	std::is_same_v<
-		typename filter1< type_list< type_list<char, float>, type_list<bool, double>, type_list<float, double> >, float >::type, 
-				 type_list< type_list<char, float>, type_list<float, double>> >,
+		typename filter1<	type_list< type_list<char, float>, type_list<bool, double>, type_list<float, double> >, float >::type, 
+							type_list< type_list<char, float>, type_list<float, double>> >,
 		"The implementation of filter1 is bad");
 
 
