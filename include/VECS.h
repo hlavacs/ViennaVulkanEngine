@@ -139,6 +139,7 @@ namespace vecs {
 		tuple_type		values(const index_t index);
 		tuple_type_ref	references(const index_t index);
 		bool			update(const index_t index, VeEntity_t<E>&& ent);
+		size_t			size() { return m_handles.size(); };
 
 		std::tuple<VeHandle_t<E>, index_t> erase(const index_t idx);
 	};
@@ -346,6 +347,12 @@ namespace vecs {
 		//-------------------------------------------------------------------------
 		//utility
 
+		template<typename E = void>
+		size_t size() { return VeComponentVector<E>().size(); };
+
+		template<>
+		size_t size<>();
+
 		template<typename... Cs>
 		VeIterator<Cs...> begin();
 
@@ -360,6 +367,20 @@ namespace vecs {
 			m_dispatch[handle.index()]->erase(handle);
 		}
 	};
+
+
+	template<>
+	size_t VeEntityTableBaseClass::size<void>() {
+		size_t sum = 0;
+		vtl::static_for<size_t, 0, vtl::size<VeEntityTypeList>::value >(
+			[&](auto i) {
+				using type = vtl::Nth_type<VeEntityTypeList, i>;
+				sum += VeComponentVector<type>().size();
+			}
+		);
+		return sum;
+	}
+
 
 
 	//-------------------------------------------------------------------------
@@ -542,6 +563,9 @@ namespace vecs {
 
 	template<typename... Cs>
 	class VeComponentIteratorBase {
+	protected:
+		index_t m_current_index{ 0 };
+
 	public:
 		using value_type = std::tuple<Cs...>;
 
@@ -549,21 +573,24 @@ namespace vecs {
 		virtual value_type operator*() = 0;
 		virtual void operator++() = 0;
 		virtual void operator++(int) = 0;
-		virtual int operator<=>(const VeComponentIteratorBase<Cs...>& v) const = 0; ///
+		auto operator<=>(const VeComponentIteratorBase<Cs...>& v) {
+			return v.m_current_index <=> m_current_index;
+		}
 	};
 
 
 	template<typename E, typename... Cs>
 	class VeComponentIterator : public VeComponentIteratorBase<Cs...> {
 	protected:
-		index_t m_current_index{ 0 };
 
 	public:
-		VeComponentIterator() {};
+		VeComponentIterator(bool is_end = false) : VeComponentIteratorBase() {
+
+		};
+
 		typename VeComponentIteratorBase<Cs...>::value_type operator*() {};
 		void operator++() {};
 		void operator++(int) {};
-		int operator<=>(const VeComponentIteratorBase<Cs...>& v) const {}; ///
 	};
 
 
@@ -582,7 +609,11 @@ namespace vecs {
 		value_type operator*() {};
 		void operator++() {};
 		void operator++(int) {};
-		auto operator<=>(const VeIterator<Cs...>& v) const {};
+		auto operator<=>(const VeIterator<Cs...>& v) const {
+			if (v.m_current_iterator == m_current_iterator) {
+
+			}
+		}
 	};
 
 	template<typename... Cs>
@@ -618,7 +649,7 @@ namespace vecs {
 
 	template<typename E>
 	requires vtl::has_type<VeEntityTypeList, E>::value
-		bool VeEntityTableBaseClass::update(const VeHandle& handle, VeEntity_t<E>&& ent) {
+	bool VeEntityTableBaseClass::update(const VeHandle& handle, VeEntity_t<E>&& ent) {
 		return VeEntityTable<E>().update({ handle }, std::forward<VeEntity_t<E>>(ent));
 	}
 
