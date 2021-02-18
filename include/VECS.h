@@ -643,13 +643,16 @@ namespace vecs {
 				int num = std::max(m_dispatch[m_current_iterator.value]->size() 
 									- m_dispatch[m_current_iterator.value]->m_current_index.value, 0);
 				left -= num;
-				if (left > 0 && m_current_iterator.value < m_dispatch.size() - 1) { ++m_current_iterator.value; }
-				else return;
+				m_dispatch[m_current_iterator.value]->m_current_index.value += num;
+				if (m_dispatch[m_current_iterator.value]->is_vector_end()) {
+					if (m_current_iterator.value < m_dispatch.size() - 1) { ++m_current_iterator.value; }
+					else return;
+				}
 			}
 		}
 
 		VeIterator<Cs...>& operator+(size_t N) {
-			VeIterator<Cs...> temp;
+			VeIterator<Cs...> temp{ *this };
 			temp += N;
 			return temp;
 		}
