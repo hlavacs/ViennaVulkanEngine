@@ -138,6 +138,10 @@ namespace vecs {
 		index_t			insert(VeHandle_t<E>& handle, tuple_type&& tuple);
 		tuple_type		values(const index_t index);
 		tuple_type_ref	references(const index_t index);
+
+		template<typename C>
+		C				component(const index_t index);
+
 		bool			update(const index_t index, VeEntity_t<E>&& ent);
 		size_t			size() { return m_handles.size(); };
 
@@ -178,6 +182,13 @@ namespace vecs {
 		};
 
 		return f(m_components);
+	}
+
+	template<typename E>
+	template<typename C>
+	inline C VeComponentVector<E>::component(const index_t index) {
+		assert(index.value < m_handles.size());
+		return std::get<vtl::index_of<E, C>::value>(m_components)[index.value];
 	}
 
 	template<typename E>
@@ -265,7 +276,6 @@ namespace vecs {
 
 	template<typename... Cs>
 	class VeIterator;
-
 
 	/**
 	* \brief This class stores all generalized handles of all entities, and can be used
@@ -508,8 +518,7 @@ namespace vecs {
 		VeHandle_t<E> h = std::get<VeHandle_t<E>>(handle);
 
 		auto compidx = m_entity_table[h.m_entity_index.value].m_next_free_or_comp_index;
-		auto tuple = VeComponentVector<E>().references(compidx); //
-		return { std::get<vtl::index_of<E,C>::value>(tuple) };
+		return { VeComponentVector<E>().component<C>(compidx) };
 	}
 
 	template<typename E>
@@ -581,13 +590,24 @@ namespace vecs {
 		using value_type = std::tuple<Cs...>;
 
 		VeIterator( bool is_end = false );
-		value_type operator*() {};
-		void operator++() {};
+		value_type operator*() { 
+			return m_dispatch[m_current_iterator.value].operator*(); 
+		};
 
-		void operator++(int) {};
+		virtual void operator++() {
+			m_dispatch[m_current_iterator.value].operator++();
+			if (m_dispatch[m_current_iterator.value].is_vector_end() && m_current_iterator.value < m_dispatch.size - 1) {
+				++m_current_iterator.value;
+			}
+		};
 
-		auto operator<=>(const VeIterator<Cs...>& v) {
-			if (v.m_current_iterator == m_current_iterator) { return v.m_current_index <=> m_current_index;	}
+		virtual void operator++(int) { operator++(); };
+
+		virtual int operator<=>(const VeIterator<Cs...>& v) {
+			if (v.m_current_iterator == m_current_iterator) { 
+				return v.m_dispatch[m_current_iterator.value] <=> m_dispatch[m_current_iterator.value];
+			}
+
 			return v.m_current_iterator <=> m_current_iterator;
 		}
 
@@ -609,9 +629,18 @@ namespace vecs {
 			if (is_end) this->m_current_index.value = VeComponentVector<E>().size();
 		};
 
-		typename VeIterator<Cs...>::value_type operator*() {};
-		void operator++() {};
-		void operator++(int) {};
+		typename VeIterator<Cs...>::value_type operator*() {
+			return std::make_tuple(VeComponentVector<E>().component<Cs>()...);
+		};
+
+		void operator++() { ++this->m_current_index.value; };
+		
+		void operator++(int) { ++this->m_current_index.value; };
+		
+		int operator<=>(const VeIterator<Cs...>& v) {
+			return this->m_current_index <=> v.m_current_index;
+		}
+
 		bool is_vector_end() { return this->m_current_index.value >= VeComponentVector<E>().size(); };
 	};
 
@@ -624,7 +653,7 @@ namespace vecs {
 				m_dispatch[i] = std::make_unique<VeIteratorDerived<type, Cs...>>(is_end);
 			}
 		);
-		if (is_end) m_current_iterator.value = vtl::size<entity_types>::value;
+		if (is_end) m_current_iterator.value = vtl::size<entity_types>::value - 1;
 	};
 
 
