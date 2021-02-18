@@ -637,11 +637,21 @@ namespace vecs {
 
 		virtual VeIterator<Cs...>& operator++(int) { return operator++(); return *this; };
 
-		VeIterator<Cs...>& operator+(size_t N) {
+		void operator+=(size_t N) {
 			size_t left = N;
 			while (left > 0) {
-
+				int num = std::max(m_dispatch[m_current_iterator.value]->size() 
+									- m_dispatch[m_current_iterator.value]->m_current_index.value, 0);
+				left -= num;
+				if (left > 0 && m_current_iterator.value < m_dispatch.size() - 1) { ++m_current_iterator.value; }
+				else return;
 			}
+		}
+
+		VeIterator<Cs...>& operator+(size_t N) {
+			VeIterator<Cs...> temp;
+			temp += N;
+			return temp;
 		}
 
 		bool operator!=(const VeIterator<Cs...>& v) {
@@ -654,6 +664,12 @@ namespace vecs {
 		}
 
 		virtual bool is_vector_end() { return m_dispatch[m_current_iterator.value]->is_vector_end(); }
+
+		virtual size_t size() {
+			size_t sum = 0;
+			for (int i = 0; i < m_dispatch.size(); ++i) { sum += m_dispatch[i]->size(); };
+			return sum;
+		}
 	};
 
 
@@ -667,7 +683,7 @@ namespace vecs {
 	protected:
 
 	public:
-		VeIteratorDerived(bool is_end = false) { //do not call parent constructor to avoid additional m_dispatch 
+		VeIteratorDerived(bool is_end = false) { //empty constructor does not create new children
 			if (is_end) this->m_current_index.value = static_cast<decltype(this->m_current_index.value)>(VeComponentVector<E>().size());
 		};
 
@@ -680,6 +696,9 @@ namespace vecs {
 		VeIterator<Cs...>& operator++(int) { ++this->m_current_index.value; return *this; };
 		
 		bool is_vector_end() { return this->m_current_index.value >= VeComponentVector<E>().size(); };
+
+		virtual size_t size() { return VeComponentVector<E>().size(); }
+
 	};
 
 
