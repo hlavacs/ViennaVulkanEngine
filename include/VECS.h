@@ -580,7 +580,7 @@ namespace vecs {
 	template<typename... Cs>
 	class VeIterator {
 	protected:
-		using entity_types = vtl::filter2< VeEntityTypeList, vtl::type_list<Cs...> >;
+		using entity_types = typename vtl::filter_have_all_types< VeEntityTypeList, vtl::type_list<Cs...> >::type;
 
 		std::array<std::unique_ptr<VeIterator<Cs...>>, vtl::size<entity_types>::value> m_dispatch;
 		index_t m_current_iterator{ 0 };
@@ -590,28 +590,29 @@ namespace vecs {
 		using value_type = std::tuple<Cs...>;
 
 		VeIterator( bool is_end = false );
-		value_type operator*() { 
-			return m_dispatch[m_current_iterator.value].operator*(); 
+		virtual value_type operator*() { 
+			return m_dispatch[m_current_iterator.value]->operator*(); 
 		};
 
 		virtual void operator++() {
-			m_dispatch[m_current_iterator.value].operator++();
-			if (m_dispatch[m_current_iterator.value].is_vector_end() && m_current_iterator.value < m_dispatch.size - 1) {
+			m_dispatch[m_current_iterator.value]->operator++();
+			if (m_dispatch[m_current_iterator.value]->is_vector_end() && m_current_iterator.value < m_dispatch.size() - 1) {
 				++m_current_iterator.value;
 			}
+			return;
 		};
 
-		virtual void operator++(int) { operator++(); };
+		virtual void operator++(int) { return operator++(); };
 
-		virtual int operator<=>(const VeIterator<Cs...>& v) {
+		auto operator<=>(const VeIterator<Cs...>& v) {
 			if (v.m_current_iterator == m_current_iterator) { 
-				return v.m_dispatch[m_current_iterator.value] <=> m_dispatch[m_current_iterator.value];
+				return v.m_dispatch[m_current_iterator.value]->m_current_index <=> *m_dispatch[m_current_iterator.value]->m_current_index;
 			}
 
 			return v.m_current_iterator <=> m_current_iterator;
 		}
 
-		virtual bool is_vector_end() { return m_dispatch[m_current_iterator.value].is_vector_end(); }
+		virtual bool is_vector_end() { return m_dispatch[m_current_iterator.value]->is_vector_end(); }
 	};
 
 
@@ -625,35 +626,32 @@ namespace vecs {
 	protected:
 
 	public:
-		VeIteratorDerived(bool is_end = false) : VeIterator<Cs...>() {
-			if (is_end) this->m_current_index.value = VeComponentVector<E>().size();
+		VeIteratorDerived(bool is_end = false) { //do not call parent constructor to avoid additional m_dispatch 
+			if (is_end) this->m_current_index.value = static_cast<decltype(this->m_current_index.value)>(VeComponentVector<E>().size());
 		};
 
 		typename VeIterator<Cs...>::value_type operator*() {
-			return std::make_tuple(VeComponentVector<E>().component<Cs>()...);
+			return {};// std::make_tuple(VeComponentVector<E>().component<Cs>()...);
 		};
 
 		void operator++() { ++this->m_current_index.value; };
 		
 		void operator++(int) { ++this->m_current_index.value; };
 		
-		int operator<=>(const VeIterator<Cs...>& v) {
-			return this->m_current_index <=> v.m_current_index;
-		}
-
 		bool is_vector_end() { return this->m_current_index.value >= VeComponentVector<E>().size(); };
 	};
 
 
 	template<typename... Cs>
-	VeIterator<Cs...>::VeIterator(bool is_end) {
+	VeIterator<Cs...>::VeIterator(bool is_end) : m_current_iterator{0} {
+		std::cout << typeid(entity_types).name() << std::endl;
 		vtl::static_for<size_t, 0, vtl::size<entity_types>::value >(
 			[&](auto i) {
 				using type = vtl::Nth_type<entity_types, i>;
 				m_dispatch[i] = std::make_unique<VeIteratorDerived<type, Cs...>>(is_end);
 			}
 		);
-		if (is_end) m_current_iterator.value = vtl::size<entity_types>::value - 1;
+		if (is_end) m_current_iterator.value = static_cast<decltype(m_current_iterator.value)>(m_dispatch.size() - 1);
 	};
 
 

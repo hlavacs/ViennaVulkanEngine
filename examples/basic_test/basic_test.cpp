@@ -35,10 +35,6 @@ int main() {
     et.update(h1, data1b);
     auto comp1_5 = et.component<VeComponentPosition>(h1);
 
-    et.erase(h1);
-
-
-    auto data1c = et.entity<VeEntityNode>(h1);
 
     VeHandle h2 = et.insert(VeComponentMaterial{ 99 }, VeComponentGeometry{});
     std::cout << typeid(VeEntityDraw).hash_code() << " " << typeid(VeEntityDraw).name() << std::endl;
@@ -48,6 +44,13 @@ int main() {
     auto comp2_1 = data2b.value().component<VeComponentMaterial>();
     auto comp2_2 = et.component<VeComponentMaterial>(h2);
 
+    using entity_types = typename vtl::filter_have_all_types< VeEntityTypeList, vtl::type_list<VeComponentPosition> >::type;
+    std::cout << typeid(entity_types).name() << std::endl;
+
+    VeIterator<VeComponentPosition, VeComponentMaterial> iter;
+
+    et.erase(h1);
+    auto data1c = et.entity<VeEntityNode>(h1);
     et.erase(h2);
 
 
