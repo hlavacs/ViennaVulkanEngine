@@ -611,34 +611,46 @@ namespace vecs {
 
 		VeIterator() {};
 		VeIterator( bool is_end );
-		VeIterator(const VeIterator& it) : VeIterator(it.m_is_end) {
+		VeIterator(const VeIterator& v) : VeIterator(v.m_is_end) {
 			if (m_is_end) return;
-			m_current_iterator = it.m_current_iterator;
+			m_current_iterator = v.m_current_iterator;
+			for (int i = 0; i < m_dispatch.size(); ++i) { m_dispatch[i]->m_current_index = v.m_dispatch[i]->m_current_index; }
 		};
+
+		VeIterator<Cs...>& operator=(const VeIterator& v) {
+			m_current_iterator = v.m_current_iterator;
+			for (int i = 0; i < m_dispatch.size(); ++i) { m_dispatch[i]->m_current_index = v.m_dispatch[i]->m_current_index; }
+			return *this;
+		}
 
 		virtual value_type operator*() { 
-			return m_dispatch[m_current_iterator.value]->operator*();
+			return *(*m_dispatch[m_current_iterator.value]);
 		};
 
-		virtual void operator++() {
-			m_dispatch[m_current_iterator.value]->operator++();
+		virtual VeIterator<Cs...>& operator++() {
+			(*m_dispatch[m_current_iterator.value])++;
 			if (m_dispatch[m_current_iterator.value]->is_vector_end() && m_current_iterator.value < m_dispatch.size() - 1) {
 				++m_current_iterator.value;
 			}
-			return;
+			return *this;
 		};
 
-		virtual void operator++(int) { return operator++(); };
+		virtual VeIterator<Cs...>& operator++(int) { return operator++(); return *this; };
+
+		VeIterator<Cs...>& operator+(size_t N) {
+			size_t left = N;
+			while (left > 0) {
+
+			}
+		}
 
 		bool operator!=(const VeIterator<Cs...>& v) {
 			return !( *this == v );
 		}
 
 		bool operator==(const VeIterator<Cs...>& v) {
-			if (v.m_current_iterator == m_current_iterator) { 
-				return v.m_dispatch[m_current_iterator.value]->m_current_index == m_dispatch[m_current_iterator.value]->m_current_index;
-			}
-			return v.m_current_iterator == m_current_iterator;
+			return	v.m_current_iterator == m_current_iterator &&
+					v.m_dispatch[m_current_iterator.value]->m_current_index == m_dispatch[m_current_iterator.value]->m_current_index;
 		}
 
 		virtual bool is_vector_end() { return m_dispatch[m_current_iterator.value]->is_vector_end(); }
@@ -663,9 +675,9 @@ namespace vecs {
 			return std::make_tuple(VeComponentVector<E>().handle(this->m_current_index), std::ref(VeComponentVector<E>().component_ref<Cs>(this->m_current_index))...);
 		};
 
-		void operator++() { ++this->m_current_index.value; };
+		VeIterator<Cs...>& operator++() { ++this->m_current_index.value; return *this; };
 		
-		void operator++(int) { ++this->m_current_index.value; };
+		VeIterator<Cs...>& operator++(int) { ++this->m_current_index.value; return *this; };
 		
 		bool is_vector_end() { return this->m_current_index.value >= VeComponentVector<E>().size(); };
 	};
@@ -689,15 +701,21 @@ namespace vecs {
 	using Functor = void(VeIterator<Cs...>&);
 
 	template<typename... Cs>
-	void for_each( std::function<Functor<Cs...>> f) {
-		auto b = VeEntityTable().begin<Cs...>();
-		auto e = VeEntityTable().end<Cs...>();
-
+	void for_each(VeIterator<Cs...>& b, VeIterator<Cs...>& e, std::function<Functor<Cs...>> f) {
 		for (; b != e; b++) {
 			f(b);
 		}
 		return; 
 	}
+
+	template<typename... Cs>
+	void for_each(std::function<Functor<Cs...>> f) {
+		auto b = VeEntityTable().begin<Cs...>();
+		auto e = VeEntityTable().end<Cs...>();
+
+		return for_each(b, e, f);
+	}
+
 
 
 	//-------------------------------------------------------------------------
@@ -738,6 +756,7 @@ namespace vecs {
 
 
 
+
 	//-------------------------------------------------------------------------
 	//system
 
@@ -745,7 +764,7 @@ namespace vecs {
 	* \brief Systems can access all components in sequence
 	*/
 
-	template<typename T, typename VeSystemComponentTypeList = vtl::type_list<>>
+	template<typename T, typename... Cs>
 	class VeSystem : public VeMonostate<VeSystem<T>> {
 	protected:
 	public:

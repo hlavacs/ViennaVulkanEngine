@@ -3,9 +3,22 @@
 
 #include <tuple>
 
+//
+//	Vienna Type List Library
+//	By Helmut Hlavacs, University of Vienna
+//	
+//	A collection of C++ typelist algorithms
+//
+//	See the static_assert statements to understand what each function does
+//
+//
+//	Based on the following sources:
+//	https://nilsdeppe.com/posts/tmpl-part2
+//	https://ericniebler.com/2014/11/13/tiny-metaprogramming-library/ (especially the first functions are from this source)
+//
+
+
 namespace vtl {
-	//https://nilsdeppe.com/posts/tmpl-part2
-	//https://ericniebler.com/2014/11/13/tiny-metaprogramming-library/
 
 	//standard list of types. Any such list can be used.
 
@@ -548,7 +561,15 @@ namespace vtl {
 		detail::static_for_impl<T, Begin>(std::forward<Func>(f), std::make_integer_sequence<T, End - Begin>{ });
 	}
 
-	//static_for<int, -3, 3 >([&](auto i) { cout << i << ", "; });
+	namespace example {
+		void f() {
+			using list = type_list<int, double, bool, float >;
+			static_for< int, 0, size<list>::value >([&](auto i) { 
+				using type = Nth_type<list, i>;
+				std::cout << i << " " << typeid(type).name(); } 
+			);
+		}
+	}
 }
 
 

@@ -35,7 +35,6 @@ int main() {
     et.update(h1, data1b);
     auto comp1_5 = et.component<VeComponentPosition>(h1);
 
-
     VeHandle h2 = et.insert(VeComponentMaterial{ 99 }, VeComponentGeometry{});
     std::cout << typeid(VeEntityDraw).hash_code() << " " << typeid(VeEntityDraw).name() << std::endl;
 
@@ -51,10 +50,12 @@ int main() {
 
         auto [handle, pos, orient] = *iter;
 
-        //auto pos = get<0>(tup);
+        pos = VeComponentPosition{ glm::vec3{12345.0f, -299.0f, -334.0f} };
 
         std::cout << "entity\n";
     });
+
+    auto comp1_6 = et.component<VeComponentPosition>(h1).value();
 
     et.erase(h1);
     auto data1c = et.entity<VeEntityNode>(h1);
