@@ -464,12 +464,12 @@ namespace vtl {
 
 	static_assert(std::is_same_v<
 		typename filter_have_type< type_list< type_list<char, float> >, float >::type, type_list< type_list<char, float> > >,
-		"The implementation of filter1 is bad");
+		"The implementation of filter_have_type is bad");
 
 	static_assert(	std::is_same_v<
 		typename filter_have_type<	type_list< type_list<char, float>, type_list<bool, double>, type_list<float, double> >, float >::type,
 							type_list< type_list<char, float>, type_list<float, double>> >,
-		"The implementation of filter1 is bad");
+		"The implementation of filter_have_type is bad");
 
 
 	//-------------------------------------------------------------------------
@@ -503,7 +503,7 @@ namespace vtl {
 							, type_list< char, float>  >::type,
 
 					 type_list< type_list<char, float, int>, type_list<float, double, char> > >,
-		"The implementation of filter2 is bad");
+		"The implementation of filter_have_all_types is bad");
 
 
 	//-------------------------------------------------------------------------
