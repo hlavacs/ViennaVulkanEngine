@@ -428,6 +428,8 @@ namespace vecs {
 		//-------------------------------------------------------------------------
 		//utility
 
+		size_t size() { return VeComponentVector<E>().size(); };
+
 		bool contains(const VeHandle& handle);
 
 		void erase(const VeHandle& handle);
