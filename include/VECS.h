@@ -142,6 +142,9 @@ namespace vecs {
 		template<typename C>
 		C				component(const index_t index);
 
+		template<typename C>
+		C&				component_ref(const index_t index);
+
 		bool			update(const index_t index, VeEntity_t<E>&& ent);
 		size_t			size() { return m_handles.size(); };
 
@@ -187,6 +190,13 @@ namespace vecs {
 	template<typename E>
 	template<typename C>
 	inline C VeComponentVector<E>::component(const index_t index) {
+		assert(index.value < m_handles.size());
+		return std::get<vtl::index_of<E, C>::value>(m_components)[index.value];
+	}
+
+	template<typename E>
+	template<typename C>
+	inline C& VeComponentVector<E>::component_ref(const index_t index) {
 		assert(index.value < m_handles.size());
 		return std::get<vtl::index_of<E, C>::value>(m_components)[index.value];
 	}
@@ -585,13 +595,20 @@ namespace vecs {
 		std::array<std::unique_ptr<VeIterator<Cs...>>, vtl::size<entity_types>::value> m_dispatch;
 		index_t m_current_iterator{ 0 };
 		index_t m_current_index{ 0 };
+		bool	m_is_end{ false };
 
 	public:
 		using value_type = std::tuple<Cs...>;
 
-		VeIterator( bool is_end = false );
+		VeIterator() {};
+		VeIterator( bool is_end );
+		VeIterator(const VeIterator& it) : VeIterator(it.m_is_end) {
+			if (m_is_end) return;
+			m_current_iterator = it.m_current_iterator;
+		};
+
 		virtual value_type operator*() { 
-			return m_dispatch[m_current_iterator.value]->operator*(); 
+			return m_dispatch[m_current_iterator.value]->operator*();
 		};
 
 		virtual void operator++() {
@@ -604,12 +621,15 @@ namespace vecs {
 
 		virtual void operator++(int) { return operator++(); };
 
-		auto operator<=>(const VeIterator<Cs...>& v) {
-			if (v.m_current_iterator == m_current_iterator) { 
-				return v.m_dispatch[m_current_iterator.value]->m_current_index <=> *m_dispatch[m_current_iterator.value]->m_current_index;
-			}
+		bool operator!=(const VeIterator<Cs...>& v) {
+			return !( *this == v );
+		}
 
-			return v.m_current_iterator <=> m_current_iterator;
+		bool operator==(const VeIterator<Cs...>& v) {
+			if (v.m_current_iterator == m_current_iterator) { 
+				return v.m_dispatch[m_current_iterator.value]->m_current_index == m_dispatch[m_current_iterator.value]->m_current_index;
+			}
+			return v.m_current_iterator == m_current_iterator;
 		}
 
 		virtual bool is_vector_end() { return m_dispatch[m_current_iterator.value]->is_vector_end(); }
@@ -631,7 +651,7 @@ namespace vecs {
 		};
 
 		typename VeIterator<Cs...>::value_type operator*() {
-			return {};// std::make_tuple(VeComponentVector<E>().component<Cs>()...);
+			return std::make_tuple(VeComponentVector<E>().component<Cs>(this->m_current_index)...);
 		};
 
 		void operator++() { ++this->m_current_index.value; };
@@ -643,16 +663,32 @@ namespace vecs {
 
 
 	template<typename... Cs>
-	VeIterator<Cs...>::VeIterator(bool is_end) : m_current_iterator{0} {
-		std::cout << typeid(entity_types).name() << std::endl;
+	VeIterator<Cs...>::VeIterator(bool is_end) : m_is_end{ is_end } {
+		if (is_end) {
+			m_current_iterator.value = static_cast<decltype(m_current_iterator.value)>(m_dispatch.size() - 1);
+		}
+
 		vtl::static_for<size_t, 0, vtl::size<entity_types>::value >(
 			[&](auto i) {
 				using type = vtl::Nth_type<entity_types, i>;
 				m_dispatch[i] = std::make_unique<VeIteratorDerived<type, Cs...>>(is_end);
 			}
 		);
-		if (is_end) m_current_iterator.value = static_cast<decltype(m_current_iterator.value)>(m_dispatch.size() - 1);
 	};
+
+	template<typename... Cs>
+	using Functor = void( const typename VeIterator<Cs...>::value_type& );
+
+	template<typename... Cs>
+	void for_each( std::function<Functor<Cs...>> f) {
+		auto b = VeEntityTable().begin<Cs...>();
+		auto e = VeEntityTable().end<Cs...>();
+
+		for (; b != e; b++) {
+			f(*b);
+		}
+		return; 
+	}
 
 
 	//-------------------------------------------------------------------------
@@ -683,13 +719,15 @@ namespace vecs {
 
 	template<typename... Cs>
 	VeIterator<Cs...> VeEntityTableBaseClass::begin() {
-		return VeIterator<Cs...>();
+		return VeIterator<Cs...>(false);
 	}
 
 	template<typename... Cs>
 	VeIterator<Cs...> VeEntityTableBaseClass::end() {
 		return VeIterator<Cs...>(true);
 	}
+
+
 
 	//-------------------------------------------------------------------------
 	//system
