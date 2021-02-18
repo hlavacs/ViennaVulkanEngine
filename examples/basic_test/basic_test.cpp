@@ -47,11 +47,11 @@ int main() {
     using entity_types = typename vtl::filter_have_all_types< VeEntityTypeList, vtl::type_list<VeComponentPosition> >::type;
     std::cout << typeid(entity_types).name() << std::endl;
 
-    for_each<VeComponentPosition>( [&](const auto& tup) {
+    for_each<VeComponentPosition, VeComponentOrientation>( [&]( auto& iter) {
 
-        //auto [pos, orient, trans] = *iter;
+        auto [handle, pos, orient] = *iter;
 
-        auto pos = get<0>(tup);
+        //auto pos = get<0>(tup);
 
         std::cout << "entity\n";
     });

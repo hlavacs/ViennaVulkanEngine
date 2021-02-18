@@ -138,6 +138,7 @@ namespace vecs {
 		index_t			insert(VeHandle_t<E>& handle, tuple_type&& tuple);
 		tuple_type		values(const index_t index);
 		tuple_type_ref	references(const index_t index);
+		VeHandle		handle(const index_t index);
 
 		template<typename C>
 		C				component(const index_t index);
@@ -186,6 +187,14 @@ namespace vecs {
 
 		return f(m_components);
 	}
+
+
+	template<typename E>
+	inline VeHandle VeComponentVector<E>::handle(const index_t index) {
+		assert(index.value < m_handles.size());
+		return { m_handles[index.value].m_handle };
+	}
+
 
 	template<typename E>
 	template<typename C>
@@ -598,7 +607,7 @@ namespace vecs {
 		bool	m_is_end{ false };
 
 	public:
-		using value_type = std::tuple<Cs...>;
+		using value_type = std::tuple<VeHandle, Cs&...>;
 
 		VeIterator() {};
 		VeIterator( bool is_end );
@@ -651,7 +660,7 @@ namespace vecs {
 		};
 
 		typename VeIterator<Cs...>::value_type operator*() {
-			return std::make_tuple(VeComponentVector<E>().component<Cs>(this->m_current_index)...);
+			return std::make_tuple(VeComponentVector<E>().handle(this->m_current_index), std::ref(VeComponentVector<E>().component_ref<Cs>(this->m_current_index))...);
 		};
 
 		void operator++() { ++this->m_current_index.value; };
@@ -677,7 +686,7 @@ namespace vecs {
 	};
 
 	template<typename... Cs>
-	using Functor = void( const typename VeIterator<Cs...>::value_type& );
+	using Functor = void(VeIterator<Cs...>&);
 
 	template<typename... Cs>
 	void for_each( std::function<Functor<Cs...>> f) {
@@ -685,7 +694,7 @@ namespace vecs {
 		auto e = VeEntityTable().end<Cs...>();
 
 		for (; b != e; b++) {
-			f(*b);
+			f(b);
 		}
 		return; 
 	}
