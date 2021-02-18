@@ -587,7 +587,7 @@ namespace vecs {
 
 	public:
 		VeComponentIterator(bool is_end = false) : VeComponentIteratorBase() {
-
+			if (is_end) this->m_current_index.value = VeComponentVector<E>().size();
 		};
 
 		typename VeComponentIteratorBase<Cs...>::value_type operator*() {};
@@ -613,8 +613,9 @@ namespace vecs {
 		void operator++(int) {};
 		auto operator<=>(const VeIterator<Cs...>& v) const {
 			if (v.m_current_iterator == m_current_iterator) {
-
+				return v.m_dispatch[v.m_current_iterator.value] <=> m_dispatch[m_current_iterator.value];
 			}
+			return v.m_current_iterator <=> m_current_iterator;
 		}
 	};
 
@@ -623,7 +624,7 @@ namespace vecs {
 		vtl::static_for<size_t, 0, vtl::size<entity_types>::value >(
 			[&](auto i) {
 				using type = vtl::Nth_type<entity_types, i>;
-				m_dispatch[i] = std::make_unique<VeComponentIterator<type, Cs...>>();
+				m_dispatch[i] = std::make_unique<VeComponentIterator<type, Cs...>>(is_end);
 			}
 		);
 	};
