@@ -116,7 +116,7 @@ namespace vecs {
 
 	protected:
 		struct entry_t {
-			VeHandle_t<E>	m_handle;
+			VeHandle_t<E>	 m_handle;
 		};
 
 		static inline std::vector<entry_t>	m_handles;
@@ -311,7 +311,6 @@ namespace vecs {
 
 			entry_t() {};
 			entry_t(const entry_t& other) {};
-			entry_t& operator=(const entry_t& other) {};
 		};
 
 		static inline std::vector<entry_t>	m_entity_table;
