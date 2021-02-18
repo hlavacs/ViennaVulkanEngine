@@ -208,7 +208,7 @@ namespace vecs {
 	//comnponent vector derived class
 
 	/**
-	* \brief This class is derived from the compoentn vector and is used to update or
+	* \brief This class is derived from the component vector and is used to update or
 	* return components C of entities of type E
 	*/
 
@@ -563,70 +563,68 @@ namespace vecs {
 	//-------------------------------------------------------------------------
 	//iterator
 
+	/**
+	* \brief Base class for an iterator that iterates over a VeComponentVector of any type 
+	* and that is intested into components Cs
+	*/
+
 	template<typename... Cs>
-	class VeComponentIteratorBase {
+	class VeIterator {
 	protected:
+		using entity_types = vtl::filter2< VeEntityTypeList, vtl::type_list<Cs...> >;
+
+		std::array<std::unique_ptr<VeIterator<Cs...>>, vtl::size<entity_types>::value> m_dispatch;
+		index_t m_current_iterator{ 0 };
 		index_t m_current_index{ 0 };
 
 	public:
 		using value_type = std::tuple<Cs...>;
 
-		VeComponentIteratorBase() {};
-		virtual value_type operator*() = 0;
-		virtual void operator++() = 0;
-		virtual void operator++(int) = 0;
-		auto operator<=>(const VeComponentIteratorBase<Cs...>& v) {
-			return v.m_current_index <=> m_current_index;
+		VeIterator( bool is_end = false );
+		value_type operator*() {};
+		void operator++() {};
+
+		void operator++(int) {};
+
+		auto operator<=>(const VeIterator<Cs...>& v) {
+			if (v.m_current_iterator == m_current_iterator) { return v.m_current_index <=> m_current_index;	}
+			return v.m_current_iterator <=> m_current_iterator;
 		}
+
+		virtual bool is_vector_end() { return m_dispatch[m_current_iterator.value].is_vector_end(); }
 	};
 
 
+	/**
+	* \brief Iterator that iterates over a VeComponentVector of type E
+	* and that is intested into components Cs
+	*/
+
 	template<typename E, typename... Cs>
-	class VeComponentIterator : public VeComponentIteratorBase<Cs...> {
+	class VeIteratorDerived : public VeIterator<Cs...> {
 	protected:
 
 	public:
-		VeComponentIterator(bool is_end = false) : VeComponentIteratorBase() {
+		VeIteratorDerived(bool is_end = false) : VeIterator<Cs...>() {
 			if (is_end) this->m_current_index.value = VeComponentVector<E>().size();
 		};
 
-		typename VeComponentIteratorBase<Cs...>::value_type operator*() {};
+		typename VeIterator<Cs...>::value_type operator*() {};
 		void operator++() {};
 		void operator++(int) {};
+		bool is_vector_end() { return this->m_current_index.value >= VeComponentVector<E>().size(); };
 	};
 
 
 	template<typename... Cs>
-	class VeIterator {
-	protected:
-		using value_type = std::tuple<Cs...>;
-		using entity_types = vtl::filter2< VeEntityTypeList, vtl::type_list<Cs...> >;
-
-		std::array<std::unique_ptr<VeComponentIteratorBase<Cs...>>, vtl::size<entity_types>::value> m_dispatch;
-		index_t m_current_iterator{0};
-		bool m_is_end;
-
-	public:
-		VeIterator( bool end = true);
-		value_type operator*() {};
-		void operator++() {};
-		void operator++(int) {};
-		auto operator<=>(const VeIterator<Cs...>& v) const {
-			if (v.m_current_iterator == m_current_iterator) {
-				return v.m_dispatch[v.m_current_iterator.value] <=> m_dispatch[m_current_iterator.value];
-			}
-			return v.m_current_iterator <=> m_current_iterator;
-		}
-	};
-
-	template<typename... Cs>
-	VeIterator<Cs...>::VeIterator(bool is_end) : m_is_end{is_end} {
+	VeIterator<Cs...>::VeIterator(bool is_end) {
 		vtl::static_for<size_t, 0, vtl::size<entity_types>::value >(
 			[&](auto i) {
 				using type = vtl::Nth_type<entity_types, i>;
-				m_dispatch[i] = std::make_unique<VeComponentIterator<type, Cs...>>(is_end);
+				m_dispatch[i] = std::make_unique<VeIteratorDerived<type, Cs...>>(is_end);
 			}
 		);
+		if (is_end) m_current_iterator.value = vtl::size<entity_types>::value;
 	};
 
 
