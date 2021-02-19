@@ -4,7 +4,7 @@
 #include "glm.hpp"
 #include "gtc/quaternion.hpp"
 
-#include "VTL.h"
+#include "VTLL.h"
 
 
 namespace vecs {
@@ -40,7 +40,7 @@ namespace vecs {
 	struct VeComponentRigidBody {
 	};
 
-	using VeComponentTypeListSystem = vtl::type_list<
+	using VeComponentTypeListSystem = vtll::type_list<
 		VeComponentPosition
 		, VeComponentOrientation
 		, VeComponentTransform
@@ -67,7 +67,7 @@ namespace vecs {
 	using VeEntityAnimation = VeEntityType<VeComponentAnimation>;
 	//...
 
-	using VeEntityTypeListSystem = vtl::type_list<
+	using VeEntityTypeListSystem = vtll::type_list<
 		  VeEntityNode
 		, VeEntityDraw
 		, VeEntityAnimation

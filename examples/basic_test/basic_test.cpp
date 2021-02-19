@@ -16,7 +16,7 @@ int main() {
     VeEntityTable et;
 
     std::cout << sizeof(VeHandle) << " "  << sizeof(VeHandle_t<VeEntityType<>>) << " " << sizeof(index_t) << std::endl;
-    std::cout << vtl::size<VeEntityTypeList>::value << std::endl;
+    std::cout << vtll::size<VeEntityTypeList>::value << std::endl;
 
     VeHandle h1 = et.insert(VeComponentPosition{ glm::vec3{9.0f, 2.0f, 3.0f} }, VeComponentOrientation{}, VeComponentTransform{});
     std::cout << typeid(VeEntityNode).hash_code() << " " << typeid(VeEntityNode).name() << std::endl;
@@ -43,7 +43,7 @@ int main() {
     auto comp2_1 = data2b.value().component<VeComponentMaterial>();
     auto comp2_2 = et.component<VeComponentMaterial>(h2);
 
-    using entity_types = typename vtl::filter_have_all_types< VeEntityTypeList, vtl::type_list<VeComponentPosition> >::type;
+    using entity_types = typename vtll::filter_have_all_types< VeEntityTypeList, vtll::type_list<VeComponentPosition> >::type;
     std::cout << typeid(entity_types).name() << std::endl;
 
     for_each<VeComponentPosition, VeComponentOrientation>( [&]( auto& iter) {

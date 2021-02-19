@@ -18,9 +18,9 @@ namespace vecs {
 	};
 	//...
 
-	//using VeComponentTypeListUser = tl::type_list<VeComponentUser1>; //include all user components into this list
+	//using VeComponentTypeListUser = vttl::type_list<VeComponentUser1>; //include all user components into this list
 	
-	using VeComponentTypeListUser = vtl::type_list<>; //default is no user define components
+	using VeComponentTypeListUser = vtll::type_list<>; //default is no user define components
 
 
 	//-------------------------------------------------------------------------
@@ -28,12 +28,12 @@ namespace vecs {
 
 	using VeEntityUser1 = VeEntityType<VeComponentPosition, VeComponentUser1>; //can be any mix of component types
 
-	//using VeEntityTypeListUser = tl::type_list<
+	//using VeEntityTypeListUser = vtll::type_list<
 	//	VeEntityeUser1
 	//  , ...  
 	//>;
 
-	using VeEntityTypeListUser = vtl::type_list<>; //default is no user entity types 
+	using VeEntityTypeListUser = vtll::type_list<>; //default is no user entity types 
 
 }
 
