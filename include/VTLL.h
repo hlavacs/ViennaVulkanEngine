@@ -5,23 +5,26 @@
 #include <variant>
 #include <iostream>
 
-//
-//	Vienna Type List Library
-//	By Helmut Hlavacs, University of Vienna
-//
-//	A collection of C++ typelist algorithms
-//
-//	See the static_assert statements to understand what each function does
-//
-//
-//	Based on the following source:
-//	https://nilsdeppe.com/posts/tmpl-part2
-//
+/***********************************************************************************
+* 
+	Vienna Type List Library
+
+	By Helmut Hlavacs, University of Vienna, 2021
+
+	This library comes with no warranty and uses the MIT license
+
+	A collection of C++ typelist algorithms.
+
+	See the static_assert statements to understand what each function does.
+
+	Inspired by Nils Deppe's post: https://nilsdeppe.com/posts/tmpl-part2
+
+***********************************************************************************/
 
 
 namespace vtll {
 
-	//standard list of types. Any such list can be used.
+	//type_list: example for a struct that can act as type list. Any such list can be used.
 
 	template <typename... Ts>
 	struct type_list {
@@ -79,7 +82,7 @@ namespace vtll {
 	using Nth_type = typename detail::Nth_type_impl<Seq, N>::type;
 
 	static_assert(
-		std::is_same<Nth_type<type_list<double, char, bool, double>, 1>, char>::value,
+		std::is_same_v<Nth_type<type_list<double, char, bool, double>, 1>, char>,
 		"The implementation of Nth_type is bad");
 
 	//-------------------------------------------------------------------------
@@ -91,25 +94,6 @@ namespace vtll {
 	static_assert(
 		std::is_same< front<type_list<double, char, bool, float>>, double >::value,
 		"The implementation of front is bad");
-
-	//-------------------------------------------------------------------------
-	//pop_front: pop the front element from a type list
-
-	namespace detail {
-		template <typename Seq>
-		struct pop_front_impl;
-
-		template <template <typename...> typename Seq, typename T, typename... Ts>
-		struct pop_front_impl<Seq<T, Ts...>> {
-			using type = Seq<Ts...>;
-		};
-	}
-
-	template <typename Seq>
-	using pop_front = typename detail::pop_front_impl<Seq>::type;
-
-	static_assert(std::is_same<pop_front<type_list<double, char, bool, double>>, type_list<char, bool, double>>::value,
-		"The implementation of pop_front is bad");
 
 	//-------------------------------------------------------------------------
 	//back: get the last element from a list
@@ -225,7 +209,7 @@ namespace vtll {
 		"The implementation of variant_type is bad");
 
 	//-------------------------------------------------------------------------
-	//transform: transform a list of types into a list of Function<types>
+	//transform: transform list<types> into list<Function<types>>
 
 	namespace detail {
 		template<typename List, template<typename> typename Fun>
@@ -356,7 +340,7 @@ namespace vtll {
 	};
 
 	static_assert(
-		std::is_same_v< to_ref_tuple<type_list<double, int>>::type, std::tuple<double&, int&> >,
+		std::is_same_v< typename to_ref_tuple<type_list<double, int>>::type, std::tuple<double&, int&> >,
 		"The implementation of to_ref_tuple is bad");
 
 
@@ -412,31 +396,63 @@ namespace vtll {
 	static_assert(!has_type<type_list<double, int, char, double>, float>::value, "The implementation of has_type is bad");
 
 	//-------------------------------------------------------------------------
-	//erase: erase a type C from a type list
+	//erase_type: erase a type C from a type list
 
 	namespace detail {
 		template<typename Seq, typename T>
-		struct erase_impl;
+		struct erase_type_impl;
 
 		template<template <typename...> typename Seq, typename C>
-		struct erase_impl<Seq<>, C> {
+		struct erase_type_impl<Seq<>, C> {
 			using type = Seq<>;
 		};
 
 		template<template <typename...> typename Seq, typename... Ts, typename T, typename C>
-		struct erase_impl<Seq<T, Ts...>, C> {
-			using type1 = cat< Seq<T>, typename erase_impl<Seq<Ts...>, C>::type>;
-			using type2 = typename erase_impl<Seq<Ts...>, C>::type;
+		struct erase_type_impl<Seq<T, Ts...>, C> {
+			using type1 = cat< Seq<T>, typename erase_type_impl<Seq<Ts...>, C>::type>;
+			using type2 = typename erase_type_impl<Seq<Ts...>, C>::type;
 			using type = typename std::conditional< !std::is_same_v<T, C>, type1, type2 >::type;
 		};
 	}
 	template <typename Seq, typename C>
-	struct erase {
-		using type = typename detail::erase_impl<Seq, C>::type;
+	struct erase_type {
+		using type = typename detail::erase_type_impl<Seq, C>::type;
 	};
 
-	static_assert( std::is_same_v< typename erase< type_list<double, int, char, double>, double>::type, type_list<int, char> >, 
+	static_assert( std::is_same_v< typename erase_type< type_list<double, int, char, double>, double>::type, type_list<int, char> >,
 		"The implementation of erase is bad");
+
+	//-------------------------------------------------------------------------
+	//erase_Nth: erase the Nth element of a list
+
+	namespace detail {
+		template<typename, size_t>
+		struct erase_Nth_impl;
+
+		template <template <typename...> typename Seq, typename T, typename... Ts>
+		struct erase_Nth_impl<Seq<T, Ts...>, 0> {
+			using type = Seq<Ts...>;
+		};
+
+		template <template <typename...> typename Seq, typename T, typename... Ts, size_t N>
+		struct erase_Nth_impl<Seq<T, Ts...>, N> {
+			using type = cat< Seq<T>, typename erase_Nth_impl<Seq<Ts...>, N-1 >::type >;
+		};
+	}
+
+	template <typename Seq, size_t N>
+	using erase_Nth = typename detail::erase_Nth_impl<Seq, N>::type;
+
+	static_assert( std::is_same_v< erase_Nth< type_list<double, char, bool, double>, 1>, type_list<double, bool, double > > );
+	static_assert(std::is_same_v< erase_Nth< type_list<double, char, bool, double>, 0>, type_list<char, bool, double > >);
+
+	namespace detail {
+		using example_list = type_list<double, char, bool, double>;
+	}
+	static_assert(
+		std::is_same_v<	
+			erase_Nth< detail::example_list, size<detail::example_list>::value -1 >
+			, type_list<double, char, bool > >);
 
 	//-------------------------------------------------------------------------
 	//has_any_type: check whether a type list contains ANY type of a second typelist
