@@ -3,20 +3,17 @@ project(vienna_vulkan_engine_cmake)
 
 set(CMAKE_CXX_STANDARD 20)
 
+
 include_directories(
         ../external/stb
         ../external/threadpool
 
         #brew headers
         /usr/local/include
-        #vulcan headers
-        ~/Code/CLionProjects/vulkanSDK/macOS/include
 )
 link_directories(
         #brew lib
         /usr/local/lib
-        #vulcan lib
-        ~/Code/CLionProjects/vulkanSDK/macOS/lib
 )
 
 # add the executable
