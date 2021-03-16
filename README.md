@@ -146,3 +146,11 @@ Building and running
 - Add the Metal Library: in „Link Binary With Libraries“, click ‚+‘, search for Metal.framework
 - Add the .cpp files from the project to the “Compile Sources” Build Phase (if they aren’t there by default)
 --> Open /VulkanEngine/VHHelper.h. If there are no errors in this file, all libs/frameworks are found.
+
+# Setup of macOS branch with Clion
+- Download the Vulkan SDK and unzip to whatever folder you want for example "~/Code/CLionProjects/vulkanSDK/"
+- Run script install_vulkan.py  
+- install glfw3, glm and assimp using brew install
+- go to file VulkanEngine/CMakeLists.txt and at the Top click on appeared button "reload changes". After that CTRL+R should run compilation. 
+- or you can setUp configuration manually just create new conf -> CMake App (target app, executable app)
+- change "working directory" to "~/Code/CLionProjects/ViennaVulkanEngine/VulkanEngine" run/debug config -> edit config -> working directory.

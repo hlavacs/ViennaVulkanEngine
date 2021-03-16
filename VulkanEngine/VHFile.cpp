@@ -20,13 +20,13 @@ namespace vh {
 	*
 	*/
 
-	std::vector<char> vhFileRead(const std::string& filename) {
-		std::ifstream file(filename, std::ios::ate | std::ios::binary);
-
-		if (!file.is_open()) {
-			assert(false);
-			exit(1);
-		}
+    std::vector<char> vhFileRead(const std::string &filename) {
+        std::ifstream file(filename, std::ios::ate | std::ios::binary);
+        if (!file.is_open()) {
+            std::cout << "some problem with file " << filename << std::endl;
+            assert(false);
+            exit(1);
+        }
 
 		size_t fileSize = (size_t)file.tellg();
 		std::vector<char> buffer(fileSize);
