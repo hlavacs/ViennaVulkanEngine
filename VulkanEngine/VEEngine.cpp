@@ -24,7 +24,7 @@ namespace ve {
 	* \brief Constructor of my VEEngine
 	* \param[in] debug Switch debuggin on or off
 	*/ 
-	VEEngine::VEEngine(bool debug) : m_debug(debug) {
+	VEEngine::VEEngine(bool debug) : m_debug(debug) ,m_renderer_type(VERendererType::Forward){
 		g_pVEEngineSingleton = this; 
 
 		if (vhLoadVulkanLibrary() != VK_SUCCESS ) exit(-1);
@@ -89,14 +89,16 @@ namespace ve {
 	void VEEngine::createRenderer() {
         m_pForwardRenderer = new VERendererForward();
         m_pRTRenderer = new VERendererRT();
-		if (m_ray_tracing)
-		{
-			m_pRenderer = m_pRTRenderer;
-		}
-		else
-		{
-			m_pRenderer = m_pForwardRenderer;
-		}
+        switch (m_rendererType) {
+            case VERendererType::Forward:
+                m_pRenderer = m_pForwardRenderer;
+                break;
+            case VERendererType::RayTracingNVidia:
+                m_pRenderer = m_pRTRenderer;
+                break;
+            default:
+                m_pRenderer = m_pForwardRenderer;
+        }
 	}
 
 	/**

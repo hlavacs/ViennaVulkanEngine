@@ -43,9 +43,21 @@ namespace ve {
 		friend VESceneManager;
 
 	protected:
+	    enum VERendererType: int
+        {
+	        Forward = 0,
+	        Deferred = 1,
+	        RayTracingNVidia = 2,
+	        RayTracingKHR = 3,
+	        Hybrid = 4,
+        };
+
 		VkInstance m_instance = VK_NULL_HANDLE;			///<Vulkan app instance
 		VEWindow * m_pWindow = nullptr;					///<Pointer to the only Window instance
+
+        VERendererType m_rendererType;
         VERenderer* m_pForwardRenderer = nullptr;
+        VERenderer* m_pDeferredRenderer = nullptr;
         VERenderer* m_pRTRenderer = nullptr;
 		VERenderer * m_pRenderer = nullptr;				///<Pointer to the only renderer instance
 		VESceneManager * m_pSceneManager = nullptr;		///<Pointer to the only scene manager instance
@@ -73,8 +85,7 @@ namespace ve {
 		bool m_framebufferResized = false;				///<Flag indicating whether the window size has changed.
 		bool m_end_running = false;						///<Flag indicating that the engine should leave the render loop
 		bool m_debug = true;							///<Flag indicating whether debugging is enabled or not
-		bool m_ray_tracing = true;					    ///<Flag indicating whether ray tracing is used
-		
+
 		virtual std::vector<const char*> getRequiredInstanceExtensions(); //Return a list of required Vulkan instance extensions
 		virtual std::vector<const char*> getValidationLayers();	//Returns a list of required Vulkan validation layers
 		void callListeners(double dt, veEvent event);	//Call all event listeners and give them certain event
