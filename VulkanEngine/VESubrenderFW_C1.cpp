@@ -22,17 +22,17 @@ namespace ve {
 	void VESubrenderFW_C1::initSubrenderer() {
 		VESubrenderFW::initSubrenderer();
 
-		VkDescriptorSetLayout perObjectLayout2 = getRendererForwardPointer()->getDescriptorSetLayoutPerObject();
+		VkDescriptorSetLayout perObjectLayout = m_renderer.getDescriptorSetLayoutPerObject();
 
-		vh::vhPipeCreateGraphicsPipelineLayout(getRendererForwardPointer()->getDevice(),
-		{ perObjectLayout2, perObjectLayout2,  getRendererForwardPointer()->getDescriptorSetLayoutShadow(), perObjectLayout2 },
+		vh::vhPipeCreateGraphicsPipelineLayout(m_renderer.getDevice(),
+		{ perObjectLayout, perObjectLayout,  m_renderer.getDescriptorSetLayoutShadow(), perObjectLayout },
 		{},&m_pipelineLayout);
 
 		m_pipelines.resize(1);
-		vh::vhPipeCreateGraphicsPipeline(getRendererForwardPointer()->getDevice(),
+		vh::vhPipeCreateGraphicsPipeline(m_renderer.getDevice(),
 		{ "media/shader/Forward/C1/vert.spv", "media/shader/Forward/C1/frag.spv" },
-			getRendererForwardPointer()->getSwapChainExtent(),
-			m_pipelineLayout, getRendererForwardPointer()->getRenderPass(),
+			m_renderer.getSwapChainExtent(),
+			m_pipelineLayout, m_renderer.getRenderPass(),
 			{ },
 			&m_pipelines[0]);
 

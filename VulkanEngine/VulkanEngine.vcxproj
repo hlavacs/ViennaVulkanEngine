@@ -178,6 +178,7 @@
     <ClInclude Include="CLInclude.h" />
     <ClInclude Include="CLShape.h" />
     <ClInclude Include="DescriptorSetGenerator.h" />
+    <ClInclude Include="VEEnums.h" />
     <ClInclude Include="RaytracingPipelineGenerator.h" />
     <ClInclude Include="ShaderBindingTableGenerator.h" />
     <ClInclude Include="TopLevelASGenerator.h" />
@@ -186,8 +187,15 @@
     <ClInclude Include="VEMaterial.h" />
     <ClInclude Include="VERendererRT.h" />
     <ClInclude Include="VERendererDeferred.h" />
+    <ClInclude Include="VESubrenderDF.h" />
+    <ClInclude Include="VESubrenderDF_C1.h" />
+    <ClInclude Include="VESubrenderDF_Composer.h" />
+    <ClInclude Include="VESubrenderDF_D.h" />
+    <ClInclude Include="VESubrenderDF_DN.h" />
+    <ClInclude Include="VESubrenderDF_Shadow.h" />
+    <ClInclude Include="VESubrenderDF_Skyplane.h" />
     <ClInclude Include="VESubrenderFW.h" />
-    <ClInclude Include="VESubrenderFW_Nuklear.h" />
+    <ClInclude Include="VESubrender_Nuklear.h" />
     <ClInclude Include="VESubrenderFW_Skyplane.h" />
     <ClInclude Include="VESubrenderFW_C1.h" />
     <ClInclude Include="VESubrenderFW_DN.h" />
@@ -205,16 +213,6 @@
     <ClInclude Include="VESubrenderFW_Shadow.h" />
     <ClInclude Include="VESubrenderRT.h" />
     <ClInclude Include="VESubrenderRT_DN.h" />
-    <ClInclude Include="VERendererDeferred.h" />
-    <ClInclude Include="VERendererShader.h" />
-    <ClInclude Include="VESubrenderDF_C1.h" />
-    <ClInclude Include="VESubrenderDF_Composer.h" />
-    <ClInclude Include="VESubrenderDF_Cubemap.h" />
-    <ClInclude Include="VESubrenderDF_Cubemap2.h" />
-    <ClInclude Include="VESubrenderDF_D.h" />
-    <ClInclude Include="VESubrenderDF_DN.h" />
-    <ClInclude Include="VESubrenderDF_Shadow.h" />
-    <ClInclude Include="VESubrenderDF_Skyplane.h" />
     <ClInclude Include="VEWindow.h" />
     <ClInclude Include="VEWindowGLFW.h" />
     <ClInclude Include="VHFunctions.h" />
@@ -228,10 +226,17 @@
     <ClCompile Include="DescriptorSetGenerator.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="CLIntersect.cpp" />
+    <ClCompile Include="VESubrenderDF.cpp" />
     <ClCompile Include="RaytracingPipelineGenerator.cpp" />
     <ClCompile Include="ShaderBindingTableGenerator.cpp" />
     <ClCompile Include="TopLevelASGenerator.cpp" />
     <ClCompile Include="VERendererRT.cpp" />
+    <ClCompile Include="VESubrenderDF_C1.cpp" />
+    <ClCompile Include="VESubrenderDF_Composer.cpp" />
+    <ClCompile Include="VESubrenderDF_D.cpp" />
+    <ClCompile Include="VESubrenderDF_DN.cpp" />
+    <ClCompile Include="VESubrenderDF_Shadow.cpp" />
+    <ClCompile Include="VESubrenderDF_Skyplane.cpp" />
     <ClCompile Include="VESubrenderRT.cpp" />
     <ClCompile Include="VESubrenderRT_DN.cpp" />
     <ClCompile Include="VHFunctions.cpp" />
@@ -253,7 +258,7 @@
     <ClCompile Include="VESubrenderFW_C1.cpp" />
     <ClCompile Include="VESubrenderFW_D.cpp" />
     <ClCompile Include="VESubrenderFW_DN.cpp" />
-    <ClCompile Include="VESubrenderFW_Nuklear.cpp" />
+    <ClCompile Include="VESubrender_Nuklear.cpp" />
     <ClCompile Include="VESubrenderFW_Shadow.cpp" />
     <ClCompile Include="VESubrenderFW_Skyplane.cpp" />
     <ClCompile Include="VEWindow.cpp" />
@@ -267,15 +272,6 @@
     <ClCompile Include="VHRender.cpp" />
     <ClCompile Include="VHSwapchain.cpp" />
     <ClCompile Include="VKHelpers.cpp" />
-    <ClInclude Include="VERendererDeferred.h" />
-    <ClInclude Include="VESubrenderDF_C1.h" />
-    <ClInclude Include="VESubrenderDF_Composer.h" />
-    <ClInclude Include="VESubrenderDF_Cubemap.h" />
-    <ClInclude Include="VESubrenderDF_Cubemap2.h" />
-    <ClInclude Include="VESubrenderDF_D.h" />
-    <ClInclude Include="VESubrenderDF_DN.h" />
-    <ClInclude Include="VESubrenderDF_Shadow.h" />
-    <ClInclude Include="VESubrenderDF_Skyplane.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="VHFunctions.inl" />

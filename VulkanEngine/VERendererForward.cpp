@@ -15,10 +15,7 @@ const uint32_t SHADOW_MAP_DIM = 4096;
 
 namespace ve {
 
-	VERendererForward * g_pVERendererForwardSingleton = nullptr;	///<Singleton pointer to the only VERendererForward instance
-
 	VERendererForward::VERendererForward() : VERenderer() {
-		g_pVERendererForwardSingleton = this;
 	}
 
 	/**
@@ -42,12 +39,8 @@ namespace ve {
 
 		vh::vhDevPickPhysicalDevice(getEnginePointer()->getInstance(), m_surface, requiredDeviceExtensions,
 									&m_physicalDevice, &m_deviceFeatures, &m_deviceLimits );
-
-		if (vh::vhDevCreateLogicalDevice(getEnginePointer()->getInstance(), m_physicalDevice, m_surface, requiredDeviceExtensions, requiredValidationLayers,
-			&m_device, &m_graphicsQueue, &m_presentQueue) != VK_SUCCESS) {
-			assert(false);
-			exit(1);
-		}
+		vh::vhDevCreateLogicalDevice(getEnginePointer()->getInstance(), m_physicalDevice, m_surface, requiredDeviceExtensions, requiredValidationLayers,
+			&m_device, &m_graphicsQueue, &m_presentQueue);
 
 		vh::vhMemCreateVMAAllocator(getEnginePointer()->getInstance(), m_physicalDevice, m_device, m_vmaAllocator);
 
@@ -205,12 +198,12 @@ namespace ve {
 	* \brief Create and register all known subrenderers for this VERenderer
 	*/
 	void VERendererForward::createSubrenderers() {
-		addSubrenderer(new VESubrenderFW_C1());
-		addSubrenderer(new VESubrenderFW_D());
-		addSubrenderer(new VESubrenderFW_DN());
-		addSubrenderer(new VESubrenderFW_Skyplane());
-		addSubrenderer( new VESubrenderFW_Shadow());
-		addSubrenderer(new VESubrenderFW_Nuklear());
+		addSubrenderer(new VESubrenderFW_C1(*this));
+		addSubrenderer(new VESubrenderFW_D(*this));
+		addSubrenderer(new VESubrenderFW_DN(*this));
+		addSubrenderer(new VESubrenderFW_Skyplane(*this));
+		addSubrenderer( new VESubrenderFW_Shadow(*this));
+		addSubrenderer(new VESubrender_Nuklear(*this));
 	}
 
 

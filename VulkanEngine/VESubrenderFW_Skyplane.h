@@ -19,7 +19,7 @@ namespace ve {
 
 	public:
 		///Constructor
-		VESubrenderFW_Skyplane() { };
+		VESubrenderFW_Skyplane(VERendererForward &renderer) : VESubrenderFW(renderer) {};
 		///Destructor
 		virtual ~VESubrenderFW_Skyplane() {};
 

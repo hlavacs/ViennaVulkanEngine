@@ -22,18 +22,18 @@ namespace ve {
 	void VESubrenderFW_Shadow::initSubrenderer() {
 		VESubrenderFW::initSubrenderer();
 
-		VkDescriptorSetLayout perObjectLayout = getRendererForwardPointer()->getDescriptorSetLayoutPerObject();
-		vh::vhPipeCreateGraphicsPipelineLayout(getRendererForwardPointer()->getDevice(),
-		{ perObjectLayout, perObjectLayout, getRendererForwardPointer()->getDescriptorSetLayoutShadow(), perObjectLayout },
+		VkDescriptorSetLayout perObjectLayout = m_renderer.getDescriptorSetLayoutPerObject();
+		vh::vhPipeCreateGraphicsPipelineLayout(m_renderer.getDevice(),
+		{ perObjectLayout, perObjectLayout, m_renderer.getDescriptorSetLayoutShadow(), perObjectLayout },
 		{},
 		&m_pipelineLayout);
 
 		m_pipelines.resize(1);
-		vh::vhPipeCreateGraphicsShadowPipeline(getRendererForwardPointer()->getDevice(),
+		vh::vhPipeCreateGraphicsShadowPipeline(m_renderer.getDevice(),
 			"media/shader/Forward/Shadow/vert.spv",
-			getRendererForwardPointer()->getShadowMapExtent(),
+			m_renderer.getShadowMapExtent(),
 			m_pipelineLayout, 
-			getRendererForwardPointer()->getRenderPassShadow(),
+			m_renderer.getRenderPassShadow(),
 			&m_pipelines[0]);
 
 	}

@@ -22,17 +22,17 @@ namespace ve {
 	void VESubrenderDF_C1::initSubrenderer() {
         VESubrender::initSubrenderer();
 
-        VkDescriptorSetLayout perObjectLayout = getRendererDeferredPointer()->getDescriptorSetLayoutPerObject();
-        vh::vhPipeCreateGraphicsPipelineLayout(getRendererDeferredPointer()->getDevice(),
-            { perObjectLayout, perObjectLayout, getRendererDeferredPointer()->getDescriptorSetLayoutShadow(), perObjectLayout },
+        VkDescriptorSetLayout perObjectLayout = m_renderer.getDescriptorSetLayoutPerObject();
+        vh::vhPipeCreateGraphicsPipelineLayout(m_renderer.getDevice(),
+            { perObjectLayout, perObjectLayout, m_renderer.getDescriptorSetLayoutShadow(), perObjectLayout },
             { },
             &m_pipelineLayout);
 
         m_pipelines.resize(1);
-        vh::vhPipeCreateGraphicsPipeline(getRendererDeferredPointer()->getDevice(),
-            { "shader/Deferred/C1/vert.spv", "shader/Deferred/C1/frag.spv" },
-            getRendererDeferredPointer()->getSwapChainExtent(),
-            m_pipelineLayout, getRendererDeferredPointer()->getRenderPass(),
+        vh::vhPipeCreateGraphicsPipeline(m_renderer.getDevice(),
+            { "media/shader/Deferred/C1/vert.spv", "media/shader/Deferred/C1/frag.spv" },
+            m_renderer.getSwapChainExtent(),
+            m_pipelineLayout, m_renderer.getRenderPass(),
             {},
             &m_pipelines[0], 0, VK_CULL_MODE_BACK_BIT, 4);
 	}

@@ -4,20 +4,20 @@
 * (c) bei Helmut Hlavacs, University of Vienna
 *
 */
-
-#pragma once
+#ifndef VE_SUBRENDER_DF_SHADOW_H
+#define VE_SUBRENDER_DF_SHADOW_H
 
 namespace ve {
 
 	/**
 	* \brief Subrenderer that manages draws the shadow pass
 	*/
-	class VESubrenderDF_Shadow : public VESubrender {
+	class VESubrenderDF_Shadow : public VESubrenderDF {
 	protected:
 
 	public:
 		///Constructor
-		VESubrenderDF_Shadow() {};
+		VESubrenderDF_Shadow(VERendererDeferred &renderer) : VESubrenderDF(renderer) {};
 		///Destructor
 		virtual ~VESubrenderDF_Shadow() {};
 
@@ -36,3 +36,4 @@ namespace ve {
 	};
 }
 
+#endif

@@ -24,7 +24,7 @@ namespace ve {
 	* \brief Constructor of my VEEngine
 	* \param[in] debug Switch debuggin on or off
 	*/ 
-	VEEngine::VEEngine(bool debug) : m_debug(debug) ,m_renderer_type(VERendererType::Forward){
+	VEEngine::VEEngine(veRendererType type, bool debug) : m_debug(debug) ,m_rendererType(type){
 		g_pVEEngineSingleton = this; 
 
 		if (vhLoadVulkanLibrary() != VK_SUCCESS ) exit(-1);
@@ -89,16 +89,16 @@ namespace ve {
 	void VEEngine::createRenderer() {
         m_pForwardRenderer = new VERendererForward();
         m_pDeferredRenderer = new VERendererDeferred();
-        m_pRTRenderer = new VERendererRT();
+        m_pRayTracingNVidiaRenderer = new VERendererRT();
         switch (m_rendererType) {
-            case VERendererType::Forward:
+            case veRendererType::VE_RENDERER_TYPE_FORWARD:
                 m_pRenderer = m_pForwardRenderer;
                 break;
-            case VERendererType::RayTracingNVidia:
-                m_pRenderer = m_pRTRenderer;
-                break;
-            case VERendererType::Deferred:
-                m_pRenderer = m_pDeferredRenderer;
+			case veRendererType::VE_RENDERER_TYPE_DEFERRED:
+				m_pRenderer = m_pDeferredRenderer;
+				break;
+            case veRendererType::VE_RENDERER_TYPE_RAYTRACING_NVIDIA:
+                m_pRenderer = m_pRayTracingNVidiaRenderer;
                 break;
             default:
                 m_pRenderer = m_pForwardRenderer;
@@ -176,7 +176,7 @@ namespace ve {
 			extensions.push_back(VK_EXT_DEBUG_REPORT_EXTENSION_NAME);
 			//extensions.push_back("VK_EXT_debug_report");
 		}
-		if (m_ray_tracing)
+		if (isRayTracing())
 		{
 			extensions.push_back(VK_KHR_GET_PHYSICAL_DEVICE_PROPERTIES_2_EXTENSION_NAME);
 		}
@@ -525,7 +525,7 @@ namespace ve {
 		std::chrono::high_resolution_clock::time_point t_prev = t_start;
 		std::chrono::high_resolution_clock::time_point t_now;
 
-		if (m_ray_tracing)
+		if (isRayTracing())
 		{
 			m_pRenderer->initAccelerationStructures();
 		}

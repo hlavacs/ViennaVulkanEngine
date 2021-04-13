@@ -25,6 +25,32 @@ namespace ve {
 		friend VEEngine;
 		friend VESceneManager;
 		friend VESubrender;
+	public: 
+		///\brief One secondary command buffer and the pool that it came from
+		struct secondaryCmdBuf_t {
+			VkCommandBuffer buffer;										///<Vulkan cmd buffer handle
+			VkCommandPool pool;											///<Vulkan cmd buffer pool handle
+			secondaryCmdBuf_t &operator= (const secondaryCmdBuf_t &right) {	///<copy operator
+				buffer = right.buffer;
+				pool = right.pool;
+				return *this;
+			};
+		};
+
+
+		///\brief Shadow and light command buffers for one particular light
+		struct secondaryBufferLists_t {
+			std::vector<secondaryCmdBuf_t> shadowBuffers = {};						///<list of secondary command buffers for the shadow pass
+			std::vector<secondaryCmdBuf_t> lightBuffers = {};						///<list of secondary command buffers for the light pass
+			std::vector<std::future<secondaryCmdBuf_t>> shadowBufferFutures = {};	///<futures to wait for if the buffers have been created in parallel
+			std::vector<std::future<secondaryCmdBuf_t>> lightBufferFutures = {};	///<futures to wait for
+		};
+
+		///\brief Shadow and light command buffers for one particular light
+		struct lightBufferLists_t {
+			bool	seenThisLight = false;								///<This light has been rendered, so you do not have to remove this cmd buffer list
+			std::vector<secondaryBufferLists_t> lightLists;				///<One list for each image in the swap chain
+		};
 
 	protected:
 		VkPhysicalDevice m_physicalDevice = VK_NULL_HANDLE;		///<Vulkan physical device handle
@@ -68,7 +94,7 @@ namespace ve {
 		///Base class does not create subrennderers directly
 		virtual void createSubrenderers() {};
 		virtual void addSubrenderer( VESubrender *pSub);
-		virtual VESubrender * getSubrenderer( VESubrender::veSubrenderType );
+		virtual VESubrender * getSubrenderer( veSubrenderType type);
 		virtual void destroySubrenderers();
 		///Draw one frame
 		virtual void drawFrame() {};

@@ -17,7 +17,7 @@ namespace ve {
 	class VESubrenderFW_D : public VESubrenderFW {
 	public:
 		///Constructor
-		VESubrenderFW_D() {};
+		VESubrenderFW_D(VERendererForward &renderer) : VESubrenderFW(renderer) {};
 		///Destructor
 		virtual ~VESubrenderFW_D() {};
 

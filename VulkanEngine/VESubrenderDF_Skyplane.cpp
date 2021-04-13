@@ -22,25 +22,27 @@ namespace ve {
 	void VESubrenderDF_Skyplane::initSubrenderer() {
 		VESubrender::initSubrenderer();
 
-        vh::vhRenderCreateDescriptorSetLayout(getRendererDeferredPointer()->getDevice(),
-            { 1 },
+        vh::vhRenderCreateDescriptorSetLayout(m_renderer.getDevice(),
+            { m_resourceArrayLength },
             { VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER },
             { VK_SHADER_STAGE_FRAGMENT_BIT },
             &m_descriptorSetLayoutResources);
 
-        VkDescriptorSetLayout perObjectLayout = getRendererDeferredPointer()->getDescriptorSetLayoutPerObject();
-        vh::vhPipeCreateGraphicsPipelineLayout(getRendererDeferredPointer()->getDevice(),
-            { perObjectLayout, perObjectLayout, getRendererDeferredPointer()->getDescriptorSetLayoutShadow(), perObjectLayout, m_descriptorSetLayoutResources },
+        VkDescriptorSetLayout perObjectLayout = m_renderer.getDescriptorSetLayoutPerObject();
+        vh::vhPipeCreateGraphicsPipelineLayout(m_renderer.getDevice(),
+            { perObjectLayout, perObjectLayout, m_renderer.getDescriptorSetLayoutShadow(), perObjectLayout, m_descriptorSetLayoutResources },
             {},
             &m_pipelineLayout);
 
         m_pipelines.resize(1);
-        vh::vhPipeCreateGraphicsPipeline(getRendererDeferredPointer()->getDevice(),
-            { "shader/Deferred/Skyplane/vert.spv", "shader/Deferred/Skyplane/frag.spv" },
-            getRendererDeferredPointer()->getSwapChainExtent(),
-            m_pipelineLayout, getRendererDeferredPointer()->getRenderPass(),
+        vh::vhPipeCreateGraphicsPipeline(m_renderer.getDevice(),
+            { "media/shader/Deferred/Skyplane/vert.spv", "media/shader/Deferred/Skyplane/frag.spv" },
+            m_renderer.getSwapChainExtent(),
+            m_pipelineLayout, m_renderer.getRenderPass(),
             {},
             &m_pipelines[0], 0, VK_CULL_MODE_BACK_BIT, 4);
+
+        if (m_maps.empty()) m_maps.resize(1);
 	}
 
 	/**
@@ -50,23 +52,10 @@ namespace ve {
 	*
 	*/
 	void VESubrenderDF_Skyplane::addEntity(VEEntity *pEntity) {
+        std::vector<VkDescriptorImageInfo> maps = { pEntity->m_pMaterial->mapDiffuse->m_imageInfo };
+        addMaps(pEntity, maps);
+
 		VESubrender::addEntity(pEntity);
-
-        vh::vhRenderCreateDescriptorSets(getRendererDeferredPointer()->getDevice(),
-            (uint32_t)getRendererDeferredPointer()->getSwapChainNumber(),
-            m_descriptorSetLayoutResources,
-            getRendererDeferredPointer()->getDescriptorPool(),
-            pEntity->m_descriptorSetsResources);
-
-        for(uint32_t i = 0; i < pEntity->m_descriptorSetsResources.size(); i++) {
-            vh::vhRenderUpdateDescriptorSet(getRendererDeferredPointer()->getDevice(),
-                pEntity->m_descriptorSetsResources[i],
-                { VK_NULL_HANDLE },	//UBOs
-                { 0 },					//UBO sizes
-                { { pEntity->m_pMaterial->mapDiffuse->m_imageView } },	//textureImageViews
-                { { pEntity->m_pMaterial->mapDiffuse->m_sampler } }	//samplers
-            );
-        }
 	}
 }
 

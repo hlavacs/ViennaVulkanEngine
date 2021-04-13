@@ -16,7 +16,6 @@ namespace ve {
 	VERendererRT* g_pVERendererRTSingleton = nullptr;	///<Singleton pointer to the only VERendererRT instance
 
 	VERendererRT::VERendererRT() : VERenderer() {
-		g_pVERendererRTSingleton = this;
 	}
 
 
@@ -42,7 +41,7 @@ namespace ve {
 			exit(1);
 		}
 
-		vh::vhMemCreateVMAAllocator(m_physicalDevice, m_device, m_vmaAllocator);
+		vh::vhMemCreateVMAAllocator(getEnginePointer()->getInstance(), m_physicalDevice, m_device, m_vmaAllocator);
 
 		vh::vhSwapCreateSwapChain(m_physicalDevice, m_surface, m_device, getWindowPointer()->getExtent(),
 			&m_swapChain, m_swapChainImages, m_swapChainImageViews,
@@ -135,17 +134,17 @@ namespace ve {
 	* \brief Create and register all known subrenderers for this VERenderer
 	*/
 	void VERendererRT::createSubrenderers() {
-		addSubrenderer(new VESubrenderRT_DN());
-        addSubrenderer(new VESubrenderFW_Nuklear());
+		addSubrenderer(new VESubrenderRT_DN(*this));
+        addSubrenderer(new VESubrender_Nuklear(*this));
 	}
 
 	void VERendererRT::addSubrenderer(VESubrender* pSub) {
 		pSub->initSubrenderer();
-		if (pSub->getClass() == VESubrender::VE_SUBRENDERER_CLASS_OVERLAY) {
+		if (pSub->getClass() == VE_SUBRENDERER_CLASS_OVERLAY) {
 			m_subrenderOverlay = pSub;
 			return;
 		}
-        if(pSub->getClass() == VESubrender::VE_SUBRENDERER_CLASS_RT)
+        if(pSub->getClass() == VE_SUBRENDERER_CLASS_RT)
         {
             m_subrenderRT = (VESubrenderRT_DN *)pSub;
             return;
@@ -715,31 +714,31 @@ namespace ve {
 
 	void VERendererRT::addEntityToSubrenderer(VEEntity* pEntity) {
 
-		VESubrender::veSubrenderType type = VESubrender::VE_SUBRENDERER_TYPE_NONE;
+		veSubrenderType type = VE_SUBRENDERER_TYPE_NONE;
 
 		switch (pEntity->getEntityType()) {
 		case VEEntity::VE_ENTITY_TYPE_NORMAL:
 			if (pEntity->m_pMaterial->mapDiffuse != nullptr) {
 
 				if (pEntity->m_pMaterial->mapNormal != nullptr) {
-					type = VESubrender::VE_SUBRENDERER_TYPE_DIFFUSEMAP_NORMALMAP;
+					type = VE_SUBRENDERER_TYPE_DIFFUSEMAP_NORMALMAP;
 					break;
 				}
 
-				type = VESubrender::VE_SUBRENDERER_TYPE_DIFFUSEMAP;
+				type = VE_SUBRENDERER_TYPE_DIFFUSEMAP;
 				break;
 			}
-			type = VESubrender::VE_SUBRENDERER_TYPE_COLOR1;
+			type = VE_SUBRENDERER_TYPE_COLOR1;
 			break;
 		case VEEntity::VE_ENTITY_TYPE_SKYPLANE:
-			type = VESubrender::VE_SUBRENDERER_TYPE_SKYPLANE;
+			type = VE_SUBRENDERER_TYPE_SKYPLANE;
 			break;
 		case VEEntity::VE_ENTITY_TYPE_TERRAIN_HEIGHTMAP:
 			break;
 		default: return;
 		}
 
-		if (type == VESubrender::VE_SUBRENDERER_TYPE_DIFFUSEMAP_NORMALMAP || type == VESubrender::VE_SUBRENDERER_TYPE_DIFFUSEMAP)
+		if (type == VE_SUBRENDERER_TYPE_DIFFUSEMAP_NORMALMAP || type == VE_SUBRENDERER_TYPE_DIFFUSEMAP)
 		{
 			m_subrenderRT->addEntity(pEntity);
 		}

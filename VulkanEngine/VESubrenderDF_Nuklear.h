@@ -4,21 +4,21 @@
 * (c) bei Helmut Hlavacs, University of Vienna
 *
 */
-
-#pragma once
+#ifndef VE_SUBRENDER_DF_NUKLEAR_H
+#define VE_SUBRENDER_DF_NUKLEAR_H
 
 namespace ve {
 
     /**
     * \brief Subrenderer that manages entities that have only one color
     */
-    class VESubrenderDF_Nuklear : public VESubrender {
+    class VESubrenderDF_Nuklear : public VESubrenderDF {
     protected:
         struct nk_context *m_ctx;						///<The Nuklear context storing the GUI data
 
     public:
         ///Constructor of class VESubrenderFW_Nuklear
-        VESubrenderDF_Nuklear() {};
+        VESubrenderDF_Nuklear(VERendererDeferred &renderer) : VESubrenderDF(renderer) {};
         ///Destructor of class VESubrenderFW_Nuklear
         virtual ~VESubrenderDF_Nuklear() {};
 
@@ -40,3 +40,5 @@ namespace ve {
 
     };
 }
+
+#endif

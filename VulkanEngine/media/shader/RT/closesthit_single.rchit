@@ -5,8 +5,8 @@
 
 #define RESOURCEARRAYLENGTH 16
 
-#include "common_defines.glsl"
-#include "light.glsl"
+#include "../common_defines.glsl"
+#include "../light.glsl"
 
 layout(location = 0) rayPayloadInNV vec3 hitValue;
 layout(location = 2) rayPayloadNV bool isShadowed;

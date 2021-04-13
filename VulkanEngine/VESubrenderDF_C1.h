@@ -5,19 +5,20 @@
 *
 */
 
-#pragma once
+#ifndef VE_SUBRENDER_DF_C1_H
+#define VE_SUBRENDER_DF_C1_H
 
 namespace ve {
 
 	/**
 	* \brief Subrenderer that manages entities that have only one color
 	*/
-	class VESubrenderDF_C1 : public VESubrender {
+	class VESubrenderDF_C1 : public VESubrenderDF {
 	protected:
 
 	public:
 		///Constructor
-		VESubrenderDF_C1() {};
+		VESubrenderDF_C1(VERendererDeferred &renderer) : VESubrenderDF(renderer) {};
 		///Destructor
 		virtual ~VESubrenderDF_C1() {};
 
@@ -29,5 +30,5 @@ namespace ve {
 		virtual void initSubrenderer();
 	};
 }
-
+#endif
 

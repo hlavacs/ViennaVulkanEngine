@@ -8,10 +8,12 @@
 #ifndef VHSUBRENDERFW_H
 #define VHSUBRENDERFW_H
 
-class VERenderer;
+#include "VESubrender.h"
+
 
 namespace ve {
 
+	class VERendererForward;
 
 	/**
 	*
@@ -26,6 +28,7 @@ namespace ve {
 	public:
 
 	protected:
+		VERendererForward &m_renderer;
 		uint32_t						m_resourceArrayLength = 16;						///<Length of resource array in shader
 		VkDescriptorSetLayout			m_descriptorSetLayoutResources = VK_NULL_HANDLE;	///<Descriptor set layout for per object resources (like images)
 		std::vector<VkDescriptorSet>	m_descriptorSetsResources;							///<a list of resource descriptor set arrays, maps are condensed into these arrays of size K
@@ -36,7 +39,7 @@ namespace ve {
 
 	public:
 		///Constructor of subrender fw class
-		VESubrenderFW() {};
+		VESubrenderFW(VERendererForward &renderer):m_renderer(renderer) {};
 		///Destructor of subrender fw class
 		virtual ~VESubrenderFW() {};
 		///\returns the class of the subrenderer, a very general description

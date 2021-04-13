@@ -9,18 +9,9 @@
 #define VERENDERERFORWARD_H
 
 
-
-#ifndef getRendererForwardPointer
-#define getRendererForwardPointer() g_pVERendererForwardSingleton
-#endif
-
 const uint32_t NUM_SHADOW_CASCADE = 6;
 
-namespace ve {
-
-
-	extern VERendererForward* g_pVERendererForwardSingleton;	///<Pointer to the only class instance 
-
+namespace ve { 
 	class VEEngine;
 
 	/**
@@ -31,34 +22,6 @@ namespace ve {
 	*
 	*/
 	class VERendererForward : public VERenderer {
-
-	public:
-
-		///\brief One secondary command buffer and the pool that it came from
-		struct secondaryCmdBuf_t {
-			VkCommandBuffer buffer;										///<Vulkan cmd buffer handle
-			VkCommandPool pool;											///<Vulkan cmd buffer pool handle
-			secondaryCmdBuf_t & operator= (const secondaryCmdBuf_t& right) {	///<copy operator
-				buffer = right.buffer;
-				pool = right.pool;
-				return *this;
-			};
-		};
-
-
-		///\brief Shadow and light command buffers for one particular light
-		struct secondaryBufferLists_t {
-			std::vector<secondaryCmdBuf_t> shadowBuffers = {};						///<list of secondary command buffers for the shadow pass
-			std::vector<secondaryCmdBuf_t> lightBuffers = {};						///<list of secondary command buffers for the light pass
-			std::vector<std::future<secondaryCmdBuf_t>> shadowBufferFutures = {};	///<futures to wait for if the buffers have been created in parallel
-			std::vector<std::future<secondaryCmdBuf_t>> lightBufferFutures = {};	///<futures to wait for
-		};
-
-		///\brief Shadow and light command buffers for one particular light
-		struct lightBufferLists_t {
-			bool	seenThisLight = false;								///<This light has been rendered, so you do not have to remove this cmd buffer list
-			std::vector<secondaryBufferLists_t> lightLists;				///<One list for each image in the swap chain
-		};
 
 	protected:
 		std::vector<VkCommandPool>		m_commandPools = {};				///<Array of command pools so that each thread in the thread pool has its own pool

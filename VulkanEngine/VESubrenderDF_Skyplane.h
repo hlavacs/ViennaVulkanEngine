@@ -5,19 +5,20 @@
 *
 */
 
-#pragma once
+#ifndef VE_SUBRENDER_DF_SKYPLANE_H
+#define VE_SUBRENDER_DF_SKYPLANE_H
 
 namespace ve {
 
 	/**
 	* \brief Subrenderer that manages entities that are cubemap based sky boxes
 	*/
-	class VESubrenderDF_Skyplane : public VESubrender {
+	class VESubrenderDF_Skyplane : public VESubrenderDF {
 	protected:
 
 	public:
 		///Constructor
-		VESubrenderDF_Skyplane() {};
+		VESubrenderDF_Skyplane(VERendererDeferred &renderer) : VESubrenderDF(renderer) {};
 		///Destructor
 		virtual ~VESubrenderDF_Skyplane() {};
 
@@ -31,5 +32,4 @@ namespace ve {
 	};
 }
 
-
-
+#endif

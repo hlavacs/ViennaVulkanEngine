@@ -8,6 +8,7 @@
 #ifndef VEINCLUDE_H
 #define VEINCLUDE_H
 
+#include "VEEnums.h"
 
 #include "VHHelper.h"
 
@@ -22,22 +23,27 @@
 #include "VEMaterial.h"
 #include "VEEntity.h"
 #include "VESceneManager.h"
+#include "VERenderer.h"
+#include "VERendererForward.h"
+#include "VERendererDeferred.h"
+#include "VERendererRT.h"
 #include "VESubrender.h"
 #include "VESubrenderFW.h"
+#include "VESubrenderDF.h"
+#include "VESubrenderRT.h"
+#include "VESubrender_Nuklear.h"
 #include "VESubrenderFW_C1.h"
 #include "VESubrenderFW_Skyplane.h"
 #include "VESubrenderFW_D.h"
 #include "VESubrenderFW_DN.h"
-#include "VESubrenderFW_Nuklear.h"
 #include "VESubrenderFW_Shadow.h"
-#include "VERenderer.h"
-#include "VERendererForward.h"
-#include "VERendererRT.h"
-#include "VESubrenderRT.h"
+#include "VESubrenderDF_C1.h"
+#include "VESubrenderDF_D.h"
+#include "VESubrenderDF_DN.h"
+#include "VESubrenderDF_Shadow.h"
+#include "VESubrenderDF_Skyplane.h"
+#include "VESubrenderDF_Composer.h"
 #include "VESubrenderRT_DN.h"
-//#include "VESubrenderRT_Nuklear.h"
-
-
 //use this macro to check the function result, if its not VK_SUCCESS then return the error
 #define VECHECKRESULT(x) { \
 		VkResult retval = (x); \

@@ -21,23 +21,23 @@ namespace ve {
 	void VESubrenderFW_Skyplane::initSubrenderer() {
 		VESubrender::initSubrenderer();
 
-		vh::vhRenderCreateDescriptorSetLayout(getRendererForwardPointer()->getDevice(),
+		vh::vhRenderCreateDescriptorSetLayout(m_renderer.getDevice(),
 			{ m_resourceArrayLength },
 			{ VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER },
 			{ VK_SHADER_STAGE_FRAGMENT_BIT },
 			&m_descriptorSetLayoutResources);
 
-		VkDescriptorSetLayout perObjectLayout = getRendererForwardPointer()->getDescriptorSetLayoutPerObject();
+		VkDescriptorSetLayout perObjectLayout = m_renderer.getDescriptorSetLayoutPerObject();
 
-		vh::vhPipeCreateGraphicsPipelineLayout(getRendererForwardPointer()->getDevice(),
-		{ perObjectLayout, perObjectLayout,  getRendererForwardPointer()->getDescriptorSetLayoutShadow(), perObjectLayout, m_descriptorSetLayoutResources },
+		vh::vhPipeCreateGraphicsPipelineLayout(m_renderer.getDevice(),
+		{ perObjectLayout, perObjectLayout,  m_renderer.getDescriptorSetLayoutShadow(), perObjectLayout, m_descriptorSetLayoutResources },
 		{}, &m_pipelineLayout);
 
 		m_pipelines.resize(1);
-		vh::vhPipeCreateGraphicsPipeline(getRendererForwardPointer()->getDevice(),
+		vh::vhPipeCreateGraphicsPipeline(m_renderer.getDevice(),
 		{ "media/shader/Forward/Skyplane/vert.spv", "media/shader/Forward/Skyplane/frag.spv" },
-			getRendererForwardPointer()->getSwapChainExtent(),
-			m_pipelineLayout, getRendererForwardPointer()->getRenderPass(),
+			m_renderer.getSwapChainExtent(),
+			m_pipelineLayout, m_renderer.getRenderPass(),
 			{ },
 			&m_pipelines[0]);
 

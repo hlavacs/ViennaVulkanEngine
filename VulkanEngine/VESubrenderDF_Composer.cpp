@@ -24,45 +24,45 @@ namespace ve {
 
         //create descriptor for the GBuffer
 
-        vh::vhRenderCreateDescriptorSetLayout(getRendererDeferredPointer()->getDevice(),
+        vh::vhRenderCreateDescriptorSetLayout(m_renderer.getDevice(),
             { 1,									1,                                    1 },
             { VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT,	VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT,  VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT },
             { VK_SHADER_STAGE_FRAGMENT_BIT,		    VK_SHADER_STAGE_FRAGMENT_BIT,         VK_SHADER_STAGE_FRAGMENT_BIT },
             &m_descriptorSetLayoutGBuffer);
 
 
-        VkDescriptorSetLayout perObjectLayout = getRendererDeferredPointer()->getDescriptorSetLayoutPerObject();
-        vh::vhPipeCreateGraphicsPipelineLayout(getRendererDeferredPointer()->getDevice(),
-            { perObjectLayout, perObjectLayout, getRendererDeferredPointer()->getDescriptorSetLayoutShadow(), m_descriptorSetLayoutGBuffer },
+        VkDescriptorSetLayout perObjectLayout = m_renderer.getDescriptorSetLayoutPerObject();
+        vh::vhPipeCreateGraphicsPipelineLayout(m_renderer.getDevice(),
+            { perObjectLayout, perObjectLayout, m_renderer.getDescriptorSetLayoutShadow(), m_descriptorSetLayoutGBuffer },
             {  },
             &m_pipelineLayout);
 
         m_pipelines.resize(1);
-        vh::vhPipeCreateGraphicsPipeline(getRendererDeferredPointer()->getDevice(),
-            { "shader/Deferred/Composition/vert.spv", "shader/Deferred/Composition/frag.spv" },
-            getRendererDeferredPointer()->getSwapChainExtent(),
-            m_pipelineLayout, getRendererDeferredPointer()->getRenderPass(),
+        vh::vhPipeCreateGraphicsPipeline(m_renderer.getDevice(),
+            { "media/shader/Deferred/Composition/vert.spv", "media/shader/Deferred/Composition/frag.spv" },
+            m_renderer.getSwapChainExtent(),
+            m_pipelineLayout, m_renderer.getRenderPass(),
             { VK_DYNAMIC_STATE_BLEND_CONSTANTS },
             &m_pipelines[0], 1, VK_CULL_MODE_FRONT_BIT, 1);
 
-        vh::vhRenderCreateDescriptorSets(getRendererDeferredPointer()->getDevice(),
-            (uint32_t)getRendererDeferredPointer()->getSwapChainNumber(),
+        vh::vhRenderCreateDescriptorSets(m_renderer.getDevice(),
+            (uint32_t)m_renderer.getSwapChainNumber(),
             m_descriptorSetLayoutGBuffer,
-            getRendererDeferredPointer()->getDescriptorPool(),
+            m_renderer.getDescriptorPool(),
             m_descriptorSetsGBuffer);
 
         for(uint32_t i = 0; i < m_descriptorSetsGBuffer.size(); i++) {
-            vh::vhRenderUpdateDescriptorSet(getRendererDeferredPointer()->getDevice(),
+            vh::vhRenderUpdateDescriptorSet(m_renderer.getDevice(),
                 m_descriptorSetsGBuffer[i],
+                { VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT, VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT, VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT },  // Descriptor Types
                 { VK_NULL_HANDLE, VK_NULL_HANDLE, VK_NULL_HANDLE }, //UBOs
                 { 0 },	//UBO sizes
                 {
-                    { getRendererDeferredPointer()->getPositionMap()->m_imageView },
-                    { getRendererDeferredPointer()->getNormalMap()->m_imageView   },
-                    { getRendererDeferredPointer()->getAlbedoMap()->m_imageView   }
+                    { m_renderer.getPositionMap()->m_imageInfo.imageView },
+                    { m_renderer.getNormalMap()->m_imageInfo.imageView   },
+                    { m_renderer.getAlbedoMap()->m_imageInfo.imageView   }
                 },	//textureImageViews
-                { { VK_NULL_HANDLE }, {VK_NULL_HANDLE }, {VK_NULL_HANDLE} }, 	//samplers
-                { VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT, VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT, VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT }  // Descriptor Types
+                { { VK_NULL_HANDLE }, {VK_NULL_HANDLE }, {VK_NULL_HANDLE} } 	//samplers
             );
 
         }
@@ -104,12 +104,6 @@ namespace ve {
 
 
     void VESubrenderDF_Composer::setDynamicPipelineState(VkCommandBuffer commandBuffer, uint32_t numPass) {
-        /*if(numPass == 0) {
-            float blendConstants[4] = { 0.0f, 0.0f, 0.0f, 0.0f };
-            vkCmdSetBlendConstants(commandBuffer, blendConstants);
-            return;
-        }*/
-
         float blendConstants[4] = { 1.0f, 1.0f, 1.0f, 1.0f };
         vkCmdSetBlendConstants(commandBuffer, blendConstants);
 

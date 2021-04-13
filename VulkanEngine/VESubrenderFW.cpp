@@ -29,13 +29,13 @@ namespace ve {
 		uint32_t size = (uint32_t)m_descriptorSetsResources.size();
 		if (size > 0) {
 			m_descriptorSetsResources.clear();
-			vh::vhRenderCreateDescriptorSets(getRendererForwardPointer()->getDevice(),
+			vh::vhRenderCreateDescriptorSets(m_renderer.getDevice(),
 				size, m_descriptorSetLayoutResources,
-				getRendererForwardPointer()->getDescriptorPool(),
+				m_renderer.getDescriptorPool(),
 				m_descriptorSetsResources);
 
 			for (uint32_t i = 0; i < size; i++) {
-				vh::vhRenderUpdateDescriptorSetMaps(getRendererForwardPointer()->getDevice(),
+				vh::vhRenderUpdateDescriptorSetMaps(m_renderer.getDevice(),
 					m_descriptorSetsResources[i],
 					0, i*m_resourceArrayLength, m_resourceArrayLength, m_maps);
 			}
@@ -48,14 +48,14 @@ namespace ve {
 	void VESubrenderFW::closeSubrenderer() {
 
 		for (auto pipeline : m_pipelines) {
-			vkDestroyPipeline(getRendererForwardPointer()->getDevice(), pipeline, nullptr);
+			vkDestroyPipeline(m_renderer.getDevice(), pipeline, nullptr);
 		}
 
 		if (m_pipelineLayout != VK_NULL_HANDLE)
-			vkDestroyPipelineLayout(getRendererForwardPointer()->getDevice(), m_pipelineLayout, nullptr);
+			vkDestroyPipelineLayout(m_renderer.getDevice(), m_pipelineLayout, nullptr);
 
 		if (m_descriptorSetLayoutResources != VK_NULL_HANDLE)
-			vkDestroyDescriptorSetLayout(getRendererForwardPointer()->getDevice(), m_descriptorSetLayoutResources, nullptr);
+			vkDestroyDescriptorSetLayout(m_renderer.getDevice(), m_descriptorSetLayoutResources, nullptr);
 
 	}
 
@@ -235,11 +235,11 @@ namespace ve {
 
 		uint32_t offset = 0;																	//offset into the list of maps - index where a particular array starts
 		if (pEntity->getResourceIdx() % m_resourceArrayLength == 0) {							//array is full or there is none yet? -> we need a new array
-			vh::vhRenderCreateDescriptorSets(	getRendererForwardPointer()->getDevice(),
-												1, 
-												m_descriptorSetLayoutResources,					//layout contains arrays of this size
-												getRendererForwardPointer()->getDescriptorPool(),
-												m_descriptorSetsResources);
+			vh::vhRenderCreateDescriptorSets(m_renderer.getDevice(),
+											 1, 
+											 m_descriptorSetLayoutResources,					//layout contains arrays of this size
+											 m_renderer.getDescriptorPool(),
+											 m_descriptorSetsResources);
 
 			offset = (uint32_t)m_maps[0].size();												//number of maps of first bind slot, e.g. number of diffuse maps
 
@@ -257,7 +257,7 @@ namespace ve {
 			}
 		}
 
-		vh::vhRenderUpdateDescriptorSetMaps(getRendererForwardPointer()->getDevice(),					//update the descriptor that holds the map array
+		vh::vhRenderUpdateDescriptorSetMaps(m_renderer.getDevice(),					//update the descriptor that holds the map array
 											m_descriptorSetsResources[m_descriptorSetsResources.size() - 1],
 											0, 
 											offset,												//start offset of the current map arrays that should be updated
@@ -295,7 +295,7 @@ namespace ve {
 
 					//update the descriptor set where the entity was removed
 					uint32_t arrayIndex = (uint32_t)(i / m_resourceArrayLength);
-					vh::vhRenderUpdateDescriptorSetMaps(getRendererForwardPointer()->getDevice(),
+					vh::vhRenderUpdateDescriptorSetMaps(m_renderer.getDevice(),
 						m_descriptorSetsResources[arrayIndex],
 						0,
 						arrayIndex*m_resourceArrayLength,

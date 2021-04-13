@@ -4,8 +4,8 @@
 
 #define RESOURCEARRAYLENGTH 16
 
-#include "../common_defines.glsl"
-#include "../light.glsl"
+#include "../../common_defines.glsl"
+#include "../../light.glsl"
 
 
 layout(location = 0) in vec2 fragTexCoord;

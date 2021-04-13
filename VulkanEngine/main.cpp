@@ -25,7 +25,7 @@ namespace ve {
 	protected:
 		
 		virtual void onDrawOverlay(veEvent event) {
-			VESubrenderFW_Nuklear * pSubrender = (VESubrenderFW_Nuklear*)getRendererPointer()->getOverlay();
+			VESubrender_Nuklear * pSubrender = (VESubrender_Nuklear*)getEnginePointer()->getRenderer()->getOverlay();
 			if (pSubrender == nullptr) return;
 
 			struct nk_context * ctx = pSubrender->getContext();
@@ -89,14 +89,14 @@ namespace ve {
 
 			glm::vec3 positionCube   = getSceneManagerPointer()->getSceneNode("The Cube Parent")->getPosition();
 			glm::vec3 positionCamera = getSceneManagerPointer()->getSceneNode("StandardCameraParent")->getPosition();
-
+			
 			float distance = glm::length(positionCube - positionCamera);
 			if (distance < 1) {
 				g_score++;
 				getEnginePointer()->m_irrklangEngine->play2D("media/sounds/explosion.wav", false);
 				if (g_score % 10 == 0) {
 					g_time = 30;
-					getEnginePointer()->m_irrklangEngine->play2D("media/sounds/bell.wav", false);
+			    	getEnginePointer()->m_irrklangEngine->play2D("media/sounds/bell.wav", false);
 				}
 
 				VESceneNode *eParent = getSceneManagerPointer()->getSceneNode("The Cube Parent");
@@ -105,7 +105,7 @@ namespace ve {
 				getSceneManagerPointer()->deleteSceneNodeAndChildren("The Cube"+ std::to_string(cubeid));
 				VECHECKPOINTER(getSceneManagerPointer()->loadModel("The Cube"+ std::to_string(++cubeid)  , "media/models/test/crate0", "cube.obj", 0, eParent) );
 			}
-
+			
 			g_time -= event.dt;
 			if (g_time <= 0) {
 				g_gameLost = true;
@@ -128,7 +128,7 @@ namespace ve {
 	class MyVulkanEngine : public VEEngine {
 	public:
 
-		MyVulkanEngine( bool debug=false) : VEEngine(debug) {};
+		MyVulkanEngine(veRendererType type, bool debug=false) : VEEngine(type, debug) {};
 		~MyVulkanEngine() {};
 
 
@@ -152,7 +152,7 @@ namespace ve {
 			VECHECKPOINTER( pScene = getSceneManagerPointer()->createSceneNode("Level 1", getRoot()) );
 	
 			//scene models
-
+/*
 			VESceneNode *sp1;
 			VECHECKPOINTER( sp1 = getSceneManagerPointer()->createSkybox("The Sky", "media/models/test/sky/cloudy",
 										{	"bluecloud_ft.jpg", "bluecloud_bk.jpg", "bluecloud_up.jpg", 
@@ -165,13 +165,13 @@ namespace ve {
 			VEEntity *pE4;
 			VECHECKPOINTER( pE4 = (VEEntity*)getSceneManagerPointer()->getSceneNode("The Plane/plane_t_n_s.obj/plane/Entity_0") );
 			pE4->setParam( glm::vec4(1000.0f, 1000.0f, 0.0f, 0.0f) );
-
-			VESceneNode *e1,*eParent;
-			eParent = getSceneManagerPointer()->createSceneNode("The Cube Parent", pScene, glm::mat4(1.0));
+*/
+			VESceneNode *e1, *eParent1;
+			eParent1 = getSceneManagerPointer()->createSceneNode("The Cube Parent", pScene, glm::mat4(1.0));
 			VECHECKPOINTER(e1 = getSceneManagerPointer()->loadModel("The Cube0", "media/models/test/crate0", "cube.obj"));
-			eParent->multiplyTransform(glm::translate(glm::mat4(1.0f), glm::vec3(-10.0f, 1.0f, 10.0f)));
-			eParent->addChild(e1);
-
+			eParent1->multiplyTransform(glm::translate(glm::mat4(1.0f), glm::vec3(-10.0f, 1.0f, 10.0f)));
+			eParent1->addChild(e1);
+			
 			m_irrklangEngine->play2D("media/sounds/ophelia.wav", true);
 		};
 	};
@@ -182,9 +182,9 @@ namespace ve {
 using namespace ve;
 
 int main() {
-	bool debug = true;
+	bool debug = false;
 
-	MyVulkanEngine mve(debug);	//enable or disable debugging (=callback, validation layers)
+	MyVulkanEngine mve(VE_RENDERER_TYPE_RAYTRACING_NVIDIA, debug);	//enable or disable debugging (=callback, validation layers)
 
 	mve.initEngine();
 	mve.loadLevel(1);

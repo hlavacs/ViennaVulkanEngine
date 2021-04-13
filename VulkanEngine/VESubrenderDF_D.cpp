@@ -21,26 +21,28 @@ namespace ve {
 	void VESubrenderDF_D::initSubrenderer() {
 		VESubrender::initSubrenderer();
 
-        vh::vhRenderCreateDescriptorSetLayout(getRendererDeferredPointer()->getDevice(),
-            { 1 },
+        vh::vhRenderCreateDescriptorSetLayout(m_renderer.getDevice(),
+            { m_resourceArrayLength },
             { VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER },
             { VK_SHADER_STAGE_FRAGMENT_BIT },
             &m_descriptorSetLayoutResources);
 
-        VkDescriptorSetLayout perObjectLayout = getRendererDeferredPointer()->getDescriptorSetLayoutPerObject();
+        VkDescriptorSetLayout perObjectLayout = m_renderer.getDescriptorSetLayoutPerObject();
 
-        vh::vhPipeCreateGraphicsPipelineLayout(getRendererDeferredPointer()->getDevice(),
-            { perObjectLayout, perObjectLayout,  getRendererDeferredPointer()->getDescriptorSetLayoutShadow(), perObjectLayout, m_descriptorSetLayoutResources },
-            { },
-            &m_pipelineLayout);
+        vh::vhPipeCreateGraphicsPipelineLayout(m_renderer.getDevice(),
+            { perObjectLayout, perObjectLayout,  m_renderer.getDescriptorSetLayoutShadow(),
+              perObjectLayout, m_descriptorSetLayoutResources },
+            { }, &m_pipelineLayout);
 
         m_pipelines.resize(1);
-        vh::vhPipeCreateGraphicsPipeline(getRendererDeferredPointer()->getDevice(),
-            { "shader/Deferred/D/vert.spv", "shader/Deferred/D/frag.spv" },
-            getRendererDeferredPointer()->getSwapChainExtent(),
-            m_pipelineLayout, getRendererDeferredPointer()->getRenderPass(),
+        vh::vhPipeCreateGraphicsPipeline(m_renderer.getDevice(),
+            { "media/shader/Deferred/D/vert.spv", "media/shader/Deferred/D/frag.spv" },
+            m_renderer.getSwapChainExtent(),
+            m_pipelineLayout, m_renderer.getRenderPass(),
             { VK_DYNAMIC_STATE_BLEND_CONSTANTS },
             &m_pipelines[0], 0, VK_CULL_MODE_BACK_BIT, 4);
+
+        if (m_maps.empty()) m_maps.resize(1);
 	}
 
     void VESubrenderDF_D::setDynamicPipelineState(VkCommandBuffer commandBuffer, uint32_t numPass) {
@@ -61,25 +63,10 @@ namespace ve {
 	*
 	*/
 	void VESubrenderDF_D::addEntity(VEEntity *pEntity) {
-		VESubrender::addEntity( pEntity);
+        std::vector<VkDescriptorImageInfo> maps = { pEntity->m_pMaterial->mapDiffuse->m_imageInfo };
+        addMaps(pEntity, maps);
 
-        vh::vhRenderCreateDescriptorSets(getRendererDeferredPointer()->getDevice(),
-            (uint32_t)getRendererDeferredPointer()->getSwapChainNumber(),
-            m_descriptorSetLayoutResources,
-            getRendererDeferredPointer()->getDescriptorPool(),
-            pEntity->m_descriptorSetsResources);
-
-        for(uint32_t i = 0; i < pEntity->m_descriptorSetsResources.size(); i++) {
-            vh::vhRenderUpdateDescriptorSet(getRendererDeferredPointer()->getDevice(),
-                pEntity->m_descriptorSetsResources[i],
-                { VK_NULL_HANDLE },	//UBOs
-                { 0 },					//UBO sizes
-                { {pEntity->m_pMaterial->mapDiffuse->m_imageView} },	//textureImageViews
-                { {pEntity->m_pMaterial->mapDiffuse->m_sampler} }	//samplers
-            );
-        }
-
-
+        VESubrender::addEntity( pEntity);
 	}
 }
 

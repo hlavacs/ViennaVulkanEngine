@@ -6,7 +6,6 @@
 */
 
 #include "VEInclude.h"
-#include "VESubrenderFW_Nuklear.h"
 
 namespace ve {
 
@@ -18,7 +17,7 @@ namespace ve {
 	*
 	*/
 	void VEEventListenerNuklear::onDrawOverlay(veEvent event) {
-		VESubrenderFW_Nuklear * pSubrender = (VESubrenderFW_Nuklear*)getEnginePointer()->getRenderer()->getOverlay();
+		VESubrender_Nuklear * pSubrender = (VESubrender_Nuklear*)getEnginePointer()->getRenderer()->getOverlay();
 		if (pSubrender == nullptr) return;
 
 		struct nk_context * ctx = pSubrender->getContext();

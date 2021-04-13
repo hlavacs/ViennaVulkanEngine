@@ -236,6 +236,9 @@ namespace vh {
 	VkResult vhBufCreateDepthResources(	VkDevice device, VmaAllocator allocator, VkQueue graphicsQueue,
 										VkCommandPool commandPool, VkExtent2D swapChainExtent, VkFormat depthFormat,
 										VkImage *depthImage, VmaAllocation *depthImageAllocation, VkImageView * depthImageView);
+	VkResult vhBufCreateGBufferResources(VkDevice device, VmaAllocator allocator, VkQueue graphicsQueue,
+										 VkCommandPool commandPool, VkExtent2D extent, VkFormat format,
+										 VkImage *image, VmaAllocation *colorImageAllocation, VkImageView *colorImageView);
 	VkResult vhBufCreateImage(	VmaAllocator allocator, uint32_t width, uint32_t height,
 								uint32_t miplevels, uint32_t arrayLayers,
 								VkFormat format, VkImageTiling tiling, VkImageUsageFlags usage, VkImageCreateFlags flags,
@@ -264,6 +267,9 @@ namespace vh {
 	VkResult vhBufCreateFramebuffers(VkDevice device, std::vector<VkImageView> imageViews,
 									std::vector<VkImageView> depthImageViews, VkRenderPass renderPass, VkExtent2D extent,
 									std::vector<VkFramebuffer> &frameBuffers);
+	VkResult vhBufCreateFramebuffersGBuffer(VkDevice device, std::vector<VkImageView> imageViews, std::vector<VkImageView> positionImageViews, std::vector<VkImageView> normalImageViews,
+											std::vector<VkImageView> albedoImageViews, std::vector<VkImageView> depthImageViews, VkRenderPass renderPass, VkExtent2D extent,
+											std::vector<VkFramebuffer> &frameBuffers);
 	VkResult vhBufCopySwapChainImageToHost(	VkDevice device, VmaAllocator allocator, 
 											VkQueue graphicsQueue, 	VkCommandPool commandPool, 
 											VkImage image, VkFormat format,
@@ -289,6 +295,7 @@ namespace vh {
 	//--------------------------------------------------------------------------------------------------------------------------------
 	//rendering
 	VkResult vhRenderCreateRenderPass( VkDevice device, VkFormat swapChainImageFormat, VkFormat depthFormat, VkAttachmentLoadOp loadOp, VkRenderPass *renderPass);
+	VkResult vhRenderCreateRenderPassGBuffer(VkDevice device, VkFormat swapChainImageFormat, VkFormat depthFormat, VkAttachmentLoadOp loadOp, VkRenderPass *renderPass);
 	VkResult vhRenderCreateRenderPassShadow( VkDevice device, VkFormat depthFormat, VkRenderPass *renderPass);
 
 	VkResult vhRenderCreateDescriptorSetLayout(	VkDevice device, std::vector<uint32_t> counts, std::vector<VkDescriptorType> types,
@@ -327,7 +334,7 @@ namespace vh {
 	VkShaderModule vhPipeCreateShaderModule(VkDevice device, const std::vector<char>& code);
 	VkResult vhPipeCreateGraphicsPipeline(	VkDevice device, std::vector<std::string> shaderFileNames,
 											VkExtent2D swapChainExtent, VkPipelineLayout pipelineLayout, VkRenderPass renderPass,
-											std::vector<VkDynamicState> dynamicStates, VkPipeline *graphicsPipeline);
+											std::vector<VkDynamicState> dynamicStates, VkPipeline *graphicsPipeline, uint32_t subpass = 0, VkCullModeFlags cullMode = VK_CULL_MODE_BACK_BIT, int32_t blendAttachmentSize = 1);
 	VkResult vhPipeCreateGraphicsShadowPipeline(VkDevice device, std::string verShaderFilename,
 												VkExtent2D shadowMapExtent, VkPipelineLayout pipelineLayout,
 												VkRenderPass renderPass, VkPipeline *graphicsPipeline);

@@ -6,8 +6,8 @@
 
 #define RESOURCEARRAYLENGTH 16
 
-#include "common_defines.glsl"
-#include "light.glsl"
+#include "../common_defines.glsl"
+#include "../light.glsl"
 
 layout(location = 0) rayPayloadInNV hitPayload prd;
 layout(location = 1) rayPayloadNV bool isShadowed;

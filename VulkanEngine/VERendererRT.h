@@ -12,16 +12,9 @@
 #include "BottomLevelASGenerator.h"
 #include "TopLevelASGenerator.h"
 
-#ifndef getRendererRTPointer
-#define getRendererRTPointer() g_pVERendererRTSingleton
-#endif
-
 namespace ve {
 
 	class VERendererRT;
-
-	extern VERendererRT* g_pVERendererRTSingleton;	///<Pointer to the only class instance 
-
 	class VEEngine;
 	class VESubrenderRT_DN;
 

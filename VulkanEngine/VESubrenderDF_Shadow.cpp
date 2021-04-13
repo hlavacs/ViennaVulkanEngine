@@ -23,17 +23,17 @@ namespace ve {
 		VESubrender::initSubrenderer();
 
 
-        VkDescriptorSetLayout perObjectLayout = getRendererDeferredPointer()->getDescriptorSetLayoutPerObject();
-        vh::vhPipeCreateGraphicsPipelineLayout(getRendererDeferredPointer()->getDevice(),
-            { perObjectLayout, perObjectLayout, getRendererDeferredPointer()->getDescriptorSetLayoutShadow(), perObjectLayout },
+        VkDescriptorSetLayout perObjectLayout = m_renderer.getDescriptorSetLayoutPerObject();
+        vh::vhPipeCreateGraphicsPipelineLayout(m_renderer.getDevice(),
+            { perObjectLayout, perObjectLayout, m_renderer.getDescriptorSetLayoutShadow(), perObjectLayout },
             { },
             &m_pipelineLayout);
 
         m_pipelines.resize(1);
-        vh::vhPipeCreateGraphicsShadowPipeline(getRendererDeferredPointer()->getDevice(),
-            "shader/Deferred/Shadow/vert.spv",
-            getRendererDeferredPointer()->getShadowMapExtent(),
-            m_pipelineLayout, getRendererDeferredPointer()->getRenderPassShadow(),
+        vh::vhPipeCreateGraphicsShadowPipeline(m_renderer.getDevice(),
+            "media/shader/Deferred/Shadow/vert.spv",
+			m_renderer.getShadowMapExtent(),
+            m_pipelineLayout, m_renderer.getRenderPassShadow(),
             &m_pipelines[0]);
 	}
 
@@ -64,9 +64,11 @@ namespace ve {
 		//set 0...per frame, includes cam and shadow matrices
 		//set 1...per object UBO
 
-        std::vector<VkDescriptorSet> sets = { entity->m_descriptorSetsUBO[imageIndex] };
+		std::vector<VkDescriptorSet> sets = { entity->m_memoryHandle.pMemBlock->descriptorSets[imageIndex] };
 
-        vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_pipelineLayout, 3, (uint32_t)sets.size(), sets.data(), 0, nullptr);
+		uint32_t offset = entity->m_memoryHandle.entryIndex * sizeof(VEEntity::veUBOPerEntity_t);
+		vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_pipelineLayout,
+			3, (uint32_t)sets.size(), sets.data(), 1, &offset);
 	}
 
 
@@ -88,18 +90,15 @@ namespace ve {
 
         bindDescriptorSetsPerFrame(commandBuffer, imageIndex, pCamera, pLight, descriptorSetsShadow);
 
-        //go through all entities and draw them
-        for(auto object : getSceneManagerPointer()->m_sceneNodes) {
-            VESceneNode *pObject = object.second;
-            if(pObject->getNodeType() == VESceneNode::VE_OBJECT_TYPE_ENTITY) {
-                VEEntity *pEntity = (VEEntity*)pObject;
-
-                if(pEntity->m_drawEntity && pEntity->m_castsShadow) {
-                    bindDescriptorSetsPerEntity(commandBuffer, imageIndex, pEntity);	//bind the entity's descriptor sets
-                    drawEntity(commandBuffer, imageIndex, pEntity);
-                }
-            }
-        }
+		//go through all entities and draw them
+		for (auto subrender : getSubrenderers()) {
+			for (auto pEntity : subrender->getEntities()) {
+				if (pEntity->m_castsShadow) {
+					bindDescriptorSetsPerEntity(commandBuffer, imageIndex, pEntity);	//bind the entity's descriptor sets
+					drawEntity(commandBuffer, imageIndex, pEntity);
+				}
+			}
+		}
 	}
 
 

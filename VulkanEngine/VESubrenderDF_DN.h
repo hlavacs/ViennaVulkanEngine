@@ -5,19 +5,20 @@
 *
 */
 
-#pragma once
+#ifndef VE_SUBRENDER_DF_DN_H
+#define VE_SUBRENDER_DF_DN_H
 
 namespace ve {
 
 	/**
 	* \brief Subrenderer that manages entities that have a diffuse texture and a normal map
 	*/
-	class VESubrenderDF_DN : public VESubrender {
+	class VESubrenderDF_DN : public VESubrenderDF {
 	protected:
 
 	public:
 		///Constructor
-		VESubrenderDF_DN() {};
+		VESubrenderDF_DN(VERendererDeferred &renderer) : VESubrenderDF(renderer) {};
 		///Destructor
 		virtual ~VESubrenderDF_DN() {};
 
@@ -33,3 +34,4 @@ namespace ve {
 	};
 }
 
+#endif

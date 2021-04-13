@@ -31,18 +31,17 @@ namespace ve {
         struct nk_font_atlas *atlas;
 
         vh::QueueFamilyIndices queueFamilyIndices =
-            vh::vhDevFindQueueFamilies(getRendererPointer()->getPhysicalDevice(),
-                getRendererPointer()->getSurface());
+            vh::vhDevFindQueueFamilies(m_renderer.getPhysicalDevice(), m_renderer.getSurface());
 
         m_ctx = nk_glfw3_init(((VEWindowGLFW*)getWindowPointer())->getWindowHandle(),
-            getRendererPointer()->getDevice(),
-            getRendererPointer()->getPhysicalDevice(),
-            getRendererPointer()->getGraphicsQueue(),
+            m_renderer.getDevice(),
+            m_renderer.getPhysicalDevice(),
+            m_renderer.getGraphicsQueue(),
             (uint32_t)queueFamilyIndices.graphicsFamily,
-            getRendererDeferredPointer()->getSwapChainFrameBuffers().data(),
-            (uint32_t)getRendererDeferredPointer()->getSwapChainFrameBuffers().size(),
-            getRendererDeferredPointer()->getSwapChainImageFormat(),
-            getRendererDeferredPointer()->getDepthMap()->m_format,
+            m_renderer.getSwapChainFrameBuffers().data(),
+            (uint32_t)m_renderer.getSwapChainFrameBuffers().size(),
+            m_renderer.getSwapChainImageFormat(),
+            m_renderer.getDepthMap()->m_format,
             NK_GLFW3_DEFAULT);
 
         // /* Load Fonts: if none of these are loaded a default font will be used  */

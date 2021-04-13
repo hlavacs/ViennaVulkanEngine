@@ -4,21 +4,20 @@
 * (c) bei Helmut Hlavacs, University of Vienna
 *
 */
-
-#pragma once
-
+#ifndef VE_SUBRENDER_DF_D_H
+#define VE_SUBRENDER_DF_D_H
 
 namespace ve {
 
 	/**
 	* \brief Subrenderer that manages entities that have one diffuse texture for coloring
 	*/
-	class VESubrenderDF_D : public VESubrender {
+	class VESubrenderDF_D : public VESubrenderDF {
 	protected:
 
 	public:
 		///Constructor
-		VESubrenderDF_D() {};
+		VESubrenderDF_D(VERendererDeferred &renderer) : VESubrenderDF(renderer) {};
 		///Destructor
 		virtual ~VESubrenderDF_D() {};
 
@@ -33,3 +32,4 @@ namespace ve {
 	};
 }
 
+#endif

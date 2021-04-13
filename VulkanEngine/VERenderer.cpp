@@ -30,11 +30,11 @@ namespace ve {
 	*/
 	void VERenderer::addSubrenderer(VESubrender *pSub) {
 		pSub->initSubrenderer();
-		if (pSub->getClass() == VESubrender::VE_SUBRENDERER_CLASS_SHADOW) {
+		if (pSub->getClass() == VE_SUBRENDERER_CLASS_SHADOW) {
 			m_subrenderShadow = pSub;
 			return;
 		}
-		if (pSub->getClass() == VESubrender::VE_SUBRENDERER_CLASS_OVERLAY) {
+		if (pSub->getClass() == VE_SUBRENDERER_CLASS_OVERLAY) {
 			m_subrenderOverlay = pSub;
 			return;
 		}
@@ -49,7 +49,7 @@ namespace ve {
 	* \returns The found subrenderer or nullptr
 	*
 	*/
-	VESubrender * VERenderer::getSubrenderer(VESubrender::veSubrenderType type) {
+	VESubrender * VERenderer::getSubrenderer(veSubrenderType type) {
 		for (uint32_t i = 0; i < m_subrenderers.size(); i++) {
 			if (m_subrenderers[i]->getType() == type) return m_subrenderers[i];
 		}
@@ -86,21 +86,21 @@ namespace ve {
 	*/
 	void VERenderer::addEntityToSubrenderer(VEEntity *pEntity ) {
 
-		VESubrender::veSubrenderType type = VESubrender::VE_SUBRENDERER_TYPE_NONE;
+		veSubrenderType type = VE_SUBRENDERER_TYPE_NONE;
 
 		switch ( pEntity->getEntityType() ) {
 		case VEEntity::VE_ENTITY_TYPE_NORMAL:
 			if (pEntity->m_pMaterial->mapDiffuse != nullptr) {
 
 				if (pEntity->m_pMaterial->mapNormal != nullptr) {
-					type = VESubrender::VE_SUBRENDERER_TYPE_DIFFUSEMAP_NORMALMAP;
+					type = VE_SUBRENDERER_TYPE_DIFFUSEMAP_NORMALMAP;
 					break;
 				}
 
-				type = VESubrender::VE_SUBRENDERER_TYPE_DIFFUSEMAP;
+				type = VE_SUBRENDERER_TYPE_DIFFUSEMAP;
 				break;
 			}
-			type = VESubrender::VE_SUBRENDERER_TYPE_COLOR1;
+			type = VE_SUBRENDERER_TYPE_COLOR1;
 			break;
 		/*case VEEntity::VE_ENTITY_TYPE_CUBEMAP:
 			type = VESubrender::VE_SUBRENDERER_TYPE_CUBEMAP;
@@ -109,7 +109,7 @@ namespace ve {
 			type = VESubrender::VE_SUBRENDERER_TYPE_CUBEMAP2;
 			break;*/
 		case VEEntity::VE_ENTITY_TYPE_SKYPLANE:
-			type = VESubrender::VE_SUBRENDERER_TYPE_SKYPLANE;
+			type = VE_SUBRENDERER_TYPE_SKYPLANE;
 			break;
 		case VEEntity::VE_ENTITY_TYPE_TERRAIN_HEIGHTMAP:
 			break;

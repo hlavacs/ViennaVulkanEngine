@@ -22,23 +22,14 @@ namespace ve {
 	public:
 
 	protected:
-		uint32_t						m_resourceArrayLength = 16;							///<Length of resource array in shader
-        VkDescriptorSetLayout			m_descriptorSetLayoutLights = VK_NULL_HANDLE;	    ///<Descriptor set layout for for lights
-        VkDescriptorSetLayout			m_descriptorSetLayoutOutput = VK_NULL_HANDLE;	    ///<Descriptor set layout for for output image
+		VkDescriptorSetLayout			m_descriptorSetLayoutOutput = VK_NULL_HANDLE;	    ///<Descriptor set layout for for output image
         VkDescriptorSetLayout			m_descriptorSetLayoutAS = VK_NULL_HANDLE;	        ///<Descriptor set layout for acceleration structure
         VkDescriptorSetLayout			m_descriptorSetLayoutGeometry = VK_NULL_HANDLE;   	///<Descriptor set layout for vertices and indices
         VkDescriptorSetLayout			m_descriptorSetLayoutObjectUBOs = VK_NULL_HANDLE;	///<Descriptor set layout for per object resources (UBOPerEntity)
-        VkDescriptorSetLayout			m_descriptorSetLayoutResources = VK_NULL_HANDLE;	///<Descriptor set layout for per object resources (like images)
-        std::vector<VkDescriptorSet>    m_descriptorSetsLights;                             ///<a list of resource descriptor sets of Lights. One set for each SwapChain Image
         std::vector<VkDescriptorSet>    m_descriptorSetsOutput;                             ///<a list of resource descriptor sets of Output Images. One set for each SwapChain Image
         std::vector<VkDescriptorSet>    m_descriptorSetsAS;                                 ///<a list of resource descriptor sets of Acceleration Structures. One set for all SwapChain Images
         std::vector<VkDescriptorSet>    m_descriptorSetsGeometry;                           ///<a list of resource descriptor sets of Vertices and Indices. One set for all SwapChain Images
         std::vector<VkDescriptorSet>    m_descriptorSetsUBOs;                               ///<a list of resource descriptor sets of UBOPerEntity. One set for each SwapChain Image
-        std::vector<VkDescriptorSet>	m_descriptorSetsResources;							///<a list of resource descriptor set arrays, maps are condensed into these arrays of size K
-		std::vector<std::vector<VkDescriptorImageInfo>> m_maps;								///<descriptor write info for the  maps, m_maps[0] may contain all diffuse maps, m_maps[1] all normal maps etc
-		VkPipelineLayout				m_pipelineLayout = VK_NULL_HANDLE;					///<Pipeline layout
-		std::vector<VkPipeline>			m_pipelines;										///<Pipelines for light pass(es)
-		uint32_t						m_idxLastRecorded = 0;								///<Used for incremental command buffer recording, idx of last recorded entity
         VkBool32                        m_enableShadows = false;
 		uint32_t m_rayGenIndex;
 		uint32_t m_hitGroupIndex;
@@ -52,7 +43,7 @@ namespace ve {
 
 	public:
 		///Constructor of subrender fw class
-        VESubrenderRT_DN();
+        VESubrenderRT_DN(VERendererRT &renderer);
 		///Destructor of subrender fw class
 		virtual ~VESubrenderRT_DN() {};
         ///\returns the class of the subrenderer
@@ -95,8 +86,6 @@ namespace ve {
 
 		//------------------------------------------------------------------------------------------------------------------
 		virtual void	addEntity(VEEntity* pEntity);
-		virtual void	addMaps(VEEntity* pEntity, std::vector<VkDescriptorImageInfo>& newMaps);
-		virtual void	removeEntity(VEEntity* pEntity);
 		///\returns the number of entities that this sub renderer manages
 		uint32_t		getNumberEntities() { return (uint32_t)m_entities.size(); };
 

@@ -255,7 +255,7 @@ namespace ve {
 
 			m_makeScreenshot = false;
 		}
-
+		/*
 		if (m_makeScreenshotDepth) {
 
             VETexture *map = getRendererShaderPointer()->getShadowMap(getRendererPointer()->getImageIndex())[0];
@@ -267,18 +267,18 @@ namespace ve {
 			VkImage image = map->m_image;
 
 			float *dataImage = new float[imageSize];
-			/*gli::byte*/unsigned char*dataImage2 = new /*gli::byte*/unsigned char[imageSize];
+			unsigned char*dataImage2 = new unsigned char[imageSize];
 
 			vh::vhBufCopyImageToHost(getRendererPointer()->getDevice(),
 				getRendererPointer()->getVmaAllocator(),
 				getRendererPointer()->getGraphicsQueue(),
 				getRendererPointer()->getCommandPool(),
 				image, map->m_format, VK_IMAGE_ASPECT_DEPTH_BIT, layout,
-				(/*gli::byte*/unsigned char*)dataImage, extent.width, extent.height, imageSize * 4);
+				(unsigned char*)dataImage, extent.width, extent.height, imageSize * 4);
 
 			for (uint32_t v = 0; v < extent.height; v++) {
 				for (uint32_t u = 0; u < extent.width; u++) {
-					dataImage2[v*extent.width + u] = (/*gli::byte*/unsigned char)((dataImage[v*extent.width + u]-0.5)*256.0f*2.0f);
+					dataImage2[v*extent.width + u] = (unsigned char)((dataImage[v*extent.width + u]-0.5)*256.0f*2.0f);
 					//std::cout << dataImage[v*extent.width + u] << " ";
 				}
 			}
@@ -291,6 +291,7 @@ namespace ve {
 			m_numScreenshot++;
 			m_makeScreenshotDepth = false;
 		}
+		*/
 	};
 
 

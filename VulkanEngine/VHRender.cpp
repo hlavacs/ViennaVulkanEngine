@@ -243,7 +243,7 @@ namespace vh {
 		VkSubpassDependency dependency1 = {};
 		dependency1.srcSubpass = VK_SUBPASS_EXTERNAL;
 		dependency1.dstSubpass = 0;
-        dependency1.srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+        dependency1.srcStageMask = VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT;
         dependency1.srcAccessMask = 0;
         dependency1.dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
         dependency1.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
@@ -259,8 +259,17 @@ namespace vh {
         dependency2.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
         dependency2.dependencyFlags = VK_DEPENDENCY_BY_REGION_BIT;
 
+		// from g-buffer to external
+		VkSubpassDependency dependency3 = {};
+		dependency2.srcSubpass = 1;
+		dependency2.dstSubpass = VK_SUBPASS_EXTERNAL;
+		dependency2.srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+		dependency2.dstStageMask = VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT;
+		dependency2.srcAccessMask = VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_COLOR_ATTACHMENT_READ_BIT;
+		dependency2.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
+		dependency2.dependencyFlags = VK_DEPENDENCY_BY_REGION_BIT;
 
-		std::array<VkSubpassDependency, 2> dependencies = { dependency1, dependency2 };
+		std::array<VkSubpassDependency, 3> dependencies = { dependency1, dependency2, dependency3};
 		VkRenderPassCreateInfo renderPassInfo = {};
 		renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
 		renderPassInfo.attachmentCount = static_cast<uint32_t>(attachments.size());

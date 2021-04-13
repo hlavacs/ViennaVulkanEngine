@@ -43,23 +43,18 @@ namespace ve {
 		friend VESceneManager;
 
 	protected:
-	    enum VERendererType: int
-        {
-	        Forward = 0,
-	        Deferred = 1,
-	        RayTracingNVidia = 2,
-	        RayTracingKHR = 3,
-	        Hybrid = 4,
-        };
 
 		VkInstance m_instance = VK_NULL_HANDLE;			///<Vulkan app instance
 		VEWindow * m_pWindow = nullptr;					///<Pointer to the only Window instance
 
-        VERendererType m_rendererType;
+		veRendererType m_rendererType;
         VERenderer* m_pForwardRenderer = nullptr;
         VERenderer* m_pDeferredRenderer = nullptr;
-        VERenderer* m_pRTRenderer = nullptr;
-		VERenderer * m_pRenderer = nullptr;				///<Pointer to the only renderer instance
+        VERenderer* m_pRayTracingNVidiaRenderer = nullptr;
+        VERenderer* m_pRayTracingKHRRenderer = nullptr;
+        VERenderer* m_pHybridRenderer = nullptr;
+
+        VERenderer * m_pRenderer = nullptr;				///<Pointer to the only renderer instance
 		VESceneManager * m_pSceneManager = nullptr;		///<Pointer to the only scene manager instance
 		VkDebugReportCallbackEXT callback;				///<Debug callback handle
 
@@ -104,7 +99,7 @@ namespace ve {
 	public:
 		irrklang::ISoundEngine* m_irrklangEngine = irrklang::createIrrKlangDevice();
 
-		VEEngine( bool debug = false );			//Only create ONE instance of the engine!
+		VEEngine(veRendererType type, bool debug = false);			//Only create ONE instance of the engine!
 		~VEEngine() {};
 
 		//-----------------------------------------------------------------------------------------------
@@ -167,7 +162,7 @@ namespace ve {
 		///\returns the average draw overlay time (s)
 		float			 getAvgDrawOvlTime() { return m_AvgDrawOvlTime; };
 
-        bool isRayTracing() { return m_ray_tracing; }
+        bool isRayTracing() { return m_rendererType != VE_RENDERER_TYPE_RAYTRACING_NVIDIA && m_rendererType != VE_RENDERER_TYPE_RAYTRACING_KHR; }
 	};
 
 }
