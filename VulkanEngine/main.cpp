@@ -152,12 +152,13 @@ namespace ve {
 			VECHECKPOINTER( pScene = getSceneManagerPointer()->createSceneNode("Level 1", getRoot()) );
 	
 			//scene models
-/*
+
 			VESceneNode *sp1;
 			VECHECKPOINTER( sp1 = getSceneManagerPointer()->createSkybox("The Sky", "media/models/test/sky/cloudy",
 										{	"bluecloud_ft.jpg", "bluecloud_bk.jpg", "bluecloud_up.jpg", 
 											"bluecloud_dn.jpg", "bluecloud_rt.jpg", "bluecloud_lf.jpg" }, pScene)  );
 
+			
 			VESceneNode *e4;
 			VECHECKPOINTER( e4 = getSceneManagerPointer()->loadModel("The Plane", "media/models/test", "plane_t_n_s.obj",0, pScene) );
 			e4->setTransform(glm::scale(glm::mat4(1.0f), glm::vec3(1000.0f, 1.0f, 1000.0f)));
@@ -165,11 +166,11 @@ namespace ve {
 			VEEntity *pE4;
 			VECHECKPOINTER( pE4 = (VEEntity*)getSceneManagerPointer()->getSceneNode("The Plane/plane_t_n_s.obj/plane/Entity_0") );
 			pE4->setParam( glm::vec4(1000.0f, 1000.0f, 0.0f, 0.0f) );
-*/
+			
 			VESceneNode *e1, *eParent1;
 			eParent1 = getSceneManagerPointer()->createSceneNode("The Cube Parent", pScene, glm::mat4(1.0));
 			VECHECKPOINTER(e1 = getSceneManagerPointer()->loadModel("The Cube0", "media/models/test/crate0", "cube.obj"));
-			eParent1->multiplyTransform(glm::translate(glm::mat4(1.0f), glm::vec3(-10.0f, 1.0f, 10.0f)));
+			eParent1->multiplyTransform(glm::translate(glm::mat4(1.0f), glm::vec3(-10.0f, 5.0f, 10.0f)));
 			eParent1->addChild(e1);
 			
 			m_irrklangEngine->play2D("media/sounds/ophelia.wav", true);
@@ -184,7 +185,7 @@ using namespace ve;
 int main() {
 	bool debug = false;
 
-	MyVulkanEngine mve(VE_RENDERER_TYPE_RAYTRACING_NVIDIA, debug);	//enable or disable debugging (=callback, validation layers)
+	MyVulkanEngine mve(VE_RENDERER_TYPE_FORWARD, debug);	//enable or disable debugging (=callback, validation layers)
 
 	mve.initEngine();
 	mve.loadLevel(1);

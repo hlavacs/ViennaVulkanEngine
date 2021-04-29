@@ -24,14 +24,14 @@ namespace ve {
 	* descriptor set layouts, etc.
 	*
 	*/
-	void VERendererDeferred::initRenderer() {
-		VERenderer::initRenderer();
+    void VERendererDeferred::initRenderer() {
+        VERenderer::initRenderer();
 
-        const std::vector<const char*> requiredDeviceExtensions = {
+        const std::vector<const char *> requiredDeviceExtensions = {
             VK_KHR_SWAPCHAIN_EXTENSION_NAME
         };
 
-        const std::vector<const char*> requiredValidationLayers = {
+        const std::vector<const char *> requiredValidationLayers = {
             "VK_LAYER_LUNARG_standard_validation"
         };
 
@@ -42,13 +42,13 @@ namespace ve {
         vh::vhMemCreateVMAAllocator(getEnginePointer()->getInstance(), m_physicalDevice, m_device, m_vmaAllocator);
 
         vh::vhSwapCreateSwapChain(m_physicalDevice, m_surface, m_device, getWindowPointer()->getExtent(),
-                                  &m_swapChain, m_swapChainImages, m_swapChainImageViews,
-                                  &m_swapChainImageFormat, &m_swapChainExtent);
+            &m_swapChain, m_swapChainImages, m_swapChainImageViews,
+            &m_swapChainImageFormat, &m_swapChainExtent);
 
-		//------------------------------------------------------------------------------------------------------------
+        //------------------------------------------------------------------------------------------------------------
 
-		//create a command pool
-		vh::vhCmdCreateCommandPool(m_physicalDevice, m_device, m_surface, &m_commandPool);
+        //create a command pool
+        vh::vhCmdCreateCommandPool(m_physicalDevice, m_device, m_surface, &m_commandPool);
 
         m_commandPools.resize(getEnginePointer()->getThreadPool()->threadCount());			//each thread in the thread pool gets its own command pool
         for (uint32_t i = 0; i < m_commandPools.size(); i++) {
@@ -68,57 +68,86 @@ namespace ve {
 
         m_secondaryBuffersFutures.resize(m_swapChainImages.size());
 
-		//------------------------------------------------------------------------------------------------------------
-		//create resources for g-buffer pass
+        //------------------------------------------------------------------------------------------------------------
+        //create resources for onscreen pass
+        m_depthMap = new VETexture("DepthMap");
+        m_depthMap->m_format = vh::vhDevFindDepthFormat(m_physicalDevice);
+        m_depthMap->m_extent = m_swapChainExtent;
 
-		m_depthMap = new VETexture("DepthMap");
-		m_depthMap->m_format = vh::vhDevFindDepthFormat(m_physicalDevice);
-		m_depthMap->m_extent = m_swapChainExtent;
+        //onscreen render pass
+        vh::vhRenderCreateRenderPassOnscreen(m_device, m_swapChainImageFormat, m_depthMap->m_format, VK_ATTACHMENT_LOAD_OP_CLEAR, &m_renderPassOnscreen);
 
-        m_positionMap = new VETexture("Position");
-        m_positionMap->m_format = VK_FORMAT_R16G16B16A16_SFLOAT;
-        m_positionMap->m_extent = m_swapChainExtent;
+        //depth map for light pass
+        vh::vhBufCreateDepthResources(m_device, m_vmaAllocator, m_graphicsQueue, m_commandPool,
+            m_swapChainExtent, m_depthMap->m_format,
+            &m_depthMap->m_image, &m_depthMap->m_deviceAllocation,
+            &m_depthMap->m_imageInfo.imageView);
 
-        m_normalMap = new VETexture("Normal");
-        m_normalMap->m_format = VK_FORMAT_R16G16B16A16_SFLOAT;
-        m_normalMap->m_extent = m_swapChainExtent;
-
-        m_albedoMap = new VETexture("Albedo");
-        m_albedoMap->m_format = VK_FORMAT_R8G8B8A8_UNORM;
-        m_albedoMap->m_extent = m_swapChainExtent;
-
-		//g-buffer render pass
-		vh::vhRenderCreateRenderPassGBuffer(m_device, m_swapChainImageFormat, m_depthMap->m_format, VK_ATTACHMENT_LOAD_OP_CLEAR, &m_renderPassClear);
-        vh::vhRenderCreateRenderPassGBuffer(m_device, m_swapChainImageFormat, m_depthMap->m_format, VK_ATTACHMENT_LOAD_OP_LOAD, &m_renderPassLoad);
-
-		//buffers for g-buffer
-		vh::vhBufCreateGBufferResources(m_device, m_vmaAllocator, m_graphicsQueue, m_commandPool,
-			m_swapChainExtent, m_positionMap->m_format, &m_positionMap->m_image, &m_positionMap->m_deviceAllocation, &m_positionMap->m_imageInfo.imageView);
-        vh::vhBufCreateGBufferResources(m_device, m_vmaAllocator, m_graphicsQueue, m_commandPool,
-            m_swapChainExtent, m_normalMap->m_format, &m_normalMap->m_image, &m_normalMap->m_deviceAllocation, &m_normalMap->m_imageInfo.imageView);
-        vh::vhBufCreateGBufferResources(m_device, m_vmaAllocator, m_graphicsQueue, m_commandPool,
-            m_swapChainExtent, m_albedoMap->m_format, &m_albedoMap->m_image, &m_albedoMap->m_deviceAllocation, &m_albedoMap->m_imageInfo.imageView);
-
-		//depth map for g-buffer
-		vh::vhBufCreateDepthResources(m_device, m_vmaAllocator, m_graphicsQueue, m_commandPool,
-			m_swapChainExtent, m_depthMap->m_format, &m_depthMap->m_image, &m_depthMap->m_deviceAllocation, &m_depthMap->m_imageInfo.imageView);
-	
-		//frame buffers
-        std::vector<VkImageView> postionMaps;
-        std::vector<VkImageView> normalMaps;
-        std::vector<VkImageView> albedoMaps;
+        //frame buffers for light pass
         std::vector<VkImageView> depthMaps;
-        for(uint32_t i = 0; i < m_swapChainImageViews.size(); i++) {
-            postionMaps.push_back(m_positionMap->m_imageInfo.imageView);
-            normalMaps.push_back(m_normalMap->m_imageInfo.imageView);
-            albedoMaps.push_back(m_albedoMap->m_imageInfo.imageView);
+        for (uint32_t i = 0; i < m_swapChainImageViews.size(); i++) 
             depthMaps.push_back(m_depthMap->m_imageInfo.imageView);
-        }
-        // setupFrameBuffer() ref
-		vh::vhBufCreateFramebuffersGBuffer(m_device, m_swapChainImageViews, postionMaps,
-                                           normalMaps, albedoMaps, depthMaps, m_renderPassClear,
-                                           m_swapChainExtent, m_swapChainFramebuffers);
+
+        vh::vhBufCreateFramebuffers(m_device, m_swapChainImageViews, depthMaps, m_renderPassOnscreen, m_swapChainExtent, m_swapChainFramebuffers);
+
+
+        //------------------------------------------------------------------------------------------------------------
+        //create resources for offscreen pass
         
+        vh::vhRenderCreateRenderPassOffscreen(m_device, m_depthMap->m_format, VK_ATTACHMENT_LOAD_OP_CLEAR, &m_renderPassOffscreen);
+
+        std::vector<VkImageView> offscreenPostionMaps;
+        std::vector<VkImageView> offscreenNormalMaps;
+        std::vector<VkImageView> offscreenAlbedoMaps;
+        std::vector<VkImageView> offscreenDepthMaps;
+
+        for (uint32_t i = 0; i < m_swapChainImageViews.size(); i++) {
+            VETexture *depthMap = new VETexture("DepthMap");
+            depthMap->m_format = vh::vhDevFindDepthFormat(m_physicalDevice);
+            depthMap->m_extent = m_swapChainExtent;
+
+            VETexture *positionMap = new VETexture("Position");
+            positionMap->m_format = VK_FORMAT_R16G16B16A16_SFLOAT;
+            positionMap->m_extent = m_swapChainExtent;
+
+            VETexture *normalMap = new VETexture("Normal");
+            normalMap->m_format = VK_FORMAT_R16G16B16A16_SFLOAT;
+            normalMap->m_extent = m_swapChainExtent;
+
+            VETexture *albedoMap = new VETexture("Albedo");
+            albedoMap->m_format = VK_FORMAT_R8G8B8A8_UNORM;
+            albedoMap->m_extent = m_swapChainExtent;
+
+
+            //buffers for offscreen pass
+            vh::vhBufCreateOffscreenResources(m_device, m_vmaAllocator, m_graphicsQueue, m_commandPool,
+                positionMap->m_extent, positionMap->m_format, &positionMap->m_image, &positionMap->m_deviceAllocation, &positionMap->m_imageInfo.imageView);
+            vh::vhBufCreateOffscreenResources(m_device, m_vmaAllocator, m_graphicsQueue, m_commandPool,
+                normalMap->m_extent, normalMap->m_format, &normalMap->m_image, &normalMap->m_deviceAllocation, &normalMap->m_imageInfo.imageView);
+            vh::vhBufCreateOffscreenResources(m_device, m_vmaAllocator, m_graphicsQueue, m_commandPool,
+                albedoMap->m_extent, albedoMap->m_format, &albedoMap->m_image, &albedoMap->m_deviceAllocation, &albedoMap->m_imageInfo.imageView);
+
+            //depth map for offscreen pass
+            vh::vhBufCreateDepthResources(m_device, m_vmaAllocator, m_graphicsQueue, m_commandPool,
+                depthMap->m_extent, depthMap->m_format, &depthMap->m_image, &depthMap->m_deviceAllocation, &depthMap->m_imageInfo.imageView);
+
+            vh::vhBufCreateTextureSampler(m_device, &positionMap->m_imageInfo.sampler);
+            vh::vhBufCreateTextureSampler(m_device, &normalMap->m_imageInfo.sampler);
+            vh::vhBufCreateTextureSampler(m_device, &albedoMap->m_imageInfo.sampler);
+
+            offscreenPostionMaps.push_back(positionMap->m_imageInfo.imageView);
+            offscreenNormalMaps.push_back(normalMap->m_imageInfo.imageView);
+            offscreenAlbedoMaps.push_back(albedoMap->m_imageInfo.imageView);
+            offscreenDepthMaps.push_back(depthMap->m_imageInfo.imageView);
+
+            m_positionMaps.push_back(positionMap);
+            m_normalMaps.push_back(normalMap);
+            m_albedoMaps.push_back(albedoMap);
+            m_depthMaps.push_back(depthMap);
+        }
+
+        vh::vhBufCreateFramebuffersOffscreen(m_device, offscreenPostionMaps, offscreenNormalMaps, offscreenAlbedoMaps, offscreenDepthMaps, m_renderPassOffscreen, m_swapChainExtent, m_offscreenFramebuffers);
+
 		//------------------------------------------------------------------------------------------------------------
 		//create resources for shadow pass
 
@@ -163,16 +192,36 @@ namespace ve {
 
         uint32_t maxobjects = 10000;
         vh::vhRenderCreateDescriptorPool(m_device,
-            { VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER , VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER , VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT },
-            { maxobjects, maxobjects , 3 },
+            { VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC , VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER },
+            { maxobjects, maxobjects},
             &m_descriptorPool);
 
-
+        //Shadow Pass:
+        // 
         //set 0...cam UBO
         //set 1...light UBO
         //set 2...shadow maps
         //set 3...per object UBO
-        //set 4...additional per object resources
+        // 
+        //Offscreen Pass:
+        // 
+        //set 0...cam UBO
+        //set 1...per object UBO
+        //set 2...additional per object resources
+        
+        //Onscreen Pass:
+        // 
+        //set 0...cam UBO
+        //set 1...light UBO
+        //set 2...shadow maps
+        //set 3...position, normal, albedo map
+
+        //camera, light, UBO layout
+        vh::vhRenderCreateDescriptorSetLayout(m_device,
+            { 1 },
+            { VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC },
+            { VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT },
+            &m_descriptorSetLayoutPerObject);
 
         //set 2, binding 0 : shadow map + sampler
         vh::vhRenderCreateDescriptorSetLayout(m_device,
@@ -181,20 +230,41 @@ namespace ve {
             { VK_SHADER_STAGE_FRAGMENT_BIT },
             &m_descriptorSetLayoutShadow);
 
-        //set 3, binding 0 : UBO per scene object: camera, light, entity
-        vh::vhRenderCreateDescriptorSetLayout(getDevice(),
-            { 1 },
-            { VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER },
-            { VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT , },
-            &m_descriptorSetLayoutPerObject);
-        
-
+        // offscreen maps
+        vh::vhRenderCreateDescriptorSetLayout(m_device,
+            { 1,									1,                                    1 },
+            { VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,	VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,  VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER },
+            { VK_SHADER_STAGE_FRAGMENT_BIT,		    VK_SHADER_STAGE_FRAGMENT_BIT,         VK_SHADER_STAGE_FRAGMENT_BIT },
+            &m_descriptorSetLayoutOffscreen);
         //------------------------------------------------------------------------------------------------------------
         //create descriptor sets
-		//vh::vhRenderCreateDescriptorSets(m_device, (uint32_t)m_swapChainImages.size(), m_descriptorSetLayoutPerFrame, getDescriptorPool(), m_descriptorSetsPerFrame);
+
+        vh::vhRenderCreateDescriptorSets(m_device, (uint32_t)m_swapChainImages.size(), m_descriptorSetLayoutOffscreen, getDescriptorPool(), m_descriptorSetsOffscreen);
+
+        //update the descriptor set for onscreen pass - position, normal and albedo
+        for (uint32_t i = 0; i < m_swapChainImageViews.size(); i++) {
+            vh::vhRenderUpdateDescriptorSet(m_device,
+                m_descriptorSetsOffscreen[i],
+                { VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER },  // Descriptor Types
+                { VK_NULL_HANDLE, VK_NULL_HANDLE, VK_NULL_HANDLE }, //UBOs
+                { 0 },	//UBO sizes
+                {
+                    { m_positionMaps[i]->m_imageInfo.imageView },
+                    { m_normalMaps[i]->m_imageInfo.imageView   },
+                    { m_albedoMaps[i]->m_imageInfo.imageView   }
+                },	//textureImageViews
+                {
+                    { m_positionMaps[i]->m_imageInfo.sampler   },
+                    { m_normalMaps[i]->m_imageInfo.sampler     },
+                    { m_albedoMaps[i]->m_imageInfo.sampler     }
+                } 	//samplers
+                );
+
+        }
+
 		vh::vhRenderCreateDescriptorSets(m_device, (uint32_t)m_swapChainImages.size(), m_descriptorSetLayoutShadow, getDescriptorPool(), m_descriptorSetsShadow);
 
-        //update the descriptor set for light pass - array of shadow maps
+        //update the descriptor set for onscreen pass - array of shadow maps
         for(uint32_t i = 0; i < m_swapChainImageViews.size(); i++) {
 
             std::vector<std::vector<VkImageView>>	imageViews;
@@ -235,11 +305,11 @@ namespace ve {
 		addSubrenderer(new VESubrenderDF_C1(*this));
 		addSubrenderer(new VESubrenderDF_D(*this));
 		addSubrenderer(new VESubrenderDF_DN(*this));
-		addSubrenderer(new VESubrenderDF_Skyplane(*this));
-        addSubrenderer(new VESubrenderDF_Shadow(*this));
-        //addSubrenderer(new VESubrender_Nuklear(*this));
+		addSubrenderer(new VESubrenderDF_Shadow(*this));
+        addSubrenderer(new VESubrender_Nuklear(*this));
+        addSubrenderer(new VESubrenderDF_Skyplane(*this));
 
-		m_subrenderComposer = new VESubrenderDF_Composer(*this);
+        m_subrenderComposer = new VESubrenderDF_Composer(*this);
 		m_subrenderComposer->initSubrenderer();
 	}
 
@@ -249,16 +319,11 @@ namespace ve {
 	*/
 	void VERendererDeferred::cleanupSwapChain() {
 		delete m_depthMap;
-        delete m_positionMap;
-        delete m_normalMap;
-        delete m_albedoMap;
 
 		for(auto framebuffer : m_swapChainFramebuffers) {
 			vkDestroyFramebuffer(m_device, framebuffer, nullptr);
 		}
-
-        vkDestroyRenderPass(m_device, m_renderPassClear, nullptr);
-        vkDestroyRenderPass(m_device, m_renderPassLoad, nullptr);
+        vkDestroyRenderPass(m_device, m_renderPassOnscreen, nullptr);
 
 		for(auto imageView : m_swapChainImageViews) {
 			vkDestroyImageView(m_device, imageView, nullptr);
@@ -290,19 +355,38 @@ namespace ve {
 				vkDestroyFramebuffer(m_device, framebuffer, nullptr);
 			}
 		}
+        for (auto framebuffer : m_offscreenFramebuffers) {
+            vkDestroyFramebuffer(m_device, framebuffer, nullptr);
+        }
 
+        //destroy offscreen maps
+        for (auto pPositionMap : m_positionMaps) {
+            delete pPositionMap;
+        }
+        for (auto pNormalMap : m_normalMaps) {
+            delete pNormalMap;
+        }
+        for (auto pAlbedoMap : m_albedoMaps) {
+            delete pAlbedoMap;
+        }
+        for (auto pDepthMap : m_depthMaps) {
+            delete pDepthMap;
+        }
         //destroy shadow maps
         for(auto pShadowMapList : m_shadowMaps) {
             for(auto pS : pShadowMapList) {
                 delete pS;
             }
         }
+        
+        vkDestroyRenderPass(m_device, m_renderPassOffscreen, nullptr);
         vkDestroyRenderPass(m_device, m_renderPassShadow, nullptr);
 
         //destroy per frame resources
         vkDestroyDescriptorPool(m_device, m_descriptorPool, nullptr);
         vkDestroyDescriptorSetLayout(m_device, m_descriptorSetLayoutPerObject, nullptr);
         vkDestroyDescriptorSetLayout(m_device, m_descriptorSetLayoutShadow, nullptr);
+        vkDestroyDescriptorSetLayout(m_device, m_descriptorSetLayoutOffscreen, nullptr);
 
         for(size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
             vkDestroySemaphore(m_device, m_renderFinishedSemaphores[i], nullptr);
@@ -334,56 +418,84 @@ namespace ve {
             &m_swapChain, m_swapChainImages, m_swapChainImageViews,
             &m_swapChainImageFormat, &m_swapChainExtent);
 
-        //------------------------------------------------------------------------------------------------------------
-        //create resources for g-buffer pass
 
+        //------------------------------------------------------------------------------------------------------------
+        //create resources for onscreen pass
         m_depthMap = new VETexture("DepthMap");
         m_depthMap->m_format = vh::vhDevFindDepthFormat(m_physicalDevice);
         m_depthMap->m_extent = m_swapChainExtent;
 
-        m_positionMap = new VETexture("Position");
-        m_positionMap->m_format = VK_FORMAT_R16G16B16A16_SFLOAT;
-        m_positionMap->m_extent = m_swapChainExtent;
+        //onscreen render pass
+        vh::vhRenderCreateRenderPassOnscreen(m_device, m_swapChainImageFormat, m_depthMap->m_format, VK_ATTACHMENT_LOAD_OP_LOAD, &m_renderPassOnscreen);
 
-        m_normalMap = new VETexture("Normal");
-        m_normalMap->m_format = VK_FORMAT_R16G16B16A16_SFLOAT;
-        m_normalMap->m_extent = m_swapChainExtent;
-
-        m_albedoMap = new VETexture("Albedo");
-        m_albedoMap->m_format = VK_FORMAT_R8G8B8A8_UNORM;
-        m_albedoMap->m_extent = m_swapChainExtent;
-
-        //g-buffer render pass
-        vh::vhRenderCreateRenderPassGBuffer(m_device, m_swapChainImageFormat, m_depthMap->m_format, VK_ATTACHMENT_LOAD_OP_CLEAR, &m_renderPassClear);
-        vh::vhRenderCreateRenderPassGBuffer(m_device, m_swapChainImageFormat, m_depthMap->m_format, VK_ATTACHMENT_LOAD_OP_LOAD, &m_renderPassLoad);
-
-        //buffers for g-buffer
-        vh::vhBufCreateGBufferResources(m_device, m_vmaAllocator, m_graphicsQueue, m_commandPool,
-            m_swapChainExtent, m_positionMap->m_format, &m_positionMap->m_image, &m_positionMap->m_deviceAllocation, &m_positionMap->m_imageInfo.imageView);
-        vh::vhBufCreateGBufferResources(m_device, m_vmaAllocator, m_graphicsQueue, m_commandPool,
-            m_swapChainExtent, m_normalMap->m_format, &m_normalMap->m_image, &m_normalMap->m_deviceAllocation, &m_normalMap->m_imageInfo.imageView);
-        vh::vhBufCreateGBufferResources(m_device, m_vmaAllocator, m_graphicsQueue, m_commandPool,
-            m_swapChainExtent, m_albedoMap->m_format, &m_albedoMap->m_image, &m_albedoMap->m_deviceAllocation, &m_albedoMap->m_imageInfo.imageView);
-
-        //depth map for g-buffer
+        //depth map for light pass
         vh::vhBufCreateDepthResources(m_device, m_vmaAllocator, m_graphicsQueue, m_commandPool,
-            m_swapChainExtent, m_depthMap->m_format, &m_depthMap->m_image, &m_depthMap->m_deviceAllocation, &m_depthMap->m_imageInfo.imageView);
+            m_swapChainExtent, m_depthMap->m_format,
+            &m_depthMap->m_image, &m_depthMap->m_deviceAllocation,
+            &m_depthMap->m_imageInfo.imageView);
 
-        //frame buffers
+        //frame buffers for light pass
         std::vector<VkImageView> depthMaps;
-        std::vector<VkImageView> postionMaps;
-        std::vector<VkImageView> normalMaps;
-        std::vector<VkImageView> albedoMaps;
-        for(uint32_t i = 0; i < m_swapChainImageViews.size(); i++) {
-            postionMaps.push_back(m_positionMap->m_imageInfo.imageView);
-            normalMaps.push_back(m_normalMap->m_imageInfo.imageView);
-            albedoMaps.push_back(m_albedoMap->m_imageInfo.imageView);
-            depthMaps.push_back(m_depthMap->m_imageInfo.imageView);
+        for (uint32_t i = 0; i < m_swapChainImageViews.size(); i++) depthMaps.push_back(m_depthMap->m_imageInfo.imageView);
+        vh::vhBufCreateFramebuffers(m_device, m_swapChainImageViews, depthMaps, m_renderPassOnscreen, m_swapChainExtent, m_swapChainFramebuffers);
+
+
+        //------------------------------------------------------------------------------------------------------------
+        //create resources for offscreen pass
+
+        std::vector<VkImageView> offscreenPostionMaps;
+        std::vector<VkImageView> offscreenNormalMaps;
+        std::vector<VkImageView> offscreenAlbedoMaps;
+        std::vector<VkImageView> offscreenDepthMaps;
+
+        for (uint32_t i = 0; i < m_swapChainImageViews.size(); i++) {
+            VETexture *depthMap = new VETexture("DepthMap");
+            depthMap->m_format = vh::vhDevFindDepthFormat(m_physicalDevice);
+            depthMap->m_extent = m_swapChainExtent;
+
+            VETexture *positionMap = new VETexture("Position");
+            positionMap->m_format = VK_FORMAT_R16G16B16A16_SFLOAT;
+            positionMap->m_extent = m_swapChainExtent;
+
+            VETexture *normalMap = new VETexture("Normal");
+            normalMap->m_format = VK_FORMAT_R16G16B16A16_SFLOAT;
+            normalMap->m_extent = m_swapChainExtent;
+
+            VETexture *albedoMap = new VETexture("Albedo");
+            albedoMap->m_format = VK_FORMAT_R8G8B8A8_UNORM;
+            albedoMap->m_extent = m_swapChainExtent;
+
+            //deferred render passes
+            vh::vhRenderCreateRenderPassOffscreen(m_device, m_depthMap->m_format, VK_ATTACHMENT_LOAD_OP_CLEAR, &m_renderPassOffscreen);
+
+            //buffers for offscreen pass
+            vh::vhBufCreateOffscreenResources(m_device, m_vmaAllocator, m_graphicsQueue, m_commandPool,
+                positionMap->m_extent, positionMap->m_format, &positionMap->m_image, &positionMap->m_deviceAllocation, &positionMap->m_imageInfo.imageView);
+            vh::vhBufCreateOffscreenResources(m_device, m_vmaAllocator, m_graphicsQueue, m_commandPool,
+                normalMap->m_extent, normalMap->m_format, &normalMap->m_image, &normalMap->m_deviceAllocation, &normalMap->m_imageInfo.imageView);
+            vh::vhBufCreateOffscreenResources(m_device, m_vmaAllocator, m_graphicsQueue, m_commandPool,
+                albedoMap->m_extent, albedoMap->m_format, &albedoMap->m_image, &albedoMap->m_deviceAllocation, &albedoMap->m_imageInfo.imageView);
+
+            //depth map for offscreen pass
+            vh::vhBufCreateDepthResources(m_device, m_vmaAllocator, m_graphicsQueue, m_commandPool,
+                depthMap->m_extent, depthMap->m_format, &depthMap->m_image, &depthMap->m_deviceAllocation, &depthMap->m_imageInfo.imageView);
+
+            vh::vhBufCreateTextureSampler(m_device, &positionMap->m_imageInfo.sampler);
+            vh::vhBufCreateTextureSampler(m_device, &normalMap->m_imageInfo.sampler);
+            vh::vhBufCreateTextureSampler(m_device, &albedoMap->m_imageInfo.sampler);
+
+            offscreenPostionMaps.push_back(positionMap->m_imageInfo.imageView);
+            offscreenNormalMaps.push_back(normalMap->m_imageInfo.imageView);
+            offscreenAlbedoMaps.push_back(albedoMap->m_imageInfo.imageView);
+            offscreenDepthMaps.push_back(depthMap->m_imageInfo.imageView);
+
+            m_depthMaps.push_back(depthMap);
+            m_positionMaps.push_back(positionMap);
+            m_normalMaps.push_back(normalMap);
+            m_albedoMaps.push_back(albedoMap);
         }
-        // setupFrameBuffer() ref
-        vh::vhBufCreateFramebuffersGBuffer(m_device, m_swapChainImageViews, postionMaps,
-            normalMaps, albedoMaps, depthMaps, m_renderPassClear,
-            m_swapChainExtent, m_swapChainFramebuffers);
+
+        vh::vhBufCreateFramebuffersOffscreen(m_device, offscreenPostionMaps, offscreenNormalMaps, offscreenAlbedoMaps, offscreenDepthMaps, m_renderPassOffscreen, m_swapChainExtent, m_offscreenFramebuffers);
 
         for(auto pSub : m_subrenderers) pSub->recreateResources();
         
@@ -484,27 +596,16 @@ namespace ve {
         m_secondaryBuffersFutures[m_imageIndex].clear();
 
         ThreadPool *tp = getEnginePointer()->getThreadPool();
-
+        VELight *pLight = nullptr;
         //go through all active lights in the scene
         std::chrono::high_resolution_clock::time_point t_start, t_now;
         for (uint32_t i = 0; i < getSceneManagerPointer()->getLights().size(); i++) {
-            VELight *pLight = getSceneManagerPointer()->getLights()[i];
-            if (i == 0)
-            {
-                //-----------------------------------------------------------------------------------------
-                //Gbuffer pass (write positon, albedo and normal to gbuffer)
-                t_now = vh::vhTimeNow();
-                auto future = tp->add(&VERendererDeferred::recordRenderpass, this, &m_renderPassClear, m_subrenderers,
-                    &m_swapChainFramebuffers[m_imageIndex],
-                    m_imageIndex, 0, pCamera, pLight, m_descriptorSetsShadow);
+            pLight = getSceneManagerPointer()->getLights()[i];
 
-                m_secondaryBuffersFutures[m_imageIndex].push_back(std::move(future));
-                m_AvgCmdGBufferTime = vh::vhAverage(vh::vhTimeDuration(t_now), m_AvgCmdGBufferTime);
-            }
             //-----------------------------------------------------------------------------------------
-            //shadow passes
-            t_now = vh::vhTimeNow();
+            //shadow pass
             {
+                t_now = vh::vhTimeNow();
                 for (unsigned j = 0; j < pLight->m_shadowCameras.size(); j++) {
                     std::vector<VkDescriptorSet> empty = {};
                     std::vector<VESubrender *> subrender = { m_subrenderShadow };
@@ -516,19 +617,32 @@ namespace ve {
 
                     m_secondaryBuffersFutures[m_imageIndex].push_back(std::move(future));
                 }
+                m_AvgCmdShadowTime = vh::vhAverage(vh::vhTimeDuration(t_now), m_AvgCmdShadowTime);
             }
-            m_AvgCmdShadowTime = vh::vhAverage(vh::vhTimeDuration(t_now), m_AvgCmdShadowTime);
+            //-----------------------------------------------------------------------------------------
+            //Offscreen pass (write positon, albedo and normal to gbuffer)
+            if (i == 0)
+            {
+                t_now = vh::vhTimeNow();
+                auto future = tp->add(&VERendererDeferred::recordRenderpass, this, &m_renderPassOffscreen, m_subrenderers,
+                    &m_offscreenFramebuffers[m_imageIndex],
+                    m_imageIndex, 0, pCamera, pLight, m_descriptorSetsShadow);
+
+                m_secondaryBuffersFutures[m_imageIndex].push_back(std::move(future));
+                m_AvgCmdGBufferTime = vh::vhAverage(vh::vhTimeDuration(t_now), m_AvgCmdGBufferTime);
+
+            }
         }
 
         //-----------------------------------------------------------------------------------------
-        //composer pass (illuminate objects using gbuffer and light)
+        //composer pass (illuminate objects using gbuffer and lights)
         std::vector<VESubrender *> m_subrendererComposer;
         m_subrendererComposer.push_back(m_subrenderComposer);
         for (uint32_t i = 0; i < getSceneManagerPointer()->getLights().size(); i++) {
             t_now = vh::vhTimeNow();
             VELight *pLight = getSceneManagerPointer()->getLights()[i];
             {
-                auto future = tp->add(&VERendererDeferred::recordRenderpass, this, &m_renderPassLoad, m_subrendererComposer,
+                auto future = tp->add(&VERendererDeferred::recordRenderpass, this, &m_renderPassOnscreen, m_subrendererComposer,
                     &m_swapChainFramebuffers[m_imageIndex],
                     m_imageIndex, i, pCamera, pLight, m_descriptorSetsShadow);
 
@@ -558,7 +672,6 @@ namespace ve {
         clearValuesLight.push_back(cv1);
         clearValuesLight.push_back(cv1);
         clearValuesLight.push_back(cv1);
-        clearValuesLight.push_back(cv1);
         cv2.depthStencil = { 1.0f, 0 };
         clearValuesLight.push_back(cv2);
 
@@ -567,37 +680,39 @@ namespace ve {
 
         //-----------------------------------------------------------------------------------------
         //create a new primary command buffer and record offscreen secondary buffers into it
-        vh::vhCmdCreateCommandBuffers(m_device, m_commandPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY,
-            1, &m_commandBuffersOffscreen[m_imageIndex]);
+        vh::vhCmdCreateCommandBuffers(m_device, m_commandPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY, 1, &m_commandBuffersOffscreen[m_imageIndex]);
         vh::vhCmdBeginCommandBuffer(m_device, m_commandBuffersOffscreen[m_imageIndex], (VkCommandBufferUsageFlagBits)0);
         
         for (uint32_t i = 0; i < getSceneManagerPointer()->getLights().size(); i++) {
             VELight *pLight = getSceneManagerPointer()->getLights()[i];
-            if (i == 0)
-            {
-                //-----------------------------------------------------------------------------------------
-                //Gbuffer pass (write positon, albedo and normal to gbuffer) can't be parallelized
-                vh::vhRenderBeginRenderPass(m_commandBuffersOffscreen[m_imageIndex], m_renderPassClear, m_swapChainFramebuffers[m_imageIndex], clearValuesLight, m_swapChainExtent, VK_SUBPASS_CONTENTS_SECONDARY_COMMAND_BUFFERS);
-                vkCmdExecuteCommands(m_commandBuffersOffscreen[m_imageIndex], 1, &m_secondaryBuffers[m_imageIndex][bufferIdx++].buffer);
-                vkCmdEndRenderPass(m_commandBuffersOffscreen[m_imageIndex]);
-                clearValuesLight.clear();		//since we blend the images onto each other, do not clear them for passes 2 and further
-            }
+            // shadow pass
             for (uint32_t j = 0; j < pLight->m_shadowCameras.size(); j++) {
                 vh::vhRenderBeginRenderPass(m_commandBuffersOffscreen[m_imageIndex], m_renderPassShadow, m_shadowFramebuffers[m_imageIndex][j], clearValuesShadow, m_shadowMaps[0][j]->m_extent, VK_SUBPASS_CONTENTS_SECONDARY_COMMAND_BUFFERS);
                 vkCmdExecuteCommands(m_commandBuffersOffscreen[m_imageIndex], 1, &m_secondaryBuffers[m_imageIndex][bufferIdx++].buffer);
                 vkCmdEndRenderPass(m_commandBuffersOffscreen[m_imageIndex]);
             }
+            //-----------------------------------------------------------------------------------------
+            //Offscreen pass (write positon, albedo and normal to gbuffer)
+            if (i == 0)
+            {
+                vh::vhRenderBeginRenderPass(m_commandBuffersOffscreen[m_imageIndex], m_renderPassOffscreen, m_offscreenFramebuffers[m_imageIndex], clearValuesLight, m_swapChainExtent, VK_SUBPASS_CONTENTS_SECONDARY_COMMAND_BUFFERS);
+                vkCmdExecuteCommands(m_commandBuffersOffscreen[m_imageIndex], 1, &m_secondaryBuffers[m_imageIndex][bufferIdx++].buffer);
+                vkCmdEndRenderPass(m_commandBuffersOffscreen[m_imageIndex]);
+            }
         }
         vkEndCommandBuffer(m_commandBuffersOffscreen[m_imageIndex]);
-
+ 
+        clearValuesLight.clear();		//since we blend the images onto each other, do not clear them for passes 2 and further
+        clearValuesLight.push_back(cv1);
+        clearValuesLight.push_back(cv2);
         //-----------------------------------------------------------------------------------------
         //create a new primary command buffer and record offscreen secondary buffers into it
         vh::vhCmdCreateCommandBuffers(m_device, m_commandPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY,
             1, &m_commandBuffersOnscreen[m_imageIndex]);
         vh::vhCmdBeginCommandBuffer(m_device, m_commandBuffersOnscreen[m_imageIndex], (VkCommandBufferUsageFlagBits)0);
 
-        vh::vhRenderBeginRenderPass(m_commandBuffersOnscreen[m_imageIndex], m_renderPassLoad, m_swapChainFramebuffers[m_imageIndex], clearValuesLight, m_swapChainExtent, VK_SUBPASS_CONTENTS_SECONDARY_COMMAND_BUFFERS);
-        vkCmdNextSubpass(m_commandBuffersOnscreen[m_imageIndex], VK_SUBPASS_CONTENTS_SECONDARY_COMMAND_BUFFERS);
+        
+        vh::vhRenderBeginRenderPass(m_commandBuffersOnscreen[m_imageIndex], m_renderPassOnscreen, m_swapChainFramebuffers[m_imageIndex], clearValuesLight, m_swapChainExtent, VK_SUBPASS_CONTENTS_SECONDARY_COMMAND_BUFFERS);
         for (uint32_t i = 0; i < getSceneManagerPointer()->getLights().size(); i++) {
             vkCmdExecuteCommands(m_commandBuffersOnscreen[m_imageIndex], 1, &m_secondaryBuffers[m_imageIndex][bufferIdx++].buffer);
         }
@@ -613,169 +728,6 @@ namespace ve {
             subrender->afterDrawFinished();
         }
     }
-
-    /*
-    void VERendererDeferred::prepareRecording() {
-        VECamera *pCamera;
-        VECHECKPOINTER(pCamera = getSceneManagerPointer()->getCamera());
-        pCamera->setExtent(getWindowPointer()->getExtent());
-
-        std::map<VELight *, lightBufferLists_t>::iterator it;
-        for (it = m_lightBufferLists.begin(); it != m_lightBufferLists.end(); it++) {
-            it->second.seenThisLight = false;
-
-            it->second.lightLists[m_imageIndex].lightBufferFutures.clear();
-            it->second.lightLists[m_imageIndex].lightBufferFutures.clear();
-        }
-    }
-
-
-    void VERendererDeferred::recordSecondaryBuffers() {
-
-        for (uint32_t i = 0; i < getSceneManagerPointer()->getLights().size(); i++) {
-            VELight *pLight = getSceneManagerPointer()->getLights()[i];
-            recordSecondaryBuffersForLight(pLight, i);
-        }
-
-        //------------------------------------------------------------------------------------------
-        //wait for all threads to finish and copy secondary command buffers into the vector
-
-        m_secondaryBuffers[m_imageIndex].resize(m_secondaryBuffersFutures[m_imageIndex].size());
-        for (uint32_t i = 0; i < m_secondaryBuffersFutures[m_imageIndex].size(); i++) {
-            m_secondaryBuffers[m_imageIndex][i] = m_secondaryBuffersFutures[m_imageIndex][i].get();
-        }
-
-
-        //------------------------------------------------------------------------------------------
-        //wait for all threads to finish and copy secondary command buffers into the vector
-
-        std::vector<VELight *> deleteList = {};
-
-        std::map<VELight *, lightBufferLists_t>::iterator it;
-        for (it = m_lightBufferLists.begin(); it != m_lightBufferLists.end(); it++) {
-            if (!it->second.seenThisLight) {
-                deleteList.push_back(it->first);
-            }
-        }
-
-        for (auto pLight : deleteList) {
-            //TODO release secondary cmd buffers
-            m_lightBufferLists.erase(it->first);
-        }
-
-    }
-
-
-    void VERendererDeferred::recordSecondaryBuffersForLight(VELight *pLight, uint32_t numPass) {
-        VECamera *pCamera;
-        VECHECKPOINTER(pCamera = getSceneManagerPointer()->getCamera());
-
-        if (m_lightBufferLists.count(pLight) > 0) {
-
-        }
-        else {
-
-        }
-
-        ThreadPool *tp = getEnginePointer()->getThreadPool();
-
-        //-----------------------------------------------------------------------------------------
-        //shadow passes
-
-        for (unsigned j = 0; j < pLight->m_shadowCameras.size(); j++) {
-            std::vector<VkDescriptorSet> empty = {};
-            std::vector<VESubrender *> subrender = { m_subrenderShadow };
-
-            auto future = tp->add(&VERendererDeferred::recordRenderpass, this, &m_renderPassShadow, subrender,
-                &m_shadowFramebuffers[m_imageIndex][j],
-                m_imageIndex, numPass, pLight->m_shadowCameras[j],
-                pLight, empty);
-
-            m_lightBufferLists[pLight].lightLists[m_imageIndex].shadowBufferFutures.push_back(std::move(future));
-        }
-
-        //-----------------------------------------------------------------------------------------
-        //light pass
-
-        auto future = tp->add(&VERendererDeferred::recordRenderpass, this, &(numPass == 0 ? m_renderPassClear : m_renderPassLoad), m_subrenderers,
-            &m_swapChainFramebuffers[m_imageIndex],
-            m_imageIndex, numPass, pCamera, pLight, m_descriptorSetsShadow);
-
-        m_lightBufferLists[pLight].lightLists[m_imageIndex].lightBufferFutures.push_back(std::move(future));
-
-        m_lightBufferLists[pLight].seenThisLight = true;
-    }
-
-
-
-    void VERendererDeferred::recordPrimaryBuffers() {
-
-        vkFreeCommandBuffers(m_device, m_commandPool, 1, &m_commandBuffers[m_imageIndex]);
-        m_commandBuffers[m_imageIndex] = VK_NULL_HANDLE;
-
-        //-----------------------------------------------------------------------------------------
-        //set clear values for shadow and light passes
-
-        std::vector<VkClearValue> clearValuesShadow = {};	//shadow map should be cleared every time
-        VkClearValue cv;
-        cv.depthStencil = { 1.0f, 0 };
-        clearValuesShadow.push_back(cv);
-
-        std::vector<VkClearValue> clearValuesLight = {};//render target and depth buffer should be cleared only first time
-        VkClearValue cv1, cv2;
-        cv1.color = { 0.0f, 0.0f, 0.0f, 1.0f };
-        clearValuesLight.push_back(cv1);
-        clearValuesLight.push_back(cv1);
-        clearValuesLight.push_back(cv1);
-        clearValuesLight.push_back(cv1);
-        cv2.depthStencil = { 1.0f, 0 };
-        clearValuesLight.push_back(cv2);
-
-
-        //-----------------------------------------------------------------------------------------
-        //create a new primary command buffer and record all secondary buffers into it
-
-        vh::vhCmdCreateCommandBuffers(m_device, m_commandPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY, 1, &m_commandBuffers[m_imageIndex]);
-
-        vh::vhCmdBeginCommandBuffer(m_device, m_commandBuffers[m_imageIndex], (VkCommandBufferUsageFlagBits)0);
-
-        uint32_t bufferIdx = 0;
-        for (uint32_t i = 0; i < getSceneManagerPointer()->getLights().size(); i++) {
-
-            VELight *pLight = getSceneManagerPointer()->getLights()[i];
-            secondaryBufferLists_t &lightList = m_lightBufferLists[pLight].lightLists[m_imageIndex];
-
-            for (uint32_t j = 0; j < pLight->m_shadowCameras.size(); j++) {
-                vh::vhRenderBeginRenderPass(m_commandBuffers[m_imageIndex], m_renderPassShadow, m_shadowFramebuffers[m_imageIndex][j], clearValuesShadow, m_shadowMaps[0][j]->m_extent, VK_SUBPASS_CONTENTS_SECONDARY_COMMAND_BUFFERS);
-                for (auto secBuf : lightList.shadowBuffers) {
-                    vkCmdExecuteCommands(m_commandBuffers[m_imageIndex], 1, &secBuf.buffer);
-                }
-                vkCmdEndRenderPass(m_commandBuffers[m_imageIndex]);
-            }
-
-            vh::vhRenderBeginRenderPass(m_commandBuffers[m_imageIndex], i == 0 ? m_renderPassClear : m_renderPassLoad, m_swapChainFramebuffers[m_imageIndex], clearValuesLight, m_swapChainExtent, VK_SUBPASS_CONTENTS_SECONDARY_COMMAND_BUFFERS);
-            for (auto secBuf : lightList.lightBuffers) {
-                vkCmdExecuteCommands(m_commandBuffers[m_imageIndex], 1, &secBuf.buffer);
-            }
-            vkCmdEndRenderPass(m_commandBuffers[m_imageIndex]);
-
-            clearValuesLight.clear();		//since we blend the images onto each other, do not clear them for passes 2 and further
-        }
-
-        vkEndCommandBuffer(m_commandBuffers[m_imageIndex]);
-
-        m_overlaySemaphores[m_currentFrame] = m_renderFinishedSemaphores[m_currentFrame];
-
-    }
-
-
-    void VERendererDeferred::recordCmdBuffers2() {
-        prepareRecording();
-        recordSecondaryBuffers();
-        recordPrimaryBuffers();
-    }
-
-    */
 
 	/**
 	* \brief Draw the frame.

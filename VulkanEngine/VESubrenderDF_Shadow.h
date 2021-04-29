@@ -28,11 +28,15 @@ namespace ve {
         virtual veSubrenderType getType() { return VE_SUBRENDERER_TYPE_SHADOW; };
 		virtual void initSubrenderer();
 		virtual void addEntity(VEEntity *pEntity);
-        void bindDescriptorSetsPerEntity(VkCommandBuffer commandBuffer, uint32_t imageIndex, VEEntity *entity);
-        //void bindDescriptorSets(VkCommandBuffer commandBuffer, uint32_t imageIndex, VEEntity *entity);
+        void bindDescriptorSetsPerEntity(VkCommandBuffer commandBuffer, uint32_t imageIndex, VEEntity *entity) override;
         virtual void draw(VkCommandBuffer commandBuffer, uint32_t imageIndex, uint32_t numPass,
-            VECamera *pCamera, VELight *pLight,
-            std::vector<VkDescriptorSet> descriptorSetsShadow);
+                          VECamera *pCamera, VELight *pLight,
+                          std::vector<VkDescriptorSet> descriptorSetsShadow);
+
+		virtual void	bindDescriptorSetsPerFrame(VkCommandBuffer commandBuffer, uint32_t imageIndex,
+			VECamera *pCamera, VELight *pLight,
+			std::vector<VkDescriptorSet> descriptorSetsShadow);
+
 	};
 }
 

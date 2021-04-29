@@ -14,9 +14,7 @@ namespace ve {
     * \brief Subrenderer that manages entities that have a diffuse texture and a normal map
     */
     class VESubrenderDF_Composer : public VESubrenderDF {
-    protected:
-        VkDescriptorSetLayout m_descriptorSetLayoutGBuffer = VK_NULL_HANDLE;
-        std::vector<VkDescriptorSet> m_descriptorSetsGBuffer;
+
     public:
         ///Constructor
         VESubrenderDF_Composer(VERendererDeferred &renderer) : VESubrenderDF(renderer) {};
@@ -28,13 +26,18 @@ namespace ve {
         ///\returns the type of the subrenderer
         virtual veSubrenderType getType() { return VE_SUBRENDERER_TYPE_NONE; };
 
-        virtual void initSubrenderer();
-        virtual void addEntity(VEEntity *pEntity);
-        void bindDescriptorSet(VkCommandBuffer commandBuffer, uint32_t imageIndex);
-        void setDynamicPipelineState(VkCommandBuffer commandBuffer, uint32_t numPass);
+        virtual void initSubrenderer() override;
+        virtual void addEntity(VEEntity *pEntity) override;
+        void setDynamicPipelineState(VkCommandBuffer commandBuffer, uint32_t numPass) override;
+
+        virtual void bindDescriptorSetsPerFrame(VkCommandBuffer commandBuffer, uint32_t imageIndex,
+                                                VECamera *pCamera, VELight *pLight,
+                                                std::vector<VkDescriptorSet> descriptorSetsShadow);
         void draw(VkCommandBuffer commandBuffer, uint32_t imageIndex, uint32_t numPass,
                   VECamera *pCamera, VELight *pLight,
-                  std::vector<VkDescriptorSet> descriptorSetsShadow) override;
+                  std::vector<VkDescriptorSet> descriptorSetsShadow);
+        
+        void bindOffscreenDescriptorSet(VkCommandBuffer commandBuffer, uint32_t imageIndex);
     };
 }
 

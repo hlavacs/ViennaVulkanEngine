@@ -71,6 +71,8 @@ void main() {
     float shadowFactor = 1.0;
 
     if( lightType == LIGHT_DIR ) {
+        if(dot(lightDirW, N) >= 0) normalW = N;
+
         sIdx = shadowIdxDirectional(cameraUBO.data.param,
                                     gl_FragCoord,
                                     lightUBO.data.shadowCameras[0].param[3],
@@ -100,6 +102,7 @@ void main() {
     }
 
     if( lightType == LIGHT_SPOT ) {
+        if(dot(lightDirW, N) >= 0) normalW = N;
 
         shadowFactor = shadowFunc(fragPosW, s.camView, s.camProj, shadowMap[sIdx] );
 

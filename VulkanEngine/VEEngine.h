@@ -48,13 +48,8 @@ namespace ve {
 		VEWindow * m_pWindow = nullptr;					///<Pointer to the only Window instance
 
 		veRendererType m_rendererType;
-        VERenderer* m_pForwardRenderer = nullptr;
-        VERenderer* m_pDeferredRenderer = nullptr;
-        VERenderer* m_pRayTracingNVidiaRenderer = nullptr;
-        VERenderer* m_pRayTracingKHRRenderer = nullptr;
-        VERenderer* m_pHybridRenderer = nullptr;
-
         VERenderer * m_pRenderer = nullptr;				///<Pointer to the only renderer instance
+
 		VESceneManager * m_pSceneManager = nullptr;		///<Pointer to the only scene manager instance
 		VkDebugReportCallbackEXT callback;				///<Debug callback handle
 

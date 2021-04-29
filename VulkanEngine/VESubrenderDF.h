@@ -52,9 +52,7 @@ namespace ve {
 
 		//------------------------------------------------------------------------------------------------------------------
 		virtual void	bindPipeline(VkCommandBuffer commandBuffer);
-		virtual void	bindDescriptorSetsPerFrame(VkCommandBuffer commandBuffer, uint32_t imageIndex,
-			VECamera *pCamera, VELight *pLight,
-			std::vector<VkDescriptorSet> descriptorSetsShadow);
+		virtual void	bindDescriptorSetsPerFrame(VkCommandBuffer commandBuffer, uint32_t imageIndex, VECamera *pCamera);
 		virtual void	bindDescriptorSetsPerEntity(VkCommandBuffer commandBuffer, uint32_t imageIndex, VEEntity *entity);
 
 		///Set the dynamic state of the pipeline - does nothing for the base class
@@ -66,20 +64,18 @@ namespace ve {
 		virtual void		afterDrawFinished();	//after all draw calls have been recorded
 
 		//Draw all entities that are managed by this subrenderer
-		virtual void		draw(VkCommandBuffer commandBuffer, uint32_t imageIndex, uint32_t numPass,
-			VECamera *pCamera, VELight *pLight,
-			std::vector<VkDescriptorSet> descriptorSetsShadow);
+		virtual void		draw(VkCommandBuffer commandBuffer, uint32_t imageIndex, uint32_t numPass, VECamera *pCamera, VELight *pLight, std::vector<VkDescriptorSet> descriptorSetsShadow) override;
 
 		///Perform an arbitrary draw operation
 		///\returns a semaphore signalling when this draw operations has finished
-		virtual VkSemaphore	draw(uint32_t imageIndex, VkSemaphore wait_semaphore) { return VK_NULL_HANDLE; };
+		virtual VkSemaphore	draw(uint32_t imageIndex, VkSemaphore wait_semaphore) override { return VK_NULL_HANDLE; };
 
-		virtual void		drawEntity(VkCommandBuffer commandBuffer, uint32_t imageIndex, VEEntity *entity);
+		virtual void		drawEntity(VkCommandBuffer commandBuffer, uint32_t imageIndex, VEEntity *entity) override;
 
 		//------------------------------------------------------------------------------------------------------------------
-		virtual void	addEntity(VEEntity *pEntity) { VESubrender::addEntity(pEntity); };
+		virtual void	addEntity(VEEntity *pEntity) override { VESubrender::addEntity(pEntity); };
 		virtual void	addMaps(VEEntity *pEntity, std::vector<VkDescriptorImageInfo> &newMaps);
-		virtual void	removeEntity(VEEntity *pEntity);
+		virtual void	removeEntity(VEEntity *pEntity) override;
 		///\returns the number of entities that this sub renderer manages
 		uint32_t		getNumberEntities() { return (uint32_t)m_entities.size(); };
 

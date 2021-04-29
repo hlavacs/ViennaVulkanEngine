@@ -10,20 +10,19 @@
 layout(location = 0) in vec2 fragTexCoord;
 layout(location = 1) in vec4 fragPosW;
 
-layout (location = 0) out vec4 outColor;
-layout (location = 1) out vec4 outPosition;
-layout (location = 2) out vec4 outNormal;
-layout (location = 3) out vec4 outAlbedo;
+layout(location = 0) out vec4 outPosition;
+layout(location = 1) out vec4 outNormal;
+layout(location = 2) out vec4 outAlbedo;
 
 layout(set = 0, binding = 0) uniform cameraUBO_t {
     cameraData_t data;
 } cameraUBO;
 
-layout(set = 3, binding = 0) uniform objectUBO_t {
+layout(set = 1, binding = 0) uniform objectUBO_t {
     objectData_t data;
 } objectUBO;
 
-layout(set = 4, binding = 0) uniform sampler2D texSamplerArray[RESOURCEARRAYLENGTH];
+layout(set = 2, binding = 0) uniform sampler2D texSamplerArray[RESOURCEARRAYLENGTH];
 
 void main() {
     vec4 texParam   = objectUBO.data.param;
@@ -34,7 +33,6 @@ void main() {
     vec3 fragColor = texture(texSamplerArray[resIdx], texCoord).xyz;
 
     outPosition = fragPosW;
-	outNormal = vec4(0.0);
-	outAlbedo = vec4(0.0);
-	outColor = vec4(fragColor, 1.0);
+    outNormal = vec4(0.0, 0.0, 0.0, 1.0);
+    outAlbedo = vec4(fragColor, 1.0);
 }

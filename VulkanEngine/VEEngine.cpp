@@ -87,21 +87,18 @@ namespace ve {
 	*
 	*/
 	void VEEngine::createRenderer() {
-        m_pForwardRenderer = new VERendererForward();
-        m_pDeferredRenderer = new VERendererDeferred();
-        m_pRayTracingNVidiaRenderer = new VERendererRT();
         switch (m_rendererType) {
             case veRendererType::VE_RENDERER_TYPE_FORWARD:
-                m_pRenderer = m_pForwardRenderer;
+                m_pRenderer = new VERendererForward();
                 break;
 			case veRendererType::VE_RENDERER_TYPE_DEFERRED:
-				m_pRenderer = m_pDeferredRenderer;
+				m_pRenderer = new VERendererDeferred();
 				break;
             case veRendererType::VE_RENDERER_TYPE_RAYTRACING_NVIDIA:
-                m_pRenderer = m_pRayTracingNVidiaRenderer;
+                m_pRenderer = new VERendererRT();
                 break;
             default:
-                m_pRenderer = m_pForwardRenderer;
+                m_pRenderer = new VERendererForward();
         }
 	}
 
@@ -160,9 +157,9 @@ namespace ve {
 	std::vector<const char*> VEEngine::getValidationLayers() {
 		std::vector<const char*> validationLayers = {};
 		if (m_debug) {
-			//validationLayers.push_back("VK_LAYER_KHRONOS_validation");
+			validationLayers.push_back("VK_LAYER_KHRONOS_validation");
 		}
-		//validationLayers.push_back("VK_LAYER_KHRONOS_monitor");
+		validationLayers.push_back("VK_LAYER_KHRONOS_monitor");
 		return validationLayers;
 	}
 
@@ -174,7 +171,7 @@ namespace ve {
 		std::vector<const char*> extensions = m_pWindow->getRequiredInstanceExtensions();
 		if (m_debug) {
 			extensions.push_back(VK_EXT_DEBUG_REPORT_EXTENSION_NAME);
-			//extensions.push_back("VK_EXT_debug_report");
+			extensions.push_back("VK_EXT_debug_report");
 		}
 		if (isRayTracing())
 		{
@@ -646,7 +643,7 @@ namespace ve {
 		light1->m_col_diffuse = glm::vec4(0.9f, 0.9f, 0.9f, 1.0f);
 		light1->m_col_specular = glm::vec4(0.4f, 0.4f, 0.4f, 1.0f);
 
-		/*VELight *light3 = (VEPointLight *)getSceneManagerPointer()->createLight("StandardPointLight", VELight::VE_LIGHT_TYPE_POINT, camera); //new VEPointLight("StandardPointLight");		//sphere is attached to this!
+		VELight *light3 = (VEPointLight *)getSceneManagerPointer()->createLight("StandardPointLight", VELight::VE_LIGHT_TYPE_POINT, camera); //new VEPointLight("StandardPointLight");		//sphere is attached to this!
 		light3->m_col_diffuse = glm::vec4(0.99f, 0.99f, 0.6f, 1.0f);
 		light3->m_col_specular = glm::vec4(0.0f, 0.0f, 0.0f, 1.0f);
 		light3->m_param[0] = 200.0f;
@@ -657,7 +654,7 @@ namespace ve {
 		light2->m_col_specular = glm::vec4(0.0f, 0.0f, 0.0f, 1.0f);
 		light2->m_param[0] = 200.0f;
 		light2->multiplyTransform(glm::translate(glm::vec3(5.0f, 0.0f, 0.0f)));
-		*/
+		
 
 		registerEventListeners();
 	}

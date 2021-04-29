@@ -222,14 +222,16 @@ namespace ve {
 			for (uint32_t i = 0; i < m_maps.size(); i++) {										//go through all map bind slots , e.g. first diffuse, then normal, then specular, then ...
 				m_maps[i].resize(offset + m_resourceArrayLength);								//make room for the new array elements
 				for (uint32_t j = offset; j < offset + m_resourceArrayLength; j++) 				//have to fill the whole new array, even if there is only one map yet
-					m_maps[i][j] = newMaps[i];													//fill the new array up with copies of the first elemenet
+					if (i < newMaps.size())
+						m_maps[i][j] = newMaps[i];													//fill the new array up with copies of the first elemenet
 			}
 		}
 		else {																					//we are inside an array, size is ALWAYS a multiple of m_resourceArrayLength!
 			offset = (uint32_t)m_maps[0].size() / m_resourceArrayLength - 1;					//get index of array
 			offset *= m_resourceArrayLength;													//get start index where the array starts
 			for (uint32_t i = 0; i < m_maps.size(); i++) {										//go through all map types
-				m_maps[i][m_entities.size()] = newMaps[i];										//copy the map into the array
+				if (i < newMaps.size())
+					m_maps[i][m_entities.size()] = newMaps[i];										//copy the map into the array
 			}
 		}
 

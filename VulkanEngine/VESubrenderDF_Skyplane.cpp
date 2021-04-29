@@ -30,7 +30,7 @@ namespace ve {
 
         VkDescriptorSetLayout perObjectLayout = m_renderer.getDescriptorSetLayoutPerObject();
         vh::vhPipeCreateGraphicsPipelineLayout(m_renderer.getDevice(),
-            { perObjectLayout, perObjectLayout, m_renderer.getDescriptorSetLayoutShadow(), perObjectLayout, m_descriptorSetLayoutResources },
+            { perObjectLayout, perObjectLayout, m_descriptorSetLayoutResources },
             {},
             &m_pipelineLayout);
 
@@ -38,9 +38,9 @@ namespace ve {
         vh::vhPipeCreateGraphicsPipeline(m_renderer.getDevice(),
             { "media/shader/Deferred/Skyplane/vert.spv", "media/shader/Deferred/Skyplane/frag.spv" },
             m_renderer.getSwapChainExtent(),
-            m_pipelineLayout, m_renderer.getRenderPass(),
+            m_pipelineLayout, m_renderer.getRenderPassOffscreen(),
             {},
-            &m_pipelines[0], 0, VK_CULL_MODE_BACK_BIT, 4);
+            &m_pipelines[0], VK_CULL_MODE_BACK_BIT, 3);
 
         if (m_maps.empty()) m_maps.resize(1);
 	}

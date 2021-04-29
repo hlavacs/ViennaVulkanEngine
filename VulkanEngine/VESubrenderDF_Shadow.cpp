@@ -49,6 +49,43 @@ namespace ve {
 	}
 
 	/**
+	* \brief Bind per frame descriptor sets to the pipeline layout
+	*
+	* \param[in] commandBuffer The command buffer that is used for recording commands
+	* \param[in] imageIndex The index of the swapchain image that is currently used
+	* \param[in] pCamera Pointer to the current light camera
+	* \param[in] pLight Pointer to the currently used light
+	* \param[in] descriptorSetsShadow Shadow maps that are used for creating shadow
+	*
+	*/
+	void VESubrenderDF_Shadow::bindDescriptorSetsPerFrame(VkCommandBuffer commandBuffer, uint32_t imageIndex,
+		VECamera *pCamera, VELight *pLight,
+		std::vector<VkDescriptorSet> descriptorSetsShadow) {
+
+		//set 0...cam UBO
+		//set 1...light resources
+		//set 2...shadow maps
+		//set 3...per object UBO
+
+		std::vector<VkDescriptorSet> set = {
+			pCamera->m_memoryHandle.pMemBlock->descriptorSets[imageIndex],
+			pLight->m_memoryHandle.pMemBlock->descriptorSets[imageIndex]
+		};
+
+		uint32_t offsets[2] = { (uint32_t)(pCamera->m_memoryHandle.entryIndex * sizeof(VECamera::veUBOPerCamera_t)),
+			(uint32_t)(pLight->m_memoryHandle.entryIndex * sizeof(VELight::veUBOPerLight_t)) };
+
+		if (descriptorSetsShadow.size() > 0) {
+			set.push_back(descriptorSetsShadow[imageIndex]);
+		}
+
+		vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_pipelineLayout,
+			0, (uint32_t)set.size(), set.data(), 2, offsets);
+
+	}
+
+
+	/**
 	*
 	* \brief Bind default descriptor sets - 0...per object 1...per frame
 	*

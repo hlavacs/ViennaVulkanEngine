@@ -142,13 +142,13 @@ namespace vh {
 	* \param[out] depthImageAllocation VMA allocation info
 	* \param[out] depthImageView View of the depth image
 	*/
-    VkResult vhBufCreateGBufferResources(VkDevice device, VmaAllocator allocator, VkQueue graphicsQueue,
+    VkResult vhBufCreateOffscreenResources(VkDevice device, VmaAllocator allocator, VkQueue graphicsQueue,
 		VkCommandPool commandPool, VkExtent2D extent, VkFormat format,
 		VkImage *image, VmaAllocation *colorImageAllocation, VkImageView * colorImageView) {
 
         VHCHECKRESULT(vhBufCreateImage(allocator, extent.width, extent.height, 1, 1,
             format, VK_IMAGE_TILING_OPTIMAL,
-            VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT, 0,
+            VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, 0,
             image, colorImageAllocation) );
 
 		VHCHECKRESULT( vh::vhBufCreateImageView(device, *image, format, VK_IMAGE_VIEW_TYPE_2D, 1, VK_IMAGE_ASPECT_COLOR_BIT, colorImageView) );
@@ -781,7 +781,7 @@ namespace vh {
 	}
 
     /**
-    * \brief Create framebuffers (color, position, normal, albedo, depth), one for each swap chain image
+    * \brief Create framebuffers (position, normal, albedo, depth), one for each swap chain image
     * \param[in] device Logical Vulkan device
     * \param[in] imageViews Color images from the swap chain
     * \param[in] positionImageViews List with views of the position images
@@ -792,9 +792,8 @@ namespace vh {
     * \param[in] extent Extent of the swap chain images
     * \param[out] frameBuffers The resulting frame buffers
     */
-    VkResult vhBufCreateFramebuffersGBuffer(VkDevice device,
-        std::vector<VkImageView> imageViews,
-        std::vector<VkImageView> positionImageViews, //should have same length!
+    VkResult vhBufCreateFramebuffersOffscreen(VkDevice device,
+        std::vector<VkImageView> positionImageViews,
         std::vector<VkImageView> normalImageViews, //should have same length!
         std::vector<VkImageView> albedoImageViews, //should have same length!
         std::vector<VkImageView> depthImageViews, //should have same length!
@@ -808,14 +807,12 @@ namespace vh {
         framebufferInfo.height = extent.height;
         framebufferInfo.layers = 1;
 
-        uint32_t loops = (uint32_t)std::max(imageViews.size(), depthImageViews.size());
+        uint32_t loops = (uint32_t)std::max(positionImageViews.size(), depthImageViews.size());
         frameBuffers.resize(loops);
 
         for(size_t i = 0; i < loops; i++) {
             std::vector<VkImageView> attachments;
 
-            if(imageViews.size() > i && imageViews[i] != VK_NULL_HANDLE)
-                attachments.push_back(imageViews[i]);
             if(positionImageViews.size() > i && positionImageViews[i] != VK_NULL_HANDLE)
                 attachments.push_back(positionImageViews[i]);
             if(normalImageViews.size() > i && normalImageViews[i] != VK_NULL_HANDLE)

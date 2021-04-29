@@ -24,7 +24,7 @@ namespace ve {
 
         VkDescriptorSetLayout perObjectLayout = m_renderer.getDescriptorSetLayoutPerObject();
         vh::vhPipeCreateGraphicsPipelineLayout(m_renderer.getDevice(),
-            { perObjectLayout, perObjectLayout, m_renderer.getDescriptorSetLayoutShadow(), perObjectLayout },
+            { perObjectLayout, perObjectLayout},
             { },
             &m_pipelineLayout);
 
@@ -32,9 +32,9 @@ namespace ve {
         vh::vhPipeCreateGraphicsPipeline(m_renderer.getDevice(),
             { "media/shader/Deferred/C1/vert.spv", "media/shader/Deferred/C1/frag.spv" },
             m_renderer.getSwapChainExtent(),
-            m_pipelineLayout, m_renderer.getRenderPass(),
+            m_pipelineLayout, m_renderer.getRenderPassOffscreen(),
             {},
-            &m_pipelines[0], 0, VK_CULL_MODE_BACK_BIT, 4);
+            &m_pipelines[0], VK_CULL_MODE_BACK_BIT, 3);
 	}
 }
 

@@ -81,30 +81,21 @@ namespace ve {
 	* \param[in] descriptorSetsShadow Shadow maps that are used for creating shadow
 	*
 	*/
-	void VESubrenderDF::bindDescriptorSetsPerFrame(VkCommandBuffer commandBuffer, uint32_t imageIndex,
-		VECamera *pCamera, VELight *pLight,
-		std::vector<VkDescriptorSet> descriptorSetsShadow) {
-
+	void VESubrenderDF::bindDescriptorSetsPerFrame(VkCommandBuffer commandBuffer, uint32_t imageIndex, VECamera *pCamera) {
+		
+		//Offscreen Pass:
+		// 
 		//set 0...cam UBO
-		//set 1...light resources
-		//set 2...shadow maps
-		//set 3...per object UBO
-		//set 4...additional per object resources
+		//set 1...per object UBO
+		//set 2...additional per object resources
 
 		std::vector<VkDescriptorSet> set = {
 			pCamera->m_memoryHandle.pMemBlock->descriptorSets[imageIndex],
-			pLight->m_memoryHandle.pMemBlock->descriptorSets[imageIndex]
 		};
-
-		uint32_t offsets[2] = { (uint32_t)(pCamera->m_memoryHandle.entryIndex * sizeof(VECamera::veUBOPerCamera_t)),
-			(uint32_t)(pLight->m_memoryHandle.entryIndex * sizeof(VELight::veUBOPerLight_t)) };
-
-		if (descriptorSetsShadow.size() > 0) {
-			set.push_back(descriptorSetsShadow[imageIndex]);
-		}
+		uint32_t offsets[1] = { (uint32_t)(pCamera->m_memoryHandle.entryIndex * sizeof(VECamera::veUBOPerCamera_t))};
 
 		vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_pipelineLayout,
-			0, (uint32_t)set.size(), set.data(), 2, offsets);
+			0, (uint32_t)set.size(), set.data(), 1, offsets);
 
 	}
 
@@ -122,11 +113,11 @@ namespace ve {
 	*/
 	void VESubrenderDF::bindDescriptorSetsPerEntity(VkCommandBuffer commandBuffer, uint32_t imageIndex, VEEntity *entity) {
 
+		//Offscreen Pass:
+		// 
 		//set 0...cam UBO
-		//set 1...light resources
-		//set 2...shadow maps
-		//set 3...per object UBO
-		//set 4...additional per object resources
+		//set 1...per object UBO
+		//set 2...additional per object resources
 
 		std::vector<VkDescriptorSet> sets = { entity->m_memoryHandle.pMemBlock->descriptorSets[imageIndex] };
 		if (m_descriptorSetsResources.size() > 0 && entity->getResourceIdx() % m_resourceArrayLength == 0) {
@@ -135,7 +126,7 @@ namespace ve {
 
 		uint32_t offset = entity->m_memoryHandle.entryIndex * sizeof(VEEntity::veUBOPerEntity_t);
 		vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_pipelineLayout,
-			3, (uint32_t)sets.size(), sets.data(), 1, &offset);
+			1, (uint32_t)sets.size(), sets.data(), 1, &offset);
 
 	}
 
@@ -154,10 +145,7 @@ namespace ve {
 	* \param[in] descriptorSetsShadow The shadow maps to be used.
 	*
 	*/
-	void VESubrenderDF::draw(VkCommandBuffer commandBuffer, uint32_t imageIndex,
-		uint32_t numPass,
-		VECamera *pCamera, VELight *pLight,
-		std::vector<VkDescriptorSet> descriptorSetsShadow) {
+	void VESubrenderDF::draw(VkCommandBuffer commandBuffer, uint32_t imageIndex, uint32_t numPass, VECamera *pCamera, VELight *pLight, std::vector<VkDescriptorSet> descriptorSetsShadow) {
 
 		if (m_entities.size() == 0) return;
 		m_idxLastRecorded = (uint32_t)m_entities.size() - 1;
@@ -168,7 +156,7 @@ namespace ve {
 
 		setDynamicPipelineState(commandBuffer, numPass);
 
-		bindDescriptorSetsPerFrame(commandBuffer, imageIndex, pCamera, pLight, descriptorSetsShadow);
+		bindDescriptorSetsPerFrame(commandBuffer, imageIndex, pCamera);
 
 		//go through all entities and draw them
 		for (auto pEntity : m_entities) {

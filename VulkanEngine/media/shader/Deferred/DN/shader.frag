@@ -17,23 +17,20 @@ layout(location = 2) in vec3 fragTangentW;
 layout(location = 3) in vec2 fragTexCoord;
 
 
-layout(location = 0) out vec4 outColor;
-layout(location = 1) out vec4 outPosition;
-layout(location = 2) out vec4 outNormal;
-layout(location = 3) out vec4 outAlbedo;
+layout(location = 0) out vec4 outPosition;
+layout(location = 1) out vec4 outNormal;
+layout(location = 2) out vec4 outAlbedo;
 
 layout(set = 0, binding = 0) uniform cameraUBO_t {
     cameraData_t data;
 } cameraUBO;
 
-layout(set = 2, binding = 0) uniform sampler2D shadowMap[NUM_SHADOW_CASCADE];
-
-layout(set = 3, binding = 0) uniform objectUBO_t {
+layout(set = 1, binding = 0) uniform objectUBO_t {
     objectData_t data;
 } objectUBO;
 
-layout(set = 4, binding = 0) uniform sampler2D texSamplerArray[RESOURCEARRAYLENGTH];
-layout(set = 4, binding = 1) uniform sampler2D normalSamplerArray[RESOURCEARRAYLENGTH];
+layout(set = 2, binding = 0) uniform sampler2D texSamplerArray[RESOURCEARRAYLENGTH];
+layout(set = 2, binding = 1) uniform sampler2D normalSamplerArray[RESOURCEARRAYLENGTH];
 
 
 void main() {

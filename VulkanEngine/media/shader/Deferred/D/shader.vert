@@ -8,7 +8,7 @@ layout(set = 0, binding = 0) uniform cameraUBO_t {
     cameraData_t data;
 } cameraUBO;
 
-layout(set = 3, binding = 0) uniform objectUBO_t {
+layout(set = 1, binding = 0) uniform objectUBO_t {
     objectData_t data;
 } objectUBO;
 
