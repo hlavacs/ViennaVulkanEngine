@@ -5,8 +5,8 @@
 *
 */
 
-#ifndef VESUBRENDERRTDN_H
-#define VESUBRENDERRTDN_H
+#ifndef VESUBRENDER_RAYTRACING_NV_DN_H
+#define VESUBRENDER_RAYTRACING_NV_DN_H
 
 #include "DescriptorSetGenerator.h"
 #include "ShaderBindingTableGenerator.h"
@@ -16,8 +16,8 @@ namespace ve {
 	/**
 	* \brief Subrenderer that manages entities that have a diffuse texture and a normal map
 	*/
-	class VESubrenderRT_DN : public VESubrenderRT {
-		friend VERendererRT;
+	class VESubrenderRayTracingNV_DN : public VESubrenderRayTracingNV {
+		friend VERendererRayTracingNV;
 
 	public:
 
@@ -43,9 +43,9 @@ namespace ve {
 
 	public:
 		///Constructor of subrender fw class
-        VESubrenderRT_DN(VERendererRT &renderer);
+        VESubrenderRayTracingNV_DN(VERendererRayTracingNV &renderer);
 		///Destructor of subrender fw class
-		virtual ~VESubrenderRT_DN() {};
+		virtual ~VESubrenderRayTracingNV_DN() {};
         ///\returns the class of the subrenderer
         virtual veSubrenderClass getClass() { return VE_SUBRENDERER_CLASS_RT; };
         ///\returns the type of the subrenderer

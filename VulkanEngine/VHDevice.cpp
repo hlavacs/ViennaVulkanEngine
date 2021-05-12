@@ -70,7 +70,7 @@ namespace vh {
 		appInfo.applicationVersion = VK_MAKE_VERSION(1, 0, 0);
 		appInfo.pEngineName = "";
 		appInfo.engineVersion = VK_MAKE_VERSION(1, 0, 0);
-		appInfo.apiVersion = VK_API_VERSION_1_0;
+		appInfo.apiVersion = VK_API_VERSION_1_2;
 
 		VkInstanceCreateInfo createInfo = {};
 		createInfo.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
@@ -269,18 +269,6 @@ namespace vh {
 		VkPhysicalDeviceProperties properties;
 		vkGetPhysicalDeviceProperties( *physicalDevice, &properties);
 		*limits = properties.limits;
-
-		VkPhysicalDeviceRayTracingPropertiesNV nv_rt_properties = {};
-		nv_rt_properties.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_TRACING_PROPERTIES_NV;
-		nv_rt_properties.pNext = nullptr;
-		nv_rt_properties.maxRecursionDepth = 0;
-		nv_rt_properties.shaderGroupHandleSize = 0;
-		VkPhysicalDeviceProperties2 properties2;
-		properties2.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROPERTIES_2;
-		properties2.pNext = &nv_rt_properties;
-		properties2.properties = {};
-		vkGetPhysicalDeviceProperties2(*physicalDevice, &properties2);
-
 		vkGetPhysicalDeviceFeatures( *physicalDevice, pFeatures);
 
 		return VK_SUCCESS;
@@ -352,6 +340,7 @@ namespace vh {
 	VkResult vhDevCreateLogicalDevice(	VkInstance instance, VkPhysicalDevice physicalDevice, VkSurfaceKHR surface,
 									std::vector<const char*> requiredDeviceExtensions, 
 									std::vector<const char*> requiredValidationLayers, 
+									void *pNextChain,
 									VkDevice *device, VkQueue *graphicsQueue, VkQueue *presentQueue) {
 		QueueFamilyIndices indices = vhDevFindQueueFamilies(physicalDevice, surface);
 
@@ -387,8 +376,20 @@ namespace vh {
 		createInfo.queueCreateInfoCount = static_cast<uint32_t>(queueCreateInfos.size());
 		createInfo.pQueueCreateInfos = queueCreateInfos.data();
 
-		createInfo.pEnabledFeatures = &deviceFeatures;
-
+		VkPhysicalDeviceFeatures2 physicalDeviceFeatures2{};
+		if (pNextChain)
+		{
+			physicalDeviceFeatures2.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
+			physicalDeviceFeatures2.features = deviceFeatures;
+			physicalDeviceFeatures2.pNext = pNextChain;
+			createInfo.pEnabledFeatures = nullptr;
+			createInfo.pNext = &physicalDeviceFeatures2;
+		}
+		else
+		{
+			createInfo.pEnabledFeatures = &deviceFeatures;
+		}
+		
 		createInfo.enabledExtensionCount = static_cast<uint32_t>(requiredDeviceExtensions.size());
 		createInfo.ppEnabledExtensionNames = requiredDeviceExtensions.data();
 

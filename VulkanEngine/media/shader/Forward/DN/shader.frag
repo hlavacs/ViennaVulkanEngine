@@ -104,6 +104,7 @@ void main() {
     if( lightType == LIGHT_SPOT ) {
         if(dot(lightDirW, N) >= 0) normalW = N;
 
+        sIdx = shadowIdxPoint( lightPosW, fragPosW );
         shadowFactor = shadowFunc(fragPosW, s.camView, s.camProj, shadowMap[sIdx] );
 
         result +=  spotlight( lightType, camPosW,

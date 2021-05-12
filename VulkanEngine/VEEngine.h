@@ -157,7 +157,7 @@ namespace ve {
 		///\returns the average draw overlay time (s)
 		float			 getAvgDrawOvlTime() { return m_AvgDrawOvlTime; };
 
-        bool isRayTracing() { return m_rendererType != VE_RENDERER_TYPE_RAYTRACING_NVIDIA && m_rendererType != VE_RENDERER_TYPE_RAYTRACING_KHR; }
+        bool isRayTracing() { return m_rendererType == VE_RENDERER_TYPE_RAYTRACING_NV || m_rendererType == VE_RENDERER_TYPE_RAYTRACING_KHR; }
 	};
 
 }

@@ -5,15 +5,15 @@
 *
 */
 
-#ifndef VHSUBRENDERRT_H
-#define VHSUBRENDERRT_H
+#ifndef VHSUBRENDER_RAYTRACING_NV_H
+#define VHSUBRENDER_RAYTRACING_NV_H
 
 #include "VESubrender.h"
 
 
 namespace ve {
 
-	class VERendererRT;
+	class VERendererRayTracingNV;
 
 	/**
 	*
@@ -23,12 +23,12 @@ namespace ve {
 	* The also create PSOs and use them to draw entities. Subrenderers maintain a list of entities associated with them.
 	*
 	*/
-	class VESubrenderRT : public VESubrender {
+	class VESubrenderRayTracingNV : public VESubrender {
 
 	public:
 
 	protected:
-		VERendererRT &m_renderer;
+		VERendererRayTracingNV      &m_renderer;
 		uint32_t						m_resourceArrayLength = 16;							///<Length of resource array in shader
 		VkDescriptorSetLayout			m_descriptorSetLayoutResources = VK_NULL_HANDLE;	///<Descriptor set layout for per object resources (like images)
 		std::vector<VkDescriptorSet>	m_descriptorSetsResources;							///<a list of resource descriptor set arrays, maps are condensed into these arrays of size K
@@ -39,9 +39,9 @@ namespace ve {
 
 	public:
 		///Constructor of subrender fw class
-		VESubrenderRT(VERendererRT &renderer) :m_renderer(renderer) {};
+		VESubrenderRayTracingNV(VERendererRayTracingNV &renderer) :m_renderer(renderer) {};
 		///Destructor of subrender fw class
-		virtual ~VESubrenderRT() {};
+		virtual ~VESubrenderRayTracingNV() {};
 		///\returns the class of the subrenderer, a very general description
 		virtual veSubrenderClass getClass() = 0;
 		///\returns the type of the subrenderer, specific type inside a class

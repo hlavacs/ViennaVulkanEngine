@@ -50,7 +50,7 @@ void main() {
 
     vec3 fragColor = texture(texSamplerArray[resIdx], texCoord).xyz;
 
-	outPosition = vec4(fragPosW,1);
-	outNormal = vec4(normalW,1);
-	outAlbedo = vec4(fragColor,1);
+	outPosition = vec4(fragPosW, 1.0);
+	outNormal = vec4(normalW, 1.0);
+	outAlbedo = vec4(fragColor, 1.0);
 }

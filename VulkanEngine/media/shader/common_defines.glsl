@@ -39,7 +39,9 @@ struct objectData_t {
   vec4 color;
   vec4 param;
   ivec4 iparam;
-  vec4  a,b,c,d,e;
+  int  hasNormalTexture;
+  vec3 a;
+  vec4 b,c,d,e;
 };
 
 struct Vertex

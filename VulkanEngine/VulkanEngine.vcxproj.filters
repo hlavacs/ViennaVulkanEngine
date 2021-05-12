@@ -125,7 +125,7 @@
     <ClInclude Include="VHFunctions.h">
       <Filter>Header Files\VHelper</Filter>
     </ClInclude>
-    <ClInclude Include="VERendererRT.h">
+    <ClInclude Include="VERendererRayTracingNV.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="BottomLevelASGenerator.h">
@@ -146,10 +146,10 @@
     <ClInclude Include="VKHelpers.h">
       <Filter>Header Files\NVHelpers</Filter>
     </ClInclude>
-    <ClInclude Include="VESubrenderRT_DN.h">
+    <ClInclude Include="VESubrenderRayTracingNV_DN.h">
       <Filter>Header Files\VESubrender</Filter>
     </ClInclude>
-    <ClInclude Include="VESubrenderRT.h">
+    <ClInclude Include="VESubrenderRayTracingNV.h">
       <Filter>Header Files\VESubrender</Filter>
     </ClInclude>
     <ClInclude Include="VERendererDeferred.h">
@@ -177,6 +177,15 @@
       <Filter>Header Files\VESubrender</Filter>
     </ClInclude>
     <ClInclude Include="VEEnums.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="VESubrenderRayTracingKHR.h">
+      <Filter>Header Files\VESubrender</Filter>
+    </ClInclude>
+    <ClInclude Include="VESubrenderRayTracingKHR_DN.h">
+      <Filter>Header Files\VESubrender</Filter>
+    </ClInclude>
+    <ClInclude Include="VERendererRayTracingKHR.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
@@ -283,7 +292,7 @@
     <ClCompile Include="VHFunctions.cpp">
       <Filter>Source Files\VHelper</Filter>
     </ClCompile>
-    <ClCompile Include="VERendererRT.cpp">
+    <ClCompile Include="VERendererRayTracingNV.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="BottomLevelASGenerator.cpp">
@@ -304,10 +313,10 @@
     <ClCompile Include="VKHelpers.cpp">
       <Filter>Source Files\NVHelpers</Filter>
     </ClCompile>
-    <ClCompile Include="VESubrenderRT_DN.cpp">
+    <ClCompile Include="VESubrenderRayTracingNV_DN.cpp">
       <Filter>Source Files\VESubrender</Filter>
     </ClCompile>
-    <ClCompile Include="VESubrenderRT.cpp">
+    <ClCompile Include="VESubrenderRayTracingNV.cpp">
       <Filter>Source Files\VESubrender</Filter>
     </ClCompile>
     <ClCompile Include="VERendererDeferred.cpp">
@@ -333,6 +342,15 @@
     </ClCompile>
     <ClCompile Include="VESubrenderDF_Skyplane.cpp">
       <Filter>Source Files\VESubrender</Filter>
+    </ClCompile>
+    <ClCompile Include="VESubrenderRayTracingKHR.cpp">
+      <Filter>Source Files\VESubrender</Filter>
+    </ClCompile>
+    <ClCompile Include="VESubrenderRayTracingKHR_DN.cpp">
+      <Filter>Source Files\VESubrender</Filter>
+    </ClCompile>
+    <ClCompile Include="VERendererRayTracingKHR.cpp">
+      <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

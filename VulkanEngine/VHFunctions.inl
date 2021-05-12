@@ -159,7 +159,7 @@ VK_DEVICE_LEVEL_FUNCTION(vkDestroySampler)
 VK_DEVICE_LEVEL_FUNCTION(vkDestroyImage)
 VK_DEVICE_LEVEL_FUNCTION(vkCmdPushConstants)
 
-// Ray Tracing Function Binding
+// NV Ray Tracing Function Binding
 VK_DEVICE_LEVEL_FUNCTION(vkCreateAccelerationStructureNV)
 VK_DEVICE_LEVEL_FUNCTION(vkDestroyAccelerationStructureNV)
 VK_DEVICE_LEVEL_FUNCTION(vkGetAccelerationStructureMemoryRequirementsNV)
@@ -169,6 +169,17 @@ VK_DEVICE_LEVEL_FUNCTION(vkCreateRayTracingPipelinesNV)
 VK_DEVICE_LEVEL_FUNCTION(vkGetAccelerationStructureHandleNV)
 VK_DEVICE_LEVEL_FUNCTION(vkGetRayTracingShaderGroupHandlesNV)
 
+// KHR Ray Tracing Function Binding
+VK_DEVICE_LEVEL_FUNCTION(vkGetBufferDeviceAddressKHR)
+VK_DEVICE_LEVEL_FUNCTION(vkGetAccelerationStructureBuildSizesKHR)
+VK_DEVICE_LEVEL_FUNCTION(vkCreateAccelerationStructureKHR)
+VK_DEVICE_LEVEL_FUNCTION(vkGetPhysicalDeviceFeatures2)
+VK_DEVICE_LEVEL_FUNCTION(vkCmdBuildAccelerationStructuresKHR)
+VK_DEVICE_LEVEL_FUNCTION(vkGetAccelerationStructureDeviceAddressKHR)
+VK_DEVICE_LEVEL_FUNCTION(vkDestroyAccelerationStructureKHR)
+VK_DEVICE_LEVEL_FUNCTION(vkCreateRayTracingPipelinesKHR)
+VK_DEVICE_LEVEL_FUNCTION(vkGetRayTracingShaderGroupHandlesKHR)
+VK_DEVICE_LEVEL_FUNCTION(vkCmdTraceRaysKHR)
 #undef VK_DEVICE_LEVEL_FUNCTION
 
 

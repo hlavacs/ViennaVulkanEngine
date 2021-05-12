@@ -44,6 +44,9 @@ namespace ve {
 
 	protected:
 		glm::mat4					m_transform = glm::mat4(1.0);	///<Transform from local to parent space, the engine uses Y-UP, Left-handed
+		VkBuffer		            m_transformBuffer = VK_NULL_HANDLE;		///<Vulkan transform buffer handle
+		VmaAllocation	            m_transformBufferAllocation = nullptr;	///<VMA allocation info
+
 		std::vector<VESceneNode *>	m_children;						///<List of entity children
 		VESceneNode *				m_parent = nullptr;				///<Pointer to entity parent
 		std::mutex					m_mutex;						///<Mutex for locking access to this node
@@ -198,7 +201,9 @@ namespace ve {
 			glm::vec4 color;			///<Uniform color if needed by shader
 			glm::vec4 param;			///<Texture scaling and animation: 0,1..scale 2,3...offset
 			glm::ivec4 iparam;			///<iparam[0] is the resource idx
-			glm::vec4 a,b,c,d,e;		///<paddding to ensure that struct has size 256
+			uint32_t  hasNormalTexture;
+			glm::vec3 a;
+			glm::vec4 b,c,d,e;		///<paddding to ensure that struct has size 256
 		};
 
 	protected:

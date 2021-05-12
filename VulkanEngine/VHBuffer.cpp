@@ -982,7 +982,7 @@ namespace vh {
 		vmaUnmapMemory(allocator, stagingBufferAllocation);
 
 		VHCHECKRESULT( vhBufCreateBuffer(	allocator, bufferSize, 
-											VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
+											VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_BUILD_INPUT_READ_ONLY_BIT_KHR | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT,
 											VMA_MEMORY_USAGE_GPU_ONLY, vertexBuffer, vertexBufferAllocation ) );
 
 		VHCHECKRESULT( vhBufCopyBuffer(device, graphicsQueue, commandPool, stagingBuffer, *vertexBuffer, bufferSize ) );
@@ -1020,7 +1020,8 @@ namespace vh {
 		vmaUnmapMemory(allocator, stagingBufferAllocation);
 
 		VHCHECKRESULT(	vhBufCreateBuffer(allocator, bufferSize, 
-						VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, VMA_MEMORY_USAGE_GPU_ONLY,
+						VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_BUILD_INPUT_READ_ONLY_BIT_KHR | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT,
+						VMA_MEMORY_USAGE_GPU_ONLY,
 						indexBuffer, indexBufferAllocation));
 
 		VHCHECKRESULT( vhBufCopyBuffer(device, graphicsQueue, commandPool, stagingBuffer, *indexBuffer, bufferSize ) );
@@ -1028,7 +1029,6 @@ namespace vh {
 		vmaDestroyBuffer(allocator, stagingBuffer, stagingBufferAllocation);
 		return VK_SUCCESS;
 	}
-
 
 	/**
 	* \brief Create a UBO
@@ -1050,7 +1050,7 @@ namespace vh {
 
 		for (size_t i = 0; i < numberBuffers; i++) {
 			VHCHECKRESULT(	vhBufCreateBuffer(allocator, bufferSize, 
-							VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VMA_MEMORY_USAGE_CPU_TO_GPU, 
+							VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT| VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT, VMA_MEMORY_USAGE_CPU_TO_GPU,
 							&uniformBuffers[i], &uniformBuffersAllocation[i]));
 		}
 		return VK_SUCCESS;

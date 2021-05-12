@@ -26,11 +26,13 @@
 #include "VERenderer.h"
 #include "VERendererForward.h"
 #include "VERendererDeferred.h"
-#include "VERendererRT.h"
+#include "VERendererRayTracingNV.h"
+#include "VERendererRayTracingKHR.h"
 #include "VESubrender.h"
 #include "VESubrenderFW.h"
 #include "VESubrenderDF.h"
-#include "VESubrenderRT.h"
+#include "VESubrenderRayTracingNV.h"
+#include "VESubrenderRayTracingKHR.h"
 #include "VESubrender_Nuklear.h"
 #include "VESubrenderFW_C1.h"
 #include "VESubrenderFW_Skyplane.h"
@@ -43,7 +45,9 @@
 #include "VESubrenderDF_Shadow.h"
 #include "VESubrenderDF_Skyplane.h"
 #include "VESubrenderDF_Composer.h"
-#include "VESubrenderRT_DN.h"
+#include "VESubrenderRayTracingNV_DN.h"
+#include "VESubrenderRayTracingKHR_DN.h"
+
 //use this macro to check the function result, if its not VK_SUCCESS then return the error
 #define VECHECKRESULT(x) { \
 		VkResult retval = (x); \

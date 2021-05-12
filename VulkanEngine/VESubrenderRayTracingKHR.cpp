@@ -15,14 +15,14 @@ namespace ve {
 	/**
 	* \brief Initialize the subrenderer
 	*/
-	void VESubrenderRT::initSubrenderer() {
+	void VESubrenderRayTracingKHR::initSubrenderer() {
 	};
 
 
 	/**
 	* \brief If the window size changes then some resources have to be recreated to fit the new size.
 	*/
-	void VESubrenderRT::recreateResources() {
+	void VESubrenderRayTracingKHR::recreateResources() {
 		closeSubrenderer();
 		initSubrenderer();
 
@@ -37,7 +37,7 @@ namespace ve {
 			for (uint32_t i = 0; i < size; i++) {
 				vh::vhRenderUpdateDescriptorSetMaps(m_renderer.getDevice(),
 					m_descriptorSetsResources[i],
-					0, i*m_resourceArrayLength, m_resourceArrayLength, m_maps);
+					0, i * m_resourceArrayLength, m_resourceArrayLength, m_maps);
 			}
 		}
 	}
@@ -45,7 +45,7 @@ namespace ve {
 	/**
 	* \brief Close down the subrenderer and destroy all local resources.
 	*/
-	void VESubrenderRT::closeSubrenderer() {
+	void VESubrenderRayTracingKHR::closeSubrenderer() {
 
 		for (auto pipeline : m_pipelines) {
 			vkDestroyPipeline(m_renderer.getDevice(), pipeline, nullptr);
@@ -66,7 +66,7 @@ namespace ve {
 	* \param[in] commandBuffer The command buffer to bind the pipeline to
 	*
 	*/
-	void VESubrenderRT::bindPipeline(VkCommandBuffer commandBuffer) {
+	void VESubrenderRayTracingKHR::bindPipeline(VkCommandBuffer commandBuffer) {
 		vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_pipelines[0]);	//bind the PSO
 	}
 
@@ -81,7 +81,7 @@ namespace ve {
 	* \param[in] descriptorSetsShadow Shadow maps that are used for creating shadow
 	*
 	*/
-	void VESubrenderRT::bindDescriptorSetsPerFrame(VkCommandBuffer commandBuffer, uint32_t imageIndex,
+	void VESubrenderRayTracingKHR::bindDescriptorSetsPerFrame(VkCommandBuffer commandBuffer, uint32_t imageIndex,
 		VECamera *pCamera, VELight *pLight,
 		std::vector<VkDescriptorSet> descriptorSetsShadow) {
 
@@ -99,7 +99,7 @@ namespace ve {
 		uint32_t offsets[2] = { pCamera->m_memoryHandle.entryIndex * sizeof(VECamera::veUBOPerCamera_t),
 			pLight->m_memoryHandle.entryIndex * sizeof(VELight::veUBOPerLight_t) };
 
-		if (descriptorSetsShadow.size()>0) {
+		if (descriptorSetsShadow.size() > 0) {
 			set.push_back(descriptorSetsShadow[imageIndex]);
 		}
 
@@ -120,7 +120,7 @@ namespace ve {
 	* \param[in] entity Pointer to the entity to draw
 	*
 	*/
-	void VESubrenderRT::bindDescriptorSetsPerEntity(VkCommandBuffer commandBuffer, uint32_t imageIndex, VEEntity *entity) {
+	void VESubrenderRayTracingKHR::bindDescriptorSetsPerEntity(VkCommandBuffer commandBuffer, uint32_t imageIndex, VEEntity *entity) {
 
 		//set 0...cam UBO
 		//set 1...light resources
@@ -135,7 +135,7 @@ namespace ve {
 
 		uint32_t offset = entity->m_memoryHandle.entryIndex * sizeof(VEEntity::veUBOPerEntity_t);
 		vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_pipelineLayout,
-								3, (uint32_t)sets.size(), sets.data(), 1, &offset);
+			3, (uint32_t)sets.size(), sets.data(), 1, &offset);
 
 	}
 
@@ -154,10 +154,10 @@ namespace ve {
 	* \param[in] descriptorSetsShadow The shadow maps to be used.
 	*
 	*/
-	void VESubrenderRT::draw(	VkCommandBuffer commandBuffer, uint32_t imageIndex,
-								uint32_t numPass,
-								VECamera *pCamera, VELight *pLight,
-								std::vector<VkDescriptorSet> descriptorSetsShadow) {
+	void VESubrenderRayTracingKHR::draw(VkCommandBuffer commandBuffer, uint32_t imageIndex,
+		uint32_t numPass,
+		VECamera *pCamera, VELight *pLight,
+		std::vector<VkDescriptorSet> descriptorSetsShadow) {
 
 	}
 
@@ -166,10 +166,10 @@ namespace ve {
 	* \brief Remember the last recorded entity
 	*
 	* Needed for incremental recording.
-	* 
+	*
 	*/
-	void VESubrenderRT::afterDrawFinished() {
-		m_idxLastRecorded = (uint32_t) m_entities.size() - 1;
+	void VESubrenderRayTracingKHR::afterDrawFinished() {
+		m_idxLastRecorded = (uint32_t)m_entities.size() - 1;
 	}
 
 
@@ -184,7 +184,7 @@ namespace ve {
 	* \param[in] entity Pointer to the entity to draw
 	*
 	*/
-	void VESubrenderRT::drawEntity(VkCommandBuffer commandBuffer, uint32_t imageIndex, VEEntity *entity) {
+	void VESubrenderRayTracingKHR::drawEntity(VkCommandBuffer commandBuffer, uint32_t imageIndex, VEEntity *entity) {
 	}
 
 
@@ -197,7 +197,7 @@ namespace ve {
 	* m_maps thus has N entries, one for such a map type. m_map[0] might hold all diffuse maps.
 	* m_map[1] might hold all normal maps. m_map[2] might hold all specular maps. etc.
 	* If a new entity is added, then its maps are just appended to the N lists.
-	* However, we have descriptor sets, each set having N slot bindings (one binding for each map type), 
+	* However, we have descriptor sets, each set having N slot bindings (one binding for each map type),
 	* each binding describing an array of e.g. K textures.
 	* So we break each list into chunks of size K, and bind each chunk to one descriptor.
 	* Variable offset denotes the start of such a chunk.
@@ -206,16 +206,16 @@ namespace ve {
 	* \param[in] newMaps List of 1..N maps to be added to this subrenderer, e.g. {diffuse texture}, or {diffuse tex, normal}
 	*
 	*/
-	void VESubrenderRT::addMaps(VEEntity *pEntity, std::vector<VkDescriptorImageInfo> &newMaps) { 
+	void VESubrenderRayTracingKHR::addMaps(VEEntity *pEntity, std::vector<VkDescriptorImageInfo> &newMaps) {
 		pEntity->setResourceIdx((uint32_t)m_entities.size());									//index into the array of textures for this entity, shader will take remainder and not absolute value
 
 		uint32_t offset = 0;																	//offset into the list of maps - index where a particular array starts
 		if (pEntity->getResourceIdx() % m_resourceArrayLength == 0) {							//array is full or there is none yet? -> we need a new array
 			vh::vhRenderCreateDescriptorSets(m_renderer.getDevice(),
-												1, 
-												m_descriptorSetLayoutResources,					//layout contains arrays of this size
+				1,
+				m_descriptorSetLayoutResources,					//layout contains arrays of this size
 				m_renderer.getDescriptorPool(),
-												m_descriptorSetsResources);
+				m_descriptorSetsResources);
 
 			offset = (uint32_t)m_maps[0].size();												//number of maps of first bind slot, e.g. number of diffuse maps
 
@@ -236,11 +236,11 @@ namespace ve {
 		}
 
 		vh::vhRenderUpdateDescriptorSetMaps(m_renderer.getDevice(),					//update the descriptor that holds the map array
-											m_descriptorSetsResources[m_descriptorSetsResources.size() - 1],
-											0, 
-											offset,												//start offset of the current map arrays that should be updated
-											m_resourceArrayLength, 
-											m_maps);
+			m_descriptorSetsResources[m_descriptorSetsResources.size() - 1],
+			0,
+			offset,												//start offset of the current map arrays that should be updated
+			m_resourceArrayLength,
+			m_maps);
 
 	}
 
@@ -254,14 +254,14 @@ namespace ve {
 	* \param[in] pEntity Pointer to the entity to be removed
 	*
 	*/
-	void VESubrenderRT::removeEntity(VEEntity *pEntity) {
+	void VESubrenderRayTracingKHR::removeEntity(VEEntity *pEntity) {
 
 		uint32_t size = (uint32_t)m_entities.size();
 		if (size == 0) return;
 
 		for (uint32_t i = 0; i < size; i++) {
 			if (m_entities[i] == pEntity) {
-				
+
 				//move the last entity and its maps to the place of the removed entity
 				m_entities[i] = m_entities[size - 1];			//replace with former last entity (could be identical)
 
@@ -276,7 +276,7 @@ namespace ve {
 					vh::vhRenderUpdateDescriptorSetMaps(m_renderer.getDevice(),
 						m_descriptorSetsResources[arrayIndex],
 						0,
-						arrayIndex*m_resourceArrayLength,
+						arrayIndex * m_resourceArrayLength,
 						m_resourceArrayLength, m_maps);
 
 					//shrink the lists

@@ -13,12 +13,12 @@
 
 namespace ve {
     // using m_enableShadows the shadows can be switched on/off. It uses a push constant to send this data to the closehit shader
-    VESubrenderRT_DN::VESubrenderRT_DN(VERendererRT &renderer): VESubrenderRT(renderer),m_enableShadows(VK_TRUE) {};
+    VESubrenderRayTracingNV_DN::VESubrenderRayTracingNV_DN(VERendererRayTracingNV &renderer): VESubrenderRayTracingNV(renderer),m_enableShadows(VK_TRUE) {};
 
 	/**
 	* \brief Initialize the subrenderer
 	*/
-	void VESubrenderRT_DN::initSubrenderer() {
+	void VESubrenderRayTracingNV_DN::initSubrenderer() {
 		VESubrender::initSubrenderer();
        
         // all scene must be rendered at once, that means, that ressources of all entities must be linked at once
@@ -40,7 +40,7 @@ namespace ve {
 		if (m_maps.empty()) m_maps.resize(2);
 	};
 
-    void VESubrenderRT_DN::createRaytracingDescriptorSets()
+    void VESubrenderRayTracingNV_DN::createRaytracingDescriptorSets()
     {
         if(m_entities.size())
         {
@@ -139,30 +139,30 @@ namespace ve {
     }
 
     //loads RT shaders
-	void VESubrenderRT_DN::createRTGraphicsPipeline()
+	void VESubrenderRayTracingNV_DN::createRTGraphicsPipeline()
 	{
         m_pipelines.resize(1);
 
 		nv_helpers_vk::RayTracingPipelineGenerator pipelineGen;
 		// We use only one ray generation, that will implement the camera model
-		auto rayGenShaderCode = vh::vhFileRead("media/shader/RT/rgen.spv");
+		auto rayGenShaderCode = vh::vhFileRead("media/shader/RayTracing_NV/rgen.spv");
 		VkShaderModule rayGenModule = vh::vhPipeCreateShaderModule(m_renderer.getDevice(), rayGenShaderCode);
 		m_rayGenIndex = pipelineGen.AddRayGenShaderStage(rayGenModule);
 
 		// The first miss shader is used to look-up the environment in case the rays
 		// from the camera miss the geometry
-		auto missShaderCode = vh::vhFileRead("media/shader/RT/rmiss.spv");
+		auto missShaderCode = vh::vhFileRead("media/shader/RayTracing_NV/rmiss.spv");
 		VkShaderModule missModule = vh::vhPipeCreateShaderModule(m_renderer.getDevice(), missShaderCode);
 		m_missIndex = pipelineGen.AddMissShaderStage(missModule);
 
         // If we hit an object the shadow_miss shader will be used to define if object must be lighted. 
-        auto shadowMissShaderCode = vh::vhFileRead("media/shader/RT/shadow_rmiss.spv");
+        auto shadowMissShaderCode = vh::vhFileRead("media/shader/RayTracing_NV/shadow_rmiss.spv");
         VkShaderModule shadowMissModule = vh::vhPipeCreateShaderModule(m_renderer.getDevice(), shadowMissShaderCode);
         m_shadowMissIndex = pipelineGen.AddMissShaderStage(shadowMissModule);
 
         // hit shader for all entiteis in a hit group with index 0
 		m_hitGroupIndex = pipelineGen.StartHitGroup();
-		auto closestHitShaderCode = vh::vhFileRead("media/shader/RT/rchit.spv");
+		auto closestHitShaderCode = vh::vhFileRead("media/shader/RayTracing_NV/rchit.spv");
 		VkShaderModule closestHitModule = vh::vhPipeCreateShaderModule(m_renderer.getDevice(), closestHitShaderCode);
 		pipelineGen.AddHitShaderStage(closestHitModule, VK_SHADER_STAGE_CLOSEST_HIT_BIT_NV);
 		pipelineGen.EndHitGroup();
@@ -182,7 +182,7 @@ namespace ve {
 	}
 
     // Creates a binding table of the shaders. Binding table has one ray generation shader, two miss and two (close) hit shaders.
-    void VESubrenderRT_DN::createShaderBindingTable()
+    void VESubrenderRayTracingNV_DN::createShaderBindingTable()
     {
 
         m_sbtGen.AddRayGenerationProgram(m_rayGenIndex, {});
@@ -207,7 +207,7 @@ namespace ve {
 	/**
 	* \brief If the window size changes then some resources have to be recreated to fit the new size.
 	*/
-	void VESubrenderRT_DN::recreateResources() {
+	void VESubrenderRayTracingNV_DN::recreateResources() {
         m_sbtGen.Reset();
 		closeSubrenderer();
 		initSubrenderer();
@@ -231,7 +231,7 @@ namespace ve {
 	/**
 	* \brief Close down the subrenderer and destroy all local resources.
 	*/
-	void VESubrenderRT_DN::closeSubrenderer() {
+	void VESubrenderRayTracingNV_DN::closeSubrenderer() {
         m_descriptorSetsAS.clear();
         m_descriptorSetsOutput.clear();
         m_descriptorSetsGeometry.clear();
@@ -264,7 +264,7 @@ namespace ve {
 	* \param[in] commandBuffer The command buffer to bind the pipeline to
 	*
 	*/
-	void VESubrenderRT_DN::bindPipeline(VkCommandBuffer commandBuffer) {
+	void VESubrenderRayTracingNV_DN::bindPipeline(VkCommandBuffer commandBuffer) {
 		vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_RAY_TRACING_NV, m_pipelines[0]);	//bind the PSO
 	}
 
@@ -279,7 +279,7 @@ namespace ve {
 	* \param[in] descriptorSetsShadow Shadow maps that are used for creating shadow
 	*
 	*/
-	void VESubrenderRT_DN::bindDescriptorSetsPerFrame(VkCommandBuffer commandBuffer, uint32_t imageIndex,
+	void VESubrenderRayTracingNV_DN::bindDescriptorSetsPerFrame(VkCommandBuffer commandBuffer, uint32_t imageIndex,
 		VECamera* pCamera, VELight* pLight) {
 
         //set 0...cam UBO
@@ -325,7 +325,7 @@ namespace ve {
 	* \param[in] entity Pointer to the entity to draw
 	*
 	*/
-	void VESubrenderRT_DN::bindDescriptorSetsPerEntity(VkCommandBuffer commandBuffer, uint32_t imageIndex, VEEntity* entity) {
+	void VESubrenderRayTracingNV_DN::bindDescriptorSetsPerEntity(VkCommandBuffer commandBuffer, uint32_t imageIndex, VEEntity* entity) {
 
         //set 0...cam UBO
         //set 1...light resources
@@ -348,7 +348,7 @@ namespace ve {
 	}
 
     // link buffers with a descriptor sets. If any of this ressources are changed, this method must be called.
-    void VESubrenderRT_DN::UpdateRTDescriptorSets()
+    void VESubrenderRayTracingNV_DN::UpdateRTDescriptorSets()
     {
 
         std::vector<VkWriteDescriptorSet> descriptorWrites;
@@ -493,23 +493,17 @@ namespace ve {
 	* \param[in] descriptorSetsShadow The shadow maps to be used.
 	*
 	*/
-	void VESubrenderRT_DN::draw(VkCommandBuffer commandBuffer, uint32_t imageIndex,
+	void VESubrenderRayTracingNV_DN::draw(VkCommandBuffer commandBuffer, uint32_t imageIndex,
 		uint32_t numPass,
 		VECamera* pCamera, VELight* pLight) {
 
 		if (m_entities.size() == 0) return;
-		m_idxLastRecorded = (uint32_t)m_entities.size() - 1;
-
-		if (numPass > 0 && getClass() != VE_SUBRENDERER_CLASS_OBJECT) return;
 
         vkCmdPushConstants(commandBuffer, m_pipelineLayout, VK_SHADER_STAGE_CLOSEST_HIT_BIT_NV, 0, sizeof(m_enableShadows), &m_enableShadows);
-
-		bindPipeline(commandBuffer);
-
-		setDynamicPipelineState(commandBuffer, numPass);
-
+		
+        bindPipeline(commandBuffer);
+        setDynamicPipelineState(commandBuffer, numPass);
 		bindDescriptorSetsPerFrame(commandBuffer, imageIndex, pCamera, pLight);
-
         bindDescriptorSetsPerEntity(commandBuffer, imageIndex, m_entities[0]);	//bind the entity's descriptor sets
         drawEntity(commandBuffer, imageIndex);
 	}
@@ -521,7 +515,7 @@ namespace ve {
     * \param[in] numPass The current pass number - in the forst pass, write over pixel colors, after this add pixel colors
     *
     */
-    void VESubrenderRT_DN::setDynamicPipelineState(VkCommandBuffer commandBuffer, uint32_t numPass)
+    void VESubrenderRayTracingNV_DN::setDynamicPipelineState(VkCommandBuffer commandBuffer, uint32_t numPass)
     {
         if(numPass == 0)
         {
@@ -540,7 +534,7 @@ namespace ve {
 	* Needed for incremental recording.
 	*
 	*/
-	void VESubrenderRT_DN::afterDrawFinished() {
+	void VESubrenderRayTracingNV_DN::afterDrawFinished() {
 		m_idxLastRecorded = (uint32_t)m_entities.size() - 1;
 	}
 
@@ -556,7 +550,7 @@ namespace ve {
 	* \param[in] entity Pointer to the entity to draw
 	*
 	*/
-	void VESubrenderRT_DN::drawEntity(VkCommandBuffer commandBuffer, uint32_t imageIndex) {
+	void VESubrenderRayTracingNV_DN::drawEntity(VkCommandBuffer commandBuffer, uint32_t imageIndex) {
 
         VkDeviceSize rayGenOffset = m_sbtGen.GetRayGenOffset();
         VkDeviceSize missOffset = m_sbtGen.GetMissOffset();
@@ -578,7 +572,7 @@ namespace ve {
 	* Create a UBO for this entity, a descriptor set per swapchain image, and update the descriptor sets
 	*
 	*/
-	void VESubrenderRT_DN::addEntity(VEEntity* pEntity) {
+	void VESubrenderRayTracingNV_DN::addEntity(VEEntity* pEntity) {
 
         std::vector<VkDescriptorImageInfo> maps = {};
         if(pEntity->m_pMaterial->mapDiffuse)

@@ -216,6 +216,7 @@ namespace vh {
 										VkSurfaceKHR surface,
 										std::vector<const char*> requiredDeviceExtensions,
 										std::vector<const char*> requiredValidationLayers, 
+										void *pNextChain,
 										VkDevice *device, VkQueue *graphicsQueue, VkQueue *presentQueue);
 
 	//--------------------------------------------------------------------------------------------------------------------------------

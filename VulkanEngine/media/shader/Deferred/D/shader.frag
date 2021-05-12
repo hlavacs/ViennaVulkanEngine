@@ -38,5 +38,5 @@ void main() {
 
     outAlbedo = vec4(fragColor, 1.0 );
 	outNormal = vec4(fragNormalW, 1.0);
-	outPosition = vec4(fragPosW,1.0);
+	outPosition = vec4(fragPosW, 1.0);
 }

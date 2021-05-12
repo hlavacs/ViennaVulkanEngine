@@ -94,9 +94,12 @@ namespace ve {
 			case veRendererType::VE_RENDERER_TYPE_DEFERRED:
 				m_pRenderer = new VERendererDeferred();
 				break;
-            case veRendererType::VE_RENDERER_TYPE_RAYTRACING_NVIDIA:
-                m_pRenderer = new VERendererRT();
+            case veRendererType::VE_RENDERER_TYPE_RAYTRACING_NV:
+                m_pRenderer = new VERendererRayTracingNV();
                 break;
+			case veRendererType::VE_RENDERER_TYPE_RAYTRACING_KHR:
+				m_pRenderer = new VERendererRayTracingKHR();
+				break;
             default:
                 m_pRenderer = new VERendererForward();
         }
@@ -647,14 +650,14 @@ namespace ve {
 		light3->m_col_diffuse = glm::vec4(0.99f, 0.99f, 0.6f, 1.0f);
 		light3->m_col_specular = glm::vec4(0.0f, 0.0f, 0.0f, 1.0f);
 		light3->m_param[0] = 200.0f;
-		light3->multiplyTransform(glm::translate(glm::vec3(0.0f, 0.0f, 15.0f)));
-
+		light3->multiplyTransform(glm::translate(glm::vec3(0.0f, 5.0f, 5.0f)));
+/*
 		VELight *light2 = (VESpotLight *)getSceneManagerPointer()->createLight("StandardSpotLight", VELight::VE_LIGHT_TYPE_SPOT, camera);
 		light2->m_col_diffuse = glm::vec4(0.99f, 0.6f, 0.6f, 1.0f);
 		light2->m_col_specular = glm::vec4(0.0f, 0.0f, 0.0f, 1.0f);
 		light2->m_param[0] = 200.0f;
 		light2->multiplyTransform(glm::translate(glm::vec3(5.0f, 0.0f, 0.0f)));
-		
+*/
 
 		registerEventListeners();
 	}

@@ -460,6 +460,14 @@ namespace ve {
 		ubo.iparam[0] = m_resourceIdx;		//make sure the shader uses the right maps in the array of maps
 		if (m_pMaterial != nullptr) {
 			ubo.color = m_pMaterial->color;
+			if (m_pMaterial->mapNormal != nullptr)
+			{
+				ubo.hasNormalTexture = 1;
+			}
+			else
+			{
+				ubo.hasNormalTexture = 0;
+			}
 		};
 
 		VESceneObject::updateUBO((void*)&ubo, (uint32_t)sizeof(veUBOPerEntity_t), imageIndex);

@@ -5,8 +5,8 @@
 *
 */
 
-#ifndef VERENDERER_NV_RT_H
-#define VERENDERER_NV_RT_H
+#ifndef VERENDERER_RAYTRACING_NV_H
+#define VERENDERER_RAYTRACING_NV_H
 
 #include <utility>      // std::pair, std::make_pair
 #include "BottomLevelASGenerator.h"
@@ -14,17 +14,16 @@
 
 namespace ve {
 
-	class VERendererRT;
 	class VEEngine;
-	class VESubrenderRT_DN;
+	class VESubrenderRayTracingNV_DN;
 
 	/**
 	*
 	* \brief Ray Tracing Renderer based on NV Ray Tracing Extension
 	*
 	*/
-	class VERendererRT: public VERenderer {
-        friend VESubrenderRT_DN;
+	class VERendererRayTracingNV : public VERenderer {
+        friend VESubrenderRayTracingNV_DN;
 	public:
         ///\brief One secondary command buffer and the pool that it came from
         struct secondaryCmdBuf_t {
@@ -41,7 +40,7 @@ namespace ve {
         float m_AvgCmdLightTime = 0.0f;				///<Average time for recording light pass
         float m_AvgRecordTime = 0.0f;				///<Average recording time of one command buffer
 
-		VERendererRT();
+		VERendererRayTracingNV();
 
 		virtual void addEntityToSubrenderer(VEEntity* pEntity) override;
         VkPhysicalDeviceRayTracingPropertiesNV getPhysicalDeviceRTProperties() { return m_raytracingProperties; }
@@ -111,7 +110,7 @@ namespace ve {
 		std::vector<VkCommandPool>  m_commandPools = {};				///<Array of command pools so that each thread in the thread pool has its own pool
 		std::vector<VkCommandBuffer>m_commandBuffers = {};				///<the main command buffers for recording draw commands
 
-        VESubrenderRT_DN*           m_subrenderRT = nullptr;	            ///<Pointer to the overlay subrenderer
+        VESubrenderRayTracingNV_DN* m_subrenderRT = nullptr;	            ///<Pointer to the overlay subrenderer
         VkRenderPass				m_renderPassClear;					///<The first light render pass, clearing the framebuffers
         VkRenderPass				m_renderPassLoad;					///<The second light render pass - no clearing of framebuffer
 
