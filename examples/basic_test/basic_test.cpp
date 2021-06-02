@@ -7,13 +7,13 @@
 #include "vve.h"
 #include "basic_test.h"
 
-int imgui();
+int imgui_SDL2();
 
 using namespace vecs;
 
 int main() {
 
-    imgui();
+    imgui_SDL2();
     std::cout << "Hello world\n";
     return 0;
 }
