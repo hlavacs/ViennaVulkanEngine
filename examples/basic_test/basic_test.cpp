@@ -8,12 +8,15 @@
 #include "basic_test.h"
 
 int imgui_SDL2();
+int imgui_glfw3();
 
 using namespace vecs;
 
 int main() {
 
+    //imgui_glfw3();
     imgui_SDL2();
+
     std::cout << "Hello world\n";
     return 0;
 }

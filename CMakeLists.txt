@@ -7,6 +7,7 @@ if (MSVC)
   add_compile_options(/await)
   set(CMAKE_VS_PLATFORM_NAME "x64")
   add_compile_options(/EHsc)
+  add_link_options(/NODEFAULTLIB:MSVCRT)
 elseif(CMAKE_CXX_COMPILER_ID STREQUAL "Clang" OR CMAKE_CXX_COMPILER_ID STREQUAL "AppleClang")
   #clang++ *.cpp -g -std=c++20 -stdlib=libc++ -pthread -fcoroutines-ts -o a.out
   add_compile_options(-stdlib=libc++)
