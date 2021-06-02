@@ -22,6 +22,7 @@ set(EXTERNAL ${CMAKE_HOME_DIRECTORY}/external)
 
 include_directories (${INCLUDE})
 include_directories (${CMAKE_HOME_DIRECTORY}/external/glfw/include)
+include_directories (${CMAKE_HOME_DIRECTORY}/external/sdl2/include)
 include_directories (${CMAKE_HOME_DIRECTORY}/external/imgui)
 include_directories (${CMAKE_HOME_DIRECTORY}/external/glm)
 include_directories ($ENV{VULKAN_SDK}/include)
