@@ -8,8 +8,6 @@
 
 #include "VEInclude.h"
 
-#include "VKHelpers.h"
-
 const int MAX_FRAMES_IN_FLIGHT = 2;
 
 namespace ve {
@@ -75,8 +73,7 @@ namespace ve {
 		m_depthMap->m_format = vh::vhDevFindDepthFormat(m_physicalDevice);
 		m_depthMap->m_extent = m_swapChainExtent;
 
-        vh::vhRenderCreateRenderPass(m_device, m_swapChainImageFormat, m_depthMap->m_format, VK_ATTACHMENT_LOAD_OP_CLEAR, &m_renderPassClear);
-        vh::vhRenderCreateRenderPass(m_device, m_swapChainImageFormat, m_depthMap->m_format, VK_ATTACHMENT_LOAD_OP_LOAD, &m_renderPassLoad);
+        vh::vhRenderCreateRenderPass(m_device, m_swapChainImageFormat, m_depthMap->m_format, VK_ATTACHMENT_LOAD_OP_CLEAR, &m_renderPass);
 
 		//depth map for light pass
 		vh::vhBufCreateDepthResources(m_device, m_vmaAllocator, m_graphicsQueue, m_commandPool,
@@ -87,7 +84,7 @@ namespace ve {
 		//frame buffers for light pass
 		std::vector<VkImageView> depthMaps;
 		for (uint32_t i = 0; i < m_swapChainImageViews.size(); i++) depthMaps.push_back(m_depthMap->m_imageInfo.imageView);
-		vh::vhBufCreateFramebuffers(m_device, m_swapChainImageViews, depthMaps, m_renderPassClear, m_swapChainExtent, m_swapChainFramebuffers);
+		vh::vhBufCreateFramebuffers(m_device, m_swapChainImageViews, depthMaps, m_renderPass, m_swapChainExtent, m_swapChainFramebuffers);
 
         uint32_t maxobjects = 200;
         uint32_t storageobjects = m_swapChainImageViews.size();
@@ -139,20 +136,7 @@ namespace ve {
 	*/
 	void VERendererRayTracingNV::createSubrenderers() {
 		addSubrenderer(new VESubrenderRayTracingNV_DN(*this));
-        addSubrenderer(new VESubrender_Nuklear(*this));
-	}
-
-	void VERendererRayTracingNV::addSubrenderer(VESubrender* pSub) {
-		pSub->initSubrenderer();
-		if (pSub->getClass() == VE_SUBRENDERER_CLASS_OVERLAY) {
-			m_subrenderOverlay = pSub;
-			return;
-		}
-        if(pSub->getClass() == VE_SUBRENDERER_CLASS_RT)
-        {
-            m_subrenderRT = (VESubrenderRayTracingNV_DN *)pSub;
-            return;
-        }
+        //addSubrenderer(new VESubrender_Nuklear(*this));
 	}
 
     /**
@@ -167,8 +151,7 @@ namespace ve {
             vkDestroyFramebuffer(m_device, framebuffer, nullptr);
         }
 
-        vkDestroyRenderPass(m_device, m_renderPassClear, nullptr);
-        vkDestroyRenderPass(m_device, m_renderPassLoad, nullptr);
+        vkDestroyRenderPass(m_device, m_renderPass, nullptr);
 
         for(auto imageView : m_swapChainImageViews)
         {
@@ -185,9 +168,7 @@ namespace ve {
     {
         destroySubrenderers();
 
-        destroyAccelerationStructure(m_topLevelAS);
-        for(auto &as : m_bottomLevelAS)
-            destroyAccelerationStructure(as);
+        vh::vhDestroyAccelerationStructure(m_device, m_vmaAllocator, m_topLevelAS);
 
         deleteCmdBuffers();
 
@@ -231,15 +212,14 @@ namespace ve {
         m_depthMap->m_format = vh::vhDevFindDepthFormat(m_physicalDevice);
         m_depthMap->m_extent = m_swapChainExtent;
 
-        vh::vhRenderCreateRenderPass(m_device, m_swapChainImageFormat, m_depthMap->m_format, VK_ATTACHMENT_LOAD_OP_CLEAR, &m_renderPassClear);
-        vh::vhRenderCreateRenderPass(m_device, m_swapChainImageFormat, m_depthMap->m_format, VK_ATTACHMENT_LOAD_OP_LOAD, &m_renderPassLoad);
+        vh::vhRenderCreateRenderPass(m_device, m_swapChainImageFormat, m_depthMap->m_format, VK_ATTACHMENT_LOAD_OP_CLEAR, &m_renderPass);
 
         vh::vhBufCreateDepthResources(m_device, m_vmaAllocator, m_graphicsQueue, m_commandPool, m_swapChainExtent,
             m_depthMap->m_format, &m_depthMap->m_image, &m_depthMap->m_deviceAllocation, &m_depthMap->m_imageInfo.imageView);
 
         std::vector<VkImageView> depthMaps;
         for(uint32_t i = 0; i < m_swapChainImageViews.size(); i++) depthMaps.push_back(m_depthMap->m_imageInfo.imageView);
-        vh::vhBufCreateFramebuffers(m_device, m_swapChainImageViews, depthMaps, m_renderPassClear, m_swapChainExtent, m_swapChainFramebuffers);
+        vh::vhBufCreateFramebuffers(m_device, m_swapChainImageViews, depthMaps, m_renderPass, m_swapChainExtent, m_swapChainFramebuffers);
 
         for(auto pSub : m_subrenderers) pSub->recreateResources();
         m_subrenderRT->recreateResources();
@@ -272,6 +252,12 @@ namespace ve {
 		}
 	}
 
+    void VERendererRayTracingNV::updateCmdBuffers()
+    {
+        vh::vhDestroyAccelerationStructure(m_device, m_vmaAllocator, m_topLevelAS);
+        deleteCmdBuffers(); 
+    };
+
     /**
     * \brief Delete all command buffers and set them to VK_NULL_HANDLE, so next time they have to be
     * created and recorded again
@@ -288,142 +274,7 @@ namespace ve {
         }
     }
 
-	//--------------------------------------------------------------------------------------------------
-	//
-	// Create a bottom-level acceleration structure based on a list of vertex
-	// buffers in GPU memory along with their vertex count. The build is then done
-	// in 3 steps: gathering the geometry, computing the sizes of the required
-	// buffers, and building the actual acceleration structure #VKRay
-	VERendererRayTracingNV::AccelerationStructure VERendererRayTracingNV::createBottomLevelAS(
-		VkCommandBuffer               commandBuffer,
-		std::vector<VEEntity *> Entities)
-	{
-
-		// Adding all vertex buffers and not transforming their position.
-		for (const auto& entity : Entities)
-		{
-			if (entity->m_pMesh->m_indexBuffer == VK_NULL_HANDLE)
-			{
-                // Transform Buffer must have an 4x3 affine transformation matrix
-				// No indices
-                m_BottomLevelASGenerator.AddVertexBuffer(entity->m_pMesh->m_vertexBuffer, 0, entity->m_pMesh->m_vertexCount,
-					sizeof(vh::vhVertex), VK_NULL_HANDLE, 0);
-			}
-			else
-			{
-                // Transform Buffer must have an 4x3 affine transformation matrix
-				// Indexed geometry
-                m_BottomLevelASGenerator.AddVertexBuffer(entity->m_pMesh->m_vertexBuffer, 0, entity->m_pMesh->m_vertexCount,
-					sizeof(vh::vhVertex), entity->m_pMesh->m_indexBuffer, 0,
-					entity->m_pMesh->m_indexCount, VK_NULL_HANDLE, 0);
-			}
-		}
-		AccelerationStructure buffers;
-
-		// Once the overall size of the geometry is known, we can create the handle
-		// for the acceleration structure
-		buffers.structure = m_BottomLevelASGenerator.CreateAccelerationStructure(m_device, VK_FALSE);
-
-		// The AS build requires some scratch space to store temporary information.
-		// The amount of scratch memory is dependent on the scene complexity.
-		VkDeviceSize scratchSizeInBytes = 0;
-		// The final AS also needs to be stored in addition to the existing vertex
-		// buffers. It size is also dependent on the scene complexity.
-		VkDeviceSize resultSizeInBytes = 0;
-        m_BottomLevelASGenerator.ComputeASBufferSizes(m_device, buffers.structure, &scratchSizeInBytes,
-			&resultSizeInBytes);
-		
-		// Once the sizes are obtained, the application is responsible for allocating
-		// the necessary buffers. Since the entire generation will be done on the GPU,
-		// we can directly allocate those in device local mem
-		nv_helpers_vk::createBuffer(m_physicalDevice, m_device, scratchSizeInBytes,
-			VK_BUFFER_USAGE_RAY_TRACING_BIT_NV, &buffers.scratchBuffer,
-			&buffers.scratchMem, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
-
-		nv_helpers_vk::createBuffer(m_physicalDevice, m_device, resultSizeInBytes,
-			VK_BUFFER_USAGE_RAY_TRACING_BIT_NV, &buffers.resultBuffer,
-			&buffers.resultMem, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
-
-		// Build the acceleration structure. Note that this call integrates a barrier
-		// on the generated AS, so that it can be used to compute a top-level AS right
-		// after this method.
-        m_BottomLevelASGenerator.Generate(m_device, commandBuffer, buffers.structure, buffers.scratchBuffer,
-			0, buffers.resultBuffer, buffers.resultMem, false, VK_NULL_HANDLE);
-
-		return buffers;
-	}
-
-	//--------------------------------------------------------------------------------------------------
-	// Create the main acceleration structure that holds all instances of the scene.
-	// Similarly to the bottom-level AS generation, it is done in 3 steps: gathering
-	// the instances, computing the memory requirements for the AS, and building the
-	// AS itself #VKRay
-	void VERendererRayTracingNV::createTopLevelAS(VkCommandBuffer commandBuffer, const std::vector<std::pair<VkAccelerationStructureNV, glm::mat4x4>> &instances,  // pair of bottom level AS and matrix of the instance
-		VkBool32 updateOnly)
-	{
-
-		if (!updateOnly)
-		{
-			// Gather all the instances into the builder helper
-			for (size_t i = 0; i < instances.size(); i++)
-			{
-				// For each instance we set its instance index to its index i in the instance vector, and set
-				// its hit group index to 0. The hit group index defines which entry of the shader binding
-				// table will contain the hit group to be executed when hitting this instance.
-                m_TopLevelASGenerator.AddInstance(instances[i].first, instances[i].second,
-					static_cast<uint32_t>(i), static_cast<uint32_t>(0));
-			}
-
-			// Once all instances have been added, we can create the handle for the TLAS
-			m_topLevelAS.structure =
-                m_TopLevelASGenerator.CreateAccelerationStructure(getDevice(), VK_TRUE);
-
-
-			// As for the bottom-level AS, the building the AS requires some scratch
-			// space to store temporary data in addition to the actual AS. In the case
-			// of the top-level AS, the instance descriptors also need to be stored in
-			// GPU memory. This call outputs the memory requirements for each (scratch,
-			// results, instance descriptors) so that the application can allocate the
-			// corresponding memory
-			VkDeviceSize scratchSizeInBytes, resultSizeInBytes, instanceDescsSizeInBytes;
-            m_TopLevelASGenerator.ComputeASBufferSizes(getDevice(), m_topLevelAS.structure,
-				&scratchSizeInBytes, &resultSizeInBytes,
-				&instanceDescsSizeInBytes);
-
-			// Create the scratch and result buffers. Since the build is all done on
-			// GPU, those can be allocated in device local memory
-			nv_helpers_vk::createBuffer(getPhysicalDevice(), getDevice(), scratchSizeInBytes,
-				VK_BUFFER_USAGE_RAY_TRACING_BIT_NV, &m_topLevelAS.scratchBuffer,
-				&m_topLevelAS.scratchMem, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
-
-			nv_helpers_vk::createBuffer(getPhysicalDevice(), getDevice(), resultSizeInBytes,
-				VK_BUFFER_USAGE_RAY_TRACING_BIT_NV, &m_topLevelAS.resultBuffer,
-				&m_topLevelAS.resultMem, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
-			// The buffer describing the instances: ID, shader binding information,
-			// matrices ... Those will be copied into the buffer by the helper through
-			// mapping, so the buffer has to be allocated in host visible memory.
-
-			nv_helpers_vk::createBuffer(getPhysicalDevice(), getDevice(),
-				instanceDescsSizeInBytes, VK_BUFFER_USAGE_RAY_TRACING_BIT_NV,
-				&m_topLevelAS.instancesBuffer, &m_topLevelAS.instancesMem,
-				VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT
-				| VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
-		}
-
-		// After all the buffers are allocated, or if only an update is required, we
-		// can build the acceleration structure. Note that in the case of the update
-		// we also pass the existing AS as the 'previous' AS, so that it can be
-		// refitted in place. Build the acceleration structure. Note that this call
-		// integrates a barrier on the generated AS, so that it can be used to compute
-		// a top-level AS right after this method.
-        m_TopLevelASGenerator.Generate(getDevice(), commandBuffer, m_topLevelAS.structure,
-			m_topLevelAS.scratchBuffer, 0, m_topLevelAS.resultBuffer,
-			m_topLevelAS.resultMem, m_topLevelAS.instancesBuffer,
-			m_topLevelAS.instancesMem, updateOnly,
-			updateOnly ? m_topLevelAS.structure : VK_NULL_HANDLE);
-	}
-
-    VERendererRayTracingNV::secondaryCmdBuf_t VERendererRayTracingNV::recordRenderpass(VkRenderPass *pRenderPass,
+    VERendererRayTracingNV::secondaryCmdBuf_t VERendererRayTracingNV::recordRenderpass(
         std::vector<VESubrender *> subRenderers,
         VkFramebuffer *pFrameBuffer,
         uint32_t imageIndex, uint32_t numPass,
@@ -432,9 +283,9 @@ namespace ve {
         secondaryCmdBuf_t buf;
         buf.pool = getThreadCommandPool();
 
-        vh::vhCmdCreateCommandBuffers(m_device, buf.pool,VK_COMMAND_BUFFER_LEVEL_SECONDARY,1, &buf.buffer);
+        vh::vhCmdCreateCommandBuffers(m_device, buf.pool, VK_COMMAND_BUFFER_LEVEL_SECONDARY,1, &buf.buffer);
 
-        vh::vhCmdBeginCommandBuffer(m_device, *pRenderPass, 0, *pFrameBuffer, buf.buffer, VK_COMMAND_BUFFER_USAGE_RENDER_PASS_CONTINUE_BIT);
+        vh::vhCmdBeginCommandBuffer(m_device, VK_NULL_HANDLE, 0, *pFrameBuffer, buf.buffer, VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT);
 
         // there is only one subrenderer in ray tracing. All object ressources must be loaded at once.
         m_subrenderRT->draw(buf.buffer, imageIndex, numPass, pCamera, pLight);
@@ -480,7 +331,7 @@ namespace ve {
 
             t_now = vh::vhTimeNow();
             {
-                auto future = tp->add(&VERendererRayTracingNV::recordRenderpass, this, &m_renderPassClear, m_subrenderers,
+                auto future = tp->add(&VERendererRayTracingNV::recordRenderpass, this, m_subrenderers,
                     &m_swapChainFramebuffers[m_imageIndex],
                     m_imageIndex, i, pCamera, pLight);
 
@@ -498,37 +349,24 @@ namespace ve {
         }
 
         //-----------------------------------------------------------------------------------------
-        //set clear values for light pass
-
-        std::vector<VkClearValue> clearValuesLight = {};	//render target and depth buffer should be cleared only first time
-        VkClearValue cv1, cv2;
-        cv1.color = { 0.0f, 0.0f, 0.0f, 1.0f };
-        clearValuesLight.push_back(cv1);
-        cv2.depthStencil = { 1.0f, 0 };
-        clearValuesLight.push_back(cv2);
-
-
-        //-----------------------------------------------------------------------------------------
         //create a new primary command buffer and record all secondary buffers into it
 
-        vh::vhCmdCreateCommandBuffers(m_device, m_commandPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY,
-            1, &m_commandBuffers[m_imageIndex]);
+        vh::vhCmdCreateCommandBuffers(m_device, m_commandPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY, 1, &m_commandBuffers[m_imageIndex]);
 
         vh::vhCmdBeginCommandBuffer(m_device, m_commandBuffers[m_imageIndex], (VkCommandBufferUsageFlagBits)0);
 
         uint32_t bufferIdx = 0;
+        VkClearColorValue clearColor = { 0.0f, 0.0f, 0.0f, 1.0f };
+        VkImageSubresourceRange imageRange = {};
+        imageRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+        imageRange.levelCount = 1;
+        imageRange.layerCount = 1;
 
-        vh::vhRenderBeginRenderPass(m_commandBuffers[m_imageIndex], m_renderPassClear, m_swapChainFramebuffers[m_imageIndex], clearValuesLight, m_swapChainExtent, VK_SUBPASS_CONTENTS_SECONDARY_COMMAND_BUFFERS);
+        vkCmdClearColorImage(m_commandBuffers[m_imageIndex], getSwapChainImage(), VK_IMAGE_LAYOUT_GENERAL, &clearColor, 1, &imageRange);
         for(uint32_t i = 0; i < lights.size(); i++) {
-
-            VELight* pLight = lights[i];
-
-            vkCmdExecuteCommands(m_commandBuffers[m_imageIndex], 1, &m_secondaryBuffers[m_imageIndex][bufferIdx++].buffer);
-            
-            clearValuesLight.clear();		//since we blend the images onto each other, do not clear them for passes 2 and further
+            vkCmdExecuteCommands(m_commandBuffers[m_imageIndex], 1, &m_secondaryBuffers[m_imageIndex][bufferIdx++].buffer);    
         }
-        vkCmdEndRenderPass(m_commandBuffers[m_imageIndex]);
-
+        
         m_AvgRecordTime = vh::vhAverage(vh::vhTimeDuration(t_start), m_AvgRecordTime);
 
         vkEndCommandBuffer(m_commandBuffers[m_imageIndex]);
@@ -567,14 +405,36 @@ namespace ve {
             exit(1);
         }
 
-        if(m_commandBuffers[m_imageIndex] == VK_NULL_HANDLE)
+        if (!m_topLevelAS.handleNV)
+        {
+            initAccelerationStructures();
+        }
+
+        // update tlas, if at least one blas is dirty
+        bool updateTLAS = false;
+        std::vector<vh::vhAccelerationStructure> blas;
+        for (auto &entity : m_subrenderRT->getEntities())
+        {
+            blas.push_back(entity->m_AccelerationStructure);
+            if (entity->m_ASDirty)
+            {
+                entity->m_ASDirty = false;
+                updateTLAS = true;
+            }
+        }
+        if (updateTLAS)
+        {
+            vh::vhUpdateTopLevelAccelerationStructureNV(m_device, m_vmaAllocator, m_commandPool, m_graphicsQueue, blas, m_topLevelAS);
+        }
+
+        if (m_commandBuffers[m_imageIndex] == VK_NULL_HANDLE)
         {
             recordCmdBuffers();
         }
 
         vh::vhBufTransitionImageLayout(m_device, m_graphicsQueue, m_commandPool,				//transition the image layout to 
             getSwapChainImage(), VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_ASPECT_COLOR_BIT, 1, 1,		//VK_IMAGE_LAYOUT_GENERAL
-            VK_IMAGE_LAYOUT_PRESENT_SRC_KHR, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
+            VK_IMAGE_LAYOUT_PRESENT_SRC_KHR, VK_IMAGE_LAYOUT_GENERAL);
 
         //submit the command buffers
         vh::vhCmdSubmitCommandBuffer(m_device, m_graphicsQueue, m_commandBuffers[m_imageIndex],
@@ -611,7 +471,7 @@ namespace ve {
 
         vh::vhBufTransitionImageLayout(m_device, m_graphicsQueue, m_commandPool,				//transition the image layout to 
             getSwapChainImage(), VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_ASPECT_COLOR_BIT, 1, 1,		//VK_IMAGE_LAYOUT_PRESENT_SRC_KHR
-            VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR);
+            VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR);
 
         VkResult result = vh::vhRenderPresentResult(m_presentQueue, m_swapChain, m_imageIndex,	//present it to the swap chain
                                                     m_overlaySemaphores[m_currentFrame]);
@@ -630,85 +490,19 @@ namespace ve {
         m_currentFrame = (m_currentFrame + 1) % MAX_FRAMES_IN_FLIGHT;		//count up the current frame number
     }
 
-	//--------------------------------------------------------------------------------------------------
-	// Create the bottom-level and top-level acceleration structures
-	// #VKRay
-	void VERendererRayTracingNV::createAccelerationStructures()
-	{
-
-		// Create a one-time command buffer in which the AS build commands will be
-		// issued
-		VkCommandBufferAllocateInfo commandBufferAllocateInfo;
-		commandBufferAllocateInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
-		commandBufferAllocateInfo.pNext = nullptr;
-		commandBufferAllocateInfo.commandPool = m_commandPool;
-		commandBufferAllocateInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
-		commandBufferAllocateInfo.commandBufferCount = 1;
-
-		VkCommandBuffer commandBuffer = VK_NULL_HANDLE;
-		VkResult        code =
-			vkAllocateCommandBuffers(getDevice(), &commandBufferAllocateInfo, &commandBuffer);
-		if (code != VK_SUCCESS)
-		{
-			throw std::logic_error("rt vkAllocateCommandBuffers failed");
-		}
-
-		VkCommandBufferBeginInfo beginInfo;
-		beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
-		beginInfo.pNext = nullptr;
-		beginInfo.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
-		beginInfo.pInheritanceInfo = nullptr;
-		vkBeginCommandBuffer(commandBuffer, &beginInfo);
-
-
-		// For each geometric object, we compute the corresponding bottom-level
-		// acceleration structure (BLAS)
-        m_bottomLevelAS.clear();
-		m_bottomLevelAS.resize(m_subrenderRT->m_entities.size());
-
-		std::vector<std::pair<VkAccelerationStructureNV, glm::mat4x4>> instances;
-
-		for (size_t i = 0; i < m_subrenderRT->m_entities.size(); i++)
-		{
-			m_bottomLevelAS[i] = createBottomLevelAS(
-				commandBuffer, { m_subrenderRT->m_entities[i]});
-			instances.push_back({ m_bottomLevelAS[i].structure, m_subrenderRT->m_entities[i]->getWorldTransform() });
-		}
-
-		// Create the top-level AS from the previously computed BLAS
-		createTopLevelAS(commandBuffer, instances, VK_FALSE);
-
-		//submit the command buffers
-		VkResult result = vh::vhCmdEndSingleTimeCommands(m_device, m_graphicsQueue, m_commandPool, commandBuffer,
-			VK_NULL_HANDLE,
-			VK_NULL_HANDLE,
-			VK_NULL_HANDLE
-		);
-		if(result)
-		{
-			throw std::logic_error("rt createAccelerationStructures failed");
-		}
-	}
-
-    void VERendererRayTracingNV::destroyAccelerationStructure(const AccelerationStructure &as)
-    {
-        vkDestroyBuffer(m_device, as.scratchBuffer, nullptr);
-        vkFreeMemory(m_device, as.scratchMem, nullptr);
-        vkDestroyBuffer(m_device, as.resultBuffer, nullptr);
-        vkFreeMemory(m_device, as.resultMem, nullptr);
-        vkDestroyBuffer(m_device, as.instancesBuffer, nullptr);
-        vkFreeMemory(m_device, as.instancesMem, nullptr);
-        vkDestroyAccelerationStructureNV(m_device, as.structure, nullptr);
-    }
-
     // this function will be called as the first step in engine run() method if m_ray_tracing engine flag is enabled
     // it creates Bottom and Top level acceleration structures and bind descriptor sets with surenderer ressources, such as
     // output image, acceleration structure, vertex and index buffers and entity UBOs
 	void VERendererRayTracingNV::initAccelerationStructures()
 	{
-        if(m_subrenderRT->m_entities.size())
+        if(m_subrenderRT->getEntities().size())
         {
-            createAccelerationStructures();
+            std::vector<vh::vhAccelerationStructure> blas;
+            for (auto &entity : m_subrenderRT->getEntities())
+            {
+                blas.push_back(entity->m_AccelerationStructure);
+            }
+            vh::vhCreateTopLevelAccelerationStructureNV(m_physicalDevice, m_device, m_vmaAllocator, m_commandPool, m_graphicsQueue, blas, m_topLevelAS);
             m_subrenderRT->UpdateRTDescriptorSets();
         }
 	}

@@ -8,10 +8,6 @@
 #ifndef VERENDERER_RAYTRACING_NV_H
 #define VERENDERER_RAYTRACING_NV_H
 
-#include <utility>      // std::pair, std::make_pair
-#include "BottomLevelASGenerator.h"
-#include "TopLevelASGenerator.h"
-
 namespace ve {
 
 	class VEEngine;
@@ -51,30 +47,10 @@ namespace ve {
 
 	protected:
 
-		struct AccelerationStructure
-		{
-			VkBuffer scratchBuffer = VK_NULL_HANDLE;
-			VkDeviceMemory scratchMem = VK_NULL_HANDLE;
-			VkBuffer resultBuffer = VK_NULL_HANDLE;
-			VkDeviceMemory resultMem = VK_NULL_HANDLE;
-			VkBuffer instancesBuffer = VK_NULL_HANDLE;
-			VkDeviceMemory instancesMem = VK_NULL_HANDLE;
-			VkAccelerationStructureNV structure = VK_NULL_HANDLE;
-		};
-
 		virtual void createSubrenderers();			//create the subrenderers
-		virtual void addSubrenderer(VESubrender* pSub);
-
+		
 		virtual void initAccelerationStructures();
-		AccelerationStructure createBottomLevelAS(VkCommandBuffer commandBuffer, std::vector<VEEntity *> vVertexBuffers);
-		void createTopLevelAS(
-			VkCommandBuffer commandBuffer,
-			const std::vector <std::pair < VkAccelerationStructureNV, glm::mat4x4>> &instances,
-			VkBool32 updateOnly);
-
-		void createAccelerationStructures();
-        AccelerationStructure* getTLAS() { return &m_topLevelAS; }
-		void destroyAccelerationStructure(const AccelerationStructure& as);
+		VkAccelerationStructureNV *getTLASHandlePointer() { return &m_topLevelAS.handleNV; };
         
 
 		void createSyncObjects();					//create the sync objects
@@ -89,15 +65,14 @@ namespace ve {
 		virtual void presentFrame();				//Present the newly drawn frame
 		virtual void closeRenderer();				//close the renderer
 		virtual void recreateSwapchain();			//new swapchain due to window size change
-        virtual secondaryCmdBuf_t recordRenderpass(VkRenderPass* pRenderPass,				//record one render pass into a command buffer
-            std::vector<VESubrender*> subRenderers,
-            VkFramebuffer* pFrameBuffer,
-            uint32_t imageIndex, uint32_t numPass,
-            VECamera* pCamera, VELight* pLight);
+        virtual secondaryCmdBuf_t recordRenderpass(std::vector<VESubrender*> subRenderers,
+                                                   VkFramebuffer* pFrameBuffer,
+                                                   uint32_t imageIndex, uint32_t numPass,
+                                                   VECamera* pCamera, VELight* pLight);
 
 		///\returns the command pool for this thread - each threads needs its own pool
 		virtual VkCommandPool getThreadCommandPool() { return m_commandPools[getEnginePointer()->getThreadPool()->threadNum[std::this_thread::get_id()]]; };
-        virtual void updateCmdBuffers() { deleteCmdBuffers(); };
+		virtual void updateCmdBuffers();
         virtual void deleteCmdBuffers();
 		VETexture*                  m_depthMap = nullptr;				///<the image depth map	
 		std::vector<VkSemaphore>	m_imageAvailableSemaphores;			///<sem for waiting for the next swapchain image
@@ -110,19 +85,12 @@ namespace ve {
 		std::vector<VkCommandPool>  m_commandPools = {};				///<Array of command pools so that each thread in the thread pool has its own pool
 		std::vector<VkCommandBuffer>m_commandBuffers = {};				///<the main command buffers for recording draw commands
 
-        VESubrenderRayTracingNV_DN* m_subrenderRT = nullptr;	            ///<Pointer to the overlay subrenderer
-        VkRenderPass				m_renderPassClear;					///<The first light render pass, clearing the framebuffers
-        VkRenderPass				m_renderPassLoad;					///<The second light render pass - no clearing of framebuffer
-
-
-        nv_helpers_vk::BottomLevelASGenerator m_BottomLevelASGenerator;
-        nv_helpers_vk::TopLevelASGenerator m_TopLevelASGenerator;
-
-
+        VkRenderPass				m_renderPass;					    ///<The first light render pass, clearing the framebuffers
+        
         std::vector<std::vector<std::future<secondaryCmdBuf_t>> > m_secondaryBuffersFutures = {};	///<secondary buffers for parallel recording
         std::vector<std::vector<secondaryCmdBuf_t>> m_secondaryBuffers = {};	///<secondary buffers for parallel recording
-		AccelerationStructure m_topLevelAS;
-		std::vector<AccelerationStructure> m_bottomLevelAS;
+
+		vh::vhAccelerationStructure m_topLevelAS;
 		
 		VkPhysicalDeviceRayTracingPropertiesNV m_raytracingProperties = {};
 	};

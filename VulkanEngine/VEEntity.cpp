@@ -420,6 +420,10 @@ namespace ve {
 	*
 	*/
 	VEEntity::~VEEntity() {
+		if (m_AccelerationStructure.deviceAddress) {
+			auto renderer = getEnginePointer()->getRenderer();
+			vh::vhDestroyAccelerationStructure(renderer->getDevice(), renderer->getVmaAllocator(), m_AccelerationStructure);
+		}
 	}
 
 	/**
@@ -449,10 +453,12 @@ namespace ve {
 
 		if (m_visible) {
 			ubo.model = worldMatrix;
+			ubo.modelTrans = glm::transpose(worldMatrix);
 			ubo.modelInvTrans = glm::transpose(glm::inverse(worldMatrix));
 		}
 		else {
 			ubo.model = glm::mat4(0.0f);
+			ubo.modelTrans = ubo.model;
 			ubo.modelInvTrans = ubo.model;
 		}
 
@@ -460,20 +466,49 @@ namespace ve {
 		ubo.iparam[0] = m_resourceIdx;		//make sure the shader uses the right maps in the array of maps
 		if (m_pMaterial != nullptr) {
 			ubo.color = m_pMaterial->color;
-			if (m_pMaterial->mapNormal != nullptr)
-			{
-				ubo.hasNormalTexture = 1;
-			}
-			else
-			{
-				ubo.hasNormalTexture = 0;
-			}
 		};
 
 		VESceneObject::updateUBO((void*)&ubo, (uint32_t)sizeof(veUBOPerEntity_t), imageIndex);
+
+		updateAccelerationStructure();
 	}
 
 
+	void VEEntity::updateAccelerationStructure() {
+		if (getEnginePointer()->isRayTracing() && m_memoryHandle.pMemBlock != nullptr && m_visible) {
+			auto renderer = getEnginePointer()->getRenderer();
+			auto transformOffset = m_memoryHandle.entryIndex * sizeof(VEEntity::veUBOPerEntity_t) + sizeof(glm::mat4);
+			m_ASDirty = true;
+			if (getEnginePointer()->getRendererType() == veRendererType::VE_RENDERER_TYPE_RAYTRACING_NV) {
+				if (!m_AccelerationStructure.handleNV) {
+					vh::vhCreateBottomLevelAccelerationStructureNV(renderer->getPhysicalDevice(), renderer->getDevice(), renderer->getVmaAllocator(), renderer->getCommandPool(), renderer->getGraphicsQueue(), m_AccelerationStructure,
+						m_pMesh->m_vertexBuffer, m_pMesh->m_vertexCount,
+						m_pMesh->m_indexBuffer, m_pMesh->m_indexCount,
+						m_memoryHandle.pMemBlock->buffers[0], transformOffset);
+				}
+				else {
+					vh::vhUpdateBottomLevelAccelerationStructureNV(renderer->getDevice(), renderer->getVmaAllocator(), renderer->getCommandPool(), renderer->getGraphicsQueue(), m_AccelerationStructure,
+						m_pMesh->m_vertexBuffer, m_pMesh->m_vertexCount,
+						m_pMesh->m_indexBuffer, m_pMesh->m_indexCount,
+						m_memoryHandle.pMemBlock->buffers[0], transformOffset);
+				}
+			}
+			if (getEnginePointer()->getRendererType() == veRendererType::VE_RENDERER_TYPE_RAYTRACING_KHR) {
+				if (!m_AccelerationStructure.handleKHR) {
+					vh::vhCreateBottomLevelAccelerationStructureKHR(renderer->getDevice(), renderer->getVmaAllocator(), renderer->getCommandPool(), renderer->getGraphicsQueue(), m_AccelerationStructure,
+						m_pMesh->m_vertexBuffer, m_pMesh->m_vertexCount,
+						m_pMesh->m_indexBuffer, m_pMesh->m_indexCount,
+						m_memoryHandle.pMemBlock->buffers[0], transformOffset);
+				}
+				else {
+					vh::vhUpdateBottomLevelAccelerationStructureKHR(renderer->getDevice(), renderer->getVmaAllocator(), renderer->getCommandPool(), renderer->getGraphicsQueue(), m_AccelerationStructure,
+						m_pMesh->m_vertexBuffer, m_pMesh->m_vertexCount,
+						m_pMesh->m_indexBuffer, m_pMesh->m_indexCount,
+						m_memoryHandle.pMemBlock->buffers[0], transformOffset);
+				}
+			}
+		}
+	}
 
 
 	/**

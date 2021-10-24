@@ -36,12 +36,9 @@ namespace ve {
 		std::vector<VkDescriptorSet>    m_descriptorSetsUBOs;                               ///<a list of resource descriptor sets of UBOPerEntity. One set for each SwapChain Image
 		VkBool32                        m_enableShadows = false;
 		std::vector<VkRayTracingShaderGroupCreateInfoKHR> m_shaderGroups;
-		VkBuffer m_shaderBindingTableBuffer;
-		VkDeviceMemory m_shaderBindingTableMem;
-
-		ShaderBindingTable m_raygenShaderBindingTable;
-		ShaderBindingTable m_missShaderBindingTable;
-		ShaderBindingTable m_hitShaderBindingTable;
+		
+		VkBuffer m_SBTBuffer = VK_NULL_HANDLE;
+		VmaAllocation m_SBTAllocation;
 
 	public:
 		///Constructor of subrender fw class
@@ -59,10 +56,9 @@ namespace ve {
 		virtual void	recreateResources();
 
 		void createRTGraphicsPipeline();
-		void createShaderBindingTables();
 		void createShaderBindingTable();
 		void createRaytracingDescriptorSets();
-		void UpdateRTDescriptorSets();
+		void UpdateRTDescriptorSets() override;
 		//------------------------------------------------------------------------------------------------------------------
 		virtual void	bindPipeline(VkCommandBuffer commandBuffer);
 		virtual void	bindDescriptorSetsPerFrame(VkCommandBuffer commandBuffer, uint32_t imageIndex,
@@ -79,7 +75,8 @@ namespace ve {
 
 		//Draw all entities that are managed by this subrenderer
 		virtual void		draw(VkCommandBuffer commandBuffer, uint32_t imageIndex, uint32_t numPass,
-			VECamera *pCamera, VELight *pLight);
+								 VECamera *pCamera, VELight *pLight, 
+			                     std::vector<VkDescriptorSet> descriptorSetsShadow = {});
 
 		///Perform an arbitrary draw operation
 		///\returns a semaphore signalling when this draw operations has finished

@@ -71,12 +71,17 @@ objectData_t unpackObjectData(uint objId)
   vec4 d8 = objectUBOs[objId].data[8];
   vec4 d9 = objectUBOs[objId].data[9];
   vec4 d10 = objectUBOs[objId].data[10];
+  vec4 d11 = objectUBOs[objId].data[11];
+  vec4 d12 = objectUBOs[objId].data[12];
+  vec4 d13 = objectUBOs[objId].data[13];
+  vec4 d14 = objectUBOs[objId].data[14];
 
   objData.model = mat4(d0, d1, d2, d3);
-  objData.modelInvTrans = mat4(d4, d5, d6, d7);
-  objData.color = d8; 
-  objData.param = d9;
-  objData.iparam = ivec4(floatBitsToInt(d10.x),floatBitsToInt(d10.y),floatBitsToInt(d10.z),floatBitsToInt(d10.w));
+  objData.modelTrans = mat4(d4, d5, d6, d7);
+  objData.modelInvTrans = mat4(d8, d9, d10, d11);
+  objData.color = d12;
+  objData.param = d13;
+  objData.iparam = ivec4(floatBitsToInt(d14.x),floatBitsToInt(d14.y),floatBitsToInt(d14.z),floatBitsToInt(d14.w));
   return objData;
 }
 
@@ -192,16 +197,25 @@ void main()
 		}
 	}
 	
-	prd.hitValue = result;
+    prd.hitValue += result * prd.attenuation;
 
-	if(true)
+	if(prd.depth < 1)
 	{
-		vec3 origin = fragPosW;
-		vec3 rayDir = reflect(gl_WorldRayDirectionEXT, normalW);
-		prd.attenuation *= 0.5;
-		prd.done      = 0;
-		prd.rayOrigin = origin;
-		prd.rayDir    = rayDir;
+	    prd.attenuation *= 0.2;
+	    prd.depth++;
+        traceRayEXT(topLevelAS,         // acceleration structure
+                gl_RayFlagsNoneEXT,  // rayFlags
+                0xFF,               // cullMask
+                0,                  // sbtRecordOffset
+                0,                  // sbtRecordStride
+                0,                  // missIndex
+                fragPosW,           // ray origin
+                0.1,                // ray min range
+                reflect(gl_WorldRayDirectionEXT, normalW), // ray direction
+                1000.0,             // ray max range
+                0                   // payload (location = 0)
+        );
+        prd.depth--;
 	}
 }
 

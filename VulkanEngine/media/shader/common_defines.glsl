@@ -19,7 +19,7 @@ struct cameraData_t {
   mat4 camViewInv;
   mat4 camProjInv;
   vec4 param;
-  vec4  a,b,c,d,e,f,g;
+  vec4 a,b,c,d,e,f,g;
 };
 
 struct lightData_t {
@@ -34,14 +34,13 @@ struct lightData_t {
 };
 
 struct objectData_t {
-  mat4 model;
-  mat4 modelInvTrans;
-  vec4 color;
-  vec4 param;
+  mat4  model;
+  mat4  modelTrans;
+  mat4  modelInvTrans;
+  vec4  color;
+  vec4  param;
   ivec4 iparam;
-  int  hasNormalTexture;
-  vec3 a;
-  vec4 b,c,d,e;
+  vec4  a;
 };
 
 struct Vertex

@@ -197,13 +197,12 @@ namespace ve {
 		///Data that is updated for each object
 		struct veUBOPerEntity_t {
 			glm::mat4 model;			///<Object model matrix
+			glm::mat4 modelTrans;	    ///<Transpose (for raytracing)
 			glm::mat4 modelInvTrans;	///<Inverse transpose
 			glm::vec4 color;			///<Uniform color if needed by shader
 			glm::vec4 param;			///<Texture scaling and animation: 0,1..scale 2,3...offset
 			glm::ivec4 iparam;			///<iparam[0] is the resource idx
-			uint32_t  hasNormalTexture;
-			glm::vec3 a;
-			glm::vec4 b,c,d,e;		///<paddding to ensure that struct has size 256
+			glm::vec4 a;		        ///<paddding to ensure that struct has size 256
 		};
 
 	protected:
@@ -217,6 +216,7 @@ namespace ve {
 		virtual ~VEEntity();
 
 		virtual void updateUBO(glm::mat4 worldMatrix, uint32_t imageIndex);		//update the UBO of this node using its current world matrix
+		void updateAccelerationStructure();
 
 	public:
 		VEMesh *					m_pMesh = nullptr;				///<Pointer to entity mesh
@@ -225,6 +225,9 @@ namespace ve {
 		VESubrender *				m_pSubrenderer = nullptr;		///<subrenderer this entity is registered with / replace with a set
 		bool						m_visible = false;				///<should it be drawn at all?
 		bool						m_castsShadow = true;			///<draw in the shadow pass?
+
+		vh::vhAccelerationStructure m_AccelerationStructure;
+		bool                        m_ASDirty = false;
 
 		//-------------------------------------------------------------------------------------
 		//Class and type

@@ -125,6 +125,7 @@ namespace ve {
 		VEWindow       * getWindow();				//Return a pointer to the window instance
 		VESceneManager * getSceneManager();			//Return a  pointer to the scene manager instance
 		VERenderer     * getRenderer();				//Return a pointer to the renderer instance
+		veRendererType   getRendererType();
 		uint32_t		 getLoopCount();			//Return the number of the current render loop
 
 		//-----------------------------------------------------------------------------------------------

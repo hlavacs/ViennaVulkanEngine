@@ -55,7 +55,6 @@ Vertex unpackVertex(uint objId, uint index)
   return v;
 }
 
-
 objectData_t unpackObjectData(uint objId)
 {
   objectData_t objData;
@@ -71,12 +70,17 @@ objectData_t unpackObjectData(uint objId)
   vec4 d8 = objectUBOs[objId].data[8];
   vec4 d9 = objectUBOs[objId].data[9];
   vec4 d10 = objectUBOs[objId].data[10];
+  vec4 d11 = objectUBOs[objId].data[11];
+  vec4 d12 = objectUBOs[objId].data[12];
+  vec4 d13 = objectUBOs[objId].data[13];
+  vec4 d14 = objectUBOs[objId].data[14];
 
   objData.model = mat4(d0, d1, d2, d3);
-  objData.modelInvTrans = mat4(d4, d5, d6, d7);
-  objData.color = d8; 
-  objData.param = d9;
-  objData.iparam = ivec4(floatBitsToInt(d10.x),floatBitsToInt(d10.y),floatBitsToInt(d10.z),floatBitsToInt(d10.w));
+  objData.modelTrans = mat4(d4, d5, d6, d7);
+  objData.modelInvTrans = mat4(d8, d9, d10, d11);
+  objData.color = d12;
+  objData.param = d13;
+  objData.iparam = ivec4(floatBitsToInt(d14.x),floatBitsToInt(d14.y),floatBitsToInt(d14.z),floatBitsToInt(d14.w));
   return objData;
 }
 
@@ -117,16 +121,14 @@ void main()
 	//TBN matrix
 	vec3 normalW  = normalize(fragNormalW);
     vec3 fragColor = texture(texSamplerArray[resIdx], texCoord).xyz;
-	if(objectUBO.hasNormalTexture != 0)
-	{
-        vec3 N        = normalize( fragNormalW );
-        vec3 T        = normalize( fragTangentW );
-        T             = normalize( T - dot(T, N)*N );
-        vec3 B        = normalize( cross( T, N ) );
-        mat3 TBN      = mat3(T,B,N);
-        vec3 mapnorm  = normalize( texture(normalSamplerArray[resIdx], texCoord).xyz*2.0 - 1.0 );
-        normalW  = normalize( TBN * mapnorm );
-    }
+
+    vec3 N        = normalize( fragNormalW );
+    vec3 T        = normalize( fragTangentW );
+    T             = normalize( T - dot(T, N)*N );
+    vec3 B        = normalize( cross( T, N ) );
+    mat3 TBN      = mat3(T,B,N);
+    vec3 mapnorm  = normalize( texture(normalSamplerArray[resIdx], texCoord).xyz*2.0 - 1.0 );
+    normalW  = normalize( TBN * mapnorm );
 
 	isShadowed = true;
 

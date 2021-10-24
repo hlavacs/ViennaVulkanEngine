@@ -63,12 +63,8 @@ namespace ve {
             commandBufferAllocateInfo.commandBufferCount = 1;
 
             VkCommandBuffer commandBuffer = VK_NULL_HANDLE;
-            VkResult        code = vkAllocateCommandBuffers(m_renderer.getDevice(), &commandBufferAllocateInfo, &commandBuffer);
-            if(code != VK_SUCCESS)
-            {
-                throw std::logic_error("rt descriptor sets vkAllocateCommandBuffers failed");
-            }
-
+            VECHECKRESULT(vkAllocateCommandBuffers(m_renderer.getDevice(), &commandBufferAllocateInfo, &commandBuffer));
+            
             VkCommandBufferBeginInfo beginInfo;
             beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
             beginInfo.pNext = nullptr;
@@ -86,12 +82,8 @@ namespace ve {
                     VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, 0, 0, nullptr, 1, &bmb, 0, nullptr);
             }
             //submit the command buffers
-            VkResult result = vh::vhCmdEndSingleTimeCommands(m_renderer.getDevice(), m_renderer.getGraphicsQueue(), m_renderer.getCommandPool(), commandBuffer,
-                VK_NULL_HANDLE,
-                VK_NULL_HANDLE,
-                VK_NULL_HANDLE
-            );
-            assert(result == VK_SUCCESS);
+            VECHECKRESULT(vh::vhCmdEndSingleTimeCommands(m_renderer.getDevice(), m_renderer.getGraphicsQueue(), m_renderer.getCommandPool(), commandBuffer,
+                                                         VK_NULL_HANDLE, VK_NULL_HANDLE, VK_NULL_HANDLE));
         }
 
         // Output image binding (set 2, binding 0)
@@ -99,7 +91,6 @@ namespace ve {
             { 1 },
             { VK_DESCRIPTOR_TYPE_STORAGE_IMAGE },
             { VK_SHADER_STAGE_RAYGEN_BIT_NV },
-
             &m_descriptorSetLayoutOutput);
 
         // Acceleration Structure binding (set 3, binding 0)
@@ -131,8 +122,8 @@ namespace ve {
             &m_descriptorSetLayoutResources);
 
         // Acceleration structure and geometry are the same for all swapchains
-        vh::vhRenderCreateDescriptorSets(m_renderer.getDevice(), 1, m_descriptorSetLayoutAS, m_renderer.getDescriptorPool(), m_descriptorSetsAS);
-        vh::vhRenderCreateDescriptorSets(m_renderer.getDevice(), 1, m_descriptorSetLayoutGeometry, m_renderer.getDescriptorPool(), m_descriptorSetsGeometry);
+        vh::vhRenderCreateDescriptorSets(m_renderer.getDevice(), m_renderer.getSwapChainNumber(), m_descriptorSetLayoutAS, m_renderer.getDescriptorPool(), m_descriptorSetsAS);
+        vh::vhRenderCreateDescriptorSets(m_renderer.getDevice(), m_renderer.getSwapChainNumber(), m_descriptorSetLayoutGeometry, m_renderer.getDescriptorPool(), m_descriptorSetsGeometry);
         // Output image and UBOPerEntity changes from Swapchain to Swapchain, for each swapchain create own descriptor set
         vh::vhRenderCreateDescriptorSets(m_renderer.getDevice(), m_renderer.getSwapChainNumber(), m_descriptorSetLayoutOutput, m_renderer.getDescriptorPool(), m_descriptorSetsOutput);
         vh::vhRenderCreateDescriptorSets(m_renderer.getDevice(), m_renderer.getSwapChainNumber(), m_descriptorSetLayoutObjectUBOs, m_renderer.getDescriptorPool(), m_descriptorSetsUBOs);
@@ -305,8 +296,8 @@ namespace ve {
 
         std::vector<VkDescriptorSet> set2 = {
             m_descriptorSetsOutput[imageIndex],
-            m_descriptorSetsAS[0],
-            m_descriptorSetsGeometry[0],
+            m_descriptorSetsAS[imageIndex],
+            m_descriptorSetsGeometry[imageIndex],
             m_descriptorSetsUBOs[imageIndex],
         };
         vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_RAY_TRACING_NV, m_pipelineLayout,
@@ -363,7 +354,7 @@ namespace ve {
             VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET_ACCELERATION_STRUCTURE_NV;
         descriptorAccelerationStructureInfo.pNext = nullptr;
         descriptorAccelerationStructureInfo.accelerationStructureCount = 1;
-        descriptorAccelerationStructureInfo.pAccelerationStructures = &(m_renderer.getTLAS()->structure);
+        descriptorAccelerationStructureInfo.pAccelerationStructures = m_renderer.getTLASHandlePointer();
         
         // go through all entities and for each vertex and index buffer add a BufferInfo.
         for(auto &entity : m_entities)
@@ -372,14 +363,14 @@ namespace ve {
             vmaGetAllocationInfo(m_renderer.getVmaAllocator(), entity->m_pMesh->m_vertexBufferAllocation, &info);
             VkDescriptorBufferInfo dbiVert = {};
             dbiVert.buffer = entity->m_pMesh->m_vertexBuffer;
-            dbiVert.range = info.size;
+            dbiVert.range = VK_WHOLE_SIZE;
             dbiVert.offset = 0;
             infoVertVector.push_back(dbiVert);
 
             vmaGetAllocationInfo(m_renderer.getVmaAllocator(), entity->m_pMesh->m_indexBufferAllocation, &info);
             VkDescriptorBufferInfo dbiInd = {};
             dbiInd.buffer = entity->m_pMesh->m_indexBuffer;
-            dbiInd.range = info.size;
+            dbiInd.range = VK_WHOLE_SIZE;
             dbiInd.offset = 0;
             infoIndVector.push_back(dbiInd);
         }
@@ -399,7 +390,7 @@ namespace ve {
             descriptorWrites.push_back(descriptorWrite);
         }
 
-        //we link an output image as a VK_DESCRIPTOR_TYPE_STORAGE_IMAGE and write the data using 
+        // we link an output image as a VK_DESCRIPTOR_TYPE_STORAGE_IMAGE and write the data using 
         // ImageStore shader function
         for(size_t i = 0; i < m_descriptorSetsOutput.size(); i++)
         {
@@ -475,7 +466,6 @@ namespace ve {
                 descriptorWrites.push_back(descriptorWriteUBO);
             }
             vkUpdateDescriptorSets(m_renderer.getDevice(), static_cast<uint32_t>(descriptorWrites.size()), descriptorWrites.data(), 0, nullptr);
-            
         }
     }
 
@@ -494,15 +484,15 @@ namespace ve {
 	*
 	*/
 	void VESubrenderRayTracingNV_DN::draw(VkCommandBuffer commandBuffer, uint32_t imageIndex,
-		uint32_t numPass,
-		VECamera* pCamera, VELight* pLight) {
+		                                  uint32_t numPass,
+		                                  VECamera* pCamera, VELight* pLight,
+                                          std::vector<VkDescriptorSet> descriptorSetsShadow) {
 
 		if (m_entities.size() == 0) return;
 
         vkCmdPushConstants(commandBuffer, m_pipelineLayout, VK_SHADER_STAGE_CLOSEST_HIT_BIT_NV, 0, sizeof(m_enableShadows), &m_enableShadows);
 		
         bindPipeline(commandBuffer);
-        setDynamicPipelineState(commandBuffer, numPass);
 		bindDescriptorSetsPerFrame(commandBuffer, imageIndex, pCamera, pLight);
         bindDescriptorSetsPerEntity(commandBuffer, imageIndex, m_entities[0]);	//bind the entity's descriptor sets
         drawEntity(commandBuffer, imageIndex);

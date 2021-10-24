@@ -34,8 +34,6 @@ void main()
     float tmin = 0.001;
     float tmax = 10000.0;
 
-	vec3 hitValue = vec3(0);
-
     traceNV(topLevelAS,  // acceleration structure
         gl_RayFlagsOpaqueNV, // rayFlags
         0xFF,			 // cullMask

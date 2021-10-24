@@ -66,13 +66,15 @@ namespace ve {
 
 
 	static std::default_random_engine e{ 12345 };					//F�r Zufallszahlen
-	static std::uniform_real_distribution<> d{ -10.0f, 10.0f };		//F�r Zufallszahlen
+	static std::uniform_real_distribution<> d{ -15.0f, 15.0f };		//F�r Zufallszahlen
 
 	//
 	// �berpr�fen, ob die Kamera die Kiste ber�hrt
 	//
+	/*
 	class EventListenerCollision : public VEEventListener {
 	protected:
+		
 		virtual void onFrameStarted(veEvent event) {
 			static uint32_t cubeid = 0;
 
@@ -121,7 +123,30 @@ namespace ve {
 		///Destructor of class EventListenerCollision
 		virtual ~EventListenerCollision() {};
 	};
+	*/
 
+	class EventListenerRotation : public VEEventListener {
+	protected:
+		VESceneNode *m_pNode;
+
+		virtual void onFrameEnded(veEvent event)
+		{
+			float slow = 2.0;		//camera rotation speed
+			float angle = slow * (float)event.dt;			//pitch angle
+			glm::vec4 rot4dy = m_pNode->getTransform() * glm::vec4(0.0, 1.0, 0.0, 1.0); //x axis from local to parent space!
+			glm::vec3 rot3dy = glm::vec3(rot4dy.x, rot4dy.y, rot4dy.z);
+			glm::mat4 rotatedy = glm::rotate(glm::mat4(1.0), angle, rot3dy);
+			m_pNode->multiplyTransform(rotatedy);
+		}
+
+
+	public:
+		///Constructor of class EventListenerCollision
+		EventListenerRotation(VESceneNode *node) : VEEventListener(node->getName() + " Rotation"), m_pNode(node) { };
+
+		///Destructor of class EventListenerCollision
+		virtual ~EventListenerRotation() {};
+	};
 	
 
 	///user defined manager class, derived from VEEngine
@@ -137,7 +162,6 @@ namespace ve {
 		virtual void registerEventListeners() {
 			VEEngine::registerEventListeners();
 
-			registerEventListener(new EventListenerCollision("Collision"), { veEvent::VE_EVENT_FRAME_STARTED });
 			registerEventListener(new EventListenerGUI("GUI"), { veEvent::VE_EVENT_DRAW_OVERLAY});
 		};
 		
@@ -158,17 +182,7 @@ namespace ve {
 										{	"bluecloud_ft.jpg", "bluecloud_bk.jpg", "bluecloud_up.jpg", 
 											"bluecloud_dn.jpg", "bluecloud_rt.jpg", "bluecloud_lf.jpg" }, pScene)  );
 
-			VESceneNode *e1, *e2, *eParent1, *eParent2;
-			eParent1 = getSceneManagerPointer()->createSceneNode("The Cube Parent", pScene, glm::mat4(1.0));
-			VECHECKPOINTER(e1 = getSceneManagerPointer()->loadModel("The Cube0", "media/models/test/crate0", "cube.obj"));
-			eParent1->multiplyTransform(glm::translate(glm::mat4(1.0f), glm::vec3(-5.0f, 1.0f, 10.0f)));
-			eParent1->addChild(e1);
-
-			eParent2 = getSceneManagerPointer()->createSceneNode("The Cube Parent 2", pScene, glm::mat4(1.0));
-			VECHECKPOINTER(e2 = getSceneManagerPointer()->loadModel("The Cube2", "media/models/test/crate0", "cube.obj"));
-			eParent2->multiplyTransform(glm::translate(glm::mat4(1.0f), glm::vec3(5.0f, 1.0f, 10.0f)));
-			eParent2->addChild(e2);
-
+			
 			VESceneNode *e4;
 			VECHECKPOINTER(e4 = getSceneManagerPointer()->loadModel("The Plane", "media/models/test", "plane_t_n_s.obj", 0, pScene));
 			e4->setTransform(glm::scale(glm::mat4(1.0f), glm::vec3(1000.0f, 1.0f, 1000.0f)));
@@ -176,7 +190,19 @@ namespace ve {
 			VEEntity *pE4;
 			VECHECKPOINTER(pE4 = (VEEntity *)getSceneManagerPointer()->getSceneNode("The Plane/plane_t_n_s.obj/plane/Entity_0"));
 			pE4->setParam(glm::vec4(1000.0f, 1000.0f, 0.0f, 0.0f));
+			
 
+			for (int i = 0; i < 12; i++)
+			{
+				VESceneNode *e1, *eParent1;
+
+				eParent1 = getSceneManagerPointer()->createSceneNode("The Cube Parent" + i, pScene, glm::mat4(1.0));
+				VECHECKPOINTER(e1 = getSceneManagerPointer()->loadModel("The Cube" + i, "media/models/test/crate0", "cube.obj"));
+				eParent1->multiplyTransform(glm::translate(glm::mat4(1.0f), glm::vec3(d(e), 1.0f, d(e))));
+				eParent1->addChild(e1);
+
+				//registerEventListener(new EventListenerRotation(e1), { veEvent::VE_EVENT_FRAME_ENDED });
+			}			
 
 			m_irrklangEngine->play2D("media/sounds/ophelia.wav", true);
 		};
@@ -188,7 +214,7 @@ namespace ve {
 using namespace ve;
 
 int main() {
-	bool debug = false;
+	bool debug = true;
 
 	MyVulkanEngine mve(VE_RENDERER_TYPE_RAYTRACING_NV, debug);	//enable or disable debugging (=callback, validation layers)
 

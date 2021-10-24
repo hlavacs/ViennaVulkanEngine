@@ -155,9 +155,9 @@ namespace ve {
 	*
 	*/
 	void VESubrenderRayTracingKHR::draw(VkCommandBuffer commandBuffer, uint32_t imageIndex,
-		uint32_t numPass,
-		VECamera *pCamera, VELight *pLight,
-		std::vector<VkDescriptorSet> descriptorSetsShadow) {
+		                                uint32_t numPass,
+		                                VECamera *pCamera, VELight *pLight,
+		                                std::vector<VkDescriptorSet> descriptorSetsShadow) {
 
 	}
 

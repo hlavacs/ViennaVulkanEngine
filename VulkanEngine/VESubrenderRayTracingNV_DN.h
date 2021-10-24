@@ -59,7 +59,7 @@ namespace ve {
 		void createRTGraphicsPipeline();
         void createShaderBindingTable();
         void createRaytracingDescriptorSets();
-        void UpdateRTDescriptorSets();
+        void UpdateRTDescriptorSets() override;
 		//------------------------------------------------------------------------------------------------------------------
 		virtual void	bindPipeline(VkCommandBuffer commandBuffer);
 		virtual void	bindDescriptorSetsPerFrame(VkCommandBuffer commandBuffer, uint32_t imageIndex,
@@ -76,7 +76,8 @@ namespace ve {
 
 		//Draw all entities that are managed by this subrenderer
 		virtual void		draw(VkCommandBuffer commandBuffer, uint32_t imageIndex, uint32_t numPass,
-			VECamera* pCamera, VELight* pLight);
+			                     VECamera* pCamera, VELight* pLight,
+			                     std::vector<VkDescriptorSet> descriptorSetsShadow = {});
 
 		///Perform an arbitrary draw operation
 		///\returns a semaphore signalling when this draw operations has finished

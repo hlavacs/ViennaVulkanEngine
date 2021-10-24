@@ -275,6 +275,7 @@
     <ClCompile Include="VHDevice.cpp" />
     <ClCompile Include="VHFile.cpp" />
     <ClCompile Include="VHMemory.cpp" />
+    <ClCompile Include="VHRayTracing.cpp" />
     <ClCompile Include="VHRender.cpp" />
     <ClCompile Include="VHSwapchain.cpp" />
     <ClCompile Include="VKHelpers.cpp" />

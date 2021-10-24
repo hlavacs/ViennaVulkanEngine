@@ -352,6 +352,9 @@
     <ClCompile Include="VERendererRayTracingKHR.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="VHRayTracing.cpp">
+      <Filter>Source Files\VHelper</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="VHFunctions.inl">

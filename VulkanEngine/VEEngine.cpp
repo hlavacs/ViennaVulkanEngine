@@ -172,13 +172,10 @@ namespace ve {
 	*/	
 	std::vector<const char*> VEEngine::getRequiredInstanceExtensions() {
 		std::vector<const char*> extensions = m_pWindow->getRequiredInstanceExtensions();
+		extensions.push_back(VK_KHR_GET_PHYSICAL_DEVICE_PROPERTIES_2_EXTENSION_NAME);
 		if (m_debug) {
 			extensions.push_back(VK_EXT_DEBUG_REPORT_EXTENSION_NAME);
 			extensions.push_back("VK_EXT_debug_report");
-		}
-		if (isRayTracing())
-		{
-			extensions.push_back(VK_KHR_GET_PHYSICAL_DEVICE_PROPERTIES_2_EXTENSION_NAME);
 		}
 		return extensions;
 	};
@@ -491,13 +488,17 @@ namespace ve {
 	*/
 	VESceneManager * VEEngine::getSceneManager() {
 		return m_pSceneManager; 
-	};
+	}
 
 	/**
 	* \returns the VERenderer instance.
 	*/
-	VERenderer  * VEEngine::getRenderer() {
-		return m_pRenderer; 
+	VERenderer * VEEngine::getRenderer() {
+		return m_pRenderer;
+	}
+
+	veRendererType VEEngine::getRendererType() {
+		return m_rendererType;
 	}
 
 	/**
@@ -505,7 +506,7 @@ namespace ve {
 	*/
 	uint32_t VEEngine::getLoopCount() {
 		return m_loopCount; 
-	};
+	}
 
 
 
@@ -525,10 +526,6 @@ namespace ve {
 		std::chrono::high_resolution_clock::time_point t_prev = t_start;
 		std::chrono::high_resolution_clock::time_point t_now;
 
-		if (isRayTracing())
-		{
-			m_pRenderer->initAccelerationStructures();
-		}
 		while ( !m_end_running) {
 			m_dt = vh::vhTimeDuration( t_prev );
 			m_AvgFrameTime = vh::vhAverage( (float)m_dt, m_AvgFrameTime );

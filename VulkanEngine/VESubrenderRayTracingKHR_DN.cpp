@@ -61,11 +61,7 @@ namespace ve {
             commandBufferAllocateInfo.commandBufferCount = 1;
 
             VkCommandBuffer commandBuffer = VK_NULL_HANDLE;
-            VkResult        code = vkAllocateCommandBuffers(m_renderer.getDevice(), &commandBufferAllocateInfo, &commandBuffer);
-            if (code != VK_SUCCESS)
-            {
-                throw std::logic_error("rt descriptor sets vkAllocateCommandBuffers failed");
-            }
+            VECHECKRESULT(vkAllocateCommandBuffers(m_renderer.getDevice(), &commandBufferAllocateInfo, &commandBuffer));
 
             VkCommandBufferBeginInfo beginInfo;
             beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
@@ -84,12 +80,8 @@ namespace ve {
                     VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, 0, 0, nullptr, 1, &bmb, 0, nullptr);
             }
             //submit the command buffers
-            VkResult result = vh::vhCmdEndSingleTimeCommands(m_renderer.getDevice(), m_renderer.getGraphicsQueue(), m_renderer.getCommandPool(), commandBuffer,
-                VK_NULL_HANDLE,
-                VK_NULL_HANDLE,
-                VK_NULL_HANDLE
-            );
-            assert(result == VK_SUCCESS);
+            VECHECKRESULT(vh::vhCmdEndSingleTimeCommands(m_renderer.getDevice(), m_renderer.getGraphicsQueue(), m_renderer.getCommandPool(), commandBuffer,
+                                                         VK_NULL_HANDLE, VK_NULL_HANDLE, VK_NULL_HANDLE));
         }
 
         // Output image binding (set 2, binding 0)
@@ -97,7 +89,6 @@ namespace ve {
             { 1 },
             { VK_DESCRIPTOR_TYPE_STORAGE_IMAGE },
             { VK_SHADER_STAGE_RAYGEN_BIT_KHR },
-
             &m_descriptorSetLayoutOutput);
 
         // Acceleration Structure binding (set 3, binding 0)
@@ -129,8 +120,8 @@ namespace ve {
             &m_descriptorSetLayoutResources);
 
         // Acceleration structure and geometry are the same for all swapchains
-        vh::vhRenderCreateDescriptorSets(m_renderer.getDevice(), 1, m_descriptorSetLayoutAS, m_renderer.getDescriptorPool(), m_descriptorSetsAS);
-        vh::vhRenderCreateDescriptorSets(m_renderer.getDevice(), 1, m_descriptorSetLayoutGeometry, m_renderer.getDescriptorPool(), m_descriptorSetsGeometry);
+        vh::vhRenderCreateDescriptorSets(m_renderer.getDevice(), m_renderer.getSwapChainNumber(), m_descriptorSetLayoutAS, m_renderer.getDescriptorPool(), m_descriptorSetsAS);
+        vh::vhRenderCreateDescriptorSets(m_renderer.getDevice(), m_renderer.getSwapChainNumber(), m_descriptorSetLayoutGeometry, m_renderer.getDescriptorPool(), m_descriptorSetsGeometry);
         // Output image and UBOPerEntity changes from Swapchain to Swapchain, for each swapchain create own descriptor set
         vh::vhRenderCreateDescriptorSets(m_renderer.getDevice(), m_renderer.getSwapChainNumber(), m_descriptorSetLayoutOutput, m_renderer.getDescriptorPool(), m_descriptorSetsOutput);
         vh::vhRenderCreateDescriptorSets(m_renderer.getDevice(), m_renderer.getSwapChainNumber(), m_descriptorSetLayoutObjectUBOs, m_renderer.getDescriptorPool(), m_descriptorSetsUBOs);
@@ -146,6 +137,8 @@ namespace ve {
         */
         std::vector<VkPipelineShaderStageCreateInfo> shaderStages;
 
+        auto rgenSCode = vh::vhFileRead("media/shader/RayTracing_KHR/rgen.spv");
+        VkShaderModule rgenSModule = vh::vhPipeCreateShaderModule(m_renderer.getDevice(), rgenSCode);
         // Ray generation group
         {
             auto shaderCode = vh::vhFileRead("media/shader/RayTracing_KHR/rgen.spv");
@@ -168,15 +161,17 @@ namespace ve {
             m_shaderGroups.push_back(shaderGroup);
         }
 
+        auto missSCode = vh::vhFileRead("media/shader/RayTracing_KHR/rmiss.spv");
+        VkShaderModule missSModule = vh::vhPipeCreateShaderModule(m_renderer.getDevice(), missSCode);
+        auto missSCodeShadow = vh::vhFileRead("media/shader/RayTracing_KHR//shadow_rmiss.spv");
+        VkShaderModule missSModuleShadow = vh::vhPipeCreateShaderModule(m_renderer.getDevice(), missSCodeShadow);
         // Miss group
         {
-            auto shaderCode = vh::vhFileRead("media/shader/RayTracing_KHR/rmiss.spv");
-            VkShaderModule shaderModule = vh::vhPipeCreateShaderModule(m_renderer.getDevice(), shaderCode);
 
             VkPipelineShaderStageCreateInfo shaderStageInfo = {};
             shaderStageInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
             shaderStageInfo.stage = VK_SHADER_STAGE_MISS_BIT_KHR;
-            shaderStageInfo.module = shaderModule;
+            shaderStageInfo.module = missSModule;
             shaderStageInfo.pName = "main";
             shaderStages.push_back(shaderStageInfo);
             VkRayTracingShaderGroupCreateInfoKHR shaderGroup{};
@@ -187,29 +182,27 @@ namespace ve {
             shaderGroup.anyHitShader = VK_SHADER_UNUSED_KHR;
             shaderGroup.intersectionShader = VK_SHADER_UNUSED_KHR;
             m_shaderGroups.push_back(shaderGroup);
-            // Second shader for shadows
-            auto shaderCodeShadow = vh::vhFileRead("media/shader/RayTracing_KHR//shadow_rmiss.spv");
-            VkShaderModule shaderModuleShadow = vh::vhPipeCreateShaderModule(m_renderer.getDevice(), shaderCodeShadow);
 
+            // Second shader for shadows
             VkPipelineShaderStageCreateInfo shaderStageInfoShadow = {};
             shaderStageInfoShadow.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
             shaderStageInfoShadow.stage = VK_SHADER_STAGE_MISS_BIT_KHR;
-            shaderStageInfoShadow.module = shaderModuleShadow;
+            shaderStageInfoShadow.module = missSModuleShadow;
             shaderStageInfoShadow.pName = "main";
             shaderStages.push_back(shaderStageInfoShadow);
             shaderGroup.generalShader = static_cast<uint32_t>(shaderStages.size()) - 1;
             m_shaderGroups.push_back(shaderGroup);
         }
 
+        auto hitSCode = vh::vhFileRead("media/shader/RayTracing_KHR/rchit.spv");
+        VkShaderModule hitSModule = vh::vhPipeCreateShaderModule(m_renderer.getDevice(), hitSCode);
         // Closest hit group
         {
-            auto vertShaderCode = vh::vhFileRead("media/shader/RayTracing_KHR/rchit.spv");
-            VkShaderModule shaderModule = vh::vhPipeCreateShaderModule(m_renderer.getDevice(), vertShaderCode);
 
             VkPipelineShaderStageCreateInfo shaderStageInfo = {};
             shaderStageInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
             shaderStageInfo.stage = VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR;
-            shaderStageInfo.module = shaderModule;
+            shaderStageInfo.module = hitSModule;
             shaderStageInfo.pName = "main";
             shaderStages.push_back(shaderStageInfo);
 
@@ -232,10 +225,14 @@ namespace ve {
         rayTracingPipelineCI.pStages = shaderStages.data();
         rayTracingPipelineCI.groupCount = static_cast<uint32_t>(m_shaderGroups.size());
         rayTracingPipelineCI.pGroups = m_shaderGroups.data();
-        rayTracingPipelineCI.maxPipelineRayRecursionDepth = 2;
+        rayTracingPipelineCI.maxPipelineRayRecursionDepth = 3;
         rayTracingPipelineCI.layout = m_pipelineLayout;
         VECHECKRESULT(vkCreateRayTracingPipelinesKHR(m_renderer.getDevice(), VK_NULL_HANDLE, VK_NULL_HANDLE, 1, &rayTracingPipelineCI, nullptr, &m_pipelines[0]));
 
+        vkDestroyShaderModule(m_renderer.getDevice(), rgenSModule, nullptr);
+        vkDestroyShaderModule(m_renderer.getDevice(), missSModule, nullptr);
+        vkDestroyShaderModule(m_renderer.getDevice(), missSModuleShadow, nullptr);
+        vkDestroyShaderModule(m_renderer.getDevice(), hitSModule, nullptr);
     }
 
     // Creates a binding table of the shaders. Binding table has one ray generation shader, two miss and two (close) hit shaders.
@@ -243,35 +240,28 @@ namespace ve {
     {
         auto rayTracingPipelineProperties = m_renderer.getPhysicalDeviceRTProperties();
         const uint32_t handleSize = rayTracingPipelineProperties.shaderGroupHandleSize;
-        //const uint32_t handleSizeAligned (rayTracingPipelineProperties.shaderGroupHandleSize + rayTracingPipelineProperties.shaderGroupHandleAlignment - 1) & ~(rayTracingPipelineProperties.shaderGroupHandleAlignment - 1);
+        const uint32_t handleSizeAligned = (rayTracingPipelineProperties.shaderGroupHandleSize + rayTracingPipelineProperties.shaderGroupHandleAlignment - 1) & ~(rayTracingPipelineProperties.shaderGroupHandleAlignment - 1);
+
         const uint32_t groupCount = static_cast<uint32_t>(m_shaderGroups.size());
-        //const uint32_t sbtSize = groupCount * handleSizeAligned;
-        const uint32_t sbtSize = groupCount * handleSize;
+        const uint32_t sbtSize = groupCount * handleSizeAligned;
+        //const uint32_t sbtSize = groupCount * handleSize;
 
         std::vector<uint8_t> shaderHandleStorage(sbtSize);
         VECHECKRESULT(vkGetRayTracingShaderGroupHandlesKHR(m_renderer.getDevice(), m_pipelines[0], 0, groupCount, sbtSize, shaderHandleStorage.data()));
 
-        const VkBufferUsageFlags bufferUsageFlags = VK_BUFFER_USAGE_SHADER_BINDING_TABLE_BIT_KHR | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT;
-        // raygen shader
-        VECHECKRESULT(vh::vhBufCreateBuffer(m_renderer.getVmaAllocator(), handleSize, bufferUsageFlags, VMA_MEMORY_USAGE_GPU_TO_CPU, &m_raygenShaderBindingTable.buffer, &m_raygenShaderBindingTable.allocation));
-        // two miss shaders - normal and shadow
-        VECHECKRESULT(vh::vhBufCreateBuffer(m_renderer.getVmaAllocator(), handleSize*2, bufferUsageFlags, VMA_MEMORY_USAGE_GPU_TO_CPU, &m_missShaderBindingTable.buffer, &m_missShaderBindingTable.allocation));
-        // hit shader
-        VECHECKRESULT(vh::vhBufCreateBuffer(m_renderer.getVmaAllocator(), handleSize, bufferUsageFlags, VMA_MEMORY_USAGE_GPU_TO_CPU, &m_hitShaderBindingTable.buffer, &m_hitShaderBindingTable.allocation));
+        const VkBufferUsageFlags bufferUsageFlags = VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_SHADER_BINDING_TABLE_BIT_KHR | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT;
+        VECHECKRESULT(vh::vhBufCreateBuffer(m_renderer.getVmaAllocator(), sbtSize, bufferUsageFlags, VMA_MEMORY_USAGE_GPU_TO_CPU, &m_SBTBuffer, &m_SBTAllocation));
         
         // Copy handles
-
-        vmaMapMemory(m_renderer.getVmaAllocator(), m_raygenShaderBindingTable.allocation, &m_raygenShaderBindingTable.mapped);
-        memcpy(m_raygenShaderBindingTable.mapped, shaderHandleStorage.data(), handleSize);
-        vmaUnmapMemory(m_renderer.getVmaAllocator(), m_raygenShaderBindingTable.allocation);
-
-        vmaMapMemory(m_renderer.getVmaAllocator(), m_raygenShaderBindingTable.allocation, &m_missShaderBindingTable.mapped);
-        memcpy(m_missShaderBindingTable.mapped, shaderHandleStorage.data() + handleSize, handleSize*2);
-        vmaUnmapMemory(m_renderer.getVmaAllocator(), m_raygenShaderBindingTable.allocation);
-
-        vmaMapMemory(m_renderer.getVmaAllocator(), m_raygenShaderBindingTable.allocation, &m_hitShaderBindingTable.mapped);
-        memcpy(m_hitShaderBindingTable.mapped, shaderHandleStorage.data() + handleSize*3, handleSize);
-        vmaUnmapMemory(m_renderer.getVmaAllocator(), m_raygenShaderBindingTable.allocation);
+        void *mapped; 
+        vmaMapMemory(m_renderer.getVmaAllocator(), m_SBTAllocation, &mapped);
+        auto *pData = reinterpret_cast<uint8_t *>(mapped);
+        for (uint32_t g = 0; g < groupCount; g++)
+        {
+            memcpy(pData, shaderHandleStorage.data() + g * handleSize, handleSize);
+            pData += handleSizeAligned;
+        }
+        vmaUnmapMemory(m_renderer.getVmaAllocator(), m_SBTAllocation);
     }
 
     /**
@@ -323,8 +313,7 @@ namespace ve {
         if (m_descriptorSetLayoutResources != VK_NULL_HANDLE)
             vkDestroyDescriptorSetLayout(m_renderer.getDevice(), m_descriptorSetLayoutResources, nullptr);
 
-        vkDestroyBuffer(m_renderer.getDevice(), m_shaderBindingTableBuffer, nullptr);
-        vkFreeMemory(m_renderer.getDevice(), m_shaderBindingTableMem, nullptr);
+        vmaDestroyBuffer(m_renderer.getVmaAllocator(), m_SBTBuffer, m_SBTAllocation);
     }
 
     /**
@@ -563,22 +552,16 @@ namespace ve {
     *
     */
     void VESubrenderRayTracingKHR_DN::draw(VkCommandBuffer commandBuffer, uint32_t imageIndex,
-        uint32_t numPass,
-        VECamera *pCamera, VELight *pLight) {
+                                           uint32_t numPass,
+                                           VECamera *pCamera, VELight *pLight,
+                                           std::vector<VkDescriptorSet> descriptorSetsShadow) {
 
         if (m_entities.size() == 0) return;
-        m_idxLastRecorded = (uint32_t)m_entities.size() - 1;
-
-        if (numPass > 0 && getClass() != VE_SUBRENDERER_CLASS_OBJECT) return;
 
         vkCmdPushConstants(commandBuffer, m_pipelineLayout, VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR, 0, sizeof(m_enableShadows), &m_enableShadows);
 
         bindPipeline(commandBuffer);
-
-        setDynamicPipelineState(commandBuffer, numPass);
-
         bindDescriptorSetsPerFrame(commandBuffer, imageIndex, pCamera, pLight);
-
         bindDescriptorSetsPerEntity(commandBuffer, imageIndex, m_entities[0]);	//bind the entity's descriptor sets
         drawEntity(commandBuffer, imageIndex);
     }
@@ -627,23 +610,22 @@ namespace ve {
     */
     void VESubrenderRayTracingKHR_DN::drawEntity(VkCommandBuffer commandBuffer, uint32_t imageIndex) {
         auto rayTracingPipelineProperties = m_renderer.getPhysicalDeviceRTProperties();
-        const uint32_t handleSize = rayTracingPipelineProperties.shaderGroupHandleSize;
-        //const uint32_t handleSizeAligned (rayTracingPipelineProperties.shaderGroupHandleSize + rayTracingPipelineProperties.shaderGroupHandleAlignment - 1) & ~(rayTracingPipelineProperties.shaderGroupHandleAlignment - 1);
+        const uint32_t handleSizeAligned = (rayTracingPipelineProperties.shaderGroupHandleSize + rayTracingPipelineProperties.shaderGroupHandleAlignment - 1) & ~(rayTracingPipelineProperties.shaderGroupHandleAlignment - 1);
 
         VkStridedDeviceAddressRegionKHR raygenShaderSbtEntry{};
-        raygenShaderSbtEntry.deviceAddress = m_renderer.getBufferDeviceAddress(m_raygenShaderBindingTable.buffer);
-        raygenShaderSbtEntry.stride = handleSize;
-        raygenShaderSbtEntry.size = handleSize;
+        raygenShaderSbtEntry.deviceAddress = vh::vhGetBufferDeviceAddress(m_renderer.getDevice(), m_SBTBuffer);
+        raygenShaderSbtEntry.stride = handleSizeAligned;
+        raygenShaderSbtEntry.size = handleSizeAligned;
 
         VkStridedDeviceAddressRegionKHR missShaderSbtEntry{};
-        missShaderSbtEntry.deviceAddress = m_renderer.getBufferDeviceAddress(m_missShaderBindingTable.buffer);
-        missShaderSbtEntry.stride = handleSize;
-        missShaderSbtEntry.size = handleSize*2;
+        missShaderSbtEntry.deviceAddress = vh::vhGetBufferDeviceAddress(m_renderer.getDevice(), m_SBTBuffer) + handleSizeAligned;
+        missShaderSbtEntry.stride = handleSizeAligned;
+        missShaderSbtEntry.size = handleSizeAligned *2;
 
         VkStridedDeviceAddressRegionKHR hitShaderSbtEntry{};
-        hitShaderSbtEntry.deviceAddress = m_renderer.getBufferDeviceAddress(m_hitShaderBindingTable.buffer);
-        hitShaderSbtEntry.stride = handleSize;
-        hitShaderSbtEntry.size = handleSize;
+        hitShaderSbtEntry.deviceAddress = vh::vhGetBufferDeviceAddress(m_renderer.getDevice(), m_SBTBuffer) + handleSizeAligned*3;
+        hitShaderSbtEntry.stride = handleSizeAligned;
+        hitShaderSbtEntry.size = handleSizeAligned;
 
         VkStridedDeviceAddressRegionKHR callableShaderSbtEntry{};
 

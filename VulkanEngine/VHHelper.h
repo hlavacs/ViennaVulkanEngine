@@ -180,6 +180,36 @@ namespace vh {
 		};
 	};
 
+	// Ray tracing structures
+	struct vhRayTracingScratchBuffer
+	{
+		uint64_t deviceAddress = 0;
+		VkBuffer buffer = VK_NULL_HANDLE;
+		void *mapped = nullptr;
+		VmaAllocation allocation;
+	};
+
+
+	struct vhAccelerationStructure {
+		// Common
+		VkBuffer instancesBuffer = VK_NULL_HANDLE;
+		VkBuffer resultBuffer = VK_NULL_HANDLE;
+
+		// RayTracingKHR
+		VkAccelerationStructureKHR handleKHR = VK_NULL_HANDLE;
+		uint64_t deviceAddress = 0;
+		VkAccelerationStructureGeometryKHR geometry;
+		VkAccelerationStructureBuildRangeInfoKHR rangeInfo;
+		VmaAllocation resultBufferAllocation;
+		VmaAllocation instancesBufferAllocation;
+
+		// RayTracingNV
+		VkAccelerationStructureNV handleNV = VK_NULL_HANDLE;
+		VkBuffer scratchBuffer = VK_NULL_HANDLE;
+		VkDeviceMemory scratchMem = VK_NULL_HANDLE;
+		VkDeviceMemory resultMem = VK_NULL_HANDLE;
+		VkDeviceMemory instancesMem = VK_NULL_HANDLE;
+	};
 
 	//--------------------------------------------------------------------------------------------------------------------------------
 	//declaration of all helper functions
@@ -387,6 +417,48 @@ namespace vh {
 	VkResult vhMemBlockRemoveEntry(vhMemoryHandle *pHandle);
 	VkResult vhMemBlockListClear( std::vector<vhMemoryBlock*> &blocklist);
 	VkResult vhMemBlockDeallocate(vhMemoryBlock *pBlock);
+
+	//--------------------------------------------------------------------------------------------------------------------------------
+	//ray tracing
+	vhRayTracingScratchBuffer vhCreateScratchBuffer(VkDevice device, VmaAllocator vmaAllocator, VkDeviceSize size);
+	void                      vhDeleteScratchBuffer(VmaAllocator vmaAllocator, vhRayTracingScratchBuffer &scratchBuffer);
+	uint64_t                  vhGetBufferDeviceAddress(VkDevice device, VkBuffer buffer);
+
+	VkResult vhCreateAccelerationStructureKHR(VmaAllocator vmaAllocator, vhAccelerationStructure &accelerationStructure, VkAccelerationStructureBuildSizesInfoKHR buildSizeInfo);
+
+	void     vhDestroyAccelerationStructure(VkDevice device, VmaAllocator vmaAllocator, vhAccelerationStructure &as);
+
+	VkResult vhCreateBottomLevelAccelerationStructureKHR(VkDevice device, VmaAllocator vmaAllocator, VkCommandPool commandPool,
+		                                                 VkQueue graphicsQueue, vhAccelerationStructure &blas,
+		                                                 const VkBuffer vertexBuffer, uint32_t vertexCount,
+		                                                 const VkBuffer indexBuffer, uint32_t indexCount,
+		                                                 const VkBuffer transformBuffer, uint32_t transformOffset);
+	VkResult vhUpdateBottomLevelAccelerationStructureKHR(VkDevice device, VmaAllocator vmaAllocator, VkCommandPool commandPool,
+		                                                 VkQueue graphicsQueue, vhAccelerationStructure &blas,
+		                                                 const VkBuffer vertexBuffer, uint32_t vertexCount,
+		                                                 const VkBuffer indexBuffer, uint32_t indexCount,
+		                                                 const VkBuffer transformBuffer, uint32_t transformOffset);
+	VkResult vhCreateTopLevelAccelerationStructureKHR(VkDevice device, VmaAllocator vmaAllocator, VkCommandPool commandPool, VkQueue graphicsQueue,
+		                                              std::vector<vhAccelerationStructure> &blas, vhAccelerationStructure &tlas);
+	VkResult vhUpdateTopLevelAccelerationStructureKHR(VkDevice device, VmaAllocator vmaAllocator, VkCommandPool commandPool, VkQueue graphicsQueue,
+		                                              std::vector<vhAccelerationStructure> &blas, vhAccelerationStructure &tlas);
+
+	VkResult vhCreateBottomLevelAccelerationStructureNV(VkPhysicalDevice physicalDevice, VkDevice device, VmaAllocator vmaAllocator, VkCommandPool commandPool,
+		                                                VkQueue graphicsQueue, vhAccelerationStructure &blas,
+		                                                const VkBuffer vertexBuffer, uint32_t vertexCount,
+		                                                const VkBuffer indexBuffer, uint32_t indexCount,
+		                                                const VkBuffer transformBuffer, uint32_t transformOffset);
+	VkResult vhUpdateBottomLevelAccelerationStructureNV(VkDevice device, VmaAllocator vmaAllocator, VkCommandPool commandPool,
+		                                                VkQueue graphicsQueue, vhAccelerationStructure &blas,
+		                                                const VkBuffer vertexBuffer, uint32_t vertexCount,
+		                                                const VkBuffer indexBuffer, uint32_t indexCount,
+		                                                const VkBuffer transformBuffer, uint32_t transformOffset);
+	VkResult vhCreateTopLevelAccelerationStructureNV(VkPhysicalDevice physicalDevice, VkDevice device, VmaAllocator vmaAllocator,
+		                                             VkCommandPool commandPool, VkQueue graphicsQueue,
+		                                             std::vector<vhAccelerationStructure> &blas, vhAccelerationStructure &tlas);
+	VkResult vhUpdateTopLevelAccelerationStructureNV(VkDevice device, VmaAllocator vmaAllocator,
+		                                             VkCommandPool commandPool, VkQueue graphicsQueue,
+		                                             std::vector<vhAccelerationStructure> &blas, vhAccelerationStructure &tlas);
 
 
 	//--------------------------------------------------------------------------------------------------------------------------------
