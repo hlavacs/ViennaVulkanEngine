@@ -307,7 +307,7 @@ namespace ve {
 						for (uint32_t j = 0; j < m_maps.size(); j++) {
 							m_maps[j].resize(m_entities.size());				//remove map entries
 						}
-						m_descriptorSetsResources.resize(m_entities.size());	//remove descriptor sets
+						m_descriptorSetsResources.resize(m_entities.size() / m_resourceArrayLength);	//remove descriptor sets
 					}
 				}
 				else {
