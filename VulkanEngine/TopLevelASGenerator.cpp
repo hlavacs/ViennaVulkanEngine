@@ -201,28 +201,30 @@ void TopLevelASGenerator::Generate(
   std::vector<VkGeometryInstance> geometryInstances;
   for(const auto& inst : m_instances)
   {
-    uint64_t accelerationStructureHandle = 0;
-    VkResult code = vkGetAccelerationStructureHandleNV(device, inst.bottomLevelAS, sizeof(uint64_t),
-                                                       &accelerationStructureHandle);
-    if(code != VK_SUCCESS)
-    {
-      throw std::logic_error("vkGetAccelerationStructureHandleNV failed");
-    }
+      if (!inst.bottomLevelAS)
+          continue;
+      uint64_t accelerationStructureHandle = 0;
+      VkResult code = vkGetAccelerationStructureHandleNV(device, inst.bottomLevelAS, sizeof(uint64_t),
+                                                        &accelerationStructureHandle);
+      if(code != VK_SUCCESS)
+      {
+          throw std::logic_error("vkGetAccelerationStructureHandleNV failed");
+      }
 
-    VkGeometryInstance gInst;
-    glm::mat4x4        transp = glm::transpose(inst.transform);
-    memcpy(gInst.transform, &transp, sizeof(gInst.transform));
-    gInst.instanceId = inst.instanceID;
-    // The visibility mask is always set of 0xFF, but if some instances would need to be ignored in
-    // some cases, this flag should be passed by the application
-    gInst.mask = 0xff;
-    // Set the hit group index, that will be used to find the shader code to execute when hitting
-    // the geometry
-    gInst.instanceOffset = inst.hitGroupIndex;
-    // Disable culling - more fine control could be provided by the application
-    gInst.flags                       = VK_GEOMETRY_INSTANCE_TRIANGLE_CULL_DISABLE_BIT_NV;
-    gInst.accelerationStructureHandle = accelerationStructureHandle;
-    geometryInstances.push_back(gInst);
+      VkGeometryInstance gInst;
+      glm::mat4x4        transp = glm::transpose(inst.transform);
+      memcpy(gInst.transform, &transp, sizeof(gInst.transform));
+      gInst.instanceId = inst.instanceID;
+      // The visibility mask is always set of 0xFF, but if some instances would need to be ignored in
+      // some cases, this flag should be passed by the application
+      gInst.mask = 0xff;
+      // Set the hit group index, that will be used to find the shader code to execute when hitting
+      // the geometry
+      gInst.instanceOffset = inst.hitGroupIndex;
+      // Disable culling - more fine control could be provided by the application
+      gInst.flags                       = VK_GEOMETRY_INSTANCE_TRIANGLE_CULL_DISABLE_BIT_NV;
+      gInst.accelerationStructureHandle = accelerationStructureHandle;
+      geometryInstances.push_back(gInst);
   }
 
   // Copy the instance descriptors into the provided mappable buffer

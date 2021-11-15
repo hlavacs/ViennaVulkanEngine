@@ -6,6 +6,8 @@
 
 #define NUM_SHADOW_CASCADE 6
 
+#define RESOURCEARRAYLENGTH 16
+
 #define LIGHT_DIR 0
 #define LIGHT_POINT 1
 #define LIGHT_SPOT 2

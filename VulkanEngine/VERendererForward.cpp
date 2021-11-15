@@ -676,7 +676,7 @@ namespace ve {
 
 		vkEndCommandBuffer(m_commandBuffers[m_imageIndex]);
 
-		m_overlaySemaphores[m_currentFrame] = m_renderFinishedSemaphores[m_currentFrame];
+		//m_overlaySemaphores[m_currentFrame] = m_renderFinishedSemaphores[m_currentFrame];
 
 	}
 

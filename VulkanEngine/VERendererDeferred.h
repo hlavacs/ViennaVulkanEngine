@@ -33,8 +33,10 @@ namespace ve {
 		std::vector<VkCommandPool>		m_commandPools = {};				///<Array of command pools so that each thread in the thread pool has its own pool
 		std::vector<VkCommandBuffer>	m_commandBuffersOffscreen = {};		///<the main command buffers for recording draw commands
 		std::vector<VkCommandBuffer>	m_commandBuffersOnscreen = {};		///<the main command buffers for recording draw commands
-		std::vector<std::vector<std::future<secondaryCmdBuf_t>> > m_secondaryBuffersFutures = {};	///<secondary buffers for parallel recording
-		std::vector<std::vector<secondaryCmdBuf_t>> m_secondaryBuffers = {};	///<secondary buffers for parallel recording
+		std::vector<std::vector<std::future<secondaryCmdBuf_t>> > m_secondaryBuffersOffscreenFutures = {};	///<secondary buffers for parallel recording
+		std::vector<std::vector<secondaryCmdBuf_t>> m_secondaryBuffersOffscreen = {};	///<secondary buffers for parallel recording
+		std::vector<std::vector<std::future<secondaryCmdBuf_t>> > m_secondaryBuffersOnscreenFutures = {};	///<secondary buffers for parallel recording
+		std::vector<std::vector<secondaryCmdBuf_t>> m_secondaryBuffersOnscreen = {};	///<secondary buffers for parallel recording
 
 		std::map<VELight *, lightBufferLists_t> m_lightBufferLists;		///<each light has its own command buffer list, one for each image in the swap chain
 
@@ -77,7 +79,8 @@ namespace ve {
 		virtual void initRenderer();						//init the renderer
 		virtual void createSubrenderers();					//create the subrenderers
 		virtual void destroySubrenderers() override;
-		virtual void recordCmdBuffers();			        //record the command buffers
+		virtual void recordCmdBuffersOffscreen();			        //record the command buffers
+		virtual void recordCmdBuffersOnscreen();			        //record the command buffers
 
 		virtual void drawFrame();							//draw one frame
         virtual void prepareOverlay();				        //prepare to draw the overlay
@@ -92,10 +95,6 @@ namespace ve {
 													VECamera *pCamera, VELight *pLight,
 													std::vector<VkDescriptorSet> descriptorSetsShadow);
 	public:
-		float m_AvgCmdShadowTime = 0.0f;			///<Average time for recording shadow maps
-		float m_AvgCmdGBufferTime = 0.0f;				///<Average time for recording light pass
-		float m_AvgCmdLightTime = 0.0f;				///<Average time for recording light pass
-		float m_AvgRecordTime = 0.0f;				///<Average recording time of one command buffer
 
 		///Constructor
 		VERendererDeferred();

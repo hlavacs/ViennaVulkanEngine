@@ -4,8 +4,6 @@
 #extension GL_ARB_shading_language_420pack : enable
 #extension GL_EXT_nonuniform_qualifier : enable
 
-#define RESOURCEARRAYLENGTH 16
-
 #include "../../common_defines.glsl"
 #include "../../light.glsl"
 

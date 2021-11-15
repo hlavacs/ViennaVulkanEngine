@@ -4,10 +4,12 @@
 #extension GL_GOOGLE_include_directive : enable
 #extension GL_EXT_scalar_block_layout : enable
 
-#define RESOURCEARRAYLENGTH 16
-
 #include "../common_defines.glsl"
 #include "../light.glsl"
+
+// override number of resources
+#undef RESOURCEARRAYLENGTH
+#define RESOURCEARRAYLENGTH 256
 
 layout(location = 0) rayPayloadInEXT hitPayload prd;
 layout(location = 1) rayPayloadEXT bool isShadowed;
@@ -109,7 +111,7 @@ void main()
 	vec2 fragTexCoord	= (v0.texCoord * barycentrics.x + v1.texCoord * barycentrics.y + v2.texCoord * barycentrics.z);
 
 	int  lightType  = lightUBO.data.itype[0];
-	vec3 camPosW    = cameraUBO.data.camModel[3].xyz;
+	vec3 camPosW    = prd.rayDir;
 	vec3 lightPosW  = lightUBO.data.lightModel[3].xyz;
 	vec3 lightDirW  = normalize( lightUBO.data.lightModel[2].xyz );
 	float nfac      = dot( fragNormalW, -lightDirW)<0? 0.5:1;
@@ -126,10 +128,11 @@ void main()
 	vec3 B        = normalize( cross( T, N ) );
 	mat3 TBN      = mat3(T,B,N);
 	vec3 mapnorm  = normalize( texture(normalSamplerArray[resIdx], texCoord).xyz*2.0 - 1.0 );
-	vec3 normalW  = normalize( TBN * mapnorm );
+	vec3 normalW  = iparam.y == 1?normalize( TBN * mapnorm ):fragNormalW;
 	vec3 fragColor = texture(texSamplerArray[resIdx], texCoord).xyz;
 
 	isShadowed = true;
+
 
 	if(pushConsts.shadowEnabled && lightType != LIGHT_AMBIENT) {
 		float tmin = 0.001;
@@ -158,7 +161,7 @@ void main()
 				tmax,        // ray max range
 				1            // payload (location = 1)
 		);
-    }
+        }
 	else
 	{
 		isShadowed = false;
@@ -201,17 +204,19 @@ void main()
 
 	if(prd.depth < 1)
 	{
-	    prd.attenuation *= 0.2;
+	    prd.attenuation *= 0.1;
 	    prd.depth++;
+	    prd.rayOrigin = gl_WorldRayOriginEXT + gl_WorldRayDirectionEXT * gl_HitTEXT;
+	    prd.rayDir = reflect(prd.rayDir,fragNormalW);
         traceRayEXT(topLevelAS,         // acceleration structure
                 gl_RayFlagsNoneEXT,  // rayFlags
                 0xFF,               // cullMask
                 0,                  // sbtRecordOffset
                 0,                  // sbtRecordStride
                 0,                  // missIndex
-                fragPosW,           // ray origin
+                prd.rayOrigin,      // ray origin
                 0.1,                // ray min range
-                reflect(gl_WorldRayDirectionEXT, normalW), // ray direction
+                prd.rayDir,         // ray direction
                 1000.0,             // ray max range
                 0                   // payload (location = 0)
         );

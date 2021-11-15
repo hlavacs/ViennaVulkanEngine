@@ -201,7 +201,7 @@ namespace ve {
 			glm::mat4 modelInvTrans;	///<Inverse transpose
 			glm::vec4 color;			///<Uniform color if needed by shader
 			glm::vec4 param;			///<Texture scaling and animation: 0,1..scale 2,3...offset
-			glm::ivec4 iparam;			///<iparam[0] is the resource idx
+			glm::ivec4 iparam;			///<iparam[0] is the resource idx, iparam[1] shows if normal map exists
 			glm::vec4 a;		        ///<paddding to ensure that struct has size 256
 		};
 

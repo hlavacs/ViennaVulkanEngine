@@ -466,6 +466,8 @@ namespace ve {
 		ubo.iparam[0] = m_resourceIdx;		//make sure the shader uses the right maps in the array of maps
 		if (m_pMaterial != nullptr) {
 			ubo.color = m_pMaterial->color;
+			if (m_pMaterial->mapNormal != nullptr)
+				ubo.iparam[1] = 1;
 		};
 
 		VESceneObject::updateUBO((void*)&ubo, (uint32_t)sizeof(veUBOPerEntity_t), imageIndex);
@@ -504,7 +506,7 @@ namespace ve {
 					vh::vhUpdateBottomLevelAccelerationStructureKHR(renderer->getDevice(), renderer->getVmaAllocator(), renderer->getCommandPool(), renderer->getGraphicsQueue(), m_AccelerationStructure,
 						m_pMesh->m_vertexBuffer, m_pMesh->m_vertexCount,
 						m_pMesh->m_indexBuffer, m_pMesh->m_indexCount,
-						m_memoryHandle.pMemBlock->buffers[0], transformOffset);
+			     		m_memoryHandle.pMemBlock->buffers[0], transformOffset);
 				}
 			}
 		}

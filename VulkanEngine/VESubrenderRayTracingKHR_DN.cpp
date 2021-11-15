@@ -141,13 +141,10 @@ namespace ve {
         VkShaderModule rgenSModule = vh::vhPipeCreateShaderModule(m_renderer.getDevice(), rgenSCode);
         // Ray generation group
         {
-            auto shaderCode = vh::vhFileRead("media/shader/RayTracing_KHR/rgen.spv");
-            VkShaderModule shaderModule = vh::vhPipeCreateShaderModule(m_renderer.getDevice(), shaderCode);
-
             VkPipelineShaderStageCreateInfo shaderStageInfo = {};
             shaderStageInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
             shaderStageInfo.stage = VK_SHADER_STAGE_RAYGEN_BIT_KHR;
-            shaderStageInfo.module = shaderModule;
+            shaderStageInfo.module = rgenSModule;
             shaderStageInfo.pName = "main";
             shaderStages.push_back(shaderStageInfo);
 

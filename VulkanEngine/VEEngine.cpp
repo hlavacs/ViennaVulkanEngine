@@ -45,7 +45,7 @@ namespace ve {
 		createRenderer();					//create a renderer
 		createSceneManager();				//create a scene manager
 		createWindow();						//create a window
-		m_pWindow->initWindow(1280, 720);	//inittialize the window
+		m_pWindow->initWindow(1920, 1080);	//inittialize the window
 
 		m_threadPool = new ThreadPool(0); //worker threads
 
@@ -636,25 +636,6 @@ namespace ve {
 
 		VELight *light4 = (VESpotLight *)getSceneManagerPointer()->createLight("StandardAmbientLight", VELight::VE_LIGHT_TYPE_AMBIENT, camera);
 		light4->m_col_ambient = glm::vec4(0.3f, 0.3f, 0.3f, 1.0f);
-
-		//use one light source
-		VELight *light1 = (VEDirectionalLight *)getSceneManagerPointer()->createLight("StandardDirLight", VELight::VE_LIGHT_TYPE_DIRECTIONAL, getRoot());     //new VEDirectionalLight("StandardDirLight");
-		light1->lookAt(glm::vec3(0.0f, 20.0f, -20.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
-		light1->m_col_diffuse = glm::vec4(0.9f, 0.9f, 0.9f, 1.0f);
-		light1->m_col_specular = glm::vec4(0.4f, 0.4f, 0.4f, 1.0f);
-
-		VELight *light3 = (VEPointLight *)getSceneManagerPointer()->createLight("StandardPointLight", VELight::VE_LIGHT_TYPE_POINT, camera); //new VEPointLight("StandardPointLight");		//sphere is attached to this!
-		light3->m_col_diffuse = glm::vec4(0.99f, 0.99f, 0.6f, 1.0f);
-		light3->m_col_specular = glm::vec4(0.0f, 0.0f, 0.0f, 1.0f);
-		light3->m_param[0] = 200.0f;
-		light3->multiplyTransform(glm::translate(glm::vec3(0.0f, 5.0f, 5.0f)));
-/*
-		VELight *light2 = (VESpotLight *)getSceneManagerPointer()->createLight("StandardSpotLight", VELight::VE_LIGHT_TYPE_SPOT, camera);
-		light2->m_col_diffuse = glm::vec4(0.99f, 0.6f, 0.6f, 1.0f);
-		light2->m_col_specular = glm::vec4(0.0f, 0.0f, 0.0f, 1.0f);
-		light2->m_param[0] = 200.0f;
-		light2->multiplyTransform(glm::translate(glm::vec3(5.0f, 0.0f, 0.0f)));
-*/
 
 		registerEventListeners();
 	}

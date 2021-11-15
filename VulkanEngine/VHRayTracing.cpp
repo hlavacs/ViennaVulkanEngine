@@ -7,15 +7,10 @@
 
 #include "VHHelper.h"
 
+//NV helpers
 #include "VKHelpers.h"
-#include "BottomLevelASGenerator.h"
-#include "TopLevelASGenerator.h"
 
 namespace vh {
-
-    static nv_helpers_vk::TopLevelASGenerator TopLevelASGenerator;
-    static nv_helpers_vk::BottomLevelASGenerator BottomLevelASGenerator;
-
     /*
     Create a scratch buffer to hold temporary data for a ray tracing acceleration structure
     */
@@ -571,14 +566,14 @@ namespace vh {
         beginInfo.pInheritanceInfo = nullptr;
         vkBeginCommandBuffer(commandBuffer, &beginInfo);
 
-        BottomLevelASGenerator.AddVertexBuffer(vertexBuffer, 0, vertexCount, sizeof(vh::vhVertex),
+        blas.blasGenerator.AddVertexBuffer(vertexBuffer, 0, vertexCount, sizeof(vh::vhVertex),
                                                indexBuffer, 0, indexCount,
                                                transformBuffer, transformOffset);
         
         
         // Once the overall size of the geometry is known, we can create the handle
         // for the acceleration structure
-        blas.handleNV = BottomLevelASGenerator.CreateAccelerationStructure(device, VK_TRUE);
+        blas.handleNV = blas.blasGenerator.CreateAccelerationStructure(device, VK_TRUE);
 
         // The AS build requires some scratch space to store temporary information.
         // The amount of scratch memory is dependent on the scene complexity.
@@ -586,7 +581,7 @@ namespace vh {
         // The final AS also needs to be stored in addition to the existing vertex
         // buffers. It size is also dependent on the scene complexity.
         VkDeviceSize resultSizeInBytes = 0;
-        BottomLevelASGenerator.ComputeASBufferSizes(device, blas.handleNV, &scratchSizeInBytes, &resultSizeInBytes);
+        blas.blasGenerator.ComputeASBufferSizes(device, blas.handleNV, &scratchSizeInBytes, &resultSizeInBytes);
 
         // Once the sizes are obtained, the application is responsible for allocating
         // the necessary buffers. Since the entire generation will be done on the GPU,
@@ -602,7 +597,7 @@ namespace vh {
         // Build the acceleration structure. Note that this call integrates a barrier
         // on the generated AS, so that it can be used to compute a top-level AS right
         // after this method.
-        BottomLevelASGenerator.Generate(device, commandBuffer, blas.handleNV, blas.scratchBuffer,
+        blas.blasGenerator.Generate(device, commandBuffer, blas.handleNV, blas.scratchBuffer,
                                         0, blas.resultBuffer, blas.resultMem, false, VK_NULL_HANDLE);
 
 
@@ -631,8 +626,8 @@ namespace vh {
         beginInfo.pInheritanceInfo = nullptr;
         vkBeginCommandBuffer(commandBuffer, &beginInfo);
 
-        BottomLevelASGenerator.Generate(device, commandBuffer, blas.handleNV, blas.scratchBuffer,
-            0, blas.resultBuffer, blas.resultMem, true, blas.handleNV);
+        blas.blasGenerator.Generate(device, commandBuffer, blas.handleNV, blas.scratchBuffer,
+                                        0, blas.resultBuffer, blas.resultMem, true, blas.handleNV);
 
         return vh::vhCmdEndSingleTimeCommands(device, graphicsQueue, commandPool, commandBuffer,
             VK_NULL_HANDLE, VK_NULL_HANDLE, VK_NULL_HANDLE);
@@ -666,11 +661,11 @@ namespace vh {
             // For each instance we set its instance index to its index i in the instance vector, and set
             // its hit group index to 0. The hit group index defines which entry of the shader binding
             // table will contain the hit group to be executed when hitting this instance.
-            TopLevelASGenerator.AddInstance(blas[i].handleNV, transformMatrix, static_cast<uint32_t>(i), static_cast<uint32_t>(0));
+            tlas.tlasGenerator.AddInstance(blas[i].handleNV, transformMatrix, static_cast<uint32_t>(i), static_cast<uint32_t>(0));
         }
 
         // Once all instances have been added, we can create the handle for the TLAS
-        tlas.handleNV = TopLevelASGenerator.CreateAccelerationStructure(device, VK_TRUE);
+        tlas.handleNV = tlas.tlasGenerator.CreateAccelerationStructure(device, VK_TRUE);
 
 
         // As for the bottom-level AS, the building the AS requires some scratch
@@ -680,7 +675,7 @@ namespace vh {
         // results, instance descriptors) so that the application can allocate the
         // corresponding memory
         VkDeviceSize scratchSizeInBytes, resultSizeInBytes, instanceDescsSizeInBytes;
-        TopLevelASGenerator.ComputeASBufferSizes(device, tlas.handleNV, &scratchSizeInBytes,
+        tlas.tlasGenerator.ComputeASBufferSizes(device, tlas.handleNV, &scratchSizeInBytes,
                                                    &resultSizeInBytes, &instanceDescsSizeInBytes);
 
         // Create the scratch and result buffers. Since the build is all done on
@@ -701,10 +696,10 @@ namespace vh {
                                     &tlas.instancesBuffer, &tlas.instancesMem,
                                     VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
 
-        TopLevelASGenerator.Generate(device, commandBuffer, tlas.handleNV, 
-                                     tlas.scratchBuffer, 0, tlas.resultBuffer,
-                                     tlas.resultMem, tlas.instancesBuffer,
-                                     tlas.instancesMem, true, VK_NULL_HANDLE);
+        tlas.tlasGenerator.Generate(device, commandBuffer, tlas.handleNV,
+            tlas.scratchBuffer, 0, tlas.resultBuffer,
+            tlas.resultMem, tlas.instancesBuffer,
+            tlas.instancesMem, false , VK_NULL_HANDLE);
 
         return vh::vhCmdEndSingleTimeCommands(device, graphicsQueue, commandPool, commandBuffer,
                                               VK_NULL_HANDLE, VK_NULL_HANDLE, VK_NULL_HANDLE);
@@ -730,12 +725,12 @@ namespace vh {
         beginInfo.pInheritanceInfo = nullptr;
         vkBeginCommandBuffer(commandBuffer, &beginInfo);
 
-        TopLevelASGenerator.Generate(device, commandBuffer, tlas.handleNV,
-                                       tlas.scratchBuffer, 0, tlas.resultBuffer,
-                                       tlas.resultMem, tlas.instancesBuffer,
-                                       tlas.instancesMem, true, tlas.handleNV);
+        tlas.tlasGenerator.Generate(device, commandBuffer, tlas.handleNV,
+                                     tlas.scratchBuffer, 0, tlas.resultBuffer,
+                                     tlas.resultMem, tlas.instancesBuffer,
+                                     tlas.instancesMem, true, tlas.handleNV);
 
         return vh::vhCmdEndSingleTimeCommands(device, graphicsQueue, commandPool, commandBuffer,
-            VK_NULL_HANDLE, VK_NULL_HANDLE, VK_NULL_HANDLE);
+                                              VK_NULL_HANDLE, VK_NULL_HANDLE, VK_NULL_HANDLE);
     }
 }

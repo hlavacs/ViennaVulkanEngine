@@ -96,7 +96,7 @@ namespace ve {
         m_depthMap->m_format = vh::vhDevFindDepthFormat(m_physicalDevice);
         m_depthMap->m_extent = m_swapChainExtent;
 
-        vh::vhRenderCreateRenderPass(m_device, m_swapChainImageFormat, m_depthMap->m_format, VK_ATTACHMENT_LOAD_OP_CLEAR, &m_renderPass);
+        vh::vhRenderCreateRenderPassRayTracing(m_device, m_swapChainImageFormat, m_depthMap->m_format, &m_renderPass);
         
         //depth map for light pass
         vh::vhBufCreateDepthResources(m_device, m_vmaAllocator, m_graphicsQueue, m_commandPool,
@@ -162,7 +162,7 @@ namespace ve {
     */
     void VERendererRayTracingKHR::createSubrenderers() {
         addSubrenderer(new VESubrenderRayTracingKHR_DN(*this));
-        //addSubrenderer(new VESubrender_Nuklear(*this));
+        addSubrenderer(new VESubrender_Nuklear(*this));
     }
 
     /**
@@ -382,7 +382,6 @@ namespace ve {
         vh::vhCmdCreateCommandBuffers(m_device, m_commandPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY, 1, &m_commandBuffers[m_imageIndex]);
 
         vh::vhCmdBeginCommandBuffer(m_device, m_commandBuffers[m_imageIndex], (VkCommandBufferUsageFlagBits)0);
-
         uint32_t bufferIdx = 0;
         VkClearColorValue clearColor = { 0.0f, 0.0f, 0.0f, 1.0f };
         VkImageSubresourceRange imageRange = {};
@@ -432,28 +431,9 @@ namespace ve {
             exit(1);
         }
 
-        if (!m_topLevelAS.handleKHR)
-        {
-            initAccelerationStructures();
-        }
-
-
-        // update tlas, if at least one blas is dirty
-        bool updateTLAS = false;
-        std::vector<vh::vhAccelerationStructure> blas;
-        for (auto &entity : m_subrenderRT->getEntities())
-        {
-            blas.push_back(entity->m_AccelerationStructure);
-            if (entity->m_ASDirty)
-            {
-                entity->m_ASDirty = false;
-                updateTLAS = true;
-            }
-        }
-        if(updateTLAS)
-        {
-            vh::vhUpdateTopLevelAccelerationStructureKHR(m_device, m_vmaAllocator, m_commandPool, m_graphicsQueue, blas, m_topLevelAS);
-        }
+        //create tlas if not existing
+        //update tlas, if at least one blas is dirty
+        updateTLAS();
 
         if (m_commandBuffers[m_imageIndex] == VK_NULL_HANDLE)
         {
@@ -461,7 +441,7 @@ namespace ve {
         }
 
         vh::vhBufTransitionImageLayout(m_device, m_graphicsQueue, m_commandPool,				//transition the image layout to 
-            getSwapChainImage(), VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_ASPECT_COLOR_BIT, 1, 1,		//VK_IMAGE_LAYOUT_GENERAL
+            getSwapChainImage(), VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_ASPECT_COLOR_BIT, 1, 1,		//VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL
             VK_IMAGE_LAYOUT_PRESENT_SRC_KHR, VK_IMAGE_LAYOUT_GENERAL);
 
         //submit the command buffers
@@ -518,21 +498,31 @@ namespace ve {
         m_currentFrame = (m_currentFrame + 1) % MAX_FRAMES_IN_FLIGHT;		//count up the current frame number
     }
 
-    // this function will be called as the first step in engine run() method if m_ray_tracing engine flag is enabled
-    // it creates Bottom and Top level acceleration structures and bind descriptor sets with surenderer ressources, such as
-    // output image, acceleration structure, vertex and index buffers and entity UBOs
-    void VERendererRayTracingKHR::initAccelerationStructures()
+    void VERendererRayTracingKHR::updateTLAS()
     {
+        bool updateTLAS = false;
         if (m_subrenderRT->getEntities().size())
         {
             std::vector<vh::vhAccelerationStructure> blas;
             for (auto &entity : m_subrenderRT->getEntities())
             {
                 blas.push_back(entity->m_AccelerationStructure);
+                if (entity->m_ASDirty)
+                {
+                    entity->m_ASDirty = false;
+                    updateTLAS = true;
+                }
             }
-            // each entity will create blas, in this step we need to create tlas, which will contain all objects
-            vh::vhCreateTopLevelAccelerationStructureKHR(m_device, m_vmaAllocator, m_commandPool, m_graphicsQueue, blas, m_topLevelAS);
-            m_subrenderRT->UpdateRTDescriptorSets();
+            if (!m_topLevelAS.handleKHR)
+            {
+                // each entity will create blas, in this step we need to create tlas, which will contain all objects
+                vh::vhCreateTopLevelAccelerationStructureKHR(m_device, m_vmaAllocator, m_commandPool, m_graphicsQueue, blas, m_topLevelAS);
+                m_subrenderRT->UpdateRTDescriptorSets();
+            }
+            else if (updateTLAS)
+            {
+                vh::vhUpdateTopLevelAccelerationStructureKHR(m_device, m_vmaAllocator, m_commandPool, m_graphicsQueue, blas, m_topLevelAS);
+            }
         }
     }
 

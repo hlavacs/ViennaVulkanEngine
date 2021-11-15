@@ -35,10 +35,6 @@ namespace ve {
 			};
 		};
 
-		float m_AvgCmdShadowTime = 0.0f;			///<Average time for recording shadow maps
-		float m_AvgCmdLightTime = 0.0f;				///<Average time for recording light pass
-		float m_AvgRecordTime = 0.0f;				///<Average recording time of one command buffer
-
 		VERendererRayTracingKHR();
 
 		virtual void addEntityToSubrenderer(VEEntity *pEntity) override;
@@ -53,7 +49,7 @@ namespace ve {
 
 		virtual void createSubrenderers();			//create the subrenderers
 		
-		virtual void initAccelerationStructures();
+		virtual void updateTLAS();
 
 		virtual void createSyncObjects();			//create the sync objects
 		virtual void cleanupSwapChain();			//delete the swapchain

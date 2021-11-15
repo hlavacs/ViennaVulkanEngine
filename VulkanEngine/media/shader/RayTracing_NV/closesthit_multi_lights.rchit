@@ -4,8 +4,6 @@
 #extension GL_GOOGLE_include_directive : enable
 #extension GL_EXT_scalar_block_layout : enable
 
-#define RESOURCEARRAYLENGTH 16
-
 #include "../common_defines.glsl"
 #include "../light.glsl"
 

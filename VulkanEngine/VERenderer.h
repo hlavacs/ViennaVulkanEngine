@@ -110,6 +110,10 @@ namespace ve {
 		virtual void recreateSwapchain() {};
 
 	public:
+		float m_AvgCmdShadowTime = 0.0f;			///<Average time for recording shadow maps
+		float m_AvgCmdLightTime = 0.0f;				///<Average time for recording light pass
+		float m_AvgCmdGBufferTime = 0.0f;			///<Average time for recording light pass
+		float m_AvgRecordTime = 0.0f;				///<Average recording time of one command buffer
 		///Constructor
 		VERenderer();
 		///Destructor

@@ -59,6 +59,10 @@
 
 #include <irrKlang.h>
 
+//NV helpers
+#include "BottomLevelASGenerator.h"
+#include "TopLevelASGenerator.h"
+
 namespace vh {
 
 	//--------------------------------------------------------------------------------------------------------------------------------
@@ -209,6 +213,10 @@ namespace vh {
 		VkDeviceMemory scratchMem = VK_NULL_HANDLE;
 		VkDeviceMemory resultMem = VK_NULL_HANDLE;
 		VkDeviceMemory instancesMem = VK_NULL_HANDLE;
+
+		// NV helpers
+		nv_helpers_vk::BottomLevelASGenerator blasGenerator = {};
+		nv_helpers_vk::TopLevelASGenerator tlasGenerator = {};
 	};
 
 	//--------------------------------------------------------------------------------------------------------------------------------
@@ -328,6 +336,7 @@ namespace vh {
 	VkResult vhRenderCreateRenderPass( VkDevice device, VkFormat swapChainImageFormat, VkFormat depthFormat, VkAttachmentLoadOp loadOp, VkRenderPass *renderPass);
 	VkResult vhRenderCreateRenderPassOffscreen(VkDevice device, VkFormat depthFormat, VkAttachmentLoadOp loadOp, VkRenderPass *renderPass);
 	VkResult vhRenderCreateRenderPassOnscreen(VkDevice device, VkFormat swapChainImageFormat, VkFormat depthFormat, VkAttachmentLoadOp loadOp, VkRenderPass *renderPass);
+	VkResult vhRenderCreateRenderPassRayTracing(VkDevice device, VkFormat swapChainImageFormat, VkFormat depthFormat, VkRenderPass *renderPass);
 	VkResult vhRenderCreateRenderPassShadow( VkDevice device, VkFormat depthFormat, VkRenderPass *renderPass);
 
 	VkResult vhRenderCreateDescriptorSetLayout(	VkDevice device, std::vector<uint32_t> counts, std::vector<VkDescriptorType> types,
