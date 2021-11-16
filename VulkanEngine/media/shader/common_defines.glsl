@@ -63,3 +63,10 @@ struct hitPayload
     vec3 rayOrigin;
     vec3 rayDir;
 };
+
+
+struct RTPushConstants_t
+{
+	bool shadowEnabled;
+	bool reflectionsEnabled;
+};

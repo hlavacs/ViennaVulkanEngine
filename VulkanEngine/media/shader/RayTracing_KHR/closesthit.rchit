@@ -16,7 +16,7 @@ layout(location = 1) rayPayloadEXT bool isShadowed;
 hitAttributeEXT vec3 attribs;
 
 layout(push_constant) uniform PushConsts {
-	bool shadowEnabled;
+    RTPushConstants_t data;
 } pushConsts;
 
 layout(set = 0, binding = 0) uniform cameraUBO_t {
@@ -134,7 +134,7 @@ void main()
 	isShadowed = true;
 
 
-	if(pushConsts.shadowEnabled && lightType != LIGHT_AMBIENT) {
+	if(pushConsts.data.shadowEnabled && lightType != LIGHT_AMBIENT) {
 		float tmin = 0.001;
 		float tmax = 100.0;
 		vec3 origin = gl_WorldRayOriginEXT + gl_WorldRayDirectionEXT * gl_HitTEXT;
@@ -202,7 +202,7 @@ void main()
 	
     prd.hitValue += result * prd.attenuation;
 
-	if(prd.depth < 1)
+	if(pushConsts.data.reflectionsEnabled && prd.depth < 1)
 	{
 	    prd.attenuation *= 0.1;
 	    prd.depth++;

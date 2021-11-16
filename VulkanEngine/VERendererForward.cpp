@@ -502,7 +502,7 @@ namespace ve {
 
 			clearValuesLight.clear();		//since we blend the images onto each other, do not clear them for passes 2 and further
 		}
-		m_AvgRecordTime = vh::vhAverage(vh::vhTimeDuration(t_start), m_AvgRecordTime);
+		m_AvgRecordTimeOnscreen = vh::vhAverage(vh::vhTimeDuration(t_start), m_AvgRecordTimeOnscreen);
 
 		vkEndCommandBuffer(m_commandBuffers[m_imageIndex]);
 

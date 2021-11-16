@@ -252,6 +252,26 @@ namespace ve {
 
         //update the descriptor set for onscreen pass - position, normal and albedo
         for (uint32_t i = 0; i < m_swapChainImageViews.size(); i++) {
+            
+            //update the descriptor set for onscreen pass - array of shadow maps
+            std::vector<std::vector<VkImageView>>	imageViews;
+            std::vector<std::vector<VkSampler>>		samplers;
+            imageViews.resize(1);
+            samplers.resize(1);
+
+            for (uint32_t j = 0; j < NUM_SHADOW_CASCADE; j++) {
+                imageViews[0].push_back(m_shadowMaps[i][j]->m_imageInfo.imageView);
+                samplers[0].push_back(m_shadowMaps[i][j]->m_imageInfo.sampler);
+            }
+
+            vh::vhRenderUpdateDescriptorSet(m_device,
+                m_descriptorSetsShadow[i],
+                { VK_NULL_HANDLE },		//UBOs
+                { 0 },					//UBO sizes
+                { imageViews },			//textureImageViews
+                { samplers }			//samplers
+            );
+
             vh::vhRenderUpdateDescriptorSet(m_device,
                 m_descriptorSetsOffscreen[i],
                 { VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER },  // Descriptor Types
@@ -268,24 +288,6 @@ namespace ve {
                     { m_albedoMaps[i]->m_imageInfo.sampler     }
                 } 	//samplers
                 );
-
-            //update the descriptor set for onscreen pass - array of shadow maps
-            std::vector<std::vector<VkImageView>>	imageViews;
-            std::vector<std::vector<VkSampler>>		samplers;
-            imageViews.resize(1);
-            samplers.resize(1);
-
-            for (uint32_t j = 0; j < NUM_SHADOW_CASCADE; j++) {
-                imageViews[0].push_back(m_shadowMaps[i][j]->m_imageInfo.imageView);
-                samplers[0].push_back(m_shadowMaps[i][j]->m_imageInfo.sampler);
-            }
-
-            vh::vhRenderUpdateDescriptorSet(m_device, m_descriptorSetsShadow[i],
-                { VK_NULL_HANDLE },		//UBOs
-                { 0 },					//UBO sizes
-                { imageViews },			//textureImageViews
-                { samplers }			//samplers
-            );
         }
 
 
@@ -599,22 +601,9 @@ namespace ve {
         ThreadPool *tp = getEnginePointer()->getThreadPool();
         //go through all active lights in the scene
         std::chrono::high_resolution_clock::time_point t_start, t_now;
+        t_start = vh::vhTimeNow();
         for (uint32_t i = 0; i < getSceneManagerPointer()->getLights().size(); i++) {
             VELight *pLight = getSceneManagerPointer()->getLights()[i];
-
-            //-----------------------------------------------------------------------------------------
-            //Offscreen pass (write positon, albedo and normal to gbuffer)
-            if (i == 0)
-            {
-                t_now = vh::vhTimeNow();
-                auto future = tp->add(&VERendererDeferred::recordRenderpass, this, &m_renderPassOffscreen, m_subrenderers,
-                    &m_offscreenFramebuffers[m_imageIndex],
-                    m_imageIndex, 0, pCamera, pLight, m_descriptorSetsShadow);
-
-                m_secondaryBuffersOffscreenFutures[m_imageIndex].push_back(std::move(future));
-                m_AvgCmdGBufferTime = vh::vhAverage(vh::vhTimeDuration(t_now), m_AvgCmdGBufferTime);
-
-            }
 
             //-----------------------------------------------------------------------------------------
             //shadow pass
@@ -632,6 +621,20 @@ namespace ve {
                     m_secondaryBuffersOffscreenFutures[m_imageIndex].push_back(std::move(future));
                 }
                 m_AvgCmdShadowTime = vh::vhAverage(vh::vhTimeDuration(t_now), m_AvgCmdShadowTime);
+            }
+
+            //-----------------------------------------------------------------------------------------
+            //Offscreen pass (write positon, albedo and normal to gbuffer)
+            if (i == 0)
+            {
+                t_now = vh::vhTimeNow();
+                auto future = tp->add(&VERendererDeferred::recordRenderpass, this, &m_renderPassOffscreen, m_subrenderers,
+                    &m_offscreenFramebuffers[m_imageIndex],
+                    m_imageIndex, 0, pCamera, pLight, m_descriptorSetsShadow);
+
+                m_secondaryBuffersOffscreenFutures[m_imageIndex].push_back(std::move(future));
+                m_AvgCmdGBufferTime = vh::vhAverage(vh::vhTimeDuration(t_now), m_AvgCmdGBufferTime);
+
             }
         }
 
@@ -669,6 +672,12 @@ namespace ve {
         
         for (uint32_t i = 0; i < getSceneManagerPointer()->getLights().size(); i++) {
             VELight *pLight = getSceneManagerPointer()->getLights()[i];
+            // shadow pass
+            for (uint32_t j = 0; j < pLight->m_shadowCameras.size(); j++) {
+                vh::vhRenderBeginRenderPass(m_commandBuffersOffscreen[m_imageIndex], m_renderPassShadow, m_shadowFramebuffers[m_imageIndex][j], clearValuesShadow, m_shadowMaps[0][j]->m_extent, VK_SUBPASS_CONTENTS_SECONDARY_COMMAND_BUFFERS);
+                vkCmdExecuteCommands(m_commandBuffersOffscreen[m_imageIndex], 1, &m_secondaryBuffersOffscreen[m_imageIndex][bufferIdx++].buffer);
+                vkCmdEndRenderPass(m_commandBuffersOffscreen[m_imageIndex]);
+            }
             //-----------------------------------------------------------------------------------------
             //Offscreen pass (write positon, albedo and normal to gbuffer)
             if (i == 0)
@@ -677,14 +686,10 @@ namespace ve {
                 vkCmdExecuteCommands(m_commandBuffersOffscreen[m_imageIndex], 1, &m_secondaryBuffersOffscreen[m_imageIndex][bufferIdx++].buffer);
                 vkCmdEndRenderPass(m_commandBuffersOffscreen[m_imageIndex]);
             }
-            // shadow pass
-            for (uint32_t j = 0; j < pLight->m_shadowCameras.size(); j++) {
-                vh::vhRenderBeginRenderPass(m_commandBuffersOffscreen[m_imageIndex], m_renderPassShadow, m_shadowFramebuffers[m_imageIndex][j], clearValuesShadow, m_shadowMaps[0][j]->m_extent, VK_SUBPASS_CONTENTS_SECONDARY_COMMAND_BUFFERS);
-                vkCmdExecuteCommands(m_commandBuffersOffscreen[m_imageIndex], 1, &m_secondaryBuffersOffscreen[m_imageIndex][bufferIdx++].buffer);
-                vkCmdEndRenderPass(m_commandBuffersOffscreen[m_imageIndex]);
-            }
         }
         vkEndCommandBuffer(m_commandBuffersOffscreen[m_imageIndex]);
+
+        m_AvgRecordTimeOffscreen = vh::vhAverage(vh::vhTimeDuration(t_start), m_AvgRecordTimeOffscreen);
     }
 
     /**
@@ -705,6 +710,7 @@ namespace ve {
         ThreadPool *tp = getEnginePointer()->getThreadPool();
         //go through all active lights in the scene
         std::chrono::high_resolution_clock::time_point t_start, t_now;
+        t_start = vh::vhTimeNow();
 
         //-----------------------------------------------------------------------------------------
         //composer pass (illuminate objects using gbuffer and lights)
@@ -762,7 +768,7 @@ namespace ve {
         vkCmdEndRenderPass(m_commandBuffersOnscreen[m_imageIndex]);
         vkEndCommandBuffer(m_commandBuffersOnscreen[m_imageIndex]);
 
-        m_AvgRecordTime = vh::vhAverage(vh::vhTimeDuration(t_start), m_AvgRecordTime);
+        m_AvgRecordTimeOnscreen = vh::vhAverage(vh::vhTimeDuration(t_start), m_AvgRecordTimeOnscreen);
 
         //m_overlaySemaphores[m_currentFrame] = m_renderFinishedSemaphores[m_currentFrame];
 

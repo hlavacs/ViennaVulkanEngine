@@ -393,7 +393,7 @@ namespace ve {
         for (uint32_t i = 0; i < lights.size(); i++) {
             vkCmdExecuteCommands(m_commandBuffers[m_imageIndex], 1, &m_secondaryBuffers[m_imageIndex][bufferIdx++].buffer);
         }
-        m_AvgRecordTime = vh::vhAverage(vh::vhTimeDuration(t_start), m_AvgRecordTime);
+        m_AvgRecordTimeOnscreen = vh::vhAverage(vh::vhTimeDuration(t_start), m_AvgRecordTimeOnscreen);
 
         vkEndCommandBuffer(m_commandBuffers[m_imageIndex]);
 

@@ -375,7 +375,7 @@ namespace vh {
 	VkShaderModule vhPipeCreateShaderModule(VkDevice device, const std::vector<char>& code);
 	VkResult vhPipeCreateGraphicsPipeline(	VkDevice device, std::vector<std::string> shaderFileNames,
 											VkExtent2D swapChainExtent, VkPipelineLayout pipelineLayout, VkRenderPass renderPass,
-											std::vector<VkDynamicState> dynamicStates, VkPipeline *graphicsPipeline, VkCullModeFlags cullMode = VK_CULL_MODE_BACK_BIT, int32_t blendAttachmentSize = 1);
+											std::vector<VkDynamicState> dynamicStates, VkPipeline *graphicsPipeline, VkCullModeFlags cullMode = VK_CULL_MODE_NONE, int32_t blendAttachmentSize = 1);
 	VkResult vhPipeCreateGraphicsShadowPipeline(VkDevice device, std::string verShaderFilename,
 												VkExtent2D shadowMapExtent, VkPipelineLayout pipelineLayout,
 												VkRenderPass renderPass, VkPipeline *graphicsPipeline);

@@ -113,7 +113,8 @@ namespace ve {
 		float m_AvgCmdShadowTime = 0.0f;			///<Average time for recording shadow maps
 		float m_AvgCmdLightTime = 0.0f;				///<Average time for recording light pass
 		float m_AvgCmdGBufferTime = 0.0f;			///<Average time for recording light pass
-		float m_AvgRecordTime = 0.0f;				///<Average recording time of one command buffer
+		float m_AvgRecordTimeOffscreen = 0.0f;		///<Average recording time of one offscreen command buffer
+		float m_AvgRecordTimeOnscreen = 0.0f;		///<Average recording time of one onscreen command buffer
 		///Constructor
 		VERenderer();
 		///Destructor

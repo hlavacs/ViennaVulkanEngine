@@ -570,7 +570,7 @@ namespace ve {
 
 			//----------------------------------------------------------------------------------
 			//Overlay
-
+			
 			t_now = vh::vhTimeNow();
 			m_pRenderer->prepareOverlay();
 			m_AvgPrepOvlTime = vh::vhAverage(vh::vhTimeDuration(t_now), m_AvgPrepOvlTime);

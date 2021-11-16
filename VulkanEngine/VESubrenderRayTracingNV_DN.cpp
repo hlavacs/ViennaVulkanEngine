@@ -13,7 +13,11 @@
 
 namespace ve {
     // using m_enableShadows the shadows can be switched on/off. It uses a push constant to send this data to the closehit shader
-    VESubrenderRayTracingNV_DN::VESubrenderRayTracingNV_DN(VERendererRayTracingNV &renderer): VESubrenderRayTracingNV(renderer),m_enableShadows(VK_TRUE) {};
+    VESubrenderRayTracingNV_DN::VESubrenderRayTracingNV_DN(VERendererRayTracingNV &renderer) : VESubrenderRayTracingNV(renderer)
+    {
+        m_pushConstants.enableReflections = false;
+        m_pushConstants.enableShadows = false;
+    };
 
 	/**
 	* \brief Initialize the subrenderer
@@ -27,7 +31,7 @@ namespace ve {
         createRaytracingDescriptorSets();
         VkPushConstantRange pushRange = {};
         pushRange.offset = 0;
-        pushRange.size = sizeof(m_enableShadows);
+        pushRange.size = sizeof(m_pushConstants);
         pushRange.stageFlags = VK_SHADER_STAGE_CLOSEST_HIT_BIT_NV;
 
         vh::vhPipeCreateGraphicsPipelineLayout(m_renderer.getDevice(),
@@ -490,7 +494,7 @@ namespace ve {
 
 		if (m_entities.size() == 0) return;
 
-        vkCmdPushConstants(commandBuffer, m_pipelineLayout, VK_SHADER_STAGE_CLOSEST_HIT_BIT_NV, 0, sizeof(m_enableShadows), &m_enableShadows);
+        vkCmdPushConstants(commandBuffer, m_pipelineLayout, VK_SHADER_STAGE_CLOSEST_HIT_BIT_NV, 0, sizeof(m_pushConstants), &m_pushConstants);
 		
         bindPipeline(commandBuffer);
 		bindDescriptorSetsPerFrame(commandBuffer, imageIndex, pCamera, pLight);

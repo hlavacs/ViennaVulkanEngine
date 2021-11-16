@@ -25,6 +25,11 @@ namespace ve {
 			VmaAllocation allocation;
 			void *mapped = nullptr;
 		};
+		struct RTPushConstants
+		{
+			VkBool32 enableShadows = false;
+			VkBool32 enableReflections = false;
+		};
 
 		VkDescriptorSetLayout			m_descriptorSetLayoutOutput = VK_NULL_HANDLE;	    ///<Descriptor set layout for for output image
 		VkDescriptorSetLayout			m_descriptorSetLayoutAS = VK_NULL_HANDLE;	        ///<Descriptor set layout for acceleration structure
@@ -34,7 +39,7 @@ namespace ve {
 		std::vector<VkDescriptorSet>    m_descriptorSetsAS;                                 ///<a list of resource descriptor sets of Acceleration Structures. One set for all SwapChain Images
 		std::vector<VkDescriptorSet>    m_descriptorSetsGeometry;                           ///<a list of resource descriptor sets of Vertices and Indices. One set for all SwapChain Images
 		std::vector<VkDescriptorSet>    m_descriptorSetsUBOs;                               ///<a list of resource descriptor sets of UBOPerEntity. One set for each SwapChain Image
-		VkBool32                        m_enableShadows = false;
+		RTPushConstants                 m_pushConstants;
 		std::vector<VkRayTracingShaderGroupCreateInfoKHR> m_shaderGroups;
 		
 		VkBuffer m_SBTBuffer = VK_NULL_HANDLE;

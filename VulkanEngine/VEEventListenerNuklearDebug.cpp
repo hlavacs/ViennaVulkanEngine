@@ -19,7 +19,7 @@ namespace ve {
 		struct nk_context * ctx = pSubrender->getContext();
 
 		/* GUI */
-		if (nk_begin(ctx, "Statistics", nk_rect( 0, 0, 350, 600 ),
+		if (nk_begin(ctx, "Statistics", nk_rect( 0, 0, 600, 600 ),
 			NK_WINDOW_BORDER | NK_WINDOW_MOVABLE | NK_WINDOW_SCALABLE | NK_WINDOW_MINIMIZABLE | NK_WINDOW_TITLE))
 		{
 			char outbuffer[100];
@@ -81,7 +81,11 @@ namespace ve {
 			*/
 
 			nk_layout_row_dynamic(ctx, 30, 1);
-			sprintf(outbuffer, "  Record 1 buffer (ms): %4.1f", getEnginePointer()->getRenderer()->m_AvgRecordTime * 1000.0f);
+			sprintf(outbuffer, "  Record 1 buffer offscreen (ms): %4.1f", getEnginePointer()->getRenderer()->m_AvgRecordTimeOffscreen * 1000.0f);
+			nk_label(ctx, outbuffer, NK_TEXT_LEFT);
+
+			nk_layout_row_dynamic(ctx, 30, 1);
+			sprintf(outbuffer, "  Record 1 buffer onscreen (ms): %4.1f", getEnginePointer()->getRenderer()->m_AvgRecordTimeOnscreen * 1000.0f);
 			nk_label(ctx, outbuffer, NK_TEXT_LEFT);
 		}
 		nk_end(ctx);
