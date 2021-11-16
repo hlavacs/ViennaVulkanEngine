@@ -52,7 +52,8 @@ void main()
 
 
 	if( lightType == LIGHT_DIR ) {
-		vec4 FragCoord = cameraUBO.data.camProj * cameraUBO.data.camView * vec4(position, 1.0);
+		float depth = (cameraUBO.data.camProj * cameraUBO.data.camView * vec4(position, 1.0)).z;
+		vec4 FragCoord = vec4(gl_FragCoord.xy, depth, 1.0);
 		sIdx = shadowIdxDirectional(cameraUBO.data.param,
 		                            FragCoord,
 									lightUBO.data.shadowCameras[0].param[3],
@@ -71,6 +72,7 @@ void main()
 	if( lightType == LIGHT_POINT ) {
 
 		sIdx = shadowIdxPoint( lightPosW, position );
+		sIdx = 4;
 		s = lightUBO.data.shadowCameras[sIdx];
 		shadowFactor = shadowFunc(position, s.camView, s.camProj, shadowMap[sIdx] );
 
