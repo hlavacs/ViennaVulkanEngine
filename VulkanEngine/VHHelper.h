@@ -334,8 +334,7 @@ namespace vh {
 	//--------------------------------------------------------------------------------------------------------------------------------
 	//rendering
 	VkResult vhRenderCreateRenderPass( VkDevice device, VkFormat swapChainImageFormat, VkFormat depthFormat, VkAttachmentLoadOp loadOp, VkRenderPass *renderPass);
-	VkResult vhRenderCreateRenderPassOffscreen(VkDevice device, VkFormat depthFormat, VkAttachmentLoadOp loadOp, VkRenderPass *renderPass);
-	VkResult vhRenderCreateRenderPassOnscreen(VkDevice device, VkFormat swapChainImageFormat, VkFormat depthFormat, VkAttachmentLoadOp loadOp, VkRenderPass *renderPass);
+	VkResult vhRenderCreateRenderPassOffscreen(VkDevice device, VkFormat depthFormat, VkRenderPass *renderPass);
 	VkResult vhRenderCreateRenderPassRayTracing(VkDevice device, VkFormat swapChainImageFormat, VkFormat depthFormat, VkRenderPass *renderPass);
 	VkResult vhRenderCreateRenderPassShadow( VkDevice device, VkFormat depthFormat, VkRenderPass *renderPass);
 

@@ -43,6 +43,11 @@ namespace ve {
 			m_subrenderRT = pSub;
 			return;
 		}
+		if (pSub->getClass() == VE_SUBRENDERER_CLASS_COMPOSER)
+		{
+			m_subrenderComposer = pSub;
+			return;
+		}
 		m_subrenderers.push_back( pSub );
 	}
 

@@ -15,8 +15,8 @@ namespace ve {
     // using m_enableShadows the shadows can be switched on/off. It uses a push constant to send this data to the closehit shader
     VESubrenderRayTracingNV_DN::VESubrenderRayTracingNV_DN(VERendererRayTracingNV &renderer) : VESubrenderRayTracingNV(renderer)
     {
-        m_pushConstants.enableReflections = false;
-        m_pushConstants.enableShadows = false;
+        m_pushConstants.enableReflections = true;
+        m_pushConstants.enableShadows = true;
     };
 
 	/**

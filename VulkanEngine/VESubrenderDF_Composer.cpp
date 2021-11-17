@@ -94,7 +94,7 @@ namespace ve {
         }
 
         vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_pipelineLayout,
-            0, (uint32_t)set.size(), set.data(), 2, offsets);
+                                0, (uint32_t)set.size(), set.data(), 2, offsets);
 
     }
 
@@ -112,7 +112,7 @@ namespace ve {
     */
     void VESubrenderDF_Composer::bindOffscreenDescriptorSet(VkCommandBuffer commandBuffer, uint32_t imageIndex) {
         
-        //set 2...per frame, includes position, normal and albedo buffers
+        //set 3...per frame, includes position, normal and albedo buffers
         std::vector<VkDescriptorSet> sets =
         {
                 m_renderer.getDescriptorSetsOffscreen()[imageIndex],

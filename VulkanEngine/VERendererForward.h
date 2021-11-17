@@ -104,7 +104,7 @@ namespace ve {
 		virtual std::vector<VkFramebuffer> &getSwapChainFrameBuffers() { return m_swapChainFramebuffers;  };
 
 		///\returns the render pass
-		virtual VkRenderPass			getRenderPass() { return m_renderPassLoad; };
+		virtual VkRenderPass			getRenderPass() { return m_renderPassClear; };
 		///\returns the shadow render pass
 		virtual VkRenderPass			getRenderPassShadow() { return m_renderPassShadow; };
 		///\returns the depth map vector

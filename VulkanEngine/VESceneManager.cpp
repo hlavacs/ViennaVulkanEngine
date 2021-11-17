@@ -50,7 +50,7 @@ namespace ve {
 			getEnginePointer()->getRenderer()->getVmaAllocator(),
 			getEnginePointer()->getRenderer()->getDescriptorPool(),
 			getEnginePointer()->getRenderer()->getDescriptorSetLayoutPerObject(),
-			64, sizeof(VECamera::veUBOPerCamera_t),
+			128, sizeof(VECamera::veUBOPerCamera_t),
 			getEnginePointer()->getRenderer()->getSwapChainNumber(),
 			m_memoryBlockMap[VESceneObject::VE_OBJECT_TYPE_CAMERA]));
 

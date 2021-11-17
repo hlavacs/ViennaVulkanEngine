@@ -27,7 +27,15 @@ namespace ve {
 			nk_label(ctx, "LOOP", NK_TEXT_LEFT);
 
 			nk_layout_row_dynamic(ctx, 30, 1);
-			sprintf(outbuffer, "  Frametime (ms): %4.1f", getEnginePointer()->getAvgFrameTime()*1000.0f );
+			sprintf(outbuffer, " Max Frametime (ms): %4.1f", getEnginePointer()->getMaxFrameTime() * 1000.0f);
+			nk_label(ctx, outbuffer, NK_TEXT_LEFT);
+			
+			nk_layout_row_dynamic(ctx, 30, 1);
+			sprintf(outbuffer, " Min Frametime (ms): %4.1f", getEnginePointer()->getMinFrameTime() * 1000.0f);
+			nk_label(ctx, outbuffer, NK_TEXT_LEFT);
+
+			nk_layout_row_dynamic(ctx, 30, 1);
+			sprintf(outbuffer, " Avg Frametime (ms): %4.1f", getEnginePointer()->getAvgFrameTime()*1000.0f );
 			nk_label(ctx, outbuffer, NK_TEXT_LEFT);
 
 			nk_layout_row_dynamic(ctx, 30, 1);

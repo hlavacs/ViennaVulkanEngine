@@ -529,6 +529,8 @@ namespace ve {
 		while ( !m_end_running) {
 			m_dt = vh::vhTimeDuration( t_prev );
 			m_AvgFrameTime = vh::vhAverage( (float)m_dt, m_AvgFrameTime );
+			m_MaxFrameTime = std::max(m_MaxFrameTime, (float)m_dt);
+			if(m_dt>0.0001) m_MinFrameTime = std::min(m_MinFrameTime, (float)m_dt);
 			t_prev = vh::vhTimeNow();
 
 			//----------------------------------------------------------------------------------

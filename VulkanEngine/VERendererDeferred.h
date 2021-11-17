@@ -33,7 +33,6 @@ namespace ve {
 		std::vector<VkCommandPool>		m_commandPools = {};				///<Array of command pools so that each thread in the thread pool has its own pool
 		std::vector<VkCommandBuffer>	m_commandBuffersOffscreen = {};		///<the main command buffers for recording draw commands
 		std::vector<VkCommandBuffer>	m_commandBuffersOnscreen = {};		///<the main command buffers for recording draw commands
-		std::vector<std::vector<std::future<secondaryCmdBuf_t>> > m_secondaryBuffersOffscreenFutures = {};	///<secondary buffers for parallel recording
 		std::vector<std::vector<secondaryCmdBuf_t>> m_secondaryBuffersOffscreen = {};	///<secondary buffers for parallel recording
 		std::vector<std::vector<std::future<secondaryCmdBuf_t>> > m_secondaryBuffersOnscreenFutures = {};	///<secondary buffers for parallel recording
 		std::vector<std::vector<secondaryCmdBuf_t>> m_secondaryBuffersOnscreen = {};	///<secondary buffers for parallel recording
@@ -41,7 +40,8 @@ namespace ve {
 		std::map<VELight *, lightBufferLists_t> m_lightBufferLists;		///<each light has its own command buffer list, one for each image in the swap chain
 
         //per frame render resources
-        VkRenderPass				m_renderPassOnscreen;
+        VkRenderPass				m_renderPassOnscreenClear;
+		VkRenderPass				m_renderPassOnscreenLoad;
 		std::vector<VkFramebuffer> m_swapChainFramebuffers;				///<Framebuffers for light pass
 		VETexture *m_depthMap = nullptr; 					    		///<the image depth map	
 	    std::vector <VETexture *> m_depthMaps;
@@ -50,8 +50,6 @@ namespace ve {
 		std::vector <VETexture *> m_albedoMaps;
         std::vector<std::vector<VETexture *>>	m_shadowMaps;			///<the shadow maps - a list of map cascades
 
-		VESubrender *				 m_subrenderComposer = nullptr;
-		
 		//per frame render resources for the offscreen pass
 		VkRenderPass				 m_renderPassOffscreen;
 		std::vector<VkFramebuffer>   m_offscreenFramebuffers;				///<Framebuffers for offscreen pass
@@ -61,7 +59,7 @@ namespace ve {
         //per frame render resources for the shadow pass
         VkRenderPass				 m_renderPassShadow;				///<The shadow render pass
 		std::vector<std::vector<VkFramebuffer>> m_shadowFramebuffers;	///<Framebuffers for shadow pass - a list of cascades
-		VkDescriptorSetLayout		 m_descriptorSetLayoutShadow;				///<Descriptor set 2: shadow
+		VkDescriptorSetLayout		 m_descriptorSetLayoutShadow;		///<Descriptor set 2: shadow
         std::vector<VkDescriptorSet> m_descriptorSetsShadow;			///<Per frame descriptor sets for set 2
 
 
@@ -119,7 +117,7 @@ namespace ve {
 		///\returns the offscreen render pass
 		virtual VkRenderPass			getRenderPassOffscreen() { return m_renderPassOffscreen; };
 		///\returns the onscreen render pass
-		virtual VkRenderPass			getRenderPassOnscreen() { return m_renderPassOnscreen; };
+		virtual VkRenderPass			getRenderPassOnscreen() { return m_renderPassOnscreenClear; };
 		///\returns the shadow render pass
 		virtual VkRenderPass			getRenderPassShadow() { return m_renderPassShadow; };
 		///\returns the depth map vector

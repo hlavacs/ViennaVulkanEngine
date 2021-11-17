@@ -85,6 +85,7 @@ namespace ve {
 		VESubrender *			  m_subrenderShadow = nullptr;	///<Pointer to the shadow subrenderer
 		VESubrender *			  m_subrenderOverlay = nullptr;	///<Pointer to the overlay subrenderer
 		VESubrender *             m_subrenderRT = nullptr;	    ///<Pointer to the raytracing subrenderer
+		VESubrender *			  m_subrenderComposer = nullptr;///<Pointer to the composer subrenderer (Deferred rendering)
 
 
 		///Initialize the base class

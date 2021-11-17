@@ -64,6 +64,8 @@ namespace ve {
 		//time statistics 
 		float m_AvgUpdateTime = 0.0f;					///<Average time for OBO updates (s)
 		float m_AvgFrameTime = 0.0f;					///<Average time per frame (s)
+		float m_MaxFrameTime = 0.0f;					///<Average time per frame (s)
+		float m_MinFrameTime = 1000000.0f;					///<Average time per frame (s)
 		float m_AvgDrawTime = 0.0f;						///<Average time for baking cmd buffers and calling commit (s)
 		float m_AvgStartedTime = 0.0f;					///<Average time for processing frame started event
 		float m_AvgEventTime = 0.0f;					///<Average time for processing windows events
@@ -141,6 +143,10 @@ namespace ve {
 
 		///\returns the average frame time (s)
 		float			 getAvgFrameTime() { return m_AvgFrameTime;  };
+		///\returns the maximal frame time (s)
+		float			 getMaxFrameTime() { return m_MaxFrameTime; };
+		///\returns the minimal frame time (s)
+		float			 getMinFrameTime() { return m_MinFrameTime; };
 		///\returns the average update time (s)
 		float			 getAvgUpdateTime() { return m_AvgUpdateTime; };
 		///\returns the average started time (s)

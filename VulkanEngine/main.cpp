@@ -178,22 +178,23 @@ namespace ve {
 			VECHECKPOINTER( pScene = getSceneManagerPointer()->createSceneNode("Level 1", getRoot()) );
 	
 			//create multiple ligt sources
-			size_t lights_number = 2;
-			for (int i = 0; i < lights_number; i++)
-			{
-				VELight *light = (VEPointLight *)getSceneManagerPointer()->createLight("StandardPointLight"+i, VELight::VE_LIGHT_TYPE_POINT, getSceneManagerPointer()->getCamera());
-				light->m_col_diffuse = glm::vec4(0.99f/ lights_number, 0.99f/ lights_number, 0.99f/ lights_number, 1.0f);
-				light->m_col_specular = glm::vec4(0.0f, 0.0f, 0.0f, 1.0f);
-				light->m_param[0] = 200.0f;
-				//light->multiplyTransform(glm::translate(glm::mat4(1.0f), glm::vec3(d(e), 1.0f, d(e))));
-				light->multiplyTransform(glm::translate(glm::vec3(0.0f, 5.0f, 15.0f)));
-			}
 
 			VELight *light1 = (VEDirectionalLight *)getSceneManagerPointer()->createLight("StandardDirLight", VELight::VE_LIGHT_TYPE_DIRECTIONAL, getRoot());     //new VEDirectionalLight("StandardDirLight");
 			light1->lookAt(glm::vec3(0.0f, 20.0f, -20.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
 			light1->m_col_diffuse = glm::vec4(0.9f, 0.9f, 0.9f, 1.0f);
 			light1->m_col_specular = glm::vec4(0.4f, 0.4f, 0.4f, 1.0f);
-
+			
+			size_t lights_number = 2;
+			for (int i = 0; i < lights_number; i++)
+			{
+				VELight *light = (VEPointLight *)getSceneManagerPointer()->createLight("StandardPointLight"+i, VELight::VE_LIGHT_TYPE_POINT, getSceneManagerPointer()->getCamera());
+				light->m_col_diffuse = glm::vec4(10.99f/ lights_number, 10.99f/ lights_number, 10.99f/ lights_number, 1.0f);
+				light->m_col_specular = glm::vec4(0.0f, 0.0f, 0.0f, 1.0f);
+				light->m_param[0] = 200.0f;
+				//light->multiplyTransform(glm::translate(glm::mat4(1.0f), glm::vec3(d(e), 1.0f, d(e))));
+				light->multiplyTransform(glm::translate(glm::vec3(0.0f, 5.0f, 15.0f)));
+			}
+			
 			//scene models
 			
 			VESceneNode *sp1;
@@ -236,7 +237,7 @@ using namespace ve;
 int main() {
 	bool debug = true;
 
-	MyVulkanEngine mve(VE_RENDERER_TYPE_FORWARD, debug);	//enable or disable debugging (=callback, validation layers)
+	MyVulkanEngine mve(VE_RENDERER_TYPE_DEFERRED, debug);	//enable or disable debugging (=callback, validation layers)
 
 	mve.initEngine();
 	mve.loadLevel(1);
