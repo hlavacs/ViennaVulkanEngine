@@ -7,7 +7,7 @@
 // ************************************************************ //
 
 #if !defined(VK_EXPORTED_FUNCTION)
-#define VK_EXPORTED_FUNCTION( fun )
+#define VK_EXPORTED_FUNCTION(fun)
 #endif
 
 VK_EXPORTED_FUNCTION(vkGetInstanceProcAddr)
@@ -23,7 +23,7 @@ VK_EXPORTED_FUNCTION(vkGetInstanceProcAddr)
 // ************************************************************ //
 
 #if !defined(VK_GLOBAL_LEVEL_FUNCTION)
-#define VK_GLOBAL_LEVEL_FUNCTION( fun )
+#define VK_GLOBAL_LEVEL_FUNCTION(fun)
 #endif
 
 VK_GLOBAL_LEVEL_FUNCTION(vkCreateInstance)
@@ -41,7 +41,7 @@ VK_GLOBAL_LEVEL_FUNCTION(vkEnumerateInstanceLayerProperties)
 // ************************************************************ //
 
 #if !defined(VK_INSTANCE_LEVEL_FUNCTION)
-#define VK_INSTANCE_LEVEL_FUNCTION( fun )
+#define VK_INSTANCE_LEVEL_FUNCTION(fun)
 #endif
 
 VK_INSTANCE_LEVEL_FUNCTION(vkEnumeratePhysicalDevices)
@@ -79,7 +79,7 @@ VK_INSTANCE_LEVEL_FUNCTION(vkGetPhysicalDeviceMemoryProperties)
 // ************************************************************ //
 
 #if !defined(VK_DEVICE_LEVEL_FUNCTION)
-#define VK_DEVICE_LEVEL_FUNCTION( fun )
+#define VK_DEVICE_LEVEL_FUNCTION(fun)
 #endif
 
 VK_DEVICE_LEVEL_FUNCTION(vkInvalidateMappedMemoryRanges)

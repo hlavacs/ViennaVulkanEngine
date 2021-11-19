@@ -10,11 +10,11 @@
 
 namespace ve {
 
-	/**
-	* \returns the name of this instance.
-	*/
-	std::string VENamedClass::getName() {
-		return m_name;
-	}
+    /**
+    * \returns the name of this instance.
+    */
+    std::string VENamedClass::getName() {
+        return m_name;
+    }
 
 }

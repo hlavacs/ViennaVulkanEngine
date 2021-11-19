@@ -30,7 +30,7 @@ out gl_PerVertex {
 void main() {
     gl_Position    = cameraUBO.data.camProj        * cameraUBO.data.camView * objectUBO.data.model * vec4(inPositionL, 1.0);
     fragPosW       = (objectUBO.data.model         * vec4(inPositionL, 1.0)).xyz;
-    fragNormalW    = (objectUBO.data.modelInvTrans * vec4( inNormalL,  0.0 )).xyz;
-    fragTangentW   = (objectUBO.data.modelInvTrans * vec4( inTangentL, 0.0 )).xyz;
+    fragNormalW    = (objectUBO.data.modelInvTrans * vec4(inNormalL, 0.0)).xyz;
+    fragTangentW   = (objectUBO.data.modelInvTrans * vec4(inTangentL, 0.0)).xyz;
     fragTexCoord   = inTexCoord;
 }

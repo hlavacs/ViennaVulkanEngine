@@ -38,17 +38,17 @@ void main() {
     uint resIdx     = iparam.x % RESOURCEARRAYLENGTH;
 
     //TBN matrix
-    vec3 N        = normalize( fragNormalW );
-    vec3 T        = normalize( fragTangentW );
-    T             = normalize( T - dot(T, N)*N );
-    vec3 B        = normalize( cross( T, N ) );
-    mat3 TBN      = mat3(T,B,N);
-    vec3 mapnorm  = normalize( texture(normalSamplerArray[resIdx], texCoord).xyz*2.0 - 1.0 );
-    vec3 normalW  = normalize( TBN * mapnorm );
+    vec3 N        = normalize(fragNormalW);
+    vec3 T        = normalize(fragTangentW);
+    T             = normalize(T - dot(T, N)*N);
+    vec3 B        = normalize(cross(T, N));
+    mat3 TBN      = mat3(T, B, N);
+    vec3 mapnorm  = normalize(texture(normalSamplerArray[resIdx], texCoord).xyz*2.0 - 1.0);
+    vec3 normalW  = normalize(TBN * mapnorm);
 
     vec3 fragColor = texture(texSamplerArray[resIdx], texCoord).xyz;
 
-	outPosition = vec4(fragPosW, 1.0);
-	outNormal = vec4(normalW, 1.0);
-	outAlbedo = vec4(fragColor, 1.0);
+    outPosition = vec4(fragPosW, 1.0);
+    outNormal = vec4(normalW, 1.0);
+    outAlbedo = vec4(fragColor, 1.0);
 }

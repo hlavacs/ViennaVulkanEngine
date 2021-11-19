@@ -14,11 +14,12 @@ namespace vh {
     /*
     Create a scratch buffer to hold temporary data for a ray tracing acceleration structure
     */
-    vhRayTracingScratchBuffer vhCreateScratchBuffer(VkDevice device, VmaAllocator vmaAllocator, VkDeviceSize size)
-    {
+    vhRayTracingScratchBuffer vhCreateScratchBuffer(VkDevice device, VmaAllocator vmaAllocator, VkDeviceSize size) {
         vhRayTracingScratchBuffer scratchBuffer{};
 
-        vh::vhBufCreateBuffer(vmaAllocator, size, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT, VMA_MEMORY_USAGE_CPU_TO_GPU, &scratchBuffer.buffer, &scratchBuffer.allocation);
+        vh::vhBufCreateBuffer(vmaAllocator, size,
+                              VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT,
+                              VMA_MEMORY_USAGE_CPU_TO_GPU, &scratchBuffer.buffer, &scratchBuffer.allocation);
         scratchBuffer.deviceAddress = vhGetBufferDeviceAddress(device, scratchBuffer.buffer);
 
         vmaMapMemory(vmaAllocator, scratchBuffer.allocation, &scratchBuffer.mapped);
@@ -26,35 +27,42 @@ namespace vh {
         return scratchBuffer;
     }
 
-    void vhDeleteScratchBuffer(VmaAllocator vmaAllocator, vhRayTracingScratchBuffer &scratchBuffer)
-    {
-        vmaUnmapMemory(vmaAllocator, scratchBuffer.allocation);
-        vmaDestroyBuffer(vmaAllocator, scratchBuffer.buffer, scratchBuffer.allocation);
+    void vhDeleteScratchBuffer(VmaAllocator
+                               vmaAllocator,
+                               vhRayTracingScratchBuffer &scratchBuffer
+    ) {
+        vmaUnmapMemory(vmaAllocator, scratchBuffer
+                .allocation);
+        vmaDestroyBuffer(vmaAllocator, scratchBuffer
+                .buffer, scratchBuffer.allocation);
     }
 
-    VkResult vhCreateAccelerationStructureKHR(VmaAllocator vmaAllocator, vhAccelerationStructure &accelerationStructure, VkAccelerationStructureBuildSizesInfoKHR buildSizeInfo)
-    {
-        return vh::vhBufCreateBuffer(vmaAllocator, buildSizeInfo.accelerationStructureSize,
-            VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_STORAGE_BIT_KHR | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT, VMA_MEMORY_USAGE_GPU_ONLY,
-            &accelerationStructure.resultBuffer, &accelerationStructure.resultBufferAllocation);
+    VkResult vhCreateAccelerationStructureKHR(VmaAllocator
+                                              vmaAllocator,
+                                              vhAccelerationStructure &accelerationStructure,
+                                              VkAccelerationStructureBuildSizesInfoKHR
+                                              buildSizeInfo) {
+        return
+                vh::vhBufCreateBuffer(vmaAllocator, buildSizeInfo
+                                              .accelerationStructureSize,
+                                      VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_STORAGE_BIT_KHR |
+                                      VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT, VMA_MEMORY_USAGE_GPU_ONLY,
+                                      &accelerationStructure.resultBuffer,
+                                      &accelerationStructure.resultBufferAllocation);
     }
 
-    void vhDestroyAccelerationStructure(VkDevice device, VmaAllocator vmaAllocator, vhAccelerationStructure &as)
-    {
-        if (as.scratchMem)
-        {
+    void vhDestroyAccelerationStructure(VkDevice device, VmaAllocator vmaAllocator, vhAccelerationStructure &as) {
+        if (as.scratchMem) {
             vkDestroyBuffer(device, as.scratchBuffer, nullptr);
             vkFreeMemory(device, as.scratchMem, nullptr);
             as.scratchBuffer = VK_NULL_HANDLE;
         }
-        if (as.resultMem)
-        {
+        if (as.resultMem) {
             vkDestroyBuffer(device, as.resultBuffer, nullptr);
             vkFreeMemory(device, as.resultMem, nullptr);
             as.resultBuffer = VK_NULL_HANDLE;
         }
-        if (as.instancesMem)
-        {
+        if (as.instancesMem) {
             vkDestroyBuffer(device, as.instancesBuffer, nullptr);
             vkFreeMemory(device, as.instancesMem, nullptr);
             as.instancesBuffer = VK_NULL_HANDLE;
@@ -70,29 +78,28 @@ namespace vh {
             vkDestroyAccelerationStructureNV(device, as.handleNV, nullptr);
     }
 
-    /*
-        Gets the device address from a buffer that's required for some of the buffers used for ray tracing
-    */
-    uint64_t vhGetBufferDeviceAddress(VkDevice device, VkBuffer buffer)
-    {
+/*
+    Gets the device address from a buffer that's required for some of the buffers used for ray tracing
+*/
+    uint64_t vhGetBufferDeviceAddress(VkDevice device, VkBuffer buffer) {
         VkBufferDeviceAddressInfoKHR bufferDeviceAI{};
         bufferDeviceAI.sType = VK_STRUCTURE_TYPE_BUFFER_DEVICE_ADDRESS_INFO;
         bufferDeviceAI.buffer = buffer;
         return vkGetBufferDeviceAddressKHR(device, &bufferDeviceAI);
     }
 
-    //--------------------------------------------------------------------------------------------------
-    //
-    // Create a bottom-level acceleration structure based on a list of vertex
-    // buffers in GPU memory along with their vertex count. The build is then done
-    // in 3 steps: gathering the geometry, computing the sizes of the required
-    // buffers, and building the actual acceleration structure #VKRay
-    VkResult vhCreateBottomLevelAccelerationStructureKHR(VkDevice device, VmaAllocator vmaAllocator, VkCommandPool commandPool,
-                                                         VkQueue graphicsQueue, vhAccelerationStructure &blas,
-                                                         const VkBuffer vertexBuffer, uint32_t vertexCount,
-                                                         const VkBuffer indexBuffer, uint32_t indexCount, 
-                                                         const VkBuffer transformBuffer, uint32_t transformOffset)
-    {
+//--------------------------------------------------------------------------------------------------
+//
+// Create a bottom-level acceleration structure based on a list of vertex
+// buffers in GPU memory along with their vertex count. The build is then done
+// in 3 steps: gathering the geometry, computing the sizes of the required
+// buffers, and building the actual acceleration structure #VKRay
+    VkResult
+    vhCreateBottomLevelAccelerationStructureKHR(VkDevice device, VmaAllocator vmaAllocator, VkCommandPool commandPool,
+                                                VkQueue graphicsQueue, vhAccelerationStructure &blas,
+                                                const VkBuffer vertexBuffer, uint32_t vertexCount,
+                                                const VkBuffer indexBuffer, uint32_t indexCount,
+                                                const VkBuffer transformBuffer, uint32_t transformOffset) {
         VkCommandBufferAllocateInfo commandBufferAllocateInfo;
         commandBufferAllocateInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
         commandBufferAllocateInfo.pNext = nullptr;
@@ -140,14 +147,17 @@ namespace vh {
         VkAccelerationStructureBuildGeometryInfoKHR accelerationStructureBuildGeometryInfo{};
         accelerationStructureBuildGeometryInfo.sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_BUILD_GEOMETRY_INFO_KHR;
         accelerationStructureBuildGeometryInfo.type = VK_ACCELERATION_STRUCTURE_TYPE_BOTTOM_LEVEL_KHR;
-        accelerationStructureBuildGeometryInfo.flags = VK_BUILD_ACCELERATION_STRUCTURE_PREFER_FAST_TRACE_BIT_KHR | VK_BUILD_ACCELERATION_STRUCTURE_ALLOW_UPDATE_BIT_KHR;
+        accelerationStructureBuildGeometryInfo.flags = VK_BUILD_ACCELERATION_STRUCTURE_PREFER_FAST_TRACE_BIT_KHR |
+                                                       VK_BUILD_ACCELERATION_STRUCTURE_ALLOW_UPDATE_BIT_KHR;
         accelerationStructureBuildGeometryInfo.geometryCount = 1;
         accelerationStructureBuildGeometryInfo.pGeometries = &accelerationStructureGeometry;
 
         const uint32_t numTriangles = indexCount / 3;
         VkAccelerationStructureBuildSizesInfoKHR accelerationStructureBuildSizesInfo{};
         accelerationStructureBuildSizesInfo.sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_BUILD_SIZES_INFO_KHR;
-        vkGetAccelerationStructureBuildSizesKHR(device, VK_ACCELERATION_STRUCTURE_BUILD_TYPE_DEVICE_KHR, &accelerationStructureBuildGeometryInfo, &numTriangles, &accelerationStructureBuildSizesInfo);
+        vkGetAccelerationStructureBuildSizesKHR(device, VK_ACCELERATION_STRUCTURE_BUILD_TYPE_DEVICE_KHR,
+                                                &accelerationStructureBuildGeometryInfo, &numTriangles,
+                                                &accelerationStructureBuildSizesInfo);
 
         vhCreateAccelerationStructureKHR(vmaAllocator, blas, accelerationStructureBuildSizesInfo);
         VkAccelerationStructureCreateInfoKHR accelerationStructureCreateInfo{};
@@ -158,12 +168,14 @@ namespace vh {
         vkCreateAccelerationStructureKHR(device, &accelerationStructureCreateInfo, nullptr, &blas.handleKHR);
 
         // Create a small scratch buffer used during build of the bottom level acceleration structure
-        vhRayTracingScratchBuffer scratchBuffer = vhCreateScratchBuffer(device, vmaAllocator, accelerationStructureBuildSizesInfo.buildScratchSize);
+        vhRayTracingScratchBuffer scratchBuffer = vhCreateScratchBuffer(device, vmaAllocator,
+                                                                        accelerationStructureBuildSizesInfo.buildScratchSize);
 
         VkAccelerationStructureBuildGeometryInfoKHR accelerationBuildGeometryInfo{};
         accelerationBuildGeometryInfo.sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_BUILD_GEOMETRY_INFO_KHR;
         accelerationBuildGeometryInfo.type = VK_ACCELERATION_STRUCTURE_TYPE_BOTTOM_LEVEL_KHR;
-        accelerationBuildGeometryInfo.flags = VK_BUILD_ACCELERATION_STRUCTURE_PREFER_FAST_TRACE_BIT_KHR | VK_BUILD_ACCELERATION_STRUCTURE_ALLOW_UPDATE_BIT_KHR;
+        accelerationBuildGeometryInfo.flags = VK_BUILD_ACCELERATION_STRUCTURE_PREFER_FAST_TRACE_BIT_KHR |
+                                              VK_BUILD_ACCELERATION_STRUCTURE_ALLOW_UPDATE_BIT_KHR;
         accelerationBuildGeometryInfo.mode = VK_BUILD_ACCELERATION_STRUCTURE_MODE_BUILD_KHR;
         accelerationBuildGeometryInfo.dstAccelerationStructure = blas.handleKHR;
         accelerationBuildGeometryInfo.geometryCount = 1;
@@ -175,19 +187,23 @@ namespace vh {
         accelerationStructureBuildRangeInfo.primitiveOffset = 0;
         accelerationStructureBuildRangeInfo.firstVertex = 0;
         accelerationStructureBuildRangeInfo.transformOffset = transformOffset;
-        std::vector<VkAccelerationStructureBuildRangeInfoKHR *> accelerationBuildStructureRangeInfos = { &accelerationStructureBuildRangeInfo };
+        std::vector<VkAccelerationStructureBuildRangeInfoKHR *> accelerationBuildStructureRangeInfos = {
+                &accelerationStructureBuildRangeInfo};
 
-        vkCmdBuildAccelerationStructuresKHR(commandBuffer, 1, &accelerationBuildGeometryInfo, accelerationBuildStructureRangeInfos.data());
+        vkCmdBuildAccelerationStructuresKHR(commandBuffer, 1, &accelerationBuildGeometryInfo,
+                                            accelerationBuildStructureRangeInfos.data());
 
         VkMemoryBarrier memoryBarrier;
         memoryBarrier.sType = VK_STRUCTURE_TYPE_MEMORY_BARRIER;
         memoryBarrier.pNext = nullptr;
-        memoryBarrier.srcAccessMask = VK_ACCESS_ACCELERATION_STRUCTURE_WRITE_BIT_KHR | VK_ACCESS_ACCELERATION_STRUCTURE_READ_BIT_KHR;
-        memoryBarrier.dstAccessMask = VK_ACCESS_ACCELERATION_STRUCTURE_WRITE_BIT_KHR | VK_ACCESS_ACCELERATION_STRUCTURE_READ_BIT_KHR;
+        memoryBarrier.srcAccessMask =
+                VK_ACCESS_ACCELERATION_STRUCTURE_WRITE_BIT_KHR | VK_ACCESS_ACCELERATION_STRUCTURE_READ_BIT_KHR;
+        memoryBarrier.dstAccessMask =
+                VK_ACCESS_ACCELERATION_STRUCTURE_WRITE_BIT_KHR | VK_ACCESS_ACCELERATION_STRUCTURE_READ_BIT_KHR;
 
         vkCmdPipelineBarrier(commandBuffer, VK_PIPELINE_STAGE_ACCELERATION_STRUCTURE_BUILD_BIT_KHR,
-            VK_PIPELINE_STAGE_ACCELERATION_STRUCTURE_BUILD_BIT_KHR, 0, 1, &memoryBarrier,
-            0, nullptr, 0, nullptr);
+                             VK_PIPELINE_STAGE_ACCELERATION_STRUCTURE_BUILD_BIT_KHR, 0, 1, &memoryBarrier,
+                             0, nullptr, 0, nullptr);
 
         VkAccelerationStructureDeviceAddressInfoKHR accelerationDeviceAddressInfo{};
         accelerationDeviceAddressInfo.sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_DEVICE_ADDRESS_INFO_KHR;
@@ -203,12 +219,12 @@ namespace vh {
 
     }
 
-    VkResult vhUpdateBottomLevelAccelerationStructureKHR(VkDevice device, VmaAllocator vmaAllocator, VkCommandPool commandPool,
-                                                         VkQueue graphicsQueue, vhAccelerationStructure &blas,
-                                                         const VkBuffer vertexBuffer, uint32_t vertexCount,
-                                                         const VkBuffer indexBuffer, uint32_t indexCount,
-                                                         const VkBuffer transformBuffer, uint32_t transformOffset)
-    {
+    VkResult
+    vhUpdateBottomLevelAccelerationStructureKHR(VkDevice device, VmaAllocator vmaAllocator, VkCommandPool commandPool,
+                                                VkQueue graphicsQueue, vhAccelerationStructure &blas,
+                                                const VkBuffer vertexBuffer, uint32_t vertexCount,
+                                                const VkBuffer indexBuffer, uint32_t indexCount,
+                                                const VkBuffer transformBuffer, uint32_t transformOffset) {
         VkCommandBufferAllocateInfo commandBufferAllocateInfo;
         commandBufferAllocateInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
         commandBufferAllocateInfo.pNext = nullptr;
@@ -255,22 +271,27 @@ namespace vh {
         VkAccelerationStructureBuildGeometryInfoKHR accelerationStructureBuildGeometryInfo{};
         accelerationStructureBuildGeometryInfo.sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_BUILD_GEOMETRY_INFO_KHR;
         accelerationStructureBuildGeometryInfo.type = VK_ACCELERATION_STRUCTURE_TYPE_BOTTOM_LEVEL_KHR;
-        accelerationStructureBuildGeometryInfo.flags = VK_BUILD_ACCELERATION_STRUCTURE_PREFER_FAST_TRACE_BIT_KHR | VK_BUILD_ACCELERATION_STRUCTURE_ALLOW_UPDATE_BIT_KHR;
+        accelerationStructureBuildGeometryInfo.flags = VK_BUILD_ACCELERATION_STRUCTURE_PREFER_FAST_TRACE_BIT_KHR |
+                                                       VK_BUILD_ACCELERATION_STRUCTURE_ALLOW_UPDATE_BIT_KHR;
         accelerationStructureBuildGeometryInfo.geometryCount = 1;
         accelerationStructureBuildGeometryInfo.pGeometries = &accelerationStructureGeometry;
 
         const uint32_t numTriangles = indexCount / 3;
         VkAccelerationStructureBuildSizesInfoKHR accelerationStructureBuildSizesInfo{};
         accelerationStructureBuildSizesInfo.sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_BUILD_SIZES_INFO_KHR;
-        vkGetAccelerationStructureBuildSizesKHR(device, VK_ACCELERATION_STRUCTURE_BUILD_TYPE_DEVICE_KHR, &accelerationStructureBuildGeometryInfo, &numTriangles, &accelerationStructureBuildSizesInfo);
+        vkGetAccelerationStructureBuildSizesKHR(device, VK_ACCELERATION_STRUCTURE_BUILD_TYPE_DEVICE_KHR,
+                                                &accelerationStructureBuildGeometryInfo, &numTriangles,
+                                                &accelerationStructureBuildSizesInfo);
 
         // Create a small scratch buffer used during build of the bottom level acceleration structure
-        vhRayTracingScratchBuffer scratchBuffer = vhCreateScratchBuffer(device, vmaAllocator, accelerationStructureBuildSizesInfo.updateScratchSize);
+        vhRayTracingScratchBuffer scratchBuffer = vhCreateScratchBuffer(device, vmaAllocator,
+                                                                        accelerationStructureBuildSizesInfo.updateScratchSize);
 
         VkAccelerationStructureBuildGeometryInfoKHR accelerationBuildGeometryInfo{};
         accelerationBuildGeometryInfo.sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_BUILD_GEOMETRY_INFO_KHR;
         accelerationBuildGeometryInfo.type = VK_ACCELERATION_STRUCTURE_TYPE_BOTTOM_LEVEL_KHR;
-        accelerationBuildGeometryInfo.flags = VK_BUILD_ACCELERATION_STRUCTURE_PREFER_FAST_TRACE_BIT_KHR | VK_BUILD_ACCELERATION_STRUCTURE_ALLOW_UPDATE_BIT_KHR;
+        accelerationBuildGeometryInfo.flags = VK_BUILD_ACCELERATION_STRUCTURE_PREFER_FAST_TRACE_BIT_KHR |
+                                              VK_BUILD_ACCELERATION_STRUCTURE_ALLOW_UPDATE_BIT_KHR;
         accelerationBuildGeometryInfo.mode = VK_BUILD_ACCELERATION_STRUCTURE_MODE_UPDATE_KHR;
         accelerationBuildGeometryInfo.srcAccelerationStructure = blas.handleKHR;
         accelerationBuildGeometryInfo.dstAccelerationStructure = blas.handleKHR;
@@ -278,18 +299,22 @@ namespace vh {
         accelerationBuildGeometryInfo.pGeometries = &blas.geometry;
         accelerationBuildGeometryInfo.scratchData.deviceAddress = scratchBuffer.deviceAddress;
 
-        std::vector<VkAccelerationStructureBuildRangeInfoKHR *> accelerationBuildStructureRangeInfos = { &blas.rangeInfo };
-        vkCmdBuildAccelerationStructuresKHR(commandBuffer, 1, &accelerationBuildGeometryInfo, accelerationBuildStructureRangeInfos.data());
+        std::vector<VkAccelerationStructureBuildRangeInfoKHR *> accelerationBuildStructureRangeInfos = {
+                &blas.rangeInfo};
+        vkCmdBuildAccelerationStructuresKHR(commandBuffer, 1, &accelerationBuildGeometryInfo,
+                                            accelerationBuildStructureRangeInfos.data());
 
         VkMemoryBarrier memoryBarrier;
         memoryBarrier.sType = VK_STRUCTURE_TYPE_MEMORY_BARRIER;
         memoryBarrier.pNext = nullptr;
-        memoryBarrier.srcAccessMask = VK_ACCESS_ACCELERATION_STRUCTURE_WRITE_BIT_KHR | VK_ACCESS_ACCELERATION_STRUCTURE_READ_BIT_KHR;
-        memoryBarrier.dstAccessMask = VK_ACCESS_ACCELERATION_STRUCTURE_WRITE_BIT_KHR | VK_ACCESS_ACCELERATION_STRUCTURE_READ_BIT_KHR;
+        memoryBarrier.srcAccessMask =
+                VK_ACCESS_ACCELERATION_STRUCTURE_WRITE_BIT_KHR | VK_ACCESS_ACCELERATION_STRUCTURE_READ_BIT_KHR;
+        memoryBarrier.dstAccessMask =
+                VK_ACCESS_ACCELERATION_STRUCTURE_WRITE_BIT_KHR | VK_ACCESS_ACCELERATION_STRUCTURE_READ_BIT_KHR;
 
         vkCmdPipelineBarrier(commandBuffer, VK_PIPELINE_STAGE_ACCELERATION_STRUCTURE_BUILD_BIT_KHR,
-            VK_PIPELINE_STAGE_ACCELERATION_STRUCTURE_BUILD_BIT_KHR, 0, 1, &memoryBarrier,
-            0, nullptr, 0, nullptr);
+                             VK_PIPELINE_STAGE_ACCELERATION_STRUCTURE_BUILD_BIT_KHR, 0, 1, &memoryBarrier,
+                             0, nullptr, 0, nullptr);
 
         vhDeleteScratchBuffer(vmaAllocator, scratchBuffer);
 
@@ -297,14 +322,16 @@ namespace vh {
                                               VK_NULL_HANDLE, VK_NULL_HANDLE, VK_NULL_HANDLE);
     }
 
-    //--------------------------------------------------------------------------------------------------
-    // Create the main acceleration structure that holds all instances of the scene.
-    // Similarly to the bottom-level AS generation, it is done in 3 steps: gathering
-    // the instances, computing the memory requirements for the AS, and building the
-    // AS itself #VKRay
-    VkResult vhCreateTopLevelAccelerationStructureKHR(VkDevice device, VmaAllocator vmaAllocator, VkCommandPool commandPool, VkQueue graphicsQueue,
-                                                      std::vector<vhAccelerationStructure> &blas, vhAccelerationStructure &tlas)
-    {
+//--------------------------------------------------------------------------------------------------
+// Create the main acceleration structure that holds all instances of the scene.
+// Similarly to the bottom-level AS generation, it is done in 3 steps: gathering
+// the instances, computing the memory requirements for the AS, and building the
+// AS itself #VKRay
+    VkResult
+    vhCreateTopLevelAccelerationStructureKHR(VkDevice device, VmaAllocator vmaAllocator, VkCommandPool commandPool,
+                                             VkQueue graphicsQueue,
+                                             std::vector<vhAccelerationStructure> &blas,
+                                             vhAccelerationStructure &tlas) {
         VkCommandBufferAllocateInfo commandBufferAllocateInfo;
         commandBufferAllocateInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
         commandBufferAllocateInfo.pNext = nullptr;
@@ -324,12 +351,11 @@ namespace vh {
         VkTransformMatrixKHR transformMatrix = {
                 1.0f, 0.0f, 0.0f, 0.0f,
                 0.0f, 1.0f, 0.0f, 0.0f,
-                0.0f, 0.0f, 1.0f, 0.0f };
+                0.0f, 0.0f, 1.0f, 0.0f};
 
         std::vector<VkAccelerationStructureInstanceKHR> asInstances;
         asInstances.reserve(blas.size());
-        for (int i = 0; i < blas.size(); i++)
-        {
+        for (int i = 0; i < blas.size(); i++) {
             VkAccelerationStructureInstanceKHR instance{};
             instance.transform = transformMatrix;
             instance.instanceCustomIndex = i;
@@ -343,12 +369,16 @@ namespace vh {
         VkDeviceSize bufferSize = sizeof(asInstances[0]) * asInstances.size();
         VkBuffer stagingBuffer;
         VmaAllocation stagingBufferAllocation;
-        vh::vhBufCreateBuffer(vmaAllocator, bufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VMA_MEMORY_USAGE_CPU_ONLY, &stagingBuffer, &stagingBufferAllocation);
+        vh::vhBufCreateBuffer(vmaAllocator, bufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VMA_MEMORY_USAGE_CPU_ONLY,
+                              &stagingBuffer, &stagingBufferAllocation);
         void *data;
         vmaMapMemory(vmaAllocator, stagingBufferAllocation, &data);
-        memcpy(data, asInstances.data(), (size_t)bufferSize);
+        memcpy(data, asInstances.data(), (size_t)
+                bufferSize);
         vmaUnmapMemory(vmaAllocator, stagingBufferAllocation);
-        vh::vhBufCreateBuffer(vmaAllocator, bufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT, VMA_MEMORY_USAGE_GPU_ONLY, &tlas.instancesBuffer, &tlas.instancesBufferAllocation);
+        vh::vhBufCreateBuffer(vmaAllocator, bufferSize,
+                              VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT,
+                              VMA_MEMORY_USAGE_GPU_ONLY, &tlas.instancesBuffer, &tlas.instancesBufferAllocation);
         vh::vhBufCopyBuffer(device, graphicsQueue, commandPool, stagingBuffer, tlas.instancesBuffer, bufferSize);
         vmaDestroyBuffer(vmaAllocator, stagingBuffer, stagingBufferAllocation);
 
@@ -380,11 +410,11 @@ namespace vh {
         VkAccelerationStructureBuildSizesInfoKHR accelerationStructureBuildSizesInfo{};
         accelerationStructureBuildSizesInfo.sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_BUILD_SIZES_INFO_KHR;
         vkGetAccelerationStructureBuildSizesKHR(
-            device,
-            VK_ACCELERATION_STRUCTURE_BUILD_TYPE_DEVICE_KHR,
-            &accelerationStructureBuildGeometryInfo,
-            &primitive_count,
-            &accelerationStructureBuildSizesInfo);
+                device,
+                VK_ACCELERATION_STRUCTURE_BUILD_TYPE_DEVICE_KHR,
+                &accelerationStructureBuildGeometryInfo,
+                &primitive_count,
+                &accelerationStructureBuildSizesInfo);
 
         vhCreateAccelerationStructureKHR(vmaAllocator, tlas, accelerationStructureBuildSizesInfo);
 
@@ -396,12 +426,14 @@ namespace vh {
         vkCreateAccelerationStructureKHR(device, &accelerationStructureCreateInfo, nullptr, &tlas.handleKHR);
 
         // Create a small scratch buffer used during build of the top level acceleration structure
-        vhRayTracingScratchBuffer scratchBuffer = vhCreateScratchBuffer(device, vmaAllocator, accelerationStructureBuildSizesInfo.buildScratchSize);
+        vhRayTracingScratchBuffer scratchBuffer = vhCreateScratchBuffer(device, vmaAllocator,
+                                                                        accelerationStructureBuildSizesInfo.buildScratchSize);
 
         VkAccelerationStructureBuildGeometryInfoKHR accelerationBuildGeometryInfo{};
         accelerationBuildGeometryInfo.sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_BUILD_GEOMETRY_INFO_KHR;
         accelerationBuildGeometryInfo.type = VK_ACCELERATION_STRUCTURE_TYPE_TOP_LEVEL_KHR;
-        accelerationBuildGeometryInfo.flags = VK_BUILD_ACCELERATION_STRUCTURE_PREFER_FAST_TRACE_BIT_KHR | VK_BUILD_ACCELERATION_STRUCTURE_ALLOW_UPDATE_BIT_KHR;
+        accelerationBuildGeometryInfo.flags = VK_BUILD_ACCELERATION_STRUCTURE_PREFER_FAST_TRACE_BIT_KHR |
+                                              VK_BUILD_ACCELERATION_STRUCTURE_ALLOW_UPDATE_BIT_KHR;
         accelerationBuildGeometryInfo.mode = VK_BUILD_ACCELERATION_STRUCTURE_MODE_BUILD_KHR;
         accelerationBuildGeometryInfo.dstAccelerationStructure = tlas.handleKHR;
         accelerationBuildGeometryInfo.geometryCount = 1;
@@ -413,23 +445,26 @@ namespace vh {
         accelerationStructureBuildRangeInfo.primitiveOffset = 0;
         accelerationStructureBuildRangeInfo.firstVertex = 0;
         accelerationStructureBuildRangeInfo.transformOffset = 0;
-        std::vector<VkAccelerationStructureBuildRangeInfoKHR *> accelerationBuildStructureRangeInfos = { &accelerationStructureBuildRangeInfo };
+        std::vector<VkAccelerationStructureBuildRangeInfoKHR *> accelerationBuildStructureRangeInfos = {
+                &accelerationStructureBuildRangeInfo};
 
         vkCmdBuildAccelerationStructuresKHR(
-            commandBuffer,
-            1,
-            &accelerationBuildGeometryInfo,
-            accelerationBuildStructureRangeInfos.data());
+                commandBuffer,
+                1,
+                &accelerationBuildGeometryInfo,
+                accelerationBuildStructureRangeInfos.data());
 
         VkMemoryBarrier memoryBarrier;
         memoryBarrier.sType = VK_STRUCTURE_TYPE_MEMORY_BARRIER;
         memoryBarrier.pNext = nullptr;
-        memoryBarrier.srcAccessMask = VK_ACCESS_ACCELERATION_STRUCTURE_WRITE_BIT_KHR | VK_ACCESS_ACCELERATION_STRUCTURE_READ_BIT_KHR;
-        memoryBarrier.dstAccessMask = VK_ACCESS_ACCELERATION_STRUCTURE_WRITE_BIT_KHR | VK_ACCESS_ACCELERATION_STRUCTURE_READ_BIT_KHR;
+        memoryBarrier.srcAccessMask =
+                VK_ACCESS_ACCELERATION_STRUCTURE_WRITE_BIT_KHR | VK_ACCESS_ACCELERATION_STRUCTURE_READ_BIT_KHR;
+        memoryBarrier.dstAccessMask =
+                VK_ACCESS_ACCELERATION_STRUCTURE_WRITE_BIT_KHR | VK_ACCESS_ACCELERATION_STRUCTURE_READ_BIT_KHR;
 
         vkCmdPipelineBarrier(commandBuffer, VK_PIPELINE_STAGE_ACCELERATION_STRUCTURE_BUILD_BIT_KHR,
-            VK_PIPELINE_STAGE_ACCELERATION_STRUCTURE_BUILD_BIT_KHR, 0, 1, &memoryBarrier,
-            0, nullptr, 0, nullptr);
+                             VK_PIPELINE_STAGE_ACCELERATION_STRUCTURE_BUILD_BIT_KHR, 0, 1, &memoryBarrier,
+                             0, nullptr, 0, nullptr);
 
         VkAccelerationStructureDeviceAddressInfoKHR accelerationDeviceAddressInfo{};
         accelerationDeviceAddressInfo.sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_DEVICE_ADDRESS_INFO_KHR;
@@ -443,9 +478,11 @@ namespace vh {
                                               VK_NULL_HANDLE, VK_NULL_HANDLE, VK_NULL_HANDLE);
     }
 
-    VkResult vhUpdateTopLevelAccelerationStructureKHR(VkDevice device, VmaAllocator vmaAllocator, VkCommandPool commandPool, VkQueue graphicsQueue,
-                                                      std::vector<vhAccelerationStructure> &blas, vhAccelerationStructure &tlas)
-    {
+    VkResult
+    vhUpdateTopLevelAccelerationStructureKHR(VkDevice device, VmaAllocator vmaAllocator, VkCommandPool commandPool,
+                                             VkQueue graphicsQueue,
+                                             std::vector<vhAccelerationStructure> &blas,
+                                             vhAccelerationStructure &tlas) {
         VkCommandBufferAllocateInfo commandBufferAllocateInfo;
         commandBufferAllocateInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
         commandBufferAllocateInfo.pNext = nullptr;
@@ -481,7 +518,8 @@ namespace vh {
         VkAccelerationStructureBuildGeometryInfoKHR accelerationStructureBuildGeometryInfo{};
         accelerationStructureBuildGeometryInfo.sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_BUILD_GEOMETRY_INFO_KHR;
         accelerationStructureBuildGeometryInfo.type = VK_ACCELERATION_STRUCTURE_TYPE_TOP_LEVEL_KHR;
-        accelerationStructureBuildGeometryInfo.flags = VK_BUILD_ACCELERATION_STRUCTURE_PREFER_FAST_TRACE_BIT_KHR | VK_BUILD_ACCELERATION_STRUCTURE_ALLOW_UPDATE_BIT_KHR;
+        accelerationStructureBuildGeometryInfo.flags = VK_BUILD_ACCELERATION_STRUCTURE_PREFER_FAST_TRACE_BIT_KHR |
+                                                       VK_BUILD_ACCELERATION_STRUCTURE_ALLOW_UPDATE_BIT_KHR;
         accelerationStructureBuildGeometryInfo.geometryCount = 1;
         accelerationStructureBuildGeometryInfo.pGeometries = &accelerationStructureGeometry;
 
@@ -490,19 +528,21 @@ namespace vh {
         VkAccelerationStructureBuildSizesInfoKHR accelerationStructureBuildSizesInfo{};
         accelerationStructureBuildSizesInfo.sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_BUILD_SIZES_INFO_KHR;
         vkGetAccelerationStructureBuildSizesKHR(
-            device,
-            VK_ACCELERATION_STRUCTURE_BUILD_TYPE_DEVICE_KHR,
-            &accelerationStructureBuildGeometryInfo,
-            &primitive_count,
-            &accelerationStructureBuildSizesInfo);
+                device,
+                VK_ACCELERATION_STRUCTURE_BUILD_TYPE_DEVICE_KHR,
+                &accelerationStructureBuildGeometryInfo,
+                &primitive_count,
+                &accelerationStructureBuildSizesInfo);
 
         // Create a small scratch buffer used during build of the top level acceleration structure
-        vhRayTracingScratchBuffer scratchBuffer = vhCreateScratchBuffer(device, vmaAllocator, accelerationStructureBuildSizesInfo.updateScratchSize);
+        vhRayTracingScratchBuffer scratchBuffer = vhCreateScratchBuffer(device, vmaAllocator,
+                                                                        accelerationStructureBuildSizesInfo.updateScratchSize);
 
         VkAccelerationStructureBuildGeometryInfoKHR accelerationBuildGeometryInfo{};
         accelerationBuildGeometryInfo.sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_BUILD_GEOMETRY_INFO_KHR;
         accelerationBuildGeometryInfo.type = VK_ACCELERATION_STRUCTURE_TYPE_TOP_LEVEL_KHR;
-        accelerationBuildGeometryInfo.flags = VK_BUILD_ACCELERATION_STRUCTURE_PREFER_FAST_TRACE_BIT_KHR | VK_BUILD_ACCELERATION_STRUCTURE_ALLOW_UPDATE_BIT_KHR;
+        accelerationBuildGeometryInfo.flags = VK_BUILD_ACCELERATION_STRUCTURE_PREFER_FAST_TRACE_BIT_KHR |
+                                              VK_BUILD_ACCELERATION_STRUCTURE_ALLOW_UPDATE_BIT_KHR;
         accelerationBuildGeometryInfo.mode = VK_BUILD_ACCELERATION_STRUCTURE_MODE_UPDATE_KHR;
         accelerationBuildGeometryInfo.srcAccelerationStructure = tlas.handleKHR;
         accelerationBuildGeometryInfo.dstAccelerationStructure = tlas.handleKHR;
@@ -515,23 +555,26 @@ namespace vh {
         accelerationStructureBuildRangeInfo.primitiveOffset = 0;
         accelerationStructureBuildRangeInfo.firstVertex = 0;
         accelerationStructureBuildRangeInfo.transformOffset = 0;
-        std::vector<VkAccelerationStructureBuildRangeInfoKHR *> accelerationBuildStructureRangeInfos = { &accelerationStructureBuildRangeInfo };
+        std::vector<VkAccelerationStructureBuildRangeInfoKHR *> accelerationBuildStructureRangeInfos = {
+                &accelerationStructureBuildRangeInfo};
 
         vkCmdBuildAccelerationStructuresKHR(
-            commandBuffer,
-            1,
-            &accelerationBuildGeometryInfo,
-            accelerationBuildStructureRangeInfos.data());
+                commandBuffer,
+                1,
+                &accelerationBuildGeometryInfo,
+                accelerationBuildStructureRangeInfos.data());
 
         VkMemoryBarrier memoryBarrier;
         memoryBarrier.sType = VK_STRUCTURE_TYPE_MEMORY_BARRIER;
         memoryBarrier.pNext = nullptr;
-        memoryBarrier.srcAccessMask = VK_ACCESS_ACCELERATION_STRUCTURE_WRITE_BIT_KHR | VK_ACCESS_ACCELERATION_STRUCTURE_READ_BIT_KHR;
-        memoryBarrier.dstAccessMask = VK_ACCESS_ACCELERATION_STRUCTURE_WRITE_BIT_KHR | VK_ACCESS_ACCELERATION_STRUCTURE_READ_BIT_KHR;
+        memoryBarrier.srcAccessMask =
+                VK_ACCESS_ACCELERATION_STRUCTURE_WRITE_BIT_KHR | VK_ACCESS_ACCELERATION_STRUCTURE_READ_BIT_KHR;
+        memoryBarrier.dstAccessMask =
+                VK_ACCESS_ACCELERATION_STRUCTURE_WRITE_BIT_KHR | VK_ACCESS_ACCELERATION_STRUCTURE_READ_BIT_KHR;
 
         vkCmdPipelineBarrier(commandBuffer, VK_PIPELINE_STAGE_ACCELERATION_STRUCTURE_BUILD_BIT_KHR,
-            VK_PIPELINE_STAGE_ACCELERATION_STRUCTURE_BUILD_BIT_KHR, 0, 1, &memoryBarrier,
-            0, nullptr, 0, nullptr);
+                             VK_PIPELINE_STAGE_ACCELERATION_STRUCTURE_BUILD_BIT_KHR, 0, 1, &memoryBarrier,
+                             0, nullptr, 0, nullptr);
 
         VkAccelerationStructureDeviceAddressInfoKHR accelerationDeviceAddressInfo{};
         accelerationDeviceAddressInfo.sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_DEVICE_ADDRESS_INFO_KHR;
@@ -544,12 +587,14 @@ namespace vh {
                                               VK_NULL_HANDLE, VK_NULL_HANDLE, VK_NULL_HANDLE);
     }
 
-    VkResult vhCreateBottomLevelAccelerationStructureNV(VkPhysicalDevice physicalDevice, VkDevice device, VmaAllocator vmaAllocator, VkCommandPool commandPool,
-                                                        VkQueue graphicsQueue, vhAccelerationStructure &blas,
-                                                        const VkBuffer vertexBuffer, uint32_t vertexCount,
-                                                        const VkBuffer indexBuffer, uint32_t indexCount,
-                                                        const VkBuffer transformBuffer, uint32_t transformOffset)
-    {
+    VkResult
+    vhCreateBottomLevelAccelerationStructureNV(VkPhysicalDevice physicalDevice, VkDevice device,
+                                               VmaAllocator vmaAllocator,
+                                               VkCommandPool commandPool,
+                                               VkQueue graphicsQueue, vhAccelerationStructure &blas,
+                                               const VkBuffer vertexBuffer, uint32_t vertexCount,
+                                               const VkBuffer indexBuffer, uint32_t indexCount,
+                                               const VkBuffer transformBuffer, uint32_t transformOffset) {
         VkCommandBufferAllocateInfo commandBufferAllocateInfo;
         commandBufferAllocateInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
         commandBufferAllocateInfo.pNext = nullptr;
@@ -567,10 +612,10 @@ namespace vh {
         vkBeginCommandBuffer(commandBuffer, &beginInfo);
 
         blas.blasGenerator.AddVertexBuffer(vertexBuffer, 0, vertexCount, sizeof(vh::vhVertex),
-                                               indexBuffer, 0, indexCount,
-                                               transformBuffer, transformOffset);
-        
-        
+                                           indexBuffer, 0, indexCount,
+                                           transformBuffer, transformOffset);
+
+
         // Once the overall size of the geometry is known, we can create the handle
         // for the acceleration structure
         blas.handleNV = blas.blasGenerator.CreateAccelerationStructure(device, VK_TRUE);
@@ -586,7 +631,7 @@ namespace vh {
         // Once the sizes are obtained, the application is responsible for allocating
         // the necessary buffers. Since the entire generation will be done on the GPU,
         // we can directly allocate those in device local mem
-        nv_helpers_vk::createBuffer(physicalDevice, device, scratchSizeInBytes, 
+        nv_helpers_vk::createBuffer(physicalDevice, device, scratchSizeInBytes,
                                     VK_BUFFER_USAGE_RAY_TRACING_BIT_NV, &blas.scratchBuffer,
                                     &blas.scratchMem, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
 
@@ -598,18 +643,19 @@ namespace vh {
         // on the generated AS, so that it can be used to compute a top-level AS right
         // after this method.
         blas.blasGenerator.Generate(device, commandBuffer, blas.handleNV, blas.scratchBuffer,
-                                        0, blas.resultBuffer, blas.resultMem, false, VK_NULL_HANDLE);
+                                    0, blas.resultBuffer, blas.resultMem, false, VK_NULL_HANDLE);
 
 
         return vh::vhCmdEndSingleTimeCommands(device, graphicsQueue, commandPool, commandBuffer,
                                               VK_NULL_HANDLE, VK_NULL_HANDLE, VK_NULL_HANDLE);
     }
-    VkResult vhUpdateBottomLevelAccelerationStructureNV(VkDevice device, VmaAllocator vmaAllocator, VkCommandPool commandPool,
-                                                        VkQueue graphicsQueue, vhAccelerationStructure &blas,
-                                                        const VkBuffer vertexBuffer, uint32_t vertexCount,
-                                                        const VkBuffer indexBuffer, uint32_t indexCount,
-                                                        const VkBuffer transformBuffer, uint32_t transformOffset)
-    {
+
+    VkResult
+    vhUpdateBottomLevelAccelerationStructureNV(VkDevice device, VmaAllocator vmaAllocator, VkCommandPool commandPool,
+                                               VkQueue graphicsQueue, vhAccelerationStructure &blas,
+                                               const VkBuffer vertexBuffer, uint32_t vertexCount,
+                                               const VkBuffer indexBuffer, uint32_t indexCount,
+                                               const VkBuffer transformBuffer, uint32_t transformOffset) {
         VkCommandBufferAllocateInfo commandBufferAllocateInfo;
         commandBufferAllocateInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
         commandBufferAllocateInfo.pNext = nullptr;
@@ -627,16 +673,16 @@ namespace vh {
         vkBeginCommandBuffer(commandBuffer, &beginInfo);
 
         blas.blasGenerator.Generate(device, commandBuffer, blas.handleNV, blas.scratchBuffer,
-                                        0, blas.resultBuffer, blas.resultMem, true, blas.handleNV);
+                                    0, blas.resultBuffer, blas.resultMem, true, blas.handleNV);
 
         return vh::vhCmdEndSingleTimeCommands(device, graphicsQueue, commandPool, commandBuffer,
-            VK_NULL_HANDLE, VK_NULL_HANDLE, VK_NULL_HANDLE);
+                                              VK_NULL_HANDLE, VK_NULL_HANDLE, VK_NULL_HANDLE);
     }
 
-    VkResult vhCreateTopLevelAccelerationStructureNV(VkPhysicalDevice physicalDevice, VkDevice device, VmaAllocator vmaAllocator,
-                                                     VkCommandPool commandPool, VkQueue graphicsQueue,
-                                                     std::vector<vhAccelerationStructure> &blas, vhAccelerationStructure &tlas)
-    {
+    VkResult
+    vhCreateTopLevelAccelerationStructureNV(VkPhysicalDevice physicalDevice, VkDevice device, VmaAllocator vmaAllocator,
+                                            VkCommandPool commandPool, VkQueue graphicsQueue,
+                                            std::vector<vhAccelerationStructure> &blas, vhAccelerationStructure &tlas) {
         VkCommandBufferAllocateInfo commandBufferAllocateInfo;
         commandBufferAllocateInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
         commandBufferAllocateInfo.pNext = nullptr;
@@ -656,12 +702,12 @@ namespace vh {
         glm::mat4x4 transformMatrix(1.0);
 
         // Gather all the instances into the builder helper
-        for (size_t i = 0; i < blas.size(); i++)
-        {
+        for (size_t i = 0; i < blas.size(); i++) {
             // For each instance we set its instance index to its index i in the instance vector, and set
             // its hit group index to 0. The hit group index defines which entry of the shader binding
             // table will contain the hit group to be executed when hitting this instance.
-            tlas.tlasGenerator.AddInstance(blas[i].handleNV, transformMatrix, static_cast<uint32_t>(i), static_cast<uint32_t>(0));
+            tlas.tlasGenerator.AddInstance(blas[i].handleNV, transformMatrix, static_cast<uint32_t>(i),
+                                           static_cast<uint32_t>(0));
         }
 
         // Once all instances have been added, we can create the handle for the TLAS
@@ -676,7 +722,7 @@ namespace vh {
         // corresponding memory
         VkDeviceSize scratchSizeInBytes, resultSizeInBytes, instanceDescsSizeInBytes;
         tlas.tlasGenerator.ComputeASBufferSizes(device, tlas.handleNV, &scratchSizeInBytes,
-                                                   &resultSizeInBytes, &instanceDescsSizeInBytes);
+                                                &resultSizeInBytes, &instanceDescsSizeInBytes);
 
         // Create the scratch and result buffers. Since the build is all done on
         // GPU, those can be allocated in device local memory
@@ -697,9 +743,9 @@ namespace vh {
                                     VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
 
         tlas.tlasGenerator.Generate(device, commandBuffer, tlas.handleNV,
-            tlas.scratchBuffer, 0, tlas.resultBuffer,
-            tlas.resultMem, tlas.instancesBuffer,
-            tlas.instancesMem, false , VK_NULL_HANDLE);
+                                    tlas.scratchBuffer, 0, tlas.resultBuffer,
+                                    tlas.resultMem, tlas.instancesBuffer,
+                                    tlas.instancesMem, false, VK_NULL_HANDLE);
 
         return vh::vhCmdEndSingleTimeCommands(device, graphicsQueue, commandPool, commandBuffer,
                                               VK_NULL_HANDLE, VK_NULL_HANDLE, VK_NULL_HANDLE);
@@ -707,8 +753,8 @@ namespace vh {
 
     VkResult vhUpdateTopLevelAccelerationStructureNV(VkDevice device, VmaAllocator vmaAllocator,
                                                      VkCommandPool commandPool, VkQueue graphicsQueue,
-                                                     std::vector<vhAccelerationStructure> &blas, vhAccelerationStructure &tlas)
-    {
+                                                     std::vector<vhAccelerationStructure> &blas,
+                                                     vhAccelerationStructure &tlas) {
         VkCommandBufferAllocateInfo commandBufferAllocateInfo;
         commandBufferAllocateInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
         commandBufferAllocateInfo.pNext = nullptr;
@@ -726,11 +772,12 @@ namespace vh {
         vkBeginCommandBuffer(commandBuffer, &beginInfo);
 
         tlas.tlasGenerator.Generate(device, commandBuffer, tlas.handleNV,
-                                     tlas.scratchBuffer, 0, tlas.resultBuffer,
-                                     tlas.resultMem, tlas.instancesBuffer,
-                                     tlas.instancesMem, true, tlas.handleNV);
+                                    tlas.scratchBuffer, 0, tlas.resultBuffer,
+                                    tlas.resultMem, tlas.instancesBuffer,
+                                    tlas.instancesMem, true, tlas.handleNV);
 
         return vh::vhCmdEndSingleTimeCommands(device, graphicsQueue, commandPool, commandBuffer,
                                               VK_NULL_HANDLE, VK_NULL_HANDLE, VK_NULL_HANDLE);
     }
+
 }

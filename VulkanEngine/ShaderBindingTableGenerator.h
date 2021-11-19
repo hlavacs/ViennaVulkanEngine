@@ -106,106 +106,108 @@ desc.HitGroupTable.StrideInBytes = m_sbtHelper.GetHitGroupEntrySize();
 */
 
 #pragma once
+
 #include "vulkan/vulkan.h"
 #include <vector>
 
 namespace nv_helpers_vk {
 /// Helper class to create and maintain a Shader Binding Table
-class ShaderBindingTableGenerator
-{
-public:
-  /// Add a ray generation program by name, with its list of data pointers or values according to
-  /// the layout of its root signature
-  void AddRayGenerationProgram(uint32_t groupIndex, const std::vector<unsigned char>& inlineData);
+    class ShaderBindingTableGenerator {
+    public:
+        /// Add a ray generation program by name, with its list of data pointers or values according to
+        /// the layout of its root signature
+        void AddRayGenerationProgram(uint32_t groupIndex, const std::vector<unsigned char> &inlineData);
 
-  /// Add a miss program by name, with its list of data pointers or values according to
-  /// the layout of its root signature
-  void AddMissProgram(uint32_t groupIndex, const std::vector<unsigned char>& inlineData);
+        /// Add a miss program by name, with its list of data pointers or values according to
+        /// the layout of its root signature
+        void AddMissProgram(uint32_t groupIndex, const std::vector<unsigned char> &inlineData);
 
-  /// Add a hit group by name, with its list of data pointers or values according to
-  /// the layout of its root signature
-  void AddHitGroup(uint32_t groupIndex, const std::vector<unsigned char>& inlineData);
+        /// Add a hit group by name, with its list of data pointers or values according to
+        /// the layout of its root signature
+        void AddHitGroup(uint32_t groupIndex, const std::vector<unsigned char> &inlineData);
 
-  /// Compute the size of the SBT based on the set of programs and hit groups it contains
-  VkDeviceSize ComputeSBTSize(const VkPhysicalDeviceRayTracingPropertiesNV& props);
+        /// Compute the size of the SBT based on the set of programs and hit groups it contains
+        VkDeviceSize ComputeSBTSize(const VkPhysicalDeviceRayTracingPropertiesNV &props);
 
-  /// Build the SBT and store it into sbtBuffer, which has to be pre-allocated on the upload heap.
-  /// Access to the raytracing pipeline object is required to fetch program identifiers using their
-  /// names
-  void Generate(VkDevice       device,
-                VkPipeline     raytracingPipeline,
-                VkBuffer       sbtBuffer,
-                VkDeviceMemory sbtMem);
+        /// Build the SBT and store it into sbtBuffer, which has to be pre-allocated on the upload heap.
+        /// Access to the raytracing pipeline object is required to fetch program identifiers using their
+        /// names
+        void Generate(VkDevice device,
+                      VkPipeline raytracingPipeline,
+                      VkBuffer sbtBuffer,
+                      VkDeviceMemory sbtMem);
 
-  /// Reset the sets of programs and hit groups
-  void Reset();
+        /// Reset the sets of programs and hit groups
+        void Reset();
 
-  /// The following getters are used to simplify the call to DispatchRays where the offsets of the
-  /// shader programs must be exactly following the SBT layout
+        /// The following getters are used to simplify the call to DispatchRays where the offsets of the
+        /// shader programs must be exactly following the SBT layout
 
-  /// Get the size in bytes of the SBT section dedicated to ray generation programs
-  VkDeviceSize GetRayGenSectionSize() const;
-  /// Get the size in bytes of one ray generation program entry in the SBT
-  VkDeviceSize GetRayGenEntrySize() const;
+        /// Get the size in bytes of the SBT section dedicated to ray generation programs
+        VkDeviceSize GetRayGenSectionSize() const;
 
-  VkDeviceSize GetRayGenOffset() const;
+        /// Get the size in bytes of one ray generation program entry in the SBT
+        VkDeviceSize GetRayGenEntrySize() const;
 
-  /// Get the size in bytes of the SBT section dedicated to miss programs
-  VkDeviceSize GetMissSectionSize() const;
-  /// Get the size in bytes of one miss program entry in the SBT
-  VkDeviceSize GetMissEntrySize();
+        VkDeviceSize GetRayGenOffset() const;
 
-  VkDeviceSize GetMissOffset() const;
+        /// Get the size in bytes of the SBT section dedicated to miss programs
+        VkDeviceSize GetMissSectionSize() const;
 
-  /// Get the size in bytes of the SBT section dedicated to hit groups
-  VkDeviceSize GetHitGroupSectionSize() const;
-  /// Get the size in bytes of hit group entry in the SBT
-  VkDeviceSize GetHitGroupEntrySize() const;
+        /// Get the size in bytes of one miss program entry in the SBT
+        VkDeviceSize GetMissEntrySize();
 
-  VkDeviceSize GetHitGroupOffset() const;
+        VkDeviceSize GetMissOffset() const;
 
-private:
-  /// Wrapper for SBT entries, each consisting of the name of the program and a list of values,
-  /// which can be either offsets or raw 32-bit constants
-  struct SBTEntry
-  {
-    SBTEntry(uint32_t groupIndex, std::vector<unsigned char> inlineData);
+        /// Get the size in bytes of the SBT section dedicated to hit groups
+        VkDeviceSize GetHitGroupSectionSize() const;
 
-    uint32_t                         m_groupIndex;
-    const std::vector<unsigned char> m_inlineData;
-  };
+        /// Get the size in bytes of hit group entry in the SBT
+        VkDeviceSize GetHitGroupEntrySize() const;
 
-  /// For each entry, copy the shader identifier followed by its resource pointers and/or root
-  /// constants in outputData, with a stride in bytes of entrySize, and returns the size in bytes
-  /// actually written to outputData.
-  VkDeviceSize CopyShaderData(VkDevice                     device,
-                              VkPipeline                   pipeline,
-                              uint8_t*                     outputData,
-                              const std::vector<SBTEntry>& shaders,
-                              VkDeviceSize                 entrySize,
-                              const uint8_t*               shaderHandleStorage);
+        VkDeviceSize GetHitGroupOffset() const;
 
-  /// Compute the size of the SBT entries for a set of entries, which is determined by the maximum
-  /// number of parameters of their root signature
-  VkDeviceSize GetEntrySize(const std::vector<SBTEntry>& entries);
+    private:
+        /// Wrapper for SBT entries, each consisting of the name of the program and a list of values,
+        /// which can be either offsets or raw 32-bit constants
+        struct SBTEntry {
+            SBTEntry(uint32_t groupIndex, std::vector<unsigned char> inlineData);
 
-  /// Ray generation shader entries
-  std::vector<SBTEntry> m_rayGen;
-  /// Miss shader entries
-  std::vector<SBTEntry> m_miss;
-  /// Hit group entries
-  std::vector<SBTEntry> m_hitGroup;
+            uint32_t m_groupIndex;
+            const std::vector<unsigned char> m_inlineData;
+        };
 
-  /// For each category, the size of an entry in the SBT depends on the maximum number of resources
-  /// used by the shaders in that category.The helper computes those values automatically in
-  /// GetEntrySize()
-  VkDeviceSize m_rayGenEntrySize;
-  VkDeviceSize m_missEntrySize;
-  VkDeviceSize m_hitGroupEntrySize;
+        /// For each entry, copy the shader identifier followed by its resource pointers and/or root
+        /// constants in outputData, with a stride in bytes of entrySize, and returns the size in bytes
+        /// actually written to outputData.
+        VkDeviceSize CopyShaderData(VkDevice device,
+                                    VkPipeline pipeline,
+                                    uint8_t *outputData,
+                                    const std::vector<SBTEntry> &shaders,
+                                    VkDeviceSize entrySize,
+                                    const uint8_t *shaderHandleStorage);
 
-  /// The program names are translated into program identifiers.The size in bytes of an identifier
-  /// is provided by the device and is the same for all categories.
-  VkDeviceSize m_progIdSize;
-  VkDeviceSize m_sbtSize;
-};
+        /// Compute the size of the SBT entries for a set of entries, which is determined by the maximum
+        /// number of parameters of their root signature
+        VkDeviceSize GetEntrySize(const std::vector<SBTEntry> &entries);
+
+        /// Ray generation shader entries
+        std::vector<SBTEntry> m_rayGen;
+        /// Miss shader entries
+        std::vector<SBTEntry> m_miss;
+        /// Hit group entries
+        std::vector<SBTEntry> m_hitGroup;
+
+        /// For each category, the size of an entry in the SBT depends on the maximum number of resources
+        /// used by the shaders in that category.The helper computes those values automatically in
+        /// GetEntrySize()
+        VkDeviceSize m_rayGenEntrySize;
+        VkDeviceSize m_missEntrySize;
+        VkDeviceSize m_hitGroupEntrySize;
+
+        /// The program names are translated into program identifiers.The size in bytes of an identifier
+        /// is provided by the device and is the same for all categories.
+        VkDeviceSize m_progIdSize;
+        VkDeviceSize m_sbtSize;
+    };
 }  // namespace nv_helpers_vk

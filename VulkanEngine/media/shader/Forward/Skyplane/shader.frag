@@ -28,5 +28,5 @@ void main() {
 
     vec3 fragColor = texture(texSamplerArray[resIdx], texCoord).xyz;
 
-    outColor = vec4( fragColor, 1.0 );
+    outColor = vec4(fragColor, 1.0);
 }

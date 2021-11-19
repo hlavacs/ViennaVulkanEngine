@@ -14,35 +14,35 @@
 #define LIGHT_AMBIENT 3
 
 struct cameraData_t {
-  mat4 camModel;
-  mat4 camView;
-  mat4 camProj;
-  mat4 camModelInv;
-  mat4 camViewInv;
-  mat4 camProjInv;
-  vec4 param;
-  vec4 a,b,c,d,e,f,g;
+    mat4 camModel;
+    mat4 camView;
+    mat4 camProj;
+    mat4 camModelInv;
+    mat4 camViewInv;
+    mat4 camProjInv;
+    vec4 param;
+    vec4 a, b, c, d, e, f, g;
 };
 
 struct lightData_t {
-  ivec4 itype;
-  mat4  lightModel;
-  vec4  col_ambient;
-  vec4  col_diffuse;
-  vec4  col_specular;
-  vec4  param;
-  vec4  a,b,c,d,e,f,g;
-  cameraData_t shadowCameras[NUM_SHADOW_CASCADE];
+    ivec4 itype;
+    mat4  lightModel;
+    vec4  col_ambient;
+    vec4  col_diffuse;
+    vec4  col_specular;
+    vec4  param;
+    vec4  a, b, c, d, e, f, g;
+    cameraData_t shadowCameras[NUM_SHADOW_CASCADE];
 };
 
 struct objectData_t {
-  mat4  model;
-  mat4  modelTrans;
-  mat4  modelInvTrans;
-  vec4  color;
-  vec4  param;
-  ivec4 iparam;
-  vec4  a;
+    mat4  model;
+    mat4  modelTrans;
+    mat4  modelInvTrans;
+    vec4  color;
+    vec4  param;
+    ivec4 iparam;
+    vec4  a;
 };
 
 struct Vertex
@@ -67,6 +67,6 @@ struct hitPayload
 
 struct RTPushConstants_t
 {
-	bool shadowEnabled;
-	bool reflectionsEnabled;
+    bool shadowEnabled;
+    bool reflectionsEnabled;
 };

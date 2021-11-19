@@ -17,6 +17,6 @@ layout(set = 2, binding = 0) uniform sampler2D shadowMap;
 
 void main() {
     outPosition = fragPosition;
-	outNormal = vec4(0.0);
+    outNormal = vec4(0.0);
     outAlbedo = fragColor;
 }

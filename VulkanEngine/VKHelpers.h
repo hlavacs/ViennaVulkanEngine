@@ -43,27 +43,31 @@ Contacts for feedback:
 namespace nv_helpers_vk {
 
 /// Find the appropriate memory type based on the requirements
-uint32_t findMemoryType(VkPhysicalDevice      physicalDevice,
-                        uint32_t              typeFilter,
-                        VkMemoryPropertyFlags properties);
+    uint32_t findMemoryType(VkPhysicalDevice physicalDevice,
+                            uint32_t typeFilter,
+                            VkMemoryPropertyFlags properties);
 
 /// Create a buffer and it associated memory object
-void createBuffer(VkPhysicalDevice      physicalDevice,
-                  VkDevice              device,
-                  VkDeviceSize          sizeInBytes,
-                  VkBufferUsageFlags    usage,
-                  VkBuffer*             buffer,
-                  VkDeviceMemory*       bufferMemory,
-                  VkMemoryPropertyFlags memPropFlags = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT
-                                                       | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+    void createBuffer(VkPhysicalDevice physicalDevice,
+                      VkDevice device,
+                      VkDeviceSize sizeInBytes,
+                      VkBufferUsageFlags usage,
+                      VkBuffer *buffer,
+                      VkDeviceMemory *bufferMemory,
+                      VkMemoryPropertyFlags memPropFlags = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT
+                                                           | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
 
 /// Create an image barrier
-void imageBarrier(VkCommandBuffer          commandBuffer,
-                  VkImage                  image,
-                  VkImageSubresourceRange& subresourceRange,
-                  VkAccessFlags            srcAccessMask,
-                  VkAccessFlags            dstAccessMask,
-                  VkImageLayout            oldLayout,
-                  VkImageLayout            newLayout);
+    void imageBarrier(VkCommandBuffer
+                      commandBuffer,
+                      VkImage image,
+                      VkImageSubresourceRange
+                      &subresourceRange,
+                      VkAccessFlags srcAccessMask,
+                      VkAccessFlags
+                      dstAccessMask,
+                      VkImageLayout oldLayout,
+                      VkImageLayout
+                      newLayout);
 
 }  // namespace nv_helpers_vk

@@ -5,7 +5,6 @@ const uint32_t SHADOW_MAP_DIM = 4096;
 const uint32_t NUM_SHADOW_CASCADE = 6;
 
 
-
 #include "VERendererForward.h"
 #include "VERendererDeferred.h"
 
@@ -18,6 +17,6 @@ const uint32_t NUM_SHADOW_CASCADE = 6;
 #define getRendererShaderPointer() getRendererDeferredPointer()
 #endif
 #ifndef getRendererShaderPointer
-    #define FORWARD_SHADER
-    #define getRendererShaderPointer() getRendererForwardPointer()
+#define FORWARD_SHADER
+#define getRendererShaderPointer() getRendererForwardPointer()
 #endif 

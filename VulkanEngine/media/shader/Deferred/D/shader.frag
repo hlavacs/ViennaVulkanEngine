@@ -32,9 +32,9 @@ void main() {
     vec2 texCoord   = (fragTexCoord + texParam.zw)*texParam.xy;
     ivec4 iparam    = objectUBO.data.iparam;
     uint resIdx     = iparam.x % RESOURCEARRAYLENGTH;
-    vec3 fragColor = texture( texSamplerArray[resIdx], texCoord ).xyz;
+    vec3 fragColor = texture(texSamplerArray[resIdx], texCoord).xyz;
 
-    outAlbedo = vec4(fragColor, 1.0 );
-	outNormal = vec4(fragNormalW, 1.0);
-	outPosition = vec4(fragPosW, 1.0);
+    outAlbedo = vec4(fragColor, 1.0);
+    outNormal = vec4(fragNormalW, 1.0);
+    outPosition = vec4(fragPosW, 1.0);
 }
