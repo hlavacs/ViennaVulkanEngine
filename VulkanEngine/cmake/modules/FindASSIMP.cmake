@@ -63,20 +63,20 @@ else(WIN32)
     )
 
     find_library(
-            ASSIMP_LIBRARIES
+            ASSIMP_LIBRARY
             NAMES assimp
             PATHS /usr/local/lib/
             PATHS /usr/lib64/
             PATHS /usr/lib/
     )
 
-    if (ASSIMP_INCLUDE_DIRS AND ASSIMP_LIBRARIES)
+    if (ASSIMP_INCLUDE_DIRS AND ASSIMP_LIBRARY)
         SET(ASSIMP_FOUND TRUE)
-    ENDIF (ASSIMP_INCLUDE_DIRS AND ASSIMP_LIBRARIES)
+    ENDIF (ASSIMP_INCLUDE_DIRS AND ASSIMP_LIBRARY)
 
     if (ASSIMP_FOUND)
         if (NOT ASSIMP_FIND_QUIETLY)
-            message(STATUS "Found asset importer library: ${ASSIMP_LIBRARIES}")
+            message(STATUS "Found asset importer library: ${ASSIMP_LIBRARY}")
         endif (NOT ASSIMP_FIND_QUIETLY)
     else (ASSIMP_FOUND)
         if (ASSIMP_FIND_REQUIRED)

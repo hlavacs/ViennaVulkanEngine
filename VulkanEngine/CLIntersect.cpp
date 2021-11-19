@@ -72,7 +72,7 @@ namespace cl {
     */
     bool clIntersect(glm::vec3 &p, clHalfspace &h) {
         float ord = glm::dot(p, h.plane.normal);
-        int sign = signbit(ord) ? -1 : 1;
+        int sign = std::signbit(ord) ? -1 : 1;
         return (sign == h.sign);
     }
 

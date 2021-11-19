@@ -191,10 +191,7 @@ namespace ve {
 using namespace ve;
 
 int main() {
-    bool debug = true;
-
-    MyVulkanEngine mve(VE_RENDERER_TYPE_RAYTRACING_NV,
-                       debug);    //enable or disable debugging (=callback, validation layers)
+    MyVulkanEngine mve(VE_RENDERER_TYPE_FORWARD, true);   
 
     mve.initEngine();
     mve.loadLevel(1);
