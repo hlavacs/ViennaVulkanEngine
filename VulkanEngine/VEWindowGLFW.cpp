@@ -5,13 +5,11 @@
 *
 */
 
-
 #include "VEInclude.h"
 
-
-namespace ve {
-
-    /**
+namespace ve
+{
+/**
     *
     * \brief Initialize a new GLFW window and set callbacks
     *
@@ -19,75 +17,82 @@ namespace ve {
     * \param[in] HEIGHT Height of the new window
     *
     */
-    void VEWindowGLFW::initWindow(int WIDTH, int HEIGHT) {
-        glfwInit();
-        glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
-        m_window = glfwCreateWindow(WIDTH, HEIGHT, "Vienna Vulkan Engine", nullptr, nullptr);
-        glfwSetWindowUserPointer(m_window, this);
+void VEWindowGLFW::initWindow(int WIDTH, int HEIGHT)
+{
+    glfwInit();
+    glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
+    m_window = glfwCreateWindow(WIDTH, HEIGHT, "Vienna Vulkan Engine", nullptr, nullptr);
+    glfwSetWindowUserPointer(m_window, this);
 
-        //set callbacks
-        glfwSetFramebufferSizeCallback(m_window, framebufferResizeCallbackGLFW);
-        glfwSetKeyCallback(m_window, key_callbackGLFW);
-        glfwSetCursorPosCallback(m_window, cursor_pos_callbackGLFW);
-        glfwSetMouseButtonCallback(m_window, mouse_button_callback);
-        glfwSetScrollCallback(m_window, mouse_scroll_callback);
-        glfwSetWindowCloseCallback(m_window, window_close_callback);
+    //set callbacks
+    glfwSetFramebufferSizeCallback(m_window, framebufferResizeCallbackGLFW);
+    glfwSetKeyCallback(m_window, key_callbackGLFW);
+    glfwSetCursorPosCallback(m_window, cursor_pos_callbackGLFW);
+    glfwSetMouseButtonCallback(m_window, mouse_button_callback);
+    glfwSetScrollCallback(m_window, mouse_scroll_callback);
+    glfwSetWindowCloseCallback(m_window, window_close_callback);
 
-        //never miss these events
-        glfwSetInputMode(m_window, GLFW_STICKY_KEYS, 1);
-        glfwSetInputMode(m_window, GLFW_STICKY_MOUSE_BUTTONS, 1);
-    }
+    //never miss these events
+    glfwSetInputMode(m_window, GLFW_STICKY_KEYS, 1);
+    glfwSetInputMode(m_window, GLFW_STICKY_MOUSE_BUTTONS, 1);
+}
 
-    ///\returns the required Vulkan instance extensions to interact with the local window system
-    std::vector<const char *> VEWindowGLFW::getRequiredInstanceExtensions() {
-        uint32_t glfwExtensionCount = 0;
-        const char **glfwExtensions;
-        glfwExtensions = glfwGetRequiredInstanceExtensions(&glfwExtensionCount);
+///\returns the required Vulkan instance extensions to interact with the local window system
+std::vector<const char*> VEWindowGLFW::getRequiredInstanceExtensions()
+{
+    uint32_t glfwExtensionCount = 0;
+    const char** glfwExtensions;
+    glfwExtensions = glfwGetRequiredInstanceExtensions(&glfwExtensionCount);
 
-        std::vector<const char *> extensions(glfwExtensions, glfwExtensions + glfwExtensionCount);
+    std::vector<const char*> extensions(glfwExtensions, glfwExtensions + glfwExtensionCount);
 
-        return extensions;
-    }
+    return extensions;
+}
 
-    ///\returns the extent of the window
-    VkExtent2D VEWindowGLFW::getExtent() {
-        int width, height;
-        glfwGetFramebufferSize(m_window, &width, &height);
-        VkExtent2D actualExtent = {
-                static_cast<uint32_t>(width),
-                static_cast<uint32_t>(height)
-        };
-        return actualExtent;
-    }
+///\returns the extent of the window
+VkExtent2D VEWindowGLFW::getExtent()
+{
+    int width, height;
+    glfwGetFramebufferSize(m_window, &width, &height);
+    VkExtent2D actualExtent = {
+        static_cast<uint32_t>(width),
+        static_cast<uint32_t>(height)};
+    return actualExtent;
+}
 
-    /**
+/**
     * \brief Create a KHR surface for intercting with the GLFW window
     * \param[in] instance The Vulkan instance
     * \param[out] pSurface  Pointer to the created surface.
     * \returns boolean falggin success
     */
-    bool VEWindowGLFW::createSurface(VkInstance instance,
-                                     VkSurfaceKHR *pSurface) {            //overload for other windowing systems!
-        if (glfwCreateWindowSurface(instance, m_window, nullptr, pSurface) != VK_SUCCESS) return false;
-        return true;
-    }
+bool VEWindowGLFW::createSurface(VkInstance instance,
+                                 VkSurfaceKHR* pSurface)
+{ //overload for other windowing systems!
+    if (glfwCreateWindowSurface(instance, m_window, nullptr, pSurface) != VK_SUCCESS)
+        return false;
+    return true;
+}
 
-    ///Wait for the window to finish size change
-    void VEWindowGLFW::waitForWindowSizeChange() {
-        int width = 0, height = 0;
-        while (width == 0 || height == 0) {
-            glfwGetFramebufferSize(m_window, &width, &height);
-            glfwWaitEvents();
-        }
+///Wait for the window to finish size change
+void VEWindowGLFW::waitForWindowSizeChange()
+{
+    int width = 0, height = 0;
+    while (width == 0 || height == 0)
+    {
+        glfwGetFramebufferSize(m_window, &width, &height);
+        glfwWaitEvents();
     }
+}
 
-    ///Close the GLFW window
-    void VEWindowGLFW::closeWindow() {
-        glfwDestroyWindow(m_window);
-        glfwTerminate();
-    }
+///Close the GLFW window
+void VEWindowGLFW::closeWindow()
+{
+    glfwDestroyWindow(m_window);
+    glfwTerminate();
+}
 
-    /**
+/**
     *
     * \brief Callback to receive GLFW events from the keyboard
     *
@@ -105,34 +110,38 @@ namespace ve {
     * \param[in] mods Not used
     *
     */
-    void VEWindowGLFW::key_callbackGLFW(GLFWwindow *window, int key, int scancode, int action, int mods) {
-        auto app = reinterpret_cast<VEWindowGLFW *>(glfwGetWindowUserPointer(window));
+void VEWindowGLFW::key_callbackGLFW(GLFWwindow* window, int key, int scancode, int action, int mods)
+{
+    auto app = reinterpret_cast<VEWindowGLFW*>(glfwGetWindowUserPointer(window));
 
-        if (action == GLFW_REPEAT) return;        //no need for this
+    if (action == GLFW_REPEAT)
+        return; //no need for this
 
-        veEvent event(veEvent::VE_EVENT_SUBSYSTEM_GLFW, veEvent::VE_EVENT_KEYBOARD);
-        event.idata1 = key;
-        event.idata2 = scancode;
-        event.idata3 = action;
-        event.idata4 = mods;
-        event.ptr = window;
+    veEvent event(veEvent::VE_EVENT_SUBSYSTEM_GLFW, veEvent::VE_EVENT_KEYBOARD);
+    event.idata1 = key;
+    event.idata2 = scancode;
+    event.idata3 = action;
+    event.idata4 = mods;
+    event.ptr = window;
+    app->processEvent(event);
+
+    if (action == GLFW_PRESS)
+    { //just started to press a key -> remember it in the engine
+
+        event.notBeforeTime = getEnginePointer()->getLoopCount() + 1;
+        event.idata3 = GLFW_REPEAT;
+        event.lifeTime = veEvent::VE_EVENT_LIFETIME_CONTINUOUS;
         app->processEvent(event);
-
-        if (action == GLFW_PRESS) {                //just started to press a key -> remember it in the engine
-
-            event.notBeforeTime = getEnginePointer()->getLoopCount() + 1;
-            event.idata3 = GLFW_REPEAT;
-            event.lifeTime = veEvent::VE_EVENT_LIFETIME_CONTINUOUS;
-            app->processEvent(event);
-        }
-
-        if (action == GLFW_RELEASE) {            //just released a key -> remove from the event list
-            event.idata3 = GLFW_REPEAT;
-            getEnginePointer()->deleteEvent(event);
-        }
     }
 
-    /**
+    if (action == GLFW_RELEASE)
+    { //just released a key -> remove from the event list
+        event.idata3 = GLFW_REPEAT;
+        getEnginePointer()->deleteEvent(event);
+    }
+}
+
+/**
     *
     * \brief Callback to receive GLFW events that mouse has moved
     *
@@ -141,17 +150,18 @@ namespace ve {
     * \param[in] ypos New y-position of the cursor
     *
     */
-    void VEWindowGLFW::cursor_pos_callbackGLFW(GLFWwindow *window, double xpos, double ypos) {
-        auto app = reinterpret_cast<VEWindowGLFW *>(glfwGetWindowUserPointer(window));
-        veEvent event(veEvent::VE_EVENT_SUBSYSTEM_GLFW, veEvent::VE_EVENT_MOUSEMOVE);
-        event.fdata1 = (float) xpos;
-        event.fdata2 = (float) ypos;
-        event.ptr = window;
+void VEWindowGLFW::cursor_pos_callbackGLFW(GLFWwindow* window, double xpos, double ypos)
+{
+    auto app = reinterpret_cast<VEWindowGLFW*>(glfwGetWindowUserPointer(window));
+    veEvent event(veEvent::VE_EVENT_SUBSYSTEM_GLFW, veEvent::VE_EVENT_MOUSEMOVE);
+    event.fdata1 = (float)xpos;
+    event.fdata2 = (float)ypos;
+    event.ptr = window;
 
-        app->processEvent(event);
-    }
+    app->processEvent(event);
+}
 
-    /**
+/**
     *
     * \brief Callback to receive GLFW events from mouse buttons
     *
@@ -168,32 +178,36 @@ namespace ve {
     * \param[in] mods Not used
     *
     */
-    void VEWindowGLFW::mouse_button_callback(GLFWwindow *window, int button, int action, int mods) {
-        auto app = reinterpret_cast<VEWindowGLFW *>(glfwGetWindowUserPointer(window));
+void VEWindowGLFW::mouse_button_callback(GLFWwindow* window, int button, int action, int mods)
+{
+    auto app = reinterpret_cast<VEWindowGLFW*>(glfwGetWindowUserPointer(window));
 
-        if (action == GLFW_REPEAT) return;        //no need for this
+    if (action == GLFW_REPEAT)
+        return; //no need for this
 
-        veEvent event(veEvent::VE_EVENT_SUBSYSTEM_GLFW, veEvent::VE_EVENT_MOUSEBUTTON);
-        event.idata1 = button;
-        event.idata3 = action;
-        event.idata4 = mods;
-        event.ptr = window;
+    veEvent event(veEvent::VE_EVENT_SUBSYSTEM_GLFW, veEvent::VE_EVENT_MOUSEBUTTON);
+    event.idata1 = button;
+    event.idata3 = action;
+    event.idata4 = mods;
+    event.ptr = window;
+    app->processEvent(event);
+
+    if (action == GLFW_PRESS)
+    { //just started to press a key -> remember it in the engine
+        event.notBeforeTime = getEnginePointer()->getLoopCount() + 1;
+        event.idata3 = GLFW_REPEAT;
+        event.lifeTime = veEvent::VE_EVENT_LIFETIME_CONTINUOUS;
         app->processEvent(event);
-
-        if (action == GLFW_PRESS) {                //just started to press a key -> remember it in the engine
-            event.notBeforeTime = getEnginePointer()->getLoopCount() + 1;
-            event.idata3 = GLFW_REPEAT;
-            event.lifeTime = veEvent::VE_EVENT_LIFETIME_CONTINUOUS;
-            app->processEvent(event);
-        }
-
-        if (action == GLFW_RELEASE) {            //just released a key -> remove from pressed keys list
-            event.idata3 = GLFW_REPEAT;
-            getEnginePointer()->deleteEvent(event);
-        }
     }
 
-    /**
+    if (action == GLFW_RELEASE)
+    { //just released a key -> remove from pressed keys list
+        event.idata3 = GLFW_REPEAT;
+        getEnginePointer()->deleteEvent(event);
+    }
+}
+
+/**
     *
     * \brief Callback to receive GLFW events from mouse scroll wheel
     *
@@ -202,22 +216,23 @@ namespace ve {
     * \param[in] yoffset Yoffset of scroll wheel
     *
     */
-    void VEWindowGLFW::mouse_scroll_callback(GLFWwindow *window, double xoffset, double yoffset) {
-        auto app = reinterpret_cast<VEWindowGLFW *>(glfwGetWindowUserPointer(window));
-        veEvent event(veEvent::VE_EVENT_SUBSYSTEM_GLFW, veEvent::VE_EVENT_MOUSESCROLL);
-        event.fdata1 = (float) xoffset;
-        event.fdata2 = (float) yoffset;
-        event.ptr = window;
+void VEWindowGLFW::mouse_scroll_callback(GLFWwindow* window, double xoffset, double yoffset)
+{
+    auto app = reinterpret_cast<VEWindowGLFW*>(glfwGetWindowUserPointer(window));
+    veEvent event(veEvent::VE_EVENT_SUBSYSTEM_GLFW, veEvent::VE_EVENT_MOUSESCROLL);
+    event.fdata1 = (float)xoffset;
+    event.fdata2 = (float)yoffset;
+    event.ptr = window;
 
-        app->processEvent(event);
-    }
+    app->processEvent(event);
+}
 
-    void VEWindowGLFW::window_close_callback(GLFWwindow *window) {
-        getEnginePointer()->end();
-    }
+void VEWindowGLFW::window_close_callback(GLFWwindow* window)
+{
+    getEnginePointer()->end();
+}
 
-
-    /**
+/**
     *
     * \brief Callback to receive GLFW events from window size change
     *
@@ -226,9 +241,10 @@ namespace ve {
     * \param[in] height New height of the window
     *
     */
-    void VEWindowGLFW::framebufferResizeCallbackGLFW(GLFWwindow *window, int width, int height) {
-        auto app = reinterpret_cast<VEWindowGLFW *>(glfwGetWindowUserPointer(window));
-        app->windowSizeChanged();
-    }
-
+void VEWindowGLFW::framebufferResizeCallbackGLFW(GLFWwindow* window, int width, int height)
+{
+    auto app = reinterpret_cast<VEWindowGLFW*>(glfwGetWindowUserPointer(window));
+    app->windowSizeChanged();
 }
+
+} // namespace ve

@@ -5,53 +5,50 @@
 *
 */
 
-
 #include "VEInclude.h"
-#include "VESubrenderFW_Shadow.h"
 #include "VERendererForward.h"
 
-
-namespace ve {
-
-    /**
+namespace ve
+{
+/**
     * \brief Initialize the subrenderer
     *
     * Create descriptor set layout, pipeline layout and the PSO
     *
     */
-    void VESubrenderFW_Shadow::initSubrenderer() {
-        VESubrenderFW::initSubrenderer();
+void VESubrenderFW_Shadow::initSubrenderer()
+{
+    VESubrenderFW::initSubrenderer();
 
-        VkDescriptorSetLayout perObjectLayout = m_renderer.getDescriptorSetLayoutPerObject();
-        vh::vhPipeCreateGraphicsPipelineLayout(m_renderer.getDevice(),
-                                               {perObjectLayout, perObjectLayout,
-                                                m_renderer.getDescriptorSetLayoutShadow(), perObjectLayout},
-                                               {},
-                                               &m_pipelineLayout);
+    VkDescriptorSetLayout perObjectLayout = m_renderer.getDescriptorSetLayoutPerObject();
+    vh::vhPipeCreateGraphicsPipelineLayout(m_renderer.getDevice(),
+                                           {perObjectLayout, perObjectLayout,
+                                            m_renderer.getDescriptorSetLayoutShadow(), perObjectLayout},
+                                           {},
+                                           &m_pipelineLayout);
 
-        m_pipelines.resize(1);
-        vh::vhPipeCreateGraphicsShadowPipeline(m_renderer.getDevice(),
-                                               "media/shader/Forward/Shadow/vert.spv",
-                                               m_renderer.getShadowMapExtent(),
-                                               m_pipelineLayout,
-                                               m_renderer.getRenderPassShadow(),
-                                               &m_pipelines[0]);
+    m_pipelines.resize(1);
+    vh::vhPipeCreateGraphicsShadowPipeline(m_renderer.getDevice(),
+                                           "media/shader/Forward/Shadow/vert.spv",
+                                           m_renderer.getShadowMapExtent(),
+                                           m_pipelineLayout,
+                                           m_renderer.getRenderPassShadow(),
+                                           &m_pipelines[0]);
+}
 
-    }
-
-    /**
+/**
     *
     * \brief Add an entity to the list of associated entities.
     *
     * \param[in] pEntity Pointer to the entity to include into the list.
     *
     */
-    void VESubrenderFW_Shadow::addEntity(VEEntity *pEntity) {
-        m_entities.push_back(pEntity);
-    }
+void VESubrenderFW_Shadow::addEntity(VEEntity* pEntity)
+{
+    m_entities.push_back(pEntity);
+}
 
-
-    /**
+/**
     *
     * \brief Bind default descriptor sets
     *
@@ -62,33 +59,23 @@ namespace ve {
     * \param[in] entity Pointer to the entity to draw
     *
     */
-    void VESubrenderFW_Shadow::bindDescriptorSetsPerEntity(VkCommandBuffer
+void VESubrenderFW_Shadow::bindDescriptorSetsPerEntity(VkCommandBuffer
                                                            commandBuffer,
-                                                           uint32_t imageIndex, VEEntity
-                                                           *entity) {
+                                                       uint32_t imageIndex,
+                                                       VEEntity* entity)
+{
+    //set 0...cam UBO
+    //set 1...light resources
+    //set 2...shadow maps
+    //set 3...per object UBO
+    //set 4...additional per object resources - NOT used in shadows
 
-        //set 0...cam UBO
-        //set 1...light resources
-        //set 2...shadow maps
-        //set 3...per object UBO
-        //set 4...additional per object resources - NOT used in shadows
+    std::vector<VkDescriptorSet> sets = {entity->m_memoryHandle.pMemBlock->descriptorSets[imageIndex]};
 
-        std::vector<VkDescriptorSet> sets = {entity->m_memoryHandle.pMemBlock->descriptorSets[imageIndex]};
-
-        uint32_t offset = entity->m_memoryHandle.entryIndex * sizeof(VEEntity::veUBOPerEntity_t);
-        vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_pipelineLayout,
-                                3, (uint32_t) sets.
-
-                        size(), sets
-
-                                        .
-
-                                                data(),
-
-                                1, &offset);
-
-    }
-
+    uint32_t offset = entity->m_memoryHandle.entryIndex * sizeof(VEEntity::veUBOPerEntity_t);
+    vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_pipelineLayout,
+                            3, (uint32_t)sets.size(), sets.data(), 1, &offset);
+}
 
 /**
 * \brief Draw all associated entities for the shadow pass
@@ -104,43 +91,28 @@ namespace ve {
 * \param[in] descriptorSetsShadow The shadow maps to be used.
 *
 */
-    void VESubrenderFW_Shadow::draw(VkCommandBuffer
-                                    commandBuffer,
-                                    uint32_t imageIndex, uint32_t
-                                    numPass,
-                                    VECamera *pCamera, VELight
-                                    *pLight,
-                                    std::vector<VkDescriptorSet> descriptorSetsShadow
-    ) {
+void VESubrenderFW_Shadow::draw(VkCommandBuffer commandBuffer,
+                                uint32_t imageIndex,
+                                uint32_t numPass,
+                                VECamera* pCamera,
+                                VELight* pLight,
+                                std::vector<VkDescriptorSet> descriptorSetsShadow)
+{
+    bindPipeline(commandBuffer);
 
-        bindPipeline(commandBuffer);
+    bindDescriptorSetsPerFrame(commandBuffer, imageIndex, pCamera, pLight, descriptorSetsShadow);
 
-        bindDescriptorSetsPerFrame(commandBuffer, imageIndex, pCamera, pLight, descriptorSetsShadow
-        );
-
-//go through all entities and draw them
-        for (
-            auto subrender
-                :
-
-                getSubrenderers()
-
-                ) {
-            for (
-                auto pEntity
-                    : subrender->
-
-                    getEntities()
-
-                    ) {
-                if (pEntity->m_castsShadow) {
-                    bindDescriptorSetsPerEntity(commandBuffer, imageIndex, pEntity
-                    );    //bind the entity's descriptor sets
-                    drawEntity(commandBuffer, imageIndex, pEntity
-                    );
-                }
+    //go through all entities and draw them
+    for (auto subrender : getSubrenderers())
+    {
+        for (auto pEntity : subrender->getEntities())
+        {
+            if (pEntity->m_castsShadow)
+            {
+                bindDescriptorSetsPerEntity(commandBuffer, imageIndex, pEntity); //bind the entity's descriptor sets
+                drawEntity(commandBuffer, imageIndex, pEntity);
             }
         }
     }
 }
-
+} // namespace ve

@@ -30,7 +30,14 @@ FIND_PATH(IRRKLANG_INCLUDE_DIR "irrKlang.h"
         PATHS ${_irrklang_HEADER_SEARCH_DIRS} )
 
 # Search for the library
-FIND_LIBRARY(IRRKLANG_LIBRARY NAMES irrKlang, libIrrKlang.so
+SET(_irrklang_LIBRARY_NAME "irrKlang")
+if(UNIX AND NOT APPLE)
+    SET(_irrklang_LIBRARY_NAME "irrKlang.so")
+elseif(UNIX AND APPLE)
+    SET(_irrklang_LIBRARY_NAME "libirrklang.dylib")
+endif(UNIX AND NOT APPLE)
+
+FIND_LIBRARY(IRRKLANG_LIBRARY NAMES ${_irrklang_LIBRARY_NAME}
         PATHS ${_irrklang_LIB_SEARCH_DIRS} )
 INCLUDE(FindPackageHandleStandardArgs)
 FIND_PACKAGE_HANDLE_STANDARD_ARGS(IrrKlang DEFAULT_MSG

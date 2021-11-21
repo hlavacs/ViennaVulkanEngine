@@ -13,7 +13,10 @@ FILE(GLOB SOURCE_FILES
         ${CMAKE_SOURCE_DIR}/*.cpp
         ${CMAKE_SOURCE_DIR}/../external/threadpool/ThreadPool.cpp)
 
+add_compile_definitions(VK_NO_PROTOTYPES)
+
 add_executable(${EXECUTABLE_NAME} ${HEADER_FILES} ${SOURCE_FILES})
+
 
 #additional include directories
 include_directories(${CMAKE_SOURCE_DIR}/../external/glm)
@@ -38,7 +41,7 @@ if (MSVC)
     add_definitions(-DUNICODE -D_UNICODE)
     set(GLFW3_ROOT ${CMAKE_SOURCE_DIR}/../external/glfw/glfw-3.2.1.bin.WIN64/)
     set(ASSIMP_ROOT_DIR ${CMAKE_SOURCE_DIR}/../external/Assimp)
-endif ()
+endif()
 
 find_package(GLFW3 REQUIRED)
 include_directories(${GLFW3_INCLUDE_DIR})
@@ -48,6 +51,6 @@ find_package(ASSIMP REQUIRED)
 include_directories(${ASSIMP_INCLUDE_DIRS})
 target_link_libraries(${EXECUTABLE_NAME} ${ASSIMP_LIBRARY})
 
-if(UNIX AND NOT APPLE)
+if(UNIX)
     target_link_libraries(${EXECUTABLE_NAME} pthread ${CMAKE_DL_LIBS})
-endif ()
+endif()

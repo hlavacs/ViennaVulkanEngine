@@ -1,7 +1,6 @@
 #ifndef VHFUNCTIONS_H
 #define VHFUNCTIONS_H
 
-
 #define VK_EXPORTED_FUNCTION(fun) extern PFN_##fun fun;
 #define VK_GLOBAL_LEVEL_FUNCTION(fun) extern PFN_##fun fun;
 #define VK_INSTANCE_LEVEL_FUNCTION(fun) extern PFN_##fun fun;
@@ -20,4 +19,3 @@ VkResult vhLoadInstanceLevelEntryPoints(VkInstance instance);
 VkResult vhLoadDeviceLevelEntryPoints(VkInstance instance, VkDevice device);
 
 #endif
-

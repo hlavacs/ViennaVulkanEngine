@@ -7,11 +7,11 @@
 
 #include "VHHelper.h"
 
-namespace vh {
+namespace vh
+{
+//-------------------------------------------------------------------------------------------------------
 
-    //-------------------------------------------------------------------------------------------------------
-
-    /**
+/**
     *
     * \brief Create a new command pool
     *
@@ -22,21 +22,20 @@ namespace vh {
     * \returns VK_SUCCESS or a Vulkan error code
     *
     */
-    VkResult vhCmdCreateCommandPool(VkPhysicalDevice physicalDevice, VkDevice device,
-                                    VkSurfaceKHR surface, VkCommandPool *commandPool) {
+VkResult vhCmdCreateCommandPool(VkPhysicalDevice physicalDevice, VkDevice device, VkSurfaceKHR surface, VkCommandPool* commandPool)
+{
+    QueueFamilyIndices queueFamilyIndices = vhDevFindQueueFamilies(physicalDevice, surface);
 
-        QueueFamilyIndices queueFamilyIndices = vhDevFindQueueFamilies(physicalDevice, surface);
+    VkCommandPoolCreateInfo poolInfo = {};
+    poolInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
+    poolInfo.queueFamilyIndex = queueFamilyIndices.graphicsFamily;
 
-        VkCommandPoolCreateInfo poolInfo = {};
-        poolInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
-        poolInfo.queueFamilyIndex = queueFamilyIndices.graphicsFamily;
+    return vkCreateCommandPool(device, &poolInfo, nullptr, commandPool);
+}
 
-        return vkCreateCommandPool(device, &poolInfo, nullptr, commandPool);
-    }
+//-------------------------------------------------------------------------------------------------------
 
-    //-------------------------------------------------------------------------------------------------------
-
-    /**
+/**
     *
     * \brief Create a number of command buffers
     *
@@ -48,21 +47,18 @@ namespace vh {
     * \returns VK_SUCCESS or a Vulkan error code
     *
     */
-    VkResult vhCmdCreateCommandBuffers(VkDevice device, VkCommandPool commandPool,
-                                       VkCommandBufferLevel level,
-                                       uint32_t count, VkCommandBuffer *pBuffers) {
+VkResult vhCmdCreateCommandBuffers(VkDevice device, VkCommandPool commandPool, VkCommandBufferLevel level, uint32_t count, VkCommandBuffer* pBuffers)
+{
+    VkCommandBufferAllocateInfo allocInfo = {};
+    allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
+    allocInfo.level = level;
+    allocInfo.commandPool = commandPool;
+    allocInfo.commandBufferCount = count;
 
-        VkCommandBufferAllocateInfo allocInfo = {};
-        allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
-        allocInfo.level = level;
-        allocInfo.commandPool = commandPool;
-        allocInfo.commandBufferCount = count;
+    return vkAllocateCommandBuffers(device, &allocInfo, pBuffers);
+}
 
-        return vkAllocateCommandBuffers(device, &allocInfo, pBuffers);
-    }
-
-
-    /**
+/**
     *
     * \brief Start a command buffer for recording commands
     *
@@ -75,25 +71,24 @@ namespace vh {
     * \returns VK_SUCCESS or a Vulkan error code
     *
     */
-    VkResult
-    vhCmdBeginCommandBuffer(VkDevice device, VkRenderPass renderPass, uint32_t subpass, VkFramebuffer frameBuffer,
-                            VkCommandBuffer commandBuffer, VkCommandBufferUsageFlagBits usageFlags) {
-        VkCommandBufferInheritanceInfo inheritance = {};
-        inheritance.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_INFO;
-        inheritance.framebuffer = frameBuffer;
-        inheritance.renderPass = renderPass;
-        inheritance.subpass = subpass;
+VkResult
+vhCmdBeginCommandBuffer(VkDevice device, VkRenderPass renderPass, uint32_t subpass, VkFramebuffer frameBuffer, VkCommandBuffer commandBuffer, VkCommandBufferUsageFlagBits usageFlags)
+{
+    VkCommandBufferInheritanceInfo inheritance = {};
+    inheritance.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_INFO;
+    inheritance.framebuffer = frameBuffer;
+    inheritance.renderPass = renderPass;
+    inheritance.subpass = subpass;
 
-        VkCommandBufferBeginInfo beginInfo = {};
-        beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
-        beginInfo.flags = usageFlags;
-        beginInfo.pInheritanceInfo = &inheritance;
+    VkCommandBufferBeginInfo beginInfo = {};
+    beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+    beginInfo.flags = usageFlags;
+    beginInfo.pInheritanceInfo = &inheritance;
 
-        return vkBeginCommandBuffer(commandBuffer, &beginInfo);
-    }
+    return vkBeginCommandBuffer(commandBuffer, &beginInfo);
+}
 
-
-    /**
+/**
     *
     * \brief Start a command buffer for recording commands
     *
@@ -103,18 +98,16 @@ namespace vh {
     * \returns VK_SUCCESS or a Vulkan error code
     *
     */
-    VkResult vhCmdBeginCommandBuffer(VkDevice device, VkCommandBuffer commandBuffer,
-                                     VkCommandBufferUsageFlagBits usageFlags) {
+VkResult vhCmdBeginCommandBuffer(VkDevice device, VkCommandBuffer commandBuffer, VkCommandBufferUsageFlagBits usageFlags)
+{
+    VkCommandBufferBeginInfo beginInfo = {};
+    beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+    beginInfo.flags = usageFlags;
 
-        VkCommandBufferBeginInfo beginInfo = {};
-        beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
-        beginInfo.flags = usageFlags;
+    return vkBeginCommandBuffer(commandBuffer, &beginInfo);
+}
 
-        return vkBeginCommandBuffer(commandBuffer, &beginInfo);
-    }
-
-
-    /**
+/**
     *
     * \brief Submit a command buffer to a queue
     *
@@ -127,41 +120,39 @@ namespace vh {
     * \returns VK_SUCCESS or a Vulkan error code
     *
     */
-    VkResult vhCmdSubmitCommandBuffer(VkDevice device, VkQueue queue,
-                                      VkCommandBuffer commandBuffer,
-                                      VkSemaphore waitSemaphore,
-                                      VkSemaphore signalSemaphore,
-                                      VkFence waitFence) {
+VkResult vhCmdSubmitCommandBuffer(VkDevice device, VkQueue queue, VkCommandBuffer commandBuffer, VkSemaphore waitSemaphore, VkSemaphore signalSemaphore, VkFence waitFence)
+{
+    VkSubmitInfo submitInfo = {};
+    submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
 
-        VkSubmitInfo submitInfo = {};
-        submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
-
-        VkSemaphore waitSemaphores[] = {waitSemaphore};
-        VkPipelineStageFlags waitStages[] = {VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT};
-        if (waitSemaphore != VK_NULL_HANDLE) {
-            submitInfo.waitSemaphoreCount = 1;
-            submitInfo.pWaitSemaphores = waitSemaphores;
-            submitInfo.pWaitDstStageMask = waitStages;
-        }
-
-        submitInfo.commandBufferCount = 1;
-        submitInfo.pCommandBuffers = &commandBuffer;
-
-        VkSemaphore signalSemaphores[] = {signalSemaphore};
-        if (signalSemaphore != VK_NULL_HANDLE) {
-            submitInfo.signalSemaphoreCount = 1;
-            submitInfo.pSignalSemaphores = signalSemaphores;
-        }
-
-        if (waitFence != VK_NULL_HANDLE) {
-            vkResetFences(device, 1, &waitFence);
-        }
-
-        return vkQueueSubmit(queue, 1, &submitInfo, waitFence);
+    VkSemaphore waitSemaphores[] = {waitSemaphore};
+    VkPipelineStageFlags waitStages[] = {VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT};
+    if (waitSemaphore != VK_NULL_HANDLE)
+    {
+        submitInfo.waitSemaphoreCount = 1;
+        submitInfo.pWaitSemaphores = waitSemaphores;
+        submitInfo.pWaitDstStageMask = waitStages;
     }
 
+    submitInfo.commandBufferCount = 1;
+    submitInfo.pCommandBuffers = &commandBuffer;
 
-    /**
+    VkSemaphore signalSemaphores[] = {signalSemaphore};
+    if (signalSemaphore != VK_NULL_HANDLE)
+    {
+        submitInfo.signalSemaphoreCount = 1;
+        submitInfo.pSignalSemaphores = signalSemaphores;
+    }
+
+    if (waitFence != VK_NULL_HANDLE)
+    {
+        vkResetFences(device, 1, &waitFence);
+    }
+
+    return vkQueueSubmit(queue, 1, &submitInfo, waitFence);
+}
+
+/**
     *
     * \brief Begin submitting a single time command
     *
@@ -170,28 +161,28 @@ namespace vh {
     * \returns a new VkCommandBuffer to record commands into
     *
     */
-    VkCommandBuffer vhCmdBeginSingleTimeCommands(VkDevice device, VkCommandPool commandPool) {
-        VkCommandBufferAllocateInfo allocInfo = {};
-        allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
-        allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
-        allocInfo.commandPool = commandPool;
-        allocInfo.commandBufferCount = 1;
+VkCommandBuffer vhCmdBeginSingleTimeCommands(VkDevice device, VkCommandPool commandPool)
+{
+    VkCommandBufferAllocateInfo allocInfo = {};
+    allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
+    allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+    allocInfo.commandPool = commandPool;
+    allocInfo.commandBufferCount = 1;
 
-        VkCommandBuffer commandBuffer;
-        vkAllocateCommandBuffers(device, &allocInfo, &commandBuffer);
+    VkCommandBuffer commandBuffer;
+    vkAllocateCommandBuffers(device, &allocInfo, &commandBuffer);
 
-        VkCommandBufferBeginInfo beginInfo = {};
-        beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
-        beginInfo.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
+    VkCommandBufferBeginInfo beginInfo = {};
+    beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+    beginInfo.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
 
-        if (vkBeginCommandBuffer(commandBuffer, &beginInfo) != VK_SUCCESS)
-            return VK_NULL_HANDLE;
+    if (vkBeginCommandBuffer(commandBuffer, &beginInfo) != VK_SUCCESS)
+        return VK_NULL_HANDLE;
 
-        return commandBuffer;
-    }
+    return commandBuffer;
+}
 
-
-    /**
+/**
     *
     * \brief End recording into a single time command buffer and submit it
     *
@@ -202,27 +193,25 @@ namespace vh {
     * \returns VK_SUCCESS or a Vulkan error code
     *
     */
-    VkResult vhCmdEndSingleTimeCommands(VkDevice device, VkQueue graphicsQueue, VkCommandPool commandPool,
-                                        VkCommandBuffer commandBuffer) {
+VkResult vhCmdEndSingleTimeCommands(VkDevice device, VkQueue graphicsQueue, VkCommandPool commandPool, VkCommandBuffer commandBuffer)
+{
+    VkFence waitFence;
 
-        VkFence waitFence;
+    VkFenceCreateInfo fenceInfo = {};
+    fenceInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
+    fenceInfo.flags = VK_FENCE_CREATE_SIGNALED_BIT;
 
-        VkFenceCreateInfo fenceInfo = {};
-        fenceInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
-        fenceInfo.flags = VK_FENCE_CREATE_SIGNALED_BIT;
+    vkCreateFence(device, &fenceInfo, nullptr, &waitFence);
 
-        vkCreateFence(device, &fenceInfo, nullptr, &waitFence);
+    VkResult result = vhCmdEndSingleTimeCommands(device, graphicsQueue, commandPool, commandBuffer,
+                                                 VK_NULL_HANDLE, VK_NULL_HANDLE, waitFence);
 
-        VkResult result = vhCmdEndSingleTimeCommands(device, graphicsQueue, commandPool, commandBuffer,
-                                                     VK_NULL_HANDLE, VK_NULL_HANDLE, waitFence);
+    vkDestroyFence(device, waitFence, nullptr);
 
-        vkDestroyFence(device, waitFence, nullptr);
+    return result;
+}
 
-        return result;
-    }
-
-
-    /**
+/**
     *
     * \brief End recording into a single time command buffer and submit it
     *
@@ -236,49 +225,49 @@ namespace vh {
     * \returns VK_SUCCESS or a Vulkan error code
     *
     */
-    VkResult vhCmdEndSingleTimeCommands(VkDevice device, VkQueue graphicsQueue, VkCommandPool commandPool,
-                                        VkCommandBuffer commandBuffer,
-                                        VkSemaphore waitSemaphore, VkSemaphore signalSemaphore, VkFence waitFence) {
+VkResult vhCmdEndSingleTimeCommands(VkDevice device, VkQueue graphicsQueue, VkCommandPool commandPool, VkCommandBuffer commandBuffer, VkSemaphore waitSemaphore, VkSemaphore signalSemaphore, VkFence waitFence)
+{
+    VHCHECKRESULT(vkEndCommandBuffer(commandBuffer));
 
-        VHCHECKRESULT(vkEndCommandBuffer(commandBuffer));
+    VkSubmitInfo submitInfo = {};
+    submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
 
-        VkSubmitInfo submitInfo = {};
-        submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
-
-        VkSemaphore waitSemaphores[] = {waitSemaphore};
-        VkPipelineStageFlags waitStages[] = {VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT};
-        if (waitSemaphore != VK_NULL_HANDLE) {
-            submitInfo.waitSemaphoreCount = 1;
-            submitInfo.pWaitSemaphores = waitSemaphores;
-            submitInfo.pWaitDstStageMask = waitStages;
-        }
-
-        submitInfo.commandBufferCount = 1;
-        submitInfo.pCommandBuffers = &commandBuffer;
-
-        VkSemaphore signalSemaphores[] = {signalSemaphore};
-        if (signalSemaphore != VK_NULL_HANDLE) {
-            submitInfo.signalSemaphoreCount = 1;
-            submitInfo.pSignalSemaphores = signalSemaphores;
-        }
-
-        if (waitFence != VK_NULL_HANDLE) {
-            vkResetFences(device, 1, &waitFence);
-        }
-
-        VHCHECKRESULT(vkQueueSubmit(graphicsQueue, 1, &submitInfo, waitFence));
-
-        if (waitFence != VK_NULL_HANDLE) {
-            VHCHECKRESULT(vkWaitForFences(device, 1, &waitFence, VK_TRUE, std::numeric_limits<uint64_t>::max()));
-        } else VHCHECKRESULT(vkQueueWaitIdle(graphicsQueue));
-
-        vkFreeCommandBuffers(device, commandPool, 1, &commandBuffer);
-
-        return VK_SUCCESS;
+    VkSemaphore waitSemaphores[] = {waitSemaphore};
+    VkPipelineStageFlags waitStages[] = {VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT};
+    if (waitSemaphore != VK_NULL_HANDLE)
+    {
+        submitInfo.waitSemaphoreCount = 1;
+        submitInfo.pWaitSemaphores = waitSemaphores;
+        submitInfo.pWaitDstStageMask = waitStages;
     }
 
+    submitInfo.commandBufferCount = 1;
+    submitInfo.pCommandBuffers = &commandBuffer;
 
+    VkSemaphore signalSemaphores[] = {signalSemaphore};
+    if (signalSemaphore != VK_NULL_HANDLE)
+    {
+        submitInfo.signalSemaphoreCount = 1;
+        submitInfo.pSignalSemaphores = signalSemaphores;
+    }
+
+    if (waitFence != VK_NULL_HANDLE)
+    {
+        vkResetFences(device, 1, &waitFence);
+    }
+
+    VHCHECKRESULT(vkQueueSubmit(graphicsQueue, 1, &submitInfo, waitFence));
+
+    if (waitFence != VK_NULL_HANDLE)
+    {
+        VHCHECKRESULT(vkWaitForFences(device, 1, &waitFence, VK_TRUE, std::numeric_limits<uint64_t>::max()));
+    }
+    else
+        VHCHECKRESULT(vkQueueWaitIdle(graphicsQueue));
+
+    vkFreeCommandBuffers(device, commandPool, 1, &commandBuffer);
+
+    return VK_SUCCESS;
 }
 
-
-
+} // namespace vh

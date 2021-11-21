@@ -7,12 +7,12 @@
 
 #include "VHHelper.h"
 
-namespace vh {
+namespace vh
+{
+//-------------------------------------------------------------------------------------------------------
+//
 
-    //-------------------------------------------------------------------------------------------------------
-    //
-
-    /**
+/**
     *
     * \brief Find the right memory type
     *
@@ -22,22 +22,24 @@ namespace vh {
     * \returns index of memory heap that fulfills the properties
     *
     */
-    uint32_t
-    vhMemFindMemoryType(VkPhysicalDevice physicalDevice, uint32_t typeFilter, VkMemoryPropertyFlags properties) {
-        VkPhysicalDeviceMemoryProperties memProperties;
-        vkGetPhysicalDeviceMemoryProperties(physicalDevice, &memProperties);
+uint32_t
+vhMemFindMemoryType(VkPhysicalDevice physicalDevice, uint32_t typeFilter, VkMemoryPropertyFlags properties)
+{
+    VkPhysicalDeviceMemoryProperties memProperties;
+    vkGetPhysicalDeviceMemoryProperties(physicalDevice, &memProperties);
 
-        for (uint32_t i = 0; i < memProperties.memoryTypeCount; i++) {
-            if ((typeFilter & (1 << i)) && (memProperties.memoryTypes[i].propertyFlags & properties) == properties) {
-                return i;
-            }
+    for (uint32_t i = 0; i < memProperties.memoryTypeCount; i++)
+    {
+        if ((typeFilter & (1 << i)) && (memProperties.memoryTypes[i].propertyFlags & properties) == properties)
+        {
+            return i;
         }
-
-        return std::numeric_limits<uint32_t>::max();
     }
 
+    return std::numeric_limits<uint32_t>::max();
+}
 
-    /**
+/**
     *
     * \brief Initialize the VMA allocator library
     *
@@ -47,22 +49,21 @@ namespace vh {
     * \returns VK_SUCCESS or a Vulkan error code
     *
     */
-    VkResult vhMemCreateVMAAllocator(VkInstance instance, VkPhysicalDevice physicalDevice, VkDevice device,
-                                     VmaAllocator &allocator) {
-        VmaAllocatorCreateInfo allocatorInfo = {};
-        allocatorInfo.physicalDevice = physicalDevice;
-        allocatorInfo.device = device;
-        allocatorInfo.instance = instance;
-        allocatorInfo.flags = VMA_ALLOCATOR_CREATE_BUFFER_DEVICE_ADDRESS_BIT;
+VkResult vhMemCreateVMAAllocator(VkInstance instance, VkPhysicalDevice physicalDevice, VkDevice device, VmaAllocator& allocator)
+{
+    VmaAllocatorCreateInfo allocatorInfo = {};
+    allocatorInfo.physicalDevice = physicalDevice;
+    allocatorInfo.device = device;
+    allocatorInfo.instance = instance;
+    allocatorInfo.flags = VMA_ALLOCATOR_CREATE_BUFFER_DEVICE_ADDRESS_BIT;
 
-        return vmaCreateAllocator(&allocatorInfo, &allocator);
-    }
+    return vmaCreateAllocator(&allocatorInfo, &allocator);
+}
 
+//-------------------------------------------------------------------------------------------------------
+//memory blocks
 
-    //-------------------------------------------------------------------------------------------------------
-    //memory blocks
-
-    /**
+/**
     *
     * \brief Initialize a list of memory blocks
     *
@@ -77,21 +78,19 @@ namespace vh {
     * \returns VK_SUCCESS or a Vulkan error code
     *
     */
-    VkResult vhMemBlockListInit(VkDevice device, VmaAllocator allocator,
-                                VkDescriptorPool descriptorPool, VkDescriptorSetLayout descriptorLayout,
-                                uint32_t maxNumEntries, uint32_t sizeEntry,
-                                uint32_t numBuffers, std::vector<vhMemoryBlock *> &blocklist) {
-        if (blocklist.empty()) {
-            vhMemoryBlock *pBlock = new vhMemoryBlock;
-            VHCHECKRESULT(vhMemBlockInit(device, allocator, descriptorPool, descriptorLayout, maxNumEntries, sizeEntry,
-                                         numBuffers, pBlock));
-            blocklist.push_back(pBlock);
-        }
-        return VK_SUCCESS;
+VkResult vhMemBlockListInit(VkDevice device, VmaAllocator allocator, VkDescriptorPool descriptorPool, VkDescriptorSetLayout descriptorLayout, uint32_t maxNumEntries, uint32_t sizeEntry, uint32_t numBuffers, std::vector<vhMemoryBlock*>& blocklist)
+{
+    if (blocklist.empty())
+    {
+        vhMemoryBlock* pBlock = new vhMemoryBlock;
+        VHCHECKRESULT(vhMemBlockInit(device, allocator, descriptorPool, descriptorLayout, maxNumEntries, sizeEntry,
+                                     numBuffers, pBlock));
+        blocklist.push_back(pBlock);
     }
+    return VK_SUCCESS;
+}
 
-
-    /**
+/**
     *
     * \brief Initialize a single memory block
     *
@@ -106,41 +105,38 @@ namespace vh {
     * \returns VK_SUCCESS or a Vulkan error code
     *
     */
-    VkResult vhMemBlockInit(VkDevice device, VmaAllocator allocator,
-                            VkDescriptorPool descriptorPool, VkDescriptorSetLayout descriptorLayout,
-                            uint32_t maxNumEntries, uint32_t sizeEntry,
-                            uint32_t numBuffers, vhMemoryBlock *pBlock) {
+VkResult vhMemBlockInit(VkDevice device, VmaAllocator allocator, VkDescriptorPool descriptorPool, VkDescriptorSetLayout descriptorLayout, uint32_t maxNumEntries, uint32_t sizeEntry, uint32_t numBuffers, vhMemoryBlock* pBlock)
+{
+    pBlock->device = device; //needed for creating descriptor sets
+    pBlock->allocator = allocator; //needed for allocating buffers
+    pBlock->descriptorPool = descriptorPool; //for creating descriptor sets
+    pBlock->descriptorLayout = descriptorLayout; //for creating descriptor sets
 
-        pBlock->device = device;                                //needed for creating descriptor sets
-        pBlock->allocator = allocator;                            //needed for allocating buffers
-        pBlock->descriptorPool = descriptorPool;                //for creating descriptor sets
-        pBlock->descriptorLayout = descriptorLayout;            //for creating descriptor sets
+    pBlock->pMemory = new int8_t[sizeEntry * maxNumEntries]; //allocate host memory
+    pBlock->maxNumEntries = maxNumEntries; //max number of entries in a block
+    pBlock->sizeEntry = sizeEntry; //size of an entry (a UBO)
+    pBlock->dirty.resize(
+        numBuffers); //flags for determining whether to update GPU buffers from host buffer
+    pBlock->setDirty(); //default is dirty -> update the next time
 
-        pBlock->pMemory = new int8_t[sizeEntry * maxNumEntries];    //allocate host memory
-        pBlock->maxNumEntries = maxNumEntries;                    //max number of entries in a block
-        pBlock->sizeEntry = sizeEntry;                            //size of an entry (a UBO)
-        pBlock->dirty.resize(
-                numBuffers);                        //flags for determining whether to update GPU buffers from host buffer
-        pBlock->setDirty();                                        //default is dirty -> update the next time
+    VHCHECKRESULT(vhBufCreateUniformBuffers(allocator, numBuffers, sizeEntry * maxNumEntries, pBlock->buffers,
+                                            pBlock->allocations));
+    auto result = vhRenderCreateDescriptorSets(device, numBuffers, descriptorLayout, descriptorPool,
+                                               pBlock->descriptorSets);
+    VHCHECKRESULT(result);
 
-        VHCHECKRESULT(vhBufCreateUniformBuffers(allocator, numBuffers, sizeEntry * maxNumEntries, pBlock->buffers,
-                                                pBlock->allocations));
-        auto result = vhRenderCreateDescriptorSets(device, numBuffers, descriptorLayout, descriptorPool,
-                                                   pBlock->descriptorSets);
-        VHCHECKRESULT(result);
-
-        for (uint32_t i = 0; i < numBuffers; i++) {
-            VHCHECKRESULT(vhRenderUpdateDescriptorSet(device, pBlock->descriptorSets[i],
-                                                      {VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC},
-                                                      {pBlock->buffers[i]}, {sizeEntry},
-                                                      {{VK_NULL_HANDLE}}, {{VK_NULL_HANDLE}}));
-        }
-
-        return VK_SUCCESS;
+    for (uint32_t i = 0; i < numBuffers; i++)
+    {
+        VHCHECKRESULT(vhRenderUpdateDescriptorSet(device, pBlock->descriptorSets[i],
+                                                  {VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC},
+                                                  {pBlock->buffers[i]}, {sizeEntry},
+                                                  {{VK_NULL_HANDLE}}, {{VK_NULL_HANDLE}}));
     }
 
+    return VK_SUCCESS;
+}
 
-    /**
+/**
     *
     * \brief Add an entry to a memory block list
     *
@@ -150,45 +146,44 @@ namespace vh {
     * \returns VK_SUCCESS or a Vulkan error code
     *
     */
-    VkResult vhMemBlockListAdd(std::vector<vhMemoryBlock *> &blocklist, void *owner, vhMemoryHandle *handle) {
+VkResult vhMemBlockListAdd(std::vector<vhMemoryBlock*>& blocklist, void* owner, vhMemoryHandle* handle)
+{
+    vhMemoryBlock* pMemBlock = nullptr;
 
-        vhMemoryBlock *pMemBlock = nullptr;
-
-        for (uint32_t i = 0;
-             i < blocklist.size(); i++) {                            //find a memory block with a free entry
-            if (blocklist[i]->handles.size() < blocklist[0]->maxNumEntries) {
-                pMemBlock = blocklist[i];
-                break;
-            }
+    for (uint32_t i = 0; i < blocklist.size(); i++)
+    { //find a memory block with a free entry
+        if (blocklist[i]->handles.size() < blocklist[0]->maxNumEntries)
+        {
+            pMemBlock = blocklist[i];
+            break;
         }
-
-        if (pMemBlock == nullptr) {                                                    //none found - create a new block
-            pMemBlock = new vhMemoryBlock;                                        //new block
-
-            //initialize the new block using the first block
-            VHCHECKRESULT(vhMemBlockInit(blocklist[0]->device,
-                                         blocklist[0]->allocator,
-                                         blocklist[0]->descriptorPool,
-                                         blocklist[0]->descriptorLayout,
-                                         blocklist[0]->maxNumEntries,
-                                         blocklist[0]->sizeEntry,
-                                         (uint32_t) blocklist[0]->buffers.size(), pMemBlock));
-
-            blocklist.push_back(
-                    pMemBlock);                                                //add the new mem block to the block list
-        }
-
-        handle->owner = owner;                                                    //need to know this for drawing
-        handle->pMemBlock = pMemBlock;                                            //pointer to last mem block
-        pMemBlock->handles.push_back(
-                handle);                                    //add pointer to the handle to the handle list
-        handle->entryIndex = (uint32_t) (pMemBlock->handles.size() - 1);            //index of last entry in block
-
-        return VK_SUCCESS;
     }
 
+    if (pMemBlock == nullptr)
+    { //none found - create a new block
+        pMemBlock = new vhMemoryBlock; //new block
 
-    /**
+        //initialize the new block using the first block
+        VHCHECKRESULT(vhMemBlockInit(blocklist[0]->device,
+                                     blocklist[0]->allocator,
+                                     blocklist[0]->descriptorPool,
+                                     blocklist[0]->descriptorLayout,
+                                     blocklist[0]->maxNumEntries,
+                                     blocklist[0]->sizeEntry,
+                                     (uint32_t)blocklist[0]->buffers.size(), pMemBlock));
+
+        blocklist.push_back(pMemBlock); //add the new mem block to the block list
+    }
+
+    handle->owner = owner; //need to know this for drawing
+    handle->pMemBlock = pMemBlock; //pointer to last mem block
+    pMemBlock->handles.push_back(handle); //add pointer to the handle to the handle list
+    handle->entryIndex = (uint32_t)(pMemBlock->handles.size() - 1); //index of last entry in block
+
+    return VK_SUCCESS;
+}
+
+/**
     *
     * \brief Add an entry to a memory block (not a block list)
     *
@@ -201,35 +196,36 @@ namespace vh {
     * \returns VK_SUCCESS or a Vulkan error code
     *
     */
-    VkResult vhMemBlockAdd(vhMemoryBlock *pBlock, void *owner, vhMemoryHandle *handle) {
-        if (pBlock->handles.size() == pBlock->maxNumEntries) {                //is the block already full?
-            int8_t *pOldMem = pBlock->pMemory;                            //remember old memory
-            uint32_t oldSize = pBlock->sizeEntry * pBlock->maxNumEntries;    //remember old host memory size
+VkResult vhMemBlockAdd(vhMemoryBlock* pBlock, void* owner, vhMemoryHandle* handle)
+{
+    if (pBlock->handles.size() == pBlock->maxNumEntries)
+    { //is the block already full?
+        int8_t* pOldMem = pBlock->pMemory; //remember old memory
+        uint32_t oldSize = pBlock->sizeEntry * pBlock->maxNumEntries; //remember old host memory size
 
-            pBlock->maxNumEntries *= 2;                                    //double the capacity
-            for (uint32_t i = 0; i < pBlock->buffers.size(); i++) {        //destroy the old Vulkan buffers
-                vmaDestroyBuffer(pBlock->allocator, pBlock->buffers[i], pBlock->allocations[i]);
-            }
-
-            VHCHECKRESULT(vhMemBlockInit(pBlock->device, pBlock->allocator,
-                                         pBlock->descriptorPool, pBlock->descriptorLayout,
-                                         pBlock->maxNumEntries, pBlock->sizeEntry,
-                                         (uint32_t) pBlock->buffers.size(), pBlock));
-
-            memcpy(pBlock->pMemory, pOldMem, oldSize);                        //copy old data to the new buffer
-            delete[] pOldMem;                                                //deallocate the old buffer memory
+        pBlock->maxNumEntries *= 2; //double the capacity
+        for (uint32_t i = 0; i < pBlock->buffers.size(); i++)
+        { //destroy the old Vulkan buffers
+            vmaDestroyBuffer(pBlock->allocator, pBlock->buffers[i], pBlock->allocations[i]);
         }
 
-        handle->owner = owner;                                                //need to know this for drawing
-        handle->pMemBlock = pBlock;                                            //pointer to last mem block
-        pBlock->handles.push_back(
-                handle);                                    //add pointer to the handle to the handle list
-        handle->entryIndex = (uint32_t) (pBlock->handles.size() - 1);            //index of last entry in block
-        return VK_SUCCESS;
+        VHCHECKRESULT(vhMemBlockInit(pBlock->device, pBlock->allocator,
+                                     pBlock->descriptorPool, pBlock->descriptorLayout,
+                                     pBlock->maxNumEntries, pBlock->sizeEntry,
+                                     (uint32_t)pBlock->buffers.size(), pBlock));
+
+        memcpy(pBlock->pMemory, pOldMem, oldSize); //copy old data to the new buffer
+        delete[] pOldMem; //deallocate the old buffer memory
     }
 
+    handle->owner = owner; //need to know this for drawing
+    handle->pMemBlock = pBlock; //pointer to last mem block
+    pBlock->handles.push_back(handle); //add pointer to the handle to the handle list
+    handle->entryIndex = (uint32_t)(pBlock->handles.size() - 1); //index of last entry in block
+    return VK_SUCCESS;
+}
 
-    /**
+/**
     *
     * \brief Update an entry in one of the memory blocks
     *
@@ -238,14 +234,14 @@ namespace vh {
     * \returns VK_SUCCESS or a Vulkan error code
     *
     */
-    VkResult vhMemBlockUpdateEntry(vhMemoryHandle *pHandle, void *data) {
-        memcpy(pHandle->getPointer(), data, pHandle->pMemBlock->sizeEntry);
-        pHandle->pMemBlock->setDirty();
-        return VK_SUCCESS;
-    }
+VkResult vhMemBlockUpdateEntry(vhMemoryHandle* pHandle, void* data)
+{
+    memcpy(pHandle->getPointer(), data, pHandle->pMemBlock->sizeEntry);
+    pHandle->pMemBlock->setDirty();
+    return VK_SUCCESS;
+}
 
-
-    /**
+/**
     *
     * \brief Update all memory blocks by copying them to the GPU
     *
@@ -254,21 +250,23 @@ namespace vh {
     * \returns VK_SUCCESS or a Vulkan error code
     *
     */
-    VkResult vhMemBlockUpdateBlockList(std::vector<vhMemoryBlock *> &blocklist, uint32_t index) {
-        for (auto pBlock : blocklist) {                                                //go through all blocks
-            if (pBlock->dirty[index]) {                                                //update only if dirty
-                void *data = nullptr;
-                vmaMapMemory(pBlock->allocator, pBlock->allocations[index], &data);        //map device to host memory
-                memcpy(data, pBlock->pMemory, pBlock->maxNumEntries * pBlock->sizeEntry);    //copy host memory
-                vmaUnmapMemory(pBlock->allocator, pBlock->allocations[index]);            //unmap
-                pBlock->dirty[index] = false;                                            //no more dirty
-            }
+VkResult vhMemBlockUpdateBlockList(std::vector<vhMemoryBlock*>& blocklist, uint32_t index)
+{
+    for (auto pBlock : blocklist)
+    { //go through all blocks
+        if (pBlock->dirty[index])
+        { //update only if dirty
+            void* data = nullptr;
+            vmaMapMemory(pBlock->allocator, pBlock->allocations[index], &data); //map device to host memory
+            memcpy(data, pBlock->pMemory, pBlock->maxNumEntries * pBlock->sizeEntry); //copy host memory
+            vmaUnmapMemory(pBlock->allocator, pBlock->allocations[index]); //unmap
+            pBlock->dirty[index] = false; //no more dirty
         }
-        return VK_SUCCESS;
     }
+    return VK_SUCCESS;
+}
 
-
-    /**
+/**
     *
     * \brief Remove an entry from a memory block
     *
@@ -276,31 +274,29 @@ namespace vh {
     * \returns VK_SUCCESS or a Vulkan error code
     *
     */
-    VkResult vhMemBlockRemoveEntry(vhMemoryHandle *pHandle) {
+VkResult vhMemBlockRemoveEntry(vhMemoryHandle* pHandle)
+{
+    vhMemoryBlock* pMemBlock = pHandle->pMemBlock; //to keep code readable
+    uint32_t idxEntry = pHandle->entryIndex; //index of the entry to be removed
+    uint32_t idxLast = (uint32_t)pMemBlock->handles.size() - 1; //index of the last entry in the block
 
-        vhMemoryBlock *pMemBlock = pHandle->pMemBlock;                //to keep code readable
-        uint32_t idxEntry = pHandle->entryIndex;                    //index of the entry to be removed
-        uint32_t
-                idxLast = (uint32_t)
-                                  pMemBlock->handles.size() - 1;//index of the last entry in the block
+    void* pEntry = pMemBlock->pMemory + pMemBlock->sizeEntry * idxEntry; //pointer to entry to be removed
+    void* pLast = pMemBlock->pMemory + pMemBlock->sizeEntry * idxLast; //pointer to last entry in the block
+    memcpy(pEntry, pLast, pMemBlock->sizeEntry); //copy last entry over the removed entry
 
-        void *pEntry = pMemBlock->pMemory + pMemBlock->sizeEntry * idxEntry;    //pointer to entry to be removed
-        void *pLast = pMemBlock->pMemory + pMemBlock->sizeEntry * idxLast;        //pointer to last entry in the block
-        memcpy(pEntry, pLast, pMemBlock->sizeEntry);                //copy last entry over the removed entry
+    vhMemoryHandle* pHandleLast = pMemBlock->handles[idxLast]; //pointer to the last handle in the list
+    pMemBlock->handles[idxEntry] = pHandleLast; //write over old handle
+    pHandleLast->entryIndex = idxEntry; //update also handle in object
 
-        vhMemoryHandle *pHandleLast = pMemBlock->handles[idxLast];    //pointer to the last handle in the list
-        pMemBlock->handles[idxEntry] = pHandleLast;                    //write over old handle
-        pHandleLast->entryIndex = idxEntry;                            //update also handle in object
+    pMemBlock->handles.pop_back(); //remove last handle, could also be identical to the removed one
 
-        pMemBlock->handles.pop_back();                                //remove last handle, could also be identical to the removed one
+    for (auto d : pMemBlock->dirty)
+        d = true; //mark as dirty
 
-        for (auto d : pMemBlock->dirty) d = true;                    //mark as dirty
+    return VK_SUCCESS;
+}
 
-        return VK_SUCCESS;
-    }
-
-
-    /**
+/**
     *
     * \brief Move a handle from one list to another list
     *
@@ -309,13 +305,13 @@ namespace vh {
     * \returns VK_SUCCESS or a Vulkan error code
     *
     */
-    VkResult vhMemBlockMoveEntry(std::vector<vhMemoryBlock *> &dstblocklist, vhMemoryHandle *pHandle) {
-        VHCHECKRESULT(vhMemBlockRemoveEntry(pHandle));                    //remove from the old block
-        return vhMemBlockListAdd(dstblocklist, pHandle->owner, pHandle);    //add to the destination block list
-    }
+VkResult vhMemBlockMoveEntry(std::vector<vhMemoryBlock*>& dstblocklist, vhMemoryHandle* pHandle)
+{
+    VHCHECKRESULT(vhMemBlockRemoveEntry(pHandle)); //remove from the old block
+    return vhMemBlockListAdd(dstblocklist, pHandle->owner, pHandle); //add to the destination block list
+}
 
-
-    /**
+/**
     *
     * \brief Delete all entries and all blocks from a block list
     *
@@ -323,16 +319,17 @@ namespace vh {
     * \returns VK_SUCCESS or a Vulkan error code
     *
     */
-    VkResult vhMemBlockListClear(std::vector<vhMemoryBlock *> &blocklist) {
-        for (auto block : blocklist) {
-            VHCHECKRESULT(vhMemBlockDeallocate(block));
-        }
-        blocklist.clear();
-        return VK_SUCCESS;
+VkResult vhMemBlockListClear(std::vector<vhMemoryBlock*>& blocklist)
+{
+    for (auto block : blocklist)
+    {
+        VHCHECKRESULT(vhMemBlockDeallocate(block));
     }
+    blocklist.clear();
+    return VK_SUCCESS;
+}
 
-
-    /**
+/**
     *
     * \brief Deallocate the memory from a block
     *
@@ -340,16 +337,15 @@ namespace vh {
     * \returns VK_SUCCESS or a Vulkan error code
     *
     */
-    VkResult vhMemBlockDeallocate(vhMemoryBlock *pBlock) {
-        delete[] pBlock->pMemory;
-        for (uint32_t i = 0; i < pBlock->buffers.size(); i++) {
-            vmaDestroyBuffer(pBlock->allocator, pBlock->buffers[i], pBlock->allocations[i]);
-        }
-        delete pBlock;
-        return VK_SUCCESS;
+VkResult vhMemBlockDeallocate(vhMemoryBlock* pBlock)
+{
+    delete[] pBlock->pMemory;
+    for (uint32_t i = 0; i < pBlock->buffers.size(); i++)
+    {
+        vmaDestroyBuffer(pBlock->allocator, pBlock->buffers[i], pBlock->allocations[i]);
     }
-
-
+    delete pBlock;
+    return VK_SUCCESS;
 }
 
-
+} // namespace vh

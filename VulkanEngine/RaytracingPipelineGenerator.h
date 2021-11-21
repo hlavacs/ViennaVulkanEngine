@@ -60,61 +60,62 @@ rtStateObject = pipeline.Generate();
 #include <string>
 #include <vector>
 
-namespace nv_helpers_vk {
-
+namespace nv_helpers_vk
+{
 /// Helper class to create raytracing pipelines
-    class RayTracingPipelineGenerator {
-    public:
-        /// Start the description of a hit group, that contains at least a closest hit shader, but may
-        /// also contain an intesection shader and a any-hit shader. The method outputs the index of the
-        /// created hit group
-        uint32_t StartHitGroup();
+class RayTracingPipelineGenerator
+{
+  public:
+    /// Start the description of a hit group, that contains at least a closest hit shader, but may
+    /// also contain an intesection shader and a any-hit shader. The method outputs the index of the
+    /// created hit group
+    uint32_t StartHitGroup();
 
-        /// Add a hit shader stage in the current hit group, where the stage can be
-        /// VK_SHADER_STAGE_ANY_HIT_BIT_NV, VK_SHADER_STAGE_CLOSEST_HIT_BIT_NV, or
-        /// VK_SHADER_STAGE_INTERSECTION_BIT_NV
-        uint32_t AddHitShaderStage(VkShaderModule module, VkShaderStageFlagBits shaderStage);
+    /// Add a hit shader stage in the current hit group, where the stage can be
+    /// VK_SHADER_STAGE_ANY_HIT_BIT_NV, VK_SHADER_STAGE_CLOSEST_HIT_BIT_NV, or
+    /// VK_SHADER_STAGE_INTERSECTION_BIT_NV
+    uint32_t AddHitShaderStage(VkShaderModule module, VkShaderStageFlagBits shaderStage);
 
-        /// End the description of the hit group
-        void EndHitGroup();
+    /// End the description of the hit group
+    void EndHitGroup();
 
-        /// Add a ray generation shader stage, and return the index of the created stage
-        uint32_t AddRayGenShaderStage(VkShaderModule module);
+    /// Add a ray generation shader stage, and return the index of the created stage
+    uint32_t AddRayGenShaderStage(VkShaderModule module);
 
-        /// Add a miss shader stage, and return the index of the created stage
-        uint32_t AddMissShaderStage(VkShaderModule module);
+    /// Add a miss shader stage, and return the index of the created stage
+    uint32_t AddMissShaderStage(VkShaderModule module);
 
-        /// Upon hitting a surface, a closest hit shader can issue a new TraceRay call. This parameter
-        /// indicates the maximum level of recursion. Note that this depth should be kept as low as
-        /// possible, typically 2, to allow hit shaders to trace shadow rays. Recursive ray tracing
-        /// algorithms must be flattened to a loop in the ray generation program for best performance.
-        void SetMaxRecursionDepth(uint32_t maxDepth);
+    /// Upon hitting a surface, a closest hit shader can issue a new TraceRay call. This parameter
+    /// indicates the maximum level of recursion. Note that this depth should be kept as low as
+    /// possible, typically 2, to allow hit shaders to trace shadow rays. Recursive ray tracing
+    /// algorithms must be flattened to a loop in the ray generation program for best performance.
+    void SetMaxRecursionDepth(uint32_t maxDepth);
 
-        /// Compiles the raytracing state object
-        VkResult Generate(VkDevice device,
-                          VkPipelineLayout &pipelineLayout,
-                          VkPipeline *pipeline);
+    /// Compiles the raytracing state object
+    VkResult Generate(VkDevice device,
+                      VkPipelineLayout& pipelineLayout,
+                      VkPipeline* pipeline);
 
-    private:
-        /// Shader stages contained in the pipeline
-        std::vector<VkPipelineShaderStageCreateInfo> m_shaderStages;
+  private:
+    /// Shader stages contained in the pipeline
+    std::vector<VkPipelineShaderStageCreateInfo> m_shaderStages;
 
-        /// Each shader stage belongs to a group. There are 3 group types: general, triangle hit and procedural hit.
-        /// The general group type (VK_RAY_TRACING_SHADER_GROUP_TYPE_GENERAL_NV) is used for raygen, miss and callable shaders.
-        /// The triangle hit group type (VK_RAY_TRACING_SHADER_GROUP_TYPE_TRIANGLES_HIT_GROUP_NV) is used for closest hit and
-        /// any hit shaders, when used together with the built-in ray-triangle intersection shader.
-        /// The procedural hit group type (VK_RAY_TRACING_SHADER_GROUP_TYPE_PROCEDURAL_HIT_GROUP_NV) is used for custom
-        /// intersection shaders, and also groups closest hit and any hit shaders that are used together with that intersection shader.
-        std::vector<VkRayTracingShaderGroupCreateInfoNV> m_shaderGroups;
+    /// Each shader stage belongs to a group. There are 3 group types: general, triangle hit and procedural hit.
+    /// The general group type (VK_RAY_TRACING_SHADER_GROUP_TYPE_GENERAL_NV) is used for raygen, miss and callable shaders.
+    /// The triangle hit group type (VK_RAY_TRACING_SHADER_GROUP_TYPE_TRIANGLES_HIT_GROUP_NV) is used for closest hit and
+    /// any hit shaders, when used together with the built-in ray-triangle intersection shader.
+    /// The procedural hit group type (VK_RAY_TRACING_SHADER_GROUP_TYPE_PROCEDURAL_HIT_GROUP_NV) is used for custom
+    /// intersection shaders, and also groups closest hit and any hit shaders that are used together with that intersection shader.
+    std::vector<VkRayTracingShaderGroupCreateInfoNV> m_shaderGroups;
 
-        /// Index of the current hit group
-        uint32_t m_currentGroupIndex = 0;
+    /// Index of the current hit group
+    uint32_t m_currentGroupIndex = 0;
 
-        /// True if a group description is currently started
-        bool m_isHitGroupOpen = false;
+    /// True if a group description is currently started
+    bool m_isHitGroupOpen = false;
 
-        /// Maximum recursion depth, initialized to 1 to at least allow tracing primary rays
-        uint32_t m_maxRecursionDepth = 1;
-    };
+    /// Maximum recursion depth, initialized to 1 to at least allow tracing primary rays
+    uint32_t m_maxRecursionDepth = 1;
+};
 
-}  // namespace nv_helpers_vk
+} // namespace nv_helpers_vk
