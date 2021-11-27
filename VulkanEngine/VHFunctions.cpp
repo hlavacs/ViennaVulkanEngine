@@ -35,14 +35,14 @@
 
 #define LoadProcAddress GetProcAddress
 
+HMODULE VulkanLibrary;
 #else
 
 #include <dlfcn.h>
 #define LoadProcAddress dlsym
 
+void *VulkanLibrary;
 #endif
-
-void* VulkanLibrary;
 
 VkResult vhLoadVulkanLibrary()
 {

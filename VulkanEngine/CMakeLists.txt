@@ -13,8 +13,6 @@ FILE(GLOB SOURCE_FILES
         ${CMAKE_SOURCE_DIR}/*.cpp
         ${CMAKE_SOURCE_DIR}/../external/threadpool/ThreadPool.cpp)
 
-add_compile_definitions(VK_NO_PROTOTYPES)
-
 add_executable(${EXECUTABLE_NAME} ${HEADER_FILES} ${SOURCE_FILES})
 
 

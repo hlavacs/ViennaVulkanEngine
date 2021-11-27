@@ -31,7 +31,10 @@ Contacts for feedback:
 
 #pragma once
 
-#include "VHHelper.h";
+#include "vulkan/vulkan.h"
+
+#include <array>
+#include <unordered_map>
 
 namespace nv_helpers_vk
 {

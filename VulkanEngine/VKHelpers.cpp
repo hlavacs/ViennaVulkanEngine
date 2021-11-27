@@ -29,8 +29,8 @@ Contacts for feedback:
 - mlefrancois@nvidia.com (Martin-Karl Lefrancois)
 */
 
-#include "VKHelpers.h"
 #include "VHHelper.h"
+#include "VKHelpers.h"
 
 namespace nv_helpers_vk
 {
