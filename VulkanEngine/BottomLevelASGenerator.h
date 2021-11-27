@@ -80,108 +80,108 @@ return buffers;
 
 namespace nv_helpers_vk
 {
-/// Helper class to generate bottom-level acceleration structures for raytracing
-class BottomLevelASGenerator
-{
-  public:
-    /// Add a vertex buffer in GPU memory into the acceleration structure. The
-    /// vertices are supposed to be represented by 3 float32 value. Indices are
-    /// implicit.
-    void AddVertexBuffer(VkBuffer vertexBuffer, /// Buffer containing the vertex coordinates,
-                         /// possibly interleaved with other vertex data
-                         VkDeviceSize vertexOffsetInBytes, /// Offset of the first vertex in the
-                         /// vertex buffer
-                         uint32_t vertexCount, /// Number of vertices to consider
-                         /// in the buffer
-                         VkDeviceSize vertexSizeInBytes, /// Size of a vertex including all
-                         /// its other data, used to stride
-                         /// in the buffer
-                         VkBuffer transformBuffer, /// Buffer containing a 4x4 transform
-                         /// matrix in GPU memory, to be applied
-                         /// to the vertices. This buffer cannot
-                         /// be nullptr
-                         VkDeviceSize transformOffsetInBytes, /// Offset of the transform matrix in
-                         /// the transform buffer
-                         bool isOpaque = true /// If true, the geometry is considered opaque,
-                         /// optimizing the search for a closest hit
-    );
+	/// Helper class to generate bottom-level acceleration structures for raytracing
+	class BottomLevelASGenerator
+	{
+	public:
+		/// Add a vertex buffer in GPU memory into the acceleration structure. The
+		/// vertices are supposed to be represented by 3 float32 value. Indices are
+		/// implicit.
+		void AddVertexBuffer(VkBuffer vertexBuffer, /// Buffer containing the vertex coordinates,
+							 /// possibly interleaved with other vertex data
+			VkDeviceSize vertexOffsetInBytes, /// Offset of the first vertex in the
+			/// vertex buffer
+			uint32_t vertexCount, /// Number of vertices to consider
+			/// in the buffer
+			VkDeviceSize vertexSizeInBytes, /// Size of a vertex including all
+			/// its other data, used to stride
+			/// in the buffer
+			VkBuffer transformBuffer, /// Buffer containing a 4x4 transform
+			/// matrix in GPU memory, to be applied
+			/// to the vertices. This buffer cannot
+			/// be nullptr
+			VkDeviceSize transformOffsetInBytes, /// Offset of the transform matrix in
+			/// the transform buffer
+			bool isOpaque = true /// If true, the geometry is considered opaque,
+			/// optimizing the search for a closest hit
+		);
 
-    /// Add a vertex buffer along with its index buffer in GPU memory into the acceleration structure.
-    /// The vertices are supposed to be represented by 3 float32 value, and the indices are 32-bit
-    /// unsigned ints
-    void AddVertexBuffer(VkBuffer vertexBuffer, /// Buffer containing the vertex coordinates,
-                         /// possibly interleaved with other vertex data
-                         VkDeviceSize vertexOffsetInBytes, /// Offset of the first vertex in the
-                         /// vertex buffer
-                         uint32_t vertexCount, /// Number of vertices to consider
-                         /// in the buffer
-                         VkDeviceSize vertexSizeInBytes, /// Size of a vertex including
-                         /// all its other data,
-                         /// used to stride in the buffer
-                         VkBuffer indexBuffer, /// Buffer containing the vertex indices
-                         /// describing the triangles
-                         VkDeviceSize indexOffsetInBytes, /// Offset of the first index in
-                         /// the index buffer
-                         uint32_t indexCount, /// Number of indices to consider in the buffer
-                         VkBuffer transformBuffer, /// Buffer containing a 4x4 transform
-                         /// matrix in GPU memory, to be applied
-                         /// to the vertices. This buffer cannot
-                         /// be nullptr
-                         VkDeviceSize transformOffsetInBytes, /// Offset of the transform matrix in
-                         /// the transform buffer
-                         bool isOpaque = true /// If true, the geometry is considered opaque,
-                         /// optimizing the search for a closest hit
-    );
+		/// Add a vertex buffer along with its index buffer in GPU memory into the acceleration structure.
+		/// The vertices are supposed to be represented by 3 float32 value, and the indices are 32-bit
+		/// unsigned ints
+		void AddVertexBuffer(VkBuffer vertexBuffer, /// Buffer containing the vertex coordinates,
+							 /// possibly interleaved with other vertex data
+			VkDeviceSize vertexOffsetInBytes, /// Offset of the first vertex in the
+			/// vertex buffer
+			uint32_t vertexCount, /// Number of vertices to consider
+			/// in the buffer
+			VkDeviceSize vertexSizeInBytes, /// Size of a vertex including
+			/// all its other data,
+			/// used to stride in the buffer
+			VkBuffer indexBuffer, /// Buffer containing the vertex indices
+			/// describing the triangles
+			VkDeviceSize indexOffsetInBytes, /// Offset of the first index in
+			/// the index buffer
+			uint32_t indexCount, /// Number of indices to consider in the buffer
+			VkBuffer transformBuffer, /// Buffer containing a 4x4 transform
+			/// matrix in GPU memory, to be applied
+			/// to the vertices. This buffer cannot
+			/// be nullptr
+			VkDeviceSize transformOffsetInBytes, /// Offset of the transform matrix in
+			/// the transform buffer
+			bool isOpaque = true /// If true, the geometry is considered opaque,
+			/// optimizing the search for a closest hit
+		);
 
-    /// Create the opaque acceleration structure descriptor, which will be used in the estimation of
-    /// the AS size and the generation itself. The allowUpdate flag indicates if the AS will need
-    /// dynamic refitting. This has to be called after adding all the geometry.
-    VkAccelerationStructureNV CreateAccelerationStructure(VkDevice device,
-                                                          VkBool32 allowUpdate = VK_FALSE);
+		/// Create the opaque acceleration structure descriptor, which will be used in the estimation of
+		/// the AS size and the generation itself. The allowUpdate flag indicates if the AS will need
+		/// dynamic refitting. This has to be called after adding all the geometry.
+		VkAccelerationStructureNV CreateAccelerationStructure(VkDevice device,
+			VkBool32 allowUpdate = VK_FALSE);
 
-    /// Compute the size of the scratch space required to build the acceleration structure, as well as
-    /// the size of the resulting structure. The allocation of the buffers is then left to the
-    /// application
-    void ComputeASBufferSizes(
-        VkDevice device, /// Device on which the build will be performed
-        VkAccelerationStructureNV accelerationStructure,
-        VkDeviceSize* scratchSizeInBytes, /// Required scratch memory on the GPU to
-        /// build the acceleration structure
-        VkDeviceSize* resultSizeInBytes /// Required GPU memory to store the
-        /// acceleration structure
-    );
+		/// Compute the size of the scratch space required to build the acceleration structure, as well as
+		/// the size of the resulting structure. The allocation of the buffers is then left to the
+		/// application
+		void ComputeASBufferSizes(
+			VkDevice device, /// Device on which the build will be performed
+			VkAccelerationStructureNV accelerationStructure,
+			VkDeviceSize *scratchSizeInBytes, /// Required scratch memory on the GPU to
+			/// build the acceleration structure
+			VkDeviceSize *resultSizeInBytes /// Required GPU memory to store the
+			/// acceleration structure
+		);
 
-    /// Enqueue the construction of the acceleration structure on a command list, using
-    /// application-provided buffers and possibly a pointer to the previous acceleration structure in
-    /// case of iterative updates. Note that the update can be done in place: the result and
-    /// previousResult pointers can be the same.
-    void Generate(VkDevice device,
-                  VkCommandBuffer commandList, /// Command list on which the build will be enqueued
-                  VkAccelerationStructureNV accelerationStructure,
-                  VkBuffer scratchBuffer, /// Scratch buffer used by the builder to
-                  /// store temporary data
-                  VkDeviceSize scratchOffset, /// Offset in the scratch buffer at which the builder can start
-                  /// writing memory
-                  VkBuffer resultBuffer, /// Result buffer storing the acceleration structure
-                  VkDeviceMemory resultMem,
-                  VkBool32 updateOnly = VK_FALSE, /// If true, simply refit the existing acceleration structure
-                  VkAccelerationStructureNV previousResult = VK_NULL_HANDLE
-                  /// Optional previous acceleration structure, used
-                  /// if an iterative update is requested
-    );
+		/// Enqueue the construction of the acceleration structure on a command list, using
+		/// application-provided buffers and possibly a pointer to the previous acceleration structure in
+		/// case of iterative updates. Note that the update can be done in place: the result and
+		/// previousResult pointers can be the same.
+		void Generate(VkDevice device,
+			VkCommandBuffer commandList, /// Command list on which the build will be enqueued
+			VkAccelerationStructureNV accelerationStructure,
+			VkBuffer scratchBuffer, /// Scratch buffer used by the builder to
+			/// store temporary data
+			VkDeviceSize scratchOffset, /// Offset in the scratch buffer at which the builder can start
+			/// writing memory
+			VkBuffer resultBuffer, /// Result buffer storing the acceleration structure
+			VkDeviceMemory resultMem,
+			VkBool32 updateOnly = VK_FALSE, /// If true, simply refit the existing acceleration structure
+			VkAccelerationStructureNV previousResult = VK_NULL_HANDLE
+			/// Optional previous acceleration structure, used
+			/// if an iterative update is requested
+		);
 
-  private:
-    /// Vertex buffer descriptors used to generate the AS
-    std::vector<VkGeometryNV> m_vertexBuffers = {};
+	private:
+		/// Vertex buffer descriptors used to generate the AS
+		std::vector<VkGeometryNV> m_vertexBuffers = {};
 
-    /// Amount of temporary memory required by the builder
-    VkDeviceSize m_scratchSizeInBytes = 0;
+		/// Amount of temporary memory required by the builder
+		VkDeviceSize m_scratchSizeInBytes = 0;
 
-    /// Amount of memory required to store the AS
-    VkDeviceSize m_resultSizeInBytes = 0;
+		/// Amount of memory required to store the AS
+		VkDeviceSize m_resultSizeInBytes = 0;
 
-    /// Flags for the builder, specifying whether to allow iterative updates, or
-    /// when to perform an update
-    VkBuildAccelerationStructureFlagsNV m_flags;
-};
+		/// Flags for the builder, specifying whether to allow iterative updates, or
+		/// when to perform an update
+		VkBuildAccelerationStructureFlagsNV m_flags;
+	};
 } // namespace nv_helpers_vk

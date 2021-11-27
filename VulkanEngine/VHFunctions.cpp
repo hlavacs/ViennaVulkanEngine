@@ -47,18 +47,18 @@ void *VulkanLibrary;
 VkResult vhLoadVulkanLibrary()
 {
 #if defined(_WIN32)
-    VulkanLibrary = LoadLibrary((LPCWSTR)L"vulkan-1.dll");
+	VulkanLibrary = LoadLibrary((LPCWSTR)L"vulkan-1.dll");
 #elif __APPLE__
-    VulkanLibrary = dlopen("libvulkan.1.dylib", RTLD_NOW);
+	VulkanLibrary = dlopen("libvulkan.1.dylib", RTLD_NOW);
 #else
-    VulkanLibrary = dlopen("libvulkan.so.1", RTLD_NOW);
+	VulkanLibrary = dlopen("libvulkan.so.1", RTLD_NOW);
 #endif
-    if (VulkanLibrary == nullptr)
-    {
-        std::cout << "Could not load Vulkan library!" << std::endl;
-        return VK_INCOMPLETE;
-    }
-    return VK_SUCCESS;
+	if (VulkanLibrary == nullptr)
+	{
+		std::cout << "Could not load Vulkan library!" << std::endl;
+		return VK_INCOMPLETE;
+	}
+	return VK_SUCCESS;
 }
 
 VkResult vhLoadExportedEntryPoints()
@@ -72,7 +72,7 @@ VkResult vhLoadExportedEntryPoints()
 
 #include "VHFunctions.inl"
 
-    return VK_SUCCESS;
+	return VK_SUCCESS;
 }
 
 VkResult vhLoadGlobalLevelEntryPoints()
@@ -86,7 +86,7 @@ VkResult vhLoadGlobalLevelEntryPoints()
 
 #include "VHFunctions.inl"
 
-    return VK_SUCCESS;
+	return VK_SUCCESS;
 }
 
 VkResult vhLoadInstanceLevelEntryPoints(VkInstance instance)
@@ -100,7 +100,7 @@ VkResult vhLoadInstanceLevelEntryPoints(VkInstance instance)
 
 #include "VHFunctions.inl"
 
-    return VK_SUCCESS;
+	return VK_SUCCESS;
 }
 
 /*if( !(fun = (PFN_##fun)vkGetDeviceProcAddr( device, #fun )) ) {                \  */
@@ -116,5 +116,5 @@ VkResult vhLoadDeviceLevelEntryPoints(VkInstance instance, VkDevice device)
 
 #include "VHFunctions.inl"
 
-    return VK_SUCCESS;
+	return VK_SUCCESS;
 }

@@ -10,36 +10,36 @@
 
 namespace ve
 {
-/**
-    * \brief Subrenderer that manages entities that are cubemap based sky boxes
-    */
-class VESubrenderFW_Skyplane : public VESubrenderFW
-{
-  protected:
-  public:
-    ///Constructor
-    VESubrenderFW_Skyplane(VERendererForward& renderer)
-    : VESubrenderFW(renderer){};
+	/**
+		* \brief Subrenderer that manages entities that are cubemap based sky boxes
+		*/
+	class VESubrenderFW_Skyplane : public VESubrenderFW
+	{
+	protected:
+	public:
+		///Constructor
+		VESubrenderFW_Skyplane(VERendererForward &renderer)
+			: VESubrenderFW(renderer) {};
 
-    ///Destructor
-    virtual ~VESubrenderFW_Skyplane(){};
+		///Destructor
+		virtual ~VESubrenderFW_Skyplane() {};
 
-    ///\returns the class of the subrenderer
-    virtual veSubrenderClass getClass()
-    {
-        return VE_SUBRENDERER_CLASS_BACKGROUND;
-    };
+		///\returns the class of the subrenderer
+		virtual veSubrenderClass getClass()
+		{
+			return VE_SUBRENDERER_CLASS_BACKGROUND;
+		};
 
-    ///\returns the type of the subrenderer
-    virtual veSubrenderType getType()
-    {
-        return VE_SUBRENDERER_TYPE_SKYPLANE;
-    };
+		///\returns the type of the subrenderer
+		virtual veSubrenderType getType()
+		{
+			return VE_SUBRENDERER_TYPE_SKYPLANE;
+		};
 
-    virtual void initSubrenderer();
+		virtual void initSubrenderer();
 
-    virtual void addEntity(VEEntity* pEntity);
-};
+		virtual void addEntity(VEEntity *pEntity);
+	};
 } // namespace ve
 
 #endif
