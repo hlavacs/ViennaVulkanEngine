@@ -69,6 +69,8 @@ namespace ve
 
 	static std::default_random_engine e{ 12345 }; //F�r Zufallszahlen
 	static std::uniform_real_distribution<> d{ -15.0f, 15.0f }; //F�r Zufallszahlen
+	static std::default_random_engine e_light{ 12345 }; //F�r Zufallszahlen
+	static std::uniform_real_distribution<> d_light{ -50.0f, 50.0f }; //F�r Zufallszahlen
 
 	class EventListenerRotation : public VEEventListener
 	{
@@ -109,8 +111,6 @@ namespace ve
 		virtual void registerEventListeners()
 		{
 			VEEngine::registerEventListeners();
-
-			//registerEventListener(new EventListenerGUI("GUI"), { veEvent::VE_EVENT_DRAW_OVERLAY});
 			registerEventListener(new VEEventListenerNuklearDebug("DebugGUI"), { veEvent::VE_EVENT_DRAW_OVERLAY });
 		};
 
@@ -130,22 +130,22 @@ namespace ve
 
 			for (int i = 0; i < dir_lights_number; i++)
 			{
-				VELight *light1 = (VEDirectionalLight *)getSceneManagerPointer()->createLight("StandardDirLight",
+				VELight *light1 = (VEDirectionalLight *)getSceneManagerPointer()->createLight("StandardDirLight" + i,
 					VELight::VE_LIGHT_TYPE_DIRECTIONAL,
-					getRoot()); //new VEDirectionalLight("StandardDirLight");
+					getRoot());
 				//light1->lookAt(glm::vec3(0.0f, 20.0f, -20.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
-				light1->lookAt(glm::vec3(0.0f, d(e), -20.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+				light1->lookAt(glm::vec3(0.0f, d_light(e_light), -20.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
 				light1->m_col_diffuse = glm::vec4(0.9f / dir_lights_number, 0.9f / dir_lights_number, 0.9f / dir_lights_number, 1.0f);
 				light1->m_col_specular = glm::vec4(0.4f / dir_lights_number, 0.4f / dir_lights_number, 0.4f / dir_lights_number, 1.0f);
 			}
 
 			for (int i = 0; i < point_lights_number; i++)
 			{
-				VELight *light = (VEPointLight *)getSceneManagerPointer()->createLight("StandardDirLight" + i,
+				VELight *light = (VEPointLight *)getSceneManagerPointer()->createLight("StandardPointLight" + i,
 					VELight::VE_LIGHT_TYPE_POINT,
 					getSceneManagerPointer()->getCamera());
 				light->multiplyTransform(glm::translate(glm::vec3(0.0f, 5.0f, 15.0f)));
-				light->multiplyTransform(glm::translate(glm::mat4(1.0f), glm::vec3(d(e), 1.0f, d(e))));
+				light->multiplyTransform(glm::translate(glm::mat4(1.0f), glm::vec3(d_light(e_light), 1.0f, d_light(e_light))));
 				light->m_param[0] = 200.0f;
 
 				//VELight *light = (VEDirectionalLight *)getSceneManagerPointer()->createLight("StandardDirLight" + i, VELight::VE_LIGHT_TYPE_DIRECTIONAL, getRoot());
@@ -174,7 +174,7 @@ namespace ve
 				"The Plane/plane_t_n_s.obj/plane/Entity_0"));
 			pE4->setParam(glm::vec4(1000.0f, 1000.0f, 0.0f, 0.0f));
 
-			size_t cubes_number = 20;
+			size_t cubes_number = 200;
 			for (int i = 0; i < cubes_number; i++)
 			{
 				VESceneNode *e1, *eParent1;
@@ -197,7 +197,7 @@ using namespace ve;
 
 int main()
 {
-	MyVulkanEngine mve(VE_RENDERER_TYPE_FORWARD, true);
+	MyVulkanEngine mve(VE_RENDERER_TYPE_RAYTRACING_NV, false);
 
 	mve.initEngine();
 	mve.loadLevel(1);

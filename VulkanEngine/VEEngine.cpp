@@ -52,9 +52,9 @@ namespace ve
 		createRenderer(); //create a renderer
 		createSceneManager(); //create a scene manager
 		createWindow(); //create a window
-		m_pWindow->initWindow(1920, 1080); //initialize the window
+		//m_pWindow->initWindow(1920, 1080); //initialize the window
 		//m_pWindow->initWindow(2560, 1440); //initialize the window
-		//m_pWindow->initWindow(3840, 2160); //initialize the window
+		m_pWindow->initWindow(3840, 2160); //initialize the window
 
 		m_threadPool = new ThreadPool(0); //worker threads
 
@@ -177,8 +177,8 @@ namespace ve
 		if (m_debug)
 		{
 			validationLayers.push_back("VK_LAYER_KHRONOS_validation");
+			validationLayers.push_back("VK_LAYER_KHRONOS_monitor");
 		}
-		validationLayers.push_back("VK_LAYER_KHRONOS_monitor");
 		return validationLayers;
 	}
 
@@ -328,8 +328,7 @@ namespace ve
 	{
 		std::set<VEEventListener *> lset;
 
-		for (uint32_t i = veEvent::VE_EVENT_NONE;
-			i < veEvent::VE_EVENT_LAST; i++)
+		for (uint32_t i = veEvent::VE_EVENT_NONE; i < veEvent::VE_EVENT_LAST; i++)
 		{
 			//initialize the event listeners lists
 			for (uint32_t j = 0; j < m_eventListeners[(veEvent::veEventType)i]->size(); j++)

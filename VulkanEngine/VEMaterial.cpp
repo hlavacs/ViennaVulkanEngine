@@ -109,8 +109,7 @@ namespace ve
 		: VENamedClass(name)
 	{
 		//copy the mesh vertex data
-		m_vertexCount = (uint32_t)
-			vertices.size();
+		m_vertexCount = (uint32_t)vertices.size();
 		m_boundingSphereRadius = 0.0f;
 		m_boundingSphereCenter = glm::vec3(0.0f, 0.0f, 0.0f);
 		for (uint32_t i = 0; i < vertices.size(); i++)
@@ -122,8 +121,7 @@ namespace ve
 		}
 		m_boundingSphereRadius = sqrt(m_boundingSphereRadius);
 
-		m_indexCount = (uint32_t)
-			indices.size();
+		m_indexCount = (uint32_t)indices.size();
 
 		//create the vertex buffer
 		VECHECKRESULT(vh::vhBufCreateVertexBuffer(getEnginePointer()->getRenderer()->getDevice(),
@@ -146,8 +144,7 @@ namespace ve
 	VEMesh::~VEMesh()
 	{
 		vmaDestroyBuffer(getEnginePointer()->getRenderer()->getVmaAllocator(), m_indexBuffer, m_indexBufferAllocation);
-		vmaDestroyBuffer(getEnginePointer()->getRenderer()->getVmaAllocator(), m_vertexBuffer,
-			m_vertexBufferAllocation);
+		vmaDestroyBuffer(getEnginePointer()->getRenderer()->getVmaAllocator(), m_vertexBuffer, m_vertexBufferAllocation);
 	}
 
 	//---------------------------------------------------------------------

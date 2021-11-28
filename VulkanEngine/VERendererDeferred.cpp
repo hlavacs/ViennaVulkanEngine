@@ -392,17 +392,6 @@ namespace ve
 		vkDestroySwapchainKHR(m_device, m_swapChain, nullptr);
 	}
 
-	void VERendererDeferred::destroySubrenderers()
-	{
-		VERenderer::destroySubrenderers();
-
-		if (m_subrenderComposer != nullptr)
-		{
-			m_subrenderComposer->closeSubrenderer();
-			delete m_subrenderComposer;
-		}
-	}
-
 	/**
 	 * \brief Close the renderer, destroy all local resources
 	 */

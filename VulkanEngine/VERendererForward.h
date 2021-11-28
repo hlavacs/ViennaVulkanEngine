@@ -36,7 +36,6 @@ namespace ve
 		VkRenderPass m_renderPassClear; ///<The first light render pass, clearing the framebuffers
 		VkRenderPass m_renderPassLoad; ///<The second light render pass - no clearing of framebuffer
 
-		std::vector<VkFramebuffer> m_swapChainFramebuffers; ///<Framebuffers for light pass
 		VETexture *m_depthMap = nullptr; ///<the image depth map
 		std::vector<std::vector<VETexture *>> m_shadowMaps; ///<the shadow maps - a list of map cascades
 
@@ -83,15 +82,14 @@ namespace ve
 		virtual void presentFrame(); //Present the newly drawn frame
 		virtual void closeRenderer(); //close the renderer
 		virtual void recreateSwapchain(); //new swapchain due to window size change
-		virtual secondaryCmdBuf_t
-			recordRenderpass(VkRenderPass *pRenderPass, //record one render pass into a command buffer
-				std::vector<VESubrender *> subRenderers,
-				VkFramebuffer *pFrameBuffer,
-				uint32_t imageIndex,
-				uint32_t numPass,
-				VECamera *pCamera,
-				VELight *pLight,
-				std::vector<VkDescriptorSet> descriptorSetsShadow);
+		virtual secondaryCmdBuf_t recordRenderpass(VkRenderPass *pRenderPass, //record one render pass into a command buffer
+			std::vector<VESubrender *> subRenderers,
+			VkFramebuffer *pFrameBuffer,
+			uint32_t imageIndex,
+			uint32_t numPass,
+			VECamera *pCamera,
+			VELight *pLight,
+			std::vector<VkDescriptorSet> descriptorSetsShadow);
 
 	public:
 		///Constructor of class VERendererForward
@@ -125,12 +123,6 @@ namespace ve
 		virtual std::vector<VkDescriptorSet> &getDescriptorSetsShadow()
 		{
 			return m_descriptorSetsShadow;
-		};
-
-		///\returns pointer to the swap chain framebuffer vector
-		virtual std::vector<VkFramebuffer> &getSwapChainFrameBuffers()
-		{
-			return m_swapChainFramebuffers;
 		};
 
 		///\returns the render pass

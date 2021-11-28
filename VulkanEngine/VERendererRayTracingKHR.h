@@ -49,12 +49,6 @@ namespace ve
 			return m_raytracingProperties;
 		}
 
-		///\returns pointer to the swap chain framebuffer vector
-		virtual std::vector<VkFramebuffer> &getSwapChainFrameBuffers()
-		{
-			return m_swapChainFramebuffers;
-		};
-
 		///\returns the depth map vector
 		VETexture *getDepthMap()
 		{

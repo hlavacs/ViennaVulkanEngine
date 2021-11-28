@@ -40,7 +40,8 @@ namespace ve
 		//per frame render resources
 		VkRenderPass m_renderPassOnscreenClear;
 		VkRenderPass m_renderPassOnscreenLoad;
-		std::vector<VkFramebuffer> m_swapChainFramebuffers; ///<Framebuffers for light pass
+
+
 		VETexture *m_depthMap = nullptr; ///<the image depth map
 		std::vector<VETexture *> m_depthMaps;
 		std::vector<VETexture *> m_positionMaps;
@@ -73,7 +74,6 @@ namespace ve
 
 		virtual void initRenderer(); //init the renderer
 		virtual void createSubrenderers(); //create the subrenderers
-		virtual void destroySubrenderers() override;
 
 		virtual void recordCmdBuffersOffscreen(); //record the command buffers
 		virtual void recordCmdBuffersOnscreen(); //record the command buffers
@@ -134,12 +134,6 @@ namespace ve
 		virtual std::vector<VkDescriptorSet> &getDescriptorSetsOffscreen()
 		{
 			return m_descriptorSetsOffscreen;
-		};
-
-		///\returns pointer to the swap chain framebuffer vector
-		virtual std::vector<VkFramebuffer> &getSwapChainFrameBuffers()
-		{
-			return m_swapChainFramebuffers;
 		};
 
 		///\returns the offscreen render pass

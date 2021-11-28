@@ -46,12 +46,6 @@ namespace ve
 			return m_raytracingProperties;
 		}
 
-		///\returns pointer to the swap chain framebuffer vector
-		virtual std::vector<VkFramebuffer> &getSwapChainFrameBuffers()
-		{
-			return m_swapChainFramebuffers;
-		};
-
 		///\returns the depth map vector
 		VETexture *getDepthMap()
 		{
@@ -110,7 +104,7 @@ namespace ve
 		std::vector<VkCommandBuffer> m_commandBuffers = {}; ///<the main command buffers for recording draw commands
 
 		VkRenderPass m_renderPass; ///<The first light render pass, clearing the framebuffers
-
+		
 		std::vector<std::vector<std::future<secondaryCmdBuf_t>>>
 			m_secondaryBuffersFutures = {}; ///<secondary buffers for parallel recording
 		std::vector<std::vector<secondaryCmdBuf_t>> m_secondaryBuffers = {}; ///<secondary buffers for parallel recording

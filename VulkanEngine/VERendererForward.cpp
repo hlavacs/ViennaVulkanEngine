@@ -131,8 +131,7 @@ namespace ve
 
 				vh::vhBufTransitionImageLayout(m_device, m_graphicsQueue, m_commandPool,
 					pShadowMap->m_image, pShadowMap->m_format, VK_IMAGE_ASPECT_DEPTH_BIT, 1,
-					1,
-					VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+					1, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
 
 				vh::vhBufCreateTextureSampler(m_device, &pShadowMap->m_imageInfo.sampler);
 
@@ -209,8 +208,7 @@ namespace ve
 			vh::vhBufTransitionImageLayout(m_device, m_graphicsQueue,
 				m_commandPool, //transition the image layout to
 				m_swapChainImages[i], VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_ASPECT_COLOR_BIT, 1,
-				1, //VK_IMAGE_LAYOUT_PRESENT_SRC_KHR
-				VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR);
+				1, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR);
 		}
 
 		createSyncObjects();
@@ -513,7 +511,6 @@ namespace ve
 		std::vector<VkClearValue> clearValuesLight = {}; //render target and depth buffer should be cleared only first time
 		VkClearValue cv1, cv2;
 		cv1.color = { 0.0f, 0.0f, 0.0f, 1.0f };
-		;
 		cv2.depthStencil = { 1.0f, 0 };
 		clearValuesLight.push_back(cv1);
 		clearValuesLight.push_back(cv2);
@@ -777,8 +774,7 @@ namespace ve
 		vh::vhBufTransitionImageLayout(m_device, m_graphicsQueue,
 			m_commandPool, //transition the image layout to
 			getSwapChainImage(), VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_ASPECT_COLOR_BIT, 1,
-			1, //VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL
-			VK_IMAGE_LAYOUT_PRESENT_SRC_KHR, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
+			1, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
 
 		//submit the command buffers
 		vh::vhCmdSubmitCommandBuffer(m_device, m_graphicsQueue, m_commandBuffers[m_imageIndex],
@@ -817,8 +813,7 @@ namespace ve
 		vh::vhBufTransitionImageLayout(m_device, m_graphicsQueue,
 			m_commandPool, //transition the image layout to
 			getSwapChainImage(), VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_ASPECT_COLOR_BIT, 1,
-			1, //VK_IMAGE_LAYOUT_PRESENT_SRC_KHR
-			VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR);
+			1, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR);
 
 		VkResult result = vh::vhRenderPresentResult(m_presentQueue, m_swapChain,
 			m_imageIndex, //present it to the swap chain

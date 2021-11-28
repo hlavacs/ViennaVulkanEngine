@@ -117,18 +117,14 @@ namespace ve
 		//managing events and listeners
 
 		void registerEventListener(VEEventListener *lis); //Register a new event listener.
-		void registerEventListener(VEEventListener *lis,
-			std::vector<veEvent::veEventType> eventTypes); //Register a new event listener for these events only
+		void registerEventListener(VEEventListener *lis, std::vector<veEvent::veEventType> eventTypes); //Register a new event listener for these events only
 		VEEventListener *getEventListener(std::string name); //get pointer to an event listener
-		void
-			removeEventListener(std::string name); //Remove an event listener - it is NOT deleted automatically!
-		void removeEventListener(std::string name,
-			std::vector<VEEventListener *> *list); //Remove an event listener - it is NOT deleted automatically!
+		void removeEventListener(std::string name); //Remove an event listener - it is NOT deleted automatically!
+		void removeEventListener(std::string name, std::vector<VEEventListener *> *list); //Remove an event listener - it is NOT deleted automatically!
 		void deleteEventListener(std::string name); //Delete an event listener
 		void clearEventListenerList();
 
-		void addEvent(
-			veEvent event); //Add an event to the event list - will be handled in the next loop
+		void addEvent( veEvent event); //Add an event to the event list - will be handled in the next loop
 		void deleteEvent(veEvent event); //Delete an event from the event list
 
 		//-----------------------------------------------------------------------------------------------

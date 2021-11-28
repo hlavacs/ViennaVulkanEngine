@@ -637,9 +637,9 @@ namespace ve
 		m_ubo.model = worldMatrix;
 		m_ubo.view = glm::inverse(worldMatrix);
 		m_ubo.proj = getProjectionMatrix();
-		m_ubo.modelInverse = glm::inverse(worldMatrix);
-		m_ubo.viewInverse = worldMatrix;
-		m_ubo.projInverse = glm::inverse(getProjectionMatrix());
+		m_ubo.modelInverse = m_ubo.view;
+		m_ubo.viewInverse = m_ubo.model;
+		m_ubo.projInverse = glm::inverse(m_ubo.proj);
 		m_ubo.param[0] = m_nearPlane;
 		m_ubo.param[1] = m_farPlane;
 		m_ubo.param[2] = m_nearPlaneFraction; //needed only if this is a shadow cam
@@ -1099,7 +1099,8 @@ namespace ve
 			glm::vec3(0.0f, 1.0f, 0.0f),
 			glm::vec3(0.0f, -1.0f, 0.0f),
 			glm::vec3(0.0f, 0.0f, 1.0f),
-			glm::vec3(0.0f, 0.0f, -1.0f) };
+			glm::vec3(0.0f, 0.0f, -1.0f)
+		};
 		std::vector<glm::vec3> up =
 		{
 			glm::vec3(0.0f, 1.0f, 0.0f),
@@ -1107,7 +1108,8 @@ namespace ve
 			glm::vec3(0.0f, 0.0f, -1.0f),
 			glm::vec3(0.0f, 0.0f, 1.0f),
 			glm::vec3(0.0f, 1.0f, 0.0f),
-			glm::vec3(0.0f, 1.0f, 0.0f) };
+			glm::vec3(0.0f, 1.0f, 0.0f)
+		};
 
 		for (uint32_t i = 0; i < m_shadowCameras.size(); i++)
 		{

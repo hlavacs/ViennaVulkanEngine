@@ -77,10 +77,10 @@ namespace ve
 
 		//swapchain
 		VkSwapchainKHR m_swapChain; ///<Vulkan KHR swapchain
+		std::vector<VkFramebuffer> m_swapChainFramebuffers; ///<Framebuffers for light pass
 		std::vector<VkImage> m_swapChainImages; ///<A list of the swap chain images
 		VkFormat m_swapChainImageFormat; ///<Swap chain image format
 		VkExtent2D m_swapChainExtent; ///<Image extent of the swap chain images
-		std::vector<VkFramebuffer> m_swapChainFramebuffers; ///<Framebuffers for light pass
 		std::vector<VkImageView> m_swapChainImageViews; ///<Image views of the swap chain images
 		uint32_t m_imageIndex = 0; ///<Index of the current swapchain image
 
@@ -96,9 +96,6 @@ namespace ve
 
 		///Initialize the base class
 		virtual void initRenderer() {};
-
-		// Ray Tracing acceletation structures, must be done, when all geometries created
-		virtual void initAccelerationStructures() {};
 
 		///Close the base class
 		virtual void closeRenderer() {};
@@ -189,6 +186,12 @@ namespace ve
 		{
 			return m_commandPool;
 		};
+		
+		///\returns pointer to the swap chain framebuffer vector
+		virtual std::vector<VkFramebuffer> &getSwapChainFrameBuffers()
+		{
+			return m_swapChainFramebuffers;
+		};
 
 		///\returns the swap chain image format
 		virtual VkFormat getSwapChainImageFormat()
@@ -229,12 +232,6 @@ namespace ve
 		virtual void addEntityToSubrenderer(VEEntity *pEntity);
 
 		virtual void removeEntityFromSubrenderers(VEEntity *pEntity);
-
-		///\returns pointer to the swap chain framebuffer vector
-		virtual std::vector<VkFramebuffer> &getSwapChainFrameBuffers()
-		{
-			return m_swapChainFramebuffers;
-		};
 
 		///\returns the depth map vector
 		virtual VETexture *getDepthMap() = 0;

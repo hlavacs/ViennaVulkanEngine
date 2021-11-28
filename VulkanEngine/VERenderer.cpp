@@ -94,6 +94,11 @@ namespace ve
 			m_subrenderRT->closeSubrenderer();
 			delete m_subrenderRT;
 		}
+		if (m_subrenderComposer != nullptr)
+		{
+			m_subrenderComposer->closeSubrenderer();
+			delete m_subrenderComposer;
+		}
 	}
 
 	/**
