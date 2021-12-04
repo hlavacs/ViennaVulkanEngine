@@ -82,10 +82,10 @@ namespace vh
 	*/
 	uint64_t vhGetBufferDeviceAddress(VkDevice device, VkBuffer buffer)
 	{
-		VkBufferDeviceAddressInfoKHR bufferDeviceAI{};
+		VkBufferDeviceAddressInfo bufferDeviceAI{};
 		bufferDeviceAI.sType = VK_STRUCTURE_TYPE_BUFFER_DEVICE_ADDRESS_INFO;
 		bufferDeviceAI.buffer = buffer;
-		return vkGetBufferDeviceAddressKHR(device, &bufferDeviceAI);
+		return vkGetBufferDeviceAddress(device, &bufferDeviceAI);
 	}
 
 	//--------------------------------------------------------------------------------------------------

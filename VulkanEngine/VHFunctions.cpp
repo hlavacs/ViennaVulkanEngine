@@ -108,10 +108,10 @@ VkResult vhLoadInstanceLevelEntryPoints(VkInstance instance)
 VkResult vhLoadDeviceLevelEntryPoints(VkInstance instance, VkDevice device)
 {
 #define VK_DEVICE_LEVEL_FUNCTION(fun)                                                      \
-    if (!(fun = (PFN_##fun)vkGetInstanceProcAddr(instance, #fun)))                         \
+    if (!(fun = (PFN_##fun)vkGetInstanceProcAddr(instance, #fun)) &&                       \
+        !(fun = (PFN_##fun)vkGetDeviceProcAddr(device, #fun)))                             \
     {                                                                                      \
         std::cout << "Could not load device level function: " << #fun << "!" << std::endl; \
-        return VK_INCOMPLETE;                                                              \
     }
 
 #include "VHFunctions.inl"

@@ -170,7 +170,7 @@ VK_DEVICE_LEVEL_FUNCTION(vkGetAccelerationStructureHandleNV)
 VK_DEVICE_LEVEL_FUNCTION(vkGetRayTracingShaderGroupHandlesNV)
 
 // KHR Ray Tracing Function Binding
-VK_DEVICE_LEVEL_FUNCTION(vkGetBufferDeviceAddressKHR)
+VK_DEVICE_LEVEL_FUNCTION(vkGetBufferDeviceAddress)
 VK_DEVICE_LEVEL_FUNCTION(vkGetAccelerationStructureBuildSizesKHR)
 VK_DEVICE_LEVEL_FUNCTION(vkCreateAccelerationStructureKHR)
 VK_DEVICE_LEVEL_FUNCTION(vkGetPhysicalDeviceFeatures2)
