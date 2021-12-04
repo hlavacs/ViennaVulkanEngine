@@ -127,7 +127,7 @@ void main()
     vec3 B        = normalize(cross(T, N));
     mat3 TBN      = mat3(T, B, N);
     vec3 mapnorm  = normalize(texture(normalSamplerArray[resIdx], texCoord).xyz*2.0 - 1.0);
-    vec3 normalW  = iparam.y == 1?normalize(TBN * mapnorm):fragNormalW;
+    vec3 normalW  = iparam.y == 1 ?normalize(TBN * mapnorm):fragNormalW;
     vec3 fragColor = texture(texSamplerArray[resIdx], texCoord).xyz;
 
     isShadowed = true;
@@ -187,7 +187,7 @@ void main()
             result +=   pointlight(lightType, camPosW,
             lightPosW, lightParam, 1.0,
             ambcol, diffcol, speccol,
-            fragPosW, fragNormalW, fragColor);
+            fragPosW, normalW, fragColor);
         }
 
         if (lightType == LIGHT_SPOT) {
@@ -205,7 +205,7 @@ void main()
         prd.attenuation *= 0.1;
         prd.depth++;
         prd.rayOrigin = gl_WorldRayOriginNV + gl_WorldRayDirectionNV * gl_HitTNV;
-        prd.rayDir = reflect(prd.rayDir, fragNormalW);
+        prd.rayDir = reflect(prd.rayDir, normalW);
         traceNV(topLevelAS, // acceleration structure
         gl_RayFlagsNoneNV, // rayFlags
         0xFF, // cullMask

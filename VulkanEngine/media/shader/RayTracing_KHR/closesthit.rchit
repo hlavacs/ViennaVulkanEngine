@@ -207,7 +207,7 @@ void main()
         prd.attenuation *= 0.1;
         prd.depth++;
         prd.rayOrigin = gl_WorldRayOriginEXT + gl_WorldRayDirectionEXT * gl_HitTEXT;
-        prd.rayDir = reflect(prd.rayDir, fragNormalW);
+        prd.rayDir = reflect(prd.rayDir, normalW);
         traceRayEXT(topLevelAS, // acceleration structure
         gl_RayFlagsNoneEXT, // rayFlags
         0xFF, // cullMask

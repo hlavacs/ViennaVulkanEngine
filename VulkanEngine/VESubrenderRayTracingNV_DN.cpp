@@ -15,7 +15,7 @@ namespace ve
 	VESubrenderRayTracingNV_DN::VESubrenderRayTracingNV_DN(VERendererRayTracingNV &renderer)
 		: VESubrenderRayTracingNV(renderer)
 	{
-		m_pushConstants.enableReflections = false;
+		m_pushConstants.enableReflections = true;
 		m_pushConstants.enableShadows = true;
 	};
 
@@ -607,14 +607,13 @@ namespace ve
 	void VESubrenderRayTracingNV_DN::addEntity(VEEntity *pEntity)
 	{
 		std::vector<VkDescriptorImageInfo> maps = {};
-		if (pEntity->m_pMaterial->mapDiffuse)
-		{
-			maps.push_back(pEntity->m_pMaterial->mapDiffuse->m_imageInfo);
-		}
-		if (pEntity->m_pMaterial->mapNormal)
-		{
-			maps.push_back(pEntity->m_pMaterial->mapNormal->m_imageInfo);
-		}
+		
+		maps.push_back(pEntity->m_pMaterial->mapDiffuse->m_imageInfo);
+		// this renderer is responsible for entities with and without normal map.
+		// here we need a placeholder to align all normal maps. That's why we use a diffuse map info. 
+		// shader will decide, wether it has a normal map by using a dedicated flag
+		maps.push_back(pEntity->m_pMaterial->mapNormal ? pEntity->m_pMaterial->mapNormal->m_imageInfo: pEntity->m_pMaterial->mapDiffuse->m_imageInfo);
+		
 		addMaps(pEntity, maps);
 
 		VESubrender::addEntity(pEntity);
