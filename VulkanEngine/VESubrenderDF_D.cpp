@@ -38,7 +38,7 @@ namespace ve
 			m_renderer.getSwapChainExtent(),
 			m_pipelineLayout, m_renderer.getRenderPassOffscreen(),
 			{ VK_DYNAMIC_STATE_BLEND_CONSTANTS },
-			&m_pipelines[0], VK_CULL_MODE_BACK_BIT, 3);
+			&m_pipelines[0], VK_CULL_MODE_NONE, 3);
 
 		if (m_maps.empty())
 			m_maps.resize(1);

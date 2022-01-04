@@ -15,7 +15,7 @@ namespace ve
 	VESubrenderRayTracingNV_DN::VESubrenderRayTracingNV_DN(VERendererRayTracingNV &renderer)
 		: VESubrenderRayTracingNV(renderer)
 	{
-		m_pushConstants.enableReflections = true;
+		m_pushConstants.enableReflections = false;
 		m_pushConstants.enableShadows = true;
 	};
 
@@ -219,10 +219,8 @@ namespace ve
 		m_sbtGen.Reset();
 		closeSubrenderer();
 		initSubrenderer();
-		UpdateRTDescriptorSets();
-		uint32_t
-			size = (uint32_t)
-			m_descriptorSetsResources.size();
+		updateRTDescriptorSets();
+		uint32_t size = (uint32_t)m_descriptorSetsResources.size();
 		if (size > 0)
 		{
 			m_descriptorSetsResources.clear();
@@ -366,7 +364,7 @@ namespace ve
 	}
 
 	// link buffers with a descriptor sets. If any of this ressources are changed, this method must be called.
-	void VESubrenderRayTracingNV_DN::UpdateRTDescriptorSets()
+	void VESubrenderRayTracingNV_DN::updateRTDescriptorSets()
 	{
 		std::vector<VkWriteDescriptorSet> descriptorWrites;
 

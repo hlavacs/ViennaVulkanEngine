@@ -103,14 +103,9 @@ namespace ve
 		m_depthMap->m_extent = m_swapChainExtent;
 
 		// onscreen render pass
-		vh::vhRenderCreateRenderPassOffscreen(m_device, m_depthMap->m_format,
-			&m_renderPassOffscreen);
-		vh::vhRenderCreateRenderPass(
-			m_device, m_swapChainImageFormat, m_depthMap->m_format,
-			VK_ATTACHMENT_LOAD_OP_CLEAR, &m_renderPassOnscreenClear);
-		vh::vhRenderCreateRenderPass(m_device, m_swapChainImageFormat,
-			m_depthMap->m_format, VK_ATTACHMENT_LOAD_OP_LOAD,
-			&m_renderPassOnscreenLoad);
+		vh::vhRenderCreateRenderPassOffscreen(m_device, m_depthMap->m_format, &m_renderPassOffscreen);
+		vh::vhRenderCreateRenderPass(m_device, m_swapChainImageFormat, m_depthMap->m_format, VK_ATTACHMENT_LOAD_OP_CLEAR, &m_renderPassOnscreenClear);
+		vh::vhRenderCreateRenderPass(m_device, m_swapChainImageFormat, m_depthMap->m_format, VK_ATTACHMENT_LOAD_OP_LOAD, &m_renderPassOnscreenLoad);
 
 		// depth map for light pass
 		vh::vhBufCreateDepthResources(
@@ -380,9 +375,13 @@ namespace ve
 		{
 			vkDestroyFramebuffer(m_device, framebuffer, nullptr);
 		}
+		for (auto framebuffer : m_offscreenFramebuffers)
+		{
+			vkDestroyFramebuffer(m_device, framebuffer, nullptr);
+		}
+		vkDestroyRenderPass(m_device, m_renderPassOffscreen, nullptr);
 		vkDestroyRenderPass(m_device, m_renderPassOnscreenClear, nullptr);
 		vkDestroyRenderPass(m_device, m_renderPassOnscreenLoad, nullptr);
-		vkDestroyRenderPass(m_device, m_renderPassOffscreen, nullptr);
 
 		for (auto imageView : m_swapChainImageViews)
 		{
@@ -409,10 +408,6 @@ namespace ve
 			{
 				vkDestroyFramebuffer(m_device, framebuffer, nullptr);
 			}
-		}
-		for (auto framebuffer : m_offscreenFramebuffers)
-		{
-			vkDestroyFramebuffer(m_device, framebuffer, nullptr);
 		}
 
 		// destroy offscreen maps
@@ -490,9 +485,9 @@ namespace ve
 
 		vh::vhRenderCreateRenderPassOffscreen(m_device, m_depthMap->m_format,
 			&m_renderPassOffscreen);
-		vh::vhRenderCreateRenderPass(
-			m_device, m_swapChainImageFormat, m_depthMap->m_format,
-			VK_ATTACHMENT_LOAD_OP_CLEAR, &m_renderPassOnscreenClear);
+		vh::vhRenderCreateRenderPass(m_device, m_swapChainImageFormat, 
+			m_depthMap->m_format, VK_ATTACHMENT_LOAD_OP_CLEAR,
+			&m_renderPassOnscreenClear);
 		vh::vhRenderCreateRenderPass(m_device, m_swapChainImageFormat,
 			m_depthMap->m_format, VK_ATTACHMENT_LOAD_OP_LOAD,
 			&m_renderPassOnscreenLoad);
@@ -750,8 +745,7 @@ namespace ve
 		vkCmdEndRenderPass(m_commandBuffersOffscreen[m_imageIndex]);
 		vkEndCommandBuffer(m_commandBuffersOffscreen[m_imageIndex]);
 
-		m_AvgRecordTimeOffscreen =
-			vh::vhAverage(vh::vhTimeDuration(t_start), m_AvgRecordTimeOffscreen);
+		m_AvgRecordTimeOffscreen = vh::vhAverage(vh::vhTimeDuration(t_start), m_AvgRecordTimeOffscreen, 1.0f / m_swapChainImages.size());
 	}
 
 	/**
@@ -798,8 +792,7 @@ namespace ve
 					m_secondaryBuffersOnscreenFutures[m_imageIndex].push_back(
 						std::move(future));
 				}
-				m_AvgCmdShadowTime =
-					vh::vhAverage(vh::vhTimeDuration(t_now), m_AvgCmdShadowTime);
+				m_AvgCmdShadowTime = vh::vhAverage(vh::vhTimeDuration(t_now), m_AvgCmdShadowTime);
 			}
 			//-----------------------------------------------------------------------------------------
 			// composition pass
@@ -813,21 +806,17 @@ namespace ve
 
 				m_secondaryBuffersOnscreenFutures[m_imageIndex].push_back(
 					std::move(future));
-				m_AvgCmdLightTime =
-					vh::vhAverage(vh::vhTimeDuration(t_now), m_AvgCmdLightTime);
+				m_AvgCmdLightTime = vh::vhAverage(vh::vhTimeDuration(t_now), m_AvgCmdLightTime);
 			}
 		}
 
 		//------------------------------------------------------------------------------------------
 		// wait for all threads to finish and copy secondary command buffers into the
 		// vector
-		m_secondaryBuffersOnscreen[m_imageIndex].resize(
-			m_secondaryBuffersOnscreenFutures[m_imageIndex].size());
-		for (uint32_t i = 0;
-			i < m_secondaryBuffersOnscreenFutures[m_imageIndex].size(); i++)
+		m_secondaryBuffersOnscreen[m_imageIndex].resize(m_secondaryBuffersOnscreenFutures[m_imageIndex].size());
+		for (uint32_t i = 0; i < m_secondaryBuffersOnscreenFutures[m_imageIndex].size(); i++)
 		{
-			m_secondaryBuffersOnscreen[m_imageIndex][i] =
-				m_secondaryBuffersOnscreenFutures[m_imageIndex][i].get();
+			m_secondaryBuffersOnscreen[m_imageIndex][i] = m_secondaryBuffersOnscreenFutures[m_imageIndex][i].get();
 		}
 
 		//-----------------------------------------------------------------------------------------
@@ -886,8 +875,7 @@ namespace ve
 		}
 		vkEndCommandBuffer(m_commandBuffersOnscreen[m_imageIndex]);
 
-		m_AvgRecordTimeOnscreen =
-			vh::vhAverage(vh::vhTimeDuration(t_start), m_AvgRecordTimeOnscreen);
+		m_AvgRecordTimeOnscreen = vh::vhAverage(vh::vhTimeDuration(t_start), m_AvgRecordTimeOnscreen, 1.0f / m_swapChainImages.size());
 
 		// m_overlaySemaphores[m_currentFrame] =
 		// m_renderFinishedSemaphores[m_currentFrame];

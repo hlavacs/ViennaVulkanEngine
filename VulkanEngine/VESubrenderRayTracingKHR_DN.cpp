@@ -292,7 +292,7 @@ namespace ve
 	{
 		closeSubrenderer();
 		initSubrenderer();
-		UpdateRTDescriptorSets();
+		updateRTDescriptorSets();
 		uint32_t size = (uint32_t)m_descriptorSetsResources.size();
 		if (size > 0)
 		{
@@ -437,7 +437,7 @@ namespace ve
 	}
 
 	// link buffers with a descriptor sets. If any of this ressources are changed, this method must be called.
-	void VESubrenderRayTracingKHR_DN::UpdateRTDescriptorSets()
+	void VESubrenderRayTracingKHR_DN::updateRTDescriptorSets()
 	{
 		std::vector<VkWriteDescriptorSet> descriptorWrites;
 

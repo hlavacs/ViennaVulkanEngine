@@ -239,7 +239,7 @@ namespace ve
 	{
 		pEntity->setResourceIdx((uint32_t)
 			m_entities.size()); //index into the array of textures for this entity, shader will take remainder and not absolute value
-
+		
 		uint32_t offset = 0; //offset into the list of maps - index where a particular array starts
 		if (pEntity->getResourceIdx() % m_resourceArrayLength == 0)
 		{ //array is full or there is none yet? -> we need a new array
@@ -248,7 +248,6 @@ namespace ve
 				m_descriptorSetLayoutResources, //layout contains arrays of this size
 				m_renderer.getDescriptorPool(),
 				m_descriptorSetsResources);
-
 			offset = (uint32_t)m_maps[0].size(); //number of maps of first bind slot, e.g. number of diffuse maps
 
 			for (uint32_t i = 0; i < m_maps.size(); i++)

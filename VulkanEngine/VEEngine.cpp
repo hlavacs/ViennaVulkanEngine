@@ -52,9 +52,9 @@ namespace ve
 		createRenderer(); //create a renderer
 		createSceneManager(); //create a scene manager
 		createWindow(); //create a window
-		//m_pWindow->initWindow(1920, 1080); //initialize the window
+		m_pWindow->initWindow(1920, 1080); //initialize the window
 		//m_pWindow->initWindow(2560, 1440); //initialize the window
-		m_pWindow->initWindow(3840, 2160); //initialize the window
+		//m_pWindow->initWindow(3840, 2160); //initialize the window
 
 		m_threadPool = new ThreadPool(0); //worker threads
 
@@ -681,9 +681,7 @@ namespace ve
 	{
 		//camera parent is used for translations
 		VESceneNode *cameraParent = getSceneManagerPointer()->createSceneNode("StandardCameraParent", getRoot(),
-			glm::translate(glm::mat4(1.0f),
-				glm::vec3(0.0f, 1.0f,
-					0.0f)));
+			glm::translate(glm::mat4(1.0f),	glm::vec3(0.0f, 5.0f, 0.0f)));
 
 		//camera can only do yaw (parent y-axis) and pitch (local x-axis) rotations
 		VkExtent2D extent = getWindowPointer()->getExtent();

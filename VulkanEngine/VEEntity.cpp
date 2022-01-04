@@ -505,7 +505,6 @@ namespace ve
 		{
 			auto renderer = getEnginePointer()->getRenderer();
 			auto transformOffset = m_memoryHandle.entryIndex * sizeof(VEEntity::veUBOPerEntity_t) + sizeof(glm::mat4);
-			m_ASDirty = true;
 			if (getEnginePointer()->getRendererType() == veRendererType::VE_RENDERER_TYPE_RAYTRACING_NV)
 			{
 				if (!m_AccelerationStructure.handleNV)
@@ -557,6 +556,7 @@ namespace ve
 						transformOffset);
 				}
 			}
+			m_AccelerationStructure.isDirty = true;
 		}
 	}
 

@@ -420,7 +420,7 @@ namespace ve
 			vkCmdExecuteCommands(m_commandBuffers[m_imageIndex], 1,
 				&m_secondaryBuffers[m_imageIndex][bufferIdx++].buffer);
 		}
-		m_AvgRecordTimeOnscreen = vh::vhAverage(vh::vhTimeDuration(t_start), m_AvgRecordTimeOnscreen);
+		m_AvgRecordTimeOnscreen = vh::vhAverage(vh::vhTimeDuration(t_start), m_AvgRecordTimeOnscreen, 1.0f / m_swapChainImages.size());
 
 		vkEndCommandBuffer(m_commandBuffers[m_imageIndex]);
 
@@ -540,9 +540,9 @@ namespace ve
 			for (auto &entity : m_subrenderRT->getEntities())
 			{
 				blas.push_back(entity->m_AccelerationStructure);
-				if (entity->m_ASDirty)
+				if (entity->m_AccelerationStructure.isDirty)
 				{
-					entity->m_ASDirty = false;
+					entity->m_AccelerationStructure.isDirty = false;
 					updateTLAS = true;
 				}
 			}
@@ -551,7 +551,7 @@ namespace ve
 				// each entity will create blas, in this step we need to create tlas, which will contain all objects
 				vh::vhCreateTopLevelAccelerationStructureKHR(m_device, m_vmaAllocator, m_commandPool, m_graphicsQueue,
 					blas, m_topLevelAS);
-				m_subrenderRT->UpdateRTDescriptorSets();
+				m_subrenderRT->updateRTDescriptorSets();
 			}
 			else if (updateTLAS)
 			{

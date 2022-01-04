@@ -18,7 +18,7 @@ namespace ve
 		*/
 	void VESubrenderDF_DN::initSubrenderer()
 	{
-		VESubrender::initSubrenderer();
+		VESubrenderDF::initSubrenderer();
 
 		vh::vhRenderCreateDescriptorSetLayout(m_renderer.getDevice(),
 			{ m_resourceArrayLength, m_resourceArrayLength },
@@ -40,7 +40,7 @@ namespace ve
 			m_renderer.getSwapChainExtent(),
 			m_pipelineLayout, m_renderer.getRenderPassOffscreen(),
 			{ VK_DYNAMIC_STATE_BLEND_CONSTANTS },
-			&m_pipelines[0], VK_CULL_MODE_BACK_BIT, 3);
+			&m_pipelines[0], VK_CULL_MODE_NONE, 3);
 
 		if (m_maps.empty())
 			m_maps.resize(2);

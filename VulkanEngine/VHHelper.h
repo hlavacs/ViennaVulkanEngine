@@ -207,6 +207,7 @@ namespace vh
 	struct vhAccelerationStructure
 	{
 		// Common
+		bool isDirty = false;
 		VkBuffer instancesBuffer = VK_NULL_HANDLE;
 		VkBuffer resultBuffer = VK_NULL_HANDLE;
 

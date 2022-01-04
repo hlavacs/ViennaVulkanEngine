@@ -250,7 +250,6 @@ namespace ve
 		bool m_castsShadow = true; ///<draw in the shadow pass?
 
 		vh::vhAccelerationStructure m_AccelerationStructure;
-		bool m_ASDirty = false;
 
 		//-------------------------------------------------------------------------------------
 		//Class and type

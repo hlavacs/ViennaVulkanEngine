@@ -90,9 +90,7 @@ namespace ve
 		//set 1...per object UBO
 		//set 2...additional per object resources
 
-		std::vector<VkDescriptorSet> set = {
-			pCamera->m_memoryHandle.pMemBlock->descriptorSets[imageIndex],
-		};
+		std::vector<VkDescriptorSet> set = { pCamera->m_memoryHandle.pMemBlock->descriptorSets[imageIndex]};
 		uint32_t offsets[1] = { (uint32_t)(pCamera->m_memoryHandle.entryIndex * sizeof(VECamera::veUBOPerCamera_t)) };
 
 		vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_pipelineLayout,

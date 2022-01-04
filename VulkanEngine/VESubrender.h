@@ -80,7 +80,7 @@ namespace ve
 		///\brief draw a specific entity
 		virtual void drawEntity(VkCommandBuffer commandBuffer, uint32_t imageIndex, VEEntity *entity) {};
 
-		virtual void UpdateRTDescriptorSets() {};
+		virtual void updateRTDescriptorSets() {};
 	};
 
 } // namespace ve

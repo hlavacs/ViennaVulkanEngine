@@ -77,7 +77,7 @@ namespace ve
 
 		void createRaytracingDescriptorSets();
 
-		void UpdateRTDescriptorSets() override;
+		void updateRTDescriptorSets() override;
 
 		//------------------------------------------------------------------------------------------------------------------
 		virtual void bindPipeline(VkCommandBuffer commandBuffer);

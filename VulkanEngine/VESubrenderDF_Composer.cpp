@@ -18,7 +18,7 @@ namespace ve
 		*/
 	void VESubrenderDF_Composer::initSubrenderer()
 	{
-		VESubrender::initSubrenderer();
+		VESubrenderDF::initSubrenderer();
 
 		//create descriptor for the Onscreen pass
 

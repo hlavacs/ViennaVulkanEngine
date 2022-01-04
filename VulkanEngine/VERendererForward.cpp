@@ -311,8 +311,9 @@ namespace ve
 
 		cleanupSwapChain();
 
-		vh::vhSwapCreateSwapChain(m_physicalDevice, m_surface, m_device, getWindowPointer()->getExtent(),
-			&m_swapChain, m_swapChainImages, m_swapChainImageViews,
+		vh::vhSwapCreateSwapChain(m_physicalDevice, m_surface, m_device, 
+			getWindowPointer()->getExtent(), &m_swapChain,
+			m_swapChainImages, m_swapChainImageViews,
 			&m_swapChainImageFormat, &m_swapChainExtent);
 
 		m_depthMap = new VETexture("DepthMap");
@@ -545,7 +546,7 @@ namespace ve
 
 			clearValuesLight.clear(); //since we blend the images onto each other, do not clear them for passes 2 and further
 		}
-		m_AvgRecordTimeOnscreen = vh::vhAverage(vh::vhTimeDuration(t_start), m_AvgRecordTimeOnscreen);
+		m_AvgRecordTimeOnscreen = vh::vhAverage(vh::vhTimeDuration(t_start), m_AvgRecordTimeOnscreen, 1.0f / m_swapChainImages.size());
 
 		vkEndCommandBuffer(m_commandBuffers[m_imageIndex]);
 
