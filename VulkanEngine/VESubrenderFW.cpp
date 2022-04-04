@@ -321,11 +321,7 @@ namespace ve
 						{
 							m_maps[j].resize(m_entities.size()); //remove map entries
 						}
-<<<<<<< HEAD
 						m_descriptorSetsResources.resize(m_entities.size() / m_resourceArrayLength); //remove descriptor sets
-=======
-						m_descriptorSetsResources.resize(m_entities.size() / m_resourceArrayLength);	//remove descriptor sets
->>>>>>> 4157435a06364ac0804e975d8e273b1a3d340145
 					}
 				}
 				else
