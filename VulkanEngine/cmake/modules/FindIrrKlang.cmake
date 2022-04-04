@@ -10,7 +10,7 @@ set( _irrklang_LIB_SEARCH_DIRS
         "C:/Program Files (x86)/irrklang/" )
 
 # Check environment for root search directory
-set( _irrklang_ENV_ROOT $ENV{GLFW3_ROOT} )
+set( _irrklang_ENV_ROOT $ENV{IRRKLANG_ROOT} )
 if( NOT IRRKLANG_ROOT AND _irrklang_ENV_ROOT )
     set(IRRKLANG_ROOT ${_irrklang_ENV_ROOT} )
 endif()

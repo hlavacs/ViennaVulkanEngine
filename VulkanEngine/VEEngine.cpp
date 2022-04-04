@@ -52,9 +52,7 @@ namespace ve
 		createRenderer(); //create a renderer
 		createSceneManager(); //create a scene manager
 		createWindow(); //create a window
-		m_pWindow->initWindow(1920, 1080); //initialize the window
-		//m_pWindow->initWindow(2560, 1440); //initialize the window
-		//m_pWindow->initWindow(3840, 2160); //initialize the window
+		m_pWindow->initWindow(800, 600); //initialize the window
 
 		m_threadPool = new ThreadPool(0); //worker threads
 
@@ -566,66 +564,52 @@ namespace ve
 		* size has changed (if so, informs the VEREnderer), and asks the VERenderer to draw and present one frame.
 		*
 		*/
-	void VEEngine::run()
+	void VEEngine::run() 
 	{
 		std::chrono::high_resolution_clock::time_point t_start = vh::vhTimeNow();
 		std::chrono::high_resolution_clock::time_point t_prev = t_start;
 		std::chrono::high_resolution_clock::time_point t_now;
 
-		while (!m_end_running)
-		{
-			if (m_loopCount > 10)
-			{
-				m_dt = vh::vhTimeDuration(t_prev);
-				m_AvgFrameTime = vh::vhAverage((float)m_dt, m_AvgFrameTime, 0.95);
-				m_MaxFrameTime = std::max(m_MaxFrameTime, (float)m_dt);
-				m_AcceptableLevel1 = vh::vhAverage((m_dt < 1.0 / 30) ? 1.0 : 0.0, m_AcceptableLevel1, 0.99);
-				m_AcceptableLevel2 = vh::vhAverage((m_dt < 1.0 / 60) ? 1.0 : 0.0, m_AcceptableLevel2, 0.99);
-
-			}
+		while ( !m_end_running) {
+			m_dt = vh::vhTimeDuration( t_prev );
+			m_AvgFrameTime = vh::vhAverage( (float)m_dt, m_AvgFrameTime );
 			t_prev = vh::vhTimeNow();
-			//m_AcceptableLevel1 =
-			//    ((m_AcceptableLevel1 * m_loopCount) + ((m_dt < 1.0 / 30) ? 1.0 : 0.0)) / (m_loopCount + 1);
-			//m_AcceptableLevel2 =
-			//    ((m_AcceptableLevel2 * m_loopCount) + ((m_dt < 1.0 / 60) ? 1.0 : 0.0)) / (m_loopCount + 1);
 
 			//----------------------------------------------------------------------------------
 			//process frame begin
 
 			t_now = vh::vhTimeNow();
-			veEvent event(veEvent::VE_EVENT_FRAME_STARTED); //notify all listeners that a new frame starts
+			veEvent event(veEvent::VE_EVENT_FRAME_STARTED );	//notify all listeners that a new frame starts
 			callListeners(m_dt, event);
 			m_AvgStartedTime = vh::vhAverage(vh::vhTimeDuration(t_now), m_AvgStartedTime);
 
 			//----------------------------------------------------------------------------------
 			//get and process window events
 
-			m_pWindow->pollEvents(); //poll window events which should be injected into the event queue
+			m_pWindow->pollEvents();			//poll window events which should be injected into the event queue
 
-			if (m_framebufferResized)
-			{ //if window size changed, recreate the current swapchain
+			if (m_framebufferResized) {			//if window size changed, recreate the current swapchain
 				m_pWindow->waitForWindowSizeChange();
 				m_pRenderer->recreateSwapchain();
 				m_framebufferResized = false;
 			}
-
+			
 			t_now = vh::vhTimeNow();
-			processEvents(m_dt); //process all current events, including pressed keys
+			processEvents(m_dt);				//process all current events, including pressed keys
 			m_AvgEventTime = vh::vhAverage(vh::vhTimeDuration(t_now), m_AvgEventTime);
 
 			//----------------------------------------------------------------------------------
 			//update world matrices and send them to the GPU
 
 			t_now = vh::vhTimeNow();
-			getSceneManagerPointer()->updateSceneNodes(
-				getEnginePointer()->getRenderer()->getImageIndex()); //update scene node UBOs
+			getSceneManagerPointer()->updateSceneNodes(getEnginePointer()->getRenderer()->getImageIndex());	//update scene node UBOs
 			m_AvgUpdateTime = vh::vhAverage(vh::vhTimeDuration(t_now), m_AvgUpdateTime);
 
 			//----------------------------------------------------------------------------------
 			//submit the cmd buffer to the GPU
 
 			t_now = vh::vhTimeNow();
-			m_pRenderer->drawFrame(); //draw the next frame
+			m_pRenderer->drawFrame();			//draw the next frame
 			m_AvgDrawTime = vh::vhAverage(vh::vhTimeDuration(t_now), m_AvgDrawTime);
 
 			//----------------------------------------------------------------------------------
@@ -636,19 +620,19 @@ namespace ve
 			m_AvgPrepOvlTime = vh::vhAverage(vh::vhTimeDuration(t_now), m_AvgPrepOvlTime);
 
 			t_now = vh::vhTimeNow();
-			event.type = veEvent::VE_EVENT_DRAW_OVERLAY; //notify all listeners that they can draw an overlay now
+			event.type = veEvent::VE_EVENT_DRAW_OVERLAY;		//notify all listeners that they can draw an overlay now
 			callListeners(m_dt, event);
 			m_AvgEndedTime = vh::vhAverage(vh::vhTimeDuration(t_now), m_AvgEndedTime);
 
 			t_now = vh::vhTimeNow();
-			m_pRenderer->drawOverlay(); //draw overlay in the subrenderer
+			m_pRenderer->drawOverlay();			//draw overlay in the subrenderer
 			m_AvgDrawOvlTime = vh::vhAverage(vh::vhTimeDuration(t_now), m_AvgDrawOvlTime);
 
 			//----------------------------------------------------------------------------------
 			//Frame ended
 
 			t_now = vh::vhTimeNow();
-			event.type = veEvent::VE_EVENT_FRAME_ENDED; //notify all listeners that the frame ended, e.g. fill cmd buffers for overlay
+			event.type = veEvent::VE_EVENT_FRAME_ENDED;	//notify all listeners that the frame ended, e.g. fill cmd buffers for overlay
 			callListeners(m_dt, event);
 			m_AvgEndedTime = vh::vhAverage(vh::vhTimeDuration(t_now), m_AvgEndedTime);
 
@@ -656,7 +640,7 @@ namespace ve
 			//present the finished frame
 
 			t_now = vh::vhTimeNow();
-			m_pRenderer->presentFrame(); //present the next frame
+			m_pRenderer->presentFrame();		//present the next frame
 			m_AvgPresentTime = vh::vhAverage(vh::vhTimeDuration(t_now), m_AvgPresentTime);
 
 			m_loopCount++;
@@ -679,15 +663,14 @@ namespace ve
 	///\brief load standard level with standard camera and lights
 	void VEEngine::loadLevel(uint32_t numLevel)
 	{
+
 		//camera parent is used for translations
-		VESceneNode *cameraParent = getSceneManagerPointer()->createSceneNode("StandardCameraParent", getRoot(),
-			glm::translate(glm::mat4(1.0f),	glm::vec3(0.0f, 5.0f, 0.0f)));
+		VESceneNode *cameraParent = getSceneManagerPointer()->createSceneNode("StandardCameraParent", getRoot(), 
+																			  glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 1.0f, 0.0f)));
 
 		//camera can only do yaw (parent y-axis) and pitch (local x-axis) rotations
 		VkExtent2D extent = getWindowPointer()->getExtent();
-		VECameraProjective *camera = (VECameraProjective *)getSceneManagerPointer()->createCamera("StandardCamera",
-			VECamera::VE_CAMERA_TYPE_PROJECTIVE,
-			cameraParent);
+		VECameraProjective *camera = (VECameraProjective *)getSceneManagerPointer()->createCamera("StandardCamera", VECamera::VE_CAMERA_TYPE_PROJECTIVE, cameraParent);
 		camera->m_nearPlane = 0.1f;
 		camera->m_farPlane = 500.1f;
 		camera->m_aspectRatio = extent.width / (float)extent.height;
@@ -695,10 +678,27 @@ namespace ve
 		camera->lookAt(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f), glm::vec3(0.0f, 1.0f, 0.0f));
 		getSceneManagerPointer()->setCamera(camera);
 
-		VELight *light4 = (VESpotLight *)getSceneManagerPointer()->createLight("StandardAmbientLight",
-			VELight::VE_LIGHT_TYPE_AMBIENT, camera);
+		VELight *light4 = (VESpotLight *)getSceneManagerPointer()->createLight("StandardAmbientLight", VELight::VE_LIGHT_TYPE_AMBIENT, camera);
 		light4->m_col_ambient = glm::vec4(0.3f, 0.3f, 0.3f, 1.0f);
 
+		//use one light source
+		VELight *light1 = (VEDirectionalLight *)getSceneManagerPointer()->createLight("StandardDirLight", VELight::VE_LIGHT_TYPE_DIRECTIONAL, getRoot());     //new VEDirectionalLight("StandardDirLight");
+		light1->lookAt(glm::vec3(0.0f, 20.0f, -20.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+		light1->m_col_diffuse = glm::vec4(0.9f, 0.9f, 0.9f, 1.0f);
+		light1->m_col_specular = glm::vec4(0.4f, 0.4f, 0.4f, 1.0f);
+		
+		/*VELight *light3 = (VEPointLight *)getSceneManagerPointer()->createLight("StandardPointLight", VELight::VE_LIGHT_TYPE_POINT, camera); //new VEPointLight("StandardPointLight");		//sphere is attached to this!
+		light3->m_col_diffuse = glm::vec4(0.99f, 0.99f, 0.6f, 1.0f);
+		light3->m_col_specular = glm::vec4(0.0f, 0.0f, 0.0f, 1.0f);
+		light3->m_param[0] = 200.0f;
+		light3->multiplyTransform(glm::translate(glm::vec3(0.0f, 0.0f, 15.0f)));
+		VELight *light2 = (VESpotLight *)getSceneManagerPointer()->createLight("StandardSpotLight", VELight::VE_LIGHT_TYPE_SPOT, camera);  
+		light2->m_col_diffuse = glm::vec4(0.99f, 0.6f, 0.6f, 1.0f);
+		light2->m_col_specular = glm::vec4(0.0f, 0.0f, 0.0f, 1.0f);
+		light2->m_param[0] = 200.0f;
+		light2->multiplyTransform(glm::translate(glm::vec3(5.0f, 0.0f, 0.0f)));
+		*/
+	
 		registerEventListeners();
 	}
 
