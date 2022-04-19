@@ -7,14 +7,14 @@
 
 #include "VEInclude.h"
 
-
-namespace ve {
-
+namespace ve
+{
 	/**
-	* \returns the name of this instance.
-	*/
-	std::string VENamedClass::getName() {
+	  * \returns the name of this instance.
+	  */
+	std::string VENamedClass::getName()
+	{
 		return m_name;
 	}
 
-}
+} // namespace ve

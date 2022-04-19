@@ -1,0 +1,54 @@
+#version 460
+#extension GL_NV_ray_tracing : require
+#extension GL_GOOGLE_include_directive : enable
+
+#include "../common_defines.glsl"
+
+layout(set = 0, binding = 0) uniform cameraUBO_t {
+    cameraData_t data;
+} cameraUBO;
+
+layout(set = 2, binding = 0, rgba8) uniform image2D image;
+layout(set = 3, binding = 0) uniform accelerationStructureNV topLevelAS;
+
+layout(location = 0) rayPayloadNV hitPayload prd;
+
+void main()
+{
+    const vec2 pixelCenter = vec2(gl_LaunchIDNV.xy) + vec2(0.5);
+    const vec2 inUV = pixelCenter/vec2(gl_LaunchSizeNV.xy);
+    vec2 d = inUV * 2.0 - 1.0;
+
+    vec4 origin = cameraUBO.data.camViewInv * vec4(0, 0, 0, 1);
+    vec4 target = cameraUBO.data.camProjInv * vec4(d.x, d.y, 1, 1);
+    vec4 direction = cameraUBO.data.camViewInv*vec4(normalize(target.xyz), 0);
+
+    prd.depth       = 0;
+    prd.hitValue    = vec3(0);
+    prd.attenuation = vec3(1.f, 1.f, 1.f);
+    prd.done        = 1;
+    prd.rayOrigin   = origin.xyz;
+    prd.rayDir      = direction.xyz;
+    uint rayFlags = gl_RayFlagsOpaqueNV;
+    uint cullMask = 0xff;
+    float tmin = 0.001;
+    float tmax = 10000.0;
+
+    traceNV(topLevelAS, // acceleration structure
+    gl_RayFlagsOpaqueNV, // rayFlags
+    0xFF, // cullMask
+    0, // sbtRecordOffset
+    0, // sbtRecordStride
+    0, // missIndex
+    prd.rayOrigin, // ray origin
+    tmin, // ray min range
+    prd.rayDir, // ray direction
+    tmax, // ray max range
+    0// payload (location = 0)
+    );
+
+    vec4 previousColor = imageLoad(image, ivec2(gl_LaunchIDNV.xy));
+    imageStore(image, ivec2(gl_LaunchIDNV.xy), vec4(prd.hitValue, 1.0) + previousColor);
+    //imageAtomicAdd(image, ivec2(gl_LaunchIDNV.xy), vec4(hitValue, 1.0));
+
+}

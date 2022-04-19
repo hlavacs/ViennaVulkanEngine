@@ -5,52 +5,56 @@
 *
 */
 
-
 #include "VEInclude.h"
+#include "VERendererForward.h"
 
-
-namespace ve {
-
+namespace ve
+{
 	/**
-	* \brief Initialize the subrenderer
-	*
-	* Create descriptor set layout, pipeline layout and the PSO
-	*
-	*/
-	void VESubrenderFW_Skyplane::initSubrenderer() {
+		* \brief Initialize the subrenderer
+		*
+		* Create descriptor set layout, pipeline layout and the PSO
+		*
+		*/
+	void VESubrenderFW_Skyplane::initSubrenderer()
+	{
 		VESubrender::initSubrenderer();
 
-		vh::vhRenderCreateDescriptorSetLayout(getRendererForwardPointer()->getDevice(),
+		vh::vhRenderCreateDescriptorSetLayout(m_renderer.getDevice(),
 			{ m_resourceArrayLength },
 			{ VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER },
 			{ VK_SHADER_STAGE_FRAGMENT_BIT },
 			&m_descriptorSetLayoutResources);
 
-		VkDescriptorSetLayout perObjectLayout = getRendererForwardPointer()->getDescriptorSetLayoutPerObject();
+		VkDescriptorSetLayout perObjectLayout = m_renderer.getDescriptorSetLayoutPerObject();
 
-		vh::vhPipeCreateGraphicsPipelineLayout(getRendererForwardPointer()->getDevice(),
-		{ perObjectLayout, perObjectLayout,  getRendererForwardPointer()->getDescriptorSetLayoutShadow(), perObjectLayout, m_descriptorSetLayoutResources },
-		{}, &m_pipelineLayout);
+		vh::vhPipeCreateGraphicsPipelineLayout(m_renderer.getDevice(),
+			{ perObjectLayout, perObjectLayout,
+			 m_renderer.getDescriptorSetLayoutShadow(), perObjectLayout,
+			 m_descriptorSetLayoutResources },
+			{}, &m_pipelineLayout);
 
 		m_pipelines.resize(1);
-		vh::vhPipeCreateGraphicsPipeline(getRendererForwardPointer()->getDevice(),
-		{ "media/shader/Forward/Skyplane/vert.spv", "media/shader/Forward/Skyplane/frag.spv" },
-			getRendererForwardPointer()->getSwapChainExtent(),
-			m_pipelineLayout, getRendererForwardPointer()->getRenderPass(),
-			{ },
+		vh::vhPipeCreateGraphicsPipeline(m_renderer.getDevice(),
+			{ "media/shader/Forward/Skyplane/vert.spv",
+			 "media/shader/Forward/Skyplane/frag.spv" },
+			m_renderer.getSwapChainExtent(),
+			m_pipelineLayout, m_renderer.getRenderPass(),
+			{},
 			&m_pipelines[0]);
 
-		if (m_maps.empty()) m_maps.resize(1);
-
+		if (m_maps.empty())
+			m_maps.resize(1);
 	}
 
 	/**
-	* \brief Add an entity to the subrenderer
-	*
-	* Create a UBO for this entity, a descriptor set per swapchain image, and update the descriptor sets
-	*
-	*/
-	void VESubrenderFW_Skyplane::addEntity(VEEntity *pEntity) {
+		* \brief Add an entity to the subrenderer
+		*
+		* Create a UBO for this entity, a descriptor set per swapchain image, and update the descriptor sets
+		*
+		*/
+	void VESubrenderFW_Skyplane::addEntity(VEEntity *pEntity)
+	{
 		std::vector<VkDescriptorImageInfo> maps = { pEntity->m_pMaterial->mapDiffuse->m_imageInfo };
 
 		addMaps(pEntity, maps);
@@ -58,6 +62,4 @@ namespace ve {
 		VESubrender::addEntity(pEntity);
 	}
 
-}
-
-
+} // namespace ve

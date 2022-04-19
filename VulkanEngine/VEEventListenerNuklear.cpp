@@ -7,34 +7,37 @@
 
 #include "VEInclude.h"
 
-namespace ve {
-
+namespace ve
+{
 	/**
-	*
-	* \brief Callback for frame ended event
-	*
-	* \param[in] event The frame ended event
-	*
-	*/
-	void VEEventListenerNuklear::onDrawOverlay(veEvent event) {
-		VESubrenderFW_Nuklear * pSubrender = (VESubrenderFW_Nuklear*)getRendererPointer()->getOverlay();
-		if (pSubrender == nullptr) return;
+		*
+		* \brief Callback for frame ended event
+		*
+		* \param[in] event The frame ended event
+		*
+		*/
+	void VEEventListenerNuklear::onDrawOverlay(veEvent event)
+	{
+		VESubrender_Nuklear *pSubrender = (VESubrender_Nuklear *)getEnginePointer()->getRenderer()->getOverlay();
+		if (pSubrender == nullptr)
+			return;
 
-		struct nk_context * ctx = pSubrender->getContext();
+		struct nk_context *ctx = pSubrender->getContext();
 
 		/* GUI */
 		if (nk_begin(ctx, "Demo", nk_rect(50, 50, 230, 250),
 			NK_WINDOW_BORDER | NK_WINDOW_MOVABLE | NK_WINDOW_SCALABLE |
 			NK_WINDOW_MINIMIZABLE | NK_WINDOW_TITLE))
 		{
-
 			nk_layout_row_static(ctx, 30, 80, 1);
 			if (nk_button_label(ctx, "button"))
 				fprintf(stdout, "button pressed\n");
 
 			nk_layout_row_dynamic(ctx, 30, 2);
-			if (nk_option_label(ctx, "up", m_orientation == UP)) m_orientation = UP;
-			if (nk_option_label(ctx, "down", m_orientation == DOWN)) m_orientation = DOWN;
+			if (nk_option_label(ctx, "up", m_orientation == UP))
+				m_orientation = UP;
+			if (nk_option_label(ctx, "down", m_orientation == DOWN))
+				m_orientation = DOWN;
 
 			nk_layout_row_dynamic(ctx, 25, 1);
 			nk_property_int(ctx, "Zoom:", 0, &m_zoom, 100, 10, 1);
@@ -42,7 +45,8 @@ namespace ve {
 			nk_layout_row_dynamic(ctx, 20, 1);
 			nk_label(ctx, "background:", NK_TEXT_LEFT);
 			nk_layout_row_dynamic(ctx, 25, 1);
-			if (nk_combo_begin_color(ctx, m_background, nk_vec2(nk_widget_width(ctx), 400))) {
+			if (nk_combo_begin_color(ctx, m_background, nk_vec2(nk_widget_width(ctx), 400)))
+			{
 				nk_layout_row_dynamic(ctx, 120, 1);
 				m_background = nk_color_picker(ctx, m_background, NK_RGBA);
 				nk_layout_row_dynamic(ctx, 25, 1);
@@ -80,18 +84,7 @@ namespace ve {
 		// glfwTerminate();
 		// return 0;
 
-		nk_color_fv( m_bg_color, m_background);
+		nk_color_fv(m_bg_color, m_background);
 	}
 
-
-
-
-}
-
-
-
-
-
-
-
-
+} // namespace ve

@@ -14,7 +14,7 @@ namespace ve {
 
 
 	uint32_t g_score = 0;				//derzeitiger Punktestand
-	double g_time = 30.0;				//zeit die noch übrig ist
+	double g_time = 30.0;				//zeit die noch Ã¼brig ist
 	bool g_gameLost = false;			//true... das Spiel wurde verloren
 	bool g_restart = false;			//true...das Spiel soll neu gestartet werden
 
@@ -25,7 +25,7 @@ namespace ve {
 	protected:
 		
 		virtual void onDrawOverlay(veEvent event) {
-			VESubrenderFW_Nuklear * pSubrender = (VESubrenderFW_Nuklear*)getRendererPointer()->getOverlay();
+			VESubrender_Nuklear * pSubrender = (VESubrender_Nuklear*)getEnginePointer()->getRenderer()->getOverlay();
 			if (pSubrender == nullptr) return;
 
 			struct nk_context * ctx = pSubrender->getContext();
@@ -65,11 +65,11 @@ namespace ve {
 	};
 
 
-	static std::default_random_engine e{ 12345 };					//Für Zufallszahlen
-	static std::uniform_real_distribution<> d{ -10.0f, 10.0f };		//Für Zufallszahlen
+	static std::default_random_engine e{ 12345 };					//FÃ¼r Zufallszahlen
+	static std::uniform_real_distribution<> d{ -10.0f, 10.0f };		//FÃ¼r Zufallszahlen
 
 	//
-	// Überprüfen, ob die Kamera die Kiste berührt
+	// ÃœberprÃ¼fen, ob die Kamera die Kiste berÃ¼hrt
 	//
 	class EventListenerCollision : public VEEventListener {
 	protected:
@@ -128,7 +128,7 @@ namespace ve {
 	class MyVulkanEngine : public VEEngine {
 	public:
 
-		MyVulkanEngine( bool debug=false) : VEEngine(debug) {};
+		MyVulkanEngine( bool debug=false) : VEEngine(veRendererType::VE_RENDERER_TYPE_FORWARD, debug) {};
 		~MyVulkanEngine() {};
 
 
@@ -192,4 +192,3 @@ int main() {
 
 	return 0;
 }
-

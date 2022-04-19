@@ -2,7 +2,7 @@
 #extension GL_ARB_separate_shader_objects : enable
 #extension GL_GOOGLE_include_directive : enable
 
-#include "../common_defines.glsl"
+#include "../../common_defines.glsl"
 
 layout(set = 0, binding = 0) uniform cameraUBO_t {
     cameraData_t data;
@@ -22,6 +22,6 @@ out gl_PerVertex {
 
 
 void main() {
-  gl_Position = cameraUBO.data.camProj  * cameraUBO.data.camView * objectUBO.data.model * vec4(inPositionL, 1.0);
-  fragColor   = objectUBO.data.color;
+    gl_Position = cameraUBO.data.camProj  * cameraUBO.data.camView * objectUBO.data.model * vec4(inPositionL, 1.0);
+    fragColor   = objectUBO.data.color;
 }

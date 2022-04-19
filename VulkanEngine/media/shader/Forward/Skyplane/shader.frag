@@ -2,10 +2,9 @@
 #extension GL_ARB_separate_shader_objects : enable
 #extension GL_GOOGLE_include_directive : enable
 
-#define RESOURCEARRAYLENGTH 16
+#include "../../common_defines.glsl"
+#include "../../light.glsl"
 
-#include "../common_defines.glsl"
-#include "../light.glsl"
 
 layout(location = 0) in vec2 fragTexCoord;
 
@@ -29,5 +28,5 @@ void main() {
 
     vec3 fragColor = texture(texSamplerArray[resIdx], texCoord).xyz;
 
-    outColor = vec4( fragColor, 1.0 );
+    outColor = vec4(fragColor, 1.0);
 }

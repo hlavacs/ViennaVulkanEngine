@@ -5,37 +5,35 @@
 *
 */
 
-
 #include "VEInclude.h"
+#include "VERendererForward.h"
 
-
-namespace ve {
-
+namespace ve
+{
 	/**
-	* \brief Initialize the subrenderer
-	*
-	* Create descriptor set layout, pipeline layout and the PSO
-	*
-	*/
-	void VESubrenderFW_C1::initSubrenderer() {
+		* \brief Initialize the subrenderer
+		*
+		* Create descriptor set layout, pipeline layout and the PSO
+		*
+		*/
+	void VESubrenderFW_C1::initSubrenderer()
+	{
 		VESubrenderFW::initSubrenderer();
 
-		VkDescriptorSetLayout perObjectLayout2 = getRendererForwardPointer()->getDescriptorSetLayoutPerObject();
+		VkDescriptorSetLayout perObjectLayout = m_renderer.getDescriptorSetLayoutPerObject();
 
-		vh::vhPipeCreateGraphicsPipelineLayout(getRendererForwardPointer()->getDevice(),
-		{ perObjectLayout2, perObjectLayout2,  getRendererForwardPointer()->getDescriptorSetLayoutShadow(), perObjectLayout2 },
-		{},&m_pipelineLayout);
+		vh::vhPipeCreateGraphicsPipelineLayout(m_renderer.getDevice(),
+			{ perObjectLayout, perObjectLayout,
+			 m_renderer.getDescriptorSetLayoutShadow(), perObjectLayout },
+			{}, &m_pipelineLayout);
 
 		m_pipelines.resize(1);
-		vh::vhPipeCreateGraphicsPipeline(getRendererForwardPointer()->getDevice(),
-		{ "media/shader/Forward/C1/vert.spv", "media/shader/Forward/C1/frag.spv" },
-			getRendererForwardPointer()->getSwapChainExtent(),
-			m_pipelineLayout, getRendererForwardPointer()->getRenderPass(),
-			{ },
+		vh::vhPipeCreateGraphicsPipeline(m_renderer.getDevice(),
+			{ "media/shader/Forward/C1/vert.spv", "media/shader/Forward/C1/frag.spv" },
+			m_renderer.getSwapChainExtent(),
+			m_pipelineLayout, m_renderer.getRenderPass(),
+			{},
 			&m_pipelines[0]);
-
 	}
 
-}
-
-
+} // namespace ve

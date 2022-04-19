@@ -7,7 +7,7 @@
 // ************************************************************ //
 
 #if !defined(VK_EXPORTED_FUNCTION)
-#define VK_EXPORTED_FUNCTION( fun )
+#define VK_EXPORTED_FUNCTION(fun)
 #endif
 
 VK_EXPORTED_FUNCTION(vkGetInstanceProcAddr)
@@ -23,7 +23,7 @@ VK_EXPORTED_FUNCTION(vkGetInstanceProcAddr)
 // ************************************************************ //
 
 #if !defined(VK_GLOBAL_LEVEL_FUNCTION)
-#define VK_GLOBAL_LEVEL_FUNCTION( fun )
+#define VK_GLOBAL_LEVEL_FUNCTION(fun)
 #endif
 
 VK_GLOBAL_LEVEL_FUNCTION(vkCreateInstance)
@@ -41,11 +41,12 @@ VK_GLOBAL_LEVEL_FUNCTION(vkEnumerateInstanceLayerProperties)
 // ************************************************************ //
 
 #if !defined(VK_INSTANCE_LEVEL_FUNCTION)
-#define VK_INSTANCE_LEVEL_FUNCTION( fun )
+#define VK_INSTANCE_LEVEL_FUNCTION(fun)
 #endif
 
 VK_INSTANCE_LEVEL_FUNCTION(vkEnumeratePhysicalDevices)
 VK_INSTANCE_LEVEL_FUNCTION(vkGetPhysicalDeviceProperties)
+VK_INSTANCE_LEVEL_FUNCTION(vkGetPhysicalDeviceProperties2)
 VK_INSTANCE_LEVEL_FUNCTION(vkGetPhysicalDeviceFormatProperties)
 VK_INSTANCE_LEVEL_FUNCTION(vkGetPhysicalDeviceFeatures)
 VK_INSTANCE_LEVEL_FUNCTION(vkGetPhysicalDeviceQueueFamilyProperties)
@@ -78,12 +79,13 @@ VK_INSTANCE_LEVEL_FUNCTION(vkGetPhysicalDeviceMemoryProperties)
 // ************************************************************ //
 
 #if !defined(VK_DEVICE_LEVEL_FUNCTION)
-#define VK_DEVICE_LEVEL_FUNCTION( fun )
+#define VK_DEVICE_LEVEL_FUNCTION(fun)
 #endif
 
 VK_DEVICE_LEVEL_FUNCTION(vkInvalidateMappedMemoryRanges)
 VK_DEVICE_LEVEL_FUNCTION(vkCmdBindIndexBuffer)
 VK_DEVICE_LEVEL_FUNCTION(vkCmdDrawIndexed)
+VK_DEVICE_LEVEL_FUNCTION(vkCmdTraceRaysNV)
 VK_DEVICE_LEVEL_FUNCTION(vkCmdSetBlendConstants)
 VK_DEVICE_LEVEL_FUNCTION(vkCreateCommandPool)
 VK_DEVICE_LEVEL_FUNCTION(vkQueueWaitIdle)
@@ -114,6 +116,7 @@ VK_DEVICE_LEVEL_FUNCTION(vkCreateShaderModule)
 VK_DEVICE_LEVEL_FUNCTION(vkCreatePipelineLayout)
 VK_DEVICE_LEVEL_FUNCTION(vkCreateGraphicsPipelines)
 VK_DEVICE_LEVEL_FUNCTION(vkCmdBeginRenderPass)
+VK_DEVICE_LEVEL_FUNCTION(vkCmdNextSubpass)
 VK_DEVICE_LEVEL_FUNCTION(vkCmdBindPipeline)
 VK_DEVICE_LEVEL_FUNCTION(vkCmdDraw)
 VK_DEVICE_LEVEL_FUNCTION(vkCmdEndRenderPass)
@@ -154,7 +157,29 @@ VK_DEVICE_LEVEL_FUNCTION(vkDestroyDescriptorPool)
 VK_DEVICE_LEVEL_FUNCTION(vkDestroyDescriptorSetLayout)
 VK_DEVICE_LEVEL_FUNCTION(vkDestroySampler)
 VK_DEVICE_LEVEL_FUNCTION(vkDestroyImage)
+VK_DEVICE_LEVEL_FUNCTION(vkCmdPushConstants)
 
+// NV Ray Tracing Function Binding
+VK_DEVICE_LEVEL_FUNCTION(vkCreateAccelerationStructureNV)
+VK_DEVICE_LEVEL_FUNCTION(vkDestroyAccelerationStructureNV)
+VK_DEVICE_LEVEL_FUNCTION(vkGetAccelerationStructureMemoryRequirementsNV)
+VK_DEVICE_LEVEL_FUNCTION(vkBindAccelerationStructureMemoryNV)
+VK_DEVICE_LEVEL_FUNCTION(vkCmdBuildAccelerationStructureNV)
+VK_DEVICE_LEVEL_FUNCTION(vkCreateRayTracingPipelinesNV)
+VK_DEVICE_LEVEL_FUNCTION(vkGetAccelerationStructureHandleNV)
+VK_DEVICE_LEVEL_FUNCTION(vkGetRayTracingShaderGroupHandlesNV)
+
+// KHR Ray Tracing Function Binding
+VK_DEVICE_LEVEL_FUNCTION(vkGetBufferDeviceAddress)
+VK_DEVICE_LEVEL_FUNCTION(vkGetAccelerationStructureBuildSizesKHR)
+VK_DEVICE_LEVEL_FUNCTION(vkCreateAccelerationStructureKHR)
+VK_DEVICE_LEVEL_FUNCTION(vkGetPhysicalDeviceFeatures2)
+VK_DEVICE_LEVEL_FUNCTION(vkCmdBuildAccelerationStructuresKHR)
+VK_DEVICE_LEVEL_FUNCTION(vkGetAccelerationStructureDeviceAddressKHR)
+VK_DEVICE_LEVEL_FUNCTION(vkDestroyAccelerationStructureKHR)
+VK_DEVICE_LEVEL_FUNCTION(vkCreateRayTracingPipelinesKHR)
+VK_DEVICE_LEVEL_FUNCTION(vkGetRayTracingShaderGroupHandlesKHR)
+VK_DEVICE_LEVEL_FUNCTION(vkCmdTraceRaysKHR)
 #undef VK_DEVICE_LEVEL_FUNCTION
 
 

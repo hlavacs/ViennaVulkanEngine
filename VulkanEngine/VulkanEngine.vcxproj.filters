@@ -33,6 +33,12 @@
     <Filter Include="Header Files\VHelper">
       <UniqueIdentifier>{6a52e981-61c4-42e0-aadb-431516ce8e9d}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Source Files\NVHelpers">
+      <UniqueIdentifier>{c2577431-9d51-4063-871e-2a39b0bfe516}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\NVHelpers">
+      <UniqueIdentifier>{9e8131b8-d5fd-46e5-bf2d-af1fb9f4169b}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="VEEngine.h">
@@ -89,7 +95,7 @@
     <ClInclude Include="VESubrenderFW_DN.h">
       <Filter>Header Files\VESubrender</Filter>
     </ClInclude>
-    <ClInclude Include="VESubrenderFW_Nuklear.h">
+    <ClInclude Include="VESubrender_Nuklear.h">
       <Filter>Header Files\VESubrender</Filter>
     </ClInclude>
     <ClInclude Include="VESubrenderFW_Shadow.h">
@@ -118,6 +124,69 @@
     </ClInclude>
     <ClInclude Include="VHFunctions.h">
       <Filter>Header Files\VHelper</Filter>
+    </ClInclude>
+    <ClInclude Include="VERendererRayTracingNV.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="BottomLevelASGenerator.h">
+      <Filter>Header Files\NVHelpers</Filter>
+    </ClInclude>
+    <ClInclude Include="DescriptorSetGenerator.h">
+      <Filter>Header Files\NVHelpers</Filter>
+    </ClInclude>
+    <ClInclude Include="RaytracingPipelineGenerator.h">
+      <Filter>Header Files\NVHelpers</Filter>
+    </ClInclude>
+    <ClInclude Include="ShaderBindingTableGenerator.h">
+      <Filter>Header Files\NVHelpers</Filter>
+    </ClInclude>
+    <ClInclude Include="TopLevelASGenerator.h">
+      <Filter>Header Files\NVHelpers</Filter>
+    </ClInclude>
+    <ClInclude Include="VKHelpers.h">
+      <Filter>Header Files\NVHelpers</Filter>
+    </ClInclude>
+    <ClInclude Include="VESubrenderRayTracingNV_DN.h">
+      <Filter>Header Files\VESubrender</Filter>
+    </ClInclude>
+    <ClInclude Include="VESubrenderRayTracingNV.h">
+      <Filter>Header Files\VESubrender</Filter>
+    </ClInclude>
+    <ClInclude Include="VERendererDeferred.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="VESubrenderDF_C1.h">
+      <Filter>Header Files\VESubrender</Filter>
+    </ClInclude>
+    <ClInclude Include="VESubrenderDF_Composer.h">
+      <Filter>Header Files\VESubrender</Filter>
+    </ClInclude>
+    <ClInclude Include="VESubrenderDF_D.h">
+      <Filter>Header Files\VESubrender</Filter>
+    </ClInclude>
+    <ClInclude Include="VESubrenderDF_DN.h">
+      <Filter>Header Files\VESubrender</Filter>
+    </ClInclude>
+    <ClInclude Include="VESubrenderDF_Shadow.h">
+      <Filter>Header Files\VESubrender</Filter>
+    </ClInclude>
+    <ClInclude Include="VESubrenderDF_Skyplane.h">
+      <Filter>Header Files\VESubrender</Filter>
+    </ClInclude>
+    <ClInclude Include="VESubrenderDF.h">
+      <Filter>Header Files\VESubrender</Filter>
+    </ClInclude>
+    <ClInclude Include="VEEnums.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="VESubrenderRayTracingKHR.h">
+      <Filter>Header Files\VESubrender</Filter>
+    </ClInclude>
+    <ClInclude Include="VESubrenderRayTracingKHR_DN.h">
+      <Filter>Header Files\VESubrender</Filter>
+    </ClInclude>
+    <ClInclude Include="VERendererRayTracingKHR.h">
+      <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -169,7 +238,7 @@
     <ClCompile Include="VESubrenderFW_DN.cpp">
       <Filter>Source Files\VESubrender</Filter>
     </ClCompile>
-    <ClCompile Include="VESubrenderFW_Nuklear.cpp">
+    <ClCompile Include="VESubrender_Nuklear.cpp">
       <Filter>Source Files\VESubrender</Filter>
     </ClCompile>
     <ClCompile Include="VESubrenderFW_Shadow.cpp">
@@ -221,6 +290,69 @@
       <Filter>Source Files\VHelper</Filter>
     </ClCompile>
     <ClCompile Include="VHFunctions.cpp">
+      <Filter>Source Files\VHelper</Filter>
+    </ClCompile>
+    <ClCompile Include="VERendererRayTracingNV.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="BottomLevelASGenerator.cpp">
+      <Filter>Source Files\NVHelpers</Filter>
+    </ClCompile>
+    <ClCompile Include="DescriptorSetGenerator.cpp">
+      <Filter>Source Files\NVHelpers</Filter>
+    </ClCompile>
+    <ClCompile Include="RaytracingPipelineGenerator.cpp">
+      <Filter>Source Files\NVHelpers</Filter>
+    </ClCompile>
+    <ClCompile Include="ShaderBindingTableGenerator.cpp">
+      <Filter>Source Files\NVHelpers</Filter>
+    </ClCompile>
+    <ClCompile Include="TopLevelASGenerator.cpp">
+      <Filter>Source Files\NVHelpers</Filter>
+    </ClCompile>
+    <ClCompile Include="VKHelpers.cpp">
+      <Filter>Source Files\NVHelpers</Filter>
+    </ClCompile>
+    <ClCompile Include="VESubrenderRayTracingNV_DN.cpp">
+      <Filter>Source Files\VESubrender</Filter>
+    </ClCompile>
+    <ClCompile Include="VESubrenderRayTracingNV.cpp">
+      <Filter>Source Files\VESubrender</Filter>
+    </ClCompile>
+    <ClCompile Include="VERendererDeferred.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="VESubrenderDF.cpp">
+      <Filter>Source Files\VESubrender</Filter>
+    </ClCompile>
+    <ClCompile Include="VESubrenderDF_C1.cpp">
+      <Filter>Source Files\VESubrender</Filter>
+    </ClCompile>
+    <ClCompile Include="VESubrenderDF_Composer.cpp">
+      <Filter>Source Files\VESubrender</Filter>
+    </ClCompile>
+    <ClCompile Include="VESubrenderDF_D.cpp">
+      <Filter>Source Files\VESubrender</Filter>
+    </ClCompile>
+    <ClCompile Include="VESubrenderDF_DN.cpp">
+      <Filter>Source Files\VESubrender</Filter>
+    </ClCompile>
+    <ClCompile Include="VESubrenderDF_Shadow.cpp">
+      <Filter>Source Files\VESubrender</Filter>
+    </ClCompile>
+    <ClCompile Include="VESubrenderDF_Skyplane.cpp">
+      <Filter>Source Files\VESubrender</Filter>
+    </ClCompile>
+    <ClCompile Include="VESubrenderRayTracingKHR.cpp">
+      <Filter>Source Files\VESubrender</Filter>
+    </ClCompile>
+    <ClCompile Include="VESubrenderRayTracingKHR_DN.cpp">
+      <Filter>Source Files\VESubrender</Filter>
+    </ClCompile>
+    <ClCompile Include="VERendererRayTracingKHR.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="VHRayTracing.cpp">
       <Filter>Source Files\VHelper</Filter>
     </ClCompile>
   </ItemGroup>

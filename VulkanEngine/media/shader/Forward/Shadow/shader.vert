@@ -3,7 +3,7 @@
 #extension GL_ARB_shading_language_420pack : enable
 #extension GL_GOOGLE_include_directive : enable
 
-#include "../common_defines.glsl"
+#include "../../common_defines.glsl"
 
 layout(set = 0, binding = 0) uniform cameraUBO_t {
     cameraData_t data;
