@@ -128,7 +128,7 @@ namespace ve {
 	class MyVulkanEngine : public VEEngine {
 	public:
 
-		MyVulkanEngine( bool debug=false) : VEEngine(veRendererType::VE_RENDERER_TYPE_FORWARD, debug) {};
+		MyVulkanEngine(veRendererType type = veRendererType::VE_RENDERER_TYPE_FORWARD, bool debug=false) : VEEngine(type, debug) {};
 		~MyVulkanEngine() {};
 
 
@@ -159,7 +159,7 @@ namespace ve {
 											"bluecloud_dn.jpg", "bluecloud_rt.jpg", "bluecloud_lf.jpg" }, pScene)  );
 
 			VESceneNode *e4;
-			VECHECKPOINTER( e4 = getSceneManagerPointer()->loadModel("The Plane", "media/models/test", "plane_t_n_s.obj",0, pScene) );
+			VECHECKPOINTER( e4 = getSceneManagerPointer()->loadModel("The Plane", "media/models/test/plane", "plane_t_n_s.obj",0, pScene) );
 			e4->setTransform(glm::scale(glm::mat4(1.0f), glm::vec3(1000.0f, 1.0f, 1000.0f)));
 
 			VEEntity *pE4;
@@ -184,7 +184,7 @@ using namespace ve;
 int main() {
 	bool debug = true;
 
-	MyVulkanEngine mve(debug);	//enable or disable debugging (=callback, validation layers)
+	MyVulkanEngine mve(veRendererType::VE_RENDERER_TYPE_DEFERRED, debug);	//enable or disable debugging (=callback, validation layers)
 
 	mve.initEngine();
 	mve.loadLevel(1);
