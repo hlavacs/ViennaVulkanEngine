@@ -184,7 +184,7 @@ using namespace ve;
 int main() {
 	bool debug = true;
 
-	MyVulkanEngine mve(veRendererType::VE_RENDERER_TYPE_DEFERRED, debug);	//enable or disable debugging (=callback, validation layers)
+	MyVulkanEngine mve(veRendererType::VE_RENDERER_TYPE_FORWARD, debug);	//enable or disable debugging (=callback, validation layers)
 
 	mve.initEngine();
 	mve.loadLevel(1);
