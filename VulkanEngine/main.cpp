@@ -23,10 +23,12 @@ inline void hash_combine(std::size_t& seed, T const& v) {
 	seed ^= std::hash<T>()(v) + 0x9e3779b9 + (seed << 6) + (seed >> 2);
 }
 
+using intpair_t = std::pair<int_t, int_t>;
+
 namespace std {
 	template <>
-	struct hash<std::pair<int_t, int_t>> {
-		std::size_t operator()(const std::pair<int_t, int_t>& p) {
+	struct hash<intpair_t> {
+		std::size_t operator()(const intpair_t& p) {
 			size_t seed = std::hash<int_t>()(p.first);
 			hash_combine(seed, p.second);
 			return seed;
@@ -102,7 +104,7 @@ namespace ve {
 		collider_map m_collider;					//main container of all colliders
 		
 		const double c_width = 5;					//grid cell width (m)
-		std::unordered_map< std::pair<int_t, int_t>, collider_map > m_grid; //broadphase grid
+		std::unordered_map< intpair_t, collider_map > m_grid; //broadphase grid
 
 		virtual void onFrameStarted(veEvent event) {
 			//getSceneManagerPointer()->getSceneNode("The Cube Parent")->setPosition(glm::vec3(d(e), 1.0f, d(e)));
@@ -125,16 +127,24 @@ namespace ve {
 			m_last_time = current_time;
 		};
 
-		const std::array<std::pair<int_t, int_t>, 6> c_pairs{ { {0,0}, {1,1}, {1,0}, {-1,-1}, {0,-1}, {1,-1} } };
 
-		void make_pairs(int_t i, int_t j) {
+		void make_pairs(const intpair_t& cell, const intpair_t& neigh) {
+			//auto& cel = m_grid.at(neigh);
 
+			//for (auto& c : m_grid[cell]) {
+				//for (auto& c : m_grid.at(neigh)) {
+
+				//}
+			//}
 		}
 
+		const std::array<intpair_t, 6> c_pairs{ { {0,0}, {1,1}, {1,0}, {-1,-1}, {0,-1}, {1,-1} } };
 		void broadPhase() {
 			for (auto& cell : m_grid) {
-				int_t i = cell.first.first;
-				int_t j = cell.first.second;
+				for (auto& p : c_pairs) {
+					intpair_t neigh{ cell.first.first + p.first, cell.first.second + p.second };
+					make_pairs(cell.first, neigh);
+				}
 			}
 		}
 
