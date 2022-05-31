@@ -78,35 +78,44 @@ namespace ve {
 			std::vector<glmvec3> m_vertices;
 			std::vector<Plane> m_planes;
 			std::vector<std::pair<uint_t, uint_t>> m_edges;
-			glmvec3 m_scale{ 1,1,1 };
 		};
 
 		Polytope g_cube{
 			{ {-0.5,-0.5,-0.5}, {-0.5,-0.5,0.5}, {-0.5,0.5,0.5}, {-0.5,0.5,-0.5},{0.5,-0.5,-0.5}, {0.5,-0.5,0.5}, {0.5,0.5,0.5}, {0.5,0.5,-0.5} },
 			{},
-			{},
-			{ 1,1,1 } };
+			{} };
 
 		struct Collider {
-			void* m_owner = nullptr;				//pointer to owner of this collider
-			Polytope& m_polytope;						//geometric shape
+			void*		m_owner = nullptr;				//pointer to owner of this collider
+			Polytope&	m_polytope;						//geometric shape
 			real		m_inv_mass{ 1 };				//1 over mass
 			glmvec3		m_inertia{ 1,1,1 };				//inertia tensor diagonal
 
+			glmvec3		m_scale{ 1,1,1 };
 			glmvec3		m_position{ 0, 0, 0 };			//current position at time slot
 			glmquat		m_orientation{ 1, 0, 0, 0 };	//current orientation at time slot
 			glmvec3		m_linear_velocity{ 0,0,0 };		//linear velocity at time slot
 			glmvec3		m_angular_velocity{ 0,0,0 };	//angular velocity at time slot
 
+			glmmat4		m_model;						//model matrix at time slots
+
 			std::function<void(double, std::shared_ptr<Collider>)>* m_on_move = nullptr; //called if the collider moves
 
-			glmvec3	stepPosition(double dt) {
-				return abs(glm::dot(m_linear_velocity, m_linear_velocity)) < c_eps * c_eps ? m_position : m_position + m_linear_velocity * (real)dt;
+			bool stepPosition(double dt, glmvec3& pos) {
+				if (abs(glm::dot(m_linear_velocity, m_linear_velocity)) < c_eps * c_eps) return false;
+				pos = m_position + m_linear_velocity * (real)dt;
+				return true;
 			};
 
-			glmquat	stepOrientation(double dt) {
+			bool stepOrientation(double dt, glmquat quat) {
 				real len = glm::length(m_angular_velocity);
-				return abs(len) < c_eps ? m_orientation : rotate(m_orientation, len * (real)dt, m_angular_velocity * 1.0 / len);
+				if (abs(len) < c_eps) return false;
+				quat = rotate(m_orientation, len * (real)dt, m_angular_velocity * 1.0 / len);
+				return true;
+			};
+
+			static glmmat4 computeModel( glmvec3 pos, glmquat orient, glmvec3 scale ) { 
+				return glm::translate(glmmat4{ 1.0 }, pos) * glm::mat4_cast(orient) * glm::scale(glmmat4{ 1.0 }, scale);
 			};
 		};
 
@@ -116,7 +125,7 @@ namespace ve {
 				glmvec3 m_normal;
 			};
 
-			std::array<std::shared_ptr<Collider>, 2>	m_colliders{};
+			std::array<std::shared_ptr<Collider>, 2> m_colliders{};
 			uint64_t					m_last_loop{ std::numeric_limits<uint64_t>::max() };
 			real						m_separation{ 0.0 };
 			bool						m_face_vertex{ true };	//true...face-vertex  false...edge-edge
@@ -152,12 +161,15 @@ namespace ve {
 
 			double current_time = m_last_time + event.dt;
 			while (current_time > m_next_slot) {
+				++m_loop;
 				broadPhase();
 				narrowPhase();
 
 				for (auto& c : m_collider) {	
-					c.second->m_position = c.second->stepPosition(m_delta_slot);		//update positions
-					c.second->m_orientation = c.second->stepOrientation(m_delta_slot);	//update orientations
+					if( c.second->stepPosition(m_delta_slot, c.second->m_position) || 
+						c.second->stepOrientation(m_delta_slot, c.second->m_orientation)) {					
+						c.second->m_model = Collider::computeModel(c.second->m_position, c.second->m_orientation, c.second->m_scale);
+					}
 				}
 
 				m_last_slot = m_next_slot;
@@ -213,6 +225,9 @@ namespace ve {
 		}
 
 		real queryFaceDirections( Contact& contact, int_t a, int_t b) {
+			glmmat4 BtoA = glm::inverse(contact.m_colliders[0]->m_model) * contact.m_colliders[1]->m_model;
+			glmmat4 BtoAit = glm::transpose(glm::inverse(BtoA));
+
 			return 0.0;
 		}
 
