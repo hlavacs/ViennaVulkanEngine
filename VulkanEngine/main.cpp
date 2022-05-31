@@ -29,7 +29,9 @@ using uint_t = uint32_t;
 #define glmquat glm::quat
 #endif
 
-const double eps = 1.0e-10;
+const double c_eps = 1.0e-10;
+const real c_margin = 1.0;
+const real c_2margin = 2.0*c_margin;
 
 template <typename T> 
 inline void hash_combine(std::size_t& seed, T const& v) {
@@ -77,9 +79,6 @@ namespace ve {
 			std::vector<Plane> m_planes;
 			std::vector<std::pair<uint_t, uint_t>> m_edges;
 			glmvec3 m_scale{ 1,1,1 };
-
-			Polytope(std::vector<glmvec3>&& v, std::vector<Plane>&& p, std::vector<std::pair<uint_t, uint_t>>&& e, glmvec3&& scale)
-				: m_vertices(v), m_planes(p), m_edges(e), m_scale(scale) {};
 		};
 
 		Polytope g_cube{
@@ -95,57 +94,51 @@ namespace ve {
 			glmvec3		m_inertia{ 1,1,1 };				//inertia tensor diagonal
 
 			glmvec3		m_position{ 0, 0, 0 };			//current position at time slot
-			glmquat		m_orientation{ 1, 0, 0, 0 };		//current orientation at time slot
+			glmquat		m_orientation{ 1, 0, 0, 0 };	//current orientation at time slot
 			glmvec3		m_linear_velocity{ 0,0,0 };		//linear velocity at time slot
 			glmvec3		m_angular_velocity{ 0,0,0 };	//angular velocity at time slot
 
+			std::function<void(double, std::shared_ptr<Collider>)>* m_on_move = nullptr; //called if the collider moves
+
 			glmvec3	stepPosition(double dt) {
-				return abs(glm::dot(m_linear_velocity, m_linear_velocity)) < eps * eps ? m_position : m_position + m_linear_velocity * (real)dt;
+				return abs(glm::dot(m_linear_velocity, m_linear_velocity)) < c_eps * c_eps ? m_position : m_position + m_linear_velocity * (real)dt;
 			};
 
 			glmquat	stepOrientation(double dt) {
 				real len = glm::length(m_angular_velocity);
-				return abs(len) < eps ? m_orientation : rotate(m_orientation, len * (real)dt, m_angular_velocity * 1.0 / len);
+				return abs(len) < c_eps ? m_orientation : rotate(m_orientation, len * (real)dt, m_angular_velocity * 1.0 / len);
 			};
-
-			std::function<void(double, std::shared_ptr<Collider>)>* m_on_move = nullptr; //called if the collider moves
-
-			Collider(void* owner, Polytope& pol, glmvec3 pos, glmquat o, std::function<void(double, std::shared_ptr<Collider>)>* on_move) :
-				m_owner(owner), m_polytope(pol), m_position(pos), m_orientation(o), m_on_move(on_move) {};
 		};
 
-		struct ContactManifold {
-			struct Contact {
+		struct Contact {
+			struct ContactPoint {
 				glmvec3 m_position;
 				glmvec3 m_normal;
 			};
 
-			std::vector<glmvec3> m_contacts;
-		};
-
-		struct Contact {
-			std::shared_ptr<Collider> m_colliderA;
-			std::shared_ptr<Collider> m_colliderB;
-			ContactManifold m_manifold;
-
-			Contact(std::shared_ptr<Collider>& A, std::shared_ptr<Collider>& B, ContactManifold&& m)
-				: m_colliderA{ A }, m_colliderB{ B }, m_manifold{ m } {};
+			std::array<std::shared_ptr<Collider>, 2>	m_colliders{};
+			uint64_t					m_last_loop{ std::numeric_limits<uint64_t>::max() };
+			real						m_separation{ 0.0 };
+			bool						m_face_vertex{ true };	//true...face-vertex  false...edge-edge
+			std::array<int_t, 2>		m_indices{};			//indices of faces or edges involved into the contact
+			std::vector<ContactPoint>	m_contact_points{};
 		};
 
 	protected:
 
-		double m_last_time = 0.0;					//last time the sim was interpolated
-		double m_last_slot = 0.0;					//last time the sim was calculated
-		const double m_delta_slot = 1.0 / 60.0;		//sim frequency
-		double m_next_slot = m_delta_slot;			//next time for simulation
+		uint64_t m_loop{ 0L };
+		double m_last_time{ 0.0 };					//last time the sim was interpolated
+		double m_last_slot{ 0.0 };					//last time the sim was calculated
+		const double m_delta_slot{ 1.0 / 60.0 };	//sim frequency
+		double m_next_slot{ m_delta_slot };			//next time for simulation
 
 		using collider_map = std::unordered_map<void*, std::shared_ptr<Collider>>;
-		collider_map m_collider;					//main container of all colliders
+		collider_map m_collider;									//main container of all colliders
 		
-		const double c_width = 5;					//grid cell width (m)
-		std::unordered_map< intpair_t, collider_map > m_grid;	//broadphase grid
+		const double c_width{5};									//grid cell width (m)
+		std::unordered_map< intpair_t, collider_map > m_grid;		//broadphase grid
 
-		std::unordered_map<voidppair_t, Contact> m_collider_pairs;	//possible contacts resulting from broadphase
+		std::unordered_map<voidppair_t, Contact> m_contacts;	//possible contacts resulting from broadphase
 
 
 		virtual void onFrameStarted(veEvent event) {
@@ -173,6 +166,7 @@ namespace ve {
 			for (auto& c : m_collider) 
 				if(c.second->m_on_move != nullptr) 
 					(*c.second->m_on_move)(current_time - m_last_slot, c.second); //predict new pos/orient
+
 			m_last_time = current_time;
 		};
 
@@ -181,7 +175,9 @@ namespace ve {
 			for (auto& coll : m_grid.at(cell)) {
 				for (auto& neigh : m_grid.at(neigh)) {
 					if (coll.second->m_owner != neigh.second->m_owner) {
-						m_collider_pairs.insert({ { coll.second->m_owner, neigh.second->m_owner }, {coll.second, neigh.second, {}} });
+						auto it = m_contacts.find({ coll.second->m_owner, neigh.second->m_owner });
+						if (it != m_contacts.end()) it->second.m_last_loop = m_loop;
+						else m_contacts.insert({ { coll.second->m_owner, neigh.second->m_owner }, {{coll.second, neigh.second}, m_loop} });
 					}
 				}
 			}
@@ -189,7 +185,6 @@ namespace ve {
 
 		const std::array<intpair_t, 5> c_pairs{ { {0,0}, {1,0}, {-1,-1}, {0,-1}, {1,-1} } };
 		void broadPhase() {
-			m_collider_pairs.clear();
 			for (auto& cell : m_grid) {
 				for (auto& p : c_pairs) {
 					makePairs(cell.first, { cell.first.first + p.first, cell.first.second + p.second });
@@ -198,12 +193,39 @@ namespace ve {
 		}
 
 		void narrowPhase() {
-			for (auto& p : m_collider_pairs) {
-
+			for( auto it = std::begin(m_contacts); it!=std::end(m_contacts); ) {
+				if (it->second.m_last_loop == m_loop ) {
+					SAT(it->second);
+					++it;
+				}
+				else m_contacts.erase(it);
 			}
 		}
 
-		void SAT() {
+		void SAT(Contact& contact) {
+			std::array<real, 3> separations;
+			if ((separations[0] = queryFaceDirections(contact, 0, 1)) > c_2margin) return;
+			if ((separations[1] = queryFaceDirections(contact, 1, 0)) > c_2margin) return;
+			if ((separations[2] = queryEdgeDirections(contact))			> c_2margin) return;
+
+			if (separations[0] > separations[2] && separations[1] > separations[2]) createFaceContact();
+			else createEdgeContact();
+		}
+
+		real queryFaceDirections( Contact& contact, int_t a, int_t b) {
+			return 0.0;
+		}
+
+		real queryEdgeDirections(Contact& contact) {
+			return 0.0;
+
+		}
+
+		void createFaceContact() {
+
+		}
+
+		void createEdgeContact() {
 
 		}
 
