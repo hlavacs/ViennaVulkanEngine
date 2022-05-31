@@ -8,15 +8,28 @@
 
 #include "VEInclude.h"
 
-//#define GLM_FORCE_PRECISION_MEDIUMP_INT
-#define GLM_FORCE_PRECISION_HIGHP_FLOAT
 #define GLM_FORCE_LEFT_HANDED
 #include "glm/glm.hpp"
 
+#if 1
 using real = double;
 using int_t = int64_t;
 using uint_t = uint64_t;
+#define glmvec3 glm::dvec3
+#define glmmat3 glm::dmat3
+#define glmmat4 glm::dmat4
+#define glmquat glm::dquat
+#else
+using real = float;
+using int_t = int32_t;
+using uint_t = uint32_t;
+#define glmvec3 glm::vec3
+#define glmmat3 glm::mat3
+#define glmmat4 glm::mat4
+#define glmquat glm::quat
+#endif
 
+const double eps = 1.0e-10;
 
 template <typename T> 
 inline void hash_combine(std::size_t& seed, T const& v) {
@@ -24,75 +37,101 @@ inline void hash_combine(std::size_t& seed, T const& v) {
 }
 
 using intpair_t = std::pair<int_t, int_t>;
+using voidppair_t = std::pair<void*, void*>;
 
 namespace std {
 	template <>
 	struct hash<intpair_t> {
-		std::size_t operator()(const intpair_t& p) {
+		std::size_t operator()(const intpair_t& p) const {
 			size_t seed = std::hash<int_t>()(p.first);
 			hash_combine(seed, p.second);
 			return seed;
 		}
 	};
+	template <>
+	struct hash<voidppair_t> {
+		std::size_t operator()(const voidppair_t& p) const {
+			size_t seed = std::hash<void*>()(std::min(p.first,p.second));
+			hash_combine(seed, std::max(p.first, p.second));
+			return seed;
+		}
+	};
+
 }
 
 namespace ve {
 
-
 	static std::default_random_engine e{ 12345 };					//Random numbers
 	static std::uniform_real_distribution<> d{ -10.0f, 10.0f };		//Random numbers
 
-
-	struct Plane {
-		std::vector<uint_t> m_vertices;
-		glm::vec3 m_normal;
-	};
-
-	struct Polytope {
-		std::vector<glm::vec3> m_vertices;
-		std::vector<Plane> m_planes;
-		std::vector<std::pair<uint_t,uint_t>> m_edges;
-		glm::vec3 m_scale{ 1,1,1 };
-
-		Polytope(	std::vector<glm::vec3>&& v, std::vector<Plane>&& p,
-					std::vector<std::pair<uint_t, uint_t>>&& e, glm::vec3&& scale) 
-						: m_vertices(v), m_planes(p), m_edges(e), m_scale(scale) {};
-	};
-
-	Polytope g_cube(
-		{ {-0.5,-0.5,-0.5}, {-0.5,-0.5,0.5}, {-0.5,0.5,0.5}, {-0.5,0.5,-0.5},{0.5,-0.5,-0.5}, {0.5,-0.5,0.5}, {0.5,0.5,0.5}, {0.5,0.5,-0.5} },
-		{}, 
-		{},
-		{1,1,1});
-
-
-	struct Collider {
-		void* m_owner = nullptr;
-		Polytope& m_polytope;
-		glm::vec3 m_position{ 0, 0, 0 };
-		glm::quat m_orientation{1, 0, 0, 0};
-		glm::vec3 m_inertia{1,1,1};
-		glm::vec3 m_linear_velocity{ 0,0,0 };
-		glm::vec3 m_angular_velocity{0,0,0};
-
-		std::function<void(Collider*, void*)>* m_on_move = nullptr;
-
-		Collider(void* owner, Polytope& pol, glm::vec3 pos, glm::quat o, std::function<void(Collider*,void*)>* on_move) :
-			m_owner(owner), m_polytope(pol), m_position(pos), m_orientation(o), m_on_move(on_move) {};
-	};
-
-
-	struct Contact {
-		Collider& m_collider_A;
-		Collider& m_collider_B;
-
-	};
-
-
-	//
-	// Überprüfen, ob die Kamera die Kiste berührt
-	//
 	class EventListenerPhysics : public VEEventListener {
+	public:
+
+		struct Plane {
+			std::vector<uint_t> m_vertices;
+			glmvec3 m_normal;
+		};
+
+		struct Polytope {
+			std::vector<glmvec3> m_vertices;
+			std::vector<Plane> m_planes;
+			std::vector<std::pair<uint_t, uint_t>> m_edges;
+			glmvec3 m_scale{ 1,1,1 };
+
+			Polytope(std::vector<glmvec3>&& v, std::vector<Plane>&& p, std::vector<std::pair<uint_t, uint_t>>&& e, glmvec3&& scale)
+				: m_vertices(v), m_planes(p), m_edges(e), m_scale(scale) {};
+		};
+
+		Polytope g_cube{
+			{ {-0.5,-0.5,-0.5}, {-0.5,-0.5,0.5}, {-0.5,0.5,0.5}, {-0.5,0.5,-0.5},{0.5,-0.5,-0.5}, {0.5,-0.5,0.5}, {0.5,0.5,0.5}, {0.5,0.5,-0.5} },
+			{},
+			{},
+			{ 1,1,1 } };
+
+		struct Collider {
+			void* m_owner = nullptr;				//pointer to owner of this collider
+			Polytope& m_polytope;						//geometric shape
+			real		m_inv_mass{ 1 };				//1 over mass
+			glmvec3		m_inertia{ 1,1,1 };				//inertia tensor diagonal
+
+			glmvec3		m_position{ 0, 0, 0 };			//current position at time slot
+			glmquat		m_orientation{ 1, 0, 0, 0 };		//current orientation at time slot
+			glmvec3		m_linear_velocity{ 0,0,0 };		//linear velocity at time slot
+			glmvec3		m_angular_velocity{ 0,0,0 };	//angular velocity at time slot
+
+			glmvec3	stepPosition(double dt) {
+				return abs(glm::dot(m_linear_velocity, m_linear_velocity)) < eps * eps ? m_position : m_position + m_linear_velocity * (real)dt;
+			};
+
+			glmquat	stepOrientation(double dt) {
+				real len = glm::length(m_angular_velocity);
+				return abs(len) < eps ? m_orientation : rotate(m_orientation, len * (real)dt, m_angular_velocity * 1.0 / len);
+			};
+
+			std::function<void(double, std::shared_ptr<Collider>)>* m_on_move = nullptr; //called if the collider moves
+
+			Collider(void* owner, Polytope& pol, glmvec3 pos, glmquat o, std::function<void(double, std::shared_ptr<Collider>)>* on_move) :
+				m_owner(owner), m_polytope(pol), m_position(pos), m_orientation(o), m_on_move(on_move) {};
+		};
+
+		struct ContactManifold {
+			struct Contact {
+				glmvec3 m_position;
+				glmvec3 m_normal;
+			};
+
+			std::vector<glmvec3> m_contacts;
+		};
+
+		struct Contact {
+			std::shared_ptr<Collider> m_colliderA;
+			std::shared_ptr<Collider> m_colliderB;
+			ContactManifold m_manifold;
+
+			Contact(std::shared_ptr<Collider>& A, std::shared_ptr<Collider>& B, ContactManifold&& m)
+				: m_colliderA{ A }, m_colliderB{ B }, m_manifold{ m } {};
+		};
+
 	protected:
 
 		double m_last_time = 0.0;					//last time the sim was interpolated
@@ -104,14 +143,17 @@ namespace ve {
 		collider_map m_collider;					//main container of all colliders
 		
 		const double c_width = 5;					//grid cell width (m)
-		std::unordered_map< intpair_t, collider_map > m_grid; //broadphase grid
+		std::unordered_map< intpair_t, collider_map > m_grid;	//broadphase grid
+
+		std::unordered_map<voidppair_t, Contact> m_collider_pairs;	//possible contacts resulting from broadphase
+
 
 		virtual void onFrameStarted(veEvent event) {
-			//getSceneManagerPointer()->getSceneNode("The Cube Parent")->setPosition(glm::vec3(d(e), 1.0f, d(e)));
-			//glm::vec3 positionCube   = getSceneManagerPointer()->getSceneNode("The Cube Parent")->getPosition();
-			//glm::vec3 positionCamera = getSceneManagerPointer()->getSceneNode("StandardCameraParent")->getPosition();
+			//getSceneManagerPointer()->getSceneNode("The Cube Parent")->setPosition(glmvec3(d(e), 1.0f, d(e)));
+			//glmvec3 positionCube   = getSceneManagerPointer()->getSceneNode("The Cube Parent")->getPosition();
+			//glmvec3 positionCamera = getSceneManagerPointer()->getSceneNode("StandardCameraParent")->getPosition();
 			//VESceneNode *eParent = getSceneManagerPointer()->getSceneNode("The Cube Parent");
-			//eParent->setPosition(glm::vec3(d(e), 1.0f, d(e)));
+			//eParent->setPosition(glmvec3(d(e), 1.0f, d(e)));
 			//getSceneManagerPointer()->deleteSceneNodeAndChildren("The Cube"+ std::to_string(cubeid));
 			//VECHECKPOINTER(getSceneManagerPointer()->loadModel("The Cube"+ std::to_string(++cubeid)  , "media/models/test/crate0", "cube.obj", 0, eParent) );
 
@@ -119,44 +161,49 @@ namespace ve {
 			while (current_time > m_next_slot) {
 				broadPhase();
 				narrowPhase();
-				update();
+
+				for (auto& c : m_collider) {	
+					c.second->m_position = c.second->stepPosition(m_delta_slot);		//update positions
+					c.second->m_orientation = c.second->stepOrientation(m_delta_slot);	//update orientations
+				}
+
 				m_last_slot = m_next_slot;
 				m_next_slot += m_delta_slot;
 			}
-			predict();
+			for (auto& c : m_collider) 
+				if(c.second->m_on_move != nullptr) 
+					(*c.second->m_on_move)(current_time - m_last_slot, c.second); //predict new pos/orient
 			m_last_time = current_time;
 		};
 
-
-		void make_pairs(const intpair_t& cell, const intpair_t& neigh) {
-			//auto& cel = m_grid.at(neigh);
-
-			//for (auto& c : m_grid[cell]) {
-				//for (auto& c : m_grid.at(neigh)) {
-
-				//}
-			//}
-		}
-
-		const std::array<intpair_t, 6> c_pairs{ { {0,0}, {1,1}, {1,0}, {-1,-1}, {0,-1}, {1,-1} } };
-		void broadPhase() {
-			for (auto& cell : m_grid) {
-				for (auto& p : c_pairs) {
-					intpair_t neigh{ cell.first.first + p.first, cell.first.second + p.second };
-					make_pairs(cell.first, neigh);
+		void makePairs(const intpair_t& cell, const intpair_t&& neigh) {
+			if( !m_grid.count(cell) || !m_grid.count(neigh) ) return;
+			for (auto& coll : m_grid.at(cell)) {
+				for (auto& neigh : m_grid.at(neigh)) {
+					if (coll.second->m_owner != neigh.second->m_owner) {
+						m_collider_pairs.insert({ { coll.second->m_owner, neigh.second->m_owner }, {coll.second, neigh.second, {}} });
+					}
 				}
 			}
 		}
 
+		const std::array<intpair_t, 5> c_pairs{ { {0,0}, {1,0}, {-1,-1}, {0,-1}, {1,-1} } };
+		void broadPhase() {
+			m_collider_pairs.clear();
+			for (auto& cell : m_grid) {
+				for (auto& p : c_pairs) {
+					makePairs(cell.first, { cell.first.first + p.first, cell.first.second + p.second });
+				} 
+			}
+		}
+
 		void narrowPhase() {
+			for (auto& p : m_collider_pairs) {
 
+			}
 		}
 
-		void update() {
-
-		}
-
-		void predict() {
+		void SAT() {
 
 		}
 
