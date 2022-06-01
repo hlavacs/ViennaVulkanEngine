@@ -5,6 +5,11 @@
 *
 */
 
+#include <algorithm>
+#include <cstdio>
+#include <iterator>
+#include <ranges>
+#include <string>
 
 #include "VEInclude.h"
 
@@ -17,6 +22,7 @@ using int_t = int64_t;
 using uint_t = uint64_t;
 #define glmvec3 glm::dvec3
 #define glmmat3 glm::dmat3
+#define glmvec4 glm::dvec4
 #define glmmat4 glm::dmat4
 #define glmquat glm::dquat
 #else
@@ -24,6 +30,7 @@ using real = float;
 using int_t = int32_t;
 using uint_t = uint32_t;
 #define glmvec3 glm::vec3
+#define glmvec4 glm::vec4
 #define glmmat3 glm::mat3
 #define glmmat4 glm::mat4
 #define glmquat glm::quat
@@ -69,48 +76,76 @@ namespace ve {
 	class EventListenerPhysics : public VEEventListener {
 	public:
 
-		struct Plane {
-			std::vector<uint_t> m_vertices;
-			glmvec3 m_normal;
+		struct Force {
+			glmvec3 m_positionL{0.0};		//position in local space
+			glmvec3 m_forceW{0.0};			//force vector in world space
 		};
 
-		struct Polytope {
-			std::vector<glmvec3> m_vertices;
-			std::vector<Plane> m_planes;
-			std::vector<std::pair<uint_t, uint_t>> m_edges;
+		struct Face {
+			std::vector<uint_t> m_vertex_indices;					//vertex indices
+			glmvec3 m_normalL;
+			real m_min{ std::numeric_limits<real>::max() };		//AABB in direction of face normal
+			real m_max{ std::numeric_limits<real>::min() };
 		};
 
-		Polytope g_cube{
+		struct AABB {
+			std::array<glmvec3, 2> m_verticesL;
+		};
+
+		struct Collider {};
+
+		struct Polytope : public Collider {
+			std::vector<glmvec3>					m_verticesL;
+			std::vector<std::pair<uint_t, uint_t>>	m_edge_indices;
+			std::vector<Face>						m_faces;
+
+			Polytope(const std::vector<glmvec3>&& v, const std::vector<std::pair<uint_t, uint_t>>&& e, const std::vector<Face>&& f)
+				: Collider{}, m_verticesL{ v }, m_edge_indices{ e }, m_faces{ f } {
+				for( auto& face : m_faces ) {
+					for (auto& vert : m_verticesL) {
+						real dp = glm::dot( face.m_normalL, vert );
+						face.m_min = std::min( face.m_min, dp );
+						face.m_max = std::max (face.m_max, dp );
+					}
+				}
+			};
+		};
+
+		Polytope g_cube { 
 			{ {-0.5,-0.5,-0.5}, {-0.5,-0.5,0.5}, {-0.5,0.5,0.5}, {-0.5,0.5,-0.5},{0.5,-0.5,-0.5}, {0.5,-0.5,0.5}, {0.5,0.5,0.5}, {0.5,0.5,-0.5} },
 			{},
-			{} };
+			{}
+		};
 
-		struct Collider {
-			void*		m_owner = nullptr;				//pointer to owner of this collider
+		struct Body {
+			void*		m_owner = nullptr;				//pointer to owner of this body
 			Polytope&	m_polytope;						//geometric shape
 			real		m_inv_mass{ 1 };				//1 over mass
 			glmvec3		m_inertia{ 1,1,1 };				//inertia tensor diagonal
 
-			glmvec3		m_scale{ 1,1,1 };
-			glmvec3		m_position{ 0, 0, 0 };			//current position at time slot
-			glmquat		m_orientation{ 1, 0, 0, 0 };	//current orientation at time slot
-			glmvec3		m_linear_velocity{ 0,0,0 };		//linear velocity at time slot
-			glmvec3		m_angular_velocity{ 0,0,0 };	//angular velocity at time slot
+			glmvec3		m_scaleL{ 1,1,1 };				//scale factor in local space
+			glmvec3		m_positionW{ 0, 0, 0 };			//current position at time slot in world space
+			glmquat		m_orientationLW{ 1, 0, 0, 0 };	//current orientation at time slot Local -> World
+			glmvec3		m_linear_velocityW{ 0,0,0 };		//linear velocity at time slot in world space
+			glmvec3		m_angular_velocityW{ 0,0,0 };	//angular velocity at time slot in world space
+
+			std::unordered_map<uint64_t, Force> m_forces;//forces acting on this body
 
 			glmmat4		m_model;						//model matrix at time slots
+			glmmat4		m_model_inv;					//model inverse matrix at time slots
 
-			std::function<void(double, std::shared_ptr<Collider>)>* m_on_move = nullptr; //called if the collider moves
+			std::function<void(double, std::shared_ptr<Body>)>* m_on_move = nullptr; //called if the body moves
 
 			bool stepPosition(double dt, glmvec3& pos) {
-				if (abs(glm::dot(m_linear_velocity, m_linear_velocity)) < c_eps * c_eps) return false;
-				pos = m_position + m_linear_velocity * (real)dt;
+				if (abs(glm::dot(m_linear_velocityW, m_linear_velocityW)) < c_eps * c_eps) return false;
+				pos = m_positionW + m_linear_velocityW * (real)dt;
 				return true;
 			};
 
 			bool stepOrientation(double dt, glmquat quat) {
-				real len = glm::length(m_angular_velocity);
+				real len = glm::length(m_angular_velocityW);
 				if (abs(len) < c_eps) return false;
-				quat = rotate(m_orientation, len * (real)dt, m_angular_velocity * 1.0 / len);
+				quat = glm::rotate(m_orientationLW, len * (real)dt, m_angular_velocityW * 1.0 / len);
 				return true;
 			};
 
@@ -121,11 +156,11 @@ namespace ve {
 
 		struct Contact {
 			struct ContactPoint {
-				glmvec3 m_position;
-				glmvec3 m_normal;
+				glmvec3 m_positionW;
+				glmvec3 m_normalW;
 			};
 
-			std::array<std::shared_ptr<Collider>, 2> m_colliders{};
+			std::array<std::shared_ptr<Body>, 2> m_bodies{};
 			uint64_t					m_last_loop{ std::numeric_limits<uint64_t>::max() };
 			real						m_separation{ 0.0 };
 			bool						m_face_vertex{ true };	//true...face-vertex  false...edge-edge
@@ -141,11 +176,11 @@ namespace ve {
 		const double m_delta_slot{ 1.0 / 60.0 };	//sim frequency
 		double m_next_slot{ m_delta_slot };			//next time for simulation
 
-		using collider_map = std::unordered_map<void*, std::shared_ptr<Collider>>;
-		collider_map m_collider;									//main container of all colliders
+		using body_map = std::unordered_map<void*, std::shared_ptr<Body>>;
+		body_map m_bodies;									//main container of all bodies
 		
 		const double c_width{5};									//grid cell width (m)
-		std::unordered_map< intpair_t, collider_map > m_grid;		//broadphase grid
+		std::unordered_map< intpair_t, body_map > m_grid;		//broadphase grid
 
 		std::unordered_map<voidppair_t, Contact> m_contacts;	//possible contacts resulting from broadphase
 
@@ -165,17 +200,18 @@ namespace ve {
 				broadPhase();
 				narrowPhase();
 
-				for (auto& c : m_collider) {	
-					if( c.second->stepPosition(m_delta_slot, c.second->m_position) || 
-						c.second->stepOrientation(m_delta_slot, c.second->m_orientation)) {					
-						c.second->m_model = Collider::computeModel(c.second->m_position, c.second->m_orientation, c.second->m_scale);
+				for (auto& c : m_bodies) {
+					if( c.second->stepPosition(m_delta_slot, c.second->m_positionW) || 
+						c.second->stepOrientation(m_delta_slot, c.second->m_orientationLW)) {					
+						c.second->m_model = Body::computeModel(c.second->m_positionW, c.second->m_orientationLW, c.second->m_scaleL);
+						c.second->m_model_inv = glm::inverse(c.second->m_model);
 					}
 				}
 
 				m_last_slot = m_next_slot;
 				m_next_slot += m_delta_slot;
 			}
-			for (auto& c : m_collider) 
+			for (auto& c : m_bodies)
 				if(c.second->m_on_move != nullptr) 
 					(*c.second->m_on_move)(current_time - m_last_slot, c.second); //predict new pos/orient
 
@@ -225,11 +261,26 @@ namespace ve {
 		}
 
 		real queryFaceDirections( Contact& contact, int_t a, int_t b) {
-			glmmat4 BtoA = glm::inverse(contact.m_colliders[0]->m_model) * contact.m_colliders[1]->m_model;
-			glmmat4 BtoAit = glm::transpose(glm::inverse(BtoA));
+			glmmat4 BtoA = contact.m_bodies[a]->m_model_inv * contact.m_bodies[b]->m_model; //transform to bring B to A
+
+			for (auto& face : contact.m_bodies[a]->m_polytope.m_faces) {
+
+				real minB{ std::numeric_limits<real>::max() }, maxB{ std::numeric_limits<real>::min() };
+				for (auto& vert : contact.m_bodies[b]->m_polytope.m_verticesL) {
+					real dp = glm::dot( glmvec4{ face.m_normalL, 0.0 }, BtoA * glmvec4{ vert, 1.0 } );
+					if (dp < minB) { minB = dp; }
+					if (dp > maxB) { maxB = dp; }
+				}
+
+				if (face.m_max < minB) return minB - face.m_max;
+				if (maxB < face.m_min) return face.m_min - maxB;
+				if (face.m_max < maxB) return face.m_max - minB;
+				return maxB - face.m_min;
+			}
 
 			return 0.0;
 		}
+
 
 		real queryEdgeDirections(Contact& contact) {
 			return 0.0;
