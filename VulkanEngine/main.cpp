@@ -152,6 +152,17 @@ namespace ve {
 			static glmmat4 computeModel( glmvec3 pos, glmquat orient, glmvec3 scale ) { 
 				return glm::translate(glmmat4{ 1.0 }, pos) * glm::mat4_cast(orient) * glm::scale(glmmat4{ 1.0 }, scale);
 			};
+
+			std::pair<int_t, real> support(glmvec3 dirL, glmmat4 BtoA = glmmat4{ 1.0 }) {
+				std::pair<int_t, real> ret{ -1, std::numeric_limits<real>::min() };
+				for (int_t i = 0; auto & vert : m_polytope.m_verticesL) {
+					real dp = glm::dot(dirL, vert);
+					if (dp > ret.second) { ret.first = i;  ret.second = dp; }
+					++i;
+				}
+				if (ret.first >= 0) ret.second = glm::dot(BtoA * glmvec4{ dirL, 0.0 }, BtoA * glmvec4{ m_polytope.m_verticesL[ret.first], 1.0});
+				return ret;
+			};
 		};
 
 		struct Contact {
@@ -261,21 +272,16 @@ namespace ve {
 		}
 
 		real queryFaceDirections( Contact& contact, int_t a, int_t b) {
+			glmmat3 AtoB = contact.m_bodies[b]->m_model_inv * contact.m_bodies[a]->m_model; //transform to bring A to B (only rotation)
 			glmmat4 BtoA = contact.m_bodies[a]->m_model_inv * contact.m_bodies[b]->m_model; //transform to bring B to A
 
 			for (auto& face : contact.m_bodies[a]->m_polytope.m_faces) {
-
-				real minB{ std::numeric_limits<real>::max() }, maxB{ std::numeric_limits<real>::min() };
-				for (auto& vert : contact.m_bodies[b]->m_polytope.m_verticesL) {
-					real dp = glm::dot( glmvec4{ face.m_normalL, 0.0 }, BtoA * glmvec4{ vert, 1.0 } );
-					if (dp < minB) { minB = dp; }
-					if (dp > maxB) { maxB = dp; }
-				}
-
+				auto [vminB, minB] = contact.m_bodies[b]->support(AtoB * face.m_normalL * -1.0, BtoA);
+				auto [vmaxB, maxB] = contact.m_bodies[b]->support(AtoB * face.m_normalL, BtoA);
 				if (face.m_max < minB) return minB - face.m_max;
 				if (maxB < face.m_min) return face.m_min - maxB;
-				if (face.m_max < maxB) return face.m_max - minB;
-				return maxB - face.m_min;
+				if (face.m_max < maxB) return minB - face.m_max;
+				return face.m_min - maxB;
 			}
 
 			return 0.0;
