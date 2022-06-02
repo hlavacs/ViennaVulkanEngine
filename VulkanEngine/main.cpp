@@ -78,12 +78,19 @@ namespace ve {
 
 		struct Force {
 			glmvec3 m_positionL{0.0};		//position in local space
-			glmvec3 m_forceW{0.0};			//force vector in world space
+			glmvec3 m_forceL{0.0};			//force vector in local space
+			glmvec3 m_forceW{ 0.0 };		//force vector in world space attached at mass center
+		};
+
+		struct Edge {
+			uint_t	m_first;				//index of first vertex
+			uint_t	m_second;				//index of second vertex
+			glmvec3 m_edgeL;				//edge vector in local space 
 		};
 
 		struct Face {
-			std::vector<uint_t> m_vertex_indices;					//vertex indices
-			glmvec3 m_normalL;
+			std::vector<uint_t> m_edge_indices{};				//edge indices
+			glmvec3 m_normalL{};								//normal vector in local space
 			real m_min{ std::numeric_limits<real>::max() };		//AABB in direction of face normal
 			real m_max{ std::numeric_limits<real>::min() };
 		};
@@ -95,23 +102,32 @@ namespace ve {
 		struct Collider {};
 
 		struct Polytope : public Collider {
-			std::vector<glmvec3>					m_verticesL;
-			std::vector<std::pair<uint_t, uint_t>>	m_edge_indices;
-			std::vector<Face>						m_faces;
+			std::vector<glmvec3>					m_verticesL{};		//positions of vertices in local space
+			std::vector<Edge>						m_edges{};			//list of edges
+			std::vector<Face>						m_faces{};			//lis of faces
 
-			Polytope(const std::vector<glmvec3>&& v, const std::vector<std::pair<uint_t, uint_t>>&& e, const std::vector<Face>&& f)
-				: Collider{}, m_verticesL{ v }, m_edge_indices{ e }, m_faces{ f } {
-				for( auto& face : m_faces ) {
-					for (auto& vert : m_verticesL) {
-						real dp = glm::dot( face.m_normalL, vert );
-						face.m_min = std::min( face.m_min, dp );
-						face.m_max = std::max (face.m_max, dp );
+			Polytope(const std::vector<glmvec3>&& vertices, const std::vector<std::pair<uint_t, uint_t>>&& edgeindices, const std::vector < std::vector<uint_t> >&& faceindices)
+				: Collider{}, m_verticesL{ vertices }, m_edges{}, m_faces{} {
+
+				for (auto& edgepair : edgeindices) {	//compute edges from indices
+					m_edges.emplace_back( edgepair.first, edgepair.second, m_verticesL[edgepair.second] - m_verticesL[edgepair.first] );
+				}
+
+				for (auto& fi : faceindices) {			//compute faces from indices
+					Face face{ fi };
+
+					if (faceindices.size() >= 2) face.m_normalL = glm::cross(m_edges[fi[0]].m_edgeL, m_edges[fi[1]].m_edgeL);
+
+					for (auto& vert : m_verticesL) {	//AABB along the face normals in local space
+						real dp = glm::dot(face.m_normalL, vert);
+						face.m_min = std::min(face.m_min, dp);
+						face.m_max = std::max(face.m_max, dp);
 					}
 				}
 			};
 		};
 
-		Polytope g_cube { 
+		Polytope g_cube{
 			{ {-0.5,-0.5,-0.5}, {-0.5,-0.5,0.5}, {-0.5,0.5,0.5}, {-0.5,0.5,-0.5},{0.5,-0.5,-0.5}, {0.5,-0.5,0.5}, {0.5,0.5,0.5}, {0.5,0.5,-0.5} },
 			{},
 			{}
@@ -262,22 +278,22 @@ namespace ve {
 		}
 
 		void SAT(Contact& contact) {
+			glmmat4 AtoB = contact.m_bodies[1]->m_model_inv * contact.m_bodies[0]->m_model; //transform to bring A to B
+			glmmat4 BtoA = contact.m_bodies[0]->m_model_inv * contact.m_bodies[1]->m_model; //transform to bring B to A
+
 			std::array<real, 3> separations;
-			if ((separations[0] = queryFaceDirections(contact, 0, 1)) > c_2margin) return;
-			if ((separations[1] = queryFaceDirections(contact, 1, 0)) > c_2margin) return;
-			if ((separations[2] = queryEdgeDirections(contact))			> c_2margin) return;
+			if ((separations[0] = queryFaceDirections(contact, 0, 1, AtoB, BtoA ))	> c_2margin) return;
+			if ((separations[1] = queryFaceDirections(contact, 1, 0, BtoA, AtoB))	> c_2margin) return;
+			if ((separations[2] = queryEdgeDirections(contact, AtoB, BtoA))			> c_2margin) return;
 
 			if (separations[0] > separations[2] && separations[1] > separations[2]) createFaceContact();
 			else createEdgeContact();
 		}
 
-		real queryFaceDirections( Contact& contact, int_t a, int_t b) {
-			glmmat3 AtoB = contact.m_bodies[b]->m_model_inv * contact.m_bodies[a]->m_model; //transform to bring A to B (only rotation)
-			glmmat4 BtoA = contact.m_bodies[a]->m_model_inv * contact.m_bodies[b]->m_model; //transform to bring B to A
-
+		real queryFaceDirections(Contact& contact, int_t a, int_t b, glmmat4& AtoB, glmmat4& BtoA) {
 			for (auto& face : contact.m_bodies[a]->m_polytope.m_faces) {
-				auto [vminB, minB] = contact.m_bodies[b]->support(AtoB * face.m_normalL * -1.0, BtoA);
-				auto [vmaxB, maxB] = contact.m_bodies[b]->support(AtoB * face.m_normalL, BtoA);
+				auto [vminB, minB] = contact.m_bodies[b]->support(glmmat3{ AtoB } * face.m_normalL * -1.0, BtoA);
+				auto [vmaxB, maxB] = contact.m_bodies[b]->support(glmmat3{ AtoB } * face.m_normalL, BtoA);
 				if (face.m_max < minB) return minB - face.m_max;
 				if (maxB < face.m_min) return face.m_min - maxB;
 				if (face.m_max < maxB) return minB - face.m_max;
@@ -288,7 +304,19 @@ namespace ve {
 		}
 
 
-		real queryEdgeDirections(Contact& contact) {
+		real queryEdgeDirections(Contact& contact, glmmat4& AtoB, glmmat4& BtoA) {
+			for (auto& edgeA : contact.m_bodies[0]->m_polytope.m_edges) {
+				for (auto& edgeB : contact.m_bodies[1]->m_polytope.m_edges) {
+					auto L = glm::cross(edgeA.m_edgeL, glmmat3{ BtoA } * edgeB.m_edgeL);
+
+					auto [vminA, minA] = contact.m_bodies[0]->support( L * -1.0, glmmat4{1.0});
+					auto [vmaxA, maxA] = contact.m_bodies[0]->support( L, glmmat4{1.0});
+
+					auto [vminB, minB] = contact.m_bodies[1]->support(glmmat3{ AtoB } * L * -1.0, BtoA);
+					auto [vmaxB, maxB] = contact.m_bodies[1]->support(glmmat3{ AtoB } * L, BtoA);
+				}
+			}
+
 			return 0.0;
 
 		}
