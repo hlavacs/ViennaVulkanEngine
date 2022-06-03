@@ -102,9 +102,20 @@ namespace ve {
 		struct Collider {};
 
 		struct Polytope : public Collider {
-			std::vector<glmvec3>					m_verticesL{};		//positions of vertices in local space
-			std::vector<Edge>						m_edges{};			//list of edges
-			std::vector<Face>						m_faces{};			//lis of faces
+			const uint_t c_high_bit = 0x01ull << (((uint_t)sizeof(uint_t) * 8ull) - 1ull); 
+
+		protected:
+			std::vector<glmvec3>	m_verticesL{};		//positions of vertices in local space
+			std::vector<Edge>		m_edges{};			//list of edges
+			std::vector<Face>		m_faces{};			//list of faces
+
+		public:
+			auto getVerticesL() const -> const std::vector<glmvec3>& { return m_verticesL; };
+			auto getVertexL(uint_t vi) const -> glmvec3 { return m_verticesL[vi]; }
+			auto getEdges() const -> const std::vector<Edge>& { return m_edges; };
+			auto getEdge(uint_t ei) const -> glmvec3 { return ei >= c_high_bit ? -m_edges[ei & (~c_high_bit)].m_edgeL : m_edges[ei].m_edgeL; }
+			auto getFaces() const -> const std::vector<Face>& { return m_faces; };
+			auto getFace(uint_t fi) const -> const Face& { return m_faces[fi]; };
 
 			Polytope(const std::vector<glmvec3>&& vertices, const std::vector<std::pair<uint_t, uint_t>>&& edgeindices, const std::vector < std::vector<uint_t> >&& faceindices)
 				: Collider{}, m_verticesL{ vertices }, m_edges{}, m_faces{} {
@@ -171,12 +182,12 @@ namespace ve {
 
 			std::pair<int_t, real> support(glmvec3 dirL, glmmat4 BtoA = glmmat4{ 1.0 }) {
 				std::pair<int_t, real> ret{ -1, std::numeric_limits<real>::min() };
-				for (int_t i = 0; auto & vert : m_polytope.m_verticesL) {
+				for (int_t i = 0; auto & vert : m_polytope.getVerticesL()) {
 					real dp = glm::dot(dirL, vert);
 					if (dp > ret.second) { ret.first = i;  ret.second = dp; }
 					++i;
 				}
-				if (ret.first >= 0) ret.second = glm::dot(BtoA * glmvec4{ dirL, 0.0 }, BtoA * glmvec4{ m_polytope.m_verticesL[ret.first], 1.0});
+				if (ret.first >= 0) ret.second = glm::dot(BtoA * glmvec4{ dirL, 0.0 }, BtoA * glmvec4{ m_polytope.getVertexL(ret.first), 1.0});
 				return ret;
 			};
 		};
@@ -291,7 +302,7 @@ namespace ve {
 		}
 
 		real queryFaceDirections(Contact& contact, int_t a, int_t b, glmmat4& AtoB, glmmat4& BtoA) {
-			for (auto& face : contact.m_bodies[a]->m_polytope.m_faces) {
+			for (auto& face : contact.m_bodies[a]->m_polytope.getFaces()) {
 				auto [vminB, minB] = contact.m_bodies[b]->support(glmmat3{ AtoB } * face.m_normalL * -1.0, BtoA);
 				auto [vmaxB, maxB] = contact.m_bodies[b]->support(glmmat3{ AtoB } * face.m_normalL, BtoA);
 				if (face.m_max < minB) return minB - face.m_max;
@@ -305,8 +316,8 @@ namespace ve {
 
 
 		real queryEdgeDirections(Contact& contact, glmmat4& AtoB, glmmat4& BtoA) {
-			for (auto& edgeA : contact.m_bodies[0]->m_polytope.m_edges) {
-				for (auto& edgeB : contact.m_bodies[1]->m_polytope.m_edges) {
+			for (auto& edgeA : contact.m_bodies[0]->m_polytope.getEdges()) {
+				for (auto& edgeB : contact.m_bodies[1]->m_polytope.getEdges()) {
 					auto L = glm::cross(edgeA.m_edgeL, glmmat3{ BtoA } * edgeB.m_edgeL);
 
 					auto [vminA, minA] = contact.m_bodies[0]->support( L * -1.0, glmmat4{1.0});
