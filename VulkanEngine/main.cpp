@@ -218,16 +218,21 @@ namespace ve {
 
 		struct Contact {
 			struct ContactPoint {
-				glmvec3 m_positionW;
-				glmvec3 m_normalW;
+				glmvec3 m_positionL{};
+				glmvec3 m_normalL{};
 			};
 
-			std::array<std::shared_ptr<Body>, 2> m_bodies{};
-			uint64_t					m_last_loop{ std::numeric_limits<uint64_t>::max() };
-			real						m_separation{ 0.0 };
+			std::array<std::shared_ptr<Body>, 2> m_bodies{};	//pointer to the two bodies involved into this contact
+			uint64_t	m_last_loop{ std::numeric_limits<uint64_t>::max() }; //number of last loop this contact was valid
+			uint_t		m_reference_body{0};	//index of reference body A
+			uint_t		m_incidence_body{1};	//index of incidence body B
+
+			real		m_separation_distance{ 0.0 };	//distance between the objects (if negative then they overlap)
+			glmvec3		m_separating_axisL{0.0};		//Axis that separates the two bodies in object space A
+
 			bool						m_face_vertex{ true };	//true...face-vertex  false...edge-edge
 			std::array<int_t, 2>		m_indices{};			//indices of faces or edges involved into the contact
-			std::vector<ContactPoint>	m_contact_points{};
+			std::vector<ContactPoint>	m_contact_points{};		//up to 4 contact points
 		};
 
 	protected:
@@ -350,10 +355,21 @@ namespace ve {
 
 		}
 
+		/// <summary>
+		/// Loop through all faces of body a. Find min and max of body b along the direction of a's face normal.
+		/// Return negative number if they overlap. Return positive number if they do not overlap.
+		/// </summary>
+		/// <param name="contact">The pair contact struct.</param>
+		/// <param name="a">Index of reference body A.</param>
+		/// <param name="b">Index of incident body B.</param>
+		/// <param name="AtoB">Transform to get from object space A to object space B.</param>
+		/// <param name="BtoA"></param>
+		/// <returns>Negative: overlap of bodies along this axis. Positive: distance between the bodies.</returns>
 		real queryFaceDirections(Contact& contact, int_t a, int_t b, glmmat4& AtoB, glmmat4& BtoA) {
 			for (auto& face : contact.m_bodies[a]->m_polytope.getFaces()) {
 				auto [vi_minB, minB] = contact.m_bodies[b]->support(glmmat3{ AtoB } * face.m_normalL * -1.0, BtoA);
 				auto [vi_maxB, maxB] = contact.m_bodies[b]->support(glmmat3{ AtoB } * face.m_normalL, BtoA);
+
 				if (face.m_max < minB) return minB - face.m_max;
 				if (maxB < face.m_min) return face.m_min - maxB;
 				if (face.m_max < maxB) return minB - face.m_max;
@@ -364,15 +380,18 @@ namespace ve {
 		}
 
 		/// <summary>
-		/// Loop over all edge pairs. Create the cross product vector L. 
-		/// Choose a reference and incident body.
-		/// Reference body is the one having the face that is most aligned with L (abs value). The other is the
-		/// incident body. Return overlap.
+		/// Loop over all edge pairs, where one edge is from nody 0, and one is from body 1. 
+		/// Create the cross product vector L of an edge pair.
+		/// Choose a reference body A and incident body B.
+		/// Reference body A is the one having the face that is most aligned with L (abs value). The other is the
+		/// incident body B.
+		/// Choose L such that it points away from A. Then compute overlap between A and B.
+		/// Return a negative number if there is overlap. Return a positive number if there is no overlap.
 		/// </summary>
 		/// <param name="contact">The contact pair.</param>
 		/// <param name="AtoB">Transform from object space A to B.</param>
 		/// <param name="BtoA">Transform from object space B to A.</param>
-		/// <returns></returns>
+		/// <returns>Negative: overlap of bodies along this axis. Positive: distance between the bodies.</returns>
 		real queryEdgeDirections(Contact& contact, glmmat4& AtoB, glmmat4& BtoA) {
 			for (auto& edgeA : contact.m_bodies[0]->m_polytope.getEdges()) {
 				for (auto& edgeB : contact.m_bodies[1]->m_polytope.getEdges()) {
