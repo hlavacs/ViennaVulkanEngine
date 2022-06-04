@@ -83,25 +83,25 @@ namespace ve {
 		};
 
 		struct Edge {
-			uint_t	m_first;				//index of first vertex
-			uint_t	m_second;				//index of second vertex
-			glmvec3 m_edgeL;				//edge vector in local space 
+			std::pair<uint_t, uint_t>	m_vertices{};		//indices of the vertices making this edge
+			glmvec3						m_edgeL{};			//edge vector in local space 
+			std::vector<int_t>			m_face_indices{};	//indices of the faces this edge belongs to
 		};
 
 		struct Face {
-			std::vector<uint_t> m_edge_indices{};				//edge indices
-			glmvec3 m_normalL{};								//normal vector in local space
-			real m_min{ std::numeric_limits<real>::max() };		//AABB in direction of face normal
-			real m_max{ std::numeric_limits<real>::min() };
+			std::vector<std::pair<uint_t, real>> m_edge_indices{};	//edge indices and orientation factors
+			glmvec3 m_normalL{};									//normal vector in local space
+			real m_min{ std::numeric_limits<real>::max() };			//max in anti direction of face normal
+			real m_max{ std::numeric_limits<real>::min() };			//max in direction of face normal
 		};
 
-		struct AABB {
-			std::array<glmvec3, 2> m_verticesL;
-		};
+		//struct AABB {
+		//	std::array<glmvec3, 2> m_verticesL;
+		//};
 
-		struct Collider {};
+		class Collider {};
 
-		struct Polytope : public Collider {
+		class Polytope : public Collider {
 			const uint_t c_high_bit = 0x01ull << (((uint_t)sizeof(uint_t) * 8ull) - 1ull); 
 
 		protected:
@@ -111,29 +111,53 @@ namespace ve {
 
 		public:
 			auto getVerticesL() const -> const std::vector<glmvec3>& { return m_verticesL; };
-			auto getVertexL(uint_t vi) const -> glmvec3 { return m_verticesL[vi]; }
-			auto getEdges() const -> const std::vector<Edge>& { return m_edges; };
-			auto getEdge(uint_t ei) const -> glmvec3 { return ei >= c_high_bit ? -m_edges[ei & (~c_high_bit)].m_edgeL : m_edges[ei].m_edgeL; }
-			auto getFaces() const -> const std::vector<Face>& { return m_faces; };
-			auto getFace(uint_t fi) const -> const Face& { return m_faces[fi]; };
+			auto getVertexL(uint_t vi) const -> glmvec3 { return getVerticesL()[vi]; }
 
-			Polytope(const std::vector<glmvec3>&& vertices, const std::vector<std::pair<uint_t, uint_t>>&& edgeindices, const std::vector < std::vector<uint_t> >&& faceindices)
+			auto getEdges() const -> const std::vector<Edge>& { return m_edges; };
+			auto getEdge(uint_t ei) const -> glmvec3 { return getEdges()[ei].m_edgeL; }
+
+			auto getFaces() const -> const std::vector<Face>& { return m_faces; };
+			auto getFace(uint_t fi) const -> const Face& { return getFaces()[fi]; };
+			auto getFaceEdge(uint_t fi, uint_t ei) -> glmvec3 { m_edges[getFace(fi).m_edge_indices[ei].first].m_edgeL * getFace(fi).m_edge_indices[ei].second; }
+
+			auto maxFaceAlignment( glmvec3 dirL, glmmat4 BtoA ) -> std::pair<uint_t,real> {
+				real max_abs_face_alignment{ std::numeric_limits<real>::min() };
+				uint_t maxfi = 0;
+				for (uint_t fi = 0;  auto & face : getFaces()) {
+					if (real abs_face_alignment = abs(glm::dot(dirL, face.m_normalL)) > max_abs_face_alignment) {
+						max_abs_face_alignment = abs_face_alignment;
+						maxfi = fi;
+					}
+					++fi;
+				}
+				return { maxfi, abs(glm::dot(BtoA * glmvec4{ dirL, 0.0 }, BtoA * glmvec4{ getFaces()[maxfi].m_normalL, 1.0 } )) };
+			}
+
+			Polytope(const std::vector<glmvec3>&& vertices, const std::vector<std::pair<uint_t, uint_t>>&& edgeindices, const std::vector < std::vector<std::pair<uint_t,real>> >&& face_edge_indices)
 				: Collider{}, m_verticesL{ vertices }, m_edges{}, m_faces{} {
 
 				for (auto& edgepair : edgeindices) {	//compute edges from indices
-					m_edges.emplace_back( edgepair.first, edgepair.second, m_verticesL[edgepair.second] - m_verticesL[edgepair.first] );
+					m_edges.emplace_back( edgepair, m_verticesL[edgepair.second] - m_verticesL[edgepair.first] );
 				}
 
-				for (auto& fi : faceindices) {			//compute faces from indices
-					Face face{ fi };
+				for (auto& fi : face_edge_indices) {	//compute faces from edge indices belonging to this face
+					Face face{ fi };					//new face
 
-					if (faceindices.size() >= 2) face.m_normalL = glm::cross(m_edges[fi[0]].m_edgeL, m_edges[fi[1]].m_edgeL);
+					if (face_edge_indices.size() >= 2) {	//compute face normal
+						face.m_normalL = glm::cross(m_edges[fi[0].first].m_edgeL * fi[0].second, m_edges[fi[1].first].m_edgeL * fi[1].second);
+					}
 
-					for (auto& vert : m_verticesL) {	//AABB along the face normals in local space
+					for (auto& vert : m_verticesL) {				//AABB along the face normals in local space
 						real dp = glm::dot(face.m_normalL, vert);
 						face.m_min = std::min(face.m_min, dp);
 						face.m_max = std::max(face.m_max, dp);
 					}
+
+					for (auto& edge : fi ) {	//record that this face belongs to a specific edge
+						m_edges[edge.first].m_face_indices.push_back( m_faces.size() );
+					}
+
+					m_faces.push_back(face);	//add new face to face vector
 				}
 			};
 		};
@@ -256,6 +280,12 @@ namespace ve {
 			m_last_time = current_time;
 		};
 
+		/// <summary>
+		/// Given a specific cell and a neighboring cell, create all pairs of bodies, where one body is in the 
+		/// cell, and one body is in the neighbor.
+		/// </summary>
+		/// <param name="cell">The grid cell. </param>
+		/// <param name="neigh">The neighbor cell. Can be identical to the cell itself.</param>
 		void makePairs(const intpair_t& cell, const intpair_t&& neigh) {
 			if( !m_grid.count(cell) || !m_grid.count(neigh) ) return;
 			for (auto& coll : m_grid.at(cell)) {
@@ -269,28 +299,45 @@ namespace ve {
 			}
 		}
 
-		const std::array<intpair_t, 5> c_pairs{ { {0,0}, {1,0}, {-1,-1}, {0,-1}, {1,-1} } };
+
+		/// <summary>
+		/// Create pairs of objects that can touch each other. These are either in the same grid cell,
+		/// or in neighboring cells. Go through all pairs of neighboring cells and create possible 
+		/// body pairs as contacts. Old contacts an their information can be reused, if they are also 
+		/// in the current set of pairs. Otherwise, previous contacts are removed.
+		/// </summary>
 		void broadPhase() {
-			for (auto& cell : m_grid) {
-				for (auto& p : c_pairs) {
+			const std::array<intpair_t, 5> c_pairs{ { {0,0}, {1,0}, {-1,-1}, {0,-1}, {1,-1} } }; //neighbor cells
+
+			for (auto& cell : m_grid) {		//loop through all cells that are currently not empty.
+				for (auto& p : c_pairs) {	//create pairs of neighborig cells and make body pairs.
 					makePairs(cell.first, { cell.first.first + p.first, cell.first.second + p.second });
 				} 
 			}
 		}
 
+		/// <summary>
+		/// For each pair coming from the broadphase, test whether the bodies touch each other. If so then
+		/// compute the contact manifold.
+		/// </summary>
 		void narrowPhase() {
 			for( auto it = std::begin(m_contacts); it!=std::end(m_contacts); ) {
 				if (it->second.m_last_loop == m_loop ) {
 					SAT(it->second);
 					++it;
 				}
-				else m_contacts.erase(it);
 			}
 		}
 
+
+
+		/// <summary>
+		/// Perform SAT test for two bodies. If they overlap then compute the contact manifold.
+		/// </summary>
+		/// <param name="contact"></param>
 		void SAT(Contact& contact) {
-			glmmat4 AtoB = contact.m_bodies[1]->m_model_inv * contact.m_bodies[0]->m_model; //transform to bring A to B
-			glmmat4 BtoA = contact.m_bodies[0]->m_model_inv * contact.m_bodies[1]->m_model; //transform to bring B to A
+			glmmat4 AtoB = contact.m_bodies[1]->m_model_inv * contact.m_bodies[0]->m_model; //transform to bring space A to space B
+			glmmat4 BtoA = contact.m_bodies[0]->m_model_inv * contact.m_bodies[1]->m_model; //transform to bring space B to space A
 
 			std::array<real, 3> separations;
 			if ((separations[0] = queryFaceDirections(contact, 0, 1, AtoB, BtoA ))	> c_2margin) return;
@@ -299,12 +346,14 @@ namespace ve {
 
 			if (separations[0] > separations[2] && separations[1] > separations[2]) createFaceContact();
 			else createEdgeContact();
+
+
 		}
 
 		real queryFaceDirections(Contact& contact, int_t a, int_t b, glmmat4& AtoB, glmmat4& BtoA) {
 			for (auto& face : contact.m_bodies[a]->m_polytope.getFaces()) {
-				auto [vminB, minB] = contact.m_bodies[b]->support(glmmat3{ AtoB } * face.m_normalL * -1.0, BtoA);
-				auto [vmaxB, maxB] = contact.m_bodies[b]->support(glmmat3{ AtoB } * face.m_normalL, BtoA);
+				auto [vi_minB, minB] = contact.m_bodies[b]->support(glmmat3{ AtoB } * face.m_normalL * -1.0, BtoA);
+				auto [vi_maxB, maxB] = contact.m_bodies[b]->support(glmmat3{ AtoB } * face.m_normalL, BtoA);
 				if (face.m_max < minB) return minB - face.m_max;
 				if (maxB < face.m_min) return face.m_min - maxB;
 				if (face.m_max < maxB) return minB - face.m_max;
@@ -314,17 +363,34 @@ namespace ve {
 			return 0.0;
 		}
 
-
+		/// <summary>
+		/// Loop over all edge pairs. Create the cross product vector L. 
+		/// Choose a reference and incident body.
+		/// Reference body is the one having the face that is most aligned with L (abs value). The other is the
+		/// incident body. Return overlap.
+		/// </summary>
+		/// <param name="contact">The contact pair.</param>
+		/// <param name="AtoB">Transform from object space A to B.</param>
+		/// <param name="BtoA">Transform from object space B to A.</param>
+		/// <returns></returns>
 		real queryEdgeDirections(Contact& contact, glmmat4& AtoB, glmmat4& BtoA) {
 			for (auto& edgeA : contact.m_bodies[0]->m_polytope.getEdges()) {
 				for (auto& edgeB : contact.m_bodies[1]->m_polytope.getEdges()) {
 					auto L = glm::cross(edgeA.m_edgeL, glmmat3{ BtoA } * edgeB.m_edgeL);
+					uint_t a = 0, b = 1; auto myAtoB = AtoB, myBtoA = BtoA;
 
-					auto [vminA, minA] = contact.m_bodies[0]->support( L * -1.0, glmmat4{1.0});
-					auto [vmaxA, maxA] = contact.m_bodies[0]->support( L, glmmat4{1.0});
+					auto [fi1, max_alignment1] = contact.m_bodies[0]->m_polytope.maxFaceAlignment( contact.m_bodies[0]->m_model_inv * glmvec4{ L, 0.0 }, contact.m_bodies[0]->m_model);
+					auto [fi2, max_alignment2] = contact.m_bodies[1]->m_polytope.maxFaceAlignment( contact.m_bodies[1]->m_model_inv * glmvec4{ L, 0.0 }, contact.m_bodies[1]->m_model);
 
-					auto [vminB, minB] = contact.m_bodies[1]->support(glmmat3{ AtoB } * L * -1.0, BtoA);
-					auto [vmaxB, maxB] = contact.m_bodies[1]->support(glmmat3{ AtoB } * L, BtoA);
+					if (max_alignment2 > max_alignment2) {
+						a = 1; b = 0; AtoB = BtoA, myBtoA = AtoB;
+					}
+										
+					auto [vminA, minA] = contact.m_bodies[a]->support( L * -1.0, glmmat4{1.0});
+					auto [vmaxA, maxA] = contact.m_bodies[a]->support( L, glmmat4{1.0});
+
+					auto [vminB, minB] = contact.m_bodies[b]->support(glmmat3{ myAtoB } * L * -1.0, myBtoA);
+					auto [vmaxB, maxB] = contact.m_bodies[b]->support(glmmat3{ myAtoB } * L, myBtoA);
 				}
 			}
 
