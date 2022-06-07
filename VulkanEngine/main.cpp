@@ -177,7 +177,7 @@ namespace ve {
 			glmvec3		m_scaleL{ 1,1,1 };				//scale factor in local space
 			glmvec3		m_positionW{ 0, 0, 0 };			//current position at time slot in world space
 			glmquat		m_orientationLW{ 1, 0, 0, 0 };	//current orientation at time slot Local -> World
-			glmvec3		m_linear_velocityW{ 0,0,0 };		//linear velocity at time slot in world space
+			glmvec3		m_linear_velocityW{ 0,0,0 };	//linear velocity at time slot in world space
 			glmvec3		m_angular_velocityW{ 0,0,0 };	//angular velocity at time slot in world space
 
 			std::unordered_map<uint64_t, Force> m_forces;//forces acting on this body
