@@ -99,8 +99,6 @@ namespace ve {
 		struct Face {
 			std::vector<std::pair<Edge*, real>> m_edge_ptrs{};		//pointers to the edges of this face and orientation factors
 			glmvec3 m_normalL{};								//normal vector in local space
-			real m_minL{ std::numeric_limits<real>::max() };	//max in anti direction of face normal
-			real m_maxL{ std::numeric_limits<real>::min() };	//max in direction of face normal
 		};
 
 		//struct AABB {
@@ -141,8 +139,6 @@ namespace ve {
 						
 						for (auto& vert : m_vertices) {		//Min and max distance along the face normals in local space
 							real dp = glm::dot(m_faces.back().m_normalL, vert.m_vertexL);
-							face.m_minL = std::min(face.m_minL, dp);
-							face.m_maxL = std::max(face.m_maxL, dp);
 						}
 					}
 
@@ -347,14 +343,14 @@ namespace ve {
 			}
 		}
 
-		struct FaceContact {
+		struct FaceQuery {
 			uint_t	m_reference;
 			real	m_separation;
 			Face*	m_face;
 			Vertex* m_vertex;
 		};
 
-		struct EdgeContact {
+		struct EdgeQuery {
 			uint_t	m_reference;
 			real	m_separation;
 			Edge*	m_edge_ref;
@@ -370,17 +366,16 @@ namespace ve {
 			glmmat4 AtoB = contact.m_bodies[1]->m_model_inv * contact.m_bodies[0]->m_model; //transform to bring space A to space B
 			glmmat4 BtoA = contact.m_bodies[0]->m_model_inv * contact.m_bodies[1]->m_model; //transform to bring space B to space A
 
-			std::array<FaceContact, 2> fc;
-			EdgeContact ec;
-			if ((fc[0] = queryFaceDirections(contact, 0, AtoB, BtoA)).m_separation	> c_2margin) return;
-			if ((fc[1] = queryFaceDirections(contact, 1, BtoA, AtoB)).m_separation	> c_2margin) return;
-			if ((ec = queryEdgeDirections(contact, AtoB, BtoA)).m_separation		> c_2margin) return;
+			FaceQuery fq0, fq1;
+			EdgeQuery eq;
+			if ((fq0 = queryFaceDirections(contact, 0, AtoB, BtoA)).m_separation	> c_2margin) return;
+			if ((fq1 = queryFaceDirections(contact, 1, BtoA, AtoB)).m_separation	> c_2margin) return;
+			if ((eq = queryEdgeDirections(contact, AtoB, BtoA)).m_separation		> c_2margin) return;
 
-			if (fc[0].m_separation > ec.m_separation && fc[1].m_separation > ec.m_separation) {
-				//if (separations[1] > separations[0]) { std::swap(contact.m_bodies[0], contact.m_bodies[1]); }
-				createFaceContact( contact );
+			if (fq0.m_separation > eq.m_separation && fq1.m_separation > eq.m_separation) {
+				fq0.m_separation > fq1.m_separation ? createFaceContact( contact, fq0 ) : createFaceContact(contact, fq1);
 			}
-			else createEdgeContact( contact );
+			else createEdgeContact( contact, eq );
 
 			createManifold(contact);
 		}
@@ -395,37 +390,26 @@ namespace ve {
 		/// <param name="AtoB">Transform to get from object space A to object space B.</param>
 		/// <param name="BtoA"></param>
 		/// <returns>Negative: overlap of bodies along this axis. Positive: distance between the bodies.</returns>
-		FaceContact queryFaceDirections(Contact& contact, uint_t a, glmmat4& AtoB, glmmat4& BtoA) {
+		FaceQuery queryFaceDirections(Contact& contact, uint_t a, glmmat4& AtoB, glmmat4& BtoA) {
 			uint_t b = 1 - a;
-			Vertex* maxV{nullptr};
-			Face* maxF{ nullptr };
-			real max_penetration{std::numeric_limits<real>::min()};
+			Vertex* maxVertex{nullptr};
+			Face* maxFace{ nullptr };
+			real max_distance{std::numeric_limits<real>::min()};
 
 			glmmat3 AtoBit = glm::transpose(glm::inverse(glmmat3{AtoB}));	//transform for a normal vector
 
 			for (auto& face : contact.m_bodies[a]->m_polytope.m_faces) {
 				auto [vertex_minB, pen_minB] = contact.m_bodies[b]->support(AtoBit * face.m_normalL * -1.0, BtoA);
-				//auto [vertex_maxB, pen_maxB] = contact.m_bodies[b]->support(AtoBit * face.m_normalL, BtoA);
 				real distance = glm::dot(glmvec4{ face.m_normalL, 0.0 }, BtoA * glmvec4{ vertex_minB->m_vertexL, 1.0 } - glmvec4{ face.m_edge_ptrs[0].first->m_first_vertexL.m_vertexL, 1.0 });
+				if (distance > 0) return { a, distance, &face, vertex_minB }; //no overlap - distance is positive
 
-
-				if (face.m_maxL < pen_minB) return { a, pen_minB - face.m_maxL, &face, vertex_minB }; //no overlap - penetration is positive
-				//if (pen_maxB < face.m_minL) return { a, face.m_minL - pen_maxB, &face, vertex_minB }; //no overlap - penetration is positive
-
-				real penetration = pen_minB - face.m_maxL;	//overlap - penetration is negative
-				Vertex* vmax = vertex_minB;
-				//if (face.m_maxL < pen_maxB) {
-				//	penetration = face.m_minL - pen_maxB;
-				//	vmax = vertex_maxB;
-				//};
-
-				if ( penetration > max_penetration) {
-					max_penetration = penetration;
-					maxV = vmax;
+				if (distance > max_distance) {
+					max_distance = distance;
+					maxFace = &face;
+					maxVertex = vertex_minB;
 				}
-
 			}
-			return { a, max_penetration, maxF, maxV };
+			return { a, max_distance, maxFace, maxVertex }; //overlap - distance is negative
 		}
 
 		/// <summary>
@@ -441,41 +425,38 @@ namespace ve {
 		/// <param name="AtoB">Transform from object space A to B.</param>
 		/// <param name="BtoA">Transform from object space B to A.</param>
 		/// <returns>Negative: overlap of bodies along this axis. Positive: distance between the bodies.</returns>
-		EdgeContact queryEdgeDirections(Contact& contact, glmmat4& AtoB, glmmat4& BtoA) {
+		EdgeQuery queryEdgeDirections(Contact& contact, glmmat4& AtoB, glmmat4& BtoA) {
 			uint_t max_ref{0};
-			real max_separation{std::numeric_limits<real>::min()};
+			real max_distance{std::numeric_limits<real>::min()};
 			Edge* edge0{nullptr}, * edge1{nullptr};
+
 			for (auto& edgeA : contact.m_bodies[0]->m_polytope.m_edges) {
 				for (auto& edgeB : contact.m_bodies[1]->m_polytope.m_edges) {
-					auto L = glm::cross(edgeA.m_edgeL, glmmat3{ BtoA } * edgeB.m_edgeL);
-					uint_t a = 0, b = 1; auto myAtoB = AtoB, myBtoA = BtoA;
+					auto L = glm::cross(edgeA.m_edgeL, glmmat3{ BtoA } * edgeB.m_edgeL);	//axis L is cross product of both edges
+					if (glm::dot( L, edgeA.m_first_vertexL.m_vertexL ) < 0) L = -L;			//L must be oriented away from center of A
 
 					auto [fi1, max_alignment1] = contact.m_bodies[0]->maxFaceAlignment( contact.m_bodies[0]->m_model_inv * glmvec4{ L, 0.0 }, contact.m_bodies[0]->m_model);
 					auto [fi2, max_alignment2] = contact.m_bodies[1]->maxFaceAlignment( contact.m_bodies[1]->m_model_inv * glmvec4{ L, 0.0 }, contact.m_bodies[1]->m_model);
+									
+					auto [vertex_minA, minA] = contact.m_bodies[0]->support( L * -1.0, glmmat4{1.0});
+					auto [vertex_maxA, maxA] = contact.m_bodies[0]->support( L, glmmat4{1.0});
 
-					if (max_alignment2 > max_alignment1) {
-						a = 1; b = 0; AtoB = BtoA, myBtoA = AtoB;
-					}
-										
-					auto [vertex_minA, minA] = contact.m_bodies[a]->support( L * -1.0, glmmat4{1.0});
-					auto [vertex_maxA, maxA] = contact.m_bodies[a]->support( L, glmmat4{1.0});
-
-					auto [vertex_minB, minB] = contact.m_bodies[b]->support(glmmat3{ myAtoB } * L * -1.0, myBtoA);
-					auto [vertex_maxB, maxB] = contact.m_bodies[b]->support(glmmat3{ myAtoB } * L, myBtoA);
+					auto [vertex_minB, minB] = contact.m_bodies[1]->support(glmmat3{ AtoB } * L * -1.0, BtoA);
+					auto [vertex_maxB, maxB] = contact.m_bodies[1]->support(glmmat3{ AtoB } * L, BtoA);
 				}
 			}
 
-			return {max_ref, max_separation, edge0, edge1};
+			return {max_ref, max_distance, edge0, edge1};
 
 		}
 
 
-		void createFaceContact(Contact& contact) {
+		void createFaceContact(Contact& contact, FaceQuery& fq) {
 
 		}
 
 
-		void createEdgeContact(Contact& contact) {
+		void createEdgeContact(Contact& contact, EdgeQuery &eq) {
 
 		}
 
