@@ -97,7 +97,7 @@ namespace ve {
 		};
 
 		struct Face {
-			std::vector<std::pair<Edge*, real>> m_edge_ptrs{};		//pointers to the edges of this face and orientation factors
+			std::vector<std::pair<Edge*, real>> m_edge_ptrs{};	//pointers to the edges of this face and orientation factors
 			glmvec3 m_normalL{};								//normal vector in local space
 		};
 
@@ -161,6 +161,12 @@ namespace ve {
 			{}
 		};
 
+		struct Support {
+			Vertex* m_vertexB;		//vertex in local space of B
+			glmvec3 m_positionA;	//vertex position in local space of A
+			real	m_distanceA;	//distance in space A
+		};
+
 		struct Body {
 			void*		m_owner = nullptr;				//pointer to owner of this body
 			Polytope&	m_polytope;						//geometric shape
@@ -215,16 +221,17 @@ namespace ve {
 			/// </summary>
 			/// <param name="dirL">Search directory in local space.</param>
 			/// <param name="BtoA">Transform for the result.</param>
-			/// <returns>Pointer to vertex and max distance into the direction, transformed by BtoA.</returns>
-			auto support(glmvec3 dirL, glmmat4 BtoA = glmmat4{ 1.0 }) -> std::pair<Vertex*, real> {
-				std::pair<Vertex*, real> ret{ nullptr, std::numeric_limits<real>::min() };
-				for (int_t i = 0; auto & vert : m_polytope.m_vertices) {
+			/// <returns>Pointer to vertex, poisition of vertex in local space of A and max distance into the direction, transformed by BtoA.</returns>
+			auto support(glmvec3 dirL, glmmat4 BtoA = glmmat4{ 1.0 }) -> Support {
+				Support ret{ nullptr, {}, std::numeric_limits<real>::min() };
+				if (m_polytope.m_vertices.size() == 0) return ret;
+
+				for ( auto & vert : m_polytope.m_vertices ) {
 					real dp = glm::dot(dirL, vert.m_vertexL);
-					if (dp > ret.second) { ret.first = &m_polytope.m_vertices[i];  ret.second = dp; }
-					++i;
+					if (dp > ret.m_distanceA) { ret.m_vertexB = &vert;  ret.m_distanceA = dp; }
 				}
-				if (ret.first != nullptr) ret.second = glm::dot(BtoA * glmvec4{ dirL, 0.0 }, BtoA * glmvec4{ ret.first->m_vertexL, 1.0});
-				return ret;
+				ret.m_positionA = glmvec3{ BtoA * glmvec4{ ret.m_vertexB->m_vertexL, 1.0 } };
+				return { ret.m_vertexB, ret.m_positionA, glm::dot(glmmat3{BtoA} * dirL, ret.m_positionA) };
 			};
 		};
 
@@ -343,20 +350,19 @@ namespace ve {
 			}
 		}
 
-		struct FaceQuery {
-			uint_t	m_reference;
-			real	m_separation;
-			Face*	m_face;
-			Vertex* m_vertex;
-		};
-
 		struct EdgeQuery {
 			uint_t	m_reference;
 			real	m_separation;
-			Edge*	m_edge_ref;
-			Edge*	m_edge_inc;
+			Edge* m_edge_ref;
+			Edge* m_edge_inc;
 		};
 
+		struct FaceQuery {
+			uint_t	m_reference;
+			real	m_separation;
+			Face* m_face;
+			Vertex* m_vertex;
+		};
 
 		/// <summary>
 		/// Perform SAT test for two bodies. If they overlap then compute the contact manifold.
@@ -368,9 +374,9 @@ namespace ve {
 
 			FaceQuery fq0, fq1;
 			EdgeQuery eq;
-			if ((fq0 = queryFaceDirections(contact, 0, AtoB, BtoA)).m_separation	> c_2margin) return;
-			if ((fq1 = queryFaceDirections(contact, 1, BtoA, AtoB)).m_separation	> c_2margin) return;
-			if ((eq = queryEdgeDirections(contact, AtoB, BtoA)).m_separation		> c_2margin) return;
+			if ((fq0 = queryFaceDirections(contact, 0, AtoB, BtoA)).m_separation	> 0) return;
+			if ((fq1 = queryFaceDirections(contact, 1, BtoA, AtoB)).m_separation	> 0) return;
+			if ((eq = queryEdgeDirections(contact, AtoB, BtoA)).m_separation		> 0) return;
 
 			if (fq0.m_separation > eq.m_separation && fq1.m_separation > eq.m_separation) {
 				fq0.m_separation > fq1.m_separation ? createFaceContact( contact, fq0 ) : createFaceContact(contact, fq1);
@@ -392,24 +398,24 @@ namespace ve {
 		/// <returns>Negative: overlap of bodies along this axis. Positive: distance between the bodies.</returns>
 		FaceQuery queryFaceDirections(Contact& contact, uint_t a, glmmat4& AtoB, glmmat4& BtoA) {
 			uint_t b = 1 - a;
-			Vertex* maxVertex{nullptr};
+			Vertex* maxVertexB{nullptr};
 			Face* maxFace{ nullptr };
 			real max_distance{std::numeric_limits<real>::min()};
 
 			glmmat3 AtoBit = glm::transpose(glm::inverse(glmmat3{AtoB}));	//transform for a normal vector
 
-			for (auto& face : contact.m_bodies[a]->m_polytope.m_faces) {
-				auto [vertex_minB, pen_minB] = contact.m_bodies[b]->support(AtoBit * face.m_normalL * -1.0, BtoA);
-				real distance = glm::dot(glmvec4{ face.m_normalL, 0.0 }, BtoA * glmvec4{ vertex_minB->m_vertexL, 1.0 } - glmvec4{ face.m_edge_ptrs[0].first->m_first_vertexL.m_vertexL, 1.0 });
-				if (distance > 0) return { a, distance, &face, vertex_minB }; //no overlap - distance is positive
+			for (auto& face : contact.m_bodies[a]->m_polytope.m_faces) {			
+				Support s = contact.m_bodies[b]->support(AtoBit * face.m_normalL * -1.0, BtoA);
+				real distance = glm::dot( face.m_normalL, s.m_positionA - face.m_edge_ptrs[0].first->m_first_vertexL.m_vertexL );
+				if (distance > 0) return { a, distance, &face, s.m_vertexB }; //no overlap - distance is positive
 
 				if (distance > max_distance) {
 					max_distance = distance;
 					maxFace = &face;
-					maxVertex = vertex_minB;
+					maxVertexB = s.m_vertexB;
 				}
 			}
-			return { a, max_distance, maxFace, maxVertex }; //overlap - distance is negative
+			return { a, max_distance, maxFace, maxVertexB }; //overlap - distance is negative
 		}
 
 		/// <summary>
@@ -430,19 +436,26 @@ namespace ve {
 			real max_distance{std::numeric_limits<real>::min()};
 			Edge* edge0{nullptr}, * edge1{nullptr};
 
+			glmmat3 AtoBit = glm::transpose(glm::inverse(glmmat3{ AtoB }));	//transform for a normal vector
+
 			for (auto& edgeA : contact.m_bodies[0]->m_polytope.m_edges) {
 				for (auto& edgeB : contact.m_bodies[1]->m_polytope.m_edges) {
-					auto L = glm::cross(edgeA.m_edgeL, glmmat3{ BtoA } * edgeB.m_edgeL);	//axis L is cross product of both edges
-					if (glm::dot( L, edgeA.m_first_vertexL.m_vertexL ) < 0) L = -L;			//L must be oriented away from center of A
+					glmvec3 n = glm::cross(edgeA.m_edgeL, glmmat3{ BtoA } * edgeB.m_edgeL);	//axis L is cross product of both edges
+					if (glm::dot( n, edgeA.m_first_vertexL.m_vertexL ) < 0) n = -n;			//L must be oriented away from center of A								
+					Support s = contact.m_bodies[1]->support(glmmat3{ AtoBit } * n * -1.0, BtoA);
 
-					auto [fi1, max_alignment1] = contact.m_bodies[0]->maxFaceAlignment( contact.m_bodies[0]->m_model_inv * glmvec4{ L, 0.0 }, contact.m_bodies[0]->m_model);
-					auto [fi2, max_alignment2] = contact.m_bodies[1]->maxFaceAlignment( contact.m_bodies[1]->m_model_inv * glmvec4{ L, 0.0 }, contact.m_bodies[1]->m_model);
-									
-					auto [vertex_minA, minA] = contact.m_bodies[0]->support( L * -1.0, glmmat4{1.0});
-					auto [vertex_maxA, maxA] = contact.m_bodies[0]->support( L, glmmat4{1.0});
+					real distance = glm::dot( n, s.m_positionA - edgeA.m_first_vertexL.m_vertexL );
+					if (distance > 0) return { 0, distance, &edgeA, &edgeB }; //no overlap - distance is positive
 
-					auto [vertex_minB, minB] = contact.m_bodies[1]->support(glmmat3{ AtoB } * L * -1.0, BtoA);
-					auto [vertex_maxB, maxB] = contact.m_bodies[1]->support(glmmat3{ AtoB } * L, BtoA);
+					if (distance > max_distance) {
+						edge0 = &edgeA;
+						edge1 = &edgeB;
+						max_distance = distance;
+					}
+
+					//auto [fi1, max_alignment1] = contact.m_bodies[0]->maxFaceAlignment( contact.m_bodies[0]->m_model_inv * glmvec4{ L, 0.0 }, contact.m_bodies[0]->m_model);
+					//auto [fi2, max_alignment2] = contact.m_bodies[1]->maxFaceAlignment( contact.m_bodies[1]->m_model_inv * glmvec4{ L, 0.0 }, contact.m_bodies[1]->m_model);
+
 				}
 			}
 
