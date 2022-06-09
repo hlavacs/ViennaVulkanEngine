@@ -397,22 +397,31 @@ namespace ve {
 		/// <returns>Negative: overlap of bodies along this axis. Positive: distance between the bodies.</returns>
 		FaceContact queryFaceDirections(Contact& contact, uint_t a, glmmat4& AtoB, glmmat4& BtoA) {
 			uint_t b = 1 - a;
-			Vertex* maxV;
-			Face* maxF;
+			Vertex* maxV{nullptr};
+			Face* maxF{ nullptr };
 			real max_penetration{std::numeric_limits<real>::min()};
 
+			glmmat3 AtoBit = glm::transpose(glm::inverse(glmmat3{AtoB}));	//transform for a normal vector
+
 			for (auto& face : contact.m_bodies[a]->m_polytope.m_faces) {
-				auto [vertex_minB, minB] = contact.m_bodies[b]->support(glmmat3{ AtoB } * face.m_normalL * -1.0, BtoA);
-				auto [vertex_maxB, maxB] = contact.m_bodies[b]->support(glmmat3{ AtoB } * face.m_normalL, BtoA);
+				auto [vertex_minB, pen_minB] = contact.m_bodies[b]->support(AtoBit * face.m_normalL * -1.0, BtoA);
+				//auto [vertex_maxB, pen_maxB] = contact.m_bodies[b]->support(AtoBit * face.m_normalL, BtoA);
+				real distance = glm::dot(glmvec4{ face.m_normalL, 0.0 }, BtoA * glmvec4{ vertex_minB->m_vertexL, 1.0 } - glmvec4{ face.m_edge_ptrs[0].first->m_first_vertexL.m_vertexL, 1.0 });
 
-				if (face.m_maxL < minB) return { a, minB - face.m_maxL, &face, vertex_minB };
-				if (maxB < face.m_minL) return { a, face.m_minL - maxB, &face, vertex_minB };
-				if (face.m_maxL < maxB) return { a, minB - face.m_maxL, &face, vertex_minB };
 
-				real penetration = face.m_minL - maxB;
+				if (face.m_maxL < pen_minB) return { a, pen_minB - face.m_maxL, &face, vertex_minB }; //no overlap - penetration is positive
+				//if (pen_maxB < face.m_minL) return { a, face.m_minL - pen_maxB, &face, vertex_minB }; //no overlap - penetration is positive
+
+				real penetration = pen_minB - face.m_maxL;	//overlap - penetration is negative
+				Vertex* vmax = vertex_minB;
+				//if (face.m_maxL < pen_maxB) {
+				//	penetration = face.m_minL - pen_maxB;
+				//	vmax = vertex_maxB;
+				//};
+
 				if ( penetration > max_penetration) {
 					max_penetration = penetration;
-					//maxV = &
+					maxV = vmax;
 				}
 
 			}
@@ -433,9 +442,9 @@ namespace ve {
 		/// <param name="BtoA">Transform from object space B to A.</param>
 		/// <returns>Negative: overlap of bodies along this axis. Positive: distance between the bodies.</returns>
 		EdgeContact queryEdgeDirections(Contact& contact, glmmat4& AtoB, glmmat4& BtoA) {
-			uint_t max_ref;
+			uint_t max_ref{0};
 			real max_separation{std::numeric_limits<real>::min()};
-			Edge *edge0, *edge1;
+			Edge* edge0{nullptr}, * edge1{nullptr};
 			for (auto& edgeA : contact.m_bodies[0]->m_polytope.m_edges) {
 				for (auto& edgeB : contact.m_bodies[1]->m_polytope.m_edges) {
 					auto L = glm::cross(edgeA.m_edgeL, glmmat3{ BtoA } * edgeB.m_edgeL);
