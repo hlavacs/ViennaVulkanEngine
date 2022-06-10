@@ -85,7 +85,7 @@ namespace ve {
 		struct Face;
 
 		struct Vertex {
-			glmvec3				m_vertexL;		//vertex position in local space
+			glmvec3				m_positionL;	//vertex position in local space
 			std::vector<Face*>	m_face_ptrs;	//faces this vertex belongs to
 		};
 
@@ -124,7 +124,7 @@ namespace ve {
 				std::ranges::for_each(vertices, [&](const glmvec3& v) { m_vertices.emplace_back(v); });
 
 				for (auto& edgepair : edgeindices) {	//compute edges from indices
-					m_edges.emplace_back( m_vertices[edgepair.first], m_vertices[edgepair.second], m_vertices[edgepair.second].m_vertexL - m_vertices[edgepair.first].m_vertexL );
+					m_edges.emplace_back( m_vertices[edgepair.first], m_vertices[edgepair.second], m_vertices[edgepair.second].m_positionL - m_vertices[edgepair.first].m_positionL);
 				}
 
 				for (auto& face_indices : face_edge_indices) {	//compute faces from edge indices belonging to this face
@@ -138,7 +138,7 @@ namespace ve {
 						face.m_normalL = glm::cross( m_edges[face_indices[0].first].m_edgeL * face_indices[0].second, m_edges[face_indices[1].first].m_edgeL * face_indices[1].second);
 						
 						for (auto& vert : m_vertices) {		//Min and max distance along the face normals in local space
-							real dp = glm::dot(m_faces.back().m_normalL, vert.m_vertexL);
+							real dp = glm::dot(m_faces.back().m_normalL, vert.m_positionL);
 						}
 					}
 
@@ -227,10 +227,10 @@ namespace ve {
 				if (m_polytope.m_vertices.size() == 0) return ret;
 
 				for ( auto & vert : m_polytope.m_vertices ) {
-					real dp = glm::dot(dirL, vert.m_vertexL);
+					real dp = glm::dot(dirL, vert.m_positionL);
 					if (dp > ret.m_distanceA) { ret.m_vertexB = &vert;  ret.m_distanceA = dp; }
 				}
-				ret.m_positionA = glmvec3{ BtoA * glmvec4{ ret.m_vertexB->m_vertexL, 1.0 } };
+				ret.m_positionA = glmvec3{ BtoA * glmvec4{ ret.m_vertexB->m_positionL, 1.0 } };
 				return { ret.m_vertexB, ret.m_positionA, glm::dot(glmmat3{BtoA} * dirL, ret.m_positionA) };
 			};
 		};
@@ -406,7 +406,7 @@ namespace ve {
 
 			for (auto& face : contact.m_bodies[a]->m_polytope.m_faces) {			
 				Support s = contact.m_bodies[b]->support(AtoBit * face.m_normalL * -1.0, BtoA);
-				real distance = glm::dot( face.m_normalL, s.m_positionA - face.m_edge_ptrs[0].first->m_first_vertexL.m_vertexL );
+				real distance = glm::dot( face.m_normalL, s.m_positionA - face.m_edge_ptrs[0].first->m_first_vertexL.m_positionL);
 				if (distance > 0) return { a, distance, &face, s.m_vertexB }; //no overlap - distance is positive
 
 				if (distance > max_distance) {
@@ -441,10 +441,10 @@ namespace ve {
 			for (auto& edgeA : contact.m_bodies[0]->m_polytope.m_edges) {
 				for (auto& edgeB : contact.m_bodies[1]->m_polytope.m_edges) {
 					glmvec3 n = glm::cross(edgeA.m_edgeL, glmmat3{ BtoA } * edgeB.m_edgeL);	//axis L is cross product of both edges
-					if (glm::dot( n, edgeA.m_first_vertexL.m_vertexL ) < 0) n = -n;			//L must be oriented away from center of A								
+					if (glm::dot( n, edgeA.m_first_vertexL.m_positionL) < 0) n = -n;			//L must be oriented away from center of A								
 					Support s = contact.m_bodies[1]->support(glmmat3{ AtoBit } * n * -1.0, BtoA);
 
-					real distance = glm::dot( n, s.m_positionA - edgeA.m_first_vertexL.m_vertexL );
+					real distance = glm::dot( n, s.m_positionA - edgeA.m_first_vertexL.m_positionL);
 					if (distance > 0) return { 0, distance, &edgeA, &edgeB }; //no overlap - distance is positive
 
 					if (distance > max_distance) {
