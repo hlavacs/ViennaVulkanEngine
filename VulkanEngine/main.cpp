@@ -172,8 +172,10 @@ namespace ve {
 			Polytope&	m_polytope;						//geometric shape
 			real		m_inv_mass{ 1 };				//1 over mass
 			glmvec3		m_inertia{ 1,1,1 };				//inertia tensor diagonal
-
 			glmvec3		m_scaleL{ 1,1,1 };				//scale factor in local space
+			real		m_restitution{ 0.1 };			//coefficient of restitution eps
+			real		m_friction{ 0.5 };				//coefficient of friction mu
+
 			glmvec3		m_positionW{ 0, 0, 0 };			//current position at time slot in world space
 			glmquat		m_orientationLW{ 1, 0, 0, 0 };	//current orientation at time slot Local -> World
 			glmvec3		m_linear_velocityW{ 0,0,0 };	//linear velocity at time slot in world space
@@ -186,18 +188,21 @@ namespace ve {
 
 			std::function<void(double, std::shared_ptr<Body>)>* m_on_move = nullptr; //called if the body moves
 
-			bool stepPosition(double dt, glmvec3& pos) {
+			bool stepPosition(double dt, glmvec3& pos, glmquat quat) {
 				if (abs(glm::dot(m_linear_velocityW, m_linear_velocityW)) < c_eps * c_eps) return false;
 				pos = m_positionW + m_linear_velocityW * (real)dt;
-				return true;
-			};
 
-			bool stepOrientation(double dt, glmquat quat) {
 				real len = glm::length(m_angular_velocityW);
 				if (abs(len) < c_eps) return false;
 				quat = glm::rotate(m_orientationLW, len * (real)dt, m_angular_velocityW * 1.0 / len);
+
 				return true;
 			};
+
+			bool stepVelocity(double dt) {
+				return true;
+			}
+
 
 			static glmmat4 computeModel( glmvec3 pos, glmquat orient, glmvec3 scale ) { 
 				return glm::translate(glmmat4{ 1.0 }, pos) * glm::mat4_cast(orient) * glm::scale(glmmat4{ 1.0 }, scale);
@@ -284,8 +289,11 @@ namespace ve {
 				applyImpulses();
 
 				for (auto& c : m_bodies) {
-					if( c.second->stepPosition(m_delta_slot, c.second->m_positionW) || 
-						c.second->stepOrientation(m_delta_slot, c.second->m_orientationLW)) {					
+					c.second->stepVelocity(m_delta_slot);
+				}
+
+				for (auto& c : m_bodies) {
+					if( c.second->stepPosition(m_delta_slot, c.second->m_positionW, c.second->m_orientationLW )) {					
 						c.second->m_model = Body::computeModel(c.second->m_positionW, c.second->m_orientationLW, c.second->m_scaleL);
 						c.second->m_model_inv = glm::inverse(c.second->m_model);
 					}
