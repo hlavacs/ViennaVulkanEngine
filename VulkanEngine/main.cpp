@@ -245,7 +245,8 @@ namespace ve {
 			uint64_t					m_last_loop{ std::numeric_limits<uint64_t>::max() }; //number of last loop this contact was valid
 			real						m_separation_distance{ 0.0 };			//distance between the objects (if negative then they overlap)
 			glmvec3						m_separating_axisL{0.0};				//Axis that separates the two bodies in object space A
-			std::vector<Face*>			m_face_ptrs{};			//pointers to the two faces that collide
+			Face*						m_reference_face;		//pointers to the colling reference face
+			Face*						m_incident_face;		//pointers to the colling incident face
 			std::vector<ContactPoint>	m_contact_points{};		//up to 4 contact points in contact manifold
 		};
 
@@ -280,6 +281,7 @@ namespace ve {
 				++m_loop;
 				broadPhase();
 				narrowPhase();
+				applyImpulses();
 
 				for (auto& c : m_bodies) {
 					if( c.second->stepPosition(m_delta_slot, c.second->m_positionW) || 
@@ -465,19 +467,55 @@ namespace ve {
 
 
 		void createFaceContact(Contact& contact, FaceQuery& fq) {
+			contact.m_contact_points.clear();
+			contact.m_contact_points.emplace_back( fq.m_vertex->m_positionL, fq.m_face->m_normalL );
 
+			Face* max_face;
+			real max_alignment{std::numeric_limits<real>::min()};
+			for (auto face : fq.m_vertex->m_face_ptrs) {
+				real alignment = -glm::dot(fq.m_face->m_normalL, face->m_normalL);
+				if (alignment > max_alignment) {
+					max_face = face;
+					max_alignment = alignment;
+				}
+			}
+			contact.m_reference_face = fq.m_face;
+			contact.m_incident_face = max_face;
 		}
 
 
 		void createEdgeContact(Contact& contact, EdgeQuery &eq) {
+			contact.m_contact_points.clear();
+
+			//find closest points between the two edges
+
+			//add contact at mid point between the points, pointint along the axis´n
+
+			//find face on A belonging to edge0 most aligned with n
+			//find face on B belonging to edg1 most aligned with n
+			//add faces to the contact
 
 		}
 
 
 		void createManifold( Contact& contact ) {
 
+			//project inc face onto reference face
+
+			//run Sutherland Hodgman Polygon Clipping Algorithm http://www.pracspedia.com/CG/sutherlandhodgman.html
+			//Find edge points on both faces
+			//if distance < 2 margin then add them to the manifold
+
 		}
 
+
+		void applyImpulses() {
+			//loop over all contacts
+
+			//create mass matrix
+
+			//
+		}
 
 
 	public:
