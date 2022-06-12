@@ -85,20 +85,20 @@ namespace ve {
 		struct Face;
 
 		struct Vertex {
-			glmvec3				m_positionL;	//vertex position in local space
-			std::vector<Face*>	m_face_ptrs;	//faces this vertex belongs to
+			glmvec3			m_positionL;	//vertex position in local space
+			std::set<Face*>	m_face_ptrs;	//pointers to faces this vertex belongs to
 		};
 
 		struct Edge {
-			Vertex&				m_first_vertexL;	//first edge vertex
-			Vertex&				m_second_vertexL;	//second edge vertex
-			glmvec3				m_edgeL{};			//edge vector in local space 
-			std::vector<Face*>	m_face_ptrs{};		//pointers to the two faces this edge belongs to
+			Vertex&			m_first_vertexL;	//first edge vertex
+			Vertex&			m_second_vertexL;	//second edge vertex
+			glmvec3			m_edgeL{};			//edge vector in local space 
+			std::set<Face*>	m_face_ptrs{};		//pointers to the two faces this edge belongs to
 		};
 
 		struct Face {
-			std::vector<std::pair<Edge*, real>> m_edge_ptrs{};	//pointers to the edges of this face and orientation factors
-			glmvec3 m_normalL{};								//normal vector in local space
+			std::set<std::pair<Edge*, real>> m_edge_ptrs{};	//pointers to the edges of this face and orientation factors
+			glmvec3 m_normalL{};							//normal vector in local space
 		};
 
 		//struct AABB {
@@ -131,7 +131,7 @@ namespace ve {
 					auto& face = m_faces.emplace_back();	//add new face to face vector
 
 					for (auto& edge : face_indices) {		//add references to the edges belonging to this face
-						face.m_edge_ptrs.emplace_back( std::make_pair( &m_edges.at(edge.first), edge.second) );	//add new face to face vector
+						face.m_edge_ptrs.insert( std::make_pair( &m_edges.at(edge.first), edge.second) );	//add new face to face vector
 					}
 
 					if (face_indices.size() >= 2) {			//compute face normal
@@ -143,13 +143,9 @@ namespace ve {
 					}
 
 					for (auto& edge : face_indices) {		//record that this face belongs to a specific edge
-						m_edges[edge.first].m_face_ptrs.emplace_back(&face);	//we touch each face only once, no need to check if face already in list
-
-						auto& v0 = m_edges[edge.first].m_first_vertexL.m_face_ptrs; //add face to list in edge vertices
-						if (std::ranges::find_if(v0, [&](Face* f) { return f == &face; }) == v0.end()) { v0.emplace_back( &face ); };
-
-						auto& v1 = m_edges[edge.first].m_second_vertexL.m_face_ptrs; //add face to list in edge vertices
-						if (std::ranges::find_if(v1, [&](Face* f) { return f == &face; }) == v1.end()) { v1.emplace_back( &face ); };
+						m_edges[edge.first].m_face_ptrs.insert(&face);	//we touch each face only once, no need to check if face already in list
+						m_edges[edge.first].m_first_vertexL.m_face_ptrs.insert(&face);	//sets cannot hold duplicates
+						m_edges[edge.first].m_second_vertexL.m_face_ptrs.insert(&face);
 					}
 				}
 			};
@@ -416,7 +412,7 @@ namespace ve {
 
 			for (auto& face : contact.m_bodies[a]->m_polytope.m_faces) {			
 				Support s = contact.m_bodies[b]->support(AtoBit * face.m_normalL * -1.0, BtoA);
-				real distance = glm::dot( face.m_normalL, s.m_positionA - face.m_edge_ptrs[0].first->m_first_vertexL.m_positionL);
+				real distance = glm::dot( face.m_normalL, s.m_positionA - face.m_edge_ptrs.begin()->first->m_first_vertexL.m_positionL);
 				if (distance > 0) return { a, distance, &face, s.m_vertexB }; //no overlap - distance is positive
 
 				if (distance > max_distance) {
@@ -603,3 +599,22 @@ int main() {
 
 	return 0;
 }
+
+
+/// <summary>
+/// </summary>
+/// <param name=""</param>
+void closestPoints( glmvec3& a, glmvec3& a1, glmvec3& b, glmvec3& b1 ) {
+	glmvec3 va = a1 - a;
+	glmvec3 vb = b1 - b;
+	glmvec3 c = b - a;
+	glmvec3 vah = va / glm::dot(va, va);
+	glmvec3 d = d  - glm::dot(va, c) * vah;
+	glmvec3 v = vb - glm::dot(va, vb) * vah;;
+	real s = -glm::dot(d, v) / glm::dot(v,v);
+	real t = glm::dot( ( (b + s * vb) - a ), vah );
+
+}
+
+
+
