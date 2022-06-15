@@ -114,6 +114,8 @@ namespace ve {
 			std::vector<Edge>	m_edges{};			//list of edges
 			std::vector<Face>	m_faces{};			//list of faces
 
+			real m_bounding_sphere_radius{ std::numeric_limits<real>::min() };
+
 			/// <summary>
 			/// Constructor for Polytope. Take in a list of vector positions and indices and create the polygon data struct.
 			/// </summary>
@@ -123,7 +125,11 @@ namespace ve {
 			Polytope(const std::vector<glmvec3>& vertices, const std::vector<std::pair<uint_t, uint_t>>&& edgeindices, const std::vector < std::vector<std::pair<uint_t,real>> >&& face_edge_indices)
 				: Collider{}, m_vertices{}, m_edges{}, m_faces{} {
 
-				std::ranges::for_each(vertices, [&](const glmvec3& v) { m_vertices.emplace_back(v); });
+				std::ranges::for_each(vertices, [&](const glmvec3& v) { 
+						m_vertices.emplace_back(v);
+						if (real l = glm::length(v) > m_bounding_sphere_radius) m_bounding_sphere_radius = l;
+					}
+				);
 
 				for (auto& edgepair : edgeindices) {	//compute edges from indices
 					m_edges.emplace_back( m_vertices[edgepair.first], m_vertices[edgepair.second], m_vertices[edgepair.second].m_positionL - m_vertices[edgepair.first].m_positionL);
@@ -151,13 +157,16 @@ namespace ve {
 					}
 				}
 			};
+
 		};
 
-		Polytope g_cube{
-			{ {-0.5,-0.5,-0.5}, {-0.5,-0.5,0.5}, {-0.5,0.5,0.5}, {-0.5,0.5,-0.5},{0.5,-0.5,-0.5}, {0.5,-0.5,0.5}, {0.5,0.5,0.5}, {0.5,0.5,-0.5} },
-			{},
-			{}
+		Polytope g_cube {
+				{ {-0.5, -0.5, -0.5}, { -0.5,-0.5,0.5 }, { -0.5,0.5,0.5 }, { -0.5,0.5,-0.5 }, { 0.5,-0.5,-0.5 }, { 0.5,-0.5,0.5 }, { 0.5,0.5,0.5 }, { 0.5,0.5,-0.5 } },
+				{},
+				{} 
 		};
+
+
 
 		struct Support {
 			Vertex* m_vertexB;		//vertex in local space of B
@@ -202,7 +211,9 @@ namespace ve {
 				return true;
 			}
 
-			real boundingSphereRadius() { return std::max( m_scale.x, std::max(m_scale.y, m_scale.z)); }
+			real boundingSphereRadius() { 
+				return std::max( m_scale.x, std::max(m_scale.y, m_scale.z)) * m_polytope->m_bounding_sphere_radius;
+			}
 
 			static glmmat4 computeModel( glmvec3 pos, glmquat orient, glmvec3 scale ) { 
 				return glm::translate(glmmat4{ 1.0 }, pos) * glm::mat4_cast(orient) * glm::scale(glmmat4{ 1.0 }, scale);
@@ -260,17 +271,17 @@ namespace ve {
 		uint64_t		m_loop{ 0L };
 		double			m_last_time{ 0.0 };					//last time the sim was interpolated
 		double			m_last_slot{ 0.0 };					//last time the sim was calculated
-		const double	m_delta_slot{ 1.0 / 60.0 };	//sim frequency
-		double			m_next_slot{ m_delta_slot };			//next time for simulation
+		const double	m_delta_slot{ 1.0 / 60.0 };			//sim frequency
+		double			m_next_slot{ m_delta_slot };		//next time for simulation
 
 		using body_map = std::unordered_map<void*, std::shared_ptr<Body>>;
-		body_map		m_bodies;									//main container of all bodies
+		body_map		m_bodies;							//main container of all bodies
 		
-		const double	c_width{5};								//grid cell width (m)
-		std::unordered_map< intpair_t, body_map > m_grid;		//broadphase grid
+		const double	c_width{5};							//grid cell width (m)
+		std::unordered_map< intpair_t, body_map > m_grid;	//broadphase grid
 
-		Body			m_ground{nullptr, &g_cube, { 0, -0.5_real, 0 } , { 1000, 1, 1000 } };
-		body_map		m_global_cell;							//cell containing the ground
+		Body			m_ground{nullptr, &g_cube, { 0, -500.0_real, 0 } , { 1000, 1000, 1000 } };
+		body_map		m_global_cell{ { nullptr, std::make_shared<Body>(&m_ground) } };	//cell containing the ground
 
 		std::unordered_map<voidppair_t, Contact> m_contacts;	//possible contacts resulting from broadphase
 
@@ -356,11 +367,17 @@ namespace ve {
 		/// </summary>
 		void narrowPhase() {
 			for (auto it = std::begin(m_contacts); it != std::end(m_contacts); ) {
-				if (it->second.m_last_loop == m_loop ) {	//is contact still possible?
-					if (it->second.m_bodies[0].get() == &m_ground) groundTest(it->second);
+				auto& contact = it->second;
+				contact.m_contact_points.clear();
+				if (contact.m_last_loop == m_loop ) {	//is contact still possible?
+					if (contact.m_bodies[0].get() == &m_ground) groundTest(contact); //is the ref body the ground?
+					else {
+						glmvec3 diff = contact.m_bodies[1]->m_positionW - contact.m_bodies[0]->m_positionW;
+						real rsum = contact.m_bodies[0]->boundingSphereRadius() + contact.m_bodies[1]->boundingSphereRadius();
+						if (glm::dot(diff, diff) > rsum * rsum) continue;
 
-
-					//SAT(it->second);						//yes - test it
+						SAT(it->second);						//yes - test it
+					}
 					++it;
 				}
 				else { m_contacts.erase(it); }				//no - erase from container
@@ -370,7 +387,6 @@ namespace ve {
 
 		void groundTest(Contact& contact) {
 			if (contact.m_bodies[1]->m_positionW.y > contact.m_bodies[1]->boundingSphereRadius()) return;
-			contact.m_contact_points.clear();
 			int_t cnt = 0;
 			for (auto& vL : contact.m_bodies[1]->m_polytope->m_vertices) {
 				auto vW = contact.m_bodies[1]->m_model * glmvec4{ vL.m_positionL, 1 };
@@ -497,7 +513,6 @@ namespace ve {
 
 
 		void createFaceContact(Contact& contact, FaceQuery& fq) {
-			contact.m_contact_points.clear();
 			contact.m_contact_points.emplace_back( fq.m_vertex->m_positionL, fq.m_face->m_normalL );
 
 			Face* max_face;
@@ -515,8 +530,6 @@ namespace ve {
 
 
 		void createEdgeContact(Contact& contact, EdgeQuery &eq) {
-			contact.m_contact_points.clear();
-
 			//find closest points between the two edges
 
 			//add contact at mid point between the points, pointint along the axis´n
