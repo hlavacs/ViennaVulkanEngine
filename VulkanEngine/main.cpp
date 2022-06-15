@@ -36,8 +36,10 @@ using uint_t = uint32_t;
 #define glmquat glm::quat
 #endif
 
+constexpr real operator "" _real(long double val) { return (real)val; };
+
 const double c_eps = 1.0e-10;
-const real c_margin = 1.0;
+const real c_margin = 1.0_real;
 const real c_2margin = 2.0*c_margin;
 
 template <typename T> 
@@ -165,14 +167,15 @@ namespace ve {
 
 		struct Body {
 			void*		m_owner = nullptr;				//pointer to owner of this body
-			Polytope&	m_polytope;						//geometric shape
-			real		m_inv_mass{ 1 };				//1 over mass
-			glmvec3		m_inertia{ 1,1,1 };				//inertia tensor diagonal
-			glmvec3		m_scaleL{ 1,1,1 };				//scale factor in local space
-			real		m_restitution{ 0.1 };			//coefficient of restitution eps
-			real		m_friction{ 0.5 };				//coefficient of friction mu
-
+			Polytope*	m_polytope = nullptr;			//geometric shape
 			glmvec3		m_positionW{ 0, 0, 0 };			//current position at time slot in world space
+			glmvec3		m_scale{ 1,1,1 };				//scale factor in local space
+
+			real		m_inv_mass{ 0 };				//1 over mass
+			glmvec3		m_inertia{ 1,1,1 };				//inertia tensor diagonal
+			real		m_restitution{ 0.0_real };			//coefficient of restitution eps
+			real		m_friction{ 0.5_real };				//coefficient of friction mu
+
 			glmquat		m_orientationLW{ 1, 0, 0, 0 };	//current orientation at time slot Local -> World
 			glmvec3		m_linear_velocityW{ 0,0,0 };	//linear velocity at time slot in world space
 			glmvec3		m_angular_velocityW{ 0,0,0 };	//angular velocity at time slot in world space
@@ -199,6 +202,7 @@ namespace ve {
 				return true;
 			}
 
+			real boundingSphereRadius() { return std::max( m_scale.x, std::max(m_scale.y, m_scale.z)); }
 
 			static glmmat4 computeModel( glmvec3 pos, glmquat orient, glmvec3 scale ) { 
 				return glm::translate(glmmat4{ 1.0 }, pos) * glm::mat4_cast(orient) * glm::scale(glmmat4{ 1.0 }, scale);
@@ -207,14 +211,14 @@ namespace ve {
 			auto maxFaceAlignment(glmvec3 dirL, glmmat4 BtoA) -> std::pair<uint_t, real> {
 				real max_abs_face_alignment{ std::numeric_limits<real>::min() };
 				uint_t maxfi = 0;
-				for (uint_t fi = 0; auto & face : m_polytope.m_faces) {
+				for (uint_t fi = 0; auto & face : m_polytope->m_faces) {
 					if (real abs_face_alignment = abs(glm::dot(dirL, face.m_normalL)) > max_abs_face_alignment) {
 						max_abs_face_alignment = abs_face_alignment;
 						maxfi = fi;
 					}
 					++fi;
 				}
-				return { maxfi, abs(glm::dot(BtoA * glmvec4{ dirL, 0.0 }, BtoA * glmvec4{ m_polytope.m_faces[maxfi].m_normalL, 1.0 })) };
+				return { maxfi, abs(glm::dot(BtoA * glmvec4{ dirL, 0.0 }, BtoA * glmvec4{ m_polytope->m_faces[maxfi].m_normalL, 1.0 })) };
 			}
 
 			/// <summary>
@@ -225,9 +229,9 @@ namespace ve {
 			/// <returns>Pointer to vertex, poisition of vertex in local space of A and max distance into the direction, transformed by BtoA.</returns>
 			auto support(glmvec3 dirL, glmmat4 BtoA = glmmat4{ 1.0 }) -> Support {
 				Support ret{ nullptr, {}, std::numeric_limits<real>::min() };
-				if (m_polytope.m_vertices.size() == 0) return ret;
+				if (m_polytope->m_vertices.size() == 0) return ret;
 
-				for ( auto & vert : m_polytope.m_vertices ) {
+				for ( auto & vert : m_polytope->m_vertices ) {
 					real dp = glm::dot(dirL, vert.m_positionL);
 					if (dp > ret.m_distanceA) { ret.m_vertexB = &vert;  ret.m_distanceA = dp; }
 				}
@@ -265,6 +269,9 @@ namespace ve {
 		const double	c_width{5};								//grid cell width (m)
 		std::unordered_map< intpair_t, body_map > m_grid;		//broadphase grid
 
+		Body			m_ground{nullptr, &g_cube, { 0, -0.5_real, 0 } , { 1000, 1, 1000 } };
+		body_map		m_global_cell;							//cell containing the ground
+
 		std::unordered_map<voidppair_t, Contact> m_contacts;	//possible contacts resulting from broadphase
 
 
@@ -290,7 +297,7 @@ namespace ve {
 
 				for (auto& c : m_bodies) {
 					if( c.second->stepPosition(m_delta_slot, c.second->m_positionW, c.second->m_orientationLW )) {					
-						c.second->m_model = Body::computeModel(c.second->m_positionW, c.second->m_orientationLW, c.second->m_scaleL);
+						c.second->m_model = Body::computeModel(c.second->m_positionW, c.second->m_orientationLW, c.second->m_scale);
 						c.second->m_model_inv = glm::inverse(c.second->m_model);
 					}
 				}
@@ -311,10 +318,9 @@ namespace ve {
 		/// </summary>
 		/// <param name="cell">The grid cell. </param>
 		/// <param name="neigh">The neighbor cell. Can be identical to the cell itself.</param>
-		void makeBodyPairs(const intpair_t& cell, const intpair_t&& neigh) {
-			if( !m_grid.count(cell) || !m_grid.count(neigh) ) return;
-			for (auto& coll : m_grid.at(cell)) {
-				for (auto& neigh : m_grid.at(neigh)) {
+		void makeBodyPairs(const body_map& cell, const body_map& neigh) {
+			for (auto& coll : cell) {
+				for (auto& neigh : neigh) {
 					if (coll.second->m_owner != neigh.second->m_owner) {
 						auto it = m_contacts.find({ coll.second->m_owner, neigh.second->m_owner }); //if contact exists already
 						if (it != m_contacts.end()) it->second.m_last_loop = m_loop;				//update loop count
@@ -335,8 +341,10 @@ namespace ve {
 			const std::array<intpair_t, 5> c_pairs{ { {0,0}, {1,0}, {-1,-1}, {0,-1}, {1,-1} } }; //neighbor cells
 
 			for (auto& cell : m_grid) {		//loop through all cells that are currently not empty.
-				for (auto& p : c_pairs) {	//create pairs of neighborig cells and make body pairs.
-					makeBodyPairs(cell.first, { cell.first.first + p.first, cell.first.second + p.second });
+				makeBodyPairs(cell.second, m_global_cell);		//test all bodies against the ground
+				for (auto& pi : c_pairs) {				//create pairs of neighborig cells and make body pairs.
+					intpair_t ni = { cell.first.first + pi.first, cell.first.second + pi.second };
+					if ( m_grid.count(ni) > 0) makeBodyPairs(cell.second, m_grid.at(ni)); 
 				} 
 			}
 		}
@@ -410,7 +418,7 @@ namespace ve {
 
 			glmmat3 AtoBit = glm::transpose(glm::inverse(glmmat3{AtoB}));	//transform for a normal vector
 
-			for (auto& face : contact.m_bodies[a]->m_polytope.m_faces) {			
+			for (auto& face : contact.m_bodies[a]->m_polytope->m_faces) {			
 				Support s = contact.m_bodies[b]->support(AtoBit * face.m_normalL * -1.0, BtoA);
 				real distance = glm::dot( face.m_normalL, s.m_positionA - face.m_edge_ptrs.begin()->first->m_first_vertexL.m_positionL);
 				if (distance > 0) return { a, distance, &face, s.m_vertexB }; //no overlap - distance is positive
@@ -444,8 +452,8 @@ namespace ve {
 
 			glmmat3 AtoBit = glm::transpose(glm::inverse(glmmat3{ AtoB }));	//transform for a normal vector
 
-			for (auto& edgeA : contact.m_bodies[0]->m_polytope.m_edges) {
-				for (auto& edgeB : contact.m_bodies[1]->m_polytope.m_edges) {
+			for (auto& edgeA : contact.m_bodies[0]->m_polytope->m_edges) {
+				for (auto& edgeB : contact.m_bodies[1]->m_polytope->m_edges) {
 					glmvec3 n = glm::cross(edgeA.m_edgeL, glmmat3{ BtoA } * edgeB.m_edgeL);	//axis L is cross product of both edges
 					if (glm::dot( n, edgeA.m_first_vertexL.m_positionL) < 0) n = -n;			//L must be oriented away from center of A								
 					Support s = contact.m_bodies[1]->support(glmmat3{ AtoBit } * n * -1.0, BtoA);
