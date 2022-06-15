@@ -341,11 +341,11 @@ namespace ve {
 			const std::array<intpair_t, 5> c_pairs{ { {0,0}, {1,0}, {-1,-1}, {0,-1}, {1,-1} } }; //neighbor cells
 
 			for (auto& cell : m_grid) {		//loop through all cells that are currently not empty.
-				makeBodyPairs(cell.second, m_global_cell);		//test all bodies against the ground
-				for (auto& pi : c_pairs) {				//create pairs of neighborig cells and make body pairs.
-					intpair_t ni = { cell.first.first + pi.first, cell.first.second + pi.second };
-					if ( m_grid.count(ni) > 0) makeBodyPairs(cell.second, m_grid.at(ni)); 
-				} 
+				makeBodyPairs(m_global_cell, cell.second);		//test all bodies against the ground
+				//for (auto& pi : c_pairs) {	//create pairs of neighborig cells and make body pairs.
+				//	intpair_t ni = { cell.first.first + pi.first, cell.first.second + pi.second };
+				//	if ( m_grid.count(ni) > 0) makeBodyPairs(cell.second, m_grid.at(ni)); 
+				//} 
 			}
 		}
 
@@ -357,12 +357,30 @@ namespace ve {
 		void narrowPhase() {
 			for (auto it = std::begin(m_contacts); it != std::end(m_contacts); ) {
 				if (it->second.m_last_loop == m_loop ) {	//is contact still possible?
-					SAT(it->second);						//yes - test it
+					if (it->second.m_bodies[0].get() == &m_ground) groundTest(it->second);
+
+
+					//SAT(it->second);						//yes - test it
 					++it;
 				}
 				else { m_contacts.erase(it); }				//no - erase from container
 			}
 		}
+
+
+		void groundTest(Contact& contact) {
+			if (contact.m_bodies[1]->m_positionW.y > contact.m_bodies[1]->boundingSphereRadius()) return;
+			contact.m_contact_points.clear();
+			int_t cnt = 0;
+			for (auto& vL : contact.m_bodies[1]->m_polytope->m_vertices) {
+				auto vW = contact.m_bodies[1]->m_model * glmvec4{ vL.m_positionL, 1 };
+				if (vW.y < 0) {
+					contact.m_contact_points.emplace_back(glmvec3{ vW }, glmvec3{ 0,1,0 });
+					if (++cnt > 3) return;
+				}
+			}
+		}
+
 
 		struct EdgeQuery {
 			uint_t	m_reference;
