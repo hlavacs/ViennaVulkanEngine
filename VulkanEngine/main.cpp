@@ -15,6 +15,8 @@
 
 #define GLM_FORCE_LEFT_HANDED
 #include "glm/glm.hpp"
+#include "glm/gtx/matrix_operation.hpp"
+
 
 #if 1
 using real = double;
@@ -79,9 +81,9 @@ namespace ve {
 	public:
 
 		struct Force {
-			glmvec3 m_positionL{0.0};		//position in local space
-			glmvec3 m_forceL{0.0};			//force vector in local space
-			glmvec3 m_forceW{ 0.0 };		//force vector in world space attached at mass center
+			glmvec3 m_positionL{0.0};	//position in local space
+			glmvec3 m_forceL{0.0};		//force vector in local space
+			glmvec3 m_forceW{0.0};		//force vector in world space 
 		};
 
 		struct Face;
@@ -181,9 +183,9 @@ namespace ve {
 			glmvec3		m_scale{ 1,1,1 };				//scale factor in local space
 
 			real		m_inv_mass{ 0 };				//1 over mass
-			glmvec3		m_inertia{ 1,1,1 };				//inertia tensor diagonal
-			real		m_restitution{ 0.0_real };			//coefficient of restitution eps
-			real		m_friction{ 0.5_real };				//coefficient of friction mu
+			glmmat3		m_inertia{ glm::diagonal3x3(glmvec3{ 1,1,1 }) };	//inertia tensor 
+			real		m_restitution{ 0.0_real };		//coefficient of restitution eps
+			real		m_friction{ 0.5_real };			//coefficient of friction mu
 
 			glmquat		m_orientationLW{ 1, 0, 0, 0 };	//current orientation at time slot Local -> World
 			glmvec3		m_linear_velocityW{ 0,0,0 };	//linear velocity at time slot in world space
@@ -193,6 +195,7 @@ namespace ve {
 
 			glmmat4		m_model;						//model matrix at time slots
 			glmmat4		m_model_inv;					//model inverse matrix at time slots
+			glmmat3		m_inertia_inv{ glm::diagonal3x3(glmvec3{ 1,1,1 }) };	//inverse inertia tensor diagonal
 
 			std::function<void(double, std::shared_ptr<Body>)>* m_on_move = nullptr; //called if the body moves
 
@@ -259,20 +262,20 @@ namespace ve {
 
 			std::array<std::shared_ptr<Body>, 2> m_bodies{};	//pointer to the two bodies involved into this contact
 			uint64_t					m_last_loop{ std::numeric_limits<uint64_t>::max() }; //number of last loop this contact was valid
-			real						m_separation_distance{ 0.0 };			//distance between the objects (if negative then they overlap)
-			glmvec3						m_separating_axisL{0.0};				//Axis that separates the two bodies in object space A
+			real						m_separation_distance{ 0.0 };	//distance between the objects (if negative then they overlap)
+			glmvec3						m_separating_axisL{0.0};		//Axis that separates the two bodies in object space A
 			Face*						m_reference_face;		//pointers to the colling reference face
 			Face*						m_incident_face;		//pointers to the colling incident face
-			std::vector<ContactPoint>	m_contact_points{};		//up to 4 contact points in contact manifold
+			std::vector<ContactPoint>	m_contact_points{};		//Contact points in contact manifold
 		};
 
 	protected:
 
 		uint64_t		m_loop{ 0L };
-		double			m_last_time{ 0.0 };					//last time the sim was interpolated
-		double			m_last_slot{ 0.0 };					//last time the sim was calculated
-		const double	m_delta_slot{ 1.0 / 60.0 };			//sim frequency
-		double			m_next_slot{ m_delta_slot };		//next time for simulation
+		double			m_last_time{ 0.0 };				//last time the sim was interpolated
+		double			m_last_slot{ 0.0 };				//last time the sim was calculated
+		const double	m_delta_slot{ 1.0 / 60.0 };		//sim frequency
+		double			m_next_slot{ m_delta_slot };	//next time for simulation
 
 		using body_map = std::unordered_map<void*, std::shared_ptr<Body>>;
 		body_map		m_bodies;							//main container of all bodies
@@ -285,8 +288,12 @@ namespace ve {
 
 		std::unordered_map<voidppair_t, Contact> m_contacts;	//possible contacts resulting from broadphase
 
+		bool onKeyboard(veEvent event)
+		{
+			return false;
+		};
 
-		virtual void onFrameStarted(veEvent event) {
+		void onFrameStarted(veEvent event) {
 			//getSceneManagerPointer()->getSceneNode("The Cube Parent")->setPosition(glmvec3(d(e), 1.0f, d(e)));
 			//glmvec3 positionCube   = getSceneManagerPointer()->getSceneNode("The Cube Parent")->getPosition();
 			//glmvec3 positionCamera = getSceneManagerPointer()->getSceneNode("StandardCameraParent")->getPosition();
@@ -384,7 +391,10 @@ namespace ve {
 			}
 		}
 
-
+		/// <summary>
+		/// Test if a body collides with the ground.
+		/// </summary>
+		/// <param name="contact">The contact information between ground and the body.</param>
 		void groundTest(Contact& contact) {
 			if (contact.m_bodies[1]->m_positionW.y > contact.m_bodies[1]->boundingSphereRadius()) return;
 			int_t cnt = 0;
@@ -587,6 +597,7 @@ namespace ve {
 			VEEngine::registerEventListeners();
 
 			registerEventListener(m_physics = new EventListenerPhysics("Physics"), { veEvent::VE_EVENT_FRAME_STARTED });
+			registerEventListener(m_physics, { veEvent::VE_EVENT_KEYBOARD });
 		};
 		
 
