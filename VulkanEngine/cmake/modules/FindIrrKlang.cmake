@@ -32,7 +32,7 @@ FIND_PATH(IRRKLANG_INCLUDE_DIR "irrKlang.h"
 # Search for the library
 SET(_irrklang_LIBRARY_NAME "irrKlang")
 if(UNIX AND NOT APPLE)
-    SET(_irrklang_LIBRARY_NAME "irrKlang.so")
+    SET(_irrklang_LIBRARY_NAME "libIrrKlang.so")
 elseif(UNIX AND APPLE)
     SET(_irrklang_LIBRARY_NAME "libirrklang.dylib")
 endif(UNIX AND NOT APPLE)
