@@ -16,7 +16,8 @@
 #define GLM_FORCE_LEFT_HANDED
 #include "glm/glm.hpp"
 #include "glm/gtx/matrix_operation.hpp"
-#include <glm/gtx/quaternion.hpp>
+#include "glm/gtc/quaternion.hpp"
+#include "glm/gtx/quaternion.hpp"
 
 #if 1
 using real = double;
@@ -118,15 +119,19 @@ namespace ve {
 
 			real m_bounding_sphere_radius{ 1.0_real };
 
+			using inertia_tensor_t = std::function<glmmat3(real, glmvec3&)>;
+			inertia_tensor_t inertiaTensor;
+
 			/// <summary>
 			/// Constructor for Polytope. Take in a list of vector positions and indices and create the polygon data struct.
 			/// </summary>
 			/// <param name="vertices">Vertex positions in local space.</param>
 			/// <param name="edgeindices">One pair of vector indices for each edge. </param>
 			/// <param name="face_edge_indices">For each face a list of pairs edge index - orientation factor (1.0 or -1.0)</param>
-			Polytope(const std::vector<glmvec3>& vertices, const std::vector<std::pair<uint_t, uint_t>>&& edgeindices, const std::vector < std::vector<std::pair<uint_t,real>> >&& face_edge_indices)
-				: Collider{}, m_vertices{}, m_edges{}, m_faces{} {
-
+			Polytope(	const std::vector<glmvec3>& vertices, const std::vector<std::pair<uint_t, uint_t>>&& edgeindices, 
+						const std::vector < std::vector<std::pair<uint_t,real>> >&& face_edge_indices, inertia_tensor_t inertia_tensor)
+				: Collider{}, m_vertices{}, m_edges{}, m_faces{}, inertiaTensor{ inertia_tensor } {
+			
 				std::ranges::for_each(vertices, [&](const glmvec3& v) { 
 						m_vertices.emplace_back(v);
 						if (real l = glm::length(v) > m_bounding_sphere_radius) m_bounding_sphere_radius = l;
@@ -160,12 +165,16 @@ namespace ve {
 				}
 			};
 
+
 		};
 
 		Polytope g_cube {
 				{ {-0.5, -0.5, -0.5}, { -0.5,-0.5,0.5 }, { -0.5,0.5,0.5 }, { -0.5,0.5,-0.5 }, { 0.5,-0.5,-0.5 }, { 0.5,-0.5,0.5 }, { 0.5,0.5,0.5 }, { 0.5,0.5,-0.5 } },
 				{},
-				{} 
+				{},
+				[&](real mass, glmvec3& s) {
+					return mass * glmmat3{ {s.y * s.y + s.z * s.z,0,0}, {0,s.x * s.x + s.z * s.z,0}, {0,0,s.y * s.y + s.z * s.z} } / 12.0;
+				}
 		};
 
 		struct Support {
@@ -179,17 +188,17 @@ namespace ve {
 
 		class Body {
 		public:
-			void* m_owner = nullptr;				//pointer to owner of this body
-			Polytope* m_polytope = nullptr;			//geometric shape
+			void*		m_owner = nullptr;				//pointer to owner of this body
+			Polytope*	m_polytope = nullptr;			//geometric shape
 			glmvec3		m_scale{ 1,1,1 };				//scale factor in local space
 			glmvec3		m_positionW{ 0, 0, 0 };			//current position at time slot in world space
-			glmquat		m_orientationLW{ 1, 0, 0, 0 };	//current orientation at time slot Local -> World
+			glmquat		m_orientationLW{ {0, 0, 0} };	//current orientation at time slot Local -> World
 			glmvec3		m_linear_velocityW{ 0,0,0 };	//linear velocity at time slot in world space
 			glmvec3		m_angular_velocityW{ 0,0,0 };	//angular velocity at time slot in world space
 			body_callback* m_on_move = nullptr;			//called if the body moves
 
-			real		m_mass_inv{ 0 };				//1 over mass
-			glmmat3		m_inertia_invL{ glmmat3{ c_eps } };	//inverse inertia tensor diagonal
+			real		m_mass_inv{ c_eps };			//1 over mass
+			//glmmat3		m_inertia_invL{ glmmat3{ c_eps } };	//inverse inertia tensor diagonal
 			real		m_restitution{ 0.0_real };		//coefficient of restitution eps
 			real		m_friction{ 0.5_real };			//coefficient of friction mu
 
@@ -202,22 +211,27 @@ namespace ve {
 
 			Body() {};
 
-			Body(void* owner, Polytope* polytope, glmvec3 scale, glmvec3 positionW, glmquat orientationLW = glmquat{1,0,0,0}, 
+			Body(void* owner, Polytope* polytope, glmvec3 scale, glmvec3 positionW, glmquat orientationLW = glmvec3{0,0,0}, 
 				body_callback* on_move = nullptr, glmvec3 linear_velocityW = glmvec3{ 0,0,0 }, glmvec3 angular_velocityW = glmvec3{0,0,0}, 
-				real mass_inv = 0, glmmat3 inertia_invL = glmmat3{c_eps}, real restitution = 0.0_real, real friction = 0.5_real ) :
+				real mass_inv = 0, real restitution = 0.0_real, real friction = 0.5_real ) :
 					m_owner{owner}, m_polytope{polytope}, m_scale{scale}, m_positionW{positionW}, m_orientationLW{orientationLW},
 					m_on_move{on_move}, m_linear_velocityW{linear_velocityW}, m_angular_velocityW{ angular_velocityW }, 
-					m_mass_inv{mass_inv}, m_inertia_invL{inertia_invL}, m_restitution{restitution}, m_friction{friction} { updateMatrices(); };
+					m_mass_inv{mass_inv}, m_restitution{restitution}, m_friction{friction} { updateMatrices(); };
 
-			bool stepPosition(double dt, glmvec3& pos, glmquat quat) {
-				if (abs(glm::dot(m_linear_velocityW, m_linear_velocityW)) < c_eps * c_eps) return false;
-				pos = m_positionW + m_linear_velocityW * (real)dt;
-
-				real len = glm::length(m_angular_velocityW);
-				if (abs(len) > c_eps) {
-					quat = glm::rotate(m_orientationLW, len * (real)dt, m_angular_velocityW * 1.0 / len);
+			bool stepPosition(double dt, glmvec3& pos, glmquat& quat) {
+				bool active = false;
+				if (abs(glm::dot(m_linear_velocityW, m_linear_velocityW)) > c_eps * c_eps) {
+					pos = m_positionW + m_linear_velocityW * (real)dt;
+					active = true;
 				}
-				return true;
+
+				auto avW = glmmat3{ m_model_inv } * m_angular_velocityW;
+				real len = glm::length(avW);
+				if (abs(len) > c_eps) {
+					quat = glm::rotate(m_orientationLW, len * (real)dt, avW * 1.0 / len);
+					active = true;
+				}
+				return active;
 			};
 
 			bool stepVelocity(double dt, glmvec3& vec, glmvec3& rot ) {
@@ -236,15 +250,19 @@ namespace ve {
 				return std::max( m_scale.x, std::max(m_scale.y, m_scale.z)) * m_polytope->m_bounding_sphere_radius;
 			}
 
-			static glmmat4 computeModel( glmvec3 pos, glmquat orient, glmvec3 scale ) { 
+			glmmat3 inertiaTensorL() {
+				return m_polytope->inertiaTensor(1.0/m_mass_inv, m_scale ) / m_mass_inv;
+			}
+
+			static glmmat4 computeModel( glmvec3& pos, glmquat& orient, glmvec3& scale ) { 
 				return glm::translate(glmmat4{ 1.0 }, pos) * glm::mat4_cast(orient) * glm::scale(glmmat4{ 1.0 }, scale);
 			};
 
 			void updateMatrices() {
 				m_model = Body::computeModel(m_positionW, m_orientationLW, m_scale);
 				m_model_inv = glm::inverse(m_model);
-				m_inertia_invW = glmmat3{ m_model } * m_inertia_invL * glmmat3{ m_model_inv };
-				m_inertiaW = glm::inverse(m_inertia_invW);
+				m_inertiaW = glmmat3{ m_model } * inertiaTensorL() * glmmat3 { m_model_inv };
+				m_inertia_invW = glm::inverse(m_inertiaW);
 			}
 
 			auto maxFaceAlignment(glmvec3 dirL, glmmat4 BtoA) -> std::pair<uint_t, real> {
@@ -315,7 +333,10 @@ namespace ve {
 
 		std::function<void(double, std::shared_ptr<Body>)> onMove = [&](double dt, std::shared_ptr<Body> body) {
 			VESceneNode* cube = static_cast<VESceneNode*>(body->m_owner);
-			cube->setTransform(glm::translate(glm::mat4_cast(body->m_orientationLW), glmvec3{body->m_positionW}));
+			glmvec3 pos = body->m_positionW;
+			glmquat orient = body->m_orientationLW;
+			body->stepPosition(dt, pos, orient);
+			cube->setTransform(Body::computeModel(pos, orient, body->m_scale));
 		};
 
 		void addBody( std::shared_ptr<Body> pbody ) {
@@ -329,11 +350,11 @@ namespace ve {
 			if (event.idata1 == GLFW_KEY_SPACE && event.idata3 == GLFW_PRESS) {
 				glmvec3 positionCamera{ getSceneManagerPointer()->getSceneNode("StandardCameraParent")->getWorldTransform()[3] };
 				glmvec3 dir{ getSceneManagerPointer()->getSceneNode("StandardCamera")->getWorldTransform()[2]};
-				glmvec3 vel{0,0,0}; // dir / glm::length(dir);
+				glmvec3 vel{0,0,0}; // = dir / glm::length(dir);
 
 				VESceneNode *cube;
 				VECHECKPOINTER(cube = getSceneManagerPointer()->loadModel("The Cube"+ std::to_string(++cubeid)  , "media/models/test/crate0", "cube.obj", 0, getRoot()) );
-				Body body{ cube, &g_cube, {1,1,1}, positionCamera, {1, 0, 0, 0}, &onMove, vel, {1,0,0}, 1.0_real };
+				Body body{ cube, &g_cube, {1,1,1}, positionCamera, glm::rotate( 20.0*M_PI / 180.0, glmvec3{ 0, 0, 1 } ), &onMove, vel, {0,1,0}, 1.0_real};
 				//body.m_forces.insert( { 0ul, Force{} } );
 				addBody(std::make_shared<Body>(body));
 			}
@@ -357,10 +378,11 @@ namespace ve {
 				m_last_slot = m_next_slot;
 				m_next_slot += m_delta_slot;
 			}
-			for (auto& c : m_bodies)
-				if(c.second->m_on_move != nullptr) 
+			for (auto& c : m_bodies) {
+				if (c.second->m_on_move != nullptr) {
 					(*c.second->m_on_move)(current_time - m_last_slot, c.second); //predict new pos/orient
-
+				}
+			}
 			m_last_time = current_time;
 		};
 
