@@ -16,7 +16,7 @@
 #define GLM_FORCE_LEFT_HANDED
 #include "glm/glm.hpp"
 #include "glm/gtx/matrix_operation.hpp"
-
+#include <glm/gtx/quaternion.hpp>
 
 #if 1
 using real = double;
@@ -81,9 +81,9 @@ namespace ve {
 	public:
 
 		struct Force {
-			glmvec3 m_positionL{0.0};	//position in local space
-			glmvec3 m_forceL{0.0};		//force vector in local space
-			glmvec3 m_forceW{0.0};		//force vector in world space 
+			glmvec3 m_positionL{0,0,0};		//position in local space
+			glmvec3 m_forceL{0,0,0};		//force vector in local space
+			glmvec3 m_forceW{0,-1,0};		//force vector in world space 
 		};
 
 		struct Face;
@@ -116,7 +116,7 @@ namespace ve {
 			std::vector<Edge>	m_edges{};			//list of edges
 			std::vector<Face>	m_faces{};			//list of faces
 
-			real m_bounding_sphere_radius{ std::numeric_limits<real>::min() };
+			real m_bounding_sphere_radius{ 1.0_real };
 
 			/// <summary>
 			/// Constructor for Polytope. Take in a list of vector positions and indices and create the polygon data struct.
@@ -168,49 +168,67 @@ namespace ve {
 				{} 
 		};
 
-
-
 		struct Support {
 			Vertex* m_vertexB;		//vertex in local space of B
 			glmvec3 m_positionA;	//vertex position in local space of A
 			real	m_distanceA;	//distance in space A
 		};
 
-		struct Body {
-			void*		m_owner = nullptr;				//pointer to owner of this body
-			Polytope*	m_polytope = nullptr;			//geometric shape
-			glmvec3		m_positionW{ 0, 0, 0 };			//current position at time slot in world space
+		class Body;
+		using body_callback = std::function<void(double, std::shared_ptr<Body>)>;
+
+		class Body {
+		public:
+			void* m_owner = nullptr;				//pointer to owner of this body
+			Polytope* m_polytope = nullptr;			//geometric shape
 			glmvec3		m_scale{ 1,1,1 };				//scale factor in local space
-
-			real		m_inv_mass{ 0 };				//1 over mass
-			glmmat3		m_inertia{ glm::diagonal3x3(glmvec3{ 1,1,1 }) };	//inertia tensor 
-			real		m_restitution{ 0.0_real };		//coefficient of restitution eps
-			real		m_friction{ 0.5_real };			//coefficient of friction mu
-
+			glmvec3		m_positionW{ 0, 0, 0 };			//current position at time slot in world space
 			glmquat		m_orientationLW{ 1, 0, 0, 0 };	//current orientation at time slot Local -> World
 			glmvec3		m_linear_velocityW{ 0,0,0 };	//linear velocity at time slot in world space
 			glmvec3		m_angular_velocityW{ 0,0,0 };	//angular velocity at time slot in world space
+			body_callback* m_on_move = nullptr;			//called if the body moves
+
+			real		m_mass_inv{ 0 };				//1 over mass
+			glmmat3		m_inertia_invL{ glmmat3{ c_eps } };	//inverse inertia tensor diagonal
+			real		m_restitution{ 0.0_real };		//coefficient of restitution eps
+			real		m_friction{ 0.5_real };			//coefficient of friction mu
 
 			std::unordered_map<uint64_t, Force> m_forces;//forces acting on this body
 
-			glmmat4		m_model;						//model matrix at time slots
-			glmmat4		m_model_inv;					//model inverse matrix at time slots
-			glmmat3		m_inertia_inv{ glm::diagonal3x3(glmvec3{ 1,1,1 }) };	//inverse inertia tensor diagonal
+			glmmat4		m_model{ glmmat4{1} };		//model matrix at time slots
+			glmmat4		m_model_inv{ glmmat4{1} };	//model inverse matrix at time slots
+			glmmat3		m_inertiaW{ glmmat4{1} };		//inverse inertia tensor diagonal
+			glmmat3		m_inertia_invW{ glmmat4{1} };	//inverse inertia tensor diagonal
 
-			std::function<void(double, std::shared_ptr<Body>)>* m_on_move = nullptr; //called if the body moves
+			Body() {};
+
+			Body(void* owner, Polytope* polytope, glmvec3 scale, glmvec3 positionW, glmquat orientationLW = glmquat{1,0,0,0}, 
+				body_callback* on_move = nullptr, glmvec3 linear_velocityW = glmvec3{ 0,0,0 }, glmvec3 angular_velocityW = glmvec3{0,0,0}, 
+				real mass_inv = 0, glmmat3 inertia_invL = glmmat3{c_eps}, real restitution = 0.0_real, real friction = 0.5_real ) :
+					m_owner{owner}, m_polytope{polytope}, m_scale{scale}, m_positionW{positionW}, m_orientationLW{orientationLW},
+					m_on_move{on_move}, m_linear_velocityW{linear_velocityW}, m_angular_velocityW{ angular_velocityW }, 
+					m_mass_inv{mass_inv}, m_inertia_invL{inertia_invL}, m_restitution{restitution}, m_friction{friction} { updateMatrices(); };
 
 			bool stepPosition(double dt, glmvec3& pos, glmquat quat) {
 				if (abs(glm::dot(m_linear_velocityW, m_linear_velocityW)) < c_eps * c_eps) return false;
 				pos = m_positionW + m_linear_velocityW * (real)dt;
 
 				real len = glm::length(m_angular_velocityW);
-				if (abs(len) < c_eps) return false;
-				quat = glm::rotate(m_orientationLW, len * (real)dt, m_angular_velocityW * 1.0 / len);
-
+				if (abs(len) > c_eps) {
+					quat = glm::rotate(m_orientationLW, len * (real)dt, m_angular_velocityW * 1.0 / len);
+				}
 				return true;
 			};
 
-			bool stepVelocity(double dt) {
+			bool stepVelocity(double dt, glmvec3& vec, glmvec3& rot ) {
+				glmvec3 sum_forces{0};
+				glmvec3 sum_torques{ 0 };
+				for (auto& force : m_forces) { 
+					sum_forces  += glmmat3{ m_model } * force.second.m_forceL + force.second.m_forceW;
+					sum_torques += glmmat3{ m_model } * glm::cross(force.second.m_positionL ,force.second.m_forceL );
+				}
+				vec += dt * m_mass_inv * sum_forces;
+				rot += dt * m_inertia_invW * ( sum_torques - glm::cross( rot, m_inertiaW * rot));
 				return true;
 			}
 
@@ -221,6 +239,13 @@ namespace ve {
 			static glmmat4 computeModel( glmvec3 pos, glmquat orient, glmvec3 scale ) { 
 				return glm::translate(glmmat4{ 1.0 }, pos) * glm::mat4_cast(orient) * glm::scale(glmmat4{ 1.0 }, scale);
 			};
+
+			void updateMatrices() {
+				m_model = Body::computeModel(m_positionW, m_orientationLW, m_scale);
+				m_model_inv = glm::inverse(m_model);
+				m_inertia_invW = glmmat3{ m_model } * m_inertia_invL * glmmat3{ m_model_inv };
+				m_inertiaW = glm::inverse(m_inertia_invW);
+			}
 
 			auto maxFaceAlignment(glmvec3 dirL, glmmat4 BtoA) -> std::pair<uint_t, real> {
 				real max_abs_face_alignment{ std::numeric_limits<real>::min() };
@@ -283,25 +308,39 @@ namespace ve {
 		const double	c_width{5};							//grid cell width (m)
 		std::unordered_map< intpair_t, body_map > m_grid;	//broadphase grid
 
-		Body			m_ground{nullptr, &g_cube, { 0, -500.0_real, 0 } , { 1000, 1000, 1000 } };
-		body_map		m_global_cell{ { nullptr, std::make_shared<Body>(&m_ground) } };	//cell containing the ground
+		Body			m_ground{ nullptr, &g_cube , { 1000, 1000, 1000 } , { 0, -500.0_real, 0 }, {1,0,0,0} };
+		body_map		m_global_cell{ { nullptr, std::make_shared<Body>(m_ground) } };	//cell containing the ground
 
 		std::unordered_map<voidppair_t, Contact> m_contacts;	//possible contacts resulting from broadphase
 
-		bool onKeyboard(veEvent event)
-		{
+		std::function<void(double, std::shared_ptr<Body>)> onMove = [&](double dt, std::shared_ptr<Body> body) {
+			VESceneNode* cube = static_cast<VESceneNode*>(body->m_owner);
+			cube->setTransform(glm::translate(glm::mat4_cast(body->m_orientationLW), glmvec3{body->m_positionW}));
+		};
+
+		void addBody( std::shared_ptr<Body> pbody ) {
+			m_bodies.insert( { pbody->m_owner, pbody } );
+			m_grid[intpair_t{ static_cast<int_t>(pbody->m_positionW.x / c_width), static_cast<int_t>(pbody->m_positionW.y / c_width) }].insert({ pbody->m_owner, pbody });
+		}
+
+		bool onKeyboard(veEvent event) {
+			static int64_t cubeid = 0;
+
+			if (event.idata1 == GLFW_KEY_SPACE && event.idata3 == GLFW_PRESS) {
+				glmvec3 positionCamera{ getSceneManagerPointer()->getSceneNode("StandardCameraParent")->getWorldTransform()[3] };
+				glmvec3 dir{ getSceneManagerPointer()->getSceneNode("StandardCamera")->getWorldTransform()[2]};
+				glmvec3 vel{0,0,0}; // dir / glm::length(dir);
+
+				VESceneNode *cube;
+				VECHECKPOINTER(cube = getSceneManagerPointer()->loadModel("The Cube"+ std::to_string(++cubeid)  , "media/models/test/crate0", "cube.obj", 0, getRoot()) );
+				Body body{ cube, &g_cube, {1,1,1}, positionCamera, {1, 0, 0, 0}, &onMove, vel, {1,0,0}, 1.0_real };
+				//body.m_forces.insert( { 0ul, Force{} } );
+				addBody(std::make_shared<Body>(body));
+			}
 			return false;
 		};
 
 		void onFrameStarted(veEvent event) {
-			//getSceneManagerPointer()->getSceneNode("The Cube Parent")->setPosition(glmvec3(d(e), 1.0f, d(e)));
-			//glmvec3 positionCube   = getSceneManagerPointer()->getSceneNode("The Cube Parent")->getPosition();
-			//glmvec3 positionCamera = getSceneManagerPointer()->getSceneNode("StandardCameraParent")->getPosition();
-			//VESceneNode *eParent = getSceneManagerPointer()->getSceneNode("The Cube Parent");
-			//eParent->setPosition(glmvec3(d(e), 1.0f, d(e)));
-			//getSceneManagerPointer()->deleteSceneNodeAndChildren("The Cube"+ std::to_string(cubeid));
-			//VECHECKPOINTER(getSceneManagerPointer()->loadModel("The Cube"+ std::to_string(++cubeid)  , "media/models/test/crate0", "cube.obj", 0, eParent) );
-
 			double current_time = m_last_time + event.dt;
 			while (current_time > m_next_slot) {
 				++m_loop;
@@ -310,14 +349,9 @@ namespace ve {
 				applyImpulses();
 
 				for (auto& c : m_bodies) {
-					c.second->stepVelocity(m_delta_slot);
-				}
-
-				for (auto& c : m_bodies) {
-					if( c.second->stepPosition(m_delta_slot, c.second->m_positionW, c.second->m_orientationLW )) {					
-						c.second->m_model = Body::computeModel(c.second->m_positionW, c.second->m_orientationLW, c.second->m_scale);
-						c.second->m_model_inv = glm::inverse(c.second->m_model);
-					}
+					auto& body = c.second;
+					body->stepVelocity(m_delta_slot, body->m_linear_velocityW, body->m_angular_velocityW);
+					if(body->stepPosition(m_delta_slot, body->m_positionW, body->m_orientationLW )) { body->updateMatrices(); }
 				}
 
 				m_last_slot = m_next_slot;
@@ -348,7 +382,6 @@ namespace ve {
 			}
 		}
 
-
 		/// <summary>
 		/// Create pairs of objects that can touch each other. These are either in the same grid cell,
 		/// or in neighboring cells. Go through all pairs of neighboring cells and create possible 
@@ -359,7 +392,7 @@ namespace ve {
 			const std::array<intpair_t, 5> c_pairs{ { {0,0}, {1,0}, {-1,-1}, {0,-1}, {1,-1} } }; //neighbor cells
 
 			for (auto& cell : m_grid) {		//loop through all cells that are currently not empty.
-				makeBodyPairs(m_global_cell, cell.second);		//test all bodies against the ground
+				//makeBodyPairs(m_global_cell, cell.second);		//test all bodies against the ground
 				//for (auto& pi : c_pairs) {	//create pairs of neighborig cells and make body pairs.
 				//	intpair_t ni = { cell.first.first + pi.first, cell.first.second + pi.second };
 				//	if ( m_grid.count(ni) > 0) makeBodyPairs(cell.second, m_grid.at(ni)); 
@@ -625,11 +658,11 @@ namespace ve {
 			VECHECKPOINTER( pE4 = (VEEntity*)getSceneManagerPointer()->getSceneNode("The Plane/plane_t_n_s.obj/plane/Entity_0") );
 			pE4->setParam( glm::vec4(1000.0f, 1000.0f, 0.0f, 0.0f) );
 
-			VESceneNode *e1,*eParent;
-			eParent = getSceneManagerPointer()->createSceneNode("The Cube Parent", pScene, glm::mat4(1.0));
-			VECHECKPOINTER(e1 = getSceneManagerPointer()->loadModel("The Cube0", "media/models/test/crate0", "cube.obj"));
-			eParent->multiplyTransform(glm::translate(glm::mat4(1.0f), glm::vec3(-10.0f, 1.0f, 10.0f)));
-			eParent->addChild(e1);
+			//VESceneNode *e1,*eParent;
+			//eParent = getSceneManagerPointer()->createSceneNode("The Cube Parent", pScene, glm::mat4(1.0));
+			//VECHECKPOINTER(e1 = getSceneManagerPointer()->loadModel("The Cube0", "media/models/test/crate0", "cube.obj"));
+			//eParent->multiplyTransform(glm::translate(glm::mat4(1.0f), glm::vec3(-10.0f, 1.0f, 10.0f)));
+			//eParent->addChild(e1);
 		};
 	};
 
