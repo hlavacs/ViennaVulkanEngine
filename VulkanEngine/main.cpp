@@ -84,7 +84,8 @@ namespace ve {
 		struct Force {
 			glmvec3 m_positionL{0,0,0};		//position in local space
 			glmvec3 m_forceL{0,0,0};		//force vector in local space
-			glmvec3 m_forceW{0,-1,0};		//force vector in world space 
+			glmvec3 m_forceW{0,0,0};		//force vector in world space 
+			glmvec3 m_accelW{ 0,-9.81,0 };	//acceleration in world space 
 		};
 
 		struct Face;
@@ -236,14 +237,16 @@ namespace ve {
 			};
 
 			bool stepVelocity(double dt, glmvec3& vec, glmvec3& rot ) {
-				glmvec3 sum_forces{0};
-				glmvec3 sum_torques{ 0 };
+				glmvec3 sum_accelW{ 0 };
+				glmvec3 sum_forcesW{ 0 };
+				glmvec3 sum_torquesW{ 0 };
 				for (auto& force : m_forces) { 
-					sum_forces  += glmmat3{ m_model } * force.second.m_forceL + force.second.m_forceW;
-					sum_torques += glmmat3{ m_model } * glm::cross(force.second.m_positionL ,force.second.m_forceL );
+					sum_accelW += force.second.m_accelW;
+					sum_forcesW  += glmmat3{ m_model } * force.second.m_forceL + force.second.m_forceW;
+					sum_torquesW += glm::cross(glmmat3{m_model}*force.second.m_positionL, glmmat3{m_model}*force.second.m_forceL);
 				}
-				vec += dt * m_mass_inv * sum_forces;
-				rot += dt * m_inertia_invW * ( sum_torques - glm::cross( rot, m_inertiaW * rot));
+				vec += dt * (m_mass_inv * sum_forcesW + sum_accelW);
+				rot += dt * m_inertia_invW * ( sum_torquesW - glm::cross( rot, m_inertiaW * rot));
 				return true;
 			}
 
@@ -252,7 +255,9 @@ namespace ve {
 			}
 
 			glmmat3 inertiaTensorL() {
-				return m_inertiaL = m_polytope->inertiaTensor(1.0/m_mass_inv, m_scale );
+				m_inertiaL = m_polytope->inertiaTensor(1.0/m_mass_inv, m_scale );
+				m_inertia_invL = glm::inverse(m_inertiaL);
+				return m_inertiaL;
 			}
 
 			static glmmat4 computeModel( glmvec3& pos, glmquat& orient, glmvec3& scale ) { 
@@ -263,7 +268,7 @@ namespace ve {
 				m_model = Body::computeModel(m_positionW, m_orientationLW, m_scale);
 				m_model_inv = glm::inverse(m_model);
 				m_inertiaW = glmmat3{ m_model } * m_inertiaL * glmmat3 { m_model_inv };
-				m_inertia_invW = glm::inverse(m_inertiaW);
+				m_inertia_invW = glmmat3{ m_model } * m_inertia_invL * glmmat3{ m_model_inv }; ; // glm::inverse(m_inertiaW);
 			}
 
 			auto maxFaceAlignment(glmvec3 dirL, glmmat4 BtoA) -> std::pair<uint_t, real> {
@@ -300,8 +305,8 @@ namespace ve {
 
 		struct Contact {
 			struct ContactPoint {
-				glmvec3 m_positionL{};
-				glmvec3 m_normalL{};
+				glmvec3 m_positionW{0};
+				glmvec3 m_normalW{0};
 			};
 
 			std::array<std::shared_ptr<Body>, 2> m_bodies{};	//pointer to the two bodies involved into this contact
@@ -318,7 +323,7 @@ namespace ve {
 		uint64_t		m_loop{ 0L };
 		double			m_last_time{ 0.0 };				//last time the sim was interpolated
 		double			m_last_slot{ 0.0 };				//last time the sim was calculated
-		const double	m_delta_slot{ 1.0 / 60.0 };		//sim frequency
+		const double	m_delta_slot{ 1.0 / 120.0 };		//sim frequency
 		double			m_next_slot{ m_delta_slot };	//next time for simulation
 
 		using body_map = std::unordered_map<void*, std::shared_ptr<Body>>;
@@ -351,14 +356,14 @@ namespace ve {
 			if (event.idata1 == GLFW_KEY_SPACE && event.idata3 == GLFW_PRESS) {
 				glmvec3 positionCamera{ getSceneManagerPointer()->getSceneNode("StandardCameraParent")->getWorldTransform()[3] };
 				glmvec3 dir{ getSceneManagerPointer()->getSceneNode("StandardCamera")->getWorldTransform()[2]};
-				glmvec3 vel = 100.0 * dir / glm::length(dir);
+				glmvec3 vel{0};// = 30.0 * dir / glm::length(dir);
 				auto r0 = rnd_unif(rnd_gen) * 10;
 				auto r1 = rnd_unif(rnd_gen) * 10 * 3 * M_PI / 180.0;
 				auto r2 = rnd_unif(rnd_gen) * 10;
 
 				VESceneNode *cube;
 				VECHECKPOINTER(cube = getSceneManagerPointer()->loadModel("The Cube"+ std::to_string(++cubeid)  , "media/models/test/crate0", "cube.obj", 0, getRoot()) );
-				Body body{ cube, &g_cube, {1,1,r0}, positionCamera, glm::rotate( r1, glmvec3{ 1, 0, 1 } ), &onMove, vel, {0,r2,0}, 100.0_real};
+				Body body{ cube, &g_cube, {1,1,r0}, positionCamera, glm::rotate( r1, glmvec3{ 1, 0, 1 } ), &onMove, vel, {0,0,r2}, 1,0/100.0_real};
 				body.m_forces.insert( { 0ul, Force{} } );
 				addBody(std::make_shared<Body>(body));
 			}
@@ -436,7 +441,7 @@ namespace ve {
 				auto& contact = it->second;
 				contact.m_contact_points.clear();
 				if (contact.m_last_loop == m_loop ) {	//is contact still possible?
-					if (contact.m_bodies[0].get() == &m_ground) groundTest(contact); //is the ref body the ground?
+					if (contact.m_bodies[0]->m_owner == nullptr) groundTest(contact); //is the ref body the ground?
 					else {
 						glmvec3 diff = contact.m_bodies[1]->m_positionW - contact.m_bodies[0]->m_positionW;
 						real rsum = contact.m_bodies[0]->boundingSphereRadius() + contact.m_bodies[1]->boundingSphereRadius();
@@ -456,24 +461,28 @@ namespace ve {
 		void groundTest(Contact& contact) {
 			if (contact.m_bodies[1]->m_positionW.y > contact.m_bodies[1]->boundingSphereRadius()) return;
 			int_t cnt = 0;
-			glmmat4 AtoB = contact.m_bodies[1]->m_model_inv * contact.m_bodies[0]->m_model; //transform to bring space A to space B
-			glmmat4 BtoA = contact.m_bodies[0]->m_model_inv * contact.m_bodies[1]->m_model; //transform to bring space B to space A
-
+			real min_depth{ std::numeric_limits<real>::max()};
 			for (auto& vL : contact.m_bodies[1]->m_polytope->m_vertices) {
 				auto vW = contact.m_bodies[1]->m_model * glmvec4{ vL.m_positionL, 1 };
 				if (vW.y < 0) {
-					contact.m_contact_points.emplace_back(glmvec3{ vW }, glmvec3{ 0,1,0 });
+					min_depth = std::min(min_depth,vW.y);
+					contact.m_contact_points.emplace_back( glmvec3{ vW }, glmvec3{ 0,1,0 } );
+					contact.m_bodies[1]->m_forces.clear();
+					contact.m_bodies[1]->m_linear_velocityW = {0,0,0};
+					contact.m_bodies[1]->m_angular_velocityW = { 0,0,0 };
+
 					//if (++cnt > 3) return;
 				}
 			}
+			contact.m_separation_distance = min_depth;
 		}
 
 
 		struct EdgeQuery {
 			uint_t	m_reference;
 			real	m_separation;
-			Edge* m_edge_ref;
-			Edge* m_edge_inc;
+			Edge*	m_edge_ref;
+			Edge*	m_edge_inc;
 		};
 
 		struct FaceQuery {
