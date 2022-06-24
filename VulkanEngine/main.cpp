@@ -75,8 +75,8 @@ namespace std {
 
 namespace ve {
 
-	static std::default_random_engine e{ 12345 };					//Random numbers
-	static std::uniform_real_distribution<> d{ -10.0f, 10.0f };		//Random numbers
+	static std::default_random_engine rnd_gen{ 12345 };					//Random numbers
+	static std::uniform_real_distribution<> rnd_unif{ 0.0f, 1.0f };		//Random numbers
 
 	class EventListenerPhysics : public VEEventListener {
 	public:
@@ -198,7 +198,6 @@ namespace ve {
 			body_callback* m_on_move = nullptr;			//called if the body moves
 
 			real		m_mass_inv{ c_eps };			//1 over mass
-			//glmmat3		m_inertia_invL{ glmmat3{ c_eps } };	//inverse inertia tensor diagonal
 			real		m_restitution{ 0.0_real };		//coefficient of restitution eps
 			real		m_friction{ 0.5_real };			//coefficient of friction mu
 
@@ -209,7 +208,7 @@ namespace ve {
 			glmmat3		m_inertiaW{ glmmat4{1} };		//inverse inertia tensor diagonal
 			glmmat3		m_inertia_invW{ glmmat4{1} };	//inverse inertia tensor diagonal
 
-			Body() {};
+			Body() { updateMatrices(); };
 
 			Body(void* owner, Polytope* polytope, glmvec3 scale, glmvec3 positionW, glmquat orientationLW = glmvec3{0,0,0}, 
 				body_callback* on_move = nullptr, glmvec3 linear_velocityW = glmvec3{ 0,0,0 }, glmvec3 angular_velocityW = glmvec3{0,0,0}, 
@@ -251,7 +250,7 @@ namespace ve {
 			}
 
 			glmmat3 inertiaTensorL() {
-				return m_polytope->inertiaTensor(1.0/m_mass_inv, m_scale ) / m_mass_inv;
+				return m_polytope->inertiaTensor(1.0/m_mass_inv, m_scale );
 			}
 
 			static glmmat4 computeModel( glmvec3& pos, glmquat& orient, glmvec3& scale ) { 
@@ -283,14 +282,14 @@ namespace ve {
 			/// </summary>
 			/// <param name="dirL">Search directory in local space.</param>
 			/// <param name="BtoA">Transform for the result.</param>
-			/// <returns>Pointer to vertex, poisition of vertex in local space of A and max distance into the direction, transformed by BtoA.</returns>
+			/// <returns>Pointer to vertex, position of vertex in local space of A and max distance into the direction, transformed by BtoA.</returns>
 			auto support(glmvec3 dirL, glmmat4 BtoA = glmmat4{ 1.0 }) -> Support {
 				Support ret{ nullptr, {}, std::numeric_limits<real>::min() };
 				if (m_polytope->m_vertices.size() == 0) return ret;
 
 				for ( auto & vert : m_polytope->m_vertices ) {
 					real dp = glm::dot(dirL, vert.m_positionL);
-					if (dp > ret.m_distanceA) { ret.m_vertexB = &vert;  ret.m_distanceA = dp; }
+					if (dp > ret.m_distanceA) { ret.m_vertexB = &vert; ret.m_distanceA = dp; }
 				}
 				ret.m_positionA = glmvec3{ BtoA * glmvec4{ ret.m_vertexB->m_positionL, 1.0 } };
 				return { ret.m_vertexB, ret.m_positionA, glm::dot(glmmat3{BtoA} * dirL, ret.m_positionA) };
@@ -351,10 +350,13 @@ namespace ve {
 				glmvec3 positionCamera{ getSceneManagerPointer()->getSceneNode("StandardCameraParent")->getWorldTransform()[3] };
 				glmvec3 dir{ getSceneManagerPointer()->getSceneNode("StandardCamera")->getWorldTransform()[2]};
 				glmvec3 vel{0,0,0}; // = dir / glm::length(dir);
+				auto r0 = rnd_unif(rnd_gen) * 10;
+				auto r1 = rnd_unif(rnd_gen) * 10 * 3 * M_PI / 180.0;
+				auto r2 = rnd_unif(rnd_gen) * 10;
 
 				VESceneNode *cube;
 				VECHECKPOINTER(cube = getSceneManagerPointer()->loadModel("The Cube"+ std::to_string(++cubeid)  , "media/models/test/crate0", "cube.obj", 0, getRoot()) );
-				Body body{ cube, &g_cube, {1,1,1}, positionCamera, glm::rotate( 20.0*M_PI / 180.0, glmvec3{ 0, 0, 1 } ), &onMove, vel, {0,1,0}, 1.0_real};
+				Body body{ cube, &g_cube, {1,1,r0}, positionCamera, glm::rotate( r1, glmvec3{ 0, 0, 1 } ), &onMove, vel, {0,r2,0}, 100.0_real};
 				//body.m_forces.insert( { 0ul, Force{} } );
 				addBody(std::make_shared<Body>(body));
 			}
