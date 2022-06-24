@@ -196,26 +196,28 @@ namespace ve {
 			glmvec3		m_linear_velocityW{ 0,0,0 };	//linear velocity at time slot in world space
 			glmvec3		m_angular_velocityW{ 0,0,0 };	//angular velocity at time slot in world space
 			body_callback* m_on_move = nullptr;			//called if the body moves
-
 			real		m_mass_inv{ c_eps };			//1 over mass
 			real		m_restitution{ 0.0_real };		//coefficient of restitution eps
 			real		m_friction{ 0.5_real };			//coefficient of friction mu
 
 			std::unordered_map<uint64_t, Force> m_forces;//forces acting on this body
 
+			glmmat3		m_inertiaL{1.0};
+			glmmat3		m_inertia_invL{ 1.0 };
+
 			glmmat4		m_model{ glmmat4{1} };		//model matrix at time slots
 			glmmat4		m_model_inv{ glmmat4{1} };	//model inverse matrix at time slots
 			glmmat3		m_inertiaW{ glmmat4{1} };		//inverse inertia tensor diagonal
 			glmmat3		m_inertia_invW{ glmmat4{1} };	//inverse inertia tensor diagonal
 
-			Body() { updateMatrices(); };
+			Body() { inertiaTensorL(); updateMatrices(); };
 
 			Body(void* owner, Polytope* polytope, glmvec3 scale, glmvec3 positionW, glmquat orientationLW = glmvec3{0,0,0}, 
 				body_callback* on_move = nullptr, glmvec3 linear_velocityW = glmvec3{ 0,0,0 }, glmvec3 angular_velocityW = glmvec3{0,0,0}, 
 				real mass_inv = 0, real restitution = 0.0_real, real friction = 0.5_real ) :
 					m_owner{owner}, m_polytope{polytope}, m_scale{scale}, m_positionW{positionW}, m_orientationLW{orientationLW},
 					m_on_move{on_move}, m_linear_velocityW{linear_velocityW}, m_angular_velocityW{ angular_velocityW }, 
-					m_mass_inv{mass_inv}, m_restitution{restitution}, m_friction{friction} { updateMatrices(); };
+				m_mass_inv{ mass_inv }, m_restitution{ restitution }, m_friction{ friction } { inertiaTensorL(); updateMatrices(); };
 
 			bool stepPosition(double dt, glmvec3& pos, glmquat& quat) {
 				bool active = false;
@@ -250,7 +252,7 @@ namespace ve {
 			}
 
 			glmmat3 inertiaTensorL() {
-				return m_polytope->inertiaTensor(1.0/m_mass_inv, m_scale );
+				return m_inertiaL = m_polytope->inertiaTensor(1.0/m_mass_inv, m_scale );
 			}
 
 			static glmmat4 computeModel( glmvec3& pos, glmquat& orient, glmvec3& scale ) { 
@@ -260,7 +262,7 @@ namespace ve {
 			void updateMatrices() {
 				m_model = Body::computeModel(m_positionW, m_orientationLW, m_scale);
 				m_model_inv = glm::inverse(m_model);
-				m_inertiaW = glmmat3{ m_model } * inertiaTensorL() * glmmat3 { m_model_inv };
+				m_inertiaW = glmmat3{ m_model } * m_inertiaL * glmmat3 { m_model_inv };
 				m_inertia_invW = glm::inverse(m_inertiaW);
 			}
 
@@ -349,15 +351,15 @@ namespace ve {
 			if (event.idata1 == GLFW_KEY_SPACE && event.idata3 == GLFW_PRESS) {
 				glmvec3 positionCamera{ getSceneManagerPointer()->getSceneNode("StandardCameraParent")->getWorldTransform()[3] };
 				glmvec3 dir{ getSceneManagerPointer()->getSceneNode("StandardCamera")->getWorldTransform()[2]};
-				glmvec3 vel{0,0,0}; // = dir / glm::length(dir);
+				glmvec3 vel = 100.0 * dir / glm::length(dir);
 				auto r0 = rnd_unif(rnd_gen) * 10;
 				auto r1 = rnd_unif(rnd_gen) * 10 * 3 * M_PI / 180.0;
 				auto r2 = rnd_unif(rnd_gen) * 10;
 
 				VESceneNode *cube;
 				VECHECKPOINTER(cube = getSceneManagerPointer()->loadModel("The Cube"+ std::to_string(++cubeid)  , "media/models/test/crate0", "cube.obj", 0, getRoot()) );
-				Body body{ cube, &g_cube, {1,1,r0}, positionCamera, glm::rotate( r1, glmvec3{ 0, 0, 1 } ), &onMove, vel, {0,r2,0}, 100.0_real};
-				//body.m_forces.insert( { 0ul, Force{} } );
+				Body body{ cube, &g_cube, {1,1,r0}, positionCamera, glm::rotate( r1, glmvec3{ 1, 0, 1 } ), &onMove, vel, {0,r2,0}, 100.0_real};
+				body.m_forces.insert( { 0ul, Force{} } );
 				addBody(std::make_shared<Body>(body));
 			}
 			return false;
@@ -416,7 +418,7 @@ namespace ve {
 			const std::array<intpair_t, 5> c_pairs{ { {0,0}, {1,0}, {-1,-1}, {0,-1}, {1,-1} } }; //neighbor cells
 
 			for (auto& cell : m_grid) {		//loop through all cells that are currently not empty.
-				//makeBodyPairs(m_global_cell, cell.second);		//test all bodies against the ground
+				makeBodyPairs(m_global_cell, cell.second);		//test all bodies against the ground
 				//for (auto& pi : c_pairs) {	//create pairs of neighborig cells and make body pairs.
 				//	intpair_t ni = { cell.first.first + pi.first, cell.first.second + pi.second };
 				//	if ( m_grid.count(ni) > 0) makeBodyPairs(cell.second, m_grid.at(ni)); 
@@ -438,8 +440,7 @@ namespace ve {
 					else {
 						glmvec3 diff = contact.m_bodies[1]->m_positionW - contact.m_bodies[0]->m_positionW;
 						real rsum = contact.m_bodies[0]->boundingSphereRadius() + contact.m_bodies[1]->boundingSphereRadius();
-						if (glm::dot(diff, diff) > rsum * rsum) continue;
-
+						if (glm::dot(diff, diff) > rsum * rsum) { ++it;  continue; }
 						SAT(it->second);						//yes - test it
 					}
 					++it;
@@ -455,11 +456,14 @@ namespace ve {
 		void groundTest(Contact& contact) {
 			if (contact.m_bodies[1]->m_positionW.y > contact.m_bodies[1]->boundingSphereRadius()) return;
 			int_t cnt = 0;
+			glmmat4 AtoB = contact.m_bodies[1]->m_model_inv * contact.m_bodies[0]->m_model; //transform to bring space A to space B
+			glmmat4 BtoA = contact.m_bodies[0]->m_model_inv * contact.m_bodies[1]->m_model; //transform to bring space B to space A
+
 			for (auto& vL : contact.m_bodies[1]->m_polytope->m_vertices) {
 				auto vW = contact.m_bodies[1]->m_model * glmvec4{ vL.m_positionL, 1 };
 				if (vW.y < 0) {
 					contact.m_contact_points.emplace_back(glmvec3{ vW }, glmvec3{ 0,1,0 });
-					if (++cnt > 3) return;
+					//if (++cnt > 3) return;
 				}
 			}
 		}
