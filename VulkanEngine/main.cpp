@@ -85,7 +85,7 @@ namespace ve {
 			glmvec3 m_positionL{0,0,0};		//position in local space
 			glmvec3 m_forceL{0,0,0};		//force vector in local space
 			glmvec3 m_forceW{0,0,0};		//force vector in world space 
-			glmvec3 m_accelW{ 0,-9.81,0 };	//acceleration in world space 
+			glmvec3 m_accelW{0,-9.81,0};	//acceleration in world space 
 		};
 
 		struct Face;
@@ -233,7 +233,7 @@ namespace ve {
 					quat = glm::rotate(m_orientationLW, len * (real)dt, avW * 1.0 / len);
 					active = true;
 				}
-				return active;
+				return true; //active
 			};
 
 			bool stepVelocity(double dt, glmvec3& vec, glmvec3& rot ) {
@@ -323,7 +323,7 @@ namespace ve {
 		uint64_t		m_loop{ 0L };
 		double			m_last_time{ 0.0 };				//last time the sim was interpolated
 		double			m_last_slot{ 0.0 };				//last time the sim was calculated
-		const double	m_delta_slot{ 1.0 / 120.0 };		//sim frequency
+		const double	m_delta_slot{ 1.0 / 60.0 };		//sim frequency
 		double			m_next_slot{ m_delta_slot };	//next time for simulation
 
 		using body_map = std::unordered_map<void*, std::shared_ptr<Body>>;
@@ -356,7 +356,7 @@ namespace ve {
 			if (event.idata1 == GLFW_KEY_SPACE && event.idata3 == GLFW_PRESS) {
 				glmvec3 positionCamera{ getSceneManagerPointer()->getSceneNode("StandardCameraParent")->getWorldTransform()[3] };
 				glmvec3 dir{ getSceneManagerPointer()->getSceneNode("StandardCamera")->getWorldTransform()[2]};
-				glmvec3 vel{0};// = 30.0 * dir / glm::length(dir);
+				glmvec3 vel = 30.0 * dir / glm::length(dir);
 				auto r0 = rnd_unif(rnd_gen) * 10;
 				auto r1 = rnd_unif(rnd_gen) * 10 * 3 * M_PI / 180.0;
 				auto r2 = rnd_unif(rnd_gen) * 10;
@@ -462,6 +462,7 @@ namespace ve {
 			if (contact.m_bodies[1]->m_positionW.y > contact.m_bodies[1]->boundingSphereRadius()) return;
 			int_t cnt = 0;
 			real min_depth{ std::numeric_limits<real>::max()};
+			bool correct = false;
 			for (auto& vL : contact.m_bodies[1]->m_polytope->m_vertices) {
 				auto vW = contact.m_bodies[1]->m_model * glmvec4{ vL.m_positionL, 1 };
 				if (vW.y < 0) {
@@ -470,13 +471,18 @@ namespace ve {
 					contact.m_bodies[1]->m_forces.clear();
 					contact.m_bodies[1]->m_linear_velocityW = {0,0,0};
 					contact.m_bodies[1]->m_angular_velocityW = { 0,0,0 };
-
+					correct = true;
 					//if (++cnt > 3) return;
 				}
 			}
-			contact.m_separation_distance = min_depth;
+			if (correct) {
+				contact.m_bodies[1]->m_positionW += glmvec3{ 0, -min_depth, 0 };
+				contact.m_bodies[1]->updateMatrices();
+			}
+			//contact.m_separation_distance = min_depth;
 		}
 
+		//----------------------------------------------------------------------------------------------------
 
 		struct EdgeQuery {
 			uint_t	m_reference;
@@ -689,7 +695,7 @@ namespace ve {
 
 			VESceneNode *e4;
 			VECHECKPOINTER( e4 = getSceneManagerPointer()->loadModel("The Plane", "media/models/test/plane", "plane_t_n_s.obj",0, pScene) );
-			e4->setTransform(glm::scale(glm::mat4(1.0f), glm::vec3(1000.0f, 1.0f, 1000.0f)));
+			e4->setTransform(glm::scale( glm::translate( glm::vec3{ 0,0,0,}) , glm::vec3(1000.0f, 1.0f, 1000.0f)));
 
 			VEEntity *pE4;
 			VECHECKPOINTER( pE4 = (VEEntity*)getSceneManagerPointer()->getSceneNode("The Plane/plane_t_n_s.obj/plane/Entity_0") );
