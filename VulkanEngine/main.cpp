@@ -18,6 +18,8 @@
 #include "glm/gtx/matrix_operation.hpp"
 #include "glm/gtc/quaternion.hpp"
 #include "glm/gtx/quaternion.hpp"
+#include "glm/gtx/matrix_cross_product.hpp"
+
 
 #if 1
 using real = double;
@@ -215,7 +217,7 @@ namespace ve {
 
 			Body(void* owner, Polytope* polytope, glmvec3 scale, glmvec3 positionW, glmquat orientationLW = glmvec3{0,0,0}, 
 				body_callback* on_move = nullptr, glmvec3 linear_velocityW = glmvec3{ 0,0,0 }, glmvec3 angular_velocityW = glmvec3{0,0,0}, 
-				real mass_inv = 0, real restitution = 0.0_real, real friction = 0.5_real ) :
+				real mass_inv = c_eps, real restitution = 0.0_real, real friction = 0.5_real ) :
 					m_owner{owner}, m_polytope{polytope}, m_scale{scale}, m_positionW{positionW}, m_orientationLW{orientationLW},
 					m_on_move{on_move}, m_linear_velocityW{linear_velocityW}, m_angular_velocityW{ angular_velocityW }, 
 				m_mass_inv{ mass_inv }, m_restitution{ restitution }, m_friction{ friction } { inertiaTensorL(); updateMatrices(); };
@@ -235,6 +237,10 @@ namespace ve {
 				}
 				return true; //active
 			};
+
+			glmvec3 totalVelocityW( glmvec3 positionW ) {
+				return m_linear_velocityW + glm::cross(m_angular_velocityW, positionW - m_positionW);
+			}
 
 			bool stepVelocity(double dt, glmvec3& vec, glmvec3& rot ) {
 				glmvec3 sum_accelW{ 0 };
@@ -268,7 +274,7 @@ namespace ve {
 				m_model = Body::computeModel(m_positionW, m_orientationLW, m_scale);
 				m_model_inv = glm::inverse(m_model);
 				m_inertiaW = glmmat3{ m_model } * m_inertiaL * glmmat3 { m_model_inv };
-				m_inertia_invW = glmmat3{ m_model } * m_inertia_invL * glmmat3{ m_model_inv }; ; // glm::inverse(m_inertiaW);
+				m_inertia_invW = glmmat3{ m_model } * m_inertia_invL * glmmat3{ m_model_inv }; ; 
 			}
 
 			auto maxFaceAlignment(glmvec3 dirL, glmmat4 BtoA) -> std::pair<uint_t, real> {
@@ -355,15 +361,15 @@ namespace ve {
 
 			if (event.idata1 == GLFW_KEY_SPACE && event.idata3 == GLFW_PRESS) {
 				glmvec3 positionCamera{ getSceneManagerPointer()->getSceneNode("StandardCameraParent")->getWorldTransform()[3] };
-				glmvec3 dir{ getSceneManagerPointer()->getSceneNode("StandardCamera")->getWorldTransform()[2]};
-				glmvec3 vel = 30.0 * dir / glm::length(dir);
-				auto r0 = rnd_unif(rnd_gen) * 10;
-				auto r1 = rnd_unif(rnd_gen) * 10 * 3 * M_PI / 180.0;
-				auto r2 = rnd_unif(rnd_gen) * 10;
+				glmvec3 dir{ getSceneManagerPointer()->getSceneNode("StandardCamera")->getWorldTransform()[2] };
+				glmvec3 vel = 30.0 * rnd_unif(rnd_gen) * dir / glm::length(dir);
+				real scalez{ 1 }; // = rnd_unif(rnd_gen) * 10;
+				real angle = rnd_unif(rnd_gen) * 10 * 3 * M_PI / 180.0;
+				real vrot = rnd_unif(rnd_gen) * 10;
 
 				VESceneNode *cube;
 				VECHECKPOINTER(cube = getSceneManagerPointer()->loadModel("The Cube"+ std::to_string(++cubeid)  , "media/models/test/crate0", "cube.obj", 0, getRoot()) );
-				Body body{ cube, &g_cube, {1,1,r0}, positionCamera, glm::rotate( r1, glmvec3{ 1, 0, 1 } ), &onMove, vel, {0,0,r2}, 1,0/100.0_real};
+				Body body{ cube, &g_cube, {1,1,scalez}, positionCamera, glm::rotate(angle, glmvec3{ 1, 0, 1 } ), &onMove, vel, {0,0,vrot}, 1.0/100.0, 0.2};
 				body.m_forces.insert( { 0ul, Force{} } );
 				addBody(std::make_shared<Body>(body));
 			}
@@ -468,11 +474,11 @@ namespace ve {
 				if (vW.y < 0) {
 					min_depth = std::min(min_depth,vW.y);
 					contact.m_contact_points.emplace_back( glmvec3{ vW }, glmvec3{ 0,1,0 } );
-					contact.m_bodies[1]->m_forces.clear();
-					contact.m_bodies[1]->m_linear_velocityW = {0,0,0};
-					contact.m_bodies[1]->m_angular_velocityW = { 0,0,0 };
+					//contact.m_bodies[1]->m_forces.clear();
+					//contact.m_bodies[1]->m_linear_velocityW = {0,0,0};
+					//contact.m_bodies[1]->m_angular_velocityW = { 0,0,0 };
 					correct = true;
-					//if (++cnt > 3) return;
+					++cnt;
 				}
 			}
 			if (correct) {
@@ -481,6 +487,47 @@ namespace ve {
 			}
 			//contact.m_separation_distance = min_depth;
 		}
+
+
+		void applyImpulses() {
+			for (auto it = std::begin(m_contacts); it != std::end(m_contacts); ++it) { 			//loop over all contacts
+				auto& contact = it->second;
+
+				for (auto& cp : contact.m_contact_points) {
+					auto r0 = cp.m_positionW - contact.m_bodies[0]->m_positionW;
+					auto v0 = contact.m_bodies[0]->totalVelocityW(cp.m_positionW);
+					auto r1 = cp.m_positionW - contact.m_bodies[1]->m_positionW;
+					auto v1 = contact.m_bodies[1]->totalVelocityW(cp.m_positionW);
+					auto vrel = v0 - v1;
+					auto d = glm::dot(vrel, cp.m_normalW);
+					auto restitution = std::max(contact.m_bodies[0]->m_restitution, contact.m_bodies[1]->m_restitution);
+
+					auto mc0 = matrixCross3(r0);
+					auto mc1 = matrixCross3(r1);
+
+					auto K = mc1 * contact.m_bodies[1]->m_inertia_invW * mc1 - glmmat3{ 1.0 } * contact.m_bodies[1]->m_mass_inv +
+							 mc0 * contact.m_bodies[0]->m_inertia_invW * mc0 - glmmat3{ 1.0 } * contact.m_bodies[0]->m_mass_inv;
+
+					auto K_inv = glm::inverse(K);
+
+					auto F = K_inv * ( -restitution * d * cp.m_normalW - vrel ) / (real)contact.m_contact_points.size();
+					auto Fn = glm::dot(F, cp.m_normalW) * cp.m_normalW;
+					auto Ft = F - Fn;
+
+					contact.m_bodies[0]->m_linear_velocityW += -F * contact.m_bodies[0]->m_mass_inv;
+					contact.m_bodies[0]->m_angular_velocityW += contact.m_bodies[0]->m_inertia_invW * glm::cross(cp.m_positionW - contact.m_bodies[0]->m_positionW, -F);
+					contact.m_bodies[0]->updateMatrices();
+
+					contact.m_bodies[1]->m_linear_velocityW += F * contact.m_bodies[1]->m_mass_inv;
+					contact.m_bodies[1]->m_angular_velocityW += contact.m_bodies[1]->m_inertia_invW * glm::cross(cp.m_positionW - contact.m_bodies[1]->m_positionW, F);
+					contact.m_bodies[1]->updateMatrices();
+
+				}
+			}
+			m_contacts.clear();
+		}
+
+
 
 		//----------------------------------------------------------------------------------------------------
 
@@ -637,14 +684,6 @@ namespace ve {
 
 		}
 
-
-		void applyImpulses() {
-			//loop over all contacts
-
-			//create mass matrix
-
-			//
-		}
 
 
 	public:
