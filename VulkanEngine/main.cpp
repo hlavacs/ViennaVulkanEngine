@@ -44,7 +44,7 @@ using uint_t = uint32_t;
 constexpr real operator "" _real(long double val) { return (real)val; };
 
 const double c_eps = 1.0e-10;
-const real c_margin = 1.0_real;
+const real c_margin = 1.0e-2_real;
 const real c_2margin = 2.0*c_margin;
 
 template <typename T> 
@@ -224,7 +224,7 @@ namespace ve {
 
 			bool stepPosition(double dt, glmvec3& pos, glmquat& quat) {
 				bool active = false;
-				if (abs(glm::dot(m_linear_velocityW, m_linear_velocityW)) > c_eps * c_eps) {
+				if (abs(glm::dot(m_linear_velocityW, m_linear_velocityW)) > c_eps) {
 					pos = m_positionW + m_linear_velocityW * (real)dt;
 					active = true;
 				}
@@ -235,12 +235,8 @@ namespace ve {
 					quat = glm::rotate(m_orientationLW, len * (real)dt, avW * 1.0 / len);
 					active = true;
 				}
-				return true; //active
+				return active;
 			};
-
-			glmvec3 totalVelocityW( glmvec3 positionW ) {
-				return m_linear_velocityW + glm::cross(m_angular_velocityW, positionW - m_positionW);
-			}
 
 			bool stepVelocity(double dt, glmvec3& vec, glmvec3& rot ) {
 				glmvec3 sum_accelW{ 0 };
@@ -254,6 +250,10 @@ namespace ve {
 				vec += dt * (m_mass_inv * sum_forcesW + sum_accelW);
 				rot += dt * m_inertia_invW * ( sum_torquesW - glm::cross( rot, m_inertiaW * rot));
 				return true;
+			}
+
+			glmvec3 totalVelocityW(glmvec3 positionW) {
+				return m_linear_velocityW + glm::cross(m_angular_velocityW, positionW - m_positionW);
 			}
 
 			real boundingSphereRadius() { 
@@ -471,18 +471,14 @@ namespace ve {
 			bool correct = false;
 			for (auto& vL : contact.m_bodies[1]->m_polytope->m_vertices) {
 				auto vW = contact.m_bodies[1]->m_model * glmvec4{ vL.m_positionL, 1 };
-				if (vW.y < 0) {
+				if (vW.y < c_margin) {
 					min_depth = std::min(min_depth,vW.y);
 					contact.m_contact_points.emplace_back( glmvec3{ vW }, glmvec3{ 0,1,0 } );
 					correct = true;
 					++cnt;
 				}
 			}
-			if (correct) {
-				contact.m_bodies[1]->m_positionW += glmvec3{ 0, -min_depth, 0 };
-				contact.m_bodies[1]->updateMatrices();
-			}
-			//contact.m_separation_distance = min_depth;
+			if (correct) { contact.m_bodies[1]->m_positionW += glmvec3{ 0, -min_depth, 0 }; }
 		}
 
 
@@ -495,6 +491,7 @@ namespace ve {
 					auto r1 = cp.m_positionW - contact.m_bodies[1]->m_positionW;
 					auto vrel = contact.m_bodies[0]->totalVelocityW(cp.m_positionW) - contact.m_bodies[1]->totalVelocityW(cp.m_positionW);
 					auto d = glm::dot(vrel, cp.m_normalW);
+					//std::cout << d << " ";
 					auto restitution = std::max(contact.m_bodies[0]->m_restitution, contact.m_bodies[1]->m_restitution);
 					auto friction = (contact.m_bodies[0]->m_friction + contact.m_bodies[1]->m_friction) / 2.0;
 
@@ -522,6 +519,7 @@ namespace ve {
 					contact.m_bodies[1]->m_angular_velocityW += contact.m_bodies[1]->m_inertia_invW * glm::cross(r1, F);
 				}
 			}
+			std::cout << std::endl;
 		}
 
 
