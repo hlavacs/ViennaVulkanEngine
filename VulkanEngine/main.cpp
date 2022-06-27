@@ -199,7 +199,7 @@ namespace ve {
 			glmvec3		m_linear_velocityW{ 0,0,0 };	//linear velocity at time slot in world space
 			glmvec3		m_angular_velocityW{ 0,0,0 };	//angular velocity at time slot in world space
 			body_callback* m_on_move = nullptr;			//called if the body moves
-			real		m_mass_inv{ c_eps };			//1 over mass
+			real		m_mass_inv{ c_eps*c_eps };		//1 over mass
 			real		m_restitution{ 0.0_real };		//coefficient of restitution eps
 			real		m_friction{ 0.5_real };			//coefficient of friction mu
 
@@ -369,7 +369,7 @@ namespace ve {
 
 				VESceneNode *cube;
 				VECHECKPOINTER(cube = getSceneManagerPointer()->loadModel("The Cube"+ std::to_string(++cubeid)  , "media/models/test/crate0", "cube.obj", 0, getRoot()) );
-				Body body{ cube, &g_cube, {1,1,scalez}, positionCamera, glm::rotate(angle, glmvec3{ 1, 0, 1 } ), &onMove, vel, {0,0,vrot}, 1.0/100.0, 0.2};
+				Body body{ cube, &g_cube, {1,1,scalez}, positionCamera, glm::rotate(angle, glmvec3{ 1, 0, 1 }), &onMove, vel, {0,0,vrot}, 1.0 / 100.0, 0.2, 1.0 };
 				body.m_forces.insert( { 0ul, Force{} } );
 				addBody(std::make_shared<Body>(body));
 			}
@@ -474,9 +474,6 @@ namespace ve {
 				if (vW.y < 0) {
 					min_depth = std::min(min_depth,vW.y);
 					contact.m_contact_points.emplace_back( glmvec3{ vW }, glmvec3{ 0,1,0 } );
-					//contact.m_bodies[1]->m_forces.clear();
-					//contact.m_bodies[1]->m_linear_velocityW = {0,0,0};
-					//contact.m_bodies[1]->m_angular_velocityW = { 0,0,0 };
 					correct = true;
 					++cnt;
 				}
@@ -495,12 +492,11 @@ namespace ve {
 
 				for (auto& cp : contact.m_contact_points) {
 					auto r0 = cp.m_positionW - contact.m_bodies[0]->m_positionW;
-					auto v0 = contact.m_bodies[0]->totalVelocityW(cp.m_positionW);
 					auto r1 = cp.m_positionW - contact.m_bodies[1]->m_positionW;
-					auto v1 = contact.m_bodies[1]->totalVelocityW(cp.m_positionW);
-					auto vrel = v0 - v1;
+					auto vrel = contact.m_bodies[0]->totalVelocityW(cp.m_positionW) - contact.m_bodies[1]->totalVelocityW(cp.m_positionW);
 					auto d = glm::dot(vrel, cp.m_normalW);
 					auto restitution = std::max(contact.m_bodies[0]->m_restitution, contact.m_bodies[1]->m_restitution);
+					auto friction = (contact.m_bodies[0]->m_friction + contact.m_bodies[1]->m_friction) / 2.0;
 
 					auto mc0 = matrixCross3(r0);
 					auto mc1 = matrixCross3(r1);
@@ -508,23 +504,24 @@ namespace ve {
 					auto K = mc1 * contact.m_bodies[1]->m_inertia_invW * mc1 - glmmat3{ 1.0 } * contact.m_bodies[1]->m_mass_inv +
 							 mc0 * contact.m_bodies[0]->m_inertia_invW * mc0 - glmmat3{ 1.0 } * contact.m_bodies[0]->m_mass_inv;
 
-					auto K_inv = glm::inverse(K);
+					auto F = glm::inverse(K) * ( -restitution * d * cp.m_normalW - vrel ) / (real)contact.m_contact_points.size();
 
-					auto F = K_inv * ( -restitution * d * cp.m_normalW - vrel ) / (real)contact.m_contact_points.size();
-					auto Fn = glm::dot(F, cp.m_normalW) * cp.m_normalW;
+					auto Fnl = glm::dot(F, cp.m_normalW);
+					auto Fn = Fnl * cp.m_normalW;
 					auto Ft = F - Fn;
+					auto Ftl = glm::length(Ft);
 
+					if (Ftl > friction * Fnl) {	//dynamic friction?
+						auto t = -Ft / Ftl;
+						auto f = -(1 - restitution) * d / glm::dot(cp.m_normalW, K * (cp.m_normalW - friction * t));
+						F = f * cp.m_normalW - restitution * f * t;
+					}
 					contact.m_bodies[0]->m_linear_velocityW += -F * contact.m_bodies[0]->m_mass_inv;
-					contact.m_bodies[0]->m_angular_velocityW += contact.m_bodies[0]->m_inertia_invW * glm::cross(cp.m_positionW - contact.m_bodies[0]->m_positionW, -F);
-					contact.m_bodies[0]->updateMatrices();
-
+					contact.m_bodies[0]->m_angular_velocityW += contact.m_bodies[0]->m_inertia_invW * glm::cross(r0, -F);
 					contact.m_bodies[1]->m_linear_velocityW += F * contact.m_bodies[1]->m_mass_inv;
-					contact.m_bodies[1]->m_angular_velocityW += contact.m_bodies[1]->m_inertia_invW * glm::cross(cp.m_positionW - contact.m_bodies[1]->m_positionW, F);
-					contact.m_bodies[1]->updateMatrices();
-
+					contact.m_bodies[1]->m_angular_velocityW += contact.m_bodies[1]->m_inertia_invW * glm::cross(r1, F);
 				}
 			}
-			m_contacts.clear();
 		}
 
 
