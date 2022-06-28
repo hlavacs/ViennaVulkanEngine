@@ -369,7 +369,7 @@ namespace ve {
 
 				VESceneNode *cube;
 				VECHECKPOINTER(cube = getSceneManagerPointer()->loadModel("The Cube"+ std::to_string(++cubeid)  , "media/models/test/crate0", "cube.obj", 0, getRoot()) );
-				Body body{ cube, &g_cube, {1,1,scalez}, positionCamera, glm::rotate(angle, glmvec3{ 1, 0, 1 }), &onMove, vel, {0,0,vrot}, 1.0 / 100.0, 0.2, 1.0 };
+				Body body{ cube, &g_cube, {1,1,scalez}, positionCamera + 2.0*dir, glm::rotate(angle, glmvec3{ 1, 0, 1 }), &onMove, vel, {0,0,vrot}, 1.0 / 100.0, 0.2, 1.0 };
 				body.m_forces.insert( { 0ul, Force{} } );
 				addBody(std::make_shared<Body>(body));
 			}
@@ -489,7 +489,7 @@ namespace ve {
 				for (auto& cp : contact.m_contact_points) {
 					auto r0 = cp.m_positionW - contact.m_bodies[0]->m_positionW;
 					auto r1 = cp.m_positionW - contact.m_bodies[1]->m_positionW;
-					auto vrel = contact.m_bodies[0]->totalVelocityW(cp.m_positionW) - contact.m_bodies[1]->totalVelocityW(cp.m_positionW);
+					auto vrel = contact.m_bodies[1]->totalVelocityW(cp.m_positionW) - contact.m_bodies[0]->totalVelocityW(cp.m_positionW);
 					auto d = glm::dot(vrel, cp.m_normalW);
 					//std::cout << d << " ";
 					auto restitution = std::max(contact.m_bodies[0]->m_restitution, contact.m_bodies[1]->m_restitution);
@@ -498,8 +498,8 @@ namespace ve {
 					auto mc0 = matrixCross3(r0);
 					auto mc1 = matrixCross3(r1);
 
-					auto K = mc1 * contact.m_bodies[1]->m_inertia_invW * mc1 - glmmat3{ 1.0 } * contact.m_bodies[1]->m_mass_inv +
-							 mc0 * contact.m_bodies[0]->m_inertia_invW * mc0 - glmmat3{ 1.0 } * contact.m_bodies[0]->m_mass_inv;
+					auto K = glmmat3{ 1.0 } * contact.m_bodies[1]->m_mass_inv - mc1 * contact.m_bodies[1]->m_inertia_invW * mc1 +
+							 glmmat3{ 1.0 } * contact.m_bodies[0]->m_mass_inv - mc0 * contact.m_bodies[0]->m_inertia_invW * mc0;
 
 					auto F = glm::inverse(K) * ( -restitution * d * cp.m_normalW - vrel ) / (real)contact.m_contact_points.size();
 
