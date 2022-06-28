@@ -534,7 +534,9 @@ namespace ve {
 						auto K = glmmat3{ 1.0 } *contact.m_bodies[1]->m_mass_inv - mc1 * contact.m_bodies[1]->m_inertia_invW * mc1 +
 							     glmmat3{ 1.0 } *contact.m_bodies[0]->m_mass_inv - mc0 * contact.m_bodies[0]->m_inertia_invW * mc0;
 
-						auto F = glm::inverse(K) * (-restitution * d * cp.m_normalW - vrel) / (real)contact.m_contact_points.size();
+						auto K_inv = glm::inverse(K);
+
+						auto F = K_inv * (-restitution * d * cp.m_normalW - vrel) / (real)contact.m_contact_points.size();
 
 						auto Fnl = glm::dot(F, cp.m_normalW);
 						auto Fn = Fnl * cp.m_normalW;
