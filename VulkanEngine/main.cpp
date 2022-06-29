@@ -200,32 +200,32 @@ namespace ve {
 			glmvec3		m_linear_velocityW{ 0,0,0 };	//linear velocity at time slot in world space
 			glmvec3		m_angular_velocityW{ 0,0,0 };	//angular velocity at time slot in world space
 			body_callback* m_on_move = nullptr;			//called if the body moves
-			real		m_mass_inv{ c_eps*c_eps };		//1 over mass
+			real		m_mass_inv{ 0.0 };				//1 over mass
 			real		m_restitution{ 0.0_real };		//coefficient of restitution eps
 			real		m_friction{ 0.5_real };			//coefficient of friction mu
 
 			std::unordered_map<uint64_t, Force> m_forces;//forces acting on this body
 
-			glmmat3		m_inertiaL{1.0};
-			glmmat3		m_inertia_invL{ 1.0 };
+			glmmat3		m_inertiaL{1.0};				//computed when the body is created
+			glmmat3		m_inertia_invL{ 1.0 };			//computed when the body is created
 
-			glmmat4		m_model{ glmmat4{1} };		//model matrix at time slots
-			glmmat4		m_model_inv{ glmmat4{1} };	//model inverse matrix at time slots
-			glmmat3		m_inertiaW{ glmmat4{1} };		//inverse inertia tensor diagonal
-			glmmat3		m_inertia_invW{ glmmat4{1} };	//inverse inertia tensor diagonal
+			glmmat4		m_model{ glmmat4{1} };			//model matrix at time slots
+			glmmat4		m_model_inv{ glmmat4{1} };		//model inverse matrix at time slots
+			glmmat3		m_inertiaW{ glmmat4{1} };		//inertia tensor in world frame
+			glmmat3		m_inertia_invW{ glmmat4{1} };	//inverse inertia tensor in world frame
 
 			Body() { inertiaTensorL(); updateMatrices(); };
 
 			Body(void* owner, Polytope* polytope, glmvec3 scale, glmvec3 positionW, glmquat orientationLW = glmvec3{0,0,0}, 
 				body_callback* on_move = nullptr, glmvec3 linear_velocityW = glmvec3{ 0,0,0 }, glmvec3 angular_velocityW = glmvec3{0,0,0}, 
-				real mass_inv = c_eps, real restitution = 0.0_real, real friction = 0.5_real ) :
+				real mass_inv = 0.0, real restitution = 0.0_real, real friction = 0.5_real ) :
 					m_owner{owner}, m_polytope{polytope}, m_scale{scale}, m_positionW{positionW}, m_orientationLW{orientationLW},
 					m_on_move{on_move}, m_linear_velocityW{linear_velocityW}, m_angular_velocityW{ angular_velocityW }, 
 				m_mass_inv{ mass_inv }, m_restitution{ restitution }, m_friction{ friction } { inertiaTensorL(); updateMatrices(); };
 
 			bool stepPosition(double dt, glmvec3& pos, glmquat& quat) {
 				bool active = false;
-				if (abs(glm::dot(m_linear_velocityW, m_linear_velocityW)) > c_eps) {
+				if (abs(glm::dot(m_linear_velocityW, m_linear_velocityW)) > c_eps * c_eps) {
 					pos = m_positionW + m_linear_velocityW * (real)dt;
 					active = true;
 				}
@@ -261,8 +261,12 @@ namespace ve {
 				return std::max( m_scale.x, std::max(m_scale.y, m_scale.z)) * m_polytope->m_bounding_sphere_radius;
 			}
 
+			real mass() {
+				return m_mass_inv <= c_eps ? 1.0/(c_eps*c_eps) : 1.0 / m_mass_inv;
+			}
+
 			glmmat3 inertiaTensorL() {
-				m_inertiaL = m_polytope->inertiaTensor(1.0/m_mass_inv, m_scale );
+				m_inertiaL = m_polytope->inertiaTensor(mass(), m_scale);
 				m_inertia_invL = glm::inverse(m_inertiaL);
 				return m_inertiaL;
 			}
@@ -342,7 +346,7 @@ namespace ve {
 		double			m_last_slot{ 0.0 };				//last time the sim was calculated
 		const double	c_delta_slot{ 1.0 / 60.0 };		//sim frequency
 		double			m_next_slot{ c_delta_slot };	//next time for simulation
-		const real		c_resting = 1.5 * c_gravity * c_delta_slot;
+		const real		c_resting = 2.5 * c_gravity * c_delta_slot;
 
 		using body_map = std::unordered_map<void*, std::shared_ptr<Body>>;
 		body_map		m_bodies;							//main container of all bodies
@@ -488,19 +492,19 @@ namespace ve {
 			real min_depth{ std::numeric_limits<real>::max()};
 			bool correct = false;
 			for (auto& vL : contact.m_bodies[1]->m_polytope->m_vertices) {
-				auto vW = contact.m_bodies[1]->m_model * glmvec4{ vL.m_positionL, 1 };
+				auto vW = glmvec3{ contact.m_bodies[1]->m_model * glmvec4{ vL.m_positionL, 1 } };
 				if (vW.y < c_margin) {
 					min_depth = std::min(min_depth,vW.y);
 
-					auto d = glm::dot(contact.m_bodies[1]->totalVelocityW(glmvec3{ vW }) - contact.m_bodies[0]->totalVelocityW(glmvec3{ vW }), glmvec3{ 0,1,0 });
+					auto d = glm::dot(contact.m_bodies[1]->totalVelocityW( vW ) - contact.m_bodies[0]->totalVelocityW( vW ), glmvec3{ 0,1,0 });
 					//std::cout << d << " ";
-					if (d > 0) {
-						contact.m_contact_points.emplace_back(glmvec3{ vW }, glmvec3{ 0,1,0 }, Contact::ContactPoint::separating);
+					if (d > 0.0) {
+						contact.m_contact_points.emplace_back( vW, glmvec3{ 0,1,0 }, Contact::ContactPoint::separating);
 					} else if ( d >= c_resting) {
-						contact.m_contact_points.emplace_back(glmvec3{ vW }, glmvec3{ 0,1,0 }, Contact::ContactPoint::resting);
+						contact.m_contact_points.emplace_back( vW, glmvec3{ 0,1,0 }, Contact::ContactPoint::resting);
 					}
 					else {
-						contact.m_contact_points.emplace_back(glmvec3{ vW }, glmvec3{ 0,1,0 }, Contact::ContactPoint::colliding);
+						contact.m_contact_points.emplace_back( vW, glmvec3{ 0,1,0 }, Contact::ContactPoint::colliding);
 					}
 
 					correct = true;
@@ -508,13 +512,15 @@ namespace ve {
 				}
 			}
 			//std::cout << std::endl;
-			if (correct) { contact.m_bodies[1]->m_positionW += glmvec3{ 0, -min_depth, 0 }; }
+			if (correct && min_depth<0.0) { contact.m_bodies[1]->m_positionW += glmvec3{ 0, -min_depth, 0 }; }
 		}
 
 
 		void applyImpulses( Contact::ContactPoint::type_t contact_type = Contact::ContactPoint::type_t::colliding) {
 			for (auto it = std::begin(m_contacts); it != std::end(m_contacts); ++it) { 			//loop over all contacts
 				auto& contact = it->second;
+
+				glmvec3 lin0{ 0.0 }, lin1{ 0.0 }, ang0{0.0}, ang1{0.0}; 
 
 				for (auto& cp : contact.m_contact_points) {
 					auto r0 = cp.m_positionW - contact.m_bodies[0]->m_positionW;
@@ -525,14 +531,14 @@ namespace ve {
 
 					if (d < 0 && cp.m_type == contact_type) {
 						auto restitution = std::max(contact.m_bodies[0]->m_restitution, contact.m_bodies[1]->m_restitution);
-						restitution = (contact_type == Contact::ContactPoint::type_t::colliding ? restitution : 0);
+						restitution = (contact_type == Contact::ContactPoint::type_t::colliding ? restitution : 0.0);
 						auto friction = (contact.m_bodies[0]->m_friction + contact.m_bodies[1]->m_friction) / 2.0;
 
 						auto mc0 = matrixCross3(r0);
 						auto mc1 = matrixCross3(r1);
 
-						auto K = glmmat3{ 1.0 } *contact.m_bodies[1]->m_mass_inv - mc1 * contact.m_bodies[1]->m_inertia_invW * mc1 +
-							     glmmat3{ 1.0 } *contact.m_bodies[0]->m_mass_inv - mc0 * contact.m_bodies[0]->m_inertia_invW * mc0;
+						auto K = glmmat3{ 1.0 } * contact.m_bodies[1]->m_mass_inv - mc1 * contact.m_bodies[1]->m_inertia_invW * mc1 +
+							     glmmat3{ 1.0 } * contact.m_bodies[0]->m_mass_inv - mc0 * contact.m_bodies[0]->m_inertia_invW * mc0;
 
 						auto K_inv = glm::inverse(K);
 
@@ -546,14 +552,18 @@ namespace ve {
 						if (Ftl > friction * Fnl) {	//dynamic friction?
 							auto t = -Ft / Ftl;
 							auto f = -(1 + restitution) * d / glm::dot(cp.m_normalW, K * (cp.m_normalW - friction * t));
-							F = f * cp.m_normalW - friction * f * t;
+							F = f * cp.m_normalW - f * friction * t;
 						}
-						contact.m_bodies[0]->m_linear_velocityW += -F * contact.m_bodies[0]->m_mass_inv;
-						contact.m_bodies[0]->m_angular_velocityW += contact.m_bodies[0]->m_inertia_invW * glm::cross(r0, -F);
-						contact.m_bodies[1]->m_linear_velocityW += F * contact.m_bodies[1]->m_mass_inv;
-						contact.m_bodies[1]->m_angular_velocityW += contact.m_bodies[1]->m_inertia_invW * glm::cross(r1, F);
+						lin0 += -F * contact.m_bodies[0]->m_mass_inv;
+						ang0 += contact.m_bodies[0]->m_inertia_invW * glm::cross(r0, -F);
+						lin1 += F * contact.m_bodies[1]->m_mass_inv;
+						ang1 += contact.m_bodies[1]->m_inertia_invW * glm::cross(r1, F);
 					}
 				}
+				contact.m_bodies[0]->m_linear_velocityW += lin0;
+				contact.m_bodies[0]->m_angular_velocityW += ang0;
+				contact.m_bodies[1]->m_linear_velocityW += lin1;
+				contact.m_bodies[1]->m_angular_velocityW += ang1;
 			}
 			//std::cout << std::endl;
 		}
