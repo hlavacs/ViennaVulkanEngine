@@ -322,7 +322,8 @@ namespace ve {
 				enum type_t {
 					colliding,
 					resting,
-					separating
+					separating,
+					any
 				};
 
 				glmvec3 m_positionW{0};
@@ -401,6 +402,7 @@ namespace ve {
 				narrowPhase();
 
 				applyImpulses(Contact::ContactPoint::type_t::colliding);
+				applyImpulses(Contact::ContactPoint::type_t::resting);
 				for (auto& c : m_bodies) {
 					auto& body = c.second;
 					body->stepVelocity(c_delta_slot, body->m_linear_velocityW, body->m_angular_velocityW);
@@ -529,7 +531,7 @@ namespace ve {
 					auto d = glm::dot(vrel, cp.m_normalW);
 					//std::cout << d << " ";
 
-					if (d < 0 && cp.m_type == contact_type) {
+					if (d < 0 && (cp.m_type == Contact::ContactPoint::type_t::any || cp.m_type == contact_type)) {
 						auto restitution = std::max(contact.m_bodies[0]->m_restitution, contact.m_bodies[1]->m_restitution);
 						restitution = (contact_type == Contact::ContactPoint::type_t::colliding ? restitution : 0.0);
 						auto friction = (contact.m_bodies[0]->m_friction + contact.m_bodies[1]->m_friction) / 2.0;
