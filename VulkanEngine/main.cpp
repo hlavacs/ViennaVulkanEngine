@@ -110,6 +110,20 @@ namespace ve {
 			glmvec3 m_normalL{};							//normal vector in local space
 		};
 
+		template<typename T>
+		Face* maxFaceAlignment(glmvec3 dirL, T& faces) {
+			assert(faces.size() > 0);
+			real max_abs_face_alignment{ std::numeric_limits<real>::min() };
+			Face* maxface = nullptr;
+			for (auto& face : faces) {
+				if (real abs_face_alignment = glm::dot(dirL, face.m_normalL) > max_abs_face_alignment) {
+					max_abs_face_alignment = abs_face_alignment;
+					maxface = &face;
+				}
+			}
+			return maxface;
+		}
+
 		//struct AABB {
 		//	std::array<glmvec3, 2> m_verticesL;
 		//};
@@ -283,19 +297,6 @@ namespace ve {
 				m_model_inv = glm::inverse(m_model);
 				m_inertiaW = rot3 * m_inertiaL * glm::transpose(rot3);
 				m_inertia_invW = rot3 * m_inertia_invL * glm::transpose(rot3); 
-			}
-
-			auto maxFaceAlignment(glmvec3 dirL, glmmat4 BtoA) -> std::pair<uint_t, real> {
-				real max_abs_face_alignment{ std::numeric_limits<real>::min() };
-				uint_t maxfi = 0;
-				for (uint_t fi = 0; auto & face : m_polytope->m_faces) {
-					if (real abs_face_alignment = abs(glm::dot(dirL, face.m_normalL)) > max_abs_face_alignment) {
-						max_abs_face_alignment = abs_face_alignment;
-						maxfi = fi;
-					}
-					++fi;
-				}
-				return { maxfi, abs(glm::dot(BtoA * glmvec4{ dirL, 0.0 }, BtoA * glmvec4{ m_polytope->m_faces[maxfi].m_normalL, 1.0 })) };
 			}
 
 			/// <summary>
@@ -691,17 +692,7 @@ namespace ve {
 		void createFaceContact(Contact& contact, FaceQuery& fq) {
 			contact.m_contact_points.emplace_back( fq.m_vertex->m_positionL, fq.m_face->m_normalL );
 
-			Face* max_face;
-			real max_alignment{std::numeric_limits<real>::min()};
-			for (auto face : fq.m_vertex->m_face_ptrs) {
-				real alignment = -glm::dot(fq.m_face->m_normalL, face->m_normalL);
-				if (alignment > max_alignment) {
-					max_face = face;
-					max_alignment = alignment;
-				}
-			}
-			contact.m_reference_face = fq.m_face;
-			contact.m_incident_face = max_face;
+			Face* max_face = maxFaceAlignment(-fq.m_face->m_normalL, fq.m_vertex->m_face_ptrs);
 		}
 
 
