@@ -352,11 +352,11 @@ namespace ve {
 
 			std::array<std::shared_ptr<Body>, 2> m_bodies{};	//pointer to the two bodies involved into this contact
 			uint64_t					m_last_loop{ std::numeric_limits<uint64_t>::max() }; //number of last loop this contact was valid
-			real						m_separation_distance{ 0.0 };	//distance between the objects (if negative then they overlap)
-			glmvec3						m_separating_axisL{0.0};		//Axis that separates the two bodies in object space A
-			Face*						m_reference_face;		//pointers to the colling reference face
-			Face*						m_incident_face;		//pointers to the colling incident face
-			std::vector<ContactPoint>	m_contact_points{};		//Contact points in contact manifold
+			glmmat4						m_AtoB;					//transform from space A to space B
+			glmmat4						m_BtoA;					//transform from space B to space A
+			glmmat3						m_AtoBit;				//inverse transpose of transform AtoB (for normal vectors)
+			glmvec3						m_separating_axisW{0.0};		//Axis that separates the two bodies in world space
+			std::vector<ContactPoint>	m_contact_points{};		//Contact points in contact manifold in world space
 		};
 
 	protected:
@@ -594,16 +594,15 @@ namespace ve {
 		//----------------------------------------------------------------------------------------------------
 
 		struct EdgeQuery {
-			real	m_separation;
-			Edge*	m_edge_ref;
-			Edge*	m_edge_inc;
+			real	m_separation;	//separation length (negative)
+			Edge*	m_edge_ref;		//pointer to reference edge (body 0)
+			Edge*	m_edge_inc;		//pointer to incident edge (body 1)
 		};
 
 		struct FaceQuery {
-			uint_t	m_reference;
-			real	m_separation;
-			Face*	m_face;
-			Vertex* m_vertex;
+			real	m_separation;	//separation length (negative)
+			Face*	m_face;			//pointer to reference face
+			Vertex* m_vertex;		//pointer to incident vertex
 		};
 
 		/// <summary>
@@ -611,19 +610,24 @@ namespace ve {
 		/// </summary>
 		/// <param name="contact">The contact between the two bodies.</param>
 		void SAT(Contact& contact) {
-			glmmat4 AtoB = contact.m_bodies[1]->m_model_inv * contact.m_bodies[0]->m_model; //transform to bring space A to space B
-			glmmat4 BtoA = contact.m_bodies[0]->m_model_inv * contact.m_bodies[1]->m_model; //transform to bring space B to space A
+			contact.m_AtoB = contact.m_bodies[1]->m_model_inv * contact.m_bodies[0]->m_model; //transform to bring space A to space B
+			contact.m_BtoA = contact.m_bodies[0]->m_model_inv * contact.m_bodies[1]->m_model; //transform to bring space B to space A
+			contact.m_AtoBit = glm::transpose(glm::inverse(glmmat3{ contact.m_AtoB }));	//transform for a normal vector
 
 			FaceQuery fq0, fq1;
 			EdgeQuery eq;
-			if ((fq0 = queryFaceDirections(contact, 0, AtoB, BtoA)).m_separation	> 0) return;
-			if ((fq1 = queryFaceDirections(contact, 1, BtoA, AtoB)).m_separation	> 0) return;
-			if ((eq = queryEdgeDirections(contact, AtoB, BtoA)).m_separation		> 0) return;
+			if ((fq0 = queryFaceDirections(contact, 0)).m_separation	> 0) return;
+			if ((fq1 = queryFaceDirections(contact, 1)).m_separation	> 0) return;
+			if ((eq = queryEdgeDirections(contact)).m_separation		> 0) return;
 
 			if (fq0.m_separation > eq.m_separation || fq1.m_separation > eq.m_separation) {
-				fq0.m_separation > fq1.m_separation ? createFaceContact( contact, fq0, AtoB, BtoA ) : createFaceContact(contact, fq1, BtoA, AtoB);
+				if (fq0.m_separation > fq1.m_separation) { createFaceContact(contact, fq0); }
+				else {
+					std::swap(contact.m_bodies[0], contact.m_bodies[1]);
+					createFaceContact(contact, fq1);
+				}
 			}
-			else createEdgeContact( contact, eq );
+			else createEdgeContact( contact, eq);
 		}
 
 		/// <summary>
@@ -636,16 +640,15 @@ namespace ve {
 		/// <param name="AtoB">Transform to get from object space A to object space B.</param>
 		/// <param name="BtoA"></param>
 		/// <returns>Negative: overlap of bodies along this axis. Positive: distance between the bodies.</returns>
-		FaceQuery queryFaceDirections(Contact& contact, uint_t a, glmmat4& AtoB, glmmat4& BtoA) {
+		FaceQuery queryFaceDirections(Contact& contact, uint_t a) {
 			uint_t b = 1 - a;
-			FaceQuery result{a, std::numeric_limits<real>::min(), nullptr, nullptr };
-			glmmat3 AtoBit = glm::transpose(glm::inverse(glmmat3{AtoB}));	//transform for a normal vector
+			FaceQuery result{std::numeric_limits<real>::min(), nullptr, nullptr };
 
 			for (auto& face : contact.m_bodies[a]->m_polytope->m_faces) {			
-				Vertex* vertB = contact.m_bodies[b]->support( glm::normalize(AtoBit * face.m_normalL * -1.0));
-				real distance = glm::dot(face.m_normalL, glmvec3{ BtoA * glmvec4{ vertB->m_positionL, 1.0 } } - face.m_edge_ptrs.begin()->first->m_first_vertexL.m_positionL);
-				if (distance > 0) return { a, distance, &face, vertB }; //no overlap - distance is positive
-				if (distance > result.m_separation) { result = { a, distance, &face, vertB }; }
+				Vertex* vertB = contact.m_bodies[b]->support( glm::normalize(contact.m_AtoBit * face.m_normalL * -1.0));
+				real distance = glm::dot(face.m_normalL, glmvec3{ contact.m_BtoA * glmvec4{ vertB->m_positionL, 1.0 } } - face.m_edge_ptrs.begin()->first->m_first_vertexL.m_positionL);
+				if (distance > 0) return { distance, &face, vertB }; //no overlap - distance is positive
+				if (distance > result.m_separation) { result = { distance, &face, vertB }; }
 			}
 			return result; //overlap - distance is negative
 		}
@@ -660,16 +663,15 @@ namespace ve {
 		/// <param name="AtoB">Transform from object space A to B.</param>
 		/// <param name="BtoA">Transform from object space B to A.</param>
 		/// <returns>Negative: overlap of bodies along this axis. Positive: distance between the bodies.</returns>
-		EdgeQuery queryEdgeDirections(Contact& contact, glmmat4& AtoB, glmmat4& BtoA) {
+		EdgeQuery queryEdgeDirections(Contact& contact) {
 			EdgeQuery result{ std::numeric_limits<real>::min(), nullptr, nullptr };
-			glmmat3 AtoBit = glm::transpose(glm::inverse(glmmat3{ AtoB }));	//transform for a normal vector
 
-			for (auto& edgeA : contact.m_bodies[0]->m_polytope->m_edges) {
+			for (auto& edgeA : contact.m_bodies[0]->m_polytope->m_edges) {	//loop over all edge-edge pairs
 				for (auto& edgeB : contact.m_bodies[1]->m_polytope->m_edges) {
-					glmvec3 n = glm::normalize(glm::cross(edgeA.m_edgeL, glmmat3{ BtoA } * edgeB.m_edgeL));	//axis L is cross product of both edges
-					if (glm::dot( n, edgeA.m_first_vertexL.m_positionL) < 0) n = -n;				//L must be oriented away from center of A								
-					Vertex* vertB = contact.m_bodies[1]->support(glmmat3{ AtoBit } * n * -1.0);		//support of B in negative normal direction
-					real distance = glm::dot( n, glmvec3{ BtoA * glmvec4{ vertB->m_positionL, 1.0 } } - edgeA.m_first_vertexL.m_positionL);//overlap distance along n
+					glmvec3 n = glm::normalize(glm::cross(edgeA.m_edgeL, glmmat3{ contact.m_BtoA } * edgeB.m_edgeL));	//axis n is cross product of both edges
+					if (glm::dot( n, edgeA.m_first_vertexL.m_positionL) < 0) n = -n;				//n must be oriented away from center of A								
+					Vertex* vertB = contact.m_bodies[1]->support(glmmat3{ contact.m_AtoBit } * n * -1.0);		//support of B in negative normal direction
+					real distance = glm::dot( n, glmvec3{ contact.m_BtoA * glmvec4{ vertB->m_positionL, 1.0 } } - edgeA.m_first_vertexL.m_positionL);//overlap distance along n
 					if (distance > 0) return { distance, &edgeA, &edgeB };							//no overlap - distance is positive
 					if (distance > result.m_separation) { result = { distance, &edgeA, &edgeB }; };	//remember max of negative distances
 				}
@@ -678,21 +680,24 @@ namespace ve {
 		}
 
 
-		void createFaceContact(Contact& contact, FaceQuery& fq, glmmat4& AtoB, glmmat4& BtoA) {
-			glmmat3 AtoBit = glm::transpose(glm::inverse(glmmat3{ AtoB }));	//transform for a normal vector
-			glmvec3 An = glm::normalize( - AtoBit * fq.m_face->m_normalL ); //transform normal vector of ref face to inc body
+		void createFaceContact(Contact& contact, FaceQuery& fq) {
+			glmmat3 AtoBit = glm::transpose(glm::inverse(glmmat3{ contact.m_AtoB }));	//transform for a normal vector
+			glmvec3 An = glm::normalize( -contact.m_AtoBit * fq.m_face->m_normalL ); //transform normal vector of ref face to inc body
 
-			Face* inc_face = maxFaceAlignment(An, fq.m_vertex->m_face_ptrs);
-			if (glm::dot(An, inc_face->m_normalL) > 1.0 - c_eps) {	//do we have a face - face contact?
-				//clip inc face against ref face
-			}
+			Face* inc_face = maxFaceAlignment(An, fq.m_vertex->m_face_ptrs);	//do we have a face - face contact?
+			if (glm::dot(An, inc_face->m_normalL) > 1.0 - c_eps) { clipFaceFace(contact, fq, inc_face); }
+			else {
+				Edge* inc_edge = minEdgeAlignment(An, fq.m_vertex->m_edge_ptrs); //do we have an edge - face contact?
+				if (fabs(glm::dot(An, inc_edge->m_edgeL)) < c_eps) { clipEdgeFace(contact, fq, inc_edge); }
+				else { contact.m_contact_points.emplace_back(fq.m_vertex->m_positionL, fq.m_face->m_normalL); } //we have only a vertex - face contact}
+			}			
+		}
 
-			//Edge* minedge = minEdgeAlignment(An, fq.m_vertex->m_edge_ptrs);
+		void clipFaceFace(Contact& contact, FaceQuery& fq, Face* inc_face) {
 
+		}
 
-
-
-			contact.m_contact_points.emplace_back( fq.m_vertex->m_positionL, fq.m_face->m_normalL );
+		void clipEdgeFace(Contact& contact, FaceQuery& fq, Edge* inc_edge) {
 
 		}
 
