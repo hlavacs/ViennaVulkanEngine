@@ -77,6 +77,13 @@ namespace std {
 
 }
 
+namespace clip {
+	struct point2D { real x, y; };
+
+	template<typename T>
+	void SutherlandHodgman(T& subjectPolygon, T& clipPolygon, T& newPolygon);
+}
+
 namespace ve {
 
 	static std::default_random_engine rnd_gen{ 12345 };					//Random numbers
@@ -97,8 +104,8 @@ namespace ve {
 
 		struct Vertex {
 			glmvec3			m_positionL;	//vertex position in local space
-			std::set<Face*>	m_face_ptrs;	//pointers to faces this vertex belongs to
-			std::set<Edge*>	m_edge_ptrs;	//pointers to edges this vertex belongs to
+			std::set<Face*>	m_vertex_face_ptrs;	//pointers to faces this vertex belongs to
+			std::set<Edge*>	m_vertex_edge_ptrs;	//pointers to edges this vertex belongs to
 		};
 
 		struct Edge {
@@ -111,8 +118,9 @@ namespace ve {
 		using SignedEdge = std::pair<Edge*,real>;
 
 		struct Face {
-			std::set<SignedEdge> m_edge_ptrs{};	//pointers to the edges of this face and orientation factors
-			glmvec3				 m_normalL{};	//normal vector in local space
+			std::vector<Vertex*>	m_face_vertex_ptrs{};	//pointers to the vertices of this face in correct orientation
+			std::vector<SignedEdge>	m_face_edge_ptrs{};		//pointers to the edges of this face and orientation factors
+			glmvec3					m_normalL{};			//normal vector in local space
 		};
 
 		template<typename T>
@@ -169,28 +177,33 @@ namespace ve {
 			Polytope(	const std::vector<glmvec3>& vertices, const std::vector<std::pair<uint_t, uint_t>>&& edgeindices, 
 						const std::vector < std::vector<std::pair<uint_t,real>> >&& face_edge_indices, inertia_tensor_t inertia_tensor)
 				: Collider{}, m_vertices{}, m_edges{}, m_faces{}, inertiaTensor{ inertia_tensor } {
-			
-				std::ranges::for_each(vertices, [&](const glmvec3& v) { 
+				//add vertices
+				std::ranges::for_each(vertices, [&](const glmvec3& v) {		
 						m_vertices.emplace_back(v);
 						if (real l = glm::length(v) > m_bounding_sphere_radius) m_bounding_sphere_radius = l;
 					}
 				);
 
+				//add edges
 				for (auto& edgepair : edgeindices) {	//compute edges from indices
 					Edge& edge = m_edges.emplace_back( m_vertices[edgepair.first], m_vertices[edgepair.second], m_vertices[edgepair.second].m_positionL - m_vertices[edgepair.first].m_positionL);
-					m_vertices[edgepair.first].m_edge_ptrs.insert(&edge);
-					m_vertices[edgepair.second].m_edge_ptrs.insert(&edge);
+					m_vertices[edgepair.first].m_vertex_edge_ptrs.insert(&edge);
+					m_vertices[edgepair.second].m_vertex_edge_ptrs.insert(&edge);
 				}
 
+				//add faces
 				for (auto& face_indices : face_edge_indices) {	//compute faces from edge indices belonging to this face
 					auto& face = m_faces.emplace_back();	//add new face to face vector
 
 					for (auto& edge : face_indices) {		//add references to the edges belonging to this face
-						face.m_edge_ptrs.insert( SignedEdge{ &m_edges.at(edge.first), edge.second } );	//add new face to face vector
+						Edge* pe = &m_edges.at(edge.first);
+						face.m_face_edge_ptrs.push_back( SignedEdge{ pe, edge.second } );	//add new face to face vector
+						if (edge.second > 0) { face.m_face_vertex_ptrs.push_back(&pe->m_first_vertexL); }
+						else { face.m_face_vertex_ptrs.push_back(&pe->m_second_vertexL); }
 					}
 
 					if (face_indices.size() >= 2) {			//compute face normal
-						face.m_normalL = glm::cross( m_edges[face_indices[0].first].m_edgeL * face_indices[0].second, m_edges[face_indices[1].first].m_edgeL * face_indices[1].second);
+						face.m_normalL = glm::normalize( glm::cross( m_edges[face_indices[0].first].m_edgeL * face_indices[0].second, m_edges[face_indices[1].first].m_edgeL * face_indices[1].second));
 						
 						for (auto& vert : m_vertices) {		//Min and max distance along the face normals in local space
 							real dp = glm::dot(m_faces.back().m_normalL, vert.m_positionL);
@@ -199,13 +212,11 @@ namespace ve {
 
 					for (auto& edge : face_indices) {		//record that this face belongs to a specific edge
 						m_edges[edge.first].m_face_ptrs.insert(&face);	//we touch each face only once, no need to check if face already in list
-						m_edges[edge.first].m_first_vertexL.m_face_ptrs.insert(&face);	//sets cannot hold duplicates
-						m_edges[edge.first].m_second_vertexL.m_face_ptrs.insert(&face);
+						m_edges[edge.first].m_first_vertexL.m_vertex_face_ptrs.insert(&face);	//sets cannot hold duplicates
+						m_edges[edge.first].m_second_vertexL.m_vertex_face_ptrs.insert(&face);
 					}
 				}
 			};
-
-
 		};
 
 		Polytope g_cube {
@@ -602,8 +613,8 @@ namespace ve {
 
 		struct FaceQuery {
 			real	m_separation;	//separation length (negative)
-			Face*	m_face;			//pointer to reference face
-			Vertex* m_vertex;		//pointer to incident vertex
+			Face*	m_face_ref;			//pointer to reference face
+			Vertex* m_vertex_inc;		//pointer to incident vertex
 		};
 
 		/// <summary>
@@ -647,7 +658,7 @@ namespace ve {
 
 			for (auto& face : contact.m_bodies[a]->m_polytope->m_faces) {			
 				Vertex* vertB = contact.m_bodies[b]->support( glm::normalize(contact.m_AtoBit * face.m_normalL * -1.0));
-				real distance = glm::dot(face.m_normalL, glmvec3{ contact.m_BtoA * glmvec4{ vertB->m_positionL, 1.0 } } - face.m_edge_ptrs.begin()->first->m_first_vertexL.m_positionL);
+				real distance = glm::dot(face.m_normalL, glmvec3{ contact.m_BtoA * glmvec4{ vertB->m_positionL, 1.0 } } - face.m_face_edge_ptrs.begin()->first->m_first_vertexL.m_positionL);
 				if (distance > 0) return { distance, &face, vertB }; //no overlap - distance is positive
 				if (distance > result.m_separation) { result = { distance, &face, vertB }; }
 			}
@@ -680,25 +691,48 @@ namespace ve {
 			return result; 
 		}
 
-
+		/// <summary>
+		/// 
+		/// </summary>
+		/// <param name="contact"></param>
+		/// <param name="fq"></param>
 		void createFaceContact(Contact& contact, FaceQuery& fq) {
-			glmmat3 AtoBit = glm::transpose(glm::inverse(glmmat3{ contact.m_AtoB }));	//transform for a normal vector
-			glmvec3 An = glm::normalize( -contact.m_AtoBit * fq.m_face->m_normalL ); //transform normal vector of ref face to inc body
-
-			Face* inc_face = maxFaceAlignment(An, fq.m_vertex->m_face_ptrs);	//do we have a face - face contact?
-			if (glm::dot(An, inc_face->m_normalL) > 1.0 - c_eps) { clipFaceFace(contact, fq, inc_face); }
+			glmvec3 An = glm::normalize( -contact.m_AtoBit * fq.m_face_ref->m_normalL ); //transform normal vector of ref face to inc body
+			Face* inc_face = maxFaceAlignment(An, fq.m_vertex_inc->m_vertex_face_ptrs);	//do we have a face - face contact?
+			if (glm::dot(An, inc_face->m_normalL) > 1.0 - c_eps) { clipFaceFace(contact, fq.m_face_ref, inc_face); }
 			else {
-				Edge* inc_edge = minEdgeAlignment(An, fq.m_vertex->m_edge_ptrs); //do we have an edge - face contact?
-				if (fabs(glm::dot(An, inc_edge->m_edgeL)) < c_eps) { clipEdgeFace(contact, fq, inc_edge); }
-				else { contact.m_contact_points.emplace_back(fq.m_vertex->m_positionL, fq.m_face->m_normalL); } //we have only a vertex - face contact}
+				Edge* inc_edge = minEdgeAlignment(An, fq.m_vertex_inc->m_vertex_edge_ptrs); //do we have an edge - face contact?
+				if (fabs(glm::dot(An, inc_edge->m_edgeL)) < c_eps) { clipEdgeFace(contact, fq.m_face_ref, inc_edge); }
+				else { contact.m_contact_points.emplace_back(fq.m_vertex_inc->m_positionL, fq.m_face_ref->m_normalL); } //we have only a vertex - face contact}
 			}			
 		}
 
-		void clipFaceFace(Contact& contact, FaceQuery& fq, Face* inc_face) {
+		/// <summary>
+		/// 
+		/// </summary>
+		/// <param name="contact"></param>
+		/// <param name="face_ref"></param>
+		/// <param name="face_inc"></param>
+		void clipFaceFace(Contact& contact, Face* face_ref, Face* face_inc) {
+			glmvec3 v = glm::normalize( face_ref->m_face_edge_ptrs.begin()->first->m_edgeL * face_ref->m_face_edge_ptrs.begin()->second );
+			glmvec3 p = {};
+			glmmat4 BtoT = glm::translate(glmmat4(), p) * glmmat4( glmmat3{ face_ref->m_normalL, v, glm::cross(face_ref->m_normalL, v)} ) * contact.m_BtoA;
 
+			std::vector<clip::point2D> points;
+			for (auto* vertex : face_ref->m_face_vertex_ptrs) {
+				glmvec3 pB = vertex->m_positionL;
+				glmvec4 pT = BtoT * glmvec4{ pB.x, pB.y, pB.z, 1.0 };
+				points.emplace_back(pT.x, pT.z);
+			}
 		}
 
-		void clipEdgeFace(Contact& contact, FaceQuery& fq, Edge* inc_edge) {
+		/// <summary>
+		/// 
+		/// </summary>
+		/// <param name="contact"></param>
+		/// <param name="face_ref"></param>
+		/// <param name="edge_inc"></param>
+		void clipEdgeFace(Contact& contact, Face* face_ref, Edge* edge_inc) {
 
 		}
 
@@ -813,115 +847,100 @@ void closestPoints( glmvec3& a, glmvec3& a1, glmvec3& b, glmvec3& b1 ) {
 
 
 //https://rosettacode.org/wiki/Sutherland-Hodgman_polygon_clipping
+//rewritten for std::vector
 namespace clip {
 
 	using namespace std;
 
-	struct point2D { float x, y; };
-
-	const int   N = 99; // clipped (new) polygon size
 
 	// check if a point is on the LEFT side of an edge
-	bool inside(point2D p, point2D p1, point2D p2)
-	{
+	bool inside(point2D p, point2D p1, point2D p2) {
 		return (p2.y - p1.y) * p.x + (p1.x - p2.x) * p.y + (p2.x * p1.y - p1.x * p2.y) < 0;
 	}
 
 	// calculate intersection point
-	point2D intersection(point2D cp1, point2D cp2, point2D s, point2D e)
-	{
+	point2D intersection(point2D cp1, point2D cp2, point2D s, point2D e) {
 		point2D dc = { cp1.x - cp2.x, cp1.y - cp2.y };
 		point2D dp = { s.x - e.x, s.y - e.y };
 
-		float n1 = cp1.x * cp2.y - cp1.y * cp2.x;
-		float n2 = s.x * e.y - s.y * e.x;
-		float n3 = 1.0 / (dc.x * dp.y - dc.y * dp.x);
+		real n1 = cp1.x * cp2.y - cp1.y * cp2.x;
+		real n2 = s.x * e.y - s.y * e.x;
+		real n3 = 1.0 / (dc.x * dp.y - dc.y * dp.x);
 
 		return { (n1 * dp.x - n2 * dc.x) * n3, (n1 * dp.y - n2 * dc.y) * n3 };
 	}
 
 	// Sutherland-Hodgman clipping
-	void SutherlandHodgman(point2D* subjectPolygon, int& subjectPolygonSize, point2D* clipPolygon, int& clipPolygonSize, point2D(&newPolygon)[N], int& newPolygonSize)
-	{
-		point2D cp1, cp2, s, e, inputPolygon[N];
+	template<typename T>
+	void SutherlandHodgman(T& subjectPolygon, T& clipPolygon, T& newPolygon) {
+		point2D cp1, cp2, s, e;
+		std::vector<point2D> inputPolygon;
+		newPolygon = subjectPolygon;
 
-		// copy subject polygon to new polygon and set its size
-		for (int i = 0; i < subjectPolygonSize; i++)
-			newPolygon[i] = subjectPolygon[i];
-
-		newPolygonSize = subjectPolygonSize;
-
-		for (int j = 0; j < clipPolygonSize; j++)
+		for (int j = 0; j < clipPolygon.size(); j++)
 		{
 			// copy new polygon to input polygon & set counter to 0
-			for (int k = 0; k < newPolygonSize; k++) { inputPolygon[k] = newPolygon[k]; }
-			int counter = 0;
+			inputPolygon = newPolygon;
+			newPolygon.clear();
 
 			// get clipping polygon edge
 			cp1 = clipPolygon[j];
-			cp2 = clipPolygon[(j + 1) % clipPolygonSize];
+			cp2 = clipPolygon[(j + 1) % clipPolygon.size()];
 
-			for (int i = 0; i < newPolygonSize; i++)
+			for (int i = 0; i < inputPolygon.size(); i++)
 			{
 				// get subject polygon edge
 				s = inputPolygon[i];
-				e = inputPolygon[(i + 1) % newPolygonSize];
+				e = inputPolygon[(i + 1) % inputPolygon.size()];
 
 				// Case 1: Both vertices are inside:
 				// Only the second vertex is added to the output list
 				if (inside(s, cp1, cp2) && inside(e, cp1, cp2))
-					newPolygon[counter++] = e;
+					newPolygon.emplace_back(e);
 
 				// Case 2: First vertex is outside while second one is inside:
 				// Both the point of intersection of the edge with the clip boundary
 				// and the second vertex are added to the output list
-				else if (!inside(s, cp1, cp2) && inside(e, cp1, cp2))
-				{
-					newPolygon[counter++] = intersection(cp1, cp2, s, e);
-					newPolygon[counter++] = e;
+				else if (!inside(s, cp1, cp2) && inside(e, cp1, cp2)) {
+					newPolygon.emplace_back(intersection(cp1, cp2, s, e));
+					newPolygon.emplace_back(e);
 				}
 
 				// Case 3: First vertex is inside while second one is outside:
 				// Only the point of intersection of the edge with the clip boundary
 				// is added to the output list
 				else if (inside(s, cp1, cp2) && !inside(e, cp1, cp2))
-					newPolygon[counter++] = intersection(cp1, cp2, s, e);
+					newPolygon.emplace_back(intersection(cp1, cp2, s, e));
 
 				// Case 4: Both vertices are outside
-				else if (!inside(s, cp1, cp2) && !inside(e, cp1, cp2))
-				{
+				else if (!inside(s, cp1, cp2) && !inside(e, cp1, cp2)) {
 					// No vertices are added to the output list
 				}
 			}
-			// set new polygon size
-			newPolygonSize = counter;
 		}
 	}
 
 	int main()
 	{
 		// subject polygon
-		point2D subjectPolygon[] = {
+		std::vector<point2D> subjectPolygon {
 		{50,150}, {200,50}, {350,150},
 			{350,300},{250,300},{200,250},
 			{150,350},{100,250},{100,200}
 		};
-		int subjectPolygonSize = sizeof(subjectPolygon) / sizeof(subjectPolygon[0]);
 
 		// clipping polygon
-		point2D clipPolygon[] = { {100,100}, {300,100}, {300,300}, {100,300} };
-		int clipPolygonSize = sizeof(clipPolygon) / sizeof(clipPolygon[0]);
+		std::vector<point2D> clipPolygon { {100,100}, {300,100}, {300,300}, {100,300} };
 
 		// define the new clipped polygon (empty)
-		int newPolygonSize = 0;
-		point2D newPolygon[N] = { 0 };
+		std::vector<point2D> newPolygon;
 
 		// apply clipping
-		SutherlandHodgman(subjectPolygon, subjectPolygonSize, clipPolygon, clipPolygonSize, newPolygon, newPolygonSize);
+		SutherlandHodgman(subjectPolygon, clipPolygon, newPolygon);
 
 		// print clipped polygon points
 		cout << "Clipped polygon points:" << endl;
-		for (int i = 0; i < newPolygonSize; i++)
+		for (int i = 0; i < newPolygon.size(); i++)
 			cout << "(" << newPolygon[i].x << ", " << newPolygon[i].y << ")" << endl;
 
 		return 0;
@@ -933,12 +952,12 @@ namespace clip {
 int main() {
 	bool debug = true;
 
-	//MyVulkanEngine mve(veRendererType::VE_RENDERER_TYPE_FORWARD, debug);	//enable or disable debugging (=callback, validation layers)
-	//mve.initEngine();
-	//mve.loadLevel(1);
-	//mve.run();
+	MyVulkanEngine mve(veRendererType::VE_RENDERER_TYPE_FORWARD, debug);	//enable or disable debugging (=callback, validation layers)
+	mve.initEngine();
+	mve.loadLevel(1);
+	mve.run();
 
-	clip::main();
+	//clip::main();
 
 	return 0;
 }
