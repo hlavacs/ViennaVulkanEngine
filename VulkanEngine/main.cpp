@@ -103,7 +103,7 @@ namespace ve {
 		struct Edge;
 
 		struct Vertex {
-			glmvec3			m_positionL;	//vertex position in local space
+			glmvec3			m_positionL;		//vertex position in local space
 			std::set<Face*>	m_vertex_face_ptrs;	//pointers to faces this vertex belongs to
 			std::set<Edge*>	m_vertex_edge_ptrs;	//pointers to edges this vertex belongs to
 		};
@@ -112,7 +112,7 @@ namespace ve {
 			Vertex&			m_first_vertexL;	//first edge vertex
 			Vertex&			m_second_vertexL;	//second edge vertex
 			glmvec3			m_edgeL{};			//edge vector in local space 
-			std::set<Face*>	m_face_ptrs{};		//pointers to the two faces this edge belongs to
+			std::set<Face*>	m_edge_face_ptrs{};		//pointers to the two faces this edge belongs to
 		};
 
 		using SignedEdge = std::pair<Edge*,real>;
@@ -121,6 +121,8 @@ namespace ve {
 			std::vector<Vertex*>	m_face_vertex_ptrs{};	//pointers to the vertices of this face in correct orientation
 			std::vector<SignedEdge>	m_face_edge_ptrs{};		//pointers to the edges of this face and orientation factors
 			glmvec3					m_normalL{};			//normal vector in local space
+			glmmat4					m_LtoT;					//local to face tangent space
+			glmmat4					m_TtoL;					//face tangent to local space
 		};
 
 		template<typename T>
@@ -174,9 +176,13 @@ namespace ve {
 			/// <param name="vertices">Vertex positions in local space.</param>
 			/// <param name="edgeindices">One pair of vector indices for each edge. </param>
 			/// <param name="face_edge_indices">For each face a list of pairs edge index - orientation factor (1.0 or -1.0)</param>
-			Polytope(	const std::vector<glmvec3>& vertices, const std::vector<std::pair<uint_t, uint_t>>&& edgeindices, 
-						const std::vector < std::vector<std::pair<uint_t,real>> >&& face_edge_indices, inertia_tensor_t inertia_tensor)
-				: Collider{}, m_vertices{}, m_edges{}, m_faces{}, inertiaTensor{ inertia_tensor } {
+			/// <param name="inertia_tensor"></param>
+			Polytope(	const std::vector<glmvec3>& vertices, 
+						const std::vector<std::pair<uint_t, uint_t>>&& edgeindices, 
+						const std::vector < std::vector<std::pair<uint_t,real>> >&& face_edge_indices, 
+						inertia_tensor_t inertia_tensor)
+							: Collider{}, m_vertices{}, m_edges{}, m_faces{}, inertiaTensor{ inertia_tensor } {
+
 				//add vertices
 				std::ranges::for_each(vertices, [&](const glmvec3& v) {		
 						m_vertices.emplace_back(v);
@@ -192,29 +198,33 @@ namespace ve {
 				}
 
 				//add faces
-				for (auto& face_indices : face_edge_indices) {	//compute faces from edge indices belonging to this face
+				for (auto& face_edge_idx : face_edge_indices) {	//compute faces from edge indices belonging to this face
+					assert(face_edge_idx.size() >= 2);
 					auto& face = m_faces.emplace_back();	//add new face to face vector
 
-					for (auto& edge : face_indices) {		//add references to the edges belonging to this face
+					for (auto& edge : face_edge_idx) {		//add references to the edges belonging to this face
 						Edge* pe = &m_edges.at(edge.first);
 						face.m_face_edge_ptrs.push_back( SignedEdge{ pe, edge.second } );	//add new face to face vector
-						if (edge.second > 0) { face.m_face_vertex_ptrs.push_back(&pe->m_first_vertexL); }
+						if (edge.second > 0) { face.m_face_vertex_ptrs.push_back(&pe->m_first_vertexL); } //list of vertices of this face
 						else { face.m_face_vertex_ptrs.push_back(&pe->m_second_vertexL); }
-					}
 
-					if (face_indices.size() >= 2) {			//compute face normal
-						face.m_normalL = glm::normalize( glm::cross( m_edges[face_indices[0].first].m_edgeL * face_indices[0].second, m_edges[face_indices[1].first].m_edgeL * face_indices[1].second));
-						
-						for (auto& vert : m_vertices) {		//Min and max distance along the face normals in local space
-							real dp = glm::dot(m_faces.back().m_normalL, vert.m_positionL);
-						}
-					}
-
-					for (auto& edge : face_indices) {		//record that this face belongs to a specific edge
-						m_edges[edge.first].m_face_ptrs.insert(&face);	//we touch each face only once, no need to check if face already in list
+						m_edges[edge.first].m_edge_face_ptrs.insert(&face);	//we touch each face only once, no need to check if face already in list
 						m_edges[edge.first].m_first_vertexL.m_vertex_face_ptrs.insert(&face);	//sets cannot hold duplicates
 						m_edges[edge.first].m_second_vertexL.m_vertex_face_ptrs.insert(&face);
 					}
+					glmvec3 edge0 = m_edges[face_edge_idx[0].first].m_edgeL * face_edge_idx[0].second;
+					glmvec3 edge1 = m_edges[face_edge_idx[1].first].m_edgeL * face_edge_idx[1].second;
+
+					glmvec3 tangent = glm::normalize( edge0 );
+					face.m_normalL = glm::normalize( glm::cross( tangent, edge1 ));
+					glmvec3 bitangent = glm::cross(tangent, face.m_normalL);
+
+					face.m_TtoL = glm::translate(glmmat4(1), face.m_face_vertex_ptrs[0]->m_positionL) * glmmat4 { glmmat3{face.m_normalL , tangent, bitangent} };
+					face.m_LtoT = glm::inverse(face.m_TtoL);
+
+					//for (auto& vert : m_vertices) {		//Min and max distance along the face normals in local space
+					//	real dp = glm::dot(m_faces.back().m_normalL, vert.m_positionL);
+					//}
 				}
 			};
 		};
