@@ -118,11 +118,12 @@ namespace ve {
 		using SignedEdge = std::pair<Edge*,real>;
 
 		struct Face {
-			std::vector<Vertex*>	m_face_vertex_ptrs{};	//pointers to the vertices of this face in correct orientation
-			std::vector<SignedEdge>	m_face_edge_ptrs{};		//pointers to the edges of this face and orientation factors
-			glmvec3					m_normalL{};			//normal vector in local space
-			glmmat4					m_LtoT;					//local to face tangent space
-			glmmat4					m_TtoL;					//face tangent to local space
+			std::vector<Vertex*>		m_face_vertex_ptrs{};	//pointers to the vertices of this face in correct orientation
+			std::vector<clip::point2D>	m_face_vertexT{};		//vertex 2D coordinates in tangent space
+			std::vector<SignedEdge>		m_face_edge_ptrs{};		//pointers to the edges of this face and orientation factors
+			glmvec3						m_normalL{};			//normal vector in local space
+			glmmat4						m_LtoT;					//local to face tangent space
+			glmmat4						m_TtoL;					//face tangent to local space
 		};
 
 		template<typename T>
@@ -217,10 +218,15 @@ namespace ve {
 
 					glmvec3 tangent = glm::normalize( edge0 );
 					face.m_normalL = glm::normalize( glm::cross( tangent, edge1 ));
-					glmvec3 bitangent = glm::cross(tangent, face.m_normalL);
+					glmvec3 bitangent = glm::cross(face.m_normalL, tangent);
 
-					face.m_TtoL = glm::translate(glmmat4(1), face.m_face_vertex_ptrs[0]->m_positionL) * glmmat4 { glmmat3{face.m_normalL , tangent, bitangent} };
+					face.m_TtoL = glm::translate(glmmat4(1), face.m_face_vertex_ptrs[0]->m_positionL) * glmmat4 { glmmat3{tangent, bitangent, face.m_normalL} };
 					face.m_LtoT = glm::inverse(face.m_TtoL);
+
+					for (auto& vertex : face.m_face_vertex_ptrs) {
+						glmvec4 pt = face.m_LtoT * glmvec4{ vertex->m_positionL, 1.0 };
+						face.m_face_vertexT.emplace_back( pt.x, pt.y);
+					}
 
 					//for (auto& vert : m_vertices) {		//Min and max distance along the face normals in local space
 					//	real dp = glm::dot(m_faces.back().m_normalL, vert.m_positionL);
@@ -726,14 +732,16 @@ namespace ve {
 		void clipFaceFace(Contact& contact, Face* face_ref, Face* face_inc) {
 			glmvec3 v = glm::normalize( face_ref->m_face_edge_ptrs.begin()->first->m_edgeL * face_ref->m_face_edge_ptrs.begin()->second );
 			glmvec3 p = {};
-			glmmat4 BtoT = glm::translate(glmmat4(), p) * glmmat4( glmmat3{ face_ref->m_normalL, v, glm::cross(face_ref->m_normalL, v)} ) * contact.m_BtoA;
+			glmmat4 BtoT =  face_ref->m_LtoT * contact.m_BtoA;
 
 			std::vector<clip::point2D> points;
-			for (auto* vertex : face_ref->m_face_vertex_ptrs) {
-				glmvec3 pB = vertex->m_positionL;
-				glmvec4 pT = BtoT * glmvec4{ pB.x, pB.y, pB.z, 1.0 };
-				points.emplace_back(pT.x, pT.z);
+			for (auto* vertex : face_inc->m_face_vertex_ptrs) {
+				glmvec4 pT = BtoT * glmvec4{ vertex->m_positionL, 1.0 };
+				points.emplace_back(pT.x, pT.y);
 			}
+			std::vector<clip::point2D> newPolygon;
+			clip::SutherlandHodgman(face_inc->m_face_vertexT, points, newPolygon);
+
 		}
 
 		/// <summary>
