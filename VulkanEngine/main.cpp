@@ -272,8 +272,10 @@ namespace ve {
 			glmmat3		m_inertiaL{1.0};				//computed when the body is created
 			glmmat3		m_inertia_invL{ 1.0 };			//computed when the body is created
 
+			//computed when the body moves
 			glmmat4		m_model{ glmmat4{1} };			//model matrix at time slots
 			glmmat4		m_model_inv{ glmmat4{1} };		//model inverse matrix at time slots
+			glmmat3		m_orient_it;					//orientation inverse transpose for bringing normal vector to world
 			glmmat3		m_inertiaW{ glmmat4{1} };		//inertia tensor in world frame
 			glmmat3		m_inertia_invW{ glmmat4{1} };	//inverse inertia tensor in world frame
 
@@ -342,8 +344,10 @@ namespace ve {
 				glmmat4 rot4 = glm::mat4_cast(m_orientationLW);
 				glmmat3 rot3{rot4};
 
-				m_model = glm::translate(glmmat4{ 1.0 }, m_positionW) * rot4 *glm::scale(glmmat4{ 1.0 }, m_scale);
+				m_model = glm::translate(glmmat4{ 1.0 }, m_positionW) * rot4 * glm::scale(glmmat4{ 1.0 }, m_scale);
 				m_model_inv = glm::inverse(m_model);
+				m_orient_it = glm::transpose(glm::inverse(glmmat3{ rot3 }));	//transform for a normal vector
+
 				m_inertiaW = rot3 * m_inertiaL * glm::transpose(rot3);
 				m_inertia_invW = rot3 * m_inertia_invL * glm::transpose(rot3); 
 			}
@@ -742,6 +746,10 @@ namespace ve {
 			std::vector<clip::point2D> newPolygon;
 			clip::SutherlandHodgman(face_inc->m_face_vertexT, points, newPolygon);
 
+			for (auto& p2D : newPolygon) { 
+				glmvec4 posW{ contact.m_bodies[0]->m_model * face_ref->m_TtoL * glmvec4{ p2D.x, p2D.y, 0.0, 1.0 } };
+				contact.m_contact_points.emplace_back(posW, contact.m_bodies[0]->m_orient_it * face_ref->m_normalL);
+			}
 		}
 
 		/// <summary>
