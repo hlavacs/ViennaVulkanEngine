@@ -744,7 +744,7 @@ namespace ve {
 				points.emplace_back(pT.x, pT.y);
 			}
 			std::vector<clip::point2D> newPolygon;
-			clip::SutherlandHodgman(face_inc->m_face_vertexT, points, newPolygon);
+			clip::SutherlandHodgman(face_ref->m_face_vertexT, points, newPolygon);
 
 			for (auto& p2D : newPolygon) { 
 				glmvec4 posW{ contact.m_bodies[0]->m_model * face_ref->m_TtoL * glmvec4{ p2D.x, p2D.y, 0.0, 1.0 } };
@@ -759,7 +759,19 @@ namespace ve {
 		/// <param name="face_ref"></param>
 		/// <param name="edge_inc"></param>
 		void clipEdgeFace(Contact& contact, Face* face_ref, Edge* edge_inc) {
-
+			glmmat4 BtoT = face_ref->m_LtoT * contact.m_BtoA;
+			std::vector<clip::point2D> points;
+			glmvec4 pT = BtoT * glmvec4{ edge_inc->m_first_vertexL.m_positionL, 1.0 };
+			points.emplace_back(pT.x, pT.y);
+			pT = BtoT * glmvec4{ edge_inc->m_second_vertexL.m_positionL, 1.0 };
+			points.emplace_back(pT.x, pT.y);
+			std::vector<clip::point2D> newPolygon;
+			clip::SutherlandHodgman(face_ref->m_face_vertexT, points, newPolygon);
+			for (uint32_t cnt = 0;  auto & p2D : newPolygon) {
+				glmvec4 posW{ contact.m_bodies[0]->m_model * face_ref->m_TtoL * glmvec4{ p2D.x, p2D.y, 0.0, 1.0 } };
+				contact.m_contact_points.emplace_back(posW, contact.m_bodies[0]->m_orient_it * face_ref->m_normalL);
+				if (++cnt == 2) return;
+			}
 		}
 
 
