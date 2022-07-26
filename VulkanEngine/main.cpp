@@ -626,9 +626,10 @@ namespace ve {
 		//----------------------------------------------------------------------------------------------------
 
 		struct EdgeQuery {
-			real	m_separation;	//separation length (negative)
-			Edge*	m_edge_ref;		//pointer to reference edge (body 0)
-			Edge*	m_edge_inc;		//pointer to incident edge (body 1)
+			real		m_separation;	//separation length (negative)
+			Edge*		m_edge_ref;		//pointer to reference edge (body 0)
+			Edge*		m_edge_inc;		//pointer to incident edge (body 1)
+			glm::vec3	m_normalL;		//normal of contact (cross product) in A's space
 		};
 
 		struct FaceQuery {
@@ -648,18 +649,18 @@ namespace ve {
 
 			FaceQuery fq0, fq1;
 			EdgeQuery eq;
-			if ((fq0 = queryFaceDirections(contact, 0)).m_separation	> 0) return;
-			if ((fq1 = queryFaceDirections(contact, 1)).m_separation	> 0) return;
-			if ((eq = queryEdgeDirections(contact)).m_separation		> 0) return;
+			if ((fq0 = queryFaceDirections(contact, 0)).m_separation	> 0) return;	//found a separating axis with face normal
+			if ((fq1 = queryFaceDirections(contact, 1)).m_separation	> 0) return;	//found a separating axis with face normal
+			if ((eq = queryEdgeDirections(contact)).m_separation		> 0) return;	//found a separating axis with edge-edge normal
 
-			if (fq0.m_separation > eq.m_separation || fq1.m_separation > eq.m_separation) {
+			if (fq0.m_separation > eq.m_separation || fq1.m_separation > eq.m_separation) {	//max separation is a face-vertex contact
 				if (fq0.m_separation > fq1.m_separation) { createFaceContact(contact, fq0); }
 				else {
-					std::swap(contact.m_bodies[0], contact.m_bodies[1]);
+					std::swap(contact.m_bodies[0], contact.m_bodies[1]);	//body 0 is the reference body having the reference face
 					createFaceContact(contact, fq1);
 				}
 			}
-			else createEdgeContact( contact, eq);
+			else createEdgeContact( contact, eq);	//max separation is an edge-edge contact
 		}
 
 		/// <summary>
@@ -705,14 +706,15 @@ namespace ve {
 					Vertex* vertB = contact.m_bodies[1]->support(glmmat3{ contact.m_AtoBit } * n * -1.0);		//support of B in negative normal direction
 					real distance = glm::dot( n, glmvec3{ contact.m_BtoA * glmvec4{ vertB->m_positionL, 1.0 } } - edgeA.m_first_vertexL.m_positionL);//overlap distance along n
 					if (distance > 0) return { distance, &edgeA, &edgeB };							//no overlap - distance is positive
-					if (distance > result.m_separation) { result = { distance, &edgeA, &edgeB }; };	//remember max of negative distances
+					if (distance > result.m_separation) { result = { distance, &edgeA, &edgeB, n }; };	//remember max of negative distances
 				}
 			}
 			return result; 
 		}
 
 		/// <summary>
-		/// 
+		/// We have a vertex-face contact. Test if this actually a 
+		/// face-face, face-edge or face-vertex contact, then call the right function to create the manifold.
 		/// </summary>
 		/// <param name="contact"></param>
 		/// <param name="fq"></param>
@@ -728,7 +730,8 @@ namespace ve {
 		}
 
 		/// <summary>
-		/// 
+		/// We found a face of B that is aligned with the ref face of A. Bring inc face vertices of B into 
+		/// A's face tangent space, then clip B against A. Bring the result into world space.
 		/// </summary>
 		/// <param name="contact"></param>
 		/// <param name="face_ref"></param>
@@ -736,15 +739,15 @@ namespace ve {
 		void clipFaceFace(Contact& contact, Face* face_ref, Face* face_inc) {
 			glmvec3 v = glm::normalize( face_ref->m_face_edge_ptrs.begin()->first->m_edgeL * face_ref->m_face_edge_ptrs.begin()->second );
 			glmvec3 p = {};
-			glmmat4 BtoT =  face_ref->m_LtoT * contact.m_BtoA;
+			glmmat4 BtoT =  face_ref->m_LtoT * contact.m_BtoA; //transform from B to A's face tangent space
 
-			std::vector<clip::point2D> points;
-			for (auto* vertex : face_inc->m_face_vertex_ptrs) {
-				glmvec4 pT = BtoT * glmvec4{ vertex->m_positionL, 1.0 };
-				points.emplace_back(pT.x, pT.y);
+			std::vector<clip::point2D> points;					
+			for (auto* vertex : face_inc->m_face_vertex_ptrs) {			//add face points of B's face
+				glmvec4 pT = BtoT * glmvec4{ vertex->m_positionL, 1.0 };//ransform to A's tangent space
+				points.emplace_back(pT.x, pT.y);						//add as 2D point
 			}
 			std::vector<clip::point2D> newPolygon;
-			clip::SutherlandHodgman(face_ref->m_face_vertexT, points, newPolygon);
+			clip::SutherlandHodgman(face_ref->m_face_vertexT, points, newPolygon); //clip B's face against A's face
 
 			for (auto& p2D : newPolygon) { 
 				glmvec4 posW{ contact.m_bodies[0]->m_model * face_ref->m_TtoL * glmvec4{ p2D.x, p2D.y, 0.0, 1.0 } };
@@ -753,29 +756,53 @@ namespace ve {
 		}
 
 		/// <summary>
-		/// 
+		/// We have a face-edge contact. Bring the edge vertices into A's face tangent space, then
+		/// clip them against A's ref face. Bring the resulting points back to world space.
 		/// </summary>
 		/// <param name="contact"></param>
 		/// <param name="face_ref"></param>
 		/// <param name="edge_inc"></param>
 		void clipEdgeFace(Contact& contact, Face* face_ref, Edge* edge_inc) {
-			glmmat4 BtoT = face_ref->m_LtoT * contact.m_BtoA;
+			glmmat4 BtoT = face_ref->m_LtoT * contact.m_BtoA;	//transform from B to A's face tangent space
+
 			std::vector<clip::point2D> points;
-			glmvec4 pT = BtoT * glmvec4{ edge_inc->m_first_vertexL.m_positionL, 1.0 };
-			points.emplace_back(pT.x, pT.y);
+			glmvec4 pT = BtoT * glmvec4{ edge_inc->m_first_vertexL.m_positionL, 1.0 };	//bring edge vertices to A's face tangent space
+			points.emplace_back(pT.x, pT.y);											//add as 2D point (projection)
 			pT = BtoT * glmvec4{ edge_inc->m_second_vertexL.m_positionL, 1.0 };
 			points.emplace_back(pT.x, pT.y);
+
 			std::vector<clip::point2D> newPolygon;
-			clip::SutherlandHodgman(face_ref->m_face_vertexT, points, newPolygon);
-			for (uint32_t cnt = 0;  auto & p2D : newPolygon) {
+			clip::SutherlandHodgman(face_ref->m_face_vertexT, points, newPolygon);	//clip B's face against A's face
+
+			for (auto & p2D : newPolygon | std::views::take(2) ) {	//result is exactly 2 or 3 points (if clip), we only need 2 points 
 				glmvec4 posW{ contact.m_bodies[0]->m_model * face_ref->m_TtoL * glmvec4{ p2D.x, p2D.y, 0.0, 1.0 } };
 				contact.m_contact_points.emplace_back(posW, contact.m_bodies[0]->m_orient_it * face_ref->m_normalL);
-				if (++cnt == 2) return;
 			}
 		}
 
 
+		/// <summary>
+		/// 
+		/// </summary>
+		/// <param name="contact"></param>
+		/// <param name="eq"></param>
 		void createEdgeContact(Contact& contact, EdgeQuery &eq) {
+
+			Face* ref_face = maxFaceAlignment(-eq.m_normalL, eq.m_edge_ref->m_edge_face_ptrs);	//face of A best aligned with the contact normal
+			Face* inc_face = maxFaceAlignment(eq.m_normalL, eq.m_edge_inc->m_edge_face_ptrs);	//face of B best aligned with the contact normal
+		
+			if (glm::dot(ref_face->m_normalL, inc_face->m_normalL) > 1.0 - c_eps) { clipFaceFace(contact, ref_face, inc_face); }
+			else {
+				//Edge* inc_edge = minEdgeAlignment(eq.m_normalL, fq.m_vertex_inc->m_vertex_edge_ptrs); //do we have an edge - face contact?
+				//if (fabs(glm::dot(eq.m_normalL, inc_edge->m_edgeL)) < c_eps) { clipEdgeFace(contact, fq.m_face_ref, inc_edge); }
+				//else { contact.m_contact_points.emplace_back(fq.m_vertex_inc->m_positionL, fq.m_face_ref->m_normalL); } //we have only a vertex - face contact}
+			}
+			
+
+
+
+
+
 			//find closest points between the two edges
 
 			//add contact at mid point between the points, pointint along the axis´n
