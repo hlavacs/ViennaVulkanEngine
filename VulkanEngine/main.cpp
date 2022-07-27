@@ -77,11 +77,9 @@ namespace std {
 
 }
 
-
 namespace geometry {
 	glmvec3 closestPointLineLine(glmvec3 p1, glmvec3 p2, glmvec3 p3, glmvec3 p4);
 }
-
 
 namespace clip {
 	struct point2D { real x, y; };
@@ -89,6 +87,17 @@ namespace clip {
 	template<typename T>
 	void SutherlandHodgman(T& subjectPolygon, T& clipPolygon, T& newPolygon);
 }
+
+
+#define ITORP(X) glmvec3{contact.m_body_inc.m_to_other * glmvec4{X, 1.0}}
+#define ITORV(X) glmmat3{contact.m_body_inc.m_to_other}*X
+#define ITORN(X) contact.m_body_inc.m_to_other_it*X
+
+#define RTOIN(X) contact.m_body_ref.m_to_other_it*X
+
+#define RTOWN(X) contact.m_body_ref.m_body->m_model_it*X
+
+
 
 namespace ve {
 
@@ -281,7 +290,7 @@ namespace ve {
 			//computed when the body moves
 			glmmat4		m_model{ glmmat4{1} };			//model matrix at time slots
 			glmmat4		m_model_inv{ glmmat4{1} };		//model inverse matrix at time slots
-			glmmat3		m_orient_it;					//orientation inverse transpose for bringing normal vector to world
+			glmmat3		m_model_it;					//orientation inverse transpose for bringing normal vector to world
 			glmmat3		m_inertiaW{ glmmat4{1} };		//inertia tensor in world frame
 			glmmat3		m_inertia_invW{ glmmat4{1} };	//inverse inertia tensor in world frame
 
@@ -352,7 +361,7 @@ namespace ve {
 
 				m_model = glm::translate(glmmat4{ 1.0 }, m_positionW) * rot4 * glm::scale(glmmat4{ 1.0 }, m_scale);
 				m_model_inv = glm::inverse(m_model);
-				m_orient_it = glm::transpose(glm::inverse(glmmat3{ rot3 }));	//transform for a normal vector
+				m_model_it = glm::transpose(glm::inverse(glmmat3{ rot3 }));	//transform for a normal vector
 
 				m_inertiaW = rot3 * m_inertiaL * glm::transpose(rot3);
 				m_inertia_invW = rot3 * m_inertia_invL * glm::transpose(rot3); 
@@ -378,8 +387,8 @@ namespace ve {
 
 			struct BodyPtr {
 				std::shared_ptr<Body> m_body;	//pointer to body
-				glmmat4 m_toOther;				//transform to other body
-				glmmat3 m_toOtherIT;			//inverse transpose of transform to other body, for normal vectors
+				glmmat4 m_to_other;				//transform to other body
+				glmmat3 m_to_other_it;			//inverse transpose of transform to other body, for normal vectors
 			};
 
 			struct ContactPoint {
@@ -663,10 +672,10 @@ namespace ve {
 		/// </summary>
 		/// <param name="contact">The contact between the two bodies.</param>
 		void SAT(Contact& contact) {
-			contact.m_body_ref.m_toOther = contact.m_body_inc.m_body->m_model_inv * contact.m_body_ref.m_body->m_model; //transform to bring space A to space B
-			contact.m_body_ref.m_toOtherIT = glm::transpose(glm::inverse(glmmat3{ contact.m_body_ref.m_toOther }));	//transform for a normal vector
-			contact.m_body_inc.m_toOther = contact.m_body_ref.m_body->m_model_inv * contact.m_body_inc.m_body->m_model; //transform to bring space B to space A
-			contact.m_body_inc.m_toOtherIT = glm::transpose(glm::inverse(glmmat3{ contact.m_body_inc.m_toOther }));	//transform for a normal vector
+			contact.m_body_ref.m_to_other = contact.m_body_inc.m_body->m_model_inv * contact.m_body_ref.m_body->m_model; //transform to bring space A to space B
+			contact.m_body_ref.m_to_other_it = glm::transpose(glm::inverse(glmmat3{ contact.m_body_ref.m_to_other }));	//transform for a normal vector
+			contact.m_body_inc.m_to_other = contact.m_body_ref.m_body->m_model_inv * contact.m_body_inc.m_body->m_model; //transform to bring space B to space A
+			contact.m_body_inc.m_to_other_it = glm::transpose(glm::inverse(glmmat3{ contact.m_body_inc.m_to_other }));	//transform for a normal vector
 
 			FaceQuery fq0, fq1;
 			EdgeQuery eq;
@@ -694,9 +703,9 @@ namespace ve {
 			FaceQuery result{std::numeric_limits<real>::min(), nullptr, nullptr };
 
 			for (auto& face : body_ref.m_body->m_polytope->m_faces) {
-				Vertex* vertB = body_inc.m_body->support( glm::normalize(body_ref.m_toOtherIT * face.m_normalL * -1.0));
+				Vertex* vertB = body_inc.m_body->support( glm::normalize( -RTOIN(face.m_normalL)));
 
-				real distance = glm::dot(face.m_normalL, glmvec3{ contact.m_body_inc.m_toOther * glmvec4{ vertB->m_positionL, 1.0 } } - face.m_face_edge_ptrs.begin()->first->m_first_vertexL.m_positionL);
+				real distance = glm::dot(face.m_normalL, ITORP(vertB->m_positionL) - face.m_face_edge_ptrs.begin()->first->m_first_vertexL.m_positionL);
 				if (distance > 0) return { distance, &face, vertB }; //no overlap - distance is positive
 				if (distance > result.m_separation) { result = { distance, &face, vertB }; }
 			}
@@ -718,10 +727,10 @@ namespace ve {
 
 			for (auto& edgeA : contact.m_body_ref.m_body->m_polytope->m_edges) {	//loop over all edge-edge pairs
 				for (auto& edgeB : contact.m_body_inc.m_body->m_polytope->m_edges) {
-					glmvec3 n = glm::normalize(glm::cross(edgeA.m_edgeL, glmmat3{ contact.m_body_inc.m_toOther } * edgeB.m_edgeL));	//axis n is cross product of both edges
+					glmvec3 n = glm::normalize(glm::cross(edgeA.m_edgeL, ITORV(edgeB.m_edgeL)));	//axis n is cross product of both edges
 					if (glm::dot( n, edgeA.m_first_vertexL.m_positionL) < 0) n = -n;				//n must be oriented away from center of A								
-					Vertex* vertB = contact.m_body_inc.m_body->support(glmmat3{ contact.m_body_ref.m_toOtherIT } * n * -1.0);		//support of B in negative normal direction
-					real distance = glm::dot( n, glmvec3{ contact.m_body_inc.m_toOther * glmvec4{ vertB->m_positionL, 1.0 } } - edgeA.m_first_vertexL.m_positionL);//overlap distance along n
+					Vertex* vertB = contact.m_body_inc.m_body->support( -RTOIN(n));		//support of B in negative normal direction
+					real distance = glm::dot( n, ITORP(vertB->m_positionL) - edgeA.m_first_vertexL.m_positionL);//overlap distance along n
 					if (distance > 0) return { distance, &edgeA, &edgeB };							//no overlap - distance is positive
 					if (distance > result.m_separation) { result = { distance, &edgeA, &edgeB, n }; };	//remember max of negative distances
 				}
@@ -736,7 +745,7 @@ namespace ve {
 		/// <param name="contact"></param>
 		/// <param name="fq"></param>
 		void createFaceContact(Contact& contact, FaceQuery& fq) {
-			glmvec3 An = glm::normalize( -contact.m_body_ref.m_toOtherIT * fq.m_face_ref->m_normalL ); //transform normal vector of ref face to inc body
+			glmvec3 An = glm::normalize( -RTOIN(fq.m_face_ref->m_normalL) ); //transform normal vector of ref face to inc body
 			Face* inc_face = maxFaceAlignment(An, fq.m_vertex_inc->m_vertex_face_ptrs);	//do we have a face - face contact?
 			if (glm::dot(An, inc_face->m_normalL) > 1.0 - c_eps) { clipFaceFace(contact, fq.m_face_ref, inc_face); }
 			else {
@@ -754,13 +763,13 @@ namespace ve {
 		/// <param name="face_ref"></param>
 		/// <param name="face_inc"></param>
 		void clipFaceFace(Contact& contact, Face* face_ref, Face* face_inc) {
-			glmvec3 v = glm::normalize( face_ref->m_face_edge_ptrs.begin()->first->m_edgeL * face_ref->m_face_edge_ptrs.begin()->second );
+			glmvec3 v = glm::normalize( face_ref->m_face_edge_ptrs.begin()->first->m_edgeL * face_ref->m_face_edge_ptrs.begin()->second ); //????
 			glmvec3 p = {};
-			glmmat4 BtoT =  face_ref->m_LtoT * contact.m_body_inc.m_toOther; //transform from B to A's face tangent space
+			glmmat4 ItoRT =  face_ref->m_LtoT * contact.m_body_inc.m_to_other; //transform from B to A's face tangent space
 
 			std::vector<clip::point2D> points;					
 			for (auto* vertex : face_inc->m_face_vertex_ptrs) {			//add face points of B's face
-				glmvec4 pT = BtoT * glmvec4{ vertex->m_positionL, 1.0 };//ransform to A's tangent space
+				glmvec4 pT = ItoRT * glmvec4{ vertex->m_positionL, 1.0 };//ransform to A's tangent space
 				points.emplace_back(pT.x, pT.y);						//add as 2D point
 			}
 			std::vector<clip::point2D> newPolygon;
@@ -768,7 +777,7 @@ namespace ve {
 
 			for (auto& p2D : newPolygon) { 
 				glmvec4 posW{ contact.m_body_ref.m_body->m_model * face_ref->m_TtoL * glmvec4{ p2D.x, p2D.y, 0.0, 1.0 } };
-				contact.m_contact_points.emplace_back(posW, contact.m_body_ref.m_body->m_orient_it * face_ref->m_normalL);
+				contact.m_contact_points.emplace_back(posW, RTOWN(face_ref->m_normalL));
 			}
 		}
 
@@ -780,12 +789,12 @@ namespace ve {
 		/// <param name="face_ref"></param>
 		/// <param name="edge_inc"></param>
 		void clipEdgeFace(Contact& contact, Face* face_ref, Edge* edge_inc) {
-			glmmat4 BtoT = face_ref->m_LtoT * contact.m_body_inc.m_toOther;	//transform from B to A's face tangent space
+			glmmat4 ItoRT = face_ref->m_LtoT * contact.m_body_inc.m_to_other;	//transform from B to A's face tangent space
 
 			std::vector<clip::point2D> points;
-			glmvec4 pT = BtoT * glmvec4{ edge_inc->m_first_vertexL.m_positionL, 1.0 };	//bring edge vertices to A's face tangent space
+			glmvec4 pT = ItoRT * glmvec4{ edge_inc->m_first_vertexL.m_positionL, 1.0 };	//bring edge vertices to A's face tangent space
 			points.emplace_back(pT.x, pT.y);											//add as 2D point (projection)
-			pT = BtoT * glmvec4{ edge_inc->m_second_vertexL.m_positionL, 1.0 };
+			pT = ItoRT * glmvec4{ edge_inc->m_second_vertexL.m_positionL, 1.0 };
 			points.emplace_back(pT.x, pT.y);
 
 			std::vector<clip::point2D> newPolygon;
@@ -793,9 +802,9 @@ namespace ve {
 
 			for (auto & p2D : newPolygon | std::views::take(2) ) {	//result is exactly 2 or 3 points (if clip), we only need 2 points 
 				glmvec4 posW{ contact.m_body_ref.m_body->m_model * face_ref->m_TtoL * glmvec4{ p2D.x, p2D.y, 0.0, 1.0 } };
-				contact.m_contact_points.emplace_back(posW, contact.m_body_ref.m_body->m_orient_it * face_ref->m_normalL);
-			}
-		}
+				contact.m_contact_points.emplace_back(posW, RTOWN(face_ref->m_normalL));
+			} 
+		} 
 
 
 		/// <summary>
@@ -806,7 +815,7 @@ namespace ve {
 		void createEdgeContact(Contact& contact, EdgeQuery &eq) {
 
 			Face* ref_face = maxFaceAlignment(eq.m_normalL, eq.m_edge_ref->m_edge_face_ptrs);	//face of A best aligned with the contact normal
-			Face* inc_face = maxFaceAlignment(-contact.m_body_ref.m_toOtherIT * eq.m_normalL, eq.m_edge_inc->m_edge_face_ptrs);	//face of B best aligned with the contact normal
+			Face* inc_face = maxFaceAlignment(-RTOIN(eq.m_normalL), eq.m_edge_inc->m_edge_face_ptrs);	//face of B best aligned with the contact normal
 		
 			real dp_ref = glm::dot(eq.m_normalL, ref_face->m_normalL);
 			real dp_inc = glm::dot(eq.m_normalL, inc_face->m_normalL);
@@ -816,11 +825,11 @@ namespace ve {
 				std::swap(eq.m_edge_ref, eq.m_edge_inc);
 			}
 
-			if (glm::dot(ref_face->m_normalL, contact.m_body_inc.m_toOtherIT * inc_face->m_normalL) > 1.0 - c_eps) { //face - face
+			if (glm::dot(ref_face->m_normalL, ITORN(inc_face->m_normalL)) > 1.0 - c_eps) { //face - face
 				clipFaceFace(contact, ref_face, inc_face); 
 			}
 			else {
-				if (fabs(glm::dot(ref_face->m_normalL, glmmat3{ contact.m_body_inc.m_toOther } * eq.m_edge_inc->m_edgeL )) < c_eps) {
+				if (fabs(glm::dot(ref_face->m_normalL, ITORV(eq.m_edge_inc->m_edgeL))) < c_eps) { 
 					clipEdgeFace(contact, ref_face, eq.m_edge_inc); //face - edge
 				}
 				else { //we have only an edge - edge contact}
