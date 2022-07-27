@@ -130,6 +130,11 @@ namespace ve {
 			std::set<Face*>	m_edge_face_ptrs{};		//pointers to the two faces this edge belongs to
 		};
 
+		struct signed_edge_t {
+			uint32_t m_vertex;
+			real	 m_factor{1.0};
+		};
+
 		using SignedEdge = std::pair<Edge*,real>;
 
 		struct Face {
@@ -195,7 +200,7 @@ namespace ve {
 			/// <param name="inertia_tensor"></param>
 			Polytope(	const std::vector<glmvec3>& vertices, 
 						const std::vector<std::pair<uint_t, uint_t>>&& edgeindices, 
-						const std::vector < std::vector<std::pair<uint_t,real>> >&& face_edge_indices, 
+						const std::vector < std::vector<signed_edge_t> >&& face_edge_indices,
 						inertia_tensor_t inertia_tensor)
 							: Collider{}, m_vertices{}, m_edges{}, m_faces{}, inertiaTensor{ inertia_tensor } {
 
@@ -219,17 +224,17 @@ namespace ve {
 					auto& face = m_faces.emplace_back();	//add new face to face vector
 
 					for (auto& edge : face_edge_idx) {		//add references to the edges belonging to this face
-						Edge* pe = &m_edges.at(edge.first);
-						face.m_face_edge_ptrs.push_back( SignedEdge{ pe, edge.second } );	//add new face to face vector
-						if (edge.second > 0) { face.m_face_vertex_ptrs.push_back(&pe->m_first_vertexL); } //list of vertices of this face
+						Edge* pe = &m_edges.at(edge.m_vertex);
+						face.m_face_edge_ptrs.push_back( SignedEdge{ pe, edge.m_factor } );	//add new face to face vector
+						if (edge.m_factor > 0) { face.m_face_vertex_ptrs.push_back(&pe->m_first_vertexL); } //list of vertices of this face
 						else { face.m_face_vertex_ptrs.push_back(&pe->m_second_vertexL); }
 
-						m_edges[edge.first].m_edge_face_ptrs.insert(&face);	//we touch each face only once, no need to check if face already in list
-						m_edges[edge.first].m_first_vertexL.m_vertex_face_ptrs.insert(&face);	//sets cannot hold duplicates
-						m_edges[edge.first].m_second_vertexL.m_vertex_face_ptrs.insert(&face);
+						m_edges[edge.m_vertex].m_edge_face_ptrs.insert(&face);	//we touch each face only once, no need to check if face already in list
+						m_edges[edge.m_vertex].m_first_vertexL.m_vertex_face_ptrs.insert(&face);	//sets cannot hold duplicates
+						m_edges[edge.m_vertex].m_second_vertexL.m_vertex_face_ptrs.insert(&face);
 					}
-					glmvec3 edge0 = m_edges[face_edge_idx[0].first].m_edgeL * face_edge_idx[0].second;
-					glmvec3 edge1 = m_edges[face_edge_idx[1].first].m_edgeL * face_edge_idx[1].second;
+					glmvec3 edge0 = m_edges[face_edge_idx[0].m_vertex].m_edgeL * face_edge_idx[0].m_factor;
+					glmvec3 edge1 = m_edges[face_edge_idx[1].m_vertex].m_edgeL * face_edge_idx[1].m_factor;
 
 					glmvec3 tangent = glm::normalize( edge0 );
 					face.m_normalL = glm::normalize( glm::cross( tangent, edge1 ));
@@ -252,8 +257,14 @@ namespace ve {
 
 		Polytope g_cube {
 				{ { -0.5,-0.5,-0.5 }, { -0.5,-0.5,0.5 }, { -0.5,0.5,0.5 }, { -0.5,0.5,-0.5 }, { 0.5,-0.5,-0.5 }, { 0.5,-0.5,0.5 }, { 0.5,0.5,0.5 }, { 0.5,0.5,-0.5 } },
-				{},
-				{},
+				{ {0,1}, {1,2}, {2,3}, {3,0}, {4,5}, {5,6}, {6,7}, {7,0}, {5,0}, {1,4}, {3,6}, {7,2} }, //edges
+				{	{ {0}, {1}, {2}, {3} },							//face 0
+					{ {4}, {5}, {6}, {7} },							//face 1
+					{ {0,-1.0}, {8,-1.0}, {4,-1.0}, {9,-1.0} },		//face 2
+					{ {2,-1.0}, {11,-1.0}, {6,-1.0}, {10,-1.0} },	//face 3
+					{ {3,-1.0}, {10}, {5,-1.0}, {8} },				//face 4
+					{ {1,-1.0}, {9}, {7,-1.0}, {11} }				//face 5
+				},
 				[&](real mass, glmvec3& s) {
 					return mass * glmmat3{ {s.y * s.y + s.z * s.z,0,0}, {0,s.x * s.x + s.z * s.z,0}, {0,0,s.x * s.x + s.y * s.y} } / 12.0;
 				}
@@ -405,18 +416,10 @@ namespace ve {
 			};
 
 			uint64_t	m_last_loop{ std::numeric_limits<uint64_t>::max() }; //number of last loop this contact was valid
-			BodyPtr		m_body_ref;
-			BodyPtr		m_body_inc;
-
-			//std::array<std::shared_ptr<Body>, 2> m_bodies{};	//pointer to the two bodies involved into this contact
-			//glmmat4						m_AtoB;					//transform from space A to space B
-			//glmmat4						m_BtoA;					//transform from space B to space A
-			//glmmat3						m_AtoBit;				//inverse transpose of transform AtoB (for normal vectors)
-
-
-
-			glmvec3						m_separating_axisW{0.0};		//Axis that separates the two bodies in world space
-			std::vector<ContactPoint>	m_contact_points{};		//Contact points in contact manifold in world space
+			BodyPtr		m_body_ref;	//reference body, we will use its local space mostly
+			BodyPtr		m_body_inc; //incident body, we will transfer its points/vectors to the ref space
+			glmvec3		m_separating_axisW{0.0};			//Axis that separates the two bodies in world space
+			std::vector<ContactPoint>	m_contact_points{};	//Contact points in contact manifold in world space
 		};
 
 	protected:
@@ -909,28 +912,24 @@ using namespace ve;
 
 
 
-/// <summary>
-/// </summary>
-/// <param name=""</param>
-void closestPoints( glmvec3& a, glmvec3& a1, glmvec3& b, glmvec3& b1 ) {
-	glmvec3 va = a1 - a;
-	glmvec3 vb = b1 - b;
-	glmvec3 c = b - a;
-	glmvec3 vah = va / glm::dot(va, va);
-	glmvec3 d = d  - glm::dot(va, c) * vah;
-	glmvec3 v = vb - glm::dot(va, vb) * vah;;
-	real s = -glm::dot(d, v) / glm::dot(v,v);
-	real t = glm::dot( ( (b + s * vb) - a ), vah );
-
-}
 
 
 namespace geometry {
-	//https://math.stackexchange.com/questions/846054/closest-points-on-two-line-segments
-	glmvec3 closestPointLineLine( glmvec3 p1,  glmvec3 p2, glmvec3 p3, glmvec3 p4) {
-
-		return {};
+	/// <summary>
+	/// </summary>
+	/// <param name=""</param>
+	void closestPointLineLine(glmvec3& a, glmvec3& a1, glmvec3& b, glmvec3& b1) {
+		glmvec3 va = a1 - a;
+		glmvec3 vb = b1 - b;
+		glmvec3 c = b - a;
+		glmvec3 vah = va / glm::dot(va, va);
+		glmvec3 d = d - glm::dot(va, c) * vah;
+		glmvec3 v = vb - glm::dot(va, vb) * vah;;
+		real s = -glm::dot(d, v) / glm::dot(v, v);
+		real t = std::min(std::max(glm::dot(((b + s * vb) - a), vah), 0.0), 1.0);
+		s = std::min(std::max(s, 0.0), 1.0);
 	}
+
 }
 
 
