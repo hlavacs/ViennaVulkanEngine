@@ -78,7 +78,7 @@ namespace std {
 }
 
 namespace geometry {
-	glmvec3 closestPointLineLine(glmvec3 p1, glmvec3 p2, glmvec3 p3, glmvec3 p4);
+	std::pair<glmvec3, glmvec3> closestPointsLineLine(glmvec3 p1, glmvec3 p2, glmvec3 p3, glmvec3 p4);
 }
 
 namespace clip {
@@ -256,24 +256,18 @@ namespace ve {
 		};
 
 		Polytope g_cube {
-				{ { -0.5,-0.5,-0.5 }, { -0.5,-0.5,0.5 }, { -0.5,0.5,0.5 }, { -0.5,0.5,-0.5 }, { 0.5,-0.5,-0.5 }, { 0.5,-0.5,0.5 }, { 0.5,0.5,0.5 }, { 0.5,0.5,-0.5 } },
-				{ {0,1}, {1,2}, {2,3}, {3,0}, {4,5}, {5,6}, {6,7}, {7,0}, {5,0}, {1,4}, {3,6}, {7,2} }, //edges
-				{	{ {0}, {1}, {2}, {3} },							//face 0
-					{ {4}, {5}, {6}, {7} },							//face 1
-					{ {0,-1.0}, {8,-1.0}, {4,-1.0}, {9,-1.0} },		//face 2
-					{ {2,-1.0}, {11,-1.0}, {6,-1.0}, {10,-1.0} },	//face 3
-					{ {3,-1.0}, {10}, {5,-1.0}, {8} },				//face 4
-					{ {1,-1.0}, {9}, {7,-1.0}, {11} }				//face 5
-				},
-				[&](real mass, glmvec3& s) {
-					return mass * glmmat3{ {s.y * s.y + s.z * s.z,0,0}, {0,s.x * s.x + s.z * s.z,0}, {0,0,s.x * s.x + s.y * s.y} } / 12.0;
-				}
-		};
-
-		struct Support {
-			Vertex* m_vertexB;		//vertex in local space of B
-			glmvec3 m_positionA;	//vertex position in local space of A
-			real	m_distanceA;	//distance in space A
+			{ { -0.5,-0.5,-0.5 }, { -0.5,-0.5,0.5 }, { -0.5,0.5,0.5 }, { -0.5,0.5,-0.5 }, { 0.5,-0.5,-0.5 }, { 0.5,-0.5,0.5 }, { 0.5,0.5,0.5 }, { 0.5,0.5,-0.5 } },
+			{ {0,1}, {1,2}, {2,3}, {3,0}, {4,5}, {5,6}, {6,7}, {7,0}, {5,0}, {1,4}, {3,6}, {7,2} }, //edges
+			{	{ {0}, {1}, {2}, {3} },							//face 0
+				{ {4}, {5}, {6}, {7} },							//face 1
+				{ {0,-1.0}, {8,-1.0}, {4,-1.0}, {9,-1.0} },		//face 2
+				{ {2,-1.0}, {11,-1.0}, {6,-1.0}, {10,-1.0} },	//face 3
+				{ {3,-1.0}, {10}, {5,-1.0}, {8} },				//face 4
+				{ {1,-1.0}, {9}, {7,-1.0}, {11} }				//face 5
+			},
+			[&](real mass, glmvec3& s) {
+				return mass * glmmat3{ {s.y * s.y + s.z * s.z,0,0}, {0,s.x * s.x + s.z * s.z,0}, {0,0,s.x * s.x + s.y * s.y} } / 12.0;
+			}
 		};
 
 		class Body;
@@ -836,8 +830,12 @@ namespace ve {
 					clipEdgeFace(contact, ref_face, eq.m_edge_inc); //face - edge
 				}
 				else { //we have only an edge - edge contact}
-					glmvec3 posL = {}; // geometry::closestPointLineLine();
-					contact.m_contact_points.emplace_back(posL, eq.m_normalL); 
+					auto posL = geometry::closestPointsLineLine( 
+						eq.m_edge_ref->m_first_vertexL.m_positionL, eq.m_edge_ref->m_second_vertexL.m_positionL,
+						ITORP(eq.m_edge_inc->m_first_vertexL.m_positionL), ITORP(eq.m_edge_inc->m_second_vertexL.m_positionL)
+					);
+
+					contact.m_contact_points.emplace_back( (posL.first + posL.second)/2.0, eq.m_normalL); 
 				} 
 			}
 		}
@@ -918,7 +916,7 @@ namespace geometry {
 	/// <summary>
 	/// </summary>
 	/// <param name=""</param>
-	void closestPointLineLine(glmvec3& a, glmvec3& a1, glmvec3& b, glmvec3& b1) {
+	std::pair<glmvec3, glmvec3> closestPointsLineLine(glmvec3 a, glmvec3 a1, glmvec3 b, glmvec3 b1) {
 		glmvec3 va = a1 - a;
 		glmvec3 vb = b1 - b;
 		glmvec3 c = b - a;
@@ -928,6 +926,7 @@ namespace geometry {
 		real s = -glm::dot(d, v) / glm::dot(v, v);
 		real t = std::min(std::max(glm::dot(((b + s * vb) - a), vah), 0.0), 1.0);
 		s = std::min(std::max(s, 0.0), 1.0);
+		return {a + s*va, b + t*vb};
 	}
 
 }
