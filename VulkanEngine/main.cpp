@@ -300,6 +300,7 @@ namespace ve {
 			glmmat3		m_inertia_invL{ 1.0 };			//computed when the body is created
 
 			//computed when the body moves
+			glmvec3		m_vbias{0.0};
 			glmmat4		m_model{ glmmat4{1} };			//model matrix at time slots
 			glmmat4		m_model_inv{ glmmat4{1} };		//model inverse matrix at time slots
 			glmmat3		m_model_it;					//orientation inverse transpose for bringing normal vector to world
@@ -320,7 +321,8 @@ namespace ve {
 			bool stepPosition(double dt, glmvec3& pos, glmquat& quat) {
 				bool active = false;
 				if (abs(glm::dot(m_linear_velocityW, m_linear_velocityW)) > c_eps * c_eps) {
-					pos = m_positionW + m_linear_velocityW * (real)dt;
+					pos = m_positionW + (m_linear_velocityW + m_vbias) * (real)dt;
+					m_vbias = glmvec3{ 0.0 };
 					active = true;
 				}
 
@@ -477,8 +479,9 @@ namespace ve {
 			static int64_t cubeid = 0;
 
 			if (event.idata1 == GLFW_KEY_SPACE && event.idata3 == GLFW_PRESS) {
-				glmvec3 positionCamera{ getSceneManagerPointer()->getSceneNode("StandardCameraParent")->getWorldTransform()[3] };
-				glmvec3 dir{ getSceneManagerPointer()->getSceneNode("StandardCamera")->getWorldTransform()[2] };
+				glmvec3 positionCamera{getSceneManagerPointer()->getSceneNode("StandardCameraParent")->getWorldTransform()[3]};
+				
+				glmvec3 dir{getSceneManagerPointer()->getSceneNode("StandardCamera")->getWorldTransform()[2]};
 				glmvec3 vel = 30.0 * rnd_unif(rnd_gen) * dir / glm::length(dir);
 				glmvec3 scale{1,1,1}; // = rnd_unif(rnd_gen) * 10;
 				real angle = rnd_unif(rnd_gen) * 10 * 3 * M_PI / 180.0;
@@ -490,6 +493,15 @@ namespace ve {
 				Body body{ cube, &g_cube, scale, positionCamera + 2.0*dir, glm::rotate(angle, glm::normalize(orient)), &onMove, vel, vrot, 1.0 / 100.0, 0.2, 1.0 };
 				body.m_forces.insert( { 0ul, Force{} } );
 				addBody(std::make_shared<Body>(body));
+				
+
+				/*VESceneNode* cube;
+				VECHECKPOINTER(cube = getSceneManagerPointer()->loadModel("The Cube" + std::to_string(++cubeid), "media/models/test/crate0", "cube.obj", 0, getRoot()));
+				Body body{ cube, &g_cube, glmvec3{1.0}, positionCamera, glmquat{}, &onMove, glmvec3{0.0}, glmvec3{0.0}, 1.0 / 100.0, 0.2, 1.0 };
+				body.m_forces.insert({ 0ul, Force{} });
+				addBody(std::make_shared<Body>(body));
+				*/
+
 			}
 			return false;
 		};
@@ -538,7 +550,6 @@ namespace ve {
 			for (auto& coll : cell) {
 				for (auto& neigh : neigh) {
 					if (coll.second->m_owner != neigh.second->m_owner) {
-
 						auto it = m_contacts.find({ coll.second->m_owner, neigh.second->m_owner }); //if contact exists already
 						if (it != m_contacts.end()) { it->second.m_last_loop = m_loop; }			// yes - update loop count
 						else { 
@@ -621,7 +632,7 @@ namespace ve {
 				}
 			}
 			//std::cout << std::endl;
-			if (correct && min_depth<0.0) { contact.m_body_inc.m_body->m_positionW += glmvec3{ 0, -min_depth, 0 }; }
+			if (correct && min_depth<0.0) { contact.m_body_inc.m_body->m_vbias += glmvec3{ 0, -min_depth, 0 }; }
 		}
 
 
@@ -738,7 +749,7 @@ namespace ve {
 				//std::cout << distance << "\n";
 				if (distance > 0) return { distance, &face, vertB }; //no overlap - distance is positive
 				if (distance > result.m_separation) { result = { distance, &face, vertB }; }
-			}
+			} 
 			return result; //overlap - distance is negative
 		}
 
