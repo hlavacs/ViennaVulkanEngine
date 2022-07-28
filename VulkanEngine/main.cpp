@@ -75,6 +75,13 @@ namespace std {
 		}
 	};
 
+	template<>
+	struct equal_to<voidppair_t> {
+		constexpr bool operator()(const voidppair_t& l, const voidppair_t& r) const {
+			return (l.first == r.first && l.second == r.second) || (l.first == r.second && l.second == r.first);
+		}
+	};
+
 }
 
 namespace geometry {
@@ -275,7 +282,7 @@ namespace ve {
 
 		class Body {
 		public:
-			void*		m_owner = nullptr;				//pointer to owner of this body
+			void*		m_owner = nullptr;				//pointer to owner of this body, must be unique
 			Polytope*	m_polytope = nullptr;			//geometric shape
 			glmvec3		m_scale{ 1,1,1 };				//scale factor in local space
 			glmvec3		m_positionW{ 0, 0, 0 };			//current position at time slot in world space
@@ -298,6 +305,8 @@ namespace ve {
 			glmmat3		m_model_it;					//orientation inverse transpose for bringing normal vector to world
 			glmmat3		m_inertiaW{ glmmat4{1} };		//inertia tensor in world frame
 			glmmat3		m_inertia_invW{ glmmat4{1} };	//inverse inertia tensor in world frame
+			int_t		m_grid_x{ 0 };
+			int_t		m_grid_z{ 0 };
 
 			Body() { inertiaTensorL(); updateMatrices(); };
 
@@ -442,11 +451,26 @@ namespace ve {
 			glmquat orient = body->m_orientationLW;
 			body->stepPosition(dt, pos, orient);
 			cube->setTransform(Body::computeModel(pos, orient, body->m_scale));
+
 		};
 
 		void addBody( std::shared_ptr<Body> pbody ) {
 			m_bodies.insert( { pbody->m_owner, pbody } );
-			m_grid[intpair_t{ static_cast<int_t>(pbody->m_positionW.x / c_width), static_cast<int_t>(pbody->m_positionW.y / c_width) }].insert({ pbody->m_owner, pbody });
+			pbody->m_grid_x = static_cast<int_t>(pbody->m_positionW.x / c_width);
+			pbody->m_grid_z = static_cast<int_t>(pbody->m_positionW.z / c_width);
+			m_grid[intpair_t{ pbody->m_grid_x, pbody->m_grid_z }].insert({ pbody->m_owner, pbody });
+		}
+		
+		void moveBodyInGrid(std::shared_ptr<Body> pbody) {
+			int_t x = static_cast<int_t>(pbody->m_positionW.x / c_width);
+			int_t z = static_cast<int_t>(pbody->m_positionW.z / c_width);
+			//std::cout << x << " " << z << "\n";
+			if (x != pbody->m_grid_x || z != pbody->m_grid_z) {
+				m_grid[intpair_t{ pbody->m_grid_x, pbody->m_grid_z }].erase(pbody->m_owner);
+				pbody->m_grid_x = x;
+				pbody->m_grid_z = z;
+				m_grid[intpair_t{ x, z }].insert({ pbody->m_owner, pbody });
+			}
 		}
 
 		bool onKeyboard(veEvent event) {
@@ -472,7 +496,7 @@ namespace ve {
 
 		void onFrameStarted(veEvent event) {
 			double current_time = m_last_time + event.dt;
-			while (current_time > m_next_slot) {
+			while (current_time > m_next_slot) {	//compute position/vel at time slots
 				++m_loop;
 				broadPhase();
 				narrowPhase();
@@ -493,7 +517,10 @@ namespace ve {
 				m_last_slot = m_next_slot;
 				m_next_slot += c_delta_slot;
 			}
-			for (auto& c : m_bodies) {
+			for (auto& c : m_bodies) {	//predict pos/vel at slot + delta, this is only a prediction for rendering, not stored anywhere
+				moveBodyInGrid(c.second);
+			}
+			for (auto& c : m_bodies) {	//predict pos/vel at slot + delta, this is only a prediction for rendering, not stored anywhere
 				if (c.second->m_on_move != nullptr) {
 					(*c.second->m_on_move)(current_time - m_last_slot, c.second); //predict new pos/orient
 				}
@@ -511,13 +538,16 @@ namespace ve {
 			for (auto& coll : cell) {
 				for (auto& neigh : neigh) {
 					if (coll.second->m_owner != neigh.second->m_owner) {
+
 						auto it = m_contacts.find({ coll.second->m_owner, neigh.second->m_owner }); //if contact exists already
-						if (it != m_contacts.end()) it->second.m_last_loop = m_loop;				//update loop count
-						else m_contacts.insert({ { coll.second->m_owner, neigh.second->m_owner }, {m_loop, {coll.second}, {neigh.second} }
-					});
+						if (it != m_contacts.end()) { it->second.m_last_loop = m_loop; }			// yes - update loop count
+						else { 
+							m_contacts.insert({ { coll.second->m_owner, neigh.second->m_owner }, {m_loop, {coll.second}, {neigh.second} } }); //no - make new
+						}
 					}
 				}
 			}
+			//std::cout << m_contacts.size() << "\n";
 		}
 
 		/// <summary>
@@ -531,10 +561,10 @@ namespace ve {
 
 			for (auto& cell : m_grid) {		//loop through all cells that are currently not empty.
 				makeBodyPairs(m_global_cell, cell.second);		//test all bodies against the ground
-				//for (auto& pi : c_pairs) {	//create pairs of neighborig cells and make body pairs.
-				//	intpair_t ni = { cell.first.first + pi.first, cell.first.second + pi.second };
-				//	if ( m_grid.count(ni) > 0) makeBodyPairs(cell.second, m_grid.at(ni)); 
-				//} 
+				for (auto& pi : c_pairs) {	//create pairs of neighborig cells and make body pairs.
+					intpair_t ni = { cell.first.first + pi.first, cell.first.second + pi.second };
+					if (m_grid.count(ni) > 0) { makeBodyPairs(cell.second, m_grid.at(ni)); }
+				} 
 			}
 		}
 
@@ -547,7 +577,7 @@ namespace ve {
 			for (auto it = std::begin(m_contacts); it != std::end(m_contacts); ) {
 				auto& contact = it->second;
 				contact.m_contact_points.clear();
-				if (contact.m_last_loop == m_loop ) {	//is contact still possible?
+				if (contact.m_last_loop == m_loop) {	//is contact still possible?
 					if (contact.m_body_ref.m_body->m_owner == nullptr) groundTest(contact); //is the ref body the ground?
 					else {
 						glmvec3 diff = contact.m_body_inc.m_body->m_positionW - contact.m_body_ref.m_body->m_positionW;
@@ -557,7 +587,7 @@ namespace ve {
 					}
 					++it;
 				}
-				else { m_contacts.erase(it); }				//no - erase from container
+				else { it = m_contacts.erase(it); }				//no - erase from container
 			}
 		}
 
@@ -669,6 +699,8 @@ namespace ve {
 		/// </summary>
 		/// <param name="contact">The contact between the two bodies.</param>
 		void SAT(Contact& contact) {
+			//std::cout << contact.m_body_ref.m_body->m_owner << " " << contact.m_body_inc.m_body->m_owner << "\n";
+
 			contact.m_body_ref.m_to_other = contact.m_body_inc.m_body->m_model_inv * contact.m_body_ref.m_body->m_model; //transform to bring space A to space B
 			contact.m_body_ref.m_to_other_it = glm::transpose(glm::inverse(glmmat3{ contact.m_body_ref.m_to_other }));	//transform for a normal vector
 			contact.m_body_inc.m_to_other = contact.m_body_ref.m_body->m_model_inv * contact.m_body_inc.m_body->m_model; //transform to bring space B to space A
@@ -703,6 +735,7 @@ namespace ve {
 				Vertex* vertB = body_inc.m_body->support( glm::normalize( -RTOIN(face.m_normalL)));
 
 				real distance = glm::dot(face.m_normalL, ITORP(vertB->m_positionL) - face.m_face_edge_ptrs.begin()->first->m_first_vertexL.m_positionL);
+				//std::cout << distance << "\n";
 				if (distance > 0) return { distance, &face, vertB }; //no overlap - distance is positive
 				if (distance > result.m_separation) { result = { distance, &face, vertB }; }
 			}
@@ -913,22 +946,21 @@ using namespace ve;
 
 
 namespace geometry {
+
+	//https://en.wikipedia.org/wiki/Skew_lines#Nearest_points
 	/// <summary>
 	/// </summary>
 	/// <param name=""</param>
-	std::pair<glmvec3, glmvec3> closestPointsLineLine(glmvec3 a, glmvec3 a1, glmvec3 b, glmvec3 b1) {
-		glmvec3 va = a1 - a;
-		glmvec3 vb = b1 - b;
-		glmvec3 c = b - a;
-		glmvec3 vah = va / glm::dot(va, va);
-		glmvec3 d = d - glm::dot(va, c) * vah;
-		glmvec3 v = vb - glm::dot(va, vb) * vah;;
-		real s = -glm::dot(d, v) / glm::dot(v, v);
-		real t = std::min(std::max(glm::dot(((b + s * vb) - a), vah), 0.0), 1.0);
-		s = std::min(std::max(s, 0.0), 1.0);
-		return {a + s*va, b + t*vb};
+	std::pair<glmvec3, glmvec3> closestPointsLineLine(glmvec3 p1, glmvec3 a, glmvec3 p2, glmvec3 b) {
+		glmvec3 d1 = a - p1;
+		glmvec3 d2 = b - p2;
+		glmvec3 n = glm::cross(d1, d2);
+		glmvec3 n1 = glm::cross(d1, n);
+		glmvec3 n2 = glm::cross(d2, n);
+		real t1 = glm::clamp(glm::dot(p2 - p1, n2) / glm::dot(d1, n2), 0.0, 1.0);
+		real t2 = glm::clamp(glm::dot(p1 - p2, n1) / glm::dot(d2, n1), 0.0, 1.0);
+		return {p1 + t1*d1, p2 + t2*d2};
 	}
-
 }
 
 
