@@ -156,7 +156,7 @@ namespace ve {
 		template<typename T>
 		Face* maxFaceAlignment(const glmvec3 dirL, const T& faces) {
 			assert(faces.size() > 0);
-			real max_face_alignment{ std::numeric_limits<real>::min() };
+			real max_face_alignment{ -std::numeric_limits<real>::max() };
 			Face* maxface = nullptr;
 			for (Face* const face : faces) {
 				if (real face_alignment = glm::dot(dirL, face->m_normalL); face_alignment > max_face_alignment) {
@@ -212,6 +212,7 @@ namespace ve {
 							: Collider{}, m_vertices{}, m_edges{}, m_faces{}, inertiaTensor{ inertia_tensor } {
 
 				//add vertices
+				m_vertices.reserve(vertices.size());
 				std::ranges::for_each(vertices, [&](const glmvec3& v) {		
 						m_vertices.emplace_back(v);
 						if (real l = glm::length(v) > m_bounding_sphere_radius) m_bounding_sphere_radius = l;
@@ -219,13 +220,15 @@ namespace ve {
 				);
 
 				//add edges
+				m_edges.reserve(edgeindices.size());
 				for (auto& edgepair : edgeindices) {	//compute edges from indices
-					Edge& edge = m_edges.emplace_back( m_vertices[edgepair.first], m_vertices[edgepair.second], m_vertices[edgepair.second].m_positionL - m_vertices[edgepair.first].m_positionL);
-					m_vertices[edgepair.first].m_vertex_edge_ptrs.insert(&edge);
-					m_vertices[edgepair.second].m_vertex_edge_ptrs.insert(&edge);
+					Edge* edge = &m_edges.emplace_back( m_vertices[edgepair.first], m_vertices[edgepair.second], m_vertices[edgepair.second].m_positionL - m_vertices[edgepair.first].m_positionL);
+					m_vertices[edgepair.first].m_vertex_edge_ptrs.insert(edge);
+					m_vertices[edgepair.second].m_vertex_edge_ptrs.insert(edge);
 				}
 
 				//add faces
+				m_faces.reserve(face_edge_indices.size());
 				for (auto& face_edge_idx : face_edge_indices) {	//compute faces from edge indices belonging to this face
 					assert(face_edge_idx.size() >= 2);
 					auto& face = m_faces.emplace_back();	//add new face to face vector
@@ -391,7 +394,7 @@ namespace ve {
 			/// <returns>Pointer to support vertex of body B.</returns>
 			Vertex* support(glmvec3 dirL, glmmat4 BtoA = glmmat4{ 1.0 }) {
 				Vertex* result(nullptr);
-				real max_dp{ std::numeric_limits<real>::min() };
+				real max_dp{ -std::numeric_limits<real>::max() };
 				for ( auto & vert : m_polytope->m_vertices ) {
 					if (real dp = glm::dot(dirL, vert.m_positionL); dp > max_dp) { result = &vert; max_dp = dp; }
 				}
@@ -481,7 +484,7 @@ namespace ve {
 			if (event.idata1 == GLFW_KEY_SPACE && event.idata3 == GLFW_PRESS) {
 				glmvec3 positionCamera{getSceneManagerPointer()->getSceneNode("StandardCameraParent")->getWorldTransform()[3]};
 				
-				glmvec3 dir{getSceneManagerPointer()->getSceneNode("StandardCamera")->getWorldTransform()[2]};
+				/*glmvec3 dir{getSceneManagerPointer()->getSceneNode("StandardCamera")->getWorldTransform()[2]};
 				glmvec3 vel = 30.0 * rnd_unif(rnd_gen) * dir / glm::length(dir);
 				glmvec3 scale{1,1,1}; // = rnd_unif(rnd_gen) * 10;
 				real angle = rnd_unif(rnd_gen) * 10 * 3 * M_PI / 180.0;
@@ -493,14 +496,14 @@ namespace ve {
 				Body body{ cube, &g_cube, scale, positionCamera + 2.0*dir, glm::rotate(angle, glm::normalize(orient)), &onMove, vel, vrot, 1.0 / 100.0, 0.2, 1.0 };
 				body.m_forces.insert( { 0ul, Force{} } );
 				addBody(std::make_shared<Body>(body));
-				
+				*/
 
-				/*VESceneNode* cube;
+				VESceneNode* cube;
 				VECHECKPOINTER(cube = getSceneManagerPointer()->loadModel("The Cube" + std::to_string(++cubeid), "media/models/test/crate0", "cube.obj", 0, getRoot()));
 				Body body{ cube, &g_cube, glmvec3{1.0}, positionCamera, glmquat{}, &onMove, glmvec3{0.0}, glmvec3{0.0}, 1.0 / 100.0, 0.2, 1.0 };
 				body.m_forces.insert({ 0ul, Force{} });
 				addBody(std::make_shared<Body>(body));
-				*/
+				
 
 			}
 			return false;
@@ -740,7 +743,7 @@ namespace ve {
 		/// <param name="contact">The pair contact struct.</param>
 		/// <returns>Negative: overlap of bodies along this axis. Positive: distance between the bodies.</returns>
 		FaceQuery queryFaceDirections(Contact& contact, Contact::BodyPtr& body_ref, Contact::BodyPtr& body_inc) {
-			FaceQuery result{std::numeric_limits<real>::min(), nullptr, nullptr };
+			FaceQuery result{-std::numeric_limits<real>::max(), nullptr, nullptr };
 
 			for (auto& face : body_ref.m_body->m_polytope->m_faces) {
 				Vertex* vertB = body_inc.m_body->support( glm::normalize( -RTOIN(face.m_normalL)));
@@ -764,16 +767,21 @@ namespace ve {
 		/// <param name="BtoA">Transform from object space B to A.</param>
 		/// <returns>Negative: overlap of bodies along this axis. Positive: distance between the bodies.</returns>
 		EdgeQuery queryEdgeDirections(Contact& contact) {
-			EdgeQuery result{ std::numeric_limits<real>::min(), nullptr, nullptr };
+			EdgeQuery result{ -std::numeric_limits<real>::max(), nullptr, nullptr };
 
 			for (auto& edgeA : contact.m_body_ref.m_body->m_polytope->m_edges) {	//loop over all edge-edge pairs
 				for (auto& edgeB : contact.m_body_inc.m_body->m_polytope->m_edges) {
-					glmvec3 n = glm::normalize(glm::cross(edgeA.m_edgeL, ITORV(edgeB.m_edgeL)));	//axis n is cross product of both edges
-					if (glm::dot( n, edgeA.m_first_vertexL.m_positionL) < 0) n = -n;				//n must be oriented away from center of A								
-					Vertex* vertB = contact.m_body_inc.m_body->support( -RTOIN(n));		//support of B in negative normal direction
-					real distance = glm::dot( n, ITORP(vertB->m_positionL) - edgeA.m_first_vertexL.m_positionL);//overlap distance along n
-					if (distance > 0) return { distance, &edgeA, &edgeB };							//no overlap - distance is positive
-					if (distance > result.m_separation) { result = { distance, &edgeA, &edgeB, n }; };	//remember max of negative distances
+					glmvec3 n = glm::cross(edgeA.m_edgeL, ITORV(edgeB.m_edgeL));	//axis n is cross product of both edges
+					real len = glm::length(n);
+					if (len > 0.0) {
+						n = n / len;
+						if (glm::dot(n, edgeA.m_first_vertexL.m_positionL) < 0) n = -n;				//n must be oriented away from center of A								
+						Vertex* vertB = contact.m_body_inc.m_body->support(-RTOIN(n));		//support of B in negative normal direction
+						real distance = glm::dot(n, ITORP(vertB->m_positionL) - edgeA.m_first_vertexL.m_positionL);//overlap distance along n
+						if (distance > 0) return { distance, &edgeA, &edgeB };							//no overlap - distance is positive
+						if (distance > result.m_separation) { result = { distance, &edgeA, &edgeB, n }; };	//remember max of negative distances
+
+					}
 				}
 			}
 			return result; 
