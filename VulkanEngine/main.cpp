@@ -44,6 +44,8 @@ using uint_t = uint32_t;
 
 constexpr real operator "" _real(long double val) { return (real)val; };
 
+
+
 const double c_eps = 1.0e-10;
 const real c_margin = 1.0e-2_real;
 const real c_2margin = 2.0*c_margin;
@@ -74,14 +76,16 @@ namespace std {
 			return seed;
 		}
 	};
-
 	template<>
 	struct equal_to<voidppair_t> {
 		constexpr bool operator()(const voidppair_t& l, const voidppair_t& r) const {
 			return (l.first == r.first && l.second == r.second) || (l.first == r.second && l.second == r.first);
 		}
 	};
-
+	ostream& operator<<(ostream& os, const glmvec3& v) {
+		os << "(" << v.x << ',' << v.y << ',' << v.z << ")";
+		return os;
+	}
 }
 
 namespace geometry {
@@ -498,12 +502,17 @@ namespace ve {
 				addBody(std::make_shared<Body>(body));
 				*/
 
-				VESceneNode* cube;
-				VECHECKPOINTER(cube = getSceneManagerPointer()->loadModel("The Cube" + std::to_string(++cubeid), "media/models/test/crate0", "cube.obj", 0, getRoot()));
-				Body body{ cube, &g_cube, glmvec3{1.0}, positionCamera, glmquat{}, &onMove, glmvec3{0.0}, glmvec3{0.0}, 1.0 / 100.0, 0.2, 1.0 };
-				body.m_forces.insert({ 0ul, Force{} });
-				addBody(std::make_shared<Body>(body));
-				
+				VESceneNode* cube0;
+				VECHECKPOINTER(cube0 = getSceneManagerPointer()->loadModel("The Cube" + std::to_string(++cubeid), "media/models/test/crate0", "cube.obj", 0, getRoot()));
+				Body body0{ cube0, &g_cube, glmvec3{1.0}, positionCamera + glmvec3{0,0,5}, glmquat{}, &onMove, glmvec3{0.0}, glmvec3{0.0}, 1.0 / 100.0, 0.2, 1.0 };
+				addBody(std::make_shared<Body>(body0));
+
+				VESceneNode* cube1;
+				VECHECKPOINTER(cube1 = getSceneManagerPointer()->loadModel("The Cube" + std::to_string(++cubeid), "media/models/test/crate0", "cube.obj", 0, getRoot()));
+				//glmquat orient{ glm::rotate(10.0, glmvec3{0,1,0}) };
+				glmquat orient{ };
+				Body body1{ cube1, &g_cube, glmvec3{1.0}, positionCamera + glmvec3{0,2,5}, orient, &onMove, glmvec3{0.0}, glmvec3{0.0}, 1.0 / 100.0, 0.2, 1.0 };
+				addBody(std::make_shared<Body>(body1));
 
 			}
 			return false;
@@ -727,13 +736,16 @@ namespace ve {
 			if ((eq = queryEdgeDirections(contact)).m_separation > 0) return;	//found a separating axis with edge-edge normal
 
 			if (fq0.m_separation > eq.m_separation || fq1.m_separation > eq.m_separation) {	//max separation is a face-vertex contact
-				if (fq0.m_separation > fq1.m_separation) { createFaceContact(contact, fq0); }
+				if (fq0.m_separation > fq1.m_separation) { 
+					createFaceContact(contact, fq0); 
+				}
 				else {
 					std::swap(contact.m_body_ref, contact.m_body_inc);	//body 0 is the reference body having the reference face
 					createFaceContact(contact, fq1);
 				}
 			}
-			else createEdgeContact( contact, eq);	//max separation is an edge-edge contact
+			else 
+				createEdgeContact( contact, eq);	//max separation is an edge-edge contact
 		}
 
 		/// <summary>
@@ -746,12 +758,19 @@ namespace ve {
 			FaceQuery result{-std::numeric_limits<real>::max(), nullptr, nullptr };
 
 			for (auto& face : body_ref.m_body->m_polytope->m_faces) {
-				Vertex* vertB = body_inc.m_body->support( glm::normalize( -RTOIN(face.m_normalL)));
+				glmvec3 n = glm::normalize(-RTOIN(face.m_normalL));
+				Vertex* vertB = body_inc.m_body->support( n );
+				glmvec3 pos = ITORP(vertB->m_positionL);
+				glmvec3 diff = pos - face.m_face_vertex_ptrs[0]->m_positionL;
+				real distance = glm::dot(face.m_normalL, diff);
+				//std::cout << distance << " " << n << " " << diff << "\n";
 
-				real distance = glm::dot(face.m_normalL, ITORP(vertB->m_positionL) - face.m_face_edge_ptrs.begin()->first->m_first_vertexL.m_positionL);
+				//real distance = glm::dot(face.m_normalL, ITORP(vertB->m_positionL) - face.m_face_vertex_ptrs[0]->m_positionL);
 				//std::cout << distance << "\n";
-				if (distance > 0) return { distance, &face, vertB }; //no overlap - distance is positive
-				if (distance > result.m_separation) { result = { distance, &face, vertB }; }
+				if (distance > 0) 
+					return { distance, &face, vertB }; //no overlap - distance is positive
+				if (distance > result.m_separation) 
+					result = { distance, &face, vertB };
 			} 
 			return result; //overlap - distance is negative
 		}
