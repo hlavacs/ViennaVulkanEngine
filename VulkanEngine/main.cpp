@@ -254,7 +254,7 @@ namespace ve {
 					face.m_normalL = glm::normalize( glm::cross( tangent, edge1 ));
 					glmvec3 bitangent = glm::cross(face.m_normalL, tangent);
 
-					face.m_TtoL = glm::translate(glmmat4(1), face.m_face_vertex_ptrs[0]->m_positionL) * glmmat4 { glmmat3{tangent, bitangent, face.m_normalL} };
+					face.m_TtoL = glm::translate(glmmat4(1), face.m_face_vertex_ptrs[0]->m_positionL) * glmmat4 { glmmat3{bitangent, face.m_normalL, tangent } };
 					face.m_LtoT = glm::inverse(face.m_TtoL);
 
 					for (auto& vertex : face.m_face_vertex_ptrs) {
@@ -435,6 +435,7 @@ namespace ve {
 		};
 
 	protected:
+		bool m_debug = false;
 
 		uint64_t		m_loop{ 0L };
 		double			m_last_time{ 0.0 };				//last time the sim was interpolated
@@ -473,7 +474,7 @@ namespace ve {
 		void moveBodyInGrid(std::shared_ptr<Body> pbody) {
 			int_t x = static_cast<int_t>(pbody->m_positionW.x / c_width);
 			int_t z = static_cast<int_t>(pbody->m_positionW.z / c_width);
-			//std::cout << x << " " << z << "\n";
+			//if(m_debug) std::cout << x << " " << z << "\n";
 			if (x != pbody->m_grid_x || z != pbody->m_grid_z) {
 				m_grid[intpair_t{ pbody->m_grid_x, pbody->m_grid_z }].erase(pbody->m_owner);
 				pbody->m_grid_x = x;
@@ -484,6 +485,11 @@ namespace ve {
 
 		bool onKeyboard(veEvent event) {
 			static int64_t cubeid = 0;
+
+			if (event.idata1 == GLFW_KEY_Z && event.idata3 == GLFW_PRESS) {
+				m_debug = true;
+				return true;
+			}
 
 			if (event.idata1 == GLFW_KEY_SPACE && event.idata3 == GLFW_PRESS) {
 				glmvec3 positionCamera{getSceneManagerPointer()->getSceneNode("StandardCameraParent")->getWorldTransform()[3]};
@@ -509,9 +515,9 @@ namespace ve {
 
 				VESceneNode* cube1;
 				VECHECKPOINTER(cube1 = getSceneManagerPointer()->loadModel("The Cube" + std::to_string(++cubeid), "media/models/test/crate0", "cube.obj", 0, getRoot()));
-				//glmquat orient{ glm::rotate(10.0, glmvec3{0,1,0}) };
-				glmquat orient{ };
-				Body body1{ cube1, &g_cube, glmvec3{1.0}, positionCamera + glmvec3{0,2,5}, orient, &onMove, glmvec3{0.0}, glmvec3{0.0}, 1.0 / 100.0, 0.2, 1.0 };
+				glmquat orient{ glm::rotate(5.0*2.0*M_PI/360.0, glmvec3{1,1,1}) };
+				//glmquat orient{ };
+				Body body1{ cube1, &g_cube, glmvec3{1.0}, positionCamera + glmvec3{0,1.01,5}, orient, &onMove, glmvec3{0.0}, glmvec3{0.0}, 1.0 / 100.0, 0.2, 1.0 };
 				addBody(std::make_shared<Body>(body1));
 
 			}
@@ -520,6 +526,7 @@ namespace ve {
 
 		void onFrameStarted(veEvent event) {
 			double current_time = m_last_time + event.dt;
+			auto last_loop = m_loop;
 			while (current_time > m_next_slot) {	//compute position/vel at time slots
 				++m_loop;
 				broadPhase();
@@ -541,8 +548,11 @@ namespace ve {
 				m_last_slot = m_next_slot;
 				m_next_slot += c_delta_slot;
 			}
-			for (auto& c : m_bodies) {	//predict pos/vel at slot + delta, this is only a prediction for rendering, not stored anywhere
-				moveBodyInGrid(c.second);
+			if (m_loop > last_loop) {
+				m_debug = false;
+				for (auto& c : m_bodies) {	//predict pos/vel at slot + delta, this is only a prediction for rendering, not stored anywhere
+					moveBodyInGrid(c.second);
+				}
 			}
 			for (auto& c : m_bodies) {	//predict pos/vel at slot + delta, this is only a prediction for rendering, not stored anywhere
 				if (c.second->m_on_move != nullptr) {
@@ -570,7 +580,7 @@ namespace ve {
 					}
 				}
 			}
-			//std::cout << m_contacts.size() << "\n";
+			//if(m_debug) std::cout << m_contacts.size() << "\n";
 		}
 
 		/// <summary>
@@ -629,7 +639,7 @@ namespace ve {
 					min_depth = std::min(min_depth,vW.y);
 
 					auto d = glm::dot(contact.m_body_inc.m_body->totalVelocityW( vW ) - contact.m_body_ref.m_body->totalVelocityW( vW ), glmvec3{ 0,1,0 });
-					//std::cout << d << " ";
+					//if(m_debug) std::cout << d << " ";
 					if (d > 0.0) {
 						contact.m_contact_points.emplace_back( vW, glmvec3{ 0,1,0 }, Contact::ContactPoint::separating);
 					} else if ( d >= c_resting) {
@@ -643,7 +653,7 @@ namespace ve {
 					++cnt;
 				}
 			}
-			//std::cout << std::endl;
+			// if(m_debug) std::cout << std::endl;
 			if (correct && min_depth<0.0) { contact.m_body_inc.m_body->m_vbias += glmvec3{ 0, -min_depth, 0 }; }
 		}
 
@@ -659,7 +669,7 @@ namespace ve {
 					auto r1 = cp.m_positionW - contact.m_body_inc.m_body->m_positionW;
 					auto vrel = contact.m_body_inc.m_body->totalVelocityW(cp.m_positionW) - contact.m_body_ref.m_body->totalVelocityW(cp.m_positionW);
 					auto d = glm::dot(vrel, cp.m_normalW);
-					//std::cout << d << " ";
+					//if(m_debug) std::cout << d << " ";
 
 					if (d < 0 && (cp.m_type == Contact::ContactPoint::type_t::any || cp.m_type == contact_type)) {
 						auto restitution = std::max(contact.m_body_ref.m_body->m_restitution, contact.m_body_inc.m_body->m_restitution);
@@ -697,7 +707,7 @@ namespace ve {
 				contact.m_body_inc.m_body->m_linear_velocityW += lin1;
 				contact.m_body_inc.m_body->m_angular_velocityW += ang1;
 			}
-			//std::cout << std::endl;
+			//if(m_debug) std::cout << std::endl;
 		}
 
 
@@ -722,7 +732,7 @@ namespace ve {
 		/// </summary>
 		/// <param name="contact">The contact between the two bodies.</param>
 		void SAT(Contact& contact) {
-			//std::cout << contact.m_body_ref.m_body->m_owner << " " << contact.m_body_inc.m_body->m_owner << "\n";
+			//if(m_debug) std::cout << contact.m_body_ref.m_body->m_owner << " " << contact.m_body_inc.m_body->m_owner << "\n";
 
 			contact.m_body_ref.m_to_other = contact.m_body_inc.m_body->m_model_inv * contact.m_body_ref.m_body->m_model; //transform to bring space A to space B
 			contact.m_body_ref.m_to_other_it = glm::transpose(glm::inverse(glmmat3{ contact.m_body_ref.m_to_other }));	//transform for a normal vector
@@ -763,10 +773,10 @@ namespace ve {
 				glmvec3 pos = ITORP(vertB->m_positionL);
 				glmvec3 diff = pos - face.m_face_vertex_ptrs[0]->m_positionL;
 				real distance = glm::dot(face.m_normalL, diff);
-				//std::cout << distance << " " << n << " " << diff << "\n";
+				//if(m_debug) std::cout << distance << " " << n << " " << diff << "\n";
 
 				//real distance = glm::dot(face.m_normalL, ITORP(vertB->m_positionL) - face.m_face_vertex_ptrs[0]->m_positionL);
-				//std::cout << distance << "\n";
+				//if(m_debug) std::cout << distance << "\n";
 				if (distance > 0) 
 					return { distance, &face, vertB }; //no overlap - distance is positive
 				if (distance > result.m_separation) 
@@ -794,12 +804,21 @@ namespace ve {
 					real len = glm::length(n);
 					if (len > 0.0) {
 						n = n / len;
-						if (glm::dot(n, edgeA.m_first_vertexL.m_positionL) < 0) n = -n;				//n must be oriented away from center of A								
+
+						if (glm::dot(n, edgeA.m_first_vertexL.m_positionL) < 0) n = -n;		//n must be oriented away from center of A								
 						Vertex* vertB = contact.m_body_inc.m_body->support(-RTOIN(n));		//support of B in negative normal direction
 						real distance = glm::dot(n, ITORP(vertB->m_positionL) - edgeA.m_first_vertexL.m_positionL);//overlap distance along n
-						if (distance > 0) return { distance, &edgeA, &edgeB };							//no overlap - distance is positive
-						if (distance > result.m_separation) { result = { distance, &edgeA, &edgeB, n }; };	//remember max of negative distances
 
+						if (m_debug) {
+							std::cout << " edgeA v1= " << edgeA.m_first_vertexL.m_positionL << " edgeA v2= " << edgeA.m_second_vertexL.m_positionL << " edgeB v1= " << edgeB.m_first_vertexL.m_positionL << " edgeB v2= " << edgeB.m_second_vertexL.m_positionL << "\n";
+							std::cout << " edgeA= " << edgeA.m_edgeL << " edgeB= " << edgeB.m_edgeL << " ITORV(edgeB)= " << ITORV(edgeB.m_edgeL) << " RTOWN(n)= " << n << " " << RTOWN(n) << " -RTOIN(n)= " << -RTOIN(n) << "\n";
+							std::cout << " vertB= " << vertB->m_positionL << " ITORP(vertB)= " << ITORP(vertB->m_positionL) << " ITORP(vertB) - edgeA v1= " << ITORP(vertB->m_positionL) - edgeA.m_first_vertexL.m_positionL << " " << distance << "\n";
+						}
+
+						if (distance > 0)
+							return { distance, &edgeA, &edgeB };							//no overlap - distance is positive
+						if (distance > result.m_separation) 
+							result = { distance, &edgeA, &edgeB, n };	//remember max of negative distances
 					}
 				}
 			}
