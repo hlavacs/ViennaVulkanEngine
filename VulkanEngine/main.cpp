@@ -86,6 +86,12 @@ namespace std {
 		os << "(" << v.x << ',' << v.y << ',' << v.z << ")";
 		return os;
 	}
+	ostream& operator<<(ostream& os, const glmmat3& m) {
+		os << "(" << m[0][0] << ',' << m[0][1] << ',' << m[0][2] << ")\n";
+		os << "(" << m[1][0] << ',' << m[1][1] << ',' << m[1][2] << ")\n";
+		os << "(" << m[2][0] << ',' << m[2][1] << ',' << m[2][2] << ")\n";
+		return os;
+	}
 }
 
 namespace geometry {
@@ -104,6 +110,7 @@ namespace clip {
 #define ITORV(X) glmmat3{contact.m_body_inc.m_to_other}*X
 #define ITORN(X) contact.m_body_inc.m_to_other_it*X
 
+#define RTOIP(X) glmvec3{contact.m_body_ref.m_to_other * glmvec4{X, 1.0}}
 #define RTOIN(X) contact.m_body_ref.m_to_other_it*X
 
 #define RTOWN(X) contact.m_body_ref.m_body->m_model_it*X
@@ -270,7 +277,7 @@ namespace ve {
 		};
 
 		Polytope g_cube {
-			{ { -0.5,-0.5,-0.5 }, { -0.5,-0.5,0.5 }, { -0.5,0.5,0.5 }, { -0.5,0.5,-0.5 }, { 0.5,-0.5,-0.5 }, { 0.5,-0.5,0.5 }, { 0.5,0.5,0.5 }, { 0.5,0.5,-0.5 } },
+			{ { -0.5,-0.5,-0.5 }, { -0.5,-0.5,0.5 }, { -0.5,0.5,0.5 }, { -0.5,0.5,-0.5 }, { 0.5,-0.5,0.5 }, { 0.5,-0.5,-0.5 }, { 0.5,0.5,-0.5 }, { 0.5,0.5,0.5 } },
 			{ {0,1}, {1,2}, {2,3}, {3,0}, {4,5}, {5,6}, {6,7}, {7,0}, {5,0}, {1,4}, {3,6}, {7,2} }, //edges
 			{	{ {0}, {1}, {2}, {3} },							//face 0
 				{ {4}, {5}, {6}, {7} },							//face 1
@@ -394,9 +401,8 @@ namespace ve {
 			/// Support mapping function of polytope.
 			/// </summary>
 			/// <param name="dirL">Search direction in local space.</param>
-			/// <param name="BtoA">Transform for the result.</param>
 			/// <returns>Pointer to support vertex of body B.</returns>
-			Vertex* support(glmvec3 dirL, glmmat4 BtoA = glmmat4{ 1.0 }) {
+			Vertex* support(glmvec3 dirL) {
 				Vertex* result(nullptr);
 				real max_dp{ -std::numeric_limits<real>::max() };
 				for ( auto & vert : m_polytope->m_vertices ) {
@@ -464,6 +470,8 @@ namespace ve {
 
 		};
 
+		std::shared_ptr<Body> m_body;
+
 		void addBody( std::shared_ptr<Body> pbody ) {
 			m_bodies.insert( { pbody->m_owner, pbody } );
 			pbody->m_grid_x = static_cast<int_t>(pbody->m_positionW.x / c_width);
@@ -483,6 +491,14 @@ namespace ve {
 			}
 		}
 
+		real m_dy = 0.0;
+		void onFrameEnded(veEvent event) {
+			if (m_body) {
+				m_body->m_positionW += glmvec3{ 0,event.dt * m_dy,0 };
+				m_body->updateMatrices();
+			}
+		}
+
 		bool onKeyboard(veEvent event) {
 			static int64_t cubeid = 0;
 
@@ -490,6 +506,11 @@ namespace ve {
 				m_debug = true;
 				return true;
 			}
+
+			if (event.idata1 == GLFW_KEY_U && event.idata3 == GLFW_PRESS) { m_dy = 2.0; }
+			if (event.idata1 == GLFW_KEY_U && event.idata3 == GLFW_RELEASE) { m_dy = 0.0; }
+			if (event.idata1 == GLFW_KEY_J && event.idata3 == GLFW_PRESS) { m_dy = -2.0; }
+			if (event.idata1 == GLFW_KEY_J && event.idata3 == GLFW_RELEASE) { m_dy = 0.0; }
 
 			if (event.idata1 == GLFW_KEY_SPACE && event.idata3 == GLFW_PRESS) {
 				glmvec3 positionCamera{getSceneManagerPointer()->getSceneNode("StandardCameraParent")->getWorldTransform()[3]};
@@ -515,10 +536,10 @@ namespace ve {
 
 				VESceneNode* cube1;
 				VECHECKPOINTER(cube1 = getSceneManagerPointer()->loadModel("The Cube" + std::to_string(++cubeid), "media/models/test/crate0", "cube.obj", 0, getRoot()));
-				glmquat orient{ glm::rotate(5.0*2.0*M_PI/360.0, glmvec3{1,1,1}) };
+				glmquat orient{ glm::rotate(20.0*2.0*M_PI/360.0, glmvec3{1,1,1}) };
 				//glmquat orient{ };
-				Body body1{ cube1, &g_cube, glmvec3{1.0}, positionCamera + glmvec3{0,1.01,5}, orient, &onMove, glmvec3{0.0}, glmvec3{0.0}, 1.0 / 100.0, 0.2, 1.0 };
-				addBody(std::make_shared<Body>(body1));
+				Body body1{ cube1, &g_cube, glmvec3{1.0}, positionCamera + glmvec3{0,2,5}, orient, &onMove, glmvec3{0.0}, glmvec3{0.0}, 1.0 / 100.0, 0.2, 1.0 };
+				addBody(m_body = std::make_shared<Body>(body1));
 
 			}
 			return false;
@@ -806,13 +827,17 @@ namespace ve {
 						n = n / len;
 
 						if (glm::dot(n, edgeA.m_first_vertexL.m_positionL) < 0) n = -n;		//n must be oriented away from center of A								
+						Vertex* vertA = contact.m_body_inc.m_body->support(n);				//support of A in normal direction
 						Vertex* vertB = contact.m_body_inc.m_body->support(-RTOIN(n));		//support of B in negative normal direction
-						real distance = glm::dot(n, ITORP(vertB->m_positionL) - edgeA.m_first_vertexL.m_positionL);//overlap distance along n
+						real distance = glm::dot(n, ITORP(vertB->m_positionL) - vertA->m_positionL);//overlap distance along n
 
 						if (m_debug) {
-							std::cout << " edgeA v1= " << edgeA.m_first_vertexL.m_positionL << " edgeA v2= " << edgeA.m_second_vertexL.m_positionL << " edgeB v1= " << edgeB.m_first_vertexL.m_positionL << " edgeB v2= " << edgeB.m_second_vertexL.m_positionL << "\n";
-							std::cout << " edgeA= " << edgeA.m_edgeL << " edgeB= " << edgeB.m_edgeL << " ITORV(edgeB)= " << ITORV(edgeB.m_edgeL) << " RTOWN(n)= " << n << " " << RTOWN(n) << " -RTOIN(n)= " << -RTOIN(n) << "\n";
-							std::cout << " vertB= " << vertB->m_positionL << " ITORP(vertB)= " << ITORP(vertB->m_positionL) << " ITORP(vertB) - edgeA v1= " << ITORP(vertB->m_positionL) - edgeA.m_first_vertexL.m_positionL << " " << distance << "\n";
+							//std::cout << "edgeA v1= " << edgeA.m_first_vertexL.m_positionL << " edgeA v2= " << edgeA.m_second_vertexL.m_positionL << " edgeB v1= " << edgeB.m_first_vertexL.m_positionL << " edgeB v2= " << edgeB.m_second_vertexL.m_positionL << "\n";
+							//std::cout << "edgeA= " << edgeA.m_edgeL << " edgeB= " << edgeB.m_edgeL << " ITORV(edgeB)= " << ITORV(edgeB.m_edgeL) << "\n";
+							//std::cout << "n= " << n << " RTOWN(n)= " << RTOWN(n) << " -RTOIN(n)= " << -RTOIN(n) << "\n";
+							//std::cout << "RTOIN\n";
+							//std::cout << contact.m_body_ref.m_to_other_it;
+							//std::cout << "vertB= " << vertB->m_positionL << " ITORP(vertB)= " << ITORP(vertB->m_positionL) << " ITORP(vertB) - edgeA v1= " << ITORP(vertB->m_positionL) - edgeA.m_first_vertexL.m_positionL << " " << distance << "\n";
 						}
 
 						if (distance > 0)
@@ -958,6 +983,7 @@ namespace ve {
 
 			registerEventListener(m_physics = new EventListenerPhysics("Physics"), { veEvent::VE_EVENT_FRAME_STARTED });
 			registerEventListener(m_physics, { veEvent::VE_EVENT_KEYBOARD });
+			registerEventListener(m_physics, { veEvent::VE_EVENT_FRAME_ENDED });
 		};
 		
 
