@@ -110,6 +110,8 @@ namespace clip {
 #define ITORV(X) glmmat3{contact.m_body_inc.m_to_other}*X
 #define ITORN(X) contact.m_body_inc.m_to_other_it*X
 
+#define ITOWP(X) glmvec3{contact.m_body_inc.m_body->m_model * glmvec4{X, 1.0}}
+
 #define RTOIP(X) glmvec3{contact.m_body_ref.m_to_other * glmvec4{X, 1.0}}
 #define RTOIN(X) contact.m_body_ref.m_to_other_it*X
 
@@ -157,7 +159,7 @@ namespace ve {
 
 		struct Face {
 			std::vector<Vertex*>		m_face_vertex_ptrs{};	//pointers to the vertices of this face in correct orientation
-			std::vector<clip::point2D>	m_face_vertexT{};		//vertex 2D coordinates in tangent space
+			std::vector<clip::point2D>	m_face_vertex2D_T{};	//vertex 2D coordinates in tangent space
 			std::vector<SignedEdge>		m_face_edge_ptrs{};		//pointers to the edges of this face and orientation factors
 			glmvec3						m_normalL{};			//normal vector in local space
 			glmmat4						m_LtoT;					//local to face tangent space
@@ -266,7 +268,7 @@ namespace ve {
 
 					for (auto& vertex : face.m_face_vertex_ptrs) {
 						glmvec4 pt = face.m_LtoT * glmvec4{ vertex->m_positionL, 1.0 };
-						face.m_face_vertexT.emplace_back( pt.x, pt.y);
+						face.m_face_vertex2D_T.emplace_back( pt.x, pt.z);
 					}
 
 					//for (auto& vert : m_vertices) {		//Min and max distance along the face normals in local space
@@ -507,9 +509,10 @@ namespace ve {
 				return true;
 			}
 
-			if (event.idata1 == GLFW_KEY_U && event.idata3 == GLFW_PRESS) { m_dy = 2.0; }
+			real vel = 0.5;
+			if (event.idata1 == GLFW_KEY_U && event.idata3 == GLFW_PRESS) { m_dy = vel; }
 			if (event.idata1 == GLFW_KEY_U && event.idata3 == GLFW_RELEASE) { m_dy = 0.0; }
-			if (event.idata1 == GLFW_KEY_J && event.idata3 == GLFW_PRESS) { m_dy = -2.0; }
+			if (event.idata1 == GLFW_KEY_J && event.idata3 == GLFW_PRESS) { m_dy = -vel; }
 			if (event.idata1 == GLFW_KEY_J && event.idata3 == GLFW_RELEASE) { m_dy = 0.0; }
 
 			if (event.idata1 == GLFW_KEY_SPACE && event.idata3 == GLFW_PRESS) {
@@ -531,14 +534,16 @@ namespace ve {
 
 				VESceneNode* cube0;
 				VECHECKPOINTER(cube0 = getSceneManagerPointer()->loadModel("The Cube" + std::to_string(++cubeid), "media/models/test/crate0", "cube.obj", 0, getRoot()));
-				Body body0{ cube0, &g_cube, glmvec3{1.0}, positionCamera + glmvec3{0,0,5}, glmquat{}, &onMove, glmvec3{0.0}, glmvec3{0.0}, 1.0 / 100.0, 0.2, 1.0 };
+				Body body0{ cube0, &g_cube, glmvec3{1.0}, glmvec3{positionCamera.x,0.5,positionCamera.z+5}, glmquat{}, &onMove, glmvec3{0.0}, glmvec3{0.0}, 1.0 / 100.0, 0.2, 1.0 };
+				body0.m_forces.insert({ 0ul, Force{} });
 				addBody(std::make_shared<Body>(body0));
 
 				VESceneNode* cube1;
 				VECHECKPOINTER(cube1 = getSceneManagerPointer()->loadModel("The Cube" + std::to_string(++cubeid), "media/models/test/crate0", "cube.obj", 0, getRoot()));
 				glmquat orient{ glm::rotate(20.0*2.0*M_PI/360.0, glmvec3{1,1,1}) };
 				//glmquat orient{ };
-				Body body1{ cube1, &g_cube, glmvec3{1.0}, positionCamera + glmvec3{0,2,5}, orient, &onMove, glmvec3{0.0}, glmvec3{0.0}, 1.0 / 100.0, 0.2, 1.0 };
+				Body body1{ cube1, &g_cube, glmvec3{1.0}, positionCamera + glmvec3{0.1,2,5}, orient, &onMove, glmvec3{0.0}, glmvec3{0.0}, 1.0 / 100.0, 0.2, 1.0 };
+				body1.m_forces.insert({ 0ul, Force{} });
 				addBody(m_body = std::make_shared<Body>(body1));
 
 			}
@@ -760,18 +765,20 @@ namespace ve {
 			contact.m_body_inc.m_to_other = contact.m_body_ref.m_body->m_model_inv * contact.m_body_inc.m_body->m_model; //transform to bring space B to space A
 			contact.m_body_inc.m_to_other_it = glm::transpose(glm::inverse(glmmat3{ contact.m_body_inc.m_to_other }));	//transform for a normal vector
 
-			FaceQuery fq0, fq1;
-			EdgeQuery eq;
-			if ((fq0 = queryFaceDirections(contact, contact.m_body_ref, contact.m_body_inc)).m_separation	> 0) return;	//found a separating axis with face normal
-			if ((fq1 = queryFaceDirections(contact, contact.m_body_inc, contact.m_body_ref)).m_separation	> 0) return;	//found a separating axis with face normal
-			if ((eq = queryEdgeDirections(contact)).m_separation > 0) return;	//found a separating axis with edge-edge normal
+			FaceQuery fq0 = queryFaceDirections(contact);
+			if(fq0.m_separation > 0) return;	//found a separating axis with face normal
+			std::swap(contact.m_body_ref, contact.m_body_inc);	//body 0 is the reference body having the reference face
+			FaceQuery fq1 = queryFaceDirections(contact);
+			if(fq1.m_separation > 0) return;	//found a separating axis with face normal
+			EdgeQuery eq = queryEdgeDirections(contact);
+			if (eq.m_separation > 0) return;	//found a separating axis with edge-edge normal
 
 			if (fq0.m_separation > eq.m_separation || fq1.m_separation > eq.m_separation) {	//max separation is a face-vertex contact
 				if (fq0.m_separation > fq1.m_separation) { 
-					createFaceContact(contact, fq0); 
+					std::swap(contact.m_body_ref, contact.m_body_inc);	//body 0 is the reference body having the reference face
+					createFaceContact(contact, fq0);
 				}
 				else {
-					std::swap(contact.m_body_ref, contact.m_body_inc);	//body 0 is the reference body having the reference face
 					createFaceContact(contact, fq1);
 				}
 			}
@@ -785,12 +792,12 @@ namespace ve {
 		/// </summary>
 		/// <param name="contact">The pair contact struct.</param>
 		/// <returns>Negative: overlap of bodies along this axis. Positive: distance between the bodies.</returns>
-		FaceQuery queryFaceDirections(Contact& contact, Contact::BodyPtr& body_ref, Contact::BodyPtr& body_inc) {
+		FaceQuery queryFaceDirections(Contact& contact) {
 			FaceQuery result{-std::numeric_limits<real>::max(), nullptr, nullptr };
 
-			for (auto& face : body_ref.m_body->m_polytope->m_faces) {
+			for (auto& face : contact.m_body_ref.m_body->m_polytope->m_faces) {
 				glmvec3 n = glm::normalize(-RTOIN(face.m_normalL));
-				Vertex* vertB = body_inc.m_body->support( n );
+				Vertex* vertB = contact.m_body_inc.m_body->support( n );
 				glmvec3 pos = ITORP(vertB->m_positionL);
 				glmvec3 diff = pos - face.m_face_vertex_ptrs[0]->m_positionL;
 				real distance = glm::dot(face.m_normalL, diff);
@@ -863,7 +870,11 @@ namespace ve {
 			else {
 				Edge* inc_edge = minEdgeAlignment(An, fq.m_vertex_inc->m_vertex_edge_ptrs); //do we have an edge - face contact?
 				if (fabs(glm::dot(An, inc_edge->m_edgeL)) < c_eps) { clipEdgeFace(contact, fq.m_face_ref, inc_edge); }
-				else { contact.m_contact_points.emplace_back(fq.m_vertex_inc->m_positionL, fq.m_face_ref->m_normalL); } //we have only a vertex - face contact}
+				else { 
+					contact.m_contact_points.emplace_back(ITOWP(fq.m_vertex_inc->m_positionL), fq.m_face_ref->m_normalL);  //we have only a vertex - face contact}
+					contact.m_body_ref.m_body->m_vbias += -fq.m_face_ref->m_normalL * fq.m_separation;
+					contact.m_body_inc.m_body->m_vbias += fq.m_face_ref->m_normalL * fq.m_separation;
+				}
 			}			
 		}
 
@@ -885,7 +896,7 @@ namespace ve {
 				points.emplace_back(pT.x, pT.y);						//add as 2D point
 			}
 			std::vector<clip::point2D> newPolygon;
-			clip::SutherlandHodgman(face_ref->m_face_vertexT, points, newPolygon); //clip B's face against A's face
+			clip::SutherlandHodgman(face_ref->m_face_vertex2D_T, points, newPolygon); //clip B's face against A's face
 
 			for (auto& p2D : newPolygon) { 
 				glmvec4 posW{ contact.m_body_ref.m_body->m_model * face_ref->m_TtoL * glmvec4{ p2D.x, p2D.y, 0.0, 1.0 } };
@@ -910,7 +921,7 @@ namespace ve {
 			points.emplace_back(pT.x, pT.y);
 
 			std::vector<clip::point2D> newPolygon;
-			clip::SutherlandHodgman(face_ref->m_face_vertexT, points, newPolygon);	//clip B's face against A's face
+			clip::SutherlandHodgman(face_ref->m_face_vertex2D_T, points, newPolygon);	//clip B's face against A's face
 
 			for (auto & p2D : newPolygon | std::views::take(2) ) {	//result is exactly 2 or 3 points (if clip), we only need 2 points 
 				glmvec4 posW{ contact.m_body_ref.m_body->m_model * face_ref->m_TtoL * glmvec4{ p2D.x, p2D.y, 0.0, 1.0 } };
