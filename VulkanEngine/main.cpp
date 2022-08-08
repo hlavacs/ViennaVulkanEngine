@@ -493,10 +493,12 @@ namespace ve {
 			}
 		}
 
+		real m_dx = 0.0;
 		real m_dy = 0.0;
+		real m_dz = 0.0;
 		void onFrameEnded(veEvent event) {
 			if (m_body) {
-				m_body->m_positionW += glmvec3{ 0,event.dt * m_dy,0 };
+				m_body->m_positionW += event.dt * glmvec3{ m_dx, m_dy,m_dz };
 				m_body->updateMatrices();
 			}
 		}
@@ -510,10 +512,20 @@ namespace ve {
 			}
 
 			real vel = 0.5;
-			if (event.idata1 == GLFW_KEY_U && event.idata3 == GLFW_PRESS) { m_dy = vel; }
-			if (event.idata1 == GLFW_KEY_U && event.idata3 == GLFW_RELEASE) { m_dy = 0.0; }
-			if (event.idata1 == GLFW_KEY_J && event.idata3 == GLFW_PRESS) { m_dy = -vel; }
-			if (event.idata1 == GLFW_KEY_J && event.idata3 == GLFW_RELEASE) { m_dy = 0.0; }
+			if (event.idata1 == GLFW_KEY_I && event.idata3 == GLFW_PRESS) { m_dy = vel; }
+			if (event.idata1 == GLFW_KEY_I && event.idata3 == GLFW_RELEASE) { m_dy = 0.0; }
+			if (event.idata1 == GLFW_KEY_Y && event.idata3 == GLFW_PRESS) { m_dy = -vel; }
+			if (event.idata1 == GLFW_KEY_Y && event.idata3 == GLFW_RELEASE) { m_dy = 0.0; }
+
+			if (event.idata1 == GLFW_KEY_U && event.idata3 == GLFW_PRESS) { m_dz = vel; }
+			if (event.idata1 == GLFW_KEY_U && event.idata3 == GLFW_RELEASE) { m_dz = 0.0; }
+			if (event.idata1 == GLFW_KEY_J && event.idata3 == GLFW_PRESS) { m_dz = -vel; }
+			if (event.idata1 == GLFW_KEY_J && event.idata3 == GLFW_RELEASE) { m_dz = 0.0; }
+
+			if (event.idata1 == GLFW_KEY_H && event.idata3 == GLFW_PRESS) { m_dx = -vel; }
+			if (event.idata1 == GLFW_KEY_H && event.idata3 == GLFW_RELEASE) { m_dx = 0.0; }
+			if (event.idata1 == GLFW_KEY_K && event.idata3 == GLFW_PRESS) { m_dx = vel; }
+			if (event.idata1 == GLFW_KEY_K && event.idata3 == GLFW_RELEASE) { m_dx = 0.0; }
 
 			if (event.idata1 == GLFW_KEY_SPACE && event.idata3 == GLFW_PRESS) {
 				glmvec3 positionCamera{getSceneManagerPointer()->getSceneNode("StandardCameraParent")->getWorldTransform()[3]};
@@ -534,16 +546,16 @@ namespace ve {
 
 				VESceneNode* cube0;
 				VECHECKPOINTER(cube0 = getSceneManagerPointer()->loadModel("The Cube" + std::to_string(++cubeid), "media/models/test/crate0", "cube.obj", 0, getRoot()));
-				Body body0{ cube0, &g_cube, glmvec3{1.0}, glmvec3{positionCamera.x,0.5,positionCamera.z+5}, glmquat{}, &onMove, glmvec3{0.0}, glmvec3{0.0}, 1.0 / 100.0, 0.2, 1.0 };
-				body0.m_forces.insert({ 0ul, Force{} });
+				Body body0{ cube0, &g_cube, glmvec3{1.0}, glmvec3{positionCamera.x,0.5,positionCamera.z+4}, glmquat{}, &onMove, glmvec3{0.0}, glmvec3{0.0}, 1.0 / 100.0, 0.2, 1.0 };
+				//body0.m_forces.insert({ 0ul, Force{} });
 				addBody(std::make_shared<Body>(body0));
 
 				VESceneNode* cube1;
 				VECHECKPOINTER(cube1 = getSceneManagerPointer()->loadModel("The Cube" + std::to_string(++cubeid), "media/models/test/crate0", "cube.obj", 0, getRoot()));
-				glmquat orient{ glm::rotate(20.0*2.0*M_PI/360.0, glmvec3{1,1,1}) };
+				glmquat orient{ glm::rotate(20.0*2.0*M_PI/360.0, glmvec3{1,0,-0.1}) };
 				//glmquat orient{ };
-				Body body1{ cube1, &g_cube, glmvec3{1.0}, positionCamera + glmvec3{0.1,2,5}, orient, &onMove, glmvec3{0.0}, glmvec3{0.0}, 1.0 / 100.0, 0.2, 1.0 };
-				body1.m_forces.insert({ 0ul, Force{} });
+				Body body1{ cube1, &g_cube, glmvec3{1.0}, positionCamera + glmvec3{0.1,2,4}, orient, &onMove, glmvec3{0.0}, glmvec3{0.0}, 1.0 / 100.0, 0.2, 1.0 };
+				//body1.m_forces.insert({ 0ul, Force{} });
 				addBody(m_body = std::make_shared<Body>(body1));
 
 			}
@@ -788,7 +800,9 @@ namespace ve {
 
 		/// <summary>
 		/// Loop through all faces of body a. Find min and max of body b along the direction of a's face normal.
-		/// Return negative number if they overlap. Return positive number if they do not overlap.
+		/// Return (largest) negative number if they overlap. Return positive number if they do not overlap.
+		/// Will be called for BOTH bodies acting as reference, but only ONE (with LARGER NEGATIVE distance) 
+		/// is the true reference!
 		/// </summary>
 		/// <param name="contact">The pair contact struct.</param>
 		/// <returns>Negative: overlap of bodies along this axis. Positive: distance between the bodies.</returns>
@@ -810,6 +824,7 @@ namespace ve {
 				if (distance > result.m_separation) 
 					result = { distance, &face, vertB };
 			} 
+			//std::cout << "Distance= " << result.m_separation << " Face Normal= "<< result.m_face_ref->m_normalL << "\n";
 			return result; //overlap - distance is negative
 		}
 
@@ -835,6 +850,8 @@ namespace ve {
 
 						if (glm::dot(n, edgeA.m_first_vertexL.m_positionL) < 0) n = -n;		//n must be oriented away from center of A								
 						Vertex* vertA = contact.m_body_inc.m_body->support(n);				//support of A in normal direction
+						//Vertex* vertA = &edgeA.m_first_vertexL;
+
 						Vertex* vertB = contact.m_body_inc.m_body->support(-RTOIN(n));		//support of B in negative normal direction
 						real distance = glm::dot(n, ITORP(vertB->m_positionL) - vertA->m_positionL);//overlap distance along n
 
