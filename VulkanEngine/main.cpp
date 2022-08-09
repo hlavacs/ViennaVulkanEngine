@@ -31,6 +31,7 @@ using uint_t = uint64_t;
 #define glmvec4 glm::dvec4
 #define glmmat4 glm::dmat4
 #define glmquat glm::dquat
+const double c_eps = 1.0e-10;
 #else
 using real = float;
 using int_t = int32_t;
@@ -40,15 +41,14 @@ using uint_t = uint32_t;
 #define glmmat3 glm::mat3
 #define glmmat4 glm::mat4
 #define glmquat glm::quat
+const double c_eps = 1.0e-5;
 #endif
 
 constexpr real operator "" _real(long double val) { return (real)val; };
 
 
-
-const double c_eps = 1.0e-10;
-const real c_margin = 1.0e-2_real;
-const real c_2margin = 2.0*c_margin;
+const double c_small = 0.001;
+const real c_margin = 0.01;
 const real c_gravity = -9.81;
 
 template <typename T> 
@@ -138,12 +138,14 @@ namespace ve {
 		struct Edge;
 
 		struct Vertex {
+			uint_t			m_id;
 			glmvec3			m_positionL;		//vertex position in local space
 			std::set<Face*>	m_vertex_face_ptrs;	//pointers to faces this vertex belongs to
 			std::set<Edge*>	m_vertex_edge_ptrs;	//pointers to edges this vertex belongs to
 		};
 
 		struct Edge {
+			uint_t			m_id;
 			Vertex&			m_first_vertexL;	//first edge vertex
 			Vertex&			m_second_vertexL;	//second edge vertex
 			glmvec3			m_edgeL{};			//edge vector in local space 
@@ -158,6 +160,7 @@ namespace ve {
 		using SignedEdge = std::pair<Edge*,real>;
 
 		struct Face {
+			uint_t						m_id;
 			std::vector<Vertex*>		m_face_vertex_ptrs{};	//pointers to the vertices of this face in correct orientation
 			std::vector<clip::point2D>	m_face_vertex2D_T{};	//vertex 2D coordinates in tangent space
 			std::vector<SignedEdge>		m_face_edge_ptrs{};		//pointers to the edges of this face and orientation factors
@@ -167,12 +170,12 @@ namespace ve {
 		};
 
 		template<typename T>
-		Face* maxFaceAlignment(const glmvec3 dirL, const T& faces) {
+		Face* maxFaceAlignment(const glmvec3 dirL, const T& faces, real (*fct)(real) ) {
 			assert(faces.size() > 0);
 			real max_face_alignment{ -std::numeric_limits<real>::max() };
 			Face* maxface = nullptr;
 			for (Face* const face : faces) {
-				if (real face_alignment = glm::dot(dirL, face->m_normalL); face_alignment > max_face_alignment) {
+				if (real face_alignment = fct(glm::dot(dirL, face->m_normalL)); face_alignment > max_face_alignment) {
 					max_face_alignment = face_alignment;
 					maxface = face;
 				}
@@ -225,26 +228,29 @@ namespace ve {
 							: Collider{}, m_vertices{}, m_edges{}, m_faces{}, inertiaTensor{ inertia_tensor } {
 
 				//add vertices
+				uint_t id = 0;
 				m_vertices.reserve(vertices.size());
 				std::ranges::for_each(vertices, [&](const glmvec3& v) {		
-						m_vertices.emplace_back(v);
+					m_vertices.emplace_back( id++, v );
 						if (real l = glm::length(v) > m_bounding_sphere_radius) m_bounding_sphere_radius = l;
 					}
 				);
 
 				//add edges
+				id = 0;
 				m_edges.reserve(edgeindices.size());
 				for (auto& edgepair : edgeindices) {	//compute edges from indices
-					Edge* edge = &m_edges.emplace_back( m_vertices[edgepair.first], m_vertices[edgepair.second], m_vertices[edgepair.second].m_positionL - m_vertices[edgepair.first].m_positionL);
+					Edge* edge = &m_edges.emplace_back( id++, m_vertices[edgepair.first], m_vertices[edgepair.second], m_vertices[edgepair.second].m_positionL - m_vertices[edgepair.first].m_positionL);
 					m_vertices[edgepair.first].m_vertex_edge_ptrs.insert(edge);
 					m_vertices[edgepair.second].m_vertex_edge_ptrs.insert(edge);
 				}
 
 				//add faces
+				id = 0;
 				m_faces.reserve(face_edge_indices.size());
 				for (auto& face_edge_idx : face_edge_indices) {	//compute faces from edge indices belonging to this face
 					assert(face_edge_idx.size() >= 2);
-					auto& face = m_faces.emplace_back();	//add new face to face vector
+					auto& face = m_faces.emplace_back(id++);	//add new face to face vector
 
 					for (auto& edge : face_edge_idx) {		//add references to the edges belonging to this face
 						Edge* pe = &m_edges.at(edge.m_vertex);
@@ -298,6 +304,7 @@ namespace ve {
 
 		class Body {
 		public:
+			std::string	m_id;
 			void*		m_owner = nullptr;				//pointer to owner of this body, must be unique
 			Polytope*	m_polytope = nullptr;			//geometric shape
 			glmvec3		m_scale{ 1,1,1 };				//scale factor in local space
@@ -327,12 +334,12 @@ namespace ve {
 
 			Body() { inertiaTensorL(); updateMatrices(); };
 
-			Body(void* owner, Polytope* polytope, glmvec3 scale, glmvec3 positionW, glmquat orientationLW = glmvec3{0,0,0}, 
+			Body(std::string id, void* owner, Polytope* polytope, glmvec3 scale, glmvec3 positionW, glmquat orientationLW = glmvec3{0,0,0}, 
 				body_callback* on_move = nullptr, glmvec3 linear_velocityW = glmvec3{ 0,0,0 }, glmvec3 angular_velocityW = glmvec3{0,0,0}, 
 				real mass_inv = 0.0, real restitution = 0.0_real, real friction = 0.5_real ) :
-					m_owner{owner}, m_polytope{polytope}, m_scale{scale}, m_positionW{positionW}, m_orientationLW{orientationLW},
+					m_id{id}, m_owner {owner}, m_polytope{ polytope }, m_scale{ scale }, m_positionW{ positionW }, m_orientationLW{ orientationLW },
 					m_on_move{on_move}, m_linear_velocityW{linear_velocityW}, m_angular_velocityW{ angular_velocityW }, 
-				m_mass_inv{ mass_inv }, m_restitution{ restitution }, m_friction{ friction } { inertiaTensorL(); updateMatrices(); };
+					m_mass_inv{ mass_inv }, m_restitution{ restitution }, m_friction{ friction } { inertiaTensorL(); updateMatrices(); };
 
 			bool stepPosition(double dt, glmvec3& pos, glmquat& quat) {
 				bool active = false;
@@ -458,7 +465,7 @@ namespace ve {
 		const double	c_width{5};							//grid cell width (m)
 		std::unordered_map< intpair_t, body_map > m_grid;	//broadphase grid
 
-		Body			m_ground{ nullptr, &g_cube , { 1000, 1000, 1000 } , { 0, -500.0_real, 0 }, {1,0,0,0} };
+		Body			m_ground{ "Ground", nullptr, &g_cube , { 1000, 1000, 1000 } , { 0, -500.0_real, 0 }, {1,0,0,0} };
 		body_map		m_global_cell{ { nullptr, std::make_shared<Body>(m_ground) } };	//cell containing the ground
 
 		std::unordered_map<voidppair_t, Contact> m_contacts;	//possible contacts resulting from broadphase
@@ -539,22 +546,22 @@ namespace ve {
 
 				VESceneNode *cube;
 				VECHECKPOINTER(cube = getSceneManagerPointer()->loadModel("The Cube"+ std::to_string(++cubeid)  , "media/models/test/crate0", "cube.obj", 0, getRoot()) );
-				Body body{ cube, &g_cube, scale, positionCamera + 2.0*dir, glm::rotate(angle, glm::normalize(orient)), &onMove, vel, vrot, 1.0 / 100.0, 0.2, 1.0 };
+				Body body{ ""; cube, &g_cube, scale, positionCamera + 2.0*dir, glm::rotate(angle, glm::normalize(orient)), &onMove, vel, vrot, 1.0 / 100.0, 0.2, 1.0 };
 				body.m_forces.insert( { 0ul, Force{} } );
 				addBody(std::make_shared<Body>(body));
 				*/
 
 				VESceneNode* cube0;
 				VECHECKPOINTER(cube0 = getSceneManagerPointer()->loadModel("The Cube" + std::to_string(++cubeid), "media/models/test/crate0", "cube.obj", 0, getRoot()));
-				Body body0{ cube0, &g_cube, glmvec3{1.0}, glmvec3{positionCamera.x,0.5,positionCamera.z+4}, glmquat{}, &onMove, glmvec3{0.0}, glmvec3{0.0}, 1.0 / 100.0, 0.2, 1.0 };
+				Body body0{ "Below", cube0, &g_cube, glmvec3{1.0}, glmvec3{positionCamera.x,0.5,positionCamera.z + 4}, glmquat{}, &onMove, glmvec3{0.0}, glmvec3{0.0}, 1.0 / 100.0, 0.2, 1.0};
 				//body0.m_forces.insert({ 0ul, Force{} });
 				addBody(std::make_shared<Body>(body0));
 
 				VESceneNode* cube1;
 				VECHECKPOINTER(cube1 = getSceneManagerPointer()->loadModel("The Cube" + std::to_string(++cubeid), "media/models/test/crate0", "cube.obj", 0, getRoot()));
-				glmquat orient{ glm::rotate(20.0*2.0*M_PI/360.0, glmvec3{1,0,-0.1}) };
+				glmquat orient{ glm::rotate(20.0*2.0*M_PI/360.0, glmvec3{1,0,-0.01}) };
 				//glmquat orient{ };
-				Body body1{ cube1, &g_cube, glmvec3{1.0}, positionCamera + glmvec3{0.1,2,4}, orient, &onMove, glmvec3{0.0}, glmvec3{0.0}, 1.0 / 100.0, 0.2, 1.0 };
+				Body body1{ "Above", cube1, &g_cube, glmvec3{1.0}, positionCamera + glmvec3{0.1,1.5,4}, orient, &onMove, glmvec3{0.0}, glmvec3{0.0}, 1.0 / 100.0, 0.2, 1.0};
 				//body1.m_forces.insert({ 0ul, Force{} });
 				addBody(m_body = std::make_shared<Body>(body1));
 
@@ -794,8 +801,10 @@ namespace ve {
 					createFaceContact(contact, fq1);
 				}
 			}
-			else 
-				createEdgeContact( contact, eq);	//max separation is an edge-edge contact
+			else {
+				std::swap(contact.m_body_ref, contact.m_body_inc);	//prevent flip flopping
+				createEdgeContact(contact, eq);	//max separation is an edge-edge contact
+			}
 		}
 
 		/// <summary>
@@ -882,11 +891,11 @@ namespace ve {
 		/// <param name="fq"></param>
 		void createFaceContact(Contact& contact, FaceQuery& fq) {
 			glmvec3 An = glm::normalize( -RTOIN(fq.m_face_ref->m_normalL) ); //transform normal vector of ref face to inc body
-			Face* inc_face = maxFaceAlignment(An, fq.m_vertex_inc->m_vertex_face_ptrs);	//do we have a face - face contact?
-			if (glm::dot(An, inc_face->m_normalL) > 1.0 - c_eps) { clipFaceFace(contact, fq.m_face_ref, inc_face); }
+			Face* inc_face = maxFaceAlignment(An, fq.m_vertex_inc->m_vertex_face_ptrs, [](real x) -> real { return x; });	//do we have a face - face contact?
+			if (glm::dot(An, inc_face->m_normalL) > 1.0 - c_small) { clipFaceFace(contact, fq.m_face_ref, inc_face); }
 			else {
 				Edge* inc_edge = minEdgeAlignment(An, fq.m_vertex_inc->m_vertex_edge_ptrs); //do we have an edge - face contact?
-				if (fabs(glm::dot(An, inc_edge->m_edgeL)) < c_eps) { clipEdgeFace(contact, fq.m_face_ref, inc_edge); }
+				if (fabs(glm::dot(An, inc_edge->m_edgeL)) < c_small) { clipEdgeFace(contact, fq.m_face_ref, inc_edge); }
 				else { 
 					contact.m_contact_points.emplace_back(ITOWP(fq.m_vertex_inc->m_positionL), fq.m_face_ref->m_normalL);  //we have only a vertex - face contact}
 					contact.m_body_ref.m_body->m_vbias += -fq.m_face_ref->m_normalL * fq.m_separation;
@@ -954,22 +963,22 @@ namespace ve {
 		/// <param name="eq"></param>
 		void createEdgeContact(Contact& contact, EdgeQuery &eq) {
 
-			Face* ref_face = maxFaceAlignment(eq.m_normalL, eq.m_edge_ref->m_edge_face_ptrs);	//face of A best aligned with the contact normal
-			Face* inc_face = maxFaceAlignment(-RTOIN(eq.m_normalL), eq.m_edge_inc->m_edge_face_ptrs);	//face of B best aligned with the contact normal
+			Face* ref_face = maxFaceAlignment(eq.m_normalL, eq.m_edge_ref->m_edge_face_ptrs, fabs);	//face of A best aligned with the contact normal
+			Face* inc_face = maxFaceAlignment(-RTOIN(eq.m_normalL), eq.m_edge_inc->m_edge_face_ptrs, fabs);	//face of B best aligned with the contact normal
 		
-			real dp_ref = glm::dot(eq.m_normalL, ref_face->m_normalL);
-			real dp_inc = glm::dot(eq.m_normalL, inc_face->m_normalL);
+			real dp_ref = fabs(glm::dot(eq.m_normalL, ref_face->m_normalL));
+			real dp_inc = fabs(glm::dot(eq.m_normalL, inc_face->m_normalL));
 			if (dp_inc > dp_ref) { 
 				std::swap(contact.m_body_ref, contact.m_body_inc);
 				std::swap(ref_face, inc_face);
 				std::swap(eq.m_edge_ref, eq.m_edge_inc);
 			}
 
-			if (glm::dot(ref_face->m_normalL, ITORN(inc_face->m_normalL)) > 1.0 - c_eps) { //face - face
+			if (glm::dot(ref_face->m_normalL, ITORN(inc_face->m_normalL)) > 1.0 - c_small) { //face - face
 				clipFaceFace(contact, ref_face, inc_face); 
 			}
 			else {
-				if (fabs(glm::dot(ref_face->m_normalL, ITORV(eq.m_edge_inc->m_edgeL))) < c_eps) { 
+				if (fabs(glm::dot(ref_face->m_normalL, ITORV(eq.m_edge_inc->m_edgeL))) < c_small) { 
 					clipEdgeFace(contact, ref_face, eq.m_edge_inc); //face - edge
 				}
 				else { //we have only an edge - edge contact}
