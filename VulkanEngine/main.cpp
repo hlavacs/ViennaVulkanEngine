@@ -115,6 +115,7 @@ namespace clip {
 #define RTOIP(X) glmvec3{contact.m_body_ref.m_to_other * glmvec4{X, 1.0}}
 #define RTOIN(X) contact.m_body_ref.m_to_other_it*X
 
+#define RTOWP(X) glmvec3{contact.m_body_ref.m_body->m_model * glmvec4{X,1.0}}
 #define RTOWN(X) contact.m_body_ref.m_body->m_model_it*X
 
 
@@ -479,7 +480,7 @@ namespace ve {
 
 		};
 
-		std::shared_ptr<Body> m_body;
+		std::shared_ptr<Body> m_body; // the body we can move with the keyboard
 
 		void addBody( std::shared_ptr<Body> pbody ) {
 			m_bodies.insert( { pbody->m_owner, pbody } );
@@ -559,10 +560,10 @@ namespace ve {
 
 				VESceneNode* cube1;
 				VECHECKPOINTER(cube1 = getSceneManagerPointer()->loadModel("The Cube" + std::to_string(++cubeid), "media/models/test/crate0", "cube.obj", 0, getRoot()));
-				glmquat orient{ glm::rotate(20.0*2.0*M_PI/360.0, glmvec3{1,0,-0.01}) };
+				glmquat orient{ glm::rotate(20.0*2.0*M_PI/360.0, glmvec3{1,0,-0.1}) };
 				//glmquat orient{ };
-				Body body1{ "Above", cube1, &g_cube, glmvec3{1.0}, positionCamera + glmvec3{0.1,1.5,4}, orient, &onMove, glmvec3{0.0}, glmvec3{0.0}, 1.0 / 100.0, 0.2, 1.0};
-				//body1.m_forces.insert({ 0ul, Force{} });
+				Body body1{ "Above", cube1, &g_cube, glmvec3{1.0}, positionCamera + glmvec3{0.1,1.1,4}, orient, &onMove, glmvec3{0.0}, glmvec3{0.0}, 1.0 / 100.0, 0.2, 1.0};
+				body1.m_forces.insert({ 0ul, Force{} });
 				addBody(m_body = std::make_shared<Body>(body1));
 
 			}
@@ -789,20 +790,21 @@ namespace ve {
 			std::swap(contact.m_body_ref, contact.m_body_inc);	//body 0 is the reference body having the reference face
 			FaceQuery fq1 = queryFaceDirections(contact);
 			if(fq1.m_separation > 0) return;	//found a separating axis with face normal
+
+			std::swap(contact.m_body_ref, contact.m_body_inc);	//prevent flip flopping
 			EdgeQuery eq = queryEdgeDirections(contact);
 			if (eq.m_separation > 0) return;	//found a separating axis with edge-edge normal
 
 			if (fq0.m_separation > eq.m_separation || fq1.m_separation > eq.m_separation) {	//max separation is a face-vertex contact
 				if (fq0.m_separation > fq1.m_separation) { 
-					std::swap(contact.m_body_ref, contact.m_body_inc);	//body 0 is the reference body having the reference face
 					createFaceContact(contact, fq0);
 				}
 				else {
+					std::swap(contact.m_body_ref, contact.m_body_inc);	//body 0 is the reference body having the reference face
 					createFaceContact(contact, fq1);
 				}
 			}
 			else {
-				std::swap(contact.m_body_ref, contact.m_body_inc);	//prevent flip flopping
 				createEdgeContact(contact, eq);	//max separation is an edge-edge contact
 			}
 		}
@@ -859,24 +861,32 @@ namespace ve {
 
 						if (glm::dot(n, edgeA.m_first_vertexL.m_positionL) < 0) n = -n;		//n must be oriented away from center of A								
 						Vertex* vertA = contact.m_body_inc.m_body->support(n);				//support of A in normal direction
-						//Vertex* vertA = &edgeA.m_first_vertexL;
-
 						Vertex* vertB = contact.m_body_inc.m_body->support(-RTOIN(n));		//support of B in negative normal direction
 						real distance = glm::dot(n, ITORP(vertB->m_positionL) - vertA->m_positionL);//overlap distance along n
 
-						if (m_debug) {
-							//std::cout << "edgeA v1= " << edgeA.m_first_vertexL.m_positionL << " edgeA v2= " << edgeA.m_second_vertexL.m_positionL << " edgeB v1= " << edgeB.m_first_vertexL.m_positionL << " edgeB v2= " << edgeB.m_second_vertexL.m_positionL << "\n";
-							//std::cout << "edgeA= " << edgeA.m_edgeL << " edgeB= " << edgeB.m_edgeL << " ITORV(edgeB)= " << ITORV(edgeB.m_edgeL) << "\n";
-							//std::cout << "n= " << n << " RTOWN(n)= " << RTOWN(n) << " -RTOIN(n)= " << -RTOIN(n) << "\n";
-							//std::cout << "RTOIN\n";
-							//std::cout << contact.m_body_ref.m_to_other_it;
-							//std::cout << "vertB= " << vertB->m_positionL << " ITORP(vertB)= " << ITORP(vertB->m_positionL) << " ITORP(vertB) - edgeA v1= " << ITORP(vertB->m_positionL) - edgeA.m_first_vertexL.m_positionL << " " << distance << "\n";
+						if (distance > 0) {
+							return { distance, &edgeA, &edgeB };							//no overlap - distance is positive
+						}
+						
+						real distance2 = glm::dot(n, ITORP( edgeB.m_first_vertexL.m_positionL ) - edgeA.m_first_vertexL.m_positionL);
+
+						if (distance2 < 0 && distance >= result.m_separation) {
+							if (m_debug) {
+								std::cout << "\n";
+								std::cout << "Body ref " << contact.m_body_ref.m_body->m_id << " edgeA id " << edgeA.m_id << " v1 = " << edgeA.m_first_vertexL.m_positionL << " edgeA v2 = " << edgeA.m_second_vertexL.m_positionL << " edgeA = " << edgeA.m_edgeL << "\n";
+								std::cout << "Body inc " << contact.m_body_inc.m_body->m_id << " edgeB id " << edgeB.m_id << " v1 = " << edgeB.m_first_vertexL.m_positionL << " edgeB v2 = " << edgeB.m_second_vertexL.m_positionL << " edgeB = " << edgeB.m_edgeL << "\n";
+								std::cout << "n= " << n << " RTOWN(n)= " << RTOWN(n) << " -RTOIN(n)= " << -RTOIN(n) << "\n";
+																
+								std::cout << "s(A)= " << vertA->m_positionL << " s(B)= " << vertB->m_positionL << " ITORP(s(B))= " << ITORP(vertB->m_positionL) << " ITORP(s(B)) - s(A)= " << ITORP(vertB->m_positionL) - vertA->m_positionL << " " << distance << "\n";
+
+								std::cout << "e(A)= " << edgeA.m_first_vertexL.m_positionL << " e(B)= " << edgeB.m_first_vertexL.m_positionL << " ITORP(e(B))= " << ITORP(edgeB.m_first_vertexL.m_positionL) << " ITORP(e(B)) - e(A)= " << ITORP(edgeB.m_first_vertexL.m_positionL) - edgeA.m_first_vertexL.m_positionL << " " << distance2 << "\n";
+
+							}
 						}
 
-						if (distance > 0)
-							return { distance, &edgeA, &edgeB };							//no overlap - distance is positive
-						if (distance > result.m_separation) 
+						if (distance2 < 0 && distance > result.m_separation) {
 							result = { distance, &edgeA, &edgeB, n };	//remember max of negative distances
+						}
 					}
 				}
 			}
@@ -982,12 +992,18 @@ namespace ve {
 					clipEdgeFace(contact, ref_face, eq.m_edge_inc); //face - edge
 				}
 				else { //we have only an edge - edge contact}
+					auto B1 = ITORP(eq.m_edge_inc->m_first_vertexL.m_positionL);
+					auto B2 = ITORP(eq.m_edge_inc->m_second_vertexL.m_positionL);
+
 					auto posL = geometry::closestPointsLineLine( 
 						eq.m_edge_ref->m_first_vertexL.m_positionL, eq.m_edge_ref->m_second_vertexL.m_positionL,
 						ITORP(eq.m_edge_inc->m_first_vertexL.m_positionL), ITORP(eq.m_edge_inc->m_second_vertexL.m_positionL)
 					);
 
-					contact.m_contact_points.emplace_back( (posL.first + posL.second)/2.0, eq.m_normalL); 
+					auto mid = (posL.first + posL.second) / 2.0;
+					auto mid_W = RTOWP(mid);
+
+					contact.m_contact_points.emplace_back( mid_W, eq.m_normalL); 
 				} 
 			}
 		}
