@@ -59,6 +59,20 @@ inline void hash_combine(std::size_t& seed, T const& v) {
 using intpair_t = std::pair<int_t, int_t>;
 using voidppair_t = std::pair<void*, void*>;
 
+namespace geometry {
+	std::pair<glmvec3, glmvec3> closestPointsLineLine(glmvec3 p1, glmvec3 p2, glmvec3 p3, glmvec3 p4);
+}
+
+namespace clip {
+	struct point2D {
+		real x, y;
+	};
+
+	template<typename T>
+	void SutherlandHodgman(T& subjectPolygon, T& clipPolygon, T& newPolygon);
+}
+
+
 namespace std {
 	template <>
 	struct hash<intpair_t> {
@@ -68,6 +82,7 @@ namespace std {
 			return seed;
 		}
 	};
+
 	template <>
 	struct hash<voidppair_t> {
 		std::size_t operator()(const voidppair_t& p) const {
@@ -82,6 +97,22 @@ namespace std {
 			return (l.first == r.first && l.second == r.second) || (l.first == r.second && l.second == r.first);
 		}
 	};
+
+	template <>
+	struct hash<clip::point2D> {
+		std::size_t operator()(const clip::point2D& p) const {
+			size_t seed = std::hash<real>()(p.x);
+			hash_combine(seed, p.y);
+			return seed;
+		}
+	};
+	template<>
+	struct less<clip::point2D> {
+		bool operator()(const clip::point2D& l, const clip::point2D& r) const {
+			return (std::hash<clip::point2D>()(l) < std::hash<clip::point2D>()(r));
+		}
+	};
+
 	ostream& operator<<(ostream& os, const glmvec3& v) {
 		os << "(" << v.x << ',' << v.y << ',' << v.z << ")";
 		return os;
@@ -92,17 +123,6 @@ namespace std {
 		os << "(" << m[2][0] << ',' << m[2][1] << ',' << m[2][2] << ")\n";
 		return os;
 	}
-}
-
-namespace geometry {
-	std::pair<glmvec3, glmvec3> closestPointsLineLine(glmvec3 p1, glmvec3 p2, glmvec3 p3, glmvec3 p4);
-}
-
-namespace clip {
-	struct point2D { real x, y; };
-
-	template<typename T>
-	void SutherlandHodgman(T& subjectPolygon, T& clipPolygon, T& newPolygon);
 }
 
 
@@ -154,7 +174,7 @@ namespace ve {
 		};
 
 		struct signed_edge_t {
-			uint32_t m_vertex;
+			uint32_t m_edge_idx;
 			real	 m_factor{1.0};
 		};
 
@@ -254,17 +274,17 @@ namespace ve {
 					auto& face = m_faces.emplace_back(id++);	//add new face to face vector
 
 					for (auto& edge : face_edge_idx) {		//add references to the edges belonging to this face
-						Edge* pe = &m_edges.at(edge.m_vertex);
+						Edge* pe = &m_edges.at(edge.m_edge_idx);
 						face.m_face_edge_ptrs.push_back( SignedEdge{ pe, edge.m_factor } );	//add new face to face vector
 						if (edge.m_factor > 0) { face.m_face_vertex_ptrs.push_back(&pe->m_first_vertexL); } //list of vertices of this face
 						else { face.m_face_vertex_ptrs.push_back(&pe->m_second_vertexL); }
 
-						m_edges[edge.m_vertex].m_edge_face_ptrs.insert(&face);	//we touch each face only once, no need to check if face already in list
-						m_edges[edge.m_vertex].m_first_vertexL.m_vertex_face_ptrs.insert(&face);	//sets cannot hold duplicates
-						m_edges[edge.m_vertex].m_second_vertexL.m_vertex_face_ptrs.insert(&face);
+						m_edges[edge.m_edge_idx].m_edge_face_ptrs.insert(&face);	//we touch each face only once, no need to check if face already in list
+						m_edges[edge.m_edge_idx].m_first_vertexL.m_vertex_face_ptrs.insert(&face);	//sets cannot hold duplicates
+						m_edges[edge.m_edge_idx].m_second_vertexL.m_vertex_face_ptrs.insert(&face);
 					}
-					glmvec3 edge0 = m_edges[face_edge_idx[0].m_vertex].m_edgeL * face_edge_idx[0].m_factor;
-					glmvec3 edge1 = m_edges[face_edge_idx[1].m_vertex].m_edgeL * face_edge_idx[1].m_factor;
+					glmvec3 edge0 = m_edges[face_edge_idx[0].m_edge_idx].m_edgeL * face_edge_idx[0].m_factor;
+					glmvec3 edge1 = m_edges[face_edge_idx[1].m_edge_idx].m_edgeL * face_edge_idx[1].m_factor;
 
 					glmvec3 tangent = glm::normalize( edge0 );
 					face.m_normalL = glm::normalize( glm::cross( tangent, edge1 ));
@@ -504,9 +524,18 @@ namespace ve {
 		real m_dx = 0.0;
 		real m_dy = 0.0;
 		real m_dz = 0.0;
+		real m_da = 0.0;
+		real m_db = 0.0;
+		real m_dc = 0.0;
+
 		void onFrameEnded(veEvent event) {
 			if (m_body) {
-				m_body->m_positionW += event.dt * glmvec3{ m_dx, m_dy,m_dz };
+				m_body->m_positionW += event.dt * glmvec3{ m_dx, m_dy, m_dz };
+				m_body->m_orientationLW = m_body->m_orientationLW * 
+					glm::rotate(glmquat{ {0,0,0} }, event.dt * m_da, glmvec3{1,0,0}) *
+					glm::rotate(glmquat{ {0,0,0} }, event.dt * m_db, glmvec3{ 0,1,0 }) *
+					glm::rotate(glmquat{ {0,0,0} }, event.dt * m_dc, glmvec3{ 0,0,1 });
+
 				m_body->updateMatrices();
 			}
 		}
@@ -535,6 +564,23 @@ namespace ve {
 			if (event.idata1 == GLFW_KEY_K && event.idata3 == GLFW_PRESS) { m_dx = vel; }
 			if (event.idata1 == GLFW_KEY_K && event.idata3 == GLFW_RELEASE) { m_dx = 0.0; }
 
+			real rot = 0.5;
+			if (event.idata1 == GLFW_KEY_SEMICOLON && event.idata3 == GLFW_PRESS) { m_da = -rot; }
+			if (event.idata1 == GLFW_KEY_SEMICOLON && event.idata3 == GLFW_RELEASE) { m_da = 0.0; }
+			if (event.idata1 == GLFW_KEY_APOSTROPHE && event.idata3 == GLFW_PRESS) { m_da = rot; }
+			if (event.idata1 == GLFW_KEY_APOSTROPHE && event.idata3 == GLFW_RELEASE) { m_da = 0.0; }
+
+			if (event.idata1 == GLFW_KEY_COMMA && event.idata3 == GLFW_PRESS) { m_db = -rot; }
+			if (event.idata1 == GLFW_KEY_COMMA && event.idata3 == GLFW_RELEASE) { m_db = 0.0; }
+			if (event.idata1 == GLFW_KEY_PERIOD && event.idata3 == GLFW_PRESS) { m_db = rot; }
+			if (event.idata1 == GLFW_KEY_PERIOD && event.idata3 == GLFW_RELEASE) { m_db = 0.0; }
+
+			if (event.idata1 == GLFW_KEY_SLASH && event.idata3 == GLFW_PRESS) { m_dc = -rot; }
+			if (event.idata1 == GLFW_KEY_SLASH && event.idata3 == GLFW_RELEASE) { m_dc = 0.0; }
+			if (event.idata1 == GLFW_KEY_RIGHT_SHIFT && event.idata3 == GLFW_PRESS) { m_dc = rot; }
+			if (event.idata1 == GLFW_KEY_RIGHT_SHIFT && event.idata3 == GLFW_RELEASE) { m_dc = 0.0; }
+
+
 			if (event.idata1 == GLFW_KEY_SPACE && event.idata3 == GLFW_PRESS) {
 				glmvec3 positionCamera{getSceneManagerPointer()->getSceneNode("StandardCameraParent")->getWorldTransform()[3]};
 				
@@ -560,7 +606,7 @@ namespace ve {
 
 				VESceneNode* cube1;
 				VECHECKPOINTER(cube1 = getSceneManagerPointer()->loadModel("The Cube" + std::to_string(++cubeid), "media/models/test/crate0", "cube.obj", 0, getRoot()));
-				glmquat orient{ glm::rotate(20.0*2.0*M_PI/360.0, glmvec3{1,0,-0.1}) };
+				glmquat orient{ glm::rotate(0.0*2.0*M_PI/360.0, glmvec3{1,0,-0.1}) };
 				//glmquat orient{ };
 				Body body1{ "Above", cube1, &g_cube, glmvec3{1.0}, positionCamera + glmvec3{0.1,1.1,4}, orient, &onMove, glmvec3{0.0}, glmvec3{0.0}, 1.0 / 100.0, 0.2, 1.0};
 				body1.m_forces.insert({ 0ul, Force{} });
@@ -708,6 +754,8 @@ namespace ve {
 			for (auto it = std::begin(m_contacts); it != std::end(m_contacts); ++it) { 			//loop over all contacts
 				auto& contact = it->second;
 
+				//return;
+
 				glmvec3 lin0{ 0.0 }, lin1{ 0.0 }, ang0{0.0}, ang1{0.0}; 
 
 				for (auto& cp : contact.m_contact_points) {
@@ -795,8 +843,8 @@ namespace ve {
 			EdgeQuery eq = queryEdgeDirections(contact);
 			if (eq.m_separation > 0) return;	//found a separating axis with edge-edge normal
 
-			if (fq0.m_separation > eq.m_separation || fq1.m_separation > eq.m_separation) {	//max separation is a face-vertex contact
-				if (fq0.m_separation > fq1.m_separation) { 
+			if (fq0.m_separation >= eq.m_separation || fq1.m_separation >= eq.m_separation) {	//max separation is a face-vertex contact
+				if (fq0.m_separation >= fq1.m_separation) { 
 					createFaceContact(contact, fq0);
 				}
 				else {
@@ -807,6 +855,11 @@ namespace ve {
 			else {
 				createEdgeContact(contact, eq);	//max separation is an edge-edge contact
 			}
+
+			for (auto& cp : contact.m_contact_points) {
+				std::cout << "Pos= " << cp.m_positionW << " n=" << cp.m_normalW << "\n";
+			}
+			std::cout << "\n";
 		}
 
 		/// <summary>
@@ -902,11 +955,13 @@ namespace ve {
 		void createFaceContact(Contact& contact, FaceQuery& fq) {
 			glmvec3 An = glm::normalize( -RTOIN(fq.m_face_ref->m_normalL) ); //transform normal vector of ref face to inc body
 			Face* inc_face = maxFaceAlignment(An, fq.m_vertex_inc->m_vertex_face_ptrs, [](real x) -> real { return x; });	//do we have a face - face contact?
-			if (glm::dot(An, inc_face->m_normalL) > 1.0 - c_small) { clipFaceFace(contact, fq.m_face_ref, inc_face); }
-			else {
+			if (glm::dot(An, inc_face->m_normalL) > 1.0 - c_small) { 
+				clipFaceFace(contact, fq.m_face_ref, inc_face); 
+			} else {
 				Edge* inc_edge = minEdgeAlignment(An, fq.m_vertex_inc->m_vertex_edge_ptrs); //do we have an edge - face contact?
-				if (fabs(glm::dot(An, inc_edge->m_edgeL)) < c_small) { clipEdgeFace(contact, fq.m_face_ref, inc_edge); }
-				else { 
+				if (fabs(glm::dot(An, inc_edge->m_edgeL)) < c_small) { 
+					clipEdgeFace(contact, fq.m_face_ref, inc_edge); 
+				} else { 
 					contact.m_contact_points.emplace_back(ITOWP(fq.m_vertex_inc->m_positionL), fq.m_face_ref->m_normalL);  //we have only a vertex - face contact}
 					contact.m_body_ref.m_body->m_vbias += -fq.m_face_ref->m_normalL * fq.m_separation;
 					contact.m_body_inc.m_body->m_vbias += fq.m_face_ref->m_normalL * fq.m_separation;
@@ -929,13 +984,13 @@ namespace ve {
 			std::vector<clip::point2D> points;					
 			for (auto* vertex : face_inc->m_face_vertex_ptrs) {			//add face points of B's face
 				glmvec4 pT = ItoRT * glmvec4{ vertex->m_positionL, 1.0 };//ransform to A's tangent space
-				points.emplace_back(pT.x, pT.y);						//add as 2D point
+				points.emplace_back(pT.x, pT.z);						//add as 2D point
 			}
 			std::vector<clip::point2D> newPolygon;
-			clip::SutherlandHodgman(face_ref->m_face_vertex2D_T, points, newPolygon); //clip B's face against A's face
+			clip::SutherlandHodgman(points, face_ref->m_face_vertex2D_T, newPolygon); //clip B's face against A's face
 
 			for (auto& p2D : newPolygon) { 
-				glmvec4 posW{ contact.m_body_ref.m_body->m_model * face_ref->m_TtoL * glmvec4{ p2D.x, p2D.y, 0.0, 1.0 } };
+				glmvec3 posW = glmvec3{ contact.m_body_ref.m_body->m_model * face_ref->m_TtoL * glmvec4{ p2D.x, 0.0, p2D.y, 1.0 } };
 				contact.m_contact_points.emplace_back(posW, RTOWN(face_ref->m_normalL));
 			}
 		}
@@ -952,15 +1007,17 @@ namespace ve {
 
 			std::vector<clip::point2D> points;
 			glmvec4 pT = ItoRT * glmvec4{ edge_inc->m_first_vertexL.m_positionL, 1.0 };	//bring edge vertices to A's face tangent space
-			points.emplace_back(pT.x, pT.y);											//add as 2D point (projection)
+			points.emplace_back(pT.x, pT.z);											//add as 2D point (projection)
 			pT = ItoRT * glmvec4{ edge_inc->m_second_vertexL.m_positionL, 1.0 };
-			points.emplace_back(pT.x, pT.y);
+			points.emplace_back(pT.x, pT.z);
 
 			std::vector<clip::point2D> newPolygon;
-			clip::SutherlandHodgman(face_ref->m_face_vertex2D_T, points, newPolygon);	//clip B's face against A's face
+			clip::SutherlandHodgman( points, face_ref->m_face_vertex2D_T, newPolygon);	//clip B's face against A's face
+			std::set<clip::point2D> newPolygon2;
+			for (auto& p : newPolygon) { newPolygon2.insert(p); }
 
-			for (auto & p2D : newPolygon | std::views::take(2) ) {	//result is exactly 2 or 3 points (if clip), we only need 2 points 
-				glmvec4 posW{ contact.m_body_ref.m_body->m_model * face_ref->m_TtoL * glmvec4{ p2D.x, p2D.y, 0.0, 1.0 } };
+			for (auto & p2D : newPolygon2 ) {	//result is exactly 2 or 3 points (if clip), we only need 2 points 
+				glmvec4 posW{ contact.m_body_ref.m_body->m_model * face_ref->m_TtoL * glmvec4{ p2D.x, 0.0, p2D.y, 1.0 } };
 				contact.m_contact_points.emplace_back(posW, RTOWN(face_ref->m_normalL));
 			} 
 		} 
@@ -1108,9 +1165,9 @@ namespace clip {
 	using namespace std;
 
 
-	// check if a point is on the LEFT side of an edge
+	// check if a point is on the RIGHT side of an edge
 	bool inside(point2D p, point2D p1, point2D p2) {
-		return (p2.y - p1.y) * p.x + (p1.x - p2.x) * p.y + (p2.x * p1.y - p1.x * p2.y) < 0;
+		return (p2.y - p1.y) * p.x + (p1.x - p2.x) * p.y + (p2.x * p1.y - p1.x * p2.y) > 0;
 	}
 
 	// calculate intersection point
@@ -1126,6 +1183,7 @@ namespace clip {
 	}
 
 	// Sutherland-Hodgman clipping
+	//https://rosettacode.org/wiki/Sutherland-Hodgman_polygon_clipping#C.2B.2B
 	template<typename T>
 	void SutherlandHodgman(T& subjectPolygon, T& clipPolygon, T& newPolygon) {
 		point2D cp1, cp2, s, e;
@@ -1150,8 +1208,9 @@ namespace clip {
 
 				// Case 1: Both vertices are inside:
 				// Only the second vertex is added to the output list
-				if (inside(s, cp1, cp2) && inside(e, cp1, cp2))
+				if (inside(s, cp1, cp2) && inside(e, cp1, cp2)) {
 					newPolygon.emplace_back(e);
+				}
 
 				// Case 2: First vertex is outside while second one is inside:
 				// Both the point of intersection of the edge with the clip boundary
@@ -1164,9 +1223,9 @@ namespace clip {
 				// Case 3: First vertex is inside while second one is outside:
 				// Only the point of intersection of the edge with the clip boundary
 				// is added to the output list
-				else if (inside(s, cp1, cp2) && !inside(e, cp1, cp2))
+				else if (inside(s, cp1, cp2) && !inside(e, cp1, cp2)) {
 					newPolygon.emplace_back(intersection(cp1, cp2, s, e));
-
+				}
 				// Case 4: Both vertices are outside
 				else if (!inside(s, cp1, cp2) && !inside(e, cp1, cp2)) {
 					// No vertices are added to the output list
