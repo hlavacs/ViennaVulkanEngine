@@ -127,16 +127,16 @@ namespace std {
 
 
 #define ITORP(X) glmvec3{contact.m_body_inc.m_to_other * glmvec4{X, 1.0}}
-#define ITORV(X) glmmat3{contact.m_body_inc.m_to_other}*X
-#define ITORN(X) contact.m_body_inc.m_to_other_it*X
+#define ITORV(X) glmmat3{contact.m_body_inc.m_to_other}*(X)
+#define ITORN(X) contact.m_body_inc.m_to_other_it*(X)
 
 #define ITOWP(X) glmvec3{contact.m_body_inc.m_body->m_model * glmvec4{X, 1.0}}
 
 #define RTOIP(X) glmvec3{contact.m_body_ref.m_to_other * glmvec4{X, 1.0}}
-#define RTOIN(X) contact.m_body_ref.m_to_other_it*X
+#define RTOIN(X) contact.m_body_ref.m_to_other_it*(X)
 
 #define RTOWP(X) glmvec3{contact.m_body_ref.m_body->m_model * glmvec4{X,1.0}}
-#define RTOWN(X) contact.m_body_ref.m_body->m_model_it*X
+#define RTOWN(X) contact.m_body_ref.m_body->m_model_it*(X)
 
 
 
@@ -609,7 +609,7 @@ namespace ve {
 				glmquat orient{ glm::rotate(0.0*2.0*M_PI/360.0, glmvec3{1,0,-0.1}) };
 				//glmquat orient{ };
 				Body body1{ "Above", cube1, &g_cube, glmvec3{1.0}, positionCamera + glmvec3{0.1,1.1,4}, orient, &onMove, glmvec3{0.0}, glmvec3{0.0}, 1.0 / 100.0, 0.2, 1.0};
-				body1.m_forces.insert({ 0ul, Force{} });
+				//body1.m_forces.insert({ 0ul, Force{} });
 				addBody(m_body = std::make_shared<Body>(body1));
 
 			}
@@ -754,7 +754,7 @@ namespace ve {
 			for (auto it = std::begin(m_contacts); it != std::end(m_contacts); ++it) { 			//loop over all contacts
 				auto& contact = it->second;
 
-				//return;
+				return;
 
 				glmvec3 lin0{ 0.0 }, lin1{ 0.0 }, ang0{0.0}, ang1{0.0}; 
 
@@ -962,9 +962,9 @@ namespace ve {
 				if (fabs(glm::dot(An, inc_edge->m_edgeL)) < c_small) { 
 					clipEdgeFace(contact, fq.m_face_ref, inc_edge); 
 				} else { 
-					contact.m_contact_points.emplace_back(ITOWP(fq.m_vertex_inc->m_positionL), fq.m_face_ref->m_normalL);  //we have only a vertex - face contact}
-					contact.m_body_ref.m_body->m_vbias += -fq.m_face_ref->m_normalL * fq.m_separation;
-					contact.m_body_inc.m_body->m_vbias += fq.m_face_ref->m_normalL * fq.m_separation;
+					contact.m_contact_points.emplace_back(ITOWP(fq.m_vertex_inc->m_positionL), RTOWN(fq.m_face_ref->m_normalL));  //we have only a vertex - face contact}
+					contact.m_body_ref.m_body->m_vbias += -RTOWN(fq.m_face_ref->m_normalL) * fq.m_separation;
+					contact.m_body_inc.m_body->m_vbias += RTOWN(fq.m_face_ref->m_normalL) * fq.m_separation;
 				}
 			}			
 		}
@@ -1060,7 +1060,7 @@ namespace ve {
 					auto mid = (posL.first + posL.second) / 2.0;
 					auto mid_W = RTOWP(mid);
 
-					contact.m_contact_points.emplace_back( mid_W, eq.m_normalL); 
+					contact.m_contact_points.emplace_back( mid_W, RTOWN(eq.m_normalL));
 				} 
 			}
 		}
