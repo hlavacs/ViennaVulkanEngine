@@ -601,15 +601,16 @@ namespace ve {
 				VESceneNode* cube0;
 				VECHECKPOINTER(cube0 = getSceneManagerPointer()->loadModel("The Cube" + std::to_string(++cubeid), "media/models/test/crate0", "cube.obj", 0, getRoot()));
 				Body body0{ "Below", cube0, &g_cube, glmvec3{1.0}, glmvec3{positionCamera.x,0.5,positionCamera.z + 4}, glmquat{}, &onMove, glmvec3{0.0}, glmvec3{0.0}, 1.0 / 100.0, 0.2, 1.0};
-				//body0.m_forces.insert({ 0ul, Force{} });
+				body0.m_forces.insert({ 0ul, Force{} });
 				addBody(std::make_shared<Body>(body0));
 
 				VESceneNode* cube1;
 				VECHECKPOINTER(cube1 = getSceneManagerPointer()->loadModel("The Cube" + std::to_string(++cubeid), "media/models/test/crate0", "cube.obj", 0, getRoot()));
-				glmquat orient{ glm::rotate(0.0*2.0*M_PI/360.0, glmvec3{1,0,-0.1}) };
+				glmquat orient{ glm::rotate(45.0*2.0*M_PI/360.0, glmvec3{1,0,0}) };
+				glmquat orient2{ glm::rotate(45.0 * 2.0 * M_PI / 360.0, glmvec3{0,0,-1}) };
 				//glmquat orient{ };
-				Body body1{ "Above", cube1, &g_cube, glmvec3{1.0}, positionCamera + glmvec3{0.1,1.1,4}, orient, &onMove, glmvec3{0.0}, glmvec3{0.0}, 1.0 / 100.0, 0.2, 1.0};
-				//body1.m_forces.insert({ 0ul, Force{} });
+				Body body1{ "Above", cube1, &g_cube, glmvec3{1.0}, positionCamera + glmvec3{1.0,10.1,4}, orient2*orient, &onMove, glmvec3{0.0}, glmvec3{0.0}, 1.0 / 100.0, 0.2, 1.0};
+				body1.m_forces.insert({ 0ul, Force{} });
 				addBody(m_body = std::make_shared<Body>(body1));
 
 			}
@@ -703,7 +704,9 @@ namespace ve {
 				auto& contact = it->second;
 				contact.m_contact_points.clear();
 				if (contact.m_last_loop == m_loop) {	//is contact still possible?
-					if (contact.m_body_ref.m_body->m_owner == nullptr) groundTest(contact); //is the ref body the ground?
+					if (contact.m_body_ref.m_body->m_owner == nullptr) {
+						groundTest(contact); //is the ref body the ground?
+					}
 					else {
 						glmvec3 diff = contact.m_body_inc.m_body->m_positionW - contact.m_body_ref.m_body->m_positionW;
 						real rsum = contact.m_body_ref.m_body->boundingSphereRadius() + contact.m_body_inc.m_body->boundingSphereRadius();
@@ -753,9 +756,6 @@ namespace ve {
 		void applyImpulses( Contact::ContactPoint::type_t contact_type = Contact::ContactPoint::type_t::colliding) {
 			for (auto it = std::begin(m_contacts); it != std::end(m_contacts); ++it) { 			//loop over all contacts
 				auto& contact = it->second;
-
-				return;
-
 				glmvec3 lin0{ 0.0 }, lin1{ 0.0 }, ang0{0.0}, ang1{0.0}; 
 
 				for (auto& cp : contact.m_contact_points) {
@@ -856,10 +856,10 @@ namespace ve {
 				createEdgeContact(contact, eq);	//max separation is an edge-edge contact
 			}
 
-			for (auto& cp : contact.m_contact_points) {
-				std::cout << "Pos= " << cp.m_positionW << " n=" << cp.m_normalW << "\n";
-			}
-			std::cout << "\n";
+			//for (auto& cp : contact.m_contact_points) {
+			//	std::cout << "Pos= " << cp.m_positionW << " n=" << cp.m_normalW << "\n";
+			//}
+			//std::cout << "\n";
 		}
 
 		/// <summary>
@@ -1120,6 +1120,8 @@ namespace ve {
 			VEEntity *pE4;
 			VECHECKPOINTER( pE4 = (VEEntity*)getSceneManagerPointer()->getSceneNode("The Plane/plane_t_n_s.obj/plane/Entity_0") );
 			pE4->setParam( glm::vec4(1000.0f, 1000.0f, 0.0f, 0.0f) );
+
+			getSceneManagerPointer()->getSceneNode("StandardCameraParent")->setPosition({0,1,-4});
 
 			//VESceneNode *e1,*eParent;
 			//eParent = getSceneManagerPointer()->createSceneNode("The Cube Parent", pScene, glm::mat4(1.0));
