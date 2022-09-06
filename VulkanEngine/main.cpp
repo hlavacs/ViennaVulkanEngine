@@ -31,7 +31,7 @@ using uint_t = uint64_t;
 #define glmvec4 glm::dvec4
 #define glmmat4 glm::dmat4
 #define glmquat glm::dquat
-const double c_eps = 1.0e-10;
+const double c_eps = 1.0e-5;
 #else
 using real = float;
 using int_t = int32_t;
@@ -367,7 +367,7 @@ namespace ve {
 
 			bool stepPosition(double dt, glmvec3& pos, glmquat& quat) {
 				bool active = false;
-				if (abs(glm::dot(m_linear_velocityW, m_linear_velocityW)) > c_eps * c_eps) {
+				if (glm::length(m_linear_velocityW) > c_eps) {
 					pos = m_positionW + (m_linear_velocityW + m_vbias) * (real)dt;
 					m_vbias = glmvec3{ 0.0 };
 					active = true;
@@ -376,7 +376,7 @@ namespace ve {
 				auto avW = glmmat3{ m_model_inv } * m_angular_velocityW;
 				real len = glm::length(avW);
 				if (abs(len) > c_eps) {
-					quat = glm::rotate(m_orientationLW, len * (real)dt, avW * 1.0 / len);
+					quat = glm::rotate(m_orientationLW, len * (real)dt, avW / len);
 					active = true;
 				}
 				return active;
