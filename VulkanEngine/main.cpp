@@ -812,7 +812,7 @@ namespace ve {
 					cp.m_F += F;
 				}
 			}
-			//if (numResting>0 && numResting == contact.m_contact_points.size()) contact.m_all_resting = true;
+			if (numResting>2 && numResting == contact.m_contact_points.size()) contact.m_all_resting = true;
 		}
 
 		void calculateImpulses( Contact::ContactPoint::type_t contact_type = Contact::ContactPoint::type_t::colliding) {
@@ -840,21 +840,31 @@ namespace ve {
 		void applyImpulses() {
 			for (auto it = std::begin(m_contacts); it != std::end(m_contacts); ++it) { 			//loop over all contacts
 				auto& contact = it->second;
+				glmvec3 lin0{ 0,0,0 }, ori0{ 0,0,0 }, lin1{ 0,0,0 }, ori1{ 0,0,0 }, n{0,0,0};
 				for (auto& cp : contact.m_contact_points) {
 					if (cp.m_type == Contact::ContactPoint::colliding || cp.m_type == Contact::ContactPoint::resting) {
-						contact.m_body_ref.m_body->m_linear_velocityW += -cp.m_F * contact.m_body_ref.m_body->m_mass_inv;
-						contact.m_body_inc.m_body->m_linear_velocityW += cp.m_F * contact.m_body_inc.m_body->m_mass_inv;
-
-						auto d_omega = contact.m_body_ref.m_body->m_inertia_invW * glm::cross(cp.m_r0, -cp.m_F);
-						if(contact.m_all_resting) d_omega = glm::dot(d_omega, cp.m_normalW) * cp.m_normalW;
-						contact.m_body_ref.m_body->m_angular_velocityW += d_omega;
-
-						d_omega = contact.m_body_inc.m_body->m_inertia_invW* glm::cross(cp.m_r1, cp.m_F);
-						if (contact.m_all_resting) d_omega = glm::dot(d_omega, cp.m_normalW) * cp.m_normalW;
-						contact.m_body_inc.m_body->m_angular_velocityW += d_omega;
+						lin0 += -cp.m_F * contact.m_body_ref.m_body->m_mass_inv;
+						ori0 +=           contact.m_body_ref.m_body->m_inertia_invW * glm::cross(cp.m_r0, -cp.m_F);
+						lin1 +=  cp.m_F * contact.m_body_inc.m_body->m_mass_inv;
+						ori1 +=           contact.m_body_inc.m_body->m_inertia_invW * glm::cross(cp.m_r1, cp.m_F);
+						n = cp.m_normalW;
 						cp.m_F = { 0,0,0 };
 					}
 				}
+				if (contact.m_all_resting) {
+					auto ori0_n = glm::dot(ori0, n) * n;
+					auto ori0_t = ori0 - ori0_n;
+					//if (glm::length(ori0_t) < 10*c_small) ori0 = ori0_n + 0.2 * ori0_t;
+
+					auto ori1_n = glm::dot(ori1, n) * n;
+					auto ori1_t = ori1 - ori1_n;
+					//if (glm::length(ori1_t) < 10*c_small) ori1 = ori1_n + 0.2 * ori1_t;
+				}
+
+				contact.m_body_ref.m_body->m_linear_velocityW  += lin0;
+				contact.m_body_ref.m_body->m_angular_velocityW += ori0;
+				contact.m_body_inc.m_body->m_linear_velocityW  += lin1;
+				contact.m_body_inc.m_body->m_angular_velocityW += ori1;
 			}
 		}
 
