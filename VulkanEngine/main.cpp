@@ -486,6 +486,7 @@ namespace ve {
 			BodyPtr		m_body_inc; //incident body, we will transfer its points/vectors to the ref space
 			glmvec3		m_separating_axisW{0.0};			//Axis that separates the two bodies in world space
 			std::vector<ContactPoint> m_contact_points{};	//Contact points in contact manifold in world space
+			bool		m_all_resting{false};
 
 			void addContactPoint(glmvec3 positionW, glmvec3 normalW) {
 				auto r0 = positionW - m_body_ref.m_body->m_positionW;
@@ -787,10 +788,11 @@ namespace ve {
 		}
 
 		void calculateContactPointImpules(auto &contact, auto contact_type) {
-			bool all_are_resting = true;
+			uint64_t numResting = 0;
+			contact.m_all_resting = false;
 			for (auto& cp : contact.m_contact_points) {
 				if (cp.m_type == contact_type) {
-					if (cp.m_type != Contact::ContactPoint::type_t::resting) all_are_resting = false;
+					if (cp.m_type == Contact::ContactPoint::type_t::resting) ++numResting;
 					auto vrel = contact.m_body_inc.m_body->totalVelocityW(cp.m_positionW) - contact.m_body_ref.m_body->totalVelocityW(cp.m_positionW);
 					auto dN = glm::dot(vrel, cp.m_normalW);
 					auto dT = glm::length(vrel - dN * cp.m_normalW);
@@ -810,11 +812,7 @@ namespace ve {
 					cp.m_F += F;
 				}
 			}
-			if (all_are_resting) {
-				for (auto& cp : contact.m_contact_points) {
-
-				}
-			}
+			//if (numResting>0 && numResting == contact.m_contact_points.size()) contact.m_all_resting = true;
 		}
 
 		void calculateImpulses( Contact::ContactPoint::type_t contact_type = Contact::ContactPoint::type_t::colliding) {
@@ -844,10 +842,16 @@ namespace ve {
 				auto& contact = it->second;
 				for (auto& cp : contact.m_contact_points) {
 					if (cp.m_type == Contact::ContactPoint::colliding || cp.m_type == Contact::ContactPoint::resting) {
-						contact.m_body_ref.m_body->m_linear_velocityW  += -cp.m_F * contact.m_body_ref.m_body->m_mass_inv;
-						contact.m_body_ref.m_body->m_angular_velocityW +=           contact.m_body_ref.m_body->m_inertia_invW * glm::cross(cp.m_r0, -cp.m_F);
-						contact.m_body_inc.m_body->m_linear_velocityW  +=  cp.m_F * contact.m_body_inc.m_body->m_mass_inv;
-						contact.m_body_inc.m_body->m_angular_velocityW +=           contact.m_body_inc.m_body->m_inertia_invW * glm::cross(cp.m_r1, cp.m_F);
+						contact.m_body_ref.m_body->m_linear_velocityW += -cp.m_F * contact.m_body_ref.m_body->m_mass_inv;
+						contact.m_body_inc.m_body->m_linear_velocityW += cp.m_F * contact.m_body_inc.m_body->m_mass_inv;
+
+						auto d_omega = contact.m_body_ref.m_body->m_inertia_invW * glm::cross(cp.m_r0, -cp.m_F);
+						if(contact.m_all_resting) d_omega = glm::dot(d_omega, cp.m_normalW) * cp.m_normalW;
+						contact.m_body_ref.m_body->m_angular_velocityW += d_omega;
+
+						d_omega = contact.m_body_inc.m_body->m_inertia_invW* glm::cross(cp.m_r1, cp.m_F);
+						if (contact.m_all_resting) d_omega = glm::dot(d_omega, cp.m_normalW) * cp.m_normalW;
+						contact.m_body_inc.m_body->m_angular_velocityW += d_omega;
 						cp.m_F = { 0,0,0 };
 					}
 				}
