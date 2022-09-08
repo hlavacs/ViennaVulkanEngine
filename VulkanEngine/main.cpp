@@ -480,6 +480,7 @@ namespace ve {
 			glmvec3		m_separating_axisW{0.0};			//Axis that separates the two bodies in world space
 			std::vector<ContactPoint> m_contact_points{};	//Contact points in contact manifold in world space
 			bool		m_all_resting{true};				//true if all contact points are resting
+			real		m_dampen_coeff{ 0.99 };				//coefficient for dampening unwanted rotation for face/face contact
 
 			void addContactPoint(glmvec3 positionW, glmvec3 normalW) {
 				if (m_contact_points.size() == 0) m_all_resting = true;
@@ -492,6 +493,7 @@ namespace ve {
 				if (d > 0) { 
 					type = Contact::ContactPoint::type_t::separating;
 					m_all_resting = false;
+					m_dampen_coeff = 0.99;
 				}
 				else if (d > c_resting) { 
 					type = Contact::ContactPoint::type_t::resting; 
@@ -499,6 +501,7 @@ namespace ve {
 				else { 
 					type = Contact::ContactPoint::type_t::colliding;
 					m_all_resting = false;
+					m_dampen_coeff = 0.99;
 				}
 
 				auto restitution = std::max(m_body_ref.m_body->m_restitution, m_body_inc.m_body->m_restitution);
@@ -524,12 +527,13 @@ namespace ve {
 		uint64_t		m_loop{ 0L };
 		double			m_last_time{ 0.0 };				//last time the sim was interpolated
 		double			m_last_slot{ 0.0 };				//last time the sim was calculated
-		double			m_next_slot{ c_sim_delta_time };	//next time for simulation
+		double			m_next_slot{ c_sim_delta_time };//next time for simulation
 
 		using body_map = std::unordered_map<void*, std::shared_ptr<Body>>;
-		body_map		m_bodies;							//main container of all bodies
+		body_map		m_bodies;						//main container of all bodies
 		
-		const double	c_width{5};							//grid cell width (m)
+		bool			m_singleSolver{ true };			//if false, use a special solver for face / face contacts
+		const double	c_width{5};						//grid cell width (m)
 		std::unordered_map< intpair_t, body_map > m_grid;	//broadphase grid
 
 		Body			m_ground{ "Ground", nullptr, &g_cube , { 1000, 1000, 1000 } , { 0, -500.0_real, 0 }, {1,0,0,0} };
@@ -633,9 +637,9 @@ namespace ve {
 				glmvec3 dir{getSceneManagerPointer()->getSceneNode("StandardCamera")->getWorldTransform()[2]};
 				glmvec3 vel = 30.0 * rnd_unif(rnd_gen) * dir / glm::length(dir);
 				glmvec3 scale{1,1,1}; // = rnd_unif(rnd_gen) * 10;
-				real angle = 0.0; // rnd_unif(rnd_gen) * 10 * 3 * M_PI / 180.0;
+				real angle = rnd_unif(rnd_gen) * 10 * 3 * M_PI / 180.0;
 				glmvec3 orient{ rnd_unif(rnd_gen), rnd_unif(rnd_gen), rnd_unif(rnd_gen) };
-				glmvec3 vrot{0,0,0}; // { rnd_unif(rnd_gen) * 10, rnd_unif(rnd_gen) * 10, rnd_unif(rnd_gen) * 10 };
+				glmvec3 vrot{ rnd_unif(rnd_gen) * 10, rnd_unif(rnd_gen) * 10, rnd_unif(rnd_gen) * 10 };
 				VESceneNode *cube;
 				VECHECKPOINTER(cube = getSceneManagerPointer()->loadModel("The Cube"+ std::to_string(++cubeid)  , "media/models/test/crate0", "cube.obj", 0, getRoot()) );
 				Body body{ "", cube, &g_cube, scale, positionCamera + 2.0*dir, glm::rotate(angle, glm::normalize(orient)), &onMove, vel, vrot, 1.0 / 100.0, 0.2, 1.0 };
@@ -795,7 +799,7 @@ namespace ve {
 					glmvec3 F{ 0,0,0 }, Fn{ 0,0,0 }, Ft{ 0,0,0 };
 					real f{ 0.0 }, t{ 0.0 };
 
-					//if (!contact.m_all_resting || contact.m_contact_points.size() < 4) {
+					if (m_singleSolver || (!contact.m_all_resting || contact.m_contact_points.size() < 4)) {
 						F = cp.m_K_inv * (-cp.m_restitution * dN * cp.m_normalW - vrel) / (real)contact.m_contact_points.size();
 						f = glm::dot(F, cp.m_normalW);
 						Fn = f * cp.m_normalW;
@@ -807,7 +811,7 @@ namespace ve {
 							f = -(1 + cp.m_restitution) * dN / glm::dot(cp.m_normalW, cp.m_K * (cp.m_normalW - cp.m_friction * T));
 							F = f * cp.m_normalW - f * cp.m_friction * T;
 						}
-					/* }
+					}
 					else {
 						real ua = glm::dot(vref, cp.m_normalW);
 						real ub = glm::dot(vinc, cp.m_normalW);
@@ -816,12 +820,13 @@ namespace ve {
 						real va = (ma * ua + mb * ub) / (ma + mb);
 						real vb = va;
 						Fn = mb * (vb - ub) * cp.m_normalW  / (real)contact.m_contact_points.size();
-						Ft = -mb * vT / (real)contact.m_contact_points.size();
+
+						Ft = cp.m_K_inv * (-cp.m_restitution * dN * cp.m_normalW - vT) / (real)contact.m_contact_points.size();
 						if (dT > 50 * c_small && glm::length(Fn) * cp.m_friction < glm::length(Ft)) {
 							Ft = -cp.m_friction * glm::length(Fn) * vT / dT;
 						}
 						F = Fn + Ft;
-					}*/
+					}
 					cp.m_F += F;
 				}
 			}
@@ -869,14 +874,15 @@ namespace ve {
 				contact.m_body_inc.m_body->m_linear_velocityW  += lin1;
 				contact.m_body_inc.m_body->m_angular_velocityW += ori1;
 
-				if (contact.m_all_resting) {	//if all contacts are resting (face/face) -> dampen rotation that is not along the normal axis
+				if (m_singleSolver && contact.m_all_resting) {	//if all contacts are resting (face/face) -> dampen rotation that is not along the normal axis
 					auto ori0_n = glm::dot(contact.m_body_ref.m_body->m_angular_velocityW, n) * n;
 					auto ori0_t = contact.m_body_ref.m_body->m_angular_velocityW - ori0_n;
-					if (glm::length(ori0_t) < 10*c_small) contact.m_body_ref.m_body->m_angular_velocityW = ori0_n + 0.2 * ori0_t;
+					if (glm::length(ori0_t) < 10*c_small) contact.m_body_ref.m_body->m_angular_velocityW = ori0_n + contact.m_dampen_coeff * ori0_t;
 
 					auto ori1_n = glm::dot(contact.m_body_inc.m_body->m_angular_velocityW, n) * n;
 					auto ori1_t = contact.m_body_inc.m_body->m_angular_velocityW - ori1_n;
-					if (glm::length(ori1_t) < 10*c_small) contact.m_body_inc.m_body->m_angular_velocityW = ori1_n + 0.2 * ori1_t;
+					if (glm::length(ori1_t) < 10*c_small) contact.m_body_inc.m_body->m_angular_velocityW = ori1_n + contact.m_dampen_coeff * ori1_t;
+					contact.m_dampen_coeff = std::max(contact.m_dampen_coeff * 0.95, 0.2);
 				}
 			}
 		}
