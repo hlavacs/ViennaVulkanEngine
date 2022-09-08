@@ -675,14 +675,14 @@ namespace ve {
 				broadPhase();
 				narrowPhase();
 
-				calculateImpulses(Contact::ContactPoint::type_t::any);
+				calculateImpulses(Contact::ContactPoint::type_t::any, 2);
 				if (m_run) {
 					for (auto& c : m_bodies) {
 						auto& body = c.second;
 						body->stepVelocity(c_sim_delta_time);
 					}
 				}
-				calculateImpulses(Contact::ContactPoint::type_t::resting);
+				calculateImpulses(Contact::ContactPoint::type_t::resting, 2);
 
 				if (m_run) {
 					for (auto& c : m_bodies) {
