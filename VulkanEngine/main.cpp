@@ -522,7 +522,8 @@ namespace ve {
 		};
 
 	protected:
-		bool m_debug = false;
+		bool			m_debug = false;
+		bool			m_run = true;
 
 		uint64_t		m_loop{ 0L };
 		double			m_last_time{ 0.0 };				//last time the sim was interpolated
@@ -634,7 +635,7 @@ namespace ve {
 			if (event.idata1 == GLFW_KEY_SPACE && event.idata3 == GLFW_PRESS) {
 				glmvec3 positionCamera{getSceneManagerPointer()->getSceneNode("StandardCameraParent")->getWorldTransform()[3]};
 				
-				glmvec3 dir{getSceneManagerPointer()->getSceneNode("StandardCamera")->getWorldTransform()[2]};
+				/*glmvec3 dir{getSceneManagerPointer()->getSceneNode("StandardCamera")->getWorldTransform()[2]};
 				glmvec3 vel = 30.0 * rnd_unif(rnd_gen) * dir / glm::length(dir);
 				glmvec3 scale{1,1,1}; // = rnd_unif(rnd_gen) * 10;
 				real angle = rnd_unif(rnd_gen) * 10 * 3 * M_PI / 180.0;
@@ -645,9 +646,9 @@ namespace ve {
 				Body body{ "", cube, &g_cube, scale, positionCamera + 2.0*dir, glm::rotate(angle, glm::normalize(orient)), &onMove, vel, vrot, 1.0 / 100.0, 0.2, 1.0 };
 				body.m_forces.insert( { 0ul, Force{} } );
 				addBody(std::make_shared<Body>(body));
-				
+				*/
 								
-				/*VESceneNode* cube0;
+				VESceneNode* cube0;
 				VECHECKPOINTER(cube0 = getSceneManagerPointer()->loadModel("The Cube" + std::to_string(++cubeid), "media/models/test/crate0", "cube.obj", 0, getRoot()));
 				Body body0{ "Below", cube0, &g_cube, glmvec3{1.0}, glmvec3{positionCamera.x,0.5,positionCamera.z + 4}, glmquat{}, &onMove, glmvec3{0.0}, glmvec3{0.0}, 1.0 / 100.0, 0.2, 1.0};
 				body0.m_forces.insert({ 0ul, Force{} });
@@ -655,13 +656,13 @@ namespace ve {
 				
 				VESceneNode* cube1;
 				VECHECKPOINTER(cube1 = getSceneManagerPointer()->loadModel("The Cube" + std::to_string(++cubeid), "media/models/test/crate0", "cube.obj", 0, getRoot()));
-				glmquat orient{ glm::rotate(30.0*2.0*M_PI/360.0, glmvec3{1,0,0}) };
-				glmquat orient2{ glm::rotate(30.0 * 2.0 * M_PI / 360.0, glmvec3{0,0,-1}) };
+				glmquat orient{ glm::rotate(45.0*2.0*M_PI/360.0, glmvec3{1,0,0}) };
+				glmquat orient2{ glm::rotate(45.0 * 2.0 * M_PI / 360.0, glmvec3{0,0,-1}) };
 				//glmquat orient{ };
-				Body body1{ "Above", cube1, &g_cube, glmvec3{1.0}, positionCamera + glmvec3{1.0,10.1,4}, orient2*orient, &onMove, glmvec3{0.0}, glmvec3{0.0}, 1.0 / 100.0, 0.2, 1.0};
+				Body body1{ "Above", cube1, &g_cube, glmvec3{1.0}, positionCamera + glmvec3{0.7,2.0,4}, orient2*orient, &onMove, glmvec3{0.0}, glmvec3{0.0}, 1.0 / 100.0, 0.2, 1.0};
 				body1.m_forces.insert({ 0ul, Force{} });
 				addBody(m_body = std::make_shared<Body>(body1));
-				*/
+				
 			}
 			return false;
 		};
@@ -675,19 +676,22 @@ namespace ve {
 				narrowPhase();
 
 				calculateImpulses(Contact::ContactPoint::type_t::any);
-				for (auto& c : m_bodies) {
-					auto& body = c.second;
-					body->stepVelocity(c_sim_delta_time);
+				if (m_run) {
+					for (auto& c : m_bodies) {
+						auto& body = c.second;
+						body->stepVelocity(c_sim_delta_time);
+					}
 				}
 				calculateImpulses(Contact::ContactPoint::type_t::resting);
 
-				for (auto& c : m_bodies) {
-					auto& body = c.second;
-					if(body->stepPosition(c_sim_delta_time, body->m_positionW, body->m_orientationLW )) {
-						body->updateMatrices(); 
+				if (m_run) {
+					for (auto& c : m_bodies) {
+						auto& body = c.second;
+						if (body->stepPosition(c_sim_delta_time, body->m_positionW, body->m_orientationLW)) {
+							body->updateMatrices();
+						}
 					}
 				}
-
 				m_last_slot = m_next_slot;
 				m_next_slot += c_sim_delta_time;
 			}
@@ -698,7 +702,7 @@ namespace ve {
 				}
 			}
 			for (auto& c : m_bodies) {	//predict pos/vel at slot + delta, this is only a prediction for rendering, not stored anywhere
-				if (c.second->m_on_move != nullptr) {
+				if (m_run && c.second->m_on_move != nullptr) {
 					(*c.second->m_on_move)(current_time - m_last_slot, c.second); //predict new pos/orient
 				}
 			}
@@ -924,6 +928,7 @@ namespace ve {
 			EdgeQuery eq = queryEdgeDirections(contact);
 			if (eq.m_separation > 0) return;	//found a separating axis with edge-edge normal
 
+			//m_run = false;
 			if (fq0.m_separation >= eq.m_separation || fq1.m_separation >= eq.m_separation) {	//max separation is a face-vertex contact
 				if (fq0.m_separation >= fq1.m_separation) { 
 					createFaceContact(contact, fq0);
@@ -1043,12 +1048,11 @@ namespace ve {
 				if (fabs(glm::dot(An, inc_edge->m_edgeL)) < c_small) { 
 					clipEdgeFace(contact, fq.m_face_ref, inc_edge); 
 				} else { 
-					//contact.m_contact_points.emplace_back(ITOWP(fq.m_vertex_inc->m_positionL), RTOWN(fq.m_face_ref->m_normalL));  //we have only a vertex - face contact}
 					contact.addContactPoint(ITOWP(fq.m_vertex_inc->m_positionL), RTOWN(fq.m_face_ref->m_normalL));  //we have only a vertex - face contact}
-					contact.m_body_ref.m_body->m_vbias += -RTOWN(fq.m_face_ref->m_normalL) * fq.m_separation;
-					contact.m_body_inc.m_body->m_vbias += RTOWN(fq.m_face_ref->m_normalL) * fq.m_separation;
 				}
-			}			
+			}
+			contact.m_body_ref.m_body->m_vbias += -RTOWN(fq.m_face_ref->m_normalL) * (-fq.m_separation) * 30.0;
+			contact.m_body_inc.m_body->m_vbias +=  RTOWN(fq.m_face_ref->m_normalL) * (-fq.m_separation) * 30.0;
 		}
 
 		/// <summary>
@@ -1073,7 +1077,6 @@ namespace ve {
 
 			for (auto& p2D : newPolygon) { 
 				glmvec3 posW = glmvec3{ contact.m_body_ref.m_body->m_model * face_ref->m_TtoL * glmvec4{ p2D.x, 0.0, p2D.y, 1.0 } };
-				//contact.m_contact_points.emplace_back(posW, RTOWN(face_ref->m_normalL));
 				contact.addContactPoint(posW, RTOWN(face_ref->m_normalL));
 			}
 		}
@@ -1101,7 +1104,6 @@ namespace ve {
 
 			for (auto & p2D : newPolygon2 ) {	//result is exactly 2 or 3 points (if clip), we only need 2 points 
 				glmvec4 posW{ contact.m_body_ref.m_body->m_model * face_ref->m_TtoL * glmvec4{ p2D.x, 0.0, p2D.y, 1.0 } };
-				//contact.m_contact_points.emplace_back(posW, RTOWN(face_ref->m_normalL));
 				contact.addContactPoint(posW, RTOWN(face_ref->m_normalL));
 			}
 		} 
@@ -1143,12 +1145,12 @@ namespace ve {
 
 					auto mid = (posL.first + posL.second) / 2.0;
 					auto mid_W = RTOWP(mid);
-
-					//contact.m_contact_points.emplace_back( mid_W, RTOWN(eq.m_normalL));
 					contact.addContactPoint(mid_W, RTOWN(eq.m_normalL));
 					//m_debug = true;
 				} 
 			}
+			contact.m_body_ref.m_body->m_vbias += -RTOWN(eq.m_normalL) * (-eq.m_separation) * 30.0;
+			contact.m_body_inc.m_body->m_vbias +=  RTOWN(eq.m_normalL) * (-eq.m_separation) * 30.0;
 		}
 
 
