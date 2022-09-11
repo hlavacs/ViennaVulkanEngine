@@ -48,7 +48,7 @@ constexpr real operator "" _real(long double val) { return (real)val; };
 
 
 const double c_small = 0.001;
-const real c_margin = 0.01;
+const real c_margin_factor = 1.01;
 const real c_gravity = -9.81;
 const double c_sim_delta_time = 1.0 / 60.0;
 const real c_resting = 2.5 * c_gravity * c_sim_delta_time; //gravity is negative!
@@ -327,7 +327,7 @@ namespace ve {
 
 		class Body {
 		public:
-			std::string	m_id;
+			std::string	m_name;
 			void*		m_owner = nullptr;				//pointer to owner of this body, must be unique
 			Polytope*	m_polytope = nullptr;			//geometric shape
 			glmvec3		m_scale{ 1,1,1 };				//scale factor in local space
@@ -357,12 +357,16 @@ namespace ve {
 
 			Body() { inertiaTensorL(); updateMatrices(); };
 
-			Body(std::string id, void* owner, Polytope* polytope, glmvec3 scale, glmvec3 positionW, glmquat orientationLW = glmvec3{0,0,0}, 
+			Body(std::string name, void* owner, Polytope* polytope, glmvec3 scale, glmvec3 positionW, glmquat orientationLW = glmvec3{0,0,0}, 
 				body_callback* on_move = nullptr, glmvec3 linear_velocityW = glmvec3{ 0,0,0 }, glmvec3 angular_velocityW = glmvec3{0,0,0}, 
 				real mass_inv = 0.0, real restitution = 0.0_real, real friction = 0.5_real ) :
-					m_id{id}, m_owner {owner}, m_polytope{ polytope }, m_scale{ scale }, m_positionW{ positionW }, m_orientationLW{ orientationLW },
+					m_name{name}, m_owner {owner}, m_polytope{ polytope }, m_scale{ scale }, m_positionW{ positionW }, m_orientationLW{ orientationLW },
 					m_on_move{on_move}, m_linear_velocityW{linear_velocityW}, m_angular_velocityW{ angular_velocityW }, 
-					m_mass_inv{ mass_inv }, m_restitution{ restitution }, m_friction{ friction } { inertiaTensorL(); updateMatrices(); };
+					m_mass_inv{ mass_inv }, m_restitution{ restitution }, m_friction{ friction } { 
+				m_scale *= c_margin_factor;
+				inertiaTensorL();
+				updateMatrices(); 
+			};
 
 			bool stepPosition(double dt, glmvec3& pos, glmquat& quat) {
 				bool active = false;
@@ -533,7 +537,7 @@ namespace ve {
 		using body_map = std::unordered_map<void*, std::shared_ptr<Body>>;
 		body_map		m_bodies;						//main container of all bodies
 		
-		bool			m_singleSolver{ true };			//if false, use a special solver for face / face contacts
+		bool			m_singleSolver{ false };			//if false, use a special solver for face / face contacts
 		const double	c_width{5};						//grid cell width (m)
 		std::unordered_map< intpair_t, body_map > m_grid;	//broadphase grid
 
@@ -656,10 +660,10 @@ namespace ve {
 				
 				VESceneNode* cube1;
 				VECHECKPOINTER(cube1 = getSceneManagerPointer()->loadModel("The Cube" + std::to_string(++cubeid), "media/models/test/crate0", "cube.obj", 0, getRoot()));
-				glmquat orient{ glm::rotate(45.0*2.0*M_PI/360.0, glmvec3{1,0,0}) };
-				glmquat orient2{ glm::rotate(45.0 * 2.0 * M_PI / 360.0, glmvec3{0,0,-1}) };
-				//glmquat orient{ };
-				Body body1{ "Above", cube1, &g_cube, glmvec3{1.0}, positionCamera + glmvec3{0.7,2.0,4}, orient2*orient, &onMove, glmvec3{0.0}, glmvec3{0.0}, 1.0 / 100.0, 0.2, 1.0};
+				//glmquat orient{ glm::rotate(45.0*2.0*M_PI/360.0, glmvec3{1,0,0}) };
+				//glmquat orient2{ glm::rotate(45.0 * 2.0 * M_PI / 360.0, glmvec3{0,0,-1}) };
+				glmquat orient{ }, orient2{ };
+				Body body1{ "Above", cube1, &g_cube, glmvec3{1.0}, positionCamera + glmvec3{0,0.5,4}, orient2*orient, &onMove, glmvec3{0.0}, glmvec3{0.0}, 1.0 / 100.0, 0.2, 1.0};
 				body1.m_forces.insert({ 0ul, Force{} });
 				addBody(m_body = std::make_shared<Body>(body1));
 				
@@ -675,6 +679,7 @@ namespace ve {
 				broadPhase();
 				narrowPhase();
 
+				//std::cout << "COLLINDING + RESTING \n";
 				calculateImpulses(Contact::ContactPoint::type_t::any, 2);
 				if (m_run) {
 					for (auto& c : m_bodies) {
@@ -682,6 +687,7 @@ namespace ve {
 						body->stepVelocity(c_sim_delta_time);
 					}
 				}
+				//std::cout << "RESTING \n";
 				calculateImpulses(Contact::ContactPoint::type_t::resting, 2);
 
 				if (m_run) {
@@ -782,7 +788,7 @@ namespace ve {
 			real min_depth{ std::numeric_limits<real>::max()};
 			for (auto& vL : contact.m_body_inc.m_body->m_polytope->m_vertices) {
 				auto vW = ITOWP(vL.m_positionL);
-				if (vW.y < c_margin) {
+				if (vW.y < 0) {
 					min_depth = std::min(min_depth,vW.y);
 					contact.addContactPoint(vW, glmvec3{ 0,1,0 });
 				}
@@ -791,7 +797,8 @@ namespace ve {
 			if (min_depth<0.0) { contact.m_body_inc.m_body->m_vbias += glmvec3{ 0, -min_depth*60.0, 0 }; }
 		}
 
-		void calculateContactPointImpules(Contact &contact, Contact::ContactPoint::type_t contact_type) {
+		uint64_t calculateContactPointImpules(Contact &contact, Contact::ContactPoint::type_t contact_type) {
+			uint64_t res = 0;
 			for (auto& cp : contact.m_contact_points) {
 				if (cp.m_type == contact_type) {
 					auto vref = contact.m_body_ref.m_body->totalVelocityW(cp.m_positionW);
@@ -832,8 +839,10 @@ namespace ve {
 						F = Fn + Ft;
 					}
 					cp.m_F += F;
+					if (contact_type == Contact::ContactPoint::resting && glm::length(F) > c_resting) res = 1;
 				}
 			}
+			return res;
 		}
 
 		void calculateImpulses( Contact::ContactPoint::type_t contact_type = Contact::ContactPoint::type_t::colliding, uint64_t loops = 2, double max_time = 1.0 / 60.0) {
@@ -847,11 +856,14 @@ namespace ve {
 			auto start = std::chrono::high_resolution_clock::now();
 			auto elapsed = std::chrono::high_resolution_clock::now() - start;
 			do {
+				//std::cout << "Loop " << num << "\n";
+				uint64_t res = 0;
 				for (auto& contact : m_contacts) { 			//loop over all contacts
-					calculateContactPointImpules(contact.second, contact_type);
+					auto nres = calculateContactPointImpules(contact.second, contact_type);
+					res = std::max(nres, (uint64_t)res);
 				}
 				applyImpulses();
-				--num;
+				num = num + res - 1;
 				elapsed = std::chrono::high_resolution_clock::now() - start;
 			} while (num > 0 && std::chrono::duration_cast<std::chrono::microseconds>(elapsed).count() < 1, 000, 000.0 * max_time);
 
@@ -869,14 +881,26 @@ namespace ve {
 						lin1 +=  cp.m_F * contact.m_body_inc.m_body->m_mass_inv;
 						ori1 +=           contact.m_body_inc.m_body->m_inertia_invW * glm::cross(cp.m_r1, cp.m_F);
 						n = cp.m_normalW;
+
+						//if(cp.m_F != glmvec3{ 0, 0, 0 }) 
+							//std::cout << "Forces " << contact.m_body_ref.m_body->m_name << " " << -cp.m_F << " " << contact.m_body_inc.m_body->m_name << " " << cp.m_F << "\n";
 						cp.m_F = { 0,0,0 };
 					}
 				}
 
+				//if (lin0 != glmvec3{ 0, 0, 0 })
+					//std::cout << "Old V " << contact.m_body_ref.m_body->m_name << " " << contact.m_body_ref.m_body->m_linear_velocityW << " + " << lin0 << "\n";
 				contact.m_body_ref.m_body->m_linear_velocityW  += lin0;
 				contact.m_body_ref.m_body->m_angular_velocityW += ori0;
+				//if (lin0 != glmvec3{ 0, 0, 0 })
+					//std::cout << "New V " << contact.m_body_ref.m_body->m_name << " " << contact.m_body_ref.m_body->m_linear_velocityW << "\n";
+
+				//if (lin1 != glmvec3{ 0, 0, 0 })
+					//std::cout << "Old V " << contact.m_body_inc.m_body->m_name << " " << contact.m_body_inc.m_body->m_linear_velocityW << " + " << lin1 << "\n";
 				contact.m_body_inc.m_body->m_linear_velocityW  += lin1;
 				contact.m_body_inc.m_body->m_angular_velocityW += ori1;
+				//if (lin1 != glmvec3{ 0, 0, 0 })
+					//std::cout << "New V " << contact.m_body_inc.m_body->m_name << " " << contact.m_body_inc.m_body->m_linear_velocityW << "\n";
 
 				if (m_singleSolver && contact.m_all_resting) {	//if all contacts are resting (face/face) -> dampen rotation that is not along the normal axis
 					auto ori0_n = glm::dot(contact.m_body_ref.m_body->m_angular_velocityW, n) * n;
@@ -1009,20 +1033,6 @@ namespace ve {
 						
 						real distance2 = glm::dot(n, ITORP( edgeB.m_first_vertexL.m_positionL ) - edgeA.m_first_vertexL.m_positionL);
 
-						if (distance2 < 0 && distance >= result.m_separation) {
-							if (m_debug) {
-								std::cout << "\n";
-								std::cout << "Body ref " << contact.m_body_ref.m_body->m_id << " edgeA id " << edgeA.m_id << " v1 = " << edgeA.m_first_vertexL.m_positionL << " edgeA v2 = " << edgeA.m_second_vertexL.m_positionL << " edgeA = " << edgeA.m_edgeL << "\n";
-								std::cout << "Body inc " << contact.m_body_inc.m_body->m_id << " edgeB id " << edgeB.m_id << " v1 = " << edgeB.m_first_vertexL.m_positionL << " edgeB v2 = " << edgeB.m_second_vertexL.m_positionL << " edgeB = " << edgeB.m_edgeL << "\n";
-								std::cout << "n= " << n << " RTOWN(n)= " << RTOWN(n) << " -RTOIN(n)= " << -RTOIN(n) << "\n";
-																
-								std::cout << "s(A)= " << vertA->m_positionL << " s(B)= " << vertB->m_positionL << " ITORP(s(B))= " << ITORP(vertB->m_positionL) << " ITORP(s(B)) - s(A)= " << ITORP(vertB->m_positionL) - vertA->m_positionL << " " << distance << "\n";
-
-								std::cout << "e(A)= " << edgeA.m_first_vertexL.m_positionL << " e(B)= " << edgeB.m_first_vertexL.m_positionL << " ITORP(e(B))= " << ITORP(edgeB.m_first_vertexL.m_positionL) << " ITORP(e(B)) - e(A)= " << ITORP(edgeB.m_first_vertexL.m_positionL) - edgeA.m_first_vertexL.m_positionL << " " << distance2 << "\n";
-
-							}
-						}
-
 						if (distance2 < 0 && distance > result.m_separation) {
 							result = { distance, &edgeA, &edgeB, n };	//remember max of negative distances
 						}
@@ -1051,8 +1061,10 @@ namespace ve {
 					contact.addContactPoint(ITOWP(fq.m_vertex_inc->m_positionL), RTOWN(fq.m_face_ref->m_normalL));  //we have only a vertex - face contact}
 				}
 			}
-			contact.m_body_ref.m_body->m_vbias += -RTOWN(fq.m_face_ref->m_normalL) * (-fq.m_separation) * 30.0;
-			contact.m_body_inc.m_body->m_vbias +=  RTOWN(fq.m_face_ref->m_normalL) * (-fq.m_separation) * 30.0;
+			if (fq.m_separation < 0) {
+				contact.m_body_ref.m_body->m_vbias += -RTOWN(fq.m_face_ref->m_normalL) * (-fq.m_separation) * 30.0;
+				contact.m_body_inc.m_body->m_vbias += RTOWN(fq.m_face_ref->m_normalL) * (-fq.m_separation) * 30.0;
+			}
 		}
 
 		/// <summary>
@@ -1149,8 +1161,10 @@ namespace ve {
 					//m_debug = true;
 				} 
 			}
-			contact.m_body_ref.m_body->m_vbias += -RTOWN(eq.m_normalL) * (-eq.m_separation) * 30.0;
-			contact.m_body_inc.m_body->m_vbias +=  RTOWN(eq.m_normalL) * (-eq.m_separation) * 30.0;
+			if (eq.m_separation < 0) {
+				contact.m_body_ref.m_body->m_vbias += -RTOWN(eq.m_normalL) * (-eq.m_separation) * 30.0;
+				contact.m_body_inc.m_body->m_vbias += RTOWN(eq.m_normalL) * (-eq.m_separation) * 30.0;
+			}
 		}
 
 
