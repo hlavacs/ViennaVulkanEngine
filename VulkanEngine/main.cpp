@@ -476,6 +476,9 @@ namespace ve {
 				glmmat3	m_K;		//mass matrix
 				glmmat3	m_K_inv;	//inverse mass matrix
 				glmvec3	m_F{0,0,0};	//accumulates force impulses along normal during a loop run
+				glmvec3	m_f{ 0,0,0 };	//accumulates force impulses along normal during a loop run
+				glmvec3	m_t{ 0,0,0 };	//accumulates force impulses along normal during a loop run
+
 			};
 
 			uint64_t	m_last_loop{ std::numeric_limits<uint64_t>::max() }; //number of last loop this contact was valid
