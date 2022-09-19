@@ -813,35 +813,18 @@ namespace ve {
 					glmvec3 F{ 0,0,0 }, Fn{ 0,0,0 }, Ft{ 0,0,0 }, T{ 0,0,0 };
 					real f{ 0.0 }, t{ 0.0 };
 
-					m_solver = 0;
-					if (m_solver == 0) {
-						F = cp.m_K_inv * (-cp.m_restitution * dN * cp.m_normalW - vrel) / (real)contact.m_contact_points.size();
-						f = glm::dot(F, cp.m_normalW);
-						Fn = f * cp.m_normalW;
-						Ft = F - Fn;
-						t = glm::length(Ft);
-						T = -Ft / t;
+					F = cp.m_K_inv * (-cp.m_restitution * dN * cp.m_normalW - vrel) / (real)contact.m_contact_points.size();
+					f = glm::dot(F, cp.m_normalW);
+					Fn = f * cp.m_normalW;
+					Ft = F - Fn;
+					t = glm::length(Ft);
+					T = -Ft / t;
 
-						if (dT > 50 * c_small && fabs(t) > fabs(cp.m_friction * f)) {	//dynamic friction?
-							f = -(1 + cp.m_restitution) * dN / glm::dot(cp.m_normalW, cp.m_K * (cp.m_normalW - cp.m_friction * T));
-							t = f * cp.m_friction;
-						}
+					if (dT > 50 * c_small && fabs(t) > fabs(cp.m_friction * f)) {	//dynamic friction?
+						f = -(1 + cp.m_restitution) * dN / glm::dot(cp.m_normalW, cp.m_K * (cp.m_normalW - cp.m_friction * T));
+						t = f * cp.m_friction;
 					}
-					if (m_solver == 1) {
-						real ua = glm::dot(vref, cp.m_normalW);
-						real ub = glm::dot(vinc, cp.m_normalW);
-						real ma = contact.m_body_ref.m_body->mass();
-						real mb = contact.m_body_inc.m_body->mass();
-						real va = (ma * ua + mb * ub + mb * cp.m_restitution * (ub - ua)) / (ma + mb);
-						real vb = cp.m_restitution * (ua - ub) + va;
-						Fn = mb * (vb - ub) * cp.m_normalW / (real)contact.m_contact_points.size();
 
-						Ft = cp.m_K_inv * (-cp.m_restitution * dN * cp.m_normalW - vT) / (real)contact.m_contact_points.size();
-						if (dT > 50 * c_small && glm::length(Fn) * cp.m_friction < glm::length(Ft)) {
-							Ft = -cp.m_friction * glm::length(Fn) * T;
-						}
-						F = Fn + Ft;
-					}
 					F = f * cp.m_normalW - t * T;
 					cp.m_F += F;
 					if (contact_type == Contact::ContactPoint::resting && glm::length(F) > c_resting) res = 1;
