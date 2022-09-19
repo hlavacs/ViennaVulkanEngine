@@ -833,10 +833,10 @@ namespace ve {
 					t = glm::length(Ft);
 					if (t != 0.0) {
 						T = -Ft / t;
-						//if (fabs(t) > fabs(cp.m_friction * f)) {	//dynamic friction?
-						//	f = -(1 + cp.m_restitution) * dN / glm::dot(cp.m_normalW, cp.m_K * (cp.m_normalW - cp.m_friction * T));
-						//	t = f * cp.m_friction;
-						//}
+						if (fabs(t) > fabs(cp.m_friction * f)) {	//dynamic friction?
+							f = -(1 + cp.m_restitution) * dN / glm::dot(cp.m_normalW, cp.m_K * (cp.m_normalW - cp.m_friction * T));
+							t = f * cp.m_friction;
+						}
 					}
 					auto tmp = cp.m_f;
 					cp.m_f = std::max(tmp + f, 0.0);
