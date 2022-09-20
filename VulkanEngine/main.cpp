@@ -48,11 +48,11 @@ const double c_eps = 1.0e-5;
 constexpr real operator "" _real(long double val) { return (real)val; };
 
 
-const double c_small = 0.001;
+const double c_small = 0.01;
 const real c_margin_factor = 1.01;
 const real c_gravity = -9.81;
 const double c_sim_delta_time = 1.0 / 60.0;
-const real c_resting = 2.5 * c_gravity * c_sim_delta_time; //gravity is negative!
+const real c_resting = 4.5 * c_gravity * c_sim_delta_time; //gravity is negative!
 
 template <typename T> 
 inline void hash_combine(std::size_t& seed, T const& v) {
@@ -373,7 +373,7 @@ namespace ve {
 				bool active = false;
 				if (glm::length(m_linear_velocityW) > c_eps) {
 					pos = m_positionW + (m_linear_velocityW + m_vbias) * (real)dt;
-					m_vbias = glmvec3{ 0.0 };
+					m_vbias = glmvec3{ 0,0,0 };
 					active = true;
 				}
 
@@ -521,7 +521,10 @@ namespace ve {
 				auto K = glmmat3{ 1.0 } * m_body_inc.m_body->m_mass_inv - mc1 * m_body_inc.m_body->m_inertia_invW * mc1 +
 						 glmmat3{ 1.0 } * m_body_ref.m_body->m_mass_inv - mc0 * m_body_ref.m_body->m_inertia_invW * mc0;
 
+				//auto K = -mc1 * m_body_inc.m_body->m_inertia_invW * mc1 - mc0 * m_body_ref.m_body->m_inertia_invW * mc0;
+				
 				auto K_inv = glm::inverse(K);
+
 				m_contact_points.emplace_back(positionW, normalW, type, restitution, friction, r0, r1, K, K_inv);
 			}
 		};
@@ -683,7 +686,7 @@ namespace ve {
 				narrowPhase();
 
 				//std::cout << "COLLINDING + RESTING \n";
-				calculateImpulses(Contact::ContactPoint::type_t::any, 10);
+				calculateImpulses(Contact::ContactPoint::type_t::any, 1000);
 				if (m_run) {
 					for (auto& c : m_bodies) {
 						auto& body = c.second;
@@ -691,7 +694,7 @@ namespace ve {
 					}
 				}
 				//std::cout << "RESTING \n";
-				calculateImpulses(Contact::ContactPoint::type_t::resting, 10);
+				calculateImpulses(Contact::ContactPoint::type_t::resting, 1000);
 
 				if (m_run) {
 					for (auto& c : m_bodies) {
@@ -816,7 +819,7 @@ namespace ve {
 		uint64_t calculateContactPointImpules(Contact &contact, Contact::ContactPoint::type_t contact_type) {
 			uint64_t res = 0;
 			for (auto& cp : contact.m_contact_points) {
-				if (cp.m_type == contact_type) {
+				if (Contact::ContactPoint::type_t::any == contact_type || cp.m_type == contact_type) {
 					auto vref = contact.m_body_ref.m_body->totalVelocityW(cp.m_positionW);
 					auto vinc = contact.m_body_inc.m_body->totalVelocityW(cp.m_positionW);
 					auto vrel = vinc - vref;
@@ -826,11 +829,13 @@ namespace ve {
 					glmvec3 F{ 0,0,0 }, Fn{ 0,0,0 }, Ft{ 0,0,0 }, T{ 0,0,0 };
 					real f{ 0.0 }, t{ 0.0 };
 
-					F = cp.m_K_inv * (-cp.m_restitution * dN * cp.m_normalW - vrel) / (real)contact.m_contact_points.size();
+					/*
+					F = cp.m_K_inv * (-cp.m_restitution * dN * cp.m_normalW - vrel); // / (real)contact.m_contact_points.size();
 					f = glm::dot(F, cp.m_normalW);
 					Fn = f * cp.m_normalW;
 					Ft = F - Fn;
 					t = glm::length(Ft);
+					
 					if (t != 0.0) {
 						T = -Ft / t;
 						if (fabs(t) > fabs(cp.m_friction * f)) {	//dynamic friction?
@@ -838,6 +843,22 @@ namespace ve {
 							t = f * cp.m_friction;
 						}
 					}
+					*/
+					
+					glmmat3 mc0 = matrixCross3(cp.m_r0);
+					glmmat3 mc1 = matrixCross3(cp.m_r1);
+
+					glmmat3 K = - mc1 * contact.m_body_inc.m_body->m_inertia_invW * mc1 - mc0 * contact.m_body_ref.m_body->m_inertia_invW * mc0;
+
+					auto dV = -cp.m_restitution * dN * cp.m_normalW - vrel;
+					auto kn = contact.m_body_ref.m_body->m_mass_inv + contact.m_body_inc.m_body->m_mass_inv + glm::dot( K * cp.m_normalW, cp.m_normalW );
+					f = glm::dot(dV, cp.m_normalW) / kn;
+
+					if (dT != 0.0) T = vT / dT;
+					auto kt = contact.m_body_ref.m_body->m_mass_inv + contact.m_body_inc.m_body->m_mass_inv + glm::dot( K * T, T);
+					t = -glm::dot(dV, T) / kt;
+					
+
 					auto tmp = cp.m_f;
 					cp.m_f = std::max(tmp + f, 0.0);
 					f = cp.m_f - tmp;
@@ -848,7 +869,7 @@ namespace ve {
 
 					F = f * cp.m_normalW - t * T;
 
-					cp.m_F = F;
+					cp.m_F = F / (real)contact.m_contact_points.size();
 
 					//contact.m_body_ref.m_body->m_linear_velocityW  += -F * contact.m_body_ref.m_body->m_mass_inv;
 					//contact.m_body_ref.m_body->m_angular_velocityW +=      contact.m_body_ref.m_body->m_inertia_invW * glm::cross(cp.m_r0, -F);
@@ -860,10 +881,10 @@ namespace ve {
 			return res;
 		}
 
-		void calculateImpulses( Contact::ContactPoint::type_t contact_type = Contact::ContactPoint::type_t::colliding, uint64_t loops = 2, double max_time = 1.0 / 60.0) {
+		void calculateImpulses( Contact::ContactPoint::type_t contact_type = Contact::ContactPoint::type_t::colliding, uint64_t loops = 20, double max_time = 1.0 / 60.0) {
 			if (contact_type == Contact::ContactPoint::type_t::any) {
-				calculateImpulses(Contact::ContactPoint::type_t::colliding, loops, max_time / 2.0);
-				calculateImpulses(Contact::ContactPoint::type_t::resting, loops, max_time / 2.0);
+				calculateImpulses(Contact::ContactPoint::type_t::colliding, 1, max_time / 2.0);
+				calculateImpulses(Contact::ContactPoint::type_t::resting, loops, max_time);
 				return;
 			}
 
@@ -876,8 +897,9 @@ namespace ve {
 				for (auto& contact : m_contacts) { 			//loop over all contacts
 					auto nres = calculateContactPointImpules(contact.second, contact_type);
 					res = std::max(nres, (uint64_t)res);
+					applyImpulsesToContact(contact.second);
 				}
-				applyImpulses();
+				//applyImpulses();
 				num = num + res - 1;
 				elapsed = std::chrono::high_resolution_clock::now() - start;
 			} while (num > 0 && std::chrono::duration_cast<std::chrono::microseconds>(elapsed).count() < 1, 000, 000.0 * max_time);
@@ -885,29 +907,32 @@ namespace ve {
 			//if(m_debug) std::cout << std::endl;
 		}
 
+		void applyImpulsesToContact( Contact &contact ) {
+			glmvec3 lin0{ 0,0,0 }, ori0{ 0,0,0 }, lin1{ 0,0,0 }, ori1{ 0,0,0 }, n{ 0,0,0 };
+			for (auto& cp : contact.m_contact_points) {
+				if (cp.m_type == Contact::ContactPoint::colliding || cp.m_type == Contact::ContactPoint::resting) {
+					auto F = cp.m_F;
+
+					lin0 += -F * contact.m_body_ref.m_body->m_mass_inv;
+					ori0 +=      contact.m_body_ref.m_body->m_inertia_invW * glm::cross(cp.m_r0, -F);
+					lin1 +=  F * contact.m_body_inc.m_body->m_mass_inv;
+					ori1 +=      contact.m_body_inc.m_body->m_inertia_invW * glm::cross(cp.m_r1, F);
+					n = cp.m_normalW;
+				}
+				cp.m_F = glmvec3{ 0,0,0 };
+			}
+
+			contact.m_body_ref.m_body->m_linear_velocityW += lin0;
+			contact.m_body_ref.m_body->m_angular_velocityW += ori0;
+			contact.m_body_inc.m_body->m_linear_velocityW += lin1;
+			contact.m_body_inc.m_body->m_angular_velocityW += ori1;
+
+			dampen(contact, n);
+		}
+
 		void applyImpulses() {
 			for (auto it = std::begin(m_contacts); it != std::end(m_contacts); ++it) { 			//loop over all contacts
-				auto& contact = it->second;
-				glmvec3 lin0{ 0,0,0 }, ori0{ 0,0,0 }, lin1{ 0,0,0 }, ori1{ 0,0,0 }, n{0,0,0};
-				for (auto& cp : contact.m_contact_points) {
-					if (cp.m_type == Contact::ContactPoint::colliding || cp.m_type == Contact::ContactPoint::resting) {
-						auto F = cp.m_F;
-
-						lin0 += -F * contact.m_body_ref.m_body->m_mass_inv;
-						ori0 +=           contact.m_body_ref.m_body->m_inertia_invW * glm::cross(cp.m_r0, -F);
-						lin1 +=  F * contact.m_body_inc.m_body->m_mass_inv;
-						ori1 +=           contact.m_body_inc.m_body->m_inertia_invW * glm::cross(cp.m_r1, F);
-						n = cp.m_normalW;
-						cp.m_F = glmvec3{0,0,0};
-					}
-				}
-
-				contact.m_body_ref.m_body->m_linear_velocityW  += lin0;
-				contact.m_body_ref.m_body->m_angular_velocityW += ori0;
-				contact.m_body_inc.m_body->m_linear_velocityW  += lin1;
-				contact.m_body_inc.m_body->m_angular_velocityW += ori1;
-
-				dampen(contact, n);
+				applyImpulsesToContact(it->second);
 			}
 		}
 
