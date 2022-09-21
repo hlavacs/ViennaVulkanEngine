@@ -50,9 +50,13 @@ constexpr real operator "" _real(long double val) { return (real)val; };
 
 const double c_small = 0.01;
 const real c_margin_factor = 1.01;
+const real c_margin = 0.05;
 const real c_gravity = -9.81;
 const double c_sim_delta_time = 1.0 / 60.0;
 const real c_resting = 4.5 * c_gravity * c_sim_delta_time; //gravity is negative!
+const real c_bias = 0.2;
+const real c_slop = 0.001;
+
 
 template <typename T> 
 inline void hash_combine(std::size_t& seed, T const& v) {
@@ -132,6 +136,7 @@ namespace std {
 #define ITORP(X) glmvec3{contact.m_body_inc.m_to_other * glmvec4{X, 1.0}}
 #define ITORV(X) glmmat3{contact.m_body_inc.m_to_other}*(X)
 #define ITORN(X) contact.m_body_inc.m_to_other_it*(X)
+#define ITORTP(X) glmvec3{face_ref->m_LtoT * contact.m_body_inc.m_to_other * glmvec4{X, 1.0}}
 
 #define ITOWP(X) glmvec3{contact.m_body_inc.m_body->m_model * glmvec4{X, 1.0}}
 
@@ -141,6 +146,7 @@ namespace std {
 #define RTOWP(X) glmvec3{contact.m_body_ref.m_body->m_model * glmvec4{X,1.0}}
 #define RTOWN(X) contact.m_body_ref.m_body->m_model_it*(X)
 
+#define RTTOWP(X) glmvec3{contact.m_body_ref.m_body->m_model * face_ref->m_TtoL * glmvec4{(X), 1.0}}
 
 
 namespace ve {
@@ -360,7 +366,7 @@ namespace ve {
 
 			Body(std::string name, void* owner, Polytope* polytope, glmvec3 scale, glmvec3 positionW, glmquat orientationLW = glmvec3{0,0,0}, 
 				body_callback* on_move = nullptr, glmvec3 linear_velocityW = glmvec3{ 0,0,0 }, glmvec3 angular_velocityW = glmvec3{0,0,0}, 
-				real mass_inv = 0.0, real restitution = 0.0_real, real friction = 0.5_real ) :
+				real mass_inv = 0.0, real restitution = 0.0_real, real friction = 1.0_real ) :
 					m_name{name}, m_owner {owner}, m_polytope{ polytope }, m_scale{ scale }, m_positionW{ positionW }, m_orientationLW{ orientationLW },
 					m_on_move{on_move}, m_linear_velocityW{linear_velocityW}, m_angular_velocityW{ angular_velocityW }, 
 					m_mass_inv{ mass_inv }, m_restitution{ restitution }, m_friction{ friction } { 
@@ -475,10 +481,10 @@ namespace ve {
 				glmvec3 m_r1;
 				glmmat3	m_K;		//mass matrix
 				glmmat3	m_K_inv;	//inverse mass matrix
+				real	m_vbias{ 0.0 };
 				glmvec3 m_F{ 0,0,0 };
 				real	m_f{ 0.0 };	//accumulates force impulses along normal during a loop run
 				real	m_t{ 0.0 };	//accumulates force impulses along normal during a loop run
-
 			};
 
 			uint64_t	m_last_loop{ std::numeric_limits<uint64_t>::max() }; //number of last loop this contact was valid
@@ -489,7 +495,7 @@ namespace ve {
 			bool		m_all_resting{true};				//true if all contact points are resting
 			real		m_dampen_coeff{ 0.99 };				//coefficient for dampening unwanted rotation for face/face contact
 
-			void addContactPoint(glmvec3 positionW, glmvec3 normalW) {
+			void addContactPoint(glmvec3 positionW, glmvec3 normalW, real penetration) {
 				if (m_contact_points.size() == 0) m_all_resting = true;
 				auto r0 = positionW - m_body_ref.m_body->m_positionW;
 				auto r1 = positionW - m_body_inc.m_body->m_positionW;
@@ -497,7 +503,7 @@ namespace ve {
 				auto d = glm::dot(vrel, normalW);
 
 				ContactPoint::type_t type;
-				if (d > 0) { 
+				if (d > -c_resting) {
 					type = Contact::ContactPoint::type_t::separating;
 					m_all_resting = false;
 					m_dampen_coeff = 0.99;
@@ -525,7 +531,8 @@ namespace ve {
 				
 				auto K_inv = glm::inverse(K);
 
-				m_contact_points.emplace_back(positionW, normalW, type, restitution, friction, r0, r1, K, K_inv);
+				real vbias = (penetration < 0.0) ? c_bias * 30 * std::max(0.0, -penetration - c_slop) : 0.0;
+				m_contact_points.emplace_back(positionW, normalW, type, restitution, friction, r0, r1, K, K_inv, vbias);
 			}
 		};
 
@@ -686,7 +693,7 @@ namespace ve {
 				narrowPhase();
 
 				//std::cout << "COLLINDING + RESTING \n";
-				calculateImpulses(Contact::ContactPoint::type_t::any, 1000);
+				calculateImpulses(Contact::ContactPoint::type_t::any, 50);
 				if (m_run) {
 					for (auto& c : m_bodies) {
 						auto& body = c.second;
@@ -694,7 +701,7 @@ namespace ve {
 					}
 				}
 				//std::cout << "RESTING \n";
-				calculateImpulses(Contact::ContactPoint::type_t::resting, 1000);
+				calculateImpulses(Contact::ContactPoint::type_t::resting, 50);
 
 				if (m_run) {
 					for (auto& c : m_bodies) {
@@ -794,13 +801,15 @@ namespace ve {
 			real min_depth{ std::numeric_limits<real>::max()};
 			for (auto& vL : contact.m_body_inc.m_body->m_polytope->m_vertices) {
 				auto vW = ITOWP(vL.m_positionL);
-				if (vW.y < 0) {
+				if (vW.y <= 0.0) {
 					min_depth = std::min(min_depth,vW.y);
-					contact.addContactPoint(vW, glmvec3{ 0,1,0 });
+					contact.addContactPoint(vW, glmvec3{ 0,1,0 }, vW.y);
 				}
 			}
 			// if(m_debug) std::cout << std::endl;
-			if (min_depth<0.0) { contact.m_body_inc.m_body->m_vbias += glmvec3{ 0, -min_depth*60.0, 0 }; }
+			if (min_depth<0.0) { 
+				//contact.m_body_inc.m_body->m_vbias += glmvec3{ 0, ( -min_depth - c_slop ) * 10.0, 0};
+			}
 		}
 
 		void dampen( auto &contact, auto &n) {
@@ -852,7 +861,7 @@ namespace ve {
 
 					auto dV = -cp.m_restitution * dN * cp.m_normalW - vrel;
 					auto kn = contact.m_body_ref.m_body->m_mass_inv + contact.m_body_inc.m_body->m_mass_inv + glm::dot( K * cp.m_normalW, cp.m_normalW );
-					f = glm::dot(dV, cp.m_normalW) / kn;
+					f = (glm::dot(dV, cp.m_normalW) + cp.m_vbias) / kn;
 
 					if (dT != 0.0) T = vT / dT;
 					auto kt = contact.m_body_ref.m_body->m_mass_inv + contact.m_body_inc.m_body->m_mass_inv + glm::dot( K * T, T);
@@ -869,7 +878,7 @@ namespace ve {
 
 					F = f * cp.m_normalW - t * T;
 
-					cp.m_F = F / (real)contact.m_contact_points.size();
+					cp.m_F = F; // / (real)contact.m_contact_points.size();
 
 					//contact.m_body_ref.m_body->m_linear_velocityW  += -F * contact.m_body_ref.m_body->m_mass_inv;
 					//contact.m_body_ref.m_body->m_angular_velocityW +=      contact.m_body_ref.m_body->m_inertia_invW * glm::cross(cp.m_r0, -F);
@@ -1079,7 +1088,7 @@ namespace ve {
 				if (fabs(glm::dot(An, inc_edge->m_edgeL)) < c_small) { 
 					clipEdgeFace(contact, fq.m_face_ref, inc_edge); 
 				} else { 
-					contact.addContactPoint(ITOWP(fq.m_vertex_inc->m_positionL), RTOWN(fq.m_face_ref->m_normalL));  //we have only a vertex - face contact}
+					contact.addContactPoint(ITOWP(fq.m_vertex_inc->m_positionL), RTOWN(fq.m_face_ref->m_normalL), fq.m_separation);  //we have only a vertex - face contact}
 				}
 			}
 			if (fq.m_separation < 0) {
@@ -1098,19 +1107,20 @@ namespace ve {
 		void clipFaceFace(Contact& contact, Face* face_ref, Face* face_inc) {
 			glmvec3 v = glm::normalize( face_ref->m_face_edge_ptrs.begin()->first->m_edgeL * face_ref->m_face_edge_ptrs.begin()->second ); //????
 			glmvec3 p = {};
-			glmmat4 ItoRT =  face_ref->m_LtoT * contact.m_body_inc.m_to_other; //transform from B to A's face tangent space
 
 			std::vector<clip::point2D> points;					
 			for (auto* vertex : face_inc->m_face_vertex_ptrs) {			//add face points of B's face
-				glmvec4 pT = ItoRT * glmvec4{ vertex->m_positionL, 1.0 };//ransform to A's tangent space
+				auto pT = ITORTP( vertex->m_positionL );				//ransform to A's tangent space
 				points.emplace_back(pT.x, pT.z);						//add as 2D point
 			}
 			std::vector<clip::point2D> newPolygon;
 			clip::SutherlandHodgman(points, face_ref->m_face_vertex2D_T, newPolygon); //clip B's face against A's face
 
-			for (auto& p2D : newPolygon) { 
-				glmvec3 posW = glmvec3{ contact.m_body_ref.m_body->m_model * face_ref->m_TtoL * glmvec4{ p2D.x, 0.0, p2D.y, 1.0 } };
-				contact.addContactPoint(posW, RTOWN(face_ref->m_normalL));
+			for (auto& p2D : newPolygon) {
+				auto p = glmvec3{ p2D.x, 0.0, p2D.y };
+				glmvec3 posW = RTTOWP(p);
+
+				contact.addContactPoint(posW, RTOWN(face_ref->m_normalL), 0.0);
 			}
 		}
 
@@ -1137,7 +1147,7 @@ namespace ve {
 
 			for (auto & p2D : newPolygon2 ) {	//result is exactly 2 or 3 points (if clip), we only need 2 points 
 				glmvec4 posW{ contact.m_body_ref.m_body->m_model * face_ref->m_TtoL * glmvec4{ p2D.x, 0.0, p2D.y, 1.0 } };
-				contact.addContactPoint(posW, RTOWN(face_ref->m_normalL));
+				contact.addContactPoint(posW, RTOWN(face_ref->m_normalL), 0.0);
 			}
 		} 
 
@@ -1178,7 +1188,7 @@ namespace ve {
 
 					auto mid = (posL.first + posL.second) / 2.0;
 					auto mid_W = RTOWP(mid);
-					contact.addContactPoint(mid_W, RTOWN(eq.m_normalL));
+					contact.addContactPoint(mid_W, RTOWN(eq.m_normalL), 0.0);
 					//m_debug = true;
 				} 
 			}
