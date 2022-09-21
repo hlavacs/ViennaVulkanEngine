@@ -68,6 +68,8 @@ using voidppair_t = std::pair<void*, void*>;
 
 namespace geometry {
 	std::pair<glmvec3, glmvec3> closestPointsLineLine(glmvec3 p1, glmvec3 p2, glmvec3 p3, glmvec3 p4);
+	real distancePointLine(glmvec3 p, glmvec3 a, glmvec3 b);
+	real distancePointLinesegment(glmvec3 p, glmvec3 a, glmvec3 b);
 }
 
 namespace clip {
@@ -139,6 +141,7 @@ namespace std {
 #define ITORTP(X) glmvec3{face_ref->m_LtoT * contact.m_body_inc.m_to_other * glmvec4{X, 1.0}}
 
 #define ITOWP(X) glmvec3{contact.m_body_inc.m_body->m_model * glmvec4{X, 1.0}}
+#define ITOWN(X) contact.m_body_inc.m_body->m_model_it*(X)
 
 #define RTOIP(X) glmvec3{contact.m_body_ref.m_to_other * glmvec4{X, 1.0}}
 #define RTOIN(X) contact.m_body_ref.m_to_other_it*(X)
@@ -353,7 +356,6 @@ namespace ve {
 			glmmat3		m_inertia_invL{ 1.0 };			//computed when the body is created
 
 			//computed when the body moves
-			glmvec3		m_vbias{0.0};					//one time summand to lin velocity for removing ground penetration
 			glmmat4		m_model{ glmmat4{1} };			//model matrix at time slots
 			glmmat4		m_model_inv{ glmmat4{1} };		//model inverse matrix at time slots
 			glmmat3		m_model_it;						//orientation inverse transpose for bringing normal vector to world
@@ -378,8 +380,7 @@ namespace ve {
 			bool stepPosition(double dt, glmvec3& pos, glmquat& quat) {
 				bool active = false;
 				if (glm::length(m_linear_velocityW) > c_eps) {
-					pos = m_positionW + (m_linear_velocityW + m_vbias) * (real)dt;
-					m_vbias = glmvec3{ 0,0,0 };
+					pos = m_positionW + m_linear_velocityW * (real)dt;
 					active = true;
 				}
 
@@ -531,7 +532,7 @@ namespace ve {
 				
 				auto K_inv = glm::inverse(K);
 
-				real vbias = (penetration < 0.0) ? c_bias * 30 * std::max(0.0, -penetration - c_slop) : 0.0;
+				real vbias = (penetration < 0.0) ? c_bias * 60 * std::max(0.0, -penetration - c_slop) : 0.0;
 				m_contact_points.emplace_back(positionW, normalW, type, restitution, friction, r0, r1, K, K_inv, vbias);
 			}
 		};
@@ -798,18 +799,13 @@ namespace ve {
 		/// <param name="contact">The contact information between ground and the body.</param>
 		void groundTest(Contact& contact) {
 			if (contact.m_body_inc.m_body->m_positionW.y > contact.m_body_inc.m_body->boundingSphereRadius()) return;
-			real min_depth{ std::numeric_limits<real>::max()};
 			for (auto& vL : contact.m_body_inc.m_body->m_polytope->m_vertices) {
 				auto vW = ITOWP(vL.m_positionL);
 				if (vW.y <= 0.0) {
-					min_depth = std::min(min_depth,vW.y);
 					contact.addContactPoint(vW, glmvec3{ 0,1,0 }, vW.y);
 				}
 			}
 			// if(m_debug) std::cout << std::endl;
-			if (min_depth<0.0) { 
-				//contact.m_body_inc.m_body->m_vbias += glmvec3{ 0, ( -min_depth - c_slop ) * 10.0, 0};
-			}
 		}
 
 		void dampen( auto &contact, auto &n) {
@@ -1091,10 +1087,6 @@ namespace ve {
 					contact.addContactPoint(ITOWP(fq.m_vertex_inc->m_positionL), RTOWN(fq.m_face_ref->m_normalL), fq.m_separation);  //we have only a vertex - face contact}
 				}
 			}
-			if (fq.m_separation < 0) {
-				contact.m_body_ref.m_body->m_vbias += -RTOWN(fq.m_face_ref->m_normalL) * (-fq.m_separation) * 30.0;
-				contact.m_body_inc.m_body->m_vbias += RTOWN(fq.m_face_ref->m_normalL) * (-fq.m_separation) * 30.0;
-			}
 		}
 
 		/// <summary>
@@ -1117,10 +1109,10 @@ namespace ve {
 			clip::SutherlandHodgman(points, face_ref->m_face_vertex2D_T, newPolygon); //clip B's face against A's face
 
 			for (auto& p2D : newPolygon) {
-				auto p = glmvec3{ p2D.x, 0.0, p2D.y };
+				auto p = glmvec3{ p2D.x, 0.0, p2D.y }; //cannot put comma into macro 
 				glmvec3 posW = RTTOWP(p);
-
-				contact.addContactPoint(posW, RTOWN(face_ref->m_normalL), 0.0);
+				auto dist = glm::dot( ITOWN(face_inc->m_normalL), posW - ITOWP( face_inc->m_face_vertex_ptrs[0]->m_positionL ) );
+				contact.addContactPoint(posW, RTOWN(face_ref->m_normalL), dist);
 			}
 		}
 
@@ -1132,12 +1124,10 @@ namespace ve {
 		/// <param name="face_ref"></param>
 		/// <param name="edge_inc"></param>
 		void clipEdgeFace(Contact& contact, Face* face_ref, Edge* edge_inc) {
-			glmmat4 ItoRT = face_ref->m_LtoT * contact.m_body_inc.m_to_other;	//transform from B to A's face tangent space
-
 			std::vector<clip::point2D> points;
-			glmvec4 pT = ItoRT * glmvec4{ edge_inc->m_first_vertexL.m_positionL, 1.0 };	//bring edge vertices to A's face tangent space
+			auto pT = ITORTP( edge_inc->m_first_vertexL.m_positionL );	//bring edge vertices to A's face tangent space
 			points.emplace_back(pT.x, pT.z);											//add as 2D point (projection)
-			pT = ItoRT * glmvec4{ edge_inc->m_second_vertexL.m_positionL, 1.0 };
+			pT = ITORTP(edge_inc->m_second_vertexL.m_positionL);
 			points.emplace_back(pT.x, pT.z);
 
 			std::vector<clip::point2D> newPolygon;
@@ -1146,8 +1136,10 @@ namespace ve {
 			for (auto& p : newPolygon) { newPolygon2.insert(p); }
 
 			for (auto & p2D : newPolygon2 ) {	//result is exactly 2 or 3 points (if clip), we only need 2 points 
-				glmvec4 posW{ contact.m_body_ref.m_body->m_model * face_ref->m_TtoL * glmvec4{ p2D.x, 0.0, p2D.y, 1.0 } };
-				contact.addContactPoint(posW, RTOWN(face_ref->m_normalL), 0.0);
+				auto p = glmvec3{ p2D.x, 0.0, p2D.y }; //cannot put comma into macro 
+				glmvec3 posW = RTTOWP(p);
+				auto dist = geometry::distancePointLinesegment( posW, ITOWP(edge_inc->m_first_vertexL.m_positionL), ITOWP(edge_inc->m_second_vertexL.m_positionL) );
+				contact.addContactPoint(posW, RTOWN(face_ref->m_normalL), -dist); ///ADD BIAS
 			}
 		} 
 
@@ -1186,15 +1178,14 @@ namespace ve {
 						ITORP(eq.m_edge_inc->m_first_vertexL.m_positionL), ITORP(eq.m_edge_inc->m_second_vertexL.m_positionL)
 					);
 
+					auto P1 = RTOWP(posL.first);
+					auto P2 = RTOWP(posL.second);
 					auto mid = (posL.first + posL.second) / 2.0;
-					auto mid_W = RTOWP(mid);
-					contact.addContactPoint(mid_W, RTOWN(eq.m_normalL), 0.0);
+					auto mid_W = (P1 + P2) / 2.0;
+					auto dist = glm::length(P2-P1);
+					contact.addContactPoint(mid_W, RTOWN(eq.m_normalL), -dist);
 					//m_debug = true;
 				} 
-			}
-			if (eq.m_separation < 0) {
-				contact.m_body_ref.m_body->m_vbias += -RTOWN(eq.m_normalL) * (-eq.m_separation) * 30.0;
-				contact.m_body_inc.m_body->m_vbias += RTOWN(eq.m_normalL) * (-eq.m_separation) * 30.0;
 			}
 		}
 
@@ -1289,6 +1280,19 @@ namespace geometry {
 		real t2 = glm::clamp(glm::dot(p1 - p2, n1) / glm::dot(d2, n1), 0.0, 1.0);
 		return {p1 + t1*d1, p2 + t2*d2};
 	}
+
+	//https://en.wikipedia.org/wiki/Distance_from_a_point_to_a_line
+	real distancePointLine(glmvec3 p, glmvec3 a, glmvec3 b) {
+		glmvec3 n = glm::normalize( b - a );
+		return glm::length( (p - a) - glm::dot( p - a, n ) * n );
+	}
+
+	//https://en.wikipedia.org/wiki/Distance_from_a_point_to_a_line
+	real distancePointLinesegment(glmvec3 p, glmvec3 a, glmvec3 b) {
+		return glm::clamp(distancePointLine(p,a,b), glm::length(p-a), glm::length(p - b));
+	}
+
+
 }
 
 
