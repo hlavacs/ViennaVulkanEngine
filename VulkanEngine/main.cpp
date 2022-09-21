@@ -54,7 +54,7 @@ const real c_margin = 0.05;
 const real c_gravity = -9.81;
 const double c_sim_delta_time = 1.0 / 60.0;
 const real c_resting = 4.5 * c_gravity * c_sim_delta_time; //gravity is negative!
-const real c_bias = 0.2;
+const real c_bias = 0.3;
 const real c_slop = 0.001;
 
 
