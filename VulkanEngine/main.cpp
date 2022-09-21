@@ -50,11 +50,11 @@ constexpr real operator "" _real(long double val) { return (real)val; };
 
 const double c_small = 0.01;
 const real c_margin_factor = 1.01;
-const real c_margin = 0.05;
+const real c_margin = 0.001;
 const real c_gravity = -9.81;
 const double c_sim_delta_time = 1.0 / 60.0;
-const real c_resting = 4.5 * c_gravity * c_sim_delta_time; //gravity is negative!
-const real c_bias = 0.3;
+const real c_resting = 3.0 * c_gravity * c_sim_delta_time; //gravity is negative!
+const real c_bias = 0.2;
 const real c_slop = 0.001;
 
 
@@ -504,7 +504,7 @@ namespace ve {
 				auto d = glm::dot(vrel, normalW);
 
 				ContactPoint::type_t type;
-				if (d > -c_resting) {
+				if (d > c_margin) {
 					type = Contact::ContactPoint::type_t::separating;
 					m_all_resting = false;
 					m_dampen_coeff = 0.99;
@@ -651,11 +651,11 @@ namespace ve {
 				glmvec3 positionCamera{ getSceneManagerPointer()->getSceneNode("StandardCameraParent")->getWorldTransform()[3] };
 
 				glmvec3 dir{ getSceneManagerPointer()->getSceneNode("StandardCamera")->getWorldTransform()[2] };
-				glmvec3 vel = 30.0 * rnd_unif(rnd_gen) * dir / glm::length(dir);
+				glmvec3 vel = 5.0 * rnd_unif(rnd_gen) * dir / glm::length(dir);
 				glmvec3 scale{ 1,1,1 }; // = rnd_unif(rnd_gen) * 10;
 				real angle = rnd_unif(rnd_gen) * 10 * 3 * M_PI / 180.0;
 				glmvec3 orient{ rnd_unif(rnd_gen), rnd_unif(rnd_gen), rnd_unif(rnd_gen) };
-				glmvec3 vrot{ rnd_unif(rnd_gen) * 10, rnd_unif(rnd_gen) * 10, rnd_unif(rnd_gen) * 10 };
+				glmvec3 vrot{ rnd_unif(rnd_gen) * 0, rnd_unif(rnd_gen) * 0, rnd_unif(rnd_gen) * 0 };
 				VESceneNode* cube;
 				VECHECKPOINTER(cube = getSceneManagerPointer()->loadModel("The Cube" + std::to_string(++cubeid), "media/models/test/crate0", "cube.obj", 0, getRoot()));
 				Body body{ "", cube, &g_cube, scale, positionCamera + 2.0 * dir, glm::rotate(angle, glm::normalize(orient)), &onMove, vel, vrot, 1.0 / 100.0, 0.2, 1 };
@@ -1139,7 +1139,7 @@ namespace ve {
 				auto p = glmvec3{ p2D.x, 0.0, p2D.y }; //cannot put comma into macro 
 				glmvec3 posW = RTTOWP(p);
 				auto dist = geometry::distancePointLinesegment( posW, ITOWP(edge_inc->m_first_vertexL.m_positionL), ITOWP(edge_inc->m_second_vertexL.m_positionL) );
-				contact.addContactPoint(posW, RTOWN(face_ref->m_normalL), -dist); ///ADD BIAS
+				contact.addContactPoint(posW, RTOWN(face_ref->m_normalL), -dist);
 			}
 		} 
 
@@ -1170,9 +1170,6 @@ namespace ve {
 					clipEdgeFace(contact, ref_face, eq.m_edge_inc); //face - edge
 				}
 				else { //we have only an edge - edge contact}
-					auto B1 = ITORP(eq.m_edge_inc->m_first_vertexL.m_positionL);
-					auto B2 = ITORP(eq.m_edge_inc->m_second_vertexL.m_positionL);
-
 					auto posL = geometry::closestPointsLineLine( 
 						eq.m_edge_ref->m_first_vertexL.m_positionL, eq.m_edge_ref->m_second_vertexL.m_positionL,
 						ITORP(eq.m_edge_inc->m_first_vertexL.m_positionL), ITORP(eq.m_edge_inc->m_second_vertexL.m_positionL)
@@ -1180,10 +1177,9 @@ namespace ve {
 
 					auto P1 = RTOWP(posL.first);
 					auto P2 = RTOWP(posL.second);
-					auto mid = (posL.first + posL.second) / 2.0;
-					auto mid_W = (P1 + P2) / 2.0;
+					auto mid = (P1 + P2) / 2.0;
 					auto dist = glm::length(P2-P1);
-					contact.addContactPoint(mid_W, RTOWN(eq.m_normalL), -dist);
+					contact.addContactPoint(mid, RTOWN(eq.m_normalL), -dist);
 					//m_debug = true;
 				} 
 			}
