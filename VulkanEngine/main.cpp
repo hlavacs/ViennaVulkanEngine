@@ -391,7 +391,6 @@ namespace ve {
 			bool stepPosition(double dt, glmvec3& pos, glmquat& quat) {
 				bool active = false;
 				if (glm::length(m_linear_velocityW) > c_eps) {
-					m_vbias = glmvec3{ 0,0,0 };
 					pos = m_positionW + ( m_linear_velocityW  + m_vbias ) * (real)dt;
 					active = true;
 					m_vbias = glmvec3{0,0,0};
@@ -775,14 +774,13 @@ namespace ve {
 			for (auto& vL : contact.m_body_inc.m_body->m_polytope->m_vertices) {
 				auto vW = ITOWP(vL.m_positionL);
 				if (vW.y <= c_collision_margin) {
-					if(min_depth<0.0) min_depth = std::min(min_depth, vW.y);
+					min_depth = std::min(min_depth, vW.y);
 					contact.addContactPoint(vW, glmvec3{ 0,1,0 }, vW.y);
 				}
 			}
 			// if(m_debug) std::cout << std::endl;
 			if (min_depth < 0.0) { 
-				real weight = 1.0 / (1.0 + contact.m_body_inc.m_body->mass() * contact.m_body_ref.m_body->m_mass_inv);
-				contact.m_body_inc.m_body->m_vbias += glmvec3{ 0, -min_depth * 60.0, 0 } * (1.0 - weight);
+				contact.m_body_inc.m_body->m_vbias += glmvec3{ 0, -min_depth * 60.0, 0 };
 			}
 		}
 
@@ -857,10 +855,10 @@ namespace ve {
 
 					cp.m_F = F;
 
-					//contact.m_body_ref.m_body->m_linear_velocityW  += -F * contact.m_body_ref.m_body->m_mass_inv;
-					//contact.m_body_ref.m_body->m_angular_velocityW +=      contact.m_body_ref.m_body->m_inertia_invW * glm::cross(cp.m_r0, -F);
-					//contact.m_body_inc.m_body->m_linear_velocityW  +=  F * contact.m_body_inc.m_body->m_mass_inv;
-					//contact.m_body_inc.m_body->m_angular_velocityW +=      contact.m_body_inc.m_body->m_inertia_invW * glm::cross(cp.m_r1, F);
+					contact.m_body_ref.m_body->m_linear_velocityW  += -F * contact.m_body_ref.m_body->m_mass_inv;
+					contact.m_body_ref.m_body->m_angular_velocityW +=      contact.m_body_ref.m_body->m_inertia_invW * glm::cross(cp.m_r0, -F);
+					contact.m_body_inc.m_body->m_linear_velocityW  +=  F * contact.m_body_inc.m_body->m_mass_inv;
+					contact.m_body_inc.m_body->m_angular_velocityW +=      contact.m_body_inc.m_body->m_inertia_invW * glm::cross(cp.m_r1, F);
 					//dampen(contact, cp.m_normalW);
 				}
 			}
@@ -883,7 +881,7 @@ namespace ve {
 				for (auto& contact : m_contacts) { 			//loop over all contacts
 					auto nres = calculateContactPointImpules(contact.second, contact_type);
 					res = std::max(nres, (uint64_t)res);
-					applyImpulsesToContact(contact.second);
+					//applyImpulsesToContact(contact.second);
 				}
 				//applyImpulses();
 				num = num + res - 1;
@@ -1070,8 +1068,8 @@ namespace ve {
 			}
 			if (fq.m_separation < 0) {
 				real weight = 1.0 / (1.0 + contact.m_body_inc.m_body->mass() * contact.m_body_ref.m_body->m_mass_inv);
-				contact.m_body_ref.m_body->m_vbias += -RTOWN(fq.m_face_ref->m_normalL) * (-fq.m_separation) * 60.0 * (weight);
-				contact.m_body_inc.m_body->m_vbias += RTOWN(fq.m_face_ref->m_normalL) * (-fq.m_separation) * 60.0 * (1.0 - weight);
+				contact.m_body_ref.m_body->m_vbias += -RTOWN(fq.m_face_ref->m_normalL) * (-fq.m_separation) * 60.0 * (1.0 - weight);
+				contact.m_body_inc.m_body->m_vbias += RTOWN(fq.m_face_ref->m_normalL) * (-fq.m_separation) * 60.0 * weight;
 			}
 		}
 
@@ -1171,8 +1169,8 @@ namespace ve {
 			}
 			if (eq.m_separation < 0) {
 				real weight = 1.0 / (1.0 + contact.m_body_inc.m_body->mass() * contact.m_body_ref.m_body->m_mass_inv);
-				contact.m_body_ref.m_body->m_vbias += -RTOWN(eq.m_normalL) * (-eq.m_separation) * 60.0 * weight;
-				contact.m_body_inc.m_body->m_vbias += RTOWN(eq.m_normalL) * (-eq.m_separation) * 60.0 * (1.0 - weight);
+				contact.m_body_ref.m_body->m_vbias += -RTOWN(eq.m_normalL) * (-eq.m_separation) * 60.0 * (1.0 - weight);
+				contact.m_body_inc.m_body->m_vbias += RTOWN(eq.m_normalL) * (-eq.m_separation) * 60.0 * weight;
 			}
 		}
 
