@@ -48,13 +48,16 @@ const double c_eps = 1.0e-5;
 constexpr real operator "" _real(long double val) { return (real)val; };
 
 
-const double c_small = 0.01;
-const real c_margin_factor = 1.01;
-const real c_margin = 0.001;
 const real c_gravity = -9.81;
 const double c_sim_delta_time = 1.0 / 60.0;
-const real c_resting = 3.0 * c_gravity * c_sim_delta_time; //gravity is negative!
-const real c_bias = 0.2;
+const double c_small = 0.01;
+
+const real c_collision_margin_factor = 1.01;
+const real c_collision_margin = 0.001;
+
+const real c_resting = 4.0 * c_gravity * c_sim_delta_time; //gravity is negative!
+const real c_sep_velocity = 0.01;
+const real c_bias = 0.3;
 const real c_slop = 0.001;
 
 
@@ -157,8 +160,15 @@ namespace ve {
 	static std::default_random_engine rnd_gen{ 12345 };					//Random numbers
 	static std::uniform_real_distribution<> rnd_unif{ 0.0f, 1.0f };		//Random numbers
 
-	class EventListenerPhysics : public VEEventListener {
+	class VEEventListenerPhysics : public VEEventListener {
 	public:
+
+		enum simulation_mode_t {
+			SIMULATION_MODE_REALTIME,
+			SIMULATION_MODE_DEBUG
+		}; 
+		simulation_mode_t m_mode{ SIMULATION_MODE_REALTIME };
+
 
 		struct Force {
 			glmvec3 m_positionL{0,0,0};		//position in local space
@@ -338,8 +348,8 @@ namespace ve {
 		class Body {
 		public:
 			std::string	m_name;
-			void*		m_owner = nullptr;				//pointer to owner of this body, must be unique
-			Polytope*	m_polytope = nullptr;			//geometric shape
+			void* m_owner = nullptr;				//pointer to owner of this body, must be unique
+			Polytope* m_polytope = nullptr;			//geometric shape
 			glmvec3		m_scale{ 1,1,1 };				//scale factor in local space
 			glmvec3		m_positionW{ 0, 0, 0 };			//current position at time slot in world space
 			glmquat		m_orientationLW{ {0, 0, 0} };	//current orientation at time slot Local -> World
@@ -352,7 +362,7 @@ namespace ve {
 
 			std::unordered_map<uint64_t, Force> m_forces;//forces acting on this body
 
-			glmmat3		m_inertiaL{1.0};				//computed when the body is created
+			glmmat3		m_inertiaL{ 1.0 };				//computed when the body is created
 			glmmat3		m_inertia_invL{ 1.0 };			//computed when the body is created
 
 			//computed when the body moves
@@ -363,6 +373,7 @@ namespace ve {
 			glmmat3		m_inertia_invW{ glmmat4{1} };	//inverse inertia tensor in world frame
 			int_t		m_grid_x{ 0 };
 			int_t		m_grid_z{ 0 };
+			glmvec3		m_vbias{0,0,0};
 
 			Body() { inertiaTensorL(); updateMatrices(); };
 
@@ -372,7 +383,7 @@ namespace ve {
 					m_name{name}, m_owner {owner}, m_polytope{ polytope }, m_scale{ scale }, m_positionW{ positionW }, m_orientationLW{ orientationLW },
 					m_on_move{on_move}, m_linear_velocityW{linear_velocityW}, m_angular_velocityW{ angular_velocityW }, 
 					m_mass_inv{ mass_inv }, m_restitution{ restitution }, m_friction{ friction } { 
-				m_scale *= c_margin_factor;
+				m_scale *= c_collision_margin_factor;
 				inertiaTensorL();
 				updateMatrices(); 
 			};
@@ -380,8 +391,10 @@ namespace ve {
 			bool stepPosition(double dt, glmvec3& pos, glmquat& quat) {
 				bool active = false;
 				if (glm::length(m_linear_velocityW) > c_eps) {
-					pos = m_positionW + m_linear_velocityW * (real)dt;
+					m_vbias = glmvec3{ 0,0,0 };
+					pos = m_positionW + ( m_linear_velocityW  + m_vbias ) * (real)dt;
 					active = true;
+					m_vbias = glmvec3{0,0,0};
 				}
 
 				auto avW = glmmat3{ m_model_inv } * m_angular_velocityW;
@@ -493,6 +506,7 @@ namespace ve {
 			BodyPtr		m_body_inc; //incident body, we will transfer its points/vectors to the ref space
 			glmvec3		m_separating_axisW{0.0};			//Axis that separates the two bodies in world space
 			std::vector<ContactPoint> m_contact_points{};	//Contact points in contact manifold in world space
+			uint32_t	m_contributing_contacts{ 0 };		//number of resting or colliding contacts
 			bool		m_all_resting{true};				//true if all contact points are resting
 			real		m_dampen_coeff{ 0.99 };				//coefficient for dampening unwanted rotation for face/face contact
 
@@ -504,18 +518,20 @@ namespace ve {
 				auto d = glm::dot(vrel, normalW);
 
 				ContactPoint::type_t type;
-				if (d > c_margin) {
+				if (d > c_sep_velocity) {
 					type = Contact::ContactPoint::type_t::separating;
 					m_all_resting = false;
 					m_dampen_coeff = 0.99;
 				}
 				else if (d > c_resting) { 
 					type = Contact::ContactPoint::type_t::resting; 
+					++m_contributing_contacts;
 				}
 				else { 
 					type = Contact::ContactPoint::type_t::colliding;
 					m_all_resting = false;
 					m_dampen_coeff = 0.99;
+					++m_contributing_contacts;
 				}
 
 				auto restitution = std::max(m_body_ref.m_body->m_restitution, m_body_inc.m_body->m_restitution);
@@ -537,11 +553,12 @@ namespace ve {
 			}
 		};
 
-	protected:
+	public:
 		bool			m_debug = false;
 		bool			m_run = true;
 
 		uint64_t		m_loop{ 0L };
+		double			m_current_time{ 0.0 };			//current time
 		double			m_last_time{ 0.0 };				//last time the sim was interpolated
 		double			m_last_slot{ 0.0 };				//last time the sim was calculated
 		double			m_next_slot{ c_sim_delta_time };//next time for simulation
@@ -587,23 +604,7 @@ namespace ve {
 			}
 		}
 
-		real m_dx = 0.0;
-		real m_dy = 0.0;
-		real m_dz = 0.0;
-		real m_da = 0.0;
-		real m_db = 0.0;
-		real m_dc = 0.0;
-
 		void onFrameEnded(veEvent event) {
-			if (m_body) {
-				m_body->m_positionW += event.dt * glmvec3{ m_dx, m_dy, m_dz };
-				m_body->m_orientationLW = m_body->m_orientationLW * 
-					glm::rotate(glmquat{ {0,0,0} }, event.dt * m_da, glmvec3{1,0,0}) *
-					glm::rotate(glmquat{ {0,0,0} }, event.dt * m_db, glmvec3{ 0,1,0 }) *
-					glm::rotate(glmquat{ {0,0,0} }, event.dt * m_dc, glmvec3{ 0,0,1 });
-
-				m_body->updateMatrices();
-			}
 		}
 
 		bool onKeyboard(veEvent event) {
@@ -613,39 +614,6 @@ namespace ve {
 				m_debug = true;
 				return true;
 			}
-
-			real vel = 0.5;
-			if (event.idata1 == GLFW_KEY_I && event.idata3 == GLFW_PRESS) { m_dy = vel; }
-			if (event.idata1 == GLFW_KEY_I && event.idata3 == GLFW_RELEASE) { m_dy = 0.0; }
-			if (event.idata1 == GLFW_KEY_Y && event.idata3 == GLFW_PRESS) { m_dy = -vel; }
-			if (event.idata1 == GLFW_KEY_Y && event.idata3 == GLFW_RELEASE) { m_dy = 0.0; }
-
-			if (event.idata1 == GLFW_KEY_U && event.idata3 == GLFW_PRESS) { m_dz = vel; }
-			if (event.idata1 == GLFW_KEY_U && event.idata3 == GLFW_RELEASE) { m_dz = 0.0; }
-			if (event.idata1 == GLFW_KEY_J && event.idata3 == GLFW_PRESS) { m_dz = -vel; }
-			if (event.idata1 == GLFW_KEY_J && event.idata3 == GLFW_RELEASE) { m_dz = 0.0; }
-
-			if (event.idata1 == GLFW_KEY_H && event.idata3 == GLFW_PRESS) { m_dx = -vel; }
-			if (event.idata1 == GLFW_KEY_H && event.idata3 == GLFW_RELEASE) { m_dx = 0.0; }
-			if (event.idata1 == GLFW_KEY_K && event.idata3 == GLFW_PRESS) { m_dx = vel; }
-			if (event.idata1 == GLFW_KEY_K && event.idata3 == GLFW_RELEASE) { m_dx = 0.0; }
-
-			real rot = 0.5;
-			if (event.idata1 == GLFW_KEY_SEMICOLON && event.idata3 == GLFW_PRESS) { m_da = -rot; }
-			if (event.idata1 == GLFW_KEY_SEMICOLON && event.idata3 == GLFW_RELEASE) { m_da = 0.0; }
-			if (event.idata1 == GLFW_KEY_APOSTROPHE && event.idata3 == GLFW_PRESS) { m_da = rot; }
-			if (event.idata1 == GLFW_KEY_APOSTROPHE && event.idata3 == GLFW_RELEASE) { m_da = 0.0; }
-
-			if (event.idata1 == GLFW_KEY_COMMA && event.idata3 == GLFW_PRESS) { m_db = -rot; }
-			if (event.idata1 == GLFW_KEY_COMMA && event.idata3 == GLFW_RELEASE) { m_db = 0.0; }
-			if (event.idata1 == GLFW_KEY_PERIOD && event.idata3 == GLFW_PRESS) { m_db = rot; }
-			if (event.idata1 == GLFW_KEY_PERIOD && event.idata3 == GLFW_RELEASE) { m_db = 0.0; }
-
-			if (event.idata1 == GLFW_KEY_SLASH && event.idata3 == GLFW_PRESS) { m_dc = -rot; }
-			if (event.idata1 == GLFW_KEY_SLASH && event.idata3 == GLFW_RELEASE) { m_dc = 0.0; }
-			if (event.idata1 == GLFW_KEY_RIGHT_SHIFT && event.idata3 == GLFW_PRESS) { m_dc = rot; }
-			if (event.idata1 == GLFW_KEY_RIGHT_SHIFT && event.idata3 == GLFW_RELEASE) { m_dc = 0.0; }
-
 
 			if (event.idata1 == GLFW_KEY_B && event.idata3 == GLFW_PRESS) {
 				glmvec3 positionCamera{ getSceneManagerPointer()->getSceneNode("StandardCameraParent")->getWorldTransform()[3] };
@@ -660,7 +628,7 @@ namespace ve {
 				VECHECKPOINTER(cube = getSceneManagerPointer()->loadModel("The Cube" + std::to_string(++cubeid), "media/models/test/crate0", "cube.obj", 0, getRoot()));
 				Body body{ "", cube, &g_cube, scale, positionCamera + 2.0 * dir, glm::rotate(angle, glm::normalize(orient)), &onMove, vel, vrot, 1.0 / 100.0, 0.2, 1 };
 				body.m_forces.insert({ 0ul, Force{} });
-				addBody(std::make_shared<Body>(body));
+				addBody(m_body = std::make_shared<Body>(body));
 			}
 								
 			if (event.idata1 == GLFW_KEY_SPACE && event.idata3 == GLFW_PRESS) {
@@ -670,7 +638,7 @@ namespace ve {
 				VECHECKPOINTER(cube0 = getSceneManagerPointer()->loadModel("The Cube" + std::to_string(++cubeid), "media/models/test/crate0", "cube.obj", 0, getRoot()));
 				Body body0{ "Below", cube0, &g_cube, glmvec3{1.0}, glmvec3{positionCamera.x,positionCamera.y,positionCamera.z + 4}, glmquat{0,0,0,1}, &onMove, glmvec3{0.0}, glmvec3{0.0}, 1.0 / 100.0, 0.2, 1};
 				body0.m_forces.insert({ 0ul, Force{} });
-				addBody(std::make_shared<Body>(body0));
+				addBody(m_body = std::make_shared<Body>(body0));
 				
 				/*VESceneNode* cube1;
 				VECHECKPOINTER(cube1 = getSceneManagerPointer()->loadModel("The Cube" + std::to_string(++cubeid), "media/models/test/crate0", "cube.obj", 0, getRoot()));
@@ -686,9 +654,12 @@ namespace ve {
 		};
 
 		void onFrameStarted(veEvent event) {
-			double current_time = m_last_time + event.dt;
+			if (m_mode == SIMULATION_MODE_REALTIME) {
+				m_current_time = m_last_time + event.dt;
+			}
+
 			auto last_loop = m_loop;
-			while (current_time > m_next_slot) {	//compute position/vel at time slots
+			while (m_current_time > m_next_slot) {	//compute position/vel at time slots
 				++m_loop;
 				broadPhase();
 				narrowPhase();
@@ -723,10 +694,10 @@ namespace ve {
 			}
 			for (auto& c : m_bodies) {	//predict pos/vel at slot + delta, this is only a prediction for rendering, not stored anywhere
 				if (m_run && c.second->m_on_move != nullptr) {
-					(*c.second->m_on_move)(current_time - m_last_slot, c.second); //predict new pos/orient
+					(*c.second->m_on_move)(m_current_time - m_last_slot, c.second); //predict new pos/orient
 				}
 			}
-			m_last_time = current_time;
+			m_last_time = m_current_time;
 		};
 
 		/// <summary>
@@ -777,6 +748,7 @@ namespace ve {
 			for (auto it = std::begin(m_contacts); it != std::end(m_contacts); ) {
 				auto& contact = it->second;
 				contact.m_contact_points.clear();
+				contact.m_contributing_contacts = 0;
 				if (contact.m_last_loop == m_loop) {	//is contact still possible?
 					if (contact.m_body_ref.m_body->m_owner == nullptr) {
 						groundTest(contact); //is the ref body the ground?
@@ -799,13 +771,19 @@ namespace ve {
 		/// <param name="contact">The contact information between ground and the body.</param>
 		void groundTest(Contact& contact) {
 			if (contact.m_body_inc.m_body->m_positionW.y > contact.m_body_inc.m_body->boundingSphereRadius()) return;
+			real min_depth{ std::numeric_limits<real>::max() };
 			for (auto& vL : contact.m_body_inc.m_body->m_polytope->m_vertices) {
 				auto vW = ITOWP(vL.m_positionL);
-				if (vW.y <= 0.0) {
+				if (vW.y <= c_collision_margin) {
+					if(min_depth<0.0) min_depth = std::min(min_depth, vW.y);
 					contact.addContactPoint(vW, glmvec3{ 0,1,0 }, vW.y);
 				}
 			}
 			// if(m_debug) std::cout << std::endl;
+			if (min_depth < 0.0) { 
+				real weight = 1.0 / (1.0 + contact.m_body_inc.m_body->mass() * contact.m_body_ref.m_body->m_mass_inv);
+				contact.m_body_inc.m_body->m_vbias += glmvec3{ 0, -min_depth * 60.0, 0 } * (1.0 - weight);
+			}
 		}
 
 		void dampen( auto &contact, auto &n) {
@@ -834,35 +812,38 @@ namespace ve {
 					glmvec3 F{ 0,0,0 }, Fn{ 0,0,0 }, Ft{ 0,0,0 }, T{ 0,0,0 };
 					real f{ 0.0 }, t{ 0.0 };
 
-					/*
-					F = cp.m_K_inv * (-cp.m_restitution * dN * cp.m_normalW - vrel); // / (real)contact.m_contact_points.size();
-					f = glm::dot(F, cp.m_normalW);
-					Fn = f * cp.m_normalW;
-					Ft = F - Fn;
-					t = glm::length(Ft);
-					
-					if (t != 0.0) {
-						T = -Ft / t;
-						if (fabs(t) > fabs(cp.m_friction * f)) {	//dynamic friction?
-							f = -(1 + cp.m_restitution) * dN / glm::dot(cp.m_normalW, cp.m_K * (cp.m_normalW - cp.m_friction * T));
-							t = f * cp.m_friction;
+					int solver = 0;
+
+					if (solver == 0) {
+						F = cp.m_K_inv * (-cp.m_restitution * dN * cp.m_normalW - vrel); // / (real)contact.m_contact_points.size();
+						f = glm::dot(F, cp.m_normalW);
+						Fn = f * cp.m_normalW;
+						Ft = F - Fn;
+						t = glm::length(Ft);
+
+						if (t != 0.0) {
+							T = -Ft / t;
+							if (fabs(t) > fabs(cp.m_friction * f)) {	//dynamic friction?
+								f = -(1 + cp.m_restitution) * dN / glm::dot(cp.m_normalW, cp.m_K * (cp.m_normalW - cp.m_friction * T));
+								t = f * cp.m_friction;
+							}
 						}
 					}
-					*/
 					
-					glmmat3 mc0 = matrixCross3(cp.m_r0);
-					glmmat3 mc1 = matrixCross3(cp.m_r1);
+					if (solver == 1) {
+						glmmat3 mc0 = matrixCross3(cp.m_r0);
+						glmmat3 mc1 = matrixCross3(cp.m_r1);
 
-					glmmat3 K = - mc1 * contact.m_body_inc.m_body->m_inertia_invW * mc1 - mc0 * contact.m_body_ref.m_body->m_inertia_invW * mc0;
+						glmmat3 K = -mc1 * contact.m_body_inc.m_body->m_inertia_invW * mc1 - mc0 * contact.m_body_ref.m_body->m_inertia_invW * mc0;
 
-					auto dV = -cp.m_restitution * dN * cp.m_normalW - vrel;
-					auto kn = contact.m_body_ref.m_body->m_mass_inv + contact.m_body_inc.m_body->m_mass_inv + glm::dot( K * cp.m_normalW, cp.m_normalW );
-					f = (glm::dot(dV, cp.m_normalW) + cp.m_vbias) / kn;
+						auto dV = -cp.m_restitution * dN * cp.m_normalW - vrel;
+						auto kn = contact.m_body_ref.m_body->m_mass_inv + contact.m_body_inc.m_body->m_mass_inv + glm::dot(K * cp.m_normalW, cp.m_normalW);
+						f = (glm::dot(dV, cp.m_normalW) + cp.m_vbias) / kn;
 
-					if (dT != 0.0) T = vT / dT;
-					auto kt = contact.m_body_ref.m_body->m_mass_inv + contact.m_body_inc.m_body->m_mass_inv + glm::dot( K * T, T);
-					t = -glm::dot(dV, T) / kt;
-					
+						if (dT != 0.0) T = vT / dT;
+						auto kt = contact.m_body_ref.m_body->m_mass_inv + contact.m_body_inc.m_body->m_mass_inv + glm::dot(K * T, T);
+						t = -glm::dot(dV, T) / kt;
+					}
 
 					auto tmp = cp.m_f;
 					cp.m_f = std::max(tmp + f, 0.0);
@@ -874,7 +855,7 @@ namespace ve {
 
 					F = f * cp.m_normalW - t * T;
 
-					cp.m_F = F; // / (real)contact.m_contact_points.size();
+					cp.m_F = F;
 
 					//contact.m_body_ref.m_body->m_linear_velocityW  += -F * contact.m_body_ref.m_body->m_mass_inv;
 					//contact.m_body_ref.m_body->m_angular_velocityW +=      contact.m_body_ref.m_body->m_inertia_invW * glm::cross(cp.m_r0, -F);
@@ -916,7 +897,7 @@ namespace ve {
 			glmvec3 lin0{ 0,0,0 }, ori0{ 0,0,0 }, lin1{ 0,0,0 }, ori1{ 0,0,0 }, n{ 0,0,0 };
 			for (auto& cp : contact.m_contact_points) {
 				if (cp.m_type == Contact::ContactPoint::colliding || cp.m_type == Contact::ContactPoint::resting) {
-					auto F = cp.m_F;
+					auto F = cp.m_F / (real)contact.m_contributing_contacts;
 
 					lin0 += -F * contact.m_body_ref.m_body->m_mass_inv;
 					ori0 +=      contact.m_body_ref.m_body->m_inertia_invW * glm::cross(cp.m_r0, -F);
@@ -1087,6 +1068,11 @@ namespace ve {
 					contact.addContactPoint(ITOWP(fq.m_vertex_inc->m_positionL), RTOWN(fq.m_face_ref->m_normalL), fq.m_separation);  //we have only a vertex - face contact}
 				}
 			}
+			if (fq.m_separation < 0) {
+				real weight = 1.0 / (1.0 + contact.m_body_inc.m_body->mass() * contact.m_body_ref.m_body->m_mass_inv);
+				contact.m_body_ref.m_body->m_vbias += -RTOWN(fq.m_face_ref->m_normalL) * (-fq.m_separation) * 60.0 * (weight);
+				contact.m_body_inc.m_body->m_vbias += RTOWN(fq.m_face_ref->m_normalL) * (-fq.m_separation) * 60.0 * (1.0 - weight);
+			}
 		}
 
 		/// <summary>
@@ -1183,18 +1169,104 @@ namespace ve {
 					//m_debug = true;
 				} 
 			}
+			if (eq.m_separation < 0) {
+				real weight = 1.0 / (1.0 + contact.m_body_inc.m_body->mass() * contact.m_body_ref.m_body->m_mass_inv);
+				contact.m_body_ref.m_body->m_vbias += -RTOWN(eq.m_normalL) * (-eq.m_separation) * 60.0 * weight;
+				contact.m_body_inc.m_body->m_vbias += RTOWN(eq.m_normalL) * (-eq.m_separation) * 60.0 * (1.0 - weight);
+			}
 		}
 
 
 	public:
 		///Constructor of class EventListenerCollision
-		EventListenerPhysics(std::string name) : VEEventListener(name) { };
+		VEEventListenerPhysics(std::string name) : VEEventListener(name) { };
 
 		///Destructor of class EventListenerCollision
-		virtual ~EventListenerPhysics() {};
+		virtual ~VEEventListenerPhysics() {};
 	};
 
-	
+
+
+	class VEEventListenerPhysicsGUI : public VEEventListener
+	{
+	protected:
+		virtual void onDrawOverlay(veEvent event) {
+			VESubrender_Nuklear* pSubrender = (VESubrender_Nuklear*)getEnginePointer()->getRenderer()->getOverlay();
+			if (pSubrender == nullptr)
+				return;
+
+			struct nk_context* ctx = pSubrender->getContext();
+
+			/* GUI */
+			if (nk_begin(ctx, "Physics Panel", nk_rect(50, 50, 330, 450),
+				NK_WINDOW_BORDER | NK_WINDOW_MOVABLE | NK_WINDOW_SCALABLE |
+				NK_WINDOW_MINIMIZABLE | NK_WINDOW_TITLE))
+			{
+				nk_layout_row_static(ctx, 30, 200, 1);
+				if (nk_button_label(ctx, "Next time slot")) {
+					m_physics->m_current_time += c_sim_delta_time;
+				}
+
+				nk_layout_row_dynamic(ctx, 60, 2);
+				if (nk_option_label(ctx, "Realtime", m_physics->m_mode == VEEventListenerPhysics::simulation_mode_t::SIMULATION_MODE_REALTIME))
+					m_physics->m_mode = VEEventListenerPhysics::simulation_mode_t::SIMULATION_MODE_REALTIME;
+				if (nk_option_label(ctx, "Debug", m_physics->m_mode == VEEventListenerPhysics::simulation_mode_t::SIMULATION_MODE_DEBUG))
+					m_physics->m_mode = VEEventListenerPhysics::simulation_mode_t::SIMULATION_MODE_DEBUG;
+
+				nk_layout_row_dynamic(ctx, 30, 1);
+				nk_label(ctx, "Current Body", NK_TEXT_LEFT);
+
+				real vel = 0.5;
+				real m_dx = 0.0;
+				real m_dy = 0.0;
+				real m_dz = 0.0;
+				real m_da = 0.0;
+				real m_db = 0.0;
+				real m_dc = 0.0;
+
+				nk_layout_row_static(ctx, 30, 100, 2);
+				if (nk_button_label(ctx, "+X")) {m_dx = vel; }
+				if (nk_button_label(ctx, "-X")) { m_dx = -vel; }
+				nk_layout_row_static(ctx, 30, 100, 2);
+				if (nk_button_label(ctx, "+Y")) { m_dy = vel; }
+				if (nk_button_label(ctx, "-Y")) { m_dy = -vel; }
+				nk_layout_row_static(ctx, 30, 100, 2);
+				if (nk_button_label(ctx, "+Z")) { m_dz = vel; }
+				if (nk_button_label(ctx, "-Z")) {m_dz = -vel; }
+
+				if (m_physics->m_body) {
+					real dt = c_sim_delta_time;
+					m_physics->m_body->m_positionW += dt * glmvec3{ m_dx, m_dy, m_dz };
+					m_physics->m_body->m_orientationLW = m_physics->m_body->m_orientationLW *
+						glm::rotate(glmquat{ {0,0,0} }, dt * m_da, glmvec3{ 1, 0, 0 }) *
+						glm::rotate(glmquat{ {0,0,0} }, dt * m_db, glmvec3{ 0, 1, 0 }) *
+						glm::rotate(glmquat{ {0,0,0} }, dt * m_dc, glmvec3{ 0, 0, 1 });
+
+					m_physics->m_body->updateMatrices();
+					m_dx = m_dy = m_dz = m_da = m_db = m_dc = 0.0;
+				}
+
+				//nk_layout_row_dynamic(ctx, 25, 1);
+				//nk_property_int(ctx, "Zoom:", 0, &m_zoom, 100, 10, 1);
+
+			}
+			nk_end(ctx);
+
+		}
+
+
+	public:
+		VEEventListenerPhysics* m_physics;
+
+		int m_zoom = 0; ///<example data
+
+		///Constructor of class VEEventListenerPhysicsGUI
+		VEEventListenerPhysicsGUI(std::string name, VEEventListenerPhysics* physics) : VEEventListener{ name }, m_physics{ physics } {};
+
+		///Destructor of class VEEventListenerPhysicsGUI
+		virtual ~VEEventListenerPhysicsGUI() {};
+	};
+
 
 	///user defined manager class, derived from VEEngine
 	class MyVulkanEngine : public VEEngine {
@@ -1203,17 +1275,16 @@ namespace ve {
 		MyVulkanEngine(veRendererType type = veRendererType::VE_RENDERER_TYPE_FORWARD, bool debug=false) : VEEngine(type, debug) {};
 		~MyVulkanEngine() {};
 
-		EventListenerPhysics *m_physics;
-
+		VEEventListenerPhysics *m_physics;
+		VEEventListenerPhysicsGUI* m_physics_gui;
 
 		///Register an event listener to interact with the user
 		
 		virtual void registerEventListeners() {
 			VEEngine::registerEventListeners();
 
-			registerEventListener(m_physics = new EventListenerPhysics("Physics"), { veEvent::VE_EVENT_FRAME_STARTED });
-			registerEventListener(m_physics, { veEvent::VE_EVENT_KEYBOARD });
-			registerEventListener(m_physics, { veEvent::VE_EVENT_FRAME_ENDED });
+			registerEventListener(m_physics = new VEEventListenerPhysics("Physics"), { veEvent::VE_EVENT_FRAME_STARTED, veEvent::VE_EVENT_KEYBOARD, veEvent::VE_EVENT_FRAME_ENDED });
+			registerEventListener(m_physics_gui = new VEEventListenerPhysicsGUI("PhysicsGUI", m_physics), { veEvent::VE_EVENT_DRAW_OVERLAY });
 		};
 		
 
