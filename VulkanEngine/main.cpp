@@ -15,6 +15,7 @@
 
 #include "VEInclude.h"
 
+#define GLM_ENABLE_EXPERIMENTAL
 #define GLM_FORCE_LEFT_HANDED
 #include "glm/glm.hpp"
 #include "glm/gtx/matrix_operation.hpp"
@@ -350,7 +351,7 @@ namespace ve {
 			Polytope* m_polytope = nullptr;			//geometric shape
 			glmvec3		m_scale{ 1,1,1 };				//scale factor in local space
 			glmvec3		m_positionW{ 0, 0, 0 };			//current position at time slot in world space
-			glmquat		m_orientationLW{ {0, 0, 0} };	//current orientation at time slot Local -> World
+			glmquat		m_orientationLW{ 1, 0, 0, 0 };	//current orientation at time slot Local -> World
 			glmvec3		m_linear_velocityW{ 0,0,0 };	//linear velocity at time slot in world space
 			glmvec3		m_angular_velocityW{ 0,0,0 };	//angular velocity at time slot in world space
 			body_callback* m_on_move = nullptr;			//called if the body moves
@@ -375,7 +376,7 @@ namespace ve {
 
 			Body() { inertiaTensorL(); updateMatrices(); };
 
-			Body(std::string name, void* owner, Polytope* polytope, glmvec3 scale, glmvec3 positionW, glmquat orientationLW = glmvec3{0,0,0}, 
+			Body(std::string name, void* owner, Polytope* polytope, glmvec3 scale, glmvec3 positionW, glmquat orientationLW = {1,0,0,0}, 
 				body_callback* on_move = nullptr, glmvec3 linear_velocityW = glmvec3{ 0,0,0 }, glmvec3 angular_velocityW = glmvec3{0,0,0}, 
 				real mass_inv = 0.0, real restitution = 0.0_real, real friction = 1.0_real ) :
 					m_name{name}, m_owner {owner}, m_polytope{ polytope }, m_scale{ scale }, m_positionW{ positionW }, m_orientationLW{ orientationLW },
@@ -639,7 +640,7 @@ namespace ve {
 				glmvec3 scale{ 1,1,1 }; // = rnd_unif(rnd_gen) * 10;
 				real angle = rnd_unif(rnd_gen) * 10 * 3 * M_PI / 180.0;
 				glmvec3 orient{ rnd_unif(rnd_gen), rnd_unif(rnd_gen), rnd_unif(rnd_gen) };
-				glmvec3 vrot{ rnd_unif(rnd_gen) * 0, rnd_unif(rnd_gen) * 0, rnd_unif(rnd_gen) * 0 };
+				glmvec3 vrot{ rnd_unif(rnd_gen) * 5, rnd_unif(rnd_gen) * 5, rnd_unif(rnd_gen) * 5 };
 				VESceneNode* cube;
 				VECHECKPOINTER(cube = getSceneManagerPointer()->loadModel("The Cube" + std::to_string(++cubeid), "media/models/test/crate0", "cube.obj", 0, getRoot()));
 				Body body{ "Body" + std::to_string(cubeid), cube, &g_cube, scale, positionCamera + 2.0 * dir, glm::rotate(angle, glm::normalize(orient)), &onMove, vel, vrot, 1.0 / 100.0, 0.2, 1 };
@@ -653,7 +654,7 @@ namespace ve {
 					
 				VESceneNode* cube0;
 				VECHECKPOINTER(cube0 = getSceneManagerPointer()->loadModel("The Cube" + std::to_string(++cubeid), "media/models/test/crate0", "cube.obj", 0, getRoot()));
-				Body body0{ "Below", cube0, &g_cube, glmvec3{1.0}, glmvec3{positionCamera.x,positionCamera.y,positionCamera.z + 4}, glmquat{0,0,0,1}, &onMove, glmvec3{0.0}, glmvec3{0.0}, 1.0 / 100.0, 0.2, 1};
+				Body body0{ "Body" + std::to_string(cubeid), cube0, &g_cube, glmvec3{1.0}, glmvec3{positionCamera.x,positionCamera.y,positionCamera.z + 4}, glmquat{ 1,0,0,0 }, &onMove, glmvec3{0.0}, glmvec3{0.0}, 1.0 / 100.0, 0.2, 1 };
 				body0.m_forces.insert({ 0ul, Force{} });
 				addBody(m_body = std::make_shared<Body>(body0));
 				
@@ -662,10 +663,21 @@ namespace ve {
 				//glmquat orient{ glm::rotate(45.0*2.0*M_PI/360.0, glmvec3{1,0,0}) };
 				//glmquat orient2{ glm::rotate(45.0 * 2.0 * M_PI / 360.0, glmvec3{0,0,-1}) };
 				glmquat orient{ }, orient2{ };
-				Body body1{ "Above", cube1, &g_cube, glmvec3{1.0}, positionCamera + glmvec3{0,0.5,4}, orient2*orient, &onMove, glmvec3{0.0}, glmvec3{0.0}, 1.0 / 100.0, 0.2, 1.0};
+				Body body1{ "Body" + std::to_string(cubeid), cube1, &g_cube, glmvec3{1.0}, positionCamera + glmvec3{0,0.5,4}, orient2*orient, &onMove, glmvec3{0.0}, glmvec3{0.0}, 1.0 / 100.0, 0.2, 1.0};
 				body1.m_forces.insert({ 0ul, Force{} });
 				addBody(m_body = std::make_shared<Body>(body1));
 				*/
+			}
+
+			static real dx = 0.0;
+			if (event.idata1 == GLFW_KEY_Y && event.idata3 == GLFW_PRESS) {
+				glmvec3 positionCamera{ getSceneManagerPointer()->getSceneNode("StandardCameraParent")->getWorldTransform()[3] };
+
+				VESceneNode* cube0;
+				VECHECKPOINTER(cube0 = getSceneManagerPointer()->loadModel("The Cube" + std::to_string(++cubeid), "media/models/test/crate0", "cube.obj", 0, getRoot()));
+				Body body0{ "Body" + std::to_string(cubeid), cube0, &g_cube, glmvec3{1.0}, glmvec3{dx++, 0.5, 0.0}, glmquat{1,0,0,0}, &onMove, glmvec3{0.0}, glmvec3{0.0}, 1.0 / 100.0, 0.2, 1 };
+				body0.m_forces.insert({ 0ul, Force{} });
+				addBody(m_body = std::make_shared<Body>(body0));
 			}
 			return false;
 		};
@@ -1025,9 +1037,10 @@ namespace ve {
 
 			for (auto& edgeA : contact.m_body_ref.m_body->m_polytope->m_edges) {	//loop over all edge-edge pairs
 				for (auto& edgeB : contact.m_body_inc.m_body->m_polytope->m_edges) {
-					debug("Ref: " + contact.m_body_ref.m_body->m_name + " Inc: " + contact.m_body_inc.m_body->m_name);
-					debug("EdgeA: " + std::to_string(edgeA.m_id) + " " + std::to_string(edgeA.m_edgeL) + " EdgeB: " + std::to_string(edgeB.m_id) + " " + std::to_string(ITORV(edgeB.m_edgeL)));
+					//debug("Ref: " + contact.m_body_ref.m_body->m_name + " Inc: " + contact.m_body_inc.m_body->m_name);
+					//debug("EdgeA: " + std::to_string(edgeA.m_id) + " " + std::to_string(edgeA.m_edgeL) + " EdgeB: " + std::to_string(edgeB.m_id) + " " + std::to_string(ITORV(edgeB.m_edgeL)));
 
+					//auto edgeb_L = ITORV(edgeB.m_edgeL);
 					glmvec3 n = glm::cross(edgeA.m_edgeL, ITORV(edgeB.m_edgeL));	//axis n is cross product of both edges
 					real len = glm::length(n);
 					if (len > 0.0) {
@@ -1247,9 +1260,9 @@ namespace ve {
 					real dt = c_sim_delta_time;
 					m_physics->m_body->m_positionW += dt * glmvec3{ m_dx, m_dy, m_dz };
 					m_physics->m_body->m_orientationLW = m_physics->m_body->m_orientationLW *
-						glm::rotate(glmquat{ 0,0,0,0 }, dt * m_da, glmvec3{ 1, 0, 0 }) *
-						glm::rotate(glmquat{ 0,0,0,0 }, dt * m_db, glmvec3{ 0, 1, 0 }) *
-						glm::rotate(glmquat{ 0,0,0,0 }, dt * m_dc, glmvec3{ 0, 0, 1 });
+						glm::rotate(glmquat{ 1,0,0,0 }, dt * m_da, glmvec3{ 1, 0, 0 }) *
+						glm::rotate(glmquat{ 1,0,0,0 }, dt * m_db, glmvec3{ 0, 1, 0 }) *
+						glm::rotate(glmquat{ 1,0,0,0 }, dt * m_dc, glmvec3{ 0, 0, 1 });
 
 					m_physics->m_body->updateMatrices();
 					m_dx = m_dy = m_dz = m_da = m_db = m_dc = 0.0;
