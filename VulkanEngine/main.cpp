@@ -1040,7 +1040,7 @@ namespace ve {
 					//debug("Ref: " + contact.m_body_ref.m_body->m_name + " Inc: " + contact.m_body_inc.m_body->m_name);
 					//debug("EdgeA: " + std::to_string(edgeA.m_id) + " " + std::to_string(edgeA.m_edgeL) + " EdgeB: " + std::to_string(edgeB.m_id) + " " + std::to_string(ITORV(edgeB.m_edgeL)));
 
-					//auto edgeb_L = ITORV(edgeB.m_edgeL);
+					auto edgeb_L = ITORV(edgeB.m_edgeL);
 					glmvec3 n = glm::cross(edgeA.m_edgeL, ITORV(edgeB.m_edgeL));	//axis n is cross product of both edges
 					real len = glm::length(n);
 					if (len > 0.0) {
@@ -1056,9 +1056,7 @@ namespace ve {
 							return { distance, &edgeA, &edgeB };							//no overlap - distance is positive
 						}
 						
-						real distance2 = glm::dot(n, ITORP( edgeB.m_first_vertexL.m_positionL ) - edgeA.m_first_vertexL.m_positionL);
-
-						if (distance2 < 0 && distance > result.m_separation) {
+						if (distance > result.m_separation) {
 							result = { distance, &edgeA, &edgeB, n };	//remember max of negative distances
 						}
 					}
