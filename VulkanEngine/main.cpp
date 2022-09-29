@@ -136,6 +136,10 @@ namespace std {
 		os << "(" << m[2][0] << ',' << m[2][1] << ',' << m[2][2] << ")\n";
 		return os;
 	}
+
+	std::string to_string(const glmvec3 v) {
+		return std::to_string(v.x) + ", " + std::to_string(v.y) + ", " + std::to_string(v.z);
+	}
 }
 
 
@@ -163,13 +167,6 @@ namespace ve {
 
 	class VEEventListenerPhysics : public VEEventListener {
 	public:
-
-		enum simulation_mode_t {
-			SIMULATION_MODE_REALTIME,
-			SIMULATION_MODE_DEBUG
-		}; 
-		simulation_mode_t m_mode{ SIMULATION_MODE_REALTIME };
-
 
 		struct Force {
 			glmvec3 m_positionL{0,0,0};		//position in local space
@@ -566,6 +563,12 @@ namespace ve {
 		};
 
 	public:
+		enum simulation_mode_t {
+			SIMULATION_MODE_REALTIME,
+			SIMULATION_MODE_DEBUG
+		};
+		simulation_mode_t m_mode{ SIMULATION_MODE_REALTIME };
+
 		bool			m_run = true;
 		uint64_t		m_loop{ 0L };
 		double			m_current_time{ 0.0 };			//current time
@@ -583,6 +586,15 @@ namespace ve {
 		body_map		m_global_cell{ { nullptr, std::make_shared<Body>(m_ground) } };	//cell containing the ground
 
 		std::unordered_map<voidppair_t, Contact> m_contacts;	//possible contacts resulting from broadphase
+
+		std::vector<std::string> m_debug;	//debug information
+
+		//-----------------------------------------------------------------------------------------------------
+
+		void debug(std::string s) {
+			if (m_mode != simulation_mode_t::SIMULATION_MODE_DEBUG) return;
+			m_debug.push_back( std::to_string(m_loop) + " " + s);
+		}
 
 		std::function<void(double, std::shared_ptr<Body>)> onMove = [&](double dt, std::shared_ptr<Body> body) {
 			VESceneNode* cube = static_cast<VESceneNode*>(body->m_owner);
@@ -630,9 +642,10 @@ namespace ve {
 				glmvec3 vrot{ rnd_unif(rnd_gen) * 0, rnd_unif(rnd_gen) * 0, rnd_unif(rnd_gen) * 0 };
 				VESceneNode* cube;
 				VECHECKPOINTER(cube = getSceneManagerPointer()->loadModel("The Cube" + std::to_string(++cubeid), "media/models/test/crate0", "cube.obj", 0, getRoot()));
-				Body body{ "Body" + cubeid, cube, &g_cube, scale, positionCamera + 2.0 * dir, glm::rotate(angle, glm::normalize(orient)), &onMove, vel, vrot, 1.0 / 100.0, 0.2, 1 };
+				Body body{ "Body" + std::to_string(cubeid), cube, &g_cube, scale, positionCamera + 2.0 * dir, glm::rotate(angle, glm::normalize(orient)), &onMove, vel, vrot, 1.0 / 100.0, 0.2, 1 };
 				body.m_forces.insert({ 0ul, Force{} });
 				addBody(m_body = std::make_shared<Body>(body));
+				debug(body.m_name);
 			}
 								
 			if (event.idata1 == GLFW_KEY_SPACE && event.idata3 == GLFW_PRESS) {
@@ -1012,10 +1025,13 @@ namespace ve {
 
 			for (auto& edgeA : contact.m_body_ref.m_body->m_polytope->m_edges) {	//loop over all edge-edge pairs
 				for (auto& edgeB : contact.m_body_inc.m_body->m_polytope->m_edges) {
+					debug("Ref: " + contact.m_body_ref.m_body->m_name + " Inc: " + contact.m_body_inc.m_body->m_name);
+					debug("EdgeA: " + std::to_string(edgeA.m_id) + " " + std::to_string(edgeA.m_edgeL) + " EdgeB: " + std::to_string(edgeB.m_id) + " " + std::to_string(ITORV(edgeB.m_edgeL)));
+
 					glmvec3 n = glm::cross(edgeA.m_edgeL, ITORV(edgeB.m_edgeL));	//axis n is cross product of both edges
 					real len = glm::length(n);
 					if (len > 0.0) {
-						n = n / len;
+						n = n / len;	//normalize the axis
 
 						if (glm::dot(n, edgeA.m_first_vertexL.m_positionL) < 0) 
 							n = -n;		//n must be oriented away from center of A								
@@ -1174,7 +1190,6 @@ namespace ve {
 	};
 
 
-
 	class VEEventListenerPhysicsGUI : public VEEventListener
 	{
 	protected:
@@ -1186,7 +1201,7 @@ namespace ve {
 			struct nk_context* ctx = pSubrender->getContext();
 
 			/* GUI */
-			if (nk_begin(ctx, "Physics Panel", nk_rect(50, 50, 330, 450),
+			if (nk_begin(ctx, "Physics Panel", nk_rect(50, 50, 300, 500),
 				NK_WINDOW_BORDER | NK_WINDOW_MOVABLE | NK_WINDOW_SCALABLE |
 				NK_WINDOW_MINIMIZABLE | NK_WINDOW_TITLE))
 			{
@@ -1204,13 +1219,9 @@ namespace ve {
 				nk_layout_row_dynamic(ctx, 30, 1);
 				nk_label(ctx, "Current Body", NK_TEXT_LEFT);
 
-				real vel = 0.5;
-				real m_dx = 0.0;
-				real m_dy = 0.0;
-				real m_dz = 0.0;
-				real m_da = 0.0;
-				real m_db = 0.0;
-				real m_dc = 0.0;
+				real vel = 5.0;
+				real m_dx, m_dy, m_dz, m_da, m_db, m_dc;
+				m_dx = m_dy = m_dz = m_da = m_db = m_dc = 0.0;
 
 				nk_layout_row_static(ctx, 30, 100, 2);
 				if (nk_button_label(ctx, "+X")) {m_dx = vel; }
@@ -1221,6 +1232,16 @@ namespace ve {
 				nk_layout_row_static(ctx, 30, 100, 2);
 				if (nk_button_label(ctx, "+Z")) { m_dz = vel; }
 				if (nk_button_label(ctx, "-Z")) {m_dz = -vel; }
+
+				nk_layout_row_static(ctx, 30, 100, 2);
+				if (nk_button_label(ctx, "RX")) { m_da = vel; }
+				if (nk_button_label(ctx, "-RX")) { m_da = -vel; }
+				nk_layout_row_static(ctx, 30, 100, 2);
+				if (nk_button_label(ctx, "+RY")) { m_db = vel; }
+				if (nk_button_label(ctx, "-RY")) { m_db = -vel; }
+				nk_layout_row_static(ctx, 30, 100, 2);
+				if (nk_button_label(ctx, "+RZ")) { m_dc = vel; }
+				if (nk_button_label(ctx, "-RZ")) { m_dc = -vel; }
 
 				if (m_physics->m_body) {
 					real dt = c_sim_delta_time;
@@ -1233,6 +1254,30 @@ namespace ve {
 					m_physics->m_body->updateMatrices();
 					m_dx = m_dy = m_dz = m_da = m_db = m_dc = 0.0;
 				}
+
+				static int selected_item = 0;
+				auto* sel = "";
+				if (selected_item < m_physics->m_debug.size()) {
+					sel = m_physics->m_debug[selected_item].data();
+				}
+
+				/*std::vector<const char*> arr;
+				for (auto&& str : m_physics->m_debug) arr.push_back(str.c_str());
+				if (arr.size() > 0) {
+					nk_layout_row_dynamic(ctx, 30, 1);
+					selected_item = nk_combo(ctx, arr.data(), arr.size(), selected_item, 30, nk_vec2(nk_widget_width(ctx), 35));
+				}
+				*/
+
+				nk_layout_row_dynamic(ctx, 25, 1);
+				if (nk_combo_begin_label(ctx, sel, nk_vec2(nk_widget_width(ctx), 300))) {
+					nk_layout_row_dynamic(ctx, 25, 1);
+					for (int i = 0; i < m_physics->m_debug.size(); ++i)
+						if (nk_combo_item_label(ctx, m_physics->m_debug[i].data(), NK_TEXT_LEFT))
+							selected_item = i;
+					nk_combo_end(ctx);
+				}
+
 
 				//nk_layout_row_dynamic(ctx, 25, 1);
 				//nk_property_int(ctx, "Zoom:", 0, &m_zoom, 100, 10, 1);
