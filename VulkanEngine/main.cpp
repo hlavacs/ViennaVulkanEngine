@@ -1247,9 +1247,9 @@ namespace ve {
 					real dt = c_sim_delta_time;
 					m_physics->m_body->m_positionW += dt * glmvec3{ m_dx, m_dy, m_dz };
 					m_physics->m_body->m_orientationLW = m_physics->m_body->m_orientationLW *
-						glm::rotate(glmquat{ {0,0,0} }, dt * m_da, glmvec3{ 1, 0, 0 }) *
-						glm::rotate(glmquat{ {0,0,0} }, dt * m_db, glmvec3{ 0, 1, 0 }) *
-						glm::rotate(glmquat{ {0,0,0} }, dt * m_dc, glmvec3{ 0, 0, 1 });
+						glm::rotate(glmquat{ 0,0,0,0 }, dt * m_da, glmvec3{ 1, 0, 0 }) *
+						glm::rotate(glmquat{ 0,0,0,0 }, dt * m_db, glmvec3{ 0, 1, 0 }) *
+						glm::rotate(glmquat{ 0,0,0,0 }, dt * m_dc, glmvec3{ 0, 0, 1 });
 
 					m_physics->m_body->updateMatrices();
 					m_dx = m_dy = m_dz = m_da = m_db = m_dc = 0.0;
