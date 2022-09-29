@@ -73,6 +73,7 @@ namespace geometry {
 	std::pair<glmvec3, glmvec3> closestPointsLineLine(glmvec3 p1, glmvec3 p2, glmvec3 p3, glmvec3 p4);
 	real distancePointLine(glmvec3 p, glmvec3 a, glmvec3 b);
 	real distancePointLinesegment(glmvec3 p, glmvec3 a, glmvec3 b);
+	void computeBasis(const glmvec3& a, glmvec3& b, glmvec3& c);
 }
 
 namespace clip {
@@ -468,6 +469,9 @@ namespace ve {
 			};
 		};
 
+		//
+		//Stable contacts: https://www.gdcvault.com/play/1022193/Physics-for-Game-Programmers-Robust
+		//
 		struct Contact {
 
 			struct BodyPtr {
@@ -486,7 +490,6 @@ namespace ve {
 				};
 
 				glmvec3 m_positionW{0.0};
-				glmvec3 m_normalW{0.0};
 				type_t	m_type{type_t::unknown};
 				real	m_restitution;
 				real	m_friction;
@@ -495,22 +498,32 @@ namespace ve {
 				glmmat3	m_K;		//mass matrix
 				glmmat3	m_K_inv;	//inverse mass matrix
 				real	m_vbias{ 0.0 };
-				glmvec3 m_F{ 0,0,0 };
-				real	m_f{ 0.0 };	//accumulates force impulses along normal during a loop run
-				real	m_t{ 0.0 };	//accumulates force impulses along normal during a loop run
+
+				glmvec3					m_F{ 0,0,0 };
+				real					m_f{ 0.0 };		//accumulates force impulses along normal during a loop run
+				std::array<real,2>		m_t;			//accumulates force impulses along normal during a loop run
 			};
 
 			uint64_t	m_last_loop{ std::numeric_limits<uint64_t>::max() }; //number of last loop this contact was valid
 			BodyPtr		m_body_ref;	//reference body, we will use its local space mostly
 			BodyPtr		m_body_inc; //incident body, we will transfer its points/vectors to the ref space
 			glmvec3		m_separating_axisW{0.0};			//Axis that separates the two bodies in world space
+
+			glmvec3					m_normalW{ 0.0 };
+			std::array<glmvec3, 2>	m_tangentW;
+
 			std::vector<ContactPoint> m_contact_points{};	//Contact points in contact manifold in world space
 			uint32_t	m_contributing_contacts{ 0 };		//number of resting or colliding contacts
 			bool		m_all_resting{true};				//true if all contact points are resting
 			real		m_dampen_coeff{ 0.99 };				//coefficient for dampening unwanted rotation for face/face contact
 
+
 			void addContactPoint(glmvec3 positionW, glmvec3 normalW, real penetration) {
-				if (m_contact_points.size() == 0) m_all_resting = true;
+				if (m_contact_points.size() == 0) {
+					m_normalW = normalW;
+					geometry::computeBasis(normalW, m_tangentW[0], m_tangentW[1]);
+					m_all_resting = true;
+				}
 				auto r0 = positionW - m_body_ref.m_body->m_positionW;
 				auto r1 = positionW - m_body_inc.m_body->m_positionW;
 				auto vrel = m_body_inc.m_body->totalVelocityW(positionW) - m_body_ref.m_body->totalVelocityW(positionW);
@@ -548,14 +561,12 @@ namespace ve {
 				auto K_inv = glm::inverse(K);
 
 				real vbias = (penetration < 0.0) ? c_bias * 60 * std::max(0.0, -penetration - c_slop) : 0.0;
-				m_contact_points.emplace_back(positionW, normalW, type, restitution, friction, r0, r1, K, K_inv, vbias);
+				m_contact_points.emplace_back(positionW, type, restitution, friction, r0, r1, K, K_inv, vbias);
 			}
 		};
 
 	public:
-		bool			m_debug = false;
 		bool			m_run = true;
-
 		uint64_t		m_loop{ 0L };
 		double			m_current_time{ 0.0 };			//current time
 		double			m_last_time{ 0.0 };				//last time the sim was interpolated
@@ -594,7 +605,6 @@ namespace ve {
 		void moveBodyInGrid(std::shared_ptr<Body> pbody) {
 			int_t x = static_cast<int_t>(pbody->m_positionW.x / c_width);
 			int_t z = static_cast<int_t>(pbody->m_positionW.z / c_width);
-			//if(m_debug) std::cout << x << " " << z << "\n";
 			if (x != pbody->m_grid_x || z != pbody->m_grid_z) {
 				m_grid[intpair_t{ pbody->m_grid_x, pbody->m_grid_z }].erase(pbody->m_owner);
 				pbody->m_grid_x = x;
@@ -609,11 +619,6 @@ namespace ve {
 		bool onKeyboard(veEvent event) {
 			static int64_t cubeid = 0;
 
-			if (event.idata1 == GLFW_KEY_Z && event.idata3 == GLFW_PRESS) {
-				m_debug = true;
-				return true;
-			}
-
 			if (event.idata1 == GLFW_KEY_B && event.idata3 == GLFW_PRESS) {
 				glmvec3 positionCamera{ getSceneManagerPointer()->getSceneNode("StandardCameraParent")->getWorldTransform()[3] };
 
@@ -625,7 +630,7 @@ namespace ve {
 				glmvec3 vrot{ rnd_unif(rnd_gen) * 0, rnd_unif(rnd_gen) * 0, rnd_unif(rnd_gen) * 0 };
 				VESceneNode* cube;
 				VECHECKPOINTER(cube = getSceneManagerPointer()->loadModel("The Cube" + std::to_string(++cubeid), "media/models/test/crate0", "cube.obj", 0, getRoot()));
-				Body body{ "", cube, &g_cube, scale, positionCamera + 2.0 * dir, glm::rotate(angle, glm::normalize(orient)), &onMove, vel, vrot, 1.0 / 100.0, 0.2, 1 };
+				Body body{ "Body" + cubeid, cube, &g_cube, scale, positionCamera + 2.0 * dir, glm::rotate(angle, glm::normalize(orient)), &onMove, vel, vrot, 1.0 / 100.0, 0.2, 1 };
 				body.m_forces.insert({ 0ul, Force{} });
 				addBody(m_body = std::make_shared<Body>(body));
 			}
@@ -686,7 +691,6 @@ namespace ve {
 				m_next_slot += c_sim_delta_time;
 			}
 			if (m_loop > last_loop) {
-				m_debug = false;
 				for (auto& c : m_bodies) {	//predict pos/vel at slot + delta, this is only a prediction for rendering, not stored anywhere
 					moveBodyInGrid(c.second);
 				}
@@ -717,7 +721,6 @@ namespace ve {
 					}
 				}
 			}
-			//if(m_debug) std::cout << m_contacts.size() << "\n";
 		}
 
 		/// <summary>
@@ -778,7 +781,6 @@ namespace ve {
 					contact.addContactPoint(vW, glmvec3{ 0,1,0 }, vW.y);
 				}
 			}
-			// if(m_debug) std::cout << std::endl;
 			if (min_depth < 0.0) { 
 				contact.m_body_inc.m_body->m_vbias += glmvec3{ 0, -min_depth * 60.0, 0 };
 			}
@@ -804,26 +806,26 @@ namespace ve {
 					auto vref = contact.m_body_ref.m_body->totalVelocityW(cp.m_positionW);
 					auto vinc = contact.m_body_inc.m_body->totalVelocityW(cp.m_positionW);
 					auto vrel = vinc - vref;
-					auto dN = glm::dot(vrel, cp.m_normalW);
-					auto vT = vrel - dN * cp.m_normalW;
+					auto dN = glm::dot(vrel, contact.m_normalW);
+					auto vT = vrel - dN * contact.m_normalW;
 					auto dT = glm::length(vT);
 					glmvec3 F{ 0,0,0 }, Fn{ 0,0,0 }, Ft{ 0,0,0 }, T{ 0,0,0 };
-					real f{ 0.0 }, t{ 0.0 };
+					real f{ 0.0 }, t0{ 0.0 }, t1{ 0.0 };
 
 					int solver = 0;
 
 					if (solver == 0) {
-						F = cp.m_K_inv * (-cp.m_restitution * dN * cp.m_normalW - vrel); // / (real)contact.m_contact_points.size();
-						f = glm::dot(F, cp.m_normalW);
-						Fn = f * cp.m_normalW;
+						F = cp.m_K_inv * (-cp.m_restitution * dN * contact.m_normalW - vrel); // / (real)contact.m_contact_points.size();
+						f = glm::dot(F, contact.m_normalW);
+						Fn = f * contact.m_normalW;
 						Ft = F - Fn;
-						t = glm::length(Ft);
+						t0 = glm::length(Ft);
 
-						if (t != 0.0) {
-							T = -Ft / t;
-							if (fabs(t) > fabs(cp.m_friction * f)) {	//dynamic friction?
-								f = -(1 + cp.m_restitution) * dN / glm::dot(cp.m_normalW, cp.m_K * (cp.m_normalW - cp.m_friction * T));
-								t = f * cp.m_friction;
+						if (t0 != 0.0) {
+							T = -Ft / t0;
+							if (fabs(t0) > fabs(cp.m_friction * f)) {	//dynamic friction?
+								f = -(1 + cp.m_restitution) * dN / glm::dot(contact.m_normalW, cp.m_K * (contact.m_normalW - cp.m_friction * T));
+								t0 = f * cp.m_friction;
 							}
 						}
 					}
@@ -834,26 +836,26 @@ namespace ve {
 
 						glmmat3 K = -mc1 * contact.m_body_inc.m_body->m_inertia_invW * mc1 - mc0 * contact.m_body_ref.m_body->m_inertia_invW * mc0;
 
-						auto dV = -cp.m_restitution * dN * cp.m_normalW - vrel;
-						auto kn = contact.m_body_ref.m_body->m_mass_inv + contact.m_body_inc.m_body->m_mass_inv + glm::dot(K * cp.m_normalW, cp.m_normalW);
-						f = (glm::dot(dV, cp.m_normalW) + cp.m_vbias) / kn;
+						auto dV = -cp.m_restitution * dN * contact.m_normalW - vrel;
+						auto kn = contact.m_body_ref.m_body->m_mass_inv + contact.m_body_inc.m_body->m_mass_inv + glm::dot(K * contact.m_normalW, contact.m_normalW);
+						f = (glm::dot(dV, contact.m_normalW) + cp.m_vbias) / kn;
 
 						if (dT != 0.0) T = vT / dT;
 						auto kt = contact.m_body_ref.m_body->m_mass_inv + contact.m_body_inc.m_body->m_mass_inv + glm::dot(K * T, T);
-						t = -glm::dot(dV, T) / kt;
+						t0 = -glm::dot(dV, T) / kt;
 					}
 
 					auto tmp = cp.m_f;
 					cp.m_f = std::max(tmp + f, 0.0);
 					f = cp.m_f - tmp;
 
-					tmp = cp.m_t;
-					cp.m_t = std::min( std::max(-cp.m_f*cp.m_friction, tmp + t), cp.m_f * cp.m_friction);
-					t = cp.m_t - tmp;
+					tmp = cp.m_t[0];
+					cp.m_t[0] = std::min(std::max(-cp.m_f * cp.m_friction, tmp + t0), cp.m_f * cp.m_friction);
+					t0 = cp.m_t[0] - tmp;
 
-					F = f * cp.m_normalW - t * T;
+					F = f * contact.m_normalW - t0 * T;
 
-					cp.m_F = F;
+					//cp.m_F = F;
 
 					contact.m_body_ref.m_body->m_linear_velocityW  += -F * contact.m_body_ref.m_body->m_mass_inv;
 					contact.m_body_ref.m_body->m_angular_velocityW +=      contact.m_body_ref.m_body->m_inertia_invW * glm::cross(cp.m_r0, -F);
@@ -888,7 +890,6 @@ namespace ve {
 				elapsed = std::chrono::high_resolution_clock::now() - start;
 			} while (num > 0 && std::chrono::duration_cast<std::chrono::microseconds>(elapsed).count() < 1, 000, 000.0 * max_time);
 
-			//if(m_debug) std::cout << std::endl;
 		}
 
 		void applyImpulsesToContact( Contact &contact ) {
@@ -901,7 +902,6 @@ namespace ve {
 					ori0 +=      contact.m_body_ref.m_body->m_inertia_invW * glm::cross(cp.m_r0, -F);
 					lin1 +=  F * contact.m_body_inc.m_body->m_mass_inv;
 					ori1 +=      contact.m_body_inc.m_body->m_inertia_invW * glm::cross(cp.m_r1, F);
-					n = cp.m_normalW;
 				}
 				cp.m_F = glmvec3{ 0,0,0 };
 			}
@@ -911,7 +911,7 @@ namespace ve {
 			contact.m_body_inc.m_body->m_linear_velocityW += lin1;
 			contact.m_body_inc.m_body->m_angular_velocityW += ori1;
 
-			dampen(contact, n);
+			dampen(contact, contact.m_normalW);
 		}
 
 		void applyImpulses() {
@@ -939,9 +939,10 @@ namespace ve {
 		/// Perform SAT test for two bodies. If they overlap then compute the contact manifold.
 		/// </summary>
 		/// <param name="contact">The contact between the two bodies.</param>
+		/// https://www.gdcvault.com/play/1022193/Physics-for-Game-Programmers-Robust
+		/// http://media.steampowered.com/apps/valve/2015/DirkGregorius_Contacts.pdf
+		/// 
 		void SAT(Contact& contact) {
-			//if(m_debug) std::cout << contact.m_body_ref.m_body->m_owner << " " << contact.m_body_inc.m_body->m_owner << "\n";
-
 			contact.m_body_ref.m_to_other = contact.m_body_inc.m_body->m_model_inv * contact.m_body_ref.m_body->m_model; //transform to bring space A to space B
 			contact.m_body_ref.m_to_other_it = glm::transpose(glm::inverse(glmmat3{ contact.m_body_ref.m_to_other }));	//transform for a normal vector
 			contact.m_body_inc.m_to_other = contact.m_body_ref.m_body->m_model_inv * contact.m_body_inc.m_body->m_model; //transform to bring space B to space A
@@ -957,8 +958,7 @@ namespace ve {
 			EdgeQuery eq = queryEdgeDirections(contact);
 			if (eq.m_separation > 0) return;	//found a separating axis with edge-edge normal
 
-			//m_run = false;
-			if (fq0.m_separation >= eq.m_separation || fq1.m_separation >= eq.m_separation) {	//max separation is a face-vertex contact
+			if (fq0.m_separation >= eq.m_separation * 1.001 || fq1.m_separation >= eq.m_separation * 1.001) {	//max separation is a face-vertex contact
 				if (fq0.m_separation >= fq1.m_separation) { 
 					createFaceContact(contact, fq0);
 				}
@@ -970,11 +970,6 @@ namespace ve {
 			else {
 				createEdgeContact(contact, eq);	//max separation is an edge-edge contact
 			}
-
-			//for (auto& cp : contact.m_contact_points) {
-			//	std::cout << "Pos= " << cp.m_positionW << " n=" << cp.m_normalW << "\n";
-			//}
-			//std::cout << "\n";
 		}
 
 		/// <summary>
@@ -994,16 +989,11 @@ namespace ve {
 				glmvec3 pos = ITORP(vertB->m_positionL);
 				glmvec3 diff = pos - face.m_face_vertex_ptrs[0]->m_positionL;
 				real distance = glm::dot(face.m_normalL, diff);
-				//if(m_debug) std::cout << distance << " " << n << " " << diff << "\n";
-
-				//real distance = glm::dot(face.m_normalL, ITORP(vertB->m_positionL) - face.m_face_vertex_ptrs[0]->m_positionL);
-				//if(m_debug) std::cout << distance << "\n";
 				if (distance > 0) 
 					return { distance, &face, vertB }; //no overlap - distance is positive
 				if (distance > result.m_separation) 
 					result = { distance, &face, vertB };
 			} 
-			//std::cout << "Distance= " << result.m_separation << " Face Normal= "<< result.m_face_ref->m_normalL << "\n";
 			return result; //overlap - distance is negative
 		}
 
@@ -1027,7 +1017,8 @@ namespace ve {
 					if (len > 0.0) {
 						n = n / len;
 
-						if (glm::dot(n, edgeA.m_first_vertexL.m_positionL) < 0) n = -n;		//n must be oriented away from center of A								
+						if (glm::dot(n, edgeA.m_first_vertexL.m_positionL) < 0) 
+							n = -n;		//n must be oriented away from center of A								
 						Vertex* vertA = contact.m_body_inc.m_body->support(n);				//support of A in normal direction
 						Vertex* vertB = contact.m_body_inc.m_body->support(-RTOIN(n));		//support of B in negative normal direction
 						real distance = glm::dot(n, ITORP(vertB->m_positionL) - vertA->m_positionL);//overlap distance along n
@@ -1164,7 +1155,6 @@ namespace ve {
 					auto mid = (P1 + P2) / 2.0;
 					auto dist = glm::length(P2-P1);
 					contact.addContactPoint(mid, RTOWN(eq.m_normalL), -dist);
-					//m_debug = true;
 				} 
 			}
 			if (eq.m_separation < 0) {
@@ -1357,7 +1347,23 @@ namespace geometry {
 		return glm::clamp(distancePointLine(p,a,b), glm::length(p-a), glm::length(p - b));
 	}
 
+	//https://box2d.org/posts/2014/02/computing-a-basis/
+	void computeBasis(const glmvec3& a, glmvec3& b, glmvec3& c)
+	{
+		// Suppose vector a has all equal components and is a unit vector:
+		// a = (s, s, s)
+		// Then 3*s*s = 1, s = sqrt(1/3) = 0.57735. This means that at
+		// least one component of a unit vector must be greater or equal
+		// to 0.57735.
 
+		if (fabs(a.x) >= 0.57735)
+			b = glmvec3(a.y, -a.x, 0.0);
+		else
+			b = glmvec3(0.0, a.z, -a.y);
+
+		b = glm::normalize(b);
+		c = glm::cross(a, b);
+	}
 }
 
 
