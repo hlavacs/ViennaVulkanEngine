@@ -160,6 +160,10 @@ namespace std {
 
 #define RTTOWP(X) glmvec3{contact.m_body_ref.m_body->m_model * face_ref->m_TtoL * glmvec4{(X), 1.0}}
 
+#define RNAME contact.m_body_ref.m_body->m_name
+#define INAME contact.m_body_inc.m_body->m_name
+
+
 
 namespace ve {
 
@@ -588,13 +592,13 @@ namespace ve {
 
 		std::unordered_map<voidppair_t, Contact> m_contacts;	//possible contacts resulting from broadphase
 
-		std::vector<std::string> m_debug;	//debug information
+		std::unordered_map<std::string, std::vector<std::string>> m_debug;	//debug information
 
 		//-----------------------------------------------------------------------------------------------------
 
-		void debug(std::string s) {
+		void debug(std::string key, std::string value) {
 			if (m_mode != simulation_mode_t::SIMULATION_MODE_DEBUG) return;
-			m_debug.push_back( std::to_string(m_loop) + " " + s);
+			m_debug[key].emplace_back(value);
 		}
 
 		std::function<void(double, std::shared_ptr<Body>)> onMove = [&](double dt, std::shared_ptr<Body> body) {
@@ -646,7 +650,6 @@ namespace ve {
 				Body body{ "Body" + std::to_string(cubeid), cube, &g_cube, scale, positionCamera + 2.0 * dir, glm::rotate(angle, glm::normalize(orient)), &onMove, vel, vrot, 1.0 / 100.0, 0.2, 1 };
 				body.m_forces.insert({ 0ul, Force{} });
 				addBody(m_body = std::make_shared<Body>(body));
-				debug(body.m_name);
 			}
 								
 			if (event.idata1 == GLFW_KEY_SPACE && event.idata3 == GLFW_PRESS) {
@@ -885,12 +888,6 @@ namespace ve {
 		}
 
 		void calculateImpulses( Contact::ContactPoint::type_t contact_type = Contact::ContactPoint::type_t::colliding, uint64_t loops = 20, double max_time = 1.0 / 60.0) {
-			//if (contact_type == Contact::ContactPoint::type_t::any) {
-			//	calculateImpulses(Contact::ContactPoint::type_t::colliding, 1, max_time / 2.0);
-			//	calculateImpulses(Contact::ContactPoint::type_t::resting, loops, max_time);
-			//	return;
-			//}
-
 			uint64_t num = loops;
 			auto start = std::chrono::high_resolution_clock::now();
 			auto elapsed = std::chrono::high_resolution_clock::now() - start;
@@ -903,7 +900,6 @@ namespace ve {
 				num = num + res - 1;
 				elapsed = std::chrono::high_resolution_clock::now() - start;
 			} while (num > 0 && std::chrono::duration_cast<std::chrono::microseconds>(elapsed).count() < 1, 000, 000.0 * max_time);
-
 		}
 
 
@@ -999,8 +995,8 @@ namespace ve {
 
 			for (auto& edgeA : contact.m_body_ref.m_body->m_polytope->m_edges) {	//loop over all edge-edge pairs
 				for (auto& edgeB : contact.m_body_inc.m_body->m_polytope->m_edges) {
-					//debug("Ref: " + contact.m_body_ref.m_body->m_name + " Inc: " + contact.m_body_inc.m_body->m_name);
-					//debug("EdgeA: " + std::to_string(edgeA.m_id) + " " + std::to_string(edgeA.m_edgeL) + " EdgeB: " + std::to_string(edgeB.m_id) + " " + std::to_string(ITORV(edgeB.m_edgeL)));
+					debug(RNAME, "Ref: " + contact.m_body_ref.m_body->m_name + " Inc: " + contact.m_body_inc.m_body->m_name);
+					debug(RNAME, "EdgeA: " + std::to_string(edgeA.m_id) + " " + std::to_string(edgeA.m_edgeL) + " EdgeB: " + std::to_string(edgeB.m_id) + " " + std::to_string(ITORV(edgeB.m_edgeL)));
 
 					auto edgeb_L = ITORV(edgeB.m_edgeL);
 					glmvec3 n = glm::cross(edgeA.m_edgeL, ITORV(edgeB.m_edgeL));	//axis n is cross product of both edges
@@ -1192,6 +1188,20 @@ namespace ve {
 				nk_layout_row_dynamic(ctx, 30, 1);
 				nk_label(ctx, "Current Body", NK_TEXT_LEFT);
 
+				auto* sel = "";
+				if(m_physics->m_body.get() ) sel = m_physics->m_body->m_name.c_str();
+				nk_layout_row_dynamic(ctx, 25, 1);
+				if (nk_combo_begin_label(ctx, sel, nk_vec2(nk_widget_width(ctx), 300))) {
+					nk_layout_row_dynamic(ctx, 25, 1);
+					for (auto& body : m_physics->m_bodies) {
+						if (nk_combo_item_label(ctx, body.second->m_name.c_str(), NK_TEXT_LEFT)) {
+							sel = body.second->m_name.c_str();
+							m_physics->m_body = body.second;
+						}
+					}
+					nk_combo_end(ctx);
+				}
+
 				real vel = 5.0;
 				real m_dx, m_dy, m_dz, m_da, m_db, m_dc;
 				m_dx = m_dy = m_dz = m_da = m_db = m_dc = 0.0;
@@ -1228,32 +1238,14 @@ namespace ve {
 					m_dx = m_dy = m_dz = m_da = m_db = m_dc = 0.0;
 				}
 
-				static int selected_item = 0;
-				auto* sel = "";
-				if (selected_item < m_physics->m_debug.size()) {
-					sel = m_physics->m_debug[selected_item].data();
-				}
-
-				/*std::vector<const char*> arr;
-				for (auto&& str : m_physics->m_debug) arr.push_back(str.c_str());
-				if (arr.size() > 0) {
-					nk_layout_row_dynamic(ctx, 30, 1);
-					selected_item = nk_combo(ctx, arr.data(), arr.size(), selected_item, 30, nk_vec2(nk_widget_width(ctx), 35));
-				}
-				*/
-
-				nk_layout_row_dynamic(ctx, 25, 1);
-				if (nk_combo_begin_label(ctx, sel, nk_vec2(nk_widget_width(ctx), 300))) {
+				struct nk_list_view view;
+				nk_layout_row_dynamic(ctx, 400, 1);
+				if (nk_list_view_begin(ctx, &view, "Debug Info", NK_WINDOW_BORDER, 25, 300)) {
 					nk_layout_row_dynamic(ctx, 25, 1);
-					for (int i = 0; i < m_physics->m_debug.size(); ++i)
-						if (nk_combo_item_label(ctx, m_physics->m_debug[i].data(), NK_TEXT_LEFT))
-							selected_item = i;
-					nk_combo_end(ctx);
+					for (auto& str : m_physics->m_debug[sel])
+						nk_label(ctx, str.c_str(), NK_TEXT_LEFT);
+					nk_list_view_end(&view);
 				}
-
-
-				//nk_layout_row_dynamic(ctx, 25, 1);
-				//nk_property_int(ctx, "Zoom:", 0, &m_zoom, 100, 10, 1);
 
 			}
 			nk_end(ctx);
