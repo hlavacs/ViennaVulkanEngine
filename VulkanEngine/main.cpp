@@ -1185,6 +1185,12 @@ namespace ve {
 				if (nk_option_label(ctx, "Debug", m_physics->m_mode == VEEventListenerPhysics::simulation_mode_t::SIMULATION_MODE_DEBUG))
 					m_physics->m_mode = VEEventListenerPhysics::simulation_mode_t::SIMULATION_MODE_DEBUG;
 
+				nk_layout_row_dynamic(ctx, 30, 2);
+				nk_label(ctx, "Time (s)", NK_TEXT_LEFT);
+				std::stringstream str;
+				str << std::setprecision(8) << m_physics->m_current_time;
+				nk_label(ctx, str.str().c_str(), NK_TEXT_LEFT);
+
 				nk_layout_row_dynamic(ctx, 30, 1);
 				nk_label(ctx, "Current Body", NK_TEXT_LEFT);
 
@@ -1201,6 +1207,25 @@ namespace ve {
 					}
 					nk_combo_end(ctx);
 				}
+
+				nk_layout_row_begin(ctx, NK_STATIC, 30, 2);
+				nk_layout_row_push(ctx, 60);
+				nk_label(ctx, "Lin Vel", NK_TEXT_LEFT);
+				std::stringstream str1;
+				if(m_physics->m_body) str1 << std::setprecision(5) << m_physics->m_body->m_linear_velocityW;
+				nk_layout_row_push(ctx, 250);
+				nk_label(ctx, str1.str().c_str(), NK_TEXT_LEFT);
+				nk_layout_row_end(ctx);
+
+				nk_layout_row_begin(ctx, NK_STATIC, 30, 2);
+				nk_layout_row_push(ctx, 60);
+				nk_label(ctx, "Ang Vel", NK_TEXT_LEFT);
+				std::stringstream str2;
+				if (m_physics->m_body) str2 << std::setprecision(5) << m_physics->m_body->m_angular_velocityW;
+				nk_layout_row_push(ctx, 250);
+				nk_label(ctx, str2.str().c_str(), NK_TEXT_LEFT);
+				nk_layout_row_end(ctx);
+
 
 				real vel = 5.0;
 				real m_dx, m_dy, m_dz, m_da, m_db, m_dc;
@@ -1237,13 +1262,42 @@ namespace ve {
 					m_physics->m_body->updateMatrices();
 					m_dx = m_dy = m_dz = m_da = m_db = m_dc = 0.0;
 				}
+			}
+			nk_end(ctx);
 
+			//--------------------------------------------------------------------------------------
+			if (nk_begin(ctx, "Debug Panel", nk_rect(500, 50, 300, 500),
+				NK_WINDOW_BORDER | NK_WINDOW_MOVABLE | NK_WINDOW_SCALABLE |
+				NK_WINDOW_MINIMIZABLE | NK_WINDOW_TITLE))
+			{
+				nk_layout_row_dynamic(ctx, 25, 1);
+				if (nk_button_label(ctx, "Clear")) { m_physics->m_debug.clear(); }
+
+				auto* sel = "";
+				if (m_physics->m_body.get()) sel = m_physics->m_body->m_name.c_str();
+				nk_layout_row_dynamic(ctx, 25, 1);
+				if (nk_combo_begin_label(ctx, sel, nk_vec2(nk_widget_width(ctx), 300))) {
+					nk_layout_row_dynamic(ctx, 25, 1);
+					for (auto& deb : m_physics->m_debug) {
+						if (nk_combo_item_label(ctx, deb.first.c_str(), NK_TEXT_LEFT)) {
+							sel = deb.first.c_str();
+						}
+					}
+					nk_combo_end(ctx);
+				}
+
+				size_t i = 0;
+				auto size = m_physics->m_debug[sel].size();
+				std::vector<const char*> list;
+				for (auto& s : m_physics->m_debug[sel]) { list.push_back(s.c_str()); }
 				struct nk_list_view view;
 				nk_layout_row_dynamic(ctx, 400, 1);
-				if (nk_list_view_begin(ctx, &view, "Debug Info", NK_WINDOW_BORDER, 25, 300)) {
+				if (nk_list_view_begin(ctx, &view, "Debug Info", NK_WINDOW_BORDER, 25, size)) {
 					nk_layout_row_dynamic(ctx, 25, 1);
-					for (auto& str : m_physics->m_debug[sel])
-						nk_label(ctx, str.c_str(), NK_TEXT_LEFT);
+					int num = std::clamp(size - view.begin, (size_t)0, (size_t)view.count);
+					for (int i = 0; i < num; ++i) {
+						nk_label(ctx, list[view.begin + i], NK_TEXT_LEFT);
+					}
 					nk_list_view_end(&view);
 				}
 
