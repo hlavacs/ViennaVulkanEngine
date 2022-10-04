@@ -6,12 +6,14 @@
 */
 
 #include <algorithm>
+#include <vector>
 #include <cstdio>
 #include <iterator>
 #include <ranges>
 #include <string>
-#include<iostream>
+#include <iostream>
 #include <cmath>
+#include <cstdlib>
 
 #include "VEInclude.h"
 
@@ -131,6 +133,12 @@ namespace std {
 		os << "(" << v.x << ',' << v.y << ',' << v.z << ")";
 		return os;
 	}
+
+	ostream& operator<<(ostream& os, const glmquat& q) {
+		os << "(" << q.x << ',' << q.y << ',' << q.z << ',' << q.w << ")";
+		return os;
+	}
+
 	ostream& operator<<(ostream& os, const glmmat3& m) {
 		os << "(" << m[0][0] << ',' << m[0][1] << ',' << m[0][2] << ")\n";
 		os << "(" << m[1][0] << ',' << m[1][1] << ',' << m[1][2] << ")\n";
@@ -592,13 +600,25 @@ namespace ve {
 
 		std::unordered_map<voidppair_t, Contact> m_contacts;	//possible contacts resulting from broadphase
 
-		std::unordered_map<std::string, std::vector<std::string>> m_debug;	//debug information
+		std::unordered_map<std::string, std::vector<std::string>> m_debug_string;	//debug information
+		std::unordered_map<std::string, std::vector<std::pair<uint64_t, real>>> m_debug_real;	//debug information
 
 		//-----------------------------------------------------------------------------------------------------
 
 		void debug(std::string key, std::string value) {
 			if (m_mode != simulation_mode_t::SIMULATION_MODE_DEBUG) return;
-			m_debug[key].emplace_back(value);
+			m_debug_string[key].emplace_back(value);
+		}
+
+		void debug_real(const std::string& key, uint64_t x, real value) {
+			if (m_mode != simulation_mode_t::SIMULATION_MODE_DEBUG) return;
+			m_debug_real[key].emplace_back( x, value );
+		}
+
+		void debug_real(const std::string& key1, const std::string& key2, const std::string& rest, uint64_t x, real value) {
+			if (m_mode != simulation_mode_t::SIMULATION_MODE_DEBUG) return;
+			if( key1 < key2 ) m_debug_real[key1 + key2 + rest].emplace_back(x, value);
+			else m_debug_real[key2 + key1 + rest].emplace_back( x, value );
 		}
 
 		std::function<void(double, std::shared_ptr<Body>)> onMove = [&](double dt, std::shared_ptr<Body> body) {
@@ -818,7 +838,9 @@ namespace ve {
 
 		uint64_t calculateContactPointImpules(Contact &contact, Contact::ContactPoint::type_t contact_type) {
 			uint64_t res = 0;
+			int i = -1;
 			for (auto& cp : contact.m_contact_points) {
+				++i;
 				if (Contact::ContactPoint::type_t::any == contact_type || cp.m_type == contact_type) {
 					auto vref = contact.m_body_ref.m_body->totalVelocityW(cp.m_positionW);
 					auto vinc = contact.m_body_inc.m_body->totalVelocityW(cp.m_positionW);
@@ -863,6 +885,8 @@ namespace ve {
 							glm::dot(K * contact.m_tangentW[1], contact.m_tangentW[1]);
 						t1 = -glm::dot(dV, contact.m_tangentW[1]) / kt1;
 					}
+
+					debug_real(contact.m_body_ref.m_body->m_name, contact.m_body_inc.m_body->m_name, "/" + std::to_string(i), 0, f);
 
 					auto tmp = cp.m_f;
 					cp.m_f = std::max(tmp + f, 0.0);
@@ -1185,11 +1209,14 @@ namespace ve {
 				if (nk_option_label(ctx, "Debug", m_physics->m_mode == VEEventListenerPhysics::simulation_mode_t::SIMULATION_MODE_DEBUG))
 					m_physics->m_mode = VEEventListenerPhysics::simulation_mode_t::SIMULATION_MODE_DEBUG;
 
-				nk_layout_row_dynamic(ctx, 30, 2);
+				nk_layout_row_begin(ctx, NK_STATIC, 30, 2);
+				nk_layout_row_push(ctx, 60);
 				nk_label(ctx, "Time (s)", NK_TEXT_LEFT);
 				std::stringstream str;
-				str << std::setprecision(8) << m_physics->m_current_time;
+				str << std::setprecision(5) << m_physics->m_current_time;
+				nk_layout_row_push(ctx, 60);
 				nk_label(ctx, str.str().c_str(), NK_TEXT_LEFT);
+				nk_layout_row_end(ctx);
 
 				nk_layout_row_dynamic(ctx, 30, 1);
 				nk_label(ctx, "Current Body", NK_TEXT_LEFT);
@@ -1210,20 +1237,38 @@ namespace ve {
 
 				nk_layout_row_begin(ctx, NK_STATIC, 30, 2);
 				nk_layout_row_push(ctx, 60);
-				nk_label(ctx, "Lin Vel", NK_TEXT_LEFT);
-				std::stringstream str1;
-				if(m_physics->m_body) str1 << std::setprecision(5) << m_physics->m_body->m_linear_velocityW;
+				nk_label(ctx, "Pos", NK_TEXT_LEFT);
+				str.str("");
+				if (m_physics->m_body) str << std::setprecision(5) << m_physics->m_body->m_positionW;
 				nk_layout_row_push(ctx, 250);
-				nk_label(ctx, str1.str().c_str(), NK_TEXT_LEFT);
+				nk_label(ctx, str.str().c_str(), NK_TEXT_LEFT);
+				nk_layout_row_end(ctx);
+
+				nk_layout_row_begin(ctx, NK_STATIC, 30, 2);
+				nk_layout_row_push(ctx, 60);
+				nk_label(ctx, "Orient", NK_TEXT_LEFT);
+				str.str("");
+				if (m_physics->m_body) str << std::setprecision(5) << m_physics->m_body->m_orientationLW;
+				nk_layout_row_push(ctx, 350);
+				nk_label(ctx, str.str().c_str(), NK_TEXT_LEFT);
+				nk_layout_row_end(ctx);
+
+				nk_layout_row_begin(ctx, NK_STATIC, 30, 2);
+				nk_layout_row_push(ctx, 60);
+				nk_label(ctx, "Lin Vel", NK_TEXT_LEFT);
+				str.str("");
+				if(m_physics->m_body) str << std::setprecision(5) << m_physics->m_body->m_linear_velocityW;
+				nk_layout_row_push(ctx, 250);
+				nk_label(ctx, str.str().c_str(), NK_TEXT_LEFT);
 				nk_layout_row_end(ctx);
 
 				nk_layout_row_begin(ctx, NK_STATIC, 30, 2);
 				nk_layout_row_push(ctx, 60);
 				nk_label(ctx, "Ang Vel", NK_TEXT_LEFT);
-				std::stringstream str2;
-				if (m_physics->m_body) str2 << std::setprecision(5) << m_physics->m_body->m_angular_velocityW;
+				str.str("");
+				if (m_physics->m_body) str << std::setprecision(5) << m_physics->m_body->m_angular_velocityW;
 				nk_layout_row_push(ctx, 250);
-				nk_label(ctx, str2.str().c_str(), NK_TEXT_LEFT);
+				nk_label(ctx, str.str().c_str(), NK_TEXT_LEFT);
 				nk_layout_row_end(ctx);
 
 
@@ -1266,30 +1311,34 @@ namespace ve {
 			nk_end(ctx);
 
 			//--------------------------------------------------------------------------------------
-			if (nk_begin(ctx, "Debug Panel", nk_rect(500, 50, 300, 500),
+
+			/*if (nk_begin(ctx, "Debug String", nk_rect(500, 50, 300, 500),
 				NK_WINDOW_BORDER | NK_WINDOW_MOVABLE | NK_WINDOW_SCALABLE |
 				NK_WINDOW_MINIMIZABLE | NK_WINDOW_TITLE))
 			{
-				nk_layout_row_dynamic(ctx, 25, 1);
-				if (nk_button_label(ctx, "Clear")) { m_physics->m_debug.clear(); }
+				static auto* sel_debug_string = "";
 
-				auto* sel = "";
-				if (m_physics->m_body.get()) sel = m_physics->m_body->m_name.c_str();
 				nk_layout_row_dynamic(ctx, 25, 1);
-				if (nk_combo_begin_label(ctx, sel, nk_vec2(nk_widget_width(ctx), 300))) {
+				if (nk_button_label(ctx, "Clear")) { 
+					m_physics->m_debug_string.clear(); 
+					sel_debug_string = "";
+				}
+
+				nk_layout_row_dynamic(ctx, 25, 1);
+				if (nk_combo_begin_label(ctx, sel_debug_string, nk_vec2(nk_widget_width(ctx), 300))) {
 					nk_layout_row_dynamic(ctx, 25, 1);
-					for (auto& deb : m_physics->m_debug) {
+					for (auto& deb : m_physics->m_debug_string) {
 						if (nk_combo_item_label(ctx, deb.first.c_str(), NK_TEXT_LEFT)) {
-							sel = deb.first.c_str();
+							sel_debug_string = deb.first.c_str();
 						}
 					}
 					nk_combo_end(ctx);
 				}
 
 				size_t i = 0;
-				auto size = m_physics->m_debug[sel].size();
+				auto size = m_physics->m_debug_string[sel_debug_string].size();
 				std::vector<const char*> list;
-				for (auto& s : m_physics->m_debug[sel]) { list.push_back(s.c_str()); }
+				for (auto& s : m_physics->m_debug_string[sel_debug_string]) { list.push_back(s.c_str()); }
 				struct nk_list_view view;
 				nk_layout_row_dynamic(ctx, 400, 1);
 				if (nk_list_view_begin(ctx, &view, "Debug Info", NK_WINDOW_BORDER, 25, size)) {
@@ -1300,7 +1349,96 @@ namespace ve {
 					}
 					nk_list_view_end(&view);
 				}
+			}
+			nk_end(ctx);
+			*/
 
+			//--------------------------------------------------------------------------------------
+
+
+			if (nk_begin(ctx, "Debug Real", nk_rect(500, 50, 300, 300),
+				NK_WINDOW_BORDER | NK_WINDOW_MOVABLE | NK_WINDOW_SCALABLE |
+				NK_WINDOW_MINIMIZABLE | NK_WINDOW_TITLE))
+			{
+				static auto* sel_debug_real = "";
+				static std::vector<std::string> values;
+
+				//clear the selection
+				nk_layout_row_dynamic(ctx, 25, 1);
+				if (nk_button_label(ctx, "Clear")) {
+					m_physics->m_debug_real.clear();
+					values.clear();
+					sel_debug_real = "";
+				}
+
+				//show all possible value arrays
+				nk_layout_row_dynamic(ctx, 25, 1);
+				std::string new_string = "";
+				if (nk_combo_begin_label(ctx, sel_debug_real, nk_vec2(nk_widget_width(ctx), 300))) {
+					nk_layout_row_dynamic(ctx, 25, 1);
+					for (auto& deb : m_physics->m_debug_real) {
+						if (nk_combo_item_label(ctx, deb.first.c_str(), NK_TEXT_LEFT)) {
+							values.push_back(deb.first);
+							sel_debug_real = deb.first.c_str();
+						}
+					}
+					nk_combo_end(ctx);
+				}
+
+				//show the selected value arrays
+				size_t i = 0;
+				auto size = values.size();
+				std::vector<const char*> list;
+				for (auto& s : values) { list.push_back(s.c_str()); }
+				struct nk_list_view view;
+				nk_layout_row_dynamic(ctx, 100, 1);
+				if (nk_list_view_begin(ctx, &view, "Value arrays", NK_WINDOW_BORDER, 25, size)) {
+					nk_layout_row_dynamic(ctx, 25, 1);
+					int num = std::clamp(size - view.begin, (size_t)0, (size_t)view.count);
+					for (int i = 0; i < num; ++i) {
+						nk_label(ctx, list[view.begin + i], NK_TEXT_LEFT);
+					}
+				}
+				nk_list_view_end(&view);
+
+				if (m_physics->m_debug_real.size() && values.size()>0) {
+					auto slots = std::ranges::max( values 
+						| std::views::transform([&](auto& s) -> std::vector<std::pair<uint64_t,real>>& { return m_physics->m_debug_real[s]; })
+						| std::views::transform([](auto& n) { return n.size(); })
+					);
+
+					auto minval = std::ranges::min( values 
+						| std::views::transform([&](auto& s) -> std::vector<std::pair<uint64_t, real>>& { return m_physics->m_debug_real[s]; })
+						| std::views::join | std::views::values
+					);
+
+					auto maxval = std::ranges::max(values
+						| std::views::transform([&](auto& s) -> std::vector<std::pair<uint64_t, real>>& { return m_physics->m_debug_real[s]; })
+						| std::views::join | std::views::values
+					);
+
+					static std::vector<nk_color> cols;
+					static bool fill = true;
+					if (fill) for (int i = 0; i<100; ++i) cols.push_back( nk_rgb(100 + 150 * rand() / RAND_MAX, 100 + 150 * rand() / RAND_MAX, 100 + 150 * rand() / RAND_MAX) );
+					fill = false;
+
+					int j = 0;
+					if (nk_chart_begin_colored(ctx, NK_CHART_LINES, cols[2 * j], cols[2 * j + 1], slots, minval, maxval)) {
+						for (int i = 1; i < values.size(); ++i) {
+							++j;
+							nk_chart_add_slot_colored(ctx, NK_CHART_LINES, cols[2 * j], cols[2 * j + 1], slots, minval, maxval);
+						}
+	
+						for (int j = 0; j < slots; ++j) {
+							for (int i = 0; i < values.size(); ++i) {
+								if(j < m_physics->m_debug_real[values[i]].size()) {
+									nk_chart_push_slot(ctx, m_physics->m_debug_real[values[i]][j].second, i);
+								}
+							}
+						} 
+						nk_chart_end(ctx);
+					}
+				}
 			}
 			nk_end(ctx);
 
