@@ -58,11 +58,13 @@ const double c_small = 0.01;
 const real c_collision_margin_factor = 1.001;
 const real c_collision_margin = 0.001;
 const real c_sep_velocity = 0.01;
-const real c_bias = 0.2;
+const real c_bias = 0.1;
 const real c_slop = 0.001;
+const real c_resting_factor = 3.0;
 
 double	g_sim_frequency = 60.0;
 double	g_sim_delta_time = 1.0 / g_sim_frequency;
+int		g_solver = 0;
 
 
 template <typename T> 
@@ -547,7 +549,7 @@ namespace ve {
 					m_all_resting = false;
 					m_dampen_coeff = 0.99;
 				}
-				else if (d > 4.0 * c_gravity * g_sim_delta_time ) { 
+				else if (d > c_resting_factor * c_gravity * g_sim_delta_time ) { 
 					type = Contact::ContactPoint::type_t::resting; 
 					++m_contributing_contacts;
 					vbias = (penetration < 0.0) ? c_bias * g_sim_frequency * std::max(0.0, -penetration - c_slop) : 0.0;
@@ -734,16 +736,12 @@ namespace ve {
 				broadPhase();
 				narrowPhase();
 
-				//std::cout << "COLLINDING + RESTING \n";
-				//calculateImpulses(Contact::ContactPoint::type_t::any, 50, g_sim_delta_time);
 				if (m_run) {
 					for (auto& c : m_bodies) {
 						auto& body = c.second;
 						body->stepVelocity(g_sim_delta_time);
 					}
 				}
-				//std::cout << "RESTING \n";
-				//calculateImpulses(Contact::ContactPoint::type_t::colliding, 1, g_sim_delta_time);
 				calculateImpulses(Contact::ContactPoint::type_t::any, 50, g_sim_delta_time);
 
 				if (m_run) {
@@ -866,10 +864,9 @@ namespace ve {
 					auto dN = glm::dot(vrel, contact.m_normalW);
 					real f{ 0.0 }, t0{ 0.0 }, t1{ 0.0 };
 
-					int solver = 0;
-
-					if (solver == 0) {
-						auto F = cp.m_K_inv * (-cp.m_restitution * dN * contact.m_normalW - vrel); 
+					if (g_solver == 0) {
+						auto F = cp.m_K_inv * (-cp.m_restitution * (dN + cp.m_vbias) * contact.m_normalW - vrel); 
+						cp.m_vbias = 0.0;
 						f = glm::dot(F, contact.m_normalW);
 						auto Fn = f * contact.m_normalW;
 						auto Ft = F - Fn;
@@ -877,7 +874,7 @@ namespace ve {
 						t1 = -glm::dot(Ft, contact.m_tangentW[1]);
 					}
 					
-					if (solver == 1) {
+					if (g_solver == 1) {
 						glmmat3 mc0 = matrixCross3(cp.m_r0);
 						glmmat3 mc1 = matrixCross3(cp.m_r1);
 
@@ -1204,12 +1201,16 @@ namespace ve {
 			struct nk_context* ctx = pSubrender->getContext();
 
 			/* GUI */
-			if (nk_begin(ctx, "Physics Panel", nk_rect(50, 50, 300, 500),
+			if (nk_begin(ctx, "Physics Panel", nk_rect(50, 50, 300, 550),
 				NK_WINDOW_BORDER | NK_WINDOW_MOVABLE | NK_WINDOW_SCALABLE |
 				NK_WINDOW_MINIMIZABLE | NK_WINDOW_TITLE))
 			{
 				std::stringstream str;
 				str << std::setprecision(5);
+
+				nk_layout_row_dynamic(ctx, 60, 2);
+				if (nk_option_label(ctx, "Solver A", g_solver == 0)) g_solver = 0;
+				if (nk_option_label(ctx, "Solver B", g_solver == 1)) g_solver = 1;
 
 				str << "Sim Frequency " << g_sim_frequency;
 
@@ -1246,7 +1247,7 @@ namespace ve {
 				nk_label(ctx, str.str().c_str(), NK_TEXT_LEFT);
 				nk_layout_row_end(ctx);
 
-				nk_layout_row_dynamic(ctx, 30, 1);
+				/*nk_layout_row_dynamic(ctx, 30, 1);
 				nk_label(ctx, "Current Body", NK_TEXT_LEFT);
 
 				auto* sel = "";
@@ -1298,7 +1299,7 @@ namespace ve {
 				nk_layout_row_push(ctx, 250);
 				nk_label(ctx, str.str().c_str(), NK_TEXT_LEFT);
 				nk_layout_row_end(ctx);
-
+				*/
 
 				real vel = 5.0;
 				real m_dx, m_dy, m_dz, m_da, m_db, m_dc;
