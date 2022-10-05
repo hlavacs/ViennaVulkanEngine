@@ -55,7 +55,7 @@ constexpr real operator "" _real(long double val) { return (real)val; };
 
 const real c_gravity = -9.81;
 const double c_small = 0.01;
-const real c_collision_margin_factor = 1.01;
+const real c_collision_margin_factor = 1.001;
 const real c_collision_margin = 0.001;
 const real c_sep_velocity = 0.01;
 const real c_bias = 0.2;
@@ -743,8 +743,8 @@ namespace ve {
 					}
 				}
 				//std::cout << "RESTING \n";
-				calculateImpulses(Contact::ContactPoint::type_t::colliding, 1, g_sim_delta_time);
-				calculateImpulses(Contact::ContactPoint::type_t::resting, 20, g_sim_delta_time);
+				//calculateImpulses(Contact::ContactPoint::type_t::colliding, 1, g_sim_delta_time);
+				calculateImpulses(Contact::ContactPoint::type_t::any, 50, g_sim_delta_time);
 
 				if (m_run) {
 					for (auto& c : m_bodies) {
@@ -886,6 +886,7 @@ namespace ve {
 						auto dV = -cp.m_restitution * dN * contact.m_normalW - vrel;
 						auto kn = contact.m_body_ref.m_body->m_mass_inv + contact.m_body_inc.m_body->m_mass_inv + glm::dot(K * contact.m_normalW, contact.m_normalW);
 						f = (glm::dot(dV, contact.m_normalW) + cp.m_vbias) / kn;
+						cp.m_vbias = 0.0;
 
 						auto kt0 = contact.m_body_ref.m_body->m_mass_inv + contact.m_body_inc.m_body->m_mass_inv + 
 							glm::dot(K * contact.m_tangentW[0], contact.m_tangentW[0]);
@@ -895,8 +896,6 @@ namespace ve {
 							glm::dot(K * contact.m_tangentW[1], contact.m_tangentW[1]);
 						t1 = -glm::dot(dV, contact.m_tangentW[1]) / kt1;
 					}
-
-					//debug_real(contact.m_body_ref.m_body->m_name, contact.m_body_inc.m_body->m_name, "/" + std::to_string(i), 0, f);
 
 					auto tmp = cp.m_f;
 					cp.m_f = std::max(tmp + f, 0.0);
@@ -922,7 +921,7 @@ namespace ve {
 			return res;
 		}
 
-		void calculateImpulses( Contact::ContactPoint::type_t contact_type, uint64_t loops, double max_time) {
+		void calculateImpulses( Contact::ContactPoint::type_t contact_type , uint64_t loops, double max_time) {
 			uint64_t num = loops;
 			auto start = std::chrono::high_resolution_clock::now();
 			auto elapsed = std::chrono::high_resolution_clock::now() - start;
