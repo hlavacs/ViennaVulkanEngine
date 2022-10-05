@@ -30,6 +30,7 @@
 using real = double;
 using int_t = int64_t;
 using uint_t = uint64_t;
+#define glmvec2 glm::dvec2
 #define glmvec3 glm::dvec3
 #define glmmat3 glm::dmat3
 #define glmvec4 glm::dvec4
@@ -40,6 +41,7 @@ const double c_eps = 1.0e-5;
 using real = float;
 using int_t = int32_t;
 using uint_t = uint32_t;
+#define glmvec2 glm::vec2
 #define glmvec3 glm::vec3
 #define glmvec4 glm::vec4
 #define glmmat3 glm::mat3
@@ -439,7 +441,7 @@ namespace ve {
 			}
 
 			real mass() {
-				return m_mass_inv <= c_eps ? 1.0/(c_eps*c_eps) : 1.0 / m_mass_inv;
+				return m_mass_inv <= c_eps ? 1.0/(c_eps*c_eps*c_eps) : 1.0 / m_mass_inv;
 			}
 
 			glmmat3 inertiaTensorL() {
@@ -509,9 +511,9 @@ namespace ve {
 				glmmat3	m_K_inv;	//inverse mass matrix
 				real	m_vbias{ 0.0 };
 
-				glmvec3					m_F{ 0,0,0 };
-				real					m_f{ 0.0 };		//accumulates force impulses along normal during a loop run
-				std::array<real,2>		m_t;			//accumulates force impulses along normal during a loop run
+				glmvec3	m_F{ 0,0,0 };
+				real	m_f{ 0.0 };		//accumulates force impulses along normal during a loop run
+				glmvec2	m_t;			//accumulates force impulses along normal during a loop run
 			};
 
 			uint64_t	m_last_loop{ std::numeric_limits<uint64_t>::max() }; //number of last loop this contact was valid
@@ -733,7 +735,7 @@ namespace ve {
 				}
 				//std::cout << "RESTING \n";
 				calculateImpulses(Contact::ContactPoint::type_t::colliding, 1);
-				calculateImpulses(Contact::ContactPoint::type_t::resting, 20);
+				calculateImpulses(Contact::ContactPoint::type_t::resting, 50);
 
 				if (m_run) {
 					for (auto& c : m_bodies) {
@@ -899,15 +901,16 @@ namespace ve {
 					cp.m_f = std::max(tmp + f, 0.0);
 					f = cp.m_f - tmp;
 
-					tmp = cp.m_t[0];
-					cp.m_t[0] = glm::clamp(-cp.m_f * cp.m_friction, cp.m_f * cp.m_friction, tmp + t0);
-					t0 = cp.m_t[0] - tmp;
+					glmvec2 dt{t0, t1};
+					auto tmpt = cp.m_t;
+					cp.m_t += dt;
+					auto len = glm::length(cp.m_t);
+					if (len > fabs(cp.m_f * cp.m_friction)) {
+						cp.m_t *= fabs(cp.m_f * cp.m_friction) / len;
+						dt = cp.m_t - tmpt;
+					}
 
-					tmp = cp.m_t[1];
-					cp.m_t[1] = glm::clamp(-cp.m_f * cp.m_friction, cp.m_f * cp.m_friction, tmp + t1);
-					t1 = cp.m_t[1] - tmp;
-
-					auto F = f * contact.m_normalW - t0 * contact.m_tangentW[0] - t1 * contact.m_tangentW[1];
+					auto F = f * contact.m_normalW - dt.x * contact.m_tangentW[0] - dt.y * contact.m_tangentW[1];
 
 					contact.m_body_ref.m_body->m_linear_velocityW  += -F * contact.m_body_ref.m_body->m_mass_inv;
 					contact.m_body_ref.m_body->m_angular_velocityW +=      contact.m_body_ref.m_body->m_inertia_invW * glm::cross(cp.m_r0, -F);
@@ -930,7 +933,7 @@ namespace ve {
 				}
 				num = num + res - 1;
 				elapsed = std::chrono::high_resolution_clock::now() - start;
-			} while (num > 0); // && std::chrono::duration_cast<std::chrono::microseconds>(elapsed).count() < 1, 000, 000.0 * max_time);
+			} while (num > 0 && std::chrono::duration_cast<std::chrono::microseconds>(elapsed).count() < 1.0e6 * max_time);
 		}
 
 
