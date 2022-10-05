@@ -53,36 +53,36 @@ const double c_eps = 1.0e-5;
 constexpr real operator "" _real(long double val) { return (real)val; };
 
 
-const real c_gravity = -9.81;
-const double c_small = 0.01;
-const real c_collision_margin_factor = 1.001;
-const real c_collision_margin = 0.001;
-const real c_sep_velocity = 0.01;
-const real c_bias = 0.1;
-const real c_slop = 0.001;
-const real c_resting_factor = 3.0;
+const real c_gravity = -9.81_real;					//Gravity acceleration
+const double c_small = 0.01_real;					//A small value
+const real c_collision_margin_factor = 1.001_real;	//This factor makes physics bodies a little larger to prevent visible interpenetration
+const real c_collision_margin = 0.001_real;			//Also a little slack for detecting collisions
+const real c_sep_velocity = 0.01_real;				//Limit such that a contact is seperating and not resting
+const real c_bias = 0.1_real;						//A small addon to reduce interpenetration
+const real c_slop = 0.001_real;						//This much penetration does not cause bias
+const real c_resting_factor = 3.0_real;				//Factor for determining when a collision velocity is actually just resting
 
-double	g_sim_frequency = 60.0;
-double	g_sim_delta_time = 1.0 / g_sim_frequency;
-int		g_solver = 0;
-
+double	g_sim_frequency = 60.0;						//Simulation frequency in Hertz
+double	g_sim_delta_time = 1.0 / g_sim_frequency;	//The time to move forward the simulation
+int		g_solver = 0;								//Select which solver to use
+int		g_use_bias = 1;								//If true, the the bias is used for resting contacts
 
 template <typename T> 
-inline void hash_combine(std::size_t& seed, T const& v) {
+inline void hash_combine(std::size_t& seed, T const& v) {		//For combining hashes
 	seed ^= std::hash<T>()(v) + 0x9e3779b9 + (seed << 6) + (seed >> 2);
 }
 
-using intpair_t = std::pair<int_t, int_t>;
-using voidppair_t = std::pair<void*, void*>;
+//Pairs of data
+using intpair_t = std::pair<int_t, int_t>;		//Pair of integers
+using voidppair_t = std::pair<void*, void*>;	//Pair of void pointers
 
+//Algorithms from namespace geometry, from below this file
 namespace geometry {
 	std::pair<glmvec3, glmvec3> closestPointsLineLine(glmvec3 p1, glmvec3 p2, glmvec3 p3, glmvec3 p4);
 	real distancePointLine(glmvec3 p, glmvec3 a, glmvec3 b);
 	real distancePointLinesegment(glmvec3 p, glmvec3 a, glmvec3 b);
 	void computeBasis(const glmvec3& a, glmvec3& b, glmvec3& c);
-}
 
-namespace clip {
 	struct point2D {
 		real x, y;
 	};
@@ -91,7 +91,7 @@ namespace clip {
 	void SutherlandHodgman(T& subjectPolygon, T& clipPolygon, T& newPolygon);
 }
 
-
+//Hash functions for storing stuff in maps
 namespace std {
 	template <>
 	struct hash<intpair_t> {
@@ -105,8 +105,8 @@ namespace std {
 	template <>
 	struct hash<voidppair_t> {
 		std::size_t operator()(const voidppair_t& p) const {
-			size_t seed = std::hash<void*>()(std::min(p.first,p.second));
-			hash_combine(seed, std::max(p.first, p.second));
+			size_t seed = std::hash<void*>()(std::min(p.first,p.second));	//Makes sure the smaller one is always first
+			hash_combine(seed, std::max(p.first, p.second));				//Larger one second
 			return seed;
 		}
 	};
@@ -118,20 +118,21 @@ namespace std {
 	};
 
 	template <>
-	struct hash<clip::point2D> {
-		std::size_t operator()(const clip::point2D& p) const {
+	struct hash<geometry::point2D> {
+		std::size_t operator()(const geometry::point2D& p) const {
 			size_t seed = std::hash<real>()(p.x);
 			hash_combine(seed, p.y);
 			return seed;
 		}
 	};
 	template<>
-	struct less<clip::point2D> {
-		bool operator()(const clip::point2D& l, const clip::point2D& r) const {
-			return (std::hash<clip::point2D>()(l) < std::hash<clip::point2D>()(r));
+	struct less<geometry::point2D> {
+		bool operator()(const geometry::point2D& l, const geometry::point2D& r) const {
+			return (std::hash<geometry::point2D>()(l) < std::hash<geometry::point2D>()(r));
 		}
 	};
 
+	//For outputting vectors/matrices to a string stream
 	ostream& operator<<(ostream& os, const glmvec3& v) {
 		os << "(" << v.x << ',' << v.y << ',' << v.z << ")";
 		return os;
@@ -149,12 +150,22 @@ namespace std {
 		return os;
 	}
 
+	//Turn vector into a string
 	std::string to_string(const glmvec3 v) {
 		return std::to_string(v.x) + ", " + std::to_string(v.y) + ", " + std::to_string(v.z);
 	}
 }
 
 
+//These are short hand notations to save on typing for transforming points/vectors from one coordinate space into another. 
+//Naming follows this code:
+//R...coordinate space of reference object
+//I...coordinate space of incident object
+//RT...tangent space of a face of the reference object
+//W...world space
+//P...point
+//V...vector
+//N...normal vector
 #define ITORP(X) glmvec3{contact.m_body_inc.m_to_other * glmvec4{X, 1.0}}
 #define ITORV(X) glmmat3{contact.m_body_inc.m_to_other}*(X)
 #define ITORN(X) contact.m_body_inc.m_to_other_it*(X)
@@ -171,6 +182,7 @@ namespace std {
 
 #define RTTOWP(X) glmvec3{contact.m_body_ref.m_body->m_model * face_ref->m_TtoL * glmvec4{(X), 1.0}}
 
+//Access body names
 #define RNAME contact.m_body_ref.m_body->m_name
 #define INAME contact.m_body_inc.m_body->m_name
 
@@ -184,48 +196,77 @@ namespace ve {
 	class VEEventListenerPhysics : public VEEventListener {
 	public:
 
+		/// <summary>
+		/// This struct stores forces that can act on bodies.
+		/// </summary>
 		struct Force {
-			glmvec3 m_positionL{0,0,0};		//position in local space
-			glmvec3 m_forceL{0,0,0};		//force vector in local space
-			glmvec3 m_forceW{0,0,0};		//force vector in world space 
-			glmvec3 m_accelW{0,c_gravity,0};	//acceleration in world space 
+			glmvec3 m_positionL{0,0,0};			//Position in local space
+			glmvec3 m_forceL{0,0,0};			//Force vector in local space
+			glmvec3 m_forceW{0,0,0};			//Force vector in world space 
+			glmvec3 m_accelW{0,c_gravity,0};	//Acceleration in world space (default is earth gravity)
 		};
 
 		struct Face;
 		struct Edge;
 
+		/// <summary>
+		/// This struct holds information about a vertex of a polytope.
+		/// </summary>
 		struct Vertex {
-			uint_t			m_id;
+			uint_t			m_id;				//Unique number within a polytope
 			glmvec3			m_positionL;		//vertex position in local space
 			std::set<Face*>	m_vertex_face_ptrs;	//pointers to faces this vertex belongs to
 			std::set<Edge*>	m_vertex_edge_ptrs;	//pointers to edges this vertex belongs to
 		};
 
+		/// <summary>
+		/// Holds information about an edge in the polytope. An edge connects two vertices.
+		/// </summary>
 		struct Edge {
-			uint_t			m_id;
-			Vertex&			m_first_vertexL;	//first edge vertex
-			Vertex&			m_second_vertexL;	//second edge vertex
-			glmvec3			m_edgeL{};			//edge vector in local space 
+			uint_t			m_id;					//Unique number within a polytope
+			Vertex&			m_first_vertexL;		//first edge vertex
+			Vertex&			m_second_vertexL;		//second edge vertex
+			glmvec3			m_edgeL{};				//edge vector in local space 
 			std::set<Face*>	m_edge_face_ptrs{};		//pointers to the two faces this edge belongs to
 		};
 
+		/// <summary>
+		/// A signed edge refers to an edge, but can use a factor (-1) to invert the edge vector.
+		/// This gives a unique winding order of edges belonging to a face.
+		/// This struct is used to construct the polytope.
+		/// </summary>
 		struct signed_edge_t {
 			uint32_t m_edge_idx;
 			real	 m_factor{1.0};
 		};
 
+		/// <summary>
+		/// Used to store the signed edge.
+		/// </summary>
 		using SignedEdge = std::pair<Edge*,real>;
 
+		/// <summary>
+		/// A polytope consists of a number of faces. Each face consists of a sequence of edges,
+		/// with the endpoint of the last edge being the starting point of the first edge.
+		/// </summary>
 		struct Face {
-			uint_t						m_id;
-			std::vector<Vertex*>		m_face_vertex_ptrs{};	//pointers to the vertices of this face in correct orientation
-			std::vector<clip::point2D>	m_face_vertex2D_T{};	//vertex 2D coordinates in tangent space
-			std::vector<SignedEdge>		m_face_edge_ptrs{};		//pointers to the edges of this face and orientation factors
-			glmvec3						m_normalL{};			//normal vector in local space
-			glmmat4						m_LtoT;					//local to face tangent space
-			glmmat4						m_TtoL;					//face tangent to local space
+			uint_t						m_id;						//Unique number within a polytope
+			std::vector<Vertex*>		m_face_vertex_ptrs{};		//pointers to the vertices of this face in correct orientation
+			std::vector<geometry::point2D>	m_face_vertex2D_T{};	//vertex 2D coordinates in tangent space
+			std::vector<SignedEdge>		m_face_edge_ptrs{};			//pointers to the edges of this face and orientation factors
+			glmvec3						m_normalL{};				//normal vector in local space
+			glmmat4						m_LtoT;						//local to face tangent space
+			glmmat4						m_TtoL;						//face tangent to local space
 		};
 
+		/// <summary>
+		/// Find the face of a polytope whose normal vector is maximally aligned with a given vector.
+		/// </summary>
+		/// <typeparam name="T"></typeparam>
+		/// <param name="dirL">Direction of vector in local space</param>
+		/// <param name="faces"></param>
+		/// <param name="fct">Can either be f(x)=x or f(x)=fabs(x)</param>
+		/// <returns></returns>
 		template<typename T>
 		Face* maxFaceAlignment(const glmvec3 dirL, const T& faces, real (*fct)(real) ) {
 			assert(faces.size() > 0);
@@ -240,6 +281,13 @@ namespace ve {
 			return maxface;
 		}
 
+		/// <summary>
+		/// Find the edge of a polytope whose normal vector is minimally aligned with a given vector.
+		/// </summary>
+		/// <typeparam name="T"></typeparam>
+		/// <param name="dirL"></param>
+		/// <param name="signed_edges"></param>
+		/// <returns></returns>
 		template<typename T>
 		Edge* minEdgeAlignment(const glmvec3 dirL, const T& signed_edges) {
 			assert(signed_edges.size() > 0);
@@ -253,11 +301,6 @@ namespace ve {
 			}
 			return minedge;
 		}
-
-
-		//struct AABB {
-		//	std::array<glmvec3, 2> m_verticesL;
-		//};
 
 		struct Collider {};
 
@@ -333,10 +376,6 @@ namespace ve {
 						glmvec4 pt = face.m_LtoT * glmvec4{ vertex->m_positionL, 1.0 };
 						face.m_face_vertex2D_T.emplace_back( pt.x, pt.z);
 					}
-
-					//for (auto& vert : m_vertices) {		//Min and max distance along the face normals in local space
-					//	real dp = glm::dot(m_faces.back().m_normalL, vert.m_positionL);
-					//}
 				}
 			};
 		};
@@ -865,7 +904,7 @@ namespace ve {
 					real f{ 0.0 }, t0{ 0.0 }, t1{ 0.0 };
 
 					if (g_solver == 0) {
-						auto F = cp.m_K_inv * (-cp.m_restitution * (dN + cp.m_vbias) * contact.m_normalW - vrel); 
+						auto F = cp.m_K_inv * (-cp.m_restitution * (dN + g_use_bias * cp.m_vbias) * contact.m_normalW - vrel);
 						cp.m_vbias = 0.0;
 						f = glm::dot(F, contact.m_normalW);
 						auto Fn = f * contact.m_normalW;
@@ -882,7 +921,7 @@ namespace ve {
 
 						auto dV = -cp.m_restitution * dN * contact.m_normalW - vrel;
 						auto kn = contact.m_body_ref.m_body->m_mass_inv + contact.m_body_inc.m_body->m_mass_inv + glm::dot(K * contact.m_normalW, contact.m_normalW);
-						f = (glm::dot(dV, contact.m_normalW) + cp.m_vbias) / kn;
+						f = (glm::dot(dV, contact.m_normalW) + g_use_bias * cp.m_vbias) / kn;
 						cp.m_vbias = 0.0;
 
 						auto kt0 = contact.m_body_ref.m_body->m_mass_inv + contact.m_body_inc.m_body->m_mass_inv + 
@@ -1056,7 +1095,7 @@ namespace ve {
 
 		/// <summary>
 		/// We have a vertex-face contact. Test if this actually a 
-		/// face-face, face-edge or face-vertex contact, then call the right function to create the manifold.
+		/// face-face, face-edge or just a face-vertex contact, then call the right function to create the manifold.
 		/// </summary>
 		/// <param name="contact"></param>
 		/// <param name="fq"></param>
@@ -1091,13 +1130,13 @@ namespace ve {
 			glmvec3 v = glm::normalize( face_ref->m_face_edge_ptrs.begin()->first->m_edgeL * face_ref->m_face_edge_ptrs.begin()->second ); //????
 			glmvec3 p = {};
 
-			std::vector<clip::point2D> points;					
+			std::vector<geometry::point2D> points;					
 			for (auto* vertex : face_inc->m_face_vertex_ptrs) {			//add face points of B's face
 				auto pT = ITORTP( vertex->m_positionL );				//ransform to A's tangent space
 				points.emplace_back(pT.x, pT.z);						//add as 2D point
 			}
-			std::vector<clip::point2D> newPolygon;
-			clip::SutherlandHodgman(points, face_ref->m_face_vertex2D_T, newPolygon); //clip B's face against A's face
+			std::vector<geometry::point2D> newPolygon;
+			geometry::SutherlandHodgman(points, face_ref->m_face_vertex2D_T, newPolygon); //clip B's face against A's face
 
 			for (auto& p2D : newPolygon) {
 				auto p = glmvec3{ p2D.x, 0.0, p2D.y }; //cannot put comma into macro 
@@ -1115,15 +1154,15 @@ namespace ve {
 		/// <param name="face_ref"></param>
 		/// <param name="edge_inc"></param>
 		void clipEdgeFace(Contact& contact, Face* face_ref, Edge* edge_inc) {
-			std::vector<clip::point2D> points;
+			std::vector<geometry::point2D> points;
 			auto pT = ITORTP( edge_inc->m_first_vertexL.m_positionL );	//bring edge vertices to A's face tangent space
 			points.emplace_back(pT.x, pT.z);											//add as 2D point (projection)
 			pT = ITORTP(edge_inc->m_second_vertexL.m_positionL);
 			points.emplace_back(pT.x, pT.z);
 
-			std::vector<clip::point2D> newPolygon;
-			clip::SutherlandHodgman( points, face_ref->m_face_vertex2D_T, newPolygon);	//clip B's face against A's face
-			std::set<clip::point2D> newPolygon2;
+			std::vector<geometry::point2D> newPolygon;
+			geometry::SutherlandHodgman( points, face_ref->m_face_vertex2D_T, newPolygon);	//clip B's face against A's face
+			std::set<geometry::point2D> newPolygon2;
 			for (auto& p : newPolygon) { newPolygon2.insert(p); }
 
 			for (auto & p2D : newPolygon2 ) {	//result is exactly 2 or 3 points (if clip), we only need 2 points 
@@ -1232,7 +1271,7 @@ namespace ve {
 					m_physics->m_current_time += g_sim_delta_time;
 				}
 
-				nk_layout_row_dynamic(ctx, 60, 2);
+				nk_layout_row_dynamic(ctx, 30, 2);
 				if (nk_option_label(ctx, "Realtime", m_physics->m_mode == VEEventListenerPhysics::simulation_mode_t::SIMULATION_MODE_REALTIME))
 					m_physics->m_mode = VEEventListenerPhysics::simulation_mode_t::SIMULATION_MODE_REALTIME;
 				if (nk_option_label(ctx, "Debug", m_physics->m_mode == VEEventListenerPhysics::simulation_mode_t::SIMULATION_MODE_DEBUG))
@@ -1246,6 +1285,14 @@ namespace ve {
 				nk_layout_row_push(ctx, 60);
 				nk_label(ctx, str.str().c_str(), NK_TEXT_LEFT);
 				nk_layout_row_end(ctx);
+
+				nk_layout_row_dynamic(ctx, 30, 3);
+				nk_label(ctx, "Use Bias ", NK_TEXT_LEFT);
+				if (nk_option_label(ctx, "Yes", g_use_bias == 1))
+					g_use_bias = 1;
+				if (nk_option_label(ctx, "No", g_use_bias == 0))
+					g_use_bias = 0;
+
 
 				/*nk_layout_row_dynamic(ctx, 30, 1);
 				nk_label(ctx, "Current Body", NK_TEXT_LEFT);
@@ -1596,16 +1643,12 @@ namespace geometry {
 		b = glm::normalize(b);
 		c = glm::cross(a, b);
 	}
-}
 
 
-
-//https://rosettacode.org/wiki/Sutherland-Hodgman_polygon_clipping
-//rewritten for std::vector
-namespace clip {
+	//https://rosettacode.org/wiki/Sutherland-Hodgman_polygon_clipping
+	//rewritten for std::vector
 
 	using namespace std;
-
 
 	// check if a point is on the RIGHT side of an edge
 	bool inside(point2D p, point2D p1, point2D p2) {
@@ -1676,6 +1719,8 @@ namespace clip {
 		}
 	}
 
+
+
 	int main()
 	{
 		// subject polygon
@@ -1713,7 +1758,7 @@ int main() {
 	mve.loadLevel(1);
 	mve.run();
 
-	//clip::main();
+	//geometry::main();
 
 	return 0;
 }
