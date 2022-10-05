@@ -54,16 +54,15 @@ constexpr real operator "" _real(long double val) { return (real)val; };
 
 
 const real c_gravity = -9.81;
-const double c_sim_delta_time = 1.0 / 60.0;
 const double c_small = 0.01;
-
 const real c_collision_margin_factor = 1.01;
 const real c_collision_margin = 0.001;
-
-const real c_resting = 4.0 * c_gravity * c_sim_delta_time; //gravity is negative!
 const real c_sep_velocity = 0.01;
-const real c_bias = 0.3;
+const real c_bias = 0.2;
 const real c_slop = 0.001;
+
+double	g_sim_frequency = 60.0;
+double	g_sim_delta_time = 1.0 / g_sim_frequency;
 
 
 template <typename T> 
@@ -406,8 +405,8 @@ namespace ve {
 				if (glm::length(m_linear_velocityW) > c_eps) {
 					pos = m_positionW + ( m_linear_velocityW  + m_vbias ) * (real)dt;
 					active = true;
-					m_vbias = glmvec3{0,0,0};
 				}
+				m_vbias = glmvec3{ 0,0,0 };
 
 				auto avW = glmmat3{ m_model_inv } * m_angular_velocityW;
 				real len = glm::length(avW);
@@ -542,14 +541,16 @@ namespace ve {
 				auto d = glm::dot(vrel, normalW);
 
 				ContactPoint::type_t type;
+				real vbias = 0.0;
 				if (d > c_sep_velocity) {
 					type = Contact::ContactPoint::type_t::separating;
 					m_all_resting = false;
 					m_dampen_coeff = 0.99;
 				}
-				else if (d > c_resting) { 
+				else if (d > 4.0 * c_gravity * g_sim_delta_time ) { 
 					type = Contact::ContactPoint::type_t::resting; 
 					++m_contributing_contacts;
+					vbias = (penetration < 0.0) ? c_bias * g_sim_frequency * std::max(0.0, -penetration - c_slop) : 0.0;
 				}
 				else { 
 					type = Contact::ContactPoint::type_t::colliding;
@@ -568,11 +569,8 @@ namespace ve {
 				auto K = glmmat3{ 1.0 } * m_body_inc.m_body->m_mass_inv - mc1 * m_body_inc.m_body->m_inertia_invW * mc1 +
 						 glmmat3{ 1.0 } * m_body_ref.m_body->m_mass_inv - mc0 * m_body_ref.m_body->m_inertia_invW * mc0;
 
-				//auto K = -mc1 * m_body_inc.m_body->m_inertia_invW * mc1 - mc0 * m_body_ref.m_body->m_inertia_invW * mc0;
-				
 				auto K_inv = glm::inverse(K);
 
-				real vbias = (penetration < 0.0) ? c_bias * 60 * std::max(0.0, -penetration - c_slop) : 0.0;
 				m_contact_points.emplace_back(positionW, type, restitution, friction, r0, r1, K, K_inv, vbias);
 			}
 		};
@@ -589,7 +587,7 @@ namespace ve {
 		double			m_current_time{ 0.0 };			//current time
 		double			m_last_time{ 0.0 };				//last time the sim was interpolated
 		double			m_last_slot{ 0.0 };				//last time the sim was calculated
-		double			m_next_slot{ c_sim_delta_time };//next time for simulation
+		double			m_next_slot{ g_sim_delta_time };//next time for simulation
 
 		using body_map = std::unordered_map<void*, std::shared_ptr<Body>>;
 		body_map		m_bodies;						//main container of all bodies
@@ -711,6 +709,17 @@ namespace ve {
 				body0.m_forces.insert({ 0ul, Force{} });
 				addBody(m_body = std::make_shared<Body>(body0));
 			}
+
+			if (event.idata1 == GLFW_KEY_Z && event.idata3 == GLFW_PRESS) {
+				glmvec3 positionCamera{ getSceneManagerPointer()->getSceneNode("StandardCameraParent")->getWorldTransform()[3] };
+				glmvec3 dir{ getSceneManagerPointer()->getSceneNode("StandardCamera")->getWorldTransform()[2] };
+				VESceneNode* cube0;
+				VECHECKPOINTER(cube0 = getSceneManagerPointer()->loadModel("The Cube" + std::to_string(++cubeid), "media/models/test/crate0", "cube.obj", 0, getRoot()));
+				Body body{ "Body" + std::to_string(cubeid), cube0, &g_cube, glmvec3{1.0}, positionCamera + 2.0 * dir, glmquat{1,0,0,0}, &onMove, glmvec3{0.0}, glmvec3{0.0}, 1.0 / 100.0, 0.2, 1 };
+				body.m_forces.insert({ 0ul, Force{} });
+				addBody(m_body = std::make_shared<Body>(body));
+			}
+
 			return false;
 		};
 
@@ -726,27 +735,27 @@ namespace ve {
 				narrowPhase();
 
 				//std::cout << "COLLINDING + RESTING \n";
-				//calculateImpulses(Contact::ContactPoint::type_t::any, 50);
+				//calculateImpulses(Contact::ContactPoint::type_t::any, 50, g_sim_delta_time);
 				if (m_run) {
 					for (auto& c : m_bodies) {
 						auto& body = c.second;
-						body->stepVelocity(c_sim_delta_time);
+						body->stepVelocity(g_sim_delta_time);
 					}
 				}
 				//std::cout << "RESTING \n";
-				calculateImpulses(Contact::ContactPoint::type_t::colliding, 1);
-				calculateImpulses(Contact::ContactPoint::type_t::resting, 50);
+				calculateImpulses(Contact::ContactPoint::type_t::colliding, 1, g_sim_delta_time);
+				calculateImpulses(Contact::ContactPoint::type_t::resting, 20, g_sim_delta_time);
 
 				if (m_run) {
 					for (auto& c : m_bodies) {
 						auto& body = c.second;
-						if (body->stepPosition(c_sim_delta_time, body->m_positionW, body->m_orientationLW)) {
+						if (body->stepPosition(g_sim_delta_time, body->m_positionW, body->m_orientationLW)) {
 							body->updateMatrices();
 						}
 					}
 				}
 				m_last_slot = m_next_slot;
-				m_next_slot += c_sim_delta_time;
+				m_next_slot += g_sim_delta_time;
 			}
 			if (m_loop > last_loop) {
 				for (auto& c : m_bodies) {	//predict pos/vel at slot + delta, this is only a prediction for rendering, not stored anywhere
@@ -840,7 +849,7 @@ namespace ve {
 				}
 			}
 			if (min_depth < 0.0) { 
-				contact.m_body_inc.m_body->m_vbias += glmvec3{ 0, -min_depth * 60.0, 0 };
+				contact.m_body_inc.m_body->m_vbias += glmvec3{ 0, -min_depth * g_sim_frequency, 0 };
 			}
 		}
 
@@ -860,20 +869,12 @@ namespace ve {
 					int solver = 0;
 
 					if (solver == 0) {
-						auto F = cp.m_K_inv * (-cp.m_restitution * dN * contact.m_normalW - vrel); // / (real)contact.m_contact_points.size();
+						auto F = cp.m_K_inv * (-cp.m_restitution * dN * contact.m_normalW - vrel); 
 						f = glm::dot(F, contact.m_normalW);
 						auto Fn = f * contact.m_normalW;
 						auto Ft = F - Fn;
 						t0 = -glm::dot(Ft, contact.m_tangentW[0]);
 						t1 = -glm::dot(Ft, contact.m_tangentW[1]);
-
-						//if (t0 != 0.0) {
-						//	T = -Ft / t0;
-						//	if (fabs(t0) > fabs(cp.m_friction * f)) {	//dynamic friction?
-						//		f = -(1 + cp.m_restitution) * dN / glm::dot(contact.m_normalW, cp.m_K * (contact.m_normalW - cp.m_friction * T));
-						//		t0 = f * cp.m_friction;
-						//	}
-						//}
 					}
 					
 					if (solver == 1) {
@@ -921,7 +922,7 @@ namespace ve {
 			return res;
 		}
 
-		void calculateImpulses( Contact::ContactPoint::type_t contact_type = Contact::ContactPoint::type_t::colliding, uint64_t loops = 20, double max_time = 1.0 / 60.0) {
+		void calculateImpulses( Contact::ContactPoint::type_t contact_type, uint64_t loops, double max_time) {
 			uint64_t num = loops;
 			auto start = std::chrono::high_resolution_clock::now();
 			auto elapsed = std::chrono::high_resolution_clock::now() - start;
@@ -1078,8 +1079,8 @@ namespace ve {
 			}
 			if (fq.m_separation < 0) {
 				real weight = 1.0 / (1.0 + contact.m_body_inc.m_body->mass() * contact.m_body_ref.m_body->m_mass_inv);
-				contact.m_body_ref.m_body->m_vbias += -RTOWN(fq.m_face_ref->m_normalL) * (-fq.m_separation) * 60.0 * (1.0 - weight);
-				contact.m_body_inc.m_body->m_vbias += RTOWN(fq.m_face_ref->m_normalL) * (-fq.m_separation) * 60.0 * weight;
+				contact.m_body_ref.m_body->m_vbias += -RTOWN(fq.m_face_ref->m_normalL) * (-fq.m_separation) * g_sim_frequency * (1.0 - weight);
+				contact.m_body_inc.m_body->m_vbias += RTOWN(fq.m_face_ref->m_normalL) * (-fq.m_separation) * g_sim_frequency * weight;
 			}
 		}
 
@@ -1178,8 +1179,8 @@ namespace ve {
 			}
 			if (eq.m_separation < 0) {
 				real weight = 1.0 / (1.0 + contact.m_body_inc.m_body->mass() * contact.m_body_ref.m_body->m_mass_inv);
-				contact.m_body_ref.m_body->m_vbias += -RTOWN(eq.m_normalL) * (-eq.m_separation) * 60.0 * (1.0 - weight);
-				contact.m_body_inc.m_body->m_vbias += RTOWN(eq.m_normalL) * (-eq.m_separation) * 60.0 * weight;
+				contact.m_body_ref.m_body->m_vbias += -RTOWN(eq.m_normalL) * (-eq.m_separation) * g_sim_frequency * (1.0 - weight);
+				contact.m_body_inc.m_body->m_vbias += RTOWN(eq.m_normalL) * (-eq.m_separation) * g_sim_frequency * weight;
 			}
 		}
 
@@ -1208,9 +1209,27 @@ namespace ve {
 				NK_WINDOW_BORDER | NK_WINDOW_MOVABLE | NK_WINDOW_SCALABLE |
 				NK_WINDOW_MINIMIZABLE | NK_WINDOW_TITLE))
 			{
+				std::stringstream str;
+				str << std::setprecision(5);
+
+				str << "Sim Frequency " << g_sim_frequency;
+
+				nk_layout_row_dynamic(ctx, 30, 1);
+				nk_label(ctx, str.str().c_str(), NK_TEXT_LEFT);
+
+				nk_layout_row_dynamic(ctx, 30, 2);
+				if (nk_button_label(ctx, "-10")) {
+					g_sim_frequency = std::max(10.0, g_sim_frequency - 10.0);
+					g_sim_delta_time = 1.0 / g_sim_frequency;
+				}
+				if (nk_button_label(ctx, "+10")) {
+					g_sim_frequency += 10;
+					g_sim_delta_time = 1.0 / g_sim_frequency;
+				}
+
 				nk_layout_row_static(ctx, 30, 200, 1);
 				if (nk_button_label(ctx, "Next time slot")) {
-					m_physics->m_current_time += c_sim_delta_time;
+					m_physics->m_current_time += g_sim_delta_time;
 				}
 
 				nk_layout_row_dynamic(ctx, 60, 2);
@@ -1222,8 +1241,8 @@ namespace ve {
 				nk_layout_row_begin(ctx, NK_STATIC, 30, 2);
 				nk_layout_row_push(ctx, 60);
 				nk_label(ctx, "Time (s)", NK_TEXT_LEFT);
-				std::stringstream str;
-				str << std::setprecision(5) << m_physics->m_current_time;
+				str.str("");
+				str << m_physics->m_current_time;
 				nk_layout_row_push(ctx, 60);
 				nk_label(ctx, str.str().c_str(), NK_TEXT_LEFT);
 				nk_layout_row_end(ctx);
@@ -1307,7 +1326,7 @@ namespace ve {
 				if (nk_button_label(ctx, "-RZ")) { m_dc = -vel; }
 
 				if (m_physics->m_body) {
-					real dt = c_sim_delta_time;
+					real dt = g_sim_delta_time;
 					m_physics->m_body->m_positionW += dt * glmvec3{ m_dx, m_dy, m_dz };
 					m_physics->m_body->m_orientationLW = m_physics->m_body->m_orientationLW *
 						glm::rotate(glmquat{ 1,0,0,0 }, dt * m_da, glmvec3{ 1, 0, 0 }) *
