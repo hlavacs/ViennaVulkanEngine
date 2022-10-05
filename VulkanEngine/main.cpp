@@ -605,9 +605,15 @@ namespace ve {
 
 		//-----------------------------------------------------------------------------------------------------
 
-		void debug(std::string key, std::string value) {
+		void debug_string(std::string key, std::string value) {
 			if (m_mode != simulation_mode_t::SIMULATION_MODE_DEBUG) return;
 			m_debug_string[key].emplace_back(value);
+		}
+
+		void debug_string(const std::string& key1, const std::string& key2, const std::string& rest, std::string value) {
+			if (m_mode != simulation_mode_t::SIMULATION_MODE_DEBUG) return;
+			if (key1 < key2) m_debug_string[key1 + key2 + rest].emplace_back(value);
+			else m_debug_string[key2 + key1 + rest].emplace_back(value);
 		}
 
 		void debug_real(const std::string& key, uint64_t x, real value) {
@@ -726,7 +732,8 @@ namespace ve {
 					}
 				}
 				//std::cout << "RESTING \n";
-				calculateImpulses(Contact::ContactPoint::type_t::any, 20);
+				calculateImpulses(Contact::ContactPoint::type_t::colliding, 1);
+				calculateImpulses(Contact::ContactPoint::type_t::resting, 20);
 
 				if (m_run) {
 					for (auto& c : m_bodies) {
@@ -886,7 +893,7 @@ namespace ve {
 						t1 = -glm::dot(dV, contact.m_tangentW[1]) / kt1;
 					}
 
-					debug_real(contact.m_body_ref.m_body->m_name, contact.m_body_inc.m_body->m_name, "/" + std::to_string(i), 0, f);
+					//debug_real(contact.m_body_ref.m_body->m_name, contact.m_body_inc.m_body->m_name, "/" + std::to_string(i), 0, f);
 
 					auto tmp = cp.m_f;
 					cp.m_f = std::max(tmp + f, 0.0);
@@ -923,7 +930,7 @@ namespace ve {
 				}
 				num = num + res - 1;
 				elapsed = std::chrono::high_resolution_clock::now() - start;
-			} while (num > 0 && std::chrono::duration_cast<std::chrono::microseconds>(elapsed).count() < 1, 000, 000.0 * max_time);
+			} while (num > 0); // && std::chrono::duration_cast<std::chrono::microseconds>(elapsed).count() < 1, 000, 000.0 * max_time);
 		}
 
 
@@ -1019,8 +1026,8 @@ namespace ve {
 
 			for (auto& edgeA : contact.m_body_ref.m_body->m_polytope->m_edges) {	//loop over all edge-edge pairs
 				for (auto& edgeB : contact.m_body_inc.m_body->m_polytope->m_edges) {
-					debug(RNAME, "Ref: " + contact.m_body_ref.m_body->m_name + " Inc: " + contact.m_body_inc.m_body->m_name);
-					debug(RNAME, "EdgeA: " + std::to_string(edgeA.m_id) + " " + std::to_string(edgeA.m_edgeL) + " EdgeB: " + std::to_string(edgeB.m_id) + " " + std::to_string(ITORV(edgeB.m_edgeL)));
+					//debug_string(RNAME, "Ref: " + contact.m_body_ref.m_body->m_name + " Inc: " + contact.m_body_inc.m_body->m_name);
+					//debug_string(RNAME, "EdgeA: " + std::to_string(edgeA.m_id) + " " + std::to_string(edgeA.m_edgeL) + " EdgeB: " + std::to_string(edgeB.m_id) + " " + std::to_string(ITORV(edgeB.m_edgeL)));
 
 					auto edgeb_L = ITORV(edgeB.m_edgeL);
 					glmvec3 n = glm::cross(edgeA.m_edgeL, ITORV(edgeB.m_edgeL));	//axis n is cross product of both edges
@@ -1356,7 +1363,7 @@ namespace ve {
 			//--------------------------------------------------------------------------------------
 
 
-			if (nk_begin(ctx, "Debug Real", nk_rect(500, 50, 300, 300),
+			/*if (nk_begin(ctx, "Debug Real", nk_rect(500, 50, 300, 300),
 				NK_WINDOW_BORDER | NK_WINDOW_MOVABLE | NK_WINDOW_SCALABLE |
 				NK_WINDOW_MINIMIZABLE | NK_WINDOW_TITLE))
 			{
@@ -1407,12 +1414,7 @@ namespace ve {
 						| std::views::transform([](auto& n) { return n.size(); })
 					);
 
-					auto minval = std::ranges::min( values 
-						| std::views::transform([&](auto& s) -> std::vector<std::pair<uint64_t, real>>& { return m_physics->m_debug_real[s]; })
-						| std::views::join | std::views::values
-					);
-
-					auto maxval = std::ranges::max(values
+					auto [minval,maxval] = std::ranges::minmax( values 
 						| std::views::transform([&](auto& s) -> std::vector<std::pair<uint64_t, real>>& { return m_physics->m_debug_real[s]; })
 						| std::views::join | std::views::values
 					);
@@ -1422,6 +1424,10 @@ namespace ve {
 					if (fill) for (int i = 0; i<100; ++i) cols.push_back( nk_rgb(100 + 150 * rand() / RAND_MAX, 100 + 150 * rand() / RAND_MAX, 100 + 150 * rand() / RAND_MAX) );
 					fill = false;
 
+					nk_layout_row_dynamic(ctx, 30, 1);
+					nk_label(ctx, std::to_string(maxval).c_str(), NK_TEXT_LEFT);
+
+					nk_layout_row_dynamic(ctx, 200, 1);
 					int j = 0;
 					if (nk_chart_begin_colored(ctx, NK_CHART_LINES, cols[2 * j], cols[2 * j + 1], slots, minval, maxval)) {
 						for (int i = 1; i < values.size(); ++i) {
@@ -1438,10 +1444,12 @@ namespace ve {
 						} 
 						nk_chart_end(ctx);
 					}
+					nk_layout_row_dynamic(ctx, 30, 1);
+					nk_label(ctx, std::to_string(minval).c_str(), NK_TEXT_LEFT);
 				}
 			}
 			nk_end(ctx);
-
+			*/
 		}
 
 
