@@ -62,10 +62,11 @@ const real c_bias = 0.1_real;						//A small addon to reduce interpenetration
 const real c_slop = 0.001_real;						//This much penetration does not cause bias
 const real c_resting_factor = 3.0_real;				//Factor for determining when a collision velocity is actually just resting
 
-double	g_sim_frequency = 60.0;						//Simulation frequency in Hertz
+double	g_sim_frequency = 120.0;					//Simulation frequency in Hertz
 double	g_sim_delta_time = 1.0 / g_sim_frequency;	//The time to move forward the simulation
 int		g_solver = 0;								//Select which solver to use
 int		g_use_bias = 1;								//If true, the the bias is used for resting contacts
+int		g_use_warmstart = 1;						//If true then warm start resting contacts
 
 template <typename T> 
 inline void hash_combine(std::size_t& seed, T const& v) {		//For combining hashes
@@ -193,8 +194,15 @@ namespace ve {
 	static std::default_random_engine rnd_gen{ 12345 };					//Random numbers
 	static std::uniform_real_distribution<> rnd_unif{ 0.0f, 1.0f };		//Random numbers
 
+	/// <summary>
+	/// This is a callback that is called in each loop. It implements a simple rigid body 
+	/// physics engine.
+	/// </summary>
 	class VEEventListenerPhysics : public VEEventListener {
 	public:
+
+		//--------------------------------------------------------------------------------------------------
+		//Basic geometric objects
 
 		/// <summary>
 		/// This struct stores forces that can act on bodies.
@@ -241,7 +249,7 @@ namespace ve {
 		};
 
 		/// <summary>
-		/// Used to store the signed edge.
+		/// Used to store the signed edge in a container.
 		/// </summary>
 		using SignedEdge = std::pair<Edge*,real>;
 
@@ -261,45 +269,34 @@ namespace ve {
 
 		/// <summary>
 		/// Find the face of a polytope whose normal vector is maximally aligned with a given vector.
+		/// There are two cases: we are either only interested into the absolute values, or we
+		/// are interested into the true values. To decide this you can specify a function 
+		/// for cvalculating this.
 		/// </summary>
-		/// <typeparam name="T"></typeparam>
+		/// <typeparam name="T">C++ class holding alist of faces. Can be face or edge.</typeparam>
 		/// <param name="dirL">Direction of vector in local space</param>
-		/// <param name="faces"></param>
-		/// <param name="fct">Can either be f(x)=x or f(x)=fabs(x)</param>
+		/// <param name="faces">A vector of pointers to faces.</param>
+		/// <param name="fct">Can either be f(x)=x (default) or f(x)=fabs(x).</param>
 		/// <returns></returns>
 		template<typename T>
-		Face* maxFaceAlignment(const glmvec3 dirL, const T& faces, real (*fct)(real) ) {
+		Face* maxFaceAlignment(const glmvec3 dirL, const T& faces, real(*fct)(real) = [](real x) { return x; }) {
 			assert(faces.size() > 0);
-			real max_face_alignment{ -std::numeric_limits<real>::max() };
-			Face* maxface = nullptr;
-			for (Face* const face : faces) {
-				if (real face_alignment = fct(glm::dot(dirL, face->m_normalL)); face_alignment > max_face_alignment) {
-					max_face_alignment = face_alignment;
-					maxface = face;
-				}
-			}
-			return maxface;
+			auto compare = [&](Face* a, Face* b) { return fct(glm::dot(dirL, a->m_normalL)) < fct(glm::dot(dirL, b->m_normalL)); };
+			return *std::ranges::max_element(faces, compare);
 		}
 
 		/// <summary>
 		/// Find the edge of a polytope whose normal vector is minimally aligned with a given vector.
 		/// </summary>
-		/// <typeparam name="T"></typeparam>
-		/// <param name="dirL"></param>
+		/// <typeparam name="T">Class holding a list of pointers to faces.</typeparam>
+		/// <param name="dirL">The vector in local space.</param>
 		/// <param name="signed_edges"></param>
 		/// <returns></returns>
 		template<typename T>
 		Edge* minEdgeAlignment(const glmvec3 dirL, const T& signed_edges) {
 			assert(signed_edges.size() > 0);
-			real min_abs_edge_alignment{ std::numeric_limits<real>::max() };
-			Edge* minedge = nullptr;
-			for (Edge* const edge : signed_edges) {
-				if (real abs_edge_alignment = fabs(glm::dot(dirL, edge->m_edgeL)); abs_edge_alignment < min_abs_edge_alignment) {
-					min_abs_edge_alignment = abs_edge_alignment;
-					minedge = edge;
-				}
-			}
-			return minedge;
+			auto compare = [&](Edge* a, Edge* b) { return fabs(glm::dot(dirL, a->m_edgeL)) < fabs(glm::dot(dirL, b->m_edgeL)); };
+			return *std::ranges::min_element(signed_edges, compare);
 		}
 
 		struct Collider {};
@@ -380,6 +377,10 @@ namespace ve {
 			};
 		};
 
+		/// <summary>
+		/// This is the template for each cube. It contains the basic geometric properties of a cube:
+		/// Vertces, edges and faces.
+		/// </summary>
 		Polytope g_cube {
 			{ { -0.5,-0.5,-0.5 }, { -0.5,-0.5,0.5 }, { -0.5,0.5,0.5 }, { -0.5,0.5,-0.5 }, { 0.5,-0.5,0.5 }, { 0.5,-0.5,-0.5 }, { 0.5,0.5,-0.5 }, { 0.5,0.5,0.5 } },
 			{ {0,1}, {1,2}, {2,3}, {3,0}, {4,5}, {5,6}, {6,7}, {7,0}, {5,0}, {1,4}, {3,6}, {7,2} }, //edges
@@ -390,19 +391,25 @@ namespace ve {
 				{ {3,-1.0}, {10}, {5,-1.0}, {8} },				//face 4
 				{ {1,-1.0}, {9}, {7,-1.0}, {11} }				//face 5
 			},
-			[&](real mass, glmvec3& s) {
+			[&](real mass, glmvec3& s) { //callback for calculating the inertia tensor of this polytope
 				return mass * glmmat3{ {s.y * s.y + s.z * s.z,0,0}, {0,s.x * s.x + s.z * s.z,0}, {0,0,s.x * s.x + s.y * s.y} } / 12.0;
 			}
 		};
 
+		//--------------------------------------------------------------------------------------------------
+		//Physics engine stuff
+
 		class Body;
 		using body_callback = std::function<void(double, std::shared_ptr<Body>)>;
 
+		/// <summary>
+		/// THis class implements the basic physics properties of a rigid body.
+		/// </summary>
 		class Body {
 		public:
-			std::string	m_name;
-			void* m_owner = nullptr;				//pointer to owner of this body, must be unique
-			Polytope* m_polytope = nullptr;			//geometric shape
+			std::string	m_name;							//The name of this body
+			void*		m_owner = nullptr;		//pointer to owner of this body, must be unique (owner is called if body moves)
+			Polytope*	m_polytope = nullptr;			//geometric shape
 			glmvec3		m_scale{ 1,1,1 };				//scale factor in local space
 			glmvec3		m_positionW{ 0, 0, 0 };			//current position at time slot in world space
 			glmquat		m_orientationLW{ 1, 0, 0, 0 };	//current orientation at time slot Local -> World
@@ -415,6 +422,9 @@ namespace ve {
 
 			std::unordered_map<uint64_t, Force> m_forces;//forces acting on this body
 
+			//-----------------------------------------------------------------------------
+			//These members are computed by the class, only change if you know what you are doing
+
 			glmmat3		m_inertiaL{ 1.0 };				//computed when the body is created
 			glmmat3		m_inertia_invL{ 1.0 };			//computed when the body is created
 
@@ -424,9 +434,9 @@ namespace ve {
 			glmmat3		m_model_it;						//orientation inverse transpose for bringing normal vector to world
 			glmmat3		m_inertiaW{ glmmat4{1} };		//inertia tensor in world frame
 			glmmat3		m_inertia_invW{ glmmat4{1} };	//inverse inertia tensor in world frame
-			int_t		m_grid_x{ 0 };
+			int_t		m_grid_x{ 0 };					//grid coordinates for broadphase
 			int_t		m_grid_z{ 0 };
-			glmvec3		m_vbias{0,0,0};
+			glmvec3		m_vbias{0,0,0};					//extra energy if body overlaps with another body
 
 			Body() { inertiaTensorL(); updateMatrices(); };
 
@@ -521,52 +531,67 @@ namespace ve {
 			};
 		};
 
-		//
-		//Stable contacts: https://www.gdcvault.com/play/1022193/Physics-for-Game-Programmers-Robust
-		//
+		//--------------------------------------------------------------------------------------------------
+		//Contact between bodies
+
+		/// <summary>
+		/// Stable contacts: https://www.gdcvault.com/play/1022193/Physics-for-Game-Programmers-Robust
+		/// This struct holds the contact information between a pair of bodies.
+		/// </summary>
 		struct Contact {
 
+			/// <summary>
+			/// A generalize pointer to a body, also including transforms. Used to be able to quickly
+			/// swap the meaning of two bodies (reference and incident body)
+			/// </summary>
 			struct BodyPtr {
 				std::shared_ptr<Body> m_body;	//pointer to body
 				glmmat4 m_to_other;				//transform to other body
 				glmmat3 m_to_other_it;			//inverse transpose of transform to other body, for normal vectors
 			};
 
+			/// <summary>
+			/// A single point of contact between two bodies.
+			/// </summary>
 			struct ContactPoint {
+
+				/// <summary>
+				/// Characterize which contact this is.
+				/// </summary>
 				enum type_t {
-					unknown,
-					any,
-					colliding,
-					resting,
-					separating
+					unknown,	//Unknown
+					any,		//Any
+					colliding,	//Colliding, bodies are bumping into each other
+					resting,	//No collision, bodies are resting, maybe sliding
+					separating	//Bodies are separating into different directions
 				};
 
-				glmvec3 m_positionW{0.0};
-				type_t	m_type{type_t::unknown};
-				real	m_restitution;
-				real	m_friction;
-				glmvec3 m_r0;
-				glmvec3 m_r1;
-				glmmat3	m_K;		//mass matrix
-				glmmat3	m_K_inv;	//inverse mass matrix
-				real	m_vbias{ 0.0 };
-
-				glmvec3	m_F{ 0,0,0 };
-				real	m_f{ 0.0 };		//accumulates force impulses along normal during a loop run
-				glmvec2	m_t;			//accumulates force impulses along normal during a loop run
+				glmvec3 m_positionW{0.0};			//Position in world coordinates
+				type_t	m_type{type_t::unknown};	//Type of contact point
+				real	m_restitution;				//Restitution of velcoties after a collision (if reting then = 0)
+				real	m_friction;					//Friction coefficient
+				glmvec3 m_r0W;						//Position in world coordinates relative to body 0 center
+				glmvec3 m_r1W;						//Position in world relative to body 1 center
+				glmmat3	m_K;			//mass matrix
+				glmmat3	m_K_inv;		//inverse mass matrix
+				real	m_vbias{ 0.0 };	//extra energy if bodies overlap
+				real	m_f{ 0.0 };		//accumulates force impulses along normal (1D) during a loop run
+				glmvec2	m_t{ 0.0 };		//accumulates force impulses along tangent (2D) during a loop run
 			};
 
 			uint64_t	m_last_loop{ std::numeric_limits<uint64_t>::max() }; //number of last loop this contact was valid
-			BodyPtr		m_body_ref;	//reference body, we will use its local space mostly
-			BodyPtr		m_body_inc; //incident body, we will transfer its points/vectors to the ref space
+			BodyPtr		m_body_ref;							//reference body, we will use its local space mostly
+			BodyPtr		m_body_inc;							//incident body, we will transfer its points/vectors to the ref space
 			glmvec3		m_separating_axisW{0.0};			//Axis that separates the two bodies in world space
 
-			glmvec3					m_normalW{ 0.0 };
-			std::array<glmvec3, 2>	m_tangentW;
+			glmvec3					m_normalW{ 0.0 };		//Contact normal
+			std::array<glmvec3, 2>	m_tangentW;				//Contact tangent vector (calculated for each normal)
 
-			std::vector<ContactPoint> m_contact_points{};	//Contact points in contact manifold in world space
-			uint32_t	m_contributing_contacts{ 0 };		//number of resting or colliding contacts
-			bool		m_all_resting{true};				//true if all contact points are resting
+			std::vector<ContactPoint> m_contact_points{};		//Contact points in contact manifold in world space
+			std::vector<ContactPoint> m_old_contact_points{};	//Contact points in contact manifold in world space in prev loop
+
+			bool		m_all_resting{false};				//true if all contact points are resting
+			bool		m_old_all_resting{false};			//true if all contact points in previous loop were resting
 			real		m_dampen_coeff{ 0.99 };				//coefficient for dampening unwanted rotation for face/face contact
 
 
@@ -590,14 +615,12 @@ namespace ve {
 				}
 				else if (d > c_resting_factor * c_gravity * g_sim_delta_time ) { 
 					type = Contact::ContactPoint::type_t::resting; 
-					++m_contributing_contacts;
 					vbias = (penetration < 0.0) ? c_bias * g_sim_frequency * std::max(0.0, -penetration - c_slop) : 0.0;
 				}
 				else { 
 					type = Contact::ContactPoint::type_t::colliding;
 					m_all_resting = false;
 					m_dampen_coeff = 0.99;
-					++m_contributing_contacts;
 				}
 
 				auto restitution = std::max(m_body_ref.m_body->m_restitution, m_body_inc.m_body->m_restitution);
@@ -615,6 +638,9 @@ namespace ve {
 				m_contact_points.emplace_back(positionW, type, restitution, friction, r0, r1, K, K_inv, vbias);
 			}
 		};
+
+		//--------------------------------------------------------------------------------------------------
+
 
 	public:
 		enum simulation_mode_t {
@@ -774,6 +800,7 @@ namespace ve {
 				++m_loop;
 				broadPhase();
 				narrowPhase();
+				warmStart();
 
 				if (m_run) {
 					for (auto& c : m_bodies) {
@@ -853,8 +880,9 @@ namespace ve {
 		void narrowPhase() {
 			for (auto it = std::begin(m_contacts); it != std::end(m_contacts); ) {
 				auto& contact = it->second;
+				contact.m_old_contact_points = std::move(contact.m_contact_points);
+				contact.m_old_all_resting = contact.m_all_resting;
 				contact.m_contact_points.clear();
-				contact.m_contributing_contacts = 0;
 				if (contact.m_last_loop == m_loop) {	//is contact still possible?
 					if (contact.m_body_ref.m_body->m_owner == nullptr) {
 						groundTest(contact); //is the ref body the ground?
@@ -868,6 +896,30 @@ namespace ve {
 					++it;
 				}
 				else { it = m_contacts.erase(it); }				//no - erase from container
+			}
+		}
+
+		/// <summary>
+		/// 
+		/// </summary>
+		void warmStart() {
+			if (g_use_warmstart == 0) return;
+			for (auto& c : m_contacts) {
+				auto& contact = c.second;
+				for (auto& cp : contact.m_contact_points) {
+					if (cp.m_type != Contact::ContactPoint::resting || cp.m_f != 0.0) break;
+					for (auto& coldp : contact.m_old_contact_points) {
+						if (coldp.m_type != Contact::ContactPoint::resting) break;
+						if (glm::length(cp.m_positionW - coldp.m_positionW) < c_small) {
+							cp.m_f = coldp.m_f;
+							auto F = cp.m_f * contact.m_normalW;
+							contact.m_body_ref.m_body->m_linear_velocityW += -F * contact.m_body_ref.m_body->m_mass_inv;
+							contact.m_body_ref.m_body->m_angular_velocityW += contact.m_body_ref.m_body->m_inertia_invW * glm::cross(cp.m_r0W, -F);
+							contact.m_body_inc.m_body->m_linear_velocityW += F * contact.m_body_inc.m_body->m_mass_inv;
+							contact.m_body_inc.m_body->m_angular_velocityW += contact.m_body_inc.m_body->m_inertia_invW * glm::cross(cp.m_r1W, F);
+						}
+					}
+				}
 			}
 		}
 
@@ -914,8 +966,8 @@ namespace ve {
 					}
 					
 					if (g_solver == 1) {
-						glmmat3 mc0 = matrixCross3(cp.m_r0);
-						glmmat3 mc1 = matrixCross3(cp.m_r1);
+						glmmat3 mc0 = matrixCross3(cp.m_r0W);
+						glmmat3 mc1 = matrixCross3(cp.m_r1W);
 
 						glmmat3 K = -mc1 * contact.m_body_inc.m_body->m_inertia_invW * mc1 - mc0 * contact.m_body_ref.m_body->m_inertia_invW * mc0;
 
@@ -949,9 +1001,9 @@ namespace ve {
 					auto F = f * contact.m_normalW - dt.x * contact.m_tangentW[0] - dt.y * contact.m_tangentW[1];
 
 					contact.m_body_ref.m_body->m_linear_velocityW  += -F * contact.m_body_ref.m_body->m_mass_inv;
-					contact.m_body_ref.m_body->m_angular_velocityW +=      contact.m_body_ref.m_body->m_inertia_invW * glm::cross(cp.m_r0, -F);
+					contact.m_body_ref.m_body->m_angular_velocityW +=      contact.m_body_ref.m_body->m_inertia_invW * glm::cross(cp.m_r0W, -F);
 					contact.m_body_inc.m_body->m_linear_velocityW  +=  F * contact.m_body_inc.m_body->m_mass_inv;
-					contact.m_body_inc.m_body->m_angular_velocityW +=      contact.m_body_inc.m_body->m_inertia_invW * glm::cross(cp.m_r1, F);
+					contact.m_body_inc.m_body->m_angular_velocityW +=      contact.m_body_inc.m_body->m_inertia_invW * glm::cross(cp.m_r1W, F);
 				}
 			}
 			return res;
@@ -1287,11 +1339,18 @@ namespace ve {
 				nk_layout_row_end(ctx);
 
 				nk_layout_row_dynamic(ctx, 30, 3);
-				nk_label(ctx, "Use Bias ", NK_TEXT_LEFT);
+				nk_label(ctx, "Use Bias", NK_TEXT_LEFT);
 				if (nk_option_label(ctx, "Yes", g_use_bias == 1))
 					g_use_bias = 1;
 				if (nk_option_label(ctx, "No", g_use_bias == 0))
 					g_use_bias = 0;
+
+				nk_layout_row_dynamic(ctx, 30, 3);
+				nk_label(ctx, "Warmstart", NK_TEXT_LEFT);
+				if (nk_option_label(ctx, "Yes", g_use_warmstart == 1))
+					g_use_warmstart = 1;
+				if (nk_option_label(ctx, "No", g_use_warmstart == 0))
+					g_use_warmstart = 0;
 
 
 				/*nk_layout_row_dynamic(ctx, 30, 1);
