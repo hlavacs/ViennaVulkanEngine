@@ -67,6 +67,7 @@ double	g_sim_delta_time = 1.0 / g_sim_frequency;	//The time to move forward the 
 int		g_solver = 0;								//Select which solver to use
 int		g_use_bias = 1;								//If true, the the bias is used for resting contacts
 int		g_use_warmstart = 1;						//If true then warm start resting contacts
+int		g_loops = 50;								//Number of loops in each simulation step
 
 template <typename T> 
 inline void hash_combine(std::size_t& seed, T const& v) {		//For combining hashes
@@ -609,28 +610,28 @@ namespace ve {
 
 				ContactPoint::type_t type;
 				real vbias = 0.0;
-				if (d > c_sep_velocity) {
+				if (d > c_sep_velocity) {											//Separatting contact
 					type = Contact::ContactPoint::type_t::separating;
 				}
-				else if (d > c_resting_factor * c_gravity * g_sim_delta_time ) { 
+				else if (d > c_resting_factor * c_gravity * g_sim_delta_time ) {	//Resting contact
 					type = Contact::ContactPoint::type_t::resting; 
 					vbias = (penetration < 0.0) ? c_bias * g_sim_frequency * std::max(0.0, -penetration - c_slop) : 0.0;
 				}
 				else { 
-					type = Contact::ContactPoint::type_t::colliding;
+					type = Contact::ContactPoint::type_t::colliding;				//Colliding contact
 				}
 
 				auto restitution = std::max(m_body_ref.m_body->m_restitution, m_body_inc.m_body->m_restitution);
 				restitution = (type == Contact::ContactPoint::type_t::colliding ? restitution : 0.0);
 				auto friction = (m_body_ref.m_body->m_friction + m_body_inc.m_body->m_friction) / 2.0;
 
-				auto mc0 = matrixCross3(r0W);
+				auto mc0 = matrixCross3(r0W);	//Turn cross product into a matrix multiplication
 				auto mc1 = matrixCross3(r1W);
 
-				auto K = glmmat3{ 1.0 } * m_body_inc.m_body->m_mass_inv - mc1 * m_body_inc.m_body->m_inertia_invW * mc1 +
+				auto K = glmmat3{ 1.0 } * m_body_inc.m_body->m_mass_inv - mc1 * m_body_inc.m_body->m_inertia_invW * mc1 + //mass matrix
 						 glmmat3{ 1.0 } * m_body_ref.m_body->m_mass_inv - mc0 * m_body_ref.m_body->m_inertia_invW * mc0;
 
-				auto K_inv = glm::inverse(K);
+				auto K_inv = glm::inverse(K);	//Inverse of mass matrix (roughly 1/mass)
 
 				m_contact_points.emplace_back(positionW, type, restitution, friction, r0W, r1W, K, K_inv, vbias);
 			}
@@ -640,34 +641,55 @@ namespace ve {
 
 
 	public:
+
+		/// <summary>
+		/// State of the simulation. Can be either real time or debug.
+		/// In debug, the simulation does not advance by itself but time can
+		/// be advanced from the outside by increasing m_current_time.
+		/// </summary>
 		enum simulation_mode_t {
-			SIMULATION_MODE_REALTIME,
-			SIMULATION_MODE_DEBUG
+			SIMULATION_MODE_REALTIME,	//Normal real time simulation
+			SIMULATION_MODE_DEBUG		//Debug mode
 		};
-		simulation_mode_t m_mode{ SIMULATION_MODE_REALTIME };
+		simulation_mode_t m_mode{ SIMULATION_MODE_REALTIME };	//state of the simulation
 
-		bool			m_run = true;
-		uint64_t		m_loop{ 0L };
-		double			m_current_time{ 0.0 };			//current time
-		double			m_last_time{ 0.0 };				//last time the sim was interpolated
-		double			m_last_slot{ 0.0 };				//last time the sim was calculated
-		double			m_next_slot{ g_sim_delta_time };//next time for simulation
+		bool			m_run = true;					//If false, halt the simulation
+		uint64_t		m_loop{ 0L };					//Loop counter
+		double			m_current_time{ 0.0 };			//Current time
+		double			m_last_time{ 0.0 };				//Last time the sim was interpolated
+		double			m_last_slot{ 0.0 };				//Last time the sim was calculated
+		double			m_next_slot{ g_sim_delta_time };//Next time for simulation
 
+		/// <summary>
+		/// All bodies are stored in the map m_bodies. The key is a void*, which can be used 
+		/// to call back an owner if the body moves. With this key, the body can also be found.
+		/// So best if there is a 1:1 correspondence. E.g., the owner can be a specific VESceneNode.
+		/// </summary>
 		using body_map = std::unordered_map<void*, std::shared_ptr<Body>>;
 		body_map		m_bodies;						//main container of all bodies
 		
-		const double	c_width{5};						//grid cell width (m)
-		std::unordered_map< intpair_t, body_map > m_grid;	//broadphase grid
+		/// <summary>
+		/// The broadphase uses a 2D grid of cells, each body is stored in exactly one cell.
+		/// Only cells which actually contain bodies are stored in the map.
+		/// </summary>
+		const double	c_width{5};							//grid cell width (m)
+		std::unordered_map<intpair_t, body_map > m_grid;	//broadphase grid of cells.
 
 		Body			m_ground{ "Ground", nullptr, &g_cube , { 1000, 1000, 1000 } , { 0, -500.0_real, 0 }, {1,0,0,0} };
-		body_map		m_global_cell{ { nullptr, std::make_shared<Body>(m_ground) } };	//cell containing the ground
+		body_map		m_global_cell{ { nullptr, std::make_shared<Body>(m_ground) } };	//cell containing only the ground
 
+		/// <summary>
+		/// A contact is a struct that contains contact information for a pair of bodies A and B.
+		/// The map hash function alsways uses the smaller of A and B first, so there is only one contact for
+		/// A/B and B/A.
+		/// </summary>
 		std::unordered_map<voidppair_t, Contact> m_contacts;	//possible contacts resulting from broadphase
 
 		std::unordered_map<std::string, std::vector<std::string>> m_debug_string;	//debug information
 		std::unordered_map<std::string, std::vector<std::pair<uint64_t, real>>> m_debug_real;	//debug information
 
 		//-----------------------------------------------------------------------------------------------------
+		//debugging
 
 		void debug_string(std::string key, std::string value) {
 			if (m_mode != simulation_mode_t::SIMULATION_MODE_DEBUG) return;
@@ -691,38 +713,61 @@ namespace ve {
 			else m_debug_real[key2 + key1 + rest].emplace_back( x, value );
 		}
 
+		//-----------------------------------------------------------------------------------------------------
+
+		/// <summary>
+		/// This callback is used for updating the visual boy whenever the physics box moves.
+		/// It is also used for extrapolating the new position between two simulation slots.
+		/// </summary>
 		std::function<void(double, std::shared_ptr<Body>)> onMove = [&](double dt, std::shared_ptr<Body> body) {
-			VESceneNode* cube = static_cast<VESceneNode*>(body->m_owner);
-			glmvec3 pos = body->m_positionW;
-			glmquat orient = body->m_orientationLW;
-			body->stepPosition(dt, pos, orient);
-			cube->setTransform(Body::computeModel(pos, orient, body->m_scale));
+			VESceneNode* cube = static_cast<VESceneNode*>(body->m_owner);		//Owner is a pointer to a scene node
+			glmvec3 pos = body->m_positionW;									//New position of the scene node
+			glmquat orient = body->m_orientationLW;								//New orientation of the scende node
+			body->stepPosition(dt, pos, orient);								//Extrapolate
+			cube->setTransform(Body::computeModel(pos, orient, body->m_scale));	//Set the scene node data
 
 		};
 
-		std::shared_ptr<Body> m_body; // the body we can move with the keyboard
+		std::shared_ptr<Body> m_body; // the body we can move with the debug panel (always the latest body created)
 
+		/// <summary>
+		/// Add a new body to the physics world.
+		/// </summary>
+		/// <param name="pbody">The new body.</param>
 		void addBody( std::shared_ptr<Body> pbody ) {
-			m_bodies.insert( { pbody->m_owner, pbody } );
-			pbody->m_grid_x = static_cast<int_t>(pbody->m_positionW.x / c_width);
+			m_bodies.insert( { pbody->m_owner, pbody } );							//Put into map
+			pbody->m_grid_x = static_cast<int_t>(pbody->m_positionW.x / c_width);	//2D coordinates in the broadphase grid
 			pbody->m_grid_z = static_cast<int_t>(pbody->m_positionW.z / c_width);
-			m_grid[intpair_t{ pbody->m_grid_x, pbody->m_grid_z }].insert({ pbody->m_owner, pbody });
+			m_grid[intpair_t{ pbody->m_grid_x, pbody->m_grid_z }].insert({ pbody->m_owner, pbody }); //Put into broadphase grid
 		}
 		
+		/// <summary>
+		/// If a body moves, it may be transferred to another broadphase grid cell.
+		/// </summary>
+		/// <param name="pbody">The body that moved.</param>
 		void moveBodyInGrid(std::shared_ptr<Body> pbody) {
-			int_t x = static_cast<int_t>(pbody->m_positionW.x / c_width);
-			int_t z = static_cast<int_t>(pbody->m_positionW.z / c_width);
-			if (x != pbody->m_grid_x || z != pbody->m_grid_z) {
-				m_grid[intpair_t{ pbody->m_grid_x, pbody->m_grid_z }].erase(pbody->m_owner);
+			int_t x = static_cast<int_t>(pbody->m_positionW.x / c_width);	//2D grid coordinates
+			int_t z = static_cast<int_t>(pbody->m_positionW.z / c_width);	
+			if (x != pbody->m_grid_x || z != pbody->m_grid_z) {				//Did they change?
+				m_grid[intpair_t{ pbody->m_grid_x, pbody->m_grid_z }].erase(pbody->m_owner); //Remove body from old cell
 				pbody->m_grid_x = x;
 				pbody->m_grid_z = z;
-				m_grid[intpair_t{ x, z }].insert({ pbody->m_owner, pbody });
+				m_grid[intpair_t{ x, z }].insert({ pbody->m_owner, pbody }); //Put body in new cell
 			}
 		}
 
+		/// <summary>
+		/// Callback for frame ended event.
+		/// </summary>
+		/// <param name="event"></param>
 		void onFrameEnded(veEvent event) {
 		}
 
+		/// <summary>
+		/// Callback for event key stroke. Depending on the key pressed, bodies are created.
+		/// </summary>
+		/// <param name="event">The keyboard event.</param>
+		/// <returns>False, so the key is not consumed.</returns>
 		bool onKeyboard(veEvent event) {
 			static int64_t cubeid = 0;
 
@@ -787,28 +832,32 @@ namespace ve {
 			return false;
 		};
 
+		/// <summary>
+		/// Callback for the frame started event. This is the main physics engine entry point.
+		/// </summary>
+		/// <param name="event">The vent data.</param>
 		void onFrameStarted(veEvent event) {
-			if (m_mode == SIMULATION_MODE_REALTIME) {
+			if (m_mode == SIMULATION_MODE_REALTIME) {	//if the engine is in realtime mode, advance time
 				m_current_time = m_last_time + event.dt;
 			}
 
 			auto last_loop = m_loop;
 			while (m_current_time > m_next_slot) {	//compute position/vel at time slots
-				++m_loop;
-				broadPhase();
-				narrowPhase();
-				warmStart();
+				++m_loop;			//increase loop counter
+				broadPhase();		//run the broad phase
+				narrowPhase();		//Run the narrow phase
+				warmStart();		//Warm start the resting contacts if possible
 
 				if (m_run) {
 					for (auto& c : m_bodies) {
 						auto& body = c.second;
-						body->stepVelocity(g_sim_delta_time);
+						body->stepVelocity(g_sim_delta_time);	//Integration step for velocity
 					}
 				}
-				calculateImpulses(Contact::ContactPoint::type_t::any, 50, g_sim_delta_time);
+				calculateImpulses(Contact::ContactPoint::type_t::any, g_loops, g_sim_delta_time); //calculate impulses
 
 				if (m_run) {
-					for (auto& c : m_bodies) {
+					for (auto& c : m_bodies) {	//integrate positions and update the matrices for the bodies
 						auto& body = c.second;
 						if (body->stepPosition(g_sim_delta_time, body->m_positionW, body->m_orientationLW)) {
 							body->updateMatrices();
@@ -1321,7 +1370,6 @@ namespace ve {
 				if (nk_option_label(ctx, "Solver B", g_solver == 1)) g_solver = 1;
 
 				str << "Sim Frequency " << g_sim_frequency;
-
 				nk_layout_row_dynamic(ctx, 30, 1);
 				nk_label(ctx, str.str().c_str(), NK_TEXT_LEFT);
 
@@ -1354,6 +1402,15 @@ namespace ve {
 				nk_layout_row_push(ctx, 60);
 				nk_label(ctx, str.str().c_str(), NK_TEXT_LEFT);
 				nk_layout_row_end(ctx);
+
+				str.str("");
+				str << "Loops" << g_loops;
+				nk_layout_row_dynamic(ctx, 30, 1);
+				nk_label(ctx, str.str().c_str(), NK_TEXT_LEFT);
+
+				nk_layout_row_dynamic(ctx, 30, 2);
+				if (nk_button_label(ctx, "-5")) { g_loops = std::max(5, g_loops - 5); }
+				if (nk_button_label(ctx, "+5")) { g_loops += 5; }
 
 				nk_layout_row_dynamic(ctx, 30, 3);
 				nk_label(ctx, "Use Bias", NK_TEXT_LEFT);
