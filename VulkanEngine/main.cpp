@@ -899,16 +899,17 @@ namespace ve {
 
 		/// <summary>
 		/// A resting point can be warmstarted with its previous normal force. This
-		/// increases stacking stability.
+		/// increases stacking stability. We warmstart with old resting points at the same position.
+		/// But we need a minimum number of old points, otherwise there is no warm starting.
 		/// </summary>
 		void warmStart() {
 			if (g_use_warmstart == 0) return;
 			for (auto& c : m_contacts) {
 				auto& contact = c.second;
 				for (auto& cp : contact.m_contact_points) {
-					if (cp.m_type != Contact::ContactPoint::resting || cp.m_f != 0.0) break; //warmstart only once
+					if (cp.m_type != Contact::ContactPoint::resting || cp.m_f != 0.0) continue; //warmstart only once
 					for (auto& coldp : contact.m_old_contact_points) {
-						if (coldp.m_type != Contact::ContactPoint::resting) break;			//warmstart only resting points
+						if (coldp.m_type != Contact::ContactPoint::resting) continue;			//warmstart only resting points
 						if (glm::length(cp.m_positionW - coldp.m_positionW) < c_small) {	//if old point is at same position
 							cp.m_f = coldp.m_f;				//remember old normal force
 							contact.m_num_old_points++;		//increas number of old points
@@ -939,21 +940,22 @@ namespace ve {
 		}
 
 		/// <summary>
-		/// Test if a body collides with the ground.
+		/// Test if a body collides with the ground. A vertex collides with the ground if its
+		/// y world coordinate is negative.
 		/// </summary>
-		/// <param name="contact">The contact information between ground and the body.</param>
+		/// <param name="contact">The contact information between the ground and the body.</param>
 		void groundTest(Contact& contact) {
-			if (contact.m_body_inc.m_body->m_positionW.y > contact.m_body_inc.m_body->boundingSphereRadius()) return;
+			if (contact.m_body_inc.m_body->m_positionW.y > contact.m_body_inc.m_body->boundingSphereRadius()) return; //early out test
 			real min_depth{ std::numeric_limits<real>::max() };
 			for (auto& vL : contact.m_body_inc.m_body->m_polytope->m_vertices) {
-				auto vW = ITOWP(vL.m_positionL);
-				if (vW.y <= c_collision_margin) {
-					min_depth = std::min(min_depth, vW.y);
-					contact.addContactPoint(vW, glmvec3{ 0,1,0 }, vW.y);
+				auto vW = ITOWP(vL.m_positionL);							//world coordinates
+				if (vW.y <= c_collision_margin) {							//close to the ground?
+					min_depth = std::min(min_depth, vW.y);					//remember smalles y coordinate for calculating bias
+					contact.addContactPoint(vW, glmvec3{ 0,1,0 }, vW.y);	//add the contact point
 				}
 			}
 			if (min_depth < 0.0) { 
-				contact.m_body_inc.m_body->m_vbias += glmvec3{ 0, -min_depth * g_sim_frequency, 0 };
+				contact.m_body_inc.m_body->m_vbias += glmvec3{ 0, -min_depth * g_sim_frequency, 0 }; //If penetrating, calculate bias
 			}
 		}
 
