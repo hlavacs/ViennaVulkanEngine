@@ -589,20 +589,21 @@ namespace ve {
 
 			std::vector<ContactPoint> m_contact_points{};		//Contact points in contact manifold in world space
 			std::vector<ContactPoint> m_old_contact_points{};	//Contact points in contact manifold in world space in prev loop
+			uint32_t				  m_num_old_points{0};		//Only warmstart if you have atleast N old resting points
 
-			bool		m_all_resting{false};				//true if all contact points are resting
-			bool		m_old_all_resting{false};			//true if all contact points in previous loop were resting
-			real		m_dampen_coeff{ 0.99 };				//coefficient for dampening unwanted rotation for face/face contact
-
-
+			/// <summary>
+			/// This function adds a new contact point to a contact manifold. 
+			/// </summary>
+			/// <param name="positionW">Position in world coordinates.</param>
+			/// <param name="normalW">Normal vector in world coordinates.</param>
+			/// <param name="penetration">Interpenetration depth. If <0 then there is interpenetration.</param>
 			void addContactPoint(glmvec3 positionW, glmvec3 normalW, real penetration) {
-				if (m_contact_points.size() == 0) {
-					m_normalW = normalW;
-					geometry::computeBasis(normalW, m_tangentW[0], m_tangentW[1]);
-					m_all_resting = true;
+				if (m_contact_points.size() == 0) {									//If first contact point
+					m_normalW = normalW;											//Use its normal vector
+					geometry::computeBasis(normalW, m_tangentW[0], m_tangentW[1]);	//Calculate a tangent base
 				}
-				auto r0 = positionW - m_body_ref.m_body->m_positionW;
-				auto r1 = positionW - m_body_inc.m_body->m_positionW;
+				auto r0W = positionW - m_body_ref.m_body->m_positionW;	//Position relative to body 0 center in world coordinates
+				auto r1W = positionW - m_body_inc.m_body->m_positionW;	//Position relative to body 1 center in world coordinates
 				auto vrel = m_body_inc.m_body->totalVelocityW(positionW) - m_body_ref.m_body->totalVelocityW(positionW);
 				auto d = glm::dot(vrel, normalW);
 
@@ -610,8 +611,6 @@ namespace ve {
 				real vbias = 0.0;
 				if (d > c_sep_velocity) {
 					type = Contact::ContactPoint::type_t::separating;
-					m_all_resting = false;
-					m_dampen_coeff = 0.99;
 				}
 				else if (d > c_resting_factor * c_gravity * g_sim_delta_time ) { 
 					type = Contact::ContactPoint::type_t::resting; 
@@ -619,23 +618,21 @@ namespace ve {
 				}
 				else { 
 					type = Contact::ContactPoint::type_t::colliding;
-					m_all_resting = false;
-					m_dampen_coeff = 0.99;
 				}
 
 				auto restitution = std::max(m_body_ref.m_body->m_restitution, m_body_inc.m_body->m_restitution);
 				restitution = (type == Contact::ContactPoint::type_t::colliding ? restitution : 0.0);
 				auto friction = (m_body_ref.m_body->m_friction + m_body_inc.m_body->m_friction) / 2.0;
 
-				auto mc0 = matrixCross3(r0);
-				auto mc1 = matrixCross3(r1);
+				auto mc0 = matrixCross3(r0W);
+				auto mc1 = matrixCross3(r1W);
 
 				auto K = glmmat3{ 1.0 } * m_body_inc.m_body->m_mass_inv - mc1 * m_body_inc.m_body->m_inertia_invW * mc1 +
 						 glmmat3{ 1.0 } * m_body_ref.m_body->m_mass_inv - mc0 * m_body_ref.m_body->m_inertia_invW * mc0;
 
 				auto K_inv = glm::inverse(K);
 
-				m_contact_points.emplace_back(positionW, type, restitution, friction, r0, r1, K, K_inv, vbias);
+				m_contact_points.emplace_back(positionW, type, restitution, friction, r0W, r1W, K, K_inv, vbias);
 			}
 		};
 
@@ -881,8 +878,9 @@ namespace ve {
 			for (auto it = std::begin(m_contacts); it != std::end(m_contacts); ) {
 				auto& contact = it->second;
 				contact.m_old_contact_points = std::move(contact.m_contact_points);
-				contact.m_old_all_resting = contact.m_all_resting;
 				contact.m_contact_points.clear();
+				contact.m_num_old_points = 0;
+
 				if (contact.m_last_loop == m_loop) {	//is contact still possible?
 					if (contact.m_body_ref.m_body->m_owner == nullptr) {
 						groundTest(contact); //is the ref body the ground?
@@ -900,24 +898,41 @@ namespace ve {
 		}
 
 		/// <summary>
-		/// 
+		/// A resting point can be warmstarted with its previous normal force. This
+		/// increases stacking stability.
 		/// </summary>
 		void warmStart() {
 			if (g_use_warmstart == 0) return;
 			for (auto& c : m_contacts) {
 				auto& contact = c.second;
 				for (auto& cp : contact.m_contact_points) {
-					if (cp.m_type != Contact::ContactPoint::resting || cp.m_f != 0.0) break;
+					if (cp.m_type != Contact::ContactPoint::resting || cp.m_f != 0.0) break; //warmstart only once
 					for (auto& coldp : contact.m_old_contact_points) {
-						if (coldp.m_type != Contact::ContactPoint::resting) break;
-						if (glm::length(cp.m_positionW - coldp.m_positionW) < c_small) {
-							cp.m_f = coldp.m_f;
+						if (coldp.m_type != Contact::ContactPoint::resting) break;			//warmstart only resting points
+						if (glm::length(cp.m_positionW - coldp.m_positionW) < c_small) {	//if old point is at same position
+							cp.m_f = coldp.m_f;				//remember old normal force
+							contact.m_num_old_points++;		//increas number of old points
+						}
+					}
+				}
+			}
+
+			for (auto& c : m_contacts) {
+				auto& contact = c.second;
+				if (contact.m_num_old_points > 3) {					//only warmstart if we have enough resting points
+					for (auto& cp : contact.m_contact_points) {
+						if (cp.m_f != 0.0) {
 							auto F = cp.m_f * contact.m_normalW;
 							contact.m_body_ref.m_body->m_linear_velocityW += -F * contact.m_body_ref.m_body->m_mass_inv;
 							contact.m_body_ref.m_body->m_angular_velocityW += contact.m_body_ref.m_body->m_inertia_invW * glm::cross(cp.m_r0W, -F);
 							contact.m_body_inc.m_body->m_linear_velocityW += F * contact.m_body_inc.m_body->m_mass_inv;
 							contact.m_body_inc.m_body->m_angular_velocityW += contact.m_body_inc.m_body->m_inertia_invW * glm::cross(cp.m_r1W, F);
 						}
+					}
+				}
+				else {
+					for (auto& cp : contact.m_contact_points) {
+						cp.m_f = 0.0;
 					}
 				}
 			}
