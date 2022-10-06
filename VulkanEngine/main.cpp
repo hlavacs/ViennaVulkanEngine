@@ -455,7 +455,8 @@ namespace ve {
 			bool stepPosition(double dt, glmvec3& pos, glmquat& quat) {
 				bool active = false;
 				if (glm::length(m_linear_velocityW) > c_eps) {
-					pos = m_positionW + ( m_linear_velocityW  + m_vbias ) * (real)dt;
+					pos = m_positionW + m_linear_velocityW * (real)dt;
+					pos += m_vbias * (real)dt;
 					active = true;
 				}
 				m_vbias = glmvec3{ 0,0,0 };
@@ -1370,10 +1371,8 @@ namespace ve {
 				if (nk_option_label(ctx, "Solver B", g_solver == 1)) g_solver = 1;
 
 				str << "Sim Frequency " << g_sim_frequency;
-				nk_layout_row_dynamic(ctx, 30, 1);
+				nk_layout_row_dynamic(ctx, 30, 3);
 				nk_label(ctx, str.str().c_str(), NK_TEXT_LEFT);
-
-				nk_layout_row_dynamic(ctx, 30, 2);
 				if (nk_button_label(ctx, "-10")) {
 					g_sim_frequency = std::max(10.0, g_sim_frequency - 10.0);
 					g_sim_delta_time = 1.0 / g_sim_frequency;
@@ -1405,10 +1404,8 @@ namespace ve {
 
 				str.str("");
 				str << "Loops" << g_loops;
-				nk_layout_row_dynamic(ctx, 30, 1);
+				nk_layout_row_dynamic(ctx, 30, 3);
 				nk_label(ctx, str.str().c_str(), NK_TEXT_LEFT);
-
-				nk_layout_row_dynamic(ctx, 30, 2);
 				if (nk_button_label(ctx, "-5")) { g_loops = std::max(5, g_loops - 5); }
 				if (nk_button_label(ctx, "+5")) { g_loops += 5; }
 
