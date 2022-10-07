@@ -458,18 +458,18 @@ namespace ve {
 
 			bool stepPosition(double dt, glmvec3& pos, glmquat& quat) {
 				bool active = !g_deactivate;
-				if (glm::length(m_linear_velocityW) > c_small || m_vbias != glmvec3{0.0}) {
-					pos = m_positionW + (m_linear_velocityW + m_vbias) * (real)dt;
+				if (glm::length(m_linear_velocityW + m_vbias) > c_small || m_num_resting < 4) {
 					active = true;
 				}
+				pos += (m_linear_velocityW + m_vbias) * (real)dt;
 				m_vbias = glmvec3{ 0,0,0 };
 
 				auto avW = glmmat3{ m_model_inv } * m_angular_velocityW;
 				real len = glm::length(avW);
 				if (abs(len) > c_small) {
-					if (len != 0.0) quat = glm::rotate(quat, len * (real)dt, avW / len);
 					active = true;
 				}
+				if (len != 0.0) quat = glm::rotate(quat, len * (real)dt, avW / len);
 
 				if (active) {
 					m_damping = 1.0;
@@ -755,6 +755,12 @@ namespace ve {
 			pbody->m_grid_x = static_cast<int_t>(pbody->m_positionW.x / c_width);	//2D coordinates in the broadphase grid
 			pbody->m_grid_z = static_cast<int_t>(pbody->m_positionW.z / c_width);
 			m_grid[intpair_t{ pbody->m_grid_x, pbody->m_grid_z }].insert({ pbody->m_owner, pbody }); //Put into broadphase grid
+		}
+
+		void clear() {
+			for (auto& body : m_bodies) getSceneManagerPointer()->deleteSceneNodeAndChildren( ((VESceneNode*) body.second->m_owner)->getName());
+			m_bodies.clear();
+			m_grid.clear();
 		}
 		
 		/// <summary>
@@ -1404,9 +1410,12 @@ namespace ve {
 					g_sim_delta_time = 1.0 / g_sim_frequency;
 				}
 
-				nk_layout_row_static(ctx, 30, 200, 1);
+				nk_layout_row_static(ctx, 30, 200, 2);
 				if (nk_button_label(ctx, "Next time slot")) {
 					m_physics->m_current_time += g_sim_delta_time;
+				}
+				if (nk_button_label(ctx, "Clear Bodies")) {
+					m_physics->clear();
 				}
 
 				nk_layout_row_dynamic(ctx, 30, 2);
