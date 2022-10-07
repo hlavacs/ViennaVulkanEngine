@@ -58,17 +58,18 @@ const double c_small = 0.01_real;					//A small value
 const real c_collision_margin_factor = 1.001_real;	//This factor makes physics bodies a little larger to prevent visible interpenetration
 const real c_collision_margin = 0.001_real;			//Also a little slack for detecting collisions
 const real c_sep_velocity = 0.01_real;				//Limit such that a contact is seperating and not resting
-const real c_bias = 0.1_real;						//A small addon to reduce interpenetration
+const real c_bias = 0.2_real;						//A small addon to reduce interpenetration
 const real c_slop = 0.001_real;						//This much penetration does not cause bias
 
-real	g_resting_factor = 2.0_real;					//Factor for determining when a collision velocity is actually just resting
-double	g_sim_frequency = 120.0;					//Simulation frequency in Hertz
+real	g_resting_factor = 3.0_real;				//Factor for determining when a collision velocity is actually just resting
+double	g_sim_frequency = 60.0;						//Simulation frequency in Hertz
 double	g_sim_delta_time = 1.0 / g_sim_frequency;	//The time to move forward the simulation
 int		g_solver = 0;								//Select which solver to use
 int		g_use_bias = 1;								//If true, the the bias is used for resting contacts
 int		g_use_warmstart = 1;						//If true then warm start resting contacts
 int		g_loops = 50;								//Number of loops in each simulation step
-bool	g_deactivate = false;						//Do not move objects that are deactivated
+bool	g_deactivate = true;						//Do not move objects that are deactivated
+real	g_damping = 0.99;
 
 template <typename T> 
 inline void hash_combine(std::size_t& seed, T const& v) {		//For combining hashes
@@ -439,6 +440,8 @@ namespace ve {
 			int_t		m_grid_x{ 0 };					//grid coordinates for broadphase
 			int_t		m_grid_z{ 0 };
 			glmvec3		m_vbias{0,0,0};					//extra energy if body overlaps with another body
+			uint32_t	m_num_resting{0};
+			real		m_damping{1.0};
 
 			Body() { inertiaTensorL(); updateMatrices(); };
 
@@ -455,19 +458,25 @@ namespace ve {
 
 			bool stepPosition(double dt, glmvec3& pos, glmquat& quat) {
 				bool active = !g_deactivate;
-				if (glm::length(m_linear_velocityW) > c_eps || m_vbias != glmvec3{0.0}) {
-					pos = m_positionW + m_linear_velocityW * (real)dt;
-					pos += m_vbias * (real)dt;
+				if (glm::length(m_linear_velocityW) > c_small || m_vbias != glmvec3{0.0}) {
 					active = true;
 				}
+				pos = m_positionW + (m_linear_velocityW + m_vbias) * (real)dt;
 				m_vbias = glmvec3{ 0,0,0 };
 
 				auto avW = glmmat3{ m_model_inv } * m_angular_velocityW;
 				real len = glm::length(avW);
-				if (abs(len) > c_eps) {
+				if (abs(len) > c_small) {
 					quat = glm::rotate(m_orientationLW, len * (real)dt, avW / len);
-					active = true;
+					active = active || true;
 				}
+				if (active) {
+					m_damping = 1.0;
+				}
+				else {
+					m_damping = std::max(m_damping * g_damping, 0.2);
+				}
+
 				return active;
 			};
 
@@ -480,8 +489,8 @@ namespace ve {
 					sum_forcesW  += glmmat3{ m_model } * force.second.m_forceL + force.second.m_forceW;
 					sum_torquesW += glm::cross(glmmat3{m_model}*force.second.m_positionL, glmmat3{m_model}*force.second.m_forceL);
 				}
-				m_linear_velocityW += dt * (m_mass_inv * sum_forcesW + sum_accelW);
-				m_angular_velocityW += dt * m_inertia_invW * ( sum_torquesW - glm::cross(m_angular_velocityW, m_inertiaW * m_angular_velocityW));
+				m_linear_velocityW += m_damping * dt * (m_mass_inv * sum_forcesW + sum_accelW);
+				m_angular_velocityW += m_damping * dt * m_inertia_invW * ( sum_torquesW - glm::cross(m_angular_velocityW, m_inertiaW * m_angular_velocityW));
 				return true;
 			}
 
@@ -616,7 +625,9 @@ namespace ve {
 					type = Contact::ContactPoint::type_t::separating;
 				}
 				else if (d > g_resting_factor * c_gravity * g_sim_delta_time ) {	//Resting contact
-					type = Contact::ContactPoint::type_t::resting; 
+					type = Contact::ContactPoint::type_t::resting;
+					m_body_ref.m_body->m_num_resting++;
+					m_body_inc.m_body->m_num_resting++;
 					vbias = (penetration < 0.0) ? c_bias * g_sim_frequency * std::max(0.0, -penetration - c_slop) : 0.0;
 				}
 				else { 
@@ -640,7 +651,6 @@ namespace ve {
 		};
 
 		//--------------------------------------------------------------------------------------------------
-
 
 	public:
 
@@ -861,9 +871,8 @@ namespace ve {
 				if (m_run) {
 					for (auto& c : m_bodies) {	//integrate positions and update the matrices for the bodies
 						auto& body = c.second;
-						if (body->stepPosition(g_sim_delta_time, body->m_positionW, body->m_orientationLW)) {
-							body->updateMatrices();
-						}
+						bool active = body->stepPosition(g_sim_delta_time, body->m_positionW, body->m_orientationLW);
+						body->updateMatrices();
 					}
 				}
 				m_last_slot = m_next_slot;
@@ -926,6 +935,9 @@ namespace ve {
 		/// compute the contact manifold.
 		/// </summary>
 		void narrowPhase() {
+			for (auto& body : m_bodies) {
+				body.second->m_num_resting = 0;
+			}
 			for (auto it = std::begin(m_contacts); it != std::end(m_contacts); ) {
 				auto& contact = it->second;
 				contact.m_old_contact_points = std::move(contact.m_contact_points);
@@ -957,13 +969,18 @@ namespace ve {
 			if (g_use_warmstart == 0) return;
 			for (auto& c : m_contacts) {
 				auto& contact = c.second;
-				for (auto& cp : contact.m_contact_points) {
-					if (cp.m_type != Contact::ContactPoint::resting || cp.m_f != 0.0) continue; //warmstart only once
-					for (auto& coldp : contact.m_old_contact_points) {
-						if (coldp.m_type != Contact::ContactPoint::resting) continue;			//warmstart only resting points
-						if (glm::length(cp.m_positionW - coldp.m_positionW) < c_small) {	//if old point is at same position
-							cp.m_f = coldp.m_f;				//remember old normal force
-							contact.m_num_old_points++;		//increas number of old points
+				auto num0 = contact.m_body_ref.m_body->m_num_resting;
+				auto num1 = contact.m_body_ref.m_body->m_num_resting;
+
+				if (num0 > 3 && num1 > 3) {
+					for (auto& cp : contact.m_contact_points) {
+						if (cp.m_type != Contact::ContactPoint::resting || cp.m_f != 0.0) continue; //warmstart only once
+						for (auto& coldp : contact.m_old_contact_points) {
+							if (coldp.m_type != Contact::ContactPoint::resting) continue;			//warmstart only resting points
+							if (glm::length(cp.m_positionW - coldp.m_positionW) < c_small) {	//if old point is at same position
+								cp.m_f = coldp.m_f;				//remember old normal force
+								contact.m_num_old_points++;		//increas number of old points
+							}
 						}
 					}
 				}
@@ -971,7 +988,7 @@ namespace ve {
 
 			for (auto& c : m_contacts) {
 				auto& contact = c.second;
-				if (contact.m_num_old_points > 3) {					//only warmstart if we have enough resting points
+				if (contact.m_num_old_points > 0) {					//only warmstart if we have enough resting points
 					for (auto& cp : contact.m_contact_points) {
 						if (cp.m_f != 0.0) {
 							auto F = cp.m_f * contact.m_normalW;
@@ -1416,6 +1433,13 @@ namespace ve {
 				nk_label(ctx, str.str().c_str(), NK_TEXT_LEFT);
 				if (nk_button_label(ctx, "-0.2")) { g_resting_factor = std::max(0.2, g_resting_factor - 0.2); }
 				if (nk_button_label(ctx, "+0.2")) { g_resting_factor += 0.2; }
+
+				str.str("");
+				str << "Damping Fac " << g_damping;
+				nk_layout_row_dynamic(ctx, 30, 3);
+				nk_label(ctx, str.str().c_str(), NK_TEXT_LEFT);
+				if (nk_button_label(ctx, "-0.01")) { g_damping = std::max(0.2, g_damping - 0.01); }
+				if (nk_button_label(ctx, "+0.01")) { g_damping += 0.01; }
 
 				nk_layout_row_dynamic(ctx, 30, 3);
 				nk_label(ctx, "Use Bias", NK_TEXT_LEFT);
