@@ -67,9 +67,9 @@ double	g_sim_delta_time = 1.0 / g_sim_frequency;	//The time to move forward the 
 int		g_solver = 0;								//Select which solver to use
 int		g_use_bias = 1;								//If true, the the bias is used for resting contacts
 int		g_use_warmstart = 1;						//If true then warm start resting contacts
-int		g_loops = 50;								//Number of loops in each simulation step
+int		g_loops = 30;								//Number of loops in each simulation step
 bool	g_deactivate = true;						//Do not move objects that are deactivated
-real	g_damping = 0.99;
+real	g_damping = 0.9;							//damp motion of slowly moving resting objects 
 
 template <typename T> 
 inline void hash_combine(std::size_t& seed, T const& v) {		//For combining hashes
@@ -459,21 +459,22 @@ namespace ve {
 			bool stepPosition(double dt, glmvec3& pos, glmquat& quat) {
 				bool active = !g_deactivate;
 				if (glm::length(m_linear_velocityW) > c_small || m_vbias != glmvec3{0.0}) {
+					pos = m_positionW + (m_linear_velocityW + m_vbias) * (real)dt;
 					active = true;
 				}
-				pos = m_positionW + (m_linear_velocityW + m_vbias) * (real)dt;
 				m_vbias = glmvec3{ 0,0,0 };
 
 				auto avW = glmmat3{ m_model_inv } * m_angular_velocityW;
 				real len = glm::length(avW);
 				if (abs(len) > c_small) {
-					quat = glm::rotate(m_orientationLW, len * (real)dt, avW / len);
-					active = active || true;
+					if (len != 0.0) quat = glm::rotate(quat, len * (real)dt, avW / len);
+					active = true;
 				}
+
 				if (active) {
 					m_damping = 1.0;
 				}
-				else {
+				else if(m_num_resting>3)  {
 					m_damping = std::max(m_damping * g_damping, 0.2);
 				}
 
@@ -489,8 +490,11 @@ namespace ve {
 					sum_forcesW  += glmmat3{ m_model } * force.second.m_forceL + force.second.m_forceW;
 					sum_torquesW += glm::cross(glmmat3{m_model}*force.second.m_positionL, glmmat3{m_model}*force.second.m_forceL);
 				}
-				m_linear_velocityW += m_damping * dt * (m_mass_inv * sum_forcesW + sum_accelW);
-				m_angular_velocityW += m_damping * dt * m_inertia_invW * ( sum_torquesW - glm::cross(m_angular_velocityW, m_inertiaW * m_angular_velocityW));
+				m_linear_velocityW += dt * (m_mass_inv * sum_forcesW + sum_accelW);
+				m_angular_velocityW += dt * m_inertia_invW * ( sum_torquesW - glm::cross(m_angular_velocityW, m_inertiaW * m_angular_velocityW));
+
+				m_linear_velocityW *= m_damping;
+				m_angular_velocityW *= m_damping;
 				return true;
 			}
 
