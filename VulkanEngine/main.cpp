@@ -68,6 +68,7 @@ int		g_solver = 0;								//Select which solver to use
 int		g_use_bias = 1;								//If true, the the bias is used for resting contacts
 int		g_use_warmstart = 1;						//If true then warm start resting contacts
 int		g_loops = 50;								//Number of loops in each simulation step
+bool	g_deactivate = true;						//Do not move objects that are deactivated
 
 template <typename T> 
 inline void hash_combine(std::size_t& seed, T const& v) {		//For combining hashes
@@ -453,8 +454,8 @@ namespace ve {
 			};
 
 			bool stepPosition(double dt, glmvec3& pos, glmquat& quat) {
-				bool active = false;
-				if (glm::length(m_linear_velocityW) > c_eps) {
+				bool active = !g_deactivate;
+				if (glm::length(m_linear_velocityW) > c_eps || m_vbias != glmvec3{0.0}) {
 					pos = m_positionW + m_linear_velocityW * (real)dt;
 					pos += m_vbias * (real)dt;
 					active = true;
@@ -1423,6 +1424,12 @@ namespace ve {
 				if (nk_option_label(ctx, "No", g_use_warmstart == 0))
 					g_use_warmstart = 0;
 
+				nk_layout_row_dynamic(ctx, 30, 3);
+				nk_label(ctx, "Deactivate", NK_TEXT_LEFT);
+				if (nk_option_label(ctx, "Yes", g_deactivate))
+					g_deactivate = true;
+				if (nk_option_label(ctx, "No", !g_deactivate))
+					g_deactivate = false;
 
 				/*nk_layout_row_dynamic(ctx, 30, 1);
 				nk_label(ctx, "Current Body", NK_TEXT_LEFT);
