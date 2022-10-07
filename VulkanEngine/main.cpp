@@ -36,7 +36,7 @@ using uint_t = uint64_t;
 #define glmvec4 glm::dvec4
 #define glmmat4 glm::dmat4
 #define glmquat glm::dquat
-const double c_eps = 1.0e-5;
+const double c_eps = 1.0e-8;
 #else
 using real = float;
 using int_t = int32_t;
