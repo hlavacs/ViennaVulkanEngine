@@ -60,15 +60,15 @@ const real c_collision_margin = 0.001_real;			//Also a little slack for detectin
 const real c_sep_velocity = 0.01_real;				//Limit such that a contact is seperating and not resting
 const real c_bias = 0.1_real;						//A small addon to reduce interpenetration
 const real c_slop = 0.001_real;						//This much penetration does not cause bias
-const real c_resting_factor = 3.0_real;				//Factor for determining when a collision velocity is actually just resting
 
+real	g_resting_factor = 2.0_real;					//Factor for determining when a collision velocity is actually just resting
 double	g_sim_frequency = 120.0;					//Simulation frequency in Hertz
 double	g_sim_delta_time = 1.0 / g_sim_frequency;	//The time to move forward the simulation
 int		g_solver = 0;								//Select which solver to use
 int		g_use_bias = 1;								//If true, the the bias is used for resting contacts
 int		g_use_warmstart = 1;						//If true then warm start resting contacts
 int		g_loops = 50;								//Number of loops in each simulation step
-bool	g_deactivate = true;						//Do not move objects that are deactivated
+bool	g_deactivate = false;						//Do not move objects that are deactivated
 
 template <typename T> 
 inline void hash_combine(std::size_t& seed, T const& v) {		//For combining hashes
@@ -615,7 +615,7 @@ namespace ve {
 				if (d > c_sep_velocity) {											//Separatting contact
 					type = Contact::ContactPoint::type_t::separating;
 				}
-				else if (d > c_resting_factor * c_gravity * g_sim_delta_time ) {	//Resting contact
+				else if (d > g_resting_factor * c_gravity * g_sim_delta_time ) {	//Resting contact
 					type = Contact::ContactPoint::type_t::resting; 
 					vbias = (penetration < 0.0) ? c_bias * g_sim_frequency * std::max(0.0, -penetration - c_slop) : 0.0;
 				}
@@ -1360,7 +1360,7 @@ namespace ve {
 			struct nk_context* ctx = pSubrender->getContext();
 
 			/* GUI */
-			if (nk_begin(ctx, "Physics Panel", nk_rect(50, 50, 300, 550),
+			if (nk_begin(ctx, "Physics Panel", nk_rect(50, 50, 400, 550),
 				NK_WINDOW_BORDER | NK_WINDOW_MOVABLE | NK_WINDOW_SCALABLE |
 				NK_WINDOW_MINIMIZABLE | NK_WINDOW_TITLE))
 			{
@@ -1371,7 +1371,7 @@ namespace ve {
 				if (nk_option_label(ctx, "Solver A", g_solver == 0)) g_solver = 0;
 				if (nk_option_label(ctx, "Solver B", g_solver == 1)) g_solver = 1;
 
-				str << "Sim Frequency " << g_sim_frequency;
+				str << "Sim Freq " << g_sim_frequency;
 				nk_layout_row_dynamic(ctx, 30, 3);
 				nk_label(ctx, str.str().c_str(), NK_TEXT_LEFT);
 				if (nk_button_label(ctx, "-10")) {
@@ -1404,11 +1404,18 @@ namespace ve {
 				nk_layout_row_end(ctx);
 
 				str.str("");
-				str << "Loops" << g_loops;
+				str << "Loops " << g_loops;
 				nk_layout_row_dynamic(ctx, 30, 3);
 				nk_label(ctx, str.str().c_str(), NK_TEXT_LEFT);
 				if (nk_button_label(ctx, "-5")) { g_loops = std::max(5, g_loops - 5); }
 				if (nk_button_label(ctx, "+5")) { g_loops += 5; }
+
+				str.str("");
+				str << "Resting Fac " << g_resting_factor;
+				nk_layout_row_dynamic(ctx, 30, 3);
+				nk_label(ctx, str.str().c_str(), NK_TEXT_LEFT);
+				if (nk_button_label(ctx, "-0.2")) { g_resting_factor = std::max(0.2, g_resting_factor - 0.2); }
+				if (nk_button_label(ctx, "+0.2")) { g_resting_factor += 0.2; }
 
 				nk_layout_row_dynamic(ctx, 30, 3);
 				nk_label(ctx, "Use Bias", NK_TEXT_LEFT);
