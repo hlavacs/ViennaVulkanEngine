@@ -55,6 +55,7 @@ constexpr real operator "" _real(long double val) { return (real)val; };
 
 const real c_gravity = -9.81_real;					//Gravity acceleration
 const double c_small = 0.01_real;					//A small value
+const double c_very_small = c_small / 50.0;
 const real c_collision_margin_factor = 1.001_real;	//This factor makes physics bodies a little larger to prevent visible interpenetration
 const real c_collision_margin = 0.005_real;			//Also a little slack for detecting collisions
 const real c_sep_velocity = 0.01_real;				//Limit such that a contact is seperating and not resting
@@ -69,7 +70,7 @@ int		g_use_bias = 1;								//If true, the the bias is used for resting contacts
 int		g_use_warmstart = 1;						//If true then warm start resting contacts
 int		g_loops = 30;								//Number of loops in each simulation step
 bool	g_deactivate = true;						//Do not move objects that are deactivated
-real	g_damping = 0.9;							//damp motion of slowly moving resting objects 
+real	g_damping = 2.0;							//damp motion of slowly moving resting objects 
 real	g_restitution = 0.2;
 real	g_friction = 1.0;
 
@@ -474,10 +475,10 @@ namespace ve {
 				if (len != 0.0) quat = glm::rotate(quat, len * (real)dt, avW / len);
 
 				if (active) {
-					m_damping = 1.0;
+					m_damping = 0.0;
 				}
 				else if(m_num_resting>3)  {
-					m_damping = std::max(m_damping * g_damping, 0.5);
+					m_damping = std::min(m_damping * g_damping, 50.0);
 				}
 
 				return active;
@@ -495,8 +496,8 @@ namespace ve {
 				m_linear_velocityW += dt * (m_mass_inv * sum_forcesW + sum_accelW);
 				m_angular_velocityW += dt * m_inertia_invW * ( sum_torquesW - glm::cross(m_angular_velocityW, m_inertiaW * m_angular_velocityW));
 
-				//m_linear_velocityW *= m_damping;
-				//m_angular_velocityW *= m_damping;
+				m_linear_velocityW *= 1.0 / (1.0 + g_sim_delta_time * m_damping);
+				m_angular_velocityW *= 1.0 / (1.0 + g_sim_delta_time * m_damping);
 				return true;
 			}
 
@@ -1251,11 +1252,11 @@ namespace ve {
 		void createFaceContact(Contact& contact, FaceQuery& fq) {
 			glmvec3 An = glm::normalize( -RTOIN(fq.m_face_ref->m_normalL) ); //transform normal vector of ref face to inc body
 			Face* inc_face = maxFaceAlignment(An, fq.m_vertex_inc->m_vertex_face_ptrs, [](real x) -> real { return x; });	//do we have a face - face contact?
-			if (glm::dot(An, inc_face->m_normalL) > 1.0 - c_small) { 
+			if (glm::dot(An, inc_face->m_normalL) > 1.0 - c_very_small) { 
 				clipFaceFace(contact, fq.m_face_ref, inc_face); 
 			} else {
 				Edge* inc_edge = minEdgeAlignment(An, fq.m_vertex_inc->m_vertex_edge_ptrs); //do we have an edge - face contact?
-				if (fabs(glm::dot(An, inc_edge->m_edgeL)) < c_small) { 
+				if (fabs(glm::dot(An, inc_edge->m_edgeL)) < c_very_small) { 
 					clipEdgeFace(contact, fq.m_face_ref, inc_edge); 
 				} else { 
 					contact.addContactPoint(ITOWP(fq.m_vertex_inc->m_positionL), RTOWN(fq.m_face_ref->m_normalL), fq.m_separation);  //we have only a vertex - face contact}
@@ -1341,11 +1342,11 @@ namespace ve {
 				std::swap(eq.m_edge_ref, eq.m_edge_inc);
 			}
 
-			if (glm::dot(ref_face->m_normalL, ITORN(inc_face->m_normalL)) > 1.0 - c_small) { //face - face
+			if (glm::dot(ref_face->m_normalL, ITORN(inc_face->m_normalL)) > 1.0 - c_very_small) { //face - face
 				clipFaceFace(contact, ref_face, inc_face); 
 			}
 			else {
-				if (fabs(glm::dot(ref_face->m_normalL, ITORV(eq.m_edge_inc->m_edgeL))) < c_small) { 
+				if (fabs(glm::dot(ref_face->m_normalL, ITORV(eq.m_edge_inc->m_edgeL))) < c_very_small) { 
 					clipEdgeFace(contact, ref_face, eq.m_edge_inc); //face - edge
 				}
 				else { //we have only an edge - edge contact}
