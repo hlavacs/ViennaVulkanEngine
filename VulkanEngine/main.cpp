@@ -56,7 +56,7 @@ constexpr real operator "" _real(long double val) { return (real)val; };
 const real c_gravity = -9.81_real;					//Gravity acceleration
 const double c_small = 0.01_real;					//A small value
 const real c_collision_margin_factor = 1.001_real;	//This factor makes physics bodies a little larger to prevent visible interpenetration
-const real c_collision_margin = 0.001_real;			//Also a little slack for detecting collisions
+const real c_collision_margin = 0.005_real;			//Also a little slack for detecting collisions
 const real c_sep_velocity = 0.01_real;				//Limit such that a contact is seperating and not resting
 const real c_bias = 0.2_real;						//A small addon to reduce interpenetration
 const real c_slop = 0.001_real;						//This much penetration does not cause bias
@@ -70,6 +70,8 @@ int		g_use_warmstart = 1;						//If true then warm start resting contacts
 int		g_loops = 30;								//Number of loops in each simulation step
 bool	g_deactivate = true;						//Do not move objects that are deactivated
 real	g_damping = 0.9;							//damp motion of slowly moving resting objects 
+real	g_restitution = 0.2;
+real	g_friction = 1.0;
 
 template <typename T> 
 inline void hash_combine(std::size_t& seed, T const& v) {		//For combining hashes
@@ -458,15 +460,15 @@ namespace ve {
 
 			bool stepPosition(double dt, glmvec3& pos, glmquat& quat) {
 				bool active = !g_deactivate;
-				if (glm::length(m_linear_velocityW + m_vbias) > c_small || m_num_resting < 4) {
+				if (glm::length(m_linear_velocityW) > -g_resting_factor * c_gravity * g_sim_delta_time || m_num_resting < 4) {
 					active = true;
 				}
-				pos += (m_linear_velocityW + m_vbias) * (real)dt;
+				pos += (m_linear_velocityW + m_vbias*0.5) * (real)dt;
 				m_vbias = glmvec3{ 0,0,0 };
 
 				auto avW = glmmat3{ m_model_inv } * m_angular_velocityW;
 				real len = glm::length(avW);
-				if (abs(len) > c_small) {
+				if (abs(len) > 10.0*c_small) {
 					active = true;
 				}
 				if (len != 0.0) quat = glm::rotate(quat, len * (real)dt, avW / len);
@@ -475,7 +477,7 @@ namespace ve {
 					m_damping = 1.0;
 				}
 				else if(m_num_resting>3)  {
-					m_damping = std::max(m_damping * g_damping, 0.2);
+					m_damping = std::max(m_damping * g_damping, 0.5);
 				}
 
 				return active;
@@ -493,8 +495,8 @@ namespace ve {
 				m_linear_velocityW += dt * (m_mass_inv * sum_forcesW + sum_accelW);
 				m_angular_velocityW += dt * m_inertia_invW * ( sum_torquesW - glm::cross(m_angular_velocityW, m_inertiaW * m_angular_velocityW));
 
-				m_linear_velocityW *= m_damping;
-				m_angular_velocityW *= m_damping;
+				//m_linear_velocityW *= m_damping;
+				//m_angular_velocityW *= m_damping;
 				return true;
 			}
 
@@ -804,7 +806,7 @@ namespace ve {
 				glmvec3 vrot{ rnd_unif(rnd_gen) * 5, rnd_unif(rnd_gen) * 5, rnd_unif(rnd_gen) * 5 };
 				VESceneNode* cube;
 				VECHECKPOINTER(cube = getSceneManagerPointer()->loadModel("The Cube" + std::to_string(++cubeid), "media/models/test/crate0", "cube.obj", 0, getRoot()));
-				Body body{ "Body" + std::to_string(cubeid), cube, &g_cube, scale, positionCamera + 2.0 * dir, glm::rotate(angle, glm::normalize(orient)), &onMove, vel, vrot, 1.0 / 100.0, 0.2, 1 };
+				Body body{ "Body" + std::to_string(cubeid), cube, &g_cube, scale, positionCamera + 2.0 * dir, glm::rotate(angle, glm::normalize(orient)), &onMove, vel, vrot, 1.0 / 100.0, g_restitution, g_friction };
 				body.m_forces.insert({ 0ul, Force{} });
 				addBody(m_body = std::make_shared<Body>(body));
 			}
@@ -815,7 +817,7 @@ namespace ve {
 				VESceneNode* cube0;
 				static int dy = 0;
 				VECHECKPOINTER(cube0 = getSceneManagerPointer()->loadModel("The Cube" + std::to_string(++cubeid), "media/models/test/crate0", "cube.obj", 0, getRoot()));
-				Body body0{ "Body" + std::to_string(cubeid), cube0, &g_cube, glmvec3{1.0}, glmvec3{positionCamera.x, 0.5 + (dy++),positionCamera.z + 4}, glmquat{ 1,0,0,0 }, &onMove, glmvec3{0.0}, glmvec3{0.0}, 1.0 / 100.0, 0.2, 1 };
+				Body body0{ "Body" + std::to_string(cubeid), cube0, &g_cube, glmvec3{1.0}, glmvec3{positionCamera.x, 0.5 + (dy++),positionCamera.z + 4}, glmquat{ 1,0,0,0 }, &onMove, glmvec3{0.0}, glmvec3{0.0}, 1.0 / 100.0, g_restitution, g_friction };
 				body0.m_forces.insert({ 0ul, Force{} });
 				addBody(m_body = std::make_shared<Body>(body0));
 				
@@ -824,7 +826,7 @@ namespace ve {
 				//glmquat orient{ glm::rotate(45.0*2.0*M_PI/360.0, glmvec3{1,0,0}) };
 				//glmquat orient2{ glm::rotate(45.0 * 2.0 * M_PI / 360.0, glmvec3{0,0,-1}) };
 				glmquat orient{ }, orient2{ };
-				Body body1{ "Body" + std::to_string(cubeid), cube1, &g_cube, glmvec3{1.0}, positionCamera + glmvec3{0,0.5,4}, orient2*orient, &onMove, glmvec3{0.0}, glmvec3{0.0}, 1.0 / 100.0, 0.2, 1.0};
+				Body body1{ "Body" + std::to_string(cubeid), cube1, &g_cube, glmvec3{1.0}, positionCamera + glmvec3{0,0.5,4}, orient2*orient, &onMove, glmvec3{0.0}, glmvec3{0.0}, 1.0 / 100.0, g_restitution, g_friction};
 				body1.m_forces.insert({ 0ul, Force{} });
 				addBody(m_body = std::make_shared<Body>(body1));
 				*/
@@ -836,7 +838,7 @@ namespace ve {
 
 				VESceneNode* cube0;
 				VECHECKPOINTER(cube0 = getSceneManagerPointer()->loadModel("The Cube" + std::to_string(++cubeid), "media/models/test/crate0", "cube.obj", 0, getRoot()));
-				Body body0{ "Body" + std::to_string(cubeid), cube0, &g_cube, glmvec3{1.0}, glmvec3{dx++, 0.5, 0.0}, glmquat{1,0,0,0}, &onMove, glmvec3{0.0}, glmvec3{0.0}, 1.0 / 100.0, 0.2, 1 };
+				Body body0{ "Body" + std::to_string(cubeid), cube0, &g_cube, glmvec3{1.0}, glmvec3{dx++, 0.5, 0.0}, glmquat{1,0,0,0}, &onMove, glmvec3{0.0}, glmvec3{0.0}, 1.0 / 100.0, g_restitution, g_friction };
 				body0.m_forces.insert({ 0ul, Force{} });
 				addBody(m_body = std::make_shared<Body>(body0));
 			}
@@ -846,7 +848,7 @@ namespace ve {
 				glmvec3 dir{ getSceneManagerPointer()->getSceneNode("StandardCamera")->getWorldTransform()[2] };
 				VESceneNode* cube0;
 				VECHECKPOINTER(cube0 = getSceneManagerPointer()->loadModel("The Cube" + std::to_string(++cubeid), "media/models/test/crate0", "cube.obj", 0, getRoot()));
-				Body body{ "Body" + std::to_string(cubeid), cube0, &g_cube, glmvec3{1.0}, positionCamera + 2.0 * dir, glmquat{1,0,0,0}, &onMove, glmvec3{0.0}, glmvec3{0.0}, 1.0 / 100.0, 0.2, 1 };
+				Body body{ "Body" + std::to_string(cubeid), cube0, &g_cube, glmvec3{1.0}, positionCamera + 2.0 * dir, glmquat{1,0,0,0}, &onMove, glmvec3{0.0}, glmvec3{0.0}, 1.0 / 100.0, g_restitution, g_friction };
 				body.m_forces.insert({ 0ul, Force{} });
 				addBody(m_body = std::make_shared<Body>(body));
 			}
@@ -1189,7 +1191,7 @@ namespace ve {
 				glmvec3 pos = ITORP(vertB->m_positionL);
 				glmvec3 diff = pos - face.m_face_vertex_ptrs[0]->m_positionL;
 				real distance = glm::dot(face.m_normalL, diff);
-				if (distance > 0) 
+				if (distance > c_collision_margin) 
 					return { distance, &face, vertB }; //no overlap - distance is positive
 				if (distance > result.m_separation) 
 					result = { distance, &face, vertB };
@@ -1227,7 +1229,7 @@ namespace ve {
 						Vertex* vertB = contact.m_body_inc.m_body->support(-RTOIN(n));		//support of B in negative normal direction
 						real distance = glm::dot(n, ITORP(vertB->m_positionL) - vertA->m_positionL);//overlap distance along n
 
-						if (distance > 0) {
+						if (distance > c_collision_margin) {
 							return { distance, &edgeA, &edgeB };							//no overlap - distance is positive
 						}
 						
