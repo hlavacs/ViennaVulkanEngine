@@ -66,11 +66,12 @@ real	g_resting_factor = 3.0_real;				//Factor for determining when a collision v
 double	g_sim_frequency = 60.0;						//Simulation frequency in Hertz
 double	g_sim_delta_time = 1.0 / g_sim_frequency;	//The time to move forward the simulation
 int		g_solver = 0;								//Select which solver to use
-int		g_use_bias = 1;								//If true, the the bias is used for resting contacts
+int		g_use_bias = 0;								//If true, the the bias is used for resting contacts
+real	g_vbias_factor = 0.2;
 int		g_use_warmstart = 1;						//If true then warm start resting contacts
 int		g_loops = 30;								//Number of loops in each simulation step
 bool	g_deactivate = true;						//Do not move objects that are deactivated
-real	g_damping = 2.0;							//damp motion of slowly moving resting objects 
+real	g_damping = 1.0;							//damp motion of slowly moving resting objects 
 real	g_restitution = 0.2;
 real	g_friction = 1.0;
 
@@ -444,7 +445,7 @@ namespace ve {
 			int_t		m_grid_z{ 0 };
 			glmvec3		m_vbias{0,0,0};					//extra energy if body overlaps with another body
 			uint32_t	m_num_resting{0};
-			real		m_damping{1.0};
+			real		m_damping{0.0};
 
 			Body() { inertiaTensorL(); updateMatrices(); };
 
@@ -461,24 +462,29 @@ namespace ve {
 
 			bool stepPosition(double dt, glmvec3& pos, glmquat& quat) {
 				bool active = !g_deactivate;
-				if (glm::length(m_linear_velocityW) > -g_resting_factor * c_gravity * g_sim_delta_time || m_num_resting < 4) {
+
+				if ( fabs(m_linear_velocityW.x) > c_small || fabs(m_linear_velocityW.z) > c_small
+					|| fabs(m_linear_velocityW.y) > -g_resting_factor * c_gravity * g_sim_delta_time 
+					|| m_num_resting < 4 ) {
+					pos += m_linear_velocityW * (real)dt;
 					active = true;
 				}
-				pos += (m_linear_velocityW + m_vbias*0.5) * (real)dt;
+				pos += g_vbias_factor * m_vbias * (real)dt;
 				m_vbias = glmvec3{ 0,0,0 };
 
 				auto avW = glmmat3{ m_model_inv } * m_angular_velocityW;
 				real len = glm::length(avW);
-				if (abs(len) > 10.0*c_small) {
+				if (len > c_small) {
+					quat = glm::rotate(quat, len * (real)dt, avW / len);
 					active = true;
 				}
-				if (len != 0.0) quat = glm::rotate(quat, len * (real)dt, avW / len);
+				//if (len != 0.0) quat = glm::rotate(quat, len * (real)dt, avW / len);
 
 				if (active) {
 					m_damping = 0.0;
 				}
-				else if(m_num_resting>3)  {
-					m_damping = std::min(m_damping * g_damping, 50.0);
+				else {
+					m_damping = std::min( m_damping + g_damping, 600.0 );
 				}
 
 				return active;
@@ -496,7 +502,8 @@ namespace ve {
 				m_linear_velocityW += dt * (m_mass_inv * sum_forcesW + sum_accelW);
 				m_angular_velocityW += dt * m_inertia_invW * ( sum_torquesW - glm::cross(m_angular_velocityW, m_inertiaW * m_angular_velocityW));
 
-				m_linear_velocityW *= 1.0 / (1.0 + g_sim_delta_time * m_damping);
+				m_linear_velocityW.x *= 1.0 / (1.0 + g_sim_delta_time * m_damping);
+				m_linear_velocityW.z *= 1.0 / (1.0 + g_sim_delta_time * m_damping);
 				m_angular_velocityW *= 1.0 / (1.0 + g_sim_delta_time * m_damping);
 				return true;
 			}
@@ -694,8 +701,8 @@ namespace ve {
 		const double	c_width{5};							//grid cell width (m)
 		std::unordered_map<intpair_t, body_map > m_grid;	//broadphase grid of cells.
 
-		Body			m_ground{ "Ground", nullptr, &g_cube , { 1000, 1000, 1000 } , { 0, -500.0_real, 0 }, {1,0,0,0} };
-		body_map		m_global_cell{ { nullptr, std::make_shared<Body>(m_ground) } };	//cell containing only the ground
+		std::shared_ptr<Body> m_ground = std::make_shared<Body>( Body{ "Ground", nullptr, &g_cube, {1000, 1000, 1000}, {0, -500.0_real, 0}, {1,0,0,0} });
+		body_map		m_global_cell{ { nullptr, m_ground } };	//cell containing only the ground
 
 		/// <summary>
 		/// A contact is a struct that contains contact information for a pair of bodies A and B.
@@ -732,6 +739,13 @@ namespace ve {
 			else m_debug_real[key2 + key1 + rest].emplace_back( x, value );
 		}
 
+		std::shared_ptr<Body> pickBody() {
+			glmvec3 pos{ getSceneManagerPointer()->getSceneNode("StandardCameraParent")->getWorldTransform()[3] };
+			glmvec3 dir{ getSceneManagerPointer()->getSceneNode("StandardCamera")->getWorldTransform()[2] };
+			auto compare = [&](auto& a, auto& b) { return glm::dot(glm::normalize(a.second->m_positionW - pos), dir) < glm::dot(glm::normalize(b.second->m_positionW - pos), dir); };
+			return std::ranges::max_element(m_bodies, compare)->second;
+		}
+
 		//-----------------------------------------------------------------------------------------------------
 
 		/// <summary>
@@ -760,10 +774,32 @@ namespace ve {
 			m_grid[intpair_t{ pbody->m_grid_x, pbody->m_grid_z }].insert({ pbody->m_owner, pbody }); //Put into broadphase grid
 		}
 
+		void createRandomBodies( auto n) {
+			for (int i = 0; i < n; ++i) {
+				glmvec3 pos = { rnd_unif(rnd_gen), 20 * rnd_unif(rnd_gen) + 10.0, rnd_unif(rnd_gen) };
+				glmvec3 vel = { rnd_unif(rnd_gen), rnd_unif(rnd_gen), rnd_unif(rnd_gen) };
+				glmvec3 scale{ 1,1,1 }; // = rnd_unif(rnd_gen) * 10;
+				real angle = rnd_unif(rnd_gen) * 10 * 3 * M_PI / 180.0;
+				glmvec3 orient{ rnd_unif(rnd_gen), rnd_unif(rnd_gen), rnd_unif(rnd_gen) };
+				glmvec3 vrot{ rnd_unif(rnd_gen) * 5, rnd_unif(rnd_gen) * 5, rnd_unif(rnd_gen) * 5 };
+				VESceneNode* cube;
+				VECHECKPOINTER(cube = getSceneManagerPointer()->loadModel("The Cube" + std::to_string(m_bodies.size()), "media/models/test/crate0", "cube.obj", 0, getRoot()));
+				Body body{ "Body" + std::to_string(m_bodies.size()), cube, &g_cube, scale, pos, glm::rotate(angle, glm::normalize(orient)), &onMove, vel, vrot, 1.0 / 100.0, g_restitution, g_friction };
+				body.m_forces.insert({ 0ul, Force{} });
+				addBody(m_body = std::make_shared<Body>(body));
+			}
+		}
+
 		void clear() {
 			for (auto& body : m_bodies) getSceneManagerPointer()->deleteSceneNodeAndChildren( ((VESceneNode*) body.second->m_owner)->getName());
 			m_bodies.clear();
 			m_grid.clear();
+		}
+
+		void eraseBody(auto body) {
+			getSceneManagerPointer()->deleteSceneNodeAndChildren(((VESceneNode*)body->m_owner)->getName());
+			m_bodies.erase(body->m_owner);
+			m_grid[intpair_t{ body->m_grid_x, body->m_grid_z }].erase(body->m_owner);
 		}
 		
 		/// <summary>
@@ -781,6 +817,16 @@ namespace ve {
 			}
 		}
 
+		void addBias(glmvec3& old_bias, glmvec3& new_bias ) {
+			auto B = new_bias;
+			auto l = glm::length(old_bias);
+			if (l > 0.0) {
+				auto f = std::max( glm::dot(new_bias, old_bias/ l) - l, 0.0 );
+				B = new_bias - f * old_bias / l;
+			}
+			old_bias += B;
+		}
+
 		/// <summary>
 		/// Callback for frame ended event.
 		/// </summary>
@@ -794,11 +840,9 @@ namespace ve {
 		/// <param name="event">The keyboard event.</param>
 		/// <returns>False, so the key is not consumed.</returns>
 		bool onKeyboard(veEvent event) {
-			static int64_t cubeid = 0;
 
 			if (event.idata1 == GLFW_KEY_B && event.idata3 == GLFW_PRESS) {
 				glmvec3 positionCamera{ getSceneManagerPointer()->getSceneNode("StandardCameraParent")->getWorldTransform()[3] };
-
 				glmvec3 dir{ getSceneManagerPointer()->getSceneNode("StandardCamera")->getWorldTransform()[2] };
 				glmvec3 vel = 35.0 * rnd_unif(rnd_gen) * dir / glm::length(dir);
 				glmvec3 scale{ 1,1,1 }; // = rnd_unif(rnd_gen) * 10;
@@ -806,8 +850,8 @@ namespace ve {
 				glmvec3 orient{ rnd_unif(rnd_gen), rnd_unif(rnd_gen), rnd_unif(rnd_gen) };
 				glmvec3 vrot{ rnd_unif(rnd_gen) * 5, rnd_unif(rnd_gen) * 5, rnd_unif(rnd_gen) * 5 };
 				VESceneNode* cube;
-				VECHECKPOINTER(cube = getSceneManagerPointer()->loadModel("The Cube" + std::to_string(++cubeid), "media/models/test/crate0", "cube.obj", 0, getRoot()));
-				Body body{ "Body" + std::to_string(cubeid), cube, &g_cube, scale, positionCamera + 2.0 * dir, glm::rotate(angle, glm::normalize(orient)), &onMove, vel, vrot, 1.0 / 100.0, g_restitution, g_friction };
+				VECHECKPOINTER(cube = getSceneManagerPointer()->loadModel("The Cube" + std::to_string(m_bodies.size()), "media/models/test/crate0", "cube.obj", 0, getRoot()));
+				Body body{ "Body" + std::to_string(m_bodies.size()), cube, &g_cube, scale, positionCamera + 2.0 * dir, glm::rotate(angle, glm::normalize(orient)), &onMove, vel, vrot, 1.0 / 100.0, g_restitution, g_friction };
 				body.m_forces.insert({ 0ul, Force{} });
 				addBody(m_body = std::make_shared<Body>(body));
 			}
@@ -817,8 +861,8 @@ namespace ve {
 					
 				VESceneNode* cube0;
 				static int dy = 0;
-				VECHECKPOINTER(cube0 = getSceneManagerPointer()->loadModel("The Cube" + std::to_string(++cubeid), "media/models/test/crate0", "cube.obj", 0, getRoot()));
-				Body body0{ "Body" + std::to_string(cubeid), cube0, &g_cube, glmvec3{1.0}, glmvec3{positionCamera.x, 0.5 + (dy++),positionCamera.z + 4}, glmquat{ 1,0,0,0 }, &onMove, glmvec3{0.0}, glmvec3{0.0}, 1.0 / 100.0, g_restitution, g_friction };
+				VECHECKPOINTER(cube0 = getSceneManagerPointer()->loadModel("The Cube" + std::to_string(m_bodies.size()), "media/models/test/crate0", "cube.obj", 0, getRoot()));
+				Body body0{ "Body" + std::to_string(m_bodies.size()), cube0, &g_cube, glmvec3{1.0}, glmvec3{positionCamera.x, 0.5 + (dy++),positionCamera.z + 4}, glmquat{ 1,0,0,0 }, &onMove, glmvec3{0.0}, glmvec3{0.0}, 1.0 / 100.0, g_restitution, g_friction };
 				body0.m_forces.insert({ 0ul, Force{} });
 				addBody(m_body = std::make_shared<Body>(body0));
 				
@@ -827,7 +871,7 @@ namespace ve {
 				//glmquat orient{ glm::rotate(45.0*2.0*M_PI/360.0, glmvec3{1,0,0}) };
 				//glmquat orient2{ glm::rotate(45.0 * 2.0 * M_PI / 360.0, glmvec3{0,0,-1}) };
 				glmquat orient{ }, orient2{ };
-				Body body1{ "Body" + std::to_string(cubeid), cube1, &g_cube, glmvec3{1.0}, positionCamera + glmvec3{0,0.5,4}, orient2*orient, &onMove, glmvec3{0.0}, glmvec3{0.0}, 1.0 / 100.0, g_restitution, g_friction};
+				Body body1{ "Body" + std::to_string(m_bodies.size()), cube1, &g_cube, glmvec3{1.0}, positionCamera + glmvec3{0,0.5,4}, orient2*orient, &onMove, glmvec3{0.0}, glmvec3{0.0}, 1.0 / 100.0, g_restitution, g_friction};
 				body1.m_forces.insert({ 0ul, Force{} });
 				addBody(m_body = std::make_shared<Body>(body1));
 				*/
@@ -838,8 +882,8 @@ namespace ve {
 				glmvec3 positionCamera{ getSceneManagerPointer()->getSceneNode("StandardCameraParent")->getWorldTransform()[3] };
 
 				VESceneNode* cube0;
-				VECHECKPOINTER(cube0 = getSceneManagerPointer()->loadModel("The Cube" + std::to_string(++cubeid), "media/models/test/crate0", "cube.obj", 0, getRoot()));
-				Body body0{ "Body" + std::to_string(cubeid), cube0, &g_cube, glmvec3{1.0}, glmvec3{dx++, 0.5, 0.0}, glmquat{1,0,0,0}, &onMove, glmvec3{0.0}, glmvec3{0.0}, 1.0 / 100.0, g_restitution, g_friction };
+				VECHECKPOINTER(cube0 = getSceneManagerPointer()->loadModel("The Cube" + std::to_string(m_bodies.size()), "media/models/test/crate0", "cube.obj", 0, getRoot()));
+				Body body0{ "Body" + std::to_string(m_bodies.size()), cube0, &g_cube, glmvec3{1.0}, glmvec3{dx++, 0.5, 0.0}, glmquat{1,0,0,0}, &onMove, glmvec3{0.0}, glmvec3{0.0}, 1.0 / 100.0, g_restitution, g_friction };
 				body0.m_forces.insert({ 0ul, Force{} });
 				addBody(m_body = std::make_shared<Body>(body0));
 			}
@@ -848,8 +892,8 @@ namespace ve {
 				glmvec3 positionCamera{ getSceneManagerPointer()->getSceneNode("StandardCameraParent")->getWorldTransform()[3] };
 				glmvec3 dir{ getSceneManagerPointer()->getSceneNode("StandardCamera")->getWorldTransform()[2] };
 				VESceneNode* cube0;
-				VECHECKPOINTER(cube0 = getSceneManagerPointer()->loadModel("The Cube" + std::to_string(++cubeid), "media/models/test/crate0", "cube.obj", 0, getRoot()));
-				Body body{ "Body" + std::to_string(cubeid), cube0, &g_cube, glmvec3{1.0}, positionCamera + 2.0 * dir, glmquat{1,0,0,0}, &onMove, glmvec3{0.0}, glmvec3{0.0}, 1.0 / 100.0, g_restitution, g_friction };
+				VECHECKPOINTER(cube0 = getSceneManagerPointer()->loadModel("The Cube" + std::to_string(m_bodies.size()), "media/models/test/crate0", "cube.obj", 0, getRoot()));
+				Body body{ "Body" + std::to_string(m_bodies.size()), cube0, &g_cube, glmvec3{1.0}, positionCamera + 2.0 * dir, glmquat{1,0,0,0}, &onMove, glmvec3{0.0}, glmvec3{0.0}, 1.0 / 100.0, g_restitution, g_friction };
 				body.m_forces.insert({ 0ul, Force{} });
 				addBody(m_body = std::make_shared<Body>(body));
 			}
@@ -873,6 +917,7 @@ namespace ve {
 				narrowPhase();		//Run the narrow phase
 				warmStart();		//Warm start the resting contacts if possible
 
+				//calculateImpulses(Contact::ContactPoint::type_t::any, g_loops, g_sim_delta_time/2.0); //calculate impulses
 				if (m_run) {
 					for (auto& c : m_bodies) {
 						auto& body = c.second;
@@ -951,6 +996,8 @@ namespace ve {
 			for (auto& body : m_bodies) {
 				body.second->m_num_resting = 0;
 			}
+			m_ground->m_num_resting = 0;
+
 			for (auto it = std::begin(m_contacts); it != std::end(m_contacts); ) {
 				auto& contact = it->second;
 				contact.m_old_contact_points = std::move(contact.m_contact_points);
@@ -983,7 +1030,7 @@ namespace ve {
 			for (auto& c : m_contacts) {
 				auto& contact = c.second;
 				auto num0 = contact.m_body_ref.m_body->m_num_resting;
-				auto num1 = contact.m_body_ref.m_body->m_num_resting;
+				auto num1 = contact.m_body_inc.m_body->m_num_resting;
 
 				if (num0 > 3 && num1 > 3) {
 					for (auto& cp : contact.m_contact_points) {
@@ -1119,7 +1166,7 @@ namespace ve {
 				}
 				num = num + res - 1;
 				elapsed = std::chrono::high_resolution_clock::now() - start;
-			} while (num > 0 && std::chrono::duration_cast<std::chrono::microseconds>(elapsed).count() < 1.0e6 * max_time);
+			} while (num > 0 && (m_mode == SIMULATION_MODE_DEBUG || std::chrono::duration_cast<std::chrono::microseconds>(elapsed).count() < 1.0e6 * max_time));
 		}
 
 
@@ -1264,8 +1311,10 @@ namespace ve {
 			}
 			if (fq.m_separation < 0) {
 				real weight = 1.0 / (1.0 + contact.m_body_inc.m_body->mass() * contact.m_body_ref.m_body->m_mass_inv);
-				contact.m_body_ref.m_body->m_vbias += -RTOWN(fq.m_face_ref->m_normalL) * (-fq.m_separation) * g_sim_frequency * (1.0 - weight);
-				contact.m_body_inc.m_body->m_vbias += RTOWN(fq.m_face_ref->m_normalL) * (-fq.m_separation) * g_sim_frequency * weight;
+				auto vbias = -RTOWN(fq.m_face_ref->m_normalL) * (-fq.m_separation) * g_sim_frequency * (1.0 - weight);
+				addBias(contact.m_body_ref.m_body->m_vbias, vbias);
+				vbias = RTOWN(fq.m_face_ref->m_normalL) * (-fq.m_separation) * g_sim_frequency * weight;
+				addBias(contact.m_body_inc.m_body->m_vbias, vbias);
 			}
 		}
 
@@ -1364,8 +1413,10 @@ namespace ve {
 			}
 			if (eq.m_separation < 0) {
 				real weight = 1.0 / (1.0 + contact.m_body_inc.m_body->mass() * contact.m_body_ref.m_body->m_mass_inv);
-				contact.m_body_ref.m_body->m_vbias += -RTOWN(eq.m_normalL) * (-eq.m_separation) * g_sim_frequency * (1.0 - weight);
-				contact.m_body_inc.m_body->m_vbias += RTOWN(eq.m_normalL) * (-eq.m_separation) * g_sim_frequency * weight;
+				auto vbias = -RTOWN(eq.m_normalL) * (-eq.m_separation) * g_sim_frequency * (1.0 - weight);
+				addBias(contact.m_body_ref.m_body->m_vbias, vbias);
+				vbias = RTOWN(eq.m_normalL) * (-eq.m_separation) * g_sim_frequency * weight;
+				addBias(contact.m_body_inc.m_body->m_vbias, vbias);
 			}
 		}
 
@@ -1390,7 +1441,7 @@ namespace ve {
 			struct nk_context* ctx = pSubrender->getContext();
 
 			/* GUI */
-			if (nk_begin(ctx, "Physics Panel", nk_rect(50, 50, 400, 550),
+			if (nk_begin(ctx, "Physics Panel", nk_rect(20, 20, 450, 650),
 				NK_WINDOW_BORDER | NK_WINDOW_MOVABLE | NK_WINDOW_SCALABLE |
 				NK_WINDOW_MINIMIZABLE | NK_WINDOW_TITLE))
 			{
@@ -1402,7 +1453,7 @@ namespace ve {
 				if (nk_option_label(ctx, "Solver B", g_solver == 1)) g_solver = 1;
 
 				str << "Sim Freq " << g_sim_frequency;
-				nk_layout_row_dynamic(ctx, 30, 3);
+				nk_layout_row_dynamic(ctx, 30, 4);
 				nk_label(ctx, str.str().c_str(), NK_TEXT_LEFT);
 				if (nk_button_label(ctx, "-10")) {
 					g_sim_frequency = std::max(10.0, g_sim_frequency - 10.0);
@@ -1412,13 +1463,8 @@ namespace ve {
 					g_sim_frequency += 10;
 					g_sim_delta_time = 1.0 / g_sim_frequency;
 				}
-
-				nk_layout_row_static(ctx, 30, 200, 2);
 				if (nk_button_label(ctx, "Next time slot")) {
 					m_physics->m_current_time += g_sim_delta_time;
-				}
-				if (nk_button_label(ctx, "Clear Bodies")) {
-					m_physics->clear();
 				}
 
 				nk_layout_row_dynamic(ctx, 30, 2);
@@ -1451,11 +1497,18 @@ namespace ve {
 				if (nk_button_label(ctx, "+0.2")) { g_resting_factor += 0.2; }
 
 				str.str("");
-				str << "Damping Fac " << g_damping;
+				str << "Damping " << g_damping;
 				nk_layout_row_dynamic(ctx, 30, 3);
 				nk_label(ctx, str.str().c_str(), NK_TEXT_LEFT);
-				if (nk_button_label(ctx, "-0.01")) { g_damping = std::max(0.2, g_damping - 0.01); }
-				if (nk_button_label(ctx, "+0.01")) { g_damping += 0.01; }
+				if (nk_button_label(ctx, "-0.5")) { g_damping = std::max(0.0, g_damping - 0.5); }
+				if (nk_button_label(ctx, "+0.5")) { g_damping += 0.5; }
+
+				str.str("");
+				str << "VBias Fac " << g_vbias_factor;
+				nk_layout_row_dynamic(ctx, 30, 3);
+				nk_label(ctx, str.str().c_str(), NK_TEXT_LEFT);
+				if (nk_button_label(ctx, "-0.1")) { g_vbias_factor = glm::clamp(g_vbias_factor - 0.1, 0.0, 1.0); }
+				if (nk_button_label(ctx, "+0.1")) { g_vbias_factor = glm::clamp(g_vbias_factor + 0.1, 0.0, 1.0); }
 
 				nk_layout_row_dynamic(ctx, 30, 3);
 				nk_label(ctx, "Use Bias", NK_TEXT_LEFT);
@@ -1477,6 +1530,25 @@ namespace ve {
 					g_deactivate = true;
 				if (nk_option_label(ctx, "No", !g_deactivate))
 					g_deactivate = false;
+
+				nk_layout_row_dynamic(ctx, 30, 2);
+				if (nk_button_label(ctx, "Create Bodies")) {
+					m_physics->createRandomBodies(20);
+				}
+				if (nk_button_label(ctx, "Clear Bodies")) {
+					m_physics->clear();
+				}
+				nk_layout_row_dynamic(ctx, 30, 3);
+				str.str("Current Body ");
+				if (m_physics->m_body) { str << "Current Body " << m_physics->m_body->m_name; }
+				nk_label(ctx, str.str().c_str(), NK_TEXT_LEFT);
+				if (nk_button_label(ctx, "Pick body")) { 
+					m_physics->m_body = m_physics->pickBody(); 
+				}
+				if (nk_button_label(ctx, "Delete body")) {
+					auto b = m_physics->pickBody();
+					if(b) m_physics->eraseBody(b);
+				}
 
 				/*nk_layout_row_dynamic(ctx, 30, 1);
 				nk_label(ctx, "Current Body", NK_TEXT_LEFT);
@@ -1559,10 +1631,10 @@ namespace ve {
 				if (m_physics->m_body) {
 					real dt = g_sim_delta_time;
 					m_physics->m_body->m_positionW += dt * glmvec3{ m_dx, m_dy, m_dz };
-					m_physics->m_body->m_orientationLW = m_physics->m_body->m_orientationLW *
+					m_physics->m_body->m_orientationLW =
 						glm::rotate(glmquat{ 1,0,0,0 }, dt * m_da, glmvec3{ 1, 0, 0 }) *
 						glm::rotate(glmquat{ 1,0,0,0 }, dt * m_db, glmvec3{ 0, 1, 0 }) *
-						glm::rotate(glmquat{ 1,0,0,0 }, dt * m_dc, glmvec3{ 0, 0, 1 });
+						glm::rotate(glmquat{ 1,0,0,0 }, dt * m_dc, glmvec3{ 0, 0, 1 }) * m_physics->m_body->m_orientationLW;
 
 					m_physics->m_body->updateMatrices();
 					m_dx = m_dy = m_dz = m_da = m_db = m_dc = 0.0;
