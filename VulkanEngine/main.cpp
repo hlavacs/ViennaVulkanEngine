@@ -176,18 +176,21 @@ namespace std {
 //V...vector
 //N...normal vector
 #define ITORP(X) glmvec3{contact.m_body_inc.m_to_other * glmvec4{X, 1.0}}
-#define ITORV(X) glmmat3{contact.m_body_inc.m_to_other}*(X)
-#define ITORN(X) contact.m_body_inc.m_to_other_it*(X)
+#define ITORV(X) glmmat3{contact.m_body_inc.m_to_other} * (X)
+#define ITORN(X) contact.m_body_inc.m_to_other_it * (X)
 #define ITORTP(X) glmvec3{face_ref->m_LtoT * contact.m_body_inc.m_to_other * glmvec4{X, 1.0}}
+#define ITTOWP(X) glmvec3{contact.m_body_inc.m_body->m_model * face_inc->m_TtoL * glmvec4{X, 1.0}}
 
 #define ITOWP(X) glmvec3{contact.m_body_inc.m_body->m_model * glmvec4{X, 1.0}}
-#define ITOWN(X) contact.m_body_inc.m_body->m_model_it*(X)
+#define ITOWN(X) contact.m_body_inc.m_body->m_model_it * (X)
 
 #define RTOIP(X) glmvec3{contact.m_body_ref.m_to_other * glmvec4{X, 1.0}}
 #define RTOIN(X) contact.m_body_ref.m_to_other_it*(X)
 #define RTOWP(X) glmvec3{contact.m_body_ref.m_body->m_model * glmvec4{X,1.0}}
 #define RTOWN(X) contact.m_body_ref.m_body->m_model_it*(X)
 #define RTORTP(X) glmvec3{face_ref->m_LtoT * glmvec4{X, 1.0}}
+
+#define WTOTIP(X) glmvec3{face_inc->m_LtoT * contact.m_body_inc.m_body->m_model_inv * glmvec4{X, 1.0} }
 
 #define RTTORP(X) glmvec3{face_ref->m_TtoL * glmvec4{(X), 1.0}}
 #define RTTOWP(X) glmvec3{contact.m_body_ref.m_body->m_model * face_ref->m_TtoL * glmvec4{(X), 1.0}}
@@ -196,7 +199,8 @@ namespace std {
 #define RNAME contact.m_body_ref.m_body->m_name
 #define INAME contact.m_body_inc.m_body->m_name
 
-
+//WTOTIP(posRW);
+//glmvec3 posIW = ITTOWP(posIT);
 
 namespace ve {
 
@@ -1265,9 +1269,6 @@ namespace ve {
 
 			for (auto& edgeA : contact.m_body_ref.m_body->m_polytope->m_edges) {	//loop over all edge-edge pairs
 				for (auto& edgeB : contact.m_body_inc.m_body->m_polytope->m_edges) {
-					//debug_string(RNAME, "Ref: " + contact.m_body_ref.m_body->m_name + " Inc: " + contact.m_body_inc.m_body->m_name);
-					//debug_string(RNAME, "EdgeA: " + std::to_string(edgeA.m_id) + " " + std::to_string(edgeA.m_edgeL) + " EdgeB: " + std::to_string(edgeB.m_id) + " " + std::to_string(ITORV(edgeB.m_edgeL)));
-
 					auto edgeb_L = ITORV(edgeB.m_edgeL);
 					glmvec3 n = glm::cross(edgeA.m_edgeL, ITORV(edgeB.m_edgeL));	//axis n is cross product of both edges
 					real len = glm::length(n);
@@ -1276,7 +1277,7 @@ namespace ve {
 
 						if (glm::dot(n, edgeA.m_first_vertexL.m_positionL) < 0) 
 							n = -n;		//n must be oriented away from center of A								
-						Vertex* vertA = contact.m_body_inc.m_body->support(n);				//support of A in normal direction
+						Vertex* vertA = contact.m_body_ref.m_body->support(n);				//support of A in normal direction
 						Vertex* vertB = contact.m_body_inc.m_body->support(-RTOIN(n));		//support of B in negative normal direction
 						real distance = glm::dot(n, ITORP(vertB->m_positionL) - vertA->m_positionL);//overlap distance along n
 
@@ -1303,24 +1304,13 @@ namespace ve {
 		void createFaceContact(Contact& contact, FaceQuery& fq) {
 			glmvec3 An = glm::normalize( -RTOIN(fq.m_face_ref->m_normalL) ); //transform normal vector of ref face to inc body
 			Face* inc_face = maxFaceAlignment(An, fq.m_vertex_inc->m_vertex_face_ptrs, [](real x) -> real { return x; });	//do we have a face - face contact?
-			if (glm::dot(An, inc_face->m_normalL) > 1.0 - c_very_small) { 
-				clipFaceFace(contact, fq.m_face_ref, inc_face); 
-			} else {
-				Edge* inc_edge = minEdgeAlignment(An, fq.m_vertex_inc->m_vertex_edge_ptrs); //do we have an edge - face contact?
-				if (fabs(glm::dot(An, inc_edge->m_edgeL)) < c_very_small) { 
-					clipEdgeFace(contact, fq.m_face_ref, inc_edge); 
-				} else { 
-					auto face_ref = fq.m_face_ref;
-					auto pos = RTORTP( ITORP(fq.m_vertex_inc->m_positionL) );
-					pos.y = 0.0;	//project to reference face
-					contact.addContactPoint( RTTOWP( pos ), RTOWN(fq.m_face_ref->m_normalL), fq.m_separation);  //we have only a vertex - face contact}
-				}
-			}
+			real min = clipFaceFace(contact, fq.m_face_ref, inc_face);
+
 			if (fq.m_separation < 0) {
 				real weight = 1.0 / (1.0 + contact.m_body_inc.m_body->mass() * contact.m_body_ref.m_body->m_mass_inv);
-				auto vbias = -RTOWN(fq.m_face_ref->m_normalL) * (-fq.m_separation) * g_sim_frequency * (1.0 - weight);
+				auto vbias = -RTOWN(fq.m_face_ref->m_normalL) * (-min) * g_sim_frequency * (1.0 - weight);
 				addBias(contact.m_body_ref.m_body->m_vbias, vbias);
-				vbias = RTOWN(fq.m_face_ref->m_normalL) * (-fq.m_separation) * g_sim_frequency * weight;
+				vbias = RTOWN(fq.m_face_ref->m_normalL) * (-min) * g_sim_frequency * weight;
 				addBias(contact.m_body_inc.m_body->m_vbias, vbias);
 			}
 		}
@@ -1332,7 +1322,7 @@ namespace ve {
 		/// <param name="contact"></param>
 		/// <param name="face_ref"></param>
 		/// <param name="face_inc"></param>
-		void clipFaceFace(Contact& contact, Face* face_ref, Face* face_inc) {
+		real clipFaceFace(Contact& contact, Face* face_ref, Face* face_inc) {
 			glmvec3 v = glm::normalize( face_ref->m_face_edge_ptrs.begin()->first->m_edgeL * face_ref->m_face_edge_ptrs.begin()->second ); //????
 			glmvec3 p = {};
 
@@ -1344,41 +1334,21 @@ namespace ve {
 			std::vector<geometry::point2D> newPolygon;
 			geometry::SutherlandHodgman(points, face_ref->m_face_vertex2D_T, newPolygon); //clip B's face against A's face
 
+			real min = 0.0;
 			for (auto& p2D : newPolygon) {
 				auto p = glmvec3{ p2D.x, 0.0, p2D.y }; //cannot put comma into macro 
-				glmvec3 posW = RTTOWP(p);
-				auto dist = glm::dot( ITOWN(face_inc->m_normalL), posW - ITOWP( face_inc->m_face_vertex_ptrs[0]->m_positionL ) );
-				contact.addContactPoint(posW, RTOWN(face_ref->m_normalL), dist);
+				glmvec3 posRW = RTTOWP(p);
+				glmvec3 posIT = WTOTIP(posRW);
+				posIT.y = 0.0;
+				glmvec3 posIW = ITTOWP( posIT );
+				auto dist = glm::dot(posIW - posRW, RTOWN(face_ref->m_normalL));
+				if ( dist < c_collision_margin) {
+					min = std::min(min, dist);
+					contact.addContactPoint(posRW, RTOWN(face_ref->m_normalL), dist);
+				}
 			}
+			return min;
 		}
-
-		/// <summary>
-		/// We have a face-edge contact. Bring the edge vertices into A's face tangent space, then
-		/// clip them against A's ref face. Bring the resulting points back to world space.
-		/// </summary>
-		/// <param name="contact"></param>
-		/// <param name="face_ref"></param>
-		/// <param name="edge_inc"></param>
-		void clipEdgeFace(Contact& contact, Face* face_ref, Edge* edge_inc) {
-			std::vector<geometry::point2D> points;
-			auto pT = ITORTP( edge_inc->m_first_vertexL.m_positionL );	//bring edge vertices to A's face tangent space
-			points.emplace_back(pT.x, pT.z);											//add as 2D point (projection)
-			pT = ITORTP(edge_inc->m_second_vertexL.m_positionL);
-			points.emplace_back(pT.x, pT.z);
-
-			std::vector<geometry::point2D> newPolygon;
-			geometry::SutherlandHodgman( points, face_ref->m_face_vertex2D_T, newPolygon);	//clip B's face against A's face
-			std::set<geometry::point2D> newPolygon2;
-			for (auto& p : newPolygon) { newPolygon2.insert(p); }
-
-			for (auto & p2D : newPolygon2 ) {	//result is exactly 2 or 3 points (if clip), we only need 2 points 
-				auto p = glmvec3{ p2D.x, 0.0, p2D.y }; //cannot put comma into macro 
-				glmvec3 posW = RTTOWP(p);
-				auto dist = geometry::distancePointLinesegment( posW, ITOWP(edge_inc->m_first_vertexL.m_positionL), ITOWP(edge_inc->m_second_vertexL.m_positionL) );
-				contact.addContactPoint(posW, RTOWN(face_ref->m_normalL), -dist);
-			}
-		} 
-
 
 		/// <summary>
 		/// 
@@ -1397,32 +1367,13 @@ namespace ve {
 				std::swap(ref_face, inc_face);
 				std::swap(eq.m_edge_ref, eq.m_edge_inc);
 			}
+			real sep = clipFaceFace(contact, ref_face, inc_face);
 
-			if (glm::dot(ref_face->m_normalL, ITORN(inc_face->m_normalL)) > 1.0 - c_very_small) { //face - face
-				clipFaceFace(contact, ref_face, inc_face); 
-			}
-			else {
-				if (fabs(glm::dot(ref_face->m_normalL, ITORV(eq.m_edge_inc->m_edgeL))) < c_very_small) { 
-					clipEdgeFace(contact, ref_face, eq.m_edge_inc); //face - edge
-				}
-				else { //we have only an edge - edge contact}
-					auto posL = geometry::closestPointsLineLine( 
-						eq.m_edge_ref->m_first_vertexL.m_positionL, eq.m_edge_ref->m_second_vertexL.m_positionL,
-						ITORP(eq.m_edge_inc->m_first_vertexL.m_positionL), ITORP(eq.m_edge_inc->m_second_vertexL.m_positionL)
-					);
-
-					auto P1 = RTOWP(posL.first);
-					auto P2 = RTOWP(posL.second);
-					auto mid = (P1 + P2) / 2.0;
-					auto dist = glm::length(P2-P1);
-					contact.addContactPoint(mid, RTOWN(eq.m_normalL), -dist);
-				} 
-			}
 			if (eq.m_separation < 0) {
 				real weight = 1.0 / (1.0 + contact.m_body_inc.m_body->mass() * contact.m_body_ref.m_body->m_mass_inv);
-				auto vbias = -RTOWN(eq.m_normalL) * (-eq.m_separation) * g_sim_frequency * (1.0 - weight);
+				auto vbias = -RTOWN(eq.m_normalL) * (-sep) * g_sim_frequency * (1.0 - weight);
 				addBias(contact.m_body_ref.m_body->m_vbias, vbias);
-				vbias = RTOWN(eq.m_normalL) * (-eq.m_separation) * g_sim_frequency * weight;
+				vbias = RTOWN(eq.m_normalL) * (-sep) * g_sim_frequency * weight;
 				addBias(contact.m_body_inc.m_body->m_vbias, vbias);
 			}
 		}
@@ -1922,7 +1873,7 @@ namespace geometry {
 
 	// check if a point is on the RIGHT side of an edge
 	bool inside(point2D p, point2D p1, point2D p2) {
-		return (p2.y - p1.y) * p.x + (p1.x - p2.x) * p.y + (p2.x * p1.y - p1.x * p2.y) > 0;
+		return (p2.y - p1.y) * p.x + (p1.x - p2.x) * p.y + (p2.x * p1.y - p1.x * p2.y) >= 0;
 	}
 
 	// calculate intersection point
