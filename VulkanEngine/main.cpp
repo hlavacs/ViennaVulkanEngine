@@ -66,6 +66,7 @@ real	g_resting_factor = 3.0_real;				//Factor for determining when a collision v
 double	g_sim_frequency = 60.0;						//Simulation frequency in Hertz
 double	g_sim_delta_time = 1.0 / g_sim_frequency;	//The time to move forward the simulation
 int		g_solver = 0;								//Select which solver to use
+int		g_clamp_position = 1;
 int		g_use_bias = 0;								//If true, the the bias is used for resting contacts
 real	g_vbias_factor = 0.2;
 int		g_use_warmstart = 1;						//If true then warm start resting contacts
@@ -184,10 +185,11 @@ namespace std {
 
 #define RTOIP(X) glmvec3{contact.m_body_ref.m_to_other * glmvec4{X, 1.0}}
 #define RTOIN(X) contact.m_body_ref.m_to_other_it*(X)
-
 #define RTOWP(X) glmvec3{contact.m_body_ref.m_body->m_model * glmvec4{X,1.0}}
 #define RTOWN(X) contact.m_body_ref.m_body->m_model_it*(X)
+#define RTORTP(X) glmvec3{face_ref->m_LtoT * glmvec4{X, 1.0}}
 
+#define RTTORP(X) glmvec3{face_ref->m_TtoL * glmvec4{(X), 1.0}}
 #define RTTOWP(X) glmvec3{contact.m_body_ref.m_body->m_model * face_ref->m_TtoL * glmvec4{(X), 1.0}}
 
 //Access body names
@@ -465,26 +467,27 @@ namespace ve {
 
 				if ( fabs(m_linear_velocityW.x) > c_small || fabs(m_linear_velocityW.z) > c_small
 					|| fabs(m_linear_velocityW.y) > -g_resting_factor * c_gravity * g_sim_delta_time 
-					|| m_num_resting < 4 ) {
-					pos += m_linear_velocityW * (real)dt;
+					|| m_num_resting < 3 ) {
+					if(g_clamp_position==1) pos += m_linear_velocityW * (real)dt;
 					active = true;
 				}
+				if (g_clamp_position==0) pos += m_linear_velocityW * (real)dt;
 				pos += g_vbias_factor * m_vbias * (real)dt;
 				m_vbias = glmvec3{ 0,0,0 };
 
 				auto avW = glmmat3{ m_model_inv } * m_angular_velocityW;
 				real len = glm::length(avW);
 				if (len > c_small) {
-					quat = glm::rotate(quat, len * (real)dt, avW / len);
+					if(g_clamp_position == 1) quat = glm::rotate(quat, len * (real)dt, avW / len);
 					active = true;
 				}
-				//if (len != 0.0) quat = glm::rotate(quat, len * (real)dt, avW / len);
+				if (g_clamp_position == 0 && len != 0.0) quat = glm::rotate(quat, len * (real)dt, avW / len);
 
 				if (active) {
 					m_damping = 0.0;
 				}
 				else {
-					m_damping = std::min( m_damping + g_damping, 600.0 );
+					m_damping = std::min( m_damping + g_damping, 60.0 );
 				}
 
 				return active;
@@ -1293,6 +1296,7 @@ namespace ve {
 		/// <summary>
 		/// We have a vertex-face contact. Test if this actually a 
 		/// face-face, face-edge or just a face-vertex contact, then call the right function to create the manifold.
+		/// Vertex-face contacts are projected to the referece face.
 		/// </summary>
 		/// <param name="contact"></param>
 		/// <param name="fq"></param>
@@ -1306,7 +1310,10 @@ namespace ve {
 				if (fabs(glm::dot(An, inc_edge->m_edgeL)) < c_very_small) { 
 					clipEdgeFace(contact, fq.m_face_ref, inc_edge); 
 				} else { 
-					contact.addContactPoint(ITOWP(fq.m_vertex_inc->m_positionL), RTOWN(fq.m_face_ref->m_normalL), fq.m_separation);  //we have only a vertex - face contact}
+					auto face_ref = fq.m_face_ref;
+					auto pos = RTORTP( ITORP(fq.m_vertex_inc->m_positionL) );
+					pos.y = 0.0;	//project to reference face
+					contact.addContactPoint( RTTOWP( pos ), RTOWN(fq.m_face_ref->m_normalL), fq.m_separation);  //we have only a vertex - face contact}
 				}
 			}
 			if (fq.m_separation < 0) {
@@ -1530,6 +1537,13 @@ namespace ve {
 					g_deactivate = true;
 				if (nk_option_label(ctx, "No", !g_deactivate))
 					g_deactivate = false;
+
+				nk_layout_row_dynamic(ctx, 30, 3);
+				nk_label(ctx, "Clamp Pos", NK_TEXT_LEFT);
+				if (nk_option_label(ctx, "Yes", g_clamp_position == 1))
+					g_clamp_position = 1;
+				if (nk_option_label(ctx, "No", g_clamp_position == 0))
+					g_clamp_position = 0;
 
 				nk_layout_row_dynamic(ctx, 30, 2);
 				if (nk_button_label(ctx, "Create Bodies")) {
