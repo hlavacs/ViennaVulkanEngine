@@ -26,7 +26,11 @@
 #include "glm/gtx/matrix_cross_product.hpp"
 
 
-#if 1
+//If this is defined then computations are done with double accuracy. Else with single accuracy
+//Time is always in double.
+//#define DOUBLE
+
+#ifdef DOUBLE
 using real = double;
 using int_t = int64_t;
 using uint_t = uint64_t;
@@ -57,7 +61,7 @@ constexpr real operator "" _real(long double val) { return (real)val; };	//defin
 using intpair_t = std::pair<int_t, int_t>;		//Pair of integers
 using voidppair_t = std::pair<void*, void*>;	//Pair of void pointers
 
-//Algorithms from namespace geometry, from below this file
+//Algorithms from namespace geometry, defined below this file
 namespace geometry {
 	std::pair<glmvec3, glmvec3> closestPointsLineLine(glmvec3 p1, glmvec3 p2, glmvec3 p3, glmvec3 p4);
 	real distancePointLine(glmvec3 p, glmvec3 a, glmvec3 b);
@@ -297,17 +301,20 @@ namespace ve {
 			return *std::ranges::min_element(signed_edges, compare);
 		}
 
-		struct Collider {};
+		struct Collider {};		//Base class for all classes that can collide
 
+		/// <summary>
+		/// A polytope is a convex polyhedron. It consists of faces, made of edges, with each edge connecting two vertices.
+		/// </summary>
 		struct Polytope : public Collider {
 			std::vector<Vertex>	m_vertices{};		//positions of vertices in local space
 			std::vector<Edge>	m_edges{};			//list of edges
 			std::vector<Face>	m_faces{};			//list of faces
 
-			real m_bounding_sphere_radius{ 1.0_real };
+			real m_bounding_sphere_radius{ 1.0_real };	//Bounding sphere radius for a quick contact test
 
 			using inertia_tensor_t = std::function<glmmat3(real, glmvec3&)>;
-			inertia_tensor_t inertiaTensor;
+			inertia_tensor_t inertiaTensor;			//Function for computing the inertia tensor of this polytope
 
 			/// <summary>
 			/// Constructor for Polytope. Take in a list of vector positions and indices and create the polygon data struct.
@@ -360,14 +367,15 @@ namespace ve {
 					glmvec3 edge0 = m_edges[face_edge_idx[0].m_edge_idx].m_edgeL * face_edge_idx[0].m_factor;
 					glmvec3 edge1 = m_edges[face_edge_idx[1].m_edge_idx].m_edgeL * face_edge_idx[1].m_factor;
 
-					glmvec3 tangent = glm::normalize( edge0 );
-					face.m_normalL = glm::normalize( glm::cross( tangent, edge1 ));
+					glmvec3 tangent = glm::normalize( edge0 );						//tangent space coordinate axes
+					face.m_normalL = glm::normalize( glm::cross( tangent, edge1 ));	//for clipping this face againts another face
 					glmvec3 bitangent = glm::cross(face.m_normalL, tangent);
 
+					//Transform from local space to tangent space and back
 					face.m_TtoL = glm::translate(glmmat4(1), face.m_face_vertex_ptrs[0]->m_positionL) * glmmat4 { glmmat3{bitangent, face.m_normalL, tangent } };
 					face.m_LtoT = glm::inverse(face.m_TtoL);
 
-					for (auto& vertex : face.m_face_vertex_ptrs) {
+					for (auto& vertex : face.m_face_vertex_ptrs) {	//precompute tangent space coordinates of face's vertices
 						glmvec4 pt = face.m_LtoT * glmvec4{ vertex->m_positionL, 1.0_real };
 						face.m_face_vertex2D_T.emplace_back( pt.x, pt.z);
 					}
@@ -399,16 +407,20 @@ namespace ve {
 		//Physics engine stuff
 
 		class Body;
-		using body_callback = std::function<void(double, std::shared_ptr<Body>)>;
+		using body_callb = std::function<void(double, std::shared_ptr<Body>)>; //call this function when the body moves
 
 		/// <summary>
-		/// THis class implements the basic physics properties of a rigid body.
+		/// This class implements the basic physics properties of a rigid body.
 		/// </summary>
 		class Body {
 
 		public:
-			VEEventListenerPhysics* m_physics;
+			VEEventListenerPhysics* m_physics;			//Pointer to the physics world to access parameters
 			std::string	m_name;							//The name of this body
+
+			//-----------------------------------------------------------------------------
+			//Physics parameters of the body
+
 			void*		m_owner = nullptr;				//pointer to owner of this body, must be unique (owner is called if body moves)
 			Polytope*	m_polytope = nullptr;			//geometric shape
 			glmvec3		m_scale{ 1,1,1 };				//scale factor in local space
@@ -416,7 +428,7 @@ namespace ve {
 			glmquat		m_orientationLW{ 1, 0, 0, 0 };	//current orientation at time slot Local -> World
 			glmvec3		m_linear_velocityW{ 0,0,0 };	//linear velocity at time slot in world space
 			glmvec3		m_angular_velocityW{ 0,0,0 };	//angular velocity at time slot in world space
-			body_callback* m_on_move = nullptr;			//called if the body moves
+			body_callb* m_on_move = nullptr;			//called if the body moves
 			real		m_mass_inv{ 0 };				//1 over mass
 			real		m_restitution{ 0 };				//coefficient of restitution eps
 			real		m_friction{ 1 };				//coefficient of friction mu
@@ -429,7 +441,9 @@ namespace ve {
 			glmmat3		m_inertiaL{ 1 };				//computed when the body is created
 			glmmat3		m_inertia_invL{ 1 };			//computed when the body is created
 
+			//-----------------------------------------------------------------------------
 			//computed when the body moves
+
 			glmmat4		m_model{ glmmat4{1} };			//model matrix at time slots
 			glmmat4		m_model_inv{ glmmat4{1} };		//model inverse matrix at time slots
 			glmmat3		m_model_it;						//orientation inverse transpose for bringing normal vector to world
@@ -438,15 +452,35 @@ namespace ve {
 			int_t		m_grid_x{ 0 };					//grid coordinates for broadphase
 			int_t		m_grid_z{ 0 };
 			glmvec3		m_pbias{ 0, 0, 0 };				//extra energy if body overlaps with another body
-			uint32_t	m_num_resting{ 0 };
-			real		m_damping{ 0 };
+			uint32_t	m_num_resting{ 0 };				//number resting contact points 
+			real		m_damping{ 0 };					//damping velocity of resting contact points
 
-			Body(VEEventListenerPhysics* physics) : m_physics{physics} { inertiaTensorL(); updateMatrices(); };
+			/// <summary>
+			/// Constructor of class Body. Uses ony default parameters.
+			/// </summary>
+			/// <param name="physics">Pointer to the physics world.</param>
+			Body(VEEventListenerPhysics* physics) : m_physics{ physics } { m_polytope = &m_physics->g_cube; inertiaTensorL(); updateMatrices(); };
 
+			/// <summary>
+			/// Constructor of class Body
+			/// </summary>
+			/// <param name="physics">Pointer to the physics world.</param>
+			/// <param name="name">Name of the body.</param>
+			/// <param name="owner">Pointer to the owner. The callback knows how to use this pointer.</param>
+			/// <param name="polytope">Pointer to the polytope.</param>
+			/// <param name="scale">3D scaling.</param>
+			/// <param name="positionW">3D position of the body.</param>
+			/// <param name="orientationLW">Body orientation as quaternion.</param>
+			/// <param name="on_move">Callback that is caleld when the body moves.</param>
+			/// <param name="linear_velocityW"></param>
+			/// <param name="angular_velocityW"></param>
+			/// <param name="mass_inv"></param>
+			/// <param name="restitution"></param>
+			/// <param name="friction"></param>
 			Body(VEEventListenerPhysics* physics, std::string name, void* owner, Polytope* polytope,
 				glmvec3 scale, glmvec3 positionW, glmquat orientationLW = { 1,0,0,0 },
-				body_callback* on_move = nullptr, glmvec3 linear_velocityW = glmvec3{ 0,0,0 }, glmvec3 angular_velocityW = glmvec3{0,0,0}, 
-				real mass_inv = 0, real restitution = 0, real friction = 1 ) :
+				body_callb* on_move = nullptr, glmvec3 linear_velocityW = glmvec3{ 0,0,0 }, glmvec3 angular_velocityW = glmvec3{0,0,0}, 
+				real mass_inv = 0, real restitution = 0.2_real, real friction = 1 ) :
 					m_physics{physics}, m_name{name}, m_owner {owner}, m_polytope{ polytope }, 
 					m_scale{ scale }, m_positionW{ positionW }, m_orientationLW{ orientationLW },
 					m_on_move{on_move}, m_linear_velocityW{linear_velocityW}, m_angular_velocityW{ angular_velocityW }, 
@@ -1508,7 +1542,10 @@ namespace ve {
 				if (nk_option_label(ctx, "No", m_physics->m_clamp_position == 0))
 					m_physics->m_clamp_position = 0;
 
-				nk_layout_row_dynamic(ctx, 30, 2);
+				str.str("");
+				str << "Num Bodies " << m_physics->m_bodies.size();
+				nk_layout_row_dynamic(ctx, 30, 3);
+				nk_label(ctx, str.str().c_str(), NK_TEXT_LEFT);
 				if (nk_button_label(ctx, "Create Bodies")) {
 					m_physics->createRandomBodies(20);
 				}
@@ -1526,60 +1563,6 @@ namespace ve {
 					auto b = m_physics->pickBody();
 					if(b) m_physics->eraseBody(b);
 				}
-
-				/*nk_layout_row_dynamic(ctx, 30, 1);
-				nk_label(ctx, "Current Body", NK_TEXT_LEFT);
-
-				auto* sel = "";
-				if(m_physics->m_body.get() ) sel = m_physics->m_body->m_name.c_str();
-				nk_layout_row_dynamic(ctx, 25, 1);
-				if (nk_combo_begin_label(ctx, sel, nk_vec2(nk_widget_width(ctx), 300))) {
-					nk_layout_row_dynamic(ctx, 25, 1);
-					for (auto& body : m_physics->m_bodies) {
-						if (nk_combo_item_label(ctx, body.second->m_name.c_str(), NK_TEXT_LEFT)) {
-							sel = body.second->m_name.c_str();
-							m_physics->m_body = body.second;
-						}
-					}
-					nk_combo_end(ctx);
-				}
-
-				nk_layout_row_begin(ctx, NK_STATIC, 30, 2);
-				nk_layout_row_push(ctx, 60);
-				nk_label(ctx, "Pos", NK_TEXT_LEFT);
-				str.str("");
-				if (m_physics->m_body) str << std::setprecision(5) << m_physics->m_body->m_positionW;
-				nk_layout_row_push(ctx, 250);
-				nk_label(ctx, str.str().c_str(), NK_TEXT_LEFT);
-				nk_layout_row_end(ctx);
-
-				nk_layout_row_begin(ctx, NK_STATIC, 30, 2);
-				nk_layout_row_push(ctx, 60);
-				nk_label(ctx, "Orient", NK_TEXT_LEFT);
-				str.str("");
-				if (m_physics->m_body) str << std::setprecision(5) << m_physics->m_body->m_orientationLW;
-				nk_layout_row_push(ctx, 350);
-				nk_label(ctx, str.str().c_str(), NK_TEXT_LEFT);
-				nk_layout_row_end(ctx);
-
-				nk_layout_row_begin(ctx, NK_STATIC, 30, 2);
-				nk_layout_row_push(ctx, 60);
-				nk_label(ctx, "Lin Vel", NK_TEXT_LEFT);
-				str.str("");
-				if(m_physics->m_body) str << std::setprecision(5) << m_physics->m_body->m_linear_velocityW;
-				nk_layout_row_push(ctx, 250);
-				nk_label(ctx, str.str().c_str(), NK_TEXT_LEFT);
-				nk_layout_row_end(ctx);
-
-				nk_layout_row_begin(ctx, NK_STATIC, 30, 2);
-				nk_layout_row_push(ctx, 60);
-				nk_label(ctx, "Ang Vel", NK_TEXT_LEFT);
-				str.str("");
-				if (m_physics->m_body) str << std::setprecision(5) << m_physics->m_body->m_angular_velocityW;
-				nk_layout_row_push(ctx, 250);
-				nk_label(ctx, str.str().c_str(), NK_TEXT_LEFT);
-				nk_layout_row_end(ctx);
-				*/
 
 				real vel = 5.0;
 				real m_dx, m_dy, m_dz, m_da, m_db, m_dc;
@@ -1618,140 +1601,6 @@ namespace ve {
 				}
 			}
 			nk_end(ctx);
-
-			//--------------------------------------------------------------------------------------
-
-			/*if (nk_begin(ctx, "Debug String", nk_rect(500, 50, 300, 500),
-				NK_WINDOW_BORDER | NK_WINDOW_MOVABLE | NK_WINDOW_SCALABLE |
-				NK_WINDOW_MINIMIZABLE | NK_WINDOW_TITLE))
-			{
-				static auto* sel_debug_string = "";
-
-				nk_layout_row_dynamic(ctx, 25, 1);
-				if (nk_button_label(ctx, "Clear")) { 
-					m_physics->m_debug_string.clear(); 
-					sel_debug_string = "";
-				}
-
-				nk_layout_row_dynamic(ctx, 25, 1);
-				if (nk_combo_begin_label(ctx, sel_debug_string, nk_vec2(nk_widget_width(ctx), 300))) {
-					nk_layout_row_dynamic(ctx, 25, 1);
-					for (auto& deb : m_physics->m_debug_string) {
-						if (nk_combo_item_label(ctx, deb.first.c_str(), NK_TEXT_LEFT)) {
-							sel_debug_string = deb.first.c_str();
-						}
-					}
-					nk_combo_end(ctx);
-				}
-
-				size_t i = 0;
-				auto size = m_physics->m_debug_string[sel_debug_string].size();
-				std::vector<const char*> list;
-				for (auto& s : m_physics->m_debug_string[sel_debug_string]) { list.push_back(s.c_str()); }
-				struct nk_list_view view;
-				nk_layout_row_dynamic(ctx, 400, 1);
-				if (nk_list_view_begin(ctx, &view, "Debug Info", NK_WINDOW_BORDER, 25, size)) {
-					nk_layout_row_dynamic(ctx, 25, 1);
-					int num = std::clamp(size - view.begin, (size_t)0, (size_t)view.count);
-					for (int i = 0; i < num; ++i) {
-						nk_label(ctx, list[view.begin + i], NK_TEXT_LEFT);
-					}
-					nk_list_view_end(&view);
-				}
-			}
-			nk_end(ctx);
-			*/
-
-			//--------------------------------------------------------------------------------------
-
-
-			/*if (nk_begin(ctx, "Debug Real", nk_rect(500, 50, 300, 300),
-				NK_WINDOW_BORDER | NK_WINDOW_MOVABLE | NK_WINDOW_SCALABLE |
-				NK_WINDOW_MINIMIZABLE | NK_WINDOW_TITLE))
-			{
-				static auto* sel_debug_real = "";
-				static std::vector<std::string> values;
-
-				//clear the selection
-				nk_layout_row_dynamic(ctx, 25, 1);
-				if (nk_button_label(ctx, "Clear")) {
-					m_physics->m_debug_real.clear();
-					values.clear();
-					sel_debug_real = "";
-				}
-
-				//show all possible value arrays
-				nk_layout_row_dynamic(ctx, 25, 1);
-				std::string new_string = "";
-				if (nk_combo_begin_label(ctx, sel_debug_real, nk_vec2(nk_widget_width(ctx), 300))) {
-					nk_layout_row_dynamic(ctx, 25, 1);
-					for (auto& deb : m_physics->m_debug_real) {
-						if (nk_combo_item_label(ctx, deb.first.c_str(), NK_TEXT_LEFT)) {
-							values.push_back(deb.first);
-							sel_debug_real = deb.first.c_str();
-						}
-					}
-					nk_combo_end(ctx);
-				}
-
-				//show the selected value arrays
-				size_t i = 0;
-				auto size = values.size();
-				std::vector<const char*> list;
-				for (auto& s : values) { list.push_back(s.c_str()); }
-				struct nk_list_view view;
-				nk_layout_row_dynamic(ctx, 100, 1);
-				if (nk_list_view_begin(ctx, &view, "Value arrays", NK_WINDOW_BORDER, 25, size)) {
-					nk_layout_row_dynamic(ctx, 25, 1);
-					int num = std::clamp(size - view.begin, (size_t)0, (size_t)view.count);
-					for (int i = 0; i < num; ++i) {
-						nk_label(ctx, list[view.begin + i], NK_TEXT_LEFT);
-					}
-				}
-				nk_list_view_end(&view);
-
-				if (m_physics->m_debug_real.size() && values.size()>0) {
-					auto slots = std::ranges::max( values 
-						| std::views::transform([&](auto& s) -> std::vector<std::pair<uint64_t,real>>& { return m_physics->m_debug_real[s]; })
-						| std::views::transform([](auto& n) { return n.size(); })
-					);
-
-					auto [minval,maxval] = std::ranges::minmax( values 
-						| std::views::transform([&](auto& s) -> std::vector<std::pair<uint64_t, real>>& { return m_physics->m_debug_real[s]; })
-						| std::views::join | std::views::values
-					);
-
-					static std::vector<nk_color> cols;
-					static bool fill = true;
-					if (fill) for (int i = 0; i<100; ++i) cols.push_back( nk_rgb(100 + 150 * rand() / RAND_MAX, 100 + 150 * rand() / RAND_MAX, 100 + 150 * rand() / RAND_MAX) );
-					fill = false;
-
-					nk_layout_row_dynamic(ctx, 30, 1);
-					nk_label(ctx, std::to_string(maxval).c_str(), NK_TEXT_LEFT);
-
-					nk_layout_row_dynamic(ctx, 200, 1);
-					int j = 0;
-					if (nk_chart_begin_colored(ctx, NK_CHART_LINES, cols[2 * j], cols[2 * j + 1], slots, minval, maxval)) {
-						for (int i = 1; i < values.size(); ++i) {
-							++j;
-							nk_chart_add_slot_colored(ctx, NK_CHART_LINES, cols[2 * j], cols[2 * j + 1], slots, minval, maxval);
-						}
-	
-						for (int j = 0; j < slots; ++j) {
-							for (int i = 0; i < values.size(); ++i) {
-								if(j < m_physics->m_debug_real[values[i]].size()) {
-									nk_chart_push_slot(ctx, m_physics->m_debug_real[values[i]][j].second, i);
-								}
-							}
-						} 
-						nk_chart_end(ctx);
-					}
-					nk_layout_row_dynamic(ctx, 30, 1);
-					nk_label(ctx, std::to_string(minval).c_str(), NK_TEXT_LEFT);
-				}
-			}
-			nk_end(ctx);
-			*/
 		}
 
 
