@@ -1295,10 +1295,11 @@ namespace ve {
 						if (distance > c_collision_margin) {
 							return { distance, &edgeA, &edgeB };							//no overlap - distance is positive
 						}
-						
-						if (distance > result.m_separation) {
+
+						auto distance2 = glm::dot( n, vBR - vertA->m_positionL);	//above does not depend on location - could find an adge on the othe side
+						if (distance2 <= c_collision_margin && distance > result.m_separation) {
 							result = { distance, &edgeA, &edgeB, n };	//remember max of negative distances
-						}
+						}						
 					}
 				}
 			}
