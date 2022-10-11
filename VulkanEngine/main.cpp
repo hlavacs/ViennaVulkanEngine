@@ -471,12 +471,12 @@ namespace ve {
 			/// <param name="scale">3D scaling.</param>
 			/// <param name="positionW">3D position of the body.</param>
 			/// <param name="orientationLW">Body orientation as quaternion.</param>
-			/// <param name="on_move">Callback that is caleld when the body moves.</param>
-			/// <param name="linear_velocityW"></param>
-			/// <param name="angular_velocityW"></param>
-			/// <param name="mass_inv"></param>
-			/// <param name="restitution"></param>
-			/// <param name="friction"></param>
+			/// <param name="on_move">Callback that is called when the body moves.</param>
+			/// <param name="linear_velocityW">Starting linear velocity.</param>
+			/// <param name="angular_velocityW">Starting angular velovity as axis vector. Length of vector is the speed.</param>
+			/// <param name="mass_inv">1 / mass. If zero, then mass is infinite.</param>
+			/// <param name="restitution">Bounciness, between 0 and 1.</param>
+			/// <param name="friction">Friction coefficient, usually larger than 0.5.</param>
 			Body(VEEventListenerPhysics* physics, std::string name, void* owner, Polytope* polytope,
 				glmvec3 scale, glmvec3 positionW, glmquat orientationLW = { 1,0,0,0 },
 				body_callb* on_move = nullptr, glmvec3 linear_velocityW = glmvec3{ 0,0,0 }, glmvec3 angular_velocityW = glmvec3{0,0,0}, 
@@ -490,86 +490,124 @@ namespace ve {
 				updateMatrices(); 
 			};
 
+			/// <summary>
+			/// Euler step for position. Can be used for integration or extrapolation in between time steps.
+			/// </summary>
+			/// <param name="dt">Delta time step.</param>
+			/// <param name="pos">Current position that is updated.</param>
+			/// <param name="quat">Current orientation that is updated.</param>
+			/// <returns></returns>
 			bool stepPosition(double dt, glmvec3& pos, glmquat& quat) {
 				bool active = !m_physics->m_deactivate;
 
 				if ( fabs(m_linear_velocityW.x) > m_physics->c_small || fabs(m_linear_velocityW.z) > m_physics->c_small
 					|| fabs(m_linear_velocityW.y) > -m_physics->m_resting_factor * m_physics->c_gravity * m_physics->m_sim_delta_time
 					|| m_num_resting < 3 ) {
-					if(m_physics->m_clamp_position==1) pos += m_linear_velocityW * (real)dt;
+					if(m_physics->m_clamp_position==1) pos += m_linear_velocityW * (real)dt; //Euler step.
 					active = true;
 				}
-				if (m_physics->m_clamp_position==0) pos += m_linear_velocityW * (real)dt;
-				pos += m_physics->m_pbias_factor * m_pbias * (real)dt;
-				m_pbias = glmvec3{ 0,0,0 };
+				if (m_physics->m_clamp_position==0) pos += m_linear_velocityW * (real)dt;	//Make Euler step here
+				pos += m_physics->m_pbias_factor * m_pbias * (real)dt;		//Add position bias
+				m_pbias = glmvec3{ 0,0,0 };									//Only once
 
-				auto avW = glmmat3{ m_model_inv } * m_angular_velocityW;
+				auto avW = glmmat3{ m_model_inv } * m_angular_velocityW;	//The same for orientation
 				real len = glm::length(avW);
 				if (len > m_physics->c_small) {
-					if(m_physics->m_clamp_position == 1) quat = glm::rotate(quat, len * (real)dt, avW / len);
+					if(m_physics->m_clamp_position == 1) quat = glm::rotate(quat, len * (real)dt, avW / len);	//Euler step
 					active = true;
 				}
-				if (m_physics->m_clamp_position == 0 && len != 0.0_real) quat = glm::rotate(quat, len * (real)dt, avW / len);
+				if (m_physics->m_clamp_position == 0 && len != 0.0_real) quat = glm::rotate(quat, len * (real)dt, avW / len); //Euler step
 
 				if (active) {
-					m_damping = 0.0_real;
+					m_damping = 0.0_real;	//If the body moves then no damping
 				}
 				else {
-					m_damping = std::min( m_damping + m_physics->m_damping, 60.0_real);
+					m_damping = std::min( m_damping + m_physics->m_damping, 60.0_real);	//If no motion, increase damping
 				}
 
 				return active;
 			};
 
-			bool stepVelocity(double dt) { 
-				glmvec3 sum_accelW{ 0 };
-				glmvec3 sum_forcesW{ 0 };
-				glmvec3 sum_torquesW{ 0 };
-				for (auto& force : m_forces) { 
+			/// <summary>
+			/// Euler step for velocity.
+			/// </summary>
+			/// <param name="dt">Delta time step.</param>
+			/// <returns></returns>
+			void stepVelocity(double dt) { 
+				glmvec3 sum_accelW{ 0 };	//sum of all accelerations
+				glmvec3 sum_forcesW{ 0 };	//sum of all forces in world coordinates
+				glmvec3 sum_torquesW{ 0 };	//sum of all torques in world coordinates
+				for (auto& force : m_forces) {	
 					sum_accelW += force.second.m_accelW;
-					sum_forcesW  += glmmat3{ m_model } * force.second.m_forceL + force.second.m_forceW;
-					sum_torquesW += glm::cross(glmmat3{m_model}*force.second.m_positionL, glmmat3{m_model}*force.second.m_forceL);
+					sum_forcesW  += glmmat3{ m_model } * force.second.m_forceL + force.second.m_forceW;	//forces in local and world coordinates
+					sum_torquesW += glm::cross(glmmat3{m_model} * force.second.m_positionL, glmmat3{m_model} * force.second.m_forceL);
 				}
 				m_linear_velocityW  += (real)dt * (m_mass_inv * sum_forcesW + sum_accelW);
 				m_angular_velocityW += (real)dt * (m_inertia_invW * ( sum_torquesW - glm::cross(m_angular_velocityW, m_inertiaW * m_angular_velocityW)));
 
-				m_linear_velocityW.x *= 1.0_real / (1.0_real + (real)m_physics->m_sim_delta_time * m_damping);
+				m_linear_velocityW.x *= 1.0_real / (1.0_real + (real)m_physics->m_sim_delta_time * m_damping);	//apply sideways damping if any
 				m_linear_velocityW.z *= 1.0_real / (1.0_real + (real)m_physics->m_sim_delta_time * m_damping);
 				m_angular_velocityW  *= 1.0_real / (1.0_real + (real)m_physics->m_sim_delta_time * m_damping);
-				return true;
 			}
 
+			/// <summary>
+			/// COmpute total velocity of object at a certain point.
+			/// </summary>
+			/// <param name="positionW">Position of interest in world coordinates.</param>
+			/// <returns></returns>
 			glmvec3 totalVelocityW(glmvec3 positionW) {
 				return m_linear_velocityW + glm::cross(m_angular_velocityW, positionW - m_positionW);
 			}
 
+			/// <summary>
+			/// Calculate radius of bounding sphere of object.
+			/// </summary>
+			/// <returns>Bounding sphere radius.</returns>
 			real boundingSphereRadius() { 
 				return std::max( m_scale.x, std::max(m_scale.y, m_scale.z)) * m_polytope->m_bounding_sphere_radius;
 			}
 
+			/// <summary>
+			/// Calculate mass of object. Is the inverse of the inverse mass. If inverse is 0 then
+			/// return a very large number.
+			/// </summary>
+			/// <returns>Mass of object.</returns>
 			real mass() {
 				return m_mass_inv <= c_eps ? 1.0_real /(c_eps) : 1.0_real / m_mass_inv;
 			}
 
-			glmmat3 inertiaTensorL() {
-				m_inertiaL = m_polytope->inertiaTensor(mass(), m_scale);
-				m_inertia_invL = glm::inverse(m_inertiaL);
-				return m_inertiaL;
+			/// <summary>
+			/// Calculate inertia tensor and inverse in world coordinates. Only done once at start.
+			/// </summary>
+			/// <returns>Inertia tensor in world coordinates.</returns>
+			void inertiaTensorL() {
+				m_inertiaL = m_polytope->inertiaTensor(mass(), m_scale);	//Polytope inertia tensor
+				m_inertia_invL = glm::inverse(m_inertiaL);					//Inverse inertia tensor
 			}
 
+			/// <summary>
+			/// Compute the model (world) matrix for transforming points from local space to world space.
+			/// Is used to set this in the body callback, thus it is static.
+			/// </summary>
+			/// <param name="pos">Current position.</param>
+			/// <param name="orient">Current orientation.</param>
+			/// <param name="scale">Object scale.</param>
+			/// <returns></returns>
 			static glmmat4 computeModel( glmvec3& pos, glmquat& orient, glmvec3& scale ) { 
 				return glm::translate(glmmat4{ 1.0_real }, pos) * glm::mat4_cast(orient) * glm::scale(glmmat4{ 1.0_real }, scale);
 			};
 
+			/// <summary>
+			/// Create model, inverse model, an inertia matrices.
+			/// </summary>
 			void updateMatrices() {
-				glmmat4 rot4 = glm::mat4_cast(m_orientationLW);
-				glmmat3 rot3{rot4};
+				glmmat3 rot3{ glm::mat4_cast(m_orientationLW) };
 
-				m_model = glm::translate(glmmat4{ 1.0_real }, m_positionW) * rot4 * glm::scale(glmmat4{ 1.0_real }, m_scale);
-				m_model_inv = glm::inverse(m_model);
-				m_model_it = glm::transpose(glm::inverse(glmmat3{ rot3 }));	//transform for a normal vector
+				m_model = computeModel(m_positionW, m_orientationLW, m_scale);  //model matrix
+				m_model_inv = glm::inverse(m_model);							//inverse model matrix
+				m_model_it = glm::transpose(glm::inverse(glmmat3{ rot3 }));		//inverse transpose to transform normal vectors
 
-				m_inertiaW = rot3 * m_inertiaL * glm::transpose(rot3);
+				m_inertiaW = rot3 * m_inertiaL * glm::transpose(rot3);			//inertia tensor depending on current orientation
 				m_inertia_invW = rot3 * m_inertia_invL * glm::transpose(rot3);
 			}
 
@@ -577,14 +615,10 @@ namespace ve {
 			/// Support mapping function of polytope.
 			/// </summary>
 			/// <param name="dirL">Search direction in local space.</param>
-			/// <returns>Pointer to support vertex of body B.</returns>
+			/// <returns>Pointer to supporting vertex of body.</returns>
 			Vertex* support(glmvec3 dirL) {
-				Vertex* result(nullptr);
-				real max_dp{ -std::numeric_limits<real>::max() };
-				for ( auto & vert : m_polytope->m_vertices ) {
-					if (real dp = glm::dot(dirL, vert.m_positionL); dp > max_dp) { result = &vert; max_dp = dp; }
-				}
-				return result;
+				auto compare = [&](auto& a, auto& b) { return glm::dot(dirL, a.m_positionL) < glm::dot(dirL, b.m_positionL); };
+				return std::ranges::max_element(m_polytope->m_vertices, compare)._Ptr;
 			};
 		};
 
@@ -616,15 +650,14 @@ namespace ve {
 				/// Characterize which contact this is.
 				/// </summary>
 				enum type_t {
-					unknown,	//Unknown
-					any,		//Any
+					none,		//Unknown
 					colliding,	//Colliding, bodies are bumping into each other
 					resting,	//No collision, bodies are resting, maybe sliding
 					separating	//Bodies are separating into different directions
 				};
 
 				glmvec3 m_positionW{ 0 };			//Position in world coordinates
-				type_t	m_type{ type_t::unknown };	//Type of contact point
+				type_t	m_type{ type_t::none };	//Type of contact point
 				real	m_restitution;				//Restitution of velcoties after a collision (if reting then = 0)
 				real	m_friction;					//Friction coefficient
 				glmvec3 m_r0W;						//Position in world coordinates relative to body 0 center
@@ -649,7 +682,6 @@ namespace ve {
 			uint32_t				  m_num_old_points{0};		//Only warmstart if you have atleast N old resting points
 
 		};
-
 
 		/// <summary>
 		/// This function adds a new contact point to a contact manifold. 
@@ -710,15 +742,16 @@ namespace ve {
 		double	m_sim_frequency = 60.0;						//Simulation frequency in Hertz
 		double	m_sim_delta_time = 1.0 / m_sim_frequency;	//The time to move forward the simulation
 		int		m_solver = 0;								//Select which solver to use
-		int		m_clamp_position = 1;
+		int		m_clamp_position = 1;						//No motions below a certain limit
 		int		m_use_vbias = 1;							//If true, the the bias is used for resting contacts
-		real	m_pbias_factor = 0.5_real;
+		int		m_align_position_bias = 1;					//if true then look of current position bias is already enough
+		real	m_pbias_factor = 0.5_real;					//Add only a fraction of the current position bias.
 		int		m_use_warmstart = 1;						//If true then warm start resting contacts
 		int		m_loops = 30;								//Number of loops in each simulation step
 		bool	m_deactivate = true;						//Do not move objects that are deactivated
 		real	m_damping = 1.0_real;						//damp motion of slowly moving resting objects 
-		real	m_restitution = 0.2_real;
-		real	m_friction = 1.0_real;
+		real	m_restitution = 0.2_real;					//Coefficient of restitution (bounciness)
+		real	m_friction = 1.0_real;						//Coefficient of friction
 
 		//--------------------------------------------------------------------------------------------------
 		//simulation state
@@ -766,34 +799,12 @@ namespace ve {
 		/// </summary>
 		std::unordered_map<voidppair_t, Contact> m_contacts;	//possible contacts resulting from broadphase
 
-		std::unordered_map<std::string, std::vector<std::string>> m_debug_string;	//debug information
-		std::unordered_map<std::string, std::vector<std::pair<uint64_t, real>>> m_debug_real;	//debug information
-
 		//-----------------------------------------------------------------------------------------------------
-		//debugging
 
-		void debug_string(std::string key, std::string value) {
-			if (m_mode != simulation_mode_t::SIMULATION_MODE_DEBUG) return;
-			m_debug_string[key].emplace_back(value);
-		}
-
-		void debug_string(const std::string& key1, const std::string& key2, const std::string& rest, std::string value) {
-			if (m_mode != simulation_mode_t::SIMULATION_MODE_DEBUG) return;
-			if (key1 < key2) m_debug_string[key1 + key2 + rest].emplace_back(value);
-			else m_debug_string[key2 + key1 + rest].emplace_back(value);
-		}
-
-		void debug_real(const std::string& key, uint64_t x, real value) {
-			if (m_mode != simulation_mode_t::SIMULATION_MODE_DEBUG) return;
-			m_debug_real[key].emplace_back( x, value );
-		}
-
-		void debug_real(const std::string& key1, const std::string& key2, const std::string& rest, uint64_t x, real value) {
-			if (m_mode != simulation_mode_t::SIMULATION_MODE_DEBUG) return;
-			if( key1 < key2 ) m_debug_real[key1 + key2 + rest].emplace_back(x, value);
-			else m_debug_real[key2 + key1 + rest].emplace_back( x, value );
-		}
-
+		/// <summary>
+		/// Pick the body that is best aligned with the camera lokking direction.
+		/// </summary>
+		/// <returns>The picked body.</returns>
 		std::shared_ptr<Body> pickBody() {
 			glmvec3 pos{ getSceneManagerPointer()->getSceneNode("StandardCameraParent")->getWorldTransform()[3] };
 			glmvec3 dir{ getSceneManagerPointer()->getSceneNode("StandardCamera")->getWorldTransform()[2] };
@@ -802,7 +813,6 @@ namespace ve {
 		}
 		std::shared_ptr<Body> m_body; // the body we can move with the debug panel (always the latest body created)
 
-		//-----------------------------------------------------------------------------------------------------
 
 		/// <summary>
 		/// This callback is used for updating the visual boy whenever the physics box moves.
@@ -828,6 +838,10 @@ namespace ve {
 			m_grid[intpair_t{ pbody->m_grid_x, pbody->m_grid_z }].insert({ pbody->m_owner, pbody }); //Put into broadphase grid
 		}
 
+		/// <summary>
+		/// Create a number of bodies at random places to populate the scene.
+		/// </summary>
+		/// <param name="n">Number of bodies to create</param>
 		void createRandomBodies( auto n) {
 			for (int i = 0; i < n; ++i) {
 				glmvec3 pos = { rnd_unif(rnd_gen), 20 * rnd_unif(rnd_gen) + 10.0_real, rnd_unif(rnd_gen) };
@@ -844,12 +858,19 @@ namespace ve {
 			}
 		}
 
+		/// <summary>
+		/// Delete all bodies.
+		/// </summary>
 		void clear() {
 			for (auto& body : m_bodies) getSceneManagerPointer()->deleteSceneNodeAndChildren( ((VESceneNode*) body.second->m_owner)->getName());
 			m_bodies.clear();
 			m_grid.clear();
 		}
 
+		/// <summary>
+		/// Erase one body.
+		/// </summary>
+		/// <param name="body">(Shared) pointer to the body.</param>
 		void eraseBody(auto body) {
 			getSceneManagerPointer()->deleteSceneNodeAndChildren(((VESceneNode*)body->m_owner)->getName());
 			m_bodies.erase(body->m_owner);
@@ -871,31 +892,38 @@ namespace ve {
 			}
 		}
 
-		void addPositionBias(glmvec3& old_bias, glmvec3& new_bias ) {
-			auto B = new_bias;
-			auto l = glm::length(old_bias);
-			if (l > 0.0_real) {
-				auto f = std::max( glm::dot(new_bias, old_bias/ l) - l, 0.0_real);
-				B = new_bias - f * old_bias / l;
+		/// <summary>
+		/// Add a position bias coming from a contact. If the current bias already is enough do not add.
+		/// </summary>
+		/// <param name="old_bias">The current bias.</param>
+		/// <param name="new_bias">The new bias to be added to the current bias.</param>
+		void addPositionBias(glmvec3& current_bias, glmvec3& new_bias ) {
+			auto B = new_bias;								//temp value
+			if (m_align_position_bias == 1) {				//Should we align thenew bias with the old one?
+				auto l = glm::length(current_bias);			//Length of current bias
+				if (l > 0.0_real) {							//if there is a current bias
+					auto f = std::max( glm::dot(new_bias, current_bias / l) - l, 0.0_real); //how much is already in this direction?
+					B = new_bias - f * current_bias / l;	//add only the bias that goes beyong this
+				}
 			}
-			old_bias += B;
-		}
-
-		void positionBias(real query_separation, real face_separation, glmvec3 normalL, Contact &contact ) {
-			if (query_separation < m_collision_margin) {
-				real weight = 1.0_real / (1.0_real + contact.m_body_inc.m_body->mass() * contact.m_body_ref.m_body->m_mass_inv);
-				auto pbias = -RTOWN(normalL) * (-face_separation) * (real)m_sim_frequency * (1.0_real - weight);
-				addPositionBias(contact.m_body_ref.m_body->m_pbias, pbias);
-				pbias = RTOWN(normalL) * (-face_separation) * (real)m_sim_frequency * weight;
-				addPositionBias(contact.m_body_inc.m_body->m_pbias, pbias);
-			}
+			current_bias += B;		//add the new bias
 		}
 
 		/// <summary>
-		/// Callback for frame ended event.
+		/// Calculate the position bias for both bodies of a contact, and add it to the current biases.
 		/// </summary>
-		/// <param name="event"></param>
-		void onFrameEnded(veEvent event) {
+		/// <param name="query_separation">Seperation distance according to query.</param>
+		/// <param name="face_separation">Separation distance as result of face calculations.</param>
+		/// <param name="normalL">Normal vector from query.</param>
+		/// <param name="contact">Contact information..</param>
+		void positionBias(real query_separation, real face_separation, glmvec3 normalL, Contact &contact ) {
+			if (query_separation < m_collision_margin) {
+				real weight = 1.0_real / (1.0_real + contact.m_body_inc.m_body->mass() * contact.m_body_ref.m_body->m_mass_inv);
+				auto pbias = -RTOWN(normalL) * (-query_separation) * (real)m_sim_frequency * (1.0_real - weight);
+				addPositionBias(contact.m_body_ref.m_body->m_pbias, pbias);
+				pbias = RTOWN(normalL) * (-query_separation) * (real)m_sim_frequency * weight;
+				addPositionBias(contact.m_body_inc.m_body->m_pbias, pbias);
+			}
 		}
 
 		/// <summary>
@@ -967,50 +995,42 @@ namespace ve {
 
 		/// <summary>
 		/// Callback for the frame started event. This is the main physics engine entry point.
+		/// Once at the start of each new frame this is called.
+		/// The function calculates the current collision/contact points, and warmstarts resting contacts.
+		/// 
 		/// </summary>
-		/// <param name="event">The vent data.</param>
+		/// <param name="event">The event data.</param>
 		void onFrameStarted(veEvent event) {
 			if (m_mode == SIMULATION_MODE_REALTIME) {	//if the engine is in realtime mode, advance time
 				m_current_time = m_last_time + event.dt;
 			}
 
 			auto last_loop = m_loop;
-			while (m_current_time > m_next_slot) {	//compute position/vel at time slots
+			while (m_current_time > m_next_slot) {	//compute position/vel only at time slots
 				++m_loop;			//increase loop counter
 				broadPhase();		//run the broad phase
 				narrowPhase();		//Run the narrow phase
 				warmStart();		//Warm start the resting contacts if possible
 
-				//calculateImpulses(Contact::ContactPoint::type_t::any, g_loops, g_sim_delta_time/2.0); //calculate impulses
-				if (m_run) {
-					for (auto& c : m_bodies) {
-						auto& body = c.second;
-						body->stepVelocity(m_sim_delta_time);	//Integration step for velocity
-					}
-				}
-				calculateImpulses(Contact::ContactPoint::type_t::any, m_loops, m_sim_delta_time); //calculate impulses
+				for (auto& body : m_bodies) { body.second->stepVelocity(m_sim_delta_time); }		//Integration step for velocity
+				calculateImpulses(m_loops, m_sim_delta_time);	//Calculate and apply impulses
 
-				if (m_run) {
-					for (auto& c : m_bodies) {	//integrate positions and update the matrices for the bodies
-						auto& body = c.second;
-						bool active = body->stepPosition(m_sim_delta_time, body->m_positionW, body->m_orientationLW);
-						body->updateMatrices();
-					}
+				for (auto& body : m_bodies) {	//integrate positions and update the matrices for the bodies
+					bool active = body.second->stepPosition(m_sim_delta_time, body.second->m_positionW, body.second->m_orientationLW);
+					body.second->updateMatrices();
 				}
-				m_last_slot = m_next_slot;
-				m_next_slot += m_sim_delta_time;
+				m_last_slot = m_next_slot;			//Remember last slot
+				m_next_slot += m_sim_delta_time;	//Move to next time slot as slong as we do not surpass current time
 			}
-			if (m_loop > last_loop) {
-				for (auto& c : m_bodies) {	//predict pos/vel at slot + delta, this is only a prediction for rendering, not stored anywhere
-					moveBodyInGrid(c.second);
-				}
+			if (m_loop > last_loop) {	//if we have entered a new time slot bodies might have moved, so update broadphase grid
+				for (auto& body : m_bodies) { moveBodyInGrid(body.second); } //update grid
 			}
-			for (auto& c : m_bodies) {	//predict pos/vel at slot + delta, this is only a prediction for rendering, not stored anywhere
-				if (m_run && c.second->m_on_move != nullptr) {
-					(*c.second->m_on_move)(m_current_time - m_last_slot, c.second); //predict new pos/orient
+			for (auto& body : m_bodies) {	//predict pos/vel at slot + delta, this is only a prediction for rendering, this is not stored anywhere
+				if (m_run && body.second->m_on_move != nullptr) {
+					(*body.second->m_on_move)(m_current_time - m_last_slot, body.second); //predict new pos/orient
 				}
 			}
-			m_last_time = m_current_time;
+			m_last_time = m_current_time;	//save last time
 		};
 
 		/// <summary>
@@ -1050,7 +1070,6 @@ namespace ve {
 				} 
 			}
 		}
-
 
 		/// <summary>
 		/// For each pair coming from the broadphase, test whether the bodies touch each other. If so then
@@ -1096,7 +1115,7 @@ namespace ve {
 				auto num0 = contact.m_body_ref.m_body->m_num_resting;
 				auto num1 = contact.m_body_inc.m_body->m_num_resting;
 
-				if (num0 > 3 && num1 > 3) {
+				if (num0 > 1 && num1 > 1) {		//should have a minimum number of resting contact points
 					for (auto& cp : contact.m_contact_points) {
 						if (cp.m_type != Contact::ContactPoint::resting || cp.m_f != 0.0_real) continue; //warmstart only once
 						for (auto& coldp : contact.m_old_contact_points) {
@@ -1124,7 +1143,7 @@ namespace ve {
 					}
 				}
 				else {
-					for (auto& cp : contact.m_contact_points) {
+					for (auto& cp : contact.m_contact_points) {	//no warm starting
 						cp.m_f = 0.0_real;
 					}
 				}
@@ -1146,86 +1165,96 @@ namespace ve {
 					addContactPoint(contact, vW, glmvec3{ 0,1,0 }, vW.y);	//add the contact point
 				}
 			}
-			if (min_depth < 0.0_real) {
-				contact.m_body_inc.m_body->m_pbias += glmvec3{ 0, -min_depth * m_sim_frequency, 0 }; //If penetrating, calculate bias
-			}
+			positionBias(min_depth, min_depth, glmvec3{ 0,1,0 }, contact);	//add position bias if necessary
 		}
 
 
-		uint64_t calculateContactPointImpules(Contact &contact, Contact::ContactPoint::type_t contact_type) {
+		/// <summary>
+		/// For a given contact, go through all contact points and apply a small impulse to satisfy the 
+		/// desired velocity. Since impulses in any loop can be negative, assure that the total impulses in
+		/// normal and tangent directions do not get negative.
+		/// </summary>
+		/// <param name="contact">Contact manifold of two bodies.</param>
+		/// <param name="contact_type">Only compute the given type of contacts.</param>
+		/// <returns></returns>
+		uint64_t calculateContactPointImpules(Contact &contact) {
 			uint64_t res = 0;
 			int i = -1;
 			for (auto& cp : contact.m_contact_points) {
 				++i;
-				if (Contact::ContactPoint::type_t::any == contact_type || cp.m_type == contact_type) {
-					auto vref = contact.m_body_ref.m_body->totalVelocityW(cp.m_positionW);
-					auto vinc = contact.m_body_inc.m_body->totalVelocityW(cp.m_positionW);
-					auto vrel = vinc - vref;
-					auto dN = glm::dot(vrel, contact.m_normalW);
-					real f{ 0.0_real }, t0{ 0.0_real }, t1{ 0.0_real };
+				auto vref = contact.m_body_ref.m_body->totalVelocityW(cp.m_positionW);	//Veloity at contact point of reference body
+				auto vinc = contact.m_body_inc.m_body->totalVelocityW(cp.m_positionW);	//Veloity at contact point of incident body
+				auto vrel = vinc - vref;							//Velocity difference
+				auto dN = glm::dot(vrel, contact.m_normalW);		//Closing speed, if negative then there is a collision
+				real f{ 0.0_real }, t0{ 0.0_real }, t1{ 0.0_real };	//The impulses to be calculated
 
-					if (m_solver == 0) {
-						auto F = cp.m_K_inv * (-cp.m_restitution * (dN + m_use_vbias * cp.m_vbias) * contact.m_normalW - vrel);
-						cp.m_vbias = 0.0_real;
-						f = glm::dot(F, contact.m_normalW);
-						auto Fn = f * contact.m_normalW;
-						auto Ft = F - Fn;
-						t0 = -glm::dot(Ft, contact.m_tangentW[0]);
-						t1 = -glm::dot(Ft, contact.m_tangentW[1]);
-					}
-					
-					if (m_solver == 1) {
-						glmmat3 mc0 = matrixCross3(cp.m_r0W);
-						glmmat3 mc1 = matrixCross3(cp.m_r1W);
-
-						glmmat3 K = -mc1 * contact.m_body_inc.m_body->m_inertia_invW * mc1 - mc0 * contact.m_body_ref.m_body->m_inertia_invW * mc0;
-
-						auto dV = -cp.m_restitution * dN * contact.m_normalW - vrel;
-						auto kn = contact.m_body_ref.m_body->m_mass_inv + contact.m_body_inc.m_body->m_mass_inv + glm::dot(K * contact.m_normalW, contact.m_normalW);
-						f = (glm::dot(dV, contact.m_normalW) + m_use_vbias * cp.m_vbias) / kn;
-						cp.m_vbias = 0.0_real;
-
-						auto kt0 = contact.m_body_ref.m_body->m_mass_inv + contact.m_body_inc.m_body->m_mass_inv + 
-							glm::dot(K * contact.m_tangentW[0], contact.m_tangentW[0]);
-						t0 = -glm::dot(dV, contact.m_tangentW[0]) / kt0;
-
-						auto kt1 = contact.m_body_ref.m_body->m_mass_inv + contact.m_body_inc.m_body->m_mass_inv +
-							glm::dot(K * contact.m_tangentW[1], contact.m_tangentW[1]);
-						t1 = -glm::dot(dV, contact.m_tangentW[1]) / kt1;
-					}
-
-					auto tmp = cp.m_f;
-					cp.m_f = std::max(tmp + f, 0.0_real);
-					f = cp.m_f - tmp;
-
-					glmvec2 dt{t0, t1};
-					auto tmpt = cp.m_t;
-					cp.m_t += dt;
-					auto len = glm::length(cp.m_t);
-					if (len > fabs(cp.m_f * cp.m_friction)) {
-						cp.m_t *= fabs(cp.m_f * cp.m_friction) / len;
-						dt = cp.m_t - tmpt;
-					}
-
-					auto F = f * contact.m_normalW - dt.x * contact.m_tangentW[0] - dt.y * contact.m_tangentW[1];
-
-					contact.m_body_ref.m_body->m_linear_velocityW  += -F * contact.m_body_ref.m_body->m_mass_inv;
-					contact.m_body_ref.m_body->m_angular_velocityW +=      contact.m_body_ref.m_body->m_inertia_invW * glm::cross(cp.m_r0W, -F);
-					contact.m_body_inc.m_body->m_linear_velocityW  +=  F * contact.m_body_inc.m_body->m_mass_inv;
-					contact.m_body_inc.m_body->m_angular_velocityW +=      contact.m_body_inc.m_body->m_inertia_invW * glm::cross(cp.m_r1W, F);
+				if (m_solver == 0) {	//All in one solver
+					auto F = cp.m_K_inv * (-cp.m_restitution * (dN + m_use_vbias * cp.m_vbias) * contact.m_normalW - vrel);
+					cp.m_vbias = 0.0_real;
+					f = glm::dot(F, contact.m_normalW);
+					auto Fn = f * contact.m_normalW;
+					auto Ft = F - Fn;
+					t0 = -glm::dot(Ft, contact.m_tangentW[0]);
+					t1 = -glm::dot(Ft, contact.m_tangentW[1]);
 				}
+				
+				if (m_solver == 1) {						//Separate normal and tangent solver
+					glmmat3 mc0 = matrixCross3(cp.m_r0W);
+					glmmat3 mc1 = matrixCross3(cp.m_r1W);
+
+					glmmat3 K = -mc1 * contact.m_body_inc.m_body->m_inertia_invW * mc1 - mc0 * contact.m_body_ref.m_body->m_inertia_invW * mc0;
+
+					auto dV = -cp.m_restitution * dN * contact.m_normalW - vrel;
+					auto kn = contact.m_body_ref.m_body->m_mass_inv + contact.m_body_inc.m_body->m_mass_inv + glm::dot(K * contact.m_normalW, contact.m_normalW);
+					f = (glm::dot(dV, contact.m_normalW) + m_use_vbias * cp.m_vbias) / kn;
+					cp.m_vbias = 0.0_real;
+
+					auto kt0 = contact.m_body_ref.m_body->m_mass_inv + contact.m_body_inc.m_body->m_mass_inv + 
+						glm::dot(K * contact.m_tangentW[0], contact.m_tangentW[0]);
+					t0 = -glm::dot(dV, contact.m_tangentW[0]) / kt0;
+
+					auto kt1 = contact.m_body_ref.m_body->m_mass_inv + contact.m_body_inc.m_body->m_mass_inv +
+						glm::dot(K * contact.m_tangentW[1], contact.m_tangentW[1]);
+					t1 = -glm::dot(dV, contact.m_tangentW[1]) / kt1;
+				}
+
+				auto tmp = cp.m_f;		//make sure that aggregated normal impulse is not negative
+				cp.m_f = std::max(tmp + f, 0.0_real);
+				f = cp.m_f - tmp;
+
+				glmvec2 dt{t0, t1};		//make sure that aggregated tangent impulse is not negative
+				auto tmpt = cp.m_t;
+				cp.m_t += dt;
+				auto len = glm::length(cp.m_t);
+				if (len > fabs(cp.m_f * cp.m_friction)) {
+					cp.m_t *= fabs(cp.m_f * cp.m_friction) / len;
+					dt = cp.m_t - tmpt;
+				}
+
+				auto F = f * contact.m_normalW - dt.x * contact.m_tangentW[0] - dt.y * contact.m_tangentW[1]; //total impulse
+
+				contact.m_body_ref.m_body->m_linear_velocityW  += -F * contact.m_body_ref.m_body->m_mass_inv;
+				contact.m_body_ref.m_body->m_angular_velocityW +=      contact.m_body_ref.m_body->m_inertia_invW * glm::cross(cp.m_r0W, -F);
+				contact.m_body_inc.m_body->m_linear_velocityW  +=  F * contact.m_body_inc.m_body->m_mass_inv;
+				contact.m_body_inc.m_body->m_angular_velocityW +=      contact.m_body_inc.m_body->m_inertia_invW * glm::cross(cp.m_r1W, F);
 			}
 			return res;
 		}
 
-		void calculateImpulses( Contact::ContactPoint::type_t contact_type , uint64_t loops, double max_time) {
+		/// <summary>
+		/// Go through all contacts and calculate and apply impulses. Do this until number of loops or time 
+		/// run out.
+		/// </summary>
+		/// <param name="loops">Max number of loops through the contacts.</param>
+		/// <param name="max_time">Max time you have.</param>
+		void calculateImpulses(uint64_t loops, double max_time) {
 			uint64_t num = loops;
 			auto start = std::chrono::high_resolution_clock::now();
 			auto elapsed = std::chrono::high_resolution_clock::now() - start;
 			do {
 				uint64_t res = 0;
 				for (auto& contact : m_contacts) { 			//loop over all contacts
-					auto nres = calculateContactPointImpules(contact.second, contact_type);
+					auto nres = calculateContactPointImpules(contact.second);
 					res = std::max(nres, (uint64_t)res);
 				}
 				num = num + res - 1;
@@ -1236,6 +1265,9 @@ namespace ve {
 
 		//----------------------------------------------------------------------------------------------------
 
+		/// <summary>
+		/// Store the result of an edge-edge query
+		/// </summary>
 		struct EdgeQuery {
 			real	m_separation;	//separation length (negative)
 			Edge*	m_edge_ref;		//pointer to reference edge (body 0)
@@ -1243,6 +1275,9 @@ namespace ve {
 			glmvec3	m_normalL;		//normal of contact (cross product) in A's space
 		};
 
+		/// <summary>
+		/// Store the result of face-face queries
+		/// </summary>
 		struct FaceQuery {
 			real	m_separation;	//separation length (negative)
 			Face*	m_face_ref;			//pointer to reference face
@@ -1262,28 +1297,24 @@ namespace ve {
 			contact.m_body_inc.m_to_other = contact.m_body_ref.m_body->m_model_inv * contact.m_body_inc.m_body->m_model; //transform to bring space B to space A
 			contact.m_body_inc.m_to_other_it = glm::transpose(glm::inverse(glmmat3{ contact.m_body_inc.m_to_other }));	//transform for a normal vector
 
-			FaceQuery fq0 = queryFaceDirections(contact);
-			if(fq0.m_separation > 0) return;	//found a separating axis with face normal
+			FaceQuery fq0 = queryFaceDirections(contact);		//Query all normal vectors of faces of first body
+			if(fq0.m_separation > 0) return;					//found a separating axis with face normal
 			std::swap(contact.m_body_ref, contact.m_body_inc);	//body 0 is the reference body having the reference face
-			FaceQuery fq1 = queryFaceDirections(contact);
-			if(fq1.m_separation > 0) return;	//found a separating axis with face normal
+			FaceQuery fq1 = queryFaceDirections(contact);		//Query all normal vectors of faces of second body
+			if(fq1.m_separation > 0) return;					//found a separating axis with face normal
 
 			std::swap(contact.m_body_ref, contact.m_body_inc);	//prevent flip flopping
-			EdgeQuery eq = queryEdgeDirections(contact);
-			if (eq.m_separation > 0) return;	//found a separating axis with edge-edge normal
+			EdgeQuery eq = queryEdgeDirections(contact);		//Query cross product of edge pairs from body 0 and 1	
+			if (eq.m_separation > 0) return;					//found a separating axis with edge-edge normal
 
-			if (fq0.m_separation >= eq.m_separation * 1.01_real || fq1.m_separation >= eq.m_separation * 1.01_real) {	//max separation is a face-vertex contact
-				if (fq0.m_separation >= fq1.m_separation) { 
-					createFaceContact(contact, fq0);
-				}
+			if (fq0.m_separation >= eq.m_separation * 1.001_real || fq1.m_separation >= eq.m_separation * 1.001_real) {	//max separation is a face-vertex contact
+				if (fq0.m_separation >= fq1.m_separation) { createFaceContact(contact, fq0); } 
 				else {
 					std::swap(contact.m_body_ref, contact.m_body_inc);	//body 0 is the reference body having the reference face
 					createFaceContact(contact, fq1);
 				}
 			}
-			else {
-				createEdgeContact(contact, eq);	//max separation is an edge-edge contact
-			}
+			else { createEdgeContact(contact, eq); } //max separation is an edge-edge contact 
 		}
 
 		/// <summary>
@@ -1354,32 +1385,29 @@ namespace ve {
 		}
 
 		/// <summary>
-		/// We have a vertex-face contact. Test if this actually a 
-		/// face-face, face-edge or just a face-vertex contact, then call the right function to create the manifold.
-		/// Vertex-face contacts are projected to the referece face.
+		/// We have a vertex-face contact, but the contact manifold could be a face/face contact.
+		/// So find the face of the incident body that is best aligned with the normal and
+		/// project it to the reference face, then clip the faces to get possible contact points.
+		/// Test if these points are actually touching.
 		/// </summary>
-		/// <param name="contact"></param>
-		/// <param name="fq"></param>
+		/// <param name="contact">The contact between 2 bodies.</param>
+		/// <param name="fq">Result of face query.</param>
 		void createFaceContact(Contact& contact, FaceQuery& fq) {
 			glmvec3 An = glm::normalize( -RTOIN(fq.m_face_ref->m_normalL) ); //transform normal vector of ref face to inc body
-			Face* inc_face = maxFaceAlignment(An, fq.m_vertex_inc->m_vertex_face_ptrs, [](real x) -> real { return x; });	//do we have a face - face contact?
-			real sep = clipFaceFace(contact, fq.m_face_ref, inc_face);
-			positionBias(fq.m_separation, sep, fq.m_face_ref->m_normalL, contact);
+			Face* inc_face = maxFaceAlignment(An, fq.m_vertex_inc->m_vertex_face_ptrs);	//Find best incident face
+			real sep = clipFaceFace(contact, fq.m_face_ref, inc_face);					//Project and clip it against reference face
+			positionBias(fq.m_separation, sep, fq.m_face_ref->m_normalL, contact);		//Add position bias if necessary
 		}
-
 
 		/// <summary>
 		/// We found a face of B that is aligned with the ref face of A. Bring inc face vertices of B into 
 		/// A's face tangent space, then clip B against A. Bring the result into world space.
 		/// </summary>
-		/// <param name="contact"></param>
-		/// <param name="face_ref"></param>
-		/// <param name="face_inc"></param>
+		/// <param name="contact">The contact between the bodies.</param>
+		/// <param name="face_ref">The reference face.</param>
+		/// <param name="face_inc">The incident face.</param>
 		real clipFaceFace(Contact& contact, Face* face_ref, Face* face_inc) {
-			glmvec3 v = glm::normalize( face_ref->m_face_edge_ptrs.begin()->first->m_edgeL * face_ref->m_face_edge_ptrs.begin()->second ); //????
-			glmvec3 p = {};
-
-			std::vector<geometry::point2D> points;					
+			std::vector<geometry::point2D> points;						//2D points holding the projected contact points				
 			for (auto* vertex : face_inc->m_face_vertex_ptrs) {			//add face points of B's face
 				auto pT = ITORTP( vertex->m_positionL );				//ransform to A's tangent space
 				points.emplace_back(pT.x, pT.z);						//add as 2D point
@@ -1388,15 +1416,15 @@ namespace ve {
 			geometry::SutherlandHodgman(points, face_ref->m_face_vertex2D_T, newPolygon); //clip B's face against A's face
 
 			real min = 0.0_real;
-			for (auto& p2D : newPolygon) {
+			for (auto& p2D : newPolygon) {					//Go through all clip points
 				auto p = glmvec3{ p2D.x, 0.0_real, p2D.y }; //cannot put comma into macro 
-				glmvec3 posRW = RTTOWP(p);
-				glmvec3 posIT = WTOTIP(posRW);
-				posIT.y = 0.0_real;
-				glmvec3 posIW = ITTOWP( posIT );
-				auto dist = glm::dot(posIW - posRW, RTOWN(face_ref->m_normalL));
-				if ( dist < m_collision_margin) {
-					min = std::min(min, dist);
+				glmvec3 posRW = RTTOWP(p);					//Bring them to world coordinates
+				glmvec3 posIT = WTOTIP(posRW);				//Bring them to the tangent space of the incident face
+				posIT.y = 0.0_real;							//Project to tangent face
+				glmvec3 posIW = ITTOWP( posIT );			//Bring back to world coordinates
+				auto dist = glm::dot(posIW - posRW, RTOWN(face_ref->m_normalL));	//Distance between the two points in world coordinates
+				if ( dist < m_collision_margin) {			//If close enough the touch
+					min = std::min(min, dist);				//Remember the minimum distance
 					addContactPoint(contact, posRW, RTOWN(face_ref->m_normalL), dist);
 				}
 			}
@@ -1404,23 +1432,24 @@ namespace ve {
 		}
 
 		/// <summary>
-		/// 
+		/// We have an edge-edge contact. Find the faces of the edges that is best aligned with the collision
+		/// normal (the edge edge cross product). Then clip the faces to find possible contact points.
 		/// </summary>
-		/// <param name="contact"></param>
-		/// <param name="eq"></param>
+		/// <param name="contact">Contact between the two bodies.</param>
+		/// <param name="eq">Result of edge query.</param>
 		void createEdgeContact(Contact& contact, EdgeQuery &eq) {
 			Face* ref_face = maxFaceAlignment(eq.m_normalL, eq.m_edge_ref->m_edge_face_ptrs, fabs);	//face of A best aligned with the contact normal
 			Face* inc_face = maxFaceAlignment(-RTOIN(eq.m_normalL), eq.m_edge_inc->m_edge_face_ptrs, fabs);	//face of B best aligned with the contact normal
 		
-			real dp_ref = fabs(glm::dot(eq.m_normalL, ref_face->m_normalL));
+			real dp_ref = fabs(glm::dot(eq.m_normalL, ref_face->m_normalL));	//Use the better aligned face as reference face.
 			real dp_inc = fabs(glm::dot(eq.m_normalL, inc_face->m_normalL));
 			if (dp_inc > dp_ref) { 
-				std::swap(contact.m_body_ref, contact.m_body_inc);
+				std::swap(contact.m_body_ref, contact.m_body_inc);	//Use incident face as reference face -> swap positions
 				std::swap(ref_face, inc_face);
 				std::swap(eq.m_edge_ref, eq.m_edge_inc);
 			}
-			real sep = clipFaceFace(contact, ref_face, inc_face);
-			positionBias(eq.m_separation, sep, eq.m_normalL, contact);
+			real sep = clipFaceFace(contact, ref_face, inc_face);		//Project and clip faces			
+			positionBias(eq.m_separation, sep, eq.m_normalL, contact);	//Add possibe position bias
 		}
 
 
@@ -1515,7 +1544,14 @@ namespace ve {
 				if (nk_button_label(ctx, "+0.1")) { m_physics->m_pbias_factor = glm::clamp(m_physics->m_pbias_factor + 0.1_real, 0.0_real, 1.0_real); }
 
 				nk_layout_row_dynamic(ctx, 30, 3);
-				nk_label(ctx, "Use Bias", NK_TEXT_LEFT);
+				nk_label(ctx, "Align PBias", NK_TEXT_LEFT);
+				if (nk_option_label(ctx, "Yes", m_physics->m_align_position_bias == 1))
+					m_physics->m_align_position_bias = 1;
+				if (nk_option_label(ctx, "No", m_physics->m_align_position_bias == 0))
+					m_physics->m_align_position_bias = 0;
+
+				nk_layout_row_dynamic(ctx, 30, 3);
+				nk_label(ctx, "Use VBias", NK_TEXT_LEFT);
 				if (nk_option_label(ctx, "Yes", m_physics->m_use_vbias == 1))
 					m_physics->m_use_vbias = 1;
 				if (nk_option_label(ctx, "No", m_physics->m_use_vbias == 0))
