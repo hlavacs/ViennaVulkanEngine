@@ -1296,7 +1296,7 @@ namespace ve {
 							return { distance, &edgeA, &edgeB };							//no overlap - distance is positive
 						}
 
-						auto distance2 = glm::dot( n, vBR - vertA->m_positionL);	//above does not depend on location - could find an adge on the othe side
+						auto distance2 = glm::dot( n, ITORP(edgeB.m_first_vertexL.m_positionL) - vertA->m_positionL);	//above does not depend on location - could find an adge on the othe side
 						if (distance2 <= c_collision_margin && distance > result.m_separation) {
 							result = { distance, &edgeA, &edgeB, n };	//remember max of negative distances
 						}						
