@@ -26,9 +26,10 @@
 #include "glm/gtx/matrix_cross_product.hpp"
 
 
-//If this is defined then computations are done with double accuracy. Else with single accuracy
+//If DOUBLE is defined then computations are done with double accuracy. Else with single accuracy
 //Time is always in double.
-//#define DOUBLE
+
+#define SINGLE
 
 #ifdef DOUBLE
 using real = double;
@@ -1710,11 +1711,10 @@ namespace ve {
 
 }
 
+
+//-------------------------------------------------------------------------------------------------------
+
 using namespace ve;
-
-
-
-
 
 namespace geometry {
 
@@ -1838,8 +1838,10 @@ namespace geometry {
 	}
 
 
+	//-------------------------------------------------------------------------------------------------------
+	//Test SutherlandHodgman
 
-	int main()
+	int testSutherlandHodgman()
 	{
 		// subject polygon
 		std::vector<point2D> subjectPolygon {
@@ -1868,6 +1870,9 @@ namespace geometry {
 }
 
 
+//-------------------------------------------------------------------------------------------------------
+
+
 int main() {
 	bool debug = true;
 
@@ -1876,7 +1881,7 @@ int main() {
 	mve.loadLevel(1);
 	mve.run();
 
-	//geometry::main();
+	//geometry::testSutherlandHodgman();		//test clipping
 
 	return 0;
 }
