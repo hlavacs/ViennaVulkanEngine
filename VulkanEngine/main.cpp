@@ -67,8 +67,8 @@ double	g_sim_frequency = 60.0;						//Simulation frequency in Hertz
 double	g_sim_delta_time = 1.0 / g_sim_frequency;	//The time to move forward the simulation
 int		g_solver = 0;								//Select which solver to use
 int		g_clamp_position = 1;
-int		g_use_bias = 0;								//If true, the the bias is used for resting contacts
-real	g_vbias_factor = 0.2;
+int		g_use_vbias = 1;								//If true, the the bias is used for resting contacts
+real	g_pbias_factor = 0.5;
 int		g_use_warmstart = 1;						//If true then warm start resting contacts
 int		g_loops = 30;								//Number of loops in each simulation step
 bool	g_deactivate = true;						//Do not move objects that are deactivated
@@ -449,7 +449,7 @@ namespace ve {
 			glmmat3		m_inertia_invW{ glmmat4{1} };	//inverse inertia tensor in world frame
 			int_t		m_grid_x{ 0 };					//grid coordinates for broadphase
 			int_t		m_grid_z{ 0 };
-			glmvec3		m_vbias{0,0,0};					//extra energy if body overlaps with another body
+			glmvec3		m_pbias{0,0,0};					//extra energy if body overlaps with another body
 			uint32_t	m_num_resting{0};
 			real		m_damping{0.0};
 
@@ -476,8 +476,8 @@ namespace ve {
 					active = true;
 				}
 				if (g_clamp_position==0) pos += m_linear_velocityW * (real)dt;
-				pos += g_vbias_factor * m_vbias * (real)dt;
-				m_vbias = glmvec3{ 0,0,0 };
+				pos += g_pbias_factor * m_pbias * (real)dt;
+				m_pbias = glmvec3{ 0,0,0 };
 
 				auto avW = glmmat3{ m_model_inv } * m_angular_velocityW;
 				real len = glm::length(avW);
@@ -1090,7 +1090,7 @@ namespace ve {
 				}
 			}
 			if (min_depth < 0.0) { 
-				contact.m_body_inc.m_body->m_vbias += glmvec3{ 0, -min_depth * g_sim_frequency, 0 }; //If penetrating, calculate bias
+				contact.m_body_inc.m_body->m_pbias += glmvec3{ 0, -min_depth * g_sim_frequency, 0 }; //If penetrating, calculate bias
 			}
 		}
 
@@ -1108,7 +1108,7 @@ namespace ve {
 					real f{ 0.0 }, t0{ 0.0 }, t1{ 0.0 };
 
 					if (g_solver == 0) {
-						auto F = cp.m_K_inv * (-cp.m_restitution * (dN + g_use_bias * cp.m_vbias) * contact.m_normalW - vrel);
+						auto F = cp.m_K_inv * (-cp.m_restitution * (dN + g_use_vbias * cp.m_vbias) * contact.m_normalW - vrel);
 						cp.m_vbias = 0.0;
 						f = glm::dot(F, contact.m_normalW);
 						auto Fn = f * contact.m_normalW;
@@ -1125,7 +1125,7 @@ namespace ve {
 
 						auto dV = -cp.m_restitution * dN * contact.m_normalW - vrel;
 						auto kn = contact.m_body_ref.m_body->m_mass_inv + contact.m_body_inc.m_body->m_mass_inv + glm::dot(K * contact.m_normalW, contact.m_normalW);
-						f = (glm::dot(dV, contact.m_normalW) + g_use_bias * cp.m_vbias) / kn;
+						f = (glm::dot(dV, contact.m_normalW) + g_use_vbias * cp.m_vbias) / kn;
 						cp.m_vbias = 0.0;
 
 						auto kt0 = contact.m_body_ref.m_body->m_mass_inv + contact.m_body_inc.m_body->m_mass_inv + 
@@ -1272,14 +1272,25 @@ namespace ve {
 					auto edgeb_L = ITORV(edgeB.m_edgeL);
 					glmvec3 n = glm::cross(edgeA.m_edgeL, ITORV(edgeB.m_edgeL));	//axis n is cross product of both edges
 					real len = glm::length(n);
+					//std::cout << "edgeA " << edgeA.m_id << " RL " << edgeA.m_edgeL << "\n";
+					//std::cout << "edgeB " << edgeB.m_id << " IL " << edgeB.m_edgeL << " RL " << ITORV(edgeB.m_edgeL) << "\n";
+					//std::cout << "n " << n << "\n";
+
 					if (len > 0.0) {
 						n = n / len;	//normalize the axis
 
 						if (glm::dot(n, edgeA.m_first_vertexL.m_positionL) < 0) 
 							n = -n;		//n must be oriented away from center of A								
 						Vertex* vertA = contact.m_body_ref.m_body->support(n);				//support of A in normal direction
-						Vertex* vertB = contact.m_body_inc.m_body->support(-RTOIN(n));		//support of B in negative normal direction
-						real distance = glm::dot(n, ITORP(vertB->m_positionL) - vertA->m_positionL);//overlap distance along n
+						Vertex* vertB = contact.m_body_inc.m_body->support(RTOIN(-n));		//support of B in negative normal direction
+						auto vBR = ITORP(vertB->m_positionL);
+						auto diff = vBR - vertA->m_positionL;
+						real distance = glm::dot(n, diff);		//overlap distance along n
+
+						//std::cout << "vertA " << vertA->m_id << " RL " << vertA->m_positionL << "\n";
+						//std::cout << "vertB " << vertB->m_id << " IL " << vertB->m_positionL << " RL " << vBR << "\n";
+						//std::cout << "n " << n << " Diff " << diff << "\n";
+						//std::cout << "Distance " << distance << "\n";
 
 						if (distance > c_collision_margin) {
 							return { distance, &edgeA, &edgeB };							//no overlap - distance is positive
@@ -1308,10 +1319,10 @@ namespace ve {
 
 			if (fq.m_separation < 0) {
 				real weight = 1.0 / (1.0 + contact.m_body_inc.m_body->mass() * contact.m_body_ref.m_body->m_mass_inv);
-				auto vbias = -RTOWN(fq.m_face_ref->m_normalL) * (-min) * g_sim_frequency * (1.0 - weight);
-				addBias(contact.m_body_ref.m_body->m_vbias, vbias);
-				vbias = RTOWN(fq.m_face_ref->m_normalL) * (-min) * g_sim_frequency * weight;
-				addBias(contact.m_body_inc.m_body->m_vbias, vbias);
+				auto pbias = -RTOWN(fq.m_face_ref->m_normalL) * (-min) * g_sim_frequency * (1.0 - weight);
+				addBias(contact.m_body_ref.m_body->m_pbias, pbias);
+				pbias = RTOWN(fq.m_face_ref->m_normalL) * (-min) * g_sim_frequency * weight;
+				addBias(contact.m_body_inc.m_body->m_pbias, pbias);
 			}
 		}
 
@@ -1371,10 +1382,10 @@ namespace ve {
 
 			if (eq.m_separation < 0) {
 				real weight = 1.0 / (1.0 + contact.m_body_inc.m_body->mass() * contact.m_body_ref.m_body->m_mass_inv);
-				auto vbias = -RTOWN(eq.m_normalL) * (-sep) * g_sim_frequency * (1.0 - weight);
-				addBias(contact.m_body_ref.m_body->m_vbias, vbias);
-				vbias = RTOWN(eq.m_normalL) * (-sep) * g_sim_frequency * weight;
-				addBias(contact.m_body_inc.m_body->m_vbias, vbias);
+				auto pbias = -RTOWN(eq.m_normalL) * (-sep) * g_sim_frequency * (1.0 - weight);
+				addBias(contact.m_body_ref.m_body->m_pbias, pbias);
+				pbias = RTOWN(eq.m_normalL) * (-sep) * g_sim_frequency * weight;
+				addBias(contact.m_body_inc.m_body->m_pbias, pbias);
 			}
 		}
 
@@ -1462,18 +1473,18 @@ namespace ve {
 				if (nk_button_label(ctx, "+0.5")) { g_damping += 0.5; }
 
 				str.str("");
-				str << "VBias Fac " << g_vbias_factor;
+				str << "PBias Fac " << g_pbias_factor;
 				nk_layout_row_dynamic(ctx, 30, 3);
 				nk_label(ctx, str.str().c_str(), NK_TEXT_LEFT);
-				if (nk_button_label(ctx, "-0.1")) { g_vbias_factor = glm::clamp(g_vbias_factor - 0.1, 0.0, 1.0); }
-				if (nk_button_label(ctx, "+0.1")) { g_vbias_factor = glm::clamp(g_vbias_factor + 0.1, 0.0, 1.0); }
+				if (nk_button_label(ctx, "-0.1")) { g_pbias_factor = glm::clamp(g_pbias_factor - 0.1, 0.0, 1.0); }
+				if (nk_button_label(ctx, "+0.1")) { g_pbias_factor = glm::clamp(g_pbias_factor + 0.1, 0.0, 1.0); }
 
 				nk_layout_row_dynamic(ctx, 30, 3);
 				nk_label(ctx, "Use Bias", NK_TEXT_LEFT);
-				if (nk_option_label(ctx, "Yes", g_use_bias == 1))
-					g_use_bias = 1;
-				if (nk_option_label(ctx, "No", g_use_bias == 0))
-					g_use_bias = 0;
+				if (nk_option_label(ctx, "Yes", g_use_vbias == 1))
+					g_use_vbias = 1;
+				if (nk_option_label(ctx, "No", g_use_vbias == 0))
+					g_use_vbias = 0;
 
 				nk_layout_row_dynamic(ctx, 30, 3);
 				nk_label(ctx, "Warmstart", NK_TEXT_LEFT);
