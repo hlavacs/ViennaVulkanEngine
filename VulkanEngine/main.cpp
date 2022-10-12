@@ -503,18 +503,21 @@ namespace ve {
 			/// <param name="pos">Current position that is updated.</param>
 			/// <param name="quat">Current orientation that is updated.</param>
 			/// <returns></returns>
-			bool stepPosition(double dt, glmvec3& pos, glmquat& quat) {
+			bool stepPosition(double dt, glmvec3& pos, glmquat& quat, bool use_pbias = true) {
 				bool active = !m_physics->m_deactivate;
 
 				if ( fabs(m_linear_velocityW.x) > m_physics->c_small || fabs(m_linear_velocityW.z) > m_physics->c_small
 					|| fabs(m_linear_velocityW.y) > -m_physics->m_resting_factor * m_physics->c_gravity * m_physics->m_sim_delta_time
-					|| m_num_resting < 3 ) {
+					|| m_num_resting < 3 
+					|| m_pbias != glmvec3{0,0,0}) {
 					if(m_physics->m_clamp_position==1) pos += m_linear_velocityW * (real)dt; //Euler step.
 					active = true;
 				}
 				if (m_physics->m_clamp_position==0) pos += m_linear_velocityW * (real)dt;	//Make Euler step here
 				pos += m_physics->m_pbias_factor * m_pbias * (real)dt;		//Add position bias
-				m_pbias = glmvec3{ 0,0,0 };									//Only once
+				if( use_pbias) {
+					m_pbias = glmvec3{ 0,0,0 };									//Only once
+				}
 
 				auto avW = glmmat3{ m_model_inv } * m_angular_velocityW;	//The same for orientation
 				real len = glm::length(avW);
@@ -830,7 +833,7 @@ namespace ve {
 			VESceneNode* cube = static_cast<VESceneNode*>(body->m_owner);		//Owner is a pointer to a scene node
 			glmvec3 pos = body->m_positionW;									//New position of the scene node
 			glmquat orient = body->m_orientationLW;								//New orientation of the scende node
-			body->stepPosition(dt, pos, orient);								//Extrapolate
+			body->stepPosition(dt, pos, orient, false);								//Extrapolate
 			cube->setTransform(Body::computeModel(pos, orient, body->m_scale));	//Set the scene node data
 
 		};
@@ -1091,10 +1094,9 @@ namespace ve {
 
 			for (auto it = std::begin(m_contacts); it != std::end(m_contacts); ) {
 				auto& contact = it->second;
-				contact.m_old_contact_points = std::move(contact.m_contact_points);
-				contact.m_contact_points.clear();
-
 				if (contact.m_last_loop == m_loop) {	//is contact still possible?
+					contact.m_old_contact_points = std::move(contact.m_contact_points);
+
 					if (!warmStartContact(contact)) {	//Can we completely warm start the contact?
 						if (contact.m_body_ref.m_body->m_owner == nullptr) {
 							groundTest(contact);		//is the ref body the ground?
@@ -1115,32 +1117,26 @@ namespace ve {
 
 		bool warmStartContact( Contact& contact ) {
 			return false;
-			if (   contact.m_body_ref.m_body->m_loop_last_active + 1 > m_loop				//bodies are still active
-				|| contact.m_body_inc.m_body->m_loop_last_active + 1 > m_loop
+			if (   contact.m_body_ref.m_body->m_loop_last_active + 2 > m_loop				//do not set to 1
+				|| contact.m_body_inc.m_body->m_loop_last_active + 2 > m_loop
+				|| contact.m_old_contact_points.size() < 3
 				|| contact.m_num_resting != contact.m_old_contact_points.size() ) {
 				return false; 
 			}
 
-			for (auto it = std::begin(contact.m_old_contact_points); it != std::end(contact.m_old_contact_points); ) {
-
-				if (it->m_type != Contact::ContactPoint::resting) { //warmstart only resting points
-					it = contact.m_old_contact_points.erase(it);			//remove old non-resting contacts
-				}
-				else {
-					auto F = it->m_f * contact.m_normalW;
-					contact.m_body_ref.m_body->m_linear_velocityW += -F * contact.m_body_ref.m_body->m_mass_inv;
-					contact.m_body_ref.m_body->m_angular_velocityW += contact.m_body_ref.m_body->m_inertia_invW * glm::cross(it->m_r0W, -F);
-					contact.m_body_inc.m_body->m_linear_velocityW += F * contact.m_body_inc.m_body->m_mass_inv;
-					contact.m_body_inc.m_body->m_angular_velocityW += contact.m_body_inc.m_body->m_inertia_invW * glm::cross(it->m_r1W, F);
-					++it;
-				}
+			for (auto& cp : contact.m_old_contact_points)  {
+				auto F = cp.m_f * contact.m_normalW;
+				contact.m_body_ref.m_body->m_linear_velocityW += -F * contact.m_body_ref.m_body->m_mass_inv;
+				contact.m_body_ref.m_body->m_angular_velocityW += contact.m_body_ref.m_body->m_inertia_invW * glm::cross(cp.m_r0W, -F);
+				contact.m_body_inc.m_body->m_linear_velocityW += F * contact.m_body_inc.m_body->m_mass_inv;
+				contact.m_body_inc.m_body->m_angular_velocityW += contact.m_body_inc.m_body->m_inertia_invW * glm::cross(cp.m_r1W, F);
 			}
 			contact.m_contact_points = std::move(contact.m_old_contact_points);
 
 			//if (contact.m_body_ref.m_body->m_loop_last_active < m_loop - 1)
-				contact.m_body_ref.m_body->m_loop_last_active = m_loop;				//immediately wake up bodies
+			//contact.m_body_ref.m_body->m_loop_last_active = 0;				//immediately wake up bodies
 			//if (contact.m_body_inc.m_body->m_loop_last_active < m_loop - 1)
-				contact.m_body_inc.m_body->m_loop_last_active = m_loop;
+			//contact.m_body_inc.m_body->m_loop_last_active = 0;
 
 			return true;
 		}
