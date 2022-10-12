@@ -758,11 +758,13 @@ namespace ve {
 		int		m_align_position_bias = 1;					//if true then look of current position bias is already enough
 		real	m_pbias_factor = 0.5_real;					//Add only a fraction of the current position bias.
 		int		m_use_warmstart = 1;						//If true then warm start resting contacts
+		int		m_use_warmstart_single = 1;					//If true then warm start resting contacts
 		int		m_loops = 30;								//Number of loops in each simulation step
 		bool	m_deactivate = true;						//Do not move objects that are deactivated
 		real	m_damping = 1.0_real;						//damp motion of slowly moving resting objects 
 		real	m_restitution = 0.2_real;					//Coefficient of restitution (bounciness)
 		real	m_friction = 1.0_real;						//Coefficient of friction
+		real	m_fps = 0.0_real;
 
 		//--------------------------------------------------------------------------------------------------
 		//simulation state
@@ -791,17 +793,17 @@ namespace ve {
 		/// So best if there is a 1:1 correspondence. E.g., the owner can be a specific VESceneNode.
 		/// </summary>
 		using body_map = std::unordered_map<void*, std::shared_ptr<Body>>;
-		body_map		m_bodies;						//main container of all bodies
+		body_map	m_bodies;						//main container of all bodies
 		
 		/// <summary>
 		/// The broadphase uses a 2D grid of cells, each body is stored in exactly one cell.
 		/// Only cells which actually contain bodies are stored in the map.
 		/// </summary>
-		const double	c_width{5};							//grid cell width (m)
+		real		m_width{5};								//grid cell width (m)
 		std::unordered_map<intpair_t, body_map > m_grid;	//broadphase grid of cells.
 
 		std::shared_ptr<Body> m_ground = std::make_shared<Body>( Body{ this, "Ground", nullptr, &g_cube, {1000, 1000, 1000}, {0, -500.0_real, 0}, {1,0,0,0} });
-		body_map		m_global_cell{ { nullptr, m_ground } };	//cell containing only the ground
+		body_map	m_global_cell{ { nullptr, m_ground } };	//cell containing only the ground
 
 		/// <summary>
 		/// A contact is a struct that contains contact information for a pair of bodies A and B.
@@ -838,15 +840,19 @@ namespace ve {
 
 		};
 
+		void addGrid( auto pbody ) {
+			pbody->m_grid_x = static_cast<int_t>(pbody->m_positionW.x / m_width);	//2D coordinates in the broadphase grid
+			pbody->m_grid_z = static_cast<int_t>(pbody->m_positionW.z / m_width);
+			m_grid[intpair_t{ pbody->m_grid_x, pbody->m_grid_z }].insert({ pbody->m_owner, pbody }); //Put into broadphase grid
+		}
+
 		/// <summary>
 		/// Add a new body to the physics world.
 		/// </summary>
 		/// <param name="pbody">The new body.</param>
 		void addBody( auto pbody ) {
-			m_bodies.insert( { pbody->m_owner, pbody } );							//Put into map
-			pbody->m_grid_x = static_cast<int_t>(pbody->m_positionW.x / c_width);	//2D coordinates in the broadphase grid
-			pbody->m_grid_z = static_cast<int_t>(pbody->m_positionW.z / c_width);
-			m_grid[intpair_t{ pbody->m_grid_x, pbody->m_grid_z }].insert({ pbody->m_owner, pbody }); //Put into broadphase grid
+			m_bodies.insert( { pbody->m_owner, pbody } );	//Put into body container
+			addGrid( pbody );
 		}
 
 		/// <summary>
@@ -893,8 +899,8 @@ namespace ve {
 		/// </summary>
 		/// <param name="pbody">The body that moved.</param>
 		void moveBodyInGrid(auto pbody) {
-			int_t x = static_cast<int_t>(pbody->m_positionW.x / c_width);	//2D grid coordinates
-			int_t z = static_cast<int_t>(pbody->m_positionW.z / c_width);	
+			int_t x = static_cast<int_t>(pbody->m_positionW.x / m_width);	//2D grid coordinates
+			int_t z = static_cast<int_t>(pbody->m_positionW.z / m_width);	
 			if (x != pbody->m_grid_x || z != pbody->m_grid_z) {				//Did they change?
 				m_grid[intpair_t{ pbody->m_grid_x, pbody->m_grid_z }].erase(pbody->m_owner); //Remove body from old cell
 				pbody->m_grid_x = x;
@@ -1014,6 +1020,7 @@ namespace ve {
 		void onFrameStarted(veEvent event) {
 			if (m_mode == SIMULATION_MODE_REALTIME) {	//if the engine is in realtime mode, advance time
 				m_current_time = m_last_time + event.dt;
+				if( event.dt != 0.0) m_fps = 1.0_real / event.dt;
 			}
 
 			auto last_loop = m_loop;
@@ -1116,8 +1123,8 @@ namespace ve {
 
 
 		bool warmStartContact( Contact& contact ) {
-			return false;
-			if (   contact.m_body_ref.m_body->m_loop_last_active + 2 > m_loop				//do not set to 1
+			if (   m_use_warmstart_single ==0
+				|| contact.m_body_ref.m_body->m_loop_last_active + 2 > m_loop				//do not set to 1
 				|| contact.m_body_inc.m_body->m_loop_last_active + 2 > m_loop
 				|| contact.m_old_contact_points.size() < 3
 				|| contact.m_num_resting != contact.m_old_contact_points.size() ) {
@@ -1536,6 +1543,13 @@ namespace ve {
 				nk_label(ctx, str.str().c_str(), NK_TEXT_LEFT);
 				nk_layout_row_end(ctx);
 
+				static real fps = 0.0;
+				fps = 0.05_real * m_physics->m_fps + 0.95_real * fps;
+				str.str("");
+				str << "FPS " << fps;
+				nk_layout_row_dynamic(ctx, 30, 1);
+				nk_label(ctx, str.str().c_str(), NK_TEXT_LEFT);
+
 				str.str("");
 				str << "Loops " << m_physics->m_loops;
 				nk_layout_row_dynamic(ctx, 30, 3);
@@ -1579,11 +1593,18 @@ namespace ve {
 					m_physics->m_use_vbias = 0;
 
 				nk_layout_row_dynamic(ctx, 30, 3);
-				nk_label(ctx, "Warmstart", NK_TEXT_LEFT);
+				nk_label(ctx, "Warmstart All", NK_TEXT_LEFT);
 				if (nk_option_label(ctx, "Yes", m_physics->m_use_warmstart == 1))
 					m_physics->m_use_warmstart = 1;
 				if (nk_option_label(ctx, "No", m_physics->m_use_warmstart == 0))
 					m_physics->m_use_warmstart = 0;
+
+				nk_layout_row_dynamic(ctx, 30, 3);
+				nk_label(ctx, "Warmstart Single", NK_TEXT_LEFT);
+				if (nk_option_label(ctx, "Yes", m_physics->m_use_warmstart_single == 1))
+					m_physics->m_use_warmstart_single = 1;
+				if (nk_option_label(ctx, "No", m_physics->m_use_warmstart_single == 0))
+					m_physics->m_use_warmstart_single = 0;
 
 				nk_layout_row_dynamic(ctx, 30, 3);
 				nk_label(ctx, "Deactivate", NK_TEXT_LEFT);
@@ -1609,6 +1630,27 @@ namespace ve {
 				if (nk_button_label(ctx, "Clear Bodies")) {
 					m_physics->clear();
 				}
+
+				str.str("");
+				str << "Num Contacts " << m_physics->m_contacts.size();
+				nk_layout_row_dynamic(ctx, 30, 1);
+				nk_label(ctx, str.str().c_str(), NK_TEXT_LEFT);
+
+				str.str("");
+				str << "Cell width " << m_physics->m_width;
+				nk_layout_row_dynamic(ctx, 30, 3);
+				nk_label(ctx, str.str().c_str(), NK_TEXT_LEFT);
+				if (nk_button_label(ctx, "-1")) {
+					m_physics->m_grid.clear();
+					m_physics->m_width = std::max(1.0_real, m_physics->m_width - 1);
+					for (auto body : m_physics->m_bodies) m_physics->addGrid(body.second);
+				}
+				if (nk_button_label(ctx, "+1")) {
+					m_physics->m_grid.clear();
+					m_physics->m_width++;
+					for (auto body : m_physics->m_bodies) m_physics->addGrid(body.second);
+				}
+
 				nk_layout_row_dynamic(ctx, 30, 3);
 				str.str("Current Body ");
 				if (m_physics->m_body) { str << "Current Body " << m_physics->m_body->m_name; }
