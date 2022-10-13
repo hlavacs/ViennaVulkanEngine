@@ -75,10 +75,6 @@ namespace geometry {
 	real distancePointLinesegment(glmvec3 p, glmvec3 a, glmvec3 b);
 	void computeBasis(const glmvec3& a, glmvec3& b, glmvec3& c);
 
-	struct point2D {
-		real x, y;
-	};
-
 	template<typename T>
 	void SutherlandHodgman(T& subjectPolygon, T& clipPolygon, T& newPolygon);
 }
@@ -118,17 +114,17 @@ namespace std {
 	};
 
 	template <>
-	struct hash<geometry::point2D> {
-		std::size_t operator()(const geometry::point2D& p) const {
+	struct hash<glmvec2> {
+		std::size_t operator()(const glmvec2& p) const {
 			size_t seed = std::hash<real>()(p.x);
 			hash_combine(seed, p.y);
 			return seed;
 		}
 	};
 	template<>
-	struct less<geometry::point2D> {
-		bool operator()(const geometry::point2D& l, const geometry::point2D& r) const {
-			return (std::hash<geometry::point2D>()(l) < std::hash<geometry::point2D>()(r));
+	struct less<glmvec2> {
+		bool operator()(const glmvec2& l, const glmvec2& r) const {
+			return (std::hash<glmvec2>()(l) < std::hash<glmvec2>()(r));
 		}
 	};
 
@@ -267,13 +263,13 @@ namespace ve {
 		/// with the endpoint of the last edge being the starting point of the first edge.
 		/// </summary>
 		struct Face {
-			uint_t						m_id;						//Unique number within a polytope
-			std::vector<Vertex*>		m_face_vertex_ptrs{};		//pointers to the vertices of this face in correct orientation
-			std::vector<geometry::point2D>	m_face_vertex2D_T{};	//vertex 2D coordinates in tangent space
-			std::vector<SignedEdge>		m_face_edge_ptrs{};			//pointers to the edges of this face and orientation factors
-			glmvec3						m_normalL{};				//normal vector in local space
-			glmmat4						m_LtoT;						//local to face tangent space
-			glmmat4						m_TtoL;						//face tangent to local space
+			uint_t					m_id;						//Unique number within a polytope
+			std::vector<Vertex*>	m_face_vertex_ptrs{};		//pointers to the vertices of this face in correct orientation
+			std::vector<glmvec2>	m_face_vertex2D_T{};	//vertex 2D coordinates in tangent space
+			std::vector<SignedEdge>	m_face_edge_ptrs{};			//pointers to the edges of this face and orientation factors
+			glmvec3					m_normalL{};				//normal vector in local space
+			glmmat4					m_LtoT;						//local to face tangent space
+			glmmat4					m_TtoL;						//face tangent to local space
 		};
 
 		/// <summary>
@@ -513,21 +509,13 @@ namespace ve {
 				bool dy = fabs(m_linear_velocityW.y) > -m_physics->m_resting_factor * m_physics->c_gravity * m_physics->m_sim_delta_time;
 				bool dz = fabs(m_linear_velocityW.z) > m_physics->c_small;
 
-				auto vel = m_linear_velocityW;
-				if (m_physics->m_clamp_position == 1) {
-					if (!dx) vel.x = 0.0_real;
-					//if (!dy) vel.y /= 2.0_real;
-					if (!dz) vel.z = 0.0_real;
-				}
-
-				if (dx || dy || dz ) { // || m_num_resting < 4) { //} || glm::length(m_pbias) >= m_physics->c_small) {
+				if (dx || dy || dz || m_num_resting < 3) {
+					if (m_physics->m_clamp_position == 1) pos += m_linear_velocityW * (real)dt;
 					active = true;
 				}
-				pos += vel * (real)dt;	//Make Euler step here
-				pos += m_physics->m_pbias_factor * m_pbias * (real)dt;		//Add position bias
-				if (use_pbias) {
-					m_pbias = glmvec3{ 0,0,0 };									//Only once
-				}
+				if (m_physics->m_clamp_position == 0) pos += m_linear_velocityW * (real)dt;
+				pos += m_physics->m_pbias_factor * m_pbias * (real)dt;
+				if (use_pbias) { m_pbias = glmvec3{ 0,0,0 }; }
 
 				auto avW = glmmat3{ m_model_inv } *m_angular_velocityW;	//The same for orientation
 				real len = glm::length(avW);
@@ -548,6 +536,7 @@ namespace ve {
 				return active;
 			};
 
+
 			/// <summary>
 			/// Euler step for velocity.
 			/// </summary>
@@ -566,7 +555,6 @@ namespace ve {
 				m_angular_velocityW += (real)dt * (m_inertia_invW * (sum_torquesW - glm::cross(m_angular_velocityW, m_inertiaW * m_angular_velocityW)));
 
 				m_linear_velocityW.x *= 1.0_real / (1.0_real + (real)m_physics->m_sim_delta_time * m_damping);	//apply sideways damping if any
-				//m_linear_velocityW.y *= 1.0_real / (1.0_real + (real)m_physics->m_sim_delta_time * m_damping / 10.0_real);
 				m_linear_velocityW.z *= 1.0_real / (1.0_real + (real)m_physics->m_sim_delta_time * m_damping);
 				m_angular_velocityW *= 1.0_real / (1.0_real + (real)m_physics->m_sim_delta_time * m_damping);
 			}
@@ -722,7 +710,7 @@ namespace ve {
 
 			Contact::ContactPoint::type_t type;
 			real vbias = 0.0_real;
-			if (d > m_sep_velocity) {											//Separatting contact
+			if (d > m_sep_velocity) {										//Separatting contact
 				type = Contact::ContactPoint::type_t::separating;
 			}
 			else if (d > m_resting_factor * c_gravity * m_sim_delta_time) {	//Resting contact
@@ -733,7 +721,7 @@ namespace ve {
 				vbias = (penetration < 0.0_real) ? m_bias * (real)m_sim_frequency * std::max(0.0_real, -penetration - m_slop) : 0.0_real;
 			}
 			else {
-				type = Contact::ContactPoint::type_t::colliding;				//Colliding contact
+				type = Contact::ContactPoint::type_t::colliding;			//Colliding contact
 			}
 
 			auto restitution = std::max(contact.m_body_ref.m_body->m_restitution, contact.m_body_inc.m_body->m_restitution);
@@ -847,7 +835,7 @@ namespace ve {
 			VESceneNode* cube = static_cast<VESceneNode*>(body->m_owner);		//Owner is a pointer to a scene node
 			glmvec3 pos = body->m_positionW;									//New position of the scene node
 			glmquat orient = body->m_orientationLW;								//New orientation of the scende node
-			body->stepPosition(dt, pos, orient, false);								//Extrapolate
+			body->stepPosition(dt, pos, orient, false);							//Extrapolate
 			cube->setTransform(Body::computeModel(pos, orient, body->m_scale));	//Set the scene node data
 
 		};
@@ -979,34 +967,29 @@ namespace ve {
 								
 			if (event.idata1 == GLFW_KEY_SPACE && event.idata3 == GLFW_PRESS) {
 				glmvec3 positionCamera{ getSceneManagerPointer()->getSceneNode("StandardCameraParent")->getWorldTransform()[3] };
-					
-				VESceneNode* cube0;
-				static int dy = 0;
-				VECHECKPOINTER(cube0 = getSceneManagerPointer()->loadModel("The Cube" + std::to_string(m_bodies.size()), "media/models/test/crate0", "cube.obj", 0, getRoot()));
-				Body body0{ this, "Body" + std::to_string(m_bodies.size()), cube0, &g_cube, glmvec3{ 1.0_real }, glmvec3{positionCamera.x, 0.5_real + (dy++),positionCamera.z + 4}, glmquat{ 1,0,0,0 }, &onMove, glmvec3{0.0_real}, glmvec3{0.0_real}, 1.0_real / 100.0_real, m_restitution, m_friction };
-				body0.m_forces.insert({ 0ul, Force{ {0, c_gravity, 0} } });
-				addBody(m_body = std::make_shared<Body>(body0));
 				
-				/*VESceneNode* cube1;
-				VECHECKPOINTER(cube1 = getSceneManagerPointer()->loadModel("The Cube" + std::to_string(++cubeid), "media/models/test/crate0", "cube.obj", 0, getRoot()));
-				//glmquat orient{ glm::rotate(45.0*2.0*M_PI/360.0, glmvec3{1,0,0}) };
-				//glmquat orient2{ glm::rotate(45.0 * 2.0 * M_PI / 360.0, glmvec3{0,0,-1}) };
-				glmquat orient{ }, orient2{ };
-				Body body1{ "Body" + std::to_string(m_bodies.size()), cube1, &g_cube, glmvec3{1.0}, positionCamera + glmvec3{0,0.5,4}, orient2*orient, &onMove, glmvec3{0.0}, glmvec3{0.0}, 1.0 / 100.0, g_restitution, g_friction};
-				body1.m_forces.insert({ 0ul, Force{ {0, c_gravity, 0} } });
-				addBody(m_body = std::make_shared<Body>(body1));
-				*/
+				for (int i = 0; i < 1; ++i) {
+					VESceneNode* cube0;
+					static real dy = 0.5_real;
+					VECHECKPOINTER(cube0 = getSceneManagerPointer()->loadModel("The Cube" + std::to_string(m_bodies.size()), "media/models/test/crate0", "cube.obj", 0, getRoot()));
+					Body body0{ this, "Body" + std::to_string(m_bodies.size()), cube0, &g_cube, glmvec3{ 1.0_real }, glmvec3{positionCamera.x, dy++, positionCamera.z + 4}, glmquat{ 1,0,0,0 }, &onMove, glmvec3{0.0_real}, glmvec3{0.0_real}, 1.0_real / 100.0_real, m_restitution, m_friction };
+					body0.m_forces.insert({ 0ul, Force{ {0, c_gravity, 0} } });
+					addBody(m_body = std::make_shared<Body>(body0));
+				}
 			}
 
-			static real dx = 0.0_real;
 			if (event.idata1 == GLFW_KEY_Y && event.idata3 == GLFW_PRESS) {
 				glmvec3 positionCamera{ getSceneManagerPointer()->getSceneNode("StandardCameraParent")->getWorldTransform()[3] };
 
-				VESceneNode* cube0;
-				VECHECKPOINTER(cube0 = getSceneManagerPointer()->loadModel("The Cube" + std::to_string(m_bodies.size()), "media/models/test/crate0", "cube.obj", 0, getRoot()));
-				Body body0{ this, "Body" + std::to_string(m_bodies.size()), cube0, &g_cube, glmvec3{1.0_real}, glmvec3{dx++, 0.5_real, 0.0_real}, glmquat{1,0,0,0}, &onMove, glmvec3{0.0_real}, glmvec3{0.0_real}, 1.0_real / 100.0_real, m_restitution, m_friction };
-				body0.m_forces.insert({ 0ul, Force{ {0, c_gravity, 0} } });
-				addBody(m_body = std::make_shared<Body>(body0));
+				for (int dy = 0; dy < 10; ++dy) {
+					for (int dx = 0; dx < 10 - dy; ++dx) {
+						VESceneNode* cube0;
+						VECHECKPOINTER(cube0 = getSceneManagerPointer()->loadModel("The Cube" + std::to_string(m_bodies.size()), "media/models/test/crate0", "cube.obj", 0, getRoot()));
+						Body body0{ this, "Body" + std::to_string(m_bodies.size()), cube0, &g_cube, glmvec3{1.0_real}, glmvec3{dx + 0.4 * dy, 0.2_real + dy, 0.0_real}, glmquat{1,0,0,0}, &onMove, glmvec3{0.0_real}, glmvec3{0.0_real}, 1.0_real / 100.0_real, m_restitution, m_friction };
+						body0.m_forces.insert({ 0ul, Force{ {0, c_gravity, 0} } });
+						addBody(m_body = std::make_shared<Body>(body0));
+					}
+				}
 			}
 
 			if (event.idata1 == GLFW_KEY_Z && event.idata3 == GLFW_PRESS) {
@@ -1059,7 +1042,7 @@ namespace ve {
 				for (auto& body : m_bodies) { moveBodyInGrid(body.second); } //update grid
 			}
 			for (auto& body : m_bodies) {	//predict pos/vel at slot + delta, this is only a prediction for rendering, this is not stored anywhere
-				if (m_run && body.second->m_on_move != nullptr) {
+				if (body.second->m_on_move != nullptr) {
 					(*body.second->m_on_move)(m_current_time - m_last_slot, body.second); //predict new pos/orient
 				}
 			}
@@ -1155,10 +1138,8 @@ namespace ve {
 			}
 			contact.m_contact_points = std::move(contact.m_old_contact_points);
 
-			//if (contact.m_body_ref.m_body->m_loop_last_active < m_loop - 1)
-			//contact.m_body_ref.m_body->m_loop_last_active = 0;				//immediately wake up bodies
-			//if (contact.m_body_inc.m_body->m_loop_last_active < m_loop - 1)
-			//contact.m_body_inc.m_body->m_loop_last_active = 0;
+			contact.m_body_ref.m_body->m_loop_last_active = 0;				//immediately wake up bodies
+			contact.m_body_inc.m_body->m_loop_last_active = 0;
 
 			return true;
 		}
@@ -1173,7 +1154,10 @@ namespace ve {
 			int num_old_points{ 0 };
 			for (auto& c : m_contacts) {
 				auto& contact = c.second;
-				if(contact.m_contact_points.size() == 0 || contact.m_old_contact_points.size() == 0) continue;
+				auto num0 = contact.m_body_ref.m_body->m_num_resting;
+				auto num1 = contact.m_body_inc.m_body->m_num_resting;
+
+				if(num0 < 4 || num1 < 4 || contact.m_contact_points.size() == 0 || contact.m_old_contact_points.size() == 0) continue;
 
 				for (auto& cp : contact.m_contact_points) {
 					if (cp.m_type != Contact::ContactPoint::resting || cp.m_f != 0.0_real) continue; //warmstart only once
@@ -1450,14 +1434,36 @@ namespace ve {
 		/// <param name="face_ref">The reference face.</param>
 		/// <param name="face_inc">The incident face.</param>
 		real clipFaceFace(Contact& contact, Face* face_ref, Face* face_inc) {
-			std::vector<geometry::point2D> points;						//2D points holding the projected contact points				
+			std::vector<glmvec2> points;						//2D points holding the projected contact points				
 			for (auto* vertex : face_inc->m_face_vertex_ptrs) {			//add face points of B's face
 				auto pT = ITORTP( vertex->m_positionL );				//ransform to A's tangent space
 				points.emplace_back(pT.x, pT.z);						//add as 2D point
 			}
-			std::vector<geometry::point2D> newPolygon;
+			std::vector<glmvec2> newPolygon;
 			geometry::SutherlandHodgman(points, face_ref->m_face_vertex2D_T, newPolygon); //clip B's face against A's face
 
+			if (newPolygon.size() > 4) {
+				auto support = [](auto& dir, auto& newPoly, auto& supp) {
+					auto compare = [&](auto& a, auto& b) { return glm::dot(dir, a) < glm::dot(dir, b); };
+					supp.push_back(*std::ranges::max_element(newPoly, compare));
+				};
+
+				std::vector<glmvec2> dirs0{ {0,1}, {1,0}, {0,-1}, {-1,0}, {1,1}, {-1,1}, {-1,-1}, {1,-1} };
+				std::vector<glmvec2> supp;
+				std::ranges::for_each(dirs0, [&](auto& dirS) { support(dirS, newPolygon, supp); });
+
+				auto area_triangle = [](auto p1, auto p2, auto p3) -> real {};
+
+				real A0 = fabs(glm::determinant(glmmat3{ {supp[0].x, supp[0].y, 1}, {supp[1].x, supp[1].y, 1}, {supp[2].x, supp[2].y, 1} }) +
+					           glm::determinant(glmmat3{ {supp[0].x, supp[0].y, 1}, {supp[1].x, supp[1].y, 1}, {supp[3].x, supp[3].y, 1} })) / 2.0_real;
+
+				real A1 = fabs(glm::determinant(glmmat3{ {supp[4].x, supp[4].y, 1}, {supp[5].x, supp[5].y, 1}, {supp[6].x, supp[6].y, 1} }) +
+					           glm::determinant(glmmat3{ {supp[4].x, supp[4].y, 1}, {supp[5].x, supp[5].y, 1}, {supp[7].x, supp[7].y, 1} })) / 2.0_real;
+
+				if (A0 > A1) { newPolygon = std::vector<glmvec2>{ supp[0], supp[1], supp[2], supp[3] }; }
+				else { newPolygon = std::vector<glmvec2>{ supp[4], supp[5], supp[6], supp[7] }; }
+
+			}
 			real min = 0.0_real;
 			for (auto& p2D : newPolygon) {					//Go through all clip points
 				auto p = glmvec3{ p2D.x, 0.0_real, p2D.y }; //cannot put comma into macro 
@@ -1851,14 +1857,14 @@ namespace geometry {
 	using namespace std;
 
 	// check if a point is on the RIGHT side of an edge
-	bool inside(point2D p, point2D p1, point2D p2) {
+	bool inside(glmvec2 p, glmvec2 p1, glmvec2 p2) {
 		return (p2.y - p1.y) * p.x + (p1.x - p2.x) * p.y + (p2.x * p1.y - p1.x * p2.y) >= 0;
 	}
 
 	// calculate intersection point
-	point2D intersection(point2D cp1, point2D cp2, point2D s, point2D e) {
-		point2D dc = { cp1.x - cp2.x, cp1.y - cp2.y };
-		point2D dp = { s.x - e.x, s.y - e.y };
+	glmvec2 intersection(glmvec2 cp1, glmvec2 cp2, glmvec2 s, glmvec2 e) {
+		glmvec2 dc = { cp1.x - cp2.x, cp1.y - cp2.y };
+		glmvec2 dp = { s.x - e.x, s.y - e.y };
 
 		real n1 = cp1.x * cp2.y - cp1.y * cp2.x;
 		real n2 = s.x * e.y - s.y * e.x;
@@ -1871,8 +1877,8 @@ namespace geometry {
 	//https://rosettacode.org/wiki/Sutherland-Hodgman_polygon_clipping#C.2B.2B
 	template<typename T>
 	void SutherlandHodgman(T& subjectPolygon, T& clipPolygon, T& newPolygon) {
-		point2D cp1, cp2, s, e;
-		std::vector<point2D> inputPolygon;
+		glmvec2 cp1, cp2, s, e;
+		std::vector<glmvec2> inputPolygon;
 		newPolygon = subjectPolygon;
 
 		for (int j = 0; j < clipPolygon.size(); j++)
@@ -1926,17 +1932,17 @@ namespace geometry {
 	int testSutherlandHodgman()
 	{
 		// subject polygon
-		std::vector<point2D> subjectPolygon {
+		std::vector<glmvec2> subjectPolygon {
 		{50,150}, {200,50}, {350,150},
 			{350,300},{250,300},{200,250},
 			{150,350},{100,250},{100,200}
 		};
 
 		// clipping polygon
-		std::vector<point2D> clipPolygon { {100,100}, {300,100}, {300,300}, {100,300} };
+		std::vector<glmvec2> clipPolygon { {100,100}, {300,100}, {300,300}, {100,300} };
 
 		// define the new clipped polygon (empty)
-		std::vector<point2D> newPolygon;
+		std::vector<glmvec2> newPolygon;
 
 		// apply clipping
 		SutherlandHodgman(subjectPolygon, clipPolygon, newPolygon);
