@@ -507,16 +507,23 @@ namespace ve {
 			bool stepPosition(double dt, glmvec3& pos, glmquat& quat, bool use_pbias = true) {
 				bool active = !m_physics->m_deactivate;
 
-				if ( fabs(m_linear_velocityW.x) > m_physics->c_small || fabs(m_linear_velocityW.z) > m_physics->c_small
-					|| fabs(m_linear_velocityW.y) > -m_physics->m_resting_factor * m_physics->c_gravity * m_physics->m_sim_delta_time
-					|| m_num_resting < 3 
-					|| m_pbias != glmvec3{0,0,0}) {
-					if(m_physics->m_clamp_position==1) pos += m_linear_velocityW * (real)dt; //Euler step.
+				bool dx = fabs(m_linear_velocityW.x) > m_physics->c_small;
+				bool dy = fabs(m_linear_velocityW.y) > -m_physics->m_resting_factor * m_physics->c_gravity * m_physics->m_sim_delta_time;
+				bool dz = fabs(m_linear_velocityW.z) > m_physics->c_small;
+
+				auto vel = m_linear_velocityW;
+				if (m_physics->m_clamp_position == 1) {
+					if (!dx) vel.x = 0.0_real;
+					if (!dy) vel.y = 0.0_real;
+					if (!dz) vel.z = 0.0_real;
+				}
+
+				if ( dx || dy || dz || m_num_resting < 3 || m_pbias != glmvec3{0,0,0}) {
 					active = true;
 				}
-				if (m_physics->m_clamp_position==0) pos += m_linear_velocityW * (real)dt;	//Make Euler step here
-				pos += m_physics->m_pbias_factor * m_pbias * (real)dt;		//Add position bias
+				pos += vel * (real)dt;	//Make Euler step here
 				if( use_pbias) {
+					pos += m_physics->m_pbias_factor * m_pbias * (real)dt;		//Add position bias
 					m_pbias = glmvec3{ 0,0,0 };									//Only once
 				}
 
@@ -1570,8 +1577,8 @@ namespace ve {
 				str << "Damp Incr " << m_physics->m_damping_incr;
 				nk_layout_row_dynamic(ctx, 30, 3);
 				nk_label(ctx, str.str().c_str(), NK_TEXT_LEFT);
-				if (nk_button_label(ctx, "-0.5")) { m_physics->m_damping_incr = std::max(0.0_real, m_physics->m_damping_incr - 0.5_real); }
-				if (nk_button_label(ctx, "+0.5")) { m_physics->m_damping_incr += 0.5_real; }
+				if (nk_button_label(ctx, "-5")) { m_physics->m_damping_incr = std::max(0.0_real, m_physics->m_damping_incr - 5.0_real); }
+				if (nk_button_label(ctx, "+5")) { m_physics->m_damping_incr += 5.0_real; }
 
 				str.str("");
 				str << "PBias Fac " << m_physics->m_pbias_factor;
