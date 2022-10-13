@@ -44,8 +44,7 @@ using uint_t = uint64_t;
 #define glmmat4 glm::dmat4
 #define glmquat glm::dquat
 const real c_eps = 1.0e-12;
-#endif
-
+#else
 #ifdef SINGLE_ACCURACY
 using real = float;
 using int_t = int32_t;
@@ -57,8 +56,11 @@ using uint_t = uint32_t;
 #define glmmat4 glm::mat4
 #define glmquat glm::quat
 const real c_eps = 1.0e-8f;
+#else
+#error Must choose accuracy!
 #endif
 
+#endif
 constexpr real operator "" _real(long double val) { return (real)val; };	//define _real 
 
 
@@ -216,9 +218,9 @@ namespace ve {
 		/// </summary>
 		struct Force {
 			glmvec3 m_accelW{ 0,0,0 };	//Acceleration in world space (default is earth gravity)
-			glmvec3 m_positionL{0,0,0};	//Position in local space
-			glmvec3 m_forceL{0,0,0};	//Force vector in local space
-			glmvec3 m_forceW{0,0,0};	//Force vector in world space 
+			glmvec3 m_positionL{ 0,0,0 };	//Position in local space
+			glmvec3 m_forceL{ 0,0,0 };	//Force vector in local space
+			glmvec3 m_forceW{ 0,0,0 };	//Force vector in world space 
 		};
 
 		struct Face;
@@ -239,8 +241,8 @@ namespace ve {
 		/// </summary>
 		struct Edge {
 			uint_t			m_id;					//Unique number within a polytope
-			Vertex&			m_first_vertexL;		//first edge vertex
-			Vertex&			m_second_vertexL;		//second edge vertex
+			Vertex& m_first_vertexL;		//first edge vertex
+			Vertex& m_second_vertexL;		//second edge vertex
 			glmvec3			m_edgeL{};				//edge vector in local space 
 			std::set<Face*>	m_edge_face_ptrs{};		//pointers to the two faces this edge belongs to
 		};
@@ -258,7 +260,7 @@ namespace ve {
 		/// <summary>
 		/// Used to store the signed edge in a container.
 		/// </summary>
-		using SignedEdge = std::pair<Edge*,real>;
+		using SignedEdge = std::pair<Edge*, real>;
 
 		/// <summary>
 		/// A polytope consists of a number of faces. Each face consists of a sequence of edges,
@@ -328,18 +330,18 @@ namespace ve {
 			/// <param name="edgeindices">One pair of vector indices for each edge. </param>
 			/// <param name="face_edge_indices">For each face a list of pairs edge index - orientation factor (1.0 or -1.0)</param>
 			/// <param name="inertia_tensor"></param>
-			Polytope(	const std::vector<glmvec3>& vertices, 
-						const std::vector<std::pair<uint_t, uint_t>>&& edgeindices, 
-						const std::vector < std::vector<signed_edge_t> >&& face_edge_indices,
-						inertia_tensor_t inertia_tensor)
-							: Collider{}, m_vertices{}, m_edges{}, m_faces{}, inertiaTensor{ inertia_tensor } {
+			Polytope(const std::vector<glmvec3>& vertices,
+				const std::vector<std::pair<uint_t, uint_t>>&& edgeindices,
+				const std::vector < std::vector<signed_edge_t> >&& face_edge_indices,
+				inertia_tensor_t inertia_tensor)
+				: Collider{}, m_vertices{}, m_edges{}, m_faces{}, inertiaTensor{ inertia_tensor } {
 
 				//add vertices
 				uint_t id = 0;
 				m_vertices.reserve(vertices.size());
-				std::ranges::for_each(vertices, [&](const glmvec3& v) {		
-					m_vertices.emplace_back( id++, v );
-						if (real l = glm::length(v) > m_bounding_sphere_radius) m_bounding_sphere_radius = l;
+				std::ranges::for_each(vertices, [&](const glmvec3& v) {
+					m_vertices.emplace_back(id++, v);
+					if (real l = glm::length(v) > m_bounding_sphere_radius) m_bounding_sphere_radius = l;
 					}
 				);
 
@@ -347,7 +349,7 @@ namespace ve {
 				id = 0;
 				m_edges.reserve(edgeindices.size());
 				for (auto& edgepair : edgeindices) {	//compute edges from indices
-					Edge* edge = &m_edges.emplace_back( id++, m_vertices[edgepair.first], m_vertices[edgepair.second], m_vertices[edgepair.second].m_positionL - m_vertices[edgepair.first].m_positionL);
+					Edge* edge = &m_edges.emplace_back(id++, m_vertices[edgepair.first], m_vertices[edgepair.second], m_vertices[edgepair.second].m_positionL - m_vertices[edgepair.first].m_positionL);
 					m_vertices[edgepair.first].m_vertex_edge_ptrs.insert(edge);
 					m_vertices[edgepair.second].m_vertex_edge_ptrs.insert(edge);
 				}
@@ -361,7 +363,7 @@ namespace ve {
 
 					for (auto& edge : face_edge_idx) {		//add references to the edges belonging to this face
 						Edge* pe = &m_edges.at(edge.m_edge_idx);
-						face.m_face_edge_ptrs.push_back( SignedEdge{ pe, edge.m_factor } );	//add new face to face vector
+						face.m_face_edge_ptrs.push_back(SignedEdge{ pe, edge.m_factor });	//add new face to face vector
 						if (edge.m_factor > 0) { face.m_face_vertex_ptrs.push_back(&pe->m_first_vertexL); } //list of vertices of this face
 						else { face.m_face_vertex_ptrs.push_back(&pe->m_second_vertexL); }
 
@@ -372,17 +374,17 @@ namespace ve {
 					glmvec3 edge0 = m_edges[face_edge_idx[0].m_edge_idx].m_edgeL * face_edge_idx[0].m_factor;
 					glmvec3 edge1 = m_edges[face_edge_idx[1].m_edge_idx].m_edgeL * face_edge_idx[1].m_factor;
 
-					glmvec3 tangent = glm::normalize( edge0 );						//tangent space coordinate axes
-					face.m_normalL = glm::normalize( glm::cross( tangent, edge1 ));	//for clipping this face againts another face
+					glmvec3 tangent = glm::normalize(edge0);						//tangent space coordinate axes
+					face.m_normalL = glm::normalize(glm::cross(tangent, edge1));	//for clipping this face againts another face
 					glmvec3 bitangent = glm::cross(face.m_normalL, tangent);
 
 					//Transform from local space to tangent space and back
-					face.m_TtoL = glm::translate(glmmat4(1), face.m_face_vertex_ptrs[0]->m_positionL) * glmmat4 { glmmat3{bitangent, face.m_normalL, tangent } };
+					face.m_TtoL = glm::translate(glmmat4(1), face.m_face_vertex_ptrs[0]->m_positionL) * glmmat4 { glmmat3{ bitangent, face.m_normalL, tangent } };
 					face.m_LtoT = glm::inverse(face.m_TtoL);
 
 					for (auto& vertex : face.m_face_vertex_ptrs) {	//precompute tangent space coordinates of face's vertices
 						glmvec4 pt = face.m_LtoT * glmvec4{ vertex->m_positionL, 1.0_real };
-						face.m_face_vertex2D_T.emplace_back( pt.x, pt.z);
+						face.m_face_vertex2D_T.emplace_back(pt.x, pt.z);
 					}
 				}
 			};
@@ -392,7 +394,7 @@ namespace ve {
 		/// This is the template for each cube. It contains the basic geometric properties of a cube:
 		/// Vertices, edges and faces.
 		/// </summary>
-		Polytope g_cube {
+		Polytope g_cube{
 			{ { -0.5_real,-0.5_real,-0.5_real }, { -0.5_real,-0.5_real,0.5_real }, { -0.5_real,0.5_real,0.5_real }, { -0.5_real,0.5_real,-0.5_real },
 			{ 0.5_real,-0.5_real,0.5_real }, { 0.5_real,-0.5_real,-0.5_real }, { 0.5_real,0.5_real,-0.5_real }, { 0.5_real,0.5_real,0.5_real } },
 			{ {0,1}, {1,2}, {2,3}, {3,0}, {4,5}, {5,6}, {6,7}, {7,0}, {5,0}, {1,4}, {3,6}, {7,2} }, //edges
@@ -426,8 +428,8 @@ namespace ve {
 			//-----------------------------------------------------------------------------
 			//Physics parameters of the body
 
-			void*		m_owner = nullptr;				//pointer to owner of this body, must be unique (owner is called if body moves)
-			Polytope*	m_polytope = nullptr;			//geometric shape
+			void* m_owner = nullptr;				//pointer to owner of this body, must be unique (owner is called if body moves)
+			Polytope* m_polytope = nullptr;			//geometric shape
 			glmvec3		m_scale{ 1,1,1 };				//scale factor in local space
 			glmvec3		m_positionW{ 0, 0, 0 };			//current position at time slot in world space
 			glmquat		m_orientationLW{ 1, 0, 0, 0 };	//current orientation at time slot Local -> World
@@ -437,7 +439,7 @@ namespace ve {
 			real		m_mass_inv{ 0 };				//1 over mass
 			real		m_restitution{ 0 };				//coefficient of restitution eps
 			real		m_friction{ 1 };				//coefficient of friction mu
-			uint64_t	m_loop_last_active{0};			//The loop number in which this body was last time active
+			uint64_t	m_loop_last_active{ 0 };			//The loop number in which this body was last time active
 
 			std::unordered_map<uint64_t, Force> m_forces;//forces acting on this body
 
@@ -485,12 +487,12 @@ namespace ve {
 			/// <param name="friction">Friction coefficient, usually larger than 0.5.</param>
 			Body(VEEventListenerPhysics* physics, std::string name, void* owner, Polytope* polytope,
 				glmvec3 scale, glmvec3 positionW, glmquat orientationLW = { 1,0,0,0 },
-				body_callb* on_move = nullptr, glmvec3 linear_velocityW = glmvec3{ 0,0,0 }, glmvec3 angular_velocityW = glmvec3{0,0,0}, 
-				real mass_inv = 0, real restitution = 0.2_real, real friction = 1 ) :
-					m_physics{physics}, m_name{name}, m_owner {owner}, m_polytope{ polytope }, 
-					m_scale{ scale }, m_positionW{ positionW }, m_orientationLW{ orientationLW },
-					m_on_move{on_move}, m_linear_velocityW{linear_velocityW}, m_angular_velocityW{ angular_velocityW }, 
-					m_mass_inv{ mass_inv }, m_restitution{ restitution }, m_friction{ friction } { 
+				body_callb* on_move = nullptr, glmvec3 linear_velocityW = glmvec3{ 0,0,0 }, glmvec3 angular_velocityW = glmvec3{ 0,0,0 },
+				real mass_inv = 0, real restitution = 0.2_real, real friction = 1) :
+				m_physics{ physics }, m_name{ name }, m_owner{ owner }, m_polytope{ polytope },
+				m_scale{ scale }, m_positionW{ positionW }, m_orientationLW{ orientationLW },
+				m_on_move{ on_move }, m_linear_velocityW{ linear_velocityW }, m_angular_velocityW{ angular_velocityW },
+				m_mass_inv{ mass_inv }, m_restitution{ restitution }, m_friction{ friction } {
 				m_scale *= m_physics->m_collision_margin_factor;
 				inertiaTensorL();
 				updateMatrices();
@@ -514,23 +516,23 @@ namespace ve {
 				auto vel = m_linear_velocityW;
 				if (m_physics->m_clamp_position == 1) {
 					if (!dx) vel.x = 0.0_real;
-					if (!dy) vel.y = 0.0_real;
+					//if (!dy) vel.y /= 2.0_real;
 					if (!dz) vel.z = 0.0_real;
 				}
 
-				if ( dx || dy || dz || m_num_resting < 3 || m_pbias != glmvec3{0,0,0}) {
+				if (dx || dy || dz ) { // || m_num_resting < 4) { //} || glm::length(m_pbias) >= m_physics->c_small) {
 					active = true;
 				}
 				pos += vel * (real)dt;	//Make Euler step here
-				if( use_pbias) {
-					pos += m_physics->m_pbias_factor * m_pbias * (real)dt;		//Add position bias
+				pos += m_physics->m_pbias_factor * m_pbias * (real)dt;		//Add position bias
+				if (use_pbias) {
 					m_pbias = glmvec3{ 0,0,0 };									//Only once
 				}
 
-				auto avW = glmmat3{ m_model_inv } * m_angular_velocityW;	//The same for orientation
+				auto avW = glmmat3{ m_model_inv } *m_angular_velocityW;	//The same for orientation
 				real len = glm::length(avW);
 				if (len > m_physics->c_small) {
-					if(m_physics->m_clamp_position == 1) quat = glm::rotate(quat, len * (real)dt, avW / len);	//Euler step
+					if (m_physics->m_clamp_position == 1) quat = glm::rotate(quat, len * (real)dt, avW / len);	//Euler step
 					active = true;
 				}
 				if (m_physics->m_clamp_position == 0 && len != 0.0_real) quat = glm::rotate(quat, len * (real)dt, avW / len); //Euler step
@@ -540,7 +542,7 @@ namespace ve {
 					m_loop_last_active = m_physics->m_loop;		//remember that the body is now active
 				}
 				else {
-					m_damping = std::clamp( m_damping + m_physics->m_damping_incr, 0.0_real, 600.0_real);	//If no motion, increase damping
+					m_damping = std::clamp(m_damping + m_physics->m_damping_incr, 0.0_real, 600.0_real);	//If no motion, increase damping
 				}
 
 				return active;
@@ -551,22 +553,22 @@ namespace ve {
 			/// </summary>
 			/// <param name="dt">Delta time step.</param>
 			/// <returns></returns>
-			void stepVelocity(double dt) { 
+			void stepVelocity(double dt) {
 				glmvec3 sum_accelW{ 0 };	//sum of all accelerations
 				glmvec3 sum_forcesW{ 0 };	//sum of all forces in world coordinates
 				glmvec3 sum_torquesW{ 0 };	//sum of all torques in world coordinates
-				for (auto& force : m_forces) {	
+				for (auto& force : m_forces) {
 					sum_accelW += force.second.m_accelW;
-					sum_forcesW  += glmmat3{ m_model } * force.second.m_forceL + force.second.m_forceW;	//forces in local and world coordinates
-					sum_torquesW += glm::cross(glmmat3{m_model} * force.second.m_positionL, glmmat3{m_model} * force.second.m_forceL);
+					sum_forcesW += glmmat3{ m_model } *force.second.m_forceL + force.second.m_forceW;	//forces in local and world coordinates
+					sum_torquesW += glm::cross(glmmat3{ m_model } *force.second.m_positionL, glmmat3{ m_model } *force.second.m_forceL);
 				}
-				m_linear_velocityW  += (real)dt * (m_mass_inv * sum_forcesW + sum_accelW);
-				m_angular_velocityW += (real)dt * (m_inertia_invW * ( sum_torquesW - glm::cross(m_angular_velocityW, m_inertiaW * m_angular_velocityW)));
+				m_linear_velocityW += (real)dt * (m_mass_inv * sum_forcesW + sum_accelW);
+				m_angular_velocityW += (real)dt * (m_inertia_invW * (sum_torquesW - glm::cross(m_angular_velocityW, m_inertiaW * m_angular_velocityW)));
 
 				m_linear_velocityW.x *= 1.0_real / (1.0_real + (real)m_physics->m_sim_delta_time * m_damping);	//apply sideways damping if any
-				m_linear_velocityW.y *= 1.0_real / (1.0_real + (real)m_physics->m_sim_delta_time * m_damping / 10.0_real);
+				//m_linear_velocityW.y *= 1.0_real / (1.0_real + (real)m_physics->m_sim_delta_time * m_damping / 10.0_real);
 				m_linear_velocityW.z *= 1.0_real / (1.0_real + (real)m_physics->m_sim_delta_time * m_damping);
-				m_angular_velocityW  *= 1.0_real / (1.0_real + (real)m_physics->m_sim_delta_time * m_damping);
+				m_angular_velocityW *= 1.0_real / (1.0_real + (real)m_physics->m_sim_delta_time * m_damping);
 			}
 
 			/// <summary>
@@ -582,8 +584,8 @@ namespace ve {
 			/// Calculate radius of bounding sphere of object.
 			/// </summary>
 			/// <returns>Bounding sphere radius.</returns>
-			real boundingSphereRadius() { 
-				return std::max( m_scale.x, std::max(m_scale.y, m_scale.z)) * m_polytope->m_bounding_sphere_radius;
+			real boundingSphereRadius() {
+				return std::max(m_scale.x, std::max(m_scale.y, m_scale.z)) * m_polytope->m_bounding_sphere_radius;
 			}
 
 			/// <summary>
@@ -592,7 +594,7 @@ namespace ve {
 			/// </summary>
 			/// <returns>Mass of object.</returns>
 			real mass() {
-				return m_mass_inv <= c_eps ? 1.0_real /(c_eps) : 1.0_real / m_mass_inv;
+				return m_mass_inv <= c_eps ? 1.0_real / (c_eps) : 1.0_real / m_mass_inv;
 			}
 
 			/// <summary>
@@ -612,7 +614,7 @@ namespace ve {
 			/// <param name="orient">Current orientation.</param>
 			/// <param name="scale">Object scale.</param>
 			/// <returns></returns>
-			static glmmat4 computeModel( glmvec3& pos, glmquat& orient, glmvec3& scale ) { 
+			static glmmat4 computeModel(glmvec3& pos, glmquat& orient, glmvec3& scale) {
 				return glm::translate(glmmat4{ 1.0_real }, pos) * glm::mat4_cast(orient) * glm::scale(glmmat4{ 1.0_real }, scale);
 			};
 
@@ -742,7 +744,7 @@ namespace ve {
 			auto mc1 = matrixCross3(r1W);
 
 			auto K = glmmat3{ 1.0_real } *contact.m_body_inc.m_body->m_mass_inv - mc1 * contact.m_body_inc.m_body->m_inertia_invW * mc1 + //mass matrix
-				glmmat3{ 1.0_real } * contact.m_body_ref.m_body->m_mass_inv - mc0 * contact.m_body_ref.m_body->m_inertia_invW * mc0;
+				glmmat3{ 1.0_real } *contact.m_body_ref.m_body->m_mass_inv - mc0 * contact.m_body_ref.m_body->m_inertia_invW * mc0;
 
 			auto K_inv = glm::inverse(K);	//Inverse of mass matrix (roughly 1/mass)
 
@@ -767,10 +769,11 @@ namespace ve {
 		int		m_align_position_bias = 1;					//if true then look of current position bias is already enough
 		real	m_pbias_factor = 0.5_real;					//Add only a fraction of the current position bias.
 		int		m_use_warmstart = 1;						//If true then warm start resting contacts
-		int		m_use_warmstart_single = 1;					//If true then warm start resting contacts
+		int		m_use_warmstart_single = 0;					//If true then warm start resting contacts
 		int		m_loops = 30;								//Number of loops in each simulation step
 		bool	m_deactivate = true;						//Do not move objects that are deactivated
-		real	m_damping_incr = 10.0_real;						//damp motion of slowly moving resting objects 
+		real	m_num_active{ 0 };							//Number of currently active bodies
+		real	m_damping_incr = 10.0_real;					//Damp motion of slowly moving resting objects 
 		real	m_restitution = 0.2_real;					//Coefficient of restitution (bounciness)
 		real	m_friction = 1.0_real;						//Coefficient of friction
 		real	m_fps = 0.0_real;
@@ -1029,12 +1032,13 @@ namespace ve {
 		void onFrameStarted(veEvent event) {
 			if (m_mode == SIMULATION_MODE_REALTIME) {	//if the engine is in realtime mode, advance time
 				m_current_time = m_last_time + event.dt;
-				if( event.dt != 0.0) m_fps = 1.0_real / event.dt;
+				if( event.dt != 0.0) m_fps = 1.0_real / (real)event.dt;
 			}
 
 			auto last_loop = m_loop;
 			while (m_current_time > m_next_slot) {	//compute position/vel only at time slots
 				++m_loop;			//increase loop counter
+				uint_t num_active = 0;
 				broadPhase();		//run the broad phase
 				narrowPhase();		//Run the narrow phase
 				warmStart();		//Warm start the resting contacts if possible
@@ -1043,9 +1047,11 @@ namespace ve {
 				calculateImpulses(m_loops, m_sim_delta_time);	//Calculate and apply impulses
 
 				for (auto& body : m_bodies) {	//integrate positions and update the matrices for the bodies
-					bool active = body.second->stepPosition(m_sim_delta_time, body.second->m_positionW, body.second->m_orientationLW);
+					if (body.second->stepPosition(m_sim_delta_time, body.second->m_positionW, body.second->m_orientationLW)) ++num_active;
 					body.second->updateMatrices();
 				}
+				m_num_active = 0.9_real * m_num_active + 0.1_real * num_active;
+				if (m_num_active < c_small) m_num_active = 0;
 				m_last_slot = m_next_slot;			//Remember last slot
 				m_next_slot += m_sim_delta_time;	//Move to next time slot as slong as we do not surpass current time
 			}
@@ -1642,6 +1648,11 @@ namespace ve {
 
 				str.str("");
 				str << "Num Contacts " << m_physics->m_contacts.size();
+				nk_layout_row_dynamic(ctx, 30, 1);
+				nk_label(ctx, str.str().c_str(), NK_TEXT_LEFT);
+
+				str.str("");
+				str << "Num Active " << m_physics->m_num_active;
 				nk_layout_row_dynamic(ctx, 30, 1);
 				nk_label(ctx, str.str().c_str(), NK_TEXT_LEFT);
 
