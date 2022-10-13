@@ -31,6 +31,7 @@
 //Time is always in double.
 
 #define SINGLE_ACCURACY
+//#define DOUBLE_ACCURACY
 
 #ifdef DOUBLE_ACCURACY
 using real = double;
@@ -532,7 +533,7 @@ namespace ve {
 					m_loop_last_active = m_physics->m_loop;		//remember that the body is now active
 				}
 				else {
-					m_damping = std::min( m_damping + m_physics->m_damping, 60.0_real);	//If no motion, increase damping
+					m_damping = std::clamp( m_damping + m_physics->m_damping_incr, 0.0_real, 600.0_real);	//If no motion, increase damping
 				}
 
 				return active;
@@ -556,6 +557,7 @@ namespace ve {
 				m_angular_velocityW += (real)dt * (m_inertia_invW * ( sum_torquesW - glm::cross(m_angular_velocityW, m_inertiaW * m_angular_velocityW)));
 
 				m_linear_velocityW.x *= 1.0_real / (1.0_real + (real)m_physics->m_sim_delta_time * m_damping);	//apply sideways damping if any
+				m_linear_velocityW.y *= 1.0_real / (1.0_real + (real)m_physics->m_sim_delta_time * m_damping / 10.0_real);
 				m_linear_velocityW.z *= 1.0_real / (1.0_real + (real)m_physics->m_sim_delta_time * m_damping);
 				m_angular_velocityW  *= 1.0_real / (1.0_real + (real)m_physics->m_sim_delta_time * m_damping);
 			}
@@ -761,7 +763,7 @@ namespace ve {
 		int		m_use_warmstart_single = 1;					//If true then warm start resting contacts
 		int		m_loops = 30;								//Number of loops in each simulation step
 		bool	m_deactivate = true;						//Do not move objects that are deactivated
-		real	m_damping = 1.0_real;						//damp motion of slowly moving resting objects 
+		real	m_damping_incr = 10.0_real;						//damp motion of slowly moving resting objects 
 		real	m_restitution = 0.2_real;					//Coefficient of restitution (bounciness)
 		real	m_friction = 1.0_real;						//Coefficient of friction
 		real	m_fps = 0.0_real;
@@ -1565,11 +1567,11 @@ namespace ve {
 				if (nk_button_label(ctx, "+0.2")) { m_physics->m_resting_factor += 0.2_real; }
 
 				str.str("");
-				str << "Damping " << m_physics->m_damping;
+				str << "Damp Incr " << m_physics->m_damping_incr;
 				nk_layout_row_dynamic(ctx, 30, 3);
 				nk_label(ctx, str.str().c_str(), NK_TEXT_LEFT);
-				if (nk_button_label(ctx, "-0.5")) { m_physics->m_damping = std::max(0.0_real, m_physics->m_damping - 0.5_real); }
-				if (nk_button_label(ctx, "+0.5")) { m_physics->m_damping += 0.5_real; }
+				if (nk_button_label(ctx, "-0.5")) { m_physics->m_damping_incr = std::max(0.0_real, m_physics->m_damping_incr - 0.5_real); }
+				if (nk_button_label(ctx, "+0.5")) { m_physics->m_damping_incr += 0.5_real; }
 
 				str.str("");
 				str << "PBias Fac " << m_physics->m_pbias_factor;
