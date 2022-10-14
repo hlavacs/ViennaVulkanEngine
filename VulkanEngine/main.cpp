@@ -130,25 +130,24 @@ namespace std {
 
 	//For outputting vectors/matrices to a string stream
 	ostream& operator<<(ostream& os, const glmvec3& v) {
-		os << "(" << v.x << ',' << v.y << ',' << v.z << ")";
+		os << "(" << v.x << ',' << v.y << ',' << v.z << ")";				//output 3D vector
 		return os;
 	}
 
 	ostream& operator<<(ostream& os, const glmquat& q) {
-		os << "(" << q.x << ',' << q.y << ',' << q.z << ',' << q.w << ")";
+		os << "(" << q.x << ',' << q.y << ',' << q.z << ',' << q.w << ")";	//output quaternion
 		return os;
 	}
 
 	ostream& operator<<(ostream& os, const glmmat3& m) {
-		os << "(" << m[0][0] << ',' << m[0][1] << ',' << m[0][2] << ")\n";
+		os << "(" << m[0][0] << ',' << m[0][1] << ',' << m[0][2] << ")\n";	//Output a 3x3 matrix
 		os << "(" << m[1][0] << ',' << m[1][1] << ',' << m[1][2] << ")\n";
 		os << "(" << m[2][0] << ',' << m[2][1] << ',' << m[2][2] << ")\n";
 		return os;
 	}
 
-	//Turn vector into a string
 	std::string to_string(const glmvec3 v) {
-		return std::to_string(v.x) + ", " + std::to_string(v.y) + ", " + std::to_string(v.z);
+		return std::to_string(v.x) + ", " + std::to_string(v.y) + ", " + std::to_string(v.z);	//Turn vector into a string
 	}
 }
 
@@ -536,7 +535,6 @@ namespace ve {
 				return active;
 			};
 
-
 			/// <summary>
 			/// Euler step for velocity.
 			/// </summary>
@@ -560,7 +558,7 @@ namespace ve {
 			}
 
 			/// <summary>
-			/// COmpute total velocity of object at a certain point.
+			/// Compute total velocity of object at a certain point.
 			/// </summary>
 			/// <param name="positionW">Position of interest in world coordinates.</param>
 			/// <returns></returns>
@@ -708,9 +706,9 @@ namespace ve {
 			auto vrel = contact.m_body_inc.m_body->totalVelocityW(positionW) - contact.m_body_ref.m_body->totalVelocityW(positionW);
 			auto d = glm::dot(vrel, normalW);
 
-			Contact::ContactPoint::type_t type;
+			Contact::ContactPoint::type_t type;	//determine the contact point type
 			real vbias = 0.0_real;
-			if (d > m_sep_velocity) {										//Separatting contact
+			if (d > m_sep_velocity) {										//Separating contact
 				type = Contact::ContactPoint::type_t::separating;
 			}
 			else if (d > m_resting_factor * c_gravity * m_sim_delta_time) {	//Resting contact
@@ -799,7 +797,7 @@ namespace ve {
 		/// The broadphase uses a 2D grid of cells, each body is stored in exactly one cell.
 		/// Only cells which actually contain bodies are stored in the map.
 		/// </summary>
-		real		m_width{5};								//grid cell width (m)
+		real		m_width{3};								//grid cell width (m)
 		std::unordered_map<intpair_t, body_map > m_grid;	//broadphase grid of cells.
 
 		std::shared_ptr<Body> m_ground = std::make_shared<Body>( Body{ this, "Ground", nullptr, &g_cube, {1000, 1000, 1000}, {0, -500.0_real, 0}, {1,0,0,0} });
@@ -840,6 +838,10 @@ namespace ve {
 
 		};
 
+		/// <summary>
+		/// Add a body to the 2D broadphase grid. This is a separate function, so we can later change the grid width.
+		/// </summary>
+		/// <param name="pbody">The body to add.</param>
 		void addGrid( auto pbody ) {
 			pbody->m_grid_x = static_cast<int_t>(pbody->m_positionW.x / m_width);	//2D coordinates in the broadphase grid
 			pbody->m_grid_z = static_cast<int_t>(pbody->m_positionW.z / m_width);
@@ -852,13 +854,13 @@ namespace ve {
 		/// <param name="pbody">The new body.</param>
 		void addBody( auto pbody ) {
 			m_bodies.insert( { pbody->m_owner, pbody } );	//Put into body container
-			addGrid( pbody );
+			addGrid( pbody );	//add to broadphase grid.
 		}
 
 		/// <summary>
 		/// Create a number of bodies at random places to populate the scene.
 		/// </summary>
-		/// <param name="n">Number of bodies to create</param>
+		/// <param name="n">Number of bodies to create.</param>
 		void createRandomBodies( auto n) {
 			for (int i = 0; i < n; ++i) {
 				glmvec3 pos = { rnd_unif(rnd_gen), 20 * rnd_unif(rnd_gen) + 10.0_real, rnd_unif(rnd_gen) };
@@ -1005,26 +1007,28 @@ namespace ve {
 			return false;
 		};
 
+		//--------------------------------------------------------------------------------------------------------
 		/// <summary>
-		/// Callback for the frame started event. This is the main physics engine entry point.
+		/// Callback for the frame started event. This is the MAIN physics engine entry point!
 		/// Once at the start of each new frame this is called.
 		/// The function calculates the current collision/contact points, and warmstarts resting contacts.
-		/// 
+		/// Time is forwarded in fixed slots. If the clock falls in between two slots (which it always does)
+		/// then the state of the world at this time is forward extrapolated.
 		/// </summary>
 		/// <param name="event">The event data.</param>
 		void onFrameStarted(veEvent event) {
-			if (m_mode == SIMULATION_MODE_REALTIME) {	//if the engine is in realtime mode, advance time
-				m_current_time = m_last_time + event.dt;
-				if( event.dt != 0.0) m_fps = 1.0_real / (real)event.dt;
+			if (m_mode == SIMULATION_MODE_REALTIME) {		//if the engine is in realtime mode, advance time
+				m_current_time = m_last_time + event.dt;	//advance time by the time that went by since the last loop
+				if( event.dt != 0.0) m_fps = 1.0_real / (real)event.dt; //estimate for frames per second
 			}
 
 			auto last_loop = m_loop;
 			while (m_current_time > m_next_slot) {	//compute position/vel only at time slots
-				++m_loop;			//increase loop counter
-				uint_t num_active = 0;
-				broadPhase();		//run the broad phase
-				narrowPhase();		//Run the narrow phase
-				warmStart();		//Warm start the resting contacts if possible
+				++m_loop;				//increase loop counter
+				uint_t num_active{ 0 };	//set number currently active objects to 0
+				broadPhase();			//run the broad phase
+				narrowPhase();			//Run the narrow phase
+				warmStart();			//Warm start the resting contacts if possible
 
 				for (auto& body : m_bodies) { body.second->stepVelocity(m_sim_delta_time); }		//Integration step for velocity
 				calculateImpulses(m_loops, m_sim_delta_time);	//Calculate and apply impulses
@@ -1033,8 +1037,8 @@ namespace ve {
 					if (body.second->stepPosition(m_sim_delta_time, body.second->m_positionW, body.second->m_orientationLW)) ++num_active;
 					body.second->updateMatrices();
 				}
-				m_num_active = 0.9_real * m_num_active + 0.1_real * num_active;
-				if (m_num_active < c_small) m_num_active = 0;
+				m_num_active = 0.9_real * m_num_active + 0.1_real * num_active; //smooth the number of active nodies
+				if (m_num_active < c_small) m_num_active = 0;					//If near 0, set to 0
 				m_last_slot = m_next_slot;			//Remember last slot
 				m_next_slot += m_sim_delta_time;	//Move to next time slot as slong as we do not surpass current time
 			}
@@ -1119,13 +1123,18 @@ namespace ve {
 			}
 		}
 
-
+		/// <summary>
+		/// This function tries to warmstart a single deactivated contact, by using its previous contact points.
+		/// This however destabilizes stacking, so do not use.
+		/// </summary>
+		/// <param name="contact"></param>
+		/// <returns></returns>
 		bool warmStartContact( Contact& contact ) {
 			if (   m_use_warmstart_single ==0
-				|| contact.m_body_ref.m_body->m_loop_last_active + 2 > m_loop				//do not set to 1
+				|| contact.m_body_ref.m_body->m_loop_last_active + 2 > m_loop		//do not set to 1
 				|| contact.m_body_inc.m_body->m_loop_last_active + 2 > m_loop
 				|| contact.m_old_contact_points.size() < 3
-				|| contact.m_num_resting != contact.m_old_contact_points.size() ) {
+				|| contact.m_num_resting != contact.m_old_contact_points.size() ) {	//do not warmstart if non resting contact points present
 				return false; 
 			}
 
@@ -1136,9 +1145,9 @@ namespace ve {
 				contact.m_body_inc.m_body->m_linear_velocityW += F * contact.m_body_inc.m_body->m_mass_inv;
 				contact.m_body_inc.m_body->m_angular_velocityW += contact.m_body_inc.m_body->m_inertia_invW * glm::cross(cp.m_r1W, F);
 			}
-			contact.m_contact_points = std::move(contact.m_old_contact_points);
+			contact.m_contact_points = std::move(contact.m_old_contact_points);	//reuse previous contact points.
 
-			contact.m_body_ref.m_body->m_loop_last_active = 0;				//immediately wake up bodies
+			contact.m_body_ref.m_body->m_loop_last_active = 0;		//immediately wake up bodies
 			contact.m_body_inc.m_body->m_loop_last_active = 0;
 
 			return true;
@@ -1194,7 +1203,6 @@ namespace ve {
 			}
 			positionBias(min_depth, min_depth, glmvec3{ 0,1,0 }, contact);	//add position bias if necessary
 		}
-
 
 		/// <summary>
 		/// For a given contact, go through all contact points and apply a small impulse to satisfy the 
@@ -1253,8 +1261,8 @@ namespace ve {
 				auto tmpt = cp.m_t;
 				cp.m_t += dt;
 				auto len = glm::length(cp.m_t);
-				if (len > fabs(cp.m_f * cp.m_friction)) {
-					cp.m_t *= fabs(cp.m_f * cp.m_friction) / len;
+				if (len > fabs(cp.m_f * cp.m_friction)) {			//friction still allowed?
+					cp.m_t *= fabs(cp.m_f * cp.m_friction) / len;	//no -> reduce to max allowed length cp.m_f * cp.m_friction
 					dt = cp.m_t - tmpt;
 				}
 
@@ -1356,14 +1364,14 @@ namespace ve {
 			FaceQuery result{-std::numeric_limits<real>::max(), nullptr, nullptr };
 
 			for (auto& face : contact.m_body_ref.m_body->m_polytope->m_faces) {
-				glmvec3 n = glm::normalize(-RTOIN(face.m_normalL));
-				Vertex* vertB = contact.m_body_inc.m_body->support( n );
-				glmvec3 pos = ITORP(vertB->m_positionL);
-				glmvec3 diff = pos - face.m_face_vertex_ptrs[0]->m_positionL;
-				real distance = glm::dot(face.m_normalL, diff);
+				glmvec3 n = glm::normalize(-RTOIN(face.m_normalL));				//bring face normal to incident object space
+				Vertex* vertB = contact.m_body_inc.m_body->support( n );		//find support point facing reference object
+				glmvec3 pos = ITORP(vertB->m_positionL);						//bring this point to reference object space
+				glmvec3 diff = pos - face.m_face_vertex_ptrs[0]->m_positionL;	//difference to a point on the face
+				real distance = glm::dot(face.m_normalL, diff);					//If dot product is <margin then we have a contact
 				if (distance > m_collision_margin) 
-					return { distance, &face, vertB }; //no overlap - distance is positive
-				if (distance > result.m_separation) 
+					return { distance, &face, vertB };	//no overlap - distance is positive
+				if (distance > result.m_separation)		//else we have overlap - remember largest value (=smallest abs value)
 					result = { distance, &face, vertB };
 			} 
 			return result; //overlap - distance is negative
@@ -1429,6 +1437,8 @@ namespace ve {
 		/// <summary>
 		/// We found a face of B that is aligned with the ref face of A. Bring inc face vertices of B into 
 		/// A's face tangent space, then clip B against A. Bring the result into world space.
+		/// If there are more than 4 contact points, reduce this to 4 by selecting those 4 points that span the 
+		/// triangle with largest area. 
 		/// </summary>
 		/// <param name="contact">The contact between the bodies.</param>
 		/// <param name="face_ref">The reference face.</param>
@@ -1442,26 +1452,27 @@ namespace ve {
 			std::vector<glmvec2> newPolygon;
 			geometry::SutherlandHodgman(points, face_ref->m_face_vertex2D_T, newPolygon); //clip B's face against A's face
 
-			if (newPolygon.size() > 4) {
-				auto support = [](auto& dir, auto& newPoly, auto& supp) {
+			if (newPolygon.size() > 4) {										//more than 4 contact points -> reduce to 4
+				auto support = [](auto& dir, auto& newPoly, auto& supp) {		//2D support mapping function
 					auto compare = [&](auto& a, auto& b) { return glm::dot(dir, a) < glm::dot(dir, b); };
-					supp.push_back(*std::ranges::max_element(newPoly, compare));
+					supp.push_back(*std::ranges::max_element(newPoly, compare));//find support points and push into vector
 				};
 
-				std::vector<glmvec2> dirs0{ {0,1}, {1,0}, {0,-1}, {-1,0}, {1,1}, {-1,1}, {-1,-1}, {1,-1} };
+				std::vector<glmvec2> dirs0{ {0,1}, {1,0}, {0,-1}, {-1,0}, {1,1}, {-1,1}, {-1,-1}, {1,-1} }; //along these directions
 				std::vector<glmvec2> supp;
-				std::ranges::for_each(dirs0, [&](auto& dirS) { support(dirS, newPolygon, supp); });
+				std::ranges::for_each(dirs0, [&](auto& dirS) { support(dirS, newPolygon, supp); });			//find support points for all 8 directions
 
-				auto area_triangle = [](auto p1, auto p2, auto p3) -> real {};
-
+				//We want to use those 4 points that maximize the area of the quadrilateral they span
+				//We have two such quadrilaterals, made by support points ß-3 and 4-7
+				//We compute the area of a quadrilateral by cutting it into two triangles and computing the areas of both (actually double area)
 				real A0 = fabs(glm::determinant(glmmat3{ {supp[0].x, supp[0].y, 1}, {supp[1].x, supp[1].y, 1}, {supp[2].x, supp[2].y, 1} }) +
-					           glm::determinant(glmmat3{ {supp[0].x, supp[0].y, 1}, {supp[1].x, supp[1].y, 1}, {supp[3].x, supp[3].y, 1} })) / 2.0_real;
+					           glm::determinant(glmmat3{ {supp[0].x, supp[0].y, 1}, {supp[1].x, supp[1].y, 1}, {supp[3].x, supp[3].y, 1} }));
 
 				real A1 = fabs(glm::determinant(glmmat3{ {supp[4].x, supp[4].y, 1}, {supp[5].x, supp[5].y, 1}, {supp[6].x, supp[6].y, 1} }) +
-					           glm::determinant(glmmat3{ {supp[4].x, supp[4].y, 1}, {supp[5].x, supp[5].y, 1}, {supp[7].x, supp[7].y, 1} })) / 2.0_real;
+					           glm::determinant(glmmat3{ {supp[4].x, supp[4].y, 1}, {supp[5].x, supp[5].y, 1}, {supp[7].x, supp[7].y, 1} }));
 
-				if (A0 > A1) { newPolygon = std::vector<glmvec2>{ supp[0], supp[1], supp[2], supp[3] }; }
-				else { newPolygon = std::vector<glmvec2>{ supp[4], supp[5], supp[6], supp[7] }; }
+				if (A0 > A1) { newPolygon = std::vector<glmvec2>{ supp[0], supp[1], supp[2], supp[3] }; }	//First quadrilateral is bigger
+				else { newPolygon = std::vector<glmvec2>{ supp[4], supp[5], supp[6], supp[7] }; }			//Second quadrilateral is bigger
 
 			}
 			real min = 0.0_real;
@@ -1469,7 +1480,7 @@ namespace ve {
 				auto p = glmvec3{ p2D.x, 0.0_real, p2D.y }; //cannot put comma into macro 
 				glmvec3 posRW = RTTOWP(p);					//Bring them to world coordinates
 				glmvec3 posIT = WTOTIP(posRW);				//Bring them to the tangent space of the incident face
-				posIT.y = 0.0_real;							//Project to tangent face
+				posIT.y = 0.0_real;							//Project to incident face
 				glmvec3 posIW = ITTOWP( posIT );			//Bring back to world coordinates
 				auto dist = glm::dot(posIW - posRW, RTOWN(face_ref->m_normalL));	//Distance between the two points in world coordinates
 				if ( dist < m_collision_margin) {			//If close enough the touch
