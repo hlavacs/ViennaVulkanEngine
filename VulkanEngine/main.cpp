@@ -1351,19 +1351,19 @@ namespace ve {
 			contact.m_body_inc.m_to_other = contact.m_body_ref.m_body->m_model_inv * contact.m_body_inc.m_body->m_model; //transform to bring space B to space A
 			contact.m_body_inc.m_to_other_it = glm::transpose(glm::inverse(glmmat3{ contact.m_body_inc.m_to_other }));	//transform for a normal vector
 
-			if (contact.m_separating_axisW != glmvec3{ 0,0,0 } &&			//try old separating axis
+			if (contact.m_separating_axisW != glmvec3{ 0,0,0 } &&	//try old separating axis
 				sat_contact(contact, WTORN(contact.m_separating_axisW)).first > m_collision_margin) { return; } 
 
-			FaceQuery fq0 = queryFaceDirections(contact);		//Query all normal vectors of faces of first body
-			if (fq0.m_separation > m_collision_margin) { return; };				//found a separating axis with face normal
+			FaceQuery fq0 = queryFaceDirections(contact);			//Query all normal vectors of faces of first body
+			if (fq0.m_separation > m_collision_margin) { return; };	//found a separating axis with face normal
 
-			std::swap(contact.m_body_ref, contact.m_body_inc);	//body 0 is the reference body having the reference face
-			FaceQuery fq1 = queryFaceDirections(contact);		//Query all normal vectors of faces of second body
-			if (fq1.m_separation > m_collision_margin) { return; };		//found a separating axis with face normal
+			std::swap(contact.m_body_ref, contact.m_body_inc);		//body 0 is the reference body having the reference face
+			FaceQuery fq1 = queryFaceDirections(contact);			//Query all normal vectors of faces of second body
+			if (fq1.m_separation > m_collision_margin) { return; };	//found a separating axis with face normal
 
-			std::swap(contact.m_body_ref, contact.m_body_inc);	//prevent flip flopping
-			EdgeQuery eq = queryEdgeDirections(contact);		//Query cross product of edge pairs from body 0 and 1	
-			if (eq.m_separation > m_collision_margin) {			//found a separating axis with edge-edge normal
+			std::swap(contact.m_body_ref, contact.m_body_inc);		//prevent flip flopping
+			EdgeQuery eq = queryEdgeDirections(contact);			//Query cross product of edge pairs from body 0 and 1	
+			if (eq.m_separation > m_collision_margin) {				//found a separating axis with edge-edge normal
 				contact.m_separating_axisW = RTOWN(eq.m_normalL);
 				return;
 			}
@@ -1465,9 +1465,9 @@ namespace ve {
 		/// <param name="face_inc">The incident face.</param>
 		real clipFaceFace(Contact& contact, Face* face_ref, Face* face_inc) {
 			std::vector<glmvec2> points;						//2D points holding the projected contact points				
-			for (auto* vertex : face_inc->m_face_vertex_ptrs) {			//add face points of B's face
-				auto pT = ITORTP( vertex->m_positionL );				//ransform to A's tangent space
-				points.emplace_back(pT.x, pT.z);						//add as 2D point
+			for (auto* vertex : face_inc->m_face_vertex_ptrs) {	//add face points of B's face
+				auto pT = ITORTP( vertex->m_positionL );		//ransform to A's tangent space
+				points.emplace_back(pT.x, pT.z);				//add as 2D point
 			}
 			std::vector<glmvec2> newPolygon;
 			geometry::SutherlandHodgman(points, face_ref->m_face_vertex2D_T, newPolygon); //clip B's face against A's face
