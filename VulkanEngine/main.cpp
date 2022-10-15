@@ -1335,7 +1335,7 @@ namespace ve {
 			contact.m_body_inc.m_to_other = contact.m_body_ref.m_body->m_model_inv * contact.m_body_inc.m_body->m_model; //transform to bring space B to space A
 			contact.m_body_inc.m_to_other_it = glm::transpose(glm::inverse(glmmat3{ contact.m_body_inc.m_to_other }));	//transform for a normal vector
 
-			if (contact.m_separating_axisW != glmvec3{ 0,0,0 }) {				//try old separating axis
+			if (contact.m_separating_axisW != glmvec3{ 0,0,0 }) {			//try old separating axis
 				auto n = contact.m_separating_axisW;
 
 				auto nA = WTORN(contact.m_separating_axisW);
@@ -1350,8 +1350,7 @@ namespace ve {
 				real maxB = glm::dot(n, ITOWP(vertB1->m_positionL));		//distance in this direction
 				real minB = glm::dot(n, ITOWP(vertB2->m_positionL));		//distance in this direction
 				
-				if (maxA < minB || maxB < minA) 
-					return;	//no overlap - distance is positive					
+				if (maxA < minB || maxB < minA) return;	//no overlap - return			
 			}
 
 			FaceQuery fq0 = queryFaceDirections(contact);		//Query all normal vectors of faces of first body
