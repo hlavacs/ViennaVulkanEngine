@@ -1303,6 +1303,12 @@ namespace ve {
 
 		//----------------------------------------------------------------------------------------------------
 
+		struct SatQuery {
+			real	m_separation;	//separation length (negative)
+			Vertex* m_vertA;		//ref vertex
+			Vertex* m_vertB;		//inc vertex
+		};
+
 		/// <summary>
 		/// Store the result of an edge-edge query
 		/// </summary>
@@ -1327,16 +1333,16 @@ namespace ve {
 		/// </summary>
 		/// <param name="contact">The contact to test.</param>
 		/// <param name="nR">Possible separating axis in the reference object space.</param>
-		/// <returns>Distance between the object. If negative, this is the seperating distance. Also return inc vertex.</returns>
-		std::pair<real, Vertex*> sat_contact(Contact& contact, glmvec3 nR) {
-			if (nR == glmvec3{ 0,0,0 }) return { 0, nullptr };
+		/// <param name="vertex">A pointer to a vertex, to make sure that axis points away from ref object.</param>
+		/// <returns>Distance between the object. If negative, this is the seperating distance. Also return ref and inc vertex.</returns>
+		SatQuery sat_contact(Contact& contact, glmvec3 nR) {
 			auto nW = glm::normalize(RTOWN(nR));
 			Vertex* vertA = contact.m_body_ref.m_body->support(nR);			//find support point in direction n
 			Vertex* vertB = contact.m_body_inc.m_body->support(RTOIN(-nR));	//find support point in direction n
 			real maxA = glm::dot(nW, RTOWP(vertA->m_positionL));					//distance in this direction for ref object
 			real minB = glm::dot(nW, ITOWP(vertB->m_positionL));					//distance in this direction for inc object
 			if(minB - maxA > m_collision_margin) contact.m_separating_axisW = nW;	//Remmber separating axis
-			return { minB - maxA, vertB };	//return distance and incident vertex
+			return { minB - maxA, vertA, vertB };	//return distance and reference and incident vertex
 		}
 
 		/// <summary>
@@ -1353,7 +1359,7 @@ namespace ve {
 			contact.m_body_inc.m_to_other_it = glm::transpose(glm::inverse(glmmat3{ contact.m_body_inc.m_to_other }));	//transform for a normal vector
 
 			if (contact.m_separating_axisW != glmvec3{ 0,0,0 } &&	//try old separating axis
-				sat_contact(contact, WTORN(contact.m_separating_axisW)).first > m_collision_margin) { return; } 
+				sat_contact(contact, WTORN(contact.m_separating_axisW)).m_separation > m_collision_margin) { return; } 
 
 			FaceQuery fq0 = queryFaceDirections(contact);			//Query all normal vectors of faces of first body
 			if (fq0.m_separation > m_collision_margin) { return; };	//found a separating axis with face normal
@@ -1392,8 +1398,8 @@ namespace ve {
 			FaceQuery result{ -std::numeric_limits<real>::max(), nullptr, nullptr };
 			auto sat = [&]( auto& face ) {							//Run this function for each reference face
 				auto sat = sat_contact(contact, face.m_normalL);	//Call the sat, get distance
-				if (sat.first > result.m_separation) result = { sat.first, &face, sat.second }; //remember max distance
-				return sat.first > m_collision_margin;	//if distance positive, stop - we found a separating axis
+				if (sat.m_separation > result.m_separation) result = { sat.m_separation, &face, sat.m_vertB }; //remember max distance
+				return sat.m_separation > m_collision_margin;	//if distance positive, stop - we found a separating axis
 			};
 			auto face = std::ranges::find_if(contact.m_body_ref.m_body->m_polytope->m_faces, sat);
 			return result;
@@ -1415,26 +1421,16 @@ namespace ve {
 			for (auto& edgeA : contact.m_body_ref.m_body->m_polytope->m_edges) {	//loop over all edge-edge pairs
 				for (auto& edgeB : contact.m_body_inc.m_body->m_polytope->m_edges) {
 					glmvec3 n = glm::cross(edgeA.m_edgeL, ITORV(edgeB.m_edgeL));	//axis n is cross product of both edges
-					real len = glm::length(n);
+					if (n == glmvec3{0,0,0}) continue;
+					if (glm::dot(n, edgeA.m_first_vertexL.m_positionL) < 0)	n = -n;		//n must be oriented away from center of A								
 
-					if (len > 0.0_real) {
-						n = n / len;	//normalize the axis
+					auto sat = sat_contact(contact, n);
+					if (sat.m_separation > m_collision_margin) return { sat.m_separation, &edgeA, &edgeB };	//if distance positive, stop - we found a separating axis
 
-						if (glm::dot(n, edgeA.m_first_vertexL.m_positionL) < 0) 
-							n = -n;		//n must be oriented away from center of A								
-						Vertex* vertA = contact.m_body_ref.m_body->support(n);				//support of A in normal direction
-						Vertex* vertB = contact.m_body_inc.m_body->support(RTOIN(-n));		//support of B in negative normal direction
-						real distance = glm::dot(n, ITORP(vertB->m_positionL) - vertA->m_positionL);		//overlap distance along n
-
-						if (distance > m_collision_margin) {
-							return { distance, &edgeA, &edgeB };							//no overlap - distance is positive
-						}
-
-						auto distance2 = glm::dot( n, ITORP(edgeB.m_first_vertexL.m_positionL) - vertA->m_positionL);	//above does not depend on location - could find an adge on the other side
-						if (distance2 <= m_collision_margin && distance > result.m_separation) {
-							result = { distance, &edgeA, &edgeB, n };	//remember max of negative distances
-						}						
-					}
+					auto distance2 = glm::dot( n, ITORP(edgeB.m_first_vertexL.m_positionL) - sat.m_vertA->m_positionL);	//above does not depend on location - could find an adge on the other side
+					if (distance2 <= m_collision_margin && sat.m_separation > result.m_separation) {
+						result = { sat.m_separation, &edgeA, &edgeB, n };	//remember max of negative distances
+					}						
 				}
 			}
 			return result; 
