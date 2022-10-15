@@ -1329,7 +1329,8 @@ namespace ve {
 		/// <param name="nR">Possible separating axis in the reference object space.</param>
 		/// <returns>Distance between the object. If negative, this is the seperating distance. Also return inc vertex.</returns>
 		std::pair<real, Vertex*> sat_contact(Contact& contact, glmvec3 nR) {
-			auto nW = RTOWN(nR);
+			if (nR == glmvec3{ 0,0,0 }) return { 0, nullptr };
+			auto nW = glm::normalize(RTOWN(nR));
 			Vertex* vertA = contact.m_body_ref.m_body->support(nR);			//find support point in direction n
 			Vertex* vertB = contact.m_body_inc.m_body->support(RTOIN(-nR));	//find support point in direction n
 			real maxA = glm::dot(nW, RTOWP(vertA->m_positionL));					//distance in this direction for ref object
