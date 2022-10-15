@@ -1329,10 +1329,12 @@ namespace ve {
 		/// <param name="nR">Possible separating axis in the reference object space.</param>
 		/// <returns>Distance between the object. If negative, this is the seperating distance. Also return inc vertex.</returns>
 		std::pair<real, Vertex*> sat_contact(Contact& contact, glmvec3 nR) {
+			auto nW = RTOWN(nR);
 			Vertex* vertA = contact.m_body_ref.m_body->support(nR);			//find support point in direction n
 			Vertex* vertB = contact.m_body_inc.m_body->support(RTOIN(-nR));	//find support point in direction n
-			real maxA = glm::dot(RTOWN(nR), RTOWP(vertA->m_positionL));		//distance in this direction for ref object
-			real minB = glm::dot(RTOWN(nR), ITOWP(vertB->m_positionL));		//distance in this direction for inc object
+			real maxA = glm::dot(nW, RTOWP(vertA->m_positionL));					//distance in this direction for ref object
+			real minB = glm::dot(nW, ITOWP(vertB->m_positionL));					//distance in this direction for inc object
+			if(minB - maxA > m_collision_margin) contact.m_separating_axisW = nW;	//Remmber separating axis
 			return { minB - maxA, vertB };	//return distance and incident vertex
 		}
 
@@ -1349,25 +1351,19 @@ namespace ve {
 			contact.m_body_inc.m_to_other = contact.m_body_ref.m_body->m_model_inv * contact.m_body_inc.m_body->m_model; //transform to bring space B to space A
 			contact.m_body_inc.m_to_other_it = glm::transpose(glm::inverse(glmmat3{ contact.m_body_inc.m_to_other }));	//transform for a normal vector
 
-			if (contact.m_separating_axisW != glmvec3{ 0,0,0 } && 
-				sat_contact(contact, contact.m_separating_axisW ).first > m_collision_margin ) {			//try old separating axis
-				return;
-			}
+			if (contact.m_separating_axisW != glmvec3{ 0,0,0 } &&			//try old separating axis
+				sat_contact(contact, WTORN(contact.m_separating_axisW)).first > m_collision_margin) { return; } 
 
 			FaceQuery fq0 = queryFaceDirections(contact);		//Query all normal vectors of faces of first body
-			if (fq0.m_separation > 0) {							//found a separating axis with face normal
-				contact.m_separating_axisW = RTOWN(fq0.m_face_ref->m_normalL);
-				return;	
-			}
+			if (fq0.m_separation > m_collision_margin) { return; };				//found a separating axis with face normal
+
 			std::swap(contact.m_body_ref, contact.m_body_inc);	//body 0 is the reference body having the reference face
 			FaceQuery fq1 = queryFaceDirections(contact);		//Query all normal vectors of faces of second body
-			if (fq1.m_separation > 0) {							//found a separating axis with face normal
-				contact.m_separating_axisW = RTOWN(fq1.m_face_ref->m_normalL);
-				return;
-			}
+			if (fq1.m_separation > m_collision_margin) { return; };		//found a separating axis with face normal
+
 			std::swap(contact.m_body_ref, contact.m_body_inc);	//prevent flip flopping
 			EdgeQuery eq = queryEdgeDirections(contact);		//Query cross product of edge pairs from body 0 and 1	
-			if (eq.m_separation > 0) {							//found a separating axis with edge-edge normal
+			if (eq.m_separation > m_collision_margin) {			//found a separating axis with edge-edge normal
 				contact.m_separating_axisW = RTOWN(eq.m_normalL);
 				return;
 			}
@@ -1393,7 +1389,7 @@ namespace ve {
 		/// <returns>Negative: overlap of bodies along this axis. Positive: distance between the bodies.</returns>
 		FaceQuery queryFaceDirections(Contact& contact) {
 			FaceQuery result{ -std::numeric_limits<real>::max(), nullptr, nullptr };
-			auto sat = [&]( auto& face) {							//Run this function for each reference face
+			auto sat = [&]( auto& face ) {							//Run this function for each reference face
 				auto sat = sat_contact(contact, face.m_normalL);	//Call the sat, get distance
 				if (sat.first > result.m_separation) result = { sat.first, &face, sat.second }; //remember max distance
 				return sat.first > m_collision_margin;	//if distance positive, stop - we found a separating axis
@@ -1433,7 +1429,7 @@ namespace ve {
 							return { distance, &edgeA, &edgeB };							//no overlap - distance is positive
 						}
 
-						auto distance2 = glm::dot( n, ITORP(edgeB.m_first_vertexL.m_positionL) - vertA->m_positionL);	//above does not depend on location - could find an adge on the othe side
+						auto distance2 = glm::dot( n, ITORP(edgeB.m_first_vertexL.m_positionL) - vertA->m_positionL);	//above does not depend on location - could find an adge on the other side
 						if (distance2 <= m_collision_margin && distance > result.m_separation) {
 							result = { distance, &edgeA, &edgeB, n };	//remember max of negative distances
 						}						
