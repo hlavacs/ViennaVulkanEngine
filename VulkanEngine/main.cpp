@@ -1323,6 +1323,20 @@ namespace ve {
 		};
 
 		/// <summary>
+		/// For a reference and an incidence object, test if a given direction is a separating axis.
+		/// </summary>
+		/// <param name="contact">The contact to test.</param>
+		/// <param name="nR">Possible separating axis in the reference object space.</param>
+		/// <returns>Distance between the object. If negative, this is the seperating distance. Also return inc vertex.</returns>
+		std::pair<real, Vertex*> sat_contact(Contact& contact, glmvec3 nR) {
+			Vertex* vertA = contact.m_body_ref.m_body->support(nR);			//find support point in direction n
+			Vertex* vertB = contact.m_body_inc.m_body->support(RTOIN(-nR));	//find support point in direction n
+			real maxA = glm::dot(RTOWN(nR), RTOWP(vertA->m_positionL));		//distance in this direction for ref object
+			real minB = glm::dot(RTOWN(nR), ITOWP(vertB->m_positionL));		//distance in this direction for inc object
+			return { minB - maxA, vertB };	//return distance and incident vertex
+		}
+
+		/// <summary>
 		/// Perform SAT test for two bodies. If they overlap then compute the contact manifold.
 		/// </summary>
 		/// <param name="contact">The contact between the two bodies.</param>
@@ -1335,22 +1349,9 @@ namespace ve {
 			contact.m_body_inc.m_to_other = contact.m_body_ref.m_body->m_model_inv * contact.m_body_inc.m_body->m_model; //transform to bring space B to space A
 			contact.m_body_inc.m_to_other_it = glm::transpose(glm::inverse(glmmat3{ contact.m_body_inc.m_to_other }));	//transform for a normal vector
 
-			if (contact.m_separating_axisW != glmvec3{ 0,0,0 }) {			//try old separating axis
-				auto n = contact.m_separating_axisW;
-
-				auto nA = WTORN(contact.m_separating_axisW);
-				Vertex* vertA1 = contact.m_body_ref.m_body->support(nA);	//find support point in direction n
-				Vertex* vertA2 = contact.m_body_ref.m_body->support(-nA);	//find support point in direction -n
-				real maxA = glm::dot(n, RTOWP(vertA1->m_positionL));		//distance in this direction
-				real minA = glm::dot(n, RTOWP(vertA2->m_positionL));		//distance in this direction
-
-				auto nB = WTOIN(contact.m_separating_axisW);
-				Vertex* vertB1 = contact.m_body_inc.m_body->support(nB);	//find support point in direction n
-				Vertex* vertB2 = contact.m_body_inc.m_body->support(-nB);	//find support point in direction -n
-				real maxB = glm::dot(n, ITOWP(vertB1->m_positionL));		//distance in this direction
-				real minB = glm::dot(n, ITOWP(vertB2->m_positionL));		//distance in this direction
-				
-				if (maxA < minB || maxB < minA) return;	//no overlap - return			
+			if (contact.m_separating_axisW != glmvec3{ 0,0,0 } && 
+				sat_contact(contact, contact.m_separating_axisW ).first > m_collision_margin ) {			//try old separating axis
+				return;
 			}
 
 			FaceQuery fq0 = queryFaceDirections(contact);		//Query all normal vectors of faces of first body
@@ -1391,20 +1392,14 @@ namespace ve {
 		/// <param name="contact">The pair contact struct.</param>
 		/// <returns>Negative: overlap of bodies along this axis. Positive: distance between the bodies.</returns>
 		FaceQuery queryFaceDirections(Contact& contact) {
-			FaceQuery result{-std::numeric_limits<real>::max(), nullptr, nullptr };
-
-			for (auto& face : contact.m_body_ref.m_body->m_polytope->m_faces) {
-				glmvec3 n = glm::normalize(-RTOIN(face.m_normalL));				//bring face normal to incident object space
-				Vertex* vertB = contact.m_body_inc.m_body->support( n );		//find support point facing reference object
-				glmvec3 pos = ITORP(vertB->m_positionL);						//bring this point to reference object space
-				glmvec3 diff = pos - face.m_face_vertex_ptrs[0]->m_positionL;	//difference to a point on the face
-				real distance = glm::dot(face.m_normalL, diff);					//If dot product is <margin then we have a contact
-				if (distance > m_collision_margin) 
-					return { distance, &face, vertB };	//no overlap - distance is positive
-				if (distance > result.m_separation)		//else we have overlap - remember largest value (=smallest abs value)
-					result = { distance, &face, vertB };
-			} 
-			return result; //overlap - distance is negative
+			FaceQuery result{ -std::numeric_limits<real>::max(), nullptr, nullptr };
+			auto sat = [&]( auto& face) {							//Run this function for each reference face
+				auto sat = sat_contact(contact, face.m_normalL);	//Call the sat, get distance
+				if (sat.first > result.m_separation) result = { sat.first, &face, sat.second }; //remember max distance
+				return sat.first > m_collision_margin;	//if distance positive, stop - we found a separating axis
+			};
+			auto face = std::ranges::find_if(contact.m_body_ref.m_body->m_polytope->m_faces, sat);
+			return result;
 		}
 
 		/// <summary>
