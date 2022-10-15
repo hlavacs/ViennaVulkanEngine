@@ -1303,6 +1303,9 @@ namespace ve {
 
 		//----------------------------------------------------------------------------------------------------
 
+		/// <summary>
+		/// Store the result of a SAT query. 
+		/// </summary>
 		struct SatQuery {
 			real	m_separation;	//separation length (negative)
 			Vertex* m_vertA;		//ref vertex
@@ -1335,7 +1338,7 @@ namespace ve {
 		/// <param name="nR">Possible separating axis in the reference object space.</param>
 		/// <param name="vertex">A pointer to a vertex, to make sure that axis points away from ref object.</param>
 		/// <returns>Distance between the object. If negative, this is the seperating distance. Also return ref and inc vertex.</returns>
-		SatQuery sat_contact(Contact& contact, glmvec3 nR) {
+		SatQuery sat_query(Contact& contact, glmvec3 nR) {
 			auto nW = glm::normalize(RTOWN(nR));
 			Vertex* vertA = contact.m_body_ref.m_body->support(nR);			//find support point in direction n
 			Vertex* vertB = contact.m_body_inc.m_body->support(RTOIN(-nR));	//find support point in direction n
@@ -1359,7 +1362,7 @@ namespace ve {
 			contact.m_body_inc.m_to_other_it = glm::transpose(glm::inverse(glmmat3{ contact.m_body_inc.m_to_other }));	//transform for a normal vector
 
 			if (contact.m_separating_axisW != glmvec3{ 0,0,0 } &&	//try old separating axis
-				sat_contact(contact, WTORN(contact.m_separating_axisW)).m_separation > m_collision_margin) { return; } 
+				sat_query(contact, WTORN(contact.m_separating_axisW)).m_separation > m_collision_margin) { return; }
 
 			FaceQuery fq0 = queryFaceDirections(contact);			//Query all normal vectors of faces of first body
 			if (fq0.m_separation > m_collision_margin) { return; };	//found a separating axis with face normal
@@ -1370,10 +1373,7 @@ namespace ve {
 
 			std::swap(contact.m_body_ref, contact.m_body_inc);		//prevent flip flopping
 			EdgeQuery eq = queryEdgeDirections(contact);			//Query cross product of edge pairs from body 0 and 1	
-			if (eq.m_separation > m_collision_margin) {				//found a separating axis with edge-edge normal
-				contact.m_separating_axisW = RTOWN(eq.m_normalL);
-				return;
-			}
+			if (eq.m_separation > m_collision_margin) { return; }	//found a separating axis with edge-edge normal
 
 			contact.m_separating_axisW = glmvec3{0,0,0};		//no separating axis found
 			if (fq0.m_separation >= eq.m_separation * 1.001_real || fq1.m_separation >= eq.m_separation * 1.001_real) {	//max separation is a face-vertex contact
@@ -1397,7 +1397,7 @@ namespace ve {
 		FaceQuery queryFaceDirections(Contact& contact) {
 			FaceQuery result{ -std::numeric_limits<real>::max(), nullptr, nullptr };
 			auto sat = [&]( auto& face ) {							//Run this function for each reference face
-				auto sat = sat_contact(contact, face.m_normalL);	//Call the sat, get distance
+				auto sat = sat_query(contact, face.m_normalL);	//Call the sat, get distance
 				if (sat.m_separation > result.m_separation) result = { sat.m_separation, &face, sat.m_vertB }; //remember max distance
 				return sat.m_separation > m_collision_margin;	//if distance positive, stop - we found a separating axis
 			};
@@ -1424,7 +1424,7 @@ namespace ve {
 					if (n == glmvec3{0,0,0}) continue;
 					if (glm::dot(n, edgeA.m_first_vertexL.m_positionL) < 0)	n = -n;		//n must be oriented away from center of A								
 
-					auto sat = sat_contact(contact, n);
+					auto sat = sat_query(contact, n);		//Try normal to this edge-edge pair
 					if (sat.m_separation > m_collision_margin) return { sat.m_separation, &edgeA, &edgeB };	//if distance positive, stop - we found a separating axis
 
 					auto distance2 = glm::dot( n, ITORP(edgeB.m_first_vertexL.m_positionL) - sat.m_vertA->m_positionL);	//above does not depend on location - could find an adge on the other side
