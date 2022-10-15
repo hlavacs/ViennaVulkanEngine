@@ -178,6 +178,8 @@ namespace std {
 #define RTORTP(X) glmvec3{face_ref->m_LtoT * glmvec4{X, 1.0_real}}
 
 #define WTOTIP(X) glmvec3{face_inc->m_LtoT * contact.m_body_inc.m_body->m_model_inv * glmvec4{X, 1.0_real} }
+#define WTORN(X)  glmmat3{ contact.m_body_ref.m_body->m_model_inv } * (X)
+#define WTOIN(X)  glmmat3{ contact.m_body_inc.m_body->m_model_inv } * (X)
 
 #define RTTORP(X) glmvec3{face_ref->m_TtoL * glmvec4{(X), 1.0_real}}
 #define RTTOWP(X) glmvec3{contact.m_body_ref.m_body->m_model * face_ref->m_TtoL * glmvec4{(X), 1.0_real}}
@@ -680,6 +682,7 @@ namespace ve {
 			BodyPtr		m_body_ref;							//reference body, we will use its local space mostly
 			BodyPtr		m_body_inc;							//incident body, we will transfer its points/vectors to the ref space
 			uint64_t	m_num_resting{ 0 };					//Number of resting contacts
+			bool		m_active{ true };					//if deactive, the contact is ignored
 			glmvec3		m_separating_axisW{ 0 };			//Axis that separates the two bodies in world space
 
 			glmvec3					m_normalW{ 0 };			//Contact normal
@@ -1315,8 +1318,8 @@ namespace ve {
 		/// </summary>
 		struct FaceQuery {
 			real	m_separation;	//separation length (negative)
-			Face*	m_face_ref;			//pointer to reference face
-			Vertex* m_vertex_inc;		//pointer to incident vertex
+			Face*	m_face_ref;		//pointer to reference face
+			Vertex* m_vertex_inc;	//pointer to incident vertex
 		};
 
 		/// <summary>
@@ -1332,16 +1335,44 @@ namespace ve {
 			contact.m_body_inc.m_to_other = contact.m_body_ref.m_body->m_model_inv * contact.m_body_inc.m_body->m_model; //transform to bring space B to space A
 			contact.m_body_inc.m_to_other_it = glm::transpose(glm::inverse(glmmat3{ contact.m_body_inc.m_to_other }));	//transform for a normal vector
 
+			if (contact.m_separating_axisW != glmvec3{ 0,0,0 }) {				//try old separating axis
+				auto n = contact.m_separating_axisW;
+
+				auto nA = WTORN(contact.m_separating_axisW);
+				Vertex* vertA1 = contact.m_body_ref.m_body->support(nA);	//find support point in direction n
+				Vertex* vertA2 = contact.m_body_ref.m_body->support(-nA);	//find support point in direction -n
+				real maxA = glm::dot(n, RTOWP(vertA1->m_positionL));		//distance in this direction
+				real minA = glm::dot(n, RTOWP(vertA2->m_positionL));		//distance in this direction
+
+				auto nB = WTOIN(contact.m_separating_axisW);
+				Vertex* vertB1 = contact.m_body_inc.m_body->support(nB);	//find support point in direction n
+				Vertex* vertB2 = contact.m_body_inc.m_body->support(-nB);	//find support point in direction -n
+				real maxB = glm::dot(n, ITOWP(vertB1->m_positionL));		//distance in this direction
+				real minB = glm::dot(n, ITOWP(vertB2->m_positionL));		//distance in this direction
+				
+				if (maxA < minB || maxB < minA) 
+					return;	//no overlap - distance is positive					
+			}
+
 			FaceQuery fq0 = queryFaceDirections(contact);		//Query all normal vectors of faces of first body
-			if(fq0.m_separation > 0) return;					//found a separating axis with face normal
+			if (fq0.m_separation > 0) {							//found a separating axis with face normal
+				contact.m_separating_axisW = RTOWN(fq0.m_face_ref->m_normalL);
+				return;	
+			}
 			std::swap(contact.m_body_ref, contact.m_body_inc);	//body 0 is the reference body having the reference face
 			FaceQuery fq1 = queryFaceDirections(contact);		//Query all normal vectors of faces of second body
-			if(fq1.m_separation > 0) return;					//found a separating axis with face normal
-
+			if (fq1.m_separation > 0) {							//found a separating axis with face normal
+				contact.m_separating_axisW = RTOWN(fq1.m_face_ref->m_normalL);
+				return;
+			}
 			std::swap(contact.m_body_ref, contact.m_body_inc);	//prevent flip flopping
 			EdgeQuery eq = queryEdgeDirections(contact);		//Query cross product of edge pairs from body 0 and 1	
-			if (eq.m_separation > 0) return;					//found a separating axis with edge-edge normal
+			if (eq.m_separation > 0) {							//found a separating axis with edge-edge normal
+				contact.m_separating_axisW = RTOWN(eq.m_normalL);
+				return;
+			}
 
+			contact.m_separating_axisW = glmvec3{0,0,0};		//no separating axis found
 			if (fq0.m_separation >= eq.m_separation * 1.001_real || fq1.m_separation >= eq.m_separation * 1.001_real) {	//max separation is a face-vertex contact
 				if (fq0.m_separation >= fq1.m_separation) { createFaceContact(contact, fq0); } 
 				else {
@@ -1392,7 +1423,6 @@ namespace ve {
 
 			for (auto& edgeA : contact.m_body_ref.m_body->m_polytope->m_edges) {	//loop over all edge-edge pairs
 				for (auto& edgeB : contact.m_body_inc.m_body->m_polytope->m_edges) {
-					auto edgeb_L = ITORV(edgeB.m_edgeL);
 					glmvec3 n = glm::cross(edgeA.m_edgeL, ITORV(edgeB.m_edgeL));	//axis n is cross product of both edges
 					real len = glm::length(n);
 
