@@ -27,7 +27,8 @@ namespace vh
 		VkFormat swapChainImageFormat,
 		VkFormat depthFormat,
 		VkAttachmentLoadOp loadOp,
-		VkRenderPass *renderPass)
+		VkRenderPass *renderPass,
+		VkImageLayout colorAttachmentFinalLayout)
 	{
 		VkAttachmentDescription colorAttachment = {};
 		colorAttachment.format = swapChainImageFormat;
@@ -42,7 +43,7 @@ namespace vh
 		{
 			colorAttachment.initialLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
 		}
-		colorAttachment.finalLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+		colorAttachment.finalLayout = colorAttachmentFinalLayout;
 
 		VkAttachmentDescription depthAttachment = {};
 		depthAttachment.format = depthFormat;

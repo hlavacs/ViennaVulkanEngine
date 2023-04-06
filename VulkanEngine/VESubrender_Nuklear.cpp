@@ -73,11 +73,11 @@ namespace ve
 		nk_glfw3_new_frame();
 	}
 
-	VkSemaphore VESubrender_Nuklear::draw(uint32_t
+	void VESubrender_Nuklear::draw(uint32_t
 		imageIndex,
-		VkSemaphore wait_semaphore)
+		VkSemaphore wait_semaphore, VkSemaphore signal_semaphore)
 	{
-		return nk_glfw3_render(NK_ANTI_ALIASING_ON, imageIndex, wait_semaphore);
+		nk_glfw3_render(NK_ANTI_ALIASING_ON, imageIndex, wait_semaphore, signal_semaphore);
 	}
 
 	void *VESubrender_Nuklear::addTexture(VETexture *texture)

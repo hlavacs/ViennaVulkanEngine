@@ -71,11 +71,7 @@ namespace ve
 		virtual void draw(VkCommandBuffer commandBuffer, uint32_t imageIndex, uint32_t numPass, VECamera *pCamera, VELight *pLight, std::vector<VkDescriptorSet> descriptorSetsShadow = {}) {};
 
 		///Perform an arbitrary draw operation
-		///\returns a semaphore signalling when this draw operations has finished
-		virtual VkSemaphore draw(uint32_t imageIndex, VkSemaphore wait_semaphore)
-		{
-			return VK_NULL_HANDLE;
-		};
+		virtual void draw(uint32_t imageIndex, VkSemaphore wait_semaphore, VkSemaphore signal_semaphore) {};
 
 		///\brief draw a specific entity
 		virtual void drawEntity(VkCommandBuffer commandBuffer, uint32_t imageIndex, VEEntity *entity) {};

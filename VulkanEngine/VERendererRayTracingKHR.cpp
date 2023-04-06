@@ -85,8 +85,11 @@ namespace ve
 		}
 
 		m_commandBuffers.resize(m_swapChainImages.size());
-		for (uint32_t i = 0; i < m_swapChainImages.size(); i++)
+		m_commandBuffersWithPendingUpdate.resize(m_swapChainImages.size());
+		for (uint32_t i = 0; i < m_swapChainImages.size(); i++) {
 			m_commandBuffers[i] = VK_NULL_HANDLE; //will be created later
+			m_commandBuffersWithPendingUpdate[i] = false;
+		}
 
 		m_secondaryBuffers.resize(m_swapChainImages.size());
 		for (uint32_t i = 0; i < m_swapChainImages.size(); i++)
@@ -138,15 +141,6 @@ namespace ve
 			&m_descriptorSetLayoutPerObject));
 
 		//------------------------------------------------------------------------------------------------------------
-
-		for (uint32_t i = 0; i < m_swapChainImages.size(); i++)
-		{
-			vh::vhBufTransitionImageLayout(m_device, m_graphicsQueue,
-				m_commandPool, //transition the image layout to
-				m_swapChainImages[i], VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_ASPECT_COLOR_BIT, 1,
-				1, //VK_IMAGE_LAYOUT_PRESENT_SRC_KHR
-				VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR);
-		}
 
 		createSyncObjects();
 
@@ -220,6 +214,7 @@ namespace ve
 		{
 			vkDestroySemaphore(m_device, m_renderFinishedSemaphores[i], nullptr);
 			vkDestroySemaphore(m_device, m_imageAvailableSemaphores[i], nullptr);
+			vkDestroySemaphore(m_device, m_overlaySemaphores[i], nullptr);
 			vkDestroyFence(m_device, m_inFlightFences[i], nullptr);
 		}
 
@@ -315,6 +310,7 @@ namespace ve
 		{
 			if (vkCreateSemaphore(m_device, &semaphoreInfo, nullptr, &m_imageAvailableSemaphores[i]) != VK_SUCCESS ||
 				vkCreateSemaphore(m_device, &semaphoreInfo, nullptr, &m_renderFinishedSemaphores[i]) != VK_SUCCESS ||
+				vkCreateSemaphore(m_device, &semaphoreInfo, nullptr, &m_overlaySemaphores[i]) != VK_SUCCESS ||
 				vkCreateFence(m_device, &fenceInfo, nullptr, &m_inFlightFences[i]) != VK_SUCCESS)
 			{
 				assert(false);
@@ -326,7 +322,13 @@ namespace ve
 	void VERendererRayTracingKHR::updateCmdBuffers()
 	{
 		vh::vhDestroyAccelerationStructure(m_device, m_vmaAllocator, m_topLevelAS);
-		deleteCmdBuffers();
+		for (uint32_t i = 0; i < m_commandBuffers.size(); i++)
+		{
+			if (m_commandBuffers[i] != VK_NULL_HANDLE)
+			{
+				m_commandBuffersWithPendingUpdate[i] = true;
+			}
+		}
 	};
 
 	/**
@@ -341,6 +343,7 @@ namespace ve
 			{
 				vkFreeCommandBuffers(m_device, m_commandPool, 1, &m_commandBuffers[i]);
 				m_commandBuffers[i] = VK_NULL_HANDLE;
+				m_commandBuffersWithPendingUpdate[i] = false;
 			}
 		}
 	}
@@ -422,9 +425,15 @@ namespace ve
 		}
 		m_AvgRecordTimeOnscreen = vh::vhAverage(vh::vhTimeDuration(t_start), m_AvgRecordTimeOnscreen, 1.0f / m_swapChainImages.size());
 
-		vkEndCommandBuffer(m_commandBuffers[m_imageIndex]);
+		if (m_subrenderOverlay == nullptr) {
+			// without overlay renderer we must transition the image to VK_IMAGE_LAYOUT_PRESENT_SRC_KHR
+			vh::vhBufTransitionImageLayout(m_device, m_graphicsQueue,
+				m_commandBuffers[m_imageIndex], //transition the image layout to
+				getSwapChainImage(), VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_ASPECT_COLOR_BIT, 1,
+				1, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR);
+		}
 
-		m_overlaySemaphores[m_currentFrame] = m_renderFinishedSemaphores[m_currentFrame];
+		vkEndCommandBuffer(m_commandBuffers[m_imageIndex]);
 
 		//remember the last recorded entities, for incremental recording
 		m_subrenderRT->afterDrawFinished();
@@ -462,16 +471,17 @@ namespace ve
 		//update tlas, if at least one blas is dirty
 		updateTLAS();
 
+		if (m_commandBuffersWithPendingUpdate[m_imageIndex])
+		{
+			vkFreeCommandBuffers(m_device, m_commandPool, 1, &m_commandBuffers[m_imageIndex]);
+			m_commandBuffers[m_imageIndex] = VK_NULL_HANDLE;
+			m_commandBuffersWithPendingUpdate[m_imageIndex] = false;
+		}
+
 		if (m_commandBuffers[m_imageIndex] == VK_NULL_HANDLE)
 		{
 			recordCmdBuffers();
 		}
-
-		vh::vhBufTransitionImageLayout(m_device, m_graphicsQueue,
-			m_commandPool, //transition the image layout to
-			getSwapChainImage(), VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_ASPECT_COLOR_BIT, 1,
-			1, //VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL
-			VK_IMAGE_LAYOUT_PRESENT_SRC_KHR, VK_IMAGE_LAYOUT_GENERAL);
 
 		//submit the command buffers
 		vh::vhCmdSubmitCommandBuffer(m_device, m_graphicsQueue, m_commandBuffers[m_imageIndex],
@@ -498,8 +508,9 @@ namespace ve
 		if (m_subrenderOverlay == nullptr)
 			return;
 
-		m_overlaySemaphores[m_currentFrame] = m_subrenderOverlay->draw(m_imageIndex,
-			m_renderFinishedSemaphores[m_currentFrame]);
+		// overlay renderer must transition image (color attachment) to VK_IMAGE_LAYOUT_PRESENT_SRC_KHR
+		m_subrenderOverlay->draw(m_imageIndex,
+			m_renderFinishedSemaphores[m_currentFrame], m_overlaySemaphores[m_currentFrame]);
 	}
 
 	/**
@@ -507,12 +518,6 @@ namespace ve
 		*/
 	void VERendererRayTracingKHR::presentFrame()
 	{
-		vh::vhBufTransitionImageLayout(m_device, m_graphicsQueue,
-			m_commandPool, //transition the image layout to
-			getSwapChainImage(), VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_ASPECT_COLOR_BIT, 1,
-			1, //VK_IMAGE_LAYOUT_PRESENT_SRC_KHR
-			VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR);
-
 		VkResult result = vh::vhRenderPresentResult(m_presentQueue, m_swapChain,
 			m_imageIndex, //present it to the swap chain
 			m_overlaySemaphores[m_currentFrame]);

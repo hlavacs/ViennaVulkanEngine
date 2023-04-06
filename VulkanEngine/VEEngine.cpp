@@ -150,6 +150,7 @@ namespace ve
 			delete m_eventListeners[(veEvent::veEventType)i];
 		}
 
+		vkDeviceWaitIdle(m_pRenderer->getDevice());
 		m_pSceneManager->closeSceneManager();
 		m_pRenderer->closeRenderer();
 		m_pWindow->closeWindow();

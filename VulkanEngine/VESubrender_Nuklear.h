@@ -49,7 +49,7 @@ namespace ve
 
 		virtual void draw(VkCommandBuffer commandBuffer, uint32_t imageIndex, uint32_t numPass, VECamera *pCamera, VELight *pLight, std::vector<VkDescriptorSet> descriptorSetsShadow) {};
 
-		virtual VkSemaphore draw(uint32_t imageIndex, VkSemaphore wait_semaphore);
+		virtual void draw(uint32_t imageIndex, VkSemaphore wait_semaphore, VkSemaphore signal_semaphore);
 
 		///\returns the Nuklear context
 		virtual struct nk_context *getContext()

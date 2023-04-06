@@ -72,7 +72,6 @@ struct nk_vulkan_adapter {
     uint32_t framebuffers_len;
     VkFormat color_format;
     VkFormat depth_format;
-    VkSemaphore render_completed;
     VkSampler font_tex;
     VkImage font_image;
     VkImageView font_image_view;
@@ -87,7 +86,7 @@ struct nk_vulkan_adapter {
     VkBuffer uniform_buffer;
     VkDeviceMemory uniform_memory;
     VkCommandPool command_pool;
-    VkCommandBuffer* command_buffers; // currently always length 1
+    VkCommandBuffer* command_buffers;
     VkDescriptorPool descriptor_pool;
     VkDescriptorSetLayout descriptor_set_layout;
     VkDescriptorSet descriptor_set;
@@ -371,7 +370,8 @@ void prepare_render_pass(struct nk_vulkan_adapter* adapter) {
 		adapter->color_format,
 		vh::vhDevFindDepthFormat(adapter->physical_device),
 		VK_ATTACHMENT_LOAD_OP_LOAD, 
-		&adapter->render_pass);
+		&adapter->render_pass,
+        VK_IMAGE_LAYOUT_PRESENT_SRC_KHR);
 }
 
 void prepare_command_buffers(struct nk_vulkan_adapter* adapter) {
@@ -387,15 +387,8 @@ void prepare_command_buffers(struct nk_vulkan_adapter* adapter) {
 	allocate_info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
 	allocate_info.commandPool = adapter->command_pool;
 	allocate_info.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
-	allocate_info.commandBufferCount = 1;
+	allocate_info.commandBufferCount = adapter->framebuffers_len;
 	res = vkAllocateCommandBuffers(adapter->logical_device, &allocate_info, adapter->command_buffers);
-    assert( res == VK_SUCCESS);
-}
-
-void prepare_semaphores(struct nk_vulkan_adapter *adapter) {
-	VkSemaphoreCreateInfo semaphore_info = {};
-	semaphore_info.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
-	VkResult res = vkCreateSemaphore(adapter->logical_device, &semaphore_info, VK_NULL_HANDLE, &adapter->render_completed);
     assert( res == VK_SUCCESS);
 }
 
@@ -449,7 +442,6 @@ nk_glfw3_device_create(VkDevice logical_device, VkPhysicalDevice physical_device
     adapter->depth_format = depth_format;
     adapter->command_buffers = (VkCommandBuffer*)malloc(framebuffers_len * sizeof(VkCommandBuffer));
 
-    prepare_semaphores(adapter);
     prepare_render_pass(adapter);
 
     create_buffer_and_memory(adapter, &adapter->vertex_buffer, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, &adapter->vertex_memory, MAX_VERTEX_BUFFER);
@@ -613,7 +605,6 @@ nk_glfw3_device_upload_atlas(const void *image, int width, int height)
 	VkCommandBufferBeginInfo begin_info = {};
 	begin_info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
 
-    // TODO: kill array
     VkCommandBuffer command_buffer = adapter->command_buffers[0];
 	result = vkBeginCommandBuffer(command_buffer, &begin_info);
     assert( result == VK_SUCCESS);
@@ -848,7 +839,7 @@ nk_glfw3_new_frame()
 }
 
 NK_API
-VkSemaphore nk_glfw3_render(enum nk_anti_aliasing AA, uint32_t buffer_index, VkSemaphore wait_semaphore) {
+void nk_glfw3_render(enum nk_anti_aliasing AA, uint32_t buffer_index, VkSemaphore wait_semaphore, VkSemaphore signal_semaphore) {
     struct nk_vulkan_adapter *adapter = &glfw.adapter;
     struct GLFWwindow *win = glfw.win;
     struct nk_buffer vbuf, ebuf;
@@ -881,7 +872,7 @@ VkSemaphore nk_glfw3_render(enum nk_anti_aliasing AA, uint32_t buffer_index, VkS
 	renderPassBeginInfo.pClearValues = VK_NULL_HANDLE;
 	renderPassBeginInfo.framebuffer = adapter->framebuffers[buffer_index];
 
-    VkCommandBuffer command_buffer = adapter->command_buffers[0];
+    VkCommandBuffer command_buffer = adapter->command_buffers[buffer_index];
     
 	VkResult res = vkBeginCommandBuffer(command_buffer, &begin_info);
     assert( res == VK_SUCCESS);
@@ -966,14 +957,10 @@ VkSemaphore nk_glfw3_render(enum nk_anti_aliasing AA, uint32_t buffer_index, VkS
 	submit_info.waitSemaphoreCount = 1;
 	submit_info.pWaitSemaphores = &wait_semaphore;
 	submit_info.signalSemaphoreCount = 1;
-	submit_info.pSignalSemaphores = &adapter->render_completed;
+	submit_info.pSignalSemaphores = &signal_semaphore;
 
 	res = vkQueueSubmit(adapter->graphics_queue, 1, &submit_info, VK_NULL_HANDLE);
     assert( res == VK_SUCCESS);
-	res = vkQueueWaitIdle(adapter->graphics_queue);
-    assert( res == VK_SUCCESS);
-
-    return adapter->render_completed;
 }
 
 
@@ -981,8 +968,7 @@ NK_API
 void nk_glfw3_shutdown(void)
 {
     struct nk_vulkan_adapter *adapter = &glfw.adapter;
-    vkFreeCommandBuffers(adapter->logical_device, adapter->command_pool, 1, adapter->command_buffers);
-    vkDestroySemaphore(adapter->logical_device, adapter->render_completed, VK_NULL_HANDLE);
+    vkFreeCommandBuffers(adapter->logical_device, adapter->command_pool, adapter->framebuffers_len, adapter->command_buffers);
 
     vkFreeMemory(adapter->logical_device, adapter->vertex_memory, VK_NULL_HANDLE);
     vkFreeMemory(adapter->logical_device, adapter->index_memory, VK_NULL_HANDLE);

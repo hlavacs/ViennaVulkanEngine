@@ -365,7 +365,7 @@ namespace vh
 
 	//--------------------------------------------------------------------------------------------------------------------------------
 	//rendering
-	VkResult vhRenderCreateRenderPass(VkDevice device, VkFormat swapChainImageFormat, VkFormat depthFormat, VkAttachmentLoadOp loadOp, VkRenderPass *renderPass);
+	VkResult vhRenderCreateRenderPass(VkDevice device, VkFormat swapChainImageFormat, VkFormat depthFormat, VkAttachmentLoadOp loadOp, VkRenderPass *renderPass, VkImageLayout colorAttachmentFinalLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
 
 	VkResult vhRenderCreateRenderPassOffscreen(VkDevice device, VkFormat depthFormat, VkRenderPass *renderPass);
 

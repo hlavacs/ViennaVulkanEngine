@@ -30,6 +30,7 @@ namespace ve
 		std::vector<VkCommandPool> m_commandPools = {}; ///<Array of command pools so that each thread in the thread pool has its own pool
 		std::vector<VkCommandBuffer> m_commandBuffersOffscreen = {}; ///<the main command buffers for recording draw commands
 		std::vector<VkCommandBuffer> m_commandBuffersOnscreen = {}; ///<the main command buffers for recording draw commands
+		std::vector<bool> m_commandBuffersWithPendingUpdate = {}; ///<flag storing if command buffer must be rerecorded
 		std::vector<std::vector<secondaryCmdBuf_t>> m_secondaryBuffersOffscreen = {}; ///<secondary buffers for parallel recording
 		std::vector<std::vector<std::future<secondaryCmdBuf_t>>>
 			m_secondaryBuffersOnscreenFutures = {}; ///<secondary buffers for parallel recording
@@ -107,10 +108,7 @@ namespace ve
 			return m_commandPools[getEnginePointer()->getThreadPool()->threadNum[std::this_thread::get_id()]];
 		};
 
-		virtual void updateCmdBuffers()
-		{
-			deleteCmdBuffers();
-		};
+		virtual void updateCmdBuffers();
 
 		virtual void deleteCmdBuffers();
 
