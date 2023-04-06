@@ -117,7 +117,7 @@ namespace ve
 			m_swapChainFramebuffers);
 
 		uint32_t maxobjects = 200;
-		uint32_t storageobjects = m_swapChainImageViews.size();
+		uint32_t storageobjects = (uint32_t)m_swapChainImageViews.size();
 		VECHECKRESULT(vh::vhRenderCreateDescriptorPool(m_device,
 			{ VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC,
 			 VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR,
