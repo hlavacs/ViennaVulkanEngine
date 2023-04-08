@@ -905,19 +905,13 @@ namespace ve
 	}
 
 	/**
-	 * \brief Draw the frame.
-	 *
-	 *- wait for draw completion using a fence, so there is at least one frame in
-	 *the swapchain
-	 *- acquire the next image from the swap chain
-	 *- update all UBOs
-	 *- get a single time command buffer from the pool, bind pipeline and begin the
-	 *render pass
-	 *- loop through all entities and draw them
-	 *- end the command buffer and submit it
-	 *- wait for the result and present it
-	 */
-	void VERendererDeferred::drawFrame()
+	* \brief Acquire the next frame.
+	*
+	*- wait for draw completion using a fence, so there is at least one frame in
+	*the swapchain
+	*- acquire the next image from the swap chain
+	*/
+	void VERendererDeferred::acquireFrame()
 	{
 		vkWaitForFences(m_device, 1, &m_inFlightFences[m_currentFrame], VK_TRUE,
 			std::numeric_limits<uint64_t>::max());
@@ -939,6 +933,20 @@ namespace ve
 			exit(1);
 		}
 
+	}
+
+	/**
+	 * \brief Draw the frame.
+	 *
+	 *- update all UBOs
+	 *- get a single time command buffer from the pool, bind pipeline and begin the
+	 *render pass
+	 *- loop through all entities and draw them
+	 *- end the command buffer and submit it
+	 *- wait for the result and present it
+	 */
+	void VERendererDeferred::drawFrame()
+	{
 		if (m_commandBuffersWithPendingUpdate[m_imageIndex])
 		{
 			vkFreeCommandBuffers(m_device, m_commandPool, 1, &m_commandBuffersOffscreen[m_imageIndex]);

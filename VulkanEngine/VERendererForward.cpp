@@ -765,14 +765,12 @@ namespace ve
 	}
 
 	/**
-		* \brief Draw the frame.
+		* \brief Acquire the next frame.
 		*
 		*- wait for draw completion using a fence of a previous cmd buffer
 		*- acquire the next image from the swap chain
-		*- if there is no command buffer yet, record one with the current scene
-		*- submit it to the queue
 		*/
-	void VERendererForward::drawFrame()
+	void VERendererForward::acquireFrame()
 	{
 		vkWaitForFences(m_device, 1, &m_inFlightFences[m_currentFrame], VK_TRUE, std::numeric_limits<uint64_t>::max());
 
@@ -780,7 +778,6 @@ namespace ve
 		VkResult result = vkAcquireNextImageKHR(m_device, m_swapChain, std::numeric_limits<uint64_t>::max(),
 			m_imageAvailableSemaphores[m_currentFrame], VK_NULL_HANDLE,
 			&m_imageIndex);
-
 		if (result == VK_ERROR_OUT_OF_DATE_KHR)
 		{
 			recreateSwapchain();
@@ -791,7 +788,16 @@ namespace ve
 			assert(false);
 			exit(1);
 		}
+	}
 
+	/**
+		* \brief Draw the frame.
+		*
+		*- if there is no command buffer yet, record one with the current scene
+		*- submit it to the queue
+		*/
+	void VERendererForward::drawFrame()
+	{
 		if (m_commandBuffersWithPendingUpdate[m_imageIndex])
 		{
 			vkFreeCommandBuffers(m_device, m_commandPool, 1, &m_commandBuffers[m_imageIndex]);

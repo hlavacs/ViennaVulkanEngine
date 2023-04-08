@@ -79,6 +79,7 @@ namespace ve
 		virtual void recordCmdBuffersOffscreen(); //record the command buffers
 		virtual void recordCmdBuffersOnscreen(); //record the command buffers
 
+		virtual void acquireFrame(); //acquire the next frame
 		virtual void drawFrame(); //draw one frame
 		virtual void prepareOverlay(); //prepare to draw the overlay
 		virtual void drawOverlay(); //Draw the overlay (GUI)

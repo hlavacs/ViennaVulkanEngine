@@ -440,14 +440,12 @@ namespace ve
 	}
 
 	/**
-		* \brief Draw the frame.
-		*
-		*- wait for draw completion using a fence of a previous cmd buffer
-		*- acquire the next image from the swap chain
-		*- if there is no command buffer yet, record one with the current scene
-		*- submit it to the queue
-		*/
-	void VERendererRayTracingKHR::drawFrame()
+	* \brief Acquire the next frame.
+	*
+	*- wait for draw completion using a fence of a previous cmd buffer
+	*- acquire the next image from the swap chain
+	*/
+	void VERendererRayTracingKHR::acquireFrame()
 	{
 		vkWaitForFences(m_device, 1, &m_inFlightFences[m_currentFrame], VK_TRUE, std::numeric_limits<uint64_t>::max());
 
@@ -466,7 +464,16 @@ namespace ve
 			assert(false);
 			exit(1);
 		}
+	}
 
+	/**
+		* \brief Draw the frame.
+		*
+		*- if there is no command buffer yet, record one with the current scene
+		*- submit it to the queue
+		*/
+	void VERendererRayTracingKHR::drawFrame()
+	{
 		//create tlas if not existing
 		//update tlas, if at least one blas is dirty
 		updateTLAS();

@@ -77,6 +77,7 @@ namespace ve
 
 		void recordPrimaryBuffers();
 
+		virtual void acquireFrame(); //acquire the next frame
 		virtual void drawFrame(); //draw one frame
 		virtual void prepareOverlay(); //prepare to draw the overlay
 		virtual void drawOverlay(); //Draw the overlay (GUI)
