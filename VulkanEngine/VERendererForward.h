@@ -26,6 +26,7 @@ namespace ve
 	protected:
 		std::vector<VkCommandPool> m_commandPools = {}; ///<Array of command pools so that each thread in the thread pool has its own pool
 		std::vector<VkCommandBuffer> m_commandBuffers = {}; ///<the main command buffers for recording draw commands
+		std::vector<bool> m_commandBuffersWithPendingUpdate = {}; ///<flag storing if command buffer must be rerecorded
 		std::vector<std::vector<std::future<secondaryCmdBuf_t>>>
 			m_secondaryBuffersFutures = {}; ///<secondary buffers for parallel recording
 		std::vector<std::vector<secondaryCmdBuf_t>> m_secondaryBuffers = {}; ///<secondary buffers for parallel recording
@@ -76,6 +77,7 @@ namespace ve
 
 		void recordPrimaryBuffers();
 
+		virtual void acquireFrame(); //acquire the next frame
 		virtual void drawFrame(); //draw one frame
 		virtual void prepareOverlay(); //prepare to draw the overlay
 		virtual void drawOverlay(); //Draw the overlay (GUI)
@@ -106,10 +108,7 @@ namespace ve
 		};
 
 		///called whenever the scene graph of the scene manager changes
-		virtual void updateCmdBuffers()
-		{
-			deleteCmdBuffers();
-		};
+		virtual void updateCmdBuffers();
 
 		virtual void deleteCmdBuffers();
 

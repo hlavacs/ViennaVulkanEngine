@@ -150,6 +150,7 @@ namespace ve
 			delete m_eventListeners[(veEvent::veEventType)i];
 		}
 
+		vkDeviceWaitIdle(m_pRenderer->getDevice());
 		m_pSceneManager->closeSceneManager();
 		m_pRenderer->closeRenderer();
 		m_pWindow->closeWindow();
@@ -597,6 +598,11 @@ namespace ve
 			t_now = vh::vhTimeNow();
 			processEvents(m_dt);				//process all current events, including pressed keys
 			m_AvgEventTime = vh::vhAverage(vh::vhTimeDuration(t_now), m_AvgEventTime);
+
+			//----------------------------------------------------------------------------------
+			//acquire the next frame before changing GPU buffers
+
+			m_pRenderer->acquireFrame();
 
 			//----------------------------------------------------------------------------------
 			//update world matrices and send them to the GPU

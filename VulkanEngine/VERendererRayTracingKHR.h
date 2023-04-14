@@ -71,6 +71,7 @@ namespace ve
 		virtual void initRenderer(); //init the renderer
 		virtual void recordCmdBuffers(); //record the command buffers
 
+		virtual void acquireFrame(); //acquire the next frame
 		virtual void drawFrame(); //draw one frame
 		virtual void prepareOverlay(); //prepare to draw the overlay
 		virtual void drawOverlay(); //Draw the overlay (GUI)
@@ -105,6 +106,7 @@ namespace ve
 
 		std::vector<VkCommandPool> m_commandPools = {}; ///<Array of command pools so that each thread in the thread pool has its own pool
 		std::vector<VkCommandBuffer> m_commandBuffers = {}; ///<the main command buffers for recording draw commands
+		std::vector<bool> m_commandBuffersWithPendingUpdate = {}; ///<flag storing if command buffer must be rerecorded
 
 		VkRenderPass m_renderPass;
 

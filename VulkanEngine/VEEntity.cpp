@@ -517,7 +517,7 @@ namespace ve
 						m_pMesh->m_vertexBuffer, m_pMesh->m_vertexCount,
 						m_pMesh->m_indexBuffer, m_pMesh->m_indexCount,
 						m_memoryHandle.pMemBlock->buffers[0],
-						transformOffset);
+						(uint32_t)transformOffset);
 				}
 				else
 				{
@@ -528,7 +528,7 @@ namespace ve
 						m_pMesh->m_vertexBuffer, m_pMesh->m_vertexCount,
 						m_pMesh->m_indexBuffer, m_pMesh->m_indexCount,
 						m_memoryHandle.pMemBlock->buffers[0],
-						transformOffset);
+						(uint32_t)transformOffset);
 				}
 			}
 			if (getEnginePointer()->getRendererType() == veRendererType::VE_RENDERER_TYPE_RAYTRACING_KHR)
@@ -542,7 +542,7 @@ namespace ve
 						m_pMesh->m_vertexBuffer, m_pMesh->m_vertexCount,
 						m_pMesh->m_indexBuffer, m_pMesh->m_indexCount,
 						m_memoryHandle.pMemBlock->buffers[0],
-						transformOffset);
+						(uint32_t)transformOffset);
 				}
 				else
 				{
@@ -553,7 +553,7 @@ namespace ve
 						m_pMesh->m_vertexBuffer, m_pMesh->m_vertexCount,
 						m_pMesh->m_indexBuffer, m_pMesh->m_indexCount,
 						m_memoryHandle.pMemBlock->buffers[0],
-						transformOffset);
+						(uint32_t)transformOffset);
 				}
 			}
 			m_AccelerationStructure.isDirty = true;

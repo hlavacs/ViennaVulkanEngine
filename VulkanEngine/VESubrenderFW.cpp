@@ -267,6 +267,10 @@ namespace ve
 			}
 		}
 
+		// workaround for synchronization problem: there must not be a command buffer in pending state while updating descriptor sets
+		// this happens if entities are added or removed
+		vkQueueWaitIdle(m_renderer.getGraphicsQueue());
+
 		vh::vhRenderUpdateDescriptorSetMaps(m_renderer.getDevice(), //update the descriptor that holds the map array
 			m_descriptorSetsResources[m_descriptorSetsResources.size() - 1],
 			0,
@@ -304,6 +308,10 @@ namespace ve
 					{ //move also the map entries
 						m_maps[j][i] = m_maps[j][size - 1];
 					}
+
+					// workaround for synchronization problem: there must not be a command buffer in pending state while updating descriptor sets
+					// this happens if entities are added or removed
+					vkQueueWaitIdle(m_renderer.getGraphicsQueue());
 
 					//update the descriptor set where the entity was removed
 					uint32_t arrayIndex = (uint32_t)(i / m_resourceArrayLength);

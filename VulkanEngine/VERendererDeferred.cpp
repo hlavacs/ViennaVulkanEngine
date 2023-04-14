@@ -80,10 +80,12 @@ namespace ve
 
 		m_commandBuffersOffscreen.resize(m_swapChainImages.size());
 		m_commandBuffersOnscreen.resize(m_swapChainImages.size());
+		m_commandBuffersWithPendingUpdate.resize(m_swapChainImages.size());
 		for (uint32_t i = 0; i < m_swapChainImages.size(); i++)
 		{
 			m_commandBuffersOffscreen[i] = VK_NULL_HANDLE; // will be created later
 			m_commandBuffersOnscreen[i] = VK_NULL_HANDLE; // will be created later
+			m_commandBuffersWithPendingUpdate[i] = false;
 		}
 
 		m_secondaryBuffersOffscreen.resize(m_swapChainImages.size());
@@ -335,16 +337,6 @@ namespace ve
 
 		//------------------------------------------------------------------------------------------------------------
 
-		for (uint32_t i = 0; i < m_swapChainImages.size(); i++)
-		{
-			vh::vhBufTransitionImageLayout(
-				m_device, m_graphicsQueue,
-				m_commandPool, // transition the image layout to
-				m_swapChainImages[i], VK_FORMAT_R8G8B8A8_UNORM,
-				VK_IMAGE_ASPECT_COLOR_BIT, 1, 1, // VK_IMAGE_LAYOUT_PRESENT_SRC_KHR
-				VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR);
-		}
-
 		createSyncObjects();
 
 		createSubrenderers();
@@ -451,6 +443,7 @@ namespace ve
 			vkDestroySemaphore(m_device, m_renderFinishedSemaphores[i], nullptr);
 			vkDestroySemaphore(m_device, m_offscreenSemaphores[i], nullptr);
 			vkDestroySemaphore(m_device, m_imageAvailableSemaphores[i], nullptr);
+			vkDestroySemaphore(m_device, m_overlaySemaphores[i], nullptr);
 			vkDestroyFence(m_device, m_inFlightFences[i], nullptr);
 		}
 
@@ -610,6 +603,8 @@ namespace ve
 					&m_offscreenSemaphores[i]) != VK_SUCCESS ||
 				vkCreateSemaphore(m_device, &semaphoreInfo, nullptr,
 					&m_renderFinishedSemaphores[i]) != VK_SUCCESS ||
+				vkCreateSemaphore(m_device, &semaphoreInfo, nullptr,
+					&m_overlaySemaphores[i]) != VK_SUCCESS ||
 				vkCreateFence(m_device, &fenceInfo, nullptr, &m_inFlightFences[i]) !=
 				VK_SUCCESS)
 			{
@@ -620,6 +615,21 @@ namespace ve
 	}
 
 	//--------------------------------------------------------------------------------------------
+
+	/**
+		* \brief Queue an update for all command buffers, so next time they have to be
+		* deleted, recreated and recorded again
+		*/
+	void VERendererDeferred::updateCmdBuffers()
+	{
+		for (uint32_t i = 0; i < m_commandBuffersOffscreen.size(); i++)
+		{
+			if (m_commandBuffersOffscreen[i] != VK_NULL_HANDLE)
+			{
+				m_commandBuffersWithPendingUpdate[i] = true;
+			}
+		}
+	}
 
 	/**
 	 * \brief Delete all command buffers and set them to VK_NULL_HANDLE, so next
@@ -644,6 +654,7 @@ namespace ve
 					&m_commandBuffersOnscreen[i]);
 				m_commandBuffersOnscreen[i] = VK_NULL_HANDLE;
 			}
+			m_commandBuffersWithPendingUpdate[i] = false;
 		}
 	}
 
@@ -873,12 +884,18 @@ namespace ve
 				&m_secondaryBuffersOnscreen[m_imageIndex][bufferIdx++].buffer);
 			vkCmdEndRenderPass(m_commandBuffersOnscreen[m_imageIndex]);
 		}
+
+		if (m_subrenderOverlay == nullptr) {
+			// without overlay renderer we must transition the image to VK_IMAGE_LAYOUT_PRESENT_SRC_KHR
+			vh::vhBufTransitionImageLayout(m_device, m_graphicsQueue,
+				m_commandBuffersOnscreen[m_imageIndex], //transition the image layout to
+				getSwapChainImage(), VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_ASPECT_COLOR_BIT, 1,
+				1, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR);
+		}
+
 		vkEndCommandBuffer(m_commandBuffersOnscreen[m_imageIndex]);
 
 		m_AvgRecordTimeOnscreen = vh::vhAverage(vh::vhTimeDuration(t_start), m_AvgRecordTimeOnscreen, 1.0f / m_swapChainImages.size());
-
-		// m_overlaySemaphores[m_currentFrame] =
-		// m_renderFinishedSemaphores[m_currentFrame];
 
 		// remember the last recorded entities, for incremental recording
 		for (auto subrender : m_subrenderers)
@@ -888,19 +905,13 @@ namespace ve
 	}
 
 	/**
-	 * \brief Draw the frame.
-	 *
-	 *- wait for draw completion using a fence, so there is at least one frame in
-	 *the swapchain
-	 *- acquire the next image from the swap chain
-	 *- update all UBOs
-	 *- get a single time command buffer from the pool, bind pipeline and begin the
-	 *render pass
-	 *- loop through all entities and draw them
-	 *- end the command buffer and submit it
-	 *- wait for the result and present it
-	 */
-	void VERendererDeferred::drawFrame()
+	* \brief Acquire the next frame.
+	*
+	*- wait for draw completion using a fence, so there is at least one frame in
+	*the swapchain
+	*- acquire the next image from the swap chain
+	*/
+	void VERendererDeferred::acquireFrame()
 	{
 		vkWaitForFences(m_device, 1, &m_inFlightFences[m_currentFrame], VK_TRUE,
 			std::numeric_limits<uint64_t>::max());
@@ -922,6 +933,29 @@ namespace ve
 			exit(1);
 		}
 
+	}
+
+	/**
+	 * \brief Draw the frame.
+	 *
+	 *- update all UBOs
+	 *- get a single time command buffer from the pool, bind pipeline and begin the
+	 *render pass
+	 *- loop through all entities and draw them
+	 *- end the command buffer and submit it
+	 *- wait for the result and present it
+	 */
+	void VERendererDeferred::drawFrame()
+	{
+		if (m_commandBuffersWithPendingUpdate[m_imageIndex])
+		{
+			vkFreeCommandBuffers(m_device, m_commandPool, 1, &m_commandBuffersOffscreen[m_imageIndex]);
+			m_commandBuffersOffscreen[m_imageIndex] = VK_NULL_HANDLE;
+			vkFreeCommandBuffers(m_device, m_commandPool, 1, &m_commandBuffersOnscreen[m_imageIndex]);
+			m_commandBuffersOnscreen[m_imageIndex] = VK_NULL_HANDLE;
+			m_commandBuffersWithPendingUpdate[m_imageIndex] = false;
+		}
+
 		if (m_commandBuffersOffscreen[m_imageIndex] == VK_NULL_HANDLE)
 		{
 			recordCmdBuffersOffscreen();
@@ -930,14 +964,6 @@ namespace ve
 		{
 			recordCmdBuffersOnscreen();
 		}
-
-		vh::vhBufTransitionImageLayout(
-			m_device, m_graphicsQueue,
-			m_commandPool, // transition the image layout to
-			getSwapChainImage(), VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_ASPECT_COLOR_BIT,
-			1, 1, // VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL
-			VK_IMAGE_LAYOUT_PRESENT_SRC_KHR,
-			VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
 
 		// submit the command buffers
 		vh::vhCmdSubmitCommandBuffer(
@@ -967,11 +993,12 @@ namespace ve
 	 */
 	void VERendererDeferred::drawOverlay()
 	{
+		assert(m_subrenderOverlay != nullptr); // needs same change as in VERendererForward
 		if (m_subrenderOverlay == nullptr)
 			return;
 
-		m_overlaySemaphores[m_currentFrame] = m_subrenderOverlay->draw(
-			m_imageIndex, m_renderFinishedSemaphores[m_currentFrame]);
+		m_subrenderOverlay->draw(
+			m_imageIndex, m_renderFinishedSemaphores[m_currentFrame], m_overlaySemaphores[m_currentFrame]);
 	}
 
 	/**
@@ -981,14 +1008,6 @@ namespace ve
 	 */
 	void VERendererDeferred::presentFrame()
 	{
-		vh::vhBufTransitionImageLayout(
-			m_device, m_graphicsQueue,
-			m_commandPool, // transition the image layout to
-			getSwapChainImage(), VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_ASPECT_COLOR_BIT,
-			1, 1, // VK_IMAGE_LAYOUT_PRESENT_SRC_KHR
-			VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
-			VK_IMAGE_LAYOUT_PRESENT_SRC_KHR);
-
 		VkResult result = vh::vhRenderPresentResult(
 			m_presentQueue, m_swapChain, m_imageIndex, // present it to the swap chain
 			m_overlaySemaphores[m_currentFrame]);

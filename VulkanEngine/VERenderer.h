@@ -109,6 +109,9 @@ namespace ve
 
 		virtual void destroySubrenderers();
 
+		///Wait until next frame can be drawn and acquire new frame
+		virtual void acquireFrame() {};
+
 		///Draw one frame
 		virtual void drawFrame() {};
 
