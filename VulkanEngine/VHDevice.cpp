@@ -131,6 +131,11 @@ namespace vh
 				indices.presentFamily = i;
 			}
 
+			if (queueFamily.queueCount > 0 && queueFamily.queueFlags & VK_QUEUE_VIDEO_ENCODE_BIT_KHR)
+			{
+				indices.encodeFamily = i;
+			}
+
 			if (indices.isComplete())
 			{
 				break;
@@ -355,12 +360,12 @@ namespace vh
 		* \returns VK_SUCCESS or a Vulkan error code
 		*
 		*/
-	VkResult vhDevCreateLogicalDevice(VkInstance instance, VkPhysicalDevice physicalDevice, VkSurfaceKHR surface, std::vector<const char *> requiredDeviceExtensions, std::vector<const char *> requiredValidationLayers, void *pNextChain, VkDevice *device, VkQueue *graphicsQueue, VkQueue *presentQueue)
+	VkResult vhDevCreateLogicalDevice(VkInstance instance, VkPhysicalDevice physicalDevice, VkSurfaceKHR surface, std::vector<const char *> requiredDeviceExtensions, std::vector<const char *> requiredValidationLayers, void *pNextChain, VkDevice *device, VkQueue *graphicsQueue, VkQueue *presentQueue, int* encodeQueueFamily, VkQueue* encodeQueue)
 	{
 		QueueFamilyIndices indices = vhDevFindQueueFamilies(physicalDevice, surface);
 
 		std::vector<VkDeviceQueueCreateInfo> queueCreateInfos;
-		std::set<int> uniqueQueueFamilies = { indices.graphicsFamily, indices.presentFamily };
+		std::set<int> uniqueQueueFamilies = { indices.graphicsFamily, indices.presentFamily, indices.encodeFamily };
 
 		float queuePriority = 1.0f;
 		for (int queueFamily : uniqueQueueFamilies)
@@ -419,6 +424,8 @@ namespace vh
 
 		vkGetDeviceQueue(*device, indices.graphicsFamily, 0, graphicsQueue);
 		vkGetDeviceQueue(*device, indices.presentFamily, 0, presentQueue);
+		vkGetDeviceQueue(*device, indices.encodeFamily, 0, encodeQueue);
+		*encodeQueueFamily = indices.encodeFamily;
 
 		return VK_SUCCESS;
 	}

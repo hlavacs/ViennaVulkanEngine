@@ -101,15 +101,15 @@ namespace ve
 		case veRendererType::VE_RENDERER_TYPE_FORWARD:
 			m_pRenderer = new VERendererForward();
 			break;
-		case veRendererType::VE_RENDERER_TYPE_DEFERRED:
-			m_pRenderer = new VERendererDeferred();
-			break;
-		case veRendererType::VE_RENDERER_TYPE_RAYTRACING_NV:
-			m_pRenderer = new VERendererRayTracingNV();
-			break;
-		case veRendererType::VE_RENDERER_TYPE_RAYTRACING_KHR:
-			m_pRenderer = new VERendererRayTracingKHR();
-			break;
+		//case veRendererType::VE_RENDERER_TYPE_DEFERRED:
+		//	m_pRenderer = new VERendererDeferred();
+		//	break;
+		//case veRendererType::VE_RENDERER_TYPE_RAYTRACING_NV:
+		//	m_pRenderer = new VERendererRayTracingNV();
+		//	break;
+		//case veRendererType::VE_RENDERER_TYPE_RAYTRACING_KHR:
+		//	m_pRenderer = new VERendererRayTracingKHR();
+		//	break;
 		default:
 			m_pRenderer = new VERendererForward();
 		}

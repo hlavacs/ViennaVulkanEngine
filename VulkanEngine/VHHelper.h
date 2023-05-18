@@ -37,6 +37,7 @@
 
 #include <math.h>
 
+#define VK_ENABLE_BETA_EXTENSIONS 1
 #define VK_NO_PROTOTYPES
 #include "vulkan/vulkan.h"
 #include "VHFunctions.h"
@@ -71,11 +72,12 @@ namespace vh
 	{
 		int graphicsFamily = -1; ///<Index of graphics family
 		int presentFamily = -1; ///<Index of present family
+		int encodeFamily = -1; ///<Index of video encode family
 
 		///\returns true if the structure is filled completely
 		bool isComplete()
 		{
-			return graphicsFamily >= 0 && presentFamily >= 0;
+			return graphicsFamily >= 0 && presentFamily >= 0 && encodeFamily >= 0;
 		}
 	};
 
@@ -271,7 +273,9 @@ namespace vh
 		void *pNextChain,
 		VkDevice *device,
 		VkQueue *graphicsQueue,
-		VkQueue *presentQueue);
+		VkQueue *presentQueue,
+		int* encodeQueueFamily,
+		VkQueue* encodeQueue);
 
 	//--------------------------------------------------------------------------------------------------------------------------------
 	//swapchain
@@ -433,7 +437,9 @@ namespace vh
 
 	//--------------------------------------------------------------------------------------------------------------------------------
 	//command
-	VkResult vhCmdCreateCommandPool(VkPhysicalDevice physicalDevice, VkDevice device, VkSurfaceKHR surface, VkCommandPool *commandPool);
+	VkResult vhCmdCreateCommandPool(VkPhysicalDevice physicalDevice, VkDevice device, VkSurfaceKHR surface, VkCommandPool* commandPool);
+
+	VkResult vhCmdCreateEncodeCommandPool(VkDevice device, int queueFamily, VkCommandPool* commandPool);
 
 	VkResult vhCmdCreateCommandBuffers(VkDevice device, VkCommandPool commandPool, VkCommandBufferLevel level, uint32_t count, VkCommandBuffer *pBuffers);
 

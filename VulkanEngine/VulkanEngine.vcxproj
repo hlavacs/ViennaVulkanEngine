@@ -110,6 +110,7 @@
       <Optimization>Disabled</Optimization>
       <PreprocessorDefinitions>WIN32;_DEBUG;_CONSOLE;%(PreprocessorDefinitions);_CRT_SECURE_NO_WARNINGS</PreprocessorDefinitions>
       <AdditionalIncludeDirectories>$(SolutionDir)\external\VulkanSDK\1.1.70.1\Include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -126,6 +127,7 @@
       <Optimization>Disabled</Optimization>
       <PreprocessorDefinitions>_DEBUG;_CONSOLE;_CRT_SECURE_NO_WARNINGS;%(PreprocessorDefinitions);_CRT_SECURE_NO_WARNINGS</PreprocessorDefinitions>
       <LanguageStandard>stdcpplatest</LanguageStandard>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -143,6 +145,7 @@
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <PreprocessorDefinitions>WIN32;NDEBUG;_CONSOLE;%(PreprocessorDefinitions);_CRT_SECURE_NO_WARNINGS</PreprocessorDefinitions>
       <AdditionalIncludeDirectories>$(SolutionDir)\external\VulkanSDK\1.1.70.1\Include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -163,6 +166,7 @@
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <PreprocessorDefinitions>NDEBUG;_CONSOLE;%(PreprocessorDefinitions);_CRT_SECURE_NO_WARNINGS</PreprocessorDefinitions>
       <LanguageStandard>stdcpplatest</LanguageStandard>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -178,6 +182,7 @@
     <ClInclude Include="CLInclude.h" />
     <ClInclude Include="CLShape.h" />
     <ClInclude Include="DescriptorSetGenerator.h" />
+    <ClInclude Include="H264ParameterSet.h" />
     <ClInclude Include="VEEnums.h" />
     <ClInclude Include="RaytracingPipelineGenerator.h" />
     <ClInclude Include="ShaderBindingTableGenerator.h" />
@@ -220,6 +225,7 @@
     <ClInclude Include="VEWindowGLFW.h" />
     <ClInclude Include="VHFunctions.h" />
     <ClInclude Include="VHHelper.h" />
+    <ClInclude Include="VHVideoEncoder.h" />
     <ClInclude Include="VKHelpers.h" />
     <ClInclude Include="vk_mem_alloc.h" />
   </ItemGroup>
@@ -229,12 +235,10 @@
     <ClCompile Include="DescriptorSetGenerator.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="CLIntersect.cpp" />
-    <ClCompile Include="VERendererRayTracingKHR.cpp" />
     <ClCompile Include="VESubrenderDF.cpp" />
     <ClCompile Include="RaytracingPipelineGenerator.cpp" />
     <ClCompile Include="ShaderBindingTableGenerator.cpp" />
     <ClCompile Include="TopLevelASGenerator.cpp" />
-    <ClCompile Include="VERendererRayTracingNV.cpp" />
     <ClCompile Include="VESubrenderDF_C1.cpp" />
     <ClCompile Include="VESubrenderDF_Composer.cpp" />
     <ClCompile Include="VESubrenderDF_D.cpp" />
@@ -256,7 +260,6 @@
     <ClCompile Include="VEMaterial.cpp" />
     <ClCompile Include="VENamedClass.cpp" />
     <ClCompile Include="VERenderer.cpp" />
-    <ClCompile Include="VERendererDeferred.cpp" />
     <ClCompile Include="VERendererForward.cpp" />
     <ClCompile Include="VESceneManager.cpp" />
     <ClCompile Include="VESubrender.cpp" />
@@ -278,6 +281,7 @@
     <ClCompile Include="VHRayTracing.cpp" />
     <ClCompile Include="VHRender.cpp" />
     <ClCompile Include="VHSwapchain.cpp" />
+    <ClCompile Include="VHVideoEncoder.cpp" />
     <ClCompile Include="VKHelpers.cpp" />
   </ItemGroup>
   <ItemGroup>

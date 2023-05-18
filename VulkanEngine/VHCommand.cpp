@@ -33,6 +33,27 @@ namespace vh
 		return vkCreateCommandPool(device, &poolInfo, nullptr, commandPool);
 	}
 
+	/**
+		*
+		* \brief Create a new command pool for video encoding
+		*
+		* \param[in] physicalDevice Physical Vulkan device
+		* \param[in] device Logical Vulkan device
+		* \param[in] surface Window surface - Needed for finding the right queue families
+		* \param[out] commandPool New command pool for allocating command bbuffers
+		* \returns VK_SUCCESS or a Vulkan error code
+		*
+		*/
+	VkResult vhCmdCreateEncodeCommandPool(VkDevice device, int queueFamily, VkCommandPool* commandPool)
+	{
+		VkCommandPoolCreateInfo poolInfo = {};
+		poolInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
+		poolInfo.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT | VK_COMMAND_POOL_CREATE_TRANSIENT_BIT;
+		poolInfo.queueFamilyIndex = queueFamily;
+
+		return vkCreateCommandPool(device, &poolInfo, nullptr, commandPool);
+	}
+
 	//-------------------------------------------------------------------------------------------------------
 
 	/**

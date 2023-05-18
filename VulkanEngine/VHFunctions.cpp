@@ -9,6 +9,7 @@
 
 #include <iostream>
 
+#define VK_ENABLE_BETA_EXTENSIONS 1
 #define VK_NO_PROTOTYPES
 #define VMA_STATIC_VULKAN_FUNCTIONS 1
 

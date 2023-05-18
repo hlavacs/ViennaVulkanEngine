@@ -188,6 +188,12 @@
     <ClInclude Include="VERendererRayTracingKHR.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="VHVideoEncoder.h">
+      <Filter>Header Files\VHelper</Filter>
+    </ClInclude>
+    <ClInclude Include="H264ParameterSet.h">
+      <Filter>Header Files\VHelper</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="VEEngine.cpp">
@@ -292,9 +298,6 @@
     <ClCompile Include="VHFunctions.cpp">
       <Filter>Source Files\VHelper</Filter>
     </ClCompile>
-    <ClCompile Include="VERendererRayTracingNV.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="BottomLevelASGenerator.cpp">
       <Filter>Source Files\NVHelpers</Filter>
     </ClCompile>
@@ -318,9 +321,6 @@
     </ClCompile>
     <ClCompile Include="VESubrenderRayTracingNV.cpp">
       <Filter>Source Files\VESubrender</Filter>
-    </ClCompile>
-    <ClCompile Include="VERendererDeferred.cpp">
-      <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="VESubrenderDF.cpp">
       <Filter>Source Files\VESubrender</Filter>
@@ -349,10 +349,10 @@
     <ClCompile Include="VESubrenderRayTracingKHR_DN.cpp">
       <Filter>Source Files\VESubrender</Filter>
     </ClCompile>
-    <ClCompile Include="VERendererRayTracingKHR.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="VHRayTracing.cpp">
+      <Filter>Source Files\VHelper</Filter>
+    </ClCompile>
+    <ClCompile Include="VHVideoEncoder.cpp">
       <Filter>Source Files\VHelper</Filter>
     </ClCompile>
   </ItemGroup>

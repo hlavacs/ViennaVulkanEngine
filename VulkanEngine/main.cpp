@@ -7,6 +7,7 @@
 
 
 #include "VEInclude.h"
+#include "VHVideoEncoder.h"
 
 
 
@@ -17,6 +18,7 @@ namespace ve {
 	double g_time = 30.0;				//zeit die noch übrig ist
 	bool g_gameLost = false;			//true... das Spiel wurde verloren
 	bool g_restart = false;			//true...das Spiel soll neu gestartet werden
+	int g_writeFrames = false;			//true..write frames to disk
 
 	//
 	//Zeichne das GUI
@@ -52,6 +54,9 @@ namespace ve {
 				}
 
 			};
+
+			nk_layout_row_dynamic(ctx, 45, 1);
+			nk_checkbox_label(ctx, "Write Frames", &g_writeFrames);
 
 			nk_end(ctx);
 		}
@@ -122,7 +127,59 @@ namespace ve {
 		virtual ~EventListenerCollision() {};
 	};
 
-	
+	class EventListenerFrameWriter : public VEEventListener {
+	private:
+		vh::VHVideoEncoder videoEncoder;
+
+	protected:
+		void onFrameEnded(veEvent event) override
+		{
+			const uint32_t RECORD_FPS = 20;
+			const double TIME_BETWEEN_WRITES = 1.0 / RECORD_FPS;
+			static double timeSinceLastWrite = TIME_BETWEEN_WRITES;
+			timeSinceLastWrite += event.dt;
+
+			// write out previous frame
+			uint8_t* dataImage;
+			uint32_t width, height;
+			VkResult ret = videoEncoder.finishCopy(dataImage, width, height);
+			if (ret == VK_SUCCESS) {
+				//videoEncoder.queueForEncode(dataImage, width, height, RECORD_FPS);
+				std::cout << "frame encoded" << std::endl;
+			}
+
+			if (!g_writeFrames || timeSinceLastWrite < TIME_BETWEEN_WRITES)
+				return;
+			timeSinceLastWrite = 0.0;
+
+			// queue another frame for copy
+			VkExtent2D extent = getWindowPointer()->getExtent();
+			VkImage image = getEnginePointer()->getRenderer()->getSwapChainImage();
+
+			videoEncoder.init(getEnginePointer()->getRenderer()->getDevice(),
+				getEnginePointer()->getRenderer()->getVmaAllocator(),
+				getEnginePointer()->getRenderer()->getEncodeQueueFamily(),
+				getEnginePointer()->getRenderer()->getEncodeQueue(),
+				getEnginePointer()->getRenderer()->getEncodeCommandPool(),
+				extent.width, extent.height);
+
+			videoEncoder.queueEncode(image);
+			//videoEncoder.queueCopy(getEnginePointer()->getRenderer()->getDevice(),
+			//	getEnginePointer()->getRenderer()->getVmaAllocator(),
+			//	getEnginePointer()->getRenderer()->getGraphicsQueue(),
+			//	getEnginePointer()->getRenderer()->getCommandPool(),
+			//	image, VK_FORMAT_R8G8B8A8_UNORM,
+			//	VK_IMAGE_ASPECT_COLOR_BIT, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR,
+			//	extent.width, extent.height);
+		}
+
+	public:
+		///Constructor of class EventListenerCollision
+		EventListenerFrameWriter(std::string name) : VEEventListener(name) { };
+
+		///Destructor of class EventListenerCollision
+		virtual ~EventListenerFrameWriter() {};
+	};
 
 	///user defined manager class, derived from VEEngine
 	class MyVulkanEngine : public VEEngine {
@@ -139,6 +196,7 @@ namespace ve {
 
 			registerEventListener(new EventListenerCollision("Collision"), { veEvent::VE_EVENT_FRAME_STARTED });
 			registerEventListener(new EventListenerGUI("GUI"), { veEvent::VE_EVENT_DRAW_OVERLAY});
+			registerEventListener(new EventListenerFrameWriter("FrameWriter"), { veEvent::VE_EVENT_FRAME_ENDED });
 		};
 		
 
@@ -182,7 +240,7 @@ namespace ve {
 using namespace ve;
 
 int main() {
-	bool debug = true;
+	bool debug = false;
 
 	MyVulkanEngine mve(veRendererType::VE_RENDERER_TYPE_FORWARD, debug);	//enable or disable debugging (=callback, validation layers)
 

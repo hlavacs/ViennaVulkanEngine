@@ -67,8 +67,11 @@ namespace ve
 		VkDevice m_device; ///<Vulkan logical device handle
 		VkQueue m_graphicsQueue; ///<Vulkan graphics queue
 		VkQueue m_presentQueue; ///<Vulkan present queue
+		int m_encodeQueueFamily; ///<Vulkan queue family index for video encode
+		VkQueue m_encodeQueue; ///<Vulkan video encode queue
 		VmaAllocator m_vmaAllocator; ///<VMA allocator
 		VkCommandPool m_commandPool; ///<Command pool of this thread
+		VkCommandPool m_encodeCommandPool; ///<Command pool for video encoding
 
 		//surface
 		VkSurfaceKHR m_surface; ///<Vulkan KHR surface
@@ -184,12 +187,30 @@ namespace ve
 			return m_graphicsQueue;
 		};
 
+		///\returns the Vulkan video encode queue family index
+		virtual int getEncodeQueueFamily()
+		{
+			return m_encodeQueueFamily;
+		};
+
+		///\returns the Vulkan video encode queue
+		virtual VkQueue getEncodeQueue()
+		{
+			return m_encodeQueue;
+		};
+
 		///\returns the thread command pool
 		virtual VkCommandPool getCommandPool()
 		{
 			return m_commandPool;
 		};
-		
+
+		///\returns the thread command pool
+		virtual VkCommandPool getEncodeCommandPool()
+		{
+			return m_encodeCommandPool;
+		};
+
 		///\returns pointer to the swap chain framebuffer vector
 		virtual std::vector<VkFramebuffer> &getSwapChainFrameBuffers()
 		{
