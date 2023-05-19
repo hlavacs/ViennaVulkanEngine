@@ -7,7 +7,7 @@ namespace vh {
 	class VHVideoEncoder {
 	public:
 		VkResult init(VkDevice device, VmaAllocator allocator, uint32_t computeQueueFamily, VkQueue computeQueue, VkCommandPool computeCommandPool, uint32_t encodeQueueFamily, VkQueue encodeQueue, VkCommandPool encodeCommandPool, uint32_t width, uint32_t height);
-		VkResult queueEncode(VkImage image);
+		VkResult queueEncode(VkImageView imageView);
 
 		void deinit();
 

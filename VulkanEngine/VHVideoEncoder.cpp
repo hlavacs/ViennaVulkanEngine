@@ -142,7 +142,7 @@ namespace vh {
 
 
         auto computeShaderCode = vhFileRead("media/shader/Video/comp.spv");
-        VkShaderModule computeShaderModule = vhPipeCreateShaderModule(device, computeShaderCode);
+        VkShaderModule computeShaderModule = vhPipeCreateShaderModule(m_device, computeShaderCode);
         VkPipelineShaderStageCreateInfo computeShaderStageInfo{};
         computeShaderStageInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
         computeShaderStageInfo.stage = VK_SHADER_STAGE_COMPUTE_BIT;
@@ -150,43 +150,50 @@ namespace vh {
         computeShaderStageInfo.pName = "main";
 
 
-        std::array<VkDescriptorSetLayoutBinding, 1> layoutBindings{};
+        std::array<VkDescriptorSetLayoutBinding, 2> layoutBindings{};
         layoutBindings[0].binding = 0;
         layoutBindings[0].descriptorCount = 1;
         layoutBindings[0].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
         layoutBindings[0].pImmutableSamplers = nullptr;
         layoutBindings[0].stageFlags = VK_SHADER_STAGE_COMPUTE_BIT;
+
+        layoutBindings[1].binding = 1;
+        layoutBindings[1].descriptorCount = 1;
+        layoutBindings[1].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
+        layoutBindings[1].pImmutableSamplers = nullptr;
+        layoutBindings[1].stageFlags = VK_SHADER_STAGE_COMPUTE_BIT;
+
         VkDescriptorSetLayoutCreateInfo layoutInfo{};
         layoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
         layoutInfo.bindingCount = (uint32_t)layoutBindings.size();
         layoutInfo.pBindings = layoutBindings.data();
-        VHCHECKRESULT(vkCreateDescriptorSetLayout(device, &layoutInfo, nullptr, &m_computeDescriptorSetLayout));
+        VHCHECKRESULT(vkCreateDescriptorSetLayout(m_device, &layoutInfo, nullptr, &m_computeDescriptorSetLayout));
 
 
         VkPipelineLayoutCreateInfo pipelineLayoutInfo{};
         pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
         pipelineLayoutInfo.setLayoutCount = 1;
         pipelineLayoutInfo.pSetLayouts = &m_computeDescriptorSetLayout;
-        VHCHECKRESULT(vkCreatePipelineLayout(device, &pipelineLayoutInfo, nullptr, &m_computePipelineLayout));
+        VHCHECKRESULT(vkCreatePipelineLayout(m_device, &pipelineLayoutInfo, nullptr, &m_computePipelineLayout));
 
         VkComputePipelineCreateInfo pipelineInfo{};
         pipelineInfo.sType = VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_CREATE_INFO;
         pipelineInfo.layout = m_computePipelineLayout;
         pipelineInfo.stage = computeShaderStageInfo;
-        VHCHECKRESULT(vkCreateComputePipelines(device, VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &m_computePipeline));
+        VHCHECKRESULT(vkCreateComputePipelines(m_device, VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &m_computePipeline));
 
-        vkDestroyShaderModule(device, computeShaderModule, nullptr);
+        vkDestroyShaderModule(m_device, computeShaderModule, nullptr);
 
 
         std::array<VkDescriptorPoolSize, 1> poolSizes{};
         poolSizes[0].type = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
-        poolSizes[0].descriptorCount = 1;
+        poolSizes[0].descriptorCount = 2;
         VkDescriptorPoolCreateInfo poolInfo{};
         poolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
         poolInfo.poolSizeCount = (uint32_t)poolSizes.size();
         poolInfo.pPoolSizes = poolSizes.data();
         poolInfo.maxSets = 1;
-        VHCHECKRESULT(vkCreateDescriptorPool(device, &poolInfo, nullptr, &m_descriptorPool));
+        VHCHECKRESULT(vkCreateDescriptorPool(m_device, &poolInfo, nullptr, &m_descriptorPool));
 
 
         std::vector<VkDescriptorSetLayout> layouts(1, m_computeDescriptorSetLayout);
@@ -197,7 +204,7 @@ namespace vh {
         descAllocInfo.pSetLayouts = layouts.data();
 
         m_computeDescriptorSets.resize(1);
-        VHCHECKRESULT(vkAllocateDescriptorSets(device, &descAllocInfo, m_computeDescriptorSets.data()));
+        VHCHECKRESULT(vkAllocateDescriptorSets(m_device, &descAllocInfo, m_computeDescriptorSets.data()));
         for (size_t i = 0; i < 1; i++) {
             std::array<VkWriteDescriptorSet, 1> descriptorWrites{};
 
@@ -206,13 +213,13 @@ namespace vh {
             imageInfo.imageLayout = VK_IMAGE_LAYOUT_GENERAL;
             descriptorWrites[0].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
             descriptorWrites[0].dstSet = m_computeDescriptorSets[i];
-            descriptorWrites[0].dstBinding = 0;
+            descriptorWrites[0].dstBinding = 1;
             descriptorWrites[0].dstArrayElement = 0;
             descriptorWrites[0].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
             descriptorWrites[0].descriptorCount = 1;
             descriptorWrites[0].pImageInfo = &imageInfo;
 
-            vkUpdateDescriptorSets(device, (uint32_t)descriptorWrites.size(), descriptorWrites.data(), 0, nullptr);
+            vkUpdateDescriptorSets(m_device, (uint32_t)descriptorWrites.size(), descriptorWrites.data(), 0, nullptr);
         }
 
 
@@ -306,8 +313,23 @@ namespace vh {
         return VK_SUCCESS;
     }
 
-    VkResult VHVideoEncoder::queueEncode(VkImage image)
+    VkResult VHVideoEncoder::queueEncode(VkImageView imageView)
     {
+
+        std::array<VkWriteDescriptorSet, 1> descriptorWrites{};
+        VkDescriptorImageInfo imageInfo{};
+        imageInfo.imageView = imageView;
+        imageInfo.imageLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
+        descriptorWrites[0].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+        descriptorWrites[0].dstSet = m_computeDescriptorSets[0];
+        descriptorWrites[0].dstBinding = 0;
+        descriptorWrites[0].dstArrayElement = 0;
+        descriptorWrites[0].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
+        descriptorWrites[0].descriptorCount = 1;
+        descriptorWrites[0].pImageInfo = &imageInfo;
+        vkUpdateDescriptorSets(m_device, (uint32_t)descriptorWrites.size(), descriptorWrites.data(), 0, nullptr);
+
+
         VkCommandBuffer cmdBuffer = vhCmdBeginSingleTimeCommands(m_device, m_computeCommandPool);
         
         VHCHECKRESULT(vhBufTransitionImageLayout(m_device, m_computeQueue, cmdBuffer,

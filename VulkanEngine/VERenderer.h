@@ -254,6 +254,12 @@ namespace ve
 			return m_swapChainImages[m_imageIndex];
 		};
 
+		///\returns the current swap chain image
+		virtual VkImageView getSwapChainImageView()
+		{
+			return m_swapChainImageViews[m_imageIndex];
+		};
+
 		///\returns the overlay (GUI) subrenderer
 		virtual VESubrender *getOverlay()
 		{

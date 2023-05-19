@@ -134,12 +134,12 @@ namespace vh
 			VK_IMAGE_USAGE_STORAGE_BIT; //need for copying to host
 
 		QueueFamilyIndices indices = vhDevFindQueueFamilies(physicalDevice, surface);
-		uint32_t queueFamilyIndices[] = { (uint32_t)indices.graphicsFamily, (uint32_t)indices.presentFamily, (uint32_t)indices.encodeFamily };
+		uint32_t queueFamilyIndices[] = { (uint32_t)indices.graphicsFamily, (uint32_t)indices.presentFamily };
 
-		if (indices.graphicsFamily != indices.presentFamily || indices.graphicsFamily != indices.encodeFamily)
+		if (indices.graphicsFamily != indices.presentFamily)
 		{
 			createInfo.imageSharingMode = VK_SHARING_MODE_CONCURRENT;
-			createInfo.queueFamilyIndexCount = 3;
+			createInfo.queueFamilyIndexCount = 2;
 			createInfo.pQueueFamilyIndices = queueFamilyIndices;
 		}
 		else

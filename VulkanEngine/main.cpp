@@ -166,7 +166,7 @@ namespace ve {
 				getEnginePointer()->getRenderer()->getEncodeCommandPool(),
 				extent.width, extent.height);
 
-			videoEncoder.queueEncode(image);
+			videoEncoder.queueEncode(getEnginePointer()->getRenderer()->getSwapChainImageView());
 			//videoEncoder.queueCopy(getEnginePointer()->getRenderer()->getDevice(),
 			//	getEnginePointer()->getRenderer()->getVmaAllocator(),
 			//	getEnginePointer()->getRenderer()->getGraphicsQueue(),
