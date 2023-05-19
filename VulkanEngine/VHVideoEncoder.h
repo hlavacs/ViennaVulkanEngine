@@ -163,6 +163,8 @@ namespace vh {
 		VkImage m_srcImage;
 		VmaAllocation m_srcImageAllocation;
 		VkImageView m_srcImageView;
+		VkImageView m_srcImageView0;
+		VkImageView m_srcImageView1;
 
 		VkImage m_dpbImage;
 		VmaAllocation m_dpbImageAllocation;

@@ -128,6 +128,8 @@ namespace vh {
         tmpImgCreateInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
         VHCHECKRESULT(vmaCreateImage(m_allocator, &tmpImgCreateInfo, &allocInfo, &m_srcImage, &m_srcImageAllocation, nullptr));
         VHCHECKRESULT(vhBufCreateImageView(m_device, m_srcImage, VK_FORMAT_G8_B8R8_2PLANE_420_UNORM, VK_IMAGE_VIEW_TYPE_2D, 1, VK_IMAGE_ASPECT_COLOR_BIT, &m_srcImageView));
+        VHCHECKRESULT(vhBufCreateImageView(m_device, m_srcImage, VK_FORMAT_G8_B8R8_2PLANE_420_UNORM, VK_IMAGE_VIEW_TYPE_2D, 1, VK_IMAGE_ASPECT_PLANE_0_BIT, &m_srcImageView0));
+        VHCHECKRESULT(vhBufCreateImageView(m_device, m_srcImage, VK_FORMAT_G8_B8R8_2PLANE_420_UNORM, VK_IMAGE_VIEW_TYPE_2D, 1, VK_IMAGE_ASPECT_PLANE_1_BIT, &m_srcImageView1));
 
 
         VkQueryPoolVideoEncodeFeedbackCreateInfoKHR queryPoolVideoEncodeFeedbackCreateInfo = { VK_STRUCTURE_TYPE_QUERY_POOL_VIDEO_ENCODE_FEEDBACK_CREATE_INFO_KHR };
@@ -150,7 +152,7 @@ namespace vh {
         computeShaderStageInfo.pName = "main";
 
 
-        std::array<VkDescriptorSetLayoutBinding, 2> layoutBindings{};
+        std::array<VkDescriptorSetLayoutBinding, 3> layoutBindings{};
         layoutBindings[0].binding = 0;
         layoutBindings[0].descriptorCount = 1;
         layoutBindings[0].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
@@ -162,6 +164,12 @@ namespace vh {
         layoutBindings[1].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
         layoutBindings[1].pImmutableSamplers = nullptr;
         layoutBindings[1].stageFlags = VK_SHADER_STAGE_COMPUTE_BIT;
+
+        layoutBindings[2].binding = 2;
+        layoutBindings[2].descriptorCount = 1;
+        layoutBindings[2].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
+        layoutBindings[2].pImmutableSamplers = nullptr;
+        layoutBindings[2].stageFlags = VK_SHADER_STAGE_COMPUTE_BIT;
 
         VkDescriptorSetLayoutCreateInfo layoutInfo{};
         layoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
@@ -187,7 +195,7 @@ namespace vh {
 
         std::array<VkDescriptorPoolSize, 1> poolSizes{};
         poolSizes[0].type = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
-        poolSizes[0].descriptorCount = 2;
+        poolSizes[0].descriptorCount = 3;
         VkDescriptorPoolCreateInfo poolInfo{};
         poolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
         poolInfo.poolSizeCount = (uint32_t)poolSizes.size();
@@ -206,18 +214,29 @@ namespace vh {
         m_computeDescriptorSets.resize(1);
         VHCHECKRESULT(vkAllocateDescriptorSets(m_device, &descAllocInfo, m_computeDescriptorSets.data()));
         for (size_t i = 0; i < 1; i++) {
-            std::array<VkWriteDescriptorSet, 1> descriptorWrites{};
+            std::array<VkWriteDescriptorSet, 2> descriptorWrites{};
 
-            VkDescriptorImageInfo imageInfo{};
-            imageInfo.imageView = m_srcImageView;
-            imageInfo.imageLayout = VK_IMAGE_LAYOUT_GENERAL;
+            VkDescriptorImageInfo imageInfo0{};
+            imageInfo0.imageView = m_srcImageView0;
+            imageInfo0.imageLayout = VK_IMAGE_LAYOUT_GENERAL;
             descriptorWrites[0].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
             descriptorWrites[0].dstSet = m_computeDescriptorSets[i];
             descriptorWrites[0].dstBinding = 1;
             descriptorWrites[0].dstArrayElement = 0;
             descriptorWrites[0].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
             descriptorWrites[0].descriptorCount = 1;
-            descriptorWrites[0].pImageInfo = &imageInfo;
+            descriptorWrites[0].pImageInfo = &imageInfo0;
+
+            VkDescriptorImageInfo imageInfo1{};
+            imageInfo1.imageView = m_srcImageView1;
+            imageInfo1.imageLayout = VK_IMAGE_LAYOUT_GENERAL;
+            descriptorWrites[1].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+            descriptorWrites[1].dstSet = m_computeDescriptorSets[i];
+            descriptorWrites[1].dstBinding = 2;
+            descriptorWrites[1].dstArrayElement = 0;
+            descriptorWrites[1].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
+            descriptorWrites[1].descriptorCount = 1;
+            descriptorWrites[1].pImageInfo = &imageInfo1;
 
             vkUpdateDescriptorSets(m_device, (uint32_t)descriptorWrites.size(), descriptorWrites.data(), 0, nullptr);
         }
@@ -471,6 +490,8 @@ namespace vh {
         vkDestroyVideoSessionParametersKHR(m_device, m_videoSessionParameters, nullptr);
         vkDestroyQueryPool(m_device, m_queryPool, nullptr);
         vmaDestroyBuffer(m_allocator, m_bitStreamBuffer, m_bitStreamBufferAllocation);
+        vkDestroyImageView(m_device, m_srcImageView1, nullptr);
+        vkDestroyImageView(m_device, m_srcImageView0, nullptr);
         vkDestroyImageView(m_device, m_srcImageView, nullptr);
         vmaDestroyImage(m_allocator, m_srcImage, m_srcImageAllocation);
         vkDestroyImageView(m_device, m_dpbImageView, nullptr);

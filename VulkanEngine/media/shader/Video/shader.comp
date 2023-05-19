@@ -1,12 +1,21 @@
 #version 450
 
 layout (binding = 0, rgba8) uniform readonly image2D inputImage;
-layout (binding = 1, rgba8) uniform writeonly image2D outputImage;
+layout (binding = 1, r8) uniform writeonly image2D outputImage0;
+layout (binding = 2, rg8) uniform writeonly image2D outputImage1;
 
 layout (local_size_x = 16, local_size_y = 16, local_size_z = 1) in;
 
 void main() {
-	//vec4 pixel = vec4(0.7, 0.1, 0.1, 0.0);
-      vec4 pixel = imageLoad(inputImage,  ivec2(gl_GlobalInvocationID.xy));
-	imageStore(outputImage, ivec2(gl_GlobalInvocationID.xy), pixel);
+      vec4 rgba = imageLoad(inputImage,  ivec2(gl_GlobalInvocationID.xy));
+	
+	vec4 yuva = vec4(0.0);
+	yuva.x = rgba.r * 0.299 + rgba.g * 0.587 + rgba.b * 0.114;
+	yuva.y = rgba.r * -0.169 + rgba.g * -0.331 + rgba.b * 0.5 + 0.5;
+	yuva.z = rgba.r * 0.5 + rgba.g * -0.419 + rgba.b * -0.081 + 0.5;
+	yuva.w = 1.0;
+
+	imageStore(outputImage0, ivec2(gl_GlobalInvocationID.xy), vec4(yuva.x));
+	imageStore(outputImage1, ivec2(gl_GlobalInvocationID.x * 2, gl_GlobalInvocationID.y), vec4(yuva.y));
+	imageStore(outputImage1, ivec2(gl_GlobalInvocationID.x * 2 + 1, gl_GlobalInvocationID.y), vec4(yuva.z));
 }
