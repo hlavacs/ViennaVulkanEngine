@@ -16,7 +16,7 @@ namespace vh {
         m_height = height;
 
         VkVideoEncodeH264ProfileInfoEXT encodeH264ProfileInfoExt = { VK_STRUCTURE_TYPE_VIDEO_ENCODE_H264_PROFILE_INFO_EXT };
-        encodeH264ProfileInfoExt.stdProfileIdc = STD_VIDEO_H264_PROFILE_IDC_BASELINE;
+        encodeH264ProfileInfoExt.stdProfileIdc = STD_VIDEO_H264_PROFILE_IDC_MAIN;
 
         VkVideoProfileInfoKHR videoProfile = { VK_STRUCTURE_TYPE_VIDEO_PROFILE_INFO_KHR };
         videoProfile.videoCodecOperation = VK_VIDEO_CODEC_OPERATION_ENCODE_H264_BIT_EXT;
@@ -119,7 +119,7 @@ namespace vh {
         VHCHECKRESULT(vmaCreateImage(m_allocator, &tmpImgCreateInfo, &allocInfo, &m_dpbImage, &m_dpbImageAllocation, nullptr));
         VHCHECKRESULT(vhBufCreateImageView(m_device, m_dpbImage, VK_FORMAT_G8_B8R8_2PLANE_420_UNORM, VK_IMAGE_VIEW_TYPE_2D, 1, VK_IMAGE_ASPECT_COLOR_BIT, &m_dpbImageView));
 
-        tmpImgCreateInfo.usage = VK_IMAGE_USAGE_VIDEO_ENCODE_SRC_BIT_KHR;
+        tmpImgCreateInfo.usage = VK_IMAGE_USAGE_VIDEO_ENCODE_SRC_BIT_KHR | VK_IMAGE_USAGE_TRANSFER_DST_BIT;
         tmpImgCreateInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
         VHCHECKRESULT(vmaCreateImage(m_allocator, &tmpImgCreateInfo, &allocInfo, &m_srcImage, &m_srcImageAllocation, nullptr));
         VHCHECKRESULT(vhBufCreateImageView(m_device, m_srcImage, VK_FORMAT_G8_B8R8_2PLANE_420_UNORM, VK_IMAGE_VIEW_TYPE_2D, 1, VK_IMAGE_ASPECT_COLOR_BIT, &m_srcImageView));
@@ -135,15 +135,69 @@ namespace vh {
         VHCHECKRESULT(vkCreateQueryPool(m_device, &queryPoolCreateInfo, NULL, &m_queryPool));
 
 
+        VkBuffer buf;
+        VmaAllocation bufAlloc;
+        VHCHECKRESULT(vhBufCreateBuffer(m_allocator, 800 * 600 * 3,
+            VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VMA_MEMORY_USAGE_CPU_TO_GPU,
+            &buf, &bufAlloc));
+        void* data;
+        vmaMapMemory(m_allocator, bufAlloc, &data);
+        int x = 0;
+        for (int i = 0; i < 800 * 600 * 3; i++) {
+            reinterpret_cast<uint8_t*>(data)[i] = x & 0xff;
+            x = x * 7 + 13;
+        }
+        vmaUnmapMemory(m_allocator, bufAlloc);
+
         VkCommandBuffer cmdBuffer = vhCmdBeginSingleTimeCommands(m_device, m_encodeCommandPool);
         initRateControl(cmdBuffer, 20);
         VHCHECKRESULT(vhBufTransitionImageLayout(m_device, m_encodeQueue, cmdBuffer,
             m_dpbImage, VK_FORMAT_G8_B8R8_2PLANE_420_UNORM, VK_IMAGE_ASPECT_COLOR_BIT, 1, 1,
             VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_VIDEO_ENCODE_DPB_KHR));
         VHCHECKRESULT(vhBufTransitionImageLayout(m_device, m_encodeQueue, cmdBuffer,
+            m_srcImage, VK_FORMAT_G8_B8R8_2PLANE_420_UNORM, VK_IMAGE_ASPECT_COLOR_BIT, 1, 1,
+            VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL));
+
+        std::vector<VkBufferImageCopy> copyRegions;
+
+        VkBufferImageCopy region = {};
+        region.imageSubresource.baseArrayLayer = 0;
+        region.imageSubresource.mipLevel = 0;
+        region.imageSubresource.layerCount = 1;
+        region.imageOffset.x = 0;
+        region.imageOffset.y = 0;
+        region.imageOffset.z = 0;
+        region.imageExtent.depth = 1;
+
+        region.bufferOffset = 800 * 600 * 0;
+        region.bufferRowLength = 800;
+        region.imageSubresource.aspectMask = VK_IMAGE_ASPECT_PLANE_0_BIT << 0;
+        region.imageExtent.width = 800;
+        region.imageExtent.height = 600;
+        copyRegions.push_back(region);
+
+        region.bufferOffset = 800 * 600 * 1;
+        region.bufferRowLength = 400;
+        region.imageSubresource.aspectMask = VK_IMAGE_ASPECT_PLANE_0_BIT << 1;
+        region.imageExtent.width = 400;
+        region.imageExtent.height = 300;
+        copyRegions.push_back(region);
+
+        region.bufferOffset = 800 * 600 * 2;
+        region.bufferRowLength = 400;
+        region.imageSubresource.aspectMask = VK_IMAGE_ASPECT_PLANE_0_BIT << 2;
+        region.imageExtent.width = 400;
+        region.imageExtent.height = 300;
+        copyRegions.push_back(region);
+
+        vkCmdCopyBufferToImage(cmdBuffer, buf, m_srcImage, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, (uint32_t)copyRegions.size(), copyRegions.data());
+
+        VHCHECKRESULT(vhBufTransitionImageLayout(m_device, m_encodeQueue, cmdBuffer,
                 m_srcImage, VK_FORMAT_G8_B8R8_2PLANE_420_UNORM, VK_IMAGE_ASPECT_COLOR_BIT, 1, 1,
-                VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_VIDEO_ENCODE_SRC_KHR));
+            VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_VIDEO_ENCODE_SRC_KHR));
         VHCHECKRESULT(vhCmdEndSingleTimeCommands(m_device, m_encodeQueue, m_encodeCommandPool, cmdBuffer));
+
+        vmaDestroyBuffer(m_allocator, buf, bufAlloc);
 
         m_outfile.open("hwenc.264", std::ios::binary);
         // Hardcoded for 352x288, 25 fps

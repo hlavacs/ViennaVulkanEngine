@@ -29,7 +29,7 @@ namespace h264
         const uint32_t mbAlignedHeight = AlignSize(height, H264MbSizeAlignment);
 
         StdVideoH264SequenceParameterSet sps = {};
-        sps.profile_idc = STD_VIDEO_H264_PROFILE_IDC_BASELINE;
+        sps.profile_idc = STD_VIDEO_H264_PROFILE_IDC_MAIN;
         sps.level_idc = STD_VIDEO_H264_LEVEL_IDC_4_1;
         sps.seq_parameter_set_id = 0u;
         sps.chroma_format_idc = STD_VIDEO_H264_CHROMA_FORMAT_IDC_420;
