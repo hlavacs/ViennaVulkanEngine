@@ -119,7 +119,7 @@ namespace vh {
         VHCHECKRESULT(vmaCreateImage(m_allocator, &tmpImgCreateInfo, &allocInfo, &m_dpbImage, &m_dpbImageAllocation, nullptr));
         VHCHECKRESULT(vhBufCreateImageView(m_device, m_dpbImage, VK_FORMAT_G8_B8R8_2PLANE_420_UNORM, VK_IMAGE_VIEW_TYPE_2D, 1, VK_IMAGE_ASPECT_COLOR_BIT, &m_dpbImageView));
 
-        tmpImgCreateInfo.usage = VK_IMAGE_USAGE_VIDEO_ENCODE_SRC_BIT_KHR | VK_IMAGE_USAGE_TRANSFER_DST_BIT;
+        tmpImgCreateInfo.usage = VK_IMAGE_USAGE_VIDEO_ENCODE_SRC_BIT_KHR | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT;
         tmpImgCreateInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
         VHCHECKRESULT(vmaCreateImage(m_allocator, &tmpImgCreateInfo, &allocInfo, &m_srcImage, &m_srcImageAllocation, nullptr));
         VHCHECKRESULT(vhBufCreateImageView(m_device, m_srcImage, VK_FORMAT_G8_B8R8_2PLANE_420_UNORM, VK_IMAGE_VIEW_TYPE_2D, 1, VK_IMAGE_ASPECT_COLOR_BIT, &m_srcImageView));
@@ -137,16 +137,23 @@ namespace vh {
 
         VkBuffer buf;
         VmaAllocation bufAlloc;
-        VHCHECKRESULT(vhBufCreateBuffer(m_allocator, 800 * 600 * 3,
+        VHCHECKRESULT(vhBufCreateBuffer(m_allocator, 800 * 600 + 400 * 300 * 2,
             VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VMA_MEMORY_USAGE_CPU_TO_GPU,
             &buf, &bufAlloc));
         void* data;
         vmaMapMemory(m_allocator, bufAlloc, &data);
-        int x = 0;
-        for (int i = 0; i < 800 * 600 * 3; i++) {
-            reinterpret_cast<uint8_t*>(data)[i] = x & 0xff;
-            x = x * 7 + 13;
-        }
+        //int x = 0;
+        //for (int i = 0; i < 800 * 600 * 3; i++) {
+        //    reinterpret_cast<uint8_t*>(data)[i] = x & 0xff;
+        //    x = x * 7 + 13;
+        //}
+
+        //memset(data, 0x00, 800 * 600 + 400 * 300 * 2);
+        //for (int i = 0; i < 400 * 300; i++) {
+        //    reinterpret_cast<uint8_t*>(data)[800 * 600 + i * 2 + 1] = 0xa0;
+        //}
+
+        memset(data, 0x80, 800 * 600 + 400 * 300 * 2);
         vmaUnmapMemory(m_allocator, bufAlloc);
 
         VkCommandBuffer cmdBuffer = vhCmdBeginSingleTimeCommands(m_device, m_encodeCommandPool);
@@ -183,12 +190,12 @@ namespace vh {
         region.imageExtent.height = 300;
         copyRegions.push_back(region);
 
-        region.bufferOffset = 800 * 600 * 2;
-        region.bufferRowLength = 400;
-        region.imageSubresource.aspectMask = VK_IMAGE_ASPECT_PLANE_0_BIT << 2;
-        region.imageExtent.width = 400;
-        region.imageExtent.height = 300;
-        copyRegions.push_back(region);
+        //region.bufferOffset = 800 * 600 * 2;
+        //region.bufferRowLength = 400;
+        //region.imageSubresource.aspectMask = VK_IMAGE_ASPECT_PLANE_0_BIT << 2;
+        //region.imageExtent.width = 400;
+        //region.imageExtent.height = 300;
+        //copyRegions.push_back(region);
 
         vkCmdCopyBufferToImage(cmdBuffer, buf, m_srcImage, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, (uint32_t)copyRegions.size(), copyRegions.data());
 
@@ -220,6 +227,52 @@ namespace vh {
     VkResult VHVideoEncoder::queueEncode(VkImage image)
     {
         VkCommandBuffer cmdBuffer = vhCmdBeginSingleTimeCommands(m_device, m_encodeCommandPool);
+
+        VHCHECKRESULT(vhBufTransitionImageLayout(m_device, m_encodeQueue, cmdBuffer,
+            image, VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_ASPECT_COLOR_BIT, 1, 1,
+            VK_IMAGE_LAYOUT_PRESENT_SRC_KHR, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL));
+        VHCHECKRESULT(vhBufTransitionImageLayout(m_device, m_encodeQueue, cmdBuffer,
+            m_srcImage, VK_FORMAT_G8_B8R8_2PLANE_420_UNORM, VK_IMAGE_ASPECT_COLOR_BIT, 1, 1,
+            VK_IMAGE_LAYOUT_VIDEO_ENCODE_SRC_KHR, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL));
+
+        VkImageCopy regions;
+        regions.srcSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+        regions.srcSubresource.baseArrayLayer = 0;
+        regions.srcSubresource.layerCount = 1;
+        regions.srcSubresource.mipLevel = 0;
+        regions.srcOffset = { 0, 0, 0 };
+        regions.dstSubresource.aspectMask = VK_IMAGE_ASPECT_PLANE_0_BIT;
+        regions.dstSubresource.baseArrayLayer = 0;
+        regions.dstSubresource.layerCount = 1;
+        regions.dstSubresource.mipLevel = 0;
+        regions.dstOffset = { 0, 0, 0 };
+        regions.extent = { 800, 600, 0 };
+
+        vkCmdCopyImage(cmdBuffer, image, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, m_srcImage, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &regions);
+
+        //VkImageBlit regions;
+        //regions.srcSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+        //regions.srcSubresource.baseArrayLayer = 0;
+        //regions.srcSubresource.layerCount = 1;
+        //regions.srcSubresource.mipLevel = 0;
+        //regions.srcOffsets[0] = { 0, 0, 0 };
+        //regions.srcOffsets[1] = { 800, 600, 0 };
+        //regions.dstSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+        //regions.dstSubresource.baseArrayLayer = 0;
+        //regions.dstSubresource.layerCount = 1;
+        //regions.dstSubresource.mipLevel = 0;
+        //regions.dstOffsets[0] = { 0, 0, 0 };
+        //regions.dstOffsets[1] = { 800, 600, 0 };
+
+        //vkCmdBlitImage(cmdBuffer, image, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, m_srcImage, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &regions, VK_FILTER_NEAREST);
+
+        VHCHECKRESULT(vhBufTransitionImageLayout(m_device, m_encodeQueue, cmdBuffer,
+            image, VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_ASPECT_COLOR_BIT, 1, 1,
+            VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR));
+        VHCHECKRESULT(vhBufTransitionImageLayout(m_device, m_encodeQueue, cmdBuffer,
+            m_srcImage, VK_FORMAT_G8_B8R8_2PLANE_420_UNORM, VK_IMAGE_ASPECT_COLOR_BIT, 1, 1,
+            VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_VIDEO_ENCODE_SRC_KHR));
+
 
         VkVideoBeginCodingInfoKHR encodeBeginInfo = { VK_STRUCTURE_TYPE_VIDEO_BEGIN_CODING_INFO_KHR };
         encodeBeginInfo.videoSession = m_videoSession;

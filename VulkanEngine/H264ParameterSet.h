@@ -64,7 +64,8 @@ namespace h264
     StdVideoH264PictureParameterSet getStdVideoH264PictureParameterSet(void)
     {
         StdVideoH264PpsFlags ppsFlags = {};
-        ppsFlags.transform_8x8_mode_flag = 1u;
+        //ppsFlags.transform_8x8_mode_flag = 1u;
+        ppsFlags.transform_8x8_mode_flag = 0u;
         ppsFlags.constrained_intra_pred_flag = 0u;
         ppsFlags.deblocking_filter_control_present_flag = 1u;
         ppsFlags.entropy_coding_mode_flag = 1u;
