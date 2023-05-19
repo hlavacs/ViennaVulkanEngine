@@ -113,7 +113,7 @@ namespace vh
 		int i = 0;
 		for (const auto &queueFamily : queueFamilies)
 		{
-			if (queueFamily.queueCount > 0 && queueFamily.queueFlags & VK_QUEUE_GRAPHICS_BIT)
+			if (queueFamily.queueCount > 0 && queueFamily.queueFlags & VK_QUEUE_GRAPHICS_BIT && queueFamily.queueFlags & VK_QUEUE_COMPUTE_BIT)
 			{
 				indices.graphicsFamily = i;
 			}
@@ -360,7 +360,7 @@ namespace vh
 		* \returns VK_SUCCESS or a Vulkan error code
 		*
 		*/
-	VkResult vhDevCreateLogicalDevice(VkInstance instance, VkPhysicalDevice physicalDevice, VkSurfaceKHR surface, std::vector<const char *> requiredDeviceExtensions, std::vector<const char *> requiredValidationLayers, void *pNextChain, VkDevice *device, VkQueue *graphicsQueue, VkQueue *presentQueue, int* encodeQueueFamily, VkQueue* encodeQueue)
+	VkResult vhDevCreateLogicalDevice(VkInstance instance, VkPhysicalDevice physicalDevice, VkSurfaceKHR surface, std::vector<const char *> requiredDeviceExtensions, std::vector<const char *> requiredValidationLayers, void *pNextChain, VkDevice *device, int* graphicsQueueFamily, VkQueue *graphicsQueue, VkQueue *presentQueue, int* encodeQueueFamily, VkQueue* encodeQueue)
 	{
 		QueueFamilyIndices indices = vhDevFindQueueFamilies(physicalDevice, surface);
 
@@ -425,6 +425,7 @@ namespace vh
 		vkGetDeviceQueue(*device, indices.graphicsFamily, 0, graphicsQueue);
 		vkGetDeviceQueue(*device, indices.presentFamily, 0, presentQueue);
 		vkGetDeviceQueue(*device, indices.encodeFamily, 0, encodeQueue);
+		*graphicsQueueFamily = indices.graphicsFamily;
 		*encodeQueueFamily = indices.encodeFamily;
 
 		return VK_SUCCESS;

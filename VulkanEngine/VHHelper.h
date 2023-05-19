@@ -272,6 +272,7 @@ namespace vh
 		std::vector<const char *> requiredValidationLayers,
 		void *pNextChain,
 		VkDevice *device,
+		int* graphicsQueueFamily,
 		VkQueue *graphicsQueue,
 		VkQueue *presentQueue,
 		int* encodeQueueFamily,

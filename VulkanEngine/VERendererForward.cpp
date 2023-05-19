@@ -48,7 +48,7 @@ namespace ve
 			&m_physicalDevice, &m_deviceFeatures, &m_deviceLimits) != VK_SUCCESS ||
 			vh::vhDevCreateLogicalDevice(getEnginePointer()->getInstance(), m_physicalDevice, m_surface,
 				requiredDeviceExtensions, requiredValidationLayers,
-				&enabledBufferDeviceAddresFeatures, &m_device, &m_graphicsQueue,
+				&enabledBufferDeviceAddresFeatures, &m_device, &m_graphicsQueueFamily, &m_graphicsQueue,
 				&m_presentQueue, &m_encodeQueueFamily, &m_encodeQueue) != VK_SUCCESS)
 		{
 			assert(false);

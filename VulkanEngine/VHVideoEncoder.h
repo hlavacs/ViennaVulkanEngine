@@ -6,7 +6,7 @@
 namespace vh {
 	class VHVideoEncoder {
 	public:
-		VkResult init(VkDevice device, VmaAllocator allocator, uint32_t encodeQueueFamily, VkQueue encodeQueue, VkCommandPool encodeCommandPool, uint32_t width, uint32_t height);
+		VkResult init(VkDevice device, VmaAllocator allocator, uint32_t computeQueueFamily, VkQueue computeQueue, VkCommandPool computeCommandPool, uint32_t encodeQueueFamily, VkQueue encodeQueue, VkCommandPool encodeCommandPool, uint32_t width, uint32_t height);
 		VkResult queueEncode(VkImage image);
 
 		void deinit();
@@ -136,7 +136,9 @@ namespace vh {
 		bool m_initialized{ false };
 		VkDevice m_device;
 		VmaAllocator m_allocator;
+		VkQueue m_computeQueue;
 		VkQueue m_encodeQueue;
+		VkCommandPool m_computeCommandPool;
 		VkCommandPool m_encodeCommandPool;
 		uint32_t m_width;
 		uint32_t m_height;
@@ -146,6 +148,12 @@ namespace vh {
 		StdVideoH264SequenceParameterSet m_sps;
 		StdVideoH264PictureParameterSet m_pps;
 		VkVideoSessionParametersKHR m_videoSessionParameters;
+
+		VkDescriptorSetLayout m_computeDescriptorSetLayout;
+		VkPipelineLayout m_computePipelineLayout;
+		VkPipeline m_computePipeline;
+		VkDescriptorPool m_descriptorPool;
+		std::vector<VkDescriptorSet> m_computeDescriptorSets;
 
 		VkQueryPool m_queryPool;
 		VkBuffer m_bitStreamBuffer;

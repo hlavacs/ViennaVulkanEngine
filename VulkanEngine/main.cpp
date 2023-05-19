@@ -158,6 +158,9 @@ namespace ve {
 
 			videoEncoder.init(getEnginePointer()->getRenderer()->getDevice(),
 				getEnginePointer()->getRenderer()->getVmaAllocator(),
+				getEnginePointer()->getRenderer()->getGraphicsQueueFamily(),
+				getEnginePointer()->getRenderer()->getGraphicsQueue(),
+				getEnginePointer()->getRenderer()->getCommandPool(),
 				getEnginePointer()->getRenderer()->getEncodeQueueFamily(),
 				getEnginePointer()->getRenderer()->getEncodeQueue(),
 				getEnginePointer()->getRenderer()->getEncodeCommandPool(),

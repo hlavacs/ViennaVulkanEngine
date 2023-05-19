@@ -66,6 +66,7 @@ namespace ve
 
 		VkDevice m_device; ///<Vulkan logical device handle
 		VkQueue m_graphicsQueue; ///<Vulkan graphics queue
+		int m_graphicsQueueFamily; ///<Vulkan queue family index for graphics queue
 		VkQueue m_presentQueue; ///<Vulkan present queue
 		int m_encodeQueueFamily; ///<Vulkan queue family index for video encode
 		VkQueue m_encodeQueue; ///<Vulkan video encode queue
@@ -179,6 +180,12 @@ namespace ve
 		virtual VkSurfaceKHR getSurface()
 		{
 			return m_surface;
+		};
+
+		///\returns the Vulkan graphics queue family index
+		virtual int getGraphicsQueueFamily()
+		{
+			return m_graphicsQueueFamily;
 		};
 
 		///\returns the Vulkan graphics queue
