@@ -20,7 +20,7 @@ void main() {
 
 	imageStore(outputImage0, ivec2(gl_GlobalInvocationID.xy), vec4(yuva.x));
 	//imageStore(outputImage1, ivec2(gl_GlobalInvocationID.xy), vec4(0.7));
-	imageStore(outputImage1, ivec2(gl_GlobalInvocationID.xy), vec4(yuva.y, yuva.z, 0.0, 0.0));
+	imageStore(outputImage1, ivec2(gl_GlobalInvocationID.x / 2, gl_GlobalInvocationID.y / 2), vec4(yuva.y, yuva.z, 0.0, 0.0));
 
 	//imageStore(outputImage1, ivec2(gl_GlobalInvocationID.x * 2, gl_GlobalInvocationID.y), vec4(yuva.y));
 	//imageStore(outputImage1, ivec2(gl_GlobalInvocationID.x * 2 + 1, gl_GlobalInvocationID.y), vec4(yuva.z));
