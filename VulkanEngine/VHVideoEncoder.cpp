@@ -131,7 +131,7 @@ namespace vh {
         VHCHECKRESULT(vhBufCreateImageView(m_device, m_srcImage, VK_FORMAT_G8_B8R8_2PLANE_420_UNORM, VK_IMAGE_VIEW_TYPE_2D, 1, VK_IMAGE_ASPECT_PLANE_0_BIT, &m_srcImageView0));
         VHCHECKRESULT(vhBufCreateImageView(m_device, m_srcImage, VK_FORMAT_G8_B8R8_2PLANE_420_UNORM, VK_IMAGE_VIEW_TYPE_2D, 1, VK_IMAGE_ASPECT_PLANE_1_BIT, &m_srcImageView1));
 
-        tmpImgCreateInfo.usage = VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_STORAGE_BIT;
+        tmpImgCreateInfo.usage = VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_STORAGE_BIT;
         tmpImgCreateInfo.format = VK_FORMAT_R8G8_UNORM;
         tmpImgCreateInfo.extent = { m_width / 2, m_height / 2, 1 };
         VHCHECKRESULT(vmaCreateImage(m_allocator, &tmpImgCreateInfo, &allocInfo, &m_srcImageColor, &m_srcImageColorAllocation, nullptr));
@@ -369,7 +369,7 @@ namespace vh {
         VkCommandBuffer cmdBuffer = vhCmdBeginSingleTimeCommands(m_device, m_computeCommandPool);
         
         VHCHECKRESULT(vhBufTransitionImageLayout(m_device, m_computeQueue, cmdBuffer,
-            m_srcImage, VK_FORMAT_G8_B8R8_2PLANE_420_UNORM, VK_IMAGE_ASPECT_COLOR_BIT, 1, 1,
+            m_srcImage, VK_FORMAT_G8_B8R8_2PLANE_420_UNORM, VK_IMAGE_ASPECT_PLANE_0_BIT, 1, 1,
             VK_IMAGE_LAYOUT_VIDEO_ENCODE_SRC_KHR, VK_IMAGE_LAYOUT_GENERAL));
         VHCHECKRESULT(vhBufTransitionImageLayout(m_device, m_encodeQueue, cmdBuffer,
             m_srcImageColor, VK_FORMAT_R8G8_UNORM, VK_IMAGE_ASPECT_COLOR_BIT, 1, 1,
@@ -380,21 +380,21 @@ namespace vh {
         vkCmdDispatch(cmdBuffer, 800/16, 600/16, 1);
 
         VHCHECKRESULT(vhBufTransitionImageLayout(m_device, m_computeQueue, cmdBuffer,
-            m_srcImage, VK_FORMAT_G8_B8R8_2PLANE_420_UNORM, VK_IMAGE_ASPECT_COLOR_BIT, 1, 1,
+            m_srcImage, VK_FORMAT_G8_B8R8_2PLANE_420_UNORM, VK_IMAGE_ASPECT_PLANE_0_BIT, 1, 1,
             VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_LAYOUT_VIDEO_ENCODE_SRC_KHR));
 
         VHCHECKRESULT(vhCmdEndSingleTimeCommands(m_device, m_computeQueue, m_computeCommandPool, cmdBuffer));
 
 
-        cmdBuffer = vhCmdBeginSingleTimeCommands(m_device, m_encodeCommandPool);
+        cmdBuffer = vhCmdBeginSingleTimeCommands(m_device, m_computeCommandPool);
 
         //VHCHECKRESULT(vhBufTransitionImageLayout(m_device, m_encodeQueue, cmdBuffer,
         //    image, VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_ASPECT_COLOR_BIT, 1, 1,
         //    VK_IMAGE_LAYOUT_PRESENT_SRC_KHR, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL));
-        VHCHECKRESULT(vhBufTransitionImageLayout(m_device, m_encodeQueue, cmdBuffer,
-            m_srcImage, VK_FORMAT_G8_B8R8_2PLANE_420_UNORM, VK_IMAGE_ASPECT_COLOR_BIT, 1, 1,
+        VHCHECKRESULT(vhBufTransitionImageLayout(m_device, m_computeQueue, cmdBuffer,
+            m_srcImage, VK_FORMAT_G8_B8R8_2PLANE_420_UNORM, VK_IMAGE_ASPECT_PLANE_1_BIT, 1, 1,
             VK_IMAGE_LAYOUT_VIDEO_ENCODE_SRC_KHR, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL));
-        VHCHECKRESULT(vhBufTransitionImageLayout(m_device, m_encodeQueue, cmdBuffer,
+        VHCHECKRESULT(vhBufTransitionImageLayout(m_device, m_computeQueue, cmdBuffer,
             m_srcImageColor, VK_FORMAT_R8G8_UNORM, VK_IMAGE_ASPECT_COLOR_BIT, 1, 1,
             VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL));
 
@@ -413,56 +413,60 @@ namespace vh {
 
         //vkCmdCopyImage(cmdBuffer, image, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, m_srcImage, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &regions);
         
-        //VkImageCopy regions;
-        //regions.srcSubresource.aspectMask = VK_IMAGE_ASPECT_PLANE_0_BIT;
-        //regions.srcSubresource.baseArrayLayer = 0;
-        //regions.srcSubresource.layerCount = 1;
-        //regions.srcSubresource.mipLevel = 0;
-        //regions.srcOffset = { 0, 0, 0 };
-        //regions.dstSubresource.aspectMask = VK_IMAGE_ASPECT_PLANE_1_BIT;
-        //regions.dstSubresource.baseArrayLayer = 0;
-        //regions.dstSubresource.layerCount = 1;
-        //regions.dstSubresource.mipLevel = 0;
-        //regions.dstOffset = { 0, 0, 0 };
-        //regions.extent = { 400, 300, 0 };
+        VkImageCopy regions;
+        regions.srcSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+        regions.srcSubresource.baseArrayLayer = 0;
+        regions.srcSubresource.layerCount = 1;
+        regions.srcSubresource.mipLevel = 0;
+        regions.srcOffset = { 0, 0, 0 };
+        regions.dstSubresource.aspectMask = VK_IMAGE_ASPECT_PLANE_1_BIT;
+        regions.dstSubresource.baseArrayLayer = 0;
+        regions.dstSubresource.layerCount = 1;
+        regions.dstSubresource.mipLevel = 0;
+        regions.dstOffset = { 0, 0, 0 };
+        regions.extent = { 400, 300, 1 };
 
-        //vkCmdCopyImage(cmdBuffer, m_srcImageColor, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, m_srcImage, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &regions);
+        vkCmdCopyImage(cmdBuffer, m_srcImageColor, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, m_srcImage, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &regions);
 
 
-        VkBufferImageCopy regions = {};
-        regions.imageSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-        regions.imageSubresource.baseArrayLayer = 0;
-        regions.imageSubresource.layerCount = 1;
-        regions.imageSubresource.mipLevel = 0;
-        regions.imageOffset = { 0, 0 };
-        regions.imageExtent = { 400, 300 };
-        regions.bufferOffset = 0;
-        regions.bufferRowLength = 400;
-        regions.bufferImageHeight = 300;
-        vkCmdCopyImageToBuffer(cmdBuffer, m_srcImageColor, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, m_srcImageColorBuffer, 1, &regions);
-
-        VHCHECKRESULT(vhCmdEndSingleTimeCommands(m_device, m_encodeQueue, m_encodeCommandPool, cmdBuffer));
-
-        cmdBuffer = vhCmdBeginSingleTimeCommands(m_device, m_encodeCommandPool);
         //VkBufferImageCopy regions = {};
-        regions.imageSubresource.aspectMask = VK_IMAGE_ASPECT_PLANE_1_BIT;
-        regions.imageSubresource.baseArrayLayer = 0;
-        regions.imageSubresource.layerCount = 1;
-        regions.imageSubresource.mipLevel = 0;
-        regions.imageOffset = { 0, 0 };
-        regions.imageExtent = { 400, 300 };
-        regions.bufferOffset = 0;
-        regions.bufferRowLength = 400;
-        regions.bufferImageHeight = 300;
-        vkCmdCopyBufferToImage(cmdBuffer, m_srcImageColorBuffer, m_srcImage, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &regions);
+        //regions.imageSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+        //regions.imageSubresource.baseArrayLayer = 0;
+        //regions.imageSubresource.layerCount = 1;
+        //regions.imageSubresource.mipLevel = 0;
+        //regions.imageOffset = { 0, 0 };
+        //regions.imageExtent = { 400, 300 };
+        //regions.bufferOffset = 0;
+        //regions.bufferRowLength = 400;
+        //regions.bufferImageHeight = 300;
+        //vkCmdCopyImageToBuffer(cmdBuffer, m_srcImageColor, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, m_srcImageColorBuffer, 1, &regions);
+
+        //VHCHECKRESULT(vhCmdEndSingleTimeCommands(m_device, m_computeQueue, m_computeCommandPool, cmdBuffer));
+
+        //cmdBuffer = vhCmdBeginSingleTimeCommands(m_device, m_computeCommandPool);
+        ////VkBufferImageCopy regions = {};
+        //regions.imageSubresource.aspectMask = VK_IMAGE_ASPECT_PLANE_1_BIT;
+        //regions.imageSubresource.baseArrayLayer = 0;
+        //regions.imageSubresource.layerCount = 1;
+        //regions.imageSubresource.mipLevel = 0;
+        //regions.imageOffset = { 0, 0 };
+        //regions.imageExtent = { 400, 300 };
+        //regions.bufferOffset = 0;
+        //regions.bufferRowLength = 400;
+        //regions.bufferImageHeight = 300;
+        //vkCmdCopyBufferToImage(cmdBuffer, m_srcImageColorBuffer, m_srcImage, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &regions);
 
         //VHCHECKRESULT(vhBufTransitionImageLayout(m_device, m_encodeQueue, cmdBuffer,
         //    image, VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_ASPECT_COLOR_BIT, 1, 1,
         //    VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR));
-        VHCHECKRESULT(vhBufTransitionImageLayout(m_device, m_encodeQueue, cmdBuffer,
-            m_srcImage, VK_FORMAT_G8_B8R8_2PLANE_420_UNORM, VK_IMAGE_ASPECT_COLOR_BIT, 1, 1,
+        VHCHECKRESULT(vhBufTransitionImageLayout(m_device, m_computeQueue, cmdBuffer,
+            m_srcImage, VK_FORMAT_G8_B8R8_2PLANE_420_UNORM, VK_IMAGE_ASPECT_PLANE_1_BIT, 1, 1,
             VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_VIDEO_ENCODE_SRC_KHR));
 
+        VHCHECKRESULT(vhCmdEndSingleTimeCommands(m_device, m_computeQueue, m_computeCommandPool, cmdBuffer));
+
+
+        cmdBuffer = vhCmdBeginSingleTimeCommands(m_device, m_encodeCommandPool);
 
         VkVideoBeginCodingInfoKHR encodeBeginInfo = { VK_STRUCTURE_TYPE_VIDEO_BEGIN_CODING_INFO_KHR };
         encodeBeginInfo.videoSession = m_videoSession;
