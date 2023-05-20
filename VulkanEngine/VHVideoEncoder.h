@@ -165,6 +165,12 @@ namespace vh {
 		VkImageView m_srcImageView;
 		VkImageView m_srcImageView0;
 		VkImageView m_srcImageView1;
+		VkBuffer m_srcImageColorBuffer;
+		VmaAllocation m_srcImageColorBufferAllocation;
+		VkImage m_srcImageColor;
+		VmaAllocation m_srcImageColorAllocation;
+		VkImageView m_srcImageColorView;
+
 
 		VkImage m_dpbImage;
 		VmaAllocation m_dpbImageAllocation;

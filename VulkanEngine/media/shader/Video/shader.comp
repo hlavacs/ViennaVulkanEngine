@@ -3,6 +3,9 @@
 layout (binding = 0, rgba8) uniform readonly image2D inputImage;
 layout (binding = 1, r8) uniform writeonly image2D outputImage0;
 layout (binding = 2, rg8) uniform writeonly image2D outputImage1;
+//layout(std140, binding = 2) writeonly buffer outputColorSSBO {
+//   uint outputColor[ ];
+//};
 
 layout (local_size_x = 16, local_size_y = 16, local_size_z = 1) in;
 
@@ -16,6 +19,13 @@ void main() {
 	yuva.w = 1.0;
 
 	imageStore(outputImage0, ivec2(gl_GlobalInvocationID.xy), vec4(yuva.x));
-	imageStore(outputImage1, ivec2(gl_GlobalInvocationID.x * 2, gl_GlobalInvocationID.y), vec4(yuva.y));
-	imageStore(outputImage1, ivec2(gl_GlobalInvocationID.x * 2 + 1, gl_GlobalInvocationID.y), vec4(yuva.z));
+	//imageStore(outputImage1, ivec2(gl_GlobalInvocationID.xy), vec4(0.7));
+	imageStore(outputImage1, ivec2(gl_GlobalInvocationID.xy), vec4(yuva.y, yuva.z, 0.0, 0.0));
+
+	//imageStore(outputImage1, ivec2(gl_GlobalInvocationID.x * 2, gl_GlobalInvocationID.y), vec4(yuva.y));
+	//imageStore(outputImage1, ivec2(gl_GlobalInvocationID.x * 2 + 1, gl_GlobalInvocationID.y), vec4(yuva.z));
+	//outputColor[gl_GlobalInvocationID.y * 800 + gl_GlobalInvocationID.x * 2] = uint(yuva.y * 255.0);
+	//outputColor[gl_GlobalInvocationID.y * 800 + gl_GlobalInvocationID.x * 2 + 1] = uint(yuva.z * 255.0);
+	//outputColor[gl_GlobalInvocationID.y * 200 + gl_GlobalInvocationID.x / 2] = 0x80808080;
+	//outputColor[gl_GlobalInvocationID.y * 200 + gl_GlobalInvocationID.x / 2 + 1] = 0x80808080;
 }
