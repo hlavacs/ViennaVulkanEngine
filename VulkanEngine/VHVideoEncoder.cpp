@@ -126,16 +126,15 @@ namespace vh {
         tmpImgCreateInfo.pQueueFamilyIndices = queueFamilies;
         tmpImgCreateInfo.usage = VK_IMAGE_USAGE_VIDEO_ENCODE_SRC_BIT_KHR | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_STORAGE_BIT;
         tmpImgCreateInfo.sharingMode = VK_SHARING_MODE_CONCURRENT;
-        VHCHECKRESULT(vmaCreateImage(m_allocator, &tmpImgCreateInfo, &allocInfo, &m_srcImage, &m_srcImageAllocation, nullptr));
-        VHCHECKRESULT(vhBufCreateImageView(m_device, m_srcImage, VK_FORMAT_G8_B8R8_2PLANE_420_UNORM, VK_IMAGE_VIEW_TYPE_2D, 1, VK_IMAGE_ASPECT_COLOR_BIT, &m_srcImageView));
-        VHCHECKRESULT(vhBufCreateImageView(m_device, m_srcImage, VK_FORMAT_G8_B8R8_2PLANE_420_UNORM, VK_IMAGE_VIEW_TYPE_2D, 1, VK_IMAGE_ASPECT_PLANE_0_BIT, &m_srcImageView0));
-        VHCHECKRESULT(vhBufCreateImageView(m_device, m_srcImage, VK_FORMAT_G8_B8R8_2PLANE_420_UNORM, VK_IMAGE_VIEW_TYPE_2D, 1, VK_IMAGE_ASPECT_PLANE_1_BIT, &m_srcImageView1));
+        VHCHECKRESULT(vmaCreateImage(m_allocator, &tmpImgCreateInfo, &allocInfo, &m_yuvImage, &m_yuvImageAllocation, nullptr));
+        VHCHECKRESULT(vhBufCreateImageView(m_device, m_yuvImage, VK_FORMAT_G8_B8R8_2PLANE_420_UNORM, VK_IMAGE_VIEW_TYPE_2D, 1, VK_IMAGE_ASPECT_COLOR_BIT, &m_yuvImageView));
+        VHCHECKRESULT(vhBufCreateImageView(m_device, m_yuvImage, VK_FORMAT_G8_B8R8_2PLANE_420_UNORM, VK_IMAGE_VIEW_TYPE_2D, 1, VK_IMAGE_ASPECT_PLANE_0_BIT, &m_yuvImagePlane0View));
 
         tmpImgCreateInfo.usage = VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_STORAGE_BIT;
         tmpImgCreateInfo.format = VK_FORMAT_R8G8_UNORM;
         tmpImgCreateInfo.extent = { m_width / 2, m_height / 2, 1 };
-        VHCHECKRESULT(vmaCreateImage(m_allocator, &tmpImgCreateInfo, &allocInfo, &m_srcImageColor, &m_srcImageColorAllocation, nullptr));
-        VHCHECKRESULT(vhBufCreateImageView(m_device, m_srcImageColor, VK_FORMAT_R8G8_UNORM, VK_IMAGE_VIEW_TYPE_2D, 1, VK_IMAGE_ASPECT_COLOR_BIT, &m_srcImageColorView));
+        VHCHECKRESULT(vmaCreateImage(m_allocator, &tmpImgCreateInfo, &allocInfo, &m_yuvImageChroma, &m_yuvImageChromaAllocation, nullptr));
+        VHCHECKRESULT(vhBufCreateImageView(m_device, m_yuvImageChroma, VK_FORMAT_R8G8_UNORM, VK_IMAGE_VIEW_TYPE_2D, 1, VK_IMAGE_ASPECT_COLOR_BIT, &m_yuvImageChromaView));
 
         VkQueryPoolVideoEncodeFeedbackCreateInfoKHR queryPoolVideoEncodeFeedbackCreateInfo = { VK_STRUCTURE_TYPE_QUERY_POOL_VIDEO_ENCODE_FEEDBACK_CREATE_INFO_KHR };
         queryPoolVideoEncodeFeedbackCreateInfo.encodeFeedbackFlags = VK_VIDEO_ENCODE_FEEDBACK_BITSTREAM_BUFFER_OFFSET_BIT_KHR | VK_VIDEO_ENCODE_FEEDBACK_BITSTREAM_BYTES_WRITTEN_BIT_KHR;
@@ -145,10 +144,6 @@ namespace vh {
         queryPoolCreateInfo.queryCount = 1;
         queryPoolCreateInfo.pNext = &queryPoolVideoEncodeFeedbackCreateInfo;
         VHCHECKRESULT(vkCreateQueryPool(m_device, &queryPoolCreateInfo, NULL, &m_queryPool));
-
-        VHCHECKRESULT(vhBufCreateBuffer(m_allocator, 400 * 300 * 2,
-            VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VMA_MEMORY_USAGE_GPU_ONLY,
-            &m_srcImageColorBuffer, &m_srcImageColorBufferAllocation));
 
         auto computeShaderCode = vhFileRead("media/shader/Video/comp.spv");
         VkShaderModule computeShaderModule = vhPipeCreateShaderModule(m_device, computeShaderCode);
@@ -203,8 +198,6 @@ namespace vh {
         std::array<VkDescriptorPoolSize, 1> poolSizes{};
         poolSizes[0].type = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
         poolSizes[0].descriptorCount = 3;
-        //poolSizes[1].type = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-        //poolSizes[1].descriptorCount = 1;
         VkDescriptorPoolCreateInfo poolInfo{};
         poolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
         poolInfo.poolSizeCount = (uint32_t)poolSizes.size();
@@ -226,7 +219,7 @@ namespace vh {
             std::array<VkWriteDescriptorSet, 2> descriptorWrites{};
 
             VkDescriptorImageInfo imageInfo0{};
-            imageInfo0.imageView = m_srcImageView0;
+            imageInfo0.imageView = m_yuvImagePlane0View;
             imageInfo0.imageLayout = VK_IMAGE_LAYOUT_GENERAL;
             descriptorWrites[0].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
             descriptorWrites[0].dstSet = m_computeDescriptorSets[i];
@@ -236,12 +229,8 @@ namespace vh {
             descriptorWrites[0].descriptorCount = 1;
             descriptorWrites[0].pImageInfo = &imageInfo0;
 
-            //VkDescriptorBufferInfo bufferInfo{};
-            //bufferInfo.buffer = m_srcImageColorBuffer;
-            //bufferInfo.offset = 0;
-            //bufferInfo.range = 400 * 300 * 2;
             VkDescriptorImageInfo imageInfo1{};
-            imageInfo1.imageView = m_srcImageColorView;
+            imageInfo1.imageView = m_yuvImageChromaView;
             imageInfo1.imageLayout = VK_IMAGE_LAYOUT_GENERAL;
             descriptorWrites[1].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
             descriptorWrites[1].dstSet = m_computeDescriptorSets[i];
@@ -249,112 +238,44 @@ namespace vh {
             descriptorWrites[1].dstArrayElement = 0;
             descriptorWrites[1].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
             descriptorWrites[1].descriptorCount = 1;
-            //descriptorWrites[1].pBufferInfo = &bufferInfo;
             descriptorWrites[1].pImageInfo = &imageInfo1;
 
             vkUpdateDescriptorSets(m_device, (uint32_t)descriptorWrites.size(), descriptorWrites.data(), 0, nullptr);
         }
 
-
-        VkBuffer buf;
-        VmaAllocation bufAlloc;
-        VHCHECKRESULT(vhBufCreateBuffer(m_allocator, 800 * 600 + 400 * 300 * 2,
-            VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VMA_MEMORY_USAGE_CPU_TO_GPU,
-            &buf, &bufAlloc));
-        void* data;
-        vmaMapMemory(m_allocator, bufAlloc, &data);
-        //int x = 0;
-        //for (int i = 0; i < 800 * 600 * 3; i++) {
-        //    reinterpret_cast<uint8_t*>(data)[i] = x & 0xff;
-        //    x = x * 7 + 13;
-        //}
-
-        //memset(data, 0x00, 800 * 600 + 400 * 300 * 2);
-        //for (int i = 0; i < 400 * 300; i++) {
-        //    reinterpret_cast<uint8_t*>(data)[800 * 600 + i * 2 + 1] = 0xa0;
-        //}
-
-        memset(data, 0x80, 800 * 600 + 400 * 300 * 2);
-        vmaUnmapMemory(m_allocator, bufAlloc);
-
         VkCommandBuffer cmdBuffer = vhCmdBeginSingleTimeCommands(m_device, m_encodeCommandPool);
+
         initRateControl(cmdBuffer, 20);
+
         VHCHECKRESULT(vhBufTransitionImageLayout(m_device, m_encodeQueue, cmdBuffer,
             m_dpbImage, VK_FORMAT_G8_B8R8_2PLANE_420_UNORM, VK_IMAGE_ASPECT_COLOR_BIT, 1, 1,
             VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_VIDEO_ENCODE_DPB_KHR));
         VHCHECKRESULT(vhBufTransitionImageLayout(m_device, m_encodeQueue, cmdBuffer,
-            m_srcImage, VK_FORMAT_G8_B8R8_2PLANE_420_UNORM, VK_IMAGE_ASPECT_COLOR_BIT, 1, 1,
-            VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL));
-
-        std::vector<VkBufferImageCopy> copyRegions;
-
-        VkBufferImageCopy region = {};
-        region.imageSubresource.baseArrayLayer = 0;
-        region.imageSubresource.mipLevel = 0;
-        region.imageSubresource.layerCount = 1;
-        region.imageOffset.x = 0;
-        region.imageOffset.y = 0;
-        region.imageOffset.z = 0;
-        region.imageExtent.depth = 1;
-
-        region.bufferOffset = 800 * 600 * 0;
-        region.bufferRowLength = 800;
-        region.imageSubresource.aspectMask = VK_IMAGE_ASPECT_PLANE_0_BIT << 0;
-        region.imageExtent.width = 800;
-        region.imageExtent.height = 600;
-        copyRegions.push_back(region);
-
-        region.bufferOffset = 800 * 600 * 1;
-        region.bufferRowLength = 400;
-        region.imageSubresource.aspectMask = VK_IMAGE_ASPECT_PLANE_0_BIT << 1;
-        region.imageExtent.width = 400;
-        region.imageExtent.height = 300;
-        copyRegions.push_back(region);
-
-        //region.bufferOffset = 800 * 600 * 2;
-        //region.bufferRowLength = 400;
-        //region.imageSubresource.aspectMask = VK_IMAGE_ASPECT_PLANE_0_BIT << 2;
-        //region.imageExtent.width = 400;
-        //region.imageExtent.height = 300;
-        //copyRegions.push_back(region);
-
-        vkCmdCopyBufferToImage(cmdBuffer, buf, m_srcImage, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, (uint32_t)copyRegions.size(), copyRegions.data());
-
-
+                m_yuvImage, VK_FORMAT_G8_B8R8_2PLANE_420_UNORM, VK_IMAGE_ASPECT_COLOR_BIT, 1, 1,
+            VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_VIDEO_ENCODE_SRC_KHR));
         VHCHECKRESULT(vhBufTransitionImageLayout(m_device, m_encodeQueue, cmdBuffer,
-                m_srcImage, VK_FORMAT_G8_B8R8_2PLANE_420_UNORM, VK_IMAGE_ASPECT_COLOR_BIT, 1, 1,
-            VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_VIDEO_ENCODE_SRC_KHR));
-        VHCHECKRESULT(vhBufTransitionImageLayout(m_device, m_encodeQueue, cmdBuffer,
-            m_srcImageColor, VK_FORMAT_R8G8_UNORM, VK_IMAGE_ASPECT_COLOR_BIT, 1, 1,
+            m_yuvImageChroma, VK_FORMAT_R8G8_UNORM, VK_IMAGE_ASPECT_COLOR_BIT, 1, 1,
             VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL));
+
         VHCHECKRESULT(vhCmdEndSingleTimeCommands(m_device, m_encodeQueue, m_encodeCommandPool, cmdBuffer));
 
-        vmaDestroyBuffer(m_allocator, buf, bufAlloc);
-
         m_outfile.open("hwenc.264", std::ios::binary);
-        // Hardcoded for 352x288, 25 fps
-        // need to implement an encoder for SPS and PPS or use an external one
-        const uint8_t sps[] =
-        { 0x00, 0x00, 0x00, 0x01, 0x67, 0x64, 0x00, 0x29, 0xac, 0xca, 0x81, 0x60, 0x96, 0x40 };
         h264::encodeSps(m_sps).writeTo(m_outfile);
-        //m_outfile.write(reinterpret_cast<const char*>(sps), sizeof(sps));
-
-        const uint8_t pps[] =
-        { 0x00, 0x00, 0x00, 0x01, 0x68, 0xee, 0x3c, 0xb0 };
         h264::encodePps(m_pps).writeTo(m_outfile);
-        //m_outfile.write(reinterpret_cast<const char*>(pps), sizeof(pps));
 
         m_frameCount = 0;
         m_initialized = true;
         return VK_SUCCESS;
     }
 
-    VkResult VHVideoEncoder::queueEncode(VkImageView imageView)
+    VkResult VHVideoEncoder::queueEncode(VkImageView inputImageView)
     {
+        // convert input image RGB to YUV multiplane
 
+        // set the input image view into the descriptor for the compute shader
         std::array<VkWriteDescriptorSet, 1> descriptorWrites{};
         VkDescriptorImageInfo imageInfo{};
-        imageInfo.imageView = imageView;
+        imageInfo.imageView = inputImageView;
         imageInfo.imageLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
         descriptorWrites[0].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
         descriptorWrites[0].dstSet = m_computeDescriptorSets[0];
@@ -365,54 +286,42 @@ namespace vh {
         descriptorWrites[0].pImageInfo = &imageInfo;
         vkUpdateDescriptorSets(m_device, (uint32_t)descriptorWrites.size(), descriptorWrites.data(), 0, nullptr);
 
-
+        // begin command buffer for compute shader
         VkCommandBuffer cmdBuffer = vhCmdBeginSingleTimeCommands(m_device, m_computeCommandPool);
-        
+
+        // transition YUV image (full and chroma) to be shader target
         VHCHECKRESULT(vhBufTransitionImageLayout(m_device, m_computeQueue, cmdBuffer,
-            m_srcImage, VK_FORMAT_G8_B8R8_2PLANE_420_UNORM, VK_IMAGE_ASPECT_PLANE_0_BIT, 1, 1,
+            m_yuvImage, VK_FORMAT_G8_B8R8_2PLANE_420_UNORM, VK_IMAGE_ASPECT_PLANE_0_BIT, 1, 1,
             VK_IMAGE_LAYOUT_VIDEO_ENCODE_SRC_KHR, VK_IMAGE_LAYOUT_GENERAL));
         VHCHECKRESULT(vhBufTransitionImageLayout(m_device, m_encodeQueue, cmdBuffer,
-            m_srcImageColor, VK_FORMAT_R8G8_UNORM, VK_IMAGE_ASPECT_COLOR_BIT, 1, 1,
+            m_yuvImageChroma, VK_FORMAT_R8G8_UNORM, VK_IMAGE_ASPECT_COLOR_BIT, 1, 1,
             VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, VK_IMAGE_LAYOUT_GENERAL));
 
+        // run the RGB->YUV conversion shader
         vkCmdBindPipeline(cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, m_computePipeline);
         vkCmdBindDescriptorSets(cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, m_computePipelineLayout, 0, 1, &m_computeDescriptorSets[0], 0, 0);
-        vkCmdDispatch(cmdBuffer, 800/16, 600/16, 1);
+        vkCmdDispatch(cmdBuffer, 800/16, 600/16, 1); // work item local size = 16x16
 
+        // transition the YUV image to be a video encode source
         VHCHECKRESULT(vhBufTransitionImageLayout(m_device, m_computeQueue, cmdBuffer,
-            m_srcImage, VK_FORMAT_G8_B8R8_2PLANE_420_UNORM, VK_IMAGE_ASPECT_PLANE_0_BIT, 1, 1,
+            m_yuvImage, VK_FORMAT_G8_B8R8_2PLANE_420_UNORM, VK_IMAGE_ASPECT_PLANE_0_BIT, 1, 1,
             VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_LAYOUT_VIDEO_ENCODE_SRC_KHR));
 
         VHCHECKRESULT(vhCmdEndSingleTimeCommands(m_device, m_computeQueue, m_computeCommandPool, cmdBuffer));
 
 
+        // begin command buffer for copying chroma image into the YUV image plane 2
         cmdBuffer = vhCmdBeginSingleTimeCommands(m_device, m_computeCommandPool);
 
-        //VHCHECKRESULT(vhBufTransitionImageLayout(m_device, m_encodeQueue, cmdBuffer,
-        //    image, VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_ASPECT_COLOR_BIT, 1, 1,
-        //    VK_IMAGE_LAYOUT_PRESENT_SRC_KHR, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL));
+        // transition the YUV image as copy target and the chroma image to be copy source
         VHCHECKRESULT(vhBufTransitionImageLayout(m_device, m_computeQueue, cmdBuffer,
-            m_srcImage, VK_FORMAT_G8_B8R8_2PLANE_420_UNORM, VK_IMAGE_ASPECT_PLANE_1_BIT, 1, 1,
+            m_yuvImage, VK_FORMAT_G8_B8R8_2PLANE_420_UNORM, VK_IMAGE_ASPECT_PLANE_1_BIT, 1, 1,
             VK_IMAGE_LAYOUT_VIDEO_ENCODE_SRC_KHR, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL));
         VHCHECKRESULT(vhBufTransitionImageLayout(m_device, m_computeQueue, cmdBuffer,
-            m_srcImageColor, VK_FORMAT_R8G8_UNORM, VK_IMAGE_ASPECT_COLOR_BIT, 1, 1,
+            m_yuvImageChroma, VK_FORMAT_R8G8_UNORM, VK_IMAGE_ASPECT_COLOR_BIT, 1, 1,
             VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL));
-
-        //VkImageCopy regions;
-        //regions.srcSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-        //regions.srcSubresource.baseArrayLayer = 0;
-        //regions.srcSubresource.layerCount = 1;
-        //regions.srcSubresource.mipLevel = 0;
-        //regions.srcOffset = { 0, 0, 0 };
-        //regions.dstSubresource.aspectMask = VK_IMAGE_ASPECT_PLANE_0_BIT;
-        //regions.dstSubresource.baseArrayLayer = 0;
-        //regions.dstSubresource.layerCount = 1;
-        //regions.dstSubresource.mipLevel = 0;
-        //regions.dstOffset = { 0, 0, 0 };
-        //regions.extent = { 800, 600, 0 };
-
-        //vkCmdCopyImage(cmdBuffer, image, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, m_srcImage, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &regions);
-        
+      
+        // copy the full chroma image into the 2nd plane of the YUV image
         VkImageCopy regions;
         regions.srcSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
         regions.srcSubresource.baseArrayLayer = 0;
@@ -425,49 +334,19 @@ namespace vh {
         regions.dstSubresource.mipLevel = 0;
         regions.dstOffset = { 0, 0, 0 };
         regions.extent = { 400, 300, 1 };
+        vkCmdCopyImage(cmdBuffer, m_yuvImageChroma, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, m_yuvImage, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &regions);
 
-        vkCmdCopyImage(cmdBuffer, m_srcImageColor, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, m_srcImage, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &regions);
-
-
-        //VkBufferImageCopy regions = {};
-        //regions.imageSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-        //regions.imageSubresource.baseArrayLayer = 0;
-        //regions.imageSubresource.layerCount = 1;
-        //regions.imageSubresource.mipLevel = 0;
-        //regions.imageOffset = { 0, 0 };
-        //regions.imageExtent = { 400, 300 };
-        //regions.bufferOffset = 0;
-        //regions.bufferRowLength = 400;
-        //regions.bufferImageHeight = 300;
-        //vkCmdCopyImageToBuffer(cmdBuffer, m_srcImageColor, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, m_srcImageColorBuffer, 1, &regions);
-
-        //VHCHECKRESULT(vhCmdEndSingleTimeCommands(m_device, m_computeQueue, m_computeCommandPool, cmdBuffer));
-
-        //cmdBuffer = vhCmdBeginSingleTimeCommands(m_device, m_computeCommandPool);
-        ////VkBufferImageCopy regions = {};
-        //regions.imageSubresource.aspectMask = VK_IMAGE_ASPECT_PLANE_1_BIT;
-        //regions.imageSubresource.baseArrayLayer = 0;
-        //regions.imageSubresource.layerCount = 1;
-        //regions.imageSubresource.mipLevel = 0;
-        //regions.imageOffset = { 0, 0 };
-        //regions.imageExtent = { 400, 300 };
-        //regions.bufferOffset = 0;
-        //regions.bufferRowLength = 400;
-        //regions.bufferImageHeight = 300;
-        //vkCmdCopyBufferToImage(cmdBuffer, m_srcImageColorBuffer, m_srcImage, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &regions);
-
-        //VHCHECKRESULT(vhBufTransitionImageLayout(m_device, m_encodeQueue, cmdBuffer,
-        //    image, VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_ASPECT_COLOR_BIT, 1, 1,
-        //    VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR));
+        // transition the YUV image to be a video encode source
         VHCHECKRESULT(vhBufTransitionImageLayout(m_device, m_computeQueue, cmdBuffer,
-            m_srcImage, VK_FORMAT_G8_B8R8_2PLANE_420_UNORM, VK_IMAGE_ASPECT_PLANE_1_BIT, 1, 1,
+            m_yuvImage, VK_FORMAT_G8_B8R8_2PLANE_420_UNORM, VK_IMAGE_ASPECT_PLANE_1_BIT, 1, 1,
             VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_VIDEO_ENCODE_SRC_KHR));
 
         VHCHECKRESULT(vhCmdEndSingleTimeCommands(m_device, m_computeQueue, m_computeCommandPool, cmdBuffer));
 
-
+        // begin command buffer for video encode
         cmdBuffer = vhCmdBeginSingleTimeCommands(m_device, m_encodeCommandPool);
 
+        // start a video encode session (without reference pics -> no I or B frames)
         VkVideoBeginCodingInfoKHR encodeBeginInfo = { VK_STRUCTURE_TYPE_VIDEO_BEGIN_CODING_INFO_KHR };
         encodeBeginInfo.videoSession = m_videoSession;
         encodeBeginInfo.videoSessionParameters = m_videoSessionParameters;
@@ -475,29 +354,34 @@ namespace vh {
         encodeBeginInfo.pReferenceSlots = nullptr;
         vkCmdBeginVideoCodingKHR(cmdBuffer, &encodeBeginInfo);
 
+        // set the YUV image as input picture for the encoder
         VkVideoPictureResourceInfoKHR inputPicResource = { VK_STRUCTURE_TYPE_VIDEO_PICTURE_RESOURCE_INFO_KHR };
-        inputPicResource.imageViewBinding = m_srcImageView;
+        inputPicResource.imageViewBinding = m_yuvImageView;
         inputPicResource.codedOffset = { 0, 0 };
         inputPicResource.codedExtent = { m_width, m_height };
         inputPicResource.baseArrayLayer = 0;
 
+        // set an image view as DPB (decoded output picture), later (with I frame support) used as reference picture
         VkVideoPictureResourceInfoKHR dpbPicResource = { VK_STRUCTURE_TYPE_VIDEO_PICTURE_RESOURCE_INFO_KHR };
         dpbPicResource.imageViewBinding = m_dpbImageView;
         dpbPicResource.codedOffset = { 0, 0 };
         dpbPicResource.codedExtent = { m_width, m_height };
         dpbPicResource.baseArrayLayer = 0;
 
+        // no reference pictures used
         VkVideoReferenceSlotInfoKHR referenceSlot{ VK_STRUCTURE_TYPE_VIDEO_REFERENCE_SLOT_INFO_KHR };
         referenceSlot.pNext = nullptr;
         referenceSlot.slotIndex = 0;
         referenceSlot.pPictureResource = &dpbPicResource;
 
+        // set all the frame parameters
         h264::IntraFrameInfo intraFrameInfo(m_frameCount, m_width, m_height,
             m_sps,
             m_pps,
             m_frameCount == 0);
         VkVideoEncodeH264VclFrameInfoEXT* encodeH264FrameInfo = intraFrameInfo.getEncodeH264FrameInfo();
 
+        // combine all structures in one control structure
         VkVideoEncodeInfoKHR videoEncodeInfo = { VK_STRUCTURE_TYPE_VIDEO_ENCODE_INFO_KHR };
         videoEncodeInfo.pNext = encodeH264FrameInfo;
         videoEncodeInfo.qualityLevel = 0;
@@ -506,15 +390,19 @@ namespace vh {
         videoEncodeInfo.srcPictureResource = inputPicResource;
         videoEncodeInfo.pSetupReferenceSlot = &referenceSlot;
 
+        // prepare the query pool for the resulting bitstream
         const uint32_t querySlotId = 0;
         vkCmdResetQueryPool(cmdBuffer, m_queryPool, querySlotId, 1);
         vkCmdBeginQuery(cmdBuffer, m_queryPool, querySlotId, VkQueryControlFlags());
+        // encode the frame as video
         vkCmdEncodeVideoKHR(cmdBuffer, &videoEncodeInfo);
+        // end the query for the result
         vkCmdEndQuery(cmdBuffer, m_queryPool, querySlotId);
-
+        // finish the video session
         VkVideoEndCodingInfoKHR encodeEndInfo = { VK_STRUCTURE_TYPE_VIDEO_END_CODING_INFO_KHR };
         vkCmdEndVideoCodingKHR(cmdBuffer, &encodeEndInfo);
 
+        // run the encoding
         VHCHECKRESULT(vhCmdEndSingleTimeCommands(m_device, m_encodeQueue, m_encodeCommandPool, cmdBuffer));
 
         struct nvVideoEncodeStatus {
@@ -522,22 +410,20 @@ namespace vh {
             uint32_t bitstreamSize;
             VkQueryResultStatusKHR status;
         };
+        // get the resulting bitstream
         nvVideoEncodeStatus encodeResult[2]; // 2nd slot is non vcl data
         memset(&encodeResult, 0, sizeof(encodeResult));
         VHCHECKRESULT(vkGetQueryPoolResults(m_device, m_queryPool, querySlotId, 1, sizeof(nvVideoEncodeStatus),
             &encodeResult[0], sizeof(nvVideoEncodeStatus), VK_QUERY_RESULT_WITH_STATUS_BIT_KHR | VK_QUERY_RESULT_WAIT_BIT));
 
         std::cout << "status: " << encodeResult[0].status << " offset: " << encodeResult[0].bitstreamStartOffset << " size: " << encodeResult[0].bitstreamSize << std::endl;
+        // invalidate host caches
         vmaInvalidateAllocation(m_allocator, m_bitStreamBufferAllocation, encodeResult[0].bitstreamStartOffset, encodeResult[0].bitstreamSize);
         void* data;
+        // map memory to host and write the bitstream into the file
         vmaMapMemory(m_allocator, m_bitStreamBufferAllocation, &data);
         m_outfile.write(reinterpret_cast<const char*>(data) + encodeResult[0].bitstreamStartOffset, encodeResult[0].bitstreamSize);
-        //memcpy(bufferData, reinterpret_cast<uint8_t*>(data) + encodeResult[0].bitstreamStartOffset, encodeResult[0].bitstreamSize);
         vmaUnmapMemory(m_allocator, m_bitStreamBufferAllocation);
-
-
-        //fwrite(data + bitstreamOffset + encodeResult[0].bitstreamStartOffset, 1, encodeResult[0].bitstreamSize, encodeConfig->outputVid);
-
 
         m_frameCount++;
 
@@ -559,13 +445,11 @@ namespace vh {
         vkDestroyVideoSessionParametersKHR(m_device, m_videoSessionParameters, nullptr);
         vkDestroyQueryPool(m_device, m_queryPool, nullptr);
         vmaDestroyBuffer(m_allocator, m_bitStreamBuffer, m_bitStreamBufferAllocation);
-        vmaDestroyBuffer(m_allocator, m_srcImageColorBuffer, m_srcImageColorBufferAllocation);
-        vkDestroyImageView(m_device, m_srcImageColorView, nullptr);
-        vmaDestroyImage(m_allocator, m_srcImageColor, m_srcImageColorAllocation);
-        vkDestroyImageView(m_device, m_srcImageView1, nullptr);
-        vkDestroyImageView(m_device, m_srcImageView0, nullptr);
-        vkDestroyImageView(m_device, m_srcImageView, nullptr);
-        vmaDestroyImage(m_allocator, m_srcImage, m_srcImageAllocation);
+        vkDestroyImageView(m_device, m_yuvImageChromaView, nullptr);
+        vmaDestroyImage(m_allocator, m_yuvImageChroma, m_yuvImageChromaAllocation);
+        vkDestroyImageView(m_device, m_yuvImagePlane0View, nullptr);
+        vkDestroyImageView(m_device, m_yuvImageView, nullptr);
+        vmaDestroyImage(m_allocator, m_yuvImage, m_yuvImageAllocation);
         vkDestroyImageView(m_device, m_dpbImageView, nullptr);
         vmaDestroyImage(m_allocator, m_dpbImage, m_dpbImageAllocation);
         vkDestroyVideoSessionKHR(m_device, m_videoSession, nullptr);

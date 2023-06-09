@@ -139,23 +139,12 @@ namespace ve {
 			static double timeSinceLastWrite = TIME_BETWEEN_WRITES;
 			timeSinceLastWrite += event.dt;
 
-			// write out previous frame
-			uint8_t* dataImage;
-			uint32_t width, height;
-			VkResult ret = videoEncoder.finishCopy(dataImage, width, height);
-			if (ret == VK_SUCCESS) {
-				//videoEncoder.queueForEncode(dataImage, width, height, RECORD_FPS);
-				std::cout << "frame encoded" << std::endl;
-			}
-
 			if (!g_writeFrames || timeSinceLastWrite < TIME_BETWEEN_WRITES)
 				return;
 			timeSinceLastWrite = 0.0;
 
 			// queue another frame for copy
 			VkExtent2D extent = getWindowPointer()->getExtent();
-			VkImage image = getEnginePointer()->getRenderer()->getSwapChainImage();
-
 			videoEncoder.init(getEnginePointer()->getRenderer()->getDevice(),
 				getEnginePointer()->getRenderer()->getVmaAllocator(),
 				getEnginePointer()->getRenderer()->getGraphicsQueueFamily(),
@@ -165,15 +154,7 @@ namespace ve {
 				getEnginePointer()->getRenderer()->getEncodeQueue(),
 				getEnginePointer()->getRenderer()->getEncodeCommandPool(),
 				extent.width, extent.height);
-
 			videoEncoder.queueEncode(getEnginePointer()->getRenderer()->getSwapChainImageView());
-			//videoEncoder.queueCopy(getEnginePointer()->getRenderer()->getDevice(),
-			//	getEnginePointer()->getRenderer()->getVmaAllocator(),
-			//	getEnginePointer()->getRenderer()->getGraphicsQueue(),
-			//	getEnginePointer()->getRenderer()->getCommandPool(),
-			//	image, VK_FORMAT_R8G8B8A8_UNORM,
-			//	VK_IMAGE_ASPECT_COLOR_BIT, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR,
-			//	extent.width, extent.height);
 		}
 
 	public:
