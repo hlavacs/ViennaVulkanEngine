@@ -302,11 +302,6 @@ namespace vh {
         vkCmdBindDescriptorSets(cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, m_computePipelineLayout, 0, 1, &m_computeDescriptorSets[0], 0, 0);
         vkCmdDispatch(cmdBuffer, 800/16, 600/16, 1); // work item local size = 16x16
 
-        // transition the YUV image to be a video encode source
-        VHCHECKRESULT(vhBufTransitionImageLayout(m_device, m_computeQueue, cmdBuffer,
-            m_yuvImage, VK_FORMAT_G8_B8R8_2PLANE_420_UNORM, VK_IMAGE_ASPECT_PLANE_0_BIT, 1, 1,
-            VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_LAYOUT_VIDEO_ENCODE_SRC_KHR));
-
         VHCHECKRESULT(vhCmdEndSingleTimeCommands(m_device, m_computeQueue, m_computeCommandPool, cmdBuffer));
 
 
@@ -316,7 +311,7 @@ namespace vh {
         // transition the YUV image as copy target and the chroma image to be copy source
         VHCHECKRESULT(vhBufTransitionImageLayout(m_device, m_computeQueue, cmdBuffer,
             m_yuvImage, VK_FORMAT_G8_B8R8_2PLANE_420_UNORM, VK_IMAGE_ASPECT_PLANE_1_BIT, 1, 1,
-            VK_IMAGE_LAYOUT_VIDEO_ENCODE_SRC_KHR, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL));
+            VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL));
         VHCHECKRESULT(vhBufTransitionImageLayout(m_device, m_computeQueue, cmdBuffer,
             m_yuvImageChroma, VK_FORMAT_R8G8_UNORM, VK_IMAGE_ASPECT_COLOR_BIT, 1, 1,
             VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL));
