@@ -142,7 +142,7 @@ namespace ve {
 	protected:
 		void onFrameEnded(veEvent event) override
 		{
-			const uint32_t RECORD_FPS = 20;
+			const uint32_t RECORD_FPS = 100;
 			const double TIME_BETWEEN_WRITES = 1.0 / RECORD_FPS;
 			static double timeSinceLastWrite = TIME_BETWEEN_WRITES;
 			timeSinceLastWrite += event.dt;
@@ -164,7 +164,7 @@ namespace ve {
 				getEnginePointer()->getRenderer()->getEncodeQueue(),
 				getEnginePointer()->getRenderer()->getEncodeCommandPool(),
 				getEnginePointer()->getRenderer()->getSwapChainImageViews(),
-				extent.width, extent.height);
+				extent.width, extent.height, RECORD_FPS);
 			videoEncoder.queueEncode(getEnginePointer()->getRenderer()->getImageIndex());
 		}
 

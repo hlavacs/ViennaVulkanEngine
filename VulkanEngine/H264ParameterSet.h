@@ -17,6 +17,20 @@ namespace h264
         return (size + alignment - 1) & ~(alignment - 1);
     }
 
+    StdVideoH264SequenceParameterSetVui getStdVideoH264SequenceParameterSetVui(uint32_t fps)
+    {
+        StdVideoH264SpsVuiFlags vuiFlags = {};
+        vuiFlags.timing_info_present_flag = 1u;
+        vuiFlags.fixed_frame_rate_flag = 1u;
+
+        StdVideoH264SequenceParameterSetVui vui = {};
+        vui.flags = vuiFlags;
+        vui.num_units_in_tick = 1;
+        vui.time_scale = fps * 2; // 2 fields
+
+        return vui;
+    }
+
     StdVideoH264SequenceParameterSet getStdVideoH264SequenceParameterSet(uint32_t width, uint32_t height,
         StdVideoH264SequenceParameterSetVui* pVui)
     {
@@ -228,10 +242,30 @@ namespace h264
         out.appendExpG(sps.pic_height_in_map_units_minus1); // pic_height_in_map_units_minus_1
         out.appendBits(sps.flags.frame_mbs_only_flag, 1); // frame_mbs_only_flag
         out.appendBits(sps.flags.direct_8x8_inference_flag, 1); // direct_8x8_interfernce
-        //out.appendBits(sps.flags.frame_cropping_flag, 1); // frame_cropping_flag
-        out.appendBits(0x0, 1); // frame_cropping_flag
-        //out.appendBits(sps.flags.vui_parameters_present_flag, 1); // vui_parameter_present
-        out.appendBits(0x0, 1); // vui_parameter_present
+        out.appendBits(sps.flags.frame_cropping_flag, 1); // frame_cropping_flag
+        if (sps.flags.frame_cropping_flag) {
+            out.appendExpG(sps.frame_crop_left_offset); // frame_crop_left_offset
+            out.appendExpG(sps.frame_crop_right_offset); // frame_crop_right_offset
+            out.appendExpG(sps.frame_crop_top_offset); // frame_crop_top_offset
+            out.appendExpG(sps.frame_crop_bottom_offset); // frame_crop_bottom_offset
+        }
+        out.appendBits(sps.flags.vui_parameters_present_flag, 1); // vui_parameter_present
+        if (sps.flags.vui_parameters_present_flag) {
+            out.appendBits(0x0, 1); // aspect_ratio_info_present_flag
+            out.appendBits(0x0, 1); // overscan_info_present_flag 
+            out.appendBits(0x0, 1); // video_signal_type_present_flag
+            out.appendBits(0x0, 1); // chroma_loc_info_present_flag
+            out.appendBits(sps.pSequenceParameterSetVui->flags.timing_info_present_flag, 1); // timing_info_present_flag
+            if (sps.pSequenceParameterSetVui->flags.timing_info_present_flag) {
+                out.appendBits(sps.pSequenceParameterSetVui->num_units_in_tick, 32); // num_units_in_tick
+                out.appendBits(sps.pSequenceParameterSetVui->time_scale, 32); // time_scale
+                out.appendBits(sps.pSequenceParameterSetVui->flags.fixed_frame_rate_flag, 1); // fixed_frame_rate_flag
+            }
+            out.appendBits(0x0, 1); // nal_hrd_parameters_present_flag
+            out.appendBits(0x0, 1); // vcl_hrd_parameters_present_flag
+            out.appendBits(0x0, 1); // pic_struct_present_flag
+            out.appendBits(0x0, 1); // bitstream_restriction_flag
+        }
         out.appendBits(0x1, 1); // rbsp stop bit
 
         return out;

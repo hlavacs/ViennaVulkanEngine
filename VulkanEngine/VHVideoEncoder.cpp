@@ -9,7 +9,7 @@ namespace vh {
         uint32_t computeQueueFamily, VkQueue computeQueue, VkCommandPool computeCommandPool,
         uint32_t encodeQueueFamily, VkQueue encodeQueue, VkCommandPool encodeCommandPool,
         const std::vector<VkImageView>& inputImageViews,
-        uint32_t width, uint32_t height)
+        uint32_t width, uint32_t height, uint32_t fps)
     {
         assert(!m_running);
         if (m_initialized) {
@@ -28,7 +28,7 @@ namespace vh {
 
         VHCHECKRESULT(createVideoSession());
         VHCHECKRESULT(allocateVideoSessionMemory());
-        VHCHECKRESULT(createVideoSessionParameters());
+        VHCHECKRESULT(createVideoSessionParameters(fps));
         VHCHECKRESULT(allocateOutputBitStream());
         VHCHECKRESULT(allocateReferenceImages(2));
         VHCHECKRESULT(allocateIntermediateImages());
@@ -140,9 +140,10 @@ namespace vh {
             encodeSessionBindMemory.data());
     }
 
-    VkResult VHVideoEncoder::createVideoSessionParameters()
+    VkResult VHVideoEncoder::createVideoSessionParameters(uint32_t fps)
     {
-        m_sps = h264::getStdVideoH264SequenceParameterSet(m_width, m_height, nullptr);
+        m_vui = h264::getStdVideoH264SequenceParameterSetVui(fps);
+        m_sps = h264::getStdVideoH264SequenceParameterSet(m_width, m_height, &m_vui);
         m_pps = h264::getStdVideoH264PictureParameterSet();
 
         VkVideoEncodeH264SessionParametersAddInfoEXT encodeH264SessionParametersAddInfo = { VK_STRUCTURE_TYPE_VIDEO_ENCODE_H264_SESSION_PARAMETERS_ADD_INFO_EXT };

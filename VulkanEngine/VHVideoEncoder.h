@@ -12,7 +12,7 @@ namespace vh {
 			uint32_t computeQueueFamily, VkQueue computeQueue, VkCommandPool computeCommandPool,
 			uint32_t encodeQueueFamily, VkQueue encodeQueue, VkCommandPool encodeCommandPool,
 			const std::vector<VkImageView>& inputImageViews,
-			uint32_t width, uint32_t height);
+			uint32_t width, uint32_t height, uint32_t fps);
 		VkResult queueEncode(uint32_t currentImageIx);
 		VkResult finishEncode();
 		void deinit();
@@ -24,7 +24,7 @@ namespace vh {
 	private:
         VkResult createVideoSession();
         VkResult allocateVideoSessionMemory();
-        VkResult createVideoSessionParameters();
+        VkResult createVideoSessionParameters(uint32_t fps);
         VkResult allocateOutputBitStream();
         VkResult allocateReferenceImages(uint32_t count);
         VkResult allocateIntermediateImages();
@@ -52,6 +52,7 @@ namespace vh {
 
 		VkVideoSessionKHR m_videoSession;
 		std::vector<VmaAllocation> m_allocations;
+		StdVideoH264SequenceParameterSetVui m_vui;
 		StdVideoH264SequenceParameterSet m_sps;
 		StdVideoH264PictureParameterSet m_pps;
 		VkVideoSessionParametersKHR m_videoSessionParameters;
