@@ -33,7 +33,7 @@ namespace ve {
 			struct nk_context * ctx = pSubrender->getContext();
 
 			if (!g_gameLost) {
-				if (nk_begin(ctx, "", nk_rect(0, 0, 200, 170), NK_WINDOW_BORDER )) {
+				if (nk_begin(ctx, "", nk_rect(0, 0, 200, 200), NK_WINDOW_BORDER )) {
 					char outbuffer[100];
 					nk_layout_row_dynamic(ctx, 45, 1);
 					sprintf(outbuffer, "Score: %03d", g_score);
@@ -45,7 +45,7 @@ namespace ve {
 				}
 			}
 			else {
-				if (nk_begin(ctx, "", nk_rect(500, 500, 200, 170), NK_WINDOW_BORDER )) {
+				if (nk_begin(ctx, "", nk_rect(500, 500, 200, 200), NK_WINDOW_BORDER )) {
 					nk_layout_row_dynamic(ctx, 45, 1);
 					nk_label(ctx, "Game Over", NK_TEXT_LEFT);
 					if (nk_button_label(ctx, "Restart")) {
@@ -54,6 +54,14 @@ namespace ve {
 				}
 
 			};
+			static double fps = 0.0;
+			if (event.dt > 0)
+				fps = 0.05 / event.dt + 0.95 * fps;
+			std::stringstream str;
+			str << std::setprecision(5);
+			str << "FPS " << fps;
+			nk_layout_row_dynamic(ctx, 30, 1);
+			nk_label(ctx, str.str().c_str(), NK_TEXT_LEFT);
 
 			nk_layout_row_dynamic(ctx, 45, 1);
 			nk_checkbox_label(ctx, "Write Frames", &g_writeFrames);
