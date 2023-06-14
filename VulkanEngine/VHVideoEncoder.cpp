@@ -426,7 +426,7 @@ namespace vh {
         // run the RGB->YUV conversion shader
         vkCmdBindPipeline(m_computeCommandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, m_computePipeline);
         vkCmdBindDescriptorSets(m_computeCommandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, m_computePipelineLayout, 0, 1, &m_computeDescriptorSets[currentImageIx], 0, 0);
-        vkCmdDispatch(m_computeCommandBuffer, 800/16, 600/16, 1); // work item local size = 16x16
+        vkCmdDispatch(m_computeCommandBuffer, m_width/16, m_height/16, 1); // work item local size = 16x16
 
 
         // transition the YUV image as copy target and the chroma image to be copy source
@@ -449,7 +449,7 @@ namespace vh {
         regions.dstSubresource.layerCount = 1;
         regions.dstSubresource.mipLevel = 0;
         regions.dstOffset = { 0, 0, 0 };
-        regions.extent = { 400, 300, 1 };
+        regions.extent = { m_width / 2, m_height / 2, 1 };
         vkCmdCopyImage(m_computeCommandBuffer, m_yuvImageChroma, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, m_yuvImage, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &regions);
 
         VHCHECKRESULT(vkEndCommandBuffer(m_computeCommandBuffer));
