@@ -11,6 +11,7 @@ namespace vh {
         const std::vector<VkImageView>& inputImageViews,
         uint32_t width, uint32_t height)
     {
+        assert(!m_running);
         if (m_initialized) {
             return VK_SUCCESS;
         }
@@ -49,10 +50,32 @@ namespace vh {
     }
 
     VkResult VHVideoEncoder::queueEncode(uint32_t currentImageIx)
-    {        
+    {
+        assert(!m_running);
         VHCHECKRESULT(convertRGBtoYUV(currentImageIx));
         VHCHECKRESULT(encodeVideoFrame());
-        VHCHECKRESULT(readOutputVideoPacket());
+        m_backgroundCopy = std::thread([this] {
+            // blocks for result
+            VkResult ret = readOutputVideoPacket();
+            if (ret != VK_SUCCESS) {
+                std::cout << "readOutputVideoPacket failed";
+            }
+        });
+        m_running = true;
+        return VK_SUCCESS;
+    }
+
+    VkResult VHVideoEncoder::finishEncode()
+    {
+        if (!m_running) {
+            return VK_NOT_READY;
+        }
+        m_backgroundCopy.join();
+        vkFreeCommandBuffers(m_device, m_computeCommandPool, 1, &m_computeCommandBuffer);
+        vkFreeCommandBuffers(m_device, m_encodeCommandPool, 1, &m_encodeCommandBuffer);
+        m_frameCount++;
+
+        m_running = false;
         return VK_SUCCESS;
     }
     
@@ -389,32 +412,28 @@ namespace vh {
     VkResult VHVideoEncoder::convertRGBtoYUV(uint32_t currentImageIx)
     {
         // begin command buffer for compute shader
-        VkCommandBuffer cmdBuffer = vhCmdBeginSingleTimeCommands(m_device, m_computeCommandPool);
+        VHCHECKRESULT(vhCmdCreateCommandBuffers(m_device, m_computeCommandPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY, 1, &m_computeCommandBuffer));
+        VHCHECKRESULT(vhCmdBeginCommandBuffer(m_device, m_computeCommandBuffer, VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT));
 
         // transition YUV image (full and chroma) to be shader target
-        VHCHECKRESULT(vhBufTransitionImageLayout(m_device, m_computeQueue, cmdBuffer,
+        VHCHECKRESULT(vhBufTransitionImageLayout(m_device, m_computeQueue, m_computeCommandBuffer,
             m_yuvImage, VK_FORMAT_G8_B8R8_2PLANE_420_UNORM, VK_IMAGE_ASPECT_PLANE_0_BIT, 1, 1,
             VK_IMAGE_LAYOUT_VIDEO_ENCODE_SRC_KHR, VK_IMAGE_LAYOUT_GENERAL));
-        VHCHECKRESULT(vhBufTransitionImageLayout(m_device, m_encodeQueue, cmdBuffer,
+        VHCHECKRESULT(vhBufTransitionImageLayout(m_device, m_computeQueue, m_computeCommandBuffer,
             m_yuvImageChroma, VK_FORMAT_R8G8_UNORM, VK_IMAGE_ASPECT_COLOR_BIT, 1, 1,
             VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, VK_IMAGE_LAYOUT_GENERAL));
 
         // run the RGB->YUV conversion shader
-        vkCmdBindPipeline(cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, m_computePipeline);
-        vkCmdBindDescriptorSets(cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, m_computePipelineLayout, 0, 1, &m_computeDescriptorSets[currentImageIx], 0, 0);
-        vkCmdDispatch(cmdBuffer, 800/16, 600/16, 1); // work item local size = 16x16
+        vkCmdBindPipeline(m_computeCommandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, m_computePipeline);
+        vkCmdBindDescriptorSets(m_computeCommandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, m_computePipelineLayout, 0, 1, &m_computeDescriptorSets[currentImageIx], 0, 0);
+        vkCmdDispatch(m_computeCommandBuffer, 800/16, 600/16, 1); // work item local size = 16x16
 
-        VHCHECKRESULT(vhCmdEndSingleTimeCommands(m_device, m_computeQueue, m_computeCommandPool, cmdBuffer));
-
-
-        // begin command buffer for copying chroma image into the YUV image plane 2
-        cmdBuffer = vhCmdBeginSingleTimeCommands(m_device, m_computeCommandPool);
 
         // transition the YUV image as copy target and the chroma image to be copy source
-        VHCHECKRESULT(vhBufTransitionImageLayout(m_device, m_computeQueue, cmdBuffer,
+        VHCHECKRESULT(vhBufTransitionImageLayout(m_device, m_computeQueue, m_computeCommandBuffer,
             m_yuvImage, VK_FORMAT_G8_B8R8_2PLANE_420_UNORM, VK_IMAGE_ASPECT_PLANE_1_BIT, 1, 1,
             VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL));
-        VHCHECKRESULT(vhBufTransitionImageLayout(m_device, m_computeQueue, cmdBuffer,
+        VHCHECKRESULT(vhBufTransitionImageLayout(m_device, m_computeQueue, m_computeCommandBuffer,
             m_yuvImageChroma, VK_FORMAT_R8G8_UNORM, VK_IMAGE_ASPECT_COLOR_BIT, 1, 1,
             VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL));
       
@@ -431,21 +450,18 @@ namespace vh {
         regions.dstSubresource.mipLevel = 0;
         regions.dstOffset = { 0, 0, 0 };
         regions.extent = { 400, 300, 1 };
-        vkCmdCopyImage(cmdBuffer, m_yuvImageChroma, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, m_yuvImage, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &regions);
+        vkCmdCopyImage(m_computeCommandBuffer, m_yuvImageChroma, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, m_yuvImage, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &regions);
 
-        // transition the YUV image to be a video encode source
-        VHCHECKRESULT(vhBufTransitionImageLayout(m_device, m_computeQueue, cmdBuffer,
-            m_yuvImage, VK_FORMAT_G8_B8R8_2PLANE_420_UNORM, VK_IMAGE_ASPECT_PLANE_1_BIT, 1, 1,
-            VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_VIDEO_ENCODE_SRC_KHR));
-
-        VHCHECKRESULT(vhCmdEndSingleTimeCommands(m_device, m_computeQueue, m_computeCommandPool, cmdBuffer));
+        VHCHECKRESULT(vkEndCommandBuffer(m_computeCommandBuffer));
+        VHCHECKRESULT(vhCmdSubmitCommandBuffer(m_device, m_computeQueue, m_computeCommandBuffer, VK_NULL_HANDLE, VK_NULL_HANDLE, VK_NULL_HANDLE));
         return VK_SUCCESS;
     }
 
     VkResult VHVideoEncoder::encodeVideoFrame()
     {
         // begin command buffer for video encode
-        VkCommandBuffer cmdBuffer = vhCmdBeginSingleTimeCommands(m_device, m_encodeCommandPool);
+        VHCHECKRESULT(vhCmdCreateCommandBuffers(m_device, m_encodeCommandPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY, 1, &m_encodeCommandBuffer));
+        VHCHECKRESULT(vhCmdBeginCommandBuffer(m_device, m_encodeCommandBuffer, VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT));
 
         // start a video encode session (without reference pics -> no I or B frames)
         VkVideoBeginCodingInfoKHR encodeBeginInfo = { VK_STRUCTURE_TYPE_VIDEO_BEGIN_CODING_INFO_KHR };
@@ -453,7 +469,12 @@ namespace vh {
         encodeBeginInfo.videoSessionParameters = m_videoSessionParameters;
         encodeBeginInfo.referenceSlotCount = 0;
         encodeBeginInfo.pReferenceSlots = nullptr;
-        vkCmdBeginVideoCodingKHR(cmdBuffer, &encodeBeginInfo);
+        vkCmdBeginVideoCodingKHR(m_encodeCommandBuffer, &encodeBeginInfo);
+
+        // transition the YUV image to be a video encode source
+        VHCHECKRESULT(vhBufTransitionImageLayout(m_device, m_encodeQueue, m_encodeCommandBuffer,
+            m_yuvImage, VK_FORMAT_G8_B8R8_2PLANE_420_UNORM, VK_IMAGE_ASPECT_PLANE_1_BIT, 1, 1,
+            VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_VIDEO_ENCODE_SRC_KHR));
 
         // set the YUV image as input picture for the encoder
         VkVideoPictureResourceInfoKHR inputPicResource = { VK_STRUCTURE_TYPE_VIDEO_PICTURE_RESOURCE_INFO_KHR };
@@ -493,18 +514,19 @@ namespace vh {
 
         // prepare the query pool for the resulting bitstream
         const uint32_t querySlotId = 0;
-        vkCmdResetQueryPool(cmdBuffer, m_queryPool, querySlotId, 1);
-        vkCmdBeginQuery(cmdBuffer, m_queryPool, querySlotId, VkQueryControlFlags());
+        vkCmdResetQueryPool(m_encodeCommandBuffer, m_queryPool, querySlotId, 1);
+        vkCmdBeginQuery(m_encodeCommandBuffer, m_queryPool, querySlotId, VkQueryControlFlags());
         // encode the frame as video
-        vkCmdEncodeVideoKHR(cmdBuffer, &videoEncodeInfo);
+        vkCmdEncodeVideoKHR(m_encodeCommandBuffer, &videoEncodeInfo);
         // end the query for the result
-        vkCmdEndQuery(cmdBuffer, m_queryPool, querySlotId);
+        vkCmdEndQuery(m_encodeCommandBuffer, m_queryPool, querySlotId);
         // finish the video session
         VkVideoEndCodingInfoKHR encodeEndInfo = { VK_STRUCTURE_TYPE_VIDEO_END_CODING_INFO_KHR };
-        vkCmdEndVideoCodingKHR(cmdBuffer, &encodeEndInfo);
+        vkCmdEndVideoCodingKHR(m_encodeCommandBuffer, &encodeEndInfo);
 
         // run the encoding
-        VHCHECKRESULT(vhCmdEndSingleTimeCommands(m_device, m_encodeQueue, m_encodeCommandPool, cmdBuffer));
+        VHCHECKRESULT(vkEndCommandBuffer(m_encodeCommandBuffer));
+        VHCHECKRESULT(vhCmdSubmitCommandBuffer(m_device, m_encodeQueue, m_encodeCommandBuffer, VK_NULL_HANDLE, VK_NULL_HANDLE, VK_NULL_HANDLE));
         return VK_SUCCESS;
     }
 
@@ -531,7 +553,6 @@ namespace vh {
         m_outfile.write(reinterpret_cast<const char*>(data) + encodeResult[0].bitstreamStartOffset, encodeResult[0].bitstreamSize);
         vmaUnmapMemory(m_allocator, m_bitStreamBufferAllocation);
 
-        m_frameCount++;
         return VK_SUCCESS;
     }
 
@@ -539,6 +560,12 @@ namespace vh {
     {
         if (!m_initialized) {
             return;
+        }
+
+        if (m_running) {
+            m_backgroundCopy.join();
+            vkFreeCommandBuffers(m_device, m_computeCommandPool, 1, &m_computeCommandBuffer);
+            vkFreeCommandBuffers(m_device, m_encodeCommandPool, 1, &m_encodeCommandBuffer);
         }
 
         vkDestroyPipeline(m_device, m_computePipeline, nullptr);

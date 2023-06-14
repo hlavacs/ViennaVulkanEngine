@@ -139,6 +139,8 @@ namespace ve {
 			static double timeSinceLastWrite = TIME_BETWEEN_WRITES;
 			timeSinceLastWrite += event.dt;
 
+			videoEncoder.finishEncode();
+
 			if (!g_writeFrames || timeSinceLastWrite < TIME_BETWEEN_WRITES)
 				return;
 			timeSinceLastWrite = 0.0;

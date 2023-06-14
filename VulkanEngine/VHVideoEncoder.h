@@ -14,6 +14,7 @@ namespace vh {
 			const std::vector<VkImageView>& inputImageViews,
 			uint32_t width, uint32_t height);
 		VkResult queueEncode(uint32_t currentImageIx);
+		VkResult finishEncode();
 		void deinit();
 
 		~VHVideoEncoder() {
@@ -37,6 +38,7 @@ namespace vh {
         VkResult readOutputVideoPacket();
 
 		bool m_initialized{ false };
+		bool m_running{ false };
 		VkDevice m_device;
 		VmaAllocator m_allocator;
 		VkQueue m_computeQueue;
@@ -75,12 +77,15 @@ namespace vh {
 		VmaAllocation m_yuvImageChromaAllocation;
 		VkImageView m_yuvImageChromaView;
 
-
 		VkImage m_dpbImage;
 		VmaAllocation m_dpbImageAllocation;
 		VkImageView m_dpbImageView;
 
 		uint32_t m_frameCount;
+
+		VkCommandBuffer m_computeCommandBuffer;
+		VkCommandBuffer m_encodeCommandBuffer;
+		std::thread m_backgroundCopy;
 	};
 }
 
