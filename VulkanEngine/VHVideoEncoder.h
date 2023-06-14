@@ -26,7 +26,7 @@ namespace vh {
         VkResult allocateVideoSessionMemory();
         VkResult createVideoSessionParameters();
         VkResult allocateOutputBitStream();
-        VkResult allocateReferenceImages();
+        VkResult allocateReferenceImages(uint32_t count);
         VkResult allocateIntermediateImages();
         VkResult createOutputQueryPool();
         VkResult createYUVConversionPipeline(const std::vector<VkImageView>& inputImageViews);
@@ -77,9 +77,9 @@ namespace vh {
 		VmaAllocation m_yuvImageChromaAllocation;
 		VkImageView m_yuvImageChromaView;
 
-		VkImage m_dpbImage;
-		VmaAllocation m_dpbImageAllocation;
-		VkImageView m_dpbImageView;
+		std::vector<VkImage> m_dpbImages;
+		std::vector <VmaAllocation> m_dpbImageAllocations;
+		std::vector <VkImageView> m_dpbImageViews;
 
 		uint32_t m_frameCount;
 

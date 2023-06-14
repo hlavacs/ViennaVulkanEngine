@@ -30,7 +30,7 @@ namespace vh {
         VHCHECKRESULT(allocateVideoSessionMemory());
         VHCHECKRESULT(createVideoSessionParameters());
         VHCHECKRESULT(allocateOutputBitStream());
-        VHCHECKRESULT(allocateReferenceImages());
+        VHCHECKRESULT(allocateReferenceImages(2));
         VHCHECKRESULT(allocateIntermediateImages());
         VHCHECKRESULT(createOutputQueryPool());
         VHCHECKRESULT(createYUVConversionPipeline(inputImageViews));
@@ -173,28 +173,33 @@ namespace vh {
             &m_bitStreamBuffer, &m_bitStreamBufferAllocation);
     }
 
-    VkResult VHVideoEncoder::allocateReferenceImages()
+    VkResult VHVideoEncoder::allocateReferenceImages(uint32_t count)
     {
-        VkImageCreateInfo tmpImgCreateInfo;
-        tmpImgCreateInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
-        tmpImgCreateInfo.pNext = &m_videoProfile;
-        tmpImgCreateInfo.imageType = VK_IMAGE_TYPE_2D;
-        tmpImgCreateInfo.format = VK_FORMAT_G8_B8R8_2PLANE_420_UNORM;
-        tmpImgCreateInfo.extent = { m_width, m_height, 1 };
-        tmpImgCreateInfo.mipLevels = 1;
-        tmpImgCreateInfo.arrayLayers = 1;
-        tmpImgCreateInfo.samples = VK_SAMPLE_COUNT_1_BIT;
-        tmpImgCreateInfo.tiling = VK_IMAGE_TILING_OPTIMAL;
-        tmpImgCreateInfo.usage = VK_IMAGE_USAGE_VIDEO_ENCODE_DPB_BIT_KHR; // DPB ONLY
-        tmpImgCreateInfo.sharingMode = VK_SHARING_MODE_CONCURRENT; // VK_SHARING_MODE_EXCLUSIVE here makes it not check for queueFamily
-        tmpImgCreateInfo.queueFamilyIndexCount = 1;
-        tmpImgCreateInfo.pQueueFamilyIndices = &m_encodeQueueFamily;
-        tmpImgCreateInfo.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-        tmpImgCreateInfo.flags = 0;
-        VmaAllocationCreateInfo allocInfo = {};
-        allocInfo.usage = VMA_MEMORY_USAGE_GPU_ONLY;
-        VHCHECKRESULT(vmaCreateImage(m_allocator, &tmpImgCreateInfo, &allocInfo, &m_dpbImage, &m_dpbImageAllocation, nullptr));
-        VHCHECKRESULT(vhBufCreateImageView(m_device, m_dpbImage, VK_FORMAT_G8_B8R8_2PLANE_420_UNORM, VK_IMAGE_VIEW_TYPE_2D, 1, VK_IMAGE_ASPECT_COLOR_BIT, &m_dpbImageView));
+        m_dpbImages.resize(count);
+        m_dpbImageAllocations.resize(count);
+        m_dpbImageViews.resize(count);
+        for (uint32_t i = 0; i < count; i++) {
+            VkImageCreateInfo tmpImgCreateInfo;
+            tmpImgCreateInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
+            tmpImgCreateInfo.pNext = &m_videoProfile;
+            tmpImgCreateInfo.imageType = VK_IMAGE_TYPE_2D;
+            tmpImgCreateInfo.format = VK_FORMAT_G8_B8R8_2PLANE_420_UNORM;
+            tmpImgCreateInfo.extent = { m_width, m_height, 1 };
+            tmpImgCreateInfo.mipLevels = 1;
+            tmpImgCreateInfo.arrayLayers = 1;
+            tmpImgCreateInfo.samples = VK_SAMPLE_COUNT_1_BIT;
+            tmpImgCreateInfo.tiling = VK_IMAGE_TILING_OPTIMAL;
+            tmpImgCreateInfo.usage = VK_IMAGE_USAGE_VIDEO_ENCODE_DPB_BIT_KHR; // DPB ONLY
+            tmpImgCreateInfo.sharingMode = VK_SHARING_MODE_CONCURRENT; // VK_SHARING_MODE_EXCLUSIVE here makes it not check for queueFamily
+            tmpImgCreateInfo.queueFamilyIndexCount = 1;
+            tmpImgCreateInfo.pQueueFamilyIndices = &m_encodeQueueFamily;
+            tmpImgCreateInfo.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+            tmpImgCreateInfo.flags = 0;
+            VmaAllocationCreateInfo allocInfo = {};
+            allocInfo.usage = VMA_MEMORY_USAGE_GPU_ONLY;
+            VHCHECKRESULT(vmaCreateImage(m_allocator, &tmpImgCreateInfo, &allocInfo, &m_dpbImages[i], &m_dpbImageAllocations[i], nullptr));
+            VHCHECKRESULT(vhBufCreateImageView(m_device, m_dpbImages[i], VK_FORMAT_G8_B8R8_2PLANE_420_UNORM, VK_IMAGE_VIEW_TYPE_2D, 1, VK_IMAGE_ASPECT_COLOR_BIT, &m_dpbImageViews[i]));
+        }
         return VK_SUCCESS;
     }
 
@@ -351,9 +356,11 @@ namespace vh {
 
         VkVideoEncodeH264FrameSizeEXT encodeH264FrameSize;
         encodeH264FrameSize.frameISize = 0;
+        encodeH264FrameSize.framePSize = 0;
 
         VkVideoEncodeH264QpEXT encodeH264Qp;
         encodeH264Qp.qpI = qp;
+        encodeH264Qp.qpP = qp;
 
         VkVideoEncodeH264RateControlLayerInfoEXT encodeH264RateControlLayerInfo = { VK_STRUCTURE_TYPE_VIDEO_ENCODE_H264_RATE_CONTROL_LAYER_INFO_EXT };
         encodeH264RateControlLayerInfo.useInitialRcQp = VK_TRUE;
@@ -397,9 +404,11 @@ namespace vh {
 
     VkResult VHVideoEncoder::transitionImagesInitial(VkCommandBuffer cmdBuf)
     {
-        VHCHECKRESULT(vhBufTransitionImageLayout(m_device, m_encodeQueue, cmdBuf,
-            m_dpbImage, VK_FORMAT_G8_B8R8_2PLANE_420_UNORM, VK_IMAGE_ASPECT_COLOR_BIT, 1, 1,
-            VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_VIDEO_ENCODE_DPB_KHR));
+        for (auto& dpbImage : m_dpbImages) {
+            VHCHECKRESULT(vhBufTransitionImageLayout(m_device, m_encodeQueue, cmdBuf,
+                dpbImage, VK_FORMAT_G8_B8R8_2PLANE_420_UNORM, VK_IMAGE_ASPECT_COLOR_BIT, 1, 1,
+                VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_VIDEO_ENCODE_DPB_KHR));
+        }
         VHCHECKRESULT(vhBufTransitionImageLayout(m_device, m_encodeQueue, cmdBuf,
                 m_yuvImage, VK_FORMAT_G8_B8R8_2PLANE_420_UNORM, VK_IMAGE_ASPECT_COLOR_BIT, 1, 1,
             VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_VIDEO_ENCODE_SRC_KHR));
@@ -459,16 +468,51 @@ namespace vh {
 
     VkResult VHVideoEncoder::encodeVideoFrame()
     {
+        const uint32_t GOP_LENGTH = 16;
+        const uint32_t gopFrameCount = m_frameCount % GOP_LENGTH;
         // begin command buffer for video encode
         VHCHECKRESULT(vhCmdCreateCommandBuffers(m_device, m_encodeCommandPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY, 1, &m_encodeCommandBuffer));
         VHCHECKRESULT(vhCmdBeginCommandBuffer(m_device, m_encodeCommandBuffer, VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT));
 
-        // start a video encode session (without reference pics -> no I or B frames)
+        // start a video encode session
+        // set an image view as DPB (decoded output picture)
+        VkVideoPictureResourceInfoKHR dpbPicResource = { VK_STRUCTURE_TYPE_VIDEO_PICTURE_RESOURCE_INFO_KHR };
+        dpbPicResource.imageViewBinding = m_dpbImageViews[gopFrameCount & 1];
+        dpbPicResource.codedOffset = { 0, 0 };
+        dpbPicResource.codedExtent = { m_width, m_height };
+        dpbPicResource.baseArrayLayer = 0;
+        // set an image view as reference picture
+        VkVideoPictureResourceInfoKHR refPicResource = { VK_STRUCTURE_TYPE_VIDEO_PICTURE_RESOURCE_INFO_KHR };
+        refPicResource.imageViewBinding = m_dpbImageViews[!(gopFrameCount & 1)];
+        refPicResource.codedOffset = { 0, 0 };
+        refPicResource.codedExtent = { m_width, m_height };
+        refPicResource.baseArrayLayer = 0;
+
+        StdVideoEncodeH264ReferenceInfo dpbRefInfo = {};
+        VkVideoEncodeH264DpbSlotInfoEXT dpbSlotInfo = { VK_STRUCTURE_TYPE_VIDEO_ENCODE_H264_DPB_SLOT_INFO_EXT };
+        dpbSlotInfo.pNext = nullptr;
+        dpbSlotInfo.pStdReferenceInfo = &dpbRefInfo;
+
+        StdVideoEncodeH264ReferenceInfo refRefInfo = {};
+        VkVideoEncodeH264DpbSlotInfoEXT refSlotInfo = { VK_STRUCTURE_TYPE_VIDEO_ENCODE_H264_DPB_SLOT_INFO_EXT };
+        refSlotInfo.pNext = nullptr;
+        refSlotInfo.pStdReferenceInfo = &refRefInfo;
+
+        VkVideoReferenceSlotInfoKHR referenceSlots[2];
+        referenceSlots[0].sType = VK_STRUCTURE_TYPE_VIDEO_REFERENCE_SLOT_INFO_KHR;
+        referenceSlots[0].pNext = &dpbSlotInfo;
+        referenceSlots[0].slotIndex = 0;
+        referenceSlots[0].pPictureResource = &dpbPicResource;
+        referenceSlots[1].sType = VK_STRUCTURE_TYPE_VIDEO_REFERENCE_SLOT_INFO_KHR;
+        referenceSlots[1].pNext = &refSlotInfo;
+        referenceSlots[1].slotIndex = 1;
+        referenceSlots[1].pPictureResource = &refPicResource;
+
         VkVideoBeginCodingInfoKHR encodeBeginInfo = { VK_STRUCTURE_TYPE_VIDEO_BEGIN_CODING_INFO_KHR };
         encodeBeginInfo.videoSession = m_videoSession;
         encodeBeginInfo.videoSessionParameters = m_videoSessionParameters;
-        encodeBeginInfo.referenceSlotCount = 0;
-        encodeBeginInfo.pReferenceSlots = nullptr;
+        encodeBeginInfo.referenceSlotCount = gopFrameCount == 0 ? 1 : 2;
+        encodeBeginInfo.pReferenceSlots = referenceSlots;
         vkCmdBeginVideoCodingKHR(m_encodeCommandBuffer, &encodeBeginInfo);
 
         // transition the YUV image to be a video encode source
@@ -483,25 +527,12 @@ namespace vh {
         inputPicResource.codedExtent = { m_width, m_height };
         inputPicResource.baseArrayLayer = 0;
 
-        // set an image view as DPB (decoded output picture), later (with I frame support) used as reference picture
-        VkVideoPictureResourceInfoKHR dpbPicResource = { VK_STRUCTURE_TYPE_VIDEO_PICTURE_RESOURCE_INFO_KHR };
-        dpbPicResource.imageViewBinding = m_dpbImageView;
-        dpbPicResource.codedOffset = { 0, 0 };
-        dpbPicResource.codedExtent = { m_width, m_height };
-        dpbPicResource.baseArrayLayer = 0;
-
-        // no reference pictures used
-        VkVideoReferenceSlotInfoKHR referenceSlot{ VK_STRUCTURE_TYPE_VIDEO_REFERENCE_SLOT_INFO_KHR };
-        referenceSlot.pNext = nullptr;
-        referenceSlot.slotIndex = 0;
-        referenceSlot.pPictureResource = &dpbPicResource;
-
         // set all the frame parameters
-        h264::IntraFrameInfo intraFrameInfo(m_frameCount, m_width, m_height,
+        h264::FrameInfo frameInfo(gopFrameCount, m_width, m_height,
             m_sps,
             m_pps,
-            m_frameCount == 0);
-        VkVideoEncodeH264VclFrameInfoEXT* encodeH264FrameInfo = intraFrameInfo.getEncodeH264FrameInfo();
+            gopFrameCount == 0);
+        VkVideoEncodeH264VclFrameInfoEXT* encodeH264FrameInfo = frameInfo.getEncodeH264FrameInfo();
 
         // combine all structures in one control structure
         VkVideoEncodeInfoKHR videoEncodeInfo = { VK_STRUCTURE_TYPE_VIDEO_ENCODE_INFO_KHR };
@@ -510,7 +541,12 @@ namespace vh {
         videoEncodeInfo.dstBuffer = m_bitStreamBuffer;
         videoEncodeInfo.dstBufferOffset = 0;
         videoEncodeInfo.srcPictureResource = inputPicResource;
-        videoEncodeInfo.pSetupReferenceSlot = &referenceSlot;
+        videoEncodeInfo.pSetupReferenceSlot = &referenceSlots[0];
+
+        if (gopFrameCount > 0) {
+            videoEncodeInfo.referenceSlotCount = 1;
+            videoEncodeInfo.pReferenceSlots = &referenceSlots[1];
+        }
 
         // prepare the query pool for the resulting bitstream
         const uint32_t querySlotId = 0;
@@ -581,8 +617,10 @@ namespace vh {
         vkDestroyImageView(m_device, m_yuvImagePlane0View, nullptr);
         vkDestroyImageView(m_device, m_yuvImageView, nullptr);
         vmaDestroyImage(m_allocator, m_yuvImage, m_yuvImageAllocation);
-        vkDestroyImageView(m_device, m_dpbImageView, nullptr);
-        vmaDestroyImage(m_allocator, m_dpbImage, m_dpbImageAllocation);
+        for (uint32_t i = 0; i < m_dpbImages.size(); i++) {
+            vkDestroyImageView(m_device, m_dpbImageViews[i], nullptr);
+            vmaDestroyImage(m_allocator, m_dpbImages[i], m_dpbImageAllocations[i]);
+        }
         vkDestroyVideoSessionKHR(m_device, m_videoSession, nullptr);
         for (VmaAllocation& allocation : m_allocations) {
             vmaFreeMemory(m_allocator, allocation);

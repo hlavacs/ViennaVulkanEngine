@@ -79,9 +79,9 @@ namespace h264
         return pps;
     }
 
-    class IntraFrameInfo {
+    class FrameInfo {
     public:
-        IntraFrameInfo(uint32_t frameCount, uint32_t width, uint32_t height, StdVideoH264SequenceParameterSet sps, StdVideoH264PictureParameterSet pps, bool isIdr)
+        FrameInfo(uint32_t frameCount, uint32_t width, uint32_t height, StdVideoH264SequenceParameterSet sps, StdVideoH264PictureParameterSet pps, bool isI)
         {
             const uint32_t MaxPicOrderCntLsb = 1 << (sps.log2_max_pic_order_cnt_lsb_minus4 + 4);
 
@@ -91,7 +91,7 @@ namespace h264
             m_sliceHeaderFlags.no_prior_references_available_flag = 0;
 
             m_sliceHeader.flags = m_sliceHeaderFlags;
-            m_sliceHeader.slice_type = STD_VIDEO_H264_SLICE_TYPE_I;
+            m_sliceHeader.slice_type = isI ? STD_VIDEO_H264_SLICE_TYPE_I : STD_VIDEO_H264_SLICE_TYPE_P;
             m_sliceHeader.idr_pic_id = 0;
             m_sliceHeader.num_ref_idx_l0_active_minus1 = 0;
             m_sliceHeader.num_ref_idx_l1_active_minus1 = 0;
@@ -109,20 +109,18 @@ namespace h264
             m_sliceInfo.pStdSliceHeader = &m_sliceHeader;
             m_sliceInfo.mbCount = iPicSizeInMbs;
 
-            if (isIdr) {
-                m_pictureInfoFlags.idr_flag = 1;
-                m_pictureInfoFlags.is_reference_flag = 1;
-            }
+            m_pictureInfoFlags.idr_flag = isI ? 1 : 0; // every I frame is an IDR frame
+            m_pictureInfoFlags.is_reference_flag = 1;
 
             m_stdPictureInfo.flags = m_pictureInfoFlags;
             m_stdPictureInfo.seq_parameter_set_id = 0;
             m_stdPictureInfo.pic_parameter_set_id = pps.pic_parameter_set_id;
-            m_stdPictureInfo.pictureType = STD_VIDEO_H264_PICTURE_TYPE_I;
+            m_stdPictureInfo.pictureType = isI ? STD_VIDEO_H264_PICTURE_TYPE_I : STD_VIDEO_H264_PICTURE_TYPE_P;
 
             // frame_num is incremented for each reference frame transmitted.
             // In our case, only the first frame (which is IDR) is a reference
             // frame with frame_num == 0, and all others have frame_num == 1.
-            m_stdPictureInfo.frame_num = isIdr ? 0 : 1;
+            m_stdPictureInfo.frame_num = frameCount;
 
             // POC is incremented by 2 for each coded frame.
             m_stdPictureInfo.PicOrderCnt = (frameCount * 2) % MaxPicOrderCntLsb;
@@ -132,6 +130,13 @@ namespace h264
             m_encodeH264FrameInfo.naluSliceEntryCount = 1;
             m_encodeH264FrameInfo.pNaluSliceEntries = &m_sliceInfo;
             m_encodeH264FrameInfo.pStdPictureInfo = &m_stdPictureInfo;
+
+            if (!isI) {
+                m_referenceLists.refPicList0EntryCount = 1;
+                m_referenceLists.pRefPicList0Entries = &m_referencePic;
+
+                m_encodeH264FrameInfo.pStdReferenceFinalLists = &m_referenceLists;
+            }
         }
 
         inline VkVideoEncodeH264VclFrameInfoEXT* getEncodeH264FrameInfo()
@@ -146,6 +151,8 @@ namespace h264
         StdVideoEncodeH264PictureInfoFlags m_pictureInfoFlags = {};
         StdVideoEncodeH264PictureInfo m_stdPictureInfo = {};
         VkVideoEncodeH264VclFrameInfoEXT m_encodeH264FrameInfo = {};
+        StdVideoEncodeH264ReferenceListsInfo m_referenceLists = {};
+        uint8_t m_referencePic = 1;
     };
 
     class BitStream
