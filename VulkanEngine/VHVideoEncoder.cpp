@@ -253,26 +253,27 @@ namespace vh {
 
         vkDestroyShaderModule(m_device, computeShaderModule, nullptr);
     
+        const int maxFramesCount = 1; 
         std::array<VkDescriptorPoolSize, 1> poolSizes{};
         poolSizes[0].type = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
-        poolSizes[0].descriptorCount = 3;
+        poolSizes[0].descriptorCount = 3 * maxFramesCount;
         VkDescriptorPoolCreateInfo poolInfo{};
         poolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
         poolInfo.poolSizeCount = (uint32_t)poolSizes.size();
         poolInfo.pPoolSizes = poolSizes.data();
-        poolInfo.maxSets = 1;
+        poolInfo.maxSets = maxFramesCount;
         VHCHECKRESULT(vkCreateDescriptorPool(m_device, &poolInfo, nullptr, &m_descriptorPool));
 
-        std::vector<VkDescriptorSetLayout> layouts(1, m_computeDescriptorSetLayout);
+        std::vector<VkDescriptorSetLayout> layouts(maxFramesCount, m_computeDescriptorSetLayout);
         VkDescriptorSetAllocateInfo descAllocInfo{};
         descAllocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
         descAllocInfo.descriptorPool = m_descriptorPool;
-        descAllocInfo.descriptorSetCount = 1;
+        descAllocInfo.descriptorSetCount = static_cast<uint32_t>(layouts.size());
         descAllocInfo.pSetLayouts = layouts.data();
 
-        m_computeDescriptorSets.resize(1);
+        m_computeDescriptorSets.resize(layouts.size());
         VHCHECKRESULT(vkAllocateDescriptorSets(m_device, &descAllocInfo, m_computeDescriptorSets.data()));
-        for (size_t i = 0; i < 1; i++) {
+        for (size_t i = 0; i < m_computeDescriptorSets.size(); i++) {
             std::array<VkWriteDescriptorSet, 2> descriptorWrites{};
 
             VkDescriptorImageInfo imageInfo0{};
