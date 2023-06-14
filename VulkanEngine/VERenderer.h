@@ -254,10 +254,10 @@ namespace ve
 			return m_swapChainImages[m_imageIndex];
 		};
 
-		///\returns the current swap chain image
-		virtual VkImageView getSwapChainImageView()
+		///\returns the swap chain image views
+		virtual const std::vector<VkImageView>& getSwapChainImageViews()
 		{
-			return m_swapChainImageViews[m_imageIndex];
+			return m_swapChainImageViews;
 		};
 
 		///\returns the overlay (GUI) subrenderer

@@ -153,8 +153,9 @@ namespace ve {
 				getEnginePointer()->getRenderer()->getEncodeQueueFamily(),
 				getEnginePointer()->getRenderer()->getEncodeQueue(),
 				getEnginePointer()->getRenderer()->getEncodeCommandPool(),
+				getEnginePointer()->getRenderer()->getSwapChainImageViews(),
 				extent.width, extent.height);
-			videoEncoder.queueEncode(getEnginePointer()->getRenderer()->getSwapChainImageView());
+			videoEncoder.queueEncode(getEnginePointer()->getRenderer()->getImageIndex());
 		}
 
 	public:

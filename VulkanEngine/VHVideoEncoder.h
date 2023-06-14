@@ -6,8 +6,14 @@
 namespace vh {
 	class VHVideoEncoder {
 	public:
-		VkResult init(VkDevice device, VmaAllocator allocator, uint32_t computeQueueFamily, VkQueue computeQueue, VkCommandPool computeCommandPool, uint32_t encodeQueueFamily, VkQueue encodeQueue, VkCommandPool encodeCommandPool, uint32_t width, uint32_t height);
-		VkResult queueEncode(VkImageView inputImageView);
+		VkResult init(
+			VkDevice device,
+			VmaAllocator allocator,
+			uint32_t computeQueueFamily, VkQueue computeQueue, VkCommandPool computeCommandPool,
+			uint32_t encodeQueueFamily, VkQueue encodeQueue, VkCommandPool encodeCommandPool,
+			const std::vector<VkImageView>& inputImageViews,
+			uint32_t width, uint32_t height);
+		VkResult queueEncode(uint32_t currentImageIx);
 		void deinit();
 
 		~VHVideoEncoder() {
@@ -22,11 +28,11 @@ namespace vh {
         VkResult allocateReferenceImages();
         VkResult allocateIntermediateImages();
         VkResult createOutputQueryPool();
-        VkResult createYUVConversionPipeline();
+        VkResult createYUVConversionPipeline(const std::vector<VkImageView>& inputImageViews);
 		VkResult initRateControl(VkCommandBuffer cmdBuf, uint32_t qp);
         VkResult transitionImagesInitial(VkCommandBuffer cmdBuf);
 
-        VkResult convertRGBtoYUV(VkImageView inputImageView);
+        VkResult convertRGBtoYUV(uint32_t currentImageIx);
         VkResult encodeVideoFrame();
         VkResult readOutputVideoPacket();
 

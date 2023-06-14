@@ -3,7 +3,13 @@
 
 namespace vh {
 
-    VkResult VHVideoEncoder::init(VkDevice device, VmaAllocator allocator, uint32_t computeQueueFamily, VkQueue computeQueue, VkCommandPool computeCommandPool, uint32_t encodeQueueFamily, VkQueue encodeQueue, VkCommandPool encodeCommandPool, uint32_t width, uint32_t height)
+    VkResult VHVideoEncoder::init(
+        VkDevice device,
+        VmaAllocator allocator,
+        uint32_t computeQueueFamily, VkQueue computeQueue, VkCommandPool computeCommandPool,
+        uint32_t encodeQueueFamily, VkQueue encodeQueue, VkCommandPool encodeCommandPool,
+        const std::vector<VkImageView>& inputImageViews,
+        uint32_t width, uint32_t height)
     {
         if (m_initialized) {
             return VK_SUCCESS;
@@ -26,7 +32,7 @@ namespace vh {
         VHCHECKRESULT(allocateReferenceImages());
         VHCHECKRESULT(allocateIntermediateImages());
         VHCHECKRESULT(createOutputQueryPool());
-        VHCHECKRESULT(createYUVConversionPipeline());
+        VHCHECKRESULT(createYUVConversionPipeline(inputImageViews));
 
         VkCommandBuffer cmdBuffer = vhCmdBeginSingleTimeCommands(m_device, m_encodeCommandPool);
         VHCHECKRESULT(initRateControl(cmdBuffer, 20));
@@ -42,9 +48,9 @@ namespace vh {
         return VK_SUCCESS;
     }
 
-    VkResult VHVideoEncoder::queueEncode(VkImageView inputImageView)
+    VkResult VHVideoEncoder::queueEncode(uint32_t currentImageIx)
     {        
-        VHCHECKRESULT(convertRGBtoYUV(inputImageView));
+        VHCHECKRESULT(convertRGBtoYUV(currentImageIx));
         VHCHECKRESULT(encodeVideoFrame());
         VHCHECKRESULT(readOutputVideoPacket());
         return VK_SUCCESS;
@@ -214,7 +220,7 @@ namespace vh {
         return vkCreateQueryPool(m_device, &queryPoolCreateInfo, NULL, &m_queryPool);
     }
 
-    VkResult VHVideoEncoder::createYUVConversionPipeline()
+    VkResult VHVideoEncoder::createYUVConversionPipeline(const std::vector<VkImageView>& inputImageViews)
     {
         auto computeShaderCode = vhFileRead("media/shader/Video/comp.spv");
         VkShaderModule computeShaderModule = vhPipeCreateShaderModule(m_device, computeShaderCode);
@@ -253,7 +259,7 @@ namespace vh {
 
         vkDestroyShaderModule(m_device, computeShaderModule, nullptr);
     
-        const int maxFramesCount = 1; 
+        const int maxFramesCount = static_cast<uint32_t>(inputImageViews.size());
         std::array<VkDescriptorPoolSize, 1> poolSizes{};
         poolSizes[0].type = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
         poolSizes[0].descriptorCount = 3 * maxFramesCount;
@@ -268,35 +274,46 @@ namespace vh {
         VkDescriptorSetAllocateInfo descAllocInfo{};
         descAllocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
         descAllocInfo.descriptorPool = m_descriptorPool;
-        descAllocInfo.descriptorSetCount = static_cast<uint32_t>(layouts.size());
+        descAllocInfo.descriptorSetCount = maxFramesCount;
         descAllocInfo.pSetLayouts = layouts.data();
 
-        m_computeDescriptorSets.resize(layouts.size());
+        m_computeDescriptorSets.resize(maxFramesCount);
         VHCHECKRESULT(vkAllocateDescriptorSets(m_device, &descAllocInfo, m_computeDescriptorSets.data()));
-        for (size_t i = 0; i < m_computeDescriptorSets.size(); i++) {
-            std::array<VkWriteDescriptorSet, 2> descriptorWrites{};
+        for (size_t i = 0; i < maxFramesCount; i++) {
+            std::array<VkWriteDescriptorSet, 3> descriptorWrites{};
 
             VkDescriptorImageInfo imageInfo0{};
-            imageInfo0.imageView = m_yuvImagePlane0View;
-            imageInfo0.imageLayout = VK_IMAGE_LAYOUT_GENERAL;
+            imageInfo0.imageView = inputImageViews[i];
+            imageInfo0.imageLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
             descriptorWrites[0].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
             descriptorWrites[0].dstSet = m_computeDescriptorSets[i];
-            descriptorWrites[0].dstBinding = 1;
+            descriptorWrites[0].dstBinding = 0;
             descriptorWrites[0].dstArrayElement = 0;
             descriptorWrites[0].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
             descriptorWrites[0].descriptorCount = 1;
             descriptorWrites[0].pImageInfo = &imageInfo0;
 
             VkDescriptorImageInfo imageInfo1{};
-            imageInfo1.imageView = m_yuvImageChromaView;
+            imageInfo1.imageView = m_yuvImagePlane0View;
             imageInfo1.imageLayout = VK_IMAGE_LAYOUT_GENERAL;
             descriptorWrites[1].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
             descriptorWrites[1].dstSet = m_computeDescriptorSets[i];
-            descriptorWrites[1].dstBinding = 2;
+            descriptorWrites[1].dstBinding = 1;
             descriptorWrites[1].dstArrayElement = 0;
             descriptorWrites[1].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
             descriptorWrites[1].descriptorCount = 1;
             descriptorWrites[1].pImageInfo = &imageInfo1;
+
+            VkDescriptorImageInfo imageInfo2{};
+            imageInfo2.imageView = m_yuvImageChromaView;
+            imageInfo2.imageLayout = VK_IMAGE_LAYOUT_GENERAL;
+            descriptorWrites[2].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+            descriptorWrites[2].dstSet = m_computeDescriptorSets[i];
+            descriptorWrites[2].dstBinding = 2;
+            descriptorWrites[2].dstArrayElement = 0;
+            descriptorWrites[2].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
+            descriptorWrites[2].descriptorCount = 1;
+            descriptorWrites[2].pImageInfo = &imageInfo2;
 
             vkUpdateDescriptorSets(m_device, (uint32_t)descriptorWrites.size(), descriptorWrites.data(), 0, nullptr);
         }
@@ -369,22 +386,8 @@ namespace vh {
         return VK_SUCCESS;
     }
 
-    VkResult VHVideoEncoder::convertRGBtoYUV(VkImageView inputImageView)
+    VkResult VHVideoEncoder::convertRGBtoYUV(uint32_t currentImageIx)
     {
-        // set the input image view into the descriptor for the compute shader
-        std::array<VkWriteDescriptorSet, 1> descriptorWrites{};
-        VkDescriptorImageInfo imageInfo{};
-        imageInfo.imageView = inputImageView;
-        imageInfo.imageLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
-        descriptorWrites[0].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-        descriptorWrites[0].dstSet = m_computeDescriptorSets[0];
-        descriptorWrites[0].dstBinding = 0;
-        descriptorWrites[0].dstArrayElement = 0;
-        descriptorWrites[0].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
-        descriptorWrites[0].descriptorCount = 1;
-        descriptorWrites[0].pImageInfo = &imageInfo;
-        vkUpdateDescriptorSets(m_device, (uint32_t)descriptorWrites.size(), descriptorWrites.data(), 0, nullptr);
-
         // begin command buffer for compute shader
         VkCommandBuffer cmdBuffer = vhCmdBeginSingleTimeCommands(m_device, m_computeCommandPool);
 
@@ -398,7 +401,7 @@ namespace vh {
 
         // run the RGB->YUV conversion shader
         vkCmdBindPipeline(cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, m_computePipeline);
-        vkCmdBindDescriptorSets(cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, m_computePipelineLayout, 0, 1, &m_computeDescriptorSets[0], 0, 0);
+        vkCmdBindDescriptorSets(cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, m_computePipelineLayout, 0, 1, &m_computeDescriptorSets[currentImageIx], 0, 0);
         vkCmdDispatch(cmdBuffer, 800/16, 600/16, 1); // work item local size = 16x16
 
         VHCHECKRESULT(vhCmdEndSingleTimeCommands(m_device, m_computeQueue, m_computeCommandPool, cmdBuffer));
