@@ -12,25 +12,60 @@ namespace vh {
         m_allocator = allocator;
         m_computeQueue = computeQueue;
         m_encodeQueue = encodeQueue;
+        m_computeQueueFamily = computeQueueFamily;
+        m_encodeQueueFamily = encodeQueueFamily;
         m_computeCommandPool = computeCommandPool;
         m_encodeCommandPool = encodeCommandPool;
         m_width = width;
         m_height = height;
 
-        VkVideoEncodeH264ProfileInfoEXT encodeH264ProfileInfoExt = { VK_STRUCTURE_TYPE_VIDEO_ENCODE_H264_PROFILE_INFO_EXT };
-        encodeH264ProfileInfoExt.stdProfileIdc = STD_VIDEO_H264_PROFILE_IDC_MAIN;
+        VHCHECKRESULT(createVideoSession());
+        VHCHECKRESULT(allocateVideoSessionMemory());
+        VHCHECKRESULT(createVideoSessionParameters());
+        VHCHECKRESULT(allocateOutputBitStream());
+        VHCHECKRESULT(allocateReferenceImages());
+        VHCHECKRESULT(allocateIntermediateImages());
+        VHCHECKRESULT(createOutputQueryPool());
+        VHCHECKRESULT(createYUVConversionPipeline());
 
-        VkVideoProfileInfoKHR videoProfile = { VK_STRUCTURE_TYPE_VIDEO_PROFILE_INFO_KHR };
-        videoProfile.videoCodecOperation = VK_VIDEO_CODEC_OPERATION_ENCODE_H264_BIT_EXT;
-        videoProfile.chromaSubsampling = VK_VIDEO_CHROMA_SUBSAMPLING_420_BIT_KHR;
-        videoProfile.chromaBitDepth = VK_VIDEO_COMPONENT_BIT_DEPTH_8_BIT_KHR;
-        videoProfile.lumaBitDepth = VK_VIDEO_COMPONENT_BIT_DEPTH_8_BIT_KHR;
-        videoProfile.pNext = &encodeH264ProfileInfoExt;
+        VkCommandBuffer cmdBuffer = vhCmdBeginSingleTimeCommands(m_device, m_encodeCommandPool);
+        VHCHECKRESULT(initRateControl(cmdBuffer, 20));
+        VHCHECKRESULT(transitionImagesInitial(cmdBuffer));
+        VHCHECKRESULT(vhCmdEndSingleTimeCommands(m_device, m_encodeQueue, m_encodeCommandPool, cmdBuffer));
+
+        m_outfile.open("hwenc.264", std::ios::binary);
+        h264::encodeSps(m_sps).writeTo(m_outfile);
+        h264::encodePps(m_pps).writeTo(m_outfile);
+
+        m_frameCount = 0;
+        m_initialized = true;
+        return VK_SUCCESS;
+    }
+
+    VkResult VHVideoEncoder::queueEncode(VkImageView inputImageView)
+    {        
+        VHCHECKRESULT(convertRGBtoYUV(inputImageView));
+        VHCHECKRESULT(encodeVideoFrame());
+        VHCHECKRESULT(readOutputVideoPacket());
+        return VK_SUCCESS;
+    }
+    
+    VkResult VHVideoEncoder::createVideoSession()
+    {
+        m_encodeH264ProfileInfoExt = { VK_STRUCTURE_TYPE_VIDEO_ENCODE_H264_PROFILE_INFO_EXT };
+        m_encodeH264ProfileInfoExt.stdProfileIdc = STD_VIDEO_H264_PROFILE_IDC_MAIN;
+
+        m_videoProfile = { VK_STRUCTURE_TYPE_VIDEO_PROFILE_INFO_KHR };
+        m_videoProfile.videoCodecOperation = VK_VIDEO_CODEC_OPERATION_ENCODE_H264_BIT_EXT;
+        m_videoProfile.chromaSubsampling = VK_VIDEO_CHROMA_SUBSAMPLING_420_BIT_KHR;
+        m_videoProfile.chromaBitDepth = VK_VIDEO_COMPONENT_BIT_DEPTH_8_BIT_KHR;
+        m_videoProfile.lumaBitDepth = VK_VIDEO_COMPONENT_BIT_DEPTH_8_BIT_KHR;
+        m_videoProfile.pNext = &m_encodeH264ProfileInfoExt;
 
         static const VkExtensionProperties h264StdExtensionVersion = { VK_STD_VULKAN_VIDEO_CODEC_H264_ENCODE_EXTENSION_NAME, VK_STD_VULKAN_VIDEO_CODEC_H264_ENCODE_SPEC_VERSION };
         VkVideoSessionCreateInfoKHR createInfo = { VK_STRUCTURE_TYPE_VIDEO_SESSION_CREATE_INFO_KHR };
-        createInfo.pVideoProfile = &videoProfile;
-        createInfo.queueFamilyIndex = encodeQueueFamily;
+        createInfo.pVideoProfile = &m_videoProfile;
+        createInfo.queueFamilyIndex = m_encodeQueueFamily;
         createInfo.pictureFormat = VK_FORMAT_G8_B8R8_2PLANE_420_UNORM;
         createInfo.maxCodedExtent = { m_width, m_height };
         createInfo.maxDpbSlots = 16;
@@ -38,9 +73,11 @@ namespace vh {
         createInfo.referencePictureFormat = VK_FORMAT_G8_B8R8_2PLANE_420_UNORM;
         createInfo.pStdHeaderVersion = &h264StdExtensionVersion;
 
-        VHCHECKRESULT(vkCreateVideoSessionKHR(m_device, &createInfo, nullptr, &m_videoSession));
+        return vkCreateVideoSessionKHR(m_device, &createInfo, nullptr, &m_videoSession);
+    }
 
-
+    VkResult VHVideoEncoder::allocateVideoSessionMemory()
+    {
         uint32_t videoSessionMemoryRequirementsCount = 0;
         VHCHECKRESULT(vkGetVideoSessionMemoryRequirementsKHR(m_device, m_videoSession,
             &videoSessionMemoryRequirementsCount, nullptr));
@@ -70,9 +107,12 @@ namespace vh {
             encodeSessionBindMemory[memIdx].memoryOffset = allocInfo.offset;
             encodeSessionBindMemory[memIdx].memorySize = allocInfo.size;
         }
-        VHCHECKRESULT(vkBindVideoSessionMemoryKHR(m_device, m_videoSession, videoSessionMemoryRequirementsCount,
-            encodeSessionBindMemory.data()));
+        return vkBindVideoSessionMemoryKHR(m_device, m_videoSession, videoSessionMemoryRequirementsCount,
+            encodeSessionBindMemory.data());
+    }
 
+    VkResult VHVideoEncoder::createVideoSessionParameters()
+    {
         m_sps = h264::getStdVideoH264SequenceParameterSet(m_width, m_height, nullptr);
         m_pps = h264::getStdVideoH264PictureParameterSet();
 
@@ -94,15 +134,21 @@ namespace vh {
         sessionParametersCreateInfo.videoSessionParametersTemplate = nullptr;
         sessionParametersCreateInfo.videoSession = m_videoSession;
 
-        VHCHECKRESULT(vkCreateVideoSessionParametersKHR(m_device, &sessionParametersCreateInfo, nullptr, &m_videoSessionParameters));
+        return vkCreateVideoSessionParametersKHR(m_device, &sessionParametersCreateInfo, nullptr, &m_videoSessionParameters);
+    }
 
-        VHCHECKRESULT(vhBufCreateBuffer(m_allocator, 4 * 1024 * 1024,
+    VkResult VHVideoEncoder::allocateOutputBitStream()
+    {
+        return vhBufCreateBuffer(m_allocator, 4 * 1024 * 1024,
             VK_BUFFER_USAGE_VIDEO_ENCODE_DST_BIT_KHR, VMA_MEMORY_USAGE_GPU_TO_CPU,
-            &m_bitStreamBuffer, &m_bitStreamBufferAllocation));
-        
+            &m_bitStreamBuffer, &m_bitStreamBufferAllocation);
+    }
+
+    VkResult VHVideoEncoder::allocateReferenceImages()
+    {
         VkImageCreateInfo tmpImgCreateInfo;
         tmpImgCreateInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
-        tmpImgCreateInfo.pNext = &videoProfile;
+        tmpImgCreateInfo.pNext = &m_videoProfile;
         tmpImgCreateInfo.imageType = VK_IMAGE_TYPE_2D;
         tmpImgCreateInfo.format = VK_FORMAT_G8_B8R8_2PLANE_420_UNORM;
         tmpImgCreateInfo.extent = { m_width, m_height, 1 };
@@ -113,19 +159,37 @@ namespace vh {
         tmpImgCreateInfo.usage = VK_IMAGE_USAGE_VIDEO_ENCODE_DPB_BIT_KHR; // DPB ONLY
         tmpImgCreateInfo.sharingMode = VK_SHARING_MODE_CONCURRENT; // VK_SHARING_MODE_EXCLUSIVE here makes it not check for queueFamily
         tmpImgCreateInfo.queueFamilyIndexCount = 1;
-        tmpImgCreateInfo.pQueueFamilyIndices = &encodeQueueFamily;
+        tmpImgCreateInfo.pQueueFamilyIndices = &m_encodeQueueFamily;
         tmpImgCreateInfo.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
         tmpImgCreateInfo.flags = 0;
         VmaAllocationCreateInfo allocInfo = {};
         allocInfo.usage = VMA_MEMORY_USAGE_GPU_ONLY;
         VHCHECKRESULT(vmaCreateImage(m_allocator, &tmpImgCreateInfo, &allocInfo, &m_dpbImage, &m_dpbImageAllocation, nullptr));
         VHCHECKRESULT(vhBufCreateImageView(m_device, m_dpbImage, VK_FORMAT_G8_B8R8_2PLANE_420_UNORM, VK_IMAGE_VIEW_TYPE_2D, 1, VK_IMAGE_ASPECT_COLOR_BIT, &m_dpbImageView));
+        return VK_SUCCESS;
+    }
 
-        uint32_t queueFamilies[] = {computeQueueFamily, encodeQueueFamily};
-        tmpImgCreateInfo.queueFamilyIndexCount = 2;
-        tmpImgCreateInfo.pQueueFamilyIndices = queueFamilies;
+    VkResult VHVideoEncoder::allocateIntermediateImages()
+    {
+        uint32_t queueFamilies[] = {m_computeQueueFamily, m_encodeQueueFamily };
+        VkImageCreateInfo tmpImgCreateInfo;
+        tmpImgCreateInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
+        tmpImgCreateInfo.pNext = &m_videoProfile;
+        tmpImgCreateInfo.imageType = VK_IMAGE_TYPE_2D;
+        tmpImgCreateInfo.format = VK_FORMAT_G8_B8R8_2PLANE_420_UNORM;
+        tmpImgCreateInfo.extent = { m_width, m_height, 1 };
+        tmpImgCreateInfo.mipLevels = 1;
+        tmpImgCreateInfo.arrayLayers = 1;
+        tmpImgCreateInfo.samples = VK_SAMPLE_COUNT_1_BIT;
+        tmpImgCreateInfo.tiling = VK_IMAGE_TILING_OPTIMAL;
         tmpImgCreateInfo.usage = VK_IMAGE_USAGE_VIDEO_ENCODE_SRC_BIT_KHR | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_STORAGE_BIT;
         tmpImgCreateInfo.sharingMode = VK_SHARING_MODE_CONCURRENT;
+        tmpImgCreateInfo.queueFamilyIndexCount = 2;
+        tmpImgCreateInfo.pQueueFamilyIndices = queueFamilies;
+        tmpImgCreateInfo.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+        tmpImgCreateInfo.flags = 0;
+        VmaAllocationCreateInfo allocInfo = {};
+        allocInfo.usage = VMA_MEMORY_USAGE_GPU_ONLY;
         VHCHECKRESULT(vmaCreateImage(m_allocator, &tmpImgCreateInfo, &allocInfo, &m_yuvImage, &m_yuvImageAllocation, nullptr));
         VHCHECKRESULT(vhBufCreateImageView(m_device, m_yuvImage, VK_FORMAT_G8_B8R8_2PLANE_420_UNORM, VK_IMAGE_VIEW_TYPE_2D, 1, VK_IMAGE_ASPECT_COLOR_BIT, &m_yuvImageView));
         VHCHECKRESULT(vhBufCreateImageView(m_device, m_yuvImage, VK_FORMAT_G8_B8R8_2PLANE_420_UNORM, VK_IMAGE_VIEW_TYPE_2D, 1, VK_IMAGE_ASPECT_PLANE_0_BIT, &m_yuvImagePlane0View));
@@ -135,16 +199,23 @@ namespace vh {
         tmpImgCreateInfo.extent = { m_width / 2, m_height / 2, 1 };
         VHCHECKRESULT(vmaCreateImage(m_allocator, &tmpImgCreateInfo, &allocInfo, &m_yuvImageChroma, &m_yuvImageChromaAllocation, nullptr));
         VHCHECKRESULT(vhBufCreateImageView(m_device, m_yuvImageChroma, VK_FORMAT_R8G8_UNORM, VK_IMAGE_VIEW_TYPE_2D, 1, VK_IMAGE_ASPECT_COLOR_BIT, &m_yuvImageChromaView));
+        return VK_SUCCESS;
+    }
 
+    VkResult VHVideoEncoder::createOutputQueryPool()
+    {
         VkQueryPoolVideoEncodeFeedbackCreateInfoKHR queryPoolVideoEncodeFeedbackCreateInfo = { VK_STRUCTURE_TYPE_QUERY_POOL_VIDEO_ENCODE_FEEDBACK_CREATE_INFO_KHR };
         queryPoolVideoEncodeFeedbackCreateInfo.encodeFeedbackFlags = VK_VIDEO_ENCODE_FEEDBACK_BITSTREAM_BUFFER_OFFSET_BIT_KHR | VK_VIDEO_ENCODE_FEEDBACK_BITSTREAM_BYTES_WRITTEN_BIT_KHR;
-        queryPoolVideoEncodeFeedbackCreateInfo.pNext = &videoProfile;
+        queryPoolVideoEncodeFeedbackCreateInfo.pNext = &m_videoProfile;
         VkQueryPoolCreateInfo queryPoolCreateInfo = { VK_STRUCTURE_TYPE_QUERY_POOL_CREATE_INFO };
         queryPoolCreateInfo.queryType = VK_QUERY_TYPE_VIDEO_ENCODE_FEEDBACK_KHR;
         queryPoolCreateInfo.queryCount = 1;
         queryPoolCreateInfo.pNext = &queryPoolVideoEncodeFeedbackCreateInfo;
-        VHCHECKRESULT(vkCreateQueryPool(m_device, &queryPoolCreateInfo, NULL, &m_queryPool));
+        return vkCreateQueryPool(m_device, &queryPoolCreateInfo, NULL, &m_queryPool);
+    }
 
+    VkResult VHVideoEncoder::createYUVConversionPipeline()
+    {
         auto computeShaderCode = vhFileRead("media/shader/Video/comp.spv");
         VkShaderModule computeShaderModule = vhPipeCreateShaderModule(m_device, computeShaderCode);
         VkPipelineShaderStageCreateInfo computeShaderStageInfo{};
@@ -153,32 +224,20 @@ namespace vh {
         computeShaderStageInfo.module = computeShaderModule;
         computeShaderStageInfo.pName = "main";
 
-
         std::array<VkDescriptorSetLayoutBinding, 3> layoutBindings{};
-        layoutBindings[0].binding = 0;
-        layoutBindings[0].descriptorCount = 1;
-        layoutBindings[0].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
-        layoutBindings[0].pImmutableSamplers = nullptr;
-        layoutBindings[0].stageFlags = VK_SHADER_STAGE_COMPUTE_BIT;
-
-        layoutBindings[1].binding = 1;
-        layoutBindings[1].descriptorCount = 1;
-        layoutBindings[1].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
-        layoutBindings[1].pImmutableSamplers = nullptr;
-        layoutBindings[1].stageFlags = VK_SHADER_STAGE_COMPUTE_BIT;
-
-        layoutBindings[2].binding = 2;
-        layoutBindings[2].descriptorCount = 1;
-        layoutBindings[2].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
-        layoutBindings[2].pImmutableSamplers = nullptr;
-        layoutBindings[2].stageFlags = VK_SHADER_STAGE_COMPUTE_BIT;
+        for (uint32_t i = 0; i < layoutBindings.size(); i++) {
+            layoutBindings[i].binding = i;
+            layoutBindings[i].descriptorCount = 1;
+            layoutBindings[i].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
+            layoutBindings[i].pImmutableSamplers = nullptr;
+            layoutBindings[i].stageFlags = VK_SHADER_STAGE_COMPUTE_BIT;
+        }
 
         VkDescriptorSetLayoutCreateInfo layoutInfo{};
         layoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
         layoutInfo.bindingCount = (uint32_t)layoutBindings.size();
         layoutInfo.pBindings = layoutBindings.data();
         VHCHECKRESULT(vkCreateDescriptorSetLayout(m_device, &layoutInfo, nullptr, &m_computeDescriptorSetLayout));
-
 
         VkPipelineLayoutCreateInfo pipelineLayoutInfo{};
         pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
@@ -193,8 +252,7 @@ namespace vh {
         VHCHECKRESULT(vkCreateComputePipelines(m_device, VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &m_computePipeline));
 
         vkDestroyShaderModule(m_device, computeShaderModule, nullptr);
-
-
+    
         std::array<VkDescriptorPoolSize, 1> poolSizes{};
         poolSizes[0].type = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
         poolSizes[0].descriptorCount = 3;
@@ -204,7 +262,6 @@ namespace vh {
         poolInfo.pPoolSizes = poolSizes.data();
         poolInfo.maxSets = 1;
         VHCHECKRESULT(vkCreateDescriptorPool(m_device, &poolInfo, nullptr, &m_descriptorPool));
-
 
         std::vector<VkDescriptorSetLayout> layouts(1, m_computeDescriptorSetLayout);
         VkDescriptorSetAllocateInfo descAllocInfo{};
@@ -242,36 +299,77 @@ namespace vh {
 
             vkUpdateDescriptorSets(m_device, (uint32_t)descriptorWrites.size(), descriptorWrites.data(), 0, nullptr);
         }
-
-        VkCommandBuffer cmdBuffer = vhCmdBeginSingleTimeCommands(m_device, m_encodeCommandPool);
-
-        initRateControl(cmdBuffer, 20);
-
-        VHCHECKRESULT(vhBufTransitionImageLayout(m_device, m_encodeQueue, cmdBuffer,
-            m_dpbImage, VK_FORMAT_G8_B8R8_2PLANE_420_UNORM, VK_IMAGE_ASPECT_COLOR_BIT, 1, 1,
-            VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_VIDEO_ENCODE_DPB_KHR));
-        VHCHECKRESULT(vhBufTransitionImageLayout(m_device, m_encodeQueue, cmdBuffer,
-                m_yuvImage, VK_FORMAT_G8_B8R8_2PLANE_420_UNORM, VK_IMAGE_ASPECT_COLOR_BIT, 1, 1,
-            VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_VIDEO_ENCODE_SRC_KHR));
-        VHCHECKRESULT(vhBufTransitionImageLayout(m_device, m_encodeQueue, cmdBuffer,
-            m_yuvImageChroma, VK_FORMAT_R8G8_UNORM, VK_IMAGE_ASPECT_COLOR_BIT, 1, 1,
-            VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL));
-
-        VHCHECKRESULT(vhCmdEndSingleTimeCommands(m_device, m_encodeQueue, m_encodeCommandPool, cmdBuffer));
-
-        m_outfile.open("hwenc.264", std::ios::binary);
-        h264::encodeSps(m_sps).writeTo(m_outfile);
-        h264::encodePps(m_pps).writeTo(m_outfile);
-
-        m_frameCount = 0;
-        m_initialized = true;
         return VK_SUCCESS;
     }
 
-    VkResult VHVideoEncoder::queueEncode(VkImageView inputImageView)
+    VkResult VHVideoEncoder::initRateControl(VkCommandBuffer cmdBuf, uint32_t qp)
     {
-        // convert input image RGB to YUV multiplane
+        VkVideoBeginCodingInfoKHR encodeBeginInfo = { VK_STRUCTURE_TYPE_VIDEO_BEGIN_CODING_INFO_KHR };
+        encodeBeginInfo.videoSession = m_videoSession;
+        encodeBeginInfo.videoSessionParameters = m_videoSessionParameters;
 
+        VkVideoEncodeH264FrameSizeEXT encodeH264FrameSize;
+        encodeH264FrameSize.frameISize = 0;
+
+        VkVideoEncodeH264QpEXT encodeH264Qp;
+        encodeH264Qp.qpI = qp;
+
+        VkVideoEncodeH264RateControlLayerInfoEXT encodeH264RateControlLayerInfo = { VK_STRUCTURE_TYPE_VIDEO_ENCODE_H264_RATE_CONTROL_LAYER_INFO_EXT };
+        encodeH264RateControlLayerInfo.useInitialRcQp = VK_TRUE;
+        encodeH264RateControlLayerInfo.initialRcQp = encodeH264Qp;
+        encodeH264RateControlLayerInfo.useMinQp = VK_TRUE;
+        encodeH264RateControlLayerInfo.minQp = encodeH264Qp;
+        encodeH264RateControlLayerInfo.useMaxQp = VK_TRUE;
+        encodeH264RateControlLayerInfo.maxQp = encodeH264Qp;
+        encodeH264RateControlLayerInfo.useMaxFrameSize = VK_TRUE;
+        encodeH264RateControlLayerInfo.maxFrameSize = encodeH264FrameSize;
+        encodeH264RateControlLayerInfo.temporalLayerId = 0;
+
+        VkVideoEncodeRateControlLayerInfoKHR encodeRateControlLayerInfo = { VK_STRUCTURE_TYPE_VIDEO_ENCODE_RATE_CONTROL_LAYER_INFO_KHR };
+        encodeRateControlLayerInfo.pNext = &encodeH264RateControlLayerInfo;
+
+        VkVideoEncodeH264RateControlInfoEXT encodeH264RateControlInfo = { VK_STRUCTURE_TYPE_VIDEO_ENCODE_H264_RATE_CONTROL_INFO_EXT };
+        encodeH264RateControlInfo.gopFrameCount = UINT32_MAX;
+        encodeH264RateControlInfo.idrPeriod = UINT32_MAX;
+        encodeH264RateControlInfo.consecutiveBFrameCount = 0;
+        encodeH264RateControlInfo.temporalLayerCount = 1;
+        encodeH264RateControlInfo.rateControlStructure = VK_VIDEO_ENCODE_H264_RATE_CONTROL_STRUCTURE_UNKNOWN_EXT;
+
+        VkVideoEncodeRateControlInfoKHR encodeRateControlInfo = { VK_STRUCTURE_TYPE_VIDEO_ENCODE_RATE_CONTROL_INFO_KHR };
+        encodeRateControlInfo.rateControlMode = VK_VIDEO_ENCODE_RATE_CONTROL_MODE_DISABLED_BIT_KHR;
+        encodeRateControlInfo.pNext = &encodeH264RateControlInfo;
+        encodeRateControlInfo.layerCount = 1;
+        encodeRateControlInfo.pLayers = &encodeRateControlLayerInfo;
+
+        VkVideoCodingControlInfoKHR codingControlInfo = { VK_STRUCTURE_TYPE_VIDEO_CODING_CONTROL_INFO_KHR };
+        codingControlInfo.flags = VK_VIDEO_CODING_CONTROL_RESET_BIT_KHR | VK_VIDEO_CODING_CONTROL_ENCODE_RATE_CONTROL_BIT_KHR;
+        codingControlInfo.pNext = &encodeRateControlInfo;
+
+        VkVideoEndCodingInfoKHR encodeEndInfo = { VK_STRUCTURE_TYPE_VIDEO_END_CODING_INFO_KHR };
+
+        // Reset the video session before first use and apply QP values.
+        vkCmdBeginVideoCodingKHR(cmdBuf, &encodeBeginInfo);
+        vkCmdControlVideoCodingKHR(cmdBuf, &codingControlInfo);
+        vkCmdEndVideoCodingKHR(cmdBuf, &encodeEndInfo);
+        return VK_SUCCESS;
+    }
+
+    VkResult VHVideoEncoder::transitionImagesInitial(VkCommandBuffer cmdBuf)
+    {
+        VHCHECKRESULT(vhBufTransitionImageLayout(m_device, m_encodeQueue, cmdBuf,
+            m_dpbImage, VK_FORMAT_G8_B8R8_2PLANE_420_UNORM, VK_IMAGE_ASPECT_COLOR_BIT, 1, 1,
+            VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_VIDEO_ENCODE_DPB_KHR));
+        VHCHECKRESULT(vhBufTransitionImageLayout(m_device, m_encodeQueue, cmdBuf,
+                m_yuvImage, VK_FORMAT_G8_B8R8_2PLANE_420_UNORM, VK_IMAGE_ASPECT_COLOR_BIT, 1, 1,
+            VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_VIDEO_ENCODE_SRC_KHR));
+        VHCHECKRESULT(vhBufTransitionImageLayout(m_device, m_encodeQueue, cmdBuf,
+            m_yuvImageChroma, VK_FORMAT_R8G8_UNORM, VK_IMAGE_ASPECT_COLOR_BIT, 1, 1,
+            VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL));            
+        return VK_SUCCESS;
+    }
+
+    VkResult VHVideoEncoder::convertRGBtoYUV(VkImageView inputImageView)
+    {
         // set the input image view into the descriptor for the compute shader
         std::array<VkWriteDescriptorSet, 1> descriptorWrites{};
         VkDescriptorImageInfo imageInfo{};
@@ -337,9 +435,13 @@ namespace vh {
             VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_VIDEO_ENCODE_SRC_KHR));
 
         VHCHECKRESULT(vhCmdEndSingleTimeCommands(m_device, m_computeQueue, m_computeCommandPool, cmdBuffer));
+        return VK_SUCCESS;
+    }
 
+    VkResult VHVideoEncoder::encodeVideoFrame()
+    {
         // begin command buffer for video encode
-        cmdBuffer = vhCmdBeginSingleTimeCommands(m_device, m_encodeCommandPool);
+        VkCommandBuffer cmdBuffer = vhCmdBeginSingleTimeCommands(m_device, m_encodeCommandPool);
 
         // start a video encode session (without reference pics -> no I or B frames)
         VkVideoBeginCodingInfoKHR encodeBeginInfo = { VK_STRUCTURE_TYPE_VIDEO_BEGIN_CODING_INFO_KHR };
@@ -399,7 +501,11 @@ namespace vh {
 
         // run the encoding
         VHCHECKRESULT(vhCmdEndSingleTimeCommands(m_device, m_encodeQueue, m_encodeCommandPool, cmdBuffer));
+        return VK_SUCCESS;
+    }
 
+    VkResult VHVideoEncoder::readOutputVideoPacket()
+    {
         struct nvVideoEncodeStatus {
             uint32_t bitstreamStartOffset;
             uint32_t bitstreamSize;
@@ -408,6 +514,7 @@ namespace vh {
         // get the resulting bitstream
         nvVideoEncodeStatus encodeResult[2]; // 2nd slot is non vcl data
         memset(&encodeResult, 0, sizeof(encodeResult));
+        const uint32_t querySlotId = 0;
         VHCHECKRESULT(vkGetQueryPoolResults(m_device, m_queryPool, querySlotId, 1, sizeof(nvVideoEncodeStatus),
             &encodeResult[0], sizeof(nvVideoEncodeStatus), VK_QUERY_RESULT_WITH_STATUS_BIT_KHR | VK_QUERY_RESULT_WAIT_BIT));
 
@@ -421,10 +528,8 @@ namespace vh {
         vmaUnmapMemory(m_allocator, m_bitStreamBufferAllocation);
 
         m_frameCount++;
-
         return VK_SUCCESS;
     }
-
 
     void VHVideoEncoder::deinit()
     {
@@ -455,57 +560,5 @@ namespace vh {
         m_outfile.close();
 
         m_initialized = false;
-    }
-
-
-    void VHVideoEncoder::initRateControl(VkCommandBuffer cmdBuf, uint32_t qp)
-    {
-        VkVideoBeginCodingInfoKHR encodeBeginInfo = { VK_STRUCTURE_TYPE_VIDEO_BEGIN_CODING_INFO_KHR };
-        encodeBeginInfo.videoSession = m_videoSession;
-        encodeBeginInfo.videoSessionParameters = m_videoSessionParameters;
-
-        VkVideoEncodeH264FrameSizeEXT encodeH264FrameSize;
-        encodeH264FrameSize.frameISize = 0;
-
-        VkVideoEncodeH264QpEXT encodeH264Qp;
-        encodeH264Qp.qpI = qp;
-
-        VkVideoEncodeH264RateControlLayerInfoEXT encodeH264RateControlLayerInfo = { VK_STRUCTURE_TYPE_VIDEO_ENCODE_H264_RATE_CONTROL_LAYER_INFO_EXT };
-        encodeH264RateControlLayerInfo.useInitialRcQp = VK_TRUE;
-        encodeH264RateControlLayerInfo.initialRcQp = encodeH264Qp;
-        encodeH264RateControlLayerInfo.useMinQp = VK_TRUE;
-        encodeH264RateControlLayerInfo.minQp = encodeH264Qp;
-        encodeH264RateControlLayerInfo.useMaxQp = VK_TRUE;
-        encodeH264RateControlLayerInfo.maxQp = encodeH264Qp;
-        encodeH264RateControlLayerInfo.useMaxFrameSize = VK_TRUE;
-        encodeH264RateControlLayerInfo.maxFrameSize = encodeH264FrameSize;
-        encodeH264RateControlLayerInfo.temporalLayerId = 0;
-
-        VkVideoEncodeRateControlLayerInfoKHR encodeRateControlLayerInfo = { VK_STRUCTURE_TYPE_VIDEO_ENCODE_RATE_CONTROL_LAYER_INFO_KHR };
-        encodeRateControlLayerInfo.pNext = &encodeH264RateControlLayerInfo;
-
-        VkVideoEncodeH264RateControlInfoEXT encodeH264RateControlInfo = { VK_STRUCTURE_TYPE_VIDEO_ENCODE_H264_RATE_CONTROL_INFO_EXT };
-        encodeH264RateControlInfo.gopFrameCount = UINT32_MAX;
-        encodeH264RateControlInfo.idrPeriod = UINT32_MAX;
-        encodeH264RateControlInfo.consecutiveBFrameCount = 0;
-        encodeH264RateControlInfo.temporalLayerCount = 1;
-        encodeH264RateControlInfo.rateControlStructure = VK_VIDEO_ENCODE_H264_RATE_CONTROL_STRUCTURE_UNKNOWN_EXT;
-
-        VkVideoEncodeRateControlInfoKHR encodeRateControlInfo = { VK_STRUCTURE_TYPE_VIDEO_ENCODE_RATE_CONTROL_INFO_KHR };
-        encodeRateControlInfo.rateControlMode = VK_VIDEO_ENCODE_RATE_CONTROL_MODE_DISABLED_BIT_KHR;
-        encodeRateControlInfo.pNext = &encodeH264RateControlInfo;
-        encodeRateControlInfo.layerCount = 1;
-        encodeRateControlInfo.pLayers = &encodeRateControlLayerInfo;
-
-        VkVideoCodingControlInfoKHR codingControlInfo = { VK_STRUCTURE_TYPE_VIDEO_CODING_CONTROL_INFO_KHR };
-        codingControlInfo.flags = VK_VIDEO_CODING_CONTROL_RESET_BIT_KHR | VK_VIDEO_CODING_CONTROL_ENCODE_RATE_CONTROL_BIT_KHR;
-        codingControlInfo.pNext = &encodeRateControlInfo;
-
-        VkVideoEndCodingInfoKHR encodeEndInfo = { VK_STRUCTURE_TYPE_VIDEO_END_CODING_INFO_KHR };
-
-        // Reset the video session before first use and apply QP values.
-        vkCmdBeginVideoCodingKHR(cmdBuf, &encodeBeginInfo);
-        vkCmdControlVideoCodingKHR(cmdBuf, &codingControlInfo);
-        vkCmdEndVideoCodingKHR(cmdBuf, &encodeEndInfo);
     }
 };

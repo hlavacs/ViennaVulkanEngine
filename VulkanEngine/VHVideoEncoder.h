@@ -15,13 +15,28 @@ namespace vh {
 		}
 
 	private:
-		void initRateControl(VkCommandBuffer cmdBuf, uint32_t qp);
+        VkResult createVideoSession();
+        VkResult allocateVideoSessionMemory();
+        VkResult createVideoSessionParameters();
+        VkResult allocateOutputBitStream();
+        VkResult allocateReferenceImages();
+        VkResult allocateIntermediateImages();
+        VkResult createOutputQueryPool();
+        VkResult createYUVConversionPipeline();
+		VkResult initRateControl(VkCommandBuffer cmdBuf, uint32_t qp);
+        VkResult transitionImagesInitial(VkCommandBuffer cmdBuf);
+
+        VkResult convertRGBtoYUV(VkImageView inputImageView);
+        VkResult encodeVideoFrame();
+        VkResult readOutputVideoPacket();
 
 		bool m_initialized{ false };
 		VkDevice m_device;
 		VmaAllocator m_allocator;
 		VkQueue m_computeQueue;
 		VkQueue m_encodeQueue;
+		uint32_t m_computeQueueFamily;
+		uint32_t m_encodeQueueFamily;
 		VkCommandPool m_computeCommandPool;
 		VkCommandPool m_encodeCommandPool;
 		uint32_t m_width;
@@ -32,6 +47,8 @@ namespace vh {
 		StdVideoH264SequenceParameterSet m_sps;
 		StdVideoH264PictureParameterSet m_pps;
 		VkVideoSessionParametersKHR m_videoSessionParameters;
+		VkVideoEncodeH264ProfileInfoEXT m_encodeH264ProfileInfoExt;
+		VkVideoProfileInfoKHR m_videoProfile;
 
 		VkDescriptorSetLayout m_computeDescriptorSetLayout;
 		VkPipelineLayout m_computePipelineLayout;
