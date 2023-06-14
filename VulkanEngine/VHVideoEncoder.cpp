@@ -23,8 +23,8 @@ namespace vh {
         m_encodeQueueFamily = encodeQueueFamily;
         m_computeCommandPool = computeCommandPool;
         m_encodeCommandPool = encodeCommandPool;
-        m_width = width;
-        m_height = height;
+        m_width = width & ~1;
+        m_height = height & ~1;
 
         VHCHECKRESULT(createVideoSession());
         VHCHECKRESULT(allocateVideoSessionMemory());
@@ -436,7 +436,7 @@ namespace vh {
         // run the RGB->YUV conversion shader
         vkCmdBindPipeline(m_computeCommandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, m_computePipeline);
         vkCmdBindDescriptorSets(m_computeCommandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, m_computePipelineLayout, 0, 1, &m_computeDescriptorSets[currentImageIx], 0, 0);
-        vkCmdDispatch(m_computeCommandBuffer, m_width/16, m_height/16, 1); // work item local size = 16x16
+        vkCmdDispatch(m_computeCommandBuffer, (m_width+15)/16, (m_height+15)/16, 1); // work item local size = 16x16
 
 
         // transition the YUV image as copy target and the chroma image to be copy source
