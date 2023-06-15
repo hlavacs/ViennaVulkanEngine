@@ -13,8 +13,20 @@ namespace vh {
     {
         assert(!m_running);
         if (m_initialized) {
-            return VK_SUCCESS;
+            if ((width & ~1) == m_width && (height & ~1) == m_height) {
+                // nothing changed
+                return VK_SUCCESS;
+            }
+
+            // resolution changed
+            deinit();
         }
+        else {
+            // delete file content on first init
+            m_outfile.open("hwenc.264", std::ios::binary);
+            m_outfile.close();
+        }
+
         m_device = device;
         m_allocator = allocator;
         m_computeQueue = computeQueue;
@@ -44,7 +56,7 @@ namespace vh {
         VHCHECKRESULT(transitionImagesInitial(cmdBuffer));
         VHCHECKRESULT(vhCmdEndSingleTimeCommands(m_device, m_encodeQueue, m_encodeCommandPool, cmdBuffer));
 
-        m_outfile.open("hwenc.264", std::ios::binary);
+        m_outfile.open("hwenc.264", std::ios::binary | std::ios::app);
         h264::encodeSps(m_sps).writeTo(m_outfile);
         h264::encodePps(m_pps).writeTo(m_outfile);
 
