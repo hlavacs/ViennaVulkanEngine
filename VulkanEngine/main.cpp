@@ -147,7 +147,10 @@ namespace ve {
 			static double timeSinceLastWrite = TIME_BETWEEN_WRITES;
 			timeSinceLastWrite += event.dt;
 
-			videoEncoder.finishEncode();
+			VkResult ret = videoEncoder.finishEncode();
+			if (ret != VK_SUCCESS && ret != VK_NOT_READY) {
+				std::cout << "Error on VideoEncoder frame finish\n";
+			}
 
 			if (!g_writeFrames || timeSinceLastWrite < TIME_BETWEEN_WRITES)
 				return;
@@ -155,7 +158,7 @@ namespace ve {
 
 			// queue another frame for copy
 			VkExtent2D extent = getWindowPointer()->getExtent();
-			videoEncoder.init(getEnginePointer()->getRenderer()->getDevice(),
+			ret = videoEncoder.init(getEnginePointer()->getRenderer()->getDevice(),
 				getEnginePointer()->getRenderer()->getVmaAllocator(),
 				getEnginePointer()->getRenderer()->getGraphicsQueueFamily(),
 				getEnginePointer()->getRenderer()->getGraphicsQueue(),
@@ -165,7 +168,16 @@ namespace ve {
 				getEnginePointer()->getRenderer()->getEncodeCommandPool(),
 				getEnginePointer()->getRenderer()->getSwapChainImageViews(),
 				extent.width, extent.height, RECORD_FPS);
-			videoEncoder.queueEncode(getEnginePointer()->getRenderer()->getImageIndex());
+			if (ret != VK_SUCCESS) {
+				std::cout << "Error initializing VideoEncoder\n";
+				g_writeFrames = false;
+				return;
+			}
+
+			ret = videoEncoder.queueEncode(getEnginePointer()->getRenderer()->getImageIndex());
+			if (ret != VK_SUCCESS) {
+				std::cout << "Error using VideoEncoder\n";
+			}
 		}
 
 	public:
@@ -235,7 +247,10 @@ namespace ve {
 using namespace ve;
 
 int main() {
-	bool debug = false;
+	bool debug = true;
+#ifdef VULKAN_VIDEO_ENCODE
+	debug = false; //validation layer not supported for beta extensions
+#endif
 
 	MyVulkanEngine mve(veRendererType::VE_RENDERER_TYPE_FORWARD, debug);	//enable or disable debugging (=callback, validation layers)
 

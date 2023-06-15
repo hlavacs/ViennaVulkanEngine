@@ -113,7 +113,11 @@ namespace vh
 		int i = 0;
 		for (const auto &queueFamily : queueFamilies)
 		{
+#ifdef VULKAN_VIDEO_ENCODE
 			if (queueFamily.queueCount > 0 && queueFamily.queueFlags & VK_QUEUE_GRAPHICS_BIT && queueFamily.queueFlags & VK_QUEUE_COMPUTE_BIT)
+#else
+			if (queueFamily.queueCount > 0 && queueFamily.queueFlags & VK_QUEUE_GRAPHICS_BIT)
+#endif
 			{
 				indices.graphicsFamily = i;
 			}
@@ -131,10 +135,12 @@ namespace vh
 				indices.presentFamily = i;
 			}
 
+#ifdef VULKAN_VIDEO_ENCODE
 			if (queueFamily.queueCount > 0 && queueFamily.queueFlags & VK_QUEUE_VIDEO_ENCODE_BIT_KHR)
 			{
 				indices.encodeFamily = i;
 			}
+#endif
 
 			if (indices.isComplete())
 			{
@@ -365,7 +371,10 @@ namespace vh
 		QueueFamilyIndices indices = vhDevFindQueueFamilies(physicalDevice, surface);
 
 		std::vector<VkDeviceQueueCreateInfo> queueCreateInfos;
-		std::set<int> uniqueQueueFamilies = { indices.graphicsFamily, indices.presentFamily, indices.encodeFamily };
+		std::set<int> uniqueQueueFamilies = { indices.graphicsFamily, indices.presentFamily };
+		if (indices.encodeFamily != -1) {
+			uniqueQueueFamilies.insert(indices.encodeFamily);
+		}
 
 		float queuePriority = 1.0f;
 		for (int queueFamily : uniqueQueueFamilies)
@@ -424,7 +433,9 @@ namespace vh
 
 		vkGetDeviceQueue(*device, indices.graphicsFamily, 0, graphicsQueue);
 		vkGetDeviceQueue(*device, indices.presentFamily, 0, presentQueue);
-		vkGetDeviceQueue(*device, indices.encodeFamily, 0, encodeQueue);
+		if (indices.encodeFamily != -1) {
+			vkGetDeviceQueue(*device, indices.encodeFamily, 0, encodeQueue);
+		}
 		*graphicsQueueFamily = indices.graphicsFamily;
 		*encodeQueueFamily = indices.encodeFamily;
 

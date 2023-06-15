@@ -355,6 +355,15 @@
     <ClCompile Include="VHVideoEncoder.cpp">
       <Filter>Source Files\VHelper</Filter>
     </ClCompile>
+    <ClCompile Include="VERendererDeferred.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="VERendererRayTracingKHR.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="VERendererRayTracingNV.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="VHFunctions.inl">

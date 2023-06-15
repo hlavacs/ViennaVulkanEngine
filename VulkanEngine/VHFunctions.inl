@@ -181,6 +181,7 @@ VK_DEVICE_LEVEL_FUNCTION(vkCreateRayTracingPipelinesKHR)
 VK_DEVICE_LEVEL_FUNCTION(vkGetRayTracingShaderGroupHandlesKHR)
 VK_DEVICE_LEVEL_FUNCTION(vkCmdTraceRaysKHR)
 
+#ifdef VULKAN_VIDEO_ENCODE
 // Video Extension
 VK_DEVICE_LEVEL_FUNCTION(vkCreateVideoSessionKHR)
 VK_DEVICE_LEVEL_FUNCTION(vkDestroyVideoSessionKHR)
@@ -202,6 +203,7 @@ VK_DEVICE_LEVEL_FUNCTION(vkCmdCopyImage)
 VK_DEVICE_LEVEL_FUNCTION(vkCmdBlitImage)
 VK_DEVICE_LEVEL_FUNCTION(vkCreateComputePipelines)
 VK_DEVICE_LEVEL_FUNCTION(vkCmdDispatch)
+#endif
 
 #undef VK_DEVICE_LEVEL_FUNCTION
 

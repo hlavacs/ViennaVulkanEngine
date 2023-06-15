@@ -23,7 +23,14 @@ namespace ve
 		const std::vector<const char *> requiredDeviceExtensions = {
 			VK_KHR_SWAPCHAIN_EXTENSION_NAME,
 			VK_KHR_GET_MEMORY_REQUIREMENTS_2_EXTENSION_NAME,
-			VK_NV_RAY_TRACING_EXTENSION_NAME };
+			VK_NV_RAY_TRACING_EXTENSION_NAME,
+#ifdef VULKAN_VIDEO_ENCODE
+			VK_KHR_SYNCHRONIZATION_2_EXTENSION_NAME,
+			VK_KHR_VIDEO_QUEUE_EXTENSION_NAME,
+			VK_KHR_VIDEO_ENCODE_QUEUE_EXTENSION_NAME,
+			VK_EXT_VIDEO_ENCODE_H264_EXTENSION_NAME
+#endif
+		};
 
 		const std::vector<const char *> requiredValidationLayers = {
 			"VK_LAYER_LUNARG_standard_validation" };
@@ -36,8 +43,8 @@ namespace ve
 			&m_physicalDevice, &m_deviceFeatures, &m_deviceLimits) != VK_SUCCESS ||
 			vh::vhDevCreateLogicalDevice(getEnginePointer()->getInstance(), m_physicalDevice, m_surface,
 				requiredDeviceExtensions, requiredValidationLayers,
-				&enabledBufferDeviceAddresFeatures, &m_device, &m_graphicsQueue,
-				&m_presentQueue) != VK_SUCCESS)
+				&enabledBufferDeviceAddresFeatures, &m_device, &m_graphicsQueueFamily, &m_graphicsQueue,
+				&m_presentQueue, &m_encodeQueueFamily, &m_encodeQueue) != VK_SUCCESS)
 		{
 			assert(false);
 			exit(1);
@@ -74,6 +81,11 @@ namespace ve
 			m_secondaryBuffers[i] = {}; //will be created later
 
 		m_secondaryBuffersFutures.resize(m_swapChainImages.size());
+
+		if (m_encodeQueueFamily != -1) {
+			vh::vhCmdCreateEncodeCommandPool(m_device, m_encodeQueueFamily,
+				&m_encodeCommandPool); //command pool for video encoding
+		}
 
 		//------------------------------------------------------------------------------------------------------------
 		//create resources for light pass

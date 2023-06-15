@@ -2,7 +2,7 @@
 #include "VHVideoEncoder.h"
 
 namespace vh {
-
+#ifdef VULKAN_VIDEO_ENCODE
     VkResult VHVideoEncoder::init(
         VkDevice device,
         VmaAllocator allocator,
@@ -12,6 +12,11 @@ namespace vh {
         uint32_t width, uint32_t height, uint32_t fps)
     {
         assert(!m_running);
+        if (encodeQueueFamily == -1) {
+            std::cout << "Vulkan VideoEncode extension not present.\n";
+            return VK_ERROR_EXTENSION_NOT_PRESENT;
+        }
+
         if (m_initialized) {
             if ((width & ~1) == m_width && (height & ~1) == m_height) {
                 // nothing changed
@@ -648,4 +653,30 @@ namespace vh {
 
         m_initialized = false;
     }
+#else
+    VkResult VHVideoEncoder::init(
+        VkDevice device,
+        VmaAllocator allocator,
+        uint32_t computeQueueFamily, VkQueue computeQueue, VkCommandPool computeCommandPool,
+        uint32_t encodeQueueFamily, VkQueue encodeQueue, VkCommandPool encodeCommandPool,
+        const std::vector<VkImageView>& inputImageViews,
+        uint32_t width, uint32_t height, uint32_t fps)
+    {
+        return VK_ERROR_EXTENSION_NOT_PRESENT;
+    }
+
+    VkResult VHVideoEncoder::queueEncode(uint32_t currentImageIx)
+    {
+        return VK_ERROR_EXTENSION_NOT_PRESENT;
+    }
+
+    VkResult VHVideoEncoder::finishEncode()
+    {
+        return VK_SUCCESS;
+    }
+        
+    void VHVideoEncoder::deinit()
+    {
+    }
+#endif
 };

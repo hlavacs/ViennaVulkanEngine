@@ -37,7 +37,9 @@
 
 #include <math.h>
 
+#ifdef VULKAN_VIDEO_ENCODE
 #define VK_ENABLE_BETA_EXTENSIONS 1
+#endif
 #define VK_NO_PROTOTYPES
 #include "vulkan/vulkan.h"
 #include "VHFunctions.h"
@@ -77,7 +79,11 @@ namespace vh
 		///\returns true if the structure is filled completely
 		bool isComplete()
 		{
+#ifdef VULKAN_VIDEO_ENCODE
 			return graphicsFamily >= 0 && presentFamily >= 0 && encodeFamily >= 0;
+#else
+			return graphicsFamily >= 0 && presentFamily >= 0;
+#endif
 		}
 	};
 

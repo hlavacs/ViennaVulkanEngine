@@ -22,6 +22,7 @@ namespace vh {
 		}
 
 	private:
+#ifdef VULKAN_VIDEO_ENCODE
         VkResult createVideoSession();
         VkResult allocateVideoSessionMemory();
         VkResult createVideoSessionParameters(uint32_t fps);
@@ -89,6 +90,7 @@ namespace vh {
 		VkCommandBuffer m_computeCommandBuffer;
 		VkCommandBuffer m_encodeCommandBuffer;
 		std::thread m_backgroundCopy;
+#endif
 	};
 }
 
