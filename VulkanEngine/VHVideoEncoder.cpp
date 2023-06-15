@@ -35,6 +35,10 @@ namespace vh {
         VHCHECKRESULT(createOutputQueryPool());
         VHCHECKRESULT(createYUVConversionPipeline(inputImageViews));
 
+        VkSemaphoreCreateInfo semaphoreInfo = {};
+        semaphoreInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
+        VHCHECKRESULT(vkCreateSemaphore(m_device, &semaphoreInfo, nullptr, &m_interQueueSemaphore));
+
         VkCommandBuffer cmdBuffer = vhCmdBeginSingleTimeCommands(m_device, m_encodeCommandPool);
         VHCHECKRESULT(initRateControl(cmdBuffer, 20));
         VHCHECKRESULT(transitionImagesInitial(cmdBuffer));
@@ -463,7 +467,7 @@ namespace vh {
         vkCmdCopyImage(m_computeCommandBuffer, m_yuvImageChroma, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, m_yuvImage, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &regions);
 
         VHCHECKRESULT(vkEndCommandBuffer(m_computeCommandBuffer));
-        VHCHECKRESULT(vhCmdSubmitCommandBuffer(m_device, m_computeQueue, m_computeCommandBuffer, VK_NULL_HANDLE, VK_NULL_HANDLE, VK_NULL_HANDLE));
+        VHCHECKRESULT(vhCmdSubmitCommandBuffer(m_device, m_computeQueue, m_computeCommandBuffer, VK_NULL_HANDLE, m_interQueueSemaphore, VK_NULL_HANDLE));
         return VK_SUCCESS;
     }
 
@@ -563,7 +567,7 @@ namespace vh {
 
         // run the encoding
         VHCHECKRESULT(vkEndCommandBuffer(m_encodeCommandBuffer));
-        VHCHECKRESULT(vhCmdSubmitCommandBuffer(m_device, m_encodeQueue, m_encodeCommandBuffer, VK_NULL_HANDLE, VK_NULL_HANDLE, VK_NULL_HANDLE));
+        VHCHECKRESULT(vhCmdSubmitCommandBuffer(m_device, m_encodeQueue, m_encodeCommandBuffer, m_interQueueSemaphore, VK_NULL_HANDLE, VK_NULL_HANDLE));
         return VK_SUCCESS;
     }
 
@@ -605,6 +609,7 @@ namespace vh {
             vkFreeCommandBuffers(m_device, m_encodeCommandPool, 1, &m_encodeCommandBuffer);
         }
 
+        vkDestroySemaphore(m_device, m_interQueueSemaphore, nullptr);
         vkDestroyPipeline(m_device, m_computePipeline, nullptr);
         vkDestroyPipelineLayout(m_device, m_computePipelineLayout, nullptr);
         vkDestroyDescriptorPool(m_device, m_descriptorPool, nullptr);

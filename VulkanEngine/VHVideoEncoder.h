@@ -65,6 +65,8 @@ namespace vh {
 		VkDescriptorPool m_descriptorPool;
 		std::vector<VkDescriptorSet> m_computeDescriptorSets;
 
+		VkSemaphore m_interQueueSemaphore;
+
 		VkQueryPool m_queryPool;
 		VkBuffer m_bitStreamBuffer;
 		VmaAllocation m_bitStreamBufferAllocation;
