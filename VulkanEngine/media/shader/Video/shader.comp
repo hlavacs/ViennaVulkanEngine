@@ -6,14 +6,20 @@ layout (binding = 2, rg8) uniform writeonly image2D outputImage1;
 
 layout (local_size_x = 16, local_size_y = 16, local_size_z = 1) in;
 
+// Conversion matrix from RGB to YCbCr
+// RGB.a must be set to 1.0
+// GLSL uses column major order: matrix looks transposed
+const mat4 rgb2yuv = mat4(
+    0.299, -0.169,  0.5,   0,
+    0.587, -0.331, -0.419, 0,
+    0.114,  0.5,   -0.081, 0,
+    0    ,  0.5,    0.5,   1
+);
+
 void main() {
-    vec4 rgba = imageLoad(inputImage,  ivec2(gl_GlobalInvocationID.xy));
-    
-    vec4 yuva = vec4(0.0);
-    yuva.x = rgba.r * 0.299 + rgba.g * 0.587 + rgba.b * 0.114;
-    yuva.y = rgba.r * -0.169 + rgba.g * -0.331 + rgba.b * 0.5 + 0.5;
-    yuva.z = rgba.r * 0.5 + rgba.g * -0.419 + rgba.b * -0.081 + 0.5;
-    yuva.w = 1.0;
+    vec4 rgba = vec4(imageLoad(inputImage,  ivec2(gl_GlobalInvocationID.xy)).rgb, 1.0);
+
+    vec4 yuva = rgb2yuv * rgba;
     
     imageStore(outputImage0, ivec2(gl_GlobalInvocationID.xy), vec4(yuva.x));
     imageStore(outputImage1, ivec2(gl_GlobalInvocationID.x / 2, gl_GlobalInvocationID.y / 2), vec4(yuva.y, yuva.z, 0.0, 0.0));
