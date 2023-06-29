@@ -16,7 +16,16 @@ elseif(CMAKE_COMPILER_IS_GNUCXX)
 endif()
 
 set(EXECUTABLE_OUTPUT_PATH ${CMAKE_HOME_DIRECTORY}/bin)
-set(LIBRARY_OUTPUT_PATH ${CMAKE_HOME_DIRECTORY}/bin)
 
-include_directories (${CMAKE_HOME_DIRECTORY}/external/glm)
+include_directories (${CMAKE_HOME_DIRECTORY}/glm)
 include_directories ($ENV{VULKAN_SDK}/include)
+link_directories($ENV{VULKAN_SDK}/lib)
+
+set(TARGET Minimal)
+set(SOURCE Minimal.cpp)
+set(HEADERS)
+add_executable(${TARGET} ${SOURCE} ${HEADERS})
+
+target_compile_features(${TARGET} PUBLIC cxx_std_20)
+target_link_libraries(${TARGET} SDL2.lib)
+target_link_libraries(${TARGET} SDL2main.lib)
