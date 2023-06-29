@@ -1,6 +1,6 @@
 
 cmake_minimum_required (VERSION 3.0.0)
-project (VVE)
+project (Minimal)
 
 if (MSVC)
   set(CMAKE_CXX_FLAGS_RELEASE /O2)
@@ -17,25 +17,6 @@ endif()
 
 set(EXECUTABLE_OUTPUT_PATH ${CMAKE_HOME_DIRECTORY}/bin)
 set(LIBRARY_OUTPUT_PATH ${CMAKE_HOME_DIRECTORY}/bin)
-set(INCLUDE ${CMAKE_HOME_DIRECTORY}/include)
-set(EXTERNAL ${CMAKE_HOME_DIRECTORY}/external)
 
-include_directories (${INCLUDE})
-include_directories (${CMAKE_HOME_DIRECTORY}/external/glfw/include)
-include_directories (${CMAKE_HOME_DIRECTORY}/external/imgui)
 include_directories (${CMAKE_HOME_DIRECTORY}/external/glm)
 include_directories ($ENV{VULKAN_SDK}/include)
-
-add_subdirectory (src)
-add_subdirectory (external/imgui)
-add_subdirectory (examples/basic_test)
-
-find_package(Doxygen)
-if (DOXYGEN_FOUND)
-  set(DOXYGEN_USE_MDFILE_AS_MAINPAGE "README.md")
-  doxygen_add_docs(doxygen
-    ${CMAKE_SOURCE_DIR}/README.md
-    ${CMAKE_SOURCE_DIR}/include
-	  ${CMAKE_SOURCE_DIR}/src
-  )
-endif(DOXYGEN_FOUND)
