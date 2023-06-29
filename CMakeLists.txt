@@ -29,3 +29,6 @@ add_executable(${TARGET} ${SOURCE} ${HEADERS})
 target_compile_features(${TARGET} PUBLIC cxx_std_20)
 target_link_libraries(${TARGET} SDL2.lib)
 target_link_libraries(${TARGET} SDL2main.lib)
+target_link_libraries(${TARGET} shaderc.lib)
+target_link_libraries(${TARGET} vulkan-1.lib)
+
