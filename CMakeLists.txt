@@ -2,7 +2,7 @@
 cmake_minimum_required (VERSION 3.0.0)
 project (Minimal LANGUAGES CXX)
 
-#find_package(Vulkan REQUIRED)
+find_package(Vulkan REQUIRED)
 
 if (MSVC)
   set(CMAKE_CXX_FLAGS_RELEASE /O2)

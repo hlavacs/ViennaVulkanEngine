@@ -13,6 +13,8 @@
 #include "SDL2/SDL_vulkan.h"
 
 #define VMA_IMPLEMENTATION
+#define VMA_STATIC_VULKAN_FUNCTIONS 0
+#define VMA_DYNAMIC_VULKAN_FUNCTIONS 1
 #include "vma/vk_mem_alloc.h"
 
 SDL_Window* window;
@@ -52,8 +54,22 @@ auto InitVulkan() {
     SDL_Vulkan_GetInstanceExtensions(window, &extensionCount, extensionNames.data());
     extensionNames.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
     const std::vector<const char*> validationLayers = { "VK_LAYER_KHRONOS_validation" };
-    VkApplicationInfo appInfo{ .sType = VK_STRUCTURE_TYPE_APPLICATION_INFO, .pApplicationName = window_name, .applicationVersion = VK_MAKE_VERSION(1, 0, 0), .apiVersion = VK_API_VERSION_1_3 };
-    VkInstanceCreateInfo instanceCreateInfo{ .sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO, .pApplicationInfo = &appInfo, .enabledLayerCount = (uint32_t)validationLayers.size(), .ppEnabledLayerNames = validationLayers.data(), .enabledExtensionCount = (uint32_t)extensionNames.size(), .ppEnabledExtensionNames = extensionNames.data() };
+    
+    VkApplicationInfo appInfo{ 
+          .sType = VK_STRUCTURE_TYPE_APPLICATION_INFO
+        , .pApplicationName = window_name
+        , .applicationVersion = VK_MAKE_VERSION(1, 0, 0)
+        , .apiVersion = VK_API_VERSION_1_3 
+    };
+    
+    VkInstanceCreateInfo instanceCreateInfo{ 
+        .sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO
+        , .pApplicationInfo = &appInfo
+        , .enabledLayerCount = (uint32_t)validationLayers.size()
+        , .ppEnabledLayerNames = validationLayers.data()
+        , .enabledExtensionCount = (uint32_t)extensionNames.size()
+        , .ppEnabledExtensionNames = extensionNames.data() 
+    };
     vkCreateInstance(&instanceCreateInfo, nullptr, &instance);
 
     //debug
@@ -176,8 +192,7 @@ auto InitVulkan() {
     for (const auto& image : swapchainImages) swapchainImageViews.push_back(createImageView(image, surfaceFormat.format, VK_IMAGE_ASPECT_COLOR_BIT));
 
     //VMA
-    VmaAllocatorCreateInfo vmaCreateInfo{ .physicalDevice = physicalDevice, .device = device, .instance = instance, .vulkanApiVersion = VK_API_VERSION_1_3  };
-    /*VmaVulkanFunctions vulkanFunctions = {};
+    VmaVulkanFunctions vulkanFunctions = {};
     vulkanFunctions.vkGetInstanceProcAddr = &vkGetInstanceProcAddr;
     vulkanFunctions.vkGetDeviceProcAddr = &vkGetDeviceProcAddr;
 
@@ -187,8 +202,7 @@ auto InitVulkan() {
     allocatorCreateInfo.device = device;
     allocatorCreateInfo.instance = instance;
     allocatorCreateInfo.pVulkanFunctions = &vulkanFunctions;
-    */
-    vmaCreateAllocator(&vmaCreateInfo, &vmaAllocator);
+    vmaCreateAllocator(&allocatorCreateInfo, &vmaAllocator);
 
     //depth map
     std::vector<VkFormat> depthFormats = { VK_FORMAT_D32_SFLOAT_S8_UINT, VK_FORMAT_D32_SFLOAT, VK_FORMAT_D24_UNORM_S8_UINT, VK_FORMAT_D16_UNORM_S8_UINT, VK_FORMAT_D16_UNORM };
@@ -206,7 +220,7 @@ auto InitVulkan() {
     //    depthImage, depthImageMemory);
 
 
-    depthImageView = createImageView(depthImage, VK_FORMAT_D32_SFLOAT_S8_UINT, VK_IMAGE_ASPECT_DEPTH_BIT);
+    //depthImageView = createImageView(depthImage, VK_FORMAT_D32_SFLOAT_S8_UINT, VK_IMAGE_ASPECT_DEPTH_BIT);
 }
 
 
