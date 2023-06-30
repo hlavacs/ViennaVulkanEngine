@@ -42,6 +42,11 @@ VkImage depthImage;
 VkImageView depthImageView;
 VmaAllocation depthImageAllocation;
 VmaAllocationInfo depthImageAllocationInfo;
+VkCommandPool commandPool;
+std::vector<VkCommandBuffer> commandBuffers;
+VkSemaphore imageAvailableSemaphore;
+VkSemaphore renderingFinishedSemaphore;
+std::vector<VkFence> fences;
 
 static VKAPI_ATTR VkBool32 VKAPI_CALL debugCallback(VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity, VkDebugUtilsMessageTypeFlagsEXT messageType, const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData, void* pUserData) {
     std::cerr << "validation layer: " << pCallbackData->pMessage << std::endl;
@@ -55,17 +60,12 @@ auto InitVulkan() {
     std::vector<const char*> extensionNames(extensionCount);
     SDL_Vulkan_GetInstanceExtensions(window, &extensionCount, extensionNames.data());
     extensionNames.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
-
     const std::vector<const char*> validationLayers = { "VK_LAYER_KHRONOS_validation" };
     
     VkApplicationInfo appInfo{ .sType = VK_STRUCTURE_TYPE_APPLICATION_INFO, .pApplicationName = window_name, .applicationVersion = VK_MAKE_VERSION(1, 0, 0), .apiVersion = VK_API_VERSION_1_3     };    
-    VkInstanceCreateInfo instanceCreateInfo{ 
-        .sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO
-        , .pApplicationInfo = &appInfo
-        , .enabledLayerCount = (uint32_t)validationLayers.size()
-        , .ppEnabledLayerNames = validationLayers.data()
-        , .enabledExtensionCount = (uint32_t)extensionNames.size()
-        , .ppEnabledExtensionNames = extensionNames.data() 
+    VkInstanceCreateInfo instanceCreateInfo{ .sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO, .pApplicationInfo = &appInfo
+        , .enabledLayerCount = (uint32_t)validationLayers.size(), .ppEnabledLayerNames = validationLayers.data()
+        , .enabledExtensionCount = (uint32_t)extensionNames.size(), .ppEnabledExtensionNames = extensionNames.data() 
     };
     vkCreateInstance(&instanceCreateInfo, nullptr, &instance);
 
@@ -192,8 +192,6 @@ auto InitVulkan() {
     VmaVulkanFunctions vulkanFunctions = {};
     vulkanFunctions.vkGetInstanceProcAddr = &vkGetInstanceProcAddr;
     vulkanFunctions.vkGetDeviceProcAddr = &vkGetDeviceProcAddr;
-    //vulkanFunctions.vkGetDeviceBufferMemoryRequirements = &vkGetDeviceBufferMemoryRequirements;
-    //vulkanFunctions.vkGetDeviceImageMemoryRequirements = &vkGetDeviceImageMemoryRequirements;
 
     VmaAllocatorCreateInfo allocatorCreateInfo = {};
     allocatorCreateInfo.vulkanApiVersion = VK_API_VERSION_1_2;
@@ -210,7 +208,6 @@ auto InitVulkan() {
         vkGetPhysicalDeviceFormatProperties(physicalDevice, format, &formatProps);
         if (formatProps.optimalTilingFeatures & VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT) { depthFormat = format; break; }
     }
-
     VkImageCreateInfo imageCreateInfo = {};
     imageCreateInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
     imageCreateInfo.imageType = VK_IMAGE_TYPE_2D;
@@ -232,13 +229,67 @@ auto InitVulkan() {
     vmaCreateImage(vmaAllocator, &imageCreateInfo, &allocCreateInfo, &depthImage, &depthImageAllocation, &depthImageAllocationInfo);
     depthImageView = createImageView(depthImage, depthFormat, VK_IMAGE_ASPECT_DEPTH_BIT);
 
+    //command pool and buffers
+    VkCommandPoolCreateInfo createPoolInfo = {};
+    createPoolInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
+    createPoolInfo.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT | VK_COMMAND_POOL_CREATE_TRANSIENT_BIT;
+    createPoolInfo.queueFamilyIndex = graphics_QueueFamilyIndex;
+    vkCreateCommandPool(device, &createPoolInfo, nullptr, &commandPool);
+    VkCommandBufferAllocateInfo allocateInfo = { .sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,
+        .commandPool = commandPool, .level = VK_COMMAND_BUFFER_LEVEL_PRIMARY, .commandBufferCount = swapchainImageCount };
+    commandBuffers.resize(swapchainImageCount);
+    vkAllocateCommandBuffers(device, &allocateInfo, commandBuffers.data());
 
+    //texture
+
+    //synchronization objects
+    VkSemaphoreCreateInfo createSemInfo = {};
+    createSemInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
+    vkCreateSemaphore(device, &createSemInfo, nullptr, &imageAvailableSemaphore);
+    vkCreateSemaphore(device, &createSemInfo, nullptr, &renderingFinishedSemaphore);
+    fences.resize(swapchainImageCount);
+    VkFenceCreateInfo createFenceInfo = {};
+    createFenceInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
+    createFenceInfo.flags = VK_FENCE_CREATE_SIGNALED_BIT;
+    for (size_t i = 0ul; i < swapchainImageCount; i++) { vkCreateFence(device, &createFenceInfo, nullptr, &fences[i]); }
+
+    //pipeline
 
 
 }
 
+auto BeginSingleCommandBuffer() {
+    VkCommandBuffer commandBuffer;
+    VkCommandBufferAllocateInfo allocateInfo = { .sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,
+        .commandPool = commandPool, .level = VK_COMMAND_BUFFER_LEVEL_PRIMARY, .commandBufferCount = 1 };
+    vkAllocateCommandBuffers(device, &allocateInfo, &commandBuffer);
+
+    VkCommandBufferBeginInfo beginInfo = {};
+    beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+    beginInfo.flags = VK_COMMAND_BUFFER_USAGE_SIMULTANEOUS_USE_BIT;
+    vkBeginCommandBuffer(commandBuffer, &beginInfo);
+    return commandBuffer;
+}
+
+void EndSingleCommandBuffer( VkCommandBuffer commandBuffer) {
+    vkEndCommandBuffer(commandBuffer);
+    VkSubmitInfo submitInfo = {};
+    submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+    submitInfo.waitSemaphoreCount = 0;
+    submitInfo.commandBufferCount = 1;
+    submitInfo.pCommandBuffers = &commandBuffer;
+    submitInfo.signalSemaphoreCount = 0;
+    vkQueueSubmit(graphicsQueue, 1, &submitInfo, 0);
+    vkDeviceWaitIdle(device);
+    vkFreeCommandBuffers(device, commandPool, 1, &commandBuffer);
+}
 
 void DestroyVulkan() {
+    for( const auto& fence : fences) vkDestroyFence(device, fence, nullptr);
+    vkDestroySemaphore(device, renderingFinishedSemaphore, nullptr);
+    vkDestroySemaphore( device, imageAvailableSemaphore, nullptr);
+    vkFreeCommandBuffers(device, commandPool, commandBuffers.size(), commandBuffers.data());
+    vkDestroyCommandPool(device, commandPool, nullptr);
     vkDestroyImageView(device, depthImageView, nullptr);
     vmaDestroyImage(vmaAllocator, depthImage, depthImageAllocation);
     for (const auto& imageView : swapchainImageViews) vkDestroyImageView(device, imageView, nullptr);
