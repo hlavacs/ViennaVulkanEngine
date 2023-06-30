@@ -36,8 +36,6 @@ static VKAPI_ATTR VkBool32 VKAPI_CALL debugCallback(VkDebugUtilsMessageSeverityF
     return VK_FALSE;
 }
 
-
-
 auto InitVulkan() {
     //instance
     unsigned int extensionCount = 0;
