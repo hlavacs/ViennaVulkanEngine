@@ -40,6 +40,8 @@ VmaAllocator vmaAllocator;
 VkFormat depthFormat;
 VkImage depthImage;
 VkImageView depthImageView;
+VmaAllocation depthImageAllocation;
+VmaAllocationInfo depthImageAllocationInfo;
 
 static VKAPI_ATTR VkBool32 VKAPI_CALL debugCallback(VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity, VkDebugUtilsMessageTypeFlagsEXT messageType, const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData, void* pUserData) {
     std::cerr << "validation layer: " << pCallbackData->pMessage << std::endl;
@@ -53,15 +55,10 @@ auto InitVulkan() {
     std::vector<const char*> extensionNames(extensionCount);
     SDL_Vulkan_GetInstanceExtensions(window, &extensionCount, extensionNames.data());
     extensionNames.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
+
     const std::vector<const char*> validationLayers = { "VK_LAYER_KHRONOS_validation" };
     
-    VkApplicationInfo appInfo{ 
-          .sType = VK_STRUCTURE_TYPE_APPLICATION_INFO
-        , .pApplicationName = window_name
-        , .applicationVersion = VK_MAKE_VERSION(1, 0, 0)
-        , .apiVersion = VK_API_VERSION_1_3 
-    };
-    
+    VkApplicationInfo appInfo{ .sType = VK_STRUCTURE_TYPE_APPLICATION_INFO, .pApplicationName = window_name, .applicationVersion = VK_MAKE_VERSION(1, 0, 0), .apiVersion = VK_API_VERSION_1_3     };    
     VkInstanceCreateInfo instanceCreateInfo{ 
         .sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO
         , .pApplicationInfo = &appInfo
@@ -118,7 +115,7 @@ auto InitVulkan() {
     }
 
     //device and queues
-    const std::vector<const char*> deviceExtensions = { VK_KHR_SWAPCHAIN_EXTENSION_NAME };
+    const std::vector<const char*> deviceExtensions = { VK_KHR_SWAPCHAIN_EXTENSION_NAME, VK_KHR_MAINTENANCE_4_EXTENSION_NAME };
     const float queue_priority = 1.0f;
 
     std::vector<VkDeviceQueueCreateInfo> queueCreateInfos;
@@ -173,7 +170,7 @@ auto InitVulkan() {
     swapchainImages.resize(swapchainImageCount);
     vkGetSwapchainImagesKHR(device, swapchain, &swapchainImageCount, swapchainImages.data());
 
-    //image views
+    //swap chain image views
     auto createImageView = [](VkImage image, VkFormat format, VkImageAspectFlags aspectFlags) {
         VkImageViewCreateInfo viewInfo = {};
         viewInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
@@ -195,6 +192,8 @@ auto InitVulkan() {
     VmaVulkanFunctions vulkanFunctions = {};
     vulkanFunctions.vkGetInstanceProcAddr = &vkGetInstanceProcAddr;
     vulkanFunctions.vkGetDeviceProcAddr = &vkGetDeviceProcAddr;
+    //vulkanFunctions.vkGetDeviceBufferMemoryRequirements = &vkGetDeviceBufferMemoryRequirements;
+    //vulkanFunctions.vkGetDeviceImageMemoryRequirements = &vkGetDeviceImageMemoryRequirements;
 
     VmaAllocatorCreateInfo allocatorCreateInfo = {};
     allocatorCreateInfo.vulkanApiVersion = VK_API_VERSION_1_2;
@@ -212,19 +211,37 @@ auto InitVulkan() {
         if (formatProps.optimalTilingFeatures & VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT) { depthFormat = format; break; }
     }
 
-    //vmaCreateImage();
+    VkImageCreateInfo imageCreateInfo = {};
+    imageCreateInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
+    imageCreateInfo.imageType = VK_IMAGE_TYPE_2D;
+    imageCreateInfo.extent.width = swapchainSize.width;
+    imageCreateInfo.extent.height = swapchainSize.height;
+    imageCreateInfo.extent.depth = 1;
+    imageCreateInfo.mipLevels = 1;
+    imageCreateInfo.arrayLayers = 1;
+    imageCreateInfo.format = depthFormat;
+    imageCreateInfo.tiling = VK_IMAGE_TILING_OPTIMAL;
+    imageCreateInfo.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+    imageCreateInfo.usage = VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
+    imageCreateInfo.samples = VK_SAMPLE_COUNT_1_BIT;
+    imageCreateInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
 
-    //createImage(swapchainSize.width, swapchainSize.height,
-    //    VK_FORMAT_D32_SFLOAT_S8_UINT, VK_IMAGE_TILING_OPTIMAL,
-    //    VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
-    //    depthImage, depthImageMemory);
+    VmaAllocationCreateInfo allocCreateInfo{};
+    allocCreateInfo.usage = VMA_MEMORY_USAGE_AUTO_PREFER_DEVICE;
+    allocCreateInfo.requiredFlags = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
+    vmaCreateImage(vmaAllocator, &imageCreateInfo, &allocCreateInfo, &depthImage, &depthImageAllocation, &depthImageAllocationInfo);
+    depthImageView = createImageView(depthImage, depthFormat, VK_IMAGE_ASPECT_DEPTH_BIT);
 
 
-    //depthImageView = createImageView(depthImage, VK_FORMAT_D32_SFLOAT_S8_UINT, VK_IMAGE_ASPECT_DEPTH_BIT);
+
+
 }
 
 
 void DestroyVulkan() {
+    vkDestroyImageView(device, depthImageView, nullptr);
+    vmaDestroyImage(vmaAllocator, depthImage, depthImageAllocation);
+    for (const auto& imageView : swapchainImageViews) vkDestroyImageView(device, imageView, nullptr);
     vkDestroySwapchainKHR(device, swapchain, nullptr );
     vkDestroyDevice(device, nullptr);
     vkDestroySurfaceKHR(instance, surface, nullptr);
