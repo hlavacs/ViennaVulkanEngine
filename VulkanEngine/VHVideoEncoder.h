@@ -2,6 +2,7 @@
 #define VHVIDEOENCODER_H
 
 #include "VHHelper.h"
+#include "H264ParameterSet.h"
 
 namespace vh {
 	class VHVideoEncoder {
@@ -14,7 +15,7 @@ namespace vh {
 			const std::vector<VkImageView>& inputImageViews,
 			uint32_t width, uint32_t height, uint32_t fps);
 		VkResult queueEncode(uint32_t currentImageIx);
-		VkResult finishEncode();
+		VkResult finishEncode(const char*& data, size_t& size);
 		void deinit();
 
 		~VHVideoEncoder() {
@@ -36,7 +37,7 @@ namespace vh {
 
         VkResult convertRGBtoYUV(uint32_t currentImageIx);
         VkResult encodeVideoFrame();
-        VkResult readOutputVideoPacket();
+        VkResult getOutputVideoPacket(const char*& data, size_t& size);
 
 		bool m_initialized{ false };
 		bool m_running{ false };
@@ -71,7 +72,10 @@ namespace vh {
 		VkQueryPool m_queryPool;
 		VkBuffer m_bitStreamBuffer;
 		VmaAllocation m_bitStreamBufferAllocation;
-		std::ofstream m_outfile;
+		h264::BitStream m_bitStreamHeader;
+		bool m_bitStreamHeaderPending;
+		
+		char* m_bitStreamData;
 
 		VkImage m_yuvImage;
 		VmaAllocation m_yuvImageAllocation;
@@ -89,7 +93,6 @@ namespace vh {
 
 		VkCommandBuffer m_computeCommandBuffer;
 		VkCommandBuffer m_encodeCommandBuffer;
-		std::thread m_backgroundCopy;
 #endif
 	};
 }

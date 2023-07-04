@@ -138,6 +138,7 @@ namespace ve {
 	class EventListenerFrameWriter : public VEEventListener {
 	private:
 		vh::VHVideoEncoder videoEncoder;
+		std::ofstream outfile;
 
 	protected:
 		void onFrameEnded(veEvent event) override
@@ -147,10 +148,21 @@ namespace ve {
 			static double timeSinceLastWrite = TIME_BETWEEN_WRITES;
 			timeSinceLastWrite += event.dt;
 
-			VkResult ret = videoEncoder.finishEncode();
-			if (ret != VK_SUCCESS && ret != VK_NOT_READY) {
-				std::cout << "Error on VideoEncoder frame finish\n";
-			}
+			VkResult ret;
+			const char* packetData;
+			size_t packetSize;
+			do {
+				ret = videoEncoder.finishEncode(packetData, packetSize);
+				if (ret != VK_SUCCESS && ret != VK_NOT_READY) {
+					std::cout << "Error on VideoEncoder frame finish\n";
+				}
+				if (packetSize > 0) {
+					if (!outfile.is_open()) {
+						outfile.open("hwenc.264", std::ios::binary);
+					}
+					outfile.write(packetData, packetSize);
+				}
+			} while (packetSize > 0);
 
 			if (!g_writeFrames || timeSinceLastWrite < TIME_BETWEEN_WRITES)
 				return;

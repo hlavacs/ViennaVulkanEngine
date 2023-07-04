@@ -19,7 +19,7 @@ namespace h264
         return (size + alignment - 1) & ~(alignment - 1);
     }
 
-    StdVideoH264SequenceParameterSetVui getStdVideoH264SequenceParameterSetVui(uint32_t fps)
+    static StdVideoH264SequenceParameterSetVui getStdVideoH264SequenceParameterSetVui(uint32_t fps)
     {
         StdVideoH264SpsVuiFlags vuiFlags = {};
         vuiFlags.timing_info_present_flag = 1u;
@@ -33,7 +33,7 @@ namespace h264
         return vui;
     }
 
-    StdVideoH264SequenceParameterSet getStdVideoH264SequenceParameterSet(uint32_t width, uint32_t height,
+    static StdVideoH264SequenceParameterSet getStdVideoH264SequenceParameterSet(uint32_t width, uint32_t height,
         StdVideoH264SequenceParameterSetVui* pVui)
     {
         StdVideoH264SpsFlags spsFlags = {};
@@ -77,7 +77,7 @@ namespace h264
         return sps;
     }
 
-    StdVideoH264PictureParameterSet getStdVideoH264PictureParameterSet(void)
+    static StdVideoH264PictureParameterSet getStdVideoH264PictureParameterSet(void)
     {
         StdVideoH264PpsFlags ppsFlags = {};
         //ppsFlags.transform_8x8_mode_flag = 1u;
@@ -203,12 +203,25 @@ namespace h264
             appendExpG(val <= 0 ? 2 * std::abs(val) : 2 * std::abs(val) - 1);
         }
 
-        template<
-            class CharT,
-            class Traits = std::char_traits<CharT>
-        >
-        void writeTo(std::basic_ostream<CharT, Traits>& ostream) {
-            ostream.write(reinterpret_cast<const CharT*>(m_data.data()), m_data.size());
+        void padByte() {
+            m_bitPos = -1;
+        }
+
+        void clear() {
+            m_data.clear();
+            m_bitPos = -1;
+        }
+
+        bool empty() const {
+            return m_data.empty();
+        }
+
+        const uint8_t* data() const {
+            return m_data.data();
+        }
+
+        const size_t size() const {
+            return m_data.size();
         }
 
     private:
@@ -216,8 +229,7 @@ namespace h264
         int8_t m_bitPos{ -1 };
     };
 
-    BitStream encodeSps(const StdVideoH264SequenceParameterSet& sps) {
-        BitStream out;
+    static void encodeSps(const StdVideoH264SequenceParameterSet& sps, BitStream& out) {
         
         // this will only work with BASELINE or MAIN profile
 
@@ -269,13 +281,10 @@ namespace h264
             out.appendBits(0x0, 1); // bitstream_restriction_flag
         }
         out.appendBits(0x1, 1); // rbsp stop bit
-
-        return out;
+        out.padByte();
     }
 
-    BitStream encodePps(const StdVideoH264PictureParameterSet& pps) {
-        BitStream out;
-
+    static void encodePps(const StdVideoH264PictureParameterSet& pps, BitStream& out) {
         out.appendBits(0x00000001, 32); // NAL header
         out.appendBits(0x0, 1); // forbidden_bit
         out.appendBits(0x3, 2); // nal_ref_idc
@@ -296,8 +305,7 @@ namespace h264
         out.appendBits(pps.flags.constrained_intra_pred_flag, 1); // constrained_intra_pred_flag
         out.appendBits(pps.flags.redundant_pic_cnt_present_flag, 1); //redundant_pic_cnt_present_flag
         out.appendBits(0x1, 1); // rbsp stop bit
-
-        return out;
+        out.padByte();
     }
 };
 #endif

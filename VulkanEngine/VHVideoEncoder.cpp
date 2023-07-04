@@ -1,4 +1,3 @@
-#include "H264ParameterSet.h"
 #include "VHVideoEncoder.h"
 
 namespace vh {
@@ -25,11 +24,6 @@ namespace vh {
 
             // resolution changed
             deinit();
-        }
-        else {
-            // delete file content on first init
-            m_outfile.open("hwenc.264", std::ios::binary);
-            m_outfile.close();
         }
 
         m_device = device;
@@ -61,9 +55,9 @@ namespace vh {
         VHCHECKRESULT(transitionImagesInitial(cmdBuffer));
         VHCHECKRESULT(vhCmdEndSingleTimeCommands(m_device, m_encodeQueue, m_encodeCommandPool, cmdBuffer));
 
-        m_outfile.open("hwenc.264", std::ios::binary | std::ios::app);
-        h264::encodeSps(m_sps).writeTo(m_outfile);
-        h264::encodePps(m_pps).writeTo(m_outfile);
+        h264::encodeSps(m_sps, m_bitStreamHeader);
+        h264::encodePps(m_pps, m_bitStreamHeader);
+        m_bitStreamHeaderPending = true;
 
         m_frameCount = 0;
         m_initialized = true;
@@ -75,29 +69,34 @@ namespace vh {
         assert(!m_running);
         VHCHECKRESULT(convertRGBtoYUV(currentImageIx));
         VHCHECKRESULT(encodeVideoFrame());
-        m_backgroundCopy = std::thread([this] {
-            // blocks for result
-            VkResult ret = readOutputVideoPacket();
-            if (ret != VK_SUCCESS) {
-                std::cout << "readOutputVideoPacket failed";
-            }
-        });
         m_running = true;
         return VK_SUCCESS;
     }
 
-    VkResult VHVideoEncoder::finishEncode()
+    VkResult VHVideoEncoder::finishEncode(const char*& data, size_t& size)
     {
+        size = 0;
         if (!m_running) {
             return VK_NOT_READY;
         }
-        m_backgroundCopy.join();
+        if (m_bitStreamHeaderPending) {
+            data = reinterpret_cast<const char*>(m_bitStreamHeader.data());
+            size = m_bitStreamHeader.size();
+            m_bitStreamHeaderPending = false;
+            return VK_SUCCESS;
+        }
+
+        VkResult ret = getOutputVideoPacket(data, size);
+        if (ret != VK_SUCCESS) {
+            std::cout << "readOutputVideoPacket failed";
+        }
+
         vkFreeCommandBuffers(m_device, m_computeCommandPool, 1, &m_computeCommandBuffer);
         vkFreeCommandBuffers(m_device, m_encodeCommandPool, 1, &m_encodeCommandBuffer);
         m_frameCount++;
 
         m_running = false;
-        return VK_SUCCESS;
+        return ret;
     }
     
     VkResult VHVideoEncoder::createVideoSession()
@@ -190,9 +189,12 @@ namespace vh {
 
     VkResult VHVideoEncoder::allocateOutputBitStream()
     {
-        return vhBufCreateBuffer(m_allocator, 4 * 1024 * 1024,
+        VHCHECKRESULT(vhBufCreateBuffer(m_allocator, 4 * 1024 * 1024,
             VK_BUFFER_USAGE_VIDEO_ENCODE_DST_BIT_KHR, VMA_MEMORY_USAGE_GPU_TO_CPU,
-            &m_bitStreamBuffer, &m_bitStreamBufferAllocation);
+            &m_bitStreamBuffer, &m_bitStreamBufferAllocation));
+        VHCHECKRESULT(vmaMapMemory(m_allocator, m_bitStreamBufferAllocation, reinterpret_cast<void**>(&m_bitStreamData)));
+
+        return VK_SUCCESS;
     }
 
     VkResult VHVideoEncoder::allocateReferenceImages(uint32_t count)
@@ -588,7 +590,7 @@ namespace vh {
         return VK_SUCCESS;
     }
 
-    VkResult VHVideoEncoder::readOutputVideoPacket()
+    VkResult VHVideoEncoder::getOutputVideoPacket(const char*& data, size_t& size)
     {
         struct nvVideoEncodeStatus {
             uint32_t bitstreamStartOffset;
@@ -605,11 +607,9 @@ namespace vh {
         //std::cout << "status: " << encodeResult[0].status << " offset: " << encodeResult[0].bitstreamStartOffset << " size: " << encodeResult[0].bitstreamSize << std::endl;
         // invalidate host caches
         vmaInvalidateAllocation(m_allocator, m_bitStreamBufferAllocation, encodeResult[0].bitstreamStartOffset, encodeResult[0].bitstreamSize);
-        void* data;
-        // map memory to host and write the bitstream into the file
-        vmaMapMemory(m_allocator, m_bitStreamBufferAllocation, &data);
-        m_outfile.write(reinterpret_cast<const char*>(data) + encodeResult[0].bitstreamStartOffset, encodeResult[0].bitstreamSize);
-        vmaUnmapMemory(m_allocator, m_bitStreamBufferAllocation);
+        // write the bitstream into the file 
+        data = m_bitStreamData + encodeResult[0].bitstreamStartOffset;
+        size = encodeResult[0].bitstreamSize;
 
         return VK_SUCCESS;
     }
@@ -621,7 +621,9 @@ namespace vh {
         }
 
         if (m_running) {
-            m_backgroundCopy.join();
+            const char* data;
+            size_t size;
+            getOutputVideoPacket(data, size);
             vkFreeCommandBuffers(m_device, m_computeCommandPool, 1, &m_computeCommandBuffer);
             vkFreeCommandBuffers(m_device, m_encodeCommandPool, 1, &m_encodeCommandBuffer);
         }
@@ -634,6 +636,7 @@ namespace vh {
 
         vkDestroyVideoSessionParametersKHR(m_device, m_videoSessionParameters, nullptr);
         vkDestroyQueryPool(m_device, m_queryPool, nullptr);
+        vmaUnmapMemory(m_allocator, m_bitStreamBufferAllocation);
         vmaDestroyBuffer(m_allocator, m_bitStreamBuffer, m_bitStreamBufferAllocation);
         vkDestroyImageView(m_device, m_yuvImageChromaView, nullptr);
         vmaDestroyImage(m_allocator, m_yuvImageChroma, m_yuvImageChromaAllocation);
@@ -649,7 +652,7 @@ namespace vh {
             vmaFreeMemory(m_allocator, allocation);
         }
         m_allocations.clear();
-        m_outfile.close();
+        m_bitStreamHeader.clear();
 
         m_initialized = false;
     }
@@ -670,8 +673,9 @@ namespace vh {
         return VK_ERROR_EXTENSION_NOT_PRESENT;
     }
 
-    VkResult VHVideoEncoder::finishEncode()
+    VkResult VHVideoEncoder::finishEncode(const char*& data, size_t& size)
     {
+        size = 0;
         return VK_SUCCESS;
     }
         
