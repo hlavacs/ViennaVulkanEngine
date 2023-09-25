@@ -223,6 +223,25 @@ namespace ve
 
 		void printTree(VESceneNode *root);
 
+
+		//------------------------------Begin-Cloth-Simulation-Stuff--------------------------------
+		// by Felix Neumann
+
+		/// <summary>
+		/// Loads a cloth model from the given path by using assimp and creates an entitiy from it.
+		/// Ít is assumed that the cloth's aiScene only contains one child (at index 0) with only
+		/// one mesh (at index 0). Other meshes will not be loaded. The corresponding material is
+		/// stored at index 1 (0 is a default material).
+		/// </summary>
+		/// <param name="entityName"> The name the entity should have. </param>
+		/// <param name="basedir"> Directory. </param>
+		/// <param name="filename"> Name of the file within the directory. </param>
+		/// <returns> Pointer to the Entitiy. </returns>
+		VEClothEntity* loadClothModel(std::string entityName, std::string basedir,
+			std::string filename);
+
+		//-------------------------------End-Cloth-Simulation-Stuff---------------------------------
+
 		//-------------------------------------------------------------------------------------
 		//deprecated
 		//VESceneNode *	createCubemap(std::string entityName, std::string basedir, std::string filename);

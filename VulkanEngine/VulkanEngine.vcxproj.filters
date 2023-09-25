@@ -188,6 +188,9 @@
     <ClInclude Include="VERendererRayTracingKHR.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="VESubrenderFW_Cloth.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="VEEngine.cpp">
@@ -354,6 +357,9 @@
     </ClCompile>
     <ClCompile Include="VHRayTracing.cpp">
       <Filter>Source Files\VHelper</Filter>
+    </ClCompile>
+    <ClCompile Include="VESubrenderFW_Cloth.cpp">
+      <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

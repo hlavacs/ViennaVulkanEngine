@@ -213,7 +213,12 @@ namespace ve
 		{
 			VE_ENTITY_TYPE_NORMAL, ///<Normal object to be drawn
 			VE_ENTITY_TYPE_SKYPLANE, ///<A plane for sky boxes
-			VE_ENTITY_TYPE_TERRAIN_HEIGHTMAP ///<A heightmap for terrain modelling
+			VE_ENTITY_TYPE_TERRAIN_HEIGHTMAP, ///<A heightmap for terrain modelling
+
+			//-------------------------------Cloth-Simulation-Stuff---------------------------------
+			// by Felix Neumann
+			VE_ENTITY_TYPE_CLOTH				///<ClothObject
+
 		};
 
 		///Data that is updated for each object
@@ -728,6 +733,33 @@ namespace ve
 			return VE_LIGHT_TYPE_AMBIENT;
 		};
 	};
+
+	//--------------------------------Begin-Cloth-Simulation-Stuff----------------------------------
+	// by Felix Neumann
+
+	/// <summary>
+	/// A class that extends VEEntity by a constructor that enforces the mesh to be of type
+	/// VEMutableMesh and sets the entitiy type to VE_ENTITY_TYPE_CLOTH for rendering.
+	/// </summary>
+	class VEClothEntity : public VEEntity {
+	public:
+		/// <summary>
+		/// Creates a cloth entity.
+		/// </summary>
+		/// <param name="name"> Name of the cloth. </param>
+		/// <param name="pClothMesh"> Pointer to a cloth mesh. </param>
+		/// <param name="pMat"> Pointer to the material. </param>
+		VEClothEntity(std::string name, VEClothMesh* pClothMesh, VEMaterial* pMat);
+
+		/// <summary>
+		///  Destructor. Needs to be called since each VEClothEntity manages a VEMutableMesh that
+		/// needs to be deleted. 
+		/// </summary>
+		~VEClothEntity();
+	};
+
+	//---------------------------------End-Cloth-Simulation-Stuff-----------------------------------
+
 
 } // namespace ve
 

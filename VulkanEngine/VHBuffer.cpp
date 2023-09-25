@@ -1068,4 +1068,85 @@ namespace vh
 		return VK_SUCCESS;
 	}
 
+	//--------------------------------Begin-Cloth-Simulation-Stuff----------------------------------
+	// by Felix Neumann
+
+	/// <summary>
+	/// Creates a vertex buffer analogous to the one of a normal VEMesh and a staging buffer for
+	/// updating the vertices. Works just like vhBufCreateVertexBuffer.
+	/// </summary>
+	/// <param name="stagingBuffer"> A pointer to the staging buffer, same principle as with
+	/// vertexBuffer. </param>
+	/// <param name="stagingBufferAllocation"> Pointer to the allocation, same principle as
+	/// with vertexBufferAllocation. </param>
+	/// <param name="ptrToStageBufMem"> Pointer to the memory of the staging buffer on the GPU.
+	/// </param>
+	/// <returns> VK_SUCCESS or a Vulkan error code. </returns>
+	VkResult vhBufCreateClothVertexBuffers(VkDevice device,
+		VmaAllocator allocator, VkQueue graphicsQueue, VkCommandPool commandPool,
+		std::vector<vh::vhVertex>& vertices, VkBuffer* vertexBuffer,
+		VmaAllocation* vertexBufferAllocation, VkBuffer* stagingBuffer,
+		VmaAllocation* stagingBufferAllocation, void** ptrToStageBufMem, VkDeviceSize* bufferSize)
+	{
+		*bufferSize = sizeof(vertices[0]) * vertices.size();
+
+		VHCHECKRESULT(vhBufCreateBuffer(allocator, *bufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT,	// Create the staging buffer
+			VMA_MEMORY_USAGE_CPU_ONLY, stagingBuffer, stagingBufferAllocation));
+
+		VHCHECKRESULT(vmaMapMemory(allocator, *stagingBufferAllocation, ptrToStageBufMem));			// Map memory and keep it mapped for updating the vertices.
+
+		memcpy(*ptrToStageBufMem, vertices.data(), (size_t)*bufferSize);							// Copy the vertex data into the staging buffer
+
+		VHCHECKRESULT(vhBufCreateBuffer(allocator, *bufferSize,										// Create the vertex buffer
+			VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT |
+			VK_BUFFER_USAGE_STORAGE_BUFFER_BIT |
+			VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_BUILD_INPUT_READ_ONLY_BIT_KHR |
+			VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT, VMA_MEMORY_USAGE_GPU_ONLY, vertexBuffer,
+			vertexBufferAllocation));
+
+		VHCHECKRESULT(vhBufCopyBuffer(device, graphicsQueue, commandPool, *stagingBuffer,			// Copy the data of the staging to the vertex buffer
+			*vertexBuffer, *bufferSize));
+
+		return VK_SUCCESS;
+	}
+
+	/// <summary>
+	/// Copies the vertices data into the vertex staging buffer.
+	/// </summary>
+	/// <param name="vertices"> The vertices with updated data. </param>
+	/// <param name="bufferSize"> Size of the previously created buffer. </param>
+	/// <param name="ptrToStageBufMem"> Pointer to the memory of the staging buffer. </param>
+	/// <returns> VK_SUCCESS or a Vulkan error code </returns>
+	VkResult updateClothStagingBuffer(std::vector<vh::vhVertex>& vertices,
+		VkDeviceSize bufferSize, void* ptrToStageBufMem)
+	{
+		memcpy(ptrToStageBufMem, vertices.data(), (size_t)bufferSize);
+
+		return VK_SUCCESS;
+	}
+
+	/// <summary>
+	/// Copies the data from the vertex staging buffer into the vertex buffer.
+	/// </summary>
+	/// <param name="device"> Logical Vulkan device handle. </param>
+	/// <param name="allocator"> VMA allocator. </param>
+	/// <param name="graphicsQueue"> Device queue for submitting commands. </param>
+	/// <param name="commandPool"> Command pool for allocating command buffers. </param>
+	/// <param name="vertexBuffer"> VkBuffer handle to the vertex buffer object. </param>
+	/// <param name="stagingBuffer"> VkBuffer handle to the vertex staging buffer object. </param>
+	/// <param name="bufferSize"> Size of the buffers. </param>
+	/// <returns> VK_SUCCESS or a Vulkan error code. </returns>
+	VkResult updateClothVertexBuffer(VkDevice device, VmaAllocator allocator,
+		VkQueue graphicsQueue, VkCommandPool commandPool, VkBuffer vertexBuffer,
+		VkBuffer stagingBuffer, VkDeviceSize bufferSize)
+	{
+		VHCHECKRESULT(vhBufCopyBuffer(device, graphicsQueue, commandPool, stagingBuffer,
+			vertexBuffer, bufferSize));
+
+		return VK_SUCCESS;
+	}
+
+	//---------------------------------End-Cloth-Simulation-Stuff-----------------------------------
+
+
 } // namespace vh

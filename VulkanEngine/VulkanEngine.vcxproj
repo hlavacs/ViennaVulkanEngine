@@ -196,6 +196,7 @@
     <ClInclude Include="VESubrenderDF_Shadow.h" />
     <ClInclude Include="VESubrenderDF_Skyplane.h" />
     <ClInclude Include="VESubrenderFW.h" />
+    <ClInclude Include="VESubrenderFW_Cloth.h" />
     <ClInclude Include="VESubrenderRayTracingKHR.h" />
     <ClInclude Include="VESubrenderRayTracingKHR_DN.h" />
     <ClInclude Include="VESubrender_Nuklear.h" />
@@ -241,6 +242,7 @@
     <ClCompile Include="VESubrenderDF_DN.cpp" />
     <ClCompile Include="VESubrenderDF_Shadow.cpp" />
     <ClCompile Include="VESubrenderDF_Skyplane.cpp" />
+    <ClCompile Include="VESubrenderFW_Cloth.cpp" />
     <ClCompile Include="VESubrenderRayTracingKHR.cpp" />
     <ClCompile Include="VESubrenderRayTracingKHR_DN.cpp" />
     <ClCompile Include="VESubrenderRayTracingNV.cpp" />

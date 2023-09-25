@@ -1182,4 +1182,29 @@ namespace ve
 		}
 	}
 
+	//--------------------------------Begin-Cloth-Simulation-Stuff----------------------------------
+	// by Felix Neumann
+
+	/// <summary>
+	/// Creates a cloth entity.
+	/// </summary>
+	/// <param name="name"> Name of the cloth. </param>
+	/// <param name="pClothMesh"> Pointer to a cloth mesh. </param>
+	/// <param name="pMat"> Pointer to the material. </param>
+	VEClothEntity::VEClothEntity(std::string name, VEClothMesh* pMutableMesh, VEMaterial* pMat)
+		: VEEntity::VEEntity(name, VEEntity::veEntityType::VE_ENTITY_TYPE_CLOTH, pMutableMesh,
+			pMat, glm::mat4(1.0f)) {}
+
+	/// <summary>
+	///  Destructor. Needs to be called since each VEClothEntity manages a VEMutableMesh that
+	/// needs to be deleted. 
+	/// </summary>
+	VEClothEntity::~VEClothEntity() {
+		VEEntity::~VEEntity();
+		delete m_pMesh;
+	}
+
+	//---------------------------------End-Cloth-Simulation-Stuff-----------------------------------
+
+
 } // namespace ve

@@ -36,6 +36,7 @@
 #include "VESubrender_Nuklear.h"
 #include "VESubrenderFW_C1.h"
 #include "VESubrenderFW_Skyplane.h"
+#include "VESubrenderFW_Cloth.h"
 #include "VESubrenderFW_D.h"
 #include "VESubrenderFW_DN.h"
 #include "VESubrenderFW_Shadow.h"
