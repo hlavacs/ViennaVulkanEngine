@@ -7,20 +7,25 @@ renderdoc.cap
 */MakeFile
 */.idea/
 */CMakeCache.txt
-*/CMakeFiles/
+*/CMakeFiles/*
 */cmake_install.cmake
 */Makefile
 */vulkanengine.dir
-*/CMakeFiles
+CMakeFiles/*
 */simplegame.dir
-*/*.vcxproj
-*/*.filters
-*/*.user
-*/x64
+*.vcxproj
+*.filters
+*.user
+ZERO_CHECK.vcxproj
+ALL_BUILD.vcxproj
+x64/*
 bin/Debug/*
 bin/Release/*
 lib/Debug/*
 lib/Release/*
+examples/CMakeFiles/*
+examples/simplegame/CMakeFiles/*
+examples/simplegame/simplegame.dir/*
 
 
 
