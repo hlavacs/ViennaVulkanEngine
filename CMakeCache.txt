@@ -207,7 +207,7 @@ Vulkan_INCLUDE_DIR:PATH=C:/VulkanSDK/1.3.250.1/Include
 Vulkan_LIBRARY:FILEPATH=C:/VulkanSDK/1.3.250.1/Lib/vulkan-1.lib
 
 //Dependencies for the target
-vulkanengine_LIB_DEPENDS:STATIC=general;AssimpLib;general;C:/Users/hlavacs/Documents/GitHub/ViennaVulkanEngine/external/glfw/lib-vc2022/glfw3.lib;
+vulkanengine_LIB_DEPENDS:STATIC=general;C:/VulkanSDK/1.3.250.1/Lib/vulkan-1.lib;general;AssimpLib;general;C:/Users/hlavacs/Documents/GitHub/ViennaVulkanEngine/external/glfw/lib-vc2022/glfw3.lib;
 
 
 ########################

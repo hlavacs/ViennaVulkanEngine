@@ -14,12 +14,14 @@ target_include_directories(vulkanengine PUBLIC ${CMAKE_SOURCE_DIR}/external/thre
 
 find_package(Vulkan REQUIRED)
 include_directories(${Vulkan_INCLUDE_DIRS})
+target_link_libraries(vulkanengine ${Vulkan_LIBRARY})
 
 #Link Assimp link libraries
 set( AssimpDir ${CMAKE_SOURCE_DIR}/external/Assimp/lib/x64)
 set( AssimpLibRel ${AssimpDir}/Release/assimp-vc140-mt.lib ${AssimpDir}/Release/IrrXML.lib ${AssimpDir}/Release/zlib.lib )
 set( AssimpLibDeb ${AssimpDir}/Debug/assimp-vc140-mt.lib ${AssimpDir}/Debug/IrrXML.lib ${AssimpDir}/Debug/zlibd.lib )
 add_library(AssimpLib STATIC IMPORTED)
+
 set_target_properties(AssimpLib PROPERTIES
              IMPORTED_CONFIGURATIONS "Debug;Release"
              IMPORTED_LOCATION ${AssimpLibRel}
