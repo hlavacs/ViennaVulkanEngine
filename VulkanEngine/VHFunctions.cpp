@@ -47,7 +47,7 @@ void *VulkanLibrary;
 VkResult vhLoadVulkanLibrary()
 {
 #if defined(_WIN32)
-	VulkanLibrary = LoadLibrary((LPCWSTR)L"vulkan-1.dll");
+	VulkanLibrary = LoadLibraryW((LPCWSTR)L"vulkan-1.dll");
 #elif __APPLE__
 	VulkanLibrary = dlopen("libvulkan.1.dylib", RTLD_NOW);
 #else

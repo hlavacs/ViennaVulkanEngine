@@ -36,7 +36,7 @@ namespace ve
 
 		m_pipelines.resize(1);
 		vh::vhPipeCreateGraphicsPipeline(m_renderer.getDevice(),
-			{ "media/shader/Forward/D/vert.spv", "media/shader/Forward/D/frag.spv" },
+			{ "../../media/shader/Forward/D/vert.spv", "../../media/shader/Forward/D/frag.spv" },
 			m_renderer.getSwapChainExtent(),
 			m_pipelineLayout, m_renderer.getRenderPass(),
 			{ VK_DYNAMIC_STATE_BLEND_CONSTANTS },

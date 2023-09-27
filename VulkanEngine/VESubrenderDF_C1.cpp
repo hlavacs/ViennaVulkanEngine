@@ -28,7 +28,7 @@ namespace ve
 
 		m_pipelines.resize(1);
 		vh::vhPipeCreateGraphicsPipeline(m_renderer.getDevice(),
-			{ "media/shader/Deferred/C1/vert.spv", "media/shader/Deferred/C1/frag.spv" },
+			{ "../../media/shader/Deferred/C1/vert.spv", "../../media/shader/Deferred/C1/frag.spv" },
 			m_renderer.getSwapChainExtent(),
 			m_pipelineLayout, m_renderer.getRenderPassOffscreen(),
 			{},

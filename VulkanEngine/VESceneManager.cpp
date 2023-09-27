@@ -7,10 +7,10 @@
 
 #include "VEInclude.h"
 
-#define STANDARD_MESH_CUBE "media/models/standard/cube.obj/cube"
-#define STANDARD_MESH_INVCUBE "media/models/standard/invcube.obj/cube"
-#define STANDARD_MESH_PLANE "media/models/standard/plane.obj/plane"
-#define STANDARD_MESH_SPHERE "media/models/standard/sphere.obj/sphere"
+#define STANDARD_MESH_CUBE "../../media/models/standard/cube.obj/cube"
+#define STANDARD_MESH_INVCUBE "../../media/models/standard/invcube.obj/cube"
+#define STANDARD_MESH_PLANE "../../media/models/standard/plane.obj/plane"
+#define STANDARD_MESH_SPHERE "../../media/models/standard/sphere.obj/sphere"
 
 namespace ve
 {
@@ -64,10 +64,10 @@ namespace ve
 		std::vector<VEMesh *> meshes;
 		std::vector<VEMaterial *> materials;
 
-		loadAssets("media/models/standard", "cube.obj", 0, meshes, materials);
-		loadAssets("media/models/standard", "invcube.obj", aiProcess_FlipWindingOrder, meshes, materials);
-		loadAssets("media/models/standard", "plane.obj", 0, meshes, materials);
-		loadAssets("media/models/standard", "sphere.obj", 0, meshes, materials);
+		loadAssets("../../media/models/standard", "cube.obj", 0, meshes, materials);
+		loadAssets("../../media/models/standard", "invcube.obj", aiProcess_FlipWindingOrder, meshes, materials);
+		loadAssets("../../media/models/standard", "plane.obj", 0, meshes, materials);
+		loadAssets("../../media/models/standard", "sphere.obj", 0, meshes, materials);
 
 		m_rootSceneNode = new VESceneNode("RootSceneNode");
 	};

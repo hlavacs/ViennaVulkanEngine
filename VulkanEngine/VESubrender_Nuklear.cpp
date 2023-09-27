@@ -45,7 +45,7 @@ namespace ve
 		// /* Load Cursor: if you uncomment cursor loading please hide the cursor */
 		{
 			nk_glfw3_font_stash_begin(&atlas);
-			struct nk_font *droid = nk_font_atlas_add_from_file(atlas, "media/fonts/DroidSans.ttf", 30, 0);
+			struct nk_font *droid = nk_font_atlas_add_from_file(atlas, "../../media/fonts/DroidSans.ttf", 30, 0);
 			/*struct nk_font *roboto = nk_font_atlas_add_from_file(atlas, "fonts/Roboto-Regular.ttf", 14, 0);*/
 			/*struct nk_font *future = nk_font_atlas_add_from_file(atlas, "fonts/kenvector_future_thin.ttf", 13, 0);*/
 			/*struct nk_font *clean = nk_font_atlas_add_from_file(atlas,  "fonts/ProggyClean.ttf", 12, 0);*/

@@ -153,24 +153,24 @@ namespace ve
 
 		nv_helpers_vk::RayTracingPipelineGenerator pipelineGen;
 		// We use only one ray generation, that will implement the camera model
-		auto rayGenShaderCode = vh::vhFileRead("media/shader/RayTracing_NV/rgen.spv");
+		auto rayGenShaderCode = vh::vhFileRead("../../media/shader/RayTracing_NV/rgen.spv");
 		VkShaderModule rayGenModule = vh::vhPipeCreateShaderModule(m_renderer.getDevice(), rayGenShaderCode);
 		m_rayGenIndex = pipelineGen.AddRayGenShaderStage(rayGenModule);
 
 		// The first miss shader is used to look-up the environment in case the rays
 		// from the camera miss the geometry
-		auto missShaderCode = vh::vhFileRead("media/shader/RayTracing_NV/rmiss.spv");
+		auto missShaderCode = vh::vhFileRead("../../media/shader/RayTracing_NV/rmiss.spv");
 		VkShaderModule missModule = vh::vhPipeCreateShaderModule(m_renderer.getDevice(), missShaderCode);
 		m_missIndex = pipelineGen.AddMissShaderStage(missModule);
 
 		// If we hit an object the shadow_miss shader will be used to define if object must be lighted.
-		auto shadowMissShaderCode = vh::vhFileRead("media/shader/RayTracing_NV/shadow_rmiss.spv");
+		auto shadowMissShaderCode = vh::vhFileRead("../../media/shader/RayTracing_NV/shadow_rmiss.spv");
 		VkShaderModule shadowMissModule = vh::vhPipeCreateShaderModule(m_renderer.getDevice(), shadowMissShaderCode);
 		m_shadowMissIndex = pipelineGen.AddMissShaderStage(shadowMissModule);
 
 		// hit shader for all entiteis in a hit group with index 0
 		m_hitGroupIndex = pipelineGen.StartHitGroup();
-		auto closestHitShaderCode = vh::vhFileRead("media/shader/RayTracing_NV/rchit.spv");
+		auto closestHitShaderCode = vh::vhFileRead("../../media/shader/RayTracing_NV/rchit.spv");
 		VkShaderModule closestHitModule = vh::vhPipeCreateShaderModule(m_renderer.getDevice(), closestHitShaderCode);
 		pipelineGen.AddHitShaderStage(closestHitModule, VK_SHADER_STAGE_CLOSEST_HIT_BIT_NV);
 		pipelineGen.EndHitGroup();

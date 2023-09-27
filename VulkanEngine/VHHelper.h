@@ -57,7 +57,7 @@
 
 #include <GLFW/glfw3.h>
 
-#include <irrKlang.h>
+//#include <irrKlang.h>
 
 //NV helpers
 #include "BottomLevelASGenerator.h"

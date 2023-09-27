@@ -29,7 +29,7 @@ namespace ve
 
 		m_pipelines.resize(1);
 		vh::vhPipeCreateGraphicsShadowPipeline(m_renderer.getDevice(),
-			"media/shader/Forward/Shadow/vert.spv",
+			"../../media/shader/Forward/Shadow/vert.spv",
 			m_renderer.getShadowMapExtent(),
 			m_pipelineLayout,
 			m_renderer.getRenderPassShadow(),

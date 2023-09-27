@@ -40,8 +40,8 @@ namespace ve
 
 		m_pipelines.resize(1);
 		vh::vhPipeCreateGraphicsPipeline(m_renderer.getDevice(),
-			{ "media/shader/Deferred/Composition/vert.spv",
-			 "media/shader/Deferred/Composition/frag.spv" },
+			{ "../../media/shader/Deferred/Composition/vert.spv",
+			 "../../media/shader/Deferred/Composition/frag.spv" },
 			m_renderer.getSwapChainExtent(),
 			m_pipelineLayout, m_renderer.getRenderPassOnscreen(),
 			{ VK_DYNAMIC_STATE_BLEND_CONSTANTS },

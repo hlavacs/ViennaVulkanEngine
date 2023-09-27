@@ -156,7 +156,7 @@ namespace ve
 			*/
 		std::vector<VkPipelineShaderStageCreateInfo> shaderStages;
 
-		auto rgenSCode = vh::vhFileRead("media/shader/RayTracing_KHR/rgen.spv");
+		auto rgenSCode = vh::vhFileRead("../../media/shader/RayTracing_KHR/rgen.spv");
 		VkShaderModule rgenSModule = vh::vhPipeCreateShaderModule(m_renderer.getDevice(), rgenSCode);
 		// Ray generation group
 		{
@@ -177,9 +177,9 @@ namespace ve
 			m_shaderGroups.push_back(shaderGroup);
 		}
 
-		auto missSCode = vh::vhFileRead("media/shader/RayTracing_KHR/rmiss.spv");
+		auto missSCode = vh::vhFileRead("../../media/shader/RayTracing_KHR/rmiss.spv");
 		VkShaderModule missSModule = vh::vhPipeCreateShaderModule(m_renderer.getDevice(), missSCode);
-		auto missSCodeShadow = vh::vhFileRead("media/shader/RayTracing_KHR//shadow_rmiss.spv");
+		auto missSCodeShadow = vh::vhFileRead("../../media/shader/RayTracing_KHR//shadow_rmiss.spv");
 		VkShaderModule missSModuleShadow = vh::vhPipeCreateShaderModule(m_renderer.getDevice(), missSCodeShadow);
 		// Miss group
 		{
@@ -209,7 +209,7 @@ namespace ve
 			m_shaderGroups.push_back(shaderGroup);
 		}
 
-		auto hitSCode = vh::vhFileRead("media/shader/RayTracing_KHR/rchit.spv");
+		auto hitSCode = vh::vhFileRead("../../media/shader/RayTracing_KHR/rchit.spv");
 		VkShaderModule hitSModule = vh::vhPipeCreateShaderModule(m_renderer.getDevice(), hitSCode);
 		// Closest hit group
 		{

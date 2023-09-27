@@ -1,14 +1,9 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
-<Project DefaultTargets="Build" ToolsVersion="14.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+<Project DefaultTargets="Build" ToolsVersion="17.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup>
+    <PreferredToolArchitecture>x64</PreferredToolArchitecture>
+  </PropertyGroup>
   <ItemGroup Label="ProjectConfigurations">
-    <ProjectConfiguration Include="Debug|Win32">
-      <Configuration>Debug</Configuration>
-      <Platform>Win32</Platform>
-    </ProjectConfiguration>
-    <ProjectConfiguration Include="Release|Win32">
-      <Configuration>Release</Configuration>
-      <Platform>Win32</Platform>
-    </ProjectConfiguration>
     <ProjectConfiguration Include="Debug|x64">
       <Configuration>Debug</Configuration>
       <Platform>x64</Platform>
@@ -19,271 +14,256 @@
     </ProjectConfiguration>
   </ItemGroup>
   <PropertyGroup Label="Globals">
-    <ProjectGuid>{F79C21D7-E79D-4EE7-A4EA-57FE14D1CFB7}</ProjectGuid>
+    <ProjectGuid>{70658F99-B9AF-3050-92D2-737A576FBC9C}</ProjectGuid>
     <Keyword>Win32Proj</Keyword>
-    <RootNamespace>VulkanTest</RootNamespace>
-    <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
-    <ProjectName>VulkanEngine</ProjectName>
+    <WindowsTargetPlatformVersion>10.0.22000.0</WindowsTargetPlatformVersion>
+    <Platform>x64</Platform>
+    <ProjectName>vulkanengine</ProjectName>
+    <VCProjectUpgraderObjectName>NoUpgrade</VCProjectUpgraderObjectName>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
-    <ConfigurationType>Application</ConfigurationType>
-    <UseDebugLibraries>true</UseDebugLibraries>
-    <PlatformToolset>v143</PlatformToolset>
-    <CharacterSet>Unicode</CharacterSet>
-  </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
-    <ConfigurationType>Application</ConfigurationType>
-    <UseDebugLibraries>false</UseDebugLibraries>
-    <PlatformToolset>v143</PlatformToolset>
-    <WholeProgramOptimization>true</WholeProgramOptimization>
-    <CharacterSet>Unicode</CharacterSet>
-  </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
-    <ConfigurationType>Application</ConfigurationType>
-    <UseDebugLibraries>true</UseDebugLibraries>
+    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <CharacterSet>MultiByte</CharacterSet>
     <PlatformToolset>v143</PlatformToolset>
-    <CharacterSet>Unicode</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
-    <ConfigurationType>Application</ConfigurationType>
-    <UseDebugLibraries>false</UseDebugLibraries>
+    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <CharacterSet>MultiByte</CharacterSet>
     <PlatformToolset>v143</PlatformToolset>
-    <WholeProgramOptimization>true</WholeProgramOptimization>
-    <CharacterSet>Unicode</CharacterSet>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
   <ImportGroup Label="ExtensionSettings">
   </ImportGroup>
-  <ImportGroup Label="Shared">
-  </ImportGroup>
-  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
-    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
-  </ImportGroup>
-  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
-    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
-  </ImportGroup>
-  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
-  </ImportGroup>
-  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+  <ImportGroup Label="PropertySheets">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
-    <LinkIncremental>false</LinkIncremental>
-    <IncludePath>$(Vulkan_SDK)\Include;$(SolutionDir)\external\glm;$(SolutionDir)\external\stb;$(SolutionDir)\external\glfw\glfw-3.2.1.bin.WIN32\include;$(SolutionDir)\external\Assimp\include;$(SolutionDir)\external\gli-master;$(SolutionDir)\external\nuklear;$(SolutionDir)\external\threadpool;$(IncludePath)</IncludePath>
-    <LibraryPath>$(Vulkan_SDK)\Lib32;$(SolutionDir)\external\glfw\glfw-3.2.1.bin.WIN32\lib-vc2015;$(SolutionDir)\external\Assimp\lib\x86\Debug;$(LibraryPath)</LibraryPath>
-    <OutDir>$(SolutionDir)\bin\$(Platform)\$(Configuration)\</OutDir>
-    <IntDir>$(SolutionDir)\bin\$(Platform)\$(Configuration)\</IntDir>
-    <ExecutablePath>$(ExecutablePath)</ExecutablePath>
+  <PropertyGroup>
+    <_ProjectFileVersion>10.0.20506.1</_ProjectFileVersion>
+    <OutDir Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">C:\Users\hlavacs\Documents\GitHub\ViennaVulkanEngine\lib\Debug\</OutDir>
+    <IntDir Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">vulkanengine.dir\Debug\</IntDir>
+    <TargetName Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">vulkanengine</TargetName>
+    <TargetExt Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">.lib</TargetExt>
+    <OutDir Condition="'$(Configuration)|$(Platform)'=='Release|x64'">C:\Users\hlavacs\Documents\GitHub\ViennaVulkanEngine\lib\Release\</OutDir>
+    <IntDir Condition="'$(Configuration)|$(Platform)'=='Release|x64'">vulkanengine.dir\Release\</IntDir>
+    <TargetName Condition="'$(Configuration)|$(Platform)'=='Release|x64'">vulkanengine</TargetName>
+    <TargetExt Condition="'$(Configuration)|$(Platform)'=='Release|x64'">.lib</TargetExt>
   </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-    <LinkIncremental>false</LinkIncremental>
-    <IncludePath>$(Vulkan_SDK)\Include;$(SolutionDir)\external\glm;$(SolutionDir)\external\stb;$(SolutionDir)\external\glfw\glfw-3.2.1.bin.WIN64\include;$(SolutionDir)\external\Assimp\include;$(SolutionDir)\external\gli-master;$(SolutionDir)\external\nuklear;$(SolutionDir)\external\threadpool;$(SolutionDir)\external\irrKlang\include;$(IncludePath)</IncludePath>
-    <LibraryPath>$(SolutionDir)\external\glfw\glfw-3.2.1.bin.WIN64\lib-vc2015;$(Vulkan_SDK)\Lib;$(SolutionDir)\external\Assimp\lib\x64\Debug;$(LibraryPath);$(SolutionDir)\external\irrKlang\lib</LibraryPath>
-    <OutDir>$(SolutionDir)\bin\$(Platform)\$(Configuration)\</OutDir>
-    <IntDir>$(SolutionDir)\bin\$(Platform)\$(Configuration)\</IntDir>
-    <ExecutablePath>$(ExecutablePath)</ExecutablePath>
-  </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
-    <LinkIncremental>false</LinkIncremental>
-    <IncludePath>$(Vulkan_SDK)\Include;$(SolutionDir)\external\glm;$(SolutionDir)\external\stb;$(SolutionDir)\external\glfw\glfw-3.2.1.bin.WIN32\include;$(SolutionDir)\external\Assimp\include;$(SolutionDir)\external\gli-master;$(SolutionDir)\external\nuklear;$(SolutionDir)\external\threadpool;$(IncludePath)</IncludePath>
-    <LibraryPath>$(Vulkan_SDK)\Lib32;$(SolutionDir)\external\glfw\glfw-3.2.1.bin.WIN32\lib-vc2015;$(SolutionDir)\external\Assimp\lib\x86\Release;$(LibraryPath)</LibraryPath>
-    <IntDir>$(SolutionDir)\bin\$(Platform)\$(Configuration)\</IntDir>
-    <OutDir>$(SolutionDir)\bin\$(Platform)\$(Configuration)\</OutDir>
-    <ExecutablePath>$(ExecutablePath)</ExecutablePath>
-  </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
-    <LinkIncremental>false</LinkIncremental>
-    <IncludePath>$(Vulkan_SDK)\Include;$(SolutionDir)\external\glm;$(SolutionDir)\external\stb;$(SolutionDir)\external\glfw\glfw-3.2.1.bin.WIN64\include;$(SolutionDir)\external\Assimp\include;$(SolutionDir)\external\gli-master;$(SolutionDir)\external\nuklear;$(SolutionDir)\external\threadpool;$(SolutionDir)\external\irrKlang\include;$(IncludePath)</IncludePath>
-    <LibraryPath>$(SolutionDir)\external\glfw\glfw-3.2.1.bin.WIN64\lib-vc2015;$(Vulkan_SDK)\Lib;$(SolutionDir)\external\Assimp\lib\x64\Release;$(LibraryPath);$(SolutionDir)\external\irrKlang\lib</LibraryPath>
-    <OutDir>$(SolutionDir)\bin\$(Platform)\$(Configuration)\</OutDir>
-    <IntDir>$(SolutionDir)\bin\$(Platform)\$(Configuration)\</IntDir>
-    <ExecutablePath>$(ExecutablePath)</ExecutablePath>
-  </PropertyGroup>
-  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
-    <ClCompile>
-      <PrecompiledHeader>
-      </PrecompiledHeader>
-      <WarningLevel>Level3</WarningLevel>
-      <Optimization>Disabled</Optimization>
-      <PreprocessorDefinitions>WIN32;_DEBUG;_CONSOLE;%(PreprocessorDefinitions);_CRT_SECURE_NO_WARNINGS</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>$(SolutionDir)\external\VulkanSDK\1.1.70.1\Include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-    </ClCompile>
-    <Link>
-      <SubSystem>Console</SubSystem>
-      <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalLibraryDirectories>$(SolutionDir)\external\VulkanSDK\1.1.70.1\Lib32;$(SolutionDir)\external\glfw-3.2.1.bin.WIN32\lib-vc2015;$(SolutionDir)\external\VulkanSDK\1.1.70.1\Lib32;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
-      <AdditionalDependencies>glfw3.lib;assimp-vc140-mt.lib;%(AdditionalDependencies)</AdditionalDependencies>
-    </Link>
-  </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <ClCompile>
-      <PrecompiledHeader>
-      </PrecompiledHeader>
-      <WarningLevel>Level3</WarningLevel>
+      <AdditionalIncludeDirectories>C:\Users\hlavacs\Documents\GitHub\ViennaVulkanEngine\external\Assimp\include;C:\Users\hlavacs\Documents\GitHub\ViennaVulkanEngine\external\glfw\include;C:\Users\hlavacs\Documents\GitHub\ViennaVulkanEngine\external\glm;C:\Users\hlavacs\Documents\GitHub\ViennaVulkanEngine\external\nuklear;C:\Users\hlavacs\Documents\GitHub\ViennaVulkanEngine\external\stb;C:\Users\hlavacs\Documents\GitHub\ViennaVulkanEngine\external\threadpool;C:\VulkanSDK\1.3.250.1\Include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AssemblerListingLocation>$(IntDir)</AssemblerListingLocation>
+      <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
+      <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
+      <ExceptionHandling>Sync</ExceptionHandling>
+      <InlineFunctionExpansion>Disabled</InlineFunctionExpansion>
+      <LanguageStandard>stdcpp20</LanguageStandard>
       <Optimization>Disabled</Optimization>
-      <PreprocessorDefinitions>_DEBUG;_CONSOLE;_CRT_SECURE_NO_WARNINGS;%(PreprocessorDefinitions);_CRT_SECURE_NO_WARNINGS</PreprocessorDefinitions>
-      <LanguageStandard>stdcpplatest</LanguageStandard>
-    </ClCompile>
-    <Link>
-      <SubSystem>Console</SubSystem>
-      <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>irrKlang.lib;glfw3.lib;assimp-vc140-mt.lib;%(AdditionalDependencies)</AdditionalDependencies>
-    </Link>
-  </ItemDefinitionGroup>
-  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
-    <ClCompile>
+      <PrecompiledHeader>NotUsing</PrecompiledHeader>
+      <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
+      <RuntimeTypeInfo>true</RuntimeTypeInfo>
+      <UseFullPaths>false</UseFullPaths>
       <WarningLevel>Level3</WarningLevel>
-      <PrecompiledHeader>
-      </PrecompiledHeader>
-      <Optimization>MaxSpeed</Optimization>
-      <FunctionLevelLinking>true</FunctionLevelLinking>
-      <IntrinsicFunctions>true</IntrinsicFunctions>
-      <PreprocessorDefinitions>WIN32;NDEBUG;_CONSOLE;%(PreprocessorDefinitions);_CRT_SECURE_NO_WARNINGS</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>$(SolutionDir)\external\VulkanSDK\1.1.70.1\Include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>%(PreprocessorDefinitions);WIN32;_WINDOWS;CMAKE_INTDIR="Debug"</PreprocessorDefinitions>
+      <ObjectFileName>$(IntDir)</ObjectFileName>
     </ClCompile>
-    <Link>
-      <SubSystem>Console</SubSystem>
-      <EnableCOMDATFolding>true</EnableCOMDATFolding>
-      <OptimizeReferences>true</OptimizeReferences>
-      <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalLibraryDirectories>%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
-      <AdditionalDependencies>glfw3.lib;assimp-vc140-mt.lib;%(AdditionalDependencies)</AdditionalDependencies>
-    </Link>
+    <ResourceCompile>
+      <PreprocessorDefinitions>%(PreprocessorDefinitions);WIN32;_DEBUG;_WINDOWS;CMAKE_INTDIR=\"Debug\"</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>C:\Users\hlavacs\Documents\GitHub\ViennaVulkanEngine\external\Assimp\include;C:\Users\hlavacs\Documents\GitHub\ViennaVulkanEngine\external\glfw\include;C:\Users\hlavacs\Documents\GitHub\ViennaVulkanEngine\external\glm;C:\Users\hlavacs\Documents\GitHub\ViennaVulkanEngine\external\nuklear;C:\Users\hlavacs\Documents\GitHub\ViennaVulkanEngine\external\stb;C:\Users\hlavacs\Documents\GitHub\ViennaVulkanEngine\external\threadpool;C:\VulkanSDK\1.3.250.1\Include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+    </ResourceCompile>
+    <Midl>
+      <AdditionalIncludeDirectories>C:\Users\hlavacs\Documents\GitHub\ViennaVulkanEngine\external\Assimp\include;C:\Users\hlavacs\Documents\GitHub\ViennaVulkanEngine\external\glfw\include;C:\Users\hlavacs\Documents\GitHub\ViennaVulkanEngine\external\glm;C:\Users\hlavacs\Documents\GitHub\ViennaVulkanEngine\external\nuklear;C:\Users\hlavacs\Documents\GitHub\ViennaVulkanEngine\external\stb;C:\Users\hlavacs\Documents\GitHub\ViennaVulkanEngine\external\threadpool;C:\VulkanSDK\1.3.250.1\Include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <OutputDirectory>$(ProjectDir)/$(IntDir)</OutputDirectory>
+      <HeaderFileName>%(Filename).h</HeaderFileName>
+      <TypeLibraryName>%(Filename).tlb</TypeLibraryName>
+      <InterfaceIdentifierFileName>%(Filename)_i.c</InterfaceIdentifierFileName>
+      <ProxyFileName>%(Filename)_p.c</ProxyFileName>
+    </Midl>
+    <Lib>
+      <AdditionalOptions>%(AdditionalOptions) /machine:x64</AdditionalOptions>
+    </Lib>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <ClCompile>
-      <WarningLevel>Level3</WarningLevel>
-      <PrecompiledHeader>
-      </PrecompiledHeader>
+      <AdditionalIncludeDirectories>C:\Users\hlavacs\Documents\GitHub\ViennaVulkanEngine\external\Assimp\include;C:\Users\hlavacs\Documents\GitHub\ViennaVulkanEngine\external\glfw\include;C:\Users\hlavacs\Documents\GitHub\ViennaVulkanEngine\external\glm;C:\Users\hlavacs\Documents\GitHub\ViennaVulkanEngine\external\nuklear;C:\Users\hlavacs\Documents\GitHub\ViennaVulkanEngine\external\stb;C:\Users\hlavacs\Documents\GitHub\ViennaVulkanEngine\external\threadpool;C:\VulkanSDK\1.3.250.1\Include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AssemblerListingLocation>$(IntDir)</AssemblerListingLocation>
+      <ExceptionHandling>Sync</ExceptionHandling>
+      <InlineFunctionExpansion>AnySuitable</InlineFunctionExpansion>
+      <LanguageStandard>stdcpp20</LanguageStandard>
       <Optimization>MaxSpeed</Optimization>
-      <FunctionLevelLinking>true</FunctionLevelLinking>
-      <IntrinsicFunctions>true</IntrinsicFunctions>
-      <PreprocessorDefinitions>NDEBUG;_CONSOLE;%(PreprocessorDefinitions);_CRT_SECURE_NO_WARNINGS</PreprocessorDefinitions>
-      <LanguageStandard>stdcpplatest</LanguageStandard>
+      <PrecompiledHeader>NotUsing</PrecompiledHeader>
+      <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
+      <RuntimeTypeInfo>true</RuntimeTypeInfo>
+      <UseFullPaths>false</UseFullPaths>
+      <WarningLevel>Level3</WarningLevel>
+      <PreprocessorDefinitions>%(PreprocessorDefinitions);WIN32;_WINDOWS;NDEBUG;CMAKE_INTDIR="Release"</PreprocessorDefinitions>
+      <ObjectFileName>$(IntDir)</ObjectFileName>
+      <DebugInformationFormat>
+      </DebugInformationFormat>
     </ClCompile>
-    <Link>
-      <SubSystem>Console</SubSystem>
-      <EnableCOMDATFolding>true</EnableCOMDATFolding>
-      <OptimizeReferences>true</OptimizeReferences>
-      <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>irrKlang.lib;glfw3.lib;assimp-vc140-mt.lib;%(AdditionalDependencies)</AdditionalDependencies>
-    </Link>
+    <ResourceCompile>
+      <PreprocessorDefinitions>%(PreprocessorDefinitions);WIN32;_WINDOWS;NDEBUG;CMAKE_INTDIR=\"Release\"</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>C:\Users\hlavacs\Documents\GitHub\ViennaVulkanEngine\external\Assimp\include;C:\Users\hlavacs\Documents\GitHub\ViennaVulkanEngine\external\glfw\include;C:\Users\hlavacs\Documents\GitHub\ViennaVulkanEngine\external\glm;C:\Users\hlavacs\Documents\GitHub\ViennaVulkanEngine\external\nuklear;C:\Users\hlavacs\Documents\GitHub\ViennaVulkanEngine\external\stb;C:\Users\hlavacs\Documents\GitHub\ViennaVulkanEngine\external\threadpool;C:\VulkanSDK\1.3.250.1\Include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+    </ResourceCompile>
+    <Midl>
+      <AdditionalIncludeDirectories>C:\Users\hlavacs\Documents\GitHub\ViennaVulkanEngine\external\Assimp\include;C:\Users\hlavacs\Documents\GitHub\ViennaVulkanEngine\external\glfw\include;C:\Users\hlavacs\Documents\GitHub\ViennaVulkanEngine\external\glm;C:\Users\hlavacs\Documents\GitHub\ViennaVulkanEngine\external\nuklear;C:\Users\hlavacs\Documents\GitHub\ViennaVulkanEngine\external\stb;C:\Users\hlavacs\Documents\GitHub\ViennaVulkanEngine\external\threadpool;C:\VulkanSDK\1.3.250.1\Include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <OutputDirectory>$(ProjectDir)/$(IntDir)</OutputDirectory>
+      <HeaderFileName>%(Filename).h</HeaderFileName>
+      <TypeLibraryName>%(Filename).tlb</TypeLibraryName>
+      <InterfaceIdentifierFileName>%(Filename)_i.c</InterfaceIdentifierFileName>
+      <ProxyFileName>%(Filename)_p.c</ProxyFileName>
+    </Midl>
+    <Lib>
+      <AdditionalOptions>%(AdditionalOptions) /machine:x64</AdditionalOptions>
+    </Lib>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClInclude Include="..\external\threadpool\ThreadPool.h" />
-    <ClInclude Include="BottomLevelASGenerator.h" />
-    <ClInclude Include="CLInclude.h" />
-    <ClInclude Include="CLShape.h" />
-    <ClInclude Include="DescriptorSetGenerator.h" />
-    <ClInclude Include="VEEnums.h" />
-    <ClInclude Include="RaytracingPipelineGenerator.h" />
-    <ClInclude Include="ShaderBindingTableGenerator.h" />
-    <ClInclude Include="TopLevelASGenerator.h" />
-    <ClInclude Include="VEEventListenerNuklear.h" />
-    <ClInclude Include="VEEventListenerNuklearDebug.h" />
-    <ClInclude Include="VEMaterial.h" />
-    <ClInclude Include="VERendererRayTracingKHR.h" />
-    <ClInclude Include="VERendererRayTracingNV.h" />
-    <ClInclude Include="VERendererDeferred.h" />
-    <ClInclude Include="VESubrenderDF.h" />
-    <ClInclude Include="VESubrenderDF_C1.h" />
-    <ClInclude Include="VESubrenderDF_Composer.h" />
-    <ClInclude Include="VESubrenderDF_D.h" />
-    <ClInclude Include="VESubrenderDF_DN.h" />
-    <ClInclude Include="VESubrenderDF_Shadow.h" />
-    <ClInclude Include="VESubrenderDF_Skyplane.h" />
-    <ClInclude Include="VESubrenderFW.h" />
-    <ClInclude Include="VESubrenderFW_Cloth.h" />
-    <ClInclude Include="VESubrenderRayTracingKHR.h" />
-    <ClInclude Include="VESubrenderRayTracingKHR_DN.h" />
-    <ClInclude Include="VESubrender_Nuklear.h" />
-    <ClInclude Include="VESubrenderFW_Skyplane.h" />
-    <ClInclude Include="VESubrenderFW_C1.h" />
-    <ClInclude Include="VESubrenderFW_DN.h" />
-    <ClInclude Include="VEEngine.h" />
-    <ClInclude Include="VEEntity.h" />
-    <ClInclude Include="VEEventListener.h" />
-    <ClInclude Include="VEEventListenerGLFW.h" />
-    <ClInclude Include="VEInclude.h" />
-    <ClInclude Include="VENamedClass.h" />
-    <ClInclude Include="VERenderer.h" />
-    <ClInclude Include="VERendererForward.h" />
-    <ClInclude Include="VESceneManager.h" />
-    <ClInclude Include="VESubrender.h" />
-    <ClInclude Include="VESubrenderFW_D.h" />
-    <ClInclude Include="VESubrenderFW_Shadow.h" />
-    <ClInclude Include="VESubrenderRayTracingNV.h" />
-    <ClInclude Include="VESubrenderRayTracingNV_DN.h" />
-    <ClInclude Include="VEWindow.h" />
-    <ClInclude Include="VEWindowGLFW.h" />
-    <ClInclude Include="VHFunctions.h" />
-    <ClInclude Include="VHHelper.h" />
-    <ClInclude Include="VKHelpers.h" />
-    <ClInclude Include="vk_mem_alloc.h" />
+    <CustomBuild Include="C:\Users\hlavacs\Documents\GitHub\ViennaVulkanEngine\VulkanEngine\CMakeLists.txt">
+      <UseUtf8Encoding>Always</UseUtf8Encoding>
+      <Message Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Building Custom Rule C:/Users/hlavacs/Documents/GitHub/ViennaVulkanEngine/VulkanEngine/CMakeLists.txt</Message>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">setlocal
+"C:\Program Files\CMake\bin\cmake.exe" -SC:/Users/hlavacs/Documents/GitHub/ViennaVulkanEngine -BC:/Users/hlavacs/Documents/GitHub/ViennaVulkanEngine --check-stamp-file C:/Users/hlavacs/Documents/GitHub/ViennaVulkanEngine/VulkanEngine/CMakeFiles/generate.stamp
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal &amp; call :cmErrorLevel %errorlevel% &amp; goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd</Command>
+      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">C:\Program Files\CMake\share\cmake-3.24\Modules\FindPackageHandleStandardArgs.cmake;C:\Program Files\CMake\share\cmake-3.24\Modules\FindPackageMessage.cmake;C:\Program Files\CMake\share\cmake-3.24\Modules\FindVulkan.cmake;%(AdditionalInputs)</AdditionalInputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">C:\Users\hlavacs\Documents\GitHub\ViennaVulkanEngine\VulkanEngine\CMakeFiles\generate.stamp</Outputs>
+      <LinkObjects Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</LinkObjects>
+      <Message Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Building Custom Rule C:/Users/hlavacs/Documents/GitHub/ViennaVulkanEngine/VulkanEngine/CMakeLists.txt</Message>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Release|x64'">setlocal
+"C:\Program Files\CMake\bin\cmake.exe" -SC:/Users/hlavacs/Documents/GitHub/ViennaVulkanEngine -BC:/Users/hlavacs/Documents/GitHub/ViennaVulkanEngine --check-stamp-file C:/Users/hlavacs/Documents/GitHub/ViennaVulkanEngine/VulkanEngine/CMakeFiles/generate.stamp
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal &amp; call :cmErrorLevel %errorlevel% &amp; goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd</Command>
+      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">C:\Program Files\CMake\share\cmake-3.24\Modules\FindPackageHandleStandardArgs.cmake;C:\Program Files\CMake\share\cmake-3.24\Modules\FindPackageMessage.cmake;C:\Program Files\CMake\share\cmake-3.24\Modules\FindVulkan.cmake;%(AdditionalInputs)</AdditionalInputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">C:\Users\hlavacs\Documents\GitHub\ViennaVulkanEngine\VulkanEngine\CMakeFiles\generate.stamp</Outputs>
+      <LinkObjects Condition="'$(Configuration)|$(Platform)'=='Release|x64'">false</LinkObjects>
+    </CustomBuild>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="..\external\threadpool\ThreadPool.cpp" />
-    <ClCompile Include="BottomLevelASGenerator.cpp" />
-    <ClCompile Include="DescriptorSetGenerator.cpp" />
-    <ClCompile Include="main.cpp" />
-    <ClCompile Include="CLIntersect.cpp" />
-    <ClCompile Include="VERendererRayTracingKHR.cpp" />
-    <ClCompile Include="VESubrenderDF.cpp" />
-    <ClCompile Include="RaytracingPipelineGenerator.cpp" />
-    <ClCompile Include="ShaderBindingTableGenerator.cpp" />
-    <ClCompile Include="TopLevelASGenerator.cpp" />
-    <ClCompile Include="VERendererRayTracingNV.cpp" />
-    <ClCompile Include="VESubrenderDF_C1.cpp" />
-    <ClCompile Include="VESubrenderDF_Composer.cpp" />
-    <ClCompile Include="VESubrenderDF_D.cpp" />
-    <ClCompile Include="VESubrenderDF_DN.cpp" />
-    <ClCompile Include="VESubrenderDF_Shadow.cpp" />
-    <ClCompile Include="VESubrenderDF_Skyplane.cpp" />
-    <ClCompile Include="VESubrenderFW_Cloth.cpp" />
-    <ClCompile Include="VESubrenderRayTracingKHR.cpp" />
-    <ClCompile Include="VESubrenderRayTracingKHR_DN.cpp" />
-    <ClCompile Include="VESubrenderRayTracingNV.cpp" />
-    <ClCompile Include="VESubrenderRayTracingNV_DN.cpp" />
-    <ClCompile Include="VHFunctions.cpp" />
-    <ClCompile Include="VEDocumentation.cpp" />
-    <ClCompile Include="VEEngine.cpp" />
-    <ClCompile Include="VEEntity.cpp" />
-    <ClCompile Include="VEEventListener.cpp" />
-    <ClCompile Include="VEEventListenerGLFW.cpp" />
-    <ClCompile Include="VEEventListenerNuklear.cpp" />
-    <ClCompile Include="VEEventListenerNuklearDebug.cpp" />
-    <ClCompile Include="VEMaterial.cpp" />
-    <ClCompile Include="VENamedClass.cpp" />
-    <ClCompile Include="VERenderer.cpp" />
-    <ClCompile Include="VERendererDeferred.cpp" />
-    <ClCompile Include="VERendererForward.cpp" />
-    <ClCompile Include="VESceneManager.cpp" />
-    <ClCompile Include="VESubrender.cpp" />
-    <ClCompile Include="VESubrenderFW.cpp" />
-    <ClCompile Include="VESubrenderFW_C1.cpp" />
-    <ClCompile Include="VESubrenderFW_D.cpp" />
-    <ClCompile Include="VESubrenderFW_DN.cpp" />
-    <ClCompile Include="VESubrender_Nuklear.cpp" />
-    <ClCompile Include="VESubrenderFW_Shadow.cpp" />
-    <ClCompile Include="VESubrenderFW_Skyplane.cpp" />
-    <ClCompile Include="VEWindow.cpp" />
-    <ClCompile Include="VEWindowGLFW.cpp" />
-    <ClCompile Include="VHBuffer.cpp" />
-    <ClCompile Include="VHCommand.cpp" />
-    <ClCompile Include="VHDebug.cpp" />
-    <ClCompile Include="VHDevice.cpp" />
-    <ClCompile Include="VHFile.cpp" />
-    <ClCompile Include="VHMemory.cpp" />
-    <ClCompile Include="VHRayTracing.cpp" />
-    <ClCompile Include="VHRender.cpp" />
-    <ClCompile Include="VHSwapchain.cpp" />
-    <ClCompile Include="VKHelpers.cpp" />
+    <ClCompile Include="C:\Users\hlavacs\Documents\GitHub\ViennaVulkanEngine\VulkanEngine\BottomLevelASGenerator.cpp" />
+    <ClInclude Include="C:\Users\hlavacs\Documents\GitHub\ViennaVulkanEngine\VulkanEngine\BottomLevelASGenerator.h" />
+    <ClInclude Include="C:\Users\hlavacs\Documents\GitHub\ViennaVulkanEngine\VulkanEngine\CLInclude.h" />
+    <ClCompile Include="C:\Users\hlavacs\Documents\GitHub\ViennaVulkanEngine\VulkanEngine\CLIntersect.cpp" />
+    <ClInclude Include="C:\Users\hlavacs\Documents\GitHub\ViennaVulkanEngine\VulkanEngine\CLShape.h" />
+    <ClCompile Include="C:\Users\hlavacs\Documents\GitHub\ViennaVulkanEngine\VulkanEngine\DescriptorSetGenerator.cpp" />
+    <ClInclude Include="C:\Users\hlavacs\Documents\GitHub\ViennaVulkanEngine\VulkanEngine\DescriptorSetGenerator.h" />
+    <ClCompile Include="C:\Users\hlavacs\Documents\GitHub\ViennaVulkanEngine\VulkanEngine\RaytracingPipelineGenerator.cpp" />
+    <ClInclude Include="C:\Users\hlavacs\Documents\GitHub\ViennaVulkanEngine\VulkanEngine\RaytracingPipelineGenerator.h" />
+    <ClCompile Include="C:\Users\hlavacs\Documents\GitHub\ViennaVulkanEngine\VulkanEngine\ShaderBindingTableGenerator.cpp" />
+    <ClInclude Include="C:\Users\hlavacs\Documents\GitHub\ViennaVulkanEngine\VulkanEngine\ShaderBindingTableGenerator.h" />
+    <ClCompile Include="C:\Users\hlavacs\Documents\GitHub\ViennaVulkanEngine\VulkanEngine\TopLevelASGenerator.cpp" />
+    <ClInclude Include="C:\Users\hlavacs\Documents\GitHub\ViennaVulkanEngine\VulkanEngine\TopLevelASGenerator.h" />
+    <ClCompile Include="C:\Users\hlavacs\Documents\GitHub\ViennaVulkanEngine\VulkanEngine\VEDocumentation.cpp" />
+    <ClCompile Include="C:\Users\hlavacs\Documents\GitHub\ViennaVulkanEngine\VulkanEngine\VEEngine.cpp" />
+    <ClInclude Include="C:\Users\hlavacs\Documents\GitHub\ViennaVulkanEngine\VulkanEngine\VEEngine.h" />
+    <ClCompile Include="C:\Users\hlavacs\Documents\GitHub\ViennaVulkanEngine\VulkanEngine\VEEntity.cpp" />
+    <ClInclude Include="C:\Users\hlavacs\Documents\GitHub\ViennaVulkanEngine\VulkanEngine\VEEntity.h" />
+    <ClInclude Include="C:\Users\hlavacs\Documents\GitHub\ViennaVulkanEngine\VulkanEngine\VEEnums.h" />
+    <ClCompile Include="C:\Users\hlavacs\Documents\GitHub\ViennaVulkanEngine\VulkanEngine\VEEventListener.cpp" />
+    <ClInclude Include="C:\Users\hlavacs\Documents\GitHub\ViennaVulkanEngine\VulkanEngine\VEEventListener.h" />
+    <ClCompile Include="C:\Users\hlavacs\Documents\GitHub\ViennaVulkanEngine\VulkanEngine\VEEventListenerGLFW.cpp" />
+    <ClInclude Include="C:\Users\hlavacs\Documents\GitHub\ViennaVulkanEngine\VulkanEngine\VEEventListenerGLFW.h" />
+    <ClCompile Include="C:\Users\hlavacs\Documents\GitHub\ViennaVulkanEngine\VulkanEngine\VEEventListenerNuklear.cpp" />
+    <ClInclude Include="C:\Users\hlavacs\Documents\GitHub\ViennaVulkanEngine\VulkanEngine\VEEventListenerNuklear.h" />
+    <ClCompile Include="C:\Users\hlavacs\Documents\GitHub\ViennaVulkanEngine\VulkanEngine\VEEventListenerNuklearDebug.cpp" />
+    <ClInclude Include="C:\Users\hlavacs\Documents\GitHub\ViennaVulkanEngine\VulkanEngine\VEEventListenerNuklearDebug.h" />
+    <ClCompile Include="C:\Users\hlavacs\Documents\GitHub\ViennaVulkanEngine\VulkanEngine\VEEventListenerNuklearError.cpp" />
+    <ClInclude Include="C:\Users\hlavacs\Documents\GitHub\ViennaVulkanEngine\VulkanEngine\VEInclude.h" />
+    <ClCompile Include="C:\Users\hlavacs\Documents\GitHub\ViennaVulkanEngine\VulkanEngine\VEMaterial.cpp" />
+    <ClInclude Include="C:\Users\hlavacs\Documents\GitHub\ViennaVulkanEngine\VulkanEngine\VEMaterial.h" />
+    <ClCompile Include="C:\Users\hlavacs\Documents\GitHub\ViennaVulkanEngine\VulkanEngine\VENamedClass.cpp" />
+    <ClInclude Include="C:\Users\hlavacs\Documents\GitHub\ViennaVulkanEngine\VulkanEngine\VENamedClass.h" />
+    <ClCompile Include="C:\Users\hlavacs\Documents\GitHub\ViennaVulkanEngine\VulkanEngine\VERenderer.cpp" />
+    <ClInclude Include="C:\Users\hlavacs\Documents\GitHub\ViennaVulkanEngine\VulkanEngine\VERenderer.h" />
+    <ClCompile Include="C:\Users\hlavacs\Documents\GitHub\ViennaVulkanEngine\VulkanEngine\VERendererDeferred.cpp" />
+    <ClInclude Include="C:\Users\hlavacs\Documents\GitHub\ViennaVulkanEngine\VulkanEngine\VERendererDeferred.h" />
+    <ClCompile Include="C:\Users\hlavacs\Documents\GitHub\ViennaVulkanEngine\VulkanEngine\VERendererForward.cpp" />
+    <ClInclude Include="C:\Users\hlavacs\Documents\GitHub\ViennaVulkanEngine\VulkanEngine\VERendererForward.h" />
+    <ClCompile Include="C:\Users\hlavacs\Documents\GitHub\ViennaVulkanEngine\VulkanEngine\VERendererRayTracingKHR.cpp" />
+    <ClInclude Include="C:\Users\hlavacs\Documents\GitHub\ViennaVulkanEngine\VulkanEngine\VERendererRayTracingKHR.h" />
+    <ClCompile Include="C:\Users\hlavacs\Documents\GitHub\ViennaVulkanEngine\VulkanEngine\VERendererRayTracingNV.cpp" />
+    <ClInclude Include="C:\Users\hlavacs\Documents\GitHub\ViennaVulkanEngine\VulkanEngine\VERendererRayTracingNV.h" />
+    <ClInclude Include="C:\Users\hlavacs\Documents\GitHub\ViennaVulkanEngine\VulkanEngine\VERendererShader.h" />
+    <ClCompile Include="C:\Users\hlavacs\Documents\GitHub\ViennaVulkanEngine\VulkanEngine\VESceneManager.cpp" />
+    <ClInclude Include="C:\Users\hlavacs\Documents\GitHub\ViennaVulkanEngine\VulkanEngine\VESceneManager.h" />
+    <ClCompile Include="C:\Users\hlavacs\Documents\GitHub\ViennaVulkanEngine\VulkanEngine\VESubrender.cpp" />
+    <ClInclude Include="C:\Users\hlavacs\Documents\GitHub\ViennaVulkanEngine\VulkanEngine\VESubrender.h" />
+    <ClCompile Include="C:\Users\hlavacs\Documents\GitHub\ViennaVulkanEngine\VulkanEngine\VESubrenderDF.cpp" />
+    <ClInclude Include="C:\Users\hlavacs\Documents\GitHub\ViennaVulkanEngine\VulkanEngine\VESubrenderDF.h" />
+    <ClCompile Include="C:\Users\hlavacs\Documents\GitHub\ViennaVulkanEngine\VulkanEngine\VESubrenderDF_C1.cpp" />
+    <ClInclude Include="C:\Users\hlavacs\Documents\GitHub\ViennaVulkanEngine\VulkanEngine\VESubrenderDF_C1.h" />
+    <ClCompile Include="C:\Users\hlavacs\Documents\GitHub\ViennaVulkanEngine\VulkanEngine\VESubrenderDF_Composer.cpp" />
+    <ClInclude Include="C:\Users\hlavacs\Documents\GitHub\ViennaVulkanEngine\VulkanEngine\VESubrenderDF_Composer.h" />
+    <ClCompile Include="C:\Users\hlavacs\Documents\GitHub\ViennaVulkanEngine\VulkanEngine\VESubrenderDF_D.cpp" />
+    <ClInclude Include="C:\Users\hlavacs\Documents\GitHub\ViennaVulkanEngine\VulkanEngine\VESubrenderDF_D.h" />
+    <ClCompile Include="C:\Users\hlavacs\Documents\GitHub\ViennaVulkanEngine\VulkanEngine\VESubrenderDF_DN.cpp" />
+    <ClInclude Include="C:\Users\hlavacs\Documents\GitHub\ViennaVulkanEngine\VulkanEngine\VESubrenderDF_DN.h" />
+    <ClCompile Include="C:\Users\hlavacs\Documents\GitHub\ViennaVulkanEngine\VulkanEngine\VESubrenderDF_Shadow.cpp" />
+    <ClInclude Include="C:\Users\hlavacs\Documents\GitHub\ViennaVulkanEngine\VulkanEngine\VESubrenderDF_Shadow.h" />
+    <ClCompile Include="C:\Users\hlavacs\Documents\GitHub\ViennaVulkanEngine\VulkanEngine\VESubrenderDF_Skyplane.cpp" />
+    <ClInclude Include="C:\Users\hlavacs\Documents\GitHub\ViennaVulkanEngine\VulkanEngine\VESubrenderDF_Skyplane.h" />
+    <ClCompile Include="C:\Users\hlavacs\Documents\GitHub\ViennaVulkanEngine\VulkanEngine\VESubrenderFW.cpp" />
+    <ClInclude Include="C:\Users\hlavacs\Documents\GitHub\ViennaVulkanEngine\VulkanEngine\VESubrenderFW.h" />
+    <ClCompile Include="C:\Users\hlavacs\Documents\GitHub\ViennaVulkanEngine\VulkanEngine\VESubrenderFW_C1.cpp" />
+    <ClInclude Include="C:\Users\hlavacs\Documents\GitHub\ViennaVulkanEngine\VulkanEngine\VESubrenderFW_C1.h" />
+    <ClCompile Include="C:\Users\hlavacs\Documents\GitHub\ViennaVulkanEngine\VulkanEngine\VESubrenderFW_Cloth.cpp" />
+    <ClInclude Include="C:\Users\hlavacs\Documents\GitHub\ViennaVulkanEngine\VulkanEngine\VESubrenderFW_Cloth.h" />
+    <ClCompile Include="C:\Users\hlavacs\Documents\GitHub\ViennaVulkanEngine\VulkanEngine\VESubrenderFW_D.cpp" />
+    <ClInclude Include="C:\Users\hlavacs\Documents\GitHub\ViennaVulkanEngine\VulkanEngine\VESubrenderFW_D.h" />
+    <ClCompile Include="C:\Users\hlavacs\Documents\GitHub\ViennaVulkanEngine\VulkanEngine\VESubrenderFW_DN.cpp" />
+    <ClInclude Include="C:\Users\hlavacs\Documents\GitHub\ViennaVulkanEngine\VulkanEngine\VESubrenderFW_DN.h" />
+    <ClCompile Include="C:\Users\hlavacs\Documents\GitHub\ViennaVulkanEngine\VulkanEngine\VESubrenderFW_Shadow.cpp" />
+    <ClInclude Include="C:\Users\hlavacs\Documents\GitHub\ViennaVulkanEngine\VulkanEngine\VESubrenderFW_Shadow.h" />
+    <ClCompile Include="C:\Users\hlavacs\Documents\GitHub\ViennaVulkanEngine\VulkanEngine\VESubrenderFW_Skyplane.cpp" />
+    <ClInclude Include="C:\Users\hlavacs\Documents\GitHub\ViennaVulkanEngine\VulkanEngine\VESubrenderFW_Skyplane.h" />
+    <ClCompile Include="C:\Users\hlavacs\Documents\GitHub\ViennaVulkanEngine\VulkanEngine\VESubrenderRayTracingKHR.cpp" />
+    <ClInclude Include="C:\Users\hlavacs\Documents\GitHub\ViennaVulkanEngine\VulkanEngine\VESubrenderRayTracingKHR.h" />
+    <ClCompile Include="C:\Users\hlavacs\Documents\GitHub\ViennaVulkanEngine\VulkanEngine\VESubrenderRayTracingKHR_DN.cpp" />
+    <ClInclude Include="C:\Users\hlavacs\Documents\GitHub\ViennaVulkanEngine\VulkanEngine\VESubrenderRayTracingKHR_DN.h" />
+    <ClCompile Include="C:\Users\hlavacs\Documents\GitHub\ViennaVulkanEngine\VulkanEngine\VESubrenderRayTracingNV.cpp" />
+    <ClInclude Include="C:\Users\hlavacs\Documents\GitHub\ViennaVulkanEngine\VulkanEngine\VESubrenderRayTracingNV.h" />
+    <ClCompile Include="C:\Users\hlavacs\Documents\GitHub\ViennaVulkanEngine\VulkanEngine\VESubrenderRayTracingNV_DN.cpp" />
+    <ClInclude Include="C:\Users\hlavacs\Documents\GitHub\ViennaVulkanEngine\VulkanEngine\VESubrenderRayTracingNV_DN.h" />
+    <ClCompile Include="C:\Users\hlavacs\Documents\GitHub\ViennaVulkanEngine\VulkanEngine\VESubrender_Nuklear.cpp" />
+    <ClInclude Include="C:\Users\hlavacs\Documents\GitHub\ViennaVulkanEngine\VulkanEngine\VESubrender_Nuklear.h" />
+    <ClCompile Include="C:\Users\hlavacs\Documents\GitHub\ViennaVulkanEngine\VulkanEngine\VEWindow.cpp" />
+    <ClInclude Include="C:\Users\hlavacs\Documents\GitHub\ViennaVulkanEngine\VulkanEngine\VEWindow.h" />
+    <ClCompile Include="C:\Users\hlavacs\Documents\GitHub\ViennaVulkanEngine\VulkanEngine\VEWindowGLFW.cpp" />
+    <ClInclude Include="C:\Users\hlavacs\Documents\GitHub\ViennaVulkanEngine\VulkanEngine\VEWindowGLFW.h" />
+    <ClCompile Include="C:\Users\hlavacs\Documents\GitHub\ViennaVulkanEngine\VulkanEngine\VHBuffer.cpp" />
+    <ClCompile Include="C:\Users\hlavacs\Documents\GitHub\ViennaVulkanEngine\VulkanEngine\VHCommand.cpp" />
+    <ClCompile Include="C:\Users\hlavacs\Documents\GitHub\ViennaVulkanEngine\VulkanEngine\VHDebug.cpp" />
+    <ClCompile Include="C:\Users\hlavacs\Documents\GitHub\ViennaVulkanEngine\VulkanEngine\VHDevice.cpp" />
+    <ClCompile Include="C:\Users\hlavacs\Documents\GitHub\ViennaVulkanEngine\VulkanEngine\VHFile.cpp" />
+    <ClCompile Include="C:\Users\hlavacs\Documents\GitHub\ViennaVulkanEngine\VulkanEngine\VHFunctions.cpp" />
+    <ClInclude Include="C:\Users\hlavacs\Documents\GitHub\ViennaVulkanEngine\VulkanEngine\VHFunctions.h" />
+    <ClInclude Include="C:\Users\hlavacs\Documents\GitHub\ViennaVulkanEngine\VulkanEngine\VHHelper.h" />
+    <ClCompile Include="C:\Users\hlavacs\Documents\GitHub\ViennaVulkanEngine\VulkanEngine\VHMemory.cpp" />
+    <ClCompile Include="C:\Users\hlavacs\Documents\GitHub\ViennaVulkanEngine\VulkanEngine\VHRayTracing.cpp" />
+    <ClCompile Include="C:\Users\hlavacs\Documents\GitHub\ViennaVulkanEngine\VulkanEngine\VHRender.cpp" />
+    <ClCompile Include="C:\Users\hlavacs\Documents\GitHub\ViennaVulkanEngine\VulkanEngine\VHSwapchain.cpp" />
+    <ClCompile Include="C:\Users\hlavacs\Documents\GitHub\ViennaVulkanEngine\VulkanEngine\VKHelpers.cpp" />
+    <ClInclude Include="C:\Users\hlavacs\Documents\GitHub\ViennaVulkanEngine\VulkanEngine\VKHelpers.h" />
+    <ClInclude Include="C:\Users\hlavacs\Documents\GitHub\ViennaVulkanEngine\VulkanEngine\vk_mem_alloc.h" />
+    <ClCompile Include="C:\Users\hlavacs\Documents\GitHub\ViennaVulkanEngine\external\threadpool\ThreadPool.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="VHFunctions.inl" />
+    <ProjectReference Include="C:\Users\hlavacs\Documents\GitHub\ViennaVulkanEngine\ZERO_CHECK.vcxproj">
+      <Project>{AA852C22-EDFC-314D-B756-3F2EA6626A9B}</Project>
+      <Name>ZERO_CHECK</Name>
+      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+    </ProjectReference>
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
