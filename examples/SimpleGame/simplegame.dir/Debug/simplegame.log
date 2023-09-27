@@ -1,4 +1,0 @@
-﻿  simplegame.cpp
-C:\Users\hlavacs\Documents\GitHub\ViennaVulkanEngine\examples\SimpleGame\simplegame.cpp(84,6): warning C4996: 'sprintf': This function or variable may be unsafe. Consider using sprintf_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
-C:\Users\hlavacs\Documents\GitHub\ViennaVulkanEngine\examples\SimpleGame\simplegame.cpp(88,6): warning C4996: 'sprintf': This function or variable may be unsafe. Consider using sprintf_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
-  simplegame.vcxproj -> C:\Users\hlavacs\Documents\GitHub\ViennaVulkanEngine\bin\Debug\simplegame.exe
