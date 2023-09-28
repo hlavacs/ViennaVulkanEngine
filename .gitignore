@@ -26,6 +26,10 @@ lib/Release/*
 examples/CMakeFiles/*
 examples/simplegame/CMakeFiles/*
 examples/simplegame/simplegame.dir/*
+docs/*
+CMakeDoxyfile.in
+CMakeDoxygenDefaults.cmake
+cmake_install.cmake
 
 
 

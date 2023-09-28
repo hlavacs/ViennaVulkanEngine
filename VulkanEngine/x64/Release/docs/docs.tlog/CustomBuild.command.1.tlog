@@ -1,0 +1,26 @@
+^C:\USERS\HLAVACS\DOCUMENTS\GITHUB\VIENNAVULKANENGINE\CMAKEFILES\AFBD4FBE586B0D10C085AEE38277C5F8\DOCS.RULE
+setlocal
+cd C:\Users\hlavacs\Documents\GitHub\ViennaVulkanEngine\VulkanEngine
+if %errorlevel% neq 0 goto :cmEnd
+C:
+if %errorlevel% neq 0 goto :cmEnd
+"C:\Program Files\CMake\bin\cmake.exe" -E make_directory C:/Users/hlavacs/Documents/GitHub/ViennaVulkanEngine/VulkanEngine
+if %errorlevel% neq 0 goto :cmEnd
+"C:\Program Files\doxygen\bin\doxygen.exe" C:/Users/hlavacs/Documents/GitHub/ViennaVulkanEngine/VulkanEngine/Doxyfile.docs
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal & call :cmErrorLevel %errorlevel% & goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd
+^C:\USERS\HLAVACS\DOCUMENTS\GITHUB\VIENNAVULKANENGINE\VULKANENGINE\CMAKELISTS.TXT
+setlocal
+"C:\Program Files\CMake\bin\cmake.exe" -SC:/Users/hlavacs/Documents/GitHub/ViennaVulkanEngine -BC:/Users/hlavacs/Documents/GitHub/ViennaVulkanEngine --check-stamp-file C:/Users/hlavacs/Documents/GitHub/ViennaVulkanEngine/VulkanEngine/CMakeFiles/generate.stamp
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal & call :cmErrorLevel %errorlevel% & goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd

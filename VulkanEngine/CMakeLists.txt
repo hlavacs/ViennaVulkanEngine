@@ -34,3 +34,12 @@ set_target_properties(vulkanengine PROPERTIES
             )
 
 target_link_libraries(vulkanengine AssimpLib ${CMAKE_SOURCE_DIR}/external/glfw/lib-vc2022/glfw3.lib )
+
+find_package(Doxygen OPTIONAL_COMPONENTS dot mscgen dia)
+#if(DOXYGEN_FOUND)
+add_custom_target(doxygen
+           COMMAND ${DOXYGEN_EXECUTABLE}
+           WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+           COMMENT "Generating API documentation with Doxygen"
+           VERBATIM)
+#endif()
