@@ -20,6 +20,7 @@ CMakeFiles/*
 ZERO_CHECK.vcxproj
 ALL_BUILD.vcxproj
 x64/*
+VulkanEngine/x64/*
 bin/Debug/*
 bin/Release/*
 lib/Debug/*
