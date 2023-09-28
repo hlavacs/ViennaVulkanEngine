@@ -51,7 +51,7 @@ namespace ve {
 			VESceneNode* e1, * eParent;
 			eParent = getSceneManagerPointer()->createSceneNode("The Cube Parent", pScene, glm::mat4(1.0));
 			VECHECKPOINTER(e1 = getSceneManagerPointer()->loadModel("The Cube0", "../../media/models/test/crate0", "cube.obj"));
-			eParent->multiplyTransform(glm::translate(glm::mat4(1.0f), glm::vec3(-10.0f, 1.0f, 10.0f)));
+			eParent->multiplyTransform(glm::translate(glm::mat4(1.0f), glm::vec3(-10.0f, 0.5f, 10.0f)));
 			eParent->addChild(e1);
 
 			m_irrklangEngine->play2D("../../media/sounds/ophelia.wav", true);
@@ -147,7 +147,7 @@ namespace ve {
 				}
 
 				VESceneNode *eParent = getSceneManagerPointer()->getSceneNode("The Cube Parent");
-				eParent->setPosition(glm::vec3(d(e), 1.0f, d(e)));
+				eParent->setPosition(glm::vec3(d(e), 0.5f, d(e)));
 
 				getSceneManagerPointer()->deleteSceneNodeAndChildren("The Cube"+ std::to_string(cubeid));
 				VECHECKPOINTER(getSceneManagerPointer()->loadModel("The Cube"+ std::to_string(++cubeid)  , "../../media/models/test/crate0", "cube.obj", 0, eParent) );
