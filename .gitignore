@@ -8,6 +8,7 @@ renderdoc.cap
 */MakeFile
 */.idea/
 */CMakeCache.txt
+CMakeCache.txt
 */CMakeFiles/*
 */cmake_install.cmake
 */Makefile
