@@ -4,9 +4,6 @@
     <ClCompile Include="C:\Users\hlavacs\Documents\GitHub\ViennaVulkanEngine\VulkanEngine\BottomLevelASGenerator.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="C:\Users\hlavacs\Documents\GitHub\ViennaVulkanEngine\VulkanEngine\CLIntersect.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="C:\Users\hlavacs\Documents\GitHub\ViennaVulkanEngine\VulkanEngine\DescriptorSetGenerator.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -172,12 +169,6 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="C:\Users\hlavacs\Documents\GitHub\ViennaVulkanEngine\VulkanEngine\BottomLevelASGenerator.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="C:\Users\hlavacs\Documents\GitHub\ViennaVulkanEngine\VulkanEngine\CLInclude.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="C:\Users\hlavacs\Documents\GitHub\ViennaVulkanEngine\VulkanEngine\CLShape.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="C:\Users\hlavacs\Documents\GitHub\ViennaVulkanEngine\VulkanEngine\DescriptorSetGenerator.h">

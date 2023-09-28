@@ -152,9 +152,6 @@ if %errorlevel% neq 0 goto :VCEnd</Command>
   <ItemGroup>
     <ClCompile Include="C:\Users\hlavacs\Documents\GitHub\ViennaVulkanEngine\VulkanEngine\BottomLevelASGenerator.cpp" />
     <ClInclude Include="C:\Users\hlavacs\Documents\GitHub\ViennaVulkanEngine\VulkanEngine\BottomLevelASGenerator.h" />
-    <ClInclude Include="C:\Users\hlavacs\Documents\GitHub\ViennaVulkanEngine\VulkanEngine\CLInclude.h" />
-    <ClCompile Include="C:\Users\hlavacs\Documents\GitHub\ViennaVulkanEngine\VulkanEngine\CLIntersect.cpp" />
-    <ClInclude Include="C:\Users\hlavacs\Documents\GitHub\ViennaVulkanEngine\VulkanEngine\CLShape.h" />
     <ClCompile Include="C:\Users\hlavacs\Documents\GitHub\ViennaVulkanEngine\VulkanEngine\DescriptorSetGenerator.cpp" />
     <ClInclude Include="C:\Users\hlavacs\Documents\GitHub\ViennaVulkanEngine\VulkanEngine\DescriptorSetGenerator.h" />
     <ClCompile Include="C:\Users\hlavacs\Documents\GitHub\ViennaVulkanEngine\VulkanEngine\RaytracingPipelineGenerator.cpp" />

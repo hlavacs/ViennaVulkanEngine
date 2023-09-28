@@ -47,7 +47,7 @@
 #include <stb_image.h>
 #include <stb_image_write.h>
 //#include <gli/gli.hpp>
-#include "CLInclude.h"
+//#include "CLInclude.h"
 
 #include <assimp/Importer.hpp>
 #include <assimp/postprocess.h>
