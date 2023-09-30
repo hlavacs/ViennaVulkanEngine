@@ -140,6 +140,12 @@ namespace ve
 		case VEEntity::VE_ENTITY_TYPE_SKYPLANE:
 			type = VE_SUBRENDERER_TYPE_SKYPLANE;
 			break;
+
+		//---------------------------------CLoth-Simulation-Stuff-----------------------------------
+		case VEEntity::VE_ENTITY_TYPE_CLOTH:
+			type = VE_SUBRENDERER_TYPE_CLOTH;
+			break;
+
 		case VEEntity::VE_ENTITY_TYPE_TERRAIN_HEIGHTMAP:
 			break;
 		default:

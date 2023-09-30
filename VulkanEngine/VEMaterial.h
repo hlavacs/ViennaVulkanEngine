@@ -98,7 +98,7 @@ namespace ve
 
 		VEMesh(std::string name, std::vector<vh::vhVertex> &vertices, std::vector<uint32_t> &indices);
 
-		~VEMesh();
+		virtual ~VEMesh();
 	};
 
 	//--------------------------------Begin-Cloth-Simulation-Stuff----------------------------------

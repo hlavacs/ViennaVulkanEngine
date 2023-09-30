@@ -69,10 +69,10 @@ namespace ve
 		}
 
 		m_commandBuffers.resize(m_swapChainImages.size());
-		m_commandBuffersWithPendingUpdate.resize(m_swapChainImages.size());
+		m_commandBuffersWithPendingUpdate.resize(m_swapChainImages.size()); //UPDATE
 		for (uint32_t i = 0; i < m_swapChainImages.size(); i++) {
 			m_commandBuffers[i] = VK_NULL_HANDLE; //will be created later
-			m_commandBuffersWithPendingUpdate[i] = false;
+			m_commandBuffersWithPendingUpdate[i] = false;   //UPDATE
 		}
 
 		m_secondaryBuffers.resize(m_swapChainImages.size());
@@ -222,6 +222,9 @@ namespace ve
 		addSubrenderer(new VESubrenderFW_Skyplane(*this));
 		addSubrenderer(new VESubrenderFW_Shadow(*this));
 		addSubrenderer(new VESubrender_Nuklear(*this));
+
+		//---------------------------------Cloth-Simulation-Stuff-----------------------------------
+		addSubrenderer(new VESubrenderFW_Cloth(*this));
 	}
 
 	/**
