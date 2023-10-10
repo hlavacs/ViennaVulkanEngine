@@ -1,327 +1,327 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="17.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
-    <ClCompile Include="C:\Users\hlavacs\Documents\GitHub\ViennaVulkanEngine\VulkanEngine\BottomLevelASGenerator.cpp">
+    <ClCompile Include="D:\data\GitHub\ViennaVulkanEngine\VulkanEngine\BottomLevelASGenerator.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="C:\Users\hlavacs\Documents\GitHub\ViennaVulkanEngine\VulkanEngine\DescriptorSetGenerator.cpp">
+    <ClCompile Include="D:\data\GitHub\ViennaVulkanEngine\VulkanEngine\DescriptorSetGenerator.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="C:\Users\hlavacs\Documents\GitHub\ViennaVulkanEngine\VulkanEngine\RaytracingPipelineGenerator.cpp">
+    <ClCompile Include="D:\data\GitHub\ViennaVulkanEngine\VulkanEngine\RaytracingPipelineGenerator.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="C:\Users\hlavacs\Documents\GitHub\ViennaVulkanEngine\VulkanEngine\ShaderBindingTableGenerator.cpp">
+    <ClCompile Include="D:\data\GitHub\ViennaVulkanEngine\VulkanEngine\ShaderBindingTableGenerator.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="C:\Users\hlavacs\Documents\GitHub\ViennaVulkanEngine\VulkanEngine\TopLevelASGenerator.cpp">
+    <ClCompile Include="D:\data\GitHub\ViennaVulkanEngine\VulkanEngine\TopLevelASGenerator.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="C:\Users\hlavacs\Documents\GitHub\ViennaVulkanEngine\VulkanEngine\VEDocumentation.cpp">
+    <ClCompile Include="D:\data\GitHub\ViennaVulkanEngine\VulkanEngine\VEDocumentation.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="C:\Users\hlavacs\Documents\GitHub\ViennaVulkanEngine\VulkanEngine\VEEngine.cpp">
+    <ClCompile Include="D:\data\GitHub\ViennaVulkanEngine\VulkanEngine\VEEngine.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="C:\Users\hlavacs\Documents\GitHub\ViennaVulkanEngine\VulkanEngine\VEEntity.cpp">
+    <ClCompile Include="D:\data\GitHub\ViennaVulkanEngine\VulkanEngine\VEEntity.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="C:\Users\hlavacs\Documents\GitHub\ViennaVulkanEngine\VulkanEngine\VEEventListener.cpp">
+    <ClCompile Include="D:\data\GitHub\ViennaVulkanEngine\VulkanEngine\VEEventListener.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="C:\Users\hlavacs\Documents\GitHub\ViennaVulkanEngine\VulkanEngine\VEEventListenerGLFW.cpp">
+    <ClCompile Include="D:\data\GitHub\ViennaVulkanEngine\VulkanEngine\VEEventListenerGLFW.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="C:\Users\hlavacs\Documents\GitHub\ViennaVulkanEngine\VulkanEngine\VEEventListenerNuklear.cpp">
+    <ClCompile Include="D:\data\GitHub\ViennaVulkanEngine\VulkanEngine\VEEventListenerNuklear.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="C:\Users\hlavacs\Documents\GitHub\ViennaVulkanEngine\VulkanEngine\VEEventListenerNuklearDebug.cpp">
+    <ClCompile Include="D:\data\GitHub\ViennaVulkanEngine\VulkanEngine\VEEventListenerNuklearDebug.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="C:\Users\hlavacs\Documents\GitHub\ViennaVulkanEngine\VulkanEngine\VEEventListenerNuklearError.cpp">
+    <ClCompile Include="D:\data\GitHub\ViennaVulkanEngine\VulkanEngine\VEEventListenerNuklearError.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="C:\Users\hlavacs\Documents\GitHub\ViennaVulkanEngine\VulkanEngine\VEMaterial.cpp">
+    <ClCompile Include="D:\data\GitHub\ViennaVulkanEngine\VulkanEngine\VEMaterial.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="C:\Users\hlavacs\Documents\GitHub\ViennaVulkanEngine\VulkanEngine\VENamedClass.cpp">
+    <ClCompile Include="D:\data\GitHub\ViennaVulkanEngine\VulkanEngine\VENamedClass.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="C:\Users\hlavacs\Documents\GitHub\ViennaVulkanEngine\VulkanEngine\VERenderer.cpp">
+    <ClCompile Include="D:\data\GitHub\ViennaVulkanEngine\VulkanEngine\VERenderer.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="C:\Users\hlavacs\Documents\GitHub\ViennaVulkanEngine\VulkanEngine\VERendererDeferred.cpp">
+    <ClCompile Include="D:\data\GitHub\ViennaVulkanEngine\VulkanEngine\VERendererDeferred.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="C:\Users\hlavacs\Documents\GitHub\ViennaVulkanEngine\VulkanEngine\VERendererForward.cpp">
+    <ClCompile Include="D:\data\GitHub\ViennaVulkanEngine\VulkanEngine\VERendererForward.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="C:\Users\hlavacs\Documents\GitHub\ViennaVulkanEngine\VulkanEngine\VERendererRayTracingKHR.cpp">
+    <ClCompile Include="D:\data\GitHub\ViennaVulkanEngine\VulkanEngine\VERendererRayTracingKHR.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="C:\Users\hlavacs\Documents\GitHub\ViennaVulkanEngine\VulkanEngine\VERendererRayTracingNV.cpp">
+    <ClCompile Include="D:\data\GitHub\ViennaVulkanEngine\VulkanEngine\VERendererRayTracingNV.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="C:\Users\hlavacs\Documents\GitHub\ViennaVulkanEngine\VulkanEngine\VESceneManager.cpp">
+    <ClCompile Include="D:\data\GitHub\ViennaVulkanEngine\VulkanEngine\VESceneManager.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="C:\Users\hlavacs\Documents\GitHub\ViennaVulkanEngine\VulkanEngine\VESubrender.cpp">
+    <ClCompile Include="D:\data\GitHub\ViennaVulkanEngine\VulkanEngine\VESubrender.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="C:\Users\hlavacs\Documents\GitHub\ViennaVulkanEngine\VulkanEngine\VESubrenderDF.cpp">
+    <ClCompile Include="D:\data\GitHub\ViennaVulkanEngine\VulkanEngine\VESubrenderDF.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="C:\Users\hlavacs\Documents\GitHub\ViennaVulkanEngine\VulkanEngine\VESubrenderDF_C1.cpp">
+    <ClCompile Include="D:\data\GitHub\ViennaVulkanEngine\VulkanEngine\VESubrenderDF_C1.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="C:\Users\hlavacs\Documents\GitHub\ViennaVulkanEngine\VulkanEngine\VESubrenderDF_Composer.cpp">
+    <ClCompile Include="D:\data\GitHub\ViennaVulkanEngine\VulkanEngine\VESubrenderDF_Composer.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="C:\Users\hlavacs\Documents\GitHub\ViennaVulkanEngine\VulkanEngine\VESubrenderDF_D.cpp">
+    <ClCompile Include="D:\data\GitHub\ViennaVulkanEngine\VulkanEngine\VESubrenderDF_D.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="C:\Users\hlavacs\Documents\GitHub\ViennaVulkanEngine\VulkanEngine\VESubrenderDF_DN.cpp">
+    <ClCompile Include="D:\data\GitHub\ViennaVulkanEngine\VulkanEngine\VESubrenderDF_DN.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="C:\Users\hlavacs\Documents\GitHub\ViennaVulkanEngine\VulkanEngine\VESubrenderDF_Shadow.cpp">
+    <ClCompile Include="D:\data\GitHub\ViennaVulkanEngine\VulkanEngine\VESubrenderDF_Shadow.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="C:\Users\hlavacs\Documents\GitHub\ViennaVulkanEngine\VulkanEngine\VESubrenderDF_Skyplane.cpp">
+    <ClCompile Include="D:\data\GitHub\ViennaVulkanEngine\VulkanEngine\VESubrenderDF_Skyplane.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="C:\Users\hlavacs\Documents\GitHub\ViennaVulkanEngine\VulkanEngine\VESubrenderFW.cpp">
+    <ClCompile Include="D:\data\GitHub\ViennaVulkanEngine\VulkanEngine\VESubrenderFW.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="C:\Users\hlavacs\Documents\GitHub\ViennaVulkanEngine\VulkanEngine\VESubrenderFW_C1.cpp">
+    <ClCompile Include="D:\data\GitHub\ViennaVulkanEngine\VulkanEngine\VESubrenderFW_C1.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="C:\Users\hlavacs\Documents\GitHub\ViennaVulkanEngine\VulkanEngine\VESubrenderFW_Cloth.cpp">
+    <ClCompile Include="D:\data\GitHub\ViennaVulkanEngine\VulkanEngine\VESubrenderFW_Cloth.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="C:\Users\hlavacs\Documents\GitHub\ViennaVulkanEngine\VulkanEngine\VESubrenderFW_D.cpp">
+    <ClCompile Include="D:\data\GitHub\ViennaVulkanEngine\VulkanEngine\VESubrenderFW_D.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="C:\Users\hlavacs\Documents\GitHub\ViennaVulkanEngine\VulkanEngine\VESubrenderFW_DN.cpp">
+    <ClCompile Include="D:\data\GitHub\ViennaVulkanEngine\VulkanEngine\VESubrenderFW_DN.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="C:\Users\hlavacs\Documents\GitHub\ViennaVulkanEngine\VulkanEngine\VESubrenderFW_Shadow.cpp">
+    <ClCompile Include="D:\data\GitHub\ViennaVulkanEngine\VulkanEngine\VESubrenderFW_Shadow.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="C:\Users\hlavacs\Documents\GitHub\ViennaVulkanEngine\VulkanEngine\VESubrenderFW_Skyplane.cpp">
+    <ClCompile Include="D:\data\GitHub\ViennaVulkanEngine\VulkanEngine\VESubrenderFW_Skyplane.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="C:\Users\hlavacs\Documents\GitHub\ViennaVulkanEngine\VulkanEngine\VESubrenderRayTracingKHR.cpp">
+    <ClCompile Include="D:\data\GitHub\ViennaVulkanEngine\VulkanEngine\VESubrenderRayTracingKHR.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="C:\Users\hlavacs\Documents\GitHub\ViennaVulkanEngine\VulkanEngine\VESubrenderRayTracingKHR_DN.cpp">
+    <ClCompile Include="D:\data\GitHub\ViennaVulkanEngine\VulkanEngine\VESubrenderRayTracingKHR_DN.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="C:\Users\hlavacs\Documents\GitHub\ViennaVulkanEngine\VulkanEngine\VESubrenderRayTracingNV.cpp">
+    <ClCompile Include="D:\data\GitHub\ViennaVulkanEngine\VulkanEngine\VESubrenderRayTracingNV.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="C:\Users\hlavacs\Documents\GitHub\ViennaVulkanEngine\VulkanEngine\VESubrenderRayTracingNV_DN.cpp">
+    <ClCompile Include="D:\data\GitHub\ViennaVulkanEngine\VulkanEngine\VESubrenderRayTracingNV_DN.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="C:\Users\hlavacs\Documents\GitHub\ViennaVulkanEngine\VulkanEngine\VESubrender_Nuklear.cpp">
+    <ClCompile Include="D:\data\GitHub\ViennaVulkanEngine\VulkanEngine\VESubrender_Nuklear.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="C:\Users\hlavacs\Documents\GitHub\ViennaVulkanEngine\VulkanEngine\VEWindow.cpp">
+    <ClCompile Include="D:\data\GitHub\ViennaVulkanEngine\VulkanEngine\VEWindow.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="C:\Users\hlavacs\Documents\GitHub\ViennaVulkanEngine\VulkanEngine\VEWindowGLFW.cpp">
+    <ClCompile Include="D:\data\GitHub\ViennaVulkanEngine\VulkanEngine\VEWindowGLFW.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="C:\Users\hlavacs\Documents\GitHub\ViennaVulkanEngine\VulkanEngine\VHBuffer.cpp">
+    <ClCompile Include="D:\data\GitHub\ViennaVulkanEngine\VulkanEngine\VHBuffer.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="C:\Users\hlavacs\Documents\GitHub\ViennaVulkanEngine\VulkanEngine\VHCommand.cpp">
+    <ClCompile Include="D:\data\GitHub\ViennaVulkanEngine\VulkanEngine\VHCommand.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="C:\Users\hlavacs\Documents\GitHub\ViennaVulkanEngine\VulkanEngine\VHDebug.cpp">
+    <ClCompile Include="D:\data\GitHub\ViennaVulkanEngine\VulkanEngine\VHDebug.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="C:\Users\hlavacs\Documents\GitHub\ViennaVulkanEngine\VulkanEngine\VHDevice.cpp">
+    <ClCompile Include="D:\data\GitHub\ViennaVulkanEngine\VulkanEngine\VHDevice.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="C:\Users\hlavacs\Documents\GitHub\ViennaVulkanEngine\VulkanEngine\VHFile.cpp">
+    <ClCompile Include="D:\data\GitHub\ViennaVulkanEngine\VulkanEngine\VHFile.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="C:\Users\hlavacs\Documents\GitHub\ViennaVulkanEngine\VulkanEngine\VHFunctions.cpp">
+    <ClCompile Include="D:\data\GitHub\ViennaVulkanEngine\VulkanEngine\VHFunctions.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="C:\Users\hlavacs\Documents\GitHub\ViennaVulkanEngine\VulkanEngine\VHMemory.cpp">
+    <ClCompile Include="D:\data\GitHub\ViennaVulkanEngine\VulkanEngine\VHMemory.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="C:\Users\hlavacs\Documents\GitHub\ViennaVulkanEngine\VulkanEngine\VHRayTracing.cpp">
+    <ClCompile Include="D:\data\GitHub\ViennaVulkanEngine\VulkanEngine\VHRayTracing.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="C:\Users\hlavacs\Documents\GitHub\ViennaVulkanEngine\VulkanEngine\VHRender.cpp">
+    <ClCompile Include="D:\data\GitHub\ViennaVulkanEngine\VulkanEngine\VHRender.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="C:\Users\hlavacs\Documents\GitHub\ViennaVulkanEngine\VulkanEngine\VHSwapchain.cpp">
+    <ClCompile Include="D:\data\GitHub\ViennaVulkanEngine\VulkanEngine\VHSwapchain.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="C:\Users\hlavacs\Documents\GitHub\ViennaVulkanEngine\VulkanEngine\VKHelpers.cpp">
+    <ClCompile Include="D:\data\GitHub\ViennaVulkanEngine\VulkanEngine\VKHelpers.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="C:\Users\hlavacs\Documents\GitHub\ViennaVulkanEngine\external\threadpool\ThreadPool.cpp">
+    <ClCompile Include="D:\data\GitHub\ViennaVulkanEngine\external\threadpool\ThreadPool.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="C:\Users\hlavacs\Documents\GitHub\ViennaVulkanEngine\VulkanEngine\BottomLevelASGenerator.h">
+    <ClInclude Include="D:\data\GitHub\ViennaVulkanEngine\VulkanEngine\BottomLevelASGenerator.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="C:\Users\hlavacs\Documents\GitHub\ViennaVulkanEngine\VulkanEngine\DescriptorSetGenerator.h">
+    <ClInclude Include="D:\data\GitHub\ViennaVulkanEngine\VulkanEngine\DescriptorSetGenerator.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="C:\Users\hlavacs\Documents\GitHub\ViennaVulkanEngine\VulkanEngine\RaytracingPipelineGenerator.h">
+    <ClInclude Include="D:\data\GitHub\ViennaVulkanEngine\VulkanEngine\RaytracingPipelineGenerator.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="C:\Users\hlavacs\Documents\GitHub\ViennaVulkanEngine\VulkanEngine\ShaderBindingTableGenerator.h">
+    <ClInclude Include="D:\data\GitHub\ViennaVulkanEngine\VulkanEngine\ShaderBindingTableGenerator.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="C:\Users\hlavacs\Documents\GitHub\ViennaVulkanEngine\VulkanEngine\TopLevelASGenerator.h">
+    <ClInclude Include="D:\data\GitHub\ViennaVulkanEngine\VulkanEngine\TopLevelASGenerator.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="C:\Users\hlavacs\Documents\GitHub\ViennaVulkanEngine\VulkanEngine\VEEngine.h">
+    <ClInclude Include="D:\data\GitHub\ViennaVulkanEngine\VulkanEngine\VEEngine.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="C:\Users\hlavacs\Documents\GitHub\ViennaVulkanEngine\VulkanEngine\VEEntity.h">
+    <ClInclude Include="D:\data\GitHub\ViennaVulkanEngine\VulkanEngine\VEEntity.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="C:\Users\hlavacs\Documents\GitHub\ViennaVulkanEngine\VulkanEngine\VEEnums.h">
+    <ClInclude Include="D:\data\GitHub\ViennaVulkanEngine\VulkanEngine\VEEnums.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="C:\Users\hlavacs\Documents\GitHub\ViennaVulkanEngine\VulkanEngine\VEEventListener.h">
+    <ClInclude Include="D:\data\GitHub\ViennaVulkanEngine\VulkanEngine\VEEventListener.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="C:\Users\hlavacs\Documents\GitHub\ViennaVulkanEngine\VulkanEngine\VEEventListenerGLFW.h">
+    <ClInclude Include="D:\data\GitHub\ViennaVulkanEngine\VulkanEngine\VEEventListenerGLFW.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="C:\Users\hlavacs\Documents\GitHub\ViennaVulkanEngine\VulkanEngine\VEEventListenerNuklear.h">
+    <ClInclude Include="D:\data\GitHub\ViennaVulkanEngine\VulkanEngine\VEEventListenerNuklear.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="C:\Users\hlavacs\Documents\GitHub\ViennaVulkanEngine\VulkanEngine\VEEventListenerNuklearDebug.h">
+    <ClInclude Include="D:\data\GitHub\ViennaVulkanEngine\VulkanEngine\VEEventListenerNuklearDebug.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="C:\Users\hlavacs\Documents\GitHub\ViennaVulkanEngine\VulkanEngine\VEInclude.h">
+    <ClInclude Include="D:\data\GitHub\ViennaVulkanEngine\VulkanEngine\VEInclude.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="C:\Users\hlavacs\Documents\GitHub\ViennaVulkanEngine\VulkanEngine\VEMaterial.h">
+    <ClInclude Include="D:\data\GitHub\ViennaVulkanEngine\VulkanEngine\VEMaterial.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="C:\Users\hlavacs\Documents\GitHub\ViennaVulkanEngine\VulkanEngine\VENamedClass.h">
+    <ClInclude Include="D:\data\GitHub\ViennaVulkanEngine\VulkanEngine\VENamedClass.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="C:\Users\hlavacs\Documents\GitHub\ViennaVulkanEngine\VulkanEngine\VERenderer.h">
+    <ClInclude Include="D:\data\GitHub\ViennaVulkanEngine\VulkanEngine\VERenderer.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="C:\Users\hlavacs\Documents\GitHub\ViennaVulkanEngine\VulkanEngine\VERendererDeferred.h">
+    <ClInclude Include="D:\data\GitHub\ViennaVulkanEngine\VulkanEngine\VERendererDeferred.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="C:\Users\hlavacs\Documents\GitHub\ViennaVulkanEngine\VulkanEngine\VERendererForward.h">
+    <ClInclude Include="D:\data\GitHub\ViennaVulkanEngine\VulkanEngine\VERendererForward.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="C:\Users\hlavacs\Documents\GitHub\ViennaVulkanEngine\VulkanEngine\VERendererRayTracingKHR.h">
+    <ClInclude Include="D:\data\GitHub\ViennaVulkanEngine\VulkanEngine\VERendererRayTracingKHR.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="C:\Users\hlavacs\Documents\GitHub\ViennaVulkanEngine\VulkanEngine\VERendererRayTracingNV.h">
+    <ClInclude Include="D:\data\GitHub\ViennaVulkanEngine\VulkanEngine\VERendererRayTracingNV.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="C:\Users\hlavacs\Documents\GitHub\ViennaVulkanEngine\VulkanEngine\VERendererShader.h">
+    <ClInclude Include="D:\data\GitHub\ViennaVulkanEngine\VulkanEngine\VERendererShader.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="C:\Users\hlavacs\Documents\GitHub\ViennaVulkanEngine\VulkanEngine\VESceneManager.h">
+    <ClInclude Include="D:\data\GitHub\ViennaVulkanEngine\VulkanEngine\VESceneManager.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="C:\Users\hlavacs\Documents\GitHub\ViennaVulkanEngine\VulkanEngine\VESubrender.h">
+    <ClInclude Include="D:\data\GitHub\ViennaVulkanEngine\VulkanEngine\VESubrender.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="C:\Users\hlavacs\Documents\GitHub\ViennaVulkanEngine\VulkanEngine\VESubrenderDF.h">
+    <ClInclude Include="D:\data\GitHub\ViennaVulkanEngine\VulkanEngine\VESubrenderDF.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="C:\Users\hlavacs\Documents\GitHub\ViennaVulkanEngine\VulkanEngine\VESubrenderDF_C1.h">
+    <ClInclude Include="D:\data\GitHub\ViennaVulkanEngine\VulkanEngine\VESubrenderDF_C1.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="C:\Users\hlavacs\Documents\GitHub\ViennaVulkanEngine\VulkanEngine\VESubrenderDF_Composer.h">
+    <ClInclude Include="D:\data\GitHub\ViennaVulkanEngine\VulkanEngine\VESubrenderDF_Composer.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="C:\Users\hlavacs\Documents\GitHub\ViennaVulkanEngine\VulkanEngine\VESubrenderDF_D.h">
+    <ClInclude Include="D:\data\GitHub\ViennaVulkanEngine\VulkanEngine\VESubrenderDF_D.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="C:\Users\hlavacs\Documents\GitHub\ViennaVulkanEngine\VulkanEngine\VESubrenderDF_DN.h">
+    <ClInclude Include="D:\data\GitHub\ViennaVulkanEngine\VulkanEngine\VESubrenderDF_DN.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="C:\Users\hlavacs\Documents\GitHub\ViennaVulkanEngine\VulkanEngine\VESubrenderDF_Shadow.h">
+    <ClInclude Include="D:\data\GitHub\ViennaVulkanEngine\VulkanEngine\VESubrenderDF_Shadow.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="C:\Users\hlavacs\Documents\GitHub\ViennaVulkanEngine\VulkanEngine\VESubrenderDF_Skyplane.h">
+    <ClInclude Include="D:\data\GitHub\ViennaVulkanEngine\VulkanEngine\VESubrenderDF_Skyplane.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="C:\Users\hlavacs\Documents\GitHub\ViennaVulkanEngine\VulkanEngine\VESubrenderFW.h">
+    <ClInclude Include="D:\data\GitHub\ViennaVulkanEngine\VulkanEngine\VESubrenderFW.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="C:\Users\hlavacs\Documents\GitHub\ViennaVulkanEngine\VulkanEngine\VESubrenderFW_C1.h">
+    <ClInclude Include="D:\data\GitHub\ViennaVulkanEngine\VulkanEngine\VESubrenderFW_C1.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="C:\Users\hlavacs\Documents\GitHub\ViennaVulkanEngine\VulkanEngine\VESubrenderFW_Cloth.h">
+    <ClInclude Include="D:\data\GitHub\ViennaVulkanEngine\VulkanEngine\VESubrenderFW_Cloth.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="C:\Users\hlavacs\Documents\GitHub\ViennaVulkanEngine\VulkanEngine\VESubrenderFW_D.h">
+    <ClInclude Include="D:\data\GitHub\ViennaVulkanEngine\VulkanEngine\VESubrenderFW_D.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="C:\Users\hlavacs\Documents\GitHub\ViennaVulkanEngine\VulkanEngine\VESubrenderFW_DN.h">
+    <ClInclude Include="D:\data\GitHub\ViennaVulkanEngine\VulkanEngine\VESubrenderFW_DN.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="C:\Users\hlavacs\Documents\GitHub\ViennaVulkanEngine\VulkanEngine\VESubrenderFW_Shadow.h">
+    <ClInclude Include="D:\data\GitHub\ViennaVulkanEngine\VulkanEngine\VESubrenderFW_Shadow.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="C:\Users\hlavacs\Documents\GitHub\ViennaVulkanEngine\VulkanEngine\VESubrenderFW_Skyplane.h">
+    <ClInclude Include="D:\data\GitHub\ViennaVulkanEngine\VulkanEngine\VESubrenderFW_Skyplane.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="C:\Users\hlavacs\Documents\GitHub\ViennaVulkanEngine\VulkanEngine\VESubrenderRayTracingKHR.h">
+    <ClInclude Include="D:\data\GitHub\ViennaVulkanEngine\VulkanEngine\VESubrenderRayTracingKHR.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="C:\Users\hlavacs\Documents\GitHub\ViennaVulkanEngine\VulkanEngine\VESubrenderRayTracingKHR_DN.h">
+    <ClInclude Include="D:\data\GitHub\ViennaVulkanEngine\VulkanEngine\VESubrenderRayTracingKHR_DN.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="C:\Users\hlavacs\Documents\GitHub\ViennaVulkanEngine\VulkanEngine\VESubrenderRayTracingNV.h">
+    <ClInclude Include="D:\data\GitHub\ViennaVulkanEngine\VulkanEngine\VESubrenderRayTracingNV.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="C:\Users\hlavacs\Documents\GitHub\ViennaVulkanEngine\VulkanEngine\VESubrenderRayTracingNV_DN.h">
+    <ClInclude Include="D:\data\GitHub\ViennaVulkanEngine\VulkanEngine\VESubrenderRayTracingNV_DN.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="C:\Users\hlavacs\Documents\GitHub\ViennaVulkanEngine\VulkanEngine\VESubrender_Nuklear.h">
+    <ClInclude Include="D:\data\GitHub\ViennaVulkanEngine\VulkanEngine\VESubrender_Nuklear.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="C:\Users\hlavacs\Documents\GitHub\ViennaVulkanEngine\VulkanEngine\VEWindow.h">
+    <ClInclude Include="D:\data\GitHub\ViennaVulkanEngine\VulkanEngine\VEWindow.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="C:\Users\hlavacs\Documents\GitHub\ViennaVulkanEngine\VulkanEngine\VEWindowGLFW.h">
+    <ClInclude Include="D:\data\GitHub\ViennaVulkanEngine\VulkanEngine\VEWindowGLFW.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="C:\Users\hlavacs\Documents\GitHub\ViennaVulkanEngine\VulkanEngine\VHFunctions.h">
+    <ClInclude Include="D:\data\GitHub\ViennaVulkanEngine\VulkanEngine\VHFunctions.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="C:\Users\hlavacs\Documents\GitHub\ViennaVulkanEngine\VulkanEngine\VHHelper.h">
+    <ClInclude Include="D:\data\GitHub\ViennaVulkanEngine\VulkanEngine\VHHelper.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="C:\Users\hlavacs\Documents\GitHub\ViennaVulkanEngine\VulkanEngine\VKHelpers.h">
+    <ClInclude Include="D:\data\GitHub\ViennaVulkanEngine\VulkanEngine\VKHelpers.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="C:\Users\hlavacs\Documents\GitHub\ViennaVulkanEngine\VulkanEngine\vk_mem_alloc.h">
+    <ClInclude Include="D:\data\GitHub\ViennaVulkanEngine\VulkanEngine\vk_mem_alloc.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <CustomBuild Include="C:\Users\hlavacs\Documents\GitHub\ViennaVulkanEngine\VulkanEngine\CMakeLists.txt" />
+    <CustomBuild Include="D:\data\GitHub\ViennaVulkanEngine\VulkanEngine\CMakeLists.txt" />
   </ItemGroup>
   <ItemGroup>
     <Filter Include="Header Files">
-      <UniqueIdentifier>{9E59244A-2E55-3690-90AA-DDFFBDF0146C}</UniqueIdentifier>
+      <UniqueIdentifier>{920650D4-EF02-36C2-A4E2-720118B6D3F9}</UniqueIdentifier>
     </Filter>
     <Filter Include="Source Files">
-      <UniqueIdentifier>{D6B2C9A4-E9AC-357B-A112-C340EEC5AA32}</UniqueIdentifier>
+      <UniqueIdentifier>{2603A407-FAA6-3612-8566-58905B97FFDB}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
 </Project>
