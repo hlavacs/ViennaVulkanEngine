@@ -203,6 +203,8 @@ VK_DEVICE_LEVEL_FUNCTION(vkCmdCopyImage)
 VK_DEVICE_LEVEL_FUNCTION(vkCmdBlitImage)
 VK_DEVICE_LEVEL_FUNCTION(vkCreateComputePipelines)
 VK_DEVICE_LEVEL_FUNCTION(vkCmdDispatch)
+VK_DEVICE_LEVEL_FUNCTION(vkGetEncodedVideoSessionParametersKHR)
+VK_DEVICE_LEVEL_FUNCTION(vkGetPhysicalDeviceVideoCapabilitiesKHR)
 #endif
 
 #undef VK_DEVICE_LEVEL_FUNCTION

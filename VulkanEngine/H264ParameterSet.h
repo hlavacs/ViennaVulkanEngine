@@ -101,16 +101,11 @@ namespace h264
         {
             const uint32_t MaxPicOrderCntLsb = 1 << (sps.log2_max_pic_order_cnt_lsb_minus4 + 4);
 
+            m_sliceHeaderFlags.direct_spatial_mv_pred_flag = 1;
             m_sliceHeaderFlags.num_ref_idx_active_override_flag = 0;
-            m_sliceHeaderFlags.no_output_of_prior_pics_flag = 0;
-            m_sliceHeaderFlags.adaptive_ref_pic_marking_mode_flag = 0;
-            m_sliceHeaderFlags.no_prior_references_available_flag = 0;
 
             m_sliceHeader.flags = m_sliceHeaderFlags;
-            m_sliceHeader.slice_type = isI ? STD_VIDEO_H264_SLICE_TYPE_I : STD_VIDEO_H264_SLICE_TYPE_P;
-            m_sliceHeader.idr_pic_id = 0;
-            m_sliceHeader.num_ref_idx_l0_active_minus1 = 0;
-            m_sliceHeader.num_ref_idx_l1_active_minus1 = 0;
+            m_sliceHeader.slice_type = isI ? STD_VIDEO_H264_SLICE_TYPE_I : STD_VIDEO_H264_SLICE_TYPE_P;            
             m_sliceHeader.cabac_init_idc = (StdVideoH264CabacInitIdc)0;
             m_sliceHeader.disable_deblocking_filter_idc = (StdVideoH264DisableDeblockingFilterIdc)0;
             m_sliceHeader.slice_alpha_c0_offset_div2 = 0;
@@ -123,15 +118,18 @@ namespace h264
             m_sliceInfo.sType = VK_STRUCTURE_TYPE_VIDEO_ENCODE_H264_NALU_SLICE_INFO_EXT;
             m_sliceInfo.pNext = NULL;
             m_sliceInfo.pStdSliceHeader = &m_sliceHeader;
-            m_sliceInfo.mbCount = iPicSizeInMbs;
 
-            m_pictureInfoFlags.idr_flag = isI ? 1 : 0; // every I frame is an IDR frame
-            m_pictureInfoFlags.is_reference_flag = 1;
+            m_pictureInfoFlags.IdrPicFlag = isI ? 1 : 0; // every I frame is an IDR frame
+            m_pictureInfoFlags.is_reference = 1;
+            m_pictureInfoFlags.adaptive_ref_pic_marking_mode_flag = 0;
+            m_pictureInfoFlags.no_output_of_prior_pics_flag = isI ? 1 : 0;
 
             m_stdPictureInfo.flags = m_pictureInfoFlags;
             m_stdPictureInfo.seq_parameter_set_id = 0;
             m_stdPictureInfo.pic_parameter_set_id = pps.pic_parameter_set_id;
-            m_stdPictureInfo.pictureType = isI ? STD_VIDEO_H264_PICTURE_TYPE_I : STD_VIDEO_H264_PICTURE_TYPE_P;
+            m_stdPictureInfo.idr_pic_id = 0;
+            m_stdPictureInfo.primary_pic_type = isI ? STD_VIDEO_H264_PICTURE_TYPE_IDR : STD_VIDEO_H264_PICTURE_TYPE_P;
+            //m_stdPictureInfo.temporal_id = 1;
 
             // frame_num is incremented for each reference frame transmitted.
             // In our case, only the first frame (which is IDR) is a reference
@@ -140,22 +138,27 @@ namespace h264
 
             // POC is incremented by 2 for each coded frame.
             m_stdPictureInfo.PicOrderCnt = (frameCount * 2) % MaxPicOrderCntLsb;
+            m_referenceLists.num_ref_idx_l0_active_minus1 = 0;
+            m_referenceLists.num_ref_idx_l1_active_minus1 = 0;
+            m_referenceLists.RefPicList0[0] = 0;
 
-            m_encodeH264FrameInfo.sType = VK_STRUCTURE_TYPE_VIDEO_ENCODE_H264_VCL_FRAME_INFO_EXT;
+            if (!isI) {
+                //m_referenceLists.num_ref_idx_l0_active_minus1 = 0;
+                //m_referenceLists.num_ref_idx_l1_active_minus1 = 0;
+                m_referenceLists.RefPicList0[0] = 1;
+
+                
+            }
+            m_stdPictureInfo.pRefLists = &m_referenceLists;
+
+            m_encodeH264FrameInfo.sType = VK_STRUCTURE_TYPE_VIDEO_ENCODE_H264_PICTURE_INFO_EXT;
             m_encodeH264FrameInfo.pNext = NULL;
             m_encodeH264FrameInfo.naluSliceEntryCount = 1;
             m_encodeH264FrameInfo.pNaluSliceEntries = &m_sliceInfo;
             m_encodeH264FrameInfo.pStdPictureInfo = &m_stdPictureInfo;
-
-            if (!isI) {
-                m_referenceLists.refPicList0EntryCount = 1;
-                m_referenceLists.pRefPicList0Entries = &m_referencePic;
-
-                m_encodeH264FrameInfo.pStdReferenceFinalLists = &m_referenceLists;
-            }
         }
 
-        inline VkVideoEncodeH264VclFrameInfoEXT* getEncodeH264FrameInfo()
+        inline VkVideoEncodeH264PictureInfoEXT* getEncodeH264FrameInfo()
         {
             return &m_encodeH264FrameInfo;
         };
@@ -166,9 +169,8 @@ namespace h264
         VkVideoEncodeH264NaluSliceInfoEXT m_sliceInfo = {};
         StdVideoEncodeH264PictureInfoFlags m_pictureInfoFlags = {};
         StdVideoEncodeH264PictureInfo m_stdPictureInfo = {};
-        VkVideoEncodeH264VclFrameInfoEXT m_encodeH264FrameInfo = {};
+        VkVideoEncodeH264PictureInfoEXT m_encodeH264FrameInfo = {};
         StdVideoEncodeH264ReferenceListsInfo m_referenceLists = {};
-        uint8_t m_referencePic = 1;
     };
 
     class BitStream

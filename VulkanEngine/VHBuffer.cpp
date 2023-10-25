@@ -27,13 +27,15 @@ namespace vh
 		VkBufferUsageFlags usage,
 		VmaMemoryUsage vmaUsage,
 		VkBuffer *buffer,
-		VmaAllocation *allocation)
+		VmaAllocation *allocation,
+		void* pNext)
 	{
 		VkBufferCreateInfo bufferInfo = {};
 		bufferInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
 		bufferInfo.size = size;
 		bufferInfo.usage = usage;
 		bufferInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+		bufferInfo.pNext = pNext;
 
 		VmaAllocationCreateInfo allocInfo = {};
 		allocInfo.usage = vmaUsage; //VMA_MEMORY_USAGE_GPU_ONLY;

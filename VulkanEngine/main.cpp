@@ -170,7 +170,8 @@ namespace ve {
 
 			// queue another frame for copy
 			VkExtent2D extent = getWindowPointer()->getExtent();
-			ret = videoEncoder.init(getEnginePointer()->getRenderer()->getDevice(),
+			ret = videoEncoder.init(getEnginePointer()->getRenderer()->getPhysicalDevice(),
+				getEnginePointer()->getRenderer()->getDevice(),
 				getEnginePointer()->getRenderer()->getVmaAllocator(),
 				getEnginePointer()->getRenderer()->getGraphicsQueueFamily(),
 				getEnginePointer()->getRenderer()->getGraphicsQueue(),

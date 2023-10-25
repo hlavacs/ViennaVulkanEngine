@@ -8,6 +8,7 @@ namespace vh {
 	class VHVideoEncoder {
 	public:
 		VkResult init(
+			VkPhysicalDevice physicalDevice,
 			VkDevice device,
 			VmaAllocator allocator,
 			uint32_t computeQueueFamily, VkQueue computeQueue, VkCommandPool computeCommandPool,
@@ -27,6 +28,7 @@ namespace vh {
         VkResult createVideoSession();
         VkResult allocateVideoSessionMemory();
         VkResult createVideoSessionParameters(uint32_t fps);
+		VkResult readBitstreamHeader();
         VkResult allocateOutputBitStream();
         VkResult allocateReferenceImages(uint32_t count);
         VkResult allocateIntermediateImages();
@@ -41,6 +43,7 @@ namespace vh {
 
 		bool m_initialized{ false };
 		bool m_running{ false };
+		VkPhysicalDevice m_physicalDevice;
 		VkDevice m_device;
 		VmaAllocator m_allocator;
 		VkQueue m_computeQueue;
@@ -60,6 +63,7 @@ namespace vh {
 		VkVideoSessionParametersKHR m_videoSessionParameters;
 		VkVideoEncodeH264ProfileInfoEXT m_encodeH264ProfileInfoExt;
 		VkVideoProfileInfoKHR m_videoProfile;
+		VkVideoProfileListInfoKHR m_videoProfileList;
 
 		VkDescriptorSetLayout m_computeDescriptorSetLayout;
 		VkPipelineLayout m_computePipelineLayout;
@@ -72,7 +76,7 @@ namespace vh {
 		VkQueryPool m_queryPool;
 		VkBuffer m_bitStreamBuffer;
 		VmaAllocation m_bitStreamBufferAllocation;
-		h264::BitStream m_bitStreamHeader;
+		std::vector<char> m_bitStreamHeader;
 		bool m_bitStreamHeaderPending;
 		
 		char* m_bitStreamData;

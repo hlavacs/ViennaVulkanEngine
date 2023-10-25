@@ -121,15 +121,15 @@ Building and running
 # Vulkan Video Encode
 
 The preprocessor define `VULKAN_VIDEO_ENCODE` enables an experimental extension to encode the output as video. It is using the Vulkan Video Extensions for hardware accelerated encoding. The used codec is H.264. The 2 necessary Vulkan extensions `VK_KHR_video_encode_queue` and `VK_EXT_video_encode_h264` are provisional and not released yet by Khronos. The APIs can change and are only available in the Vulkan SDK with enabled Beta Extensions. Following revisions are supported (Vulkan SDK and graphics driver must match these):
-- VK_KHR_video_encode_queue: rev. 8
-- VK_EXT_video_encode_h264: rev. 10
+- VK_KHR_video_encode_queue: rev. 10
+- VK_EXT_video_encode_h264: rev. 12
 
 The only graphics driver supporting those extensions at the moment is the NVIDIA Vulkan Beta Driver available at https://developer.nvidia.com/vulkan-driver.
 
 The code is tested with
 - Windows 11
 - NVIDIA RTX 3070
-- Vulkan SDK 1.3.243.0
-- NVIDIA driver version 531.54 (Vulkan Beta Driver)
+- Vulkan SDK 1.3.268.0
+- NVIDIA driver version 537.72 (Vulkan Beta Driver)
 
 After enabling `Write Frames` in the GUI the output is written to the file `hwenc.264` (in the current directory). It can be played with VLC or ffplay.

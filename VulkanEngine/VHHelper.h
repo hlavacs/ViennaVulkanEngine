@@ -299,7 +299,8 @@ namespace vh
 		usage,
 		VmaMemoryUsage vmaUsage,
 		VkBuffer *buffer,
-		VmaAllocation *allocation);
+		VmaAllocation *allocation,
+		void* pNext = nullptr);
 
 	VkResult vhBufCopyBuffer(VkDevice device, VkQueue graphicsQueue, VkCommandPool commandPool, VkBuffer srcBuffer, VkBuffer dstBuffer, VkDeviceSize size);
 
