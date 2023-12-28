@@ -12,10 +12,10 @@ set(HEADERS
 add_library (${TARGET} ${SOURCE} ${HEADERS})
 
 target_include_directories(${TARGET} PUBLIC $ENV{VULKAN_SDK}/include)
-target_include_directories(${TARGET} PUBLIC ../include)
-target_include_directories(${TARGET} PUBLIC ../extern/imgui)
 target_include_directories(${TARGET} PUBLIC ${SDL2}/include/SDL2)
-target_include_directories(${TARGET} PUBLIC ../extern/glm)
+target_include_directories(${TARGET} PUBLIC ${PROJECT_SOURCE_DIR}/include)
+target_include_directories(${TARGET} PUBLIC ${PROJECT_SOURCE_DIR}/extern/imgui)
+target_include_directories(${TARGET} PUBLIC ${PROJECT_SOURCE_DIR}/extern/glm)
 
 target_link_libraries(${TARGET} LINK_INTERFACE_LIBRARIES imgui)
 

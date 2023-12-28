@@ -23,8 +23,8 @@ endif()
 
 find_package(Vulkan REQUIRED)
 set(SDL2 $ENV{VULKAN_SDK})
-set(INCLUDE ${CMAKE_HOME_DIRECTORY}/include)
-set(EXTERN ${CMAKE_HOME_DIRECTORY}/extern)
+set(INCLUDE ${PROJECT_SOURCE_DIR}/include)
+set(EXTERN ${PROJECT_SOURCE_DIR}/extern)
 
 add_subdirectory(extern)
 add_subdirectory(src)
