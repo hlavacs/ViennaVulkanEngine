@@ -27,6 +27,7 @@ set(INCLUDE ${CMAKE_HOME_DIRECTORY}/include)
 set(EXTERN ${CMAKE_HOME_DIRECTORY}/extern)
 
 add_subdirectory(src)
+add_subdirectory (extern/imgui)
 add_subdirectory(examples)
 
 if((CMAKE_PROJECT_NAME STREQUAL PROJECT_NAME OR MODERN_CMAKE_BUILD_TESTING)

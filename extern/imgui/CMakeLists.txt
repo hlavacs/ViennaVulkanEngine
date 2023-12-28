@@ -13,17 +13,20 @@ set(SOURCE
 )
 
 set(HEADERS
-  ${EXTERNAL}/imgui/imconfig.h
-  ${EXTERNAL}/imgui/imgui.h
-  ${EXTERNAL}/imgui/imgui_impl_glfw.h
-  ${EXTERNAL}/imgui/imgui_impl_sdl.h
-  ${EXTERNAL}/imgui/imgui_impl_vulkan.h
-  ${EXTERNAL}/imgui/imgui_internal.h
-  ${EXTERNAL}/imgui/imstb_rectpack.h
-  ${EXTERNAL}/imgui/imstb_textedit.h
-  ${EXTERNAL}/imgui/imstb_truetype.h
+  ${EXTERN}/imgui/imconfig.h
+  ${EXTERN}/imgui/imgui.h
+  ${EXTERN}/imgui/imgui_impl_glfw.h
+  ${EXTERN}/imgui/imgui_impl_sdl.h
+  ${EXTERN}/imgui/imgui_impl_vulkan.h
+  ${EXTERN}/imgui/imgui_internal.h
+  ${EXTERN}/imgui/imstb_rectpack.h
+  ${EXTERN}/imgui/imstb_textedit.h
+  ${EXTERN}/imgui/imstb_truetype.h
 )
 
 add_library (${TARGET} ${SOURCE} ${HEADERS})
+
+target_include_directories(${TARGET} PUBLIC ../../extern/sdl2/include)
+target_include_directories(${TARGET} PUBLIC ../../extern/glfw/include)
 
 target_compile_features(${TARGET} PUBLIC cxx_std_20)

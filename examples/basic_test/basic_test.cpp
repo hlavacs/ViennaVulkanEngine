@@ -4,13 +4,10 @@
 #include "glm.hpp"
 #include "gtc/quaternion.hpp"
 #include "vulkan/vulkan.h"
-//#include "ViennaVulkanEngine/vve.h"
 #include "basic_test.h"
 
 int imgui_SDL2();
 int imgui_glfw3();
-
-using namespace vecs;
 
 int main() {
 
