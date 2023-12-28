@@ -26,6 +26,7 @@ set(SDL2 $ENV{VULKAN_SDK})
 set(INCLUDE ${CMAKE_HOME_DIRECTORY}/include)
 set(EXTERN ${CMAKE_HOME_DIRECTORY}/extern)
 
+add_subdirectory(extern)
 add_subdirectory(src)
 add_subdirectory (extern/imgui)
 add_subdirectory(examples)
