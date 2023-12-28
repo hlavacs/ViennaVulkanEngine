@@ -14,7 +14,7 @@ if(CMAKE_PROJECT_NAME STREQUAL PROJECT_NAME)
 
   find_package(Doxygen)
   if(Doxygen_FOUND)
-    message(STATUS "Doxygen found, building docs...")
+    message(STATUS "Doxygen found, building docs")
     add_subdirectory(docs)
   else()
     message(STATUS "Doxygen not found, not building docs")
