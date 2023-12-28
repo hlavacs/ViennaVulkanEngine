@@ -14,6 +14,7 @@ if(CMAKE_PROJECT_NAME STREQUAL PROJECT_NAME)
 
   find_package(Doxygen)
   if(Doxygen_FOUND)
+    message(STATUS "Doxygen found, building docs...")
     add_subdirectory(docs)
   else()
     message(STATUS "Doxygen not found, not building docs")
@@ -21,8 +22,7 @@ if(CMAKE_PROJECT_NAME STREQUAL PROJECT_NAME)
 endif()
 
 find_package(Vulkan REQUIRED)
-include_directories ($ENV{VULKAN_SDK}/include)
-
+set(SDL2 $ENV{VULKAN_SDK})
 set(INCLUDE ${CMAKE_HOME_DIRECTORY}/include)
 set(EXTERN ${CMAKE_HOME_DIRECTORY}/extern)
 

@@ -26,7 +26,8 @@ set(HEADERS
 
 add_library (${TARGET} ${SOURCE} ${HEADERS})
 
-target_include_directories(${TARGET} PUBLIC ../../extern/sdl2/include)
+target_include_directories(${TARGET} PUBLIC $ENV{VULKAN_SDK}/include)
+target_include_directories(${TARGET} PUBLIC ${SDL2}/include/SDL2)
 target_include_directories(${TARGET} PUBLIC ../../extern/glfw/include)
 
 target_compile_features(${TARGET} PUBLIC cxx_std_20)
