@@ -1,8 +1,6 @@
-#ifndef VEENGINE_H
-#define VEENGINE_H
+#pragma once
 
-
-#include "VECS.h"
+//#include "VECS.h"
 
 
 namespace vve {
@@ -14,7 +12,4 @@ namespace vve {
 		VeEngine();
 	};*/
 }
-
-
-#endif
 
