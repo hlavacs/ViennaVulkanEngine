@@ -15,7 +15,6 @@ target_include_directories(${TARGET} PUBLIC $ENV{VULKAN_SDK}/include)
 target_include_directories(${TARGET} PUBLIC ../include)
 target_include_directories(${TARGET} PUBLIC ../extern/imgui)
 target_include_directories(${TARGET} PUBLIC ${SDL2}/include/SDL2)
-target_include_directories(${TARGET} PUBLIC ../extern/glfw/include)
 target_include_directories(${TARGET} PUBLIC ../extern/glm)
 
 target_link_libraries(${TARGET} LINK_INTERFACE_LIBRARIES imgui)

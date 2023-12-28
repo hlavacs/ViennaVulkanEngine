@@ -33,3 +33,6 @@ file(DOWNLOAD
 file(DOWNLOAD
     https://raw.githubusercontent.com/hlavacs/ViennaPhysicsEngine/main/include/VPE.hpp
     ${CMAKE_SOURCE_DIR}/extern/ViennaPhysicsEngine/VPE.h)
+
+
+add_subdirectory (imgui)
