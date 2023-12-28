@@ -4,12 +4,9 @@
 #include "glm.hpp"
 #include "gtc/quaternion.hpp"
 #include "vulkan/vulkan.h"
-#include "vve.h"
 
 int imgui_SDL2();
 int imgui_glfw3();
-
-using namespace vecs;
 
 int main() {
 
