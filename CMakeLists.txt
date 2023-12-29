@@ -23,6 +23,8 @@ endif()
 
 find_package(Vulkan REQUIRED)
 set(SDL2 $ENV{VULKAN_SDK})
+set(ASSIMP ${PROJECT_SOURCE_DIR}/../assimp)   # you have to clone assimp and build it yourself
+
 set(INCLUDE ${PROJECT_SOURCE_DIR}/include)
 set(EXTERN ${PROJECT_SOURCE_DIR}/extern)
 
