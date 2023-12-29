@@ -9,8 +9,6 @@ project (
 # enforce C++20 standard
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
-set(DOWNLOAD_EXTRACT_TIMESTAMP true)
-
 
 list(APPEND CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake ) #cmake scripts for finding packages
 
@@ -47,6 +45,8 @@ add_subdirectory(examples)
 # Testing
 
 include(CTest)
+
+cmake_policy(SET CMP0135 NEW) #force time stamping of downloads to avoid warnings
 
 include(FetchContent)
 FetchContent_Declare(
