@@ -12,6 +12,8 @@ if(CMAKE_PROJECT_NAME STREQUAL PROJECT_NAME)
 
   include(CTest)
 
+  set( CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake )
+
   find_package(Doxygen)
   if(Doxygen_FOUND)
     message(STATUS "Doxygen found, building docs")
@@ -23,7 +25,9 @@ endif()
 
 find_package(Vulkan REQUIRED)
 set(SDL2 $ENV{VULKAN_SDK})
-set(ASSIMP ${PROJECT_SOURCE_DIR}/../assimp)   # you have to clone assimp and build it yourself
+
+find_package(ASSIMP REQUIRED)
+#set(ASSIMP ${PROJECT_SOURCE_DIR}/../assimp)   # you have to clone assimp and build it yourself
 
 set(INCLUDE ${PROJECT_SOURCE_DIR}/include)
 set(EXTERN ${PROJECT_SOURCE_DIR}/extern)
