@@ -12,7 +12,7 @@ if(CMAKE_PROJECT_NAME STREQUAL PROJECT_NAME)
 
   include(CTest)
 
-  set( CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake )
+  list(APPEND CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake )
 
   find_package(Doxygen)
   if(Doxygen_FOUND)
@@ -26,7 +26,12 @@ endif()
 find_package(Vulkan REQUIRED)
 set(SDL2 $ENV{VULKAN_SDK})
 
-find_package(ASSIMP REQUIRED)
+find_package(assimp REQUIRED)
+if(assimp_FOUND)
+  message(STATUS "Assimp found at ${ASSIMP_ROOT_DIR}")
+else()
+  message(STATUS "Assimp not found - clone it to the parent directory and build it yourself!")
+endif()
 #set(ASSIMP ${PROJECT_SOURCE_DIR}/../assimp)   # you have to clone assimp and build it yourself
 
 set(INCLUDE ${PROJECT_SOURCE_DIR}/include)
