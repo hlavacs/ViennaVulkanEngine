@@ -5,6 +5,7 @@
 #include <variant>
 #include <iostream>
 #include <limits>
+#include <tuple>
 
 /***********************************************************************************
 * 
@@ -395,15 +396,15 @@ namespace vtll {
 	//transform: transform list<types> into list<Function<types>>
 
 	namespace detail {
-		template<typename List, template<typename> typename Fun>
+		template<typename List, template<typename...> typename Fun>
 		struct transform_impl;
 
-		template<template <typename...> typename Seq, typename ...Ts, template<typename> typename Fun>
+		template<template <typename...> typename Seq, typename ...Ts, template<typename...> typename Fun>
 		struct transform_impl<Seq<Ts...>, Fun> {
 			using type = Seq<Fun<Ts>...>;
 		};
 	}
-	template <typename Seq, template<typename> typename Fun>
+	template <typename Seq, template<typename...> typename Fun>
 	using transform = typename detail::transform_impl<Seq, Fun>::type;
 
 	static_assert(
@@ -433,15 +434,15 @@ namespace vtll {
 	//transform_front: transform list<types> + T into list<Function<T,types>>
 
 	namespace detail {
-		template<typename List, template<typename, typename> typename Fun, typename T>
+		template<typename List, template<typename...> typename Fun, typename T>
 		struct transform_front_impl;
 
-		template<template <typename...> typename Seq, typename... Ts, template<typename, typename> typename Fun, typename T>
+		template<template <typename...> typename Seq, typename... Ts, template<typename...> typename Fun, typename T>
 		struct transform_front_impl<Seq<Ts...>, Fun, T> {
 			using type = Seq<Fun<T, Ts>...>;
 		};
 	}
-	template <typename Seq, template<typename, typename> typename Fun, typename T>
+	template <typename Seq, template<typename...> typename Fun, typename T>
 	using transform_front = typename detail::transform_front_impl<Seq, Fun, T>::type;
 
 	static_assert(
@@ -455,15 +456,15 @@ namespace vtll {
 	//transform_back: transform list<types> + T into list<Function<types,T>>
 
 	namespace detail {
-		template<typename List, template<typename, typename> typename Fun, typename T>
+		template<typename List, template<typename...> typename Fun, typename T>
 		struct transform_back_impl;
 
-		template<template <typename...> typename Seq, typename... Ts, template<typename, typename> typename Fun, typename T>
+		template<template <typename...> typename Seq, typename... Ts, template<typename...> typename Fun, typename T>
 		struct transform_back_impl<Seq<Ts...>, Fun, T> {
 			using type = Seq<Fun<Ts,T>...>;
 		};
 	}
-	template <typename Seq, template<typename, typename> typename Fun, typename T>
+	template <typename Seq, template<typename...> typename Fun, typename T>
 	using transform_back = typename detail::transform_back_impl<Seq, Fun, T>::type;
 
 	static_assert(
@@ -477,7 +478,7 @@ namespace vtll {
 	//substitute: substitute a type list TYPE with another list type
 
 	namespace detail {
-		template<typename List, template<typename> typename Fun>
+		template<typename List, template<typename...> typename Fun>
 		struct substitute_impl;
 
 		template<template <typename...> typename Seq, typename... Ts, template<typename...> typename Fun>
@@ -485,7 +486,7 @@ namespace vtll {
 			using type = Fun<Ts...>;
 		};
 	}
-	template <typename Seq, template<typename> typename Fun>
+	template <typename Seq, template<typename...> typename Fun>
 	using substitute = typename detail::substitute_impl<Seq, Fun>::type;
 
 	static_assert(
@@ -496,7 +497,7 @@ namespace vtll {
 	//transfer: transfer a list of types1 into a list of types2
 
 	namespace detail {
-		template<typename List, template<typename> typename Fun>
+		template<typename List, template<typename...> typename Fun>
 		struct transfer_impl;
 
 		template<template <typename...> typename Seq, template<typename...> typename Fun>
@@ -509,7 +510,7 @@ namespace vtll {
 			using type = cat< Seq< substitute<T, Fun> >, typename transfer_impl< Seq<Ts...>, Fun>::type >;
 		};
 	}
-	template <typename Seq, template<typename> typename Fun>
+	template <typename Seq, template<typename...> typename Fun>
 	using transfer = typename detail::transfer_impl<Seq, Fun>::type;
 
 	static_assert(
@@ -1573,28 +1574,23 @@ namespace vtll {
 		"The implementation of ptr_to_ref_tuple is bad");
 
 	//-------------------------------------------------------------------------
-	//is_same_tuple: test whether two tuples are the same
-
-	namespace detail {
-		template<typename T, size_t... Is>
-		constexpr auto is_same_tuple_impl(T&& t1, T&& t2, std::index_sequence<Is...>) {
-			return ((std::get<Is>(t1) == std::get<Is>(t2)) && ...);
-		}
-	}
+	//is_same_tuple: test whether two tuples are the same (Note: Clang does not accept strings as tuple elements)
 
 	template <typename T>
-	constexpr auto is_same_tuple(T&& t1, T&& t2) {
-		return detail::is_same_tuple_impl(std::forward<T>(t1), std::forward<T>(t2), std::make_index_sequence<std::tuple_size_v<T>>{ });
+	constexpr auto is_same_tuple(T a, T b) {
+  		return [&a, &b]<std::size_t ...I>(std::index_sequence<I...>) {
+    		return ( (std::get<I>(a) == std::get<I>(b) ) && ... && true );
+  		}(std::make_index_sequence<std::tuple_size_v<T>>{});
 	}
 
 	template <typename T1, typename T2>
-	constexpr auto is_same_tuple(T1&& t1, T2&& t2) {
+	constexpr auto is_same_tuple(const T1& t1, const T2& t2) {
 		return false;
 	}
 
-	static_assert(is_same_tuple(std::make_tuple(1, "a", 4.5), std::make_tuple(1, "a", 4.5)), "The implementation of is_same_tuple is bad");
-	static_assert(!is_same_tuple(std::make_tuple(1, "a", 4.5), std::make_tuple(1, "b", 4.5)), "The implementation of is_same_tuple is bad");
-	static_assert(!is_same_tuple(std::make_tuple(1, "a", 4.5), std::make_tuple("a", 4.5)), "The implementation of is_same_tuple is bad");
+	static_assert( is_same_tuple( std::make_tuple(1, 'a', 4.5), std::make_tuple(1, 'a', 4.5) ), "The implementation of is_same_tuple is bad");
+	static_assert(!is_same_tuple( std::make_tuple(1, 'a', 4.5), std::make_tuple(1, 'b', 4.5) ), "The implementation of is_same_tuple is bad");
+	static_assert(!is_same_tuple( std::make_tuple(1, 'a', 4.5), std::make_tuple('a', 4.5)), "The implementation of is_same_tuple is bad");
 
 	//-------------------------------------------------------------------------
 	//sub_tuple: extract a subtuple from a tuple
