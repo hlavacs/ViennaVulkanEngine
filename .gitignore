@@ -8,6 +8,8 @@ docs/
 [Dd]ebug/
 [Rr]elease/
 **/*.ini
+**/*.tcl
+
 
 #x64/
 #bin/
