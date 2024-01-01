@@ -11,7 +11,7 @@ file(DOWNLOAD
 
 # Vienna Strong Type Library
 file(DOWNLOAD
-    https://raw.githubusercontent.com/hlavacs/ViennaStrongType/main/VSTY.h
+    https://raw.githubusercontent.com/hlavacs/ViennaStrongType/main/include/VSTY.h
     ${PROJECT_SOURCE_DIR}/extern/ViennaStrongType/VSTY.h)
 
 # Vienna Game Job System (branch simple)
