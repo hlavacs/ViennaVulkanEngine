@@ -137,14 +137,14 @@ namespace ve
 		/// <param name="vertices"> The new vertices. </param>
 		/// <param name="updateBoundingSphere"> Wether the bounding sphere should be recalculated.
 		/// </param>
-		void updateVertices(std::vector<vh::vhVertex>& vertices, bool updateBoundingSphere = false);
+		void updateVertices(std::vector<glm::vec3>& vertices, bool updateBoundingSphere = false);
 
 		/// <summary>
 		/// Get the initial vertices to modify them or for the construction of a cloth entitiy in
 		/// the physics world.
 		/// </summary>
 		/// <returns> The vector of vertices fetched from the assimp mesh. <returns>
-		const std::vector<vh::vhVertex>& getInitialVertices() const;
+		const std::vector<glm::vec3>& getInitialVertices() const;
 
 		/// <summary>
 		/// Get the indices of the mesh to determine for example which vertices form a triangle.

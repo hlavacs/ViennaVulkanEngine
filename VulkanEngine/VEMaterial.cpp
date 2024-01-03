@@ -284,8 +284,15 @@ namespace ve
 	/// <param name="vertices"> The new vertices. </param>
 	/// <param name="updateBoundingSphere"> Wether the bounding sphere should be recalculated.
 	/// </param>
-	void VEClothMesh::updateVertices(std::vector<vh::vhVertex>& vertices, bool updateBoundingSphere)
+	void VEClothMesh::updateVertices(std::vector<glm::vec3>& glmvertices, bool updateBoundingSphere)
 	{
+		std::vector<vh::vhVertex> vertices;
+		for (auto gv : glmvertices) {
+			vh::vhVertex v;
+			v.pos = gv;
+			vertices.emplace_back(v);
+		}
+
 		updateNormals(vertices);																	// Calculate flat shading normals based on the new vertex															
 
 		vertices = createVerticesWithBack(vertices);												// Create a vector twice its original size with flipped triangles appended
@@ -308,8 +315,12 @@ namespace ve
 	/// bodies).
 	/// </summary>
 	/// <returns> The vector of vertices fetched from the assimp mesh. <returns>
-	const std::vector<vh::vhVertex>& VEClothMesh::getInitialVertices() const {
-		return m_initialVertices;
+	const std::vector<glm::vec3>& VEClothMesh::getInitialVertices() const {
+		std::vector<glm::vec3> vertices;
+		for (auto v : m_initialVertices) {
+			vertices.emplace_back(v.pos);
+		}
+		return vertices;
 	}
 
 	/// <summary>
