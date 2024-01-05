@@ -19,6 +19,8 @@
 #include <random>
 #include <chrono>
 #include <set>
+#include <array>
+#include <map>
 #include <functional>
 
 #define GLM_ENABLE_EXPERIMENTAL
@@ -41,26 +43,26 @@
 using real = double;
 using int_t = int64_t;
 using uint_t = uint64_t;
-#define glmvec2 glm::dvec2
-#define glmvec3 glm::dvec3
-#define glmmat2 glm::dmat2
-#define glmmat3 glm::dmat3
-#define glmvec4 glm::dvec4
-#define glmmat4 glm::dmat4
-#define glmquat glm::dquat
+using glmvec2 = glm::dvec2
+using glmvec3 = glm::dvec3
+using glmmat2 = glm::dmat2
+using glmmat3 = glm::dmat3
+using glmvec4 = glm::dvec4
+using glmmat4 = glm::dmat4
+using glmquat = glm::dquat
 const real c_eps = 1.0e-12;
 #else
 #ifdef VPE_SINGLE_ACCURACY
 using real = float;
 using int_t = int32_t;
 using uint_t = uint32_t;
-#define glmvec2 glm::vec2
-#define glmvec3 glm::vec3
-#define glmvec4 glm::vec4
-#define glmmat2 glm::mat2
-#define glmmat3 glm::mat3
-#define glmmat4 glm::mat4
-#define glmquat glm::quat
+using glmvec2 = glm::vec2;
+using glmvec3 = glm::vec3;
+using glmvec4 = glm::vec4;
+using glmmat2 = glm::mat2;
+using glmmat3 = glm::mat3;
+using glmmat4 = glm::mat4;
+using glmquat = glm::quat;
 const real c_eps = 1.0e-8f;
 const real pi = glm::pi<real>();
 const real pi2 = 2.0f * pi;
@@ -402,14 +404,14 @@ namespace vpe {
 			{ { -0.5_real,-0.5_real,-0.5_real }, { -0.5_real,-0.5_real,0.5_real }, { -0.5_real,0.5_real,0.5_real }, { -0.5_real,0.5_real,-0.5_real },
 			{ 0.5_real,-0.5_real,0.5_real }, { 0.5_real,-0.5_real,-0.5_real }, { 0.5_real,0.5_real,-0.5_real }, { 0.5_real,0.5_real,0.5_real } },
 			{ {0,1}, {1,2}, {2,3}, {3,0}, {4,5}, {5,6}, {6,7}, {7,4}, {5,0}, {1,4}, {3,6}, {7,2} }, //edges
-			{	{ {0}, {1}, {2}, {3} },					//face 0
-				{ {4}, {5}, {6}, {7} },					//face 1
+			{	{ {0, 1}, {1, 1},  {2, 1}, {3, 1} },	//face 0
+				{ {4, 1}, {5, 1},  {6, 1}, {7, 1} },	//face 1
 				{ {0,-1}, {8,-1},  {4,-1}, {9,-1} },	//face 2
 				{ {2,-1}, {11,-1}, {6,-1}, {10,-1} },	//face 3
-				{ {3,-1}, {10},    {5,-1}, {8} },		//face 4
-				{ {1,-1}, {9},     {7,-1}, {11} }		//face 5
+				{ {3,-1}, {10, 1}, {5,-1}, {8, 1} },	//face 4
+				{ {1,-1}, {9, 1},  {7,-1}, {11, 1} }	//face 5
 			},
-			[&](real mass, glmvec3& s) { //callback for calculating the inertia tensor of this polytope
+			[](real mass, glmvec3& s) { //callback for calculating the inertia tensor of this polytope
 				return mass * glmmat3{ {s.y * s.y + s.z * s.z,0,0}, {0,s.x * s.x + s.z * s.z,0}, {0,0,s.x * s.x + s.y * s.y} } / 12.0_real;
 			}
 		};
@@ -1598,7 +1600,7 @@ namespace vpe {
 				std::ranges::for_each(dirs0, [&](auto& dirS) { support(dirS, newPolygon, supp); });			//find support points for all 8 directions
 
 				//We want to use those 4 points that maximize the area of the quadrilateral they span
-				//We have two such quadrilaterals, made by support points ß-3 and 4-7
+				//We have two such quadrilaterals, made by support points ï¿½-3 and 4-7
 				//We compute the area of a quadrilateral by cutting it into two triangles and computing the areas of both (actually double area)
 				real A0 = fabs(glm::determinant(glmmat3{ {supp[0].x, supp[0].y, 1}, {supp[1].x, supp[1].y, 1}, {supp[2].x, supp[2].y, 1} }) +
 					glm::determinant(glmmat3{ {supp[0].x, supp[0].y, 1}, {supp[1].x, supp[1].y, 1}, {supp[3].x, supp[3].y, 1} }));
@@ -2973,23 +2975,23 @@ namespace vpe {
 		class Cloth
 		{
 		public:
-			std::string	m_name;																		// Name of the cloth
-			void* m_owner;																			// Pointer to owner of this body, must be unique (owner is called if cloth moves)									
-			callback_move_cloth m_on_move;															// Called if the cloth moves
-			callback_erase_cloth m_on_erase;														// Called if the cloth is erased
+			std::string	m_name;										// Name of the cloth
+			void* m_owner;											// Pointer to owner of this body, must be unique (owner is called if cloth moves)									
+			callback_move_cloth m_on_move;							// Called if the cloth moves
+			callback_erase_cloth m_on_erase;						// Called if the cloth is erased
 
 		private:
-			VPEWorld* m_physics;																	// Pointer to the physics world to access parameters
-			std::vector<ClothMassPoint> m_massPoints{};												// All mass points of the cloth
-			std::vector<ClothConstraint> m_constraints{};											// All constraints (bending and stretching) of the cloth
-			std::vector<vh::vhVertex> m_vertices;													// The vertices of the mesh that was used to create the cloth
-			real m_maxMassPointDistance;															// The max distance between two arbitrary mass points at their inital position
-			const int c_substeps;																	// How many times per frame the constraints should be solved (higher = less stretchy)
-			const real c_movementSimulation;														// How much mass points not fixed should be moved by transformation (0 to 1)
-			std::vector<std::shared_ptr<Body>> m_bodiesNearby;										// A vector that stores all bodies nearby for collision detection
-			int_t m_gridX;																			// X Coordinate in grid for broadphase
-			int_t m_gridZ;																			// Z Coordinate in grid for broadphase
-			int_t m_bodiesNearbyCount;																// Number of nearby bodies during previous broadphase pass
+			VPEWorld* m_physics;									// Pointer to the physics world to access parameters
+			std::vector<ClothMassPoint> m_massPoints{};				// All mass points of the cloth
+			std::vector<ClothConstraint> m_constraints{};			// All constraints (bending and stretching) of the cloth
+			std::vector<glmvec3> m_vertices;						// The vertices of the mesh that was used to create the cloth
+			real m_maxMassPointDistance;							// The max distance between two arbitrary mass points at their inital position
+			const int c_substeps;									// How many times per frame the constraints should be solved (higher = less stretchy)
+			const real c_movementSimulation;						// How much mass points not fixed should be moved by transformation (0 to 1)
+			std::vector<std::shared_ptr<Body>> m_bodiesNearby;		// A vector that stores all bodies nearby for collision detection
+			int_t m_gridX;											// X Coordinate in grid for broadphase
+			int_t m_gridZ;											// Z Coordinate in grid for broadphase
+			int_t m_bodiesNearbyCount;								// Number of nearby bodies during previous broadphase pass
 
 		public:
 			/// <summary>
@@ -3016,7 +3018,7 @@ namespace vpe {
 			/// <param name="movementSimulation"> How much mass points not fixed should be moved by
 			/// transformation (0 to 1). </param>
 			Cloth(VPEWorld* physics, std::string name, void* owner, callback_move_cloth on_move,
-				callback_erase_cloth on_erase, std::vector<vh::vhVertex> vertices,
+				callback_erase_cloth on_erase, std::vector<glmvec3> vertices,
 				std::vector<uint32_t> indices, std::vector<glmvec3> fixedPointsPositions,
 				real bendingCompliance = 1, int substeps = 4, real movementSimulation = 0.8)
 				: m_physics{ physics }, m_name{ name }, m_owner{ owner }, m_on_move{ on_move },
@@ -3072,14 +3074,14 @@ namespace vpe {
 			/// </summary>
 			/// <returns> A vector with vertices of same length as the initial vertices vector with
 			/// updated position data. </returns>
-			std::vector<vh::vhVertex> generateVertices()
+			std::vector<glmvec3> generateVertices()
 			{
 				int vertexCount = 0;
 
 				for (const ClothMassPoint& massPoint : m_massPoints)
 					for (const size_t vertexIndex : massPoint.m_associatedVertices)
 					{
-						m_vertices[vertexIndex].pos = massPoint.pos;
+						m_vertices[vertexIndex] = massPoint.pos;
 						vertexCount++;
 					}
 
@@ -3200,14 +3202,14 @@ namespace vpe {
 			/// <param name="vertices"> The vertices of the mesh. </param>
 			/// <param name="fixedPointsPositions"> The positions of the vertices that should be
 			/// fixed. </param>
-			void createMassPoints(const std::vector<vh::vhVertex>& vertices,
+			void createMassPoints(const std::vector<glmvec3>& vertices,
 				const std::vector<glmvec3> fixedPointsPositions)
 			{
 				std::map<std::vector<real>, int> alreadyAddedPositions{};							// Already stored positions for duplicate removal
 																									// first is the position, second the index of the corresponding mass point
 				for (size_t i = 0; i < vertices.size(); ++i)
 				{
-					glmvec3 vertexPosGlm = vertices[i].pos;											// Convert glm::vec3 to std::vector for stl algorithms to work
+					glmvec3 vertexPosGlm = vertices[i];											// Convert glm::vec3 to std::vector for stl algorithms to work
 					std::vector vertexPos = { vertexPosGlm.x, vertexPosGlm.y, vertexPosGlm.z };
 
 					if (alreadyAddedPositions.count(vertexPos))										// Add an associated vertex to the mass point if it already exists

@@ -23,13 +23,13 @@ namespace vsty {
         strong_type_t() noexcept requires (std::is_same_v<D, void>) = default;					//default constructible
         strong_type_t() noexcept requires (!std::is_same_v<D, void>) { m_value = D::value; };	//explicit from a NULL value
         explicit strong_type_t(const T& v) noexcept { m_value = v; };	//explicit from type T
-        explicit strong_type_t(T&& v) noexcept { m_value = std::move(v); };	//explicit from type T
+        explicit strong_type_t(T&& v) noexcept { m_value = v; };	//explicit from type T
 
         strong_type_t( strong_type_t<T, P, D> const &) noexcept = default;		//copy constructible
         strong_type_t( strong_type_t<T, P, D>&&) noexcept = default;			//move constructible
 
         strong_type_t<T, P, D>& operator=(T const& v) noexcept { m_value = v; return *this; };		//copy assignable from type T
-        strong_type_t<T, P, D>& operator=(T&& v) noexcept { m_value = std::move(v); return *this; };	//copy assignable from type T
+        strong_type_t<T, P, D>& operator=(T&& v) noexcept { m_value = v; return *this; };	//copy assignable from type T
 
         strong_type_t<T, P, D>& operator=(strong_type_t<T, P, D> const&) noexcept = default;	//move assignable
         strong_type_t<T, P, D>& operator=(strong_type_t<T, P, D>&&) noexcept = default;			//move assignable
@@ -65,6 +65,15 @@ namespace vsty {
 			return val;
 		}
 
+		auto get_bits_signed(const uint32_t first_bit, const uint32_t number_bits) const noexcept -> T requires std::unsigned_integral<T>  {
+			auto value = get_bits(first_bit, number_bits);
+			if( value & (1ull << (number_bits - 1))) {
+				value |= static_cast<T>(~0ull) << number_bits;
+			}
+			return value;
+		}
+
+
 		/***
 		* \brief Set  bits in the m_value
 		* \param value...value to set
@@ -74,7 +83,7 @@ namespace vsty {
 		void set_bits(const T&& value, const uint32_t first_bit, const uint32_t number_bits) requires std::unsigned_integral<T> {
 			uint32_t nbits = sizeof(T) * 8;
 			assert(first_bit + number_bits <= nbits);
-			assert(value < 1ull << number_bits);
+			//assert(static_cast<T>(abs(value)) < 1ull << number_bits);
 			if( number_bits >= nbits) { m_value = value; return; }
 
 			T umask = static_cast<T>(~0ull) << (first_bit + number_bits);
