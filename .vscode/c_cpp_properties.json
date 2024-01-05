@@ -13,7 +13,6 @@
                 "_UNICODE"
             ],
             "windowsSdkVersion": "10.0.22000.0",
-            "compilerPath": "cl.exe",
             "cStandard": "c17",
             "intelliSenseMode": "windows-msvc-x64"
         }
