@@ -21,7 +21,7 @@ file(DOWNLOAD
 
 # Vienna Lock Less Table
 file(DOWNLOAD
-    https://raw.githubusercontent.com/hlavacs/ViennaLockLessTable/main/VLLT.h
+    https://raw.githubusercontent.com/hlavacs/ViennaLockLessTable/main/include/VLLT.h
     ${PROJECT_SOURCE_DIR}/extern/ViennaLockLessTable/VLLT.h)
 
 # Vienna Entity Component System
