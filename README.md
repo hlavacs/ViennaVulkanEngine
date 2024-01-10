@@ -120,16 +120,17 @@ Building and running
 
 # Vulkan Video Encode
 
-The preprocessor define `VULKAN_VIDEO_ENCODE` enables an experimental extension to encode the output as video. It is using the Vulkan Video Extensions for hardware accelerated encoding. The used codec is H.264. The 2 necessary Vulkan extensions `VK_KHR_video_encode_queue` and `VK_EXT_video_encode_h264` are provisional and not released yet by Khronos. The APIs can change and are only available in the Vulkan SDK with enabled Beta Extensions. Following revisions are supported (Vulkan SDK and graphics driver must match these):
-- VK_KHR_video_encode_queue: rev. 10
-- VK_EXT_video_encode_h264: rev. 12
+The preprocessor define `VULKAN_VIDEO_ENCODE` enables an extension to encode the output as video. It is using the Vulkan Video Extensions for hardware accelerated encoding. The used codec is H.264. The 2 necessary Vulkan extensions `VK_KHR_video_encode_queue` and `VK_KHR_video_encode_h264` are released with Vulkan 1.3.274 as revisions:
+- VK_KHR_video_encode_queue: rev. 12
+- VK_KHR_video_encode_h264: rev. 14
 
-The only graphics driver supporting those extensions at the moment is the NVIDIA Vulkan Beta Driver available at https://developer.nvidia.com/vulkan-driver.
+There is no official Vulkan SDK containing this Vulkan revision released yet. The header files can be downloaded from https://github.com/KhronosGroup/Vulkan-Headers/tags and combined with another SDK.
+The only graphics driver supporting those extensions at the moment is the NVIDIA Vulkan Beta Driver available at https://developer.nvidia.com/vulkan-driver. According https://www.khronos.org/blog/khronos-finalizes-vulkan-video-extensions-for-accelerated-h.264-and-h.265-encode AMD and Intel will follow soon.
 
 The code is tested with
 - Windows 11
 - NVIDIA RTX 3070
-- Vulkan SDK 1.3.268.0
-- NVIDIA driver version 537.72 (Vulkan Beta Driver)
+- Vulkan SDK 1.3.268.0 + Vulkan-Headers-1.3.275
+- NVIDIA driver version 538.09 (Vulkan Beta Driver)
 
 After enabling `Write Frames` in the GUI the output is written to the file `hwenc.264` (in the current directory). It can be played with VLC or ffplay.

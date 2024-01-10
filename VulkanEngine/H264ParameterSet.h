@@ -115,7 +115,7 @@ namespace h264
             uint32_t picHeightInMbs = sps.pic_height_in_map_units_minus1 + 1;
             uint32_t iPicSizeInMbs = picWidthInMbs * picHeightInMbs;
 
-            m_sliceInfo.sType = VK_STRUCTURE_TYPE_VIDEO_ENCODE_H264_NALU_SLICE_INFO_EXT;
+            m_sliceInfo.sType = VK_STRUCTURE_TYPE_VIDEO_ENCODE_H264_NALU_SLICE_INFO_KHR;
             m_sliceInfo.pNext = NULL;
             m_sliceInfo.pStdSliceHeader = &m_sliceHeader;
 
@@ -151,14 +151,14 @@ namespace h264
             }
             m_stdPictureInfo.pRefLists = &m_referenceLists;
 
-            m_encodeH264FrameInfo.sType = VK_STRUCTURE_TYPE_VIDEO_ENCODE_H264_PICTURE_INFO_EXT;
+            m_encodeH264FrameInfo.sType = VK_STRUCTURE_TYPE_VIDEO_ENCODE_H264_PICTURE_INFO_KHR;
             m_encodeH264FrameInfo.pNext = NULL;
             m_encodeH264FrameInfo.naluSliceEntryCount = 1;
             m_encodeH264FrameInfo.pNaluSliceEntries = &m_sliceInfo;
             m_encodeH264FrameInfo.pStdPictureInfo = &m_stdPictureInfo;
         }
 
-        inline VkVideoEncodeH264PictureInfoEXT* getEncodeH264FrameInfo()
+        inline VkVideoEncodeH264PictureInfoKHR* getEncodeH264FrameInfo()
         {
             return &m_encodeH264FrameInfo;
         };
@@ -166,10 +166,10 @@ namespace h264
     private:
         StdVideoEncodeH264SliceHeaderFlags m_sliceHeaderFlags = {};
         StdVideoEncodeH264SliceHeader m_sliceHeader = {};
-        VkVideoEncodeH264NaluSliceInfoEXT m_sliceInfo = {};
+        VkVideoEncodeH264NaluSliceInfoKHR m_sliceInfo = {};
         StdVideoEncodeH264PictureInfoFlags m_pictureInfoFlags = {};
         StdVideoEncodeH264PictureInfo m_stdPictureInfo = {};
-        VkVideoEncodeH264PictureInfoEXT m_encodeH264FrameInfo = {};
+        VkVideoEncodeH264PictureInfoKHR m_encodeH264FrameInfo = {};
         StdVideoEncodeH264ReferenceListsInfo m_referenceLists = {};
     };
 

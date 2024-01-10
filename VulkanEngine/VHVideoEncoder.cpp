@@ -100,11 +100,11 @@ namespace vh {
     
     VkResult VHVideoEncoder::createVideoSession()
     {
-        m_encodeH264ProfileInfoExt = { VK_STRUCTURE_TYPE_VIDEO_ENCODE_H264_PROFILE_INFO_EXT };
+        m_encodeH264ProfileInfoExt = { VK_STRUCTURE_TYPE_VIDEO_ENCODE_H264_PROFILE_INFO_KHR };
         m_encodeH264ProfileInfoExt.stdProfileIdc = STD_VIDEO_H264_PROFILE_IDC_MAIN;
 
         m_videoProfile = { VK_STRUCTURE_TYPE_VIDEO_PROFILE_INFO_KHR };
-        m_videoProfile.videoCodecOperation = VK_VIDEO_CODEC_OPERATION_ENCODE_H264_BIT_EXT;
+        m_videoProfile.videoCodecOperation = VK_VIDEO_CODEC_OPERATION_ENCODE_H264_BIT_KHR;
         m_videoProfile.chromaSubsampling = VK_VIDEO_CHROMA_SUBSAMPLING_420_BIT_KHR;
         m_videoProfile.chromaBitDepth = VK_VIDEO_COMPONENT_BIT_DEPTH_8_BIT_KHR;
         m_videoProfile.lumaBitDepth = VK_VIDEO_COMPONENT_BIT_DEPTH_8_BIT_KHR;
@@ -125,8 +125,8 @@ namespace vh {
         createInfo.referencePictureFormat = VK_FORMAT_G8_B8R8_2PLANE_420_UNORM;
         createInfo.pStdHeaderVersion = &h264StdExtensionVersion;
 
-        VkVideoEncodeH264CapabilitiesEXT h264capabilities = {};
-        h264capabilities.sType = VK_STRUCTURE_TYPE_VIDEO_ENCODE_H264_CAPABILITIES_EXT;        
+        VkVideoEncodeH264CapabilitiesKHR h264capabilities = {};
+        h264capabilities.sType = VK_STRUCTURE_TYPE_VIDEO_ENCODE_H264_CAPABILITIES_KHR;
 
         VkVideoEncodeCapabilitiesKHR encodeCapabilities = {};
         encodeCapabilities.sType = VK_STRUCTURE_TYPE_VIDEO_ENCODE_CAPABILITIES_KHR;
@@ -182,14 +182,14 @@ namespace vh {
         m_sps = h264::getStdVideoH264SequenceParameterSet(m_width, m_height, &m_vui);
         m_pps = h264::getStdVideoH264PictureParameterSet();
 
-        VkVideoEncodeH264SessionParametersAddInfoEXT encodeH264SessionParametersAddInfo = { VK_STRUCTURE_TYPE_VIDEO_ENCODE_H264_SESSION_PARAMETERS_ADD_INFO_EXT };
+        VkVideoEncodeH264SessionParametersAddInfoKHR encodeH264SessionParametersAddInfo = { VK_STRUCTURE_TYPE_VIDEO_ENCODE_H264_SESSION_PARAMETERS_ADD_INFO_KHR };
         encodeH264SessionParametersAddInfo.pNext = nullptr;
         encodeH264SessionParametersAddInfo.stdSPSCount = 1;
         encodeH264SessionParametersAddInfo.pStdSPSs = &m_sps;
         encodeH264SessionParametersAddInfo.stdPPSCount = 1;
         encodeH264SessionParametersAddInfo.pStdPPSs = &m_pps;
 
-        VkVideoEncodeH264SessionParametersCreateInfoEXT encodeH264SessionParametersCreateInfo = { VK_STRUCTURE_TYPE_VIDEO_ENCODE_H264_SESSION_PARAMETERS_CREATE_INFO_EXT };
+        VkVideoEncodeH264SessionParametersCreateInfoKHR encodeH264SessionParametersCreateInfo = { VK_STRUCTURE_TYPE_VIDEO_ENCODE_H264_SESSION_PARAMETERS_CREATE_INFO_KHR };
         encodeH264SessionParametersCreateInfo.pNext = nullptr;
         encodeH264SessionParametersCreateInfo.maxStdSPSCount = 1;
         encodeH264SessionParametersCreateInfo.maxStdPPSCount = 1;
@@ -205,8 +205,8 @@ namespace vh {
 
     VkResult VHVideoEncoder::readBitstreamHeader()
     {
-        VkVideoEncodeH264SessionParametersGetInfoEXT h264getInfo = {};
-        h264getInfo.sType = VK_STRUCTURE_TYPE_VIDEO_ENCODE_H264_SESSION_PARAMETERS_GET_INFO_EXT;
+        VkVideoEncodeH264SessionParametersGetInfoKHR h264getInfo = {};
+        h264getInfo.sType = VK_STRUCTURE_TYPE_VIDEO_ENCODE_H264_SESSION_PARAMETERS_GET_INFO_KHR;
         h264getInfo.stdSPSId = 0;
         h264getInfo.stdPPSId = 0;
         h264getInfo.writeStdPPS = VK_TRUE;
@@ -216,8 +216,8 @@ namespace vh {
         getInfo.pNext = &h264getInfo;
         getInfo.videoSessionParameters = m_videoSessionParameters;
 
-        VkVideoEncodeH264SessionParametersFeedbackInfoEXT h264feedback = {};
-        h264feedback.sType = VK_STRUCTURE_TYPE_VIDEO_ENCODE_H264_SESSION_PARAMETERS_FEEDBACK_INFO_EXT;
+        VkVideoEncodeH264SessionParametersFeedbackInfoKHR h264feedback = {};
+        h264feedback.sType = VK_STRUCTURE_TYPE_VIDEO_ENCODE_H264_SESSION_PARAMETERS_FEEDBACK_INFO_KHR;
         VkVideoEncodeSessionParametersFeedbackInfoKHR feedback = {};
         feedback.sType = VK_STRUCTURE_TYPE_VIDEO_ENCODE_SESSION_PARAMETERS_FEEDBACK_INFO_KHR;
         feedback.pNext = &h264feedback;
@@ -421,15 +421,15 @@ namespace vh {
         encodeBeginInfo.videoSession = m_videoSession;
         encodeBeginInfo.videoSessionParameters = m_videoSessionParameters;
 
-        VkVideoEncodeH264FrameSizeEXT encodeH264FrameSize;
+        VkVideoEncodeH264FrameSizeKHR encodeH264FrameSize;
         encodeH264FrameSize.frameISize = 0;
         encodeH264FrameSize.framePSize = 0;
 
-        VkVideoEncodeH264QpEXT encodeH264Qp;
+        VkVideoEncodeH264QpKHR encodeH264Qp;
         encodeH264Qp.qpI = qp;
         encodeH264Qp.qpP = qp;
 
-        VkVideoEncodeH264RateControlLayerInfoEXT encodeH264RateControlLayerInfo = { VK_STRUCTURE_TYPE_VIDEO_ENCODE_H264_RATE_CONTROL_LAYER_INFO_EXT };
+        VkVideoEncodeH264RateControlLayerInfoKHR encodeH264RateControlLayerInfo = { VK_STRUCTURE_TYPE_VIDEO_ENCODE_H264_RATE_CONTROL_LAYER_INFO_KHR };
         encodeH264RateControlLayerInfo.useMinQp = VK_TRUE;
         encodeH264RateControlLayerInfo.minQp = encodeH264Qp;
         encodeH264RateControlLayerInfo.useMaxQp = VK_TRUE;
@@ -443,10 +443,10 @@ namespace vh {
         VkVideoEncodeQualityLevelInfoKHR encodeQualityLevelInfo = { VK_STRUCTURE_TYPE_VIDEO_ENCODE_QUALITY_LEVEL_INFO_KHR };
         encodeQualityLevelInfo.qualityLevel = 0;
 
-        VkVideoEncodeH264RateControlInfoEXT encodeH264RateControlInfo = { VK_STRUCTURE_TYPE_VIDEO_ENCODE_H264_RATE_CONTROL_INFO_EXT };
+        VkVideoEncodeH264RateControlInfoKHR encodeH264RateControlInfo = { VK_STRUCTURE_TYPE_VIDEO_ENCODE_H264_RATE_CONTROL_INFO_KHR };
         //encodeH264RateControlInfo.flags = 0;
         encodeH264RateControlInfo.pNext = &encodeQualityLevelInfo;
-        encodeH264RateControlInfo.flags = VK_VIDEO_ENCODE_H264_RATE_CONTROL_REGULAR_GOP_BIT_EXT;
+        encodeH264RateControlInfo.flags = VK_VIDEO_ENCODE_H264_RATE_CONTROL_REGULAR_GOP_BIT_KHR;
         encodeH264RateControlInfo.gopFrameCount = 16;
         encodeH264RateControlInfo.idrPeriod = 16;
         encodeH264RateControlInfo.consecutiveBFrameCount = 0;
@@ -562,7 +562,7 @@ namespace vh {
         dpbRefInfo.FrameNum = gopFrameCount;
         dpbRefInfo.PicOrderCnt = (dpbRefInfo.FrameNum * 2) % MaxPicOrderCntLsb;
         dpbRefInfo.primary_pic_type = dpbRefInfo.FrameNum == 0 ? STD_VIDEO_H264_PICTURE_TYPE_IDR : STD_VIDEO_H264_PICTURE_TYPE_P;
-        VkVideoEncodeH264DpbSlotInfoEXT dpbSlotInfo = { VK_STRUCTURE_TYPE_VIDEO_ENCODE_H264_DPB_SLOT_INFO_EXT };
+        VkVideoEncodeH264DpbSlotInfoKHR dpbSlotInfo = { VK_STRUCTURE_TYPE_VIDEO_ENCODE_H264_DPB_SLOT_INFO_KHR };
         dpbSlotInfo.pNext = nullptr;
         dpbSlotInfo.pStdReferenceInfo = &dpbRefInfo;
 
@@ -570,7 +570,7 @@ namespace vh {
         refRefInfo.FrameNum = gopFrameCount - 1;
         refRefInfo.PicOrderCnt = (refRefInfo.FrameNum * 2) % MaxPicOrderCntLsb;
         refRefInfo.primary_pic_type = refRefInfo.FrameNum == 0 ? STD_VIDEO_H264_PICTURE_TYPE_IDR : STD_VIDEO_H264_PICTURE_TYPE_P;
-        VkVideoEncodeH264DpbSlotInfoEXT refSlotInfo = { VK_STRUCTURE_TYPE_VIDEO_ENCODE_H264_DPB_SLOT_INFO_EXT };
+        VkVideoEncodeH264DpbSlotInfoKHR refSlotInfo = { VK_STRUCTURE_TYPE_VIDEO_ENCODE_H264_DPB_SLOT_INFO_KHR };
         refSlotInfo.pNext = nullptr;
         refSlotInfo.pStdReferenceInfo = &refRefInfo;
 
@@ -608,7 +608,7 @@ namespace vh {
             m_sps,
             m_pps,
             gopFrameCount == 0);
-        VkVideoEncodeH264PictureInfoEXT* encodeH264FrameInfo = frameInfo.getEncodeH264FrameInfo();
+        VkVideoEncodeH264PictureInfoKHR* encodeH264FrameInfo = frameInfo.getEncodeH264FrameInfo();
 
         // combine all structures in one control structure
         VkVideoEncodeInfoKHR videoEncodeInfo = { VK_STRUCTURE_TYPE_VIDEO_ENCODE_INFO_KHR };

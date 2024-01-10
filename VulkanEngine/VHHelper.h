@@ -37,9 +37,6 @@
 
 #include <math.h>
 
-#ifdef VULKAN_VIDEO_ENCODE
-#define VK_ENABLE_BETA_EXTENSIONS 1
-#endif
 #define VK_NO_PROTOTYPES
 #include "vulkan/vulkan.h"
 #include "VHFunctions.h"

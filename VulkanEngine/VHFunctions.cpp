@@ -9,9 +9,6 @@
 
 #include <iostream>
 
-#ifdef VULKAN_VIDEO_ENCODE
-#define VK_ENABLE_BETA_EXTENSIONS 1
-#endif
 #define VK_NO_PROTOTYPES
 #define VMA_STATIC_VULKAN_FUNCTIONS 1
 

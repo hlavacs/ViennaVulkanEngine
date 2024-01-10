@@ -61,7 +61,7 @@ namespace vh {
 		StdVideoH264SequenceParameterSet m_sps;
 		StdVideoH264PictureParameterSet m_pps;
 		VkVideoSessionParametersKHR m_videoSessionParameters;
-		VkVideoEncodeH264ProfileInfoEXT m_encodeH264ProfileInfoExt;
+		VkVideoEncodeH264ProfileInfoKHR m_encodeH264ProfileInfoExt;
 		VkVideoProfileInfoKHR m_videoProfile;
 		VkVideoProfileListInfoKHR m_videoProfileList;
 
