@@ -15,7 +15,7 @@ namespace vh {
 			uint32_t encodeQueueFamily, VkQueue encodeQueue, VkCommandPool encodeCommandPool,
 			const std::vector<VkImageView>& inputImageViews,
 			uint32_t width, uint32_t height, uint32_t fps);
-		VkResult queueEncode(uint32_t currentImageIx);
+		VkResult queueEncode(VkImage currentImage, uint32_t currentImageIx);
 		VkResult finishEncode(const char*& data, size_t& size);
 		void deinit();
 
@@ -37,7 +37,7 @@ namespace vh {
 		VkResult initRateControl(VkCommandBuffer cmdBuf, uint32_t fps);
         VkResult transitionImagesInitial(VkCommandBuffer cmdBuf);
 
-        VkResult convertRGBtoYUV(uint32_t currentImageIx);
+        VkResult convertRGBtoYUV(VkImage currentImage, uint32_t currentImageIx);
         VkResult encodeVideoFrame();
         VkResult getOutputVideoPacket(const char*& data, size_t& size);
 
@@ -89,7 +89,9 @@ namespace vh {
 		VkImage m_yuvImage;
 		VmaAllocation m_yuvImageAllocation;
 		VkImageView m_yuvImageView;
-		VkImageView m_yuvImagePlane0View;
+		VkImage m_yuvImageLuma;
+		VmaAllocation m_yuvImageLumaAllocation;
+		VkImageView m_yuvImageLumaView;
 		VkImage m_yuvImageChroma;
 		VmaAllocation m_yuvImageChromaAllocation;
 		VkImageView m_yuvImageChromaView;

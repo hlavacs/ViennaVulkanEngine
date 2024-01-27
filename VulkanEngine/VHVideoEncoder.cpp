@@ -67,10 +67,10 @@ namespace vh {
         return VK_SUCCESS;
     }
 
-    VkResult VHVideoEncoder::queueEncode(uint32_t currentImageIx)
+    VkResult VHVideoEncoder::queueEncode(VkImage currentImage, uint32_t currentImageIx)
     {
         assert(!m_running);
-        VHCHECKRESULT(convertRGBtoYUV(currentImageIx));
+        VHCHECKRESULT(convertRGBtoYUV(currentImage, currentImageIx));
         VHCHECKRESULT(encodeVideoFrame());
         m_running = true;
         return VK_SUCCESS;
@@ -287,7 +287,7 @@ namespace vh {
         tmpImgCreateInfo.arrayLayers = 1;
         tmpImgCreateInfo.samples = VK_SAMPLE_COUNT_1_BIT;
         tmpImgCreateInfo.tiling = VK_IMAGE_TILING_OPTIMAL;
-        tmpImgCreateInfo.usage = VK_IMAGE_USAGE_VIDEO_ENCODE_SRC_BIT_KHR | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_STORAGE_BIT;
+        tmpImgCreateInfo.usage = VK_IMAGE_USAGE_VIDEO_ENCODE_SRC_BIT_KHR | VK_IMAGE_USAGE_TRANSFER_DST_BIT;
         tmpImgCreateInfo.sharingMode = VK_SHARING_MODE_CONCURRENT;
         tmpImgCreateInfo.queueFamilyIndexCount = 2;
         tmpImgCreateInfo.pQueueFamilyIndices = queueFamilies;
@@ -297,9 +297,18 @@ namespace vh {
         allocInfo.usage = VMA_MEMORY_USAGE_GPU_ONLY;
         VHCHECKRESULT(vmaCreateImage(m_allocator, &tmpImgCreateInfo, &allocInfo, &m_yuvImage, &m_yuvImageAllocation, nullptr));
         VHCHECKRESULT(vhBufCreateImageView(m_device, m_yuvImage, VK_FORMAT_G8_B8R8_2PLANE_420_UNORM, VK_IMAGE_VIEW_TYPE_2D, 1, VK_IMAGE_ASPECT_COLOR_BIT, &m_yuvImageView));
-        VHCHECKRESULT(vhBufCreateImageView(m_device, m_yuvImage, VK_FORMAT_G8_B8R8_2PLANE_420_UNORM, VK_IMAGE_VIEW_TYPE_2D, 1, VK_IMAGE_ASPECT_PLANE_0_BIT, &m_yuvImagePlane0View));
+
 
         tmpImgCreateInfo.usage = VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_STORAGE_BIT;
+        tmpImgCreateInfo.pNext = nullptr;
+        tmpImgCreateInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+        tmpImgCreateInfo.queueFamilyIndexCount = 0;
+        tmpImgCreateInfo.pQueueFamilyIndices = nullptr;
+
+        tmpImgCreateInfo.format = VK_FORMAT_R8_UNORM;
+        VHCHECKRESULT(vmaCreateImage(m_allocator, &tmpImgCreateInfo, &allocInfo, &m_yuvImageLuma, &m_yuvImageLumaAllocation, nullptr));
+        VHCHECKRESULT(vhBufCreateImageView(m_device, m_yuvImageLuma, VK_FORMAT_R8_UNORM, VK_IMAGE_VIEW_TYPE_2D, 1, VK_IMAGE_ASPECT_COLOR_BIT, &m_yuvImageLumaView));
+
         tmpImgCreateInfo.format = VK_FORMAT_R8G8_UNORM;
         tmpImgCreateInfo.extent = { m_width / 2, m_height / 2, 1 };
         VHCHECKRESULT(vmaCreateImage(m_allocator, &tmpImgCreateInfo, &allocInfo, &m_yuvImageChroma, &m_yuvImageChromaAllocation, nullptr));
@@ -383,7 +392,7 @@ namespace vh {
 
             VkDescriptorImageInfo imageInfo0{};
             imageInfo0.imageView = inputImageViews[i];
-            imageInfo0.imageLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
+            imageInfo0.imageLayout = VK_IMAGE_LAYOUT_GENERAL;
             descriptorWrites[0].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
             descriptorWrites[0].dstSet = m_computeDescriptorSets[i];
             descriptorWrites[0].dstBinding = 0;
@@ -393,7 +402,7 @@ namespace vh {
             descriptorWrites[0].pImageInfo = &imageInfo0;
 
             VkDescriptorImageInfo imageInfo1{};
-            imageInfo1.imageView = m_yuvImagePlane0View;
+            imageInfo1.imageView = m_yuvImageLumaView;
             imageInfo1.imageLayout = VK_IMAGE_LAYOUT_GENERAL;
             descriptorWrites[1].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
             descriptorWrites[1].dstSet = m_computeDescriptorSets[i];
@@ -468,21 +477,29 @@ namespace vh {
                 m_yuvImage, VK_FORMAT_G8_B8R8_2PLANE_420_UNORM, VK_IMAGE_ASPECT_COLOR_BIT, 1, 1,
             VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_VIDEO_ENCODE_SRC_KHR));
         VHCHECKRESULT(vhBufTransitionImageLayout(m_device, m_encodeQueue, cmdBuf,
+            m_yuvImageLuma, VK_FORMAT_R8_UNORM, VK_IMAGE_ASPECT_COLOR_BIT, 1, 1,
+            VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL));
+        VHCHECKRESULT(vhBufTransitionImageLayout(m_device, m_encodeQueue, cmdBuf,
             m_yuvImageChroma, VK_FORMAT_R8G8_UNORM, VK_IMAGE_ASPECT_COLOR_BIT, 1, 1,
             VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL));            
         return VK_SUCCESS;
     }
 
-    VkResult VHVideoEncoder::convertRGBtoYUV(uint32_t currentImageIx)
+    VkResult VHVideoEncoder::convertRGBtoYUV(VkImage currentImage, uint32_t currentImageIx)
     {
         // begin command buffer for compute shader
         VHCHECKRESULT(vhCmdCreateCommandBuffers(m_device, m_computeCommandPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY, 1, &m_computeCommandBuffer));
         VHCHECKRESULT(vhCmdBeginCommandBuffer(m_device, m_computeCommandBuffer, VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT));
 
+        // transition source image to be shader source
+        VHCHECKRESULT(vhBufTransitionImageLayout(m_device, m_computeQueue, m_computeCommandBuffer,
+            currentImage, VK_FORMAT_R8G8B8_UNORM, VK_IMAGE_ASPECT_COLOR_BIT, 1, 1,
+            VK_IMAGE_LAYOUT_PRESENT_SRC_KHR, VK_IMAGE_LAYOUT_GENERAL));
+
         // transition YUV image (full and chroma) to be shader target
         VHCHECKRESULT(vhBufTransitionImageLayout(m_device, m_computeQueue, m_computeCommandBuffer,
-            m_yuvImage, VK_FORMAT_G8_B8R8_2PLANE_420_UNORM, VK_IMAGE_ASPECT_PLANE_0_BIT, 1, 1,
-            VK_IMAGE_LAYOUT_VIDEO_ENCODE_SRC_KHR, VK_IMAGE_LAYOUT_GENERAL));
+            m_yuvImageLuma, VK_FORMAT_R8_UNORM, VK_IMAGE_ASPECT_COLOR_BIT, 1, 1,
+            VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, VK_IMAGE_LAYOUT_GENERAL));
         VHCHECKRESULT(vhBufTransitionImageLayout(m_device, m_computeQueue, m_computeCommandBuffer,
             m_yuvImageChroma, VK_FORMAT_R8G8_UNORM, VK_IMAGE_ASPECT_COLOR_BIT, 1, 1,
             VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, VK_IMAGE_LAYOUT_GENERAL));
@@ -492,27 +509,43 @@ namespace vh {
         vkCmdBindDescriptorSets(m_computeCommandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, m_computePipelineLayout, 0, 1, &m_computeDescriptorSets[currentImageIx], 0, 0);
         vkCmdDispatch(m_computeCommandBuffer, (m_width+15)/16, (m_height+15)/16, 1); // work item local size = 16x16
 
+        // transition source image back
+        VHCHECKRESULT(vhBufTransitionImageLayout(m_device, m_computeQueue, m_computeCommandBuffer,
+            currentImage, VK_FORMAT_R8G8B8_UNORM, VK_IMAGE_ASPECT_COLOR_BIT, 1, 1,
+            VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR));
 
         // transition the YUV image as copy target and the chroma image to be copy source
         VHCHECKRESULT(vhBufTransitionImageLayout(m_device, m_computeQueue, m_computeCommandBuffer,
-            m_yuvImage, VK_FORMAT_G8_B8R8_2PLANE_420_UNORM, VK_IMAGE_ASPECT_PLANE_1_BIT, 1, 1,
-            VK_IMAGE_LAYOUT_VIDEO_ENCODE_SRC_KHR, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL));
-        VHCHECKRESULT(vhBufTransitionImageLayout(m_device, m_computeQueue, m_computeCommandBuffer,
-            m_yuvImageChroma, VK_FORMAT_R8G8_UNORM, VK_IMAGE_ASPECT_COLOR_BIT, 1, 1,
+            m_yuvImageLuma, VK_FORMAT_R8_UNORM, VK_IMAGE_ASPECT_COLOR_BIT, 1, 1,
             VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL));
-      
-        // copy the full chroma image into the 2nd plane of the YUV image
+        VHCHECKRESULT(vhBufTransitionImageLayout(m_device, m_computeQueue, m_computeCommandBuffer,
+            m_yuvImage, VK_FORMAT_G8_B8R8_2PLANE_420_UNORM, VK_IMAGE_ASPECT_PLANE_0_BIT, 1, 1,
+            VK_IMAGE_LAYOUT_VIDEO_ENCODE_SRC_KHR, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL));
+
+        // copy the full luma image into the 1st plane of the YUV image
         VkImageCopy regions;
         regions.srcSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
         regions.srcSubresource.baseArrayLayer = 0;
         regions.srcSubresource.layerCount = 1;
         regions.srcSubresource.mipLevel = 0;
         regions.srcOffset = { 0, 0, 0 };
-        regions.dstSubresource.aspectMask = VK_IMAGE_ASPECT_PLANE_1_BIT;
+        regions.dstSubresource.aspectMask = VK_IMAGE_ASPECT_PLANE_0_BIT;
         regions.dstSubresource.baseArrayLayer = 0;
         regions.dstSubresource.layerCount = 1;
         regions.dstSubresource.mipLevel = 0;
         regions.dstOffset = { 0, 0, 0 };
+        regions.extent = { m_width, m_height, 1 };
+        vkCmdCopyImage(m_computeCommandBuffer, m_yuvImageLuma, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, m_yuvImage, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &regions);
+
+        VHCHECKRESULT(vhBufTransitionImageLayout(m_device, m_computeQueue, m_computeCommandBuffer,
+            m_yuvImageChroma, VK_FORMAT_R8G8_UNORM, VK_IMAGE_ASPECT_COLOR_BIT, 1, 1,
+            VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL));
+        VHCHECKRESULT(vhBufTransitionImageLayout(m_device, m_computeQueue, m_computeCommandBuffer,
+            m_yuvImage, VK_FORMAT_G8_B8R8_2PLANE_420_UNORM, VK_IMAGE_ASPECT_PLANE_1_BIT, 1, 1,
+            VK_IMAGE_LAYOUT_VIDEO_ENCODE_SRC_KHR, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL));
+
+        // copy the full chroma image into the 2nd plane of the YUV image
+        regions.dstSubresource.aspectMask = VK_IMAGE_ASPECT_PLANE_1_BIT;
         regions.extent = { m_width / 2, m_height / 2, 1 };
         vkCmdCopyImage(m_computeCommandBuffer, m_yuvImageChroma, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, m_yuvImage, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &regions);
 
@@ -584,7 +617,7 @@ namespace vh {
         // transition the YUV image to be a video encode source
         VHCHECKRESULT(vhBufTransitionImageLayout(m_device, m_encodeQueue, m_encodeCommandBuffer,
             m_yuvImage, VK_FORMAT_G8_B8R8_2PLANE_420_UNORM, VK_IMAGE_ASPECT_PLANE_0_BIT, 1, 1,
-            VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_LAYOUT_VIDEO_ENCODE_SRC_KHR));
+            VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_VIDEO_ENCODE_SRC_KHR));
         VHCHECKRESULT(vhBufTransitionImageLayout(m_device, m_encodeQueue, m_encodeCommandBuffer,
             m_yuvImage, VK_FORMAT_G8_B8R8_2PLANE_420_UNORM, VK_IMAGE_ASPECT_PLANE_1_BIT, 1, 1,
             VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_VIDEO_ENCODE_SRC_KHR));
@@ -685,7 +718,8 @@ namespace vh {
         vmaDestroyBuffer(m_allocator, m_bitStreamBuffer, m_bitStreamBufferAllocation);
         vkDestroyImageView(m_device, m_yuvImageChromaView, nullptr);
         vmaDestroyImage(m_allocator, m_yuvImageChroma, m_yuvImageChromaAllocation);
-        vkDestroyImageView(m_device, m_yuvImagePlane0View, nullptr);
+        vkDestroyImageView(m_device, m_yuvImageLumaView, nullptr);
+        vmaDestroyImage(m_allocator, m_yuvImageLuma, m_yuvImageLumaAllocation);
         vkDestroyImageView(m_device, m_yuvImageView, nullptr);
         vmaDestroyImage(m_allocator, m_yuvImage, m_yuvImageAllocation);
         for (uint32_t i = 0; i < m_dpbImages.size(); i++) {
@@ -713,7 +747,7 @@ namespace vh {
         return VK_ERROR_EXTENSION_NOT_PRESENT;
     }
 
-    VkResult VHVideoEncoder::queueEncode(uint32_t currentImageIx)
+    VkResult VHVideoEncoder::queueEncode(VkImage currentImage, uint32_t currentImageIx)
     {
         return VK_ERROR_EXTENSION_NOT_PRESENT;
     }

@@ -186,8 +186,8 @@ namespace ve {
 				g_writeFrames = false;
 				return;
 			}
-
-			ret = videoEncoder.queueEncode(getEnginePointer()->getRenderer()->getImageIndex());
+			
+			ret = videoEncoder.queueEncode(getEnginePointer()->getRenderer()->getSwapChainImage(), getEnginePointer()->getRenderer()->getImageIndex());
 			if (ret != VK_SUCCESS) {
 				std::cout << "Error using VideoEncoder\n";
 			}
