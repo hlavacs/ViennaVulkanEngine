@@ -261,9 +261,6 @@ using namespace ve;
 
 int main() {
 	bool debug = true;
-#ifdef VULKAN_VIDEO_ENCODE
-	debug = false; //validation layer not supported for beta extensions
-#endif
 
 	MyVulkanEngine mve(veRendererType::VE_RENDERER_TYPE_FORWARD, debug);	//enable or disable debugging (=callback, validation layers)
 

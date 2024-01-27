@@ -34,7 +34,7 @@ namespace vh {
         VkResult allocateIntermediateImages();
         VkResult createOutputQueryPool();
         VkResult createYUVConversionPipeline(const std::vector<VkImageView>& inputImageViews);
-		VkResult initRateControl(VkCommandBuffer cmdBuf, uint32_t qp);
+		VkResult initRateControl(VkCommandBuffer cmdBuf, uint32_t fps);
         VkResult transitionImagesInitial(VkCommandBuffer cmdBuf);
 
         VkResult convertRGBtoYUV(uint32_t currentImageIx);
@@ -64,6 +64,11 @@ namespace vh {
 		VkVideoEncodeH264ProfileInfoKHR m_encodeH264ProfileInfoExt;
 		VkVideoProfileInfoKHR m_videoProfile;
 		VkVideoProfileListInfoKHR m_videoProfileList;
+
+		VkVideoEncodeH264RateControlLayerInfoKHR m_encodeH264RateControlLayerInfo = { VK_STRUCTURE_TYPE_VIDEO_ENCODE_H264_RATE_CONTROL_LAYER_INFO_KHR };
+		VkVideoEncodeRateControlLayerInfoKHR m_encodeRateControlLayerInfo = { VK_STRUCTURE_TYPE_VIDEO_ENCODE_RATE_CONTROL_LAYER_INFO_KHR };
+		VkVideoEncodeH264RateControlInfoKHR m_encodeH264RateControlInfo = { VK_STRUCTURE_TYPE_VIDEO_ENCODE_H264_RATE_CONTROL_INFO_KHR };
+		VkVideoEncodeRateControlInfoKHR m_encodeRateControlInfo = { VK_STRUCTURE_TYPE_VIDEO_ENCODE_RATE_CONTROL_INFO_KHR };
 
 		VkDescriptorSetLayout m_computeDescriptorSetLayout;
 		VkPipelineLayout m_computePipelineLayout;
@@ -95,6 +100,7 @@ namespace vh {
 
 		uint32_t m_frameCount;
 
+		VkFence m_encodeFinishedFence;
 		VkCommandBuffer m_computeCommandBuffer;
 		VkCommandBuffer m_encodeCommandBuffer;
 #endif

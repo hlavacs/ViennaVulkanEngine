@@ -454,7 +454,7 @@ namespace vh
 	VkResult
 		vhCmdBeginCommandBuffer(VkDevice device, VkRenderPass renderPass, uint32_t subpass, VkFramebuffer framebuffer, VkCommandBuffer commandBuffer, VkCommandBufferUsageFlagBits usageFlags);
 
-	VkResult vhCmdSubmitCommandBuffer(VkDevice device, VkQueue graphicsQueue, VkCommandBuffer commandBuffer, VkSemaphore waitSemaphore, VkSemaphore signalSemaphore, VkFence waitFence);
+	VkResult vhCmdSubmitCommandBuffer(VkDevice device, VkQueue graphicsQueue, VkCommandBuffer commandBuffer, VkSemaphore waitSemaphore, VkSemaphore signalSemaphore, VkFence waitFence, VkPipelineStageFlags waitStage = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT);
 
 	VkCommandBuffer vhCmdBeginSingleTimeCommands(VkDevice device, VkCommandPool commandPool);
 

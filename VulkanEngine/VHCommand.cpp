@@ -141,13 +141,13 @@ namespace vh
 		* \returns VK_SUCCESS or a Vulkan error code
 		*
 		*/
-	VkResult vhCmdSubmitCommandBuffer(VkDevice device, VkQueue queue, VkCommandBuffer commandBuffer, VkSemaphore waitSemaphore, VkSemaphore signalSemaphore, VkFence waitFence)
+	VkResult vhCmdSubmitCommandBuffer(VkDevice device, VkQueue queue, VkCommandBuffer commandBuffer, VkSemaphore waitSemaphore, VkSemaphore signalSemaphore, VkFence waitFence, VkPipelineStageFlags waitStage)
 	{
 		VkSubmitInfo submitInfo = {};
 		submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
 
 		VkSemaphore waitSemaphores[] = { waitSemaphore };
-		VkPipelineStageFlags waitStages[] = { VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT };
+		VkPipelineStageFlags waitStages[] = { waitStage };
 		if (waitSemaphore != VK_NULL_HANDLE)
 		{
 			submitInfo.waitSemaphoreCount = 1;

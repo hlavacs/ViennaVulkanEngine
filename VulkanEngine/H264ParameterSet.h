@@ -97,15 +97,16 @@ namespace h264
 
     class FrameInfo {
     public:
-        FrameInfo(uint32_t frameCount, uint32_t width, uint32_t height, StdVideoH264SequenceParameterSet sps, StdVideoH264PictureParameterSet pps, bool isI)
+        FrameInfo(uint32_t frameCount, uint32_t width, uint32_t height, StdVideoH264SequenceParameterSet sps, StdVideoH264PictureParameterSet pps, uint32_t gopFrameCount)
         {
+            bool isI = gopFrameCount == 0;
             const uint32_t MaxPicOrderCntLsb = 1 << (sps.log2_max_pic_order_cnt_lsb_minus4 + 4);
 
             m_sliceHeaderFlags.direct_spatial_mv_pred_flag = 1;
             m_sliceHeaderFlags.num_ref_idx_active_override_flag = 0;
 
             m_sliceHeader.flags = m_sliceHeaderFlags;
-            m_sliceHeader.slice_type = isI ? STD_VIDEO_H264_SLICE_TYPE_I : STD_VIDEO_H264_SLICE_TYPE_P;            
+            m_sliceHeader.slice_type = isI ? STD_VIDEO_H264_SLICE_TYPE_I : STD_VIDEO_H264_SLICE_TYPE_P;
             m_sliceHeader.cabac_init_idc = (StdVideoH264CabacInitIdc)0;
             m_sliceHeader.disable_deblocking_filter_idc = (StdVideoH264DisableDeblockingFilterIdc)0;
             m_sliceHeader.slice_alpha_c0_offset_div2 = 0;
@@ -140,14 +141,10 @@ namespace h264
             m_stdPictureInfo.PicOrderCnt = (frameCount * 2) % MaxPicOrderCntLsb;
             m_referenceLists.num_ref_idx_l0_active_minus1 = 0;
             m_referenceLists.num_ref_idx_l1_active_minus1 = 0;
-            m_referenceLists.RefPicList0[0] = 0;
-
+            std::fill_n(m_referenceLists.RefPicList0, STD_VIDEO_H264_MAX_NUM_LIST_REF, STD_VIDEO_H264_NO_REFERENCE_PICTURE);
+            std::fill_n(m_referenceLists.RefPicList1, STD_VIDEO_H264_MAX_NUM_LIST_REF, STD_VIDEO_H264_NO_REFERENCE_PICTURE);
             if (!isI) {
-                //m_referenceLists.num_ref_idx_l0_active_minus1 = 0;
-                //m_referenceLists.num_ref_idx_l1_active_minus1 = 0;
-                m_referenceLists.RefPicList0[0] = 1;
-
-                
+                m_referenceLists.RefPicList0[0] = !(gopFrameCount & 1);
             }
             m_stdPictureInfo.pRefLists = &m_referenceLists;
 
