@@ -1,7 +1,10 @@
 .vs/
 build/
 docs/
-extern/
+extern/imgui
+extern/glm
+extern/glTF
+
 **/CMakeFiles
 **/*.vcxproj
 **/*.vcxproj.user
