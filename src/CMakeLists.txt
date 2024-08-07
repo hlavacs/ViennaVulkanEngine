@@ -21,7 +21,7 @@ add_library (${TARGET} ${SOURCE} ${HEADERS})
 
 target_include_directories(${TARGET} PUBLIC $ENV{VULKAN_SDK}/include)
 target_include_directories(${TARGET} PUBLIC ${SDL2}/include/SDL2)
-target_include_directories(${TARGET} PUBLIC ${INCLUDE}/include)
+target_include_directories(${TARGET} PUBLIC ${INCLUDE})
 target_include_directories(${TARGET} PUBLIC ${IMGUI})
 target_include_directories(${TARGET} PUBLIC ${IMGUI}/backends)
 target_include_directories(${TARGET} PUBLIC ${GLM}/glm)

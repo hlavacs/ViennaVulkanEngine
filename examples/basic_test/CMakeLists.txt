@@ -7,7 +7,7 @@ set(HEADERS basic_test.h)
 
 add_executable(${TARGET} ${SOURCE} ${HEADERS})
 
-target_include_directories (${TARGET} PUBLIC ${INCLUDE} ${EXTERN}/glm/glm)
+target_include_directories (${TARGET} PUBLIC ${INCLUDE} ${GLM}/glm)
 target_include_directories (${TARGET} PUBLIC $ENV{VULKAN_SDK}/include)
 
 target_compile_features(${TARGET} PUBLIC cxx_std_20)

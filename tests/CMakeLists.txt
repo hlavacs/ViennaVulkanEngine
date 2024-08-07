@@ -6,7 +6,7 @@ set(HEADERS )
 
 add_executable(${TARGET} ${SOURCE} ${HEADERS})
 
-target_include_directories (${TARGET} PUBLIC ${PROJECT_SOURCE_DIR}/include)
+target_include_directories (${TARGET} PUBLIC ${INCLUDE})
 target_include_directories (${TARGET} PUBLIC $ENV{VULKAN_SDK}/include)
 
 target_compile_features(${TARGET} PUBLIC cxx_std_20)

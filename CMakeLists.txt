@@ -30,7 +30,7 @@ set(SDL2 $ENV{VULKAN_SDK})
 set(INCLUDE ${PROJECT_SOURCE_DIR}/include)  # engine include directory
 set(EXTERN ${PROJECT_SOURCE_DIR}/extern)    # external libraries
 set(IMGUI ${EXTERN}/imgui)    # external libraries
-set(GLM ${EXTERN}/glm)    # external libraries
+set(GLM ${EXTERN}/glm)    # external libraries 
 
 
 # Add directories for compiling
@@ -56,7 +56,9 @@ include(CTest)
 #set(CMAKE_CXX_EXTENSIONS OFF)
 #set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 
-if((CMAKE_PROJECT_NAME STREQUAL PROJECT_NAME OR MODERN_CMAKE_BUILD_TESTING)
-   AND BUILD_TESTING)
-  add_subdirectory(tests)
-endif()
+#if((CMAKE_PROJECT_NAME STREQUAL PROJECT_NAME OR MODERN_CMAKE_BUILD_TESTING)
+#   AND BUILD_TESTING)
+#  add_subdirectory(tests)
+#endif()
+
+add_subdirectory(tests)
