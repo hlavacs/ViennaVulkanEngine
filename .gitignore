@@ -1,6 +1,7 @@
 .vs/
 build/
 docs/
+extern/
 **/CMakeFiles
 **/*.vcxproj
 **/*.vcxproj.user
