@@ -42,23 +42,4 @@ add_subdirectory(examples)
 
 include(CTest)
 
-#cmake_policy(SET CMP0135 NEW) #force time stamping of downloads to avoid warnings
-
-#include(FetchContent)
-#FetchContent_Declare(
-#  googletest
-#  URL https://github.com/google/googletest/archive/03597a01ee50ed33e9dfd640b249b4be3799d395.zip
-#)
-# For Windows: Prevent overriding the parent project's compiler/linker settings
-#set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
-#FetchContent_MakeAvailable(googletest)
-
-#set(CMAKE_CXX_EXTENSIONS OFF)
-#set_property(GLOBAL PROPERTY USE_FOLDERS ON)
-
-#if((CMAKE_PROJECT_NAME STREQUAL PROJECT_NAME OR MODERN_CMAKE_BUILD_TESTING)
-#   AND BUILD_TESTING)
-#  add_subdirectory(tests)
-#endif()
-
 add_subdirectory(tests)
