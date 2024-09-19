@@ -97,7 +97,7 @@ namespace h264
 
     class FrameInfo {
     public:
-        FrameInfo(uint32_t frameCount, uint32_t width, uint32_t height, StdVideoH264SequenceParameterSet sps, StdVideoH264PictureParameterSet pps, uint32_t gopFrameCount)
+        FrameInfo(uint32_t frameCount, uint32_t width, uint32_t height, StdVideoH264SequenceParameterSet sps, StdVideoH264PictureParameterSet pps, uint32_t gopFrameCount, bool useConstantQp)
         {
             bool isI = gopFrameCount == 0;
             const uint32_t MaxPicOrderCntLsb = 1 << (sps.log2_max_pic_order_cnt_lsb_minus4 + 4);
@@ -119,6 +119,7 @@ namespace h264
             m_sliceInfo.sType = VK_STRUCTURE_TYPE_VIDEO_ENCODE_H264_NALU_SLICE_INFO_KHR;
             m_sliceInfo.pNext = NULL;
             m_sliceInfo.pStdSliceHeader = &m_sliceHeader;
+            m_sliceInfo.constantQp = useConstantQp ? 26 : 0;
 
             m_pictureInfoFlags.IdrPicFlag = isI ? 1 : 0; // every I frame is an IDR frame
             m_pictureInfoFlags.is_reference = 1;

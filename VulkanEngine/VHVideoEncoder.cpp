@@ -118,17 +118,6 @@ namespace vh {
         m_videoProfileList.profileCount = 1;
         m_videoProfileList.pProfiles = &m_videoProfile;
 
-        static const VkExtensionProperties h264StdExtensionVersion = { VK_STD_VULKAN_VIDEO_CODEC_H264_ENCODE_EXTENSION_NAME, VK_STD_VULKAN_VIDEO_CODEC_H264_ENCODE_SPEC_VERSION };
-        VkVideoSessionCreateInfoKHR createInfo = { VK_STRUCTURE_TYPE_VIDEO_SESSION_CREATE_INFO_KHR };
-        createInfo.pVideoProfile = &m_videoProfile;
-        createInfo.queueFamilyIndex = m_encodeQueueFamily;
-        createInfo.pictureFormat = VK_FORMAT_G8_B8R8_2PLANE_420_UNORM;
-        createInfo.maxCodedExtent = { m_width, m_height };
-        createInfo.maxDpbSlots = 16;
-        createInfo.maxActiveReferencePictures = 16;
-        createInfo.referencePictureFormat = VK_FORMAT_G8_B8R8_2PLANE_420_UNORM;
-        createInfo.pStdHeaderVersion = &h264StdExtensionVersion;
-
         VkVideoEncodeH264CapabilitiesKHR h264capabilities = {};
         h264capabilities.sType = VK_STRUCTURE_TYPE_VIDEO_ENCODE_H264_CAPABILITIES_KHR;
 
@@ -141,6 +130,44 @@ namespace vh {
         capabilities.pNext = &encodeCapabilities;
 
         VkResult ret = vkGetPhysicalDeviceVideoCapabilitiesKHR(m_physicalDevice, &m_videoProfile, &capabilities);
+
+        m_chosenRateControlMode = VK_VIDEO_ENCODE_RATE_CONTROL_MODE_DEFAULT_KHR;
+        if (encodeCapabilities.rateControlModes & VK_VIDEO_ENCODE_RATE_CONTROL_MODE_VBR_BIT_KHR) {
+            m_chosenRateControlMode = VK_VIDEO_ENCODE_RATE_CONTROL_MODE_VBR_BIT_KHR;
+        }
+        else if (encodeCapabilities.rateControlModes & VK_VIDEO_ENCODE_RATE_CONTROL_MODE_CBR_BIT_KHR) {
+            m_chosenRateControlMode = VK_VIDEO_ENCODE_RATE_CONTROL_MODE_CBR_BIT_KHR;
+        }
+        else if (encodeCapabilities.rateControlModes & VK_VIDEO_ENCODE_RATE_CONTROL_MODE_DISABLED_BIT_KHR) {
+            m_chosenRateControlMode = VK_VIDEO_ENCODE_RATE_CONTROL_MODE_DISABLED_BIT_KHR;
+        }
+
+        VkPhysicalDeviceVideoFormatInfoKHR videoFormatInfo = {};
+        videoFormatInfo.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VIDEO_FORMAT_INFO_KHR;
+        videoFormatInfo.pNext = &m_videoProfileList;
+        videoFormatInfo.imageUsage = VK_IMAGE_USAGE_VIDEO_ENCODE_DPB_BIT_KHR;
+        uint32_t videoFormatPropertyCount;
+        ret = vkGetPhysicalDeviceVideoFormatPropertiesKHR(m_physicalDevice, &videoFormatInfo, &videoFormatPropertyCount,
+            nullptr);
+        std::vector<VkVideoFormatPropertiesKHR> dpbVideoFormatProperties(videoFormatPropertyCount);
+        for (uint32_t i = 0; i < videoFormatPropertyCount; i++) {
+            memset(&dpbVideoFormatProperties[i], 0, sizeof(VkVideoFormatPropertiesKHR));
+            dpbVideoFormatProperties[i].sType = VK_STRUCTURE_TYPE_VIDEO_FORMAT_PROPERTIES_KHR;
+        }
+        ret = vkGetPhysicalDeviceVideoFormatPropertiesKHR(m_physicalDevice, &videoFormatInfo, &videoFormatPropertyCount,
+            dpbVideoFormatProperties.data());
+        m_chosenDpbImageFormat = dpbVideoFormatProperties[0].format;
+
+        static const VkExtensionProperties h264StdExtensionVersion = { VK_STD_VULKAN_VIDEO_CODEC_H264_ENCODE_EXTENSION_NAME, VK_STD_VULKAN_VIDEO_CODEC_H264_ENCODE_SPEC_VERSION };
+        VkVideoSessionCreateInfoKHR createInfo = { VK_STRUCTURE_TYPE_VIDEO_SESSION_CREATE_INFO_KHR };
+        createInfo.pVideoProfile = &m_videoProfile;
+        createInfo.queueFamilyIndex = m_encodeQueueFamily;
+        createInfo.pictureFormat = VK_FORMAT_G8_B8R8_2PLANE_420_UNORM;
+        createInfo.maxCodedExtent = { m_width, m_height };
+        createInfo.maxDpbSlots = 16;
+        createInfo.maxActiveReferencePictures = 16;
+        createInfo.referencePictureFormat = m_chosenDpbImageFormat;
+        createInfo.pStdHeaderVersion = &h264StdExtensionVersion;
 
         return vkCreateVideoSessionKHR(m_device, &createInfo, nullptr, &m_videoSession);
     }
@@ -254,7 +281,7 @@ namespace vh {
             tmpImgCreateInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
             tmpImgCreateInfo.pNext = &m_videoProfileList;
             tmpImgCreateInfo.imageType = VK_IMAGE_TYPE_2D;
-            tmpImgCreateInfo.format = VK_FORMAT_G8_B8R8_2PLANE_420_UNORM;
+            tmpImgCreateInfo.format = m_chosenDpbImageFormat;
             tmpImgCreateInfo.extent = { m_width, m_height, 1 };
             tmpImgCreateInfo.mipLevels = 1;
             tmpImgCreateInfo.arrayLayers = 1;
@@ -269,7 +296,7 @@ namespace vh {
             VmaAllocationCreateInfo allocInfo = {};
             allocInfo.usage = VMA_MEMORY_USAGE_GPU_ONLY;
             VHCHECKRESULT(vmaCreateImage(m_allocator, &tmpImgCreateInfo, &allocInfo, &m_dpbImages[i], &m_dpbImageAllocations[i], nullptr));
-            VHCHECKRESULT(vhBufCreateImageView(m_device, m_dpbImages[i], VK_FORMAT_G8_B8R8_2PLANE_420_UNORM, VK_IMAGE_VIEW_TYPE_2D, 1, VK_IMAGE_ASPECT_COLOR_BIT, &m_dpbImageViews[i]));
+            VHCHECKRESULT(vhBufCreateImageView(m_device, m_dpbImages[i], m_chosenDpbImageFormat, VK_IMAGE_VIEW_TYPE_2D, 1, VK_IMAGE_ASPECT_COLOR_BIT, &m_dpbImageViews[i]));
         }
         return VK_SUCCESS;
     }
@@ -440,13 +467,14 @@ namespace vh {
         m_encodeRateControlLayerInfo.averageBitrate = 5000000;
         m_encodeRateControlLayerInfo.maxBitrate = 20000000;
 
-        m_encodeH264RateControlInfo.flags = VK_VIDEO_ENCODE_H264_RATE_CONTROL_REGULAR_GOP_BIT_KHR;
+        m_encodeH264RateControlInfo.flags = VK_VIDEO_ENCODE_H264_RATE_CONTROL_REGULAR_GOP_BIT_KHR |
+            VK_VIDEO_ENCODE_H264_RATE_CONTROL_REFERENCE_PATTERN_FLAT_BIT_KHR;
         m_encodeH264RateControlInfo.gopFrameCount = 16;
         m_encodeH264RateControlInfo.idrPeriod = 16;
         m_encodeH264RateControlInfo.consecutiveBFrameCount = 0;
         m_encodeH264RateControlInfo.temporalLayerCount = 1;
 
-        m_encodeRateControlInfo.rateControlMode = VK_VIDEO_ENCODE_RATE_CONTROL_MODE_VBR_BIT_KHR;
+        m_encodeRateControlInfo.rateControlMode = m_chosenRateControlMode;
         m_encodeRateControlInfo.pNext = &m_encodeH264RateControlInfo;
         m_encodeRateControlInfo.layerCount = 1;
         m_encodeRateControlInfo.pLayers = &m_encodeRateControlLayerInfo;
@@ -456,6 +484,15 @@ namespace vh {
         VkVideoCodingControlInfoKHR codingControlInfo = { VK_STRUCTURE_TYPE_VIDEO_CODING_CONTROL_INFO_KHR };
         codingControlInfo.flags = VK_VIDEO_CODING_CONTROL_RESET_BIT_KHR | VK_VIDEO_CODING_CONTROL_ENCODE_RATE_CONTROL_BIT_KHR;
         codingControlInfo.pNext = &m_encodeRateControlInfo;
+
+        if (m_encodeRateControlInfo.rateControlMode & VK_VIDEO_ENCODE_RATE_CONTROL_MODE_CBR_BIT_KHR) {
+            m_encodeRateControlLayerInfo.averageBitrate = m_encodeRateControlLayerInfo.maxBitrate;
+        }
+        if (m_encodeRateControlInfo.rateControlMode & VK_VIDEO_ENCODE_RATE_CONTROL_MODE_DISABLED_BIT_KHR ||
+            m_encodeRateControlInfo.rateControlMode == VK_VIDEO_ENCODE_RATE_CONTROL_MODE_DEFAULT_KHR) {
+            m_encodeH264RateControlInfo.temporalLayerCount = 0;
+            m_encodeRateControlInfo.layerCount = 0;
+        }
 
         VkVideoEndCodingInfoKHR encodeEndInfo = { VK_STRUCTURE_TYPE_VIDEO_END_CODING_INFO_KHR };
 
@@ -470,7 +507,7 @@ namespace vh {
     {
         for (auto& dpbImage : m_dpbImages) {
             VHCHECKRESULT(vhBufTransitionImageLayout(m_device, m_encodeQueue, cmdBuf,
-                dpbImage, VK_FORMAT_G8_B8R8_2PLANE_420_UNORM, VK_IMAGE_ASPECT_COLOR_BIT, 1, 1,
+                dpbImage, m_chosenDpbImageFormat, VK_IMAGE_ASPECT_COLOR_BIT, 1, 1,
                 VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_VIDEO_ENCODE_DPB_KHR));
         }
         VHCHECKRESULT(vhBufTransitionImageLayout(m_device, m_encodeQueue, cmdBuf,
@@ -633,7 +670,8 @@ namespace vh {
         h264::FrameInfo frameInfo(gopFrameCount, m_width, m_height,
             m_sps,
             m_pps,
-            gopFrameCount);
+            gopFrameCount,
+            m_chosenRateControlMode & VK_VIDEO_ENCODE_RATE_CONTROL_MODE_DISABLED_BIT_KHR);
         VkVideoEncodeH264PictureInfoKHR* encodeH264FrameInfo = frameInfo.getEncodeH264FrameInfo();
 
         // combine all structures in one control structure
@@ -641,6 +679,7 @@ namespace vh {
         videoEncodeInfo.pNext = encodeH264FrameInfo;
         videoEncodeInfo.dstBuffer = m_bitStreamBuffer;
         videoEncodeInfo.dstBufferOffset = 0;
+        videoEncodeInfo.dstBufferRange = 4 * 1024 * 1024;
         videoEncodeInfo.srcPictureResource = inputPicResource;
         referenceSlots[0].slotIndex = gopFrameCount & 1;
         videoEncodeInfo.pSetupReferenceSlot = &referenceSlots[0];

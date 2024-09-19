@@ -205,6 +205,7 @@ VK_DEVICE_LEVEL_FUNCTION(vkCreateComputePipelines)
 VK_DEVICE_LEVEL_FUNCTION(vkCmdDispatch)
 VK_DEVICE_LEVEL_FUNCTION(vkGetEncodedVideoSessionParametersKHR)
 VK_DEVICE_LEVEL_FUNCTION(vkGetPhysicalDeviceVideoCapabilitiesKHR)
+VK_DEVICE_LEVEL_FUNCTION(vkGetPhysicalDeviceVideoFormatPropertiesKHR)
 #endif
 
 #undef VK_DEVICE_LEVEL_FUNCTION

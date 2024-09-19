@@ -64,6 +64,8 @@ namespace vh {
 		VkVideoEncodeH264ProfileInfoKHR m_encodeH264ProfileInfoExt;
 		VkVideoProfileInfoKHR m_videoProfile;
 		VkVideoProfileListInfoKHR m_videoProfileList;
+		VkFormat m_chosenDpbImageFormat;
+		VkVideoEncodeRateControlModeFlagBitsKHR m_chosenRateControlMode;
 
 		VkVideoEncodeH264RateControlLayerInfoKHR m_encodeH264RateControlLayerInfo = { VK_STRUCTURE_TYPE_VIDEO_ENCODE_H264_RATE_CONTROL_LAYER_INFO_KHR };
 		VkVideoEncodeRateControlLayerInfoKHR m_encodeRateControlLayerInfo = { VK_STRUCTURE_TYPE_VIDEO_ENCODE_RATE_CONTROL_LAYER_INFO_KHR };
