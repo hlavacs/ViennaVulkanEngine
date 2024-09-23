@@ -7,3 +7,6 @@
 [submodule "extern/glTF"]
 	path = extern/glTF
 	url = https://github.com/KhronosGroup/glTF.git
+[submodule "extern/ViennaEntityComponentSystem"]
+	path = extern/ViennaEntityComponentSystem
+	url = https://github.com/hlavacs/ViennaEntityComponentSystem.git
