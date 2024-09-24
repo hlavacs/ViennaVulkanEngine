@@ -1,13 +1,17 @@
 #pragma once
 
+#include <string>
 
-class VEWindow
-{
-private:
+namespace vve {
 
-public:
-    VEWindow(){};
-    virtual ~VEWindow(){}
+    class VeWindow
+    {
+    public:
+        VeWindow(std::string windowName, int width, int height){};
+        virtual ~VeWindow(){};
 
-};
+    private:
+    };
+
+}   // namespace vve
 

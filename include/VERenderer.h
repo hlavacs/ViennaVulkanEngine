@@ -1,12 +1,24 @@
 #pragma once
 
 
-class VERenderer
+namespace vve
 {
 
-public:
-    VERenderer();
-    virtual ~VERenderer();
-private:
-};
+    enum class VeRendererType {
+        FORWARD,
+        DEFERRED,
+        RAYTRACING
+    };
 
+
+    class VeRenderer {
+
+    public:
+        VeRenderer();
+        virtual ~VeRenderer();
+
+    private:
+
+    };
+
+}   // namespace vve

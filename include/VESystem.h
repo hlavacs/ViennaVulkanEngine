@@ -1,12 +1,18 @@
 #pragma once
 
 
-class VESystem
+namespace vve
 {
-public:
-    VESystem();
-    virtual ~VESystem();
 
-private:
+    class VeSystem
+    {
+    public:
+        VeSystem();
+        virtual ~VeSystem();
+    
+    private:
 
-};
+    };
+
+}
+

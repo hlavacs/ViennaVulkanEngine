@@ -2,11 +2,16 @@
 
 #include "VERenderer.h"
 
-class VERendererForward : public VERenderer
+namespace vve
 {
-public:
-    VERendererForward();
-    virtual ~VERendererForward();
-private:
-};
+
+    class VeRendererForward : public VeRenderer
+    {
+    public:
+        VeRendererForward();
+        virtual ~VeRendererForward();
+    private:
+    };
+
+}   // namespace vve
 

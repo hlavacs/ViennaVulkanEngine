@@ -10,7 +10,6 @@ set(SOURCE
   ${IMGUI}/imgui_widgets.cpp
 
   VEEngine.cpp
-  VEImgui.cpp
   VERenderer.cpp
   VERendererForward.cpp
   VESystem.cpp
@@ -18,6 +17,7 @@ set(SOURCE
   VEWindowSDL.cpp
 
   VHDevice.cpp
+  VHImgui.cpp
   )
 
 set(HEADERS

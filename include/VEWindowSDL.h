@@ -1,13 +1,19 @@
 #pragma once
 
-#include "VEWindow.h"
+#include "VeWindow.h"
 
-class VEWindowSDL : public VEWindow {
 
-public:
-    VEWindowSDL();
-    virtual ~VEWindowSDL();
+namespace vve {
 
-private:
+    class VeWindowSDL : public VeWindow {
+    
+    public:
+        VeWindowSDL(std::string windowName, int width, int height);
+        virtual ~VeWindowSDL();
+    
+    private:
+    
+    };
 
-};
+}  // namespace vve
+
