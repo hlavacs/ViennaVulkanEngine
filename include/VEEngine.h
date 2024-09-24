@@ -5,11 +5,11 @@
 
 namespace vve {
 
-	/*class VeEngine : public VeSystem<VeEngine> {
+	class VeEngine : public VeSystem<VeEngine> {
 	protected:
 
 	public:
 		VeEngine();
-	};*/
+	};
 }
 
