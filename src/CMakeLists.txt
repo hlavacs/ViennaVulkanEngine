@@ -12,9 +12,11 @@ set(SOURCE
   VEEngine.cpp
   VEImgui.cpp
   VERenderer.cpp
+  VERendererForward.cpp
   VESystem.cpp
   VEWindow.cpp
   VEWindowSDL.cpp
+
   VHDevice.cpp
   )
 
@@ -30,6 +32,8 @@ target_include_directories(${TARGET} PUBLIC ${INCLUDE})
 target_include_directories(${TARGET} PUBLIC ${IMGUI})
 target_include_directories(${TARGET} PUBLIC ${IMGUI}/backends)
 target_include_directories(${TARGET} PUBLIC ${GLM}/glm)
+target_include_directories(${TARGET} PUBLIC ${VECS}/include)
+target_include_directories(${TARGET} PUBLIC ${VTLL}/include)
 
 target_link_libraries(${TARGET} LINK_INTERFACE_LIBRARIES $(VULKAN_SDK)/Lib/vulkan-1.lib)
 

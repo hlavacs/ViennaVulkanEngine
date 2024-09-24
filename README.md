@@ -5,5 +5,10 @@ VVE's main contributor is Prof. Helmut Hlavacs (http://entertain.univie.ac.at/~h
 
 VVE features are:
 - 100% Vulkan, C++20
-- Windowing through GLFW, other systems are possible.
-- Multiplatform (almost) out of the box: Win 10, Linux, MacOS (using MoltenVK).
+- Windowing through SDL2, other systems are possible.
+- Multiplatform (almost) out of the box: Win 11, Linux, MacOS (using MoltenVK).
+
+
+For initialising all submodules run this in a CMD window:\  
+
+git submodule update --init --recursive
