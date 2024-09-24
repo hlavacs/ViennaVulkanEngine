@@ -11,6 +11,11 @@ set(SOURCE
 
   VEEngine.cpp
   VEImgui.cpp
+  VERenderer.cpp
+  VESystem.cpp
+  VEWindow.cpp
+  VEWindowSDL.cpp
+  VHDevice.cpp
   )
 
 set(HEADERS
