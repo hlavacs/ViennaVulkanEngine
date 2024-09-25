@@ -1,4 +1,5 @@
 
 
+add_subdirectory(ViennaEntityComponentSystem)
 
 

@@ -1,6 +1,6 @@
-set(TARGET testlib)
+set(TARGET testvve)
 
-set(SOURCE testlib.cpp)
+set(SOURCE testvve.cpp)
 
 set(HEADERS )
 
@@ -15,4 +15,4 @@ target_link_libraries (${TARGET} PUBLIC viennavulkanengine)
 
 target_link_libraries (${TARGET} PUBLIC ${SDL2}/lib/SDL2.lib)
 
-add_test(NAME testlibtest COMMAND testlib) # Command can be a target
+add_test(NAME testvvetest COMMAND testvve) # Command can be a target
