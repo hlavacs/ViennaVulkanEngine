@@ -12,7 +12,7 @@ int imgui_SDL2();
 
 int main() {
 
-    //vve::VeEngine engine;
+    vve::VeEngine engine;
 
     imgui_SDL2();
 
