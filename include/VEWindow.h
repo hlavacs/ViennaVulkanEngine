@@ -7,8 +7,8 @@ namespace vve {
     class VeWindow
     {
     public:
-        VeWindow(std::string windowName, int width, int height){};
-        virtual ~VeWindow(){};
+        VeWindow(std::string windowName, int width, int height);
+        virtual ~VeWindow();
 
     private:
     };

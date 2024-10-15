@@ -3,10 +3,8 @@
 #include "VEWindow.h"
 
 
+using namespace vve;
 
-namespace vve {
+VeWindow::VeWindow(std::string windowName, int width, int height) {}
 
-    //VeWindowSDL(std::string windowName, int width, int height);
-
-
-}
+VeWindow::~VeWindow(){}
