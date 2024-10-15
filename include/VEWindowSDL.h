@@ -14,16 +14,16 @@ namespace vve {
     class VeWindowSDL : public VeWindow {
     
     public:
-        VeWindowSDL(std::string windowName, int width, int height);
+        VeWindowSDL(VkInstance instance, std::string windowName, int width, int height);
         virtual ~VeWindowSDL();
     
     private:
-        bool InitSDL();
+        bool InitSDL(VkInstance instance);
         inline static bool sdl_initialized{false};
         SDL_Window* m_window{nullptr};
         std::vector<const char*> m_extensions;
 
-        ImGui_ImplVulkanH_Window g_MainWindowData;	
+        //ImGui_ImplVulkanH_Window g_MainWindowData;	
 
     };
 

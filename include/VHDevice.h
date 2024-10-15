@@ -21,7 +21,6 @@ namespace vh {
                         std::vector<const char*>& device_extensions, uint32_t queueFamily, VkDevice* device);
     void SetupDescriptorPool(VkDevice device, VkDescriptorPool* descriptorPool);
     void SetupSurface( VkDevice device, VkDescriptorPool descriptorPool, VkSurfaceKHR* surface);
-    void SetupGraphicsQueue(VkDevice device, VkQueue* queue );
 
 }
 

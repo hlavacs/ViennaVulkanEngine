@@ -53,7 +53,7 @@ void VeEngine::LoadLevel( const char* levelName ){
 };
 
 void VeEngine::CreateWindow( const char* windowName, int width, int height ){
-	m_window = std::make_unique<VeWindowSDL>(windowName, width, height);
+	m_window = std::make_unique<VeWindowSDL>(m_instance, windowName, width, height);
 };
 
 void VeEngine::CreateRenderer( const char* rendererName){

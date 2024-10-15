@@ -4,16 +4,16 @@
 
 using namespace vve;
 
-VeWindowSDL::VeWindowSDL(std::string windowName, int width, int height) : VeWindow(windowName, width, height) {
+VeWindowSDL::VeWindowSDL(VkInstance instance, std::string windowName, int width, int height) : VeWindow(instance, windowName, width, height) {
     if(!sdl_initialized) {
-        sdl_initialized = InitSDL();
+        sdl_initialized = InitSDL(instance);
     }
 
 }
 
 VeWindowSDL::~VeWindowSDL(){}
 
-bool VeWindowSDL::InitSDL() {
+bool VeWindowSDL::InitSDL(VkInstance instance) {
     // Setup SDL
     if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_TIMER | SDL_INIT_GAMECONTROLLER) != 0)
     {

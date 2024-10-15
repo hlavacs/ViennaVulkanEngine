@@ -5,6 +5,6 @@
 
 using namespace vve;
 
-VeWindow::VeWindow(std::string windowName, int width, int height) {}
+VeWindow::VeWindow(VkInstance instance, std::string windowName, int width, int height) {}
 
 VeWindow::~VeWindow(){}

@@ -158,11 +158,6 @@ void SetupDevice(VkPhysicalDevice physicalDevice, VkAllocationCallbacks* allocat
 }
 
 
-void SelectGraphicsQueue(VkDevice device, uint32_t queueFamily, VkQueue* queue) {
-    vkGetDeviceQueue(device, queueFamily, 0, queue);
-}
-
-
 void SetupDescriptorPool(VkDevice device, VkDescriptorPool* descriptorPool) {
     VkDescriptorPoolSize pool_sizes[] =
     {
