@@ -26,7 +26,7 @@ namespace vve {
 	private:
 		bool m_initialized{false};
 		bool m_running{false};
-		//vecs::Registry m_registry;
+		vecs::Registry<> m_registry;
 		std::unordered_map<std::string, vecs::Handle> m_nameMap{};
 		std::shared_ptr<VeWindow> m_window{};
 		std::shared_ptr<VeRenderer> m_renderer{};
