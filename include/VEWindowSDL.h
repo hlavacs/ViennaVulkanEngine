@@ -1,6 +1,11 @@
 #pragma once
 
 #include "VeWindow.h"
+#include <vector>
+#include <vulkan/vulkan.h>
+#include "imgui.h"
+#include "imgui_impl_sdl2.h"
+#include "imgui_impl_vulkan.h"
 #include <SDL.h>
 #include <SDL_vulkan.h>
 
@@ -13,9 +18,11 @@ namespace vve {
         virtual ~VeWindowSDL();
     
     private:
-        void InitSDL();
+        bool InitSDL();
         inline static bool sdl_initialized{false};
-        SDL_Window* window;
+        SDL_Window* window{nullptr};
+        ImGui_ImplVulkanH_Window g_MainWindowData;	
+
     };
 
 
