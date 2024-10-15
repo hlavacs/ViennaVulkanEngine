@@ -13,7 +13,7 @@ namespace vve {
         virtual ~VeWindowSDL();
     
     private:
-        void initSDL();
+        void InitSDL();
         inline static bool sdl_initialized{false};
         SDL_Window* window;
     };

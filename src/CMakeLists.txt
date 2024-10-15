@@ -12,6 +12,7 @@ set(SOURCE
   VEEngine.cpp
   VERenderer.cpp
   VERendererForward.cpp
+  VESceneManager.cpp
   VESystem.cpp
   VEWindow.cpp
   VEWindowSDL.cpp
