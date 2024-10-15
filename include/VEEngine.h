@@ -2,8 +2,8 @@
 
 #include <memory>
 #include <unordered_map>
-#include "VEWindowSDL.h"
-#include "VERendererForward.h"
+#include "VEWindow.h"
+#include "VERenderer.h"
 #include "VECS.h"
 
 
@@ -22,6 +22,7 @@ namespace vve {
 		virtual void createCamera( const char* cameraName );
 		virtual void createSceneManager( const char* sceneManagerName );
 		virtual void run();
+		virtual void stop();
 
 	private:
 		bool m_initialized{false};

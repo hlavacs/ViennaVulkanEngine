@@ -1,4 +1,5 @@
 #include "VEEngine.h"
+#include "VEWindowSDL.h"
 
 using namespace vve;
 
@@ -7,12 +8,14 @@ VeEngine::VeEngine(){};
 VeEngine::~VeEngine(){};
 
 void VeEngine::init(){
+	loadLevel("");
+	createWindow("Vulkan Engine", 800, 600);
+	createRenderer("Forward");
+	createCamera("Main Camera");
+	createSceneManager("");
 	m_initialized = true;
 };
 
-void VeEngine::shutdown(){
-	m_running = false;
-};
 
 void VeEngine::loadLevel( const char* levelName ){
 	// Load level
@@ -37,12 +40,23 @@ void VeEngine::createSceneManager( const char* sceneManagerName ){
 void VeEngine::run(){
 	if(!m_initialized){ init(); }
 	m_running = true;
-	while(m_running) {
+	while(m_running) { //call stop to stop the engine
+		// Window
 		// Update
 		// Render
+		// GUI
 	}
 	shutdown();
 };
+
+void VeEngine::stop(){
+	m_running = false;
+};
+
+
+void VeEngine::shutdown(){
+};
+
 
 
 

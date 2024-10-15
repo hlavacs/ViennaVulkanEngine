@@ -13,5 +13,5 @@ namespace vve
     private:
     };
 
-}   // namespace vve
+};   // namespace vve
 
