@@ -384,9 +384,18 @@ static void FramePresent(ImGui_ImplVulkanH_Window* wd)
 
 
 // Main code
-int imgui_SDL2( VkInstance xinstance, VkPhysicalDevice xphysicalDevice, VkDevice xdevice, 
-        VkQueue xqueue, uint32_t xqueueFamily, VkSurfaceKHR xsurface, VkAllocationCallbacks* xallocator)
+int imgui_SDL2( VkInstance instance, VkPhysicalDevice physicalDevice, VkDevice device, VkQueue queue, 
+        uint32_t queueFamily, VkSurfaceKHR surface, VkAllocationCallbacks* allocator, SDL_Window* window)
 {
+    // Setup Vulkan
+    g_Instance = instance;
+    g_PhysicalDevice = physicalDevice;
+    g_Device = device;
+    g_Queue = queue;
+    g_QueueFamily = queueFamily;
+    g_Allocator = allocator;
+
+    /*
     // Setup SDL
     if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_TIMER | SDL_INIT_GAMECONTROLLER) != 0)
     {
@@ -413,16 +422,18 @@ int imgui_SDL2( VkInstance xinstance, VkPhysicalDevice xphysicalDevice, VkDevice
     SDL_Vulkan_GetInstanceExtensions(window, &extensions_count, nullptr);
     extensions.resize(extensions_count);
     SDL_Vulkan_GetInstanceExtensions(window, &extensions_count, extensions.Data);
+
     SetupVulkan(extensions);
 
     // Create Window Surface
     VkSurfaceKHR surface;
     VkResult err;
-    if (SDL_Vulkan_CreateSurface(window, g_Instance, &surface) == 0)
-    {
+    if (SDL_Vulkan_CreateSurface(window, g_Instance, &surface) == 0) {
         printf("Failed to create Vulkan surface.\n");
         return 1;
     }
+    */
+
 
     // Create Framebuffers
     int w, h;
@@ -574,7 +585,7 @@ int imgui_SDL2( VkInstance xinstance, VkPhysicalDevice xphysicalDevice, VkDevice
     }
 
     // Cleanup
-    err = vkDeviceWaitIdle(g_Device);
+    VkResult err = vkDeviceWaitIdle(g_Device);
     check_vk_result(err);
     ImGui_ImplVulkan_Shutdown();
     ImGui_ImplSDL2_Shutdown();

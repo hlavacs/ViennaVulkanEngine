@@ -4,7 +4,7 @@
 namespace vve {
 
     VeWindowSDL::VeWindowSDL(VeEngine& engine, VkInstance instance, std::string windowName
-            , int width, int height, std::vector<const char*> instance_extensions) 
+            , int width, int height, std::vector<const char*>& instance_extensions) 
                 : VeWindow(engine, instance, windowName, width, height, instance_extensions) {
 
         if(!sdl_initialized) {
@@ -14,7 +14,7 @@ namespace vve {
 
         // Create window with Vulkan graphics context
         SDL_WindowFlags window_flags = (SDL_WindowFlags)(SDL_WINDOW_VULKAN | SDL_WINDOW_RESIZABLE | SDL_WINDOW_ALLOW_HIGHDPI);
-        SDL_Window* m_window = SDL_CreateWindow(windowName.c_str(), SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, width, height, window_flags);
+        m_window = SDL_CreateWindow(windowName.c_str(), SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, width, height, window_flags);
         if (m_window == nullptr) {
             printf("Error: SDL_CreateWindow(): %s\n", SDL_GetError());
             return;
@@ -55,6 +55,10 @@ namespace vve {
             return VK_NULL_HANDLE;
         }
         return m_surface; 
+    }
+
+    void VeWindowSDL::render() {
+        //imgui_SDL2(m_instance, m_physicalDevice, m_device, m_queue, m_queueFamily, m_surface, m_allocator, m_window);
     }
 
 
