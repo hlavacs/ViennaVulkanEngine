@@ -7,6 +7,7 @@
 #include "VEWindow.h"
 #include "VERenderer.h"
 #include "VESceneManager.h"
+#include "VESystem.h"
 #include "VECS.h"
 
 
@@ -18,7 +19,7 @@ namespace vve {
 		VeEngine();
 		virtual ~VeEngine();
 		virtual void Init();
-		virtual void RegisterSystem();
+		virtual void RegisterSystem( std::shared_ptr<VeSystem> system);
 		virtual void Shutdown();
 		virtual void LoadLevel( const char* levelName );
 		virtual void CreateWindow( const char* windowName, int width, int height );
@@ -29,20 +30,23 @@ namespace vve {
 		virtual void Stop();
 
 	private:
+		void SetupVulkan();
 
-		VkAllocationCallbacks*   m_Allocator = nullptr;
-		VkInstance               m_Instance = VK_NULL_HANDLE;
-		VkPhysicalDevice         m_PhysicalDevice = VK_NULL_HANDLE;
-		VkDevice                 m_Device = VK_NULL_HANDLE;
-		uint32_t                 m_QueueFamily = (uint32_t)-1;
-		VkQueue                  m_Queue = VK_NULL_HANDLE;
-		VkDebugReportCallbackEXT m_DebugReport = VK_NULL_HANDLE;
-		VkPipelineCache          m_PipelineCache = VK_NULL_HANDLE;
-		VkDescriptorPool         m_DescriptorPool = VK_NULL_HANDLE;
+		VkAllocationCallbacks*   m_allocator = nullptr;
+		VkInstance               m_instance = VK_NULL_HANDLE;
+		VkPhysicalDevice         m_physicalDevice = VK_NULL_HANDLE;
+		VkDevice                 m_device = VK_NULL_HANDLE;
+		uint32_t                 m_queueFamily = (uint32_t)-1;
+		VkQueue                  m_queue = VK_NULL_HANDLE;
+		VkDebugReportCallbackEXT m_debugReport = VK_NULL_HANDLE;
+		VkSurfaceKHR			 m_surface = VK_NULL_HANDLE;
+		VkPipelineCache          m_pipelineCache = VK_NULL_HANDLE;
+		VkDescriptorPool         m_descriptorPool = VK_NULL_HANDLE;
 
-		uint32_t                 m_MinImageCount = 2;
-		bool                     m_SwapChainRebuild = false;
+		uint32_t                 m_minImageCount = 2;
+		bool                     m_swapChainRebuild = false;
 
+		bool m_debug{false};
 		bool m_initialized{false};
 		bool m_running{false};
 		vecs::Registry<> m_registry;

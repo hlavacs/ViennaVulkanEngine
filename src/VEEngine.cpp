@@ -3,20 +3,49 @@
 
 using namespace vve;
 
-VeEngine::VeEngine(){};
+VeEngine::VeEngine() {
+#ifdef DEBUG
+	m_debug = true;
+#endif
+};
 
 VeEngine::~VeEngine(){};
 
 void VeEngine::Init(){
 	if(m_initialized) return;
 	CreateWindow("Vulkan Engine", 800, 600);
-	vh::SetupVulkan();
+	SetupVulkan();
 	CreateRenderer("Forward");
 	CreateCamera("Main Camera");
 	CreateSceneManager("");
 	LoadLevel("");
 	m_initialized = true;
 };
+
+
+void VeEngine::SetupVulkan() {
+	std::vector<const char*> instance_layers;
+	std::vector<const char*> instance_extensions;
+	std::vector<const char*> device_extensions{"VK_KHR_swapchain"};
+	
+	if(m_debug) {
+        instance_layers.push_back("VK_LAYER_KHRONOS_validation");
+        instance_extensions.push_back("VK_EXT_debug_report");
+	}
+
+	vh::SetUpInstance(instance_layers, instance_extensions, m_allocator, &m_instance);
+	if(m_debug) vh::SetupDebugReport(m_instance, m_allocator, &m_debugReport);
+	vh::SetupPhysicalDevice(m_instance, device_extensions, &m_physicalDevice);
+	vh::SetupGraphicsQueueFamily(m_physicalDevice, &m_queueFamily);
+    vh::SetupDevice( m_physicalDevice, nullptr, device_extensions, m_queueFamily, &m_device);
+	vkGetDeviceQueue(m_device, m_queueFamily, 0, &m_queue);
+	vh::SetupDescriptorPool(m_device, &m_descriptorPool);
+	vh::SetupSurface( m_device, m_descriptorPool, &m_surface);
+};
+
+void VeEngine::RegisterSystem( std::shared_ptr<VeSystem> system) {
+	// Register system
+}
 
 
 void VeEngine::LoadLevel( const char* levelName ){
@@ -57,5 +86,14 @@ void VeEngine::Stop(){
 
 
 void VeEngine::Shutdown(){
-};
+	vkDestroyDescriptorPool(m_device, m_descriptorPool, m_allocator);
+
+    auto PFN_DestroyDebugReportCallbackEXT = (PFN_vkDestroyDebugReportCallbackEXT)vkGetInstanceProcAddr(m_instance, "vkDestroyDebugReportCallbackEXT");
+    PFN_DestroyDebugReportCallbackEXT(m_instance, m_debugReport, m_allocator);
+
+    vkDestroyDevice(m_device, m_allocator);
+    vkDestroyInstance(m_instance, m_allocator);
+}
+
+
 

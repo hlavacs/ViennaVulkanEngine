@@ -3,23 +3,25 @@
 #include <vector>
 #include <assert.h>
 #include <vulkan/vulkan.h>
+#include "imgui.h"
+#include "imgui_impl_sdl2.h"
+#include "imgui_impl_vulkan.h"
 
 namespace vh {
 
-    void check_vk_result(VkResult err);
+    void CheckResult(VkResult err);
     bool IsExtensionAvailable(const std::vector<VkExtensionProperties>& properties, const char* extension);
-    auto SelectPhysicalDevice() -> VkPhysicalDevice;
-    void SelectGraphicsQueueFamily();
-   
-    void SetUpInstance(std::vector<const char*> instance_extensions, VkAllocationCallbacks* allocator, VkInstance* instance);
-    void SetupDebugReport();
-    void SetupPhysicalDevice();
-    void SetupDevice(std::vector<const char*> device_extensions);
-    void SetupVulkan();
-    void SetupSurface(VkSurfaceKHR surface, int width, int height);
+    auto SelectPhysicalDevice() ;
 
-    void CleanupVulkan();
-
+    void SetUpInstance(std::vector<const char*> layers, std::vector<const char*> instance_extensions, VkAllocationCallbacks* allocator, VkInstance* instance);
+    void SetupDebugReport(VkInstance instance, VkAllocationCallbacks* allocator, VkDebugReportCallbackEXT* debugReport);
+    void SetupPhysicalDevice(VkInstance instance, std::vector<const char*> device_extensions, VkPhysicalDevice* physicalDevice);
+    void SetupGraphicsQueueFamily( VkPhysicalDevice physicalDevice, uint32_t* queueFamily);
+    void SetupDevice(   VkPhysicalDevice physicalDevice, VkAllocationCallbacks* allocator, 
+                        std::vector<const char*>& device_extensions, uint32_t queueFamily, VkDevice* device);
+    void SetupDescriptorPool(VkDevice device, VkDescriptorPool* descriptorPool);
+    void SetupSurface( VkDevice device, VkDescriptorPool descriptorPool, VkSurfaceKHR* surface);
+    void SetupGraphicsQueue(VkDevice device, VkQueue* queue );
 
 }
 
