@@ -19,7 +19,8 @@ namespace vve {
     public:
         VeWindowSDL(VeEngine& engine, VkInstance instance, std::string windowName, int width, int height, std::vector<const char*> instance_extensions);
         virtual ~VeWindowSDL();
-    
+        virtual auto getSurface(VkInstance instance) -> VkSurfaceKHR override;
+
     private:
         bool InitSDL(VkInstance instance);
         inline static bool sdl_initialized{false};

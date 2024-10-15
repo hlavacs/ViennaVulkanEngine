@@ -13,7 +13,7 @@ namespace vve {
     public:
         VeWindow(VeEngine& engine, VkInstance instance, std::string windowName, int width, int height, std::vector<const char*> instance_extensions) ;
         virtual ~VeWindow();
-        VkSurfaceKHR getSurface();
+        virtual auto getSurface(VkInstance instance) -> VkSurfaceKHR = 0;
 
     protected:
         VeEngine& m_engine;
