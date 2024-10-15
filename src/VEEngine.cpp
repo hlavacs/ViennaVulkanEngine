@@ -8,11 +8,13 @@ VeEngine::VeEngine(){};
 VeEngine::~VeEngine(){};
 
 void VeEngine::Init(){
-	LoadLevel("");
+	if(m_initialized) return;
 	CreateWindow("Vulkan Engine", 800, 600);
+	vh::SetupVulkan();
 	CreateRenderer("Forward");
 	CreateCamera("Main Camera");
 	CreateSceneManager("");
+	LoadLevel("");
 	m_initialized = true;
 };
 
@@ -38,7 +40,7 @@ void VeEngine::CreateSceneManager( const char* sceneManagerName ){
 };
 
 void VeEngine::Run(){
-	if(!m_initialized){ Init(); }
+	Init();
 	m_running = true;
 	while(m_running) { //call stop to stop the engine
 		// Window
@@ -56,12 +58,4 @@ void VeEngine::Stop(){
 
 void VeEngine::Shutdown(){
 };
-
-
-
-
-
-
-
-
 

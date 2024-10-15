@@ -3,6 +3,7 @@
 #include <memory>
 #include <unordered_map>
 #include <vulkan/vulkan.h>
+#include "VHDevice.h"
 #include "VEWindow.h"
 #include "VERenderer.h"
 #include "VESceneManager.h"
@@ -29,18 +30,18 @@ namespace vve {
 
 	private:
 
-		VkAllocationCallbacks*   g_Allocator = nullptr;
-		VkInstance               g_Instance = VK_NULL_HANDLE;
-		VkPhysicalDevice         g_PhysicalDevice = VK_NULL_HANDLE;
-		VkDevice                 g_Device = VK_NULL_HANDLE;
-		uint32_t                 g_QueueFamily = (uint32_t)-1;
-		VkQueue                  g_Queue = VK_NULL_HANDLE;
-		VkDebugReportCallbackEXT g_DebugReport = VK_NULL_HANDLE;
-		VkPipelineCache          g_PipelineCache = VK_NULL_HANDLE;
-		VkDescriptorPool         g_DescriptorPool = VK_NULL_HANDLE;
+		VkAllocationCallbacks*   m_Allocator = nullptr;
+		VkInstance               m_Instance = VK_NULL_HANDLE;
+		VkPhysicalDevice         m_PhysicalDevice = VK_NULL_HANDLE;
+		VkDevice                 m_Device = VK_NULL_HANDLE;
+		uint32_t                 m_QueueFamily = (uint32_t)-1;
+		VkQueue                  m_Queue = VK_NULL_HANDLE;
+		VkDebugReportCallbackEXT m_DebugReport = VK_NULL_HANDLE;
+		VkPipelineCache          m_PipelineCache = VK_NULL_HANDLE;
+		VkDescriptorPool         m_DescriptorPool = VK_NULL_HANDLE;
 
-		uint32_t                 g_MinImageCount = 2;
-		bool                     g_SwapChainRebuild = false;
+		uint32_t                 m_MinImageCount = 2;
+		bool                     m_SwapChainRebuild = false;
 
 		bool m_initialized{false};
 		bool m_running{false};

@@ -20,7 +20,9 @@ namespace vve {
     private:
         bool InitSDL();
         inline static bool sdl_initialized{false};
-        SDL_Window* window{nullptr};
+        SDL_Window* m_window{nullptr};
+        std::vector<const char*> m_extensions;
+
         ImGui_ImplVulkanH_Window g_MainWindowData;	
 
     };
