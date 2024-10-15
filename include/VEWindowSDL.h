@@ -1,7 +1,8 @@
 #pragma once
 
 #include "VeWindow.h"
-
+#include <SDL.h>
+#include <SDL_vulkan.h>
 
 namespace vve {
 
@@ -12,8 +13,11 @@ namespace vve {
         virtual ~VeWindowSDL();
     
     private:
-    
+        void initSDL();
+        inline static bool sdl_initialized{false};
+        SDL_Window* window;
     };
+
 
 }  // namespace vve
 

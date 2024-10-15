@@ -13,15 +13,15 @@ namespace vve {
 
 	public:
 		VeEngine();
-		~VeEngine();
-		void init();
-		void shutdown();
-		void loadLevel( const char* levelName );
-		void createWindow( const char* windowName, int width, int height );
-		void createRenderer( const char* rendererName);
-		void createCamera( const char* cameraName );
-		void createSceneManager( const char* sceneManagerName );
-		void run();
+		virtual ~VeEngine();
+		virtual void init();
+		virtual void shutdown();
+		virtual void loadLevel( const char* levelName );
+		virtual void createWindow( const char* windowName, int width, int height );
+		virtual void createRenderer( const char* rendererName);
+		virtual void createCamera( const char* cameraName );
+		virtual void createSceneManager( const char* sceneManagerName );
+		virtual void run();
 
 	private:
 		bool m_initialized{false};

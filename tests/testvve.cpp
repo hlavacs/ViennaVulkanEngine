@@ -9,7 +9,7 @@
 
 int imgui_SDL2();
 
-int main() {
+int main(int argc, char** argv) {
 
     vve::VeEngine engine;
 
