@@ -32,19 +32,18 @@ namespace vve {
 	private:
 		void SetupVulkan();
 
+		std::vector<const char*> m_instance_layers;
+		std::vector<const char*> m_instance_extensions;
+		std::vector<const char*> m_device_extensions{"VK_KHR_swapchain"};
+
 		VkAllocationCallbacks*   m_allocator = nullptr;
 		VkInstance               m_instance = VK_NULL_HANDLE;
+		VkDebugReportCallbackEXT m_debugReport = VK_NULL_HANDLE;
 		VkPhysicalDevice         m_physicalDevice = VK_NULL_HANDLE;
 		VkDevice                 m_device = VK_NULL_HANDLE;
-		uint32_t                 m_queueFamily = (uint32_t)-1;
+		uint32_t                 m_queueFamily = (uint32_t)-1;		
 		VkQueue                  m_queue = VK_NULL_HANDLE;
-		VkDebugReportCallbackEXT m_debugReport = VK_NULL_HANDLE;
 		VkSurfaceKHR			 m_surface = VK_NULL_HANDLE;
-		VkPipelineCache          m_pipelineCache = VK_NULL_HANDLE;
-		VkDescriptorPool         m_descriptorPool = VK_NULL_HANDLE;
-
-		uint32_t                 m_minImageCount = 2;
-		bool                     m_swapChainRebuild = false;
 
 		bool m_debug{false};
 		bool m_initialized{false};

@@ -6,5 +6,5 @@ namespace vve {
 
 
 
-}
+};  // namespace vve
 

@@ -383,45 +383,9 @@ static void FramePresent(ImGui_ImplVulkanH_Window* wd)
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 // Main code
-int imgui_SDL2()
+int imgui_SDL2( VkInstance xinstance, VkPhysicalDevice xphysicalDevice, VkDevice xdevice, 
+        VkQueue xqueue, uint32_t xqueueFamily, VkSurfaceKHR xsurface, VkAllocationCallbacks* xallocator)
 {
     // Setup SDL
     if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_TIMER | SDL_INIT_GAMECONTROLLER) != 0)

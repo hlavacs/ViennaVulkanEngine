@@ -1,18 +1,22 @@
 #pragma once
 
 #include <string>
+#include <vector>
 #include <vulkan/vulkan.h>
 
 namespace vve {
 
+    class VeEngine;
+
     class VeWindow
     {
     public:
-        VeWindow(VkInstance instance, std::string windowName, int width, int height);
+        VeWindow(VeEngine& engine, VkInstance instance, std::string windowName, int width, int height, std::vector<const char*> instance_extensions) ;
         virtual ~VeWindow();
+        VkSurfaceKHR getSurface();
 
-        VkSurfaceKHR getSurface() { return m_surface; }
-    private:
+    protected:
+        VeEngine& m_engine;
         VkSurfaceKHR m_surface{VK_NULL_HANDLE};
     };
 

@@ -2,8 +2,7 @@
 
 namespace vve {
 
-    class VeSceneManager
-    {
+    class VeSceneManager {
     public:
         VeSceneManager();
         virtual ~VeSceneManager();
@@ -12,6 +11,5 @@ namespace vve {
 
     };
 
+};  // namespace vve
 
-
-}  // namespace vve

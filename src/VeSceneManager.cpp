@@ -1,11 +1,11 @@
 
 #include "VESceneManager.h"
 
-using namespace vve;   
+namespace vve {
 
-VeSceneManager::VeSceneManager() {
-}
+    VeSceneManager::VeSceneManager() {}
 
-VeSceneManager::~VeSceneManager() {
-}
+    VeSceneManager::~VeSceneManager() {}
+
+};  // namespace vve
 
