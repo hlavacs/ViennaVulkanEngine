@@ -30,24 +30,24 @@ namespace vve {
     }
 
     VeWindowSDL::~VeWindowSDL() {
-        vh::CheckResult(vkDeviceWaitIdle(m_engine.getDevice()));
+        vh::CheckResult(vkDeviceWaitIdle(m_engine.getState().m_device));
         ImGui_ImplVulkan_Shutdown();
         ImGui_ImplSDL2_Shutdown();
         ImGui::DestroyContext();
 
-        ImGui_ImplVulkanH_DestroyWindow(m_engine.getInstance(), m_engine.getDevice(), &m_mainWindowData, m_engine.getAllocator());
-        vkDestroyDescriptorPool(m_engine.getDevice(), m_descriptorPool, m_engine.getAllocator());
+        ImGui_ImplVulkanH_DestroyWindow(m_engine.getState().m_instance, m_engine.getState().m_device, &m_mainWindowData, m_engine.getState().m_allocator);
+        vkDestroyDescriptorPool(m_engine.getState().m_device, m_descriptorPool, m_engine.getState().m_allocator);
         SDL_DestroyWindow(m_window);
         SDL_Quit();
     }
 
 
     void VeWindowSDL::Init() {
-        if (SDL_Vulkan_CreateSurface(m_window, m_engine.getInstance(), &m_surface) == 0) {
+        if (SDL_Vulkan_CreateSurface(m_window, m_engine.getState().m_instance, &m_surface) == 0) {
             printf("Failed to create Vulkan surface.\n");
         }
         
-        vh::SetupDescriptorPool(m_engine.getDevice(), &m_descriptorPool);
+        vh::SetupDescriptorPool(m_engine.getState().m_device, &m_descriptorPool);
 
         // Setup Vulkan
         // Create Framebuffers
@@ -58,7 +58,7 @@ namespace vve {
 
         // Check for WSI support
         VkBool32 res;
-        vkGetPhysicalDeviceSurfaceSupportKHR(m_engine.getPhysicalDevice(), m_engine.getQueueFamily(), m_mainWindowData.Surface, &res);
+        vkGetPhysicalDeviceSurfaceSupportKHR(m_engine.getState().m_physicalDevice, m_engine.getState().m_queueFamily, m_mainWindowData.Surface, &res);
         if (res != VK_TRUE) {
             fprintf(stderr, "Error no WSI support on physical device 0\n");
             exit(-1);
@@ -67,16 +67,16 @@ namespace vve {
         // Select Surface Format
         const VkFormat requestSurfaceImageFormat[] = { VK_FORMAT_B8G8R8A8_UNORM, VK_FORMAT_R8G8B8A8_UNORM, VK_FORMAT_B8G8R8_UNORM, VK_FORMAT_R8G8B8_UNORM };
         const VkColorSpaceKHR requestSurfaceColorSpace = VK_COLORSPACE_SRGB_NONLINEAR_KHR;
-        m_mainWindowData.SurfaceFormat = ImGui_ImplVulkanH_SelectSurfaceFormat(m_engine.getPhysicalDevice(), m_mainWindowData.Surface, requestSurfaceImageFormat, (size_t)IM_ARRAYSIZE(requestSurfaceImageFormat), requestSurfaceColorSpace);
+        m_mainWindowData.SurfaceFormat = ImGui_ImplVulkanH_SelectSurfaceFormat(m_engine.getState().m_physicalDevice, m_mainWindowData.Surface, requestSurfaceImageFormat, (size_t)IM_ARRAYSIZE(requestSurfaceImageFormat), requestSurfaceColorSpace);
 
         // Select Present Mode
         VkPresentModeKHR present_modes[] = { VK_PRESENT_MODE_MAILBOX_KHR, VK_PRESENT_MODE_IMMEDIATE_KHR, VK_PRESENT_MODE_FIFO_KHR };
-        m_mainWindowData.PresentMode = ImGui_ImplVulkanH_SelectPresentMode(m_engine.getPhysicalDevice(), m_mainWindowData.Surface, &present_modes[0], IM_ARRAYSIZE(present_modes));
+        m_mainWindowData.PresentMode = ImGui_ImplVulkanH_SelectPresentMode(m_engine.getState().m_physicalDevice, m_mainWindowData.Surface, &present_modes[0], IM_ARRAYSIZE(present_modes));
         //printf("[vulkan] Selected PresentMode = %d\n", wd->PresentMode);
 
         // Create SwapChain, RenderPass, Framebuffer, etc.
         assert(m_minImageCount >= 2);
-        ImGui_ImplVulkanH_CreateOrResizeWindow(m_engine.getInstance(), m_engine.getPhysicalDevice(), m_engine.getDevice(), &m_mainWindowData, m_engine.getQueueFamily(), m_engine.getAllocator(), w, h, m_minImageCount);
+        ImGui_ImplVulkanH_CreateOrResizeWindow(m_engine.getState().m_instance, m_engine.getState().m_physicalDevice, m_engine.getState().m_device, &m_mainWindowData, m_engine.getState().m_queueFamily, m_engine.getState().m_allocator, w, h, m_minImageCount);
 
         // Setup Dear ImGui context
         IMGUI_CHECKVERSION();
@@ -93,19 +93,19 @@ namespace vve {
         // Setup Platform/Renderer backends
         ImGui_ImplSDL2_InitForVulkan(m_window);
         ImGui_ImplVulkan_InitInfo init_info = {};
-        init_info.Instance = m_engine.getInstance();
-        init_info.PhysicalDevice = m_engine.getPhysicalDevice();
-        init_info.Device = m_engine.getDevice();
-        init_info.QueueFamily = m_engine.getQueueFamily();
-        init_info.Queue = m_engine.getQueue();
-        init_info.PipelineCache = m_engine.getPipelineCache();
+        init_info.Instance = m_engine.getState().m_instance;
+        init_info.PhysicalDevice = m_engine.getState().m_physicalDevice;
+        init_info.Device = m_engine.getState().m_device;
+        init_info.QueueFamily = m_engine.getState().m_queueFamily;
+        init_info.Queue = m_engine.getState().m_queue;
+        init_info.PipelineCache = m_engine.getState().m_pipelineCache;
         init_info.DescriptorPool = m_descriptorPool;
         init_info.RenderPass = m_mainWindowData.RenderPass;
         init_info.Subpass = 0;
         init_info.MinImageCount = m_minImageCount;
         init_info.ImageCount = m_mainWindowData.ImageCount;
         init_info.MSAASamples = VK_SAMPLE_COUNT_1_BIT;
-        init_info.Allocator = m_engine.getAllocator();
+        init_info.Allocator = m_engine.getState().m_allocator;
         init_info.CheckVkResultFn = vh::CheckResult;
         ImGui_ImplVulkan_Init(&init_info);
 
@@ -159,7 +159,7 @@ namespace vve {
         if (fb_width > 0 && fb_height > 0 && (m_swapChainRebuild || m_mainWindowData.Width != fb_width || m_mainWindowData.Height != fb_height))
         {
             ImGui_ImplVulkan_SetMinImageCount(m_minImageCount);
-            ImGui_ImplVulkanH_CreateOrResizeWindow(m_engine.getInstance(), m_engine.getPhysicalDevice(), m_engine.getDevice(), &m_mainWindowData, m_engine.getQueueFamily(), m_engine.getAllocator(), fb_width, fb_height, m_minImageCount);
+            ImGui_ImplVulkanH_CreateOrResizeWindow(m_engine.getState().m_instance, m_engine.getState().m_physicalDevice, m_engine.getState().m_device, &m_mainWindowData, m_engine.getState().m_queueFamily, m_engine.getState().m_allocator, fb_width, fb_height, m_minImageCount);
             m_mainWindowData.FrameIndex = 0;
             m_swapChainRebuild = false;
         }
@@ -239,7 +239,7 @@ namespace vve {
 
         VkSemaphore image_acquired_semaphore  = wd->FrameSemaphores[wd->SemaphoreIndex].ImageAcquiredSemaphore;
         VkSemaphore render_complete_semaphore = wd->FrameSemaphores[wd->SemaphoreIndex].RenderCompleteSemaphore;
-        err = vkAcquireNextImageKHR(m_engine.getDevice(), wd->Swapchain, UINT64_MAX, image_acquired_semaphore, VK_NULL_HANDLE, &wd->FrameIndex);
+        err = vkAcquireNextImageKHR(m_engine.getState().m_device, wd->Swapchain, UINT64_MAX, image_acquired_semaphore, VK_NULL_HANDLE, &wd->FrameIndex);
         if (err == VK_ERROR_OUT_OF_DATE_KHR || err == VK_SUBOPTIMAL_KHR)
         {
             m_swapChainRebuild = true;
@@ -249,11 +249,11 @@ namespace vve {
 
         ImGui_ImplVulkanH_Frame* fd = &wd->Frames[wd->FrameIndex];
         {
-            vh::CheckResult(vkWaitForFences(m_engine.getDevice(), 1, &fd->Fence, VK_TRUE, UINT64_MAX));
-            vh::CheckResult(vkResetFences(m_engine.getDevice(), 1, &fd->Fence));
+            vh::CheckResult(vkWaitForFences(m_engine.getState().m_device, 1, &fd->Fence, VK_TRUE, UINT64_MAX));
+            vh::CheckResult(vkResetFences(m_engine.getState().m_device, 1, &fd->Fence));
         }
         {
-            vh::CheckResult(vkResetCommandPool(m_engine.getDevice(), fd->CommandPool, 0));
+            vh::CheckResult(vkResetCommandPool(m_engine.getState().m_device, fd->CommandPool, 0));
             VkCommandBufferBeginInfo info = {};
             info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
             info.flags |= VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
@@ -289,7 +289,7 @@ namespace vve {
             info.pSignalSemaphores = &render_complete_semaphore;
 
             vh::CheckResult(vkEndCommandBuffer(fd->CommandBuffer));
-            vh::CheckResult(vkQueueSubmit(m_engine.getQueue(), 1, &info, fd->Fence));
+            vh::CheckResult(vkQueueSubmit(m_engine.getState().m_queue, 1, &info, fd->Fence));
         }
     }
 
@@ -305,7 +305,7 @@ namespace vve {
         info.swapchainCount = 1;
         info.pSwapchains = &wd->Swapchain;
         info.pImageIndices = &wd->FrameIndex;
-        VkResult err = vkQueuePresentKHR(m_engine.getQueue(), &info);
+        VkResult err = vkQueuePresentKHR(m_engine.getState().m_queue, &info);
         if (err == VK_ERROR_OUT_OF_DATE_KHR || err == VK_SUBOPTIMAL_KHR)
         {
             m_swapChainRebuild = true;

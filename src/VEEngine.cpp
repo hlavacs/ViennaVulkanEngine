@@ -1,7 +1,6 @@
 #define VOLK_IMPLEMENTATION
 #include "VEEngine.h"
 #include "VEWindowSDL.h"
-//#include "VHImgui.h"
 
 namespace vve {
 
@@ -13,9 +12,6 @@ namespace vve {
 	};
 	
 	VeEngine::~VeEngine() {
-		m_renderer = nullptr;
-		m_sceneManager = nullptr;
-		m_window = nullptr;
 		Shutdown();
 	};
 	
@@ -34,21 +30,20 @@ namespace vve {
 
 		if(m_debug) {
 	        m_instance_layers.push_back("VK_LAYER_KHRONOS_validation");
-	        //m_instance_layers.push_back("VK_LAYER_KHRONOS_");
 	        m_instance_extensions.push_back("VK_EXT_debug_report");
 		}
 	
 		//VkResult volkInitialize();
-		vh::SetUpInstance(m_instance_layers, m_instance_extensions, m_allocator, &m_instance);
+		vh::SetUpInstance(m_instance_layers, m_instance_extensions, m_state.m_allocator, &m_state.m_instance);
 		//volkLoadInstance(m_instance);
 
-		if(m_debug) vh::SetupDebugReport(m_instance, m_allocator, &m_debugReport);
-		vh::SetupPhysicalDevice(m_instance, m_device_extensions, &m_physicalDevice);
-		vh::SetupGraphicsQueueFamily(m_physicalDevice, &m_queueFamily);
-	    vh::SetupDevice( m_physicalDevice, nullptr, m_device_extensions, m_queueFamily, &m_device);
+		if(m_debug) vh::SetupDebugReport(m_state.m_instance, m_state.m_allocator, &m_state.m_debugReport);
+		vh::SetupPhysicalDevice(m_state.m_instance, m_device_extensions, &m_state.m_physicalDevice);
+		vh::SetupGraphicsQueueFamily(m_state.m_physicalDevice, &m_state.m_queueFamily);
+	    vh::SetupDevice( m_state.m_physicalDevice, nullptr, m_device_extensions, m_state.m_queueFamily, &m_state.m_device);
 		//volkLoadDevice(m_device);
 
-		vkGetDeviceQueue(m_device, m_queueFamily, 0, &m_queue);
+		vkGetDeviceQueue(m_state.m_device, m_state.m_queueFamily, 0, &m_state.m_queue);
 		
 		m_window->Init();
 	};
@@ -64,7 +59,7 @@ namespace vve {
 	};
 	
 	void VeEngine::CreateWindow( const char* windowName, int width, int height ){
-		m_window = std::make_unique<VeWindowSDL>(*this, m_instance, windowName, width, height, m_instance_extensions);
+		m_window = std::make_unique<VeWindowSDL>(*this, m_state.m_instance, windowName, width, height, m_instance_extensions);
 	};
 	
 	void VeEngine::CreateRenderer( const char* rendererName){
@@ -99,11 +94,15 @@ namespace vve {
 	
 	
 	void VeEngine::Shutdown(){
-	    auto PFN_DestroyDebugReportCallbackEXT = (PFN_vkDestroyDebugReportCallbackEXT)vkGetInstanceProcAddr(m_instance, "vkDestroyDebugReportCallbackEXT");
-	    PFN_DestroyDebugReportCallbackEXT(m_instance, m_debugReport, m_allocator);
+		m_renderer = nullptr;
+		m_sceneManager = nullptr;
+		m_window = nullptr;
+
+	    auto PFN_DestroyDebugReportCallbackEXT = (PFN_vkDestroyDebugReportCallbackEXT)vkGetInstanceProcAddr(m_state.m_instance, "vkDestroyDebugReportCallbackEXT");
+	    PFN_DestroyDebugReportCallbackEXT(m_state.m_instance, m_state.m_debugReport, m_state.m_allocator);
 	
-	    vkDestroyDevice(m_device, m_allocator);
-	    vkDestroyInstance(m_instance, m_allocator);
+	    vkDestroyDevice(m_state.m_device, m_state.m_allocator);
+	    vkDestroyInstance(m_state.m_instance, m_state.m_allocator);
 	}
 
 };   // namespace vve
