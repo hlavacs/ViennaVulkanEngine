@@ -14,6 +14,8 @@ int main() {
 
     vve::VeEngine engine;
 
+    //engine.Run();
+
     //imgui_SDL2();
 
     std::cout << "Hello world\n";

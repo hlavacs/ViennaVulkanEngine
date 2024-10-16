@@ -46,7 +46,7 @@ namespace vve {
 		vkGetDeviceQueue(m_device, m_queueFamily, 0, &m_queue);
 		
 		m_window->Init();
-		m_window->render();
+		m_window->renderNextFrame();
 	};
 	
 	
@@ -83,6 +83,10 @@ namespace vve {
 			// Update
 			// Render
 			// GUI
+
+			m_window->pollEvents();
+			m_window->renderNextFrame();
+
 		}
 		Shutdown();
 	};

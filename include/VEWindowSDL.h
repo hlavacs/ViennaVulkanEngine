@@ -23,7 +23,8 @@ namespace vve {
             , int width, int height, std::vector<const char*>& instance_extensions);
         virtual ~VeWindowSDL();
         virtual void Init() override;
-        virtual void render() override;
+        virtual void pollEvents();
+        virtual void renderNextFrame() override;
         virtual std::pair<int, int> getSize();
 
     private:

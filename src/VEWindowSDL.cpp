@@ -34,6 +34,34 @@ namespace vve {
         //ImGui_ImplVulkanH_DestroyWindow(g_Instance, g_Device, &g_MainWindowData, g_Allocator);
     }
 
+
+    void VeWindowSDL::Init() {
+        if (SDL_Vulkan_CreateSurface(m_window, m_engine.getInstance(), &m_surface) == 0) {
+            printf("Failed to create Vulkan surface.\n");
+        }
+        
+        vh::SetupDescriptorPool(m_engine.getDevice(), &m_descriptorPool);
+
+    }
+
+
+    void VeWindowSDL::pollEvents() {
+
+    }
+
+
+    void VeWindowSDL::renderNextFrame() {
+        imgui_SDL2( m_engine.getInstance(), m_engine.getPhysicalDevice(), m_engine.getDevice()
+            , m_engine.getQueue(), m_engine.getQueueFamily(), m_surface
+            , m_descriptorPool, m_engine.getAllocator(), m_window, &m_MainWindowData);
+    }
+
+    std::pair<int, int> VeWindowSDL::getSize() {
+        int w, h;
+        SDL_GetWindowSize(m_window, &w, &h);
+        return std::make_pair(w, h);
+    }
+
     bool VeWindowSDL::InitSDL(VkInstance instance) {
         // Setup SDL
         if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_TIMER | SDL_INIT_GAMECONTROLLER) != 0) {
@@ -49,26 +77,8 @@ namespace vve {
         return true;
     }
 
-    void VeWindowSDL::Init() {
-        if (SDL_Vulkan_CreateSurface(m_window, m_engine.getInstance(), &m_surface) == 0) {
-            printf("Failed to create Vulkan surface.\n");
-        }
-        
-        vh::SetupDescriptorPool(m_engine.getDevice(), &m_descriptorPool);
 
-    }
 
-    void VeWindowSDL::render() {
-        imgui_SDL2( m_engine.getInstance(), m_engine.getPhysicalDevice(), m_engine.getDevice()
-            , m_engine.getQueue(), m_engine.getQueueFamily(), m_surface
-            , m_descriptorPool, m_engine.getAllocator(), m_window, &m_MainWindowData);
-    }
-
-    std::pair<int, int> VeWindowSDL::getSize() {
-        int w, h;
-        SDL_GetWindowSize(m_window, &w, &h);
-        return std::make_pair(w, h);
-    }
 
 
 };  // namespace vve
