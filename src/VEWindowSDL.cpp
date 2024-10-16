@@ -138,6 +138,12 @@ namespace vve {
         // - When io.WantCaptureMouse is true, do not dispatch mouse input data to your main application, or clear/overwrite your copy of the mouse data.
         // - When io.WantCaptureKeyboard is true, do not dispatch keyboard input data to your main application, or clear/overwrite your copy of the keyboard data.
         // Generally you may always pass all inputs to dear imgui, and hide them from your application based on those two flags.
+
+        static std::vector<SDL_Scancode> key;
+        static std::vector<int8_t> button;
+        key.clear();
+        button.clear();
+
         SDL_Event event;
         while (SDL_PollEvent(&event)) {
             ImGui_ImplSDL2_ProcessEvent(&event);
@@ -146,54 +152,42 @@ namespace vve {
             if (event.type == SDL_WINDOWEVENT && event.window.event == SDL_WINDOWEVENT_CLOSE && event.window.windowID == SDL_GetWindowID(m_window))
                 m_engine.Stop();
 
-            SDL_Scancode key = SDL_SCANCODE_UNKNOWN;
-            int8_t button = -1;
-            bool down = true;
-
             switch( event.type ) {
                 case SDL_MOUSEMOTION:
                     m_engine.SendMessage( MessageMouseMove{event.motion.x, event.motion.y} );
                     break;
                 case SDL_MOUSEBUTTONDOWN:
                     m_engine.SendMessage( MessageMouseButtonDown{event.button.x, event.button.y} );
-                    button = event.button.button;
+                    button.push_back( event.button.button );
                     break;
                 case SDL_MOUSEBUTTONUP:
                     m_engine.SendMessage( MessageMouseButtonUp{event.button.x, event.button.y} );
-                    button = event.button.button;
-                    down = false;
+                    m_mouseButtonsDown.erase( event.button.button );
                     break;
                 case SDL_MOUSEWHEEL:
                     m_engine.SendMessage( MessageMouseWheel{event.wheel.x, event.wheel.y} );
                     break;
                 case SDL_KEYDOWN:
-                    m_engine.SendMessage( MessageKeyDown{event.key.keysym.sym} );
-                    key = event.key.keysym.scancode;
+                    m_engine.SendMessage( MessageKeyDown{event.key.keysym.scancode} );
+                    key.push_back(event.key.keysym.scancode);
                     break;
                 case SDL_KEYUP:
-                    m_engine.SendMessage( MessageKeyUp{event.key.keysym.sym} );
-                    key = event.key.keysym.scancode;
-                    down = false;
+                    m_engine.SendMessage( MessageKeyUp{event.key.keysym.scancode} );
+                    m_keysDown.erase(event.key.keysym.scancode);
                     break;
                 default:
                     break;
             }
-
-            for( auto& key : m_keysDown ) { m_engine.SendMessage( MessageKeyRepeat{key} ); }
-            for( auto& button : m_mouseButtonsDown ) {
-                //m_engine.SendMessage( MessageMouseButtonRepeat{button} );
-            }
-
-            if(key != SDL_SCANCODE_UNKNOWN) {
-                if(down) { m_keysDown.insert(key);  } 
-                else { m_keysDown.erase(key);  }
-            }
-            if(button != -1) {
-                if(down) { m_mouseButtonsDown.insert(button);  } 
-                else { m_mouseButtonsDown.erase(button);  }
-            }
-
         }
+
+        for( auto& key : m_keysDown ) { m_engine.SendMessage( MessageKeyRepeat{key} ); }
+        for( auto& button : m_mouseButtonsDown ) {
+            //m_engine.SendMessage( MessageMouseButtonRepeat{button} );
+        }
+
+        if(key.size() > 0) { for( auto& k : key ) { m_keysDown.insert(k) ; } }
+        if(button.size() > 0) { for( auto& b : button ) {m_mouseButtonsDown.insert(b);} }
+
         if (SDL_GetWindowFlags(m_window) & SDL_WINDOW_MINIMIZED)
         {
             SDL_Delay(10);

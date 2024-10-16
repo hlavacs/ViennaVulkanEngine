@@ -57,6 +57,20 @@ public:
 
         engine->getWindow()->setClearColor( glm::vec4{ clear_color[0], clear_color[1], clear_color[2], 1.0f} );
     }
+
+
+    void onKeyDown(vve::Message message) {
+        std::cout << "Key down: " << static_cast<vve::MessageKeyDown&>(message).m_key << std::endl;
+    }
+
+    void onKeyUp(vve::Message message) {
+        std::cout << "Key up: " << static_cast<vve::MessageKeyUp&>(message).m_key << std::endl;
+    }
+    void onKeyRepeat(vve::Message message) {
+        std::cout << "Key repeat: " << static_cast<vve::MessageKeyRepeat&>(message).m_key << std::endl;
+    }
+
+
 private:
 };
 
@@ -65,7 +79,8 @@ int main() {
 
     engine = std::make_unique<vve::Engine>();
 
-    engine->RegisterSystem(std::make_shared<MyGUI>(), {vve::MessageType::DRAW_GUI});
+    engine->RegisterSystem(std::make_shared<MyGUI>()
+        , {vve::MessageType::DRAW_GUI, vve::MessageType::KEY_DOWN, vve::MessageType::KEY_REPEAT, vve::MessageType::KEY_UP});
 
     engine->Run();
 

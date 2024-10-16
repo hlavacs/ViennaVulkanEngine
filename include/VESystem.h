@@ -32,10 +32,13 @@ namespace vve
     struct MessageDelete : public Message { MessageDelete(): Message{DELETED} {}; void* m_ptr; uint64_t m_id; };
     struct MessageDrawGUI : public Message { MessageDrawGUI(): Message{DRAW_GUI} {}; };
     struct MessageMouseMove : public Message { MessageMouseMove(int x, int y): Message{MOUSE_MOVE}, m_x{x}, m_y{y} {}; int m_x; int m_y; };
+    
     struct MessageMouseButtonDown : public Message { MessageMouseButtonDown(int x, int y): Message{MOUSE_BUTTON_DOWN}, m_x{x}, m_y{y} {}; int m_x; int m_y; };
     struct MessageMouseButtonUp : public Message { MessageMouseButtonUp(int x, int y): Message{MOUSE_BUTTON_UP}, m_x{x}, m_y{y} {}; int m_x; int m_y; };
     struct MessageMouseButtonRepeat : public Message { MessageMouseButtonRepeat(int x, int y): Message{MOUSE_BUTTON_REPEAT}, m_x{x}, m_y{y} {}; int m_x; int m_y; };
+    
     struct MessageMouseWheel : public Message { MessageMouseWheel(int x, int y): Message{MOUSE_WHEEL}, m_x{x}, m_y{y} {}; int m_x; int m_y; };
+    
     struct MessageKeyDown : public Message { MessageKeyDown(int key): Message{KEY_DOWN}, m_key{key} {}; int m_key; };
     struct MessageKeyUp : public Message { MessageKeyUp(int key): Message{KEY_UP}, m_key{key} {}; int m_key; };
     struct MessageKeyRepeat : public Message { MessageKeyRepeat(int key): Message{KEY_REPEAT}, m_key{key} {}; int m_key; };    
