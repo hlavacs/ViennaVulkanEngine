@@ -5,11 +5,11 @@
 namespace vve
 {
 
-    class VeRendererForward : public VeRenderer
+    class RendererForward : public Renderer
     {
     public:
-        VeRendererForward();
-        virtual ~VeRendererForward();
+        RendererForward();
+        virtual ~RendererForward();
     private:
     };
 

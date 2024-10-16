@@ -3,9 +3,9 @@
 
 namespace vve {
 
-    VeSceneManager::VeSceneManager() {}
+    SceneManager::SceneManager() {}
 
-    VeSceneManager::~VeSceneManager() {}
+    SceneManager::~SceneManager() {}
 
 };  // namespace vve
 

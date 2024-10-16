@@ -4,18 +4,18 @@
 namespace vve
 {
 
-    enum class VeRendererType {
+    enum class RendererType {
         FORWARD,
         DEFERRED,
         RAYTRACING
     };
 
 
-    class VeRenderer {
+    class Renderer {
 
     public:
-        VeRenderer();
-        virtual ~VeRenderer();
+        Renderer();
+        virtual ~Renderer();
 
     private:
 

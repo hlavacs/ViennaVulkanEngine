@@ -13,7 +13,7 @@
 
 namespace vve {
 
-	class VeEngine  {
+	class Engine  {
 
 		struct VulkanState {
 			VkAllocationCallbacks*   m_allocator = nullptr;
@@ -27,17 +27,19 @@ namespace vve {
 		};
 
 	public:
-		VeEngine();
-		virtual ~VeEngine();
-		virtual void RegisterSystem( std::shared_ptr<VeSystem> system);
-		virtual void Run();
-		virtual void Stop();
+		Engine();
+		virtual ~Engine();
+		void RegisterSystem( std::shared_ptr<System> system, std::vector<MessageType> messageTypes );
+		void DeregisterSystem( std::shared_ptr<System> system );
+		void Run();
+		void Stop();
 		auto getState() -> const VulkanState& { return m_state; }	
 
 	protected:
 		void Init();
 		void SetupVulkan();
 		void Shutdown();
+		void SendMessage( MessageType messageType, MessageData messageData );
 
 		virtual void LoadLevel( const char* levelName );
 		virtual void CreateWindow( const char* windowName, int width, int height );
@@ -56,10 +58,13 @@ namespace vve {
 		bool m_running{false};
 
 		vecs::Registry<> m_registry;
-		std::unordered_map<std::string, vecs::Handle> m_nameMap{};
-		std::unique_ptr<VeWindow> m_window{};
-		std::unique_ptr<VeRenderer> m_renderer{};
-		std::unique_ptr<VeSceneManager> m_sceneManager{};
+		
+		using MessageMap = std::unordered_map<MessageType, std::set<std::shared_ptr<System>>>;
+		MessageMap m_messageMap{};
+
+		std::unique_ptr<Window> m_window{};
+		std::unique_ptr<Renderer> m_renderer{};
+		std::unique_ptr<SceneManager> m_sceneManager{};
 	};
 };
 

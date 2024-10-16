@@ -7,9 +7,7 @@ namespace vve
 {
 
     enum MessageType {
-        REGISTERED = 0,
-        UNREGISTERED,
-        FRAME_START,
+        FRAME_START = 0,
         UPDATE,
         FRAME_END,
         DELETED,
@@ -27,24 +25,24 @@ namespace vve
     using MessageData = std::variant<MessageDataRegistered, MessageDataUnregistered, MessageDataFrameStarted
         , MessageDataUpdate, MessageDataFrameEnded, MessageDataDeleted, MessageDataDrawGUI>;
 
-    struct VeMessage {
+    struct Message {
         MessageType m_type;
         MessageData m_data;
     };
 
 
-    class VeSystem
+    class System
     {
     public:
-        VeSystem();
-        virtual ~VeSystem();
+        System();
+        virtual ~System();
 
-        void onRegistered(VeMessage message);
-        void onUnregistered(VeMessage message);
-        void onFrameStart(VeMessage message);
-        void onUpdate(VeMessage message);
-        void onFrameEnd(VeMessage message);
-        void onDrawGUI(VeMessage message);
+        void onRegistered(Message message);
+        void onUnregistered(Message message);
+        void onFrameStart(Message message);
+        void onUpdate(Message message);
+        void onFrameEnd(Message message);
+        void onDrawGUI(Message message);
     
     private:
 

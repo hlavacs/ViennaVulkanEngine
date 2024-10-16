@@ -4,9 +4,9 @@
 
 namespace vve {
 
-    VeWindowSDL::VeWindowSDL(VeEngine& engine, VkInstance instance, std::string windowName
+    WindowSDL::WindowSDL(Engine& engine, VkInstance instance, std::string windowName
             , int width, int height, std::vector<const char*>& instance_extensions) 
-                : VeWindow(engine, instance, windowName, width, height, instance_extensions) {
+                : Window(engine, instance, windowName, width, height, instance_extensions) {
 
         if(!sdl_initialized) {
             sdl_initialized = InitSDL(instance);
@@ -29,7 +29,7 @@ namespace vve {
         instance_extensions.insert(instance_extensions.end(), extensions.begin(), extensions.end());
     }
 
-    VeWindowSDL::~VeWindowSDL() {
+    WindowSDL::~WindowSDL() {
         vh::CheckResult(vkDeviceWaitIdle(m_engine.getState().m_device));
         ImGui_ImplVulkan_Shutdown();
         ImGui_ImplSDL2_Shutdown();
@@ -42,7 +42,7 @@ namespace vve {
     }
 
 
-    void VeWindowSDL::Init() {
+    void WindowSDL::Init() {
         if (SDL_Vulkan_CreateSurface(m_window, m_engine.getState().m_instance, &m_surface) == 0) {
             printf("Failed to create Vulkan surface.\n");
         }
@@ -132,7 +132,7 @@ namespace vve {
     }
 
 
-    bool VeWindowSDL::pollEvents() {
+    bool WindowSDL::pollEvents() {
         // Poll and handle events (inputs, window resize, etc.)
         // You can read the io.WantCaptureMouse, io.WantCaptureKeyboard flags to tell if dear imgui wants to use your inputs.
         // - When io.WantCaptureMouse is true, do not dispatch mouse input data to your main application, or clear/overwrite your copy of the mouse data.
@@ -168,7 +168,7 @@ namespace vve {
     }
 
 
-    void VeWindowSDL::renderNextFrame() {
+    void WindowSDL::renderNextFrame() {
         // Rendering
 
         static bool show_demo_window = true;
@@ -233,7 +233,7 @@ namespace vve {
     }
 
 
-    void VeWindowSDL::FrameRender(ImGui_ImplVulkanH_Window* wd, ImDrawData* draw_data)
+    void WindowSDL::FrameRender(ImGui_ImplVulkanH_Window* wd, ImDrawData* draw_data)
     {
         VkResult err;
 
@@ -293,7 +293,7 @@ namespace vve {
         }
     }
 
-    void VeWindowSDL::FramePresent(ImGui_ImplVulkanH_Window* wd)
+    void WindowSDL::FramePresent(ImGui_ImplVulkanH_Window* wd)
     {
         if (m_swapChainRebuild)
             return;
@@ -318,13 +318,13 @@ namespace vve {
 
 
 
-    std::pair<int, int> VeWindowSDL::getSize() {
+    std::pair<int, int> WindowSDL::getSize() {
         int w, h;
         SDL_GetWindowSize(m_window, &w, &h);
         return std::make_pair(w, h);
     }
 
-    bool VeWindowSDL::InitSDL(VkInstance instance) {
+    bool WindowSDL::InitSDL(VkInstance instance) {
         // Setup SDL
         if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_TIMER | SDL_INIT_GAMECONTROLLER) != 0) {
             printf("Error: %s\n", SDL_GetError());

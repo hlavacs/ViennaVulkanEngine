@@ -6,21 +6,21 @@
 
 namespace vve {
 
-    class VeEngine;
+    class Engine;
 
-    class VeWindow
+    class Window
     {
     public:
-        VeWindow(VeEngine& engine, VkInstance instance, std::string windowName
+        Window(Engine& engine, VkInstance instance, std::string windowName
             , int width, int height, std::vector<const char*>& instance_extensions);
-        virtual ~VeWindow();
+        virtual ~Window();
         virtual void Init() = 0;
         virtual bool pollEvents() = 0;
         virtual void renderNextFrame() = 0;
         virtual std::pair<int, int> getSize() = 0;
         
     protected:
-        VeEngine& m_engine;
+        Engine& m_engine;
         VkSurfaceKHR m_surface{VK_NULL_HANDLE};
     };
 

@@ -4,18 +4,18 @@
 
 namespace vve {
 
-	VeEngine::VeEngine() {
+	Engine::Engine() {
 	#ifndef NDEBUG
 		m_debug = true;
 	#endif
 		Init();
 	};
 	
-	VeEngine::~VeEngine() {
+	Engine::~Engine() {
 		Shutdown();
 	};
 	
-	void VeEngine::Init(){
+	void Engine::Init(){
 		if(m_initialized) return;
 		CreateWindow("Vulkan Engine", 800, 600);
 		SetupVulkan();
@@ -26,7 +26,7 @@ namespace vve {
 		m_initialized = true;
 	};
 	
-	void VeEngine::SetupVulkan() {
+	void Engine::SetupVulkan() {
 
 		if(m_debug) {
 	        m_instance_layers.push_back("VK_LAYER_KHRONOS_validation");
@@ -49,32 +49,40 @@ namespace vve {
 	};
 	
 	
-	void VeEngine::RegisterSystem( std::shared_ptr<VeSystem> system) {
-		// Register system
+	void Engine::RegisterSystem( std::shared_ptr<System> system, std::vector<MessageType> messageTypes) {
+		for( auto messageType : messageTypes ) {
+			m_messageMap[messageType].insert(system);
+		}
+	}
+
+	void Engine::DeregisterSystem(std::shared_ptr<System> system) {
+		for( auto& [messageType, systems] : m_messageMap ) {
+			systems.erase(system);
+		}
 	}
 	
 	
-	void VeEngine::LoadLevel( const char* levelName ){
+	void Engine::LoadLevel( const char* levelName ){
 		// Load level
 	};
 	
-	void VeEngine::CreateWindow( const char* windowName, int width, int height ){
-		m_window = std::make_unique<VeWindowSDL>(*this, m_state.m_instance, windowName, width, height, m_instance_extensions);
+	void Engine::CreateWindow( const char* windowName, int width, int height ){
+		m_window = std::make_unique<WindowSDL>(*this, m_state.m_instance, windowName, width, height, m_instance_extensions);
 	};
 	
-	void VeEngine::CreateRenderer( const char* rendererName){
+	void Engine::CreateRenderer( const char* rendererName){
 		// Create renderer
 	};
 	
-	void VeEngine::CreateCamera( const char* cameraName ){
+	void Engine::CreateCamera( const char* cameraName ){
 		// Create camera
 	};
 	
-	void VeEngine::CreateSceneManager( const char* sceneManagerName ){
+	void Engine::CreateSceneManager( const char* sceneManagerName ){
 		// Create scene manager
 	};
 	
-	void VeEngine::Run(){
+	void Engine::Run(){
 		Init();
 		m_running = true;
 		while(m_running) { //call stop to stop the engine
@@ -88,12 +96,12 @@ namespace vve {
 		}
 	};
 	
-	void VeEngine::Stop(){
+	void Engine::Stop(){
 		m_running = false;
 	};
 	
 	
-	void VeEngine::Shutdown(){
+	void Engine::Shutdown(){
 		m_renderer = nullptr;
 		m_sceneManager = nullptr;
 		m_window = nullptr;

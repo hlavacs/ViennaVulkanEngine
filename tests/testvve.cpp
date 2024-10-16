@@ -8,11 +8,11 @@
 #include "VEEngine.h"
 
 
-class MyGUI : public vve::VeSystem {
+class MyGUI : public vve::System {
 public:
     MyGUI() = default;
     ~MyGUI() = default;
-    void onDrawGUI(vve::VeMessage message) {
+    void onDrawGUI(vve::Message message) {
         std::cout << "Draw GUI\n";
     }
 private:
@@ -22,11 +22,11 @@ MyGUI my_gui;
 
 int main() {
 
-    vve::VeEngine engine;
+    vve::Engine engine;
+    engine.RegisterSystem(std::make_shared<MyGUI>(), {vve::MessageType::DRAW_GUI});
 
     engine.Run();
 
-    std::cout << "Hello world\n";
     return 0;
 }
 

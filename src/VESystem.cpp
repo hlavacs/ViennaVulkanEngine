@@ -5,15 +5,15 @@
 
 namespace vve {
 
-    VeSystem::VeSystem(){};
-    VeSystem::~VeSystem(){};
+    System::System(){};
+    System::~System(){};
 
-    void VeSystem::onRegistered(VeMessage message){};
-    void VeSystem::onUnregistered(VeMessage message){};
-    void VeSystem::onFrameStart(VeMessage message){};
-    void VeSystem::onUpdate(VeMessage message){};
-    void VeSystem::onFrameEnd(VeMessage message){};
-    void VeSystem::onDrawGUI(VeMessage message){};
+    void System::onRegistered(Message message){};
+    void System::onUnregistered(Message message){};
+    void System::onFrameStart(Message message){};
+    void System::onUpdate(Message message){};
+    void System::onFrameEnd(Message message){};
+    void System::onDrawGUI(Message message){};
 
 };   // namespace vve
 

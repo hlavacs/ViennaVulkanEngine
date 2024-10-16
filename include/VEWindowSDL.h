@@ -13,14 +13,14 @@
 
 namespace vve {
 
-    class VeEngine;
+    class Engine;
 
-    class VeWindowSDL : public VeWindow {
+    class WindowSDL : public Window {
     
     public:
-        VeWindowSDL(VeEngine& engine, VkInstance instance, std::string windowName
+        WindowSDL(Engine& engine, VkInstance instance, std::string windowName
             , int width, int height, std::vector<const char*>& instance_extensions);
-        virtual ~VeWindowSDL();
+        virtual ~WindowSDL();
         virtual void Init() override;
         virtual bool pollEvents();
         virtual void renderNextFrame() override;

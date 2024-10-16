@@ -2,10 +2,10 @@
 
 namespace vve {
 
-    class VeSceneManager {
+    class SceneManager {
     public:
-        VeSceneManager();
-        virtual ~VeSceneManager();
+        SceneManager();
+        virtual ~SceneManager();
 
     private:
 
