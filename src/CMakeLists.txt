@@ -17,7 +17,7 @@ set(SOURCE
   VEWindow.cpp
   VEWindowSDL.cpp
   VHDevice.cpp
-  VHImgui.cpp
+  #VHImgui.cpp
   )
 
 set(HEADERS
@@ -29,7 +29,7 @@ set(HEADERS
   ${INCLUDE}/VEWindow.h
   ${INCLUDE}/VEWindowSDL.h
   ${INCLUDE}/VHDevice.h
-  ${INCLUDE}/VHImgui.h
+  #${INCLUDE}/VHImgui.h
 )
 
 add_library (${TARGET} ${SOURCE} ${HEADERS})

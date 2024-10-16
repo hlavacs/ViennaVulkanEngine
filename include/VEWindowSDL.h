@@ -2,13 +2,12 @@
 
 #include <vector>
 #include <vulkan/vulkan.h>
-//#include "imgui.h"
-//#include "imgui_impl_sdl2.h"
-//#include "imgui_impl_vulkan.h"
-//#include <SDL.h>
-//#include <SDL_vulkan.h>
+#include "imgui.h"
+#include "imgui_impl_sdl2.h"
+#include "imgui_impl_vulkan.h"
+#include <SDL.h>
+#include <SDL_vulkan.h>
 #include "VEWindow.h"
-#include "VHImgui.h"
 
 
 
@@ -29,6 +28,9 @@ namespace vve {
 
     private:
         bool InitSDL(VkInstance instance);
+        void FrameRender(ImGui_ImplVulkanH_Window* wd, ImDrawData* draw_data);
+        void FramePresent(ImGui_ImplVulkanH_Window* wd);
+
         inline static bool sdl_initialized{false};
         SDL_Window* m_window{nullptr};
         ImGui_ImplVulkanH_Window m_mainWindowData;
