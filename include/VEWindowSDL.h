@@ -1,6 +1,7 @@
 #pragma once
 
 #include <vector>
+#include <set>
 #include <vulkan/vulkan.h>
 #include "imgui.h"
 #include "imgui_impl_sdl2.h"
@@ -39,6 +40,8 @@ namespace vve {
    		VkDescriptorPool m_descriptorPool = VK_NULL_HANDLE;	
         ImGuiIO* m_io;
         bool m_swapChainRebuild = false;
+        std::set<SDL_Scancode> m_keysDown;
+        std::set<uint8_t> m_mouseButtonsDown;
     };
 
 

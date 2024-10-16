@@ -100,7 +100,6 @@ namespace vve {
 			SendMessage( MessageFrameStart{dt} ) ;
 			m_window->pollEvents();
 			SendMessage( MessageUpdate{dt} ) ;
-
 			m_window->prepareNextFrame();
 			SendMessage( MessageDrawGUI{} ) ;
 			m_window->renderNextFrame();

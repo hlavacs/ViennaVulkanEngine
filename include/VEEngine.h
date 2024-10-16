@@ -38,12 +38,15 @@ namespace vve {
 		void Stop();
 		auto getState() -> const VulkanState& { return m_state; }
 		auto getWindow() -> std::shared_ptr<Window> { return m_window; }
+		auto getRenderer() -> std::shared_ptr<Renderer> { return m_renderer; }
+		auto getSceneMgr() -> std::shared_ptr<SceneManager> { return m_sceneManager; }
+		auto getRegistry() -> vecs::Registry<>& { return m_registry; }
+		void SendMessage( const Message&& message );
 
 	protected:
 		void Init();
 		void SetupVulkan();
 		void Shutdown();
-		void SendMessage( const Message&& message );
 
 		virtual void LoadLevel( const char* levelName );
 		virtual void CreateWindow( const char* windowName, int width, int height );
@@ -67,8 +70,8 @@ namespace vve {
 		MessageMap m_messageMap{};
 
 		std::shared_ptr<Window> m_window{};
-		std::shared_ptr<Renderer> m_renderer{};
-		std::shared_ptr<SceneManager> m_sceneManager{};
+		std::shared_ptr<Renderer> m_renderer;
+		std::shared_ptr<SceneManager> m_sceneManager;
 	};
 };
 
