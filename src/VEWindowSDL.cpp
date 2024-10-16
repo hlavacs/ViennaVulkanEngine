@@ -30,7 +30,9 @@ namespace vve {
         instance_extensions.insert(instance_extensions.end(), extensions.begin(), extensions.end());
     }
 
-    VeWindowSDL::~VeWindowSDL(){}
+    VeWindowSDL::~VeWindowSDL(){
+        //ImGui_ImplVulkanH_DestroyWindow(g_Instance, g_Device, &g_MainWindowData, g_Allocator);
+    }
 
     bool VeWindowSDL::InitSDL(VkInstance instance) {
         // Setup SDL
@@ -59,7 +61,7 @@ namespace vve {
     void VeWindowSDL::render() {
         imgui_SDL2( m_engine.getInstance(), m_engine.getPhysicalDevice(), m_engine.getDevice()
             , m_engine.getQueue(), m_engine.getQueueFamily(), m_surface
-            , m_descriptorPool, m_engine.getAllocator(), m_window);
+            , m_descriptorPool, m_engine.getAllocator(), m_window, &m_MainWindowData);
     }
 
     std::pair<int, int> VeWindowSDL::getSize() {
