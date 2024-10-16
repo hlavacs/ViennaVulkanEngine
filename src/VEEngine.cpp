@@ -77,7 +77,7 @@ namespace vve {
 	};
 	
 	void Engine::CreateRenderer( const char* rendererName){
-		// Create renderer
+		m_renderer = std::make_shared<RendererForward>(*this);
 	};
 	
 	void Engine::CreateCamera( const char* cameraName ){
@@ -85,7 +85,7 @@ namespace vve {
 	};
 	
 	void Engine::CreateSceneManager( const char* sceneManagerName ){
-		// Create scene manager
+		m_sceneManager = std::make_shared<SceneManager>(*this);
 	};
 	
 	void Engine::Run(){
@@ -98,23 +98,12 @@ namespace vve {
 			auto dt = std::chrono::duration_cast<std::chrono::duration<double>>(now - last).count();
 
 			SendMessage( MessageFrameStart{dt} ) ;
-
-
-			// Window
-			// Update
-			// Render
-			// GUI
-
 			m_window->pollEvents();
-
 			SendMessage( MessageUpdate{dt} ) ;
 
 			m_window->prepareNextFrame();
-
 			SendMessage( MessageDrawGUI{} ) ;
-
 			m_window->renderNextFrame();
-
 			SendMessage( MessageFrameEnd{dt} ) ;
 		}
 	};

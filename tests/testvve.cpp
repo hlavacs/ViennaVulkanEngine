@@ -60,7 +60,6 @@ public:
 private:
 };
 
-MyGUI my_gui;
 
 int main() {
 

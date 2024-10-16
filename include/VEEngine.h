@@ -6,13 +6,15 @@
 #include <vulkan/vulkan.h>
 #include "VHDevice.h"
 #include "VEWindow.h"
-#include "VERenderer.h"
+#include "VERendererForward.h"
 #include "VESceneManager.h"
 #include "VESystem.h"
 #include "VECS.h"
 
 
 namespace vve {
+
+	class SceneManager;
 
 	class Engine  {
 

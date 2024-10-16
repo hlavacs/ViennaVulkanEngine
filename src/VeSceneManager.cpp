@@ -3,9 +3,14 @@
 
 namespace vve {
 
-    SceneManager::SceneManager() {}
+    SceneManager::SceneManager(Engine& engine ) : m_engine{engine} {}
 
     SceneManager::~SceneManager() {}
+
+    void SceneManager::DrawScene() {
+
+        
+    }
 
 };  // namespace vve
 

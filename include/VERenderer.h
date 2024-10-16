@@ -3,6 +3,7 @@
 
 namespace vve
 {
+    class Engine;
 
     enum class RendererType {
         FORWARD,
@@ -12,13 +13,15 @@ namespace vve
 
 
     class Renderer {
+        friend class Engine;
 
     public:
-        Renderer();
+        Renderer(Engine& m_engine);
         virtual ~Renderer();
 
     private:
-
+        virtual void Render();
+        Engine& m_engine;
     };
 
 };   // namespace vve

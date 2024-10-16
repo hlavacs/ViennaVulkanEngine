@@ -8,9 +8,11 @@ namespace vve
     class RendererForward : public Renderer
     {
     public:
-        RendererForward();
+        RendererForward(Engine& engine);
         virtual ~RendererForward();
+
     private:
+        virtual void Render() override;
     };
 
 };   // namespace vve
