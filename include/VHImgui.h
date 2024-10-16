@@ -7,6 +7,9 @@
 #include <SDL_vulkan.h>
 
 
+void SetupVulkanWindow(ImGui_ImplVulkanH_Window* wd, VkSurfaceKHR surface, int width, int height);
+
 int imgui_SDL2( VkInstance instance, VkPhysicalDevice physicalDevice, VkDevice device, VkQueue queue
         , uint32_t queueFamily, VkSurfaceKHR surface, VkDescriptorPool pool
-        , VkAllocationCallbacks* allocator, SDL_Window* window, ImGui_ImplVulkanH_Window* mainWindowData);
+        , VkAllocationCallbacks* allocator, SDL_Window* window, ImGui_ImplVulkanH_Window* mainWindowData
+        , ImGuiIO* io);

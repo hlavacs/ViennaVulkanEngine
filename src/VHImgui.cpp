@@ -52,7 +52,7 @@ static void check_vk_result(VkResult err)
 
 // All the ImGui_ImplVulkanH_XXX structures/functions are optional helpers used by the demo.
 // Your real engine/app may not use them.
-static void SetupVulkanWindow(ImGui_ImplVulkanH_Window* wd, VkSurfaceKHR surface, int width, int height)
+void SetupVulkanWindow(ImGui_ImplVulkanH_Window* wd, VkSurfaceKHR surface, int width, int height)
 {
     wd->Surface = surface;
 
@@ -184,7 +184,7 @@ static void FramePresent(ImGui_ImplVulkanH_Window* wd)
 // Main code
 int imgui_SDL2( VkInstance instance, VkPhysicalDevice physicalDevice, VkDevice device, VkQueue queue
         , uint32_t queueFamily, VkSurfaceKHR surface, VkDescriptorPool pool
-        , VkAllocationCallbacks* allocator, SDL_Window* window, ImGui_ImplVulkanH_Window* mainWindowData)
+        , VkAllocationCallbacks* allocator, SDL_Window* window, ImGui_ImplVulkanH_Window* mainWindowData, ImGuiIO* io)
 {
     // Setup Vulkan
     g_Allocator = allocator;
@@ -196,6 +196,7 @@ int imgui_SDL2( VkInstance instance, VkPhysicalDevice physicalDevice, VkDevice d
     g_DescriptorPool = pool;
     g_MainWindowData = mainWindowData;
 
+    /*
     // Create Framebuffers
     int w, h;
     SDL_GetWindowSize(window, &w, &h);
@@ -247,6 +248,8 @@ int imgui_SDL2( VkInstance instance, VkPhysicalDevice physicalDevice, VkDevice d
     //io.Fonts->AddFontFromFileTTF("../../misc/fonts/Cousine-Regular.ttf", 15.0f);
     //ImFont* font = io.Fonts->AddFontFromFileTTF("c:\\Windows\\Fonts\\ArialUni.ttf", 18.0f, nullptr, io.Fonts->GetGlyphRangesJapanese());
     //IM_ASSERT(font != nullptr);
+
+    */
 
     // Our state
     bool show_demo_window = true;
@@ -316,7 +319,7 @@ int imgui_SDL2( VkInstance instance, VkPhysicalDevice physicalDevice, VkDevice d
             ImGui::SameLine();
             ImGui::Text("counter = %d", counter);
 
-            ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / io.Framerate, io.Framerate);
+            ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / io->Framerate, io->Framerate);
             ImGui::End();
         }
 
@@ -336,12 +339,12 @@ int imgui_SDL2( VkInstance instance, VkPhysicalDevice physicalDevice, VkDevice d
         const bool is_minimized = (draw_data->DisplaySize.x <= 0.0f || draw_data->DisplaySize.y <= 0.0f);
         if (!is_minimized)
         {
-            wd->ClearValue.color.float32[0] = clear_color.x * clear_color.w;
-            wd->ClearValue.color.float32[1] = clear_color.y * clear_color.w;
-            wd->ClearValue.color.float32[2] = clear_color.z * clear_color.w;
-            wd->ClearValue.color.float32[3] = clear_color.w;
-            FrameRender(wd, draw_data);
-            FramePresent(wd);
+            mainWindowData->ClearValue.color.float32[0] = clear_color.x * clear_color.w;
+            mainWindowData->ClearValue.color.float32[1] = clear_color.y * clear_color.w;
+            mainWindowData->ClearValue.color.float32[2] = clear_color.z * clear_color.w;
+            mainWindowData->ClearValue.color.float32[3] = clear_color.w;
+            FrameRender(mainWindowData, draw_data);
+            FramePresent(mainWindowData);
         }
     }
 

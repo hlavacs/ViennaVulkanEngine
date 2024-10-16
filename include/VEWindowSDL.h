@@ -31,8 +31,10 @@ namespace vve {
         bool InitSDL(VkInstance instance);
         inline static bool sdl_initialized{false};
         SDL_Window* m_window{nullptr};
-        ImGui_ImplVulkanH_Window m_MainWindowData;
+        ImGui_ImplVulkanH_Window m_mainWindowData;
+        int m_minImageCount = 2;
    		VkDescriptorPool m_descriptorPool = VK_NULL_HANDLE;	
+        ImGuiIO* m_io;
     };
 
 
