@@ -46,10 +46,8 @@ namespace vve {
         // Create Framebuffers
         int w, h;
         SDL_GetWindowSize(m_window, &w, &h);
-        //ImGui_ImplVulkanH_Window* wd = &m_mainWindowData;
-        //SetupVulkanWindow(wd, m_surface, w, h);
-
-        m_mainWindowData.Surface = m_surface;
+        
+         m_mainWindowData.Surface = m_surface;
 
         // Check for WSI support
         VkBool32 res;

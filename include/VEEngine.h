@@ -35,6 +35,7 @@ namespace vve {
 		auto getDevice() -> VkDevice { return m_device; }
 		auto getQueueFamily() -> uint32_t { return m_queueFamily; }
 		auto getQueue() -> VkQueue { return m_queue; }
+		auto getPipelineCache() -> VkPipelineCache { return m_pipelineCache; }	
 
 	private:
 		void SetupVulkan();
@@ -50,6 +51,7 @@ namespace vve {
 		VkDevice                 m_device = VK_NULL_HANDLE;
 		uint32_t                 m_queueFamily = (uint32_t)-1;		
 		VkQueue                  m_queue = VK_NULL_HANDLE;
+		VkPipelineCache          m_pipelineCache = VK_NULL_HANDLE;
 
 		bool m_debug{false};
 		bool m_initialized{false};
