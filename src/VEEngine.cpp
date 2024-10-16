@@ -5,7 +5,7 @@
 namespace vve {
 
 	VeEngine::VeEngine() {
-	#ifdef DEBUG
+	#ifndef NDEBUG
 		m_debug = true;
 	#endif
 		Init();
@@ -28,17 +28,20 @@ namespace vve {
 
 		if(m_debug) {
 	        m_instance_layers.push_back("VK_LAYER_KHRONOS_validation");
+	        //m_instance_layers.push_back("VK_LAYER_KHRONOS_");
 	        m_instance_extensions.push_back("VK_EXT_debug_report");
 		}
 	
 		vh::SetUpInstance(m_instance_layers, m_instance_extensions, m_allocator, &m_instance);
 		m_surface = m_window->getSurface(m_instance);
-
 		if(m_debug) vh::SetupDebugReport(m_instance, m_allocator, &m_debugReport);
 		vh::SetupPhysicalDevice(m_instance, m_device_extensions, &m_physicalDevice);
 		vh::SetupGraphicsQueueFamily(m_physicalDevice, &m_queueFamily);
 	    vh::SetupDevice( m_physicalDevice, nullptr, m_device_extensions, m_queueFamily, &m_device);
 		vkGetDeviceQueue(m_device, m_queueFamily, 0, &m_queue);
+		vh::SetupDescriptorPool(m_device, &m_descriptorPool);
+		m_window->render();
+
 
 		//imgui_SDL2(m_instance, m_physicalDevice, m_device, m_queue, m_queueFamily, m_surface, m_allocator, m_window->getWindow());
 

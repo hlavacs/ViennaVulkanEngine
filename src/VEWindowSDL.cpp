@@ -1,5 +1,7 @@
 
 #include "VEWindowSDL.h"
+#include "VEEngine.h"
+#include "VHImgui.h"
 
 namespace vve {
 
@@ -58,7 +60,9 @@ namespace vve {
     }
 
     void VeWindowSDL::render() {
-        //imgui_SDL2(m_instance, m_physicalDevice, m_device, m_queue, m_queueFamily, m_surface, m_allocator, m_window);
+        imgui_SDL2( m_engine.getInstance(), m_engine.getPhysicalDevice(), m_engine.getDevice()
+            , m_engine.getQueue(), m_engine.getQueueFamily(), m_engine.getSurface()
+            , m_engine.getDescriptorPool(), m_engine.getAllocator(), m_window);
     }
 
 

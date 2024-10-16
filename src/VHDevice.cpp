@@ -1,5 +1,5 @@
 
-
+#include <iostream>
 #include "VHDevice.h"
 
 
@@ -72,14 +72,14 @@ namespace vh {
 
 
     void SetupDebugReport( VkInstance instance, VkAllocationCallbacks* allocator, VkDebugReportCallbackEXT* debugReport) {
-            auto PFN_CreateDebugReportCallbackEXT = (PFN_vkCreateDebugReportCallbackEXT)vkGetInstanceProcAddr(instance, "vkCreateDebugReportCallbackEXT");
-            if(PFN_CreateDebugReportCallbackEXT == nullptr) return;
+            auto PFN_CreateDebugReportCallbackEXT_ptr = (PFN_vkCreateDebugReportCallbackEXT)vkGetInstanceProcAddr(instance, "vkCreateDebugReportCallbackEXT");
+            if(PFN_CreateDebugReportCallbackEXT_ptr == nullptr) return;
             VkDebugReportCallbackCreateInfoEXT debug_report_ci = {};
             debug_report_ci.sType = VK_STRUCTURE_TYPE_DEBUG_REPORT_CALLBACK_CREATE_INFO_EXT;
-            debug_report_ci.flags = VK_DEBUG_REPORT_ERROR_BIT_EXT | VK_DEBUG_REPORT_WARNING_BIT_EXT | VK_DEBUG_REPORT_PERFORMANCE_WARNING_BIT_EXT;
+            debug_report_ci.flags = VK_DEBUG_REPORT_INFORMATION_BIT_EXT | VK_DEBUG_REPORT_WARNING_BIT_EXT | VK_DEBUG_REPORT_ERROR_BIT_EXT | VK_DEBUG_REPORT_WARNING_BIT_EXT | VK_DEBUG_REPORT_PERFORMANCE_WARNING_BIT_EXT;
             debug_report_ci.pfnCallback = debug_report;
             debug_report_ci.pUserData = nullptr;
-            vh::CheckResult( PFN_CreateDebugReportCallbackEXT(instance, &debug_report_ci, allocator, debugReport) );
+            vh::CheckResult( PFN_CreateDebugReportCallbackEXT_ptr(instance, &debug_report_ci, allocator, debugReport) );
     }
 
 

@@ -164,7 +164,7 @@ static void SetupVulkan(ImVector<const char*> instance_extensions)
         check_vk_result(err);
 #endif
     }
-
+   
     // Select Physical Device (GPU)
     g_PhysicalDevice = SetupVulkan_SelectPhysicalDevice();
 
@@ -380,20 +380,18 @@ static void FramePresent(ImGui_ImplVulkanH_Window* wd)
 
 
 
-
-
-
 // Main code
 int imgui_SDL2( VkInstance instance, VkPhysicalDevice physicalDevice, VkDevice device, VkQueue queue, 
-        uint32_t queueFamily, VkSurfaceKHR surface, VkAllocationCallbacks* allocator, SDL_Window* window)
+        uint32_t queueFamily, VkSurfaceKHR surface, VkDescriptorPool pool, VkAllocationCallbacks* allocator, SDL_Window* window)
 {
     // Setup Vulkan
+    g_Allocator = allocator;
     g_Instance = instance;
     g_PhysicalDevice = physicalDevice;
     g_Device = device;
     g_Queue = queue;
     g_QueueFamily = queueFamily;
-    g_Allocator = allocator;
+    g_DescriptorPool = pool;
 
     /*
     // Setup SDL
@@ -423,8 +421,11 @@ int imgui_SDL2( VkInstance instance, VkPhysicalDevice physicalDevice, VkDevice d
     extensions.resize(extensions_count);
     SDL_Vulkan_GetInstanceExtensions(window, &extensions_count, extensions.Data);
 
+    ImVector<const char*> extensions;
     SetupVulkan(extensions);
+    */
 
+    /*
     // Create Window Surface
     VkSurfaceKHR surface;
     VkResult err;
@@ -592,7 +593,7 @@ int imgui_SDL2( VkInstance instance, VkPhysicalDevice physicalDevice, VkDevice d
     ImGui::DestroyContext();
 
     CleanupVulkanWindow();
-    CleanupVulkan();
+    //CleanupVulkan();
 
     SDL_DestroyWindow(window);
     SDL_Quit();
