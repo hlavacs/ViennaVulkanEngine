@@ -12,6 +12,7 @@ class MyGUI : public vve::System {
 public:
     MyGUI() = default;
     ~MyGUI() = default;
+    
     void onDrawGUI(vve::Message message) {
         std::cout << "Draw GUI\n";
     }

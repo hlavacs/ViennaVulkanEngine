@@ -14,38 +14,32 @@ namespace vve
         DRAW_GUI
     };
 
-    struct MessageDataRegistered { };
-    struct MessageDataUnregistered { };
-    struct MessageDataFrameStarted { double m_dt; };
-    struct MessageDataUpdate { double m_dt; };
-    struct MessageDataFrameEnded { double m_dt; };
-    struct MessageDataDeleted { void* m_ptr; uint64_t m_id;};
-    struct MessageDataDrawGUI { };
-
-    using MessageData = std::variant<MessageDataRegistered, MessageDataUnregistered, MessageDataFrameStarted
-        , MessageDataUpdate, MessageDataFrameEnded, MessageDataDeleted, MessageDataDrawGUI>;
-
     struct Message {
         MessageType m_type;
-        MessageData m_data;
     };
 
+    struct MessageFrameStart : public Message { MessageFrameStart(): Message{FRAME_START} {}; double m_dt; };
+    struct MessageUpdate : public Message { MessageUpdate(): Message{UPDATE} {}; double m_dt; };
+    struct MessageFrameEnd : public Message { MessageFrameEnd(): Message{FRAME_END} {}; double m_dt; };
+    struct MessageDelete : public Message { MessageDelete(): Message{DELETED} {}; void* m_ptr; uint64_t m_id; };
+    struct MessageDrawGUI : public Message { MessageDrawGUI(): Message{DRAW_GUI} {}; };
 
     class System
     {
+        friend class Engine;
+
     public:
         System();
         virtual ~System();
 
-        void onRegistered(Message message);
-        void onUnregistered(Message message);
-        void onFrameStart(Message message);
-        void onUpdate(Message message);
-        void onFrameEnd(Message message);
-        void onDrawGUI(Message message);
-    
     private:
-
+        virtual void onMessage(Message message);
+        virtual void onFrameStart(Message message);
+        virtual void onUpdate(Message message);
+        virtual void onFrameEnd(Message message);
+        virtual void onDelete(Message message);
+        virtual void onDrawGUI(Message message);
+    
     };
 
 };

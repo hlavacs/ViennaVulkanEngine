@@ -1,4 +1,5 @@
-#define VOLK_IMPLEMENTATION
+
+#include <chrono>
 #include "VEEngine.h"
 #include "VEWindowSDL.h"
 
@@ -60,8 +61,13 @@ namespace vve {
 			systems.erase(system);
 		}
 	}
-	
-	
+
+	void Engine::SendMessage( const Message&& message ) {
+		for( auto& system : m_messageMap[message.m_type] ) {
+			system->onMessage(message);
+		}
+	}
+
 	void Engine::LoadLevel( const char* levelName ){
 		// Load level
 	};
@@ -84,14 +90,22 @@ namespace vve {
 	
 	void Engine::Run(){
 		Init();
+		std::clock_t start = std::clock();
 		m_running = true;
+		auto last = std::chrono::high_resolution_clock::now();
 		while(m_running) { //call stop to stop the engine
+			auto now = std::chrono::high_resolution_clock::now();
+			auto dt = std::chrono::duration_cast<std::chrono::duration<double>>(now - last).count();
+
 			// Window
 			// Update
 			// Render
 			// GUI
 
 			m_window->pollEvents();
+
+			SendMessage( MessageDrawGUI{} ) ;
+
 			m_window->renderNextFrame();
 		}
 	};

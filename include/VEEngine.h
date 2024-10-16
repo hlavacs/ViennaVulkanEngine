@@ -39,7 +39,7 @@ namespace vve {
 		void Init();
 		void SetupVulkan();
 		void Shutdown();
-		void SendMessage( MessageType messageType, MessageData messageData );
+		void SendMessage( const Message&& message );
 
 		virtual void LoadLevel( const char* levelName );
 		virtual void CreateWindow( const char* windowName, int width, int height );
