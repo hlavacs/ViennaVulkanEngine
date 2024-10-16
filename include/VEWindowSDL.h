@@ -23,7 +23,7 @@ namespace vve {
             , int width, int height, std::vector<const char*>& instance_extensions);
         virtual ~VeWindowSDL();
         virtual void Init() override;
-        virtual void pollEvents();
+        virtual bool pollEvents();
         virtual void renderNextFrame() override;
         virtual std::pair<int, int> getSize();
 
@@ -35,6 +35,7 @@ namespace vve {
         int m_minImageCount = 2;
    		VkDescriptorPool m_descriptorPool = VK_NULL_HANDLE;	
         ImGuiIO* m_io;
+        bool m_swapChainRebuild = false;
     };
 
 

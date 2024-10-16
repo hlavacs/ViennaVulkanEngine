@@ -30,8 +30,16 @@ namespace vve {
         instance_extensions.insert(instance_extensions.end(), extensions.begin(), extensions.end());
     }
 
-    VeWindowSDL::~VeWindowSDL(){
-        //ImGui_ImplVulkanH_DestroyWindow(g_Instance, g_Device, &g_MainWindowData, g_Allocator);
+    VeWindowSDL::~VeWindowSDL() {
+        vh::CheckResult(vkDeviceWaitIdle(m_engine.getDevice()));
+        ImGui_ImplVulkan_Shutdown();
+        ImGui_ImplSDL2_Shutdown();
+        ImGui::DestroyContext();
+
+        ImGui_ImplVulkanH_DestroyWindow(m_engine.getInstance(), m_engine.getDevice(), &m_mainWindowData, m_engine.getAllocator());
+        vkDestroyDescriptorPool(m_engine.getDevice(), m_descriptorPool, m_engine.getAllocator());
+        SDL_DestroyWindow(m_window);
+        SDL_Quit();
     }
 
 
@@ -46,7 +54,7 @@ namespace vve {
         // Create Framebuffers
         int w, h;
         SDL_GetWindowSize(m_window, &w, &h);
-        
+
          m_mainWindowData.Surface = m_surface;
 
         // Check for WSI support
@@ -71,8 +79,6 @@ namespace vve {
         assert(m_minImageCount >= 2);
         ImGui_ImplVulkanH_CreateOrResizeWindow(m_engine.getInstance(), m_engine.getPhysicalDevice(), m_engine.getDevice(), &m_mainWindowData, m_engine.getQueueFamily(), m_engine.getAllocator(), w, h, m_minImageCount);
 
-
-
         // Setup Dear ImGui context
         IMGUI_CHECKVERSION();
         ImGui::CreateContext();
@@ -93,7 +99,7 @@ namespace vve {
         init_info.Device = m_engine.getDevice();
         init_info.QueueFamily = m_engine.getQueueFamily();
         init_info.Queue = m_engine.getQueue();
-        //init_info.PipelineCache = g_PipelineCache;
+        init_info.PipelineCache = m_engine.getPipelineCache();
         init_info.DescriptorPool = m_descriptorPool;
         init_info.RenderPass = m_mainWindowData.RenderPass;
         init_info.Subpass = 0;
@@ -124,18 +130,120 @@ namespace vve {
         //bool show_demo_window = true;
         //bool show_another_window = false;
         //ImVec4 clear_color = ImVec4(0.45f, 0.55f, 0.60f, 1.00f);
+
+        imgui_SDL2( m_engine.getInstance(), m_engine.getPhysicalDevice(), m_engine.getDevice()
+            , m_engine.getQueue(), m_engine.getQueueFamily(), m_surface
+            , m_descriptorPool, m_engine.getAllocator(), m_window, &m_mainWindowData, m_io);
     }
 
 
-    void VeWindowSDL::pollEvents() {
+    bool VeWindowSDL::pollEvents() {
+        // Poll and handle events (inputs, window resize, etc.)
+        // You can read the io.WantCaptureMouse, io.WantCaptureKeyboard flags to tell if dear imgui wants to use your inputs.
+        // - When io.WantCaptureMouse is true, do not dispatch mouse input data to your main application, or clear/overwrite your copy of the mouse data.
+        // - When io.WantCaptureKeyboard is true, do not dispatch keyboard input data to your main application, or clear/overwrite your copy of the keyboard data.
+        // Generally you may always pass all inputs to dear imgui, and hide them from your application based on those two flags.
+        SDL_Event event;
+        while (SDL_PollEvent(&event))
+        {
+            ImGui_ImplSDL2_ProcessEvent(&event);
+            if (event.type == SDL_QUIT)
+                m_engine.Stop();
+            if (event.type == SDL_WINDOWEVENT && event.window.event == SDL_WINDOWEVENT_CLOSE && event.window.windowID == SDL_GetWindowID(m_window))
+                m_engine.Stop();
+        }
+        if (SDL_GetWindowFlags(m_window) & SDL_WINDOW_MINIMIZED)
+        {
+            SDL_Delay(10);
+            return false;
+        }
 
+        // Resize swap chain?
+        int fb_width, fb_height;
+        SDL_GetWindowSize(m_window, &fb_width, &fb_height);
+        if (fb_width > 0 && fb_height > 0 && (m_swapChainRebuild || m_mainWindowData.Width != fb_width || m_mainWindowData.Height != fb_height))
+        {
+            ImGui_ImplVulkan_SetMinImageCount(m_minImageCount);
+            ImGui_ImplVulkanH_CreateOrResizeWindow(m_engine.getInstance(), m_engine.getPhysicalDevice(), m_engine.getDevice(), &m_mainWindowData, m_engine.getQueueFamily(), m_engine.getAllocator(), fb_width, fb_height, m_minImageCount);
+            m_mainWindowData.FrameIndex = 0;
+            m_swapChainRebuild = false;
+        }
+
+        return true;
     }
 
 
     void VeWindowSDL::renderNextFrame() {
-        imgui_SDL2( m_engine.getInstance(), m_engine.getPhysicalDevice(), m_engine.getDevice()
-            , m_engine.getQueue(), m_engine.getQueueFamily(), m_surface
-            , m_descriptorPool, m_engine.getAllocator(), m_window, &m_mainWindowData, m_io);
+
+        //imgui_SDL2( m_engine.getInstance(), m_engine.getPhysicalDevice(), m_engine.getDevice()
+        //    , m_engine.getQueue(), m_engine.getQueueFamily(), m_surface
+        //    , m_descriptorPool, m_engine.getAllocator(), m_window, &m_mainWindowData, m_io);
+
+
+
+        // Rendering
+
+        static bool show_demo_window = true;
+        static bool show_another_window = false;
+        ImVec4 clear_color = ImVec4(0.45f, 0.55f, 0.60f, 1.00f);
+
+        // Start the Dear ImGui frame
+        ImGui_ImplVulkan_NewFrame();
+        ImGui_ImplSDL2_NewFrame();
+        ImGui::NewFrame();
+
+        // 1. Show the big demo window (Most of the sample code is in ImGui::ShowDemoWindow()! You can browse its code to learn more about Dear ImGui!).
+        if (show_demo_window)
+            ImGui::ShowDemoWindow(&show_demo_window);
+
+        // 2. Show a simple window that we create ourselves. We use a Begin/End pair to create a named window.
+        {
+            static float f = 0.0f;
+            static int counter = 0;
+
+            ImGui::Begin("Hello, world!");                          // Create a window called "Hello, world!" and append into it.
+
+            ImGui::Text("This is some useful text.");               // Display some text (you can use a format strings too)
+            ImGui::Checkbox("Demo Window", &show_demo_window);      // Edit bools storing our window open/close state
+            ImGui::Checkbox("Another Window", &show_another_window);
+
+            ImGui::SliderFloat("float", &f, 0.0f, 1.0f);            // Edit 1 float using a slider from 0.0f to 1.0f
+            ImGui::ColorEdit3("clear color", (float*)&clear_color); // Edit 3 floats representing a color
+
+            if (ImGui::Button("Button"))                            // Buttons return true when clicked (most widgets return true when edited/activated)
+                counter++;
+            ImGui::SameLine();
+            ImGui::Text("counter = %d", counter);
+
+            ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / m_io->Framerate, m_io->Framerate);
+            ImGui::End();
+        }
+
+        // 3. Show another simple window.
+        if (show_another_window)
+        {
+            ImGui::Begin("Another Window", &show_another_window);   // Pass a pointer to our bool variable (the window will have a closing button that will clear the bool when clicked)
+            ImGui::Text("Hello from another window!");
+            if (ImGui::Button("Close Me"))
+                show_another_window = false;
+            ImGui::End();
+        }
+
+        // Rendering
+        ImGui::Render();
+        ImDrawData* draw_data = ImGui::GetDrawData();
+        const bool is_minimized = (draw_data->DisplaySize.x <= 0.0f || draw_data->DisplaySize.y <= 0.0f);
+        if (!is_minimized)
+        {
+            m_mainWindowData.ClearValue.color.float32[0] = clear_color.x * clear_color.w;
+            m_mainWindowData.ClearValue.color.float32[1] = clear_color.y * clear_color.w;
+            m_mainWindowData.ClearValue.color.float32[2] = clear_color.z * clear_color.w;
+            m_mainWindowData.ClearValue.color.float32[3] = clear_color.w;
+            FrameRender(&m_mainWindowData, draw_data);
+            FramePresent(&m_mainWindowData);
+        }
+
+
     }
 
 

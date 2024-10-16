@@ -12,7 +12,12 @@ namespace vve {
 		Init();
 	};
 	
-	VeEngine::~VeEngine(){};
+	VeEngine::~VeEngine() {
+		m_renderer = nullptr;
+		m_sceneManager = nullptr;
+		m_window = nullptr;
+		Shutdown();
+	};
 	
 	void VeEngine::Init(){
 		if(m_initialized) return;
@@ -46,7 +51,6 @@ namespace vve {
 		vkGetDeviceQueue(m_device, m_queueFamily, 0, &m_queue);
 		
 		m_window->Init();
-		m_window->renderNextFrame();
 	};
 	
 	
@@ -86,9 +90,7 @@ namespace vve {
 
 			m_window->pollEvents();
 			m_window->renderNextFrame();
-
 		}
-		Shutdown();
 	};
 	
 	void VeEngine::Stop(){

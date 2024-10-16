@@ -14,7 +14,7 @@ int main() {
 
     vve::VeEngine engine;
 
-    //engine.Run();
+    engine.Run();
 
     //imgui_SDL2();
 

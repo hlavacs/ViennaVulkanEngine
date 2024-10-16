@@ -13,3 +13,7 @@ int imgui_SDL2( VkInstance instance, VkPhysicalDevice physicalDevice, VkDevice d
         , uint32_t queueFamily, VkSurfaceKHR surface, VkDescriptorPool pool
         , VkAllocationCallbacks* allocator, SDL_Window* window, ImGui_ImplVulkanH_Window* mainWindowData
         , ImGuiIO* io);
+
+void FrameRender(ImGui_ImplVulkanH_Window* wd, ImDrawData* draw_data);
+
+void FramePresent(ImGui_ImplVulkanH_Window* wd);

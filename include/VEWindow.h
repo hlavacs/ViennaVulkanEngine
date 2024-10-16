@@ -15,7 +15,7 @@ namespace vve {
             , int width, int height, std::vector<const char*>& instance_extensions);
         virtual ~VeWindow();
         virtual void Init() = 0;
-        virtual void pollEvents() = 0;
+        virtual bool pollEvents() = 0;
         virtual void renderNextFrame() = 0;
         virtual std::pair<int, int> getSize() = 0;
         
