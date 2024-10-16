@@ -73,7 +73,7 @@ namespace vve {
 	};
 	
 	void Engine::CreateWindow( const char* windowName, int width, int height ){
-		m_window = std::make_unique<WindowSDL>(*this, m_state.m_instance, windowName, width, height, m_instance_extensions);
+		m_window = std::make_shared<WindowSDL>(*this, m_state.m_instance, windowName, width, height, m_instance_extensions);
 	};
 	
 	void Engine::CreateRenderer( const char* rendererName){
@@ -97,6 +97,9 @@ namespace vve {
 			auto now = std::chrono::high_resolution_clock::now();
 			auto dt = std::chrono::duration_cast<std::chrono::duration<double>>(now - last).count();
 
+			SendMessage( MessageFrameStart{dt} ) ;
+
+
 			// Window
 			// Update
 			// Render
@@ -104,9 +107,15 @@ namespace vve {
 
 			m_window->pollEvents();
 
+			SendMessage( MessageUpdate{dt} ) ;
+
+			m_window->prepareNextFrame();
+
 			SendMessage( MessageDrawGUI{} ) ;
 
 			m_window->renderNextFrame();
+
+			SendMessage( MessageFrameEnd{dt} ) ;
 		}
 	};
 	

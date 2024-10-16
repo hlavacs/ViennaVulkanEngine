@@ -29,6 +29,7 @@ namespace vve {
             break;
         }
     };
+    
     void System::onFrameStart(Message message){};
     void System::onUpdate(Message message){};
     void System::onFrameEnd(Message message){};

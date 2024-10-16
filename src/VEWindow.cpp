@@ -10,4 +10,7 @@ namespace vve {
 
     Window::~Window(){}
 
+    void Window::setClearColor(glm::vec4 clearColor){ m_clearColor = clearColor; };
+
+
 };   // namespace vve

@@ -23,6 +23,7 @@ namespace vve {
         virtual ~WindowSDL();
         virtual void Init() override;
         virtual bool pollEvents();
+        virtual void prepareNextFrame() override;
         virtual void renderNextFrame() override;
         virtual std::pair<int, int> getSize();
 

@@ -2,6 +2,7 @@
 
 #include <memory>
 #include <unordered_map>
+#include "glm/glm.hpp"
 #include <vulkan/vulkan.h>
 #include "VHDevice.h"
 #include "VEWindow.h"
@@ -33,7 +34,8 @@ namespace vve {
 		void DeregisterSystem( std::shared_ptr<System> system );
 		void Run();
 		void Stop();
-		auto getState() -> const VulkanState& { return m_state; }	
+		auto getState() -> const VulkanState& { return m_state; }
+		auto getWindow() -> std::shared_ptr<Window> { return m_window; }
 
 	protected:
 		void Init();
@@ -62,9 +64,9 @@ namespace vve {
 		using MessageMap = std::unordered_map<MessageType, std::set<std::shared_ptr<System>>>;
 		MessageMap m_messageMap{};
 
-		std::unique_ptr<Window> m_window{};
-		std::unique_ptr<Renderer> m_renderer{};
-		std::unique_ptr<SceneManager> m_sceneManager{};
+		std::shared_ptr<Window> m_window{};
+		std::shared_ptr<Renderer> m_renderer{};
+		std::shared_ptr<SceneManager> m_sceneManager{};
 	};
 };
 
