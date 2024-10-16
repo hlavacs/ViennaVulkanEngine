@@ -12,10 +12,11 @@ namespace vve {
     {
     public:
         VeWindow(VeEngine& engine, VkInstance instance, std::string windowName
-            , int width, int height, std::vector<const char*>& instance_extensions) ;
+            , int width, int height, std::vector<const char*>& instance_extensions);
         virtual ~VeWindow();
-        virtual auto getSurface(VkInstance instance) -> VkSurfaceKHR = 0;
+        virtual void Init() = 0;
         virtual void render() = 0;
+        virtual std::pair<int, int> getSize() = 0;
         
     protected:
         VeEngine& m_engine;

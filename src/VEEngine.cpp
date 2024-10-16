@@ -33,18 +33,14 @@ namespace vve {
 		}
 	
 		vh::SetUpInstance(m_instance_layers, m_instance_extensions, m_allocator, &m_instance);
-		m_surface = m_window->getSurface(m_instance);
 		if(m_debug) vh::SetupDebugReport(m_instance, m_allocator, &m_debugReport);
 		vh::SetupPhysicalDevice(m_instance, m_device_extensions, &m_physicalDevice);
 		vh::SetupGraphicsQueueFamily(m_physicalDevice, &m_queueFamily);
 	    vh::SetupDevice( m_physicalDevice, nullptr, m_device_extensions, m_queueFamily, &m_device);
 		vkGetDeviceQueue(m_device, m_queueFamily, 0, &m_queue);
-		vh::SetupDescriptorPool(m_device, &m_descriptorPool);
+		
+		m_window->Init();
 		m_window->render();
-
-
-		//imgui_SDL2(m_instance, m_physicalDevice, m_device, m_queue, m_queueFamily, m_surface, m_allocator, m_window->getWindow());
-
 	};
 	
 	

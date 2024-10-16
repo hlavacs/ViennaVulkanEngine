@@ -20,13 +20,15 @@ namespace vve {
         VeWindowSDL(VeEngine& engine, VkInstance instance, std::string windowName
             , int width, int height, std::vector<const char*>& instance_extensions);
         virtual ~VeWindowSDL();
-        virtual auto getSurface(VkInstance instance) -> VkSurfaceKHR override;
+        virtual void Init() override;
         virtual void render() override;
-        
+        virtual std::pair<int, int> getSize();
+
     private:
         bool InitSDL(VkInstance instance);
         inline static bool sdl_initialized{false};
         SDL_Window* m_window{nullptr};
+   		VkDescriptorPool m_descriptorPool = VK_NULL_HANDLE;	
     };
 
 

@@ -103,6 +103,7 @@ static VkPhysicalDevice SetupVulkan_SelectPhysicalDevice()
     return VK_NULL_HANDLE;
 }
 
+/*
 static void SetupVulkan(ImVector<const char*> instance_extensions)
 {
     VkResult err;
@@ -235,6 +236,7 @@ static void SetupVulkan(ImVector<const char*> instance_extensions)
         check_vk_result(err);
     }
 }
+*/
 
 // All the ImGui_ImplVulkanH_XXX structures/functions are optional helpers used by the demo.
 // Your real engine/app may not use them.

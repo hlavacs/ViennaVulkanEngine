@@ -47,22 +47,25 @@ namespace vve {
         return true;
     }
 
-    auto VeWindowSDL::getSurface( VkInstance instance ) -> VkSurfaceKHR { 
-        if(m_surface != VK_NULL_HANDLE) return m_surface; 
-
-        // Create Window Surface
-        if (SDL_Vulkan_CreateSurface(m_window, instance, &m_surface) == 0)
-        {
+    void VeWindowSDL::Init() {
+        if (SDL_Vulkan_CreateSurface(m_window, m_engine.getInstance(), &m_surface) == 0) {
             printf("Failed to create Vulkan surface.\n");
-            return VK_NULL_HANDLE;
         }
-        return m_surface; 
+        
+        vh::SetupDescriptorPool(m_engine.getDevice(), &m_descriptorPool);
+
     }
 
     void VeWindowSDL::render() {
         imgui_SDL2( m_engine.getInstance(), m_engine.getPhysicalDevice(), m_engine.getDevice()
-            , m_engine.getQueue(), m_engine.getQueueFamily(), m_engine.getSurface()
-            , m_engine.getDescriptorPool(), m_engine.getAllocator(), m_window);
+            , m_engine.getQueue(), m_engine.getQueueFamily(), m_surface
+            , m_descriptorPool, m_engine.getAllocator(), m_window);
+    }
+
+    std::pair<int, int> VeWindowSDL::getSize() {
+        int w, h;
+        SDL_GetWindowSize(m_window, &w, &h);
+        return std::make_pair(w, h);
     }
 
 

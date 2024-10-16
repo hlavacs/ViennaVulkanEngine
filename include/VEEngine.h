@@ -35,8 +35,6 @@ namespace vve {
 		auto getDevice() -> VkDevice { return m_device; }
 		auto getQueueFamily() -> uint32_t { return m_queueFamily; }
 		auto getQueue() -> VkQueue { return m_queue; }
-		auto getSurface() -> VkSurfaceKHR { return m_surface; }
-		auto getDescriptorPool() -> VkDescriptorPool { return m_descriptorPool; }
 
 	private:
 		void SetupVulkan();
@@ -52,8 +50,6 @@ namespace vve {
 		VkDevice                 m_device = VK_NULL_HANDLE;
 		uint32_t                 m_queueFamily = (uint32_t)-1;		
 		VkQueue                  m_queue = VK_NULL_HANDLE;
-		VkSurfaceKHR			 m_surface = VK_NULL_HANDLE;
-		VkDescriptorPool	 	 m_descriptorPool = VK_NULL_HANDLE;		
 
 		bool m_debug{false};
 		bool m_initialized{false};
