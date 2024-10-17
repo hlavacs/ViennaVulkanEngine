@@ -21,14 +21,15 @@ public:
 
     float clear_color[3]{ 0.45f, 0.55f, 0.60f};
 
-    void onDrawGUI(vve::Message message) {
+    void OnDrawGUI(vve::Message message) override {
       
         static bool show_demo_window = true;
         static bool show_another_window = false;
 
         // 1. Show the big demo window (Most of the sample code is in ImGui::ShowDemoWindow()! You can browse its code to learn more about Dear ImGui!).
-        if (show_demo_window)
+        if (show_demo_window) {
             ImGui::ShowDemoWindow(&show_demo_window);
+        }
 
         // 2. Show a simple window that we create ourselves. We use a Begin/End pair to create a named window.
         {
@@ -63,19 +64,19 @@ public:
             ImGui::End();
         }
 
-        m_engine.getWindow()->setClearColor( glm::vec4{ clear_color[0], clear_color[1], clear_color[2], 1.0f} );
+        m_engine.GetWindow()->SetClearColor( glm::vec4{ clear_color[0], clear_color[1], clear_color[2], 1.0f} );
     }
 
 
-    void onKeyDown(vve::Message message) {
-        std::cout << "Key down: " << message.getData<vve::MessageKeyDown>().m_key << std::endl;
+    void OnKeyDown(vve::Message message) override {
+        std::cout << "Key down: " << message.GetData<vve::MessageKeyDown>().m_key << std::endl;
     }
 
-    void onKeyUp(vve::Message message) {
-        std::cout << "Key up: " << message.getData<vve::MessageKeyUp>().m_key << std::endl;
+    void OnKeyUp(vve::Message message) override {
+        std::cout << "Key up: " << message.GetData<vve::MessageKeyUp>().m_key << std::endl;
     }
-    void onKeyRepeat(vve::Message message) {
-        std::cout << "Key repeat: " << message.getData<vve::MessageKeyRepeat>().m_key << std::endl;
+    void OnKeyRepeat(vve::Message message) override {
+        std::cout << "Key repeat: " << message.GetData<vve::MessageKeyRepeat>().m_key << std::endl;
     }
 
 

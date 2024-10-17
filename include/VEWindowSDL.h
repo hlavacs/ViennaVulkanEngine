@@ -29,10 +29,10 @@ namespace vve {
             , int width, int height, std::vector<const char*>& instance_extensions);
         virtual ~WindowSDL();
         virtual void Init() override;
-        virtual bool pollEvents();
-        virtual void prepareNextFrame() override;
-        virtual void renderNextFrame() override;
-        virtual auto getSize() -> std::pair<int, int>;
+        virtual bool PollEvents() override;
+        virtual void PrepareNextFrame() override;
+        virtual void RenderNextFrame() override;
+        virtual auto GetSize() -> std::pair<int, int>;
 
     private:
         bool InitSDL(VkInstance instance);

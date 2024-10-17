@@ -32,11 +32,11 @@ namespace vve {
 		void DeregisterSystem( std::shared_ptr<System<ATYPE>> system );
 		void Run();
 		void Stop();
-		auto getState() -> const VulkanState& { return m_state; }
-		auto getWindow() -> std::shared_ptr<Window<ATYPE>> { return m_window; }
-		auto getRenderer() -> std::shared_ptr<Renderer<ATYPE>> { return m_renderer; }
-		auto getSceneMgr() -> std::shared_ptr<SceneManager<ATYPE>> { return m_sceneManager; }
-		auto getRegistry() -> vecs::Registry<>& { return m_registry; }
+		auto GetState() -> const VulkanState& { return m_state; }
+		auto GetWindow() -> std::shared_ptr<Window<ATYPE>> { return m_window; }
+		auto GetRenderer() -> std::shared_ptr<Renderer<ATYPE>> { return m_renderer; }
+		auto GetSceneMgr() -> std::shared_ptr<SceneManager<ATYPE>> { return m_sceneManager; }
+		auto GetRegistry() -> vecs::Registry<>& { return m_registry; }
 		void SendMessage( Message message );
 
 	protected:

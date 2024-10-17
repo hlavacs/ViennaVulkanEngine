@@ -27,6 +27,7 @@ namespace vve
         virtual ~Renderer();
 
     private:
+        virtual void PrepareRender();
         virtual void Render();
         Engine<ATYPE>& m_engine;
         std::weak_ptr<Window<ATYPE>> m_window;

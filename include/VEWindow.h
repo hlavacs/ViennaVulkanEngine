@@ -26,15 +26,15 @@ namespace vve {
             , int width, int height, std::vector<const char*>& instance_extensions);
         virtual ~Window();
 
-        virtual std::pair<int, int> getSize() = 0;
-        virtual void setClearColor(glm::vec4 clearColor);
+        virtual std::pair<int, int> GetSize() = 0;
+        virtual void SetClearColor(glm::vec4 clearColor);
         
     protected:
         virtual void Init() = 0;
-        virtual bool pollEvents() = 0;
-        virtual void prepareNextFrame() = 0;
-        virtual void renderNextFrame() = 0;
-        virtual void addRenderer(int64_t priority, std::shared_ptr<Renderer<ATYPE>> renderer);
+        virtual bool PollEvents() = 0;
+        virtual void PrepareNextFrame() = 0;
+        virtual void RenderNextFrame() = 0;
+        virtual void AddRenderer(int64_t priority, std::shared_ptr<Renderer<ATYPE>> renderer);
 
         Engine<ATYPE>& m_engine;
         std::map< int64_t, std::shared_ptr<Renderer<ATYPE>>> m_renderer;

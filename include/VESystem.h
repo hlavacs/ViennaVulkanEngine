@@ -59,13 +59,13 @@ namespace vve {
             std::memcpy(m_data, &msg, sizeof(T));
         };
 
-        auto getType() -> MessageType {
+        auto GetType() -> MessageType {
             return reinterpret_cast<MessageBase*>(m_data)->m_type;
         };
 
         template<typename T>
             requires (std::is_base_of_v<MessageBase, T> && sizeof(T) <= MAX_SIZE)
-        auto getData() -> T& {
+        auto GetData() -> T& {
             assert(m_typeID == std::type_index(typeid(T)).hash_code() );
             return *reinterpret_cast<T*>(m_data);
         };
@@ -87,22 +87,22 @@ namespace vve {
     public:
         System( Engine<ATYPE>& engine );
         virtual ~System();
-        virtual void receiveMessage(Message message);
+        virtual void ReceiveMessage(Message message);
 
     protected:
-        virtual void onFrameStart(Message message);
-        virtual void onUpdate(Message message);
-        virtual void onFrameEnd(Message message);
-        virtual void onDelete(Message message);
-        virtual void onDrawGUI(Message message);
-        virtual void onMouseMove(Message message);
-        virtual void onMouseButtonDown(Message message);
-        virtual void onMouseButtonUp(Message message);
-        virtual void onMouseButtonRepeat(Message message);
-        virtual void onMouseWheel(Message message);
-        virtual void onKeyDown(Message message);
-        virtual void onKeyUp(Message message);
-        virtual void onKeyRepeat(Message message);
+        virtual void OnFrameStart(Message message);
+        virtual void OnUpdate(Message message);
+        virtual void OnFrameEnd(Message message);
+        virtual void OnDelete(Message message);
+        virtual void OnDrawGUI(Message message);
+        virtual void OnMouseMove(Message message);
+        virtual void OnMouseButtonDown(Message message);
+        virtual void OnMouseButtonUp(Message message);
+        virtual void OnMouseButtonRepeat(Message message);
+        virtual void OnMouseWheel(Message message);
+        virtual void OnKeyDown(Message message);
+        virtual void OnKeyUp(Message message);
+        virtual void OnKeyRepeat(Message message);
 
         std::unordered_map<MessageType, std::function<void(Message)>> m_onFunctions;
         Engine<ATYPE>& m_engine;

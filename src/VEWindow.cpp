@@ -14,10 +14,10 @@ namespace vve {
     Window<ATYPE>::~Window(){}
 
    	template<ArchitectureType ATYPE>
-    void Window<ATYPE>::addRenderer(int64_t priority, std::shared_ptr<Renderer<ATYPE>> renderer) { m_renderer[priority] = renderer; };
+    void Window<ATYPE>::AddRenderer(int64_t priority, std::shared_ptr<Renderer<ATYPE>> renderer) { m_renderer[priority] = renderer; };
 
    	template<ArchitectureType ATYPE>
-    void Window<ATYPE>::setClearColor(glm::vec4 clearColor){ m_clearColor = clearColor; };
+    void Window<ATYPE>::SetClearColor(glm::vec4 clearColor){ m_clearColor = clearColor; };
 
     template class Window<ArchitectureType::SEQUENTIAL>;
     template class Window<ArchitectureType::PARALLEL>;

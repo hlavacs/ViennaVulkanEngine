@@ -77,8 +77,8 @@ namespace vve {
 
 	template<ArchitectureType ATYPE>
 	void Engine<ATYPE>::SendMessage( Message message ) {
-		for( auto& system : m_messageMap[message.getType()] ) {
-			system->receiveMessage(message);
+		for( auto& system : m_messageMap[message.GetType()] ) {
+			system->ReceiveMessage(message);
 		}
 	}
 
@@ -94,8 +94,8 @@ namespace vve {
 	
 	template<ArchitectureType ATYPE>
 	void Engine<ATYPE>::CreateRenderer( const char* rendererName){
-		m_window->addRenderer(100, std::make_shared<RendererImgui<ATYPE>>(*this, m_window) );
-		m_window->addRenderer(10, std::make_shared<RendererForward<ATYPE>>(*this, m_window) );
+		m_window->AddRenderer(100, std::make_shared<RendererImgui<ATYPE>>(*this, m_window) );
+		m_window->AddRenderer(10, std::make_shared<RendererForward<ATYPE>>(*this, m_window) );
 	};
 	
 	template<ArchitectureType ATYPE>
@@ -119,11 +119,11 @@ namespace vve {
 			auto dt = std::chrono::duration_cast<std::chrono::duration<double>>(now - last).count();
 
 			SendMessage( MessageFrameStart{dt} ) ;
-			m_window->pollEvents();
+			m_window->PollEvents();
 			SendMessage( MessageUpdate{dt} ) ;
-			m_window->prepareNextFrame();
+			m_window->PrepareNextFrame();
 			SendMessage( MessageDrawGUI{} ) ;
-			m_window->renderNextFrame();
+			m_window->RenderNextFrame();
 			SendMessage( MessageFrameEnd{dt} ) ;
 		}
 	};

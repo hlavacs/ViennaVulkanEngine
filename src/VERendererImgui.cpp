@@ -12,7 +12,10 @@ namespace vve {
     RendererImgui<ATYPE>::~RendererImgui(){};
 
    	template<ArchitectureType ATYPE>
-    void RendererImgui<ATYPE>::Render(){};
+    void RendererImgui<ATYPE>::Render(){
+
+        
+    };
 
     template class RendererImgui<ArchitectureType::SEQUENTIAL>;
     template class RendererImgui<ArchitectureType::PARALLEL>;
