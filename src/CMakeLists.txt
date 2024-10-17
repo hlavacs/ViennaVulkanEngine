@@ -12,6 +12,7 @@ set(SOURCE
   VEEngine.cpp
   VERenderer.cpp
   VERendererForward.cpp
+  VERendererImgui.cpp
   VESceneManager.cpp
   VESystem.cpp
   VEWindow.cpp
@@ -24,6 +25,7 @@ set(HEADERS
   ${INCLUDE}/VEEngine.h
   ${INCLUDE}/VERenderer.h
   ${INCLUDE}/VERendererForward.h
+  ${INCLUDE}/VERendererImgui.h
   ${INCLUDE}/VESceneManager.h
   ${INCLUDE}/VESystem.h
   ${INCLUDE}/VEWindow.h
