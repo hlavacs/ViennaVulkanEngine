@@ -1,8 +1,8 @@
 
+#include "VESystem.h"
 #include "VHDevice.h"
 #include "VEWindowSDL.h"
 #include "VEEngine.h"
-#include "VESystem.h"
 
 namespace vve {
 

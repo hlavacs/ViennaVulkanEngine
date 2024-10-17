@@ -1,4 +1,5 @@
 
+#include "VESystem.h"
 #include "VESceneManager.h"
 
 namespace vve {

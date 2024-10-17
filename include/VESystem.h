@@ -9,10 +9,24 @@
 #include <typeinfo>
 #include "VEInclude.h"
 
-namespace vve
-{
+namespace vve {
 
-
+    enum MessageType {
+        FRAME_START = 0,
+        UPDATE,
+        FRAME_END,
+        DELETED,
+        DRAW_GUI,
+        MOUSE_MOVE,
+        MOUSE_BUTTON_DOWN,
+        MOUSE_BUTTON_UP,
+        MOUSE_BUTTON_REPEAT,
+        MOUSE_WHEEL,
+        KEY_DOWN,
+        KEY_UP,
+        KEY_REPEAT,
+        LAST
+    };
 
     struct MessageBase {
         MessageType m_type;
