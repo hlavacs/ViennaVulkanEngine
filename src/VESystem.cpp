@@ -1,5 +1,5 @@
 
-
+#include <cassert>
 #include "VESystem.h"
 
 
@@ -7,7 +7,6 @@ namespace vve {
 
    	template<ArchitectureType ATYPE>
     System<ATYPE>::System( Engine<ATYPE>& engine) : m_engine(engine) {
-        m_onFunctions.resize( static_cast<int>(MessageType::LAST + 1) );
         m_onFunctions[FRAME_START] = [this](Message message){ onFrameStart(message); };
         m_onFunctions[UPDATE] = [this](Message message){ onUpdate(message); };
         m_onFunctions[FRAME_END] = [this](Message message){ onFrameEnd(message); };
@@ -28,6 +27,7 @@ namespace vve {
 
    	template<ArchitectureType ATYPE>
     void System<ATYPE>::receiveMessage(Message message) {
+        assert( m_onFunctions.find(message.getType()) != m_onFunctions.end() );
         if constexpr (ATYPE == vve::ArchitectureType::PARALLEL) {
             if( message.getType() == MessageType::UPDATE ) {
                 m_onFunctions[MessageType::UPDATE](message);
@@ -41,6 +41,8 @@ namespace vve {
         }
     };
 
+    //-------------------------------------------------------------------------------------------------
+
    	template<ArchitectureType ATYPE>
     void System<ATYPE>::onFrameStart(Message message){};
 
@@ -49,6 +51,7 @@ namespace vve {
         if constexpr (ATYPE == vve::ArchitectureType::PARALLEL) {
             std::lock_guard<Mutex<ATYPE>> lock(m_mutex);
             for( auto& message : m_messages ) {
+                assert( m_onFunctions.find(message.getType()) != m_onFunctions.end() );
                 m_onFunctions[message.getType()](message);
             }
             m_messages.clear();

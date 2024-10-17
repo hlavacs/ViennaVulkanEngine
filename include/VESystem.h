@@ -51,7 +51,7 @@ namespace vve
 
 
     struct Message {
-        static const size_t MAX_SIZE = 100;
+        static const size_t MAX_SIZE = 64;
 
         template<typename T>
             requires (std::is_base_of_v<MessageBase, T> && sizeof(T) <= MAX_SIZE)
@@ -105,7 +105,7 @@ namespace vve
         virtual void onKeyUp(Message message);
         virtual void onKeyRepeat(Message message);
 
-        std::vector<std::function<void(Message)>> m_onFunctions;
+        std::unordered_map<MessageType, std::function<void(Message)>> m_onFunctions;
         Engine<ATYPE>& m_engine;
         Mutex<ATYPE> m_mutex;
         std::vector<Message> m_messages;
