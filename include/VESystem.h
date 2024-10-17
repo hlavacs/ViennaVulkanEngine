@@ -5,6 +5,8 @@
 #include <variant>
 #include <mutex>
 #include <functional>
+#include <typeindex>
+#include <typeinfo>
 #include "VEInclude.h"
 
 namespace vve
@@ -54,6 +56,7 @@ namespace vve
         template<typename T>
             requires (std::is_base_of_v<MessageBase, T> && sizeof(T) <= MAX_SIZE)
         Message(const T&& msg ) {
+            m_typeID = std::type_index(typeid(T)).hash_code();
             std::memcpy(m_data, &msg, sizeof(T));
         };
 
@@ -64,10 +67,12 @@ namespace vve
         template<typename T>
             requires (std::is_base_of_v<MessageBase, T> && sizeof(T) <= MAX_SIZE)
         auto getData() -> T& {
+            assert(m_typeID == std::type_index(typeid(T)).hash_code() );
             return *reinterpret_cast<T*>(m_data);
         };
 
     private:
+        size_t m_typeID{};
         uint8_t m_data[MAX_SIZE];
     };
 
