@@ -1,22 +1,22 @@
 #pragma once
 
-#include "VEInclude.h"
-#include "VEWindow.h"
 #include "VERenderer.h"
 
-namespace vve
-{
+namespace vve {
+
+   	template<ArchitectureType ATYPE>
+    class Window;
+
    	template<ArchitectureType ATYPE>
     class RendererImgui : public Renderer<ATYPE>
     {
     public:
-        RendererImgui(Engine<ATYPE>& engine, Window<ATYPE>& window);
+        RendererImgui(Engine<ATYPE>& engine, std::shared_ptr<Window<ATYPE>> window);
         virtual ~RendererImgui();
 
     private:
         virtual void Render() override;
 
-        Window<ATYPE>& m_window;
     };
 
 };   // namespace vve

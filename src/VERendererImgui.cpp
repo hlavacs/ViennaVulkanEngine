@@ -1,12 +1,12 @@
 
 #include "VERendererImgui.h"
-
+#include "VEWindow.h"
 
 namespace vve {
 
    	template<ArchitectureType ATYPE>
-    RendererImgui<ATYPE>::RendererImgui(Engine<ATYPE>& engine, Window<ATYPE>& window) 
-        : Renderer<ATYPE>(engine), m_window(window) {};
+    RendererImgui<ATYPE>::RendererImgui(Engine<ATYPE>& engine, std::shared_ptr<Window<ATYPE>> window) 
+        : Renderer<ATYPE>(engine, window) {};
 
    	template<ArchitectureType ATYPE>
     RendererImgui<ATYPE>::~RendererImgui(){};

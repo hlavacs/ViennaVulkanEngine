@@ -1,11 +1,16 @@
 #pragma once
 
+#include <memory>
 #include "VEInclude.h"
+
 
 namespace vve
 {
    	template<ArchitectureType ATYPE>
     class Engine;
+
+   	template<ArchitectureType ATYPE>
+    class Window;
 
     enum class RendererType {
         FORWARD,
@@ -13,18 +18,18 @@ namespace vve
         RAYTRACING
     };
 
-
    	template<ArchitectureType ATYPE>
     class Renderer {
         friend class Engine<ATYPE>;
 
     public:
-        Renderer(Engine<ATYPE>& m_engine);
+        Renderer(Engine<ATYPE>& m_engine, std::shared_ptr<Window<ATYPE>> window);
         virtual ~Renderer();
 
     private:
         virtual void Render();
         Engine<ATYPE>& m_engine;
+        std::shared_ptr<Window<ATYPE>> m_window;
     };
 
 };   // namespace vve

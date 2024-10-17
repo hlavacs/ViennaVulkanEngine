@@ -12,42 +12,27 @@
 namespace vve
 {
 
-    enum MessageType {
-        FRAME_START = 0,
-        UPDATE,
-        FRAME_END,
-        DELETED,
-        DRAW_GUI,
-        MOUSE_MOVE,
-        MOUSE_BUTTON_DOWN,
-        MOUSE_BUTTON_UP,
-        MOUSE_BUTTON_REPEAT,
-        MOUSE_WHEEL,
-        KEY_DOWN,
-        KEY_UP,
-        KEY_REPEAT,
-        LAST
-    };
+
 
     struct MessageBase {
         MessageType m_type;
     };
 
-    struct MessageFrameStart : public MessageBase { MessageFrameStart(double dt): MessageBase{FRAME_START}, m_dt{dt} {}; double m_dt; };
-    struct MessageUpdate : public MessageBase { MessageUpdate(double dt): MessageBase{UPDATE}, m_dt{dt} {}; double m_dt; };
-    struct MessageFrameEnd : public MessageBase { MessageFrameEnd(double dt): MessageBase{FRAME_END}, m_dt{dt} {}; double m_dt; };
-    struct MessageDelete : public MessageBase { MessageDelete(): MessageBase{DELETED} {}; void* m_ptr; uint64_t m_id; };
-    struct MessageDrawGUI : public MessageBase { MessageDrawGUI(): MessageBase{DRAW_GUI} {}; };
-    struct MessageMouseMove : public MessageBase { MessageMouseMove(int x, int y): MessageBase{MOUSE_MOVE}, m_x{x}, m_y{y} {}; int m_x; int m_y; };
+    struct MessageFrameStart : public MessageBase { MessageFrameStart(double dt); double m_dt; };
+    struct MessageUpdate : public MessageBase { MessageUpdate(double dt); double m_dt; };
+    struct MessageFrameEnd : public MessageBase { MessageFrameEnd(double dt); double m_dt; };
+    struct MessageDelete : public MessageBase { MessageDelete(); void* m_ptr; uint64_t m_id; };
+    struct MessageDrawGUI : public MessageBase { MessageDrawGUI(); };
+    struct MessageMouseMove : public MessageBase { MessageMouseMove(int x, int y); int m_x; int m_y; };
     
-    struct MessageMouseButtonDown : public MessageBase { MessageMouseButtonDown(int button): MessageBase{MOUSE_BUTTON_DOWN}, m_button{button} {}; int m_button; };
-    struct MessageMouseButtonUp : public MessageBase { MessageMouseButtonUp(int button): MessageBase{MOUSE_BUTTON_UP}, m_button{button} {}; int m_button; };
-    struct MessageMouseButtonRepeat : public MessageBase { MessageMouseButtonRepeat(int button): MessageBase{MOUSE_BUTTON_REPEAT}, m_button{button} {}; int m_button; };
-    struct MessageMouseWheel : public MessageBase { MessageMouseWheel(int x, int y): MessageBase{MOUSE_WHEEL}, m_x{x}, m_y{y} {}; int m_x; int m_y; };
+    struct MessageMouseButtonDown : public MessageBase { MessageMouseButtonDown(int button); int m_button; };
+    struct MessageMouseButtonUp : public MessageBase { MessageMouseButtonUp(int button); int m_button; };
+    struct MessageMouseButtonRepeat : public MessageBase { MessageMouseButtonRepeat(int button); int m_button; };
+    struct MessageMouseWheel : public MessageBase { MessageMouseWheel(int x, int y); int m_x; int m_y; };
     
-    struct MessageKeyDown : public MessageBase { MessageKeyDown(int key): MessageBase{KEY_DOWN}, m_key{key} {}; int m_key; };
-    struct MessageKeyUp : public MessageBase { MessageKeyUp(int key): MessageBase{KEY_UP}, m_key{key} {}; int m_key; };
-    struct MessageKeyRepeat : public MessageBase { MessageKeyRepeat(int key): MessageBase{KEY_REPEAT}, m_key{key} {}; int m_key; };    
+    struct MessageKeyDown : public MessageBase { MessageKeyDown(int key); int m_key; };
+    struct MessageKeyUp : public MessageBase { MessageKeyUp(int key); int m_key; };
+    struct MessageKeyRepeat : public MessageBase { MessageKeyRepeat(int key); int m_key; };    
 
 
     struct Message {

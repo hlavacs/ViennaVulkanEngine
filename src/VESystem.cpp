@@ -5,6 +5,24 @@
 
 namespace vve {
 
+    MessageFrameStart::MessageFrameStart(double dt) : MessageBase{FRAME_START}, m_dt{dt} {};
+
+    MessageUpdate::MessageUpdate(double dt): MessageBase{UPDATE}, m_dt{dt} {}; 
+    MessageFrameEnd:: MessageFrameEnd(double dt): MessageBase{FRAME_END}, m_dt{dt} {}; 
+    MessageDelete:: MessageDelete(): MessageBase{DELETED} {}; 
+    MessageDrawGUI::MessageDrawGUI(): MessageBase{DRAW_GUI} {}; 
+    MessageMouseMove:: MessageMouseMove(int x, int y): MessageBase{MOUSE_MOVE}, m_x{x}, m_y{y} {}; 
+    
+    MessageMouseButtonDown:: MessageMouseButtonDown(int button): MessageBase{MOUSE_BUTTON_DOWN}, m_button{button} {}; 
+    MessageMouseButtonUp::MessageMouseButtonUp(int button): MessageBase{MOUSE_BUTTON_UP}, m_button{button} {}; 
+    MessageMouseButtonRepeat::MessageMouseButtonRepeat(int button): MessageBase{MOUSE_BUTTON_REPEAT}, m_button{button} {}; 
+    MessageMouseWheel::MessageMouseWheel(int x, int y): MessageBase{MOUSE_WHEEL}, m_x{x}, m_y{y} {}; 
+    
+    MessageKeyDown::MessageKeyDown(int key): MessageBase{KEY_DOWN}, m_key{key} {}; 
+    MessageKeyUp::MessageKeyUp(int key): MessageBase{KEY_UP}, m_key{key} {}; 
+    MessageKeyRepeat::MessageKeyRepeat(int key): MessageBase{KEY_REPEAT}, m_key{key} {};   
+
+
    	template<ArchitectureType ATYPE>
     System<ATYPE>::System( Engine<ATYPE>& engine) : m_engine(engine) {
         m_onFunctions[FRAME_START] = [this](Message message){ onFrameStart(message); };

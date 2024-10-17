@@ -1,5 +1,5 @@
 
-
+#include "VERenderer.h"
 #include "VEWindow.h"
 
 
@@ -13,7 +13,7 @@ namespace vve {
     Window<ATYPE>::~Window(){}
 
    	template<ArchitectureType ATYPE>
-    void Window<ATYPE>::setRenderer(Renderer<ATYPE>* renderer) { m_renderer = renderer; };
+    void Window<ATYPE>::addRenderer(int64_t priority, std::shared_ptr<Renderer<ATYPE>> renderer) { m_renderer[priority] = renderer; };
 
    	template<ArchitectureType ATYPE>
     void Window<ATYPE>::setClearColor(glm::vec4 clearColor){ m_clearColor = clearColor; };

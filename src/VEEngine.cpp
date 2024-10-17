@@ -1,7 +1,14 @@
 
 #include <chrono>
 #include "VEEngine.h"
+
+#include "VHDevice.h"
+#include "VEWindow.h"
 #include "VEWindowSDL.h"
+#include "VERendererForward.h"
+#include "VERendererImgui.h"
+#include "VESceneManager.h"
+#include "VESystem.h"
 
 namespace vve {
 
@@ -87,7 +94,8 @@ namespace vve {
 	
 	template<ArchitectureType ATYPE>
 	void Engine<ATYPE>::CreateRenderer( const char* rendererName){
-		m_renderer = std::make_shared<RendererForward<ATYPE>>(*this);
+		m_window->addRenderer((int64_t)100, std::make_shared<RendererImgui<ATYPE>>(*this, m_window) );
+		m_window->addRenderer((int64_t)10, std::make_shared<RendererForward<ATYPE>>(*this, m_window) );
 	};
 	
 	template<ArchitectureType ATYPE>

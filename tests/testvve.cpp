@@ -2,6 +2,10 @@
 #include <iostream>
 #include <utility>
 #include "vulkan/vulkan.h"
+#include "imgui.h"
+#include "VEInclude.h"
+#include "VESystem.h"
+#include "VEWindow.h"
 #include "VEEngine.h"
 
 
