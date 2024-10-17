@@ -52,12 +52,13 @@ namespace vve
         static const size_t MAX_SIZE = 100;
 
         template<typename T>
+            requires (std::is_base_of_v<MessageBase, T> && sizeof(T) <= MAX_SIZE)
         Message(const T&& msg ) {
             std::memcpy(m_data, &msg, sizeof(T));
         };
 
         auto getType() -> MessageType {
-            return reinterpret_cast<MessageBase*>(&m_data)->m_type;
+            return reinterpret_cast<MessageBase*>(m_data)->m_type;
         };
 
         template<typename T>
