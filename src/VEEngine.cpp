@@ -69,9 +69,9 @@ namespace vve {
 	}
 
 	template<ArchitectureType ATYPE>
-	void Engine<ATYPE>::SendMessage( const Message&& message ) {
-		for( auto& system : m_messageMap[message.m_type] ) {
-			system->onMessage(message);
+	void Engine<ATYPE>::SendMessage( Message message ) {
+		for( auto& system : m_messageMap[message.getType()] ) {
+			system->receiveMessage(message);
 		}
 	}
 

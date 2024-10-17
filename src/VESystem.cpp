@@ -6,69 +6,54 @@
 namespace vve {
 
    	template<ArchitectureType ATYPE>
-    System<ATYPE>::System( Engine<ATYPE>& engine) : m_engine(engine) {};
+    System<ATYPE>::System( Engine<ATYPE>& engine) : m_engine(engine) {
+        m_onFunctions.resize( static_cast<int>(MessageType::LAST + 1) );
+        m_onFunctions[FRAME_START] = [this](Message message){ onFrameStart(message); };
+        m_onFunctions[UPDATE] = [this](Message message){ onUpdate(message); };
+        m_onFunctions[FRAME_END] = [this](Message message){ onFrameEnd(message); };
+        m_onFunctions[DELETED] = [this](Message message){ onDelete(message); };
+        m_onFunctions[DRAW_GUI] = [this](Message message){ onDrawGUI(message); };
+        m_onFunctions[MOUSE_MOVE] = [this](Message message){ onMouseMove(message); };
+        m_onFunctions[MOUSE_BUTTON_DOWN] = [this](Message message){ onMouseButtonDown(message); };
+        m_onFunctions[MOUSE_BUTTON_UP] = [this](Message message){ onMouseButtonUp(message); };
+        m_onFunctions[MOUSE_BUTTON_REPEAT] = [this](Message message){ onMouseButtonRepeat(message); };
+        m_onFunctions[MOUSE_WHEEL] = [this](Message message){ onMouseWheel(message); };
+        m_onFunctions[KEY_DOWN] = [this](Message message){ onKeyDown(message); };
+        m_onFunctions[KEY_UP] = [this](Message message){ onKeyUp(message); };
+        m_onFunctions[KEY_REPEAT] = [this](Message message){ onKeyRepeat(message); };
+    };
 
    	template<ArchitectureType ATYPE>
     System<ATYPE>::~System(){};
 
    	template<ArchitectureType ATYPE>
     void System<ATYPE>::receiveMessage(Message message) {
-        std::lock_guard<std::mutex> lock(m_mutex);
-        m_messages.push_back(message);
-    };
-
-   	template<ArchitectureType ATYPE>
-    void System<ATYPE>::onMessage(Message message) {
-        switch (message.m_type) {
-        case MessageType::FRAME_START:
-            onFrameStart(message);
-            break;
-        case MessageType::UPDATE:
-            onUpdate(message);
-            break;
-        case MessageType::FRAME_END:
-            onFrameEnd(message);
-            break;
-        case MessageType::DELETED:
-            onDelete(message);
-            break;
-        case MessageType::DRAW_GUI:
-            onDrawGUI(message);
-            break;
-        case MessageType::MOUSE_MOVE:
-            onMouseMove(message);
-            break;
-        case MessageType::MOUSE_BUTTON_DOWN:
-            onMouseButtonDown(message);
-            break;
-        case MessageType::MOUSE_BUTTON_UP:
-            onMouseButtonUp(message);
-            break;
-        case MessageType::MOUSE_BUTTON_REPEAT:
-            onMouseButtonRepeat(message);
-            break;
-        case MessageType::MOUSE_WHEEL:
-            onMouseWheel(message);
-            break;
-        case MessageType::KEY_DOWN:
-            onKeyDown(message);
-            break;
-        case MessageType::KEY_UP:
-            onKeyUp(message);
-            break;
-        case MessageType::KEY_REPEAT:
-            onKeyRepeat(message);
-            break;
-        default:
-            break;
+        if constexpr (ATYPE == vve::ArchitectureType::PARALLEL) {
+            if( message.getType() == MessageType::UPDATE ) {
+                m_onFunctions[MessageType::UPDATE](message);
+            } else {
+                std::lock_guard<Mutex<ATYPE>> lock(m_mutex);
+                m_messages.push_back(message);
+            }
+        }
+        else {
+            m_onFunctions[message.getType()](message);
         }
     };
-    
+
    	template<ArchitectureType ATYPE>
     void System<ATYPE>::onFrameStart(Message message){};
 
    	template<ArchitectureType ATYPE>
-    void System<ATYPE>::onUpdate(Message message){};
+    void System<ATYPE>::onUpdate(Message message){
+        if constexpr (ATYPE == vve::ArchitectureType::PARALLEL) {
+            std::lock_guard<Mutex<ATYPE>> lock(m_mutex);
+            for( auto& message : m_messages ) {
+                m_onFunctions[message.getType()](message);
+            }
+            m_messages.clear();
+        }
+    };
 
    	template<ArchitectureType ATYPE>
     void System<ATYPE>::onFrameEnd(Message message){};

@@ -1,6 +1,7 @@
 #pragma once
 
 #include <cstdint>
+#include <mutex>
 
 
 namespace vve {
@@ -9,6 +10,11 @@ namespace vve {
         SEQUENTIAL = 0,
         PARALLEL
     };	
+
+    struct Empty {};
+
+    template<ArchitectureType ATYPE>
+    using Mutex = std::conditional_t<ATYPE == ArchitectureType::SEQUENTIAL, Empty, std::mutex>;
 
 }
 

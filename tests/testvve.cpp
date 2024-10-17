@@ -64,14 +64,14 @@ public:
 
 
     void onKeyDown(vve::Message message) {
-        std::cout << "Key down: " << static_cast<vve::MessageKeyDown&>(message).m_key << std::endl;
+        std::cout << "Key down: " << message.getData<vve::MessageKeyDown>().m_key << std::endl;
     }
 
     void onKeyUp(vve::Message message) {
-        std::cout << "Key up: " << static_cast<vve::MessageKeyUp&>(message).m_key << std::endl;
+        std::cout << "Key up: " << message.getData<vve::MessageKeyUp>().m_key << std::endl;
     }
     void onKeyRepeat(vve::Message message) {
-        std::cout << "Key repeat: " << static_cast<vve::MessageKeyRepeat&>(message).m_key << std::endl;
+        std::cout << "Key repeat: " << message.getData<vve::MessageKeyRepeat>().m_key << std::endl;
     }
 
 

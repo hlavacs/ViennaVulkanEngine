@@ -4,6 +4,7 @@
 #include <cstdint>
 #include <variant>
 #include <mutex>
+#include <functional>
 #include "VEInclude.h"
 
 namespace vve
@@ -22,34 +23,56 @@ namespace vve
         MOUSE_WHEEL,
         KEY_DOWN,
         KEY_UP,
-        KEY_REPEAT
+        KEY_REPEAT,
+        LAST
     };
 
-    struct Message {
+    struct MessageBase {
         MessageType m_type;
     };
 
-    struct MessageFrameStart : public Message { MessageFrameStart(double dt): Message{FRAME_START}, m_dt{dt} {}; double m_dt; };
-    struct MessageUpdate : public Message { MessageUpdate(double dt): Message{UPDATE}, m_dt{dt} {}; double m_dt; };
-    struct MessageFrameEnd : public Message { MessageFrameEnd(double dt): Message{FRAME_END}, m_dt{dt} {}; double m_dt; };
-    struct MessageDelete : public Message { MessageDelete(): Message{DELETED} {}; void* m_ptr; uint64_t m_id; };
-    struct MessageDrawGUI : public Message { MessageDrawGUI(): Message{DRAW_GUI} {}; };
-    struct MessageMouseMove : public Message { MessageMouseMove(int x, int y): Message{MOUSE_MOVE}, m_x{x}, m_y{y} {}; int m_x; int m_y; };
+    struct MessageFrameStart : public MessageBase { MessageFrameStart(double dt): MessageBase{FRAME_START}, m_dt{dt} {}; double m_dt; };
+    struct MessageUpdate : public MessageBase { MessageUpdate(double dt): MessageBase{UPDATE}, m_dt{dt} {}; double m_dt; };
+    struct MessageFrameEnd : public MessageBase { MessageFrameEnd(double dt): MessageBase{FRAME_END}, m_dt{dt} {}; double m_dt; };
+    struct MessageDelete : public MessageBase { MessageDelete(): MessageBase{DELETED} {}; void* m_ptr; uint64_t m_id; };
+    struct MessageDrawGUI : public MessageBase { MessageDrawGUI(): MessageBase{DRAW_GUI} {}; };
+    struct MessageMouseMove : public MessageBase { MessageMouseMove(int x, int y): MessageBase{MOUSE_MOVE}, m_x{x}, m_y{y} {}; int m_x; int m_y; };
     
-    struct MessageMouseButtonDown : public Message { MessageMouseButtonDown(int x, int y): Message{MOUSE_BUTTON_DOWN}, m_x{x}, m_y{y} {}; int m_x; int m_y; };
-    struct MessageMouseButtonUp : public Message { MessageMouseButtonUp(int x, int y): Message{MOUSE_BUTTON_UP}, m_x{x}, m_y{y} {}; int m_x; int m_y; };
-    struct MessageMouseButtonRepeat : public Message { MessageMouseButtonRepeat(int x, int y): Message{MOUSE_BUTTON_REPEAT}, m_x{x}, m_y{y} {}; int m_x; int m_y; };
+    struct MessageMouseButtonDown : public MessageBase { MessageMouseButtonDown(int button): MessageBase{MOUSE_BUTTON_DOWN}, m_button{button} {}; int m_button; };
+    struct MessageMouseButtonUp : public MessageBase { MessageMouseButtonUp(int button): MessageBase{MOUSE_BUTTON_UP}, m_button{button} {}; int m_button; };
+    struct MessageMouseButtonRepeat : public MessageBase { MessageMouseButtonRepeat(int button): MessageBase{MOUSE_BUTTON_REPEAT}, m_button{button} {}; int m_button; };
+    struct MessageMouseWheel : public MessageBase { MessageMouseWheel(int x, int y): MessageBase{MOUSE_WHEEL}, m_x{x}, m_y{y} {}; int m_x; int m_y; };
     
-    struct MessageMouseWheel : public Message { MessageMouseWheel(int x, int y): Message{MOUSE_WHEEL}, m_x{x}, m_y{y} {}; int m_x; int m_y; };
-    
-    struct MessageKeyDown : public Message { MessageKeyDown(int key): Message{KEY_DOWN}, m_key{key} {}; int m_key; };
-    struct MessageKeyUp : public Message { MessageKeyUp(int key): Message{KEY_UP}, m_key{key} {}; int m_key; };
-    struct MessageKeyRepeat : public Message { MessageKeyRepeat(int key): Message{KEY_REPEAT}, m_key{key} {}; int m_key; };    
+    struct MessageKeyDown : public MessageBase { MessageKeyDown(int key): MessageBase{KEY_DOWN}, m_key{key} {}; int m_key; };
+    struct MessageKeyUp : public MessageBase { MessageKeyUp(int key): MessageBase{KEY_UP}, m_key{key} {}; int m_key; };
+    struct MessageKeyRepeat : public MessageBase { MessageKeyRepeat(int key): MessageBase{KEY_REPEAT}, m_key{key} {}; int m_key; };    
+
+
+    struct Message {
+        static const size_t MAX_SIZE = 100;
+
+        template<typename T>
+        Message(const T&& msg ) {
+            std::memcpy(m_data, &msg, sizeof(T));
+        };
+
+        auto getType() -> MessageType {
+            return reinterpret_cast<MessageBase*>(&m_data)->m_type;
+        };
+
+        template<typename T>
+            requires (std::is_base_of_v<MessageBase, T> && sizeof(T) <= MAX_SIZE)
+        auto getData() -> T& {
+            return *reinterpret_cast<T*>(m_data);
+        };
+
+    private:
+        uint8_t m_data[MAX_SIZE];
+    };
 
 
    	template<ArchitectureType ATYPE>
     class Engine;
-
 
    	template<ArchitectureType ATYPE>
     class System
@@ -59,7 +82,6 @@ namespace vve
     public:
         System( Engine<ATYPE>& engine );
         virtual ~System();
-        virtual void onMessage(Message message);
         virtual void receiveMessage(Message message);
 
     protected:
@@ -77,8 +99,9 @@ namespace vve
         virtual void onKeyUp(Message message);
         virtual void onKeyRepeat(Message message);
 
+        std::vector<std::function<void(Message)>> m_onFunctions;
         Engine<ATYPE>& m_engine;
-        std::mutex m_mutex;
+        Mutex<ATYPE> m_mutex;
         std::vector<Message> m_messages;
     };
 

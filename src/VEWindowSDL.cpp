@@ -161,17 +161,18 @@ namespace vve {
                     m_engine.SendMessage( MessageMouseMove{event.motion.x, event.motion.y} );
                     break;
                 case SDL_MOUSEBUTTONDOWN:
-                    m_engine.SendMessage( MessageMouseButtonDown{event.button.x, event.button.y} );
+                    m_engine.SendMessage( MessageMouseButtonDown{event.button.button} );
                     button.push_back( event.button.button );
                     break;
                 case SDL_MOUSEBUTTONUP:
-                    m_engine.SendMessage( MessageMouseButtonUp{event.button.x, event.button.y} );
+                    m_engine.SendMessage( MessageMouseButtonUp{event.button.button} );
                     m_mouseButtonsDown.erase( event.button.button );
                     break;
                 case SDL_MOUSEWHEEL:
                     m_engine.SendMessage( MessageMouseWheel{event.wheel.x, event.wheel.y} );
                     break;
                 case SDL_KEYDOWN:
+                    if( event.key.repeat ) continue;
                     m_engine.SendMessage( MessageKeyDown{event.key.keysym.scancode} );
                     key.push_back(event.key.keysym.scancode);
                     break;
@@ -185,9 +186,7 @@ namespace vve {
         }
 
         for( auto& key : m_keysDown ) { m_engine.SendMessage( MessageKeyRepeat{key} ); }
-        for( auto& button : m_mouseButtonsDown ) {
-            //m_engine.SendMessage( MessageMouseButtonRepeat{button} );
-        }
+        for( auto& button : m_mouseButtonsDown ) { m_engine.SendMessage( MessageMouseButtonRepeat{button} ); }
 
         if(key.size() > 0) { for( auto& k : key ) { m_keysDown.insert(k) ; } }
         if(button.size() > 0) { for( auto& b : button ) {m_mouseButtonsDown.insert(b);} }

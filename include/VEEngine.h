@@ -44,7 +44,7 @@ namespace vve {
 		auto getRenderer() -> std::shared_ptr<Renderer<ATYPE>> { return m_renderer; }
 		auto getSceneMgr() -> std::shared_ptr<SceneManager<ATYPE>> { return m_sceneManager; }
 		auto getRegistry() -> vecs::Registry<>& { return m_registry; }
-		void SendMessage( const Message&& message );
+		void SendMessage( Message message );
 
 	protected:
 		void Init();
