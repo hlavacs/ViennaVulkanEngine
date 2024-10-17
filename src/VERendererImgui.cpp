@@ -11,10 +11,11 @@ namespace vve {
    	template<ArchitectureType ATYPE>
     RendererImgui<ATYPE>::~RendererImgui(){};
 
+    template<ArchitectureType ATYPE>
+    void RendererImgui<ATYPE>::PrepareRender() {};
+
    	template<ArchitectureType ATYPE>
     void RendererImgui<ATYPE>::Render(){
-
-        
     };
 
     template class RendererImgui<ArchitectureType::SEQUENTIAL>;

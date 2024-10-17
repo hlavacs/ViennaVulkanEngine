@@ -12,6 +12,7 @@ namespace vve
         virtual ~RendererForward();
 
     private:
+        virtual void PrepareRender() override;
         virtual void Render() override;
     };
 

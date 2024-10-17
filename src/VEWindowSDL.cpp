@@ -30,6 +30,7 @@ namespace vve {
         extensions.resize(extensions_count);
         SDL_Vulkan_GetInstanceExtensions(m_window, &extensions_count, extensions.data());
         instance_extensions.insert(instance_extensions.end(), extensions.begin(), extensions.end());
+        
     }
 
    	template<ArchitectureType ATYPE>

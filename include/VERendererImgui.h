@@ -15,6 +15,7 @@ namespace vve {
         virtual ~RendererImgui();
 
     private:
+        virtual void PrepareRender() override;
         virtual void Render() override;
 
     };

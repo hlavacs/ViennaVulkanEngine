@@ -12,6 +12,9 @@ namespace vve {
    	template<ArchitectureType ATYPE>
     RendererForward<ATYPE>::~RendererForward(){};
 
+    template<ArchitectureType ATYPE>
+    void RendererForward<ATYPE>::PrepareRender() {};
+
    	template<ArchitectureType ATYPE>
     void RendererForward<ATYPE>::Render(){};
 
