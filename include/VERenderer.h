@@ -23,13 +23,13 @@ namespace vve
         friend class Engine<ATYPE>;
 
     public:
-        Renderer(Engine<ATYPE>& m_engine, std::shared_ptr<Window<ATYPE>> window);
+        Renderer(Engine<ATYPE>& m_engine, std::weak_ptr<Window<ATYPE>> window);
         virtual ~Renderer();
 
     private:
         virtual void Render();
         Engine<ATYPE>& m_engine;
-        std::shared_ptr<Window<ATYPE>> m_window;
+        std::weak_ptr<Window<ATYPE>> m_window;
     };
 
 };   // namespace vve

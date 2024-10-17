@@ -11,7 +11,7 @@ namespace vve {
     class RendererImgui : public Renderer<ATYPE>
     {
     public:
-        RendererImgui(Engine<ATYPE>& engine, std::shared_ptr<Window<ATYPE>> window);
+        RendererImgui(Engine<ATYPE>& engine, std::weak_ptr<Window<ATYPE>> window);
         virtual ~RendererImgui();
 
     private:
