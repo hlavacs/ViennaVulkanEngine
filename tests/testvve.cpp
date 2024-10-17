@@ -4,12 +4,16 @@
 #include "vulkan/vulkan.h"
 #include "VEEngine.h"
 
-std::unique_ptr<vve::Engine> engine;
 
-class MyGUI : public vve::System {
+
+template<vve::ArchitectureType ATYPE>
+class MyGUI : public vve::System<ATYPE> {
+
+    using vve::System<ATYPE>::m_engine;
+
 public:
-    MyGUI() = default;
-    ~MyGUI() = default;
+    MyGUI( vve::Engine<ATYPE>& engine ) : vve::System<ATYPE>(engine) {};
+    ~MyGUI() {};
 
     float clear_color[3]{ 0.45f, 0.55f, 0.60f};
 
@@ -55,7 +59,7 @@ public:
             ImGui::End();
         }
 
-        engine->getWindow()->setClearColor( glm::vec4{ clear_color[0], clear_color[1], clear_color[2], 1.0f} );
+        m_engine.getWindow()->setClearColor( glm::vec4{ clear_color[0], clear_color[1], clear_color[2], 1.0f} );
     }
 
 
@@ -75,11 +79,15 @@ private:
 };
 
 
+
+
 int main() {
 
-    engine = std::make_unique<vve::Engine>();
+    const auto AT = vve::ArchitectureType::SEQUENTIAL;
 
-    engine->RegisterSystem(std::make_shared<MyGUI>()
+    auto engine = std::make_unique<vve::Engine<AT>>();
+
+    engine->RegisterSystem(std::make_shared<MyGUI<AT>>(*engine.get())
         , {vve::MessageType::DRAW_GUI, vve::MessageType::KEY_DOWN, vve::MessageType::KEY_REPEAT, vve::MessageType::KEY_UP});
 
     engine->Run();

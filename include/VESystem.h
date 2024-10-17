@@ -1,7 +1,10 @@
 #pragma once
 
+#include <vector>
 #include <cstdint>
 #include <variant>
+#include <mutex>
+#include "VEInclude.h"
 
 namespace vve
 {
@@ -43,16 +46,23 @@ namespace vve
     struct MessageKeyUp : public Message { MessageKeyUp(int key): Message{KEY_UP}, m_key{key} {}; int m_key; };
     struct MessageKeyRepeat : public Message { MessageKeyRepeat(int key): Message{KEY_REPEAT}, m_key{key} {}; int m_key; };    
 
+
+   	template<ArchitectureType ATYPE>
+    class Engine;
+
+
+   	template<ArchitectureType ATYPE>
     class System
     {
-        friend class Engine;
+        friend class Engine<ATYPE>;
 
     public:
-        System();
+        System( Engine<ATYPE>& engine );
         virtual ~System();
         virtual void onMessage(Message message);
+        virtual void receiveMessage(Message message);
 
-    private:
+    protected:
         virtual void onFrameStart(Message message);
         virtual void onUpdate(Message message);
         virtual void onFrameEnd(Message message);
@@ -67,6 +77,9 @@ namespace vve
         virtual void onKeyUp(Message message);
         virtual void onKeyRepeat(Message message);
 
+        Engine<ATYPE>& m_engine;
+        std::mutex m_mutex;
+        std::vector<Message> m_messages;
     };
 
 };

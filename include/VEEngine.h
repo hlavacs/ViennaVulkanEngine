@@ -4,6 +4,7 @@
 #include <unordered_map>
 #include "glm/glm.hpp"
 #include <vulkan/vulkan.h>
+#include "VEInclude.h"
 #include "VHDevice.h"
 #include "VEWindow.h"
 #include "VERendererForward.h"
@@ -14,8 +15,10 @@
 
 namespace vve {
 
+   	template<ArchitectureType ATYPE>
 	class SceneManager;
 
+	template<ArchitectureType ATYPE = ArchitectureType::SEQUENTIAL>
 	class Engine  {
 
 		struct VulkanState {
@@ -32,14 +35,14 @@ namespace vve {
 	public:
 		Engine();
 		virtual ~Engine();
-		void RegisterSystem( std::shared_ptr<System> system, std::vector<MessageType> messageTypes );
-		void DeregisterSystem( std::shared_ptr<System> system );
+		void RegisterSystem( std::shared_ptr<System<ATYPE>> system, std::vector<MessageType> messageTypes );
+		void DeregisterSystem( std::shared_ptr<System<ATYPE>> system );
 		void Run();
 		void Stop();
 		auto getState() -> const VulkanState& { return m_state; }
-		auto getWindow() -> std::shared_ptr<Window> { return m_window; }
-		auto getRenderer() -> std::shared_ptr<Renderer> { return m_renderer; }
-		auto getSceneMgr() -> std::shared_ptr<SceneManager> { return m_sceneManager; }
+		auto getWindow() -> std::shared_ptr<Window<ATYPE>> { return m_window; }
+		auto getRenderer() -> std::shared_ptr<Renderer<ATYPE>> { return m_renderer; }
+		auto getSceneMgr() -> std::shared_ptr<SceneManager<ATYPE>> { return m_sceneManager; }
 		auto getRegistry() -> vecs::Registry<>& { return m_registry; }
 		void SendMessage( const Message&& message );
 
@@ -66,12 +69,12 @@ namespace vve {
 
 		vecs::Registry<> m_registry;
 		
-		using MessageMap = std::unordered_map<MessageType, std::set<std::shared_ptr<System>>>;
+		using MessageMap = std::unordered_map<MessageType, std::set<std::shared_ptr<System<ATYPE>>>>;
 		MessageMap m_messageMap{};
 
-		std::shared_ptr<Window> m_window{};
-		std::shared_ptr<Renderer> m_renderer;
-		std::shared_ptr<SceneManager> m_sceneManager;
+		std::shared_ptr<Window<ATYPE>> m_window{};
+		std::shared_ptr<Renderer<ATYPE>> m_renderer;
+		std::shared_ptr<SceneManager<ATYPE>> m_sceneManager;
 	};
 };
 

@@ -3,14 +3,20 @@
 
 namespace vve {
 
-    SceneManager::SceneManager(Engine& engine ) : m_engine{engine} {}
+   	template<ArchitectureType ATYPE>
+    SceneManager<ATYPE>::SceneManager(Engine<ATYPE>& engine ) : m_engine{engine} {}
 
-    SceneManager::~SceneManager() {}
+   	template<ArchitectureType ATYPE>
+    SceneManager<ATYPE>::~SceneManager() {}
 
-    void SceneManager::DrawScene() {
+   	template<ArchitectureType ATYPE>
+    void SceneManager<ATYPE>::DrawScene() {
 
         
     }
+
+    template class SceneManager<ArchitectureType::SEQUENTIAL>;
+    template class SceneManager<ArchitectureType::PARALLEL>;
 
 };  // namespace vve
 

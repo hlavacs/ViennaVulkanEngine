@@ -14,19 +14,25 @@
 
 namespace vve {
 
+   	template<ArchitectureType ATYPE>
     class Engine;
 
-    class WindowSDL : public Window {
+   	template<ArchitectureType ATYPE>
+    class WindowSDL : public Window<ATYPE> {
+
+        using Window<ATYPE>::m_engine;
+        using Window<ATYPE>::m_surface;
+        using Window<ATYPE>::m_clearColor;
     
     public:
-        WindowSDL(Engine& engine, VkInstance instance, std::string windowName
+        WindowSDL(Engine<ATYPE>& engine, VkInstance instance, std::string windowName
             , int width, int height, std::vector<const char*>& instance_extensions);
         virtual ~WindowSDL();
         virtual void Init() override;
         virtual bool pollEvents();
         virtual void prepareNextFrame() override;
         virtual void renderNextFrame() override;
-        virtual std::pair<int, int> getSize();
+        virtual auto getSize() -> std::pair<int, int>;
 
     private:
         bool InitSDL(VkInstance instance);

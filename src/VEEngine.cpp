@@ -5,18 +5,21 @@
 
 namespace vve {
 
-	Engine::Engine() {
+	template<ArchitectureType ATYPE>
+	Engine<ATYPE>::Engine() {
 	#ifndef NDEBUG
 		m_debug = true;
 	#endif
 		Init();
 	};
 	
-	Engine::~Engine() {
+	template<ArchitectureType ATYPE>
+	Engine<ATYPE>::~Engine() {
 		Shutdown();
 	};
 	
-	void Engine::Init(){
+	template<ArchitectureType ATYPE>
+	void Engine<ATYPE>::Init(){
 		if(m_initialized) return;
 		CreateWindow("Vulkan Engine", 800, 600);
 		SetupVulkan();
@@ -27,7 +30,8 @@ namespace vve {
 		m_initialized = true;
 	};
 	
-	void Engine::SetupVulkan() {
+	template<ArchitectureType ATYPE>
+	void Engine<ATYPE>::SetupVulkan() {
 
 		if(m_debug) {
 	        m_instance_layers.push_back("VK_LAYER_KHRONOS_validation");
@@ -49,46 +53,55 @@ namespace vve {
 		m_window->Init();
 	};
 	
-	
-	void Engine::RegisterSystem( std::shared_ptr<System> system, std::vector<MessageType> messageTypes) {
+
+	template<ArchitectureType ATYPE>
+	void Engine<ATYPE>::RegisterSystem( std::shared_ptr<System<ATYPE>> system, std::vector<MessageType> messageTypes) {
 		for( auto messageType : messageTypes ) {
 			m_messageMap[messageType].insert(system);
 		}
 	}
 
-	void Engine::DeregisterSystem(std::shared_ptr<System> system) {
+	template<ArchitectureType ATYPE>
+	void Engine<ATYPE>::DeregisterSystem(std::shared_ptr<System<ATYPE>> system) {
 		for( auto& [messageType, systems] : m_messageMap ) {
 			systems.erase(system);
 		}
 	}
 
-	void Engine::SendMessage( const Message&& message ) {
+	template<ArchitectureType ATYPE>
+	void Engine<ATYPE>::SendMessage( const Message&& message ) {
 		for( auto& system : m_messageMap[message.m_type] ) {
 			system->onMessage(message);
 		}
 	}
 
-	void Engine::LoadLevel( const char* levelName ){
+	template<ArchitectureType ATYPE>
+	void Engine<ATYPE>::LoadLevel( const char* levelName ){
 		// Load level
 	};
 	
-	void Engine::CreateWindow( const char* windowName, int width, int height ){
-		m_window = std::make_shared<WindowSDL>(*this, m_state.m_instance, windowName, width, height, m_instance_extensions);
+	template<ArchitectureType ATYPE>
+	void Engine<ATYPE>::CreateWindow( const char* windowName, int width, int height ){
+		m_window = std::make_shared<WindowSDL<ATYPE>>(*this, m_state.m_instance, windowName, width, height, m_instance_extensions);
 	};
 	
-	void Engine::CreateRenderer( const char* rendererName){
-		m_renderer = std::make_shared<RendererForward>(*this);
+	template<ArchitectureType ATYPE>
+	void Engine<ATYPE>::CreateRenderer( const char* rendererName){
+		m_renderer = std::make_shared<RendererForward<ATYPE>>(*this);
 	};
 	
-	void Engine::CreateCamera( const char* cameraName ){
+	template<ArchitectureType ATYPE>
+	void Engine<ATYPE>::CreateCamera( const char* cameraName ){
 		// Create camera
 	};
 	
-	void Engine::CreateSceneManager( const char* sceneManagerName ){
-		m_sceneManager = std::make_shared<SceneManager>(*this);
+	template<ArchitectureType ATYPE>
+	void Engine<ATYPE>::CreateSceneManager( const char* sceneManagerName ){
+		m_sceneManager = std::make_shared<SceneManager<ATYPE>>(*this);
 	};
-	
-	void Engine::Run(){
+
+	template<ArchitectureType ATYPE>
+	void Engine<ATYPE>::Run(){
 		Init();
 		std::clock_t start = std::clock();
 		m_running = true;
@@ -107,12 +120,14 @@ namespace vve {
 		}
 	};
 	
-	void Engine::Stop(){
+	template<ArchitectureType ATYPE>
+	void Engine<ATYPE>::Stop(){
 		m_running = false;
 	};
 	
 	
-	void Engine::Shutdown(){
+	template<ArchitectureType ATYPE>
+	void Engine<ATYPE>::Shutdown(){
 		m_renderer = nullptr;
 		m_sceneManager = nullptr;
 		m_window = nullptr;
@@ -123,6 +138,9 @@ namespace vve {
 	    vkDestroyDevice(m_state.m_device, m_state.m_allocator);
 	    vkDestroyInstance(m_state.m_instance, m_state.m_allocator);
 	}
+
+	template class Engine<ArchitectureType::SEQUENTIAL>;
+	template class Engine<ArchitectureType::PARALLEL>;
 
 };   // namespace vve
 

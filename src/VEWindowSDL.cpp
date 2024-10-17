@@ -4,9 +4,10 @@
 
 namespace vve {
 
-    WindowSDL::WindowSDL(Engine& engine, VkInstance instance, std::string windowName
+   	template<ArchitectureType ATYPE>
+    WindowSDL<ATYPE>::WindowSDL(Engine<ATYPE>& engine, VkInstance instance, std::string windowName
             , int width, int height, std::vector<const char*>& instance_extensions) 
-                : Window(engine, instance, windowName, width, height, instance_extensions) {
+                : Window<ATYPE>(engine, instance, windowName, width, height, instance_extensions) {
 
         if(!sdl_initialized) {
             sdl_initialized = InitSDL(instance);
@@ -29,7 +30,8 @@ namespace vve {
         instance_extensions.insert(instance_extensions.end(), extensions.begin(), extensions.end());
     }
 
-    WindowSDL::~WindowSDL() {
+   	template<ArchitectureType ATYPE>
+    WindowSDL<ATYPE>::~WindowSDL() {
         vh::CheckResult(vkDeviceWaitIdle(m_engine.getState().m_device));
         ImGui_ImplVulkan_Shutdown();
         ImGui_ImplSDL2_Shutdown();
@@ -42,7 +44,8 @@ namespace vve {
     }
 
 
-    void WindowSDL::Init() {
+   	template<ArchitectureType ATYPE>
+    void WindowSDL<ATYPE>::Init() {
         if (SDL_Vulkan_CreateSurface(m_window, m_engine.getState().m_instance, &m_surface) == 0) {
             printf("Failed to create Vulkan surface.\n");
         }
@@ -132,7 +135,8 @@ namespace vve {
     }
 
 
-    bool WindowSDL::pollEvents() {
+   	template<ArchitectureType ATYPE>
+    bool WindowSDL<ATYPE>::pollEvents() {
         // Poll and handle events (inputs, window resize, etc.)
         // You can read the io.WantCaptureMouse, io.WantCaptureKeyboard flags to tell if dear imgui wants to use your inputs.
         // - When io.WantCaptureMouse is true, do not dispatch mouse input data to your main application, or clear/overwrite your copy of the mouse data.
@@ -209,7 +213,8 @@ namespace vve {
     }
 
 
-    void WindowSDL::prepareNextFrame() {
+   	template<ArchitectureType ATYPE>
+    void WindowSDL<ATYPE>::prepareNextFrame() {
         // Start the Dear ImGui frame
         ImGui_ImplVulkan_NewFrame();
         ImGui_ImplSDL2_NewFrame();
@@ -217,7 +222,8 @@ namespace vve {
     }
 
 
-    void WindowSDL::renderNextFrame() {
+   	template<ArchitectureType ATYPE>
+    void WindowSDL<ATYPE>::renderNextFrame() {
         // Rendering
         ImGui::Render();
         ImDrawData* draw_data = ImGui::GetDrawData();
@@ -234,7 +240,8 @@ namespace vve {
     }
 
 
-    void WindowSDL::FrameRender(ImGui_ImplVulkanH_Window* wd, ImDrawData* draw_data)
+   	template<ArchitectureType ATYPE>
+    void WindowSDL<ATYPE>::FrameRender(ImGui_ImplVulkanH_Window* wd, ImDrawData* draw_data)
     {
         VkResult err;
 
@@ -294,7 +301,9 @@ namespace vve {
         }
     }
 
-    void WindowSDL::FramePresent(ImGui_ImplVulkanH_Window* wd)
+
+   	template<ArchitectureType ATYPE>
+    void WindowSDL<ATYPE>::FramePresent(ImGui_ImplVulkanH_Window* wd)
     {
         if (m_swapChainRebuild)
             return;
@@ -317,13 +326,15 @@ namespace vve {
     }
 
 
-    std::pair<int, int> WindowSDL::getSize() {
+   	template<ArchitectureType ATYPE>
+    auto WindowSDL<ATYPE>::getSize() -> std::pair<int, int> {
         int w, h;
         SDL_GetWindowSize(m_window, &w, &h);
         return std::make_pair(w, h);
     }
 
-    bool WindowSDL::InitSDL(VkInstance instance) {
+   	template<ArchitectureType ATYPE>
+    bool WindowSDL<ATYPE>::InitSDL(VkInstance instance) {
         // Setup SDL
         if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_TIMER | SDL_INIT_GAMECONTROLLER) != 0) {
             printf("Error: %s\n", SDL_GetError());
@@ -338,8 +349,7 @@ namespace vve {
         return true;
     }
 
-
-
-
+    template class WindowSDL<ArchitectureType::SEQUENTIAL>;
+    template class WindowSDL<ArchitectureType::PARALLEL>;
 
 };  // namespace vve

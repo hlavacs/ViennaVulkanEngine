@@ -1,8 +1,10 @@
 #pragma once
 
+#include "VEInclude.h"
 
 namespace vve
 {
+   	template<ArchitectureType ATYPE>
     class Engine;
 
     enum class RendererType {
@@ -12,16 +14,17 @@ namespace vve
     };
 
 
+   	template<ArchitectureType ATYPE>
     class Renderer {
-        friend class Engine;
+        friend class Engine<ATYPE>;
 
     public:
-        Renderer(Engine& m_engine);
+        Renderer(Engine<ATYPE>& m_engine);
         virtual ~Renderer();
 
     private:
         virtual void Render();
-        Engine& m_engine;
+        Engine<ATYPE>& m_engine;
     };
 
 };   // namespace vve

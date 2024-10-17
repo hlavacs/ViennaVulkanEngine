@@ -4,11 +4,11 @@
 
 namespace vve
 {
-
-    class RendererForward : public Renderer
+   	template<ArchitectureType ATYPE>
+    class RendererForward : public Renderer<ATYPE>
     {
     public:
-        RendererForward(Engine& engine);
+        RendererForward(Engine<ATYPE>& engine);
         virtual ~RendererForward();
 
     private:

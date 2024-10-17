@@ -5,10 +5,20 @@
 
 namespace vve {
 
-    System::System(){};
-    System::~System(){};
+   	template<ArchitectureType ATYPE>
+    System<ATYPE>::System( Engine<ATYPE>& engine) : m_engine(engine) {};
 
-    void System::onMessage(Message message) {
+   	template<ArchitectureType ATYPE>
+    System<ATYPE>::~System(){};
+
+   	template<ArchitectureType ATYPE>
+    void System<ATYPE>::receiveMessage(Message message) {
+        std::lock_guard<std::mutex> lock(m_mutex);
+        m_messages.push_back(message);
+    };
+
+   	template<ArchitectureType ATYPE>
+    void System<ATYPE>::onMessage(Message message) {
         switch (message.m_type) {
         case MessageType::FRAME_START:
             onFrameStart(message);
@@ -54,19 +64,47 @@ namespace vve {
         }
     };
     
-    void System::onFrameStart(Message message){};
-    void System::onUpdate(Message message){};
-    void System::onFrameEnd(Message message){};
-    void System::onDelete(Message message){};
-    void System::onDrawGUI(Message message){};
-    void System::onMouseMove(Message message){};
-    void System::onMouseButtonDown(Message message){};
-    void System::onMouseButtonUp(Message message){};
-    void System::onMouseButtonRepeat(Message message){};
-    void System::onMouseWheel(Message message){};
-    void System::onKeyDown(Message message){};
-    void System::onKeyUp(Message message){};
-    void System::onKeyRepeat(Message message){};
+   	template<ArchitectureType ATYPE>
+    void System<ATYPE>::onFrameStart(Message message){};
+
+   	template<ArchitectureType ATYPE>
+    void System<ATYPE>::onUpdate(Message message){};
+
+   	template<ArchitectureType ATYPE>
+    void System<ATYPE>::onFrameEnd(Message message){};
+
+   	template<ArchitectureType ATYPE>
+    void System<ATYPE>::onDelete(Message message){};
+
+   	template<ArchitectureType ATYPE>
+    void System<ATYPE>::onDrawGUI(Message message){};
+
+   	template<ArchitectureType ATYPE>
+    void System<ATYPE>::onMouseMove(Message message){};
+
+   	template<ArchitectureType ATYPE>
+    void System<ATYPE>::onMouseButtonDown(Message message){};
+
+   	template<ArchitectureType ATYPE>
+    void System<ATYPE>::onMouseButtonUp(Message message){};
+
+   	template<ArchitectureType ATYPE>
+    void System<ATYPE>::onMouseButtonRepeat(Message message){};
+
+   	template<ArchitectureType ATYPE>
+    void System<ATYPE>::onMouseWheel(Message message){};
+
+   	template<ArchitectureType ATYPE>
+    void System<ATYPE>::onKeyDown(Message message){};
+
+   	template<ArchitectureType ATYPE>
+    void System<ATYPE>::onKeyUp(Message message){};
+
+   	template<ArchitectureType ATYPE>
+    void System<ATYPE>::onKeyRepeat(Message message){};
+
+    template class System<ArchitectureType::SEQUENTIAL>;
+    template class System<ArchitectureType::PARALLEL>;
 
 };   // namespace vve
 

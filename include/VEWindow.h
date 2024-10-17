@@ -4,15 +4,19 @@
 #include <vector>
 #include <glm/glm.hpp>
 #include <vulkan/vulkan.h>
+#include "VEInclude.h"
+
 
 namespace vve {
 
+   	template<ArchitectureType ATYPE>
     class Engine;
 
+   	template<ArchitectureType ATYPE>
     class Window
     {
     public:
-        Window(Engine& engine, VkInstance instance, std::string windowName
+        Window(Engine<ATYPE>& engine, VkInstance instance, std::string windowName
             , int width, int height, std::vector<const char*>& instance_extensions);
         virtual ~Window();
         virtual void Init() = 0;
@@ -23,7 +27,7 @@ namespace vve {
         virtual void setClearColor(glm::vec4 clearColor);
         
     protected:
-        Engine& m_engine;
+        Engine<ATYPE>& m_engine;
         VkSurfaceKHR m_surface{VK_NULL_HANDLE};
         glm::vec4 m_clearColor{0.45f, 0.55f, 0.60f, 1.00f};
     };

@@ -20,6 +20,7 @@ set(SOURCE
   )
 
 set(HEADERS
+  ${INCLUDE}/VEInclude.h
   ${INCLUDE}/VEEngine.h
   ${INCLUDE}/VERenderer.h
   ${INCLUDE}/VERendererForward.h
