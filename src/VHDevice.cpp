@@ -201,14 +201,13 @@ namespace vh {
         // 1. Mailbox mode (for lowest latency and best performance)
         // 2. FIFO mode (for reliability and compatibility)
         VkPresentModeKHR bestPresentMode = VK_PRESENT_MODE_FIFO_KHR;
-        for (const auto& presentMode : presentModes) {
-            if (presentMode == VK_PRESENT_MODE_MAILBOX_KHR) {
-                bestPresentMode = presentMode;
-                break;
+        for (const auto& presentMode : requestPresentModes) {
+            if( std::find_if(presentModes.begin(), presentModes.end(), [&](VkPresentModeKHR& p){ return presentMode == p; } ) != presentModes.end() ) {
+                return presentMode;
             }
         }
       
-        return bestPresentMode;
+        return VK_PRESENT_MODE_FIFO_KHR;
     }
 
 

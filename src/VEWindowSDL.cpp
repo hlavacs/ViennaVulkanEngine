@@ -77,7 +77,7 @@ namespace vve {
         m_mainWindowData.SurfaceFormat = vh::SelectSurfaceFormat(m_engine.GetState().m_physicalDevice, m_mainWindowData.Surface, requestSurfaceFormat);
 
         // Select Present Mode
-        std::vector<VkPresentModeKHR> requestedPresentModes = { VK_PRESENT_MODE_MAILBOX_KHR, VK_PRESENT_MODE_IMMEDIATE_KHR, VK_PRESENT_MODE_FIFO_KHR };
+        std::vector<VkPresentModeKHR> requestedPresentModes = { VK_PRESENT_MODE_MAILBOX_KHR, VK_PRESENT_MODE_FIFO_KHR };
         //m_mainWindowData.PresentMode = ImGui_ImplVulkanH_SelectPresentMode(m_engine.GetState().m_physicalDevice, m_mainWindowData.Surface, &present_modes[0], IM_ARRAYSIZE(present_modes));
         m_mainWindowData.PresentMode = vh::SelectPresentMode(m_engine.GetState().m_physicalDevice, m_mainWindowData.Surface, requestedPresentModes);
 
