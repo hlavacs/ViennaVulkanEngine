@@ -60,7 +60,7 @@ namespace vve {
         int w, h;
         SDL_GetWindowSize(m_window, &w, &h);
 
-         m_mainWindowData.Surface = m_surface;
+        m_mainWindowData.Surface = m_surface;
 
         // Check for WSI support
         VkBool32 res;
@@ -71,13 +71,17 @@ namespace vve {
         }
 
         // Select Surface Format
-        const VkFormat requestSurfaceImageFormat[] = { VK_FORMAT_B8G8R8A8_UNORM, VK_FORMAT_R8G8B8A8_UNORM, VK_FORMAT_B8G8R8_UNORM, VK_FORMAT_R8G8B8_UNORM };
-        const VkColorSpaceKHR requestSurfaceColorSpace = VK_COLORSPACE_SRGB_NONLINEAR_KHR;
-        m_mainWindowData.SurfaceFormat = ImGui_ImplVulkanH_SelectSurfaceFormat(m_engine.GetState().m_physicalDevice, m_mainWindowData.Surface, requestSurfaceImageFormat, (size_t)IM_ARRAYSIZE(requestSurfaceImageFormat), requestSurfaceColorSpace);
+        std::vector<VkFormat> requestSurfaceFormat = { VK_FORMAT_B8G8R8A8_UNORM, VK_FORMAT_R8G8B8A8_UNORM, VK_FORMAT_B8G8R8_UNORM, VK_FORMAT_R8G8B8_UNORM };
+        //const VkColorSpaceKHR requestSurfaceColorSpace = VK_COLORSPACE_SRGB_NONLINEAR_KHR;
+        //m_mainWindowData.SurfaceFormat = ImGui_ImplVulkanH_SelectSurfaceFormat(m_engine.GetState().m_physicalDevice, m_mainWindowData.Surface, requestSurfaceImageFormat, (size_t)IM_ARRAYSIZE(requestSurfaceImageFormat), requestSurfaceColorSpace);
+        m_mainWindowData.SurfaceFormat = vh::SelectSurfaceFormat(m_engine.GetState().m_physicalDevice, m_mainWindowData.Surface, requestSurfaceFormat);
 
         // Select Present Mode
-        VkPresentModeKHR present_modes[] = { VK_PRESENT_MODE_MAILBOX_KHR, VK_PRESENT_MODE_IMMEDIATE_KHR, VK_PRESENT_MODE_FIFO_KHR };
-        m_mainWindowData.PresentMode = ImGui_ImplVulkanH_SelectPresentMode(m_engine.GetState().m_physicalDevice, m_mainWindowData.Surface, &present_modes[0], IM_ARRAYSIZE(present_modes));
+        std::vector<VkPresentModeKHR> requestedPresentModes = { VK_PRESENT_MODE_MAILBOX_KHR, VK_PRESENT_MODE_IMMEDIATE_KHR, VK_PRESENT_MODE_FIFO_KHR };
+        //m_mainWindowData.PresentMode = ImGui_ImplVulkanH_SelectPresentMode(m_engine.GetState().m_physicalDevice, m_mainWindowData.Surface, &present_modes[0], IM_ARRAYSIZE(present_modes));
+        m_mainWindowData.PresentMode = vh::SelectPresentMode(m_engine.GetState().m_physicalDevice, m_mainWindowData.Surface, requestedPresentModes);
+
+        
         //printf("[vulkan] Selected PresentMode = %d\n", wd->PresentMode);
 
         // Create SwapChain, RenderPass, Framebuffer, etc.

@@ -26,7 +26,7 @@ namespace vve {
             , int width, int height, std::vector<const char*>& instance_extensions);
         virtual ~Window();
 
-        virtual std::pair<int, int> GetSize() = 0;
+        virtual auto GetSize() -> std::pair<int, int> = 0;
         virtual void SetClearColor(glm::vec4 clearColor);
         
     protected:

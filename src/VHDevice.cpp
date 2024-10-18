@@ -1,5 +1,7 @@
 
 #include <iostream>
+#include <vector>
+#include <set>
 #include "VHDevice.h"
 
 
@@ -168,6 +170,45 @@ namespace vh {
         pool_info.poolSizeCount = (uint32_t)IM_ARRAYSIZE(pool_sizes);
         pool_info.pPoolSizes = pool_sizes;
         vh::CheckResult( vkCreateDescriptorPool(device, &pool_info, nullptr, descriptorPool) );
+    }
+
+
+    VkSurfaceFormatKHR SelectSurfaceFormat(VkPhysicalDevice physicalDevice, VkSurfaceKHR surface, std::vector<VkFormat> requestSurfaceImageFormat) {
+        // Get the list of supported surface formats
+        uint32_t formatCount;
+        vkGetPhysicalDeviceSurfaceFormatsKHR(physicalDevice, surface, &formatCount, nullptr);
+        std::vector<VkSurfaceFormatKHR> formats(formatCount);
+        vkGetPhysicalDeviceSurfaceFormatsKHR(physicalDevice, surface, &formatCount, formats.data());
+
+        for (const auto& format : requestSurfaceImageFormat) {
+            if( std::find_if(formats.begin(), formats.end(), [&](VkSurfaceFormatKHR& f){ return format == f.format; } ) != formats.end() ) {
+                return { format, VK_COLOR_SPACE_SRGB_NONLINEAR_KHR };
+            }
+        }
+        // If no suitable format is found, fall back to guaranteed supported format
+        return {VK_FORMAT_B8G8R8A8_UNORM, VK_COLOR_SPACE_SRGB_NONLINEAR_KHR};
+    }
+
+
+    VkPresentModeKHR SelectPresentMode(VkPhysicalDevice physicalDevice, VkSurfaceKHR surface, std::vector<VkPresentModeKHR> requestPresentModes) {
+        // Get the list of supported present modes
+        uint32_t presentModeCount;
+        vkGetPhysicalDeviceSurfacePresentModesKHR(physicalDevice, surface, &presentModeCount, nullptr);
+        std::vector<VkPresentModeKHR> presentModes(presentModeCount);
+        vkGetPhysicalDeviceSurfacePresentModesKHR(physicalDevice, surface, &presentModeCount, presentModes.data());
+      
+        // Prioritize present modes with the following characteristics:
+        // 1. Mailbox mode (for lowest latency and best performance)
+        // 2. FIFO mode (for reliability and compatibility)
+        VkPresentModeKHR bestPresentMode = VK_PRESENT_MODE_FIFO_KHR;
+        for (const auto& presentMode : presentModes) {
+            if (presentMode == VK_PRESENT_MODE_MAILBOX_KHR) {
+                bestPresentMode = presentMode;
+                break;
+            }
+        }
+      
+        return bestPresentMode;
     }
 
 
