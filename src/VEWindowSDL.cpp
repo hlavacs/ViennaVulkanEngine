@@ -62,31 +62,27 @@ namespace vve {
 
         m_mainWindowData.Surface = m_surface;
 
+        auto& state = m_engine.GetState();
+
         // Check for WSI support
         VkBool32 res;
-        vkGetPhysicalDeviceSurfaceSupportKHR(m_engine.GetState().m_physicalDevice, m_engine.GetState().m_queueFamily, m_mainWindowData.Surface, &res);
+        vkGetPhysicalDeviceSurfaceSupportKHR(state.m_physicalDevice, state.m_queueFamily, m_mainWindowData.Surface, &res);
         if (res != VK_TRUE) {
             fprintf(stderr, "Error no WSI support on physical device 0\n");
             exit(-1);
         }
 
         // Select Surface Format
-        std::vector<VkFormat> requestSurfaceFormat = { VK_FORMAT_B8G8R8A8_UNORM, VK_FORMAT_R8G8B8A8_UNORM, VK_FORMAT_B8G8R8_UNORM, VK_FORMAT_R8G8B8_UNORM };
-        //const VkColorSpaceKHR requestSurfaceColorSpace = VK_COLORSPACE_SRGB_NONLINEAR_KHR;
-        //m_mainWindowData.SurfaceFormat = ImGui_ImplVulkanH_SelectSurfaceFormat(m_engine.GetState().m_physicalDevice, m_mainWindowData.Surface, requestSurfaceImageFormat, (size_t)IM_ARRAYSIZE(requestSurfaceImageFormat), requestSurfaceColorSpace);
-        m_mainWindowData.SurfaceFormat = vh::SelectSurfaceFormat(m_engine.GetState().m_physicalDevice, m_mainWindowData.Surface, requestSurfaceFormat);
+        std::vector<VkFormat> requestSurfaceFormats = { VK_FORMAT_B8G8R8A8_UNORM, VK_FORMAT_R8G8B8A8_UNORM, VK_FORMAT_B8G8R8_UNORM, VK_FORMAT_R8G8B8_UNORM };
+        m_mainWindowData.SurfaceFormat = vh::SelectSurfaceFormat(state.m_physicalDevice, m_mainWindowData.Surface, requestSurfaceFormats);
 
         // Select Present Mode
         std::vector<VkPresentModeKHR> requestedPresentModes = { VK_PRESENT_MODE_MAILBOX_KHR, VK_PRESENT_MODE_FIFO_KHR };
-        //m_mainWindowData.PresentMode = ImGui_ImplVulkanH_SelectPresentMode(m_engine.GetState().m_physicalDevice, m_mainWindowData.Surface, &present_modes[0], IM_ARRAYSIZE(present_modes));
-        m_mainWindowData.PresentMode = vh::SelectPresentMode(m_engine.GetState().m_physicalDevice, m_mainWindowData.Surface, requestedPresentModes);
-
-        
-        //printf("[vulkan] Selected PresentMode = %d\n", wd->PresentMode);
+        m_mainWindowData.PresentMode = vh::SelectPresentMode(state.m_physicalDevice, m_mainWindowData.Surface, requestedPresentModes);
 
         // Create SwapChain, RenderPass, Framebuffer, etc.
         assert(m_minImageCount >= 2);
-        ImGui_ImplVulkanH_CreateOrResizeWindow(m_engine.GetState().m_instance, m_engine.GetState().m_physicalDevice, m_engine.GetState().m_device, &m_mainWindowData, m_engine.GetState().m_queueFamily, m_engine.GetState().m_allocator, w, h, m_minImageCount);
+        ImGui_ImplVulkanH_CreateOrResizeWindow(state.m_instance, state.m_physicalDevice, state.m_device, &m_mainWindowData, state.m_queueFamily, state.m_allocator, w, h, m_minImageCount);
 
         // Setup Dear ImGui context
         IMGUI_CHECKVERSION();
@@ -103,19 +99,19 @@ namespace vve {
         // Setup Platform/Renderer backends
         ImGui_ImplSDL2_InitForVulkan(m_window);
         ImGui_ImplVulkan_InitInfo init_info = {};
-        init_info.Instance = m_engine.GetState().m_instance;
-        init_info.PhysicalDevice = m_engine.GetState().m_physicalDevice;
-        init_info.Device = m_engine.GetState().m_device;
-        init_info.QueueFamily = m_engine.GetState().m_queueFamily;
-        init_info.Queue = m_engine.GetState().m_queue;
-        init_info.PipelineCache = m_engine.GetState().m_pipelineCache;
+        init_info.Instance = state.m_instance;
+        init_info.PhysicalDevice = state.m_physicalDevice;
+        init_info.Device = state.m_device;
+        init_info.QueueFamily = state.m_queueFamily;
+        init_info.Queue = state.m_queue;
+        init_info.PipelineCache = state.m_pipelineCache;
         init_info.DescriptorPool = m_descriptorPool;
         init_info.RenderPass = m_mainWindowData.RenderPass;
         init_info.Subpass = 0;
         init_info.MinImageCount = m_minImageCount;
         init_info.ImageCount = m_mainWindowData.ImageCount;
         init_info.MSAASamples = VK_SAMPLE_COUNT_1_BIT;
-        init_info.Allocator = m_engine.GetState().m_allocator;
+        init_info.Allocator = state.m_allocator;
         init_info.CheckVkResultFn = vh::CheckResult;
         ImGui_ImplVulkan_Init(&init_info);
 
