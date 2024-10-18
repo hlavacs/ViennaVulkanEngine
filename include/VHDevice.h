@@ -27,7 +27,16 @@ namespace vh {
     //surface
     VkSurfaceFormatKHR SelectSurfaceFormat(VkPhysicalDevice physicalDevice, VkSurfaceKHR surface, std::vector<VkFormat> requestSurfaceImageFormat);
     VkPresentModeKHR SelectPresentMode(VkPhysicalDevice physicalDevice, VkSurfaceKHR surface, std::vector<VkPresentModeKHR> requestPresentModes);
-    void SetupSurface( VkDevice device, VkDescriptorPool descriptorPool, VkSurfaceKHR* surface);
 
+    //swapchain
+
+    void DestroyFrame(VkDevice device, ImGui_ImplVulkanH_Frame* fd, const VkAllocationCallbacks* allocator);
+    void DestroyFrameSemaphores(VkDevice device, ImGui_ImplVulkanH_FrameSemaphores* fsd, const VkAllocationCallbacks* allocator);
+
+    void CreateWindowSwapChain(VkPhysicalDevice physical_device, VkDevice device, ImGui_ImplVulkanH_Window* wd
+        , const VkAllocationCallbacks* allocator, int w, int h, uint32_t min_image_count);
+
+    void CreateWindowCommandBuffers(VkPhysicalDevice physical_device, VkDevice device
+        , ImGui_ImplVulkanH_Window* wd, uint32_t queue_family, const VkAllocationCallbacks* allocator);
 }
 

@@ -80,9 +80,11 @@ namespace vve {
         std::vector<VkPresentModeKHR> requestedPresentModes = { VK_PRESENT_MODE_MAILBOX_KHR, VK_PRESENT_MODE_FIFO_KHR };
         m_mainWindowData.PresentMode = vh::SelectPresentMode(state.m_physicalDevice, m_mainWindowData.Surface, requestedPresentModes);
 
-        // Create SwapChain, RenderPass, Framebuffer, etc.
-        assert(m_minImageCount >= 2);
-        ImGui_ImplVulkanH_CreateOrResizeWindow(state.m_instance, state.m_physicalDevice, state.m_device, &m_mainWindowData, state.m_queueFamily, state.m_allocator, w, h, m_minImageCount);
+        vh::CreateWindowSwapChain(state.m_physicalDevice, state.m_device, &m_mainWindowData, state.m_allocator, w, h, m_minImageCount);
+        vh::CreateWindowCommandBuffers(state.m_physicalDevice, state.m_device, &m_mainWindowData, state.m_queueFamily, state.m_allocator);
+
+
+        //--------------------------------------------------------------------------------------
 
         // Setup Dear ImGui context
         IMGUI_CHECKVERSION();
@@ -247,9 +249,11 @@ namespace vve {
     {
         VkResult err;
 
+        auto& state = m_engine.GetState();
+
         VkSemaphore image_acquired_semaphore  = wd->FrameSemaphores[wd->SemaphoreIndex].ImageAcquiredSemaphore;
         VkSemaphore render_complete_semaphore = wd->FrameSemaphores[wd->SemaphoreIndex].RenderCompleteSemaphore;
-        err = vkAcquireNextImageKHR(m_engine.GetState().m_device, wd->Swapchain, UINT64_MAX, image_acquired_semaphore, VK_NULL_HANDLE, &wd->FrameIndex);
+        err = vkAcquireNextImageKHR(state.m_device, wd->Swapchain, UINT64_MAX, image_acquired_semaphore, VK_NULL_HANDLE, &wd->FrameIndex);
         if (err == VK_ERROR_OUT_OF_DATE_KHR || err == VK_SUBOPTIMAL_KHR)
         {
             m_swapChainRebuild = true;
@@ -259,11 +263,11 @@ namespace vve {
 
         ImGui_ImplVulkanH_Frame* fd = &wd->Frames[wd->FrameIndex];
         {
-            vh::CheckResult(vkWaitForFences(m_engine.GetState().m_device, 1, &fd->Fence, VK_TRUE, UINT64_MAX));
-            vh::CheckResult(vkResetFences(m_engine.GetState().m_device, 1, &fd->Fence));
+            vh::CheckResult(vkWaitForFences(state.m_device, 1, &fd->Fence, VK_TRUE, UINT64_MAX));
+            vh::CheckResult(vkResetFences(state.m_device, 1, &fd->Fence));
         }
         {
-            vh::CheckResult(vkResetCommandPool(m_engine.GetState().m_device, fd->CommandPool, 0));
+            vh::CheckResult(vkResetCommandPool(state.m_device, fd->CommandPool, 0));
             VkCommandBufferBeginInfo info = {};
             info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
             info.flags |= VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
@@ -299,7 +303,7 @@ namespace vve {
             info.pSignalSemaphores = &render_complete_semaphore;
 
             vh::CheckResult(vkEndCommandBuffer(fd->CommandBuffer));
-            vh::CheckResult(vkQueueSubmit(m_engine.GetState().m_queue, 1, &info, fd->Fence));
+            vh::CheckResult(vkQueueSubmit(state.m_queue, 1, &info, fd->Fence));
         }
     }
 
