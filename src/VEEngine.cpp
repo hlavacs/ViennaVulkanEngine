@@ -62,25 +62,28 @@ namespace vve {
 	
 
 	template<ArchitectureType ATYPE>
-	void Engine<ATYPE>::RegisterSystem( std::shared_ptr<System<ATYPE>> system, std::vector<MessageType> messageTypes) {
+	void Engine<ATYPE>::RegisterSystem( std::shared_ptr<System<ATYPE>> system, int priority, std::vector<MessageType> messageTypes) {
 		for( auto messageType : messageTypes ) {
-			m_messageMap[messageType].insert(system);
+			auto& pm = m_messageMap[messageType];
+			pm[priority] = system;
 		}
 	}
 
 	template<ArchitectureType ATYPE>
 	void Engine<ATYPE>::DeregisterSystem(std::shared_ptr<System<ATYPE>> system) {
-		for( auto& [messageType, systems] : m_messageMap ) {
-			systems.erase(system);
+		for( auto& map : m_messageMap ) {
+			for( auto& [priority, sys] : map.second ) {
+				if( sys == system ) {
+					map.second.erase(priority);
+				}
+			}
 		}
 	}
 
 	template<ArchitectureType ATYPE>
 	void Engine<ATYPE>::SendMessage( Message message ) {
-		for( auto& map : m_messageMap[message.GetType()] ) {
-			for( auto& system : map.second ) {
-				system->ReceiveMessage(message);
-			}
+		for( auto& [priority, system] : m_messageMap[message.GetType()] ) {
+			system->ReceiveMessage(message);
 		}
 	}
 

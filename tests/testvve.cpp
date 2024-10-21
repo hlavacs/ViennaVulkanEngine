@@ -92,7 +92,7 @@ int main() {
 
     auto engine = std::make_unique<vve::Engine<AT>>();
 
-    engine->RegisterSystem(std::make_shared<MyGUI<AT>>(*engine.get())
+    engine->RegisterSystem(std::make_shared<MyGUI<AT>>(*engine.get()), 0
         , {vve::MessageType::DRAW_GUI, vve::MessageType::KEY_DOWN, vve::MessageType::KEY_REPEAT, vve::MessageType::KEY_UP});
 
     engine->Run();
