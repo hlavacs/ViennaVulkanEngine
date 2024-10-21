@@ -62,7 +62,7 @@ namespace vve {
 	
 
 	template<ArchitectureType ATYPE>
-	void Engine<ATYPE>::RegisterSystem( std::shared_ptr<System<ATYPE>> system, int priority, std::vector<MessageType> messageTypes) {
+	void Engine<ATYPE>::RegisterSystem( System<ATYPE>* system, int priority, std::vector<MessageType> messageTypes) {
 		for( auto messageType : messageTypes ) {
 			auto& pm = m_messageMap[messageType];
 			pm[priority] = system;
@@ -70,7 +70,7 @@ namespace vve {
 	}
 
 	template<ArchitectureType ATYPE>
-	void Engine<ATYPE>::DeregisterSystem(std::shared_ptr<System<ATYPE>> system) {
+	void Engine<ATYPE>::DeregisterSystem(System<ATYPE>* system) {
 		for( auto& map : m_messageMap ) {
 			for( auto& [priority, sys] : map.second ) {
 				if( sys == system ) {
@@ -95,6 +95,9 @@ namespace vve {
 	template<ArchitectureType ATYPE>
 	void Engine<ATYPE>::CreateWindow( const char* windowName, int width, int height ){
 		m_window = std::make_shared<WindowSDL<ATYPE>>(*this, m_state.m_instance, windowName, width, height, m_instance_extensions);
+		RegisterSystem( m_window.get(), 0, {MessageType::PREPARE_NEXT_FRAME} );
+        RegisterSystem( m_window.get(), 0, {MessageType::RENDER_NEXT_FRAME} );
+        RegisterSystem( m_window.get(), 0, {MessageType::SHOW_NEXT_FRAME} );
 	};
 	
 	template<ArchitectureType ATYPE>
@@ -128,9 +131,9 @@ namespace vve {
 			SendMessage( MessageUpdate{dt} ) ;
 			SendMessage( MessagePrepareNextFrame{dt} ) ;
 			m_window->PrepareNextFrame();
+			SendMessage( MessageRenderNextFrame{dt} ) ;
 			SendMessage( MessageDrawGUI{} ) ;
 			m_window->RenderNextFrame();
-			SendMessage( MessageRenderNextFrame{dt} ) ;
 			SendMessage( MessageShowNextFrame{dt} ) ;
 			SendMessage( MessageFrameEnd{dt} ) ;
 		}

@@ -27,8 +27,8 @@ namespace vve {
 	public:
 		Engine();
 		virtual ~Engine();
-		void RegisterSystem( std::shared_ptr<System<ATYPE>> system, int priority, std::vector<MessageType> messageTypes );
-		void DeregisterSystem( std::shared_ptr<System<ATYPE>> system );
+		void RegisterSystem( System<ATYPE>* system, int priority, std::vector<MessageType> messageTypes );
+		void DeregisterSystem( System<ATYPE>* system );
 		void Run();
 		void Stop();
 		auto GetState() -> const VulkanState& { return m_state; }
@@ -61,7 +61,7 @@ namespace vve {
 
 		vecs::Registry<> m_registry;
 		
-		using PriorityMap = std::map<int, std::shared_ptr<System<ATYPE>>>;
+		using PriorityMap = std::map<int, System<ATYPE>*>;
 		using MessageMap = std::unordered_map<MessageType, PriorityMap>;
 		MessageMap m_messageMap{};
 
