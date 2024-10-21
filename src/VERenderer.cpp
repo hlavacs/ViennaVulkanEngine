@@ -6,7 +6,7 @@
 namespace vve {
     
    	template<ArchitectureType ATYPE>
-    Renderer<ATYPE>::Renderer(std::string name, Engine<ATYPE>& engine, std::weak_ptr<Window<ATYPE>> window) 
+    Renderer<ATYPE>::Renderer(std::string name, Engine<ATYPE>& engine, Window<ATYPE>* window) 
         : System<ATYPE>{name, engine}, m_window{window} {};
 
    	template<ArchitectureType ATYPE>

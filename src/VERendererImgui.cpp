@@ -14,10 +14,10 @@
 namespace vve {
 
    	template<ArchitectureType ATYPE>
-    RendererImgui<ATYPE>::RendererImgui(std::string name, Engine<ATYPE>& engine, std::weak_ptr<Window<ATYPE>> window) 
+    RendererImgui<ATYPE>::RendererImgui(std::string name, Engine<ATYPE>& engine, Window<ATYPE>* window) 
         : Renderer<ATYPE>(name, engine, window) {
 
-        WindowSDL<ATYPE>* sdlwindow = (WindowSDL<ATYPE>*)(m_window.lock().get());
+        WindowSDL<ATYPE>* sdlwindow = (WindowSDL<ATYPE>*)m_window;
         auto state = m_engine.GetState();
         vh::CreateWindowCommandBuffers(state.m_physicalDevice, state.m_device, &sdlwindow->m_mainWindowData, state.m_queueFamily, state.m_allocator);
         vh::SetupDescriptorPool(m_engine.GetState().m_device, &m_descriptorPool);

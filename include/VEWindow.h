@@ -34,9 +34,6 @@ namespace vve {
         
     protected:
         virtual void Init() = 0;
-        //virtual bool PollEvents() = 0;
-        //virtual void PrepareNextFrame() = 0;
-        //virtual void RenderNextFrame() = 0;
         virtual void AddRenderer(int64_t priority, std::shared_ptr<Renderer<ATYPE>> renderer);
 
         std::map< int64_t, std::shared_ptr<Renderer<ATYPE>>> m_renderer;

@@ -6,7 +6,7 @@
 namespace vve {
 
    	template<ArchitectureType ATYPE>
-    RendererForward<ATYPE>::RendererForward(std::string name, Engine<ATYPE>& engine, std::weak_ptr<Window<ATYPE>> window) 
+    RendererForward<ATYPE>::RendererForward(std::string name, Engine<ATYPE>& engine, Window<ATYPE>* window) 
         : Renderer<ATYPE>(name, engine, window) {};
 
    	template<ArchitectureType ATYPE>

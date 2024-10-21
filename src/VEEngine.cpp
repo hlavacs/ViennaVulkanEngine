@@ -101,8 +101,8 @@ namespace vve {
 	
 	template<ArchitectureType ATYPE>
 	void Engine<ATYPE>::CreateRenderer( const char* rendererName){
-		m_windows[0]->AddRenderer(100, std::make_shared<RendererImgui<ATYPE>>("RendererImgui", *this, m_windows[0]) );
-		m_windows[0]->AddRenderer(10, std::make_shared<RendererForward<ATYPE>>("RendererForward", *this, m_windows[0]) );
+		m_windows[0]->AddRenderer(100, std::make_shared<RendererImgui<ATYPE>>("RendererImgui", *this, m_windows[0].get()) );
+		m_windows[0]->AddRenderer(10, std::make_shared<RendererForward<ATYPE>>("RendererForward", *this, m_windows[0].get()) );
 	};
 	
 	template<ArchitectureType ATYPE>
