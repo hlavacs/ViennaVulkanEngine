@@ -34,13 +34,14 @@ namespace vve {
             , int width, int height, std::vector<const char*>& instance_extensions);
         virtual ~WindowSDL();
         virtual void Init() override;
-        virtual bool PollEvents() override;
-        virtual void PrepareNextFrame() override;
-        virtual void RenderNextFrame() override;
+
         virtual auto GetSize() -> std::pair<int, int>;
 
     private:
         bool InitSDL(VkInstance instance);
+        virtual void OnPollEvents(Message message) override;
+        virtual void OnPrepareNextFrame(Message message) override;
+        virtual void OnRenderNextFrame(Message message) override;
         void FrameRender(ImGui_ImplVulkanH_Window* wd, ImDrawData* draw_data);
         void FramePresent(ImGui_ImplVulkanH_Window* wd);
 

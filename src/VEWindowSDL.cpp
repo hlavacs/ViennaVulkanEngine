@@ -82,7 +82,7 @@ namespace vve {
 
 
    	template<ArchitectureType ATYPE>
-    bool WindowSDL<ATYPE>::PollEvents() {
+    void WindowSDL<ATYPE>::OnPollEvents(Message message) {
         // Poll and handle events (inputs, window resize, etc.)
         // You can read the io.WantCaptureMouse, io.WantCaptureKeyboard flags to tell if dear imgui wants to use your inputs.
         // - When io.WantCaptureMouse is true, do not dispatch mouse input data to your main application, or clear/overwrite your copy of the mouse data.
@@ -140,7 +140,7 @@ namespace vve {
         if (SDL_GetWindowFlags(m_window) & SDL_WINDOW_MINIMIZED)
         {
             SDL_Delay(10);
-            return false;
+            return;
         }
 
         // Resize swap chain?
@@ -154,12 +154,12 @@ namespace vve {
             m_swapChainRebuild = false;
         }
 
-        return true;
+        return ;
     }
 
 
    	template<ArchitectureType ATYPE>
-    void WindowSDL<ATYPE>::PrepareNextFrame() {
+    void WindowSDL<ATYPE>::OnPrepareNextFrame(Message message) {
         // Start the Dear ImGui frame
         ImGui_ImplVulkan_NewFrame();
         ImGui_ImplSDL2_NewFrame();
@@ -168,7 +168,7 @@ namespace vve {
 
 
    	template<ArchitectureType ATYPE>
-    void WindowSDL<ATYPE>::RenderNextFrame() {
+    void WindowSDL<ATYPE>::OnRenderNextFrame(Message message) {
         // Rendering
         ImGui::Render();
         ImDrawData* draw_data = ImGui::GetDrawData();

@@ -13,6 +13,7 @@ namespace vve {
 
     enum MessageType {
         FRAME_START = 0,
+        POLL_EVENTS,
         UPDATE,
         PREPARE_NEXT_FRAME,
         RENDER_NEXT_FRAME,
@@ -36,6 +37,7 @@ namespace vve {
     };
 
     struct MessageFrameStart : public MessageBase { MessageFrameStart(double dt); double m_dt; };
+    struct MessagePollEvents : public MessageBase { MessagePollEvents(double dt); double m_dt; };
     struct MessageUpdate : public MessageBase { MessageUpdate(double dt); double m_dt; };
     struct MessagePrepareNextFrame : public MessageBase { MessagePrepareNextFrame(double dt); double m_dt; };
     struct MessageRenderNextFrame : public MessageBase { MessageRenderNextFrame(double dt); double m_dt; };
@@ -97,6 +99,7 @@ namespace vve {
 
     protected:
         virtual void OnFrameStart(Message message);
+        virtual void OnPollEvents(Message message);
         virtual void OnUpdate(Message message);
         virtual void OnPrepareNextFrame(Message message);
         virtual void OnRenderNextFrame(Message message);

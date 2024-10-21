@@ -124,13 +124,11 @@ namespace vve {
 			auto dt = std::chrono::duration_cast<std::chrono::duration<double>>(now - last).count();
 
 			SendMessage( MessageFrameStart{dt} ) ;
-			m_window->PollEvents();
+			SendMessage( MessagePollEvents{dt} ) ;
 			SendMessage( MessageUpdate{dt} ) ;
 			SendMessage( MessagePrepareNextFrame{dt} ) ;
-			m_window->PrepareNextFrame();
-			SendMessage( MessageRenderNextFrame{dt} ) ;
 			SendMessage( MessageDrawGUI{} ) ;
-			m_window->RenderNextFrame();
+			SendMessage( MessageRenderNextFrame{dt} ) ;
 			SendMessage( MessageShowNextFrame{dt} ) ;
 			SendMessage( MessageFrameEnd{dt} ) ;
 		}

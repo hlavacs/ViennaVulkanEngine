@@ -11,9 +11,7 @@ namespace vve {
     Window<ATYPE>::Window(Engine<ATYPE>& engine, VkInstance instance, std::string windowName
         , int width, int height, std::vector<const char*>& instance_extensions) : System<ATYPE>(engine) {
 
-    	engine.RegisterSystem( this, 0, {MessageType::PREPARE_NEXT_FRAME} );
-        engine.RegisterSystem( this, 0, {MessageType::RENDER_NEXT_FRAME} );
-        engine.RegisterSystem( this, 0, {MessageType::SHOW_NEXT_FRAME} );
+    	engine.RegisterSystem( this, 0, {MessageType::POLL_EVENTS, MessageType::PREPARE_NEXT_FRAME, MessageType::RENDER_NEXT_FRAME, MessageType::SHOW_NEXT_FRAME} );
     }
 
    	template<ArchitectureType ATYPE>
