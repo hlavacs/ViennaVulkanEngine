@@ -14,9 +14,12 @@ namespace vve {
     enum MessageType {
         FRAME_START = 0,
         UPDATE,
+        PREPARE_NEXT_FRAME,
+        RENDER_NEXT_FRAME,
+        DRAW_GUI,
+        SHOW_NEXT_FRAME,
         FRAME_END,
         DELETED,
-        DRAW_GUI,
         MOUSE_MOVE,
         MOUSE_BUTTON_DOWN,
         MOUSE_BUTTON_UP,
@@ -34,9 +37,12 @@ namespace vve {
 
     struct MessageFrameStart : public MessageBase { MessageFrameStart(double dt); double m_dt; };
     struct MessageUpdate : public MessageBase { MessageUpdate(double dt); double m_dt; };
+    struct MessagePrepareNextFrame : public MessageBase { MessagePrepareNextFrame(double dt); double m_dt; };
+    struct MessageRenderNextFrame : public MessageBase { MessageRenderNextFrame(double dt); double m_dt; };
+    struct MessageDrawGUI : public MessageBase { MessageDrawGUI(); };
+    struct MessageShowNextFrame : public MessageBase { MessageShowNextFrame(double dt); double m_dt; };
     struct MessageFrameEnd : public MessageBase { MessageFrameEnd(double dt); double m_dt; };
     struct MessageDelete : public MessageBase { MessageDelete(); void* m_ptr; uint64_t m_id; };
-    struct MessageDrawGUI : public MessageBase { MessageDrawGUI(); };
     struct MessageMouseMove : public MessageBase { MessageMouseMove(int x, int y); int m_x; int m_y; };
     
     struct MessageMouseButtonDown : public MessageBase { MessageMouseButtonDown(int button); int m_button; };
@@ -92,9 +98,12 @@ namespace vve {
     protected:
         virtual void OnFrameStart(Message message);
         virtual void OnUpdate(Message message);
+        virtual void OnPrepareNextFrame(Message message);
+        virtual void OnRenderNextFrame(Message message);
+        virtual void OnDrawGUI(Message message);
+        virtual void OnShowNextFrame(Message message);
         virtual void OnFrameEnd(Message message);
         virtual void OnDelete(Message message);
-        virtual void OnDrawGUI(Message message);
         virtual void OnMouseMove(Message message);
         virtual void OnMouseButtonDown(Message message);
         virtual void OnMouseButtonUp(Message message);

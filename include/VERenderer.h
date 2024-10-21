@@ -7,6 +7,9 @@
 namespace vve
 {
    	template<ArchitectureType ATYPE>
+    class System;
+
+   	template<ArchitectureType ATYPE>
     class Engine;
 
    	template<ArchitectureType ATYPE>
@@ -19,7 +22,7 @@ namespace vve
     };
 
    	template<ArchitectureType ATYPE>
-    class Renderer {
+    class Renderer : public System<ATYPE> {
         friend class Engine<ATYPE>;
 
     public:
@@ -29,7 +32,6 @@ namespace vve
     protected:
         virtual void PrepareRender();
         virtual void Render();
-        Engine<ATYPE>& m_engine;
         std::weak_ptr<Window<ATYPE>> m_window;
     };
 

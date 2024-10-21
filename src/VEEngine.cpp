@@ -126,9 +126,12 @@ namespace vve {
 			SendMessage( MessageFrameStart{dt} ) ;
 			m_window->PollEvents();
 			SendMessage( MessageUpdate{dt} ) ;
+			SendMessage( MessagePrepareNextFrame{dt} ) ;
 			m_window->PrepareNextFrame();
 			SendMessage( MessageDrawGUI{} ) ;
 			m_window->RenderNextFrame();
+			SendMessage( MessageRenderNextFrame{dt} ) ;
+			SendMessage( MessageShowNextFrame{dt} ) ;
 			SendMessage( MessageFrameEnd{dt} ) ;
 		}
 	};

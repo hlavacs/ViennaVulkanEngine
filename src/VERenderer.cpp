@@ -1,13 +1,13 @@
 
-
+#include "VESystem.h"
 #include "VERenderer.h"
 
 
 namespace vve {
-
+    
    	template<ArchitectureType ATYPE>
     Renderer<ATYPE>::Renderer(Engine<ATYPE>& m_engine, std::weak_ptr<Window<ATYPE>> window) 
-        : m_engine{m_engine}, m_window{window} {};
+        : System<ATYPE>{m_engine}, m_window{window} {};
 
    	template<ArchitectureType ATYPE>
     Renderer<ATYPE>::~Renderer(){};
