@@ -77,8 +77,10 @@ namespace vve {
 
 	template<ArchitectureType ATYPE>
 	void Engine<ATYPE>::SendMessage( Message message ) {
-		for( auto& system : m_messageMap[message.GetType()] ) {
-			system->ReceiveMessage(message);
+		for( auto& map : m_messageMap[message.GetType()] ) {
+			for( auto& system : map.second ) {
+				system->ReceiveMessage(message);
+			}
 		}
 	}
 

@@ -61,7 +61,8 @@ namespace vve {
 
 		vecs::Registry<> m_registry;
 		
-		using MessageMap = std::unordered_map<MessageType, std::set<std::shared_ptr<System<ATYPE>>>>;
+		using PriorityMap = std::map<int, std::shared_ptr<System<ATYPE>>>;
+		using MessageMap = std::unordered_map<MessageType, PriorityMap>;
 		MessageMap m_messageMap{};
 
 		std::shared_ptr<Window<ATYPE>> m_window{};
