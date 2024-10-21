@@ -18,11 +18,16 @@ namespace vve {
     class Engine;
 
    	template<ArchitectureType ATYPE>
+    class RendererImgui;
+
+   	template<ArchitectureType ATYPE>
     class WindowSDL : public Window<ATYPE> {
 
         using Window<ATYPE>::m_engine;
         using Window<ATYPE>::m_surface;
         using Window<ATYPE>::m_clearColor;
+
+        friend class RendererImgui<ATYPE>;
     
     public:
         WindowSDL(Engine<ATYPE>& engine, VkInstance instance, std::string windowName
@@ -42,8 +47,6 @@ namespace vve {
         inline static bool sdl_initialized{false};
         SDL_Window* m_window{nullptr};
         int m_minImageCount = 2;
-   		VkDescriptorPool m_descriptorPool = VK_NULL_HANDLE;	
-        ImGuiIO* m_io;
         bool m_swapChainRebuild = false;
         std::set<SDL_Scancode> m_keysDown;
         std::set<uint8_t> m_mouseButtonsDown;
