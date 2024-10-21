@@ -14,8 +14,8 @@
 namespace vve {
 
    	template<ArchitectureType ATYPE>
-    RendererImgui<ATYPE>::RendererImgui(Engine<ATYPE>& engine, std::weak_ptr<Window<ATYPE>> window) 
-        : Renderer<ATYPE>(engine, window) {
+    RendererImgui<ATYPE>::RendererImgui(std::string name, Engine<ATYPE>& engine, std::weak_ptr<Window<ATYPE>> window) 
+        : Renderer<ATYPE>(name, engine, window) {
 
         WindowSDL<ATYPE>* sdlwindow = (WindowSDL<ATYPE>*)(m_window.lock().get());
         auto state = m_engine.GetState();

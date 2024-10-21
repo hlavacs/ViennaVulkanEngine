@@ -16,7 +16,7 @@ class MyGUI : public vve::System<ATYPE> {
     using vve::System<ATYPE>::m_engine;
 
 public:
-    MyGUI( vve::Engine<ATYPE>& engine ) : vve::System<ATYPE>(engine) {};
+    MyGUI( vve::Engine<ATYPE>& engine ) : vve::System<ATYPE>("MyGUI", engine) {};
     ~MyGUI() {};
 
     float clear_color[3]{ 0.45f, 0.55f, 0.60f};
@@ -64,7 +64,7 @@ public:
             ImGui::End();
         }
 
-        m_engine.GetWindow()->SetClearColor( glm::vec4{ clear_color[0], clear_color[1], clear_color[2], 1.0f} );
+        m_engine.GetWindows()[0]->SetClearColor( glm::vec4{ clear_color[0], clear_color[1], clear_color[2], 1.0f} );
     }
 
 

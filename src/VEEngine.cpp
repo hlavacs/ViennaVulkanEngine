@@ -57,7 +57,9 @@ namespace vve {
 
 		vkGetDeviceQueue(m_state.m_device, m_state.m_queueFamily, 0, &m_state.m_queue);
 		
-		m_window->Init();
+		for( auto& window : m_windows ) {
+			window->Init();
+		}
 	};
 	
 
@@ -94,13 +96,13 @@ namespace vve {
 	
 	template<ArchitectureType ATYPE>
 	void Engine<ATYPE>::CreateWindow( const char* windowName, int width, int height ){
-		m_window = std::make_shared<WindowSDL<ATYPE>>(*this, m_state.m_instance, windowName, width, height, m_instance_extensions);
+		m_windows.push_back( std::make_shared<WindowSDL<ATYPE>>("WindowSDL", *this, m_state.m_instance, windowName, width, height, m_instance_extensions) );
 	};
 	
 	template<ArchitectureType ATYPE>
 	void Engine<ATYPE>::CreateRenderer( const char* rendererName){
-		m_window->AddRenderer(100, std::make_shared<RendererImgui<ATYPE>>(*this, m_window) );
-		m_window->AddRenderer(10, std::make_shared<RendererForward<ATYPE>>(*this, m_window) );
+		m_windows[0]->AddRenderer(100, std::make_shared<RendererImgui<ATYPE>>("RendererImgui", *this, m_windows[0]) );
+		m_windows[0]->AddRenderer(10, std::make_shared<RendererForward<ATYPE>>("RendererForward", *this, m_windows[0]) );
 	};
 	
 	template<ArchitectureType ATYPE>
@@ -142,9 +144,8 @@ namespace vve {
 	
 	template<ArchitectureType ATYPE>
 	void Engine<ATYPE>::Shutdown(){
-		m_renderer = nullptr;
 		m_sceneManager = nullptr;
-		m_window = nullptr;
+		m_windows.clear();
 
 	    auto PFN_DestroyDebugReportCallbackEXT = (PFN_vkDestroyDebugReportCallbackEXT)vkGetInstanceProcAddr(m_state.m_instance, "vkDestroyDebugReportCallbackEXT");
 	    PFN_DestroyDebugReportCallbackEXT(m_state.m_instance, m_state.m_debugReport, m_state.m_allocator);

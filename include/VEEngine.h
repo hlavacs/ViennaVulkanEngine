@@ -32,8 +32,7 @@ namespace vve {
 		void Run();
 		void Stop();
 		auto GetState() -> const VulkanState& { return m_state; }
-		auto GetWindow() -> std::shared_ptr<Window<ATYPE>> { return m_window; }
-		auto GetRenderer() -> std::shared_ptr<Renderer<ATYPE>> { return m_renderer; }
+		auto GetWindows() -> std::vector<std::shared_ptr<Window<ATYPE>>>& { return m_windows; }
 		auto GetSceneMgr() -> std::shared_ptr<SceneManager<ATYPE>> { return m_sceneManager; }
 		auto GetRegistry() -> vecs::Registry<>& { return m_registry; }
 		void SendMessage( Message message );
@@ -65,8 +64,7 @@ namespace vve {
 		using MessageMap = std::unordered_map<MessageType, PriorityMap>;
 		MessageMap m_messageMap{};
 
-		std::shared_ptr<Window<ATYPE>> m_window{};
-		std::shared_ptr<Renderer<ATYPE>> m_renderer;
+		std::vector<std::shared_ptr<Window<ATYPE>>> m_windows{};
 		std::shared_ptr<SceneManager<ATYPE>> m_sceneManager;
 	};
 

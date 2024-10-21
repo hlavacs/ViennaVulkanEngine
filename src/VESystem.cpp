@@ -25,7 +25,7 @@ namespace vve {
 
 
    	template<ArchitectureType ATYPE>
-    System<ATYPE>::System( Engine<ATYPE>& engine) : m_engine(engine) {
+    System<ATYPE>::System( std::string name, Engine<ATYPE>& engine) : m_name(name), m_engine(engine) {
         m_onFunctions[FRAME_START] = [this](Message message){ OnFrameStart(message); };
         m_onFunctions[POLL_EVENTS] = [this](Message message){ OnPollEvents(message); };
         m_onFunctions[UPDATE] = [this](Message message){ OnUpdate(message); };
