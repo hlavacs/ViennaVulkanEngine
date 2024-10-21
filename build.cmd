@@ -1,5 +1,6 @@
-git submodule init
-git submodule update
+rem git clone -b nexgen.develop https://github.com/hlavacs/ViennaVulkanEngine.git
+rem cd ViennaVulkanEngine
+rem git submodule update --init --recursive
 
 rem cmake -S . -Bbuild -G "Visual Studio 17 2022" -T ClangCL -A x64
 cmake -S . -Bbuild -A x64
