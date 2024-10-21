@@ -95,9 +95,6 @@ namespace vve {
 	template<ArchitectureType ATYPE>
 	void Engine<ATYPE>::CreateWindow( const char* windowName, int width, int height ){
 		m_window = std::make_shared<WindowSDL<ATYPE>>(*this, m_state.m_instance, windowName, width, height, m_instance_extensions);
-		RegisterSystem( m_window.get(), 0, {MessageType::PREPARE_NEXT_FRAME} );
-        RegisterSystem( m_window.get(), 0, {MessageType::RENDER_NEXT_FRAME} );
-        RegisterSystem( m_window.get(), 0, {MessageType::SHOW_NEXT_FRAME} );
 	};
 	
 	template<ArchitectureType ATYPE>

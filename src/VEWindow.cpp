@@ -1,5 +1,6 @@
 
 #include "VESystem.h"
+#include "VEEngine.h"
 #include "VERenderer.h"
 #include "VEWindow.h"
 
@@ -8,7 +9,12 @@ namespace vve {
 
    	template<ArchitectureType ATYPE>
     Window<ATYPE>::Window(Engine<ATYPE>& engine, VkInstance instance, std::string windowName
-        , int width, int height, std::vector<const char*>& instance_extensions) : System<ATYPE>(engine) {}
+        , int width, int height, std::vector<const char*>& instance_extensions) : System<ATYPE>(engine) {
+
+    	engine.RegisterSystem( this, 0, {MessageType::PREPARE_NEXT_FRAME} );
+        engine.RegisterSystem( this, 0, {MessageType::RENDER_NEXT_FRAME} );
+        engine.RegisterSystem( this, 0, {MessageType::SHOW_NEXT_FRAME} );
+    }
 
    	template<ArchitectureType ATYPE>
     Window<ATYPE>::~Window(){}
