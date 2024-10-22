@@ -34,9 +34,9 @@ namespace vve {
         
     protected:
         virtual void Init() = 0;
-        virtual void AddRenderer(int64_t priority, std::shared_ptr<Renderer<ATYPE>> renderer);
+        virtual void AddRenderer(std::shared_ptr<Renderer<ATYPE>> renderer);
 
-        std::map< int64_t, std::shared_ptr<Renderer<ATYPE>>> m_renderer;
+        std::vector<std::shared_ptr<Renderer<ATYPE>>> m_renderer;
         VkSurfaceKHR m_surface{VK_NULL_HANDLE};
         glm::vec4 m_clearColor{0.45f, 0.55f, 0.60f, 1.00f};
     };

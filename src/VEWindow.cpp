@@ -16,7 +16,7 @@ namespace vve {
     Window<ATYPE>::~Window(){}
 
    	template<ArchitectureType ATYPE>
-    void Window<ATYPE>::AddRenderer(int64_t priority, std::shared_ptr<Renderer<ATYPE>> renderer) { m_renderer[priority] = renderer; };
+    void Window<ATYPE>::AddRenderer(std::shared_ptr<Renderer<ATYPE>> renderer) { m_renderer.emplace_back(renderer); };
 
    	template<ArchitectureType ATYPE>
     void Window<ATYPE>::SetClearColor(glm::vec4 clearColor){ m_clearColor = clearColor; };
