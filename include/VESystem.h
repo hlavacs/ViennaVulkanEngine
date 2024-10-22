@@ -34,7 +34,7 @@ namespace vve {
 
     struct MessageBase {
         MessageType m_type;
-        int m_priority;
+        int m_phase;
     };
 
     struct MessageFrameStart : public MessageBase { MessageFrameStart(double dt); double m_dt; };
@@ -72,12 +72,12 @@ namespace vve {
             return reinterpret_cast<MessageBase*>(m_data)->m_type;
         };
 
-        void SetPriority(int priority) {
-            reinterpret_cast<MessageBase*>(m_data)->m_priority = priority;
+        void SetPhase(int priority) {
+            reinterpret_cast<MessageBase*>(m_data)->m_phase = priority;
         };
 
-        auto GetPriority() -> int {
-            return reinterpret_cast<MessageBase*>(m_data)->m_priority;
+        auto GetPhase() -> int {
+            return reinterpret_cast<MessageBase*>(m_data)->m_phase;
         };
 
         template<typename T>

@@ -51,17 +51,7 @@ namespace vve {
    	template<ArchitectureType ATYPE>
     void System<ATYPE>::ReceiveMessage(Message message) {
         assert( m_onFunctions.find(message.GetType()) != m_onFunctions.end() );
-        if constexpr (ATYPE == vve::ArchitectureType::PARALLEL) {
-            if( message.GetType() == MessageType::UPDATE ) {
-                m_onFunctions[MessageType::UPDATE](message);
-            } else {
-                std::lock_guard<Mutex<ATYPE>> lock(m_mutex);
-                m_messages.push_back(message);
-            }
-        }
-        else {
-            m_onFunctions[message.GetType()](message);
-        }
+        m_onFunctions[message.GetType()](message);
     };
 
     //-------------------------------------------------------------------------------------------------
@@ -70,16 +60,7 @@ namespace vve {
     void System<ATYPE>::OnFrameStart(Message message){};
 
    	template<ArchitectureType ATYPE>
-    void System<ATYPE>::OnUpdate(Message message){
-        if constexpr (ATYPE == vve::ArchitectureType::PARALLEL) {
-            std::lock_guard<Mutex<ATYPE>> lock(m_mutex);
-            for( auto& message : m_messages ) {
-                assert( m_onFunctions.find(message.GetType()) != m_onFunctions.end() );
-                m_onFunctions[message.GetType()](message);
-            }
-            m_messages.clear();
-        }
-    };
+    void System<ATYPE>::OnUpdate(Message message){};
 
    	template<ArchitectureType ATYPE>
     void System<ATYPE>::OnPollEvents(Message message) {};

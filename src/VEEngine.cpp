@@ -64,10 +64,10 @@ namespace vve {
 	
 
 	template<ArchitectureType ATYPE>
-	void Engine<ATYPE>::RegisterSystem( System<ATYPE>* system, int priority, std::vector<MessageType> messageTypes) {
+	void Engine<ATYPE>::RegisterSystem( System<ATYPE>* system, int phase, std::vector<MessageType> messageTypes) {
 		for( auto messageType : messageTypes ) {
 			auto& pm = m_messageMap[messageType];
-			pm[priority] = system;
+			pm[phase] = system;
 		}
 	}
 
@@ -86,8 +86,8 @@ namespace vve {
 
 	template<ArchitectureType ATYPE>
 	void Engine<ATYPE>::SendMessage( Message message ) {
-		for( auto& [priority, system] : m_messageMap[message.GetType()] ) {
-			message.SetPriority(priority);
+		for( auto& [phase, system] : m_messageMap[message.GetType()] ) {
+			message.SetPhase(phase);
 			system->ReceiveMessage(message);
 		}
 	}
