@@ -75,7 +75,8 @@ namespace vve {
         //bool show_another_window = false;
         //ImVec4 clear_color = ImVec4(0.45f, 0.55f, 0.60f, 1.00f);
 
-        engine.RegisterSystem( this, -100, {MessageType::PREPARE_NEXT_FRAME, MessageType::RECORD_NEXT_FRAME, MessageType::RENDER_NEXT_FRAME} );
+        engine.RegisterSystem( this, -100
+            , {MessageType::INIT, MessageType::PREPARE_NEXT_FRAME, MessageType::RECORD_NEXT_FRAME, MessageType::RENDER_NEXT_FRAME, MessageType::QUIT} );
 
     };
 
@@ -84,6 +85,11 @@ namespace vve {
         ImGui_ImplVulkan_Shutdown();
         vkDestroyDescriptorPool(m_engine.GetState().m_device, m_descriptorPool, m_engine.GetState().m_allocator);
     };
+
+   	template<ArchitectureType ATYPE>
+    void RendererImgui<ATYPE>::OnInit(Message message) {
+
+    }
 
    	template<ArchitectureType ATYPE>
     void RendererImgui<ATYPE>::OnPrepareNextFrame(Message message) {
@@ -177,6 +183,10 @@ namespace vve {
     }
 
 
+   	template<ArchitectureType ATYPE>
+    void RendererImgui<ATYPE>::OnQuit(Message message) {
+
+    }
 
     template class RendererImgui<ArchitectureType::SEQUENTIAL>;
     template class RendererImgui<ArchitectureType::PARALLEL>;

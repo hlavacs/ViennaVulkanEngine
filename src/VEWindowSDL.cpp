@@ -32,7 +32,7 @@ namespace vve {
         instance_extensions.insert(instance_extensions.end(), extensions.begin(), extensions.end());
         
         engine.RegisterSystem( this, 0
-            , {MessageType::POLL_EVENTS, MessageType::PREPARE_NEXT_FRAME, MessageType::RENDER_NEXT_FRAME, MessageType::PRESENT_NEXT_FRAME} );
+            , {MessageType::INIT, MessageType::POLL_EVENTS, MessageType::PREPARE_NEXT_FRAME, MessageType::RENDER_NEXT_FRAME, MessageType::PRESENT_NEXT_FRAME, MessageType::QUIT} );
     }
 
    	template<ArchitectureType ATYPE>
@@ -81,6 +81,9 @@ namespace vve {
         vh::CreateWindowSwapChain(state.m_physicalDevice, state.m_device, &m_mainWindowData, state.m_allocator, w, h, m_minImageCount);
     }
 
+   	template<ArchitectureType ATYPE>
+    void WindowSDL<ATYPE>::OnInit(Message message) {
+    }
 
    	template<ArchitectureType ATYPE>
     void WindowSDL<ATYPE>::OnPollEvents(Message message) {
@@ -192,6 +195,10 @@ namespace vve {
         }
     }
 
+
+   	template<ArchitectureType ATYPE>
+    void WindowSDL<ATYPE>::OnQuit(Message message) {
+    }
 
 
    	template<ArchitectureType ATYPE>

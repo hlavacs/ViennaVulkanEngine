@@ -39,9 +39,11 @@ namespace vve {
 
     private:
         bool InitSDL(VkInstance instance);
+        virtual void OnInit(Message message) override;
         virtual void OnPollEvents(Message message) override;
         virtual void OnPrepareNextFrame(Message message) override;
         virtual void OnRenderNextFrame(Message message) override;
+        virtual void OnQuit(Message message) override;
 
         inline static bool sdl_initialized{false};
         SDL_Window* m_window{nullptr};
