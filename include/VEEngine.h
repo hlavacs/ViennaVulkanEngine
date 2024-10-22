@@ -11,7 +11,7 @@
 namespace vve {
 
 	template<ArchitectureType ATYPE = ArchitectureType::SEQUENTIAL>
-	class Engine  {
+	class Engine : public System<ATYPE> {
 
 		struct VulkanState {
 			VkAllocationCallbacks*   m_allocator = nullptr;
@@ -38,7 +38,7 @@ namespace vve {
 		void SendMessage( Message message );
 
 	protected:
-		void Init();
+		void OnInit(Message message);
 		void SetupVulkan();
 		void Shutdown();
 
@@ -55,7 +55,6 @@ namespace vve {
 		VulkanState m_state;
 
 		bool m_debug{false};
-		bool m_initialized{false};
 		bool m_running{false};
 
 		vecs::Registry<> m_registry;

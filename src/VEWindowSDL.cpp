@@ -48,7 +48,7 @@ namespace vve {
 
 
    	template<ArchitectureType ATYPE>
-    void WindowSDL<ATYPE>::Init() {
+    void WindowSDL<ATYPE>::OnInit(Message message) {
         if (SDL_Vulkan_CreateSurface(m_window, m_engine.GetState().m_instance, &m_surface) == 0) {
             printf("Failed to create Vulkan surface.\n");
         }
@@ -81,9 +81,6 @@ namespace vve {
         vh::CreateWindowSwapChain(state.m_physicalDevice, state.m_device, &m_mainWindowData, state.m_allocator, w, h, m_minImageCount);
     }
 
-   	template<ArchitectureType ATYPE>
-    void WindowSDL<ATYPE>::OnInit(Message message) {
-    }
 
    	template<ArchitectureType ATYPE>
     void WindowSDL<ATYPE>::OnPollEvents(Message message) {

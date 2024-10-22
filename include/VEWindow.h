@@ -33,7 +33,7 @@ namespace vve {
         virtual void SetClearColor(glm::vec4 clearColor);
         
     protected:
-        virtual void Init() = 0;
+        //virtual void Init() = 0;
         virtual void AddRenderer(std::shared_ptr<Renderer<ATYPE>> renderer);
 
         std::vector<std::shared_ptr<Renderer<ATYPE>>> m_renderer;

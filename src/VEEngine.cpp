@@ -13,11 +13,11 @@
 namespace vve {
 
 	template<ArchitectureType ATYPE>
-	Engine<ATYPE>::Engine() {
+	Engine<ATYPE>::Engine() : System<ATYPE>("Engine", *this) {
 	#ifndef NDEBUG
 		m_debug = true;
 	#endif
-		Init();
+		RegisterSystem( this, std::numeric_limits<int>::lowest(), {MessageType::INIT} );
 	};
 	
 	template<ArchitectureType ATYPE>
@@ -26,15 +26,13 @@ namespace vve {
 	};
 	
 	template<ArchitectureType ATYPE>
-	void Engine<ATYPE>::Init(){
-		if(m_initialized) return;
+	void Engine<ATYPE>::OnInit( Message message ) {
 		CreateWindow("Vulkan Engine", 800, 600);
 		SetupVulkan();
 		CreateRenderer("Forward");
 		CreateCamera("Main Camera");
 		CreateSceneManager("");
 		LoadLevel("");
-		m_initialized = true;
 	};
 	
 	template<ArchitectureType ATYPE>
@@ -56,10 +54,6 @@ namespace vve {
 		//volkLoadDevice(m_device);
 
 		vkGetDeviceQueue(m_state.m_device, m_state.m_queueFamily, 0, &m_state.m_queue);
-		
-		for( auto& window : m_windows ) {
-			window->Init();
-		}
 	};
 	
 
@@ -120,7 +114,7 @@ namespace vve {
 
 	template<ArchitectureType ATYPE>
 	void Engine<ATYPE>::Run(){
-		Init();
+		//Init();
 		SendMessage( MessageInit{} ) ;
 		std::clock_t start = std::clock();
 		m_running = true;
