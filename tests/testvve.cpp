@@ -21,7 +21,7 @@ public:
 
     float clear_color[3]{ 0.45f, 0.55f, 0.60f};
 
-    void OnDrawGUI(vve::Message message) override {
+    void OnRecord(vve::Message message) override {
       
         static bool show_demo_window = true;
         static bool show_another_window = false;
@@ -94,7 +94,7 @@ int main() {
     auto mygui = std::make_shared<MyGUI<AT>>(*engine.get());
 
     engine->RegisterSystem(mygui.get(), 0
-        , {vve::MessageType::DRAW_GUI, vve::MessageType::KEY_DOWN, vve::MessageType::KEY_REPEAT, vve::MessageType::KEY_UP});
+        , {vve::MessageType::RECORD, vve::MessageType::KEY_DOWN, vve::MessageType::KEY_REPEAT, vve::MessageType::KEY_UP});
 
     engine->Run();
 

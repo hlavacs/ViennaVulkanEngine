@@ -10,7 +10,7 @@ namespace vve {
     MessageUpdate::MessageUpdate(double dt): MessageBase{UPDATE}, m_dt{dt} {}; 
     MessagePrepareNextFrame::MessagePrepareNextFrame(double dt): MessageBase{PREPARE_NEXT_FRAME}, m_dt{dt} {}; 
     MessageRenderNextFrame::MessageRenderNextFrame(double dt): MessageBase{RENDER_NEXT_FRAME}, m_dt{dt} {}; 
-    MessageDrawGUI::MessageDrawGUI(): MessageBase{DRAW_GUI} {}; 
+    MessageRecord::MessageRecord(): MessageBase{RECORD} {}; 
     MessageShowNextFrame::MessageShowNextFrame(double dt): MessageBase{SHOW_NEXT_FRAME}, m_dt{dt} {}; 
     MessageFrameEnd:: MessageFrameEnd(double dt): MessageBase{FRAME_END}, m_dt{dt} {};
     MessageDelete:: MessageDelete(): MessageBase{DELETED} {}; 
@@ -31,7 +31,7 @@ namespace vve {
         m_onFunctions[UPDATE] = [this](Message message){ OnUpdate(message); };
         m_onFunctions[PREPARE_NEXT_FRAME] = [this](Message message){ OnPrepareNextFrame(message); };
         m_onFunctions[RENDER_NEXT_FRAME] = [this](Message message){ OnRenderNextFrame(message); };
-        m_onFunctions[DRAW_GUI] = [this](Message message){ OnDrawGUI(message); };
+        m_onFunctions[RECORD] = [this](Message message){ OnRecord(message); };
         m_onFunctions[SHOW_NEXT_FRAME] = [this](Message message){ OnShowNextFrame(message); };
         m_onFunctions[FRAME_END] = [this](Message message){ OnFrameEnd(message); };
         m_onFunctions[DELETED] = [this](Message message){ OnDelete(message); };
@@ -91,7 +91,7 @@ namespace vve {
     void System<ATYPE>::OnRenderNextFrame(Message message) {};
 
     template<ArchitectureType ATYPE>
-    void System<ATYPE>::OnDrawGUI(Message message){};
+    void System<ATYPE>::OnRecord(Message message){};
   	
     template<ArchitectureType ATYPE>
     void System<ATYPE>::OnShowNextFrame(Message message) {};

@@ -17,7 +17,7 @@ namespace vve {
         UPDATE,
         PREPARE_NEXT_FRAME,
         RENDER_NEXT_FRAME,
-        DRAW_GUI,
+        RECORD,
         SHOW_NEXT_FRAME,
         FRAME_END,
         DELETED,
@@ -41,7 +41,7 @@ namespace vve {
     struct MessageUpdate : public MessageBase { MessageUpdate(double dt); double m_dt; };
     struct MessagePrepareNextFrame : public MessageBase { MessagePrepareNextFrame(double dt); double m_dt; };
     struct MessageRenderNextFrame : public MessageBase { MessageRenderNextFrame(double dt); double m_dt; };
-    struct MessageDrawGUI : public MessageBase { MessageDrawGUI(); };
+    struct MessageRecord : public MessageBase { MessageRecord(); };
     struct MessageShowNextFrame : public MessageBase { MessageShowNextFrame(double dt); double m_dt; };
     struct MessageFrameEnd : public MessageBase { MessageFrameEnd(double dt); double m_dt; };
     struct MessageDelete : public MessageBase { MessageDelete(); void* m_ptr; uint64_t m_id; };
@@ -103,7 +103,7 @@ namespace vve {
         virtual void OnUpdate(Message message);
         virtual void OnPrepareNextFrame(Message message);
         virtual void OnRenderNextFrame(Message message);
-        virtual void OnDrawGUI(Message message);
+        virtual void OnRecord(Message message);
         virtual void OnShowNextFrame(Message message);
         virtual void OnFrameEnd(Message message);
         virtual void OnDelete(Message message);

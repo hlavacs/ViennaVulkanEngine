@@ -129,7 +129,7 @@ namespace vve {
 			SendMessage( MessagePollEvents{dt} ) ;
 			SendMessage( MessageUpdate{dt} ) ;
 			SendMessage( MessagePrepareNextFrame{dt} ) ;
-			SendMessage( MessageDrawGUI{} ) ;
+			SendMessage( MessageRecord{} ) ;
 			SendMessage( MessageRenderNextFrame{dt} ) ;
 			SendMessage( MessageShowNextFrame{dt} ) ;
 			SendMessage( MessageFrameEnd{dt} ) ;
