@@ -32,6 +32,11 @@ namespace vve {
         LAST
     };
 
+    struct MessageTypePhase {
+        MessageType m_type;
+        int m_phase;
+    };
+
     struct MessageBase {
         MessageType m_type;
         int m_phase;

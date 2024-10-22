@@ -14,7 +14,7 @@
 namespace vve {
 
    	template<ArchitectureType ATYPE>
-    RendererImgui<ATYPE>::RendererImgui(std::string name, Engine<ATYPE>& engine, Window<ATYPE>* window, int phase) 
+    RendererImgui<ATYPE>::RendererImgui(std::string name, Engine<ATYPE>& engine, Window<ATYPE>* window) 
         : Renderer<ATYPE>(name, engine, window) {
 
         WindowSDL<ATYPE>* sdlwindow = (WindowSDL<ATYPE>*)m_window;
@@ -75,19 +75,20 @@ namespace vve {
         //bool show_another_window = false;
         //ImVec4 clear_color = ImVec4(0.45f, 0.55f, 0.60f, 1.00f);
 
-        engine.RegisterSystem( this, phase, {MessageType::PREPARE_NEXT_FRAME, MessageType::RECORD_NEXT_FRAME, MessageType::RENDER_NEXT_FRAME} );
+        engine.RegisterSystem( this, -100, {MessageType::PREPARE_NEXT_FRAME});
+        engine.RegisterSystem( this,  100, {MessageType::RECORD_NEXT_FRAME, MessageType::RENDER_NEXT_FRAME} );
 
     };
 
    	template<ArchitectureType ATYPE>
     RendererImgui<ATYPE>::~RendererImgui(){
-
+        ImGui_ImplVulkan_Shutdown();
         vkDestroyDescriptorPool(m_engine.GetState().m_device, m_descriptorPool, m_engine.GetState().m_allocator);
     };
 
    	template<ArchitectureType ATYPE>
     void RendererImgui<ATYPE>::OnPrepareNextFrame(Message message) {
-
+        ImGui_ImplVulkan_NewFrame();
     }
 
    	template<ArchitectureType ATYPE>

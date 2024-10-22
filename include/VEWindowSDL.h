@@ -26,6 +26,7 @@ namespace vve {
         using Window<ATYPE>::m_engine;
         using Window<ATYPE>::m_surface;
         using Window<ATYPE>::m_clearColor;
+        using Window<ATYPE>::m_renderer;
 
         friend class RendererImgui<ATYPE>;
     
@@ -34,7 +35,6 @@ namespace vve {
             , int width, int height, std::vector<const char*>& instance_extensions);
         virtual ~WindowSDL();
         virtual void Init() override;
-
         virtual auto GetSize() -> std::pair<int, int>;
 
     private:

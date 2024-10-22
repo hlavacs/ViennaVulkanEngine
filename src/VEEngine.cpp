@@ -67,7 +67,7 @@ namespace vve {
 	void Engine<ATYPE>::RegisterSystem( System<ATYPE>* system, int phase, std::vector<MessageType> messageTypes) {
 		for( auto messageType : messageTypes ) {
 			auto& pm = m_messageMap[messageType];
-			pm[phase] = system;
+			pm.insert({phase, system});
 		}
 	}
 
@@ -86,7 +86,9 @@ namespace vve {
 
 	template<ArchitectureType ATYPE>
 	void Engine<ATYPE>::SendMessage( Message message ) {
-		for( auto& [phase, system] : m_messageMap[message.GetType()] ) {
+		auto type = message.GetType();
+		auto & map = m_messageMap[type];
+		for( auto& [phase, system] : map ) {
 			message.SetPhase(phase);
 			system->ReceiveMessage(message);
 		}

@@ -60,7 +60,7 @@ namespace vve {
 
 		vecs::Registry<> m_registry;
 		
-		using PriorityMap = std::map<int, System<ATYPE>*>;
+		using PriorityMap = std::multimap<int, System<ATYPE>*>;
 		using MessageMap = std::unordered_map<MessageType, PriorityMap>;
 		MessageMap m_messageMap{};
 

@@ -7,10 +7,11 @@
 namespace vve {
 
    	template<ArchitectureType ATYPE>
-    RendererForward<ATYPE>::RendererForward(std::string name, Engine<ATYPE>& engine, Window<ATYPE>* window, int phase) 
+    RendererForward<ATYPE>::RendererForward(std::string name, Engine<ATYPE>& engine, Window<ATYPE>* window) 
         : Renderer<ATYPE>(name, engine, window) {
 
-        engine.RegisterSystem( this, phase, {MessageType::PREPARE_NEXT_FRAME, MessageType::RECORD_NEXT_FRAME, MessageType::RENDER_NEXT_FRAME} );
+        engine.RegisterSystem( this, -100, {MessageType::PREPARE_NEXT_FRAME} );
+        engine.RegisterSystem( this,  100, {MessageType::RECORD_NEXT_FRAME, MessageType::RENDER_NEXT_FRAME} );
     };
 
    	template<ArchitectureType ATYPE>

@@ -32,17 +32,15 @@ namespace vve {
         instance_extensions.insert(instance_extensions.end(), extensions.begin(), extensions.end());
         
         engine.RegisterSystem( this, 0
-            , {MessageType::POLL_EVENTS, MessageType::PREPARE_NEXT_FRAME
-            , MessageType::RENDER_NEXT_FRAME, MessageType::PRESENT_NEXT_FRAME} );
+            , {MessageType::POLL_EVENTS, MessageType::PREPARE_NEXT_FRAME, MessageType::RENDER_NEXT_FRAME, MessageType::PRESENT_NEXT_FRAME} );
     }
 
    	template<ArchitectureType ATYPE>
     WindowSDL<ATYPE>::~WindowSDL() {
         vh::CheckResult(vkDeviceWaitIdle(m_engine.GetState().m_device));
-        ImGui_ImplVulkan_Shutdown();
+        m_renderer.clear();
         ImGui_ImplSDL2_Shutdown();
         ImGui::DestroyContext();
-
         ImGui_ImplVulkanH_DestroyWindow(m_engine.GetState().m_instance, m_engine.GetState().m_device, &m_mainWindowData, m_engine.GetState().m_allocator);
         SDL_DestroyWindow(m_window);
         SDL_Quit();
@@ -81,6 +79,8 @@ namespace vve {
         m_mainWindowData.PresentMode = vh::SelectPresentMode(state.m_physicalDevice, m_mainWindowData.Surface, requestedPresentModes);
 
         vh::CreateWindowSwapChain(state.m_physicalDevice, state.m_device, &m_mainWindowData, state.m_allocator, w, h, m_minImageCount);
+
+
     }
 
 
@@ -164,7 +164,7 @@ namespace vve {
    	template<ArchitectureType ATYPE>
     void WindowSDL<ATYPE>::OnPrepareNextFrame(Message message) {
         // Start the Dear ImGui frame
-        ImGui_ImplVulkan_NewFrame();
+        //ImGui_ImplVulkan_NewFrame();
         ImGui_ImplSDL2_NewFrame();
         ImGui::NewFrame();
     }
