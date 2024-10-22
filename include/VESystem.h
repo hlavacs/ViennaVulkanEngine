@@ -34,6 +34,7 @@ namespace vve {
 
     struct MessageBase {
         MessageType m_type;
+        int m_priority;
     };
 
     struct MessageFrameStart : public MessageBase { MessageFrameStart(double dt); double m_dt; };
@@ -69,6 +70,14 @@ namespace vve {
 
         auto GetType() -> MessageType {
             return reinterpret_cast<MessageBase*>(m_data)->m_type;
+        };
+
+        void SetPriority(int priority) {
+            reinterpret_cast<MessageBase*>(m_data)->m_priority = priority;
+        };
+
+        auto GetPriority() -> int {
+            return reinterpret_cast<MessageBase*>(m_data)->m_priority;
         };
 
         template<typename T>
