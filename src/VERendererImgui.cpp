@@ -74,6 +74,9 @@ namespace vve {
         //bool show_demo_window = true;
         //bool show_another_window = false;
         //ImVec4 clear_color = ImVec4(0.45f, 0.55f, 0.60f, 1.00f);
+
+        engine.RegisterSystem( this, 100, {MessageType::PREPARE_NEXT_FRAME, MessageType::RECORD_NEXT_FRAME, MessageType::RENDER_NEXT_FRAME} );
+
     };
 
    	template<ArchitectureType ATYPE>

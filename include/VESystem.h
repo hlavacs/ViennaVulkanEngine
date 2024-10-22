@@ -17,8 +17,8 @@ namespace vve {
         UPDATE,
         PREPARE_NEXT_FRAME,
         RENDER_NEXT_FRAME,
-        RECORD,
-        SHOW_NEXT_FRAME,
+        RECORD_NEXT_FRAME,
+        PRESENT_NEXT_FRAME,
         FRAME_END,
         DELETED,
         MOUSE_MOVE,
@@ -42,8 +42,8 @@ namespace vve {
     struct MessageUpdate : public MessageBase { MessageUpdate(double dt); double m_dt; };
     struct MessagePrepareNextFrame : public MessageBase { MessagePrepareNextFrame(double dt); double m_dt; };
     struct MessageRenderNextFrame : public MessageBase { MessageRenderNextFrame(double dt); double m_dt; };
-    struct MessageRecord : public MessageBase { MessageRecord(); };
-    struct MessageShowNextFrame : public MessageBase { MessageShowNextFrame(double dt); double m_dt; };
+    struct MessageRecordNextFrame : public MessageBase { MessageRecordNextFrame(); };
+    struct MessagePresentNextFrame : public MessageBase { MessagePresentNextFrame(double dt); double m_dt; };
     struct MessageFrameEnd : public MessageBase { MessageFrameEnd(double dt); double m_dt; };
     struct MessageDelete : public MessageBase { MessageDelete(); void* m_ptr; uint64_t m_id; };
     struct MessageMouseMove : public MessageBase { MessageMouseMove(int x, int y); int m_x; int m_y; };
@@ -112,8 +112,8 @@ namespace vve {
         virtual void OnUpdate(Message message);
         virtual void OnPrepareNextFrame(Message message);
         virtual void OnRenderNextFrame(Message message);
-        virtual void OnRecord(Message message);
-        virtual void OnShowNextFrame(Message message);
+        virtual void OnRecordNextFrame(Message message);
+        virtual void OnPresentNextFrame(Message message);
         virtual void OnFrameEnd(Message message);
         virtual void OnDelete(Message message);
         virtual void OnMouseMove(Message message);

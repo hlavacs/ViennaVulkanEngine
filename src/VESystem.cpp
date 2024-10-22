@@ -10,8 +10,8 @@ namespace vve {
     MessageUpdate::MessageUpdate(double dt): MessageBase{UPDATE}, m_dt{dt} {}; 
     MessagePrepareNextFrame::MessagePrepareNextFrame(double dt): MessageBase{PREPARE_NEXT_FRAME}, m_dt{dt} {}; 
     MessageRenderNextFrame::MessageRenderNextFrame(double dt): MessageBase{RENDER_NEXT_FRAME}, m_dt{dt} {}; 
-    MessageRecord::MessageRecord(): MessageBase{RECORD} {}; 
-    MessageShowNextFrame::MessageShowNextFrame(double dt): MessageBase{SHOW_NEXT_FRAME}, m_dt{dt} {}; 
+    MessageRecordNextFrame::MessageRecordNextFrame(): MessageBase{RECORD_NEXT_FRAME} {}; 
+    MessagePresentNextFrame::MessagePresentNextFrame(double dt): MessageBase{PRESENT_NEXT_FRAME}, m_dt{dt} {}; 
     MessageFrameEnd:: MessageFrameEnd(double dt): MessageBase{FRAME_END}, m_dt{dt} {};
     MessageDelete:: MessageDelete(): MessageBase{DELETED} {}; 
     MessageMouseMove:: MessageMouseMove(int x, int y): MessageBase{MOUSE_MOVE}, m_x{x}, m_y{y} {}; 
@@ -31,8 +31,8 @@ namespace vve {
         m_onFunctions[UPDATE] = [this](Message message){ OnUpdate(message); };
         m_onFunctions[PREPARE_NEXT_FRAME] = [this](Message message){ OnPrepareNextFrame(message); };
         m_onFunctions[RENDER_NEXT_FRAME] = [this](Message message){ OnRenderNextFrame(message); };
-        m_onFunctions[RECORD] = [this](Message message){ OnRecord(message); };
-        m_onFunctions[SHOW_NEXT_FRAME] = [this](Message message){ OnShowNextFrame(message); };
+        m_onFunctions[RECORD_NEXT_FRAME] = [this](Message message){ OnRecordNextFrame(message); };
+        m_onFunctions[PRESENT_NEXT_FRAME] = [this](Message message){ OnPresentNextFrame(message); };
         m_onFunctions[FRAME_END] = [this](Message message){ OnFrameEnd(message); };
         m_onFunctions[DELETED] = [this](Message message){ OnDelete(message); };
         m_onFunctions[MOUSE_MOVE] = [this](Message message){ OnMouseMove(message); };
@@ -72,10 +72,10 @@ namespace vve {
     void System<ATYPE>::OnRenderNextFrame(Message message) {};
 
     template<ArchitectureType ATYPE>
-    void System<ATYPE>::OnRecord(Message message){};
+    void System<ATYPE>::OnRecordNextFrame(Message message){};
   	
     template<ArchitectureType ATYPE>
-    void System<ATYPE>::OnShowNextFrame(Message message) {};
+    void System<ATYPE>::OnPresentNextFrame(Message message) {};
 
    	template<ArchitectureType ATYPE>
     void System<ATYPE>::OnFrameEnd(Message message) {};
