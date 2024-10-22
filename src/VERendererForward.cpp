@@ -12,11 +12,21 @@ namespace vve {
    	template<ArchitectureType ATYPE>
     RendererForward<ATYPE>::~RendererForward(){};
 
-    template<ArchitectureType ATYPE>
-    void RendererForward<ATYPE>::PrepareRender() {};
+   	template<ArchitectureType ATYPE>
+    void RendererForward<ATYPE>::OnPrepareNextFrame(Message message) {
+
+    }
 
    	template<ArchitectureType ATYPE>
-    void RendererForward<ATYPE>::Render(){};
+    void RendererForward<ATYPE>::OnRecordNextFrame(Message message) {
+        
+    }
+
+   	template<ArchitectureType ATYPE>
+    void RendererForward<ATYPE>::OnRenderNextFrame(Message message) {
+
+    }
+
 
     template class RendererForward<ArchitectureType::SEQUENTIAL>;
     template class RendererForward<ArchitectureType::PARALLEL>;

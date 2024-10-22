@@ -85,12 +85,20 @@ namespace vve {
         vkDestroyDescriptorPool(m_engine.GetState().m_device, m_descriptorPool, m_engine.GetState().m_allocator);
     };
 
-    template<ArchitectureType ATYPE>
-    void RendererImgui<ATYPE>::PrepareRender() {};
+   	template<ArchitectureType ATYPE>
+    void RendererImgui<ATYPE>::OnPrepareNextFrame(Message message) {
+
+    }
 
    	template<ArchitectureType ATYPE>
-    void RendererImgui<ATYPE>::Render(){
-    };
+    void RendererImgui<ATYPE>::OnRecordNextFrame(Message message) {
+        
+    }
+
+   	template<ArchitectureType ATYPE>
+    void RendererImgui<ATYPE>::OnRenderNextFrame(Message message) {
+
+    }
 
     template class RendererImgui<ArchitectureType::SEQUENTIAL>;
     template class RendererImgui<ArchitectureType::PARALLEL>;
