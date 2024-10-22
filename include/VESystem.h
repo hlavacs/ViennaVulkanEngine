@@ -12,7 +12,8 @@
 namespace vve {
 
     enum MessageType {
-        FRAME_START = 0,
+        INIT = 0,
+        FRAME_START,
         POLL_EVENTS,
         UPDATE,
         PREPARE_NEXT_FRAME,
@@ -29,6 +30,7 @@ namespace vve {
         KEY_DOWN,
         KEY_UP,
         KEY_REPEAT,
+        QUIT,
         LAST
     };
 
@@ -42,6 +44,7 @@ namespace vve {
         int m_phase;
     };
 
+    struct MessageInit : public MessageBase { MessageInit(); };
     struct MessageFrameStart : public MessageBase { MessageFrameStart(double dt); double m_dt; };
     struct MessagePollEvents : public MessageBase { MessagePollEvents(double dt); double m_dt; };
     struct MessageUpdate : public MessageBase { MessageUpdate(double dt); double m_dt; };
@@ -60,7 +63,9 @@ namespace vve {
     
     struct MessageKeyDown : public MessageBase { MessageKeyDown(int key); int m_key; };
     struct MessageKeyUp : public MessageBase { MessageKeyUp(int key); int m_key; };
-    struct MessageKeyRepeat : public MessageBase { MessageKeyRepeat(int key); int m_key; };    
+    struct MessageKeyRepeat : public MessageBase { MessageKeyRepeat(int key); int m_key; };
+
+    struct MessageQuit : public MessageBase { MessageQuit(); };
 
 
     struct Message {
@@ -112,6 +117,7 @@ namespace vve {
         virtual void ReceiveMessage(Message message);
 
     protected:
+        virtual void OnInit(Message message);
         virtual void OnFrameStart(Message message);
         virtual void OnPollEvents(Message message);
         virtual void OnUpdate(Message message);
@@ -129,6 +135,7 @@ namespace vve {
         virtual void OnKeyDown(Message message);
         virtual void OnKeyUp(Message message);
         virtual void OnKeyRepeat(Message message);
+        virtual void OnQuit(Message message);
 
         std::string m_name;
         std::unordered_map<MessageType, std::function<void(Message)>> m_onFunctions;

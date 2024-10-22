@@ -5,6 +5,7 @@
 
 namespace vve {
 
+    MessageInit::MessageInit() : MessageBase{INIT} {};
     MessageFrameStart::MessageFrameStart(double dt) : MessageBase{FRAME_START}, m_dt{dt} {};
     MessagePollEvents::MessagePollEvents(double dt) : MessageBase{POLL_EVENTS}, m_dt{dt} {};
     MessageUpdate::MessageUpdate(double dt): MessageBase{UPDATE}, m_dt{dt} {}; 
@@ -22,10 +23,12 @@ namespace vve {
     MessageKeyDown::MessageKeyDown(int key): MessageBase{KEY_DOWN}, m_key{key} {}; 
     MessageKeyUp::MessageKeyUp(int key): MessageBase{KEY_UP}, m_key{key} {}; 
     MessageKeyRepeat::MessageKeyRepeat(int key): MessageBase{KEY_REPEAT}, m_key{key} {};   
+    MessageQuit::MessageQuit() : MessageBase{QUIT} {};
 
 
    	template<ArchitectureType ATYPE>
     System<ATYPE>::System( std::string name, Engine<ATYPE>& engine) : m_name(name), m_engine(engine) {
+        m_onFunctions[INIT] = [this](Message message){ OnInit(message); };
         m_onFunctions[FRAME_START] = [this](Message message){ OnFrameStart(message); };
         m_onFunctions[POLL_EVENTS] = [this](Message message){ OnPollEvents(message); };
         m_onFunctions[UPDATE] = [this](Message message){ OnUpdate(message); };
@@ -43,6 +46,7 @@ namespace vve {
         m_onFunctions[KEY_DOWN] = [this](Message message){ OnKeyDown(message); };
         m_onFunctions[KEY_UP] = [this](Message message){ OnKeyUp(message); };
         m_onFunctions[KEY_REPEAT] = [this](Message message){ OnKeyRepeat(message); };
+        m_onFunctions[QUIT] = [this](Message message){ OnQuit(message); };
     };
 
    	template<ArchitectureType ATYPE>
@@ -55,6 +59,9 @@ namespace vve {
     };
 
     //-------------------------------------------------------------------------------------------------
+
+   	template<ArchitectureType ATYPE>
+    void System<ATYPE>::OnInit(Message message){};
 
    	template<ArchitectureType ATYPE>
     void System<ATYPE>::OnFrameStart(Message message){};
@@ -106,6 +113,9 @@ namespace vve {
 
    	template<ArchitectureType ATYPE>
     void System<ATYPE>::OnKeyRepeat(Message message){};
+
+   	template<ArchitectureType ATYPE>
+    void System<ATYPE>::OnQuit(Message message){};
 
     template class System<ArchitectureType::SEQUENTIAL>;
     template class System<ArchitectureType::PARALLEL>;

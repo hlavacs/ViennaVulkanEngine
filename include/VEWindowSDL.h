@@ -42,8 +42,6 @@ namespace vve {
         virtual void OnPollEvents(Message message) override;
         virtual void OnPrepareNextFrame(Message message) override;
         virtual void OnRenderNextFrame(Message message) override;
-        void FrameRender(ImGui_ImplVulkanH_Window* wd, ImDrawData* draw_data);
-        void FramePresent(ImGui_ImplVulkanH_Window* wd);
 
         inline static bool sdl_initialized{false};
         SDL_Window* m_window{nullptr};

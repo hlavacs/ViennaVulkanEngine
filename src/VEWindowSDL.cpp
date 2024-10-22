@@ -79,8 +79,6 @@ namespace vve {
         m_mainWindowData.PresentMode = vh::SelectPresentMode(state.m_physicalDevice, m_mainWindowData.Surface, requestedPresentModes);
 
         vh::CreateWindowSwapChain(state.m_physicalDevice, state.m_device, &m_mainWindowData, state.m_allocator, w, h, m_minImageCount);
-
-
     }
 
 
@@ -163,8 +161,6 @@ namespace vve {
 
    	template<ArchitectureType ATYPE>
     void WindowSDL<ATYPE>::OnPrepareNextFrame(Message message) {
-        // Start the Dear ImGui frame
-        //ImGui_ImplVulkan_NewFrame();
         ImGui_ImplSDL2_NewFrame();
         ImGui::NewFrame();
     }
@@ -172,108 +168,30 @@ namespace vve {
 
    	template<ArchitectureType ATYPE>
     void WindowSDL<ATYPE>::OnRenderNextFrame(Message message) {
-        // Rendering
-        ImGui::Render();
         ImDrawData* draw_data = ImGui::GetDrawData();
         const bool is_minimized = (draw_data->DisplaySize.x <= 0.0f || draw_data->DisplaySize.y <= 0.0f);
-        if (!is_minimized)
-        {
-            m_mainWindowData.ClearValue.color.float32[0] = m_clearColor.x * m_clearColor.w;
-            m_mainWindowData.ClearValue.color.float32[1] = m_clearColor.y * m_clearColor.w;
-            m_mainWindowData.ClearValue.color.float32[2] = m_clearColor.z * m_clearColor.w;
-            m_mainWindowData.ClearValue.color.float32[3] = m_clearColor.w;
-            FrameRender(&m_mainWindowData, draw_data);
-            FramePresent(&m_mainWindowData);
-        }
-    }
-
-
-   	template<ArchitectureType ATYPE>
-    void WindowSDL<ATYPE>::FrameRender(ImGui_ImplVulkanH_Window* wd, ImDrawData* draw_data)
-    {
-        VkResult err;
-
-        auto& state = m_engine.GetState();
-
-        VkSemaphore image_acquired_semaphore  = wd->FrameSemaphores[wd->SemaphoreIndex].ImageAcquiredSemaphore;
-        VkSemaphore render_complete_semaphore = wd->FrameSemaphores[wd->SemaphoreIndex].RenderCompleteSemaphore;
-        err = vkAcquireNextImageKHR(state.m_device, wd->Swapchain, UINT64_MAX, image_acquired_semaphore, VK_NULL_HANDLE, &wd->FrameIndex);
-        if (err == VK_ERROR_OUT_OF_DATE_KHR || err == VK_SUBOPTIMAL_KHR)
-        {
-            m_swapChainRebuild = true;
-            return;
-        }
-        vh::CheckResult(err);
-
-        ImGui_ImplVulkanH_Frame* fd = &wd->Frames[wd->FrameIndex];
-        {
-            vh::CheckResult(vkWaitForFences(state.m_device, 1, &fd->Fence, VK_TRUE, UINT64_MAX));
-            vh::CheckResult(vkResetFences(state.m_device, 1, &fd->Fence));
-        }
-        {
-            vh::CheckResult(vkResetCommandPool(state.m_device, fd->CommandPool, 0));
-            VkCommandBufferBeginInfo info = {};
-            info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
-            info.flags |= VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
-            vh::CheckResult(vkBeginCommandBuffer(fd->CommandBuffer, &info));
-        }
-        {
-            VkRenderPassBeginInfo info = {};
-            info.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
-            info.renderPass = wd->RenderPass;
-            info.framebuffer = fd->Framebuffer;
-            info.renderArea.extent.width = wd->Width;
-            info.renderArea.extent.height = wd->Height;
-            info.clearValueCount = 1;
-            info.pClearValues = &wd->ClearValue;
-            vkCmdBeginRenderPass(fd->CommandBuffer, &info, VK_SUBPASS_CONTENTS_INLINE);
-        }
-
-        // Record dear imgui primitives into command buffer
-        ImGui_ImplVulkan_RenderDrawData(draw_data, fd->CommandBuffer);
-
-        // Submit command buffer
-        vkCmdEndRenderPass(fd->CommandBuffer);
-        {
-            VkPipelineStageFlags wait_stage = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
-            VkSubmitInfo info = {};
-            info.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+        if (!is_minimized) {
+            if (m_swapChainRebuild)
+                return;
+            VkSemaphore render_complete_semaphore = m_mainWindowData.FrameSemaphores[m_mainWindowData.SemaphoreIndex].RenderCompleteSemaphore;
+            VkPresentInfoKHR info = {};
+            info.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
             info.waitSemaphoreCount = 1;
-            info.pWaitSemaphores = &image_acquired_semaphore;
-            info.pWaitDstStageMask = &wait_stage;
-            info.commandBufferCount = 1;
-            info.pCommandBuffers = &fd->CommandBuffer;
-            info.signalSemaphoreCount = 1;
-            info.pSignalSemaphores = &render_complete_semaphore;
-
-            vh::CheckResult(vkEndCommandBuffer(fd->CommandBuffer));
-            vh::CheckResult(vkQueueSubmit(state.m_queue, 1, &info, fd->Fence));
+            info.pWaitSemaphores = &render_complete_semaphore;
+            info.swapchainCount = 1;
+            info.pSwapchains = &m_mainWindowData.Swapchain;
+            info.pImageIndices = &m_mainWindowData.FrameIndex;
+            VkResult err = vkQueuePresentKHR(m_engine.GetState().m_queue, &info);
+            if (err == VK_ERROR_OUT_OF_DATE_KHR || err == VK_SUBOPTIMAL_KHR)
+            {
+                m_swapChainRebuild = true;
+                return;
+            }
+            vh::CheckResult(err);
+            m_mainWindowData.SemaphoreIndex = (m_mainWindowData.SemaphoreIndex + 1) % m_mainWindowData.SemaphoreCount; // Now we can use the next set of semaphores        }
         }
     }
 
-
-   	template<ArchitectureType ATYPE>
-    void WindowSDL<ATYPE>::FramePresent(ImGui_ImplVulkanH_Window* wd)
-    {
-        if (m_swapChainRebuild)
-            return;
-        VkSemaphore render_complete_semaphore = wd->FrameSemaphores[wd->SemaphoreIndex].RenderCompleteSemaphore;
-        VkPresentInfoKHR info = {};
-        info.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
-        info.waitSemaphoreCount = 1;
-        info.pWaitSemaphores = &render_complete_semaphore;
-        info.swapchainCount = 1;
-        info.pSwapchains = &wd->Swapchain;
-        info.pImageIndices = &wd->FrameIndex;
-        VkResult err = vkQueuePresentKHR(m_engine.GetState().m_queue, &info);
-        if (err == VK_ERROR_OUT_OF_DATE_KHR || err == VK_SUBOPTIMAL_KHR)
-        {
-            m_swapChainRebuild = true;
-            return;
-        }
-        vh::CheckResult(err);
-        wd->SemaphoreIndex = (wd->SemaphoreIndex + 1) % wd->SemaphoreCount; // Now we can use the next set of semaphores
-    }
 
 
    	template<ArchitectureType ATYPE>
