@@ -30,8 +30,6 @@ namespace vve
         virtual ~Renderer();
 
     protected:
-        virtual void PrepareRender();
-        virtual void Render();
         Window<ATYPE>* m_window;
     };
 

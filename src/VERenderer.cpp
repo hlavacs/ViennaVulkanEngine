@@ -12,12 +12,6 @@ namespace vve {
    	template<ArchitectureType ATYPE>
     Renderer<ATYPE>::~Renderer(){};
 
-   	template<ArchitectureType ATYPE>
-    void Renderer<ATYPE>::PrepareRender(){};
-
-   	template<ArchitectureType ATYPE>
-    void Renderer<ATYPE>::Render(){};
-
     template class Renderer<ArchitectureType::SEQUENTIAL>;
     template class Renderer<ArchitectureType::PARALLEL>;
 

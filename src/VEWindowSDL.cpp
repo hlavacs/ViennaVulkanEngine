@@ -31,6 +31,9 @@ namespace vve {
         SDL_Vulkan_GetInstanceExtensions(m_window, &extensions_count, extensions.data());
         instance_extensions.insert(instance_extensions.end(), extensions.begin(), extensions.end());
         
+        engine.RegisterSystem( this, 0
+            , {MessageType::POLL_EVENTS, MessageType::PREPARE_NEXT_FRAME
+            , MessageType::RENDER_NEXT_FRAME, MessageType::PRESENT_NEXT_FRAME} );
     }
 
    	template<ArchitectureType ATYPE>
