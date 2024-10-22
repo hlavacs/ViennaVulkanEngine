@@ -38,9 +38,9 @@ namespace vve {
 		void SendMessage( Message message );
 
 	protected:
-		void OnInit(Message message);
+		virtual void OnInit(Message message) override;
+		virtual void OnQuit(Message message) override;
 		void SetupVulkan();
-		void Shutdown();
 
 		virtual void LoadLevel( const char* levelName );
 		virtual void CreateWindow( const char* windowName, int width, int height );

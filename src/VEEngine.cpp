@@ -18,12 +18,11 @@ namespace vve {
 		m_debug = true;
 	#endif
 		RegisterSystem( this, std::numeric_limits<int>::lowest(), {MessageType::INIT} );
+		RegisterSystem( this, std::numeric_limits<int>::max(), {MessageType::QUIT} );
 	};
 	
 	template<ArchitectureType ATYPE>
-	Engine<ATYPE>::~Engine() {
-		Shutdown();
-	};
+	Engine<ATYPE>::~Engine() {};
 	
 	template<ArchitectureType ATYPE>
 	void Engine<ATYPE>::OnInit( Message message ) {
@@ -114,7 +113,6 @@ namespace vve {
 
 	template<ArchitectureType ATYPE>
 	void Engine<ATYPE>::Run(){
-		//Init();
 		SendMessage( MessageInit{} ) ;
 		std::clock_t start = std::clock();
 		m_running = true;
@@ -136,13 +134,13 @@ namespace vve {
 	};
 	
 	template<ArchitectureType ATYPE>
-	void Engine<ATYPE>::Stop(){
+	void Engine<ATYPE>::Stop() {
 		m_running = false;
 	};
 	
 	
 	template<ArchitectureType ATYPE>
-	void Engine<ATYPE>::Shutdown(){
+	void Engine<ATYPE>::OnQuit(Message message) {
 		m_sceneManager = nullptr;
 		m_windows.clear();
 
