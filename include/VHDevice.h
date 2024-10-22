@@ -21,7 +21,7 @@ namespace vh {
     void SetupDevice(   VkPhysicalDevice physicalDevice, VkAllocationCallbacks* allocator, 
                         std::vector<const char*>& device_extensions, uint32_t queueFamily, VkDevice* device);
 
-    void SetupDescriptorPool(VkDevice device, VkDescriptorPool* descriptorPool);
+    void CreateDescriptorPool(VkDevice device, VkDescriptorPool* descriptorPool);
     
 
     //surface

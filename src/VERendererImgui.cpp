@@ -20,7 +20,7 @@ namespace vve {
         WindowSDL<ATYPE>* sdlwindow = (WindowSDL<ATYPE>*)m_window;
         auto state = m_engine.GetState();
         vh::CreateWindowCommandBuffers(state.m_physicalDevice, state.m_device, &sdlwindow->m_mainWindowData, state.m_queueFamily, state.m_allocator);
-        vh::SetupDescriptorPool(m_engine.GetState().m_device, &m_descriptorPool);
+        vh::CreateDescriptorPool(m_engine.GetState().m_device, &m_descriptorPool);
 
         // Setup Dear ImGui context
         IMGUI_CHECKVERSION();

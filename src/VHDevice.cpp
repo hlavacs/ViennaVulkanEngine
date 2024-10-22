@@ -158,7 +158,7 @@ namespace vh {
     }
 
 
-    void SetupDescriptorPool(VkDevice device, VkDescriptorPool* descriptorPool) {
+    void CreateDescriptorPool(VkDevice device, VkDescriptorPool* descriptorPool) {
         VkDescriptorPoolSize pool_sizes[] =
         {
             { VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1 },
