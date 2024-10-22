@@ -74,9 +74,11 @@ namespace vve {
 	template<ArchitectureType ATYPE>
 	void Engine<ATYPE>::DeregisterSystem(System<ATYPE>* system) {
 		for( auto& map : m_messageMap ) {
-			for( auto& [priority, sys] : map.second ) {
-				if( sys == system ) {
-					map.second.erase(priority);
+			for( auto iter = map.second.begin(); iter != map.second.end(); ) {
+				if( iter->second == system ) {
+					iter = map.second.erase(iter);
+				} else {
+					++iter;
 				}
 			}
 		}
