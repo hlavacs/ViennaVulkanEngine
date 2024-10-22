@@ -86,9 +86,7 @@ namespace vve {
 
 	template<ArchitectureType ATYPE>
 	void Engine<ATYPE>::SendMessage( Message message ) {
-		auto type = message.GetType();
-		auto & map = m_messageMap[type];
-		for( auto& [phase, system] : map ) {
+		for( auto& [phase, system] : m_messageMap[message.GetType()] ) {
 			message.SetPhase(phase);
 			system->ReceiveMessage(message);
 		}

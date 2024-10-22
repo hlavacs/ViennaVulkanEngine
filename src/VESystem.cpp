@@ -54,7 +54,7 @@ namespace vve {
 
    	template<ArchitectureType ATYPE>
     void System<ATYPE>::ReceiveMessage(Message message) {
-        assert( m_onFunctions.find(message.GetType()) != m_onFunctions.end() );
+        assert( m_onFunctions.contains(message.GetType()) );
         m_onFunctions[message.GetType()](message);
     };
 
