@@ -41,31 +41,34 @@ namespace vve {
 
     struct MessageBase {
         MessageType m_type;
-        int m_phase;
+        void* m_sender{nullptr};
+        void* m_receiver{nullptr};
+        double m_dt;
+        int m_phase; //can register the same system for more than one phase
     };
 
-    struct MessageInit : public MessageBase { MessageInit(); };
-    struct MessageFrameStart : public MessageBase { MessageFrameStart(double dt); double m_dt; };
-    struct MessagePollEvents : public MessageBase { MessagePollEvents(double dt); double m_dt; };
-    struct MessageUpdate : public MessageBase { MessageUpdate(double dt); double m_dt; };
-    struct MessagePrepareNextFrame : public MessageBase { MessagePrepareNextFrame(double dt); double m_dt; };
-    struct MessageRenderNextFrame : public MessageBase { MessageRenderNextFrame(double dt); double m_dt; };
-    struct MessageRecordNextFrame : public MessageBase { MessageRecordNextFrame(); };
-    struct MessagePresentNextFrame : public MessageBase { MessagePresentNextFrame(double dt); double m_dt; };
-    struct MessageFrameEnd : public MessageBase { MessageFrameEnd(double dt); double m_dt; };
-    struct MessageDelete : public MessageBase { MessageDelete(); void* m_ptr; uint64_t m_id; };
-    struct MessageMouseMove : public MessageBase { MessageMouseMove(int x, int y); int m_x; int m_y; };
+    struct MessageInit : public MessageBase { MessageInit(void* s, void* r); };
+    struct MessageFrameStart : public MessageBase { MessageFrameStart(void* s, void* r, double dt); };
+    struct MessagePollEvents : public MessageBase { MessagePollEvents(void* s, void* r, double dt); };
+    struct MessageUpdate : public MessageBase { MessageUpdate(void* s, void* r, double dt); double m_dt; };
+    struct MessagePrepareNextFrame : public MessageBase { MessagePrepareNextFrame(void* s, void* r, double dt); };
+    struct MessageRenderNextFrame : public MessageBase { MessageRenderNextFrame(void* s, void* r, double dt);  };
+    struct MessageRecordNextFrame : public MessageBase { MessageRecordNextFrame(void* s, void* r, double dt ); };
+    struct MessagePresentNextFrame : public MessageBase { MessagePresentNextFrame(void* s, void* r, double dt);  };
+    struct MessageFrameEnd : public MessageBase { MessageFrameEnd(void* s, void* r, double dt); };
+    struct MessageDelete : public MessageBase { MessageDelete(void* s, void* r, double dt ); void* m_ptr; uint64_t m_id; };
+    struct MessageMouseMove : public MessageBase { MessageMouseMove(void* s, void* r, double dt, int x, int y); int m_x; int m_y; };
     
-    struct MessageMouseButtonDown : public MessageBase { MessageMouseButtonDown(int button); int m_button; };
-    struct MessageMouseButtonUp : public MessageBase { MessageMouseButtonUp(int button); int m_button; };
-    struct MessageMouseButtonRepeat : public MessageBase { MessageMouseButtonRepeat(int button); int m_button; };
-    struct MessageMouseWheel : public MessageBase { MessageMouseWheel(int x, int y); int m_x; int m_y; };
+    struct MessageMouseButtonDown : public MessageBase { MessageMouseButtonDown(void* s, void* r, double dt, int button); int m_button; };
+    struct MessageMouseButtonUp : public MessageBase { MessageMouseButtonUp(void* s, void* r, double dt, int button);  int m_button; };
+    struct MessageMouseButtonRepeat : public MessageBase { MessageMouseButtonRepeat(void* s, void* r, double dt, int button);  int m_button; };
+    struct MessageMouseWheel : public MessageBase { MessageMouseWheel(void* s, void* r, double dt, int x, int y);  int m_x; int m_y; };
     
-    struct MessageKeyDown : public MessageBase { MessageKeyDown(int key); int m_key; };
-    struct MessageKeyUp : public MessageBase { MessageKeyUp(int key); int m_key; };
-    struct MessageKeyRepeat : public MessageBase { MessageKeyRepeat(int key); int m_key; };
+    struct MessageKeyDown : public MessageBase { MessageKeyDown(void* s, void* r, double dt, int key);  int m_key; };
+    struct MessageKeyUp : public MessageBase { MessageKeyUp(void* s, void* r, double dt, int key);  int m_key; };
+    struct MessageKeyRepeat : public MessageBase { MessageKeyRepeat(void* s, void* r, double dt, int key); int m_key; };
 
-    struct MessageQuit : public MessageBase { MessageQuit(); };
+    struct MessageQuit : public MessageBase { MessageQuit(void* s, void* r); };
 
 
     struct Message {
@@ -78,17 +81,12 @@ namespace vve {
             std::memcpy(m_data, &msg, sizeof(T));
         };
 
-        auto GetType() -> MessageType {
-            return reinterpret_cast<MessageBase*>(m_data)->m_type;
-        };
-
-        void SetPhase(int priority) {
-            reinterpret_cast<MessageBase*>(m_data)->m_phase = priority;
-        };
-
-        auto GetPhase() -> int {
-            return reinterpret_cast<MessageBase*>(m_data)->m_phase;
-        };
+        auto GetType() -> MessageType { return reinterpret_cast<MessageBase*>(m_data)->m_type; };
+        auto GetSender() -> void* { return reinterpret_cast<MessageBase*>(m_data)->m_sender; };
+        auto GetReceiver() -> void* { return reinterpret_cast<MessageBase*>(m_data)->m_receiver; };
+        auto GetDt() -> double { return reinterpret_cast<MessageBase*>(m_data)->m_dt; };
+        void SetPhase(int priority) { reinterpret_cast<MessageBase*>(m_data)->m_phase = priority; };
+        auto GetPhase() -> int { return reinterpret_cast<MessageBase*>(m_data)->m_phase; };
 
         template<typename T>
             requires (std::is_base_of_v<MessageBase, T> && sizeof(T) <= MAX_SIZE)

@@ -5,25 +5,25 @@
 
 namespace vve {
 
-    MessageInit::MessageInit() : MessageBase{INIT} {};
-    MessageFrameStart::MessageFrameStart(double dt) : MessageBase{FRAME_START}, m_dt{dt} {};
-    MessagePollEvents::MessagePollEvents(double dt) : MessageBase{POLL_EVENTS}, m_dt{dt} {};
-    MessageUpdate::MessageUpdate(double dt): MessageBase{UPDATE}, m_dt{dt} {}; 
-    MessagePrepareNextFrame::MessagePrepareNextFrame(double dt): MessageBase{PREPARE_NEXT_FRAME}, m_dt{dt} {}; 
-    MessageRenderNextFrame::MessageRenderNextFrame(double dt): MessageBase{RENDER_NEXT_FRAME}, m_dt{dt} {}; 
-    MessageRecordNextFrame::MessageRecordNextFrame(): MessageBase{RECORD_NEXT_FRAME} {}; 
-    MessagePresentNextFrame::MessagePresentNextFrame(double dt): MessageBase{PRESENT_NEXT_FRAME}, m_dt{dt} {}; 
-    MessageFrameEnd:: MessageFrameEnd(double dt): MessageBase{FRAME_END}, m_dt{dt} {};
-    MessageDelete:: MessageDelete(): MessageBase{DELETED} {}; 
-    MessageMouseMove:: MessageMouseMove(int x, int y): MessageBase{MOUSE_MOVE}, m_x{x}, m_y{y} {}; 
-    MessageMouseButtonDown:: MessageMouseButtonDown(int button): MessageBase{MOUSE_BUTTON_DOWN}, m_button{button} {}; 
-    MessageMouseButtonUp::MessageMouseButtonUp(int button): MessageBase{MOUSE_BUTTON_UP}, m_button{button} {}; 
-    MessageMouseButtonRepeat::MessageMouseButtonRepeat(int button): MessageBase{MOUSE_BUTTON_REPEAT}, m_button{button} {}; 
-    MessageMouseWheel::MessageMouseWheel(int x, int y): MessageBase{MOUSE_WHEEL}, m_x{x}, m_y{y} {}; 
-    MessageKeyDown::MessageKeyDown(int key): MessageBase{KEY_DOWN}, m_key{key} {}; 
-    MessageKeyUp::MessageKeyUp(int key): MessageBase{KEY_UP}, m_key{key} {}; 
-    MessageKeyRepeat::MessageKeyRepeat(int key): MessageBase{KEY_REPEAT}, m_key{key} {};   
-    MessageQuit::MessageQuit() : MessageBase{QUIT} {};
+    MessageInit::MessageInit(void* s, void* r) : MessageBase{INIT, s, r} {};
+    MessageFrameStart::MessageFrameStart(void* s, void* r, double dt) : MessageBase{FRAME_START, s, r, dt} {};
+    MessagePollEvents::MessagePollEvents(void* s, void* r, double dt) : MessageBase{POLL_EVENTS, s, r, dt} {};
+    MessageUpdate::MessageUpdate(void* s, void* r, double dt): MessageBase{UPDATE, s, r, dt} {}; 
+    MessagePrepareNextFrame::MessagePrepareNextFrame(void* s, void* r, double dt): MessageBase{PREPARE_NEXT_FRAME, s, r, dt} {}; 
+    MessageRenderNextFrame::MessageRenderNextFrame(void* s, void* r, double dt): MessageBase{RENDER_NEXT_FRAME, s, r, dt} {}; 
+    MessageRecordNextFrame::MessageRecordNextFrame(void* s, void* r, double dt): MessageBase{RECORD_NEXT_FRAME, s, r, dt} {}; 
+    MessagePresentNextFrame::MessagePresentNextFrame(void* s, void* r, double dt): MessageBase{PRESENT_NEXT_FRAME, s, r, dt} {}; 
+    MessageFrameEnd:: MessageFrameEnd(void* s, void* r, double dt): MessageBase{FRAME_END, s, r, dt} {};
+    MessageDelete:: MessageDelete(void* s, void* r, double dt): MessageBase{DELETED, s, r, dt} {}; 
+    MessageMouseMove:: MessageMouseMove(void* s, void* r, double dt, int x, int y): MessageBase{MOUSE_MOVE, s, r, dt}, m_x{x}, m_y{y} {}; 
+    MessageMouseButtonDown:: MessageMouseButtonDown(void* s, void* r, double dt, int button): MessageBase{MOUSE_BUTTON_DOWN, s, r, dt}, m_button{button} {}; 
+    MessageMouseButtonUp::MessageMouseButtonUp(void* s, void* r, double dt, int button): MessageBase{MOUSE_BUTTON_UP, s, r, dt}, m_button{button} {}; 
+    MessageMouseButtonRepeat::MessageMouseButtonRepeat(void* s, void* r, double dt, int button): MessageBase{MOUSE_BUTTON_REPEAT, s, r, dt}, m_button{button} {}; 
+    MessageMouseWheel::MessageMouseWheel(void* s, void* r, double dt, int x, int y): MessageBase{MOUSE_WHEEL, s, r, dt}, m_x{x}, m_y{y} {}; 
+    MessageKeyDown::MessageKeyDown(void* s, void* r, double dt, int key): MessageBase{KEY_DOWN, s, r, dt}, m_key{key} {}; 
+    MessageKeyUp::MessageKeyUp(void* s, void* r, double dt, int key): MessageBase{KEY_UP, s, r, dt}, m_key{key} {}; 
+    MessageKeyRepeat::MessageKeyRepeat(void* s, void* r, double dt, int key): MessageBase{KEY_REPEAT, s, r, dt}, m_key{key} {};   
+    MessageQuit::MessageQuit(void* s, void* r) : MessageBase{QUIT, s, r} {};
 
 
    	template<ArchitectureType ATYPE>

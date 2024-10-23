@@ -17,15 +17,17 @@ namespace vve {
 	#ifndef NDEBUG
 		m_debug = true;
 	#endif
-		RegisterSystem( this, std::numeric_limits<int>::lowest(), {MessageType::INIT} );
-		RegisterSystem( this, std::numeric_limits<int>::max(), {MessageType::QUIT} );
+		Init();		
 	};
 	
 	template<ArchitectureType ATYPE>
 	Engine<ATYPE>::~Engine() {};
 	
 	template<ArchitectureType ATYPE>
-	void Engine<ATYPE>::OnInit( Message message ) {
+	void Engine<ATYPE>::Init( ) {
+		RegisterSystem( this, std::numeric_limits<int>::lowest(), {MessageType::INIT} );
+		RegisterSystem( this, std::numeric_limits<int>::max(), {MessageType::QUIT} );
+		
 		CreateWindow("Vulkan Engine", 800, 600);
 		SetupVulkan();
 		CreateRenderer("Forward");
@@ -113,7 +115,7 @@ namespace vve {
 
 	template<ArchitectureType ATYPE>
 	void Engine<ATYPE>::Run(){
-		SendMessage( MessageInit{} ) ;
+		SendMessage( MessageInit{this, nullptr} ) ;
 		std::clock_t start = std::clock();
 		m_running = true;
 		auto last = std::chrono::high_resolution_clock::now();
@@ -121,16 +123,16 @@ namespace vve {
 			auto now = std::chrono::high_resolution_clock::now();
 			auto dt = std::chrono::duration_cast<std::chrono::duration<double>>(now - last).count();
 
-			SendMessage( MessageFrameStart{dt} ) ;
-			SendMessage( MessagePollEvents{dt} ) ;
-			SendMessage( MessageUpdate{dt} ) ;
-			SendMessage( MessagePrepareNextFrame{dt} ) ;
-			SendMessage( MessageRecordNextFrame{} ) ;
-			SendMessage( MessageRenderNextFrame{dt} ) ;
-			SendMessage( MessagePresentNextFrame{dt} ) ;
-			SendMessage( MessageFrameEnd{dt} ) ;
+			SendMessage( MessageFrameStart{this, nullptr, dt} ) ;
+			SendMessage( MessagePollEvents{this, nullptr, dt} ) ;
+			SendMessage( MessageUpdate{this, nullptr, dt} ) ;
+			SendMessage( MessagePrepareNextFrame{this, nullptr, dt} ) ;
+			SendMessage( MessageRecordNextFrame{this, nullptr, dt} ) ;
+			SendMessage( MessageRenderNextFrame{this, nullptr, dt} ) ;
+			SendMessage( MessagePresentNextFrame{this, nullptr, dt} ) ;
+			SendMessage( MessageFrameEnd{this, nullptr, dt} ) ;
 		}
-		SendMessage( MessageQuit{} ) ;
+		SendMessage( MessageQuit{this, nullptr} ) ;
 	};
 	
 	template<ArchitectureType ATYPE>

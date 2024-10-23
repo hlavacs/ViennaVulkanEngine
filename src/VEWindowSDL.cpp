@@ -105,26 +105,26 @@ namespace vve {
 
             switch( event.type ) {
                 case SDL_MOUSEMOTION:
-                    m_engine.SendMessage( MessageMouseMove{event.motion.x, event.motion.y} );
+                    m_engine.SendMessage( MessageMouseMove{this, nullptr, message.GetDt(), event.motion.x, event.motion.y} );
                     break;
                 case SDL_MOUSEBUTTONDOWN:
-                    m_engine.SendMessage( MessageMouseButtonDown{event.button.button} );
+                    m_engine.SendMessage( MessageMouseButtonDown{this, nullptr, message.GetDt(), event.button.button} );
                     button.push_back( event.button.button );
                     break;
                 case SDL_MOUSEBUTTONUP:
-                    m_engine.SendMessage( MessageMouseButtonUp{event.button.button} );
+                    m_engine.SendMessage( MessageMouseButtonUp{this, nullptr, message.GetDt(), event.button.button} );
                     m_mouseButtonsDown.erase( event.button.button );
                     break;
                 case SDL_MOUSEWHEEL:
-                    m_engine.SendMessage( MessageMouseWheel{event.wheel.x, event.wheel.y} );
+                    m_engine.SendMessage( MessageMouseWheel{this, nullptr, message.GetDt(), event.wheel.x, event.wheel.y} );
                     break;
                 case SDL_KEYDOWN:
                     if( event.key.repeat ) continue;
-                    m_engine.SendMessage( MessageKeyDown{event.key.keysym.scancode} );
+                    m_engine.SendMessage( MessageKeyDown{this, nullptr, message.GetDt(), event.key.keysym.scancode} );
                     key.push_back(event.key.keysym.scancode);
                     break;
                 case SDL_KEYUP:
-                    m_engine.SendMessage( MessageKeyUp{event.key.keysym.scancode} );
+                    m_engine.SendMessage( MessageKeyUp{this, nullptr, message.GetDt(), event.key.keysym.scancode} );
                     m_keysDown.erase(event.key.keysym.scancode);
                     break;
                 default:
@@ -132,8 +132,8 @@ namespace vve {
             }
         }
 
-        for( auto& key : m_keysDown ) { m_engine.SendMessage( MessageKeyRepeat{key} ); }
-        for( auto& button : m_mouseButtonsDown ) { m_engine.SendMessage( MessageMouseButtonRepeat{button} ); }
+        for( auto& key : m_keysDown ) { m_engine.SendMessage( MessageKeyRepeat{this, nullptr, message.GetDt(), key} ); }
+        for( auto& button : m_mouseButtonsDown ) { m_engine.SendMessage( MessageMouseButtonRepeat{this, nullptr, message.GetDt(), button} ); }
 
         if(key.size() > 0) { for( auto& k : key ) { m_keysDown.insert(k) ; } }
         if(button.size() > 0) { for( auto& b : button ) {m_mouseButtonsDown.insert(b);} }
