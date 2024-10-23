@@ -5,15 +5,14 @@
 namespace vve {
 
   	template<ArchitectureType ATYPE>
-    class SceneManager {
+    class SceneManager : public System<ATYPE> {
         friend class engine;
     public:
-        SceneManager(Engine<ATYPE>& engine);
+        SceneManager(Engine<ATYPE>* engine);
         virtual ~SceneManager();
 
     private:
         virtual void DrawScene();
-        Engine<ATYPE>& m_engine;
     };
 
 };  // namespace vve

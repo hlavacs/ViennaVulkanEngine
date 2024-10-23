@@ -7,13 +7,23 @@
 namespace vve {
 
    	template<ArchitectureType ATYPE>
-    WindowSDL<ATYPE>::WindowSDL(std::string name, Engine<ATYPE>& engine, VkInstance instance, std::string windowName
+    WindowSDL<ATYPE>::WindowSDL(std::string name, Engine<ATYPE>* engine, VkInstance instance, std::string windowName
             , int width, int height, std::vector<const char*>& instance_extensions) 
                 : Window<ATYPE>(name, engine, instance, windowName, width, height, instance_extensions) {
 
         if(!sdl_initialized) {
-            sdl_initialized = InitSDL(instance);
-            if(!sdl_initialized)  return;
+
+            if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_TIMER | SDL_INIT_GAMECONTROLLER) != 0) {
+                printf("Error: %s\n", SDL_GetError());
+                return;
+            }
+
+            // From 2.0.18: Enable native IME.
+        #ifdef SDL_HINT_IME_SHOW_UI
+            SDL_SetHint(SDL_HINT_IME_SHOW_UI, "1");
+        #endif
+
+            sdl_initialized = true;
         }
 
         // Create window with Vulkan graphics context
@@ -31,17 +41,17 @@ namespace vve {
         SDL_Vulkan_GetInstanceExtensions(m_window, &extensions_count, extensions.data());
         instance_extensions.insert(instance_extensions.end(), extensions.begin(), extensions.end());
         
-        engine.RegisterSystem( this, 0
+        engine->RegisterSystem( this, 0
             , {MessageType::INIT, MessageType::POLL_EVENTS, MessageType::PREPARE_NEXT_FRAME, MessageType::RENDER_NEXT_FRAME, MessageType::PRESENT_NEXT_FRAME, MessageType::QUIT} );
     }
 
    	template<ArchitectureType ATYPE>
     WindowSDL<ATYPE>::~WindowSDL() {
-        vh::CheckResult(vkDeviceWaitIdle(m_engine.GetState().m_device));
+        vh::CheckResult(vkDeviceWaitIdle(m_engine->GetState().m_device));
         m_renderer.clear();
         ImGui_ImplSDL2_Shutdown();
         ImGui::DestroyContext();
-        ImGui_ImplVulkanH_DestroyWindow(m_engine.GetState().m_instance, m_engine.GetState().m_device, &m_mainWindowData, m_engine.GetState().m_allocator);
+        ImGui_ImplVulkanH_DestroyWindow(m_engine->GetState().m_instance, m_engine->GetState().m_device, &m_mainWindowData, m_engine->GetState().m_allocator);
         SDL_DestroyWindow(m_window);
         SDL_Quit();
     }
@@ -49,7 +59,7 @@ namespace vve {
 
    	template<ArchitectureType ATYPE>
     void WindowSDL<ATYPE>::OnInit(Message message) {
-        if (SDL_Vulkan_CreateSurface(m_window, m_engine.GetState().m_instance, &m_surface) == 0) {
+        if (SDL_Vulkan_CreateSurface(m_window, m_engine->GetState().m_instance, &m_surface) == 0) {
             printf("Failed to create Vulkan surface.\n");
         }
         
@@ -60,7 +70,7 @@ namespace vve {
 
         m_mainWindowData.Surface = m_surface;
 
-        auto& state = m_engine.GetState();
+        auto& state = m_engine->GetState();
 
         // Check for WSI support
         VkBool32 res;
@@ -99,32 +109,32 @@ namespace vve {
         while (SDL_PollEvent(&event)) {
             ImGui_ImplSDL2_ProcessEvent(&event);
             if (event.type == SDL_QUIT)
-                m_engine.Stop();
+                m_engine->Stop();
             if (event.type == SDL_WINDOWEVENT && event.window.event == SDL_WINDOWEVENT_CLOSE && event.window.windowID == SDL_GetWindowID(m_window))
-                m_engine.Stop();
+                m_engine->Stop();
 
             switch( event.type ) {
                 case SDL_MOUSEMOTION:
-                    m_engine.SendMessage( MessageMouseMove{this, nullptr, message.GetDt(), event.motion.x, event.motion.y} );
+                    m_engine->SendMessage( MessageMouseMove{this, nullptr, message.GetDt(), event.motion.x, event.motion.y} );
                     break;
                 case SDL_MOUSEBUTTONDOWN:
-                    m_engine.SendMessage( MessageMouseButtonDown{this, nullptr, message.GetDt(), event.button.button} );
+                    m_engine->SendMessage( MessageMouseButtonDown{this, nullptr, message.GetDt(), event.button.button} );
                     button.push_back( event.button.button );
                     break;
                 case SDL_MOUSEBUTTONUP:
-                    m_engine.SendMessage( MessageMouseButtonUp{this, nullptr, message.GetDt(), event.button.button} );
+                    m_engine->SendMessage( MessageMouseButtonUp{this, nullptr, message.GetDt(), event.button.button} );
                     m_mouseButtonsDown.erase( event.button.button );
                     break;
                 case SDL_MOUSEWHEEL:
-                    m_engine.SendMessage( MessageMouseWheel{this, nullptr, message.GetDt(), event.wheel.x, event.wheel.y} );
+                    m_engine->SendMessage( MessageMouseWheel{this, nullptr, message.GetDt(), event.wheel.x, event.wheel.y} );
                     break;
                 case SDL_KEYDOWN:
                     if( event.key.repeat ) continue;
-                    m_engine.SendMessage( MessageKeyDown{this, nullptr, message.GetDt(), event.key.keysym.scancode} );
+                    m_engine->SendMessage( MessageKeyDown{this, nullptr, message.GetDt(), event.key.keysym.scancode} );
                     key.push_back(event.key.keysym.scancode);
                     break;
                 case SDL_KEYUP:
-                    m_engine.SendMessage( MessageKeyUp{this, nullptr, message.GetDt(), event.key.keysym.scancode} );
+                    m_engine->SendMessage( MessageKeyUp{this, nullptr, message.GetDt(), event.key.keysym.scancode} );
                     m_keysDown.erase(event.key.keysym.scancode);
                     break;
                 default:
@@ -132,8 +142,8 @@ namespace vve {
             }
         }
 
-        for( auto& key : m_keysDown ) { m_engine.SendMessage( MessageKeyRepeat{this, nullptr, message.GetDt(), key} ); }
-        for( auto& button : m_mouseButtonsDown ) { m_engine.SendMessage( MessageMouseButtonRepeat{this, nullptr, message.GetDt(), button} ); }
+        for( auto& key : m_keysDown ) { m_engine->SendMessage( MessageKeyRepeat{this, nullptr, message.GetDt(), key} ); }
+        for( auto& button : m_mouseButtonsDown ) { m_engine->SendMessage( MessageMouseButtonRepeat{this, nullptr, message.GetDt(), button} ); }
 
         if(key.size() > 0) { for( auto& k : key ) { m_keysDown.insert(k) ; } }
         if(button.size() > 0) { for( auto& b : button ) {m_mouseButtonsDown.insert(b);} }
@@ -150,7 +160,7 @@ namespace vve {
         if (fb_width > 0 && fb_height > 0 && (m_swapChainRebuild || m_mainWindowData.Width != fb_width || m_mainWindowData.Height != fb_height))
         {
             ImGui_ImplVulkan_SetMinImageCount(m_minImageCount);
-            ImGui_ImplVulkanH_CreateOrResizeWindow(m_engine.GetState().m_instance, m_engine.GetState().m_physicalDevice, m_engine.GetState().m_device, &m_mainWindowData, m_engine.GetState().m_queueFamily, m_engine.GetState().m_allocator, fb_width, fb_height, m_minImageCount);
+            ImGui_ImplVulkanH_CreateOrResizeWindow(m_engine->GetState().m_instance, m_engine->GetState().m_physicalDevice, m_engine->GetState().m_device, &m_mainWindowData, m_engine->GetState().m_queueFamily, m_engine->GetState().m_allocator, fb_width, fb_height, m_minImageCount);
             m_mainWindowData.FrameIndex = 0;
             m_swapChainRebuild = false;
         }
@@ -181,7 +191,7 @@ namespace vve {
             info.swapchainCount = 1;
             info.pSwapchains = &m_mainWindowData.Swapchain;
             info.pImageIndices = &m_mainWindowData.FrameIndex;
-            VkResult err = vkQueuePresentKHR(m_engine.GetState().m_queue, &info);
+            VkResult err = vkQueuePresentKHR(m_engine->GetState().m_queue, &info);
             if (err == VK_ERROR_OUT_OF_DATE_KHR || err == VK_SUBOPTIMAL_KHR)
             {
                 m_swapChainRebuild = true;
@@ -205,21 +215,7 @@ namespace vve {
         return std::make_pair(w, h);
     }
 
-   	template<ArchitectureType ATYPE>
-    bool WindowSDL<ATYPE>::InitSDL(VkInstance instance) {
-        // Setup SDL
-        if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_TIMER | SDL_INIT_GAMECONTROLLER) != 0) {
-            printf("Error: %s\n", SDL_GetError());
-            return false;
-        }
 
-        // From 2.0.18: Enable native IME.
-    #ifdef SDL_HINT_IME_SHOW_UI
-        SDL_SetHint(SDL_HINT_IME_SHOW_UI, "1");
-    #endif
-
-        return true;
-    }
 
     template class WindowSDL<ArchitectureType::SEQUENTIAL>;
     template class WindowSDL<ArchitectureType::PARALLEL>;

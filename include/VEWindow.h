@@ -25,7 +25,7 @@ namespace vve {
         friend class Engine<ATYPE>;
 
     public:
-        Window( std::string name, Engine<ATYPE>& engine, VkInstance instance, std::string windowName
+        Window( std::string name, Engine<ATYPE>* engine, VkInstance instance, std::string windowName
                 , int width, int height, std::vector<const char*>& instance_extensions);
         virtual ~Window();
 

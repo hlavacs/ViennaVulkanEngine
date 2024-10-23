@@ -5,7 +5,7 @@
 namespace vve {
 
    	template<ArchitectureType ATYPE>
-    SceneManager<ATYPE>::SceneManager(Engine<ATYPE>& engine ) : m_engine{engine} {}
+    SceneManager<ATYPE>::SceneManager(Engine<ATYPE>* engine ) : System<ATYPE>{"SceneManager", engine} {}
 
    	template<ArchitectureType ATYPE>
     SceneManager<ATYPE>::~SceneManager() {}

@@ -14,12 +14,12 @@
 namespace vve {
 
    	template<ArchitectureType ATYPE>
-    RendererImgui<ATYPE>::RendererImgui(std::string name, Engine<ATYPE>& engine, Window<ATYPE>* window) 
+    RendererImgui<ATYPE>::RendererImgui(std::string name, Engine<ATYPE>* engine, Window<ATYPE>* window) 
         : Renderer<ATYPE>(name, engine, window) {
 
-        engine.RegisterSystem( this, 100, {MessageType::INIT} ); //init after window
+        engine->RegisterSystem( this, 100, {MessageType::INIT} ); //init after window
 
-        engine.RegisterSystem( this, -100 //prepare before window
+        engine->RegisterSystem( this, -100 //prepare before window
             , {MessageType::PREPARE_NEXT_FRAME, MessageType::RENDER_NEXT_FRAME, MessageType::QUIT} );
 
     };
@@ -27,15 +27,15 @@ namespace vve {
    	template<ArchitectureType ATYPE>
     RendererImgui<ATYPE>::~RendererImgui(){
         ImGui_ImplVulkan_Shutdown();
-        vkDestroyDescriptorPool(m_engine.GetState().m_device, m_descriptorPool, m_engine.GetState().m_allocator);
+        vkDestroyDescriptorPool(m_engine->GetState().m_device, m_descriptorPool, m_engine->GetState().m_allocator);
     };
 
    	template<ArchitectureType ATYPE>
     void RendererImgui<ATYPE>::OnInit(Message message) {
         WindowSDL<ATYPE>* sdlwindow = (WindowSDL<ATYPE>*)m_window;
-        auto state = m_engine.GetState();
+        auto state = m_engine->GetState();
         vh::CreateWindowCommandBuffers(state.m_physicalDevice, state.m_device, &sdlwindow->m_mainWindowData, state.m_queueFamily, state.m_allocator);
-        vh::CreateDescriptorPool(m_engine.GetState().m_device, &m_descriptorPool);
+        vh::CreateDescriptorPool(m_engine->GetState().m_device, &m_descriptorPool);
 
         // Setup Dear ImGui context
         IMGUI_CHECKVERSION();
@@ -115,7 +115,7 @@ namespace vve {
 
             VkResult err;
 
-            auto& state = m_engine.GetState();
+            auto& state = m_engine->GetState();
             //WindowSDL<ATYPE>* sdlwindow = (WindowSDL<ATYPE>*)m_window;
 
             VkSemaphore image_acquired_semaphore  = wd->FrameSemaphores[wd->SemaphoreIndex].ImageAcquiredSemaphore;

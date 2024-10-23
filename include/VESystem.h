@@ -112,7 +112,7 @@ namespace vve {
         friend class Engine<ATYPE>;
 
     public:
-        System( std::string name, Engine<ATYPE>& engine );
+        System( std::string name, Engine<ATYPE>* engine );
         virtual ~System();
         virtual void ReceiveMessage(Message message);
 
@@ -140,7 +140,7 @@ namespace vve {
 
         std::string m_name;
         std::unordered_map<MessageType, std::function<void(Message)>> m_onFunctions;
-        Engine<ATYPE>& m_engine;
+        Engine<ATYPE>* m_engine;
         Mutex<ATYPE> m_mutex;
         std::vector<Message> m_messages;
     };
