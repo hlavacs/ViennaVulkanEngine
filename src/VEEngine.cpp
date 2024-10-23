@@ -24,6 +24,7 @@ namespace vve {
 		SetupVulkan();
 		CreateRenderer("Forward");
 		CreateSceneManager("");
+		CreateCamera("Main Camera");
 	};
 	
 	template<ArchitectureType ATYPE>
@@ -31,7 +32,6 @@ namespace vve {
 	
 	template<ArchitectureType ATYPE>
 	void Engine<ATYPE>::OnInit(Message message ) {
-		CreateCamera("Main Camera");
 		LoadLevel("");
 	};
 	
@@ -82,7 +82,9 @@ namespace vve {
 	void Engine<ATYPE>::SendMessage( Message message ) {
 		for( auto& [phase, system] : m_messageMap[message.GetType()] ) {
 			message.SetPhase(phase);
-			system->ReceiveMessage(message);
+			void* receiver = message.GetReceiver();
+			if( receiver == nullptr || receiver == system ) [[likely]]
+				system->ReceiveMessage(message);
 		}
 	}
 
@@ -114,7 +116,7 @@ namespace vve {
 
 	template<ArchitectureType ATYPE>
 	void Engine<ATYPE>::Run(){
-		SendMessage( MessageInit{this, nullptr} ) ;
+		SendMessage( MessageInit{this} ) ;
 		std::clock_t start = std::clock();
 		m_running = true;
 		auto last = std::chrono::high_resolution_clock::now();

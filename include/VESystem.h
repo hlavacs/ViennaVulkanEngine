@@ -13,6 +13,7 @@ namespace vve {
 
     enum MessageType {
         INIT = 0,
+        ANNOUNCE,
         FRAME_START,
         POLL_EVENTS,
         UPDATE,
@@ -43,11 +44,12 @@ namespace vve {
         MessageType m_type;
         void* m_sender{nullptr};
         void* m_receiver{nullptr};
-        double m_dt;
-        int m_phase; //can register the same system for more than one phase
+        double m_dt{0};
+        int m_phase{0}; //can register the same system for more than one phase
     };
 
-    struct MessageInit : public MessageBase { MessageInit(void* s, void* r); };
+    struct MessageInit : public MessageBase { MessageInit(void* s, void* r=nullptr); };
+    struct MessageAnnounce : public MessageBase { MessageAnnounce(void* s); };
     struct MessageFrameStart : public MessageBase { MessageFrameStart(void* s, void* r, double dt); };
     struct MessagePollEvents : public MessageBase { MessagePollEvents(void* s, void* r, double dt); };
     struct MessageUpdate : public MessageBase { MessageUpdate(void* s, void* r, double dt); double m_dt; };
@@ -68,7 +70,7 @@ namespace vve {
     struct MessageKeyUp : public MessageBase { MessageKeyUp(void* s, void* r, double dt, int key);  int m_key; };
     struct MessageKeyRepeat : public MessageBase { MessageKeyRepeat(void* s, void* r, double dt, int key); int m_key; };
 
-    struct MessageQuit : public MessageBase { MessageQuit(void* s, void* r); };
+    struct MessageQuit : public MessageBase { MessageQuit(void* s, void* r=nullptr); };
 
 
     struct Message {
@@ -115,25 +117,26 @@ namespace vve {
         virtual void ReceiveMessage(Message message);
 
     protected:
-        virtual void OnInit(Message message);
-        virtual void OnFrameStart(Message message);
-        virtual void OnPollEvents(Message message);
-        virtual void OnUpdate(Message message);
-        virtual void OnPrepareNextFrame(Message message);
-        virtual void OnRenderNextFrame(Message message);
-        virtual void OnRecordNextFrame(Message message);
-        virtual void OnPresentNextFrame(Message message);
-        virtual void OnFrameEnd(Message message);
-        virtual void OnDelete(Message message);
-        virtual void OnMouseMove(Message message);
-        virtual void OnMouseButtonDown(Message message);
-        virtual void OnMouseButtonUp(Message message);
-        virtual void OnMouseButtonRepeat(Message message);
-        virtual void OnMouseWheel(Message message);
-        virtual void OnKeyDown(Message message);
-        virtual void OnKeyUp(Message message);
-        virtual void OnKeyRepeat(Message message);
-        virtual void OnQuit(Message message);
+        virtual void OnInit(Message message);       //system is initiated
+        virtual void OnAnnounce(Message message);   //system announces itself to all other systems
+        virtual void OnFrameStart(Message message); //Enter the game loop
+        virtual void OnPollEvents(Message message); //Poll events from window and other sources
+        virtual void OnUpdate(Message message);     //Update systems
+        virtual void OnPrepareNextFrame(Message message);   //Prepare next frame
+        virtual void OnRecordNextFrame(Message message);    //Record next frame
+        virtual void OnRenderNextFrame(Message message);    //Render next frame
+        virtual void OnPresentNextFrame(Message message);   //Present next frame
+        virtual void OnFrameEnd(Message message);   //End of game loop
+        virtual void OnDelete(Message message);     //Delete an object or object is deleted
+        virtual void OnMouseMove(Message message);  //Mouse moved
+        virtual void OnMouseButtonDown(Message message);    //Mouse button down
+        virtual void OnMouseButtonUp(Message message);      //Mouse button up
+        virtual void OnMouseButtonRepeat(Message message);  //Mouse button repeat
+        virtual void OnMouseWheel(Message message); //Mouse wheel
+        virtual void OnKeyDown(Message message);    //Key down
+        virtual void OnKeyUp(Message message);      //Key up
+        virtual void OnKeyRepeat(Message message);  //Key repeat
+        virtual void OnQuit(Message message);       //Quit
 
         std::string m_name;
         std::unordered_map<MessageType, std::function<void(Message)>> m_onFunctions;

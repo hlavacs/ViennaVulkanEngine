@@ -6,6 +6,7 @@
 namespace vve {
 
     MessageInit::MessageInit(void* s, void* r) : MessageBase{INIT, s, r} {};
+    MessageAnnounce::MessageAnnounce(void* s) : MessageBase{ANNOUNCE, s} {};
     MessageFrameStart::MessageFrameStart(void* s, void* r, double dt) : MessageBase{FRAME_START, s, r, dt} {};
     MessagePollEvents::MessagePollEvents(void* s, void* r, double dt) : MessageBase{POLL_EVENTS, s, r, dt} {};
     MessageUpdate::MessageUpdate(void* s, void* r, double dt): MessageBase{UPDATE, s, r, dt} {}; 
@@ -29,6 +30,7 @@ namespace vve {
    	template<ArchitectureType ATYPE>
     System<ATYPE>::System( std::string name, Engine<ATYPE>& engine) : m_name(name), m_engine(engine) {
         m_onFunctions[INIT] = [this](Message message){ OnInit(message); };
+        m_onFunctions[ANNOUNCE] = [this](Message message){ OnAnnounce(message); };
         m_onFunctions[FRAME_START] = [this](Message message){ OnFrameStart(message); };
         m_onFunctions[POLL_EVENTS] = [this](Message message){ OnPollEvents(message); };
         m_onFunctions[UPDATE] = [this](Message message){ OnUpdate(message); };
@@ -62,6 +64,9 @@ namespace vve {
 
    	template<ArchitectureType ATYPE>
     void System<ATYPE>::OnInit(Message message){};
+
+   	template<ArchitectureType ATYPE>
+    void System<ATYPE>::OnAnnounce(Message message){};
 
    	template<ArchitectureType ATYPE>
     void System<ATYPE>::OnFrameStart(Message message){};
