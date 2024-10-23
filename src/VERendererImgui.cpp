@@ -17,10 +17,10 @@ namespace vve {
     RendererImgui<ATYPE>::RendererImgui(std::string name, Engine<ATYPE>& engine, Window<ATYPE>* window) 
         : Renderer<ATYPE>(name, engine, window) {
 
-        engine.RegisterSystem( this, 100, {MessageType::INIT} );
+        engine.RegisterSystem( this, 100, {MessageType::INIT} ); //init after window
 
-        engine.RegisterSystem( this, -100
-            , {MessageType::PREPARE_NEXT_FRAME, MessageType::RECORD_NEXT_FRAME, MessageType::RENDER_NEXT_FRAME, MessageType::QUIT} );
+        engine.RegisterSystem( this, -100 //prepare before window
+            , {MessageType::PREPARE_NEXT_FRAME, MessageType::RENDER_NEXT_FRAME, MessageType::QUIT} );
 
     };
 
@@ -98,11 +98,6 @@ namespace vve {
     }
 
    	template<ArchitectureType ATYPE>
-    void RendererImgui<ATYPE>::OnRecordNextFrame(Message message) {
-        
-    }
-
-   	template<ArchitectureType ATYPE>
     void RendererImgui<ATYPE>::OnRenderNextFrame(Message message) {
         ImGui::Render();
         ImDrawData* draw_data = ImGui::GetDrawData();
@@ -114,80 +109,75 @@ namespace vve {
             sdlwindow->m_mainWindowData.ClearValue.color.float32[1] = sdlwindow->m_clearColor.y * sdlwindow->m_clearColor.w;
             sdlwindow->m_mainWindowData.ClearValue.color.float32[2] = sdlwindow->m_clearColor.z * sdlwindow->m_clearColor.w;
             sdlwindow->m_mainWindowData.ClearValue.color.float32[3] = sdlwindow->m_clearColor.w;
-            FrameRender(&sdlwindow->m_mainWindowData, draw_data);
-        }
-    }
+            
+            //FrameRender(&sdlwindow->m_mainWindowData, draw_data);
+            auto wd = &sdlwindow->m_mainWindowData;
 
+            VkResult err;
 
-    template<ArchitectureType ATYPE>
-    void RendererImgui<ATYPE>::FrameRender(ImGui_ImplVulkanH_Window* wd, ImDrawData* draw_data)
-    {
-        VkResult err;
+            auto& state = m_engine.GetState();
+            //WindowSDL<ATYPE>* sdlwindow = (WindowSDL<ATYPE>*)m_window;
 
-        auto& state = m_engine.GetState();
-        WindowSDL<ATYPE>* sdlwindow = (WindowSDL<ATYPE>*)m_window;
+            VkSemaphore image_acquired_semaphore  = wd->FrameSemaphores[wd->SemaphoreIndex].ImageAcquiredSemaphore;
+            VkSemaphore render_complete_semaphore = wd->FrameSemaphores[wd->SemaphoreIndex].RenderCompleteSemaphore;
+            err = vkAcquireNextImageKHR(state.m_device, wd->Swapchain, UINT64_MAX, image_acquired_semaphore, VK_NULL_HANDLE, &wd->FrameIndex);
+            if (err == VK_ERROR_OUT_OF_DATE_KHR || err == VK_SUBOPTIMAL_KHR)
+            {
+                sdlwindow->m_swapChainRebuild = true;
+                return;
+            }
+            vh::CheckResult(err);
 
-        VkSemaphore image_acquired_semaphore  = wd->FrameSemaphores[wd->SemaphoreIndex].ImageAcquiredSemaphore;
-        VkSemaphore render_complete_semaphore = wd->FrameSemaphores[wd->SemaphoreIndex].RenderCompleteSemaphore;
-        err = vkAcquireNextImageKHR(state.m_device, wd->Swapchain, UINT64_MAX, image_acquired_semaphore, VK_NULL_HANDLE, &wd->FrameIndex);
-        if (err == VK_ERROR_OUT_OF_DATE_KHR || err == VK_SUBOPTIMAL_KHR)
-        {
-            sdlwindow->m_swapChainRebuild = true;
-            return;
-        }
-        vh::CheckResult(err);
+            ImGui_ImplVulkanH_Frame* fd = &wd->Frames[wd->FrameIndex];
+            {
+                vh::CheckResult(vkWaitForFences(state.m_device, 1, &fd->Fence, VK_TRUE, UINT64_MAX));
+                vh::CheckResult(vkResetFences(state.m_device, 1, &fd->Fence));
+            }
+            {
+                vh::CheckResult(vkResetCommandPool(state.m_device, fd->CommandPool, 0));
+                VkCommandBufferBeginInfo info = {};
+                info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+                info.flags |= VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
+                vh::CheckResult(vkBeginCommandBuffer(fd->CommandBuffer, &info));
+            }
+            {
+                VkRenderPassBeginInfo info = {};
+                info.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
+                info.renderPass = wd->RenderPass;
+                info.framebuffer = fd->Framebuffer;
+                info.renderArea.extent.width = wd->Width;
+                info.renderArea.extent.height = wd->Height;
+                info.clearValueCount = 1;
+                info.pClearValues = &wd->ClearValue;
+                vkCmdBeginRenderPass(fd->CommandBuffer, &info, VK_SUBPASS_CONTENTS_INLINE);
+            }
 
-        ImGui_ImplVulkanH_Frame* fd = &wd->Frames[wd->FrameIndex];
-        {
-            vh::CheckResult(vkWaitForFences(state.m_device, 1, &fd->Fence, VK_TRUE, UINT64_MAX));
-            vh::CheckResult(vkResetFences(state.m_device, 1, &fd->Fence));
-        }
-        {
-            vh::CheckResult(vkResetCommandPool(state.m_device, fd->CommandPool, 0));
-            VkCommandBufferBeginInfo info = {};
-            info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
-            info.flags |= VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
-            vh::CheckResult(vkBeginCommandBuffer(fd->CommandBuffer, &info));
-        }
-        {
-            VkRenderPassBeginInfo info = {};
-            info.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
-            info.renderPass = wd->RenderPass;
-            info.framebuffer = fd->Framebuffer;
-            info.renderArea.extent.width = wd->Width;
-            info.renderArea.extent.height = wd->Height;
-            info.clearValueCount = 1;
-            info.pClearValues = &wd->ClearValue;
-            vkCmdBeginRenderPass(fd->CommandBuffer, &info, VK_SUBPASS_CONTENTS_INLINE);
-        }
+            // Record dear imgui primitives into command buffer
+            ImGui_ImplVulkan_RenderDrawData(draw_data, fd->CommandBuffer); ////!!!!!!!!!!!!!!
 
-        // Record dear imgui primitives into command buffer
-        ImGui_ImplVulkan_RenderDrawData(draw_data, fd->CommandBuffer);
+            // Submit command buffer
+            vkCmdEndRenderPass(fd->CommandBuffer);
+            {
+                VkPipelineStageFlags wait_stage = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+                VkSubmitInfo info = {};
+                info.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+                info.waitSemaphoreCount = 1;
+                info.pWaitSemaphores = &image_acquired_semaphore;
+                info.pWaitDstStageMask = &wait_stage;
+                info.commandBufferCount = 1;
+                info.pCommandBuffers = &fd->CommandBuffer;
+                info.signalSemaphoreCount = 1;
+                info.pSignalSemaphores = &render_complete_semaphore;
 
-        // Submit command buffer
-        vkCmdEndRenderPass(fd->CommandBuffer);
-        {
-            VkPipelineStageFlags wait_stage = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
-            VkSubmitInfo info = {};
-            info.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
-            info.waitSemaphoreCount = 1;
-            info.pWaitSemaphores = &image_acquired_semaphore;
-            info.pWaitDstStageMask = &wait_stage;
-            info.commandBufferCount = 1;
-            info.pCommandBuffers = &fd->CommandBuffer;
-            info.signalSemaphoreCount = 1;
-            info.pSignalSemaphores = &render_complete_semaphore;
-
-            vh::CheckResult(vkEndCommandBuffer(fd->CommandBuffer));
-            vh::CheckResult(vkQueueSubmit(state.m_queue, 1, &info, fd->Fence));
+                vh::CheckResult(vkEndCommandBuffer(fd->CommandBuffer));
+                vh::CheckResult(vkQueueSubmit(state.m_queue, 1, &info, fd->Fence));
+            }
         }
     }
 
 
    	template<ArchitectureType ATYPE>
-    void RendererImgui<ATYPE>::OnQuit(Message message) {
-
-    }
+    void RendererImgui<ATYPE>::OnQuit(Message message) {}
 
     template class RendererImgui<ArchitectureType::SEQUENTIAL>;
     template class RendererImgui<ArchitectureType::PARALLEL>;
