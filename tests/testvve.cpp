@@ -16,7 +16,13 @@ class MyGUI : public vve::System<ATYPE> {
     using vve::System<ATYPE>::m_engine;
 
 public:
-    MyGUI( vve::Engine<ATYPE>* engine ) : vve::System<ATYPE>(engine, "MyGUI") {};
+    MyGUI( vve::Engine<ATYPE>* engine ) : vve::System<ATYPE>(engine, "MyGUI") {
+
+        engine->RegisterSystem(this, 0
+            , {vve::MessageType::RECORD_NEXT_FRAME, vve::MessageType::KEY_DOWN, vve::MessageType::KEY_REPEAT, vve::MessageType::KEY_UP});
+
+    };
+    
     ~MyGUI() {};
 
     float clear_color[3]{ 0.45f, 0.55f, 0.60f};
@@ -92,9 +98,6 @@ int main() {
 
     auto engine = std::make_unique<vve::Engine<AT>>();
     auto mygui = std::make_shared<MyGUI<AT>>(engine.get());
-
-    engine->RegisterSystem(mygui.get(), 0
-        , {vve::MessageType::RECORD_NEXT_FRAME, vve::MessageType::KEY_DOWN, vve::MessageType::KEY_REPEAT, vve::MessageType::KEY_UP});
 
     engine->Run();
 
