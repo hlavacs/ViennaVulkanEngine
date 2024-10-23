@@ -31,8 +31,8 @@ namespace vve {
         friend class RendererImgui<ATYPE>;
     
     public:
-        WindowSDL(std::string name, Engine<ATYPE>* engine, VkInstance instance, std::string windowName
-            , int width, int height, std::vector<const char*>& instance_extensions);
+        WindowSDL(Engine<ATYPE>* engine, VkInstance instance, std::string windowName
+            , int width, int height, std::vector<const char*>& instance_extensions, std::string name = "VVE WindowSDL" );
         virtual ~WindowSDL();
         virtual auto GetSize() -> std::pair<int, int>;
 

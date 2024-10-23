@@ -14,8 +14,8 @@
 namespace vve {
 
    	template<ArchitectureType ATYPE>
-    RendererImgui<ATYPE>::RendererImgui(std::string name, Engine<ATYPE>* engine, Window<ATYPE>* window) 
-        : Renderer<ATYPE>(name, engine, window) {
+    RendererImgui<ATYPE>::RendererImgui( Engine<ATYPE>* engine, Window<ATYPE>* window, std::string name) 
+        : Renderer<ATYPE>(engine, window, name ) {
 
         engine->RegisterSystem( this, 100, {MessageType::INIT} ); //init after window
 

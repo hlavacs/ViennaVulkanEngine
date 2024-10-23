@@ -26,7 +26,7 @@ namespace vve
         friend class Engine<ATYPE>;
 
     public:
-        Renderer(std::string name, Engine<ATYPE>* m_engine, Window<ATYPE>* window);
+        Renderer(Engine<ATYPE>* m_engine, Window<ATYPE>* window, std::string name = "VVE Renderer" );
         virtual ~Renderer();
 
     protected:

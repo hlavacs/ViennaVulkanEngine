@@ -8,7 +8,7 @@ namespace vve
     class RendererForward : public Renderer<ATYPE>
     {
     public:
-        RendererForward(std::string name, Engine<ATYPE>* engine, Window<ATYPE>* window);
+        RendererForward(Engine<ATYPE>* engine, Window<ATYPE>* window, std::string name = "VVE RendererForward" );
         virtual ~RendererForward();
 
     private:

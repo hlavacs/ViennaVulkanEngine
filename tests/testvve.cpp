@@ -16,7 +16,7 @@ class MyGUI : public vve::System<ATYPE> {
     using vve::System<ATYPE>::m_engine;
 
 public:
-    MyGUI( vve::Engine<ATYPE>* engine ) : vve::System<ATYPE>("MyGUI", engine) {};
+    MyGUI( vve::Engine<ATYPE>* engine ) : vve::System<ATYPE>(engine, "MyGUI") {};
     ~MyGUI() {};
 
     float clear_color[3]{ 0.45f, 0.55f, 0.60f};

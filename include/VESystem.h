@@ -112,7 +112,7 @@ namespace vve {
         friend class Engine<ATYPE>;
 
     public:
-        System( std::string name, Engine<ATYPE>* engine );
+        System( Engine<ATYPE>* engine, std::string name );
         virtual ~System();
         virtual void ReceiveMessage(Message message);
 

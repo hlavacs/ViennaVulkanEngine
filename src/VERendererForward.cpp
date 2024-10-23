@@ -7,8 +7,8 @@
 namespace vve {
 
    	template<ArchitectureType ATYPE>
-    RendererForward<ATYPE>::RendererForward(std::string name, Engine<ATYPE>* engine, Window<ATYPE>* window) 
-        : Renderer<ATYPE>(name, engine, window) {
+    RendererForward<ATYPE>::RendererForward(Engine<ATYPE>* engine, Window<ATYPE>* window, std::string name ) 
+        : Renderer<ATYPE>(engine, window, name) {
 
         engine->RegisterSystem( this,  -100
             , {MessageType::INIT, MessageType::PREPARE_NEXT_FRAME, MessageType::RECORD_NEXT_FRAME, MessageType::RENDER_NEXT_FRAME, MessageType::QUIT} );

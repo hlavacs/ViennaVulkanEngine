@@ -25,7 +25,7 @@ namespace vve {
 		};
 
 	public:
-		Engine();
+		Engine(std::string name = "VVE Engine");
 		virtual ~Engine();
 		void RegisterSystem( System<ATYPE>* system, int phase, std::vector<MessageType> messageTypes );
 		void DeregisterSystem( System<ATYPE>* system );

@@ -13,7 +13,7 @@
 namespace vve {
 
 	template<ArchitectureType ATYPE>
-	Engine<ATYPE>::Engine() : System<ATYPE>("Engine", this) {
+	Engine<ATYPE>::Engine(std::string name) : System<ATYPE>(this, name) {
 	#ifndef NDEBUG
 		m_debug = true;
 	#endif
@@ -95,13 +95,13 @@ namespace vve {
 	
 	template<ArchitectureType ATYPE>
 	void Engine<ATYPE>::CreateWindow( const char* windowName, int width, int height ){
-		m_windows.push_back( std::make_shared<WindowSDL<ATYPE>>("WindowSDL", this, m_state.m_instance, windowName, width, height, m_instance_extensions) );
+		m_windows.push_back( std::make_shared<WindowSDL<ATYPE>>(this, m_state.m_instance, windowName, width, height, m_instance_extensions) );
 	};
 	
 	template<ArchitectureType ATYPE>
 	void Engine<ATYPE>::CreateRenderer( const char* rendererName){
-		m_windows[0]->AddRenderer(std::make_shared<RendererImgui<ATYPE>>("RendererImgui", this, m_windows[0].get()) );
-		m_windows[0]->AddRenderer(std::make_shared<RendererForward<ATYPE>>("RendererForward", this, m_windows[0].get()) );
+		m_windows[0]->AddRenderer(std::make_shared<RendererImgui<ATYPE>>(this, m_windows[0].get()) );
+		m_windows[0]->AddRenderer(std::make_shared<RendererForward<ATYPE>>(this, m_windows[0].get()) );
 	};
 	
 	template<ArchitectureType ATYPE>

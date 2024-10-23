@@ -8,7 +8,7 @@ namespace vve {
     class SceneManager : public System<ATYPE> {
         friend class engine;
     public:
-        SceneManager(Engine<ATYPE>* engine);
+        SceneManager(Engine<ATYPE>* engine, std::string name = "VVE SceneManager" );
         virtual ~SceneManager();
 
     private:
