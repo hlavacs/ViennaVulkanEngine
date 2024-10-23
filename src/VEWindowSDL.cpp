@@ -1,6 +1,6 @@
 
 #include "VESystem.h"
-#include "VHDevice.h"
+#include "VHInclude.h"
 #include "VEWindowSDL.h"
 #include "VEEngine.h"
 

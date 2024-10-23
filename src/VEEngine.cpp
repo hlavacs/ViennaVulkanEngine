@@ -1,9 +1,9 @@
 
 #include <chrono>
 
+#include "VHInclude.h"
 #include "VESystem.h"
 #include "VEEngine.h"
-#include "VHDevice.h"
 #include "VEWindow.h"
 #include "VEWindowSDL.h"
 #include "VERendererForward.h"

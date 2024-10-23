@@ -30,7 +30,7 @@ set(HEADERS
   ${INCLUDE}/VESystem.h
   ${INCLUDE}/VEWindow.h
   ${INCLUDE}/VEWindowSDL.h
-  ${INCLUDE}/VHDevice.h
+  ${INCLUDE}/VHInclude.h
 )
 
 add_library (${TARGET} ${SOURCE} ${HEADERS})
