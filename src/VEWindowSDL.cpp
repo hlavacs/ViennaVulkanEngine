@@ -62,11 +62,6 @@ namespace vve {
         if (SDL_Vulkan_CreateSurface(m_window, m_engine->GetState().m_instance, &m_surface) == 0) {
             printf("Failed to create Vulkan surface.\n");
         }
-        
-        // Setup Vulkan
-        // Create Framebuffers
-        int w, h;
-        SDL_GetWindowSize(m_window, &w, &h);
 
         m_mainWindowData.Surface = m_surface;
 
@@ -88,7 +83,8 @@ namespace vve {
         std::vector<VkPresentModeKHR> requestedPresentModes = { VK_PRESENT_MODE_MAILBOX_KHR, VK_PRESENT_MODE_FIFO_KHR };
         m_mainWindowData.PresentMode = vh::SelectPresentMode(state.m_physicalDevice, m_mainWindowData.Surface, requestedPresentModes);
 
-        vh::CreateWindowSwapChain(state.m_physicalDevice, state.m_device, &m_mainWindowData, state.m_allocator, w, h, m_minImageCount);
+        auto [width, height] = GetSize();
+        vh::CreateWindowSwapChain(state.m_physicalDevice, state.m_device, &m_mainWindowData, state.m_allocator, width, height, m_minImageCount);
     }
 
 
