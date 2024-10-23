@@ -29,6 +29,7 @@ namespace vve {
 
    	template<ArchitectureType ATYPE>
     System<ATYPE>::System( Engine<ATYPE>* engine, std::string name ) : m_engine(engine), m_name(name) {
+        assert( m_engine != nullptr );
         m_onFunctions[INIT] = [this](Message message){ OnInit(message); };
         m_onFunctions[ANNOUNCE] = [this](Message message){ OnAnnounce(message); };
         m_onFunctions[FRAME_START] = [this](Message message){ OnFrameStart(message); };
