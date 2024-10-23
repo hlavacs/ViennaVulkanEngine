@@ -17,22 +17,21 @@ namespace vve {
 	#ifndef NDEBUG
 		m_debug = true;
 	#endif
-		Init();		
-	};
-	
-	template<ArchitectureType ATYPE>
-	Engine<ATYPE>::~Engine() {};
-	
-	template<ArchitectureType ATYPE>
-	void Engine<ATYPE>::Init( ) {
 		RegisterSystem( this, std::numeric_limits<int>::lowest(), {MessageType::INIT} );
 		RegisterSystem( this, std::numeric_limits<int>::max(), {MessageType::QUIT} );
 		
 		CreateWindow("Vulkan Engine", 800, 600);
 		SetupVulkan();
 		CreateRenderer("Forward");
-		CreateCamera("Main Camera");
 		CreateSceneManager("");
+	};
+	
+	template<ArchitectureType ATYPE>
+	Engine<ATYPE>::~Engine() {};
+	
+	template<ArchitectureType ATYPE>
+	void Engine<ATYPE>::OnInit(Message message ) {
+		CreateCamera("Main Camera");
 		LoadLevel("");
 	};
 	

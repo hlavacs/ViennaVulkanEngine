@@ -38,8 +38,8 @@ namespace vve {
 		void SendMessage( Message message );
 
 	protected:
-		virtual void Init();
-		virtual void OnQuit(Message message);
+		virtual void OnInit(Message message) override;
+		virtual void OnQuit(Message message) override;
 		void SetupVulkan();
 
 		virtual void LoadLevel( const char* levelName );
