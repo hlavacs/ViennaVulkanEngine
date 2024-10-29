@@ -56,7 +56,7 @@ namespace vve {
             printf("Failed to create Vulkan surface.\n");
         }
 
-        m_mainWindowData.Surface = m_surface;
+        //m_mainWindowData.Surface = m_surface;
 
         // Setup Dear ImGui context
         IMGUI_CHECKVERSION();
@@ -138,7 +138,9 @@ namespace vve {
 
         // Resize swap chain?
         int fb_width, fb_height;
-        SDL_GetWindowSize(m_window, &fb_width, &fb_height);
+        SDL_GetWindowSize(m_window, &m_width, &m_height);
+
+        /*
         if (fb_width > 0 && fb_height > 0 && (m_swapChainRebuild || m_mainWindowData.Width != fb_width || m_mainWindowData.Height != fb_height))
         {
             ImGui_ImplVulkan_SetMinImageCount(m_minImageCount);
@@ -146,7 +148,9 @@ namespace vve {
             m_mainWindowData.FrameIndex = 0;
             m_swapChainRebuild = false;
         }
+        */
 
+       
         return ;
     }
 
@@ -161,27 +165,7 @@ namespace vve {
    	template<ArchitectureType ATYPE>
     void WindowSDL<ATYPE>::OnRenderNextFrame(Message message) {
         ImDrawData* draw_data = ImGui::GetDrawData();
-        const bool is_minimized = (draw_data->DisplaySize.x <= 0.0f || draw_data->DisplaySize.y <= 0.0f);
-        if (!is_minimized) {
-            if (m_swapChainRebuild)
-                return;
-            VkSemaphore render_complete_semaphore = m_mainWindowData.FrameSemaphores[m_mainWindowData.SemaphoreIndex].RenderCompleteSemaphore;
-            VkPresentInfoKHR info = {};
-            info.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
-            info.waitSemaphoreCount = 1;
-            info.pWaitSemaphores = &render_complete_semaphore;
-            info.swapchainCount = 1;
-            info.pSwapchains = &m_mainWindowData.Swapchain;
-            info.pImageIndices = &m_mainWindowData.FrameIndex;
-            VkResult err = vkQueuePresentKHR(m_engine->GetState().m_queue, &info);
-            if (err == VK_ERROR_OUT_OF_DATE_KHR || err == VK_SUBOPTIMAL_KHR)
-            {
-                m_swapChainRebuild = true;
-                return;
-            }
-            vh::CheckResult(err);
-            m_mainWindowData.SemaphoreIndex = (m_mainWindowData.SemaphoreIndex + 1) % m_mainWindowData.SemaphoreCount; // Now we can use the next set of semaphores        }
-        }
+        const bool m_isMinimized = (draw_data->DisplaySize.x <= 0.0f || draw_data->DisplaySize.y <= 0.0f);       
     }
 
 

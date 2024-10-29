@@ -27,6 +27,8 @@ namespace vve {
         using Window<ATYPE>::m_surface;
         using Window<ATYPE>::m_clearColor;
         using Window<ATYPE>::m_renderer;
+        using Window<ATYPE>::m_width;
+        using Window<ATYPE>::m_height;
 
         friend class RendererImgui<ATYPE>;
     
@@ -48,64 +50,10 @@ namespace vve {
         SDL_Window* m_window{nullptr};
         ImGuiIO* m_io;
         int m_minImageCount = 2;
+        bool m_isMinimized = false;
         bool m_swapChainRebuild = false;
         std::set<SDL_Scancode> m_keysDown;
         std::set<uint8_t> m_mouseButtonsDown;
-
-        //-------------------------------------------------------------------------
-
-        ImGui_ImplVulkanH_Window m_mainWindowData;
-
-        /*
-        struct ImGui_ImplVulkanH_Frame
-        {
-            VkCommandPool       CommandPool;
-            VkCommandBuffer     CommandBuffer;
-            VkFence             Fence;
-            VkImage             Backbuffer;
-            VkImageView         BackbufferView;
-            VkFramebuffer       Framebuffer;
-        };
-
-        struct ImGui_ImplVulkanH_FrameSemaphores
-        {
-            VkSemaphore         ImageAcquiredSemaphore;
-            VkSemaphore         RenderCompleteSemaphore;
-        };
-
-        // Helper structure to hold the data needed by one rendering context into one OS window
-        // (Used by example's main.cpp. Used by multi-viewport features. Probably NOT used by your own engine/app.)
-        struct ImGui_ImplVulkanH_Window
-        {
-            int                 Width;
-            int                 Height;
-            VkSwapchainKHR      Swapchain;
-            VkSurfaceKHR        Surface;
-            VkSurfaceFormatKHR  SurfaceFormat;
-            VkPresentModeKHR    PresentMode;
-            VkRenderPass        RenderPass;
-            VkPipeline          Pipeline;               // The window pipeline may uses a different VkRenderPass than the one passed in ImGui_ImplVulkan_InitInfo
-            bool                UseDynamicRendering;
-            bool                ClearEnable;
-            VkClearValue        ClearValue;
-            uint32_t            FrameIndex;             // Current frame being rendered to (0 <= FrameIndex < FrameInFlightCount)
-            uint32_t            ImageCount;             // Number of simultaneous in-flight frames (returned by vkGetSwapchainImagesKHR, usually derived from min_image_count)
-            uint32_t            SemaphoreCount;         // Number of simultaneous in-flight frames + 1, to be able to use it in vkAcquireNextImageKHR
-            uint32_t            SemaphoreIndex;         // Current set of swapchain wait semaphores we're using (needs to be distinct from per frame data)
-            ImGui_ImplVulkanH_Frame*            Frames;
-            ImGui_ImplVulkanH_FrameSemaphores*  FrameSemaphores;
-
-            ImGui_ImplVulkanH_Window()
-            {
-                memset((void*)this, 0, sizeof(*this));
-                PresentMode = (VkPresentModeKHR)~0;     // Ensure we get an error if user doesn't set this.
-                ClearEnable = true;
-            }
-        };
-        */
-
-
-
     };
 
 
