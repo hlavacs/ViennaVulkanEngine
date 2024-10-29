@@ -26,9 +26,29 @@ namespace vve {
 
    	template<ArchitectureType ATYPE>
     void RendererImgui<ATYPE>::OnInit(Message message) {
-        WindowSDL<ATYPE>* sdlwindow = (WindowSDL<ATYPE>*)m_window;
+        WindowSDL<ATYPE>* window = (WindowSDL<ATYPE>*)m_window;
         auto state = m_engine->GetState();
-        vh::CreateWindowCommandBuffers(state.m_physicalDevice, state.m_device, &sdlwindow->m_mainWindowData, state.m_queueFamily, state.m_allocator);
+
+        // Check for WSI support
+        VkBool32 res;
+        vkGetPhysicalDeviceSurfaceSupportKHR(state.m_physicalDevice, state.m_queueFamily, window->m_mainWindowData.Surface, &res);
+        if (res != VK_TRUE) {
+            fprintf(stderr, "Error no WSI support on physical device 0\n");
+            exit(-1);
+        }
+
+        // Select Surface Format
+        std::vector<VkFormat> requestSurfaceFormats = { VK_FORMAT_B8G8R8A8_UNORM, VK_FORMAT_R8G8B8A8_UNORM, VK_FORMAT_B8G8R8_UNORM, VK_FORMAT_R8G8B8_UNORM };
+        window->m_mainWindowData.SurfaceFormat = vh::SelectSurfaceFormat(state.m_physicalDevice, window->m_mainWindowData.Surface, requestSurfaceFormats);
+
+        // Select Present Mode
+        std::vector<VkPresentModeKHR> requestedPresentModes = { VK_PRESENT_MODE_MAILBOX_KHR, VK_PRESENT_MODE_FIFO_KHR };
+        window->m_mainWindowData.PresentMode = vh::SelectPresentMode(state.m_physicalDevice, window->m_mainWindowData.Surface, requestedPresentModes);
+
+        auto [width, height] = window->GetSize();
+        vh::CreateWindowSwapChain(state.m_physicalDevice, state.m_device, &window->m_mainWindowData, state.m_allocator, width, height, window->m_minImageCount);
+
+        vh::CreateWindowCommandBuffers(state.m_physicalDevice, state.m_device, &window->m_mainWindowData, state.m_queueFamily, state.m_allocator);
         vh::CreateDescriptorPool(m_engine->GetState().m_device, &m_descriptorPool);
 
         ImGui_ImplVulkan_InitInfo init_info = {};
@@ -40,10 +60,10 @@ namespace vve {
         init_info.Queue = state.m_queue;
         init_info.PipelineCache = state.m_pipelineCache;
         init_info.DescriptorPool = m_descriptorPool;
-        init_info.RenderPass = sdlwindow->m_mainWindowData.RenderPass;
+        init_info.RenderPass = window->m_mainWindowData.RenderPass;
         init_info.Subpass = 0;
-        init_info.MinImageCount = sdlwindow->m_minImageCount;
-        init_info.ImageCount = sdlwindow->m_mainWindowData.ImageCount;
+        init_info.MinImageCount = window->m_minImageCount;
+        init_info.ImageCount = window->m_mainWindowData.ImageCount;
         init_info.MSAASamples = VK_SAMPLE_COUNT_1_BIT;
         init_info.Allocator = state.m_allocator;
         init_info.CheckVkResultFn = vh::CheckResult;

@@ -58,27 +58,6 @@ namespace vve {
 
         m_mainWindowData.Surface = m_surface;
 
-        auto& state = m_engine->GetState();
-
-        // Check for WSI support
-        VkBool32 res;
-        vkGetPhysicalDeviceSurfaceSupportKHR(state.m_physicalDevice, state.m_queueFamily, m_mainWindowData.Surface, &res);
-        if (res != VK_TRUE) {
-            fprintf(stderr, "Error no WSI support on physical device 0\n");
-            exit(-1);
-        }
-
-        // Select Surface Format
-        std::vector<VkFormat> requestSurfaceFormats = { VK_FORMAT_B8G8R8A8_UNORM, VK_FORMAT_R8G8B8A8_UNORM, VK_FORMAT_B8G8R8_UNORM, VK_FORMAT_R8G8B8_UNORM };
-        m_mainWindowData.SurfaceFormat = vh::SelectSurfaceFormat(state.m_physicalDevice, m_mainWindowData.Surface, requestSurfaceFormats);
-
-        // Select Present Mode
-        std::vector<VkPresentModeKHR> requestedPresentModes = { VK_PRESENT_MODE_MAILBOX_KHR, VK_PRESENT_MODE_FIFO_KHR };
-        m_mainWindowData.PresentMode = vh::SelectPresentMode(state.m_physicalDevice, m_mainWindowData.Surface, requestedPresentModes);
-
-        auto [width, height] = GetSize();
-        vh::CreateWindowSwapChain(state.m_physicalDevice, state.m_device, &m_mainWindowData, state.m_allocator, width, height, m_minImageCount);
-
         // Setup Dear ImGui context
         IMGUI_CHECKVERSION();
         ImGui::CreateContext();
