@@ -42,19 +42,12 @@ namespace vve {
         instance_extensions.insert(instance_extensions.end(), extensions.begin(), extensions.end());
         
         engine->RegisterSystem( this, 0
-            , {MessageType::INIT, MessageType::POLL_EVENTS, MessageType::PREPARE_NEXT_FRAME, MessageType::RENDER_NEXT_FRAME, MessageType::PRESENT_NEXT_FRAME, MessageType::QUIT} );
+            , {MessageType::INIT, MessageType::POLL_EVENTS, MessageType::PREPARE_NEXT_FRAME
+                , MessageType::RENDER_NEXT_FRAME, MessageType::PRESENT_NEXT_FRAME, MessageType::QUIT} );
     }
 
    	template<ArchitectureType ATYPE>
-    WindowSDL<ATYPE>::~WindowSDL() {
-        vh::CheckResult(vkDeviceWaitIdle(m_engine->GetState().m_device));
-        m_renderer.clear();
-        ImGui_ImplSDL2_Shutdown();
-        ImGui::DestroyContext();
-        ImGui_ImplVulkanH_DestroyWindow(m_engine->GetState().m_instance, m_engine->GetState().m_device, &m_mainWindowData, m_engine->GetState().m_allocator);
-        SDL_DestroyWindow(m_window);
-        SDL_Quit();
-    }
+    WindowSDL<ATYPE>::~WindowSDL() {}
 
 
    	template<ArchitectureType ATYPE>
@@ -201,6 +194,10 @@ namespace vve {
 
    	template<ArchitectureType ATYPE>
     void WindowSDL<ATYPE>::OnQuit(Message message) {
+        ImGui_ImplSDL2_Shutdown();
+        ImGui::DestroyContext();
+        SDL_DestroyWindow(m_window);
+        SDL_Quit();
     }
 
 
@@ -210,7 +207,6 @@ namespace vve {
         SDL_GetWindowSize(m_window, &w, &h);
         return std::make_pair(w, h);
     }
-
 
 
     template class WindowSDL<ArchitectureType::SEQUENTIAL>;

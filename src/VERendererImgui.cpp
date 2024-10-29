@@ -17,18 +17,12 @@ namespace vve {
     RendererImgui<ATYPE>::RendererImgui( Engine<ATYPE>* engine, Window<ATYPE>* window, std::string name) 
         : Renderer<ATYPE>(engine, window, name ) {
 
+        engine->RegisterSystem( this, -100, {MessageType::PREPARE_NEXT_FRAME, MessageType::RENDER_NEXT_FRAME, MessageType::QUIT} );
         engine->RegisterSystem( this, 100, {MessageType::INIT} ); //init after window
-
-        engine->RegisterSystem( this, -100 //prepare before window
-            , {MessageType::PREPARE_NEXT_FRAME, MessageType::RENDER_NEXT_FRAME, MessageType::QUIT} );
-
     };
 
    	template<ArchitectureType ATYPE>
-    RendererImgui<ATYPE>::~RendererImgui(){
-        ImGui_ImplVulkan_Shutdown();
-        vkDestroyDescriptorPool(m_engine->GetState().m_device, m_descriptorPool, m_engine->GetState().m_allocator);
-    };
+    RendererImgui<ATYPE>::~RendererImgui() {};
 
    	template<ArchitectureType ATYPE>
     void RendererImgui<ATYPE>::OnInit(Message message) {
@@ -177,7 +171,12 @@ namespace vve {
 
 
    	template<ArchitectureType ATYPE>
-    void RendererImgui<ATYPE>::OnQuit(Message message) {}
+    void RendererImgui<ATYPE>::OnQuit(Message message) {
+        vh::CheckResult(vkDeviceWaitIdle(m_engine->GetState().m_device));
+        ImGui_ImplVulkan_Shutdown();
+        vkDestroyDescriptorPool(m_engine->GetState().m_device, m_descriptorPool, m_engine->GetState().m_allocator);
+        ImGui_ImplVulkanH_DestroyWindow(m_engine->GetState().m_instance, m_engine->GetState().m_device, &((WindowSDL<ATYPE>*)m_window)->m_mainWindowData, m_engine->GetState().m_allocator);
+    }
 
     template class RendererImgui<ArchitectureType::SEQUENTIAL>;
     template class RendererImgui<ArchitectureType::PARALLEL>;

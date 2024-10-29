@@ -116,7 +116,8 @@ namespace vve {
 
 	template<ArchitectureType ATYPE>
 	void Engine<ATYPE>::Run(){
-		SendMessage( MessageInit{this} ) ;
+		SendMessage( MessageInit{this} );
+		
 		std::clock_t start = std::clock();
 		m_running = true;
 		auto last = std::chrono::high_resolution_clock::now();

@@ -22,7 +22,6 @@ namespace vve {
         virtual void OnPrepareNextFrame(Message message) override;
         virtual void OnRenderNextFrame(Message message) override;
         virtual void OnQuit(Message message) override;
-        //void FrameRender(ImGui_ImplVulkanH_Window* wd, ImDrawData* draw_data);
 
         ImGuiIO* m_io;
    		VkDescriptorPool m_descriptorPool = VK_NULL_HANDLE;	
