@@ -46,6 +46,7 @@ namespace vve {
 
         inline static bool sdl_initialized{false};
         SDL_Window* m_window{nullptr};
+        ImGuiIO* m_io;
         int m_minImageCount = 2;
         bool m_swapChainRebuild = false;
         std::set<SDL_Scancode> m_keysDown;

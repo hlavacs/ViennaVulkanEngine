@@ -31,20 +31,6 @@ namespace vve {
         vh::CreateWindowCommandBuffers(state.m_physicalDevice, state.m_device, &sdlwindow->m_mainWindowData, state.m_queueFamily, state.m_allocator);
         vh::CreateDescriptorPool(m_engine->GetState().m_device, &m_descriptorPool);
 
-        // Setup Dear ImGui context
-        IMGUI_CHECKVERSION();
-        ImGui::CreateContext();
-        //ImGuiIO& io = ImGui::GetIO(); (void)io;
-        m_io = &ImGui::GetIO();
-        m_io->ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;     // Enable Keyboard Controls
-        m_io->ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;      // Enable Gamepad Controls
-
-        // Setup Dear ImGui style
-        ImGui::StyleColorsDark();
-        //ImGui::StyleColorsLight();
-
-        // Setup Platform/Renderer backends
-        ImGui_ImplSDL2_InitForVulkan(sdlwindow->m_window);
         ImGui_ImplVulkan_InitInfo init_info = {};
 
         init_info.Instance = state.m_instance;
@@ -104,13 +90,11 @@ namespace vve {
             sdlwindow->m_mainWindowData.ClearValue.color.float32[2] = sdlwindow->m_clearColor.z * sdlwindow->m_clearColor.w;
             sdlwindow->m_mainWindowData.ClearValue.color.float32[3] = sdlwindow->m_clearColor.w;
             
-            //FrameRender(&sdlwindow->m_mainWindowData, draw_data);
             auto wd = &sdlwindow->m_mainWindowData;
 
             VkResult err;
 
             auto& state = m_engine->GetState();
-            //WindowSDL<ATYPE>* sdlwindow = (WindowSDL<ATYPE>*)m_window;
 
             VkSemaphore image_acquired_semaphore  = wd->FrameSemaphores[wd->SemaphoreIndex].ImageAcquiredSemaphore;
             VkSemaphore render_complete_semaphore = wd->FrameSemaphores[wd->SemaphoreIndex].RenderCompleteSemaphore;

@@ -78,6 +78,20 @@ namespace vve {
 
         auto [width, height] = GetSize();
         vh::CreateWindowSwapChain(state.m_physicalDevice, state.m_device, &m_mainWindowData, state.m_allocator, width, height, m_minImageCount);
+
+        // Setup Dear ImGui context
+        IMGUI_CHECKVERSION();
+        ImGui::CreateContext();
+        m_io = &ImGui::GetIO();
+        m_io->ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;     // Enable Keyboard Controls
+        m_io->ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;      // Enable Gamepad Controls
+
+        // Setup Dear ImGui style
+        ImGui::StyleColorsDark();
+        //ImGui::StyleColorsLight();
+
+        // Setup Platform/Renderer backends
+        ImGui_ImplSDL2_InitForVulkan(m_window);
     }
 
 

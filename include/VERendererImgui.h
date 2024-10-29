@@ -23,7 +23,7 @@ namespace vve {
         virtual void OnRenderNextFrame(Message message) override;
         virtual void OnQuit(Message message) override;
 
-        ImGuiIO* m_io;
+        //ImGuiIO* m_io;
    		VkDescriptorPool m_descriptorPool = VK_NULL_HANDLE;	
     };
 
