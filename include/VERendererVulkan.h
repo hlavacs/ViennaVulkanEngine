@@ -8,14 +8,14 @@ namespace vve {
     class Window;
 
    	template<ArchitectureType ATYPE>
-    class RendererImgui : public Renderer<ATYPE>
+    class RendererVulkan : public Renderer<ATYPE>
     {
         using Renderer<ATYPE>::m_engine;
         using Renderer<ATYPE>::m_window;
 
     public:
-        RendererImgui(Engine<ATYPE>* engine, Window<ATYPE>* window, std::string name = "VVE RendererImgui" );
-        virtual ~RendererImgui();
+        RendererVulkan(Engine<ATYPE>* engine, Window<ATYPE>* window, std::string name = "VVE RendererImgui" );
+        virtual ~RendererVulkan();
 
     private:
         virtual void OnInit(Message message) override;
@@ -27,3 +27,4 @@ namespace vve {
     };
 
 };   // namespace vve
+

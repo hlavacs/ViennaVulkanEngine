@@ -13,6 +13,7 @@ set(SOURCE
   VERenderer.cpp
   VERendererForward.cpp
   VERendererImgui.cpp
+  VERendererVulkan.cpp
   VESceneManager.cpp
   VESystem.cpp
   VEWindow.cpp
@@ -26,6 +27,7 @@ set(HEADERS
   ${INCLUDE}/VERenderer.h
   ${INCLUDE}/VERendererForward.h
   ${INCLUDE}/VERendererImgui.h
+  ${INCLUDE}/VERendererVulkan.h
   ${INCLUDE}/VESceneManager.h
   ${INCLUDE}/VESystem.h
   ${INCLUDE}/VEWindow.h
