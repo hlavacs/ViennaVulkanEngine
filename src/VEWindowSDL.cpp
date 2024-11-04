@@ -137,7 +137,7 @@ namespace vve {
         }
 
         // Resize swap chain?
-        int fb_width, fb_height;
+        //int fb_width, fb_height;
         SDL_GetWindowSize(m_window, &m_width, &m_height);
 
         /*
