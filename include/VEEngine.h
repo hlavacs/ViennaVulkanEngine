@@ -18,21 +18,6 @@ namespace vve {
    		template<ArchitectureType ATYPE>
     	friend class RendererVulkan;		
 
-		struct VulkanState {
-			VkAllocationCallbacks*   m_allocator = nullptr;
-			VkInstance               m_instance = VK_NULL_HANDLE;
-			VkDebugReportCallbackEXT m_debugReport = VK_NULL_HANDLE;
-			VkPhysicalDevice         m_physicalDevice = VK_NULL_HANDLE;
-			VkDevice                 m_device = VK_NULL_HANDLE;
-			uint32_t                 m_queueFamily = (uint32_t)-1;		
-			VkQueue                  m_queue = VK_NULL_HANDLE;
-			VkPipelineCache          m_pipelineCache = VK_NULL_HANDLE;
-
-			std::vector<const char*> m_instance_layers;
-			std::vector<const char*> m_instance_extensions;
-			std::vector<const char*> m_device_extensions{"VK_KHR_swapchain"};
-		};
-
 	public:
 		Engine(std::string name = "VVE Engine");
 		virtual ~Engine();
@@ -41,8 +26,7 @@ namespace vve {
 		void Run();
 		void Stop();
 		auto GetDebug() -> bool { return m_debug; }
-		auto& GetState() { return m_state; }
-		auto GetState2() -> std::any& { return m_state2; }
+		auto GetState() -> std::any&;
 		auto GetWindows() -> std::vector<std::shared_ptr<Window<ATYPE>>>& { return m_windows; }
 		auto GetSceneMgr() -> std::shared_ptr<SceneManager<ATYPE>> { return m_sceneManager; }
 		auto GetRegistry() -> vecs::Registry<>& { return m_registry; }
@@ -51,16 +35,13 @@ namespace vve {
 	protected:
 		virtual void OnInit(Message message) override;
 		virtual void OnQuit(Message message) override;
-		void SetupVulkan();
-
 		virtual void LoadLevel( const char* levelName );
 		virtual void CreateWindow( const char* windowName, int width, int height );
 		virtual void CreateRenderer( const char* rendererName);
 		virtual void CreateCamera( const char* cameraName );
 		virtual void CreateSceneManager( const char* sceneManagerName );
 
-		VulkanState m_state;
-		std::any m_state2;
+		std::any m_state;
 
 		bool m_debug{false};
 		bool m_running{false};

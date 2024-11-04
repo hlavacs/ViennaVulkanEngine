@@ -1,6 +1,7 @@
 
 #include <chrono>
 
+#include <any>
 #include "VHInclude.h"
 #include "VESystem.h"
 #include "VEEngine.h"
@@ -22,7 +23,7 @@ namespace vve {
 		RegisterSystem( this, std::numeric_limits<int>::max(), {MessageType::QUIT} );
 		
 		CreateWindow("Vulkan Engine", 800, 600);
-		SetupVulkan();
+		//SetupVulkan();
 		CreateRenderer("Forward");
 		CreateSceneManager("");
 		CreateCamera("Main Camera");
@@ -30,32 +31,16 @@ namespace vve {
 	
 	template<ArchitectureType ATYPE>
 	Engine<ATYPE>::~Engine() {};
-	
+
+	template<ArchitectureType ATYPE>
+	auto Engine<ATYPE>::GetState() -> std::any& { 
+		return m_state; 
+	}
+
 	template<ArchitectureType ATYPE>
 	void Engine<ATYPE>::OnInit(Message message ) {
 		LoadLevel("");
 	};
-	
-	template<ArchitectureType ATYPE>
-	void Engine<ATYPE>::SetupVulkan() {
-		if(m_debug) {
-	        GetState().m_instance_layers.push_back("VK_LAYER_KHRONOS_validation");
-	        GetState().m_instance_extensions.push_back("VK_EXT_debug_report");
-		}
-	
-		//VkResult volkInitialize();
-		vh::SetUpInstance(GetState().m_instance_layers, GetState().m_instance_extensions, m_state.m_allocator, &m_state.m_instance);
-		//volkLoadInstance(m_instance);
-
-		if(m_debug) vh::SetupDebugReport(m_state.m_instance, m_state.m_allocator, &m_state.m_debugReport);
-		vh::SetupPhysicalDevice(m_state.m_instance, GetState().m_device_extensions, &m_state.m_physicalDevice);
-		vh::SetupGraphicsQueueFamily(m_state.m_physicalDevice, &m_state.m_queueFamily);
-	    vh::SetupDevice( m_state.m_physicalDevice, nullptr, GetState().m_device_extensions, m_state.m_queueFamily, &m_state.m_device);
-		//volkLoadDevice(m_device);
-
-		vkGetDeviceQueue(m_state.m_device, m_state.m_queueFamily, 0, &m_state.m_queue);
-	};
-	
 
 	template<ArchitectureType ATYPE>
 	void Engine<ATYPE>::RegisterSystem( System<ATYPE>* system, int phase, std::vector<MessageType> messageTypes) {
@@ -95,9 +80,7 @@ namespace vve {
 	
 	template<ArchitectureType ATYPE>
 	void Engine<ATYPE>::CreateWindow( const char* windowName, int width, int height ){
-		auto window = std::make_shared<WindowSDL<ATYPE>>(this, windowName, width, height );
-		GetState().m_instance_extensions = window->m_instance_extensions;
-		m_windows.push_back(window );
+		m_windows.push_back(std::make_shared<WindowSDL<ATYPE>>(this, windowName, width, height ) );
 	};
 	
 	template<ArchitectureType ATYPE>
@@ -145,18 +128,8 @@ namespace vve {
 		m_running = false;
 	};
 	
-	
 	template<ArchitectureType ATYPE>
-	void Engine<ATYPE>::OnQuit(Message message) {
-		m_sceneManager = nullptr;
-		m_windows.clear();
-
-	    auto PFN_DestroyDebugReportCallbackEXT = (PFN_vkDestroyDebugReportCallbackEXT)vkGetInstanceProcAddr(m_state.m_instance, "vkDestroyDebugReportCallbackEXT");
-	    PFN_DestroyDebugReportCallbackEXT(m_state.m_instance, m_state.m_debugReport, m_state.m_allocator);
-	
-	    vkDestroyDevice(m_state.m_device, m_state.m_allocator);
-	    vkDestroyInstance(m_state.m_instance, m_state.m_allocator);
-	}
+	void Engine<ATYPE>::OnQuit(Message message) {}
 
 	template class Engine<ArchitectureType::SEQUENTIAL>;
 	template class Engine<ArchitectureType::PARALLEL>;

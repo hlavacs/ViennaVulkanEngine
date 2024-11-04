@@ -3,6 +3,7 @@
 #include "VHInclude.h"
 #include "VEWindowSDL.h"
 #include "VEEngine.h"
+#include "VERendererVulkan.h"
 
 namespace vve {
 
@@ -52,7 +53,9 @@ namespace vve {
 
    	template<ArchitectureType ATYPE>
     void WindowSDL<ATYPE>::OnInit(Message message) {
-        if (SDL_Vulkan_CreateSurface(m_window, m_engine->GetState().m_instance, &m_surface) == 0) {
+        auto state = std::any_cast<VulkanState*>(m_engine->GetState());
+
+        if (SDL_Vulkan_CreateSurface(m_window, state->m_instance, &m_surface) == 0) {
             printf("Failed to create Vulkan surface.\n");
         }
 

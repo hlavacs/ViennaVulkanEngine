@@ -27,12 +27,13 @@ namespace vve {
    	template<ArchitectureType ATYPE>
     void RendererImgui<ATYPE>::OnInit(Message message) {
         WindowSDL<ATYPE>* window = (WindowSDL<ATYPE>*)m_window;
-        auto state = m_engine->GetState();
+		auto state = std::any_cast<VulkanState*>(m_engine->GetState());
+
         m_mainWindowData.Surface = window->m_surface;
 
         // Check for WSI support
         VkBool32 res;
-        vkGetPhysicalDeviceSurfaceSupportKHR(state.m_physicalDevice, state.m_queueFamily, m_mainWindowData.Surface, &res);
+        vkGetPhysicalDeviceSurfaceSupportKHR(state->m_physicalDevice, state->m_queueFamily, m_mainWindowData.Surface, &res);
         if (res != VK_TRUE) {
             fprintf(stderr, "Error no WSI support on physical device 0\n");
             exit(-1);
@@ -40,33 +41,33 @@ namespace vve {
 
         // Select Surface Format
         std::vector<VkFormat> requestSurfaceFormats = { VK_FORMAT_B8G8R8A8_UNORM, VK_FORMAT_R8G8B8A8_UNORM, VK_FORMAT_B8G8R8_UNORM, VK_FORMAT_R8G8B8_UNORM };
-        m_mainWindowData.SurfaceFormat = vh::SelectSurfaceFormat(state.m_physicalDevice, m_mainWindowData.Surface, requestSurfaceFormats);
+        m_mainWindowData.SurfaceFormat = vh::SelectSurfaceFormat(state->m_physicalDevice, m_mainWindowData.Surface, requestSurfaceFormats);
 
         // Select Present Mode
         std::vector<VkPresentModeKHR> requestedPresentModes = { VK_PRESENT_MODE_MAILBOX_KHR, VK_PRESENT_MODE_FIFO_KHR };
-        m_mainWindowData.PresentMode = vh::SelectPresentMode(state.m_physicalDevice, m_mainWindowData.Surface, requestedPresentModes);
+        m_mainWindowData.PresentMode = vh::SelectPresentMode(state->m_physicalDevice, m_mainWindowData.Surface, requestedPresentModes);
 
         auto [width, height] = window->GetSize();
-        vh::CreateWindowSwapChain(state.m_physicalDevice, state.m_device, &m_mainWindowData, state.m_allocator, width, height, window->m_minImageCount);
+        vh::CreateWindowSwapChain(state->m_physicalDevice, state->m_device, &m_mainWindowData, state->m_allocator, width, height, window->m_minImageCount);
 
-        vh::CreateWindowCommandBuffers(state.m_physicalDevice, state.m_device, &m_mainWindowData, state.m_queueFamily, state.m_allocator);
-        vh::CreateDescriptorPool(m_engine->GetState().m_device, &m_descriptorPool);
+        vh::CreateWindowCommandBuffers(state->m_physicalDevice, state->m_device, &m_mainWindowData, state->m_queueFamily, state->m_allocator);
+        vh::CreateDescriptorPool(state->m_device, &m_descriptorPool);
 
         ImGui_ImplVulkan_InitInfo init_info = {};
 
-        init_info.Instance = state.m_instance;
-        init_info.PhysicalDevice = state.m_physicalDevice;
-        init_info.Device = state.m_device;
-        init_info.QueueFamily = state.m_queueFamily;
-        init_info.Queue = state.m_queue;
-        init_info.PipelineCache = state.m_pipelineCache;
+        init_info.Instance = state->m_instance;
+        init_info.PhysicalDevice = state->m_physicalDevice;
+        init_info.Device = state->m_device;
+        init_info.QueueFamily = state->m_queueFamily;
+        init_info.Queue = state->m_queue;
+        init_info.PipelineCache = state->m_pipelineCache;
         init_info.DescriptorPool = m_descriptorPool;
         init_info.RenderPass = m_mainWindowData.RenderPass;
         init_info.Subpass = 0;
         init_info.MinImageCount = window->m_minImageCount;
         init_info.ImageCount = m_mainWindowData.ImageCount;
         init_info.MSAASamples = VK_SAMPLE_COUNT_1_BIT;
-        init_info.Allocator = state.m_allocator;
+        init_info.Allocator = state->m_allocator;
         init_info.CheckVkResultFn = vh::CheckResult;
         ImGui_ImplVulkan_Init(&init_info);
 
@@ -115,11 +116,11 @@ namespace vve {
 
             VkResult err;
 
-            auto& state = m_engine->GetState();
+		    auto state = std::any_cast<VulkanState*>(m_engine->GetState());
 
             VkSemaphore image_acquired_semaphore  = wd->FrameSemaphores[wd->SemaphoreIndex].ImageAcquiredSemaphore;
             VkSemaphore render_complete_semaphore = wd->FrameSemaphores[wd->SemaphoreIndex].RenderCompleteSemaphore;
-            err = vkAcquireNextImageKHR(state.m_device, wd->Swapchain, UINT64_MAX, image_acquired_semaphore, VK_NULL_HANDLE, &wd->FrameIndex);
+            err = vkAcquireNextImageKHR(state->m_device, wd->Swapchain, UINT64_MAX, image_acquired_semaphore, VK_NULL_HANDLE, &wd->FrameIndex);
             if (err == VK_ERROR_OUT_OF_DATE_KHR || err == VK_SUBOPTIMAL_KHR)
             {
                 sdlwindow->m_swapChainRebuild = true;
@@ -129,11 +130,11 @@ namespace vve {
 
             ImGui_ImplVulkanH_Frame* fd = &wd->Frames[wd->FrameIndex];
             {
-                vh::CheckResult(vkWaitForFences(state.m_device, 1, &fd->Fence, VK_TRUE, UINT64_MAX));
-                vh::CheckResult(vkResetFences(state.m_device, 1, &fd->Fence));
+                vh::CheckResult(vkWaitForFences(state->m_device, 1, &fd->Fence, VK_TRUE, UINT64_MAX));
+                vh::CheckResult(vkResetFences(state->m_device, 1, &fd->Fence));
             }
             {
-                vh::CheckResult(vkResetCommandPool(state.m_device, fd->CommandPool, 0));
+                vh::CheckResult(vkResetCommandPool(state->m_device, fd->CommandPool, 0));
                 VkCommandBufferBeginInfo info = {};
                 info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
                 info.flags |= VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
@@ -169,12 +170,14 @@ namespace vve {
                 info.pSignalSemaphores = &render_complete_semaphore;
 
                 vh::CheckResult(vkEndCommandBuffer(fd->CommandBuffer));
-                vh::CheckResult(vkQueueSubmit(state.m_queue, 1, &info, fd->Fence));
+                vh::CheckResult(vkQueueSubmit(state->m_queue, 1, &info, fd->Fence));
             }
         }
 
         if (!is_minimized) {
             WindowSDL<ATYPE>* window = (WindowSDL<ATYPE>*)m_window;
+      		auto state = std::any_cast<VulkanState*>(m_engine->GetState());
+
 
             if (window->m_swapChainRebuild)
                 return;
@@ -186,7 +189,7 @@ namespace vve {
             info.swapchainCount = 1;
             info.pSwapchains = &m_mainWindowData.Swapchain;
             info.pImageIndices = &m_mainWindowData.FrameIndex;
-            VkResult err = vkQueuePresentKHR(m_engine->GetState().m_queue, &info);
+            VkResult err = vkQueuePresentKHR(state->m_queue, &info);
             if (err == VK_ERROR_OUT_OF_DATE_KHR || err == VK_SUBOPTIMAL_KHR)
             {
                 window->m_swapChainRebuild = true;
@@ -202,10 +205,12 @@ namespace vve {
         WindowSDL<ATYPE>* window = (WindowSDL<ATYPE>*)m_window;
         if (window->m_width > 0 && window->m_height > 0 && (window->m_swapChainRebuild || m_mainWindowData.Width != window->m_width || m_mainWindowData.Height != window->m_height))
         {
+      		auto state = std::any_cast<VulkanState*>(m_engine->GetState());
+
             ImGui_ImplVulkan_SetMinImageCount(window->m_minImageCount);
-            ImGui_ImplVulkanH_CreateOrResizeWindow(m_engine->GetState().m_instance, m_engine->GetState().m_physicalDevice
-                , m_engine->GetState().m_device, &m_mainWindowData, m_engine->GetState().m_queueFamily
-                , m_engine->GetState().m_allocator, window->m_width, window->m_height, window->m_minImageCount);
+            ImGui_ImplVulkanH_CreateOrResizeWindow(state->m_instance, state->m_physicalDevice
+                , state->m_device, &m_mainWindowData, state->m_queueFamily
+                , state->m_allocator, window->m_width, window->m_height, window->m_minImageCount);
 
             m_mainWindowData.FrameIndex = 0;
             window->m_swapChainRebuild = false;
@@ -215,10 +220,12 @@ namespace vve {
 
    	template<ArchitectureType ATYPE>
     void RendererImgui<ATYPE>::OnQuit(Message message) {
-        vh::CheckResult(vkDeviceWaitIdle(m_engine->GetState().m_device));
+    	auto state = std::any_cast<VulkanState*>(m_engine->GetState());
+
+        vh::CheckResult(vkDeviceWaitIdle(state->m_device));
         ImGui_ImplVulkan_Shutdown();
-        vkDestroyDescriptorPool(m_engine->GetState().m_device, m_descriptorPool, m_engine->GetState().m_allocator);
-        ImGui_ImplVulkanH_DestroyWindow(m_engine->GetState().m_instance, m_engine->GetState().m_device, &m_mainWindowData, m_engine->GetState().m_allocator);
+        vkDestroyDescriptorPool(state->m_device, m_descriptorPool, state->m_allocator);
+        ImGui_ImplVulkanH_DestroyWindow(state->m_instance, state->m_device, &m_mainWindowData, state->m_allocator);
     }
 
     template class RendererImgui<ArchitectureType::SEQUENTIAL>;
