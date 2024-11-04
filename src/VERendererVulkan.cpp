@@ -28,18 +28,18 @@ namespace vve {
     template<ArchitectureType ATYPE>
     void RendererVulkan<ATYPE>::OnInit(Message message) {
         if(m_engine->GetDebug()) {
-	        m_engine->m_instance_layers.push_back("VK_LAYER_KHRONOS_validation");
-	        m_engine->m_instance_extensions.push_back("VK_EXT_debug_report");
+	        m_state.m_instance_layers.push_back("VK_LAYER_KHRONOS_validation");
+	        m_state.m_instance_extensions.push_back("VK_EXT_debug_report");
 		}
 	
 		//VkResult volkInitialize();
-		vh::SetUpInstance(m_engine->m_instance_layers, m_engine->m_instance_extensions, m_state.m_allocator, &m_state.m_instance);
+		vh::SetUpInstance(m_state.m_instance_layers, m_state.m_instance_extensions, m_state.m_allocator, &m_state.m_instance);
 		//volkLoadInstance(m_instance);
 
 		if(m_engine->GetDebug()) vh::SetupDebugReport(m_state.m_instance, m_state.m_allocator, &m_state.m_debugReport);
-		vh::SetupPhysicalDevice(m_state.m_instance, m_engine->m_device_extensions, &m_state.m_physicalDevice);
+		vh::SetupPhysicalDevice(m_state.m_instance, m_state.m_device_extensions, &m_state.m_physicalDevice);
 		vh::SetupGraphicsQueueFamily(m_state.m_physicalDevice, &m_state.m_queueFamily);
-	    vh::SetupDevice( m_state.m_physicalDevice, nullptr, m_engine->m_device_extensions, m_state.m_queueFamily, &m_state.m_device);
+	    vh::SetupDevice( m_state.m_physicalDevice, nullptr, m_state.m_device_extensions, m_state.m_queueFamily, &m_state.m_device);
 		//volkLoadDevice(m_device);
 
 		vkGetDeviceQueue(m_state.m_device, m_state.m_queueFamily, 0, &m_state.m_queue);

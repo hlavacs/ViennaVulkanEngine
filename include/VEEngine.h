@@ -27,6 +27,10 @@ namespace vve {
 			uint32_t                 m_queueFamily = (uint32_t)-1;		
 			VkQueue                  m_queue = VK_NULL_HANDLE;
 			VkPipelineCache          m_pipelineCache = VK_NULL_HANDLE;
+
+			std::vector<const char*> m_instance_layers;
+			std::vector<const char*> m_instance_extensions;
+			std::vector<const char*> m_device_extensions{"VK_KHR_swapchain"};
 		};
 
 	public:
@@ -37,7 +41,8 @@ namespace vve {
 		void Run();
 		void Stop();
 		auto GetDebug() -> bool { return m_debug; }
-		auto GetState() -> const VulkanState& { return m_state; }
+		auto& GetState() { return m_state; }
+		auto GetState2() -> std::any& { return m_state2; }
 		auto GetWindows() -> std::vector<std::shared_ptr<Window<ATYPE>>>& { return m_windows; }
 		auto GetSceneMgr() -> std::shared_ptr<SceneManager<ATYPE>> { return m_sceneManager; }
 		auto GetRegistry() -> vecs::Registry<>& { return m_registry; }
@@ -54,10 +59,11 @@ namespace vve {
 		virtual void CreateCamera( const char* cameraName );
 		virtual void CreateSceneManager( const char* sceneManagerName );
 
-		std::vector<const char*> m_instance_layers;
-		std::vector<const char*> m_instance_extensions;
-		std::vector<const char*> m_device_extensions{"VK_KHR_swapchain"};
+		//std::vector<const char*> m_instance_layers;
+		//std::vector<const char*> m_instance_extensions;
+		//std::vector<const char*> m_device_extensions{"VK_KHR_swapchain"};
 		VulkanState m_state;
+		std::any m_state2;
 
 		bool m_debug{false};
 		bool m_running{false};

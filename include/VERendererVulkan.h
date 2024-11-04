@@ -23,6 +23,10 @@ namespace vve {
 			uint32_t                 m_queueFamily = (uint32_t)-1;		
 			VkQueue                  m_queue = VK_NULL_HANDLE;
 			VkPipelineCache          m_pipelineCache = VK_NULL_HANDLE;
+
+			std::vector<const char*> m_instance_layers;
+			std::vector<const char*> m_instance_extensions;
+			std::vector<const char*> m_device_extensions{"VK_KHR_swapchain"};
 		};
 
     public:
