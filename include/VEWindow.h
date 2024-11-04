@@ -25,15 +25,14 @@ namespace vve {
         friend class Engine<ATYPE>;
 
     public:
-        Window( Engine<ATYPE>* engine, VkInstance instance, std::string windowName
-                , int width, int height, std::vector<const char*>& instance_extensions, std::string name = "VVE Window" );
+        Window( Engine<ATYPE>* engine, std::string windowName
+                , int width, int height, std::string name = "VVE Window" );
         virtual ~Window();
 
         virtual auto GetSize() -> std::pair<int, int> = 0;
         virtual void SetClearColor(glm::vec4 clearColor);
         
     protected:
-        //virtual void Init() = 0;
         virtual void AddRenderer(std::shared_ptr<Renderer<ATYPE>> renderer);
 
         int m_width;

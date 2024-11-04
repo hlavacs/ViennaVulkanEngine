@@ -8,8 +8,8 @@
 namespace vve {
 
    	template<ArchitectureType ATYPE>
-    Window<ATYPE>::Window(Engine<ATYPE>* engine, VkInstance instance, std::string windowName
-        , int width, int height, std::vector<const char*>& instance_extensions, std::string name ) 
+    Window<ATYPE>::Window(Engine<ATYPE>* engine,std::string windowName
+        , int width, int height, std::string name ) 
             : System<ATYPE>(engine, name), m_width(width), m_height(height) {
     }
 

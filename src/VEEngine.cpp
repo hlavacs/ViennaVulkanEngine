@@ -95,7 +95,9 @@ namespace vve {
 	
 	template<ArchitectureType ATYPE>
 	void Engine<ATYPE>::CreateWindow( const char* windowName, int width, int height ){
-		m_windows.push_back( std::make_shared<WindowSDL<ATYPE>>(this, m_state.m_instance, windowName, width, height, GetState().m_instance_extensions) );
+		auto window = std::make_shared<WindowSDL<ATYPE>>(this, windowName, width, height );
+		GetState().m_instance_extensions = window->m_instance_extensions;
+		m_windows.push_back(window );
 	};
 	
 	template<ArchitectureType ATYPE>

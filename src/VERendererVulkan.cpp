@@ -6,7 +6,7 @@
 #include "VEInclude.h"
 #include "VHInclude.h"
 #include "VEEngine.h"
-#include "VEWindow.h"
+#include "VEWindowSDL.h"
 
 
 namespace vve {
@@ -27,6 +27,8 @@ namespace vve {
 
     template<ArchitectureType ATYPE>
     void RendererVulkan<ATYPE>::OnInit(Message message) {
+        WindowSDL<ATYPE>* window = (WindowSDL<ATYPE>*)m_engine->m_windows[0].get();
+        m_state.m_instance_extensions = window->m_instance_extensions;
         if(m_engine->GetDebug()) {
 	        m_state.m_instance_layers.push_back("VK_LAYER_KHRONOS_validation");
 	        m_state.m_instance_extensions.push_back("VK_EXT_debug_report");
@@ -43,6 +45,8 @@ namespace vve {
 		//volkLoadDevice(m_device);
 
 		vkGetDeviceQueue(m_state.m_device, m_state.m_queueFamily, 0, &m_state.m_queue);
+
+        m_engine->GetState2() = std::any(&m_state);
     }
 
     template<ArchitectureType ATYPE>

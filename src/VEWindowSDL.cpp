@@ -7,9 +7,9 @@
 namespace vve {
 
    	template<ArchitectureType ATYPE>
-    WindowSDL<ATYPE>::WindowSDL( Engine<ATYPE>* engine, VkInstance instance, std::string windowName
-            , int width, int height, std::vector<const char*>& instance_extensions, std::string name) 
-                : Window<ATYPE>(engine, instance, windowName, width, height, instance_extensions, name ) {
+    WindowSDL<ATYPE>::WindowSDL( Engine<ATYPE>* engine,std::string windowName
+            , int width, int height, std::string name) 
+                : Window<ATYPE>(engine, windowName, width, height, name ) {
 
         if(!sdl_initialized) {
 
@@ -39,7 +39,7 @@ namespace vve {
         SDL_Vulkan_GetInstanceExtensions(m_window, &extensions_count, nullptr);
         extensions.resize(extensions_count);
         SDL_Vulkan_GetInstanceExtensions(m_window, &extensions_count, extensions.data());
-        instance_extensions.insert(instance_extensions.end(), extensions.begin(), extensions.end());
+        m_instance_extensions.insert(m_instance_extensions.end(), extensions.begin(), extensions.end());
         
         engine->RegisterSystem( this, 0
             , {MessageType::INIT, MessageType::POLL_EVENTS, MessageType::PREPARE_NEXT_FRAME

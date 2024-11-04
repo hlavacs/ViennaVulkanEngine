@@ -59,9 +59,6 @@ namespace vve {
 		virtual void CreateCamera( const char* cameraName );
 		virtual void CreateSceneManager( const char* sceneManagerName );
 
-		//std::vector<const char*> m_instance_layers;
-		//std::vector<const char*> m_instance_extensions;
-		//std::vector<const char*> m_device_extensions{"VK_KHR_swapchain"};
 		VulkanState m_state;
 		std::any m_state2;
 

@@ -21,6 +21,9 @@ namespace vve {
     class RendererImgui;
 
    	template<ArchitectureType ATYPE>
+    class RendererVulkan;
+
+   	template<ArchitectureType ATYPE>
     class WindowSDL : public Window<ATYPE> {
 
         using Window<ATYPE>::m_engine;
@@ -30,11 +33,12 @@ namespace vve {
         using Window<ATYPE>::m_width;
         using Window<ATYPE>::m_height;
 
+        friend class Engine<ATYPE>;
         friend class RendererImgui<ATYPE>;
+        friend class RendererVulkan<ATYPE>;
     
     public:
-        WindowSDL(Engine<ATYPE>* engine, VkInstance instance, std::string windowName
-            , int width, int height, std::vector<const char*>& instance_extensions, std::string name = "VVE WindowSDL" );
+        WindowSDL(Engine<ATYPE>* engine, std::string windowName, int width, int height, std::string name = "VVE WindowSDL" );
         virtual ~WindowSDL();
         virtual auto GetSize() -> std::pair<int, int>;
 
@@ -54,6 +58,7 @@ namespace vve {
         bool m_swapChainRebuild = false;
         std::set<SDL_Scancode> m_keysDown;
         std::set<uint8_t> m_mouseButtonsDown;
+        std::vector<const char*> m_instance_extensions;
     };
 
 
