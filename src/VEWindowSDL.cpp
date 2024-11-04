@@ -137,21 +137,9 @@ namespace vve {
         }
 
         // Resize swap chain?
-        //int fb_width, fb_height;
         SDL_GetWindowSize(m_window, &m_width, &m_height);
-
-        /*
-        if (fb_width > 0 && fb_height > 0 && (m_swapChainRebuild || m_mainWindowData.Width != fb_width || m_mainWindowData.Height != fb_height))
-        {
-            ImGui_ImplVulkan_SetMinImageCount(m_minImageCount);
-            ImGui_ImplVulkanH_CreateOrResizeWindow(m_engine->GetState().m_instance, m_engine->GetState().m_physicalDevice, m_engine->GetState().m_device, &m_mainWindowData, m_engine->GetState().m_queueFamily, m_engine->GetState().m_allocator, fb_width, fb_height, m_minImageCount);
-            m_mainWindowData.FrameIndex = 0;
-            m_swapChainRebuild = false;
-        }
-        */
-
        
-        return ;
+        return;
     }
 
 
