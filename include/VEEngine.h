@@ -9,9 +9,14 @@
 
 
 namespace vve {
+   	template<ArchitectureType ATYPE>
+    class RendererVulkan;
 
 	template<ArchitectureType ATYPE = ArchitectureType::SEQUENTIAL>
 	class Engine : public System<ATYPE> {
+
+   		template<ArchitectureType ATYPE>
+    	friend class RendererVulkan;		
 
 		struct VulkanState {
 			VkAllocationCallbacks*   m_allocator = nullptr;
@@ -31,6 +36,7 @@ namespace vve {
 		void DeregisterSystem( System<ATYPE>* system );
 		void Run();
 		void Stop();
+		auto GetDebug() -> bool { return m_debug; }
 		auto GetState() -> const VulkanState& { return m_state; }
 		auto GetWindows() -> std::vector<std::shared_ptr<Window<ATYPE>>>& { return m_windows; }
 		auto GetSceneMgr() -> std::shared_ptr<SceneManager<ATYPE>> { return m_sceneManager; }
@@ -51,7 +57,6 @@ namespace vve {
 		std::vector<const char*> m_instance_layers;
 		std::vector<const char*> m_instance_extensions;
 		std::vector<const char*> m_device_extensions{"VK_KHR_swapchain"};
-
 		VulkanState m_state;
 
 		bool m_debug{false};

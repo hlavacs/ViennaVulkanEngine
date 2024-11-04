@@ -38,7 +38,6 @@ namespace vve {
 	
 	template<ArchitectureType ATYPE>
 	void Engine<ATYPE>::SetupVulkan() {
-
 		if(m_debug) {
 	        m_instance_layers.push_back("VK_LAYER_KHRONOS_validation");
 	        m_instance_extensions.push_back("VK_EXT_debug_report");
