@@ -26,14 +26,13 @@ namespace vve {
    	template<ArchitectureType ATYPE>
     class RendererVulkan : public Renderer<ATYPE>
     {
-        using Renderer<ATYPE>::m_engine;
+        using System<ATYPE>::m_engine;
         using Renderer<ATYPE>::m_window;
 
     public:
         RendererVulkan(Engine<ATYPE>* engine, Window<ATYPE>* window, std::string name = "VVE RendererImgui" );
         virtual ~RendererVulkan();
-
-        virtual auto GetState() -> std::any { return std::any(&m_state); }
+        virtual auto GetState() -> std::any;
 
     private:
         virtual void OnInit(Message message) override;

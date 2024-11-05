@@ -3,6 +3,8 @@
 #include <memory>
 #include <any>
 #include "VEInclude.h"
+#include "VESystem.h"
+#include "VEEngine.h"
 
 
 namespace vve
@@ -25,6 +27,8 @@ namespace vve
    	template<ArchitectureType ATYPE>
     class Renderer : public System<ATYPE> {
         friend class Engine<ATYPE>;
+
+        using System<ATYPE>::m_engine;
 
     public:
         Renderer(Engine<ATYPE>* m_engine, Window<ATYPE>* window, std::string name = "VVE Renderer" );

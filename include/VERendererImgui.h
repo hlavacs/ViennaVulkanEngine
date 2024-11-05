@@ -10,7 +10,7 @@ namespace vve {
    	template<ArchitectureType ATYPE>
     class RendererImgui : public Renderer<ATYPE>
     {
-        using Renderer<ATYPE>::m_engine;
+        using System<ATYPE>::m_engine;
         using Renderer<ATYPE>::m_window;
 
     public:
