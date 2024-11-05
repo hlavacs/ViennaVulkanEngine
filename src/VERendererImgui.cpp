@@ -30,8 +30,16 @@ namespace vve {
         if( message.GetPhase() == -100 ) {
             IMGUI_CHECKVERSION();
             ImGui::CreateContext();
+            
+            ImGui::StyleColorsDark();  // Setup Dear ImGui style
+            //ImGui::StyleColorsLight();
+            
+            auto window = (WindowSDL<ATYPE>*)m_window;
+            ImGui_ImplSDL2_InitForVulkan(window->GetSDLWindow());  // Setup Platform/Renderer backends
             return;
         }
+
+        assert( message.GetPhase() == 100 );
 
         WindowSDL<ATYPE>* window = (WindowSDL<ATYPE>*)m_window;
 		auto rend = (RendererVulkan<ATYPE>*)(m_engine->GetSystem("VVE RendererVulkan"));

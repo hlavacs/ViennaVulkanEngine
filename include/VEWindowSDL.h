@@ -30,6 +30,7 @@ namespace vve {
         auto GetMinImageCount() -> int { return m_minImageCount; };
         auto GetSwapChainRebuild() -> bool { return m_swapChainRebuild; };
         void SetSwapChainRebuild(bool rebuild) { m_swapChainRebuild = rebuild; };
+        auto GetSDLWindow() -> SDL_Window* { return m_window; };
 
     private:
         virtual void OnInit(Message message) override;

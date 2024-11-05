@@ -59,18 +59,12 @@ namespace vve {
                     SDL_Vulkan_GetInstanceExtensions(m_window, &extensions_count, extensions.data());
                     m_instance_extensions.insert(m_instance_extensions.end(), extensions.begin(), extensions.end());
                 }
-
                 break;
+
             case 0:
                 {
 		            auto rend = ((RendererVulkan<ATYPE>*)(m_engine->GetSystem("VVE RendererVulkan")));
 
-                    // Setup Dear ImGui style
-                    ImGui::StyleColorsDark();
-                    //ImGui::StyleColorsLight();
-    
-                    ImGui_ImplSDL2_InitForVulkan(m_window);  // Setup Platform/Renderer backends
-    
                     if (SDL_Vulkan_CreateSurface(m_window, rend->GetInstance(), &m_surface) == 0) {
                         printf("Failed to create Vulkan surface.\n");
                     }

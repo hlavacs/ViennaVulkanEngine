@@ -18,7 +18,6 @@ namespace vve {
 
         auto GetAllocator() -> VkAllocationCallbacks* { return m_allocator; };
         auto GetInstance() -> VkInstance { return m_instance; };
-        auto GetSurface() -> VkSurfaceKHR { return m_surface; };
         auto GetDebugReport() -> VkDebugReportCallbackEXT { return m_debugReport; };
         auto GetPhysicalDevice() -> VkPhysicalDevice { return m_physicalDevice; };
         auto GetDevice() -> VkDevice { return m_device; };
@@ -38,7 +37,6 @@ namespace vve {
    		VkDescriptorPool         m_descriptorPool = VK_NULL_HANDLE;
 		VkAllocationCallbacks*   m_allocator = nullptr;
 		VkInstance               m_instance = VK_NULL_HANDLE;
-        VkSurfaceKHR             m_surface{VK_NULL_HANDLE};
 		VkDebugReportCallbackEXT m_debugReport = VK_NULL_HANDLE;
 		VkPhysicalDevice         m_physicalDevice = VK_NULL_HANDLE;
 		VkDevice                 m_device = VK_NULL_HANDLE;
