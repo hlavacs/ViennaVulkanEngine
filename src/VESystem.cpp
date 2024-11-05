@@ -26,98 +26,12 @@ namespace vve {
     MessageKeyRepeat::MessageKeyRepeat(void* s, void* r, double dt, int key): MessageBase{KEY_REPEAT, s, r, dt}, m_key{key} {};   
     MessageQuit::MessageQuit(void* s, void* r) : MessageBase{QUIT, s, r} {};
 
-
    	template<ArchitectureType ATYPE>
     System<ATYPE>::System( Engine<ATYPE>* engine, std::string name ) : m_engine(engine), m_name(name) {
-        /*assert( m_engine != nullptr );
-        m_onFunctions[INIT] = [this](Message message){ OnInit(message); };
-        m_onFunctions[ANNOUNCE] = [this](Message message){ OnAnnounce(message); };
-        m_onFunctions[FRAME_START] = [this](Message message){ OnFrameStart(message); };
-        m_onFunctions[POLL_EVENTS] = [this](Message message){ OnPollEvents(message); };
-        m_onFunctions[UPDATE] = [this](Message message){ OnUpdate(message); };
-        m_onFunctions[PREPARE_NEXT_FRAME] = [this](Message message){ OnPrepareNextFrame(message); };
-        m_onFunctions[RENDER_NEXT_FRAME] = [this](Message message){ OnRenderNextFrame(message); };
-        m_onFunctions[RECORD_NEXT_FRAME] = [this](Message message){ OnRecordNextFrame(message); };
-        m_onFunctions[PRESENT_NEXT_FRAME] = [this](Message message){ OnPresentNextFrame(message); };
-        m_onFunctions[FRAME_END] = [this](Message message){ OnFrameEnd(message); };
-        m_onFunctions[DELETED] = [this](Message message){ OnDelete(message); };
-        m_onFunctions[MOUSE_MOVE] = [this](Message message){ OnMouseMove(message); };
-        m_onFunctions[MOUSE_BUTTON_DOWN] = [this](Message message){ OnMouseButtonDown(message); };
-        m_onFunctions[MOUSE_BUTTON_UP] = [this](Message message){ OnMouseButtonUp(message); };
-        m_onFunctions[MOUSE_BUTTON_REPEAT] = [this](Message message){ OnMouseButtonRepeat(message); };
-        m_onFunctions[MOUSE_WHEEL] = [this](Message message){ OnMouseWheel(message); };
-        m_onFunctions[KEY_DOWN] = [this](Message message){ OnKeyDown(message); };
-        m_onFunctions[KEY_UP] = [this](Message message){ OnKeyUp(message); };
-        m_onFunctions[KEY_REPEAT] = [this](Message message){ OnKeyRepeat(message); };
-        m_onFunctions[QUIT] = [this](Message message){ OnQuit(message); };*/
     };
 
    	template<ArchitectureType ATYPE>
     System<ATYPE>::~System(){};
-
-
-    //-------------------------------------------------------------------------------------------------
-    /*
-   	template<ArchitectureType ATYPE>
-    void System<ATYPE>::OnInit(Message message){};
-
-   	template<ArchitectureType ATYPE>
-    void System<ATYPE>::OnAnnounce(Message message){};
-
-   	template<ArchitectureType ATYPE>
-    void System<ATYPE>::OnFrameStart(Message message){};
-
-   	template<ArchitectureType ATYPE>
-    void System<ATYPE>::OnUpdate(Message message){};
-
-   	template<ArchitectureType ATYPE>
-    void System<ATYPE>::OnPollEvents(Message message) {};
-
-   	template<ArchitectureType ATYPE>
-    void System<ATYPE>::OnPrepareNextFrame(Message message) {};
-
-   	template<ArchitectureType ATYPE>
-    void System<ATYPE>::OnRenderNextFrame(Message message) {};
-
-    template<ArchitectureType ATYPE>
-    void System<ATYPE>::OnRecordNextFrame(Message message){};
-  	
-    template<ArchitectureType ATYPE>
-    void System<ATYPE>::OnPresentNextFrame(Message message) {};
-
-   	template<ArchitectureType ATYPE>
-    void System<ATYPE>::OnFrameEnd(Message message) {};
-
-   	template<ArchitectureType ATYPE>
-    void System<ATYPE>::OnDelete(Message message) {};
-
-   	template<ArchitectureType ATYPE>
-    void System<ATYPE>::OnMouseMove(Message message){};
-
-   	template<ArchitectureType ATYPE>
-    void System<ATYPE>::OnMouseButtonDown(Message message){};
-
-   	template<ArchitectureType ATYPE>
-    void System<ATYPE>::OnMouseButtonUp(Message message){};
-
-   	template<ArchitectureType ATYPE>
-    void System<ATYPE>::OnMouseButtonRepeat(Message message){};
-
-   	template<ArchitectureType ATYPE>
-    void System<ATYPE>::OnMouseWheel(Message message){};
-
-   	template<ArchitectureType ATYPE>
-    void System<ATYPE>::OnKeyDown(Message message){};
-
-   	template<ArchitectureType ATYPE>
-    void System<ATYPE>::OnKeyUp(Message message){};
-
-   	template<ArchitectureType ATYPE>
-    void System<ATYPE>::OnKeyRepeat(Message message){};
-
-   	template<ArchitectureType ATYPE>
-    void System<ATYPE>::OnQuit(Message message){};
-    */
 
     template class System<ArchitectureType::SEQUENTIAL>;
     template class System<ArchitectureType::PARALLEL>;

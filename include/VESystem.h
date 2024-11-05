@@ -113,35 +113,10 @@ namespace vve {
         System( Engine<ATYPE>* engine, std::string name );
         virtual ~System();
         auto GetName() -> std::string { return m_name; };
-        //virtual void ReceiveMessage(Message message);
 
-    /*protected:
-        virtual void OnInit(Message message);       //system is initiated
-        virtual void OnAnnounce(Message message);   //system announces itself to all other systems
-        virtual void OnFrameStart(Message message); //Enter the game loop
-        virtual void OnPollEvents(Message message); //Poll events from window and other sources
-        virtual void OnUpdate(Message message);     //Update systems
-        virtual void OnPrepareNextFrame(Message message);   //Prepare next frame
-        virtual void OnRecordNextFrame(Message message);    //Record next frame
-        virtual void OnRenderNextFrame(Message message);    //Render next frame
-        virtual void OnPresentNextFrame(Message message);   //Present next frame
-        virtual void OnFrameEnd(Message message);   //End of game loop
-        virtual void OnDelete(Message message);     //Delete an object or object is deleted
-        virtual void OnMouseMove(Message message);  //Mouse moved
-        virtual void OnMouseButtonDown(Message message);    //Mouse button down
-        virtual void OnMouseButtonUp(Message message);      //Mouse button up
-        virtual void OnMouseButtonRepeat(Message message);  //Mouse button repeat
-        virtual void OnMouseWheel(Message message); //Mouse wheel
-        virtual void OnKeyDown(Message message);    //Key down
-        virtual void OnKeyUp(Message message);      //Key up
-        virtual void OnKeyRepeat(Message message);  //Key repeat
-        virtual void OnQuit(Message message);       //Quit
-        */
+    protected:
         std::string m_name;
-        //std::unordered_map<MessageType, std::function<void(Message)>> m_onFunctions;
         Engine<ATYPE>* m_engine;
-        Mutex<ATYPE> m_mutex;
-        std::vector<Message> m_messages;
     };
 
 };
