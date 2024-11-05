@@ -49,6 +49,7 @@ namespace vve {
 			auto& pm = m_messageMap[messageType];
 			pm.insert({phase, system});
 		}
+		m_systems[system->GetName()] = system;
 	}
 
 	template<ArchitectureType ATYPE>
@@ -62,6 +63,7 @@ namespace vve {
 				}
 			}
 		}
+		m_systems.erase(system->GetName());
 	}
 
 	template<ArchitectureType ATYPE>

@@ -114,6 +114,7 @@ namespace vve {
     public:
         System( Engine<ATYPE>* engine, std::string name );
         virtual ~System();
+        auto GetName() -> std::string { return m_name; };
         virtual void ReceiveMessage(Message message);
 
     protected:
