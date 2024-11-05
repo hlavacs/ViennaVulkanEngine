@@ -19,6 +19,17 @@ namespace vve {
 
         engine->RegisterSystem( this, -100, {MessageType::INIT, MessageType::PREPARE_NEXT_FRAME, MessageType::RENDER_NEXT_FRAME, MessageType::QUIT} );
         engine->RegisterSystem( this, 100, {MessageType::INIT, MessageType::POLL_EVENTS} ); //init after window
+
+
+		engine->RegisterSystem2( { 
+			  {this, -100, MessageType::INIT, [this](Message message){this->OnInit(message);} }
+			, {this, -100, MessageType::PREPARE_NEXT_FRAME, [this](Message message){this->OnPrepareNextFrame(message);} }
+			, {this, -100, MessageType::RENDER_NEXT_FRAME, [this](Message message){this->OnRenderNextFrame(message);} }
+			, {this, -100, MessageType::QUIT, [this](Message message){this->OnQuit(message);} }
+			, {this,  100, MessageType::INIT, [this](Message message){this->OnInit(message);} }
+			, {this,  100, MessageType::POLL_EVENTS, [this](Message message){this->OnPollEvents(message);} }
+		} );
+
     };
 
    	template<ArchitectureType ATYPE>
