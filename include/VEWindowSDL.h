@@ -40,7 +40,6 @@ namespace vve {
 
         inline static bool sdl_initialized{false};
         SDL_Window* m_window{nullptr};
-        ImGuiIO* m_io;
         int m_minImageCount = 2;
         bool m_isMinimized = false;
         bool m_swapChainRebuild = false;

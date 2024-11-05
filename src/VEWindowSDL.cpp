@@ -65,13 +65,6 @@ namespace vve {
                 {
 		            auto rend = ((RendererVulkan<ATYPE>*)(m_engine->GetSystem("VVE RendererVulkan")));
 
-                    // Setup Dear ImGui context
-                    IMGUI_CHECKVERSION();
-                    ImGui::CreateContext();
-                    m_io = &ImGui::GetIO();
-                    m_io->ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;     // Enable Keyboard Controls
-                    m_io->ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;      // Enable Gamepad Controls
-    
                     // Setup Dear ImGui style
                     ImGui::StyleColorsDark();
                     //ImGui::StyleColorsLight();

@@ -49,10 +49,14 @@ namespace vve {
     }
 
     template<ArchitectureType ATYPE>
-    void RendererVulkan<ATYPE>::OnPrepareNextFrame(Message message) {}
+    void RendererVulkan<ATYPE>::OnPrepareNextFrame(Message message) {
+
+    }
 
     template<ArchitectureType ATYPE>
-    void RendererVulkan<ATYPE>::OnRenderNextFrame(Message message) {}
+    void RendererVulkan<ATYPE>::OnRenderNextFrame(Message message) {
+        
+    }
     
     template<ArchitectureType ATYPE>
     void RendererVulkan<ATYPE>::OnQuit(Message message) { 

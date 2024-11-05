@@ -17,7 +17,7 @@ namespace vve {
     RendererImgui<ATYPE>::RendererImgui( Engine<ATYPE>* engine, Window<ATYPE>* window, std::string name) 
         : Renderer<ATYPE>(engine, window, name ) {
 
-        engine->RegisterSystem( this, -100, {MessageType::PREPARE_NEXT_FRAME, MessageType::RENDER_NEXT_FRAME, MessageType::QUIT} );
+        engine->RegisterSystem( this, -100, {MessageType::INIT, MessageType::PREPARE_NEXT_FRAME, MessageType::RENDER_NEXT_FRAME, MessageType::QUIT} );
         engine->RegisterSystem( this, 100, {MessageType::INIT, MessageType::POLL_EVENTS} ); //init after window
     };
 
@@ -26,8 +26,14 @@ namespace vve {
 
    	template<ArchitectureType ATYPE>
     void RendererImgui<ATYPE>::OnInit(Message message) {
+
+        if( message.GetPhase() == -100 ) {
+            IMGUI_CHECKVERSION();
+            ImGui::CreateContext();
+            return;
+        }
+
         WindowSDL<ATYPE>* window = (WindowSDL<ATYPE>*)m_window;
-		//auto state = ((RendererVulkan<ATYPE>*)(m_engine->GetSystem("VVE RendererVulkan")))->GetState();
 		auto rend = (RendererVulkan<ATYPE>*)(m_engine->GetSystem("VVE RendererVulkan"));
 
         m_mainWindowData.Surface = window->GetSurface();
@@ -179,7 +185,6 @@ namespace vve {
         if (!is_minimized) {
             WindowSDL<ATYPE>* window = (WindowSDL<ATYPE>*)m_window;
 		    auto rend = ((RendererVulkan<ATYPE>*)(m_engine->GetSystem("VVE RendererVulkan")));
-
 
             if (window->GetSwapChainRebuild())
                 return;
