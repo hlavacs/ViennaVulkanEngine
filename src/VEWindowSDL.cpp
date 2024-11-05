@@ -29,7 +29,7 @@ namespace vve {
         switch( message.GetPhase() ) {
             case -2000:
                 {
-                    if(!m_state.sdl_initialized) {
+                    if(!sdl_initialized) {
                     
                         if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_TIMER | SDL_INIT_GAMECONTROLLER) != 0) {
                             printf("Error: %s\n", SDL_GetError());
@@ -41,23 +41,23 @@ namespace vve {
                         SDL_SetHint(SDL_HINT_IME_SHOW_UI, "1");
                     #endif
 
-                        m_state.sdl_initialized = true;
+                        sdl_initialized = true;
                     }
 
                     // Create window with Vulkan graphics context
                     SDL_WindowFlags window_flags = (SDL_WindowFlags)(SDL_WINDOW_VULKAN | SDL_WINDOW_RESIZABLE | SDL_WINDOW_ALLOW_HIGHDPI);
-                    m_state.m_window = SDL_CreateWindow(m_windowName.c_str(), SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, m_width, m_height, window_flags);
-                    if (m_state.m_window == nullptr) {
+                    m_window = SDL_CreateWindow(m_windowName.c_str(), SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, m_width, m_height, window_flags);
+                    if (m_window == nullptr) {
                         printf("Error: SDL_CreateWindow(): %s\n", SDL_GetError());
                         return;
                     }
 
                     uint32_t extensions_count = 0;
                     std::vector<const char*> extensions;
-                    SDL_Vulkan_GetInstanceExtensions(m_state.m_window, &extensions_count, nullptr);
+                    SDL_Vulkan_GetInstanceExtensions(m_window, &extensions_count, nullptr);
                     extensions.resize(extensions_count);
-                    SDL_Vulkan_GetInstanceExtensions(m_state.m_window, &extensions_count, extensions.data());
-                    m_state.m_instance_extensions.insert(m_state.m_instance_extensions.end(), extensions.begin(), extensions.end());
+                    SDL_Vulkan_GetInstanceExtensions(m_window, &extensions_count, extensions.data());
+                    m_instance_extensions.insert(m_instance_extensions.end(), extensions.begin(), extensions.end());
                 }
 
                 break;
@@ -68,17 +68,17 @@ namespace vve {
                     // Setup Dear ImGui context
                     IMGUI_CHECKVERSION();
                     ImGui::CreateContext();
-                    m_state.m_io = &ImGui::GetIO();
-                    m_state.m_io->ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;     // Enable Keyboard Controls
-                    m_state.m_io->ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;      // Enable Gamepad Controls
+                    m_io = &ImGui::GetIO();
+                    m_io->ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;     // Enable Keyboard Controls
+                    m_io->ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;      // Enable Gamepad Controls
     
                     // Setup Dear ImGui style
                     ImGui::StyleColorsDark();
                     //ImGui::StyleColorsLight();
     
-                    ImGui_ImplSDL2_InitForVulkan(m_state.m_window);  // Setup Platform/Renderer backends
+                    ImGui_ImplSDL2_InitForVulkan(m_window);  // Setup Platform/Renderer backends
     
-                    if (SDL_Vulkan_CreateSurface(m_state.m_window, state->m_instance, &m_state.m_surface) == 0) {
+                    if (SDL_Vulkan_CreateSurface(m_window, state->m_instance, &m_surface) == 0) {
                         printf("Failed to create Vulkan surface.\n");
                     }
                 }
@@ -108,7 +108,7 @@ namespace vve {
             ImGui_ImplSDL2_ProcessEvent(&event);
             if (event.type == SDL_QUIT)
                 m_engine->Stop();
-            if (event.type == SDL_WINDOWEVENT && event.window.event == SDL_WINDOWEVENT_CLOSE && event.window.windowID == SDL_GetWindowID(m_state.m_window))
+            if (event.type == SDL_WINDOWEVENT && event.window.event == SDL_WINDOWEVENT_CLOSE && event.window.windowID == SDL_GetWindowID(m_window))
                 m_engine->Stop();
 
             switch( event.type ) {
@@ -121,7 +121,7 @@ namespace vve {
                     break;
                 case SDL_MOUSEBUTTONUP:
                     m_engine->SendMessage( MessageMouseButtonUp{this, nullptr, message.GetDt(), event.button.button} );
-                    m_state.m_mouseButtonsDown.erase( event.button.button );
+                    m_mouseButtonsDown.erase( event.button.button );
                     break;
                 case SDL_MOUSEWHEEL:
                     m_engine->SendMessage( MessageMouseWheel{this, nullptr, message.GetDt(), event.wheel.x, event.wheel.y} );
@@ -133,27 +133,27 @@ namespace vve {
                     break;
                 case SDL_KEYUP:
                     m_engine->SendMessage( MessageKeyUp{this, nullptr, message.GetDt(), event.key.keysym.scancode} );
-                    m_state.m_keysDown.erase(event.key.keysym.scancode);
+                    m_keysDown.erase(event.key.keysym.scancode);
                     break;
                 default:
                     break;
             }
         }
 
-        for( auto& key : m_state.m_keysDown ) { m_engine->SendMessage( MessageKeyRepeat{this, nullptr, message.GetDt(), key} ); }
-        for( auto& button : m_state.m_mouseButtonsDown ) { m_engine->SendMessage( MessageMouseButtonRepeat{this, nullptr, message.GetDt(), button} ); }
+        for( auto& key : m_keysDown ) { m_engine->SendMessage( MessageKeyRepeat{this, nullptr, message.GetDt(), key} ); }
+        for( auto& button : m_mouseButtonsDown ) { m_engine->SendMessage( MessageMouseButtonRepeat{this, nullptr, message.GetDt(), button} ); }
 
-        if(key.size() > 0) { for( auto& k : key ) { m_state.m_keysDown.insert(k) ; } }
-        if(button.size() > 0) { for( auto& b : button ) {m_state.m_mouseButtonsDown.insert(b);} }
+        if(key.size() > 0) { for( auto& k : key ) { m_keysDown.insert(k) ; } }
+        if(button.size() > 0) { for( auto& b : button ) {m_mouseButtonsDown.insert(b);} }
 
-        if (SDL_GetWindowFlags(m_state.m_window) & SDL_WINDOW_MINIMIZED)
+        if (SDL_GetWindowFlags(m_window) & SDL_WINDOW_MINIMIZED)
         {
             SDL_Delay(10);
             return;
         }
 
         // Resize swap chain?
-        SDL_GetWindowSize(m_state.m_window, &m_width, &m_height);
+        SDL_GetWindowSize(m_window, &m_width, &m_height);
        
         return;
     }
@@ -174,7 +174,7 @@ namespace vve {
     void WindowSDL<ATYPE>::OnQuit(Message message) {
         ImGui_ImplSDL2_Shutdown();
         ImGui::DestroyContext();
-        SDL_DestroyWindow(m_state.m_window);
+        SDL_DestroyWindow(m_window);
         SDL_Quit();
     }
 
