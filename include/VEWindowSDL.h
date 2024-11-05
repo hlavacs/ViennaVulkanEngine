@@ -23,6 +23,18 @@ namespace vve {
    	template<ArchitectureType ATYPE>
     class RendererVulkan;
 
+    struct WindowSDLState {
+        inline static bool sdl_initialized{false};
+        SDL_Window* m_window{nullptr};
+        ImGuiIO* m_io;
+        int m_minImageCount = 2;
+        bool m_isMinimized = false;
+        bool m_swapChainRebuild = false;
+        std::set<SDL_Scancode> m_keysDown;
+        std::set<uint8_t> m_mouseButtonsDown;
+        std::vector<const char*> m_instance_extensions;
+    };
+
    	template<ArchitectureType ATYPE>
     class WindowSDL : public Window<ATYPE> {
 
@@ -42,14 +54,16 @@ namespace vve {
         WindowSDL(Engine<ATYPE>* engine, std::string windowName, int width, int height, std::string name = "VVE WindowSDL" );
         virtual ~WindowSDL();
         virtual auto GetSize() -> std::pair<int, int>;
+        auto GetState() -> WindowSDLState* { return &m_state; };
 
     private:
-        //bool InitSDL(VkInstance instance);
         virtual void OnInit(Message message) override;
         virtual void OnPollEvents(Message message) override;
         virtual void OnPrepareNextFrame(Message message) override;
         virtual void OnRenderNextFrame(Message message) override;
         virtual void OnQuit(Message message) override;
+
+        WindowSDLState m_state;
 
         inline static bool sdl_initialized{false};
         SDL_Window* m_window{nullptr};

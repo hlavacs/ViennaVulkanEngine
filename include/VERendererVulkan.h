@@ -30,10 +30,10 @@ namespace vve {
         using Renderer<ATYPE>::m_window;
 
     public:
-        VulkanState m_state;
 
         RendererVulkan(Engine<ATYPE>* engine, Window<ATYPE>* window, std::string name = "VVE RendererVulkan" );
         virtual ~RendererVulkan();
+        auto GetState() -> const VulkanState*  { return &m_state; };
 
     private:
         virtual void OnInit(Message message) override;
@@ -41,7 +41,8 @@ namespace vve {
         virtual void OnRenderNextFrame(Message message) override;
         virtual void OnQuit(Message message) override;
 
-   		VkDescriptorPool m_descriptorPool = VK_NULL_HANDLE;	
+   		VkDescriptorPool m_descriptorPool = VK_NULL_HANDLE;
+        VulkanState m_state;
     };
 
 };   // namespace vve

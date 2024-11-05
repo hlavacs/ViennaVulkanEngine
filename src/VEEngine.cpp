@@ -43,13 +43,6 @@ namespace vve {
 
 	};
 
-	//template<ArchitectureType ATYPE>
-	//auto Engine<ATYPE>::GetState() -> const std::any { 
-	//	return { &((RendererVulkan<ATYPE>*)(GetSystem("VVE RendererVulkan")))->m_state };
-	//	//return m_state; 
-	//};
-
-
 	template<ArchitectureType ATYPE>
 	void Engine<ATYPE>::RegisterSystem( System<ATYPE>* system, int phase, std::vector<MessageType> messageTypes) {
 		for( auto messageType : messageTypes ) {

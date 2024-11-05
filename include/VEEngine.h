@@ -15,8 +15,8 @@ namespace vve {
 	template<ArchitectureType ATYPE = ArchitectureType::SEQUENTIAL>
 	class Engine : public System<ATYPE> {
 
-   		template<ArchitectureType ATYPE>
-    	friend class RendererVulkan;		
+   		//template<ArchitectureType ATYPE>
+    	//friend class RendererVulkan;		
 
 	public:
 		Engine(std::string name = "VVE Engine");

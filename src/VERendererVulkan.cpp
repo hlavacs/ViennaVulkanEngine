@@ -27,7 +27,8 @@ namespace vve {
 
     template<ArchitectureType ATYPE>
     void RendererVulkan<ATYPE>::OnInit(Message message) {
-        WindowSDL<ATYPE>* window = (WindowSDL<ATYPE>*)m_engine->m_windows[0].get();
+        WindowSDL<ATYPE>* window = (WindowSDL<ATYPE>*)(m_engine->GetSystem("VVE WindowSDL"));
+
         m_state.m_instance_extensions = window->m_instance_extensions;
         if(m_engine->GetDebug()) {
 	        m_state.m_instance_layers.push_back("VK_LAYER_KHRONOS_validation");
