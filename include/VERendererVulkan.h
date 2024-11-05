@@ -8,7 +8,37 @@ namespace vve {
    	template<ArchitectureType ATYPE>
     class Window;
 
-    struct VulkanState {
+   	template<ArchitectureType ATYPE>
+    class RendererVulkan : public Renderer<ATYPE>
+    {
+        using System<ATYPE>::m_engine;
+        using Renderer<ATYPE>::m_window;
+
+    public:
+
+        RendererVulkan(Engine<ATYPE>* engine, Window<ATYPE>* window, std::string name = "VVE RendererVulkan" );
+        virtual ~RendererVulkan();
+
+        auto GetAllocator() -> VkAllocationCallbacks* { return m_allocator; };
+        auto GetInstance() -> VkInstance { return m_instance; };
+        auto GetSurface() -> VkSurfaceKHR { return m_surface; };
+        auto GetDebugReport() -> VkDebugReportCallbackEXT { return m_debugReport; };
+        auto GetPhysicalDevice() -> VkPhysicalDevice { return m_physicalDevice; };
+        auto GetDevice() -> VkDevice { return m_device; };
+        auto GetQueueFamily() -> uint32_t { return m_queueFamily; };
+        auto GetQueue() -> VkQueue { return m_queue; };
+        auto GetPipelineCache() -> VkPipelineCache { return m_pipelineCache; };
+        auto GetInstanceLayers() -> std::vector<const char*> { return m_instance_layers; };
+        auto GetInstanceExtensions() -> std::vector<const char*> { return m_instance_extensions; };
+        auto GetDeviceExtensions() -> std::vector<const char*> { return m_device_extensions; };
+
+    private:
+        virtual void OnInit(Message message) override;
+        virtual void OnPrepareNextFrame(Message message) override;
+        virtual void OnRenderNextFrame(Message message) override;
+        virtual void OnQuit(Message message) override;
+
+   		VkDescriptorPool         m_descriptorPool = VK_NULL_HANDLE;
 		VkAllocationCallbacks*   m_allocator = nullptr;
 		VkInstance               m_instance = VK_NULL_HANDLE;
         VkSurfaceKHR             m_surface{VK_NULL_HANDLE};
@@ -21,29 +51,6 @@ namespace vve {
 		std::vector<const char*> m_instance_layers;
 		std::vector<const char*> m_instance_extensions;
 		std::vector<const char*> m_device_extensions{"VK_KHR_swapchain"};
-	};
-
-
-   	template<ArchitectureType ATYPE>
-    class RendererVulkan : public Renderer<ATYPE>
-    {
-        using System<ATYPE>::m_engine;
-        using Renderer<ATYPE>::m_window;
-
-    public:
-
-        RendererVulkan(Engine<ATYPE>* engine, Window<ATYPE>* window, std::string name = "VVE RendererVulkan" );
-        virtual ~RendererVulkan();
-        auto GetState() -> const VulkanState*  { return &m_state; };
-
-    private:
-        virtual void OnInit(Message message) override;
-        virtual void OnPrepareNextFrame(Message message) override;
-        virtual void OnRenderNextFrame(Message message) override;
-        virtual void OnQuit(Message message) override;
-
-   		VkDescriptorPool m_descriptorPool = VK_NULL_HANDLE;
-        VulkanState m_state;
     };
 
 };   // namespace vve

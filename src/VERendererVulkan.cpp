@@ -29,23 +29,23 @@ namespace vve {
     void RendererVulkan<ATYPE>::OnInit(Message message) {
         WindowSDL<ATYPE>* window = (WindowSDL<ATYPE>*)(m_engine->GetSystem("VVE WindowSDL"));
 
-        m_state.m_instance_extensions = window->GetInstanceExtensions();
+        m_instance_extensions = window->GetInstanceExtensions();
         if(m_engine->GetDebug()) {
-	        m_state.m_instance_layers.push_back("VK_LAYER_KHRONOS_validation");
-	        m_state.m_instance_extensions.push_back("VK_EXT_debug_report");
+	        m_instance_layers.push_back("VK_LAYER_KHRONOS_validation");
+	        m_instance_extensions.push_back("VK_EXT_debug_report");
 		}
 	
 		//VkResult volkInitialize();
-		vh::SetUpInstance(m_state.m_instance_layers, m_state.m_instance_extensions, m_state.m_allocator, &m_state.m_instance);
+		vh::SetUpInstance(m_instance_layers, m_instance_extensions, m_allocator, &m_instance);
 		//volkLoadInstance(m_instance);
 
-		if(m_engine->GetDebug()) vh::SetupDebugReport(m_state.m_instance, m_state.m_allocator, &m_state.m_debugReport);
-		vh::SetupPhysicalDevice(m_state.m_instance, m_state.m_device_extensions, &m_state.m_physicalDevice);
-		vh::SetupGraphicsQueueFamily(m_state.m_physicalDevice, &m_state.m_queueFamily);
-	    vh::SetupDevice( m_state.m_physicalDevice, nullptr, m_state.m_device_extensions, m_state.m_queueFamily, &m_state.m_device);
+		if(m_engine->GetDebug()) vh::SetupDebugReport(m_instance, m_allocator, &m_debugReport);
+		vh::SetupPhysicalDevice(m_instance, m_device_extensions, &m_physicalDevice);
+		vh::SetupGraphicsQueueFamily(m_physicalDevice, &m_queueFamily);
+	    vh::SetupDevice( m_physicalDevice, nullptr, m_device_extensions, m_queueFamily, &m_device);
 		//volkLoadDevice(m_device);
 
-		vkGetDeviceQueue(m_state.m_device, m_state.m_queueFamily, 0, &m_state.m_queue);
+		vkGetDeviceQueue(m_device, m_queueFamily, 0, &m_queue);
     }
 
     template<ArchitectureType ATYPE>
@@ -56,11 +56,11 @@ namespace vve {
     
     template<ArchitectureType ATYPE>
     void RendererVulkan<ATYPE>::OnQuit(Message message) { 
-	    auto PFN_DestroyDebugReportCallbackEXT = (PFN_vkDestroyDebugReportCallbackEXT)vkGetInstanceProcAddr(m_state.m_instance, "vkDestroyDebugReportCallbackEXT");
-	    PFN_DestroyDebugReportCallbackEXT(m_state.m_instance, m_state.m_debugReport, m_state.m_allocator);
+	    auto PFN_DestroyDebugReportCallbackEXT = (PFN_vkDestroyDebugReportCallbackEXT)vkGetInstanceProcAddr(m_instance, "vkDestroyDebugReportCallbackEXT");
+	    PFN_DestroyDebugReportCallbackEXT(m_instance, m_debugReport, m_allocator);
 	
-	    vkDestroyDevice(m_state.m_device, m_state.m_allocator);
-	    vkDestroyInstance(m_state.m_instance, m_state.m_allocator);
+	    vkDestroyDevice(m_device, m_allocator);
+	    vkDestroyInstance(m_instance, m_allocator);
     }
 
     template class RendererVulkan<ArchitectureType::SEQUENTIAL>;

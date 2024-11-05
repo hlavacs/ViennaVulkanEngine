@@ -27,13 +27,14 @@ namespace vve {
    	template<ArchitectureType ATYPE>
     void RendererImgui<ATYPE>::OnInit(Message message) {
         WindowSDL<ATYPE>* window = (WindowSDL<ATYPE>*)m_window;
-		auto state = ((RendererVulkan<ATYPE>*)(m_engine->GetSystem("VVE RendererVulkan")))->GetState();
+		//auto state = ((RendererVulkan<ATYPE>*)(m_engine->GetSystem("VVE RendererVulkan")))->GetState();
+		auto rend = (RendererVulkan<ATYPE>*)(m_engine->GetSystem("VVE RendererVulkan"));
 
         m_mainWindowData.Surface = window->GetSurface();
 
         // Check for WSI support
         VkBool32 res;
-        vkGetPhysicalDeviceSurfaceSupportKHR(state->m_physicalDevice, state->m_queueFamily, m_mainWindowData.Surface, &res);
+        vkGetPhysicalDeviceSurfaceSupportKHR(rend->GetPhysicalDevice(), rend->GetQueueFamily(), m_mainWindowData.Surface, &res);
         if (res != VK_TRUE) {
             fprintf(stderr, "Error no WSI support on physical device 0\n");
             exit(-1);
@@ -41,34 +42,34 @@ namespace vve {
 
         // Select Surface Format
         std::vector<VkFormat> requestSurfaceFormats = { VK_FORMAT_B8G8R8A8_UNORM, VK_FORMAT_R8G8B8A8_UNORM, VK_FORMAT_B8G8R8_UNORM, VK_FORMAT_R8G8B8_UNORM };
-        m_mainWindowData.SurfaceFormat = vh::SelectSurfaceFormat(state->m_physicalDevice, m_mainWindowData.Surface, requestSurfaceFormats);
+        m_mainWindowData.SurfaceFormat = vh::SelectSurfaceFormat(rend->GetPhysicalDevice(), m_mainWindowData.Surface, requestSurfaceFormats);
 
         // Select Present Mode
         std::vector<VkPresentModeKHR> requestedPresentModes = { VK_PRESENT_MODE_MAILBOX_KHR, VK_PRESENT_MODE_FIFO_KHR };
-        m_mainWindowData.PresentMode = vh::SelectPresentMode(state->m_physicalDevice, m_mainWindowData.Surface, requestedPresentModes);
+        m_mainWindowData.PresentMode = vh::SelectPresentMode(rend->GetPhysicalDevice(), m_mainWindowData.Surface, requestedPresentModes);
 
         auto width = window->GetWidth();
         auto height = window->GetHeight();
-        vh::CreateWindowSwapChain(state->m_physicalDevice, state->m_device, &m_mainWindowData, state->m_allocator, width, height, window->GetMinImageCount());
+        vh::CreateWindowSwapChain(rend->GetPhysicalDevice(), rend->GetDevice(), &m_mainWindowData, rend->GetAllocator(), width, height, window->GetMinImageCount());
 
-        vh::CreateWindowCommandBuffers(state->m_physicalDevice, state->m_device, &m_mainWindowData, state->m_queueFamily, state->m_allocator);
-        vh::CreateDescriptorPool(state->m_device, &m_descriptorPool);
+        vh::CreateWindowCommandBuffers(rend->GetPhysicalDevice(), rend->GetDevice(), &m_mainWindowData, rend->GetQueueFamily(), rend->GetAllocator());
+        vh::CreateDescriptorPool(rend->GetDevice(), &m_descriptorPool);
 
         ImGui_ImplVulkan_InitInfo init_info = {};
 
-        init_info.Instance = state->m_instance;
-        init_info.PhysicalDevice = state->m_physicalDevice;
-        init_info.Device = state->m_device;
-        init_info.QueueFamily = state->m_queueFamily;
-        init_info.Queue = state->m_queue;
-        init_info.PipelineCache = state->m_pipelineCache;
+        init_info.Instance = rend->GetInstance();
+        init_info.PhysicalDevice = rend->GetPhysicalDevice();
+        init_info.Device = rend->GetDevice();
+        init_info.QueueFamily = rend->GetQueueFamily();
+        init_info.Queue = rend->GetQueue();
+        init_info.PipelineCache = rend->GetPipelineCache();
         init_info.DescriptorPool = m_descriptorPool;
         init_info.RenderPass = m_mainWindowData.RenderPass;
         init_info.Subpass = 0;
         init_info.MinImageCount = window->GetMinImageCount();
         init_info.ImageCount = m_mainWindowData.ImageCount;
         init_info.MSAASamples = VK_SAMPLE_COUNT_1_BIT;
-        init_info.Allocator = state->m_allocator;
+        init_info.Allocator = rend->GetAllocator();
         init_info.CheckVkResultFn = vh::CheckResult;
         ImGui_ImplVulkan_Init(&init_info);
 
@@ -117,11 +118,11 @@ namespace vve {
 
             VkResult err;
 
-		    auto state = ((RendererVulkan<ATYPE>*)(m_engine->GetSystem("VVE RendererVulkan")))->GetState();
+		    auto rend = ((RendererVulkan<ATYPE>*)(m_engine->GetSystem("VVE RendererVulkan")));
 
             VkSemaphore image_acquired_semaphore  = wd->FrameSemaphores[wd->SemaphoreIndex].ImageAcquiredSemaphore;
             VkSemaphore render_complete_semaphore = wd->FrameSemaphores[wd->SemaphoreIndex].RenderCompleteSemaphore;
-            err = vkAcquireNextImageKHR(state->m_device, wd->Swapchain, UINT64_MAX, image_acquired_semaphore, VK_NULL_HANDLE, &wd->FrameIndex);
+            err = vkAcquireNextImageKHR(rend->GetDevice(), wd->Swapchain, UINT64_MAX, image_acquired_semaphore, VK_NULL_HANDLE, &wd->FrameIndex);
             if (err == VK_ERROR_OUT_OF_DATE_KHR || err == VK_SUBOPTIMAL_KHR)
             {
                 window->SetSwapChainRebuild(true);
@@ -131,11 +132,11 @@ namespace vve {
 
             ImGui_ImplVulkanH_Frame* fd = &wd->Frames[wd->FrameIndex];
             {
-                vh::CheckResult(vkWaitForFences(state->m_device, 1, &fd->Fence, VK_TRUE, UINT64_MAX));
-                vh::CheckResult(vkResetFences(state->m_device, 1, &fd->Fence));
+                vh::CheckResult(vkWaitForFences(rend->GetDevice(), 1, &fd->Fence, VK_TRUE, UINT64_MAX));
+                vh::CheckResult(vkResetFences(rend->GetDevice(), 1, &fd->Fence));
             }
             {
-                vh::CheckResult(vkResetCommandPool(state->m_device, fd->CommandPool, 0));
+                vh::CheckResult(vkResetCommandPool(rend->GetDevice(), fd->CommandPool, 0));
                 VkCommandBufferBeginInfo info = {};
                 info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
                 info.flags |= VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
@@ -171,13 +172,13 @@ namespace vve {
                 info.pSignalSemaphores = &render_complete_semaphore;
 
                 vh::CheckResult(vkEndCommandBuffer(fd->CommandBuffer));
-                vh::CheckResult(vkQueueSubmit(state->m_queue, 1, &info, fd->Fence));
+                vh::CheckResult(vkQueueSubmit(rend->GetQueue(), 1, &info, fd->Fence));
             }
         }
 
         if (!is_minimized) {
             WindowSDL<ATYPE>* window = (WindowSDL<ATYPE>*)m_window;
-		    auto state = ((RendererVulkan<ATYPE>*)(m_engine->GetSystem("VVE RendererVulkan")))->GetState();
+		    auto rend = ((RendererVulkan<ATYPE>*)(m_engine->GetSystem("VVE RendererVulkan")));
 
 
             if (window->GetSwapChainRebuild())
@@ -190,7 +191,7 @@ namespace vve {
             info.swapchainCount = 1;
             info.pSwapchains = &m_mainWindowData.Swapchain;
             info.pImageIndices = &m_mainWindowData.FrameIndex;
-            VkResult err = vkQueuePresentKHR(state->m_queue, &info);
+            VkResult err = vkQueuePresentKHR(rend->GetQueue(), &info);
             if (err == VK_ERROR_OUT_OF_DATE_KHR || err == VK_SUBOPTIMAL_KHR)
             {
                 window->SetSwapChainRebuild(true);
@@ -206,12 +207,12 @@ namespace vve {
         WindowSDL<ATYPE>* window = (WindowSDL<ATYPE>*)m_window;
         if (window->GetWidth() > 0 && window->GetHeight() > 0 && (window->GetSwapChainRebuild() || m_mainWindowData.Width != window->GetWidth() || m_mainWindowData.Height != window->GetHeight()))
         {
-		    auto state = ((RendererVulkan<ATYPE>*)(m_engine->GetSystem("VVE RendererVulkan")))->GetState();
+		    auto rend = ((RendererVulkan<ATYPE>*)(m_engine->GetSystem("VVE RendererVulkan")));
 
             ImGui_ImplVulkan_SetMinImageCount(window->GetMinImageCount());
-            ImGui_ImplVulkanH_CreateOrResizeWindow(state->m_instance, state->m_physicalDevice
-                , state->m_device, &m_mainWindowData, state->m_queueFamily
-                , state->m_allocator, window->GetWidth(), window->GetHeight(), window->GetMinImageCount());
+            ImGui_ImplVulkanH_CreateOrResizeWindow(rend->GetInstance(), rend->GetPhysicalDevice()
+                , rend->GetDevice(), &m_mainWindowData, rend->GetQueueFamily()
+                , rend->GetAllocator(), window->GetWidth(), window->GetHeight(), window->GetMinImageCount());
 
             m_mainWindowData.FrameIndex = 0;
             window->SetSwapChainRebuild(false);
@@ -221,12 +222,12 @@ namespace vve {
 
    	template<ArchitectureType ATYPE>
     void RendererImgui<ATYPE>::OnQuit(Message message) {
-		auto state = ((RendererVulkan<ATYPE>*)(m_engine->GetSystem("VVE RendererVulkan")))->GetState();
+		auto rend = ((RendererVulkan<ATYPE>*)(m_engine->GetSystem("VVE RendererVulkan")));
 
-        vh::CheckResult(vkDeviceWaitIdle(state->m_device));
+        vh::CheckResult(vkDeviceWaitIdle(rend->GetDevice()));
         ImGui_ImplVulkan_Shutdown();
-        vkDestroyDescriptorPool(state->m_device, m_descriptorPool, state->m_allocator);
-        ImGui_ImplVulkanH_DestroyWindow(state->m_instance, state->m_device, &m_mainWindowData, state->m_allocator);
+        vkDestroyDescriptorPool(rend->GetDevice(), m_descriptorPool, rend->GetAllocator());
+        ImGui_ImplVulkanH_DestroyWindow(rend->GetInstance(), rend->GetDevice(), &m_mainWindowData, rend->GetAllocator());
     }
 
     template class RendererImgui<ArchitectureType::SEQUENTIAL>;

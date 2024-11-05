@@ -63,7 +63,7 @@ namespace vve {
                 break;
             case 0:
                 {
-		            auto state = ((RendererVulkan<ATYPE>*)(m_engine->GetSystem("VVE RendererVulkan")))->GetState();
+		            auto rend = ((RendererVulkan<ATYPE>*)(m_engine->GetSystem("VVE RendererVulkan")));
 
                     // Setup Dear ImGui context
                     IMGUI_CHECKVERSION();
@@ -78,7 +78,7 @@ namespace vve {
     
                     ImGui_ImplSDL2_InitForVulkan(m_window);  // Setup Platform/Renderer backends
     
-                    if (SDL_Vulkan_CreateSurface(m_window, state->m_instance, &m_surface) == 0) {
+                    if (SDL_Vulkan_CreateSurface(m_window, rend->GetInstance(), &m_surface) == 0) {
                         printf("Failed to create Vulkan surface.\n");
                     }
                 }
