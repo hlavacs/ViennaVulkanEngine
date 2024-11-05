@@ -4,19 +4,10 @@
 #include <any>
 #include "VEInclude.h"
 #include "VESystem.h"
-#include "VEEngine.h"
 
 
 namespace vve
 {
-   	template<ArchitectureType ATYPE>
-    class System;
-
-   	template<ArchitectureType ATYPE>
-    class Engine;
-
-   	template<ArchitectureType ATYPE>
-    class Window;
 
     enum class RendererType {
         FORWARD,

@@ -107,9 +107,7 @@ namespace vve {
     class Engine;
 
    	template<ArchitectureType ATYPE>
-    class System
-    {
-        friend class Engine<ATYPE>;
+    class System {
 
     public:
         System( Engine<ATYPE>* engine, std::string name );

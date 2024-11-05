@@ -5,9 +5,6 @@
 namespace vve {
 
    	template<ArchitectureType ATYPE>
-    class Window;
-
-   	template<ArchitectureType ATYPE>
     class RendererImgui : public Renderer<ATYPE>
     {
         using System<ATYPE>::m_engine;
@@ -26,7 +23,7 @@ namespace vve {
 
    		VkDescriptorPool m_descriptorPool = VK_NULL_HANDLE;	
 
-                //-------------------------------------------------------------------------
+        //-------------------------------------------------------------------------
 
         ImGui_ImplVulkanH_Window m_mainWindowData;
 

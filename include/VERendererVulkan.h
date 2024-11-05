@@ -6,9 +6,6 @@
 namespace vve {
 
    	template<ArchitectureType ATYPE>
-    class Window;
-
-   	template<ArchitectureType ATYPE>
     class RendererVulkan : public Renderer<ATYPE>
     {
         using System<ATYPE>::m_engine;

@@ -11,7 +11,6 @@
 #include "VEWindow.h"
 
 
-
 namespace vve {
 
    	template<ArchitectureType ATYPE>
@@ -22,13 +21,13 @@ namespace vve {
         using Window<ATYPE>::m_width;
         using Window<ATYPE>::m_height;
         using Window<ATYPE>::m_windowName;
+        using Window<ATYPE>::m_surface;
+        using Window<ATYPE>::m_instance_extensions;
    
     public:
         WindowSDL(Engine<ATYPE>* engine, std::string windowName, int width, int height, std::string name = "VVE WindowSDL" );
         virtual ~WindowSDL();
-        auto GetSurface() -> VkSurfaceKHR { return m_surface; };
         auto GetMinImageCount() -> int { return m_minImageCount; };
-        auto GetInstanceExtensions() -> std::vector<const char*> { return m_instance_extensions; }; 
         auto GetSwapChainRebuild() -> bool { return m_swapChainRebuild; };
         void SetSwapChainRebuild(bool rebuild) { m_swapChainRebuild = rebuild; };
 
@@ -41,14 +40,12 @@ namespace vve {
 
         inline static bool sdl_initialized{false};
         SDL_Window* m_window{nullptr};
-        VkSurfaceKHR m_surface{VK_NULL_HANDLE};
         ImGuiIO* m_io;
         int m_minImageCount = 2;
         bool m_isMinimized = false;
         bool m_swapChainRebuild = false;
         std::set<SDL_Scancode> m_keysDown;
         std::set<uint8_t> m_mouseButtonsDown;
-        std::vector<const char*> m_instance_extensions;
     };
 
 
