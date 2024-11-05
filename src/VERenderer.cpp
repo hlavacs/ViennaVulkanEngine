@@ -13,11 +13,6 @@ namespace vve {
    	template<ArchitectureType ATYPE>
     Renderer<ATYPE>::~Renderer(){};
 
-   	template<ArchitectureType ATYPE>
-    auto Renderer<ATYPE>::GetState() -> std::any { 
-        return std::any(m_engine->GetState()); 
-    }
-
     template class Renderer<ArchitectureType::SEQUENTIAL>;
     template class Renderer<ArchitectureType::PARALLEL>;
 

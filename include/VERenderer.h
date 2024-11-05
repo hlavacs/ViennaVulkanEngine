@@ -33,7 +33,6 @@ namespace vve
     public:
         Renderer(Engine<ATYPE>* m_engine, Window<ATYPE>* window, std::string name = "VVE Renderer" );
         virtual ~Renderer();
-        virtual auto GetState() -> std::any;
 
     protected:
         Window<ATYPE>* m_window;

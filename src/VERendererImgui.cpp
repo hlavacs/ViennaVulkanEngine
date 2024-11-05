@@ -27,7 +27,7 @@ namespace vve {
    	template<ArchitectureType ATYPE>
     void RendererImgui<ATYPE>::OnInit(Message message) {
         WindowSDL<ATYPE>* window = (WindowSDL<ATYPE>*)m_window;
-		auto state = std::any_cast<VulkanState*>(m_engine->GetState());
+		auto state = &((RendererVulkan<ATYPE>*)(m_engine->GetSystem("VVE RendererVulkan")))->m_state;
 
         m_mainWindowData.Surface = window->m_surface;
 
@@ -116,7 +116,7 @@ namespace vve {
 
             VkResult err;
 
-		    auto state = std::any_cast<VulkanState*>(m_engine->GetState());
+		    auto state = &((RendererVulkan<ATYPE>*)(m_engine->GetSystem("VVE RendererVulkan")))->m_state;
 
             VkSemaphore image_acquired_semaphore  = wd->FrameSemaphores[wd->SemaphoreIndex].ImageAcquiredSemaphore;
             VkSemaphore render_complete_semaphore = wd->FrameSemaphores[wd->SemaphoreIndex].RenderCompleteSemaphore;
@@ -176,7 +176,7 @@ namespace vve {
 
         if (!is_minimized) {
             WindowSDL<ATYPE>* window = (WindowSDL<ATYPE>*)m_window;
-      		auto state = std::any_cast<VulkanState*>(m_engine->GetState());
+		    auto state = &((RendererVulkan<ATYPE>*)(m_engine->GetSystem("VVE RendererVulkan")))->m_state;
 
 
             if (window->m_swapChainRebuild)
@@ -205,7 +205,7 @@ namespace vve {
         WindowSDL<ATYPE>* window = (WindowSDL<ATYPE>*)m_window;
         if (window->m_width > 0 && window->m_height > 0 && (window->m_swapChainRebuild || m_mainWindowData.Width != window->m_width || m_mainWindowData.Height != window->m_height))
         {
-      		auto state = std::any_cast<VulkanState*>(m_engine->GetState());
+		    auto state = &((RendererVulkan<ATYPE>*)(m_engine->GetSystem("VVE RendererVulkan")))->m_state;
 
             ImGui_ImplVulkan_SetMinImageCount(window->m_minImageCount);
             ImGui_ImplVulkanH_CreateOrResizeWindow(state->m_instance, state->m_physicalDevice
@@ -220,7 +220,7 @@ namespace vve {
 
    	template<ArchitectureType ATYPE>
     void RendererImgui<ATYPE>::OnQuit(Message message) {
-    	auto state = std::any_cast<VulkanState*>(m_engine->GetState());
+		auto state = &((RendererVulkan<ATYPE>*)(m_engine->GetSystem("VVE RendererVulkan")))->m_state;
 
         vh::CheckResult(vkDeviceWaitIdle(state->m_device));
         ImGui_ImplVulkan_Shutdown();

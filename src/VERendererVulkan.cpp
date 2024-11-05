@@ -55,13 +55,11 @@ namespace vve {
     
     template<ArchitectureType ATYPE>
     void RendererVulkan<ATYPE>::OnQuit(Message message) { 
-		auto state = std::any_cast<VulkanState*>(m_engine->GetState());
-
-	    auto PFN_DestroyDebugReportCallbackEXT = (PFN_vkDestroyDebugReportCallbackEXT)vkGetInstanceProcAddr(state->m_instance, "vkDestroyDebugReportCallbackEXT");
-	    PFN_DestroyDebugReportCallbackEXT(state->m_instance, state->m_debugReport, state->m_allocator);
+	    auto PFN_DestroyDebugReportCallbackEXT = (PFN_vkDestroyDebugReportCallbackEXT)vkGetInstanceProcAddr(m_state.m_instance, "vkDestroyDebugReportCallbackEXT");
+	    PFN_DestroyDebugReportCallbackEXT(m_state.m_instance, m_state.m_debugReport, m_state.m_allocator);
 	
-	    vkDestroyDevice(state->m_device, state->m_allocator);
-	    vkDestroyInstance(state->m_instance, state->m_allocator);
+	    vkDestroyDevice(m_state.m_device, m_state.m_allocator);
+	    vkDestroyInstance(m_state.m_instance, m_state.m_allocator);
     }
 
     template class RendererVulkan<ArchitectureType::SEQUENTIAL>;

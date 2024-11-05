@@ -43,6 +43,13 @@ namespace vve {
 
 	};
 
+	//template<ArchitectureType ATYPE>
+	//auto Engine<ATYPE>::GetState() -> const std::any { 
+	//	return { &((RendererVulkan<ATYPE>*)(GetSystem("VVE RendererVulkan")))->m_state };
+	//	//return m_state; 
+	//};
+
+
 	template<ArchitectureType ATYPE>
 	void Engine<ATYPE>::RegisterSystem( System<ATYPE>* system, int phase, std::vector<MessageType> messageTypes) {
 		for( auto messageType : messageTypes ) {
@@ -89,9 +96,7 @@ namespace vve {
 	
 	template<ArchitectureType ATYPE>
 	void Engine<ATYPE>::CreateRenderer( const char* rendererName){
-		auto vulkanRenderer = std::make_shared<RendererVulkan<ATYPE>>(this, m_windows[0].get());
-		m_state = vulkanRenderer->GetState();
-		m_windows[0]->AddRenderer(vulkanRenderer );
+		m_windows[0]->AddRenderer(std::make_shared<RendererVulkan<ATYPE>>(this, m_windows[0].get()) );
 		m_windows[0]->AddRenderer(std::make_shared<RendererImgui<ATYPE>>(this, m_windows[0].get()) );
 		m_windows[0]->AddRenderer(std::make_shared<RendererForward<ATYPE>>(this, m_windows[0].get()) );
 	};

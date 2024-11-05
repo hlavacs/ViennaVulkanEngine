@@ -63,7 +63,8 @@ namespace vve {
                 break;
             case 0:
                 {
-                    auto state = std::any_cast<VulkanState*>(m_engine->GetState());
+		            auto state = &((RendererVulkan<ATYPE>*)(m_engine->GetSystem("VVE RendererVulkan")))->m_state;
+                    
                     // Setup Dear ImGui context
                     IMGUI_CHECKVERSION();
                     ImGui::CreateContext();

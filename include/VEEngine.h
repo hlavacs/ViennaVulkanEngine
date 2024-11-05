@@ -26,11 +26,11 @@ namespace vve {
 		void Run();
 		void Stop();
 		auto GetDebug() -> bool { return m_debug; }
-		auto GetState() -> const std::any& { return m_state; }
 		auto GetWindows() -> std::vector<std::shared_ptr<Window<ATYPE>>>& { return m_windows; }
 		auto GetSceneMgr() -> std::shared_ptr<SceneManager<ATYPE>> { return m_sceneManager; }
 		auto GetRegistry() -> vecs::Registry<>& { return m_registry; }
 		void SendMessage( Message message );
+		auto GetSystem( std::string name ) -> System<ATYPE>* { return m_systems[name]; }	
 
 	protected:
 		virtual void OnInit(Message message) override;
@@ -40,8 +40,6 @@ namespace vve {
 		virtual void CreateRenderer( const char* rendererName);
 		virtual void CreateCamera( const char* cameraName );
 		virtual void CreateSceneManager( const char* sceneManagerName );
-
-		std::any m_state;
 
 		std::unordered_map<std::string, System<ATYPE>*> m_systems{};
 
