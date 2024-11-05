@@ -167,7 +167,7 @@ namespace vve {
    	template<ArchitectureType ATYPE>
     void WindowSDL<ATYPE>::OnRenderNextFrame(Message message) {
         ImDrawData* draw_data = ImGui::GetDrawData();
-        const bool m_isMinimized = (draw_data->DisplaySize.x <= 0.0f || draw_data->DisplaySize.y <= 0.0f);       
+        m_isMinimized = (draw_data->DisplaySize.x <= 0.0f || draw_data->DisplaySize.y <= 0.0f);       
     }
 
    	template<ArchitectureType ATYPE>
