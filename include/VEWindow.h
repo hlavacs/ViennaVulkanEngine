@@ -25,8 +25,7 @@ namespace vve {
         friend class Engine<ATYPE>;
 
     public:
-        Window( Engine<ATYPE>* engine, std::string windowName
-                , int width, int height, std::string name = "VVE Window" );
+        Window( Engine<ATYPE>* engine, std::string windowName, int width, int height, std::string name = "VVE Window" );
         virtual ~Window();
 
         virtual auto GetSize() -> std::pair<int, int> = 0;
@@ -37,6 +36,7 @@ namespace vve {
 
         int m_width;
         int m_height;
+        std::string m_windowName;
         std::vector<std::shared_ptr<Renderer<ATYPE>>> m_renderer;
         VkSurfaceKHR m_surface{VK_NULL_HANDLE};
         glm::vec4 m_clearColor{0.45f, 0.55f, 0.60f, 1.00f};

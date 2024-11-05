@@ -32,6 +32,7 @@ namespace vve {
         using Window<ATYPE>::m_renderer;
         using Window<ATYPE>::m_width;
         using Window<ATYPE>::m_height;
+        using Window<ATYPE>::m_windowName;
 
         friend class Engine<ATYPE>;
         friend class RendererImgui<ATYPE>;

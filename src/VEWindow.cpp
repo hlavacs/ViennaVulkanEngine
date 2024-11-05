@@ -8,9 +8,8 @@
 namespace vve {
 
    	template<ArchitectureType ATYPE>
-    Window<ATYPE>::Window(Engine<ATYPE>* engine,std::string windowName
-        , int width, int height, std::string name ) 
-            : System<ATYPE>(engine, name), m_width(width), m_height(height) {
+    Window<ATYPE>::Window(Engine<ATYPE>* engine,std::string windowName, int width, int height, std::string name ) 
+            : System<ATYPE>(engine, name), m_width(width), m_height(height), m_windowName(windowName) {
     }
 
    	template<ArchitectureType ATYPE>
