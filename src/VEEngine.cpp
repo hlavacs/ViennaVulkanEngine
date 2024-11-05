@@ -20,26 +20,27 @@ namespace vve {
 		m_debug = true;
 	#endif
 		RegisterSystem( this, std::numeric_limits<int>::lowest(), {MessageType::INIT} );
-		RegisterSystem( this, std::numeric_limits<int>::max(), {MessageType::QUIT} );
-		
-		CreateWindow("Vulkan Engine", 800, 600);
-		//SetupVulkan();
-		CreateRenderer("Forward");
-		CreateSceneManager("");
-		CreateCamera("Main Camera");
+		RegisterSystem( this, std::numeric_limits<int>::max(), {MessageType::INIT, MessageType::QUIT} );
 	};
 	
 	template<ArchitectureType ATYPE>
 	Engine<ATYPE>::~Engine() {};
 
 	template<ArchitectureType ATYPE>
-	auto Engine<ATYPE>::GetState() -> std::any& { 
-		return m_state; 
-	}
-
-	template<ArchitectureType ATYPE>
 	void Engine<ATYPE>::OnInit(Message message ) {
-		LoadLevel("");
+		switch( message.GetPhase()) {
+			case std::numeric_limits<int>::lowest():
+				CreateWindow("Vulkan Engine", 800, 600);
+				CreateRenderer("Forward");
+				CreateSceneManager("");
+				CreateCamera("Main Camera");
+				break;
+			case std::numeric_limits<int>::max():
+				LoadLevel("");
+			default:
+				break;
+		}
+
 	};
 
 	template<ArchitectureType ATYPE>
@@ -74,8 +75,9 @@ namespace vve {
 	}
 
 	template<ArchitectureType ATYPE>
-	void Engine<ATYPE>::LoadLevel( const char* levelName ){
+	void Engine<ATYPE>::LoadLevel( std::string levelName ){
 		// Load level
+		std::cout << "Loading level: " << levelName << std::endl;
 	};
 	
 	template<ArchitectureType ATYPE>
@@ -103,7 +105,7 @@ namespace vve {
 	template<ArchitectureType ATYPE>
 	void Engine<ATYPE>::Run(){
 		SendMessage( MessageInit{this} );
-		
+
 		std::clock_t start = std::clock();
 		m_running = true;
 		auto last = std::chrono::high_resolution_clock::now();
