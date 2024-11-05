@@ -32,7 +32,7 @@ namespace vve {
     public:
         RendererVulkan(Engine<ATYPE>* engine, Window<ATYPE>* window, std::string name = "VVE RendererImgui" );
         virtual ~RendererVulkan();
-        virtual auto GetState() -> std::any;
+        virtual auto GetState() -> std::any { return std::any(&m_state); }
 
     private:
         virtual void OnInit(Message message) override;

@@ -26,7 +26,7 @@ namespace vve {
 		void Run();
 		void Stop();
 		auto GetDebug() -> bool { return m_debug; }
-		auto GetState() -> std::any& { return m_state; }
+		auto GetState() -> const std::any& { return m_state; }
 		auto GetWindows() -> std::vector<std::shared_ptr<Window<ATYPE>>>& { return m_windows; }
 		auto GetSceneMgr() -> std::shared_ptr<SceneManager<ATYPE>> { return m_sceneManager; }
 		auto GetRegistry() -> vecs::Registry<>& { return m_registry; }

@@ -26,11 +26,6 @@ namespace vve {
     RendererVulkan<ATYPE>::~RendererVulkan() {}
 
     template<ArchitectureType ATYPE>
-    auto RendererVulkan<ATYPE>::GetState() -> std::any { 
-        return std::any(&m_state); 
-    }
-
-    template<ArchitectureType ATYPE>
     void RendererVulkan<ATYPE>::OnInit(Message message) {
         WindowSDL<ATYPE>* window = (WindowSDL<ATYPE>*)m_engine->m_windows[0].get();
         m_state.m_instance_extensions = window->m_instance_extensions;
@@ -50,8 +45,6 @@ namespace vve {
 		//volkLoadDevice(m_device);
 
 		vkGetDeviceQueue(m_state.m_device, m_state.m_queueFamily, 0, &m_state.m_queue);
-
-        m_engine->GetState() = std::any(&m_state);
     }
 
     template<ArchitectureType ATYPE>
