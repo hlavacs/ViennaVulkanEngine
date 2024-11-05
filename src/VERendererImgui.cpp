@@ -29,7 +29,7 @@ namespace vve {
         WindowSDL<ATYPE>* window = (WindowSDL<ATYPE>*)m_window;
 		auto state = ((RendererVulkan<ATYPE>*)(m_engine->GetSystem("VVE RendererVulkan")))->GetState();
 
-        m_mainWindowData.Surface = window->m_surface;
+        m_mainWindowData.Surface = window->m_state.m_surface;
 
         // Check for WSI support
         VkBool32 res;
@@ -48,7 +48,7 @@ namespace vve {
         m_mainWindowData.PresentMode = vh::SelectPresentMode(state->m_physicalDevice, m_mainWindowData.Surface, requestedPresentModes);
 
         auto [width, height] = window->GetSize();
-        vh::CreateWindowSwapChain(state->m_physicalDevice, state->m_device, &m_mainWindowData, state->m_allocator, width, height, window->m_minImageCount);
+        vh::CreateWindowSwapChain(state->m_physicalDevice, state->m_device, &m_mainWindowData, state->m_allocator, width, height, window->m_state.m_minImageCount);
 
         vh::CreateWindowCommandBuffers(state->m_physicalDevice, state->m_device, &m_mainWindowData, state->m_queueFamily, state->m_allocator);
         vh::CreateDescriptorPool(state->m_device, &m_descriptorPool);
@@ -64,7 +64,7 @@ namespace vve {
         init_info.DescriptorPool = m_descriptorPool;
         init_info.RenderPass = m_mainWindowData.RenderPass;
         init_info.Subpass = 0;
-        init_info.MinImageCount = window->m_minImageCount;
+        init_info.MinImageCount = window->m_state.m_minImageCount;
         init_info.ImageCount = m_mainWindowData.ImageCount;
         init_info.MSAASamples = VK_SAMPLE_COUNT_1_BIT;
         init_info.Allocator = state->m_allocator;
@@ -106,11 +106,11 @@ namespace vve {
         const bool is_minimized = (draw_data->DisplaySize.x <= 0.0f || draw_data->DisplaySize.y <= 0.0f);
         if (!is_minimized)
         {
-            WindowSDL<ATYPE>* sdlwindow = (WindowSDL<ATYPE>*)m_window;
-            m_mainWindowData.ClearValue.color.float32[0] = sdlwindow->m_clearColor.x * sdlwindow->m_clearColor.w;
-            m_mainWindowData.ClearValue.color.float32[1] = sdlwindow->m_clearColor.y * sdlwindow->m_clearColor.w;
-            m_mainWindowData.ClearValue.color.float32[2] = sdlwindow->m_clearColor.z * sdlwindow->m_clearColor.w;
-            m_mainWindowData.ClearValue.color.float32[3] = sdlwindow->m_clearColor.w;
+            WindowSDL<ATYPE>* window = (WindowSDL<ATYPE>*)m_window;
+            m_mainWindowData.ClearValue.color.float32[0] = window->m_clearColor.x * window->m_clearColor.w;
+            m_mainWindowData.ClearValue.color.float32[1] = window->m_clearColor.y * window->m_clearColor.w;
+            m_mainWindowData.ClearValue.color.float32[2] = window->m_clearColor.z * window->m_clearColor.w;
+            m_mainWindowData.ClearValue.color.float32[3] = window->m_clearColor.w;
             
             auto wd = &m_mainWindowData;
 
@@ -123,7 +123,7 @@ namespace vve {
             err = vkAcquireNextImageKHR(state->m_device, wd->Swapchain, UINT64_MAX, image_acquired_semaphore, VK_NULL_HANDLE, &wd->FrameIndex);
             if (err == VK_ERROR_OUT_OF_DATE_KHR || err == VK_SUBOPTIMAL_KHR)
             {
-                sdlwindow->m_swapChainRebuild = true;
+                window->m_state.m_swapChainRebuild = true;
                 return;
             }
             vh::CheckResult(err);
@@ -179,7 +179,7 @@ namespace vve {
 		    auto state = ((RendererVulkan<ATYPE>*)(m_engine->GetSystem("VVE RendererVulkan")))->GetState();
 
 
-            if (window->m_swapChainRebuild)
+            if (window->m_state.m_swapChainRebuild)
                 return;
             VkSemaphore render_complete_semaphore = m_mainWindowData.FrameSemaphores[m_mainWindowData.SemaphoreIndex].RenderCompleteSemaphore;
             VkPresentInfoKHR info = {};
@@ -192,7 +192,7 @@ namespace vve {
             VkResult err = vkQueuePresentKHR(state->m_queue, &info);
             if (err == VK_ERROR_OUT_OF_DATE_KHR || err == VK_SUBOPTIMAL_KHR)
             {
-                window->m_swapChainRebuild = true;
+                window->m_state.m_swapChainRebuild = true;
                 return;
             }
             vh::CheckResult(err);
@@ -203,17 +203,17 @@ namespace vve {
    	template<ArchitectureType ATYPE>
     void RendererImgui<ATYPE>::OnPollEvents(Message message) {
         WindowSDL<ATYPE>* window = (WindowSDL<ATYPE>*)m_window;
-        if (window->m_width > 0 && window->m_height > 0 && (window->m_swapChainRebuild || m_mainWindowData.Width != window->m_width || m_mainWindowData.Height != window->m_height))
+        if (window->m_width > 0 && window->m_height > 0 && (window->m_state.m_swapChainRebuild || m_mainWindowData.Width != window->m_width || m_mainWindowData.Height != window->m_height))
         {
 		    auto state = ((RendererVulkan<ATYPE>*)(m_engine->GetSystem("VVE RendererVulkan")))->GetState();
 
-            ImGui_ImplVulkan_SetMinImageCount(window->m_minImageCount);
+            ImGui_ImplVulkan_SetMinImageCount(window->m_state.m_minImageCount);
             ImGui_ImplVulkanH_CreateOrResizeWindow(state->m_instance, state->m_physicalDevice
                 , state->m_device, &m_mainWindowData, state->m_queueFamily
-                , state->m_allocator, window->m_width, window->m_height, window->m_minImageCount);
+                , state->m_allocator, window->m_width, window->m_height, window->m_state.m_minImageCount);
 
             m_mainWindowData.FrameIndex = 0;
-            window->m_swapChainRebuild = false;
+            window->m_state.m_swapChainRebuild = false;
         }
     }
     

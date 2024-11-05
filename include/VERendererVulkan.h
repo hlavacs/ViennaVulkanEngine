@@ -11,6 +11,7 @@ namespace vve {
     struct VulkanState {
 		VkAllocationCallbacks*   m_allocator = nullptr;
 		VkInstance               m_instance = VK_NULL_HANDLE;
+        VkSurfaceKHR             m_surface{VK_NULL_HANDLE};
 		VkDebugReportCallbackEXT m_debugReport = VK_NULL_HANDLE;
 		VkPhysicalDevice         m_physicalDevice = VK_NULL_HANDLE;
 		VkDevice                 m_device = VK_NULL_HANDLE;
