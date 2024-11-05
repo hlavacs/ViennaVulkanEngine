@@ -43,6 +43,8 @@ namespace vve {
 
 		std::any m_state;
 
+		std::unordered_map<std::string, System<ATYPE>*> m_systems{};
+
 		bool m_debug{false};
 		bool m_running{false};
 
