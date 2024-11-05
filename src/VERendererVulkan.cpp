@@ -29,7 +29,7 @@ namespace vve {
     void RendererVulkan<ATYPE>::OnInit(Message message) {
         WindowSDL<ATYPE>* window = (WindowSDL<ATYPE>*)(m_engine->GetSystem("VVE WindowSDL"));
 
-        m_state.m_instance_extensions = window->m_state.m_instance_extensions;
+        m_state.m_instance_extensions = window->GetInstanceExtensions();
         if(m_engine->GetDebug()) {
 	        m_state.m_instance_layers.push_back("VK_LAYER_KHRONOS_validation");
 	        m_state.m_instance_extensions.push_back("VK_EXT_debug_report");

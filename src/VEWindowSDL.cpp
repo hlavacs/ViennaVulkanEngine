@@ -158,13 +158,11 @@ namespace vve {
         return;
     }
 
-
    	template<ArchitectureType ATYPE>
     void WindowSDL<ATYPE>::OnPrepareNextFrame(Message message) {
         ImGui_ImplSDL2_NewFrame();
         ImGui::NewFrame();
     }
-
 
    	template<ArchitectureType ATYPE>
     void WindowSDL<ATYPE>::OnRenderNextFrame(Message message) {
@@ -172,21 +170,12 @@ namespace vve {
         const bool m_isMinimized = (draw_data->DisplaySize.x <= 0.0f || draw_data->DisplaySize.y <= 0.0f);       
     }
 
-
    	template<ArchitectureType ATYPE>
     void WindowSDL<ATYPE>::OnQuit(Message message) {
         ImGui_ImplSDL2_Shutdown();
         ImGui::DestroyContext();
         SDL_DestroyWindow(m_state.m_window);
         SDL_Quit();
-    }
-
-
-   	template<ArchitectureType ATYPE>
-    auto WindowSDL<ATYPE>::GetSize() -> std::pair<int, int> {
-        int w, h;
-        SDL_GetWindowSize(m_state.m_window, &w, &h);
-        return std::make_pair(w, h);
     }
 
 

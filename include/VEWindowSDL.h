@@ -40,20 +40,23 @@ namespace vve {
     class WindowSDL : public Window<ATYPE> {
 
         using Window<ATYPE>::m_engine;
-        using Window<ATYPE>::m_clearColor;
         using Window<ATYPE>::m_renderer;
         using Window<ATYPE>::m_width;
         using Window<ATYPE>::m_height;
         using Window<ATYPE>::m_windowName;
 
         friend class RendererImgui<ATYPE>;
-        friend class RendererVulkan<ATYPE>;
+        //friend class RendererVulkan<ATYPE>;
     
     public:
         WindowSDL(Engine<ATYPE>* engine, std::string windowName, int width, int height, std::string name = "VVE WindowSDL" );
         virtual ~WindowSDL();
-        virtual auto GetSize() -> std::pair<int, int>;
-        auto GetState() -> const WindowSDLState* { return &m_state; };
+        auto GetSDLWindow() -> const SDL_Window* { return m_state.m_window; };
+        auto GetSurface() -> VkSurfaceKHR { return m_state.m_surface; };
+        auto GetIO() -> const ImGuiIO* { return m_state.m_io; };  
+        auto GetMinImageCount() -> int { return m_state.m_minImageCount; };
+        auto IsMinimized() -> bool { return m_state.m_isMinimized; };
+        auto GetInstanceExtensions() -> std::vector<const char*> { return m_state.m_instance_extensions; }; 
 
     private:
         virtual void OnInit(Message message) override;
@@ -61,7 +64,7 @@ namespace vve {
         virtual void OnPrepareNextFrame(Message message) override;
         virtual void OnRenderNextFrame(Message message) override;
         virtual void OnQuit(Message message) override;
-        
+
         WindowSDLState m_state;
     };
 

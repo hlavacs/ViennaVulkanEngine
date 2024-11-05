@@ -47,7 +47,8 @@ namespace vve {
         std::vector<VkPresentModeKHR> requestedPresentModes = { VK_PRESENT_MODE_MAILBOX_KHR, VK_PRESENT_MODE_FIFO_KHR };
         m_mainWindowData.PresentMode = vh::SelectPresentMode(state->m_physicalDevice, m_mainWindowData.Surface, requestedPresentModes);
 
-        auto [width, height] = window->GetSize();
+        auto width = window->GetWidth();
+        auto height = window->GetHeight();
         vh::CreateWindowSwapChain(state->m_physicalDevice, state->m_device, &m_mainWindowData, state->m_allocator, width, height, window->m_state.m_minImageCount);
 
         vh::CreateWindowCommandBuffers(state->m_physicalDevice, state->m_device, &m_mainWindowData, state->m_queueFamily, state->m_allocator);

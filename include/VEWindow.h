@@ -22,13 +22,14 @@ namespace vve {
    	template<ArchitectureType ATYPE>
     class Window : public System<ATYPE> {
 
-        //friend class Engine<ATYPE>;
-
     public:
         Window( Engine<ATYPE>* engine, std::string windowName, int width, int height, std::string name = "VVE Window" );
         virtual ~Window();
 
-        virtual auto GetSize() -> std::pair<int, int> = 0;
+        int GetWidth() { return m_width; };
+        int GetHeight() { return m_height; };
+        auto GetClearColor() -> glm::vec4 { return m_clearColor; };
+        auto GetWindowName() -> std::string { return m_windowName; };
         virtual void SetClearColor(glm::vec4 clearColor);
         virtual void AddRenderer(std::shared_ptr<Renderer<ATYPE>> renderer);
 
