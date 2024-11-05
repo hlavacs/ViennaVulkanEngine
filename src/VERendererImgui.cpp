@@ -17,11 +17,7 @@ namespace vve {
     RendererImgui<ATYPE>::RendererImgui( Engine<ATYPE>* engine, Window<ATYPE>* window, std::string name) 
         : Renderer<ATYPE>(engine, window, name ) {
 
-        engine->RegisterSystem( this, -100, {MessageType::INIT, MessageType::PREPARE_NEXT_FRAME, MessageType::RENDER_NEXT_FRAME, MessageType::QUIT} );
-        engine->RegisterSystem( this, 100, {MessageType::INIT, MessageType::POLL_EVENTS} ); //init after window
-
-
-		engine->RegisterSystem2( { 
+		engine->RegisterSystem( { 
 			  {this, -100, MessageType::INIT, [this](Message message){this->OnInit(message);} }
 			, {this, -100, MessageType::PREPARE_NEXT_FRAME, [this](Message message){this->OnPrepareNextFrame(message);} }
 			, {this, -100, MessageType::RENDER_NEXT_FRAME, [this](Message message){this->OnRenderNextFrame(message);} }

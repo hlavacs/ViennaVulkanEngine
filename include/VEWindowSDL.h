@@ -33,11 +33,12 @@ namespace vve {
         auto GetSDLWindow() -> SDL_Window* { return m_window; };
 
     private:
-        virtual void OnInit(Message message) override;
-        virtual void OnPollEvents(Message message) override;
-        virtual void OnPrepareNextFrame(Message message) override;
-        virtual void OnRenderNextFrame(Message message) override;
-        virtual void OnQuit(Message message) override;
+        virtual void OnInit(Message message);
+        virtual void OnPollEvents(Message message);
+        virtual void OnPrepareNextFrame(Message message);
+        virtual void OnRenderNextFrame(Message message);
+        virtual void OnPresentNextFrame(Message message);
+        virtual void OnQuit(Message message);
 
         inline static bool sdl_initialized{false};
         SDL_Window* m_window{nullptr};

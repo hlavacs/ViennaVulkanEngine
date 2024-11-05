@@ -12,11 +12,11 @@ namespace vve
         virtual ~RendererForward();
 
     private:
-        virtual void OnInit(Message message) override;
-        virtual void OnPrepareNextFrame(Message message) override;
-        virtual void OnRecordNextFrame(Message message) override;
-        virtual void OnRenderNextFrame(Message message) override;
-        virtual void OnQuit(Message message) override;
+        virtual void OnInit(Message message);
+        virtual void OnPrepareNextFrame(Message message);
+        virtual void OnRecordNextFrame(Message message);
+        virtual void OnRenderNextFrame(Message message);
+        virtual void OnQuit(Message message);
     };
 
 };   // namespace vve

@@ -18,10 +18,7 @@ class MyGUI : public vve::System<ATYPE> {
 public:
     MyGUI( vve::Engine<ATYPE>* engine ) : vve::System<ATYPE>(engine, "MyGUI") {
 
-        engine->RegisterSystem(this, 0
-            , {vve::MessageType::RECORD_NEXT_FRAME, vve::MessageType::KEY_DOWN, vve::MessageType::KEY_REPEAT, vve::MessageType::KEY_UP});
-
-        engine->RegisterSystem2( { 
+        engine->RegisterSystem( { 
 			  {this, 0, vve::MessageType::RECORD_NEXT_FRAME, [this](vve::Message message){this->OnRecordNextFrame(message);} }
 			, {this, 0, vve::MessageType::KEY_DOWN, [this](vve::Message message){this->OnKeyDown(message);} }
 			, {this, 0, vve::MessageType::KEY_REPEAT, [this](vve::Message message){this->OnKeyRepeat(message);} }
@@ -34,7 +31,7 @@ public:
 
     float clear_color[3]{ 0.45f, 0.55f, 0.60f};
 
-    void OnRecordNextFrame(vve::Message message) override {
+    void OnRecordNextFrame(vve::Message message) {
       
         static bool show_demo_window = true;
         static bool show_another_window = false;
@@ -81,14 +78,14 @@ public:
     }
 
 
-    void OnKeyDown(vve::Message message) override {
+    void OnKeyDown(vve::Message message) {
         std::cout << "Key down: " << message.GetData<vve::MessageKeyDown>().m_key << std::endl;
     }
 
-    void OnKeyUp(vve::Message message) override {
+    void OnKeyUp(vve::Message message) {
         std::cout << "Key up: " << message.GetData<vve::MessageKeyUp>().m_key << std::endl;
     }
-    void OnKeyRepeat(vve::Message message) override {
+    void OnKeyRepeat(vve::Message message) {
         std::cout << "Key repeat: " << message.GetData<vve::MessageKeyRepeat>().m_key << std::endl;
     }
 

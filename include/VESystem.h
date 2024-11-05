@@ -113,9 +113,9 @@ namespace vve {
         System( Engine<ATYPE>* engine, std::string name );
         virtual ~System();
         auto GetName() -> std::string { return m_name; };
-        virtual void ReceiveMessage(Message message);
+        //virtual void ReceiveMessage(Message message);
 
-    protected:
+    /*protected:
         virtual void OnInit(Message message);       //system is initiated
         virtual void OnAnnounce(Message message);   //system announces itself to all other systems
         virtual void OnFrameStart(Message message); //Enter the game loop
@@ -136,9 +136,9 @@ namespace vve {
         virtual void OnKeyUp(Message message);      //Key up
         virtual void OnKeyRepeat(Message message);  //Key repeat
         virtual void OnQuit(Message message);       //Quit
-
+        */
         std::string m_name;
-        std::unordered_map<MessageType, std::function<void(Message)>> m_onFunctions;
+        //std::unordered_map<MessageType, std::function<void(Message)>> m_onFunctions;
         Engine<ATYPE>* m_engine;
         Mutex<ATYPE> m_mutex;
         std::vector<Message> m_messages;

@@ -12,14 +12,7 @@ namespace vve {
             , int width, int height, std::string name) 
                 : Window<ATYPE>(engine, windowName, width, height, name ) {
 
-        engine->RegisterSystem( this, -2000, {MessageType::INIT} );
-
-        engine->RegisterSystem( this, 0
-            , {MessageType::INIT, MessageType::POLL_EVENTS, MessageType::PREPARE_NEXT_FRAME
-                , MessageType::RENDER_NEXT_FRAME, MessageType::PRESENT_NEXT_FRAME, MessageType::QUIT} );
-
-
-        engine->RegisterSystem2( { 
+        engine->RegisterSystem( { 
 			  {this, -2000, MessageType::INIT, [this](Message message){this->OnInit(message);} }
 			, {this,     0, MessageType::INIT, [this](Message message){this->OnInit(message);} }
 			, {this,     0, MessageType::POLL_EVENTS, [this](Message message){this->OnPollEvents(message);} }
@@ -166,6 +159,10 @@ namespace vve {
     void WindowSDL<ATYPE>::OnRenderNextFrame(Message message) {
         ImDrawData* draw_data = ImGui::GetDrawData();
         m_isMinimized = (draw_data->DisplaySize.x <= 0.0f || draw_data->DisplaySize.y <= 0.0f);       
+    }
+
+   	template<ArchitectureType ATYPE>
+    void WindowSDL<ATYPE>::OnPresentNextFrame(Message message) {
     }
 
    	template<ArchitectureType ATYPE>

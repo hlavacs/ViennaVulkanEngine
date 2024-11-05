@@ -19,10 +19,7 @@ namespace vve {
 	#ifndef NDEBUG
 		m_debug = true;
 	#endif
-		RegisterSystem( this, std::numeric_limits<int>::lowest(), {MessageType::INIT} );
-		RegisterSystem( this, std::numeric_limits<int>::max(), {MessageType::INIT, MessageType::QUIT} );
-
-		RegisterSystem2( { 
+		RegisterSystem( { 
 			  {this, std::numeric_limits<int>::lowest(), MessageType::INIT, [this](Message message){this->OnInit(message);} }
 			, {this, std::numeric_limits<int>::max(),    MessageType::INIT, [this](Message message){this->OnInit(message);} }
 			, {this, std::numeric_limits<int>::max(),    MessageType::QUIT, [this](Message message){this->OnQuit(message);} }
@@ -46,23 +43,12 @@ namespace vve {
 			default:
 				break;
 		}
-
 	};
 
 	template<ArchitectureType ATYPE>
-	void Engine<ATYPE>::RegisterSystem( System<ATYPE>* system, int phase, std::vector<MessageType> messageTypes) {
-		for( auto messageType : messageTypes ) {
-			auto& pm = m_messageMap[messageType];
-			pm.insert({phase, system});
-		}
-		m_systems[system->GetName()] = system;
-	}
-
-
-	template<ArchitectureType ATYPE>
-	void Engine<ATYPE>::RegisterSystem2( std::vector<MessageCallback> callbacks) {
+	void Engine<ATYPE>::RegisterSystem( std::vector<MessageCallback> callbacks) {
 		for( auto& callback : callbacks ) {
-			auto& pm = m_messageMap2[callback.m_messageType];
+			auto& pm = m_messageMap[callback.m_messageType];
 			pm.insert({callback.m_phase, callback});
 			m_systems[callback.m_system->GetName()] = callback.m_system;
 		}
@@ -71,20 +57,6 @@ namespace vve {
 	template<ArchitectureType ATYPE>
 	void Engine<ATYPE>::DeregisterSystem(System<ATYPE>* system) {
 		for( auto& map : m_messageMap ) {
-			for( auto iter = map.second.begin(); iter != map.second.end(); ) {
-				if( iter->second == system ) {
-					iter = map.second.erase(iter);
-				} else {
-					++iter;
-				}
-			}
-		}
-		m_systems.erase(system->GetName());
-	}
-
-	template<ArchitectureType ATYPE>
-	void Engine<ATYPE>::DeregisterSystem2(System<ATYPE>* system) {
-		for( auto& map : m_messageMap2 ) {
 			for( auto iter = map.second.begin(); iter != map.second.end(); ) {
 				if( iter->second.m_system == system ) {
 					iter = map.second.erase(iter);
@@ -98,17 +70,7 @@ namespace vve {
 
 	template<ArchitectureType ATYPE>
 	void Engine<ATYPE>::SendMessage( Message message ) {
-		for( auto& [phase, system] : m_messageMap[message.GetType()] ) {
-			message.SetPhase(phase);
-			void* receiver = message.GetReceiver();
-			if( receiver == nullptr || receiver == system ) [[likely]]
-				system->ReceiveMessage(message);
-		}
-	}
-
-	template<ArchitectureType ATYPE>
-	void Engine<ATYPE>::SendMessage2( Message message ) {
-		for( auto& [phase, callback] : m_messageMap2[message.GetType()] ) {
+		for( auto& [phase, callback] : m_messageMap[message.GetType()] ) {
 			message.SetPhase(phase);
 			void* receiver = message.GetReceiver();
 			if( receiver == nullptr || receiver == callback.m_system ) [[likely]]

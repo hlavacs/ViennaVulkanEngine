@@ -29,7 +29,7 @@ namespace vve {
 
    	template<ArchitectureType ATYPE>
     System<ATYPE>::System( Engine<ATYPE>* engine, std::string name ) : m_engine(engine), m_name(name) {
-        assert( m_engine != nullptr );
+        /*assert( m_engine != nullptr );
         m_onFunctions[INIT] = [this](Message message){ OnInit(message); };
         m_onFunctions[ANNOUNCE] = [this](Message message){ OnAnnounce(message); };
         m_onFunctions[FRAME_START] = [this](Message message){ OnFrameStart(message); };
@@ -49,20 +49,15 @@ namespace vve {
         m_onFunctions[KEY_DOWN] = [this](Message message){ OnKeyDown(message); };
         m_onFunctions[KEY_UP] = [this](Message message){ OnKeyUp(message); };
         m_onFunctions[KEY_REPEAT] = [this](Message message){ OnKeyRepeat(message); };
-        m_onFunctions[QUIT] = [this](Message message){ OnQuit(message); };
+        m_onFunctions[QUIT] = [this](Message message){ OnQuit(message); };*/
     };
 
    	template<ArchitectureType ATYPE>
     System<ATYPE>::~System(){};
 
-   	template<ArchitectureType ATYPE>
-    void System<ATYPE>::ReceiveMessage(Message message) {
-        assert( m_onFunctions.contains(message.GetType()) );
-        m_onFunctions[message.GetType()](message);
-    };
 
     //-------------------------------------------------------------------------------------------------
-
+    /*
    	template<ArchitectureType ATYPE>
     void System<ATYPE>::OnInit(Message message){};
 
@@ -122,6 +117,7 @@ namespace vve {
 
    	template<ArchitectureType ATYPE>
     void System<ATYPE>::OnQuit(Message message){};
+    */
 
     template class System<ArchitectureType::SEQUENTIAL>;
     template class System<ArchitectureType::PARALLEL>;

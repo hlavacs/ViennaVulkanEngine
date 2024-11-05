@@ -25,10 +25,8 @@ namespace vve {
 	public:
 		Engine(std::string name = "VVE Engine");
 		virtual ~Engine();
-		void RegisterSystem( System<ATYPE>* system, int phase, std::vector<MessageType> messageTypes );
-		void RegisterSystem2( std::vector<MessageCallback> callbacks);
+		void RegisterSystem( std::vector<MessageCallback> callbacks);
 		void DeregisterSystem( System<ATYPE>* system );
-		void DeregisterSystem2( System<ATYPE>* system );
 		void Run();
 		void Stop();
 		auto GetDebug() -> bool { return m_debug; }
@@ -36,12 +34,11 @@ namespace vve {
 		auto GetSceneMgr() -> std::shared_ptr<SceneManager<ATYPE>> { return m_sceneManager; }
 		auto GetRegistry() -> vecs::Registry<>& { return m_registry; }
 		void SendMessage( Message message );
-		void SendMessage2( Message message );
 		auto GetSystem( std::string name ) -> System<ATYPE>* { return m_systems[name]; }	
 
 	protected:
-		virtual void OnInit(Message message) override;
-		virtual void OnQuit(Message message) override;
+		virtual void OnInit(Message message);
+		virtual void OnQuit(Message message);
 		virtual void LoadLevel( std::string levelName );
 		virtual void CreateWindow( const char* windowName, int width, int height );
 		virtual void CreateRenderer( const char* rendererName);
@@ -55,13 +52,9 @@ namespace vve {
 
 		vecs::Registry<> m_registry;
 		
-		using PriorityMap = std::multimap<int, System<ATYPE>*>;
+		using PriorityMap = std::multimap<int, MessageCallback>;
 		using MessageMap = std::unordered_map<MessageType, PriorityMap>;
 		MessageMap m_messageMap{};
-
-		using PriorityMap2 = std::multimap<int, MessageCallback>;
-		using MessageMap2 = std::unordered_map<MessageType, PriorityMap2>;
-		MessageMap2 m_messageMap2{};
 
 		std::vector<std::shared_ptr<Window<ATYPE>>> m_windows{};
 		std::shared_ptr<SceneManager<ATYPE>> m_sceneManager;

@@ -15,11 +15,11 @@ namespace vve {
         virtual ~RendererImgui();
 
     private:
-        virtual void OnInit(Message message) override;
-        virtual void OnPollEvents(Message message) override;
-        virtual void OnPrepareNextFrame(Message message) override;
-        virtual void OnRenderNextFrame(Message message) override;
-        virtual void OnQuit(Message message) override;
+        virtual void OnInit(Message message);
+        virtual void OnPollEvents(Message message);
+        virtual void OnPrepareNextFrame(Message message);
+        virtual void OnRenderNextFrame(Message message);
+        virtual void OnQuit(Message message);
 
    		VkDescriptorPool m_descriptorPool = VK_NULL_HANDLE;	
 
