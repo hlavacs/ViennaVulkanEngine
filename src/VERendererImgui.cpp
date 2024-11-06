@@ -49,6 +49,8 @@ namespace vve {
         WindowSDL<ATYPE>* window = (WindowSDL<ATYPE>*)m_window;
 		auto rend = (RendererVulkan<ATYPE>*)(m_engine->GetSystem("VVE RendererVulkan"));
 
+        //-------------------------------------------------------------------------
+
         m_mainWindowData.Surface = window->GetSurface();
 
         // Check for WSI support
@@ -73,6 +75,9 @@ namespace vve {
 
         vh::CreateWindowCommandBuffers(rend->GetPhysicalDevice(), rend->GetDevice(), &m_mainWindowData, rend->GetQueueFamily(), rend->GetAllocator());
         vh::CreateDescriptorPool(rend->GetDevice(), &m_descriptorPool);
+
+        //-------------------------------------------------------------------------
+
 
         ImGui_ImplVulkan_InitInfo init_info = {};
 

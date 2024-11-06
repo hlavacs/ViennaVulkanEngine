@@ -45,6 +45,28 @@ namespace vve {
 		uint32_t                 m_queueFamily = (uint32_t)-1;		
 		VkQueue                  m_queue = VK_NULL_HANDLE;
 		VkPipelineCache          m_pipelineCache = VK_NULL_HANDLE;
+
+        VkFormat                 m_surfaceFormat = VK_FORMAT_UNDEFINED;
+        VkPresentModeKHR         m_presentMode = VK_PRESENT_MODE_FIFO_KHR;
+        VkSwapchainKHR           m_swapchain = VK_NULL_HANDLE;
+        int                      m_minImageCount = 0;
+
+        struct Frame {
+            VkCommandPool       m_commandPool;
+            VkCommandBuffer     m_commandBuffer;
+            VkFence             m_fence;
+            VkImage             m_backbuffer;
+            VkImageView         m_backbufferView;
+            VkFramebuffer       m_framebuffer;
+        };
+        std::vector<Frame>      m_frames;
+
+        struct FrameSemaphore {
+            VkSemaphore         m_imageAcquiredSemaphore;
+            VkSemaphore         m_renderCompleteSemaphore;
+        };
+        std::vector<FrameSemaphore> m_frameSemaphores;
+       
 		std::vector<const char*> m_instance_layers;
 		std::vector<const char*> m_instance_extensions;
 		std::vector<const char*> m_device_extensions{"VK_KHR_swapchain"};
