@@ -47,8 +47,6 @@ target_include_directories(${TARGET} PUBLIC ${GLM}/glm)
 target_include_directories(${TARGET} PUBLIC ${VECS}/include)
 target_include_directories(${TARGET} PUBLIC ${VTLL}/include)
 
-target_link_libraries(${TARGET} LINK_INTERFACE_LIBRARIES $(VULKAN_SDK)/Lib/vulkan-1.lib)
-
 target_compile_features(${TARGET} PUBLIC cxx_std_20)
 
 source_group(

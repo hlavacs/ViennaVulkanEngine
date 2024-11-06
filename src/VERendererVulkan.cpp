@@ -1,10 +1,8 @@
 
 
-#include "VHInclude.h"
+#define VOLK_IMPLEMENTATION
+
 #include "VERendererVulkan.h"
-#include "VESystem.h"
-#include "VEInclude.h"
-#include "VHInclude.h"
 #include "VEEngine.h"
 #include "VEWindowSDL.h"
 
@@ -39,8 +37,9 @@ namespace vve {
    	        m_instance_extensions.push_back("VK_EXT_debug_report");
    		}
    		//VkResult volkInitialize();
+        volkInitialize();
    		vh::SetupInstance(m_instance_layers, m_instance_extensions, m_allocator, &m_instance);
-   		//volkLoadInstance(m_instance);       
+   		volkLoadInstance(m_instance);       
    		if(m_engine->GetDebug()) vh::SetupDebugReport(m_instance, m_allocator, &m_debugReport);
     }
 
@@ -52,7 +51,7 @@ namespace vve {
    		vh::SetupPhysicalDevice(m_instance, m_device_extensions, &m_physicalDevice);
    		vh::SetupGraphicsQueueFamily(m_physicalDevice, &m_queueFamily);
    	    vh::SetupDevice( m_physicalDevice, nullptr, m_device_extensions, m_queueFamily, &m_device);
-   		//volkLoadDevice(m_device);
+   		volkLoadDevice(m_device);
    		vkGetDeviceQueue(m_device, m_queueFamily, 0, &m_queue);
 
         //-------------------------------------------------------------------------
