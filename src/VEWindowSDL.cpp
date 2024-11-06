@@ -14,7 +14,7 @@ namespace vve {
 
         engine->RegisterSystem( { 
 			  {this, -2000, MessageType::INIT, [this](Message message){this->OnInit(message);} }
-			, {this,     0, MessageType::INIT, [this](Message message){this->OnInit(message);} }
+			, {this,     0, MessageType::INIT, [this](Message message){this->OnInit2(message);} }
 			, {this,     0, MessageType::POLL_EVENTS, [this](Message message){this->OnPollEvents(message);} }
 			, {this,     0, MessageType::PREPARE_NEXT_FRAME, [this](Message message){this->OnPrepareNextFrame(message);} }
 			, {this,     0, MessageType::RENDER_NEXT_FRAME, [this](Message message){this->OnRenderNextFrame(message);} }
@@ -26,60 +26,44 @@ namespace vve {
    	template<ArchitectureType ATYPE>
     WindowSDL<ATYPE>::~WindowSDL() {}
 
-
    	template<ArchitectureType ATYPE>
     void WindowSDL<ATYPE>::OnInit(Message message) {
 
-        switch( message.GetPhase() ) {
-            case -2000:
-                {
-                    if(!sdl_initialized) {
-                    
-                        if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_TIMER | SDL_INIT_GAMECONTROLLER) != 0) {
-                            printf("Error: %s\n", SDL_GetError());
-                            return;
-                        }
-
-                        // From 2.0.18: Enable native IME.
-                    #ifdef SDL_HINT_IME_SHOW_UI
-                        SDL_SetHint(SDL_HINT_IME_SHOW_UI, "1");
-                    #endif
-
-                        sdl_initialized = true;
-                    }
-
-                    // Create window with Vulkan graphics context
-                    SDL_WindowFlags window_flags = (SDL_WindowFlags)(SDL_WINDOW_VULKAN | SDL_WINDOW_RESIZABLE | SDL_WINDOW_ALLOW_HIGHDPI);
-                    m_window = SDL_CreateWindow(m_windowName.c_str(), SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, m_width, m_height, window_flags);
-                    if (m_window == nullptr) {
-                        printf("Error: SDL_CreateWindow(): %s\n", SDL_GetError());
-                        return;
-                    }
-
-                    uint32_t extensions_count = 0;
-                    std::vector<const char*> extensions;
-                    SDL_Vulkan_GetInstanceExtensions(m_window, &extensions_count, nullptr);
-                    extensions.resize(extensions_count);
-                    SDL_Vulkan_GetInstanceExtensions(m_window, &extensions_count, extensions.data());
-                    m_instance_extensions.insert(m_instance_extensions.end(), extensions.begin(), extensions.end());
-                }
-                break;
-
-            case 0:
-                {
-		            auto rend = ((RendererVulkan<ATYPE>*)(m_engine->GetSystem("VVE RendererVulkan")));
-
-                    if (SDL_Vulkan_CreateSurface(m_window, rend->GetInstance(), &m_surface) == 0) {
-                        printf("Failed to create Vulkan surface.\n");
-                    }
-                }
-                break;
-
-            default:
-                break;
+        if(!sdl_initialized) {
+        
+            if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_TIMER | SDL_INIT_GAMECONTROLLER) != 0) {
+                printf("Error: %s\n", SDL_GetError());
+                return;
+            }
+            // From 2.0.18: Enable native IME.
+        #ifdef SDL_HINT_IME_SHOW_UI
+            SDL_SetHint(SDL_HINT_IME_SHOW_UI, "1");
+        #endif
+            sdl_initialized = true;
+        }
+        // Create window with Vulkan graphics context
+        SDL_WindowFlags window_flags = (SDL_WindowFlags)(SDL_WINDOW_VULKAN | SDL_WINDOW_RESIZABLE | SDL_WINDOW_ALLOW_HIGHDPI);
+        m_window = SDL_CreateWindow(m_windowName.c_str(), SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, m_width, m_height, window_flags);
+        if (m_window == nullptr) {
+            printf("Error: SDL_CreateWindow(): %s\n", SDL_GetError());
+            return;
+        }
+        uint32_t extensions_count = 0;
+        std::vector<const char*> extensions;
+        SDL_Vulkan_GetInstanceExtensions(m_window, &extensions_count, nullptr);
+        extensions.resize(extensions_count);
+        SDL_Vulkan_GetInstanceExtensions(m_window, &extensions_count, extensions.data());
+        m_instance_extensions.insert(m_instance_extensions.end(), extensions.begin(), extensions.end());
+    }
+        
+   	template<ArchitectureType ATYPE>
+    void WindowSDL<ATYPE>::OnInit2(Message message) {
+        auto rend = ((RendererVulkan<ATYPE>*)(m_engine->GetSystem("VVE RendererVulkan")));
+        
+        if (SDL_Vulkan_CreateSurface(m_window, rend->GetInstance(), &m_surface) == 0) {
+            printf("Failed to create Vulkan surface.\n");
         }
     }
-
 
    	template<ArchitectureType ATYPE>
     void WindowSDL<ATYPE>::OnPollEvents(Message message) {
