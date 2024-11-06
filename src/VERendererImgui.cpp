@@ -22,7 +22,7 @@ namespace vve {
 			, {this, -100, MessageType::PREPARE_NEXT_FRAME, [this](Message message){this->OnPrepareNextFrame(message);} }
 			, {this, -100, MessageType::RENDER_NEXT_FRAME, [this](Message message){this->OnRenderNextFrame(message);} }
 			, {this, -100, MessageType::QUIT, [this](Message message){this->OnQuit(message);} }
-			, {this,  100, MessageType::INIT, [this](Message message){this->OnInit(message);} }
+			, {this,  100, MessageType::INIT, [this](Message message){this->OnInit2(message);} }
 			, {this,  100, MessageType::POLL_EVENTS, [this](Message message){this->OnPollEvents(message);} }
 		} );
 
@@ -33,20 +33,18 @@ namespace vve {
 
    	template<ArchitectureType ATYPE>
     void RendererImgui<ATYPE>::OnInit(Message message) {
+        IMGUI_CHECKVERSION();
+        ImGui::CreateContext();
+        
+        ImGui::StyleColorsDark();  // Setup Dear ImGui style
+        //ImGui::StyleColorsLight();
+        
+        auto window = (WindowSDL<ATYPE>*)m_window;
+        ImGui_ImplSDL2_InitForVulkan(window->GetSDLWindow());  // Setup Platform/Renderer backends
+    }
 
-        if( message.GetPhase() == -100 ) {
-            IMGUI_CHECKVERSION();
-            ImGui::CreateContext();
-            
-            ImGui::StyleColorsDark();  // Setup Dear ImGui style
-            //ImGui::StyleColorsLight();
-            
-            auto window = (WindowSDL<ATYPE>*)m_window;
-            ImGui_ImplSDL2_InitForVulkan(window->GetSDLWindow());  // Setup Platform/Renderer backends
-            return;
-        }
-
-        assert( message.GetPhase() == 100 );
+   	template<ArchitectureType ATYPE>
+    void RendererImgui<ATYPE>::OnInit2(Message message) {
 
         WindowSDL<ATYPE>* window = (WindowSDL<ATYPE>*)m_window;
 		auto rend = (RendererVulkan<ATYPE>*)(m_engine->GetSystem("VVE RendererVulkan"));

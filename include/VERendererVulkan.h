@@ -30,6 +30,7 @@ namespace vve {
 
     private:
         virtual void OnInit(Message message);
+        virtual void OnInit2(Message message);
         virtual void OnPrepareNextFrame(Message message);
         virtual void OnRecordNextFrame(Message message);
         virtual void OnRenderNextFrame(Message message);

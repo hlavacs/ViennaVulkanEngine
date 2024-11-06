@@ -38,6 +38,7 @@ namespace vve {
 
 	protected:
 		virtual void OnInit(Message message);
+		virtual void OnInit2(Message message);
 		virtual void OnQuit(Message message);
 		virtual void LoadLevel( std::string levelName );
 		virtual void CreateWindow( const char* windowName, int width, int height );

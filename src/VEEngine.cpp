@@ -21,7 +21,7 @@ namespace vve {
 	#endif
 		RegisterSystem( { 
 			  {this, std::numeric_limits<int>::lowest(), MessageType::INIT, [this](Message message){this->OnInit(message);} }
-			, {this, std::numeric_limits<int>::max(),    MessageType::INIT, [this](Message message){this->OnInit(message);} }
+			, {this, std::numeric_limits<int>::max(),    MessageType::INIT, [this](Message message){this->OnInit2(message);} }
 			, {this, std::numeric_limits<int>::max(),    MessageType::QUIT, [this](Message message){this->OnQuit(message);} }
 		} );
 	};
@@ -31,18 +31,15 @@ namespace vve {
 
 	template<ArchitectureType ATYPE>
 	void Engine<ATYPE>::OnInit(Message message ) {
-		switch( message.GetPhase()) {
-			case std::numeric_limits<int>::lowest():
-				CreateWindow("Vulkan Engine", 800, 600);
-				CreateRenderer("Forward");
-				CreateSceneManager("");
-				CreateCamera("Main Camera");
-				break;
-			case std::numeric_limits<int>::max():
-				LoadLevel("");
-			default:
-				break;
-		}
+		CreateWindow("Vulkan Engine", 800, 600);
+		CreateRenderer("Forward");
+		CreateSceneManager("");
+		CreateCamera("Main Camera");
+	};
+
+	template<ArchitectureType ATYPE>
+	void Engine<ATYPE>::OnInit2(Message message ) {
+		LoadLevel("");
 	};
 
 	template<ArchitectureType ATYPE>
