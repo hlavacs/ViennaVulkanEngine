@@ -4,13 +4,11 @@
 #include <unordered_map>
 #include "glm/glm.hpp"
 #include <vulkan/vulkan.h>
-#include "imgui.h"
 #include "VECS.h"
 
 
 namespace vve {
-   	template<ArchitectureType ATYPE>
-    class RendererVulkan;
+   	template<ArchitectureType ATYPE> class RendererVulkan;
 
 	template<ArchitectureType ATYPE = ArchitectureType::SEQUENTIAL>
 	class Engine : public System<ATYPE> {

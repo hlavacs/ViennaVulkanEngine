@@ -31,28 +31,29 @@ namespace vve {
 
     template<ArchitectureType ATYPE>
     void RendererVulkan<ATYPE>::OnInit(Message message) {
-        WindowSDL<ATYPE>* window = (WindowSDL<ATYPE>*)(m_engine->GetSystem("VVE WindowSDL"));
+        WindowSDL<ATYPE>* window = (WindowSDL<ATYPE>*)m_window;
 
-           m_instance_extensions = window->GetInstanceExtensions();
-           if(m_engine->GetDebug()) {
+        m_instance_extensions = window->GetInstanceExtensions();
+        if(m_engine->GetDebug()) {
    	        m_instance_layers.push_back("VK_LAYER_KHRONOS_validation");
    	        m_instance_extensions.push_back("VK_EXT_debug_report");
    		}
    		//VkResult volkInitialize();
    		vh::SetupInstance(m_instance_layers, m_instance_extensions, m_allocator, &m_instance);
-   		//volkLoadInstance(m_instance);
+   		//volkLoadInstance(m_instance);       
    		if(m_engine->GetDebug()) vh::SetupDebugReport(m_instance, m_allocator, &m_debugReport);
-   		vh::SetupPhysicalDevice(m_instance, m_device_extensions, &m_physicalDevice);
-   		vh::SetupGraphicsQueueFamily(m_physicalDevice, &m_queueFamily);
-   	    vh::SetupDevice( m_physicalDevice, nullptr, m_device_extensions, m_queueFamily, &m_device);
-   		//volkLoadDevice(m_device);
-   		vkGetDeviceQueue(m_device, m_queueFamily, 0, &m_queue);
     }
 
 
     template<ArchitectureType ATYPE>
     void RendererVulkan<ATYPE>::OnInit2(Message message) {
         WindowSDL<ATYPE>* window = (WindowSDL<ATYPE>*)(m_engine->GetSystem("VVE WindowSDL"));
+
+   		vh::SetupPhysicalDevice(m_instance, m_device_extensions, &m_physicalDevice);
+   		vh::SetupGraphicsQueueFamily(m_physicalDevice, &m_queueFamily);
+   	    vh::SetupDevice( m_physicalDevice, nullptr, m_device_extensions, m_queueFamily, &m_device);
+   		//volkLoadDevice(m_device);
+   		vkGetDeviceQueue(m_device, m_queueFamily, 0, &m_queue);
 
         //-------------------------------------------------------------------------
 

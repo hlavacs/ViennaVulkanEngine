@@ -1,11 +1,6 @@
 
-#include "imgui.h"
-#include "imgui_impl_sdl2.h"
-#include "imgui_impl_vulkan.h"
-#include <SDL.h>
-#include <SDL_vulkan.h>
-#include "VESystem.h"
 #include "VEInclude.h"
+#include "VESystem.h"
 #include "VHInclude.h"
 #include "VEEngine.h"
 #include "VERendererImgui.h"
