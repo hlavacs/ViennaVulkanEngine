@@ -14,7 +14,7 @@ namespace vh {
     //instance and device
     bool IsExtensionAvailable(const std::vector<VkExtensionProperties>& properties, const char* extension);
     auto SelectPhysicalDevice() ;    
-    void SetUpInstance(std::vector<const char*> layers, std::vector<const char*> instance_extensions, VkAllocationCallbacks* allocator, VkInstance* instance);
+    void SetupInstance(std::vector<const char*> layers, std::vector<const char*> instance_extensions, VkAllocationCallbacks* allocator, VkInstance* instance);
     void SetupDebugReport(VkInstance instance, VkAllocationCallbacks* allocator, VkDebugReportCallbackEXT* debugReport);
     void SetupPhysicalDevice(VkInstance instance, std::vector<const char*> device_extensions, VkPhysicalDevice* physicalDevice);
     void SetupGraphicsQueueFamily( VkPhysicalDevice physicalDevice, uint32_t* queueFamily);
@@ -23,10 +23,16 @@ namespace vh {
 
     void CreateDescriptorPool(VkDevice device, VkDescriptorPool* descriptorPool);
     
-
     //surface
     VkSurfaceFormatKHR SelectSurfaceFormat(VkPhysicalDevice physicalDevice, VkSurfaceKHR surface, std::vector<VkFormat> requestSurfaceImageFormat);
     VkPresentModeKHR SelectPresentMode(VkPhysicalDevice physicalDevice, VkSurfaceKHR surface, std::vector<VkPresentModeKHR> requestPresentModes);
+
+
+
+
+
+    //-------------------------------------------------------------------------
+    //IMGUI 
 
     //swapchain
 

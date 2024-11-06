@@ -39,7 +39,7 @@ namespace vve {
    	        m_instance_extensions.push_back("VK_EXT_debug_report");
    		}
    		//VkResult volkInitialize();
-   		vh::SetUpInstance(m_instance_layers, m_instance_extensions, m_allocator, &m_instance);
+   		vh::SetupInstance(m_instance_layers, m_instance_extensions, m_allocator, &m_instance);
    		//volkLoadInstance(m_instance);
    		if(m_engine->GetDebug()) vh::SetupDebugReport(m_instance, m_allocator, &m_debugReport);
    		vh::SetupPhysicalDevice(m_instance, m_device_extensions, &m_physicalDevice);

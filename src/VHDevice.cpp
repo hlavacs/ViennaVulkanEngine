@@ -16,7 +16,6 @@ namespace vh {
             abort();
     }
 
-
     bool IsExtensionAvailable(const std::vector<VkExtensionProperties>& properties, const char* extension) {
         for (const VkExtensionProperties& p : properties)
             if (strcmp(p.extensionName, extension) == 0)
@@ -24,8 +23,7 @@ namespace vh {
         return false;
     }
 
-
-    void SetUpInstance(std::vector<const char*> layers, std::vector<const char*> extensions, VkAllocationCallbacks* allocator, VkInstance* instance) {
+    void SetupInstance(std::vector<const char*> layers, std::vector<const char*> extensions, VkAllocationCallbacks* allocator, VkInstance* instance) {
         #ifdef IMGUI_IMPL_VULKAN_USE_VOLK
             volkInitialize();
         #endif
@@ -65,13 +63,11 @@ namespace vh {
         #endif
     }
 
-
     static VKAPI_ATTR VkBool32 VKAPI_CALL debug_report(VkDebugReportFlagsEXT flags, VkDebugReportObjectTypeEXT objectType, uint64_t object, size_t location, int32_t messageCode, const char* pLayerPrefix, const char* pMessage, void* pUserData) {
         (void)flags; (void)object; (void)location; (void)messageCode; (void)pUserData; (void)pLayerPrefix; // Unused arguments
         fprintf(stderr, "[vulkan] Debug report from ObjectType: %i\nMessage: %s\n\n", objectType, pMessage);
         return VK_FALSE;
     }
-
 
     void SetupDebugReport( VkInstance instance, VkAllocationCallbacks* allocator, VkDebugReportCallbackEXT* debugReport) {
             auto PFN_CreateDebugReportCallbackEXT_ptr = (PFN_vkCreateDebugReportCallbackEXT)vkGetInstanceProcAddr(instance, "vkCreateDebugReportCallbackEXT");
@@ -83,7 +79,6 @@ namespace vh {
             debug_report_ci.pUserData = nullptr;
             vh::CheckResult( PFN_CreateDebugReportCallbackEXT_ptr(instance, &debug_report_ci, allocator, debugReport) );
     }
-
 
     void SetupPhysicalDevice(VkInstance instance, std::vector<const char*> device_extensions, VkPhysicalDevice* physicalDevice) {
         uint32_t gpu_count;
@@ -105,7 +100,6 @@ namespace vh {
         return;
     }
 
-
     // Select graphics queue family
     void SetupGraphicsQueueFamily( VkPhysicalDevice physicalDevice, uint32_t* queueFamily) {
         uint32_t count;
@@ -121,7 +115,6 @@ namespace vh {
         free(queues);
         assert(*queueFamily != (uint32_t)-1);
     }
-
 
     void SetupDevice(VkPhysicalDevice physicalDevice, VkAllocationCallbacks* allocator, 
                     std::vector<const char*>& device_extensions, uint32_t queueFamily, 
@@ -157,7 +150,6 @@ namespace vh {
         vh::CheckResult( vkCreateDevice(physicalDevice, &create_info, allocator, device) );
     }
 
-
     void CreateDescriptorPool(VkDevice device, VkDescriptorPool* descriptorPool) {
         VkDescriptorPoolSize pool_sizes[] =
         {
@@ -171,7 +163,6 @@ namespace vh {
         pool_info.pPoolSizes = pool_sizes;
         vh::CheckResult( vkCreateDescriptorPool(device, &pool_info, nullptr, descriptorPool) );
     }
-
 
     VkSurfaceFormatKHR SelectSurfaceFormat(VkPhysicalDevice physicalDevice, VkSurfaceKHR surface, std::vector<VkFormat> requestSurfaceImageFormat) {
         // Get the list of supported surface formats
@@ -188,7 +179,6 @@ namespace vh {
         // If no suitable format is found, fall back to guaranteed supported format
         return {VK_FORMAT_B8G8R8A8_UNORM, VK_COLOR_SPACE_SRGB_NONLINEAR_KHR};
     }
-
 
     VkPresentModeKHR SelectPresentMode(VkPhysicalDevice physicalDevice, VkSurfaceKHR surface, std::vector<VkPresentModeKHR> requestPresentModes) {
         // Get the list of supported present modes

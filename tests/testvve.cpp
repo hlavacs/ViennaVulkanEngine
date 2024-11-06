@@ -19,8 +19,9 @@ public:
     MyGUI( vve::Engine<ATYPE>* engine ) : vve::System<ATYPE>(engine, "MyGUI") {
 
         engine->RegisterSystem( { 
-			  {this, 0, vve::MessageType::RECORD_NEXT_FRAME, [this](vve::Message message){this->OnRecordNextFrame(message);} }
-			, {this, 0, vve::MessageType::KEY_DOWN, [this](vve::Message message){this->OnKeyDown(message);} }
+			//  {this, 0, vve::MessageType::RECORD_NEXT_FRAME, [this](vve::Message message){this->OnRecordNextFrame(message);} }
+			//, 
+            {this, 0, vve::MessageType::KEY_DOWN, [this](vve::Message message){this->OnKeyDown(message);} }
 			, {this, 0, vve::MessageType::KEY_REPEAT, [this](vve::Message message){this->OnKeyRepeat(message);} }
 			, {this, 0, vve::MessageType::KEY_UP, [this](vve::Message message){this->OnKeyUp(message);} }
 		} );

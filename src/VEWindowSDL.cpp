@@ -59,7 +59,7 @@ namespace vve {
    	template<ArchitectureType ATYPE>
     void WindowSDL<ATYPE>::OnInit2(Message message) {
         auto rend = ((RendererVulkan<ATYPE>*)(m_engine->GetSystem("VVE RendererVulkan")));
-        
+
         if (SDL_Vulkan_CreateSurface(m_window, rend->GetInstance(), &m_surface) == 0) {
             printf("Failed to create Vulkan surface.\n");
         }
@@ -80,7 +80,7 @@ namespace vve {
 
         SDL_Event event;
         while (SDL_PollEvent(&event)) {
-            ImGui_ImplSDL2_ProcessEvent(&event);
+            //ImGui_ImplSDL2_ProcessEvent(&event);
             if (event.type == SDL_QUIT)
                 m_engine->Stop();
             if (event.type == SDL_WINDOWEVENT && event.window.event == SDL_WINDOWEVENT_CLOSE && event.window.windowID == SDL_GetWindowID(m_window))
@@ -135,14 +135,14 @@ namespace vve {
 
    	template<ArchitectureType ATYPE>
     void WindowSDL<ATYPE>::OnPrepareNextFrame(Message message) {
-        ImGui_ImplSDL2_NewFrame();
-        ImGui::NewFrame();
+        //ImGui_ImplSDL2_NewFrame();
+        //ImGui::NewFrame();
     }
 
    	template<ArchitectureType ATYPE>
     void WindowSDL<ATYPE>::OnRenderNextFrame(Message message) {
-        ImDrawData* draw_data = ImGui::GetDrawData();
-        m_isMinimized = (draw_data->DisplaySize.x <= 0.0f || draw_data->DisplaySize.y <= 0.0f);       
+        //ImDrawData* draw_data = ImGui::GetDrawData();
+        //m_isMinimized = (draw_data->DisplaySize.x <= 0.0f || draw_data->DisplaySize.y <= 0.0f);       
     }
 
    	template<ArchitectureType ATYPE>
@@ -151,8 +151,11 @@ namespace vve {
 
    	template<ArchitectureType ATYPE>
     void WindowSDL<ATYPE>::OnQuit(Message message) {
-        ImGui_ImplSDL2_Shutdown();
-        ImGui::DestroyContext();
+        //ImGui_ImplSDL2_Shutdown();
+        //ImGui::DestroyContext();
+
+        auto rend = ((RendererVulkan<ATYPE>*)(m_engine->GetSystem("VVE RendererVulkan")));
+        vkDestroySurfaceKHR(rend->GetInstance(), m_surface, nullptr);
         SDL_DestroyWindow(m_window);
         SDL_Quit();
     }
