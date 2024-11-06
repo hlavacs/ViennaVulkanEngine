@@ -3,9 +3,6 @@
 #include <vector>
 #include <set>
 #include <vulkan/vulkan.h>
-#include "imgui.h"
-#include "imgui_impl_sdl2.h"
-#include "imgui_impl_vulkan.h"
 #include <SDL.h>
 #include <SDL_vulkan.h>
 #include "VEWindow.h"

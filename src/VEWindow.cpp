@@ -1,7 +1,4 @@
 
-#include "VESystem.h"
-#include "VEEngine.h"
-#include "VERenderer.h"
 #include "VEWindow.h"
 
 

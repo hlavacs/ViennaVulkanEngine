@@ -1,6 +1,7 @@
 #pragma once
 
-#include "VEEngine.h"
+#include "VEInclude.h"
+#include "VESystem.h"
 
 namespace vve {
 

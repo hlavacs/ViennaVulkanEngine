@@ -6,7 +6,7 @@
 #include <glm/glm.hpp>
 #include <vulkan/vulkan.h>
 #include "VEInclude.h"
-
+#include "VERenderer.h"
 
 namespace vve {
 

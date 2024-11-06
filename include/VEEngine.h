@@ -5,6 +5,8 @@
 #include "glm/glm.hpp"
 #include <vulkan/vulkan.h>
 #include "VECS.h"
+#include "VEInclude.h"
+
 
 
 namespace vve {
