@@ -27,6 +27,8 @@ namespace vh {
     void CreateDescriptorPool(VkDevice device, VkDescriptorPool* descriptorPool);
     
     //surface
+    
+
     VkSurfaceFormatKHR SelectSurfaceFormat(VkPhysicalDevice physicalDevice, VkSurfaceKHR surface, std::vector<VkFormat> requestSurfaceImageFormat);
     VkPresentModeKHR SelectPresentMode(VkPhysicalDevice physicalDevice, VkSurfaceKHR surface, std::vector<VkPresentModeKHR> requestPresentModes);
 

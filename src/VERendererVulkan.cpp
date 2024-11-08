@@ -54,28 +54,30 @@ namespace vve {
    		volkLoadDevice(m_device);
    		vkGetDeviceQueue(m_device, m_queueFamily, 0, &m_queue);
 
-        //-------------------------------------------------------------------------
-
-        /*m_mainWindowData.Surface = window->GetSurface();
         // Check for WSI support
         VkBool32 res;
-        vkGetPhysicalDeviceSurfaceSupportKHR(rend->GetPhysicalDevice(), rend->GetQueueFamily(), m_mainWindowData.Surface, &res);
+        vkGetPhysicalDeviceSurfaceSupportKHR(m_physicalDevice, m_queueFamily, window->GetSurface(), &res);
         if (res != VK_TRUE) {
             fprintf(stderr, "Error no WSI support on physical device 0\n");
             exit(-1);
         }
+
         // Select Surface Format
         std::vector<VkFormat> requestSurfaceFormats = { VK_FORMAT_B8G8R8A8_UNORM, VK_FORMAT_R8G8B8A8_UNORM, VK_FORMAT_B8G8R8_UNORM, VK_FORMAT_R8G8B8_UNORM };
-        m_mainWindowData.SurfaceFormat = vh::SelectSurfaceFormat(rend->GetPhysicalDevice(), m_mainWindowData.Surface, requestSurfaceFormats);
+        m_surfaceFormat = vh::SelectSurfaceFormat(m_physicalDevice, window->GetSurface(), requestSurfaceFormats);
+        
         // Select Present Mode
         std::vector<VkPresentModeKHR> requestedPresentModes = { VK_PRESENT_MODE_MAILBOX_KHR, VK_PRESENT_MODE_FIFO_KHR };
-        m_mainWindowData.PresentMode = vh::SelectPresentMode(rend->GetPhysicalDevice(), m_mainWindowData.Surface, requestedPresentModes);
+        m_presentMode = vh::SelectPresentMode(m_physicalDevice, window->GetSurface(), requestedPresentModes);
+        
         auto width = window->GetWidth();
         auto height = window->GetHeight();
-        vh::CreateWindowSwapChain(rend->GetPhysicalDevice(), rend->GetDevice(), &m_mainWindowData, rend->GetAllocator(), width, height, window->GetMinImageCount());
-        vh::CreateWindowCommandBuffers(rend->GetPhysicalDevice(), rend->GetDevice(), &m_mainWindowData, rend->GetQueueFamily(), rend->GetAllocator());
-        vh::CreateDescriptorPool(rend->GetDevice(), &m_descriptorPool);
-        */
+        
+        
+        //vh::CreateWindowSwapChain(rend->GetPhysicalDevice(), rend->GetDevice(), &m_mainWindowData, rend->GetAllocator(), width, height, window->GetMinImageCount());
+        //vh::CreateWindowCommandBuffers(rend->GetPhysicalDevice(), rend->GetDevice(), &m_mainWindowData, rend->GetQueueFamily(), rend->GetAllocator());
+        //vh::CreateDescriptorPool(rend->GetDevice(), &m_descriptorPool);
+        
 
 
     }

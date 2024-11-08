@@ -47,7 +47,7 @@ namespace vve {
 		VkQueue                  m_queue = VK_NULL_HANDLE;
 		VkPipelineCache          m_pipelineCache = VK_NULL_HANDLE;
 
-        VkFormat                 m_surfaceFormat = VK_FORMAT_UNDEFINED;
+        VkSurfaceFormatKHR       m_surfaceFormat;
         VkPresentModeKHR         m_presentMode = VK_PRESENT_MODE_FIFO_KHR;
         VkSwapchainKHR           m_swapchain = VK_NULL_HANDLE;
         int                      m_minImageCount = 0;
