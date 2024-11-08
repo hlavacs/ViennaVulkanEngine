@@ -1,8 +1,3 @@
-//#define GLFW_INCLUDE_VULKAN
-
-//#define  VK_NO_PROTOTYPES
-//#include "vulkan/vulkan.h"
-//#include <GLFW/glfw3.h>
 
 #define VOLK_IMPLEMENTATION
 #include "volk/volk.h"
@@ -162,8 +157,9 @@ public:
     }
 
 private:
-    //GLFWwindow* window;
     SDL_Window* m_window{nullptr};
+    bool isMinimized = false;
+    bool quit = false;
 
     VkInstance instance;
     VkDebugUtilsMessengerEXT debugMessenger;
@@ -221,15 +217,6 @@ private:
 
     bool framebufferResized = false;
 
-    //void initWindow2() {
-    //    glfwInit();
-
-    //    glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
-
-    //    window = glfwCreateWindow(WIDTH, HEIGHT, "Vulkan", nullptr, nullptr);
-    //    glfwSetWindowUserPointer(window, this);
-    //    glfwSetFramebufferSizeCallback(window, framebufferResizeCallback);
-    //}
 
     void initWindow() {
         SDL_Init(SDL_INIT_VIDEO | SDL_INIT_TIMER | SDL_INIT_GAMECONTROLLER);
@@ -241,10 +228,6 @@ private:
         m_window = SDL_CreateWindow("Tutorial", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, 800, 600, window_flags);
     }
 
-    //static void framebufferResizeCallback(GLFWwindow* window, int width, int height) {
-    //    auto app = reinterpret_cast<HelloTriangleApplication*>(glfwGetWindowUserPointer(window));
-    //    app->framebufferResized = true;
-    //}
 
     void initVulkan() {
         createInstance();
@@ -273,22 +256,29 @@ private:
         createSyncObjects();
     }
 
-    //void mainLoop() {
-    //    while (!glfwWindowShouldClose(window)) {
-    //        glfwPollEvents();
-    //        drawFrame();
-    //    }
-
-    //    vkDeviceWaitIdle(device);
-    //}
 
     void mainLoop() {
         SDL_Event event;
         SDL_PollEvent(&event);
 
-        while (event.type != SDL_QUIT) {
-            SDL_PollEvent(&event);
-            drawFrame();
+        while (!quit) {
+            while (SDL_PollEvent(&event)) {
+                if (event.type == SDL_QUIT || event.window.event == SDL_WINDOWEVENT_CLOSE )
+                    quit = true;
+
+                if (event.type == SDL_WINDOWEVENT) {
+                    switch (event.window.event) {
+                    case SDL_WINDOWEVENT_MINIMIZED: 
+                        isMinimized = true;
+                        break;
+
+                    case SDL_WINDOWEVENT_RESTORED:
+                        isMinimized = false;
+                        break;
+                    }
+                }
+            }
+            if(!isMinimized) drawFrame();
         }
         vkDeviceWaitIdle(device);
     }
@@ -357,28 +347,16 @@ private:
         SDL_DestroyWindow(m_window);
         SDL_Quit();
 
-        //glfwDestroyWindow(window);
-        //glfwTerminate();
     }
 
     void recreateSwapChain() {
         int width = 0, height = 0;
         
-        {
-            //glfwGetFramebufferSize(window, &width, &height);
-            //while (width == 0 || height == 0) {
-            //    glfwGetFramebufferSize(window, &width, &height);
-            //    glfwWaitEvents();
-            //}
-        }
-
-        {
+        SDL_GetWindowSize(m_window, &width, &height);
+        while (width == 0 || height == 0) {
+            SDL_Event event;
+            SDL_WaitEvent(&event);
             SDL_GetWindowSize(m_window, &width, &height);
-            while (width == 0 || height == 0) {
-                SDL_Event event;
-                SDL_GetWindowSize(m_window, &width, &height);
-                SDL_WaitEvent(&event);
-            }
         }
 
         vkDeviceWaitIdle(device);
@@ -402,9 +380,9 @@ private:
         appInfo.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;
         appInfo.pApplicationName = "Hello Triangle";
         appInfo.applicationVersion = VK_MAKE_VERSION(1, 0, 0);
-        appInfo.pEngineName = "No Engine";
+        appInfo.pEngineName = "Tutorial";
         appInfo.engineVersion = VK_MAKE_VERSION(1, 0, 0);
-        appInfo.apiVersion = VK_API_VERSION_1_0;
+        appInfo.apiVersion = VK_API_VERSION_1_3;
 
         VkInstanceCreateInfo createInfo{};
         createInfo.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
@@ -453,12 +431,6 @@ private:
         }
     }
 
-    void createSurface2() {
-        //if (glfwCreateWindowSurface(instance, window, nullptr, &surface) != VK_SUCCESS) {
-        //    throw std::runtime_error("failed to create window surface!");
-        //}
-    }
-
     void createSurface() {
         if (SDL_Vulkan_CreateSurface(m_window, instance, &surface) == 0) {
             printf("Failed to create Vulkan surface.\n");
@@ -477,9 +449,22 @@ private:
         vkEnumeratePhysicalDevices(instance, &deviceCount, devices.data());
 
         for (const auto& device : devices) {
-            if (isDeviceSuitable(device)) {
+            VkPhysicalDeviceProperties2 deviceProperties2{};
+            deviceProperties2.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROPERTIES_2;
+            vkGetPhysicalDeviceProperties2(device, &deviceProperties2);
+
+            if (deviceProperties2.properties.deviceType == VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU && isDeviceSuitable(device)) {
                 physicalDevice = device;
                 break;
+            }
+        }
+
+        if (physicalDevice == VK_NULL_HANDLE) {
+            for (const auto& device : devices) {
+                if (isDeviceSuitable(device)) {
+                    physicalDevice = device;
+                    break;
+                }
             }
         }
 
@@ -1407,7 +1392,7 @@ private:
         uint32_t imageIndex;
         VkResult result = vkAcquireNextImageKHR(device, swapChain, UINT64_MAX, imageAvailableSemaphores[currentFrame], VK_NULL_HANDLE, &imageIndex);
 
-        if (result == VK_ERROR_OUT_OF_DATE_KHR) {
+        if (result == VK_ERROR_OUT_OF_DATE_KHR ) {
             recreateSwapChain();
             return;
         } else if (result != VK_SUCCESS && result != VK_SUBOPTIMAL_KHR) {
@@ -1458,10 +1443,10 @@ private:
         if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR || framebufferResized) {
             framebufferResized = false;
             recreateSwapChain();
-        } else if (result != VK_SUCCESS) {
+        }
+        else if (result != VK_SUCCESS) {
             throw std::runtime_error("failed to present swap chain image!");
         }
-
         currentFrame = (currentFrame + 1) % MAX_FRAMES_IN_FLIGHT;
     }
 
@@ -1504,7 +1489,6 @@ private:
             return capabilities.currentExtent;
         } else {
             int width, height;
-            //glfwGetFramebufferSize(window, &width, &height);
             SDL_GetWindowSize(m_window, &width, &height);
 
             VkExtent2D actualExtent = {
@@ -1607,21 +1591,6 @@ private:
 
         return indices;
     }
-
-    //std::vector<const char*> getRequiredExtensions2() {
-    //    uint32_t glfwExtensionCount = 0;
-    //    const char** glfwExtensions;
-    //    glfwExtensions = glfwGetRequiredInstanceExtensions(&glfwExtensionCount);
-
-    //    std::vector<const char*> extensions(glfwExtensions, glfwExtensions + glfwExtensionCount);
-
-    //    if (enableValidationLayers) {
-    //        extensions.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
-    //    }
-
-    //    return extensions;
-    //}
-
 
     std::vector<const char*> getRequiredExtensions() {
         uint32_t extensions_count = 0;
