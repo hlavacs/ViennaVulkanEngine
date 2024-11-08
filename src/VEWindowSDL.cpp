@@ -1,4 +1,6 @@
 
+#define SDL_MAIN_HANDLED
+
 #include "VESystem.h"
 #include "VHInclude.h"
 #include "VEWindowSDL.h"
