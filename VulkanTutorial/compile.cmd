@@ -1,5 +1,5 @@
 
-set IMGUI = "../extern/imgui"
+set IMGUI="../extern/imgui"
 echo %IMGUI%
 
 cl 28_model_loading.cpp ^
