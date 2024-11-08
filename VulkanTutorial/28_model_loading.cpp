@@ -292,6 +292,8 @@ private:
 
         while (!quit) {
             while (SDL_PollEvent(&event)) {
+                ImGui_ImplSDL2_ProcessEvent(&event); // Forward your event to backend
+
                 if (event.type == SDL_QUIT || event.window.event == SDL_WINDOWEVENT_CLOSE )
                     quit = true;
 
@@ -307,7 +309,16 @@ private:
                     }
                 }
             }
-            if(!isMinimized) drawFrame();
+
+            if(!isMinimized) {
+                ImGui_ImplVulkan_NewFrame();
+                ImGui_ImplSDL2_NewFrame();
+                ImGui::NewFrame();
+
+                ImGui::ShowDemoWindow(); // Show demo window! :)
+
+                drawFrame();
+            }
         }
         vkDeviceWaitIdle(device);
     }
@@ -329,6 +340,10 @@ private:
     }
 
     void cleanup() {
+        ImGui_ImplVulkan_Shutdown();
+        ImGui_ImplSDL2_Shutdown();
+        ImGui::DestroyContext();
+
         cleanupSwapChain();
 
         vkDestroyPipeline(device, graphicsPipeline, nullptr);
@@ -1399,7 +1414,16 @@ private:
 
             vkCmdDrawIndexed(commandBuffer, static_cast<uint32_t>(indices.size()), 1, 0, 0, 0);
 
+
+            //----------------------------------------------------------------------------------
+            ImGui::Render();
+
+            ImGui_ImplVulkan_RenderDrawData(ImGui::GetDrawData(), commandBuffer);
+            //----------------------------------------------------------------------------------
+
+
         vkCmdEndRenderPass(commandBuffer);
+
 
         if (vkEndCommandBuffer(commandBuffer) != VK_SUCCESS) {
             throw std::runtime_error("failed to record command buffer!");
@@ -1461,6 +1485,8 @@ private:
 
         vkResetCommandBuffer(commandBuffers[currentFrame],  0);
         recordCommandBuffer(commandBuffers[currentFrame], imageIndex);
+
+
 
         VkSubmitInfo submitInfo{};
         submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
