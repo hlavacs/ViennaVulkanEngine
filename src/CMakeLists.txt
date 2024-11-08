@@ -19,6 +19,7 @@ set(SOURCE
   VEWindow.cpp
   VEWindowSDL.cpp
   VHDevice.cpp
+  VHDevice2.cpp
   )
 
 set(HEADERS

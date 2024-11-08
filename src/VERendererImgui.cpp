@@ -80,7 +80,7 @@ namespace vve {
         init_info.PhysicalDevice = rend->GetPhysicalDevice();
         init_info.Device = rend->GetDevice();
         init_info.QueueFamily = rend->GetQueueFamily();
-        init_info.Queue = rend->GetQueue();
+        init_info.Queue = rend->GetGraphicsQueue();
         init_info.PipelineCache = rend->GetPipelineCache();
         init_info.DescriptorPool = m_descriptorPool;
         init_info.RenderPass = m_mainWindowData.RenderPass;
@@ -191,7 +191,7 @@ namespace vve {
                 info.pSignalSemaphores = &render_complete_semaphore;
 
                 vh::CheckResult(vkEndCommandBuffer(fd->CommandBuffer));
-                vh::CheckResult(vkQueueSubmit(rend->GetQueue(), 1, &info, fd->Fence));
+                vh::CheckResult(vkQueueSubmit(rend->GetGraphicsQueue(), 1, &info, fd->Fence));
             }
         }
 
@@ -209,7 +209,7 @@ namespace vve {
             info.swapchainCount = 1;
             info.pSwapchains = &m_mainWindowData.Swapchain;
             info.pImageIndices = &m_mainWindowData.FrameIndex;
-            VkResult err = vkQueuePresentKHR(rend->GetQueue(), &info);
+            VkResult err = vkQueuePresentKHR(rend->GetPresentQueue(), &info);
             if (err == VK_ERROR_OUT_OF_DATE_KHR || err == VK_SUBOPTIMAL_KHR)
             {
                 window->SetSwapChainRebuild(true);

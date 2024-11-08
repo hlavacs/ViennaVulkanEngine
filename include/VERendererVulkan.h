@@ -23,7 +23,9 @@ namespace vve {
         auto GetPhysicalDevice() -> VkPhysicalDevice { return m_physicalDevice; };
         auto GetDevice() -> VkDevice { return m_device; };
         auto GetQueueFamily() -> uint32_t { return m_queueFamily; };
-        auto GetQueue() -> VkQueue { return m_queue; };
+        auto GetGraphicsQueue() -> VkQueue { return m_graphics_queue; };
+        auto GetPresentQueue() -> VkQueue { return m_present_queue; };
+        auto GetComputeQueue() -> VkQueue { return m_compute_queue; };
         auto GetPipelineCache() -> VkPipelineCache { return m_pipelineCache; };
         auto GetInstanceLayers() -> std::vector<const char*> { return m_instance_layers; };
         auto GetInstanceExtensions() -> std::vector<const char*> { return m_instance_extensions; };
@@ -37,14 +39,19 @@ namespace vve {
         virtual void OnRenderNextFrame(Message message);
         virtual void OnQuit(Message message);
 
+        VmaAllocator             m_vma_allocator = VK_NULL_HANDLE;
    		VkDescriptorPool         m_descriptorPool = VK_NULL_HANDLE;
 		VkAllocationCallbacks*   m_allocator = nullptr;
 		VkInstance               m_instance = VK_NULL_HANDLE;
 		VkDebugReportCallbackEXT m_debugReport = VK_NULL_HANDLE;
 		VkPhysicalDevice         m_physicalDevice = VK_NULL_HANDLE;
+        VkPhysicalDeviceFeatures m_physicalDeviceFeatures;
+        VkPhysicalDeviceLimits   m_physicalDeviceLimits;
 		VkDevice                 m_device = VK_NULL_HANDLE;
-		uint32_t                 m_queueFamily = (uint32_t)-1;		
-		VkQueue                  m_queue = VK_NULL_HANDLE;
+		uint32_t                 m_queueFamily = 0;		
+		VkQueue                  m_graphics_queue = VK_NULL_HANDLE;
+		VkQueue                  m_present_queue = VK_NULL_HANDLE;
+		VkQueue                  m_compute_queue = VK_NULL_HANDLE;
 		VkPipelineCache          m_pipelineCache = VK_NULL_HANDLE;
 
         VkSurfaceFormatKHR       m_surfaceFormat;
