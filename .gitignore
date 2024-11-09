@@ -16,6 +16,7 @@ extern/glTF
 **/*.exe
 **/*.pdb
 **/*.ilk
+**/*.obj
 
 
 #x64/
