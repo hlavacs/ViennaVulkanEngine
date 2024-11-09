@@ -180,17 +180,17 @@ public:
         initWindow();
         initVulkan();
         mainLoop();
-        cleanup();
+        cleanup(m_instance, m_surface);
     }
 
 private:
-    SDL_Window* m_window{nullptr};
+    SDL_Window* m_sdl_window{nullptr};
     bool isMinimized = false;
     bool quit = false;
 
-    VkInstance instance;
+    VkInstance m_instance;
     VkDebugUtilsMessengerEXT debugMessenger;
-    VkSurfaceKHR surface;
+    VkSurfaceKHR m_surface;
 
     VkPhysicalDevice physicalDevice = VK_NULL_HANDLE;
     VkDevice device;
@@ -253,22 +253,22 @@ private:
         #endif
 
         SDL_WindowFlags window_flags = (SDL_WindowFlags)(SDL_WINDOW_VULKAN | SDL_WINDOW_RESIZABLE | SDL_WINDOW_ALLOW_HIGHDPI);
-        m_window = SDL_CreateWindow("Tutorial", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, 800, 600, window_flags);
+        m_sdl_window = SDL_CreateWindow("Tutorial", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, 800, 600, window_flags);
     }
 
 
     void initVulkan() {
-        createInstance();
-        setupDebugMessenger();
-        createSurface();
-        pickPhysicalDevice();
-        createLogicalDevice();
-        createSwapChain();
+        createInstance(&m_instance);
+        setupDebugMessenger(m_instance);
+        createSurface(m_instance, &m_surface);
+        pickPhysicalDevice(m_instance, m_surface);
+        createLogicalDevice(m_surface);
+        createSwapChain(m_surface);
         createImageViews();
         createRenderPass();
         createDescriptorSetLayout();
         createGraphicsPipeline();
-        createCommandPool();
+        createCommandPool(m_surface);
         createDepthResources();
         createFramebuffers();
         createTextureImage();
@@ -282,7 +282,7 @@ private:
         createDescriptorSets();
         createCommandBuffers();
         createSyncObjects();
-        setupImgui();
+        setupImgui(m_instance);
     }
 
 
@@ -317,7 +317,7 @@ private:
 
                 ImGui::ShowDemoWindow(); // Show demo window! :)
 
-                drawFrame();
+                drawFrame(m_sdl_window);
             }
         }
         vkDeviceWaitIdle(device);
@@ -339,7 +339,7 @@ private:
         vkDestroySwapchainKHR(device, swapChain, nullptr);
     }
 
-    void cleanup() {
+    void cleanup(VkInstance instance, VkSurfaceKHR surface) {
         ImGui_ImplVulkan_Shutdown();
         ImGui_ImplSDL2_Shutdown();
         ImGui::DestroyContext();
@@ -388,33 +388,33 @@ private:
         vkDestroySurfaceKHR(instance, surface, nullptr);
         vkDestroyInstance(instance, nullptr);
 
-        SDL_DestroyWindow(m_window);
+        SDL_DestroyWindow(m_sdl_window);
         SDL_Quit();
 
     }
 
-    void recreateSwapChain() {
+    void recreateSwapChain(SDL_Window* window) {
         int width = 0, height = 0;
         
-        SDL_GetWindowSize(m_window, &width, &height);
+        SDL_GetWindowSize(window, &width, &height);
         while (width == 0 || height == 0) {
             SDL_Event event;
             SDL_WaitEvent(&event);
-            SDL_GetWindowSize(m_window, &width, &height);
+            SDL_GetWindowSize(window, &width, &height);
         }
 
         vkDeviceWaitIdle(device);
 
         cleanupSwapChain();
 
-        createSwapChain();
+        createSwapChain(m_surface);
         createImageViews();
         createDepthResources();
         createFramebuffers();
     }
 
 
-    void createInstance() {
+    void createInstance(VkInstance *instance) {
         volkInitialize();
 
         if (enableValidationLayers && !checkValidationLayerSupport()) {
@@ -450,12 +450,12 @@ private:
             createInfo.pNext = nullptr;
         }
 
-        if (vkCreateInstance(&createInfo, nullptr, &instance) != VK_SUCCESS) {
+        if (vkCreateInstance(&createInfo, nullptr, instance) != VK_SUCCESS) {
             throw std::runtime_error("failed to create instance!");
         }
-        _instance = instance;
+        _instance = *instance;
 
-   		volkLoadInstance(instance);       
+   		volkLoadInstance(*instance);       
     }
 
     void populateDebugMessengerCreateInfo(VkDebugUtilsMessengerCreateInfoEXT& createInfo) {
@@ -466,7 +466,7 @@ private:
         createInfo.pfnUserCallback = debugCallback;
     }
 
-    void setupDebugMessenger() {
+    void setupDebugMessenger(VkInstance instance) {
         if (!enableValidationLayers) return;
 
         VkDebugUtilsMessengerCreateInfoEXT createInfo;
@@ -477,13 +477,13 @@ private:
         }
     }
 
-    void createSurface() {
-        if (SDL_Vulkan_CreateSurface(m_window, instance, &surface) == 0) {
+    void createSurface(VkInstance instance, VkSurfaceKHR *surface) {
+        if (SDL_Vulkan_CreateSurface(m_sdl_window, instance, surface) == 0) {
             printf("Failed to create Vulkan surface.\n");
         }
     }
 
-    void pickPhysicalDevice() {
+    void pickPhysicalDevice(VkInstance instance, VkSurfaceKHR surface) {
         uint32_t deviceCount = 0;
         vkEnumeratePhysicalDevices(instance, &deviceCount, nullptr);
 
@@ -499,7 +499,7 @@ private:
             deviceProperties2.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROPERTIES_2;
             vkGetPhysicalDeviceProperties2(device, &deviceProperties2);
 
-            if (deviceProperties2.properties.deviceType == VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU && isDeviceSuitable(device)) {
+            if (deviceProperties2.properties.deviceType == VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU && isDeviceSuitable(device, surface)) {
                 physicalDevice = device;
                 break;
             }
@@ -507,7 +507,7 @@ private:
 
         if (physicalDevice == VK_NULL_HANDLE) {
             for (const auto& device : devices) {
-                if (isDeviceSuitable(device)) {
+                if (isDeviceSuitable(device, surface)) {
                     physicalDevice = device;
                     break;
                 }
@@ -519,8 +519,8 @@ private:
         }
     }
 
-    void createLogicalDevice() {
-        queueFamilies = findQueueFamilies(physicalDevice);
+    void createLogicalDevice(VkSurfaceKHR surface) {
+        queueFamilies = findQueueFamilies(physicalDevice, surface);
 
         std::vector<VkDeviceQueueCreateInfo> queueCreateInfos;
         std::set<uint32_t> uniqueQueueFamilies = { queueFamilies.graphicsFamily.value(), queueFamilies.presentFamily.value()};
@@ -566,8 +566,8 @@ private:
         vkGetDeviceQueue(device, queueFamilies.presentFamily.value(), 0, &presentQueue);
     }
 
-    void createSwapChain() {
-        SwapChainSupportDetails swapChainSupport = querySwapChainSupport(physicalDevice);
+    void createSwapChain(VkSurfaceKHR surface) {
+        SwapChainSupportDetails swapChainSupport = querySwapChainSupport(physicalDevice, surface);
 
         VkSurfaceFormatKHR surfaceFormat = chooseSwapSurfaceFormat(swapChainSupport.formats);
         VkPresentModeKHR presentMode = chooseSwapPresentMode(swapChainSupport.presentModes);
@@ -589,7 +589,7 @@ private:
         createInfo.imageArrayLayers = 1;
         createInfo.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
 
-        QueueFamilyIndices indices = findQueueFamilies(physicalDevice);
+        QueueFamilyIndices indices = findQueueFamilies(physicalDevice, surface);
         uint32_t queueFamilyIndices[] = {indices.graphicsFamily.value(), indices.presentFamily.value()};
 
         if (indices.graphicsFamily != indices.presentFamily) {
@@ -856,8 +856,8 @@ private:
         }
     }
 
-    void createCommandPool() {
-        QueueFamilyIndices queueFamilyIndices = findQueueFamilies(physicalDevice);
+    void createCommandPool(VkSurfaceKHR surface) {
+        QueueFamilyIndices queueFamilyIndices = findQueueFamilies(physicalDevice, surface);
 
         VkCommandPoolCreateInfo poolInfo{};
         poolInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
@@ -1466,14 +1466,14 @@ private:
         memcpy(uniformBuffersMapped[currentImage], &ubo, sizeof(ubo));
     }
 
-    void drawFrame() {
+    void drawFrame(SDL_Window* window) {
         vkWaitForFences(device, 1, &inFlightFences[currentFrame], VK_TRUE, UINT64_MAX);
 
         uint32_t imageIndex;
         VkResult result = vkAcquireNextImageKHR(device, swapChain, UINT64_MAX, imageAvailableSemaphores[currentFrame], VK_NULL_HANDLE, &imageIndex);
 
         if (result == VK_ERROR_OUT_OF_DATE_KHR ) {
-            recreateSwapChain();
+            recreateSwapChain(window);
             return;
         } else if (result != VK_SUCCESS && result != VK_SUBOPTIMAL_KHR) {
             throw std::runtime_error("failed to acquire swap chain image!");
@@ -1524,7 +1524,7 @@ private:
 
         if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR || framebufferResized) {
             framebufferResized = false;
-            recreateSwapChain();
+            recreateSwapChain(window);
         }
         else if (result != VK_SUCCESS) {
             throw std::runtime_error("failed to present swap chain image!");
@@ -1571,7 +1571,7 @@ private:
             return capabilities.currentExtent;
         } else {
             int width, height;
-            SDL_GetWindowSize(m_window, &width, &height);
+            SDL_GetWindowSize(m_sdl_window, &width, &height);
 
             VkExtent2D actualExtent = {
                 static_cast<uint32_t>(width),
@@ -1585,7 +1585,7 @@ private:
         }
     }
 
-    SwapChainSupportDetails querySwapChainSupport(VkPhysicalDevice device) {
+    SwapChainSupportDetails querySwapChainSupport(VkPhysicalDevice device, VkSurfaceKHR surface) {
         SwapChainSupportDetails details;
 
         vkGetPhysicalDeviceSurfaceCapabilitiesKHR(device, surface, &details.capabilities);
@@ -1609,14 +1609,14 @@ private:
         return details;
     }
 
-    bool isDeviceSuitable(VkPhysicalDevice device) {
-        QueueFamilyIndices indices = findQueueFamilies(device);
+    bool isDeviceSuitable(VkPhysicalDevice device, VkSurfaceKHR surface) {
+        QueueFamilyIndices indices = findQueueFamilies(device, surface);
 
         bool extensionsSupported = checkDeviceExtensionSupport(device);
 
         bool swapChainAdequate = false;
         if (extensionsSupported) {
-            SwapChainSupportDetails swapChainSupport = querySwapChainSupport(device);
+            SwapChainSupportDetails swapChainSupport = querySwapChainSupport(device, surface);
             swapChainAdequate = !swapChainSupport.formats.empty() && !swapChainSupport.presentModes.empty();
         }
 
@@ -1642,7 +1642,7 @@ private:
         return requiredExtensions.empty();
     }
 
-    QueueFamilyIndices findQueueFamilies(VkPhysicalDevice device) {
+    QueueFamilyIndices findQueueFamilies(VkPhysicalDevice device, VkSurfaceKHR surface) {
         QueueFamilyIndices indices;
 
         uint32_t queueFamilyCount = 0;
@@ -1677,9 +1677,9 @@ private:
     std::vector<const char*> getRequiredExtensions() {
         uint32_t extensions_count = 0;
         std::vector<const char*> extensions;
-        SDL_Vulkan_GetInstanceExtensions(m_window, &extensions_count, nullptr);
+        SDL_Vulkan_GetInstanceExtensions(m_sdl_window, &extensions_count, nullptr);
         extensions.resize(extensions_count);
-        SDL_Vulkan_GetInstanceExtensions(m_window, &extensions_count, extensions.data());
+        SDL_Vulkan_GetInstanceExtensions(m_sdl_window, &extensions_count, extensions.data());
         if (enableValidationLayers) {
             extensions.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
         }
@@ -1739,7 +1739,7 @@ private:
     //------------------------------------------------------------------------
 
 
-    void setupImgui() {
+    void setupImgui(VkInstance instance) {
         // Setup Dear ImGui context
         IMGUI_CHECKVERSION();
         ImGui::CreateContext();
@@ -1751,7 +1751,7 @@ private:
         ImGui_ImplVulkan_LoadFunctions( &loadVolk );
 
         // Setup Platform/Renderer backends
-        ImGui_ImplSDL2_InitForVulkan(m_window);
+        ImGui_ImplSDL2_InitForVulkan(m_sdl_window);
 
         ImGui_ImplVulkan_InitInfo init_info = {};
         init_info.Instance = instance;
