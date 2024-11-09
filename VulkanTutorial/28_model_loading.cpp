@@ -196,8 +196,8 @@ private:
     VkDevice m_device;
 
     QueueFamilyIndices m_queueFamilies;
-    VkQueue graphicsQueue;
-    VkQueue presentQueue;
+    VkQueue m_graphicsQueue;
+    VkQueue m_presentQueue;
 
     VkSwapchainKHR swapChain;
     std::vector<VkImage> swapChainImages;
@@ -262,7 +262,7 @@ private:
         setupDebugMessenger(m_instance);
         createSurface(m_instance, &m_surface);
         pickPhysicalDevice(m_instance, m_surface, &m_physicalDevice);
-        createLogicalDevice(m_surface, m_physicalDevice, &m_queueFamilies, &m_device);
+        createLogicalDevice(m_surface, m_physicalDevice, &m_queueFamilies, &m_device, &m_graphicsQueue, &m_presentQueue);
         createSwapChain(m_surface, m_physicalDevice, m_device);
         createImageViews(m_device);
         createRenderPass(m_physicalDevice, m_device);
@@ -271,18 +271,18 @@ private:
         createCommandPool(m_surface, m_physicalDevice, m_device);
         createDepthResources(m_physicalDevice, m_device);
         createFramebuffers(m_device);
-        createTextureImage(m_physicalDevice, m_device);
+        createTextureImage(m_physicalDevice, m_device, m_graphicsQueue);
         createTextureImageView(m_device);
         createTextureSampler(m_physicalDevice, m_device);
         loadModel();
-        createVertexBuffer(m_physicalDevice, m_device);
-        createIndexBuffer(m_physicalDevice, m_device);
+        createVertexBuffer(m_physicalDevice, m_device, m_graphicsQueue);
+        createIndexBuffer(m_physicalDevice, m_device, m_graphicsQueue);
         createUniformBuffers(m_physicalDevice, m_device);
         createDescriptorPool(m_device);
         createDescriptorSets(m_device);
         createCommandBuffers(m_device);
         createSyncObjects(m_device);
-        setupImgui(m_instance, m_physicalDevice, m_queueFamilies, m_device, graphicsQueue, commandPool, descriptorPool, renderPass);
+        setupImgui(m_instance, m_physicalDevice, m_queueFamilies, m_device, m_graphicsQueue, commandPool, descriptorPool, renderPass);
     }
 
 
@@ -317,7 +317,7 @@ private:
 
                 ImGui::ShowDemoWindow(); // Show demo window! :)
 
-                drawFrame(m_sdl_window, m_surface, m_physicalDevice, m_device);
+                drawFrame(m_sdl_window, m_surface, m_physicalDevice, m_device, m_graphicsQueue, m_presentQueue);
             }
         }
         vkDeviceWaitIdle(m_device);
@@ -519,7 +519,7 @@ private:
         }
     }
 
-    void createLogicalDevice(VkSurfaceKHR surface, VkPhysicalDevice physicalDevice, QueueFamilyIndices* queueFamilies, VkDevice *device) {
+    void createLogicalDevice(VkSurfaceKHR surface, VkPhysicalDevice physicalDevice, QueueFamilyIndices* queueFamilies, VkDevice *device, VkQueue *graphicsQueue, VkQueue *presentQueue) {
         *queueFamilies = findQueueFamilies(physicalDevice, surface);
 
         std::vector<VkDeviceQueueCreateInfo> queueCreateInfos;
@@ -562,8 +562,8 @@ private:
 
         volkLoadDevice(*device);
 
-        vkGetDeviceQueue(*device, queueFamilies->graphicsFamily.value(), 0, &graphicsQueue);
-        vkGetDeviceQueue(*device, queueFamilies->presentFamily.value(), 0, &presentQueue);
+        vkGetDeviceQueue(*device, queueFamilies->graphicsFamily.value(), 0, graphicsQueue);
+        vkGetDeviceQueue(*device, queueFamilies->presentFamily.value(), 0, presentQueue);
     }
 
     void createSwapChain(VkSurfaceKHR surface, VkPhysicalDevice physicalDevice, VkDevice device) {
@@ -903,7 +903,7 @@ private:
         return format == VK_FORMAT_D32_SFLOAT_S8_UINT || format == VK_FORMAT_D24_UNORM_S8_UINT;
     }
 
-    void createTextureImage(VkPhysicalDevice physicalDevice, VkDevice device) {
+    void createTextureImage(VkPhysicalDevice physicalDevice, VkDevice device, VkQueue graphicsQueue) {
         int texWidth, texHeight, texChannels;
         stbi_uc* pixels = stbi_load(TEXTURE_PATH.c_str(), &texWidth, &texHeight, &texChannels, STBI_rgb_alpha);
         VkDeviceSize imageSize = texWidth * texHeight * 4;
@@ -925,9 +925,9 @@ private:
 
         createImage(physicalDevice,device, texWidth, texHeight, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, textureImage, textureImageMemory);
 
-        transitionImageLayout(device, textureImage, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
-            copyBufferToImage(device, stagingBuffer, textureImage, static_cast<uint32_t>(texWidth), static_cast<uint32_t>(texHeight));
-        transitionImageLayout(device, textureImage, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+        transitionImageLayout(device, graphicsQueue, textureImage, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
+            copyBufferToImage(device, graphicsQueue, stagingBuffer, textureImage, static_cast<uint32_t>(texWidth), static_cast<uint32_t>(texHeight));
+        transitionImageLayout(device, graphicsQueue, textureImage, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
 
         vkDestroyBuffer(device, stagingBuffer, nullptr);
         vkFreeMemory(device, stagingBufferMemory, nullptr);
@@ -1016,7 +1016,7 @@ private:
         vkBindImageMemory(device, image, imageMemory, 0);
     }
 
-    void transitionImageLayout(VkDevice device, VkImage image, VkFormat format, VkImageLayout oldLayout, VkImageLayout newLayout) {
+    void transitionImageLayout(VkDevice device, VkQueue graphicsQueue, VkImage image, VkFormat format, VkImageLayout oldLayout, VkImageLayout newLayout) {
         VkCommandBuffer commandBuffer = beginSingleTimeCommands(device);
 
         VkImageMemoryBarrier barrier{};
@@ -1060,10 +1060,10 @@ private:
             1, &barrier
         );
 
-        endSingleTimeCommands(device, commandBuffer);
+        endSingleTimeCommands(device, graphicsQueue, commandBuffer);
     }
 
-    void copyBufferToImage(VkDevice device, VkBuffer buffer, VkImage image, uint32_t width, uint32_t height) {
+    void copyBufferToImage(VkDevice device, VkQueue graphicsQueue, VkBuffer buffer, VkImage image, uint32_t width, uint32_t height) {
         VkCommandBuffer commandBuffer = beginSingleTimeCommands(device);
 
         VkBufferImageCopy region{};
@@ -1083,7 +1083,7 @@ private:
 
         vkCmdCopyBufferToImage(commandBuffer, buffer, image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &region);
 
-        endSingleTimeCommands(device, commandBuffer);
+        endSingleTimeCommands(device, graphicsQueue, commandBuffer);
     }
 
     void loadModel() {
@@ -1125,7 +1125,7 @@ private:
         }
     }
 
-    void createVertexBuffer(VkPhysicalDevice physicalDevice, VkDevice device) {
+    void createVertexBuffer(VkPhysicalDevice physicalDevice, VkDevice device, VkQueue graphicsQueue ) {
         VkDeviceSize bufferSize = sizeof(vertices[0]) * vertices.size();
 
         VkBuffer stagingBuffer;
@@ -1139,13 +1139,13 @@ private:
 
         createBuffer(physicalDevice, device, bufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, vertexBuffer, vertexBufferMemory);
 
-        copyBuffer(device, stagingBuffer, vertexBuffer, bufferSize);
+        copyBuffer(device, graphicsQueue, stagingBuffer, vertexBuffer, bufferSize);
 
         vkDestroyBuffer(device, stagingBuffer, nullptr);
         vkFreeMemory(device, stagingBufferMemory, nullptr);
     }
 
-    void createIndexBuffer(VkPhysicalDevice physicalDevice, VkDevice device) {
+    void createIndexBuffer(VkPhysicalDevice physicalDevice, VkDevice device, VkQueue graphicsQueue) {
         VkDeviceSize bufferSize = sizeof(indices[0]) * indices.size();
 
         VkBuffer stagingBuffer;
@@ -1159,7 +1159,7 @@ private:
 
         createBuffer(physicalDevice, device, bufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, indexBuffer, indexBufferMemory);
 
-        copyBuffer(device, stagingBuffer, indexBuffer, bufferSize);
+        copyBuffer(device, graphicsQueue, stagingBuffer, indexBuffer, bufferSize);
 
         vkDestroyBuffer(device, stagingBuffer, nullptr);
         vkFreeMemory(device, stagingBufferMemory, nullptr);
@@ -1313,7 +1313,7 @@ private:
         return commandBuffer;
     }
 
-    void endSingleTimeCommands(VkDevice device, VkCommandBuffer commandBuffer) {
+    void endSingleTimeCommands(VkDevice device, VkQueue graphicsQueue, VkCommandBuffer commandBuffer) {
         vkEndCommandBuffer(commandBuffer);
 
         VkSubmitInfo submitInfo{};
@@ -1327,14 +1327,14 @@ private:
         vkFreeCommandBuffers(device, commandPool, 1, &commandBuffer);
     }
 
-    void copyBuffer(VkDevice device, VkBuffer srcBuffer, VkBuffer dstBuffer, VkDeviceSize size) {
+    void copyBuffer(VkDevice device, VkQueue graphicsQueue, VkBuffer srcBuffer, VkBuffer dstBuffer, VkDeviceSize size) {
         VkCommandBuffer commandBuffer = beginSingleTimeCommands(device);
 
         VkBufferCopy copyRegion{};
         copyRegion.size = size;
         vkCmdCopyBuffer(commandBuffer, srcBuffer, dstBuffer, 1, &copyRegion);
 
-        endSingleTimeCommands(device, commandBuffer);
+        endSingleTimeCommands(device, graphicsQueue, commandBuffer);
     }
 
     uint32_t findMemoryType(VkPhysicalDevice physicalDevice, uint32_t typeFilter, VkMemoryPropertyFlags properties) {
@@ -1466,7 +1466,7 @@ private:
         memcpy(uniformBuffersMapped[currentImage], &ubo, sizeof(ubo));
     }
 
-    void drawFrame(SDL_Window* window, VkSurfaceKHR surface, VkPhysicalDevice physicalDevice, VkDevice device) {
+    void drawFrame(SDL_Window* window, VkSurfaceKHR surface, VkPhysicalDevice physicalDevice, VkDevice device, VkQueue graphicsQueue, VkQueue presentQueue) {   
         vkWaitForFences(device, 1, &inFlightFences[currentFrame], VK_TRUE, UINT64_MAX);
 
         uint32_t imageIndex;
