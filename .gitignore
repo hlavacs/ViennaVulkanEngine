@@ -13,6 +13,9 @@ extern/glTF
 [Rr]elease/
 **/*.ini
 **/*.tcl
+**/*.exe
+**/*.pdb
+**/*.ilk
 
 
 #x64/
