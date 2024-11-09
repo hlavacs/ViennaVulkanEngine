@@ -195,7 +195,7 @@ private:
     VkPhysicalDevice m_physicalDevice = VK_NULL_HANDLE;
     VkDevice m_device;
 
-    QueueFamilyIndices queueFamilies;
+    QueueFamilyIndices m_queueFamilies;
     VkQueue graphicsQueue;
     VkQueue presentQueue;
 
@@ -262,7 +262,7 @@ private:
         setupDebugMessenger(m_instance);
         createSurface(m_instance, &m_surface);
         pickPhysicalDevice(m_instance, m_surface, &m_physicalDevice);
-        createLogicalDevice(m_surface, m_physicalDevice, &m_device);
+        createLogicalDevice(m_surface, m_physicalDevice, &m_queueFamilies, &m_device);
         createSwapChain(m_surface, m_physicalDevice, m_device);
         createImageViews(m_device);
         createRenderPass(m_physicalDevice, m_device);
@@ -282,7 +282,7 @@ private:
         createDescriptorSets(m_device);
         createCommandBuffers(m_device);
         createSyncObjects(m_device);
-        setupImgui(m_instance, m_physicalDevice, m_device, graphicsQueue, commandPool, descriptorPool, renderPass);
+        setupImgui(m_instance, m_physicalDevice, m_queueFamilies, m_device, graphicsQueue, commandPool, descriptorPool, renderPass);
     }
 
 
@@ -519,11 +519,11 @@ private:
         }
     }
 
-    void createLogicalDevice(VkSurfaceKHR surface, VkPhysicalDevice physicalDevice, VkDevice *device) {
-        queueFamilies = findQueueFamilies(physicalDevice, surface);
+    void createLogicalDevice(VkSurfaceKHR surface, VkPhysicalDevice physicalDevice, QueueFamilyIndices* queueFamilies, VkDevice *device) {
+        *queueFamilies = findQueueFamilies(physicalDevice, surface);
 
         std::vector<VkDeviceQueueCreateInfo> queueCreateInfos;
-        std::set<uint32_t> uniqueQueueFamilies = { queueFamilies.graphicsFamily.value(), queueFamilies.presentFamily.value()};
+        std::set<uint32_t> uniqueQueueFamilies = { queueFamilies->graphicsFamily.value(), queueFamilies->presentFamily.value()};
 
         float queuePriority = 1.0f;
         for (uint32_t queueFamily : uniqueQueueFamilies) {
@@ -562,8 +562,8 @@ private:
 
         volkLoadDevice(*device);
 
-        vkGetDeviceQueue(*device, queueFamilies.graphicsFamily.value(), 0, &graphicsQueue);
-        vkGetDeviceQueue(*device, queueFamilies.presentFamily.value(), 0, &presentQueue);
+        vkGetDeviceQueue(*device, queueFamilies->graphicsFamily.value(), 0, &graphicsQueue);
+        vkGetDeviceQueue(*device, queueFamilies->presentFamily.value(), 0, &presentQueue);
     }
 
     void createSwapChain(VkSurfaceKHR surface, VkPhysicalDevice physicalDevice, VkDevice device) {
@@ -1739,7 +1739,7 @@ private:
     //------------------------------------------------------------------------
 
 
-    void setupImgui(VkInstance instance, VkPhysicalDevice physicalDevice, VkDevice device, VkQueue graphicsQueue, VkCommandPool commandPool, VkDescriptorPool descriptorPool, VkRenderPass renderPass) {
+    void setupImgui(VkInstance instance, VkPhysicalDevice physicalDevice, QueueFamilyIndices queueFamilies, VkDevice device, VkQueue graphicsQueue, VkCommandPool commandPool, VkDescriptorPool descriptorPool, VkRenderPass renderPass) {
         // Setup Dear ImGui context
         IMGUI_CHECKVERSION();
         ImGui::CreateContext();
