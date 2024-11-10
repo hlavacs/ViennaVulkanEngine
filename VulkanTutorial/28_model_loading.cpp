@@ -22,6 +22,11 @@
 #define VOLK_IMPLEMENTATION
 #include "volk/volk.h"
 
+#define VMA_IMPLEMENTATION
+#define VMA_STATIC_VULKAN_FUNCTIONS 0
+#define VMA_DYNAMIC_VULKAN_FUNCTIONS 1
+#include "vma/vk_mem_alloc.h"
+
 #define IMGUI_IMPL_VULKAN_USE_VOLK
 #include "imgui.h"
 #include "backends/imgui_impl_sdl2.h"
@@ -184,6 +189,8 @@ public:
     }
 
 private:
+    VmaAllocator m_allocator;
+
     SDL_Window* m_sdl_window{nullptr};
     bool m_isMinimized = false;
     bool m_quit = false;
@@ -270,6 +277,21 @@ private:
         m_sdl_window = SDL_CreateWindow("Tutorial", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, 800, 600, window_flags);
     }
 
+    void initVMA(VkInstance instance, VkPhysicalDevice physicalDevice, VkDevice device, VmaAllocator& allocator) {
+        VmaVulkanFunctions vulkanFunctions = {};
+        vulkanFunctions.vkGetInstanceProcAddr = vkGetInstanceProcAddr;
+        vulkanFunctions.vkGetDeviceProcAddr = vkGetDeviceProcAddr;
+
+        VmaAllocatorCreateInfo allocatorCreateInfo = {};
+        allocatorCreateInfo.flags = VMA_ALLOCATOR_CREATE_EXT_MEMORY_BUDGET_BIT;
+        allocatorCreateInfo.vulkanApiVersion = VK_API_VERSION_1_2;
+        allocatorCreateInfo.physicalDevice = physicalDevice;
+        allocatorCreateInfo.device = device;
+        allocatorCreateInfo.instance = instance;
+        allocatorCreateInfo.pVulkanFunctions = &vulkanFunctions;
+        vmaCreateAllocator(&allocatorCreateInfo, &allocator);
+    }
+
 
     void initVulkan() {
         createInstance(&m_instance);
@@ -277,6 +299,7 @@ private:
         createSurface(m_instance, m_surface);
         pickPhysicalDevice(m_instance, m_surface, m_physicalDevice);
         createLogicalDevice(m_surface, m_physicalDevice, m_queueFamilies, m_device, m_graphicsQueue, m_presentQueue);
+        initVMA(m_instance, m_physicalDevice, m_device, m_allocator);  
         createSwapChain(m_surface, m_physicalDevice, m_device, m_swapChain);
         createImageViews(m_device, m_swapChain);
         createRenderPass(m_physicalDevice, m_device, m_swapChain, m_renderPass);
