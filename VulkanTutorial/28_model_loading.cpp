@@ -181,7 +181,7 @@ public:
         initVulkan();
         mainLoop();
         cleanup(m_instance, m_surface, m_device, m_swapChain
-            , m_depthImage, m_commandPool, m_renderPass, m_texture);
+            , m_depthImage, m_commandPool, m_renderPass, m_texture, m_descriptorSetLayout);
     }
 
 private:
@@ -210,7 +210,7 @@ private:
     } m_swapChain;
 
     VkRenderPass m_renderPass;
-    VkDescriptorSetLayout descriptorSetLayout;
+    VkDescriptorSetLayout m_descriptorSetLayout;
     VkPipelineLayout pipelineLayout;
     VkPipeline graphicsPipeline;
 
@@ -273,8 +273,8 @@ private:
         createSwapChain(m_surface, m_physicalDevice, m_device, m_swapChain);
         createImageViews(m_device, m_swapChain);
         createRenderPass(m_physicalDevice, m_device, m_swapChain, m_renderPass);
-        createDescriptorSetLayout(m_device);
-        createGraphicsPipeline(m_device, m_renderPass);
+        createDescriptorSetLayout(m_device, m_descriptorSetLayout);
+        createGraphicsPipeline(m_device, m_renderPass, m_descriptorSetLayout);
         createCommandPool(m_surface, m_physicalDevice, m_device, m_commandPool);
         createDepthResources(m_physicalDevice, m_device, m_swapChain, m_depthImage);
         createFramebuffers(m_device, m_swapChain, m_depthImage, m_renderPass);
@@ -286,7 +286,7 @@ private:
         createIndexBuffer(m_physicalDevice, m_device, m_graphicsQueue, m_commandPool);
         createUniformBuffers(m_physicalDevice, m_device);
         createDescriptorPool(m_device);
-        createDescriptorSets(m_device, m_texture);
+        createDescriptorSets(m_device, m_texture, m_descriptorSetLayout);
         createCommandBuffers(m_device, m_commandPool);
         createSyncObjects(m_device);
         setupImgui(m_instance, m_physicalDevice, m_queueFamilies, m_device, m_graphicsQueue, m_commandPool, descriptorPool, m_renderPass);
@@ -354,7 +354,7 @@ private:
 
     void cleanup(VkInstance instance, VkSurfaceKHR surface, VkDevice device
         , SwapChain& swapChain, DepthImage& depthImage, VkCommandPool commandPool
-        , VkRenderPass renderPass, Texture texture) {
+        , VkRenderPass renderPass, Texture texture, VkDescriptorSetLayout descriptorSetLayout) {
 
         ImGui_ImplVulkan_Shutdown();
         ImGui_ImplSDL2_Shutdown();
@@ -701,7 +701,7 @@ private:
         }
     }
 
-    void createDescriptorSetLayout(VkDevice device) {
+    void createDescriptorSetLayout(VkDevice device, VkDescriptorSetLayout& descriptorSetLayout) {
         VkDescriptorSetLayoutBinding uboLayoutBinding{};
         uboLayoutBinding.binding = 0;
         uboLayoutBinding.descriptorCount = 1;
@@ -727,7 +727,7 @@ private:
         }
     }
 
-    void createGraphicsPipeline(VkDevice device, VkRenderPass renderPass) {
+    void createGraphicsPipeline(VkDevice device, VkRenderPass renderPass, VkDescriptorSetLayout descriptorSetLayout) {
         auto vertShaderCode = readFile("shaders/vert.spv");
         auto fragShaderCode = readFile("shaders/frag.spv");
 
@@ -1247,7 +1247,7 @@ private:
         vkCreateDescriptorPool(device, &pool_info, nullptr, &descriptorPool);
     }
 
-    void createDescriptorSets(VkDevice device, Texture& texture) {
+    void createDescriptorSets(VkDevice device, Texture& texture, VkDescriptorSetLayout descriptorSetLayout) {
         std::vector<VkDescriptorSetLayout> layouts(MAX_FRAMES_IN_FLIGHT, descriptorSetLayout);
         VkDescriptorSetAllocateInfo allocInfo{};
         allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
