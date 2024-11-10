@@ -23,8 +23,8 @@
 #include "volk/volk.h"
 
 #define VMA_IMPLEMENTATION
-#define VMA_STATIC_VULKAN_FUNCTIONS 0
-#define VMA_DYNAMIC_VULKAN_FUNCTIONS 1
+//#define VMA_STATIC_VULKAN_FUNCTIONS 0
+//#define VMA_DYNAMIC_VULKAN_FUNCTIONS 1
 #include "vma/vk_mem_alloc.h"
 
 #define IMGUI_IMPL_VULKAN_USE_VOLK
@@ -241,13 +241,16 @@ private:
         std::vector<uint32_t>   m_indices;
         VkBuffer                m_vertexBuffer;
         VkDeviceMemory          m_vertexBufferMemory;
+        VmaAllocation           m_vertexBufferAllocation;
         VkBuffer                m_indexBuffer;
         VkDeviceMemory          m_indexBufferMemory;
+        VmaAllocation           m_indexBufferAllocation;
     } m_geometry;
 
     struct UniformBuffers {
         std::vector<VkBuffer>       m_uniformBuffers;
         std::vector<VkDeviceMemory> m_uniformBuffersMemory;
+        std::vector<VmaAllocation> m_uniformBuffersAllocation;
         std::vector<void*>          m_uniformBuffersMapped;
     } m_uniformBuffers;
 
