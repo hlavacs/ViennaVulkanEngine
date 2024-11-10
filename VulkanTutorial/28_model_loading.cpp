@@ -401,15 +401,29 @@ private:
         ImGui_ImplSDL2_Shutdown();
         ImGui::DestroyContext();
 
+        std::cout << "cleanupSwapChain1" << std::endl;
+
         cleanupSwapChain(m_device, m_swapChain, m_depthImage);
+
+        std::cout << "cleanupSwapChain2" << std::endl;
+
 
         vkDestroyPipeline(m_device, m_graphicsPipeline.m_pipeline, nullptr);
         vkDestroyPipelineLayout(m_device, m_graphicsPipeline.m_pipelineLayout, nullptr);
         vkDestroyRenderPass(m_device, m_renderPass, nullptr);
 
+
         for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
-            destroyBuffer(m_device, m_vmaAllocator, m_uniformBuffers.m_uniformBuffers[i], m_uniformBuffers.m_uniformBuffersMemory[i], m_uniformBuffers.m_uniformBuffersAllocation[i]);
+            std::cout << "cleanupSwapChain2.1 " << i << std::endl;
+            destroyBuffer(m_device, m_vmaAllocator, m_uniformBuffers.m_uniformBuffers[i]
+                , m_uniformBuffers.m_uniformBuffersMemory[i], m_uniformBuffers.m_uniformBuffersAllocation[i]);
+
+            //vkDestroyBuffer(m_device, m_uniformBuffers.m_uniformBuffers[i], nullptr);
+            //std::cout << "cleanupSwapChain2.2 " << i << std::endl;
+            //vkFreeMemory(m_device, m_uniformBuffers.m_uniformBuffersMemory[i], nullptr);
         }
+
+        std::cout << "cleanupSwapChain3" << std::endl;
 
         vkDestroyDescriptorPool(m_device, m_descriptorPool, nullptr);
 
@@ -418,11 +432,15 @@ private:
 
         destroyImage(m_device, m_vmaAllocator, m_texture.m_textureImage, m_texture.m_textureImageMemory, m_texture.m_textureImageAllocation);
 
+        std::cout << "cleanupSwapChain4" << std::endl;
+
         vkDestroyDescriptorSetLayout(m_device, m_descriptorSetLayout, nullptr);
 
-        destroyBuffer(m_device, m_vmaAllocator, m_geometry.m_indexBuffer, m_geometry.m_indexBufferMemory, m_geometry.m_indexBufferAllocation);
+        destroyBuffer2(m_device, m_vmaAllocator, m_geometry.m_indexBuffer, m_geometry.m_indexBufferMemory, m_geometry.m_indexBufferAllocation);
 
-        destroyBuffer(m_device, m_vmaAllocator, m_geometry.m_vertexBuffer, m_geometry.m_vertexBufferMemory, m_geometry.m_vertexBufferAllocation);
+        destroyBuffer2(m_device, m_vmaAllocator, m_geometry.m_vertexBuffer, m_geometry.m_vertexBufferMemory, m_geometry.m_vertexBufferAllocation);
+
+        std::cout << "cleanupSwapChain5" << std::endl;
 
         for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
             vkDestroySemaphore(m_device, m_syncObjects.m_renderFinishedSemaphores[i], nullptr);
@@ -1105,10 +1123,11 @@ private:
         vmaCreateImage(vmaAllocator, &imageInfo, &allocInfo, &image, &imageAllocation, nullptr);
     }
 
-    void destroyImage(VkDevice device, VmaAllocator vmaAllocator, VkImage image, VkDeviceMemory imageMemory, VmaAllocation imageAllocation) {
+    void destroyImage(VkDevice device, VmaAllocator vmaAllocator, VkImage image, VkDeviceMemory imageMemory, VmaAllocation& imageAllocation) {
         vmaDestroyImage(vmaAllocator, image, imageAllocation);
     }
 
+    /*
     void createImage2(VkPhysicalDevice physicalDevice, VkDevice device, VmaAllocator vmaAllocator, uint32_t width, uint32_t height
         , VkFormat format, VkImageTiling tiling, VkImageUsageFlags usage, VkMemoryPropertyFlags properties
         , VkImage& image, VkDeviceMemory& imageMemory, VmaAllocation& imageAllocation) {
@@ -1150,7 +1169,7 @@ private:
     void destroyImage2(VkDevice device, VmaAllocator vmaAllocator, VkImage image, VkDeviceMemory imageMemory, VmaAllocation imageAllocation) {
         vkDestroyImage(device, image, nullptr);
         vkFreeMemory(device, imageMemory, nullptr);
-    }
+    }*/
 
     void transitionImageLayout(VkDevice device, VkQueue graphicsQueue, VkCommandPool commandPool
         , VkImage image, VkFormat format, VkImageLayout oldLayout, VkImageLayout newLayout) {
@@ -1286,7 +1305,7 @@ private:
         //memcpy(allocInfo.pMappedData, geometry.m_vertices.data(), bufferSize);
         MemCopy2(device, geometry.m_vertices.data(), stagingBufferMemory, allocInfo, bufferSize);
 
-        createBuffer(physicalDevice, device, vmaAllocator, bufferSize
+        createBuffer2(physicalDevice, device, vmaAllocator, bufferSize
             , VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT
             , VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, 0, geometry.m_vertexBuffer
             , geometry.m_vertexBufferMemory, geometry.m_vertexBufferAllocation);
@@ -1317,7 +1336,7 @@ private:
         //memcpy(allocInfo.pMappedData, geometry.m_indices.data(), bufferSize);
         MemCopy2(device, geometry.m_indices.data(), stagingBufferMemory, allocInfo, bufferSize);
 
-        createBuffer(physicalDevice, device, vmaAllocator, bufferSize
+        createBuffer2(physicalDevice, device, vmaAllocator, bufferSize
             , VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT
             , VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, 0
             , geometry.m_indexBuffer, geometry.m_indexBufferMemory, geometry.m_indexBufferAllocation);
@@ -1457,7 +1476,9 @@ private:
         vmaCreateBuffer(vmaAllocator, &bufferInfo, &allocInfo, &buffer, &allocation, allocationInfo);
     }
 
-    void destroyBuffer2(VkDevice device, VmaAllocator vmaAllocator, VkBuffer buffer, VkDeviceMemory bufferMemory, VmaAllocation allocation) {
+    void destroyBuffer2(VkDevice device, VmaAllocator vmaAllocator, VkBuffer buffer
+        , VkDeviceMemory bufferMemory, VmaAllocation& allocation) {
+            
         vmaDestroyBuffer(vmaAllocator, buffer, allocation);
     }
     
@@ -1491,7 +1512,7 @@ private:
         vkBindBufferMemory(device, buffer, bufferMemory, 0);
     }
 
-    void destroyBuffer(VkDevice device, VmaAllocator vmaAllocator, VkBuffer buffer, VkDeviceMemory bufferMemory, VmaAllocation allocation) {
+    void destroyBuffer(VkDevice device, VmaAllocator vmaAllocator, VkBuffer buffer, VkDeviceMemory bufferMemory, VmaAllocation& allocation) {
         vkDestroyBuffer(device, buffer, nullptr);
         vkFreeMemory(device, bufferMemory, nullptr);
     }
