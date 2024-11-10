@@ -180,7 +180,7 @@ public:
         initWindow();
         initVulkan();
         mainLoop();
-        cleanup(m_instance, m_surface, m_device, m_swapChain, m_depthImage, m_commandPool);
+        cleanup(m_instance, m_surface, m_device, m_swapChain, m_depthImage, m_commandPool, m_renderPass);
     }
 
 private:
@@ -208,7 +208,7 @@ private:
         std::vector<VkFramebuffer> m_swapChainFramebuffers;
     } m_swapChain;
 
-    VkRenderPass renderPass;
+    VkRenderPass m_renderPass;
     VkDescriptorSetLayout descriptorSetLayout;
     VkPipelineLayout pipelineLayout;
     VkPipeline graphicsPipeline;
@@ -269,12 +269,12 @@ private:
         createLogicalDevice(m_surface, m_physicalDevice, m_queueFamilies, m_device, m_graphicsQueue, m_presentQueue);
         createSwapChain(m_surface, m_physicalDevice, m_device, m_swapChain);
         createImageViews(m_device, m_swapChain);
-        createRenderPass(m_physicalDevice, m_device, m_swapChain);
+        createRenderPass(m_physicalDevice, m_device, m_swapChain, m_renderPass);
         createDescriptorSetLayout(m_device);
-        createGraphicsPipeline(m_device);
+        createGraphicsPipeline(m_device, m_renderPass);
         createCommandPool(m_surface, m_physicalDevice, m_device, m_commandPool);
         createDepthResources(m_physicalDevice, m_device, m_swapChain, m_depthImage);
-        createFramebuffers(m_device, m_swapChain, m_depthImage);
+        createFramebuffers(m_device, m_swapChain, m_depthImage, m_renderPass);
         createTextureImage(m_physicalDevice, m_device, m_graphicsQueue, m_commandPool);
         createTextureImageView(m_device);
         createTextureSampler(m_physicalDevice, m_device);
@@ -286,7 +286,7 @@ private:
         createDescriptorSets(m_device);
         createCommandBuffers(m_device, m_commandPool);
         createSyncObjects(m_device);
-        setupImgui(m_instance, m_physicalDevice, m_queueFamilies, m_device, m_graphicsQueue, m_commandPool, descriptorPool, renderPass);
+        setupImgui(m_instance, m_physicalDevice, m_queueFamilies, m_device, m_graphicsQueue, m_commandPool, descriptorPool, m_renderPass);
     }
 
 
@@ -326,7 +326,8 @@ private:
                 ImGui::ShowDemoWindow(); // Show demo window! :)
 
                 drawFrame(m_sdl_window, m_surface, m_physicalDevice, m_device
-                    , m_graphicsQueue, m_presentQueue, m_swapChain, m_depthImage);
+                    , m_graphicsQueue, m_presentQueue, m_swapChain, m_depthImage
+                    , m_renderPass);
             }
         }
         vkDeviceWaitIdle(m_device);
@@ -348,7 +349,7 @@ private:
         vkDestroySwapchainKHR(device, swapChain.m_swapChain, nullptr);
     }
 
-    void cleanup(VkInstance instance, VkSurfaceKHR surface, VkDevice device, SwapChain& swapChain, DepthImage& depthImage, VkCommandPool commandPool) {
+    void cleanup(VkInstance instance, VkSurfaceKHR surface, VkDevice device, SwapChain& swapChain, DepthImage& depthImage, VkCommandPool commandPool, VkRenderPass renderPass) {
         ImGui_ImplVulkan_Shutdown();
         ImGui_ImplSDL2_Shutdown();
         ImGui::DestroyContext();
@@ -403,7 +404,8 @@ private:
     }
 
     void recreateSwapChain(SDL_Window* window, VkSurfaceKHR surface
-        , VkPhysicalDevice physicalDevice, VkDevice device, SwapChain& swapChain, DepthImage& depthImage) {
+        , VkPhysicalDevice physicalDevice, VkDevice device, SwapChain& swapChain
+        , DepthImage& depthImage, VkRenderPass renderPass) {
         int width = 0, height = 0;
         
         SDL_GetWindowSize(window, &width, &height);
@@ -420,7 +422,7 @@ private:
         createSwapChain(surface, physicalDevice, device, swapChain);
         createImageViews(device, swapChain);
         createDepthResources(physicalDevice, device, swapChain, depthImage);
-        createFramebuffers(device, swapChain, depthImage);
+        createFramebuffers(device, swapChain, depthImage, renderPass);
     }
 
 
@@ -635,7 +637,7 @@ private:
         }
     }
 
-    void createRenderPass(VkPhysicalDevice physicalDevice, VkDevice device, SwapChain& swapChain) {
+    void createRenderPass(VkPhysicalDevice physicalDevice, VkDevice device, SwapChain& swapChain, VkRenderPass& renderPass) {
         VkAttachmentDescription colorAttachment{};
         colorAttachment.format = swapChain.m_swapChainImageFormat;
         colorAttachment.samples = VK_SAMPLE_COUNT_1_BIT;
@@ -719,7 +721,7 @@ private:
         }
     }
 
-    void createGraphicsPipeline(VkDevice device) {
+    void createGraphicsPipeline(VkDevice device, VkRenderPass renderPass) {
         auto vertShaderCode = readFile("shaders/vert.spv");
         auto fragShaderCode = readFile("shaders/frag.spv");
 
@@ -842,7 +844,7 @@ private:
         vkDestroyShaderModule(device, vertShaderModule, nullptr);
     }
 
-    void createFramebuffers(VkDevice device, SwapChain& swapChain, DepthImage& depthImage) {
+    void createFramebuffers(VkDevice device, SwapChain& swapChain, DepthImage& depthImage, VkRenderPass renderPass) {
         swapChain.m_swapChainFramebuffers.resize(swapChain.m_swapChainImageViews.size());
 
         for (size_t i = 0; i < swapChain.m_swapChainImageViews.size(); i++) {
@@ -1377,7 +1379,7 @@ private:
         }
     }
 
-    void recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageIndex, SwapChain& swapChain) {
+    void recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageIndex, SwapChain& swapChain, VkRenderPass renderPass) {
         VkCommandBufferBeginInfo beginInfo{};
         beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
 
@@ -1481,7 +1483,7 @@ private:
 
     void drawFrame(SDL_Window* window, VkSurfaceKHR surface, VkPhysicalDevice physicalDevice
         , VkDevice device, VkQueue graphicsQueue, VkQueue presentQueue
-        , SwapChain& swapChain, DepthImage& depthImage) {   
+        , SwapChain& swapChain, DepthImage& depthImage, VkRenderPass renderPass) {   
 
         vkWaitForFences(device, 1, &inFlightFences[currentFrame], VK_TRUE, UINT64_MAX);
 
@@ -1489,7 +1491,7 @@ private:
         VkResult result = vkAcquireNextImageKHR(device, swapChain.m_swapChain, UINT64_MAX, imageAvailableSemaphores[currentFrame], VK_NULL_HANDLE, &imageIndex);
 
         if (result == VK_ERROR_OUT_OF_DATE_KHR ) {
-            recreateSwapChain(window, surface, physicalDevice, device, swapChain, depthImage);
+            recreateSwapChain(window, surface, physicalDevice, device, swapChain, depthImage, renderPass);
             return;
         } else if (result != VK_SUCCESS && result != VK_SUBOPTIMAL_KHR) {
             throw std::runtime_error("failed to acquire swap chain image!");
@@ -1500,7 +1502,7 @@ private:
         vkResetFences(device, 1, &inFlightFences[currentFrame]);
 
         vkResetCommandBuffer(commandBuffers[currentFrame],  0);
-        recordCommandBuffer(commandBuffers[currentFrame], imageIndex, swapChain);
+        recordCommandBuffer(commandBuffers[currentFrame], imageIndex, swapChain, renderPass);
 
 
 
@@ -1540,7 +1542,7 @@ private:
 
         if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR || framebufferResized) {
             framebufferResized = false;
-            recreateSwapChain(window, surface, physicalDevice, device, swapChain, depthImage);
+            recreateSwapChain(window, surface, physicalDevice, device, swapChain, depthImage, renderPass);
         }
         else if (result != VK_SUCCESS) {
             throw std::runtime_error("failed to present swap chain image!");
