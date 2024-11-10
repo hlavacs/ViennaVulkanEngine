@@ -30,9 +30,7 @@ namespace vve {
 
    	template<ArchitectureType ATYPE>
     void WindowSDL<ATYPE>::OnInit(Message message) {
-
         if(!sdl_initialized) {
-        
             if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_TIMER | SDL_INIT_GAMECONTROLLER) != 0) {
                 printf("Error: %s\n", SDL_GetError());
                 return;
@@ -82,7 +80,7 @@ namespace vve {
 
         SDL_Event event;
         while (SDL_PollEvent(&event)) {
-            //ImGui_ImplSDL2_ProcessEvent(&event);
+            //ImGui_ImplSDL2_ProcessEvent(&event); //send SDL message
             if (event.type == SDL_QUIT)
                 m_engine->Stop();
             if (event.type == SDL_WINDOWEVENT && event.window.event == SDL_WINDOWEVENT_CLOSE && event.window.windowID == SDL_GetWindowID(m_window))
@@ -137,14 +135,10 @@ namespace vve {
 
    	template<ArchitectureType ATYPE>
     void WindowSDL<ATYPE>::OnPrepareNextFrame(Message message) {
-        //ImGui_ImplSDL2_NewFrame();
-        //ImGui::NewFrame();
     }
 
    	template<ArchitectureType ATYPE>
     void WindowSDL<ATYPE>::OnRenderNextFrame(Message message) {
-        //ImDrawData* draw_data = ImGui::GetDrawData();
-        //m_isMinimized = (draw_data->DisplaySize.x <= 0.0f || draw_data->DisplaySize.y <= 0.0f);       
     }
 
    	template<ArchitectureType ATYPE>
@@ -153,13 +147,6 @@ namespace vve {
 
    	template<ArchitectureType ATYPE>
     void WindowSDL<ATYPE>::OnQuit(Message message) {
-        //ImGui_ImplSDL2_Shutdown();
-        //ImGui::DestroyContext();
-
-        auto rend = ((RendererVulkan<ATYPE>*)(m_engine->GetSystem("VVE RendererVulkan")));
-        vkDestroySurfaceKHR(rend->GetInstance(), m_surface, nullptr);
-        SDL_DestroyWindow(m_window);
-        SDL_Quit();
     }
 
 

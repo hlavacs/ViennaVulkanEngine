@@ -25,10 +25,6 @@ namespace vve {
     public:
         WindowSDL(Engine<ATYPE>* engine, std::string windowName, int width, int height, std::string name = "VVE WindowSDL" );
         virtual ~WindowSDL();
-        auto GetMinImageCount() -> int { return m_minImageCount; };
-        auto GetSwapChainRebuild() -> bool { return m_swapChainRebuild; };
-        void SetSwapChainRebuild(bool rebuild) { m_swapChainRebuild = rebuild; };
-        auto GetSDLWindow() -> SDL_Window* { return m_window; };
 
     private:
         virtual void OnInit(Message message);

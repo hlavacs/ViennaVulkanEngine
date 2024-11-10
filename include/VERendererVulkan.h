@@ -16,20 +16,7 @@ namespace vve {
 
         RendererVulkan(Engine<ATYPE>* engine, Window<ATYPE>* window, std::string name = "VVE RendererVulkan" );
         virtual ~RendererVulkan();
-
-        auto GetAllocator() -> VkAllocationCallbacks* { return m_allocator; };
-        auto GetInstance() -> VkInstance { return m_instance; };
-        auto GetDebugReport() -> VkDebugReportCallbackEXT { return m_debugReport; };
-        auto GetPhysicalDevice() -> VkPhysicalDevice { return m_physicalDevice; };
-        auto GetDevice() -> VkDevice { return m_device; };
-        auto GetQueueFamily() -> uint32_t { return m_queueFamily; };
-        auto GetGraphicsQueue() -> VkQueue { return m_graphics_queue; };
-        auto GetPresentQueue() -> VkQueue { return m_present_queue; };
-        auto GetComputeQueue() -> VkQueue { return m_compute_queue; };
-        auto GetPipelineCache() -> VkPipelineCache { return m_pipelineCache; };
-        auto GetInstanceLayers() -> std::vector<const char*> { return m_instance_layers; };
-        auto GetInstanceExtensions() -> std::vector<const char*> { return m_instance_extensions; };
-        auto GetDeviceExtensions() -> std::vector<const char*> { return m_device_extensions; };
+        auto GetInstance() -> VkInstance { return m_instance; }
 
     private:
         virtual void OnInit(Message message);
@@ -39,46 +26,7 @@ namespace vve {
         virtual void OnRenderNextFrame(Message message);
         virtual void OnQuit(Message message);
 
-        VmaAllocator             m_vma_allocator = VK_NULL_HANDLE;
-   		VkDescriptorPool         m_descriptorPool = VK_NULL_HANDLE;
-		VkAllocationCallbacks*   m_allocator = nullptr;
-		VkInstance               m_instance = VK_NULL_HANDLE;
-		VkDebugReportCallbackEXT m_debugReport = VK_NULL_HANDLE;
-		VkPhysicalDevice         m_physicalDevice = VK_NULL_HANDLE;
-        VkPhysicalDeviceFeatures m_physicalDeviceFeatures;
-        VkPhysicalDeviceLimits   m_physicalDeviceLimits;
-		VkDevice                 m_device = VK_NULL_HANDLE;
-		uint32_t                 m_queueFamily = 0;		
-		VkQueue                  m_graphics_queue = VK_NULL_HANDLE;
-		VkQueue                  m_present_queue = VK_NULL_HANDLE;
-		VkQueue                  m_compute_queue = VK_NULL_HANDLE;
-		VkPipelineCache          m_pipelineCache = VK_NULL_HANDLE;
-
-        VkSurfaceFormatKHR       m_surfaceFormat;
-        VkPresentModeKHR         m_presentMode = VK_PRESENT_MODE_FIFO_KHR;
-        VkSwapchainKHR           m_swapchain = VK_NULL_HANDLE;
-        int                      m_minImageCount = 0;
-
-        struct Frame {
-            VkCommandPool       m_commandPool;
-            VkCommandBuffer     m_commandBuffer;
-            VkFence             m_fence;
-            VkImage             m_backbuffer;
-            VkImageView         m_backbufferView;
-            VkFramebuffer       m_framebuffer;
-        };
-        std::vector<Frame>      m_frames;
-
-        struct FrameSemaphore {
-            VkSemaphore         m_imageAcquiredSemaphore;
-            VkSemaphore         m_renderCompleteSemaphore;
-        };
-        std::vector<FrameSemaphore> m_frameSemaphores;
-       
-		std::vector<const char*> m_instance_layers;
-		std::vector<const char*> m_instance_extensions;
-		std::vector<const char*> m_device_extensions{"VK_KHR_swapchain"};
+        VkInstance m_instance;
     };
-
 };   // namespace vve
 

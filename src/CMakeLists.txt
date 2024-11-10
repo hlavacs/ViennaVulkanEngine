@@ -19,7 +19,6 @@ set(SOURCE
   VEWindow.cpp
   VEWindowSDL.cpp
   VHDevice.cpp
-  VHDevice2.cpp
   )
 
 set(HEADERS
@@ -45,6 +44,7 @@ target_include_directories(${TARGET} PUBLIC ${INCLUDE})
 target_include_directories(${TARGET} PUBLIC ${IMGUI})
 target_include_directories(${TARGET} PUBLIC ${IMGUI}/backends)
 target_include_directories(${TARGET} PUBLIC ${GLM}/glm)
+target_include_directories(${TARGET} PUBLIC ${STB})
 target_include_directories(${TARGET} PUBLIC ${VECS}/include)
 target_include_directories(${TARGET} PUBLIC ${VTLL}/include)
 

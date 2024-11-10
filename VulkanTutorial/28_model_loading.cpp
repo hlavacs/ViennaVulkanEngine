@@ -62,7 +62,7 @@ const std::vector<const char*> validationLayers = {
 
 std::vector<const char*> m_sdl_instance_extensions = {};
 
-const std::vector<const char*> deviceExtensions = {
+const std::vector<const char*> m_deviceExtensions = {
     VK_KHR_SWAPCHAIN_EXTENSION_NAME
 };
 
@@ -196,7 +196,7 @@ public:
 private:
     VmaAllocator m_vmaAllocator;
 
-    SDL_Window* m_sdl_window{nullptr};
+    SDL_Window* m_sdlWindow{nullptr};
     bool m_isMinimized = false;
     bool m_quit = false;
 
@@ -279,7 +279,7 @@ private:
         #endif
 
         SDL_WindowFlags window_flags = (SDL_WindowFlags)(SDL_WINDOW_VULKAN | SDL_WINDOW_RESIZABLE | SDL_WINDOW_ALLOW_HIGHDPI);
-        m_sdl_window = SDL_CreateWindow("Tutorial", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, 800, 600, window_flags);
+        m_sdlWindow = SDL_CreateWindow("Tutorial", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, 800, 600, window_flags);
     }
 
     void initVMA(VkInstance instance, VkPhysicalDevice physicalDevice, VkDevice device, VmaAllocator& allocator) {
@@ -302,8 +302,8 @@ private:
         createInstance(&m_instance);
         setupDebugMessenger(m_instance);
         createSurface(m_instance, m_surface);
-        pickPhysicalDevice(m_instance, m_surface, m_physicalDevice);
-        createLogicalDevice(m_surface, m_physicalDevice, m_queueFamilies, m_device, m_graphicsQueue, m_presentQueue);
+        pickPhysicalDevice(m_instance, m_deviceExtensions, m_surface, m_physicalDevice);
+        createLogicalDevice(m_surface, m_physicalDevice, m_queueFamilies, m_deviceExtensions, m_device, m_graphicsQueue, m_presentQueue);
         initVMA(m_instance, m_physicalDevice, m_device, m_vmaAllocator);  
         createSwapChain(m_surface, m_physicalDevice, m_device, m_swapChain);
         createImageViews(m_device, m_swapChain);
@@ -364,7 +364,7 @@ private:
 
                 ImGui::ShowDemoWindow(); // Show demo window! :)
 
-                drawFrame(m_sdl_window, m_surface, m_physicalDevice, m_device, m_vmaAllocator
+                drawFrame(m_sdlWindow, m_surface, m_physicalDevice, m_device, m_vmaAllocator
                     , m_graphicsQueue, m_presentQueue, m_swapChain, m_depthImage
                     , m_renderPass, m_graphicsPipeline, m_geometry, m_commandBuffers
                     , m_uniformBuffers, m_descriptorSets, m_syncObjects, m_currentFrame
@@ -374,10 +374,10 @@ private:
         vkDeviceWaitIdle(m_device);
     }
 
-    void cleanupSwapChain(VkDevice device, SwapChain& swapChain, DepthImage& depthImage) {
+    void cleanupSwapChain(VkDevice device, VmaAllocator vmaAllocator, SwapChain& swapChain, DepthImage& depthImage) {
         vkDestroyImageView(device, depthImage.m_depthImageView, nullptr);
 
-        destroyImage(device, m_vmaAllocator, depthImage.m_depthImage, depthImage.m_depthImageAllocation);
+        destroyImage(device, vmaAllocator, depthImage.m_depthImage, depthImage.m_depthImageAllocation);
 
         for (auto framebuffer : swapChain.m_swapChainFramebuffers) {
             vkDestroyFramebuffer(device, framebuffer, nullptr);
@@ -396,7 +396,7 @@ private:
         ImGui_ImplSDL2_Shutdown();
         ImGui::DestroyContext();
 
-        cleanupSwapChain(m_device, m_swapChain, m_depthImage);
+        cleanupSwapChain(m_device, m_vmaAllocator, m_swapChain, m_depthImage);
 
         vkDestroyPipeline(m_device, m_graphicsPipeline.m_pipeline, nullptr);
         vkDestroyPipelineLayout(m_device, m_graphicsPipeline.m_pipelineLayout, nullptr);
@@ -439,7 +439,7 @@ private:
         vkDestroySurfaceKHR(m_instance, m_surface, nullptr);
         vkDestroyInstance(m_instance, nullptr);
 
-        SDL_DestroyWindow(m_sdl_window);
+        SDL_DestroyWindow(m_sdlWindow);
         SDL_Quit();
 
     }
@@ -458,7 +458,7 @@ private:
 
         vkDeviceWaitIdle(device);
 
-        cleanupSwapChain(device, swapChain, depthImage);
+        cleanupSwapChain(device, vmaAllocator, swapChain, depthImage);
 
         createSwapChain(surface, physicalDevice, device, swapChain);
         createImageViews(device, swapChain);
@@ -533,12 +533,12 @@ private:
     }
 
     void createSurface(VkInstance instance, VkSurfaceKHR& surface) {
-        if (SDL_Vulkan_CreateSurface(m_sdl_window, instance, &surface) == 0) {
+        if (SDL_Vulkan_CreateSurface(m_sdlWindow, instance, &surface) == 0) {
             printf("Failed to create Vulkan surface.\n");
         }
     }
 
-    void pickPhysicalDevice(VkInstance instance, VkSurfaceKHR surface, VkPhysicalDevice& physicalDevice) {
+    void pickPhysicalDevice(VkInstance instance, const std::vector<const char*>& deviceExtensions, VkSurfaceKHR surface, VkPhysicalDevice& physicalDevice) {
         uint32_t deviceCount = 0;
         vkEnumeratePhysicalDevices(instance, &deviceCount, nullptr);
 
@@ -554,7 +554,9 @@ private:
             deviceProperties2.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROPERTIES_2;
             vkGetPhysicalDeviceProperties2(device, &deviceProperties2);
 
-            if (deviceProperties2.properties.deviceType == VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU && isDeviceSuitable(device, surface)) {
+            if (deviceProperties2.properties.deviceType == VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU 
+                && isDeviceSuitable(device, deviceExtensions, surface)) {
+
                 physicalDevice = device;
                 break;
             }
@@ -562,7 +564,7 @@ private:
 
         if (physicalDevice == VK_NULL_HANDLE) {
             for (const auto& device : devices) {
-                if (isDeviceSuitable(device, surface)) {
+                if (isDeviceSuitable(device, deviceExtensions, surface)) {
                     physicalDevice = device;
                     break;
                 }
@@ -575,6 +577,7 @@ private:
     }
 
     void createLogicalDevice(VkSurfaceKHR surface, VkPhysicalDevice physicalDevice, QueueFamilyIndices& queueFamilies
+        , const std::vector<const char*>& deviceExtensions
         , VkDevice& device, VkQueue& graphicsQueue, VkQueue& presentQueue) {
 
         queueFamilies = findQueueFamilies(physicalDevice, surface);
@@ -1683,7 +1686,7 @@ private:
             return capabilities.currentExtent;
         } else {
             int width, height;
-            SDL_GetWindowSize(m_sdl_window, &width, &height);
+            SDL_GetWindowSize(m_sdlWindow, &width, &height);
 
             VkExtent2D actualExtent = {
                 static_cast<uint32_t>(width),
@@ -1723,10 +1726,10 @@ private:
         return details;
     }
 
-    bool isDeviceSuitable(VkPhysicalDevice device, VkSurfaceKHR surface) {
+    bool isDeviceSuitable(VkPhysicalDevice device, const std::vector<const char*>& deviceExtensions, VkSurfaceKHR surface) {
         QueueFamilyIndices indices = findQueueFamilies(device, surface);
 
-        bool extensionsSupported = checkDeviceExtensionSupport(device);
+        bool extensionsSupported = checkDeviceExtensionSupport(device, deviceExtensions);
 
         bool swapChainAdequate = false;
         if (extensionsSupported) {
@@ -1740,7 +1743,7 @@ private:
         return indices.isComplete() && extensionsSupported && swapChainAdequate  && supportedFeatures.samplerAnisotropy;
     }
 
-    bool checkDeviceExtensionSupport(VkPhysicalDevice device) {
+    bool checkDeviceExtensionSupport(VkPhysicalDevice device, const std::vector<const char*>& deviceExtensions) {
         uint32_t extensionCount;
         vkEnumerateDeviceExtensionProperties(device, nullptr, &extensionCount, nullptr);
 
@@ -1791,9 +1794,9 @@ private:
     std::vector<const char*> getRequiredExtensions() {
         uint32_t extensions_count = 0;
         std::vector<const char*> extensions;
-        SDL_Vulkan_GetInstanceExtensions(m_sdl_window, &extensions_count, nullptr);
+        SDL_Vulkan_GetInstanceExtensions(m_sdlWindow, &extensions_count, nullptr);
         extensions.resize(extensions_count);
-        SDL_Vulkan_GetInstanceExtensions(m_sdl_window, &extensions_count, extensions.data());
+        SDL_Vulkan_GetInstanceExtensions(m_sdlWindow, &extensions_count, extensions.data());
         if (enableValidationLayers) {
             extensions.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
         }
@@ -1871,7 +1874,7 @@ private:
         ImGui_ImplVulkan_LoadFunctions( &loadVolk );
 
         // Setup Platform/Renderer backends
-        ImGui_ImplSDL2_InitForVulkan(m_sdl_window);
+        ImGui_ImplSDL2_InitForVulkan(m_sdlWindow);
 
         ImGui_ImplVulkan_InitInfo init_info = {};
         init_info.Instance = instance;

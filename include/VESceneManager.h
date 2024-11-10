@@ -13,7 +13,7 @@ namespace vve {
         virtual ~SceneManager();
 
     private:
-        virtual void DrawScene();
+
     };
 
 };  // namespace vve

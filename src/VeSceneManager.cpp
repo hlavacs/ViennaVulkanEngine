@@ -9,12 +9,6 @@ namespace vve {
    	template<ArchitectureType ATYPE>
     SceneManager<ATYPE>::~SceneManager() {}
 
-   	template<ArchitectureType ATYPE>
-    void SceneManager<ATYPE>::DrawScene() {
-
-        
-    }
-
     template class SceneManager<ArchitectureType::SEQUENTIAL>;
     template class SceneManager<ArchitectureType::PARALLEL>;
 
