@@ -181,7 +181,8 @@ public:
         initVulkan();
         mainLoop();
         cleanup(m_instance, m_surface, m_device, m_swapChain
-            , m_depthImage, m_commandPool, m_renderPass, m_texture, m_descriptorSetLayout);
+            , m_depthImage, m_commandPool, m_renderPass, m_texture
+            , m_descriptorSetLayout, m_graphicsPipeline);
     }
 
 private:
@@ -211,8 +212,11 @@ private:
 
     VkRenderPass m_renderPass;
     VkDescriptorSetLayout m_descriptorSetLayout;
-    VkPipelineLayout pipelineLayout;
-    VkPipeline graphicsPipeline;
+
+    struct Pipeline {
+        VkPipelineLayout m_pipelineLayout;
+        VkPipeline m_pipeline;
+    } m_graphicsPipeline;
 
     VkCommandPool m_commandPool;
 
@@ -274,7 +278,7 @@ private:
         createImageViews(m_device, m_swapChain);
         createRenderPass(m_physicalDevice, m_device, m_swapChain, m_renderPass);
         createDescriptorSetLayout(m_device, m_descriptorSetLayout);
-        createGraphicsPipeline(m_device, m_renderPass, m_descriptorSetLayout);
+        createGraphicsPipeline(m_device, m_renderPass, m_descriptorSetLayout, m_graphicsPipeline);
         createCommandPool(m_surface, m_physicalDevice, m_device, m_commandPool);
         createDepthResources(m_physicalDevice, m_device, m_swapChain, m_depthImage);
         createFramebuffers(m_device, m_swapChain, m_depthImage, m_renderPass);
@@ -330,7 +334,7 @@ private:
 
                 drawFrame(m_sdl_window, m_surface, m_physicalDevice, m_device
                     , m_graphicsQueue, m_presentQueue, m_swapChain, m_depthImage
-                    , m_renderPass);
+                    , m_renderPass, m_graphicsPipeline);
             }
         }
         vkDeviceWaitIdle(m_device);
@@ -354,7 +358,8 @@ private:
 
     void cleanup(VkInstance instance, VkSurfaceKHR surface, VkDevice device
         , SwapChain& swapChain, DepthImage& depthImage, VkCommandPool commandPool
-        , VkRenderPass renderPass, Texture texture, VkDescriptorSetLayout descriptorSetLayout) {
+        , VkRenderPass renderPass, Texture& texture, VkDescriptorSetLayout descriptorSetLayout
+        , Pipeline& graphicsPipeline) {
 
         ImGui_ImplVulkan_Shutdown();
         ImGui_ImplSDL2_Shutdown();
@@ -362,8 +367,8 @@ private:
 
         cleanupSwapChain(device, swapChain, depthImage);
 
-        vkDestroyPipeline(device, graphicsPipeline, nullptr);
-        vkDestroyPipelineLayout(device, pipelineLayout, nullptr);
+        vkDestroyPipeline(device, graphicsPipeline.m_pipeline, nullptr);
+        vkDestroyPipelineLayout(device, graphicsPipeline.m_pipelineLayout, nullptr);
         vkDestroyRenderPass(device, renderPass, nullptr);
 
         for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
@@ -727,7 +732,9 @@ private:
         }
     }
 
-    void createGraphicsPipeline(VkDevice device, VkRenderPass renderPass, VkDescriptorSetLayout descriptorSetLayout) {
+    void createGraphicsPipeline(VkDevice device, VkRenderPass renderPass
+        , VkDescriptorSetLayout descriptorSetLayout, Pipeline& graphicsPipeline) {
+
         auto vertShaderCode = readFile("shaders/vert.spv");
         auto fragShaderCode = readFile("shaders/frag.spv");
 
@@ -821,7 +828,7 @@ private:
         pipelineLayoutInfo.setLayoutCount = 1;
         pipelineLayoutInfo.pSetLayouts = &descriptorSetLayout;
 
-        if (vkCreatePipelineLayout(device, &pipelineLayoutInfo, nullptr, &pipelineLayout) != VK_SUCCESS) {
+        if (vkCreatePipelineLayout(device, &pipelineLayoutInfo, nullptr, &graphicsPipeline.m_pipelineLayout) != VK_SUCCESS) {
             throw std::runtime_error("failed to create pipeline layout!");
         }
 
@@ -837,12 +844,12 @@ private:
         pipelineInfo.pDepthStencilState = &depthStencil;
         pipelineInfo.pColorBlendState = &colorBlending;
         pipelineInfo.pDynamicState = &dynamicState;
-        pipelineInfo.layout = pipelineLayout;
+        pipelineInfo.layout = graphicsPipeline.m_pipelineLayout;
         pipelineInfo.renderPass = renderPass;
         pipelineInfo.subpass = 0;
         pipelineInfo.basePipelineHandle = VK_NULL_HANDLE;
 
-        if (vkCreateGraphicsPipelines(device, VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &graphicsPipeline) != VK_SUCCESS) {
+        if (vkCreateGraphicsPipelines(device, VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &graphicsPipeline.m_pipeline) != VK_SUCCESS) {
             throw std::runtime_error("failed to create graphics pipeline!");
         }
 
@@ -1389,7 +1396,9 @@ private:
         }
     }
 
-    void recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageIndex, SwapChain& swapChain, VkRenderPass renderPass) {
+    void recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageIndex
+        , SwapChain& swapChain, VkRenderPass renderPass, Pipeline& graphicsPipeline) {
+
         VkCommandBufferBeginInfo beginInfo{};
         beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
 
@@ -1413,7 +1422,7 @@ private:
 
         vkCmdBeginRenderPass(commandBuffer, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
 
-            vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsPipeline);
+            vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsPipeline.m_pipeline);
 
             VkViewport viewport{};
             viewport.x = 0.0f;
@@ -1435,7 +1444,7 @@ private:
 
             vkCmdBindIndexBuffer(commandBuffer, indexBuffer, 0, VK_INDEX_TYPE_UINT32);
 
-            vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 0, 1, &descriptorSets[currentFrame], 0, nullptr);
+            vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsPipeline.m_pipelineLayout, 0, 1, &descriptorSets[currentFrame], 0, nullptr);
 
             vkCmdDrawIndexed(commandBuffer, static_cast<uint32_t>(indices.size()), 1, 0, 0, 0);
 
@@ -1493,7 +1502,8 @@ private:
 
     void drawFrame(SDL_Window* window, VkSurfaceKHR surface, VkPhysicalDevice physicalDevice
         , VkDevice device, VkQueue graphicsQueue, VkQueue presentQueue
-        , SwapChain& swapChain, DepthImage& depthImage, VkRenderPass renderPass) {   
+        , SwapChain& swapChain, DepthImage& depthImage, VkRenderPass renderPass
+        , Pipeline& graphicsPipeline) {   
 
         vkWaitForFences(device, 1, &inFlightFences[currentFrame], VK_TRUE, UINT64_MAX);
 
@@ -1512,7 +1522,7 @@ private:
         vkResetFences(device, 1, &inFlightFences[currentFrame]);
 
         vkResetCommandBuffer(commandBuffers[currentFrame],  0);
-        recordCommandBuffer(commandBuffers[currentFrame], imageIndex, swapChain, renderPass);
+        recordCommandBuffer(commandBuffers[currentFrame], imageIndex, swapChain, renderPass, graphicsPipeline);
 
 
 
