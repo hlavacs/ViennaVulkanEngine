@@ -17,7 +17,7 @@ extern/glTF
 **/*.pdb
 **/*.ilk
 **/*.obj
-
+vc140.pdb
 
 #x64/
 #bin/
