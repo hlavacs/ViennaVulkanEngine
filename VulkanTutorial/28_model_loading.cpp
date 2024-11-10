@@ -182,7 +182,7 @@ public:
         mainLoop();
         cleanup(m_instance, m_surface, m_device, m_swapChain
             , m_depthImage, m_commandPool, m_renderPass, m_texture
-            , m_descriptorSetLayout, m_graphicsPipeline);
+            , m_descriptorSetLayout, m_graphicsPipeline, m_geometry);
     }
 
 private:
@@ -230,15 +230,17 @@ private:
         VkImage         m_textureImage;
         VkDeviceMemory  m_textureImageMemory;
         VkImageView     m_textureImageView;
-        VkSampler   m_textureSampler;
+        VkSampler       m_textureSampler;
     } m_texture;
 
-    std::vector<Vertex> vertices;
-    std::vector<uint32_t> indices;
-    VkBuffer vertexBuffer;
-    VkDeviceMemory vertexBufferMemory;
-    VkBuffer indexBuffer;
-    VkDeviceMemory indexBufferMemory;
+    struct Geometry {
+        std::vector<Vertex>     m_vertices;
+        std::vector<uint32_t>   m_indices;
+        VkBuffer                m_vertexBuffer;
+        VkDeviceMemory          m_vertexBufferMemory;
+        VkBuffer                m_indexBuffer;
+        VkDeviceMemory          m_indexBufferMemory;
+    } m_geometry;
 
     std::vector<VkBuffer> uniformBuffers;
     std::vector<VkDeviceMemory> uniformBuffersMemory;
@@ -285,9 +287,9 @@ private:
         createTextureImage(m_physicalDevice, m_device, m_graphicsQueue, m_commandPool, m_texture);
         createTextureImageView(m_device, m_texture);
         createTextureSampler(m_physicalDevice, m_device, m_texture);
-        loadModel();
-        createVertexBuffer(m_physicalDevice, m_device, m_graphicsQueue, m_commandPool);
-        createIndexBuffer(m_physicalDevice, m_device, m_graphicsQueue, m_commandPool);
+        loadModel(m_geometry);
+        createVertexBuffer(m_physicalDevice, m_device, m_graphicsQueue, m_commandPool, m_geometry);
+        createIndexBuffer(m_physicalDevice, m_device, m_graphicsQueue, m_commandPool, m_geometry);
         createUniformBuffers(m_physicalDevice, m_device);
         createDescriptorPool(m_device);
         createDescriptorSets(m_device, m_texture, m_descriptorSetLayout);
@@ -334,7 +336,7 @@ private:
 
                 drawFrame(m_sdl_window, m_surface, m_physicalDevice, m_device
                     , m_graphicsQueue, m_presentQueue, m_swapChain, m_depthImage
-                    , m_renderPass, m_graphicsPipeline);
+                    , m_renderPass, m_graphicsPipeline, m_geometry);
             }
         }
         vkDeviceWaitIdle(m_device);
@@ -359,7 +361,7 @@ private:
     void cleanup(VkInstance instance, VkSurfaceKHR surface, VkDevice device
         , SwapChain& swapChain, DepthImage& depthImage, VkCommandPool commandPool
         , VkRenderPass renderPass, Texture& texture, VkDescriptorSetLayout descriptorSetLayout
-        , Pipeline& graphicsPipeline) {
+        , Pipeline& graphicsPipeline, Geometry& geometry) {
 
         ImGui_ImplVulkan_Shutdown();
         ImGui_ImplSDL2_Shutdown();
@@ -386,11 +388,11 @@ private:
 
         vkDestroyDescriptorSetLayout(device, descriptorSetLayout, nullptr);
 
-        vkDestroyBuffer(device, indexBuffer, nullptr);
-        vkFreeMemory(device, indexBufferMemory, nullptr);
+        vkDestroyBuffer(device, geometry.m_indexBuffer, nullptr);
+        vkFreeMemory(device, geometry.m_indexBufferMemory, nullptr);
 
-        vkDestroyBuffer(device, vertexBuffer, nullptr);
-        vkFreeMemory(device, vertexBufferMemory, nullptr);
+        vkDestroyBuffer(device, geometry.m_vertexBuffer, nullptr);
+        vkFreeMemory(device, geometry.m_vertexBufferMemory, nullptr);
 
         for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
             vkDestroySemaphore(device, renderFinishedSemaphores[i], nullptr);
@@ -1118,7 +1120,7 @@ private:
         endSingleTimeCommands(device, graphicsQueue, commandPool, commandBuffer);
     }
 
-    void loadModel() {
+    void loadModel( Geometry& geometry) {
         tinyobj::attrib_t attrib;
         std::vector<tinyobj::shape_t> shapes;
         std::vector<tinyobj::material_t> materials;
@@ -1148,17 +1150,19 @@ private:
                 vertex.color = {1.0f, 1.0f, 1.0f};
 
                 if (uniqueVertices.count(vertex) == 0) {
-                    uniqueVertices[vertex] = static_cast<uint32_t>(vertices.size());
-                    vertices.push_back(vertex);
+                    uniqueVertices[vertex] = static_cast<uint32_t>(geometry.m_vertices.size());
+                    geometry.m_vertices.push_back(vertex);
                 }
 
-                indices.push_back(uniqueVertices[vertex]);
+                geometry.m_indices.push_back(uniqueVertices[vertex]);
             }
         }
     }
 
-    void createVertexBuffer(VkPhysicalDevice physicalDevice, VkDevice device, VkQueue graphicsQueue, VkCommandPool commandPool) {
-        VkDeviceSize bufferSize = sizeof(vertices[0]) * vertices.size();
+    void createVertexBuffer(VkPhysicalDevice physicalDevice, VkDevice device
+        , VkQueue graphicsQueue, VkCommandPool commandPool, Geometry& geometry) {
+
+        VkDeviceSize bufferSize = sizeof(geometry.m_vertices[0]) * geometry.m_vertices.size();
 
         VkBuffer stagingBuffer;
         VkDeviceMemory stagingBufferMemory;
@@ -1166,19 +1170,21 @@ private:
 
         void* data;
         vkMapMemory(device, stagingBufferMemory, 0, bufferSize, 0, &data);
-            memcpy(data, vertices.data(), (size_t) bufferSize);
+            memcpy(data, geometry.m_vertices.data(), (size_t) bufferSize);
         vkUnmapMemory(device, stagingBufferMemory);
 
-        createBuffer(physicalDevice, device, bufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, vertexBuffer, vertexBufferMemory);
+        createBuffer(physicalDevice, device, bufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, geometry.m_vertexBuffer, geometry.m_vertexBufferMemory);
 
-        copyBuffer(device, graphicsQueue, commandPool, stagingBuffer, vertexBuffer, bufferSize);
+        copyBuffer(device, graphicsQueue, commandPool, stagingBuffer, geometry.m_vertexBuffer, bufferSize);
 
         vkDestroyBuffer(device, stagingBuffer, nullptr);
         vkFreeMemory(device, stagingBufferMemory, nullptr);
     }
 
-    void createIndexBuffer(VkPhysicalDevice physicalDevice, VkDevice device, VkQueue graphicsQueue, VkCommandPool commandPool) {
-        VkDeviceSize bufferSize = sizeof(indices[0]) * indices.size();
+    void createIndexBuffer(VkPhysicalDevice physicalDevice, VkDevice device
+        , VkQueue graphicsQueue, VkCommandPool commandPool, Geometry& geometry) {
+
+        VkDeviceSize bufferSize = sizeof(geometry.m_indices[0]) * geometry.m_indices.size();
 
         VkBuffer stagingBuffer;
         VkDeviceMemory stagingBufferMemory;
@@ -1186,12 +1192,12 @@ private:
 
         void* data;
         vkMapMemory(device, stagingBufferMemory, 0, bufferSize, 0, &data);
-            memcpy(data, indices.data(), (size_t) bufferSize);
+            memcpy(data, geometry.m_indices.data(), (size_t) bufferSize);
         vkUnmapMemory(device, stagingBufferMemory);
 
-        createBuffer(physicalDevice, device, bufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, indexBuffer, indexBufferMemory);
+        createBuffer(physicalDevice, device, bufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, geometry.m_indexBuffer, geometry.m_indexBufferMemory);
 
-        copyBuffer(device, graphicsQueue, commandPool, stagingBuffer, indexBuffer, bufferSize);
+        copyBuffer(device, graphicsQueue, commandPool, stagingBuffer, geometry.m_indexBuffer, bufferSize);
 
         vkDestroyBuffer(device, stagingBuffer, nullptr);
         vkFreeMemory(device, stagingBufferMemory, nullptr);
@@ -1397,7 +1403,8 @@ private:
     }
 
     void recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageIndex
-        , SwapChain& swapChain, VkRenderPass renderPass, Pipeline& graphicsPipeline) {
+        , SwapChain& swapChain, VkRenderPass renderPass, Pipeline& graphicsPipeline
+        , Geometry& geometry) {
 
         VkCommandBufferBeginInfo beginInfo{};
         beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
@@ -1438,15 +1445,15 @@ private:
             scissor.extent = swapChain.m_swapChainExtent;
             vkCmdSetScissor(commandBuffer, 0, 1, &scissor);
 
-            VkBuffer vertexBuffers[] = {vertexBuffer};
+            VkBuffer vertexBuffers[] = {geometry.m_vertexBuffer};
             VkDeviceSize offsets[] = {0};
             vkCmdBindVertexBuffers(commandBuffer, 0, 1, vertexBuffers, offsets);
 
-            vkCmdBindIndexBuffer(commandBuffer, indexBuffer, 0, VK_INDEX_TYPE_UINT32);
+            vkCmdBindIndexBuffer(commandBuffer, geometry.m_indexBuffer, 0, VK_INDEX_TYPE_UINT32);
 
             vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsPipeline.m_pipelineLayout, 0, 1, &descriptorSets[currentFrame], 0, nullptr);
 
-            vkCmdDrawIndexed(commandBuffer, static_cast<uint32_t>(indices.size()), 1, 0, 0, 0);
+            vkCmdDrawIndexed(commandBuffer, static_cast<uint32_t>(geometry.m_indices.size()), 1, 0, 0, 0);
 
 
             //----------------------------------------------------------------------------------
@@ -1503,7 +1510,7 @@ private:
     void drawFrame(SDL_Window* window, VkSurfaceKHR surface, VkPhysicalDevice physicalDevice
         , VkDevice device, VkQueue graphicsQueue, VkQueue presentQueue
         , SwapChain& swapChain, DepthImage& depthImage, VkRenderPass renderPass
-        , Pipeline& graphicsPipeline) {   
+        , Pipeline& graphicsPipeline, Geometry& geometry) {   
 
         vkWaitForFences(device, 1, &inFlightFences[currentFrame], VK_TRUE, UINT64_MAX);
 
@@ -1522,7 +1529,7 @@ private:
         vkResetFences(device, 1, &inFlightFences[currentFrame]);
 
         vkResetCommandBuffer(commandBuffers[currentFrame],  0);
-        recordCommandBuffer(commandBuffers[currentFrame], imageIndex, swapChain, renderPass, graphicsPipeline);
+        recordCommandBuffer(commandBuffers[currentFrame], imageIndex, swapChain, renderPass, graphicsPipeline, geometry);
 
 
 
