@@ -1015,7 +1015,7 @@ private:
 
         vkDestroyBuffer(device, stagingBuffer, nullptr);
         vkFreeMemory(device, stagingBufferMemory, nullptr);
-        //free VMA allocation
+        //vmaFreeMemory(vmaAllocator, stagingBufferAllocation);
     }
 
     void createTextureImageView(VkDevice device, Texture& texture) {
@@ -1242,7 +1242,7 @@ private:
 
         vkDestroyBuffer(device, stagingBuffer, nullptr);
         vkFreeMemory(device, stagingBufferMemory, nullptr);
-        //free VMA allocation
+        //vmaFreeMemory(vmaAllocator, stagingBufferAllocation);
     }
 
     void createIndexBuffer(VkPhysicalDevice physicalDevice, VkDevice device, VmaAllocator vmaAllocator
