@@ -264,9 +264,9 @@ private:
     void initVulkan() {
         createInstance(&m_instance);
         setupDebugMessenger(m_instance);
-        createSurface(m_instance, &m_surface);
-        pickPhysicalDevice(m_instance, m_surface, &m_physicalDevice);
-        createLogicalDevice(m_surface, m_physicalDevice, &m_queueFamilies, &m_device, &m_graphicsQueue, &m_presentQueue);
+        createSurface(m_instance, m_surface);
+        pickPhysicalDevice(m_instance, m_surface, m_physicalDevice);
+        createLogicalDevice(m_surface, m_physicalDevice, m_queueFamilies, m_device, m_graphicsQueue, m_presentQueue);
         createSwapChain(m_surface, m_physicalDevice, m_device, m_swapChain);
         createImageViews(m_device, m_swapChain);
         createRenderPass(m_physicalDevice, m_device, m_swapChain);
@@ -485,13 +485,13 @@ private:
         }
     }
 
-    void createSurface(VkInstance instance, VkSurfaceKHR *surface) {
-        if (SDL_Vulkan_CreateSurface(m_sdl_window, instance, surface) == 0) {
+    void createSurface(VkInstance instance, VkSurfaceKHR& surface) {
+        if (SDL_Vulkan_CreateSurface(m_sdl_window, instance, &surface) == 0) {
             printf("Failed to create Vulkan surface.\n");
         }
     }
 
-    void pickPhysicalDevice(VkInstance instance, VkSurfaceKHR surface, VkPhysicalDevice *physicalDevice) {
+    void pickPhysicalDevice(VkInstance instance, VkSurfaceKHR surface, VkPhysicalDevice& physicalDevice) {
         uint32_t deviceCount = 0;
         vkEnumeratePhysicalDevices(instance, &deviceCount, nullptr);
 
@@ -508,30 +508,30 @@ private:
             vkGetPhysicalDeviceProperties2(device, &deviceProperties2);
 
             if (deviceProperties2.properties.deviceType == VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU && isDeviceSuitable(device, surface)) {
-                *physicalDevice = device;
+                physicalDevice = device;
                 break;
             }
         }
 
-        if (*physicalDevice == VK_NULL_HANDLE) {
+        if (physicalDevice == VK_NULL_HANDLE) {
             for (const auto& device : devices) {
                 if (isDeviceSuitable(device, surface)) {
-                    *physicalDevice = device;
+                    physicalDevice = device;
                     break;
                 }
             }
         }
 
-        if (*physicalDevice == VK_NULL_HANDLE) {
+        if (physicalDevice == VK_NULL_HANDLE) {
             throw std::runtime_error("failed to find a suitable GPU!");
         }
     }
 
-    void createLogicalDevice(VkSurfaceKHR surface, VkPhysicalDevice physicalDevice, QueueFamilyIndices* queueFamilies, VkDevice *device, VkQueue *graphicsQueue, VkQueue *presentQueue) {
-        *queueFamilies = findQueueFamilies(physicalDevice, surface);
+    void createLogicalDevice(VkSurfaceKHR surface, VkPhysicalDevice physicalDevice, QueueFamilyIndices& queueFamilies, VkDevice& device, VkQueue& graphicsQueue, VkQueue& presentQueue) {
+        queueFamilies = findQueueFamilies(physicalDevice, surface);
 
         std::vector<VkDeviceQueueCreateInfo> queueCreateInfos;
-        std::set<uint32_t> uniqueQueueFamilies = { queueFamilies->graphicsFamily.value(), queueFamilies->presentFamily.value()};
+        std::set<uint32_t> uniqueQueueFamilies = { queueFamilies.graphicsFamily.value(), queueFamilies.presentFamily.value()};
 
         float queuePriority = 1.0f;
         for (uint32_t queueFamily : uniqueQueueFamilies) {
@@ -564,14 +564,14 @@ private:
             createInfo.enabledLayerCount = 0;
         }
 
-        if (vkCreateDevice(physicalDevice, &createInfo, nullptr, device) != VK_SUCCESS) {
+        if (vkCreateDevice(physicalDevice, &createInfo, nullptr, &device) != VK_SUCCESS) {
             throw std::runtime_error("failed to create logical device!");
         }
 
-        volkLoadDevice(*device);
+        volkLoadDevice(device);
 
-        vkGetDeviceQueue(*device, queueFamilies->graphicsFamily.value(), 0, graphicsQueue);
-        vkGetDeviceQueue(*device, queueFamilies->presentFamily.value(), 0, presentQueue);
+        vkGetDeviceQueue(device, queueFamilies.graphicsFamily.value(), 0, &graphicsQueue);
+        vkGetDeviceQueue(device, queueFamilies.presentFamily.value(), 0, &presentQueue);
     }
 
     void createSwapChain(VkSurfaceKHR surface, VkPhysicalDevice physicalDevice, VkDevice device, SwapChain& swapChain) {
