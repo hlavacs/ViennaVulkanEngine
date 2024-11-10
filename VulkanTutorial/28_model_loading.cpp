@@ -231,12 +231,14 @@ private:
     struct DepthImage {
         VkImage         m_depthImage;
         VkDeviceMemory  m_depthImageMemory;
+        VmaAllocation   m_depthImageAllocation;
         VkImageView     m_depthImageView;
     } m_depthImage;
 
     struct Texture {
         VkImage         m_textureImage;
         VkDeviceMemory  m_textureImageMemory;
+        VmaAllocation   m_textureImageAllocation;
         VkImageView     m_textureImageView;
         VkSampler       m_textureSampler;
     } m_texture;
@@ -314,7 +316,7 @@ private:
         createDescriptorSetLayout(m_device, m_descriptorSetLayout);
         createGraphicsPipeline(m_device, m_renderPass, m_descriptorSetLayout, m_graphicsPipeline);
         createCommandPool(m_surface, m_physicalDevice, m_device, m_commandPool);
-        createDepthResources(m_physicalDevice, m_device, m_swapChain, m_depthImage);
+        createDepthResources(m_physicalDevice, m_device, m_vmaAllocator, m_swapChain, m_depthImage);
         createFramebuffers(m_device, m_swapChain, m_depthImage, m_renderPass);
         createTextureImage(m_physicalDevice, m_device, m_vmaAllocator, m_graphicsQueue, m_commandPool, m_texture);
         createTextureImageView(m_device, m_texture);
@@ -367,7 +369,7 @@ private:
 
                 ImGui::ShowDemoWindow(); // Show demo window! :)
 
-                drawFrame(m_sdl_window, m_surface, m_physicalDevice, m_device
+                drawFrame(m_sdl_window, m_surface, m_physicalDevice, m_device, m_vmaAllocator
                     , m_graphicsQueue, m_presentQueue, m_swapChain, m_depthImage
                     , m_renderPass, m_graphicsPipeline, m_geometry, m_commandBuffers
                     , m_uniformBuffers, m_descriptorSets, m_syncObjects, m_currentFrame
@@ -451,7 +453,7 @@ private:
     }
 
     void recreateSwapChain(SDL_Window* window, VkSurfaceKHR surface
-        , VkPhysicalDevice physicalDevice, VkDevice device, SwapChain& swapChain
+        , VkPhysicalDevice physicalDevice, VkDevice device, VmaAllocator vmaAllocator, SwapChain& swapChain
         , DepthImage& depthImage, VkRenderPass renderPass) {
         int width = 0, height = 0;
         
@@ -468,7 +470,7 @@ private:
 
         createSwapChain(surface, physicalDevice, device, swapChain);
         createImageViews(device, swapChain);
-        createDepthResources(physicalDevice, device, swapChain, depthImage);
+        createDepthResources(physicalDevice, device, vmaAllocator, swapChain, depthImage);
         createFramebuffers(device, swapChain, depthImage, renderPass);
     }
 
@@ -936,13 +938,13 @@ private:
         }
     }
 
-    void createDepthResources(VkPhysicalDevice physicalDevice, VkDevice device, SwapChain& swapChain, DepthImage& depthImage) {
+    void createDepthResources(VkPhysicalDevice physicalDevice, VkDevice device, VmaAllocator vmaAllocator, SwapChain& swapChain, DepthImage& depthImage) {
         VkFormat depthFormat = findDepthFormat(physicalDevice);
 
-        createImage(physicalDevice, device, swapChain.m_swapChainExtent.width
+        createImage(physicalDevice, device, vmaAllocator, swapChain.m_swapChainExtent.width
             , swapChain.m_swapChainExtent.height, depthFormat
             , VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT
-            , VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, depthImage.m_depthImage, depthImage.m_depthImageMemory);
+            , VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, depthImage.m_depthImage, depthImage.m_depthImageMemory, depthImage.m_depthImageAllocation);
         depthImage.m_depthImageView = createImageView(device, depthImage.m_depthImage, depthFormat, VK_IMAGE_ASPECT_DEPTH_BIT);
     }
 
@@ -1000,9 +1002,9 @@ private:
 
         stbi_image_free(pixels);
 
-        createImage(physicalDevice,device, texWidth, texHeight, VK_FORMAT_R8G8B8A8_SRGB
+        createImage(physicalDevice, device, vmaAllocator, texWidth, texHeight, VK_FORMAT_R8G8B8A8_SRGB
             , VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT
-            , VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, texture.m_textureImage, texture.m_textureImageMemory);
+            , VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, texture.m_textureImage, texture.m_textureImageMemory, texture.m_textureImageAllocation); 
 
         transitionImageLayout(device, graphicsQueue, commandPool, texture.m_textureImage, VK_FORMAT_R8G8B8A8_SRGB
             , VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
@@ -1065,9 +1067,9 @@ private:
         return imageView;
     }
 
-    void createImage(VkPhysicalDevice physicalDevice, VkDevice device, uint32_t width, uint32_t height
+    void createImage(VkPhysicalDevice physicalDevice, VkDevice device, VmaAllocator vmaAllocator, uint32_t width, uint32_t height
         , VkFormat format, VkImageTiling tiling, VkImageUsageFlags usage, VkMemoryPropertyFlags properties
-        , VkImage& image, VkDeviceMemory& imageMemory) {
+        , VkImage& image, VkDeviceMemory& imageMemory, VmaAllocation& imageAllocation) {
         
         VkImageCreateInfo imageInfo{};
         imageInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
@@ -1589,7 +1591,7 @@ private:
     }
 
     void drawFrame(SDL_Window* window, VkSurfaceKHR surface, VkPhysicalDevice physicalDevice
-        , VkDevice device, VkQueue graphicsQueue, VkQueue presentQueue
+        , VkDevice device, VmaAllocator vmaAllocator, VkQueue graphicsQueue, VkQueue presentQueue
         , SwapChain& swapChain, DepthImage& depthImage, VkRenderPass renderPass
         , Pipeline& graphicsPipeline, Geometry& geometry, std::vector<VkCommandBuffer>& commandBuffers
         , UniformBuffers& uniformBuffers, std::vector<VkDescriptorSet>& descriptorSets
@@ -1602,7 +1604,7 @@ private:
                             , syncObjects.m_imageAvailableSemaphores[currentFrame], VK_NULL_HANDLE, &imageIndex);
 
         if (result == VK_ERROR_OUT_OF_DATE_KHR ) {
-            recreateSwapChain(window, surface, physicalDevice, device, swapChain, depthImage, renderPass);
+            recreateSwapChain(window, surface, physicalDevice, device, vmaAllocator, swapChain, depthImage, renderPass);
             return;
         } else if (result != VK_SUCCESS && result != VK_SUBOPTIMAL_KHR) {
             throw std::runtime_error("failed to acquire swap chain image!");
@@ -1652,7 +1654,7 @@ private:
 
         if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR || framebufferResized) {
             framebufferResized = false;
-            recreateSwapChain(window, surface, physicalDevice, device, swapChain, depthImage, renderPass);
+            recreateSwapChain(window, surface, physicalDevice, device, vmaAllocator, swapChain, depthImage, renderPass);
         }
         else if (result != VK_SUCCESS) {
             throw std::runtime_error("failed to present swap chain image!");
