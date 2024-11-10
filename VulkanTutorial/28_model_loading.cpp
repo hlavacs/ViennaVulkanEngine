@@ -408,8 +408,7 @@ private:
         vkDestroyRenderPass(m_device, m_renderPass, nullptr);
 
         for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
-            vkDestroyBuffer(m_device, m_uniformBuffers.m_uniformBuffers[i], nullptr);
-            vkFreeMemory(m_device, m_uniformBuffers.m_uniformBuffersMemory[i], nullptr);
+            destroyBuffer(m_device, m_vmaAllocator, m_uniformBuffers.m_uniformBuffers[i], m_uniformBuffers.m_uniformBuffersMemory[i], m_uniformBuffers.m_uniformBuffersAllocation[i]);
         }
 
         vkDestroyDescriptorPool(m_device, m_descriptorPool, nullptr);
@@ -417,16 +416,13 @@ private:
         vkDestroySampler(m_device, m_texture.m_textureSampler, nullptr);
         vkDestroyImageView(m_device, m_texture.m_textureImageView, nullptr);
 
-        vkDestroyImage(m_device, m_texture.m_textureImage, nullptr);
-        vkFreeMemory(m_device, m_texture.m_textureImageMemory, nullptr);
+        destroyImage(m_device, m_vmaAllocator, m_texture.m_textureImage, m_texture.m_textureImageMemory, m_texture.m_textureImageAllocation);
 
         vkDestroyDescriptorSetLayout(m_device, m_descriptorSetLayout, nullptr);
 
-        vkDestroyBuffer(m_device, m_geometry.m_indexBuffer, nullptr);
-        vkFreeMemory(m_device, m_geometry.m_indexBufferMemory, nullptr);
+        destroyBuffer(m_device, m_vmaAllocator, m_geometry.m_indexBuffer, m_geometry.m_indexBufferMemory, m_geometry.m_indexBufferAllocation);
 
-        vkDestroyBuffer(m_device, m_geometry.m_vertexBuffer, nullptr);
-        vkFreeMemory(m_device, m_geometry.m_vertexBufferMemory, nullptr);
+        destroyBuffer(m_device, m_vmaAllocator, m_geometry.m_vertexBuffer, m_geometry.m_vertexBufferMemory, m_geometry.m_vertexBufferAllocation);
 
         for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
             vkDestroySemaphore(m_device, m_syncObjects.m_renderFinishedSemaphores[i], nullptr);
@@ -1013,9 +1009,7 @@ private:
         transitionImageLayout(device, graphicsQueue, commandPool, texture.m_textureImage, VK_FORMAT_R8G8B8A8_SRGB
             , VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
 
-        vkDestroyBuffer(device, stagingBuffer, nullptr);
-        vkFreeMemory(device, stagingBufferMemory, nullptr);
-        //vmaFreeMemory(vmaAllocator, stagingBufferAllocation);
+        destroyBuffer(device, vmaAllocator, stagingBuffer, stagingBufferMemory, stagingBufferAllocation);
     }
 
     void createTextureImageView(VkDevice device, Texture& texture) {
@@ -1067,6 +1061,35 @@ private:
         return imageView;
     }
 
+
+    void createImage2(VkPhysicalDevice physicalDevice, VkDevice device, VmaAllocator vmaAllocator, uint32_t width, uint32_t height
+        , VkFormat format, VkImageTiling tiling, VkImageUsageFlags usage, VkMemoryPropertyFlags properties
+        , VkImage& image, VkDeviceMemory& imageMemory, VmaAllocation& imageAllocation) {
+
+        VkImageCreateInfo imageInfo{};
+        imageInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
+        imageInfo.imageType = VK_IMAGE_TYPE_2D;
+        imageInfo.extent.width = width;
+        imageInfo.extent.height = height;
+        imageInfo.extent.depth = 1;
+        imageInfo.mipLevels = 1;
+        imageInfo.arrayLayers = 1;
+        imageInfo.format = format;
+        imageInfo.tiling = tiling;
+        imageInfo.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+        imageInfo.usage = usage;
+        imageInfo.samples = VK_SAMPLE_COUNT_1_BIT;
+        imageInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+
+        VmaAllocationCreateInfo allocInfo = {};
+        allocInfo.usage = VMA_MEMORY_USAGE_AUTO;
+        vmaCreateImage(vmaAllocator, &imageInfo, &allocInfo, &image, &imageAllocation, nullptr);
+    }
+
+    void destroyImage2(VkDevice device, VmaAllocator vmaAllocator, VkImage image, VkDeviceMemory imageMemory, VmaAllocation imageAllocation) {
+        vmaDestroyImage(vmaAllocator, image, imageAllocation);
+    }
+
     void createImage(VkPhysicalDevice physicalDevice, VkDevice device, VmaAllocator vmaAllocator, uint32_t width, uint32_t height
         , VkFormat format, VkImageTiling tiling, VkImageUsageFlags usage, VkMemoryPropertyFlags properties
         , VkImage& image, VkDeviceMemory& imageMemory, VmaAllocation& imageAllocation) {
@@ -1103,6 +1126,11 @@ private:
         }
 
         vkBindImageMemory(device, image, imageMemory, 0);
+    }
+
+    void destroyImage(VkDevice device, VmaAllocator vmaAllocator, VkImage image, VkDeviceMemory imageMemory, VmaAllocation imageAllocation) {
+        vkDestroyImage(device, image, nullptr);
+        vkFreeMemory(device, imageMemory, nullptr);
     }
 
     void transitionImageLayout(VkDevice device, VkQueue graphicsQueue, VkCommandPool commandPool
@@ -1240,9 +1268,7 @@ private:
 
         copyBuffer(device, graphicsQueue, commandPool, stagingBuffer, geometry.m_vertexBuffer, bufferSize);
 
-        vkDestroyBuffer(device, stagingBuffer, nullptr);
-        vkFreeMemory(device, stagingBufferMemory, nullptr);
-        //vmaFreeMemory(vmaAllocator, stagingBufferAllocation);
+        destroyBuffer(device, vmaAllocator, stagingBuffer, stagingBufferMemory, stagingBufferAllocation);
     }
 
     void createIndexBuffer(VkPhysicalDevice physicalDevice, VkDevice device, VmaAllocator vmaAllocator
@@ -1267,9 +1293,7 @@ private:
 
         copyBuffer(device, graphicsQueue, commandPool, stagingBuffer, geometry.m_indexBuffer, bufferSize);
 
-        vkDestroyBuffer(device, stagingBuffer, nullptr);
-        vkFreeMemory(device, stagingBufferMemory, nullptr);
-        //free VMA allocation
+        destroyBuffer(device, vmaAllocator, stagingBuffer, stagingBufferMemory, stagingBufferAllocation);
     }
 
     void createUniformBuffers(VkPhysicalDevice physicalDevice, VkDevice device, VmaAllocator vmaAllocator
@@ -1383,6 +1407,23 @@ private:
         }
     }
 
+
+    void createBuffer2(VkPhysicalDevice physicalDevice, VkDevice device, VmaAllocator vmaAllocator, VkDeviceSize size, VkBufferUsageFlags usage
+        , VkMemoryPropertyFlags properties, VkBuffer& buffer, VkDeviceMemory& bufferMemory, VmaAllocation& allocation) {
+    
+        VkBufferCreateInfo bufferInfo = { VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO };
+        bufferInfo.size = size;
+        bufferInfo.usage = usage;
+
+        VmaAllocationCreateInfo allocInfo = {};
+        allocInfo.usage = VMA_MEMORY_USAGE_AUTO;
+        vmaCreateBuffer(vmaAllocator, &bufferInfo, &allocInfo, &buffer, &allocation, nullptr);
+    }
+
+    void destroyBuffer2(VkDevice device, VmaAllocator vmaAllocator, VkBuffer buffer, VkDeviceMemory bufferMemory, VmaAllocation allocation) {
+        vmaDestroyBuffer(vmaAllocator, buffer, allocation);
+    }
+    
     void createBuffer(VkPhysicalDevice physicalDevice, VkDevice device, VmaAllocator vmaAllocator, VkDeviceSize size, VkBufferUsageFlags usage
         , VkMemoryPropertyFlags properties, VkBuffer& buffer, VkDeviceMemory& bufferMemory, VmaAllocation& allocation) {
 
@@ -1409,6 +1450,11 @@ private:
         }
 
         vkBindBufferMemory(device, buffer, bufferMemory, 0);
+    }
+
+    void destroyBuffer(VkDevice device, VmaAllocator vmaAllocator, VkBuffer buffer, VkDeviceMemory bufferMemory, VmaAllocation allocation) {
+        vkDestroyBuffer(device, buffer, nullptr);
+        vkFreeMemory(device, bufferMemory, nullptr);
     }
 
     VkCommandBuffer beginSingleTimeCommands(VkDevice device, VkCommandPool commandPool) {
