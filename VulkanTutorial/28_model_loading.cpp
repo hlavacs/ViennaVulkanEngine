@@ -180,7 +180,8 @@ public:
         initWindow();
         initVulkan();
         mainLoop();
-        cleanup(m_instance, m_surface, m_device, m_swapChain, m_depthImage, m_commandPool, m_renderPass);
+        cleanup(m_instance, m_surface, m_device, m_swapChain
+            , m_depthImage, m_commandPool, m_renderPass, m_texture);
     }
 
 private:
@@ -221,10 +222,12 @@ private:
         VkImageView     m_depthImageView;
     } m_depthImage;
 
-    VkImage textureImage;
-    VkDeviceMemory textureImageMemory;
-    VkImageView textureImageView;
-    VkSampler textureSampler;
+    struct Texture {
+        VkImage         m_textureImage;
+        VkDeviceMemory  m_textureImageMemory;
+        VkImageView     m_textureImageView;
+        VkSampler   m_textureSampler;
+    } m_texture;
 
     std::vector<Vertex> vertices;
     std::vector<uint32_t> indices;
@@ -275,15 +278,15 @@ private:
         createCommandPool(m_surface, m_physicalDevice, m_device, m_commandPool);
         createDepthResources(m_physicalDevice, m_device, m_swapChain, m_depthImage);
         createFramebuffers(m_device, m_swapChain, m_depthImage, m_renderPass);
-        createTextureImage(m_physicalDevice, m_device, m_graphicsQueue, m_commandPool);
-        createTextureImageView(m_device);
-        createTextureSampler(m_physicalDevice, m_device);
+        createTextureImage(m_physicalDevice, m_device, m_graphicsQueue, m_commandPool, m_texture);
+        createTextureImageView(m_device, m_texture);
+        createTextureSampler(m_physicalDevice, m_device, m_texture);
         loadModel();
         createVertexBuffer(m_physicalDevice, m_device, m_graphicsQueue, m_commandPool);
         createIndexBuffer(m_physicalDevice, m_device, m_graphicsQueue, m_commandPool);
         createUniformBuffers(m_physicalDevice, m_device);
         createDescriptorPool(m_device);
-        createDescriptorSets(m_device);
+        createDescriptorSets(m_device, m_texture);
         createCommandBuffers(m_device, m_commandPool);
         createSyncObjects(m_device);
         setupImgui(m_instance, m_physicalDevice, m_queueFamilies, m_device, m_graphicsQueue, m_commandPool, descriptorPool, m_renderPass);
@@ -349,7 +352,10 @@ private:
         vkDestroySwapchainKHR(device, swapChain.m_swapChain, nullptr);
     }
 
-    void cleanup(VkInstance instance, VkSurfaceKHR surface, VkDevice device, SwapChain& swapChain, DepthImage& depthImage, VkCommandPool commandPool, VkRenderPass renderPass) {
+    void cleanup(VkInstance instance, VkSurfaceKHR surface, VkDevice device
+        , SwapChain& swapChain, DepthImage& depthImage, VkCommandPool commandPool
+        , VkRenderPass renderPass, Texture texture) {
+
         ImGui_ImplVulkan_Shutdown();
         ImGui_ImplSDL2_Shutdown();
         ImGui::DestroyContext();
@@ -367,11 +373,11 @@ private:
 
         vkDestroyDescriptorPool(device, descriptorPool, nullptr);
 
-        vkDestroySampler(device, textureSampler, nullptr);
-        vkDestroyImageView(device, textureImageView, nullptr);
+        vkDestroySampler(device, texture.m_textureSampler, nullptr);
+        vkDestroyImageView(device, texture.m_textureImageView, nullptr);
 
-        vkDestroyImage(device, textureImage, nullptr);
-        vkFreeMemory(device, textureImageMemory, nullptr);
+        vkDestroyImage(device, texture.m_textureImage, nullptr);
+        vkFreeMemory(device, texture.m_textureImageMemory, nullptr);
 
         vkDestroyDescriptorSetLayout(device, descriptorSetLayout, nullptr);
 
@@ -918,7 +924,9 @@ private:
         return format == VK_FORMAT_D32_SFLOAT_S8_UINT || format == VK_FORMAT_D24_UNORM_S8_UINT;
     }
 
-    void createTextureImage(VkPhysicalDevice physicalDevice, VkDevice device, VkQueue graphicsQueue, VkCommandPool commandPool) {
+    void createTextureImage(VkPhysicalDevice physicalDevice, VkDevice device
+        , VkQueue graphicsQueue, VkCommandPool commandPool, Texture& texture) {
+
         int texWidth, texHeight, texChannels;
         stbi_uc* pixels = stbi_load(TEXTURE_PATH.c_str(), &texWidth, &texHeight, &texChannels, STBI_rgb_alpha);
         VkDeviceSize imageSize = texWidth * texHeight * 4;
@@ -938,21 +946,23 @@ private:
 
         stbi_image_free(pixels);
 
-        createImage(physicalDevice,device, texWidth, texHeight, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, textureImage, textureImageMemory);
+        createImage(physicalDevice,device, texWidth, texHeight, VK_FORMAT_R8G8B8A8_SRGB
+            , VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT
+            , VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, texture.m_textureImage, texture.m_textureImageMemory);
 
-        transitionImageLayout(device, graphicsQueue, commandPool, textureImage, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
-            copyBufferToImage(device, graphicsQueue, commandPool, stagingBuffer, textureImage, static_cast<uint32_t>(texWidth), static_cast<uint32_t>(texHeight));
-        transitionImageLayout(device, graphicsQueue, commandPool, textureImage, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+        transitionImageLayout(device, graphicsQueue, commandPool, texture.m_textureImage, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
+            copyBufferToImage(device, graphicsQueue, commandPool, stagingBuffer, texture.m_textureImage, static_cast<uint32_t>(texWidth), static_cast<uint32_t>(texHeight));
+        transitionImageLayout(device, graphicsQueue, commandPool, texture.m_textureImage, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
 
         vkDestroyBuffer(device, stagingBuffer, nullptr);
         vkFreeMemory(device, stagingBufferMemory, nullptr);
     }
 
-    void createTextureImageView(VkDevice device) {
-        textureImageView = createImageView(device, textureImage, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_ASPECT_COLOR_BIT);
+    void createTextureImageView(VkDevice device, Texture& texture) {
+        texture.m_textureImageView = createImageView(device, texture.m_textureImage, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_ASPECT_COLOR_BIT);
     }
 
-    void createTextureSampler(VkPhysicalDevice physicalDevice, VkDevice device) {
+    void createTextureSampler(VkPhysicalDevice physicalDevice, VkDevice device, Texture &texture) {
         VkPhysicalDeviceProperties properties{};
         vkGetPhysicalDeviceProperties(physicalDevice, &properties);
 
@@ -971,7 +981,7 @@ private:
         samplerInfo.compareOp = VK_COMPARE_OP_ALWAYS;
         samplerInfo.mipmapMode = VK_SAMPLER_MIPMAP_MODE_LINEAR;
 
-        if (vkCreateSampler(device, &samplerInfo, nullptr, &textureSampler) != VK_SUCCESS) {
+        if (vkCreateSampler(device, &samplerInfo, nullptr, &texture.m_textureSampler) != VK_SUCCESS) {
             throw std::runtime_error("failed to create texture sampler!");
         }
     }
@@ -1237,7 +1247,7 @@ private:
         vkCreateDescriptorPool(device, &pool_info, nullptr, &descriptorPool);
     }
 
-    void createDescriptorSets(VkDevice device) {
+    void createDescriptorSets(VkDevice device, Texture& texture) {
         std::vector<VkDescriptorSetLayout> layouts(MAX_FRAMES_IN_FLIGHT, descriptorSetLayout);
         VkDescriptorSetAllocateInfo allocInfo{};
         allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
@@ -1258,8 +1268,8 @@ private:
 
             VkDescriptorImageInfo imageInfo{};
             imageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-            imageInfo.imageView = textureImageView;
-            imageInfo.sampler = textureSampler;
+            imageInfo.imageView = texture.m_textureImageView;
+            imageInfo.sampler = texture.m_textureSampler;
 
             std::array<VkWriteDescriptorSet, 2> descriptorWrites{};
 
