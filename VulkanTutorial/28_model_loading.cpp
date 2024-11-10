@@ -189,7 +189,7 @@ public:
     }
 
 private:
-    VmaAllocator m_allocator;
+    VmaAllocator m_vma_allocator;
 
     SDL_Window* m_sdl_window{nullptr};
     bool m_isMinimized = false;
@@ -299,7 +299,7 @@ private:
         createSurface(m_instance, m_surface);
         pickPhysicalDevice(m_instance, m_surface, m_physicalDevice);
         createLogicalDevice(m_surface, m_physicalDevice, m_queueFamilies, m_device, m_graphicsQueue, m_presentQueue);
-        initVMA(m_instance, m_physicalDevice, m_device, m_allocator);  
+        initVMA(m_instance, m_physicalDevice, m_device, m_vma_allocator);  
         createSwapChain(m_surface, m_physicalDevice, m_device, m_swapChain);
         createImageViews(m_device, m_swapChain);
         createRenderPass(m_physicalDevice, m_device, m_swapChain, m_renderPass);
@@ -424,6 +424,8 @@ private:
         }
 
         vkDestroyCommandPool(m_device, m_commandPool, nullptr);
+
+        vmaDestroyAllocator(m_vma_allocator);
 
         vkDestroyDevice(m_device, nullptr);
 
