@@ -1469,7 +1469,7 @@ private:
         VkBufferCreateInfo bufferInfo = { VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO };
         bufferInfo.size = size;
         bufferInfo.usage = usage;
-
+        
         VmaAllocationCreateInfo allocInfo = {};
         allocInfo.usage = VMA_MEMORY_USAGE_AUTO;
         allocInfo.flags = vmaFlags;
@@ -1478,7 +1478,7 @@ private:
 
     void destroyBuffer2(VkDevice device, VmaAllocator vmaAllocator, VkBuffer buffer
         , VkDeviceMemory bufferMemory, VmaAllocation& allocation) {
-            
+
         vmaDestroyBuffer(vmaAllocator, buffer, allocation);
     }
     
