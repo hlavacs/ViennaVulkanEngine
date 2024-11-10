@@ -415,7 +415,7 @@ private:
 
         for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
             std::cout << "cleanupSwapChain2.1 " << i << std::endl;
-            destroyBuffer(m_device, m_vmaAllocator, m_uniformBuffers.m_uniformBuffers[i]
+            destroyBuffer2(m_device, m_vmaAllocator, m_uniformBuffers.m_uniformBuffers[i]
                 , m_uniformBuffers.m_uniformBuffersMemory[i], m_uniformBuffers.m_uniformBuffersAllocation[i]);
 
             //vkDestroyBuffer(m_device, m_uniformBuffers.m_uniformBuffers[i], nullptr);
@@ -1346,25 +1346,27 @@ private:
         destroyBuffer2(device, vmaAllocator, stagingBuffer, stagingBufferMemory, stagingBufferAllocation);
     }
 
-    void createUniformBuffers(VkPhysicalDevice physicalDevice, VkDevice device, VmaAllocator vmaAllocator
+    void createUniformBuffers(VkPhysicalDevice physicalDevice, VkDevice device, VmaAllocator& vmaAllocator
             , UniformBuffers &uniformBuffers) {
 
         VkDeviceSize bufferSize = sizeof(UniformBufferObject);
 
         uniformBuffers.m_uniformBuffers.resize(MAX_FRAMES_IN_FLIGHT);
         uniformBuffers.m_uniformBuffersMemory.resize(MAX_FRAMES_IN_FLIGHT);
+        uniformBuffers.m_uniformBuffersAllocation.resize(MAX_FRAMES_IN_FLIGHT);
         uniformBuffers.m_uniformBuffersMapped.resize(MAX_FRAMES_IN_FLIGHT);
 
         for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
             VmaAllocationInfo allocInfo;
-            createBuffer(physicalDevice, device, vmaAllocator, bufferSize, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT
+            createBuffer2(physicalDevice, device, vmaAllocator, bufferSize, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT
                 , VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT 
                 , VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT | VMA_ALLOCATION_CREATE_MAPPED_BIT
                 , uniformBuffers.m_uniformBuffers[i], uniformBuffers.m_uniformBuffersMemory[i]
                 , uniformBuffers.m_uniformBuffersAllocation[i], &allocInfo);
 
-            vkMapMemory(device, uniformBuffers.m_uniformBuffersMemory[i], 0, bufferSize, 0, &uniformBuffers.m_uniformBuffersMapped[i]);
-            //uniformBuffers.m_uniformBuffersMapped[i] = allocInfo.pMappedData;
+            //vkMapMemory(device, uniformBuffers.m_uniformBuffersMemory[i], 0, bufferSize
+            //    , 0, &uniformBuffers.m_uniformBuffersMapped[i]);
+            uniformBuffers.m_uniformBuffersMapped[i] = allocInfo.pMappedData;
         }
     }
 
@@ -1469,7 +1471,8 @@ private:
         VkBufferCreateInfo bufferInfo = { VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO };
         bufferInfo.size = size;
         bufferInfo.usage = usage;
-        
+        bufferInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+
         VmaAllocationCreateInfo allocInfo = {};
         allocInfo.usage = VMA_MEMORY_USAGE_AUTO;
         allocInfo.flags = vmaFlags;
