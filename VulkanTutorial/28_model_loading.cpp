@@ -218,8 +218,6 @@ private:
         VkPipeline m_pipeline;
     } m_graphicsPipeline;
 
-    VkCommandPool m_commandPool;
-
     struct DepthImage {
         VkImage         m_depthImage;
         VkDeviceMemory  m_depthImageMemory;
@@ -249,7 +247,8 @@ private:
     VkDescriptorPool descriptorPool;
     std::vector<VkDescriptorSet> descriptorSets;
 
-    std::vector<VkCommandBuffer> commandBuffers;
+    VkCommandPool m_commandPool;
+    std::vector<VkCommandBuffer> m_commandBuffers;
 
     std::vector<VkSemaphore> imageAvailableSemaphores;
     std::vector<VkSemaphore> renderFinishedSemaphores;
@@ -293,7 +292,7 @@ private:
         createUniformBuffers(m_physicalDevice, m_device);
         createDescriptorPool(m_device);
         createDescriptorSets(m_device, m_texture, m_descriptorSetLayout);
-        createCommandBuffers(m_device, m_commandPool);
+        createCommandBuffers(m_device, m_commandPool, m_commandBuffers);
         createSyncObjects(m_device);
         setupImgui(m_instance, m_physicalDevice, m_queueFamilies, m_device, m_graphicsQueue, m_commandPool, descriptorPool, m_renderPass);
     }
@@ -336,7 +335,7 @@ private:
 
                 drawFrame(m_sdl_window, m_surface, m_physicalDevice, m_device
                     , m_graphicsQueue, m_presentQueue, m_swapChain, m_depthImage
-                    , m_renderPass, m_graphicsPipeline, m_geometry);
+                    , m_renderPass, m_graphicsPipeline, m_geometry, m_commandBuffers);
             }
         }
         vkDeviceWaitIdle(m_device);
@@ -1388,7 +1387,7 @@ private:
         throw std::runtime_error("failed to find suitable memory type!");
     }
 
-    void createCommandBuffers(VkDevice device, VkCommandPool commandPool) {
+    void createCommandBuffers(VkDevice device, VkCommandPool commandPool, std::vector<VkCommandBuffer>& commandBuffers) {
         commandBuffers.resize(MAX_FRAMES_IN_FLIGHT);
 
         VkCommandBufferAllocateInfo allocInfo{};
@@ -1510,7 +1509,7 @@ private:
     void drawFrame(SDL_Window* window, VkSurfaceKHR surface, VkPhysicalDevice physicalDevice
         , VkDevice device, VkQueue graphicsQueue, VkQueue presentQueue
         , SwapChain& swapChain, DepthImage& depthImage, VkRenderPass renderPass
-        , Pipeline& graphicsPipeline, Geometry& geometry) {   
+        , Pipeline& graphicsPipeline, Geometry& geometry, std::vector<VkCommandBuffer>& commandBuffers) {   
 
         vkWaitForFences(device, 1, &inFlightFences[currentFrame], VK_TRUE, UINT64_MAX);
 
