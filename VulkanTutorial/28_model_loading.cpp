@@ -183,7 +183,7 @@ public:
         cleanup(m_instance, m_surface, m_device, m_swapChain
             , m_depthImage, m_commandPool, m_renderPass, m_texture
             , m_descriptorSetLayout, m_graphicsPipeline, m_geometry
-            , m_uniformBuffers, m_descriptorPool);
+            , m_uniformBuffers, m_descriptorPool, m_syncObjects);
     }
 
 private:
@@ -253,11 +253,13 @@ private:
     VkCommandPool m_commandPool;
     std::vector<VkCommandBuffer> m_commandBuffers;
 
-    std::vector<VkSemaphore> imageAvailableSemaphores;
-    std::vector<VkSemaphore> renderFinishedSemaphores;
-    std::vector<VkFence> inFlightFences;
-    uint32_t currentFrame = 0;
+    struct SyncObjects {
+        std::vector<VkSemaphore> m_imageAvailableSemaphores;
+        std::vector<VkSemaphore> m_renderFinishedSemaphores;
+        std::vector<VkFence>     m_inFlightFences;
+    } m_syncObjects;
 
+    uint32_t currentFrame = 0;
     bool framebufferResized = false;
 
 
@@ -296,7 +298,7 @@ private:
         createDescriptorPool(m_device, m_descriptorPool);
         createDescriptorSets(m_device, m_texture, m_descriptorSetLayout, m_uniformBuffers, m_descriptorPool, m_descriptorSets);
         createCommandBuffers(m_device, m_commandPool, m_commandBuffers);
-        createSyncObjects(m_device);
+        createSyncObjects(m_device, m_syncObjects);
         setupImgui(m_instance, m_physicalDevice, m_queueFamilies, m_device, m_graphicsQueue, m_commandPool, m_descriptorPool, m_renderPass);
     }
 
@@ -339,7 +341,7 @@ private:
                 drawFrame(m_sdl_window, m_surface, m_physicalDevice, m_device
                     , m_graphicsQueue, m_presentQueue, m_swapChain, m_depthImage
                     , m_renderPass, m_graphicsPipeline, m_geometry, m_commandBuffers
-                    , m_uniformBuffers, m_descriptorSets);
+                    , m_uniformBuffers, m_descriptorSets, m_syncObjects);
             }
         }
         vkDeviceWaitIdle(m_device);
@@ -365,7 +367,7 @@ private:
         , SwapChain& swapChain, DepthImage& depthImage, VkCommandPool commandPool
         , VkRenderPass renderPass, Texture& texture, VkDescriptorSetLayout descriptorSetLayout
         , Pipeline& graphicsPipeline, Geometry& geometry, UniformBuffers& uniformBuffers
-        , VkDescriptorPool descriptorPool) {
+        , VkDescriptorPool descriptorPool, SyncObjects& syncObjects) {
 
         ImGui_ImplVulkan_Shutdown();
         ImGui_ImplSDL2_Shutdown();
@@ -399,9 +401,9 @@ private:
         vkFreeMemory(device, geometry.m_vertexBufferMemory, nullptr);
 
         for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
-            vkDestroySemaphore(device, renderFinishedSemaphores[i], nullptr);
-            vkDestroySemaphore(device, imageAvailableSemaphores[i], nullptr);
-            vkDestroyFence(device, inFlightFences[i], nullptr);
+            vkDestroySemaphore(device, syncObjects.m_renderFinishedSemaphores[i], nullptr);
+            vkDestroySemaphore(device, syncObjects.m_imageAvailableSemaphores[i], nullptr);
+            vkDestroyFence(device, syncObjects.m_inFlightFences[i], nullptr);
         }
 
         vkDestroyCommandPool(device, commandPool, nullptr);
@@ -1479,10 +1481,10 @@ private:
         }
     }
 
-    void createSyncObjects(VkDevice device) {
-        imageAvailableSemaphores.resize(MAX_FRAMES_IN_FLIGHT);
-        renderFinishedSemaphores.resize(MAX_FRAMES_IN_FLIGHT);
-        inFlightFences.resize(MAX_FRAMES_IN_FLIGHT);
+    void createSyncObjects(VkDevice device, SyncObjects& syncObjects) {
+        syncObjects.m_imageAvailableSemaphores.resize(MAX_FRAMES_IN_FLIGHT);
+        syncObjects.m_renderFinishedSemaphores.resize(MAX_FRAMES_IN_FLIGHT);
+        syncObjects.m_inFlightFences.resize(MAX_FRAMES_IN_FLIGHT);
 
         VkSemaphoreCreateInfo semaphoreInfo{};
         semaphoreInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
@@ -1492,9 +1494,9 @@ private:
         fenceInfo.flags = VK_FENCE_CREATE_SIGNALED_BIT;
 
         for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
-            if (vkCreateSemaphore(device, &semaphoreInfo, nullptr, &imageAvailableSemaphores[i]) != VK_SUCCESS ||
-                vkCreateSemaphore(device, &semaphoreInfo, nullptr, &renderFinishedSemaphores[i]) != VK_SUCCESS ||
-                vkCreateFence(device, &fenceInfo, nullptr, &inFlightFences[i]) != VK_SUCCESS) {
+            if (vkCreateSemaphore(device, &semaphoreInfo, nullptr, &syncObjects.m_imageAvailableSemaphores[i]) != VK_SUCCESS ||
+                vkCreateSemaphore(device, &semaphoreInfo, nullptr, &syncObjects.m_renderFinishedSemaphores[i]) != VK_SUCCESS ||
+                vkCreateFence(device, &fenceInfo, nullptr, &syncObjects.m_inFlightFences[i]) != VK_SUCCESS) {
                 throw std::runtime_error("failed to create synchronization objects for a frame!");
             }
         }
@@ -1519,12 +1521,13 @@ private:
         , VkDevice device, VkQueue graphicsQueue, VkQueue presentQueue
         , SwapChain& swapChain, DepthImage& depthImage, VkRenderPass renderPass
         , Pipeline& graphicsPipeline, Geometry& geometry, std::vector<VkCommandBuffer>& commandBuffers
-        , UniformBuffers& uniformBuffers, std::vector<VkDescriptorSet>& descriptorSets) {   
+        , UniformBuffers& uniformBuffers, std::vector<VkDescriptorSet>& descriptorSets
+        , SyncObjects& syncObjects) {   
 
-        vkWaitForFences(device, 1, &inFlightFences[currentFrame], VK_TRUE, UINT64_MAX);
+        vkWaitForFences(device, 1, &syncObjects.m_inFlightFences[currentFrame], VK_TRUE, UINT64_MAX);
 
         uint32_t imageIndex;
-        VkResult result = vkAcquireNextImageKHR(device, swapChain.m_swapChain, UINT64_MAX, imageAvailableSemaphores[currentFrame], VK_NULL_HANDLE, &imageIndex);
+        VkResult result = vkAcquireNextImageKHR(device, swapChain.m_swapChain, UINT64_MAX, syncObjects.m_imageAvailableSemaphores[currentFrame], VK_NULL_HANDLE, &imageIndex);
 
         if (result == VK_ERROR_OUT_OF_DATE_KHR ) {
             recreateSwapChain(window, surface, physicalDevice, device, swapChain, depthImage, renderPass);
@@ -1535,7 +1538,7 @@ private:
 
         updateUniformBuffer(currentFrame, swapChain, uniformBuffers);
 
-        vkResetFences(device, 1, &inFlightFences[currentFrame]);
+        vkResetFences(device, 1, &syncObjects.m_inFlightFences[currentFrame]);
 
         vkResetCommandBuffer(commandBuffers[currentFrame],  0);
         recordCommandBuffer(commandBuffers[currentFrame], imageIndex, swapChain
@@ -1544,7 +1547,7 @@ private:
         VkSubmitInfo submitInfo{};
         submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
 
-        VkSemaphore waitSemaphores[] = {imageAvailableSemaphores[currentFrame]};
+        VkSemaphore waitSemaphores[] = {syncObjects.m_imageAvailableSemaphores[currentFrame]};
         VkPipelineStageFlags waitStages[] = {VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT};
         submitInfo.waitSemaphoreCount = 1;
         submitInfo.pWaitSemaphores = waitSemaphores;
@@ -1553,11 +1556,11 @@ private:
         submitInfo.commandBufferCount = 1;
         submitInfo.pCommandBuffers = &commandBuffers[currentFrame];
 
-        VkSemaphore signalSemaphores[] = {renderFinishedSemaphores[currentFrame]};
+        VkSemaphore signalSemaphores[] = {syncObjects.m_renderFinishedSemaphores[currentFrame]};
         submitInfo.signalSemaphoreCount = 1;
         submitInfo.pSignalSemaphores = signalSemaphores;
 
-        if (vkQueueSubmit(graphicsQueue, 1, &submitInfo, inFlightFences[currentFrame]) != VK_SUCCESS) {
+        if (vkQueueSubmit(graphicsQueue, 1, &submitInfo, syncObjects.m_inFlightFences[currentFrame]) != VK_SUCCESS) {
             throw std::runtime_error("failed to submit draw command buffer!");
         }
 
