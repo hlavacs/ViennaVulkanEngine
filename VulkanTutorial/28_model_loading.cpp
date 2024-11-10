@@ -259,8 +259,8 @@ private:
         std::vector<VkFence>     m_inFlightFences;
     } m_syncObjects;
 
-    uint32_t currentFrame = 0;
-    bool framebufferResized = false;
+    uint32_t m_currentFrame = 0;
+    bool m_framebufferResized = false;
 
 
     void initWindow() {
@@ -341,7 +341,8 @@ private:
                 drawFrame(m_sdl_window, m_surface, m_physicalDevice, m_device
                     , m_graphicsQueue, m_presentQueue, m_swapChain, m_depthImage
                     , m_renderPass, m_graphicsPipeline, m_geometry, m_commandBuffers
-                    , m_uniformBuffers, m_descriptorSets, m_syncObjects);
+                    , m_uniformBuffers, m_descriptorSets, m_syncObjects, m_currentFrame
+                    , m_framebufferResized);
             }
         }
         vkDeviceWaitIdle(m_device);
@@ -1414,7 +1415,7 @@ private:
 
     void recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageIndex
         , SwapChain& swapChain, VkRenderPass renderPass, Pipeline& graphicsPipeline
-        , Geometry& geometry, std::vector<VkDescriptorSet>& descriptorSets) {
+        , Geometry& geometry, std::vector<VkDescriptorSet>& descriptorSets, uint32_t currentFrame) {
 
         VkCommandBufferBeginInfo beginInfo{};
         beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
@@ -1522,7 +1523,7 @@ private:
         , SwapChain& swapChain, DepthImage& depthImage, VkRenderPass renderPass
         , Pipeline& graphicsPipeline, Geometry& geometry, std::vector<VkCommandBuffer>& commandBuffers
         , UniformBuffers& uniformBuffers, std::vector<VkDescriptorSet>& descriptorSets
-        , SyncObjects& syncObjects) {   
+        , SyncObjects& syncObjects, uint32_t& currentFrame, bool& framebufferResized) {   
 
         vkWaitForFences(device, 1, &syncObjects.m_inFlightFences[currentFrame], VK_TRUE, UINT64_MAX);
 
@@ -1542,7 +1543,7 @@ private:
 
         vkResetCommandBuffer(commandBuffers[currentFrame],  0);
         recordCommandBuffer(commandBuffers[currentFrame], imageIndex, swapChain
-            , renderPass, graphicsPipeline, geometry, descriptorSets);
+            , renderPass, graphicsPipeline, geometry, descriptorSets, currentFrame);
 
         VkSubmitInfo submitInfo{};
         submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
