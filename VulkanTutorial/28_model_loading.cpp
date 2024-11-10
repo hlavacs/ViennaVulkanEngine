@@ -995,7 +995,6 @@ private:
             , VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT | VMA_ALLOCATION_CREATE_MAPPED_BIT
             , stagingBuffer, stagingBufferAllocation, &allocInfo);
 
-        void* data;
         MemCopy(device, pixels, allocInfo, imageSize);
 
         stbi_image_free(pixels);
