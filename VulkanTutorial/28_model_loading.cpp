@@ -180,10 +180,7 @@ public:
         initWindow();
         initVulkan();
         mainLoop();
-        cleanup(m_instance, m_surface, m_device, m_swapChain
-            , m_depthImage, m_commandPool, m_renderPass, m_texture
-            , m_descriptorSetLayout, m_graphicsPipeline, m_geometry
-            , m_uniformBuffers, m_descriptorPool, m_syncObjects);
+        cleanup();
     }
 
 private:
@@ -364,59 +361,55 @@ private:
         vkDestroySwapchainKHR(device, swapChain.m_swapChain, nullptr);
     }
 
-    void cleanup(VkInstance instance, VkSurfaceKHR surface, VkDevice device
-        , SwapChain& swapChain, DepthImage& depthImage, VkCommandPool commandPool
-        , VkRenderPass renderPass, Texture& texture, VkDescriptorSetLayout descriptorSetLayout
-        , Pipeline& graphicsPipeline, Geometry& geometry, UniformBuffers& uniformBuffers
-        , VkDescriptorPool descriptorPool, SyncObjects& syncObjects) {
+    void cleanup() {
 
         ImGui_ImplVulkan_Shutdown();
         ImGui_ImplSDL2_Shutdown();
         ImGui::DestroyContext();
 
-        cleanupSwapChain(device, swapChain, depthImage);
+        cleanupSwapChain(m_device, m_swapChain, m_depthImage);
 
-        vkDestroyPipeline(device, graphicsPipeline.m_pipeline, nullptr);
-        vkDestroyPipelineLayout(device, graphicsPipeline.m_pipelineLayout, nullptr);
-        vkDestroyRenderPass(device, renderPass, nullptr);
-
-        for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
-            vkDestroyBuffer(device, uniformBuffers.m_uniformBuffers[i], nullptr);
-            vkFreeMemory(device, uniformBuffers.m_uniformBuffersMemory[i], nullptr);
-        }
-
-        vkDestroyDescriptorPool(device, descriptorPool, nullptr);
-
-        vkDestroySampler(device, texture.m_textureSampler, nullptr);
-        vkDestroyImageView(device, texture.m_textureImageView, nullptr);
-
-        vkDestroyImage(device, texture.m_textureImage, nullptr);
-        vkFreeMemory(device, texture.m_textureImageMemory, nullptr);
-
-        vkDestroyDescriptorSetLayout(device, descriptorSetLayout, nullptr);
-
-        vkDestroyBuffer(device, geometry.m_indexBuffer, nullptr);
-        vkFreeMemory(device, geometry.m_indexBufferMemory, nullptr);
-
-        vkDestroyBuffer(device, geometry.m_vertexBuffer, nullptr);
-        vkFreeMemory(device, geometry.m_vertexBufferMemory, nullptr);
+        vkDestroyPipeline(m_device, m_graphicsPipeline.m_pipeline, nullptr);
+        vkDestroyPipelineLayout(m_device, m_graphicsPipeline.m_pipelineLayout, nullptr);
+        vkDestroyRenderPass(m_device, m_renderPass, nullptr);
 
         for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
-            vkDestroySemaphore(device, syncObjects.m_renderFinishedSemaphores[i], nullptr);
-            vkDestroySemaphore(device, syncObjects.m_imageAvailableSemaphores[i], nullptr);
-            vkDestroyFence(device, syncObjects.m_inFlightFences[i], nullptr);
+            vkDestroyBuffer(m_device, m_uniformBuffers.m_uniformBuffers[i], nullptr);
+            vkFreeMemory(m_device, m_uniformBuffers.m_uniformBuffersMemory[i], nullptr);
         }
 
-        vkDestroyCommandPool(device, commandPool, nullptr);
+        vkDestroyDescriptorPool(m_device, m_descriptorPool, nullptr);
 
-        vkDestroyDevice(device, nullptr);
+        vkDestroySampler(m_device, m_texture.m_textureSampler, nullptr);
+        vkDestroyImageView(m_device, m_texture.m_textureImageView, nullptr);
+
+        vkDestroyImage(m_device, m_texture.m_textureImage, nullptr);
+        vkFreeMemory(m_device, m_texture.m_textureImageMemory, nullptr);
+
+        vkDestroyDescriptorSetLayout(m_device, m_descriptorSetLayout, nullptr);
+
+        vkDestroyBuffer(m_device, m_geometry.m_indexBuffer, nullptr);
+        vkFreeMemory(m_device, m_geometry.m_indexBufferMemory, nullptr);
+
+        vkDestroyBuffer(m_device, m_geometry.m_vertexBuffer, nullptr);
+        vkFreeMemory(m_device, m_geometry.m_vertexBufferMemory, nullptr);
+
+        for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
+            vkDestroySemaphore(m_device, m_syncObjects.m_renderFinishedSemaphores[i], nullptr);
+            vkDestroySemaphore(m_device, m_syncObjects.m_imageAvailableSemaphores[i], nullptr);
+            vkDestroyFence(m_device, m_syncObjects.m_inFlightFences[i], nullptr);
+        }
+
+        vkDestroyCommandPool(m_device, m_commandPool, nullptr);
+
+        vkDestroyDevice(m_device, nullptr);
 
         if (enableValidationLayers) {
-            DestroyDebugUtilsMessengerEXT(instance, m_debugMessenger, nullptr);
+            DestroyDebugUtilsMessengerEXT(m_instance, m_debugMessenger, nullptr);
         }
 
-        vkDestroySurfaceKHR(instance, surface, nullptr);
-        vkDestroyInstance(instance, nullptr);
+        vkDestroySurfaceKHR(m_instance, m_surface, nullptr);
+        vkDestroyInstance(m_instance, nullptr);
 
         SDL_DestroyWindow(m_sdl_window);
         SDL_Quit();
