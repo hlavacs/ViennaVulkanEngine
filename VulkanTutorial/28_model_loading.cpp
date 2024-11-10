@@ -182,7 +182,8 @@ public:
         mainLoop();
         cleanup(m_instance, m_surface, m_device, m_swapChain
             , m_depthImage, m_commandPool, m_renderPass, m_texture
-            , m_descriptorSetLayout, m_graphicsPipeline, m_geometry);
+            , m_descriptorSetLayout, m_graphicsPipeline, m_geometry
+            , m_uniformBuffers);
     }
 
 private:
@@ -240,9 +241,11 @@ private:
         VkDeviceMemory          m_indexBufferMemory;
     } m_geometry;
 
-    std::vector<VkBuffer> uniformBuffers;
-    std::vector<VkDeviceMemory> uniformBuffersMemory;
-    std::vector<void*> uniformBuffersMapped;
+    struct UniformBuffers {
+        std::vector<VkBuffer>       m_uniformBuffers;
+        std::vector<VkDeviceMemory> m_uniformBuffersMemory;
+        std::vector<void*>          m_uniformBuffersMapped;
+    } m_uniformBuffers;
 
     VkDescriptorPool descriptorPool;
     std::vector<VkDescriptorSet> descriptorSets;
@@ -289,9 +292,9 @@ private:
         loadModel(m_geometry);
         createVertexBuffer(m_physicalDevice, m_device, m_graphicsQueue, m_commandPool, m_geometry);
         createIndexBuffer(m_physicalDevice, m_device, m_graphicsQueue, m_commandPool, m_geometry);
-        createUniformBuffers(m_physicalDevice, m_device);
+        createUniformBuffers(m_physicalDevice, m_device, m_uniformBuffers);
         createDescriptorPool(m_device);
-        createDescriptorSets(m_device, m_texture, m_descriptorSetLayout);
+        createDescriptorSets(m_device, m_texture, m_descriptorSetLayout, m_uniformBuffers);
         createCommandBuffers(m_device, m_commandPool, m_commandBuffers);
         createSyncObjects(m_device);
         setupImgui(m_instance, m_physicalDevice, m_queueFamilies, m_device, m_graphicsQueue, m_commandPool, descriptorPool, m_renderPass);
@@ -335,7 +338,8 @@ private:
 
                 drawFrame(m_sdl_window, m_surface, m_physicalDevice, m_device
                     , m_graphicsQueue, m_presentQueue, m_swapChain, m_depthImage
-                    , m_renderPass, m_graphicsPipeline, m_geometry, m_commandBuffers);
+                    , m_renderPass, m_graphicsPipeline, m_geometry, m_commandBuffers
+                    , m_uniformBuffers);
             }
         }
         vkDeviceWaitIdle(m_device);
@@ -360,7 +364,7 @@ private:
     void cleanup(VkInstance instance, VkSurfaceKHR surface, VkDevice device
         , SwapChain& swapChain, DepthImage& depthImage, VkCommandPool commandPool
         , VkRenderPass renderPass, Texture& texture, VkDescriptorSetLayout descriptorSetLayout
-        , Pipeline& graphicsPipeline, Geometry& geometry) {
+        , Pipeline& graphicsPipeline, Geometry& geometry, UniformBuffers& uniformBuffers) {
 
         ImGui_ImplVulkan_Shutdown();
         ImGui_ImplSDL2_Shutdown();
@@ -373,8 +377,8 @@ private:
         vkDestroyRenderPass(device, renderPass, nullptr);
 
         for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
-            vkDestroyBuffer(device, uniformBuffers[i], nullptr);
-            vkFreeMemory(device, uniformBuffersMemory[i], nullptr);
+            vkDestroyBuffer(device, uniformBuffers.m_uniformBuffers[i], nullptr);
+            vkFreeMemory(device, uniformBuffers.m_uniformBuffersMemory[i], nullptr);
         }
 
         vkDestroyDescriptorPool(device, descriptorPool, nullptr);
@@ -1202,17 +1206,19 @@ private:
         vkFreeMemory(device, stagingBufferMemory, nullptr);
     }
 
-    void createUniformBuffers(VkPhysicalDevice physicalDevice, VkDevice device) {
+    void createUniformBuffers(VkPhysicalDevice physicalDevice, VkDevice device, UniformBuffers &uniformBuffers) {
         VkDeviceSize bufferSize = sizeof(UniformBufferObject);
 
-        uniformBuffers.resize(MAX_FRAMES_IN_FLIGHT);
-        uniformBuffersMemory.resize(MAX_FRAMES_IN_FLIGHT);
-        uniformBuffersMapped.resize(MAX_FRAMES_IN_FLIGHT);
+        uniformBuffers.m_uniformBuffers.resize(MAX_FRAMES_IN_FLIGHT);
+        uniformBuffers.m_uniformBuffersMemory.resize(MAX_FRAMES_IN_FLIGHT);
+        uniformBuffers.m_uniformBuffersMapped.resize(MAX_FRAMES_IN_FLIGHT);
 
         for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
-            createBuffer(physicalDevice, device, bufferSize, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, uniformBuffers[i], uniformBuffersMemory[i]);
+            createBuffer(physicalDevice, device, bufferSize, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT
+                , VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT
+                , uniformBuffers.m_uniformBuffers[i], uniformBuffers.m_uniformBuffersMemory[i]);
 
-            vkMapMemory(device, uniformBuffersMemory[i], 0, bufferSize, 0, &uniformBuffersMapped[i]);
+            vkMapMemory(device, uniformBuffers.m_uniformBuffersMemory[i], 0, bufferSize, 0, &uniformBuffers.m_uniformBuffersMapped[i]);
         }
     }
 
@@ -1259,7 +1265,9 @@ private:
         vkCreateDescriptorPool(device, &pool_info, nullptr, &descriptorPool);
     }
 
-    void createDescriptorSets(VkDevice device, Texture& texture, VkDescriptorSetLayout descriptorSetLayout) {
+    void createDescriptorSets(VkDevice device, Texture& texture
+        , VkDescriptorSetLayout descriptorSetLayout, UniformBuffers& uniformBuffers) {
+
         std::vector<VkDescriptorSetLayout> layouts(MAX_FRAMES_IN_FLIGHT, descriptorSetLayout);
         VkDescriptorSetAllocateInfo allocInfo{};
         allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
@@ -1274,7 +1282,7 @@ private:
 
         for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
             VkDescriptorBufferInfo bufferInfo{};
-            bufferInfo.buffer = uniformBuffers[i];
+            bufferInfo.buffer = uniformBuffers.m_uniformBuffers[i];
             bufferInfo.offset = 0;
             bufferInfo.range = sizeof(UniformBufferObject);
 
@@ -1491,7 +1499,7 @@ private:
         }
     }
 
-    void updateUniformBuffer(uint32_t currentImage, SwapChain& swapChain) {
+    void updateUniformBuffer(uint32_t currentImage, SwapChain& swapChain, UniformBuffers& uniformBuffers) {
         static auto startTime = std::chrono::high_resolution_clock::now();
 
         auto currentTime = std::chrono::high_resolution_clock::now();
@@ -1503,13 +1511,14 @@ private:
         ubo.proj = glm::perspective(glm::radians(45.0f), swapChain.m_swapChainExtent.width / (float) swapChain.m_swapChainExtent.height, 0.1f, 10.0f);
         ubo.proj[1][1] *= -1;
 
-        memcpy(uniformBuffersMapped[currentImage], &ubo, sizeof(ubo));
+        memcpy(uniformBuffers.m_uniformBuffersMapped[currentImage], &ubo, sizeof(ubo));
     }
 
     void drawFrame(SDL_Window* window, VkSurfaceKHR surface, VkPhysicalDevice physicalDevice
         , VkDevice device, VkQueue graphicsQueue, VkQueue presentQueue
         , SwapChain& swapChain, DepthImage& depthImage, VkRenderPass renderPass
-        , Pipeline& graphicsPipeline, Geometry& geometry, std::vector<VkCommandBuffer>& commandBuffers) {   
+        , Pipeline& graphicsPipeline, Geometry& geometry, std::vector<VkCommandBuffer>& commandBuffers
+        , UniformBuffers& uniformBuffers) {   
 
         vkWaitForFences(device, 1, &inFlightFences[currentFrame], VK_TRUE, UINT64_MAX);
 
@@ -1523,7 +1532,7 @@ private:
             throw std::runtime_error("failed to acquire swap chain image!");
         }
 
-        updateUniformBuffer(currentFrame, swapChain);
+        updateUniformBuffer(currentFrame, swapChain, uniformBuffers);
 
         vkResetFences(device, 1, &inFlightFences[currentFrame]);
 
