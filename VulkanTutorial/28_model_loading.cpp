@@ -303,6 +303,10 @@ private:
                         m_isMinimized = true;
                         break;
 
+                    case SDL_WINDOWEVENT_MAXIMIZED: 
+                        m_isMinimized = false;
+                        break;
+
                     case SDL_WINDOWEVENT_RESTORED:
                         m_isMinimized = false;
                         break;
