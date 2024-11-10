@@ -180,7 +180,7 @@ public:
         initWindow();
         initVulkan();
         mainLoop();
-        cleanup(m_instance, m_surface, m_device, m_swapChain, m_depthImage);
+        cleanup(m_instance, m_surface, m_device, m_swapChain, m_depthImage, m_commandPool);
     }
 
 private:
@@ -213,7 +213,7 @@ private:
     VkPipelineLayout pipelineLayout;
     VkPipeline graphicsPipeline;
 
-    VkCommandPool commandPool;
+    VkCommandPool m_commandPool;
 
     struct DepthImage {
         VkImage         m_depthImage;
@@ -272,21 +272,21 @@ private:
         createRenderPass(m_physicalDevice, m_device, m_swapChain);
         createDescriptorSetLayout(m_device);
         createGraphicsPipeline(m_device);
-        createCommandPool(m_surface, m_physicalDevice, m_device);
+        createCommandPool(m_surface, m_physicalDevice, m_device, m_commandPool);
         createDepthResources(m_physicalDevice, m_device, m_swapChain, m_depthImage);
         createFramebuffers(m_device, m_swapChain, m_depthImage);
-        createTextureImage(m_physicalDevice, m_device, m_graphicsQueue);
+        createTextureImage(m_physicalDevice, m_device, m_graphicsQueue, m_commandPool);
         createTextureImageView(m_device);
         createTextureSampler(m_physicalDevice, m_device);
         loadModel();
-        createVertexBuffer(m_physicalDevice, m_device, m_graphicsQueue);
-        createIndexBuffer(m_physicalDevice, m_device, m_graphicsQueue);
+        createVertexBuffer(m_physicalDevice, m_device, m_graphicsQueue, m_commandPool);
+        createIndexBuffer(m_physicalDevice, m_device, m_graphicsQueue, m_commandPool);
         createUniformBuffers(m_physicalDevice, m_device);
         createDescriptorPool(m_device);
         createDescriptorSets(m_device);
-        createCommandBuffers(m_device);
+        createCommandBuffers(m_device, m_commandPool);
         createSyncObjects(m_device);
-        setupImgui(m_instance, m_physicalDevice, m_queueFamilies, m_device, m_graphicsQueue, commandPool, descriptorPool, renderPass);
+        setupImgui(m_instance, m_physicalDevice, m_queueFamilies, m_device, m_graphicsQueue, m_commandPool, descriptorPool, renderPass);
     }
 
 
@@ -348,7 +348,7 @@ private:
         vkDestroySwapchainKHR(device, swapChain.m_swapChain, nullptr);
     }
 
-    void cleanup(VkInstance instance, VkSurfaceKHR surface, VkDevice device, SwapChain& swapChain, DepthImage& depthImage) {
+    void cleanup(VkInstance instance, VkSurfaceKHR surface, VkDevice device, SwapChain& swapChain, DepthImage& depthImage, VkCommandPool commandPool) {
         ImGui_ImplVulkan_Shutdown();
         ImGui_ImplSDL2_Shutdown();
         ImGui::DestroyContext();
@@ -866,7 +866,7 @@ private:
         }
     }
 
-    void createCommandPool(VkSurfaceKHR surface, VkPhysicalDevice physicalDevice, VkDevice device) {
+    void createCommandPool(VkSurfaceKHR surface, VkPhysicalDevice physicalDevice, VkDevice device, VkCommandPool& commandPool) {
         QueueFamilyIndices queueFamilyIndices = findQueueFamilies(physicalDevice, surface);
 
         VkCommandPoolCreateInfo poolInfo{};
@@ -916,7 +916,7 @@ private:
         return format == VK_FORMAT_D32_SFLOAT_S8_UINT || format == VK_FORMAT_D24_UNORM_S8_UINT;
     }
 
-    void createTextureImage(VkPhysicalDevice physicalDevice, VkDevice device, VkQueue graphicsQueue) {
+    void createTextureImage(VkPhysicalDevice physicalDevice, VkDevice device, VkQueue graphicsQueue, VkCommandPool commandPool) {
         int texWidth, texHeight, texChannels;
         stbi_uc* pixels = stbi_load(TEXTURE_PATH.c_str(), &texWidth, &texHeight, &texChannels, STBI_rgb_alpha);
         VkDeviceSize imageSize = texWidth * texHeight * 4;
@@ -938,9 +938,9 @@ private:
 
         createImage(physicalDevice,device, texWidth, texHeight, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, textureImage, textureImageMemory);
 
-        transitionImageLayout(device, graphicsQueue, textureImage, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
-            copyBufferToImage(device, graphicsQueue, stagingBuffer, textureImage, static_cast<uint32_t>(texWidth), static_cast<uint32_t>(texHeight));
-        transitionImageLayout(device, graphicsQueue, textureImage, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+        transitionImageLayout(device, graphicsQueue, commandPool, textureImage, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
+            copyBufferToImage(device, graphicsQueue, commandPool, stagingBuffer, textureImage, static_cast<uint32_t>(texWidth), static_cast<uint32_t>(texHeight));
+        transitionImageLayout(device, graphicsQueue, commandPool, textureImage, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
 
         vkDestroyBuffer(device, stagingBuffer, nullptr);
         vkFreeMemory(device, stagingBufferMemory, nullptr);
@@ -1029,8 +1029,8 @@ private:
         vkBindImageMemory(device, image, imageMemory, 0);
     }
 
-    void transitionImageLayout(VkDevice device, VkQueue graphicsQueue, VkImage image, VkFormat format, VkImageLayout oldLayout, VkImageLayout newLayout) {
-        VkCommandBuffer commandBuffer = beginSingleTimeCommands(device);
+    void transitionImageLayout(VkDevice device, VkQueue graphicsQueue, VkCommandPool commandPool, VkImage image, VkFormat format, VkImageLayout oldLayout, VkImageLayout newLayout) {
+        VkCommandBuffer commandBuffer = beginSingleTimeCommands(device, commandPool);
 
         VkImageMemoryBarrier barrier{};
         barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
@@ -1073,11 +1073,11 @@ private:
             1, &barrier
         );
 
-        endSingleTimeCommands(device, graphicsQueue, commandBuffer);
+        endSingleTimeCommands(device, graphicsQueue, commandPool, commandBuffer);
     }
 
-    void copyBufferToImage(VkDevice device, VkQueue graphicsQueue, VkBuffer buffer, VkImage image, uint32_t width, uint32_t height) {
-        VkCommandBuffer commandBuffer = beginSingleTimeCommands(device);
+    void copyBufferToImage(VkDevice device, VkQueue graphicsQueue, VkCommandPool commandPool, VkBuffer buffer, VkImage image, uint32_t width, uint32_t height) {
+        VkCommandBuffer commandBuffer = beginSingleTimeCommands(device, commandPool);
 
         VkBufferImageCopy region{};
         region.bufferOffset = 0;
@@ -1096,7 +1096,7 @@ private:
 
         vkCmdCopyBufferToImage(commandBuffer, buffer, image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &region);
 
-        endSingleTimeCommands(device, graphicsQueue, commandBuffer);
+        endSingleTimeCommands(device, graphicsQueue, commandPool, commandBuffer);
     }
 
     void loadModel() {
@@ -1138,7 +1138,7 @@ private:
         }
     }
 
-    void createVertexBuffer(VkPhysicalDevice physicalDevice, VkDevice device, VkQueue graphicsQueue ) {
+    void createVertexBuffer(VkPhysicalDevice physicalDevice, VkDevice device, VkQueue graphicsQueue, VkCommandPool commandPool) {
         VkDeviceSize bufferSize = sizeof(vertices[0]) * vertices.size();
 
         VkBuffer stagingBuffer;
@@ -1152,13 +1152,13 @@ private:
 
         createBuffer(physicalDevice, device, bufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, vertexBuffer, vertexBufferMemory);
 
-        copyBuffer(device, graphicsQueue, stagingBuffer, vertexBuffer, bufferSize);
+        copyBuffer(device, graphicsQueue, commandPool, stagingBuffer, vertexBuffer, bufferSize);
 
         vkDestroyBuffer(device, stagingBuffer, nullptr);
         vkFreeMemory(device, stagingBufferMemory, nullptr);
     }
 
-    void createIndexBuffer(VkPhysicalDevice physicalDevice, VkDevice device, VkQueue graphicsQueue) {
+    void createIndexBuffer(VkPhysicalDevice physicalDevice, VkDevice device, VkQueue graphicsQueue, VkCommandPool commandPool) {
         VkDeviceSize bufferSize = sizeof(indices[0]) * indices.size();
 
         VkBuffer stagingBuffer;
@@ -1172,7 +1172,7 @@ private:
 
         createBuffer(physicalDevice, device, bufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, indexBuffer, indexBufferMemory);
 
-        copyBuffer(device, graphicsQueue, stagingBuffer, indexBuffer, bufferSize);
+        copyBuffer(device, graphicsQueue, commandPool, stagingBuffer, indexBuffer, bufferSize);
 
         vkDestroyBuffer(device, stagingBuffer, nullptr);
         vkFreeMemory(device, stagingBufferMemory, nullptr);
@@ -1307,7 +1307,7 @@ private:
         vkBindBufferMemory(device, buffer, bufferMemory, 0);
     }
 
-    VkCommandBuffer beginSingleTimeCommands(VkDevice device) {
+    VkCommandBuffer beginSingleTimeCommands(VkDevice device, VkCommandPool commandPool) {
         VkCommandBufferAllocateInfo allocInfo{};
         allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
         allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
@@ -1326,7 +1326,7 @@ private:
         return commandBuffer;
     }
 
-    void endSingleTimeCommands(VkDevice device, VkQueue graphicsQueue, VkCommandBuffer commandBuffer) {
+    void endSingleTimeCommands(VkDevice device, VkQueue graphicsQueue, VkCommandPool commandPool, VkCommandBuffer commandBuffer) {
         vkEndCommandBuffer(commandBuffer);
 
         VkSubmitInfo submitInfo{};
@@ -1340,14 +1340,14 @@ private:
         vkFreeCommandBuffers(device, commandPool, 1, &commandBuffer);
     }
 
-    void copyBuffer(VkDevice device, VkQueue graphicsQueue, VkBuffer srcBuffer, VkBuffer dstBuffer, VkDeviceSize size) {
-        VkCommandBuffer commandBuffer = beginSingleTimeCommands(device);
+    void copyBuffer(VkDevice device, VkQueue graphicsQueue, VkCommandPool commandPool, VkBuffer srcBuffer, VkBuffer dstBuffer, VkDeviceSize size) {
+        VkCommandBuffer commandBuffer = beginSingleTimeCommands(device, commandPool);
 
         VkBufferCopy copyRegion{};
         copyRegion.size = size;
         vkCmdCopyBuffer(commandBuffer, srcBuffer, dstBuffer, 1, &copyRegion);
 
-        endSingleTimeCommands(device, graphicsQueue, commandBuffer);
+        endSingleTimeCommands(device, graphicsQueue, commandPool, commandBuffer);
     }
 
     uint32_t findMemoryType(VkPhysicalDevice physicalDevice, uint32_t typeFilter, VkMemoryPropertyFlags properties) {
@@ -1363,7 +1363,7 @@ private:
         throw std::runtime_error("failed to find suitable memory type!");
     }
 
-    void createCommandBuffers(VkDevice device) {
+    void createCommandBuffers(VkDevice device, VkCommandPool commandPool) {
         commandBuffers.resize(MAX_FRAMES_IN_FLIGHT);
 
         VkCommandBufferAllocateInfo allocInfo{};
