@@ -183,7 +183,7 @@ public:
         cleanup(m_instance, m_surface, m_device, m_swapChain
             , m_depthImage, m_commandPool, m_renderPass, m_texture
             , m_descriptorSetLayout, m_graphicsPipeline, m_geometry
-            , m_uniformBuffers);
+            , m_uniformBuffers, m_descriptorPool);
     }
 
 private:
@@ -247,8 +247,8 @@ private:
         std::vector<void*>          m_uniformBuffersMapped;
     } m_uniformBuffers;
 
-    VkDescriptorPool descriptorPool;
-    std::vector<VkDescriptorSet> descriptorSets;
+    VkDescriptorPool m_descriptorPool;
+    std::vector<VkDescriptorSet> m_descriptorSets;
 
     VkCommandPool m_commandPool;
     std::vector<VkCommandBuffer> m_commandBuffers;
@@ -293,11 +293,11 @@ private:
         createVertexBuffer(m_physicalDevice, m_device, m_graphicsQueue, m_commandPool, m_geometry);
         createIndexBuffer(m_physicalDevice, m_device, m_graphicsQueue, m_commandPool, m_geometry);
         createUniformBuffers(m_physicalDevice, m_device, m_uniformBuffers);
-        createDescriptorPool(m_device);
-        createDescriptorSets(m_device, m_texture, m_descriptorSetLayout, m_uniformBuffers);
+        createDescriptorPool(m_device, m_descriptorPool);
+        createDescriptorSets(m_device, m_texture, m_descriptorSetLayout, m_uniformBuffers, m_descriptorPool, m_descriptorSets);
         createCommandBuffers(m_device, m_commandPool, m_commandBuffers);
         createSyncObjects(m_device);
-        setupImgui(m_instance, m_physicalDevice, m_queueFamilies, m_device, m_graphicsQueue, m_commandPool, descriptorPool, m_renderPass);
+        setupImgui(m_instance, m_physicalDevice, m_queueFamilies, m_device, m_graphicsQueue, m_commandPool, m_descriptorPool, m_renderPass);
     }
 
 
@@ -339,7 +339,7 @@ private:
                 drawFrame(m_sdl_window, m_surface, m_physicalDevice, m_device
                     , m_graphicsQueue, m_presentQueue, m_swapChain, m_depthImage
                     , m_renderPass, m_graphicsPipeline, m_geometry, m_commandBuffers
-                    , m_uniformBuffers);
+                    , m_uniformBuffers, m_descriptorSets);
             }
         }
         vkDeviceWaitIdle(m_device);
@@ -364,7 +364,8 @@ private:
     void cleanup(VkInstance instance, VkSurfaceKHR surface, VkDevice device
         , SwapChain& swapChain, DepthImage& depthImage, VkCommandPool commandPool
         , VkRenderPass renderPass, Texture& texture, VkDescriptorSetLayout descriptorSetLayout
-        , Pipeline& graphicsPipeline, Geometry& geometry, UniformBuffers& uniformBuffers) {
+        , Pipeline& graphicsPipeline, Geometry& geometry, UniformBuffers& uniformBuffers
+        , VkDescriptorPool descriptorPool) {
 
         ImGui_ImplVulkan_Shutdown();
         ImGui_ImplSDL2_Shutdown();
@@ -1222,7 +1223,7 @@ private:
         }
     }
 
-    void createDescriptorPool(VkDevice device) {
+    void createDescriptorPool(VkDevice device, VkDescriptorPool& descriptorPool) {
         /*std::array<VkDescriptorPoolSize, 2> poolSizes{};
         poolSizes[0].type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
         poolSizes[0].descriptorCount = static_cast<uint32_t>(MAX_FRAMES_IN_FLIGHT);
@@ -1266,7 +1267,7 @@ private:
     }
 
     void createDescriptorSets(VkDevice device, Texture& texture
-        , VkDescriptorSetLayout descriptorSetLayout, UniformBuffers& uniformBuffers) {
+        , VkDescriptorSetLayout descriptorSetLayout, UniformBuffers& uniformBuffers, VkDescriptorPool descriptorPool, std::vector<VkDescriptorSet>& descriptorSets) {
 
         std::vector<VkDescriptorSetLayout> layouts(MAX_FRAMES_IN_FLIGHT, descriptorSetLayout);
         VkDescriptorSetAllocateInfo allocInfo{};
@@ -1411,7 +1412,7 @@ private:
 
     void recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageIndex
         , SwapChain& swapChain, VkRenderPass renderPass, Pipeline& graphicsPipeline
-        , Geometry& geometry) {
+        , Geometry& geometry, std::vector<VkDescriptorSet>& descriptorSets) {
 
         VkCommandBufferBeginInfo beginInfo{};
         beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
@@ -1518,7 +1519,7 @@ private:
         , VkDevice device, VkQueue graphicsQueue, VkQueue presentQueue
         , SwapChain& swapChain, DepthImage& depthImage, VkRenderPass renderPass
         , Pipeline& graphicsPipeline, Geometry& geometry, std::vector<VkCommandBuffer>& commandBuffers
-        , UniformBuffers& uniformBuffers) {   
+        , UniformBuffers& uniformBuffers, std::vector<VkDescriptorSet>& descriptorSets) {   
 
         vkWaitForFences(device, 1, &inFlightFences[currentFrame], VK_TRUE, UINT64_MAX);
 
@@ -1537,9 +1538,8 @@ private:
         vkResetFences(device, 1, &inFlightFences[currentFrame]);
 
         vkResetCommandBuffer(commandBuffers[currentFrame],  0);
-        recordCommandBuffer(commandBuffers[currentFrame], imageIndex, swapChain, renderPass, graphicsPipeline, geometry);
-
-
+        recordCommandBuffer(commandBuffers[currentFrame], imageIndex, swapChain
+            , renderPass, graphicsPipeline, geometry, descriptorSets);
 
         VkSubmitInfo submitInfo{};
         submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
