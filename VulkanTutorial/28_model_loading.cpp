@@ -381,8 +381,8 @@ private:
 
     void cleanupSwapChain(VkDevice device, SwapChain& swapChain, DepthImage& depthImage) {
         vkDestroyImageView(device, depthImage.m_depthImageView, nullptr);
-        vkDestroyImage(device, depthImage.m_depthImage, nullptr);
-        vkFreeMemory(device, depthImage.m_depthImageMemory, nullptr);
+
+        destroyImage(device, m_vmaAllocator, depthImage.m_depthImage, depthImage.m_depthImageMemory, depthImage.m_depthImageAllocation);
 
         for (auto framebuffer : swapChain.m_swapChainFramebuffers) {
             vkDestroyFramebuffer(device, framebuffer, nullptr);
@@ -1079,7 +1079,7 @@ private:
     }
 
 
-    void createImage2(VkPhysicalDevice physicalDevice, VkDevice device, VmaAllocator vmaAllocator, uint32_t width, uint32_t height
+    void createImage(VkPhysicalDevice physicalDevice, VkDevice device, VmaAllocator vmaAllocator, uint32_t width, uint32_t height
         , VkFormat format, VkImageTiling tiling, VkImageUsageFlags usage, VkMemoryPropertyFlags properties
         , VkImage& image, VkDeviceMemory& imageMemory, VmaAllocation& imageAllocation) {
 
@@ -1103,11 +1103,11 @@ private:
         vmaCreateImage(vmaAllocator, &imageInfo, &allocInfo, &image, &imageAllocation, nullptr);
     }
 
-    void destroyImage2(VkDevice device, VmaAllocator vmaAllocator, VkImage image, VkDeviceMemory imageMemory, VmaAllocation imageAllocation) {
+    void destroyImage(VkDevice device, VmaAllocator vmaAllocator, VkImage image, VkDeviceMemory imageMemory, VmaAllocation imageAllocation) {
         vmaDestroyImage(vmaAllocator, image, imageAllocation);
     }
 
-    void createImage(VkPhysicalDevice physicalDevice, VkDevice device, VmaAllocator vmaAllocator, uint32_t width, uint32_t height
+    void createImage2(VkPhysicalDevice physicalDevice, VkDevice device, VmaAllocator vmaAllocator, uint32_t width, uint32_t height
         , VkFormat format, VkImageTiling tiling, VkImageUsageFlags usage, VkMemoryPropertyFlags properties
         , VkImage& image, VkDeviceMemory& imageMemory, VmaAllocation& imageAllocation) {
         
@@ -1145,7 +1145,7 @@ private:
         vkBindImageMemory(device, image, imageMemory, 0);
     }
 
-    void destroyImage(VkDevice device, VmaAllocator vmaAllocator, VkImage image, VkDeviceMemory imageMemory, VmaAllocation imageAllocation) {
+    void destroyImage2(VkDevice device, VmaAllocator vmaAllocator, VkImage image, VkDeviceMemory imageMemory, VmaAllocation imageAllocation) {
         vkDestroyImage(device, image, nullptr);
         vkFreeMemory(device, imageMemory, nullptr);
     }
