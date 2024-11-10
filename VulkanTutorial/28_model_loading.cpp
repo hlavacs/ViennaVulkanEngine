@@ -401,12 +401,7 @@ private:
         ImGui_ImplSDL2_Shutdown();
         ImGui::DestroyContext();
 
-        std::cout << "cleanupSwapChain1" << std::endl;
-
         cleanupSwapChain(m_device, m_swapChain, m_depthImage);
-
-        std::cout << "cleanupSwapChain2" << std::endl;
-
 
         vkDestroyPipeline(m_device, m_graphicsPipeline.m_pipeline, nullptr);
         vkDestroyPipelineLayout(m_device, m_graphicsPipeline.m_pipelineLayout, nullptr);
@@ -414,16 +409,9 @@ private:
 
 
         for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
-            std::cout << "cleanupSwapChain2.1 " << i << std::endl;
-            destroyBuffer2(m_device, m_vmaAllocator, m_uniformBuffers.m_uniformBuffers[i]
+            destroyBuffer(m_device, m_vmaAllocator, m_uniformBuffers.m_uniformBuffers[i]
                 , m_uniformBuffers.m_uniformBuffersMemory[i], m_uniformBuffers.m_uniformBuffersAllocation[i]);
-
-            //vkDestroyBuffer(m_device, m_uniformBuffers.m_uniformBuffers[i], nullptr);
-            //std::cout << "cleanupSwapChain2.2 " << i << std::endl;
-            //vkFreeMemory(m_device, m_uniformBuffers.m_uniformBuffersMemory[i], nullptr);
         }
-
-        std::cout << "cleanupSwapChain3" << std::endl;
 
         vkDestroyDescriptorPool(m_device, m_descriptorPool, nullptr);
 
@@ -432,15 +420,11 @@ private:
 
         destroyImage(m_device, m_vmaAllocator, m_texture.m_textureImage, m_texture.m_textureImageMemory, m_texture.m_textureImageAllocation);
 
-        std::cout << "cleanupSwapChain4" << std::endl;
-
         vkDestroyDescriptorSetLayout(m_device, m_descriptorSetLayout, nullptr);
 
-        destroyBuffer2(m_device, m_vmaAllocator, m_geometry.m_indexBuffer, m_geometry.m_indexBufferMemory, m_geometry.m_indexBufferAllocation);
+        destroyBuffer(m_device, m_vmaAllocator, m_geometry.m_indexBuffer, m_geometry.m_indexBufferMemory, m_geometry.m_indexBufferAllocation);
 
-        destroyBuffer2(m_device, m_vmaAllocator, m_geometry.m_vertexBuffer, m_geometry.m_vertexBufferMemory, m_geometry.m_vertexBufferAllocation);
-
-        std::cout << "cleanupSwapChain5" << std::endl;
+        destroyBuffer(m_device, m_vmaAllocator, m_geometry.m_vertexBuffer, m_geometry.m_vertexBufferMemory, m_geometry.m_vertexBufferAllocation);
 
         for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
             vkDestroySemaphore(m_device, m_syncObjects.m_renderFinishedSemaphores[i], nullptr);
@@ -1019,16 +1003,12 @@ private:
         VkDeviceMemory stagingBufferMemory;
         VmaAllocation stagingBufferAllocation;
         VmaAllocationInfo allocInfo;
-        createBuffer2(physicalDevice, device, vmaAllocator, imageSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT
+        createBuffer(physicalDevice, device, vmaAllocator, imageSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT
             , VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT
             , VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT | VMA_ALLOCATION_CREATE_MAPPED_BIT
             , stagingBuffer, stagingBufferMemory, stagingBufferAllocation, &allocInfo);
 
         void* data;
-        //vkMapMemory(device, stagingBufferMemory, 0, imageSize, 0, &data);
-        //memcpy(data, pixels, static_cast<size_t>(imageSize));
-        //vkUnmapMemory(device, stagingBufferMemory);
-        //memcpy(allocInfo.pMappedData, pixels, static_cast<size_t>(imageSize));
         MemCopy2(device, pixels, stagingBufferMemory, allocInfo, imageSize);
 
         stbi_image_free(pixels);
@@ -1044,7 +1024,7 @@ private:
         transitionImageLayout(device, graphicsQueue, commandPool, texture.m_textureImage, VK_FORMAT_R8G8B8A8_SRGB
             , VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
 
-        destroyBuffer2(device, vmaAllocator, stagingBuffer, stagingBufferMemory, stagingBufferAllocation);
+        destroyBuffer(device, vmaAllocator, stagingBuffer, stagingBufferMemory, stagingBufferAllocation);
     }
 
     void createTextureImageView(VkDevice device, Texture& texture) {
@@ -1127,49 +1107,6 @@ private:
         vmaDestroyImage(vmaAllocator, image, imageAllocation);
     }
 
-    /*
-    void createImage2(VkPhysicalDevice physicalDevice, VkDevice device, VmaAllocator vmaAllocator, uint32_t width, uint32_t height
-        , VkFormat format, VkImageTiling tiling, VkImageUsageFlags usage, VkMemoryPropertyFlags properties
-        , VkImage& image, VkDeviceMemory& imageMemory, VmaAllocation& imageAllocation) {
-        
-        VkImageCreateInfo imageInfo{};
-        imageInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
-        imageInfo.imageType = VK_IMAGE_TYPE_2D;
-        imageInfo.extent.width = width;
-        imageInfo.extent.height = height;
-        imageInfo.extent.depth = 1;
-        imageInfo.mipLevels = 1;
-        imageInfo.arrayLayers = 1;
-        imageInfo.format = format;
-        imageInfo.tiling = tiling;
-        imageInfo.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-        imageInfo.usage = usage;
-        imageInfo.samples = VK_SAMPLE_COUNT_1_BIT;
-        imageInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
-
-        if (vkCreateImage(device, &imageInfo, nullptr, &image) != VK_SUCCESS) {
-            throw std::runtime_error("failed to create image!");
-        }
-
-        VkMemoryRequirements memRequirements;
-        vkGetImageMemoryRequirements(device, image, &memRequirements);
-
-        VkMemoryAllocateInfo allocInfo{};
-        allocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
-        allocInfo.allocationSize = memRequirements.size;
-        allocInfo.memoryTypeIndex = findMemoryType(physicalDevice, memRequirements.memoryTypeBits, properties);
-
-        if (vkAllocateMemory(device, &allocInfo, nullptr, &imageMemory) != VK_SUCCESS) {
-            throw std::runtime_error("failed to allocate image memory!");
-        }
-
-        vkBindImageMemory(device, image, imageMemory, 0);
-    }
-
-    void destroyImage2(VkDevice device, VmaAllocator vmaAllocator, VkImage image, VkDeviceMemory imageMemory, VmaAllocation imageAllocation) {
-        vkDestroyImage(device, image, nullptr);
-        vkFreeMemory(device, imageMemory, nullptr);
-    }*/
 
     void transitionImageLayout(VkDevice device, VkQueue graphicsQueue, VkCommandPool commandPool
         , VkImage image, VkFormat format, VkImageLayout oldLayout, VkImageLayout newLayout) {
@@ -1293,26 +1230,21 @@ private:
         VkDeviceMemory stagingBufferMemory;
         VmaAllocation stagingBufferAllocation;
         VmaAllocationInfo allocInfo;
-        createBuffer2(physicalDevice, device, vmaAllocator, bufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT
+        createBuffer(physicalDevice, device, vmaAllocator, bufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT
             , VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT 
             , VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT | VMA_ALLOCATION_CREATE_MAPPED_BIT
             , stagingBuffer, stagingBufferMemory, stagingBufferAllocation, &allocInfo);
 
-        void* data;
-        //vkMapMemory(device, stagingBufferMemory, 0, bufferSize, 0, &data);
-        //    memcpy(data, geometry.m_vertices.data(), (size_t) bufferSize);
-        //vkUnmapMemory(device, stagingBufferMemory);
-        //memcpy(allocInfo.pMappedData, geometry.m_vertices.data(), bufferSize);
         MemCopy2(device, geometry.m_vertices.data(), stagingBufferMemory, allocInfo, bufferSize);
 
-        createBuffer2(physicalDevice, device, vmaAllocator, bufferSize
+        createBuffer(physicalDevice, device, vmaAllocator, bufferSize
             , VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT
             , VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, 0, geometry.m_vertexBuffer
             , geometry.m_vertexBufferMemory, geometry.m_vertexBufferAllocation);
 
         copyBuffer(device, graphicsQueue, commandPool, stagingBuffer, geometry.m_vertexBuffer, bufferSize);
 
-        destroyBuffer2(device, vmaAllocator, stagingBuffer, stagingBufferMemory, stagingBufferAllocation);
+        destroyBuffer(device, vmaAllocator, stagingBuffer, stagingBufferMemory, stagingBufferAllocation);
     }
 
     void createIndexBuffer(VkPhysicalDevice physicalDevice, VkDevice device, VmaAllocator vmaAllocator
@@ -1324,26 +1256,21 @@ private:
         VkDeviceMemory stagingBufferMemory;
         VmaAllocation stagingBufferAllocation;
         VmaAllocationInfo allocInfo;
-        createBuffer2(physicalDevice, device, vmaAllocator, bufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT
+        createBuffer(physicalDevice, device, vmaAllocator, bufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT
             , VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT 
             , VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT | VMA_ALLOCATION_CREATE_MAPPED_BIT
             , stagingBuffer, stagingBufferMemory, stagingBufferAllocation, &allocInfo);
 
-        void* data;
-        //vkMapMemory(device, stagingBufferMemory, 0, bufferSize, 0, &data);
-        //    memcpy(data, geometry.m_indices.data(), (size_t) bufferSize);
-        //vkUnmapMemory(device, stagingBufferMemory);
-        //memcpy(allocInfo.pMappedData, geometry.m_indices.data(), bufferSize);
         MemCopy2(device, geometry.m_indices.data(), stagingBufferMemory, allocInfo, bufferSize);
 
-        createBuffer2(physicalDevice, device, vmaAllocator, bufferSize
+        createBuffer(physicalDevice, device, vmaAllocator, bufferSize
             , VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT
             , VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, 0
             , geometry.m_indexBuffer, geometry.m_indexBufferMemory, geometry.m_indexBufferAllocation);
 
         copyBuffer(device, graphicsQueue, commandPool, stagingBuffer, geometry.m_indexBuffer, bufferSize);
 
-        destroyBuffer2(device, vmaAllocator, stagingBuffer, stagingBufferMemory, stagingBufferAllocation);
+        destroyBuffer(device, vmaAllocator, stagingBuffer, stagingBufferMemory, stagingBufferAllocation);
     }
 
     void createUniformBuffers(VkPhysicalDevice physicalDevice, VkDevice device, VmaAllocator& vmaAllocator
@@ -1358,14 +1285,12 @@ private:
 
         for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
             VmaAllocationInfo allocInfo;
-            createBuffer2(physicalDevice, device, vmaAllocator, bufferSize, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT
+            createBuffer(physicalDevice, device, vmaAllocator, bufferSize, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT
                 , VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT 
                 , VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT | VMA_ALLOCATION_CREATE_MAPPED_BIT
                 , uniformBuffers.m_uniformBuffers[i], uniformBuffers.m_uniformBuffersMemory[i]
                 , uniformBuffers.m_uniformBuffersAllocation[i], &allocInfo);
 
-            //vkMapMemory(device, uniformBuffers.m_uniformBuffersMemory[i], 0, bufferSize
-            //    , 0, &uniformBuffers.m_uniformBuffersMapped[i]);
             uniformBuffers.m_uniformBuffersMapped[i] = allocInfo.pMappedData;
         }
     }
@@ -1463,7 +1388,7 @@ private:
     }
 
 
-    void createBuffer2(VkPhysicalDevice physicalDevice, VkDevice device, VmaAllocator vmaAllocator
+    void createBuffer(VkPhysicalDevice physicalDevice, VkDevice device, VmaAllocator vmaAllocator
         , VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties
         , VmaAllocationCreateFlags vmaFlags, VkBuffer& buffer
         , VkDeviceMemory& bufferMemory, VmaAllocation& allocation, VmaAllocationInfo* allocationInfo = nullptr) {
@@ -1479,46 +1404,12 @@ private:
         vmaCreateBuffer(vmaAllocator, &bufferInfo, &allocInfo, &buffer, &allocation, allocationInfo);
     }
 
-    void destroyBuffer2(VkDevice device, VmaAllocator vmaAllocator, VkBuffer buffer
+    void destroyBuffer(VkDevice device, VmaAllocator vmaAllocator, VkBuffer buffer
         , VkDeviceMemory bufferMemory, VmaAllocation& allocation) {
 
         vmaDestroyBuffer(vmaAllocator, buffer, allocation);
     }
     
-    void createBuffer(VkPhysicalDevice physicalDevice, VkDevice device, VmaAllocator vmaAllocator
-        , VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties
-        , VmaAllocationCreateFlags vmaFlags, VkBuffer& buffer
-        , VkDeviceMemory& bufferMemory, VmaAllocation& allocation, VmaAllocationInfo* allocationInfo = nullptr) {
-
-        VkBufferCreateInfo bufferInfo{};
-        bufferInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
-        bufferInfo.size = size;
-        bufferInfo.usage = usage;
-        bufferInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
-
-        if (vkCreateBuffer(device, &bufferInfo, nullptr, &buffer) != VK_SUCCESS) {
-            throw std::runtime_error("failed to create buffer!");
-        }
-
-        VkMemoryRequirements memRequirements;
-        vkGetBufferMemoryRequirements(device, buffer, &memRequirements);
-
-        VkMemoryAllocateInfo allocInfo{};
-        allocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
-        allocInfo.allocationSize = memRequirements.size;
-        allocInfo.memoryTypeIndex = findMemoryType(physicalDevice, memRequirements.memoryTypeBits, properties);
-
-        if (vkAllocateMemory(device, &allocInfo, nullptr, &bufferMemory) != VK_SUCCESS) {
-            throw std::runtime_error("failed to allocate buffer memory!");
-        }
-
-        vkBindBufferMemory(device, buffer, bufferMemory, 0);
-    }
-
-    void destroyBuffer(VkDevice device, VmaAllocator vmaAllocator, VkBuffer buffer, VkDeviceMemory bufferMemory, VmaAllocation& allocation) {
-        vkDestroyBuffer(device, buffer, nullptr);
-        vkFreeMemory(device, bufferMemory, nullptr);
-    }
 
     VkCommandBuffer beginSingleTimeCommands(VkDevice device, VkCommandPool commandPool) {
         VkCommandBufferAllocateInfo allocInfo{};
