@@ -17,13 +17,13 @@ namespace vve {
                 : Window<ATYPE>(engine, windowName, width, height, name ) {
 
         engine->RegisterSystem( { 
-			  {this, -100000, MessageType::INIT, [this](Message message){this->OnInit(message);} }
-			, {this,     0, MessageType::INIT, [this](Message message){this->OnInit2(message);} }
-			, {this,     0, MessageType::POLL_EVENTS, [this](Message message){this->OnPollEvents(message);} }
-			, {this,     0, MessageType::PREPARE_NEXT_FRAME, [this](Message message){this->OnPrepareNextFrame(message);} }
-			, {this,     0, MessageType::RENDER_NEXT_FRAME, [this](Message message){this->OnRenderNextFrame(message);} }
-			, {this,     0, MessageType::PRESENT_NEXT_FRAME, [this](Message message){this->OnPresentNextFrame(message);} }
-			, {this,     0, MessageType::QUIT, [this](Message message){this->OnQuit(message);} }
+			{this, -100000, MessageType::INIT, [this](Message message){this->OnInit(message);} },
+			{this,       0, MessageType::INIT, [this](Message message){this->OnInit2(message);} },
+			{this,       0, MessageType::POLL_EVENTS, [this](Message message){this->OnPollEvents(message);} },
+			{this,       0, MessageType::PREPARE_NEXT_FRAME, [this](Message message){this->OnPrepareNextFrame(message);} },
+			{this,       0, MessageType::RENDER_NEXT_FRAME, [this](Message message){this->OnRenderNextFrame(message);} },
+			{this,       0, MessageType::PRESENT_NEXT_FRAME, [this](Message message){this->OnPresentNextFrame(message);} },
+			{this,  100000, MessageType::QUIT, [this](Message message){this->OnQuit(message);} }
 		} );
     }
 
@@ -150,8 +150,9 @@ namespace vve {
 
    	template<ArchitectureType ATYPE>
     void WindowSDL<ATYPE>::OnQuit(Message message) {
+		SDL_DestroyWindow(m_sdlWindow);
+        SDL_Quit();
     }
-
 
     template class WindowSDL<ArchitectureType::SEQUENTIAL>;
     template class WindowSDL<ArchitectureType::PARALLEL>;

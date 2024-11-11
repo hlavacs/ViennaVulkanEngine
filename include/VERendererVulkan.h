@@ -35,7 +35,32 @@ namespace vve {
         };
 
         WindowSDL<ATYPE> *m_windowSDL;
+		VmaAllocator m_vmaAllocator;
         VkInstance m_instance;
+	    VkDebugUtilsMessengerEXT m_debugMessenger;
+	    VkPhysicalDevice m_physicalDevice = VK_NULL_HANDLE;
+	    VkDevice m_device;
+	    vh::QueueFamilyIndices m_queueFamilies;
+	    VkQueue m_graphicsQueue;
+	    VkQueue m_presentQueue;
+	    vh::SwapChain m_swapChain;
+	    VkRenderPass m_renderPass;
+	    VkDescriptorSetLayout m_descriptorSetLayout;
+	    vh::Pipeline m_graphicsPipeline;
+	    vh::DepthImage m_depthImage;
+	    vh::Texture m_texture;
+	    vh::Geometry m_geometry;
+	    vh::UniformBuffers m_uniformBuffers;
+	    VkDescriptorPool m_descriptorPool;
+	    std::vector<VkDescriptorSet> m_descriptorSets;
+	    VkCommandPool m_commandPool;
+	    std::vector<VkCommandBuffer> m_commandBuffers;
+	    vh::SyncObjects m_syncObjects;
+
+	    uint32_t m_currentFrame = 0;
+	    bool m_framebufferResized = false;
+
+
     };
 };   // namespace vve
 

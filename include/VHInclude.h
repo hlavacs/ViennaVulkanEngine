@@ -171,36 +171,35 @@ namespace vh {
         std::vector<VkFence>     m_inFlightFences;
     };
 
-    void createInstance(const std::vector<const char*>& validationLayers
-        , const std::vector<const char *>& extensions, VkInstance &instance);
+    void createInstance(const std::vector<const char*>& validationLayers, const std::vector<const char *>& extensions, VkInstance &instance);
+	VkResult CreateDebugUtilsMessengerEXT(VkInstance instance, const VkDebugUtilsMessengerCreateInfoEXT* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkDebugUtilsMessengerEXT* pDebugMessenger);
+	void DestroyDebugUtilsMessengerEXT(VkInstance instance, VkDebugUtilsMessengerEXT& debugMessenger, const VkAllocationCallbacks* pAllocator);
     void initVMA(VkInstance instance, VkPhysicalDevice physicalDevice, VkDevice device, VmaAllocator& allocator);
     void cleanupSwapChain(VkDevice device, VmaAllocator vmaAllocator, SwapChain& swapChain, DepthImage& depthImage);
-    void recreateSwapChain(SDL_Window* window, VkSurfaceKHR surface
-        , VkPhysicalDevice physicalDevice, VkDevice device, VmaAllocator vmaAllocator, SwapChain& swapChain
-        , DepthImage& depthImage, VkRenderPass renderPass);
+    void recreateSwapChain(SDL_Window* window, VkSurfaceKHR surface, VkPhysicalDevice physicalDevice, VkDevice device, VmaAllocator vmaAllocator, SwapChain& swapChain, DepthImage& depthImage, VkRenderPass renderPass);
     void populateDebugMessengerCreateInfo(VkDebugUtilsMessengerCreateInfoEXT& createInfo);
-    void setupDebugMessenger(VkInstance instance);
+    void setupDebugMessenger(VkInstance instance, VkDebugUtilsMessengerEXT& debugMessenger);
     void createSurface(VkInstance instance, SDL_Window *sdlWindow, VkSurfaceKHR& surface);
-    void pickPhysicalDevice(VkInstance instance, VkSurfaceKHR surface, VkPhysicalDevice& physicalDevice);
-    void createLogicalDevice(VkSurfaceKHR surface, VkPhysicalDevice physicalDevice, QueueFamilyIndices& queueFamilies
-        , VkDevice& device, VkQueue& graphicsQueue, VkQueue& presentQueue);
+    
+	void pickPhysicalDevice(VkInstance instance, const std::vector<const char*>& deviceExtensions, VkSurfaceKHR surface, VkPhysicalDevice& physicalDevice);
+
+    void createLogicalDevice(VkSurfaceKHR surface, VkPhysicalDevice physicalDevice, QueueFamilyIndices& queueFamilies, 
+		const std::vector<const char*>& validationLayers, const std::vector<const char*>& deviceExtensions, 
+		VkDevice& device, VkQueue& graphicsQueue, VkQueue& presentQueue);
+
     void createSwapChain(SDL_Window* window, VkSurfaceKHR surface, VkPhysicalDevice physicalDevice, VkDevice device, SwapChain& swapChain);
     void createImageViews(VkDevice device, SwapChain& swapChain);
     void createRenderPass(VkPhysicalDevice physicalDevice, VkDevice device, SwapChain& swapChain, VkRenderPass& renderPass);
     void createDescriptorSetLayout(VkDevice device, VkDescriptorSetLayout& descriptorSetLayout);
-    void createGraphicsPipeline(VkDevice device, VkRenderPass renderPass
-        , VkDescriptorSetLayout descriptorSetLayout, Pipeline& graphicsPipeline);
+    void createGraphicsPipeline(VkDevice device, VkRenderPass renderPass, VkDescriptorSetLayout descriptorSetLayout, Pipeline& graphicsPipeline);
     void createFramebuffers(VkDevice device, SwapChain& swapChain, DepthImage& depthImage, VkRenderPass renderPass);
     void createCommandPool(VkSurfaceKHR surface, VkPhysicalDevice physicalDevice, VkDevice device, VkCommandPool& commandPool);
-    void createDepthResources(VkPhysicalDevice physicalDevice, VkDevice device, VmaAllocator vmaAllocator
-        , SwapChain& swapChain, DepthImage& depthImage);
-    VkFormat findSupportedFormat(VkPhysicalDevice physicalDevice, const std::vector<VkFormat>& candidates
-        , VkImageTiling tiling, VkFormatFeatureFlags features);
+    void createDepthResources(VkPhysicalDevice physicalDevice, VkDevice device, VmaAllocator vmaAllocator, SwapChain& swapChain, DepthImage& depthImage);
+    VkFormat findSupportedFormat(VkPhysicalDevice physicalDevice, const std::vector<VkFormat>& candidates, VkImageTiling tiling, VkFormatFeatureFlags features);
     VkFormat findDepthFormat(VkPhysicalDevice physicalDevice);
     bool hasStencilComponent(VkFormat format);
     void MemCopy(VkDevice device, void* source, VmaAllocationInfo& allocInfo, VkDeviceSize size);
-    void createTextureImage(VkPhysicalDevice physicalDevice, VkDevice device, VmaAllocator vmaAllocator
-        , VkQueue graphicsQueue, VkCommandPool commandPool, Texture& texture);
+    void createTextureImage(VkPhysicalDevice physicalDevice, VkDevice device, VmaAllocator vmaAllocator, VkQueue graphicsQueue, VkCommandPool commandPool, Texture& texture);
     void createTextureImageView(VkDevice device, Texture& texture);
     void createTextureSampler(VkPhysicalDevice physicalDevice, VkDevice device, Texture &texture);
     VkImageView createImageView(VkDevice device, VkImage image, VkFormat format, VkImageAspectFlags aspectFlags);

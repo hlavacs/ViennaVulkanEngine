@@ -14,13 +14,13 @@ namespace vve {
         : Renderer<ATYPE>(engine, window, name ) {
 
 		engine->RegisterSystem( { 
-			  {this, -10000, MessageType::INIT, [this](Message message){this->OnInit(message);} }
-			, {this, -10000, MessageType::PREPARE_NEXT_FRAME, [this](Message message){this->OnPrepareNextFrame(message);} }
-			, {this, -10000, MessageType::RENDER_NEXT_FRAME, [this](Message message){this->OnRenderNextFrame(message);} }
-			, {this, -10000, MessageType::QUIT, [this](Message message){this->OnQuit(message);} }
-			, {this,      0, MessageType::SDL, [this](Message message){this->OnSDL(message);} }
-			, {this,    100, MessageType::INIT, [this](Message message){this->OnInit2(message);} }
-			, {this,    100, MessageType::POLL_EVENTS, [this](Message message){this->OnPollEvents(message);} }
+			{this, -10000, MessageType::INIT, [this](Message message){this->OnInit(message);} },
+			{this, -10000, MessageType::PREPARE_NEXT_FRAME, [this](Message message){this->OnPrepareNextFrame(message);} },
+			{this, -10000, MessageType::RENDER_NEXT_FRAME, [this](Message message){this->OnRenderNextFrame(message);} },
+			{this, -10000, MessageType::QUIT, [this](Message message){this->OnQuit(message);} },
+			{this,      0, MessageType::SDL, [this](Message message){this->OnSDL(message);} },
+			{this,  10000, MessageType::INIT, [this](Message message){this->OnInit2(message);} },
+			{this,  10000, MessageType::POLL_EVENTS, [this](Message message){this->OnPollEvents(message);} }
 		} );
 
     };
@@ -50,13 +50,16 @@ namespace vve {
 
    	template<ArchitectureType ATYPE>
     void RendererImgui<ATYPE>::OnSDL(Message message) {
-      SDL_Event event = message.GetData<MessageSDL>().m_event;
-      //ImGui_ImplSDL2_ProcessEvent(&event);
+    	SDL_Event event = message.GetData<MessageSDL>().m_event;
+    	//ImGui_ImplSDL2_ProcessEvent(&event);
     }
 
     
    	template<ArchitectureType ATYPE>
     void RendererImgui<ATYPE>::OnQuit(Message message) {
+		//ImGui_ImplVulkan_Shutdown();
+        //ImGui_ImplSDL2_Shutdown();
+        //ImGui::DestroyContext();
     }
 
     template class RendererImgui<ArchitectureType::SEQUENTIAL>;

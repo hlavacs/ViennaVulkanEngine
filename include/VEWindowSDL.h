@@ -42,8 +42,6 @@ namespace vve {
         bool m_swapChainRebuild = false;
         std::set<SDL_Scancode> m_keysDown;
         std::set<uint8_t> m_mouseButtonsDown;
-
-
     };
 
 

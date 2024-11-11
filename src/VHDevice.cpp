@@ -35,8 +35,8 @@ namespace vh
     const uint32_t WIDTH = 800;
     const uint32_t HEIGHT = 600;
     
-    const std::string MODEL_PATH = "models/viking_room.obj";
-    const std::string TEXTURE_PATH = "textures/viking_room.png";
+    const std::string MODEL_PATH   = "assets\\models\\viking_room.obj";
+    const std::string TEXTURE_PATH = "assets\\textures\\viking_room.png";
     
     const int MAX_FRAMES_IN_FLIGHT = 2;
 
@@ -334,8 +334,7 @@ namespace vh
         }
     }
 
-    void pickPhysicalDevice(VkInstance instance, const std::vector<const char *>& deviceExtensions
-        , VkSurfaceKHR surface, VkPhysicalDevice& physicalDevice) {
+    void pickPhysicalDevice(VkInstance instance, const std::vector<const char *>& deviceExtensions, VkSurfaceKHR surface, VkPhysicalDevice& physicalDevice) {
 
         uint32_t deviceCount = 0;
         vkEnumeratePhysicalDevices(instance, &deviceCount, nullptr);
@@ -374,9 +373,9 @@ namespace vh
         }
     }
 
-    void createLogicalDevice(VkSurfaceKHR surface, VkPhysicalDevice physicalDevice, QueueFamilyIndices& queueFamilies
-        , const std::vector<const char*>& validationLayers, const std::vector<const char*>& deviceExtensions
-        , VkDevice& device, VkQueue& graphicsQueue, VkQueue& presentQueue) {
+    void createLogicalDevice(VkSurfaceKHR surface, VkPhysicalDevice physicalDevice, QueueFamilyIndices& queueFamilies, 
+		const std::vector<const char*>& validationLayers, const std::vector<const char*>& deviceExtensions, 
+		VkDevice& device, VkQueue& graphicsQueue, VkQueue& presentQueue) {
 
         queueFamilies = findQueueFamilies(physicalDevice, surface);
 
@@ -571,8 +570,8 @@ namespace vh
     void createGraphicsPipeline(VkDevice device, VkRenderPass renderPass
         , VkDescriptorSetLayout descriptorSetLayout, Pipeline& graphicsPipeline) {
 
-        auto vertShaderCode = readFile("shaders/vert.spv");
-        auto fragShaderCode = readFile("shaders/frag.spv");
+        auto vertShaderCode = readFile("assets\\shaders\\vert.spv");
+        auto fragShaderCode = readFile("assets\\shaders\\frag.spv");
 
         VkShaderModule vertShaderModule = createShaderModule(device, vertShaderCode);
         VkShaderModule fragShaderModule = createShaderModule(device, fragShaderCode);
