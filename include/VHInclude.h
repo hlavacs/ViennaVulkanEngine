@@ -24,10 +24,8 @@
 #define GLM_FORCE_RADIANS
 #define GLM_FORCE_DEPTH_ZERO_TO_ONE
 #define GLM_ENABLE_EXPERIMENTAL
-#define GLM_FORCE_CXX14
 #include <glm.hpp>
 #include <gtc/matrix_transform.hpp>
-#include <gtx/hash.hpp>
 
 #include <stb_image.h>
 #include <tiny_obj_loader.h>
@@ -40,9 +38,25 @@
 #include "backends/imgui_impl_vulkan.h"
 
 
+namespace vh {
+	struct Vertex;
+}
+
+template <typename T, typename... Rest>
+void hash_combine(std::size_t& seed, const T& v, const Rest&... rest) {
+    seed ^= std::hash<T>{}(v) + 0x9e3779b9 + (seed << 6) + (seed >> 2);
+    (hash_combine(seed, rest), ...);
+}
+
+
+namespace std {
+    template<> struct hash<vh::Vertex> {
+        size_t operator()(vh::Vertex const& vertex) const; 
+    };
+}
+
 
 namespace vh {
-
 
 	//use this macro to check the function result, if its not VK_SUCCESS then return the error
     #define VHCHECKRESULT(x) { CheckResult(VkResult err) };

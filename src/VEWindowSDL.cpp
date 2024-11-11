@@ -17,7 +17,7 @@ namespace vve {
                 : Window<ATYPE>(engine, windowName, width, height, name ) {
 
         engine->RegisterSystem( { 
-			  {this, -30000, MessageType::INIT, [this](Message message){this->OnInit(message);} }
+			  {this, -100000, MessageType::INIT, [this](Message message){this->OnInit(message);} }
 			, {this,     0, MessageType::INIT, [this](Message message){this->OnInit2(message);} }
 			, {this,     0, MessageType::POLL_EVENTS, [this](Message message){this->OnPollEvents(message);} }
 			, {this,     0, MessageType::PREPARE_NEXT_FRAME, [this](Message message){this->OnPrepareNextFrame(message);} }

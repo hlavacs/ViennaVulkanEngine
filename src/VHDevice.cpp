@@ -29,15 +29,6 @@
 #include "VHInclude.h"
 
 
-namespace std {
-    template<> struct hash<vh::Vertex> {
-        size_t operator()(vh::Vertex const& vertex) const {
-            return ((hash<glm::vec3>()(vertex.pos) ^ (hash<glm::vec3>()(vertex.color) << 1)) >> 1) 
-                ^ (hash<glm::vec2>()(vertex.texCoord) << 1);
-        }
-    };
-}
-
 
 namespace vh
 {
@@ -1692,3 +1683,15 @@ namespace vh
     }
 
 } // namespace vh
+
+
+namespace std {
+
+	size_t hash<vh::Vertex>::operator()(vh::Vertex const& vertex) const {
+		size_t h = 0;
+		hash_combine(h, vertex.pos.x, vertex.pos.y, vertex.pos.z, vertex.color.r, vertex.color.g, vertex.color.b, vertex.texCoord.x, vertex.texCoord.y);
+        return h;
+    };
+
+}
+
