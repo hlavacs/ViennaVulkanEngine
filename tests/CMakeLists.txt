@@ -11,6 +11,8 @@ target_include_directories(${TARGET} PUBLIC $ENV{VULKAN_SDK}/include)
 target_include_directories(${TARGET} PUBLIC $ENV{VULKAN_SDK}/include/SDL2)
 target_include_directories(${TARGET} PUBLIC $ENV{VULKAN_SDK}/include/Volk)
 target_include_directories(${TARGET} PUBLIC $ENV{VULKAN_SDK}/include/glm)
+target_include_directories(${TARGET} PUBLIC $ENV{VULKAN_SDK}/include/vma)
+
 target_compile_features(${TARGET} PUBLIC cxx_std_20)
 
 target_link_libraries (${TARGET} PUBLIC viennavulkanengine)

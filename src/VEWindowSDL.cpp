@@ -9,13 +9,15 @@
 
 namespace vve {
 
+    MessageSDL::MessageSDL(void* s, void* r, double dt, SDL_Event event): MessageBase{MessageType::SDL, s, r}, m_dt{dt}, m_event{event} {};   
+
    	template<ArchitectureType ATYPE>
     WindowSDL<ATYPE>::WindowSDL( Engine<ATYPE>* engine,std::string windowName
             , int width, int height, std::string name) 
                 : Window<ATYPE>(engine, windowName, width, height, name ) {
 
         engine->RegisterSystem( { 
-			  {this, -10000, MessageType::INIT, [this](Message message){this->OnInit(message);} }
+			  {this, -30000, MessageType::INIT, [this](Message message){this->OnInit(message);} }
 			, {this,     0, MessageType::INIT, [this](Message message){this->OnInit2(message);} }
 			, {this,     0, MessageType::POLL_EVENTS, [this](Message message){this->OnPollEvents(message);} }
 			, {this,     0, MessageType::PREPARE_NEXT_FRAME, [this](Message message){this->OnPrepareNextFrame(message);} }
@@ -80,7 +82,8 @@ namespace vve {
 
         SDL_Event event;
         while (SDL_PollEvent(&event)) {
-            //ImGui_ImplSDL2_ProcessEvent(&event); //send SDL message
+            m_engine->SendMessage( MessageSDL{this, nullptr, message.GetDt(), event} );
+
             if (event.type == SDL_QUIT)
                 m_engine->Stop();
             if (event.type == SDL_WINDOWEVENT && event.window.event == SDL_WINDOWEVENT_CLOSE && event.window.windowID == SDL_GetWindowID(m_sdlWindow))

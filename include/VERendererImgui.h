@@ -20,6 +20,7 @@ namespace vve {
         virtual void OnPollEvents(Message message);
         virtual void OnPrepareNextFrame(Message message);
         virtual void OnRenderNextFrame(Message message);
+        virtual void OnSDL(Message message);
         virtual void OnQuit(Message message);
     };
 

@@ -8,10 +8,11 @@
 #include <typeindex>
 #include <typeinfo>
 #include "VEInclude.h"
+#include "VHInclude.h"
 
 namespace vve {
 
-    enum MessageType {
+    enum class MessageType : int {
         INIT = 0,
         ANNOUNCE,
         FRAME_START,
@@ -32,6 +33,7 @@ namespace vve {
         KEY_UP,
         KEY_REPEAT,
         QUIT,
+        SDL,
         LAST
     };
 
@@ -45,7 +47,7 @@ namespace vve {
         void* m_sender{nullptr};
         void* m_receiver{nullptr};
         double m_dt{0};
-        int m_phase{0}; //can register the same system for more than one phase
+        int m_phase{0}; //is set when delivering the message, NOT by sender!
     };
 
     struct MessageInit : public MessageBase { MessageInit(void* s, void* r=nullptr); };
@@ -74,7 +76,7 @@ namespace vve {
 
 
     struct Message {
-        static const size_t MAX_SIZE = 64;
+        static const size_t MAX_SIZE = 128;
 
         template<typename T>
             requires (std::is_base_of_v<MessageBase, T> && sizeof(T) <= MAX_SIZE)
@@ -87,7 +89,7 @@ namespace vve {
         auto GetSender() -> void* { return reinterpret_cast<MessageBase*>(m_data)->m_sender; };
         auto GetReceiver() -> void* { return reinterpret_cast<MessageBase*>(m_data)->m_receiver; };
         auto GetDt() -> double { return reinterpret_cast<MessageBase*>(m_data)->m_dt; };
-        void SetPhase(int priority) { reinterpret_cast<MessageBase*>(m_data)->m_phase = priority; };
+        void SetPhase(int phase) { reinterpret_cast<MessageBase*>(m_data)->m_phase = phase; };
         auto GetPhase() -> int { return reinterpret_cast<MessageBase*>(m_data)->m_phase; };
 
         template<typename T>

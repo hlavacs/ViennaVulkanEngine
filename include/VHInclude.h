@@ -18,21 +18,21 @@
 
 
 #define SDL_MAIN_HANDLED
-#include <SDL2/SDL.h>
-#include <SDL2/SDL_vulkan.h>
+#include <SDL.h>
+#include <SDL_vulkan.h>
 
 #define GLM_FORCE_RADIANS
 #define GLM_FORCE_DEPTH_ZERO_TO_ONE
 #define GLM_ENABLE_EXPERIMENTAL
 #define GLM_FORCE_CXX14
-#include <glm/glm.hpp>
-#include <glm/gtc/matrix_transform.hpp>
-#include <glm/gtx/hash.hpp>
+#include <glm.hpp>
+#include <gtc/matrix_transform.hpp>
+#include <gtx/hash.hpp>
 
 #include <stb_image.h>
 #include <tiny_obj_loader.h>
-#include "volk/volk.h"
-#include "vma/vk_mem_alloc.h"
+#include "volk.h"
+#include "vk_mem_alloc.h"
 
 #define IMGUI_IMPL_VULKAN_USE_VOLK
 #include "imgui.h"

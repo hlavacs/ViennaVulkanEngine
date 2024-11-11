@@ -1,6 +1,7 @@
 
 #include "VEInclude.h"
 #include "VESystem.h"
+#include "VEInclude.h"
 #include "VHInclude.h"
 #include "VEEngine.h"
 #include "VERendererImgui.h"
@@ -13,12 +14,13 @@ namespace vve {
         : Renderer<ATYPE>(engine, window, name ) {
 
 		engine->RegisterSystem( { 
-			  {this, -100, MessageType::INIT, [this](Message message){this->OnInit(message);} }
-			, {this, -100, MessageType::PREPARE_NEXT_FRAME, [this](Message message){this->OnPrepareNextFrame(message);} }
-			, {this, -100, MessageType::RENDER_NEXT_FRAME, [this](Message message){this->OnRenderNextFrame(message);} }
-			, {this, -100, MessageType::QUIT, [this](Message message){this->OnQuit(message);} }
-			, {this,  100, MessageType::INIT, [this](Message message){this->OnInit2(message);} }
-			, {this,  100, MessageType::POLL_EVENTS, [this](Message message){this->OnPollEvents(message);} }
+			  {this, -10000, MessageType::INIT, [this](Message message){this->OnInit(message);} }
+			, {this, -10000, MessageType::PREPARE_NEXT_FRAME, [this](Message message){this->OnPrepareNextFrame(message);} }
+			, {this, -10000, MessageType::RENDER_NEXT_FRAME, [this](Message message){this->OnRenderNextFrame(message);} }
+			, {this, -10000, MessageType::QUIT, [this](Message message){this->OnQuit(message);} }
+			, {this,      0, MessageType::SDL, [this](Message message){this->OnSDL(message);} }
+			, {this,    100, MessageType::INIT, [this](Message message){this->OnInit2(message);} }
+			, {this,    100, MessageType::POLL_EVENTS, [this](Message message){this->OnPollEvents(message);} }
 		} );
 
     };
@@ -45,6 +47,13 @@ namespace vve {
    	template<ArchitectureType ATYPE>
     void RendererImgui<ATYPE>::OnPollEvents(Message message) {
     }
+
+   	template<ArchitectureType ATYPE>
+    void RendererImgui<ATYPE>::OnSDL(Message message) {
+      SDL_Event event = message.GetData<MessageSDL>().m_event;
+      //ImGui_ImplSDL2_ProcessEvent(&event);
+    }
+
     
    	template<ArchitectureType ATYPE>
     void RendererImgui<ATYPE>::OnQuit(Message message) {
