@@ -27,6 +27,8 @@ namespace vve {
 
     template<ArchitectureType ATYPE>
     void RendererVulkan<ATYPE>::OnInit(Message message) {
+      m_windowSDL = (WindowSDL<ATYPE>*)m_window;
+      vh::createInstance( m_validationLayers, m_windowSDL->GetInstanceExtensions(), m_instance);
     }
 
 

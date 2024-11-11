@@ -270,8 +270,8 @@ namespace vh
     }
 
 
-    void createInstance(VkInstance *instance, const std::vector<const char*>& validationLayers
-        , const std::vector<const char *>& extensions) {
+    void createInstance(const std::vector<const char*>& validationLayers
+        , const std::vector<const char *>& extensions, VkInstance &instance) {
 
         volkInitialize();
 
@@ -308,12 +308,12 @@ namespace vh
             createInfo.pNext = nullptr;
         }
 
-        if (vkCreateInstance(&createInfo, nullptr, instance) != VK_SUCCESS) {
+        if (vkCreateInstance(&createInfo, nullptr, &instance) != VK_SUCCESS) {
             throw std::runtime_error("failed to create instance!");
         }
-        _instance = *instance;
+        _instance = instance;
 
-   		volkLoadInstance(*instance);       
+   		volkLoadInstance(instance);       
     }
 
     void populateDebugMessengerCreateInfo(VkDebugUtilsMessengerCreateInfoEXT& createInfo) {
@@ -1124,7 +1124,7 @@ namespace vh
         pool_info.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
         pool_info.flags = VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT;
         pool_info.maxSets = 1000;
-        pool_info.poolSizeCount = std::size(pool_sizes);
+        pool_info.poolSizeCount = (uint32_t)std::size(pool_sizes);
         pool_info.pPoolSizes = pool_sizes;
 
         vkCreateDescriptorPool(device, &pool_info, nullptr, &descriptorPool);

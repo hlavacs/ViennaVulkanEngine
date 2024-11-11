@@ -16,9 +16,6 @@
 #include <set>
 #include <unordered_map>
 
-//#include <vulkan/vulkan.h>
-#include "volk.h"
-#include "vma/vk_mem_alloc.h"
 
 #define SDL_MAIN_HANDLED
 #include <SDL2/SDL.h>
@@ -160,7 +157,8 @@ namespace vh {
         std::vector<VkFence>     m_inFlightFences;
     };
 
-    void createInstance(VkInstance *instance);
+    void createInstance(const std::vector<const char*>& validationLayers
+        , const std::vector<const char *>& extensions, VkInstance &instance);
     void initVMA(VkInstance instance, VkPhysicalDevice physicalDevice, VkDevice device, VmaAllocator& allocator);
     void cleanupSwapChain(VkDevice device, VmaAllocator vmaAllocator, SwapChain& swapChain, DepthImage& depthImage);
     void recreateSwapChain(SDL_Window* window, VkSurfaceKHR surface

@@ -25,7 +25,7 @@ namespace vve {
         virtual void SetClearColor(glm::vec4 clearColor);
         virtual void AddRenderer(std::shared_ptr<Renderer<ATYPE>> renderer);
         auto GetSurface() -> VkSurfaceKHR { return m_surface; };
-        auto GetInstanceExtensions() -> std::vector<const char*> { return m_instance_extensions; }; 
+        auto GetInstanceExtensions() -> std::vector<const char*> { return m_instanceExtensions; }; 
 
     protected:
         std::vector<std::shared_ptr<Renderer<ATYPE>>> m_renderer;
@@ -35,7 +35,7 @@ namespace vve {
         std::string m_windowName;
         glm::vec4 m_clearColor{0.45f, 0.55f, 0.60f, 1.00f};
         VkSurfaceKHR m_surface{VK_NULL_HANDLE};
-        std::vector<const char*> m_instance_extensions;
+        std::vector<const char*> m_instanceExtensions;
     };
 
 };   // namespace vve

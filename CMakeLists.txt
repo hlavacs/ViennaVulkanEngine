@@ -23,7 +23,7 @@ endif()
 
 # Vulkan
 find_package(Vulkan REQUIRED)
-set(SDL2 $ENV{VULKAN_SDK})
+set(VULKAN $ENV{VULKAN_SDK})
 
 
 # set variables for directories

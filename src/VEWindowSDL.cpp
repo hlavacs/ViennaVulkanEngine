@@ -15,7 +15,7 @@ namespace vve {
                 : Window<ATYPE>(engine, windowName, width, height, name ) {
 
         engine->RegisterSystem( { 
-			  {this, -2000, MessageType::INIT, [this](Message message){this->OnInit(message);} }
+			  {this, -10000, MessageType::INIT, [this](Message message){this->OnInit(message);} }
 			, {this,     0, MessageType::INIT, [this](Message message){this->OnInit2(message);} }
 			, {this,     0, MessageType::POLL_EVENTS, [this](Message message){this->OnPollEvents(message);} }
 			, {this,     0, MessageType::PREPARE_NEXT_FRAME, [this](Message message){this->OnPrepareNextFrame(message);} }
@@ -43,24 +43,24 @@ namespace vve {
         }
         // Create window with Vulkan graphics context
         SDL_WindowFlags window_flags = (SDL_WindowFlags)(SDL_WINDOW_VULKAN | SDL_WINDOW_RESIZABLE | SDL_WINDOW_ALLOW_HIGHDPI);
-        m_window = SDL_CreateWindow(m_windowName.c_str(), SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, m_width, m_height, window_flags);
-        if (m_window == nullptr) {
+        m_sdlWindow = SDL_CreateWindow(m_windowName.c_str(), SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, m_width, m_height, window_flags);
+        if (m_sdlWindow == nullptr) {
             printf("Error: SDL_CreateWindow(): %s\n", SDL_GetError());
             return;
         }
         uint32_t extensions_count = 0;
         std::vector<const char*> extensions;
-        SDL_Vulkan_GetInstanceExtensions(m_window, &extensions_count, nullptr);
+        SDL_Vulkan_GetInstanceExtensions(m_sdlWindow, &extensions_count, nullptr);
         extensions.resize(extensions_count);
-        SDL_Vulkan_GetInstanceExtensions(m_window, &extensions_count, extensions.data());
-        m_instance_extensions.insert(m_instance_extensions.end(), extensions.begin(), extensions.end());
+        SDL_Vulkan_GetInstanceExtensions(m_sdlWindow, &extensions_count, extensions.data());
+        m_instanceExtensions.insert(m_instanceExtensions.end(), extensions.begin(), extensions.end());
     }
         
    	template<ArchitectureType ATYPE>
     void WindowSDL<ATYPE>::OnInit2(Message message) {
         auto rend = ((RendererVulkan<ATYPE>*)(m_engine->GetSystem("VVE RendererVulkan")));
 
-        if (SDL_Vulkan_CreateSurface(m_window, rend->GetInstance(), &m_surface) == 0) {
+        if (SDL_Vulkan_CreateSurface(m_sdlWindow, rend->GetInstance(), &m_surface) == 0) {
             printf("Failed to create Vulkan surface.\n");
         }
     }
@@ -83,7 +83,7 @@ namespace vve {
             //ImGui_ImplSDL2_ProcessEvent(&event); //send SDL message
             if (event.type == SDL_QUIT)
                 m_engine->Stop();
-            if (event.type == SDL_WINDOWEVENT && event.window.event == SDL_WINDOWEVENT_CLOSE && event.window.windowID == SDL_GetWindowID(m_window))
+            if (event.type == SDL_WINDOWEVENT && event.window.event == SDL_WINDOWEVENT_CLOSE && event.window.windowID == SDL_GetWindowID(m_sdlWindow))
                 m_engine->Stop();
 
             switch( event.type ) {
@@ -121,14 +121,14 @@ namespace vve {
         if(key.size() > 0) { for( auto& k : key ) { m_keysDown.insert(k) ; } }
         if(button.size() > 0) { for( auto& b : button ) {m_mouseButtonsDown.insert(b);} }
 
-        if (SDL_GetWindowFlags(m_window) & SDL_WINDOW_MINIMIZED)
+        if (SDL_GetWindowFlags(m_sdlWindow) & SDL_WINDOW_MINIMIZED)
         {
             SDL_Delay(10);
             return;
         }
 
         // Resize swap chain?
-        SDL_GetWindowSize(m_window, &m_width, &m_height);
+        SDL_GetWindowSize(m_sdlWindow, &m_width, &m_height);
        
         return;
     }
