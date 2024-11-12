@@ -230,7 +230,7 @@ namespace vh {
     void createCommandBuffers(VkDevice device, VkCommandPool commandPool, std::vector<VkCommandBuffer>& commandBuffers);
     void recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageIndex
         , SwapChain& swapChain, VkRenderPass renderPass, Pipeline& graphicsPipeline
-        , Geometry& geometry, std::vector<VkDescriptorSet>& descriptorSets, uint32_t currentFrame);
+        , Geometry& geometry, std::vector<VkDescriptorSet>& descriptorSets, glm::vec4 clearColor, uint32_t currentFrame);
     void createSyncObjects(VkDevice device, SyncObjects& syncObjects);
     void updateUniformBuffer(uint32_t currentImage, SwapChain& swapChain, UniformBuffers& uniformBuffers);
     void drawFrame(SDL_Window* window, VkSurfaceKHR surface, VkPhysicalDevice physicalDevice
@@ -238,7 +238,7 @@ namespace vh {
         , SwapChain& swapChain, DepthImage& depthImage, VkRenderPass renderPass
         , Pipeline& graphicsPipeline, Geometry& geometry, std::vector<VkCommandBuffer>& commandBuffers
         , UniformBuffers& uniformBuffers, std::vector<VkDescriptorSet>& descriptorSets
-        , SyncObjects& syncObjects, uint32_t& currentFrame, bool& framebufferResized);
+        , SyncObjects& syncObjects, glm::vec4 clearColor, uint32_t& currentFrame, bool& framebufferResized);
     
     VkShaderModule createShaderModule(VkDevice device, const std::vector<char>& code);
     VkSurfaceFormatKHR chooseSwapSurfaceFormat(const std::vector<VkSurfaceFormatKHR>& availableFormats);

@@ -42,7 +42,6 @@
 #define VMA_IMPLEMENTATION
 #include "vma/vk_mem_alloc.h"
 
-#define IMGUI_IMPL_VULKAN_NO_PROTOTYPES
 #define IMGUI_IMPL_VULKAN_USE_VOLK
 #include "imgui.h"
 #include "backends/imgui_impl_sdl2.h"
@@ -1275,7 +1274,7 @@ namespace vh
 
     void recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageIndex
         , SwapChain& swapChain, VkRenderPass renderPass, Pipeline& graphicsPipeline
-        , Geometry& geometry, std::vector<VkDescriptorSet>& descriptorSets, uint32_t currentFrame) {
+        , Geometry& geometry, std::vector<VkDescriptorSet>& descriptorSets, glm::vec4 clearColor, uint32_t currentFrame) {
 
         VkCommandBufferBeginInfo beginInfo{};
         beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
@@ -1292,7 +1291,7 @@ namespace vh
         renderPassInfo.renderArea.extent = swapChain.m_swapChainExtent;
 
         std::array<VkClearValue, 2> clearValues{};
-        clearValues[0].color = {{0.0f, 0.0f, 0.0f, 1.0f}};
+        clearValues[0].color = {{clearColor.r, clearColor.g, clearColor.b, 1.0f}};  //{{0.0f, 0.0f, 0.0f, 1.0f}};
         clearValues[1].depthStencil = {1.0f, 0};
 
         renderPassInfo.clearValueCount = static_cast<uint32_t>(clearValues.size());
@@ -1385,7 +1384,7 @@ namespace vh
         , SwapChain& swapChain, DepthImage& depthImage, VkRenderPass renderPass
         , Pipeline& graphicsPipeline, Geometry& geometry, std::vector<VkCommandBuffer>& commandBuffers
         , UniformBuffers& uniformBuffers, std::vector<VkDescriptorSet>& descriptorSets
-        , SyncObjects& syncObjects, uint32_t& currentFrame, bool& framebufferResized) {   
+        , SyncObjects& syncObjects, glm::vec4 clearColor, uint32_t& currentFrame, bool& framebufferResized) {   
 
         vkWaitForFences(device, 1, &syncObjects.m_inFlightFences[currentFrame], VK_TRUE, UINT64_MAX);
 
@@ -1406,7 +1405,7 @@ namespace vh
 
         vkResetCommandBuffer(commandBuffers[currentFrame],  0);
         recordCommandBuffer(commandBuffers[currentFrame], imageIndex, swapChain
-            , renderPass, graphicsPipeline, geometry, descriptorSets, currentFrame);
+            , renderPass, graphicsPipeline, geometry, descriptorSets, clearColor, currentFrame);
 
         VkSubmitInfo submitInfo{};
         submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;

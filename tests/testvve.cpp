@@ -21,11 +21,10 @@ public:
     MyGUI( vve::Engine<ATYPE>* engine ) : vve::System<ATYPE>(engine, "MyGUI") {
 
         engine->RegisterSystem( { 
-			//  {this, 0, vve::MessageType::RECORD_NEXT_FRAME, [this](vve::Message message){this->OnRecordNextFrame(message);} }
-			//, 
-            {this, 0, vve::MessageType::KEY_DOWN, [this](vve::Message message){this->OnKeyDown(message);} }
-			, {this, 0, vve::MessageType::KEY_REPEAT, [this](vve::Message message){this->OnKeyRepeat(message);} }
-			, {this, 0, vve::MessageType::KEY_UP, [this](vve::Message message){this->OnKeyUp(message);} }
+			  {this, -10000, vve::MessageType::RENDER_NEXT_FRAME, [this](vve::Message message){this->OnRenderNextFrame(message);} }
+			, {this,      0, vve::MessageType::KEY_DOWN, [this](vve::Message message){this->OnKeyDown(message);} }
+			, {this,      0, vve::MessageType::KEY_REPEAT, [this](vve::Message message){this->OnKeyRepeat(message);} }
+			, {this,      0, vve::MessageType::KEY_UP, [this](vve::Message message){this->OnKeyUp(message);} }
 		} );
 
     };
@@ -34,10 +33,15 @@ public:
 
     float clear_color[3]{ 0.45f, 0.55f, 0.60f};
 
-    void OnRecordNextFrame(vve::Message message) {
+    void OnRenderNextFrame(vve::Message message) {
       
         static bool show_demo_window = true;
         static bool show_another_window = false;
+
+        if(m_engine->GetWindows()[0]->GetIsMinimized()) {
+			return;
+		}
+
 
         // 1. Show the big demo window (Most of the sample code is in ImGui::ShowDemoWindow()! You can browse its code to learn more about Dear ImGui!).
         if (show_demo_window) {

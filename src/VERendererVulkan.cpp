@@ -18,7 +18,7 @@ namespace vve {
 			{this, -50000, MessageType::INIT, [this](Message message){this->OnInit(message);} }, 
 			{this, -50000, MessageType::PREPARE_NEXT_FRAME, [this](Message message){this->OnPrepareNextFrame(message);} },
 			{this, -50000, MessageType::RECORD_NEXT_FRAME, [this](Message message){this->OnRecordNextFrame(message);} },
-			{this, -10000, MessageType::RENDER_NEXT_FRAME, [this](Message message){this->OnRenderNextFrame(message);} },
+			{this,      0, MessageType::RENDER_NEXT_FRAME, [this](Message message){this->OnRenderNextFrame(message);} },
 			{this,   1000, MessageType::INIT, [this](Message message){this->OnInit2(message);} },
 			{this, -10000, MessageType::QUIT, [this](Message message){this->OnQuit(message);} },
 			{this,  10000, MessageType::QUIT, [this](Message message){this->OnQuit2(message);} }
@@ -86,7 +86,7 @@ namespace vve {
             vh::drawFrame(m_windowSDL->GetSDLWindow(), m_window->GetSurface(), m_physicalDevice, m_device, m_vmaAllocator
                 , m_graphicsQueue, m_presentQueue, m_swapChain, m_depthImage
                 , m_renderPass, m_graphicsPipeline, m_geometry, m_commandBuffers
-                , m_uniformBuffers, m_descriptorSets, m_syncObjects, m_currentFrame
+                , m_uniformBuffers, m_descriptorSets, m_syncObjects, m_window->GetClearColor(), m_currentFrame
                 , m_framebufferResized);
         }
     }
