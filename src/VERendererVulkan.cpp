@@ -17,7 +17,8 @@ namespace vve {
 			{this, -50000, MessageType::RECORD_NEXT_FRAME, [this](Message message){this->OnRecordNextFrame(message);} },
 			{this, -50000, MessageType::RENDER_NEXT_FRAME, [this](Message message){this->OnRenderNextFrame(message);} },
 			{this,     50, MessageType::INIT, [this](Message message){this->OnInit2(message);} },
-			{this,  50000, MessageType::QUIT, [this](Message message){this->OnQuit(message);} }
+			{this, -20000, MessageType::QUIT, [this](Message message){this->OnQuit(message);} },
+			{this,  10000, MessageType::QUIT, [this](Message message){this->OnQuit2(message);} }
 		} );
     }
 
@@ -83,10 +84,54 @@ namespace vve {
     
     template<ArchitectureType ATYPE>
     void RendererVulkan<ATYPE>::OnQuit(Message message) {
+
+        vh::cleanupSwapChain(m_device, m_vmaAllocator, m_swapChain, m_depthImage);
+
+        vkDestroyPipeline(m_device, m_graphicsPipeline.m_pipeline, nullptr);
+        vkDestroyPipelineLayout(m_device, m_graphicsPipeline.m_pipelineLayout, nullptr);
+        vkDestroyRenderPass(m_device, m_renderPass, nullptr);
+
+
+        for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
+            vh::destroyBuffer(m_device, m_vmaAllocator, m_uniformBuffers.m_uniformBuffers[i], m_uniformBuffers.m_uniformBuffersAllocation[i]);
+        }
+
+        vkDestroyDescriptorPool(m_device, m_descriptorPool, nullptr);
+
+        vkDestroySampler(m_device, m_texture.m_textureSampler, nullptr);
+        vkDestroyImageView(m_device, m_texture.m_textureImageView, nullptr);
+
+        vh::destroyImage(m_device, m_vmaAllocator, m_texture.m_textureImage, m_texture.m_textureImageAllocation);
+
+        vkDestroyDescriptorSetLayout(m_device, m_descriptorSetLayout, nullptr);
+
+        vh::destroyBuffer(m_device, m_vmaAllocator, m_geometry.m_indexBuffer, m_geometry.m_indexBufferAllocation);
+
+        vh::destroyBuffer(m_device, m_vmaAllocator, m_geometry.m_vertexBuffer, m_geometry.m_vertexBufferAllocation);
+
+        for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
+            vkDestroySemaphore(m_device, m_syncObjects.m_renderFinishedSemaphores[i], nullptr);
+            vkDestroySemaphore(m_device, m_syncObjects.m_imageAvailableSemaphores[i], nullptr);
+            vkDestroyFence(m_device, m_syncObjects.m_inFlightFences[i], nullptr);
+        }
+
+        vkDestroyCommandPool(m_device, m_commandPool, nullptr);
+
+        vmaDestroyAllocator(m_vmaAllocator);
+
+        vkDestroyDevice(m_device, nullptr);
+
 		if (m_engine->GetDebug()) {
             vh::DestroyDebugUtilsMessengerEXT(m_instance, m_debugMessenger, nullptr);
         }
     }
+
+
+	template<ArchitectureType ATYPE>
+    void RendererVulkan<ATYPE>::OnQuit2(Message message) {
+        //vkDestroySurfaceKHR(m_instance, m_surface, nullptr);
+        vkDestroyInstance(m_instance, nullptr);
+	}
 
     template class RendererVulkan<ArchitectureType::SEQUENTIAL>;
     template class RendererVulkan<ArchitectureType::PARALLEL>;

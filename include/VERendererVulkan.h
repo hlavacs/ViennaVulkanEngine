@@ -25,6 +25,7 @@ namespace vve {
         virtual void OnRecordNextFrame(Message message);
         virtual void OnRenderNextFrame(Message message);
         virtual void OnQuit(Message message);
+        virtual void OnQuit2(Message message);
 
         const std::vector<const char*> m_validationLayers = {
             "VK_LAYER_KHRONOS_validation"
@@ -33,6 +34,8 @@ namespace vve {
         const std::vector<const char*> m_deviceExtensions = {
             VK_KHR_SWAPCHAIN_EXTENSION_NAME
         };
+
+		const int MAX_FRAMES_IN_FLIGHT = 2;
 
         WindowSDL<ATYPE> *m_windowSDL;
 		VmaAllocator m_vmaAllocator;

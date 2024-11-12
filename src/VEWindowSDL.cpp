@@ -23,7 +23,8 @@ namespace vve {
 			{this,       0, MessageType::PREPARE_NEXT_FRAME, [this](Message message){this->OnPrepareNextFrame(message);} },
 			{this,       0, MessageType::RENDER_NEXT_FRAME, [this](Message message){this->OnRenderNextFrame(message);} },
 			{this,       0, MessageType::PRESENT_NEXT_FRAME, [this](Message message){this->OnPresentNextFrame(message);} },
-			{this,  100000, MessageType::QUIT, [this](Message message){this->OnQuit(message);} }
+			{this,   	 0, MessageType::QUIT, [this](Message message){this->OnQuit(message);} },
+			{this,  100000, MessageType::QUIT, [this](Message message){this->OnQuit2(message);} }
 		} );
     }
 
@@ -150,6 +151,12 @@ namespace vve {
 
    	template<ArchitectureType ATYPE>
     void WindowSDL<ATYPE>::OnQuit(Message message) {
+        auto rend = ((RendererVulkan<ATYPE>*)(m_engine->GetSystem("VVE RendererVulkan")));
+        vkDestroySurfaceKHR(rend->GetInstance(), m_surface, nullptr);
+    }
+
+   	template<ArchitectureType ATYPE>
+    void WindowSDL<ATYPE>::OnQuit2(Message message) {
 		SDL_DestroyWindow(m_sdlWindow);
         SDL_Quit();
     }
