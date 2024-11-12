@@ -85,38 +85,53 @@ namespace vve {
         while (SDL_PollEvent(&event)) {
             m_engine->SendMessage( MessageSDL{this, nullptr, message.GetDt(), event} );
 
-            if (event.type == SDL_QUIT)
-                m_engine->Stop();
-            if (event.type == SDL_WINDOWEVENT && event.window.event == SDL_WINDOWEVENT_CLOSE && event.window.windowID == SDL_GetWindowID(m_sdlWindow))
-                m_engine->Stop();
-
-            switch( event.type ) {
-                case SDL_MOUSEMOTION:
-                    m_engine->SendMessage( MessageMouseMove{this, nullptr, message.GetDt(), event.motion.x, event.motion.y} );
-                    break;
-                case SDL_MOUSEBUTTONDOWN:
-                    m_engine->SendMessage( MessageMouseButtonDown{this, nullptr, message.GetDt(), event.button.button} );
-                    button.push_back( event.button.button );
-                    break;
-                case SDL_MOUSEBUTTONUP:
-                    m_engine->SendMessage( MessageMouseButtonUp{this, nullptr, message.GetDt(), event.button.button} );
-                    m_mouseButtonsDown.erase( event.button.button );
-                    break;
-                case SDL_MOUSEWHEEL:
-                    m_engine->SendMessage( MessageMouseWheel{this, nullptr, message.GetDt(), event.wheel.x, event.wheel.y} );
-                    break;
-                case SDL_KEYDOWN:
-                    if( event.key.repeat ) continue;
-                    m_engine->SendMessage( MessageKeyDown{this, nullptr, message.GetDt(), event.key.keysym.scancode} );
-                    key.push_back(event.key.keysym.scancode);
-                    break;
-                case SDL_KEYUP:
-                    m_engine->SendMessage( MessageKeyUp{this, nullptr, message.GetDt(), event.key.keysym.scancode} );
-                    m_keysDown.erase(event.key.keysym.scancode);
-                    break;
-                default:
-                    break;
-            }
+            if (event.type == SDL_WINDOWEVENT) {
+                switch (event.window.event) {
+					case SDL_WINDOWEVENT_CLOSE:
+						m_engine->Stop();
+						break;
+                	case SDL_WINDOWEVENT_MINIMIZED: 
+                    	m_isMinimized = true;
+                    	break;
+                	case SDL_WINDOWEVENT_MAXIMIZED: 
+                    	m_isMinimized = false;
+                    	break;
+                	case SDL_WINDOWEVENT_RESTORED:
+                    	m_isMinimized = false;
+                    	break;
+                }
+            } else {				
+			    switch( event.type ) {
+					case SDL_QUIT:
+	                	m_engine->Stop();
+						break;
+	                case SDL_MOUSEMOTION:
+	                    m_engine->SendMessage( MessageMouseMove{this, nullptr, message.GetDt(), event.motion.x, event.motion.y} );
+	                    break;
+	                case SDL_MOUSEBUTTONDOWN:
+	                    m_engine->SendMessage( MessageMouseButtonDown{this, nullptr, message.GetDt(), event.button.button} );
+	                    button.push_back( event.button.button );
+	                    break;
+	                case SDL_MOUSEBUTTONUP:
+	                    m_engine->SendMessage( MessageMouseButtonUp{this, nullptr, message.GetDt(), event.button.button} );
+	                    m_mouseButtonsDown.erase( event.button.button );
+	                    break;
+	                case SDL_MOUSEWHEEL:
+	                    m_engine->SendMessage( MessageMouseWheel{this, nullptr, message.GetDt(), event.wheel.x, event.wheel.y} );
+	                    break;
+	                case SDL_KEYDOWN:
+	                    if( event.key.repeat ) continue;
+	                    m_engine->SendMessage( MessageKeyDown{this, nullptr, message.GetDt(), event.key.keysym.scancode} );
+	                    key.push_back(event.key.keysym.scancode);
+	                    break;
+	                case SDL_KEYUP:
+	                    m_engine->SendMessage( MessageKeyUp{this, nullptr, message.GetDt(), event.key.keysym.scancode} );
+	                    m_keysDown.erase(event.key.keysym.scancode);
+	                    break;
+	                default:
+	                    break;
+	            }
+			}
         }
 
         for( auto& key : m_keysDown ) { m_engine->SendMessage( MessageKeyRepeat{this, nullptr, message.GetDt(), key} ); }

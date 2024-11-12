@@ -20,6 +20,7 @@ namespace vve {
         using Window<ATYPE>::m_windowName;
         using Window<ATYPE>::m_surface;
         using Window<ATYPE>::m_instanceExtensions;
+		using Window<ATYPE>::m_isMinimized;
    
     public:
         WindowSDL(Engine<ATYPE>* engine, std::string windowName, int width, int height, std::string name = "VVE WindowSDL" );
@@ -39,7 +40,6 @@ namespace vve {
         inline static bool sdl_initialized{false};
         SDL_Window* m_sdlWindow{nullptr};
         int m_minImageCount = 2;
-        bool m_isMinimized = false;
         bool m_swapChainRebuild = false;
         std::set<SDL_Scancode> m_keysDown;
         std::set<uint8_t> m_mouseButtonsDown;

@@ -1307,9 +1307,9 @@ namespace vh
 
 
             //----------------------------------------------------------------------------------
-            ImGui::Render();
+            //ImGui::Render();
 
-            ImGui_ImplVulkan_RenderDrawData(ImGui::GetDrawData(), commandBuffer);
+            //ImGui_ImplVulkan_RenderDrawData(ImGui::GetDrawData(), commandBuffer);
             //----------------------------------------------------------------------------------
 
 

@@ -26,6 +26,7 @@ namespace vve {
         virtual void AddRenderer(std::shared_ptr<Renderer<ATYPE>> renderer);
         auto GetSurface() -> VkSurfaceKHR { return m_surface; };
         auto GetInstanceExtensions() -> std::vector<const char*> { return m_instanceExtensions; }; 
+		bool GetIsMinimized() { return m_isMinimized; }
 
     protected:
         std::vector<std::shared_ptr<Renderer<ATYPE>>> m_renderer;
@@ -36,6 +37,8 @@ namespace vve {
         glm::vec4 m_clearColor{0.45f, 0.55f, 0.60f, 1.00f};
         VkSurfaceKHR m_surface{VK_NULL_HANDLE};
         std::vector<const char*> m_instanceExtensions;
+	    bool m_isMinimized = false;
+
     };
 
 };   // namespace vve

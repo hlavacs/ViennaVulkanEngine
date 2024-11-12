@@ -79,11 +79,19 @@ namespace vve {
 
     template<ArchitectureType ATYPE>
     void RendererVulkan<ATYPE>::OnRenderNextFrame(Message message) {
-
+        if(!m_window->GetIsMinimized()) {
+            vh::drawFrame(m_windowSDL->GetSDLWindow(), m_window->GetSurface(), m_physicalDevice, m_device, m_vmaAllocator
+                , m_graphicsQueue, m_presentQueue, m_swapChain, m_depthImage
+                , m_renderPass, m_graphicsPipeline, m_geometry, m_commandBuffers
+                , m_uniformBuffers, m_descriptorSets, m_syncObjects, m_currentFrame
+                , m_framebufferResized);
+        }
     }
     
     template<ArchitectureType ATYPE>
     void RendererVulkan<ATYPE>::OnQuit(Message message) {
+
+        vkDeviceWaitIdle(m_device);
 
         vh::cleanupSwapChain(m_device, m_vmaAllocator, m_swapChain, m_depthImage);
 
