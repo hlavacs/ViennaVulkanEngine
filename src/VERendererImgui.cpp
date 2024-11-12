@@ -18,7 +18,7 @@ namespace vve {
 		engine->RegisterSystem( { 
 			{this,  10000, MessageType::INIT, [this](Message message){this->OnInit(message);} },
 			{this, -10000, MessageType::PREPARE_NEXT_FRAME, [this](Message message){this->OnPrepareNextFrame(message);} },
-			{this, -10000, MessageType::RENDER_NEXT_FRAME, [this](Message message){this->OnRenderNextFrame(message);} },
+			{this, -20000, MessageType::RENDER_NEXT_FRAME, [this](Message message){this->OnRenderNextFrame(message);} },
 			{this, -20000, MessageType::QUIT, [this](Message message){this->OnQuit(message);} },
 			{this,      0, MessageType::SDL, [this](Message message){this->OnSDL(message);} },
 			{this,  10000, MessageType::INIT, [this](Message message){this->OnInit2(message);} },
@@ -49,6 +49,14 @@ namespace vve {
 
    	template<ArchitectureType ATYPE>
     void RendererImgui<ATYPE>::OnRenderNextFrame(Message message) {
+        if(!m_window->GetIsMinimized()) {
+
+		    ImGui_ImplVulkan_NewFrame();
+			ImGui_ImplSDL2_NewFrame();
+            ImGui::NewFrame();
+
+            ImGui::ShowDemoWindow(); // Show demo window! :)
+		}
     }
 
    	template<ArchitectureType ATYPE>
@@ -64,6 +72,9 @@ namespace vve {
     
    	template<ArchitectureType ATYPE>
     void RendererImgui<ATYPE>::OnQuit(Message message) {
+		auto rend = ((RendererVulkan<ATYPE>*)(m_engine->GetSystem("VVE RendererVulkan")));
+        vkDeviceWaitIdle(rend->GetDevice());
+
 		ImGui_ImplVulkan_Shutdown();
         ImGui_ImplSDL2_Shutdown();
         ImGui::DestroyContext();
