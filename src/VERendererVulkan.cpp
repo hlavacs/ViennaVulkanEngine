@@ -1,8 +1,11 @@
 
+#include "VHInclude.h"
+#include "VHVulkan.h"
 
 #include "VERendererVulkan.h"
 #include "VEEngine.h"
 #include "VEWindowSDL.h"
+
 
 
 namespace vve {
@@ -16,8 +19,8 @@ namespace vve {
 			{this, -50000, MessageType::PREPARE_NEXT_FRAME, [this](Message message){this->OnPrepareNextFrame(message);} },
 			{this, -50000, MessageType::RECORD_NEXT_FRAME, [this](Message message){this->OnRecordNextFrame(message);} },
 			{this, -50000, MessageType::RENDER_NEXT_FRAME, [this](Message message){this->OnRenderNextFrame(message);} },
-			{this,     50, MessageType::INIT, [this](Message message){this->OnInit2(message);} },
-			{this, -20000, MessageType::QUIT, [this](Message message){this->OnQuit(message);} },
+			{this,   1000, MessageType::INIT, [this](Message message){this->OnInit2(message);} },
+			{this, -10000, MessageType::QUIT, [this](Message message){this->OnQuit(message);} },
 			{this,  10000, MessageType::QUIT, [this](Message message){this->OnQuit2(message);} }
 		} );
     }
@@ -137,7 +140,6 @@ namespace vve {
 
 	template<ArchitectureType ATYPE>
     void RendererVulkan<ATYPE>::OnQuit2(Message message) {
-        //vkDestroySurfaceKHR(m_instance, m_surface, nullptr);
         vkDestroyInstance(m_instance, nullptr);
 	}
 

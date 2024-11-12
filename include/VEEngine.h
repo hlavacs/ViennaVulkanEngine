@@ -3,10 +3,9 @@
 #include <memory>
 #include <unordered_map>
 #include "glm/glm.hpp"
+
 #include "VECS.h"
 #include "VEInclude.h"
-
-
 
 namespace vve {
    	template<ArchitectureType ATYPE> class RendererVulkan;

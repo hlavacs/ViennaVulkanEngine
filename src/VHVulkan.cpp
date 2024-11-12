@@ -20,15 +20,42 @@
 #include <set>
 #include <unordered_map>
 
+#define SDL_MAIN_HANDLED
+#include <SDL2/SDL.h>
+#include <SDL2/SDL_vulkan.h>
+
+#define GLM_FORCE_RADIANS
+#define GLM_FORCE_DEPTH_ZERO_TO_ONE
+#define GLM_ENABLE_EXPERIMENTAL
+#include <glm/glm.hpp>
+#include <glm/gtc/matrix_transform.hpp>
+
 #define STB_IMAGE_IMPLEMENTATION
+#include <stb_image.h>
+
 #define TINYOBJLOADER_IMPLEMENTATION
+#include <tiny_obj_loader.h>
+
 #define VOLK_IMPLEMENTATION
+#include "volk/volk.h"
+
 #define VMA_IMPLEMENTATION
+#include "vma/vk_mem_alloc.h"
+
+#define IMGUI_IMPL_VULKAN_NO_PROTOTYPES
 #define IMGUI_IMPL_VULKAN_USE_VOLK
+#include "imgui.h"
+#include "backends/imgui_impl_sdl2.h"
+#include "backends/imgui_impl_vulkan.h"
 
-#include "VHInclude.h"
+#include "VHVulkan.h"
 
 
+VkInstance volkInstance;
+
+auto loadVolk(const char* name, void* context) {
+   	return vkGetInstanceProcAddr(volkInstance, name);
+}
 
 namespace vh
 {
@@ -46,11 +73,6 @@ namespace vh
     const bool m_enableValidationLayers = true;
     #endif
 
-    VkInstance _instance;
-    
-    auto loadVolk(const char* name, void* context) {
-        return vkGetInstanceProcAddr(_instance, name);
-    }
 
     VkResult CreateDebugUtilsMessengerEXT(VkInstance instance, const VkDebugUtilsMessengerCreateInfoEXT* pCreateInfo
         , const VkAllocationCallbacks* pAllocator, VkDebugUtilsMessengerEXT* pDebugMessenger) {
@@ -302,7 +324,7 @@ namespace vh
         if (vkCreateInstance(&createInfo, nullptr, &instance) != VK_SUCCESS) {
             throw std::runtime_error("failed to create instance!");
         }
-        _instance = instance;
+        volkInstance = instance;
 
    		volkLoadInstance(instance);       
     }

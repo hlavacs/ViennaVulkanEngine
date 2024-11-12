@@ -17,6 +17,21 @@ namespace vve {
         RendererVulkan(Engine<ATYPE>* engine, Window<ATYPE>* window, std::string name = "VVE RendererVulkan" );
         virtual ~RendererVulkan();
         auto GetInstance() -> VkInstance { return m_instance; }
+		auto GetPhysicalDevice() -> VkPhysicalDevice { return m_physicalDevice; }
+		auto GetDevice() -> VkDevice { return m_device; }
+		auto GetQueueFamilies() -> vh::QueueFamilyIndices { return m_queueFamilies; }
+		auto GetGraphicsQueue() -> VkQueue { return m_graphicsQueue; }
+		auto GetPresentQueue() -> VkQueue { return m_presentQueue; }
+		auto GetCommandPool() -> VkCommandPool { return m_commandPool; }
+		auto GetVmaAllocator() -> VmaAllocator { return m_vmaAllocator; }
+		auto GetSwapChain() -> vh::SwapChain { return m_swapChain; }
+		auto GetRenderPass() -> VkRenderPass { return m_renderPass; }
+		auto GetDescriptorSetLayout() -> VkDescriptorSetLayout { return m_descriptorSetLayout; }
+		auto GetDescriptorPool() -> VkDescriptorPool { return m_descriptorPool; }
+		auto GetGraphicsPipeline() -> vh::Pipeline { return m_graphicsPipeline; }
+		auto GetDepthImage() -> vh::DepthImage { return m_depthImage; }
+		auto GetTexture() -> vh::Texture { return m_texture; }
+		auto GetGeometry() -> vh::Geometry { return m_geometry; }
 
     private:
         virtual void OnInit(Message message);

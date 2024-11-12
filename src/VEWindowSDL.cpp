@@ -1,5 +1,6 @@
 
-#define SDL_MAIN_HANDLED
+#include "VHInclude.h"
+#include "VHVulkan.h"
 
 #include "VESystem.h"
 #include "VHInclude.h"

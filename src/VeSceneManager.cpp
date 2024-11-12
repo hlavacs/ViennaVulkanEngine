@@ -1,4 +1,7 @@
 
+#include "VHInclude.h"
+#include "VHVulkan.h"
+
 #include "VESceneManager.h"
 
 namespace vve {

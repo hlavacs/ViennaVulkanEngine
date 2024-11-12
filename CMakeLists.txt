@@ -6,6 +6,12 @@ project (
   LANGUAGES CXX
 )
 
+if (MSVC)
+    add_compile_options(/D IMGUI_IMPL_VULKAN_NO_PROTOTYPES)
+else()
+    add_compile_options(-D IMGUI_IMPL_VULKAN_NO_PROTOTYPES)
+endif()
+
 # enforce C++20 standard
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)

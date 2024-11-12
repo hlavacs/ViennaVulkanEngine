@@ -3,6 +3,7 @@
 #include <any>
 
 #include "VHInclude.h"
+#include "VHVulkan.h"
 #include "VESystem.h"
 #include "VEEngine.h"
 #include "VEWindow.h"
