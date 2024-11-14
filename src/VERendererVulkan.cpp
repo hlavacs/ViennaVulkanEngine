@@ -56,10 +56,12 @@ namespace vve {
         vh::createCommandPool(m_window->GetSurface(), m_physicalDevice, m_device, m_commandPool);
         vh::createDepthResources(m_physicalDevice, m_device, m_vmaAllocator, m_swapChain, m_depthImage);
         vh::createFramebuffers(m_device, m_swapChain, m_depthImage, m_renderPass);
+
         vh::createTextureImage(m_physicalDevice, m_device, m_vmaAllocator, m_graphicsQueue, m_commandPool, m_texture);
         vh::createTextureImageView(m_device, m_texture);
         vh::createTextureSampler(m_physicalDevice, m_device, m_texture);
 		vh::loadModel(m_geometry);
+		
         vh::createVertexBuffer(m_physicalDevice, m_device, m_vmaAllocator, m_graphicsQueue, m_commandPool, m_geometry);
         vh::createIndexBuffer( m_physicalDevice, m_device, m_vmaAllocator, m_graphicsQueue, m_commandPool, m_geometry);
         vh::createUniformBuffers(m_physicalDevice, m_device, m_vmaAllocator, m_uniformBuffers);

@@ -2,18 +2,37 @@
 
 #include "VEInclude.h"
 #include "VESystem.h"
+#include "VECS.h"
 
 namespace vve {
 
   	template<ArchitectureType ATYPE>
     class SceneManager : public System<ATYPE> {
-        friend class engine;
+
+		struct Transform {
+			vec3_t m_position{};
+			quat_t m_rotation{};
+			vec3_t m_scale{};
+			mat4_t GetMatrix();
+		};
+
+		struct SceneNode {
+			std::string m_name;
+			Transform m_transform;
+			size_t m_parent;
+			std::vector<size_t> m_children;
+			std::vector<vecs::Handle> m_objects;
+		};
+
     public:
         SceneManager(Engine<ATYPE>* engine, std::string name = "VVE SceneManager" );
         virtual ~SceneManager();
+		bool LoadTexture(std::string filename);
+		bool LoadOBJ(std::string filename);
+		bool LoadGLTF(std::string filename);
 
-    private:
-
+    private:		
+		std::vector<SceneNode> m_sceneNodes; //root node is m_sceneNodes[0]
     };
 
 };  // namespace vve
