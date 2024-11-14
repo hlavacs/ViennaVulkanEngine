@@ -17,22 +17,6 @@
 #include <unordered_map>
 
 
-/*#define SDL_MAIN_HANDLED
-#include <SDL.h>
-#include <SDL_vulkan.h>
-
-#define GLM_FORCE_RADIANS
-#define GLM_FORCE_DEPTH_ZERO_TO_ONE
-#define GLM_ENABLE_EXPERIMENTAL
-#include <glm.hpp>
-#include <gtc/matrix_transform.hpp>
-
-#include <stb_image.h>
-#include <tiny_obj_loader.h>
-//#include "volk.h"
-#include "vk_mem_alloc.h"*/
-
-
 
 namespace vh {
 	struct Vertex;

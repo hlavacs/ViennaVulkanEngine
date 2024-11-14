@@ -12,8 +12,14 @@
 #include <glm/gtc/quaternion.hpp>
 #include <glm/gtx/quaternion.hpp>
 
-#define VVE_SINGLE_PRECISION
-//#define VVE_DOUBLE_PRECISION
+
+#if (defined(VVE_SINGLE_PRECISION) && defined(VVE_DOUBLE_PRECISION))
+	#error "Both VVE_SINGLE_PRECISION and VVE_DOUBLE_PRECISION are defined!"
+#endif
+
+#if !(defined(VVE_SINGLE_PRECISION) || defined(VVE_DOUBLE_PRECISION))
+	#define VVE_SINGLE_PRECISION
+#endif
 
 namespace vve {
 	#ifdef VVE_SINGLE_PRECISION
@@ -24,10 +30,7 @@ namespace vve {
 		#define quat_t glm::quat
 		#define mat3_t glm::mat3
 		#define mat4_t glm::mat4
-	#else 
-		#ifndef VVE_DOUBLE_PRECISION
-			#define VVE_DOUBLE_PRECISION
-		#endif
+	#else //VVE_DOUBLE_PRECISION
 		using real_t = double;
 		#define vec2_t glm::dvec2
 		#define vec3_t glm::dvec3
