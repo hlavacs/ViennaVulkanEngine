@@ -4,3 +4,6 @@
 [submodule "extern/ViennaEntityComponentSystem"]
 	path = extern/ViennaEntityComponentSystem
 	url = https://github.com/hlavacs/ViennaEntityComponentSystem.git
+[submodule "extern/tinygltf"]
+	path = extern/tinygltf
+	url = https://github.com/syoyo/tinygltf.git
