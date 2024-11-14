@@ -22,7 +22,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 find_package(Doxygen)
 if(Doxygen_FOUND)
   message(STATUS "Doxygen found, building docs")
-  add_subdirectory(docs)
+  #add_subdirectory(docs)
 else()
   message(STATUS "Doxygen not found, not building docs")
 endif()
@@ -37,8 +37,7 @@ set(INCLUDE ${PROJECT_SOURCE_DIR}/include)  # engine include directory
 
 set(EXTERN ${PROJECT_SOURCE_DIR}/extern)    # external libraries
 set(IMGUI ${EXTERN}/imgui)    # external libraries
-set(GLTF ${EXTERN}/glTF)    # external libraries 
-set(STB ${EXTERN}/stb)    # external libraries
+set(TINYGLTF ${EXTERN}/tinygltf)    # external libraries 
 set(VECS ${EXTERN}/ViennaEntityComponentSystem)    # external libraries 
 set(VTLL ${EXTERN}/ViennaEntityComponentSystem/extern/ViennaTypeListLibrary)    # external libraries 
 
