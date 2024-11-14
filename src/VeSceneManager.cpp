@@ -1,13 +1,18 @@
 
+#include "VEInclude.h"
 #include "VHInclude.h"
 #include "VHVulkan.h"
-
+#include "VESystem.h"
+#include "VEEngine.h"
 #include "VESceneManager.h"
 
 namespace vve {
 
    	template<ArchitectureType ATYPE>
-    SceneManager<ATYPE>::SceneManager(Engine<ATYPE>* engine, std::string name) : System<ATYPE>{engine, name } {}
+    SceneManager<ATYPE>::SceneManager(Engine<ATYPE>* engine, std::string name) 
+		: System<ATYPE>{engine, name }, m_registry{engine->GetRegistry()} {
+
+	}
 
    	template<ArchitectureType ATYPE>
     SceneManager<ATYPE>::~SceneManager() {}
@@ -26,7 +31,6 @@ namespace vve {
 	
    	template<ArchitectureType ATYPE>
 	bool SceneManager<ATYPE>::LoadGLTF(std::string filename) {
-
 		return false;
 	}
 

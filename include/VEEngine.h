@@ -30,7 +30,7 @@ namespace vve {
 		auto GetDebug() -> bool { return m_debug; }
 		auto GetWindows() -> std::vector<std::shared_ptr<Window<ATYPE>>>& { return m_windows; }
 		auto GetSceneMgr() -> std::shared_ptr<SceneManager<ATYPE>> { return m_sceneManager; }
-		auto GetRegistry() -> vecs::Registry<>& { return m_registry; }
+		auto GetRegistry() -> vecs::Registry<vecs::SEQUENTIAL>& { return m_registry; }
 		void SendMessage( Message message );
 		auto GetSystem( std::string name ) -> System<ATYPE>* { return m_systems[name]; }	
 
@@ -49,7 +49,7 @@ namespace vve {
 		bool m_debug{false};
 		bool m_running{false};
 
-		vecs::Registry<> m_registry;
+		vecs::Registry<vecs::SEQUENTIAL> m_registry;
 		
 		using PriorityMap = std::multimap<int, MessageCallback>;
 		using MessageMap = std::unordered_map<MessageType, PriorityMap>;

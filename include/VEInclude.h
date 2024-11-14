@@ -5,7 +5,7 @@
 
 namespace vve {
 
-    enum class ArchitectureType : uint32_t {
+    enum class ArchitectureType : int {
         SEQUENTIAL = 0,
         PARALLEL
     };	

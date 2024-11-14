@@ -31,8 +31,8 @@ namespace vve {
 		bool LoadOBJ(std::string filename);
 		bool LoadGLTF(std::string filename);
 
-    private:		
-		std::vector<SceneNode> m_sceneNodes; //root node is m_sceneNodes[0]
+    private:
+		vecs::Registry<vecs::SEQUENTIAL>& m_registry;
     };
 
 };  // namespace vve
