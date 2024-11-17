@@ -32,7 +32,7 @@ namespace vve {
 		bool LoadGLTF(std::string filename);
 
     private:
-		vecs::Registry<vecs::SEQUENTIAL>& m_registry;
+		vecs::Registry<vecs::RegistryType::SEQUENTIAL>& m_registry;
     };
 
 };  // namespace vve
