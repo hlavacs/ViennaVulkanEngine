@@ -44,7 +44,7 @@ namespace vve {
 #include <stb_image.h>
 #include <tiny_obj_loader.h>
 
-#include "volk/volk.h"
+#include "Volk/volk.h"
 
 #include "vma/vk_mem_alloc.h"
 

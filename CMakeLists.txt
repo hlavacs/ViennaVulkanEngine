@@ -10,6 +10,7 @@ if (MSVC)
     add_compile_options(/D IMGUI_IMPL_VULKAN_NO_PROTOTYPES)
 else()
     add_compile_options(-D IMGUI_IMPL_VULKAN_NO_PROTOTYPES)
+	add_compile_options(-Wno-nullability-completeness)
 endif()
 
 # enforce C++20 standard
