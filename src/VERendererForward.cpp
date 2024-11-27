@@ -51,8 +51,8 @@ namespace vve {
 
     }
 
-    template class RendererForward<ArchitectureType::SEQUENTIAL>;
-    template class RendererForward<ArchitectureType::PARALLEL>;
+    template class RendererForward<ENGINETYPE_SEQUENTIAL>;
+    template class RendererForward<ENGINETYPE_PARALLEL>;
 
 };   // namespace vve
 

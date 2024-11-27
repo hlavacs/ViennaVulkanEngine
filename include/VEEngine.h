@@ -10,7 +10,7 @@
 namespace vve {
    	template<ArchitectureType ATYPE> class RendererVulkan;
 
-	template<ArchitectureType ATYPE = ArchitectureType::SEQUENTIAL>
+	template<ArchitectureType ATYPE = ENGINETYPE_SEQUENTIAL>
 	class Engine : public System<ATYPE> {
 
 		struct MessageCallback {
@@ -30,7 +30,7 @@ namespace vve {
 		auto GetDebug() -> bool { return m_debug; }
 		auto GetWindows() -> std::vector<std::shared_ptr<Window<ATYPE>>>& { return m_windows; }
 		auto GetSceneMgr() -> std::shared_ptr<SceneManager<ATYPE>> { return m_sceneManager; }
-		auto GetRegistry() -> vecs::Registry<vecs::REGISTRYTYPE_SEQUENTIAL>& { return m_registry; }
+		auto GetRegistry() -> auto& { return m_registry; }
 		void SendMessage( Message message );
 		auto GetSystem( std::string name ) -> System<ATYPE>* { return m_systems[name]; }	
 
@@ -40,9 +40,9 @@ namespace vve {
 		virtual void OnQuit(Message message);
 		virtual void LoadLevel( std::string levelName );
 		virtual void CreateWindow( const char* windowName, int width, int height );
-		virtual void CreateRenderer( const char* rendererName);
-		virtual void CreateCamera( const char* cameraName );
-		virtual void CreateSceneManager( const char* sceneManagerName );
+		virtual void CreateRenderer();
+		virtual void CreateSystems();
+		virtual void CreateCamera();
 
 		std::unordered_map<std::string, System<ATYPE>*> m_systems{};
 

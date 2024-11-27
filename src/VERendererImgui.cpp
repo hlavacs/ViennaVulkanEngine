@@ -77,8 +77,8 @@ namespace vve {
         ImGui::DestroyContext();
     }
 
-    template class RendererImgui<ArchitectureType::SEQUENTIAL>;
-    template class RendererImgui<ArchitectureType::PARALLEL>;
+    template class RendererImgui<ENGINETYPE_SEQUENTIAL>;
+    template class RendererImgui<ENGINETYPE_PARALLEL>;
 
 };   // namespace vve
 

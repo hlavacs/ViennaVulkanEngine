@@ -16,8 +16,8 @@ namespace vve {
    	template<ArchitectureType ATYPE>
     Renderer<ATYPE>::~Renderer(){};
 
-    template class Renderer<ArchitectureType::SEQUENTIAL>;
-    template class Renderer<ArchitectureType::PARALLEL>;
+    template class Renderer<ENGINETYPE_SEQUENTIAL>;
+    template class Renderer<ENGINETYPE_PARALLEL>;
 
 };  // namespace vve
 

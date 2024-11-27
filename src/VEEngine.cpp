@@ -33,9 +33,9 @@ namespace vve {
 	template<ArchitectureType ATYPE>
 	void Engine<ATYPE>::OnInit(Message message ) {
 		CreateWindow("Vulkan Engine", 800, 600);
-		CreateRenderer("Forward");
-		CreateSceneManager("");
-		CreateCamera("Main Camera");
+		CreateRenderer();
+		CreateSystems();
+		CreateCamera();
 	};
 
 	template<ArchitectureType ATYPE>
@@ -88,19 +88,19 @@ namespace vve {
 	};
 	
 	template<ArchitectureType ATYPE>
-	void Engine<ATYPE>::CreateRenderer( const char* rendererName){
+	void Engine<ATYPE>::CreateRenderer(){
 		m_windows[0]->AddRenderer(std::make_shared<RendererVulkan<ATYPE>>(this, m_windows[0].get()) );
 		m_windows[0]->AddRenderer(std::make_shared<RendererImgui<ATYPE>>(this, m_windows[0].get()) );
 		m_windows[0]->AddRenderer(std::make_shared<RendererForward<ATYPE>>(this, m_windows[0].get()) );
 	};
 	
 	template<ArchitectureType ATYPE>
-	void Engine<ATYPE>::CreateCamera( const char* cameraName ){
+	void Engine<ATYPE>::CreateCamera( ){
 		// Create camera
 	};
 	
 	template<ArchitectureType ATYPE>
-	void Engine<ATYPE>::CreateSceneManager( const char* sceneManagerName ){
+	void Engine<ATYPE>::CreateSystems( ){
 		m_sceneManager = std::make_shared<SceneManager<ATYPE>>(this);
 	};
 
@@ -135,8 +135,8 @@ namespace vve {
 	template<ArchitectureType ATYPE>
 	void Engine<ATYPE>::OnQuit(Message message) {}
 
-	template class Engine<ArchitectureType::SEQUENTIAL>;
-	template class Engine<ArchitectureType::PARALLEL>;
+	template class Engine<ENGINETYPE_SEQUENTIAL>;
+	template class Engine<ENGINETYPE_PARALLEL>;
 
 };   // namespace vve
 

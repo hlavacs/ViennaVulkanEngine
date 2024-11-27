@@ -177,7 +177,7 @@ namespace vve {
         SDL_Quit();
     }
 
-    template class WindowSDL<ArchitectureType::SEQUENTIAL>;
-    template class WindowSDL<ArchitectureType::PARALLEL>;
+    template class WindowSDL<ENGINETYPE_SEQUENTIAL>;
+    template class WindowSDL<ENGINETYPE_PARALLEL>;
 
 };  // namespace vve

@@ -145,7 +145,7 @@ namespace vve {
         vkDestroyInstance(m_instance, nullptr);
 	}
 
-    template class RendererVulkan<ArchitectureType::SEQUENTIAL>;
-    template class RendererVulkan<ArchitectureType::PARALLEL>;
+    template class RendererVulkan<ENGINETYPE_SEQUENTIAL>;
+    template class RendererVulkan<ENGINETYPE_PARALLEL>;
 
 };   // namespace vve

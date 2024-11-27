@@ -44,8 +44,8 @@ namespace vve {
 		return matrix;
 	}
 
-    template class SceneManager<ArchitectureType::SEQUENTIAL>;
-    template class SceneManager<ArchitectureType::PARALLEL>;
+    template class SceneManager<ENGINETYPE_SEQUENTIAL>;
+    template class SceneManager<ENGINETYPE_PARALLEL>;
 
 };  // namespace vve
 

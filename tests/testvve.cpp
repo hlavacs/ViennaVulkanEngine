@@ -11,7 +11,6 @@
 #include "VEEngine.h"
 
 
-
 template<vve::ArchitectureType ATYPE>
 class MyGUI : public vve::System<ATYPE> {
 
@@ -20,13 +19,12 @@ class MyGUI : public vve::System<ATYPE> {
 public:
     MyGUI( vve::Engine<ATYPE>* engine ) : vve::System<ATYPE>(engine, "MyGUI") {
 
-        engine->RegisterSystem( { 
+		m_engine->RegisterSystem( { 
 			  {this, -10000, vve::MessageType::RENDER_NEXT_FRAME, [this](vve::Message message){this->OnRenderNextFrame(message);} }
 			, {this,      0, vve::MessageType::KEY_DOWN, [this](vve::Message message){this->OnKeyDown(message);} }
 			, {this,      0, vve::MessageType::KEY_REPEAT, [this](vve::Message message){this->OnKeyRepeat(message);} }
 			, {this,      0, vve::MessageType::KEY_UP, [this](vve::Message message){this->OnKeyUp(message);} }
 		} );
-
     };
     
     ~MyGUI() {};
@@ -101,16 +99,32 @@ private:
 };
 
 
+template<vve::ArchitectureType ATYPE>
+class MyEngine : public vve::Engine<ATYPE> {
+
+
+	public:
+		MyEngine() : vve::Engine<ATYPE>("MyEngine") {};
+		~MyEngine() {};
+
+	private:
+		
+		void LoadLevel(std::string levelName) {
+			std::cout << "Loading level: " << levelName << std::endl;
+		}
+
+		MyGUI<ATYPE> mygui{this};
+
+};
+
 
 
 int main() {
 
-    const auto AT = vve::ArchitectureType::SEQUENTIAL;
 
-    auto engine = std::make_unique<vve::Engine<AT>>();
-    auto mygui = std::make_shared<MyGUI<AT>>(engine.get());
+    MyEngine<vve::ENGINETYPE_SEQUENTIAL> engine ;
 
-    engine->Run();
+    engine.Run();
 
     return 0;
 }

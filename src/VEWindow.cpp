@@ -21,7 +21,7 @@ namespace vve {
         template<ArchitectureType ATYPE>
     void Window<ATYPE>::SetClearColor(glm::vec4 clearColor){ m_clearColor = clearColor; };
 
-    template class Window<ArchitectureType::SEQUENTIAL>;
-    template class Window<ArchitectureType::PARALLEL>;
+    template class Window<ENGINETYPE_SEQUENTIAL>;
+    template class Window<ENGINETYPE_PARALLEL>;
 
 };   // namespace vve

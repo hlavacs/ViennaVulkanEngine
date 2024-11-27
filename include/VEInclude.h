@@ -5,15 +5,14 @@
 
 namespace vve {
 
-    enum class ArchitectureType : int {
-        SEQUENTIAL = 0,
-        PARALLEL
-    };	
+    using ArchitectureType = int;
+	const ArchitectureType ENGINETYPE_SEQUENTIAL = 0;
+	const ArchitectureType ENGINETYPE_PARALLEL = 1;
 
     struct Empty {};
 
     template<ArchitectureType ATYPE>
-    using Mutex = std::conditional_t<ATYPE == ArchitectureType::SEQUENTIAL, Empty, std::mutex>;
+    using Mutex = std::conditional_t<ATYPE == ENGINETYPE_SEQUENTIAL, Empty, std::mutex>;
 
    	template<ArchitectureType ATYPE> class System;
    	template<ArchitectureType ATYPE> class Engine;

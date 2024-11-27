@@ -37,8 +37,8 @@ namespace vve {
    	template<ArchitectureType ATYPE>
     System<ATYPE>::~System(){};
 
-    template class System<ArchitectureType::SEQUENTIAL>;
-    template class System<ArchitectureType::PARALLEL>;
+    template class System<ENGINETYPE_SEQUENTIAL>;
+    template class System<ENGINETYPE_PARALLEL>;
 
 };   // namespace vve
 
