@@ -5,7 +5,7 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "(Windows) Launch",
+            "name": "(Windows) Debug",
             "type": "cppvsdbg",
             "request": "launch",
             "program": "${workspaceFolder}/build/tests/Debug/testvve.exe",  
@@ -15,7 +15,18 @@
             "environment": [],
             "externalConsole": true
           },
-		  {
+          {
+            "name": "(Windows) Release",
+            "type": "cppvsdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/build/tests/Release/testvve.exe",  
+            "args": [],
+            "stopAtEntry": false,
+            "cwd": "${workspaceFolder}",
+            "environment": [],
+            "externalConsole": true
+          },
+		      {
             "name": "Clang Launch",
             "type": "cppvsdbg",
             "request": "launch",
