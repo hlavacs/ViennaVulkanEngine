@@ -13,7 +13,7 @@ namespace vve {
     RendererForward<ATYPE>::RendererForward(Engine<ATYPE>* engine, Window<ATYPE>* window, std::string name ) 
         : Renderer<ATYPE>(engine, window, name) {
 
-  		engine->RegisterSystem( { 
+  		engine->RegisterCallback( { 
   			{this, -5000, MessageType::INIT, [this](Message message){this->OnInit(message);} },
   			{this, -5000, MessageType::PREPARE_NEXT_FRAME, [this](Message message){this->OnPrepareNextFrame(message);} },
   			{this, -5000, MessageType::RECORD_NEXT_FRAME, [this](Message message){this->OnRecordNextFrame(message);} },

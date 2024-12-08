@@ -15,7 +15,7 @@ namespace vve {
     RendererImgui<ATYPE>::RendererImgui( Engine<ATYPE>* engine, Window<ATYPE>* window, std::string name) 
         : Renderer<ATYPE>(engine, window, name ) {
 
-		engine->RegisterSystem( { 
+		engine->RegisterCallback( { 
 			{this,  10000, MessageType::INIT, [this](Message message){this->OnInit(message);} },
 			{this, -10000, MessageType::PREPARE_NEXT_FRAME, [this](Message message){this->OnPrepareNextFrame(message);} },
 			{this, -20000, MessageType::RENDER_NEXT_FRAME, [this](Message message){this->OnRenderNextFrame(message);} },

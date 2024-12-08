@@ -17,7 +17,7 @@ namespace vve {
             , int width, int height, std::string name) 
                 : Window<ATYPE>(engine, windowName, width, height, name ) {
 
-        engine->RegisterSystem( { 
+        engine->RegisterCallback( { 
 			{this, -100000, MessageType::INIT, [this](Message message){this->OnInit(message);} },
 			{this,       0, MessageType::INIT, [this](Message message){this->OnInit2(message);} },
 			{this,       0, MessageType::POLL_EVENTS, [this](Message message){this->OnPollEvents(message);} },

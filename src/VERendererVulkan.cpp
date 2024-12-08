@@ -14,7 +14,7 @@ namespace vve {
     RendererVulkan<ATYPE>::RendererVulkan(Engine<ATYPE>* engine, Window<ATYPE>* window, std::string name ) 
         : Renderer<ATYPE>(engine, window, name) {
 
-        engine->RegisterSystem( { 
+        engine->RegisterCallback( { 
 			{this, -50000, MessageType::INIT, [this](Message message){this->OnInit(message);} }, 
 			{this, -50000, MessageType::PREPARE_NEXT_FRAME, [this](Message message){this->OnPrepareNextFrame(message);} },
 			{this, -50000, MessageType::RECORD_NEXT_FRAME, [this](Message message){this->OnRecordNextFrame(message);} },

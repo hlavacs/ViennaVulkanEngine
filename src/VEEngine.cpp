@@ -20,7 +20,7 @@ namespace vve {
 	#ifndef NDEBUG
 		m_debug = true;
 	#endif
-		RegisterSystem( { 
+		RegisterCallback( { 
 			{this, std::numeric_limits<int>::lowest(), MessageType::INIT, [this](Message message){this->OnInit(message);} },
 			{this, std::numeric_limits<int>::max(),    MessageType::INIT, [this](Message message){this->OnInit2(message);} },
 			{this, std::numeric_limits<int>::max(),    MessageType::QUIT, [this](Message message){this->OnQuit(message);} }
@@ -44,7 +44,7 @@ namespace vve {
 	};
 
 	template<ArchitectureType ATYPE>
-	void Engine<ATYPE>::RegisterSystem( std::vector<MessageCallback> callbacks) {
+	void Engine<ATYPE>::RegisterCallback( std::vector<MessageCallback> callbacks) {
 		for( auto& callback : callbacks ) {
 			auto& pm = m_messageMap[callback.m_messageType];
 			pm.insert({callback.m_phase, callback});
@@ -52,7 +52,7 @@ namespace vve {
 	}
 
 	template<ArchitectureType ATYPE>
-	void Engine<ATYPE>::RegisterSystem2( std::unique_ptr<System<ATYPE>>&& system ) {
+	void Engine<ATYPE>::RegisterSystem( std::unique_ptr<System<ATYPE>>&& system ) {
 		m_systems[system->GetName()] = std::move(system);
 	}
 
@@ -88,14 +88,14 @@ namespace vve {
 	
 	template<ArchitectureType ATYPE>
 	void Engine<ATYPE>::CreateWindow(){
-		RegisterSystem2(std::make_unique<WindowSDL<ATYPE>>(this, "Vulkane Engine", 800, 600, "Main Window" ) );
+		RegisterSystem(std::make_unique<WindowSDL<ATYPE>>(this, "Vulkane Engine", 800, 600, "Main Window" ) );
 	};
 	
 	template<ArchitectureType ATYPE>
 	void Engine<ATYPE>::CreateRenderer(){
-		RegisterSystem2(std::make_unique<RendererVulkan<ATYPE>>( this, GetWindow("Main Window"), "VVE RendererVulkan") );
-		RegisterSystem2(std::make_unique<RendererImgui<ATYPE>>(  this, GetWindow("Main Window"), "VVE RendererImgui") );
-		RegisterSystem2(std::make_unique<RendererForward<ATYPE>>(this, GetWindow("Main Window"), "VVE RendererForward") );
+		RegisterSystem(std::make_unique<RendererVulkan<ATYPE>>( this, GetWindow("Main Window"), "VVE RendererVulkan") );
+		RegisterSystem(std::make_unique<RendererImgui<ATYPE>>(  this, GetWindow("Main Window"), "VVE RendererImgui") );
+		RegisterSystem(std::make_unique<RendererForward<ATYPE>>(this, GetWindow("Main Window"), "VVE RendererForward") );
 	};
 	
 	template<ArchitectureType ATYPE>
@@ -105,7 +105,7 @@ namespace vve {
 	
 	template<ArchitectureType ATYPE>
 	void Engine<ATYPE>::CreateSystems( ){
-		RegisterSystem2(std::make_unique<SceneManager<ATYPE>>(this, "VVE SceneManager"));
+		RegisterSystem(std::make_unique<SceneManager<ATYPE>>(this, "VVE SceneManager"));
 	};
 
 	template<ArchitectureType ATYPE>

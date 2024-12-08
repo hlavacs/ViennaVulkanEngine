@@ -19,7 +19,7 @@ class MyGUI : public vve::System<ATYPE> {
 public:
     MyGUI( vve::Engine<ATYPE>* engine ) : vve::System<ATYPE>(engine, "MyGUI") {
 
-		m_engine->RegisterSystem( { 
+		m_engine->RegisterCallback( { 
 			  {this, -10000, vve::MessageType::RENDER_NEXT_FRAME, [this](vve::Message message){this->OnRenderNextFrame(message);} }
 			, {this,      0, vve::MessageType::KEY_DOWN, [this](vve::Message message){this->OnKeyDown(message);} }
 			, {this,      0, vve::MessageType::KEY_REPEAT, [this](vve::Message message){this->OnKeyRepeat(message);} }

@@ -21,10 +21,10 @@ namespace vve {
 		};
 
 	public:
-		Engine(std::string name = "VVE Engine");
+		Engine(std::string name);
 		virtual ~Engine();
-		void RegisterSystem( std::vector<MessageCallback> callbacks);
-		void RegisterSystem2( std::unique_ptr<System<ATYPE>>&& system );
+		void RegisterSystem( std::unique_ptr<System<ATYPE>>&& system );
+		void RegisterCallback( std::vector<MessageCallback> callbacks);
 		void DeregisterSystem( System<ATYPE>* system );
 		void Run();
 		void Stop();
