@@ -32,7 +32,7 @@ namespace vve {
 
 	template<ArchitectureType ATYPE>
 	void Engine<ATYPE>::OnInit(Message message ) {
-		CreateWindow("Vulkan Engine", 800, 600);
+		CreateWindow();
 		CreateRenderer();
 		CreateSystems();
 		CreateCamera();
@@ -83,15 +83,15 @@ namespace vve {
 	};
 	
 	template<ArchitectureType ATYPE>
-	void Engine<ATYPE>::CreateWindow( const char* windowName, int width, int height ){
-		m_windows.push_back(std::make_shared<WindowSDL<ATYPE>>(this, windowName, width, height ) );
+	void Engine<ATYPE>::CreateWindow(){
+		m_windows.push_back(std::make_unique<WindowSDL<ATYPE>>(this, "Vulkane Engine", 800, 600, "Main Window" ) );
 	};
 	
 	template<ArchitectureType ATYPE>
 	void Engine<ATYPE>::CreateRenderer(){
-		m_windows[0]->AddRenderer(std::make_shared<RendererVulkan<ATYPE>>(this, m_windows[0].get()) );
-		m_windows[0]->AddRenderer(std::make_shared<RendererImgui<ATYPE>>(this, m_windows[0].get()) );
-		m_windows[0]->AddRenderer(std::make_shared<RendererForward<ATYPE>>(this, m_windows[0].get()) );
+		GetWindow("Main Window")->AddRenderer(std::make_unique<RendererVulkan<ATYPE>>(this, GetWindow("Main Window")) );
+		GetWindow("Main Window")->AddRenderer(std::make_unique<RendererImgui<ATYPE>>(this, GetWindow("Main Window")) );
+		GetWindow("Main Window")->AddRenderer(std::make_unique<RendererForward<ATYPE>>(this, GetWindow("Main Window")) );
 	};
 	
 	template<ArchitectureType ATYPE>
@@ -101,7 +101,7 @@ namespace vve {
 	
 	template<ArchitectureType ATYPE>
 	void Engine<ATYPE>::CreateSystems( ){
-		m_sceneManager = std::make_shared<SceneManager<ATYPE>>(this);
+		m_sceneManager = std::make_unique<SceneManager<ATYPE>>(this);
 	};
 
 	template<ArchitectureType ATYPE>
@@ -126,7 +126,15 @@ namespace vve {
 		}
 		SendMessage( MessageQuit{this, nullptr} ) ;
 	};
-	
+
+
+	template<ArchitectureType ATYPE>
+	auto Engine<ATYPE>::GetSystem( std::string name ) -> System<ATYPE>* { 
+		auto system = m_systems[name];
+		assert(system != nullptr);
+		return system;
+	}	
+
 	template<ArchitectureType ATYPE>
 	void Engine<ATYPE>::Stop() {
 		m_running = false;

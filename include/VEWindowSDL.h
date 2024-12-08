@@ -23,7 +23,7 @@ namespace vve {
 		using Window<ATYPE>::m_isMinimized;
    
     public:
-        WindowSDL(Engine<ATYPE>* engine, std::string windowName, int width, int height, std::string name = "VVE WindowSDL" );
+        WindowSDL(Engine<ATYPE>* engine, std::string windowTitle, int width, int height, std::string systemName );
         virtual ~WindowSDL();
         auto GetSDLWindow() -> SDL_Window* { return m_sdlWindow; }
 
@@ -37,12 +37,12 @@ namespace vve {
         virtual void OnQuit(Message message);
         virtual void OnQuit2(Message message);
 
-        inline static bool sdl_initialized{false};
-        SDL_Window* m_sdlWindow{nullptr};
-        int m_minImageCount = 2;
-        bool m_swapChainRebuild = false;
-        std::set<SDL_Scancode> m_keysDown;
-        std::set<uint8_t> m_mouseButtonsDown;
+        inline static bool 		m_sdl_initialized{false};
+        SDL_Window* 			m_sdlWindow{nullptr};
+        int 					m_minImageCount = 2;
+        bool 					m_swapChainRebuild = false;
+        std::set<SDL_Scancode> 	m_keysDown;
+        std::set<uint8_t> 		m_mouseButtonsDown;
     };
 
 

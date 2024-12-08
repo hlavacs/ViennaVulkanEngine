@@ -43,3 +43,14 @@ namespace vve {
 };   // namespace vve
 
 
+namespace std {
+
+	size_t hash<vve::System<vve::ENGINETYPE_SEQUENTIAL>>::operator()(vve::System<vve::ENGINETYPE_SEQUENTIAL> & system)  {
+		return std::hash<std::string>{}(system.GetName());
+    };
+
+	size_t hash<vve::System<vve::ENGINETYPE_PARALLEL>>::operator()(vve::System<vve::ENGINETYPE_PARALLEL> & system)  {
+		return std::hash<std::string>{}(system.GetName());
+    };
+
+};  // namespace std

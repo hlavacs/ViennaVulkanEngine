@@ -28,18 +28,18 @@ namespace vve {
 		void Run();
 		void Stop();
 		auto GetDebug() -> bool { return m_debug; }
-		auto GetWindows() -> std::vector<std::shared_ptr<Window<ATYPE>>>& { return m_windows; }
-		auto GetSceneMgr() -> std::shared_ptr<SceneManager<ATYPE>> { return m_sceneManager; }
+		auto GetSceneMgr() -> SceneManager<ATYPE>* { return m_sceneManager.get(); }
 		auto GetRegistry() -> auto& { return m_registry; }
 		void SendMessage( Message message );
-		auto GetSystem( std::string name ) -> System<ATYPE>* { return m_systems[name]; }	
+		auto GetSystem( std::string name ) -> System<ATYPE>*;
+		auto GetWindow( std::string name ) -> Window<ATYPE>* { return (Window<ATYPE>*)GetSystem(name); }
 
 	protected:
 		virtual void OnInit(Message message);
 		virtual void OnInit2(Message message);
 		virtual void OnQuit(Message message);
 		virtual void LoadLevel( std::string levelName );
-		virtual void CreateWindow( const char* windowName, int width, int height );
+		virtual void CreateWindow();
 		virtual void CreateRenderer();
 		virtual void CreateSystems();
 		virtual void CreateCamera();
@@ -55,8 +55,8 @@ namespace vve {
 		using MessageMap = std::unordered_map<MessageType, PriorityMap>;
 		MessageMap m_messageMap{};
 
-		std::vector<std::shared_ptr<Window<ATYPE>>> m_windows{};
-		std::shared_ptr<SceneManager<ATYPE>> m_sceneManager;
+		std::vector<std::unique_ptr<Window<ATYPE>>> m_windows{};
+		std::unique_ptr<SceneManager<ATYPE>> m_sceneManager;
 	};
 
 };  // namespace vve

@@ -117,9 +117,20 @@ namespace vve {
         auto GetName() -> std::string { return m_name; };
 
     protected:
-        std::string m_name;
-        Engine<ATYPE>* m_engine;
+        std::string 	m_name;
+        Engine<ATYPE>* 	m_engine;
     };
 
+};
+
+namespace std {
+
+    template<> struct hash<vve::System<vve::ENGINETYPE_SEQUENTIAL>> {
+        size_t operator()(vve::System<vve::ENGINETYPE_SEQUENTIAL> & system) ; 
+    };
+
+    template<> struct hash<vve::System<vve::ENGINETYPE_PARALLEL>> {
+        size_t operator()(vve::System<vve::ENGINETYPE_PARALLEL> & system) ; 
+    };
 };
 

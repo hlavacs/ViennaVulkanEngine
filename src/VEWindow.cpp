@@ -16,9 +16,11 @@ namespace vve {
     Window<ATYPE>::~Window(){}
 
    	template<ArchitectureType ATYPE>
-    void Window<ATYPE>::AddRenderer(std::shared_ptr<Renderer<ATYPE>> renderer) { m_renderer.emplace_back(renderer); };
+    void Window<ATYPE>::AddRenderer(std::unique_ptr<Renderer<ATYPE>>&& renderer) { 
+		m_renderer.emplace_back(std::forward<std::unique_ptr<Renderer<ATYPE>>>(renderer)); 
+	};
 
-        template<ArchitectureType ATYPE>
+    template<ArchitectureType ATYPE>
     void Window<ATYPE>::SetClearColor(glm::vec4 clearColor){ m_clearColor = clearColor; };
 
     template class Window<ENGINETYPE_SEQUENTIAL>;
