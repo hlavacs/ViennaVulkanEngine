@@ -112,7 +112,7 @@ namespace vve {
     class System {
 
     public:
-        System( Engine<ATYPE>* engine, std::string name );
+        System( std::string systemName, Engine<ATYPE>* engine );
         virtual ~System();
         auto GetName() -> std::string { return m_name; };
 

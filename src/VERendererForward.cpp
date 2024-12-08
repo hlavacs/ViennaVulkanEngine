@@ -10,8 +10,8 @@
 namespace vve {
 
    	template<ArchitectureType ATYPE>
-    RendererForward<ATYPE>::RendererForward(Engine<ATYPE>* engine, Window<ATYPE>* window, std::string name ) 
-        : Renderer<ATYPE>(engine, window, name) {
+    RendererForward<ATYPE>::RendererForward( std::string systemName, Engine<ATYPE>* engine, Window<ATYPE>* window ) 
+        : Renderer<ATYPE>(systemName, engine, window ) {
 
   		engine->RegisterCallback( { 
   			{this, -5000, MessageType::INIT, [this](Message message){this->OnInit(message);} },

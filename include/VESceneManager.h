@@ -25,7 +25,7 @@ namespace vve {
 		};
 
     public:
-        SceneManager(Engine<ATYPE>* engine, std::string name );
+        SceneManager(std::string systemName, Engine<ATYPE>* engine );
         virtual ~SceneManager();
 		bool LoadTexture(std::string filename);
 		bool LoadOBJ(std::string filename);

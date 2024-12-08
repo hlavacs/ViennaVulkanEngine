@@ -9,8 +9,8 @@
 namespace vve {
 
    	template<ArchitectureType ATYPE>
-    SceneManager<ATYPE>::SceneManager(Engine<ATYPE>* engine, std::string name) 
-		: System<ATYPE>{engine, name } {
+    SceneManager<ATYPE>::SceneManager(std::string systemName, Engine<ATYPE>* engine ) 
+		: System<ATYPE>{systemName, engine } {
 
 	}
 

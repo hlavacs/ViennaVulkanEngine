@@ -12,8 +12,8 @@
 namespace vve {
 
    	template<ArchitectureType ATYPE>
-    RendererImgui<ATYPE>::RendererImgui( Engine<ATYPE>* engine, Window<ATYPE>* window, std::string name) 
-        : Renderer<ATYPE>(engine, window, name ) {
+    RendererImgui<ATYPE>::RendererImgui( std::string systemName, Engine<ATYPE>* engine, Window<ATYPE>* window ) 
+        : Renderer<ATYPE>(systemName, engine, window ) {
 
 		engine->RegisterCallback( { 
 			{this,  10000, MessageType::INIT, [this](Message message){this->OnInit(message);} },

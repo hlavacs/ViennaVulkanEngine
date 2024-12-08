@@ -10,8 +10,8 @@
 namespace vve {
     
    	template<ArchitectureType ATYPE>
-    Renderer<ATYPE>::Renderer(Engine<ATYPE>* engine, Window<ATYPE>* window, std::string name ) 
-        : System<ATYPE>{engine, name }, m_window{window} {
+    Renderer<ATYPE>::Renderer(std::string systemName, Engine<ATYPE>* engine, Window<ATYPE>* window ) 
+        : System<ATYPE>{systemName, engine }, m_window{window} {
 	};
 
    	template<ArchitectureType ATYPE>

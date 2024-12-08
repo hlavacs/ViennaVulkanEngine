@@ -13,9 +13,8 @@ namespace vve {
     MessageSDL::MessageSDL(void* s, void* r, double dt, SDL_Event event): MessageBase{MessageType::SDL, s, r}, m_dt{dt}, m_event{event} {};   
 
    	template<ArchitectureType ATYPE>
-    WindowSDL<ATYPE>::WindowSDL( Engine<ATYPE>* engine,std::string windowName
-            , int width, int height, std::string name) 
-                : Window<ATYPE>(engine, windowName, width, height, name ) {
+    WindowSDL<ATYPE>::WindowSDL( std::string systemName, Engine<ATYPE>* engine,std::string windowName, int width, int height) 
+                : Window<ATYPE>(systemName, engine, windowName, width, height ) {
 
         engine->RegisterCallback( { 
 			{this, -100000, MessageType::INIT, [this](Message message){this->OnInit(message);} },

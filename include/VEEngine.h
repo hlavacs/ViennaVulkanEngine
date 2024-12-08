@@ -32,6 +32,9 @@ namespace vve {
 		void DeregisterSystem( System<ATYPE>* system );
 		void Run();
 		void Stop();
+		void Init();
+		void Step();
+		void Quit();
 		auto GetDebug() -> bool { return m_debug; }
 		auto GetRegistry() -> auto& { return m_registry; }
 		void SendMessage( Message message );
@@ -55,6 +58,7 @@ namespace vve {
 
 		bool m_debug{false};
 		bool m_running{false};
+		double m_dt{0.0};
 
 		vecs::Registry<ATYPE> m_registry;
 		

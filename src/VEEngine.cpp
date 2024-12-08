@@ -16,7 +16,7 @@
 namespace vve {
 
 	template<ArchitectureType ATYPE>
-	Engine<ATYPE>::Engine(std::string name) : System<ATYPE>(this, name) {
+	Engine<ATYPE>::Engine(std::string name) : System<ATYPE>(name, this) {
 	#ifndef NDEBUG
 		m_debug = true;
 	#endif
@@ -88,14 +88,14 @@ namespace vve {
 	
 	template<ArchitectureType ATYPE>
 	void Engine<ATYPE>::CreateWindow(){
-		RegisterSystem(std::make_unique<WindowSDL<ATYPE>>(this, "Vulkane Engine", 800, 600, m_mainWindowName ) );
+		RegisterSystem(std::make_unique<WindowSDL<ATYPE>>(GetMainWindowName(), this, "Vulkane Engine", 800, 600 ) );
 	};
 	
 	template<ArchitectureType ATYPE>
 	void Engine<ATYPE>::CreateRenderer(){
-		RegisterSystem(std::make_unique<RendererVulkan<ATYPE>>( this, GetWindow(m_mainWindowName), "VVE RendererVulkan") );
-		RegisterSystem(std::make_unique<RendererImgui<ATYPE>>(  this, GetWindow(m_mainWindowName), "VVE RendererImgui") );
-		RegisterSystem(std::make_unique<RendererForward<ATYPE>>(this, GetWindow(m_mainWindowName), "VVE RendererForward") );
+		RegisterSystem(std::make_unique<RendererVulkan<ATYPE>>( "VVE RendererVulkan",  this, GetMainWindow() ) );
+		RegisterSystem(std::make_unique<RendererImgui<ATYPE>>(  "VVE RendererImgui",   this, GetMainWindow() ) );
+		RegisterSystem(std::make_unique<RendererForward<ATYPE>>("VVE RendererForward", this, GetMainWindow() ) );
 	};
 	
 	template<ArchitectureType ATYPE>
@@ -105,32 +105,41 @@ namespace vve {
 	
 	template<ArchitectureType ATYPE>
 	void Engine<ATYPE>::CreateSystems( ){
-		RegisterSystem(std::make_unique<SceneManager<ATYPE>>(this, "VVE SceneManager"));
+		RegisterSystem(std::make_unique<SceneManager<ATYPE>>("VVE SceneManager", this));
 	};
 
 	template<ArchitectureType ATYPE>
 	void Engine<ATYPE>::Run(){
-		SendMessage( MessageInit{this} );
-
-		std::clock_t start = std::clock();
 		m_running = true;
-		auto last = std::chrono::high_resolution_clock::now();
-		while(m_running) { //call stop to stop the engine
-			auto now = std::chrono::high_resolution_clock::now();
-			auto dt = std::chrono::duration_cast<std::chrono::duration<double>>(now - last).count();
-
-			SendMessage( MessageFrameStart{this, nullptr, dt} ) ;
-			SendMessage( MessagePollEvents{this, nullptr, dt} ) ;
-			SendMessage( MessageUpdate{this, nullptr, dt} ) ;
-			SendMessage( MessagePrepareNextFrame{this, nullptr, dt} ) ;
-			SendMessage( MessageRecordNextFrame{this, nullptr, dt} ) ;
-			SendMessage( MessageRenderNextFrame{this, nullptr, dt} ) ;
-			SendMessage( MessagePresentNextFrame{this, nullptr, dt} ) ;
-			SendMessage( MessageFrameEnd{this, nullptr, dt} ) ;
-		}
-		SendMessage( MessageQuit{this, nullptr} ) ;
+		Init();
+		while(m_running) { Step(); }
+		Quit();
 	};
 
+	template<ArchitectureType ATYPE>
+	void Engine<ATYPE>::Init(){
+		SendMessage( MessageInit{this} );
+	}
+
+	template<ArchitectureType ATYPE>
+	void Engine<ATYPE>::Step(){
+		auto last = std::chrono::high_resolution_clock::now();
+		SendMessage( MessageFrameStart{this, nullptr, m_dt} ) ;
+		SendMessage( MessagePollEvents{this, nullptr, m_dt} ) ;
+		SendMessage( MessageUpdate{this, nullptr, m_dt} ) ;
+		SendMessage( MessagePrepareNextFrame{this, nullptr, m_dt} ) ;
+		SendMessage( MessageRecordNextFrame{this, nullptr, m_dt} ) ;
+		SendMessage( MessageRenderNextFrame{this, nullptr, m_dt} ) ;
+		SendMessage( MessagePresentNextFrame{this, nullptr, m_dt} ) ;
+		SendMessage( MessageFrameEnd{this, nullptr, m_dt} ) ;
+		auto now = std::chrono::high_resolution_clock::now();
+		m_dt = std::chrono::duration_cast<std::chrono::duration<double>>(now - last).count();
+	}
+
+	template<ArchitectureType ATYPE>
+	void Engine<ATYPE>::Quit(){
+		SendMessage( MessageQuit{this, nullptr} );
+	}
 
 	template<ArchitectureType ATYPE>
 	auto Engine<ATYPE>::GetSystem( std::string name ) -> System<ATYPE>* { 

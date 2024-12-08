@@ -31,7 +31,7 @@ namespace vve {
     MessageQuit::MessageQuit(void* s, void* r) : MessageBase{MessageType::QUIT, s, r} {};
 
    	template<ArchitectureType ATYPE>
-    System<ATYPE>::System( Engine<ATYPE>* engine, std::string name ) : m_engine(engine), m_name(name) {
+    System<ATYPE>::System( std::string systemName, Engine<ATYPE>* engine ) : m_name(systemName), m_engine(engine) {
     };
 
    	template<ArchitectureType ATYPE>

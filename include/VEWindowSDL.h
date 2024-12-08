@@ -22,7 +22,7 @@ namespace vve {
 		using Window<ATYPE>::m_isMinimized;
    
     public:
-        WindowSDL(Engine<ATYPE>* engine, std::string windowTitle, int width, int height, std::string systemName );
+        WindowSDL(std::string systemName, Engine<ATYPE>* engine, std::string windowTitle, int width, int height );
         virtual ~WindowSDL();
         auto GetSDLWindow() -> SDL_Window* { return m_sdlWindow; }
 
