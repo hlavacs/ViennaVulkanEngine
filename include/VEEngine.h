@@ -58,7 +58,7 @@ namespace vve {
 
 		bool m_debug{false};
 		bool m_running{false};
-		double m_dt{0.0};
+		std::chrono::time_point<std::chrono::high_resolution_clock> m_last;
 
 		vecs::Registry<ATYPE> m_registry;
 		

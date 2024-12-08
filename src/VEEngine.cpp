@@ -119,21 +119,22 @@ namespace vve {
 	template<ArchitectureType ATYPE>
 	void Engine<ATYPE>::Init(){
 		SendMessage( MessageInit{this} );
+		m_last = std::chrono::high_resolution_clock::now();
 	}
 
 	template<ArchitectureType ATYPE>
 	void Engine<ATYPE>::Step(){
-		auto last = std::chrono::high_resolution_clock::now();
-		SendMessage( MessageFrameStart{this, nullptr, m_dt} ) ;
-		SendMessage( MessagePollEvents{this, nullptr, m_dt} ) ;
-		SendMessage( MessageUpdate{this, nullptr, m_dt} ) ;
-		SendMessage( MessagePrepareNextFrame{this, nullptr, m_dt} ) ;
-		SendMessage( MessageRecordNextFrame{this, nullptr, m_dt} ) ;
-		SendMessage( MessageRenderNextFrame{this, nullptr, m_dt} ) ;
-		SendMessage( MessagePresentNextFrame{this, nullptr, m_dt} ) ;
-		SendMessage( MessageFrameEnd{this, nullptr, m_dt} ) ;
 		auto now = std::chrono::high_resolution_clock::now();
-		m_dt = std::chrono::duration_cast<std::chrono::duration<double>>(now - last).count();
+		double dt = std::chrono::duration_cast<std::chrono::duration<double>>(now - m_last).count();
+		m_last = now;
+		SendMessage( MessageFrameStart{this, nullptr, dt} ) ;
+		SendMessage( MessagePollEvents{this, nullptr, dt} ) ;
+		SendMessage( MessageUpdate{this, nullptr, dt} ) ;
+		SendMessage( MessagePrepareNextFrame{this, nullptr, dt} ) ;
+		SendMessage( MessageRecordNextFrame{this, nullptr, dt} ) ;
+		SendMessage( MessageRenderNextFrame{this, nullptr, dt} ) ;
+		SendMessage( MessagePresentNextFrame{this, nullptr, dt} ) ;
+		SendMessage( MessageFrameEnd{this, nullptr, dt} ) ;
 	}
 
 	template<ArchitectureType ATYPE>
