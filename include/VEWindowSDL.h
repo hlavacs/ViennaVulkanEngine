@@ -14,7 +14,6 @@ namespace vve {
     class WindowSDL : public Window<ATYPE> {
 
         using Window<ATYPE>::m_engine;
-        using Window<ATYPE>::m_renderer;
         using Window<ATYPE>::m_width;
         using Window<ATYPE>::m_height;
         using Window<ATYPE>::m_windowName;

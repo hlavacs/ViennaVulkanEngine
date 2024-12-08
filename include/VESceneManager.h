@@ -25,14 +25,13 @@ namespace vve {
 		};
 
     public:
-        SceneManager(Engine<ATYPE>* engine, std::string name = "VVE SceneManager" );
+        SceneManager(Engine<ATYPE>* engine, std::string name );
         virtual ~SceneManager();
 		bool LoadTexture(std::string filename);
 		bool LoadOBJ(std::string filename);
 		bool LoadGLTF(std::string filename);
 
     private:
-		vecs::Registry<vecs::REGISTRYTYPE_SEQUENTIAL>& m_registry;
     };
 
 };  // namespace vve

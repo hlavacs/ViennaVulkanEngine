@@ -14,7 +14,7 @@ namespace vve {
 
     public:
 
-        RendererVulkan(Engine<ATYPE>* engine, Window<ATYPE>* window, std::string name = "VVE RendererVulkan" );
+        RendererVulkan(Engine<ATYPE>* engine, Window<ATYPE>* window, std::string name );
         virtual ~RendererVulkan();
         auto GetInstance() -> VkInstance { return m_instance; }
 		auto GetPhysicalDevice() -> VkPhysicalDevice { return m_physicalDevice; }

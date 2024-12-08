@@ -23,14 +23,11 @@ namespace vve {
         auto GetClearColor() -> glm::vec4 { return m_clearColor; };
         auto GetWindowName() -> std::string { return m_windowName; };
         virtual void SetClearColor(glm::vec4 clearColor);
-        virtual void AddRenderer(std::unique_ptr<Renderer<ATYPE>>&& renderer);
         auto GetSurface() -> VkSurfaceKHR { return m_surface; };
         auto GetInstanceExtensions() -> std::vector<const char*> { return m_instanceExtensions; }; 
 		bool GetIsMinimized() { return m_isMinimized; }
 
     protected:
-        std::vector<std::unique_ptr<Renderer<ATYPE>>> m_renderer;
-
         int 			m_width;
         int 			m_height;
         std::string 	m_windowName;

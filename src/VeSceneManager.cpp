@@ -10,7 +10,7 @@ namespace vve {
 
    	template<ArchitectureType ATYPE>
     SceneManager<ATYPE>::SceneManager(Engine<ATYPE>* engine, std::string name) 
-		: System<ATYPE>{engine, name }, m_registry{engine->GetRegistry()} {
+		: System<ATYPE>{engine, name } {
 
 	}
 

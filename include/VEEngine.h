@@ -24,15 +24,16 @@ namespace vve {
 		Engine(std::string name = "VVE Engine");
 		virtual ~Engine();
 		void RegisterSystem( std::vector<MessageCallback> callbacks);
+		void RegisterSystem2( std::unique_ptr<System<ATYPE>>&& system );
 		void DeregisterSystem( System<ATYPE>* system );
 		void Run();
 		void Stop();
 		auto GetDebug() -> bool { return m_debug; }
-		auto GetSceneMgr() -> SceneManager<ATYPE>* { return m_sceneManager.get(); }
 		auto GetRegistry() -> auto& { return m_registry; }
 		void SendMessage( Message message );
 		auto GetSystem( std::string name ) -> System<ATYPE>*;
 		auto GetWindow( std::string name ) -> Window<ATYPE>* { return (Window<ATYPE>*)GetSystem(name); }
+		auto GetSceneMgr(std::string name) -> SceneManager<ATYPE>* { return (SceneManager<ATYPE>*)GetSystem(name); }
 
 	protected:
 		virtual void OnInit(Message message);
@@ -44,7 +45,7 @@ namespace vve {
 		virtual void CreateSystems();
 		virtual void CreateCamera();
 
-		std::unordered_map<std::string, System<ATYPE>*> m_systems{};
+		std::unordered_map<std::string, std::unique_ptr<System<ATYPE>>> m_systems{};
 
 		bool m_debug{false};
 		bool m_running{false};
@@ -54,9 +55,6 @@ namespace vve {
 		using PriorityMap = std::multimap<int, MessageCallback>;
 		using MessageMap = std::unordered_map<MessageType, PriorityMap>;
 		MessageMap m_messageMap{};
-
-		std::vector<std::unique_ptr<Window<ATYPE>>> m_windows{};
-		std::unique_ptr<SceneManager<ATYPE>> m_sceneManager;
 	};
 
 };  // namespace vve

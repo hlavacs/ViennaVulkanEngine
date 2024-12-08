@@ -11,7 +11,8 @@ namespace vve {
     
    	template<ArchitectureType ATYPE>
     Renderer<ATYPE>::Renderer(Engine<ATYPE>* engine, Window<ATYPE>* window, std::string name ) 
-        : System<ATYPE>{engine, name }, m_window{window} {};
+        : System<ATYPE>{engine, name }, m_window{window} {
+	};
 
    	template<ArchitectureType ATYPE>
     Renderer<ATYPE>::~Renderer(){};

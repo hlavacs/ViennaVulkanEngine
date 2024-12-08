@@ -48,8 +48,12 @@ namespace vve {
 		for( auto& callback : callbacks ) {
 			auto& pm = m_messageMap[callback.m_messageType];
 			pm.insert({callback.m_phase, callback});
-			m_systems[callback.m_system->GetName()] = callback.m_system;
 		}
+	}
+
+	template<ArchitectureType ATYPE>
+	void Engine<ATYPE>::RegisterSystem2( std::unique_ptr<System<ATYPE>>&& system ) {
+		m_systems[system->GetName()] = std::move(system);
 	}
 
 	template<ArchitectureType ATYPE>
@@ -84,14 +88,14 @@ namespace vve {
 	
 	template<ArchitectureType ATYPE>
 	void Engine<ATYPE>::CreateWindow(){
-		m_windows.push_back(std::make_unique<WindowSDL<ATYPE>>(this, "Vulkane Engine", 800, 600, "Main Window" ) );
+		RegisterSystem2(std::make_unique<WindowSDL<ATYPE>>(this, "Vulkane Engine", 800, 600, "Main Window" ) );
 	};
 	
 	template<ArchitectureType ATYPE>
 	void Engine<ATYPE>::CreateRenderer(){
-		GetWindow("Main Window")->AddRenderer(std::make_unique<RendererVulkan<ATYPE>>(this, GetWindow("Main Window")) );
-		GetWindow("Main Window")->AddRenderer(std::make_unique<RendererImgui<ATYPE>>(this, GetWindow("Main Window")) );
-		GetWindow("Main Window")->AddRenderer(std::make_unique<RendererForward<ATYPE>>(this, GetWindow("Main Window")) );
+		RegisterSystem2(std::make_unique<RendererVulkan<ATYPE>>( this, GetWindow("Main Window"), "VVE RendererVulkan") );
+		RegisterSystem2(std::make_unique<RendererImgui<ATYPE>>(  this, GetWindow("Main Window"), "VVE RendererImgui") );
+		RegisterSystem2(std::make_unique<RendererForward<ATYPE>>(this, GetWindow("Main Window"), "VVE RendererForward") );
 	};
 	
 	template<ArchitectureType ATYPE>
@@ -101,7 +105,7 @@ namespace vve {
 	
 	template<ArchitectureType ATYPE>
 	void Engine<ATYPE>::CreateSystems( ){
-		m_sceneManager = std::make_unique<SceneManager<ATYPE>>(this);
+		RegisterSystem2(std::make_unique<SceneManager<ATYPE>>(this, "VVE SceneManager"));
 	};
 
 	template<ArchitectureType ATYPE>
@@ -130,7 +134,7 @@ namespace vve {
 
 	template<ArchitectureType ATYPE>
 	auto Engine<ATYPE>::GetSystem( std::string name ) -> System<ATYPE>* { 
-		auto system = m_systems[name];
+		auto system = m_systems[name].get();
 		assert(system != nullptr);
 		return system;
 	}	
