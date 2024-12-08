@@ -88,14 +88,14 @@ namespace vve {
 	
 	template<ArchitectureType ATYPE>
 	void Engine<ATYPE>::CreateWindow(){
-		RegisterSystem(std::make_unique<WindowSDL<ATYPE>>(this, "Vulkane Engine", 800, 600, "Main Window" ) );
+		RegisterSystem(std::make_unique<WindowSDL<ATYPE>>(this, "Vulkane Engine", 800, 600, m_mainWindowName ) );
 	};
 	
 	template<ArchitectureType ATYPE>
 	void Engine<ATYPE>::CreateRenderer(){
-		RegisterSystem(std::make_unique<RendererVulkan<ATYPE>>( this, GetWindow("Main Window"), "VVE RendererVulkan") );
-		RegisterSystem(std::make_unique<RendererImgui<ATYPE>>(  this, GetWindow("Main Window"), "VVE RendererImgui") );
-		RegisterSystem(std::make_unique<RendererForward<ATYPE>>(this, GetWindow("Main Window"), "VVE RendererForward") );
+		RegisterSystem(std::make_unique<RendererVulkan<ATYPE>>( this, GetWindow(m_mainWindowName), "VVE RendererVulkan") );
+		RegisterSystem(std::make_unique<RendererImgui<ATYPE>>(  this, GetWindow(m_mainWindowName), "VVE RendererImgui") );
+		RegisterSystem(std::make_unique<RendererForward<ATYPE>>(this, GetWindow(m_mainWindowName), "VVE RendererForward") );
 	};
 	
 	template<ArchitectureType ATYPE>

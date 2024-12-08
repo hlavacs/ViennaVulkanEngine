@@ -36,7 +36,7 @@ public:
         static bool show_demo_window = true;
         static bool show_another_window = false;
 
-        if( m_engine->GetWindow("Main Window")->GetIsMinimized()) {
+        if( m_engine->GetMainWindow()->GetIsMinimized()) {
 			return;
 		}
 
@@ -79,7 +79,7 @@ public:
             ImGui::End();
         }
 
-        m_engine->GetWindow("Main Window")->SetClearColor( glm::vec4{ clear_color[0], clear_color[1], clear_color[2], 1.0f} );
+        m_engine->GetMainWindow()->SetClearColor( glm::vec4{ clear_color[0], clear_color[1], clear_color[2], 1.0f} );
     }
 
 

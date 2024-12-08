@@ -8,10 +8,15 @@
 #include "VEInclude.h"
 
 namespace vve {
+
    	template<ArchitectureType ATYPE> class RendererVulkan;
+
 
 	template<ArchitectureType ATYPE = ENGINETYPE_SEQUENTIAL>
 	class Engine : public System<ATYPE> {
+
+	public:
+		const std::string m_mainWindowName = "VVE MainWindow";	
 
 		struct MessageCallback {
 			System<ATYPE>* 				 m_system;
@@ -20,7 +25,6 @@ namespace vve {
 			std::function<void(Message)> m_callback;
 		};
 
-	public:
 		Engine(std::string name);
 		virtual ~Engine();
 		void RegisterSystem( std::unique_ptr<System<ATYPE>>&& system );
@@ -32,6 +36,8 @@ namespace vve {
 		auto GetRegistry() -> auto& { return m_registry; }
 		void SendMessage( Message message );
 		auto GetSystem( std::string name ) -> System<ATYPE>*;
+		auto GetMainWindowName() -> std::string { return m_mainWindowName; }
+		auto GetMainWindow() -> Window<ATYPE>* { return (Window<ATYPE>*)GetSystem(GetMainWindowName()); }
 		auto GetWindow( std::string name ) -> Window<ATYPE>* { return (Window<ATYPE>*)GetSystem(name); }
 		auto GetSceneMgr(std::string name) -> SceneManager<ATYPE>* { return (SceneManager<ATYPE>*)GetSystem(name); }
 
@@ -50,7 +56,7 @@ namespace vve {
 		bool m_debug{false};
 		bool m_running{false};
 
-		vecs::Registry<vecs::REGISTRYTYPE_SEQUENTIAL> m_registry;
+		vecs::Registry<ATYPE> m_registry;
 		
 		using PriorityMap = std::multimap<int, MessageCallback>;
 		using MessageMap = std::unordered_map<MessageType, PriorityMap>;
