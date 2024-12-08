@@ -40,7 +40,7 @@ namespace vve {
 		void SendMessage( Message message );
 		auto GetSystem( std::string name ) -> System<ATYPE>*;
 		auto GetMainWindowName() -> std::string { return m_mainWindowName; }
-		auto GetMainWindow() -> Window<ATYPE>* { return (Window<ATYPE>*)GetSystem(GetMainWindowName()); }
+		auto GetMainWindow() -> Window<ATYPE>* { return GetWindow(GetMainWindowName()); }
 		auto GetWindow( std::string name ) -> Window<ATYPE>* { return (Window<ATYPE>*)GetSystem(name); }
 		auto GetSceneMgr(std::string name) -> SceneManager<ATYPE>* { return (SceneManager<ATYPE>*)GetSystem(name); }
 
