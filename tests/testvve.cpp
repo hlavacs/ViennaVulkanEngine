@@ -20,10 +20,10 @@ public:
     MyGUI( vve::Engine<ATYPE>* engine ) : vve::System<ATYPE>("MyGUI", engine ) {
 
 		m_engine->RegisterCallback( { 
-			  {this, -10000, vve::MessageType::RENDER_NEXT_FRAME, [this](vve::Message message){this->OnRenderNextFrame(message);} }
-			, {this,      0, vve::MessageType::KEY_DOWN, [this](vve::Message message){this->OnKeyDown(message);} }
-			, {this,      0, vve::MessageType::KEY_REPEAT, [this](vve::Message message){this->OnKeyRepeat(message);} }
-			, {this,      0, vve::MessageType::KEY_UP, [this](vve::Message message){this->OnKeyUp(message);} }
+			  {this, -10000, vve::MsgType::RENDER_NEXT_FRAME, [this](vve::Message message){this->OnRenderNextFrame(message);} }
+			, {this,      0, vve::MsgType::KEY_DOWN, [this](vve::Message message){this->OnKeyDown(message);} }
+			, {this,      0, vve::MsgType::KEY_REPEAT, [this](vve::Message message){this->OnKeyRepeat(message);} }
+			, {this,      0, vve::MsgType::KEY_UP, [this](vve::Message message){this->OnKeyUp(message);} }
 		} );
     };
     
@@ -84,14 +84,14 @@ public:
 
 
     void OnKeyDown(vve::Message message) {
-        std::cout << "Key down: " << message.GetData<vve::MessageKeyDown>().m_key << std::endl;
+        std::cout << "Key down: " << message.GetData<vve::MsgKeyDown>().m_key << std::endl;
     }
 
     void OnKeyUp(vve::Message message) {
-        std::cout << "Key up: " << message.GetData<vve::MessageKeyUp>().m_key << std::endl;
+        std::cout << "Key up: " << message.GetData<vve::MsgKeyUp>().m_key << std::endl;
     }
     void OnKeyRepeat(vve::Message message) {
-        std::cout << "Key repeat: " << message.GetData<vve::MessageKeyRepeat>().m_key << std::endl;
+        std::cout << "Key repeat: " << message.GetData<vve::MsgKeyRepeat>().m_key << std::endl;
     }
 
 

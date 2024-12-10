@@ -15,13 +15,13 @@ namespace vve {
         : Renderer<ATYPE>(systemName, engine, window) {
 
         engine->RegisterCallback( { 
-			{this, -50000, MessageType::INIT, [this](Message message){this->OnInit(message);} }, 
-			{this, -50000, MessageType::PREPARE_NEXT_FRAME, [this](Message message){this->OnPrepareNextFrame(message);} },
-			{this, -50000, MessageType::RECORD_NEXT_FRAME, [this](Message message){this->OnRecordNextFrame(message);} },
-			{this,      0, MessageType::RENDER_NEXT_FRAME, [this](Message message){this->OnRenderNextFrame(message);} },
-			{this,   1000, MessageType::INIT, [this](Message message){this->OnInit2(message);} },
-			{this, -10000, MessageType::QUIT, [this](Message message){this->OnQuit(message);} },
-			{this,  10000, MessageType::QUIT, [this](Message message){this->OnQuit2(message);} }
+			{this, -50000, MsgType::INIT, [this](Message message){this->OnInit(message);} }, 
+			{this, -50000, MsgType::PREPARE_NEXT_FRAME, [this](Message message){this->OnPrepareNextFrame(message);} },
+			{this, -50000, MsgType::RECORD_NEXT_FRAME, [this](Message message){this->OnRecordNextFrame(message);} },
+			{this,      0, MsgType::RENDER_NEXT_FRAME, [this](Message message){this->OnRenderNextFrame(message);} },
+			{this,   1000, MsgType::INIT, [this](Message message){this->OnInit2(message);} },
+			{this, -10000, MsgType::QUIT, [this](Message message){this->OnQuit(message);} },
+			{this,  10000, MsgType::QUIT, [this](Message message){this->OnQuit2(message);} }
 		} );
     }
 
@@ -57,13 +57,14 @@ namespace vve {
         vh::createDepthResources(m_physicalDevice, m_device, m_vmaAllocator, m_swapChain, m_depthImage);
         vh::createFramebuffers(m_device, m_swapChain, m_depthImage, m_renderPass);
 
-        vh::createTextureImage(m_physicalDevice, m_device, m_vmaAllocator, m_graphicsQueue, m_commandPool, m_texture);
+        vh::createTextureImage(m_physicalDevice, m_device, m_vmaAllocator, m_graphicsQueue, m_commandPool, "assets\\textures\\viking_room.png", m_texture);
         vh::createTextureImageView(m_device, m_texture);
         vh::createTextureSampler(m_physicalDevice, m_device, m_texture);
-		vh::loadModel(m_geometry);
-		
+
+		vh::loadModel("assets\\models\\viking_room.obj", m_geometry);
         vh::createVertexBuffer(m_physicalDevice, m_device, m_vmaAllocator, m_graphicsQueue, m_commandPool, m_geometry);
         vh::createIndexBuffer( m_physicalDevice, m_device, m_vmaAllocator, m_graphicsQueue, m_commandPool, m_geometry);
+
         vh::createUniformBuffers(m_physicalDevice, m_device, m_vmaAllocator, m_uniformBuffers);
         vh::createDescriptorPool(m_device, m_descriptorPool);
         vh::createDescriptorSets(m_device, m_texture, m_descriptorSetLayout, m_uniformBuffers, m_descriptorPool, m_descriptorSets);
@@ -139,10 +140,16 @@ namespace vve {
         }
     }
 
-
 	template<ArchitectureType ATYPE>
     void RendererVulkan<ATYPE>::OnQuit2(Message message) {
         vkDestroyInstance(m_instance, nullptr);
+	}
+
+	template<ArchitectureType ATYPE>
+	auto RendererVulkan<ATYPE>::CreateTexture( void *pixels, int width, int height, size_t size, vh::Texture& texture ) -> void {
+		vh::createTextureImage2(m_physicalDevice, m_device, m_vmaAllocator, m_graphicsQueue, m_commandPool, pixels, width, height, size, texture);
+		vh::createTextureImageView(m_device, texture);
+		vh::createTextureSampler(m_physicalDevice, m_device, texture);
 	}
 
     template class RendererVulkan<ENGINETYPE_SEQUENTIAL>;

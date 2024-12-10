@@ -124,7 +124,10 @@ namespace vh {
     };
 
     struct Texture {
-        VkImage         m_textureImage;
+		int 			m_width;
+		int				m_height;
+		VkDeviceSize	m_size;
+		VkImage         m_textureImage;
         VmaAllocation   m_textureImageAllocation;
         VkImageView     m_textureImageView;
         VkSampler       m_textureSampler;
@@ -179,7 +182,10 @@ namespace vh {
     VkFormat findDepthFormat(VkPhysicalDevice physicalDevice);
     bool hasStencilComponent(VkFormat format);
     void MemCopy(VkDevice device, void* source, VmaAllocationInfo& allocInfo, VkDeviceSize size);
-    void createTextureImage(VkPhysicalDevice physicalDevice, VkDevice device, VmaAllocator vmaAllocator, VkQueue graphicsQueue, VkCommandPool commandPool, Texture& texture);
+    
+	void createTextureImage(VkPhysicalDevice physicalDevice, VkDevice device, VmaAllocator vmaAllocator, VkQueue graphicsQueue, VkCommandPool commandPool, std::string fileName, Texture& texture);
+	void createTextureImage2(VkPhysicalDevice physicalDevice, VkDevice device, VmaAllocator vmaAllocator, VkQueue graphicsQueue, VkCommandPool commandPool, void* pixels, int width, int height, size_t size, Texture& texture);
+
     void createTextureImageView(VkDevice device, Texture& texture);
     void createTextureSampler(VkPhysicalDevice physicalDevice, VkDevice device, Texture &texture);
     VkImageView createImageView(VkDevice device, VkImage image, VkFormat format, VkImageAspectFlags aspectFlags);
@@ -191,7 +197,7 @@ namespace vh {
         , VkImage image, VkFormat format, VkImageLayout oldLayout, VkImageLayout newLayout);
     void copyBufferToImage(VkDevice device, VkQueue graphicsQueue, VkCommandPool commandPool
         , VkBuffer buffer, VkImage image, uint32_t width, uint32_t height);
-    void loadModel( Geometry& geometry);
+    void loadModel( std::string fileName, Geometry& geometry);
     void createVertexBuffer(VkPhysicalDevice physicalDevice, VkDevice device, VmaAllocator vmaAllocator
         , VkQueue graphicsQueue, VkCommandPool commandPool, Geometry& geometry);
     void createIndexBuffer(VkPhysicalDevice physicalDevice, VkDevice device, VmaAllocator vmaAllocator

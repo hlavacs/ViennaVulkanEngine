@@ -16,12 +16,13 @@ namespace vve {
 	class Engine : public System<ATYPE> {
 
 	public:
-		const std::string m_mainWindowName = "VVE MainWindow";	
+		const std::string m_mainWindowName = "VVE MainWindow";
+		const std::string m_sceneManagerName = "VVE SceneManager";
 
 		struct MessageCallback {
 			System<ATYPE>* 				 m_system;
 			int 						 m_phase;	
-			MessageType 				 m_messageType;
+			MsgType 				 	 m_messageType;
 			std::function<void(Message)> m_callback;
 		};
 
@@ -63,7 +64,7 @@ namespace vve {
 		vecs::Registry<ATYPE> m_registry;
 		
 		using PriorityMap = std::multimap<int, MessageCallback>;
-		using MessageMap = std::unordered_map<MessageType, PriorityMap>;
+		using MessageMap = std::unordered_map<MsgType, PriorityMap>;
 		MessageMap m_messageMap{};
 	};
 

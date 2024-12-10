@@ -658,14 +658,12 @@ namespace vh
         return format == VK_FORMAT_D32_SFLOAT_S8_UINT || format == VK_FORMAT_D24_UNORM_S8_UINT;
     }
 
-
     void MemCopy(VkDevice device, void* source, VmaAllocationInfo& allocInfo, VkDeviceSize size) {
         memcpy(allocInfo.pMappedData, source, size);
     }
 
-
   void createTextureImage(VkPhysicalDevice physicalDevice, VkDevice device, VmaAllocator vmaAllocator
-        , VkQueue graphicsQueue, VkCommandPool commandPool, Texture& texture) {
+        , VkQueue graphicsQueue, VkCommandPool commandPool, std::string fileName, Texture& texture) {
 
         int texWidth, texHeight, texChannels;
         stbi_uc* pixels = stbi_load(TEXTURE_PATH.c_str(), &texWidth, &texHeight, &texChannels, STBI_rgb_alpha);
@@ -700,6 +698,39 @@ namespace vh
 
         destroyBuffer(device, vmaAllocator, stagingBuffer, stagingBufferAllocation);
     }
+
+
+  void createTextureImage2(VkPhysicalDevice physicalDevice, VkDevice device, VmaAllocator vmaAllocator, 
+  			VkQueue graphicsQueue, VkCommandPool commandPool, void* pixels, int texWidth, int texHeight, size_t imageSize, vh::Texture& texture) {
+
+        VkBuffer stagingBuffer;
+        VmaAllocation stagingBufferAllocation;
+        VmaAllocationInfo allocInfo;
+        createBuffer(physicalDevice, device, vmaAllocator, imageSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT
+            , VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT
+            , VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT | VMA_ALLOCATION_CREATE_MAPPED_BIT
+            , stagingBuffer, stagingBufferAllocation, &allocInfo);
+
+        MemCopy(device, pixels, allocInfo, imageSize);
+
+        stbi_image_free(pixels);
+
+        createImage(physicalDevice, device, vmaAllocator, texWidth, texHeight, VK_FORMAT_R8G8B8A8_SRGB
+            , VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT
+            , VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, texture.m_textureImage, texture.m_textureImageAllocation); 
+
+        transitionImageLayout(device, graphicsQueue, commandPool, texture.m_textureImage, VK_FORMAT_R8G8B8A8_SRGB
+            , VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
+            copyBufferToImage(device, graphicsQueue, commandPool, stagingBuffer, texture.m_textureImage
+                , static_cast<uint32_t>(texWidth), static_cast<uint32_t>(texHeight));
+        transitionImageLayout(device, graphicsQueue, commandPool, texture.m_textureImage, VK_FORMAT_R8G8B8A8_SRGB
+            , VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+
+        destroyBuffer(device, vmaAllocator, stagingBuffer, stagingBufferAllocation);
+    }
+
+
+
 
     void createTextureImageView(VkDevice device, Texture& texture) {
         texture.m_textureImageView = createImageView(device, texture.m_textureImage, VK_FORMAT_R8G8B8A8_SRGB
@@ -856,13 +887,13 @@ namespace vh
         endSingleTimeCommands(device, graphicsQueue, commandPool, commandBuffer);
     }
 
-    void loadModel( Geometry& geometry) {
+    void loadModel( std::string fileName, Geometry& geometry) {
         tinyobj::attrib_t attrib;
         std::vector<tinyobj::shape_t> shapes;
         std::vector<tinyobj::material_t> materials;
         std::string warn, err;
 
-        if (!tinyobj::LoadObj(&attrib, &shapes, &materials, &warn, &err, MODEL_PATH.c_str())) {
+        if (!tinyobj::LoadObj(&attrib, &shapes, &materials, &warn, &err, fileName.c_str())) {
             throw std::runtime_error(warn + err);
         }
 

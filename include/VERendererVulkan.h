@@ -33,6 +33,8 @@ namespace vve {
 		auto GetTexture() -> vh::Texture { return m_texture; }
 		auto GetGeometry() -> vh::Geometry { return m_geometry; }
 
+		auto CreateTexture( void *pixels, int width, int height, size_t size, vh::Texture& texture ) -> void;
+
     private:
         virtual void OnInit(Message message);
         virtual void OnInit2(Message message);

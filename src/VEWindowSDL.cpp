@@ -10,21 +10,21 @@
 
 namespace vve {
 
-    MessageSDL::MessageSDL(void* s, void* r, double dt, SDL_Event event): MessageBase{MessageType::SDL, s, r}, m_dt{dt}, m_event{event} {};   
+    MsgSDL::MsgSDL(void* s, void* r, double dt, SDL_Event event): MsgBase{MsgType::SDL, s, r}, m_dt{dt}, m_event{event} {};   
 
    	template<ArchitectureType ATYPE>
     WindowSDL<ATYPE>::WindowSDL( std::string systemName, Engine<ATYPE>* engine,std::string windowName, int width, int height) 
                 : Window<ATYPE>(systemName, engine, windowName, width, height ) {
 
         engine->RegisterCallback( { 
-			{this, -100000, MessageType::INIT, [this](Message message){this->OnInit(message);} },
-			{this,       0, MessageType::INIT, [this](Message message){this->OnInit2(message);} },
-			{this,       0, MessageType::POLL_EVENTS, [this](Message message){this->OnPollEvents(message);} },
-			{this,       0, MessageType::PREPARE_NEXT_FRAME, [this](Message message){this->OnPrepareNextFrame(message);} },
-			{this,       0, MessageType::RENDER_NEXT_FRAME, [this](Message message){this->OnRenderNextFrame(message);} },
-			{this,       0, MessageType::PRESENT_NEXT_FRAME, [this](Message message){this->OnPresentNextFrame(message);} },
-			{this,   	 0, MessageType::QUIT, [this](Message message){this->OnQuit(message);} },
-			{this,  100000, MessageType::QUIT, [this](Message message){this->OnQuit2(message);} }
+			{this, -100000, MsgType::INIT, [this](Message message){this->OnInit(message);} },
+			{this,       0, MsgType::INIT, [this](Message message){this->OnInit2(message);} },
+			{this,       0, MsgType::POLL_EVENTS, [this](Message message){this->OnPollEvents(message);} },
+			{this,       0, MsgType::PREPARE_NEXT_FRAME, [this](Message message){this->OnPrepareNextFrame(message);} },
+			{this,       0, MsgType::RENDER_NEXT_FRAME, [this](Message message){this->OnRenderNextFrame(message);} },
+			{this,       0, MsgType::PRESENT_NEXT_FRAME, [this](Message message){this->OnPresentNextFrame(message);} },
+			{this,   	 0, MsgType::QUIT, [this](Message message){this->OnQuit(message);} },
+			{this,  100000, MsgType::QUIT, [this](Message message){this->OnQuit2(message);} }
 		} );
     }
 
@@ -83,7 +83,7 @@ namespace vve {
 
         SDL_Event event;
         while (SDL_PollEvent(&event)) {
-            m_engine->SendMessage( MessageSDL{this, nullptr, message.GetDt(), event} );
+            m_engine->SendMessage( MsgSDL{this, nullptr, message.GetDt(), event} );
 
             if (event.type == SDL_WINDOWEVENT) {
                 switch (event.window.event) {
@@ -106,26 +106,26 @@ namespace vve {
 	                	m_engine->Stop();
 						break;
 	                case SDL_MOUSEMOTION:
-	                    m_engine->SendMessage( MessageMouseMove{this, nullptr, message.GetDt(), event.motion.x, event.motion.y} );
+	                    m_engine->SendMessage( MsgMouseMove{this, nullptr, message.GetDt(), event.motion.x, event.motion.y} );
 	                    break;
 	                case SDL_MOUSEBUTTONDOWN:
-	                    m_engine->SendMessage( MessageMouseButtonDown{this, nullptr, message.GetDt(), event.button.button} );
+	                    m_engine->SendMessage( MsgMouseButtonDown{this, nullptr, message.GetDt(), event.button.button} );
 	                    button.push_back( event.button.button );
 	                    break;
 	                case SDL_MOUSEBUTTONUP:
-	                    m_engine->SendMessage( MessageMouseButtonUp{this, nullptr, message.GetDt(), event.button.button} );
+	                    m_engine->SendMessage( MsgMouseButtonUp{this, nullptr, message.GetDt(), event.button.button} );
 	                    m_mouseButtonsDown.erase( event.button.button );
 	                    break;
 	                case SDL_MOUSEWHEEL:
-	                    m_engine->SendMessage( MessageMouseWheel{this, nullptr, message.GetDt(), event.wheel.x, event.wheel.y} );
+	                    m_engine->SendMessage( MsgMouseWheel{this, nullptr, message.GetDt(), event.wheel.x, event.wheel.y} );
 	                    break;
 	                case SDL_KEYDOWN:
 	                    if( event.key.repeat ) continue;
-	                    m_engine->SendMessage( MessageKeyDown{this, nullptr, message.GetDt(), event.key.keysym.scancode} );
+	                    m_engine->SendMessage( MsgKeyDown{this, nullptr, message.GetDt(), event.key.keysym.scancode} );
 	                    key.push_back(event.key.keysym.scancode);
 	                    break;
 	                case SDL_KEYUP:
-	                    m_engine->SendMessage( MessageKeyUp{this, nullptr, message.GetDt(), event.key.keysym.scancode} );
+	                    m_engine->SendMessage( MsgKeyUp{this, nullptr, message.GetDt(), event.key.keysym.scancode} );
 	                    m_keysDown.erase(event.key.keysym.scancode);
 	                    break;
 	                default:
@@ -134,8 +134,8 @@ namespace vve {
 			}
         }
 
-        for( auto& key : m_keysDown ) { m_engine->SendMessage( MessageKeyRepeat{this, nullptr, message.GetDt(), key} ); }
-        for( auto& button : m_mouseButtonsDown ) { m_engine->SendMessage( MessageMouseButtonRepeat{this, nullptr, message.GetDt(), button} ); }
+        for( auto& key : m_keysDown ) { m_engine->SendMessage( MsgKeyRepeat{this, nullptr, message.GetDt(), key} ); }
+        for( auto& button : m_mouseButtonsDown ) { m_engine->SendMessage( MsgMouseButtonRepeat{this, nullptr, message.GetDt(), button} ); }
 
         if(key.size() > 0) { for( auto& k : key ) { m_keysDown.insert(k) ; } }
         if(button.size() > 0) { for( auto& b : button ) {m_mouseButtonsDown.insert(b);} }

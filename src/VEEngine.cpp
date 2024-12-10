@@ -21,9 +21,9 @@ namespace vve {
 		m_debug = true;
 	#endif
 		RegisterCallback( { 
-			{this, std::numeric_limits<int>::lowest(), MessageType::INIT, [this](Message message){this->OnInit(message);} },
-			{this, std::numeric_limits<int>::max(),    MessageType::INIT, [this](Message message){this->OnInit2(message);} },
-			{this, std::numeric_limits<int>::max(),    MessageType::QUIT, [this](Message message){this->OnQuit(message);} }
+			{this, std::numeric_limits<int>::lowest(), MsgType::INIT, [this](Message message){this->OnInit(message);} },
+			{this, std::numeric_limits<int>::max(),    MsgType::INIT, [this](Message message){this->OnInit2(message);} },
+			{this, std::numeric_limits<int>::max(),    MsgType::QUIT, [this](Message message){this->OnQuit(message);} }
 		} );
 	};
 	
@@ -53,6 +53,7 @@ namespace vve {
 
 	template<ArchitectureType ATYPE>
 	void Engine<ATYPE>::RegisterSystem( std::unique_ptr<System<ATYPE>>&& system ) {
+		assert(!m_systems.contains(system->GetName()));
 		m_systems[system->GetName()] = std::move(system);
 	}
 
@@ -118,7 +119,7 @@ namespace vve {
 
 	template<ArchitectureType ATYPE>
 	void Engine<ATYPE>::Init(){
-		SendMessage( MessageInit{this} );
+		SendMessage( MsgInit{this} );
 		m_last = std::chrono::high_resolution_clock::now();
 	}
 
@@ -127,19 +128,19 @@ namespace vve {
 		auto now = std::chrono::high_resolution_clock::now();
 		double dt = std::chrono::duration_cast<std::chrono::duration<double>>(now - m_last).count();
 		m_last = now;
-		SendMessage( MessageFrameStart{this, nullptr, dt} ) ;
-		SendMessage( MessagePollEvents{this, nullptr, dt} ) ;
-		SendMessage( MessageUpdate{this, nullptr, dt} ) ;
-		SendMessage( MessagePrepareNextFrame{this, nullptr, dt} ) ;
-		SendMessage( MessageRecordNextFrame{this, nullptr, dt} ) ;
-		SendMessage( MessageRenderNextFrame{this, nullptr, dt} ) ;
-		SendMessage( MessagePresentNextFrame{this, nullptr, dt} ) ;
-		SendMessage( MessageFrameEnd{this, nullptr, dt} ) ;
+		SendMessage( MsgFrameStart{this, nullptr, dt} ) ;
+		SendMessage( MsgPollEvents{this, nullptr, dt} ) ;
+		SendMessage( MsgUpdate{this, nullptr, dt} ) ;
+		SendMessage( MsgPrepareNextFrame{this, nullptr, dt} ) ;
+		SendMessage( MsgRecordNextFrame{this, nullptr, dt} ) ;
+		SendMessage( MsgRenderNextFrame{this, nullptr, dt} ) ;
+		SendMessage( MsgPresentNextFrame{this, nullptr, dt} ) ;
+		SendMessage( MsgFrameEnd{this, nullptr, dt} ) ;
 	}
 
 	template<ArchitectureType ATYPE>
 	void Engine<ATYPE>::Quit(){
-		SendMessage( MessageQuit{this, nullptr} );
+		SendMessage( MsgQuit{this, nullptr} );
 	}
 
 	template<ArchitectureType ATYPE>

@@ -9,26 +9,33 @@
 
 namespace vve {
 
-    MessageInit::MessageInit(void* s, void* r) : MessageBase{MessageType::INIT, s, r} {};
-    MessageAnnounce::MessageAnnounce(void* s) : MessageBase{MessageType::ANNOUNCE, s} {};
-    MessageFrameStart::MessageFrameStart(void* s, void* r, double dt) : MessageBase{MessageType::FRAME_START, s, r, dt} {};
-    MessagePollEvents::MessagePollEvents(void* s, void* r, double dt) : MessageBase{MessageType::POLL_EVENTS, s, r, dt} {};
-    MessageUpdate::MessageUpdate(void* s, void* r, double dt): MessageBase{MessageType::UPDATE, s, r, dt} {}; 
-    MessagePrepareNextFrame::MessagePrepareNextFrame(void* s, void* r, double dt): MessageBase{MessageType::PREPARE_NEXT_FRAME, s, r, dt} {}; 
-    MessageRenderNextFrame::MessageRenderNextFrame(void* s, void* r, double dt): MessageBase{MessageType::RENDER_NEXT_FRAME, s, r, dt} {}; 
-    MessageRecordNextFrame::MessageRecordNextFrame(void* s, void* r, double dt): MessageBase{MessageType::RECORD_NEXT_FRAME, s, r, dt} {}; 
-    MessagePresentNextFrame::MessagePresentNextFrame(void* s, void* r, double dt): MessageBase{MessageType::PRESENT_NEXT_FRAME, s, r, dt} {}; 
-    MessageFrameEnd:: MessageFrameEnd(void* s, void* r, double dt): MessageBase{MessageType::FRAME_END, s, r, dt} {};
-    MessageDelete:: MessageDelete(void* s, void* r, double dt): MessageBase{MessageType::DELETED, s, r, dt} {}; 
-    MessageMouseMove:: MessageMouseMove(void* s, void* r, double dt, int x, int y): MessageBase{MessageType::MOUSE_MOVE, s, r, dt}, m_x{x}, m_y{y} {}; 
-    MessageMouseButtonDown:: MessageMouseButtonDown(void* s, void* r, double dt, int button): MessageBase{MessageType::MOUSE_BUTTON_DOWN, s, r, dt}, m_button{button} {}; 
-    MessageMouseButtonUp::MessageMouseButtonUp(void* s, void* r, double dt, int button): MessageBase{MessageType::MOUSE_BUTTON_UP, s, r, dt}, m_button{button} {}; 
-    MessageMouseButtonRepeat::MessageMouseButtonRepeat(void* s, void* r, double dt, int button): MessageBase{MessageType::MOUSE_BUTTON_REPEAT, s, r, dt}, m_button{button} {}; 
-    MessageMouseWheel::MessageMouseWheel(void* s, void* r, double dt, int x, int y): MessageBase{MessageType::MOUSE_WHEEL, s, r, dt}, m_x{x}, m_y{y} {}; 
-    MessageKeyDown::MessageKeyDown(void* s, void* r, double dt, int key): MessageBase{MessageType::KEY_DOWN, s, r, dt}, m_key{key} {}; 
-    MessageKeyUp::MessageKeyUp(void* s, void* r, double dt, int key): MessageBase{MessageType::KEY_UP, s, r, dt}, m_key{key} {}; 
-    MessageKeyRepeat::MessageKeyRepeat(void* s, void* r, double dt, int key): MessageBase{MessageType::KEY_REPEAT, s, r, dt}, m_key{key} {};   
-    MessageQuit::MessageQuit(void* s, void* r) : MessageBase{MessageType::QUIT, s, r} {};
+    MsgInit::MsgInit(void* s, void* r) : MsgBase{MsgType::INIT, s, r} {};
+    MsgAnnounce::MsgAnnounce(void* s) : MsgBase{MsgType::ANNOUNCE, s} {};
+    MsgFrameStart::MsgFrameStart(void* s, void* r, double dt) : MsgBase{MsgType::FRAME_START, s, r, dt} {};
+    MsgPollEvents::MsgPollEvents(void* s, void* r, double dt) : MsgBase{MsgType::POLL_EVENTS, s, r, dt} {};
+    MsgUpdate::MsgUpdate(void* s, void* r, double dt): MsgBase{MsgType::UPDATE, s, r, dt} {}; 
+    MsgPrepareNextFrame::MsgPrepareNextFrame(void* s, void* r, double dt): MsgBase{MsgType::PREPARE_NEXT_FRAME, s, r, dt} {}; 
+    MsgRenderNextFrame::MsgRenderNextFrame(void* s, void* r, double dt): MsgBase{MsgType::RENDER_NEXT_FRAME, s, r, dt} {}; 
+    MsgRecordNextFrame::MsgRecordNextFrame(void* s, void* r, double dt): MsgBase{MsgType::RECORD_NEXT_FRAME, s, r, dt} {}; 
+    MsgPresentNextFrame::MsgPresentNextFrame(void* s, void* r, double dt): MsgBase{MsgType::PRESENT_NEXT_FRAME, s, r, dt} {}; 
+    MsgFrameEnd:: MsgFrameEnd(void* s, void* r, double dt): MsgBase{MsgType::FRAME_END, s, r, dt} {};
+    MsgDelete:: MsgDelete(void* s, void* r, double dt): MsgBase{MsgType::DELETED, s, r, dt} {}; 
+    MsgMouseMove:: MsgMouseMove(void* s, void* r, double dt, int x, int y): MsgBase{MsgType::MOUSE_MOVE, s, r, dt}, m_x{x}, m_y{y} {}; 
+    MsgMouseButtonDown:: MsgMouseButtonDown(void* s, void* r, double dt, int button): MsgBase{MsgType::MOUSE_BUTTON_DOWN, s, r, dt}, m_button{button} {}; 
+    MsgMouseButtonUp::MsgMouseButtonUp(void* s, void* r, double dt, int button): MsgBase{MsgType::MOUSE_BUTTON_UP, s, r, dt}, m_button{button} {}; 
+    MsgMouseButtonRepeat::MsgMouseButtonRepeat(void* s, void* r, double dt, int button): MsgBase{MsgType::MOUSE_BUTTON_REPEAT, s, r, dt}, m_button{button} {}; 
+    MsgMouseWheel::MsgMouseWheel(void* s, void* r, double dt, int x, int y): MsgBase{MsgType::MOUSE_WHEEL, s, r, dt}, m_x{x}, m_y{y} {}; 
+    MsgKeyDown::MsgKeyDown(void* s, void* r, double dt, int key): MsgBase{MsgType::KEY_DOWN, s, r, dt}, m_key{key} {}; 
+    MsgKeyUp::MsgKeyUp(void* s, void* r, double dt, int key): MsgBase{MsgType::KEY_UP, s, r, dt}, m_key{key} {}; 
+    MsgKeyRepeat::MsgKeyRepeat(void* s, void* r, double dt, int key): MsgBase{MsgType::KEY_REPEAT, s, r, dt}, m_key{key} {};   
+    MsgQuit::MsgQuit(void* s, void* r) : MsgBase{MsgType::QUIT, s, r} {};
+
+	MsgTextureCreate::MsgTextureCreate(void* s, void* r, void *pixels, vecs::Handle handle) : MsgBase{MsgType::TEXTURE_CREATE, s, r}, m_pixels{pixels}, m_handle{handle} {};
+    MsgTextureDestroy::MsgTextureDestroy(void* s, void* r, vecs::Handle handle) : MsgBase{MsgType::TEXTURE_DESTROY, s, r}, m_handle{handle} {};
+	MsgGeometryCreate::MsgGeometryCreate(void* s, void* r, vecs::Handle handle) : MsgBase{MsgType::GEOMETRY_CREATE, s, r}, m_handle{handle} {};
+    MsgGeometryDestroy::MsgGeometryDestroy(void* s, void* r, vecs::Handle handle) : MsgBase{MsgType::GEOMETRY_DESTROY, s, r}, m_handle{handle} {};
+
+
 
    	template<ArchitectureType ATYPE>
     System<ATYPE>::System( std::string systemName, Engine<ATYPE>* engine ) : m_name(systemName), m_engine(engine) {

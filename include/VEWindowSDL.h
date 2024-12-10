@@ -8,7 +8,7 @@
 
 namespace vve {
 
-    struct MessageSDL : public MessageBase { MessageSDL(void* s, void* r, double dt, SDL_Event event ); double m_dt; SDL_Event m_event; };
+    struct MsgSDL : public MsgBase { MsgSDL(void* s, void* r, double dt, SDL_Event event ); double m_dt; SDL_Event m_event; };
 
    	template<ArchitectureType ATYPE>
     class WindowSDL : public Window<ATYPE> {
