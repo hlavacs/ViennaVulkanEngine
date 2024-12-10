@@ -3,6 +3,7 @@
 #include "VESystem.h"
 #include "VEEngine.h"
 #include "VEWindow.h"
+#include "L2DFileDialog.h"
 #include "VEGUI.h"
 
 namespace vve {
@@ -21,7 +22,35 @@ namespace vve {
         {
             ImGui::Begin("Hello, world!");                          // Create a window called "Hello, world!" and append into it.
 
-            if (ImGui::Button("Load File")) {                          // Buttons return true when clicked (most widgets return true when edited/activated)
+			static char* file_dialog_buffer = nullptr;
+			static char path_obj[500] = "assets\\models\\viking_room.obj";
+
+			ImGui::TextUnformatted("OBJ File: ");
+			ImGui::SameLine();
+			ImGui::InputText("##path", path_obj, sizeof(path_obj));
+			ImGui::SameLine();
+			if (ImGui::Button("Browse##path_obj")) {
+			  file_dialog_buffer = path_obj;
+			  FileDialog::file_dialog_open = true;
+			  FileDialog::file_dialog_open_type = FileDialog::FileDialogType::OpenFile;
+			}
+
+			static char path_texture[500] = "assets\\textures\\viking_room.png";
+			ImGui::TextUnformatted("Txt File: ");
+			ImGui::SameLine();
+			ImGui::InputText("##path", path_texture, sizeof(path_obj));
+			ImGui::SameLine();
+			if (ImGui::Button("Browse##path_texture")) {
+			  file_dialog_buffer = path_texture;
+			  FileDialog::file_dialog_open = true;
+			  FileDialog::file_dialog_open_type = FileDialog::FileDialogType::OpenFile;
+			}
+
+			if (FileDialog::file_dialog_open) {
+			  FileDialog::ShowFileDialog(&FileDialog::file_dialog_open, file_dialog_buffer, sizeof(file_dialog_buffer), FileDialog::file_dialog_open_type);
+			}
+
+            if (ImGui::Button("Load")) {                          // Buttons return true when clicked (most widgets return true when edited/activated)
 			}
 
             ImGui::End();
