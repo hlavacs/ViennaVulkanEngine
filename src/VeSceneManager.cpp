@@ -7,6 +7,11 @@
 #include "VESceneManager.h"
 
 namespace vve {
+	
+	MsgTextureCreate::MsgTextureCreate(void* s, void* r, void *pixels, vecs::Handle handle) : MsgBase{MsgType::TEXTURE_CREATE, s, r}, m_pixels{pixels}, m_handle{handle} {};
+    MsgTextureDestroy::MsgTextureDestroy(void* s, void* r, vecs::Handle handle) : MsgBase{MsgType::TEXTURE_DESTROY, s, r}, m_handle{handle} {};
+	MsgGeometryCreate::MsgGeometryCreate(void* s, void* r, vecs::Handle handle) : MsgBase{MsgType::GEOMETRY_CREATE, s, r}, m_handle{handle} {};
+    MsgGeometryDestroy::MsgGeometryDestroy(void* s, void* r, vecs::Handle handle) : MsgBase{MsgType::GEOMETRY_DESTROY, s, r}, m_handle{handle} {};
 
    	template<ArchitectureType ATYPE>
     SceneManager<ATYPE>::SceneManager(std::string systemName, Engine<ATYPE>* engine ) 
@@ -30,9 +35,8 @@ namespace vve {
         //m_renderer->CreateTexture(pixels, texWidth, texHeight, imageSize, texture);
 		auto handle = m_engine->GetRegistry().Insert(filenName, texture);
 		m_files[filenName] = handle;
-
+		m_engine->SendMessage( MsgTextureCreate{this, nullptr, pixels, handle} );
 		stbi_image_free(pixels);
-
 		return handle;
 	}
 
@@ -42,6 +46,7 @@ namespace vve {
 		vh::loadModel(fileName, geometry);
 		auto handle = m_engine->GetRegistry().Insert(fileName, geometry);
 		m_files[fileName] = handle;
+		m_engine->SendMessage( MsgGeometryCreate{this, nullptr, handle} );
 		return handle;
 	}
 	

@@ -54,6 +54,7 @@ namespace vve {
 		virtual void CreateRenderer();
 		virtual void CreateSystems();
 		virtual void CreateCamera();
+		virtual void CreateGUI();
 
 		std::unordered_map<std::string, std::unique_ptr<System<ATYPE>>> m_systems{};
 

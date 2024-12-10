@@ -30,13 +30,6 @@ namespace vve {
     MsgKeyRepeat::MsgKeyRepeat(void* s, void* r, double dt, int key): MsgBase{MsgType::KEY_REPEAT, s, r, dt}, m_key{key} {};   
     MsgQuit::MsgQuit(void* s, void* r) : MsgBase{MsgType::QUIT, s, r} {};
 
-	MsgTextureCreate::MsgTextureCreate(void* s, void* r, void *pixels, vecs::Handle handle) : MsgBase{MsgType::TEXTURE_CREATE, s, r}, m_pixels{pixels}, m_handle{handle} {};
-    MsgTextureDestroy::MsgTextureDestroy(void* s, void* r, vecs::Handle handle) : MsgBase{MsgType::TEXTURE_DESTROY, s, r}, m_handle{handle} {};
-	MsgGeometryCreate::MsgGeometryCreate(void* s, void* r, vecs::Handle handle) : MsgBase{MsgType::GEOMETRY_CREATE, s, r}, m_handle{handle} {};
-    MsgGeometryDestroy::MsgGeometryDestroy(void* s, void* r, vecs::Handle handle) : MsgBase{MsgType::GEOMETRY_DESTROY, s, r}, m_handle{handle} {};
-
-
-
    	template<ArchitectureType ATYPE>
     System<ATYPE>::System( std::string systemName, Engine<ATYPE>* engine ) : m_name(systemName), m_engine(engine) {
     };

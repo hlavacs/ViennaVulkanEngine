@@ -122,7 +122,7 @@ class MyEngine : public vve::Engine<ATYPE> {
 int main() {
 
 
-    MyEngine<vve::ENGINETYPE_SEQUENTIAL> engine ;
+    vve::Engine<vve::ENGINETYPE_SEQUENTIAL> engine("My Engine") ;
 
     engine.Run();
 

@@ -36,6 +36,7 @@ namespace vve {
 		CreateRenderer();
 		CreateSystems();
 		CreateCamera();
+		CreateGUI();
 	};
 
 	template<ArchitectureType ATYPE>
@@ -108,6 +109,11 @@ namespace vve {
 	void Engine<ATYPE>::CreateSystems( ){
 		RegisterSystem(std::make_unique<SceneManager<ATYPE>>("VVE SceneManager", this));
 	};
+
+	template<ArchitectureType ATYPE>
+	void Engine<ATYPE>::CreateGUI() {
+		
+	}
 
 	template<ArchitectureType ATYPE>
 	void Engine<ATYPE>::Run(){

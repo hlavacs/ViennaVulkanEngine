@@ -100,7 +100,7 @@ namespace vve {
                     	m_isMinimized = false;
                     	break;
                 }
-            } else {				
+            } else {
 			    switch( event.type ) {
 					case SDL_QUIT:
 	                	m_engine->Stop();
@@ -140,8 +140,7 @@ namespace vve {
         if(key.size() > 0) { for( auto& k : key ) { m_keysDown.insert(k) ; } }
         if(button.size() > 0) { for( auto& b : button ) {m_mouseButtonsDown.insert(b);} }
 
-        if (SDL_GetWindowFlags(m_sdlWindow) & SDL_WINDOW_MINIMIZED)
-        {
+        if (SDL_GetWindowFlags(m_sdlWindow) & SDL_WINDOW_MINIMIZED) {
             SDL_Delay(10);
             return;
         }

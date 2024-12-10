@@ -34,11 +34,11 @@ namespace vve {
         KEY_UP,
         KEY_REPEAT,
         QUIT,
-        SDL,
-		TEXTURE_CREATE,
-		TEXTURE_DESTROY,
-		GEOMETRY_CREATE,
-		GEOMETRY_DESTROY,
+        SDL, //defined in WindowSDL
+		TEXTURE_CREATE,  //defined in SceneManager
+		TEXTURE_DESTROY, //defined in SceneManager
+		GEOMETRY_CREATE,	//defined in SceneManager
+		GEOMETRY_DESTROY,	//defined in SceneManager
         LAST
     };
 
@@ -67,27 +67,14 @@ namespace vve {
     struct MsgFrameEnd : public MsgBase { MsgFrameEnd(void* s, void* r, double dt); };
     struct MsgDelete : public MsgBase { MsgDelete(void* s, void* r, double dt ); void* m_ptr; uint64_t m_id; };
     struct MsgMouseMove : public MsgBase { MsgMouseMove(void* s, void* r, double dt, int x, int y); int m_x; int m_y; };
-    
     struct MsgMouseButtonDown : public MsgBase { MsgMouseButtonDown(void* s, void* r, double dt, int button); int m_button; };
     struct MsgMouseButtonUp : public MsgBase { MsgMouseButtonUp(void* s, void* r, double dt, int button);  int m_button; };
     struct MsgMouseButtonRepeat : public MsgBase { MsgMouseButtonRepeat(void* s, void* r, double dt, int button);  int m_button; };
     struct MsgMouseWheel : public MsgBase { MsgMouseWheel(void* s, void* r, double dt, int x, int y);  int m_x; int m_y; };
-    
     struct MsgKeyDown : public MsgBase { MsgKeyDown(void* s, void* r, double dt, int key);  int m_key; };
     struct MsgKeyUp : public MsgBase { MsgKeyUp(void* s, void* r, double dt, int key);  int m_key; };
     struct MsgKeyRepeat : public MsgBase { MsgKeyRepeat(void* s, void* r, double dt, int key); int m_key; };
     struct MsgQuit : public MsgBase { MsgQuit(void* s, void* r=nullptr); };
-
-    struct MsgTextureCreate : public MsgBase { 
-		MsgTextureCreate(void* s, void* r, void *pixels, vecs::Handle handle); 
-		void* m_pixels; vecs::Handle m_handle; 
-	};
-
-    struct MsgTextureDestroy : public MsgBase { MsgTextureDestroy(void* s, void* r, vecs::Handle handle); vecs::Handle m_handle; };
-
-    struct MsgGeometryCreate : public MsgBase { MsgGeometryCreate(void* s, void* r, vecs::Handle handle); vecs::Handle m_handle; };
-    struct MsgGeometryDestroy : public MsgBase { MsgGeometryDestroy(void* s, void* r, vecs::Handle handle); vecs::Handle m_handle; };
-
 
 
     struct Message {
