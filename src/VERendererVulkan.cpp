@@ -5,6 +5,7 @@
 #include "VERendererVulkan.h"
 #include "VEEngine.h"
 #include "VEWindowSDL.h"
+#include "VESceneManager.h"
 
 
 
@@ -20,6 +21,12 @@ namespace vve {
 			{this, -50000, MsgType::RECORD_NEXT_FRAME, [this](Message message){this->OnRecordNextFrame(message);} },
 			{this,      0, MsgType::RENDER_NEXT_FRAME, [this](Message message){this->OnRenderNextFrame(message);} },
 			{this,   1000, MsgType::INIT, [this](Message message){this->OnInit2(message);} },
+
+			{this,   1000, MsgType::TEXTURE_CREATE,   [this](Message message){this->OnTextureCreate(message);} },
+			{this,   1000, MsgType::TEXTURE_DESTROY,  [this](Message message){this->OnTextureDestroy(message);} },
+			{this,   1000, MsgType::GEOMETRY_CREATE,  [this](Message message){this->OnTextureCreate(message);} },
+			{this,   1000, MsgType::GEOMETRY_DESTROY, [this](Message message){this->OnTextureDestroy(message);} },
+
 			{this, -10000, MsgType::QUIT, [this](Message message){this->OnQuit(message);} },
 			{this,  10000, MsgType::QUIT, [this](Message message){this->OnQuit2(message);} }
 		} );
@@ -146,11 +153,43 @@ namespace vve {
 	}
 
 	template<ArchitectureType ATYPE>
-	auto RendererVulkan<ATYPE>::CreateTexture( void *pixels, int width, int height, size_t size, vh::Texture& texture ) -> void {
-		vh::createTextureImage2(m_physicalDevice, m_device, m_vmaAllocator, m_graphicsQueue, m_commandPool, pixels, width, height, size, texture);
+	auto RendererVulkan<ATYPE>::OnTextureCreate( Message message ) -> void {
+		auto pixels = message.GetData<MsgTextureCreate>().m_pixels;
+		auto handle = message.GetData<MsgTextureCreate>().m_handle;
+		auto& texture = m_engine->GetRegistry().template Get<vh::Texture&>(handle).GetRef();
+		vh::createTextureImage2(m_physicalDevice, m_device, m_vmaAllocator, m_graphicsQueue, m_commandPool, 
+			pixels, texture.m_width, texture.m_height, texture.m_size, texture);
 		vh::createTextureImageView(m_device, texture);
 		vh::createTextureSampler(m_physicalDevice, m_device, texture);
 	}
+
+	template<ArchitectureType ATYPE>
+	auto RendererVulkan<ATYPE>::OnTextureDestroy( Message message ) -> void {
+		auto handle = message.GetData<MsgTextureDestroy>().m_handle;
+		auto& texture = m_engine->GetRegistry().template Get<vh::Texture&>(handle).GetRef();
+		vkDestroySampler(m_device, texture.m_textureSampler, nullptr);
+		vkDestroyImageView(m_device, texture.m_textureImageView, nullptr);
+		vh::destroyImage(m_device, m_vmaAllocator, texture.m_textureImage, texture.m_textureImageAllocation);
+		m_engine->GetRegistry().template Erase(handle);
+	}
+
+	template<ArchitectureType ATYPE>
+	auto RendererVulkan<ATYPE>::OnGeometryCreate( Message message ) -> void {
+		auto handle = message.GetData<MsgGeometryCreate>().m_handle;
+		auto& geometry = m_engine->GetRegistry().template Get<vh::Geometry&>(handle).GetRef();
+		vh::createVertexBuffer(m_physicalDevice, m_device, m_vmaAllocator, m_graphicsQueue, m_commandPool, geometry);
+		vh::createIndexBuffer( m_physicalDevice, m_device, m_vmaAllocator, m_graphicsQueue, m_commandPool, geometry);
+	}
+
+	template<ArchitectureType ATYPE>
+	auto RendererVulkan<ATYPE>::OnGeometryDestroy( Message message ) -> void {
+		auto handle = message.GetData<MsgGeometryDestroy>().m_handle;
+		auto& geometry = m_engine->GetRegistry().template Get<vh::Geometry&>(handle).GetRef();
+		vh::destroyBuffer(m_device, m_vmaAllocator, geometry.m_indexBuffer, geometry.m_indexBufferAllocation);
+		vh::destroyBuffer(m_device, m_vmaAllocator, geometry.m_vertexBuffer, geometry.m_vertexBufferAllocation);
+		m_engine->GetRegistry().template Erase(handle);
+	}
+
 
     template class RendererVulkan<ENGINETYPE_SEQUENTIAL>;
     template class RendererVulkan<ENGINETYPE_PARALLEL>;

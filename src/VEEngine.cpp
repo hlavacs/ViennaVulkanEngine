@@ -8,6 +8,7 @@
 #include "VEEngine.h"
 #include "VEWindow.h"
 #include "VEWindowSDL.h"
+#include "VEGUI.h"
 #include "VERendererForward.h"
 #include "VERendererImgui.h"
 #include "VERendererVulkan.h"
@@ -112,7 +113,7 @@ namespace vve {
 
 	template<ArchitectureType ATYPE>
 	void Engine<ATYPE>::CreateGUI() {
-		
+		RegisterSystem(std::make_unique<GUI<ATYPE>>("VVE GUI", this));
 	}
 
 	template<ArchitectureType ATYPE>

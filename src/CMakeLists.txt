@@ -10,6 +10,7 @@ set(SOURCE
   ${IMGUI}/imgui_widgets.cpp
 
   VEEngine.cpp
+  VEGUI.cpp
   VERenderer.cpp
   VERendererForward.cpp
   VERendererImgui.cpp
@@ -24,6 +25,7 @@ set(SOURCE
 set(HEADERS
   ${INCLUDE}/VEInclude.h
   ${INCLUDE}/VEEngine.h
+  ${INCLUDE}/VEGUI.h
   ${INCLUDE}/VERenderer.h
   ${INCLUDE}/VERendererForward.h
   ${INCLUDE}/VERendererImgui.h

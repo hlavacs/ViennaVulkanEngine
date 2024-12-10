@@ -13,7 +13,7 @@ namespace vve {
 
 	public:
 		GUI(std::string systemName, Engine<ATYPE>* engine );
-		~GUI() = default;
+    	~GUI() {};
 
 	private:
 		void OnRenderNextFrame(vve::Message message);
