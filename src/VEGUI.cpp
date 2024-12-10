@@ -11,12 +11,12 @@ namespace vve {
 	template<ArchitectureType ATYPE>
 	GUI<ATYPE>::GUI(std::string systemName, Engine<ATYPE>* engine ) : System<ATYPE>(systemName, engine) {
 		m_engine->RegisterCallback( { 
-			  {this, -10000, vve::MsgType::RENDER_NEXT_FRAME, [this](vve::Message message){this->OnRenderNextFrame(message);} }
+			  {this, 1000, vve::MsgType::RECORD_NEXT_FRAME, [this](vve::Message message){this->OnRecordNextFrame(message);} }
 		} );
 	};
 
 	template<ArchitectureType ATYPE>
-    void GUI<ATYPE>::OnRenderNextFrame(vve::Message message) {
+    void GUI<ATYPE>::OnRecordNextFrame(vve::Message message) {
         if( m_engine->GetMainWindow()->GetIsMinimized()) { return; }
 
         {

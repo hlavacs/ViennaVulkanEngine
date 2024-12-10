@@ -8,11 +8,6 @@
 
 namespace vve {
 	
-	MsgTextureCreate::MsgTextureCreate(void* s, void* r, void *pixels, vecs::Handle handle) : MsgBase{MsgType::TEXTURE_CREATE, s, r}, m_pixels{pixels}, m_handle{handle} {};
-    MsgTextureDestroy::MsgTextureDestroy(void* s, void* r, vecs::Handle handle) : MsgBase{MsgType::TEXTURE_DESTROY, s, r}, m_handle{handle} {};
-	MsgGeometryCreate::MsgGeometryCreate(void* s, void* r, vecs::Handle handle) : MsgBase{MsgType::GEOMETRY_CREATE, s, r}, m_handle{handle} {};
-    MsgGeometryDestroy::MsgGeometryDestroy(void* s, void* r, vecs::Handle handle) : MsgBase{MsgType::GEOMETRY_DESTROY, s, r}, m_handle{handle} {};
-
    	template<ArchitectureType ATYPE>
     SceneManager<ATYPE>::SceneManager(std::string systemName, Engine<ATYPE>* engine ) 
 		: System<ATYPE>{systemName, engine } {

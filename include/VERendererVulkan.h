@@ -6,6 +6,20 @@
 
 namespace vve {
 
+	//-------------------------------------------------------------------------------------------------------
+	// Messages
+
+	struct MsgTextureCreate : public MsgBase { 
+		MsgTextureCreate(void* s, void* r, void *pixels, vecs::Handle handle); 
+		void* m_pixels; vecs::Handle m_handle; 
+	};
+    struct MsgTextureDestroy : public MsgBase { MsgTextureDestroy(void* s, void* r, vecs::Handle handle); vecs::Handle m_handle; };
+    struct MsgGeometryCreate : public MsgBase { MsgGeometryCreate(void* s, void* r, vecs::Handle handle); vecs::Handle m_handle; };
+    struct MsgGeometryDestroy : public MsgBase { MsgGeometryDestroy(void* s, void* r, vecs::Handle handle); vecs::Handle m_handle; };
+
+	//-------------------------------------------------------------------------------------------------------
+	// Vulkan Renderer
+
    	template<ArchitectureType ATYPE>
     class RendererVulkan : public Renderer<ATYPE>
     {
@@ -24,21 +38,27 @@ namespace vve {
 		auto GetPresentQueue() -> VkQueue { return m_presentQueue; }
 		auto GetCommandPool() -> VkCommandPool { return m_commandPool; }
 		auto GetVmaAllocator() -> VmaAllocator { return m_vmaAllocator; }
-		auto GetSwapChain() -> vh::SwapChain { return m_swapChain; }
+		auto GetSwapChain() -> vh::SwapChain& { return m_swapChain; }
 		auto GetRenderPass() -> VkRenderPass { return m_renderPass; }
 		auto GetDescriptorSetLayout() -> VkDescriptorSetLayout { return m_descriptorSetLayout; }
 		auto GetDescriptorPool() -> VkDescriptorPool { return m_descriptorPool; }
-		auto GetGraphicsPipeline() -> vh::Pipeline { return m_graphicsPipeline; }
-		auto GetDepthImage() -> vh::DepthImage { return m_depthImage; }
-		auto GetTexture() -> vh::Texture { return m_texture; }
-		auto GetGeometry() -> vh::Geometry { return m_geometry; }
+		auto GetGraphicsPipeline() -> vh::Pipeline& { return m_graphicsPipeline; }
+		auto GetDepthImage() -> vh::DepthImage& { return m_depthImage; }
+		auto GetTexture() -> vh::Texture& { return m_texture; }
+		auto GetGeometry() -> vh::Geometry& { return m_geometry; }
 
+		auto GetUniformBuffers() -> vh::UniformBuffers& { return m_uniformBuffers; }
+		auto GetDescriptorSets() -> std::vector<VkDescriptorSet>& { return m_descriptorSets; }
+		auto GetCommandBuffers() -> std::vector<VkCommandBuffer>& { return m_commandBuffers; }
+		auto GetSyncObjects() -> vh::SyncObjects& { return m_syncObjects; }
+		auto GetCurrentFrame() -> uint32_t { return m_currentFrame; }
+		auto GetImageIndex() -> uint32_t { return m_imageIndex; }
+		auto GetFramebufferResized() -> bool { return m_framebufferResized; }
 
     private:
         virtual void OnInit(Message message);
         virtual void OnInit2(Message message);
         virtual void OnPrepareNextFrame(Message message);
-        virtual void OnRecordNextFrame(Message message);
         virtual void OnRenderNextFrame(Message message);
 		virtual void OnTextureCreate( Message message );
 		virtual void OnTextureDestroy( Message message );
@@ -82,6 +102,8 @@ namespace vve {
 	    vh::SyncObjects m_syncObjects;
 
 	    uint32_t m_currentFrame = 0;
+        uint32_t m_imageIndex;
+
 	    bool m_framebufferResized = false;
 
 

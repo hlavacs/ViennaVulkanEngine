@@ -7,17 +7,6 @@
 
 namespace vve {
 
-	struct MsgTextureCreate : public MsgBase { 
-		MsgTextureCreate(void* s, void* r, void *pixels, vecs::Handle handle); 
-		void* m_pixels; vecs::Handle m_handle; 
-	};
-
-    struct MsgTextureDestroy : public MsgBase { MsgTextureDestroy(void* s, void* r, vecs::Handle handle); vecs::Handle m_handle; };
-
-    struct MsgGeometryCreate : public MsgBase { MsgGeometryCreate(void* s, void* r, vecs::Handle handle); vecs::Handle m_handle; };
-    struct MsgGeometryDestroy : public MsgBase { MsgGeometryDestroy(void* s, void* r, vecs::Handle handle); vecs::Handle m_handle; };
-
-
   	template<ArchitectureType ATYPE>
     class SceneManager : public System<ATYPE> {
 

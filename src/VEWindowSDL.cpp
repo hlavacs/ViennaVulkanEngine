@@ -10,8 +10,14 @@
 
 namespace vve {
 
+	//-------------------------------------------------------------------------------------------------------
+	// Messages
+
     MsgSDL::MsgSDL(void* s, void* r, double dt, SDL_Event event): MsgBase{MsgType::SDL, s, r}, m_dt{dt}, m_event{event} {};   
 
+	//-------------------------------------------------------------------------------------------------------
+	// SDL Window
+	
    	template<ArchitectureType ATYPE>
     WindowSDL<ATYPE>::WindowSDL( std::string systemName, Engine<ATYPE>* engine,std::string windowName, int width, int height) 
                 : Window<ATYPE>(systemName, engine, windowName, width, height ) {

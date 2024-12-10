@@ -17,8 +17,7 @@ namespace vve {
 
 		engine->RegisterCallback( { 
 			{this,  10000, MsgType::INIT, [this](Message message){this->OnInit(message);} },
-			{this, -10000, MsgType::PREPARE_NEXT_FRAME, [this](Message message){this->OnPrepareNextFrame(message);} },
-			{this, -20000, MsgType::RENDER_NEXT_FRAME, [this](Message message){this->OnRenderNextFrame(message);} },
+			{this,      0, MsgType::RECORD_NEXT_FRAME, [this](Message message){this->OnRecordNextFrame(message);} },
 			{this, -20000, MsgType::QUIT, [this](Message message){this->OnQuit(message);} },
 			{this,      0, MsgType::SDL, [this](Message message){this->OnSDL(message);} },
 			{this,  10000, MsgType::INIT, [this](Message message){this->OnInit2(message);} },
@@ -44,11 +43,7 @@ namespace vve {
     }
 
    	template<ArchitectureType ATYPE>
-    void RendererImgui<ATYPE>::OnPrepareNextFrame(Message message) {
-    }
-
-   	template<ArchitectureType ATYPE>
-    void RendererImgui<ATYPE>::OnRenderNextFrame(Message message) {
+    void RendererImgui<ATYPE>::OnRecordNextFrame(Message message) {
         if(!m_window->GetIsMinimized()) {
 		    ImGui_ImplVulkan_NewFrame();
 			ImGui_ImplSDL2_NewFrame();

@@ -1493,17 +1493,6 @@ namespace vh
         return indices;
     }
 
-    //std::vector<const char*> getRequiredExtensions() {
-    //    uint32_t extensions_count = 0;
-    //    std::vector<const char*> extensions;
-    //    SDL_Vulkan_GetInstanceExtensions(sdlWindow, &extensions_count, nullptr);
-    //    extensions.resize(extensions_count);
-    //    SDL_Vulkan_GetInstanceExtensions(sdlWindow, &extensions_count, extensions.data());
-    //    if (enableValidationLayers) {
-    //        extensions.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
-    //    }
-    //    return extensions;
-    // }
 
     bool checkValidationLayerSupport(const std::vector<const char*>& validationLayers) {
         uint32_t layerCount;

@@ -16,7 +16,7 @@ namespace vve {
     	~GUI() {};
 
 	private:
-		void OnRenderNextFrame(vve::Message message);
+		void OnRecordNextFrame(vve::Message message);
 	};
 
 };  // namespace vve

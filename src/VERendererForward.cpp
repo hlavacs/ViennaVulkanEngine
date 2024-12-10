@@ -1,9 +1,10 @@
 
 #include "VHInclude.h"
 #include "VHVulkan.h"
-
 #include "VESystem.h"
 #include "VEEngine.h"
+#include "VEWindowSDL.h"
+#include "VERendererVulkan.h"
 #include "VERendererForward.h"
 
 
@@ -15,9 +16,7 @@ namespace vve {
 
   		engine->RegisterCallback( { 
   			{this, -5000, MsgType::INIT, [this](Message message){this->OnInit(message);} },
-  			{this, -5000, MsgType::PREPARE_NEXT_FRAME, [this](Message message){this->OnPrepareNextFrame(message);} },
-  			{this, -5000, MsgType::RECORD_NEXT_FRAME, [this](Message message){this->OnRecordNextFrame(message);} },
-  			{this, -5000, MsgType::RENDER_NEXT_FRAME, [this](Message message){this->OnRenderNextFrame(message);} },
+  			{this,  5000, MsgType::RECORD_NEXT_FRAME, [this](Message message){this->OnRecordNextFrame(message);} },
   			{this, -5000, MsgType::QUIT, [this](Message message){this->OnQuit(message);} }
   		} );
     };
@@ -32,19 +31,22 @@ namespace vve {
     }
 
    	template<ArchitectureType ATYPE>
-    void RendererForward<ATYPE>::OnPrepareNextFrame(Message message) {
-
-    }
-
-   	template<ArchitectureType ATYPE>
     void RendererForward<ATYPE>::OnRecordNextFrame(Message message) {
+		if(m_vulkan == nullptr) {
+			m_vulkan = (RendererVulkan<ATYPE>*)m_engine->GetSystem("VVE RendererVulkan");
+		}
+
+        vh::updateUniformBuffer(m_vulkan->GetCurrentFrame(), m_vulkan->GetSwapChain(), m_vulkan->GetUniformBuffers());
+        vkResetCommandBuffer(m_vulkan->GetCommandBuffers()[m_vulkan->GetCurrentFrame()],  0);
         
+		recordCommandBuffer(
+			m_vulkan->GetCommandBuffers()[m_vulkan->GetCurrentFrame()], m_vulkan->GetImageIndex(), 
+			m_vulkan->GetSwapChain(), m_vulkan->GetRenderPass(), m_vulkan->GetGraphicsPipeline(), 
+			m_vulkan->GetGeometry(), m_vulkan->GetDescriptorSets(), ((WindowSDL<ATYPE>*)m_window)->GetClearColor(), 
+			m_vulkan->GetCurrentFrame());
+	        
     }
 
-   	template<ArchitectureType ATYPE>
-    void RendererForward<ATYPE>::OnRenderNextFrame(Message message) {
-
-    }
 
    	template<ArchitectureType ATYPE>
     void RendererForward<ATYPE>::OnQuit(Message message) {

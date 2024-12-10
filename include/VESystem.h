@@ -35,10 +35,10 @@ namespace vve {
         KEY_REPEAT,
         QUIT,
         SDL, //defined in WindowSDL
-		TEXTURE_CREATE,  //defined in SceneManager
-		TEXTURE_DESTROY, //defined in SceneManager
-		GEOMETRY_CREATE,	//defined in SceneManager
-		GEOMETRY_DESTROY,	//defined in SceneManager
+		TEXTURE_CREATE,  //defined in VulkanRenderer
+		TEXTURE_DESTROY, //defined in VulkanRenderer
+		GEOMETRY_CREATE,	//defined in VulkanRenderer
+		GEOMETRY_DESTROY,	//defined in VulkanRenderer
         LAST
     };
 
