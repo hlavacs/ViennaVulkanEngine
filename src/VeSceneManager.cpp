@@ -24,11 +24,23 @@ namespace vve {
 
    	template<ArchitectureType ATYPE>
     void SceneManager<ATYPE>::OnInit(Message message) {
-		m_rootNode = m_engine->GetRegistry().Insert(SceneNode{});
+		m_rootNode = m_engine->GetRegistry().Insert(SceneNodeWrapper{});
 	}
 
    	template<ArchitectureType ATYPE>
     void SceneManager<ATYPE>::OnUpdate(Message message) {
+		auto& registry = m_engine->GetRegistry();
+
+		for( auto [handle, node] : registry.template GetView<vecs::Handle, SceneNodeWrapper&>() ) {
+			auto sceneNode = node().m_sceneNode;
+			mat4_t parentWorldTransformMatrix{1.0};
+
+			if( sceneNode.m_parent.IsValid() ) {
+				auto parent = registry.template Get<SceneNodeWrapper&>(sceneNode.m_parent)().m_sceneNode;
+				parentWorldTransformMatrix = parent.m_worldTransformMatrix;
+			}
+			sceneNode.m_worldTransformMatrix = parentWorldTransformMatrix * sceneNode.m_parentTransform.Matrix();
+		}
 	}
 
    	template<ArchitectureType ATYPE>

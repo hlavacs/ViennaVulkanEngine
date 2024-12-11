@@ -31,6 +31,7 @@ namespace vve {
 
    	template<ArchitectureType ATYPE>
     void RendererImgui<ATYPE>::OnInit(Message message) {
+		if(m_vulkan == nullptr) { m_vulkan = (RendererVulkan<ATYPE>*)m_engine->GetSystem("VVE RendererVulkan"); }
 		auto rend = ((RendererVulkan<ATYPE>*)(m_engine->GetSystem("VVE RendererVulkan")));
 		WindowSDL<ATYPE>* windowSDL = (WindowSDL<ATYPE>*)m_window;
 
@@ -44,6 +45,7 @@ namespace vve {
 
    	template<ArchitectureType ATYPE>
     void RendererImgui<ATYPE>::OnRecordNextFrame(Message message) {
+
         if(!m_window->GetIsMinimized()) {
 		    ImGui_ImplVulkan_NewFrame();
 			ImGui_ImplSDL2_NewFrame();

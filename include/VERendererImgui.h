@@ -21,6 +21,10 @@ namespace vve {
         virtual void OnRecordNextFrame(Message message);
         virtual void OnSDL(Message message);
         virtual void OnQuit(Message message);
+
+		RendererVulkan<ATYPE>* m_vulkan{nullptr};
+	    std::vector<VkCommandBuffer> m_commandBuffers;
+
     };
 
 };   // namespace vve
