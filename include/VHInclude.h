@@ -30,6 +30,7 @@ namespace vve {
 		#define quat_t glm::quat
 		#define mat3_t glm::mat3
 		#define mat4_t glm::mat4
+		#define mat43_t glm::mat4x3
 	#else //VVE_DOUBLE_PRECISION
 		using real_t = double;
 		#define vec2_t glm::dvec2
@@ -38,6 +39,7 @@ namespace vve {
 		#define quat_t glm::dquat
 		#define mat3_t glm::dmat3
 		#define mat4_t glm::dmat4
+		#define mat43_t glm::dmat4x3
 	#endif
 }
 

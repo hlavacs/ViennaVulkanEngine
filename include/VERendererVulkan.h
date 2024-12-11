@@ -58,6 +58,7 @@ namespace vve {
     private:
         virtual void OnInit(Message message);
         virtual void OnInit2(Message message);
+        virtual void OnUpdate(Message message);
         virtual void OnPrepareNextFrame(Message message);
         virtual void OnRenderNextFrame(Message message);
 		virtual void OnTextureCreate( Message message );
@@ -101,7 +102,7 @@ namespace vve {
 	    std::vector<VkCommandBuffer> m_commandBuffers;
 	    vh::SyncObjects m_syncObjects;
 
-	    uint32_t m_currentFrame = 0;
+	    uint32_t m_currentFrame = MAX_FRAMES_IN_FLIGHT;
         uint32_t m_imageIndex;
 
 	    bool m_framebufferResized = false;

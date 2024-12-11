@@ -28,6 +28,7 @@ namespace vve {
 
         engine->RegisterCallback( { 
 			{this, -50000, MsgType::INIT, [this](Message message){this->OnInit(message);} }, 
+			{this,      0, MsgType::UPDATE, [this](Message message){this->OnUpdate(message);} },
 			{this, -50000, MsgType::PREPARE_NEXT_FRAME, [this](Message message){this->OnPrepareNextFrame(message);} },
 			{this,      0, MsgType::RENDER_NEXT_FRAME, [this](Message message){this->OnRenderNextFrame(message);} },
 			{this,   1000, MsgType::INIT, [this](Message message){this->OnInit2(message);} },
@@ -87,12 +88,19 @@ namespace vve {
         vh::createDescriptorSets(m_device, m_texture, m_descriptorSetLayout, m_uniformBuffers, m_descriptorPool, m_descriptorSets);
         vh::createCommandBuffers(m_device, m_commandPool, m_commandBuffers);
         vh::createSyncObjects(m_device, m_syncObjects);
-
     }
+
+
+    template<ArchitectureType ATYPE>
+    void RendererVulkan<ATYPE>::OnUpdate(Message message) {
+		
+	}
+
 
     template<ArchitectureType ATYPE>
     void RendererVulkan<ATYPE>::OnPrepareNextFrame(Message message) {
         if(!m_window->GetIsMinimized()) {
+	        m_currentFrame = (m_currentFrame + 1) % MAX_FRAMES_IN_FLIGHT;
 
 			vkWaitForFences(m_device, 1, &m_syncObjects.m_inFlightFences[m_currentFrame], VK_TRUE, UINT64_MAX);
 
@@ -105,17 +113,10 @@ namespace vve {
 		}
     }
 
-
     template<ArchitectureType ATYPE>
     void RendererVulkan<ATYPE>::OnRenderNextFrame(Message message) {
         if(!m_window->GetIsMinimized()) {
 			VkResult result;
-
-		//updateUniformBuffer(m_currentFrame, m_swapChain, m_uniformBuffers);
-        //vkResetCommandBuffer(m_commandBuffers[m_currentFrame],  0);
-        
-		//recordCommandBuffer(m_commandBuffers[m_currentFrame], m_imageIndex, m_swapChain
-        //    , m_renderPass, m_graphicsPipeline, m_geometry, m_descriptorSets, m_window->GetClearColor(), m_currentFrame);
 	        
 	        vkResetFences(m_device, 1, &m_syncObjects.m_inFlightFences[m_currentFrame]);
 			VkSubmitInfo submitInfo{};
@@ -147,10 +148,7 @@ namespace vve {
 	            m_framebufferResized = false;
 	            recreateSwapChain(m_windowSDL->GetSDLWindow(), m_window->GetSurface(), m_physicalDevice, m_device, m_vmaAllocator, m_swapChain, m_depthImage, m_renderPass);
 	        } else assert(result == VK_SUCCESS);
-
-	        m_currentFrame = (m_currentFrame + 1) % MAX_FRAMES_IN_FLIGHT;
 	    }
-
     }
     
     template<ArchitectureType ATYPE>

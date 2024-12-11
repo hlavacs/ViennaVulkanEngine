@@ -32,9 +32,7 @@ namespace vve {
 
    	template<ArchitectureType ATYPE>
     void RendererForward<ATYPE>::OnRecordNextFrame(Message message) {
-		if(m_vulkan == nullptr) {
-			m_vulkan = (RendererVulkan<ATYPE>*)m_engine->GetSystem("VVE RendererVulkan");
-		}
+		if(m_vulkan == nullptr) { m_vulkan = (RendererVulkan<ATYPE>*)m_engine->GetSystem("VVE RendererVulkan"); }
 
         vh::updateUniformBuffer(m_vulkan->GetCurrentFrame(), m_vulkan->GetSwapChain(), m_vulkan->GetUniformBuffers());
         vkResetCommandBuffer(m_vulkan->GetCommandBuffers()[m_vulkan->GetCurrentFrame()],  0);

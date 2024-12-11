@@ -8,13 +8,28 @@
 
 namespace vve {
 	
+
+	//-------------------------------------------------------------------------------------------------------
+
    	template<ArchitectureType ATYPE>
-    SceneManager<ATYPE>::SceneManager(std::string systemName, Engine<ATYPE>* engine ) 
-		: System<ATYPE>{systemName, engine } {
+    SceneManager<ATYPE>::SceneManager(std::string systemName, Engine<ATYPE>* engine ) : System<ATYPE>{systemName, engine } {
+		engine->RegisterCallback( { 
+			{this, 0, MsgType::INIT, [this](Message message){this->OnInit(message);} },
+			{this, std::numeric_limits<int>::max(), MsgType::UPDATE, [this](Message message){this->OnUpdate(message);} },
+		} );
 	}
 
    	template<ArchitectureType ATYPE>
     SceneManager<ATYPE>::~SceneManager() {}
+
+   	template<ArchitectureType ATYPE>
+    void SceneManager<ATYPE>::OnInit(Message message) {
+		m_rootNode = m_engine->GetRegistry().Insert(SceneNode{});
+	}
+
+   	template<ArchitectureType ATYPE>
+    void SceneManager<ATYPE>::OnUpdate(Message message) {
+	}
 
    	template<ArchitectureType ATYPE>
 	auto SceneManager<ATYPE>::LoadTexture(std::string filenName) -> vecs::Handle {
@@ -51,14 +66,7 @@ namespace vve {
 		return {};
 	}
 
-   	template<ArchitectureType ATYPE>
-	auto SceneManager<ATYPE>::Transform::GetMatrix() -> glm::mat4 {
-		glm::mat4 matrix = glm::mat4(1.0f);
-		matrix = glm::translate(matrix, m_position);
-		matrix = matrix * glm::mat4_cast(m_rotation);
-		matrix = glm::scale(matrix, m_scale);
-		return matrix;
-	}
+
 
    	template<ArchitectureType ATYPE>
 	auto SceneManager<ATYPE>::GetAsset(std::string filename) -> vecs::Handle {
