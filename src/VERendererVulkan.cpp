@@ -206,7 +206,7 @@ namespace vve {
 	auto RendererVulkan<ATYPE>::OnTextureCreate( Message message ) -> void {
 		auto pixels = message.GetData<MsgTextureCreate>().m_pixels;
 		auto handle = message.GetData<MsgTextureCreate>().m_handle;
-		auto& texture = m_engine->GetRegistry().template Get<vh::Texture&>(handle).GetRef();
+		auto& texture = m_engine->GetRegistry().template Get<vh::Texture&>(handle);
 		vh::createTextureImage2(m_physicalDevice, m_device, m_vmaAllocator, m_graphicsQueue, m_commandPool, 
 			pixels, texture.m_width, texture.m_height, texture.m_size, texture);
 		vh::createTextureImageView(m_device, texture);
@@ -216,7 +216,7 @@ namespace vve {
 	template<ArchitectureType ATYPE>
 	auto RendererVulkan<ATYPE>::OnTextureDestroy( Message message ) -> void {
 		auto handle = message.GetData<MsgTextureDestroy>().m_handle;
-		auto& texture = m_engine->GetRegistry().template Get<vh::Texture&>(handle).GetRef();
+		auto& texture = m_engine->GetRegistry().template Get<vh::Texture&>(handle);
 		vkDestroySampler(m_device, texture.m_textureSampler, nullptr);
 		vkDestroyImageView(m_device, texture.m_textureImageView, nullptr);
 		vh::destroyImage(m_device, m_vmaAllocator, texture.m_textureImage, texture.m_textureImageAllocation);
@@ -226,7 +226,7 @@ namespace vve {
 	template<ArchitectureType ATYPE>
 	auto RendererVulkan<ATYPE>::OnGeometryCreate( Message message ) -> void {
 		auto handle = message.GetData<MsgGeometryCreate>().m_handle;
-		auto& geometry = m_engine->GetRegistry().template Get<vh::Geometry&>(handle).GetRef();
+		auto& geometry = m_engine->GetRegistry().template Get<vh::Geometry&>(handle);
 		vh::createVertexBuffer(m_physicalDevice, m_device, m_vmaAllocator, m_graphicsQueue, m_commandPool, geometry);
 		vh::createIndexBuffer( m_physicalDevice, m_device, m_vmaAllocator, m_graphicsQueue, m_commandPool, geometry);
 	}
@@ -234,7 +234,7 @@ namespace vve {
 	template<ArchitectureType ATYPE>
 	auto RendererVulkan<ATYPE>::OnGeometryDestroy( Message message ) -> void {
 		auto handle = message.GetData<MsgGeometryDestroy>().m_handle;
-		auto& geometry = m_engine->GetRegistry().template Get<vh::Geometry&>(handle).GetRef();
+		auto& geometry = m_engine->GetRegistry().template Get<vh::Geometry&>(handle);
 		vh::destroyBuffer(m_device, m_vmaAllocator, geometry.m_indexBuffer, geometry.m_indexBufferAllocation);
 		vh::destroyBuffer(m_device, m_vmaAllocator, geometry.m_vertexBuffer, geometry.m_vertexBufferAllocation);
 		m_engine->GetRegistry().template Erase(handle);

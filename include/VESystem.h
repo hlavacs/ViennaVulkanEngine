@@ -35,6 +35,9 @@ namespace vve {
         KEY_REPEAT,
         QUIT,
         SDL, //defined in WindowSDL
+		FILE_LOAD_TEXTURE, //defined in SceneManager
+		FILE_LOAD_OBJ,	//defined in SceneManager
+		FILE_LOAD_GLTF,	//defined in SceneManager
 		TEXTURE_CREATE,  //defined in VulkanRenderer
 		TEXTURE_DESTROY, //defined in VulkanRenderer
 		GEOMETRY_CREATE,	//defined in VulkanRenderer
@@ -119,8 +122,9 @@ namespace vve {
         auto GetName() -> std::string { return m_name; };
 
     protected:
-        std::string 	m_name;
-        Engine<ATYPE>* 	m_engine;
+        std::string 			m_name;
+        Engine<ATYPE>* 			m_engine;
+		vecs::Registry<ATYPE>*	m_registry;
     };
 
 };

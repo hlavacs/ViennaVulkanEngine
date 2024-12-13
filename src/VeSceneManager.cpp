@@ -8,6 +8,9 @@
 
 namespace vve {
 	
+	//-------------------------------------------------------------------------------------------------------
+
+    MsgFileLoadTexture::MsgFileLoadTexture(void* s, void* r, std::string fileName) : MsgBase{MsgType::FILE_LOAD_TEXTURE, s, r}, m_fileName{fileName} {};
 
 	//-------------------------------------------------------------------------------------------------------
 
@@ -24,22 +27,21 @@ namespace vve {
 
    	template<ArchitectureType ATYPE>
     void SceneManager<ATYPE>::OnInit(Message message) {
-		m_rootNode = m_engine->GetRegistry().Insert(SceneNodeWrapper{});
+		m_registry = &m_engine->GetRegistry();
+		m_rootNode = m_registry->Insert(SceneNodeWrapper{});
 	}
 
    	template<ArchitectureType ATYPE>
     void SceneManager<ATYPE>::OnUpdate(Message message) {
-		auto& registry = m_engine->GetRegistry();
-
-		for( auto [handle, node] : registry.template GetView<vecs::Handle, SceneNodeWrapper&>() ) {
-			auto sceneNode = node().m_sceneNode;
-			mat4_t parentWorldTransformMatrix{1.0};
+		for( auto [handle, node] : m_registry->template GetView<vecs::Handle, SceneNodeWrapper&>() ) {
+			auto sceneNode = node.m_sceneNode;
+			mat4_t parentWorldTransMatrix{1.0};
 
 			if( sceneNode.m_parent.IsValid() ) {
-				auto parent = registry.template Get<SceneNodeWrapper&>(sceneNode.m_parent)().m_sceneNode;
-				parentWorldTransformMatrix = parent.m_worldTransformMatrix;
+				auto parent = m_registry->template Get<SceneNodeWrapper&>(sceneNode.m_parent).m_sceneNode;
+				parentWorldTransMatrix = parent.m_worldTransMatrix;
 			}
-			sceneNode.m_worldTransformMatrix = parentWorldTransformMatrix * sceneNode.m_parentTransform.Matrix();
+			sceneNode.m_worldTransMatrix = parentWorldTransMatrix * sceneNode.m_parentTransform.Matrix();
 		}
 	}
 
@@ -48,14 +50,11 @@ namespace vve {
 		int texWidth, texHeight, texChannels;
         stbi_uc* pixels = stbi_load(filenName.c_str(), &texWidth, &texHeight, &texChannels, STBI_rgb_alpha);
         VkDeviceSize imageSize = texWidth * texHeight * 4;
-
-        if (!pixels) {
-            throw std::runtime_error("failed to load texture image!");
-        }
+        if (!pixels) { return {}; }
 
 		vh::Texture texture{texWidth, texHeight, imageSize};
         //m_renderer->CreateTexture(pixels, texWidth, texHeight, imageSize, texture);
-		auto handle = m_engine->GetRegistry().Insert(filenName, texture);
+		auto handle = m_registry->Insert(filenName, texture);
 		m_files[filenName] = handle;
 		m_engine->SendMessage( MsgTextureCreate{this, nullptr, pixels, handle} );
 		stbi_image_free(pixels);
@@ -66,7 +65,7 @@ namespace vve {
 	auto SceneManager<ATYPE>::LoadOBJ(std::string fileName) -> vecs::Handle {
 		vh::Geometry geometry;
 		vh::loadModel(fileName, geometry);
-		auto handle = m_engine->GetRegistry().Insert(fileName, geometry);
+		auto handle = m_registry->Insert(fileName, geometry);
 		m_files[fileName] = handle;
 		m_engine->SendMessage( MsgGeometryCreate{this, nullptr, handle} );
 		return handle;

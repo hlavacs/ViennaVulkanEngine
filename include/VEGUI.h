@@ -6,6 +6,9 @@
 
 namespace vve {
 
+
+	//-------------------------------------------------------------------------------------------------------
+
 	template<ArchitectureType ATYPE>
 	class GUI : public System<ATYPE> {
 

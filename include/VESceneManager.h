@@ -9,6 +9,11 @@ namespace vve {
 
 	//-------------------------------------------------------------------------------------------------------
 
+	struct MsgFileLoadTexture : public MsgBase { MsgFileLoadTexture(void* s, void* r, std::string fileName); std::string m_fileName; };
+
+
+	//-------------------------------------------------------------------------------------------------------
+
 	struct Transform {
 		vec3_t m_position{0.0, 0.0, 0.0};
 		quat_t m_rotation{};
@@ -19,7 +24,7 @@ namespace vve {
 	};
 
 	struct SceneNode {
-		mat4_t m_worldTransformMatrix{1.0};
+		mat4_t m_worldTransMatrix{1.0};
 		Transform m_parentTransform;
 		vecs::Handle m_parent{};
 		std::vector<vecs::Handle> m_children;
@@ -44,6 +49,7 @@ namespace vve {
     class SceneManager : public System<ATYPE> {
 
 		using System<ATYPE>::m_engine;
+		using System<ATYPE>::m_registry;
 
 		struct SceneNodeWrapper {
 			SceneNode m_sceneNode;
