@@ -18,14 +18,14 @@ namespace vve {
 		vec3_t m_position{0.0, 0.0, 0.0};
 		quat_t m_rotation{};
 		vec3_t m_scale{1.0, 1.0, 1.0};
-		mat4_t m_transMatrix{1.0};
+		mat4_t m_matrix{1.0};
 		Transform() { Matrix(); }
-		auto Matrix() -> mat4_t { m_transMatrix = glm::translate(mat4_t{}, m_position) * glm::mat4_cast(m_rotation) * glm::scale(mat4_t{}, m_scale); return m_transMatrix; }
+		auto Matrix() -> mat4_t { m_matrix = glm::translate(mat4_t{}, m_position) * glm::mat4_cast(m_rotation) * glm::scale(mat4_t{}, m_scale); return m_matrix; }
 	};
 
 	struct SceneNode {
-		mat4_t m_worldTransMatrix{1.0};
-		Transform m_parentTransform;
+		mat4_t m_localToWorldM{1.0};
+		Transform m_localToParentT;
 		vecs::Handle m_parent{};
 		std::vector<vecs::Handle> m_children;
 		std::vector<vecs::Handle> m_objects;

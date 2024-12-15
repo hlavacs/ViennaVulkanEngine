@@ -35,13 +35,13 @@ namespace vve {
     void SceneManager<ATYPE>::OnUpdate(Message message) {
 		for( auto [handle, node] : m_registry->template GetView<vecs::Handle, SceneNodeWrapper&>() ) {
 			auto sceneNode = node.m_sceneNode;
-			mat4_t parentWorldTransMatrix{1.0};
+			mat4_t parentToWorldM{1.0};
 
 			if( sceneNode.m_parent.IsValid() ) {
 				auto parent = m_registry->template Get<SceneNodeWrapper&>(sceneNode.m_parent).m_sceneNode;
-				parentWorldTransMatrix = parent.m_worldTransMatrix;
+				parentToWorldM = parent.m_localToWorldM;
 			}
-			sceneNode.m_worldTransMatrix = parentWorldTransMatrix * sceneNode.m_parentTransform.Matrix();
+			sceneNode.m_localToWorldM = parentToWorldM * sceneNode.m_localToParentT.Matrix();
 		}
 	}
 

@@ -25,16 +25,16 @@ namespace vve {
         PRESENT_NEXT_FRAME,
         FRAME_END,
         DELETED,
-        MOUSE_MOVE,
-        MOUSE_BUTTON_DOWN,
-        MOUSE_BUTTON_UP,
-        MOUSE_BUTTON_REPEAT,
-        MOUSE_WHEEL,
-        KEY_DOWN,
-        KEY_UP,
-        KEY_REPEAT,
-        QUIT,
         SDL, //defined in WindowSDL
+        SDL_MOUSE_MOVE,
+        SDL_MOUSE_BUTTON_DOWN,
+        SDL_MOUSE_BUTTON_UP,
+        SDL_MOUSE_BUTTON_REPEAT,
+        SDL_MOUSE_WHEEL,
+        SDL_KEY_DOWN,
+        SDL_KEY_UP,
+        SDL_KEY_REPEAT,
+        QUIT,
 		FILE_LOAD_TEXTURE, //defined in SceneManager
 		FILE_LOAD_OBJ,	//defined in SceneManager
 		FILE_LOAD_GLTF,	//defined in SceneManager

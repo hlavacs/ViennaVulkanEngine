@@ -20,19 +20,18 @@ namespace vve {
     MsgPresentNextFrame::MsgPresentNextFrame(void* s, void* r, double dt): MsgBase{MsgType::PRESENT_NEXT_FRAME, s, r, dt} {}; 
     MsgFrameEnd:: MsgFrameEnd(void* s, void* r, double dt): MsgBase{MsgType::FRAME_END, s, r, dt} {};
     MsgDelete:: MsgDelete(void* s, void* r, double dt): MsgBase{MsgType::DELETED, s, r, dt} {}; 
-    MsgMouseMove:: MsgMouseMove(void* s, void* r, double dt, int x, int y): MsgBase{MsgType::MOUSE_MOVE, s, r, dt}, m_x{x}, m_y{y} {}; 
-    MsgMouseButtonDown:: MsgMouseButtonDown(void* s, void* r, double dt, int button): MsgBase{MsgType::MOUSE_BUTTON_DOWN, s, r, dt}, m_button{button} {}; 
-    MsgMouseButtonUp::MsgMouseButtonUp(void* s, void* r, double dt, int button): MsgBase{MsgType::MOUSE_BUTTON_UP, s, r, dt}, m_button{button} {}; 
-    MsgMouseButtonRepeat::MsgMouseButtonRepeat(void* s, void* r, double dt, int button): MsgBase{MsgType::MOUSE_BUTTON_REPEAT, s, r, dt}, m_button{button} {}; 
-    MsgMouseWheel::MsgMouseWheel(void* s, void* r, double dt, int x, int y): MsgBase{MsgType::MOUSE_WHEEL, s, r, dt}, m_x{x}, m_y{y} {}; 
-    MsgKeyDown::MsgKeyDown(void* s, void* r, double dt, int key): MsgBase{MsgType::KEY_DOWN, s, r, dt}, m_key{key} {}; 
-    MsgKeyUp::MsgKeyUp(void* s, void* r, double dt, int key): MsgBase{MsgType::KEY_UP, s, r, dt}, m_key{key} {}; 
-    MsgKeyRepeat::MsgKeyRepeat(void* s, void* r, double dt, int key): MsgBase{MsgType::KEY_REPEAT, s, r, dt}, m_key{key} {};   
+    MsgMouseMove:: MsgMouseMove(void* s, void* r, double dt, int x, int y): MsgBase{MsgType::SDL_MOUSE_MOVE, s, r, dt}, m_x{x}, m_y{y} {}; 
+    MsgMouseButtonDown:: MsgMouseButtonDown(void* s, void* r, double dt, int button): MsgBase{MsgType::SDL_MOUSE_BUTTON_DOWN, s, r, dt}, m_button{button} {}; 
+    MsgMouseButtonUp::MsgMouseButtonUp(void* s, void* r, double dt, int button): MsgBase{MsgType::SDL_MOUSE_BUTTON_UP, s, r, dt}, m_button{button} {}; 
+    MsgMouseButtonRepeat::MsgMouseButtonRepeat(void* s, void* r, double dt, int button): MsgBase{MsgType::SDL_MOUSE_BUTTON_REPEAT, s, r, dt}, m_button{button} {}; 
+    MsgMouseWheel::MsgMouseWheel(void* s, void* r, double dt, int x, int y): MsgBase{MsgType::SDL_MOUSE_WHEEL, s, r, dt}, m_x{x}, m_y{y} {}; 
+    MsgKeyDown::MsgKeyDown(void* s, void* r, double dt, int key): MsgBase{MsgType::SDL_KEY_DOWN, s, r, dt}, m_key{key} {}; 
+    MsgKeyUp::MsgKeyUp(void* s, void* r, double dt, int key): MsgBase{MsgType::SDL_KEY_UP, s, r, dt}, m_key{key} {}; 
+    MsgKeyRepeat::MsgKeyRepeat(void* s, void* r, double dt, int key): MsgBase{MsgType::SDL_KEY_REPEAT, s, r, dt}, m_key{key} {};   
     MsgQuit::MsgQuit(void* s, void* r) : MsgBase{MsgType::QUIT, s, r} {};
 
    	template<ArchitectureType ATYPE>
-    System<ATYPE>::System( std::string systemName, Engine<ATYPE>* engine ) : m_name(systemName), m_engine(engine) {
-    };
+    System<ATYPE>::System( std::string systemName, Engine<ATYPE>* engine ) : m_name(systemName), m_engine(engine) {};
 
    	template<ArchitectureType ATYPE>
     System<ATYPE>::~System(){};
