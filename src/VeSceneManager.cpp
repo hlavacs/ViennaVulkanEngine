@@ -28,17 +28,17 @@ namespace vve {
    	template<ArchitectureType ATYPE>
     void SceneManager<ATYPE>::OnInit(Message message) {
 		m_registry = &m_engine->GetRegistry();
-		m_rootNode = m_registry->Insert(SceneNodeWrapper{});
+		m_handleMap[m_rootName] = m_registry->Insert(SceneNodeWrapper{}); //insert root node
 	}
 
    	template<ArchitectureType ATYPE>
     void SceneManager<ATYPE>::OnUpdate(Message message) {
 		for( auto [handle, node] : m_registry->template GetView<vecs::Handle, SceneNodeWrapper&>() ) {
-			auto sceneNode = node.m_sceneNode;
+			auto& sceneNode = node.m_sceneNode;
 			mat4_t parentToWorldM{1.0};
 
 			if( sceneNode.m_parent.IsValid() ) {
-				auto parent = m_registry->template Get<SceneNodeWrapper&>(sceneNode.m_parent).m_sceneNode;
+				auto& parent = m_registry->template Get<SceneNodeWrapper&>(sceneNode.m_parent).m_sceneNode;
 				parentToWorldM = parent.m_localToWorldM;
 			}
 			sceneNode.m_localToWorldM = parentToWorldM * sceneNode.m_localToParentT.Matrix();
@@ -55,7 +55,7 @@ namespace vve {
 		vh::Texture texture{texWidth, texHeight, imageSize};
         //m_renderer->CreateTexture(pixels, texWidth, texHeight, imageSize, texture);
 		auto handle = m_registry->Insert(filenName, texture);
-		m_files[filenName] = handle;
+		m_handleMap[filenName] = handle;
 		m_engine->SendMessage( MsgTextureCreate{this, nullptr, pixels, handle} );
 		stbi_image_free(pixels);
 		return handle;
@@ -66,7 +66,7 @@ namespace vve {
 		vh::Geometry geometry;
 		vh::loadModel(fileName, geometry);
 		auto handle = m_registry->Insert(fileName, geometry);
-		m_files[fileName] = handle;
+		m_handleMap[fileName] = handle;
 		m_engine->SendMessage( MsgGeometryCreate{this, nullptr, handle} );
 		return handle;
 	}
@@ -77,12 +77,10 @@ namespace vve {
 		return {};
 	}
 
-
-
    	template<ArchitectureType ATYPE>
 	auto SceneManager<ATYPE>::GetAsset(std::string filename) -> vecs::Handle {
-		if( !m_files.contains(filename) ) return {};
-		return m_files[filename]; 
+		if( !m_handleMap.contains(filename) ) return {};
+		return m_handleMap[filename]; 
 	}
 
     template class SceneManager<ENGINETYPE_SEQUENTIAL>;

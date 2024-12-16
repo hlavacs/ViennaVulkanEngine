@@ -55,6 +55,8 @@ namespace vve {
 			SceneNode m_sceneNode;
 		};
 
+		const std::string m_rootName = "VVE RootSceneNode";
+
     public:
         SceneManager(std::string systemName, Engine<ATYPE>* engine );
         virtual ~SceneManager();
@@ -68,8 +70,8 @@ namespace vve {
 		virtual void OnInit(Message message);
 		virtual void OnUpdate(Message message);
 
-		std::unordered_map<std::string, vecs::Handle> m_files;
-		vecs::Handle m_rootNode;
+		std::shared_mutex m_mutex;
+		std::unordered_map<std::string, vecs::Handle> m_handleMap;
     };
 
 };  // namespace vve
