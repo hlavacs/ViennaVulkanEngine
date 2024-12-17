@@ -126,7 +126,8 @@ namespace vve {
 
 	template<ArchitectureType ATYPE>
 	void Engine<ATYPE>::Init(){
-		SendMessage( MsgInit{this} );
+		if(!m_initialized) SendMessage( MsgInit{this} );
+		m_initialized = true;
 		m_last = std::chrono::high_resolution_clock::now();
 	}
 
@@ -164,6 +165,17 @@ namespace vve {
 	
 	template<ArchitectureType ATYPE>
 	void Engine<ATYPE>::OnQuit(Message message) {}
+
+	template<ArchitectureType ATYPE>
+	void Engine<ATYPE>::PrintCallbacks() {
+		for( auto& [type, map] : m_messageMap ) {
+			std::cout << "Message Type: " << typeid(type).name() << " (" << (int)type << ")" << std::endl;
+			for( auto& [phase, callback] : map ) {
+				std::cout << "  Phase: " << phase << " System: '" << callback.m_system->GetName() << "'" << std::endl;
+			}
+		}
+
+	}
 
 	template class Engine<ENGINETYPE_SEQUENTIAL>;
 	template class Engine<ENGINETYPE_PARALLEL>;

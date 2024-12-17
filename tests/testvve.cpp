@@ -124,6 +124,9 @@ int main() {
 
     vve::Engine<vve::ENGINETYPE_SEQUENTIAL> engine("My Engine") ;
 
+	engine.Init();
+	engine.PrintCallbacks();
+
     engine.Run();
 
     return 0;

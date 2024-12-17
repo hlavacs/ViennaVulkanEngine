@@ -16,18 +16,23 @@ namespace vve {
 
   		engine->RegisterCallback( { 
   			{this, -5000, MsgType::INIT, [this](Message message){this->OnInit(message);} },
+  			{this,  5000, MsgType::INIT, [this](Message message){this->OnInit2(message);} },
   			{this,  5000, MsgType::RECORD_NEXT_FRAME, [this](Message message){this->OnRecordNextFrame(message);} },
-  			{this, -5000, MsgType::QUIT, [this](Message message){this->OnQuit(message);} }
+  			{this,-50000, MsgType::QUIT, [this](Message message){this->OnQuit(message);} }
   		} );
     };
 
    	template<ArchitectureType ATYPE>
     RendererForward<ATYPE>::~RendererForward(){};
 
-
    	template<ArchitectureType ATYPE>
     void RendererForward<ATYPE>::OnInit(Message message) {
+    }
+
+   	template<ArchitectureType ATYPE>
+    void RendererForward<ATYPE>::OnInit2(Message message) {
 		if(m_vulkan == nullptr) { m_vulkan = (RendererVulkan<ATYPE>*)m_engine->GetSystem("VVE RendererVulkan"); }
+        vh::createCommandPool(m_window->GetSurface(), m_vulkan->GetPhysicalDevice(), m_vulkan->GetDevice(), m_commandPool);
     }
 
    	template<ArchitectureType ATYPE>
@@ -47,7 +52,7 @@ namespace vve {
 
    	template<ArchitectureType ATYPE>
     void RendererForward<ATYPE>::OnQuit(Message message) {
-
+        vkDestroyCommandPool(m_vulkan->GetDevice(), m_commandPool, nullptr);
     }
 
     template class RendererForward<ENGINETYPE_SEQUENTIAL>;

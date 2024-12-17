@@ -44,6 +44,7 @@ namespace vve {
 		auto GetMainWindow() -> Window<ATYPE>* { return GetWindow(GetMainWindowName()); }
 		auto GetWindow( std::string name ) -> Window<ATYPE>* { return (Window<ATYPE>*)GetSystem(name); }
 		auto GetSceneMgr(std::string name) -> SceneManager<ATYPE>* { return (SceneManager<ATYPE>*)GetSystem(name); }
+		void PrintCallbacks();
 
 	protected:
 		virtual void OnInit(Message message);
@@ -59,13 +60,14 @@ namespace vve {
 		std::unordered_map<std::string, std::unique_ptr<System<ATYPE>>> m_systems{};
 
 		bool m_debug{false};
+		bool m_initialized{false};
 		bool m_running{false};
 		std::chrono::time_point<std::chrono::high_resolution_clock> m_last;
 
 		vecs::Registry<ATYPE> m_registry;
 		
 		using PriorityMap = std::multimap<int, MessageCallback>;
-		using MessageMap = std::unordered_map<MsgType, PriorityMap>;
+		using MessageMap = std::map<MsgType, PriorityMap>;
 		MessageMap m_messageMap{};
 	};
 

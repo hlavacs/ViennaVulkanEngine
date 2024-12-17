@@ -28,11 +28,10 @@ namespace vve {
 
         engine->RegisterCallback( { 
 			{this, -50000, MsgType::INIT, [this](Message message){this->OnInit(message);} }, 
+			{this,   1000, MsgType::INIT, [this](Message message){this->OnInit2(message);} },
 			{this,      0, MsgType::UPDATE, [this](Message message){this->OnUpdate(message);} },
 			{this, -50000, MsgType::PREPARE_NEXT_FRAME, [this](Message message){this->OnPrepareNextFrame(message);} },
 			{this,      0, MsgType::RENDER_NEXT_FRAME, [this](Message message){this->OnRenderNextFrame(message);} },
-			{this,   1000, MsgType::INIT, [this](Message message){this->OnInit2(message);} },
-
 			{this,   1000, MsgType::TEXTURE_CREATE,   [this](Message message){this->OnTextureCreate(message);} },
 			{this,   1000, MsgType::TEXTURE_DESTROY,  [this](Message message){this->OnTextureDestroy(message);} },
 			{this,   1000, MsgType::GEOMETRY_CREATE,  [this](Message message){this->OnTextureCreate(message);} },

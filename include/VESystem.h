@@ -15,35 +15,68 @@ namespace vve {
 
     enum class MsgType : int {
         INIT = 0,			//initialize the system
-        ANNOUNCE,
-        FRAME_START,
-        POLL_EVENTS,
-        UPDATE,
-        PREPARE_NEXT_FRAME,	//prepare the next frame
-        RECORD_NEXT_FRAME,		
-        RENDER_NEXT_FRAME,		
-        PRESENT_NEXT_FRAME,
-        FRAME_END,
-        DELETED,
-        SDL, //defined in WindowSDL
-        SDL_MOUSE_MOVE,
-        SDL_MOUSE_BUTTON_DOWN,
-        SDL_MOUSE_BUTTON_UP,
-        SDL_MOUSE_BUTTON_REPEAT,
-        SDL_MOUSE_WHEEL,
-        SDL_KEY_DOWN,
-        SDL_KEY_UP,
-        SDL_KEY_REPEAT,
-        QUIT,
-		FILE_LOAD_TEXTURE, //defined in SceneManager
-		FILE_LOAD_OBJ,	//defined in SceneManager
-		FILE_LOAD_GLTF,	//defined in SceneManager
-		TEXTURE_CREATE,  //defined in VulkanRenderer
-		TEXTURE_DESTROY, //defined in VulkanRenderer
-		GEOMETRY_CREATE,	//defined in VulkanRenderer
-		GEOMETRY_DESTROY,	//defined in VulkanRenderer
-        LAST
+        ANNOUNCE, //1
+        FRAME_START, //2
+        POLL_EVENTS, //3
+        UPDATE, //4
+        PREPARE_NEXT_FRAME,	//5 prepare the next frame
+        RECORD_NEXT_FRAME,	//6 record the next frame	
+        RENDER_NEXT_FRAME,	//7 render the next frame
+        PRESENT_NEXT_FRAME, //8 present the next frame
+        FRAME_END, //9
+        DELETED, //10 React to something being deleted
+        SDL, //11 defined in WindowSDL
+        SDL_MOUSE_MOVE, //12
+        SDL_MOUSE_BUTTON_DOWN, //13
+        SDL_MOUSE_BUTTON_UP, //14
+        SDL_MOUSE_BUTTON_REPEAT, //15
+        SDL_MOUSE_WHEEL, //16
+        SDL_KEY_DOWN, //17
+        SDL_KEY_UP, //18
+        SDL_KEY_REPEAT, //19
+        QUIT, //20
+		FILE_LOAD_TEXTURE, //21 defined in SceneManager
+		FILE_LOAD_OBJ,	//22 defined in SceneManager
+		FILE_LOAD_GLTF,	//23 defined in SceneManager
+		TEXTURE_CREATE,  //24 defined in VulkanRenderer
+		TEXTURE_DESTROY, //25 defined in VulkanRenderer
+		GEOMETRY_CREATE,	//26 defined in VulkanRenderer
+		GEOMETRY_DESTROY,	//27 defined in VulkanRenderer
+        LAST //28
     };
+
+    const std::set<std::string> MsgTypeNames{
+        "INIT",			//initialize the system
+        "ANNOUNCE", //
+        "FRAME_START", //
+        "POLL_EVENTS", //
+        "UPDATE", //
+        "PREPARE_NEXT_FRAME",	// prepare the next frame
+        "RECORD_NEXT_FRAME",	// record the next frame	
+        "RENDER_NEXT_FRAME",	// render the next frame
+        "PRESENT_NEXT_FRAME", // present the next frame
+        "FRAME_END", //
+        "DELETED", //React to something being deleted
+        "SDL", // defined in WindowSDL
+        "SDL_MOUSE_MOVE", //
+        "SDL_MOUSE_BUTTON_DOWN", //
+        "SDL_MOUSE_BUTTON_UP", //
+        "SDL_MOUSE_BUTTON_REPEAT", //
+        "SDL_MOUSE_WHEEL", //
+        "SDL_KEY_DOWN", //
+        "SDL_KEY_UP", //
+        "SDL_KEY_REPEAT", //
+        "QUIT", //
+		"FILE_LOAD_TEXTURE", //defined in SceneManager
+		"FILE_LOAD_OBJ",	//defined in SceneManager
+		"FILE_LOAD_GLTF",	//defined in SceneManager
+		"TEXTURE_CREATE",  //defined in VulkanRenderer
+		"TEXTURE_DESTROY", //defined in VulkanRenderer
+		"GEOMETRY_CREATE",	//defined in VulkanRenderer
+		"GEOMETRY_DESTROY",	//defined in VulkanRenderer
+        "LAST" //
+    };
+
 
     struct MsgTypePhase {
         MsgType m_type;
