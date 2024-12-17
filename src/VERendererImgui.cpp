@@ -16,12 +16,11 @@ namespace vve {
         : Renderer<ATYPE>(systemName, engine, window ) {
 
 		engine->RegisterCallback( { 
-			{this,  10000, MsgType::INIT, [this](Message message){this->OnInit(message);} },
-			{this,      0, MsgType::RECORD_NEXT_FRAME, [this](Message message){this->OnRecordNextFrame(message);} },
-			{this, -20000, MsgType::QUIT, [this](Message message){this->OnQuit(message);} },
-			{this,      0, MsgType::SDL, [this](Message message){this->OnSDL(message);} },
-			{this,  10000, MsgType::INIT, [this](Message message){this->OnInit2(message);} },
-			{this,  10000, MsgType::POLL_EVENTS, [this](Message message){this->OnPollEvents(message);} }
+			{this,  10000, "INIT", [this](Message message){this->OnInit(message);} },
+			{this,      0, "RECORD_NEXT_FRAME", [this](Message message){this->OnRecordNextFrame(message);} },
+			{this,      0, "SDL", [this](Message message){this->OnSDL(message);} },
+			{this,  10000, "POLL_EVENTS", [this](Message message){this->OnPollEvents(message);} },
+			{this, -20000, "QUIT", [this](Message message){this->OnQuit(message);} }
 		} );
 
     };
@@ -38,10 +37,6 @@ namespace vve {
 		vh::setupImgui(windowSDL->GetSDLWindow(), rend->GetInstance(), rend->GetPhysicalDevice(), rend->GetQueueFamilies(), rend->GetDevice(), rend->GetGraphicsQueue(), 
 			rend->GetCommandPool(), rend->GetDescriptorPool(), rend->GetRenderPass());    
 	}
-
-   	template<ArchitectureType ATYPE>
-    void RendererImgui<ATYPE>::OnInit2(Message message) {
-    }
 
    	template<ArchitectureType ATYPE>
     void RendererImgui<ATYPE>::OnRecordNextFrame(Message message) {

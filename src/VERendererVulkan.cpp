@@ -14,10 +14,10 @@ namespace vve {
 	//-------------------------------------------------------------------------------------------------------
 	// Messages
 
-	MsgTextureCreate::MsgTextureCreate(void* s, void* r, void *pixels, vecs::Handle handle) : MsgBase{MsgType::TEXTURE_CREATE, s, r}, m_pixels{pixels}, m_handle{handle} {};
-    MsgTextureDestroy::MsgTextureDestroy(void* s, void* r, vecs::Handle handle) : MsgBase{MsgType::TEXTURE_DESTROY, s, r}, m_handle{handle} {};
-	MsgGeometryCreate::MsgGeometryCreate(void* s, void* r, vecs::Handle handle) : MsgBase{MsgType::GEOMETRY_CREATE, s, r}, m_handle{handle} {};
-    MsgGeometryDestroy::MsgGeometryDestroy(void* s, void* r, vecs::Handle handle) : MsgBase{MsgType::GEOMETRY_DESTROY, s, r}, m_handle{handle} {};
+	MsgTextureCreate::MsgTextureCreate(void* s, void* r, void *pixels, vecs::Handle handle) : MsgBase{std::hash<std::string>{}("TEXTURE_CREATE"), s, r}, m_pixels{pixels}, m_handle{handle} {};
+    MsgTextureDestroy::MsgTextureDestroy(void* s, void* r, vecs::Handle handle) : MsgBase{std::hash<std::string>{}("TEXTURE_DESTROY"), s, r}, m_handle{handle} {};
+	MsgGeometryCreate::MsgGeometryCreate(void* s, void* r, vecs::Handle handle) : MsgBase{std::hash<std::string>{}("GEOMETRY_CREATE"), s, r}, m_handle{handle} {};
+    MsgGeometryDestroy::MsgGeometryDestroy(void* s, void* r, vecs::Handle handle) : MsgBase{std::hash<std::string>{}("GEOMETRY_DESTROY"), s, r}, m_handle{handle} {};
 
 	//-------------------------------------------------------------------------------------------------------
 	// Vulkan Renderer
@@ -27,18 +27,17 @@ namespace vve {
         : Renderer<ATYPE>(systemName, engine, window) {
 
         engine->RegisterCallback( { 
-			{this, -50000, MsgType::INIT, [this](Message message){this->OnInit(message);} }, 
-			{this,   1000, MsgType::INIT, [this](Message message){this->OnInit2(message);} },
-			{this,      0, MsgType::UPDATE, [this](Message message){this->OnUpdate(message);} },
-			{this, -50000, MsgType::PREPARE_NEXT_FRAME, [this](Message message){this->OnPrepareNextFrame(message);} },
-			{this,      0, MsgType::RENDER_NEXT_FRAME, [this](Message message){this->OnRenderNextFrame(message);} },
-			{this,   1000, MsgType::TEXTURE_CREATE,   [this](Message message){this->OnTextureCreate(message);} },
-			{this,   1000, MsgType::TEXTURE_DESTROY,  [this](Message message){this->OnTextureDestroy(message);} },
-			{this,   1000, MsgType::GEOMETRY_CREATE,  [this](Message message){this->OnTextureCreate(message);} },
-			{this,   1000, MsgType::GEOMETRY_DESTROY, [this](Message message){this->OnTextureDestroy(message);} },
-
-			{this, -10000, MsgType::QUIT, [this](Message message){this->OnQuit(message);} },
-			{this,  10000, MsgType::QUIT, [this](Message message){this->OnQuit2(message);} }
+			{this, -50000, "INIT", [this](Message message){this->OnInit(message);} }, 
+			{this,   1000, "INIT", [this](Message message){this->OnInit2(message);} },
+			{this,      0, "UPDATE", [this](Message message){this->OnUpdate(message);} },
+			{this, -50000, "PREPARE_NEXT_FRAME", [this](Message message){this->OnPrepareNextFrame(message);} },
+			{this,      0, "RENDER_NEXT_FRAME", [this](Message message){this->OnRenderNextFrame(message);} },
+			{this,   1000, "TEXTURE_CREATE",   [this](Message message){this->OnTextureCreate(message);} },
+			{this,   1000, "TEXTURE_DESTROY",  [this](Message message){this->OnTextureDestroy(message);} },
+			{this,   1000, "GEOMETRY_CREATE",  [this](Message message){this->OnTextureCreate(message);} },
+			{this,   1000, "GEOMETRY_DESTROY", [this](Message message){this->OnTextureDestroy(message);} },
+			{this, -10000, "QUIT", [this](Message message){this->OnQuit(message);} },
+			{this,  10000, "QUIT", [this](Message message){this->OnQuit2(message);} }
 		} );
     }
 

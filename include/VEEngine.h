@@ -22,7 +22,7 @@ namespace vve {
 		struct MessageCallback {
 			System<ATYPE>* 				 m_system;
 			int 						 m_phase;	
-			MsgType 				 	 m_messageType;
+			std::string			 	 	 m_messageName;
 			std::function<void(Message)> m_callback;
 		};
 
@@ -67,8 +67,10 @@ namespace vve {
 		vecs::Registry<ATYPE> m_registry;
 		
 		using PriorityMap = std::multimap<int, MessageCallback>;
-		using MessageMap = std::map<MsgType, PriorityMap>;
+		using MessageMap = std::map<size_t, PriorityMap>;
 		MessageMap m_messageMap{};
+
+		std::map<size_t, std::string> m_msgTypeMap;
 	};
 
 };  // namespace vve

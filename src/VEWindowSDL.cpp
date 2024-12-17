@@ -13,7 +13,7 @@ namespace vve {
 	//-------------------------------------------------------------------------------------------------------
 	// Messages
 
-    MsgSDL::MsgSDL(void* s, void* r, double dt, SDL_Event event): MsgBase{MsgType::SDL, s, r}, m_dt{dt}, m_event{event} {};   
+    MsgSDL::MsgSDL(void* s, void* r, double dt, SDL_Event event): MsgBase{std::hash<std::string>{}("SDL"), s, r}, m_dt{dt}, m_event{event} {};   
 
 	//-------------------------------------------------------------------------------------------------------
 	// SDL Window
@@ -23,14 +23,14 @@ namespace vve {
                 : Window<ATYPE>(systemName, engine, windowName, width, height ) {
 
         engine->RegisterCallback( { 
-			{this, -100000, MsgType::INIT, [this](Message message){this->OnInit(message);} },
-			{this,       0, MsgType::INIT, [this](Message message){this->OnInit2(message);} },
-			{this,       0, MsgType::POLL_EVENTS, [this](Message message){this->OnPollEvents(message);} },
-			{this,       0, MsgType::PREPARE_NEXT_FRAME, [this](Message message){this->OnPrepareNextFrame(message);} },
-			{this,       0, MsgType::RENDER_NEXT_FRAME, [this](Message message){this->OnRenderNextFrame(message);} },
-			{this,       0, MsgType::PRESENT_NEXT_FRAME, [this](Message message){this->OnPresentNextFrame(message);} },
-			{this,   	 0, MsgType::QUIT, [this](Message message){this->OnQuit(message);} },
-			{this,  100000, MsgType::QUIT, [this](Message message){this->OnQuit2(message);} }
+			{this, -100000, "INIT", [this](Message message){this->OnInit(message);} },
+			{this,       0, "INIT", [this](Message message){this->OnInit2(message);} },
+			{this,       0, "POLL_EVENTS", [this](Message message){this->OnPollEvents(message);} },
+			{this,       0, "PREPARE_NEXT_FRAME", [this](Message message){this->OnPrepareNextFrame(message);} },
+			{this,       0, "RENDER_NEXT_FRAME", [this](Message message){this->OnRenderNextFrame(message);} },
+			{this,       0, "PRESENT_NEXT_FRAME", [this](Message message){this->OnPresentNextFrame(message);} },
+			{this,   	 0, "QUIT", [this](Message message){this->OnQuit(message);} },
+			{this,  100000, "QUIT", [this](Message message){this->OnQuit2(message);} }
 		} );
     }
 

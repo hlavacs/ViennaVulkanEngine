@@ -20,10 +20,10 @@ public:
     MyGUI( vve::Engine<ATYPE>* engine ) : vve::System<ATYPE>("MyGUI", engine ) {
 
 		m_engine->RegisterCallback( { 
-			  {this, -10000, vve::MsgType::RENDER_NEXT_FRAME, [this](vve::Message message){this->OnRenderNextFrame(message);} }
-			, {this,      0, vve::MsgType::SDL_KEY_DOWN, [this](vve::Message message){this->OnKeyDown(message);} }
-			, {this,      0, vve::MsgType::SDL_KEY_REPEAT, [this](vve::Message message){this->OnKeyRepeat(message);} }
-			, {this,      0, vve::MsgType::SDL_KEY_UP, [this](vve::Message message){this->OnKeyUp(message);} }
+			  {this, -10000, "RENDER_NEXT_FRAME", [this](vve::Message message){this->OnRenderNextFrame(message);} }
+			, {this,      0, "SDL_KEY_DOWN", [this](vve::Message message){this->OnKeyDown(message);} }
+			, {this,      0, "SDL_KEY_REPEAT", [this](vve::Message message){this->OnKeyRepeat(message);} }
+			, {this,      0, "SDL_KEY_UP", [this](vve::Message message){this->OnKeyUp(message);} }
 		} );
     };
     

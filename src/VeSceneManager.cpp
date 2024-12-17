@@ -10,15 +10,15 @@ namespace vve {
 	
 	//-------------------------------------------------------------------------------------------------------
 
-    MsgFileLoadTexture::MsgFileLoadTexture(void* s, void* r, std::string fileName) : MsgBase{MsgType::FILE_LOAD_TEXTURE, s, r}, m_fileName{fileName} {};
+    MsgFileLoadTexture::MsgFileLoadTexture(void* s, void* r, std::string fileName) : MsgBase{std::hash<std::string>{}("FILE_LOAD_TEXTURE"), s, r}, m_fileName{fileName} {};
 
 	//-------------------------------------------------------------------------------------------------------
 
    	template<ArchitectureType ATYPE>
     SceneManager<ATYPE>::SceneManager(std::string systemName, Engine<ATYPE>* engine ) : System<ATYPE>{systemName, engine } {
 		engine->RegisterCallback( { 
-			{this, 0, MsgType::INIT, [this](Message message){this->OnInit(message);} },
-			{this, std::numeric_limits<int>::max(), MsgType::UPDATE, [this](Message message){this->OnUpdate(message);} },
+			{this, 0, "INIT", [this](Message message){this->OnInit(message);} },
+			{this, std::numeric_limits<int>::max(), "UPDATE", [this](Message message){this->OnUpdate(message);} },
 		} );
 	}
 

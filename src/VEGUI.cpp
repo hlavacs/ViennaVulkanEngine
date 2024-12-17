@@ -11,7 +11,7 @@ namespace vve {
 	template<ArchitectureType ATYPE>
 	GUI<ATYPE>::GUI(std::string systemName, Engine<ATYPE>* engine ) : System<ATYPE>(systemName, engine) {
 		m_engine->RegisterCallback( { 
-			  {this, 1000, vve::MsgType::RECORD_NEXT_FRAME, [this](vve::Message message){this->OnRecordNextFrame(message);} }
+			  {this, 1000, "RECORD_NEXT_FRAME", [this](vve::Message message){this->OnRecordNextFrame(message);} }
 		} );
 	};
 

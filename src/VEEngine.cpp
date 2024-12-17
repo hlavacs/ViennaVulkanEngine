@@ -2,6 +2,9 @@
 #include <chrono>
 #include <any>
 
+#include <algorithm>
+#include <iterator>
+#include <ranges>
 #include "VHInclude.h"
 #include "VHVulkan.h"
 #include "VESystem.h"
@@ -22,10 +25,13 @@ namespace vve {
 		m_debug = true;
 	#endif
 		RegisterCallback( { 
-			{this, std::numeric_limits<int>::lowest(), MsgType::INIT, [this](Message message){this->OnInit(message);} },
-			{this, std::numeric_limits<int>::max(),    MsgType::INIT, [this](Message message){this->OnInit2(message);} },
-			{this, std::numeric_limits<int>::max(),    MsgType::QUIT, [this](Message message){this->OnQuit(message);} }
+			{this, std::numeric_limits<int>::lowest(), "INIT", [this](Message message){this->OnInit(message);} },
+			{this, std::numeric_limits<int>::max(),    "INIT", [this](Message message){this->OnInit2(message);} },
+			{this, std::numeric_limits<int>::max(),    "QUIT", [this](Message message){this->OnQuit(message);} }
 		} );
+
+		auto transform = [&](const auto& str) { m_msgTypeMap[std::hash<std::string>{}(str)] = str; };
+		std::ranges::for_each( MsgTypeNames, transform );
 	};
 	
 	template<ArchitectureType ATYPE>
@@ -48,7 +54,8 @@ namespace vve {
 	template<ArchitectureType ATYPE>
 	void Engine<ATYPE>::RegisterCallback( std::vector<MessageCallback> callbacks) {
 		for( auto& callback : callbacks ) {
-			auto& pm = m_messageMap[callback.m_messageType];
+			assert(MsgTypeNames.contains(callback.m_messageName));
+			auto& pm = m_messageMap[std::hash<std::string>{}(callback.m_messageName)];
 			pm.insert({callback.m_phase, callback});
 		}
 	}
@@ -84,7 +91,7 @@ namespace vve {
 	}
 
 	template<ArchitectureType ATYPE>
-	void Engine<ATYPE>::LoadLevel( std::string levelName ){
+	void Engine<ATYPE>::LoadLevel( std::string levelName ) {
 		// Load level
 		std::cout << "Loading level: " << levelName << std::endl;
 	};
@@ -169,12 +176,12 @@ namespace vve {
 	template<ArchitectureType ATYPE>
 	void Engine<ATYPE>::PrintCallbacks() {
 		for( auto& [type, map] : m_messageMap ) {
-			std::cout << "Message Type: " << typeid(type).name() << " (" << (int)type << ")" << std::endl;
+			std::cout << "Message Type: " << m_msgTypeMap[type] << std::endl;
 			for( auto& [phase, callback] : map ) {
-				std::cout << "  Phase: " << phase << " System: '" << callback.m_system->GetName() << "'" << std::endl;
+				std::cout << "  Phase: " << std::setw(11) << phase << " System: '" << callback.m_system->GetName() << "'" << std::endl;
 			}
+			std::cout << std::endl;
 		}
-
 	}
 
 	template class Engine<ENGINETYPE_SEQUENTIAL>;

@@ -83,6 +83,12 @@
 		"xutility": "cpp",
 		"cinttypes": "cpp",
 		"fstream": "cpp",
-		"deque": "cpp"
+		"deque": "cpp",
+		"codecvt": "cpp",
+		"filesystem": "cpp",
+		"numeric": "cpp",
+		"queue": "cpp",
+		"regex": "cpp",
+		"valarray": "cpp"
 	}
 }

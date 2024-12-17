@@ -7,45 +7,14 @@
 #include <functional>
 #include <typeindex>
 #include <typeinfo>
+#include <unordered_set>
 #include "VEInclude.h"
 #include "VHInclude.h"
 #include "VECS.h"
 
 namespace vve {
 
-    enum class MsgType : int {
-        INIT = 0,			//initialize the system
-        ANNOUNCE, //1
-        FRAME_START, //2
-        POLL_EVENTS, //3
-        UPDATE, //4
-        PREPARE_NEXT_FRAME,	//5 prepare the next frame
-        RECORD_NEXT_FRAME,	//6 record the next frame	
-        RENDER_NEXT_FRAME,	//7 render the next frame
-        PRESENT_NEXT_FRAME, //8 present the next frame
-        FRAME_END, //9
-        DELETED, //10 React to something being deleted
-        SDL, //11 defined in WindowSDL
-        SDL_MOUSE_MOVE, //12
-        SDL_MOUSE_BUTTON_DOWN, //13
-        SDL_MOUSE_BUTTON_UP, //14
-        SDL_MOUSE_BUTTON_REPEAT, //15
-        SDL_MOUSE_WHEEL, //16
-        SDL_KEY_DOWN, //17
-        SDL_KEY_UP, //18
-        SDL_KEY_REPEAT, //19
-        QUIT, //20
-		FILE_LOAD_TEXTURE, //21 defined in SceneManager
-		FILE_LOAD_OBJ,	//22 defined in SceneManager
-		FILE_LOAD_GLTF,	//23 defined in SceneManager
-		TEXTURE_CREATE,  //24 defined in VulkanRenderer
-		TEXTURE_DESTROY, //25 defined in VulkanRenderer
-		GEOMETRY_CREATE,	//26 defined in VulkanRenderer
-		GEOMETRY_DESTROY,	//27 defined in VulkanRenderer
-        LAST //28
-    };
-
-    const std::set<std::string> MsgTypeNames{
+    const std::unordered_set<std::string> MsgTypeNames {
         "INIT",			//initialize the system
         "ANNOUNCE", //
         "FRAME_START", //
@@ -79,12 +48,12 @@ namespace vve {
 
 
     struct MsgTypePhase {
-        MsgType m_type;
+        size_t m_type;
         int m_phase;
     };
 
     struct MsgBase {
-        MsgType m_type;
+        size_t m_type;
         void* m_sender{nullptr};
         void* m_receiver{nullptr};
         double m_dt{0};
@@ -123,7 +92,7 @@ namespace vve {
             std::memcpy(m_data, &msg, sizeof(T));
         };
 
-        auto GetType() -> MsgType { return reinterpret_cast<MsgBase*>(m_data)->m_type; };
+        auto GetType() -> size_t { return reinterpret_cast<MsgBase*>(m_data)->m_type; };
         auto GetSender() -> void* { return reinterpret_cast<MsgBase*>(m_data)->m_sender; };
         auto GetReceiver() -> void* { return reinterpret_cast<MsgBase*>(m_data)->m_receiver; };
         auto GetDt() -> double { return reinterpret_cast<MsgBase*>(m_data)->m_dt; };
