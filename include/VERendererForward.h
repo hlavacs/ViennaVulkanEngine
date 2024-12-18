@@ -21,6 +21,7 @@ namespace vve
         virtual void OnQuit(Message message);
 
 		RendererVulkan<ATYPE>* m_vulkan{nullptr};
+	    VkRenderPass m_renderPass;
 	    VkCommandPool m_commandPool;
 	    std::vector<VkCommandBuffer> m_commandBuffers;
     };

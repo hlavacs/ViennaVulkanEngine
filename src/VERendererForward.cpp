@@ -32,6 +32,7 @@ namespace vve {
    	template<ArchitectureType ATYPE>
     void RendererForward<ATYPE>::OnInit2(Message message) {
 		if(m_vulkan == nullptr) { m_vulkan = (RendererVulkan<ATYPE>*)m_engine->GetSystem("VVE RendererVulkan"); }
+        vh::createRenderPass(m_vulkan->GetPhysicalDevice(), m_vulkan->GetDevice(), m_vulkan->GetSwapChain(), m_renderPass);
         vh::createCommandPool(m_window->GetSurface(), m_vulkan->GetPhysicalDevice(), m_vulkan->GetDevice(), m_commandPool);
         vh::createCommandBuffers(m_vulkan->GetDevice(), m_commandPool, m_commandBuffers);
     }
@@ -43,7 +44,7 @@ namespace vve {
         
 		vh::recordCommandBuffer(
 			m_commandBuffers[m_vulkan->GetCurrentFrame()], m_vulkan->GetImageIndex(), 
-			m_vulkan->GetSwapChain(), m_vulkan->GetRenderPass(), m_vulkan->GetGraphicsPipeline(), 
+			m_vulkan->GetSwapChain(), m_renderPass, m_vulkan->GetGraphicsPipeline(), 
 			m_vulkan->GetGeometry(), m_vulkan->GetDescriptorSets(), ((WindowSDL<ATYPE>*)m_window)->GetClearColor(), 
 			m_vulkan->GetCurrentFrame());
 
@@ -55,6 +56,7 @@ namespace vve {
     void RendererForward<ATYPE>::OnQuit(Message message) {
         vkDeviceWaitIdle(m_vulkan->GetDevice());
         vkDestroyCommandPool(m_vulkan->GetDevice(), m_commandPool, nullptr);
+        vkDestroyRenderPass(m_vulkan->GetDevice(), m_renderPass, nullptr);
     }
 
     template class RendererForward<ENGINETYPE_SEQUENTIAL>;

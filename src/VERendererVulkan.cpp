@@ -82,7 +82,6 @@ namespace vve {
         vh::createUniformBuffers(m_physicalDevice, m_device, m_vmaAllocator, m_uniformBuffers);
         vh::createDescriptorPool(m_device, m_descriptorPool);
         vh::createDescriptorSets(m_device, m_texture, m_descriptorSetLayout, m_uniformBuffers, m_descriptorPool, m_descriptorSets);
-        vh::createCommandBuffers(m_device, m_commandPool, m_commandBuffers);
         vh::createSyncObjects(m_device, m_syncObjects);
     }
 
@@ -91,7 +90,7 @@ namespace vve {
         if(m_window->GetIsMinimized()) return;
 
         m_currentFrame = (m_currentFrame + 1) % MAX_FRAMES_IN_FLIGHT;
-		m_commandBuffersSubmit.clear();
+		m_commandBuffers.clear();
 
 		vkWaitForFences(m_device, 1, &m_syncObjects.m_inFlightFences[m_currentFrame], VK_TRUE, UINT64_MAX);
 
@@ -116,8 +115,8 @@ namespace vve {
         submitInfo.waitSemaphoreCount = 1;
         submitInfo.pWaitSemaphores = waitSemaphores;
         submitInfo.pWaitDstStageMask = waitStages;
-        submitInfo.commandBufferCount = m_commandBuffersSubmit.size();
-        submitInfo.pCommandBuffers = m_commandBuffersSubmit.data();
+        submitInfo.commandBufferCount = m_commandBuffers.size();
+        submitInfo.pCommandBuffers = m_commandBuffers.data();
         VkSemaphore signalSemaphores[] = {m_syncObjects.m_renderFinishedSemaphores[m_currentFrame]};
         submitInfo.signalSemaphoreCount = 1;
         submitInfo.pSignalSemaphores = signalSemaphores;
@@ -149,8 +148,6 @@ namespace vve {
 
         vkDestroyPipeline(m_device, m_graphicsPipeline.m_pipeline, nullptr);
         vkDestroyPipelineLayout(m_device, m_graphicsPipeline.m_pipelineLayout, nullptr);
-        vkDestroyRenderPass(m_device, m_renderPass, nullptr);
-
 
         for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
             vh::destroyBuffer(m_device, m_vmaAllocator, m_uniformBuffers.m_uniformBuffers[i], m_uniformBuffers.m_uniformBuffersAllocation[i]);

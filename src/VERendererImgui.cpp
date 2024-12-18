@@ -35,8 +35,10 @@ namespace vve {
 		//auto rend = ((RendererVulkan<ATYPE>*)(m_engine->GetSystem("VVE RendererVulkan")));
 		WindowSDL<ATYPE>* windowSDL = (WindowSDL<ATYPE>*)m_window;
 
+        vh::createRenderPassNoClear(m_vulkan->GetPhysicalDevice(), m_vulkan->GetDevice(), m_vulkan->GetSwapChain(), m_renderPass);
+		
 		vh::setupImgui(windowSDL->GetSDLWindow(), m_vulkan->GetInstance(), m_vulkan->GetPhysicalDevice(), m_vulkan->GetQueueFamilies(), m_vulkan->GetDevice(), m_vulkan->GetGraphicsQueue(), 
-			m_vulkan->GetCommandPool(), m_vulkan->GetDescriptorPool(), m_vulkan->GetRenderPass());  
+			m_vulkan->GetCommandPool(), m_vulkan->GetDescriptorPool(), m_renderPass);  
 
         vh::createCommandPool(m_window->GetSurface(), m_vulkan->GetPhysicalDevice(), m_vulkan->GetDevice(), m_commandPool); 
         vh::createCommandBuffers(m_vulkan->GetDevice(), m_commandPool, m_commandBuffers);
@@ -55,7 +57,7 @@ namespace vve {
         if(m_window->GetIsMinimized()) return;
 		vh::recordCommandBufferImgui(
 			m_commandBuffers[m_vulkan->GetCurrentFrame()], m_vulkan->GetImageIndex(), 
-			m_vulkan->GetSwapChain(), m_vulkan->GetRenderPass(), m_vulkan->GetGraphicsPipeline(), 
+			m_vulkan->GetSwapChain(), m_renderPass, m_vulkan->GetGraphicsPipeline(), 
 			m_vulkan->GetDescriptorSets(), ((WindowSDL<ATYPE>*)m_window)->GetClearColor(), 
 			m_vulkan->GetCurrentFrame());
 		m_vulkan->SubmitCommandBuffer(m_commandBuffers[m_vulkan->GetCurrentFrame()]);
@@ -74,6 +76,8 @@ namespace vve {
 		ImGui_ImplVulkan_Shutdown();
         ImGui_ImplSDL2_Shutdown();
         ImGui::DestroyContext();
+
+        vkDestroyRenderPass(m_vulkan->GetDevice(), m_renderPass, nullptr);
     }
 
     template class RendererImgui<ENGINETYPE_SEQUENTIAL>;
