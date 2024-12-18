@@ -51,7 +51,7 @@ namespace vve {
 		auto GetUniformBuffers() -> vh::UniformBuffers& { return m_uniformBuffers; }
 		auto GetDescriptorSets() -> std::vector<VkDescriptorSet>& { return m_descriptorSets; }
 		auto GetCommandBuffers() -> std::vector<VkCommandBuffer>& { return m_commandBuffers; }
-		auto GetSyncObjects() -> std::vector<vh::SyncObjects>& { return m_semaphores; }
+		auto GetSyncObjects() -> std::vector<vh::Semaphores>& { return m_semaphores; }
 		auto GetCurrentFrame() -> uint32_t { return m_currentFrame; }
 		auto GetImageIndex() -> uint32_t { return m_imageIndex; }
 		auto GetFramebufferResized() -> bool { return m_framebufferResized; }
@@ -104,7 +104,7 @@ namespace vve {
 	    VkCommandPool m_commandPool;
 	    std::vector<VkCommandBuffer> m_commandBuffers;
 	    std::vector<VkCommandBuffer> m_commandBuffersSubmit;
-	    std::vector<vh::SyncObjects> m_semaphores;
+	    std::vector<vh::Semaphores> m_semaphores;
 		std::vector<VkFence> m_fences;
 
 	    uint32_t m_currentFrame = MAX_FRAMES_IN_FLIGHT - 1;

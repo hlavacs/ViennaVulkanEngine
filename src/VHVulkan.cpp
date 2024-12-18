@@ -1313,7 +1313,7 @@ namespace vh
         renderPassInfo.renderArea.extent = swapChain.m_swapChainExtent;
 
         std::array<VkClearValue, 2> clearValues{};
-        clearValues[0].color = {{clearColor.r, clearColor.g, clearColor.b, 1.0f}};  //{{0.0f, 0.0f, 0.0f, 1.0f}};
+        clearValues[0].color = {{clearColor.r, clearColor.g, clearColor.b, 1.0f}};  
         clearValues[1].depthStencil = {1.0f, 0};
 
         renderPassInfo.clearValueCount = static_cast<uint32_t>(clearValues.size());
@@ -1361,13 +1361,6 @@ namespace vh
         renderPassInfo.framebuffer = swapChain.m_swapChainFramebuffers[imageIndex];
         renderPassInfo.renderArea.offset = {0, 0};
         renderPassInfo.renderArea.extent = swapChain.m_swapChainExtent;
-
-        std::array<VkClearValue, 2> clearValues{};
-        clearValues[0].color = {{clearColor.r, clearColor.g, clearColor.b, 1.0f}};  //{{0.0f, 0.0f, 0.0f, 1.0f}};
-        clearValues[1].depthStencil = {1.0f, 0};
-
-        renderPassInfo.clearValueCount = 0;//static_cast<uint32_t>(clearValues.size());
-        renderPassInfo.pClearValues = 0;// clearValues.data();
 
         vkCmdBeginRenderPass(commandBuffer, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
 
@@ -1425,13 +1418,6 @@ namespace vh
         renderPassInfo.renderArea.offset = {0, 0};
         renderPassInfo.renderArea.extent = swapChain.m_swapChainExtent;
 
-        //std::array<VkClearValue, 2> clearValues{};
-        //clearValues[0].color = {{clearColor.r, clearColor.g, clearColor.b, 1.0f}};  //{{0.0f, 0.0f, 0.0f, 1.0f}};
-        //clearValues[1].depthStencil = {1.0f, 0};
-
-        renderPassInfo.clearValueCount = 0; //static_cast<uint32_t>(clearValues.size());
-        renderPassInfo.pClearValues = nullptr; //clearValues.data();
-
         vkCmdBeginRenderPass(commandBuffer, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
 
             vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsPipeline.m_pipeline);
@@ -1481,15 +1467,14 @@ namespace vh
 		}
 	}
 
-    void createSemaphores(VkDevice device, size_t size, std::vector<SyncObjects>& syncObjects ) {
+    void createSemaphores(VkDevice device, size_t size, std::vector<Semaphores>& syncObjects ) {
 
 		size_t start = syncObjects.size();
 		size_t end = start + size;
 		for( int i = start; i < end; ++i ) {
-			SyncObjects syncObject;
+			Semaphores syncObject;
 	        syncObject.m_imageAvailableSemaphores.resize(MAX_FRAMES_IN_FLIGHT);
 	        syncObject.m_renderFinishedSemaphores.resize(MAX_FRAMES_IN_FLIGHT);
-	        syncObject.m_inFlightFences.resize(MAX_FRAMES_IN_FLIGHT);
 			syncObjects.push_back(syncObject);
 
 	        VkSemaphoreCreateInfo semaphoreInfo{};
@@ -1501,24 +1486,21 @@ namespace vh
 
 	        for (size_t j = 0; j < MAX_FRAMES_IN_FLIGHT; j++) {
 	            if (vkCreateSemaphore(device, &semaphoreInfo, nullptr, &syncObjects[i].m_imageAvailableSemaphores[j]) != VK_SUCCESS ||
-	                vkCreateSemaphore(device, &semaphoreInfo, nullptr, &syncObjects[i].m_renderFinishedSemaphores[j]) != VK_SUCCESS ||
-	                vkCreateFence(device, &fenceInfo, nullptr, &syncObjects[i].m_inFlightFences[j]) != VK_SUCCESS) {
+	                vkCreateSemaphore(device, &semaphoreInfo, nullptr, &syncObjects[i].m_renderFinishedSemaphores[j]) != VK_SUCCESS != VK_SUCCESS) {
 	                throw std::runtime_error("failed to create synchronization objects for a frame!");
 	            }
 	        }
 		}
     }
 
-    void destroySemaphores(VkDevice device, std::vector<SyncObjects>& syncObjects) {
+    void destroySemaphores(VkDevice device, std::vector<Semaphores>& syncObjects) {
 		for( int i = 0; i < syncObjects.size(); ++i ) {
 			for (size_t j = 0; j < MAX_FRAMES_IN_FLIGHT; j++) {
 				vkDestroySemaphore(device, syncObjects[i].m_imageAvailableSemaphores[j], nullptr);
 				vkDestroySemaphore(device, syncObjects[i].m_renderFinishedSemaphores[j], nullptr);
-				vkDestroyFence(device, syncObjects[i].m_inFlightFences[j], nullptr);
 			}
 		}
 	}
-
 
     void updateUniformBuffer(uint32_t currentImage, SwapChain& swapChain, UniformBuffers& uniformBuffers) {
         static auto startTime = std::chrono::high_resolution_clock::now();

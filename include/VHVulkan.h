@@ -148,10 +148,9 @@ namespace vh {
         std::vector<void*>          m_uniformBuffersMapped;
     };
 
-    struct SyncObjects {
+    struct Semaphores {
         std::vector<VkSemaphore> m_imageAvailableSemaphores;
         std::vector<VkSemaphore> m_renderFinishedSemaphores;
-        std::vector<VkFence>     m_inFlightFences;
     };
 
     void createInstance(const std::vector<const char*>& validationLayers, const std::vector<const char *>& extensions, VkInstance &instance);
@@ -239,8 +238,8 @@ namespace vh {
 	void createFences(VkDevice device, size_t size, std::vector<VkFence>& fences);
 	void destroyFences(VkDevice device, std::vector<VkFence>& fences);
 
-    void createSemaphores(VkDevice device, size_t size, std::vector<SyncObjects>& semaphores);
-    void destroySemaphores(VkDevice device, std::vector<SyncObjects>& semaphores);
+    void createSemaphores(VkDevice device, size_t size, std::vector<Semaphores>& semaphores);
+    void destroySemaphores(VkDevice device, std::vector<Semaphores>& semaphores);
 
     void updateUniformBuffer(uint32_t currentImage, SwapChain& swapChain, UniformBuffers& uniformBuffers);
     
