@@ -173,8 +173,9 @@ namespace vh {
     void createSwapChain(SDL_Window* window, VkSurfaceKHR surface, VkPhysicalDevice physicalDevice, VkDevice device, SwapChain& swapChain);
     void createImageViews(VkDevice device, SwapChain& swapChain);
 
-    void createRenderPass(VkPhysicalDevice physicalDevice, VkDevice device, SwapChain& swapChain, VkRenderPass& renderPass);
-    void createRenderPassNoClear(VkPhysicalDevice physicalDevice, VkDevice device, SwapChain& swapChain, VkRenderPass& renderPass);
+    void createRenderPassClear(VkPhysicalDevice physicalDevice, VkDevice device, SwapChain& swapChain, bool clear, VkRenderPass& renderPass);
+    void createRenderPass(VkPhysicalDevice physicalDevice, VkDevice device, SwapChain& swapChain, bool clear, VkRenderPass& renderPass);
+    void createRenderPassFinal(VkPhysicalDevice physicalDevice, VkDevice device, SwapChain& swapChain, bool clear, VkRenderPass& renderPass);
 
     void createDescriptorSetLayout(VkDevice device, VkDescriptorSetLayout& descriptorSetLayout);
     void createGraphicsPipeline(VkDevice device, VkRenderPass renderPass, VkDescriptorSetLayout descriptorSetLayout, Pipeline& graphicsPipeline);
@@ -222,23 +223,26 @@ namespace vh {
         , VkBuffer dstBuffer, VkDeviceSize size);
     void createCommandBuffers(VkDevice device, VkCommandPool commandPool, std::vector<VkCommandBuffer>& commandBuffers);
 
+    void recordCommandBufferClear(VkCommandBuffer commandBuffer, uint32_t imageIndex
+        , SwapChain& swapChain, VkRenderPass renderPass, Pipeline& graphicsPipeline
+        , std::vector<VkDescriptorSet>& descriptorSets, glm::vec4 clearColor, uint32_t currentFrame);
+
     void recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageIndex
         , SwapChain& swapChain, VkRenderPass renderPass, Pipeline& graphicsPipeline
         , Geometry& geometry, std::vector<VkDescriptorSet>& descriptorSets, glm::vec4 clearColor, uint32_t currentFrame);
 
     void recordCommandBufferImgui(VkCommandBuffer commandBuffer, uint32_t imageIndex
         , SwapChain& swapChain, VkRenderPass renderPass, Pipeline& graphicsPipeline
-        , std::vector<VkDescriptorSet>& descriptorSets, glm::vec4 clearColor, uint32_t currentFrame);
+        , std::vector<VkDescriptorSet>& descriptorSets, uint32_t currentFrame);
 
 
-    void createSyncObjects(VkDevice device, SyncObjects& syncObjects);
+	void createFences(VkDevice device, size_t size, std::vector<VkFence>& fences);
+	void destroyFences(VkDevice device, std::vector<VkFence>& fences);
+
+    void createSemaphores(VkDevice device, size_t size, std::vector<SyncObjects>& semaphores);
+    void destroySemaphores(VkDevice device, std::vector<SyncObjects>& semaphores);
+
     void updateUniformBuffer(uint32_t currentImage, SwapChain& swapChain, UniformBuffers& uniformBuffers);
-    void drawFrame(SDL_Window* window, VkSurfaceKHR surface, VkPhysicalDevice physicalDevice
-        , VkDevice device, VmaAllocator vmaAllocator, VkQueue graphicsQueue, VkQueue presentQueue
-        , SwapChain& swapChain, DepthImage& depthImage, VkRenderPass renderPass
-        , Pipeline& graphicsPipeline, Geometry& geometry, std::vector<VkCommandBuffer>& commandBuffers
-        , UniformBuffers& uniformBuffers, std::vector<VkDescriptorSet>& descriptorSets
-        , SyncObjects& syncObjects, glm::vec4 clearColor, uint32_t& currentFrame, bool& framebufferResized);
     
     VkShaderModule createShaderModule(VkDevice device, const std::vector<char>& code);
     VkSurfaceFormatKHR chooseSwapSurfaceFormat(const std::vector<VkSurfaceFormatKHR>& availableFormats);

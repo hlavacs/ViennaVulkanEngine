@@ -30,6 +30,7 @@ namespace vve {
 			{this,  -2000, "INIT", [this](Message message){this->OnInit(message);} }, 
 			{this,   1000, "INIT", [this](Message message){this->OnInit2(message);} },
 			{this,      0, "PREPARE_NEXT_FRAME", [this](Message message){this->OnPrepareNextFrame(message);} },
+			{this,      0, "RECORD_NEXT_FRAME", [this](Message message){this->OnRecordNextFrame(message);} },
 			{this,      0, "RENDER_NEXT_FRAME", [this](Message message){this->OnRenderNextFrame(message);} },
 			{this,      0, "TEXTURE_CREATE",   [this](Message message){this->OnTextureCreate(message);} },
 			{this,      0, "TEXTURE_DESTROY",  [this](Message message){this->OnTextureDestroy(message);} },
@@ -64,7 +65,7 @@ namespace vve {
         vh::initVMA(m_instance, m_physicalDevice, m_device, m_vmaAllocator);  
         vh::createSwapChain(m_windowSDL->GetSDLWindow(), m_window->GetSurface(), m_physicalDevice, m_device, m_swapChain);
         vh::createImageViews(m_device, m_swapChain);
-        vh::createRenderPass(m_physicalDevice, m_device, m_swapChain, m_renderPass);
+        vh::createRenderPassClear(m_physicalDevice, m_device, m_swapChain, true, m_renderPass);
         vh::createDescriptorSetLayout(m_device, m_descriptorSetLayout);
         vh::createGraphicsPipeline(m_device, m_renderPass, m_descriptorSetLayout, m_graphicsPipeline);
         vh::createCommandPool(m_window->GetSurface(), m_physicalDevice, m_device, m_commandPool);
@@ -79,10 +80,12 @@ namespace vve {
         vh::createVertexBuffer(m_physicalDevice, m_device, m_vmaAllocator, m_graphicsQueue, m_commandPool, m_geometry);
         vh::createIndexBuffer( m_physicalDevice, m_device, m_vmaAllocator, m_graphicsQueue, m_commandPool, m_geometry);
 
+        vh::createCommandBuffers(m_device, m_commandPool, m_commandBuffers);
         vh::createUniformBuffers(m_physicalDevice, m_device, m_vmaAllocator, m_uniformBuffers);
         vh::createDescriptorPool(m_device, m_descriptorPool);
         vh::createDescriptorSets(m_device, m_texture, m_descriptorSetLayout, m_uniformBuffers, m_descriptorPool, m_descriptorSets);
-        vh::createSyncObjects(m_device, m_syncObjects);
+        vh::createSemaphores(m_device, 1, m_semaphores);
+		vh::createFences(m_device, MAX_FRAMES_IN_FLIGHT, m_fences);
     }
 
     template<ArchitectureType ATYPE>
@@ -90,44 +93,79 @@ namespace vve {
         if(m_window->GetIsMinimized()) return;
 
         m_currentFrame = (m_currentFrame + 1) % MAX_FRAMES_IN_FLIGHT;
-		m_commandBuffers.clear();
+		m_commandBuffersSubmit.clear();
 
-		vkWaitForFences(m_device, 1, &m_syncObjects.m_inFlightFences[m_currentFrame], VK_TRUE, UINT64_MAX);
+		vkWaitForFences(m_device, 1, &m_fences[m_currentFrame], VK_TRUE, UINT64_MAX);
 
-        VkResult result = vkAcquireNextImageKHR(m_device, m_swapChain.m_swapChain, UINT64_MAX
-                            , m_syncObjects.m_imageAvailableSemaphores[m_currentFrame], VK_NULL_HANDLE, &m_imageIndex);
+        VkResult result = vkAcquireNextImageKHR(m_device, m_swapChain.m_swapChain, UINT64_MAX,
+                            m_semaphores[0].m_imageAvailableSemaphores[m_currentFrame], VK_NULL_HANDLE, &m_imageIndex);
+
         if (result == VK_ERROR_OUT_OF_DATE_KHR ) {
             recreateSwapChain(m_windowSDL->GetSDLWindow(), m_window->GetSurface(), m_physicalDevice, m_device, m_vmaAllocator, m_swapChain, m_depthImage, m_renderPass);
             return;
         } else assert (result == VK_SUCCESS || result == VK_SUBOPTIMAL_KHR);
     }
 
+
+    template<ArchitectureType ATYPE>
+    void RendererVulkan<ATYPE>::OnRecordNextFrame(Message message) {
+		if(m_windowSDL->GetIsMinimized()) return;
+
+        vkResetCommandBuffer(m_commandBuffers[m_currentFrame],  0);
+
+		vh::recordCommandBufferClear(
+			m_commandBuffers[m_currentFrame], m_imageIndex, 
+			m_swapChain, m_renderPass, m_graphicsPipeline, 
+			m_descriptorSets, ((WindowSDL<ATYPE>*)m_window)->GetClearColor(), 
+			m_currentFrame);
+
+		SubmitCommandBuffer(m_commandBuffers[GetCurrentFrame()]);
+	}
+
     template<ArchitectureType ATYPE>
     void RendererVulkan<ATYPE>::OnRenderNextFrame(Message message) {
         if(m_window->GetIsMinimized()) return;
 		VkResult result;
         
-        vkResetFences(m_device, 1, &m_syncObjects.m_inFlightFences[m_currentFrame]);
-		VkSubmitInfo submitInfo{};
-        submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
-        VkSemaphore waitSemaphores[] = {m_syncObjects.m_imageAvailableSemaphores[m_currentFrame]};
-        VkPipelineStageFlags waitStages[] = {VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT};
-        submitInfo.waitSemaphoreCount = 1;
-        submitInfo.pWaitSemaphores = waitSemaphores;
-        submitInfo.pWaitDstStageMask = waitStages;
-        submitInfo.commandBufferCount = m_commandBuffers.size();
-        submitInfo.pCommandBuffers = m_commandBuffers.data();
-        VkSemaphore signalSemaphores[] = {m_syncObjects.m_renderFinishedSemaphores[m_currentFrame]};
-        submitInfo.signalSemaphoreCount = 1;
-        submitInfo.pSignalSemaphores = signalSemaphores;
-        if (vkQueueSubmit(m_graphicsQueue, 1, &submitInfo, m_syncObjects.m_inFlightFences[m_currentFrame]) != VK_SUCCESS) {
-            throw std::runtime_error("failed to submit draw command buffer!");
-        }
+		size_t size = m_commandBuffersSubmit.size();
+		size_t s2 = m_semaphores.size();
+		if( size > m_semaphores.size() ) {
+			vh::createSemaphores(m_device, size - m_semaphores.size(), m_semaphores);
+		}
+
+        vkResetFences(m_device, 1, &m_fences[m_currentFrame]);
+
+		VkSemaphore waitSemaphore = m_semaphores[0].m_imageAvailableSemaphores[m_currentFrame];
+		VkSemaphore signalSemaphore;
+
+		for( int i = 0; i < size; i++ ) {
+			VkCommandBuffer commandBuffer = m_commandBuffersSubmit[i];
+			signalSemaphore = m_semaphores[i].m_renderFinishedSemaphores[m_currentFrame];
+			VkSubmitInfo submitInfo{};
+	        submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+	        VkPipelineStageFlags waitStages[] = {VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT};
+	        submitInfo.waitSemaphoreCount = 1;
+	        submitInfo.pWaitSemaphores = &waitSemaphore;
+	        submitInfo.pWaitDstStageMask = waitStages;
+	        submitInfo.commandBufferCount = 1;
+	        submitInfo.pCommandBuffers = &commandBuffer;
+	        submitInfo.signalSemaphoreCount = 1;
+	        submitInfo.pSignalSemaphores = &signalSemaphore;
+			VkFence fence = VK_NULL_HANDLE;
+			if( i== size-1 ) fence = m_fences[m_currentFrame];
+	        if (vkQueueSubmit(m_graphicsQueue, 1, &submitInfo, fence) != VK_SUCCESS) {
+	            throw std::runtime_error("failed to submit draw command buffer!");
+	        }
+			waitSemaphore = signalSemaphore;
+		}
+
+   		vh::transitionImageLayout(m_device, m_graphicsQueue, m_commandPool, 
+			m_swapChain.m_swapChainImages[m_imageIndex], m_swapChain.m_swapChainImageFormat, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR);
 
         VkPresentInfoKHR presentInfo{};
         presentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
         presentInfo.waitSemaphoreCount = 1;
-        presentInfo.pWaitSemaphores = signalSemaphores;
+        presentInfo.pWaitSemaphores = &signalSemaphore;
         VkSwapchainKHR swapChains[] = {m_swapChain.m_swapChain};
         presentInfo.swapchainCount = 1;
         presentInfo.pSwapchains = swapChains;
@@ -166,13 +204,13 @@ namespace vve {
 
         vh::destroyBuffer(m_device, m_vmaAllocator, m_geometry.m_vertexBuffer, m_geometry.m_vertexBufferAllocation);
 
-        for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
-            vkDestroySemaphore(m_device, m_syncObjects.m_renderFinishedSemaphores[i], nullptr);
-            vkDestroySemaphore(m_device, m_syncObjects.m_imageAvailableSemaphores[i], nullptr);
-            vkDestroyFence(m_device, m_syncObjects.m_inFlightFences[i], nullptr);
-        }
-
         vkDestroyCommandPool(m_device, m_commandPool, nullptr);
+
+        vkDestroyRenderPass(m_device, m_renderPass, nullptr);
+
+		vh::destroyFences(m_device, m_fences);
+
+		vh::destroySemaphores(m_device, m_semaphores);
 
         vmaDestroyAllocator(m_vmaAllocator);
 

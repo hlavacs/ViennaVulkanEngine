@@ -32,10 +32,9 @@ namespace vve {
     void RendererImgui<ATYPE>::OnInit(Message message) {
 		if(m_vulkan == nullptr) { m_vulkan = (RendererVulkan<ATYPE>*)m_engine->GetSystem("VVE RendererVulkan"); }
 
-		//auto rend = ((RendererVulkan<ATYPE>*)(m_engine->GetSystem("VVE RendererVulkan")));
 		WindowSDL<ATYPE>* windowSDL = (WindowSDL<ATYPE>*)m_window;
 
-        vh::createRenderPassNoClear(m_vulkan->GetPhysicalDevice(), m_vulkan->GetDevice(), m_vulkan->GetSwapChain(), m_renderPass);
+        vh::createRenderPass(m_vulkan->GetPhysicalDevice(), m_vulkan->GetDevice(), m_vulkan->GetSwapChain(), false, m_renderPass);
 		
 		vh::setupImgui(windowSDL->GetSDLWindow(), m_vulkan->GetInstance(), m_vulkan->GetPhysicalDevice(), m_vulkan->GetQueueFamilies(), m_vulkan->GetDevice(), m_vulkan->GetGraphicsQueue(), 
 			m_vulkan->GetCommandPool(), m_vulkan->GetDescriptorPool(), m_renderPass);  
@@ -55,11 +54,14 @@ namespace vve {
    	template<ArchitectureType ATYPE>
     void RendererImgui<ATYPE>::OnRecordNextFrame(Message message) {
         if(m_window->GetIsMinimized()) return;
+
+        vkResetCommandBuffer(m_commandBuffers[m_vulkan->GetCurrentFrame()],  0);
+
 		vh::recordCommandBufferImgui(
 			m_commandBuffers[m_vulkan->GetCurrentFrame()], m_vulkan->GetImageIndex(), 
 			m_vulkan->GetSwapChain(), m_renderPass, m_vulkan->GetGraphicsPipeline(), 
-			m_vulkan->GetDescriptorSets(), ((WindowSDL<ATYPE>*)m_window)->GetClearColor(), 
-			m_vulkan->GetCurrentFrame());
+			m_vulkan->GetDescriptorSets(), m_vulkan->GetCurrentFrame());
+
 		m_vulkan->SubmitCommandBuffer(m_commandBuffers[m_vulkan->GetCurrentFrame()]);
     }
 
@@ -72,12 +74,12 @@ namespace vve {
    	template<ArchitectureType ATYPE>
     void RendererImgui<ATYPE>::OnQuit(Message message) {
         vkDeviceWaitIdle(m_vulkan->GetDevice());
-        vkDestroyCommandPool(m_vulkan->GetDevice(), m_commandPool, nullptr);
 		ImGui_ImplVulkan_Shutdown();
         ImGui_ImplSDL2_Shutdown();
         ImGui::DestroyContext();
 
         vkDestroyRenderPass(m_vulkan->GetDevice(), m_renderPass, nullptr);
+        vkDestroyCommandPool(m_vulkan->GetDevice(), m_commandPool, nullptr);
     }
 
     template class RendererImgui<ENGINETYPE_SEQUENTIAL>;

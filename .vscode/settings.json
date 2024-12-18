@@ -89,6 +89,7 @@
 		"numeric": "cpp",
 		"queue": "cpp",
 		"regex": "cpp",
-		"valarray": "cpp"
+		"valarray": "cpp",
+		"unordered_set": "cpp"
 	}
 }

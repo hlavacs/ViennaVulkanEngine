@@ -51,17 +51,18 @@ namespace vve {
 		auto GetUniformBuffers() -> vh::UniformBuffers& { return m_uniformBuffers; }
 		auto GetDescriptorSets() -> std::vector<VkDescriptorSet>& { return m_descriptorSets; }
 		auto GetCommandBuffers() -> std::vector<VkCommandBuffer>& { return m_commandBuffers; }
-		auto GetSyncObjects() -> vh::SyncObjects& { return m_syncObjects; }
+		auto GetSyncObjects() -> std::vector<vh::SyncObjects>& { return m_semaphores; }
 		auto GetCurrentFrame() -> uint32_t { return m_currentFrame; }
 		auto GetImageIndex() -> uint32_t { return m_imageIndex; }
 		auto GetFramebufferResized() -> bool { return m_framebufferResized; }
 
-		void SubmitCommandBuffer( VkCommandBuffer commandBuffer ) { m_commandBuffers.push_back(commandBuffer); };
+		void SubmitCommandBuffer( VkCommandBuffer commandBuffer ) { m_commandBuffersSubmit.push_back(commandBuffer); };
 
     private:
         virtual void OnInit(Message message);
         virtual void OnInit2(Message message);
         virtual void OnPrepareNextFrame(Message message);
+        virtual void OnRecordNextFrame(Message message);
         virtual void OnRenderNextFrame(Message message);
 		virtual void OnTextureCreate( Message message );
 		virtual void OnTextureDestroy( Message message );
@@ -102,9 +103,11 @@ namespace vve {
 	    std::vector<VkDescriptorSet> m_descriptorSets;
 	    VkCommandPool m_commandPool;
 	    std::vector<VkCommandBuffer> m_commandBuffers;
-	    vh::SyncObjects m_syncObjects;
+	    std::vector<VkCommandBuffer> m_commandBuffersSubmit;
+	    std::vector<vh::SyncObjects> m_semaphores;
+		std::vector<VkFence> m_fences;
 
-	    uint32_t m_currentFrame = MAX_FRAMES_IN_FLIGHT;
+	    uint32_t m_currentFrame = MAX_FRAMES_IN_FLIGHT - 1;
         uint32_t m_imageIndex;
 
 	    bool m_framebufferResized = false;
