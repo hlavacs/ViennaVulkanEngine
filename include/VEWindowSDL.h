@@ -36,11 +36,7 @@ namespace vve {
         virtual void OnInit(Message message);
         virtual void OnInit2(Message message);
         virtual void OnPollEvents(Message message);
-        virtual void OnPrepareNextFrame(Message message);
-        virtual void OnRenderNextFrame(Message message);
-        virtual void OnPresentNextFrame(Message message);
         virtual void OnQuit(Message message);
-        virtual void OnQuit2(Message message);
 
         inline static bool 		m_sdl_initialized{false};
         SDL_Window* 			m_sdlWindow{nullptr};

@@ -16,14 +16,13 @@ namespace vve {
 
     private:
         virtual void OnInit(Message message);
-        virtual void OnPollEvents(Message message);
         virtual void OnRecordNextFrame(Message message);
         virtual void OnSDL(Message message);
         virtual void OnQuit(Message message);
 
 		RendererVulkan<ATYPE>* m_vulkan{nullptr};
+	    VkCommandPool m_commandPool;
 	    std::vector<VkCommandBuffer> m_commandBuffers;
-
     };
 
 };   // namespace vve

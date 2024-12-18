@@ -15,10 +15,10 @@ namespace vve {
         : Renderer<ATYPE>(systemName, engine, window ) {
 
   		engine->RegisterCallback( { 
-  			{this, -5000, "INIT", [this](Message message){this->OnInit(message);} },
-  			{this,  5000, "INIT", [this](Message message){this->OnInit2(message);} },
-  			{this,  5000, "RECORD_NEXT_FRAME", [this](Message message){this->OnRecordNextFrame(message);} },
-  			{this,-50000, "QUIT", [this](Message message){this->OnQuit(message);} }
+  			{this, -1000, "INIT", [this](Message message){this->OnInit(message);} },
+  			{this,  2000, "INIT", [this](Message message){this->OnInit2(message);} },
+  			{this,  2000, "RECORD_NEXT_FRAME", [this](Message message){this->OnRecordNextFrame(message);} },
+  			{this, -3000, "QUIT", [this](Message message){this->OnQuit(message);} }
   		} );
     };
 
@@ -52,6 +52,7 @@ namespace vve {
 
    	template<ArchitectureType ATYPE>
     void RendererForward<ATYPE>::OnQuit(Message message) {
+        vkDeviceWaitIdle(m_vulkan->GetDevice());
         vkDestroyCommandPool(m_vulkan->GetDevice(), m_commandPool, nullptr);
     }
 

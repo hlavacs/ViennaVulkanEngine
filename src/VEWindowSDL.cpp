@@ -23,14 +23,10 @@ namespace vve {
                 : Window<ATYPE>(systemName, engine, windowName, width, height ) {
 
         engine->RegisterCallback( { 
-			{this, -100000, "INIT", [this](Message message){this->OnInit(message);} },
-			{this,       0, "INIT", [this](Message message){this->OnInit2(message);} },
-			{this,       0, "POLL_EVENTS", [this](Message message){this->OnPollEvents(message);} },
-			{this,       0, "PREPARE_NEXT_FRAME", [this](Message message){this->OnPrepareNextFrame(message);} },
-			{this,       0, "RENDER_NEXT_FRAME", [this](Message message){this->OnRenderNextFrame(message);} },
-			{this,       0, "PRESENT_NEXT_FRAME", [this](Message message){this->OnPresentNextFrame(message);} },
-			{this,   	 0, "QUIT", [this](Message message){this->OnQuit(message);} },
-			{this,  100000, "QUIT", [this](Message message){this->OnQuit2(message);} }
+			{this, -3000, "INIT", [this](Message message){this->OnInit(message);} },
+			{this,     0, "INIT", [this](Message message){this->OnInit2(message);} },
+			{this,     0, "POLL_EVENTS", [this](Message message){this->OnPollEvents(message);} },
+			{this,     0, "QUIT", [this](Message message){this->OnQuit(message);} },
 		} );
     }
 
@@ -158,28 +154,12 @@ namespace vve {
     }
 
    	template<ArchitectureType ATYPE>
-    void WindowSDL<ATYPE>::OnPrepareNextFrame(Message message) {
-    }
-
-   	template<ArchitectureType ATYPE>
-    void WindowSDL<ATYPE>::OnRenderNextFrame(Message message) {
-    }
-
-   	template<ArchitectureType ATYPE>
-    void WindowSDL<ATYPE>::OnPresentNextFrame(Message message) {
-    }
-
-   	template<ArchitectureType ATYPE>
     void WindowSDL<ATYPE>::OnQuit(Message message) {
         auto rend = ((RendererVulkan<ATYPE>*)(m_engine->GetSystem("VVE RendererVulkan")));
         vkDestroySurfaceKHR(rend->GetInstance(), m_surface, nullptr);
-    }
-
-   	template<ArchitectureType ATYPE>
-    void WindowSDL<ATYPE>::OnQuit2(Message message) {
 		SDL_DestroyWindow(m_sdlWindow);
-        SDL_Quit();
-    }
+        SDL_Quit(); 
+   }
 
     template class WindowSDL<ENGINETYPE_SEQUENTIAL>;
     template class WindowSDL<ENGINETYPE_PARALLEL>;

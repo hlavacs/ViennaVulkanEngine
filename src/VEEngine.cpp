@@ -175,6 +175,7 @@ namespace vve {
 
 	template<ArchitectureType ATYPE>
 	void Engine<ATYPE>::PrintCallbacks() {
+		if( !m_debug ) return;
 		for( auto& [type, map] : m_messageMap ) {
 			std::cout << "Message Type: " << m_msgTypeMap[type] << std::endl;
 			for( auto& [phase, callback] : map ) {

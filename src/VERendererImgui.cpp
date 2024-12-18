@@ -16,11 +16,10 @@ namespace vve {
         : Renderer<ATYPE>(systemName, engine, window ) {
 
 		engine->RegisterCallback( { 
-			{this,  10000, "INIT", [this](Message message){this->OnInit(message);} },
+			{this,   3000, "INIT", [this](Message message){this->OnInit(message);} },
 			{this,      0, "RECORD_NEXT_FRAME", [this](Message message){this->OnRecordNextFrame(message);} },
 			{this,      0, "SDL", [this](Message message){this->OnSDL(message);} },
-			{this,  10000, "POLL_EVENTS", [this](Message message){this->OnPollEvents(message);} },
-			{this, -20000, "QUIT", [this](Message message){this->OnQuit(message);} }
+			{this,  -2000, "QUIT", [this](Message message){this->OnQuit(message);} }
 		} );
 
     };
@@ -31,11 +30,14 @@ namespace vve {
    	template<ArchitectureType ATYPE>
     void RendererImgui<ATYPE>::OnInit(Message message) {
 		if(m_vulkan == nullptr) { m_vulkan = (RendererVulkan<ATYPE>*)m_engine->GetSystem("VVE RendererVulkan"); }
-		auto rend = ((RendererVulkan<ATYPE>*)(m_engine->GetSystem("VVE RendererVulkan")));
+
+		//auto rend = ((RendererVulkan<ATYPE>*)(m_engine->GetSystem("VVE RendererVulkan")));
 		WindowSDL<ATYPE>* windowSDL = (WindowSDL<ATYPE>*)m_window;
 
-		vh::setupImgui(windowSDL->GetSDLWindow(), rend->GetInstance(), rend->GetPhysicalDevice(), rend->GetQueueFamilies(), rend->GetDevice(), rend->GetGraphicsQueue(), 
-			rend->GetCommandPool(), rend->GetDescriptorPool(), rend->GetRenderPass());    
+		vh::setupImgui(windowSDL->GetSDLWindow(), m_vulkan->GetInstance(), m_vulkan->GetPhysicalDevice(), m_vulkan->GetQueueFamilies(), m_vulkan->GetDevice(), m_vulkan->GetGraphicsQueue(), 
+			m_vulkan->GetCommandPool(), m_vulkan->GetDescriptorPool(), m_vulkan->GetRenderPass());  
+
+        vh::createCommandPool(m_window->GetSurface(), m_vulkan->GetPhysicalDevice(), m_vulkan->GetDevice(), m_commandPool); 
 	}
 
    	template<ArchitectureType ATYPE>
@@ -49,10 +51,6 @@ namespace vve {
     }
 
    	template<ArchitectureType ATYPE>
-    void RendererImgui<ATYPE>::OnPollEvents(Message message) {
-    }
-
-   	template<ArchitectureType ATYPE>
     void RendererImgui<ATYPE>::OnSDL(Message message) {
     	SDL_Event event = message.GetData<MsgSDL>().m_event;
     	ImGui_ImplSDL2_ProcessEvent(&event);
@@ -61,9 +59,8 @@ namespace vve {
     
    	template<ArchitectureType ATYPE>
     void RendererImgui<ATYPE>::OnQuit(Message message) {
-		auto rend = ((RendererVulkan<ATYPE>*)(m_engine->GetSystem("VVE RendererVulkan")));
-        vkDeviceWaitIdle(rend->GetDevice());
-
+        vkDeviceWaitIdle(m_vulkan->GetDevice());
+        vkDestroyCommandPool(m_vulkan->GetDevice(), m_commandPool, nullptr);
 		ImGui_ImplVulkan_Shutdown();
         ImGui_ImplSDL2_Shutdown();
         ImGui::DestroyContext();
