@@ -91,7 +91,6 @@ namespace vve {
 
     template<ArchitectureType ATYPE>
     void RendererVulkan<ATYPE>::OnUpdate(Message message) {
-		
 	}
 
 

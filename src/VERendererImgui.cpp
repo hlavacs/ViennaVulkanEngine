@@ -17,7 +17,8 @@ namespace vve {
 
 		engine->RegisterCallback( { 
 			{this,   3000, "INIT", [this](Message message){this->OnInit(message);} },
-			{this,      0, "RECORD_NEXT_FRAME", [this](Message message){this->OnRecordNextFrame(message);} },
+			{this,   1000, "PREPARE_NEXT_FRAME", [this](Message message){this->OnPrepareNextFrame(message);} },
+			{this,   3000, "RECORD_NEXT_FRAME", [this](Message message){this->OnRecordNextFrame(message);} },
 			{this,      0, "SDL", [this](Message message){this->OnSDL(message);} },
 			{this,  -2000, "QUIT", [this](Message message){this->OnQuit(message);} }
 		} );
@@ -38,16 +39,30 @@ namespace vve {
 			m_vulkan->GetCommandPool(), m_vulkan->GetDescriptorPool(), m_vulkan->GetRenderPass());  
 
         vh::createCommandPool(m_window->GetSurface(), m_vulkan->GetPhysicalDevice(), m_vulkan->GetDevice(), m_commandPool); 
+        vh::createCommandBuffers(m_vulkan->GetDevice(), m_commandPool, m_commandBuffers);
 	}
+
+
+   	template<ArchitectureType ATYPE>
+    void RendererImgui<ATYPE>::OnPrepareNextFrame(Message message) {
+
+        if(m_window->GetIsMinimized()) return;
+
+	    ImGui_ImplVulkan_NewFrame();
+		ImGui_ImplSDL2_NewFrame();
+        ImGui::NewFrame();
+    }
 
    	template<ArchitectureType ATYPE>
     void RendererImgui<ATYPE>::OnRecordNextFrame(Message message) {
 
-        if(!m_window->GetIsMinimized()) {
-		    ImGui_ImplVulkan_NewFrame();
-			ImGui_ImplSDL2_NewFrame();
-            ImGui::NewFrame();
-		}
+        if(m_window->GetIsMinimized()) return;
+
+		vh::recordCommandBufferImgui(
+			m_commandBuffers[m_vulkan->GetCurrentFrame()], m_vulkan->GetImageIndex(), 
+			m_vulkan->GetSwapChain(), m_vulkan->GetRenderPass(), m_vulkan->GetGraphicsPipeline(), 
+			m_vulkan->GetDescriptorSets(), ((WindowSDL<ATYPE>*)m_window)->GetClearColor(), 
+			m_vulkan->GetCurrentFrame());
     }
 
    	template<ArchitectureType ATYPE>

@@ -33,6 +33,7 @@ namespace vve {
     void RendererForward<ATYPE>::OnInit2(Message message) {
 		if(m_vulkan == nullptr) { m_vulkan = (RendererVulkan<ATYPE>*)m_engine->GetSystem("VVE RendererVulkan"); }
         vh::createCommandPool(m_window->GetSurface(), m_vulkan->GetPhysicalDevice(), m_vulkan->GetDevice(), m_commandPool);
+        vh::createCommandBuffers(m_vulkan->GetDevice(), m_commandPool, m_commandBuffers);
     }
 
    	template<ArchitectureType ATYPE>
@@ -41,7 +42,7 @@ namespace vve {
         vh::updateUniformBuffer(m_vulkan->GetCurrentFrame(), m_vulkan->GetSwapChain(), m_vulkan->GetUniformBuffers());
         vkResetCommandBuffer(m_vulkan->GetCommandBuffers()[m_vulkan->GetCurrentFrame()],  0);
         
-		recordCommandBuffer(
+		vh::recordCommandBuffer(
 			m_vulkan->GetCommandBuffers()[m_vulkan->GetCurrentFrame()], m_vulkan->GetImageIndex(), 
 			m_vulkan->GetSwapChain(), m_vulkan->GetRenderPass(), m_vulkan->GetGraphicsPipeline(), 
 			m_vulkan->GetGeometry(), m_vulkan->GetDescriptorSets(), ((WindowSDL<ATYPE>*)m_window)->GetClearColor(), 

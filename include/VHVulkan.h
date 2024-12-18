@@ -218,9 +218,16 @@ namespace vh {
     void copyBuffer(VkDevice device, VkQueue graphicsQueue, VkCommandPool commandPool, VkBuffer srcBuffer
         , VkBuffer dstBuffer, VkDeviceSize size);
     void createCommandBuffers(VkDevice device, VkCommandPool commandPool, std::vector<VkCommandBuffer>& commandBuffers);
+
     void recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageIndex
         , SwapChain& swapChain, VkRenderPass renderPass, Pipeline& graphicsPipeline
         , Geometry& geometry, std::vector<VkDescriptorSet>& descriptorSets, glm::vec4 clearColor, uint32_t currentFrame);
+
+    void recordCommandBufferImgui(VkCommandBuffer commandBuffer, uint32_t imageIndex
+        , SwapChain& swapChain, VkRenderPass renderPass, Pipeline& graphicsPipeline
+        , std::vector<VkDescriptorSet>& descriptorSets, glm::vec4 clearColor, uint32_t currentFrame);
+
+
     void createSyncObjects(VkDevice device, SyncObjects& syncObjects);
     void updateUniformBuffer(uint32_t currentImage, SwapChain& swapChain, UniformBuffers& uniformBuffers);
     void drawFrame(SDL_Window* window, VkSurfaceKHR surface, VkPhysicalDevice physicalDevice
