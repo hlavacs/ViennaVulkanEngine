@@ -8,10 +8,6 @@
 
 namespace vve {
 
-	//-------------------------------------------------------------------------------------------------------
-	// Messages
-
-    struct MsgSDL : public MsgBase { MsgSDL(void* s, void* r, double dt, SDL_Event event ); double m_dt; SDL_Event m_event; };
 
 	//-------------------------------------------------------------------------------------------------------
 	// SDL Window

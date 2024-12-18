@@ -8,9 +8,6 @@
 
 namespace vve {
 	
-	//-------------------------------------------------------------------------------------------------------
-
-    MsgFileLoadTexture::MsgFileLoadTexture(void* s, void* r, std::string fileName) : MsgBase{std::hash<std::string>{}("FILE_LOAD_TEXTURE"), s, r}, m_fileName{fileName} {};
 
 	//-------------------------------------------------------------------------------------------------------
 

@@ -27,7 +27,7 @@ namespace vve {
         "PRESENT_NEXT_FRAME", // present the next frame
         "FRAME_END", //
         "DELETED", //React to something being deleted
-        "SDL", // defined in WindowSDL
+        "SDL", // 
         "SDL_MOUSE_MOVE", //
         "SDL_MOUSE_BUTTON_DOWN", //
         "SDL_MOUSE_BUTTON_UP", //
@@ -37,13 +37,13 @@ namespace vve {
         "SDL_KEY_UP", //
         "SDL_KEY_REPEAT", //
         "QUIT", //
-		"FILE_LOAD_TEXTURE", //defined in SceneManager
-		"FILE_LOAD_OBJ",	//defined in SceneManager
-		"FILE_LOAD_GLTF",	//defined in SceneManager
-		"TEXTURE_CREATE",  //defined in VulkanRenderer
-		"TEXTURE_DESTROY", //defined in VulkanRenderer
-		"GEOMETRY_CREATE",	//defined in VulkanRenderer
-		"GEOMETRY_DESTROY",	//defined in VulkanRenderer
+		"FILE_LOAD_TEXTURE", 
+		"FILE_LOAD_OBJ",	
+		"FILE_LOAD_GLTF",
+		"TEXTURE_CREATE",  
+		"TEXTURE_DESTROY", 
+		"GEOMETRY_CREATE",	
+		"GEOMETRY_DESTROY",	
         "LAST" //
     };
 
@@ -80,6 +80,15 @@ namespace vve {
     struct MsgKeyDown : public MsgBase { MsgKeyDown(void* s, void* r, double dt, int key);  int m_key; };
     struct MsgKeyUp : public MsgBase { MsgKeyUp(void* s, void* r, double dt, int key);  int m_key; };
     struct MsgKeyRepeat : public MsgBase { MsgKeyRepeat(void* s, void* r, double dt, int key); int m_key; };
+    struct MsgSDL : public MsgBase { MsgSDL(void* s, void* r, double dt, SDL_Event event ); double m_dt; SDL_Event m_event; };
+	struct MsgFileLoadTexture : public MsgBase { MsgFileLoadTexture(void* s, void* r, std::string fileName); std::string m_fileName; };
+		struct MsgTextureCreate : public MsgBase { 
+		MsgTextureCreate(void* s, void* r, void *pixels, vecs::Handle handle); 
+		void* m_pixels; vecs::Handle m_handle; 
+	};
+    struct MsgTextureDestroy : public MsgBase { MsgTextureDestroy(void* s, void* r, vecs::Handle handle); vecs::Handle m_handle; };
+    struct MsgGeometryCreate : public MsgBase { MsgGeometryCreate(void* s, void* r, vecs::Handle handle); vecs::Handle m_handle; };
+    struct MsgGeometryDestroy : public MsgBase { MsgGeometryDestroy(void* s, void* r, vecs::Handle handle); vecs::Handle m_handle; };
     struct MsgQuit : public MsgBase { MsgQuit(void* s, void* r=nullptr); };
 
 

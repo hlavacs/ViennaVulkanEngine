@@ -11,13 +11,6 @@
 
 namespace vve {
 
-	//-------------------------------------------------------------------------------------------------------
-	// Messages
-
-	MsgTextureCreate::MsgTextureCreate(void* s, void* r, void *pixels, vecs::Handle handle) : MsgBase{std::hash<std::string>{}("TEXTURE_CREATE"), s, r}, m_pixels{pixels}, m_handle{handle} {};
-    MsgTextureDestroy::MsgTextureDestroy(void* s, void* r, vecs::Handle handle) : MsgBase{std::hash<std::string>{}("TEXTURE_DESTROY"), s, r}, m_handle{handle} {};
-	MsgGeometryCreate::MsgGeometryCreate(void* s, void* r, vecs::Handle handle) : MsgBase{std::hash<std::string>{}("GEOMETRY_CREATE"), s, r}, m_handle{handle} {};
-    MsgGeometryDestroy::MsgGeometryDestroy(void* s, void* r, vecs::Handle handle) : MsgBase{std::hash<std::string>{}("GEOMETRY_DESTROY"), s, r}, m_handle{handle} {};
 
 	//-------------------------------------------------------------------------------------------------------
 	// Vulkan Renderer

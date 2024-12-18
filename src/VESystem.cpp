@@ -29,6 +29,12 @@ namespace vve {
     MsgKeyDown::MsgKeyDown(void* s, void* r, double dt, int key): MsgBase{std::hash<std::string>{}("SDL_KEY_DOWN"), s, r, dt}, m_key{key} {}; 
     MsgKeyUp::MsgKeyUp(void* s, void* r, double dt, int key): MsgBase{std::hash<std::string>{}("SDL_KEY_UP"), s, r, dt}, m_key{key} {}; 
     MsgKeyRepeat::MsgKeyRepeat(void* s, void* r, double dt, int key): MsgBase{std::hash<std::string>{}("SDL_KEY_REPEAT"), s, r, dt}, m_key{key} {};   
+    MsgSDL::MsgSDL(void* s, void* r, double dt, SDL_Event event): MsgBase{std::hash<std::string>{}("SDL"), s, r}, m_dt{dt}, m_event{event} {};   
+    MsgFileLoadTexture::MsgFileLoadTexture(void* s, void* r, std::string fileName) : MsgBase{std::hash<std::string>{}("FILE_LOAD_TEXTURE"), s, r}, m_fileName{fileName} {};
+	MsgTextureCreate::MsgTextureCreate(void* s, void* r, void *pixels, vecs::Handle handle) : MsgBase{std::hash<std::string>{}("TEXTURE_CREATE"), s, r}, m_pixels{pixels}, m_handle{handle} {};
+    MsgTextureDestroy::MsgTextureDestroy(void* s, void* r, vecs::Handle handle) : MsgBase{std::hash<std::string>{}("TEXTURE_DESTROY"), s, r}, m_handle{handle} {};
+	MsgGeometryCreate::MsgGeometryCreate(void* s, void* r, vecs::Handle handle) : MsgBase{std::hash<std::string>{}("GEOMETRY_CREATE"), s, r}, m_handle{handle} {};
+    MsgGeometryDestroy::MsgGeometryDestroy(void* s, void* r, vecs::Handle handle) : MsgBase{std::hash<std::string>{}("GEOMETRY_DESTROY"), s, r}, m_handle{handle} {};
     MsgQuit::MsgQuit(void* s, void* r) : MsgBase{std::hash<std::string>{}("QUIT"), s, r} {};
 
    	template<ArchitectureType ATYPE>

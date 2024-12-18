@@ -7,10 +7,6 @@
 
 namespace vve {
 
-	//-------------------------------------------------------------------------------------------------------
-
-	struct MsgFileLoadTexture : public MsgBase { MsgFileLoadTexture(void* s, void* r, std::string fileName); std::string m_fileName; };
-
 
 	//-------------------------------------------------------------------------------------------------------
 
