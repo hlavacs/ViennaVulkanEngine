@@ -6,6 +6,7 @@
 
 #include "VECS.h"
 #include "VEInclude.h"
+#include "VESystem.h"
 
 namespace vve {
 

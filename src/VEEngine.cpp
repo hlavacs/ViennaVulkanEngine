@@ -6,6 +6,7 @@
 #include <iterator>
 #include <ranges>
 #include "VHInclude.h"
+#include "VEInclude.h"
 #include "VHVulkan.h"
 #include "VESystem.h"
 #include "VEEngine.h"
@@ -18,7 +19,7 @@
 #include "VESceneManager.h"
 
 namespace vve {
-
+	
 	template<ArchitectureType ATYPE>
 	Engine<ATYPE>::Engine(std::string name) : System<ATYPE>(name, this) {
 	#ifndef NDEBUG

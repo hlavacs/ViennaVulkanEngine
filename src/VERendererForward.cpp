@@ -38,16 +38,16 @@ namespace vve {
 
    	template<ArchitectureType ATYPE>
     void RendererForward<ATYPE>::OnRecordNextFrame(Message message) {
-
         vh::updateUniformBuffer(m_vulkan->GetCurrentFrame(), m_vulkan->GetSwapChain(), m_vulkan->GetUniformBuffers());
-        vkResetCommandBuffer(m_vulkan->GetCommandBuffers()[m_vulkan->GetCurrentFrame()],  0);
+        vkResetCommandBuffer(m_commandBuffers[m_vulkan->GetCurrentFrame()],  0);
         
 		vh::recordCommandBuffer(
-			m_vulkan->GetCommandBuffers()[m_vulkan->GetCurrentFrame()], m_vulkan->GetImageIndex(), 
+			m_commandBuffers[m_vulkan->GetCurrentFrame()], m_vulkan->GetImageIndex(), 
 			m_vulkan->GetSwapChain(), m_vulkan->GetRenderPass(), m_vulkan->GetGraphicsPipeline(), 
 			m_vulkan->GetGeometry(), m_vulkan->GetDescriptorSets(), ((WindowSDL<ATYPE>*)m_window)->GetClearColor(), 
 			m_vulkan->GetCurrentFrame());
-	        
+
+	    m_vulkan->SubmitCommandBuffer(m_commandBuffers[m_vulkan->GetCurrentFrame()]);
     }
 
 

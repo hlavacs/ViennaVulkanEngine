@@ -42,12 +42,9 @@ namespace vve {
         vh::createCommandBuffers(m_vulkan->GetDevice(), m_commandPool, m_commandBuffers);
 	}
 
-
    	template<ArchitectureType ATYPE>
     void RendererImgui<ATYPE>::OnPrepareNextFrame(Message message) {
-
         if(m_window->GetIsMinimized()) return;
-
 	    ImGui_ImplVulkan_NewFrame();
 		ImGui_ImplSDL2_NewFrame();
         ImGui::NewFrame();
@@ -55,14 +52,13 @@ namespace vve {
 
    	template<ArchitectureType ATYPE>
     void RendererImgui<ATYPE>::OnRecordNextFrame(Message message) {
-
         if(m_window->GetIsMinimized()) return;
-
 		vh::recordCommandBufferImgui(
 			m_commandBuffers[m_vulkan->GetCurrentFrame()], m_vulkan->GetImageIndex(), 
 			m_vulkan->GetSwapChain(), m_vulkan->GetRenderPass(), m_vulkan->GetGraphicsPipeline(), 
 			m_vulkan->GetDescriptorSets(), ((WindowSDL<ATYPE>*)m_window)->GetClearColor(), 
 			m_vulkan->GetCurrentFrame());
+		m_vulkan->SubmitCommandBuffer(m_commandBuffers[m_vulkan->GetCurrentFrame()]);
     }
 
    	template<ArchitectureType ATYPE>
@@ -71,7 +67,6 @@ namespace vve {
     	ImGui_ImplSDL2_ProcessEvent(&event);
     }
 
-    
    	template<ArchitectureType ATYPE>
     void RendererImgui<ATYPE>::OnQuit(Message message) {
         vkDeviceWaitIdle(m_vulkan->GetDevice());

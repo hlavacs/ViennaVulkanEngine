@@ -2,6 +2,7 @@
 
 #include <any>
 #include "VHInclude.h"
+#include "VESystem.h"
 #include "VERenderer.h"
 
 namespace vve {
@@ -55,10 +56,11 @@ namespace vve {
 		auto GetImageIndex() -> uint32_t { return m_imageIndex; }
 		auto GetFramebufferResized() -> bool { return m_framebufferResized; }
 
+		void SubmitCommandBuffer( VkCommandBuffer commandBuffer ) { m_commandBuffersSubmit.push_back(commandBuffer); };
+
     private:
         virtual void OnInit(Message message);
         virtual void OnInit2(Message message);
-        virtual void OnUpdate(Message message);
         virtual void OnPrepareNextFrame(Message message);
         virtual void OnRenderNextFrame(Message message);
 		virtual void OnTextureCreate( Message message );
@@ -100,6 +102,7 @@ namespace vve {
 	    std::vector<VkDescriptorSet> m_descriptorSets;
 	    VkCommandPool m_commandPool;
 	    std::vector<VkCommandBuffer> m_commandBuffers;
+	    std::vector<VkCommandBuffer> m_commandBuffersSubmit;
 	    vh::SyncObjects m_syncObjects;
 
 	    uint32_t m_currentFrame = MAX_FRAMES_IN_FLIGHT;
