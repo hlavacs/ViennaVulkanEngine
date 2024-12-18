@@ -84,7 +84,7 @@ namespace vve {
         vh::createUniformBuffers(m_physicalDevice, m_device, m_vmaAllocator, m_uniformBuffers);
         vh::createDescriptorPool(m_device, m_descriptorPool);
         vh::createDescriptorSets(m_device, m_texture, m_descriptorSetLayout, m_uniformBuffers, m_descriptorPool, m_descriptorSets);
-        vh::createSemaphores(m_device, 1, m_semaphores);
+        vh::createSemaphores(m_device, 1, m_imageAvailableSemaphores, m_semaphores);
 		vh::createFences(m_device, MAX_FRAMES_IN_FLIGHT, m_fences);
     }
 
@@ -98,7 +98,7 @@ namespace vve {
 		vkWaitForFences(m_device, 1, &m_fences[m_currentFrame], VK_TRUE, UINT64_MAX);
 
         VkResult result = vkAcquireNextImageKHR(m_device, m_swapChain.m_swapChain, UINT64_MAX,
-                            m_semaphores[0].m_imageAvailableSemaphores[m_currentFrame], VK_NULL_HANDLE, &m_imageIndex);
+                            m_imageAvailableSemaphores[m_currentFrame], VK_NULL_HANDLE, &m_imageIndex);
 
         if (result == VK_ERROR_OUT_OF_DATE_KHR ) {
             recreateSwapChain(m_windowSDL->GetSDLWindow(), m_window->GetSurface(), m_physicalDevice, m_device, m_vmaAllocator, m_swapChain, m_depthImage, m_renderPass);
@@ -130,12 +130,12 @@ namespace vve {
 		size_t size = m_commandBuffersSubmit.size();
 		size_t s2 = m_semaphores.size();
 		if( size > m_semaphores.size() ) {
-			vh::createSemaphores(m_device, size - m_semaphores.size(), m_semaphores);
+			vh::createSemaphores(m_device, size - m_semaphores.size(), m_imageAvailableSemaphores, m_semaphores);
 		}
 
         vkResetFences(m_device, 1, &m_fences[m_currentFrame]);
 
-		VkSemaphore waitSemaphore = m_semaphores[0].m_imageAvailableSemaphores[m_currentFrame];
+		VkSemaphore waitSemaphore = m_imageAvailableSemaphores[m_currentFrame];
 		VkSemaphore signalSemaphore;
 
 		for( int i = 0; i < size; i++ ) {
@@ -210,7 +210,7 @@ namespace vve {
 
 		vh::destroyFences(m_device, m_fences);
 
-		vh::destroySemaphores(m_device, m_semaphores);
+		vh::destroySemaphores(m_device, m_imageAvailableSemaphores, m_semaphores);
 
         vmaDestroyAllocator(m_vmaAllocator);
 

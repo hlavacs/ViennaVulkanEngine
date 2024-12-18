@@ -104,6 +104,8 @@ namespace vve {
 	    VkCommandPool m_commandPool;
 	    std::vector<VkCommandBuffer> m_commandBuffers;
 	    std::vector<VkCommandBuffer> m_commandBuffersSubmit;
+		
+        std::vector<VkSemaphore> m_imageAvailableSemaphores;
 	    std::vector<vh::Semaphores> m_semaphores;
 		std::vector<VkFence> m_fences;
 

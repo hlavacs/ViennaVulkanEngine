@@ -487,64 +487,6 @@ namespace vh
         }
     }
 
-    void createRenderPassFinal(VkPhysicalDevice physicalDevice, VkDevice device, SwapChain& swapChain, bool clear, VkRenderPass& renderPass) {
-        VkAttachmentDescription colorAttachment{};
-        colorAttachment.format = swapChain.m_swapChainImageFormat;
-        colorAttachment.samples = VK_SAMPLE_COUNT_1_BIT;
-        colorAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_LOAD;
-        colorAttachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
-        colorAttachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
-        colorAttachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-        colorAttachment.initialLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
-        colorAttachment.finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
-
-        VkAttachmentDescription depthAttachment{};
-        depthAttachment.format = findDepthFormat(physicalDevice);
-        depthAttachment.samples = VK_SAMPLE_COUNT_1_BIT;
-        depthAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_LOAD;
-        depthAttachment.storeOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-        depthAttachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
-        depthAttachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-        depthAttachment.initialLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
-        depthAttachment.finalLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
-
-        VkAttachmentReference colorAttachmentRef{};
-        colorAttachmentRef.attachment = 0;
-        colorAttachmentRef.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
-
-        VkAttachmentReference depthAttachmentRef{};
-        depthAttachmentRef.attachment = 1;
-        depthAttachmentRef.layout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
-
-        VkSubpassDescription subpass{};
-        subpass.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
-        subpass.colorAttachmentCount = 1;
-        subpass.pColorAttachments = &colorAttachmentRef;
-        subpass.pDepthStencilAttachment = &depthAttachmentRef;
-
-        VkSubpassDependency dependency{};
-        dependency.srcSubpass = VK_SUBPASS_EXTERNAL;
-        dependency.dstSubpass = 0;
-        dependency.srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT | VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT;
-        dependency.srcAccessMask = VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
-        dependency.dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT | VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT;
-        dependency.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT | VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
-
-        std::array<VkAttachmentDescription, 2> attachments = {colorAttachment, depthAttachment};
-        VkRenderPassCreateInfo renderPassInfo{};
-        renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
-        renderPassInfo.attachmentCount = static_cast<uint32_t>(attachments.size());
-        renderPassInfo.pAttachments = attachments.data();
-        renderPassInfo.subpassCount = 1;
-        renderPassInfo.pSubpasses = &subpass;
-        renderPassInfo.dependencyCount = 1;
-        renderPassInfo.pDependencies = &dependency;
-
-        if (vkCreateRenderPass(device, &renderPassInfo, nullptr, &renderPass) != VK_SUCCESS) {
-            throw std::runtime_error("failed to create render pass!");
-        }
-    }
-
     void createDescriptorSetLayout(VkDevice device, VkDescriptorSetLayout& descriptorSetLayout) {
         VkDescriptorSetLayoutBinding uboLayoutBinding{};
         uboLayoutBinding.binding = 0;
@@ -1467,38 +1409,41 @@ namespace vh
 		}
 	}
 
-    void createSemaphores(VkDevice device, size_t size, std::vector<Semaphores>& syncObjects ) {
+    void createSemaphores(VkDevice device, size_t size,  std::vector<VkSemaphore>& imageAvailableSemaphores, std::vector<Semaphores>& semaphores ) {
+        VkSemaphoreCreateInfo semaphoreInfo{};
+        semaphoreInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
 
-		size_t start = syncObjects.size();
+		size_t start = semaphores.size();
 		size_t end = start + size;
 		for( int i = start; i < end; ++i ) {
-			Semaphores syncObject;
-	        syncObject.m_imageAvailableSemaphores.resize(MAX_FRAMES_IN_FLIGHT);
-	        syncObject.m_renderFinishedSemaphores.resize(MAX_FRAMES_IN_FLIGHT);
-			syncObjects.push_back(syncObject);
-
-	        VkSemaphoreCreateInfo semaphoreInfo{};
-	        semaphoreInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
-
-	        VkFenceCreateInfo fenceInfo{};
-	        fenceInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
-	        fenceInfo.flags = VK_FENCE_CREATE_SIGNALED_BIT;
+			Semaphores renderFinishedSemaphores;
+	        renderFinishedSemaphores.m_renderFinishedSemaphores.resize(MAX_FRAMES_IN_FLIGHT);
+			semaphores.push_back(renderFinishedSemaphores);
 
 	        for (size_t j = 0; j < MAX_FRAMES_IN_FLIGHT; j++) {
-	            if (vkCreateSemaphore(device, &semaphoreInfo, nullptr, &syncObjects[i].m_imageAvailableSemaphores[j]) != VK_SUCCESS ||
-	                vkCreateSemaphore(device, &semaphoreInfo, nullptr, &syncObjects[i].m_renderFinishedSemaphores[j]) != VK_SUCCESS != VK_SUCCESS) {
+	            if (vkCreateSemaphore(device, &semaphoreInfo, nullptr, &semaphores[i].m_renderFinishedSemaphores[j]) != VK_SUCCESS != VK_SUCCESS) {
 	                throw std::runtime_error("failed to create synchronization objects for a frame!");
 	            }
 	        }
 		}
+
+        for (size_t j = 0; j < MAX_FRAMES_IN_FLIGHT; j++) {
+			imageAvailableSemaphores.push_back(VK_NULL_HANDLE);
+            if (vkCreateSemaphore(device, &semaphoreInfo, nullptr, &imageAvailableSemaphores[j]) != VK_SUCCESS ) {
+                throw std::runtime_error("failed to create synchronization objects for a frame!");
+            }
+        }
     }
 
-    void destroySemaphores(VkDevice device, std::vector<Semaphores>& syncObjects) {
-		for( int i = 0; i < syncObjects.size(); ++i ) {
+    void destroySemaphores(VkDevice device,  std::vector<VkSemaphore>& imageAvailableSemaphores, std::vector<Semaphores>& semaphores) {
+		for( int i = 0; i < semaphores.size(); ++i ) {
 			for (size_t j = 0; j < MAX_FRAMES_IN_FLIGHT; j++) {
-				vkDestroySemaphore(device, syncObjects[i].m_imageAvailableSemaphores[j], nullptr);
-				vkDestroySemaphore(device, syncObjects[i].m_renderFinishedSemaphores[j], nullptr);
+				vkDestroySemaphore(device, semaphores[i].m_renderFinishedSemaphores[j], nullptr);
 			}
+		}
+
+		for (size_t j = 0; j < MAX_FRAMES_IN_FLIGHT; j++) {
+			vkDestroySemaphore(device, imageAvailableSemaphores[j], nullptr);
 		}
 	}
 

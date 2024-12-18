@@ -149,7 +149,6 @@ namespace vh {
     };
 
     struct Semaphores {
-        std::vector<VkSemaphore> m_imageAvailableSemaphores;
         std::vector<VkSemaphore> m_renderFinishedSemaphores;
     };
 
@@ -174,7 +173,6 @@ namespace vh {
 
     void createRenderPassClear(VkPhysicalDevice physicalDevice, VkDevice device, SwapChain& swapChain, bool clear, VkRenderPass& renderPass);
     void createRenderPass(VkPhysicalDevice physicalDevice, VkDevice device, SwapChain& swapChain, bool clear, VkRenderPass& renderPass);
-    void createRenderPassFinal(VkPhysicalDevice physicalDevice, VkDevice device, SwapChain& swapChain, bool clear, VkRenderPass& renderPass);
 
     void createDescriptorSetLayout(VkDevice device, VkDescriptorSetLayout& descriptorSetLayout);
     void createGraphicsPipeline(VkDevice device, VkRenderPass renderPass, VkDescriptorSetLayout descriptorSetLayout, Pipeline& graphicsPipeline);
@@ -238,8 +236,8 @@ namespace vh {
 	void createFences(VkDevice device, size_t size, std::vector<VkFence>& fences);
 	void destroyFences(VkDevice device, std::vector<VkFence>& fences);
 
-    void createSemaphores(VkDevice device, size_t size, std::vector<Semaphores>& semaphores);
-    void destroySemaphores(VkDevice device, std::vector<Semaphores>& semaphores);
+    void createSemaphores(VkDevice device, size_t size, std::vector<VkSemaphore>& imageAvailableSemaphores, std::vector<Semaphores>& renderFinishedSemaphores);
+    void destroySemaphores(VkDevice device, std::vector<VkSemaphore>& imageAvailableSemaphores, std::vector<Semaphores>& semaphores);
 
     void updateUniformBuffer(uint32_t currentImage, SwapChain& swapChain, UniformBuffers& uniformBuffers);
     
