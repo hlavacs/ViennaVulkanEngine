@@ -41,6 +41,7 @@ set(IMGUI ${EXTERN}/imgui)    # external libraries
 set(TINYGLTF ${EXTERN}/tinygltf)    # external libraries 
 set(VECS ${EXTERN}/ViennaEntityComponentSystem)    # external libraries 
 set(VTLL ${EXTERN}/ViennaEntityComponentSystem/extern/ViennaTypeListLibrary)    # external libraries 
+set(VSTY ${EXTERN}/ViennaEntityComponentSystem/extern/ViennaStrongType)    # external libraries 
 
 
 # Add directories for compiling

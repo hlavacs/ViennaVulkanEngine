@@ -53,6 +53,7 @@ target_include_directories(${TARGET} PUBLIC ${GLM}/glm)
 target_include_directories(${TARGET} PUBLIC ${TINYGLTF})
 target_include_directories(${TARGET} PUBLIC ${VECS}/include)
 target_include_directories(${TARGET} PUBLIC ${VTLL}/include)
+target_include_directories(${TARGET} PUBLIC ${VSTY}/include)
 
 target_compile_features(${TARGET} PUBLIC cxx_std_20)
 
