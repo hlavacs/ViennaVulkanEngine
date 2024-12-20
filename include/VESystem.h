@@ -37,9 +37,7 @@ namespace vve {
         "SDL_KEY_UP", //
         "SDL_KEY_REPEAT", //
         "QUIT", //
-		"FILE_LOAD_TEXTURE", 
-		"FILE_LOAD_OBJ",	
-		"FILE_LOAD_GLTF",
+		"FILE_LOAD_OBJECT",	
 		"TEXTURE_CREATE",  
 		"TEXTURE_DESTROY", 
 		"GEOMETRY_CREATE",	
@@ -81,16 +79,15 @@ namespace vve {
     struct MsgKeyUp : public MsgBase { MsgKeyUp(void* s, void* r, double dt, int key);  int m_key; };
     struct MsgKeyRepeat : public MsgBase { MsgKeyRepeat(void* s, void* r, double dt, int key); int m_key; };
     struct MsgSDL : public MsgBase { MsgSDL(void* s, void* r, double dt, SDL_Event event ); double m_dt; SDL_Event m_event; };
-	struct MsgFileLoadTexture : public MsgBase { MsgFileLoadTexture(void* s, void* r, std::string fileName); std::string m_fileName; };
-		struct MsgTextureCreate : public MsgBase { 
-		MsgTextureCreate(void* s, void* r, void *pixels, vecs::Handle handle); 
-		void* m_pixels; vecs::Handle m_handle; 
-	};
+	struct MsgQuit : public MsgBase { MsgQuit(void* s, void* r=nullptr); };
+	
+    struct MsgFileLoadObject : public MsgBase { MsgFileLoadObject(void* s, void* r, std::string txtName, std::string objName); std::string m_txtName; std::string m_objName; };
+	
+	struct MsgTextureCreate : public MsgBase { MsgTextureCreate(void* s, void* r, void *pixels, vecs::Handle handle); void* m_pixels; vecs::Handle m_handle; };
     struct MsgTextureDestroy : public MsgBase { MsgTextureDestroy(void* s, void* r, vecs::Handle handle); vecs::Handle m_handle; };
     struct MsgGeometryCreate : public MsgBase { MsgGeometryCreate(void* s, void* r, vecs::Handle handle); vecs::Handle m_handle; };
     struct MsgGeometryDestroy : public MsgBase { MsgGeometryDestroy(void* s, void* r, vecs::Handle handle); vecs::Handle m_handle; };
-    struct MsgQuit : public MsgBase { MsgQuit(void* s, void* r=nullptr); };
-
+    
 
     struct Message {
         static const size_t MAX_SIZE = 128;

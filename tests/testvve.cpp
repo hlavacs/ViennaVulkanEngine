@@ -107,8 +107,10 @@ class MyEngine : public vve::Engine<ATYPE> {
 		MyEngine() : vve::Engine<ATYPE>("MyEngine") {};
 		~MyEngine() {};
 
-	private:
+	protected:
 		
+		void CreateGUI() override {}
+
 		void LoadLevel(std::string levelName) {
 			std::cout << "Loading level: " << levelName << std::endl;
 		}

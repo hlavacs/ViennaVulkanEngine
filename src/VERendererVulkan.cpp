@@ -27,8 +27,8 @@ namespace vve {
 			{this,      0, "RENDER_NEXT_FRAME", [this](Message message){this->OnRenderNextFrame(message);} },
 			{this,      0, "TEXTURE_CREATE",   [this](Message message){this->OnTextureCreate(message);} },
 			{this,      0, "TEXTURE_DESTROY",  [this](Message message){this->OnTextureDestroy(message);} },
-			{this,      0, "GEOMETRY_CREATE",  [this](Message message){this->OnTextureCreate(message);} },
-			{this,      0, "GEOMETRY_DESTROY", [this](Message message){this->OnTextureDestroy(message);} },
+			{this,      0, "GEOMETRY_CREATE",  [this](Message message){this->OnGeometryCreate(message);} },
+			{this,      0, "GEOMETRY_DESTROY", [this](Message message){this->OnGeometryDestroy(message);} },
 			{this,  -1000, "QUIT", [this](Message message){this->OnQuit(message);} },
 			{this,   1000, "QUIT", [this](Message message){this->OnQuit2(message);} }
 		} );
@@ -221,11 +221,11 @@ namespace vve {
 
 	template<ArchitectureType ATYPE>
 	auto RendererVulkan<ATYPE>::OnTextureCreate( Message message ) -> void {
-		auto pixels = message.GetData<MsgTextureCreate>().m_pixels;
-		auto handle = message.GetData<MsgTextureCreate>().m_handle;
+		auto msg = message.GetData<MsgTextureCreate>();
+		auto pixels = msg.m_pixels;
+		auto handle = msg.m_handle;
 		auto& texture = m_engine->GetRegistry().template Get<vh::Texture&>(handle);
-		vh::createTextureImage2(m_physicalDevice, m_device, m_vmaAllocator, m_graphicsQueue, m_commandPool, 
-			pixels, texture.m_width, texture.m_height, texture.m_size, texture);
+		vh::createTextureImage2(m_physicalDevice, m_device, m_vmaAllocator, m_graphicsQueue, m_commandPool, pixels, texture.m_width, texture.m_height, texture.m_size, texture);
 		vh::createTextureImageView(m_device, texture);
 		vh::createTextureSampler(m_physicalDevice, m_device, texture);
 	}

@@ -24,7 +24,6 @@ namespace vve {
 
 			static char* file_dialog_buffer = nullptr;
 			static char path_obj[500] = "assets\\models\\viking_room.obj";
-
 			ImGui::TextUnformatted("OBJ File: ");
 			ImGui::SameLine();
 			ImGui::InputText("##path", path_obj, sizeof(path_obj));
@@ -51,6 +50,7 @@ namespace vve {
 			}
 
             if (ImGui::Button("Load")) {                          // Buttons return true when clicked (most widgets return true when edited/activated)
+				m_engine->SendMessage( MsgFileLoadObject{this, nullptr, path_texture, path_obj} );
 			}
 
             ImGui::End();

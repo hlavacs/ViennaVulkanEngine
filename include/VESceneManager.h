@@ -47,11 +47,10 @@ namespace vve {
 		using System<ATYPE>::m_engine;
 		using System<ATYPE>::m_registry;
 
-		using TransformWrapper = vsty::strong_type_t<Transform, vsty::counter<>>;
-		using SceneNodeWrapper = vsty::strong_type_t<SceneNode, vsty::counter<>>;
-		using CameraWrapper = vsty::strong_type_t<Camera, vsty::counter<>>;
-		using GeometryWrapper = vsty::strong_type_t<vh::Geometry, vsty::counter<>>;
-		using TextureWrapper = vsty::strong_type_t<vh::Texture, vsty::counter<>>;
+		using SceneNodeWrapper = vsty::strong_type_t<SceneNode, vsty::counter<>>; //need this to use SceneNode as a unique component
+		using SceneNodeHandleWrapper = vsty::strong_type_t<vecs::Handle, vsty::counter<>>; //need this to use SceneNode as a unique component
+		using TextureHandleWrapper = vsty::strong_type_t<vecs::Handle, vsty::counter<>>; //need this to use SceneNode as a unique component
+		using GeometryHandleWrapper = vsty::strong_type_t<vecs::Handle, vsty::counter<>>; //need this to use SceneNode as a unique component
 
 		const std::string m_rootName = "VVE RootSceneNode";
 
@@ -67,6 +66,7 @@ namespace vve {
     private:
 		virtual void OnInit(Message message);
 		virtual void OnUpdate(Message message);
+		virtual void OnLoadObject(Message message);
 
 		std::shared_mutex m_mutex;
 		std::unordered_map<std::string, vecs::Handle> m_handleMap;

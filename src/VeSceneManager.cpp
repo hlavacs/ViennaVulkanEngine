@@ -16,6 +16,7 @@ namespace vve {
 		engine->RegisterCallback( { 
 			{this, 0, "INIT", [this](Message message){this->OnInit(message);} },
 			{this, std::numeric_limits<int>::max(), "UPDATE", [this](Message message){this->OnUpdate(message);} },
+			{this, std::numeric_limits<int>::max(), "FILE_LOAD_OBJECT", [this](Message message){this->OnLoadObject(message);} },
 		} );
 	}
 
@@ -39,6 +40,14 @@ namespace vve {
 			}
 			node().m_localToWorldM = parentToWorldM * node().m_localToParentT.Matrix();
 		}
+	}
+
+	template<ArchitectureType ATYPE>
+    void SceneManager<ATYPE>::OnLoadObject(Message message) {
+		auto msg = message.GetData<MsgFileLoadObject>();
+		//auto thandle = LoadTexture(msg.m_txtName);
+		//auto ohandle = LoadOBJ(msg.m_objName);
+		//auto nhandle = m_registry->Insert( GeometryHandleWrapper{ohandle}, TextureHandleWrapper{thandle}, SceneNodeHandleWrapper{m_handleMap[m_rootName]} );
 	}
 
    	template<ArchitectureType ATYPE>
