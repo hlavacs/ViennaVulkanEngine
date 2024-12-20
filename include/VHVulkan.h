@@ -226,6 +226,8 @@ namespace vh {
 
     void endRecordCommandBuffer(VkCommandBuffer commandBuffer);
 
+    void recordObject(VkCommandBuffer commandBuffer, Pipeline& graphicsPipeline, 
+			std::vector<VkDescriptorSet>& descriptorSets, Geometry& geometry, uint32_t currentFrame);
 
 	void createFences(VkDevice device, size_t size, std::vector<VkFence>& fences);
 	void destroyFences(VkDevice device, std::vector<VkFence>& fences);

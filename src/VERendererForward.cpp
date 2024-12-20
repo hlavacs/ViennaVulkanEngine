@@ -47,16 +47,8 @@ namespace vve {
 			m_vulkan->GetSwapChain(), m_renderPass, m_vulkan->GetGraphicsPipeline(), m_vulkan->GetDescriptorSets(), 
 			false, ((WindowSDL<ATYPE>*)m_window)->GetClearColor(), m_vulkan->GetCurrentFrame());
 		
-        VkBuffer vertexBuffers[] = {m_vulkan->GetGeometry().m_vertexBuffer};
-        VkDeviceSize offsets[] = {0};
-        vkCmdBindVertexBuffers(m_commandBuffers[m_vulkan->GetCurrentFrame()], 0, 1, vertexBuffers, offsets);
-
-        vkCmdBindIndexBuffer(m_commandBuffers[m_vulkan->GetCurrentFrame()], m_vulkan->GetGeometry().m_indexBuffer, 0, VK_INDEX_TYPE_UINT32);
-
-        vkCmdBindDescriptorSets(m_commandBuffers[m_vulkan->GetCurrentFrame()], VK_PIPELINE_BIND_POINT_GRAPHICS, m_vulkan->GetGraphicsPipeline().m_pipelineLayout
-            , 0, 1, &m_vulkan->GetDescriptorSets()[m_vulkan->GetCurrentFrame()], 0, nullptr);
-
-        vkCmdDrawIndexed(m_commandBuffers[m_vulkan->GetCurrentFrame()], static_cast<uint32_t>(m_vulkan->GetGeometry().m_indices.size()), 1, 0, 0, 0);
+		recordObject( m_commandBuffers[m_vulkan->GetCurrentFrame()], m_vulkan->GetGraphicsPipeline(), 
+			m_vulkan->GetDescriptorSets(), m_vulkan->GetGeometry(), m_vulkan->GetCurrentFrame() );
 
 		vh::endRecordCommandBuffer(m_commandBuffers[m_vulkan->GetCurrentFrame()]);
 

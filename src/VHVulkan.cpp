@@ -1292,6 +1292,24 @@ namespace vh
     }
 
 
+
+    void recordObject(VkCommandBuffer commandBuffer, Pipeline& graphicsPipeline, 
+			std::vector<VkDescriptorSet>& descriptorSets, Geometry& geometry, uint32_t currentFrame) {
+
+        VkBuffer vertexBuffers[] = {geometry.m_vertexBuffer};
+        VkDeviceSize offsets[] = {0};
+        vkCmdBindVertexBuffers(commandBuffer, 0, 1, vertexBuffers, offsets);
+
+        vkCmdBindIndexBuffer(commandBuffer, geometry.m_indexBuffer, 0, VK_INDEX_TYPE_UINT32);
+
+        vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsPipeline.m_pipelineLayout
+            , 0, 1, &descriptorSets[currentFrame], 0, nullptr);
+
+        vkCmdDrawIndexed(commandBuffer, static_cast<uint32_t>(geometry.m_indices.size()), 1, 0, 0, 0);
+
+	}
+
+
 	void createFences(VkDevice device, size_t size, std::vector<VkFence>& fences) {
 		for( int i = 0; i < size; ++i ) {
 			VkFence fence;
