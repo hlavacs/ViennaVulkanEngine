@@ -47,7 +47,11 @@ namespace vve {
 		using System<ATYPE>::m_engine;
 		using System<ATYPE>::m_registry;
 
+		using TransformWrapper = vsty::strong_type_t<Transform, vsty::counter<>>;
 		using SceneNodeWrapper = vsty::strong_type_t<SceneNode, vsty::counter<>>;
+		using CameraWrapper = vsty::strong_type_t<Camera, vsty::counter<>>;
+		using GeometryWrapper = vsty::strong_type_t<vh::Geometry, vsty::counter<>>;
+		using TextureWrapper = vsty::strong_type_t<vh::Texture, vsty::counter<>>;
 
 		const std::string m_rootName = "VVE RootSceneNode";
 

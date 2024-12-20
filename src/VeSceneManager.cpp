@@ -31,14 +31,13 @@ namespace vve {
    	template<ArchitectureType ATYPE>
     void SceneManager<ATYPE>::OnUpdate(Message message) {
 		for( auto [handle, node] : m_registry->template GetView<vecs::Handle, SceneNodeWrapper&>() ) {
-			//auto& sceneNode = node;
 			mat4_t parentToWorldM{1.0};
 
-			if( node.value().m_parent.IsValid() ) {
-				auto& parent = m_registry->template Get<SceneNodeWrapper&>(node.value().m_parent);
-				parentToWorldM = parent.value().m_localToWorldM;
+			if( node().m_parent.IsValid() ) {
+				auto& parent = m_registry->template Get<SceneNodeWrapper&>(node().m_parent);
+				parentToWorldM = parent().m_localToWorldM;
 			}
-			node.value().m_localToWorldM = parentToWorldM * node.value().m_localToParentT.Matrix();
+			node().m_localToWorldM = parentToWorldM * node().m_localToParentT.Matrix();
 		}
 	}
 
@@ -50,7 +49,6 @@ namespace vve {
         if (!pixels) { return {}; }
 
 		vh::Texture texture{texWidth, texHeight, imageSize};
-        //m_renderer->CreateTexture(pixels, texWidth, texHeight, imageSize, texture);
 		auto handle = m_registry->Insert(filenName, texture);
 		m_handleMap[filenName] = handle;
 		m_engine->SendMessage( MsgTextureCreate{this, nullptr, pixels, handle} );
