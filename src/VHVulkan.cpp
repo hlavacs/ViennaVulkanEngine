@@ -1173,6 +1173,19 @@ namespace vh
     void destroyBuffer(VkDevice device, VmaAllocator vmaAllocator, VkBuffer buffer, VmaAllocation& allocation) {
         vmaDestroyBuffer(vmaAllocator, buffer, allocation);
     }
+
+	
+    void copyBuffer(VkDevice device, VkQueue graphicsQueue, VkCommandPool commandPool, VkBuffer srcBuffer
+        , VkBuffer dstBuffer, VkDeviceSize size) {
+
+        VkCommandBuffer commandBuffer = beginSingleTimeCommands(device, commandPool);
+
+        VkBufferCopy copyRegion{};
+        copyRegion.size = size;
+        vkCmdCopyBuffer(commandBuffer, srcBuffer, dstBuffer, 1, &copyRegion);
+
+        endSingleTimeCommands(device, graphicsQueue, commandPool, commandBuffer);
+    }
     
 
     VkCommandBuffer beginSingleTimeCommands(VkDevice device, VkCommandPool commandPool) {
@@ -1208,18 +1221,6 @@ namespace vh
         vkFreeCommandBuffers(device, commandPool, 1, &commandBuffer);
     }
 
-    void copyBuffer(VkDevice device, VkQueue graphicsQueue, VkCommandPool commandPool, VkBuffer srcBuffer
-        , VkBuffer dstBuffer, VkDeviceSize size) {
-
-        VkCommandBuffer commandBuffer = beginSingleTimeCommands(device, commandPool);
-
-        VkBufferCopy copyRegion{};
-        copyRegion.size = size;
-        vkCmdCopyBuffer(commandBuffer, srcBuffer, dstBuffer, 1, &copyRegion);
-
-        endSingleTimeCommands(device, graphicsQueue, commandPool, commandBuffer);
-    }
-
 
     void createCommandBuffers(VkDevice device, VkCommandPool commandPool, std::vector<VkCommandBuffer>& commandBuffers) {
         commandBuffers.resize(MAX_FRAMES_IN_FLIGHT);
@@ -1236,9 +1237,9 @@ namespace vh
     }
 
 
-    void recordCommandBufferClear(VkCommandBuffer commandBuffer, uint32_t imageIndex
+	void startRecordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageIndex
         , SwapChain& swapChain, VkRenderPass renderPass, Pipeline& graphicsPipeline
-        , std::vector<VkDescriptorSet>& descriptorSets, glm::vec4 clearColor, uint32_t currentFrame) {
+        , std::vector<VkDescriptorSet>& descriptorSets, bool clear, glm::vec4 clearColor, uint32_t currentFrame) {
 
         VkCommandBufferBeginInfo beginInfo{};
         beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
@@ -1254,140 +1255,42 @@ namespace vh
         renderPassInfo.renderArea.offset = {0, 0};
         renderPassInfo.renderArea.extent = swapChain.m_swapChainExtent;
 
-        std::array<VkClearValue, 2> clearValues{};
-        clearValues[0].color = {{clearColor.r, clearColor.g, clearColor.b, 1.0f}};  
-        clearValues[1].depthStencil = {1.0f, 0};
+		if( clear) {
+			std::array<VkClearValue, 2> clearValues{};
+	        clearValues[0].color = {{clearColor.r, clearColor.g, clearColor.b, 1.0f}};  
+	        clearValues[1].depthStencil = {1.0f, 0};
 
-        renderPassInfo.clearValueCount = static_cast<uint32_t>(clearValues.size());
-        renderPassInfo.pClearValues = clearValues.data();
+	        renderPassInfo.clearValueCount = static_cast<uint32_t>(clearValues.size());
+	        renderPassInfo.pClearValues = clearValues.data();
+		}
 
         vkCmdBeginRenderPass(commandBuffer, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
 
-            vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsPipeline.m_pipeline);
+        vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsPipeline.m_pipeline);
 
-            VkViewport viewport{};
-            viewport.x = 0.0f;
-            viewport.y = 0.0f;
-            viewport.width = (float) swapChain.m_swapChainExtent.width;
-            viewport.height = (float) swapChain.m_swapChainExtent.height;
-            viewport.minDepth = 0.0f;
-            viewport.maxDepth = 1.0f;
-            vkCmdSetViewport(commandBuffer, 0, 1, &viewport);
+        VkViewport viewport{};
+        viewport.x = 0.0f;
+        viewport.y = 0.0f;
+        viewport.width = (float) swapChain.m_swapChainExtent.width;
+        viewport.height = (float) swapChain.m_swapChainExtent.height;
+        viewport.minDepth = 0.0f;
+        viewport.maxDepth = 1.0f;
+        vkCmdSetViewport(commandBuffer, 0, 1, &viewport);
+  
+        VkRect2D scissor{};
+        scissor.offset = {0, 0};
+        scissor.extent = swapChain.m_swapChainExtent;
+        vkCmdSetScissor(commandBuffer, 0, 1, &scissor);
+    }
 
-            VkRect2D scissor{};
-            scissor.offset = {0, 0};
-            scissor.extent = swapChain.m_swapChainExtent;
-            vkCmdSetScissor(commandBuffer, 0, 1, &scissor);
 
+    void endRecordCommandBuffer(VkCommandBuffer commandBuffer) {
         vkCmdEndRenderPass(commandBuffer);
-
         if (vkEndCommandBuffer(commandBuffer) != VK_SUCCESS) {
             throw std::runtime_error("failed to record command buffer!");
         }
     }
 
-    void recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageIndex
-        , SwapChain& swapChain, VkRenderPass renderPass, Pipeline& graphicsPipeline
-        , Geometry& geometry, std::vector<VkDescriptorSet>& descriptorSets, glm::vec4 clearColor, uint32_t currentFrame) {
-
-        VkCommandBufferBeginInfo beginInfo{};
-        beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
-
-        if (vkBeginCommandBuffer(commandBuffer, &beginInfo) != VK_SUCCESS) {
-            throw std::runtime_error("failed to begin recording command buffer!");
-        }
-
-        VkRenderPassBeginInfo renderPassInfo{};
-        renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
-        renderPassInfo.renderPass = renderPass;
-        renderPassInfo.framebuffer = swapChain.m_swapChainFramebuffers[imageIndex];
-        renderPassInfo.renderArea.offset = {0, 0};
-        renderPassInfo.renderArea.extent = swapChain.m_swapChainExtent;
-
-        vkCmdBeginRenderPass(commandBuffer, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
-
-            vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsPipeline.m_pipeline);
-
-            VkViewport viewport{};
-            viewport.x = 0.0f;
-            viewport.y = 0.0f;
-            viewport.width = (float) swapChain.m_swapChainExtent.width;
-            viewport.height = (float) swapChain.m_swapChainExtent.height;
-            viewport.minDepth = 0.0f;
-            viewport.maxDepth = 1.0f;
-            vkCmdSetViewport(commandBuffer, 0, 1, &viewport);
-
-            VkRect2D scissor{};
-            scissor.offset = {0, 0};
-            scissor.extent = swapChain.m_swapChainExtent;
-            vkCmdSetScissor(commandBuffer, 0, 1, &scissor);
-
-            VkBuffer vertexBuffers[] = {geometry.m_vertexBuffer};
-            VkDeviceSize offsets[] = {0};
-            vkCmdBindVertexBuffers(commandBuffer, 0, 1, vertexBuffers, offsets);
-
-            vkCmdBindIndexBuffer(commandBuffer, geometry.m_indexBuffer, 0, VK_INDEX_TYPE_UINT32);
-
-            vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsPipeline.m_pipelineLayout
-                , 0, 1, &descriptorSets[currentFrame], 0, nullptr);
-
-            vkCmdDrawIndexed(commandBuffer, static_cast<uint32_t>(geometry.m_indices.size()), 1, 0, 0, 0);
-
-        vkCmdEndRenderPass(commandBuffer);
-
-
-        if (vkEndCommandBuffer(commandBuffer) != VK_SUCCESS) {
-            throw std::runtime_error("failed to record command buffer!");
-        }
-    }
-
-
-    void recordCommandBufferImgui(VkCommandBuffer commandBuffer, uint32_t imageIndex
-        , SwapChain& swapChain, VkRenderPass renderPass, Pipeline& graphicsPipeline
-        , std::vector<VkDescriptorSet>& descriptorSets, uint32_t currentFrame) {
-
-        VkCommandBufferBeginInfo beginInfo{};
-        beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
-
-        if (vkBeginCommandBuffer(commandBuffer, &beginInfo) != VK_SUCCESS) {
-            throw std::runtime_error("failed to begin recording command buffer!");
-        }
-
-        VkRenderPassBeginInfo renderPassInfo{};
-        renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
-        renderPassInfo.renderPass = renderPass;
-        renderPassInfo.framebuffer = swapChain.m_swapChainFramebuffers[imageIndex];
-        renderPassInfo.renderArea.offset = {0, 0};
-        renderPassInfo.renderArea.extent = swapChain.m_swapChainExtent;
-
-        vkCmdBeginRenderPass(commandBuffer, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
-
-            vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsPipeline.m_pipeline);
-
-            VkViewport viewport{};
-            viewport.x = 0.0f;
-            viewport.y = 0.0f;
-            viewport.width = (float) swapChain.m_swapChainExtent.width;
-            viewport.height = (float) swapChain.m_swapChainExtent.height;
-            viewport.minDepth = 0.0f;
-            viewport.maxDepth = 1.0f;
-            vkCmdSetViewport(commandBuffer, 0, 1, &viewport);
-
-            VkRect2D scissor{};
-            scissor.offset = {0, 0};
-            scissor.extent = swapChain.m_swapChainExtent;
-            vkCmdSetScissor(commandBuffer, 0, 1, &scissor);
-
-            ImGui::Render();
-            ImGui_ImplVulkan_RenderDrawData(ImGui::GetDrawData(), commandBuffer);
-
-        vkCmdEndRenderPass(commandBuffer);
-
-
-        if (vkEndCommandBuffer(commandBuffer) != VK_SUCCESS) {
-            throw std::runtime_error("failed to record command buffer!");
-        }
-    }
 
 	void createFences(VkDevice device, size_t size, std::vector<VkFence>& fences) {
 		for( int i = 0; i < size; ++i ) {
@@ -1414,7 +1317,7 @@ namespace vh
         semaphoreInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
 
 		size_t start = semaphores.size();
-		size_t end = start + size;
+		size_t end = size;
 		for( int i = start; i < end; ++i ) {
 			Semaphores renderFinishedSemaphores;
 	        renderFinishedSemaphores.m_renderFinishedSemaphores.resize(MAX_FRAMES_IN_FLIGHT);
@@ -1427,7 +1330,7 @@ namespace vh
 	        }
 		}
 
-        for (size_t j = 0; j < MAX_FRAMES_IN_FLIGHT; j++) {
+        for (size_t j = imageAvailableSemaphores.size(); j < MAX_FRAMES_IN_FLIGHT; j++) {
 			imageAvailableSemaphores.push_back(VK_NULL_HANDLE);
             if (vkCreateSemaphore(device, &semaphoreInfo, nullptr, &imageAvailableSemaphores[j]) != VK_SUCCESS ) {
                 throw std::runtime_error("failed to create synchronization objects for a frame!");

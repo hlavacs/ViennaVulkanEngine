@@ -106,11 +106,11 @@ namespace vve {
 
         vkResetCommandBuffer(m_commandBuffers[m_currentFrame],  0);
 
-		vh::recordCommandBufferClear(
-			m_commandBuffers[m_currentFrame], m_imageIndex, 
-			m_swapChain, m_renderPass, m_graphicsPipeline, 
-			m_descriptorSets, ((WindowSDL<ATYPE>*)m_window)->GetClearColor(), 
-			m_currentFrame);
+		vh::startRecordCommandBuffer(m_commandBuffers[m_currentFrame], m_imageIndex, 
+			m_swapChain, m_renderPass, m_graphicsPipeline, m_descriptorSets, 
+			true, ((WindowSDL<ATYPE>*)m_window)->GetClearColor(), m_currentFrame);
+
+		vh::endRecordCommandBuffer(m_commandBuffers[m_currentFrame]);
 
 		SubmitCommandBuffer(m_commandBuffers[GetCurrentFrame()]);
 	}
@@ -121,9 +121,8 @@ namespace vve {
 		VkResult result;
         
 		size_t size = m_commandBuffersSubmit.size();
-		size_t s2 = m_semaphores.size();
 		if( size > m_semaphores.size() ) {
-			vh::createSemaphores(m_device, size - m_semaphores.size(), m_imageAvailableSemaphores, m_semaphores);
+			vh::createSemaphores(m_device, size, m_imageAvailableSemaphores, m_semaphores);
 		}
 
         vkResetFences(m_device, 1, &m_fences[m_currentFrame]);
@@ -153,7 +152,8 @@ namespace vve {
 		}
 
    		vh::transitionImageLayout(m_device, m_graphicsQueue, m_commandPool, 
-			m_swapChain.m_swapChainImages[m_imageIndex], m_swapChain.m_swapChainImageFormat, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR);
+			m_swapChain.m_swapChainImages[m_imageIndex], m_swapChain.m_swapChainImageFormat, 
+			VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR);
 
         VkPresentInfoKHR presentInfo{};
         presentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;

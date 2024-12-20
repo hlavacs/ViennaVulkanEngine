@@ -214,23 +214,17 @@ namespace vh {
         , VmaAllocationCreateFlags vmaFlags, VkBuffer& buffer
         , VmaAllocation& allocation, VmaAllocationInfo* allocationInfo = nullptr);
     void destroyBuffer(VkDevice device, VmaAllocator vmaAllocator, VkBuffer buffer, VmaAllocation& allocation);
+    void copyBuffer(VkDevice device, VkQueue graphicsQueue, VkCommandPool commandPool, VkBuffer srcBuffer, VkBuffer dstBuffer, VkDeviceSize size);
+
     VkCommandBuffer beginSingleTimeCommands(VkDevice device, VkCommandPool commandPool);
     void endSingleTimeCommands(VkDevice device, VkQueue graphicsQueue, VkCommandPool commandPool, VkCommandBuffer commandBuffer);
-    void copyBuffer(VkDevice device, VkQueue graphicsQueue, VkCommandPool commandPool, VkBuffer srcBuffer
-        , VkBuffer dstBuffer, VkDeviceSize size);
     void createCommandBuffers(VkDevice device, VkCommandPool commandPool, std::vector<VkCommandBuffer>& commandBuffers);
 
-    void recordCommandBufferClear(VkCommandBuffer commandBuffer, uint32_t imageIndex
+    void startRecordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageIndex
         , SwapChain& swapChain, VkRenderPass renderPass, Pipeline& graphicsPipeline
-        , std::vector<VkDescriptorSet>& descriptorSets, glm::vec4 clearColor, uint32_t currentFrame);
+        , std::vector<VkDescriptorSet>& descriptorSets, bool clear, glm::vec4 clearColor, uint32_t currentFrame);
 
-    void recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageIndex
-        , SwapChain& swapChain, VkRenderPass renderPass, Pipeline& graphicsPipeline
-        , Geometry& geometry, std::vector<VkDescriptorSet>& descriptorSets, glm::vec4 clearColor, uint32_t currentFrame);
-
-    void recordCommandBufferImgui(VkCommandBuffer commandBuffer, uint32_t imageIndex
-        , SwapChain& swapChain, VkRenderPass renderPass, Pipeline& graphicsPipeline
-        , std::vector<VkDescriptorSet>& descriptorSets, uint32_t currentFrame);
+    void endRecordCommandBuffer(VkCommandBuffer commandBuffer);
 
 
 	void createFences(VkDevice device, size_t size, std::vector<VkFence>& fences);

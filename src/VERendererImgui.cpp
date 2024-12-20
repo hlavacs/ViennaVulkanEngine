@@ -57,10 +57,14 @@ namespace vve {
 
         vkResetCommandBuffer(m_commandBuffers[m_vulkan->GetCurrentFrame()],  0);
 
-		vh::recordCommandBufferImgui(
-			m_commandBuffers[m_vulkan->GetCurrentFrame()], m_vulkan->GetImageIndex(), 
-			m_vulkan->GetSwapChain(), m_renderPass, m_vulkan->GetGraphicsPipeline(), 
-			m_vulkan->GetDescriptorSets(), m_vulkan->GetCurrentFrame());
+		vh::startRecordCommandBuffer(m_commandBuffers[m_vulkan->GetCurrentFrame()], m_vulkan->GetImageIndex(), 
+			m_vulkan->GetSwapChain(), m_renderPass, m_vulkan->GetGraphicsPipeline(), m_vulkan->GetDescriptorSets(), 
+			false, ((WindowSDL<ATYPE>*)m_window)->GetClearColor(), m_vulkan->GetCurrentFrame());
+		
+		ImGui::Render();
+        ImGui_ImplVulkan_RenderDrawData(ImGui::GetDrawData(), m_commandBuffers[m_vulkan->GetCurrentFrame()]);
+
+		vh::endRecordCommandBuffer(m_commandBuffers[m_vulkan->GetCurrentFrame()]);
 
 		m_vulkan->SubmitCommandBuffer(m_commandBuffers[m_vulkan->GetCurrentFrame()]);
     }
