@@ -75,7 +75,7 @@ namespace vve {
 
         vh::createCommandBuffers(m_device, m_commandPool, m_commandBuffers);
         vh::createUniformBuffers(m_physicalDevice, m_device, m_vmaAllocator, m_uniformBuffers);
-        vh::createDescriptorPool(m_device, m_descriptorPool);
+        vh::createDescriptorPool(m_device, 1000, m_descriptorPool);
         vh::createDescriptorSets(m_device, m_texture, m_descriptorSetLayout, m_uniformBuffers, m_descriptorPool, m_descriptorSets);
         vh::createSemaphores(m_device, 1, m_imageAvailableSemaphores, m_semaphores);
 		vh::createFences(m_device, MAX_FRAMES_IN_FLIGHT, m_fences);

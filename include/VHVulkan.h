@@ -205,7 +205,7 @@ namespace vh {
         , VkQueue graphicsQueue, VkCommandPool commandPool, Geometry& geometry);
     void createUniformBuffers(VkPhysicalDevice physicalDevice, VkDevice device, VmaAllocator& vmaAllocator
             , UniformBuffers &uniformBuffers);
-    void createDescriptorPool(VkDevice device, VkDescriptorPool& descriptorPool);
+    void createDescriptorPool(VkDevice device, uint32_t sizes, VkDescriptorPool& descriptorPool);
     void createDescriptorSets(VkDevice device, Texture& texture
         , VkDescriptorSetLayout descriptorSetLayout, UniformBuffers& uniformBuffers, VkDescriptorPool descriptorPool
         , std::vector<VkDescriptorSet>& descriptorSets);
