@@ -47,9 +47,7 @@ namespace vve {
 		using System<ATYPE>::m_engine;
 		using System<ATYPE>::m_registry;
 
-		struct SceneNodeWrapper {
-			SceneNode m_sceneNode;
-		};
+		using SceneNodeWrapper = vsty::strong_type_t<SceneNode, vsty::counter<>>;
 
 		const std::string m_rootName = "VVE RootSceneNode";
 
