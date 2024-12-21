@@ -51,9 +51,9 @@ namespace vve {
 	template<ArchitectureType ATYPE>
     void SceneManager<ATYPE>::OnLoadObject(Message message) {
 		auto msg = message.GetData<MsgFileLoadObject>();
-		//auto thandle = LoadTexture(msg.m_txtName);
+		auto thandle = LoadTexture(msg.m_txtName);
 		//auto ohandle = LoadOBJ(msg.m_objName);
-		//auto nhandle = m_registry->Insert( GeometryHandleWrapper{ohandle}, TextureHandleWrapper{thandle}, SceneNodeHandleWrapper{m_handleMap[m_rootName]} );
+		//auto nhandle = m_registry->Insert( GeometryHandle{ohandle}, TextureHandle{thandle}, SceneNodeHande{m_handleMap[m_rootName]} );
 	}
 
    	template<ArchitectureType ATYPE>
