@@ -31,14 +31,20 @@ namespace vve {
 
    	template<ArchitectureType ATYPE>
     void SceneManager<ATYPE>::OnUpdate(Message message) {
-		for( auto [handle, node] : m_registry->template GetView<vecs::Handle, SceneNodeWrapper&>() ) {
-			mat4_t parentToWorldM{1.0};
+		auto node = m_registry->template Get<SceneNodeWrapper&>(m_handleMap[m_rootName]);
 
-			if( node().m_parent.IsValid() ) {
-				auto& parent = m_registry->template Get<SceneNodeWrapper&>(node().m_parent);
-				parentToWorldM = parent().m_localToWorldM;
+		auto func = [&](mat4_t& parentTransform, SceneNodeWrapper& node, auto& self) -> void {
+			auto& transform = node().m_localToParentT;
+			node().m_localToWorldM = parentTransform * transform.Matrix();
+			for( auto handle : node().m_children ) {
+				auto child = m_registry->template Get<SceneNodeWrapper&>(handle);
+				self(node().m_localToWorldM, child, self);
 			}
-			node().m_localToWorldM = parentToWorldM * node().m_localToParentT.Matrix();
+		};
+
+		for( auto handle : node().m_children ) {
+			auto child = m_registry->template Get<SceneNodeWrapper&>(handle);
+			func(node().m_localToWorldM, child, func);
 		}
 	}
 

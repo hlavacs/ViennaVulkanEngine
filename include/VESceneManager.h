@@ -48,9 +48,9 @@ namespace vve {
 		using System<ATYPE>::m_registry;
 
 		using SceneNodeWrapper = vsty::strong_type_t<SceneNode, vsty::counter<>>; //need this to use SceneNode as a unique component
-		using SceneNodeHandleWrapper = vsty::strong_type_t<vecs::Handle, vsty::counter<>>; //need this to use SceneNode as a unique component
-		using TextureHandleWrapper = vsty::strong_type_t<vecs::Handle, vsty::counter<>>; //need this to use SceneNode as a unique component
-		using GeometryHandleWrapper = vsty::strong_type_t<vecs::Handle, vsty::counter<>>; //need this to use SceneNode as a unique component
+		using SceneNodeHandle = vsty::strong_type_t<vecs::Handle, vsty::counter<>>; //need this to use SceneNode as a unique component
+		using TextureHandle = vsty::strong_type_t<vecs::Handle, vsty::counter<>>; //need this to use SceneNode as a unique component
+		using GeometryHandle = vsty::strong_type_t<vecs::Handle, vsty::counter<>>; //need this to use SceneNode as a unique component
 
 		const std::string m_rootName = "VVE RootSceneNode";
 
