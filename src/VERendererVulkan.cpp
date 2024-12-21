@@ -188,10 +188,11 @@ namespace vve {
 
         vkDestroySampler(m_device, m_texture.m_textureSampler, nullptr);
         vkDestroyImageView(m_device, m_texture.m_textureImageView, nullptr);
-
         vh::destroyImage(m_device, m_vmaAllocator, m_texture.m_textureImage, m_texture.m_textureImageAllocation);
-		for( auto texture : m_engine->GetRegistry().template GetView<vh::Texture&>() ) {
-	        vh::destroyImage(m_device, m_vmaAllocator, m_texture.m_textureImage, m_texture.m_textureImageAllocation);
+		for( decltype(auto) texture : m_engine->GetRegistry().template GetView<vh::Texture&>() ) {
+			vkDestroySampler(m_device, texture.m_textureSampler, nullptr);
+        	vkDestroyImageView(m_device, texture.m_textureImageView, nullptr);
+	        vh::destroyImage(m_device, m_vmaAllocator, texture.m_textureImage, texture.m_textureImageAllocation);
 		}
 
         vkDestroyDescriptorSetLayout(m_device, m_descriptorSetLayout, nullptr);

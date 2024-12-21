@@ -723,43 +723,24 @@ namespace vh
   void createTextureImage(VkPhysicalDevice physicalDevice, VkDevice device, VmaAllocator vmaAllocator
         , VkQueue graphicsQueue, VkCommandPool commandPool, std::string fileName, Texture& texture) {
 
-        int texWidth, texHeight, texChannels;
-        stbi_uc* pixels = stbi_load(TEXTURE_PATH.c_str(), &texWidth, &texHeight, &texChannels, STBI_rgb_alpha);
-        VkDeviceSize imageSize = texWidth * texHeight * 4;
+        int texChannels;
+        stbi_uc* pixels = stbi_load(TEXTURE_PATH.c_str(), &texture.m_width, &texture.m_height, &texChannels, STBI_rgb_alpha);
+        texture.m_size = texture.m_width * texture.m_height * 4;
 
         if (!pixels) {
             throw std::runtime_error("failed to load texture image!");
         }
 
-        VkBuffer stagingBuffer;
-        VmaAllocation stagingBufferAllocation;
-        VmaAllocationInfo allocInfo;
-        createBuffer(physicalDevice, device, vmaAllocator, imageSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT
-            , VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT
-            , VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT | VMA_ALLOCATION_CREATE_MAPPED_BIT
-            , stagingBuffer, stagingBufferAllocation, &allocInfo);
-
-        MemCopy(device, pixels, allocInfo, imageSize);
+		vh::createTextureImage2(physicalDevice, device, vmaAllocator, graphicsQueue, commandPool, pixels, 
+			texture.m_width, texture.m_height, texture.m_size, texture);
 
         stbi_image_free(pixels);
-
-        createImage(physicalDevice, device, vmaAllocator, texWidth, texHeight, VK_FORMAT_R8G8B8A8_SRGB
-            , VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT
-            , VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, texture.m_textureImage, texture.m_textureImageAllocation); 
-
-        transitionImageLayout(device, graphicsQueue, commandPool, texture.m_textureImage, VK_FORMAT_R8G8B8A8_SRGB
-            , VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
-        copyBufferToImage(device, graphicsQueue, commandPool, stagingBuffer, texture.m_textureImage
-                , static_cast<uint32_t>(texWidth), static_cast<uint32_t>(texHeight));
-        transitionImageLayout(device, graphicsQueue, commandPool, texture.m_textureImage, VK_FORMAT_R8G8B8A8_SRGB
-            , VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
-
-        destroyBuffer(device, vmaAllocator, stagingBuffer, stagingBufferAllocation);
     }
 
 
   void createTextureImage2(VkPhysicalDevice physicalDevice, VkDevice device, VmaAllocator vmaAllocator, 
-  			VkQueue graphicsQueue, VkCommandPool commandPool, void* pixels, int texWidth, int texHeight, size_t imageSize, vh::Texture& texture) {
+  			VkQueue graphicsQueue, VkCommandPool commandPool, void* pixels, int texWidth, int texHeight, 
+			size_t imageSize, vh::Texture& texture) {
 
         VkBuffer stagingBuffer;
         VmaAllocation stagingBufferAllocation;

@@ -65,6 +65,7 @@ namespace vve {
 
 		vh::Texture texture{texWidth, texHeight, imageSize};
 		auto handle = m_registry->Insert(filenName, texture);
+
 		m_handleMap[filenName] = handle;
 		m_engine->SendMessage( MsgTextureCreate{this, nullptr, pixels, handle} );
 		stbi_image_free(pixels);
