@@ -127,6 +127,7 @@ namespace vh {
 		int 			m_width;
 		int				m_height;
 		VkDeviceSize	m_size;
+		void *			m_pixels;
 		VkImage         m_textureImage;
         VmaAllocation   m_textureImageAllocation;
         VkImageView     m_textureImageView;

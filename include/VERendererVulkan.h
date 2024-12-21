@@ -35,7 +35,6 @@ namespace vve {
 		auto GetGraphicsPipeline() -> vh::Pipeline& { return m_graphicsPipeline; }
 		auto GetDepthImage() -> vh::DepthImage& { return m_depthImage; }
 		auto GetTexture() -> vh::Texture& { return m_texture; }
-		auto GetGeometry() -> vh::Geometry& { return m_geometry; }
 
 		auto GetUniformBuffers() -> vh::UniformBuffers& { return m_uniformBuffers; }
 		auto GetDescriptorSets() -> std::vector<VkDescriptorSet>& { return m_descriptorSets; }
@@ -86,7 +85,6 @@ namespace vve {
 	    vh::Pipeline m_graphicsPipeline;
 	    vh::DepthImage m_depthImage;
 	    vh::Texture m_texture;
-	    vh::Geometry m_geometry;
 	    vh::UniformBuffers m_uniformBuffers;
 	    VkDescriptorPool m_descriptorPool;
 	    std::vector<VkDescriptorSet> m_descriptorSets;

@@ -69,10 +69,6 @@ namespace vve {
         vh::createTextureImageView(m_device, m_texture);
         vh::createTextureSampler(m_physicalDevice, m_device, m_texture);
 
-		vh::loadModel("assets\\models\\viking_room.obj", m_geometry);
-        vh::createVertexBuffer(m_physicalDevice, m_device, m_vmaAllocator, m_graphicsQueue, m_commandPool, m_geometry);
-        vh::createIndexBuffer( m_physicalDevice, m_device, m_vmaAllocator, m_graphicsQueue, m_commandPool, m_geometry);
-
         vh::createCommandBuffers(m_device, m_commandPool, m_commandBuffers);
         vh::createUniformBuffers(m_physicalDevice, m_device, m_vmaAllocator, m_uniformBuffers);
         vh::createDescriptorPool(m_device, 1000, m_descriptorPool);
@@ -197,8 +193,6 @@ namespace vve {
 
         vkDestroyDescriptorSetLayout(m_device, m_descriptorSetLayout, nullptr);
 
-        vh::destroyBuffer(m_device, m_vmaAllocator, m_geometry.m_indexBuffer, m_geometry.m_indexBufferAllocation);
-        vh::destroyBuffer(m_device, m_vmaAllocator, m_geometry.m_vertexBuffer, m_geometry.m_vertexBufferAllocation);
 		for( auto geometry : m_engine->GetRegistry().template GetView<vh::Geometry&>() ) {
 	        vh::destroyBuffer(m_device, m_vmaAllocator, geometry.m_indexBuffer, geometry.m_indexBufferAllocation);
 	        vh::destroyBuffer(m_device, m_vmaAllocator, geometry.m_vertexBuffer, geometry.m_vertexBufferAllocation);
@@ -225,6 +219,19 @@ namespace vve {
     void RendererVulkan<ATYPE>::OnQuit2(Message message) {
         vkDestroyInstance(m_instance, nullptr);
 	}
+
+	//-------------------------------------------------------------------------------------------------------
+
+
+
+
+	
+
+
+
+
+
+
 
 	template<ArchitectureType ATYPE>
 	auto RendererVulkan<ATYPE>::OnTextureCreate( Message message ) -> void {

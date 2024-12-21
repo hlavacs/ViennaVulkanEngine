@@ -47,8 +47,9 @@ namespace vve {
 			m_vulkan->GetSwapChain(), m_renderPass, m_vulkan->GetGraphicsPipeline(), m_vulkan->GetDescriptorSets(), 
 			false, ((WindowSDL<ATYPE>*)m_window)->GetClearColor(), m_vulkan->GetCurrentFrame());
 		
-		vh::recordObject( m_commandBuffers[m_vulkan->GetCurrentFrame()], m_vulkan->GetGraphicsPipeline(), 
-			m_vulkan->GetDescriptorSets(), m_vulkan->GetGeometry(), m_vulkan->GetCurrentFrame() );
+		for( decltype(auto) geometry : m_engine->GetRegistry().template GetView<vh::Geometry&>() ) {
+			vh::recordObject( m_commandBuffers[m_vulkan->GetCurrentFrame()], m_vulkan->GetGraphicsPipeline(), m_vulkan->GetDescriptorSets(), geometry, m_vulkan->GetCurrentFrame() );
+		}
 
 		vh::endRecordCommandBuffer(m_commandBuffers[m_vulkan->GetCurrentFrame()]);
 

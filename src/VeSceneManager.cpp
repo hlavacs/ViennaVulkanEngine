@@ -52,8 +52,9 @@ namespace vve {
     void SceneManager<ATYPE>::OnLoadObject(Message message) {
 		auto msg = message.GetData<MsgFileLoadObject>();
 		auto thandle = LoadTexture(msg.m_txtName);
-		//auto ohandle = LoadOBJ(msg.m_objName);
-		//auto nhandle = m_registry->Insert( GeometryHandle{ohandle}, TextureHandle{thandle}, SceneNodeHande{m_handleMap[m_rootName]} );
+		auto ohandle = LoadOBJ(msg.m_objName);
+		vh::UniformBuffers ubo;
+		auto nhandle = m_registry->Insert( GeometryHandle{ohandle}, TextureHandle{thandle}, SceneNodeHandle{m_handleMap[m_rootName]} );
 	}
 
    	template<ArchitectureType ATYPE>
@@ -63,7 +64,7 @@ namespace vve {
         VkDeviceSize imageSize = texWidth * texHeight * 4;
         if (!pixels) { return {}; }
 
-		vh::Texture texture{texWidth, texHeight, imageSize};
+		vh::Texture texture{texWidth, texHeight, imageSize, pixels};
 		auto handle = m_registry->Insert(filenName, texture);
 
 		m_handleMap[filenName] = handle;

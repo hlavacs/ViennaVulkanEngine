@@ -30,6 +30,7 @@ namespace vve {
     MsgKeyUp::MsgKeyUp(void* s, void* r, double dt, int key): MsgBase{std::hash<std::string>{}("SDL_KEY_UP"), s, r, dt}, m_key{key} {}; 
     MsgKeyRepeat::MsgKeyRepeat(void* s, void* r, double dt, int key): MsgBase{std::hash<std::string>{}("SDL_KEY_REPEAT"), s, r, dt}, m_key{key} {};   
     MsgSDL::MsgSDL(void* s, void* r, double dt, SDL_Event event): MsgBase{std::hash<std::string>{}("SDL"), s, r}, m_dt{dt}, m_event{event} {};   
+    MsgQuit::MsgQuit(void* s, void* r) : MsgBase{std::hash<std::string>{}("QUIT"), s, r} {};
     
 	MsgFileLoadObject::MsgFileLoadObject(void* s, void* r, std::string txtName, std::string objName) : MsgBase{std::hash<std::string>{}("FILE_LOAD_OBJECT"), s, r}, m_txtName{txtName}, m_objName{objName} {};
 
@@ -37,7 +38,6 @@ namespace vve {
     MsgTextureDestroy::MsgTextureDestroy(void* s, void* r, vecs::Handle handle) : MsgBase{std::hash<std::string>{}("TEXTURE_DESTROY"), s, r}, m_handle{handle} {};
 	MsgGeometryCreate::MsgGeometryCreate(void* s, void* r, vecs::Handle handle) : MsgBase{std::hash<std::string>{}("GEOMETRY_CREATE"), s, r}, m_handle{handle} {};
     MsgGeometryDestroy::MsgGeometryDestroy(void* s, void* r, vecs::Handle handle) : MsgBase{std::hash<std::string>{}("GEOMETRY_DESTROY"), s, r}, m_handle{handle} {};
-    MsgQuit::MsgQuit(void* s, void* r) : MsgBase{std::hash<std::string>{}("QUIT"), s, r} {};
 
    	template<ArchitectureType ATYPE>
     System<ATYPE>::System( std::string systemName, Engine<ATYPE>* engine ) : m_name(systemName), m_engine(engine) {};
