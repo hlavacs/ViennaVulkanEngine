@@ -149,6 +149,10 @@ namespace vh {
         std::vector<void*>          m_uniformBuffersMapped;
     };
 
+	struct DescriptorSets {
+		std::vector<std::vector<VkDescriptorSet>> m_descriptorSets;
+	};
+
     struct Semaphores {
         std::vector<VkSemaphore> m_renderFinishedSemaphores;
     };

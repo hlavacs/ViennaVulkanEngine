@@ -32,8 +32,14 @@ namespace vve {
     MsgSDL::MsgSDL(void* s, void* r, double dt, SDL_Event event): MsgBase{std::hash<std::string>{}("SDL"), s, r}, m_dt{dt}, m_event{event} {};   
     MsgQuit::MsgQuit(void* s, void* r) : MsgBase{std::hash<std::string>{}("QUIT"), s, r} {};
     
-	MsgFileLoadObject::MsgFileLoadObject(void* s, void* r, std::string txtName, std::string objName) : MsgBase{std::hash<std::string>{}("FILE_LOAD_OBJECT"), s, r}, m_txtName{txtName}, m_objName{objName} {};
+	//------------------------------------------------------------------------
 
+	MsgFileLoadObject::MsgFileLoadObject(void* s, void* r, std::string txtName, std::string objName) : MsgBase{std::hash<std::string>{}("FILE_LOAD_OBJECT"), s, r}, m_txtName{txtName}, m_objName{objName} {};
+	
+	MsgObjectCreate::MsgObjectCreate(void* s, void* r, vecs::Handle geometryHandle, vecs::Handle textureHandle) 
+		: MsgBase{std::hash<std::string>{}("OBJECT_CREATE"), s, r}, 
+			m_geometryHandle{geometryHandle}, m_textureHandle{textureHandle} {};
+		
 	MsgTextureCreate::MsgTextureCreate(void* s, void* r, void *pixels, vecs::Handle handle) : MsgBase{std::hash<std::string>{}("TEXTURE_CREATE"), s, r}, m_pixels{pixels}, m_handle{handle} {};
     MsgTextureDestroy::MsgTextureDestroy(void* s, void* r, vecs::Handle handle) : MsgBase{std::hash<std::string>{}("TEXTURE_DESTROY"), s, r}, m_handle{handle} {};
 	MsgGeometryCreate::MsgGeometryCreate(void* s, void* r, vecs::Handle handle) : MsgBase{std::hash<std::string>{}("GEOMETRY_CREATE"), s, r}, m_handle{handle} {};

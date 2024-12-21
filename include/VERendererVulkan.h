@@ -52,6 +52,8 @@ namespace vve {
         virtual void OnPrepareNextFrame(Message message);
         virtual void OnRecordNextFrame(Message message);
         virtual void OnRenderNextFrame(Message message);
+		
+		virtual void OnObjectCreate( Message message );
 		virtual void OnTextureCreate( Message message );
 		virtual void OnTextureDestroy( Message message );
 		virtual void OnGeometryCreate( Message message );

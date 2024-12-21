@@ -25,10 +25,13 @@ namespace vve {
 			{this,      0, "PREPARE_NEXT_FRAME", [this](Message message){this->OnPrepareNextFrame(message);} },
 			{this,      0, "RECORD_NEXT_FRAME", [this](Message message){this->OnRecordNextFrame(message);} },
 			{this,      0, "RENDER_NEXT_FRAME", [this](Message message){this->OnRenderNextFrame(message);} },
+
+			{this,      0, "OBJECT_CREATE", [this](Message message){this->OnObjectCreate(message);} },
 			{this,      0, "TEXTURE_CREATE",   [this](Message message){this->OnTextureCreate(message);} },
 			{this,      0, "TEXTURE_DESTROY",  [this](Message message){this->OnTextureDestroy(message);} },
 			{this,      0, "GEOMETRY_CREATE",  [this](Message message){this->OnGeometryCreate(message);} },
 			{this,      0, "GEOMETRY_DESTROY", [this](Message message){this->OnGeometryDestroy(message);} },
+
 			{this,  -1000, "QUIT", [this](Message message){this->OnQuit(message);} },
 			{this,   1000, "QUIT", [this](Message message){this->OnQuit2(message);} }
 		} );
@@ -225,13 +228,11 @@ namespace vve {
 
 
 
+	template<ArchitectureType ATYPE>
+	auto RendererVulkan<ATYPE>::OnObjectCreate( Message message ) -> void {
+		auto msg = message.GetData<MsgObjectCreate>();
+	}
 	
-
-
-
-
-
-
 
 	template<ArchitectureType ATYPE>
 	auto RendererVulkan<ATYPE>::OnTextureCreate( Message message ) -> void {
