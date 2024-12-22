@@ -84,7 +84,10 @@ namespace vve {
 	    VkQueue m_presentQueue;
 	    vh::SwapChain m_swapChain;
 	    VkRenderPass m_renderPass;
+
 	    VkDescriptorSetLayout m_descriptorSetLayout;
+		vh::DescriptorSetLayouts m_descriptorSetLayouts;
+
 	    vh::Pipeline m_graphicsPipeline;
 	    vh::DepthImage m_depthImage;
 

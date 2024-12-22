@@ -68,8 +68,6 @@ namespace vve {
 		vh::Texture texture{texWidth, texHeight, imageSize, pixels};
 		auto handle = m_registry.Insert(filenName, texture);
 		m_handleMap[filenName] = handle;
-		//m_engine.SendMessage( MsgTextureCreate{this, nullptr, pixels, handle} );
-		//stbi_image_free(pixels);
 		return handle;
 	}
 
@@ -81,7 +79,6 @@ namespace vve {
 		vh::loadModel(fileName, geometry);
 		auto handle = m_registry.Insert(fileName, geometry);
 		m_handleMap[fileName] = handle;
-		//m_engine.SendMessage( MsgGeometryCreate{this, nullptr, handle} );
 		return handle;
 	}
 	

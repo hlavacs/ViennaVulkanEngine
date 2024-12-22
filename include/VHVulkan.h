@@ -149,6 +149,10 @@ namespace vh {
         std::vector<void*>          m_uniformBuffersMapped;
     };
 
+	struct DescriptorSetLayouts {
+		std::vector<VkDescriptorSetLayout> m_descriptorSetLayouts;
+	};
+
 	struct DescriptorSets {
 		std::vector<std::vector<VkDescriptorSet>> m_descriptorSets;
 	};
@@ -180,6 +184,8 @@ namespace vh {
     void createRenderPass(VkPhysicalDevice physicalDevice, VkDevice device, SwapChain& swapChain, bool clear, VkRenderPass& renderPass);
 
     void createDescriptorSetLayout(VkDevice device, VkDescriptorSetLayout& descriptorSetLayout);
+    void createDescriptorSetLayout2(VkDevice device, DescriptorSetLayouts& descriptorSetLayouts);
+
     void createGraphicsPipeline(VkDevice device, VkRenderPass renderPass, VkDescriptorSetLayout descriptorSetLayout, Pipeline& graphicsPipeline);
     void createFramebuffers(VkDevice device, SwapChain& swapChain, DepthImage& depthImage, VkRenderPass renderPass);
     void createCommandPool(VkSurfaceKHR surface, VkPhysicalDevice physicalDevice, VkDevice device, VkCommandPool& commandPool);
@@ -210,11 +216,16 @@ namespace vh {
         , VkQueue graphicsQueue, VkCommandPool commandPool, Geometry& geometry);
     void createUniformBuffers(VkPhysicalDevice physicalDevice, VkDevice device, VmaAllocator& vmaAllocator
             , UniformBuffers &uniformBuffers);
+			
     void createDescriptorPool(VkDevice device, uint32_t sizes, VkDescriptorPool& descriptorPool);
 
     void createDescriptorSets(VkDevice device, Texture& texture
         , VkDescriptorSetLayout descriptorSetLayout, UniformBuffers& uniformBuffers, VkDescriptorPool descriptorPool
         , std::vector<VkDescriptorSet>& descriptorSets);
+
+    void createDescriptorSets2(VkDevice device, Texture& texture
+        , DescriptorSetLayouts& descriptorSetLayouts, UniformBuffers& uniformBuffers, VkDescriptorPool descriptorPool
+        , DescriptorSets& descriptorSets);
 
     void updateDescriptorSets(VkDevice device, Texture& texture
         , VkDescriptorSetLayout descriptorSetLayout, UniformBuffers& uniformBuffers, VkDescriptorPool descriptorPool

@@ -62,7 +62,10 @@ namespace vve {
         vh::createSwapChain(m_windowSDL->GetSDLWindow(), m_window->GetSurface(), m_physicalDevice, m_device, m_swapChain);
         vh::createImageViews(m_device, m_swapChain);
         vh::createRenderPassClear(m_physicalDevice, m_device, m_swapChain, true, m_renderPass);
-        vh::createDescriptorSetLayout(m_device, m_descriptorSetLayout);
+        
+		vh::createDescriptorSetLayout(m_device, m_descriptorSetLayout);
+		vh::createDescriptorSetLayout2(m_device, m_descriptorSetLayouts);
+
         vh::createGraphicsPipeline(m_device, m_renderPass, m_descriptorSetLayout, m_graphicsPipeline);
         vh::createCommandPool(m_window->GetSurface(), m_physicalDevice, m_device, m_commandPool);
         vh::createDepthResources(m_physicalDevice, m_device, m_vmaAllocator, m_swapChain, m_depthImage);
@@ -77,7 +80,6 @@ namespace vve {
 
         vh::createDescriptorPool(m_device, 1000, m_descriptorPool);
         vh::createDescriptorSets(m_device, m_texture, m_descriptorSetLayout, m_uniformBuffers, m_descriptorPool, m_descriptorSets);
-        vh::updateDescriptorSets(m_device, m_texture, m_descriptorSetLayout, m_uniformBuffers, m_descriptorPool, m_descriptorSets);
 
         vh::createSemaphores(m_device, 1, m_imageAvailableSemaphores, m_semaphores);
 		vh::createFences(m_device, MAX_FRAMES_IN_FLIGHT, m_fences);
@@ -247,7 +249,17 @@ namespace vve {
 			vh::createTextureImage2(m_physicalDevice, m_device, m_vmaAllocator, m_graphicsQueue, m_commandPool, texture.m_pixels, texture.m_width, texture.m_height, texture.m_size, texture);
 			vh::createTextureImageView(m_device, texture);
 			vh::createTextureSampler(m_physicalDevice, m_device, texture);
+	        vh::updateDescriptorSets(m_device, texture, m_descriptorSetLayout, m_uniformBuffers, m_descriptorPool, m_descriptorSets);
 		}
+
+		vh::UniformBuffers ubo;
+		//vh::createUniformBuffers(m_physicalDevice, m_device, m_vmaAllocator, ubo);
+
+		vh::DescriptorSets descriptorSets;
+		descriptorSets.m_descriptorSets.resize(MAX_FRAMES_IN_FLIGHT);
+		//vh::createDescriptorSets2(m_device, texture, m_descriptorSetLayouts, ubo, m_descriptorPool, descriptorSets);
+
+	    vh::updateDescriptorSets(m_device, texture, m_descriptorSetLayout, m_uniformBuffers, m_descriptorPool, m_descriptorSets);
 	}
 	
 
