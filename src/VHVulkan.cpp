@@ -1081,6 +1081,12 @@ namespace vh
         if (vkAllocateDescriptorSets(device, &allocInfo, descriptorSets.data()) != VK_SUCCESS) {
             throw std::runtime_error("failed to allocate descriptor sets!");
         }
+    }
+
+
+    void updateDescriptorSets(VkDevice device, Texture& texture
+        , VkDescriptorSetLayout descriptorSetLayout, UniformBuffers& uniformBuffers, VkDescriptorPool descriptorPool
+        , std::vector<VkDescriptorSet>& descriptorSets) {
 
         for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
             VkDescriptorBufferInfo bufferInfo{};

@@ -8,6 +8,7 @@ namespace vve
     class RendererForward : public Renderer<ATYPE> {
 		
 		using System<ATYPE>::m_engine;
+		using System<ATYPE>::m_registry;
 		using Renderer<ATYPE>::m_window;
 
     public:

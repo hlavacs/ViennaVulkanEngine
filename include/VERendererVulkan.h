@@ -87,11 +87,13 @@ namespace vve {
 	    VkDescriptorSetLayout m_descriptorSetLayout;
 	    vh::Pipeline m_graphicsPipeline;
 	    vh::DepthImage m_depthImage;
+
 	    vh::Texture m_texture;
 	    vh::UniformBuffers m_uniformBuffers;
 	    VkDescriptorPool m_descriptorPool;
 	    std::vector<VkDescriptorSet> m_descriptorSets;
-	    VkCommandPool m_commandPool;
+	    
+		VkCommandPool m_commandPool;
 	    std::vector<VkCommandBuffer> m_commandBuffers;
 	    std::vector<VkCommandBuffer> m_commandBuffersSubmit;
 		

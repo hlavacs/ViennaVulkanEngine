@@ -211,9 +211,16 @@ namespace vh {
     void createUniformBuffers(VkPhysicalDevice physicalDevice, VkDevice device, VmaAllocator& vmaAllocator
             , UniformBuffers &uniformBuffers);
     void createDescriptorPool(VkDevice device, uint32_t sizes, VkDescriptorPool& descriptorPool);
+
     void createDescriptorSets(VkDevice device, Texture& texture
         , VkDescriptorSetLayout descriptorSetLayout, UniformBuffers& uniformBuffers, VkDescriptorPool descriptorPool
         , std::vector<VkDescriptorSet>& descriptorSets);
+
+    void updateDescriptorSets(VkDevice device, Texture& texture
+        , VkDescriptorSetLayout descriptorSetLayout, UniformBuffers& uniformBuffers, VkDescriptorPool descriptorPool
+        , std::vector<VkDescriptorSet>& descriptorSets);
+
+
     void createBuffer(VkPhysicalDevice physicalDevice, VkDevice device, VmaAllocator vmaAllocator
         , VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties
         , VmaAllocationCreateFlags vmaFlags, VkBuffer& buffer
