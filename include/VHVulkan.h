@@ -236,7 +236,11 @@ namespace vh {
         , VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties
         , VmaAllocationCreateFlags vmaFlags, VkBuffer& buffer
         , VmaAllocation& allocation, VmaAllocationInfo* allocationInfo = nullptr);
+
     void destroyBuffer(VkDevice device, VmaAllocator vmaAllocator, VkBuffer buffer, VmaAllocation& allocation);
+    void destroyBuffer2(VkDevice device, VmaAllocator vmaAllocator, UniformBuffers buffers);
+
+
     void copyBuffer(VkDevice device, VkQueue graphicsQueue, VkCommandPool commandPool, VkBuffer srcBuffer, VkBuffer dstBuffer, VkDeviceSize size);
 
     VkCommandBuffer beginSingleTimeCommands(VkDevice device, VkCommandPool commandPool);

@@ -206,6 +206,10 @@ namespace vve {
 	        vh::destroyBuffer(m_device, m_vmaAllocator, geometry.m_vertexBuffer, geometry.m_vertexBufferAllocation);
 		}
 
+		for( auto ubo : m_registry.template GetView<vh::UniformBuffers&>() ) {
+			vh::destroyBuffer2(m_device, m_vmaAllocator, ubo);
+		}
+
         vkDestroyCommandPool(m_device, m_commandPool, nullptr);
 
         vkDestroyRenderPass(m_device, m_renderPass, nullptr);
@@ -253,13 +257,14 @@ namespace vve {
 		}
 
 		vh::UniformBuffers ubo;
-		//vh::createUniformBuffers(m_physicalDevice, m_device, m_vmaAllocator, ubo);
+		vh::createUniformBuffers(m_physicalDevice, m_device, m_vmaAllocator, ubo);
 
 		vh::DescriptorSets descriptorSets;
 		descriptorSets.m_descriptorSets.resize(MAX_FRAMES_IN_FLIGHT);
-		//vh::createDescriptorSets2(m_device, texture, m_descriptorSetLayouts, ubo, m_descriptorPool, descriptorSets);
-
-	    vh::updateDescriptorSets(m_device, texture, m_descriptorSetLayout, m_uniformBuffers, m_descriptorPool, m_descriptorSets);
+		vh::createDescriptorSets2(m_device, texture, m_descriptorSetLayouts, ubo, m_descriptorPool, descriptorSets);
+	    vh::updateDescriptorSets(m_device, texture, m_descriptorSetLayouts.m_descriptorSetLayouts[0], ubo, m_descriptorPool, descriptorSets.m_descriptorSets[0]);
+	
+		m_registry.template Put(handle, ubo, descriptorSets);
 	}
 	
 

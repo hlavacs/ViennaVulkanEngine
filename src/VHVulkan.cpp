@@ -1189,7 +1189,13 @@ namespace vh
         vmaDestroyBuffer(vmaAllocator, buffer, allocation);
     }
 
-	
+    void destroyBuffer2(VkDevice device, VmaAllocator vmaAllocator, UniformBuffers buffers) {
+		for (size_t i = 0; i < buffers.m_uniformBuffers.size(); i++) {
+			vmaDestroyBuffer(vmaAllocator, buffers.m_uniformBuffers[i], buffers.m_uniformBuffersAllocation[i]);
+		}
+	}
+
+
     void copyBuffer(VkDevice device, VkQueue graphicsQueue, VkCommandPool commandPool, VkBuffer srcBuffer
         , VkBuffer dstBuffer, VkDeviceSize size) {
 
