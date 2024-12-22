@@ -1169,6 +1169,46 @@ namespace vh
     }
 
 
+    void updateDescriptorSets2(VkDevice device, Texture& texture
+        , DescriptorSets descriptorSetLayouts, UniformBuffers& uniformBuffers, VkDescriptorPool descriptorPool
+        , DescriptorSets& descriptorSets) {
+
+		for( size_t j = 0; j < descriptorSets.m_descriptorSets.size(); j++) {
+	        for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
+	            VkDescriptorBufferInfo bufferInfo{};
+	            bufferInfo.buffer = uniformBuffers.m_uniformBuffers[i];
+	            bufferInfo.offset = 0;
+	            bufferInfo.range = sizeof(UniformBufferObject);
+
+	            VkDescriptorImageInfo imageInfo{};
+	            imageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+	            imageInfo.imageView = texture.m_textureImageView;
+	            imageInfo.sampler = texture.m_textureSampler;
+
+	            std::array<VkWriteDescriptorSet, 2> descriptorWrites{};
+
+	            descriptorWrites[0].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+	            descriptorWrites[0].dstSet = descriptorSets.m_descriptorSets[j][i];
+	            descriptorWrites[0].dstBinding = 0;
+	            descriptorWrites[0].dstArrayElement = 0;
+	            descriptorWrites[0].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+	            descriptorWrites[0].descriptorCount = 1;
+	            descriptorWrites[0].pBufferInfo = &bufferInfo;
+
+	            descriptorWrites[1].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+	            descriptorWrites[1].dstSet = descriptorSets.m_descriptorSets[j][i];
+	            descriptorWrites[1].dstBinding = 1;
+	            descriptorWrites[1].dstArrayElement = 0;
+	            descriptorWrites[1].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+	            descriptorWrites[1].descriptorCount = 1;
+	            descriptorWrites[1].pImageInfo = &imageInfo;
+
+	            vkUpdateDescriptorSets(device, static_cast<uint32_t>(descriptorWrites.size()), descriptorWrites.data(), 0, nullptr);
+	        }
+		}
+    }
+
+
     void createBuffer(VkPhysicalDevice physicalDevice, VkDevice device, VmaAllocator vmaAllocator
         , VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties
         , VmaAllocationCreateFlags vmaFlags, VkBuffer& buffer
@@ -1355,37 +1395,37 @@ namespace vh
         VkSemaphoreCreateInfo semaphoreInfo{};
         semaphoreInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
 
-		size_t start = semaphores.size();
-		size_t end = size;
-		for( int i = start; i < end; ++i ) {
-			Semaphores renderFinishedSemaphores;
-	        renderFinishedSemaphores.m_renderFinishedSemaphores.resize(MAX_FRAMES_IN_FLIGHT);
-			semaphores.push_back(renderFinishedSemaphores);
-
+		for( int i = semaphores.size(); i < size; ++i ) {
+			Semaphores Sem;
 	        for (size_t j = 0; j < MAX_FRAMES_IN_FLIGHT; j++) {
-	            if (vkCreateSemaphore(device, &semaphoreInfo, nullptr, &semaphores[i].m_renderFinishedSemaphores[j]) != VK_SUCCESS != VK_SUCCESS) {
+				VkSemaphore semaphore;
+	            if (vkCreateSemaphore(device, &semaphoreInfo, nullptr, &semaphore) != VK_SUCCESS != VK_SUCCESS) {
 	                throw std::runtime_error("failed to create synchronization objects for a frame!");
 	            }
+				Sem.m_renderFinishedSemaphores.push_back(semaphore);
 	        }
+			semaphores.push_back(Sem);
 		}
 
         for (size_t j = imageAvailableSemaphores.size(); j < MAX_FRAMES_IN_FLIGHT; j++) {
-			imageAvailableSemaphores.push_back(VK_NULL_HANDLE);
-            if (vkCreateSemaphore(device, &semaphoreInfo, nullptr, &imageAvailableSemaphores[j]) != VK_SUCCESS ) {
+			VkSemaphore semaphore;
+            if (vkCreateSemaphore(device, &semaphoreInfo, nullptr, &semaphore) != VK_SUCCESS ) {
                 throw std::runtime_error("failed to create synchronization objects for a frame!");
             }
+			imageAvailableSemaphores.push_back(semaphore);
         }
+
     }
 
     void destroySemaphores(VkDevice device,  std::vector<VkSemaphore>& imageAvailableSemaphores, std::vector<Semaphores>& semaphores) {
-		for( int i = 0; i < semaphores.size(); ++i ) {
-			for (size_t j = 0; j < MAX_FRAMES_IN_FLIGHT; j++) {
-				vkDestroySemaphore(device, semaphores[i].m_renderFinishedSemaphores[j], nullptr);
+		for( auto Sem : semaphores ) {
+			for ( auto sem : Sem.m_renderFinishedSemaphores ) {
+				vkDestroySemaphore(device, sem, nullptr);
 			}
 		}
 
-		for (size_t j = 0; j < MAX_FRAMES_IN_FLIGHT; j++) {
-			vkDestroySemaphore(device, imageAvailableSemaphores[j], nullptr);
+		for ( auto sem : imageAvailableSemaphores) {
+			vkDestroySemaphore(device, sem, nullptr);
 		}
 	}
 

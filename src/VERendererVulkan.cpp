@@ -81,7 +81,7 @@ namespace vve {
         vh::createDescriptorPool(m_device, 1000, m_descriptorPool);
         vh::createDescriptorSets(m_device, m_texture, m_descriptorSetLayout, m_uniformBuffers, m_descriptorPool, m_descriptorSets);
 
-        vh::createSemaphores(m_device, 1, m_imageAvailableSemaphores, m_semaphores);
+        vh::createSemaphores(m_device, 3, m_imageAvailableSemaphores, m_semaphores);
 		vh::createFences(m_device, MAX_FRAMES_IN_FLIGHT, m_fences);
     }
 
@@ -200,6 +200,9 @@ namespace vve {
 		}
 
         vkDestroyDescriptorSetLayout(m_device, m_descriptorSetLayout, nullptr);
+		for( auto layout : m_descriptorSetLayouts.m_descriptorSetLayouts ) {
+			vkDestroyDescriptorSetLayout(m_device, layout, nullptr);
+		}
 
 		for( auto geometry : m_registry.template GetView<vh::Geometry&>() ) {
 	        vh::destroyBuffer(m_device, m_vmaAllocator, geometry.m_indexBuffer, geometry.m_indexBufferAllocation);
@@ -263,6 +266,10 @@ namespace vve {
 		descriptorSets.m_descriptorSets.resize(MAX_FRAMES_IN_FLIGHT);
 		vh::createDescriptorSets2(m_device, texture, m_descriptorSetLayouts, ubo, m_descriptorPool, descriptorSets);
 	    vh::updateDescriptorSets(m_device, texture, m_descriptorSetLayouts.m_descriptorSetLayouts[0], ubo, m_descriptorPool, descriptorSets.m_descriptorSets[0]);
+
+	    //vh::updateDescriptorSets(m_device, texture, m_descriptorSetLayout, ubo, m_descriptorPool, m_descriptorSets);
+
+	    //vh::updateDescriptorSets2(m_device, texture, m_descriptorSetLayouts.m_descriptorSetLayouts[0], ubo, m_descriptorPool, descriptorSets.m_descriptorSets[0]);
 	
 		m_registry.template Put(handle, ubo, descriptorSets);
 	}

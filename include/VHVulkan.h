@@ -157,6 +157,7 @@ namespace vh {
 		std::vector<std::vector<VkDescriptorSet>> m_descriptorSets;
 	};
 
+    /// @brief Semaphores for signalling that a command buffer has finished executing. Every buffer gets its own Semaphore.
     struct Semaphores {
         std::vector<VkSemaphore> m_renderFinishedSemaphores;
     };
@@ -230,6 +231,10 @@ namespace vh {
     void updateDescriptorSets(VkDevice device, Texture& texture
         , VkDescriptorSetLayout descriptorSetLayout, UniformBuffers& uniformBuffers, VkDescriptorPool descriptorPool
         , std::vector<VkDescriptorSet>& descriptorSets);
+
+    void updateDescriptorSets2(VkDevice device, Texture& texture
+        , DescriptorSets descriptorSetLayouts, UniformBuffers& uniformBuffers, VkDescriptorPool descriptorPool
+        , DescriptorSets& descriptorSets);
 
 
     void createBuffer(VkPhysicalDevice physicalDevice, VkDevice device, VmaAllocator vmaAllocator
