@@ -21,7 +21,7 @@ namespace vve
         using System<ATYPE>::m_engine;
 
     public:
-        Renderer(std::string systemName, Engine<ATYPE>* m_engine, Window<ATYPE>* window );
+        Renderer(std::string systemName, Engine<ATYPE>& m_engine, Window<ATYPE>* window );
         virtual ~Renderer();
 
     protected:

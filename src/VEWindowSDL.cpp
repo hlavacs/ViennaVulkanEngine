@@ -15,10 +15,10 @@ namespace vve {
 	// SDL Window
 	
    	template<ArchitectureType ATYPE>
-    WindowSDL<ATYPE>::WindowSDL( std::string systemName, Engine<ATYPE>* engine,std::string windowName, int width, int height) 
+    WindowSDL<ATYPE>::WindowSDL( std::string systemName, Engine<ATYPE>& engine,std::string windowName, int width, int height) 
                 : Window<ATYPE>(systemName, engine, windowName, width, height ) {
 
-        engine->RegisterCallback( { 
+        engine.RegisterCallback( { 
 			{this, -3000, "INIT", [this](Message message){this->OnInit(message);} },
 			{this,     0, "INIT", [this](Message message){this->OnInit2(message);} },
 			{this,     0, "POLL_EVENTS", [this](Message message){this->OnPollEvents(message);} },
@@ -59,7 +59,7 @@ namespace vve {
         
    	template<ArchitectureType ATYPE>
     void WindowSDL<ATYPE>::OnInit2(Message message) {
-        auto rend = ((RendererVulkan<ATYPE>*)(m_engine->GetSystem("VVE RendererVulkan")));
+        auto rend = ((RendererVulkan<ATYPE>*)(m_engine.GetSystem("VVE RendererVulkan")));
 
         if (SDL_Vulkan_CreateSurface(m_sdlWindow, rend->GetInstance(), &m_surface) == 0) {
             printf("Failed to create Vulkan surface.\n");
@@ -81,12 +81,12 @@ namespace vve {
 
         SDL_Event event;
         while (SDL_PollEvent(&event)) {
-            m_engine->SendMessage( MsgSDL{this, nullptr, message.GetDt(), event} );
+            m_engine.SendMessage( MsgSDL{this, nullptr, message.GetDt(), event} );
 
             if (event.type == SDL_WINDOWEVENT) {
                 switch (event.window.event) {
 					case SDL_WINDOWEVENT_CLOSE:
-						m_engine->Stop();
+						m_engine.Stop();
 						break;
                 	case SDL_WINDOWEVENT_MINIMIZED: 
                     	m_isMinimized = true;
@@ -101,29 +101,29 @@ namespace vve {
             } else {
 			    switch( event.type ) {
 					case SDL_QUIT:
-	                	m_engine->Stop();
+	                	m_engine.Stop();
 						break;
 	                case SDL_MOUSEMOTION:
-	                    m_engine->SendMessage( MsgMouseMove{this, nullptr, message.GetDt(), event.motion.x, event.motion.y} );
+	                    m_engine.SendMessage( MsgMouseMove{this, nullptr, message.GetDt(), event.motion.x, event.motion.y} );
 	                    break;
 	                case SDL_MOUSEBUTTONDOWN:
-	                    m_engine->SendMessage( MsgMouseButtonDown{this, nullptr, message.GetDt(), event.button.button} );
+	                    m_engine.SendMessage( MsgMouseButtonDown{this, nullptr, message.GetDt(), event.button.button} );
 	                    button.push_back( event.button.button );
 	                    break;
 	                case SDL_MOUSEBUTTONUP:
-	                    m_engine->SendMessage( MsgMouseButtonUp{this, nullptr, message.GetDt(), event.button.button} );
+	                    m_engine.SendMessage( MsgMouseButtonUp{this, nullptr, message.GetDt(), event.button.button} );
 	                    m_mouseButtonsDown.erase( event.button.button );
 	                    break;
 	                case SDL_MOUSEWHEEL:
-	                    m_engine->SendMessage( MsgMouseWheel{this, nullptr, message.GetDt(), event.wheel.x, event.wheel.y} );
+	                    m_engine.SendMessage( MsgMouseWheel{this, nullptr, message.GetDt(), event.wheel.x, event.wheel.y} );
 	                    break;
 	                case SDL_KEYDOWN:
 	                    if( event.key.repeat ) continue;
-	                    m_engine->SendMessage( MsgKeyDown{this, nullptr, message.GetDt(), event.key.keysym.scancode} );
+	                    m_engine.SendMessage( MsgKeyDown{this, nullptr, message.GetDt(), event.key.keysym.scancode} );
 	                    key.push_back(event.key.keysym.scancode);
 	                    break;
 	                case SDL_KEYUP:
-	                    m_engine->SendMessage( MsgKeyUp{this, nullptr, message.GetDt(), event.key.keysym.scancode} );
+	                    m_engine.SendMessage( MsgKeyUp{this, nullptr, message.GetDt(), event.key.keysym.scancode} );
 	                    m_keysDown.erase(event.key.keysym.scancode);
 	                    break;
 	                default:
@@ -132,8 +132,8 @@ namespace vve {
 			}
         }
 
-        for( auto& key : m_keysDown ) { m_engine->SendMessage( MsgKeyRepeat{this, nullptr, message.GetDt(), key} ); }
-        for( auto& button : m_mouseButtonsDown ) { m_engine->SendMessage( MsgMouseButtonRepeat{this, nullptr, message.GetDt(), button} ); }
+        for( auto& key : m_keysDown ) { m_engine.SendMessage( MsgKeyRepeat{this, nullptr, message.GetDt(), key} ); }
+        for( auto& button : m_mouseButtonsDown ) { m_engine.SendMessage( MsgMouseButtonRepeat{this, nullptr, message.GetDt(), button} ); }
 
         if(key.size() > 0) { for( auto& k : key ) { m_keysDown.insert(k) ; } }
         if(button.size() > 0) { for( auto& b : button ) {m_mouseButtonsDown.insert(b);} }
@@ -151,7 +151,7 @@ namespace vve {
 
    	template<ArchitectureType ATYPE>
     void WindowSDL<ATYPE>::OnQuit(Message message) {
-        auto rend = ((RendererVulkan<ATYPE>*)(m_engine->GetSystem("VVE RendererVulkan")));
+        auto rend = ((RendererVulkan<ATYPE>*)(m_engine.GetSystem("VVE RendererVulkan")));
         vkDestroySurfaceKHR(rend->GetInstance(), m_surface, nullptr);
 		SDL_DestroyWindow(m_sdlWindow);
         SDL_Quit(); 

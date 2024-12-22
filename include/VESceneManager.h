@@ -56,7 +56,7 @@ namespace vve {
 		const std::string m_rootName = "VVE RootSceneNode";
 
     public:
-        SceneManager(std::string systemName, Engine<ATYPE>* engine );
+        SceneManager(std::string systemName, Engine<ATYPE>& engine );
         virtual ~SceneManager();
 		auto LoadTexture(std::string filename)-> vecs::Handle;
 		auto LoadOBJ(std::string filename) -> vecs::Handle;

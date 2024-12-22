@@ -9,15 +9,15 @@
 namespace vve {
 
 	template<ArchitectureType ATYPE>
-	GUI<ATYPE>::GUI(std::string systemName, Engine<ATYPE>* engine ) : System<ATYPE>(systemName, engine) {
-		m_engine->RegisterCallback( { 
+	GUI<ATYPE>::GUI(std::string systemName, Engine<ATYPE>& engine ) : System<ATYPE>(systemName, engine) {
+		m_engine.RegisterCallback( { 
 			  {this, 1000, "RECORD_NEXT_FRAME", [this](vve::Message message){this->OnRecordNextFrame(message);} }
 		} );
 	};
 
 	template<ArchitectureType ATYPE>
     void GUI<ATYPE>::OnRecordNextFrame(vve::Message message) {
-        if( m_engine->GetMainWindow()->GetIsMinimized()) { return; }
+        if( m_engine.GetMainWindow()->GetIsMinimized()) { return; }
 
         {
             ImGui::Begin("Hello, world!");                          // Create a window called "Hello, world!" and append into it.
@@ -50,7 +50,7 @@ namespace vve {
 			}
 
             if (ImGui::Button("Load")) {                          // Buttons return true when clicked (most widgets return true when edited/activated)
-				m_engine->SendMessage( MsgFileLoadObject{this, nullptr, path_texture, path_obj} );
+				m_engine.SendMessage( MsgFileLoadObject{this, nullptr, path_texture, path_obj} );
 			}
 
             ImGui::End();

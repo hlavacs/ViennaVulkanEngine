@@ -130,14 +130,14 @@ namespace vve {
     class System {
 
     public:
-        System( std::string systemName, Engine<ATYPE>* engine );
+        System( std::string systemName, Engine<ATYPE>& engine );
         virtual ~System();
         auto GetName() -> std::string { return m_name; };
 
     protected:
         std::string 			m_name;
-        Engine<ATYPE>* 			m_engine;
-		vecs::Registry<ATYPE>*	m_registry;
+        Engine<ATYPE>& 			m_engine;
+		vecs::Registry<ATYPE>&	m_registry;
     };
 
 };

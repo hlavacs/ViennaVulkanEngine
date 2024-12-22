@@ -12,8 +12,8 @@ namespace vve {
 	//-------------------------------------------------------------------------------------------------------
 
    	template<ArchitectureType ATYPE>
-    SceneManager<ATYPE>::SceneManager(std::string systemName, Engine<ATYPE>* engine ) : System<ATYPE>{systemName, engine } {
-		engine->RegisterCallback( { 
+    SceneManager<ATYPE>::SceneManager(std::string systemName, Engine<ATYPE>& engine ) : System<ATYPE>{systemName, engine } {
+		engine.RegisterCallback( { 
 			{this, 0, "INIT", [this](Message message){this->OnInit(message);} },
 			{this, std::numeric_limits<int>::max(), "UPDATE", [this](Message message){this->OnUpdate(message);} },
 			{this, std::numeric_limits<int>::max(), "FILE_LOAD_OBJECT", [this](Message message){this->OnLoadObject(message);} },
@@ -25,25 +25,24 @@ namespace vve {
 
    	template<ArchitectureType ATYPE>
     void SceneManager<ATYPE>::OnInit(Message message) {
-		m_registry = &m_engine->GetRegistry();
-		m_handleMap[m_rootName] = m_registry->Insert(SceneNodeWrapper{}); //insert root node
+		m_handleMap[m_rootName] = m_registry.Insert(SceneNodeWrapper{}); //insert root node
 	}
 
    	template<ArchitectureType ATYPE>
     void SceneManager<ATYPE>::OnUpdate(Message message) {
-		auto node = m_registry->template Get<SceneNodeWrapper&>(m_handleMap[m_rootName]);
+		auto node = m_registry.template Get<SceneNodeWrapper&>(m_handleMap[m_rootName]);
 
 		auto func = [&](mat4_t& parentTransform, SceneNodeWrapper& node, auto& self) -> void {
 			auto& transform = node().m_localToParentT;
 			node().m_localToWorldM = parentTransform * transform.Matrix();
 			for( auto handle : node().m_children ) {
-				auto child = m_registry->template Get<SceneNodeWrapper&>(handle);
+				auto child = m_registry.template Get<SceneNodeWrapper&>(handle);
 				self(node().m_localToWorldM, child, self);
 			}
 		};
 
 		for( auto handle : node().m_children ) {
-			auto child = m_registry->template Get<SceneNodeWrapper&>(handle);
+			auto child = m_registry.template Get<SceneNodeWrapper&>(handle);
 			func(node().m_localToWorldM, child, func);
 		}
 	}
@@ -53,8 +52,8 @@ namespace vve {
 		auto msg = message.GetData<MsgFileLoadObject>();
 		auto tHandle = LoadTexture(msg.m_txtName);
 		auto oHandle = LoadOBJ(msg.m_objName);
-		auto nHandle = m_registry->Insert( GeometryHandle{oHandle}, TextureHandle{tHandle}, vh::UniformBuffers{}, SceneNodeHandle{m_handleMap[m_rootName]} );
-		m_engine->SendMessage( MsgObjectCreate{this, nullptr, nHandle} );
+		auto nHandle = m_registry.Insert( GeometryHandle{oHandle}, TextureHandle{tHandle}, vh::UniformBuffers{}, SceneNodeHandle{m_handleMap[m_rootName]} );
+		m_engine.SendMessage( MsgObjectCreate{this, nullptr, nHandle} );
 	}
 
    	template<ArchitectureType ATYPE>
@@ -67,9 +66,9 @@ namespace vve {
         if (!pixels) { return {}; }
 
 		vh::Texture texture{texWidth, texHeight, imageSize, pixels};
-		auto handle = m_registry->Insert(filenName, texture);
+		auto handle = m_registry.Insert(filenName, texture);
 		m_handleMap[filenName] = handle;
-		//m_engine->SendMessage( MsgTextureCreate{this, nullptr, pixels, handle} );
+		//m_engine.SendMessage( MsgTextureCreate{this, nullptr, pixels, handle} );
 		//stbi_image_free(pixels);
 		return handle;
 	}
@@ -80,9 +79,9 @@ namespace vve {
 		
 		vh::Geometry geometry;
 		vh::loadModel(fileName, geometry);
-		auto handle = m_registry->Insert(fileName, geometry);
+		auto handle = m_registry.Insert(fileName, geometry);
 		m_handleMap[fileName] = handle;
-		//m_engine->SendMessage( MsgGeometryCreate{this, nullptr, handle} );
+		//m_engine.SendMessage( MsgGeometryCreate{this, nullptr, handle} );
 		return handle;
 	}
 	

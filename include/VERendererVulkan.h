@@ -14,11 +14,12 @@ namespace vve {
     class RendererVulkan : public Renderer<ATYPE>
     {
         using System<ATYPE>::m_engine;
+        using System<ATYPE>::m_registry;
         using Renderer<ATYPE>::m_window;
 
     public:
 
-        RendererVulkan(std::string systemName, Engine<ATYPE>* engine, Window<ATYPE>* window );
+        RendererVulkan(std::string systemName, Engine<ATYPE>& engine, Window<ATYPE>* window );
         virtual ~RendererVulkan();
         auto GetInstance() -> VkInstance { return m_instance; }
 		auto GetPhysicalDevice() -> VkPhysicalDevice { return m_physicalDevice; }

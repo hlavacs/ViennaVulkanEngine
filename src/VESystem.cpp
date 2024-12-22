@@ -3,7 +3,7 @@
 
 #include "VHInclude.h"
 #include "VHVulkan.h"
-
+#include "VEEngine.h"
 #include "VESystem.h"
 
 
@@ -44,7 +44,8 @@ namespace vve {
     MsgGeometryDestroy::MsgGeometryDestroy(void* s, void* r, vecs::Handle handle) : MsgBase{std::hash<std::string>{}("GEOMETRY_DESTROY"), s, r}, m_handle{handle} {};
 
    	template<ArchitectureType ATYPE>
-    System<ATYPE>::System( std::string systemName, Engine<ATYPE>* engine ) : m_name(systemName), m_engine(engine) {};
+    System<ATYPE>::System( std::string systemName, Engine<ATYPE>& engine ) : 
+		m_name(systemName), m_engine(engine), m_registry{engine.GetRegistry()} {};
 
    	template<ArchitectureType ATYPE>
     System<ATYPE>::~System(){};

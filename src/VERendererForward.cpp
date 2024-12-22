@@ -11,10 +11,10 @@
 namespace vve {
 
    	template<ArchitectureType ATYPE>
-    RendererForward<ATYPE>::RendererForward( std::string systemName, Engine<ATYPE>* engine, Window<ATYPE>* window ) 
+    RendererForward<ATYPE>::RendererForward( std::string systemName, Engine<ATYPE>& engine, Window<ATYPE>* window ) 
         : Renderer<ATYPE>(systemName, engine, window ) {
 
-  		engine->RegisterCallback( { 
+  		engine.RegisterCallback( { 
   			{this, -1000, "INIT", [this](Message message){this->OnInit(message);} },
   			{this,  2000, "INIT", [this](Message message){this->OnInit2(message);} },
   			{this,  2000, "RECORD_NEXT_FRAME", [this](Message message){this->OnRecordNextFrame(message);} },
@@ -31,7 +31,7 @@ namespace vve {
 
    	template<ArchitectureType ATYPE>
     void RendererForward<ATYPE>::OnInit2(Message message) {
-		if(m_vulkan == nullptr) { m_vulkan = (RendererVulkan<ATYPE>*)m_engine->GetSystem("VVE RendererVulkan"); }
+		if(m_vulkan == nullptr) { m_vulkan = (RendererVulkan<ATYPE>*)m_engine.GetSystem("VVE RendererVulkan"); }
         vh::createRenderPass(m_vulkan->GetPhysicalDevice(), m_vulkan->GetDevice(), m_vulkan->GetSwapChain(), false, m_renderPass);
         vh::createCommandPool(m_window->GetSurface(), m_vulkan->GetPhysicalDevice(), m_vulkan->GetDevice(), m_commandPool);
         vh::createCommandBuffers(m_vulkan->GetDevice(), m_commandPool, m_commandBuffers);
@@ -47,7 +47,7 @@ namespace vve {
 			m_vulkan->GetSwapChain(), m_renderPass, m_vulkan->GetGraphicsPipeline(), m_vulkan->GetDescriptorSets(), 
 			false, ((WindowSDL<ATYPE>*)m_window)->GetClearColor(), m_vulkan->GetCurrentFrame());
 		
-		for( decltype(auto) geometry : m_engine->GetRegistry().template GetView<vh::Geometry&>() ) {
+		for( decltype(auto) geometry : m_registry.template GetView<vh::Geometry&>() ) {
 			vh::recordObject( m_commandBuffers[m_vulkan->GetCurrentFrame()], m_vulkan->GetGraphicsPipeline(), m_vulkan->GetDescriptorSets(), geometry, m_vulkan->GetCurrentFrame() );
 		}
 

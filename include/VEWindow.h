@@ -15,7 +15,7 @@ namespace vve {
     class Window : public System<ATYPE> {
 
     public:
-        Window( std::string systemName, Engine<ATYPE>* engine, std::string windowTitle, int width, int height );
+        Window( std::string systemName, Engine<ATYPE>& engine, std::string windowTitle, int width, int height );
         virtual ~Window();
 
         int GetWidth() { return m_width; };

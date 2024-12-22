@@ -15,7 +15,7 @@ namespace vve {
 		using System<ATYPE>::m_engine;
 
 	public:
-		GUI(std::string systemName, Engine<ATYPE>* engine );
+		GUI(std::string systemName, Engine<ATYPE>& engine );
     	~GUI() {};
 
 	private:
