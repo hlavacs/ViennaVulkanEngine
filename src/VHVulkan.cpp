@@ -516,8 +516,8 @@ namespace vh
     void createGraphicsPipeline(VkDevice device, VkRenderPass renderPass
         , VkDescriptorSetLayout descriptorSetLayout, Pipeline& graphicsPipeline) {
 
-        auto vertShaderCode = readFile("assets\\shaders\\vert.spv");
-        auto fragShaderCode = readFile("assets\\shaders\\frag.spv");
+        auto vertShaderCode = readFile("shaders\\vert.spv");
+        auto fragShaderCode = readFile("shaders\\frag.spv");
 
         VkShaderModule vertShaderModule = createShaderModule(device, vertShaderCode);
         VkShaderModule fragShaderModule = createShaderModule(device, fragShaderCode);
