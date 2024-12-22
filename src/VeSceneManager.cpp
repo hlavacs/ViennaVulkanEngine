@@ -51,14 +51,16 @@ namespace vve {
 	template<ArchitectureType ATYPE>
     void SceneManager<ATYPE>::OnLoadObject(Message message) {
 		auto msg = message.GetData<MsgFileLoadObject>();
-		auto thandle = LoadTexture(msg.m_txtName);
-		auto ohandle = LoadOBJ(msg.m_objName);
-		vh::UniformBuffers ubo;
-		auto nhandle = m_registry->Insert( GeometryHandle{ohandle}, TextureHandle{thandle}, SceneNodeHandle{m_handleMap[m_rootName]} );
+		auto tHandle = LoadTexture(msg.m_txtName);
+		auto oHandle = LoadOBJ(msg.m_objName);
+		auto nHandle = m_registry->Insert( GeometryHandle{oHandle}, TextureHandle{tHandle}, vh::UniformBuffers{}, SceneNodeHandle{m_handleMap[m_rootName]} );
+		m_engine->SendMessage( MsgObjectCreate{this, nullptr, nHandle} );
 	}
 
    	template<ArchitectureType ATYPE>
 	auto SceneManager<ATYPE>::LoadTexture(std::string filenName) -> vecs::Handle {
+		if( m_handleMap.contains(filenName) ) return m_handleMap[filenName];
+
 		int texWidth, texHeight, texChannels;
         stbi_uc* pixels = stbi_load(filenName.c_str(), &texWidth, &texHeight, &texChannels, STBI_rgb_alpha);
         VkDeviceSize imageSize = texWidth * texHeight * 4;
@@ -66,20 +68,21 @@ namespace vve {
 
 		vh::Texture texture{texWidth, texHeight, imageSize, pixels};
 		auto handle = m_registry->Insert(filenName, texture);
-
 		m_handleMap[filenName] = handle;
-		m_engine->SendMessage( MsgTextureCreate{this, nullptr, pixels, handle} );
-		stbi_image_free(pixels);
+		//m_engine->SendMessage( MsgTextureCreate{this, nullptr, pixels, handle} );
+		//stbi_image_free(pixels);
 		return handle;
 	}
 
    	template<ArchitectureType ATYPE>
 	auto SceneManager<ATYPE>::LoadOBJ(std::string fileName) -> vecs::Handle {
+		if( m_handleMap.contains(fileName) ) return m_handleMap[fileName];
+		
 		vh::Geometry geometry;
 		vh::loadModel(fileName, geometry);
 		auto handle = m_registry->Insert(fileName, geometry);
 		m_handleMap[fileName] = handle;
-		m_engine->SendMessage( MsgGeometryCreate{this, nullptr, handle} );
+		//m_engine->SendMessage( MsgGeometryCreate{this, nullptr, handle} );
 		return handle;
 	}
 	

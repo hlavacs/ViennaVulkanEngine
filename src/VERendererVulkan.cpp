@@ -230,7 +230,21 @@ namespace vve {
 
 	template<ArchitectureType ATYPE>
 	auto RendererVulkan<ATYPE>::OnObjectCreate( Message message ) -> void {
-		auto msg = message.GetData<MsgObjectCreate>();
+		auto handle = message.GetData<MsgObjectCreate>().m_handle;
+		auto [gHandle, tHandle] = m_engine->GetRegistry().template Get<GeometryHandle, TextureHandle>(handle);
+		decltype(auto) geometry = m_engine->GetRegistry().template Get<vh::Geometry&>(gHandle);
+
+		if( geometry.m_vertexBuffer == VK_NULL_HANDLE ) {
+			vh::createVertexBuffer(m_physicalDevice, m_device, m_vmaAllocator, m_graphicsQueue, m_commandPool, geometry);
+			vh::createIndexBuffer( m_physicalDevice, m_device, m_vmaAllocator, m_graphicsQueue, m_commandPool, geometry);
+		}
+
+		decltype(auto) texture = m_engine->GetRegistry().template Get<vh::Texture&>(tHandle);
+		if( texture.m_textureImage == VK_NULL_HANDLE && texture.m_pixels != nullptr ) {
+			vh::createTextureImage2(m_physicalDevice, m_device, m_vmaAllocator, m_graphicsQueue, m_commandPool, texture.m_pixels, texture.m_width, texture.m_height, texture.m_size, texture);
+			vh::createTextureImageView(m_device, texture);
+			vh::createTextureSampler(m_physicalDevice, m_device, texture);
+		}
 	}
 	
 

@@ -38,6 +38,11 @@ namespace vve {
 		auto Matrix() -> mat43_t { m_projMatrix = glm::perspective(glm::radians(m_fov), (real_t)1.0, m_near, m_far); return m_projMatrix; }
 	};
 
+	using SceneNodeHandle = vsty::strong_type_t<vecs::Handle, vsty::counter<>>; //need this to use SceneNode as a unique componen
+	using TransformHandle = vsty::strong_type_t<vecs::Handle, vsty::counter<>>; //need this to use SceneNode as a unique componen
+	using TextureHandle = vsty::strong_type_t<vecs::Handle, vsty::counter<>>; //need this to use Texture as a unique component
+	using GeometryHandle = vsty::strong_type_t<vecs::Handle, vsty::counter<>>; //need this to use Geometry as a unique component
+	using CamerayHandle = vsty::strong_type_t<vecs::Handle, vsty::counter<>>; //need this to use Camera as a unique component
 
 	//-------------------------------------------------------------------------------------------------------
 
@@ -48,10 +53,6 @@ namespace vve {
 		using System<ATYPE>::m_registry;
 
 		using SceneNodeWrapper = vsty::strong_type_t<SceneNode, vsty::counter<>>; //need this to use SceneNode as a unique component
-		using SceneNodeHandle = vsty::strong_type_t<vecs::Handle, vsty::counter<>>; //need this to use SceneNode as a unique component
-		using TextureHandle = vsty::strong_type_t<vecs::Handle, vsty::counter<>>; //need this to use SceneNode as a unique component
-		using GeometryHandle = vsty::strong_type_t<vecs::Handle, vsty::counter<>>; //need this to use SceneNode as a unique component
-
 		const std::string m_rootName = "VVE RootSceneNode";
 
     public:
