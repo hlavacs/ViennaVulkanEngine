@@ -39,15 +39,20 @@ namespace vve {
 
    	template<ArchitectureType ATYPE>
     void RendererForward<ATYPE>::OnRecordNextFrame(Message message) {
-        vh::updateUniformBuffer(m_vulkan->GetCurrentFrame(), m_vulkan->GetSwapChain(), m_vulkan->GetUniformBuffers());
-        
+
+       	vh::updateUniformBuffer(m_vulkan->GetCurrentFrame(), m_vulkan->GetSwapChain(), m_vulkan->GetUniformBuffers());
+
+		for( decltype(auto) ubo : m_registry.template GetView<vh::UniformBuffers&>() ) {
+        	vh::updateUniformBuffer(m_vulkan->GetCurrentFrame(), m_vulkan->GetSwapChain(), ubo);
+		}
+
 		vkResetCommandBuffer(m_commandBuffers[m_vulkan->GetCurrentFrame()],  0);
         
 		vh::startRecordCommandBuffer(m_commandBuffers[m_vulkan->GetCurrentFrame()], m_vulkan->GetImageIndex(), 
 			m_vulkan->GetSwapChain(), m_renderPass, m_vulkan->GetGraphicsPipeline(), m_vulkan->GetDescriptorSets(), 
 			false, ((WindowSDL<ATYPE>*)m_window)->GetClearColor(), m_vulkan->GetCurrentFrame());
 		
-		for( decltype(auto) geometry : m_registry.template GetView<vh::Geometry&>() ) {
+		for( auto[geometry, ubo] : m_registry.template GetView<vh::Geometry&, vh::UniformBuffers&>() ) {
 			vh::recordObject( m_commandBuffers[m_vulkan->GetCurrentFrame()], m_vulkan->GetGraphicsPipeline(), m_vulkan->GetDescriptorSets(), geometry, m_vulkan->GetCurrentFrame() );
 		}
 

@@ -272,6 +272,8 @@ namespace vve {
 	    //vh::updateDescriptorSets2(m_device, texture, m_descriptorSetLayouts.m_descriptorSetLayouts[0], ubo, m_descriptorPool, descriptorSets.m_descriptorSets[0]);
 	
 		m_registry.template Put(handle, ubo, descriptorSets);
+		assert( m_registry.template Has<vh::UniformBuffers>(handle) );
+		assert( m_registry.template Has<vh::DescriptorSets>(handle) );
 	}
 	
 
