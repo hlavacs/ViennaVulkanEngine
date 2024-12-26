@@ -180,10 +180,6 @@ namespace vve {
         vkDestroyPipeline(m_device, m_graphicsPipeline.m_pipeline, nullptr);
         vkDestroyPipelineLayout(m_device, m_graphicsPipeline.m_pipelineLayout, nullptr);
 
-        //for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
-        //    vh::destroyBuffer(m_device, m_vmaAllocator, m_uniformBuffers.m_uniformBuffers[i], m_uniformBuffers.m_uniformBuffersAllocation[i]);
-        //}
-
         vkDestroyDescriptorPool(m_device, m_descriptorPool, nullptr);
 
         vkDestroySampler(m_device, m_texture.m_textureSampler, nullptr);
