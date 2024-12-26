@@ -1176,10 +1176,11 @@ namespace vh
         , DescriptorSetLayouts& descriptorSetLayouts, UniformBuffers& uniformBuffers, VkDescriptorPool descriptorPool
         , DescriptorSets& descriptorSets) {
 
+		size_t i = 0;
 	    for ( auto dspf : descriptorSets.m_descriptorSetsPerFrameInFlight ) {
 			for( auto ds : dspf.m_descriptorSets ) {
 	            VkDescriptorBufferInfo bufferInfo{};
-	            bufferInfo.buffer = uniformBuffers.m_uniformBuffers[0];
+	            bufferInfo.buffer = uniformBuffers.m_uniformBuffers[i];
 	            bufferInfo.offset = 0;
 	            bufferInfo.range = sizeof(UniformBufferObject);
 
@@ -1208,6 +1209,7 @@ namespace vh
 
 	            vkUpdateDescriptorSets(device, static_cast<uint32_t>(descriptorWrites.size()), descriptorWrites.data(), 0, nullptr);
 	        }
+			++i;
 		}
     }
 
@@ -1368,6 +1370,22 @@ namespace vh
 
         vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsPipeline.m_pipelineLayout
             , 0, 1, &descriptorSets[currentFrame], 0, nullptr);
+
+        vkCmdDrawIndexed(commandBuffer, static_cast<uint32_t>(geometry.m_indices.size()), 1, 0, 0, 0);
+	}
+
+
+    void recordObject2(VkCommandBuffer commandBuffer, Pipeline& graphicsPipeline, 
+			DescriptorSets& descriptorSets, Geometry& geometry, uint32_t currentFrame) {
+
+        VkBuffer vertexBuffers[] = {geometry.m_vertexBuffer};
+        VkDeviceSize offsets[] = {0};
+        vkCmdBindVertexBuffers(commandBuffer, 0, 1, vertexBuffers, offsets);
+
+        vkCmdBindIndexBuffer(commandBuffer, geometry.m_indexBuffer, 0, VK_INDEX_TYPE_UINT32);
+
+        vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsPipeline.m_pipelineLayout
+            , 0, 1, descriptorSets.m_descriptorSetsPerFrameInFlight[currentFrame].m_descriptorSets.data(), 0, nullptr);
 
         vkCmdDrawIndexed(commandBuffer, static_cast<uint32_t>(geometry.m_indices.size()), 1, 0, 0, 0);
 
