@@ -6,6 +6,7 @@
 #include "VEWindowSDL.h"
 #include "VERendererVulkan.h"
 #include "VERendererForward.h"
+#include "VESceneManager.h"
 
 
 namespace vve {
@@ -52,7 +53,8 @@ namespace vve {
 			m_vulkan->GetSwapChain(), m_renderPass, m_vulkan->GetGraphicsPipeline(), m_vulkan->GetDescriptorSets(), 
 			false, ((WindowSDL<ATYPE>*)m_window)->GetClearColor(), m_vulkan->GetCurrentFrame());
 		
-		for( auto[geometry, ubo] : m_registry.template GetView<vh::Geometry&, vh::UniformBuffers&>() ) {
+		for( auto[ghandle, ubo] : m_registry.template GetView<GeometryHandle, vh::UniformBuffers&>() ) {
+			auto& geometry = m_registry.template Get<vh::Geometry&>(ghandle);
 			vh::recordObject( m_commandBuffers[m_vulkan->GetCurrentFrame()], m_vulkan->GetGraphicsPipeline(), m_vulkan->GetDescriptorSets(), geometry, m_vulkan->GetCurrentFrame() );
 		}
 

@@ -272,14 +272,14 @@ namespace vve {
 	    //vh::updateDescriptorSets2(m_device, texture, m_descriptorSetLayouts.m_descriptorSetLayouts[0], ubo, m_descriptorPool, descriptorSets.m_descriptorSets[0]);
 	
 		m_registry.Print();
-		for( auto[handle, geometry, ubo] : m_registry.template GetView<vecs::Handle, vh::Geometry&, vh::UniformBuffers&>() ) {
+		for( auto[handle, ghandle, ubo] : m_registry.template GetView<vecs::Handle, GeometryHandle, vh::UniformBuffers&>() ) {
 			std::cout << "Geometry and UBO" << handle << std::endl;
 		}
 
 		m_registry.template Put(handle, ubo, descriptorSets);
 
 		m_registry.Print();
-		for( auto[handle, geometry, ubo] : m_registry.template GetView<vecs::Handle, vh::Geometry&, vh::UniformBuffers&>() ) {
+		for( auto[handle, ghandle, ubo] : m_registry.template GetView<vecs::Handle, GeometryHandle, vh::UniformBuffers&>() ) {
 			std::cout << "Geometry and UBO" << handle << std::endl;
 		}
 
