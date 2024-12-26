@@ -79,7 +79,7 @@ namespace vve {
         vh::createUniformBuffers(m_physicalDevice, m_device, m_vmaAllocator, m_uniformBuffers);
 
         vh::createDescriptorPool(m_device, 1000, m_descriptorPool);
-        vh::createDescriptorSets(m_device, m_texture, m_descriptorSetLayout, m_uniformBuffers, m_descriptorPool, m_descriptorSets);
+        //vh::createDescriptorSets(m_device, m_texture, m_descriptorSetLayout, m_uniformBuffers, m_descriptorPool, m_descriptorSets);
 
         vh::createSemaphores(m_device, 3, m_imageAvailableSemaphores, m_semaphores);
 		vh::createFences(m_device, MAX_FRAMES_IN_FLIGHT, m_fences);
@@ -111,7 +111,7 @@ namespace vve {
         vkResetCommandBuffer(m_commandBuffers[m_currentFrame],  0);
 
 		vh::startRecordCommandBuffer(m_commandBuffers[m_currentFrame], m_imageIndex, 
-			m_swapChain, m_renderPass, m_graphicsPipeline, m_descriptorSets, 
+			m_swapChain, m_renderPass, m_graphicsPipeline, 
 			true, ((WindowSDL<ATYPE>*)m_window)->GetClearColor(), m_currentFrame);
 
 		vh::endRecordCommandBuffer(m_commandBuffers[m_currentFrame]);
@@ -256,7 +256,6 @@ namespace vve {
 			vh::createTextureImage2(m_physicalDevice, m_device, m_vmaAllocator, m_graphicsQueue, m_commandPool, texture.m_pixels, texture.m_width, texture.m_height, texture.m_size, texture);
 			vh::createTextureImageView(m_device, texture);
 			vh::createTextureSampler(m_physicalDevice, m_device, texture);
-	        vh::updateDescriptorSets(m_device, texture, m_descriptorSetLayout, m_uniformBuffers, m_descriptorPool, m_descriptorSets);
 		}
 
 		vh::UniformBuffers ubo;
@@ -266,21 +265,7 @@ namespace vve {
 		vh::createDescriptorSets2(m_device, texture, m_descriptorSetLayouts, ubo, m_descriptorPool, descriptorSets);
 	    vh::updateDescriptorSets2(m_device, texture, m_descriptorSetLayouts, ubo, m_descriptorPool, descriptorSets);
 
-	    //vh::updateDescriptorSets(m_device, texture, m_descriptorSetLayout, ubo, m_descriptorPool, m_descriptorSets);
-
-	    //vh::updateDescriptorSets2(m_device, texture, m_descriptorSetLayouts.m_descriptorSetLayouts[0], ubo, m_descriptorPool, descriptorSets.m_descriptorSets[0]);
-	
-		//m_registry.Print();
-		//for( auto[handle, ghandle, ubo] : m_registry.template GetView<vecs::Handle, GeometryHandle, vh::UniformBuffers&>() ) {
-		//	std::cout << "Geometry and UBO" << handle << std::endl;
-		//}
-
 		m_registry.template Put(handle, ubo, descriptorSets);
-
-		//m_registry.Print();
-		//for( auto[handle, ghandle, ubo] : m_registry.template GetView<vecs::Handle, GeometryHandle, vh::UniformBuffers&>() ) {
-		//	std::cout << "Geometry and UBO" << handle << std::endl;
-		//}
 
 		assert( m_registry.template Has<vh::UniformBuffers>(handle) );
 		assert( m_registry.template Has<vh::DescriptorSets>(handle) );

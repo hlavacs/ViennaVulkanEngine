@@ -50,12 +50,11 @@ namespace vve {
 		vkResetCommandBuffer(m_commandBuffers[m_vulkan->GetCurrentFrame()],  0);
         
 		vh::startRecordCommandBuffer(m_commandBuffers[m_vulkan->GetCurrentFrame()], m_vulkan->GetImageIndex(), 
-			m_vulkan->GetSwapChain(), m_renderPass, m_vulkan->GetGraphicsPipeline(), m_vulkan->GetDescriptorSets(), 
+			m_vulkan->GetSwapChain(), m_renderPass, m_vulkan->GetGraphicsPipeline(), 
 			false, ((WindowSDL<ATYPE>*)m_window)->GetClearColor(), m_vulkan->GetCurrentFrame());
 		
 		for( auto[ghandle, ubo, ds] : m_registry.template GetView<GeometryHandle, vh::UniformBuffers&, vh::DescriptorSets&>() ) {
 			auto& geometry = m_registry.template Get<vh::Geometry&>(ghandle);
-			//vh::recordObject( m_commandBuffers[m_vulkan->GetCurrentFrame()], m_vulkan->GetGraphicsPipeline(), m_vulkan->GetDescriptorSets(), geometry, m_vulkan->GetCurrentFrame() );
 			vh::recordObject2( m_commandBuffers[m_vulkan->GetCurrentFrame()], m_vulkan->GetGraphicsPipeline(), ds, geometry, m_vulkan->GetCurrentFrame() );
 		}
 

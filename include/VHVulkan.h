@@ -257,7 +257,7 @@ namespace vh {
 
     void startRecordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageIndex
         , SwapChain& swapChain, VkRenderPass renderPass, Pipeline& graphicsPipeline
-        , std::vector<VkDescriptorSet>& descriptorSets, bool clear, glm::vec4 clearColor, uint32_t currentFrame);
+        , bool clear, glm::vec4 clearColor, uint32_t currentFrame);
 
     void endRecordCommandBuffer(VkCommandBuffer commandBuffer);
 
