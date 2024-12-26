@@ -1118,7 +1118,7 @@ namespace vh
         , DescriptorSets& descriptorSets) {
 
 		descriptorSets.m_descriptorSetsPerFrameInFlight.resize(MAX_FRAMES_IN_FLIGHT);
-		for( auto ds : descriptorSets.m_descriptorSetsPerFrameInFlight ) {
+		for( auto& ds : descriptorSets.m_descriptorSetsPerFrameInFlight ) {
 	        std::vector<VkDescriptorSetLayout> layouts(MAX_FRAMES_IN_FLIGHT, descriptorSetLayouts.m_descriptorSetLayouts[0]);
 	        VkDescriptorSetAllocateInfo allocInfo{};
 	        allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
@@ -1177,8 +1177,8 @@ namespace vh
         , DescriptorSets& descriptorSets) {
 
 		size_t i = 0;
-	    for ( auto dspf : descriptorSets.m_descriptorSetsPerFrameInFlight ) {
-			for( auto ds : dspf.m_descriptorSets ) {
+	    for ( auto& dspf : descriptorSets.m_descriptorSetsPerFrameInFlight ) {
+			for( auto& ds : dspf.m_descriptorSets ) {
 	            VkDescriptorBufferInfo bufferInfo{};
 	            bufferInfo.buffer = uniformBuffers.m_uniformBuffers[i];
 	            bufferInfo.offset = 0;
