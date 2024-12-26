@@ -190,7 +190,7 @@ namespace vh {
     void createDescriptorSetLayout(VkDevice device, VkDescriptorSetLayout& descriptorSetLayout);
     void createDescriptorSetLayout2(VkDevice device, DescriptorSetLayouts& descriptorSetLayouts);
 
-    void createGraphicsPipeline(VkDevice device, VkRenderPass renderPass, VkDescriptorSetLayout descriptorSetLayout, Pipeline& graphicsPipeline);
+    void createGraphicsPipeline(VkDevice device, VkRenderPass renderPass, DescriptorSetLayouts descriptorSetLayout, Pipeline& graphicsPipeline);
     void createFramebuffers(VkDevice device, SwapChain& swapChain, DepthImage& depthImage, VkRenderPass renderPass);
     void createCommandPool(VkSurfaceKHR surface, VkPhysicalDevice physicalDevice, VkDevice device, VkCommandPool& commandPool);
     void createDepthResources(VkPhysicalDevice physicalDevice, VkDevice device, VmaAllocator vmaAllocator, SwapChain& swapChain, DepthImage& depthImage);

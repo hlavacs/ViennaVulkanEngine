@@ -31,7 +31,6 @@ namespace vve {
 		auto GetVmaAllocator() -> VmaAllocator { return m_vmaAllocator; }
 		auto GetSwapChain() -> vh::SwapChain& { return m_swapChain; }
 		auto GetRenderPass() -> VkRenderPass { return m_renderPass; }
-		auto GetDescriptorSetLayout() -> VkDescriptorSetLayout { return m_descriptorSetLayout; }
 		auto GetDescriptorPool() -> VkDescriptorPool { return m_descriptorPool; }
 		auto GetGraphicsPipeline() -> vh::Pipeline& { return m_graphicsPipeline; }
 		auto GetDepthImage() -> vh::DepthImage& { return m_depthImage; }
@@ -83,9 +82,7 @@ namespace vve {
 	    vh::SwapChain m_swapChain;
 	    VkRenderPass m_renderPass;
 
-	    VkDescriptorSetLayout m_descriptorSetLayout;
 		vh::DescriptorSetLayouts m_descriptorSetLayouts;
-
 	    vh::Pipeline m_graphicsPipeline;
 	    vh::DepthImage m_depthImage;
 

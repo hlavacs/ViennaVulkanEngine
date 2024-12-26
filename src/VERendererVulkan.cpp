@@ -63,10 +63,9 @@ namespace vve {
         vh::createImageViews(m_device, m_swapChain);
         vh::createRenderPassClear(m_physicalDevice, m_device, m_swapChain, true, m_renderPass);
         
-		vh::createDescriptorSetLayout(m_device, m_descriptorSetLayout);
 		vh::createDescriptorSetLayout2(m_device, m_descriptorSetLayouts);
 
-        vh::createGraphicsPipeline(m_device, m_renderPass, m_descriptorSetLayout, m_graphicsPipeline);
+        vh::createGraphicsPipeline(m_device, m_renderPass, m_descriptorSetLayouts, m_graphicsPipeline);
         vh::createCommandPool(m_window->GetSurface(), m_physicalDevice, m_device, m_commandPool);
         vh::createDepthResources(m_physicalDevice, m_device, m_vmaAllocator, m_swapChain, m_depthImage);
         vh::createFramebuffers(m_device, m_swapChain, m_depthImage, m_renderPass);
@@ -191,7 +190,6 @@ namespace vve {
 	        vh::destroyImage(m_device, m_vmaAllocator, texture.m_textureImage, texture.m_textureImageAllocation);
 		}
 
-        vkDestroyDescriptorSetLayout(m_device, m_descriptorSetLayout, nullptr);
 		for( auto layout : m_descriptorSetLayouts.m_descriptorSetLayouts ) {
 			vkDestroyDescriptorSetLayout(m_device, layout, nullptr);
 		}
