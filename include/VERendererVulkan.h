@@ -37,7 +37,6 @@ namespace vve {
 		auto GetDepthImage() -> vh::DepthImage& { return m_depthImage; }
 		auto GetTexture() -> vh::Texture& { return m_texture; }
 
-		auto GetUniformBuffers() -> vh::UniformBuffers& { return m_uniformBuffers; }
 		auto GetCommandBuffers() -> std::vector<VkCommandBuffer>& { return m_commandBuffers; }
 		auto GetSyncObjects() -> std::vector<vh::Semaphores>& { return m_semaphores; }
 		auto GetCurrentFrame() -> uint32_t { return m_currentFrame; }
@@ -91,7 +90,6 @@ namespace vve {
 	    vh::DepthImage m_depthImage;
 
 	    vh::Texture m_texture;
-	    vh::UniformBuffers m_uniformBuffers;
 	    VkDescriptorPool m_descriptorPool;
 	    
 		VkCommandPool m_commandPool;

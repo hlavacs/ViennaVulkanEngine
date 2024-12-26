@@ -40,9 +40,7 @@ namespace vve {
 
    	template<ArchitectureType ATYPE>
     void RendererForward<ATYPE>::OnRecordNextFrame(Message message) {
-
-       	vh::updateUniformBuffer(m_vulkan->GetCurrentFrame(), m_vulkan->GetSwapChain(), m_vulkan->GetUniformBuffers());
-
+		
 		for( decltype(auto) ubo : m_registry.template GetView<vh::UniformBuffers&>() ) {
         	vh::updateUniformBuffer(m_vulkan->GetCurrentFrame(), m_vulkan->GetSwapChain(), ubo);
 		}

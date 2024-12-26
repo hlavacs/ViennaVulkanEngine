@@ -76,11 +76,7 @@ namespace vve {
         vh::createTextureSampler(m_physicalDevice, m_device, m_texture);
 
         vh::createCommandBuffers(m_device, m_commandPool, m_commandBuffers);
-        vh::createUniformBuffers(m_physicalDevice, m_device, m_vmaAllocator, m_uniformBuffers);
-
         vh::createDescriptorPool(m_device, 1000, m_descriptorPool);
-        //vh::createDescriptorSets(m_device, m_texture, m_descriptorSetLayout, m_uniformBuffers, m_descriptorPool, m_descriptorSets);
-
         vh::createSemaphores(m_device, 3, m_imageAvailableSemaphores, m_semaphores);
 		vh::createFences(m_device, MAX_FRAMES_IN_FLIGHT, m_fences);
     }
@@ -184,9 +180,9 @@ namespace vve {
         vkDestroyPipeline(m_device, m_graphicsPipeline.m_pipeline, nullptr);
         vkDestroyPipelineLayout(m_device, m_graphicsPipeline.m_pipelineLayout, nullptr);
 
-        for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
-            vh::destroyBuffer(m_device, m_vmaAllocator, m_uniformBuffers.m_uniformBuffers[i], m_uniformBuffers.m_uniformBuffersAllocation[i]);
-        }
+        //for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
+        //    vh::destroyBuffer(m_device, m_vmaAllocator, m_uniformBuffers.m_uniformBuffers[i], m_uniformBuffers.m_uniformBuffersAllocation[i]);
+        //}
 
         vkDestroyDescriptorPool(m_device, m_descriptorPool, nullptr);
 
