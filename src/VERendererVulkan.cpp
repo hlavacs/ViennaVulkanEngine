@@ -263,9 +263,8 @@ namespace vve {
 		vh::createUniformBuffers(m_physicalDevice, m_device, m_vmaAllocator, ubo);
 
 		vh::DescriptorSets descriptorSets;
-		descriptorSets.m_descriptorSets.resize(MAX_FRAMES_IN_FLIGHT);
 		vh::createDescriptorSets2(m_device, texture, m_descriptorSetLayouts, ubo, m_descriptorPool, descriptorSets);
-	    vh::updateDescriptorSets(m_device, texture, m_descriptorSetLayouts.m_descriptorSetLayouts[0], ubo, m_descriptorPool, descriptorSets.m_descriptorSets[0]);
+	    vh::updateDescriptorSets2(m_device, texture, m_descriptorSetLayouts, ubo, m_descriptorPool, descriptorSets);
 
 	    //vh::updateDescriptorSets(m_device, texture, m_descriptorSetLayout, ubo, m_descriptorPool, m_descriptorSets);
 

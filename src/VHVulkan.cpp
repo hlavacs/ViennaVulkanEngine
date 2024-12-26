@@ -1117,17 +1117,20 @@ namespace vh
         , DescriptorSetLayouts& descriptorSetLayouts, UniformBuffers& uniformBuffers, VkDescriptorPool descriptorPool
         , DescriptorSets& descriptorSets) {
 
-        std::vector<VkDescriptorSetLayout> layouts(MAX_FRAMES_IN_FLIGHT, descriptorSetLayouts.m_descriptorSetLayouts[0]);
-        VkDescriptorSetAllocateInfo allocInfo{};
-        allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
-        allocInfo.descriptorPool = descriptorPool;
-        allocInfo.descriptorSetCount = static_cast<uint32_t>(MAX_FRAMES_IN_FLIGHT);
-        allocInfo.pSetLayouts = layouts.data();
+		descriptorSets.m_descriptorSetsPerFrameInFlight.resize(MAX_FRAMES_IN_FLIGHT);
+		for( auto ds : descriptorSets.m_descriptorSetsPerFrameInFlight ) {
+	        std::vector<VkDescriptorSetLayout> layouts(MAX_FRAMES_IN_FLIGHT, descriptorSetLayouts.m_descriptorSetLayouts[0]);
+	        VkDescriptorSetAllocateInfo allocInfo{};
+	        allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
+	        allocInfo.descriptorPool = descriptorPool;
+	        allocInfo.descriptorSetCount = 1;
+	        allocInfo.pSetLayouts = layouts.data();
 
-        descriptorSets.m_descriptorSets[0].resize(MAX_FRAMES_IN_FLIGHT);
-        if (vkAllocateDescriptorSets(device, &allocInfo, descriptorSets.m_descriptorSets[0].data()) != VK_SUCCESS) {
-            throw std::runtime_error("failed to allocate descriptor sets!");
-        }
+	        ds.m_descriptorSets.resize(1);
+	        if (vkAllocateDescriptorSets(device, &allocInfo, ds.m_descriptorSets.data()) != VK_SUCCESS) {
+	            throw std::runtime_error("failed to allocate descriptor sets!");
+	        }
+		}
     }
 
 
@@ -1170,13 +1173,13 @@ namespace vh
 
 
     void updateDescriptorSets2(VkDevice device, Texture& texture
-        , DescriptorSets descriptorSetLayouts, UniformBuffers& uniformBuffers, VkDescriptorPool descriptorPool
+        , DescriptorSetLayouts& descriptorSetLayouts, UniformBuffers& uniformBuffers, VkDescriptorPool descriptorPool
         , DescriptorSets& descriptorSets) {
 
-		for( size_t j = 0; j < descriptorSets.m_descriptorSets.size(); j++) {
-	        for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
+	    for ( auto dspf : descriptorSets.m_descriptorSetsPerFrameInFlight ) {
+			for( auto ds : dspf.m_descriptorSets ) {
 	            VkDescriptorBufferInfo bufferInfo{};
-	            bufferInfo.buffer = uniformBuffers.m_uniformBuffers[i];
+	            bufferInfo.buffer = uniformBuffers.m_uniformBuffers[0];
 	            bufferInfo.offset = 0;
 	            bufferInfo.range = sizeof(UniformBufferObject);
 
@@ -1188,7 +1191,7 @@ namespace vh
 	            std::array<VkWriteDescriptorSet, 2> descriptorWrites{};
 
 	            descriptorWrites[0].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-	            descriptorWrites[0].dstSet = descriptorSets.m_descriptorSets[j][i];
+	            descriptorWrites[0].dstSet = ds;
 	            descriptorWrites[0].dstBinding = 0;
 	            descriptorWrites[0].dstArrayElement = 0;
 	            descriptorWrites[0].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
@@ -1196,7 +1199,7 @@ namespace vh
 	            descriptorWrites[0].pBufferInfo = &bufferInfo;
 
 	            descriptorWrites[1].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-	            descriptorWrites[1].dstSet = descriptorSets.m_descriptorSets[j][i];
+	            descriptorWrites[1].dstSet = ds;
 	            descriptorWrites[1].dstBinding = 1;
 	            descriptorWrites[1].dstArrayElement = 0;
 	            descriptorWrites[1].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;

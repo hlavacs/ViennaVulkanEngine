@@ -154,7 +154,10 @@ namespace vh {
 	};
 
 	struct DescriptorSets {
-		std::vector<std::vector<VkDescriptorSet>> m_descriptorSets;
+		struct DescriptorSetsPerFrameInFlight {
+			std::vector<VkDescriptorSet> m_descriptorSets;
+		};
+		std::vector<DescriptorSetsPerFrameInFlight> m_descriptorSetsPerFrameInFlight;
 	};
 
     /// @brief Semaphores for signalling that a command buffer has finished executing. Every buffer gets its own Semaphore.
@@ -233,7 +236,7 @@ namespace vh {
         , std::vector<VkDescriptorSet>& descriptorSets);
 
     void updateDescriptorSets2(VkDevice device, Texture& texture
-        , DescriptorSets descriptorSetLayouts, UniformBuffers& uniformBuffers, VkDescriptorPool descriptorPool
+        , DescriptorSetLayouts& descriptorSetLayouts, UniformBuffers& uniformBuffers, VkDescriptorPool descriptorPool
         , DescriptorSets& descriptorSets);
 
 
