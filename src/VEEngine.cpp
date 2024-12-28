@@ -95,6 +95,7 @@ namespace vve {
 	
 	template<ArchitectureType ATYPE>
 	void Engine<ATYPE>::CreateRenderer(){
+		RegisterSystem(std::make_unique<Vulkan<ATYPE>>( "VVE Vulkan",  *this ) );
 		RegisterSystem(std::make_unique<RendererVulkan<ATYPE>>( "VVE RendererVulkan",  *this, GetMainWindow() ) );
 		RegisterSystem(std::make_unique<RendererImgui<ATYPE>>(  "VVE RendererImgui",   *this, GetMainWindow() ) );
 		RegisterSystem(std::make_unique<RendererForward<ATYPE>>("VVE RendererForward", *this, GetMainWindow() ) );

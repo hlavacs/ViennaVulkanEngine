@@ -3,12 +3,7 @@
 #include <utility>
 
 #include "VHInclude.h"
-#include "VHVulkan.h"
-
 #include "VEInclude.h"
-#include "VESystem.h"
-#include "VEWindow.h"
-#include "VEEngine.h"
 
 
 template<vve::ArchitectureType ATYPE>

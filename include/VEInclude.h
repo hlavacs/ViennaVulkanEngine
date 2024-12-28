@@ -16,6 +16,7 @@ namespace vve {
     using Mutex = std::conditional_t<ATYPE == ENGINETYPE_SEQUENTIAL, Empty, std::shared_mutex>;
 
    	template<ArchitectureType ATYPE> class System;
+   	template<ArchitectureType ATYPE> class Vulkan;
    	template<ArchitectureType ATYPE> class Engine;
     template<ArchitectureType ATYPE> class Window;
 	template<ArchitectureType ATYPE> class WindowSDL;
@@ -28,6 +29,7 @@ namespace vve {
 }
 
 #include "VECS.h"
+#include "VEVulkan.h"
 #include "VEEngine.h"
 #include "VEGUI.h"
 #include "VESystem.h"
