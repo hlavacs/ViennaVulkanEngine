@@ -19,6 +19,10 @@ namespace vh {
     
 	void setupDebugMessenger(VkInstance instance, VkDebugUtilsMessengerEXT& debugMessenger);
     
+    VKAPI_ATTR VkBool32 VKAPI_CALL debugCallback(VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity
+        , VkDebugUtilsMessageTypeFlagsEXT messageType, const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData
+        , void* pUserData);
+
 	void createSurface(VkInstance instance, SDL_Window *sdlWindow, VkSurfaceKHR& surface);
     
 	void pickPhysicalDevice(VkInstance instance, const std::vector<const char*>& deviceExtensions, VkSurfaceKHR surface, VkPhysicalDevice& physicalDevice);
@@ -28,5 +32,24 @@ namespace vh {
 		VkDevice& device, VkQueue& graphicsQueue, VkQueue& presentQueue);
 
     void createSwapChain(SDL_Window* window, VkSurfaceKHR surface, VkPhysicalDevice physicalDevice, VkDevice device, SwapChain& swapChain);
+
+    void createImageViews(VkDevice device, SwapChain& swapChain);
+
+
+	VkSurfaceFormatKHR chooseSwapSurfaceFormat(const std::vector<VkSurfaceFormatKHR>& availableFormats);
+
+    VkPresentModeKHR chooseSwapPresentMode(const std::vector<VkPresentModeKHR>& availablePresentModes);
+
+    VkExtent2D chooseSwapExtent(const VkSurfaceCapabilitiesKHR& capabilities, SDL_Window* sdlWindow);
+
+    SwapChainSupportDetails querySwapChainSupport(VkPhysicalDevice device, VkSurfaceKHR surface);
+
+    bool isDeviceSuitable(VkPhysicalDevice device, const std::vector<const char *>&extensions , VkSurfaceKHR surface);
+
+    bool checkDeviceExtensionSupport(VkPhysicalDevice device, const std::vector<const char*>& deviceExtensions);
+
+    QueueFamilyIndices findQueueFamilies(VkPhysicalDevice device, VkSurfaceKHR surface);
+
+    bool checkValidationLayerSupport(const std::vector<const char*>& validationLayers);
 
 } // namespace vh

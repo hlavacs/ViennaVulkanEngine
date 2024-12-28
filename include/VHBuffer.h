@@ -3,6 +3,20 @@
 
 namespace vh {
 
+    void createBuffer(VkPhysicalDevice physicalDevice, VkDevice device, VmaAllocator vmaAllocator
+        , VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties
+        , VmaAllocationCreateFlags vmaFlags, VkBuffer& buffer
+        , VmaAllocation& allocation, VmaAllocationInfo* allocationInfo = nullptr);
+
+
+    void updateUniformBuffer(uint32_t currentImage, SwapChain& swapChain, UniformBuffers& uniformBuffers);
+
+    void destroyBuffer(VkDevice device, VmaAllocator vmaAllocator, VkBuffer buffer, VmaAllocation& allocation);
+
+    void destroyBuffer2(VkDevice device, VmaAllocator vmaAllocator, UniformBuffers buffers);
+
+    void copyBuffer(VkDevice device, VkQueue graphicsQueue, VkCommandPool commandPool, VkBuffer srcBuffer, VkBuffer dstBuffer, VkDeviceSize size);
+
 	void createTextureImage(VkPhysicalDevice physicalDevice, VkDevice device, VmaAllocator vmaAllocator, VkQueue graphicsQueue, VkCommandPool commandPool, void* pixels, int width, int height, size_t size, Texture& texture);
 
     void createTextureImageView(VkDevice device, Texture& texture);
@@ -30,7 +44,7 @@ namespace vh {
 
     void createIndexBuffer(VkPhysicalDevice physicalDevice, VkDevice device, VmaAllocator vmaAllocator
         , VkQueue graphicsQueue, VkCommandPool commandPool, Geometry& geometry);
-		
+
     void createUniformBuffers(VkPhysicalDevice physicalDevice, VkDevice device, VmaAllocator& vmaAllocator
             , UniformBuffers &uniformBuffers);
 
