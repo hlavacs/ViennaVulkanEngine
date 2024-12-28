@@ -67,8 +67,6 @@ namespace vve {
             VK_KHR_SWAPCHAIN_EXTENSION_NAME
         };
 
-		const int MAX_FRAMES_IN_FLIGHT = 2;
-
         WindowSDL<ATYPE> *m_windowSDL;
 		VmaAllocator m_vmaAllocator;
         VkInstance m_instance;

@@ -19,6 +19,7 @@ set(SOURCE
   VESystem.cpp
   VEWindow.cpp
   VEWindowSDL.cpp
+  VHBUffer.cpp
   VHVulkan.cpp
   )
 
@@ -35,6 +36,7 @@ set(HEADERS
   ${INCLUDE}/VEWindow.h
   ${INCLUDE}/VEWindowSDL.h
   ${INCLUDE}/VHInclude.h
+  ${INCLUDE}/VHBuffer.h
   ${INCLUDE}/VHVulkan.h
 )
 
