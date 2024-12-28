@@ -187,8 +187,7 @@ namespace vh {
     void createRenderPassClear(VkPhysicalDevice physicalDevice, VkDevice device, SwapChain& swapChain, bool clear, VkRenderPass& renderPass);
     void createRenderPass(VkPhysicalDevice physicalDevice, VkDevice device, SwapChain& swapChain, bool clear, VkRenderPass& renderPass);
 
-    void createDescriptorSetLayout(VkDevice device, VkDescriptorSetLayout& descriptorSetLayout);
-    void createDescriptorSetLayout2(VkDevice device, DescriptorSetLayouts& descriptorSetLayouts);
+    void createDescriptorSetLayout(VkDevice device, DescriptorSetLayouts& descriptorSetLayouts);
 
     void createGraphicsPipeline(VkDevice device, VkRenderPass renderPass, DescriptorSetLayouts descriptorSetLayout, Pipeline& graphicsPipeline);
     void createFramebuffers(VkDevice device, SwapChain& swapChain, DepthImage& depthImage, VkRenderPass renderPass);
@@ -199,8 +198,7 @@ namespace vh {
     bool hasStencilComponent(VkFormat format);
     void MemCopy(VkDevice device, void* source, VmaAllocationInfo& allocInfo, VkDeviceSize size);
     
-	void createTextureImage(VkPhysicalDevice physicalDevice, VkDevice device, VmaAllocator vmaAllocator, VkQueue graphicsQueue, VkCommandPool commandPool, std::string fileName, Texture& texture);
-	void createTextureImage2(VkPhysicalDevice physicalDevice, VkDevice device, VmaAllocator vmaAllocator, VkQueue graphicsQueue, VkCommandPool commandPool, void* pixels, int width, int height, size_t size, Texture& texture);
+	void createTextureImage(VkPhysicalDevice physicalDevice, VkDevice device, VmaAllocator vmaAllocator, VkQueue graphicsQueue, VkCommandPool commandPool, void* pixels, int width, int height, size_t size, Texture& texture);
 
     void createTextureImageView(VkDevice device, Texture& texture);
     void createTextureSampler(VkPhysicalDevice physicalDevice, VkDevice device, Texture &texture);
@@ -224,18 +222,10 @@ namespace vh {
     void createDescriptorPool(VkDevice device, uint32_t sizes, VkDescriptorPool& descriptorPool);
 
     void createDescriptorSets(VkDevice device, Texture& texture
-        , VkDescriptorSetLayout descriptorSetLayout, UniformBuffers& uniformBuffers, VkDescriptorPool descriptorPool
-        , std::vector<VkDescriptorSet>& descriptorSets);
-
-    void createDescriptorSets2(VkDevice device, Texture& texture
         , DescriptorSetLayouts& descriptorSetLayouts, UniformBuffers& uniformBuffers, VkDescriptorPool descriptorPool
         , DescriptorSets& descriptorSets);
 
     void updateDescriptorSets(VkDevice device, Texture& texture
-        , VkDescriptorSetLayout descriptorSetLayout, UniformBuffers& uniformBuffers, VkDescriptorPool descriptorPool
-        , std::vector<VkDescriptorSet>& descriptorSets);
-
-    void updateDescriptorSets2(VkDevice device, Texture& texture
         , DescriptorSetLayouts& descriptorSetLayouts, UniformBuffers& uniformBuffers, VkDescriptorPool descriptorPool
         , DescriptorSets& descriptorSets);
 

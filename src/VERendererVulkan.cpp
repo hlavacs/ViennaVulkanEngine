@@ -63,16 +63,12 @@ namespace vve {
         vh::createImageViews(m_device, m_swapChain);
         vh::createRenderPassClear(m_physicalDevice, m_device, m_swapChain, true, m_renderPass);
         
-		vh::createDescriptorSetLayout2(m_device, m_descriptorSetLayouts);
+		vh::createDescriptorSetLayout(m_device, m_descriptorSetLayouts);
 
         vh::createGraphicsPipeline(m_device, m_renderPass, m_descriptorSetLayouts, m_graphicsPipeline);
         vh::createCommandPool(m_window->GetSurface(), m_physicalDevice, m_device, m_commandPool);
         vh::createDepthResources(m_physicalDevice, m_device, m_vmaAllocator, m_swapChain, m_depthImage);
         vh::createFramebuffers(m_device, m_swapChain, m_depthImage, m_renderPass);
-
-        vh::createTextureImage(m_physicalDevice, m_device, m_vmaAllocator, m_graphicsQueue, m_commandPool, "assets\\textures\\viking_room.png", m_texture);
-        vh::createTextureImageView(m_device, m_texture);
-        vh::createTextureSampler(m_physicalDevice, m_device, m_texture);
 
         vh::createCommandBuffers(m_device, m_commandPool, m_commandBuffers);
         vh::createDescriptorPool(m_device, 1000, m_descriptorPool);
@@ -181,9 +177,6 @@ namespace vve {
 
         vkDestroyDescriptorPool(m_device, m_descriptorPool, nullptr);
 
-        vkDestroySampler(m_device, m_texture.m_textureSampler, nullptr);
-        vkDestroyImageView(m_device, m_texture.m_textureImageView, nullptr);
-        vh::destroyImage(m_device, m_vmaAllocator, m_texture.m_textureImage, m_texture.m_textureImageAllocation);
 		for( decltype(auto) texture : m_registry.template GetView<vh::Texture&>() ) {
 			vkDestroySampler(m_device, texture.m_textureSampler, nullptr);
         	vkDestroyImageView(m_device, texture.m_textureImageView, nullptr);
@@ -243,7 +236,7 @@ namespace vve {
 
 		decltype(auto) texture = m_registry.template Get<vh::Texture&>(tHandle);
 		if( texture.m_textureImage == VK_NULL_HANDLE && texture.m_pixels != nullptr ) {
-			vh::createTextureImage2(m_physicalDevice, m_device, m_vmaAllocator, m_graphicsQueue, m_commandPool, texture.m_pixels, texture.m_width, texture.m_height, texture.m_size, texture);
+			vh::createTextureImage(m_physicalDevice, m_device, m_vmaAllocator, m_graphicsQueue, m_commandPool, texture.m_pixels, texture.m_width, texture.m_height, texture.m_size, texture);
 			vh::createTextureImageView(m_device, texture);
 			vh::createTextureSampler(m_physicalDevice, m_device, texture);
 		}
@@ -252,8 +245,8 @@ namespace vve {
 		vh::createUniformBuffers(m_physicalDevice, m_device, m_vmaAllocator, ubo);
 
 		vh::DescriptorSets descriptorSets;
-		vh::createDescriptorSets2(m_device, texture, m_descriptorSetLayouts, ubo, m_descriptorPool, descriptorSets);
-	    vh::updateDescriptorSets2(m_device, texture, m_descriptorSetLayouts, ubo, m_descriptorPool, descriptorSets);
+		vh::createDescriptorSets(m_device, texture, m_descriptorSetLayouts, ubo, m_descriptorPool, descriptorSets);
+	    vh::updateDescriptorSets(m_device, texture, m_descriptorSetLayouts, ubo, m_descriptorPool, descriptorSets);
 
 		m_registry.template Put(handle, ubo, descriptorSets);
 
@@ -268,7 +261,7 @@ namespace vve {
 		auto pixels = msg.m_pixels;
 		auto handle = msg.m_handle;
 		auto& texture = m_registry.template Get<vh::Texture&>(handle);
-		vh::createTextureImage2(m_physicalDevice, m_device, m_vmaAllocator, m_graphicsQueue, m_commandPool, pixels, texture.m_width, texture.m_height, texture.m_size, texture);
+		vh::createTextureImage(m_physicalDevice, m_device, m_vmaAllocator, m_graphicsQueue, m_commandPool, pixels, texture.m_width, texture.m_height, texture.m_size, texture);
 		vh::createTextureImageView(m_device, texture);
 		vh::createTextureSampler(m_physicalDevice, m_device, texture);
 	}

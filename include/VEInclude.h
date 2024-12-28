@@ -1,7 +1,8 @@
 #pragma once
 
 #include <cstdint>
-#include <mutex>
+#include <shared_mutex>
+
 
 namespace vve {
 
@@ -12,7 +13,7 @@ namespace vve {
     struct Empty {};
 
     template<ArchitectureType ATYPE>
-    using Mutex = std::conditional_t<ATYPE == ENGINETYPE_SEQUENTIAL, Empty, std::mutex>;
+    using Mutex = std::conditional_t<ATYPE == ENGINETYPE_SEQUENTIAL, Empty, std::shared_mutex>;
 
    	template<ArchitectureType ATYPE> class System;
    	template<ArchitectureType ATYPE> class Engine;

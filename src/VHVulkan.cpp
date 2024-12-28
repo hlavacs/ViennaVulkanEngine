@@ -487,33 +487,8 @@ namespace vh
         }
     }
 
-    void createDescriptorSetLayout(VkDevice device, VkDescriptorSetLayout& descriptorSetLayout) {
-        VkDescriptorSetLayoutBinding uboLayoutBinding{};
-        uboLayoutBinding.binding = 0;
-        uboLayoutBinding.descriptorCount = 1;
-        uboLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-        uboLayoutBinding.pImmutableSamplers = nullptr;
-        uboLayoutBinding.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
 
-        VkDescriptorSetLayoutBinding samplerLayoutBinding{};
-        samplerLayoutBinding.binding = 1;
-        samplerLayoutBinding.descriptorCount = 1;
-        samplerLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-        samplerLayoutBinding.pImmutableSamplers = nullptr;
-        samplerLayoutBinding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
-
-        std::array<VkDescriptorSetLayoutBinding, 2> bindings = {uboLayoutBinding, samplerLayoutBinding};
-        VkDescriptorSetLayoutCreateInfo layoutInfo{};
-        layoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
-        layoutInfo.bindingCount = static_cast<uint32_t>(bindings.size());
-        layoutInfo.pBindings = bindings.data();
-
-        if (vkCreateDescriptorSetLayout(device, &layoutInfo, nullptr, &descriptorSetLayout) != VK_SUCCESS) {
-            throw std::runtime_error("failed to create descriptor set layout!");
-        }
-    }
-
-    void createDescriptorSetLayout2(VkDevice device, vh::DescriptorSetLayouts& descriptorSetLayouts) {
+    void createDescriptorSetLayout(VkDevice device, vh::DescriptorSetLayouts& descriptorSetLayouts) {
 		descriptorSetLayouts.m_descriptorSetLayouts.resize(MAX_FRAMES_IN_FLIGHT);
 
         VkDescriptorSetLayoutBinding uboLayoutBinding{};
@@ -749,25 +724,8 @@ namespace vh
         memcpy(allocInfo.pMappedData, source, size);
     }
 
-  void createTextureImage(VkPhysicalDevice physicalDevice, VkDevice device, VmaAllocator vmaAllocator
-        , VkQueue graphicsQueue, VkCommandPool commandPool, std::string fileName, Texture& texture) {
 
-        int texChannels;
-        stbi_uc* pixels = stbi_load(TEXTURE_PATH.c_str(), &texture.m_width, &texture.m_height, &texChannels, STBI_rgb_alpha);
-        texture.m_size = texture.m_width * texture.m_height * 4;
-
-        if (!pixels) {
-            throw std::runtime_error("failed to load texture image!");
-        }
-
-		vh::createTextureImage2(physicalDevice, device, vmaAllocator, graphicsQueue, commandPool, pixels, 
-			texture.m_width, texture.m_height, texture.m_size, texture);
-
-        stbi_image_free(pixels);
-    }
-
-
-  void createTextureImage2(VkPhysicalDevice physicalDevice, VkDevice device, VmaAllocator vmaAllocator, 
+  void createTextureImage(VkPhysicalDevice physicalDevice, VkDevice device, VmaAllocator vmaAllocator, 
   			VkQueue graphicsQueue, VkCommandPool commandPool, void* pixels, int texWidth, int texHeight, 
 			size_t imageSize, vh::Texture& texture) {
 
@@ -1097,23 +1055,6 @@ namespace vh
 
 
     void createDescriptorSets(VkDevice device, Texture& texture
-        , VkDescriptorSetLayout descriptorSetLayout, UniformBuffers& uniformBuffers, VkDescriptorPool descriptorPool
-        , std::vector<VkDescriptorSet>& descriptorSets) {
-
-        std::vector<VkDescriptorSetLayout> layouts(MAX_FRAMES_IN_FLIGHT, descriptorSetLayout);
-        VkDescriptorSetAllocateInfo allocInfo{};
-        allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
-        allocInfo.descriptorPool = descriptorPool;
-        allocInfo.descriptorSetCount = static_cast<uint32_t>(MAX_FRAMES_IN_FLIGHT);
-        allocInfo.pSetLayouts = layouts.data();
-
-        descriptorSets.resize(MAX_FRAMES_IN_FLIGHT);
-        if (vkAllocateDescriptorSets(device, &allocInfo, descriptorSets.data()) != VK_SUCCESS) {
-            throw std::runtime_error("failed to allocate descriptor sets!");
-        }
-    }
-
-    void createDescriptorSets2(VkDevice device, Texture& texture
         , DescriptorSetLayouts& descriptorSetLayouts, UniformBuffers& uniformBuffers, VkDescriptorPool descriptorPool
         , DescriptorSets& descriptorSets) {
 
@@ -1135,44 +1076,6 @@ namespace vh
 
 
     void updateDescriptorSets(VkDevice device, Texture& texture
-        , VkDescriptorSetLayout descriptorSetLayout, UniformBuffers& uniformBuffers, VkDescriptorPool descriptorPool
-        , std::vector<VkDescriptorSet>& descriptorSets) {
-
-        for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
-            VkDescriptorBufferInfo bufferInfo{};
-            bufferInfo.buffer = uniformBuffers.m_uniformBuffers[i];
-            bufferInfo.offset = 0;
-            bufferInfo.range = sizeof(UniformBufferObject);
-
-            VkDescriptorImageInfo imageInfo{};
-            imageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-            imageInfo.imageView = texture.m_textureImageView;
-            imageInfo.sampler = texture.m_textureSampler;
-
-            std::array<VkWriteDescriptorSet, 2> descriptorWrites{};
-
-            descriptorWrites[0].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-            descriptorWrites[0].dstSet = descriptorSets[i];
-            descriptorWrites[0].dstBinding = 0;
-            descriptorWrites[0].dstArrayElement = 0;
-            descriptorWrites[0].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-            descriptorWrites[0].descriptorCount = 1;
-            descriptorWrites[0].pBufferInfo = &bufferInfo;
-
-            descriptorWrites[1].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-            descriptorWrites[1].dstSet = descriptorSets[i];
-            descriptorWrites[1].dstBinding = 1;
-            descriptorWrites[1].dstArrayElement = 0;
-            descriptorWrites[1].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-            descriptorWrites[1].descriptorCount = 1;
-            descriptorWrites[1].pImageInfo = &imageInfo;
-
-            vkUpdateDescriptorSets(device, static_cast<uint32_t>(descriptorWrites.size()), descriptorWrites.data(), 0, nullptr);
-        }
-    }
-
-
-    void updateDescriptorSets2(VkDevice device, Texture& texture
         , DescriptorSetLayouts& descriptorSetLayouts, UniformBuffers& uniformBuffers, VkDescriptorPool descriptorPool
         , DescriptorSets& descriptorSets) {
 

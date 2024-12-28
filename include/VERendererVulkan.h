@@ -34,7 +34,6 @@ namespace vve {
 		auto GetDescriptorPool() -> VkDescriptorPool { return m_descriptorPool; }
 		auto GetGraphicsPipeline() -> vh::Pipeline& { return m_graphicsPipeline; }
 		auto GetDepthImage() -> vh::DepthImage& { return m_depthImage; }
-		auto GetTexture() -> vh::Texture& { return m_texture; }
 
 		auto GetCommandBuffers() -> std::vector<VkCommandBuffer>& { return m_commandBuffers; }
 		auto GetSyncObjects() -> std::vector<vh::Semaphores>& { return m_semaphores; }
@@ -86,7 +85,6 @@ namespace vve {
 	    vh::Pipeline m_graphicsPipeline;
 	    vh::DepthImage m_depthImage;
 
-	    vh::Texture m_texture;
 	    VkDescriptorPool m_descriptorPool;
 	    
 		VkCommandPool m_commandPool;
