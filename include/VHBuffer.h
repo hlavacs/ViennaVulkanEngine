@@ -37,7 +37,6 @@ namespace vh {
     void copyBufferToImage(VkDevice device, VkQueue graphicsQueue, VkCommandPool commandPool
         , VkBuffer buffer, VkImage image, uint32_t width, uint32_t height);
 
-    void loadModel( std::string fileName, Geometry& geometry);
 
     void createVertexBuffer(VkPhysicalDevice physicalDevice, VkDevice device, VmaAllocator vmaAllocator
         , VkQueue graphicsQueue, VkCommandPool commandPool, Geometry& geometry);

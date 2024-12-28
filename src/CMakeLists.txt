@@ -24,6 +24,7 @@ set(SOURCE
   VHDevice.cpp
   VHRender.cpp
   VHCommand.cpp
+  VHSync.cpp
   )
 
 set(HEADERS
@@ -45,6 +46,8 @@ set(HEADERS
   ${INCLUDE}/VHRender.h
   ${INCLUDE}/VHRender.h
   ${INCLUDE}/VHCommand.h
+  ${INCLUDE}/VHSync.h
+  
 )
 
 add_library (${TARGET} ${SOURCE} ${HEADERS})

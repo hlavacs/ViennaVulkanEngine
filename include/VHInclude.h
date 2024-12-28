@@ -59,3 +59,4 @@ namespace vve {
 #include "VHDevice.h"
 #include "VHCommand.h"
 #include "VHRender.h"
+#include "VHSync.h"

@@ -173,43 +173,11 @@ namespace vh {
     #define enableValidationLayers true
     #endif
 
- 
-
-    void createCommandPool(VkSurfaceKHR surface, VkPhysicalDevice physicalDevice, VkDevice device, VkCommandPool& commandPool);
-
-
     void MemCopy(VkDevice device, void* source, VmaAllocationInfo& allocInfo, VkDeviceSize size);
     
-
-    VkCommandBuffer beginSingleTimeCommands(VkDevice device, VkCommandPool commandPool);
-    void endSingleTimeCommands(VkDevice device, VkQueue graphicsQueue, VkCommandPool commandPool, VkCommandBuffer commandBuffer);
-    void createCommandBuffers(VkDevice device, VkCommandPool commandPool, std::vector<VkCommandBuffer>& commandBuffers);
-
-    void startRecordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageIndex
-        , SwapChain& swapChain, VkRenderPass renderPass, Pipeline& graphicsPipeline
-        , bool clear, glm::vec4 clearColor, uint32_t currentFrame);
-
-    void endRecordCommandBuffer(VkCommandBuffer commandBuffer);
-
-    void recordObject(VkCommandBuffer commandBuffer, Pipeline& graphicsPipeline, 
-			std::vector<VkDescriptorSet>& descriptorSets, Geometry& geometry, uint32_t currentFrame);
-
-    void recordObject2(VkCommandBuffer commandBuffer, Pipeline& graphicsPipeline, 
-			DescriptorSets& descriptorSets, Geometry& geometry, uint32_t currentFrame);
-
-	void createFences(VkDevice device, size_t size, std::vector<VkFence>& fences);
-
-	void destroyFences(VkDevice device, std::vector<VkFence>& fences);
-
-    void createSemaphores(VkDevice device, size_t size, std::vector<VkSemaphore>& imageAvailableSemaphores, std::vector<Semaphores>& renderFinishedSemaphores);
-
-    void destroySemaphores(VkDevice device, std::vector<VkSemaphore>& imageAvailableSemaphores, std::vector<Semaphores>& semaphores);
-
-    
-
+    void loadModel( std::string fileName, Geometry& geometry);
 
     std::vector<char> readFile(const std::string& filename);
-
 
 	void setupImgui(SDL_Window* sdlWindow, VkInstance instance, VkPhysicalDevice physicalDevice, QueueFamilyIndices queueFamilies
         , VkDevice device, VkQueue graphicsQueue, VkCommandPool commandPool, VkDescriptorPool descriptorPool

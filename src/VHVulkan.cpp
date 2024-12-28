@@ -70,18 +70,6 @@ namespace vh
     QueueFamilyIndices findQueueFamilies(VkPhysicalDevice device, VkSurfaceKHR surface);
 
 
-    void createCommandPool(VkSurfaceKHR surface, VkPhysicalDevice physicalDevice, VkDevice device, VkCommandPool& commandPool) {
-        QueueFamilyIndices queueFamilyIndices = findQueueFamilies(physicalDevice, surface);
-
-        VkCommandPoolCreateInfo poolInfo{};
-        poolInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
-        poolInfo.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
-        poolInfo.queueFamilyIndex = queueFamilyIndices.graphicsFamily.value();
-
-        if (vkCreateCommandPool(device, &poolInfo, nullptr, &commandPool) != VK_SUCCESS) {
-            throw std::runtime_error("failed to create graphics command pool!");
-        }
-    }
 
 
     void MemCopy(VkDevice device, void* source, VmaAllocationInfo& allocInfo, VkDeviceSize size) {
@@ -89,203 +77,44 @@ namespace vh
     }
 
 
-    VkCommandBuffer beginSingleTimeCommands(VkDevice device, VkCommandPool commandPool) {
-        VkCommandBufferAllocateInfo allocInfo{};
-        allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
-        allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
-        allocInfo.commandPool = commandPool;
-        allocInfo.commandBufferCount = 1;
+    void loadModel( std::string fileName, Geometry& geometry) {
+        tinyobj::attrib_t attrib;
+        std::vector<tinyobj::shape_t> shapes;
+        std::vector<tinyobj::material_t> materials;
+        std::string warn, err;
 
-        VkCommandBuffer commandBuffer;
-        vkAllocateCommandBuffers(device, &allocInfo, &commandBuffer);
-
-        VkCommandBufferBeginInfo beginInfo{};
-        beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
-        beginInfo.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
-
-        vkBeginCommandBuffer(commandBuffer, &beginInfo);
-
-        return commandBuffer;
-    }
-
-    void endSingleTimeCommands(VkDevice device, VkQueue graphicsQueue, VkCommandPool commandPool, VkCommandBuffer commandBuffer) {
-        vkEndCommandBuffer(commandBuffer);
-
-        VkSubmitInfo submitInfo{};
-        submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
-        submitInfo.commandBufferCount = 1;
-        submitInfo.pCommandBuffers = &commandBuffer;
-
-        vkQueueSubmit(graphicsQueue, 1, &submitInfo, VK_NULL_HANDLE);
-        vkQueueWaitIdle(graphicsQueue);
-
-        vkFreeCommandBuffers(device, commandPool, 1, &commandBuffer);
-    }
-
-
-    void createCommandBuffers(VkDevice device, VkCommandPool commandPool, std::vector<VkCommandBuffer>& commandBuffers) {
-        commandBuffers.resize(MAX_FRAMES_IN_FLIGHT);
-
-        VkCommandBufferAllocateInfo allocInfo{};
-        allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
-        allocInfo.commandPool = commandPool;
-        allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
-        allocInfo.commandBufferCount = (uint32_t) commandBuffers.size();
-
-        if (vkAllocateCommandBuffers(device, &allocInfo, commandBuffers.data()) != VK_SUCCESS) {
-            throw std::runtime_error("failed to allocate command buffers!");
-        }
-    }
-
-
-	void startRecordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageIndex
-        , SwapChain& swapChain, VkRenderPass renderPass, Pipeline& graphicsPipeline
-        , bool clear, glm::vec4 clearColor, uint32_t currentFrame) {
-
-        VkCommandBufferBeginInfo beginInfo{};
-        beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
-
-        if (vkBeginCommandBuffer(commandBuffer, &beginInfo) != VK_SUCCESS) {
-            throw std::runtime_error("failed to begin recording command buffer!");
+        if (!tinyobj::LoadObj(&attrib, &shapes, &materials, &warn, &err, fileName.c_str())) {
+            throw std::runtime_error(warn + err);
         }
 
-        VkRenderPassBeginInfo renderPassInfo{};
-        renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
-        renderPassInfo.renderPass = renderPass;
-        renderPassInfo.framebuffer = swapChain.m_swapChainFramebuffers[imageIndex];
-        renderPassInfo.renderArea.offset = {0, 0};
-        renderPassInfo.renderArea.extent = swapChain.m_swapChainExtent;
+        std::unordered_map<Vertex, uint32_t> uniqueVertices{};
 
-		if( clear) {
-			std::array<VkClearValue, 2> clearValues{};
-	        clearValues[0].color = {{clearColor.r, clearColor.g, clearColor.b, 1.0f}};  
-	        clearValues[1].depthStencil = {1.0f, 0};
+        for (const auto& shape : shapes) {
+            for (const auto& index : shape.mesh.indices) {
+                Vertex vertex{};
 
-	        renderPassInfo.clearValueCount = static_cast<uint32_t>(clearValues.size());
-	        renderPassInfo.pClearValues = clearValues.data();
-		}
+                vertex.pos = {
+                    attrib.vertices[3 * index.vertex_index + 0],
+                    attrib.vertices[3 * index.vertex_index + 1],
+                    attrib.vertices[3 * index.vertex_index + 2]
+                };
 
-        vkCmdBeginRenderPass(commandBuffer, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
+                vertex.texCoord = {
+                    attrib.texcoords[2 * index.texcoord_index + 0],
+                    1.0f - attrib.texcoords[2 * index.texcoord_index + 1]
+                };
 
-        vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsPipeline.m_pipeline);
+                vertex.color = {1.0f, 1.0f, 1.0f};
 
-        VkViewport viewport{};
-        viewport.x = 0.0f;
-        viewport.y = 0.0f;
-        viewport.width = (float) swapChain.m_swapChainExtent.width;
-        viewport.height = (float) swapChain.m_swapChainExtent.height;
-        viewport.minDepth = 0.0f;
-        viewport.maxDepth = 1.0f;
-        vkCmdSetViewport(commandBuffer, 0, 1, &viewport);
-  
-        VkRect2D scissor{};
-        scissor.offset = {0, 0};
-        scissor.extent = swapChain.m_swapChainExtent;
-        vkCmdSetScissor(commandBuffer, 0, 1, &scissor);
-    }
+                if (uniqueVertices.count(vertex) == 0) {
+                    uniqueVertices[vertex] = static_cast<uint32_t>(geometry.m_vertices.size());
+                    geometry.m_vertices.push_back(vertex);
+                }
 
-
-    void endRecordCommandBuffer(VkCommandBuffer commandBuffer) {
-        vkCmdEndRenderPass(commandBuffer);
-        if (vkEndCommandBuffer(commandBuffer) != VK_SUCCESS) {
-            throw std::runtime_error("failed to record command buffer!");
-        }
-    }
-
-
-
-    void recordObject(VkCommandBuffer commandBuffer, Pipeline& graphicsPipeline, 
-			std::vector<VkDescriptorSet>& descriptorSets, Geometry& geometry, uint32_t currentFrame) {
-
-        VkBuffer vertexBuffers[] = {geometry.m_vertexBuffer};
-        VkDeviceSize offsets[] = {0};
-        vkCmdBindVertexBuffers(commandBuffer, 0, 1, vertexBuffers, offsets);
-
-        vkCmdBindIndexBuffer(commandBuffer, geometry.m_indexBuffer, 0, VK_INDEX_TYPE_UINT32);
-
-        vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsPipeline.m_pipelineLayout
-            , 0, 1, &descriptorSets[currentFrame], 0, nullptr);
-
-        vkCmdDrawIndexed(commandBuffer, static_cast<uint32_t>(geometry.m_indices.size()), 1, 0, 0, 0);
-	}
-
-
-    void recordObject2(VkCommandBuffer commandBuffer, Pipeline& graphicsPipeline, 
-			DescriptorSets& descriptorSets, Geometry& geometry, uint32_t currentFrame) {
-
-        VkBuffer vertexBuffers[] = {geometry.m_vertexBuffer};
-        VkDeviceSize offsets[] = {0};
-        vkCmdBindVertexBuffers(commandBuffer, 0, 1, vertexBuffers, offsets);
-
-        vkCmdBindIndexBuffer(commandBuffer, geometry.m_indexBuffer, 0, VK_INDEX_TYPE_UINT32);
-
-        vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsPipeline.m_pipelineLayout
-            , 0, 1, descriptorSets.m_descriptorSetsPerFrameInFlight[currentFrame].m_descriptorSets.data(), 0, nullptr);
-
-        vkCmdDrawIndexed(commandBuffer, static_cast<uint32_t>(geometry.m_indices.size()), 1, 0, 0, 0);
-
-	}
-
-
-	void createFences(VkDevice device, size_t size, std::vector<VkFence>& fences) {
-		for( int i = 0; i < size; ++i ) {
-			VkFence fence;
-			VkFenceCreateInfo fenceInfo{};
-			fenceInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
-			fenceInfo.flags = VK_FENCE_CREATE_SIGNALED_BIT;
-
-			if (vkCreateFence(device, &fenceInfo, nullptr, &fence) != VK_SUCCESS) {
-				throw std::runtime_error("failed to create synchronization objects for a frame!");
-			}
-			fences.push_back(fence);
-		}
-	}
-
-	void destroyFences(VkDevice device, std::vector<VkFence>& fences) {
-		for( int i = 0; i < fences.size(); ++i ) {
-			vkDestroyFence(device, fences[i], nullptr);
-		}
-	}
-
-    void createSemaphores(VkDevice device, size_t size,  std::vector<VkSemaphore>& imageAvailableSemaphores, std::vector<Semaphores>& semaphores ) {
-        VkSemaphoreCreateInfo semaphoreInfo{};
-        semaphoreInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
-
-		for( int i = semaphores.size(); i < size; ++i ) {
-			Semaphores Sem;
-	        for (size_t j = 0; j < MAX_FRAMES_IN_FLIGHT; j++) {
-				VkSemaphore semaphore;
-	            if (vkCreateSemaphore(device, &semaphoreInfo, nullptr, &semaphore) != VK_SUCCESS != VK_SUCCESS) {
-	                throw std::runtime_error("failed to create synchronization objects for a frame!");
-	            }
-				Sem.m_renderFinishedSemaphores.push_back(semaphore);
-	        }
-			semaphores.push_back(Sem);
-		}
-
-        for (size_t j = imageAvailableSemaphores.size(); j < MAX_FRAMES_IN_FLIGHT; j++) {
-			VkSemaphore semaphore;
-            if (vkCreateSemaphore(device, &semaphoreInfo, nullptr, &semaphore) != VK_SUCCESS ) {
-                throw std::runtime_error("failed to create synchronization objects for a frame!");
+                geometry.m_indices.push_back(uniqueVertices[vertex]);
             }
-			imageAvailableSemaphores.push_back(semaphore);
         }
-
     }
-
-    void destroySemaphores(VkDevice device,  std::vector<VkSemaphore>& imageAvailableSemaphores, std::vector<Semaphores>& semaphores) {
-		for( auto Sem : semaphores ) {
-			for ( auto sem : Sem.m_renderFinishedSemaphores ) {
-				vkDestroySemaphore(device, sem, nullptr);
-			}
-		}
-
-		for ( auto sem : imageAvailableSemaphores) {
-			vkDestroySemaphore(device, sem, nullptr);
-		}
-	}
-
-
 
 
     std::vector<char> readFile(const std::string& filename) {
