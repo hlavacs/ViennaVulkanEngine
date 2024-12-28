@@ -173,32 +173,13 @@ namespace vh {
     #define enableValidationLayers true
     #endif
 
+ 
 
-    void createRenderPassClear(VkPhysicalDevice physicalDevice, VkDevice device, SwapChain& swapChain, bool clear, VkRenderPass& renderPass);
-    void createRenderPass(VkPhysicalDevice physicalDevice, VkDevice device, SwapChain& swapChain, bool clear, VkRenderPass& renderPass);
-
-    void createDescriptorSetLayout(VkDevice device, DescriptorSetLayouts& descriptorSetLayouts);
-
-    void createGraphicsPipeline(VkDevice device, VkRenderPass renderPass, DescriptorSetLayouts descriptorSetLayout, Pipeline& graphicsPipeline);
-    void createFramebuffers(VkDevice device, SwapChain& swapChain, DepthImage& depthImage, VkRenderPass renderPass);
     void createCommandPool(VkSurfaceKHR surface, VkPhysicalDevice physicalDevice, VkDevice device, VkCommandPool& commandPool);
-    void createDepthResources(VkPhysicalDevice physicalDevice, VkDevice device, VmaAllocator vmaAllocator, SwapChain& swapChain, DepthImage& depthImage);
-    VkFormat findSupportedFormat(VkPhysicalDevice physicalDevice, const std::vector<VkFormat>& candidates, VkImageTiling tiling, VkFormatFeatureFlags features);
-    VkFormat findDepthFormat(VkPhysicalDevice physicalDevice);
-    bool hasStencilComponent(VkFormat format);
+
+
     void MemCopy(VkDevice device, void* source, VmaAllocationInfo& allocInfo, VkDeviceSize size);
     
-    void createDescriptorPool(VkDevice device, uint32_t sizes, VkDescriptorPool& descriptorPool);
-
-    void createDescriptorSets(VkDevice device, Texture& texture
-        , DescriptorSetLayouts& descriptorSetLayouts, UniformBuffers& uniformBuffers, VkDescriptorPool descriptorPool
-        , DescriptorSets& descriptorSets);
-
-    void updateDescriptorSets(VkDevice device, Texture& texture
-        , DescriptorSetLayouts& descriptorSetLayouts, UniformBuffers& uniformBuffers, VkDescriptorPool descriptorPool
-        , DescriptorSets& descriptorSets);
-
-
 
     VkCommandBuffer beginSingleTimeCommands(VkDevice device, VkCommandPool commandPool);
     void endSingleTimeCommands(VkDevice device, VkQueue graphicsQueue, VkCommandPool commandPool, VkCommandBuffer commandBuffer);
@@ -217,13 +198,14 @@ namespace vh {
 			DescriptorSets& descriptorSets, Geometry& geometry, uint32_t currentFrame);
 
 	void createFences(VkDevice device, size_t size, std::vector<VkFence>& fences);
+
 	void destroyFences(VkDevice device, std::vector<VkFence>& fences);
 
     void createSemaphores(VkDevice device, size_t size, std::vector<VkSemaphore>& imageAvailableSemaphores, std::vector<Semaphores>& renderFinishedSemaphores);
+
     void destroySemaphores(VkDevice device, std::vector<VkSemaphore>& imageAvailableSemaphores, std::vector<Semaphores>& semaphores);
 
     
-    VkShaderModule createShaderModule(VkDevice device, const std::vector<char>& code);
 
 
     std::vector<char> readFile(const std::string& filename);

@@ -22,6 +22,8 @@ set(SOURCE
   VHBUffer.cpp
   VHVulkan.cpp
   VHDevice.cpp
+  VHRender.cpp
+  VHCommand.cpp
   )
 
 set(HEADERS
@@ -40,6 +42,9 @@ set(HEADERS
   ${INCLUDE}/VHBuffer.h
   ${INCLUDE}/VHVulkan.h
   ${INCLUDE}/VHDevice.h
+  ${INCLUDE}/VHRender.h
+  ${INCLUDE}/VHRender.h
+  ${INCLUDE}/VHCommand.h
 )
 
 add_library (${TARGET} ${SOURCE} ${HEADERS})
