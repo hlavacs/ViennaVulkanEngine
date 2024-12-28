@@ -9,9 +9,7 @@
 #include <typeinfo>
 #include <type_traits>
 #include <unordered_set>
-#include "VEInclude.h"
-#include "VHInclude.h"
-#include "VECS.h"
+
 
 namespace vve {
 

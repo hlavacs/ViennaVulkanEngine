@@ -2,8 +2,7 @@
 
 #include <vector>
 #include <set>
-#include "VEInclude.h"
-#include "VEWindow.h"
+
 
 
 namespace vve {

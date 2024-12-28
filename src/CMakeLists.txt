@@ -10,6 +10,7 @@ set(SOURCE
   ${IMGUI}/imgui_widgets.cpp
 
   VEEngine.cpp
+  VEVulkan.cpp
   VEGUI.cpp
   VERenderer.cpp
   VERendererForward.cpp
@@ -30,6 +31,7 @@ set(SOURCE
 set(HEADERS
   ${INCLUDE}/VEInclude.h
   ${INCLUDE}/VEEngine.h
+  ${INCLUDE}/VEVulkan.h
   ${INCLUDE}/VEGUI.h
   ${INCLUDE}/VERenderer.h
   ${INCLUDE}/VERendererForward.h

@@ -1,10 +1,6 @@
 #include "VHInclude.h"
-#include "VHVulkan.h"
-#include "VESystem.h"
-#include "VEEngine.h"
-#include "VEWindow.h"
+#include "VEInclude.h"
 #include "L2DFileDialog.h"
-#include "VEGUI.h"
 
 namespace vve {
 

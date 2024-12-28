@@ -4,9 +4,6 @@
 #include <unordered_map>
 #include "glm/glm.hpp"
 
-#include "VECS.h"
-#include "VEInclude.h"
-#include "VESystem.h"
 
 namespace vve {
 

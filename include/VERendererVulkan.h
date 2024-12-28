@@ -1,9 +1,6 @@
 #pragma once
 
 #include <any>
-#include "VHInclude.h"
-#include "VESystem.h"
-#include "VERenderer.h"
 
 namespace vve {
 

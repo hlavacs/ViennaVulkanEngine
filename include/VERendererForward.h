@@ -1,7 +1,5 @@
 #pragma once
 
-#include "VERenderer.h"
-
 namespace vve
 {
    	template<ArchitectureType ATYPE>

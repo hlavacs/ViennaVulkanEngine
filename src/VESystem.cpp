@@ -1,11 +1,7 @@
 
 #include <cassert>
-
 #include "VHInclude.h"
-#include "VHVulkan.h"
-#include "VEEngine.h"
-#include "VESystem.h"
-
+#include "VEInclude.h"
 
 namespace vve {
 	

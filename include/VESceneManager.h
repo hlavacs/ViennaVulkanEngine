@@ -1,10 +1,6 @@
 #pragma once
 
 
-#include "VESystem.h"
-#include "VERendererVulkan.h"
-#include "VECS.h"
-
 namespace vve {
 
 

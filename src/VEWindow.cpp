@@ -1,8 +1,5 @@
-
 #include "VHInclude.h"
-#include "VHVulkan.h"
-
-#include "VEWindow.h"
+#include "VEInclude.h"
 
 
 namespace vve {

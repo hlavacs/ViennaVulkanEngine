@@ -1,6 +1,5 @@
 #pragma once
 
-#include "VERendererVulkan.h"
 
 namespace vve {
 

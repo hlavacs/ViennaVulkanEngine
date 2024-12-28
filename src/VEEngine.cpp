@@ -7,16 +7,7 @@
 #include <ranges>
 #include "VHInclude.h"
 #include "VEInclude.h"
-#include "VHVulkan.h"
-#include "VESystem.h"
-#include "VEEngine.h"
-#include "VEWindow.h"
-#include "VEWindowSDL.h"
-#include "VEGUI.h"
-#include "VERendererForward.h"
-#include "VERendererImgui.h"
-#include "VERendererVulkan.h"
-#include "VESceneManager.h"
+
 
 namespace vve {
 	

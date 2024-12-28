@@ -1,12 +1,5 @@
-
 #include "VHInclude.h"
-#include "VHVulkan.h"
-
-#include "VERendererVulkan.h"
-#include "VEEngine.h"
-#include "VEWindowSDL.h"
-#include "VESceneManager.h"
-
+#include "VEInclude.h"
 
 
 namespace vve {

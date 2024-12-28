@@ -27,5 +27,16 @@ namespace vve {
 	struct Message;
 }
 
+#include "VECS.h"
+#include "VEEngine.h"
+#include "VEGUI.h"
+#include "VESystem.h"
+#include "VEWindow.h"
+#include "VEWindowSDL.h"
+#include "VERenderer.h"
+#include "VERendererImgui.h"
+#include "VERendererForward.h"
+#include "VERendererVulkan.h"
+#include "VESceneManager.h"
 
 
