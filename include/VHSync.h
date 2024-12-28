@@ -4,7 +4,6 @@
 namespace vh {
 
 
-
 	void createFences(VkDevice device, size_t size, std::vector<VkFence>& fences);
 
 	void destroyFences(VkDevice device, std::vector<VkFence>& fences);
@@ -14,6 +13,6 @@ namespace vh {
     void destroySemaphores(VkDevice device, std::vector<VkSemaphore>& imageAvailableSemaphores, std::vector<Semaphores>& semaphores);
 
     
-	
+
 } // namespace vh
 

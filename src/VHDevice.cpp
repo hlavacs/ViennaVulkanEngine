@@ -12,7 +12,7 @@ namespace vh {
 
         volkInitialize();
 
-        if (enableValidationLayers && !checkValidationLayerSupport(validationLayers)) {
+        if (ENABLE_VALIDATION_LAYERS && !checkValidationLayerSupport(validationLayers)) {
             throw std::runtime_error("validation layers requested, but not available!");
         }
 
@@ -33,7 +33,7 @@ namespace vh {
         createInfo.ppEnabledExtensionNames = extensions.data();
 
         VkDebugUtilsMessengerCreateInfoEXT debugCreateInfo{};
-        if (enableValidationLayers) {
+        if (ENABLE_VALIDATION_LAYERS) {
             createInfo.enabledLayerCount = static_cast<uint32_t>(validationLayers.size());
             createInfo.ppEnabledLayerNames = validationLayers.data();
 
@@ -140,7 +140,7 @@ namespace vh {
     }
 
     void setupDebugMessenger(VkInstance instance, VkDebugUtilsMessengerEXT& debugMessenger) {
-        if (!enableValidationLayers) return;
+        if (!ENABLE_VALIDATION_LAYERS) return;
 
         VkDebugUtilsMessengerCreateInfoEXT createInfo;
         populateDebugMessengerCreateInfo(createInfo);
@@ -237,7 +237,7 @@ namespace vh {
         createInfo.enabledExtensionCount = static_cast<uint32_t>(deviceExtensions.size());
         createInfo.ppEnabledExtensionNames = deviceExtensions.data();
 
-        if (enableValidationLayers) {
+        if (ENABLE_VALIDATION_LAYERS) {
             createInfo.enabledLayerCount = static_cast<uint32_t>(validationLayers.size());
             createInfo.ppEnabledLayerNames = validationLayers.data();
         } else {

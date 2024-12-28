@@ -168,9 +168,9 @@ namespace vh {
 	#define MAX_FRAMES_IN_FLIGHT 2
 
 	#ifdef NDEBUG
-    #define enableValidationLayers false
+    #define ENABLE_VALIDATION_LAYERS false
     #else
-    #define enableValidationLayers true
+    #define ENABLE_VALIDATION_LAYERS true
     #endif
 
     void MemCopy(VkDevice device, void* source, VmaAllocationInfo& allocInfo, VkDeviceSize size);

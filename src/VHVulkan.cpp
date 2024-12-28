@@ -60,22 +60,15 @@ namespace vh
     const std::string MODEL_PATH   = "assets\\models\\viking_room.obj";
     const std::string TEXTURE_PATH = "assets\\textures\\viking_room.png";
     
-
 	extern VkInstance volkInstance;
 
 	auto loadVolk(const char* name, void* context) {
    		return vkGetInstanceProcAddr(volkInstance, name);
 	}
 
-    QueueFamilyIndices findQueueFamilies(VkPhysicalDevice device, VkSurfaceKHR surface);
-
-
-
-
     void MemCopy(VkDevice device, void* source, VmaAllocationInfo& allocInfo, VkDeviceSize size) {
         memcpy(allocInfo.pMappedData, source, size);
     }
-
 
     void loadModel( std::string fileName, Geometry& geometry) {
         tinyobj::attrib_t attrib;
