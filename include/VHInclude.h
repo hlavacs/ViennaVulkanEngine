@@ -56,3 +56,4 @@ namespace vve {
 
 #include "VHVulkan.h"
 #include "VHBuffer.h"
+#include "VHDevice.h"

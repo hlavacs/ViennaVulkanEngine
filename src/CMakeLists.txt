@@ -21,6 +21,7 @@ set(SOURCE
   VEWindowSDL.cpp
   VHBUffer.cpp
   VHVulkan.cpp
+  VHDevice.cpp
   )
 
 set(HEADERS
@@ -38,6 +39,7 @@ set(HEADERS
   ${INCLUDE}/VHInclude.h
   ${INCLUDE}/VHBuffer.h
   ${INCLUDE}/VHVulkan.h
+  ${INCLUDE}/VHDevice.h
 )
 
 add_library (${TARGET} ${SOURCE} ${HEADERS})
