@@ -60,7 +60,6 @@ namespace vve {
         m_instanceExtensions.insert(m_instanceExtensions.end(), extensions.begin(), extensions.end());
 
 		m_engine.SendMessage( MsgExtensions{this, m_instanceExtensions, {}} );
-		m_engine.SendMessage( MsgAnnounce{this} );
     }
 
    	template<ArchitectureType ATYPE>
