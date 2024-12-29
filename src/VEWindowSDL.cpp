@@ -66,8 +66,6 @@ namespace vve {
         
    	template<ArchitectureType ATYPE>
     void WindowSDL<ATYPE>::OnInit2(Message message) {
-        m_vulkan = ((RendererVulkan<ATYPE>*)(m_engine.GetSystem("VVE Renderer Vulkan")));
-
         if (SDL_Vulkan_CreateSurface(m_sdlWindow, m_vulkan->GetInstance(), &m_surface) == 0) {
             printf("Failed to create Vulkan surface.\n");
         }

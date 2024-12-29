@@ -17,8 +17,6 @@ namespace vve {
 		m_debug = true;
 	#endif
 		RegisterCallback( { 
-			{this, std::numeric_limits<int>::lowest(), "INIT", [this](Message message){this->OnInit(message);} },
-			{this, std::numeric_limits<int>::max(),    "INIT", [this](Message message){this->OnInit2(message);} },
 			{this, std::numeric_limits<int>::max(),    "QUIT", [this](Message message){this->OnQuit(message);} }
 		} );
 
@@ -28,20 +26,6 @@ namespace vve {
 	
 	template<ArchitectureType ATYPE>
 	Engine<ATYPE>::~Engine() {};
-
-	template<ArchitectureType ATYPE>
-	void Engine<ATYPE>::OnInit(Message message ) {
-		CreateWindow();
-		CreateRenderer();
-		CreateSystems();
-		CreateCamera();
-		CreateGUI();
-	};
-
-	template<ArchitectureType ATYPE>
-	void Engine<ATYPE>::OnInit2(Message message ) {
-		LoadLevel("");
-	};
 
 	template<ArchitectureType ATYPE>
 	void Engine<ATYPE>::RegisterCallback( std::vector<MessageCallback> callbacks) {
@@ -127,8 +111,14 @@ namespace vve {
 	template<ArchitectureType ATYPE>
 	void Engine<ATYPE>::Init() {
 		if(!m_initialized) {
+			CreateWindow();
+			CreateRenderer();
+			CreateSystems();
+			CreateCamera();
+			CreateGUI();		
 			SendMessage( MsgAnnounce{this} );
 			SendMessage( MsgInit{this} );
+			LoadLevel("");
 		}
 		m_initialized = true;
 		m_last = std::chrono::high_resolution_clock::now();

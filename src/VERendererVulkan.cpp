@@ -37,8 +37,8 @@ namespace vve {
    	template<ArchitectureType ATYPE>
     void RendererVulkan<ATYPE>::OnAnnounce(Message message) {
 		auto msg = message.template GetData<MsgAnnounce>();
-		if( msg.m_sender->GetName() == "VVE Engine" ) {
-			//m_engine.SendMessage( MsgAnnounce{this} );
+		if( msg.m_sender == &m_engine ) {
+			m_engine.SendMessage( MsgAnnounce{this} );
 		}
     }
 

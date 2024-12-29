@@ -122,7 +122,7 @@ namespace vh {
 
 
     void createDescriptorSetLayout(VkDevice device, vh::DescriptorSetLayouts& descriptorSetLayouts) {
-		descriptorSetLayouts.m_descriptorSetLayouts.resize(MAX_FRAMES_IN_FLIGHT);
+		descriptorSetLayouts.m_descriptorSetLayouts.resize(1);
 
         VkDescriptorSetLayoutBinding uboLayoutBinding{};
         uboLayoutBinding.binding = 0;
