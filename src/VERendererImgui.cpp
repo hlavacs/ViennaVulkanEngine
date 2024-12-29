@@ -42,7 +42,7 @@ namespace vve {
 		vh::setupImgui(windowSDL->GetSDLWindow(), m_vulkan->GetInstance(), m_vulkan->GetPhysicalDevice(), m_vulkan->GetQueueFamilies(), m_vulkan->GetDevice(), m_vulkan->GetGraphicsQueue(), 
 			m_vulkan->GetCommandPool(), m_vulkan->GetDescriptorPool(), m_renderPass);  
 
-        vh::createCommandPool(m_window->GetSurface(), m_vulkan->GetPhysicalDevice(), m_vulkan->GetDevice(), m_commandPool); 
+        vh::createCommandPool(m_vulkan->GetSurface(), m_vulkan->GetPhysicalDevice(), m_vulkan->GetDevice(), m_commandPool); 
         vh::createCommandBuffers(m_vulkan->GetDevice(), m_commandPool, m_commandBuffers);
 	}
 

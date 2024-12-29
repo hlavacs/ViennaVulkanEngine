@@ -18,7 +18,6 @@ namespace vve
     private:
         void OnAnnounce(Message message);
         void OnInit(Message message);
-        void OnInit2(Message message);
         void OnRecordNextFrame(Message message);
         void OnQuit(Message message);
 

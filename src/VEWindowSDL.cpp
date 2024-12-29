@@ -16,7 +16,6 @@ namespace vve {
         engine.RegisterCallback( { 
   			{this,     0, "ANNOUNCE", [this](Message message){this->OnAnnounce(message);} },
 			{this, -4000, "INIT", [this](Message message){this->OnInit(message);} },
-			{this,     0, "INIT", [this](Message message){this->OnInit2(message);} },
 			{this,     0, "POLL_EVENTS", [this](Message message){this->OnPollEvents(message);} },
 			{this,     0, "QUIT", [this](Message message){this->OnQuit(message);} },
 		} );
@@ -62,13 +61,6 @@ namespace vve {
 
 		m_engine.SendMessage( MsgExtensions{this, m_instanceExtensions, {}} );
 		m_engine.SendMessage( MsgAnnounce{this} );
-    }
-        
-   	template<ArchitectureType ATYPE>
-    void WindowSDL<ATYPE>::OnInit2(Message message) {
-        if (SDL_Vulkan_CreateSurface(m_sdlWindow, m_vulkan->GetInstance(), &m_surface) == 0) {
-            printf("Failed to create Vulkan surface.\n");
-        }
     }
 
    	template<ArchitectureType ATYPE>
@@ -157,7 +149,6 @@ namespace vve {
    	template<ArchitectureType ATYPE>
     void WindowSDL<ATYPE>::OnQuit(Message message) {
         auto rend = ((RendererVulkan<ATYPE>*)(m_engine.GetSystem("VVE Renderer Vulkan")));
-        vkDestroySurfaceKHR(rend->GetInstance(), m_surface, nullptr);
 		SDL_DestroyWindow(m_sdlWindow);
         SDL_Quit(); 
    }

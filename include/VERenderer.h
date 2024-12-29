@@ -24,11 +24,13 @@ namespace vve
     public:
         Renderer(std::string systemName, Engine<ATYPE>& m_engine, std::string windowName);
         virtual ~Renderer();
+        auto GetSurface() -> VkSurfaceKHR { return m_surface; };
 
     protected:
 		void OnAnnounce(Message message);
-		std::string m_windowName;
-        Window<ATYPE>* m_window;
+        VkSurfaceKHR	m_surface{VK_NULL_HANDLE};
+		std::string 	m_windowName;
+        Window<ATYPE>* 	m_window;
     };
 
 };   // namespace vve

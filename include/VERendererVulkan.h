@@ -21,6 +21,7 @@ namespace vve {
 		using typename System<ATYPE>::MsgGeometryCreate;
 		using typename System<ATYPE>::MsgGeometryDestroy;
         using Renderer<ATYPE>::m_window;
+		using Renderer<ATYPE>::m_surface;
 
     public:
 
@@ -51,7 +52,6 @@ namespace vve {
     private:
 		void OnExtensions(Message message);
         void OnInit(Message message);
-        void OnInit2(Message message);
 
         void OnPrepareNextFrame(Message message);
         void OnRecordNextFrame(Message message);

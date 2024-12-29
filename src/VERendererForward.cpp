@@ -11,8 +11,7 @@ namespace vve {
 
   		engine.RegisterCallback( { 
   			{this,     0, "ANNOUNCE", [this](Message message){this->OnAnnounce(message);} },
-  			{this, -1000, "INIT", [this](Message message){this->OnInit(message);} },
-  			{this,  2000, "INIT", [this](Message message){this->OnInit2(message);} },
+  			{this,  2000, "INIT", [this](Message message){this->OnInit(message);} },
   			{this,  2000, "RECORD_NEXT_FRAME", [this](Message message){this->OnRecordNextFrame(message);} },
   			{this, -3000, "QUIT", [this](Message message){this->OnQuit(message);} }
   		} );
@@ -29,14 +28,11 @@ namespace vve {
 		}
     }
 
-   	template<ArchitectureType ATYPE>
-    void RendererForward<ATYPE>::OnInit(Message message) {
-    }
 
    	template<ArchitectureType ATYPE>
-    void RendererForward<ATYPE>::OnInit2(Message message) {
+    void RendererForward<ATYPE>::OnInit(Message message) {
         vh::createRenderPass(m_vulkan->GetPhysicalDevice(), m_vulkan->GetDevice(), m_vulkan->GetSwapChain(), false, m_renderPass);
-        vh::createCommandPool(m_window->GetSurface(), m_vulkan->GetPhysicalDevice(), m_vulkan->GetDevice(), m_commandPool);
+        vh::createCommandPool(m_vulkan->GetSurface(), m_vulkan->GetPhysicalDevice(), m_vulkan->GetDevice(), m_commandPool);
         vh::createCommandBuffers(m_vulkan->GetDevice(), m_commandPool, m_commandBuffers);
     }
 

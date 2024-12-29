@@ -31,7 +31,6 @@ namespace vve {
         using Window<ATYPE>::m_width;
         using Window<ATYPE>::m_height;
         using Window<ATYPE>::m_windowName;
-        using Window<ATYPE>::m_surface;
         using Window<ATYPE>::m_instanceExtensions;
 		using Window<ATYPE>::m_isMinimized;
    
@@ -43,7 +42,6 @@ namespace vve {
     private:
         void OnAnnounce(Message message);
         void OnInit(Message message);
-        void OnInit2(Message message);
         void OnPollEvents(Message message);
         void OnQuit(Message message);
 

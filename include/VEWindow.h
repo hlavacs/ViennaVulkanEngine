@@ -19,7 +19,6 @@ namespace vve {
         auto GetClearColor() -> glm::vec4 { return m_clearColor; };
         auto GetWindowName() -> std::string { return m_windowName; };
         virtual void SetClearColor(glm::vec4 clearColor);
-        auto GetSurface() -> VkSurfaceKHR { return m_surface; };
         auto GetInstanceExtensions() -> std::vector<const char*> { return m_instanceExtensions; }; 
 		bool GetIsMinimized() { return m_isMinimized; }
 
@@ -28,7 +27,6 @@ namespace vve {
         int 			m_height;
         std::string 	m_windowName;
         glm::vec4 		m_clearColor{0.45f, 0.55f, 0.60f, 1.00f};
-        VkSurfaceKHR	m_surface{VK_NULL_HANDLE};
 	    bool 			m_isMinimized = false;
         std::vector<const char*> m_instanceExtensions;
 

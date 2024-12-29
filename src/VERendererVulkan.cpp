@@ -15,7 +15,6 @@ namespace vve {
         engine.RegisterCallback( { 
 			{this,      0, "EXTENSIONS", [this](Message message){this->OnExtensions(message);} },
 			{this,  -2000, "INIT", [this](Message message){this->OnInit(message);} }, 
-			{this,   1000, "INIT", [this](Message message){this->OnInit2(message);} },
 			{this,      0, "PREPARE_NEXT_FRAME", [this](Message message){this->OnPrepareNextFrame(message);} },
 			{this,      0, "RECORD_NEXT_FRAME", [this](Message message){this->OnRecordNextFrame(message);} },
 			{this,      0, "RENDER_NEXT_FRAME", [this](Message message){this->OnRenderNextFrame(message);} },
@@ -53,21 +52,21 @@ namespace vve {
 	        vh::setupDebugMessenger(m_instance, m_debugMessenger);
 		}
 
-    }
+		if (SDL_Vulkan_CreateSurface(m_windowSDL->GetSDLWindow(), m_instance, &m_surface) == 0) {
+            printf("Failed to create Vulkan surface.\n");
+        }
 
-    template<ArchitectureType ATYPE>
-    void RendererVulkan<ATYPE>::OnInit2(Message message) {
-        vh::pickPhysicalDevice(m_instance, m_deviceExtensions, m_window->GetSurface(), m_physicalDevice);
-        vh::createLogicalDevice(m_window->GetSurface(), m_physicalDevice, m_queueFamilies, m_validationLayers, m_deviceExtensions, m_device, m_graphicsQueue, m_presentQueue);
+        vh::pickPhysicalDevice(m_instance, m_deviceExtensions, m_surface, m_physicalDevice);
+        vh::createLogicalDevice(m_surface, m_physicalDevice, m_queueFamilies, m_validationLayers, m_deviceExtensions, m_device, m_graphicsQueue, m_presentQueue);
         vh::initVMA(m_instance, m_physicalDevice, m_device, m_vmaAllocator);  
-        vh::createSwapChain(m_windowSDL->GetSDLWindow(), m_window->GetSurface(), m_physicalDevice, m_device, m_swapChain);
+        vh::createSwapChain(m_windowSDL->GetSDLWindow(), m_surface, m_physicalDevice, m_device, m_swapChain);
         vh::createImageViews(m_device, m_swapChain);
         vh::createRenderPassClear(m_physicalDevice, m_device, m_swapChain, true, m_renderPass);
         
 		vh::createDescriptorSetLayout(m_device, m_descriptorSetLayouts);
 
         vh::createGraphicsPipeline(m_device, m_renderPass, m_descriptorSetLayouts, m_graphicsPipeline);
-        vh::createCommandPool(m_window->GetSurface(), m_physicalDevice, m_device, m_commandPool);
+        vh::createCommandPool(m_surface, m_physicalDevice, m_device, m_commandPool);
         vh::createDepthResources(m_physicalDevice, m_device, m_vmaAllocator, m_swapChain, m_depthImage);
         vh::createFramebuffers(m_device, m_swapChain, m_depthImage, m_renderPass);
 
@@ -75,9 +74,6 @@ namespace vve {
         vh::createDescriptorPool(m_device, 1000, m_descriptorPool);
         vh::createSemaphores(m_device, 3, m_imageAvailableSemaphores, m_semaphores);
 		vh::createFences(m_device, MAX_FRAMES_IN_FLIGHT, m_fences);
-
-		//m_engine.SendMessage( MsgAnnounce{this} );
-
     }
 
     template<ArchitectureType ATYPE>
@@ -93,7 +89,7 @@ namespace vve {
                             m_imageAvailableSemaphores[m_currentFrame], VK_NULL_HANDLE, &m_imageIndex);
 
         if (result == VK_ERROR_OUT_OF_DATE_KHR ) {
-            recreateSwapChain(m_windowSDL->GetSDLWindow(), m_window->GetSurface(), m_physicalDevice, m_device, m_vmaAllocator, m_swapChain, m_depthImage, m_renderPass);
+            recreateSwapChain(m_windowSDL->GetSDLWindow(), m_surface, m_physicalDevice, m_device, m_vmaAllocator, m_swapChain, m_depthImage, m_renderPass);
             return;
         } else assert (result == VK_SUCCESS || result == VK_SUBOPTIMAL_KHR);
     }
@@ -165,7 +161,7 @@ namespace vve {
         result = vkQueuePresentKHR(m_presentQueue, &presentInfo);
         if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR || m_framebufferResized) {
             m_framebufferResized = false;
-            recreateSwapChain(m_windowSDL->GetSDLWindow(), m_window->GetSurface(), m_physicalDevice, m_device, m_vmaAllocator, m_swapChain, m_depthImage, m_renderPass);
+            recreateSwapChain(m_windowSDL->GetSDLWindow(), m_surface, m_physicalDevice, m_device, m_vmaAllocator, m_swapChain, m_depthImage, m_renderPass);
         } else assert(result == VK_SUCCESS);
     }
     
@@ -211,6 +207,8 @@ namespace vve {
         vmaDestroyAllocator(m_vmaAllocator);
 
         vkDestroyDevice(m_device, nullptr);
+
+        vkDestroySurfaceKHR(m_instance, m_surface, nullptr);
 
 		if (m_engine.GetDebug()) {
             vh::DestroyDebugUtilsMessengerEXT(m_instance, m_debugMessenger, nullptr);
