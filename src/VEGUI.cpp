@@ -7,13 +7,23 @@ namespace vve {
 	template<ArchitectureType ATYPE>
 	GUI<ATYPE>::GUI(std::string systemName, Engine<ATYPE>& engine ) : System<ATYPE>(systemName, engine) {
 		m_engine.RegisterCallback( { 
-			  {this, 1000, "RECORD_NEXT_FRAME", [this](vve::Message message){this->OnRecordNextFrame(message);} }
+ 		  {this,    0, "ANNOUNCE", [this](Message message){this->OnAnnounce(message);} }, 
+		  {this, 1000, "RECORD_NEXT_FRAME", [this](vve::Message message){this->OnRecordNextFrame(message);} }
 		} );
 	};
 
+
+	template<ArchitectureType ATYPE>
+    void GUI<ATYPE>::OnAnnounce(vve::Message message) {
+		auto msg = message.GetData<MsgAnnounce>();
+		if( ((System<ATYPE>*)msg.m_sender)->GetName() == "VVE Window" ) {
+			m_windowSDL = (WindowSDL<ATYPE>*)msg.m_sender;
+		}
+	}
+
 	template<ArchitectureType ATYPE>
     void GUI<ATYPE>::OnRecordNextFrame(vve::Message message) {
-        if( m_engine.GetMainWindow()->GetIsMinimized()) { return; }
+        if( m_windowSDL->GetIsMinimized()) { return; }
 
         {
             ImGui::Begin("Hello, world!");                          // Create a window called "Hello, world!" and append into it.

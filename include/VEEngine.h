@@ -14,8 +14,6 @@ namespace vve {
 	class Engine : public System<ATYPE> {
 
 	public:
-		const std::string m_mainWindowName = "VVE MainWindow";
-		const std::string m_sceneManagerName = "VVE SceneManager";
 
 		struct MessageCallback {
 			System<ATYPE>* 				 m_system;
@@ -38,8 +36,6 @@ namespace vve {
 		auto GetRegistry() -> auto& { return m_registry; }
 		void SendMessage( Message message );
 		auto GetSystem( std::string name ) -> System<ATYPE>*;
-		auto GetMainWindowName() -> std::string { return m_mainWindowName; }
-		auto GetMainWindow() -> Window<ATYPE>* { return GetWindow(GetMainWindowName()); }
 		auto GetWindow( std::string name ) -> Window<ATYPE>* { return (Window<ATYPE>*)GetSystem(name); }
 		auto GetSceneMgr(std::string name) -> SceneManager<ATYPE>* { return (SceneManager<ATYPE>*)GetSystem(name); }
 		void PrintCallbacks();

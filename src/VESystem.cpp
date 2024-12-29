@@ -5,9 +5,9 @@
 
 namespace vve {
 	
-
-    MsgInit::MsgInit(void* s, void* r) : MsgBase{std::hash<std::string>{}("INIT"), s, r} {};
     MsgAnnounce::MsgAnnounce(void* s) : MsgBase{std::hash<std::string>{}("ANNOUNCE"), s} {};
+    MsgExtensions::MsgExtensions(void* s, std::vector<const char*> instExt, std::vector<const char*> devExt) : MsgBase{std::hash<std::string>{}("EXTENSIONS"), s}, m_instExt{instExt}, m_devExt{devExt} {};
+   	MsgInit::MsgInit(void* s, void* r) : MsgBase{std::hash<std::string>{}("INIT"), s, r} {};
     MsgFrameStart::MsgFrameStart(void* s, void* r, double dt) : MsgBase{std::hash<std::string>{}("FRAME_START"), s, r, dt} {};
     MsgPollEvents::MsgPollEvents(void* s, void* r, double dt) : MsgBase{std::hash<std::string>{}("POLL_EVENTS"), s, r, dt} {};
     MsgUpdate::MsgUpdate(void* s, void* r, double dt): MsgBase{std::hash<std::string>{}("UPDATE"), s, r, dt} {}; 

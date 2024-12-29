@@ -9,8 +9,8 @@ namespace vve {
 	// Vulkan Renderer
 
     template<ArchitectureType ATYPE>
-    RendererVulkan<ATYPE>::RendererVulkan(std::string systemName, Engine<ATYPE>& engine, Window<ATYPE>* window ) 
-        : Renderer<ATYPE>(systemName, engine, window) {
+    RendererVulkan<ATYPE>::RendererVulkan(std::string systemName, Engine<ATYPE>& engine ) 
+        : Renderer<ATYPE>(systemName, engine) {
 
         engine.RegisterCallback( { 
 			{this,  -2000, "INIT", [this](Message message){this->OnInit(message);} }, 

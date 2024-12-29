@@ -17,16 +17,17 @@ namespace vve {
         Vulkan(std::string systemName, Engine<ATYPE>& engine );
         virtual ~Vulkan();
 
-        /*auto GetInstance() -> VkInstance { return m_instance; }
+        auto GetInstance() -> VkInstance { return m_instance; }
 		auto GetPhysicalDevice() -> VkPhysicalDevice { return m_physicalDevice; }
 		auto GetDevice() -> VkDevice { return m_device; }
 		auto GetQueueFamilies() -> vh::QueueFamilyIndices { return m_queueFamilies; }
 		auto GetGraphicsQueue() -> VkQueue { return m_graphicsQueue; }
 		auto GetPresentQueue() -> VkQueue { return m_presentQueue; }
-		auto GetCommandPool() -> VkCommandPool { return m_commandPool; }
-		auto GetVmaAllocator() -> VmaAllocator { return m_vmaAllocator; }*/
+		auto GetVmaAllocator() -> VmaAllocator { return m_vmaAllocator; }
 
     private:
+		virtual void OnAnnounce(Message message);
+		virtual void OnExtensions(Message message);
         virtual void OnInit(Message message);
         virtual void OnQuit(Message message);
 
@@ -34,7 +35,9 @@ namespace vve {
             "VK_LAYER_KHRONOS_validation"
         };
 
-        const std::vector<const char*> m_deviceExtensions = {
+		std::vector<const char*> m_instanceExtensions;
+
+        std::vector<const char*> m_deviceExtensions = {
             VK_KHR_SWAPCHAIN_EXTENSION_NAME
         };
 

@@ -90,15 +90,15 @@ namespace vve {
 	
 	template<ArchitectureType ATYPE>
 	void Engine<ATYPE>::CreateWindow(){
-		RegisterSystem(std::make_unique<WindowSDL<ATYPE>>(GetMainWindowName(), *this, "Vulkane Engine", 800, 600 ) );
+		RegisterSystem(std::make_unique<WindowSDL<ATYPE>>("VVE Window", *this, "Vienna VUlkan Engine", 800, 600 ) );
 	};
 	
 	template<ArchitectureType ATYPE>
 	void Engine<ATYPE>::CreateRenderer(){
 		RegisterSystem(std::make_unique<Vulkan<ATYPE>>( "VVE Vulkan",  *this ) );
-		RegisterSystem(std::make_unique<RendererVulkan<ATYPE>>( "VVE RendererVulkan",  *this, GetMainWindow() ) );
-		RegisterSystem(std::make_unique<RendererImgui<ATYPE>>(  "VVE RendererImgui",   *this, GetMainWindow() ) );
-		RegisterSystem(std::make_unique<RendererForward<ATYPE>>("VVE RendererForward", *this, GetMainWindow() ) );
+		RegisterSystem(std::make_unique<RendererVulkan<ATYPE>>( "VVE Renderer Vulkan",  *this ) );
+		RegisterSystem(std::make_unique<RendererImgui<ATYPE>>(  "VVE Renderer Imgui",   *this ) );
+		RegisterSystem(std::make_unique<RendererForward<ATYPE>>("VVE Renderer Forward", *this) );
 	};
 	
 	template<ArchitectureType ATYPE>
@@ -125,8 +125,11 @@ namespace vve {
 	};
 
 	template<ArchitectureType ATYPE>
-	void Engine<ATYPE>::Init(){
-		if(!m_initialized) SendMessage( MsgInit{this} );
+	void Engine<ATYPE>::Init() {
+		if(!m_initialized) {
+			SendMessage( MsgAnnounce{this} );
+			SendMessage( MsgInit{this} );
+		}
 		m_initialized = true;
 		m_last = std::chrono::high_resolution_clock::now();
 	}

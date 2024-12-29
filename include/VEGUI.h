@@ -19,7 +19,9 @@ namespace vve {
     	~GUI() {};
 
 	private:
+		void OnAnnounce(vve::Message message);
 		void OnRecordNextFrame(vve::Message message);
+		WindowSDL<ATYPE>* m_windowSDL;
 	};
 
 };  // namespace vve

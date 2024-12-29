@@ -14,7 +14,7 @@ namespace vve {
                 : Window<ATYPE>(systemName, engine, windowName, width, height ) {
 
         engine.RegisterCallback( { 
-			{this, -3000, "INIT", [this](Message message){this->OnInit(message);} },
+			{this, -4000, "INIT", [this](Message message){this->OnInit(message);} },
 			{this,     0, "INIT", [this](Message message){this->OnInit2(message);} },
 			{this,     0, "POLL_EVENTS", [this](Message message){this->OnPollEvents(message);} },
 			{this,     0, "QUIT", [this](Message message){this->OnQuit(message);} },
@@ -50,11 +50,14 @@ namespace vve {
         extensions.resize(extensions_count);
         SDL_Vulkan_GetInstanceExtensions(m_sdlWindow, &extensions_count, extensions.data());
         m_instanceExtensions.insert(m_instanceExtensions.end(), extensions.begin(), extensions.end());
+
+		m_engine.SendMessage( MsgExtensions{this, m_instanceExtensions, {}} );
+		m_engine.SendMessage( MsgAnnounce{this} );
     }
         
    	template<ArchitectureType ATYPE>
     void WindowSDL<ATYPE>::OnInit2(Message message) {
-        auto rend = ((RendererVulkan<ATYPE>*)(m_engine.GetSystem("VVE RendererVulkan")));
+        auto rend = ((RendererVulkan<ATYPE>*)(m_engine.GetSystem("VVE Renderer Vulkan")));
 
         if (SDL_Vulkan_CreateSurface(m_sdlWindow, rend->GetInstance(), &m_surface) == 0) {
             printf("Failed to create Vulkan surface.\n");
@@ -146,7 +149,7 @@ namespace vve {
 
    	template<ArchitectureType ATYPE>
     void WindowSDL<ATYPE>::OnQuit(Message message) {
-        auto rend = ((RendererVulkan<ATYPE>*)(m_engine.GetSystem("VVE RendererVulkan")));
+        auto rend = ((RendererVulkan<ATYPE>*)(m_engine.GetSystem("VVE Renderer Vulkan")));
         vkDestroySurfaceKHR(rend->GetInstance(), m_surface, nullptr);
 		SDL_DestroyWindow(m_sdlWindow);
         SDL_Quit(); 

@@ -14,8 +14,9 @@
 namespace vve {
 
     const std::unordered_set<std::string> MsgTypeNames {
+        "ANNOUNCE", //System announce themselves
+        "EXTENSIONS", //System announce extensions they need
         "INIT",			//initialize the system
-        "ANNOUNCE", //
         "FRAME_START", //
         "POLL_EVENTS", //
         "UPDATE", //
@@ -59,8 +60,9 @@ namespace vve {
         int m_phase{0}; //is set when delivering the message, NOT by sender!
     };
 
-    struct MsgInit : public MsgBase { MsgInit(void* s, void* r=nullptr); };
     struct MsgAnnounce : public MsgBase { MsgAnnounce(void* s); };
+    struct MsgExtensions : public MsgBase { MsgExtensions(void* s, std::vector<const char*> instExt, std::vector<const char*> devExt ); std::vector<const char*> m_instExt; std::vector<const char*> m_devExt;};
+    struct MsgInit : public MsgBase { MsgInit(void* s, void* r=nullptr); };
     struct MsgFrameStart : public MsgBase { MsgFrameStart(void* s, void* r, double dt); };
     struct MsgPollEvents : public MsgBase { MsgPollEvents(void* s, void* r, double dt); };
     struct MsgUpdate : public MsgBase { MsgUpdate(void* s, void* r, double dt); double m_dt; };

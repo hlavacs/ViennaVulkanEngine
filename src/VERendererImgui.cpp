@@ -6,8 +6,8 @@
 namespace vve {
 
    	template<ArchitectureType ATYPE>
-    RendererImgui<ATYPE>::RendererImgui( std::string systemName, Engine<ATYPE>& engine, Window<ATYPE>* window ) 
-        : Renderer<ATYPE>(systemName, engine, window ) {
+    RendererImgui<ATYPE>::RendererImgui( std::string systemName, Engine<ATYPE>& engine ) 
+        : Renderer<ATYPE>(systemName, engine ) {
 
 		engine.RegisterCallback( { 
 			{this,   3000, "INIT", [this](Message message){this->OnInit(message);} },
@@ -24,7 +24,7 @@ namespace vve {
 
    	template<ArchitectureType ATYPE>
     void RendererImgui<ATYPE>::OnInit(Message message) {
-		if(m_vulkan == nullptr) { m_vulkan = (RendererVulkan<ATYPE>*)m_engine.GetSystem("VVE RendererVulkan"); }
+		if(m_vulkan == nullptr) { m_vulkan = (RendererVulkan<ATYPE>*)m_engine.GetSystem("VVE Renderer Vulkan"); }
 
 		WindowSDL<ATYPE>* windowSDL = (WindowSDL<ATYPE>*)m_window;
 

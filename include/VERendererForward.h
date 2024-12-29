@@ -10,7 +10,7 @@ namespace vve
 		using Renderer<ATYPE>::m_window;
 
     public:
-        RendererForward(std::string systemName, Engine<ATYPE>& engine, Window<ATYPE>* window );
+        RendererForward(std::string systemName, Engine<ATYPE>& engine);
         virtual ~RendererForward();
 
     private:

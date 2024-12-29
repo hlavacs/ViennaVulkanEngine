@@ -6,8 +6,8 @@
 namespace vve {
 
    	template<ArchitectureType ATYPE>
-    RendererForward<ATYPE>::RendererForward( std::string systemName, Engine<ATYPE>& engine, Window<ATYPE>* window ) 
-        : Renderer<ATYPE>(systemName, engine, window ) {
+    RendererForward<ATYPE>::RendererForward( std::string systemName, Engine<ATYPE>& engine ) 
+        : Renderer<ATYPE>(systemName, engine ) {
 
   		engine.RegisterCallback( { 
   			{this, -1000, "INIT", [this](Message message){this->OnInit(message);} },
@@ -26,7 +26,7 @@ namespace vve {
 
    	template<ArchitectureType ATYPE>
     void RendererForward<ATYPE>::OnInit2(Message message) {
-		if(m_vulkan == nullptr) { m_vulkan = (RendererVulkan<ATYPE>*)m_engine.GetSystem("VVE RendererVulkan"); }
+		if(m_vulkan == nullptr) { m_vulkan = (RendererVulkan<ATYPE>*)m_engine.GetSystem("VVE Renderer Vulkan"); }
         vh::createRenderPass(m_vulkan->GetPhysicalDevice(), m_vulkan->GetDevice(), m_vulkan->GetSwapChain(), false, m_renderPass);
         vh::createCommandPool(m_window->GetSurface(), m_vulkan->GetPhysicalDevice(), m_vulkan->GetDevice(), m_commandPool);
         vh::createCommandBuffers(m_vulkan->GetDevice(), m_commandPool, m_commandBuffers);
