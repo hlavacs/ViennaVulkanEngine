@@ -15,9 +15,9 @@ namespace vve {
 
         engine.RegisterCallback( { 
   			{this,     0, "ANNOUNCE", [this](Message message){this->OnAnnounce(message);} },
-			{this, -4000, "INIT", [this](Message message){this->OnInit(message);} },
+			{this,     0, "INIT", [this](Message message){this->OnInit(message);} },
 			{this,     0, "POLL_EVENTS", [this](Message message){this->OnPollEvents(message);} },
-			{this,     0, "QUIT", [this](Message message){this->OnQuit(message);} },
+			{this,  3000, "QUIT", [this](Message message){this->OnQuit(message);} },
 		} );
     }
 

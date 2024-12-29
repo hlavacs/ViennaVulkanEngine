@@ -16,10 +16,6 @@ namespace vve {
 	#ifndef NDEBUG
 		m_debug = true;
 	#endif
-		RegisterCallback( { 
-			{this, std::numeric_limits<int>::max(),    "QUIT", [this](Message message){this->OnQuit(message);} }
-		} );
-
 		auto transform = [&](const auto& str) { m_msgTypeMap[std::hash<std::string>{}(str)] = str; };
 		std::ranges::for_each( MsgTypeNames, transform );
 	};
@@ -155,8 +151,6 @@ namespace vve {
 		m_running = false;
 	};
 	
-	template<ArchitectureType ATYPE>
-	void Engine<ATYPE>::OnQuit(Message message) {}
 
 	template<ArchitectureType ATYPE>
 	void Engine<ATYPE>::PrintCallbacks() {

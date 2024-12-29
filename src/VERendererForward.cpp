@@ -11,9 +11,9 @@ namespace vve {
 
   		engine.RegisterCallback( { 
   			{this,     0, "ANNOUNCE", [this](Message message){this->OnAnnounce(message);} },
-  			{this,  2000, "INIT", [this](Message message){this->OnInit(message);} },
+  			{this,  3000, "INIT", [this](Message message){this->OnInit(message);} },
   			{this,  2000, "RECORD_NEXT_FRAME", [this](Message message){this->OnRecordNextFrame(message);} },
-  			{this, -3000, "QUIT", [this](Message message){this->OnQuit(message);} }
+  			{this,     0, "QUIT", [this](Message message){this->OnQuit(message);} }
   		} );
     };
 

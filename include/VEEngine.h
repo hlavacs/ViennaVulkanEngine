@@ -54,7 +54,6 @@ namespace vve {
 		void PrintCallbacks();
 
 	protected:
-		void OnQuit(Message message);
 		void LoadLevel( std::string levelName );
 		void CreateWindow();
 		void CreateRenderer();

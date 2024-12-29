@@ -14,7 +14,7 @@ namespace vve {
 
         engine.RegisterCallback( { 
 			{this,      0, "EXTENSIONS", [this](Message message){this->OnExtensions(message);} },
-			{this,  -2000, "INIT", [this](Message message){this->OnInit(message);} }, 
+			{this,   1000, "INIT", [this](Message message){this->OnInit(message);} }, 
 			{this,      0, "PREPARE_NEXT_FRAME", [this](Message message){this->OnPrepareNextFrame(message);} },
 			{this,      0, "RECORD_NEXT_FRAME", [this](Message message){this->OnRecordNextFrame(message);} },
 			{this,      0, "RENDER_NEXT_FRAME", [this](Message message){this->OnRenderNextFrame(message);} },
@@ -25,8 +25,7 @@ namespace vve {
 			{this,      0, "GEOMETRY_CREATE",  [this](Message message){this->OnGeometryCreate(message);} },
 			{this,      0, "GEOMETRY_DESTROY", [this](Message message){this->OnGeometryDestroy(message);} },
 
-			{this,  -1000, "QUIT", [this](Message message){this->OnQuit(message);} },
-			{this,   1000, "QUIT", [this](Message message){this->OnQuit2(message);} }
+			{this,   2000, "QUIT", [this](Message message){this->OnQuit(message);} },
 		} );
     }
 
@@ -213,12 +212,11 @@ namespace vve {
 		if (m_engine.GetDebug()) {
             vh::DestroyDebugUtilsMessengerEXT(m_instance, m_debugMessenger, nullptr);
         }
+
+        vkDestroyInstance(m_instance, nullptr);
+
     }
 
-	template<ArchitectureType ATYPE>
-    void RendererVulkan<ATYPE>::OnQuit2(Message message) {
-        vkDestroyInstance(m_instance, nullptr);
-	}
 
 	//-------------------------------------------------------------------------------------------------------
 

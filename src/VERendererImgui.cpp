@@ -11,11 +11,11 @@ namespace vve {
 
 		engine.RegisterCallback( { 
   			{this,     0, "ANNOUNCE", [this](Message message){this->OnAnnounce(message);} },
-			{this,   3000, "INIT", [this](Message message){this->OnInit(message);} },
+			{this,   4000, "INIT", [this](Message message){this->OnInit(message);} },
 			{this,   1000, "PREPARE_NEXT_FRAME", [this](Message message){this->OnPrepareNextFrame(message);} },
 			{this,   3000, "RECORD_NEXT_FRAME", [this](Message message){this->OnRecordNextFrame(message);} },
 			{this,      0, "SDL", [this](Message message){this->OnSDL(message);} },
-			{this,  -2000, "QUIT", [this](Message message){this->OnQuit(message);} }
+			{this,   1000, "QUIT", [this](Message message){this->OnQuit(message);} }
 		} );
 
     };

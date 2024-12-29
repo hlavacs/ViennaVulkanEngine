@@ -64,7 +64,6 @@ namespace vve {
 		void OnGeometryDestroy( Message message );
 
         void OnQuit(Message message);
-        void OnQuit2(Message message);
 
         const std::vector<const char*> m_validationLayers = {
             "VK_LAYER_KHRONOS_validation"
