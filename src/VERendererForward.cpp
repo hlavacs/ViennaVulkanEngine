@@ -28,7 +28,6 @@ namespace vve {
 		}
     }
 
-
    	template<ArchitectureType ATYPE>
     void RendererForward<ATYPE>::OnInit(Message message) {
         vh::createRenderPass(m_vulkan->GetPhysicalDevice(), m_vulkan->GetDevice(), m_vulkan->GetSwapChain(), false, m_renderPass);
@@ -58,7 +57,6 @@ namespace vve {
 
 	    m_vulkan->SubmitCommandBuffer(m_commandBuffers[m_vulkan->GetCurrentFrame()]);
     }
-
 
    	template<ArchitectureType ATYPE>
     void RendererForward<ATYPE>::OnQuit(Message message) {

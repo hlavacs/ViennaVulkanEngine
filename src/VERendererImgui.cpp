@@ -33,13 +33,9 @@ namespace vve {
 
    	template<ArchitectureType ATYPE>
     void RendererImgui<ATYPE>::OnInit(Message message) {
-		//if(m_vulkan == nullptr) { m_vulkan = (RendererVulkan<ATYPE>*)m_engine.GetSystem("VVE Renderer Vulkan"); }
-
-		WindowSDL<ATYPE>* windowSDL = (WindowSDL<ATYPE>*)m_window;
-
         vh::createRenderPass(m_vulkan->GetPhysicalDevice(), m_vulkan->GetDevice(), m_vulkan->GetSwapChain(), false, m_renderPass);
 		
-		vh::setupImgui(windowSDL->GetSDLWindow(), m_vulkan->GetInstance(), m_vulkan->GetPhysicalDevice(), m_vulkan->GetQueueFamilies(), m_vulkan->GetDevice(), m_vulkan->GetGraphicsQueue(), 
+		vh::setupImgui( ((WindowSDL<ATYPE>*)m_window)->GetSDLWindow(), m_vulkan->GetInstance(), m_vulkan->GetPhysicalDevice(), m_vulkan->GetQueueFamilies(), m_vulkan->GetDevice(), m_vulkan->GetGraphicsQueue(), 
 			m_vulkan->GetCommandPool(), m_vulkan->GetDescriptorPool(), m_renderPass);  
 
         vh::createCommandPool(m_vulkan->GetSurface(), m_vulkan->GetPhysicalDevice(), m_vulkan->GetDevice(), m_commandPool); 
