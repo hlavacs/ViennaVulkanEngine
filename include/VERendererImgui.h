@@ -8,6 +8,7 @@ namespace vve {
     {
         using System<ATYPE>::m_engine;
 		using typename System<ATYPE>::Message;
+		using typename System<ATYPE>::MsgAnnounce;
 		using typename System<ATYPE>::MsgSDL;
         using Renderer<ATYPE>::m_window;
 
@@ -16,6 +17,7 @@ namespace vve {
         virtual ~RendererImgui();
 
     private:
+        void OnAnnounce(Message message);
         void OnInit(Message message);
         void OnPrepareNextFrame(Message message);
         void OnRecordNextFrame(Message message);

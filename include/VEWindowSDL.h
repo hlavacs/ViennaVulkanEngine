@@ -41,12 +41,14 @@ namespace vve {
         auto GetSDLWindow() -> SDL_Window* { return m_sdlWindow; }
 
     private:
+        void OnAnnounce(Message message);
         void OnInit(Message message);
         void OnInit2(Message message);
         void OnPollEvents(Message message);
         void OnQuit(Message message);
 
         inline static bool 		m_sdl_initialized{false};
+		RendererVulkan<ATYPE>* 	m_vulkan{nullptr};
         SDL_Window* 			m_sdlWindow{nullptr};
         int 					m_minImageCount = 2;
         bool 					m_swapChainRebuild = false;

@@ -16,7 +16,7 @@ namespace vve {
 	template<ArchitectureType ATYPE>
     void GUI<ATYPE>::OnAnnounce(Message message) {
 		auto msg = message.template GetData<MsgAnnounce>();
-		if( ((System<ATYPE>*)msg.m_sender)->GetName() == "VVE Window" ) {
+		if( msg.m_sender->GetName() == "VVE Window" ) {
 			m_windowSDL = (WindowSDL<ATYPE>*)msg.m_sender;
 		}
 	}

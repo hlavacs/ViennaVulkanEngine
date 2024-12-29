@@ -13,6 +13,7 @@ namespace vve {
         : Renderer<ATYPE>(systemName, engine) {
 
         engine.RegisterCallback( { 
+  			{this,     0, "ANNOUNCE", [this](Message message){this->OnAnnounce(message);} },
 			{this,  -2000, "INIT", [this](Message message){this->OnInit(message);} }, 
 			{this,   1000, "INIT", [this](Message message){this->OnInit2(message);} },
 			{this,      0, "PREPARE_NEXT_FRAME", [this](Message message){this->OnPrepareNextFrame(message);} },
@@ -33,6 +34,13 @@ namespace vve {
     template<ArchitectureType ATYPE>
     RendererVulkan<ATYPE>::~RendererVulkan() {}
 
+   	template<ArchitectureType ATYPE>
+    void RendererVulkan<ATYPE>::OnAnnounce(Message message) {
+		auto msg = message.template GetData<MsgAnnounce>();
+		if( msg.m_sender->GetName() == "VVE Engine" ) {
+			//m_engine.SendMessage( MsgAnnounce{this} );
+		}
+    }
 
     template<ArchitectureType ATYPE>
     void RendererVulkan<ATYPE>::OnInit(Message message) {
@@ -67,6 +75,9 @@ namespace vve {
         vh::createDescriptorPool(m_device, 1000, m_descriptorPool);
         vh::createSemaphores(m_device, 3, m_imageAvailableSemaphores, m_semaphores);
 		vh::createFences(m_device, MAX_FRAMES_IN_FLIGHT, m_fences);
+
+		m_engine.SendMessage( MsgAnnounce{this} );
+
     }
 
     template<ArchitectureType ATYPE>

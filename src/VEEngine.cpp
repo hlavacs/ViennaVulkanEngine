@@ -90,7 +90,7 @@ namespace vve {
 	
 	template<ArchitectureType ATYPE>
 	void Engine<ATYPE>::CreateWindow(){
-		RegisterSystem(std::make_unique<WindowSDL<ATYPE>>("VVE Window", *this, "Vienna VUlkan Engine", 800, 600 ) );
+		RegisterSystem(std::make_unique<WindowSDL<ATYPE>>("VVE Window", *this, "Vienna Vulkan Engine", 800, 600 ) );
 	};
 	
 	template<ArchitectureType ATYPE>

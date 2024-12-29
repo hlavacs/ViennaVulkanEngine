@@ -8,6 +8,7 @@ namespace vve
 		using System<ATYPE>::m_engine;
 		using System<ATYPE>::m_registry;
 		using typename System<ATYPE>::Message;
+		using typename System<ATYPE>::MsgAnnounce;
 		using Renderer<ATYPE>::m_window;
 
     public:
@@ -15,6 +16,7 @@ namespace vve
         virtual ~RendererForward();
 
     private:
+        void OnAnnounce(Message message);
         void OnInit(Message message);
         void OnInit2(Message message);
         void OnRecordNextFrame(Message message);

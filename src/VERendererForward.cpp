@@ -10,6 +10,7 @@ namespace vve {
         : Renderer<ATYPE>(systemName, engine ) {
 
   		engine.RegisterCallback( { 
+  			{this,     0, "ANNOUNCE", [this](Message message){this->OnAnnounce(message);} },
   			{this, -1000, "INIT", [this](Message message){this->OnInit(message);} },
   			{this,  2000, "INIT", [this](Message message){this->OnInit2(message);} },
   			{this,  2000, "RECORD_NEXT_FRAME", [this](Message message){this->OnRecordNextFrame(message);} },
@@ -21,12 +22,19 @@ namespace vve {
     RendererForward<ATYPE>::~RendererForward(){};
 
    	template<ArchitectureType ATYPE>
+    void RendererForward<ATYPE>::OnAnnounce(Message message) {
+		auto msg = message.template GetData<MsgAnnounce>();
+		if( msg.m_sender->GetName() == "VVE Renderer Vulkan" ) {
+			m_vulkan = (RendererVulkan<ATYPE>*)msg.m_sender;
+		}
+    }
+
+   	template<ArchitectureType ATYPE>
     void RendererForward<ATYPE>::OnInit(Message message) {
     }
 
    	template<ArchitectureType ATYPE>
     void RendererForward<ATYPE>::OnInit2(Message message) {
-		if(m_vulkan == nullptr) { m_vulkan = (RendererVulkan<ATYPE>*)m_engine.GetSystem("VVE Renderer Vulkan"); }
         vh::createRenderPass(m_vulkan->GetPhysicalDevice(), m_vulkan->GetDevice(), m_vulkan->GetSwapChain(), false, m_renderPass);
         vh::createCommandPool(m_window->GetSurface(), m_vulkan->GetPhysicalDevice(), m_vulkan->GetDevice(), m_commandPool);
         vh::createCommandBuffers(m_vulkan->GetDevice(), m_commandPool, m_commandBuffers);

@@ -10,6 +10,7 @@ namespace vve {
         : Renderer<ATYPE>(systemName, engine ) {
 
 		engine.RegisterCallback( { 
+  			{this,     0, "ANNOUNCE", [this](Message message){this->OnAnnounce(message);} },
 			{this,   3000, "INIT", [this](Message message){this->OnInit(message);} },
 			{this,   1000, "PREPARE_NEXT_FRAME", [this](Message message){this->OnPrepareNextFrame(message);} },
 			{this,   3000, "RECORD_NEXT_FRAME", [this](Message message){this->OnRecordNextFrame(message);} },
@@ -23,8 +24,16 @@ namespace vve {
     RendererImgui<ATYPE>::~RendererImgui() {};
 
    	template<ArchitectureType ATYPE>
+    void RendererImgui<ATYPE>::OnAnnounce(Message message) {
+		auto msg = message.template GetData<MsgAnnounce>();
+		if( msg.m_sender->GetName() == "VVE Renderer Vulkan" ) {
+			m_vulkan = (RendererVulkan<ATYPE>*)msg.m_sender;
+		}
+    }
+
+   	template<ArchitectureType ATYPE>
     void RendererImgui<ATYPE>::OnInit(Message message) {
-		if(m_vulkan == nullptr) { m_vulkan = (RendererVulkan<ATYPE>*)m_engine.GetSystem("VVE Renderer Vulkan"); }
+		//if(m_vulkan == nullptr) { m_vulkan = (RendererVulkan<ATYPE>*)m_engine.GetSystem("VVE Renderer Vulkan"); }
 
 		WindowSDL<ATYPE>* windowSDL = (WindowSDL<ATYPE>*)m_window;
 
