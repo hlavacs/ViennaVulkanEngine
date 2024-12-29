@@ -7,7 +7,8 @@
 namespace vve {
     
    	template<ArchitectureType ATYPE>
-    Renderer<ATYPE>::Renderer(std::string systemName, Engine<ATYPE>& engine ) : System<ATYPE>{systemName, engine } {
+    Renderer<ATYPE>::Renderer(std::string systemName, Engine<ATYPE>& engine, std::string windowName ) : 
+		System<ATYPE>{systemName, engine }, m_windowName(windowName) {
 		engine.RegisterCallback( { 
 			{this,      0, "ANNOUNCE", [this](Message message){this->OnAnnounce(message);} }
 		} );
@@ -19,7 +20,7 @@ namespace vve {
    	template<ArchitectureType ATYPE>
     void Renderer<ATYPE>::OnAnnounce( Message message ) {
 		auto msg = message.template GetData<MsgAnnounce>();
-		if( msg.m_sender->GetName() == "VVE Window" ) {
+		if( msg.m_sender->GetName() == m_windowName ) {
 			m_window = (WindowSDL<ATYPE>*)msg.m_sender;
 		}
 	};

@@ -6,8 +6,8 @@
 namespace vve {
 
    	template<ArchitectureType ATYPE>
-    RendererForward<ATYPE>::RendererForward( std::string systemName, Engine<ATYPE>& engine ) 
-        : Renderer<ATYPE>(systemName, engine ) {
+    RendererForward<ATYPE>::RendererForward( std::string systemName, Engine<ATYPE>& engine, std::string windowName ) 
+        : Renderer<ATYPE>(systemName, engine, windowName ) {
 
   		engine.RegisterCallback( { 
   			{this,     0, "ANNOUNCE", [this](Message message){this->OnAnnounce(message);} },

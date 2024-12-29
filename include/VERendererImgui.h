@@ -13,7 +13,7 @@ namespace vve {
         using Renderer<ATYPE>::m_window;
 
     public:
-        RendererImgui(std::string systemName, Engine<ATYPE>& engine);
+        RendererImgui(std::string systemName, Engine<ATYPE>& engine, std::string windowName);
         virtual ~RendererImgui();
 
     private:

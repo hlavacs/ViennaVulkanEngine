@@ -9,8 +9,8 @@ namespace vve {
 	// Vulkan Renderer
 
     template<ArchitectureType ATYPE>
-    RendererVulkan<ATYPE>::RendererVulkan(std::string systemName, Engine<ATYPE>& engine ) 
-        : Renderer<ATYPE>(systemName, engine) {
+    RendererVulkan<ATYPE>::RendererVulkan(std::string systemName, Engine<ATYPE>& engine, std::string windowName ) 
+        : Renderer<ATYPE>(systemName, engine, windowName) {
 
         engine.RegisterCallback( { 
 			{this,      0, "EXTENSIONS", [this](Message message){this->OnExtensions(message);} },

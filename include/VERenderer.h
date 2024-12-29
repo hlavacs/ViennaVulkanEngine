@@ -22,11 +22,12 @@ namespace vve
 		using typename System<ATYPE>::MsgAnnounce;
 
     public:
-        Renderer(std::string systemName, Engine<ATYPE>& m_engine );
+        Renderer(std::string systemName, Engine<ATYPE>& m_engine, std::string windowName);
         virtual ~Renderer();
 
     protected:
 		void OnAnnounce(Message message);
+		std::string m_windowName;
         Window<ATYPE>* m_window;
     };
 
