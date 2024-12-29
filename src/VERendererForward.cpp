@@ -24,7 +24,7 @@ namespace vve {
     void RendererForward<ATYPE>::OnAnnounce(Message message) {
 		auto msg = message.template GetData<MsgAnnounce>();
 		if( msg.m_sender->GetName() == "VVE Renderer Vulkan" ) {
-			m_vulkan = (RendererVulkan<ATYPE>*)msg.m_sender;
+			m_vulkan = dynamic_cast<RendererVulkan<ATYPE>*>(msg.m_sender);
 		}
     }
 

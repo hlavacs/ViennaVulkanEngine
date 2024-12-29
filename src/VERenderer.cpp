@@ -1,4 +1,3 @@
-#include <any>
 #include "VHInclude.h"
 #include "VEInclude.h"
 
@@ -21,7 +20,7 @@ namespace vve {
     void Renderer<ATYPE>::OnAnnounce( Message message ) {
 		auto msg = message.template GetData<MsgAnnounce>();
 		if( msg.m_sender->GetName() == m_windowName ) {
-			m_window = (WindowSDL<ATYPE>*)msg.m_sender;
+			m_window = dynamic_cast<Window<ATYPE>*>(msg.m_sender);
 		}
 	};
 
