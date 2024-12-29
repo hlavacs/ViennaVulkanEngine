@@ -8,7 +8,6 @@ namespace vve {
     Vulkan<ATYPE>::Vulkan(std::string systemName, Engine<ATYPE>& engine ) : System<ATYPE>(systemName, engine) {
 
         engine.RegisterCallback( { 
-			{this,      0, "ANNOUNCE", [this](Message message){this->OnAnnounce(message);} }, 
 			{this,      0, "EXTENSIONS", [this](Message message){this->OnExtensions(message);} }
 			//{this,  -3000, "INIT", [this](Message message){this->OnInit(message);} }, 
 			//{this,   4000, "QUIT", [this](Message message){this->OnQuit(message);} },
@@ -17,11 +16,6 @@ namespace vve {
 
     template<ArchitectureType ATYPE>
     Vulkan<ATYPE>::~Vulkan() {}
-
-    template<ArchitectureType ATYPE>
-    void Vulkan<ATYPE>::OnAnnounce(Message message) {
-		auto msg = message.template GetData<MsgAnnounce>();
-	}
 
     template<ArchitectureType ATYPE>
     void Vulkan<ATYPE>::OnExtensions(Message message) {

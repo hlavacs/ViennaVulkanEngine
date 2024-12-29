@@ -41,10 +41,25 @@ namespace vve {
 
    	template<ArchitectureType ATYPE>
     System<ATYPE>::System( std::string systemName, Engine<ATYPE>& engine ) : 
-		m_name(systemName), m_engine(engine), m_registry{engine.GetRegistry()} {};
+		m_name(systemName), m_engine(engine), m_registry{engine.GetRegistry()} {
+
+		if( this != &engine ) {
+			engine.RegisterCallback( { 
+				{this, 0, "ANNOUNCE", [this](Message message){this->OnAnnounce(message);} }
+			} );
+		}
+	};
 
    	template<ArchitectureType ATYPE>
     System<ATYPE>::~System(){};
+
+	template<ArchitectureType ATYPE>
+    void System<ATYPE>::OnAnnounce(Message message) {
+		auto msg = message.template GetData<MsgAnnounce>();
+		if( msg.m_sender == &m_engine ) {
+			m_engine.SendMessage( MsgAnnounce{this} );
+		}
+    }
 
     template class System<ENGINETYPE_SEQUENTIAL>;
     template class System<ENGINETYPE_PARALLEL>;

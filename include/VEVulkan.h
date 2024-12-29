@@ -29,7 +29,6 @@ namespace vve {
 		auto GetVmaAllocator() -> VmaAllocator { return m_vmaAllocator; }
 
     private:
-		void OnAnnounce(Message message);
 		void OnExtensions(Message message);
         void OnInit(Message message);
         void OnQuit(Message message);

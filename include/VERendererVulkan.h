@@ -48,7 +48,6 @@ namespace vve {
 		void SubmitCommandBuffer( VkCommandBuffer commandBuffer ) { m_commandBuffersSubmit.push_back(commandBuffer); };
 
     private:
-        void OnAnnounce(Message message);
         void OnInit(Message message);
         void OnInit2(Message message);
 

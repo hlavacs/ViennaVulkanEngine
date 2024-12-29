@@ -13,7 +13,6 @@ namespace vve {
         : Renderer<ATYPE>(systemName, engine) {
 
         engine.RegisterCallback( { 
-  			{this,     0, "ANNOUNCE", [this](Message message){this->OnAnnounce(message);} },
 			{this,  -2000, "INIT", [this](Message message){this->OnInit(message);} }, 
 			{this,   1000, "INIT", [this](Message message){this->OnInit2(message);} },
 			{this,      0, "PREPARE_NEXT_FRAME", [this](Message message){this->OnPrepareNextFrame(message);} },
@@ -33,14 +32,6 @@ namespace vve {
 
     template<ArchitectureType ATYPE>
     RendererVulkan<ATYPE>::~RendererVulkan() {}
-
-   	template<ArchitectureType ATYPE>
-    void RendererVulkan<ATYPE>::OnAnnounce(Message message) {
-		auto msg = message.template GetData<MsgAnnounce>();
-		if( msg.m_sender == &m_engine ) {
-			m_engine.SendMessage( MsgAnnounce{this} );
-		}
-    }
 
     template<ArchitectureType ATYPE>
     void RendererVulkan<ATYPE>::OnInit(Message message) {

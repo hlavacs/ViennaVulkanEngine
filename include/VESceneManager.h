@@ -48,6 +48,7 @@ namespace vve {
 		using System<ATYPE>::m_engine;
 		using System<ATYPE>::m_registry;
 		using typename System<ATYPE>::Message;
+		using typename System<ATYPE>::MsgAnnounce;
 		using typename System<ATYPE>::MsgObjectCreate;
 		using typename System<ATYPE>::MsgFileLoadObject;
 
