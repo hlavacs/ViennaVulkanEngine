@@ -61,9 +61,9 @@ namespace vve {
 		auto GetAsset(std::string filename) -> vecs::Handle;
 
     private:
-		virtual void OnInit(Message message);
-		virtual void OnUpdate(Message message);
-		virtual void OnLoadObject(Message message);
+		void OnInit(Message message);
+		void OnUpdate(Message message);
+		void OnLoadObject(Message message);
 
 		std::shared_mutex m_mutex;
 		std::unordered_map<std::string, vecs::Handle> m_handleMap;

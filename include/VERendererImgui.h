@@ -14,11 +14,11 @@ namespace vve {
         virtual ~RendererImgui();
 
     private:
-        virtual void OnInit(Message message);
-        virtual void OnPrepareNextFrame(Message message);
-        virtual void OnRecordNextFrame(Message message);
-        virtual void OnSDL(Message message);
-        virtual void OnQuit(Message message);
+        void OnInit(Message message);
+        void OnPrepareNextFrame(Message message);
+        void OnRecordNextFrame(Message message);
+        void OnSDL(Message message);
+        void OnQuit(Message message);
 
 		RendererVulkan<ATYPE>* m_vulkan{nullptr};
 	    VkRenderPass m_renderPass;

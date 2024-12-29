@@ -41,15 +41,15 @@ namespace vve {
 		void PrintCallbacks();
 
 	protected:
-		virtual void OnInit(Message message);
-		virtual void OnInit2(Message message);
-		virtual void OnQuit(Message message);
-		virtual void LoadLevel( std::string levelName );
-		virtual void CreateWindow();
-		virtual void CreateRenderer();
-		virtual void CreateSystems();
-		virtual void CreateCamera();
-		virtual void CreateGUI();
+		void OnInit(Message message);
+		void OnInit2(Message message);
+		void OnQuit(Message message);
+		void LoadLevel( std::string levelName );
+		void CreateWindow();
+		void CreateRenderer();
+		void CreateSystems();
+		void CreateCamera();
+		void CreateGUI();
 
 		std::unordered_map<std::string, std::unique_ptr<System<ATYPE>>> m_systems{};
 

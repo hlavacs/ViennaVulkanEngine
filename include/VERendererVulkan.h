@@ -41,20 +41,21 @@ namespace vve {
 		void SubmitCommandBuffer( VkCommandBuffer commandBuffer ) { m_commandBuffersSubmit.push_back(commandBuffer); };
 
     private:
-        virtual void OnInit(Message message);
-        virtual void OnInit2(Message message);
-        virtual void OnPrepareNextFrame(Message message);
-        virtual void OnRecordNextFrame(Message message);
-        virtual void OnRenderNextFrame(Message message);
-		
-		virtual void OnObjectCreate( Message message );
-		virtual void OnTextureCreate( Message message );
-		virtual void OnTextureDestroy( Message message );
-		virtual void OnGeometryCreate( Message message );
-		virtual void OnGeometryDestroy( Message message );
+        void OnInit(Message message);
+        void OnInit2(Message message);
 
-        virtual void OnQuit(Message message);
-        virtual void OnQuit2(Message message);
+        void OnPrepareNextFrame(Message message);
+        void OnRecordNextFrame(Message message);
+        void OnRenderNextFrame(Message message);
+		
+		void OnObjectCreate( Message message );
+		void OnTextureCreate( Message message );
+		void OnTextureDestroy( Message message );
+		void OnGeometryCreate( Message message );
+		void OnGeometryDestroy( Message message );
+
+        void OnQuit(Message message);
+        void OnQuit2(Message message);
 
         const std::vector<const char*> m_validationLayers = {
             "VK_LAYER_KHRONOS_validation"

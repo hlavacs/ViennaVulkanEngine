@@ -26,10 +26,10 @@ namespace vve {
 		auto GetVmaAllocator() -> VmaAllocator { return m_vmaAllocator; }
 
     private:
-		virtual void OnAnnounce(Message message);
-		virtual void OnExtensions(Message message);
-        virtual void OnInit(Message message);
-        virtual void OnQuit(Message message);
+		void OnAnnounce(Message message);
+		void OnExtensions(Message message);
+        void OnInit(Message message);
+        void OnQuit(Message message);
 
         const std::vector<const char*> m_validationLayers = {
             "VK_LAYER_KHRONOS_validation"

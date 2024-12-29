@@ -24,7 +24,7 @@ namespace vve
         virtual ~Renderer();
 
     protected:
-		virtual void OnAnnounce(Message message);
+		void OnAnnounce(Message message);
         Window<ATYPE>* m_window;
     };
 
