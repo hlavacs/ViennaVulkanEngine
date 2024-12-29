@@ -92,7 +92,7 @@ namespace vve {
 
 	template<ArchitectureType ATYPE>
 	void Engine<ATYPE>::CreateGUI() {
-		RegisterSystem(std::make_unique<GUI<ATYPE>>("VVE GUI", *this));
+		RegisterSystem(std::make_unique<GUI<ATYPE>>("VVE GUI", *this, "VVE Window"));
 	}
 
 	template<ArchitectureType ATYPE>

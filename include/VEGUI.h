@@ -18,12 +18,14 @@ namespace vve {
 		using typename System<ATYPE>::MsgFileLoadObject;
 
 	public:
-		GUI(std::string systemName, Engine<ATYPE>& engine );
+		GUI(std::string systemName, Engine<ATYPE>& engine, std::string windowName);
     	~GUI() {};
 
 	private:
 		void OnAnnounce(Message message);
 		void OnRecordNextFrame(Message message);
+
+		std::string m_windowName;
 		WindowSDL<ATYPE>* m_windowSDL;
 	};
 

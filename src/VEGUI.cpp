@@ -5,7 +5,8 @@
 namespace vve {
 
 	template<ArchitectureType ATYPE>
-	GUI<ATYPE>::GUI(std::string systemName, Engine<ATYPE>& engine ) : System<ATYPE>(systemName, engine) {
+	GUI<ATYPE>::GUI(std::string systemName, Engine<ATYPE>& engine, std::string windowName ) : 
+		System<ATYPE>(systemName, engine), m_windowName(windowName) {
 		m_engine.RegisterCallback( { 
  		  {this,    0, "ANNOUNCE", [this](Message message){this->OnAnnounce(message);} }, 
 		  {this, 1000, "RECORD_NEXT_FRAME", [this](Message message){this->OnRecordNextFrame(message);} }
@@ -16,7 +17,7 @@ namespace vve {
 	template<ArchitectureType ATYPE>
     void GUI<ATYPE>::OnAnnounce(Message message) {
 		auto msg = message.template GetData<MsgAnnounce>();
-		if( msg.m_sender->GetName() == "VVE Window" ) {
+		if( msg.m_sender->GetName() == m_windowName ) {
 			m_windowSDL = (WindowSDL<ATYPE>*)msg.m_sender;
 		}
 	}

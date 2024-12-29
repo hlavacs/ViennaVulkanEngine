@@ -14,7 +14,6 @@ namespace vve {
                 : Window<ATYPE>(systemName, engine, windowName, width, height ) {
 
         engine.RegisterCallback( { 
-  			{this,     0, "ANNOUNCE", [this](Message message){this->OnAnnounce(message);} },
 			{this,     0, "INIT", [this](Message message){this->OnInit(message);} },
 			{this,     0, "POLL_EVENTS", [this](Message message){this->OnPollEvents(message);} },
 			{this,  3000, "QUIT", [this](Message message){this->OnQuit(message);} },
@@ -23,14 +22,6 @@ namespace vve {
 
    	template<ArchitectureType ATYPE>
     WindowSDL<ATYPE>::~WindowSDL() {}
-
-   	template<ArchitectureType ATYPE>
-    void WindowSDL<ATYPE>::OnAnnounce(Message message) {
-		auto msg = message.template GetData<MsgAnnounce>();
-		if( msg.m_sender->GetName() == "VVE Renderer Vulkan" ) {
-			m_vulkan = (RendererVulkan<ATYPE>*)msg.m_sender;
-		}
-    }
 
    	template<ArchitectureType ATYPE>
     void WindowSDL<ATYPE>::OnInit(Message message) {

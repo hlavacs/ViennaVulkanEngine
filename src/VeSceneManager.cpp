@@ -9,7 +9,6 @@ namespace vve {
    	template<ArchitectureType ATYPE>
     SceneManager<ATYPE>::SceneManager(std::string systemName, Engine<ATYPE>& engine ) : System<ATYPE>{systemName, engine } {
 		engine.RegisterCallback( { 
-  			{this,     0, "ANNOUNCE", [this](Message message){this->OnAnnounce(message);} },
 			{this,  2000, "INIT", [this](Message message){this->OnInit(message);} },
 			{this, std::numeric_limits<int>::max(), "UPDATE", [this](Message message){this->OnUpdate(message);} },
 			{this, std::numeric_limits<int>::max(), "FILE_LOAD_OBJECT", [this](Message message){this->OnLoadObject(message);} },
