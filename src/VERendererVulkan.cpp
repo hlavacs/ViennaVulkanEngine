@@ -13,6 +13,7 @@ namespace vve {
         : Renderer<ATYPE>(systemName, engine) {
 
         engine.RegisterCallback( { 
+			{this,      0, "EXTENSIONS", [this](Message message){this->OnExtensions(message);} },
 			{this,  -2000, "INIT", [this](Message message){this->OnInit(message);} }, 
 			{this,   1000, "INIT", [this](Message message){this->OnInit2(message);} },
 			{this,      0, "PREPARE_NEXT_FRAME", [this](Message message){this->OnPrepareNextFrame(message);} },
@@ -34,16 +35,24 @@ namespace vve {
     RendererVulkan<ATYPE>::~RendererVulkan() {}
 
     template<ArchitectureType ATYPE>
+    void RendererVulkan<ATYPE>::OnExtensions(Message message) {
+		auto msg = message.template GetData<MsgExtensions>();
+		m_instanceExtensions.insert(m_instanceExtensions.end(), msg.m_instExt.begin(), msg.m_instExt.end());
+		m_deviceExtensions.insert(m_deviceExtensions.end(), msg.m_devExt.begin(), msg.m_devExt.end());
+	}
+
+    template<ArchitectureType ATYPE>
     void RendererVulkan<ATYPE>::OnInit(Message message) {
     	m_windowSDL = (WindowSDL<ATYPE>*)m_window;
-		auto instanceExtensions = m_windowSDL->GetInstanceExtensions();
 		if (m_engine.GetDebug()) {
-            instanceExtensions.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
+            m_instanceExtensions.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
         }
-    	vh::createInstance( m_validationLayers, instanceExtensions, m_instance);
+
+    	vh::createInstance( m_validationLayers, m_instanceExtensions, m_instance);
 		if (m_engine.GetDebug()) {
 	        vh::setupDebugMessenger(m_instance, m_debugMessenger);
 		}
+
     }
 
     template<ArchitectureType ATYPE>
@@ -67,7 +76,7 @@ namespace vve {
         vh::createSemaphores(m_device, 3, m_imageAvailableSemaphores, m_semaphores);
 		vh::createFences(m_device, MAX_FRAMES_IN_FLIGHT, m_fences);
 
-		m_engine.SendMessage( MsgAnnounce{this} );
+		//m_engine.SendMessage( MsgAnnounce{this} );
 
     }
 

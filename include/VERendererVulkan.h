@@ -13,6 +13,7 @@ namespace vve {
         using System<ATYPE>::m_engine;
         using System<ATYPE>::m_registry;
 		using typename System<ATYPE>::Message;
+		using typename System<ATYPE>::MsgExtensions;
 		using typename System<ATYPE>::MsgAnnounce;
 		using typename System<ATYPE>::MsgObjectCreate;
 		using typename System<ATYPE>::MsgTextureCreate;
@@ -48,6 +49,7 @@ namespace vve {
 		void SubmitCommandBuffer( VkCommandBuffer commandBuffer ) { m_commandBuffersSubmit.push_back(commandBuffer); };
 
     private:
+		void OnExtensions(Message message);
         void OnInit(Message message);
         void OnInit2(Message message);
 
@@ -68,7 +70,9 @@ namespace vve {
             "VK_LAYER_KHRONOS_validation"
         };
 
-        const std::vector<const char*> m_deviceExtensions = {
+		std::vector<const char*> m_instanceExtensions;
+
+        std::vector<const char*> m_deviceExtensions = {
             VK_KHR_SWAPCHAIN_EXTENSION_NAME
         };
 
