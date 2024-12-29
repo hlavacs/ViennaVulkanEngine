@@ -12,6 +12,12 @@ namespace vve {
     {
         using System<ATYPE>::m_engine;
         using System<ATYPE>::m_registry;
+		using typename System<ATYPE>::Message;
+		using typename System<ATYPE>::MsgObjectCreate;
+		using typename System<ATYPE>::MsgTextureCreate;
+		using typename System<ATYPE>::MsgTextureDestroy;
+		using typename System<ATYPE>::MsgGeometryCreate;
+		using typename System<ATYPE>::MsgGeometryDestroy;
         using Renderer<ATYPE>::m_window;
 
     public:

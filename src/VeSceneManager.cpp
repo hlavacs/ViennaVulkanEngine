@@ -44,7 +44,7 @@ namespace vve {
 
 	template<ArchitectureType ATYPE>
     void SceneManager<ATYPE>::OnLoadObject(Message message) {
-		auto msg = message.GetData<MsgFileLoadObject>();
+		auto msg = message.template GetData<MsgFileLoadObject>();
 		auto tHandle = LoadTexture(msg.m_txtName);
 		auto oHandle = LoadOBJ(msg.m_objName);
 		auto nHandle = m_registry.Insert( GeometryHandle{oHandle}, TextureHandle{tHandle}, SceneNodeHandle{m_handleMap[m_rootName]} );

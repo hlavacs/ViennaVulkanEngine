@@ -10,15 +10,19 @@ template<vve::ArchitectureType ATYPE>
 class MyGUI : public vve::System<ATYPE> {
 
     using vve::System<ATYPE>::m_engine;
+	using typename vve::System<ATYPE>::Message;
+	using typename vve::System<ATYPE>::MsgKeyDown;
+	using typename vve::System<ATYPE>::MsgKeyUp;
+	using typename vve::System<ATYPE>::MsgKeyRepeat;
 
 public:
     MyGUI( vve::Engine<ATYPE>* engine ) : vve::System<ATYPE>("MyGUI", engine ) {
 
 		m_engine->RegisterCallback( { 
-			  {this, -10000, "RENDER_NEXT_FRAME", [this](vve::Message message){this->OnRenderNextFrame(message);} }
-			, {this,      0, "SDL_KEY_DOWN", [this](vve::Message message){this->OnKeyDown(message);} }
-			, {this,      0, "SDL_KEY_REPEAT", [this](vve::Message message){this->OnKeyRepeat(message);} }
-			, {this,      0, "SDL_KEY_UP", [this](vve::Message message){this->OnKeyUp(message);} }
+			  {this, -10000, "RENDER_NEXT_FRAME", [this](Message message){this->OnRenderNextFrame(message);} }
+			, {this,      0, "SDL_KEY_DOWN", [this](Message message){this->OnKeyDown(message);} }
+			, {this,      0, "SDL_KEY_REPEAT", [this](Message message){this->OnKeyRepeat(message);} }
+			, {this,      0, "SDL_KEY_UP", [this](Message message){this->OnKeyUp(message);} }
 		} );
     };
     
@@ -26,7 +30,7 @@ public:
 
     float clear_color[3]{ 0.45f, 0.55f, 0.60f};
 
-    void OnRenderNextFrame(vve::Message message) {
+    void OnRenderNextFrame(Message message) {
       
         static bool show_demo_window = true;
         static bool show_another_window = false;
@@ -78,15 +82,15 @@ public:
     }
 
 
-    void OnKeyDown(vve::Message message) {
-        std::cout << "Key down: " << message.GetData<vve::MsgKeyDown>().m_key << std::endl;
+    void OnKeyDown(Message message) {
+        std::cout << "Key down: " << message.template GetData<MsgKeyDown>().m_key << std::endl;
     }
 
-    void OnKeyUp(vve::Message message) {
-        std::cout << "Key up: " << message.GetData<vve::MsgKeyUp>().m_key << std::endl;
+    void OnKeyUp(Message message) {
+        std::cout << "Key up: " << message.template GetData<MsgKeyUp>().m_key << std::endl;
     }
-    void OnKeyRepeat(vve::Message message) {
-        std::cout << "Key repeat: " << message.GetData<vve::MsgKeyRepeat>().m_key << std::endl;
+    void OnKeyRepeat(Message message) {
+        std::cout << "Key repeat: " << message.template GetData<MsgKeyRepeat>().m_key << std::endl;
     }
 
 

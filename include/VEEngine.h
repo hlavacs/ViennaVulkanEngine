@@ -13,6 +13,19 @@ namespace vve {
 	template<ArchitectureType ATYPE = ENGINETYPE_SEQUENTIAL>
 	class Engine : public System<ATYPE> {
 
+		using typename System<ATYPE>::Message;
+		using typename System<ATYPE>::MsgAnnounce;
+		using typename System<ATYPE>::MsgInit;
+		using typename System<ATYPE>::MsgFrameStart;
+		using typename System<ATYPE>::MsgFrameEnd;
+		using typename System<ATYPE>::MsgPollEvents;
+		using typename System<ATYPE>::MsgUpdate;
+		using typename System<ATYPE>::MsgPrepareNextFrame;
+		using typename System<ATYPE>::MsgRecordNextFrame;
+		using typename System<ATYPE>::MsgRenderNextFrame;
+		using typename System<ATYPE>::MsgPresentNextFrame;
+		using typename System<ATYPE>::MsgQuit;
+
 	public:
 
 		struct MessageCallback {

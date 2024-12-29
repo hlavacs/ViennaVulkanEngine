@@ -7,6 +7,7 @@ namespace vve
 		
 		using System<ATYPE>::m_engine;
 		using System<ATYPE>::m_registry;
+		using typename System<ATYPE>::Message;
 		using Renderer<ATYPE>::m_window;
 
     public:

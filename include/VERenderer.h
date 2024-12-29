@@ -18,6 +18,8 @@ namespace vve
         friend class Engine<ATYPE>;
 
         using System<ATYPE>::m_engine;
+		using typename System<ATYPE>::Message;
+		using typename System<ATYPE>::MsgAnnounce;
 
     public:
         Renderer(std::string systemName, Engine<ATYPE>& m_engine );

@@ -47,6 +47,9 @@ namespace vve {
 
 		using System<ATYPE>::m_engine;
 		using System<ATYPE>::m_registry;
+		using typename System<ATYPE>::Message;
+		using typename System<ATYPE>::MsgObjectCreate;
+		using typename System<ATYPE>::MsgFileLoadObject;
 
 		using SceneNodeWrapper = vsty::strong_type_t<SceneNode, vsty::counter<>>; //need this to use SceneNode as a unique component
 		const std::string m_rootName = "VVE RootSceneNode";

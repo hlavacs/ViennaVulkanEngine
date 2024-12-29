@@ -14,6 +14,19 @@ namespace vve {
    	template<ArchitectureType ATYPE>
     class WindowSDL : public Window<ATYPE> {
 
+		using typename System<ATYPE>::Message;
+		using typename System<ATYPE>::MsgAnnounce;
+		using typename System<ATYPE>::MsgExtensions;
+		using typename System<ATYPE>::MsgSDL;
+		using typename System<ATYPE>::MsgKeyUp;
+		using typename System<ATYPE>::MsgKeyDown;
+		using typename System<ATYPE>::MsgKeyRepeat;
+		using typename System<ATYPE>::MsgMouseMove;
+		using typename System<ATYPE>::MsgMouseButtonDown;
+		using typename System<ATYPE>::MsgMouseButtonUp;
+		using typename System<ATYPE>::MsgMouseButtonRepeat;
+		using typename System<ATYPE>::MsgMouseWheel;
+
         using Window<ATYPE>::m_engine;
         using Window<ATYPE>::m_width;
         using Window<ATYPE>::m_height;

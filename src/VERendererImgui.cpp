@@ -65,7 +65,7 @@ namespace vve {
 
    	template<ArchitectureType ATYPE>
     void RendererImgui<ATYPE>::OnSDL(Message message) {
-    	SDL_Event event = message.GetData<MsgSDL>().m_event;
+    	SDL_Event event = message.template GetData<MsgSDL>().m_event;
     	ImGui_ImplSDL2_ProcessEvent(&event);
     }
 

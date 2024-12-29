@@ -8,21 +8,21 @@ namespace vve {
 	GUI<ATYPE>::GUI(std::string systemName, Engine<ATYPE>& engine ) : System<ATYPE>(systemName, engine) {
 		m_engine.RegisterCallback( { 
  		  {this,    0, "ANNOUNCE", [this](Message message){this->OnAnnounce(message);} }, 
-		  {this, 1000, "RECORD_NEXT_FRAME", [this](vve::Message message){this->OnRecordNextFrame(message);} }
+		  {this, 1000, "RECORD_NEXT_FRAME", [this](Message message){this->OnRecordNextFrame(message);} }
 		} );
 	};
 
 
 	template<ArchitectureType ATYPE>
-    void GUI<ATYPE>::OnAnnounce(vve::Message message) {
-		auto msg = message.GetData<MsgAnnounce>();
+    void GUI<ATYPE>::OnAnnounce(Message message) {
+		auto msg = message.template GetData<MsgAnnounce>();
 		if( ((System<ATYPE>*)msg.m_sender)->GetName() == "VVE Window" ) {
 			m_windowSDL = (WindowSDL<ATYPE>*)msg.m_sender;
 		}
 	}
 
 	template<ArchitectureType ATYPE>
-    void GUI<ATYPE>::OnRecordNextFrame(vve::Message message) {
+    void GUI<ATYPE>::OnRecordNextFrame(Message message) {
         if( m_windowSDL->GetIsMinimized()) { return; }
 
         {

@@ -25,7 +25,6 @@ namespace vve {
 	template<ArchitectureType ATYPE> class RendererForward;
 	template<ArchitectureType ATYPE> class RendererVulkan;
    	template<ArchitectureType ATYPE> class SceneManager;
-	struct Message;
 }
 
 #include "VECS.h"

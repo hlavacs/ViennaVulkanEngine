@@ -20,12 +20,12 @@ namespace vve {
 
     template<ArchitectureType ATYPE>
     void Vulkan<ATYPE>::OnAnnounce(Message message) {
-		auto msg = message.GetData<MsgAnnounce>();
+		auto msg = message.template GetData<MsgAnnounce>();
 	}
 
     template<ArchitectureType ATYPE>
     void Vulkan<ATYPE>::OnExtensions(Message message) {
-		auto msg = message.GetData<MsgExtensions>();
+		auto msg = message.template GetData<MsgExtensions>();
 		m_instanceExtensions.insert(m_instanceExtensions.end(), msg.m_instExt.begin(), msg.m_instExt.end());
 		m_deviceExtensions.insert(m_deviceExtensions.end(), msg.m_devExt.begin(), msg.m_devExt.end());
 	}
