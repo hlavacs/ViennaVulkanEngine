@@ -19,6 +19,7 @@ namespace vve {
 
    	class System;
    	class Engine;
+	class GUI;
     class Window;
 	class WindowSDL;
 	class Renderer;

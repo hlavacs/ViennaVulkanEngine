@@ -8,8 +8,6 @@
 
 class MyGUI : public vve::System {
 
-	using Message = typename vve::System::Message;
-
 public:
     MyGUI( vve::Engine& engine ) : vve::System("MyGUI", engine ) {
 
