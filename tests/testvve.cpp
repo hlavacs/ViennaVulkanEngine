@@ -16,10 +16,10 @@ class MyGUI : public vve::System<ATYPE> {
 	using typename vve::System<ATYPE>::MsgKeyRepeat;
 
 public:
-    MyGUI( vve::Engine<ATYPE>* engine ) : vve::System<ATYPE>("MyGUI", engine ) {
+    MyGUI( vve::Engine<ATYPE>& engine ) : vve::System<ATYPE>("MyGUI", engine ) {
 
-		m_engine->RegisterCallback( { 
-			  {this, -10000, "RENDER_NEXT_FRAME", [this](Message message){this->OnRenderNextFrame(message);} }
+		m_engine.RegisterCallback( { 
+			  {this, -10000, "RECORD_NEXT_FRAME", [this](Message message){this->OnRecordNextFrame(message);} }
 			, {this,      0, "SDL_KEY_DOWN", [this](Message message){this->OnKeyDown(message);} }
 			, {this,      0, "SDL_KEY_REPEAT", [this](Message message){this->OnKeyRepeat(message);} }
 			, {this,      0, "SDL_KEY_UP", [this](Message message){this->OnKeyUp(message);} }
@@ -30,12 +30,12 @@ public:
 
     float clear_color[3]{ 0.45f, 0.55f, 0.60f};
 
-    void OnRenderNextFrame(Message message) {
+    void OnRecordNextFrame(Message message) {
       
-        static bool show_demo_window = true;
+        static bool show_demo_window = false;
         static bool show_another_window = false;
 
-        if( m_engine->GetMainWindow()->GetIsMinimized()) {
+        if( m_engine.GetWindow("VVE Window")->GetIsMinimized()) {
 			return;
 		}
 
@@ -78,7 +78,7 @@ public:
             ImGui::End();
         }
 
-        m_engine->GetMainWindow()->SetClearColor( glm::vec4{ clear_color[0], clear_color[1], clear_color[2], 1.0f} );
+        m_engine.GetWindow("VVE Window")->SetClearColor( glm::vec4{ clear_color[0], clear_color[1], clear_color[2], 1.0f} );
     }
 
 
@@ -92,7 +92,6 @@ public:
     void OnKeyRepeat(Message message) {
         std::cout << "Key repeat: " << message.template GetData<MsgKeyRepeat>().m_key << std::endl;
     }
-
 
 private:
 };
@@ -124,6 +123,8 @@ int main() {
 
 
     vve::Engine<vve::ENGINETYPE_SEQUENTIAL> engine("My Engine") ;
+
+	MyGUI<vve::ENGINETYPE_SEQUENTIAL> mygui{engine};
 
 	engine.Init();
 	engine.PrintCallbacks();

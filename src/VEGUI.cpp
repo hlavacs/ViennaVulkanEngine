@@ -27,7 +27,7 @@ namespace vve {
         if( m_windowSDL->GetIsMinimized()) { return; }
 
         {
-            ImGui::Begin("Hello, world!");                          // Create a window called "Hello, world!" and append into it.
+            ImGui::Begin("Load Object");                          // Create a window called "Hello, world!" and append into it.
 
 			static char* file_dialog_buffer = nullptr;
 			static char path_obj[500] = "assets\\models\\viking_room.obj";
