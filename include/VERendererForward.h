@@ -2,17 +2,10 @@
 
 namespace vve
 {
-   	template<ArchitectureType ATYPE>
-    class RendererForward : public Renderer<ATYPE> {
+    class RendererForward : public Renderer {
 		
-		using System<ATYPE>::m_engine;
-		using System<ATYPE>::m_registry;
-		using typename System<ATYPE>::Message;
-		using typename System<ATYPE>::MsgAnnounce;
-		using Renderer<ATYPE>::m_window;
-
     public:
-        RendererForward(std::string systemName, Engine<ATYPE>& engine, std::string windowName);
+        RendererForward(std::string systemName, Engine& engine, std::string windowName);
         virtual ~RendererForward();
 
     private:
@@ -21,7 +14,7 @@ namespace vve
         void OnRecordNextFrame(Message message);
         void OnQuit(Message message);
 
-		RendererVulkan<ATYPE>* m_vulkan{nullptr};
+		RendererVulkan* m_vulkan{nullptr};
 	    VkRenderPass m_renderPass;
 	    VkCommandPool m_commandPool;
 	    std::vector<VkCommandBuffer> m_commandBuffers;

@@ -9,16 +9,10 @@ namespace vve {
 
 	//-------------------------------------------------------------------------------------------------------
 
-	template<ArchitectureType ATYPE>
-	class GUI : public System<ATYPE> {
-
-		using System<ATYPE>::m_engine;
-		using typename System<ATYPE>::Message;
-		using typename System<ATYPE>::MsgAnnounce;
-		using typename System<ATYPE>::MsgFileLoadObject;
+	class GUI : public System {
 
 	public:
-		GUI(std::string systemName, Engine<ATYPE>& engine, std::string windowName);
+		GUI(std::string systemName, Engine& engine, std::string windowName);
     	~GUI() {};
 
 	private:
@@ -26,7 +20,7 @@ namespace vve {
 		void OnRecordNextFrame(Message message);
 
 		std::string m_windowName;
-		WindowSDL<ATYPE>* m_windowSDL;
+		WindowSDL* m_windowSDL;
 	};
 
 };  // namespace vve

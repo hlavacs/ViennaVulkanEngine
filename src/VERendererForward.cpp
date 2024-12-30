@@ -5,9 +5,8 @@
 
 namespace vve {
 
-   	template<ArchitectureType ATYPE>
-    RendererForward<ATYPE>::RendererForward( std::string systemName, Engine<ATYPE>& engine, std::string windowName ) 
-        : Renderer<ATYPE>(systemName, engine, windowName ) {
+    RendererForward::RendererForward( std::string systemName, Engine& engine, std::string windowName ) 
+        : Renderer(systemName, engine, windowName ) {
 
   		engine.RegisterCallback( { 
   			{this,     0, "ANNOUNCE", [this](Message message){this->OnAnnounce(message);} },
@@ -17,26 +16,22 @@ namespace vve {
   		} );
     };
 
-   	template<ArchitectureType ATYPE>
-    RendererForward<ATYPE>::~RendererForward(){};
+    RendererForward::~RendererForward(){};
 
-   	template<ArchitectureType ATYPE>
-    void RendererForward<ATYPE>::OnAnnounce(Message message) {
+    void RendererForward::OnAnnounce(Message message) {
 		auto msg = message.template GetData<MsgAnnounce>();
 		if( msg.m_sender->GetName() == "VVE Renderer Vulkan" ) {
-			m_vulkan = dynamic_cast<RendererVulkan<ATYPE>*>(msg.m_sender);
+			m_vulkan = dynamic_cast<RendererVulkan*>(msg.m_sender);
 		}
     }
 
-   	template<ArchitectureType ATYPE>
-    void RendererForward<ATYPE>::OnInit(Message message) {
+    void RendererForward::OnInit(Message message) {
         vh::createRenderPass(m_vulkan->GetPhysicalDevice(), m_vulkan->GetDevice(), m_vulkan->GetSwapChain(), false, m_renderPass);
         vh::createCommandPool(m_vulkan->GetSurface(), m_vulkan->GetPhysicalDevice(), m_vulkan->GetDevice(), m_commandPool);
         vh::createCommandBuffers(m_vulkan->GetDevice(), m_commandPool, m_commandBuffers);
     }
 
-   	template<ArchitectureType ATYPE>
-    void RendererForward<ATYPE>::OnRecordNextFrame(Message message) {
+    void RendererForward::OnRecordNextFrame(Message message) {
 		
 		for( decltype(auto) ubo : m_registry.template GetView<vh::UniformBuffers&>() ) {
         	vh::updateUniformBuffer(m_vulkan->GetCurrentFrame(), m_vulkan->GetSwapChain(), ubo);
@@ -46,7 +41,7 @@ namespace vve {
         
 		vh::startRecordCommandBuffer(m_commandBuffers[m_vulkan->GetCurrentFrame()], m_vulkan->GetImageIndex(), 
 			m_vulkan->GetSwapChain(), m_renderPass, m_vulkan->GetGraphicsPipeline(), 
-			false, ((WindowSDL<ATYPE>*)m_window)->GetClearColor(), m_vulkan->GetCurrentFrame());
+			false, ((WindowSDL*)m_window)->GetClearColor(), m_vulkan->GetCurrentFrame());
 		
 		for( auto[ghandle, ubo, ds] : m_registry.template GetView<GeometryHandle, vh::UniformBuffers&, vh::DescriptorSets&>() ) {
 			auto& geometry = m_registry.template Get<vh::Geometry&>(ghandle);
@@ -58,15 +53,12 @@ namespace vve {
 	    m_vulkan->SubmitCommandBuffer(m_commandBuffers[m_vulkan->GetCurrentFrame()]);
     }
 
-   	template<ArchitectureType ATYPE>
-    void RendererForward<ATYPE>::OnQuit(Message message) {
+    void RendererForward::OnQuit(Message message) {
         vkDeviceWaitIdle(m_vulkan->GetDevice());
         vkDestroyRenderPass(m_vulkan->GetDevice(), m_renderPass, nullptr);
         vkDestroyCommandPool(m_vulkan->GetDevice(), m_commandPool, nullptr);
     }
 
-    template class RendererForward<ENGINETYPE_SEQUENTIAL>;
-    template class RendererForward<ENGINETYPE_PARALLEL>;
 
 };   // namespace vve
 

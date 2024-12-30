@@ -11,8 +11,7 @@
 
 namespace vve {
 	
-	template<ArchitectureType ATYPE>
-	Engine<ATYPE>::Engine(std::string name) : System<ATYPE>(name, *this) {
+	Engine::Engine(std::string name) : System(name, *this) {
 	#ifndef NDEBUG
 		m_debug = true;
 	#endif
@@ -20,11 +19,9 @@ namespace vve {
 		std::ranges::for_each( MsgTypeNames, transform );
 	};
 	
-	template<ArchitectureType ATYPE>
-	Engine<ATYPE>::~Engine() {};
+	Engine::~Engine() {};
 
-	template<ArchitectureType ATYPE>
-	void Engine<ATYPE>::RegisterCallback( std::vector<MessageCallback> callbacks) {
+	void Engine::RegisterCallback( std::vector<MessageCallback> callbacks) {
 		for( auto& callback : callbacks ) {
 			assert(MsgTypeNames.contains(callback.m_messageName));
 			auto& pm = m_messageMap[std::hash<std::string>{}(callback.m_messageName)];
@@ -32,14 +29,12 @@ namespace vve {
 		}
 	}
 
-	template<ArchitectureType ATYPE>
-	void Engine<ATYPE>::RegisterSystem( std::unique_ptr<System<ATYPE>>&& system ) {
+	void Engine::RegisterSystem( std::unique_ptr<System>&& system ) {
 		assert(!m_systems.contains(system->GetName()));
 		m_systems[system->GetName()] = std::move(system);
 	}
 
-	template<ArchitectureType ATYPE>
-	void Engine<ATYPE>::DeregisterSystem(System<ATYPE>* system) {
+	void Engine::DeregisterSystem(System* system) {
 		for( auto& map : m_messageMap ) {
 			for( auto iter = map.second.begin(); iter != map.second.end(); ) {
 				if( iter->second.m_system == system ) {
@@ -52,8 +47,7 @@ namespace vve {
 		m_systems.erase(system->GetName());
 	}
 
-	template<ArchitectureType ATYPE>
-	void Engine<ATYPE>::SendMessage( Message message ) {
+	void Engine::SendMessage( Message message ) {
 		for( auto& [phase, callback] : m_messageMap[message.GetType()] ) {
 			message.SetPhase(phase);
 			void* receiver = message.GetReceiver();
@@ -62,49 +56,41 @@ namespace vve {
 		}
 	}
 
-	template<ArchitectureType ATYPE>
-	void Engine<ATYPE>::LoadLevel( std::string levelName ) {
+	void Engine::LoadLevel( std::string levelName ) {
 		// Load level
 		std::cout << "Loading level: " << levelName << std::endl;
 	};
 	
-	template<ArchitectureType ATYPE>
-	void Engine<ATYPE>::CreateWindow(){
-		RegisterSystem(std::make_unique<WindowSDL<ATYPE>>("VVE Window", *this, "Vienna Vulkan Engine", 800, 600 ) );
+	void Engine::CreateWindow(){
+		RegisterSystem(std::make_unique<WindowSDL>("VVE Window", *this, "Vienna Vulkan Engine", 800, 600 ) );
 	};
 	
-	template<ArchitectureType ATYPE>
-	void Engine<ATYPE>::CreateRenderer(){
-		RegisterSystem(std::make_unique<RendererVulkan<ATYPE>>( "VVE Renderer Vulkan",  *this, "VVE Window" ) );
-		RegisterSystem(std::make_unique<RendererImgui<ATYPE>>(  "VVE Renderer Imgui",   *this, "VVE Window" ) );
-		RegisterSystem(std::make_unique<RendererForward<ATYPE>>("VVE Renderer Forward", *this, "VVE Window") );
+	void Engine::CreateRenderer(){
+		RegisterSystem(std::make_unique<RendererVulkan>( "VVE Renderer Vulkan",  *this, "VVE Window" ) );
+		RegisterSystem(std::make_unique<RendererImgui>(  "VVE Renderer Imgui",   *this, "VVE Window" ) );
+		RegisterSystem(std::make_unique<RendererForward>("VVE Renderer Forward", *this, "VVE Window") );
 	};
 	
-	template<ArchitectureType ATYPE>
-	void Engine<ATYPE>::CreateCamera( ){
+	void Engine::CreateCamera( ){
 		// Create camera
 	};
 	
-	template<ArchitectureType ATYPE>
-	void Engine<ATYPE>::CreateSystems( ){
-		RegisterSystem(std::make_unique<SceneManager<ATYPE>>("VVE SceneManager", *this));
+	void Engine::CreateSystems( ){
+		RegisterSystem(std::make_unique<SceneManager>("VVE SceneManager", *this));
 	};
 
-	template<ArchitectureType ATYPE>
-	void Engine<ATYPE>::CreateGUI() {
-		RegisterSystem(std::make_unique<GUI<ATYPE>>("VVE GUI", *this, "VVE Window"));
+	void Engine::CreateGUI() {
+		RegisterSystem(std::make_unique<GUI>("VVE GUI", *this, "VVE Window"));
 	}
 
-	template<ArchitectureType ATYPE>
-	void Engine<ATYPE>::Run(){
+	void Engine::Run(){
 		m_running = true;
 		Init();
 		while(m_running) { Step(); }
 		Quit();
 	};
 
-	template<ArchitectureType ATYPE>
-	void Engine<ATYPE>::Init() {
+	void Engine::Init() {
 		if(!m_initialized) {
 			CreateWindow();
 			CreateRenderer();
@@ -119,8 +105,7 @@ namespace vve {
 		m_last = std::chrono::high_resolution_clock::now();
 	}
 
-	template<ArchitectureType ATYPE>
-	void Engine<ATYPE>::Step(){
+	void Engine::Step(){
 		auto now = std::chrono::high_resolution_clock::now();
 		double dt = std::chrono::duration_cast<std::chrono::duration<double>>(now - m_last).count();
 		m_last = now;
@@ -134,26 +119,21 @@ namespace vve {
 		SendMessage( MsgFrameEnd{this, nullptr, dt} ) ;
 	}
 
-	template<ArchitectureType ATYPE>
-	void Engine<ATYPE>::Quit(){
+	void Engine::Quit(){
 		SendMessage( MsgQuit{this, nullptr} );
 	}
 
-	template<ArchitectureType ATYPE>
-	auto Engine<ATYPE>::GetSystem( std::string name ) -> System<ATYPE>* { 
+	auto Engine::GetSystem( std::string name ) -> System* { 
 		auto system = m_systems[name].get();
 		assert(system != nullptr);
 		return system;
 	}	
 
-	template<ArchitectureType ATYPE>
-	void Engine<ATYPE>::Stop() {
+	void Engine::Stop() {
 		m_running = false;
 	};
 	
-
-	template<ArchitectureType ATYPE>
-	void Engine<ATYPE>::PrintCallbacks() {
+	void Engine::PrintCallbacks() {
 		if( !m_debug ) return;
 		for( auto& [type, map] : m_messageMap ) {
 			std::cout << "Message Type: " << m_msgTypeMap[type] << std::endl;
@@ -163,9 +143,6 @@ namespace vve {
 			std::cout << std::endl;
 		}
 	}
-
-	template class Engine<ENGINETYPE_SEQUENTIAL>;
-	template class Engine<ENGINETYPE_PARALLEL>;
 
 };   // namespace vve
 

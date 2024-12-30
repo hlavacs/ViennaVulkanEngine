@@ -7,25 +7,12 @@ namespace vve {
 	//-------------------------------------------------------------------------------------------------------
 	// Vulkan Renderer
 
-   	template<ArchitectureType ATYPE>
-    class RendererVulkan : public Renderer<ATYPE>
+    class RendererVulkan : public Renderer
     {
-        using System<ATYPE>::m_engine;
-        using System<ATYPE>::m_registry;
-		using typename System<ATYPE>::Message;
-		using typename System<ATYPE>::MsgExtensions;
-		using typename System<ATYPE>::MsgAnnounce;
-		using typename System<ATYPE>::MsgObjectCreate;
-		using typename System<ATYPE>::MsgTextureCreate;
-		using typename System<ATYPE>::MsgTextureDestroy;
-		using typename System<ATYPE>::MsgGeometryCreate;
-		using typename System<ATYPE>::MsgGeometryDestroy;
-        using Renderer<ATYPE>::m_window;
-		using Renderer<ATYPE>::m_surface;
 
     public:
 
-        RendererVulkan(std::string systemName, Engine<ATYPE>& engine, std::string windowName);
+        RendererVulkan(std::string systemName, Engine& engine, std::string windowName);
         virtual ~RendererVulkan();
         auto GetInstance() -> VkInstance { return m_instance; }
 		auto GetPhysicalDevice() -> VkPhysicalDevice { return m_physicalDevice; }
@@ -75,7 +62,7 @@ namespace vve {
             VK_KHR_SWAPCHAIN_EXTENSION_NAME
         };
 
-        WindowSDL<ATYPE> *m_windowSDL;
+        WindowSDL *m_windowSDL;
 		VmaAllocator m_vmaAllocator;
         VkInstance m_instance;
 	    VkDebugUtilsMessengerEXT m_debugMessenger;

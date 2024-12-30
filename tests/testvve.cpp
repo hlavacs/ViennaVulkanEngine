@@ -6,17 +6,12 @@
 #include "VEInclude.h"
 
 
-template<vve::ArchitectureType ATYPE>
-class MyGUI : public vve::System<ATYPE> {
+class MyGUI : public vve::System {
 
-    using vve::System<ATYPE>::m_engine;
-	using typename vve::System<ATYPE>::Message;
-	using typename vve::System<ATYPE>::MsgKeyDown;
-	using typename vve::System<ATYPE>::MsgKeyUp;
-	using typename vve::System<ATYPE>::MsgKeyRepeat;
+	using Message = typename vve::System::Message;
 
 public:
-    MyGUI( vve::Engine<ATYPE>& engine ) : vve::System<ATYPE>("MyGUI", engine ) {
+    MyGUI( vve::Engine& engine ) : vve::System("MyGUI", engine ) {
 
 		m_engine.RegisterCallback( { 
 			  {this, -10000, "RECORD_NEXT_FRAME", [this](Message message){this->OnRecordNextFrame(message);} }
@@ -97,34 +92,12 @@ private:
 };
 
 
-template<vve::ArchitectureType ATYPE>
-class MyEngine : public vve::Engine<ATYPE> {
-
-
-	public:
-		MyEngine() : vve::Engine<ATYPE>("MyEngine") {};
-		~MyEngine() {};
-
-	protected:
-		
-		void CreateGUI() override {}
-
-		void LoadLevel(std::string levelName) {
-			std::cout << "Loading level: " << levelName << std::endl;
-		}
-
-		MyGUI<ATYPE> mygui{this};
-
-};
-
-
 
 int main() {
 
+    vve::Engine engine("My Engine") ;
 
-    vve::Engine<vve::ENGINETYPE_SEQUENTIAL> engine("My Engine") ;
-
-	MyGUI<vve::ENGINETYPE_SEQUENTIAL> mygui{engine};
+	MyGUI mygui{engine};
 
 	engine.Init();
 	engine.PrintCallbacks();

@@ -13,16 +13,11 @@ namespace vve
         RAYTRACING
     };
 
-   	template<ArchitectureType ATYPE>
-    class Renderer : public System<ATYPE> {
-        friend class Engine<ATYPE>;
-
-        using System<ATYPE>::m_engine;
-		using typename System<ATYPE>::Message;
-		using typename System<ATYPE>::MsgAnnounce;
+    class Renderer : public System {
+        friend class Engine;
 
     public:
-        Renderer(std::string systemName, Engine<ATYPE>& m_engine, std::string windowName);
+        Renderer(std::string systemName, Engine& m_engine, std::string windowName);
         virtual ~Renderer();
         auto GetSurface() -> VkSurfaceKHR { return m_surface; };
 
@@ -30,7 +25,7 @@ namespace vve
 		void OnAnnounce(Message message);
         VkSurfaceKHR	m_surface{VK_NULL_HANDLE};
 		std::string 	m_windowName;
-        Window<ATYPE>* 	m_window;
+        Window* 	m_window;
     };
 
 };   // namespace vve

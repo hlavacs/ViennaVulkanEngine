@@ -9,9 +9,8 @@ namespace vve {
 	//-------------------------------------------------------------------------------------------------------
 	// SDL Window
 	
-   	template<ArchitectureType ATYPE>
-    WindowSDL<ATYPE>::WindowSDL( std::string systemName, Engine<ATYPE>& engine,std::string windowName, int width, int height) 
-                : Window<ATYPE>(systemName, engine, windowName, width, height ) {
+    WindowSDL::WindowSDL( std::string systemName, Engine& engine,std::string windowName, int width, int height) 
+                : Window(systemName, engine, windowName, width, height ) {
 
         engine.RegisterCallback( { 
 			{this,     0, "INIT", [this](Message message){this->OnInit(message);} },
@@ -20,11 +19,9 @@ namespace vve {
 		} );
     }
 
-   	template<ArchitectureType ATYPE>
-    WindowSDL<ATYPE>::~WindowSDL() {}
+    WindowSDL::~WindowSDL() {}
 
-   	template<ArchitectureType ATYPE>
-    void WindowSDL<ATYPE>::OnInit(Message message) {
+    void WindowSDL::OnInit(Message message) {
         if(!m_sdl_initialized) {
             if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_TIMER | SDL_INIT_GAMECONTROLLER) != 0) {
                 printf("Error: %s\n", SDL_GetError());
@@ -53,8 +50,7 @@ namespace vve {
 		m_engine.SendMessage( MsgExtensions{this, m_instanceExtensions, {}} );
     }
 
-   	template<ArchitectureType ATYPE>
-    void WindowSDL<ATYPE>::OnPollEvents(Message message) {
+    void WindowSDL::OnPollEvents(Message message) {
         // Poll and handle events (inputs, window resize, etc.)
         // You can read the io.WantCaptureMouse, io.WantCaptureKeyboard flags to tell if dear imgui wants to use your inputs.
         // - When io.WantCaptureMouse is true, do not dispatch mouse input data to your main application, or clear/overwrite your copy of the mouse data.
@@ -136,14 +132,11 @@ namespace vve {
         return;
     }
 
-   	template<ArchitectureType ATYPE>
-    void WindowSDL<ATYPE>::OnQuit(Message message) {
-        auto rend = ((RendererVulkan<ATYPE>*)(m_engine.GetSystem("VVE Renderer Vulkan")));
+    void WindowSDL::OnQuit(Message message) {
+        auto rend = ((RendererVulkan*)(m_engine.GetSystem("VVE Renderer Vulkan")));
 		SDL_DestroyWindow(m_sdlWindow);
         SDL_Quit(); 
    }
 
-    template class WindowSDL<ENGINETYPE_SEQUENTIAL>;
-    template class WindowSDL<ENGINETYPE_PARALLEL>;
 
 };  // namespace vve

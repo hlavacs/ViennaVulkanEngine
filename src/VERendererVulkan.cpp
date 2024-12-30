@@ -8,9 +8,8 @@ namespace vve {
 	//-------------------------------------------------------------------------------------------------------
 	// Vulkan Renderer
 
-    template<ArchitectureType ATYPE>
-    RendererVulkan<ATYPE>::RendererVulkan(std::string systemName, Engine<ATYPE>& engine, std::string windowName ) 
-        : Renderer<ATYPE>(systemName, engine, windowName) {
+    RendererVulkan::RendererVulkan(std::string systemName, Engine& engine, std::string windowName ) 
+        : Renderer(systemName, engine, windowName) {
 
         engine.RegisterCallback( { 
 			{this,      0, "EXTENSIONS", [this](Message message){this->OnExtensions(message);} },
@@ -29,19 +28,16 @@ namespace vve {
 		} );
     }
 
-    template<ArchitectureType ATYPE>
-    RendererVulkan<ATYPE>::~RendererVulkan() {}
+    RendererVulkan::~RendererVulkan() {}
 
-    template<ArchitectureType ATYPE>
-    void RendererVulkan<ATYPE>::OnExtensions(Message message) {
+    void RendererVulkan::OnExtensions(Message message) {
 		auto msg = message.template GetData<MsgExtensions>();
 		m_instanceExtensions.insert(m_instanceExtensions.end(), msg.m_instExt.begin(), msg.m_instExt.end());
 		m_deviceExtensions.insert(m_deviceExtensions.end(), msg.m_devExt.begin(), msg.m_devExt.end());
 	}
 
-    template<ArchitectureType ATYPE>
-    void RendererVulkan<ATYPE>::OnInit(Message message) {
-    	m_windowSDL = (WindowSDL<ATYPE>*)m_window;
+    void RendererVulkan::OnInit(Message message) {
+    	m_windowSDL = (WindowSDL*)m_window;
 		if (m_engine.GetDebug()) {
             m_instanceExtensions.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
         }
@@ -75,8 +71,7 @@ namespace vve {
 		vh::createFences(m_device, MAX_FRAMES_IN_FLIGHT, m_fences);
     }
 
-    template<ArchitectureType ATYPE>
-    void RendererVulkan<ATYPE>::OnPrepareNextFrame(Message message) {
+    void RendererVulkan::OnPrepareNextFrame(Message message) {
         if(m_window->GetIsMinimized()) return;
 
         m_currentFrame = (m_currentFrame + 1) % MAX_FRAMES_IN_FLIGHT;
@@ -94,23 +89,21 @@ namespace vve {
     }
 
 
-    template<ArchitectureType ATYPE>
-    void RendererVulkan<ATYPE>::OnRecordNextFrame(Message message) {
+    void RendererVulkan::OnRecordNextFrame(Message message) {
 		if(m_windowSDL->GetIsMinimized()) return;
 
         vkResetCommandBuffer(m_commandBuffers[m_currentFrame],  0);
 
 		vh::startRecordCommandBuffer(m_commandBuffers[m_currentFrame], m_imageIndex, 
 			m_swapChain, m_renderPass, m_graphicsPipeline, 
-			true, ((WindowSDL<ATYPE>*)m_window)->GetClearColor(), m_currentFrame);
+			true, ((WindowSDL*)m_window)->GetClearColor(), m_currentFrame);
 
 		vh::endRecordCommandBuffer(m_commandBuffers[m_currentFrame]);
 
 		SubmitCommandBuffer(m_commandBuffers[GetCurrentFrame()]);
 	}
 
-    template<ArchitectureType ATYPE>
-    void RendererVulkan<ATYPE>::OnRenderNextFrame(Message message) {
+    void RendererVulkan::OnRenderNextFrame(Message message) {
         if(m_window->GetIsMinimized()) return;
 		VkResult result;
         
@@ -164,8 +157,7 @@ namespace vve {
         } else assert(result == VK_SUCCESS);
     }
     
-    template<ArchitectureType ATYPE>
-    void RendererVulkan<ATYPE>::OnQuit(Message message) {
+    void RendererVulkan::OnQuit(Message message) {
 
         vkDeviceWaitIdle(m_device);
 
@@ -223,8 +215,7 @@ namespace vve {
 
 
 
-	template<ArchitectureType ATYPE>
-	auto RendererVulkan<ATYPE>::OnObjectCreate( Message message ) -> void {
+	auto RendererVulkan::OnObjectCreate( Message message ) -> void {
 		auto handle = message.template GetData<MsgObjectCreate>().m_handle;
 		auto [gHandle, tHandle] = m_registry.template Get<GeometryHandle, TextureHandle>(handle);
 
@@ -255,8 +246,7 @@ namespace vve {
 	}
 	
 
-	template<ArchitectureType ATYPE>
-	auto RendererVulkan<ATYPE>::OnTextureCreate( Message message ) -> void {
+	auto RendererVulkan::OnTextureCreate( Message message ) -> void {
 		auto msg = message.template GetData<MsgTextureCreate>();
 		auto pixels = msg.m_pixels;
 		auto handle = msg.m_handle;
@@ -266,8 +256,7 @@ namespace vve {
 		vh::createTextureSampler(m_physicalDevice, m_device, texture);
 	}
 
-	template<ArchitectureType ATYPE>
-	auto RendererVulkan<ATYPE>::OnTextureDestroy( Message message ) -> void {
+	auto RendererVulkan::OnTextureDestroy( Message message ) -> void {
 		auto handle = message.template GetData<MsgTextureDestroy>().m_handle;
 		auto& texture = m_registry.template Get<vh::Texture&>(handle);
 		vkDestroySampler(m_device, texture.m_textureSampler, nullptr);
@@ -276,16 +265,14 @@ namespace vve {
 		m_registry.template Erase(handle);
 	}
 
-	template<ArchitectureType ATYPE>
-	auto RendererVulkan<ATYPE>::OnGeometryCreate( Message message ) -> void {
+	auto RendererVulkan::OnGeometryCreate( Message message ) -> void {
 		auto handle = message.template GetData<MsgGeometryCreate>().m_handle;
 		auto& geometry = m_registry.template Get<vh::Geometry&>(handle);
 		vh::createVertexBuffer(m_physicalDevice, m_device, m_vmaAllocator, m_graphicsQueue, m_commandPool, geometry);
 		vh::createIndexBuffer( m_physicalDevice, m_device, m_vmaAllocator, m_graphicsQueue, m_commandPool, geometry);
 	}
 
-	template<ArchitectureType ATYPE>
-	auto RendererVulkan<ATYPE>::OnGeometryDestroy( Message message ) -> void {
+	auto RendererVulkan::OnGeometryDestroy( Message message ) -> void {
 		auto handle = message.template GetData<MsgGeometryDestroy>().m_handle;
 		auto& geometry = m_registry.template Get<vh::Geometry&>(handle);
 		vh::destroyBuffer(m_device, m_vmaAllocator, geometry.m_indexBuffer, geometry.m_indexBufferAllocation);
@@ -294,7 +281,5 @@ namespace vve {
 	}
 
 
-    template class RendererVulkan<ENGINETYPE_SEQUENTIAL>;
-    template class RendererVulkan<ENGINETYPE_PARALLEL>;
 
 };   // namespace vve

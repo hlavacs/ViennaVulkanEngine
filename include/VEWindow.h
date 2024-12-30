@@ -7,11 +7,10 @@
 
 namespace vve {
 
-   	template<ArchitectureType ATYPE>
-    class Window : public System<ATYPE> {
+    class Window : public System {
 
     public:
-        Window( std::string systemName, Engine<ATYPE>& engine, std::string windowTitle, int width, int height );
+        Window( std::string systemName, Engine& engine, std::string windowTitle, int width, int height );
         virtual ~Window();
 
         int GetWidth() { return m_width; };

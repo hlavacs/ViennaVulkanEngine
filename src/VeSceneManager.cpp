@@ -6,8 +6,7 @@ namespace vve {
 
 	//-------------------------------------------------------------------------------------------------------
 
-   	template<ArchitectureType ATYPE>
-    SceneManager<ATYPE>::SceneManager(std::string systemName, Engine<ATYPE>& engine ) : System<ATYPE>{systemName, engine } {
+    SceneManager::SceneManager(std::string systemName, Engine& engine ) : System{systemName, engine } {
 		engine.RegisterCallback( { 
 			{this,  2000, "INIT", [this](Message message){this->OnInit(message);} },
 			{this, std::numeric_limits<int>::max(), "UPDATE", [this](Message message){this->OnUpdate(message);} },
@@ -15,16 +14,13 @@ namespace vve {
 		} );
 	}
 
-   	template<ArchitectureType ATYPE>
-    SceneManager<ATYPE>::~SceneManager() {}
+    SceneManager::~SceneManager() {}
 
-   	template<ArchitectureType ATYPE>
-    void SceneManager<ATYPE>::OnInit(Message message) {
+    void SceneManager::OnInit(Message message) {
 		m_handleMap[m_rootName] = m_registry.Insert(SceneNodeWrapper{}); //insert root node
 	}
 
-   	template<ArchitectureType ATYPE>
-    void SceneManager<ATYPE>::OnUpdate(Message message) {
+    void SceneManager::OnUpdate(Message message) {
 		auto node = m_registry.template Get<SceneNodeWrapper&>(m_handleMap[m_rootName]);
 
 		auto func = [&](mat4_t& parentTransform, SceneNodeWrapper& node, auto& self) -> void {
@@ -42,8 +38,7 @@ namespace vve {
 		}
 	}
 
-	template<ArchitectureType ATYPE>
-    void SceneManager<ATYPE>::OnLoadObject(Message message) {
+    void SceneManager::OnLoadObject(Message message) {
 		auto msg = message.template GetData<MsgFileLoadObject>();
 		auto tHandle = LoadTexture(msg.m_txtName);
 		auto oHandle = LoadOBJ(msg.m_objName);
@@ -51,8 +46,7 @@ namespace vve {
 		m_engine.SendMessage( MsgObjectCreate{this, nullptr, nHandle} );
 	}
 
-   	template<ArchitectureType ATYPE>
-	auto SceneManager<ATYPE>::LoadTexture(std::string filenName) -> vecs::Handle {
+	auto SceneManager::LoadTexture(std::string filenName) -> vecs::Handle {
 		if( m_handleMap.contains(filenName) ) return m_handleMap[filenName];
 
 		int texWidth, texHeight, texChannels;
@@ -66,8 +60,7 @@ namespace vve {
 		return handle;
 	}
 
-   	template<ArchitectureType ATYPE>
-	auto SceneManager<ATYPE>::LoadOBJ(std::string fileName) -> vecs::Handle {
+	auto SceneManager::LoadOBJ(std::string fileName) -> vecs::Handle {
 		if( m_handleMap.contains(fileName) ) return m_handleMap[fileName];
 		
 		vh::Geometry geometry;
@@ -77,20 +70,16 @@ namespace vve {
 		return handle;
 	}
 	
-   	template<ArchitectureType ATYPE>
-	auto SceneManager<ATYPE>::LoadGLTF(std::string filename) -> vecs::Handle {
+	auto SceneManager::LoadGLTF(std::string filename) -> vecs::Handle {
 		//m_files[filenName] = handle;
 		return {};
 	}
 
-   	template<ArchitectureType ATYPE>
-	auto SceneManager<ATYPE>::GetAsset(std::string filename) -> vecs::Handle {
+	auto SceneManager::GetAsset(std::string filename) -> vecs::Handle {
 		if( !m_handleMap.contains(filename) ) return {};
 		return m_handleMap[filename]; 
 	}
 
-    template class SceneManager<ENGINETYPE_SEQUENTIAL>;
-    template class SceneManager<ENGINETYPE_PARALLEL>;
 
 };  // namespace vve
 

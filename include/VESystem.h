@@ -47,7 +47,6 @@ namespace vve {
     };
 
 
-   	template<ArchitectureType ATYPE>
     class System {
 
 	protected:
@@ -59,42 +58,42 @@ namespace vve {
 
 	    struct MsgBase {
 	        size_t m_type;
-	        System<ATYPE>* m_sender{nullptr};
-	        System<ATYPE>* m_receiver{nullptr};
+	        System* m_sender{nullptr};
+	        System* m_receiver{nullptr};
 	        double m_dt{0};
 	        int m_phase{0}; //is set when delivering the message, NOT by sender!
 	    };
 
-	    struct MsgAnnounce : public MsgBase { MsgAnnounce(System<ATYPE>* s); };
-	    struct MsgExtensions : public MsgBase { MsgExtensions(System<ATYPE>* s, std::vector<const char*> instExt, std::vector<const char*> devExt ); std::vector<const char*> m_instExt; std::vector<const char*> m_devExt;};
-	    struct MsgInit : public MsgBase { MsgInit(System<ATYPE>* s, System<ATYPE>* r=nullptr); };
-	    struct MsgFrameStart : public MsgBase { MsgFrameStart(System<ATYPE>* s, System<ATYPE>* r, double dt); };
-	    struct MsgPollEvents : public MsgBase { MsgPollEvents(System<ATYPE>* s, System<ATYPE>* r, double dt); };
-	    struct MsgUpdate : public MsgBase { MsgUpdate(System<ATYPE>* s, System<ATYPE>* r, double dt); double m_dt; };
-	    struct MsgPrepareNextFrame : public MsgBase { MsgPrepareNextFrame(System<ATYPE>* s, System<ATYPE>* r, double dt); };
-	    struct MsgRenderNextFrame : public MsgBase { MsgRenderNextFrame(System<ATYPE>* s, System<ATYPE>* r, double dt);  };
-	    struct MsgRecordNextFrame : public MsgBase { MsgRecordNextFrame(System<ATYPE>* s, System<ATYPE>* r, double dt ); };
-	    struct MsgPresentNextFrame : public MsgBase { MsgPresentNextFrame(System<ATYPE>* s, System<ATYPE>* r, double dt);  };
-	    struct MsgFrameEnd : public MsgBase { MsgFrameEnd(System<ATYPE>* s, System<ATYPE>* r, double dt); };
-	    struct MsgDelete : public MsgBase { MsgDelete(System<ATYPE>* s, System<ATYPE>* r, double dt ); void* m_ptr; uint64_t m_id; };
-	    struct MsgMouseMove : public MsgBase { MsgMouseMove(System<ATYPE>* s, System<ATYPE>* r, double dt, int x, int y); int m_x; int m_y; };
-	    struct MsgMouseButtonDown : public MsgBase { MsgMouseButtonDown(System<ATYPE>* s, System<ATYPE>* r, double dt, int button); int m_button; };
-	    struct MsgMouseButtonUp : public MsgBase { MsgMouseButtonUp(System<ATYPE>* s, System<ATYPE>* r, double dt, int button);  int m_button; };
-	    struct MsgMouseButtonRepeat : public MsgBase { MsgMouseButtonRepeat(System<ATYPE>* s, System<ATYPE>* r, double dt, int button);  int m_button; };
-	    struct MsgMouseWheel : public MsgBase { MsgMouseWheel(System<ATYPE>* s, System<ATYPE>* r, double dt, int x, int y);  int m_x; int m_y; };
-	    struct MsgKeyDown : public MsgBase { MsgKeyDown(System<ATYPE>* s, System<ATYPE>* r, double dt, int key);  int m_key; };
-	    struct MsgKeyUp : public MsgBase { MsgKeyUp(System<ATYPE>* s, System<ATYPE>* r, double dt, int key);  int m_key; };
-	    struct MsgKeyRepeat : public MsgBase { MsgKeyRepeat(System<ATYPE>* s, System<ATYPE>* r, double dt, int key); int m_key; };
-	    struct MsgSDL : public MsgBase { MsgSDL(System<ATYPE>* s, System<ATYPE>* r, double dt, SDL_Event event ); double m_dt; SDL_Event m_event; };
-		struct MsgQuit : public MsgBase { MsgQuit(System<ATYPE>* s, System<ATYPE>* r=nullptr); };
+	    struct MsgAnnounce : public MsgBase { MsgAnnounce(System* s); };
+	    struct MsgExtensions : public MsgBase { MsgExtensions(System* s, std::vector<const char*> instExt, std::vector<const char*> devExt ); std::vector<const char*> m_instExt; std::vector<const char*> m_devExt;};
+	    struct MsgInit : public MsgBase { MsgInit(System* s, System* r=nullptr); };
+	    struct MsgFrameStart : public MsgBase { MsgFrameStart(System* s, System* r, double dt); };
+	    struct MsgPollEvents : public MsgBase { MsgPollEvents(System* s, System* r, double dt); };
+	    struct MsgUpdate : public MsgBase { MsgUpdate(System* s, System* r, double dt); double m_dt; };
+	    struct MsgPrepareNextFrame : public MsgBase { MsgPrepareNextFrame(System* s, System* r, double dt); };
+	    struct MsgRenderNextFrame : public MsgBase { MsgRenderNextFrame(System* s, System* r, double dt);  };
+	    struct MsgRecordNextFrame : public MsgBase { MsgRecordNextFrame(System* s, System* r, double dt ); };
+	    struct MsgPresentNextFrame : public MsgBase { MsgPresentNextFrame(System* s, System* r, double dt);  };
+	    struct MsgFrameEnd : public MsgBase { MsgFrameEnd(System* s, System* r, double dt); };
+	    struct MsgDelete : public MsgBase { MsgDelete(System* s, System* r, double dt ); void* m_ptr; uint64_t m_id; };
+	    struct MsgMouseMove : public MsgBase { MsgMouseMove(System* s, System* r, double dt, int x, int y); int m_x; int m_y; };
+	    struct MsgMouseButtonDown : public MsgBase { MsgMouseButtonDown(System* s, System* r, double dt, int button); int m_button; };
+	    struct MsgMouseButtonUp : public MsgBase { MsgMouseButtonUp(System* s, System* r, double dt, int button);  int m_button; };
+	    struct MsgMouseButtonRepeat : public MsgBase { MsgMouseButtonRepeat(System* s, System* r, double dt, int button);  int m_button; };
+	    struct MsgMouseWheel : public MsgBase { MsgMouseWheel(System* s, System* r, double dt, int x, int y);  int m_x; int m_y; };
+	    struct MsgKeyDown : public MsgBase { MsgKeyDown(System* s, System* r, double dt, int key);  int m_key; };
+	    struct MsgKeyUp : public MsgBase { MsgKeyUp(System* s, System* r, double dt, int key);  int m_key; };
+	    struct MsgKeyRepeat : public MsgBase { MsgKeyRepeat(System* s, System* r, double dt, int key); int m_key; };
+	    struct MsgSDL : public MsgBase { MsgSDL(System* s, System* r, double dt, SDL_Event event ); double m_dt; SDL_Event m_event; };
+		struct MsgQuit : public MsgBase { MsgQuit(System* s, System* r=nullptr); };
 
-	    struct MsgFileLoadObject : public MsgBase { MsgFileLoadObject(System<ATYPE>* s, System<ATYPE>* r, std::string txtName, std::string objName); std::string m_txtName; std::string m_objName; };
-		struct MsgObjectCreate : public MsgBase { MsgObjectCreate(System<ATYPE>* s, System<ATYPE>* r, vecs::Handle handle); vecs::Handle m_handle; };
+	    struct MsgFileLoadObject : public MsgBase { MsgFileLoadObject(System* s, System* r, std::string txtName, std::string objName); std::string m_txtName; std::string m_objName; };
+		struct MsgObjectCreate : public MsgBase { MsgObjectCreate(System* s, System* r, vecs::Handle handle); vecs::Handle m_handle; };
 
-		struct MsgTextureCreate : public MsgBase { MsgTextureCreate(System<ATYPE>* s, System<ATYPE>* r, void *pixels, vecs::Handle handle); void* m_pixels; vecs::Handle m_handle; };
-	    struct MsgTextureDestroy : public MsgBase { MsgTextureDestroy(System<ATYPE>* s, System<ATYPE>* r, vecs::Handle handle); vecs::Handle m_handle; };
-	    struct MsgGeometryCreate : public MsgBase { MsgGeometryCreate(System<ATYPE>* s, System<ATYPE>* r, vecs::Handle handle); vecs::Handle m_handle; };
-	    struct MsgGeometryDestroy : public MsgBase { MsgGeometryDestroy(System<ATYPE>* s, System<ATYPE>* r, vecs::Handle handle); vecs::Handle m_handle; };
+		struct MsgTextureCreate : public MsgBase { MsgTextureCreate(System* s, System* r, void *pixels, vecs::Handle handle); void* m_pixels; vecs::Handle m_handle; };
+	    struct MsgTextureDestroy : public MsgBase { MsgTextureDestroy(System* s, System* r, vecs::Handle handle); vecs::Handle m_handle; };
+	    struct MsgGeometryCreate : public MsgBase { MsgGeometryCreate(System* s, System* r, vecs::Handle handle); vecs::Handle m_handle; };
+	    struct MsgGeometryDestroy : public MsgBase { MsgGeometryDestroy(System* s, System* r, vecs::Handle handle); vecs::Handle m_handle; };
 	
 
 	    struct Message {
@@ -125,29 +124,27 @@ namespace vve {
 	        size_t m_typeID{};
 	        uint8_t m_data[MAX_SIZE];
 	    };
+		
 
     public:
-        System( std::string systemName, Engine<ATYPE>& engine );
+        System( std::string systemName, Engine& engine );
         virtual ~System();
         auto GetName() -> std::string { return m_name; };
 
     protected:
 		void OnAnnounce(Message message);
-        std::string 			m_name;
-        Engine<ATYPE>& 			m_engine;
-		vecs::Registry<ATYPE>&	m_registry;
+        std::string 							m_name;
+        Engine& 								m_engine;
+		vecs::Registry<VVE_ARCHITECTURE_TYPE>&	m_registry;
     };
 
 };
 
 namespace std {
 
-    template<> struct hash<vve::System<vve::ENGINETYPE_SEQUENTIAL>> {
-        size_t operator()(vve::System<vve::ENGINETYPE_SEQUENTIAL> & system) ; 
+    template<> struct hash<vve::System> {
+        size_t operator()(vve::System & system) ; 
     };
 
-    template<> struct hash<vve::System<vve::ENGINETYPE_PARALLEL>> {
-        size_t operator()(vve::System<vve::ENGINETYPE_PARALLEL> & system) ; 
-    };
 };
 

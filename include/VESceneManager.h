@@ -42,21 +42,13 @@ namespace vve {
 
 	//-------------------------------------------------------------------------------------------------------
 
-  	template<ArchitectureType ATYPE>
-    class SceneManager : public System<ATYPE> {
-
-		using System<ATYPE>::m_engine;
-		using System<ATYPE>::m_registry;
-		using typename System<ATYPE>::Message;
-		using typename System<ATYPE>::MsgAnnounce;
-		using typename System<ATYPE>::MsgObjectCreate;
-		using typename System<ATYPE>::MsgFileLoadObject;
+    class SceneManager : public System {
 
 		using SceneNodeWrapper = vsty::strong_type_t<SceneNode, vsty::counter<>>; //need this to use SceneNode as a unique component
 		const std::string m_rootName = "VVE RootSceneNode";
 
     public:
-        SceneManager(std::string systemName, Engine<ATYPE>& engine );
+        SceneManager(std::string systemName, Engine& engine );
         virtual ~SceneManager();
 		auto LoadTexture(std::string filename)-> vecs::Handle;
 		auto LoadOBJ(std::string filename) -> vecs::Handle;

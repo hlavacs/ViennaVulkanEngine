@@ -7,29 +7,13 @@
 
 namespace vve {
 
-   	template<ArchitectureType ATYPE> class RendererVulkan;
 
-
-	template<ArchitectureType ATYPE = ENGINETYPE_SEQUENTIAL>
-	class Engine : public System<ATYPE> {
-
-		using typename System<ATYPE>::Message;
-		using typename System<ATYPE>::MsgAnnounce;
-		using typename System<ATYPE>::MsgInit;
-		using typename System<ATYPE>::MsgFrameStart;
-		using typename System<ATYPE>::MsgFrameEnd;
-		using typename System<ATYPE>::MsgPollEvents;
-		using typename System<ATYPE>::MsgUpdate;
-		using typename System<ATYPE>::MsgPrepareNextFrame;
-		using typename System<ATYPE>::MsgRecordNextFrame;
-		using typename System<ATYPE>::MsgRenderNextFrame;
-		using typename System<ATYPE>::MsgPresentNextFrame;
-		using typename System<ATYPE>::MsgQuit;
+	class Engine : public System {
 
 	public:
 
 		struct MessageCallback {
-			System<ATYPE>* 				 m_system;
+			System* 				 	 m_system;
 			int 						 m_phase;	
 			std::string			 	 	 m_messageName;
 			std::function<void(Message)> m_callback;
@@ -37,9 +21,9 @@ namespace vve {
 
 		Engine(std::string name);
 		virtual ~Engine();
-		void RegisterSystem( std::unique_ptr<System<ATYPE>>&& system );
+		void RegisterSystem( std::unique_ptr<System>&& system );
 		void RegisterCallback( std::vector<MessageCallback> callbacks);
-		void DeregisterSystem( System<ATYPE>* system );
+		void DeregisterSystem( System* system );
 		void Run();
 		void Stop();
 		void Init();
@@ -48,9 +32,9 @@ namespace vve {
 		auto GetDebug() -> bool { return m_debug; }
 		auto GetRegistry() -> auto& { return m_registry; }
 		void SendMessage( Message message );
-		auto GetSystem( std::string name ) -> System<ATYPE>*;
-		auto GetWindow( std::string name ) -> Window<ATYPE>* { return (Window<ATYPE>*)GetSystem(name); }
-		auto GetSceneMgr(std::string name) -> SceneManager<ATYPE>* { return (SceneManager<ATYPE>*)GetSystem(name); }
+		auto GetSystem( std::string name ) -> System*;
+		auto GetWindow( std::string name ) -> Window* { return (Window*)GetSystem(name); }
+		auto GetSceneMgr(std::string name) -> SceneManager* { return (SceneManager*)GetSystem(name); }
 		void PrintCallbacks();
 
 	protected:
@@ -61,14 +45,14 @@ namespace vve {
 		void CreateCamera();
 		void CreateGUI();
 
-		std::unordered_map<std::string, std::unique_ptr<System<ATYPE>>> m_systems{};
+		std::unordered_map<std::string, std::unique_ptr<System>> m_systems{};
 
 		bool m_debug{false};
 		bool m_initialized{false};
 		bool m_running{false};
 		std::chrono::time_point<std::chrono::high_resolution_clock> m_last;
 
-		vecs::Registry<ATYPE> m_registry;
+		vecs::Registry<VVE_ARCHITECTURE_TYPE> m_registry;
 		
 		using PriorityMap = std::multimap<int, MessageCallback>;
 		using MessageMap = std::map<size_t, PriorityMap>;

@@ -10,26 +10,28 @@ namespace vve {
 	const ArchitectureType ENGINETYPE_SEQUENTIAL = 0;
 	const ArchitectureType ENGINETYPE_PARALLEL = 1;
 
+	#define VVE_ARCHITECTURE_TYPE ENGINETYPE_SEQUENTIAL
+
     struct Empty {};
 
     template<ArchitectureType ATYPE>
-    using Mutex = std::conditional_t<ATYPE == ENGINETYPE_SEQUENTIAL, Empty, std::shared_mutex>;
+    using Mutex = std::conditional_t<VVE_ARCHITECTURE_TYPE == ENGINETYPE_SEQUENTIAL, Empty, std::shared_mutex>;
 
-   	template<ArchitectureType ATYPE> class System;
-   	template<ArchitectureType ATYPE> class Engine;
-    template<ArchitectureType ATYPE> class Window;
-	template<ArchitectureType ATYPE> class WindowSDL;
-	template<ArchitectureType ATYPE> class Renderer;
-	template<ArchitectureType ATYPE> class RendererImgui;
-	template<ArchitectureType ATYPE> class RendererForward;
-	template<ArchitectureType ATYPE> class RendererVulkan;
-   	template<ArchitectureType ATYPE> class SceneManager;
+   	class System;
+   	class Engine;
+    class Window;
+	class WindowSDL;
+	class Renderer;
+	class RendererImgui;
+	class RendererForward;
+	class RendererVulkan;
+   	class SceneManager;
 }
 
 #include "VECS.h"
+#include "VESystem.h"
 #include "VEEngine.h"
 #include "VEGUI.h"
-#include "VESystem.h"
 #include "VEWindow.h"
 #include "VEWindowSDL.h"
 #include "VERenderer.h"
