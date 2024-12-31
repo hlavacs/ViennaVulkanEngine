@@ -147,12 +147,31 @@ namespace vh {
         if (vkCreateDescriptorSetLayout(device, &layoutInfo, nullptr, &descriptorSetLayouts.m_descriptorSetLayouts[0]) != VK_SUCCESS) {
             throw std::runtime_error("failed to create descriptor set layout 0!");
         }
+    }
 
-        if (vkCreateDescriptorSetLayout(device, &layoutInfo, nullptr, &descriptorSetLayouts.m_descriptorSetLayouts[1]) != VK_SUCCESS) {
-            throw std::runtime_error("failed to create descriptor set layout 1!");
+
+    void createDescriptorSetLayout2(VkDevice device, std::vector<VkDescriptorSetLayoutBinding> bindings, vh::DescriptorSetLayouts& descriptorSetLayouts) {
+		descriptorSetLayouts.m_descriptorSetLayouts.resize(bindings.size());
+		size_t i = 0;
+		for( auto& uboLayoutBinding : bindings ) {
+	        uboLayoutBinding.binding = i++;
+	        uboLayoutBinding.descriptorCount = 1;
+	        uboLayoutBinding.pImmutableSamplers = nullptr;
+		}
+
+        VkDescriptorSetLayoutCreateInfo layoutInfo{};
+        layoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
+        layoutInfo.bindingCount = static_cast<uint32_t>(bindings.size());
+        layoutInfo.pBindings = bindings.data();
+
+        if (vkCreateDescriptorSetLayout(device, &layoutInfo, nullptr, &descriptorSetLayouts.m_descriptorSetLayouts[0]) != VK_SUCCESS) {
+            throw std::runtime_error("failed to create descriptor set layout 0!");
         }
 
     }
+
+
+
 
     VkShaderModule createShaderModule(VkDevice device, const std::vector<char>& code) {
         VkShaderModuleCreateInfo createInfo{};

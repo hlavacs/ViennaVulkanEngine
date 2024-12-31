@@ -17,6 +17,11 @@ namespace vve
 
 		RendererVulkan* m_vulkan{nullptr};
 
+		vh::DescriptorSetLayouts m_descriptorSetLayoutsPerFrameInFlight;
+		vh::DescriptorSets m_descriptorSetsPerFrameInFlight;
+		vh::DescriptorSetLayouts m_descriptorSetLayoutsPerObject;
+		vh::DescriptorSets m_descriptorSetsPerObject;
+
 		vh::DescriptorSetLayouts m_descriptorSetLayouts;
 	    vh::Pipeline m_graphicsPipeline;
 
