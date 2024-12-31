@@ -48,8 +48,6 @@
 #include "backends/imgui_impl_vulkan.h"
 
 #include "VHVulkan.h"
-#include "VHBuffer.h"
-
 
 
 namespace vh

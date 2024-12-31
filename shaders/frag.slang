@@ -4,8 +4,18 @@ struct CoarseVertex
     float2 uv;
 };
 
+struct UniformBufferObject {
+    float4x4 model;
+    float4x4 view;
+    float4x4 proj;
+};
 
-[[vk::binding(1)]]
+// binding 0,0 means that the uniform buffer is bound to binding 0, set 0
+[[vk::binding(0, 0)]]
+ParameterBlock<UniformBufferObject> gParams;
+
+// binding 0,0 means that the uniform buffer is bound to binding 1, set 0
+[[vk::binding(1,0)]]
 Sampler2D texSampler;
 
 

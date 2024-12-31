@@ -6,13 +6,11 @@ struct AssembledVertex
     float2 uv       : UV;
 };
 
-
 struct CoarseVertex
 {
     float3 fragColor;
     float2 uv;
 };
-
 
 struct VertexStageOutput
 {
@@ -27,7 +25,12 @@ struct UniformBufferObject {
     float4x4 proj;
 };
 
+// binding 0,0 means that the uniform buffer is bound to binding 0, set 0
+[[vk::binding(0,0)]]
 ParameterBlock<UniformBufferObject> gParams;
+
+[[vk::binding(0, 1)]]
+ParameterBlock<UniformBufferObject> gParamsObject;
 
 
 [shader("vertex")]

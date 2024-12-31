@@ -123,6 +123,12 @@ namespace vh {
         VkImageView     m_depthImageView;
     };
 
+	struct UniformBuffers {
+        std::vector<VkBuffer>       m_uniformBuffers;
+        std::vector<VmaAllocation>  m_uniformBuffersAllocation;
+        std::vector<void*>          m_uniformBuffersMapped;
+    };
+
     struct Texture {
 		int 			m_width;
 		int				m_height;
@@ -143,12 +149,6 @@ namespace vh {
         VmaAllocation           m_indexBufferAllocation;
     };
 
-    struct UniformBuffers {
-        std::vector<VkBuffer>       m_uniformBuffers;
-        std::vector<VmaAllocation>  m_uniformBuffersAllocation;
-        std::vector<void*>          m_uniformBuffersMapped;
-    };
-
 	struct DescriptorSetLayouts {
 		std::vector<VkDescriptorSetLayout> m_descriptorSetLayouts;
 	};
@@ -159,6 +159,7 @@ namespace vh {
 		};
 		std::vector<DescriptorSetsPerFrameInFlight> m_descriptorSetsPerFrameInFlight;
 	};
+
 
     /// @brief Semaphores for signalling that a command buffer has finished executing. Every buffer gets its own Semaphore.
     struct Semaphores {
@@ -184,3 +185,11 @@ namespace vh {
         , VkRenderPass renderPass);
 
 }
+
+
+#include "VHBuffer.h"
+#include "VHCommand.h"
+#include "VHDevice.h"
+#include "VHRender.h"
+#include "VHVulkan.h"
+#include "VHSync.h"
