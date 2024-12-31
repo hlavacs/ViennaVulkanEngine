@@ -72,7 +72,7 @@ namespace vve {
 	    vh::SwapChain m_swapChain;
 	    VkRenderPass m_renderPass;
 
-		vh::DescriptorSetLayouts m_descriptorSetLayouts;
+		vh::DescriptorSetLayout m_descriptorSetLayouts;
 	    vh::Pipeline m_graphicsPipeline;
 	    vh::DepthImage m_depthImage;
 

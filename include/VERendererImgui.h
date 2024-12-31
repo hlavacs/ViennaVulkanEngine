@@ -19,7 +19,7 @@ namespace vve {
 
 		RendererVulkan* m_vulkan{nullptr};
 
-		vh::DescriptorSetLayouts m_descriptorSetLayouts;
+		vh::DescriptorSetLayout m_descriptorSetLayouts;
 	    vh::Pipeline m_graphicsPipeline;
 
 	    VkRenderPass m_renderPass;

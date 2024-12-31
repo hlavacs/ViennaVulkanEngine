@@ -47,7 +47,7 @@ namespace vve {
 			m_vulkan->GetSwapChain(), m_renderPass, m_graphicsPipeline, 
 			false, ((WindowSDL*)m_window)->GetClearColor(), m_vulkan->GetCurrentFrame());
 		
-		for( auto[ghandle, ubo, descriptorsets] : m_registry.template GetView<GeometryHandle, vh::UniformBuffers&, vh::DescriptorSets&>() ) {
+		for( auto[ghandle, ubo, descriptorsets] : m_registry.template GetView<GeometryHandle, vh::UniformBuffers&, vh::DescriptorSet&>() ) {
 			auto& geometry = m_registry.template Get<vh::Geometry&>(ghandle);
 			vh::recordObject2( m_commandBuffers[m_vulkan->GetCurrentFrame()], m_graphicsPipeline, descriptorsets, geometry, m_vulkan->GetCurrentFrame() );
 		}
@@ -78,14 +78,14 @@ namespace vve {
 		vh::UniformBuffers ubo;
 		vh::createUniformBuffers(m_vulkan->GetPhysicalDevice(), m_vulkan->GetDevice(), m_vulkan->GetVmaAllocator(), ubo);
 
-		vh::DescriptorSets descriptorSets;
-		vh::createDescriptorSets(m_vulkan->GetDevice(), texture, m_descriptorSetLayouts, ubo, m_vulkan->GetDescriptorPool(), descriptorSets);
-	    vh::updateDescriptorSets(m_vulkan->GetDevice(), texture, m_descriptorSetLayouts, ubo, m_vulkan->GetDescriptorPool(), descriptorSets);
+		vh::DescriptorSet descriptorSet;
+		vh::createDescriptorSets(m_vulkan->GetDevice(), texture, m_descriptorSetLayouts, ubo, m_vulkan->GetDescriptorPool(), descriptorSet);
+	    vh::updateDescriptorSets(m_vulkan->GetDevice(), texture, m_descriptorSetLayouts, ubo, m_vulkan->GetDescriptorPool(), descriptorSet);
 
-		m_registry.template Put(handle, ubo, descriptorSets);
+		m_registry.template Put(handle, ubo, descriptorSet);
 
 		assert( m_registry.template Has<vh::UniformBuffers>(handle) );
-		assert( m_registry.template Has<vh::DescriptorSets>(handle) );
+		assert( m_registry.template Has<vh::DescriptorSet>(handle) );
 	}
 
 

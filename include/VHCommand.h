@@ -20,7 +20,7 @@ namespace vh {
 			std::vector<VkDescriptorSet>& descriptorSets, Geometry& geometry, uint32_t currentFrame);
 
     void recordObject2(VkCommandBuffer commandBuffer, Pipeline& graphicsPipeline, 
-			DescriptorSets& descriptorSets, Geometry& geometry, uint32_t currentFrame);
+			DescriptorSet& descriptorSets, Geometry& geometry, uint32_t currentFrame);
 
 
 } // namespace vh

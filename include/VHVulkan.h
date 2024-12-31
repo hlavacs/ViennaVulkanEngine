@@ -149,16 +149,16 @@ namespace vh {
         VmaAllocation           m_indexBufferAllocation;
     };
 
-	struct DescriptorSetLayouts {
+	struct DescriptorSetLayout {
 		std::vector<VkDescriptorSetLayout> m_descriptorSetLayouts;
 	};
 
-	struct DescriptorSets {
-		struct DescriptorSetsPerFrameInFlight {
+	struct DescriptorSet {
+		struct DescriptorSetPerFrameInFlight {
 			std::vector<VkDescriptorSet> m_descriptorSets;
 		};
 		int m_set{0};
-		std::vector<DescriptorSetsPerFrameInFlight> m_descriptorSetsPerFrameInFlight;
+		std::vector<DescriptorSetPerFrameInFlight> m_descriptorSetsPerFrameInFlight;
 	};
 
 

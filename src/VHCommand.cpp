@@ -140,7 +140,7 @@ namespace vh {
 
 
     void recordObject2(VkCommandBuffer commandBuffer, Pipeline& graphicsPipeline, 
-			DescriptorSets& descriptorSets, Geometry& geometry, uint32_t currentFrame) {
+			DescriptorSet& descriptorSets, Geometry& geometry, uint32_t currentFrame) {
 
         VkBuffer vertexBuffers[] = {geometry.m_vertexBuffer};
         VkDeviceSize offsets[] = {0};

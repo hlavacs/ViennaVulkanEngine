@@ -121,7 +121,7 @@ namespace vh {
     }
 
 
-    void createDescriptorSetLayout(VkDevice device, vh::DescriptorSetLayouts& descriptorSetLayouts) {
+    void createDescriptorSetLayout(VkDevice device, vh::DescriptorSetLayout& descriptorSetLayouts) {
 		descriptorSetLayouts.m_descriptorSetLayouts.resize(2);
 
         VkDescriptorSetLayoutBinding uboLayoutBinding{};
@@ -150,7 +150,7 @@ namespace vh {
     }
 
 
-    void createDescriptorSetLayout2(VkDevice device, std::vector<VkDescriptorSetLayoutBinding> bindings, vh::DescriptorSetLayouts& descriptorSetLayouts) {
+    void createDescriptorSetLayout2(VkDevice device, std::vector<VkDescriptorSetLayoutBinding> bindings, vh::DescriptorSetLayout& descriptorSetLayouts) {
 		descriptorSetLayouts.m_descriptorSetLayouts.resize(bindings.size());
 		size_t i = 0;
 		for( auto& uboLayoutBinding : bindings ) {
@@ -188,7 +188,7 @@ namespace vh {
     }
 
     void createGraphicsPipeline(VkDevice device, VkRenderPass renderPass
-        , DescriptorSetLayouts descriptorSetLayouts, Pipeline& graphicsPipeline) {
+        , DescriptorSetLayout descriptorSetLayouts, Pipeline& graphicsPipeline) {
 
         auto vertShaderCode = readFile("shaders\\vert.spv");
         auto fragShaderCode = readFile("shaders\\frag.spv");
@@ -364,8 +364,8 @@ namespace vh {
 
 
     void createDescriptorSets(VkDevice device, Texture& texture
-        , DescriptorSetLayouts& descriptorSetLayouts, UniformBuffers& uniformBuffers, VkDescriptorPool descriptorPool
-        , DescriptorSets& descriptorSets) {
+        , DescriptorSetLayout& descriptorSetLayouts, UniformBuffers& uniformBuffers, VkDescriptorPool descriptorPool
+        , DescriptorSet& descriptorSets) {
 
 		descriptorSets.m_descriptorSetsPerFrameInFlight.resize(MAX_FRAMES_IN_FLIGHT);
 		for( auto& ds : descriptorSets.m_descriptorSetsPerFrameInFlight ) {
@@ -385,8 +385,8 @@ namespace vh {
 
 
     void updateDescriptorSets(VkDevice device, Texture& texture
-        , DescriptorSetLayouts& descriptorSetLayouts, UniformBuffers& uniformBuffers, VkDescriptorPool descriptorPool
-        , DescriptorSets& descriptorSets) {
+        , DescriptorSetLayout& descriptorSetLayouts, UniformBuffers& uniformBuffers, VkDescriptorPool descriptorPool
+        , DescriptorSet& descriptorSets) {
 
 		size_t i = 0;
 	    for ( auto& dspf : descriptorSets.m_descriptorSetsPerFrameInFlight ) {

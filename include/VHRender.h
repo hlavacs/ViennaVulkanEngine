@@ -7,22 +7,22 @@ namespace vh {
 
     void createRenderPass(VkPhysicalDevice physicalDevice, VkDevice device, SwapChain& swapChain, bool clear, VkRenderPass& renderPass);
 
-    void createDescriptorSetLayout(VkDevice device, DescriptorSetLayouts& descriptorSetLayouts);
-    void createDescriptorSetLayout2(VkDevice device, std::vector<VkDescriptorSetLayoutBinding> bindings, vh::DescriptorSetLayouts& descriptorSetLayouts);
+    void createDescriptorSetLayout(VkDevice device, DescriptorSetLayout& descriptorSetLayouts);
+    void createDescriptorSetLayout2(VkDevice device, std::vector<VkDescriptorSetLayoutBinding> bindings, vh::DescriptorSetLayout& descriptorSetLayouts);
 
 	void createDescriptorPool(VkDevice device, uint32_t sizes, VkDescriptorPool& descriptorPool);
 
     void createDescriptorSets(VkDevice device, Texture& texture
-        , DescriptorSetLayouts& descriptorSetLayouts, UniformBuffers& uniformBuffers, VkDescriptorPool descriptorPool
-        , DescriptorSets& descriptorSets);
+        , DescriptorSetLayout& descriptorSetLayouts, UniformBuffers& uniformBuffers, VkDescriptorPool descriptorPool
+        , DescriptorSet& descriptorSet);
 
     void updateDescriptorSets(VkDevice device, Texture& texture
-        , DescriptorSetLayouts& descriptorSetLayouts, UniformBuffers& uniformBuffers, VkDescriptorPool descriptorPool
-        , DescriptorSets& descriptorSets);
+        , DescriptorSetLayout& descriptorSetLayouts, UniformBuffers& uniformBuffers, VkDescriptorPool descriptorPool
+        , DescriptorSet& descriptorSet);
 
     VkShaderModule createShaderModule(VkDevice device, const std::vector<char>& code);
 
-    void createGraphicsPipeline(VkDevice device, VkRenderPass renderPass, DescriptorSetLayouts descriptorSetLayout, Pipeline& graphicsPipeline);
+    void createGraphicsPipeline(VkDevice device, VkRenderPass renderPass, DescriptorSetLayout descriptorSetLayout, Pipeline& graphicsPipeline);
 
     void createFramebuffers(VkDevice device, SwapChain& swapChain, DepthImage& depthImage, VkRenderPass renderPass);
 
