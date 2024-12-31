@@ -8,7 +8,7 @@ namespace vve {
     Renderer::Renderer(std::string systemName, Engine& engine, std::string windowName ) : 
 		System{systemName, engine }, m_windowName(windowName) {
 		engine.RegisterCallback( { 
-			{this,      0, "ANNOUNCE", [this](Message message){this->OnAnnounce(message);} }
+			{this,      0, "ANNOUNCE", [this](Message message){OnAnnounce(message);} }
 		} );
 	};
 

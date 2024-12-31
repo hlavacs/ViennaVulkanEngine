@@ -13,9 +13,9 @@ namespace vve {
                 : Window(systemName, engine, windowName, width, height ) {
 
         engine.RegisterCallback( { 
-			{this,     0, "INIT", [this](Message message){this->OnInit(message);} },
-			{this,     0, "POLL_EVENTS", [this](Message message){this->OnPollEvents(message);} },
-			{this,  3000, "QUIT", [this](Message message){this->OnQuit(message);} },
+			{this,     0, "INIT", [this](Message message){OnInit(message);} },
+			{this,     0, "POLL_EVENTS", [this](Message message){OnPollEvents(message);} },
+			{this,  3000, "QUIT", [this](Message message){OnQuit(message);} },
 		} );
     }
 

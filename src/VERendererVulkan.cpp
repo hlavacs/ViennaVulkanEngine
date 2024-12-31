@@ -12,19 +12,19 @@ namespace vve {
         : Renderer(systemName, engine, windowName) {
 
         engine.RegisterCallback( { 
-			{this,      0, "EXTENSIONS", [this](Message message){this->OnExtensions(message);} },
-			{this,   1000, "INIT", [this](Message message){this->OnInit(message);} }, 
-			{this,      0, "PREPARE_NEXT_FRAME", [this](Message message){this->OnPrepareNextFrame(message);} },
-			{this,      0, "RECORD_NEXT_FRAME", [this](Message message){this->OnRecordNextFrame(message);} },
-			{this,      0, "RENDER_NEXT_FRAME", [this](Message message){this->OnRenderNextFrame(message);} },
+			{this,      0, "EXTENSIONS", [this](Message message){OnExtensions(message);} },
+			{this,   1000, "INIT", [this](Message message){OnInit(message);} }, 
+			{this,      0, "PREPARE_NEXT_FRAME", [this](Message message){OnPrepareNextFrame(message);} },
+			{this,      0, "RECORD_NEXT_FRAME", [this](Message message){OnRecordNextFrame(message);} },
+			{this,      0, "RENDER_NEXT_FRAME", [this](Message message){OnRenderNextFrame(message);} },
 
-			{this,      0, "OBJECT_CREATE", [this](Message message){this->OnObjectCreate(message);} },
-			{this,      0, "TEXTURE_CREATE",   [this](Message message){this->OnTextureCreate(message);} },
-			{this,      0, "TEXTURE_DESTROY",  [this](Message message){this->OnTextureDestroy(message);} },
-			{this,      0, "GEOMETRY_CREATE",  [this](Message message){this->OnGeometryCreate(message);} },
-			{this,      0, "GEOMETRY_DESTROY", [this](Message message){this->OnGeometryDestroy(message);} },
+			{this,      0, "OBJECT_CREATE", [this](Message message){OnObjectCreate(message);} },
+			{this,      0, "TEXTURE_CREATE",   [this](Message message){OnTextureCreate(message);} },
+			{this,      0, "TEXTURE_DESTROY",  [this](Message message){OnTextureDestroy(message);} },
+			{this,      0, "GEOMETRY_CREATE",  [this](Message message){OnGeometryCreate(message);} },
+			{this,      0, "GEOMETRY_DESTROY", [this](Message message){OnGeometryDestroy(message);} },
 
-			{this,   2000, "QUIT", [this](Message message){this->OnQuit(message);} },
+			{this,   2000, "QUIT", [this](Message message){OnQuit(message);} },
 		} );
     }
 

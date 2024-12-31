@@ -8,9 +8,9 @@ namespace vve {
 
     SceneManager::SceneManager(std::string systemName, Engine& engine ) : System{systemName, engine } {
 		engine.RegisterCallback( { 
-			{this,  2000, "INIT", [this](Message message){this->OnInit(message);} },
-			{this, std::numeric_limits<int>::max(), "UPDATE", [this](Message message){this->OnUpdate(message);} },
-			{this, std::numeric_limits<int>::max(), "FILE_LOAD_OBJECT", [this](Message message){this->OnLoadObject(message);} },
+			{this,  2000, "INIT", [this](Message message){OnInit(message);} },
+			{this, std::numeric_limits<int>::max(), "UPDATE", [this](Message message){OnUpdate(message);} },
+			{this, std::numeric_limits<int>::max(), "FILE_LOAD_OBJECT", [this](Message message){OnLoadObject(message);} },
 		} );
 	}
 
