@@ -12,9 +12,14 @@ namespace vve
         void OnAnnounce(Message message);
         void OnInit(Message message);
         void OnRecordNextFrame(Message message);
+		void OnObjectCreate( Message message );
         void OnQuit(Message message);
 
 		RendererVulkan* m_vulkan{nullptr};
+
+		vh::DescriptorSetLayouts m_descriptorSetLayouts;
+	    vh::Pipeline m_graphicsPipeline;
+
 	    VkRenderPass m_renderPass;
 	    VkCommandPool m_commandPool;
 	    std::vector<VkCommandBuffer> m_commandBuffers;

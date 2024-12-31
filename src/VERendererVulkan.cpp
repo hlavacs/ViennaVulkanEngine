@@ -18,7 +18,6 @@ namespace vve {
 			{this,      0, "RECORD_NEXT_FRAME", [this](Message message){OnRecordNextFrame(message);} },
 			{this,      0, "RENDER_NEXT_FRAME", [this](Message message){OnRenderNextFrame(message);} },
 
-			{this,      0, "OBJECT_CREATE", [this](Message message){OnObjectCreate(message);} },
 			{this,      0, "TEXTURE_CREATE",   [this](Message message){OnTextureCreate(message);} },
 			{this,      0, "TEXTURE_DESTROY",  [this](Message message){OnTextureDestroy(message);} },
 			{this,      0, "GEOMETRY_CREATE",  [this](Message message){OnGeometryCreate(message);} },
@@ -212,39 +211,6 @@ namespace vve {
 
 	//-------------------------------------------------------------------------------------------------------
 
-
-
-
-	auto RendererVulkan::OnObjectCreate( Message message ) -> void {
-		auto handle = message.template GetData<MsgObjectCreate>().m_handle;
-		auto [gHandle, tHandle] = m_registry.template Get<GeometryHandle, TextureHandle>(handle);
-
-		decltype(auto) geometry = m_registry.template Get<vh::Geometry&>(gHandle);
-		if( geometry.m_vertexBuffer == VK_NULL_HANDLE ) {
-			vh::createVertexBuffer(m_physicalDevice, m_device, m_vmaAllocator, m_graphicsQueue, m_commandPool, geometry);
-			vh::createIndexBuffer( m_physicalDevice, m_device, m_vmaAllocator, m_graphicsQueue, m_commandPool, geometry);
-		}
-
-		decltype(auto) texture = m_registry.template Get<vh::Texture&>(tHandle);
-		if( texture.m_textureImage == VK_NULL_HANDLE && texture.m_pixels != nullptr ) {
-			vh::createTextureImage(m_physicalDevice, m_device, m_vmaAllocator, m_graphicsQueue, m_commandPool, texture.m_pixels, texture.m_width, texture.m_height, texture.m_size, texture);
-			vh::createTextureImageView(m_device, texture);
-			vh::createTextureSampler(m_physicalDevice, m_device, texture);
-		}
-
-		vh::UniformBuffers ubo;
-		vh::createUniformBuffers(m_physicalDevice, m_device, m_vmaAllocator, ubo);
-
-		vh::DescriptorSets descriptorSets;
-		vh::createDescriptorSets(m_device, texture, m_descriptorSetLayouts, ubo, m_descriptorPool, descriptorSets);
-	    vh::updateDescriptorSets(m_device, texture, m_descriptorSetLayouts, ubo, m_descriptorPool, descriptorSets);
-
-		m_registry.template Put(handle, ubo, descriptorSets);
-
-		assert( m_registry.template Has<vh::UniformBuffers>(handle) );
-		assert( m_registry.template Has<vh::DescriptorSets>(handle) );
-	}
-	
 
 	auto RendererVulkan::OnTextureCreate( Message message ) -> void {
 		auto msg = message.template GetData<MsgTextureCreate>();

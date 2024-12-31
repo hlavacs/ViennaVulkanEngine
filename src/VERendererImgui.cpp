@@ -31,6 +31,9 @@ namespace vve {
     void RendererImgui::OnInit(Message message) {
         vh::createRenderPass(m_vulkan->GetPhysicalDevice(), m_vulkan->GetDevice(), m_vulkan->GetSwapChain(), false, m_renderPass);
 		
+		vh::createDescriptorSetLayout(m_vulkan->GetDevice(), m_descriptorSetLayouts);
+		vh::createGraphicsPipeline(m_vulkan->GetDevice(), m_renderPass, m_descriptorSetLayouts, m_graphicsPipeline);
+
 		vh::setupImgui( ((WindowSDL*)m_window)->GetSDLWindow(), m_vulkan->GetInstance(), m_vulkan->GetPhysicalDevice(), m_vulkan->GetQueueFamilies(), m_vulkan->GetDevice(), m_vulkan->GetGraphicsQueue(), 
 			m_vulkan->GetCommandPool(), m_vulkan->GetDescriptorPool(), m_renderPass);  
 
@@ -51,7 +54,7 @@ namespace vve {
         vkResetCommandBuffer(m_commandBuffers[m_vulkan->GetCurrentFrame()],  0);
 
 		vh::startRecordCommandBuffer(m_commandBuffers[m_vulkan->GetCurrentFrame()], m_vulkan->GetImageIndex(), 
-			m_vulkan->GetSwapChain(), m_renderPass, m_vulkan->GetGraphicsPipeline(), 
+			m_vulkan->GetSwapChain(), m_renderPass, m_graphicsPipeline, 
 			false, ((WindowSDL*)m_window)->GetClearColor(), m_vulkan->GetCurrentFrame());
 		
 		ImGui::Render();
@@ -73,8 +76,13 @@ namespace vve {
         ImGui_ImplSDL2_Shutdown();
         ImGui::DestroyContext();
 
-        vkDestroyRenderPass(m_vulkan->GetDevice(), m_renderPass, nullptr);
         vkDestroyCommandPool(m_vulkan->GetDevice(), m_commandPool, nullptr);
+        vkDestroyRenderPass(m_vulkan->GetDevice(), m_renderPass, nullptr);
+		vkDestroyPipeline(m_vulkan->GetDevice(), m_graphicsPipeline.m_pipeline, nullptr);
+        vkDestroyPipelineLayout(m_vulkan->GetDevice(), m_graphicsPipeline.m_pipelineLayout, nullptr);   
+		for( auto layout : m_descriptorSetLayouts.m_descriptorSetLayouts ) {
+			vkDestroyDescriptorSetLayout(m_vulkan->GetDevice(), layout, nullptr);
+		}
     }
 
 

@@ -122,7 +122,7 @@ namespace vh {
 
 
     void createDescriptorSetLayout(VkDevice device, vh::DescriptorSetLayouts& descriptorSetLayouts) {
-		descriptorSetLayouts.m_descriptorSetLayouts.resize(1);
+		descriptorSetLayouts.m_descriptorSetLayouts.resize(2);
 
         VkDescriptorSetLayoutBinding uboLayoutBinding{};
         uboLayoutBinding.binding = 0;
@@ -144,9 +144,14 @@ namespace vh {
         layoutInfo.bindingCount = static_cast<uint32_t>(bindings.size());
         layoutInfo.pBindings = bindings.data();
 
-        if (vkCreateDescriptorSetLayout(device, &layoutInfo, nullptr, descriptorSetLayouts.m_descriptorSetLayouts.data()) != VK_SUCCESS) {
-            throw std::runtime_error("failed to create descriptor set layout!");
+        if (vkCreateDescriptorSetLayout(device, &layoutInfo, nullptr, &descriptorSetLayouts.m_descriptorSetLayouts[0]) != VK_SUCCESS) {
+            throw std::runtime_error("failed to create descriptor set layout 0!");
         }
+
+        if (vkCreateDescriptorSetLayout(device, &layoutInfo, nullptr, &descriptorSetLayouts.m_descriptorSetLayouts[1]) != VK_SUCCESS) {
+            throw std::runtime_error("failed to create descriptor set layout 1!");
+        }
+
     }
 
     VkShaderModule createShaderModule(VkDevice device, const std::vector<char>& code) {

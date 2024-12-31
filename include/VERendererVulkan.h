@@ -21,11 +21,10 @@ namespace vve {
 		auto GetGraphicsQueue() -> VkQueue { return m_graphicsQueue; }
 		auto GetPresentQueue() -> VkQueue { return m_presentQueue; }
 		auto GetCommandPool() -> VkCommandPool { return m_commandPool; }
-		auto GetVmaAllocator() -> VmaAllocator { return m_vmaAllocator; }
+		auto GetVmaAllocator() -> VmaAllocator& { return m_vmaAllocator; }
 		auto GetSwapChain() -> vh::SwapChain& { return m_swapChain; }
 		auto GetRenderPass() -> VkRenderPass { return m_renderPass; }
 		auto GetDescriptorPool() -> VkDescriptorPool { return m_descriptorPool; }
-		auto GetGraphicsPipeline() -> vh::Pipeline& { return m_graphicsPipeline; }
 		auto GetDepthImage() -> vh::DepthImage& { return m_depthImage; }
 
 		auto GetCommandBuffers() -> std::vector<VkCommandBuffer>& { return m_commandBuffers; }
@@ -44,7 +43,6 @@ namespace vve {
         void OnRecordNextFrame(Message message);
         void OnRenderNextFrame(Message message);
 		
-		void OnObjectCreate( Message message );
 		void OnTextureCreate( Message message );
 		void OnTextureDestroy( Message message );
 		void OnGeometryCreate( Message message );
