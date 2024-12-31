@@ -17,24 +17,23 @@ namespace vve {
     SceneManager::~SceneManager() {}
 
     void SceneManager::OnInit(Message message) {
-		m_handleMap[m_rootName] = m_registry.Insert(SceneNodeWrapper{}); //insert root node
+		m_handleMap[m_rootName] = m_registry.Insert(SceneNode{}); //insert root node
 	}
 
     void SceneManager::OnUpdate(Message message) {
-		auto node = m_registry.template Get<SceneNodeWrapper&>(m_handleMap[m_rootName]);
+		auto node = m_registry.template Get<SceneNode&>(m_handleMap[m_rootName]);
 
-		auto func = [&](mat4_t& parentTransform, SceneNodeWrapper& node, auto& self) -> void {
-			auto& transform = node().m_localToParentT;
-			node().m_localToWorldM = parentTransform * transform.Matrix();
-			for( auto handle : node().m_children ) {
-				auto child = m_registry.template Get<SceneNodeWrapper&>(handle);
-				self(node().m_localToWorldM, child, self);
+		auto func = [](auto& registry, mat4_t& parentTransform, SceneNode& currentNode, auto& self) -> void {
+			currentNode.m_localToWorldM = parentTransform * currentNode.m_localToParentT.Matrix();
+			for( auto handle : currentNode.m_children ) {
+				auto child = registry.template Get<SceneNode&>(handle);
+				self(registry, currentNode.m_localToWorldM, child, self);
 			}
 		};
 
-		for( auto handle : node().m_children ) {
-			auto child = m_registry.template Get<SceneNodeWrapper&>(handle);
-			func(node().m_localToWorldM, child, func);
+		for( auto handle : node.m_children ) {
+			auto child = m_registry.template Get<SceneNode&>(handle);
+			func(m_registry, node.m_localToWorldM, child, func);
 		}
 	}
 
@@ -42,7 +41,7 @@ namespace vve {
 		auto msg = message.template GetData<MsgFileLoadObject>();
 		auto tHandle = LoadTexture(msg.m_txtName);
 		auto oHandle = LoadOBJ(msg.m_objName);
-		auto nHandle = m_registry.Insert( GeometryHandle{oHandle}, TextureHandle{tHandle}, SceneNodeHandle{m_handleMap[m_rootName]} );
+		auto nHandle = m_registry.Insert( GeometryHandle{oHandle}, TextureHandle{tHandle}, SceneNode{} );
 		m_engine.SendMessage( MsgObjectCreate{this, nullptr, nHandle} );
 	}
 
