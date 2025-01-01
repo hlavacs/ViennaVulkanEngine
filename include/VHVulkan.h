@@ -154,11 +154,11 @@ namespace vh {
 	};
 
 	struct DescriptorSet {
-		struct DescriptorSetPerFrameInFlight {
-			std::vector<VkDescriptorSet> m_descriptorSets;
-		};
+		//struct DescriptorSetPerFrameInFlight {
+		//	std::vector<VkDescriptorSet> m_descriptorSets;
+		//};
 		int m_set{0};
-		std::vector<DescriptorSetPerFrameInFlight> m_descriptorSetsPerFrameInFlight;
+		std::vector<VkDescriptorSet> m_descriptorSetPerFrameInFlight;
 	};
 
 
