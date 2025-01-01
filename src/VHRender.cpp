@@ -150,7 +150,7 @@ namespace vh {
     }
 
 
-    void createDescriptorSetLayout2(VkDevice device, std::vector<VkDescriptorSetLayoutBinding> bindings, vh::DescriptorSetLayout& descriptorSetLayouts) {
+    void createDescriptorSetLayout2(VkDevice device, std::vector<VkDescriptorSetLayoutBinding>& bindings, vh::DescriptorSetLayout& descriptorSetLayouts) {
 		descriptorSetLayouts.m_descriptorSetLayouts.resize(bindings.size());
 		size_t i = 0;
 		for( auto& uboLayoutBinding : bindings ) {
@@ -169,8 +169,6 @@ namespace vh {
         }
 
     }
-
-
 
 
     VkShaderModule createShaderModule(VkDevice device, const std::vector<char>& code) {
@@ -363,9 +361,8 @@ namespace vh {
     }
 
 
-    void createDescriptorSet(VkDevice device, Texture& texture
-        , DescriptorSetLayout& descriptorSetLayouts, UniformBuffers& uniformBuffers, VkDescriptorPool descriptorPool
-        , DescriptorSet& descriptorSet) {
+    void createDescriptorSet(VkDevice device, Texture& texture, DescriptorSetLayout& descriptorSetLayouts, 
+		VkDescriptorPool descriptorPool, DescriptorSet& descriptorSet) {
 
 		descriptorSet.m_descriptorSetPerFrameInFlight.resize(MAX_FRAMES_IN_FLIGHT);
 		for( auto& ds : descriptorSet.m_descriptorSetPerFrameInFlight ) {
@@ -383,13 +380,12 @@ namespace vh {
     }
 
 
-    void updateDescriptorSet(VkDevice device, Texture& texture
-        , DescriptorSetLayout& descriptorSetLayouts, UniformBuffers& uniformBuffers, VkDescriptorPool descriptorPool
-        , DescriptorSet& descriptorSet) {
+    void updateDescriptorSet(VkDevice device, Texture& texture, UniformBuffers& uniformBuffers, DescriptorSet& descriptorSet) {
 
+		size_t i = 0;
 	    for ( auto& ds : descriptorSet.m_descriptorSetPerFrameInFlight ) {
 	        VkDescriptorBufferInfo bufferInfo{};
-	        bufferInfo.buffer = uniformBuffers.m_uniformBuffers[0];
+	        bufferInfo.buffer = uniformBuffers.m_uniformBuffers[i++];
 	        bufferInfo.offset = 0;
 	        bufferInfo.range = sizeof(UniformBufferObject);
 
@@ -417,6 +413,53 @@ namespace vh {
 	        descriptorWrites[1].pImageInfo = &imageInfo;
 
 	        vkUpdateDescriptorSets(device, static_cast<uint32_t>(descriptorWrites.size()), descriptorWrites.data(), 0, nullptr);
+		}
+    }
+
+    void updateDescriptorSetUBO(VkDevice device, UniformBuffers& uniformBuffers, size_t binding, DescriptorSet& descriptorSet) {
+
+		size_t i = 0;
+	    for ( auto& ds : descriptorSet.m_descriptorSetPerFrameInFlight ) {
+	        VkDescriptorBufferInfo bufferInfo{};
+	        bufferInfo.buffer = uniformBuffers.m_uniformBuffers[i++];
+	        bufferInfo.offset = 0;
+	        bufferInfo.range = sizeof(UniformBufferObject);
+
+	        VkWriteDescriptorSet descriptorWrites{};
+
+	        descriptorWrites.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+	        descriptorWrites.dstSet = ds;
+	        descriptorWrites.dstBinding = 0;
+	        descriptorWrites.dstArrayElement = 0;
+	        descriptorWrites.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+	        descriptorWrites.descriptorCount = 1;
+	        descriptorWrites.pBufferInfo = &bufferInfo;
+
+	        vkUpdateDescriptorSets(device, 1, &descriptorWrites, 0, nullptr);
+		}
+    }
+
+    void updateDescriptorSetTexture(VkDevice device, Texture& texture, size_t binding, DescriptorSet& descriptorSet) {
+
+		size_t i = 0;
+	    for ( auto& ds : descriptorSet.m_descriptorSetPerFrameInFlight ) {
+
+	        VkDescriptorImageInfo imageInfo{};
+	        imageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+	        imageInfo.imageView = texture.m_textureImageView;
+	        imageInfo.sampler = texture.m_textureSampler;
+
+	        VkWriteDescriptorSet descriptorWrites{};
+
+	        descriptorWrites.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+	        descriptorWrites.dstSet = ds;
+	        descriptorWrites.dstBinding = 1;
+	        descriptorWrites.dstArrayElement = 0;
+	        descriptorWrites.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+	        descriptorWrites.descriptorCount = 1;
+	        descriptorWrites.pImageInfo = &imageInfo;
+
+	        vkUpdateDescriptorSets(device, 1, &descriptorWrites, 0, nullptr);
 		}
     }
 

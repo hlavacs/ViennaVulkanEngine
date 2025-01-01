@@ -8,17 +8,16 @@ namespace vh {
     void createRenderPass(VkPhysicalDevice physicalDevice, VkDevice device, SwapChain& swapChain, bool clear, VkRenderPass& renderPass);
 
     void createDescriptorSetLayout(VkDevice device, DescriptorSetLayout& descriptorSetLayouts);
-    void createDescriptorSetLayout2(VkDevice device, std::vector<VkDescriptorSetLayoutBinding> bindings, vh::DescriptorSetLayout& descriptorSetLayouts);
+    void createDescriptorSetLayout2(VkDevice device, std::vector<VkDescriptorSetLayoutBinding>& bindings, vh::DescriptorSetLayout& descriptorSetLayouts);
 
 	void createDescriptorPool(VkDevice device, uint32_t sizes, VkDescriptorPool& descriptorPool);
 
-    void createDescriptorSet(VkDevice device, Texture& texture
-        , DescriptorSetLayout& descriptorSetLayouts, UniformBuffers& uniformBuffers, VkDescriptorPool descriptorPool
-        , DescriptorSet& descriptorSet);
+    void createDescriptorSet(VkDevice device, Texture& texture, DescriptorSetLayout& descriptorSetLayouts, 
+		VkDescriptorPool descriptorPool, DescriptorSet& descriptorSet);
 
-    void updateDescriptorSet(VkDevice device, Texture& texture
-        , DescriptorSetLayout& descriptorSetLayouts, UniformBuffers& uniformBuffers, VkDescriptorPool descriptorPool
-        , DescriptorSet& descriptorSet);
+    void updateDescriptorSet(VkDevice device, Texture& texture, UniformBuffers& uniformBuffers, DescriptorSet& descriptorSet);
+    void updateDescriptorSetUBO(VkDevice device, UniformBuffers& uniformBuffers, size_t binding, DescriptorSet& descriptorSet);
+    void updateDescriptorSetTexture(VkDevice device, Texture& texture, size_t binding, DescriptorSet& descriptorSet);
 
     VkShaderModule createShaderModule(VkDevice device, const std::vector<char>& code);
 

@@ -79,8 +79,9 @@ namespace vve {
 		vh::createUniformBuffers(m_vulkan->GetPhysicalDevice(), m_vulkan->GetDevice(), m_vulkan->GetVmaAllocator(), ubo);
 
 		vh::DescriptorSet descriptorSet;
-		vh::createDescriptorSet(m_vulkan->GetDevice(), texture, m_descriptorSetLayouts, ubo, m_vulkan->GetDescriptorPool(), descriptorSet);
-	    vh::updateDescriptorSet(m_vulkan->GetDevice(), texture, m_descriptorSetLayouts, ubo, m_vulkan->GetDescriptorPool(), descriptorSet);
+		vh::createDescriptorSet(m_vulkan->GetDevice(), texture, m_descriptorSetLayouts, m_vulkan->GetDescriptorPool(), descriptorSet);
+	    vh::updateDescriptorSetUBO(m_vulkan->GetDevice(), ubo, 0, descriptorSet);
+	    vh::updateDescriptorSetTexture(m_vulkan->GetDevice(), texture, 1, descriptorSet);
 
 		m_registry.template Put(handle, ubo, descriptorSet);
 
