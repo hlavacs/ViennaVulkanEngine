@@ -73,6 +73,8 @@ namespace vve {
 	
 	void Engine::CreateCamera( ){
 		// Create camera
+		Camera camera{};
+		auto h = m_registry.Insert(std::string("VVE Camera"), camera);
 	};
 	
 	void Engine::CreateSystems( ){
