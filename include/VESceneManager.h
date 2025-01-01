@@ -15,7 +15,10 @@ namespace vve {
 		auto Matrix() -> mat4_t { m_matrix = glm::translate(mat4_t{}, m_position) * glm::mat4_cast(m_rotation) * glm::scale(mat4_t{}, m_scale); return m_matrix; }
 	};
 
+
 	struct SceneNode {
+		using Children = std::variant<std::pair<vecs::Handle,vecs::Handle>, std::vector<vecs::Handle>>;
+		
 		mat4_t m_localToWorldM{1.0};
 		Transform m_localToParentT;
 		vecs::Handle m_parent{};
