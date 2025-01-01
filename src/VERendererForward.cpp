@@ -29,8 +29,7 @@ namespace vve {
     void RendererForward::OnInit(Message message) {
         vh::createRenderPass(m_vulkan->GetPhysicalDevice(), m_vulkan->GetDevice(), m_vulkan->GetSwapChain(), false, m_renderPass);
 		
-		//vh::createDescriptorSetLayout(m_vulkan->GetDevice(), m_descriptorSetLayouts);
-		vh::createDescriptorSetLayout2(m_vulkan->GetDevice(),
+		vh::createDescriptorSetLayout(m_vulkan->GetDevice(),
 			{
 				{
 					.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
@@ -38,9 +37,11 @@ namespace vve {
 				},
 				{
 					.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
-					.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT			}
+					.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT			
+				}
 			},
-			m_descriptorSetLayouts);
+			m_descriptorSetLayouts
+		);
 
 		vh::createGraphicsPipeline(m_vulkan->GetDevice(), m_renderPass, m_descriptorSetLayouts, m_graphicsPipeline);
 

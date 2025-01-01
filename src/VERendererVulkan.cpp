@@ -57,7 +57,19 @@ namespace vve {
         vh::createImageViews(m_device, m_swapChain);
         vh::createRenderPassClear(m_physicalDevice, m_device, m_swapChain, true, m_renderPass);
         
-		vh::createDescriptorSetLayout(m_device, m_descriptorSetLayouts);
+		vh::createDescriptorSetLayout(m_device,
+			{
+				{
+					.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
+					.stageFlags = VK_SHADER_STAGE_VERTEX_BIT
+				},
+				{
+					.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
+					.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT			
+				}
+			},
+			m_descriptorSetLayouts
+		);
 
         vh::createGraphicsPipeline(m_device, m_renderPass, m_descriptorSetLayouts, m_graphicsPipeline);
         vh::createCommandPool(m_surface, m_physicalDevice, m_device, m_commandPool);

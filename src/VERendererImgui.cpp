@@ -31,7 +31,20 @@ namespace vve {
     void RendererImgui::OnInit(Message message) {
         vh::createRenderPass(m_vulkan->GetPhysicalDevice(), m_vulkan->GetDevice(), m_vulkan->GetSwapChain(), false, m_renderPass);
 		
-		vh::createDescriptorSetLayout(m_vulkan->GetDevice(), m_descriptorSetLayouts);
+		vh::createDescriptorSetLayout(m_vulkan->GetDevice(),
+			{
+				{
+					.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
+					.stageFlags = VK_SHADER_STAGE_VERTEX_BIT
+				},
+				{
+					.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
+					.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT			
+				}
+			},
+			m_descriptorSetLayouts
+		);
+
 		vh::createGraphicsPipeline(m_vulkan->GetDevice(), m_renderPass, m_descriptorSetLayouts, m_graphicsPipeline);
 
 		vh::setupImgui( ((WindowSDL*)m_window)->GetSDLWindow(), m_vulkan->GetInstance(), m_vulkan->GetPhysicalDevice(), m_vulkan->GetQueueFamilies(), m_vulkan->GetDevice(), m_vulkan->GetGraphicsQueue(), 
