@@ -8,7 +8,7 @@ namespace vh {
     void createRenderPass(VkPhysicalDevice physicalDevice, VkDevice device, SwapChain& swapChain, bool clear, VkRenderPass& renderPass);
 
     void createDescriptorSetLayout(VkDevice device, DescriptorSetLayout& descriptorSetLayouts);
-    void createDescriptorSetLayout2(VkDevice device, std::vector<VkDescriptorSetLayoutBinding>& bindings, vh::DescriptorSetLayout& descriptorSetLayouts);
+    void createDescriptorSetLayout2(VkDevice device, std::vector<VkDescriptorSetLayoutBinding>&& bindings, vh::DescriptorSetLayout& descriptorSetLayouts);
 
 	void createDescriptorPool(VkDevice device, uint32_t sizes, VkDescriptorPool& descriptorPool);
 

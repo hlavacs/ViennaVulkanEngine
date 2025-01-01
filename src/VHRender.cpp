@@ -150,8 +150,8 @@ namespace vh {
     }
 
 
-    void createDescriptorSetLayout2(VkDevice device, std::vector<VkDescriptorSetLayoutBinding>& bindings, vh::DescriptorSetLayout& descriptorSetLayouts) {
-		descriptorSetLayouts.m_descriptorSetLayouts.resize(bindings.size());
+    void createDescriptorSetLayout2(VkDevice device, std::vector<VkDescriptorSetLayoutBinding>&& bindings, vh::DescriptorSetLayout& descriptorSetLayouts) {
+		descriptorSetLayouts.m_descriptorSetLayouts.resize(1);
 		size_t i = 0;
 		for( auto& uboLayoutBinding : bindings ) {
 	        uboLayoutBinding.binding = i++;
@@ -164,7 +164,7 @@ namespace vh {
         layoutInfo.bindingCount = static_cast<uint32_t>(bindings.size());
         layoutInfo.pBindings = bindings.data();
 
-        if (vkCreateDescriptorSetLayout(device, &layoutInfo, nullptr, &descriptorSetLayouts.m_descriptorSetLayouts[0]) != VK_SUCCESS) {
+        if (vkCreateDescriptorSetLayout(device, &layoutInfo, nullptr, descriptorSetLayouts.m_descriptorSetLayouts.data()) != VK_SUCCESS) {
             throw std::runtime_error("failed to create descriptor set layout 0!");
         }
 
