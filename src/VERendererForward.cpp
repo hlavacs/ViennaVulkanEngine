@@ -30,10 +30,12 @@ namespace vve {
 			{{ .descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, .stageFlags = VK_SHADER_STAGE_VERTEX_BIT } },
 			m_descriptorSetLayoutBuffer );
 
-		vh::createGraphicsPipeline(GetDevice(), m_renderPass, m_descriptorSetLayoutBufferTexture, m_graphicsPipeline);
+		vh::createGraphicsPipeline(GetDevice(), m_renderPass, { m_descriptorSetLayoutBufferTexture, m_descriptorSetLayoutBuffer }, m_graphicsPipeline);
 
         vh::createCommandPool(GetSurface(), GetPhysicalDevice(), GetDevice(), m_commandPool);
         vh::createCommandBuffers(GetDevice(), GetCommandPool(), m_commandBuffers);
+
+		vh::createUniformBuffers(GetPhysicalDevice(), GetDevice(), GetVmaAllocator(), m_uniformBuffersPerFrame);
     }
 
     void RendererForward::OnRecordNextFrame(Message message) {
@@ -98,6 +100,8 @@ namespace vve {
 		vkDestroyPipeline(GetDevice(), m_graphicsPipeline.m_pipeline, nullptr);
         vkDestroyPipelineLayout(GetDevice(), m_graphicsPipeline.m_pipelineLayout, nullptr);        
 		vkDestroyRenderPass(GetDevice(), m_renderPass, nullptr);
+
+		vh::destroyBuffer2(GetDevice(), GetVmaAllocator(), m_uniformBuffersPerFrame);
 
 		vkDestroyDescriptorSetLayout(GetDevice(), m_descriptorSetLayoutBuffer, nullptr);
 		vkDestroyDescriptorSetLayout(GetDevice(), m_descriptorSetLayoutBufferTexture, nullptr);

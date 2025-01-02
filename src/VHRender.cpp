@@ -155,8 +155,8 @@ namespace vh {
         return shaderModule;
     }
 
-    void createGraphicsPipeline(VkDevice device, VkRenderPass renderPass
-        , VkDescriptorSetLayout descriptorSetLayouts, Pipeline& graphicsPipeline) {
+    void createGraphicsPipeline(VkDevice device, VkRenderPass renderPass, 
+		std::vector<VkDescriptorSetLayout> descriptorSetLayouts, Pipeline& graphicsPipeline) {
 
         auto vertShaderCode = readFile("shaders\\vert.spv");
         auto fragShaderCode = readFile("shaders\\frag.spv");
@@ -249,8 +249,8 @@ namespace vh {
 
         VkPipelineLayoutCreateInfo pipelineLayoutInfo{};
         pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
-        pipelineLayoutInfo.setLayoutCount = 1;
-        pipelineLayoutInfo.pSetLayouts = &descriptorSetLayouts;
+        pipelineLayoutInfo.setLayoutCount = descriptorSetLayouts.size();
+        pipelineLayoutInfo.pSetLayouts = descriptorSetLayouts.data();
 
         if (vkCreatePipelineLayout(device, &pipelineLayoutInfo, nullptr, &graphicsPipeline.m_pipelineLayout) != VK_SUCCESS) {
             throw std::runtime_error("failed to create pipeline layout!");

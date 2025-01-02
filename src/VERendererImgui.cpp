@@ -37,7 +37,7 @@ namespace vve {
 			m_descriptorSetLayouts
 		);
 
-		vh::createGraphicsPipeline(GetDevice(), m_renderPass, m_descriptorSetLayouts, m_graphicsPipeline);
+		vh::createGraphicsPipeline(GetDevice(), m_renderPass, { m_descriptorSetLayouts }, m_graphicsPipeline);
 
 		vh::setupImgui( ((WindowSDL*)m_window)->GetSDLWindow(), GetInstance(), GetPhysicalDevice(), GetQueueFamilies(), GetDevice(), GetGraphicsQueue(), 
 			GetCommandPool(), GetDescriptorPool(), m_renderPass);  

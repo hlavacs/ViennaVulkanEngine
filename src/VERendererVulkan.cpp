@@ -72,7 +72,7 @@ namespace vve {
 			m_descriptorSetLayouts
 		);
 
-        vh::createGraphicsPipeline(GetDevice(), GetRenderPass(), m_descriptorSetLayouts, m_graphicsPipeline);
+        vh::createGraphicsPipeline(GetDevice(), GetRenderPass(), { m_descriptorSetLayouts }, m_graphicsPipeline);
         vh::createCommandPool(GetSurface(), GetPhysicalDevice(), GetDevice(), m_commandPool);
         vh::createDepthResources(GetPhysicalDevice(), GetDevice(), GetVmaAllocator(), GetSwapChain(), m_depthImage);
         vh::createFramebuffers(GetDevice(), GetSwapChain(), GetDepthImage(), GetRenderPass());
