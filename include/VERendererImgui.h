@@ -10,7 +10,6 @@ namespace vve {
         virtual ~RendererImgui();
 
     private:
-        void OnAnnounce(Message message);
         void OnInit(Message message);
         void OnPrepareNextFrame(Message message);
         void OnRecordNextFrame(Message message);

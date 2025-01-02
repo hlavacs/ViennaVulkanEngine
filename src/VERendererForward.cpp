@@ -9,7 +9,6 @@ namespace vve {
         : Renderer(systemName, engine, windowName ) {
 
   		engine.RegisterCallback( { 
-  			{this,     0, "ANNOUNCE", [this](Message message){OnAnnounce(message);} },
   			{this,  3000, "INIT", [this](Message message){OnInit(message);} },
   			{this,  2000, "RECORD_NEXT_FRAME", [this](Message message){OnRecordNextFrame(message);} },
 			{this,     0, "OBJECT_CREATE", [this](Message message){OnObjectCreate(message);} },
@@ -18,13 +17,6 @@ namespace vve {
     };
 
     RendererForward::~RendererForward(){};
-
-    void RendererForward::OnAnnounce(Message message) {
-		auto msg = message.template GetData<MsgAnnounce>();
-		if( msg.m_sender->GetName() == "VVE Renderer Vulkan" ) {
-			m_vulkan = dynamic_cast<RendererVulkan*>(msg.m_sender);
-		}
-    }
 
     void RendererForward::OnInit(Message message) {
         vh::createRenderPass(GetPhysicalDevice(), GetDevice(), GetSwapChain(), false, m_renderPass);

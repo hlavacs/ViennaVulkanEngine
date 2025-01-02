@@ -9,7 +9,6 @@ namespace vve {
         : Renderer(systemName, engine, windowName ) {
 
 		engine.RegisterCallback( { 
-  			{this,     0, "ANNOUNCE", [this](Message message){OnAnnounce(message);} },
 			{this,   4000, "INIT", [this](Message message){OnInit(message);} },
 			{this,   1000, "PREPARE_NEXT_FRAME", [this](Message message){OnPrepareNextFrame(message);} },
 			{this,   3000, "RECORD_NEXT_FRAME", [this](Message message){OnRecordNextFrame(message);} },
@@ -20,13 +19,6 @@ namespace vve {
     };
 
     RendererImgui::~RendererImgui() {};
-
-    void RendererImgui::OnAnnounce(Message message) {
-		auto msg = message.template GetData<MsgAnnounce>();
-		if( msg.m_sender->GetName() == "VVE Renderer Vulkan" ) {
-			m_vulkan = dynamic_cast<RendererVulkan*>(msg.m_sender);
-		}
-    }
 
     void RendererImgui::OnInit(Message message) {
         vh::createRenderPass(GetPhysicalDevice(), GetDevice(), GetSwapChain(), false, m_renderPass);

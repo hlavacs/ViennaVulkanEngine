@@ -9,7 +9,6 @@ namespace vve
         virtual ~RendererForward();
 
     private:
-        void OnAnnounce(Message message);
         void OnInit(Message message);
         void OnRecordNextFrame(Message message);
 		void OnObjectCreate( Message message );
