@@ -34,6 +34,7 @@ namespace vve {
 		void SendMessage( Message message );
 		auto GetSystem( std::string name ) -> System*;
 		auto GetWindow( std::string name ) -> Window* { return (Window*)GetSystem(name); }
+		auto GetRenderer( std::string name ) -> Renderer* { return (Renderer*)GetSystem(name); }
 		auto GetSceneMgr(std::string name) -> SceneManager* { return (SceneManager*)GetSystem(name); }
 		void PrintCallbacks();
 

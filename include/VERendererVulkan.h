@@ -14,6 +14,7 @@ namespace vve {
 
         RendererVulkan(std::string systemName, Engine& engine, std::string windowName);
         virtual ~RendererVulkan();
+		auto GetSurface() -> VkSurfaceKHR { return m_surface; };
         auto GetInstance() -> VkInstance { return m_instance; }
 		auto GetPhysicalDevice() -> VkPhysicalDevice { return m_physicalDevice; }
 		auto GetDevice() -> VkDevice { return m_device; }
@@ -21,18 +22,17 @@ namespace vve {
 		auto GetGraphicsQueue() -> VkQueue { return m_graphicsQueue; }
 		auto GetPresentQueue() -> VkQueue { return m_presentQueue; }
 		auto GetCommandPool() -> VkCommandPool { return m_commandPool; }
+		auto GetDescriptorPool() -> VkDescriptorPool { return m_descriptorPool; }
 		auto GetVmaAllocator() -> VmaAllocator& { return m_vmaAllocator; }
 		auto GetSwapChain() -> vh::SwapChain& { return m_swapChain; }
-		auto GetRenderPass() -> VkRenderPass { return m_renderPass; }
-		auto GetDescriptorPool() -> VkDescriptorPool { return m_descriptorPool; }
 		auto GetDepthImage() -> vh::DepthImage& { return m_depthImage; }
-
-		auto GetCommandBuffers() -> std::vector<VkCommandBuffer>& { return m_commandBuffers; }
-		auto GetSyncObjects() -> std::vector<vh::Semaphores>& { return m_semaphores; }
 		auto GetCurrentFrame() -> uint32_t { return m_currentFrame; }
 		auto GetImageIndex() -> uint32_t { return m_imageIndex; }
-		auto GetFramebufferResized() -> bool { return m_framebufferResized; }
 
+		//auto GetRenderPass() -> VkRenderPass { return m_renderPass; }
+		//auto GetCommandBuffers() -> std::vector<VkCommandBuffer>& { return m_commandBuffers; }
+		//auto GetSyncObjects() -> std::vector<vh::Semaphores>& { return m_semaphores; }
+		auto GetFramebufferResized() -> bool { return m_framebufferResized; }
 		void SubmitCommandBuffer( VkCommandBuffer commandBuffer ) { m_commandBuffersSubmit.push_back(commandBuffer); };
 
     private:

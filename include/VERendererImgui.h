@@ -17,8 +17,6 @@ namespace vve {
         void OnSDL(Message message);
         void OnQuit(Message message);
 
-		RendererVulkan* m_vulkan{nullptr};
-
 		vh::DescriptorSetLayout m_descriptorSetLayouts;
 	    vh::Pipeline m_graphicsPipeline;
 

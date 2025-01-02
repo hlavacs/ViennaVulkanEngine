@@ -15,8 +15,6 @@ namespace vve
 		void OnObjectCreate( Message message );
         void OnQuit(Message message);
 
-		RendererVulkan* m_vulkan{nullptr};
-
 		vh::DescriptorSetLayout m_descriptorSetLayoutsPerFrameInFlight;
 		vh::DescriptorSet m_descriptorSetsPerFrameInFlight;
 		vh::DescriptorSetLayout m_descriptorSetLayoutsPerObject;
