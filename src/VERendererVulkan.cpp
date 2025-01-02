@@ -88,10 +88,10 @@ namespace vve {
         m_currentFrame = (m_currentFrame + 1) % MAX_FRAMES_IN_FLIGHT;
 		m_commandBuffersSubmit.clear();
 
-		vkWaitForFences(GetDevice(), 1, &m_fences[m_currentFrame], VK_TRUE, UINT64_MAX);
+		vkWaitForFences(GetDevice(), 1, &m_fences[GetCurrentFrame()], VK_TRUE, UINT64_MAX);
 
         VkResult result = vkAcquireNextImageKHR(GetDevice(), GetSwapChain().m_swapChain, UINT64_MAX,
-                            m_imageAvailableSemaphores[m_currentFrame], VK_NULL_HANDLE, &m_imageIndex);
+                            m_imageAvailableSemaphores[GetCurrentFrame()], VK_NULL_HANDLE, &m_imageIndex);
 
         if (result == VK_ERROR_OUT_OF_DATE_KHR ) {
             recreateSwapChain(m_windowSDL->GetSDLWindow(), GetSurface(), GetPhysicalDevice(), GetDevice(), GetVmaAllocator(), GetSwapChain(), GetDepthImage(), GetRenderPass());
@@ -103,13 +103,13 @@ namespace vve {
     void RendererVulkan::OnRecordNextFrame(Message message) {
 		if(m_windowSDL->GetIsMinimized()) return;
 
-        vkResetCommandBuffer(m_commandBuffers[m_currentFrame],  0);
+        vkResetCommandBuffer(m_commandBuffers[GetCurrentFrame()],  0);
 
-		vh::startRecordCommandBuffer(m_commandBuffers[m_currentFrame], GetImageIndex(), 
+		vh::startRecordCommandBuffer(m_commandBuffers[GetCurrentFrame()], GetImageIndex(), 
 			GetSwapChain(), GetRenderPass(), m_graphicsPipeline, 
-			true, ((WindowSDL*)m_window)->GetClearColor(), m_currentFrame);
+			true, ((WindowSDL*)m_window)->GetClearColor(), GetCurrentFrame());
 
-		vh::endRecordCommandBuffer(m_commandBuffers[m_currentFrame]);
+		vh::endRecordCommandBuffer(m_commandBuffers[GetCurrentFrame()]);
 
 		SubmitCommandBuffer(m_commandBuffers[GetCurrentFrame()]);
 	}
@@ -123,14 +123,14 @@ namespace vve {
 			vh::createSemaphores(GetDevice(), size, m_imageAvailableSemaphores, m_semaphores);
 		}
 
-        vkResetFences(GetDevice(), 1, &m_fences[m_currentFrame]);
+        vkResetFences(GetDevice(), 1, &m_fences[GetCurrentFrame()]);
 
-		VkSemaphore waitSemaphore = m_imageAvailableSemaphores[m_currentFrame];
+		VkSemaphore waitSemaphore = m_imageAvailableSemaphores[GetCurrentFrame()];
 		VkSemaphore signalSemaphore;
 
 		for( int i = 0; i < size; i++ ) {
 			VkCommandBuffer commandBuffer = m_commandBuffersSubmit[i];
-			signalSemaphore = m_semaphores[i].m_renderFinishedSemaphores[m_currentFrame];
+			signalSemaphore = m_semaphores[i].m_renderFinishedSemaphores[GetCurrentFrame()];
 			VkSubmitInfo submitInfo{};
 	        submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
 	        VkPipelineStageFlags waitStages[] = {VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT};
@@ -142,7 +142,7 @@ namespace vve {
 	        submitInfo.signalSemaphoreCount = 1;
 	        submitInfo.pSignalSemaphores = &signalSemaphore;
 			VkFence fence = VK_NULL_HANDLE;
-			if( i== size-1 ) fence = m_fences[m_currentFrame];
+			if( i== size-1 ) fence = m_fences[GetCurrentFrame()];
 	        if (vkQueueSubmit(m_graphicsQueue, 1, &submitInfo, fence) != VK_SUCCESS) {
 	            throw std::runtime_error("failed to submit draw command buffer!");
 	        }
@@ -177,7 +177,7 @@ namespace vve {
         vkDestroyPipeline(GetDevice(), m_graphicsPipeline.m_pipeline, nullptr);
         vkDestroyPipelineLayout(GetDevice(), m_graphicsPipeline.m_pipelineLayout, nullptr);
 
-        vkDestroyDescriptorPool(GetDevice(), m_descriptorPool, nullptr);
+        vkDestroyDescriptorPool(GetDevice(), GetDescriptorPool(), nullptr);
 
 		for( decltype(auto) texture : m_registry.template GetView<vh::Texture&>() ) {
 			vkDestroySampler(GetDevice(), texture.m_textureSampler, nullptr);
