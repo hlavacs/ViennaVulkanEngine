@@ -11,7 +11,6 @@ namespace vve {
 		quat_t m_rotation{};
 		vec3_t m_scale{1.0, 1.0, 1.0};
 		mat4_t m_matrix{1.0};
-		Transform() { Matrix(); }
 		auto Matrix() -> mat4_t { m_matrix = glm::translate(mat4_t{}, m_position) * glm::mat4_cast(m_rotation) * glm::scale(mat4_t{}, m_scale); return m_matrix; }
 	};
 
@@ -19,10 +18,10 @@ namespace vve {
 	struct SceneNode {
 		using Children = std::variant<std::pair<vecs::Handle,vecs::Handle>, std::vector<vecs::Handle>>;
 		
-		mat4_t m_localToWorldM{1.0};
 		Transform m_localToParentT;
 		vecs::Handle m_parent{};
 		std::vector<vecs::Handle> m_children;
+		mat4_t m_localToWorldM{1.0};
 		void EraseChild(vecs::Handle handle)  { if(m_children.size()>0) m_children.erase(std::remove(m_children.begin(), m_children.end(), handle), m_children.end()); }
 	};
 

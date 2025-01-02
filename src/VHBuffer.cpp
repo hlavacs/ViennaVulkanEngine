@@ -27,7 +27,18 @@ namespace vh {
 
         UniformBufferObject ubo{};
         ubo.model = glm::rotate(glm::mat4(1.0f), time * glm::radians(90.0f), glm::vec3(0.0f, 0.0f, 1.0f));
-        ubo.view = glm::lookAt(glm::vec3(2.0f, 2.0f, 2.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f));
+        
+		ubo.view = glm::lookAt(glm::vec3(2.0f, 2.0f, 2.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f));
+
+		/*vec3_t m_position{0.0, 0.0, 0.0};
+		quat_t m_rotation{};
+		vec3_t m_scale{1.0, 1.0, 1.0};
+		mat4_t m_matrix{1.0};
+		auto Matrix = [&]()-> mat4_t { m_matrix = glm::translate(mat4_t{}, m_position) * glm::mat4_cast(m_rotation) * glm::scale(mat4_t{}, m_scale); return m_matrix; };
+		auto view = glm::inverse( Matrix() );
+		*/
+	
+
         ubo.proj = glm::perspective(glm::radians(45.0f)
             , swapChain.m_swapChainExtent.width / (float) swapChain.m_swapChainExtent.height, 0.1f, 10.0f);
         ubo.proj[1][1] *= -1;
