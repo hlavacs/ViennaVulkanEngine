@@ -38,7 +38,7 @@ namespace vve {
 		vh::createGraphicsPipeline(GetDevice(), m_renderPass, m_descriptorSetLayouts, m_graphicsPipeline);
 
         vh::createCommandPool(GetSurface(), GetPhysicalDevice(), GetDevice(), m_commandPool);
-        vh::createCommandBuffers(GetDevice(), m_commandPool, m_commandBuffers);
+        vh::createCommandBuffers(GetDevice(), GetCommandPool(), m_commandBuffers);
     }
 
     void RendererForward::OnRecordNextFrame(Message message) {
@@ -70,13 +70,13 @@ namespace vve {
 
 		decltype(auto) geometry = m_registry.template Get<vh::Geometry&>(gHandle);
 		if( geometry.m_vertexBuffer == VK_NULL_HANDLE ) {
-			vh::createVertexBuffer(GetPhysicalDevice(), GetDevice(), GetVmaAllocator(), GetGraphicsQueue(), m_commandPool, geometry);
-			vh::createIndexBuffer( GetPhysicalDevice(), GetDevice(), GetVmaAllocator(), GetGraphicsQueue(), m_commandPool, geometry);
+			vh::createVertexBuffer(GetPhysicalDevice(), GetDevice(), GetVmaAllocator(), GetGraphicsQueue(), GetCommandPool(), geometry);
+			vh::createIndexBuffer( GetPhysicalDevice(), GetDevice(), GetVmaAllocator(), GetGraphicsQueue(), GetCommandPool(), geometry);
 		}
 
 		decltype(auto) texture = m_registry.template Get<vh::Texture&>(tHandle);
 		if( texture.m_textureImage == VK_NULL_HANDLE && texture.m_pixels != nullptr ) {
-			vh::createTextureImage(GetPhysicalDevice(), GetDevice(), GetVmaAllocator(), GetGraphicsQueue(), m_commandPool, texture.m_pixels, texture.m_width, texture.m_height, texture.m_size, texture);
+			vh::createTextureImage(GetPhysicalDevice(), GetDevice(), GetVmaAllocator(), GetGraphicsQueue(), GetCommandPool(), texture.m_pixels, texture.m_width, texture.m_height, texture.m_size, texture);
 			vh::createTextureImageView(GetDevice(), texture);
 			vh::createTextureSampler(GetPhysicalDevice(), GetDevice(), texture);
 		}
@@ -99,7 +99,7 @@ namespace vve {
     void RendererForward::OnQuit(Message message) {
         vkDeviceWaitIdle(GetDevice());
 		
-        vkDestroyCommandPool(GetDevice(), m_commandPool, nullptr);
+        vkDestroyCommandPool(GetDevice(), GetCommandPool(), nullptr);
 		vkDestroyPipeline(GetDevice(), m_graphicsPipeline.m_pipeline, nullptr);
         vkDestroyPipelineLayout(GetDevice(), m_graphicsPipeline.m_pipelineLayout, nullptr);        
 		vkDestroyRenderPass(GetDevice(), m_renderPass, nullptr);
