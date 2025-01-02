@@ -17,7 +17,7 @@ namespace vve {
         void OnSDL(Message message);
         void OnQuit(Message message);
 
-		vh::DescriptorSetLayout m_descriptorSetLayouts;
+		VkDescriptorSetLayout m_descriptorSetLayouts;
 	    vh::Pipeline m_graphicsPipeline;
 
 	    VkRenderPass m_renderPass;

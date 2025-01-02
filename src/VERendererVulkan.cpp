@@ -186,9 +186,7 @@ namespace vve {
 	        vh::destroyImage(GetDevice(), GetVmaAllocator(), texture.m_textureImage, texture.m_textureImageAllocation);
 		}
 
-		for( auto layout : m_descriptorSetLayouts.m_descriptorSetLayouts ) {
-			vkDestroyDescriptorSetLayout(GetDevice(), layout, nullptr);
-		}
+		vkDestroyDescriptorSetLayout(GetDevice(), m_descriptorSetLayouts, nullptr);
 
 		for( auto geometry : m_registry.template GetView<vh::Geometry&>() ) {
 	        vh::destroyBuffer(GetDevice(), GetVmaAllocator(), geometry.m_indexBuffer, geometry.m_indexBufferAllocation);

@@ -15,12 +15,13 @@ namespace vve
 		void OnObjectCreate( Message message );
         void OnQuit(Message message);
 
-		vh::DescriptorSetLayout m_descriptorSetLayoutsPerFrameInFlight;
+		VkDescriptorSetLayout m_descriptorSetLayoutsPerFrameInFlight;
 		vh::DescriptorSet m_descriptorSetsPerFrameInFlight;
-		vh::DescriptorSetLayout m_descriptorSetLayoutsPerObject;
+		VkDescriptorSetLayout m_descriptorSetLayoutsPerObject;
 		vh::DescriptorSet m_descriptorSetsPerObject;
 
-		vh::DescriptorSetLayout m_descriptorSetLayouts;
+		VkDescriptorSetLayout m_descriptorSetLayoutBuffer;
+		VkDescriptorSetLayout m_descriptorSetLayoutBufferTexture;
 	    vh::Pipeline m_graphicsPipeline;
 
 	    VkRenderPass m_renderPass;

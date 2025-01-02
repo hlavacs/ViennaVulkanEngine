@@ -121,8 +121,7 @@ namespace vh {
     }
 
 
-    void createDescriptorSetLayout(VkDevice device, std::vector<VkDescriptorSetLayoutBinding>&& bindings, vh::DescriptorSetLayout& descriptorSetLayouts) {
-		descriptorSetLayouts.m_descriptorSetLayouts.resize(1);
+    void createDescriptorSetLayout(VkDevice device, std::vector<VkDescriptorSetLayoutBinding>&& bindings, VkDescriptorSetLayout& descriptorSetLayouts) {
 		size_t i = 0;
 		for( auto& uboLayoutBinding : bindings ) {
 	        uboLayoutBinding.binding = i++;
@@ -135,7 +134,7 @@ namespace vh {
         layoutInfo.bindingCount = static_cast<uint32_t>(bindings.size());
         layoutInfo.pBindings = bindings.data();
 
-        if (vkCreateDescriptorSetLayout(device, &layoutInfo, nullptr, descriptorSetLayouts.m_descriptorSetLayouts.data()) != VK_SUCCESS) {
+        if (vkCreateDescriptorSetLayout(device, &layoutInfo, nullptr, &descriptorSetLayouts) != VK_SUCCESS) {
             throw std::runtime_error("failed to create descriptor set layout 0!");
         }
 
@@ -157,7 +156,7 @@ namespace vh {
     }
 
     void createGraphicsPipeline(VkDevice device, VkRenderPass renderPass
-        , DescriptorSetLayout descriptorSetLayouts, Pipeline& graphicsPipeline) {
+        , VkDescriptorSetLayout descriptorSetLayouts, Pipeline& graphicsPipeline) {
 
         auto vertShaderCode = readFile("shaders\\vert.spv");
         auto fragShaderCode = readFile("shaders\\frag.spv");
@@ -250,8 +249,8 @@ namespace vh {
 
         VkPipelineLayoutCreateInfo pipelineLayoutInfo{};
         pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
-        pipelineLayoutInfo.setLayoutCount = descriptorSetLayouts.m_descriptorSetLayouts.size();
-        pipelineLayoutInfo.pSetLayouts = descriptorSetLayouts.m_descriptorSetLayouts.data();
+        pipelineLayoutInfo.setLayoutCount = 1;
+        pipelineLayoutInfo.pSetLayouts = &descriptorSetLayouts;
 
         if (vkCreatePipelineLayout(device, &pipelineLayoutInfo, nullptr, &graphicsPipeline.m_pipelineLayout) != VK_SUCCESS) {
             throw std::runtime_error("failed to create pipeline layout!");
@@ -332,12 +331,12 @@ namespace vh {
     }
 
 
-    void createDescriptorSet(VkDevice device, Texture& texture, DescriptorSetLayout& descriptorSetLayouts, 
+    void createDescriptorSet(VkDevice device, Texture& texture, VkDescriptorSetLayout& descriptorSetLayouts, 
 		VkDescriptorPool descriptorPool, DescriptorSet& descriptorSet) {
 
 		descriptorSet.m_descriptorSetPerFrameInFlight.resize(MAX_FRAMES_IN_FLIGHT);
 		for( auto& ds : descriptorSet.m_descriptorSetPerFrameInFlight ) {
-	        std::vector<VkDescriptorSetLayout> layouts(MAX_FRAMES_IN_FLIGHT, descriptorSetLayouts.m_descriptorSetLayouts[0]);
+	        std::vector<VkDescriptorSetLayout> layouts(MAX_FRAMES_IN_FLIGHT, descriptorSetLayouts);
 	        VkDescriptorSetAllocateInfo allocInfo{};
 	        allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
 	        allocInfo.descriptorPool = descriptorPool;

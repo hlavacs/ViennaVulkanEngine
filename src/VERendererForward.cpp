@@ -21,21 +21,16 @@ namespace vve {
     void RendererForward::OnInit(Message message) {
         vh::createRenderPass(GetPhysicalDevice(), GetDevice(), GetSwapChain(), false, m_renderPass);
 		
-		vh::createDescriptorSetLayout(GetDevice(),
-			{
-				{
-					.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
-					.stageFlags = VK_SHADER_STAGE_VERTEX_BIT
-				},
-				{
-					.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
-					.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT			
-				}
-			},
-			m_descriptorSetLayouts
-		);
+		vh::createDescriptorSetLayout( GetDevice(), //Per frame
+			{{ .descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, .stageFlags = VK_SHADER_STAGE_VERTEX_BIT },
+			 {.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, .stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT } },
+			m_descriptorSetLayoutBufferTexture );
 
-		vh::createGraphicsPipeline(GetDevice(), m_renderPass, m_descriptorSetLayouts, m_graphicsPipeline);
+		vh::createDescriptorSetLayout( GetDevice(), //Per object
+			{{ .descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, .stageFlags = VK_SHADER_STAGE_VERTEX_BIT } },
+			m_descriptorSetLayoutBuffer );
+
+		vh::createGraphicsPipeline(GetDevice(), m_renderPass, m_descriptorSetLayoutBufferTexture, m_graphicsPipeline);
 
         vh::createCommandPool(GetSurface(), GetPhysicalDevice(), GetDevice(), m_commandPool);
         vh::createCommandBuffers(GetDevice(), GetCommandPool(), m_commandBuffers);
@@ -85,7 +80,7 @@ namespace vve {
 		vh::createUniformBuffers(GetPhysicalDevice(), GetDevice(), GetVmaAllocator(), ubo);
 
 		vh::DescriptorSet descriptorSet;
-		vh::createDescriptorSet(GetDevice(), texture, m_descriptorSetLayouts, GetDescriptorPool(), descriptorSet);
+		vh::createDescriptorSet(GetDevice(), texture, m_descriptorSetLayoutBufferTexture, GetDescriptorPool(), descriptorSet);
 	    vh::updateDescriptorSetUBO(GetDevice(), ubo, 0, descriptorSet);
 	    vh::updateDescriptorSetTexture(GetDevice(), texture, 1, descriptorSet);
 
@@ -103,9 +98,9 @@ namespace vve {
 		vkDestroyPipeline(GetDevice(), m_graphicsPipeline.m_pipeline, nullptr);
         vkDestroyPipelineLayout(GetDevice(), m_graphicsPipeline.m_pipelineLayout, nullptr);        
 		vkDestroyRenderPass(GetDevice(), m_renderPass, nullptr);
-		for( auto layout : m_descriptorSetLayouts.m_descriptorSetLayouts ) {
-			vkDestroyDescriptorSetLayout(GetDevice(), layout, nullptr);
-		}
+
+		vkDestroyDescriptorSetLayout(GetDevice(), m_descriptorSetLayoutBuffer, nullptr);
+		vkDestroyDescriptorSetLayout(GetDevice(), m_descriptorSetLayoutBufferTexture, nullptr);
     }
 
 

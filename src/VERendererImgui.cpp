@@ -85,9 +85,7 @@ namespace vve {
         vkDestroyRenderPass(GetDevice(), m_renderPass, nullptr);
 		vkDestroyPipeline(GetDevice(), m_graphicsPipeline.m_pipeline, nullptr);
         vkDestroyPipelineLayout(GetDevice(), m_graphicsPipeline.m_pipelineLayout, nullptr);   
-		for( auto layout : m_descriptorSetLayouts.m_descriptorSetLayouts ) {
-			vkDestroyDescriptorSetLayout(GetDevice(), layout, nullptr);
-		}
+		vkDestroyDescriptorSetLayout(GetDevice(), m_descriptorSetLayouts, nullptr);
     }
 
 

@@ -7,11 +7,11 @@ namespace vh {
 
     void createRenderPass(VkPhysicalDevice physicalDevice, VkDevice device, SwapChain& swapChain, bool clear, VkRenderPass& renderPass);
 
-    void createDescriptorSetLayout(VkDevice device, std::vector<VkDescriptorSetLayoutBinding>&& bindings, vh::DescriptorSetLayout& descriptorSetLayouts);
+    void createDescriptorSetLayout(VkDevice device, std::vector<VkDescriptorSetLayoutBinding>&& bindings, VkDescriptorSetLayout& descriptorSetLayouts);
 
 	void createDescriptorPool(VkDevice device, uint32_t sizes, VkDescriptorPool& descriptorPool);
 
-    void createDescriptorSet(VkDevice device, Texture& texture, DescriptorSetLayout& descriptorSetLayouts, 
+    void createDescriptorSet(VkDevice device, Texture& texture, VkDescriptorSetLayout& descriptorSetLayouts, 
 		VkDescriptorPool descriptorPool, DescriptorSet& descriptorSet);
 
     void updateDescriptorSet(VkDevice device, Texture& texture, UniformBuffers& uniformBuffers, DescriptorSet& descriptorSet);
@@ -20,7 +20,7 @@ namespace vh {
 
     VkShaderModule createShaderModule(VkDevice device, const std::vector<char>& code);
 
-    void createGraphicsPipeline(VkDevice device, VkRenderPass renderPass, DescriptorSetLayout descriptorSetLayout, Pipeline& graphicsPipeline);
+    void createGraphicsPipeline(VkDevice device, VkRenderPass renderPass, VkDescriptorSetLayout descriptorSetLayout, Pipeline& graphicsPipeline);
 
     void createFramebuffers(VkDevice device, SwapChain& swapChain, DepthImage& depthImage, VkRenderPass renderPass);
 
