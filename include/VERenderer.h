@@ -35,7 +35,7 @@ namespace vve
 		auto GetSwapChain() -> vh::SwapChain&;
 		auto GetDepthImage() -> vh::DepthImage&;
 		auto GetCurrentFrame() -> uint32_t;
-		auto GetImageIndex() -> uint32_t;
+		auto GetImageIndex() -> uint32_t&;
 		void SubmitCommandBuffer( VkCommandBuffer commandBuffer );
 
     protected:

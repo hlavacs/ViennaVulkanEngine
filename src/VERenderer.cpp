@@ -37,7 +37,7 @@ namespace vve {
 	auto Renderer::GetSwapChain() -> vh::SwapChain& { assert(m_vulkan!=this); return m_vulkan->GetSwapChain(); }
 	auto Renderer::GetDepthImage() -> vh::DepthImage& { assert(m_vulkan!=this); return m_vulkan->GetDepthImage(); }
 	auto Renderer::GetCurrentFrame() -> uint32_t { assert(m_vulkan!=this); return m_vulkan->GetCurrentFrame(); }
-	auto Renderer::GetImageIndex() -> uint32_t { assert(m_vulkan!=this); return m_vulkan->GetImageIndex(); }
+	auto Renderer::GetImageIndex() -> uint32_t& { assert(m_vulkan!=this); return m_vulkan->GetImageIndex(); }
 	void Renderer::SubmitCommandBuffer( VkCommandBuffer commandBuffer ) { assert(m_vulkan!=this); m_vulkan->SubmitCommandBuffer(commandBuffer); };
 
 };  // namespace vve

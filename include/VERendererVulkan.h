@@ -27,11 +27,11 @@ namespace vve {
 		auto GetSwapChain() -> vh::SwapChain& { return m_swapChain; }
 		auto GetDepthImage() -> vh::DepthImage& { return m_depthImage; }
 		auto GetCurrentFrame() -> uint32_t { return m_currentFrame; }
-		auto GetImageIndex() -> uint32_t { return m_imageIndex; }
-
-		//auto GetRenderPass() -> VkRenderPass { return m_renderPass; }
+		auto GetImageIndex() -> uint32_t& { return m_imageIndex; }
+		
 		//auto GetCommandBuffers() -> std::vector<VkCommandBuffer>& { return m_commandBuffers; }
 		//auto GetSyncObjects() -> std::vector<vh::Semaphores>& { return m_semaphores; }
+		auto GetRenderPass() -> VkRenderPass { return m_renderPass; }
 		auto GetFramebufferResized() -> bool { return m_framebufferResized; }
 		void SubmitCommandBuffer( VkCommandBuffer commandBuffer ) { m_commandBuffersSubmit.push_back(commandBuffer); };
 
