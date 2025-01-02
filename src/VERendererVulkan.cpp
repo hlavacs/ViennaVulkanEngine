@@ -51,7 +51,8 @@ namespace vve {
         }
 
         vh::pickPhysicalDevice(GetInstance(), m_deviceExtensions, GetSurface(), m_physicalDevice);
-        vh::createLogicalDevice(GetSurface(), GetPhysicalDevice(), m_queueFamilies, m_validationLayers, m_deviceExtensions, m_device, m_graphicsQueue, m_presentQueue);
+        vh::createLogicalDevice(GetSurface(), GetPhysicalDevice(), m_queueFamilies, m_validationLayers, 
+			m_deviceExtensions, m_device, m_graphicsQueue, m_presentQueue);
         vh::initVMA(GetInstance(), GetPhysicalDevice(), GetDevice(), m_vmaAllocator);  
         vh::createSwapChain(m_windowSDL->GetSDLWindow(), GetSurface(), GetPhysicalDevice(), GetDevice(), m_swapChain);
         vh::createImageViews(GetDevice(), GetSwapChain());
@@ -76,7 +77,7 @@ namespace vve {
         vh::createDepthResources(GetPhysicalDevice(), GetDevice(), GetVmaAllocator(), GetSwapChain(), m_depthImage);
         vh::createFramebuffers(GetDevice(), GetSwapChain(), GetDepthImage(), GetRenderPass());
 
-        vh::createCommandBuffers(GetDevice(), m_commandPool, m_commandBuffers);
+        vh::createCommandBuffers(GetDevice(), GetCommandPool(), m_commandBuffers);
         vh::createDescriptorPool(GetDevice(), 1000, m_descriptorPool);
         vh::createSemaphores(GetDevice(), 3, m_imageAvailableSemaphores, m_semaphores);
 		vh::createFences(GetDevice(), MAX_FRAMES_IN_FLIGHT, m_fences);
@@ -143,13 +144,13 @@ namespace vve {
 	        submitInfo.pSignalSemaphores = &signalSemaphore;
 			VkFence fence = VK_NULL_HANDLE;
 			if( i== size-1 ) fence = m_fences[GetCurrentFrame()];
-	        if (vkQueueSubmit(m_graphicsQueue, 1, &submitInfo, fence) != VK_SUCCESS) {
+	        if (vkQueueSubmit(GetGraphicsQueue(), 1, &submitInfo, fence) != VK_SUCCESS) {
 	            throw std::runtime_error("failed to submit draw command buffer!");
 	        }
 			waitSemaphore = signalSemaphore;
 		}
 
-   		vh::transitionImageLayout(GetDevice(), m_graphicsQueue, m_commandPool, 
+   		vh::transitionImageLayout(GetDevice(), GetGraphicsQueue(), GetCommandPool(), 
 			GetSwapChain().m_swapChainImages[GetImageIndex()], GetSwapChain().m_swapChainImageFormat, 
 			VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR);
 
@@ -198,7 +199,7 @@ namespace vve {
 			vh::destroyBuffer2(GetDevice(), GetVmaAllocator(), ubo);
 		}
 
-        vkDestroyCommandPool(GetDevice(), m_commandPool, nullptr);
+        vkDestroyCommandPool(GetDevice(), GetCommandPool(), nullptr);
 
         vkDestroyRenderPass(GetDevice(), GetRenderPass(), nullptr);
 
@@ -229,7 +230,7 @@ namespace vve {
 		auto pixels = msg.m_pixels;
 		auto handle = msg.m_handle;
 		auto& texture = m_registry.template Get<vh::Texture&>(handle);
-		vh::createTextureImage(GetPhysicalDevice(), GetDevice(), m_vmaAllocator, m_graphicsQueue, m_commandPool, pixels, texture.m_width, texture.m_height, texture.m_size, texture);
+		vh::createTextureImage(GetPhysicalDevice(), GetDevice(), m_vmaAllocator, GetGraphicsQueue(), GetCommandPool(), pixels, texture.m_width, texture.m_height, texture.m_size, texture);
 		vh::createTextureImageView(GetDevice(), texture);
 		vh::createTextureSampler(GetPhysicalDevice(), GetDevice(), texture);
 	}
@@ -246,8 +247,8 @@ namespace vve {
 	auto RendererVulkan::OnGeometryCreate( Message message ) -> void {
 		auto handle = message.template GetData<MsgGeometryCreate>().m_handle;
 		auto& geometry = m_registry.template Get<vh::Geometry&>(handle);
-		vh::createVertexBuffer(GetPhysicalDevice(), GetDevice(), m_vmaAllocator, m_graphicsQueue, m_commandPool, geometry);
-		vh::createIndexBuffer( GetPhysicalDevice(), GetDevice(), m_vmaAllocator, m_graphicsQueue, m_commandPool, geometry);
+		vh::createVertexBuffer(GetPhysicalDevice(), GetDevice(), m_vmaAllocator, GetGraphicsQueue(), GetCommandPool(), geometry);
+		vh::createIndexBuffer( GetPhysicalDevice(), GetDevice(), m_vmaAllocator, GetGraphicsQueue(), GetCommandPool(), geometry);
 	}
 
 	auto RendererVulkan::OnGeometryDestroy( Message message ) -> void {
