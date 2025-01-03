@@ -52,7 +52,7 @@ namespace vve {
 		
 		for( auto[ghandle, ubo, descriptorsets] : m_registry.template GetView<GeometryHandle, vh::UniformBuffers&, vh::DescriptorSet&>() ) {
 			auto& geometry = m_registry.template Get<vh::Geometry&>(ghandle);
-			vh::recordObject2( m_commandBuffers[GetCurrentFrame()], m_graphicsPipeline, descriptorsets, geometry, GetCurrentFrame() );
+			vh::recordObject2( m_commandBuffers[GetCurrentFrame()], m_graphicsPipeline, { descriptorsets }, geometry, GetCurrentFrame() );
 		}
 
 		vh::endRecordCommandBuffer(m_commandBuffers[GetCurrentFrame()]);
