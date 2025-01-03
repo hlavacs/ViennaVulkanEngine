@@ -73,10 +73,13 @@ namespace vve {
 	
 	void Engine::CreateCamera( ){
 		// Create camera
-		Camera camera{};
-        auto view = glm::inverse( glm::lookAt(glm::vec3(2.0f, 2.0f, 2.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f)) );
-
-		auto h = m_registry.Insert(std::string("VVE Camera"), camera, SceneNode{{{2.0f, 2.0f, 2.0f}, glm::quat_cast(view)}} );
+		auto window = GetWindow("VVE Window");
+		Camera camera{(float)window->GetWidth() / (float)window->GetHeight()};
+        auto view = glm::inverse( glm::lookAt(glm::vec3(2.0f, 1.9f, 1.8f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f)) );
+		//auto quat = glm::quat_cast(view);
+		//auto pos = glm::vec3(view[3]);
+		//auto rot = glm::mat3_cast(quat);
+		auto h = m_registry.Insert(std::string("VVE Camera"), camera, SceneNode{{glm::vec3(view[3]), glm::quat_cast(view)}} );
 	};
 	
 	void Engine::CreateSystems( ){

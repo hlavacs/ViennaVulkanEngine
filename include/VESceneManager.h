@@ -18,20 +18,20 @@ namespace vve {
 	struct SceneNode {
 		using Children = std::variant<std::pair<vecs::Handle,vecs::Handle>, std::vector<vecs::Handle>>;
 		
-		Transform m_localToParentT;
-		vecs::Handle m_parent{};
+		Transform 		m_localToParentT;
+		vecs::Handle 	m_parent{};
 		std::vector<vecs::Handle> m_children;
-		mat4_t m_localToWorldM{1.0};
+		mat4_t 			m_localToWorldM{1.0};
 		void EraseChild(vecs::Handle handle)  { if(m_children.size()>0) m_children.erase(std::remove(m_children.begin(), m_children.end(), handle), m_children.end()); }
 	};
 
 	struct Camera {
+		real_t m_aspect = 1.0f;
 		real_t m_near = 0.1f;
 		real_t m_far = 100.0f;
 		real_t m_fov = 45.0f;
-		mat4_t m_projMatrix{1.0};
-		Camera() { Matrix(); }
-		auto Matrix() -> mat4_t { m_projMatrix = glm::perspective(glm::radians(m_fov), (real_t)1.0, m_near, m_far); return m_projMatrix; }
+		mat4_t m_proj{};
+		auto Matrix() -> mat4_t { m_proj = glm::perspective(glm::radians(m_fov), m_aspect, m_near, m_far); return m_proj; }
 	};
 
 	using SceneNodeHandle = vsty::strong_type_t<vecs::Handle, vsty::counter<>>; //need this to use SceneNode as a unique componen

@@ -23,7 +23,7 @@ namespace vve {
     void SceneManager::OnUpdate(Message message) {
 		auto node = m_registry.template Get<SceneNode&>(m_handleMap[m_rootName]);
 
-		auto func = [](auto& registry, mat4_t& parentTransform, SceneNode& currentNode, auto& self) -> void {
+		auto update = [](auto& registry, mat4_t& parentTransform, SceneNode& currentNode, auto& self) -> void {
 			currentNode.m_localToWorldM = parentTransform * currentNode.m_localToParentT.Matrix();
 			for( auto handle : currentNode.m_children ) {
 				auto child = registry.template Get<SceneNode&>(handle);
@@ -33,7 +33,11 @@ namespace vve {
 
 		for( auto handle : node.m_children ) {
 			auto child = m_registry.template Get<SceneNode&>(handle);
-			func(m_registry, node.m_localToWorldM, child, func);
+			update(m_registry, node.m_localToWorldM, child, update);
+		}
+
+		for( auto [camera, cameraNode] : m_registry.template GetView<Camera&, SceneNode&>() ) {
+			cameraNode.m_localToWorldM = glm::inverse(cameraNode.m_localToWorldM);
 		}
 	}
 

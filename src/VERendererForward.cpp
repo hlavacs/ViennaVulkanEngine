@@ -39,18 +39,30 @@ namespace vve {
     }
 
     void RendererForward::OnRecordNextFrame(Message message) {
-		
-		for( decltype(auto) ubo : m_registry.template GetView<vh::UniformBuffers&>() ) {
-        	vh::updateUniformBuffer(GetCurrentFrame(), GetSwapChain(), ubo);
-		}
+		static auto startTime = std::chrono::high_resolution_clock::now();
+        auto currentTime = std::chrono::high_resolution_clock::now();
+        float time = std::chrono::duration<float, std::chrono::seconds::period>(currentTime - startTime).count();
+
+		auto [camera, cameraNode] = *m_registry.template GetView<Camera&, SceneNode&>().begin();
 
 		vkResetCommandBuffer(m_commandBuffers[GetCurrentFrame()],  0);
         
 		vh::startRecordCommandBuffer(m_commandBuffers[GetCurrentFrame()], GetImageIndex(), 
-			GetSwapChain(), m_renderPass, m_graphicsPipeline, 
-			false, ((WindowSDL*)m_window)->GetClearColor(), GetCurrentFrame());
+			GetSwapChain(), m_renderPass, m_graphicsPipeline, false, ((WindowSDL*)m_window)->GetClearColor(), GetCurrentFrame());
 		
-		for( auto[ghandle, ubo, descriptorsets] : m_registry.template GetView<GeometryHandle, vh::UniformBuffers&, vh::DescriptorSet&>() ) {
+		for( auto[ghandle, sn, uniformBuffers, descriptorsets] : m_registry.template GetView<GeometryHandle, SceneNode&, vh::UniformBuffers&, vh::DescriptorSet&>() ) {
+
+			vh::UniformBufferObject ubo{};
+			ubo.model = sn.m_localToWorldM * glm::rotate(glm::mat4(1.0f), time * glm::radians(50.0f), glm::vec3(0.0f, 0.0f, 1.0f));
+			
+			ubo.view = glm::lookAt(glm::vec3(2.0f, 2.0f, 2.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f));
+			//ubo.view = cameraNode.m_localToWorldM;
+        	
+			ubo.proj = glm::perspective(glm::radians(45.0f), GetSwapChain().m_swapChainExtent.width / (float) GetSwapChain().m_swapChainExtent.height, 0.1f, 10.0f);
+        	ubo.proj[1][1] *= -1;
+
+			memcpy(uniformBuffers.m_uniformBuffersMapped[GetCurrentFrame()], &ubo, sizeof(ubo));
+
 			auto& geometry = m_registry.template Get<vh::Geometry&>(ghandle);
 			vh::recordObject2( m_commandBuffers[GetCurrentFrame()], m_graphicsPipeline, { descriptorsets }, geometry, GetCurrentFrame() );
 		}
