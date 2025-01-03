@@ -44,7 +44,7 @@ namespace vh {
     void createIndexBuffer(VkPhysicalDevice physicalDevice, VkDevice device, VmaAllocator vmaAllocator
         , VkQueue graphicsQueue, VkCommandPool commandPool, Geometry& geometry);
 
-    void createUniformBuffers(VkPhysicalDevice physicalDevice, VkDevice device, VmaAllocator& vmaAllocator
-            , UniformBuffers &uniformBuffers);
+    void createUniformBuffers(VkPhysicalDevice physicalDevice, VkDevice device, VmaAllocator& vmaAllocator, 
+		VkDeviceSize bufferSize, UniformBuffers &uniformBuffers);
 
 }; // namespace vh

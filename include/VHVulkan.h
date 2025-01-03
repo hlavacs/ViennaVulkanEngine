@@ -103,6 +103,12 @@ namespace vh {
         alignas(16) glm::mat4 proj;
     };
 
+    struct UniformBufferCamera {
+        alignas(16) glm::mat4 model;
+        alignas(16) glm::mat4 view;
+        alignas(16) glm::mat4 proj;
+    };
+
     struct SwapChain {
         VkSwapchainKHR m_swapChain;
         std::vector<VkImage> m_swapChainImages;

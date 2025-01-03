@@ -35,7 +35,7 @@ namespace vve {
         vh::createCommandPool(GetSurface(), GetPhysicalDevice(), GetDevice(), m_commandPool);
         vh::createCommandBuffers(GetDevice(), GetCommandPool(), m_commandBuffers);
 
-		vh::createUniformBuffers(GetPhysicalDevice(), GetDevice(), GetVmaAllocator(), m_uniformBuffersPerFrame);
+		vh::createUniformBuffers(GetPhysicalDevice(), GetDevice(), GetVmaAllocator(), sizeof(m_uniformBuffersPerFrame), m_uniformBuffersPerFrame);
     }
 
     void RendererForward::OnRecordNextFrame(Message message) {
@@ -79,7 +79,7 @@ namespace vve {
 		}
 
 		vh::UniformBuffers ubo;
-		vh::createUniformBuffers(GetPhysicalDevice(), GetDevice(), GetVmaAllocator(), ubo);
+		vh::createUniformBuffers(GetPhysicalDevice(), GetDevice(), GetVmaAllocator(), sizeof(ubo), ubo);
 
 		vh::DescriptorSet descriptorSet{0};
 		vh::createDescriptorSet(GetDevice(), texture, m_descriptorSetLayoutPerObject, GetDescriptorPool(), descriptorSet);
