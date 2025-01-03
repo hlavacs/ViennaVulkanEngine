@@ -15,8 +15,8 @@ namespace vve
 		void OnObjectCreate( Message message );
         void OnQuit(Message message);
 
-		VkDescriptorSetLayout m_descriptorSetLayoutBuffer;
-		VkDescriptorSetLayout m_descriptorSetLayoutBufferTexture;
+		VkDescriptorSetLayout m_descriptorSetLayoutPerFrame;
+		VkDescriptorSetLayout m_descriptorSetLayoutPerObject;
 	    vh::Pipeline m_graphicsPipeline;
 
 		vh::UniformBuffers m_uniformBuffersPerFrame;

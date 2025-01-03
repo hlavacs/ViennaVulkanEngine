@@ -24,13 +24,13 @@ namespace vve {
 		vh::createDescriptorSetLayout( GetDevice(), //Per frame
 			{{ .descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, .stageFlags = VK_SHADER_STAGE_VERTEX_BIT },
 			 {.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, .stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT } },
-			m_descriptorSetLayoutBufferTexture );
+			m_descriptorSetLayoutPerObject );
 
 		vh::createDescriptorSetLayout( GetDevice(), //Per object
 			{{ .descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, .stageFlags = VK_SHADER_STAGE_VERTEX_BIT } },
-			m_descriptorSetLayoutBuffer );
+			m_descriptorSetLayoutPerFrame );
 
-		vh::createGraphicsPipeline(GetDevice(), m_renderPass, { m_descriptorSetLayoutBufferTexture, m_descriptorSetLayoutBuffer }, m_graphicsPipeline);
+		vh::createGraphicsPipeline(GetDevice(), m_renderPass, { m_descriptorSetLayoutPerObject, m_descriptorSetLayoutPerFrame }, m_graphicsPipeline);
 
         vh::createCommandPool(GetSurface(), GetPhysicalDevice(), GetDevice(), m_commandPool);
         vh::createCommandBuffers(GetDevice(), GetCommandPool(), m_commandBuffers);
@@ -82,7 +82,7 @@ namespace vve {
 		vh::createUniformBuffers(GetPhysicalDevice(), GetDevice(), GetVmaAllocator(), ubo);
 
 		vh::DescriptorSet descriptorSet{0};
-		vh::createDescriptorSet(GetDevice(), texture, m_descriptorSetLayoutBufferTexture, GetDescriptorPool(), descriptorSet);
+		vh::createDescriptorSet(GetDevice(), texture, m_descriptorSetLayoutPerObject, GetDescriptorPool(), descriptorSet);
 	    vh::updateDescriptorSetUBO(GetDevice(), ubo, 0, descriptorSet);
 	    vh::updateDescriptorSetTexture(GetDevice(), texture, 1, descriptorSet);
 
@@ -103,8 +103,8 @@ namespace vve {
 
 		vh::destroyBuffer2(GetDevice(), GetVmaAllocator(), m_uniformBuffersPerFrame);
 
-		vkDestroyDescriptorSetLayout(GetDevice(), m_descriptorSetLayoutBuffer, nullptr);
-		vkDestroyDescriptorSetLayout(GetDevice(), m_descriptorSetLayoutBufferTexture, nullptr);
+		vkDestroyDescriptorSetLayout(GetDevice(), m_descriptorSetLayoutPerFrame, nullptr);
+		vkDestroyDescriptorSetLayout(GetDevice(), m_descriptorSetLayoutPerObject, nullptr);
     }
 
 
