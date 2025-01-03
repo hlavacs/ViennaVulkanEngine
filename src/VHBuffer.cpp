@@ -317,8 +317,7 @@ namespace vh {
     void createUniformBuffers(VkPhysicalDevice physicalDevice, VkDevice device, VmaAllocator& vmaAllocator, 
 		VkDeviceSize bufferSize, UniformBuffers &uniformBuffers) {
 
-        //VkDeviceSize bufferSize = sizeof(UniformBufferObject);
-
+		uniformBuffers.m_bufferSize = bufferSize;
         uniformBuffers.m_uniformBuffers.resize(MAX_FRAMES_IN_FLIGHT);
         uniformBuffers.m_uniformBuffersAllocation.resize(MAX_FRAMES_IN_FLIGHT);
         uniformBuffers.m_uniformBuffersMapped.resize(MAX_FRAMES_IN_FLIGHT);
