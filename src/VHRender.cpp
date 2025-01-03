@@ -327,7 +327,9 @@ namespace vh {
         pool_info.poolSizeCount = (uint32_t)std::size(pool_sizes);
         pool_info.pPoolSizes = pool_sizes.data();
 
-        vkCreateDescriptorPool(device, &pool_info, nullptr, &descriptorPool);
+		if (vkCreateDescriptorPool(device, &pool_info, nullptr, &descriptorPool) != VK_SUCCESS) {
+            throw std::runtime_error("failed to create descriptor pool!");
+        }
     }
 
 
@@ -335,18 +337,15 @@ namespace vh {
 		VkDescriptorPool descriptorPool, DescriptorSet& descriptorSet) {
 
 		descriptorSet.m_descriptorSetPerFrameInFlight.resize(MAX_FRAMES_IN_FLIGHT);
-		for( auto& ds : descriptorSet.m_descriptorSetPerFrameInFlight ) {
-	        std::vector<VkDescriptorSetLayout> layouts(MAX_FRAMES_IN_FLIGHT, descriptorSetLayouts);
-	        VkDescriptorSetAllocateInfo allocInfo{};
-	        allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
-	        allocInfo.descriptorPool = descriptorPool;
-	        allocInfo.descriptorSetCount = 1;
-	        allocInfo.pSetLayouts = layouts.data();
-
-	        if (vkAllocateDescriptorSets(device, &allocInfo, &ds) != VK_SUCCESS) {
-	            throw std::runtime_error("failed to allocate descriptor sets!");
-	        }
-		}
+        std::vector<VkDescriptorSetLayout> layouts(MAX_FRAMES_IN_FLIGHT, descriptorSetLayouts);
+        VkDescriptorSetAllocateInfo allocInfo{};
+        allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
+        allocInfo.descriptorPool = descriptorPool;
+        allocInfo.descriptorSetCount = layouts.size();
+        allocInfo.pSetLayouts = layouts.data();
+        if (vkAllocateDescriptorSets(device, &allocInfo, descriptorSet.m_descriptorSetPerFrameInFlight.data()) != VK_SUCCESS) {
+            throw std::runtime_error("failed to allocate descriptor sets!");
+        }
     }
 
 

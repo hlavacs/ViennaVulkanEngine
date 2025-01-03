@@ -149,7 +149,7 @@ namespace vh {
         vkCmdBindIndexBuffer(commandBuffer, geometry.m_indexBuffer, 0, VK_INDEX_TYPE_UINT32);
 
         vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsPipeline.m_pipelineLayout
-            , 0, 1, &descriptorSet.m_descriptorSetPerFrameInFlight[currentFrame], 0, nullptr);
+            , descriptorSet.m_set, 1, &descriptorSet.m_descriptorSetPerFrameInFlight[currentFrame], 0, nullptr);
 
         vkCmdDrawIndexed(commandBuffer, static_cast<uint32_t>(geometry.m_indices.size()), 1, 0, 0, 0);
 
