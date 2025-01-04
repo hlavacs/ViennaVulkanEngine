@@ -67,14 +67,14 @@ namespace vve {
 			update(m_registry, node.m_localToWorldM, child, update);
 		}
 
-		for( auto [name, sn] : m_registry.template GetView<std::string, SceneNode&>() ) {
+		/*for( auto [name, sn] : m_registry.template GetView<std::string, SceneNode&>() ) {
 			std::cout << name << std::endl << sn.m_localToWorldM << std::endl;
 		}
 
 		for( auto [name, camera, sn] : m_registry.template GetView<std::string, Camera&, SceneNode&>() ) {
 			sn.m_localToWorldM = glm::inverse(sn.m_localToWorldM);
 			std::cout << name << std::endl << sn.m_localToWorldM << std::endl;
-		}
+		}*/
 	}
 
     void SceneManager::OnLoadObject(Message message) {
