@@ -11,10 +11,8 @@ namespace vh {
 
 	void createDescriptorPool(VkDevice device, uint32_t sizes, VkDescriptorPool& descriptorPool);
 
-    void createDescriptorSet(VkDevice device, Texture& texture, VkDescriptorSetLayout& descriptorSetLayouts, 
-		VkDescriptorPool descriptorPool, DescriptorSet& descriptorSet);
+    void createDescriptorSet(VkDevice device, VkDescriptorSetLayout& descriptorSetLayouts, VkDescriptorPool descriptorPool, DescriptorSet& descriptorSet);
 
-    void updateDescriptorSet(VkDevice device, Texture& texture, UniformBuffers& uniformBuffers, DescriptorSet& descriptorSet);
     void updateDescriptorSetUBO(VkDevice device, UniformBuffers& uniformBuffers, size_t binding, size_t size, DescriptorSet& descriptorSet);
     void updateDescriptorSetTexture(VkDevice device, Texture& texture, size_t binding, DescriptorSet& descriptorSet);
 

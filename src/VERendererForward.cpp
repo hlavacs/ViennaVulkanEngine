@@ -94,7 +94,7 @@ namespace vve {
 		vh::createUniformBuffers(GetPhysicalDevice(), GetDevice(), GetVmaAllocator(), sizeof(vh::UniformBufferObject), ubo);
 
 		vh::DescriptorSet descriptorSet{0};
-		vh::createDescriptorSet(GetDevice(), texture, m_descriptorSetLayoutPerObject, GetDescriptorPool(), descriptorSet);
+		vh::createDescriptorSet(GetDevice(), m_descriptorSetLayoutPerObject, GetDescriptorPool(), descriptorSet);
 	    vh::updateDescriptorSetUBO(GetDevice(), ubo, 0, sizeof(vh::UniformBufferObject), descriptorSet);
 	    vh::updateDescriptorSetTexture(GetDevice(), texture, 1, descriptorSet);
 
