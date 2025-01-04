@@ -18,6 +18,19 @@ namespace vve {
 
     void SceneManager::OnInit(Message message) {
 		m_handleMap[m_rootName] = m_registry.Insert(SceneNode{}); //insert root node
+
+		// Create camera
+		auto window = m_engine.GetWindow(m_windowName);
+		Camera camera{(float)window->GetWidth() / (float)window->GetHeight()};
+        auto view = glm::inverse( glm::lookAt(glm::vec3(2.0f, 1.9f, 1.8f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f)) );
+		//auto quat = glm::quat_cast(view);
+		//auto pos = glm::vec3(view[3]);
+		//auto rot = glm::mat3_cast(quat);
+		//Transform transform{{glm::vec3(view[3]), glm::quat_cast(view)}};
+		auto h = m_registry.Insert(std::string(m_cameraName), camera, 
+								Transform{glm::vec3(view[3]), glm::quat_cast(view)}, 
+								SceneNode{{glm::vec3(view[3]), glm::quat_cast(view)}, m_handleMap[m_rootName]} );
+
 	}
 
     void SceneManager::OnUpdate(Message message) {

@@ -14,7 +14,6 @@ namespace vve {
 		auto Matrix() -> mat4_t { m_matrix = glm::translate(mat4_t{}, m_position) * glm::mat4_cast(m_rotation) * glm::scale(mat4_t{}, m_scale); return m_matrix; }
 	};
 
-
 	struct SceneNode {
 		using Children = std::variant<std::pair<vecs::Handle,vecs::Handle>, std::vector<vecs::Handle>>;
 		
@@ -44,8 +43,9 @@ namespace vve {
 
     class SceneManager : public System {
 
-		//using SceneNodeWrapper = vsty::strong_type_t<SceneNode, vsty::counter<>>; //need this to use SceneNode as a unique component
+		const std::string m_windowName = "VVE Window";
 		const std::string m_rootName = "VVE RootSceneNode";
+		const std::string m_cameraName = "VVE Camera";
 
     public:
         SceneManager(std::string systemName, Engine& engine );

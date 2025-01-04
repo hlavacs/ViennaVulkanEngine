@@ -62,32 +62,33 @@ namespace vve {
 	};
 	
 	void Engine::CreateWindow(){
-		RegisterSystem(std::make_unique<WindowSDL>("VVE Window", *this, "Vienna Vulkan Engine", 800, 600 ) );
+		RegisterSystem(std::make_unique<WindowSDL>(m_windowName, *this, m_windowName, 800, 600 ) );
 	};
 	
 	void Engine::CreateRenderer(){
-		RegisterSystem(std::make_unique<RendererVulkan>( "VVE Renderer Vulkan",  *this, "VVE Window" ) );
-		RegisterSystem(std::make_unique<RendererImgui>(  "VVE Renderer Imgui",   *this, "VVE Window" ) );
-		RegisterSystem(std::make_unique<RendererForward>("VVE Renderer Forward", *this, "VVE Window") );
+		RegisterSystem(std::make_unique<RendererVulkan>( m_rendererVulkanaName,  *this, m_windowName ) );
+		RegisterSystem(std::make_unique<RendererImgui>(  m_rendererImguiName,   *this, m_windowName ) );
+		RegisterSystem(std::make_unique<RendererForward>(m_rendererForwardName, *this, m_windowName) );
 	};
 	
 	void Engine::CreateCamera( ){
 		// Create camera
-		auto window = GetWindow("VVE Window");
+		/*auto window = GetWindow("VVE Window");
 		Camera camera{(float)window->GetWidth() / (float)window->GetHeight()};
         auto view = glm::inverse( glm::lookAt(glm::vec3(2.0f, 1.9f, 1.8f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f)) );
 		//auto quat = glm::quat_cast(view);
 		//auto pos = glm::vec3(view[3]);
 		//auto rot = glm::mat3_cast(quat);
 		auto h = m_registry.Insert(std::string("VVE Camera"), camera, SceneNode{{glm::vec3(view[3]), glm::quat_cast(view)}} );
+		*/
 	};
 	
 	void Engine::CreateSystems( ){
-		RegisterSystem(std::make_unique<SceneManager>("VVE SceneManager", *this));
+		RegisterSystem(std::make_unique<SceneManager>(m_sceneManagerName, *this));
 	};
 
 	void Engine::CreateGUI() {
-		RegisterSystem(std::make_unique<GUI>("VVE GUI", *this, "VVE Window"));
+		RegisterSystem(std::make_unique<GUI>(m_guiName, *this, m_windowName));
 	}
 
 	void Engine::Run(){
