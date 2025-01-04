@@ -2,8 +2,6 @@
 #include "VEInclude.h"
 
 
-
-
 namespace vve {
 	
 
@@ -122,7 +120,7 @@ namespace vve {
 	auto SceneManager::LoadOBJ(Name fileName) -> vecs::Handle {
 		if( m_handleMap.contains(fileName) ) return m_handleMap[fileName];
 		
-		vh::Geometry geometry;
+		vh::Geometry geometry{};
 		vh::loadModel(fileName(), geometry);
 		auto handle = m_registry.Insert(fileName, geometry);
 		m_handleMap[fileName] = handle;
@@ -144,13 +142,13 @@ namespace vve {
 	}	
 
 
-	template<typename T>
-	size_t VVEHash<T>::operator()(T const& name) const {
-		return std::hash<std::string>{}(name());
-    };
-
-	template class VVEHash<Name>;
-
 };  // namespace vve
+
+namespace std {
+	size_t hash<vve::Name>::operator()(vve::Name const& name) const {
+		return std::hash<std::string>{}(name());
+	}
+
+}
 
 

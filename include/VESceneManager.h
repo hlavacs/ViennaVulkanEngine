@@ -1,12 +1,18 @@
 #pragma once
 
 
+namespace vve {
+	using Name = vsty::strong_type_t<std::string, vsty::counter<>>;
+}
+
+
+namespace std {
+    template<> struct hash<vve::Name> {
+        size_t operator()(vve::Name const& name) const; 
+    };
+}
 
 namespace vve {
-
-    template<typename T> struct VVEHash {
-        size_t operator()(T const& name) const; 
-    };
 
 	//-------------------------------------------------------------------------------------------------------
 
@@ -37,7 +43,7 @@ namespace vve {
 		auto Matrix() -> mat4_t { m_proj = glm::perspective(glm::radians(m_fov), m_aspect, m_near, m_far); return m_proj; }
 	};
 
-	using Name = vsty::strong_type_t<std::string, vsty::counter<>>;
+	//using Name = vsty::strong_type_t<std::string, vsty::counter<>>;
 	using Parent = vsty::strong_type_t<vecs::Handle, vsty::counter<>>;
 	using Children = vsty::strong_type_t<std::vector<vecs::Handle>, vsty::counter<>>;
 	using Position = vsty::strong_type_t<vec3_t, vsty::counter<>>;
@@ -76,10 +82,11 @@ namespace vve {
 		auto GetHandle(Name name) -> vecs::Handle&;	
 
 		std::shared_mutex m_mutex;
-		std::unordered_map<Name, vecs::Handle, VVEHash<Name>> m_handleMap;
+		std::unordered_map<Name, vecs::Handle> m_handleMap;
     };
 
 };  // namespace vve
+
 
 
 
