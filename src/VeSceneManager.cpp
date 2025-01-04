@@ -37,11 +37,12 @@ namespace vve {
 		}
 
 		for( auto [name, sn] : m_registry.template GetView<std::string, SceneNode&>() ) {
-			std::cout << name << std::endl;
+			std::cout << name << std::endl << sn.m_localToWorldM << std::endl;
 		}
 
-		for( auto [camera, cameraNode] : m_registry.template GetView<Camera&, SceneNode&>() ) {
-			cameraNode.m_localToWorldM = glm::inverse(cameraNode.m_localToWorldM);
+		for( auto [name, camera, sn] : m_registry.template GetView<std::string, Camera&, SceneNode&>() ) {
+			sn.m_localToWorldM = glm::inverse(sn.m_localToWorldM);
+			std::cout << name << std::endl << sn.m_localToWorldM << std::endl;
 		}
 	}
 

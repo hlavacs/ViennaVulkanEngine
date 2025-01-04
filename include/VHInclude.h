@@ -1,6 +1,7 @@
 #pragma once
 
 #include <iostream>
+#include <iomanip>
 
 #define SDL_MAIN_HANDLED
 #include <SDL.h>
@@ -45,15 +46,15 @@ namespace vve {
 	#endif
 
 	inline std::ostream& operator<<(std::ostream& os, const vec3_t& vec) {
-    	return os << vec[0] << vec[1] << vec[2] << std::endl; 
+    	return os << std::setw(6) << vec[0] << " " << vec[1] << " " << vec[2] << " " << std::endl; 
 	}
 
 	inline std::ostream& operator<<(std::ostream& os, const mat3_t& mat) {
-    	return os << mat[0]<< mat[1]<< mat[2]<< std::endl; 
+    	return os << mat[0] << mat[1]<< mat[2]<< std::endl; 
 	}
 
 	inline std::ostream& operator<<(std::ostream& os, const vec4_t& vec) {
-    	return os << vec[0] << vec[1] << vec[2] << vec[3] << std::endl; 
+    	return os << std::setw(6) << vec[0] << " " << vec[1] << " " << vec[2] << " " << vec[3] << std::endl; 
 	}
 
 	inline std::ostream& operator<<(std::ostream& os, const mat4_t& mat) {
