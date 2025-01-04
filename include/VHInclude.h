@@ -1,5 +1,7 @@
 #pragma once
 
+#include <iostream>
+
 #define SDL_MAIN_HANDLED
 #include <SDL.h>
 #include <SDL_vulkan.h>
@@ -41,6 +43,22 @@ namespace vve {
 		#define mat4_t glm::dmat4
 		#define mat43_t glm::dmat4x3
 	#endif
+
+	inline std::ostream& operator<<(std::ostream& os, const vec3_t& vec) {
+    	return os << vec[0] << vec[1] << vec[2] << std::endl; 
+	}
+
+	inline std::ostream& operator<<(std::ostream& os, const mat3_t& mat) {
+    	return os << mat[0]<< mat[1]<< mat[2]<< std::endl; 
+	}
+
+	inline std::ostream& operator<<(std::ostream& os, const vec4_t& vec) {
+    	return os << vec[0] << vec[1] << vec[2] << vec[3] << std::endl; 
+	}
+
+	inline std::ostream& operator<<(std::ostream& os, const mat4_t& mat) {
+    	return os << mat[0]<< mat[1]<< mat[2]<< mat[3] << std::endl; 
+	}
 }
 
 #include <stb_image.h>

@@ -22,22 +22,22 @@ namespace vh {
 	struct Vertex;
 }
 
-template <typename T, typename... Rest>
-void hash_combine(std::size_t& seed, const T& v, const Rest&... rest) {
-    seed ^= std::hash<T>{}(v) + 0x9e3779b9 + (seed << 6) + (seed >> 2);
-    (hash_combine(seed, rest), ...);
-}
-
 
 namespace std {
     template<> struct hash<vh::Vertex> {
         size_t operator()(vh::Vertex const& vertex) const; 
     };
+
+	template <typename T, typename... Rest>
+	inline void hash_combine(std::size_t& seed, const T& v, const Rest&... rest) {
+	    seed ^= std::hash<T>{}(v) + 0x9e3779b9 + (seed << 6) + (seed >> 2);
+	    (hash_combine(seed, rest), ...);
+	}
 }
 
 
 namespace vh {
-
+	
 	//use this macro to check the function result, if its not VK_SUCCESS then return the error
     #define VHCHECKRESULT(x) { CheckResult(VkResult err) };
     void CheckResult(VkResult err);
