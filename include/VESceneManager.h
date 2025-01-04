@@ -1,8 +1,12 @@
 #pragma once
 
 
+
 namespace vve {
 
+    template<typename T> struct VVEHash {
+        size_t operator()(T const& name) const; 
+    };
 
 	//-------------------------------------------------------------------------------------------------------
 
@@ -60,20 +64,23 @@ namespace vve {
     public:
         SceneManager(std::string systemName, Engine& engine );
         virtual ~SceneManager();
-		auto LoadTexture(std::string filename)-> vecs::Handle;
-		auto LoadOBJ(std::string filename) -> vecs::Handle;
-		auto LoadGLTF(std::string filename) -> vecs::Handle;
-
-		auto GetAsset(std::string filename) -> vecs::Handle;
+		auto LoadTexture(Name filenName)-> vecs::Handle;
+		auto LoadOBJ(Name filenName) -> vecs::Handle;
+		auto LoadGLTF(Name filenName) -> vecs::Handle;
+		auto GetAsset(Name filenName) -> vecs::Handle;
 
     private:
 		void OnInit(Message message);
 		void OnUpdate(Message message);
 		void OnLoadObject(Message message);
+		auto GetHandle(Name name) -> vecs::Handle&;	
 
 		std::shared_mutex m_mutex;
-		std::unordered_map<std::string, vecs::Handle> m_handleMap;
+		std::unordered_map<Name, vecs::Handle, VVEHash<Name>> m_handleMap;
     };
 
 };  // namespace vve
+
+
+
 
