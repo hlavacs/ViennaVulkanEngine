@@ -146,8 +146,7 @@ namespace vve {
 
 	template<typename T>
 	size_t VVEHash<T>::operator()(T const& name) const {
-		const auto str = name();
-		return std::hash<std::string>{}(str);
+		return std::hash<std::string>{}(name());
     };
 
 	template class VVEHash<Name>;
