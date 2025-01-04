@@ -43,24 +43,19 @@ namespace vve {
         auto currentTime = std::chrono::high_resolution_clock::now();
         float time = std::chrono::duration<float, std::chrono::seconds::period>(currentTime - startTime).count();
 
-		auto [camera, cameraNode] = *m_registry.template GetView<Camera&, SceneNode&>().begin();
+		auto [camera, view] = *m_registry.template GetView<Camera&, ViewMatrix&>().begin();
+		camera.Matrix();
 
 		vkResetCommandBuffer(m_commandBuffers[GetCurrentFrame()],  0);
         
 		vh::startRecordCommandBuffer(m_commandBuffers[GetCurrentFrame()], GetImageIndex(), 
 			GetSwapChain(), m_renderPass, m_graphicsPipeline, false, ((WindowSDL*)m_window)->GetClearColor(), GetCurrentFrame());
 		
-		//for( auto[name, ghandle, LtoW, sn, uniformBuffers, descriptorsets] : m_registry.template GetView<Name, GeometryHandle, LocalToWorldMatrix&, SceneNode&, vh::UniformBuffers&, vh::DescriptorSet&>() ) {
-		for( auto[ghandle, sn, uniformBuffers, descriptorsets] : m_registry.template GetView<GeometryHandle, SceneNode&, vh::UniformBuffers&, vh::DescriptorSet&>() ) {
-
+		for( auto[name, ghandle, LtoW, sn, uniformBuffers, descriptorsets] : m_registry.template GetView<Name, GeometryHandle, LocalToWorldMatrix&, SceneNode&, vh::UniformBuffers&, vh::DescriptorSet&>() ) {
 			vh::UniformBufferObject ubo{};
-			ubo.model = mat4_t{1.0f} * glm::rotate(glm::mat4(1.0f), time * glm::radians(50.0f), glm::vec3(0.0f, 0.0f, 1.0f));
-			
-			ubo.view = glm::lookAt(glm::vec3(2.0f, 2.0f, 2.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f));
-			//ubo.view = cameraNode.m_localToWorldM;
-        	
-			ubo.proj = glm::perspective(glm::radians(45.0f), GetSwapChain().m_swapChainExtent.width / (float) GetSwapChain().m_swapChainExtent.height, 0.1f, 10.0f);
-        	ubo.proj[1][1] *= -1;
+			ubo.model = LtoW() * glm::rotate(glm::mat4(1.0f), time * glm::radians(50.0f), glm::vec3(0.0f, 0.0f, 1.0f));			
+			ubo.view = view;
+        	ubo.proj = camera.m_proj;
 
 			memcpy(uniformBuffers.m_uniformBuffersMapped[GetCurrentFrame()], &ubo, sizeof(ubo));
 

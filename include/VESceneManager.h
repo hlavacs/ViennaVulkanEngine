@@ -40,7 +40,7 @@ namespace vve {
 		real_t m_far = 100.0f;
 		real_t m_fov = 45.0f;
 		mat4_t m_proj{};
-		auto Matrix() -> mat4_t { m_proj = glm::perspective(glm::radians(m_fov), m_aspect, m_near, m_far); return m_proj; }
+		auto Matrix() -> mat4_t { m_proj = glm::perspective(glm::radians(m_fov), m_aspect, m_near, m_far); m_proj[1][1] *= -1; return m_proj; }
 	};
 
 	//using Name = vsty::strong_type_t<std::string, vsty::counter<>>;

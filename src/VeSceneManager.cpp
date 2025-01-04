@@ -28,12 +28,7 @@ namespace vve {
 
 		// Create camera
 		auto window = m_engine.GetWindow(m_windowName);
-		//Camera camera{(float)window->GetWidth() / (float)window->GetHeight()};
-        auto view = glm::inverse( glm::lookAt(glm::vec3(2.0f, 1.9f, 1.8f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f)) );
-		//auto quat = glm::quat_cast(view);
-		//auto pos = glm::vec3(view[3]);
-		//auto rot = glm::mat3_cast(quat);
-		//Transform transform{{glm::vec3(view[3]), glm::quat_cast(view)}};
+        auto view = glm::inverse( glm::lookAt(glm::vec3(4.0f, 1.9f, 3.8f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f)) );
 		auto cHandle = m_registry.Insert(
 								Name(m_cameraName),
 								Parent{GetHandle(Name{m_rootName})},
@@ -41,8 +36,8 @@ namespace vve {
 								Position{glm::vec3(view[3])}, 
 								Orientation{glm::quat_cast(view)}, 
 								Scale{vec3_t{1.0f, 1.0f, 1.0f}}, 
-								LocalToParentMatrix{}, 
-								LocalToWorldMatrix{}, 
+								LocalToParentMatrix{mat4_t{1.0f}}, 
+								LocalToWorldMatrix{mat4_t{1.0f}}, 
 								ViewMatrix{view},
 								Transform{glm::vec3(view[3]), glm::quat_cast(view)}, 
 								SceneNode{{glm::vec3(view[3]), glm::quat_cast(view)}, GetHandle(Name{m_rootName})} );
@@ -55,8 +50,13 @@ namespace vve {
 		auto children = m_registry.template Get<Children&>(GetHandle(Name{m_rootName}));
 
 		auto update = [](auto& registry, mat4_t& parentToWorld, vecs::Handle& handle, auto& self) -> void {
-			auto [LtoP, LtoW] = registry.template Get<LocalToParentMatrix&, LocalToWorldMatrix&>(handle);
+			auto [p, o, s, LtoP, LtoW] = registry.template Get<Position, Orientation, Scale, LocalToParentMatrix&, LocalToWorldMatrix&>(handle);
+			LtoP = glm::translate(mat4_t{1.0f}, p()) * glm::mat4_cast(o()) * glm::scale(mat4_t{1.0f}, s());
 			LtoW = parentToWorld * LtoP();
+
+			if( registry.template Has<ViewMatrix&>(handle) ) {
+				registry.template Put(handle, ViewMatrix{glm::inverse(LtoW())});
+			}
 
 			if( registry.template Has<Children&>(handle) ) {
 				auto& children = registry.template Get<Children&>(handle);
@@ -67,17 +67,8 @@ namespace vve {
 		};
 
 		for( auto child : children() ) {
-			update(m_registry, LocalToWorldMatrix{}, child, update);
+			update(m_registry, LocalToWorldMatrix{mat4_t{1.0f}}, child, update);
 		}
-
-		/*for( auto [name, sn] : m_registry.template GetView<Name&, SceneNode&>() ) {
-			std::cout << name << std::endl << sn.m_localToWorldM << std::endl;
-		}
-
-		for( auto [name, camera, sn] : m_registry.template GetView<Name&, Camera&, SceneNode&>() ) {
-			sn.m_localToWorldM = glm::inverse(sn.m_localToWorldM);
-			std::cout << name << std::endl << sn.m_localToWorldM << std::endl;
-		}*/
 	}
 
     void SceneManager::OnLoadObject(Message message) {
@@ -89,11 +80,11 @@ namespace vve {
 									Name(msg.m_objName),
 									Parent{GetHandle(Name{m_rootName})},
 									Children{},
-									Position{glm::vec3()}, 
+									Position{glm::vec3(-0.5f, 0.5f, 0.5f)}, 
 									Orientation{}, 
 									Scale{vec3_t{1.0f, 1.0f, 1.0f}}, 
-									LocalToParentMatrix{}, 
-									LocalToWorldMatrix{},
+									LocalToParentMatrix{mat4_t{1.0f}}, 
+									LocalToWorldMatrix{mat4_t{1.0f}},
 									GeometryHandle{oHandle}, 
 									TextureHandle{tHandle}, 
 									SceneNode{} );
