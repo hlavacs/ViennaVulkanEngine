@@ -33,6 +33,16 @@ namespace vve {
 		auto Matrix() -> mat4_t { m_proj = glm::perspective(glm::radians(m_fov), m_aspect, m_near, m_far); return m_proj; }
 	};
 
+	using Name = vsty::strong_type_t<std::string, vsty::counter<>>;
+	using Parent = vsty::strong_type_t<vecs::Handle, vsty::counter<>>;
+	using Children = vsty::strong_type_t<std::vector<vecs::Handle>, vsty::counter<>>;
+	using Position = vsty::strong_type_t<vec3_t, vsty::counter<>>;
+	using Orientation = vsty::strong_type_t<quat_t, vsty::counter<>>;
+	using Scale = vsty::strong_type_t<vec3_t, vsty::counter<>>;
+	using LocalToParentMatrix = vsty::strong_type_t<mat4_t, vsty::counter<>>;
+	using LocalToWorldMatrix = vsty::strong_type_t<mat4_t, vsty::counter<>>;
+	using ViewMatrix = vsty::strong_type_t<mat4_t, vsty::counter<>>;
+
 	using SceneNodeHandle = vsty::strong_type_t<vecs::Handle, vsty::counter<>>; //need this to use SceneNode as a unique componen
 	using TransformHandle = vsty::strong_type_t<vecs::Handle, vsty::counter<>>; //need this to use SceneNode as a unique componen
 	using TextureHandle = vsty::strong_type_t<vecs::Handle, vsty::counter<>>; //need this to use Texture as a unique component

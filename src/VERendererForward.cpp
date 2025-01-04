@@ -50,10 +50,10 @@ namespace vve {
 		vh::startRecordCommandBuffer(m_commandBuffers[GetCurrentFrame()], GetImageIndex(), 
 			GetSwapChain(), m_renderPass, m_graphicsPipeline, false, ((WindowSDL*)m_window)->GetClearColor(), GetCurrentFrame());
 		
-		for( auto[ghandle, sn, uniformBuffers, descriptorsets] : m_registry.template GetView<GeometryHandle, SceneNode&, vh::UniformBuffers&, vh::DescriptorSet&>() ) {
+		for( auto[ghandle, LtoW, sn, uniformBuffers, descriptorsets] : m_registry.template GetView<GeometryHandle, LocalToWorldMatrix&, SceneNode&, vh::UniformBuffers&, vh::DescriptorSet&>() ) {
 
 			vh::UniformBufferObject ubo{};
-			ubo.model = sn.m_localToWorldM * glm::rotate(glm::mat4(1.0f), time * glm::radians(50.0f), glm::vec3(0.0f, 0.0f, 1.0f));
+			ubo.model = mat4_t{1.0f} * glm::rotate(glm::mat4(1.0f), time * glm::radians(50.0f), glm::vec3(0.0f, 0.0f, 1.0f));
 			
 			ubo.view = glm::lookAt(glm::vec3(2.0f, 2.0f, 2.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f));
 			//ubo.view = cameraNode.m_localToWorldM;

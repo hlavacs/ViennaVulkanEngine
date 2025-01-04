@@ -17,19 +17,37 @@ namespace vve {
     SceneManager::~SceneManager() {}
 
     void SceneManager::OnInit(Message message) {
-		m_handleMap[m_rootName] = m_registry.Insert(SceneNode{}); //insert root node
+		m_handleMap[m_rootName] = m_registry.Insert(
+												Name(m_rootName),
+												Parent{},
+												Children{},
+												Position{glm::vec3(0.0f, 0.0f, 0.0f)},
+												LocalToWorldMatrix{mat4_t{1.0f}},
+												SceneNode{}); //insert root node
 
 		// Create camera
 		auto window = m_engine.GetWindow(m_windowName);
-		Camera camera{(float)window->GetWidth() / (float)window->GetHeight()};
+		//Camera camera{(float)window->GetWidth() / (float)window->GetHeight()};
         auto view = glm::inverse( glm::lookAt(glm::vec3(2.0f, 1.9f, 1.8f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f)) );
 		//auto quat = glm::quat_cast(view);
 		//auto pos = glm::vec3(view[3]);
 		//auto rot = glm::mat3_cast(quat);
 		//Transform transform{{glm::vec3(view[3]), glm::quat_cast(view)}};
-		auto h = m_registry.Insert(std::string(m_cameraName), camera, 
+		auto cHandle = m_registry.Insert(
+								std::string(m_cameraName), 
+								Name(m_cameraName),
+								Parent{m_handleMap[m_rootName]},
+								Camera{(float)window->GetWidth() / (float)window->GetHeight()}, 
+								Position{glm::vec3(view[3])}, 
+								Orientation{glm::quat_cast(view)}, 
+								Scale{vec3_t{1.0f, 1.0f, 1.0f}}, 
+								LocalToParentMatrix{}, 
+								LocalToWorldMatrix{}, 
+								ViewMatrix{view},
 								Transform{glm::vec3(view[3]), glm::quat_cast(view)}, 
 								SceneNode{{glm::vec3(view[3]), glm::quat_cast(view)}, m_handleMap[m_rootName]} );
+
+		m_registry.Get<Children&>(m_handleMap[m_rootName])().push_back(cHandle);
 
 	}
 
@@ -63,7 +81,22 @@ namespace vve {
 		auto msg = message.template GetData<MsgFileLoadObject>();
 		auto tHandle = LoadTexture(msg.m_txtName);
 		auto oHandle = LoadOBJ(msg.m_objName);
-		auto nHandle = m_registry.Insert( GeometryHandle{oHandle}, TextureHandle{tHandle}, SceneNode{} );
+
+		auto nHandle = m_registry.Insert(
+									Name(msg.m_objName),
+									Parent{m_handleMap[m_rootName]},
+									Children{},
+									Position{glm::vec3()}, 
+									Orientation{}, 
+									Scale{vec3_t{1.0f, 1.0f, 1.0f}}, 
+									LocalToParentMatrix{}, 
+									LocalToWorldMatrix{},
+									GeometryHandle{oHandle}, 
+									TextureHandle{tHandle}, 
+									SceneNode{} );
+
+		m_registry.Get<Children&>(m_handleMap[m_rootName])().push_back(nHandle);
+
 		m_engine.SendMessage( MsgObjectCreate{this, nullptr, nHandle} );
 	}
 
