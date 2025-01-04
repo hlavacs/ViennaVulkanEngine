@@ -385,20 +385,20 @@ namespace vh {
 		}
     }
 
-    void updateDescriptorSetUBO(VkDevice device, UniformBuffers& uniformBuffers, size_t binding, DescriptorSet& descriptorSet) {
+    void updateDescriptorSetUBO(VkDevice device, UniformBuffers& uniformBuffers, size_t binding, size_t size, DescriptorSet& descriptorSet) {
 
 		size_t i = 0;
 	    for ( auto& ds : descriptorSet.m_descriptorSetPerFrameInFlight ) {
 	        VkDescriptorBufferInfo bufferInfo{};
 	        bufferInfo.buffer = uniformBuffers.m_uniformBuffers[i++];
 	        bufferInfo.offset = 0;
-	        bufferInfo.range = sizeof(UniformBufferObject);
+	        bufferInfo.range = size;
 
 	        VkWriteDescriptorSet descriptorWrites{};
 
 	        descriptorWrites.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
 	        descriptorWrites.dstSet = ds;
-	        descriptorWrites.dstBinding = 0;
+	        descriptorWrites.dstBinding = binding;
 	        descriptorWrites.dstArrayElement = 0;
 	        descriptorWrites.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
 	        descriptorWrites.descriptorCount = 1;
