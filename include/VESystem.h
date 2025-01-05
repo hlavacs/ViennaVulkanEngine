@@ -132,7 +132,7 @@ namespace vve {
         auto GetName() -> std::string { return m_name; };
 
     protected:
-		void OnAnnounce(Message message);
+		bool OnAnnounce(Message message);
         std::string 							m_name;
         Engine& 								m_engine;
 		vecs::Registry<VVE_ARCHITECTURE_TYPE>&	m_registry;

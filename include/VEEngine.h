@@ -25,7 +25,7 @@ namespace vve {
 			System* 				 	 m_system;
 			int 						 m_phase;	
 			std::string			 	 	 m_messageName;
-			std::function<void(Message)> m_callback;
+			std::function<bool(Message)> m_callback;
 		};
 
 		Engine(std::string name);
@@ -52,7 +52,6 @@ namespace vve {
 		void CreateWindow();
 		void CreateRenderer();
 		void CreateSystems();
-		void CreateCamera();
 		void CreateGUI();
 
 		std::unordered_map<std::string, std::unique_ptr<System>> m_systems{};

@@ -13,19 +13,19 @@ namespace vve {
                 : Window(systemName, engine, windowName, width, height ) {
 
         engine.RegisterCallback( { 
-			{this,     0, "INIT", [this](Message message){OnInit(message);} },
-			{this,     0, "POLL_EVENTS", [this](Message message){OnPollEvents(message);} },
-			{this,  3000, "QUIT", [this](Message message){OnQuit(message);} },
+			{this,     0, "INIT", [this](Message message){ return OnInit(message);} },
+			{this,     0, "POLL_EVENTS", [this](Message message){ return OnPollEvents(message);} },
+			{this,  3000, "QUIT", [this](Message message){ return OnQuit(message);} },
 		} );
     }
 
     WindowSDL::~WindowSDL() {}
 
-    void WindowSDL::OnInit(Message message) {
+    bool WindowSDL::OnInit(Message message) {
         if(!m_sdl_initialized) {
             if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_TIMER | SDL_INIT_GAMECONTROLLER) != 0) {
                 printf("Error: %s\n", SDL_GetError());
-                return;
+                exit(1);
             }
             // From 2.0.18: Enable native IME.
         #ifdef SDL_HINT_IME_SHOW_UI
@@ -38,7 +38,7 @@ namespace vve {
         m_sdlWindow = SDL_CreateWindow(m_windowName.c_str(), SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, m_width, m_height, window_flags);
         if (m_sdlWindow == nullptr) {
             printf("Error: SDL_CreateWindow(): %s\n", SDL_GetError());
-            return;
+            exit(1);
         }
         uint32_t extensions_count = 0;
         std::vector<const char*> extensions;
@@ -48,9 +48,10 @@ namespace vve {
         m_instanceExtensions.insert(m_instanceExtensions.end(), extensions.begin(), extensions.end());
 
 		m_engine.SendMessage( MsgExtensions{this, m_instanceExtensions, {}} );
+		return false;
     }
 
-    void WindowSDL::OnPollEvents(Message message) {
+    bool WindowSDL::OnPollEvents(Message message) {
         // Poll and handle events (inputs, window resize, etc.)
         // You can read the io.WantCaptureMouse, io.WantCaptureKeyboard flags to tell if dear imgui wants to use your inputs.
         // - When io.WantCaptureMouse is true, do not dispatch mouse input data to your main application, or clear/overwrite your copy of the mouse data.
@@ -123,20 +124,21 @@ namespace vve {
 
         if (SDL_GetWindowFlags(m_sdlWindow) & SDL_WINDOW_MINIMIZED) {
             SDL_Delay(10);
-            return;
+            return false;
         }
 
         // Resize swap chain?
         SDL_GetWindowSize(m_sdlWindow, &m_width, &m_height);
        
-        return;
+        return false;
     }
 
-    void WindowSDL::OnQuit(Message message) {
+    bool WindowSDL::OnQuit(Message message) {
         auto rend = ((RendererVulkan*)(m_engine.GetSystem("VVE Renderer Vulkan")));
 		SDL_DestroyWindow(m_sdlWindow);
         SDL_Quit(); 
-   }
+		return false;
+    }
 
 
 };  // namespace vve

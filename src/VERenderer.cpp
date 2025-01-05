@@ -8,13 +8,13 @@ namespace vve {
     Renderer::Renderer(std::string systemName, Engine& engine, std::string windowName ) : 
 		System{systemName, engine }, m_vulkan{nullptr},  m_windowName(windowName) {
 		engine.RegisterCallback( { 
-			{this,      0, "ANNOUNCE", [this](Message message){OnAnnounce(message);} }
+			{this,      0, "ANNOUNCE", [this](Message message){ return OnAnnounce(message);} }
 		} );
 	};
 
     Renderer::~Renderer(){};
 
-    void Renderer::OnAnnounce( Message message ) {
+    bool Renderer::OnAnnounce( Message message ) {
 		auto msg = message.template GetData<MsgAnnounce>();
 		if( msg.m_sender->GetName() == m_windowName ) {
 			m_window = dynamic_cast<Window*>(msg.m_sender);
@@ -22,6 +22,7 @@ namespace vve {
 		if( msg.m_sender->GetName() == "VVE Renderer Vulkan" && m_vulkan == nullptr ) {
 			m_vulkan = dynamic_cast<RendererVulkan*>(msg.m_sender);
 		}
+		return false;
 	};
 
 	auto Renderer::GetSurface() -> VkSurfaceKHR { assert(m_vulkan!=this); return m_vulkan->GetSurface(); };

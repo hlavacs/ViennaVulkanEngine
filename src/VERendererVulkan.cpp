@@ -12,30 +12,31 @@ namespace vve {
         : Renderer(systemName, engine, windowName) {
 
         engine.RegisterCallback( { 
-			{this,      0, "EXTENSIONS", [this](Message message){OnExtensions(message);} },
-			{this,   1000, "INIT", [this](Message message){OnInit(message);} }, 
-			{this,      0, "PREPARE_NEXT_FRAME", [this](Message message){OnPrepareNextFrame(message);} },
-			{this,      0, "RECORD_NEXT_FRAME", [this](Message message){OnRecordNextFrame(message);} },
-			{this,      0, "RENDER_NEXT_FRAME", [this](Message message){OnRenderNextFrame(message);} },
+			{this,      0, "EXTENSIONS", [this](Message message){ return OnExtensions(message);} },
+			{this,   1000, "INIT", [this](Message message){ return OnInit(message);} }, 
+			{this,      0, "PREPARE_NEXT_FRAME", [this](Message message){ return OnPrepareNextFrame(message);} },
+			{this,      0, "RECORD_NEXT_FRAME", [this](Message message){ return OnRecordNextFrame(message);} },
+			{this,      0, "RENDER_NEXT_FRAME", [this](Message message){ return OnRenderNextFrame(message);} },
 
-			{this,      0, "TEXTURE_CREATE",   [this](Message message){OnTextureCreate(message);} },
-			{this,      0, "TEXTURE_DESTROY",  [this](Message message){OnTextureDestroy(message);} },
-			{this,      0, "GEOMETRY_CREATE",  [this](Message message){OnGeometryCreate(message);} },
-			{this,      0, "GEOMETRY_DESTROY", [this](Message message){OnGeometryDestroy(message);} },
+			{this,      0, "TEXTURE_CREATE",   [this](Message message){ return OnTextureCreate(message);} },
+			{this,      0, "TEXTURE_DESTROY",  [this](Message message){ return OnTextureDestroy(message);} },
+			{this,      0, "GEOMETRY_CREATE",  [this](Message message){ return OnGeometryCreate(message);} },
+			{this,      0, "GEOMETRY_DESTROY", [this](Message message){ return OnGeometryDestroy(message);} },
 
-			{this,   2000, "QUIT", [this](Message message){OnQuit(message);} },
+			{this,   2000, "QUIT", [this](Message message){ return OnQuit(message);} },
 		} );
     }
 
     RendererVulkan::~RendererVulkan() {}
 
-    void RendererVulkan::OnExtensions(Message message) {
+    bool RendererVulkan::OnExtensions(Message message) {
 		auto msg = message.template GetData<MsgExtensions>();
 		m_instanceExtensions.insert(m_instanceExtensions.end(), msg.m_instExt.begin(), msg.m_instExt.end());
 		m_deviceExtensions.insert(m_deviceExtensions.end(), msg.m_devExt.begin(), msg.m_devExt.end());
+		return false;
 	}
 
-    void RendererVulkan::OnInit(Message message) {
+    bool RendererVulkan::OnInit(Message message) {
     	m_windowSDL = (WindowSDL*)m_window;
 		if (m_engine.GetDebug()) {
             m_instanceExtensions.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
@@ -79,10 +80,11 @@ namespace vve {
         vh::createDescriptorPool(GetDevice(), 1000, m_descriptorPool);
         vh::createSemaphores(GetDevice(), 3, m_imageAvailableSemaphores, m_semaphores);
 		vh::createFences(GetDevice(), MAX_FRAMES_IN_FLIGHT, m_fences);
+		return false;
     }
 
-    void RendererVulkan::OnPrepareNextFrame(Message message) {
-        if(m_window->GetIsMinimized()) return;
+    bool RendererVulkan::OnPrepareNextFrame(Message message) {
+        if(m_window->GetIsMinimized()) return false;
 
         m_currentFrame = (m_currentFrame + 1) % MAX_FRAMES_IN_FLIGHT;
 		m_commandBuffersSubmit.clear();
@@ -94,13 +96,12 @@ namespace vve {
 
         if (result == VK_ERROR_OUT_OF_DATE_KHR ) {
             recreateSwapChain(m_windowSDL->GetSDLWindow(), GetSurface(), GetPhysicalDevice(), GetDevice(), GetVmaAllocator(), GetSwapChain(), GetDepthImage(), GetRenderPass());
-            return;
         } else assert (result == VK_SUCCESS || result == VK_SUBOPTIMAL_KHR);
+		return false;
     }
 
-
-    void RendererVulkan::OnRecordNextFrame(Message message) {
-		if(m_windowSDL->GetIsMinimized()) return;
+    bool RendererVulkan::OnRecordNextFrame(Message message) {
+		if(m_windowSDL->GetIsMinimized()) return false;
 
         vkResetCommandBuffer(m_commandBuffers[GetCurrentFrame()],  0);
 
@@ -111,10 +112,11 @@ namespace vve {
 		vh::endRecordCommandBuffer(m_commandBuffers[GetCurrentFrame()]);
 
 		SubmitCommandBuffer(m_commandBuffers[GetCurrentFrame()]);
+		return false;
 	}
 
-    void RendererVulkan::OnRenderNextFrame(Message message) {
-        if(m_window->GetIsMinimized()) return;
+    bool RendererVulkan::OnRenderNextFrame(Message message) {
+        if(m_window->GetIsMinimized()) return false;
         
 		VkSemaphore signalSemaphore;
 		vh::submitCommandBuffers(GetDevice(), GetGraphicsQueue(), m_commandBuffersSubmit, 
@@ -130,9 +132,10 @@ namespace vve {
             m_framebufferResized = false;
             vh::recreateSwapChain(m_windowSDL->GetSDLWindow(), GetSurface(), GetPhysicalDevice(), GetDevice(), GetVmaAllocator(), GetSwapChain(), GetDepthImage(), GetRenderPass());
         } else assert(result == VK_SUCCESS);
+		return false;
     }
     
-    void RendererVulkan::OnQuit(Message message) {
+    bool RendererVulkan::OnQuit(Message message) {
 
         vkDeviceWaitIdle(GetDevice());
 
@@ -180,14 +183,14 @@ namespace vve {
         }
 
         vkDestroyInstance(GetInstance(), nullptr);
-
+		return false;
     }
 
 
 	//-------------------------------------------------------------------------------------------------------
 
 
-	auto RendererVulkan::OnTextureCreate( Message message ) -> void {
+	bool RendererVulkan::OnTextureCreate( Message message ) {
 		auto msg = message.template GetData<MsgTextureCreate>();
 		auto pixels = msg.m_pixels;
 		auto handle = msg.m_handle;
@@ -195,25 +198,28 @@ namespace vve {
 		vh::createTextureImage(GetPhysicalDevice(), GetDevice(), m_vmaAllocator, GetGraphicsQueue(), GetCommandPool(), pixels, texture.m_width, texture.m_height, texture.m_size, texture);
 		vh::createTextureImageView(GetDevice(), texture);
 		vh::createTextureSampler(GetPhysicalDevice(), GetDevice(), texture);
+		return false;
 	}
 
-	auto RendererVulkan::OnTextureDestroy( Message message ) -> void {
+	bool RendererVulkan::OnTextureDestroy( Message message ) {
 		auto handle = message.template GetData<MsgTextureDestroy>().m_handle;
 		auto& texture = m_registry.template Get<vh::Texture&>(handle);
 		vkDestroySampler(GetDevice(), texture.m_textureSampler, nullptr);
 		vkDestroyImageView(GetDevice(), texture.m_textureImageView, nullptr);
 		vh::destroyImage(GetDevice(), m_vmaAllocator, texture.m_textureImage, texture.m_textureImageAllocation);
 		m_registry.template Erase(handle);
+		return false;
 	}
 
-	auto RendererVulkan::OnGeometryCreate( Message message ) -> void {
+	bool RendererVulkan::OnGeometryCreate( Message message ) {
 		auto handle = message.template GetData<MsgGeometryCreate>().m_handle;
 		auto& geometry = m_registry.template Get<vh::Geometry&>(handle);
 		vh::createVertexBuffer(GetPhysicalDevice(), GetDevice(), m_vmaAllocator, GetGraphicsQueue(), GetCommandPool(), geometry);
 		vh::createIndexBuffer( GetPhysicalDevice(), GetDevice(), m_vmaAllocator, GetGraphicsQueue(), GetCommandPool(), geometry);
+		return false;
 	}
 
-	auto RendererVulkan::OnGeometryDestroy( Message message ) -> void {
+	bool RendererVulkan::OnGeometryDestroy( Message message ) {
 		auto handle = message.template GetData<MsgGeometryDestroy>().m_handle;
 		auto& geometry = m_registry.template Get<vh::Geometry&>(handle);
 		vh::destroyBuffer(GetDevice(), m_vmaAllocator, geometry.m_indexBuffer, geometry.m_indexBufferAllocation);

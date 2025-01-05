@@ -16,8 +16,8 @@ namespace vve {
     	~GUI() {};
 
 	private:
-		void OnAnnounce(Message message);
-		void OnRecordNextFrame(Message message);
+		bool OnAnnounce(Message message);
+		bool OnRecordNextFrame(Message message);
 
 		std::string m_windowName;
 		WindowSDL* m_windowSDL;

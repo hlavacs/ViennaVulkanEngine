@@ -19,10 +19,10 @@ namespace vve
 		auto GetCommandPool() -> VkCommandPool { return m_commandPool; }
 
     private:
-        void OnInit(Message message);
-        void OnRecordNextFrame(Message message);
-		void OnObjectCreate( Message message );
-        void OnQuit(Message message);
+        bool OnInit(Message message);
+        bool OnRecordNextFrame(Message message);
+		bool OnObjectCreate( Message message );
+        bool OnQuit(Message message);
 
 		vh::UniformBuffers m_uniformBuffersPerFrame;
 		VkDescriptorSetLayout m_descriptorSetLayoutPerFrame;

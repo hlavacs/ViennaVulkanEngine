@@ -55,9 +55,9 @@ namespace vve {
 		auto GetAsset(Name filenName) -> vecs::Handle;
 
     private:
-		void OnInit(Message message);
-		void OnUpdate(Message message);
-		void OnLoadObject(Message message);
+		bool OnInit(Message message);
+		bool OnUpdate(Message message);
+		bool OnLoadObject(Message message);
 		auto GetHandle(Name name) -> vecs::Handle&;	
 
 		std::shared_mutex m_mutex;

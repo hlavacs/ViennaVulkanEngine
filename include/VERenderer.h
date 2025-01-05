@@ -39,7 +39,7 @@ namespace vve
 		void SubmitCommandBuffer( VkCommandBuffer commandBuffer );
 
     protected:
-		void OnAnnounce(Message message);
+		bool OnAnnounce(Message message);
         VkSurfaceKHR	m_surface{VK_NULL_HANDLE};
 		std::string 	m_windowName;
         Window* 		m_window;

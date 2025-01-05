@@ -12,10 +12,10 @@ public:
     MyGUI( vve::Engine& engine ) : vve::System("MyGUI", engine ) {
 
 		m_engine.RegisterCallback( { 
-			  {this, -10000, "RECORD_NEXT_FRAME", [this](Message message){this->OnRecordNextFrame(message);} }
-			, {this,      0, "SDL_KEY_DOWN", [this](Message message){this->OnKeyDown(message);} }
-			, {this,      0, "SDL_KEY_REPEAT", [this](Message message){this->OnKeyRepeat(message);} }
-			, {this,      0, "SDL_KEY_UP", [this](Message message){this->OnKeyUp(message);} }
+			  {this, -10000, "RECORD_NEXT_FRAME", [this](Message message){ return OnRecordNextFrame(message);} }
+			, {this,      0, "SDL_KEY_DOWN", [this](Message message){ return OnKeyDown(message);} }
+			, {this,      0, "SDL_KEY_REPEAT", [this](Message message){ return OnKeyRepeat(message);} }
+			, {this,      0, "SDL_KEY_UP", [this](Message message){ return OnKeyUp(message);} }
 		} );
     };
     
@@ -23,13 +23,13 @@ public:
 
     float clear_color[3]{ 0.45f, 0.55f, 0.60f};
 
-    void OnRecordNextFrame(Message message) {
+    bool OnRecordNextFrame(Message message) {
       
         static bool show_demo_window = false;
         static bool show_another_window = false;
 
         if( m_engine.GetWindow("VVE Window")->GetIsMinimized()) {
-			return;
+			return false;
 		}
 
 
@@ -72,21 +72,26 @@ public:
         }
 
         m_engine.GetWindow("VVE Window")->SetClearColor( glm::vec4{ clear_color[0], clear_color[1], clear_color[2], 1.0f} );
+		return false;
     }
 
 
-    void OnKeyDown(Message message) {
+    bool OnKeyDown(Message message) {
         std::cout << "Key down: " << message.template GetData<MsgKeyDown>().m_key << std::endl;
+		return false;
     }
 
-    void OnKeyUp(Message message) {
+    bool OnKeyUp(Message message) {
         std::cout << "Key up: " << message.template GetData<MsgKeyUp>().m_key << std::endl;
-    }
-    void OnKeyRepeat(Message message) {
-        std::cout << "Key repeat: " << message.template GetData<MsgKeyRepeat>().m_key << std::endl;
+		return false;
     }
 
-private:
+    bool OnKeyRepeat(Message message) {
+        std::cout << "Key repeat: " << message.template GetData<MsgKeyRepeat>().m_key << std::endl;
+		return false;
+    }
+
+	private:
 };
 
 

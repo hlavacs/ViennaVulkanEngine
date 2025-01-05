@@ -33,19 +33,19 @@ namespace vve {
 		void SubmitCommandBuffer( VkCommandBuffer commandBuffer ) { m_commandBuffersSubmit.push_back(commandBuffer); };
 
     private:
-		void OnExtensions(Message message);
-        void OnInit(Message message);
+		bool OnExtensions(Message message);
+        bool OnInit(Message message);
 
-        void OnPrepareNextFrame(Message message);
-        void OnRecordNextFrame(Message message);
-        void OnRenderNextFrame(Message message);
+        bool OnPrepareNextFrame(Message message);
+        bool OnRecordNextFrame(Message message);
+        bool OnRenderNextFrame(Message message);
 		
-		void OnTextureCreate( Message message );
-		void OnTextureDestroy( Message message );
-		void OnGeometryCreate( Message message );
-		void OnGeometryDestroy( Message message );
+		bool OnTextureCreate( Message message );
+		bool OnTextureDestroy( Message message );
+		bool OnGeometryCreate( Message message );
+		bool OnGeometryDestroy( Message message );
 
-        void OnQuit(Message message);
+        bool OnQuit(Message message);
 
         const std::vector<const char*> m_validationLayers = {
             "VK_LAYER_KHRONOS_validation"

@@ -7,21 +7,22 @@ namespace vve {
 	GUI::GUI(std::string systemName, Engine& engine, std::string windowName ) : 
 		System(systemName, engine), m_windowName(windowName) {
 		m_engine.RegisterCallback( { 
- 		  {this,    0, "ANNOUNCE", [this](Message message){OnAnnounce(message);} }, 
-		  {this, 1000, "RECORD_NEXT_FRAME", [this](Message message){OnRecordNextFrame(message);} }
+ 		  {this,    0, "ANNOUNCE", [this](Message message){ return OnAnnounce(message);} }, 
+		  {this, 1000, "RECORD_NEXT_FRAME", [this](Message message){ return OnRecordNextFrame(message);} }
 		} );
 	};
 
 
-    void GUI::OnAnnounce(Message message) {
+    bool GUI::OnAnnounce(Message message) {
 		auto msg = message.template GetData<MsgAnnounce>();
 		if( msg.m_sender->GetName() == m_windowName ) {
 			m_windowSDL = (WindowSDL*)msg.m_sender;
 		}
+		return false;
 	}
 
-    void GUI::OnRecordNextFrame(Message message) {
-        if( m_windowSDL->GetIsMinimized()) { return; }
+    bool GUI::OnRecordNextFrame(Message message) {
+        if( m_windowSDL->GetIsMinimized()) { return false; }
 
         {
             ImGui::Begin("Load Object");                          // Create a window called "Hello, world!" and append into it.
@@ -59,7 +60,7 @@ namespace vve {
 
             ImGui::End();
         }
-
+		return false;
     }
 
 

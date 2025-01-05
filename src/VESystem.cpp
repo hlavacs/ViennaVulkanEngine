@@ -44,18 +44,19 @@ namespace vve {
 
 		if( this != &engine ) {
 			engine.RegisterCallback( { 
-				{this, 0, "ANNOUNCE", [this](Message message){OnAnnounce(message);} }
+				{this, 0, "ANNOUNCE", [this](Message message){ return OnAnnounce(message);} }
 			} );
 		}
 	};
 
     System::~System(){};
 
-    void System::OnAnnounce(Message message) {
+    bool System::OnAnnounce(Message message) {
 		auto msg = message.template GetData<MsgAnnounce>();
 		if( msg.m_sender == &m_engine ) {
 			m_engine.SendMessage( MsgAnnounce{this} );
 		}
+		return false;
     }
 
 

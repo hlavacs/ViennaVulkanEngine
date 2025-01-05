@@ -9,16 +9,16 @@ namespace vve {
         : Renderer(systemName, engine, windowName ) {
 
   		engine.RegisterCallback( { 
-  			{this,  3000, "INIT", [this](Message message){OnInit(message);} },
-  			{this,  2000, "RECORD_NEXT_FRAME", [this](Message message){OnRecordNextFrame(message);} },
-			{this,     0, "OBJECT_CREATE", [this](Message message){OnObjectCreate(message);} },
-  			{this,     0, "QUIT", [this](Message message){OnQuit(message);} }
+  			{this,  3000, "INIT", [this](Message message){ return OnInit(message);} },
+  			{this,  2000, "RECORD_NEXT_FRAME", [this](Message message){ return OnRecordNextFrame(message);} },
+			{this,     0, "OBJECT_CREATE", [this](Message message){ return OnObjectCreate(message);} },
+  			{this,     0, "QUIT", [this](Message message){ return OnQuit(message);} }
   		} );
     };
 
     RendererForward::~RendererForward(){};
 
-    void RendererForward::OnInit(Message message) {
+    bool RendererForward::OnInit(Message message) {
         vh::createRenderPass(GetPhysicalDevice(), GetDevice(), GetSwapChain(), false, m_renderPass);
 		
 		vh::createDescriptorSetLayout( GetDevice(), //Per object
@@ -38,9 +38,11 @@ namespace vve {
 
 		vh::createUniformBuffers(GetPhysicalDevice(), GetDevice(), GetVmaAllocator(), sizeof(UniformBufferFrame), m_uniformBuffersPerFrame);
 		vh::createDescriptorSet(GetDevice(), m_descriptorSetLayoutPerFrame, GetDescriptorPool(), m_descriptorSetPerFrame);
-	    vh::updateDescriptorSetUBO(GetDevice(), m_uniformBuffersPerFrame, 0, sizeof(UniformBufferFrame), m_descriptorSetPerFrame);    }
+	    vh::updateDescriptorSetUBO(GetDevice(), m_uniformBuffersPerFrame, 0, sizeof(UniformBufferFrame), m_descriptorSetPerFrame);   
+		return false;
+	}
 
-    void RendererForward::OnRecordNextFrame(Message message) {
+    bool RendererForward::OnRecordNextFrame(Message message) {
 		static auto startTime = std::chrono::high_resolution_clock::now();
         auto currentTime = std::chrono::high_resolution_clock::now();
         float time = std::chrono::duration<float, std::chrono::seconds::period>(currentTime - startTime).count();
@@ -65,12 +67,12 @@ namespace vve {
 		}
 
 		vh::endRecordCommandBuffer(m_commandBuffers[GetCurrentFrame()]);
-
 	    SubmitCommandBuffer(m_commandBuffers[GetCurrentFrame()]);
+		return false;
     }
 
 	
-	auto RendererForward::OnObjectCreate( Message message ) -> void {
+	bool RendererForward::OnObjectCreate( Message message ) {
 		auto handle = message.template GetData<MsgObjectCreate>().m_handle;
 		auto [gHandle, tHandle] = m_registry.template Get<GeometryHandle, TextureHandle>(handle);
 
@@ -99,10 +101,11 @@ namespace vve {
 
 		assert( m_registry.template Has<vh::UniformBuffers>(handle) );
 		assert( m_registry.template Has<vh::DescriptorSet>(handle) );
+		return false; //true if handled
 	}
 
 
-    void RendererForward::OnQuit(Message message) {
+    bool RendererForward::OnQuit(Message message) {
         vkDeviceWaitIdle(GetDevice());
 		
         vkDestroyCommandPool(GetDevice(), GetCommandPool(), nullptr);
@@ -114,6 +117,7 @@ namespace vve {
 
 		vkDestroyDescriptorSetLayout(GetDevice(), m_descriptorSetLayoutPerFrame, nullptr);
 		vkDestroyDescriptorSetLayout(GetDevice(), m_descriptorSetLayoutPerObject, nullptr);
+		return false;
     }
 
 

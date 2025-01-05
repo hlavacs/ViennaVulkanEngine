@@ -11,11 +11,11 @@ namespace vve {
 		auto GetCommandPool() -> VkCommandPool { return m_commandPool; }
 
     private:
-        void OnInit(Message message);
-        void OnPrepareNextFrame(Message message);
-        void OnRecordNextFrame(Message message);
-        void OnSDL(Message message);
-        void OnQuit(Message message);
+        bool OnInit(Message message);
+        bool OnPrepareNextFrame(Message message);
+        bool OnRecordNextFrame(Message message);
+        bool OnSDL(Message message);
+        bool OnQuit(Message message);
 
 		VkDescriptorSetLayout m_descriptorSetLayoutPerObject;
 		VkDescriptorSetLayout m_descriptorSetLayoutPerFrame;

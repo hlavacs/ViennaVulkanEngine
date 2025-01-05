@@ -9,15 +9,15 @@ namespace vve {
 
     SceneManager::SceneManager(std::string systemName, Engine& engine ) : System{systemName, engine } {
 		engine.RegisterCallback( { 
-			{this,  2000, "INIT", [this](Message message){OnInit(message);} },
-			{this, std::numeric_limits<int>::max(), "UPDATE", [this](Message message){OnUpdate(message);} },
-			{this, std::numeric_limits<int>::max(), "FILE_LOAD_OBJECT", [this](Message message){OnLoadObject(message);} },
+			{this,  2000, "INIT", [this](Message message){ return OnInit(message);} },
+			{this, std::numeric_limits<int>::max(), "UPDATE", [this](Message message){ return OnUpdate(message);} },
+			{this, std::numeric_limits<int>::max(), "FILE_LOAD_OBJECT", [this](Message message){ return OnLoadObject(message);} },
 		} );
 	}
 
     SceneManager::~SceneManager() {}
 
-    void SceneManager::OnInit(Message message) {
+    bool SceneManager::OnInit(Message message) {
 		m_handleMap[Name{m_rootName}] = m_registry.Insert(
 												Name{m_rootName},
 												ParentHandle{},
@@ -40,10 +40,10 @@ namespace vve {
 								ViewMatrix{view} );
 
 		m_registry.Get<Children&>(GetHandle(Name{m_rootName}))().push_back(cHandle);
-
+		return false;
 	}
 
-    void SceneManager::OnUpdate(Message message) {
+    bool SceneManager::OnUpdate(Message message) {
 		auto children = m_registry.template Get<Children&>(GetHandle(Name{m_rootName}));
 
 		auto update = [](auto& registry, mat4_t& parentToWorld, vecs::Handle& handle, auto& self) -> void {
@@ -68,9 +68,10 @@ namespace vve {
 		for( auto child : children() ) {
 			update(m_registry, LocalToWorldMatrix{mat4_t{1.0f}}, child, update);
 		}
+		return false;
 	}
 
-    void SceneManager::OnLoadObject(Message message) {
+    bool SceneManager::OnLoadObject(Message message) {
 		auto msg = message.template GetData<MsgFileLoadObject>();
 		auto tHandle = LoadTexture(Name{msg.m_txtName});
 		auto oHandle = LoadOBJ(Name{msg.m_objName});
@@ -90,6 +91,7 @@ namespace vve {
 		m_registry.Get<Children&>(GetHandle(Name{m_rootName}))().push_back(nHandle);
 
 		m_engine.SendMessage( MsgObjectCreate{this, nullptr, nHandle} );
+		return false;
 	}
 
 	auto SceneManager::LoadTexture(Name fileName) -> vecs::Handle {

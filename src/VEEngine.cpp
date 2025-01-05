@@ -52,7 +52,7 @@ namespace vve {
 			message.SetPhase(phase);
 			void* receiver = message.GetReceiver();
 			if( receiver == nullptr || receiver == callback.m_system ) [[likely]]
-				callback.m_callback(message);
+				if( callback.m_callback(message) ) { break; }
 		}
 	}
 
@@ -69,18 +69,6 @@ namespace vve {
 		RegisterSystem(std::make_unique<RendererVulkan>( m_rendererVulkanaName,  *this, m_windowName ) );
 		RegisterSystem(std::make_unique<RendererImgui>(  m_rendererImguiName,   *this, m_windowName ) );
 		RegisterSystem(std::make_unique<RendererForward>(m_rendererForwardName, *this, m_windowName) );
-	};
-	
-	void Engine::CreateCamera( ){
-		// Create camera
-		/*auto window = GetWindow("VVE Window");
-		Camera camera{(float)window->GetWidth() / (float)window->GetHeight()};
-        auto view = glm::inverse( glm::lookAt(glm::vec3(2.0f, 1.9f, 1.8f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f)) );
-		//auto quat = glm::quat_cast(view);
-		//auto pos = glm::vec3(view[3]);
-		//auto rot = glm::mat3_cast(quat);
-		auto h = m_registry.Insert(std::string("VVE Camera"), camera, SceneNode{{glm::vec3(view[3]), glm::quat_cast(view)}} );
-		*/
 	};
 	
 	void Engine::CreateSystems( ){
@@ -103,7 +91,6 @@ namespace vve {
 			CreateWindow();
 			CreateRenderer();
 			CreateSystems();
-			CreateCamera();
 			CreateGUI();		
 			SendMessage( MsgAnnounce{this} );
 			SendMessage( MsgInit{this} );

@@ -20,9 +20,9 @@ namespace vve {
         auto GetSDLWindow() -> SDL_Window* { return m_sdlWindow; }
 
     private:
-        void OnInit(Message message);
-        void OnPollEvents(Message message);
-        void OnQuit(Message message);
+        bool OnInit(Message message);
+        bool OnPollEvents(Message message);
+        bool OnQuit(Message message);
 
         inline static bool 		m_sdl_initialized{false};
         SDL_Window* 			m_sdlWindow{nullptr};
