@@ -3,7 +3,16 @@
 namespace vve
 {
     class RendererForward : public Renderer {
-		
+
+	    struct UniformBufferObject {
+	        alignas(16) glm::mat4 model;
+	    };
+	
+	    struct UniformBufferFrame {
+	        alignas(16) glm::mat4 view;
+	        alignas(16) glm::mat4 proj;
+	    };
+
     public:
         RendererForward(std::string systemName, Engine& engine, std::string windowName);
         virtual ~RendererForward();

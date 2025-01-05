@@ -3,8 +3,8 @@
 
 namespace vve {
 
-    class RendererImgui : public Renderer
-    {
+    class RendererImgui : public Renderer  {
+		
     public:
         RendererImgui(std::string systemName, Engine& engine, std::string windowName);
         virtual ~RendererImgui();

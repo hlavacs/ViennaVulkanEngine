@@ -36,9 +36,9 @@ namespace vve {
         vh::createCommandPool(GetSurface(), GetPhysicalDevice(), GetDevice(), m_commandPool);
         vh::createCommandBuffers(GetDevice(), GetCommandPool(), m_commandBuffers);
 
-		vh::createUniformBuffers(GetPhysicalDevice(), GetDevice(), GetVmaAllocator(), sizeof(vh::UniformBufferCamera), m_uniformBuffersPerFrame);
+		vh::createUniformBuffers(GetPhysicalDevice(), GetDevice(), GetVmaAllocator(), sizeof(UniformBufferFrame), m_uniformBuffersPerFrame);
 		vh::createDescriptorSet(GetDevice(), m_descriptorSetLayoutPerFrame, GetDescriptorPool(), m_descriptorSetPerFrame);
-	    vh::updateDescriptorSetUBO(GetDevice(), m_uniformBuffersPerFrame, 0, sizeof(vh::UniformBufferCamera), m_descriptorSetPerFrame);    }
+	    vh::updateDescriptorSetUBO(GetDevice(), m_uniformBuffersPerFrame, 0, sizeof(UniformBufferFrame), m_descriptorSetPerFrame);    }
 
     void RendererForward::OnRecordNextFrame(Message message) {
 		static auto startTime = std::chrono::high_resolution_clock::now();
@@ -46,7 +46,7 @@ namespace vve {
         float time = std::chrono::duration<float, std::chrono::seconds::period>(currentTime - startTime).count();
 
 		auto [view, proj] = *m_registry.template GetView<ViewMatrix&, ProjectionMatrix&>().begin();
-		vh::UniformBufferCamera ubc;
+		UniformBufferFrame ubc;
 		ubc.view = view;
         ubc.proj = proj;
 		memcpy(m_uniformBuffersPerFrame.m_uniformBuffersMapped[GetCurrentFrame()], &ubc, sizeof(ubc));
@@ -57,7 +57,7 @@ namespace vve {
 			GetSwapChain(), m_renderPass, m_graphicsPipeline, false, ((WindowSDL*)m_window)->GetClearColor(), GetCurrentFrame());
 		
 		for( auto[name, ghandle, LtoW, uniformBuffers, descriptorsets] : m_registry.template GetView<Name, GeometryHandle, LocalToWorldMatrix&, vh::UniformBuffers&, vh::DescriptorSet&>() ) {
-			vh::UniformBufferObject ubo{};
+			UniformBufferObject ubo{};
 			ubo.model = LtoW() * glm::rotate(glm::mat4(1.0f), time * glm::radians(50.0f), glm::vec3(0.0f, 0.0f, 1.0f));			
 			memcpy(uniformBuffers.m_uniformBuffersMapped[GetCurrentFrame()], &ubo, sizeof(ubo));
 			vh::Geometry& geometry = m_registry.template Get<vh::Geometry&>(ghandle);
@@ -88,11 +88,11 @@ namespace vve {
 		}
 
 		vh::UniformBuffers ubo;
-		vh::createUniformBuffers(GetPhysicalDevice(), GetDevice(), GetVmaAllocator(), sizeof(vh::UniformBufferObject), ubo);
+		vh::createUniformBuffers(GetPhysicalDevice(), GetDevice(), GetVmaAllocator(), sizeof(UniformBufferObject), ubo);
 
 		vh::DescriptorSet descriptorSet{0};
 		vh::createDescriptorSet(GetDevice(), m_descriptorSetLayoutPerObject, GetDescriptorPool(), descriptorSet);
-	    vh::updateDescriptorSetUBO(GetDevice(), ubo, 0, sizeof(vh::UniformBufferObject), descriptorSet);
+	    vh::updateDescriptorSetUBO(GetDevice(), ubo, 0, sizeof(UniformBufferObject), descriptorSet);
 	    vh::updateDescriptorSetTexture(GetDevice(), texture, 1, descriptorSet);
 
 		m_registry.template Put(handle, ubo, descriptorSet);

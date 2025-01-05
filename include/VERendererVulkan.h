@@ -7,8 +7,7 @@ namespace vve {
 	//-------------------------------------------------------------------------------------------------------
 	// Vulkan Renderer
 
-    class RendererVulkan : public Renderer
-    {
+    class RendererVulkan : public Renderer {
 
     public:
 

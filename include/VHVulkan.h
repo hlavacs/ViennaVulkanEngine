@@ -97,14 +97,6 @@ namespace vh {
         }
     };
 
-    struct UniformBufferObject {
-        alignas(16) glm::mat4 model;
-    };
-
-    struct UniformBufferCamera {
-        alignas(16) glm::mat4 view;
-        alignas(16) glm::mat4 proj;
-    };
 
 	struct UniformBuffers {
 		VkDeviceSize 				m_bufferSize{0};
