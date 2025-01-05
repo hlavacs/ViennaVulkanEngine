@@ -64,7 +64,6 @@ namespace vve {
 		auto update = [](auto& registry, mat4_t& parentToWorld, vecs::Handle& handle, auto& self) -> void {
 			auto [p, r, s, LtoP, LtoW] = registry.template Get<Position, Rotation, Scale, LocalToParentMatrix&, LocalToWorldMatrix&>(handle);
 			LtoP = glm::translate(mat4_t{1.0f}, p()) * mat4_t(r()) * glm::scale(mat4_t{1.0f}, s());
-
 			LtoW = parentToWorld * LtoP();
 
 			if( registry.template Has<Camera>(handle) ) {
@@ -161,7 +160,7 @@ namespace vve {
 		auto [pc, rc, sc, LtoPc] = m_registry.template Get<Position&, Rotation&, Scale&, LocalToParentMatrix>(m_cameraHandle);		
 	
 		vec3_t translate = vec3_t(0.0f, 0.0f, 0.0f); //total translation
-		vec3_t rot3 = vec3_t(1.0f); //total rotation around the axes, is 4d !
+		vec3_t axis = vec3_t(1.0f); //total rotation around the axes, is 4d !
 		float angle = 0.0f;
 		float rotSpeed = 2.0f;
 
@@ -199,35 +198,35 @@ namespace vve {
 
 			case SDL_SCANCODE_LEFT : {
 				angle = rotSpeed * (float)msg.m_dt * 1.0f;
-				rot3 = glm::vec3(0.0, 0.0, 1.0);
+				axis = glm::vec3(0.0, 0.0, 1.0);
 				break;
 			}
 
 			case SDL_SCANCODE_RIGHT : {
 				angle = rotSpeed * (float)msg.m_dt * -1.0f;
-				rot3 = glm::vec3(0.0, 0.0, 1.0);
+				axis = glm::vec3(0.0, 0.0, 1.0);
 				break;
 			}
 
 			case SDL_SCANCODE_UP : {
 				angle = rotSpeed * (float)msg.m_dt * -1.0f;
-				rot3 = vec3_t{ LtoPc() * vec4_t{1.0f, 0.0f, 0.0f, 0.0f} };
+				axis = vec3_t{ LtoPc() * vec4_t{1.0f, 0.0f, 0.0f, 0.0f} };
 				break;
 			}
 
 			case SDL_SCANCODE_DOWN : {
 				angle = rotSpeed * (float)msg.m_dt * 1.0f;
-				rot3 = vec3_t{ LtoPc() * vec4_t{1.0f, 0.0f, 0.0f, 0.0f} };
+				axis = vec3_t{ LtoPc() * vec4_t{1.0f, 0.0f, 0.0f, 0.0f} };
 				break;
 			}
 		}
 
 		///add the new translation vector to the previous one
 		float speed = 3.0f;
-		pn() = pn() + translate * (real_t)msg.m_dt * speed;
+		pn = pn() + translate * (real_t)msg.m_dt * speed;
 
 		///combination of yaw and pitch, both wrt to parent space
-		rc() = mat3_t{ glm::rotate(mat4_t{1.0f}, angle, rot3) * mat4_t{ rc() } };
+		rc = mat3_t{ glm::rotate(mat4_t{1.0f}, angle, axis) * mat4_t{ rc } };
 
         //std::cout << "Key down: " << message.template GetData<MsgKeyDown>().m_key << std::endl;
 		return false;
