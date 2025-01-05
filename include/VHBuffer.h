@@ -8,9 +8,6 @@ namespace vh {
         , VmaAllocationCreateFlags vmaFlags, VkBuffer& buffer
         , VmaAllocation& allocation, VmaAllocationInfo* allocationInfo = nullptr);
 
-
-    void updateUniformBuffer(uint32_t currentImage, SwapChain& swapChain, UniformBuffers& uniformBuffers);
-
     void destroyBuffer(VkDevice device, VmaAllocator vmaAllocator, VkBuffer buffer, VmaAllocation& allocation);
 
     void destroyBuffer2(VkDevice device, VmaAllocator vmaAllocator, UniformBuffers buffers);

@@ -21,8 +21,8 @@ struct VertexStageOutput
 
 struct UniformBufferObject {
     float4x4 model;
-    float4x4 view;
-    float4x4 proj;
+    //float4x4 view;
+    //float4x4 proj;
 };
 
 struct UniformBufferCamera {
@@ -49,11 +49,11 @@ VertexStageOutput vertexMain(AssembledVertex assembledVertex)
     float2 uv       = assembledVertex.uv;
 
     float3 worldPosition = mul(gParams.model, float4(position, 1.0)).xyz;
-    float3 viewPosition = mul(gParams.view, float4(worldPosition, 1.0)).xyz;   
+    float3 viewPosition = mul(gParamsCamera.view, float4(worldPosition, 1.0)).xyz;   
 
     output.coarseVertex.fragColor   = color;
     output.coarseVertex.uv = uv;
-    output.sv_position = mul(gParams.proj, float4(viewPosition, 1.0));
+    output.sv_position = mul(gParamsCamera.proj, float4(viewPosition, 1.0));
 
     return output;
 }

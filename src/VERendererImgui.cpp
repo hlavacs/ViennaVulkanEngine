@@ -26,11 +26,15 @@ namespace vve {
 		vh::createDescriptorSetLayout(GetDevice(),
 			{ { .descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, .stageFlags = VK_SHADER_STAGE_VERTEX_BIT },
 			{ .descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 	.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT } },
-			m_descriptorSetLayouts
+			m_descriptorSetLayoutPerObject
 		);
 
+		vh::createDescriptorSetLayout( GetDevice(), //Per object
+			{{ .descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, .stageFlags = VK_SHADER_STAGE_VERTEX_BIT } },
+			m_descriptorSetLayoutPerFrame );
+
 		vh::createGraphicsPipeline(GetDevice(), m_renderPass, "shaders\\vert.spv", "shaders\\frag.spv",
-			 { m_descriptorSetLayouts }, m_graphicsPipeline);
+			 { m_descriptorSetLayoutPerObject, m_descriptorSetLayoutPerFrame }, m_graphicsPipeline);
 
 		vh::setupImgui( ((WindowSDL*)m_window)->GetSDLWindow(), GetInstance(), GetPhysicalDevice(), GetQueueFamilies(), GetDevice(), GetGraphicsQueue(), 
 			GetCommandPool(), GetDescriptorPool(), m_renderPass);  
@@ -78,7 +82,8 @@ namespace vve {
         vkDestroyRenderPass(GetDevice(), m_renderPass, nullptr);
 		vkDestroyPipeline(GetDevice(), m_graphicsPipeline.m_pipeline, nullptr);
         vkDestroyPipelineLayout(GetDevice(), m_graphicsPipeline.m_pipelineLayout, nullptr);   
-		vkDestroyDescriptorSetLayout(GetDevice(), m_descriptorSetLayouts, nullptr);
+		vkDestroyDescriptorSetLayout(GetDevice(), m_descriptorSetLayoutPerObject, nullptr);
+		vkDestroyDescriptorSetLayout(GetDevice(), m_descriptorSetLayoutPerFrame, nullptr);
     }
 
 
