@@ -59,20 +59,18 @@ namespace vve {
         vh::createRenderPassClear(GetPhysicalDevice(), GetDevice(), GetSwapChain(), true, m_renderPass);
         
 		vh::createDescriptorSetLayout(GetDevice(),
-			{
-				{
-					.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
-					.stageFlags = VK_SHADER_STAGE_VERTEX_BIT
-				},
-				{
-					.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
-					.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT			
-				}
-			},
-			m_descriptorSetLayouts
+			{{ .descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, .stageFlags = VK_SHADER_STAGE_VERTEX_BIT },
+			{ .descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, .stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT} },
+			m_descriptorSetLayoutPerObject
 		);
 
-        vh::createGraphicsPipeline(GetDevice(), GetRenderPass(), { m_descriptorSetLayouts }, m_graphicsPipeline);
+		vh::createDescriptorSetLayout( GetDevice(), //Per object
+			{{ .descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, .stageFlags = VK_SHADER_STAGE_VERTEX_BIT } },
+			m_descriptorSetLayoutPerFrame );
+			
+        vh::createGraphicsPipeline(GetDevice(), GetRenderPass(), "shaders\\vert.spv", "shaders\\frag.spv",
+			 { m_descriptorSetLayoutPerObject, m_descriptorSetLayoutPerFrame  }, m_graphicsPipeline);
+
         vh::createCommandPool(GetSurface(), GetPhysicalDevice(), GetDevice(), m_commandPool);
         vh::createDepthResources(GetPhysicalDevice(), GetDevice(), GetVmaAllocator(), GetSwapChain(), m_depthImage);
         vh::createFramebuffers(GetDevice(), GetSwapChain(), GetDepthImage(), GetRenderPass());
@@ -186,7 +184,8 @@ namespace vve {
 	        vh::destroyImage(GetDevice(), GetVmaAllocator(), texture.m_textureImage, texture.m_textureImageAllocation);
 		}
 
-		vkDestroyDescriptorSetLayout(GetDevice(), m_descriptorSetLayouts, nullptr);
+		vkDestroyDescriptorSetLayout(GetDevice(), m_descriptorSetLayoutPerObject, nullptr);
+		vkDestroyDescriptorSetLayout(GetDevice(), m_descriptorSetLayoutPerFrame, nullptr);
 
 		for( auto geometry : m_registry.template GetView<vh::Geometry&>() ) {
 	        vh::destroyBuffer(GetDevice(), GetVmaAllocator(), geometry.m_indexBuffer, geometry.m_indexBufferAllocation);

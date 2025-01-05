@@ -15,11 +15,12 @@ namespace vve
 		void OnObjectCreate( Message message );
         void OnQuit(Message message);
 
+		vh::UniformBuffers m_uniformBuffersPerFrame;
 		VkDescriptorSetLayout m_descriptorSetLayoutPerFrame;
+		vh::DescriptorSet m_descriptorSetPerFrame{1};
+
 		VkDescriptorSetLayout m_descriptorSetLayoutPerObject;
 	    vh::Pipeline m_graphicsPipeline;
-
-		vh::UniformBuffers m_uniformBuffersPerFrame;
 
 	    VkRenderPass m_renderPass;
 	    VkCommandPool m_commandPool;

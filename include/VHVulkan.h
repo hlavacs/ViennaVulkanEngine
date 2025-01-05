@@ -104,10 +104,21 @@ namespace vh {
     };
 
     struct UniformBufferCamera {
-        alignas(16) glm::mat4 model;
         alignas(16) glm::mat4 view;
         alignas(16) glm::mat4 proj;
     };
+
+	struct UniformBuffers {
+		VkDeviceSize 				m_bufferSize{0};
+        std::vector<VkBuffer>       m_uniformBuffers;
+        std::vector<VmaAllocation>  m_uniformBuffersAllocation;
+        std::vector<void*>          m_uniformBuffersMapped;
+    };
+
+	struct DescriptorSet {
+		int m_set{0};
+		std::vector<VkDescriptorSet> m_descriptorSetPerFrameInFlight;
+	};
 
     struct SwapChain {
         VkSwapchainKHR m_swapChain;
@@ -127,13 +138,6 @@ namespace vh {
         VkImage         m_depthImage;
         VmaAllocation   m_depthImageAllocation;
         VkImageView     m_depthImageView;
-    };
-
-	struct UniformBuffers {
-		VkDeviceSize 				m_bufferSize{0};
-        std::vector<VkBuffer>       m_uniformBuffers;
-        std::vector<VmaAllocation>  m_uniformBuffersAllocation;
-        std::vector<void*>          m_uniformBuffersMapped;
     };
 
     struct Texture {
@@ -156,10 +160,6 @@ namespace vh {
         VmaAllocation           m_indexBufferAllocation;
     };
 
-	struct DescriptorSet {
-		int m_set{0};
-		std::vector<VkDescriptorSet> m_descriptorSetPerFrameInFlight;
-	};
 
 
     /// @brief Semaphores for signalling that a command buffer has finished executing. Every buffer gets its own Semaphore.

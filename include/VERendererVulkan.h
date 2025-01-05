@@ -29,8 +29,6 @@ namespace vve {
 		auto GetCurrentFrame() -> uint32_t { return m_currentFrame; }
 		auto GetImageIndex() -> uint32_t& { return m_imageIndex; }
 		
-		//auto GetCommandBuffers() -> std::vector<VkCommandBuffer>& { return m_commandBuffers; }
-		//auto GetSyncObjects() -> std::vector<vh::Semaphores>& { return m_semaphores; }
 		auto GetRenderPass() -> VkRenderPass { return m_renderPass; }
 		auto GetFramebufferResized() -> bool { return m_framebufferResized; }
 		void SubmitCommandBuffer( VkCommandBuffer commandBuffer ) { m_commandBuffersSubmit.push_back(commandBuffer); };
@@ -72,7 +70,8 @@ namespace vve {
 	    vh::SwapChain m_swapChain;
 	    VkRenderPass m_renderPass;
 
-		VkDescriptorSetLayout m_descriptorSetLayouts;
+		VkDescriptorSetLayout m_descriptorSetLayoutPerObject;
+		VkDescriptorSetLayout m_descriptorSetLayoutPerFrame;
 	    vh::Pipeline m_graphicsPipeline;
 	    vh::DepthImage m_depthImage;
 

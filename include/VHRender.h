@@ -18,7 +18,9 @@ namespace vh {
 
     VkShaderModule createShaderModule(VkDevice device, const std::vector<char>& code);
 
-    void createGraphicsPipeline(VkDevice device, VkRenderPass renderPass, std::vector<VkDescriptorSetLayout> descriptorSetLayout, Pipeline& graphicsPipeline);
+    void createGraphicsPipeline(VkDevice device, VkRenderPass renderPass, 
+		std::string vertShaderPath, std::string fragShaderPath,
+		std::vector<VkDescriptorSetLayout> descriptorSetLayout, Pipeline& graphicsPipeline);
 
     void createFramebuffers(VkDevice device, SwapChain& swapChain, DepthImage& depthImage, VkRenderPass renderPass);
 

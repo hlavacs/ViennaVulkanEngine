@@ -156,21 +156,20 @@ namespace vh {
     }
 
     void createGraphicsPipeline(VkDevice device, VkRenderPass renderPass, 
+		std::string vertShaderPath, std::string fragShaderPath,
 		std::vector<VkDescriptorSetLayout> descriptorSetLayouts, Pipeline& graphicsPipeline) {
 
-        auto vertShaderCode = readFile("shaders\\vert.spv");
-        auto fragShaderCode = readFile("shaders\\frag.spv");
-
-        VkShaderModule vertShaderModule = createShaderModule(device, vertShaderCode);
-        VkShaderModule fragShaderModule = createShaderModule(device, fragShaderCode);
-
         VkPipelineShaderStageCreateInfo vertShaderStageInfo{};
+        auto vertShaderCode = readFile("shaders\\vert.spv");
+        VkShaderModule vertShaderModule = createShaderModule(device, vertShaderCode);
         vertShaderStageInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
         vertShaderStageInfo.stage = VK_SHADER_STAGE_VERTEX_BIT;
         vertShaderStageInfo.module = vertShaderModule;
         vertShaderStageInfo.pName = "main";
 
         VkPipelineShaderStageCreateInfo fragShaderStageInfo{};
+        auto fragShaderCode = readFile("shaders\\frag.spv");
+        VkShaderModule fragShaderModule = createShaderModule(device, fragShaderCode);
         fragShaderStageInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
         fragShaderStageInfo.stage = VK_SHADER_STAGE_FRAGMENT_BIT;
         fragShaderStageInfo.module = fragShaderModule;

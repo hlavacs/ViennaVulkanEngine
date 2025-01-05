@@ -30,13 +30,15 @@ namespace vve {
 			{{ .descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, .stageFlags = VK_SHADER_STAGE_VERTEX_BIT } },
 			m_descriptorSetLayoutPerFrame );
 
-		vh::createGraphicsPipeline(GetDevice(), m_renderPass, { m_descriptorSetLayoutPerObject, m_descriptorSetLayoutPerFrame }, m_graphicsPipeline);
+		vh::createGraphicsPipeline(GetDevice(), m_renderPass, "shaders\\vert.spv", "shaders\\frag.spv", 
+			{ m_descriptorSetLayoutPerObject, m_descriptorSetLayoutPerFrame }, m_graphicsPipeline);
 
         vh::createCommandPool(GetSurface(), GetPhysicalDevice(), GetDevice(), m_commandPool);
         vh::createCommandBuffers(GetDevice(), GetCommandPool(), m_commandBuffers);
 
-		vh::createUniformBuffers(GetPhysicalDevice(), GetDevice(), GetVmaAllocator(), sizeof(m_uniformBuffersPerFrame), m_uniformBuffersPerFrame);
-    }
+		vh::createUniformBuffers(GetPhysicalDevice(), GetDevice(), GetVmaAllocator(), sizeof(vh::UniformBufferCamera), m_uniformBuffersPerFrame);
+		vh::createDescriptorSet(GetDevice(), m_descriptorSetLayoutPerFrame, GetDescriptorPool(), m_descriptorSetPerFrame);
+	    vh::updateDescriptorSetUBO(GetDevice(), m_uniformBuffersPerFrame, 0, sizeof(vh::UniformBufferCamera), m_descriptorSetPerFrame);    }
 
     void RendererForward::OnRecordNextFrame(Message message) {
 		static auto startTime = std::chrono::high_resolution_clock::now();
@@ -44,6 +46,10 @@ namespace vve {
         float time = std::chrono::duration<float, std::chrono::seconds::period>(currentTime - startTime).count();
 
 		auto [view, proj] = *m_registry.template GetView<ViewMatrix&, ProjectionMatrix&>().begin();
+		vh::UniformBufferCamera ubc;
+		ubc.view = view;
+        ubc.proj = proj;
+		memcpy(m_uniformBuffersPerFrame.m_uniformBuffersMapped[GetCurrentFrame()], &ubc, sizeof(ubc));
 
 		vkResetCommandBuffer(m_commandBuffers[GetCurrentFrame()],  0);
         

@@ -25,12 +25,18 @@ struct UniformBufferObject {
     float4x4 proj;
 };
 
+struct UniformBufferCamera {
+    float4x4 view;
+    float4x4 proj;
+};
+
 // binding 0,0 means that the uniform buffer is bound to binding 0, set 0
 [[vk::binding(0,0)]]
 ParameterBlock<UniformBufferObject> gParams;
 
+// binding 0,1 means that the uniform buffer is bound to binding 0, set 1
 [[vk::binding(0, 1)]]
-ParameterBlock<UniformBufferObject> gParamsObject;
+ParameterBlock<UniformBufferCamera> gParamsCamera;
 
 
 [shader("vertex")]
@@ -46,7 +52,7 @@ VertexStageOutput vertexMain(AssembledVertex assembledVertex)
     float3 viewPosition = mul(gParams.view, float4(worldPosition, 1.0)).xyz;   
 
     output.coarseVertex.fragColor   = color;
-    output.coarseVertex.uv          = uv;
+    output.coarseVertex.uv = uv;
     output.sv_position = mul(gParams.proj, float4(viewPosition, 1.0));
 
     return output;

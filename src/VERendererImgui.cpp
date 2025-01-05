@@ -24,20 +24,13 @@ namespace vve {
         vh::createRenderPass(GetPhysicalDevice(), GetDevice(), GetSwapChain(), false, m_renderPass);
 		
 		vh::createDescriptorSetLayout(GetDevice(),
-			{
-				{
-					.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
-					.stageFlags = VK_SHADER_STAGE_VERTEX_BIT
-				},
-				{
-					.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
-					.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT			
-				}
-			},
+			{ { .descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, .stageFlags = VK_SHADER_STAGE_VERTEX_BIT },
+			{ .descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 	.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT } },
 			m_descriptorSetLayouts
 		);
 
-		vh::createGraphicsPipeline(GetDevice(), m_renderPass, { m_descriptorSetLayouts }, m_graphicsPipeline);
+		vh::createGraphicsPipeline(GetDevice(), m_renderPass, "shaders\\vert.spv", "shaders\\frag.spv",
+			 { m_descriptorSetLayouts }, m_graphicsPipeline);
 
 		vh::setupImgui( ((WindowSDL*)m_window)->GetSDLWindow(), GetInstance(), GetPhysicalDevice(), GetQueueFamilies(), GetDevice(), GetGraphicsQueue(), 
 			GetCommandPool(), GetDescriptorPool(), m_renderPass);  
