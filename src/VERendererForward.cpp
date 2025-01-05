@@ -21,17 +21,17 @@ namespace vve {
     void RendererForward::OnInit(Message message) {
         vh::createRenderPass(GetPhysicalDevice(), GetDevice(), GetSwapChain(), false, m_renderPass);
 		
-		vh::createDescriptorSetLayout( GetDevice(), //Per frame
-			{{ .descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, .stageFlags = VK_SHADER_STAGE_VERTEX_BIT },
+		vh::createDescriptorSetLayout( GetDevice(), //Per object
+			{{ .descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, .stageFlags = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT },
 			 {.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, .stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT } },
 			m_descriptorSetLayoutPerObject );
 
-		vh::createDescriptorSetLayout( GetDevice(), //Per object
+		vh::createDescriptorSetLayout( GetDevice(), //Per frame
 			{{ .descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, .stageFlags = VK_SHADER_STAGE_VERTEX_BIT } },
 			m_descriptorSetLayoutPerFrame );
 
-		vh::createGraphicsPipeline(GetDevice(), m_renderPass, "shaders\\vert.spv", "shaders\\frag.spv", 
-			{ m_descriptorSetLayoutPerObject, m_descriptorSetLayoutPerFrame }, m_graphicsPipeline);
+		vh::createGraphicsPipeline(GetDevice(), m_renderPass, "shaders\\Forward\\vert.spv", "shaders\\Forward\\frag.spv", 
+			{ m_descriptorSetLayoutPerFrame, m_descriptorSetLayoutPerObject }, m_graphicsPipeline);
 
         vh::createCommandPool(GetSurface(), GetPhysicalDevice(), GetDevice(), m_commandPool);
         vh::createCommandBuffers(GetDevice(), GetCommandPool(), m_commandBuffers);
@@ -90,7 +90,7 @@ namespace vve {
 		vh::UniformBuffers ubo;
 		vh::createUniformBuffers(GetPhysicalDevice(), GetDevice(), GetVmaAllocator(), sizeof(UniformBufferObject), ubo);
 
-		vh::DescriptorSet descriptorSet{0};
+		vh::DescriptorSet descriptorSet{1};
 		vh::createDescriptorSet(GetDevice(), m_descriptorSetLayoutPerObject, GetDescriptorPool(), descriptorSet);
 	    vh::updateDescriptorSetUBO(GetDevice(), ubo, 0, sizeof(UniformBufferObject), descriptorSet);
 	    vh::updateDescriptorSetTexture(GetDevice(), texture, 1, descriptorSet);

@@ -26,7 +26,7 @@ namespace vve
 
 		vh::UniformBuffers m_uniformBuffersPerFrame;
 		VkDescriptorSetLayout m_descriptorSetLayoutPerFrame;
-		vh::DescriptorSet m_descriptorSetPerFrame{1};
+		vh::DescriptorSet m_descriptorSetPerFrame{0};
 
 		VkDescriptorSetLayout m_descriptorSetLayoutPerObject;
 	    vh::Pipeline m_graphicsPipeline;
