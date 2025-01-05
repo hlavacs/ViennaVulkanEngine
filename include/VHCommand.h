@@ -23,6 +23,12 @@ namespace vh {
 			const std::vector<DescriptorSet>&& descriptorSets, Geometry& geometry, uint32_t currentFrame);
 
 
+	void submitCommandBuffers(VkDevice device, VkQueue graphicsQueue, std::vector<VkCommandBuffer>& commandBuffers,
+		std::vector<VkSemaphore>& imageAvailableSemaphores, std::vector<Semaphores>& semaphores, VkSemaphore& signalSemaphore,
+		std::vector<VkFence>& fences, uint32_t currentFrame);
+
+	VkResult presentImage(VkQueue presentQueue, SwapChain swapChain, uint32_t imageIndex, VkSemaphore signalSemaphore);
+
 } // namespace vh
 
 

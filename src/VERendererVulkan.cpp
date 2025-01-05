@@ -115,52 +115,17 @@ namespace vve {
 
     void RendererVulkan::OnRenderNextFrame(Message message) {
         if(m_window->GetIsMinimized()) return;
-		VkResult result;
         
-		size_t size = m_commandBuffersSubmit.size();
-		if( size > m_semaphores.size() ) {
-			vh::createSemaphores(GetDevice(), size, m_imageAvailableSemaphores, m_semaphores);
-		}
-
-        vkResetFences(GetDevice(), 1, &m_fences[GetCurrentFrame()]);
-
-		VkSemaphore waitSemaphore = m_imageAvailableSemaphores[GetCurrentFrame()];
 		VkSemaphore signalSemaphore;
-
-		for( int i = 0; i < size; i++ ) {
-			VkCommandBuffer commandBuffer = m_commandBuffersSubmit[i];
-			signalSemaphore = m_semaphores[i].m_renderFinishedSemaphores[GetCurrentFrame()];
-			VkSubmitInfo submitInfo{};
-	        submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
-	        VkPipelineStageFlags waitStages[] = {VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT};
-	        submitInfo.waitSemaphoreCount = 1;
-	        submitInfo.pWaitSemaphores = &waitSemaphore;
-	        submitInfo.pWaitDstStageMask = waitStages;
-	        submitInfo.commandBufferCount = 1;
-	        submitInfo.pCommandBuffers = &commandBuffer;
-	        submitInfo.signalSemaphoreCount = 1;
-	        submitInfo.pSignalSemaphores = &signalSemaphore;
-			VkFence fence = VK_NULL_HANDLE;
-			if( i== size-1 ) fence = m_fences[GetCurrentFrame()];
-	        if (vkQueueSubmit(GetGraphicsQueue(), 1, &submitInfo, fence) != VK_SUCCESS) {
-	            throw std::runtime_error("failed to submit draw command buffer!");
-	        }
-			waitSemaphore = signalSemaphore;
-		}
-
+		submitCommandBuffers(GetDevice(), GetGraphicsQueue(), m_commandBuffersSubmit, 
+			m_imageAvailableSemaphores, m_semaphores, signalSemaphore, m_fences, GetCurrentFrame());
+				
    		vh::transitionImageLayout(GetDevice(), GetGraphicsQueue(), GetCommandPool(), 
 			GetSwapChain().m_swapChainImages[GetImageIndex()], GetSwapChain().m_swapChainImageFormat, 
 			VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR);
 
-        VkPresentInfoKHR presentInfo{};
-        presentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
-        presentInfo.waitSemaphoreCount = 1;
-        presentInfo.pWaitSemaphores = &signalSemaphore;
-        VkSwapchainKHR swapChains[] = {GetSwapChain().m_swapChain};
-        presentInfo.swapchainCount = 1;
-        presentInfo.pSwapchains = swapChains;
-        presentInfo.pImageIndices = &GetImageIndex();
-        result = vkQueuePresentKHR(m_presentQueue, &presentInfo);
+		VkResult result = vh::presentImage(GetPresentQueue(), GetSwapChain(), GetImageIndex(), signalSemaphore);
+
         if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR || m_framebufferResized) {
             m_framebufferResized = false;
             recreateSwapChain(m_windowSDL->GetSDLWindow(), GetSurface(), GetPhysicalDevice(), GetDevice(), GetVmaAllocator(), GetSwapChain(), GetDepthImage(), GetRenderPass());

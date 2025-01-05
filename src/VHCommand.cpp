@@ -158,6 +158,53 @@ namespace vh {
 	}
 
 
+	void submitCommandBuffers(VkDevice device, VkQueue graphicsQueue, std::vector<VkCommandBuffer>& commandBuffers, 
+		std::vector<VkSemaphore>& imageAvailableSemaphores, std::vector<Semaphores>& semaphores, VkSemaphore& signalSemaphore,
+		std::vector<VkFence>& fences, uint32_t currentFrame) {
+
+		size_t size = commandBuffers.size();
+		if( size > semaphores.size() ) {
+			vh::createSemaphores(device, size, imageAvailableSemaphores, semaphores);
+		}
+
+        vkResetFences(device, 1, &fences[currentFrame]);
+
+		VkSemaphore waitSemaphore = imageAvailableSemaphores[currentFrame];
+
+		for( int i = 0; i < size; i++ ) {
+			VkCommandBuffer commandBuffer = commandBuffers[i];
+			signalSemaphore = semaphores[i].m_renderFinishedSemaphores[currentFrame];
+			VkSubmitInfo submitInfo{};
+	        submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+	        VkPipelineStageFlags waitStages[] = {VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT};
+	        submitInfo.waitSemaphoreCount = 1;
+	        submitInfo.pWaitSemaphores = &waitSemaphore;
+	        submitInfo.pWaitDstStageMask = waitStages;
+	        submitInfo.commandBufferCount = 1;
+	        submitInfo.pCommandBuffers = &commandBuffer;
+	        submitInfo.signalSemaphoreCount = 1;
+	        submitInfo.pSignalSemaphores = &signalSemaphore;
+			VkFence fence = VK_NULL_HANDLE;
+			if( i== size-1 ) fence = fences[currentFrame];
+	        if (vkQueueSubmit(graphicsQueue, 1, &submitInfo, fence) != VK_SUCCESS) {
+	            throw std::runtime_error("failed to submit draw command buffer!");
+	        }
+			waitSemaphore = signalSemaphore;
+		}
+	}
+
+	VkResult presentImage(VkQueue presentQueue, SwapChain swapChain, uint32_t imageIndex, VkSemaphore signalSemaphore) {
+        VkPresentInfoKHR presentInfo{};
+        presentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
+        presentInfo.waitSemaphoreCount = 1;
+        presentInfo.pWaitSemaphores = &signalSemaphore;
+        VkSwapchainKHR swapChains[] = {swapChain.m_swapChain};
+        presentInfo.swapchainCount = 1;
+        presentInfo.pSwapchains = swapChains;
+        presentInfo.pImageIndices = &imageIndex;
+        return vkQueuePresentKHR(presentQueue, &presentInfo);
+	}
+
 
 } // namespace vh
 
