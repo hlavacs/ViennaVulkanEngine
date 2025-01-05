@@ -117,7 +117,7 @@ namespace vve {
         if(m_window->GetIsMinimized()) return;
         
 		VkSemaphore signalSemaphore;
-		submitCommandBuffers(GetDevice(), GetGraphicsQueue(), m_commandBuffersSubmit, 
+		vh::submitCommandBuffers(GetDevice(), GetGraphicsQueue(), m_commandBuffersSubmit, 
 			m_imageAvailableSemaphores, m_semaphores, signalSemaphore, m_fences, GetCurrentFrame());
 				
    		vh::transitionImageLayout(GetDevice(), GetGraphicsQueue(), GetCommandPool(), 
@@ -128,7 +128,7 @@ namespace vve {
 
         if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR || m_framebufferResized) {
             m_framebufferResized = false;
-            recreateSwapChain(m_windowSDL->GetSDLWindow(), GetSurface(), GetPhysicalDevice(), GetDevice(), GetVmaAllocator(), GetSwapChain(), GetDepthImage(), GetRenderPass());
+            vh::recreateSwapChain(m_windowSDL->GetSDLWindow(), GetSurface(), GetPhysicalDevice(), GetDevice(), GetVmaAllocator(), GetSwapChain(), GetDepthImage(), GetRenderPass());
         } else assert(result == VK_SUCCESS);
     }
     
