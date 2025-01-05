@@ -60,7 +60,7 @@ namespace vve {
 		
 		for( auto[name, ghandle, LtoW, uniformBuffers, descriptorsets] : m_registry.template GetView<Name, GeometryHandle, LocalToWorldMatrix&, vh::UniformBuffers&, vh::DescriptorSet&>() ) {
 			UniformBufferObject ubo{};
-			ubo.model = LtoW() * glm::rotate(glm::mat4(1.0f), time * glm::radians(50.0f), glm::vec3(0.0f, 0.0f, 1.0f));			
+			ubo.model = LtoW(); // * glm::rotate(glm::mat4(1.0f), time * glm::radians(50.0f), glm::vec3(0.0f, 0.0f, 1.0f));			
 			memcpy(uniformBuffers.m_uniformBuffersMapped[GetCurrentFrame()], &ubo, sizeof(ubo));
 			vh::Geometry& geometry = m_registry.template Get<vh::Geometry&>(ghandle);
 			vh::recordObject2( m_commandBuffers[GetCurrentFrame()], m_graphicsPipeline, { descriptorsets, m_descriptorSetPerFrame }, geometry, GetCurrentFrame() );

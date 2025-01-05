@@ -20,50 +20,51 @@ namespace vve {
     SceneManager::~SceneManager() {}
 
     bool SceneManager::OnInit(Message message) {
-		m_handleMap[Name{m_rootName}] = m_registry.Insert(
-												Name{m_rootName},
-												ParentHandle{},
-												Children{},
-												Position{glm::vec3(0.0f, 0.0f, 0.0f)},
-												LocalToWorldMatrix{mat4_t{1.0f}} ); //insert root node
+		m_rootHandle = m_registry.Insert(
+									Name{m_rootName},
+									ParentHandle{},
+									Children{},
+									Position{glm::vec3(0.0f, 0.0f, 0.0f)},
+									LocalToWorldMatrix{mat4_t{1.0f}} ); //insert root node
 
 		// Create camera
 		auto window = m_engine.GetWindow(m_windowName);
         auto view = glm::inverse( glm::lookAt(glm::vec3(4.0f, 1.9f, 3.8f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f)) );
 
-		auto nHandle = m_registry.Insert(
+		m_cameraNodeHandle = m_registry.Insert(
 								Name(m_cameraNodeName),
-								ParentHandle{GetHandle(Name{m_rootName})},
+								ParentHandle{m_rootHandle},
 								Children{},
 								Position{glm::vec3(view[3])}, 
-								Orientation{glm::quat_cast(view)}, 
+								Rotation{mat3_t{1.0f}},
 								Scale{vec3_t{1.0f, 1.0f, 1.0f}}, 
 								LocalToParentMatrix{mat4_t{1.0f}}, 
 								LocalToWorldMatrix{mat4_t{1.0f}} );
 
-		m_registry.template Get<Children&>(GetHandle(Name{m_rootName}))().push_back(nHandle);
+		m_registry.template Get<Children&>(m_rootHandle)().push_back(m_cameraNodeHandle);
 
-		auto cHandle = m_registry.Insert(
+		m_cameraHandle = m_registry.Insert(
 								Name(m_cameraName),
-								ParentHandle{nHandle},
+								ParentHandle{m_cameraNodeHandle},
 								Camera{(real_t)window->GetWidth() / (real_t)window->GetHeight()}, 
 								Position{}, 
-								Orientation{}, 
+								Rotation{mat3_t{view}},
 								Scale{vec3_t{1.0f, 1.0f, 1.0f}}, 
 								LocalToParentMatrix{mat4_t{1.0f}}, 
 								LocalToWorldMatrix{mat4_t{1.0f}}, 
 								ViewMatrix{view} );
 
-		m_registry.template Get<Children&>(nHandle)().push_back(cHandle);
+		m_registry.template Get<Children&>(m_cameraNodeHandle)().push_back(m_cameraHandle);
 		return false;
 	}
 
     bool SceneManager::OnUpdate(Message message) {
-		auto children = m_registry.template Get<Children&>(GetHandle(Name{m_rootName}));
+		auto children = m_registry.template Get<Children&>(m_rootHandle);
 
 		auto update = [](auto& registry, mat4_t& parentToWorld, vecs::Handle& handle, auto& self) -> void {
-			auto [p, o, s, LtoP, LtoW] = registry.template Get<Position, Orientation, Scale, LocalToParentMatrix&, LocalToWorldMatrix&>(handle);
-			LtoP = glm::translate(mat4_t{1.0f}, p()) * glm::mat4_cast(o()) * glm::scale(mat4_t{1.0f}, s());
+			auto [p, r, s, LtoP, LtoW] = registry.template Get<Position, Rotation, Scale, LocalToParentMatrix&, LocalToWorldMatrix&>(handle);
+			LtoP = glm::translate(mat4_t{1.0f}, p()) * mat4_t(r()) * glm::scale(mat4_t{1.0f}, s());
+
 			LtoW = parentToWorld * LtoP();
 
 			if( registry.template Has<Camera>(handle) ) {
@@ -93,17 +94,17 @@ namespace vve {
 
 		auto nHandle = m_registry.Insert(
 									Name(msg.m_objName),
-									ParentHandle{GetHandle(Name{m_rootName})},
+									ParentHandle{m_rootHandle},
 									Children{},
 									Position{glm::vec3(-0.5f, 0.5f, 0.5f)}, 
-									Orientation{}, 
+									Rotation{mat3_t{1.0f}},
 									Scale{vec3_t{1.0f, 1.0f, 1.0f}}, 
 									LocalToParentMatrix{mat4_t{1.0f}}, 
 									LocalToWorldMatrix{mat4_t{1.0f}},
 									GeometryHandle{oHandle}, 
 									TextureHandle{tHandle} );
 
-		m_registry.Get<Children&>(GetHandle(Name{m_rootName}))().push_back(nHandle);
+		m_registry.Get<Children&>(m_rootHandle)().push_back(nHandle);
 
 		m_engine.SendMessage( MsgObjectCreate{this, nullptr, nHandle} );
 		return false;
@@ -148,27 +149,87 @@ namespace vve {
 	}
 
 	bool SceneManager::OnKeyDown(Message message) {
-		auto key = message.template GetData<MsgKeyDown>().m_key;
+		auto msg = message.template GetData<MsgKeyDown>();
+		auto key = msg.m_key;
 
 		if( key == SDL_SCANCODE_ESCAPE  ) {
 			m_engine.Stop();
 			return false;
 		}
 
+		auto [pn, rn, sn] 		 = m_registry.template Get<Position&, Rotation&, Scale&>(m_cameraNodeHandle);
+		auto [pc, rc, sc, LtoPc] = m_registry.template Get<Position&, Rotation&, Scale&, LocalToParentMatrix>(m_cameraHandle);		
+	
+		vec3_t translate = vec3_t(0.0f, 0.0f, 0.0f); //total translation
+		vec3_t rot3 = vec3_t(1.0f); //total rotation around the axes, is 4d !
+		float angle = 0.0f;
+		float rotSpeed = 2.0f;
+
 		switch( key )  {
 
 			case SDL_SCANCODE_W : {
-				auto camera = GetHandle(Name{m_cameraName});
-				auto [p, o, s] = m_registry.Get<Position, Orientation, Scale>(camera);
-				auto forward = glm::rotate(o(), glm::radians(90.0f), glm::vec3(0.0f, 0.0f, 1.0f)) * glm::vec3(0.0f, 1.0f, 0.0f);
-				m_registry.Put(camera, Position{p() + forward});
+				translate = mat3_t{ LtoPc } * vec3_t(0.0f, 0.0f, -1.0f);
 				break;
 			}
 
+			case SDL_SCANCODE_S : {
+				translate = mat3_t{ LtoPc } * vec3_t(0.0f, 0.0f, 1.0f);
+				break;
+			}
+
+			case SDL_SCANCODE_A : {
+				translate = mat3_t{ LtoPc } * vec3_t(-1.0f, 0.0f, 0.0f);
+				break;
+			}
+
+			case SDL_SCANCODE_Q : {
+				translate = vec3_t(0.0f, 0.0f, -1.0f);
+				break;
+			}
+
+			case SDL_SCANCODE_E : {
+				translate = vec3_t(0.0f, 0.0f, 1.0f);
+				break;
+			}
+
+			case SDL_SCANCODE_D : {
+				translate = mat3_t{ LtoPc } * vec3_t(1.0f, 0.0f, 0.0f);
+				break;
+			}
+
+			case SDL_SCANCODE_LEFT : {
+				angle = rotSpeed * (float)msg.m_dt * 1.0f;
+				rot3 = glm::vec3(0.0, 0.0, 1.0);
+				break;
+			}
+
+			case SDL_SCANCODE_RIGHT : {
+				angle = rotSpeed * (float)msg.m_dt * -1.0f;
+				rot3 = glm::vec3(0.0, 0.0, 1.0);
+				break;
+			}
+
+			case SDL_SCANCODE_UP : {
+				angle = rotSpeed * (float)msg.m_dt * -1.0f;
+				rot3 = vec3_t{ LtoPc() * vec4_t{1.0f, 0.0f, 0.0f, 0.0f} };
+				break;
+			}
+
+			case SDL_SCANCODE_DOWN : {
+				angle = rotSpeed * (float)msg.m_dt * 1.0f;
+				rot3 = vec3_t{ LtoPc() * vec4_t{1.0f, 0.0f, 0.0f, 0.0f} };
+				break;
+			}
 		}
 
+		///add the new translation vector to the previous one
+		float speed = 3.0f;
+		pn() = pn() + translate * (real_t)msg.m_dt * speed;
 
-        std::cout << "Key down: " << message.template GetData<MsgKeyDown>().m_key << std::endl;
+		///combination of yaw and pitch, both wrt to parent space
+		rc() = mat3_t{ glm::rotate(mat4_t{1.0f}, angle, rot3) * mat4_t{ rc() } };
+
+        //std::cout << "Key down: " << message.template GetData<MsgKeyDown>().m_key << std::endl;
 		return false;
     }
 

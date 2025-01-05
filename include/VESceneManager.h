@@ -27,7 +27,7 @@ namespace vve {
 	using ParentHandle = vsty::strong_type_t<vecs::Handle, vsty::counter<>>;
 	using Children = vsty::strong_type_t<std::vector<vecs::Handle>, vsty::counter<>>;
 	using Position = vsty::strong_type_t<vec3_t, vsty::counter<>>;
-	using Orientation = vsty::strong_type_t<quat_t, vsty::counter<>>;
+	using Rotation = vsty::strong_type_t<mat3_t, vsty::counter<>>;
 	using Scale = vsty::strong_type_t<vec3_t, vsty::counter<>>;
 	using LocalToParentMatrix = vsty::strong_type_t<mat4_t, vsty::counter<>>;
 	using LocalToWorldMatrix = vsty::strong_type_t<mat4_t, vsty::counter<>>;
@@ -66,6 +66,9 @@ namespace vve {
 
 		std::shared_mutex m_mutex;
 		std::unordered_map<Name, vecs::Handle> m_handleMap;
+		vecs::Handle m_cameraHandle;
+		vecs::Handle m_cameraNodeHandle;
+		vecs::Handle m_rootHandle;
     };
 
 };  // namespace vve
