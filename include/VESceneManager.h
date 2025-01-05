@@ -45,6 +45,7 @@ namespace vve {
 		const std::string m_windowName = "VVE Window";
 		const std::string m_rootName = "VVE RootSceneNode";
 		const std::string m_cameraName = "VVE Camera";
+		const std::string m_cameraNodeName = "VVE CameraNode";
 
     public:
         SceneManager(std::string systemName, Engine& engine );
@@ -58,6 +59,9 @@ namespace vve {
 		bool OnInit(Message message);
 		bool OnUpdate(Message message);
 		bool OnLoadObject(Message message);
+		bool OnKeyDown(Message message);
+		bool OnKeyRepeat(Message message);
+
 		auto GetHandle(Name name) -> vecs::Handle&;	
 
 		std::shared_mutex m_mutex;

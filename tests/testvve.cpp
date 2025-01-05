@@ -77,17 +77,17 @@ public:
 
 
     bool OnKeyDown(Message message) {
-        std::cout << "Key down: " << message.template GetData<MsgKeyDown>().m_key << std::endl;
+        //std::cout << "Key down: " << message.template GetData<MsgKeyDown>().m_key << std::endl;
 		return false;
     }
 
     bool OnKeyUp(Message message) {
-        std::cout << "Key up: " << message.template GetData<MsgKeyUp>().m_key << std::endl;
+        //std::cout << "Key up: " << message.template GetData<MsgKeyUp>().m_key << std::endl;
 		return false;
     }
 
     bool OnKeyRepeat(Message message) {
-        std::cout << "Key repeat: " << message.template GetData<MsgKeyRepeat>().m_key << std::endl;
+        //std::cout << "Key repeat: " << message.template GetData<MsgKeyRepeat>().m_key << std::endl;
 		return false;
     }
 

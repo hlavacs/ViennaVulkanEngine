@@ -225,6 +225,7 @@ namespace vve {
 		vh::destroyBuffer(GetDevice(), m_vmaAllocator, geometry.m_indexBuffer, geometry.m_indexBufferAllocation);
 		vh::destroyBuffer(GetDevice(), m_vmaAllocator, geometry.m_vertexBuffer, geometry.m_vertexBufferAllocation);
 		m_registry.template Erase(handle);
+		return false;
 	}
 
 

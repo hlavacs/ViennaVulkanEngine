@@ -12,6 +12,8 @@ namespace vve {
 			{this,  2000, "INIT", [this](Message message){ return OnInit(message);} },
 			{this, std::numeric_limits<int>::max(), "UPDATE", [this](Message message){ return OnUpdate(message);} },
 			{this, std::numeric_limits<int>::max(), "FILE_LOAD_OBJECT", [this](Message message){ return OnLoadObject(message);} },
+			{this,      0, "SDL_KEY_DOWN", [this](Message message){ return OnKeyDown(message);} },
+			{this,      0, "SDL_KEY_REPEAT", [this](Message message){ return OnKeyRepeat(message);} }		
 		} );
 	}
 
@@ -28,18 +30,31 @@ namespace vve {
 		// Create camera
 		auto window = m_engine.GetWindow(m_windowName);
         auto view = glm::inverse( glm::lookAt(glm::vec3(4.0f, 1.9f, 3.8f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f)) );
-		auto cHandle = m_registry.Insert(
-								Name(m_cameraName),
+
+		auto nHandle = m_registry.Insert(
+								Name(m_cameraNodeName),
 								ParentHandle{GetHandle(Name{m_rootName})},
-								Camera{(real_t)window->GetWidth() / (real_t)window->GetHeight()}, 
+								Children{},
 								Position{glm::vec3(view[3])}, 
 								Orientation{glm::quat_cast(view)}, 
+								Scale{vec3_t{1.0f, 1.0f, 1.0f}}, 
+								LocalToParentMatrix{mat4_t{1.0f}}, 
+								LocalToWorldMatrix{mat4_t{1.0f}} );
+
+		m_registry.template Get<Children&>(GetHandle(Name{m_rootName}))().push_back(nHandle);
+
+		auto cHandle = m_registry.Insert(
+								Name(m_cameraName),
+								ParentHandle{nHandle},
+								Camera{(real_t)window->GetWidth() / (real_t)window->GetHeight()}, 
+								Position{}, 
+								Orientation{}, 
 								Scale{vec3_t{1.0f, 1.0f, 1.0f}}, 
 								LocalToParentMatrix{mat4_t{1.0f}}, 
 								LocalToWorldMatrix{mat4_t{1.0f}}, 
 								ViewMatrix{view} );
 
-		m_registry.Get<Children&>(GetHandle(Name{m_rootName}))().push_back(cHandle);
+		m_registry.template Get<Children&>(nHandle)().push_back(cHandle);
 		return false;
 	}
 
@@ -130,7 +145,40 @@ namespace vve {
 
 	auto SceneManager::GetHandle(Name name) -> vecs::Handle& { 
 		return m_handleMap[name]; 
-	}	
+	}
+
+	bool SceneManager::OnKeyDown(Message message) {
+		auto key = message.template GetData<MsgKeyDown>().m_key;
+
+		if( key == SDL_SCANCODE_ESCAPE  ) {
+			m_engine.Stop();
+			return false;
+		}
+
+		switch( key )  {
+
+			case SDL_SCANCODE_W : {
+				auto camera = GetHandle(Name{m_cameraName});
+				auto [p, o, s] = m_registry.Get<Position, Orientation, Scale>(camera);
+				auto forward = glm::rotate(o(), glm::radians(90.0f), glm::vec3(0.0f, 0.0f, 1.0f)) * glm::vec3(0.0f, 1.0f, 0.0f);
+				m_registry.Put(camera, Position{p() + forward});
+				break;
+			}
+
+		}
+
+
+        std::cout << "Key down: " << message.template GetData<MsgKeyDown>().m_key << std::endl;
+		return false;
+    }
+
+    bool SceneManager::OnKeyRepeat(Message message) {
+		auto key = message.template GetData<MsgKeyRepeat>().m_key;
+		return OnKeyDown(MsgKeyDown{this, nullptr, message.GetDt(), key});
+
+        //std::cout << "Key repeat: " << message.template GetData<MsgKeyRepeat>().m_key << std::endl;
+		//return false;
+    }
 
 
 };  // namespace vve
