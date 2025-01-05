@@ -20,27 +20,24 @@ namespace vve {
     void SceneManager::OnInit(Message message) {
 		m_handleMap[Name{m_rootName}] = m_registry.Insert(
 												Name{m_rootName},
-												Parent{},
+												ParentHandle{},
 												Children{},
 												Position{glm::vec3(0.0f, 0.0f, 0.0f)},
-												LocalToWorldMatrix{mat4_t{1.0f}},
-												SceneNode{}); //insert root node
+												LocalToWorldMatrix{mat4_t{1.0f}} ); //insert root node
 
 		// Create camera
 		auto window = m_engine.GetWindow(m_windowName);
         auto view = glm::inverse( glm::lookAt(glm::vec3(4.0f, 1.9f, 3.8f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f)) );
 		auto cHandle = m_registry.Insert(
 								Name(m_cameraName),
-								Parent{GetHandle(Name{m_rootName})},
-								Camera{(float)window->GetWidth() / (float)window->GetHeight()}, 
+								ParentHandle{GetHandle(Name{m_rootName})},
+								Camera{(real_t)window->GetWidth() / (real_t)window->GetHeight()}, 
 								Position{glm::vec3(view[3])}, 
 								Orientation{glm::quat_cast(view)}, 
 								Scale{vec3_t{1.0f, 1.0f, 1.0f}}, 
 								LocalToParentMatrix{mat4_t{1.0f}}, 
 								LocalToWorldMatrix{mat4_t{1.0f}}, 
-								ViewMatrix{view},
-								Transform{glm::vec3(view[3]), glm::quat_cast(view)}, 
-								SceneNode{{glm::vec3(view[3]), glm::quat_cast(view)}, GetHandle(Name{m_rootName})} );
+								ViewMatrix{view} );
 
 		m_registry.Get<Children&>(GetHandle(Name{m_rootName}))().push_back(cHandle);
 
@@ -54,8 +51,10 @@ namespace vve {
 			LtoP = glm::translate(mat4_t{1.0f}, p()) * glm::mat4_cast(o()) * glm::scale(mat4_t{1.0f}, s());
 			LtoW = parentToWorld * LtoP();
 
-			if( registry.template Has<ViewMatrix&>(handle) ) {
-				registry.template Put(handle, ViewMatrix{glm::inverse(LtoW())});
+			if( registry.template Has<Camera>(handle) ) {
+				auto camera = registry.template Get<Camera&>(handle);
+				registry.Put(handle, ViewMatrix{glm::inverse(LtoW())});
+				registry.Put(handle, ProjectionMatrix{camera.Matrix()});
 			}
 
 			if( registry.template Has<Children&>(handle) ) {
@@ -78,7 +77,7 @@ namespace vve {
 
 		auto nHandle = m_registry.Insert(
 									Name(msg.m_objName),
-									Parent{GetHandle(Name{m_rootName})},
+									ParentHandle{GetHandle(Name{m_rootName})},
 									Children{},
 									Position{glm::vec3(-0.5f, 0.5f, 0.5f)}, 
 									Orientation{}, 
@@ -86,8 +85,7 @@ namespace vve {
 									LocalToParentMatrix{mat4_t{1.0f}}, 
 									LocalToWorldMatrix{mat4_t{1.0f}},
 									GeometryHandle{oHandle}, 
-									TextureHandle{tHandle}, 
-									SceneNode{} );
+									TextureHandle{tHandle} );
 
 		m_registry.Get<Children&>(GetHandle(Name{m_rootName}))().push_back(nHandle);
 
