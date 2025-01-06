@@ -55,7 +55,14 @@ namespace vve {
 			}
 
             if (ImGui::Button("Load")) {                          // Buttons return true when clicked (most widgets return true when edited/activated)
-				m_engine.SendMessage( MsgLoadObject{this, nullptr, {}, {}, path_texture, path_obj} );
+				static float x = 0.0f;
+				
+				auto handle = m_registry.Insert( Position{vec3_t(0.0f, x, 0.0f)}, 
+								   Rotation{mat3_t{1.0f}},
+								   Scale{vec3_t{1.0f, 1.0f, 1.0f}} );
+
+				m_engine.SendMessage( MsgLoadObject{this, nullptr, handle, {}, path_texture, path_obj} );
+				x += 2.0f;
 			}
 
             ImGui::End();
