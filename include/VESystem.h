@@ -116,10 +116,8 @@ namespace vve {
 	
 
 	    struct Message {
-	        static const size_t MAX_SIZE = 256;
-
 	        template<typename T>
-	            requires (std::is_base_of_v<MsgBase, T> && sizeof(T) <= MAX_SIZE)
+	            requires (std::is_base_of_v<MsgBase, T> && sizeof(T) <= MAX_MESSAGE_SIZE)
 	        Message(const T&& msg ) {
 	            m_typeID = std::type_index(typeid(T)).hash_code();
 	            std::memcpy(m_data, &msg, sizeof(T));
@@ -133,7 +131,7 @@ namespace vve {
 	        auto GetPhase() -> int { return reinterpret_cast<MsgBase*>(m_data)->m_phase; };
 
 	        template<typename T>
-	            requires (std::is_base_of_v<MsgBase, T> && sizeof(T) <= MAX_SIZE)
+	            requires (std::is_base_of_v<MsgBase, T> && sizeof(T) <= MAX_MESSAGE_SIZE)
 	        auto GetData() -> T& {
 	            assert(m_typeID == std::type_index(typeid(T)).hash_code() );
 	            return *reinterpret_cast<T*>(m_data);
@@ -141,7 +139,7 @@ namespace vve {
 
 	    private:
 	        size_t m_typeID{};
-	        uint8_t m_data[MAX_SIZE];
+	        uint8_t m_data[MAX_MESSAGE_SIZE];
 	    };
 		
 

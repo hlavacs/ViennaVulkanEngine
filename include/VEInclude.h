@@ -12,6 +12,8 @@ namespace vve {
 
 	#define VVE_ARCHITECTURE_TYPE ENGINETYPE_SEQUENTIAL
 
+	#define MAX_MESSAGE_SIZE 256
+
     struct Empty {};
 
     template<ArchitectureType ATYPE>
