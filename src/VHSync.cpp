@@ -30,7 +30,7 @@ namespace vh {
         VkSemaphoreCreateInfo semaphoreInfo{};
         semaphoreInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
 
-		for( int i = semaphores.size(); i < size; ++i ) {
+		for( size_t i = semaphores.size(); i < size; ++i ) {
 			Semaphores Sem;
 	        for (size_t j = 0; j < MAX_FRAMES_IN_FLIGHT; j++) {
 				VkSemaphore semaphore;
