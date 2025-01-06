@@ -97,7 +97,7 @@ namespace vve {
 	    vh::updateDescriptorSetUBO(GetDevice(), ubo, 0, sizeof(UniformBufferObject), descriptorSet);
 	    vh::updateDescriptorSetTexture(GetDevice(), texture, 1, descriptorSet);
 
-		m_registry.template Put(handle, ubo, descriptorSet);
+		m_registry.Put(handle, ubo, descriptorSet);
 
 		assert( m_registry.template Has<vh::UniformBuffers>(handle) );
 		assert( m_registry.template Has<vh::DescriptorSet>(handle) );

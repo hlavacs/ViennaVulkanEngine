@@ -207,7 +207,7 @@ namespace vve {
 		vkDestroySampler(GetDevice(), texture.m_textureSampler, nullptr);
 		vkDestroyImageView(GetDevice(), texture.m_textureImageView, nullptr);
 		vh::destroyImage(GetDevice(), m_vmaAllocator, texture.m_textureImage, texture.m_textureImageAllocation);
-		m_registry.template Erase(handle);
+		m_registry.Erase(handle);
 		return false;
 	}
 
@@ -224,7 +224,7 @@ namespace vve {
 		auto& geometry = m_registry.template Get<vh::Geometry&>(handle);
 		vh::destroyBuffer(GetDevice(), m_vmaAllocator, geometry.m_indexBuffer, geometry.m_indexBufferAllocation);
 		vh::destroyBuffer(GetDevice(), m_vmaAllocator, geometry.m_vertexBuffer, geometry.m_vertexBufferAllocation);
-		m_registry.template Erase(handle);
+		m_registry.Erase(handle);
 		return false;
 	}
 
