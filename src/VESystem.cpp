@@ -30,7 +30,8 @@ namespace vve {
     
 	//------------------------------------------------------------------------
 
-	System::MsgFileLoadObject::MsgFileLoadObject(System* s, System* r, std::string txtName, std::string objName) : MsgBase{std::hash<std::string>{}("FILE_LOAD_OBJECT"), s, r}, m_txtName{txtName}, m_objName{objName} {};
+	System::MsgLoadObject::MsgLoadObject(System* s, System* r, vecs::Handle object, vecs::Handle parent, std::string txtName, std::string objName) : 
+		MsgBase{std::hash<std::string>{}("LOAD_OBJECT"), s, r}, m_object{object}, m_parent{parent}, m_txtName{txtName}, m_objName{objName} {};
 	
 	System::MsgObjectCreate::MsgObjectCreate(System* s, System* r, vecs::Handle handle) : MsgBase{std::hash<std::string>{}("OBJECT_CREATE"), s, r}, m_handle{handle} {};
 		
@@ -64,10 +65,13 @@ namespace vve {
 
 
 namespace std {
+	
+	size_t hash<vve::Name>::operator()(vve::Name const& name) const {
+		return std::hash<std::string>{}(name());
+	}
 
 	size_t hash<vve::System>::operator()(vve::System& system)  {
-		return std::hash<std::string>{}(system.GetName());
+		return std::hash<decltype(system.GetName())>{}(system.GetName());
     };
-
 
 };  // namespace std

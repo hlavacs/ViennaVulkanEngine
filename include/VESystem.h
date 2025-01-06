@@ -12,6 +12,17 @@
 
 
 namespace vve {
+	using Name = vsty::strong_type_t<std::string, vsty::counter<>>;
+}
+
+
+namespace std {
+    template<> struct hash<vve::Name> {
+        size_t operator()(vve::Name const& name) const; 
+    };
+}
+
+namespace vve {
 
     const std::unordered_set<std::string> MsgTypeNames {
         "ANNOUNCE", //System announce themselves
@@ -38,7 +49,7 @@ namespace vve {
         "QUIT", //
 		//---------------------
 		"OBJECT_CREATE",
-		"FILE_LOAD_OBJECT",	
+		"LOAD_OBJECT",	
 		"TEXTURE_CREATE",  
 		"TEXTURE_DESTROY", 
 		"GEOMETRY_CREATE",	
@@ -87,7 +98,15 @@ namespace vve {
 	    struct MsgSDL : public MsgBase { MsgSDL(System* s, System* r, double dt, SDL_Event event ); double m_dt; SDL_Event m_event; };
 		struct MsgQuit : public MsgBase { MsgQuit(System* s, System* r=nullptr); };
 
-	    struct MsgFileLoadObject : public MsgBase { MsgFileLoadObject(System* s, System* r, std::string txtName, std::string objName); std::string m_txtName; std::string m_objName; };
+	    struct MsgLoadObject : public MsgBase { 
+			MsgLoadObject(System* s, System* r, vecs::Handle object, vecs::Handle parent, 
+				std::string txtName, std::string objName); 
+			vecs::Handle m_object{}; 
+			vecs::Handle m_parent{}; 
+			std::string m_txtName; 
+			std::string m_objName; 
+		};
+
 		struct MsgObjectCreate : public MsgBase { MsgObjectCreate(System* s, System* r, vecs::Handle handle); vecs::Handle m_handle; };
 
 		struct MsgTextureCreate : public MsgBase { MsgTextureCreate(System* s, System* r, void *pixels, vecs::Handle handle); void* m_pixels; vecs::Handle m_handle; };
@@ -97,7 +116,7 @@ namespace vve {
 	
 
 	    struct Message {
-	        static const size_t MAX_SIZE = 128;
+	        static const size_t MAX_SIZE = 256;
 
 	        template<typename T>
 	            requires (std::is_base_of_v<MsgBase, T> && sizeof(T) <= MAX_SIZE)

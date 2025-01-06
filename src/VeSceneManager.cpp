@@ -11,7 +11,7 @@ namespace vve {
 		engine.RegisterCallback( { 
 			{this,  2000, "INIT", [this](Message message){ return OnInit(message);} },
 			{this, std::numeric_limits<int>::max(), "UPDATE", [this](Message message){ return OnUpdate(message);} },
-			{this, std::numeric_limits<int>::max(), "FILE_LOAD_OBJECT", [this](Message message){ return OnLoadObject(message);} },
+			{this, std::numeric_limits<int>::max(), "LOAD_OBJECT", [this](Message message){ return OnLoadObject(message);} },
 			{this, std::numeric_limits<int>::max(), "SDL_KEY_DOWN", [this](Message message){ return OnKeyDown(message);} },
 			{this, std::numeric_limits<int>::max(), "SDL_KEY_REPEAT", [this](Message message){ return OnKeyRepeat(message);} }		
 		} );
@@ -87,23 +87,38 @@ namespace vve {
 	}
 
     bool SceneManager::OnLoadObject(Message message) {
-		auto msg = message.template GetData<MsgFileLoadObject>();
+		auto msg = message.template GetData<MsgLoadObject>();
+		auto nHandle = msg.m_object;
+		auto pHandle = msg.m_parent;
 		auto tHandle = LoadTexture(Name{msg.m_txtName});
 		auto oHandle = LoadOBJ(Name{msg.m_objName});
 
-		auto nHandle = m_registry.Insert(
-									Name(msg.m_objName),
-									ParentHandle{m_rootHandle},
-									Children{},
-									Position{glm::vec3(-0.5f, 0.5f, 0.5f)}, 
-									Rotation{mat3_t{1.0f}},
-									Scale{vec3_t{1.0f, 1.0f, 1.0f}}, 
-									LocalToParentMatrix{mat4_t{1.0f}}, 
-									LocalToWorldMatrix{mat4_t{1.0f}},
-									GeometryHandle{oHandle}, 
-									TextureHandle{tHandle} );
+		if( !pHandle.IsValid() ) pHandle = m_rootHandle;
+		if( !nHandle.IsValid()) {
+			nHandle = m_registry.Insert(
+							Name(msg.m_objName),
+							ParentHandle{pHandle},
+							Children{},
+							Position{glm::vec3(-0.5f, 0.5f, 0.5f)}, 
+							Rotation{mat3_t{1.0f}},
+							Scale{vec3_t{1.0f, 1.0f, 1.0f}}, 
+							LocalToParentMatrix{mat4_t{1.0f}}, 
+							LocalToWorldMatrix{mat4_t{1.0f}},
+							GeometryHandle{oHandle}, 
+							TextureHandle{tHandle} );
+		} else {
+			m_registry.Put(	nHandle, 
+							Name(msg.m_objName),
+							ParentHandle{pHandle},
+							Children{},
+							LocalToParentMatrix{mat4_t{1.0f}}, 
+							LocalToWorldMatrix{mat4_t{1.0f}},
+							GeometryHandle{ oHandle }, 
+							TextureHandle{ tHandle }
+						);
+		}
 
-		m_registry.Get<Children&>(m_rootHandle)().push_back(nHandle);
+		m_registry.Get<Children&>(pHandle)().push_back(nHandle);
 
 		m_engine.SendMessage( MsgObjectCreate{this, nullptr, nHandle} );
 		return false;
@@ -243,11 +258,6 @@ namespace vve {
 
 };  // namespace vve
 
-namespace std {
-	size_t hash<vve::Name>::operator()(vve::Name const& name) const {
-		return std::hash<std::string>{}(name());
-	}
 
-}
 
 

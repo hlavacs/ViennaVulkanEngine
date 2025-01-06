@@ -2,17 +2,6 @@
 
 
 namespace vve {
-	using Name = vsty::strong_type_t<std::string, vsty::counter<>>;
-}
-
-
-namespace std {
-    template<> struct hash<vve::Name> {
-        size_t operator()(vve::Name const& name) const; 
-    };
-}
-
-namespace vve {
 
 	//-------------------------------------------------------------------------------------------------------
 

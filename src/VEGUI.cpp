@@ -55,7 +55,7 @@ namespace vve {
 			}
 
             if (ImGui::Button("Load")) {                          // Buttons return true when clicked (most widgets return true when edited/activated)
-				m_engine.SendMessage( MsgFileLoadObject{this, nullptr, path_texture, path_obj} );
+				m_engine.SendMessage( MsgLoadObject{this, nullptr, {}, {}, path_texture, path_obj} );
 			}
 
             ImGui::End();
