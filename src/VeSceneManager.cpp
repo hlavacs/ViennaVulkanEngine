@@ -12,8 +12,8 @@ namespace vve {
 			{this,  2000, "INIT", [this](Message message){ return OnInit(message);} },
 			{this, std::numeric_limits<int>::max(), "UPDATE", [this](Message message){ return OnUpdate(message);} },
 			{this, std::numeric_limits<int>::max(), "FILE_LOAD_OBJECT", [this](Message message){ return OnLoadObject(message);} },
-			{this,      0, "SDL_KEY_DOWN", [this](Message message){ return OnKeyDown(message);} },
-			{this,      0, "SDL_KEY_REPEAT", [this](Message message){ return OnKeyRepeat(message);} }		
+			{this, std::numeric_limits<int>::max(), "SDL_KEY_DOWN", [this](Message message){ return OnKeyDown(message);} },
+			{this, std::numeric_limits<int>::max(), "SDL_KEY_REPEAT", [this](Message message){ return OnKeyRepeat(message);} }		
 		} );
 	}
 

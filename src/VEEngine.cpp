@@ -51,8 +51,9 @@ namespace vve {
 		for( auto& [phase, callback] : m_messageMap[message.GetType()] ) {
 			message.SetPhase(phase);
 			void* receiver = message.GetReceiver();
-			if( receiver == nullptr || receiver == callback.m_system ) [[likely]]
-				if( callback.m_callback(message) ) { break; }
+			if( receiver == nullptr || receiver == callback.m_system ) [[likely]] {
+				if( callback.m_callback(message) ) { return; }
+			}
 		}
 	}
 
