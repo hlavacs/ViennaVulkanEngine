@@ -52,7 +52,8 @@ namespace vve {
     private:
 		bool OnInit(Message message);
 		bool OnUpdate(Message message);
-		bool OnLoadObject(Message message);
+		bool OnObjectLoad(Message message);
+		bool OnObjectSetParent(Message message);
 		bool OnKeyDown(Message message);
 		bool OnKeyRepeat(Message message);
 

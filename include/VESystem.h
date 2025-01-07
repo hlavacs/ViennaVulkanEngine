@@ -48,8 +48,10 @@ namespace vve {
         "SDL_KEY_REPEAT", //
         "QUIT", //
 		//---------------------
+		"OBJECT_LOAD",	
 		"OBJECT_CREATE",
-		"LOAD_OBJECT",	
+		"OBJECT_DESTROY",
+		"OBJECT_SET_PARENT",	
 		"TEXTURE_CREATE",  
 		"TEXTURE_DESTROY", 
 		"GEOMETRY_CREATE",	
@@ -68,6 +70,7 @@ namespace vve {
 	    };
 
 	    struct MsgBase {
+			MsgBase(std::string type, System* s, System* r=nullptr, double dt=0);
 	        size_t m_type;
 	        System* m_sender{nullptr};
 	        System* m_receiver{nullptr};
@@ -98,8 +101,10 @@ namespace vve {
 	    struct MsgSDL : public MsgBase { MsgSDL(System* s, System* r, double dt, SDL_Event event ); double m_dt; SDL_Event m_event; };
 		struct MsgQuit : public MsgBase { MsgQuit(System* s, System* r=nullptr); };
 
-	    struct MsgLoadObject : public MsgBase { 
-			MsgLoadObject(System* s, System* r, vecs::Handle object, vecs::Handle parent, 
+		//------------------------------------------------------------------------------------------------
+
+	    struct MsgObjectLoad : public MsgBase { 
+			MsgObjectLoad(System* s, System* r, vecs::Handle object, vecs::Handle parent, 
 				std::string txtName, std::string objName); 
 			vecs::Handle m_object{}; 
 			vecs::Handle m_parent{}; 
@@ -107,7 +112,11 @@ namespace vve {
 			std::string m_objName; 
 		};
 
+		struct MsgObjectSetParent : public MsgBase { MsgObjectSetParent(System* s, System* r, vecs::Handle object, vecs::Handle Parent); vecs::Handle m_object; vecs::Handle m_parent;};
 		struct MsgObjectCreate : public MsgBase { MsgObjectCreate(System* s, System* r, vecs::Handle handle); vecs::Handle m_handle; };
+		struct MsgObjectDestroy : public MsgBase { MsgObjectDestroy(System* s, System* r, vecs::Handle handle); vecs::Handle m_handle; };
+
+		//------------------------------------------------------------------------------------------------
 
 		struct MsgTextureCreate : public MsgBase { MsgTextureCreate(System* s, System* r, void *pixels, vecs::Handle handle); void* m_pixels; vecs::Handle m_handle; };
 	    struct MsgTextureDestroy : public MsgBase { MsgTextureDestroy(System* s, System* r, vecs::Handle handle); vecs::Handle m_handle; };

@@ -11,7 +11,8 @@ namespace vve {
 		engine.RegisterCallback( { 
 			{this,  2000, "INIT", [this](Message message){ return OnInit(message);} },
 			{this, std::numeric_limits<int>::max(), "UPDATE", [this](Message message){ return OnUpdate(message);} },
-			{this, std::numeric_limits<int>::max(), "LOAD_OBJECT", [this](Message message){ return OnLoadObject(message);} },
+			{this, std::numeric_limits<int>::max(), "OBJECT_LOAD", [this](Message message){ return OnObjectLoad(message);} },
+			{this, std::numeric_limits<int>::max(), "OBJECT_SET_PARENT", [this](Message message){ return OnObjectSetParent(message);} },
 			{this, std::numeric_limits<int>::max(), "SDL_KEY_DOWN", [this](Message message){ return OnKeyDown(message);} },
 			{this, std::numeric_limits<int>::max(), "SDL_KEY_REPEAT", [this](Message message){ return OnKeyRepeat(message);} }		
 		} );
@@ -86,8 +87,8 @@ namespace vve {
 		return false;
 	}
 
-    bool SceneManager::OnLoadObject(Message message) {
-		auto msg = message.template GetData<MsgLoadObject>();
+    bool SceneManager::OnObjectLoad(Message message) {
+		auto msg = message.template GetData<MsgObjectLoad>();
 		auto nHandle = msg.m_object;
 		auto pHandle = msg.m_parent;
 		auto tHandle = LoadTexture(Name{msg.m_txtName});
@@ -121,6 +122,19 @@ namespace vve {
 		m_registry.Get<Children&>(pHandle)().push_back(nHandle);
 
 		m_engine.SendMessage( MsgObjectCreate{this, nullptr, nHandle} );
+		return false;
+	}
+
+    bool SceneManager::OnObjectSetParent(Message message) {
+		auto msg = message.template GetData<MsgObjectSetParent>();
+		auto oHandle = msg.m_object;
+		auto pHandle = msg.m_parent;
+		auto& parent = m_registry.template Get<ParentHandle&>(msg.m_object);
+		auto& childrenOld = m_registry.template Get<Children&>(parent());
+		auto& childrenNew = m_registry.template Get<Children&>(msg.m_parent);
+		childrenOld().erase(std::remove(childrenOld().begin(), childrenOld().end(), oHandle), childrenOld().end());
+		childrenNew().push_back(oHandle);
+		parent = pHandle;
 		return false;
 	}
 
