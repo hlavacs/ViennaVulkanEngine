@@ -12,12 +12,17 @@ namespace vve {
 		real_t m_fov = 45.0f;
 		auto Matrix() -> mat4_t { mat4_t proj = glm::perspective(glm::radians(m_fov), m_aspect, m_near, m_far); proj[1][1] *= -1; return proj; }
 	};
+	
 
 	using ParentHandle = vsty::strong_type_t<vecs::Handle, vsty::counter<>>;
 	using Children = vsty::strong_type_t<std::vector<vecs::Handle>, vsty::counter<>>;
-	using Position = vsty::strong_type_t<vec3_t, vsty::counter<>>;
-	using Rotation = vsty::strong_type_t<mat3_t, vsty::counter<>>;
-	using Scale = vsty::strong_type_t<vec3_t, vsty::counter<>>;
+
+	struct PositionDefaultValue { static constexpr auto value = vec3_t{0.0f, 0.0f, 0.0f}; };
+	using Position = vsty::strong_type_t<vec3_t, vsty::counter<>, PositionDefaultValue >;
+	struct RotationDefaultValue { static constexpr auto value = mat3_t{1.0f}; };
+	using Rotation = vsty::strong_type_t<mat3_t, vsty::counter<>, RotationDefaultValue>;
+	struct ScaleDefaultValue { static constexpr auto value = vec3_t{1.0f, 1.0f, 1.0f}; };
+	using Scale = vsty::strong_type_t<vec3_t, vsty::counter<>, ScaleDefaultValue>;
 	using LocalToParentMatrix = vsty::strong_type_t<mat4_t, vsty::counter<>>;
 	using LocalToWorldMatrix = vsty::strong_type_t<mat4_t, vsty::counter<>>;
 	using ViewMatrix = vsty::strong_type_t<mat4_t, vsty::counter<>>;
