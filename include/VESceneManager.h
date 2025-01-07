@@ -23,6 +23,7 @@ namespace vve {
 	using Rotation = vsty::strong_type_t<mat3_t, vsty::counter<>, RotationDefaultValue>;
 	struct ScaleDefaultValue { static constexpr auto value = vec3_t{1.0f, 1.0f, 1.0f}; };
 	using Scale = vsty::strong_type_t<vec3_t, vsty::counter<>, ScaleDefaultValue>;
+	
 	using LocalToParentMatrix = vsty::strong_type_t<mat4_t, vsty::counter<>>;
 	using LocalToWorldMatrix = vsty::strong_type_t<mat4_t, vsty::counter<>>;
 	using ViewMatrix = vsty::strong_type_t<mat4_t, vsty::counter<>>;
