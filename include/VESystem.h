@@ -12,8 +12,16 @@
 
 
 namespace vve {
+
 	using Name = vsty::strong_type_t<std::string, vsty::counter<>>;
-}
+	using ObjectHandle = vsty::strong_type_t<vecs::Handle, vsty::counter<>>;
+	using ParentHandle = vsty::strong_type_t<vecs::Handle, vsty::counter<>>;}
+	using TextureHandle = vsty::strong_type_t<vecs::Handle, vsty::counter<>>; //need this to use Texture as a unique comonent
+	using GeometryHandle = vsty::strong_type_t<vecs::Handle, vsty::counter<>>; //need this to use Geometry as a unique component
+	using CameraHandle = vsty::strong_type_t<vecs::Handle, vsty::counter<>>; //need this to use Camera as a unique component
+	using Children = vsty::strong_type_t<std::vector<vecs::Handle>, vsty::counter<>>;
+	using TextureName = vsty::strong_type_t<std::string, vsty::counter<>>;
+	using GeometryName = vsty::strong_type_t<std::string, vsty::counter<>>;
 
 
 namespace std {
@@ -104,15 +112,14 @@ namespace vve {
 		//------------------------------------------------------------------------------------------------
 
 	    struct MsgObjectLoad : public MsgBase { 
-			MsgObjectLoad(System* s, System* r, vecs::Handle object, vecs::Handle parent, 
-				std::string txtName, std::string objName); 
+			MsgObjectLoad(System* s, System* r, vecs::Handle object, vecs::Handle parent, std::string txtName, std::string objName); 
 			vecs::Handle m_object{}; 
 			vecs::Handle m_parent{}; 
 			std::string m_txtName; 
 			std::string m_objName; 
 		};
 
-		struct MsgObjectSetParent : public MsgBase { MsgObjectSetParent(System* s, System* r, vecs::Handle object, vecs::Handle Parent); vecs::Handle m_object; vecs::Handle m_parent;};
+		struct MsgObjectSetParent : public MsgBase { MsgObjectSetParent(System* s, System* r, ObjectHandle object, ParentHandle Parent); ObjectHandle m_object; ParentHandle m_parent;};
 		struct MsgObjectCreate : public MsgBase { MsgObjectCreate(System* s, System* r, vecs::Handle handle); vecs::Handle m_handle; };
 		struct MsgObjectDestroy : public MsgBase { MsgObjectDestroy(System* s, System* r, vecs::Handle handle); vecs::Handle m_handle; };
 

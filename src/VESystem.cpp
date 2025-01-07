@@ -38,7 +38,7 @@ namespace vve {
 	System::MsgObjectLoad::MsgObjectLoad(System* s, System* r, vecs::Handle object, vecs::Handle parent, std::string txtName, std::string objName) : 
 		MsgBase{"OBJECT_LOAD", s, r}, m_object{object}, m_parent{parent}, m_txtName{txtName}, m_objName{objName} {};
 	
-	System::MsgObjectSetParent::MsgObjectSetParent(System* s, System* r, vecs::Handle object, vecs::Handle parent) : MsgBase("OBJECT_SET_PARENT", s, r), m_object{object}, m_parent{parent} {};
+	System::MsgObjectSetParent::MsgObjectSetParent(System* s, System* r, ObjectHandle object, ParentHandle parent) : MsgBase("OBJECT_SET_PARENT", s, r), m_object{object}, m_parent{parent} {};
 	System::MsgObjectCreate::MsgObjectCreate(System* s, System* r, vecs::Handle handle) : MsgBase{"OBJECT_CREATE", s, r}, m_handle{handle} {};
 	System::MsgObjectDestroy::MsgObjectDestroy(System* s, System* r, vecs::Handle handle) : MsgBase("OBJECT_DESTROY", s, r), m_handle{handle} {};
 
