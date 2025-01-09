@@ -7,3 +7,6 @@
 [submodule "extern/tinygltf"]
 	path = extern/tinygltf
 	url = https://github.com/syoyo/tinygltf.git
+[submodule "extern/assimp"]
+	path = extern/assimp
+	url = https://github.com/assimp/assimp.git
