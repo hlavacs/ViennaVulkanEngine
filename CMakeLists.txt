@@ -34,9 +34,11 @@ set(VULKAN $ENV{VULKAN_SDK})
 
 
 # set variables for directories
+set(BUILD ${PROJECT_SOURCE_DIR}/build)  # engine include directory
 set(INCLUDE ${PROJECT_SOURCE_DIR}/include)  # engine include directory
 set(EXTERN ${PROJECT_SOURCE_DIR}/extern)    # external libraries
 set(IMGUI ${EXTERN}/imgui)    # external libraries
+set(ASSIMP ${EXTERN}/assimp)    # external libraries
 set(TINYGLTF ${EXTERN}/tinygltf)    # external libraries 
 set(VECS ${EXTERN}/ViennaEntityComponentSystem)    # external libraries 
 set(VTLL ${EXTERN}/ViennaEntityComponentSystem/extern/ViennaTypeListLibrary)    # external libraries 

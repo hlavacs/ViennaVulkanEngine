@@ -16,6 +16,7 @@ set(SOURCE
   VERendererImgui.cpp
   VERendererVulkan.cpp
   VESceneManager.cpp
+  VEAssetManager.cpp
   VESystem.cpp
   VEWindow.cpp
   VEWindowSDL.cpp
@@ -36,6 +37,7 @@ set(HEADERS
   ${INCLUDE}/VERendererImgui.h
   ${INCLUDE}/VERendererVulkan.h
   ${INCLUDE}/VESceneManager.h
+  ${INCLUDE}/VEAssetManager.h
   ${INCLUDE}/VESystem.h
   ${INCLUDE}/VEWindow.h
   ${INCLUDE}/VEWindowSDL.h
@@ -59,10 +61,12 @@ target_include_directories(${TARGET} PUBLIC $ENV{VULKAN_SDK}/Include/glm)
 target_include_directories(${TARGET} PUBLIC $ENV{VULKAN_SDK}/Include/vma)
 target_include_directories(${TARGET} PUBLIC ${INCLUDE})
 target_include_directories(${TARGET} PUBLIC ${EXTERN})
+target_include_directories(${TARGET} PUBLIC ${ASSIMP}/include)
+target_include_directories(${TARGET} PUBLIC ${BUILD}/extern/assimp/include)
 target_include_directories(${TARGET} PUBLIC ${IMGUI})
 target_include_directories(${TARGET} PUBLIC ${IMGUI}/backends)
 target_include_directories(${TARGET} PUBLIC ${GLM}/glm)
-target_include_directories(${TARGET} PUBLIC ${TINYGLTF})
+#target_include_directories(${TARGET} PUBLIC ${TINYGLTF})
 target_include_directories(${TARGET} PUBLIC ${VECS}/include)
 target_include_directories(${TARGET} PUBLIC ${VTLL}/include)
 target_include_directories(${TARGET} PUBLIC ${VSTY}/include)

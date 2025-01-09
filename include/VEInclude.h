@@ -29,6 +29,7 @@ namespace vve {
 	class RendererForward;
 	class RendererVulkan;
    	class SceneManager;
+   	class AssetManager;
 }
 
 #include "VECS.h"
