@@ -8,16 +8,16 @@ project (
 
 if (MSVC)
     add_compile_options(/D IMGUI_IMPL_VULKAN_NO_PROTOTYPES)
+	add_compile_options(/D_CRT_SECURE_NO_WARNINGS) #for assimp
 else()
     add_compile_options(-D IMGUI_IMPL_VULKAN_NO_PROTOTYPES)
 	add_compile_options(-Wno-nullability-completeness)
+	add_compile_options(-D_CRT_SECURE_NO_WARNINGS) #for assimp
 endif()
 
 # enforce C++20 standard
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
-
-#list(APPEND CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake ) #cmake scripts for finding packages
 
 # Doxygen
 find_package(Doxygen)
@@ -35,7 +35,6 @@ set(VULKAN $ENV{VULKAN_SDK})
 
 # set variables for directories
 set(INCLUDE ${PROJECT_SOURCE_DIR}/include)  # engine include directory
-
 set(EXTERN ${PROJECT_SOURCE_DIR}/extern)    # external libraries
 set(IMGUI ${EXTERN}/imgui)    # external libraries
 set(TINYGLTF ${EXTERN}/tinygltf)    # external libraries 

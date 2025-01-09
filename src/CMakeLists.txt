@@ -50,7 +50,7 @@ set(HEADERS
   
 )
 
-add_library (${TARGET} ${SOURCE} ${HEADERS})
+add_library (${TARGET} STATIC ${SOURCE} ${HEADERS})
 
 target_include_directories(${TARGET} PUBLIC $ENV{VULKAN_SDK}/Include)
 target_include_directories(${TARGET} PUBLIC $ENV{VULKAN_SDK}/Include/SDL2)
