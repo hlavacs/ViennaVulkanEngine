@@ -122,7 +122,7 @@ namespace vh {
 
 
     void createDescriptorSetLayout(VkDevice device, std::vector<VkDescriptorSetLayoutBinding>&& bindings, VkDescriptorSetLayout& descriptorSetLayouts) {
-		size_t i = 0;
+		uint32_t i = 0;
 		for( auto& uboLayoutBinding : bindings ) {
 	        uboLayoutBinding.binding = i++;
 	        uboLayoutBinding.descriptorCount = 1;
@@ -248,7 +248,7 @@ namespace vh {
 
         VkPipelineLayoutCreateInfo pipelineLayoutInfo{};
         pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
-        pipelineLayoutInfo.setLayoutCount = descriptorSetLayouts.size();
+        pipelineLayoutInfo.setLayoutCount = (uint32_t)descriptorSetLayouts.size();
         pipelineLayoutInfo.pSetLayouts = descriptorSetLayouts.data();
 
         if (vkCreatePipelineLayout(device, &pipelineLayoutInfo, nullptr, &graphicsPipeline.m_pipelineLayout) != VK_SUCCESS) {
@@ -340,7 +340,7 @@ namespace vh {
         VkDescriptorSetAllocateInfo allocInfo{};
         allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
         allocInfo.descriptorPool = descriptorPool;
-        allocInfo.descriptorSetCount = layouts.size();
+        allocInfo.descriptorSetCount = (uint32_t)layouts.size();
         allocInfo.pSetLayouts = layouts.data();
         if (vkAllocateDescriptorSets(device, &allocInfo, descriptorSet.m_descriptorSetPerFrameInFlight.data()) != VK_SUCCESS) {
             throw std::runtime_error("failed to allocate descriptor sets!");
@@ -361,7 +361,7 @@ namespace vh {
 
 	        descriptorWrites.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
 	        descriptorWrites.dstSet = ds;
-	        descriptorWrites.dstBinding = binding;
+	        descriptorWrites.dstBinding = (uint32_t)binding;
 	        descriptorWrites.dstArrayElement = 0;
 	        descriptorWrites.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
 	        descriptorWrites.descriptorCount = 1;
