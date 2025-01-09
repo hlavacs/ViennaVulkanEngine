@@ -42,5 +42,6 @@ namespace vve {
 #include "VERendererForward.h"
 #include "VERendererVulkan.h"
 #include "VESceneManager.h"
+#include "VEAssetManager.h"
 
 
