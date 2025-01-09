@@ -93,13 +93,13 @@ namespace vve {
 
     bool SceneManager::OnObjectLoad(Message message) {
 		auto msg = message.template GetData<MsgObjectLoad>();
-		auto nHandle = msg.m_object;
-		auto pHandle = msg.m_parent;
-		auto tHandle = LoadTexture(Name{msg.m_txtName});
-		auto oHandle = LoadOBJ(Name{msg.m_objName});
+		ObjectHandle nHandle = msg.m_object;
+		ParentHandle pHandle = msg.m_parent;
+		TextureHandle tHandle = LoadTexture(msg.m_txtName);
+		GeometryHandle oHandle = LoadOBJ(msg.m_objName);
 
-		if( !pHandle.IsValid() ) pHandle = m_rootHandle;
-		if( !nHandle.IsValid()) {
+		if( !pHandle().IsValid() ) pHandle = m_rootHandle;
+		if( !nHandle().IsValid()) {
 			nHandle = m_registry.Insert(
 							Name(msg.m_objName),
 							ParentHandle{pHandle},
@@ -142,8 +142,8 @@ namespace vve {
 		return false;
 	}
 
-	auto SceneManager::LoadTexture(Name fileName) -> vecs::Handle {
-		if( m_handleMap.contains(fileName) ) return m_handleMap[fileName];
+	auto SceneManager::LoadTexture(Name fileName) -> TextureHandle {
+		if( m_handleMap.contains(fileName) ) return TextureHandle{m_handleMap[fileName]};
 
 		int texWidth, texHeight, texChannels;
         stbi_uc* pixels = stbi_load(fileName().c_str(), &texWidth, &texHeight, &texChannels, STBI_rgb_alpha);
@@ -153,17 +153,17 @@ namespace vve {
 		vh::Texture texture{texWidth, texHeight, imageSize, pixels};
 		auto handle = m_registry.Insert(fileName, texture);
 		m_handleMap[fileName] = handle;
-		return handle;
+		return TextureHandle{handle};
 	}
 
-	auto SceneManager::LoadOBJ(Name fileName) -> vecs::Handle {
-		if( m_handleMap.contains(fileName) ) return m_handleMap[fileName];
+	auto SceneManager::LoadOBJ(Name fileName) -> GeometryHandle {
+		if( m_handleMap.contains(fileName) ) return GeometryHandle{m_handleMap[fileName]};
 		
 		vh::Geometry geometry{};
 		vh::loadModel(fileName(), geometry);
 		auto handle = m_registry.Insert(fileName, geometry);
 		m_handleMap[fileName] = handle;
-		return handle;
+		return GeometryHandle{handle};
 	}
 	
 	auto SceneManager::LoadGLTF(Name fileName) -> vecs::Handle {

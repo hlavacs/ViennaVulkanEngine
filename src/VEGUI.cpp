@@ -61,12 +61,10 @@ namespace vve {
 					MsgObjectLoad{
 						this, 
 						nullptr, 
-						m_registry.Insert( Position{ { 0.0f, x, 0.0f } }, 
-						Rotation{}, 
-						Scale{}), 
-						{}, 
-						path_texture, 
-						path_obj} );
+						ObjectHandle( m_registry.Insert( Position{ { 0.0f, x, 0.0f } }, Rotation{}, Scale{}) ), 
+						ParentHandle{}, 
+						Name{path_texture}, 
+						Name{path_obj} });
 				x += 2.0f;
 			}
 

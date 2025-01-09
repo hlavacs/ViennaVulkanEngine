@@ -20,6 +20,7 @@ namespace vve {
 	struct ScaleDefaultValue { static constexpr auto value = vec3_t{1.0f, 1.0f, 1.0f}; };
 	using Scale = vsty::strong_type_t<vec3_t, vsty::counter<>, ScaleDefaultValue>;
 	
+	using Children = vsty::strong_type_t<std::vector<vecs::Handle>, vsty::counter<>>;
 	using LocalToParentMatrix = vsty::strong_type_t<mat4_t, vsty::counter<>>;
 	using LocalToWorldMatrix = vsty::strong_type_t<mat4_t, vsty::counter<>>;
 	using ViewMatrix = vsty::strong_type_t<mat4_t, vsty::counter<>>;
@@ -37,8 +38,8 @@ namespace vve {
     public:
         SceneManager(std::string systemName, Engine& engine );
         virtual ~SceneManager();
-		auto LoadTexture(Name filenName)-> vecs::Handle;
-		auto LoadOBJ(Name filenName) -> vecs::Handle;
+		auto LoadTexture(Name filenName)-> TextureHandle;
+		auto LoadOBJ(Name filenName) -> GeometryHandle;
 		auto LoadGLTF(Name filenName) -> vecs::Handle;
 		auto GetAsset(Name filenName) -> vecs::Handle;
 

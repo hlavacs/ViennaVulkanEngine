@@ -7,8 +7,8 @@ namespace vve {
     public:
         AssetManager(std::string systemName, Engine& engine );
         virtual ~AssetManager();
-		auto LoadTexture(Name filenName)-> vecs::Handle;
-		auto LoadOBJ(Name filenName) -> vecs::Handle;
+		auto LoadTexture(Name filenName)-> TextureHandle;
+		auto LoadOBJ(Name filenName) -> GeometryHandle;
 		auto LoadGLTF(Name filenName) -> vecs::Handle;
 		auto GetAsset(Name filenName) -> vecs::Handle;
 
