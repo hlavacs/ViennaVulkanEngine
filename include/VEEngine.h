@@ -22,10 +22,10 @@ namespace vve {
 	public:
 
 		struct MessageCallback {
-			System* 				 	 m_system;
-			int 						 m_phase;	
-			std::string			 	 	 m_messageName;
-			std::function<bool(Message)> m_callback;
+			System* 				 	  m_system;
+			int 						  m_phase;	
+			std::string			 	 	  m_messageName;
+			std::function<bool(Message&)> m_callback;
 		};
 
 		Engine(std::string name);

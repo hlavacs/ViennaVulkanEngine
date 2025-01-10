@@ -9,10 +9,10 @@ namespace vve {
         : Renderer(systemName, engine, windowName ) {
 
   		engine.RegisterCallback( { 
-  			{this,  3000, "INIT", [this](Message message){ return OnInit(message);} },
-  			{this,  2000, "RECORD_NEXT_FRAME", [this](Message message){ return OnRecordNextFrame(message);} },
-			{this,     0, "OBJECT_CREATE", [this](Message message){ return OnObjectCreate(message);} },
-  			{this,     0, "QUIT", [this](Message message){ return OnQuit(message);} }
+  			{this,  3000, "INIT", [this](Message& message){ return OnInit(message);} },
+  			{this,  2000, "RECORD_NEXT_FRAME", [this](Message& message){ return OnRecordNextFrame(message);} },
+			{this,     0, "OBJECT_CREATE", [this](Message& message){ return OnObjectCreate(message);} },
+  			{this,     0, "QUIT", [this](Message& message){ return OnQuit(message);} }
   		} );
     };
 

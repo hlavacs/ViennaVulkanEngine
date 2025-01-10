@@ -9,11 +9,11 @@ namespace vve {
         : Renderer(systemName, engine, windowName ) {
 
 		engine.RegisterCallback( { 
-			{this,   4000, "INIT", [this](Message message){ return OnInit(message);} },
-			{this,   1000, "PREPARE_NEXT_FRAME", [this](Message message){ return OnPrepareNextFrame(message);} },
-			{this,   3000, "RECORD_NEXT_FRAME", [this](Message message){ return OnRecordNextFrame(message);} },
-			{this,      0, "SDL", [this](Message message){ return OnSDL(message);} },
-			{this,   1000, "QUIT", [this](Message message){ return OnQuit(message);} }
+			{this,   4000, "INIT", [this](Message& message){ return OnInit(message);} },
+			{this,   1000, "PREPARE_NEXT_FRAME", [this](Message& message){ return OnPrepareNextFrame(message);} },
+			{this,   3000, "RECORD_NEXT_FRAME", [this](Message& message){ return OnRecordNextFrame(message);} },
+			{this,      0, "SDL", [this](Message& message){ return OnSDL(message);} },
+			{this,   1000, "QUIT", [this](Message& message){ return OnQuit(message);} }
 		} );
 
     };

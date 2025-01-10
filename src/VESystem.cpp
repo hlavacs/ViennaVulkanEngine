@@ -54,7 +54,7 @@ namespace vve {
 
 		if( this != &engine ) {
 			engine.RegisterCallback( { 
-				{this, 0, "ANNOUNCE", [this](Message message){ return OnAnnounce(message);} }
+				{this, 0, "ANNOUNCE", [this](Message& message){ return OnAnnounce(message);} }
 			} );
 		}
 	};

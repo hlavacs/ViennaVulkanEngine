@@ -14,11 +14,11 @@ namespace vve {
     SceneManager::SceneManager(std::string systemName, Engine& engine ) : System{systemName, engine } {
 		engine.RegisterCallback( { 
 			{this,  2000, "INIT", [this](Message message){ return OnInit(message);} },
-			{this, std::numeric_limits<int>::max(), "UPDATE", [this](Message message){ return OnUpdate(message);} },
-			{this, std::numeric_limits<int>::max(), "OBJECT_LOAD", [this](Message message){ return OnObjectLoad(message);} },
-			{this, std::numeric_limits<int>::max(), "OBJECT_SET_PARENT", [this](Message message){ return OnObjectSetParent(message);} },
-			{this, std::numeric_limits<int>::max(), "SDL_KEY_DOWN", [this](Message message){ return OnKeyDown(message);} },
-			{this, std::numeric_limits<int>::max(), "SDL_KEY_REPEAT", [this](Message message){ return OnKeyRepeat(message);} }		
+			{this, std::numeric_limits<int>::max(), "UPDATE", [this](Message& message){ return OnUpdate(message);} },
+			{this, std::numeric_limits<int>::max(), "OBJECT_LOAD", [this](Message& message){ return OnObjectLoad(message);} },
+			{this, std::numeric_limits<int>::max(), "OBJECT_SET_PARENT", [this](Message& message){ return OnObjectSetParent(message);} },
+			{this, std::numeric_limits<int>::max(), "SDL_KEY_DOWN", [this](Message& message){ return OnKeyDown(message);} },
+			{this, std::numeric_limits<int>::max(), "SDL_KEY_REPEAT", [this](Message& message){ return OnKeyRepeat(message);} }		
 		} );
 	}
 

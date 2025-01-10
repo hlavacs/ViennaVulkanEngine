@@ -7,8 +7,8 @@ namespace vve {
 	GUI::GUI(std::string systemName, Engine& engine, std::string windowName ) : 
 		System(systemName, engine), m_windowName(windowName) {
 		m_engine.RegisterCallback( { 
- 		  {this,    0, "ANNOUNCE", [this](Message message){ return OnAnnounce(message);} }, 
-		  {this, 1000, "RECORD_NEXT_FRAME", [this](Message message){ return OnRecordNextFrame(message);} }
+ 		  {this,    0, "ANNOUNCE", [this](Message& message){ return OnAnnounce(message);} }, 
+		  {this, 1000, "RECORD_NEXT_FRAME", [this](Message& message){ return OnRecordNextFrame(message);} }
 		} );
 	};
 

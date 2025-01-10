@@ -12,18 +12,18 @@ namespace vve {
         : Renderer(systemName, engine, windowName) {
 
         engine.RegisterCallback( { 
-			{this,      0, "EXTENSIONS", [this](Message message){ return OnExtensions(message);} },
-			{this,   1000, "INIT", [this](Message message){ return OnInit(message);} }, 
-			{this,      0, "PREPARE_NEXT_FRAME", [this](Message message){ return OnPrepareNextFrame(message);} },
-			{this,      0, "RECORD_NEXT_FRAME", [this](Message message){ return OnRecordNextFrame(message);} },
-			{this,      0, "RENDER_NEXT_FRAME", [this](Message message){ return OnRenderNextFrame(message);} },
+			{this,      0, "EXTENSIONS", [this](Message& message){ return OnExtensions(message);} },
+			{this,   1000, "INIT", [this](Message& message){ return OnInit(message);} }, 
+			{this,      0, "PREPARE_NEXT_FRAME", [this](Message& message){ return OnPrepareNextFrame(message);} },
+			{this,      0, "RECORD_NEXT_FRAME", [this](Message& message){ return OnRecordNextFrame(message);} },
+			{this,      0, "RENDER_NEXT_FRAME", [this](Message& message){ return OnRenderNextFrame(message);} },
 
-			{this,      0, "TEXTURE_CREATE",   [this](Message message){ return OnTextureCreate(message);} },
-			{this,      0, "TEXTURE_DESTROY",  [this](Message message){ return OnTextureDestroy(message);} },
-			{this,      0, "GEOMETRY_CREATE",  [this](Message message){ return OnGeometryCreate(message);} },
-			{this,      0, "GEOMETRY_DESTROY", [this](Message message){ return OnGeometryDestroy(message);} },
+			{this,      0, "TEXTURE_CREATE",   [this](Message& message){ return OnTextureCreate(message);} },
+			{this,      0, "TEXTURE_DESTROY",  [this](Message& message){ return OnTextureDestroy(message);} },
+			{this,      0, "GEOMETRY_CREATE",  [this](Message& message){ return OnGeometryCreate(message);} },
+			{this,      0, "GEOMETRY_DESTROY", [this](Message& message){ return OnGeometryDestroy(message);} },
 
-			{this,   2000, "QUIT", [this](Message message){ return OnQuit(message);} },
+			{this,   2000, "QUIT", [this](Message& message){ return OnQuit(message);} },
 		} );
     }
 
