@@ -70,9 +70,6 @@ namespace vh {
         destroyBuffer(device, vmaAllocator, stagingBuffer, stagingBufferAllocation);
     }
 
-
-
-
     void createTextureImageView(VkDevice device, Texture& texture) {
         texture.m_textureImageView = createImageView(device, texture.m_textureImage, VK_FORMAT_R8G8B8A8_SRGB
                                         , VK_IMAGE_ASPECT_COLOR_BIT);
@@ -122,7 +119,6 @@ namespace vh {
         return imageView;
     }
 
-
     void createImage(VkPhysicalDevice physicalDevice, VkDevice device, VmaAllocator vmaAllocator, uint32_t width, uint32_t height
         , VkFormat format, VkImageTiling tiling, VkImageUsageFlags usage, VkMemoryPropertyFlags properties
         , VkImage& image, VmaAllocation& imageAllocation) {
@@ -152,7 +148,6 @@ namespace vh {
     void destroyImage(VkDevice device, VmaAllocator vmaAllocator, VkImage image, VmaAllocation& imageAllocation) {
         vmaDestroyImage(vmaAllocator, image, imageAllocation);
     }
-
 
     void transitionImageLayout(VkDevice device, VkQueue graphicsQueue, VkCommandPool commandPool
         , VkImage image, VkFormat format, VkImageLayout oldLayout, VkImageLayout newLayout) {
