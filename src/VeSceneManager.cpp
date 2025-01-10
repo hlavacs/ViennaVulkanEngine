@@ -96,12 +96,12 @@ namespace vve {
 		ObjectHandle nHandle = msg.m_object;
 		ParentHandle pHandle = msg.m_parent;
 		TextureHandle tHandle = LoadTexture(msg.m_txtName);
-		GeometryHandle oHandle = LoadOBJ(msg.m_objName);
+		GeometryHandle oHandle = LoadOBJ(msg.m_geomName);
 
 		if( !pHandle().IsValid() ) pHandle = m_rootHandle;
 		if( !nHandle().IsValid()) {
 			nHandle = m_registry.Insert(
-							Name(msg.m_objName),
+							Name(msg.m_geomName),
 							ParentHandle{pHandle},
 							Children{},
 							Position{}, 
@@ -113,7 +113,7 @@ namespace vve {
 							TextureHandle{tHandle} );
 		} else {
 			m_registry.Put(	nHandle, 
-							Name(msg.m_objName),
+							Name(msg.m_geomName),
 							ParentHandle{pHandle},
 							Children{},
 							LocalToParentMatrix{mat4_t{1.0f}}, 

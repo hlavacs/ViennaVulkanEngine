@@ -117,11 +117,11 @@ namespace vve {
 		};
 
 	    struct MsgObjectLoad : public MsgBase { 
-			MsgObjectLoad(System* s, System* r, ObjectHandle object, ParentHandle parent, Name txtName, Name objName); 
+			MsgObjectLoad(System* s, System* r, ObjectHandle object, ParentHandle parent, Name txtName, Name geomName); 
 			ObjectHandle m_object{}; 
 			ParentHandle m_parent{}; 
 			Name m_txtName; 
-			Name m_objName; 
+			Name m_geomName; 
 		};
 
 		struct MsgObjectSetParent : public MsgBase { MsgObjectSetParent(System* s, System* r, ObjectHandle object, ParentHandle Parent); ObjectHandle m_object; ParentHandle m_parent;};

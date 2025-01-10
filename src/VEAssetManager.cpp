@@ -35,7 +35,7 @@ namespace vve {
 		auto msg = message.template GetData<MsgObjectLoad>();
 		ObjectHandle nHandle = msg.m_object;
 		TextureHandle tHandle = LoadTexture(msg.m_txtName);
-		GeometryHandle oHandle = LoadOBJ(msg.m_objName);
+		GeometryHandle oHandle = LoadOBJ(msg.m_geomName);
 		return false;
 	}
 
