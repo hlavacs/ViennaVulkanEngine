@@ -28,7 +28,7 @@ namespace vve {
             ImGui::Begin("Load Object");                          // Create a window called "Hello, world!" and append into it.
 
 			static char* file_dialog_buffer = nullptr;
-			static char path_obj[500] = "assets\\models\\viking_room.obj";
+			static char path_obj[500] = "assets\\viking_room\\viking_room.obj";
 			ImGui::TextUnformatted("OBJ File: ");
 			ImGui::SameLine();
 			ImGui::InputText("##path1", path_obj, sizeof(path_obj));
@@ -39,7 +39,7 @@ namespace vve {
 			  FileDialog::file_dialog_open_type = FileDialog::FileDialogType::OpenFile;
 			}
 
-			static char path_texture[500] = "assets\\textures\\viking_room.png";
+			static char path_texture[500] = "assets\\viking_room\\viking_room.png";
 			ImGui::TextUnformatted("Txt File: ");
 			ImGui::SameLine();
 			ImGui::InputText("##path2", path_texture, sizeof(path_texture));
