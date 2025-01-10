@@ -31,7 +31,6 @@ namespace vve {
 	}
 
     bool AssetManager::OnObjectLoad(Message message) {
-		return false;
 		auto msg = message.template GetData<MsgObjectLoad>();
 		ObjectHandle nHandle = msg.m_object;
 		TextureHandle tHandle = LoadTexture(msg.m_txtName);

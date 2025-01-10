@@ -100,6 +100,22 @@ namespace vve {
 		auto msg = message.template GetData<MsgObjectLoad>();
 		ObjectHandle nHandle = msg.m_object;
 		ParentHandle pHandle = msg.m_parent;
+		if( !pHandle().IsValid() ) pHandle = m_rootHandle;
+		m_registry.Put(	nHandle, 
+					Name(msg.m_geomName),
+					ParentHandle{pHandle},
+					Children{},
+					LocalToParentMatrix{mat4_t{1.0f}}, 
+					LocalToWorldMatrix{mat4_t{1.0f}});
+
+		m_registry.Get<Children&>(pHandle)().push_back(nHandle);
+		return false;
+	}
+
+	/*bool SceneManager::OnObjectLoad(Message message) {
+		auto msg = message.template GetData<MsgObjectLoad>();
+		ObjectHandle nHandle = msg.m_object;
+		ParentHandle pHandle = msg.m_parent;
 		TextureHandle tHandle = LoadTexture(msg.m_txtName);
 		GeometryHandle oHandle = LoadOBJ(msg.m_geomName);
 
@@ -132,7 +148,8 @@ namespace vve {
 
 		//m_engine.SendMessage( MsgObjectCreate{this, nullptr, nHandle} );
 		return false;
-	}
+	}*/
+
 
     bool SceneManager::OnObjectSetParent(Message message) {
 		auto msg = message.template GetData<MsgObjectSetParent>();

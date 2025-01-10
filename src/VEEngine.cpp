@@ -75,6 +75,7 @@ namespace vve {
 	
 	void Engine::CreateSystems( ){
 		RegisterSystem(std::make_unique<SceneManager>(m_sceneManagerName, *this));
+		RegisterSystem(std::make_unique<AssetManager>(m_assetManagerName, *this));
 	};
 
 	void Engine::CreateGUI() {
