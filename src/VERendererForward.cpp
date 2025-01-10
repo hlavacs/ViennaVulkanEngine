@@ -11,7 +11,7 @@ namespace vve {
   		engine.RegisterCallback( { 
   			{this,  3000, "INIT", [this](Message& message){ return OnInit(message);} },
   			{this,  2000, "RECORD_NEXT_FRAME", [this](Message& message){ return OnRecordNextFrame(message);} },
-			{this,     0, "OBJECT_CREATE", [this](Message& message){ return OnObjectCreate(message);} },
+			{this,  2000, "OBJECT_LOAD", [this](Message& message){ return OnObjectLoad(message);} },
   			{this,     0, "QUIT", [this](Message& message){ return OnQuit(message);} }
   		} );
     };
@@ -72,8 +72,8 @@ namespace vve {
     }
 
 	
-	bool RendererForward::OnObjectCreate( Message message ) {
-		auto handle = message.template GetData<MsgObjectCreate>().m_handle;
+	bool RendererForward::OnObjectLoad( Message message ) {
+		auto handle = message.template GetData<MsgObjectLoad>().m_object;
 		auto [gHandle, tHandle] = m_registry.template Get<GeometryHandle, TextureHandle>(handle);
 
 		decltype(auto) geometry = m_registry.template Get<vh::Geometry&>(gHandle);

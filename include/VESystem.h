@@ -55,7 +55,6 @@ namespace vve {
 		//---------------------
 		"SCENE_LOAD",	
 		"OBJECT_LOAD",	
-		"OBJECT_CREATE",
 		"OBJECT_DESTROY",
 		"OBJECT_SET_PARENT",	
 		"TEXTURE_CREATE",  
@@ -125,7 +124,6 @@ namespace vve {
 		};
 
 		struct MsgObjectSetParent : public MsgBase { MsgObjectSetParent(System* s, System* r, ObjectHandle object, ParentHandle Parent); ObjectHandle m_object; ParentHandle m_parent;};
-		struct MsgObjectCreate : public MsgBase { MsgObjectCreate(System* s, System* r, vecs::Handle handle); vecs::Handle m_handle; };
 		struct MsgObjectDestroy : public MsgBase { MsgObjectDestroy(System* s, System* r, vecs::Handle handle); vecs::Handle m_handle; };
 
 		//------------------------------------------------------------------------------------------------
