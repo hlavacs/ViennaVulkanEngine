@@ -156,6 +156,12 @@ namespace vve {
 	            return *reinterpret_cast<T*>(m_data);
 	        };
 
+	        template<typename T>
+	            requires (std::is_base_of_v<MsgBase, T> && sizeof(T) <= MAX_MESSAGE_SIZE)
+	        auto HasType() -> bool {
+	            return m_typeID == std::type_index(typeid(T)).hash_code();
+	        };
+
 	    private:
 	        size_t m_typeID{};
 	        uint8_t m_data[MAX_MESSAGE_SIZE];

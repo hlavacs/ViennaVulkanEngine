@@ -19,7 +19,7 @@ namespace vve {
 			{this,                            1000, "OBJECT_LOAD", [this](Message& message){ return OnObjectLoad(message);} },
 			{this, std::numeric_limits<int>::max(), "OBJECT_SET_PARENT", [this](Message& message){ return OnObjectSetParent(message);} },
 			{this, std::numeric_limits<int>::max(), "SDL_KEY_DOWN", [this](Message& message){ return OnKeyDown(message);} },
-			{this, std::numeric_limits<int>::max(), "SDL_KEY_REPEAT", [this](Message& message){ return OnKeyRepeat(message);} }		
+			{this, std::numeric_limits<int>::max(), "SDL_KEY_REPEAT", [this](Message& message){ return OnKeyDown(message);} }		
 		} );
 	}
 
@@ -126,8 +126,17 @@ namespace vve {
 	}
 
 	bool SceneManager::OnKeyDown(Message message) {
-		auto msg = message.template GetData<MsgKeyDown>();
-		auto key = msg.m_key;
+		int key;
+		real_t dt;
+		if(message.HasType<MsgKeyDown>()) {
+			auto msg = message.template GetData<MsgKeyDown>();
+			key = msg.m_key;
+			dt = (real_t)msg.m_dt;
+		} else {
+			auto msg = message.template GetData<MsgKeyRepeat>();
+			key = msg.m_key;
+			dt = (real_t)msg.m_dt;
+		}
 
 		if( key == SDL_SCANCODE_ESCAPE  ) {
 			m_engine.Stop();
@@ -175,25 +184,25 @@ namespace vve {
 			}
 
 			case SDL_SCANCODE_LEFT : {
-				angle = rotSpeed * (float)msg.m_dt * 1.0f;
+				angle = rotSpeed * (float)dt * 1.0f;
 				axis = glm::vec3(0.0, 0.0, 1.0);
 				break;
 			}
 
 			case SDL_SCANCODE_RIGHT : {
-				angle = rotSpeed * (float)msg.m_dt * -1.0f;
+				angle = rotSpeed * (float)dt * -1.0f;
 				axis = glm::vec3(0.0, 0.0, 1.0);
 				break;
 			}
 
 			case SDL_SCANCODE_UP : {
-				angle = rotSpeed * (float)msg.m_dt * -1.0f;
+				angle = rotSpeed * (float)dt * -1.0f;
 				axis = vec3_t{ LtoPc() * vec4_t{1.0f, 0.0f, 0.0f, 0.0f} };
 				break;
 			}
 
 			case SDL_SCANCODE_DOWN : {
-				angle = rotSpeed * (float)msg.m_dt * 1.0f;
+				angle = rotSpeed * (float)dt * 1.0f;
 				axis = vec3_t{ LtoPc() * vec4_t{1.0f, 0.0f, 0.0f, 0.0f} };
 				break;
 			}
@@ -201,21 +210,13 @@ namespace vve {
 
 		///add the new translation vector to the previous one
 		float speed = 3.0f;
-		pn = pn() + translate * (real_t)msg.m_dt * speed;
+		pn = pn() + translate * (real_t)dt * speed;
 
 		///combination of yaw and pitch, both wrt to parent space
 		rc = mat3_t{ glm::rotate(mat4_t{1.0f}, angle, axis) * mat4_t{ rc } };
 
         //std::cout << "Key down: " << message.template GetData<MsgKeyDown>().m_key << std::endl;
 		return false;
-    }
-
-    bool SceneManager::OnKeyRepeat(Message message) {
-		auto key = message.template GetData<MsgKeyRepeat>().m_key;
-		return OnKeyDown(MsgKeyDown{this, nullptr, message.GetDt(), key});
-
-        //std::cout << "Key repeat: " << message.template GetData<MsgKeyRepeat>().m_key << std::endl;
-		//return false;
     }
 
 

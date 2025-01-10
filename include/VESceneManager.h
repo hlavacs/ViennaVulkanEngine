@@ -46,7 +46,6 @@ namespace vve {
 		bool OnObjectLoad(Message message);
 		bool OnObjectSetParent(Message message);
 		bool OnKeyDown(Message message);
-		bool OnKeyRepeat(Message message);
 		
 		std::shared_mutex m_mutex;
 		vecs::Handle m_cameraHandle;
