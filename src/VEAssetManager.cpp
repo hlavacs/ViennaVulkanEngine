@@ -67,10 +67,6 @@ namespace vve {
 		return GeometryHandle{handle};
 	}
 	
-	auto AssetManager::LoadGLTF(Name fileName) -> vecs::Handle {
-		//m_files[fileName] = handle;
-		return {};
-	}
 
 	auto AssetManager::GetAsset(Name fileName) -> vecs::Handle {
 		if( !m_handleMap.contains(fileName) ) return {};
