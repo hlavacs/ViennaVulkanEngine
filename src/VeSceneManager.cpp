@@ -15,6 +15,7 @@ namespace vve {
 		engine.RegisterCallback( { 
 			{this,  2000, "INIT", [this](Message& message){ return OnInit(message);} },
 			{this, std::numeric_limits<int>::max(), "UPDATE", [this](Message& message){ return OnUpdate(message);} },
+			{this, std::numeric_limits<int>::max(), "SCENE_LOAD", [this](Message& message){ return OnSceneLoad(message);} },
 			{this, std::numeric_limits<int>::max(), "OBJECT_LOAD", [this](Message& message){ return OnObjectLoad(message);} },
 			{this, std::numeric_limits<int>::max(), "OBJECT_SET_PARENT", [this](Message& message){ return OnObjectSetParent(message);} },
 			{this, std::numeric_limits<int>::max(), "SDL_KEY_DOWN", [this](Message& message){ return OnKeyDown(message);} },
@@ -88,6 +89,10 @@ namespace vve {
 		for( auto child : children() ) {
 			update(m_registry, LocalToWorldMatrix{mat4_t{1.0f}}, child, update);
 		}
+		return false;
+	}
+
+	bool SceneManager::OnSceneLoad(Message message) {
 		return false;
 	}
 
