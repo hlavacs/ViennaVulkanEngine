@@ -104,7 +104,7 @@ namespace vve {
 							Name(msg.m_objName),
 							ParentHandle{pHandle},
 							Children{},
-							Position{}}, 
+							Position{}, 
 							Rotation{},
 							Scale{vec3_t{1.0f, 1.0f, 1.0f}}, 
 							LocalToParentMatrix{mat4_t{1.0f}}, 
