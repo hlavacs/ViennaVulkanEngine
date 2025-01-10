@@ -30,7 +30,7 @@ namespace vve {
 		
 		auto GetRenderPass() -> VkRenderPass { return m_renderPass; }
 		auto GetFramebufferResized() -> bool { return m_framebufferResized; }
-		void SubmitCommandBuffer( VkCommandBuffer commandBuffer ) { m_commandBuffersSubmit.push_back(commandBuffer); };
+		void SubmitCommandBuffer( VkCommandBuffer commandBuffer );
 
     private:
 		bool OnExtensions(Message message);

@@ -12,10 +12,10 @@ public:
     MyGUI( vve::Engine& engine ) : vve::System("MyGUI", engine ) {
 
 		m_engine.RegisterCallback( { 
-			  {this, -10000, "RECORD_NEXT_FRAME", [this](Message message){ return OnRecordNextFrame(message);} }
-			, {this,      0, "SDL_KEY_DOWN", [this](Message message){ return OnKeyDown(message);} }
-			, {this,      0, "SDL_KEY_REPEAT", [this](Message message){ return OnKeyRepeat(message);} }
-			, {this,      0, "SDL_KEY_UP", [this](Message message){ return OnKeyUp(message);} }
+			  {this, -10000, "RECORD_NEXT_FRAME", [this](Message& message){ return OnRecordNextFrame(message);} }
+			, {this,      0, "SDL_KEY_DOWN", [this](Message& message){ return OnKeyDown(message);} }
+			, {this,      0, "SDL_KEY_REPEAT", [this](Message& message){ return OnKeyRepeat(message);} }
+			, {this,      0, "SDL_KEY_UP", [this](Message& message){ return OnKeyUp(message);} }
 		} );
     };
     
@@ -31,7 +31,6 @@ public:
         if( m_engine.GetWindow("VVE Window")->GetIsMinimized()) {
 			return false;
 		}
-
 
         // 1. Show the big demo window (Most of the sample code is in ImGui::ShowDemoWindow()! You can browse its code to learn more about Dear ImGui!).
         if (show_demo_window) {
@@ -70,7 +69,7 @@ public:
                 show_another_window = false;
             ImGui::End();
         }
-
+		
         m_engine.GetWindow("VVE Window")->SetClearColor( glm::vec4{ clear_color[0], clear_color[1], clear_color[2], 1.0f} );
 		return false;
     }

@@ -42,7 +42,7 @@ namespace vve {
             m_instanceExtensions.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
         }
 
-    	vh::createInstance( m_validationLayers, m_instanceExtensions, m_instance);
+    	vh::createInstance( m_validationLayers, m_instanceExtensions, m_engine.GetDebug(), m_instance);
 		if (m_engine.GetDebug()) {
 	        vh::setupDebugMessenger(GetInstance(), m_debugMessenger);
 		}
@@ -53,7 +53,7 @@ namespace vve {
 
         vh::pickPhysicalDevice(GetInstance(), m_deviceExtensions, GetSurface(), m_physicalDevice);
         vh::createLogicalDevice(GetSurface(), GetPhysicalDevice(), m_queueFamilies, m_validationLayers, 
-			m_deviceExtensions, m_device, m_graphicsQueue, m_presentQueue);
+			m_deviceExtensions, m_engine.GetDebug(), m_device, m_graphicsQueue, m_presentQueue);
         vh::initVMA(GetInstance(), GetPhysicalDevice(), GetDevice(), m_vmaAllocator);  
         vh::createSwapChain(m_windowSDL->GetSDLWindow(), GetSurface(), GetPhysicalDevice(), GetDevice(), m_swapChain);
         vh::createImageViews(GetDevice(), GetSwapChain());
@@ -114,6 +114,11 @@ namespace vve {
 		SubmitCommandBuffer(m_commandBuffers[GetCurrentFrame()]);
 		return false;
 	}
+
+	void RendererVulkan::SubmitCommandBuffer( VkCommandBuffer commandBuffer ) { 
+		m_commandBuffersSubmit.push_back(commandBuffer); 
+		//std::cout << "SubmitCommandBuffer: " << m_commandBuffersSubmit.size() << std::endl;
+	};
 
     bool RendererVulkan::OnRenderNextFrame(Message message) {
         if(m_window->GetIsMinimized()) return false;

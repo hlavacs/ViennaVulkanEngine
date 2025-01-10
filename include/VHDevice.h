@@ -3,7 +3,8 @@
 
 namespace vh {
 
-    void createInstance(const std::vector<const char*>& validationLayers, const std::vector<const char *>& extensions, VkInstance &instance);
+    void createInstance(const std::vector<const char*>& validationLayers, 
+		const std::vector<const char *>& extensions, bool debug, VkInstance &instance);
 	
 	VkResult CreateDebugUtilsMessengerEXT(VkInstance instance, const VkDebugUtilsMessengerCreateInfoEXT* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkDebugUtilsMessengerEXT* pDebugMessenger);
 	
@@ -28,7 +29,7 @@ namespace vh {
 	void pickPhysicalDevice(VkInstance instance, const std::vector<const char*>& deviceExtensions, VkSurfaceKHR surface, VkPhysicalDevice& physicalDevice);
 
     void createLogicalDevice(VkSurfaceKHR surface, VkPhysicalDevice physicalDevice, QueueFamilyIndices& queueFamilies, 
-		const std::vector<const char*>& validationLayers, const std::vector<const char*>& deviceExtensions, 
+		const std::vector<const char*>& validationLayers, const std::vector<const char*>& deviceExtensions, bool debug, 
 		VkDevice& device, VkQueue& graphicsQueue, VkQueue& presentQueue);
 
     void createSwapChain(SDL_Window* window, VkSurfaceKHR surface, VkPhysicalDevice physicalDevice, VkDevice device, SwapChain& swapChain);

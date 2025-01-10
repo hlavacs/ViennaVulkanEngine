@@ -159,12 +159,6 @@ namespace vh {
 
 	#define MAX_FRAMES_IN_FLIGHT 2
 
-	#ifdef NDEBUG
-    #define ENABLE_VALIDATION_LAYERS false
-    #else
-    #define ENABLE_VALIDATION_LAYERS true
-    #endif
-
     void MemCopy(VkDevice device, void* source, VmaAllocationInfo& allocInfo, VkDeviceSize size);
     
     void loadModel( std::string fileName, Geometry& geometry);

@@ -13,9 +13,9 @@ namespace vve {
 
     AssetManager::AssetManager(std::string systemName, Engine& engine ) : System{systemName, engine } {
 		engine.RegisterCallback( { 
-			{this,  2000, "INIT", [this](Message message){ return OnInit(message);} },
-			{this,     0, "OBJECT_LOAD", [this](Message message){ return OnObjectLoad(message);} },
-			{this,     0, "QUIT", [this](Message message){ return OnQuit(message);} },
+			{this,  2000, "INIT", [this](Message& message){ return OnInit(message);} },
+			{this,     0, "OBJECT_LOAD", [this](Message& message){ return OnObjectLoad(message);} },
+			{this,     0, "QUIT", [this](Message& message){ return OnQuit(message);} },
 		} );
 	}
 

@@ -11,10 +11,11 @@
 
 namespace vve {
 	
-	Engine::Engine(std::string name) : System(name, *this) {
+	Engine::Engine(std::string name, bool debug) : System(name, *this) {
 	#ifndef NDEBUG
 		m_debug = true;
 	#endif
+		m_debug = m_debug | debug;
 		auto transform = [&](const auto& str) { m_msgTypeMap[std::hash<std::string>{}(str)] = str; };
 		std::ranges::for_each( MsgTypeNames, transform );
 	};

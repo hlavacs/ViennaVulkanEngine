@@ -28,7 +28,7 @@ namespace vve {
 			std::function<bool(Message&)> m_callback;
 		};
 
-		Engine(std::string name);
+		Engine(std::string name, bool debug=false);
 		virtual ~Engine();
 		void RegisterSystem( std::unique_ptr<System>&& system );
 		void RegisterCallback( std::vector<MessageCallback> callbacks);

@@ -7,12 +7,12 @@ namespace vh {
 
 	VkInstance volkInstance;
 	
-    void createInstance(const std::vector<const char*>& validationLayers
-        , const std::vector<const char *>& extensions, VkInstance &instance) {
+    void createInstance(const std::vector<const char*>& validationLayers, 
+		const std::vector<const char *>& extensions, bool debug, VkInstance &instance) {
 
         volkInitialize();
 
-        if (ENABLE_VALIDATION_LAYERS && !checkValidationLayerSupport(validationLayers)) {
+        if (debug && !checkValidationLayerSupport(validationLayers)) {
             throw std::runtime_error("validation layers requested, but not available!");
         }
 
@@ -33,7 +33,7 @@ namespace vh {
         createInfo.ppEnabledExtensionNames = extensions.data();
 
         VkDebugUtilsMessengerCreateInfoEXT debugCreateInfo{};
-        if (ENABLE_VALIDATION_LAYERS) {
+        if (debug) {
             createInfo.enabledLayerCount = static_cast<uint32_t>(validationLayers.size());
             createInfo.ppEnabledLayerNames = validationLayers.data();
 
@@ -140,8 +140,6 @@ namespace vh {
     }
 
     void setupDebugMessenger(VkInstance instance, VkDebugUtilsMessengerEXT& debugMessenger) {
-        if (!ENABLE_VALIDATION_LAYERS) return;
-
         VkDebugUtilsMessengerCreateInfoEXT createInfo;
         populateDebugMessengerCreateInfo(createInfo);
 
@@ -205,7 +203,7 @@ namespace vh {
     }
 
     void createLogicalDevice(VkSurfaceKHR surface, VkPhysicalDevice physicalDevice, QueueFamilyIndices& queueFamilies, 
-		const std::vector<const char*>& validationLayers, const std::vector<const char*>& deviceExtensions, 
+		const std::vector<const char*>& validationLayers, const std::vector<const char*>& deviceExtensions, bool debug,
 		VkDevice& device, VkQueue& graphicsQueue, VkQueue& presentQueue) {
 
         queueFamilies = findQueueFamilies(physicalDevice, surface);
@@ -237,7 +235,7 @@ namespace vh {
         createInfo.enabledExtensionCount = static_cast<uint32_t>(deviceExtensions.size());
         createInfo.ppEnabledExtensionNames = deviceExtensions.data();
 
-        if (ENABLE_VALIDATION_LAYERS) {
+        if (debug) {
             createInfo.enabledLayerCount = static_cast<uint32_t>(validationLayers.size());
             createInfo.ppEnabledLayerNames = validationLayers.data();
         } else {
