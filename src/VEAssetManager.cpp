@@ -14,6 +14,7 @@ namespace vve {
     AssetManager::AssetManager(std::string systemName, Engine& engine ) : System{systemName, engine } {
 		engine.RegisterCallback( { 
 			{this,  2000, "INIT", [this](Message& message){ return OnInit(message);} },
+			{this,     0, "SCENE_LOAD", [this](Message& message){ return OnSceneLoad(message);} },
 			{this,     0, "OBJECT_LOAD", [this](Message& message){ return OnObjectLoad(message);} },
 			{this,     0, "QUIT", [this](Message& message){ return OnQuit(message);} },
 		} );
@@ -25,11 +26,14 @@ namespace vve {
 		return false;
 	}
 
+    bool AssetManager::OnSceneLoad(Message message) {
+		return false;
+	}
+
     bool AssetManager::OnObjectLoad(Message message) {
 		return false;
 		auto msg = message.template GetData<MsgObjectLoad>();
 		ObjectHandle nHandle = msg.m_object;
-		ParentHandle pHandle = msg.m_parent;
 		TextureHandle tHandle = LoadTexture(msg.m_txtName);
 		GeometryHandle oHandle = LoadOBJ(msg.m_objName);
 		return false;

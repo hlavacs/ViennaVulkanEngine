@@ -34,7 +34,9 @@ namespace vve {
     System::MsgQuit::MsgQuit(System* s, System* r) : MsgBase{"QUIT", s, r} {};
     
 	//------------------------------------------------------------------------
-
+	System::MsgSceneLoad::MsgSceneLoad(System* s, System* r, ObjectHandle object, ParentHandle parent, Name sceneName) : 
+		MsgBase{"OBJECT_LOAD", s, r}, m_object{object}, m_parent{parent}, m_sceneName{sceneName} {};
+	
 	System::MsgObjectLoad::MsgObjectLoad(System* s, System* r, ObjectHandle object, ParentHandle parent, Name txtName, Name objName) : 
 		MsgBase{"OBJECT_LOAD", s, r}, m_object{object}, m_parent{parent}, m_txtName{txtName}, m_objName{objName} {};
 	

@@ -53,6 +53,7 @@ namespace vve {
         "SDL_KEY_REPEAT", //
         "QUIT", //
 		//---------------------
+		"SCENE_LOAD",	
 		"OBJECT_LOAD",	
 		"OBJECT_CREATE",
 		"OBJECT_DESTROY",
@@ -107,6 +108,13 @@ namespace vve {
 		struct MsgQuit : public MsgBase { MsgQuit(System* s, System* r=nullptr); };
 
 		//------------------------------------------------------------------------------------------------
+
+	    struct MsgSceneLoad : public MsgBase { 
+			MsgSceneLoad(System* s, System* r, ObjectHandle object, ParentHandle parent, Name sceneName); 
+			ObjectHandle m_object{}; 
+			ParentHandle m_parent{}; 
+			Name m_sceneName; 
+		};
 
 	    struct MsgObjectLoad : public MsgBase { 
 			MsgObjectLoad(System* s, System* r, ObjectHandle object, ParentHandle parent, Name txtName, Name objName); 
