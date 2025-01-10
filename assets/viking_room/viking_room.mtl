@@ -1,0 +1,7 @@
+newmtl viking_room1
+Ka 1.000 1.000 1.000
+Kd 1.000 1.000 1.000
+Ks 0.500 0.500 0.500
+Ns 50.000
+map_Kd viking_room.png
+

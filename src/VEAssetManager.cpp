@@ -25,7 +25,33 @@ namespace vve {
     bool AssetManager::OnSceneLoad(Message& message) {
 		auto& msg = message.template GetData<MsgSceneLoad>();
 		auto path = msg.m_sceneName;
-		msg.m_scene = aiImportFile(path().c_str(), aiProcessPreset_TargetRealtime_MaxQuality);
+
+		Assimp::DefaultLogger::create("", Assimp::Logger::VERBOSE);
+		Assimp::Importer importer;
+		msg.m_scene = importer.ReadFile(path().c_str(), aiProcess_Triangulate | aiProcess_GenNormals);
+
+		if (!msg.m_scene) {
+		    std::cerr << "Assimp Error: " << importer.GetErrorString() << std::endl;
+		}
+
+		for (unsigned int i = 0; i < msg.m_scene->mNumMaterials; i++) {
+		    aiMaterial* material = msg.m_scene->mMaterials[i];
+
+		    aiString name;
+		    if (material->Get(AI_MATKEY_NAME, name) == AI_SUCCESS) {
+		        std::cout << "Material: " << name.C_Str() << std::endl;
+		    }
+
+		    aiColor3D color;
+		    if (material->Get(AI_MATKEY_COLOR_DIFFUSE, color) == AI_SUCCESS) {
+		        std::cout << "Diffuse Color: " << color.r << ", " << color.g << ", " << color.b << std::endl;
+		    }
+
+		    aiString texturePath;
+		    if (material->GetTexture(aiTextureType_DIFFUSE, 0, &texturePath) == AI_SUCCESS) {
+		        std::cout << "Diffuse Texture: " << texturePath.C_Str() << std::endl;
+		    }
+		}
 		return false;
 	}
 
