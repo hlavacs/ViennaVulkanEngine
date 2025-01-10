@@ -1,7 +1,3 @@
-#include <assimp/cimport.h>
-#include <assimp/scene.h>
-#include <assimp/postprocess.h>
-
 #include "VHInclude.h"
 #include "VEInclude.h"
 
@@ -26,7 +22,10 @@ namespace vve {
 		return false;
 	}
 
-    bool AssetManager::OnSceneLoad(Message message) {
+    bool AssetManager::OnSceneLoad(Message& message) {
+		auto& msg = message.template GetData<MsgSceneLoad>();
+		auto path = msg.m_sceneName;
+		msg.m_scene = aiImportFile(path().c_str(), aiProcessPreset_TargetRealtime_MaxQuality);
 		return false;
 	}
 

@@ -32,6 +32,10 @@ namespace vve {
    	class AssetManager;
 }
 
+#include <assimp/cimport.h>
+#include <assimp/scene.h>
+#include <assimp/postprocess.h>
+
 #include "VECS.h"
 #include "VESystem.h"
 #include "VEEngine.h"

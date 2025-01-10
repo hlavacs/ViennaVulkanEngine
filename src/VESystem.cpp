@@ -35,7 +35,7 @@ namespace vve {
     
 	//------------------------------------------------------------------------
 	System::MsgSceneLoad::MsgSceneLoad(System* s, System* r, ObjectHandle object, ParentHandle parent, Name sceneName) : 
-		MsgBase{"OBJECT_LOAD", s, r}, m_object{object}, m_parent{parent}, m_sceneName{sceneName} {};
+		MsgBase{"SCENE_LOAD", s, r}, m_object{object}, m_parent{parent}, m_sceneName{sceneName} {};
 	
 	System::MsgObjectLoad::MsgObjectLoad(System* s, System* r, ObjectHandle object, ParentHandle parent, Name txtName, Name geomName) : 
 		MsgBase{"OBJECT_LOAD", s, r}, m_object{object}, m_parent{parent}, m_txtName{txtName}, m_geomName{geomName} {};

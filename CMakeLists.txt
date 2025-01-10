@@ -6,6 +6,8 @@ project (
   LANGUAGES CXX
 )
 
+#set(CMAKE_BUILD_TYPE Debug) #use for MSVC debug
+
 if (MSVC)
     add_compile_options(/D IMGUI_IMPL_VULKAN_NO_PROTOTYPES)
 	add_compile_options(/D_CRT_SECURE_NO_WARNINGS) #for assimp

@@ -14,7 +14,7 @@ namespace vve {
 
     private:
 		bool OnInit(Message message);
-		bool OnSceneLoad(Message message);
+		bool OnSceneLoad(Message& message);
 		bool OnObjectLoad(Message message);
 		bool OnQuit( Message message );
 

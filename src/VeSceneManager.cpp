@@ -1,7 +1,3 @@
-#include <assimp/cimport.h>
-#include <assimp/scene.h>
-#include <assimp/postprocess.h>
-
 #include "VHInclude.h"
 #include "VEInclude.h"
 
@@ -93,6 +89,8 @@ namespace vve {
 	}
 
 	bool SceneManager::OnSceneLoad(Message message) {
+		auto msg = message.template GetData<MsgSceneLoad>();
+		aiReleaseImport(msg.m_scene);
 		return false;
 	}
 

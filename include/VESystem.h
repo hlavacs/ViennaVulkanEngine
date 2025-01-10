@@ -112,7 +112,8 @@ namespace vve {
 			MsgSceneLoad(System* s, System* r, ObjectHandle object, ParentHandle parent, Name sceneName); 
 			ObjectHandle m_object{}; 
 			ParentHandle m_parent{}; 
-			Name m_sceneName; 
+			Name m_sceneName;
+			const C_STRUCT aiScene* m_scene{};
 		};
 
 	    struct MsgObjectLoad : public MsgBase { 
