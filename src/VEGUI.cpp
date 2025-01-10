@@ -61,7 +61,7 @@ namespace vve {
 					MsgObjectLoad{
 						this, 
 						nullptr, 
-						ObjectHandle( m_registry.Insert( Position{ { 0.0f, x, 0.0f } }, Rotation{}, Scale{}) ), 
+						ObjectHandle( m_registry.Insert( Position{ { 0.0f, x, 0.0f } }, Rotation{mat3_t{1.0f}}, Scale{vec3_t{1.0f}}) ), 
 						ParentHandle{}, 
 						Name{path_texture}, 
 						Name{path_obj} });

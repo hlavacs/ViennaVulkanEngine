@@ -53,7 +53,7 @@ namespace vve {
 								Name(m_cameraName),
 								ParentHandle{m_cameraNodeHandle},
 								Camera{(real_t)window->GetWidth() / (real_t)window->GetHeight()}, 
-								Position{}, 
+								Position{vec3_t{0.0f, 0.0f, 0.0f}}, 
 								Rotation{mat3_t{view}},
 								Scale{vec3_t{1.0f, 1.0f, 1.0f}}, 
 								LocalToParentMatrix{mat4_t{1.0f}}, 
@@ -112,45 +112,6 @@ namespace vve {
 		return false;
 	}
 
-	/*bool SceneManager::OnObjectLoad(Message message) {
-		auto msg = message.template GetData<MsgObjectLoad>();
-		ObjectHandle nHandle = msg.m_object;
-		ParentHandle pHandle = msg.m_parent;
-		TextureHandle tHandle = LoadTexture(msg.m_txtName);
-		GeometryHandle oHandle = LoadOBJ(msg.m_geomName);
-
-		if( !pHandle().IsValid() ) pHandle = m_rootHandle;
-		if( !nHandle().IsValid()) {
-			nHandle = m_registry.Insert(
-							Name(msg.m_geomName),
-							ParentHandle{pHandle},
-							Children{},
-							Position{}, 
-							Rotation{},
-							Scale{vec3_t{1.0f, 1.0f, 1.0f}}, 
-							LocalToParentMatrix{mat4_t{1.0f}}, 
-							LocalToWorldMatrix{mat4_t{1.0f}},
-							GeometryHandle{oHandle}, 
-							TextureHandle{tHandle} );
-		} else {
-			m_registry.Put(	nHandle, 
-							Name(msg.m_geomName),
-							ParentHandle{pHandle},
-							Children{},
-							LocalToParentMatrix{mat4_t{1.0f}}, 
-							LocalToWorldMatrix{mat4_t{1.0f}},
-							GeometryHandle{ oHandle }, 
-							TextureHandle{ tHandle }
-						);
-		}
-
-		m_registry.Get<Children&>(pHandle)().push_back(nHandle);
-
-		//m_engine.SendMessage( MsgObjectCreate{this, nullptr, nHandle} );
-		return false;
-	}*/
-
-
     bool SceneManager::OnObjectSetParent(Message message) {
 		auto msg = message.template GetData<MsgObjectSetParent>();
 		auto oHandle = msg.m_object;
@@ -162,44 +123,6 @@ namespace vve {
 		childrenNew().push_back(oHandle);
 		parent = pHandle;
 		return false;
-	}
-
-	auto SceneManager::LoadTexture(Name fileName) -> TextureHandle {
-		if( m_handleMap.contains(fileName) ) return TextureHandle{m_handleMap[fileName]};
-
-		int texWidth, texHeight, texChannels;
-        stbi_uc* pixels = stbi_load(fileName().c_str(), &texWidth, &texHeight, &texChannels, STBI_rgb_alpha);
-        VkDeviceSize imageSize = texWidth * texHeight * 4;
-        if (!pixels) { return {}; }
-
-		vh::Texture texture{texWidth, texHeight, imageSize, pixels};
-		auto handle = m_registry.Insert(fileName, texture);
-		m_handleMap[fileName] = handle;
-		return TextureHandle{handle};
-	}
-
-	auto SceneManager::LoadOBJ(Name fileName) -> GeometryHandle {
-		if( m_handleMap.contains(fileName) ) return GeometryHandle{m_handleMap[fileName]};
-		
-		vh::Geometry geometry{};
-		vh::loadModel(fileName(), geometry);
-		auto handle = m_registry.Insert(fileName, geometry);
-		m_handleMap[fileName] = handle;
-		return GeometryHandle{handle};
-	}
-	
-	auto SceneManager::LoadGLTF(Name fileName) -> vecs::Handle {
-		//m_files[fileName] = handle;
-		return {};
-	}
-
-	auto SceneManager::GetAsset(Name fileName) -> vecs::Handle {
-		if( !m_handleMap.contains(fileName) ) return {};
-		return m_handleMap[fileName]; 
-	}
-
-	auto SceneManager::GetHandle(Name name) -> vecs::Handle& { 
-		return m_handleMap[name]; 
 	}
 
 	bool SceneManager::OnKeyDown(Message message) {

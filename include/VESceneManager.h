@@ -13,18 +13,18 @@ namespace vve {
 		auto Matrix() -> mat4_t { mat4_t proj = glm::perspective(glm::radians(m_fov), m_aspect, m_near, m_far); proj[1][1] *= -1; return proj; }
 	};
 	
-	struct PositionDefaultValue { static constexpr auto value = vec3_t{0.0f, 0.0f, 0.0f}; };
-	using Position = vsty::strong_type_t<vec3_t, vsty::counter<>, PositionDefaultValue >;
-	struct RotationDefaultValue { static constexpr auto value = mat3_t{1.0f}; };
-	using Rotation = vsty::strong_type_t<mat3_t, vsty::counter<>, RotationDefaultValue>;
-	struct ScaleDefaultValue { static constexpr auto value = vec3_t{1.0f, 1.0f, 1.0f}; };
-	using Scale = vsty::strong_type_t<vec3_t, vsty::counter<>, ScaleDefaultValue>;
-	
+
+	struct VectorDefaultValue { static constexpr auto value = vec3_t{INFINITY, INFINITY, INFINITY}; };
+	struct MaxtrixDefaultValue { static constexpr auto value = mat4_t{INFINITY}; };
+
+	using Position = vsty::strong_type_t<vec3_t, vsty::counter<>, VectorDefaultValue >;
+	using Rotation = vsty::strong_type_t<mat3_t, vsty::counter<>, MaxtrixDefaultValue>;
+	using Scale = vsty::strong_type_t<vec3_t, vsty::counter<>, VectorDefaultValue>;
+	using LocalToParentMatrix = vsty::strong_type_t<mat4_t, vsty::counter<>, MaxtrixDefaultValue>;
+	using LocalToWorldMatrix = vsty::strong_type_t<mat4_t, vsty::counter<>, MaxtrixDefaultValue>;
+	using ViewMatrix = vsty::strong_type_t<mat4_t, vsty::counter<>, MaxtrixDefaultValue>;
+	using ProjectionMatrix = vsty::strong_type_t<mat4_t, vsty::counter<>, MaxtrixDefaultValue>;
 	using Children = vsty::strong_type_t<std::vector<vecs::Handle>, vsty::counter<>>;
-	using LocalToParentMatrix = vsty::strong_type_t<mat4_t, vsty::counter<>>;
-	using LocalToWorldMatrix = vsty::strong_type_t<mat4_t, vsty::counter<>>;
-	using ViewMatrix = vsty::strong_type_t<mat4_t, vsty::counter<>>;
-	using ProjectionMatrix = vsty::strong_type_t<mat4_t, vsty::counter<>>;
 
 	//-------------------------------------------------------------------------------------------------------
 
@@ -38,10 +38,6 @@ namespace vve {
     public:
         SceneManager(std::string systemName, Engine& engine );
         virtual ~SceneManager();
-		auto LoadTexture(Name filenName)-> TextureHandle;
-		auto LoadOBJ(Name filenName) -> GeometryHandle;
-		auto LoadGLTF(Name filenName) -> vecs::Handle;
-		auto GetAsset(Name filenName) -> vecs::Handle;
 
     private:
 		bool OnInit(Message message);
@@ -51,11 +47,8 @@ namespace vve {
 		bool OnObjectSetParent(Message message);
 		bool OnKeyDown(Message message);
 		bool OnKeyRepeat(Message message);
-
-		auto GetHandle(Name name) -> vecs::Handle&;	
-
+		
 		std::shared_mutex m_mutex;
-		std::unordered_map<Name, vecs::Handle> m_handleMap;
 		vecs::Handle m_cameraHandle;
 		vecs::Handle m_cameraNodeHandle;
 		vecs::Handle m_rootHandle;
