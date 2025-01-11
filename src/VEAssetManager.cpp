@@ -26,7 +26,9 @@ namespace vve {
     bool AssetManager::OnSceneLoad(Message& message) {
 		auto& msg = message.template GetData<MsgSceneLoad>();
 		auto path = msg.m_sceneName;
-
+		std::filesystem::path filepath = path();
+		auto directory = filepath.parent_path();
+		
 		msg.m_scene = aiImportFile(path().c_str(), aiProcess_Triangulate | aiProcess_GenNormals);
 
 		//Assimp::DefaultLogger::create("", Assimp::Logger::VERBOSE);
@@ -54,8 +56,6 @@ namespace vve {
 
 		    aiString texturePath;
 		    if (material->GetTexture(aiTextureType_DIFFUSE, 0, &texturePath) == AI_SUCCESS) {
-				std::filesystem::path filepath = path();
-				auto directory = filepath.parent_path();
 				auto texturePathStr = directory / std::string{texturePath.C_Str()};
 		        std::cout << "Diffuse Texture: " << texturePathStr.string() << std::endl;
 				LoadTexture( Name{texturePathStr.string().c_str()});
