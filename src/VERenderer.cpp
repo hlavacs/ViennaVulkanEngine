@@ -19,7 +19,7 @@ namespace vve {
 		if( msg.m_sender->GetName() == m_windowName ) {
 			m_window = dynamic_cast<Window*>(msg.m_sender);
 		}
-		if( msg.m_sender->GetName() == "VVE Renderer Vulkan" && m_vulkan == nullptr ) {
+		if( msg.m_sender->GetName() == m_engine.m_rendererVulkanaName && m_vulkan == nullptr ) {
 			m_vulkan = dynamic_cast<RendererVulkan*>(msg.m_sender);
 		}
 		return false;

@@ -10,6 +10,8 @@ namespace vve {
 
 	class Engine : public System {
 
+	public:
+
 		const std::string m_windowName = "VVE Window";
 		const std::string m_sceneManagerName = "VVE SceneManager";
 		const std::string m_assetManagerName = "VVE AssetManager";
@@ -18,9 +20,6 @@ namespace vve {
 		const std::string m_rendererForwardName = "VVE Renderer Forward";
 		const std::string m_rendererImguiName = "VVE Renderer Imgui";
 		const std::string m_guiName = "VVE GUI";
-
-
-	public:
 
 		struct MessageCallback {
 			System* 				 	  m_system;
