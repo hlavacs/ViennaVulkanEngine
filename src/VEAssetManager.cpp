@@ -38,8 +38,6 @@ namespace vve {
 		}
 
 		// Process materials
-		std::filesystem::path filepath = path();
-		auto directory = filepath.parent_path();
 
 		for (unsigned int i = 0; i < msg.m_scene->mNumMaterials; i++) {
 		    aiMaterial* material = msg.m_scene->mMaterials[i];
@@ -56,6 +54,8 @@ namespace vve {
 
 		    aiString texturePath;
 		    if (material->GetTexture(aiTextureType_DIFFUSE, 0, &texturePath) == AI_SUCCESS) {
+				std::filesystem::path filepath = path();
+				auto directory = filepath.parent_path();
 				auto texturePathStr = directory / std::string{texturePath.C_Str()};
 		        std::cout << "Diffuse Texture: " << texturePathStr.string() << std::endl;
 				LoadTexture( Name{texturePathStr.string().c_str()});
@@ -65,10 +65,15 @@ namespace vve {
 		// Process meshes
 		for (unsigned int i = 0; i <msg.m_scene->mNumMeshes; i++) {
 		    aiMesh* mesh = msg.m_scene->mMeshes[i];
-			vh::Geometry geometry{};
+			assert(mesh->HasPositions());
 
 		    std::cout << "Mesh " << i << " " << mesh->mName.C_Str() << " has " << mesh->mNumVertices << " vertices." << std::endl;
+			Name name{mesh->mName.C_Str()};
+			if( m_handleMap.contains(name) ) continue;
+			auto gHandle = m_registry.Insert( name );
+			m_handleMap[name] = gHandle;
 
+			vh::Geometry geometry{};
 		    for (unsigned int j = 0; j < mesh->mNumVertices; j++) {
 		        aiVector3D vertex = mesh->mVertices[j];
 				geometry.m_vertices.push_back(vh::Vertex{ {vertex.x, vertex.y, vertex.z} });
@@ -78,22 +83,18 @@ namespace vve {
 					geometry.m_vertices[j].normal = vec3_t{normal.x, normal.y, normal.z};
 				}
 
-				if (mesh->mTextureCoords[0]) { // Assumes the first set of texture coordinates
+				if (mesh->HasTextureCoords(0)) { 
 			        aiVector3D texCoord = mesh->mTextureCoords[0][j];
 					geometry.m_vertices[j].texCoord = vec2_t{texCoord.x, texCoord.y};
 				}
 
-				if (mesh->mColors[0]) { // Assumes the first set of vertex colors
+				if (mesh->HasVertexColors(0)) { 
 				    aiColor4D color = mesh->mColors[0][j];
 					geometry.m_vertices[j].color = vec4_t{color.r, color.g, color.b, color.a};
 				}
 		    }
-			Name name{mesh->mName.C_Str()};
-			auto gHandle = m_registry.Insert( name, geometry);
-			m_handleMap[name] = gHandle;
+			m_registry.Put( gHandle, geometry );
 		}
-
-		ProcessNode(msg.m_scene->mRootNode, msg.m_scene);
 		return false;
 	}
 
@@ -110,40 +111,6 @@ namespace vve {
 		return false;
 	}
 
-	void AssetManager::ProcessNode(aiNode* node, const aiScene* scene) {
-		for (unsigned int i = 0; i <scene->mNumMeshes; i++) {
-		    aiMesh* mesh = scene->mMeshes[i];
-			vh::Geometry geometry{};
-
-		    std::cout << "Mesh " << i << " " << mesh->mName.C_Str() << " has " << mesh->mNumVertices << " vertices." << std::endl;
-
-		    for (unsigned int j = 0; j < mesh->mNumVertices; j++) {
-		        aiVector3D vertex = mesh->mVertices[j];
-				geometry.m_vertices.push_back(vh::Vertex{ {vertex.x, vertex.y, vertex.z} });
-			
-				if (mesh->HasNormals()) {
-		            aiVector3D normal = mesh->mNormals[j];
-					geometry.m_vertices[j].normal = vec3_t{normal.x, normal.y, normal.z};
-				}
-
-				if (mesh->mTextureCoords[0]) { // Assumes the first set of texture coordinates
-			        aiVector3D texCoord = mesh->mTextureCoords[0][j];
-					geometry.m_vertices[j].texCoord = vec2_t{texCoord.x, texCoord.y};
-				}
-
-				if (mesh->mColors[0]) { // Assumes the first set of vertex colors
-				    aiColor4D color = mesh->mColors[0][j];
-					geometry.m_vertices[j].color = vec4_t{color.r, color.g, color.b, color.a};
-				}
-		    }
-			Name name{mesh->mName.C_Str()};
-			auto gHandle = m_registry.Insert( name, geometry);
-			m_handleMap[name] = gHandle;
-
-			// Process materials
-
-		}
-	}
 
 	auto AssetManager::LoadTexture(Name fileName) -> TextureHandle {
 		if( m_handleMap.contains(fileName) ) return TextureHandle{m_handleMap[fileName]};

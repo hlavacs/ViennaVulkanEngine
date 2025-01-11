@@ -90,8 +90,19 @@ namespace vve {
 
 	bool SceneManager::OnSceneLoad(Message message) {
 		auto msg = message.template GetData<MsgSceneLoad>();
+		ProcessNode(msg.m_scene->mRootNode, msg.m_scene);
 		aiReleaseImport(msg.m_scene);
 		return false;
+	}
+
+	void SceneManager::ProcessNode(aiNode* node, const aiScene* scene) {
+		for (unsigned int i = 0; i <node->mNumMeshes; i++) {
+		    auto mesh = scene->mMeshes[node->mMeshes[i]];
+
+
+
+
+		}
 	}
 
     bool SceneManager::OnObjectLoad(Message message) {

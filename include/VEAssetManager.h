@@ -17,7 +17,6 @@ namespace vve {
 		bool OnSceneLoad(Message& message);
 		bool OnObjectLoad(Message message);
 		bool OnQuit( Message message );
-		void ProcessNode(aiNode* node, const aiScene* scene);
 
 		std::unordered_map<Name, vecs::Handle> m_handleMap;
     };
