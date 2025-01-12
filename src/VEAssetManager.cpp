@@ -83,6 +83,11 @@ namespace vve {
 					geometry.m_vertices[j].normal = vec3_t{normal.x, normal.y, normal.z};
 				}
 
+				if( mesh->HasTangentsAndBitangents() ) {
+					aiVector3D tangent = mesh->mTangents[j];
+					geometry.m_vertices[j].tangent = vec3_t{tangent.x, tangent.y, tangent.z};
+				}
+
 				if (mesh->HasTextureCoords(0)) { 
 			        aiVector3D texCoord = mesh->mTextureCoords[0][j];
 					geometry.m_vertices[j].texCoord = vec2_t{texCoord.x, texCoord.y};

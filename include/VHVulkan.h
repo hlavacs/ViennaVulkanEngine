@@ -62,6 +62,7 @@ namespace vh {
         glm::vec3 color;
         glm::vec2 texCoord;
         glm::vec3 normal;
+        glm::vec3 tangent;
 
         static VkVertexInputBindingDescription getBindingDescription() {
             VkVertexInputBindingDescription bindingDescription{};
@@ -72,8 +73,8 @@ namespace vh {
             return bindingDescription;
         }
 
-        static std::array<VkVertexInputAttributeDescription, 4> getAttributeDescriptions() {
-            std::array<VkVertexInputAttributeDescription, 4> attributeDescriptions{};
+        static std::array<VkVertexInputAttributeDescription, 5> getAttributeDescriptions() {
+            std::array<VkVertexInputAttributeDescription, 5> attributeDescriptions{};
 
             attributeDescriptions[0].binding = 0;
             attributeDescriptions[0].location = 0;
@@ -95,11 +96,17 @@ namespace vh {
             attributeDescriptions[3].format = VK_FORMAT_R32G32B32_SFLOAT;
             attributeDescriptions[3].offset = offsetof(Vertex, normal);
 
+            attributeDescriptions[4].binding = 0;
+            attributeDescriptions[4].location = 4;
+            attributeDescriptions[4].format = VK_FORMAT_R32G32B32_SFLOAT;
+            attributeDescriptions[4].offset = offsetof(Vertex, tangent);
+
             return attributeDescriptions;
         }
 
         bool operator==(const Vertex& other) const {
-            return pos == other.pos && color == other.color && texCoord == other.texCoord && normal == other.normal;
+            return pos == other.pos && color == other.color && texCoord == other.texCoord 
+				&& normal == other.normal && tangent == other.tangent;
         }
     };
 

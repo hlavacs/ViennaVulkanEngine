@@ -90,18 +90,28 @@ namespace vve {
 
 	bool SceneManager::OnSceneLoad(Message message) {
 		auto msg = message.template GetData<MsgSceneLoad>();
-		ProcessNode(msg.m_scene->mRootNode, msg.m_scene);
+		ProcessNode(msg.m_scene->mRootNode, ParentHandle{}, msg.m_scene);
 		aiReleaseImport(msg.m_scene);
 		return false;
 	}
 
-	void SceneManager::ProcessNode(aiNode* node, const aiScene* scene) {
-		for (unsigned int i = 0; i <node->mNumMeshes; i++) {
+	void SceneManager::ProcessNode(aiNode* node, ParentHandle parent, const aiScene* scene) {
+		Name name = Name{  node->mName.C_Str() };
+		if(parent().IsValid()) {
+			auto& parentName = m_registry.Get<Name&>(parent);
+			name = Name{  parentName().append( "/", node->mName.C_Str() ) };
+		}
+		for (unsigned int i = 0; i < std::min(1u, node->mNumMeshes); i++) {
 		    auto mesh = scene->mMeshes[node->mMeshes[i]];
 
+			auto nHandle = m_registry.Insert(
+									name,
+									parent,
+									Children{},
+									LocalToParentMatrix{mat4_t{1.0f}}, 
+									LocalToWorldMatrix{mat4_t{1.0f}});
 
-
-
+			m_registry.Get<Children&>(parent())().push_back(nHandle);
 		}
 	}
 
