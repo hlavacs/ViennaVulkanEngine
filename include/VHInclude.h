@@ -63,7 +63,6 @@ namespace vve {
 }
 
 #include <stb_image.h>
-#include <tiny_obj_loader.h>
 
 #include "Volk/volk.h"
 

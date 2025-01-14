@@ -174,8 +174,6 @@ namespace vh {
 
     void MemCopy(VkDevice device, void* source, VmaAllocationInfo& allocInfo, VkDeviceSize size);
     
-    void loadModel( std::string fileName, Geometry& geometry);
-
     std::vector<char> readFile(const std::string& filename);
 
 	void setupImgui(SDL_Window* sdlWindow, VkInstance instance, VkPhysicalDevice physicalDevice, QueueFamilyIndices queueFamilies
