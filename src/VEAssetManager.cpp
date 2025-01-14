@@ -13,8 +13,7 @@ namespace vve {
 			{this,                            2000, "INIT", [this](Message& message){ return OnInit(message);} },
 			{this,                               0, "SCENE_LOAD", [this](Message& message){ return OnSceneLoad(message);} },
 			{this, std::numeric_limits<int>::max(), "SCENE_LOAD", [this](Message& message){ return OnSceneLoad2(message);} },
-			//{this,                               0, "OBJECT_LOAD", [this](Message& message){ return OnObjectLoad(message);} },
-			{this,                               0, "OBJECT_LOAD", [this](Message& message){ return OnObjectLoad2(message);} },
+			{this,                               0, "OBJECT_LOAD", [this](Message& message){ return OnObjectLoad(message);} },
 			{this,                               0, "QUIT", [this](Message& message){ return OnQuit(message);} },
 		} );
 	}
@@ -124,17 +123,6 @@ namespace vve {
 
     bool AssetManager::OnObjectLoad(Message message) {
 		auto msg = message.template GetData<MsgObjectLoad>();
-		ObjectHandle nHandle = msg.m_object;
-		TextureHandle tHandle = LoadTexture(msg.m_txtName);
-		GeometryHandle gHandle = LoadOBJ(msg.m_geomName);
-		m_registry.Put(	nHandle, gHandle, tHandle );
-		return false;
-	}
-
-    bool AssetManager::OnObjectLoad2(Message message) {
-		auto msg = message.template GetData<MsgObjectLoad>();
-		auto gHandle = m_handleMap[msg.m_geomName];
-		auto tHandle = m_handleMap[msg.m_txtName];
 		m_registry.Put(	msg.m_object, GeometryHandle{m_handleMap[msg.m_geomName]}, TextureHandle{m_handleMap[msg.m_txtName]} );
 		return false;
 	}
@@ -142,7 +130,6 @@ namespace vve {
 	bool AssetManager::OnQuit( Message message ) {
 		return false;
 	}
-
 
 	auto AssetManager::LoadTexture(Name fileName) -> TextureHandle {
 		if( m_handleMap.contains(fileName) ) return TextureHandle{m_handleMap[fileName]};
@@ -157,17 +144,6 @@ namespace vve {
 		m_handleMap[fileName] = handle;
 		return TextureHandle{handle};
 	}
-
-	auto AssetManager::LoadOBJ(Name fileName) -> GeometryHandle {
-		if( m_handleMap.contains(fileName) ) return GeometryHandle{m_handleMap[fileName]};
-		
-		vh::Geometry geometry{};
-		vh::loadModel(fileName(), geometry);
-		auto handle = m_registry.Insert(fileName, geometry);
-		m_handleMap[fileName] = handle;
-		return GeometryHandle{handle};
-	}
-	
 
 	auto AssetManager::GetAsset(Name fileName) -> vecs::Handle {
 		if( !m_handleMap.contains(fileName) ) return {};

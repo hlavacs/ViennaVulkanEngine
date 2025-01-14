@@ -43,7 +43,6 @@ namespace vve {
 		bool OnInit(Message message);
 		bool OnUpdate(Message message);
 		bool OnSceneLoad(Message message);
-		bool OnObjectLoad(Message message);
 		bool OnObjectSetParent(Message message);
 		bool OnKeyDown(Message message);
 		void ProcessNode(aiNode* node, ParentHandle parent, std::filesystem::path& directory, const aiScene* scene, float& x);

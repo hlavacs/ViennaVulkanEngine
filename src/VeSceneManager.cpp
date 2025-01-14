@@ -14,7 +14,6 @@ namespace vve {
 			{this,  2000, "INIT", [this](Message& message){ return OnInit(message);} },
 			{this, std::numeric_limits<int>::max(), "UPDATE", [this](Message& message){ return OnUpdate(message);} },
 			{this,                            1000, "SCENE_LOAD", [this](Message& message){ return OnSceneLoad(message);} },
-			//{this,                            1000, "OBJECT_LOAD", [this](Message& message){ return OnObjectLoad(message);} },
 			{this, std::numeric_limits<int>::max(), "OBJECT_SET_PARENT", [this](Message& message){ return OnObjectSetParent(message);} },
 			{this, std::numeric_limits<int>::max(), "SDL_KEY_DOWN", [this](Message& message){ return OnKeyDown(message);} },
 			{this, std::numeric_limits<int>::max(), "SDL_KEY_REPEAT", [this](Message& message){ return OnKeyDown(message);} }		
@@ -142,22 +141,6 @@ namespace vve {
 			float xx=0.0f;
 			ProcessNode(node->mChildren[i], ParentHandle{nHandle}, directory, scene, xx);
 		}
-	}
-
-    bool SceneManager::OnObjectLoad(Message message) {
-		auto msg = message.template GetData<MsgObjectLoad>();
-		ObjectHandle nHandle = msg.m_object;
-		ParentHandle pHandle = msg.m_parent;
-		if( !pHandle().IsValid() ) pHandle = { m_rootHandle };
-		m_registry.Put(	nHandle, 
-					Name(msg.m_geomName),
-					pHandle,
-					Children{},
-					LocalToParentMatrix{mat4_t{1.0f}}, 
-					LocalToWorldMatrix{mat4_t{1.0f}});
-
-		m_registry.Get<Children&>(pHandle)().push_back(nHandle);
-		return false;
 	}
 
     bool SceneManager::OnObjectSetParent(Message message) {
