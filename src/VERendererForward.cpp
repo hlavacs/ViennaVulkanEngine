@@ -76,13 +76,13 @@ namespace vve {
 		auto handle = message.template GetData<MsgObjectLoad>().m_object;
 		auto [gHandle, tHandle] = m_registry.template Get<GeometryHandle, TextureHandle>(handle);
 
-		decltype(auto) geometry = m_registry.template Get<vh::Geometry&>(gHandle);
+		auto& geometry = m_registry.template Get<vh::Geometry&>(gHandle);
 		if( geometry.m_vertexBuffer == VK_NULL_HANDLE ) {
 			vh::createVertexBuffer(GetPhysicalDevice(), GetDevice(), GetVmaAllocator(), GetGraphicsQueue(), GetCommandPool(), geometry);
 			vh::createIndexBuffer( GetPhysicalDevice(), GetDevice(), GetVmaAllocator(), GetGraphicsQueue(), GetCommandPool(), geometry);
 		}
 
-		decltype(auto) texture = m_registry.template Get<vh::Texture&>(tHandle);
+		auto& texture = m_registry.template Get<vh::Texture&>(tHandle);
 		if( texture.m_textureImage == VK_NULL_HANDLE && texture.m_pixels != nullptr ) {
 			vh::createTextureImage(GetPhysicalDevice(), GetDevice(), GetVmaAllocator(), GetGraphicsQueue(), GetCommandPool(), texture.m_pixels, texture.m_width, texture.m_height, texture.m_size, texture);
 			vh::createTextureImageView(GetDevice(), texture);

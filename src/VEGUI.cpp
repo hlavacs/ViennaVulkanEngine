@@ -76,7 +76,6 @@ namespace vve {
 							Name{path_obj} });				
 				}
 
-				x += 2.0f;
 			}
 
             ImGui::End();

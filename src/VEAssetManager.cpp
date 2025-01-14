@@ -10,10 +10,12 @@ namespace vve {
 
     AssetManager::AssetManager(std::string systemName, Engine& engine ) : System{systemName, engine } {
 		engine.RegisterCallback( { 
-			{this,  2000, "INIT", [this](Message& message){ return OnInit(message);} },
-			{this,     0, "SCENE_LOAD", [this](Message& message){ return OnSceneLoad(message);} },
-			{this,     0, "OBJECT_LOAD", [this](Message& message){ return OnObjectLoad(message);} },
-			{this,     0, "QUIT", [this](Message& message){ return OnQuit(message);} },
+			{this,                            2000, "INIT", [this](Message& message){ return OnInit(message);} },
+			{this,                               0, "SCENE_LOAD", [this](Message& message){ return OnSceneLoad(message);} },
+			{this, std::numeric_limits<int>::max(), "SCENE_LOAD", [this](Message& message){ return OnSceneLoad2(message);} },
+			//{this,                               0, "OBJECT_LOAD", [this](Message& message){ return OnObjectLoad(message);} },
+			{this,                               0, "OBJECT_LOAD", [this](Message& message){ return OnObjectLoad2(message);} },
+			{this,                               0, "QUIT", [this](Message& message){ return OnQuit(message);} },
 		} );
 	}
 
@@ -29,7 +31,7 @@ namespace vve {
 		std::filesystem::path filepath = path();
 		auto directory = filepath.parent_path();
 		
-		msg.m_scene = aiImportFile(path().c_str(), aiProcess_Triangulate | aiProcess_GenNormals);
+		msg.m_scene = aiImportFile(path().c_str(), aiProcess_Triangulate | aiProcess_GenNormals | aiProcess_FlipUVs);
 
 		//Assimp::DefaultLogger::create("", Assimp::Logger::VERBOSE);
 		//Assimp::Importer importer;
@@ -98,8 +100,25 @@ namespace vve {
 					geometry.m_vertices[j].color = vec4_t{color.r, color.g, color.b, color.a};
 				}
 		    }
+
+			for (unsigned int i = 0; i < mesh->mNumFaces; i++) {
+		        aiFace& face = mesh->mFaces[i];
+        		// Ensure it's a triangle
+        		if (face.mNumIndices == 3) {
+            		geometry.m_indices.push_back(face.mIndices[0]);
+            		geometry.m_indices.push_back(face.mIndices[1]);
+            		geometry.m_indices.push_back(face.mIndices[2]);
+        		}
+			}
+	
 			m_registry.Put( gHandle, geometry );
 		}
+		return false;
+	}
+
+    bool AssetManager::OnSceneLoad2(Message& message) {
+		auto msg = message.template GetData<MsgSceneLoad>();
+		aiReleaseImport(msg.m_scene);
 		return false;
 	}
 
@@ -109,6 +128,14 @@ namespace vve {
 		TextureHandle tHandle = LoadTexture(msg.m_txtName);
 		GeometryHandle gHandle = LoadOBJ(msg.m_geomName);
 		m_registry.Put(	nHandle, gHandle, tHandle );
+		return false;
+	}
+
+    bool AssetManager::OnObjectLoad2(Message message) {
+		auto msg = message.template GetData<MsgObjectLoad>();
+		auto gHandle = m_handleMap[msg.m_geomName];
+		auto tHandle = m_handleMap[msg.m_txtName];
+		m_registry.Put(	msg.m_object, GeometryHandle{m_handleMap[msg.m_geomName]}, TextureHandle{m_handleMap[msg.m_txtName]} );
 		return false;
 	}
 

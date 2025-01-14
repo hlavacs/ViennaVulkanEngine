@@ -1,3 +1,5 @@
+#include <filesystem>
+
 #include "VHInclude.h"
 #include "VEInclude.h"
 
@@ -11,8 +13,8 @@ namespace vve {
 		engine.RegisterCallback( { 
 			{this,  2000, "INIT", [this](Message& message){ return OnInit(message);} },
 			{this, std::numeric_limits<int>::max(), "UPDATE", [this](Message& message){ return OnUpdate(message);} },
-			{this, std::numeric_limits<int>::max(), "SCENE_LOAD", [this](Message& message){ return OnSceneLoad(message);} },
-			{this,                            1000, "OBJECT_LOAD", [this](Message& message){ return OnObjectLoad(message);} },
+			{this,                            1000, "SCENE_LOAD", [this](Message& message){ return OnSceneLoad(message);} },
+			//{this,                            1000, "OBJECT_LOAD", [this](Message& message){ return OnObjectLoad(message);} },
 			{this, std::numeric_limits<int>::max(), "OBJECT_SET_PARENT", [this](Message& message){ return OnObjectSetParent(message);} },
 			{this, std::numeric_limits<int>::max(), "SDL_KEY_DOWN", [this](Message& message){ return OnKeyDown(message);} },
 			{this, std::numeric_limits<int>::max(), "SDL_KEY_REPEAT", [this](Message& message){ return OnKeyDown(message);} }		
@@ -64,9 +66,10 @@ namespace vve {
 		auto children = m_registry.template Get<Children&>(m_rootHandle);
 
 		auto update = [](auto& registry, mat4_t& parentToWorld, vecs::Handle& handle, auto& self) -> void {
-			auto [p, r, s, LtoP, LtoW] = registry.template Get<Position, Rotation, Scale, LocalToParentMatrix&, LocalToWorldMatrix&>(handle);
+			auto [name, p, r, s, LtoP, LtoW] = registry.template Get<Name&, Position&, Rotation&, Scale&, LocalToParentMatrix&, LocalToWorldMatrix&>(handle);
 			LtoP = glm::translate(mat4_t{1.0f}, p()) * mat4_t(r()) * glm::scale(mat4_t{1.0f}, s());
 			LtoW = parentToWorld * LtoP();
+			//std::cout << "Handle: " << handle << " Name: " << name() << " Position: " << p().x << ", " << p().y << ", " << p().z << std::endl;
 
 			if( registry.template Has<Camera>(handle) ) {
 				auto camera = registry.template Get<Camera&>(handle);
@@ -89,29 +92,55 @@ namespace vve {
 	}
 
 	bool SceneManager::OnSceneLoad(Message message) {
-		auto msg = message.template GetData<MsgSceneLoad>();
-		ProcessNode(msg.m_scene->mRootNode, ParentHandle{}, msg.m_scene);
-		aiReleaseImport(msg.m_scene);
+		auto& msg = message.template GetData<MsgSceneLoad>();
+		ParentHandle pHandle = msg.m_parent;
+		if( !pHandle().IsValid() ) pHandle = { m_rootHandle };
+
+		auto path = msg.m_sceneName;
+		std::filesystem::path filepath = path();
+		auto directory = filepath.parent_path();
+
+		static float x = 0.0f;
+		ProcessNode(msg.m_scene->mRootNode, pHandle, directory, msg.m_scene, x);
 		return false;
 	}
 
-	void SceneManager::ProcessNode(aiNode* node, ParentHandle parent, const aiScene* scene) {
-		Name name = Name{  node->mName.C_Str() };
+	void SceneManager::ProcessNode(aiNode* node, ParentHandle parent, std::filesystem::path& directory, const aiScene* scene, float& x) {
+		static uint64_t id = 0;
+		
+		auto nHandle = m_registry.Insert(
+								node->mName.C_Str()[0] != 0 ? Name{node->mName.C_Str()} : Name{"Node" + std::to_string(id++)},
+								parent,
+								Children{},
+								Position{ { 0.0f, x, 0.0f } }, Rotation{mat3_t{1.0f}}, Scale{vec3_t{1.0f}},
+								LocalToParentMatrix{mat4_t{1.0f}}, 
+								LocalToWorldMatrix{mat4_t{1.0f}});
+
+		x += 2.0f;
+
 		if(parent().IsValid()) {
-			auto& parentName = m_registry.Get<Name&>(parent);
-			name = Name{  parentName().append( "/", node->mName.C_Str() ) };
+			auto& children = m_registry.Get<Children&>(parent);
+			children().push_back(nHandle);
 		}
+
 		for (unsigned int i = 0; i < std::min(1u, node->mNumMeshes); i++) {
 		    auto mesh = scene->mMeshes[node->mMeshes[i]];
-
-			auto nHandle = m_registry.Insert(
-									name,
-									parent,
-									Children{},
-									LocalToParentMatrix{mat4_t{1.0f}}, 
-									LocalToWorldMatrix{mat4_t{1.0f}});
+			auto material = scene->mMaterials[mesh->mMaterialIndex];
+		    aiString texturePath;
+			std::string texturePathStr{};
+		    if (material->GetTexture(aiTextureType_DIFFUSE, 0, &texturePath) == AI_SUCCESS) {
+				texturePathStr = (directory / std::string{texturePath.C_Str()}).string();
+		        std::cout << "Diffuse Texture: " << texturePathStr << std::endl;
+			} 
 
 			m_registry.Get<Children&>(parent())().push_back(nHandle);
+			m_engine.SendMessage( MsgObjectLoad{this, nullptr, ObjectHandle{nHandle}, 
+				ParentHandle{parent}, Name{texturePathStr}, Name{mesh->mName.C_Str()} });
+		}
+
+		for (unsigned int i = 0; i < node->mNumChildren; i++) {
+			float xx=0.0f;
+			ProcessNode(node->mChildren[i], ParentHandle{nHandle}, directory, scene, xx);
 		}
 	}
 
@@ -119,10 +148,10 @@ namespace vve {
 		auto msg = message.template GetData<MsgObjectLoad>();
 		ObjectHandle nHandle = msg.m_object;
 		ParentHandle pHandle = msg.m_parent;
-		if( !pHandle().IsValid() ) pHandle = m_rootHandle;
+		if( !pHandle().IsValid() ) pHandle = { m_rootHandle };
 		m_registry.Put(	nHandle, 
 					Name(msg.m_geomName),
-					ParentHandle{pHandle},
+					pHandle,
 					Children{},
 					LocalToParentMatrix{mat4_t{1.0f}}, 
 					LocalToWorldMatrix{mat4_t{1.0f}});

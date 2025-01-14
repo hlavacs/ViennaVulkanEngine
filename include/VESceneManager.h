@@ -46,7 +46,7 @@ namespace vve {
 		bool OnObjectLoad(Message message);
 		bool OnObjectSetParent(Message message);
 		bool OnKeyDown(Message message);
-		void ProcessNode(aiNode* node, ParentHandle parent, const aiScene* scene);
+		void ProcessNode(aiNode* node, ParentHandle parent, std::filesystem::path& directory, const aiScene* scene, float& x);
 
 		std::shared_mutex m_mutex;
 		vecs::Handle m_cameraHandle;

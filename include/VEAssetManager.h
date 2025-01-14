@@ -15,7 +15,9 @@ namespace vve {
     private:
 		bool OnInit(Message message);
 		bool OnSceneLoad(Message& message);
+		bool OnSceneLoad2(Message& message);
 		bool OnObjectLoad(Message message);
+		bool OnObjectLoad2(Message message);
 		bool OnQuit( Message message );
 
 		std::unordered_map<Name, vecs::Handle> m_handleMap;
