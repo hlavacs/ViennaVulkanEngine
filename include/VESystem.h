@@ -9,6 +9,7 @@
 #include <typeinfo>
 #include <type_traits>
 #include <unordered_set>
+#include <filesystem>
 
 
 namespace vve {
@@ -25,7 +26,11 @@ namespace std {
     template<> struct hash<vve::Name> {
         size_t operator()(vve::Name const& name) const; 
     };
-}
+
+    template<> struct hash<vve::System> {
+        size_t operator()(vve::System & system) ; 
+    };
+};
 
 namespace vve {
 
@@ -137,8 +142,8 @@ namespace vve {
 
 	    struct Message {
 	        template<typename T>
-	            requires (std::is_base_of_v<MsgBase, T> && sizeof(T) <= MAX_MESSAGE_SIZE)
-	        Message(const T&& msg ) {
+	            requires (std::is_base_of_v<MsgBase, std::decay_t<T>> && sizeof(std::decay_t<T>) <= MAX_MESSAGE_SIZE)
+	        Message( T&& msg ) {
 	            m_typeID = std::type_index(typeid(T)).hash_code();
 	            std::memcpy(m_data, &msg, sizeof(T));
 	        };
@@ -183,11 +188,5 @@ namespace vve {
 
 };
 
-namespace std {
 
-    template<> struct hash<vve::System> {
-        size_t operator()(vve::System & system) ; 
-    };
-
-};
 

@@ -39,7 +39,7 @@ namespace vve {
 			  FileDialog::file_dialog_open_type = FileDialog::FileDialogType::OpenFile;
 			}
 
-			static char path_texture[500] = "assets\\viking_room\\viking_room.png";
+			/*static char path_texture[500] = "assets\\viking_room\\viking_room.png";
 			ImGui::TextUnformatted("Txt File: ");
 			ImGui::SameLine();
 			ImGui::InputText("##path2", path_texture, sizeof(path_texture));
@@ -48,7 +48,7 @@ namespace vve {
 			  file_dialog_buffer = path_texture;
 			  FileDialog::file_dialog_open = true;
 			  FileDialog::file_dialog_open_type = FileDialog::FileDialogType::OpenFile;
-			}
+			}*/
 
 			if (FileDialog::file_dialog_open) {
 			  FileDialog::ShowFileDialog(&FileDialog::file_dialog_open, file_dialog_buffer, sizeof(file_dialog_buffer), FileDialog::file_dialog_open_type);
@@ -57,25 +57,13 @@ namespace vve {
             if (ImGui::Button("Load")) {                          // Buttons return true when clicked (most widgets return true when edited/activated)
 				static float x = 0.0f;
 				
-				if( std::string(path_texture) != "" ) {
-					m_engine.SendMessage( 
-						MsgObjectLoad{
-							this, 
-							nullptr, 
-							ObjectHandle( m_registry.Insert( Position{ { 0.0f, x, 0.0f } }, Rotation{mat3_t{1.0f}}, Scale{vec3_t{1.0f}}) ), 
-							ParentHandle{}, 
-							Name{path_texture}, 
-							Name{path_obj} });
-				} else {
-					m_engine.SendMessage( 
-						MsgSceneLoad{
-							this, 
-							nullptr, 
-							ObjectHandle( m_registry.Insert( Position{ { 0.0f, x, 0.0f } }, Rotation{mat3_t{1.0f}}, Scale{vec3_t{1.0f}}) ), 
-							ParentHandle{}, 
-							Name{path_obj} });				
-				}
-
+				m_engine.SendMessage( 
+					MsgSceneLoad{
+						this, 
+						nullptr, 
+						ObjectHandle( m_registry.Insert( Position{ { 0.0f, 0.0f, 0.0f } }, Rotation{mat3_t{1.0f}}, Scale{vec3_t{1.0f}}) ), 
+						ParentHandle{}, 
+						Name{path_obj} });				
 			}
 
             ImGui::End();

@@ -1,4 +1,3 @@
-#include <filesystem>
 
 #include "VHInclude.h"
 #include "VEInclude.h"
@@ -14,6 +13,7 @@ namespace vve {
 			{this,                               0, "SCENE_LOAD", [this](Message& message){ return OnSceneLoad(message);} },
 			{this, std::numeric_limits<int>::max(), "SCENE_LOAD", [this](Message& message){ return OnSceneLoad2(message);} },
 			{this,                               0, "OBJECT_LOAD", [this](Message& message){ return OnObjectLoad(message);} },
+			{this, std::numeric_limits<int>::max(), "TEXTURE_CREATE",   [this](Message& message){ return OnTextureCreate(message);} },
 			{this,                               0, "QUIT", [this](Message& message){ return OnQuit(message);} },
 		} );
 	}
@@ -118,13 +118,19 @@ namespace vve {
     bool AssetManager::OnSceneLoad2(Message& message) {
 		auto msg = message.template GetData<MsgSceneLoad>();
 		aiReleaseImport(msg.m_scene);
-		return false;
+		return true;
 	}
 
     bool AssetManager::OnObjectLoad(Message message) {
 		auto msg = message.template GetData<MsgObjectLoad>();
 		m_registry.Put(	msg.m_object, GeometryHandle{m_handleMap[msg.m_geomName]}, TextureHandle{m_handleMap[msg.m_txtName]} );
 		return false;
+	}
+
+	bool AssetManager::OnTextureCreate(Message message) {
+		auto msg = message.template GetData<MsgTextureCreate>();
+		stbi_image_free(msg.m_pixels);
+		return true;
 	}
 
 	bool AssetManager::OnQuit( Message message ) {
@@ -139,9 +145,9 @@ namespace vve {
         VkDeviceSize imageSize = texWidth * texHeight * 4;
         if (!pixels) { return {}; }
 
-		vh::Texture texture{texWidth, texHeight, imageSize, pixels};
-		auto handle = m_registry.Insert(fileName, texture);
+		auto handle = m_registry.Insert(fileName, vh::Texture{texWidth, texHeight, imageSize, pixels});
 		m_handleMap[fileName] = handle;
+		m_engine.SendMessage( MsgTextureCreate{this, nullptr, pixels, TextureHandle{handle} } );
 		return TextureHandle{handle};
 	}
 
@@ -156,7 +162,6 @@ namespace vve {
 
 
 };  // namespace vve
-
 
 
 

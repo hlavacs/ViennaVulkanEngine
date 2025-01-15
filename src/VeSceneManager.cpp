@@ -132,7 +132,7 @@ namespace vve {
 		        std::cout << "Diffuse Texture: " << texturePathStr << std::endl;
 			} 
 
-			m_registry.Get<Children&>(parent())().push_back(nHandle);
+			//m_registry.Get<Children&>(parent())().push_back(nHandle);
 			m_engine.SendMessage( MsgObjectLoad{this, nullptr, ObjectHandle{nHandle}, 
 				ParentHandle{parent}, Name{texturePathStr}, Name{mesh->mName.C_Str()} });
 		}

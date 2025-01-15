@@ -203,7 +203,6 @@ namespace vve {
 		vh::createTextureImage(GetPhysicalDevice(), GetDevice(), m_vmaAllocator, GetGraphicsQueue(), GetCommandPool(), pixels, texture.m_width, texture.m_height, texture.m_size, texture);
 		vh::createTextureImageView(GetDevice(), texture);
 		vh::createTextureSampler(GetPhysicalDevice(), GetDevice(), texture);
-		stbi_image_free(pixels);
 		return false;
 	}
 

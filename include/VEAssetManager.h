@@ -1,4 +1,6 @@
 #pragma once
+#include <filesystem>
+
 
 namespace vve {
 
@@ -16,9 +18,11 @@ namespace vve {
 		bool OnSceneLoad(Message& message);
 		bool OnSceneLoad2(Message& message);
 		bool OnObjectLoad(Message message);
+		bool OnTextureCreate(Message message);
 		bool OnQuit( Message message );
 
 		std::unordered_map<Name, vecs::Handle> m_handleMap;
+		std::unordered_map<std::filesystem::path, Name> m_fileNameMap;
     };
 
 };  // namespace vve
