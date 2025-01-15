@@ -133,7 +133,7 @@ namespace vve {
 			} 
 
 			//m_registry.Get<Children&>(parent())().push_back(nHandle);
-			m_engine.SendMessage( MsgObjectLoad{this, nullptr, ObjectHandle{nHandle}, 
+			m_engine.SendMessage( MsgObjectCreate{this, nullptr, ObjectHandle{nHandle}, 
 				ParentHandle{parent}, Name{texturePathStr}, Name{mesh->mName.C_Str()} });
 		}
 

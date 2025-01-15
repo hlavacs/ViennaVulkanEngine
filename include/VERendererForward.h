@@ -21,7 +21,7 @@ namespace vve
     private:
         bool OnInit(Message message);
         bool OnRecordNextFrame(Message message);
-		bool OnObjectLoad( Message message );
+		bool OnObjectCreate( Message message );
         bool OnQuit(Message message);
 
 		vh::UniformBuffers m_uniformBuffersPerFrame;

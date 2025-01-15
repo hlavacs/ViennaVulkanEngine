@@ -59,7 +59,7 @@ namespace vve {
         "QUIT", //
 		//---------------------
 		"SCENE_LOAD",	
-		"OBJECT_LOAD",	
+		"OBJECT_CREATE",	
 		"OBJECT_DESTROY",
 		"OBJECT_SET_PARENT",	
 		"TEXTURE_CREATE",  
@@ -121,8 +121,8 @@ namespace vve {
 			const C_STRUCT aiScene* m_scene{};
 		};
 
-	    struct MsgObjectLoad : public MsgBase { 
-			MsgObjectLoad(System* s, System* r, ObjectHandle object, ParentHandle parent, Name txtName, Name geomName); 
+	    struct MsgObjectCreate : public MsgBase { 
+			MsgObjectCreate(System* s, System* r, ObjectHandle object, ParentHandle parent, Name txtName, Name geomName); 
 			ObjectHandle m_object{}; 
 			ParentHandle m_parent{}; 
 			Name m_txtName; 

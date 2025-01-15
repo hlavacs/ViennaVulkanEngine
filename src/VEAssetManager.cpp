@@ -12,7 +12,7 @@ namespace vve {
 			{this,                            2000, "INIT", [this](Message& message){ return OnInit(message);} },
 			{this,                               0, "SCENE_LOAD", [this](Message& message){ return OnSceneLoad(message);} },
 			{this, std::numeric_limits<int>::max(), "SCENE_LOAD", [this](Message& message){ return OnSceneLoad2(message);} },
-			{this,                               0, "OBJECT_LOAD", [this](Message& message){ return OnObjectLoad(message);} },
+			{this,                               0, "OBJECT_CREATE", [this](Message& message){ return OnObjectCreate(message);} },
 			{this, std::numeric_limits<int>::max(), "TEXTURE_CREATE",   [this](Message& message){ return OnTextureCreate(message);} },
 			{this,                               0, "QUIT", [this](Message& message){ return OnQuit(message);} },
 		} );
@@ -30,7 +30,7 @@ namespace vve {
 		std::filesystem::path filepath = path();
 		auto directory = filepath.parent_path();
 		
-		msg.m_scene = aiImportFile(path().c_str(), aiProcess_Triangulate | aiProcess_GenNormals | aiProcess_FlipUVs);
+		msg.m_scene = aiImportFile(path().c_str(), aiProcessPreset_TargetRealtime_Fast | aiProcess_FlipUVs);
 
 		//Assimp::DefaultLogger::create("", Assimp::Logger::VERBOSE);
 		//Assimp::Importer importer;
@@ -39,6 +39,8 @@ namespace vve {
 		    //std::cerr << "Assimp Error: " << importer.GetErrorString() << std::endl;
 		    std::cerr << "Assimp Error: " << aiGetErrorString() << std::endl;
 		}
+
+		if(m_fileNameMap.contains(filepath)) { return false; }
 
 		// Process materials
 
@@ -58,8 +60,17 @@ namespace vve {
 		    aiString texturePath;
 		    if (material->GetTexture(aiTextureType_DIFFUSE, 0, &texturePath) == AI_SUCCESS) {
 				auto texturePathStr = directory / std::string{texturePath.C_Str()};
-		        std::cout << "Diffuse Texture: " << texturePathStr.string() << std::endl;
-				LoadTexture( Name{texturePathStr.string().c_str()});
+		        std::cout << "Diffuse Texture: " << texturePathStr.string() << std::endl;	
+				auto fileName = Name{texturePathStr.string()};
+				if( m_handleMap.contains(fileName) ) continue;
+				int texWidth, texHeight, texChannels;
+		        stbi_uc* pixels = stbi_load(fileName().c_str(), &texWidth, &texHeight, &texChannels, STBI_rgb_alpha);
+		        assert(pixels);
+		        VkDeviceSize imageSize = texWidth * texHeight * 4;
+				auto handle = m_registry.Insert(fileName, vh::Texture{texWidth, texHeight, imageSize, pixels});
+				m_handleMap[fileName] = handle;
+				m_fileNameMap[filepath] = Name{texturePathStr.string().c_str()};
+				m_engine.SendMessage( MsgTextureCreate{this, nullptr, pixels, TextureHandle{handle} } );
 		    }
 		}
 
@@ -71,8 +82,6 @@ namespace vve {
 		    std::cout << "Mesh " << i << " " << mesh->mName.C_Str() << " has " << mesh->mNumVertices << " vertices." << std::endl;
 			Name name{mesh->mName.C_Str()};
 			if( m_handleMap.contains(name) ) continue;
-			auto gHandle = m_registry.Insert( name );
-			m_handleMap[name] = gHandle;
 
 			vh::Geometry geometry{};
 		    for (unsigned int j = 0; j < mesh->mNumVertices; j++) {
@@ -109,8 +118,11 @@ namespace vve {
             		geometry.m_indices.push_back(face.mIndices[2]);
         		}
 			}
-	
-			m_registry.Put( gHandle, geometry );
+
+			auto gHandle = m_registry.Insert( name, geometry );
+			m_handleMap[name] = gHandle;
+			m_fileNameMap[filepath] = name;
+			m_engine.SendMessage( MsgGeometryCreate{this, nullptr, gHandle} );
 		}
 		return false;
 	}
@@ -121,8 +133,8 @@ namespace vve {
 		return true;
 	}
 
-    bool AssetManager::OnObjectLoad(Message message) {
-		auto msg = message.template GetData<MsgObjectLoad>();
+    bool AssetManager::OnObjectCreate(Message message) {
+		auto msg = message.template GetData<MsgObjectCreate>();
 		m_registry.Put(	msg.m_object, GeometryHandle{m_handleMap[msg.m_geomName]}, TextureHandle{m_handleMap[msg.m_txtName]} );
 		return false;
 	}

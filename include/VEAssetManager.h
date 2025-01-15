@@ -17,7 +17,7 @@ namespace vve {
 		bool OnInit(Message message);
 		bool OnSceneLoad(Message& message);
 		bool OnSceneLoad2(Message& message);
-		bool OnObjectLoad(Message message);
+		bool OnObjectCreate(Message message);
 		bool OnTextureCreate(Message message);
 		bool OnQuit( Message message );
 
