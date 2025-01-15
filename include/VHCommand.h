@@ -17,9 +17,6 @@ namespace vh {
     void endRecordCommandBuffer(VkCommandBuffer commandBuffer);
 
     void recordObject(VkCommandBuffer commandBuffer, Pipeline& graphicsPipeline, 
-			std::vector<VkDescriptorSet>& descriptorSets, Geometry& geometry, uint32_t currentFrame);
-
-    void recordObject2(VkCommandBuffer commandBuffer, Pipeline& graphicsPipeline, 
 			const std::vector<DescriptorSet>&& descriptorSets, Geometry& geometry, uint32_t currentFrame);
 
 

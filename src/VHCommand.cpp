@@ -122,24 +122,7 @@ namespace vh {
     }
 
 
-
     void recordObject(VkCommandBuffer commandBuffer, Pipeline& graphicsPipeline, 
-			std::vector<VkDescriptorSet>& descriptorSet, Geometry& geometry, uint32_t currentFrame) {
-
-        VkBuffer vertexBuffers[] = {geometry.m_vertexBuffer};
-        VkDeviceSize offsets[] = {0};
-        vkCmdBindVertexBuffers(commandBuffer, 0, 1, vertexBuffers, offsets);
-
-        vkCmdBindIndexBuffer(commandBuffer, geometry.m_indexBuffer, 0, VK_INDEX_TYPE_UINT32);
-
-        vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsPipeline.m_pipelineLayout
-            , 0, 1, &descriptorSet[currentFrame], 0, nullptr);
-
-        vkCmdDrawIndexed(commandBuffer, static_cast<uint32_t>(geometry.m_indices.size()), 1, 0, 0, 0);
-	}
-
-
-    void recordObject2(VkCommandBuffer commandBuffer, Pipeline& graphicsPipeline, 
 			const std::vector<DescriptorSet>&& descriptorSets, Geometry& geometry, uint32_t currentFrame) {
 
         VkBuffer vertexBuffers[] = {geometry.m_vertexBuffer};
