@@ -41,7 +41,6 @@ set(INCLUDE ${PROJECT_SOURCE_DIR}/include)  # engine include directory
 set(EXTERN ${PROJECT_SOURCE_DIR}/extern)    # external libraries
 set(IMGUI ${EXTERN}/imgui)    # external libraries
 set(ASSIMP ${EXTERN}/assimp)    # external libraries
-set(TINYGLTF ${EXTERN}/tinygltf)    # external libraries 
 set(VECS ${EXTERN}/ViennaEntityComponentSystem)    # external libraries 
 set(VTLL ${EXTERN}/ViennaEntityComponentSystem/extern/ViennaTypeListLibrary)    # external libraries 
 set(VSTY ${EXTERN}/ViennaEntityComponentSystem/extern/ViennaStrongType)    # external libraries 
