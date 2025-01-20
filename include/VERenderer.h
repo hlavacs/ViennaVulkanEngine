@@ -61,7 +61,6 @@ namespace vve
 		auto GetFramebufferResized() -> bool&;
 
 		auto GetVulkanState() -> VulkanState&;
-
 		void SubmitCommandBuffer( VkCommandBuffer commandBuffer );
 
     protected:

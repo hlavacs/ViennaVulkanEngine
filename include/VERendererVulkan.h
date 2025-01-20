@@ -14,10 +14,6 @@ namespace vve {
         RendererVulkan(std::string systemName, Engine& engine, std::string windowName);
         virtual ~RendererVulkan();
 
-		auto GetDescriptorPool() -> VkDescriptorPool& { return m_descriptorPool; }
-		auto GetVulkanState() -> VulkanState& { return m_vulkanState; }
-		//void SubmitCommandBuffer( VkCommandBuffer commandBuffer );
-
     protected:
 		bool OnExtensions(Message message);
         bool OnInit(Message message);
@@ -42,8 +38,6 @@ namespace vve {
         std::vector<const char*> m_deviceExtensions = {
             VK_KHR_SWAPCHAIN_EXTENSION_NAME
         };
-
-		VulkanState m_vulkanState{};
 
 	    VkRenderPass m_renderPass;
 		VkDescriptorSetLayout m_descriptorSetLayoutPerObject;

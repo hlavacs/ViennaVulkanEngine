@@ -116,12 +116,6 @@ namespace vve {
 		return false;
 	}
 
-	/*void RendererVulkan::SubmitCommandBuffer( VkCommandBuffer commandBuffer ) { 
-		GetVulkanState().m_commandBuffersSubmit.push_back(commandBuffer); /////////////////////
-
-		//std::cout << "SubmitCommandBuffer: " << m_commandBuffersSubmit.size() << std::endl;
-	};*/
-
     bool RendererVulkan::OnRenderNextFrame(Message message) {
         if(m_window->GetIsMinimized()) return false;
         

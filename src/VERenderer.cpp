@@ -40,15 +40,10 @@ namespace vve {
 	auto Renderer::GetDepthImage() -> vh::DepthImage& { return GetVulkanState().m_depthImage; }
 
 	void Renderer::SubmitCommandBuffer( VkCommandBuffer commandBuffer ) { 
-		GetVulkanState().m_commandBuffersSubmit.push_back(commandBuffer); /////////////////////
-		//std::cout << "SubmitCommandBuffer: " << m_commandBuffersSubmit.size() << std::endl;
+		GetVulkanState().m_commandBuffersSubmit.push_back(commandBuffer); 
 	};
 
 	auto Renderer::GetVulkanState() -> VulkanState& { 
-		return m_vulkan->GetVulkanState();
-	}
-
-	/*auto Renderer::GetVulkanState() -> VulkanState& { 
 		if( m_vulkanStateHandle().IsValid() == false ) {
 			for( auto [handle, state] : m_registry.template GetView<vecs::Handle, VulkanState&>() ) {
 				m_vulkanStateHandle = handle;
@@ -58,10 +53,7 @@ namespace vve {
 		}
 		auto& state = m_registry.template Get<VulkanState&>(m_vulkanStateHandle);
 		return state;
-	}*/
-
-
-	//void Renderer::SubmitCommandBuffer( VkCommandBuffer commandBuffer ) { assert(m_vulkan!=this); m_vulkan->SubmitCommandBuffer(commandBuffer); };
-
+	}
+	
 };  // namespace vve
 
