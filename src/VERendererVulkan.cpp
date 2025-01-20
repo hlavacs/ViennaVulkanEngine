@@ -86,13 +86,13 @@ namespace vve {
     bool RendererVulkan::OnPrepareNextFrame(Message message) {
         if(m_window->GetIsMinimized()) return false;
 
-        m_currentFrame = (m_currentFrame + 1) % MAX_FRAMES_IN_FLIGHT;
+        GetCurrentFrame() = (GetCurrentFrame() + 1) % MAX_FRAMES_IN_FLIGHT;
 		m_commandBuffersSubmit.clear();
 
 		vkWaitForFences(GetDevice(), 1, &m_fences[GetCurrentFrame()], VK_TRUE, UINT64_MAX);
 
         VkResult result = vkAcquireNextImageKHR(GetDevice(), GetSwapChain().m_swapChain, UINT64_MAX,
-                            m_imageAvailableSemaphores[GetCurrentFrame()], VK_NULL_HANDLE, &m_imageIndex);
+                            m_imageAvailableSemaphores[GetCurrentFrame()], VK_NULL_HANDLE, &GetImageIndex());
 
         if (result == VK_ERROR_OUT_OF_DATE_KHR ) {
             recreateSwapChain(m_vulkanState.m_windowSDL->GetSDLWindow(), GetSurface(), GetPhysicalDevice(), GetDevice(), GetVmaAllocator(), GetSwapChain(), GetDepthImage(), GetRenderPass());
@@ -133,8 +133,8 @@ namespace vve {
 
 		VkResult result = vh::presentImage(GetPresentQueue(), GetSwapChain(), GetImageIndex(), signalSemaphore);
 
-        if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR || m_framebufferResized) {
-            m_framebufferResized = false;
+        if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR || GetFramebufferResized()) {
+            GetFramebufferResized() = false;
             vh::recreateSwapChain(m_vulkanState.m_windowSDL->GetSDLWindow(), GetSurface(), GetPhysicalDevice(), GetDevice(), GetVmaAllocator(), GetSwapChain(), GetDepthImage(), GetRenderPass());
         } else assert(result == VK_SUCCESS);
 		return false;

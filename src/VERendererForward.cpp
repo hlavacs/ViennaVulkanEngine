@@ -34,7 +34,7 @@ namespace vve {
 			{ m_descriptorSetLayoutPerFrame, m_descriptorSetLayoutPerObject }, m_graphicsPipeline);
 
         vh::createCommandPool(GetSurface(), GetPhysicalDevice(), GetDevice(), m_commandPool);
-        vh::createCommandBuffers(GetDevice(), GetCommandPool(), m_commandBuffers);
+        vh::createCommandBuffers(GetDevice(), m_commandPool, m_commandBuffers);
 
 		vh::createUniformBuffers(GetPhysicalDevice(), GetDevice(), GetVmaAllocator(), sizeof(UniformBufferFrame), m_uniformBuffersPerFrame);
 		vh::createDescriptorSet(GetDevice(), m_descriptorSetLayoutPerFrame, GetDescriptorPool(), m_descriptorSetPerFrame);
@@ -96,7 +96,7 @@ namespace vve {
     bool RendererForward::OnQuit(Message message) {
         vkDeviceWaitIdle(GetDevice());
 		
-        vkDestroyCommandPool(GetDevice(), GetCommandPool(), nullptr);
+        vkDestroyCommandPool(GetDevice(), m_commandPool, nullptr);
 		vkDestroyPipeline(GetDevice(), m_graphicsPipeline.m_pipeline, nullptr);
         vkDestroyPipelineLayout(GetDevice(), m_graphicsPipeline.m_pipelineLayout, nullptr);        
 		vkDestroyRenderPass(GetDevice(), m_renderPass, nullptr);

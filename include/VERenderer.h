@@ -53,7 +53,7 @@ namespace vve
 		auto GetVmaAllocator() -> VmaAllocator&;
 		auto GetSwapChain() -> vh::SwapChain&;
 		auto GetDepthImage() -> vh::DepthImage&;
-		auto GetCurrentFrame() -> uint32_t;
+		auto GetCurrentFrame() -> uint32_t&;
 		auto GetImageIndex() -> uint32_t&;
 		void SubmitCommandBuffer( VkCommandBuffer commandBuffer );
 
@@ -63,7 +63,7 @@ namespace vve
         Window* 		m_window;
 		RendererVulkan* m_vulkan;
 
-		VulkanState* m_vulkanState{};
+		VulkanState* m_vulkanStatePtr{};
     };
 
 };   // namespace vve

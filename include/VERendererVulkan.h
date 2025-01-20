@@ -25,11 +25,11 @@ namespace vve {
 		auto GetVmaAllocator() -> VmaAllocator& { return m_vulkanState.m_vmaAllocator; }
 		auto GetSwapChain() -> vh::SwapChain& { return m_vulkanState.m_swapChain; }
 		auto GetDepthImage() -> vh::DepthImage& { return m_depthImage; }
-		auto GetCurrentFrame() -> uint32_t { return m_currentFrame; }
-		auto GetImageIndex() -> uint32_t& { return m_imageIndex; }
-		
+		auto GetCurrentFrame() -> uint32_t& { return m_vulkanState.m_currentFrame; }
+		auto GetImageIndex() -> uint32_t& { return m_vulkanState.m_imageIndex; }
+		auto GetFramebufferResized() -> bool& { return m_vulkanState.m_framebufferResized; }
+
 		auto GetRenderPass() -> VkRenderPass { return m_renderPass; }
-		auto GetFramebufferResized() -> bool { return m_framebufferResized; }
 		void SubmitCommandBuffer( VkCommandBuffer commandBuffer );
 
     private:
@@ -72,10 +72,9 @@ namespace vve {
 	    std::vector<vh::Semaphores> m_semaphores;
 		std::vector<VkFence> m_fences;
 
-	    uint32_t m_currentFrame = MAX_FRAMES_IN_FLIGHT - 1;
-        uint32_t m_imageIndex;
-	    bool m_framebufferResized = false;
-
+	    //uint32_t m_currentFrame = MAX_FRAMES_IN_FLIGHT - 1;
+        //uint32_t m_imageIndex;
+	    //bool m_framebufferResized = false;
 
     };
 };   // namespace vve

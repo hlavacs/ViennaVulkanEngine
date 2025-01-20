@@ -73,6 +73,8 @@ namespace vve {
     class System {
 
 	protected:
+
+		struct VulkanState;
 	
 	    struct MsgTypePhase {
 	        size_t m_type;
