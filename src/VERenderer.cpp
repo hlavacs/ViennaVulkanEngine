@@ -40,6 +40,23 @@ namespace vve {
 	auto Renderer::GetCurrentFrame() -> uint32_t& { assert(m_vulkan!=this); return m_vulkan->GetCurrentFrame(); }
 	auto Renderer::GetImageIndex() -> uint32_t& { assert(m_vulkan!=this); return m_vulkan->GetImageIndex(); }
 
+	/*
+	auto Renderer::GetSurface() -> VkSurfaceKHR { assert(m_vulkan!=this); return m_vulkan->GetSurface(); };
+	auto Renderer::GetInstance() -> VkInstance { assert(m_vulkan!=this); return m_vulkan->GetInstance(); }
+	auto Renderer::GetPhysicalDevice() -> VkPhysicalDevice { assert(m_vulkan!=this); return m_vulkan->GetPhysicalDevice(); }
+	auto Renderer::GetDevice() -> VkDevice { assert(m_vulkan!=this); return m_vulkan->GetDevice(); }
+	auto Renderer::GetQueueFamilies() -> vh::QueueFamilyIndices { assert(m_vulkan!=this); return m_vulkan->GetQueueFamilies(); }
+	auto Renderer::GetGraphicsQueue() -> VkQueue { assert(m_vulkan!=this); return m_vulkan->GetGraphicsQueue(); }
+	auto Renderer::GetPresentQueue() -> VkQueue { assert(m_vulkan!=this); return m_vulkan->GetPresentQueue(); }
+	auto Renderer::GetCommandPool() -> VkCommandPool { assert(m_vulkan!=this); return m_vulkan->GetCommandPool(); }
+	auto Renderer::GetDescriptorPool() -> VkDescriptorPool { assert(m_vulkan!=this); return m_vulkan->GetDescriptorPool(); }
+	auto Renderer::GetVmaAllocator() -> VmaAllocator& { assert(m_vulkan!=this); return m_vulkan->GetVmaAllocator(); }
+	auto Renderer::GetSwapChain() -> vh::SwapChain& { assert(m_vulkan!=this); return m_vulkan->GetSwapChain(); }
+	auto Renderer::GetDepthImage() -> vh::DepthImage& { assert(m_vulkan!=this); return m_vulkan->GetDepthImage(); }
+	auto Renderer::GetCurrentFrame() -> uint32_t& { assert(m_vulkan!=this); return m_vulkan->GetCurrentFrame(); }
+	auto Renderer::GetImageIndex() -> uint32_t& { assert(m_vulkan!=this); return m_vulkan->GetImageIndex(); }
+	*/
+
 
 	auto Renderer::GetVulkanState() -> VulkanState& { 
 		if( m_vulkanStateHandle().IsValid() == false ) {

@@ -13,6 +13,7 @@ namespace vve {
 
         RendererVulkan(std::string systemName, Engine& engine, std::string windowName);
         virtual ~RendererVulkan();
+		
 		auto GetSurface() -> VkSurfaceKHR { return  m_vulkanState.m_surface; };
         auto GetInstance() -> VkInstance { return m_vulkanState.m_instance; }
 		auto GetPhysicalDevice() -> VkPhysicalDevice { return m_vulkanState.m_physicalDevice; }
