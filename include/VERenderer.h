@@ -18,6 +18,25 @@ namespace vve
     class Renderer : public System {
         friend class Engine;
 
+	protected:	
+		struct VulkanState {
+        	VkSurfaceKHR 	m_surface{VK_NULL_HANDLE};
+	        WindowSDL*		m_windowSDL;
+			VmaAllocator 	m_vmaAllocator;
+	        VkInstance 		m_instance;
+		    VkDebugUtilsMessengerEXT m_debugMessenger;
+		    VkPhysicalDevice m_physicalDevice = VK_NULL_HANDLE;
+		    VkDevice 		m_device;
+		    vh::QueueFamilyIndices m_queueFamilies;
+		    VkQueue 		m_graphicsQueue;
+		    VkQueue 		m_presentQueue;
+		    vh::SwapChain 	m_swapChain;
+			
+	    	uint32_t m_currentFrame = MAX_FRAMES_IN_FLIGHT - 1;
+        	uint32_t m_imageIndex;
+	    	bool m_framebufferResized = false;
+		};
+
     public:
         Renderer(std::string systemName, Engine& m_engine, std::string windowName);
         virtual ~Renderer();
@@ -40,10 +59,11 @@ namespace vve
 
     protected:
 		bool OnAnnounce(Message message);
-        VkSurfaceKHR	m_surface{VK_NULL_HANDLE};
 		std::string 	m_windowName;
         Window* 		m_window;
 		RendererVulkan* m_vulkan;
+
+		VulkanState* m_vulkanState{};
     };
 
 };   // namespace vve

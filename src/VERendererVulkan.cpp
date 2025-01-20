@@ -37,25 +37,25 @@ namespace vve {
 	}
 
     bool RendererVulkan::OnInit(Message message) {
-    	m_windowSDL = (WindowSDL*)m_window;
+    	m_vulkanState.m_windowSDL = (WindowSDL*)m_window;
 		if (m_engine.GetDebug()) {
             m_instanceExtensions.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
         }
 
-    	vh::createInstance( m_validationLayers, m_instanceExtensions, m_engine.GetDebug(), m_instance);
+    	vh::createInstance( m_validationLayers, m_instanceExtensions, m_engine.GetDebug(), m_vulkanState.m_instance);
 		if (m_engine.GetDebug()) {
-	        vh::setupDebugMessenger(GetInstance(), m_debugMessenger);
+	        vh::setupDebugMessenger(GetInstance(), m_vulkanState.m_debugMessenger);
 		}
 
-		if (SDL_Vulkan_CreateSurface(m_windowSDL->GetSDLWindow(), GetInstance(), &m_surface) == 0) {
+		if (SDL_Vulkan_CreateSurface(m_vulkanState.m_windowSDL->GetSDLWindow(), GetInstance(), &m_vulkanState.m_surface) == 0) {
             printf("Failed to create Vulkan surface.\n");
         }
 
-        vh::pickPhysicalDevice(GetInstance(), m_deviceExtensions, GetSurface(), m_physicalDevice);
-        vh::createLogicalDevice(GetSurface(), GetPhysicalDevice(), m_queueFamilies, m_validationLayers, 
-			m_deviceExtensions, m_engine.GetDebug(), m_device, m_graphicsQueue, m_presentQueue);
-        vh::initVMA(GetInstance(), GetPhysicalDevice(), GetDevice(), m_vmaAllocator);  
-        vh::createSwapChain(m_windowSDL->GetSDLWindow(), GetSurface(), GetPhysicalDevice(), GetDevice(), m_swapChain);
+        vh::pickPhysicalDevice(GetInstance(), m_deviceExtensions, GetSurface(), m_vulkanState.m_physicalDevice);
+        vh::createLogicalDevice(GetSurface(), GetPhysicalDevice(), m_vulkanState.m_queueFamilies, m_validationLayers, 
+			m_deviceExtensions, m_engine.GetDebug(), m_vulkanState.m_device, m_vulkanState.m_graphicsQueue, m_vulkanState.m_presentQueue);
+        vh::initVMA(GetInstance(), GetPhysicalDevice(), GetDevice(), m_vulkanState.m_vmaAllocator);  
+        vh::createSwapChain(m_vulkanState.m_windowSDL->GetSDLWindow(), GetSurface(), GetPhysicalDevice(), GetDevice(), m_vulkanState.m_swapChain);
         vh::createImageViews(GetDevice(), GetSwapChain());
         vh::createRenderPassClear(GetPhysicalDevice(), GetDevice(), GetSwapChain(), true, m_renderPass);
         
@@ -95,13 +95,13 @@ namespace vve {
                             m_imageAvailableSemaphores[GetCurrentFrame()], VK_NULL_HANDLE, &m_imageIndex);
 
         if (result == VK_ERROR_OUT_OF_DATE_KHR ) {
-            recreateSwapChain(m_windowSDL->GetSDLWindow(), GetSurface(), GetPhysicalDevice(), GetDevice(), GetVmaAllocator(), GetSwapChain(), GetDepthImage(), GetRenderPass());
+            recreateSwapChain(m_vulkanState.m_windowSDL->GetSDLWindow(), GetSurface(), GetPhysicalDevice(), GetDevice(), GetVmaAllocator(), GetSwapChain(), GetDepthImage(), GetRenderPass());
         } else assert (result == VK_SUCCESS || result == VK_SUBOPTIMAL_KHR);
 		return false;
     }
 
     bool RendererVulkan::OnRecordNextFrame(Message message) {
-		if(m_windowSDL->GetIsMinimized()) return false;
+		if(m_vulkanState.m_windowSDL->GetIsMinimized()) return false;
 
         vkResetCommandBuffer(m_commandBuffers[GetCurrentFrame()],  0);
 
@@ -135,7 +135,7 @@ namespace vve {
 
         if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR || m_framebufferResized) {
             m_framebufferResized = false;
-            vh::recreateSwapChain(m_windowSDL->GetSDLWindow(), GetSurface(), GetPhysicalDevice(), GetDevice(), GetVmaAllocator(), GetSwapChain(), GetDepthImage(), GetRenderPass());
+            vh::recreateSwapChain(m_vulkanState.m_windowSDL->GetSDLWindow(), GetSurface(), GetPhysicalDevice(), GetDevice(), GetVmaAllocator(), GetSwapChain(), GetDepthImage(), GetRenderPass());
         } else assert(result == VK_SUCCESS);
 		return false;
     }
@@ -184,7 +184,7 @@ namespace vve {
         vkDestroySurfaceKHR(GetInstance(), GetSurface(), nullptr);
 
 		if (m_engine.GetDebug()) {
-            vh::DestroyDebugUtilsMessengerEXT(GetInstance(), m_debugMessenger, nullptr);
+            vh::DestroyDebugUtilsMessengerEXT(GetInstance(), m_vulkanState.m_debugMessenger, nullptr);
         }
 
         vkDestroyInstance(GetInstance(), nullptr);
@@ -200,7 +200,7 @@ namespace vve {
 		auto pixels = msg.m_pixels;
 		auto handle = msg.m_handle;
 		auto& texture = m_registry.template Get<vh::Texture&>(handle);
-		vh::createTextureImage(GetPhysicalDevice(), GetDevice(), m_vmaAllocator, GetGraphicsQueue(), GetCommandPool(), pixels, texture.m_width, texture.m_height, texture.m_size, texture);
+		vh::createTextureImage(GetPhysicalDevice(), GetDevice(), m_vulkanState.m_vmaAllocator, GetGraphicsQueue(), GetCommandPool(), pixels, texture.m_width, texture.m_height, texture.m_size, texture);
 		vh::createTextureImageView(GetDevice(), texture);
 		vh::createTextureSampler(GetPhysicalDevice(), GetDevice(), texture);
 		return false;
@@ -211,7 +211,7 @@ namespace vve {
 		auto& texture = m_registry.template Get<vh::Texture&>(handle);
 		vkDestroySampler(GetDevice(), texture.m_textureSampler, nullptr);
 		vkDestroyImageView(GetDevice(), texture.m_textureImageView, nullptr);
-		vh::destroyImage(GetDevice(), m_vmaAllocator, texture.m_textureImage, texture.m_textureImageAllocation);
+		vh::destroyImage(GetDevice(), m_vulkanState.m_vmaAllocator, texture.m_textureImage, texture.m_textureImageAllocation);
 		m_registry.Erase(handle);
 		return false;
 	}
@@ -219,16 +219,16 @@ namespace vve {
 	bool RendererVulkan::OnGeometryCreate( Message message ) {
 		auto handle = message.template GetData<MsgGeometryCreate>().m_handle;
 		auto& geometry = m_registry.template Get<vh::Geometry&>(handle);
-		vh::createVertexBuffer(GetPhysicalDevice(), GetDevice(), m_vmaAllocator, GetGraphicsQueue(), GetCommandPool(), geometry);
-		vh::createIndexBuffer( GetPhysicalDevice(), GetDevice(), m_vmaAllocator, GetGraphicsQueue(), GetCommandPool(), geometry);
+		vh::createVertexBuffer(GetPhysicalDevice(), GetDevice(), m_vulkanState.m_vmaAllocator, GetGraphicsQueue(), GetCommandPool(), geometry);
+		vh::createIndexBuffer( GetPhysicalDevice(), GetDevice(), m_vulkanState.m_vmaAllocator, GetGraphicsQueue(), GetCommandPool(), geometry);
 		return false;
 	}
 
 	bool RendererVulkan::OnGeometryDestroy( Message message ) {
 		auto handle = message.template GetData<MsgGeometryDestroy>().m_handle;
 		auto& geometry = m_registry.template Get<vh::Geometry&>(handle);
-		vh::destroyBuffer(GetDevice(), m_vmaAllocator, geometry.m_indexBuffer, geometry.m_indexBufferAllocation);
-		vh::destroyBuffer(GetDevice(), m_vmaAllocator, geometry.m_vertexBuffer, geometry.m_vertexBufferAllocation);
+		vh::destroyBuffer(GetDevice(), m_vulkanState.m_vmaAllocator, geometry.m_indexBuffer, geometry.m_indexBufferAllocation);
+		vh::destroyBuffer(GetDevice(), m_vulkanState.m_vmaAllocator, geometry.m_vertexBuffer, geometry.m_vertexBufferAllocation);
 		m_registry.Erase(handle);
 		return false;
 	}

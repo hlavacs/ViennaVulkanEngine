@@ -16,7 +16,6 @@ namespace vve
     public:
         RendererForward(std::string systemName, Engine& engine, std::string windowName);
         virtual ~RendererForward();
-		auto GetCommandPool() -> VkCommandPool { return m_commandPool; }
 
     private:
         bool OnInit(Message message);
