@@ -1,6 +1,7 @@
 struct CoarseVertex {
     float3 fragColor;
     float2 uv;
+    float3 normal;
 };
 
 struct UniformBufferObject {

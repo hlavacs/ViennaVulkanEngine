@@ -25,12 +25,13 @@ namespace vve
 			VmaAllocator 	m_vmaAllocator;
 	        VkInstance 		m_instance;
 		    VkDebugUtilsMessengerEXT m_debugMessenger;
-		    VkPhysicalDevice m_physicalDevice = VK_NULL_HANDLE;
-		    VkDevice 		m_device;
-		    vh::QueueFamilyIndices m_queueFamilies;
-		    VkQueue 		m_graphicsQueue;
-		    VkQueue 		m_presentQueue;
+		    VkPhysicalDevice m_physicalDevice{VK_NULL_HANDLE};
+		    VkDevice 		m_device{VK_NULL_HANDLE};
+		    vh::QueueFamilyIndices m_queueFamilies{VK_NULL_HANDLE};
+		    VkQueue 		m_graphicsQueue{VK_NULL_HANDLE};
+		    VkQueue 		m_presentQueue{VK_NULL_HANDLE};
 		    vh::SwapChain 	m_swapChain;
+			vh::DepthImage 	m_depthImage;
 			
 	    	uint32_t m_currentFrame = MAX_FRAMES_IN_FLIGHT - 1;
         	uint32_t m_imageIndex;
@@ -43,20 +44,20 @@ namespace vve
         Renderer(std::string systemName, Engine& m_engine, std::string windowName);
         virtual ~Renderer();
         
-		auto GetSurface() -> VkSurfaceKHR;
-		auto GetInstance() -> VkInstance;
-		auto GetPhysicalDevice() -> VkPhysicalDevice;
-		auto GetDevice() -> VkDevice;
-		auto GetQueueFamilies() -> vh::QueueFamilyIndices;
-		auto GetGraphicsQueue() -> VkQueue;
-		auto GetPresentQueue() -> VkQueue;
-		auto GetCommandPool() -> VkCommandPool;
-		auto GetDescriptorPool() -> VkDescriptorPool;
+		auto GetSurface() -> VkSurfaceKHR&;
+		auto GetInstance() -> VkInstance&;
+		auto GetPhysicalDevice() -> VkPhysicalDevice&;
+		auto GetDevice() -> VkDevice&;
+		auto GetQueueFamilies() -> vh::QueueFamilyIndices&;
+		auto GetGraphicsQueue() -> VkQueue&;
+		auto GetPresentQueue() -> VkQueue&;
+		auto GetCommandPool() -> VkCommandPool&;
 		auto GetVmaAllocator() -> VmaAllocator&;
 		auto GetSwapChain() -> vh::SwapChain&;
 		auto GetDepthImage() -> vh::DepthImage&;
 		auto GetCurrentFrame() -> uint32_t&;
 		auto GetImageIndex() -> uint32_t&;
+		auto GetFramebufferResized() -> bool&;
 
 		auto GetVulkanState() -> VulkanState&;
 

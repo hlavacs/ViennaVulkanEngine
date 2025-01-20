@@ -36,8 +36,10 @@ namespace vve {
 		vh::createGraphicsPipeline(GetDevice(), m_renderPass, "shaders\\Imgui\\vert.spv", "shaders\\Imgui\\frag.spv",
 			 { m_descriptorSetLayoutPerFrame, m_descriptorSetLayoutPerObject }, m_graphicsPipeline);
 
+        vh::createDescriptorPool(GetDevice(), 1000, m_descriptorPool);
+
 		vh::setupImgui( ((WindowSDL*)m_window)->GetSDLWindow(), GetInstance(), GetPhysicalDevice(), GetQueueFamilies(), GetDevice(), GetGraphicsQueue(), 
-			GetCommandPool(), GetDescriptorPool(), m_renderPass);  
+			m_commandPool, m_descriptorPool, m_renderPass);  
 
         vh::createCommandPool(GetSurface(), GetPhysicalDevice(), GetDevice(), m_commandPool); 
         vh::createCommandBuffers(GetDevice(), m_commandPool, m_commandBuffers);
@@ -86,6 +88,7 @@ namespace vve {
         vkDestroyRenderPass(GetDevice(), m_renderPass, nullptr);
 		vkDestroyPipeline(GetDevice(), m_graphicsPipeline.m_pipeline, nullptr);
         vkDestroyPipelineLayout(GetDevice(), m_graphicsPipeline.m_pipelineLayout, nullptr);   
+        vkDestroyDescriptorPool(GetDevice(), m_descriptorPool, nullptr);
 		vkDestroyDescriptorSetLayout(GetDevice(), m_descriptorSetLayoutPerObject, nullptr);
 		vkDestroyDescriptorSetLayout(GetDevice(), m_descriptorSetLayoutPerFrame, nullptr);
 		return false;

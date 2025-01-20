@@ -31,6 +31,7 @@ namespace vve
 	    vh::Pipeline m_graphicsPipeline;
 
 	    VkRenderPass m_renderPass;
+	    VkDescriptorPool m_descriptorPool;    
 	    VkCommandPool m_commandPool;
 	    std::vector<VkCommandBuffer> m_commandBuffers;
     };

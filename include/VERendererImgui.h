@@ -8,7 +8,6 @@ namespace vve {
     public:
         RendererImgui(std::string systemName, Engine& engine, std::string windowName);
         virtual ~RendererImgui();
-		auto GetCommandPool() -> VkCommandPool { return m_commandPool; }
 
     private:
         bool OnInit(Message message);
@@ -22,6 +21,7 @@ namespace vve {
 	    vh::Pipeline m_graphicsPipeline;
 
 	    VkRenderPass m_renderPass;
+	    VkDescriptorPool m_descriptorPool;    
 	    VkCommandPool m_commandPool;
 	    std::vector<VkCommandBuffer> m_commandBuffers;
     };

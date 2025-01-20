@@ -35,9 +35,10 @@ namespace vve {
 
         vh::createCommandPool(GetSurface(), GetPhysicalDevice(), GetDevice(), m_commandPool);
         vh::createCommandBuffers(GetDevice(), m_commandPool, m_commandBuffers);
+        vh::createDescriptorPool(GetDevice(), 1000, m_descriptorPool);
 
 		vh::createUniformBuffers(GetPhysicalDevice(), GetDevice(), GetVmaAllocator(), sizeof(UniformBufferFrame), m_uniformBuffersPerFrame);
-		vh::createDescriptorSet(GetDevice(), m_descriptorSetLayoutPerFrame, GetDescriptorPool(), m_descriptorSetPerFrame);
+		vh::createDescriptorSet(GetDevice(), m_descriptorSetLayoutPerFrame, m_descriptorPool, m_descriptorSetPerFrame);
 	    vh::updateDescriptorSetUBO(GetDevice(), m_uniformBuffersPerFrame, 0, sizeof(UniformBufferFrame), m_descriptorSetPerFrame);   
 		return false;
 	}
@@ -81,7 +82,7 @@ namespace vve {
 		vh::createUniformBuffers(GetPhysicalDevice(), GetDevice(), GetVmaAllocator(), sizeof(UniformBufferObject), ubo);
 
 		vh::DescriptorSet descriptorSet{1};
-		vh::createDescriptorSet(GetDevice(), m_descriptorSetLayoutPerObject, GetDescriptorPool(), descriptorSet);
+		vh::createDescriptorSet(GetDevice(), m_descriptorSetLayoutPerObject, m_descriptorPool, descriptorSet);
 	    vh::updateDescriptorSetUBO(GetDevice(), ubo, 0, sizeof(UniformBufferObject), descriptorSet);
 	    vh::updateDescriptorSetTexture(GetDevice(), texture, 1, descriptorSet);
 
@@ -99,6 +100,7 @@ namespace vve {
         vkDestroyCommandPool(GetDevice(), m_commandPool, nullptr);
 		vkDestroyPipeline(GetDevice(), m_graphicsPipeline.m_pipeline, nullptr);
         vkDestroyPipelineLayout(GetDevice(), m_graphicsPipeline.m_pipelineLayout, nullptr);        
+        vkDestroyDescriptorPool(GetDevice(), m_descriptorPool, nullptr);
 		vkDestroyRenderPass(GetDevice(), m_renderPass, nullptr);
 
 		vh::destroyBuffer2(GetDevice(), GetVmaAllocator(), m_uniformBuffersPerFrame);

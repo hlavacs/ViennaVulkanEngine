@@ -12,10 +12,10 @@ public:
     MyGUI( vve::Engine& engine ) : vve::System("MyGUI", engine ) {
 
 		m_engine.RegisterCallback( { 
-			  {this, -10000, "RECORD_NEXT_FRAME", [this](Message& message){ return OnRecordNextFrame(message);} }
-			, {this,      0, "SDL_KEY_DOWN", [this](Message& message){ return OnKeyDown(message);} }
-			, {this,      0, "SDL_KEY_REPEAT", [this](Message& message){ return OnKeyRepeat(message);} }
-			, {this,      0, "SDL_KEY_UP", [this](Message& message){ return OnKeyUp(message);} }
+			{this, -10000, "RECORD_NEXT_FRAME", [this](Message& message){ return OnRecordNextFrame(message);} },
+			{this,      0, "SDL_KEY_DOWN", [this](Message& message){ return OnKeyDown(message);} },
+			{this,      0, "SDL_KEY_REPEAT", [this](Message& message){ return OnKeyRepeat(message);} },
+			{this,      0, "SDL_KEY_UP", [this](Message& message){ return OnKeyUp(message);} }
 		} );
     };
     
