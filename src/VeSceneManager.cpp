@@ -17,7 +17,7 @@ namespace vve {
 			{this, std::numeric_limits<int>::max(), "OBJECT_SET_PARENT", [this](Message& message){ return OnObjectSetParent(message);} },
 			{this, std::numeric_limits<int>::max(), "SDL_KEY_DOWN", [this](Message& message){ return OnKeyDown(message);} },
 			{this, std::numeric_limits<int>::max(), "SDL_KEY_REPEAT", [this](Message& message){ return OnKeyDown(message);} },
-			{this, std::numeric_limits<int>::max(), "SDL_MOUSE_BUTTON_DOWN", [this](Message& message){ m_mouseButtonDown = true; return false;} },
+			{this, std::numeric_limits<int>::max(), "SDL_MOUSE_BUTTON_DOWN", [this](Message& message){ m_mouseButtonDown = true; m_x = m_y = -1; return false;} },
 			{this, std::numeric_limits<int>::max(), "SDL_MOUSE_BUTTON_UP", [this](Message& message){ m_mouseButtonDown = false; return false;} },
 			{this, std::numeric_limits<int>::max(), "SDL_MOUSE_MOVE", [this](Message& message){ return OnMouseMove(message); } }
 		} );
@@ -172,10 +172,7 @@ namespace vve {
 			dt = (real_t)msg.m_dt;
 		}
 
-		if( key == SDL_SCANCODE_ESCAPE  ) {
-			m_engine.Stop();
-			return false;
-		}
+		if( key == SDL_SCANCODE_ESCAPE  ) { m_engine.Stop(); return false; }
 
 		auto [pn, rn, sn] 		 = m_registry.template Get<Position&, Rotation&, Scale&>(m_cameraNodeHandle);
 		auto [pc, rc, sc, LtoPc] = m_registry.template Get<Position&, Rotation&, Scale&, LocalToParentMatrix>(m_cameraHandle);		
@@ -186,75 +183,60 @@ namespace vve {
 		float rotSpeed = 2.0f;
 
 		switch( key )  {
-
-			case SDL_SCANCODE_W : {
-				translate = mat3_t{ LtoPc } * vec3_t(0.0f, 0.0f, -1.0f);
-				break;
-			}
-
-			case SDL_SCANCODE_S : {
-				translate = mat3_t{ LtoPc } * vec3_t(0.0f, 0.0f, 1.0f);
-				break;
-			}
-
-			case SDL_SCANCODE_A : {
-				translate = mat3_t{ LtoPc } * vec3_t(-1.0f, 0.0f, 0.0f);
-				break;
-			}
-
-			case SDL_SCANCODE_Q : {
-				translate = vec3_t(0.0f, 0.0f, -1.0f);
-				break;
-			}
-
-			case SDL_SCANCODE_E : {
-				translate = vec3_t(0.0f, 0.0f, 1.0f);
-				break;
-			}
-
-			case SDL_SCANCODE_D : {
-				translate = mat3_t{ LtoPc } * vec3_t(1.0f, 0.0f, 0.0f);
-				break;
-			}
-
-			case SDL_SCANCODE_LEFT : {
-				angle = rotSpeed * (float)dt * 1.0f;
-				axis = glm::vec3(0.0, 0.0, 1.0);
-				break;
-			}
-
-			case SDL_SCANCODE_RIGHT : {
-				angle = rotSpeed * (float)dt * -1.0f;
-				axis = glm::vec3(0.0, 0.0, 1.0);
-				break;
-			}
-
-			case SDL_SCANCODE_UP : {
-				angle = rotSpeed * (float)dt * -1.0f;
-				axis = vec3_t{ LtoPc() * vec4_t{1.0f, 0.0f, 0.0f, 0.0f} };
-				break;
-			}
-
-			case SDL_SCANCODE_DOWN : {
-				angle = rotSpeed * (float)dt * 1.0f;
-				axis = vec3_t{ LtoPc() * vec4_t{1.0f, 0.0f, 0.0f, 0.0f} };
-				break;
-			}
+			case SDL_SCANCODE_W : { translate = mat3_t{ LtoPc } * vec3_t(0.0f, 0.0f, -1.0f); break; }
+			case SDL_SCANCODE_S : { translate = mat3_t{ LtoPc } * vec3_t(0.0f, 0.0f, 1.0f); break; }
+			case SDL_SCANCODE_A : { translate = mat3_t{ LtoPc } * vec3_t(-1.0f, 0.0f, 0.0f); break; }
+			case SDL_SCANCODE_Q : { translate = vec3_t(0.0f, 0.0f, -1.0f); break; }
+			case SDL_SCANCODE_E : { translate = vec3_t(0.0f, 0.0f, 1.0f); break; }
+			case SDL_SCANCODE_D : { translate = mat3_t{ LtoPc } * vec3_t(1.0f, 0.0f, 0.0f); break; }
+			case SDL_SCANCODE_LEFT : { angle = rotSpeed * (float)dt * 1.0f; axis = glm::vec3(0.0, 0.0, 1.0); break; }
+			case SDL_SCANCODE_RIGHT : { angle = rotSpeed * (float)dt * -1.0f; axis = glm::vec3(0.0, 0.0, 1.0); break; }
+			case SDL_SCANCODE_UP : { angle = rotSpeed * (float)dt * -1.0f; 
+									 axis = vec3_t{ LtoPc() * vec4_t{1.0f, 0.0f, 0.0f, 0.0f} }; break; }
+			case SDL_SCANCODE_DOWN : { angle = rotSpeed * (float)dt * 1.0f;
+									   axis = vec3_t{ LtoPc() * vec4_t{1.0f, 0.0f, 0.0f, 0.0f} }; break; }
 		}
 
-		///add the new translation vector to the previous one
-		float speed = 3.0f;
+		float speed = 3.0f; ///add the new translation vector to the previous one
 		pn = pn() + translate * (real_t)dt * speed;
 
 		///combination of yaw and pitch, both wrt to parent space
 		rc = mat3_t{ glm::rotate(mat4_t{1.0f}, angle, axis) * mat4_t{ rc } };
-
-        //std::cout << "Key down: " << message.template GetData<MsgKeyDown>().m_key << std::endl;
 		return false;
     }
 
 
 	bool SceneManager::OnMouseMove(Message message) {
+		if( m_mouseButtonDown == false ) return false;
+
+		auto msg = message.template GetData<MsgMouseMove>();
+		real_t dt = (real_t)msg.m_dt;
+		if( m_x==-1 ) { m_x = msg.m_x; m_y = msg.m_y; }
+		int dx = msg.m_x - m_x;
+		m_x = msg.m_x;
+		int dy = msg.m_y - m_y;
+		m_y = msg.m_y;
+
+		auto [pn, rn, sn] = m_registry.template Get<Position&, Rotation&, Scale&>(m_cameraNodeHandle);
+		auto [pc, rc, sc, LtoPc] = m_registry.template Get<Position&, Rotation&, Scale&, LocalToParentMatrix>(m_cameraHandle);		
+		
+		vec3_t translate = vec3_t(0.0f, 0.0f, 0.0f); //total translation
+		vec3_t axis1 = vec3_t(1.0f); //total rotation around the axes, is 4d !
+		float angle1 = 0.0f;
+		vec3_t axis2 = vec3_t(1.0f); //total rotation around the axes, is 4d !
+		float angle2 = 0.0f;
+		float rotSpeed = 1.0f;
+
+		std::cout << "Mouse move: " << dx << ", " << dy << std::endl;
+
+		angle1 = rotSpeed * (float)dt * -dx; //left right
+		axis1 = glm::vec3(0.0, 0.0, 1.0);
+		rc = mat3_t{ glm::rotate(mat4_t{1.0f}, angle1, axis1) * mat4_t{ rc } };
+
+		angle2 = rotSpeed * (float)dt * -dy; //up down
+		axis2 = vec3_t{ LtoPc() * vec4_t{1.0f, 0.0f, 0.0f, 0.0f} };
+		rc = mat3_t{ glm::rotate(mat4_t{1.0f}, angle2, axis2) * mat4_t{ rc } };
+
 		return false;
 	}
 

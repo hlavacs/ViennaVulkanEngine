@@ -22,10 +22,8 @@ namespace vve {
 			{this,      0, "TEXTURE_DESTROY",  [this](Message& message){ return OnTextureDestroy(message);} },
 			{this,      0, "GEOMETRY_CREATE",  [this](Message& message){ return OnGeometryCreate(message);} },
 			{this,      0, "GEOMETRY_DESTROY", [this](Message& message){ return OnGeometryDestroy(message);} },
-
 			{this,   2000, "QUIT", [this](Message& message){ return OnQuit(message);} },
 		} );
-		m_vulkan = this;
     }
 
     RendererVulkan::~RendererVulkan() {}

@@ -23,11 +23,11 @@ namespace vve
         	VkSurfaceKHR 	m_surface{VK_NULL_HANDLE};
 	        WindowSDL*		m_windowSDL;
 			VmaAllocator 	m_vmaAllocator;
-	        VkInstance 		m_instance;
+	        VkInstance 		m_instance{VK_NULL_HANDLE};
 		    VkDebugUtilsMessengerEXT m_debugMessenger;
 		    VkPhysicalDevice m_physicalDevice{VK_NULL_HANDLE};
 		    VkDevice 		m_device{VK_NULL_HANDLE};
-		    vh::QueueFamilyIndices m_queueFamilies{VK_NULL_HANDLE};
+		    vh::QueueFamilyIndices m_queueFamilies;
 		    VkQueue 		m_graphicsQueue{VK_NULL_HANDLE};
 		    VkQueue 		m_presentQueue{VK_NULL_HANDLE};
 		    vh::SwapChain 	m_swapChain;
@@ -67,7 +67,7 @@ namespace vve
 		bool OnAnnounce(Message message);
 		std::string 	m_windowName;
         Window* 		m_window;
-		RendererVulkan* m_vulkan;
+		//RendererVulkan* m_vulkan;
 
 		VulkanStateHandle m_vulkanStateHandle{};
     };

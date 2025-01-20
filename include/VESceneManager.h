@@ -54,6 +54,8 @@ namespace vve {
 		vecs::Handle m_rootHandle;
 
 		bool m_mouseButtonDown=false;
+		int m_x = -1;
+		int m_y = -1;
     };
 
 };  // namespace vve
