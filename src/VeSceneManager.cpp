@@ -227,7 +227,7 @@ namespace vve {
 		float angle2 = 0.0f;
 		float rotSpeed = 1.0f;
 
-		std::cout << "Mouse move: " << dx << ", " << dy << std::endl;
+		//std::cout << "Mouse move: " << dx << ", " << dy << std::endl;
 
 		angle1 = rotSpeed * (float)dt * -dx; //left right
 		axis1 = glm::vec3(0.0, 0.0, 1.0);
