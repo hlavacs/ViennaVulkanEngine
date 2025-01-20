@@ -39,6 +39,11 @@ namespace vve {
 	auto Renderer::GetFramebufferResized() -> bool& { return GetVulkanState().m_framebufferResized; }
 	auto Renderer::GetDepthImage() -> vh::DepthImage& { return GetVulkanState().m_depthImage; }
 
+	void Renderer::SubmitCommandBuffer( VkCommandBuffer commandBuffer ) { 
+		GetVulkanState().m_commandBuffersSubmit.push_back(commandBuffer); /////////////////////
+		//std::cout << "SubmitCommandBuffer: " << m_commandBuffersSubmit.size() << std::endl;
+	};
+
 	auto Renderer::GetVulkanState() -> VulkanState& { 
 		return m_vulkan->GetVulkanState();
 	}
@@ -56,7 +61,7 @@ namespace vve {
 	}*/
 
 
-	void Renderer::SubmitCommandBuffer( VkCommandBuffer commandBuffer ) { assert(m_vulkan!=this); m_vulkan->SubmitCommandBuffer(commandBuffer); };
+	//void Renderer::SubmitCommandBuffer( VkCommandBuffer commandBuffer ) { assert(m_vulkan!=this); m_vulkan->SubmitCommandBuffer(commandBuffer); };
 
 };  // namespace vve
 

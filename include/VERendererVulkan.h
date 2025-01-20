@@ -16,7 +16,7 @@ namespace vve {
 
 		auto GetDescriptorPool() -> VkDescriptorPool& { return m_descriptorPool; }
 		auto GetVulkanState() -> VulkanState& { return m_vulkanState; }
-		void SubmitCommandBuffer( VkCommandBuffer commandBuffer );
+		//void SubmitCommandBuffer( VkCommandBuffer commandBuffer );
 
     protected:
 		bool OnExtensions(Message message);

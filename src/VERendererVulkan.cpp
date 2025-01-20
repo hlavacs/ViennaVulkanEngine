@@ -88,7 +88,7 @@ namespace vve {
         if(m_window->GetIsMinimized()) return false;
 
         GetCurrentFrame() = (GetCurrentFrame() + 1) % MAX_FRAMES_IN_FLIGHT;
-		m_commandBuffersSubmit.clear();
+		GetVulkanState().m_commandBuffersSubmit.clear();
 
 		vkWaitForFences(GetDevice(), 1, &m_fences[GetCurrentFrame()], VK_TRUE, UINT64_MAX);
 
@@ -116,16 +116,17 @@ namespace vve {
 		return false;
 	}
 
-	void RendererVulkan::SubmitCommandBuffer( VkCommandBuffer commandBuffer ) { 
-		m_commandBuffersSubmit.push_back(commandBuffer); 
+	/*void RendererVulkan::SubmitCommandBuffer( VkCommandBuffer commandBuffer ) { 
+		GetVulkanState().m_commandBuffersSubmit.push_back(commandBuffer); /////////////////////
+
 		//std::cout << "SubmitCommandBuffer: " << m_commandBuffersSubmit.size() << std::endl;
-	};
+	};*/
 
     bool RendererVulkan::OnRenderNextFrame(Message message) {
         if(m_window->GetIsMinimized()) return false;
         
 		VkSemaphore signalSemaphore;
-		vh::submitCommandBuffers(GetDevice(), GetGraphicsQueue(), m_commandBuffersSubmit, 
+		vh::submitCommandBuffers(GetDevice(), GetGraphicsQueue(), GetVulkanState().m_commandBuffersSubmit, 
 			m_imageAvailableSemaphores, m_semaphores, signalSemaphore, m_fences, GetCurrentFrame());
 				
    		vh::transitionImageLayout(GetDevice(), GetGraphicsQueue(), m_commandPool, 
