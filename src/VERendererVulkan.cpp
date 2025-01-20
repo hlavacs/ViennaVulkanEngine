@@ -42,6 +42,8 @@ namespace vve {
             m_instanceExtensions.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
         }
 
+		m_vulkanStateHandle = m_registry.template Insert(VulkanState{});
+
     	vh::createInstance( m_validationLayers, m_instanceExtensions, m_engine.GetDebug(), m_vulkanState.m_instance);
 		if (m_engine.GetDebug()) {
 	        vh::setupDebugMessenger(GetInstance(), m_vulkanState.m_debugMessenger);

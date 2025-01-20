@@ -29,10 +29,12 @@ namespace vve {
 		auto GetImageIndex() -> uint32_t& { return m_vulkanState.m_imageIndex; }
 		auto GetFramebufferResized() -> bool& { return m_vulkanState.m_framebufferResized; }
 
+		auto GetVulkanState() -> VulkanState& { return m_vulkanState; }
+
 		auto GetRenderPass() -> VkRenderPass { return m_renderPass; }
 		void SubmitCommandBuffer( VkCommandBuffer commandBuffer );
 
-    private:
+    protected:
 		bool OnExtensions(Message message);
         bool OnInit(Message message);
 
@@ -71,11 +73,6 @@ namespace vve {
         std::vector<VkSemaphore> m_imageAvailableSemaphores;
 	    std::vector<vh::Semaphores> m_semaphores;
 		std::vector<VkFence> m_fences;
-
-	    //uint32_t m_currentFrame = MAX_FRAMES_IN_FLIGHT - 1;
-        //uint32_t m_imageIndex;
-	    //bool m_framebufferResized = false;
-
     };
 };   // namespace vve
 

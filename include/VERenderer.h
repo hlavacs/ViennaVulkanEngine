@@ -37,6 +37,8 @@ namespace vve
 	    	bool m_framebufferResized = false;
 		};
 
+		using VulkanStateHandle = vsty::strong_type_t<vecs::Handle, vsty::counter<>>;
+
     public:
         Renderer(std::string systemName, Engine& m_engine, std::string windowName);
         virtual ~Renderer();
@@ -55,6 +57,9 @@ namespace vve
 		auto GetDepthImage() -> vh::DepthImage&;
 		auto GetCurrentFrame() -> uint32_t&;
 		auto GetImageIndex() -> uint32_t&;
+
+		auto GetVulkanState() -> VulkanState&;
+
 		void SubmitCommandBuffer( VkCommandBuffer commandBuffer );
 
     protected:
@@ -63,7 +68,7 @@ namespace vve
         Window* 		m_window;
 		RendererVulkan* m_vulkan;
 
-		VulkanState* m_vulkanStatePtr{};
+		VulkanStateHandle m_vulkanStateHandle{};
     };
 
 };   // namespace vve

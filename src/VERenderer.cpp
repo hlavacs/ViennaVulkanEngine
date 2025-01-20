@@ -39,6 +39,18 @@ namespace vve {
 	auto Renderer::GetDepthImage() -> vh::DepthImage& { assert(m_vulkan!=this); return m_vulkan->GetDepthImage(); }
 	auto Renderer::GetCurrentFrame() -> uint32_t& { assert(m_vulkan!=this); return m_vulkan->GetCurrentFrame(); }
 	auto Renderer::GetImageIndex() -> uint32_t& { assert(m_vulkan!=this); return m_vulkan->GetImageIndex(); }
+
+
+	auto Renderer::GetVulkanState() -> VulkanState& { 
+		if( m_vulkanStateHandle().IsValid() == false ) {
+			auto [handle, state] = *m_registry.template GetView<vecs::Handle, VulkanState&>().begin();
+			m_vulkanStateHandle = handle;
+			return state;
+		}
+		return m_registry.template Get<VulkanState&>(m_vulkanStateHandle);
+	}
+
+
 	void Renderer::SubmitCommandBuffer( VkCommandBuffer commandBuffer ) { assert(m_vulkan!=this); m_vulkan->SubmitCommandBuffer(commandBuffer); };
 
 };  // namespace vve
