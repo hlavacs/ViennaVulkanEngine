@@ -13,22 +13,23 @@ namespace vve {
 
         RendererVulkan(std::string systemName, Engine& engine, std::string windowName);
         virtual ~RendererVulkan();
-		
-		auto GetSurface() -> VkSurfaceKHR { return  m_vulkanState.m_surface; };
-        auto GetInstance() -> VkInstance { return m_vulkanState.m_instance; }
-		auto GetPhysicalDevice() -> VkPhysicalDevice { return m_vulkanState.m_physicalDevice; }
-		auto GetDevice() -> VkDevice { return m_vulkanState.m_device; }
-		auto GetQueueFamilies() -> vh::QueueFamilyIndices { return m_vulkanState.m_queueFamilies; }
-		auto GetGraphicsQueue() -> VkQueue { return m_vulkanState.m_graphicsQueue; }
-		auto GetPresentQueue() -> VkQueue { return m_vulkanState.m_presentQueue; }
+
+		auto GetSurface() -> VkSurfaceKHR { return  GetVulkanState().m_surface; };
+        auto GetInstance() -> VkInstance { return GetVulkanState().m_instance; }
+		auto GetPhysicalDevice() -> VkPhysicalDevice { return GetVulkanState().m_physicalDevice; }
+		auto GetDevice() -> VkDevice { return GetVulkanState().m_device; }
+		auto GetQueueFamilies() -> vh::QueueFamilyIndices { return GetVulkanState().m_queueFamilies; }
+		auto GetGraphicsQueue() -> VkQueue { return GetVulkanState().m_graphicsQueue; }
+		auto GetPresentQueue() -> VkQueue { return GetVulkanState().m_presentQueue; }
+		auto GetVmaAllocator() -> VmaAllocator& { return GetVulkanState().m_vmaAllocator; }
+		auto GetSwapChain() -> vh::SwapChain& { return GetVulkanState().m_swapChain; }
+		auto GetCurrentFrame() -> uint32_t& { return GetVulkanState().m_currentFrame; }
+		auto GetImageIndex() -> uint32_t& { return GetVulkanState().m_imageIndex; }
+		auto GetFramebufferResized() -> bool& { return GetVulkanState().m_framebufferResized; }
+
 		auto GetCommandPool() -> VkCommandPool { return m_commandPool; }
 		auto GetDescriptorPool() -> VkDescriptorPool { return m_descriptorPool; }
-		auto GetVmaAllocator() -> VmaAllocator& { return m_vulkanState.m_vmaAllocator; }
-		auto GetSwapChain() -> vh::SwapChain& { return m_vulkanState.m_swapChain; }
 		auto GetDepthImage() -> vh::DepthImage& { return m_depthImage; }
-		auto GetCurrentFrame() -> uint32_t& { return m_vulkanState.m_currentFrame; }
-		auto GetImageIndex() -> uint32_t& { return m_vulkanState.m_imageIndex; }
-		auto GetFramebufferResized() -> bool& { return m_vulkanState.m_framebufferResized; }
 
 		auto GetVulkanState() -> VulkanState& { return m_vulkanState; }
 
