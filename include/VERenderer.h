@@ -45,6 +45,7 @@ namespace vve
         Renderer(std::string systemName, Engine& m_engine, std::string windowName);
         virtual ~Renderer();
         
+    protected:
 		auto GetSurface() -> VkSurfaceKHR&;
 		auto GetInstance() -> VkInstance&;
 		auto GetPhysicalDevice() -> VkPhysicalDevice&;
@@ -63,7 +64,6 @@ namespace vve
 		auto GetVulkanState() -> VulkanState&;
 		void SubmitCommandBuffer( VkCommandBuffer commandBuffer );
 
-    protected:
 		bool OnAnnounce(Message message);
 		std::string 	m_windowName;
         Window* 		m_window;
