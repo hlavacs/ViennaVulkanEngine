@@ -116,8 +116,8 @@ namespace vve {
 			}
         }
 
-        for( auto& key : m_keysDown ) { m_engine.SendMessage( MsgKeyRepeat{this, nullptr, message.GetDt(), key} ); }
-        for( auto& button : m_mouseButtonsDown ) { m_engine.SendMessage( MsgMouseButtonRepeat{this, nullptr, message.GetDt(), button} ); }
+        for( auto& key1 : m_keysDown ) { m_engine.SendMessage( MsgKeyRepeat{this, nullptr, message.GetDt(), key1} ); }
+        for( auto& button1 : m_mouseButtonsDown ) { m_engine.SendMessage( MsgMouseButtonRepeat{this, nullptr, message.GetDt(), button1} ); }
 
         if(key.size() > 0) { for( auto& k : key ) { m_keysDown.insert(k) ; } }
         if(button.size() > 0) { for( auto& b : button ) {m_mouseButtonsDown.insert(b);} }

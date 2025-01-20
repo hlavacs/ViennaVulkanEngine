@@ -16,7 +16,10 @@ namespace vve {
 			{this,                            1000, "SCENE_LOAD", [this](Message& message){ return OnSceneLoad(message);} },
 			{this, std::numeric_limits<int>::max(), "OBJECT_SET_PARENT", [this](Message& message){ return OnObjectSetParent(message);} },
 			{this, std::numeric_limits<int>::max(), "SDL_KEY_DOWN", [this](Message& message){ return OnKeyDown(message);} },
-			{this, std::numeric_limits<int>::max(), "SDL_KEY_REPEAT", [this](Message& message){ return OnKeyDown(message);} }		
+			{this, std::numeric_limits<int>::max(), "SDL_KEY_REPEAT", [this](Message& message){ return OnKeyDown(message);} },
+			{this, std::numeric_limits<int>::max(), "SDL_MOUSE_BUTTON_DOWN", [this](Message& message){ m_mouseButtonDown = true; return false;} },
+			{this, std::numeric_limits<int>::max(), "SDL_MOUSE_BUTTON_UP", [this](Message& message){ m_mouseButtonDown = false; return false;} },
+			{this, std::numeric_limits<int>::max(), "SDL_MOUSE_MOVE", [this](Message& message){ return OnMouseMove(message); } }
 		} );
 	}
 
@@ -249,6 +252,11 @@ namespace vve {
         //std::cout << "Key down: " << message.template GetData<MsgKeyDown>().m_key << std::endl;
 		return false;
     }
+
+
+	bool SceneManager::OnMouseMove(Message message) {
+		return false;
+	}
 
 
 };  // namespace vve
