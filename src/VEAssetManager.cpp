@@ -26,11 +26,10 @@ namespace vve {
 
     bool AssetManager::OnSceneLoad(Message& message) {
 		auto& msg = message.template GetData<MsgSceneLoad>();
-		auto path = msg.m_sceneName;
-		std::filesystem::path filepath = path();
+		std::filesystem::path filepath = msg.m_sceneName();
 		auto directory = filepath.parent_path();
 		
-		msg.m_scene = aiImportFile(path().c_str(), aiProcessPreset_TargetRealtime_Fast | aiProcess_FlipUVs);
+		msg.m_scene = aiImportFile(msg.m_sceneName().c_str(), aiProcessPreset_TargetRealtime_Fast | aiProcess_FlipUVs);
 
 		//Assimp::DefaultLogger::create("", Assimp::Logger::VERBOSE);
 		//Assimp::Importer importer;

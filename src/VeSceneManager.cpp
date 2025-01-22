@@ -98,8 +98,7 @@ namespace vve {
 		ParentHandle pHandle = msg.m_parent;
 		if( !pHandle().IsValid() ) pHandle = { m_rootHandle };
 
-		auto path = msg.m_sceneName;
-		std::filesystem::path filepath = path();
+		std::filesystem::path filepath = msg.m_sceneName();
 		auto directory = filepath.parent_path();
 
 		static float x = 0.0f;
