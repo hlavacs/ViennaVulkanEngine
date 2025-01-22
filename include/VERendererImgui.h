@@ -16,7 +16,6 @@ namespace vve {
         bool OnSDL(Message message);
         bool OnQuit(Message message);
 
-		VkDescriptorSetLayout m_descriptorSetLayoutPerObject;
 		VkDescriptorSetLayout m_descriptorSetLayoutPerFrame;
 	    vh::Pipeline m_graphicsPipeline;
 

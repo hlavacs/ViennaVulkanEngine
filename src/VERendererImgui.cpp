@@ -23,18 +23,10 @@ namespace vve {
     bool RendererImgui::OnInit(Message message) {
         vh::createRenderPass(GetPhysicalDevice(), GetDevice(), GetSwapChain(), false, m_renderPass);
 		
-		vh::createDescriptorSetLayout(GetDevice(), //Per object
-			{ { .descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, .stageFlags = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT },
-			{ .descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 	.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT } },
-			m_descriptorSetLayoutPerObject
-		);
-
-		vh::createDescriptorSetLayout( GetDevice(), //Per frame
-			{{ .descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, .stageFlags = VK_SHADER_STAGE_VERTEX_BIT } },
-			m_descriptorSetLayoutPerFrame );
-
-		vh::createGraphicsPipeline(GetDevice(), m_renderPass, "shaders\\Imgui\\vert.spv", "shaders\\Imgui\\frag.spv",
-			 { m_descriptorSetLayoutPerFrame, m_descriptorSetLayoutPerObject }, m_graphicsPipeline);
+ 		vh::createDescriptorSetLayout( GetDevice(), {}, m_descriptorSetLayoutPerFrame );
+			
+        vh::createGraphicsPipeline(GetDevice(), m_renderPass, "shaders\\Imgui\\vert.spv", "", 
+			 { m_descriptorSetLayoutPerFrame }, m_graphicsPipeline);
 
         vh::createDescriptorPool(GetDevice(), 1000, m_descriptorPool);
 
@@ -89,7 +81,6 @@ namespace vve {
 		vkDestroyPipeline(GetDevice(), m_graphicsPipeline.m_pipeline, nullptr);
         vkDestroyPipelineLayout(GetDevice(), m_graphicsPipeline.m_pipelineLayout, nullptr);   
         vkDestroyDescriptorPool(GetDevice(), m_descriptorPool, nullptr);
-		vkDestroyDescriptorSetLayout(GetDevice(), m_descriptorSetLayoutPerObject, nullptr);
 		vkDestroyDescriptorSetLayout(GetDevice(), m_descriptorSetLayoutPerFrame, nullptr);
 		return false;
     }
