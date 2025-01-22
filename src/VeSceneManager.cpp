@@ -113,12 +113,14 @@ namespace vve {
 		aiVector3D scaling, position;
     	aiQuaternion rotation;
     	transform.Decompose(scaling, rotation, position);
+		aiMatrix3x3 rotMat = rotation.GetMatrix();
+		mat3_t rotMat3x3 = mat3_t(rotMat.a1, rotMat.a2, rotMat.a3, rotMat.b1, rotMat.b2, rotMat.b3, rotMat.c1, rotMat.c2, rotMat.c3);
 
 		auto nHandle = m_registry.Insert(
 								node->mName.C_Str()[0] != 0 ? Name{node->mName.C_Str()} : Name{"Node" + std::to_string(id++)},
 								parent,
 								Children{},
-								Position{ { position.x, position.y + x, position.z } }, Rotation{mat3_t{1.0f}}, Scale{{ scaling.x, scaling.y, scaling.z }},
+								Position{ { position.x, position.y + x, position.z } }, Rotation{rotMat3x3}, Scale{{ scaling.x, scaling.y, scaling.z }},
 								LocalToParentMatrix{mat4_t{1.0f}}, 
 								LocalToWorldMatrix{mat4_t{1.0f}});
 
