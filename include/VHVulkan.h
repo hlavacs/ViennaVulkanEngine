@@ -59,9 +59,9 @@ namespace vh {
 
     struct Vertex {
         glm::vec3 pos;
+        glm::vec3 normal;
         glm::vec3 color;
         glm::vec2 texCoord;
-        glm::vec3 normal;
         glm::vec3 tangent;
 
         static VkVertexInputBindingDescription getBindingDescription() {
@@ -81,9 +81,9 @@ namespace vh {
             attributeDescriptions[0].offset = offsetof(Vertex, pos);
 
             attributeDescriptions[1].binding = 0;
-            attributeDescriptions[1].location = 1;
+            attributeDescriptions[1].location = 3;
             attributeDescriptions[1].format = VK_FORMAT_R32G32B32_SFLOAT;
-            attributeDescriptions[1].offset = offsetof(Vertex, color);
+            attributeDescriptions[1].offset = offsetof(Vertex, normal);
 
             attributeDescriptions[2].binding = 0;
             attributeDescriptions[2].location = 2;
@@ -91,9 +91,9 @@ namespace vh {
             attributeDescriptions[2].offset = offsetof(Vertex, texCoord);
 
             attributeDescriptions[3].binding = 0;
-            attributeDescriptions[3].location = 3;
+            attributeDescriptions[3].location = 1;
             attributeDescriptions[3].format = VK_FORMAT_R32G32B32_SFLOAT;
-            attributeDescriptions[3].offset = offsetof(Vertex, normal);
+            attributeDescriptions[3].offset = offsetof(Vertex, color);
 
             attributeDescriptions[4].binding = 0;
             attributeDescriptions[4].location = 4;

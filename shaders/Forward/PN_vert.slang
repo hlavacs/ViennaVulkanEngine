@@ -1,17 +1,6 @@
-
-/*struct AssembledVertex {
-    float3 position : POSITION;
-    float3 color    : COLOR;
-    float2 uv 		: UV;
-    float3 normal   : NORMAL;
-    float3 tangent  : TANGENT;
-};*/
-
 struct CoarseVertex {
     float3 fragColor;
-    float2 uv;
     float3 normal;
-    float3 tangent;
 };
 
 struct VertexStageOutput {
@@ -21,6 +10,7 @@ struct VertexStageOutput {
 
 struct UniformBufferObject {
     float4x4 model;
+    float3 color;
 };
 
 struct UniformBufferCamera {
@@ -36,30 +26,17 @@ ParameterBlock<UniformBufferCamera> gParamsFrame;
 [[vk::binding(0,1)]]
 ParameterBlock<UniformBufferObject> gParamsObject;
 
-//VertexStageOutput vertexMain(AssembledVertex assembledVertex)
-
 [shader("vertex")]
-VertexStageOutput vertexMain( 
-	float3 position : POSITION,
-    float3 normal   : NORMAL,
-    float2 uv 		: UV,
-    float3 color    : COLOR,
-    float3 tangent  : TANGENT)
+VertexStageOutput vertexMain( float3 position : POSITION, float3 normal : NORMAL)
 {
     float3 worldPosition = mul(gParamsObject.model, float4(position, 1.0)).xyz;
     float3 viewPosition = mul(gParamsFrame.view, float4(worldPosition, 1.0)).xyz;   
 
     VertexStageOutput output;
-    output.coarseVertex.fragColor = color;
-    output.coarseVertex.uv = uv;
+	output.coarseVertex.fragColor = gParamsObject.color;
     output.coarseVertex.normal = mul(gParamsObject.model, float4(normal, 1.0)).xyz;
-    output.coarseVertex.tangent = mul(gParamsObject.model, float4(tangent, 1.0)).xyz;
     output.sv_position = mul(gParamsFrame.proj, float4(viewPosition, 1.0));
 
     return output;
 }
-
-
-
-
 
