@@ -59,11 +59,11 @@ namespace vve {
 		vh::startRecordCommandBuffer(m_commandBuffers[GetCurrentFrame()], GetImageIndex(), 
 			GetSwapChain(), m_renderPass, m_graphicsPipeline, false, ((WindowSDL*)m_window)->GetClearColor(), GetCurrentFrame());
 		
-		for( auto[name, ghandle, LtoW, uniformBuffers, descriptorsets] : m_registry.template GetView<Name, GeometryHandle, LocalToWorldMatrix&, vh::UniformBuffers&, vh::DescriptorSet&>() ) {
+		for( auto[name, ghandle, LtoW, uniformBuffers, descriptorsets] : m_registry.template GetView<Name, MeshHandle, LocalToWorldMatrix&, vh::UniformBuffers&, vh::DescriptorSet&>() ) {
 			UniformBufferObject ubo{};
 			ubo.model = LtoW(); // * glm::rotate(glm::mat4(1.0f), time * glm::radians(50.0f), glm::vec3(0.0f, 0.0f, 1.0f));			
 			memcpy(uniformBuffers.m_uniformBuffersMapped[GetCurrentFrame()], &ubo, sizeof(ubo));
-			vh::Geometry& geometry = m_registry.template Get<vh::Geometry&>(ghandle);
+			vh::Mesh& geometry = m_registry.template Get<vh::Mesh&>(ghandle);
 			vh::recordObject( m_commandBuffers[GetCurrentFrame()], m_graphicsPipeline, { descriptorsets, m_descriptorSetPerFrame }, geometry, GetCurrentFrame() );
 		}
 
@@ -75,7 +75,7 @@ namespace vve {
 	
 	bool RendererForward::OnObjectCreate( Message message ) {
 		auto handle = message.template GetData<MsgObjectCreate>().m_object;
-		auto [gHandle, tHandle] = m_registry.template Get<GeometryHandle, TextureHandle>(handle);
+		auto [gHandle, tHandle] = m_registry.template Get<MeshHandle, TextureHandle>(handle);
 		auto& texture = m_registry.template Get<vh::Texture&>(tHandle);
 
 		vh::UniformBuffers ubo;

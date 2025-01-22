@@ -232,7 +232,7 @@ namespace vh {
 
 
     void createVertexBuffer(VkPhysicalDevice physicalDevice, VkDevice device, VmaAllocator vmaAllocator
-        , VkQueue graphicsQueue, VkCommandPool commandPool, Geometry& geometry) {
+        , VkQueue graphicsQueue, VkCommandPool commandPool, Mesh& geometry) {
 
         VkDeviceSize bufferSize = sizeof(geometry.m_vertices[0]) * geometry.m_vertices.size();
 
@@ -257,7 +257,7 @@ namespace vh {
     }
 
     void createIndexBuffer(VkPhysicalDevice physicalDevice, VkDevice device, VmaAllocator vmaAllocator
-        , VkQueue graphicsQueue, VkCommandPool commandPool, Geometry& geometry) {
+        , VkQueue graphicsQueue, VkCommandPool commandPool, Mesh& geometry) {
 
         VkDeviceSize bufferSize = sizeof(geometry.m_indices[0]) * geometry.m_indices.size();
 

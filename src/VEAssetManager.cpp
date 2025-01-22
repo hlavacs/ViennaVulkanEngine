@@ -83,7 +83,7 @@ namespace vve {
 			Name name{mesh->mName.C_Str()};
 			if( m_handleMap.contains(name) ) continue;
 
-			vh::Geometry geometry{};
+			vh::Mesh geometry{};
 		    for (unsigned int j = 0; j < mesh->mNumVertices; j++) {
 		        aiVector3D vertex = mesh->mVertices[j];
 				geometry.m_vertices.push_back(vh::Vertex{ {vertex.x, vertex.y, vertex.z} });
@@ -135,7 +135,7 @@ namespace vve {
 
     bool AssetManager::OnObjectCreate(Message message) {
 		auto msg = message.template GetData<MsgObjectCreate>();
-		m_registry.Put(	msg.m_object, GeometryHandle{m_handleMap[msg.m_geomName]}, TextureHandle{m_handleMap[msg.m_txtName]} );
+		m_registry.Put(	msg.m_object, MeshHandle{m_handleMap[msg.m_geomName]}, TextureHandle{m_handleMap[msg.m_txtName]} );
 		return false;
 	}
 

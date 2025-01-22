@@ -36,10 +36,10 @@ namespace vh {
 
 
     void createVertexBuffer(VkPhysicalDevice physicalDevice, VkDevice device, VmaAllocator vmaAllocator
-        , VkQueue graphicsQueue, VkCommandPool commandPool, Geometry& geometry);
+        , VkQueue graphicsQueue, VkCommandPool commandPool, Mesh& geometry);
 
     void createIndexBuffer(VkPhysicalDevice physicalDevice, VkDevice device, VmaAllocator vmaAllocator
-        , VkQueue graphicsQueue, VkCommandPool commandPool, Geometry& geometry);
+        , VkQueue graphicsQueue, VkCommandPool commandPool, Mesh& geometry);
 
     void createUniformBuffers(VkPhysicalDevice physicalDevice, VkDevice device, VmaAllocator& vmaAllocator, 
 		VkDeviceSize bufferSize, UniformBuffers &uniformBuffers);

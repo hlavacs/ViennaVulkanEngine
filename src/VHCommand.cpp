@@ -123,7 +123,7 @@ namespace vh {
 
 
     void recordObject(VkCommandBuffer commandBuffer, Pipeline& graphicsPipeline, 
-			const std::vector<DescriptorSet>&& descriptorSets, Geometry& geometry, uint32_t currentFrame) {
+			const std::vector<DescriptorSet>&& descriptorSets, Mesh& geometry, uint32_t currentFrame) {
 
         VkBuffer vertexBuffers[] = {geometry.m_vertexBuffer};
         VkDeviceSize offsets[] = {0};

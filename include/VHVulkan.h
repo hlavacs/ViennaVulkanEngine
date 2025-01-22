@@ -153,7 +153,7 @@ namespace vh {
         VkSampler       m_textureSampler;
     };
 
-    struct Geometry {
+    struct Mesh {
         std::vector<Vertex>     m_vertices;
         std::vector<uint32_t>   m_indices;
         VkBuffer                m_vertexBuffer;

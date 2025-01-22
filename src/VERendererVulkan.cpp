@@ -145,7 +145,7 @@ namespace vve {
 
 		vkDestroyDescriptorSetLayout(GetDevice(), m_descriptorSetLayoutPerFrame, nullptr);
 
-		for( auto geometry : m_registry.template GetView<vh::Geometry&>() ) {
+		for( auto geometry : m_registry.template GetView<vh::Mesh&>() ) {
 	        vh::destroyBuffer(GetDevice(), GetVmaAllocator(), geometry.m_indexBuffer, geometry.m_indexBufferAllocation);
 	        vh::destroyBuffer(GetDevice(), GetVmaAllocator(), geometry.m_vertexBuffer, geometry.m_vertexBufferAllocation);
 		}
@@ -203,7 +203,7 @@ namespace vve {
 
 	bool RendererVulkan::OnGeometryCreate( Message message ) {
 		auto handle = message.template GetData<MsgGeometryCreate>().m_handle;
-		auto& geometry = m_registry.template Get<vh::Geometry&>(handle);
+		auto& geometry = m_registry.template Get<vh::Mesh&>(handle);
 		vh::createVertexBuffer(GetPhysicalDevice(), GetDevice(), GetVulkanState().m_vmaAllocator, GetGraphicsQueue(), m_commandPool, geometry);
 		vh::createIndexBuffer( GetPhysicalDevice(), GetDevice(), GetVulkanState().m_vmaAllocator, GetGraphicsQueue(), m_commandPool, geometry);
 		return false;
@@ -211,7 +211,7 @@ namespace vve {
 
 	bool RendererVulkan::OnGeometryDestroy( Message message ) {
 		auto handle = message.template GetData<MsgGeometryDestroy>().m_handle;
-		auto& geometry = m_registry.template Get<vh::Geometry&>(handle);
+		auto& geometry = m_registry.template Get<vh::Mesh&>(handle);
 		vh::destroyBuffer(GetDevice(), GetVulkanState().m_vmaAllocator, geometry.m_indexBuffer, geometry.m_indexBufferAllocation);
 		vh::destroyBuffer(GetDevice(), GetVulkanState().m_vmaAllocator, geometry.m_vertexBuffer, geometry.m_vertexBufferAllocation);
 		m_registry.Erase(handle);
