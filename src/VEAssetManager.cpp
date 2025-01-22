@@ -68,7 +68,7 @@ namespace vve {
 		        VkDeviceSize imageSize = texWidth * texHeight * 4;
 				auto handle = m_registry.Insert(fileName, vh::Texture{texWidth, texHeight, imageSize, pixels});
 				m_handleMap[fileName] = handle;
-				m_fileNameMap[filepath] = Name{texturePathStr.string().c_str()};
+				m_fileNameMap.insert( std::make_pair( filepath, Name{texturePathStr.string().c_str()} ) );
 				m_engine.SendMessage( MsgTextureCreate{this, nullptr, pixels, TextureHandle{handle} } );
 		    }
 		}
@@ -120,7 +120,7 @@ namespace vve {
 
 			auto gHandle = m_registry.Insert( name, geometry );
 			m_handleMap[name] = gHandle;
-			m_fileNameMap[filepath] = name;
+			m_fileNameMap.insert( std::make_pair(filepath, name) );
 			m_engine.SendMessage( MsgGeometryCreate{this, nullptr, gHandle} );
 		}
 		return false;

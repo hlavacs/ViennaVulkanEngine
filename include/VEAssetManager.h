@@ -22,7 +22,7 @@ namespace vve {
 		bool OnQuit( Message message );
 
 		std::unordered_map<Name, vecs::Handle> m_handleMap;
-		std::unordered_map<std::filesystem::path, Name> m_fileNameMap;
+		std::unordered_multimap<std::filesystem::path, Name> m_fileNameMap;
     };
 
 };  // namespace vve
