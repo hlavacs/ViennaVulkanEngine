@@ -40,7 +40,6 @@ namespace vve {
         };
 
 	    VkRenderPass m_renderPass;
-		VkDescriptorSetLayout m_descriptorSetLayoutPerObject;
 		VkDescriptorSetLayout m_descriptorSetLayoutPerFrame;
 	    vh::Pipeline m_graphicsPipeline;
 	    VkDescriptorPool m_descriptorPool;    

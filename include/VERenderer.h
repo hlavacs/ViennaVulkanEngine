@@ -65,11 +65,9 @@ namespace vve
 		void SubmitCommandBuffer( VkCommandBuffer commandBuffer );
 
 		bool OnAnnounce(Message message);
-		std::string 	m_windowName;
-        Window* 		m_window;
-		//RendererVulkan* m_vulkan;
-
-		VulkanStateHandle m_vulkanStateHandle{};
+		std::string 		m_windowName;
+        Window* 			m_window;
+		VulkanStateHandle 	m_vulkanStateHandle{};
     };
 
 };   // namespace vve

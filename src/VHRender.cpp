@@ -159,6 +159,8 @@ namespace vh {
 		std::string vertShaderPath, std::string fragShaderPath,
 		std::vector<VkDescriptorSetLayout> descriptorSetLayouts, Pipeline& graphicsPipeline) {
 
+		std::vector<VkPipelineShaderStageCreateInfo> shaderStages;
+
         VkPipelineShaderStageCreateInfo vertShaderStageInfo{};
         auto vertShaderCode = readFile(vertShaderPath);
         VkShaderModule vertShaderModule = createShaderModule(device, vertShaderCode);
@@ -166,27 +168,32 @@ namespace vh {
         vertShaderStageInfo.stage = VK_SHADER_STAGE_VERTEX_BIT;
         vertShaderStageInfo.module = vertShaderModule;
         vertShaderStageInfo.pName = "main";
+		shaderStages.push_back(vertShaderStageInfo);
 
-        VkPipelineShaderStageCreateInfo fragShaderStageInfo{};
-        auto fragShaderCode = readFile(fragShaderPath);
-        VkShaderModule fragShaderModule = createShaderModule(device, fragShaderCode);
-        fragShaderStageInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
-        fragShaderStageInfo.stage = VK_SHADER_STAGE_FRAGMENT_BIT;
-        fragShaderStageInfo.module = fragShaderModule;
-        fragShaderStageInfo.pName = "main";
-
-        VkPipelineShaderStageCreateInfo shaderStages[] = {vertShaderStageInfo, fragShaderStageInfo};
+		VkShaderModule fragShaderModule{};
+		if( !fragShaderPath.empty() ) {
+	        VkPipelineShaderStageCreateInfo fragShaderStageInfo{};
+	        auto fragShaderCode = readFile(fragShaderPath);
+	        fragShaderModule = createShaderModule(device, fragShaderCode);
+	        fragShaderStageInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+	        fragShaderStageInfo.stage = VK_SHADER_STAGE_FRAGMENT_BIT;
+	        fragShaderStageInfo.module = fragShaderModule;
+	        fragShaderStageInfo.pName = "main";
+			shaderStages.push_back(fragShaderStageInfo);
+		}
 
         VkPipelineVertexInputStateCreateInfo vertexInputInfo{};
         vertexInputInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
 
-        auto bindingDescription = Vertex::getBindingDescription();
-        auto attributeDescriptions = Vertex::getAttributeDescriptions();
-
-        vertexInputInfo.vertexBindingDescriptionCount = 1;
-        vertexInputInfo.vertexAttributeDescriptionCount = static_cast<uint32_t>(attributeDescriptions.size());
-        vertexInputInfo.pVertexBindingDescriptions = &bindingDescription;
-        vertexInputInfo.pVertexAttributeDescriptions = attributeDescriptions.data();
+		if( !fragShaderPath.empty() ) {
+	        auto bindingDescription = Vertex::getBindingDescription();
+	        auto attributeDescriptions = Vertex::getAttributeDescriptions();
+	
+	        vertexInputInfo.vertexBindingDescriptionCount = 1;
+	        vertexInputInfo.vertexAttributeDescriptionCount = static_cast<uint32_t>(attributeDescriptions.size());
+	        vertexInputInfo.pVertexBindingDescriptions = &bindingDescription;
+	        vertexInputInfo.pVertexAttributeDescriptions = attributeDescriptions.data();
+		}
 
         VkPipelineInputAssemblyStateCreateInfo inputAssembly{};
         inputAssembly.sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
@@ -257,8 +264,8 @@ namespace vh {
 
         VkGraphicsPipelineCreateInfo pipelineInfo{};
         pipelineInfo.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
-        pipelineInfo.stageCount = 2;
-        pipelineInfo.pStages = shaderStages;
+        pipelineInfo.stageCount = shaderStages.size();
+        pipelineInfo.pStages = shaderStages.data();
         pipelineInfo.pVertexInputState = &vertexInputInfo;
         pipelineInfo.pInputAssemblyState = &inputAssembly;
         pipelineInfo.pViewportState = &viewportState;
@@ -276,7 +283,7 @@ namespace vh {
             throw std::runtime_error("failed to create graphics pipeline!");
         }
 
-        vkDestroyShaderModule(device, fragShaderModule, nullptr);
+		if(shaderStages.size() > 1) { vkDestroyShaderModule(device, fragShaderModule, nullptr); }
         vkDestroyShaderModule(device, vertShaderModule, nullptr);
     }
 

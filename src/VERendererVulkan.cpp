@@ -57,19 +57,11 @@ namespace vve {
         vh::createSwapChain(GetVulkanState().m_windowSDL->GetSDLWindow(), GetSurface(), GetPhysicalDevice(), GetDevice(), GetVulkanState().m_swapChain);
         vh::createImageViews(GetDevice(), GetSwapChain());
         vh::createRenderPassClear(GetPhysicalDevice(), GetDevice(), GetSwapChain(), true, m_renderPass);
-        
-		vh::createDescriptorSetLayout(GetDevice(), //Per object
-			{{ .descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, .stageFlags = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT },
-			{ .descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, .stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT} },
-			m_descriptorSetLayoutPerObject
-		);
 
-		vh::createDescriptorSetLayout( GetDevice(), //Per frame
-			{{ .descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, .stageFlags = VK_SHADER_STAGE_VERTEX_BIT } },
-			m_descriptorSetLayoutPerFrame );
+		vh::createDescriptorSetLayout( GetDevice(), {}, m_descriptorSetLayoutPerFrame );
 			
-        vh::createGraphicsPipeline(GetDevice(), m_renderPass, "shaders\\Vulkan\\vert.spv", "shaders\\Vulkan\\frag.spv",
-			 { m_descriptorSetLayoutPerFrame, m_descriptorSetLayoutPerObject }, m_graphicsPipeline);
+        vh::createGraphicsPipeline(GetDevice(), m_renderPass, "shaders\\Vulkan\\vert.spv", "", 
+			 { m_descriptorSetLayoutPerFrame }, m_graphicsPipeline);
 
         vh::createCommandPool(GetSurface(), GetPhysicalDevice(), GetDevice(), m_commandPool);
         vh::createDepthResources(GetPhysicalDevice(), GetDevice(), GetVmaAllocator(), GetSwapChain(), GetDepthImage());
@@ -151,7 +143,6 @@ namespace vve {
 	        vh::destroyImage(GetDevice(), GetVmaAllocator(), texture.m_textureImage, texture.m_textureImageAllocation);
 		}
 
-		vkDestroyDescriptorSetLayout(GetDevice(), m_descriptorSetLayoutPerObject, nullptr);
 		vkDestroyDescriptorSetLayout(GetDevice(), m_descriptorSetLayoutPerFrame, nullptr);
 
 		for( auto geometry : m_registry.template GetView<vh::Geometry&>() ) {
