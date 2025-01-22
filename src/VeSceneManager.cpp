@@ -103,18 +103,23 @@ namespace vve {
 		auto directory = filepath.parent_path();
 
 		static float x = 0.0f;
-		ProcessNode(msg.m_scene->mRootNode, pHandle, directory, msg.m_scene, x);
+		uint64_t id = 0;
+		ProcessNode(msg.m_scene->mRootNode, pHandle, directory, msg.m_scene, id, x);
 		return false;
 	}
 
-	void SceneManager::ProcessNode(aiNode* node, ParentHandle parent, std::filesystem::path& directory, const aiScene* scene, float& x) {
-		static uint64_t id = 0;
+	void SceneManager::ProcessNode(aiNode* node, ParentHandle parent, std::filesystem::path& directory, const aiScene* scene, uint64_t& id, float& x) {
 		
+		auto transform = node->mTransformation;
+		aiVector3D scaling, position;
+    	aiQuaternion rotation;
+    	transform.Decompose(scaling, rotation, position);
+
 		auto nHandle = m_registry.Insert(
 								node->mName.C_Str()[0] != 0 ? Name{node->mName.C_Str()} : Name{"Node" + std::to_string(id++)},
 								parent,
 								Children{},
-								Position{ { 0.0f, x, 0.0f } }, Rotation{mat3_t{1.0f}}, Scale{vec3_t{1.0f}},
+								Position{ { position.x, position.y + x, position.z } }, Rotation{mat3_t{1.0f}}, Scale{{ scaling.x, scaling.y, scaling.z }},
 								LocalToParentMatrix{mat4_t{1.0f}}, 
 								LocalToWorldMatrix{mat4_t{1.0f}});
 
@@ -135,14 +140,13 @@ namespace vve {
 		        std::cout << "Diffuse Texture: " << texturePathStr << std::endl;
 			} 
 
-			//m_registry.Get<Children&>(parent())().push_back(nHandle);
 			m_engine.SendMessage( MsgObjectCreate{this, nullptr, ObjectHandle{nHandle}, 
 				ParentHandle{parent}, Name{texturePathStr}, Name{mesh->mName.C_Str()} });
 		}
 
 		for (unsigned int i = 0; i < node->mNumChildren; i++) {
 			float xx=0.0f;
-			ProcessNode(node->mChildren[i], ParentHandle{nHandle}, directory, scene, xx);
+			ProcessNode(node->mChildren[i], ParentHandle{nHandle}, directory, scene, id, xx);
 		}
 	}
 
