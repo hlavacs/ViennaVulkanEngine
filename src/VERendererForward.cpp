@@ -30,7 +30,7 @@ namespace vve {
 			{{ .descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, .stageFlags = VK_SHADER_STAGE_VERTEX_BIT } },
 			m_descriptorSetLayoutPerFrame );
 
-		vh::createGraphicsPipeline(GetDevice(), m_renderPass, "shaders\\Forward\\vert.spv", "shaders\\Forward\\frag.spv", 
+		vh::createGraphicsPipeline(GetDevice(), m_renderPass, "shaders\\Forward\\T_vert.spv", "shaders\\Forward\\T_frag.spv", 
 			{ m_descriptorSetLayoutPerFrame, m_descriptorSetLayoutPerObject }, m_graphicsPipeline);
 
         vh::createCommandPool(GetSurface(), GetPhysicalDevice(), GetDevice(), m_commandPool);
