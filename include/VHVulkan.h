@@ -109,57 +109,6 @@ namespace vh {
         }
 	};
 
-	struct Vertex2 {
-
-		std::vector<glm::vec3> m_positions;
-		std::vector<glm::vec3> m_normals;
-		std::vector<glm::vec2> m_texCoords;
-		std::vector<glm::vec3> m_colors;
-		std::vector<glm::vec3> m_tangents;
-
-		void getBindingDescription( auto &vec, int &binding, int stride, auto& bdesc ) {
-			if( vec.size() == 0 ) return;
-			VkVertexInputBindingDescription bindingDescription{};
-			bindingDescription.binding = binding++;
-			bindingDescription.stride = stride;
-			bindingDescription.inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
-			bdesc.push_back( bindingDescription );
-		}
-
-		void getBindingDescriptions() {
-			std::vector<VkVertexInputBindingDescription> bindingDescriptions{};
-			
-			int binding=0;
-			getBindingDescription( m_positions, binding, sizeof(glm::vec3), bindingDescriptions );
-			getBindingDescription( m_normals,   binding, sizeof(glm::vec3), bindingDescriptions );
-			getBindingDescription( m_texCoords, binding, sizeof(glm::vec2), bindingDescriptions );
-			getBindingDescription( m_colors,    binding, sizeof(glm::vec3), bindingDescriptions );
-			getBindingDescription( m_tangents,  binding, sizeof(glm::vec3), bindingDescriptions );
-		}
-
-		void addAttributeDescription( auto &vec, int& binding, int& location, VkFormat format, auto& attd ) {
-			if( vec.size() == 0 ) return;
-			VkVertexInputAttributeDescription attributeDescription{};
-			attributeDescription.binding = binding++;
-			attributeDescription.location = location++;
-			attributeDescription.format = format;
-			attributeDescription.offset = 0;
-			attd.push_back( attributeDescription );
-		}
-
-        std::vector<VkVertexInputAttributeDescription> getAttributeDescriptions2() {
-            std::vector<VkVertexInputAttributeDescription> attributeDescriptions{};
-
-			int binding=0;
-			int location=0;
-			addAttributeDescription( m_positions, binding, location, VK_FORMAT_R32G32B32_SFLOAT, attributeDescriptions );
-			addAttributeDescription( m_normals,   binding, location, VK_FORMAT_R32G32B32_SFLOAT, attributeDescriptions );
-			addAttributeDescription( m_texCoords, binding, location, VK_FORMAT_R32G32_SFLOAT,    attributeDescriptions );
-			addAttributeDescription( m_colors,    binding, location, VK_FORMAT_R32G32B32_SFLOAT, attributeDescriptions );
-			addAttributeDescription( m_tangents,  binding, location, VK_FORMAT_R32G32B32_SFLOAT, attributeDescriptions );
-            return attributeDescriptions;
-        }
-    };
 
 	struct UniformBuffers {
 		VkDeviceSize 				m_bufferSize{0};
@@ -204,15 +153,112 @@ namespace vh {
         VkSampler       m_textureSampler;
     };
 
+	struct VertexData {
+
+		std::vector<glm::vec3> m_positions;
+		std::vector<glm::vec3> m_normals;
+		std::vector<glm::vec2> m_texCoords;
+		std::vector<glm::vec3> m_colors;
+		std::vector<glm::vec3> m_tangents;
+
+		std::string getTypes() {
+			std::string name;
+			if( m_positions.size() > 0 ) name = name + "P";
+			if( m_normals.size() > 0 )   name = name + "N";
+			if( m_texCoords.size() > 0 ) name = name + "U";
+			if( m_colors.size() > 0 )    name = name + "C";
+			if( m_tangents.size() > 0 )  name = name + "T";
+			return name;
+		}
+
+		VkDeviceSize getSize() {
+			return 	m_positions.size() * sizeof(glm::vec3) + 
+					m_normals.size()   * sizeof(glm::vec3) + 
+					m_texCoords.size() * sizeof(glm::vec2) + 
+					m_colors.size()    * sizeof(glm::vec3) + 
+					m_tangents.size()  * sizeof(glm::vec3);
+		}
+
+		std::vector<VkDeviceSize> getOffsets() {
+			int offset=0;
+			std::vector<VkDeviceSize> offsets{};
+			if( int size = m_positions.size() * sizeof(glm::vec3); size > 0 ) { offsets.push_back(offset); offset += size; }
+			if( int size = m_normals.size()   * sizeof(glm::vec3); size > 0 ) { offsets.push_back(offset); offset += size; }
+			if( int size = m_texCoords.size() * sizeof(glm::vec2); size > 0 ) { offsets.push_back(offset); offset += size; }
+			if( int size = m_colors.size()    * sizeof(glm::vec3); size > 0 ) { offsets.push_back(offset); offset += size; }
+			if( int size = m_tangents.size()  * sizeof(glm::vec3); size > 0 ) { offsets.push_back(offset); offset += size; }
+			return offsets;
+		}
+
+		void copyData( void* data ) {
+			int offset=0, size = 0;
+			size = m_positions.size() * sizeof(glm::vec3); memcpy( data, m_positions.data(), size );                 offset += size;
+			size = m_normals.size()   * sizeof(glm::vec3); memcpy( (char*)data + offset, m_normals.data(), size );   offset += size;
+			size = m_texCoords.size() * sizeof(glm::vec2); memcpy( (char*)data + offset, m_texCoords.data(), size ); offset += size;
+			size = m_colors.size()    * sizeof(glm::vec3); memcpy( (char*)data + offset, m_colors.data(), size );    offset += size;
+			size = m_tangents.size()  * sizeof(glm::vec3); memcpy( (char*)data + offset, m_tangents.data(), size );  offset += size;
+		}
+
+		void getBindingDescription( auto &vec, int &binding, int stride, auto& bdesc ) {
+			if( vec.size() == 0 ) return;
+			VkVertexInputBindingDescription bindingDescription{};
+			bindingDescription.binding = binding++;
+			bindingDescription.stride = stride;
+			bindingDescription.inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
+			bdesc.push_back( bindingDescription );
+		}
+
+		void getBindingDescriptions() {
+			std::vector<VkVertexInputBindingDescription> bindingDescriptions{};
+			
+			int binding=0;
+			getBindingDescription( m_positions, binding, sizeof(glm::vec3), bindingDescriptions );
+			getBindingDescription( m_normals,   binding, sizeof(glm::vec3), bindingDescriptions );
+			getBindingDescription( m_texCoords, binding, sizeof(glm::vec2), bindingDescriptions );
+			getBindingDescription( m_colors,    binding, sizeof(glm::vec3), bindingDescriptions );
+			getBindingDescription( m_tangents,  binding, sizeof(glm::vec3), bindingDescriptions );
+		}
+
+		void addAttributeDescription( auto &vec, int& binding, int& location, VkFormat format, auto& attd ) {
+			if( vec.size() == 0 ) return;
+			VkVertexInputAttributeDescription attributeDescription{};
+			attributeDescription.binding = binding++;
+			attributeDescription.location = location++;
+			attributeDescription.format = format;
+			attributeDescription.offset = 0;
+			attd.push_back( attributeDescription );
+		}
+
+        std::vector<VkVertexInputAttributeDescription> getAttributeDescriptions() {
+            std::vector<VkVertexInputAttributeDescription> attributeDescriptions{};
+
+			int binding=0;
+			int location=0;
+			addAttributeDescription( m_positions, binding, location, VK_FORMAT_R32G32B32_SFLOAT, attributeDescriptions );
+			addAttributeDescription( m_normals,   binding, location, VK_FORMAT_R32G32B32_SFLOAT, attributeDescriptions );
+			addAttributeDescription( m_texCoords, binding, location, VK_FORMAT_R32G32_SFLOAT,    attributeDescriptions );
+			addAttributeDescription( m_colors,    binding, location, VK_FORMAT_R32G32B32_SFLOAT, attributeDescriptions );
+			addAttributeDescription( m_tangents,  binding, location, VK_FORMAT_R32G32B32_SFLOAT, attributeDescriptions );
+            return attributeDescriptions;
+        }
+
+		VkResult CmdBindVertexBuffers( VkCommandBuffer commandBuffer, VkBuffer vertexBuffer ) {
+			std::vector<VkDeviceSize> offsets = getOffsets();
+			std::vector<VkBuffer> vertexBuffers(offsets.size(), vertexBuffer);
+			vkCmdBindVertexBuffers( commandBuffer, 0, offsets.size(), vertexBuffers.data(), offsets.data() );
+			return VK_SUCCESS;
+		}
+    };
+
     struct Mesh {
         std::vector<Vertex>     m_vertices;
+		VertexData				m_vertexData;
         std::vector<uint32_t>   m_indices;
         VkBuffer                m_vertexBuffer;
         VmaAllocation           m_vertexBufferAllocation;
         VkBuffer                m_indexBuffer;
         VmaAllocation           m_indexBufferAllocation;
     };
-
 
 
     /// @brief Semaphores for signalling that a command buffer has finished executing. Every buffer gets its own Semaphore.
