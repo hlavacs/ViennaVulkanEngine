@@ -6,3 +6,6 @@ slangc.exe PNU_frag.slang -target spirv -o PNU_frag.spv -entry fragmentMain
 
 slangc.exe PN_vert.slang -target spirv -o PN_vert.spv -entry vertexMain
 slangc.exe PN_frag.slang -target spirv -o PN_frag.spv -entry fragmentMain
+
+slangc.exe PNC_vert.slang -target spirv -o PNC_vert.spv -entry vertexMain
+slangc.exe PNC_frag.slang -target spirv -o PNC_frag.spv -entry fragmentMain

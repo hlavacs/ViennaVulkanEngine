@@ -1,6 +1,6 @@
 struct CoarseVertex {
-    float2 uv;
     float3 normal;
+    float2 uv;
 };
 
 struct VertexStageOutput {

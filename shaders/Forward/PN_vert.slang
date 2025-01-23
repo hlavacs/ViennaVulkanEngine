@@ -1,6 +1,6 @@
 struct CoarseVertex {
-    float3 fragColor;
     float3 normal;
+    float3 fragColor;
 };
 
 struct VertexStageOutput {
