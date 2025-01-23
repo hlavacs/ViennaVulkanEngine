@@ -7,6 +7,7 @@ namespace vve
 	    struct UniformBufferObject {
 	        alignas(16) glm::mat4 model;
 	        alignas(16) glm::mat4 modelInverseTranspose;
+			alignas(16) glm::vec4 color{1.0f, 1.0f, 1.0f, 1.0f}; //can be used as parameter for shader		
 	    };
 	
 	    struct UniformBufferFrame {

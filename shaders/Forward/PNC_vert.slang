@@ -1,6 +1,6 @@
 struct CoarseVertex {
     float3 normal;
-    float3 fragColor;
+    float4 fragColor;
 };
 
 struct VertexStageOutput {
@@ -11,6 +11,7 @@ struct VertexStageOutput {
 struct UniformBufferObject {
     float4x4 model;
     float4x4 modelInvTranspose;
+    float4   color;
 };
 
 struct UniformBufferCamera {
@@ -30,7 +31,7 @@ ParameterBlock<UniformBufferObject> gParamsObject;
 VertexStageOutput vertexMain( 
 	float3 position : POSITION,
     float3 normal   : NORMAL,
-    float3 color 	: COLOR)
+    float4 color 	: COLOR)
 {
     float3 worldPosition = mul(gParamsObject.model, float4(position, 1.0)).xyz;
     float3 viewPosition = mul(gParamsFrame.view, float4(worldPosition, 1.0)).xyz;
