@@ -81,7 +81,7 @@ namespace vh {
             attributeDescriptions[0].offset = offsetof(Vertex, pos);
 
             attributeDescriptions[1].binding = 0;
-            attributeDescriptions[1].location = 3;
+            attributeDescriptions[1].location = 1;
             attributeDescriptions[1].format = VK_FORMAT_R32G32B32_SFLOAT;
             attributeDescriptions[1].offset = offsetof(Vertex, normal);
 
@@ -91,7 +91,7 @@ namespace vh {
             attributeDescriptions[2].offset = offsetof(Vertex, texCoord);
 
             attributeDescriptions[3].binding = 0;
-            attributeDescriptions[3].location = 1;
+            attributeDescriptions[3].location = 3;
             attributeDescriptions[3].format = VK_FORMAT_R32G32B32_SFLOAT;
             attributeDescriptions[3].offset = offsetof(Vertex, color);
 
@@ -107,8 +107,59 @@ namespace vh {
             return pos == other.pos && color == other.color && texCoord == other.texCoord 
 				&& normal == other.normal && tangent == other.tangent;
         }
-    };
+	};
 
+	struct Vertex2 {
+
+		std::vector<glm::vec3> m_positions;
+		std::vector<glm::vec3> m_normals;
+		std::vector<glm::vec2> m_texCoords;
+		std::vector<glm::vec3> m_colors;
+		std::vector<glm::vec3> m_tangents;
+
+		void getBindingDescription( auto &vec, int &binding, int stride, auto& bdesc ) {
+			if( vec.size() == 0 ) return;
+			VkVertexInputBindingDescription bindingDescription{};
+			bindingDescription.binding = binding++;
+			bindingDescription.stride = stride;
+			bindingDescription.inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
+			bdesc.push_back( bindingDescription );
+		}
+
+		void getBindingDescriptions() {
+			std::vector<VkVertexInputBindingDescription> bindingDescriptions{};
+			
+			int binding=0;
+			getBindingDescription( m_positions, binding, sizeof(glm::vec3), bindingDescriptions );
+			getBindingDescription( m_normals,   binding, sizeof(glm::vec3), bindingDescriptions );
+			getBindingDescription( m_texCoords, binding, sizeof(glm::vec2), bindingDescriptions );
+			getBindingDescription( m_colors,    binding, sizeof(glm::vec3), bindingDescriptions );
+			getBindingDescription( m_tangents,  binding, sizeof(glm::vec3), bindingDescriptions );
+		}
+
+		void addAttributeDescription( auto &vec, int& binding, int& location, VkFormat format, auto& attd ) {
+			if( vec.size() == 0 ) return;
+			VkVertexInputAttributeDescription attributeDescription{};
+			attributeDescription.binding = binding++;
+			attributeDescription.location = location++;
+			attributeDescription.format = format;
+			attributeDescription.offset = 0;
+			attd.push_back( attributeDescription );
+		}
+
+        std::vector<VkVertexInputAttributeDescription> getAttributeDescriptions2() {
+            std::vector<VkVertexInputAttributeDescription> attributeDescriptions{};
+
+			int binding=0;
+			int location=0;
+			addAttributeDescription( m_positions, binding, location, VK_FORMAT_R32G32B32_SFLOAT, attributeDescriptions );
+			addAttributeDescription( m_normals,   binding, location, VK_FORMAT_R32G32B32_SFLOAT, attributeDescriptions );
+			addAttributeDescription( m_texCoords, binding, location, VK_FORMAT_R32G32_SFLOAT,    attributeDescriptions );
+			addAttributeDescription( m_colors,    binding, location, VK_FORMAT_R32G32B32_SFLOAT, attributeDescriptions );
+			addAttributeDescription( m_tangents,  binding, location, VK_FORMAT_R32G32B32_SFLOAT, attributeDescriptions );
+            return attributeDescriptions;
+        }
+    };
 
 	struct UniformBuffers {
 		VkDeviceSize 				m_bufferSize{0};
