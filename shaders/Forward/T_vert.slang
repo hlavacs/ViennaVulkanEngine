@@ -45,7 +45,7 @@ VertexStageOutput vertexMain(
     VertexStageOutput output;
     output.coarseVertex.fragColor = color;
     output.coarseVertex.uv = uv;
-    output.coarseVertex.normal = mul(gParamsObject.model, float4(normal, 1.0)).xyz;
+    output.coarseVertex.normal = mul(gParamsObject.modelInvTranspose, float4(normal, 1.0)).xyz;
     output.coarseVertex.tangent = mul(gParamsObject.model, float4(tangent, 1.0)).xyz;
     output.sv_position = mul(gParamsFrame.proj, float4(viewPosition, 1.0));
 

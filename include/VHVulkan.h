@@ -257,7 +257,7 @@ namespace vh {
 
     struct Mesh {
         std::vector<Vertex>     m_vertices;
-		VertexData				m_vertexData;
+		VertexData				m_verticesData;
         std::vector<uint32_t>   m_indices;
         VkBuffer                m_vertexBuffer;
         VmaAllocation           m_vertexBufferAllocation;
