@@ -67,6 +67,8 @@ namespace vve {
 
 			memcpy(uniformBuffers.m_uniformBuffersMapped[GetCurrentFrame()], &ubo, sizeof(ubo));
 			vh::Mesh& geometry = m_registry.template Get<vh::Mesh&>(ghandle);
+			auto type = geometry.m_verticesData.getType();
+			auto pipelinePerType = getPipelinePerType(geometry.m_verticesData);
 			vh::recordObject( m_commandBuffers[GetCurrentFrame()], m_graphicsPipeline, { descriptorsets, m_descriptorSetPerFrame }, geometry, GetCurrentFrame() );
 		}
 
@@ -78,8 +80,7 @@ namespace vve {
 	
 	bool RendererForward::OnObjectCreate( Message message ) {
 		auto handle = message.template GetData<MsgObjectCreate>().m_object;
-		auto [gHandle, tHandle] = m_registry.template Get<MeshHandle, TextureHandle>(handle);
-		auto& texture = m_registry.template Get<vh::Texture&>(tHandle);
+		auto gHandle = m_registry.template Get<MeshHandle>(handle);
 
 		vh::UniformBuffers ubo;
 		vh::createUniformBuffers(GetPhysicalDevice(), GetDevice(), GetVmaAllocator(), sizeof(UniformBufferObject), ubo);
@@ -87,8 +88,12 @@ namespace vve {
 		vh::DescriptorSet descriptorSet{1};
 		vh::createDescriptorSet(GetDevice(), m_descriptorSetLayoutPerObject, m_descriptorPool, descriptorSet);
 	    vh::updateDescriptorSetUBO(GetDevice(), ubo, 0, sizeof(UniformBufferObject), descriptorSet);
-	    vh::updateDescriptorSetTexture(GetDevice(), texture, 1, descriptorSet);
 
+		if( m_registry.template Has<TextureHandle>(handle) ) {
+			auto tHandle = m_registry.template Get<TextureHandle>(handle);
+			auto& texture = m_registry.template Get<vh::Texture&>(tHandle);
+	    	vh::updateDescriptorSetTexture(GetDevice(), texture, 1, descriptorSet);
+		}
 		m_registry.Put(handle, ubo, descriptorSet);
 
 		assert( m_registry.template Has<vh::UniformBuffers>(handle) );
