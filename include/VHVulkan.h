@@ -166,7 +166,7 @@ namespace vh {
 		std::vector<glm::vec4> m_colors;
 		std::vector<glm::vec3> m_tangents;
 
-		std::string getTypes() {
+		std::string getType() {
 			std::string name;
 			if( m_positions.size() > 0 ) name = name + "P";
 			if( m_normals.size() > 0 )   name = name + "N";

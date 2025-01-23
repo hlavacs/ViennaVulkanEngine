@@ -15,6 +15,12 @@ namespace vve
 	        alignas(16) glm::mat4 proj;
 	    };
 
+		struct PipelinePerType {
+			std::string m_type;
+			VkDescriptorSetLayout m_descriptorSetLayoutPerObject;
+	    	vh::Pipeline m_graphicsPipeline;
+		};
+
     public:
         RendererForward(std::string systemName, Engine& engine, std::string windowName);
         virtual ~RendererForward();
@@ -25,12 +31,18 @@ namespace vve
 		bool OnObjectCreate( Message message );
         bool OnQuit(Message message);
 
+		PipelinePerType& getPipelinePerType(vh::VertexData &vertexData);
+
+	private:
+
 		vh::UniformBuffers m_uniformBuffersPerFrame;
 		VkDescriptorSetLayout m_descriptorSetLayoutPerFrame;
 		vh::DescriptorSet m_descriptorSetPerFrame{0};
 
 		VkDescriptorSetLayout m_descriptorSetLayoutPerObject;
 	    vh::Pipeline m_graphicsPipeline;
+
+		std::unordered_map<std::string, PipelinePerType> m_pipelinesPerType;
 
 	    VkRenderPass m_renderPass;
 	    VkDescriptorPool m_descriptorPool;    

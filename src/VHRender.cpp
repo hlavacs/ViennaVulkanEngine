@@ -121,8 +121,9 @@ namespace vh {
     }
 
 
-    void createDescriptorSetLayout(VkDevice device, std::vector<VkDescriptorSetLayoutBinding>&& bindings, VkDescriptorSetLayout& descriptorSetLayouts) {
+    void createDescriptorSetLayout(VkDevice device, const std::vector<VkDescriptorSetLayoutBinding>& bind, VkDescriptorSetLayout& descriptorSetLayouts) {
 		uint32_t i = 0;
+		std::vector<VkDescriptorSetLayoutBinding> bindings = bind;
 		for( auto& uboLayoutBinding : bindings ) {
 	        uboLayoutBinding.binding = i++;
 	        uboLayoutBinding.descriptorCount = 1;

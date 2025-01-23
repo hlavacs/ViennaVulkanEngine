@@ -1,3 +1,4 @@
+#include <filesystem>
 
 #include "VHInclude.h"
 #include "VEInclude.h"
@@ -100,8 +101,16 @@ namespace vve {
         vkDeviceWaitIdle(GetDevice());
 		
         vkDestroyCommandPool(GetDevice(), m_commandPool, nullptr);
+
+		for( auto& [type, pipeline] : m_pipelinesPerType ) {
+			vkDestroyDescriptorSetLayout(GetDevice(), pipeline.m_descriptorSetLayoutPerObject, nullptr);
+			vkDestroyPipeline(GetDevice(), pipeline.m_graphicsPipeline.m_pipeline, nullptr);
+			vkDestroyPipelineLayout(GetDevice(), pipeline.m_graphicsPipeline.m_pipelineLayout, nullptr);
+		}
+
 		vkDestroyPipeline(GetDevice(), m_graphicsPipeline.m_pipeline, nullptr);
-        vkDestroyPipelineLayout(GetDevice(), m_graphicsPipeline.m_pipelineLayout, nullptr);        
+        vkDestroyPipelineLayout(GetDevice(), m_graphicsPipeline.m_pipelineLayout, nullptr); 
+
         vkDestroyDescriptorPool(GetDevice(), m_descriptorPool, nullptr);
 		vkDestroyRenderPass(GetDevice(), m_renderPass, nullptr);
 
@@ -111,6 +120,31 @@ namespace vve {
 		vkDestroyDescriptorSetLayout(GetDevice(), m_descriptorSetLayoutPerObject, nullptr);
 		return false;
     }
+
+
+	RendererForward::PipelinePerType& RendererForward::getPipelinePerType(vh::VertexData &vertexData) {
+		auto type = vertexData.getType();
+		if( m_pipelinesPerType.contains(type) ) return m_pipelinesPerType[type];
+
+		VkDescriptorSetLayout descriptorSetLayoutPerObject;
+		std::vector<VkDescriptorSetLayoutBinding> bindings{
+			{ .descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, .stageFlags = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT }
+		};
+
+		if(type.find("U") != std::string::npos) {
+			bindings.push_back( { .descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, .stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT } );
+		}
+
+		vh::createDescriptorSetLayout( GetDevice(), bindings, descriptorSetLayoutPerObject );
+
+		vh::Pipeline graphicsPipeline;
+		std::filesystem::path vertShaderPath = "shaders\\Forward\\" + type + "_vert.spv";
+		std::filesystem::path fragShaderPath = "shaders\\Forward\\" + type + "_frag.spv";
+		vh::createGraphicsPipeline(GetDevice(), m_renderPass, vertShaderPath.string(), fragShaderPath.string(), 
+			{ m_descriptorSetLayoutPerFrame, descriptorSetLayoutPerObject }, graphicsPipeline);
+
+		return m_pipelinesPerType[type] = { type, descriptorSetLayoutPerObject, graphicsPipeline };
+	}
 
 
 };   // namespace vve
