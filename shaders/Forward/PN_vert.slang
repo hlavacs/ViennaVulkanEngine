@@ -10,6 +10,7 @@ struct VertexStageOutput {
 
 struct UniformBufferObject {
     float4x4 model;
+    float4x4 modelInvTranspose;
     float3 color;
 };
 

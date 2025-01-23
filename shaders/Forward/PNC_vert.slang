@@ -1,6 +1,6 @@
 struct CoarseVertex {
     float3 normal;
-    float3 color;
+    float3 fragColor;
 };
 
 struct VertexStageOutput {
@@ -10,6 +10,7 @@ struct VertexStageOutput {
 
 struct UniformBufferObject {
     float4x4 model;
+    float4x4 modelInvTranspose;
 };
 
 struct UniformBufferCamera {
@@ -25,8 +26,6 @@ ParameterBlock<UniformBufferCamera> gParamsFrame;
 [[vk::binding(0,1)]]
 ParameterBlock<UniformBufferObject> gParamsObject;
 
-//VertexStageOutput vertexMain(AssembledVertex assembledVertex)
-
 [shader("vertex")]
 VertexStageOutput vertexMain( 
 	float3 position : POSITION,
@@ -34,10 +33,10 @@ VertexStageOutput vertexMain(
     float3 color 	: COLOR)
 {
     float3 worldPosition = mul(gParamsObject.model, float4(position, 1.0)).xyz;
-    float3 viewPosition = mul(gParamsFrame.view, float4(worldPosition, 1.0)).xyz;   
+    float3 viewPosition = mul(gParamsFrame.view, float4(worldPosition, 1.0)).xyz;
 
     VertexStageOutput output;
-    output.coarseVertex.color = color;
+    output.coarseVertex.fragColor = color;
     output.coarseVertex.normal = mul(gParamsObject.model, float4(normal, 1.0)).xyz;
     output.sv_position = mul(gParamsFrame.proj, float4(viewPosition, 1.0));
 

@@ -3,14 +3,6 @@ struct CoarseVertex {
     float3 fragColor;
 };
 
-struct UniformBufferObject {
-    float4x4 model;
-};
-
-// binding 0,1 means that the uniform buffer is bound to binding 0, set 1
-[[vk::binding(0, 1)]]
-ParameterBlock<UniformBufferObject> gParamsObject;
-
 [shader("fragment")]
 float4 fragmentMain(CoarseVertex coarseVertex : CoarseVertex) : SV_Target 
 {

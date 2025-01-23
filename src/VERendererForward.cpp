@@ -61,7 +61,9 @@ namespace vve {
 		
 		for( auto[name, ghandle, LtoW, uniformBuffers, descriptorsets] : m_registry.template GetView<Name, MeshHandle, LocalToWorldMatrix&, vh::UniformBuffers&, vh::DescriptorSet&>() ) {
 			UniformBufferObject ubo{};
-			ubo.model = LtoW(); // * glm::rotate(glm::mat4(1.0f), time * glm::radians(50.0f), glm::vec3(0.0f, 0.0f, 1.0f));			
+			ubo.model = LtoW(); 		
+			ubo.modelInverseTranspose = glm::inverse( glm::transpose(ubo.model) );
+
 			memcpy(uniformBuffers.m_uniformBuffersMapped[GetCurrentFrame()], &ubo, sizeof(ubo));
 			vh::Mesh& geometry = m_registry.template Get<vh::Mesh&>(ghandle);
 			vh::recordObject( m_commandBuffers[GetCurrentFrame()], m_graphicsPipeline, { descriptorsets, m_descriptorSetPerFrame }, geometry, GetCurrentFrame() );

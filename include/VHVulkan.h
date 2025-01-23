@@ -109,7 +109,6 @@ namespace vh {
         }
 	};
 
-
 	struct UniformBuffers {
 		VkDeviceSize 				m_bufferSize{0};
         std::vector<VkBuffer>       m_uniformBuffers;
