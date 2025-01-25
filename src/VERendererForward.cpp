@@ -127,8 +127,8 @@ namespace vve {
 		vh::Pipeline graphicsPipeline;
 		std::filesystem::path vertShaderPath = "shaders\\Forward\\" + type + "_vert.spv";
 		std::filesystem::path fragShaderPath = "shaders\\Forward\\" + type + "_frag.spv";
-		vh::createGraphicsPipeline(GetDevice(), m_renderPass, vertShaderPath.string(), fragShaderPath.string(), 
-			//vertexData,
+		vh::createGraphicsPipeline2(GetDevice(), m_renderPass, vertShaderPath.string(), fragShaderPath.string(), 
+			vertexData,
 			{ m_descriptorSetLayoutPerFrame, descriptorSetLayoutPerObject }, graphicsPipeline);
 
 		return m_pipelinesPerType[type] = { type, descriptorSetLayoutPerObject, graphicsPipeline };

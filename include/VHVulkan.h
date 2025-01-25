@@ -274,7 +274,7 @@ namespace vh {
 
 	#define MAX_FRAMES_IN_FLIGHT 2
 
-    void MemCopy(VkDevice device, void* source, VmaAllocationInfo& allocInfo, VkDeviceSize size);
+    void MemCopy(VkDevice device, void* source, VmaAllocationInfo& allocInfo, VkDeviceSize size, VkDeviceSize offset=0);
     
     std::vector<char> readFile(const std::string& filename);
 

@@ -61,8 +61,9 @@ namespace vh
    		return vkGetInstanceProcAddr(volkInstance, name);
 	}
 
-    void MemCopy(VkDevice device, void* source, VmaAllocationInfo& allocInfo, VkDeviceSize size) {
-        memcpy(allocInfo.pMappedData, source, size);
+    void MemCopy(VkDevice device, void* source, VmaAllocationInfo& allocInfo, VkDeviceSize size, VkDeviceSize offset) {
+		char *data = (char*)allocInfo.pMappedData + offset;
+        memcpy(data, source, size);
     }
 
     std::vector<char> readFile(const std::string& filename) {

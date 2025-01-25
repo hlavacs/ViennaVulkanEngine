@@ -38,6 +38,9 @@ namespace vh {
     void createVertexBuffer(VkPhysicalDevice physicalDevice, VkDevice device, VmaAllocator vmaAllocator
         , VkQueue graphicsQueue, VkCommandPool commandPool, Mesh& geometry);
 
+    void createVertexBuffer2(VkPhysicalDevice physicalDevice, VkDevice device, VmaAllocator vmaAllocator
+        , VkQueue graphicsQueue, VkCommandPool commandPool, Mesh& geometry);
+
     void createIndexBuffer(VkPhysicalDevice physicalDevice, VkDevice device, VmaAllocator vmaAllocator
         , VkQueue graphicsQueue, VkCommandPool commandPool, Mesh& geometry);
 
