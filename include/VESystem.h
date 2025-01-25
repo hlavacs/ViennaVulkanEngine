@@ -124,11 +124,9 @@ namespace vve {
 		};
 
 	    struct MsgObjectCreate : public MsgBase { 
-			MsgObjectCreate(System* s, System* r, ObjectHandle object, ParentHandle parent, Name txtName, Name geomName); 
+			MsgObjectCreate(System* s, System* r, ObjectHandle object, ParentHandle parent); 
 			ObjectHandle m_object{}; 
 			ParentHandle m_parent{}; 
-			Name m_txtName; 
-			Name m_geomName; 
 		};
 
 		struct MsgObjectSetParent : public MsgBase { MsgObjectSetParent(System* s, System* r, ObjectHandle object, ParentHandle Parent); ObjectHandle m_object; ParentHandle m_parent;};

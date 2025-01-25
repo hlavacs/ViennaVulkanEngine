@@ -21,7 +21,7 @@ namespace vve {
 		bool OnTextureCreate(Message message);
 		bool OnQuit( Message message );
 
-		std::unordered_map<Name, vecs::Handle> m_handleMap;
+		std::unordered_map<std::string, vecs::Handle> m_handleMap;
 		std::unordered_multimap<std::filesystem::path, Name> m_fileNameMap;
     };
 

@@ -139,7 +139,15 @@ namespace vve {
 
     bool AssetManager::OnObjectCreate(Message message) {
 		auto msg = message.template GetData<MsgObjectCreate>();
-		m_registry.Put(	msg.m_object, MeshHandle{m_handleMap[msg.m_geomName]}, TextureHandle{m_handleMap[msg.m_txtName]} );
+		if( m_registry.Has<MeshName>(msg.m_object) ) {
+			auto meshName = m_registry.Get<MeshName>(msg.m_object);
+			m_registry.Put(	msg.m_object, MeshHandle{m_handleMap[meshName()]} );
+		}
+		if( m_registry.Has<TextureName>(msg.m_object) ) {
+			auto textureName = m_registry.Get<TextureName>(msg.m_object);
+			m_registry.Put(	msg.m_object, TextureHandle{m_handleMap[textureName()]} );
+		}
+		//m_registry.Put(	msg.m_object, MeshHandle{m_handleMap[msg.m_geomName()]}, TextureHandle{m_handleMap[msg.m_txtName()]} );
 		return false;
 	}
 
@@ -154,7 +162,7 @@ namespace vve {
 	}
 
 	auto AssetManager::LoadTexture(Name fileName) -> TextureHandle {
-		if( m_handleMap.contains(fileName) ) return TextureHandle{m_handleMap[fileName]};
+		if( m_handleMap.contains(fileName()) ) return TextureHandle{m_handleMap[fileName()]};
 
 		int texWidth, texHeight, texChannels;
         stbi_uc* pixels = stbi_load(fileName().c_str(), &texWidth, &texHeight, &texChannels, STBI_rgb_alpha);
@@ -162,18 +170,18 @@ namespace vve {
         if (!pixels) { return {}; }
 
 		auto handle = m_registry.Insert(fileName, vh::Texture{texWidth, texHeight, imageSize, pixels});
-		m_handleMap[fileName] = handle;
+		m_handleMap[fileName()] = handle;
 		m_engine.SendMessage( MsgTextureCreate{this, nullptr, pixels, TextureHandle{handle} } );
 		return TextureHandle{handle};
 	}
 
 	auto AssetManager::GetAsset(Name fileName) -> vecs::Handle {
-		if( !m_handleMap.contains(fileName) ) return {};
+		if( !m_handleMap.contains(fileName()) ) return {};
 		return m_handleMap[fileName]; 
 	}
 
 	auto AssetManager::GetAssetHandle(Name name) -> vecs::Handle& { 
-		return m_handleMap[name]; 
+		return m_handleMap[name()]; 
 	}
 
 

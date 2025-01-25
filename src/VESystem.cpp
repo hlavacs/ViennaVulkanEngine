@@ -37,8 +37,8 @@ namespace vve {
 	System::MsgSceneLoad::MsgSceneLoad(System* s, System* r, ObjectHandle object, ParentHandle parent, Name sceneName) : 
 		MsgBase{"SCENE_LOAD", s, r}, m_object{object}, m_parent{parent}, m_sceneName{sceneName} {};
 	
-	System::MsgObjectCreate::MsgObjectCreate(System* s, System* r, ObjectHandle object, ParentHandle parent, Name txtName, Name geomName) : 
-		MsgBase{"OBJECT_CREATE", s, r}, m_object{object}, m_parent{parent}, m_txtName{txtName}, m_geomName{geomName} {};
+	System::MsgObjectCreate::MsgObjectCreate(System* s, System* r, ObjectHandle object, ParentHandle parent) : 
+		MsgBase{"OBJECT_CREATE", s, r}, m_object{object}, m_parent{parent} {};
 	
 	System::MsgObjectSetParent::MsgObjectSetParent(System* s, System* r, ObjectHandle object, ParentHandle parent) : MsgBase("OBJECT_SET_PARENT", s, r), m_object{object}, m_parent{parent} {};
 	System::MsgObjectDestroy::MsgObjectDestroy(System* s, System* r, vecs::Handle handle) : MsgBase("OBJECT_DESTROY", s, r), m_handle{handle} {};

@@ -17,8 +17,8 @@ namespace vve {
 			{this, std::numeric_limits<int>::max(), "OBJECT_SET_PARENT", [this](Message& message){ return OnObjectSetParent(message);} },
 			{this, std::numeric_limits<int>::max(), "SDL_KEY_DOWN", [this](Message& message){ return OnKeyDown(message);} },
 			{this, std::numeric_limits<int>::max(), "SDL_KEY_REPEAT", [this](Message& message){ return OnKeyDown(message);} },
-			{this, std::numeric_limits<int>::max(), "SDL_MOUSE_BUTTON_DOWN", [this](Message& message){ m_mouseButtonDown = true; m_x = m_y = -1; return false;} },
-			{this, std::numeric_limits<int>::max(), "SDL_MOUSE_BUTTON_UP", [this](Message& message){ m_mouseButtonDown = false; return false;} },
+			{this, std::numeric_limits<int>::max(), "SDL_MOUSE_BUTTON_DOWN", [this](Message& message){ return OnMouseButtonDown(message);} },
+			{this, std::numeric_limits<int>::max(), "SDL_MOUSE_BUTTON_UP", [this](Message& message){return OnMouseButtonUp(message);} },
 			{this, std::numeric_limits<int>::max(), "SDL_MOUSE_MOVE", [this](Message& message){ return OnMouseMove(message); } },
 			{this, std::numeric_limits<int>::max(), "SDL_MOUSE_WHEEL", [this](Message& message){ return OnMouseWheel(message); } }
 		} );
@@ -134,16 +134,23 @@ namespace vve {
 
 		for (unsigned int i = 0; i < std::min(1u, node->mNumMeshes); i++) {
 		    auto mesh = scene->mMeshes[node->mMeshes[i]];
+			m_registry.template Put(nHandle, MeshName{mesh->mName.C_Str()});
+			
 			auto material = scene->mMaterials[mesh->mMaterialIndex];
 		    aiString texturePath;
 			std::string texturePathStr{};
 		    if (material->GetTexture(aiTextureType_DIFFUSE, 0, &texturePath) == AI_SUCCESS) {
 				texturePathStr = (directory / std::string{texturePath.C_Str()}).string();
 		        std::cout << "Diffuse Texture: " << texturePathStr << std::endl;
-			} 
+				m_registry.template Put(nHandle, TextureName{texturePathStr});
+			}
+			aiColor4D diffuseColor;
+			if (AI_SUCCESS == material->Get(AI_MATKEY_COLOR_DIFFUSE, diffuseColor)) {
+		        std::cout << "Diffuse Color: " << diffuseColor.r << diffuseColor.g << diffuseColor.b << diffuseColor.a << std::endl;
+				m_registry.template Put(nHandle, Color{vec4_t{diffuseColor.r, diffuseColor.g, diffuseColor.b, diffuseColor.a}});	
+			}
 
-			m_engine.SendMessage( MsgObjectCreate{this, nullptr, ObjectHandle{nHandle}, 
-				ParentHandle{parent}, Name{texturePathStr}, Name{mesh->mName.C_Str()} });
+			m_engine.SendMessage( MsgObjectCreate{this, nullptr, ObjectHandle{nHandle}, ParentHandle{parent} }); 
 		}
 
 		for (unsigned int i = 0; i < node->mNumChildren; i++) {
@@ -210,6 +217,21 @@ namespace vve {
 		rc = mat3_t{ glm::rotate(mat4_t{1.0f}, angle, axis) * mat4_t{ rc } };
 		return false;
     }
+
+	bool SceneManager::OnMouseButtonDown(Message message) {
+		auto msg = message.template GetData<MsgMouseButtonDown>();
+		if(msg.m_button != SDL_BUTTON_RIGHT) return false;
+ 		m_mouseButtonDown = true; 
+		m_x = m_y = -1; 
+		return false;
+	}
+
+	bool SceneManager::OnMouseButtonUp(Message message) {
+		auto msg = message.template GetData<MsgMouseButtonUp>();
+		if(msg.m_button != SDL_BUTTON_RIGHT) return false;
+		m_mouseButtonDown = false; 
+		return false;
+	}
 
 
 	bool SceneManager::OnMouseMove(Message message) {
