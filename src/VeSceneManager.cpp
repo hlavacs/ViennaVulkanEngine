@@ -19,7 +19,8 @@ namespace vve {
 			{this, std::numeric_limits<int>::max(), "SDL_KEY_REPEAT", [this](Message& message){ return OnKeyDown(message);} },
 			{this, std::numeric_limits<int>::max(), "SDL_MOUSE_BUTTON_DOWN", [this](Message& message){ m_mouseButtonDown = true; m_x = m_y = -1; return false;} },
 			{this, std::numeric_limits<int>::max(), "SDL_MOUSE_BUTTON_UP", [this](Message& message){ m_mouseButtonDown = false; return false;} },
-			{this, std::numeric_limits<int>::max(), "SDL_MOUSE_MOVE", [this](Message& message){ return OnMouseMove(message); } }
+			{this, std::numeric_limits<int>::max(), "SDL_MOUSE_MOVE", [this](Message& message){ return OnMouseMove(message); } },
+			{this, std::numeric_limits<int>::max(), "SDL_MOUSE_WHEEL", [this](Message& message){ return OnMouseWheel(message); } }
 		} );
 	}
 
@@ -234,7 +235,7 @@ namespace vve {
 
 		//std::cout << "Mouse move: " << dx << ", " << dy << std::endl;
 
-		angle1 = rotSpeed * (float)dt * -dx; //left right
+		angle1 = rotSpeed * (float)dt * dx; //left right
 		axis1 = glm::vec3(0.0, 0.0, 1.0);
 		rc = mat3_t{ glm::rotate(mat4_t{1.0f}, angle1, axis1) * mat4_t{ rc } };
 
@@ -244,6 +245,18 @@ namespace vve {
 
 		return false;
 	}
+
+	
+	bool SceneManager::OnMouseWheel(Message message) {
+		auto msg = message.template GetData<MsgMouseWheel>();
+		real_t dt = (real_t)msg.m_dt;
+		auto [pn, rn, sn] 		 = m_registry.template Get<Position&, Rotation&, Scale&>(m_cameraNodeHandle);
+		auto [pc, rc, sc, LtoPc] = m_registry.template Get<Position&, Rotation&, Scale&, LocalToParentMatrix>(m_cameraHandle);		
+		float speed = 100.0f; ///add the new translation vector to the previous one
+		pn = pn() + mat3_t{ LtoPc } * vec3_t(0.0f, 0.0f, -msg.m_y) * (real_t)dt * speed;
+		return false;
+	}
+
 
 
 };  // namespace vve

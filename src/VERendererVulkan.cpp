@@ -204,7 +204,7 @@ namespace vve {
 	bool RendererVulkan::OnGeometryCreate( Message message ) {
 		auto handle = message.template GetData<MsgGeometryCreate>().m_handle;
 		auto& geometry = m_registry.template Get<vh::Mesh&>(handle);
-		vh::createVertexBuffer2(GetPhysicalDevice(), GetDevice(), GetVulkanState().m_vmaAllocator, GetGraphicsQueue(), m_commandPool, geometry);
+		vh::createVertexBuffer(GetPhysicalDevice(), GetDevice(), GetVulkanState().m_vmaAllocator, GetGraphicsQueue(), m_commandPool, geometry);
 		vh::createIndexBuffer( GetPhysicalDevice(), GetDevice(), GetVulkanState().m_vmaAllocator, GetGraphicsQueue(), m_commandPool, geometry);
 		return false;
 	}

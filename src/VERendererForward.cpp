@@ -22,17 +22,9 @@ namespace vve {
     bool RendererForward::OnInit(Message message) {
         vh::createRenderPass(GetPhysicalDevice(), GetDevice(), GetSwapChain(), false, m_renderPass);
 		
-		//vh::createDescriptorSetLayout( GetDevice(), //Per object
-		//	{{ .descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, .stageFlags = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT },
-		//	 {.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, .stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT } },
-		//	m_descriptorSetLayoutPerObject );
-
 		vh::createDescriptorSetLayout( GetDevice(), //Per frame
 			{{ .descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, .stageFlags = VK_SHADER_STAGE_VERTEX_BIT } },
 			m_descriptorSetLayoutPerFrame );
-
-		//vh::createGraphicsPipeline(GetDevice(), m_renderPass, "shaders\\Forward\\T_vert.spv", "shaders\\Forward\\T_frag.spv", 
-		//	{ m_descriptorSetLayoutPerFrame, m_descriptorSetLayoutPerObject }, m_graphicsPipeline);
 
         vh::createCommandPool(GetSurface(), GetPhysicalDevice(), GetDevice(), m_commandPool);
         vh::createCommandBuffers(GetDevice(), m_commandPool, m_commandBuffers);
@@ -73,7 +65,6 @@ namespace vve {
 			vh::bindPipeline(m_commandBuffers[GetCurrentFrame()], GetImageIndex(), 
 				GetSwapChain(), m_renderPass, pipelinePerType.m_graphicsPipeline, false, ((WindowSDL*)m_window)->GetClearColor(), GetCurrentFrame());
 		
-			//vh::recordObject( m_commandBuffers[GetCurrentFrame()], pipelinePerType.m_graphicsPipeline, { descriptorsets, m_descriptorSetPerFrame }, mesh, GetCurrentFrame() );
 			vh::recordObject2( m_commandBuffers[GetCurrentFrame()], pipelinePerType.m_graphicsPipeline, { descriptorsets, m_descriptorSetPerFrame }, mesh, GetCurrentFrame() );
 		}
 
@@ -151,7 +142,6 @@ namespace vve {
 		vh::destroyBuffer2(GetDevice(), GetVmaAllocator(), m_uniformBuffersPerFrame);
 
 		vkDestroyDescriptorSetLayout(GetDevice(), m_descriptorSetLayoutPerFrame, nullptr);
-		//vkDestroyDescriptorSetLayout(GetDevice(), m_descriptorSetLayoutPerObject, nullptr);
 		return false;
     }
 

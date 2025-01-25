@@ -34,11 +34,7 @@ namespace vh {
     void copyBufferToImage(VkDevice device, VkQueue graphicsQueue, VkCommandPool commandPool
         , VkBuffer buffer, VkImage image, uint32_t width, uint32_t height);
 
-
     void createVertexBuffer(VkPhysicalDevice physicalDevice, VkDevice device, VmaAllocator vmaAllocator
-        , VkQueue graphicsQueue, VkCommandPool commandPool, Mesh& geometry);
-
-    void createVertexBuffer2(VkPhysicalDevice physicalDevice, VkDevice device, VmaAllocator vmaAllocator
         , VkQueue graphicsQueue, VkCommandPool commandPool, Mesh& geometry);
 
     void createIndexBuffer(VkPhysicalDevice physicalDevice, VkDevice device, VmaAllocator vmaAllocator

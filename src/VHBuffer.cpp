@@ -234,32 +234,6 @@ namespace vh {
     void createVertexBuffer(VkPhysicalDevice physicalDevice, VkDevice device, VmaAllocator vmaAllocator
         , VkQueue graphicsQueue, VkCommandPool commandPool, Mesh& geometry) {
 
-        VkDeviceSize bufferSize = sizeof(geometry.m_vertices[0]) * geometry.m_vertices.size();
-
-        VkBuffer stagingBuffer;
-        VmaAllocation stagingBufferAllocation;
-        VmaAllocationInfo allocInfo;
-        createBuffer(physicalDevice, device, vmaAllocator, bufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT
-            , VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT 
-            , VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT | VMA_ALLOCATION_CREATE_MAPPED_BIT
-            , stagingBuffer, stagingBufferAllocation, &allocInfo);
-
-        MemCopy(device, geometry.m_vertices.data(), allocInfo, bufferSize);
-
-        createBuffer(physicalDevice, device, vmaAllocator, bufferSize
-            , VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT
-            , VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, 0, geometry.m_vertexBuffer
-            , geometry.m_vertexBufferAllocation);
-
-        copyBuffer(device, graphicsQueue, commandPool, stagingBuffer, geometry.m_vertexBuffer, bufferSize);
-
-        destroyBuffer(device, vmaAllocator, stagingBuffer, stagingBufferAllocation);
-    }
-
-
-    void createVertexBuffer2(VkPhysicalDevice physicalDevice, VkDevice device, VmaAllocator vmaAllocator
-        , VkQueue graphicsQueue, VkCommandPool commandPool, Mesh& geometry) {
-
         VkDeviceSize bufferSize = geometry.m_verticesData.getSize();
 
         VkBuffer stagingBuffer;

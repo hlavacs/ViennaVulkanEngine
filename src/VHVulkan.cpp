@@ -62,8 +62,7 @@ namespace vh
 	}
 
     void MemCopy(VkDevice device, void* source, VmaAllocationInfo& allocInfo, VkDeviceSize size, VkDeviceSize offset) {
-		char *data = (char*)allocInfo.pMappedData + offset;
-        memcpy(data, source, size);
+        memcpy((char*)allocInfo.pMappedData + offset, source, size);
     }
 
     std::vector<char> readFile(const std::string& filename) {
