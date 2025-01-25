@@ -96,6 +96,27 @@ namespace vh {
 
         vkCmdBeginRenderPass(commandBuffer, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
 
+        /*vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsPipeline.m_pipeline);
+
+        VkViewport viewport{};
+        viewport.x = 0.0f;
+        viewport.y = 0.0f;
+        viewport.width = (float) swapChain.m_swapChainExtent.width;
+        viewport.height = (float) swapChain.m_swapChainExtent.height;
+        viewport.minDepth = 0.0f;
+        viewport.maxDepth = 1.0f;
+        vkCmdSetViewport(commandBuffer, 0, 1, &viewport);
+  
+        VkRect2D scissor{};
+        scissor.offset = {0, 0};
+        scissor.extent = swapChain.m_swapChainExtent;
+        vkCmdSetScissor(commandBuffer, 0, 1, &scissor);*/
+    }
+
+	void bindPipeline(VkCommandBuffer commandBuffer, uint32_t imageIndex
+        , SwapChain& swapChain, VkRenderPass renderPass, Pipeline& graphicsPipeline
+        , bool clear, glm::vec4 clearColor, uint32_t currentFrame) {
+
         vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsPipeline.m_pipeline);
 
         VkViewport viewport{};
@@ -111,8 +132,7 @@ namespace vh {
         scissor.offset = {0, 0};
         scissor.extent = swapChain.m_swapChainExtent;
         vkCmdSetScissor(commandBuffer, 0, 1, &scissor);
-    }
-
+	}
 
     void endRecordCommandBuffer(VkCommandBuffer commandBuffer) {
         vkCmdEndRenderPass(commandBuffer);
@@ -137,6 +157,25 @@ namespace vh {
 		}
 
         vkCmdDrawIndexed(commandBuffer, static_cast<uint32_t>(geometry.m_indices.size()), 1, 0, 0, 0);
+
+	}
+
+
+    void recordObject2(VkCommandBuffer commandBuffer, Pipeline& graphicsPipeline, 
+			const std::vector<DescriptorSet>&& descriptorSets, Mesh& mesh, uint32_t currentFrame) {
+
+        auto offsets = mesh.m_verticesData.getOffsets();
+        std::vector<VkBuffer> vertexBuffers(offsets.size(), mesh.m_vertexBuffer);
+       	vkCmdBindVertexBuffers(commandBuffer, 0, offsets.size(), vertexBuffers.data(), offsets.data());
+
+        vkCmdBindIndexBuffer(commandBuffer, mesh.m_indexBuffer, 0, VK_INDEX_TYPE_UINT32);
+
+		for( auto& descriptorSet : descriptorSets ) {
+        	vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsPipeline.m_pipelineLayout, 
+            	descriptorSet.m_set, 1, &descriptorSet.m_descriptorSetPerFrameInFlight[currentFrame], 0, nullptr);
+		}
+
+        vkCmdDrawIndexed(commandBuffer, static_cast<uint32_t>(mesh.m_indices.size()), 1, 0, 0, 0);
 
 	}
 

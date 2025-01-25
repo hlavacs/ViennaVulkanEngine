@@ -213,7 +213,7 @@ namespace vh {
 			bdesc.push_back( bindingDescription );
 		}
 
-		void getBindingDescriptions() {
+		auto getBindingDescriptions() {
 			std::vector<VkVertexInputBindingDescription> bindingDescriptions{};
 			
 			int binding=0;
@@ -222,6 +222,7 @@ namespace vh {
 			getBindingDescription( m_texCoords, binding, size_tex, bindingDescriptions );
 			getBindingDescription( m_colors,    binding, size_col, bindingDescriptions );
 			getBindingDescription( m_tangents,  binding, size_tan, bindingDescriptions );
+			return bindingDescriptions;
 		}
 
 		void addAttributeDescription( auto &vec, int& binding, int& location, VkFormat format, auto& attd ) {
@@ -234,7 +235,7 @@ namespace vh {
 			attd.push_back( attributeDescription );
 		}
 
-        std::vector<VkVertexInputAttributeDescription> getAttributeDescriptions() {
+        auto getAttributeDescriptions() {
             std::vector<VkVertexInputAttributeDescription> attributeDescriptions{};
 
 			int binding=0;

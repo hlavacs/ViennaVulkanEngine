@@ -1,5 +1,5 @@
 struct CoarseVertex {
-    float3 fragColor;
+    float4 fragColor;
     float2 uv;
     float3 normal;
     float3 tangent;
@@ -36,7 +36,7 @@ VertexStageOutput vertexMain(
 	float3 position : POSITION,
     float3 normal   : NORMAL,
     float2 uv 		: UV,
-    float3 color    : COLOR,
+    float4 color    : COLOR,
     float3 tangent  : TANGENT)
 {
     float3 worldPosition = mul(gParamsObject.model, float4(position, 1.0)).xyz;

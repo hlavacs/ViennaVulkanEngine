@@ -22,17 +22,17 @@ namespace vve {
     bool RendererForward::OnInit(Message message) {
         vh::createRenderPass(GetPhysicalDevice(), GetDevice(), GetSwapChain(), false, m_renderPass);
 		
-		vh::createDescriptorSetLayout( GetDevice(), //Per object
-			{{ .descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, .stageFlags = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT },
-			 {.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, .stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT } },
-			m_descriptorSetLayoutPerObject );
+		//vh::createDescriptorSetLayout( GetDevice(), //Per object
+		//	{{ .descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, .stageFlags = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT },
+		//	 {.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, .stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT } },
+		//	m_descriptorSetLayoutPerObject );
 
 		vh::createDescriptorSetLayout( GetDevice(), //Per frame
 			{{ .descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, .stageFlags = VK_SHADER_STAGE_VERTEX_BIT } },
 			m_descriptorSetLayoutPerFrame );
 
-		vh::createGraphicsPipeline(GetDevice(), m_renderPass, "shaders\\Forward\\T_vert.spv", "shaders\\Forward\\T_frag.spv", 
-			{ m_descriptorSetLayoutPerFrame, m_descriptorSetLayoutPerObject }, m_graphicsPipeline);
+		//vh::createGraphicsPipeline(GetDevice(), m_renderPass, "shaders\\Forward\\T_vert.spv", "shaders\\Forward\\T_frag.spv", 
+		//	{ m_descriptorSetLayoutPerFrame, m_descriptorSetLayoutPerObject }, m_graphicsPipeline);
 
         vh::createCommandPool(GetSurface(), GetPhysicalDevice(), GetDevice(), m_commandPool);
         vh::createCommandBuffers(GetDevice(), m_commandPool, m_commandBuffers);
@@ -66,10 +66,15 @@ namespace vve {
 			ubo.modelInverseTranspose = glm::inverse( glm::transpose(ubo.model) );
 
 			memcpy(uniformBuffers.m_uniformBuffersMapped[GetCurrentFrame()], &ubo, sizeof(ubo));
-			vh::Mesh& geometry = m_registry.template Get<vh::Mesh&>(ghandle);
-			auto type = geometry.m_verticesData.getType();
-			auto pipelinePerType = getPipelinePerType(geometry.m_verticesData);
-			vh::recordObject( m_commandBuffers[GetCurrentFrame()], m_graphicsPipeline, { descriptorsets, m_descriptorSetPerFrame }, geometry, GetCurrentFrame() );
+			vh::Mesh& mesh = m_registry.template Get<vh::Mesh&>(ghandle);
+			auto type = mesh.m_verticesData.getType();
+			auto pipelinePerType = getPipelinePerType(mesh.m_verticesData);
+
+			vh::bindPipeline(m_commandBuffers[GetCurrentFrame()], GetImageIndex(), 
+				GetSwapChain(), m_renderPass, pipelinePerType.m_graphicsPipeline, false, ((WindowSDL*)m_window)->GetClearColor(), GetCurrentFrame());
+		
+			//vh::recordObject( m_commandBuffers[GetCurrentFrame()], pipelinePerType.m_graphicsPipeline, { descriptorsets, m_descriptorSetPerFrame }, mesh, GetCurrentFrame() );
+			vh::recordObject2( m_commandBuffers[GetCurrentFrame()], pipelinePerType.m_graphicsPipeline, { descriptorsets, m_descriptorSetPerFrame }, mesh, GetCurrentFrame() );
 		}
 
 		vh::endRecordCommandBuffer(m_commandBuffers[GetCurrentFrame()]);
@@ -81,12 +86,15 @@ namespace vve {
 	bool RendererForward::OnObjectCreate( Message message ) {
 		auto handle = message.template GetData<MsgObjectCreate>().m_object;
 		auto gHandle = m_registry.template Get<MeshHandle>(handle);
+		auto mesh = m_registry.template Get<vh::Mesh&>(gHandle);
+
+		auto pipelinePerType = getPipelinePerType(mesh.m_verticesData);
 
 		vh::UniformBuffers ubo;
 		vh::createUniformBuffers(GetPhysicalDevice(), GetDevice(), GetVmaAllocator(), sizeof(UniformBufferObject), ubo);
 
 		vh::DescriptorSet descriptorSet{1};
-		vh::createDescriptorSet(GetDevice(), m_descriptorSetLayoutPerObject, m_descriptorPool, descriptorSet);
+		vh::createDescriptorSet(GetDevice(), pipelinePerType.m_descriptorSetLayoutPerObject, m_descriptorPool, descriptorSet);
 	    vh::updateDescriptorSetUBO(GetDevice(), ubo, 0, sizeof(UniformBufferObject), descriptorSet);
 
 		if( m_registry.template Has<TextureHandle>(handle) ) {
@@ -100,32 +108,6 @@ namespace vve {
 		assert( m_registry.template Has<vh::DescriptorSet>(handle) );
 		return false; //true if handled
 	}
-
-
-    bool RendererForward::OnQuit(Message message) {
-        vkDeviceWaitIdle(GetDevice());
-		
-        vkDestroyCommandPool(GetDevice(), m_commandPool, nullptr);
-
-		for( auto& [type, pipeline] : m_pipelinesPerType ) {
-			vkDestroyDescriptorSetLayout(GetDevice(), pipeline.m_descriptorSetLayoutPerObject, nullptr);
-			vkDestroyPipeline(GetDevice(), pipeline.m_graphicsPipeline.m_pipeline, nullptr);
-			vkDestroyPipelineLayout(GetDevice(), pipeline.m_graphicsPipeline.m_pipelineLayout, nullptr);
-		}
-
-		vkDestroyPipeline(GetDevice(), m_graphicsPipeline.m_pipeline, nullptr);
-        vkDestroyPipelineLayout(GetDevice(), m_graphicsPipeline.m_pipelineLayout, nullptr); 
-
-        vkDestroyDescriptorPool(GetDevice(), m_descriptorPool, nullptr);
-		vkDestroyRenderPass(GetDevice(), m_renderPass, nullptr);
-
-		vh::destroyBuffer2(GetDevice(), GetVmaAllocator(), m_uniformBuffersPerFrame);
-
-		vkDestroyDescriptorSetLayout(GetDevice(), m_descriptorSetLayoutPerFrame, nullptr);
-		vkDestroyDescriptorSetLayout(GetDevice(), m_descriptorSetLayoutPerObject, nullptr);
-		return false;
-    }
-
 
 	RendererForward::PipelinePerType& RendererForward::getPipelinePerType(vh::VertexData &vertexData) {
 		auto type = vertexData.getType();
@@ -146,10 +128,32 @@ namespace vve {
 		std::filesystem::path vertShaderPath = "shaders\\Forward\\" + type + "_vert.spv";
 		std::filesystem::path fragShaderPath = "shaders\\Forward\\" + type + "_frag.spv";
 		vh::createGraphicsPipeline(GetDevice(), m_renderPass, vertShaderPath.string(), fragShaderPath.string(), 
+			//vertexData,
 			{ m_descriptorSetLayoutPerFrame, descriptorSetLayoutPerObject }, graphicsPipeline);
 
 		return m_pipelinesPerType[type] = { type, descriptorSetLayoutPerObject, graphicsPipeline };
 	}
+
+    bool RendererForward::OnQuit(Message message) {
+        vkDeviceWaitIdle(GetDevice());
+		
+        vkDestroyCommandPool(GetDevice(), m_commandPool, nullptr);
+
+		for( auto& [type, pipeline] : m_pipelinesPerType ) {
+			vkDestroyDescriptorSetLayout(GetDevice(), pipeline.m_descriptorSetLayoutPerObject, nullptr);
+			vkDestroyPipeline(GetDevice(), pipeline.m_graphicsPipeline.m_pipeline, nullptr);
+			vkDestroyPipelineLayout(GetDevice(), pipeline.m_graphicsPipeline.m_pipelineLayout, nullptr);
+		}
+
+        vkDestroyDescriptorPool(GetDevice(), m_descriptorPool, nullptr);
+		vkDestroyRenderPass(GetDevice(), m_renderPass, nullptr);
+
+		vh::destroyBuffer2(GetDevice(), GetVmaAllocator(), m_uniformBuffersPerFrame);
+
+		vkDestroyDescriptorSetLayout(GetDevice(), m_descriptorSetLayoutPerFrame, nullptr);
+		//vkDestroyDescriptorSetLayout(GetDevice(), m_descriptorSetLayoutPerObject, nullptr);
+		return false;
+    }
 
 
 };   // namespace vve
