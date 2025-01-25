@@ -109,13 +109,14 @@ namespace vve {
 	}
 
 	void SceneManager::ProcessNode(aiNode* node, ParentHandle parent, std::filesystem::path& directory, const aiScene* scene, uint64_t& id, float& x) {
-		
 		auto transform = node->mTransformation;
 		aiVector3D scaling, position;
     	aiQuaternion rotation;
     	transform.Decompose(scaling, rotation, position);
 		aiMatrix3x3 rotMat = rotation.GetMatrix();
 		mat3_t rotMat3x3 = mat3_t(rotMat.a1, rotMat.a2, rotMat.a3, rotMat.b1, rotMat.b2, rotMat.b3, rotMat.c1, rotMat.c2, rotMat.c3);
+
+		std::cout << "Node: " << node->mName.C_Str() << std::endl;
 
 		auto nHandle = m_registry.Insert(
 								node->mName.C_Str()[0] != 0 ? Name{node->mName.C_Str()} : Name{"Node" + std::to_string(id++)},
@@ -132,8 +133,8 @@ namespace vve {
 			children().push_back(nHandle);
 		}
 
-		for (unsigned int i = 0; i < std::min(1u, node->mNumMeshes); i++) {
-		    auto mesh = scene->mMeshes[node->mMeshes[i]];
+		if ( node->mNumMeshes > 0) {
+		    auto mesh = scene->mMeshes[node->mMeshes[0]];
 			m_registry.template Put(nHandle, MeshName{mesh->mName.C_Str()});
 			
 			auto material = scene->mMaterials[mesh->mMaterialIndex];
