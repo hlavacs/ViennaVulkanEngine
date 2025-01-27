@@ -46,23 +46,12 @@ namespace vve {
 		bool OnUpdate(Message message);
 		bool OnSceneLoad(Message message);
 		bool OnObjectSetParent(Message message);
-		bool OnKeyDown(Message message);
-		bool OnKeyUp(Message message);
-		bool OnMouseButtonDown(Message message);
-		bool OnMouseButtonUp(Message message);
-		bool OnMouseMove(Message message);
-		bool OnMouseWheel(Message message);
 		void ProcessNode(aiNode* node, ParentHandle parent, std::filesystem::path& directory, const aiScene* scene, uint64_t& id, float& x);
 
 		std::shared_mutex m_mutex;
 		vecs::Handle m_cameraHandle;
 		vecs::Handle m_cameraNodeHandle;
 		vecs::Handle m_rootHandle;
-
-		bool m_mouseButtonDown=false;
-		bool m_shiftPressed=false;
-		int m_x = -1;
-		int m_y = -1;
     };
 
 };  // namespace vve
