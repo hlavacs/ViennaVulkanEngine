@@ -152,7 +152,7 @@ namespace vve {
 				hasColor = true;
 		        std::cout << "Diffuse Color: " << color.m_diffuseColor.r << color.m_diffuseColor.g << color.m_diffuseColor.b << color.m_diffuseColor.a << std::endl;
 			}
-			if( hasColor == false ) {
+			if( hasColor ) {
 				m_registry.template Put(nHandle, color);
 			}
 
