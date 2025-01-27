@@ -109,6 +109,12 @@ namespace vh {
         }
 	};
 
+	struct Color {
+		glm::vec4 m_ambientColor{0.0f};
+		glm::vec4 m_diffuseColor{0.0f};
+		glm::vec4 m_specularColor{0.0f};
+	};
+
 	struct UniformBuffers {
 		VkDeviceSize 				m_bufferSize{0};
         std::vector<VkBuffer>       m_uniformBuffers;

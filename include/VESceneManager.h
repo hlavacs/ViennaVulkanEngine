@@ -27,7 +27,12 @@ namespace vve {
 	using Children = vsty::strong_type_t<std::vector<vecs::Handle>, vsty::counter<>>;
 	using MeshName = vsty::strong_type_t<std::string, vsty::counter<>>;
 	using TextureName = vsty::strong_type_t<std::string, vsty::counter<>>;
-	using Color = vsty::strong_type_t<vec4_t, vsty::counter<>>;
+	
+	struct Color {
+		vec4_t m_ambientColor{0.0f};
+		vec4_t m_diffuseColor{0.0f};
+		vec4_t m_specularColor{0.0f};
+	};
 
 	//-------------------------------------------------------------------------------------------------------
 

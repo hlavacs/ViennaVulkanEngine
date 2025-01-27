@@ -1,3 +1,5 @@
+import Common;
+
 struct CoarseVertex {
     float3 normal;
     float4 fragColor;

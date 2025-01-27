@@ -1,3 +1,5 @@
+import Common;
+
 struct CoarseVertex {
     float3 normal;
     float2 uv;
@@ -7,17 +9,6 @@ struct CoarseVertex {
 struct VertexStageOutput {
     CoarseVertex coarseVertex : CoarseVertex;
     float4       sv_position  : SV_Position;
-};
-
-struct UniformBufferObject {
-    float4x4 model;
-    float4x4 modelInvTranspose;
-    float4   color;
-};
-
-struct UniformBufferCamera {
-    float4x4 view;
-    float4x4 proj;
 };
 
 // binding 0,1 means that the uniform buffer is bound to binding 0, set 0

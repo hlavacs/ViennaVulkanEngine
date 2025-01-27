@@ -58,7 +58,7 @@ namespace vve {
 			ubo.modelInverseTranspose = glm::inverse( glm::transpose(ubo.model) );
 			if( m_registry.template Has<Color>(ghandle) ) {
 				auto color = m_registry.template Get<Color&>(ghandle);
-				ubo.color = glm::vec4{color().r, color().g, color().b, color().a};
+				//ubo.color = glm::vec4{color().r, color().g, color().b, color().a};
 			}
 
 			memcpy(uniformBuffers.m_uniformBuffersMapped[GetCurrentFrame()], &ubo, sizeof(ubo));

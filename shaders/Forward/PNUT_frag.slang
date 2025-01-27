@@ -1,12 +1,9 @@
+import Common;
+
 struct CoarseVertex {
     float3 normal;
     float2 uv;
     float3 tangent;
-};
-
-struct UniformBufferObject {
-    float4x4 model;
-    float4x4 modelInvTranspose;
 };
 
 // binding 0,1 means that the uniform buffer is bound to binding 0, set 1

@@ -145,10 +145,19 @@ namespace vve {
 		        std::cout << "Diffuse Texture: " << texturePathStr << std::endl;
 				m_registry.template Put(nHandle, TextureName{texturePathStr});
 			}
+
+			Color color;
+			bool hasColor = false;
+			aiColor4D ambientColor;
+			if (AI_SUCCESS == material->Get(AI_MATKEY_COLOR_AMBIENT, color.m_ambientColor)) {
+		        std::cout << "Diffuse Color: " << color.m_ambientColor.r << color.m_ambientColor.g << color.m_ambientColor.b << color.m_ambientColor.a << std::endl;
+			}
 			aiColor4D diffuseColor;
-			if (AI_SUCCESS == material->Get(AI_MATKEY_COLOR_DIFFUSE, diffuseColor)) {
-		        std::cout << "Diffuse Color: " << diffuseColor.r << diffuseColor.g << diffuseColor.b << diffuseColor.a << std::endl;
-				m_registry.template Put(nHandle, Color{vec4_t{diffuseColor.r, diffuseColor.g, diffuseColor.b, diffuseColor.a}});	
+			if (AI_SUCCESS == material->Get(AI_MATKEY_COLOR_DIFFUSE, color.m_diffuseColor)) {
+		        std::cout << "Diffuse Color: " << color.m_diffuseColor.r << color.m_diffuseColor.g << color.m_diffuseColor.b << color.m_diffuseColor.a << std::endl;
+			}
+			if( hasColor == false ) {
+				m_registry.template Put(nHandle, color);
 			}
 
 			m_engine.SendMessage( MsgObjectCreate{this, nullptr, ObjectHandle{nHandle}, ParentHandle{parent} }); 
