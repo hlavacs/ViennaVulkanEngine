@@ -52,19 +52,18 @@ namespace vve {
 		vh::startRecordCommandBuffer(m_commandBuffers[GetCurrentFrame()], GetImageIndex(), 
 			GetSwapChain(), m_renderPass, m_graphicsPipeline, false, ((WindowSDL*)m_window)->GetClearColor(), GetCurrentFrame());
 		
-		for( auto[name, ghandle, LtoW, uniformBuffers, descriptorsets] : m_registry.template GetView<Name, MeshHandle, LocalToWorldMatrix&, vh::UniformBuffers&, vh::DescriptorSet&>() ) {
+		for( auto[handle, name, ghandle, LtoW, uniformBuffers, descriptorsets] : m_registry.template GetView<vecs::Handle, Name, MeshHandle, LocalToWorldMatrix&, vh::UniformBuffers&, vh::DescriptorSet&>() ) {
 			UniformBufferObject ubo{};
 			ubo.model = LtoW(); 		
 			ubo.modelInverseTranspose = glm::inverse( glm::transpose(ubo.model) );
-			if( m_registry.template Has<Color>(ghandle) ) {
-				auto color = m_registry.template Get<Color&>(ghandle);
-				//ubo.color = glm::vec4{color().r, color().g, color().b, color().a};
+			if( m_registry.template Has<vh::Color>(ghandle) ) {
+				auto color = m_registry.template Get<vh::Color&>(ghandle);
+				ubo.color = color;
 			}
 
 			memcpy(uniformBuffers.m_uniformBuffersMapped[GetCurrentFrame()], &ubo, sizeof(ubo));
 			vh::Mesh& mesh = m_registry.template Get<vh::Mesh&>(ghandle);
-			auto type = mesh.m_verticesData.getType();
-			auto pipelinePerType = getPipelinePerType(mesh.m_verticesData);
+			auto pipelinePerType = getPipelinePerType(getPipelineType(ObjectHandle{handle}, mesh.m_verticesData), mesh.m_verticesData);
 
 			vh::bindPipeline(m_commandBuffers[GetCurrentFrame()], GetImageIndex(), 
 				GetSwapChain(), m_renderPass, pipelinePerType.m_graphicsPipeline, false, ((WindowSDL*)m_window)->GetClearColor(), GetCurrentFrame());
@@ -77,13 +76,11 @@ namespace vve {
 		return false;
     }
 
-	
 	bool RendererForward::OnObjectCreate( Message message ) {
-		auto handle = message.template GetData<MsgObjectCreate>().m_object;
+		ObjectHandle handle = message.template GetData<MsgObjectCreate>().m_object;
 		auto gHandle = m_registry.template Get<MeshHandle>(handle);
 		auto mesh = m_registry.template Get<vh::Mesh&>(gHandle);
-
-		auto pipelinePerType = getPipelinePerType(mesh.m_verticesData);
+		auto pipelinePerType = getPipelinePerType(getPipelineType(handle, mesh.m_verticesData), mesh.m_verticesData);
 
 		vh::UniformBuffers ubo;
 		vh::createUniformBuffers(GetPhysicalDevice(), GetDevice(), GetVmaAllocator(), sizeof(UniformBufferObject), ubo);
@@ -104,8 +101,13 @@ namespace vve {
 		return false; //true if handled
 	}
 
-	RendererForward::PipelinePerType& RendererForward::getPipelinePerType(vh::VertexData &vertexData) {
-		auto type = vertexData.getType();
+	std::string RendererForward::getPipelineType(ObjectHandle handle, vh::VertexData &vertexData) {
+		std::string type = vertexData.getType();
+		if( m_registry.template Has<vh::Color>(handle) ) type += "C";
+		return type;
+	}
+
+	RendererForward::PipelinePerType& RendererForward::getPipelinePerType(std::string type, vh::VertexData &vertexData) {
 		if( m_pipelinesPerType.contains(type) ) return m_pipelinesPerType[type];
 
 		VkDescriptorSetLayout descriptorSetLayoutPerObject;

@@ -28,12 +28,6 @@ namespace vve {
 	using MeshName = vsty::strong_type_t<std::string, vsty::counter<>>;
 	using TextureName = vsty::strong_type_t<std::string, vsty::counter<>>;
 	
-	struct Color {
-		vec4_t m_ambientColor{0.0f};
-		vec4_t m_diffuseColor{0.0f};
-		vec4_t m_specularColor{0.0f};
-	};
-
 	//-------------------------------------------------------------------------------------------------------
 
     class SceneManager : public System {
@@ -53,6 +47,7 @@ namespace vve {
 		bool OnSceneLoad(Message message);
 		bool OnObjectSetParent(Message message);
 		bool OnKeyDown(Message message);
+		bool OnKeyUp(Message message);
 		bool OnMouseButtonDown(Message message);
 		bool OnMouseButtonUp(Message message);
 		bool OnMouseMove(Message message);
@@ -65,6 +60,7 @@ namespace vve {
 		vecs::Handle m_rootHandle;
 
 		bool m_mouseButtonDown=false;
+		bool m_shiftPressed=false;
 		int m_x = -1;
 		int m_y = -1;
     };

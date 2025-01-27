@@ -17,6 +17,7 @@ namespace vve {
 			{this, std::numeric_limits<int>::max(), "OBJECT_SET_PARENT", [this](Message& message){ return OnObjectSetParent(message);} },
 			{this, std::numeric_limits<int>::max(), "SDL_KEY_DOWN", [this](Message& message){ return OnKeyDown(message);} },
 			{this, std::numeric_limits<int>::max(), "SDL_KEY_REPEAT", [this](Message& message){ return OnKeyDown(message);} },
+			{this, std::numeric_limits<int>::max(), "SDL_KEY_UP", [this](Message& message){ return OnKeyUp(message);} },
 			{this, std::numeric_limits<int>::max(), "SDL_MOUSE_BUTTON_DOWN", [this](Message& message){ return OnMouseButtonDown(message);} },
 			{this, std::numeric_limits<int>::max(), "SDL_MOUSE_BUTTON_UP", [this](Message& message){return OnMouseButtonUp(message);} },
 			{this, std::numeric_limits<int>::max(), "SDL_MOUSE_MOVE", [this](Message& message){ return OnMouseMove(message); } },
@@ -146,14 +147,16 @@ namespace vve {
 				m_registry.template Put(nHandle, TextureName{texturePathStr});
 			}
 
-			Color color;
+			vh::Color color;
 			bool hasColor = false;
 			aiColor4D ambientColor;
 			if (AI_SUCCESS == material->Get(AI_MATKEY_COLOR_AMBIENT, color.m_ambientColor)) {
-		        std::cout << "Diffuse Color: " << color.m_ambientColor.r << color.m_ambientColor.g << color.m_ambientColor.b << color.m_ambientColor.a << std::endl;
+				hasColor = true;
+		        std::cout << "Ambient Color: " << color.m_ambientColor.r << color.m_ambientColor.g << color.m_ambientColor.b << color.m_ambientColor.a << std::endl;
 			}
 			aiColor4D diffuseColor;
 			if (AI_SUCCESS == material->Get(AI_MATKEY_COLOR_DIFFUSE, color.m_diffuseColor)) {
+				hasColor = true;
 		        std::cout << "Diffuse Color: " << color.m_diffuseColor.r << color.m_diffuseColor.g << color.m_diffuseColor.b << color.m_diffuseColor.a << std::endl;
 			}
 			if( hasColor == false ) {
@@ -196,6 +199,7 @@ namespace vve {
 		}
 
 		if( key == SDL_SCANCODE_ESCAPE  ) { m_engine.Stop(); return false; }
+		if( key == SDL_SCANCODE_LSHIFT || key == SDL_SCANCODE_RSHIFT  ) { m_shiftPressed = true; return false; }
 
 		auto [pn, rn, sn] 		 = m_registry.template Get<Position&, Rotation&, Scale&>(m_cameraNodeHandle);
 		auto [pc, rc, sc, LtoPc] = m_registry.template Get<Position&, Rotation&, Scale&, LocalToParentMatrix>(m_cameraHandle);		
@@ -220,13 +224,20 @@ namespace vve {
 									   axis = vec3_t{ LtoPc() * vec4_t{1.0f, 0.0f, 0.0f, 0.0f} }; break; }
 		}
 
-		float speed = 3.0f; ///add the new translation vector to the previous one
+		float speed = m_shiftPressed ? 30.0f : 3.0f; ///add the new translation vector to the previous one
 		pn = pn() + translate * (real_t)dt * speed;
 
 		///combination of yaw and pitch, both wrt to parent space
 		rc = mat3_t{ glm::rotate(mat4_t{1.0f}, angle, axis) * mat4_t{ rc } };
 		return false;
     }
+
+	bool SceneManager::OnKeyUp(Message message) {
+		auto msg = message.template GetData<MsgKeyUp>();
+		int key = msg.m_key;
+		if( key == SDL_SCANCODE_LSHIFT || key == SDL_SCANCODE_RSHIFT ) { m_shiftPressed = false; }
+		return false;
+	}
 
 	bool SceneManager::OnMouseButtonDown(Message message) {
 		auto msg = message.template GetData<MsgMouseButtonDown>();

@@ -7,7 +7,7 @@ namespace vve
 	    struct UniformBufferObject {
 	        alignas(16) glm::mat4 model;
 	        alignas(16) glm::mat4 modelInverseTranspose;
-			alignas(16) glm::vec4 color{1.0f, 1.0f, 1.0f, 1.0f}; //can be used as parameter for shader		
+			alignas(16) vh::Color color{}; //can be used as parameter for shader		
 	    };
 	
 	    struct UniformBufferFrame {
@@ -31,9 +31,8 @@ namespace vve
 		bool OnObjectCreate( Message message );
         bool OnQuit(Message message);
 
-		PipelinePerType& getPipelinePerType(vh::VertexData &vertexData);
-
-	private:
+		PipelinePerType& getPipelinePerType(std::string type, vh::VertexData &vertexData);
+		std::string getPipelineType(ObjectHandle handle, vh::VertexData &vertexData);
 
 		vh::UniformBuffers m_uniformBuffersPerFrame;
 		VkDescriptorSetLayout m_descriptorSetLayoutPerFrame;
