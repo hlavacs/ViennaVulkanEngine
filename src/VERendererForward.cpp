@@ -30,9 +30,9 @@ namespace vve {
         vh::createCommandBuffers(GetDevice(), m_commandPool, m_commandBuffers);
         vh::createDescriptorPool(GetDevice(), 1000, m_descriptorPool);
 
-		vh::createUniformBuffers(GetPhysicalDevice(), GetDevice(), GetVmaAllocator(), sizeof(UniformBufferFrame), m_uniformBuffersPerFrame);
+		vh::createUniformBuffers(GetPhysicalDevice(), GetDevice(), GetVmaAllocator(), sizeof(vh::UniformBufferFrame), m_uniformBuffersPerFrame);
 		vh::createDescriptorSet(GetDevice(), m_descriptorSetLayoutPerFrame, m_descriptorPool, m_descriptorSetPerFrame);
-	    vh::updateDescriptorSetUBO(GetDevice(), m_uniformBuffersPerFrame, 0, sizeof(UniformBufferFrame), m_descriptorSetPerFrame);   
+	    vh::updateDescriptorSetUBO(GetDevice(), m_uniformBuffersPerFrame, 0, sizeof(vh::UniformBufferFrame), m_descriptorSetPerFrame);   
 		return false;
 	}
 
@@ -42,7 +42,7 @@ namespace vve {
         float time = std::chrono::duration<float, std::chrono::seconds::period>(currentTime - startTime).count();
 
 		auto [view, proj] = *m_registry.template GetView<ViewMatrix&, ProjectionMatrix&>().begin();
-		UniformBufferFrame ubc;
+		vh::UniformBufferFrame ubc;
 		ubc.view = view;
         ubc.proj = proj;
 		memcpy(m_uniformBuffersPerFrame.m_uniformBuffersMapped[GetCurrentFrame()], &ubc, sizeof(ubc));
@@ -53,7 +53,7 @@ namespace vve {
 			GetSwapChain(), m_renderPass, m_graphicsPipeline, false, ((WindowSDL*)m_window)->GetClearColor(), GetCurrentFrame());
 		
 		for( auto[handle, name, ghandle, LtoW, uniformBuffers, descriptorsets] : m_registry.template GetView<vecs::Handle, Name, MeshHandle, LocalToWorldMatrix&, vh::UniformBuffers&, vh::DescriptorSet&>() ) {
-			UniformBufferObject ubo{};
+			vh::UniformBufferObject ubo{};
 			ubo.model = LtoW(); 		
 			ubo.modelInverseTranspose = glm::inverse( glm::transpose(ubo.model) );
 			if( m_registry.template Has<vh::Color>(ghandle) ) {
@@ -83,11 +83,11 @@ namespace vve {
 		auto pipelinePerType = getPipelinePerType(getPipelineType(handle, mesh.m_verticesData), mesh.m_verticesData);
 
 		vh::UniformBuffers ubo;
-		vh::createUniformBuffers(GetPhysicalDevice(), GetDevice(), GetVmaAllocator(), sizeof(UniformBufferObject), ubo);
+		vh::createUniformBuffers(GetPhysicalDevice(), GetDevice(), GetVmaAllocator(), sizeof(vh::UniformBufferObject), ubo);
 
 		vh::DescriptorSet descriptorSet{1};
 		vh::createDescriptorSet(GetDevice(), pipelinePerType.m_descriptorSetLayoutPerObject, m_descriptorPool, descriptorSet);
-	    vh::updateDescriptorSetUBO(GetDevice(), ubo, 0, sizeof(UniformBufferObject), descriptorSet);
+	    vh::updateDescriptorSetUBO(GetDevice(), ubo, 0, sizeof(vh::UniformBufferObject), descriptorSet);
 
 		if( m_registry.template Has<TextureHandle>(handle) ) {
 			auto tHandle = m_registry.template Get<TextureHandle>(handle);
@@ -103,7 +103,7 @@ namespace vve {
 
 	std::string RendererForward::getPipelineType(ObjectHandle handle, vh::VertexData &vertexData) {
 		std::string type = vertexData.getType();
-		if( m_registry.template Has<vh::Color>(handle) ) type += "C";
+		if( m_registry.template Has<vh::Color>(handle) && type.find("U") == std::string::npos ) type += "O";
 		return type;
 	}
 

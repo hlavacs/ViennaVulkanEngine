@@ -38,6 +38,10 @@ namespace vve {
 #include <assimp/postprocess.h>
 #include <assimp/DefaultLogger.hpp>
 
+inline auto to_vec4 (const aiColor4D &color) {
+	return glm::vec4{color.r, color.g, color.b, color.a};
+}
+
 #include "VECS.h"
 #include "VESystem.h"
 #include "VEEngine.h"

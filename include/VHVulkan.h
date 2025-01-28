@@ -115,6 +115,17 @@ namespace vh {
 		glm::vec4 m_specularColor{0.0f};
 	};
 
+	struct UniformBufferObject {
+	    alignas(16) glm::mat4 model;
+	    alignas(16) glm::mat4 modelInverseTranspose;
+		alignas(16) vh::Color color{}; //can be used as parameter for shader		
+	};
+	
+	struct UniformBufferFrame {
+	    alignas(16) glm::mat4 view;
+	    alignas(16) glm::mat4 proj;
+	};
+
 	struct UniformBuffers {
 		VkDeviceSize 				m_bufferSize{0};
         std::vector<VkBuffer>       m_uniformBuffers;
