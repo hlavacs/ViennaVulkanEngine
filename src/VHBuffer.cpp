@@ -54,7 +54,7 @@ namespace vh {
             , VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT | VMA_ALLOCATION_CREATE_MAPPED_BIT
             , stagingBuffer, stagingBufferAllocation, &allocInfo);
 
-        MemCopy(device, pixels, allocInfo, imageSize);
+		memcpy(allocInfo.pMappedData, pixels, imageSize);
 
         createImage(physicalDevice, device, vmaAllocator, texWidth, texHeight, VK_FORMAT_R8G8B8A8_SRGB
             , VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT
@@ -270,7 +270,7 @@ namespace vh {
             , VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT | VMA_ALLOCATION_CREATE_MAPPED_BIT
             , stagingBuffer, stagingBufferAllocation, &allocInfo);
 
-        MemCopy(device, geometry.m_indices.data(), allocInfo, bufferSize);
+		memcpy(allocInfo.pMappedData, geometry.m_indices.data(), bufferSize);
 
         createBuffer(physicalDevice, device, vmaAllocator, bufferSize
             , VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT

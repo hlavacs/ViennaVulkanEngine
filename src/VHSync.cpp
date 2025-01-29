@@ -6,7 +6,7 @@
 namespace vh {
 
 
-	void createFences(VkDevice device, size_t size, std::vector<VkFence>& fences) {
+	void SynCreateFences(VkDevice device, size_t size, std::vector<VkFence>& fences) {
 		for( int i = 0; i < size; ++i ) {
 			VkFence fence;
 			VkFenceCreateInfo fenceInfo{};
@@ -20,13 +20,13 @@ namespace vh {
 		}
 	}
 
-	void destroyFences(VkDevice device, std::vector<VkFence>& fences) {
+	void SynDestroyFences(VkDevice device, std::vector<VkFence>& fences) {
 		for( int i = 0; i < fences.size(); ++i ) {
 			vkDestroyFence(device, fences[i], nullptr);
 		}
 	}
 
-    void createSemaphores(VkDevice device, size_t size,  std::vector<VkSemaphore>& imageAvailableSemaphores, std::vector<Semaphores>& semaphores ) {
+    void SynCreateSemaphores(VkDevice device, size_t size,  std::vector<VkSemaphore>& imageAvailableSemaphores, std::vector<Semaphores>& semaphores ) {
         VkSemaphoreCreateInfo semaphoreInfo{};
         semaphoreInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
 
@@ -52,7 +52,7 @@ namespace vh {
 
     }
 
-    void destroySemaphores(VkDevice device,  std::vector<VkSemaphore>& imageAvailableSemaphores, std::vector<Semaphores>& semaphores) {
+    void SynDestroySemaphores(VkDevice device,  std::vector<VkSemaphore>& imageAvailableSemaphores, std::vector<Semaphores>& semaphores) {
 		for( auto Sem : semaphores ) {
 			for ( auto sem : Sem.m_renderFinishedSemaphores ) {
 				vkDestroySemaphore(device, sem, nullptr);

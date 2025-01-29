@@ -7,12 +7,12 @@ namespace vh {
 
 	VkInstance volkInstance;
 	
-    void createInstance(const std::vector<const char*>& validationLayers, 
+    void DevCreateInstance(const std::vector<const char*>& validationLayers, 
 		const std::vector<const char *>& extensions, bool debug, VkInstance &instance) {
 
         volkInitialize();
 
-        if (debug && !checkValidationLayerSupport(validationLayers)) {
+        if (debug && !DevCheckValidationLayerSupport(validationLayers)) {
             throw std::runtime_error("validation layers requested, but not available!");
         }
 
@@ -37,7 +37,7 @@ namespace vh {
             createInfo.enabledLayerCount = static_cast<uint32_t>(validationLayers.size());
             createInfo.ppEnabledLayerNames = validationLayers.data();
 
-            populateDebugMessengerCreateInfo(debugCreateInfo);
+            DevPopulateDebugMessengerCreateInfo(debugCreateInfo);
             createInfo.pNext = (VkDebugUtilsMessengerCreateInfoEXT*) &debugCreateInfo;
         } else {
             createInfo.enabledLayerCount = 0;
@@ -53,7 +53,7 @@ namespace vh {
    		volkLoadInstance(instance);       
     }
 
-    VkResult CreateDebugUtilsMessengerEXT(VkInstance instance, const VkDebugUtilsMessengerCreateInfoEXT* pCreateInfo
+    VkResult DevCreateDebugUtilsMessengerEXT(VkInstance instance, const VkDebugUtilsMessengerCreateInfoEXT* pCreateInfo
         , const VkAllocationCallbacks* pAllocator, VkDebugUtilsMessengerEXT* pDebugMessenger) {
 
         auto func = (PFN_vkCreateDebugUtilsMessengerEXT) vkGetInstanceProcAddr(instance, "vkCreateDebugUtilsMessengerEXT");
@@ -64,7 +64,7 @@ namespace vh {
         }
     }
 
-    void DestroyDebugUtilsMessengerEXT(VkInstance instance, VkDebugUtilsMessengerEXT& debugMessenger
+    void DevDestroyDebugUtilsMessengerEXT(VkInstance instance, VkDebugUtilsMessengerEXT& debugMessenger
         , const VkAllocationCallbacks* pAllocator) {
 
         auto func = (PFN_vkDestroyDebugUtilsMessengerEXT) vkGetInstanceProcAddr(instance, "vkDestroyDebugUtilsMessengerEXT");
@@ -73,7 +73,7 @@ namespace vh {
         }
     }
 
-    void initVMA(VkInstance instance, VkPhysicalDevice physicalDevice, VkDevice device, VmaAllocator& allocator) {
+    void DevInitVMA(VkInstance instance, VkPhysicalDevice physicalDevice, VkDevice device, VmaAllocator& allocator) {
         VmaVulkanFunctions vulkanFunctions = {};
         vulkanFunctions.vkGetInstanceProcAddr = vkGetInstanceProcAddr;
         vulkanFunctions.vkGetDeviceProcAddr = vkGetDeviceProcAddr;
@@ -88,7 +88,7 @@ namespace vh {
         vmaCreateAllocator(&allocatorCreateInfo, &allocator);
     }
 
-    void cleanupSwapChain(VkDevice device, VmaAllocator vmaAllocator, SwapChain& swapChain, DepthImage& depthImage) {
+    void DevCleanupSwapChain(VkDevice device, VmaAllocator vmaAllocator, SwapChain& swapChain, DepthImage& depthImage) {
         vkDestroyImageView(device, depthImage.m_depthImageView, nullptr);
 
         destroyImage(device, vmaAllocator, depthImage.m_depthImage, depthImage.m_depthImageAllocation);
@@ -105,7 +105,7 @@ namespace vh {
     }
 
 
-    void recreateSwapChain(SDL_Window* window, VkSurfaceKHR surface
+    void DevRecreateSwapChain(SDL_Window* window, VkSurfaceKHR surface
         , VkPhysicalDevice physicalDevice, VkDevice device, VmaAllocator vmaAllocator, SwapChain& swapChain
         , DepthImage& depthImage, VkRenderPass renderPass) {
         int width = 0, height = 0;
@@ -119,36 +119,34 @@ namespace vh {
 
         vkDeviceWaitIdle(device);
 
-        cleanupSwapChain(device, vmaAllocator, swapChain, depthImage);
+        DevCleanupSwapChain(device, vmaAllocator, swapChain, depthImage);
 
-        createSwapChain(window, surface, physicalDevice, device, swapChain);
-        createImageViews(device, swapChain);
-        createDepthResources(physicalDevice, device, vmaAllocator, swapChain, depthImage);
-        createFramebuffers(device, swapChain, depthImage, renderPass);
+        DevCreateSwapChain(window, surface, physicalDevice, device, swapChain);
+        DevCreateImageViews(device, swapChain);
+        RenCreateDepthResources(physicalDevice, device, vmaAllocator, swapChain, depthImage);
+        RenCreateFramebuffers(device, swapChain, depthImage, renderPass);
     }
 
-
-
-    void populateDebugMessengerCreateInfo(VkDebugUtilsMessengerCreateInfoEXT& createInfo) {
+    void DevPopulateDebugMessengerCreateInfo(VkDebugUtilsMessengerCreateInfoEXT& createInfo) {
         createInfo = {};
         createInfo.sType = VK_STRUCTURE_TYPE_DEBUG_UTILS_MESSENGER_CREATE_INFO_EXT;
         createInfo.messageSeverity = VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT 
             | VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT;
         createInfo.messageType = VK_DEBUG_UTILS_MESSAGE_TYPE_GENERAL_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT 
             | VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT;
-        createInfo.pfnUserCallback = debugCallback;
+        createInfo.pfnUserCallback = DevDebugCallback;
     }
 
-    void setupDebugMessenger(VkInstance instance, VkDebugUtilsMessengerEXT& debugMessenger) {
+    void DevSetupDebugMessenger(VkInstance instance, VkDebugUtilsMessengerEXT& debugMessenger) {
         VkDebugUtilsMessengerCreateInfoEXT createInfo;
-        populateDebugMessengerCreateInfo(createInfo);
+        DevPopulateDebugMessengerCreateInfo(createInfo);
 
-        if (CreateDebugUtilsMessengerEXT(instance, &createInfo, nullptr, &debugMessenger) != VK_SUCCESS) {
+        if (DevCreateDebugUtilsMessengerEXT(instance, &createInfo, nullptr, &debugMessenger) != VK_SUCCESS) {
             throw std::runtime_error("failed to set up debug messenger!");
         }
     }
 
-	VKAPI_ATTR VkBool32 VKAPI_CALL debugCallback(VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity
+	VKAPI_ATTR VkBool32 VKAPI_CALL DevDebugCallback(VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity
         , VkDebugUtilsMessageTypeFlagsEXT messageType, const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData
         , void* pUserData) {
 
@@ -157,13 +155,13 @@ namespace vh {
         return VK_FALSE;
     }
 
-    void createSurface(VkInstance instance, SDL_Window *sdlWindow, VkSurfaceKHR& surface) {
+    void DevCreateSurface(VkInstance instance, SDL_Window *sdlWindow, VkSurfaceKHR& surface) {
         if (SDL_Vulkan_CreateSurface(sdlWindow, instance, &surface) == 0) {
             printf("Failed to create Vulkan surface.\n");
         }
     }
 
-    void pickPhysicalDevice(VkInstance instance, const std::vector<const char *>& deviceExtensions, VkSurfaceKHR surface, VkPhysicalDevice& physicalDevice) {
+    void DevPickPhysicalDevice(VkInstance instance, const std::vector<const char *>& deviceExtensions, VkSurfaceKHR surface, VkPhysicalDevice& physicalDevice) {
 
         uint32_t deviceCount = 0;
         vkEnumeratePhysicalDevices(instance, &deviceCount, nullptr);
@@ -181,7 +179,7 @@ namespace vh {
             vkGetPhysicalDeviceProperties2(device, &deviceProperties2);
 
             if (deviceProperties2.properties.deviceType == VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU 
-                && isDeviceSuitable(device, deviceExtensions, surface)) {
+                && DevIsDeviceSuitable(device, deviceExtensions, surface)) {
 
                 physicalDevice = device;
                 break;
@@ -190,7 +188,7 @@ namespace vh {
 
         if (physicalDevice == VK_NULL_HANDLE) {
             for (const auto& device : devices) {
-                if (isDeviceSuitable(device, deviceExtensions, surface)) {
+                if (DevIsDeviceSuitable(device, deviceExtensions, surface)) {
                     physicalDevice = device;
                     break;
                 }
@@ -202,11 +200,11 @@ namespace vh {
         }
     }
 
-    void createLogicalDevice(VkSurfaceKHR surface, VkPhysicalDevice physicalDevice, QueueFamilyIndices& queueFamilies, 
+    void DevCreateLogicalDevice(VkSurfaceKHR surface, VkPhysicalDevice physicalDevice, QueueFamilyIndices& queueFamilies, 
 		const std::vector<const char*>& validationLayers, const std::vector<const char*>& deviceExtensions, bool debug,
 		VkDevice& device, VkQueue& graphicsQueue, VkQueue& presentQueue) {
 
-        queueFamilies = findQueueFamilies(physicalDevice, surface);
+        queueFamilies = DevFindQueueFamilies(physicalDevice, surface);
 
         std::vector<VkDeviceQueueCreateInfo> queueCreateInfos;
         std::set<uint32_t> uniqueQueueFamilies = { queueFamilies.graphicsFamily.value(), queueFamilies.presentFamily.value()};
@@ -252,12 +250,12 @@ namespace vh {
         vkGetDeviceQueue(device, queueFamilies.presentFamily.value(), 0, &presentQueue);
     }
 
-    void createSwapChain(SDL_Window *sdlWindow, VkSurfaceKHR surface, VkPhysicalDevice physicalDevice, VkDevice device, SwapChain& swapChain) {
-        SwapChainSupportDetails swapChainSupport = querySwapChainSupport(physicalDevice, surface);
+    void DevCreateSwapChain(SDL_Window *sdlWindow, VkSurfaceKHR surface, VkPhysicalDevice physicalDevice, VkDevice device, SwapChain& swapChain) {
+        SwapChainSupportDetails swapChainSupport = DevQuerySwapChainSupport(physicalDevice, surface);
 
-        VkSurfaceFormatKHR surfaceFormat = chooseSwapSurfaceFormat(swapChainSupport.formats);
-        VkPresentModeKHR presentMode = chooseSwapPresentMode(swapChainSupport.presentModes);
-        VkExtent2D extent = chooseSwapExtent(swapChainSupport.capabilities, sdlWindow);
+        VkSurfaceFormatKHR surfaceFormat = DevChooseSwapSurfaceFormat(swapChainSupport.formats);
+        VkPresentModeKHR presentMode = DevChooseSwapPresentMode(swapChainSupport.presentModes);
+        VkExtent2D extent = DevChooseSwapExtent(swapChainSupport.capabilities, sdlWindow);
 
         uint32_t imageCount = swapChainSupport.capabilities.minImageCount + 1;
         if (swapChainSupport.capabilities.maxImageCount > 0 && imageCount > swapChainSupport.capabilities.maxImageCount) {
@@ -275,7 +273,7 @@ namespace vh {
         createInfo.imageArrayLayers = 1;
         createInfo.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
 
-        QueueFamilyIndices indices = findQueueFamilies(physicalDevice, surface);
+        QueueFamilyIndices indices = DevFindQueueFamilies(physicalDevice, surface);
         uint32_t queueFamilyIndices[] = {indices.graphicsFamily.value(), indices.presentFamily.value()};
 
         if (indices.graphicsFamily != indices.presentFamily) {
@@ -304,7 +302,7 @@ namespace vh {
     }
 
 
-    void createImageViews(VkDevice device, SwapChain& swapChain) {
+    void DevCreateImageViews(VkDevice device, SwapChain& swapChain) {
         swapChain.m_swapChainImageViews.resize(swapChain.m_swapChainImages.size());
 
         for (uint32_t i = 0; i < swapChain.m_swapChainImages.size(); i++) {
@@ -313,7 +311,7 @@ namespace vh {
         }
     }
 
-	    VkSurfaceFormatKHR chooseSwapSurfaceFormat(const std::vector<VkSurfaceFormatKHR>& availableFormats) {
+	    VkSurfaceFormatKHR DevChooseSwapSurfaceFormat(const std::vector<VkSurfaceFormatKHR>& availableFormats) {
         for (const auto& availableFormat : availableFormats) {
             if (availableFormat.format == VK_FORMAT_B8G8R8A8_SRGB && availableFormat.colorSpace == VK_COLOR_SPACE_SRGB_NONLINEAR_KHR) {
                 return availableFormat;
@@ -323,7 +321,7 @@ namespace vh {
         return availableFormats[0];
     }
 
-    VkPresentModeKHR chooseSwapPresentMode(const std::vector<VkPresentModeKHR>& availablePresentModes) {
+    VkPresentModeKHR DevChooseSwapPresentMode(const std::vector<VkPresentModeKHR>& availablePresentModes) {
         for (const auto& availablePresentMode : availablePresentModes) {
             if (availablePresentMode == VK_PRESENT_MODE_MAILBOX_KHR) {
                 return availablePresentMode;
@@ -333,7 +331,7 @@ namespace vh {
         return VK_PRESENT_MODE_FIFO_KHR;
     }
 
-    VkExtent2D chooseSwapExtent(const VkSurfaceCapabilitiesKHR& capabilities, SDL_Window* sdlWindow) {
+    VkExtent2D DevChooseSwapExtent(const VkSurfaceCapabilitiesKHR& capabilities, SDL_Window* sdlWindow) {
         if (capabilities.currentExtent.width != std::numeric_limits<uint32_t>::max()) {
             return capabilities.currentExtent;
         } else {
@@ -354,7 +352,7 @@ namespace vh {
         }
     }
 
-    SwapChainSupportDetails querySwapChainSupport(VkPhysicalDevice device, VkSurfaceKHR surface) {
+    SwapChainSupportDetails DevQuerySwapChainSupport(VkPhysicalDevice device, VkSurfaceKHR surface) {
         SwapChainSupportDetails details;
 
         vkGetPhysicalDeviceSurfaceCapabilitiesKHR(device, surface, &details.capabilities);
@@ -378,14 +376,14 @@ namespace vh {
         return details;
     }
 
-    bool isDeviceSuitable(VkPhysicalDevice device, const std::vector<const char*>& deviceExtensions,  VkSurfaceKHR surface) {
-        QueueFamilyIndices indices = findQueueFamilies(device, surface);
+    bool DevIsDeviceSuitable(VkPhysicalDevice device, const std::vector<const char*>& deviceExtensions,  VkSurfaceKHR surface) {
+        QueueFamilyIndices indices = DevFindQueueFamilies(device, surface);
 
-        bool extensionsSupported = checkDeviceExtensionSupport(device, deviceExtensions);
+        bool extensionsSupported = DevCheckDeviceExtensionSupport(device, deviceExtensions);
 
         bool swapChainAdequate = false;
         if (extensionsSupported) {
-            SwapChainSupportDetails swapChainSupport = querySwapChainSupport(device, surface);
+            SwapChainSupportDetails swapChainSupport = DevQuerySwapChainSupport(device, surface);
             swapChainAdequate = !swapChainSupport.formats.empty() && !swapChainSupport.presentModes.empty();
         }
 
@@ -395,7 +393,7 @@ namespace vh {
         return indices.isComplete() && extensionsSupported && swapChainAdequate  && supportedFeatures.samplerAnisotropy;
     }
 
-    bool checkDeviceExtensionSupport(VkPhysicalDevice device, const std::vector<const char*>& deviceExtensions) {
+    bool DevCheckDeviceExtensionSupport(VkPhysicalDevice device, const std::vector<const char*>& deviceExtensions) {
         uint32_t extensionCount;
         vkEnumerateDeviceExtensionProperties(device, nullptr, &extensionCount, nullptr);
 
@@ -411,7 +409,7 @@ namespace vh {
         return requiredExtensions.empty();
     }
 
-    QueueFamilyIndices findQueueFamilies(VkPhysicalDevice device, VkSurfaceKHR surface) {
+    QueueFamilyIndices DevFindQueueFamilies(VkPhysicalDevice device, VkSurfaceKHR surface) {
         QueueFamilyIndices indices;
 
         uint32_t queueFamilyCount = 0;
@@ -443,8 +441,7 @@ namespace vh {
         return indices;
     }
 
-
-    bool checkValidationLayerSupport(const std::vector<const char*>& validationLayers) {
+    bool DevCheckValidationLayerSupport(const std::vector<const char*>& validationLayers) {
         uint32_t layerCount;
         vkEnumerateInstanceLayerProperties(&layerCount, nullptr);
 

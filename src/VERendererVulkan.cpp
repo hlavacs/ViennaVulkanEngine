@@ -41,36 +41,36 @@ namespace vve {
             m_instanceExtensions.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
         }
 
-    	vh::createInstance( m_validationLayers, m_instanceExtensions, m_engine.GetDebug(), GetVulkanState().m_instance);
+    	vh::DevCreateInstance( m_validationLayers, m_instanceExtensions, m_engine.GetDebug(), GetVulkanState().m_instance);
 		if (m_engine.GetDebug()) {
-	        vh::setupDebugMessenger(GetInstance(), GetVulkanState().m_debugMessenger);
+	        vh::DevSetupDebugMessenger(GetInstance(), GetVulkanState().m_debugMessenger);
 		}
 
 		if (SDL_Vulkan_CreateSurface(GetVulkanState().m_windowSDL->GetSDLWindow(), GetInstance(), &GetVulkanState().m_surface) == 0) {
             printf("Failed to create Vulkan surface.\n");
         }
 
-        vh::pickPhysicalDevice(GetInstance(), m_deviceExtensions, GetSurface(), GetVulkanState().m_physicalDevice);
-        vh::createLogicalDevice(GetSurface(), GetPhysicalDevice(), GetVulkanState().m_queueFamilies, m_validationLayers, 
+        vh::DevPickPhysicalDevice(GetInstance(), m_deviceExtensions, GetSurface(), GetVulkanState().m_physicalDevice);
+        vh::DevCreateLogicalDevice(GetSurface(), GetPhysicalDevice(), GetVulkanState().m_queueFamilies, m_validationLayers, 
 			m_deviceExtensions, m_engine.GetDebug(), GetVulkanState().m_device, GetVulkanState().m_graphicsQueue, GetVulkanState().m_presentQueue);
-        vh::initVMA(GetInstance(), GetPhysicalDevice(), GetDevice(), GetVulkanState().m_vmaAllocator);  
-        vh::createSwapChain(GetVulkanState().m_windowSDL->GetSDLWindow(), GetSurface(), GetPhysicalDevice(), GetDevice(), GetVulkanState().m_swapChain);
-        vh::createImageViews(GetDevice(), GetSwapChain());
-        vh::createRenderPassClear(GetPhysicalDevice(), GetDevice(), GetSwapChain(), true, m_renderPass);
+        vh::DevInitVMA(GetInstance(), GetPhysicalDevice(), GetDevice(), GetVulkanState().m_vmaAllocator);  
+        vh::DevCreateSwapChain(GetVulkanState().m_windowSDL->GetSDLWindow(), GetSurface(), GetPhysicalDevice(), GetDevice(), GetVulkanState().m_swapChain);
+        vh::DevCreateImageViews(GetDevice(), GetSwapChain());
+        vh::RenCreateRenderPassClear(GetPhysicalDevice(), GetDevice(), GetSwapChain(), true, m_renderPass);
 
-		vh::createDescriptorSetLayout( GetDevice(), {}, m_descriptorSetLayoutPerFrame );
+		vh::RenCreateDescriptorSetLayout( GetDevice(), {}, m_descriptorSetLayoutPerFrame );
 			
-        vh::createGraphicsPipeline(GetDevice(), m_renderPass, "shaders\\Vulkan\\vert.spv", "", {}, {},
+        vh::RenCreateGraphicsPipeline(GetDevice(), m_renderPass, "shaders\\Vulkan\\vert.spv", "", {}, {},
 			 { m_descriptorSetLayoutPerFrame }, m_graphicsPipeline);
 
         vh::createCommandPool(GetSurface(), GetPhysicalDevice(), GetDevice(), m_commandPool);
-        vh::createDepthResources(GetPhysicalDevice(), GetDevice(), GetVmaAllocator(), GetSwapChain(), GetDepthImage());
-        vh::createFramebuffers(GetDevice(), GetSwapChain(), GetDepthImage(), m_renderPass);
+        vh::RenCreateDepthResources(GetPhysicalDevice(), GetDevice(), GetVmaAllocator(), GetSwapChain(), GetDepthImage());
+        vh::RenCreateFramebuffers(GetDevice(), GetSwapChain(), GetDepthImage(), m_renderPass);
 
         vh::createCommandBuffers(GetDevice(), m_commandPool, m_commandBuffers);
-        vh::createDescriptorPool(GetDevice(), 1000, m_descriptorPool);
-        vh::createSemaphores(GetDevice(), 3, m_imageAvailableSemaphores, m_semaphores);
-		vh::createFences(GetDevice(), MAX_FRAMES_IN_FLIGHT, m_fences);
+        vh::RenCreateDescriptorPool(GetDevice(), 1000, m_descriptorPool);
+        vh::SynCreateSemaphores(GetDevice(), 3, m_imageAvailableSemaphores, m_semaphores);
+		vh::SynCreateFences(GetDevice(), MAX_FRAMES_IN_FLIGHT, m_fences);
 		return false;
     }
 
@@ -86,7 +86,7 @@ namespace vve {
                             m_imageAvailableSemaphores[GetCurrentFrame()], VK_NULL_HANDLE, &GetImageIndex());
 
         if (result == VK_ERROR_OUT_OF_DATE_KHR ) {
-            recreateSwapChain(GetVulkanState().m_windowSDL->GetSDLWindow(), GetSurface(), GetPhysicalDevice(), GetDevice(), GetVmaAllocator(), GetSwapChain(), GetDepthImage(), m_renderPass);
+            DevRecreateSwapChain(GetVulkanState().m_windowSDL->GetSDLWindow(), GetSurface(), GetPhysicalDevice(), GetDevice(), GetVmaAllocator(), GetSwapChain(), GetDepthImage(), m_renderPass);
         } else assert (result == VK_SUCCESS || result == VK_SUBOPTIMAL_KHR);
 		return false;
     }
@@ -121,7 +121,7 @@ namespace vve {
 
         if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR || GetFramebufferResized()) {
             GetFramebufferResized() = false;
-            vh::recreateSwapChain(GetVulkanState().m_windowSDL->GetSDLWindow(), GetSurface(), GetPhysicalDevice(), GetDevice(), GetVmaAllocator(), GetSwapChain(), GetDepthImage(), m_renderPass);
+            vh::DevRecreateSwapChain(GetVulkanState().m_windowSDL->GetSDLWindow(), GetSurface(), GetPhysicalDevice(), GetDevice(), GetVmaAllocator(), GetSwapChain(), GetDepthImage(), m_renderPass);
         } else assert(result == VK_SUCCESS);
 		return false;
     }
@@ -130,7 +130,7 @@ namespace vve {
 
         vkDeviceWaitIdle(GetDevice());
 
-        vh::cleanupSwapChain(GetDevice(), GetVmaAllocator(), GetSwapChain(), GetDepthImage());
+        vh::DevCleanupSwapChain(GetDevice(), GetVmaAllocator(), GetSwapChain(), GetDepthImage());
 
         vkDestroyPipeline(GetDevice(), m_graphicsPipeline.m_pipeline, nullptr);
         vkDestroyPipelineLayout(GetDevice(), m_graphicsPipeline.m_pipelineLayout, nullptr);
@@ -158,9 +158,9 @@ namespace vve {
 
         vkDestroyRenderPass(GetDevice(), m_renderPass, nullptr);
 
-		vh::destroyFences(GetDevice(), m_fences);
+		vh::SynDestroyFences(GetDevice(), m_fences);
 
-		vh::destroySemaphores(GetDevice(), m_imageAvailableSemaphores, m_semaphores);
+		vh::SynDestroySemaphores(GetDevice(), m_imageAvailableSemaphores, m_semaphores);
 
         vmaDestroyAllocator(GetVmaAllocator());
 
@@ -169,7 +169,7 @@ namespace vve {
         vkDestroySurfaceKHR(GetInstance(), GetSurface(), nullptr);
 
 		if (m_engine.GetDebug()) {
-            vh::DestroyDebugUtilsMessengerEXT(GetInstance(), GetVulkanState().m_debugMessenger, nullptr);
+            vh::DevDestroyDebugUtilsMessengerEXT(GetInstance(), GetVulkanState().m_debugMessenger, nullptr);
         }
 
         vkDestroyInstance(GetInstance(), nullptr);

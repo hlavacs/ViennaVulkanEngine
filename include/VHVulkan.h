@@ -29,10 +29,6 @@ namespace std {
 
 namespace vh {
 	
-	//use this macro to check the function result, if its not VK_SUCCESS then return the error
-    #define VHCHECKRESULT(x) { CheckResult(VkResult err) };
-    void CheckResult(VkResult err);
-
     struct QueueFamilyIndices {
         std::optional<uint32_t> graphicsFamily;
         std::optional<uint32_t> presentFamily;
@@ -213,11 +209,9 @@ namespace vh {
 
 	#define MAX_FRAMES_IN_FLIGHT 2
 
-    void MemCopy(VkDevice device, void* source, VmaAllocationInfo& allocInfo, VkDeviceSize size, VkDeviceSize offset=0);
-    
-    std::vector<char> readFile(const std::string& filename);
+    std::vector<char> VulReadFile(const std::string& filename);
 
-	void setupImgui(SDL_Window* sdlWindow, VkInstance instance, VkPhysicalDevice physicalDevice, QueueFamilyIndices queueFamilies
+	void VulSetupImgui(SDL_Window* sdlWindow, VkInstance instance, VkPhysicalDevice physicalDevice, QueueFamilyIndices queueFamilies
         , VkDevice device, VkQueue graphicsQueue, VkCommandPool commandPool, VkDescriptorPool descriptorPool
         , VkRenderPass renderPass);
 

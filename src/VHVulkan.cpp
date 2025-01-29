@@ -57,15 +57,11 @@ namespace vh
     
 	extern VkInstance volkInstance;
 
-	auto loadVolk(const char* name, void* context) {
+	auto VulLoadVolk(const char* name, void* context) {
    		return vkGetInstanceProcAddr(volkInstance, name);
 	}
 
-    void MemCopy(VkDevice device, void* source, VmaAllocationInfo& allocInfo, VkDeviceSize size, VkDeviceSize offset) {
-        memcpy((char*)allocInfo.pMappedData + offset, source, size);
-    }
-
-    std::vector<char> readFile(const std::string& filename) {
+    std::vector<char> VulReadFile(const std::string& filename) {
         std::ifstream file(filename, std::ios::ate | std::ios::binary);
 
         if (!file.is_open()) {
@@ -87,7 +83,7 @@ namespace vh
     //------------------------------------------------------------------------
 
 
-    void setupImgui(SDL_Window* sdlWindow, VkInstance instance, VkPhysicalDevice physicalDevice, QueueFamilyIndices queueFamilies
+    void VulSetupImgui(SDL_Window* sdlWindow, VkInstance instance, VkPhysicalDevice physicalDevice, QueueFamilyIndices queueFamilies
         , VkDevice device, VkQueue graphicsQueue, VkCommandPool commandPool, VkDescriptorPool descriptorPool
         , VkRenderPass renderPass) {
             
@@ -99,7 +95,7 @@ namespace vh
         io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;      // Enable Gamepad Controls
         //io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;         // IF using Docking Branch
 
-        ImGui_ImplVulkan_LoadFunctions( &loadVolk );
+        ImGui_ImplVulkan_LoadFunctions( &VulLoadVolk );
 
         // Setup Platform/Renderer backends
         ImGui_ImplSDL2_InitForVulkan(sdlWindow);

@@ -5,7 +5,7 @@
 namespace vh {
 
 	void createCommandPool(VkSurfaceKHR surface, VkPhysicalDevice physicalDevice, VkDevice device, VkCommandPool& commandPool) {
-        QueueFamilyIndices queueFamilyIndices = findQueueFamilies(physicalDevice, surface);
+        QueueFamilyIndices queueFamilyIndices = DevFindQueueFamilies(physicalDevice, surface);
 
         VkCommandPoolCreateInfo poolInfo{};
         poolInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
@@ -164,7 +164,7 @@ namespace vh {
 
 		size_t size = commandBuffers.size();
 		if( size > semaphores.size() ) {
-			vh::createSemaphores(device, size, imageAvailableSemaphores, semaphores);
+			vh::SynCreateSemaphores(device, size, imageAvailableSemaphores, semaphores);
 		}
 
         vkResetFences(device, 1, &fences[currentFrame]);

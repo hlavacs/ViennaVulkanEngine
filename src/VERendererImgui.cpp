@@ -21,16 +21,16 @@ namespace vve {
     RendererImgui::~RendererImgui() {};
 
     bool RendererImgui::OnInit(Message message) {
-        vh::createRenderPass(GetPhysicalDevice(), GetDevice(), GetSwapChain(), false, m_renderPass);
+        vh::RenCreateRenderPass(GetPhysicalDevice(), GetDevice(), GetSwapChain(), false, m_renderPass);
 		
- 		vh::createDescriptorSetLayout( GetDevice(), {}, m_descriptorSetLayoutPerFrame );
+ 		vh::RenCreateDescriptorSetLayout( GetDevice(), {}, m_descriptorSetLayoutPerFrame );
 			
-        vh::createGraphicsPipeline(GetDevice(), m_renderPass, "shaders\\Imgui\\vert.spv", "", {}, {},
+        vh::RenCreateGraphicsPipeline(GetDevice(), m_renderPass, "shaders\\Imgui\\vert.spv", "", {}, {},
 			 { m_descriptorSetLayoutPerFrame }, m_graphicsPipeline);
 
-        vh::createDescriptorPool(GetDevice(), 1000, m_descriptorPool);
+        vh::RenCreateDescriptorPool(GetDevice(), 1000, m_descriptorPool);
 
-		vh::setupImgui( ((WindowSDL*)m_window)->GetSDLWindow(), GetInstance(), GetPhysicalDevice(), GetQueueFamilies(), GetDevice(), GetGraphicsQueue(), 
+		vh::VulSetupImgui( ((WindowSDL*)m_window)->GetSDLWindow(), GetInstance(), GetPhysicalDevice(), GetQueueFamilies(), GetDevice(), GetGraphicsQueue(), 
 			m_commandPool, m_descriptorPool, m_renderPass);  
 
         vh::createCommandPool(GetSurface(), GetPhysicalDevice(), GetDevice(), m_commandPool); 

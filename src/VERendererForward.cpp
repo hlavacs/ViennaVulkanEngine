@@ -39,19 +39,19 @@ namespace vve {
     RendererForward::~RendererForward(){};
 
     bool RendererForward::OnInit(Message message) {
-        vh::createRenderPass(GetPhysicalDevice(), GetDevice(), GetSwapChain(), false, m_renderPass);
+        vh::RenCreateRenderPass(GetPhysicalDevice(), GetDevice(), GetSwapChain(), false, m_renderPass);
 		
-		vh::createDescriptorSetLayout( GetDevice(), //Per frame
+		vh::RenCreateDescriptorSetLayout( GetDevice(), //Per frame
 			{{ .descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, .stageFlags = VK_SHADER_STAGE_VERTEX_BIT } },
 			m_descriptorSetLayoutPerFrame );
 
         vh::createCommandPool(GetSurface(), GetPhysicalDevice(), GetDevice(), m_commandPool);
         vh::createCommandBuffers(GetDevice(), m_commandPool, m_commandBuffers);
-        vh::createDescriptorPool(GetDevice(), 1000, m_descriptorPool);
+        vh::RenCreateDescriptorPool(GetDevice(), 1000, m_descriptorPool);
 
 		vh::createUniformBuffers(GetPhysicalDevice(), GetDevice(), GetVmaAllocator(), sizeof(vh::UniformBufferFrame), m_uniformBuffersPerFrame);
-		vh::createDescriptorSet(GetDevice(), m_descriptorSetLayoutPerFrame, m_descriptorPool, m_descriptorSetPerFrame);
-	    vh::updateDescriptorSetUBO(GetDevice(), m_uniformBuffersPerFrame, 0, sizeof(vh::UniformBufferFrame), m_descriptorSetPerFrame);   
+		vh::RenCreateDescriptorSet(GetDevice(), m_descriptorSetLayoutPerFrame, m_descriptorPool, m_descriptorSetPerFrame);
+	    vh::RenUpdateDescriptorSetUBO(GetDevice(), m_uniformBuffersPerFrame, 0, sizeof(vh::UniformBufferFrame), m_descriptorSetPerFrame);   
 
 		const std::filesystem::path shaders{"shaders\\Forward"};
 		for( const auto& entry : std::filesystem::directory_iterator(shaders) ) {
@@ -72,12 +72,12 @@ namespace vve {
 					bindings.push_back( { .descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, .stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT } );
 				}
 
-				vh::createDescriptorSetLayout( GetDevice(), bindings, descriptorSetLayoutPerObject );
+				vh::RenCreateDescriptorSetLayout( GetDevice(), bindings, descriptorSetLayoutPerObject );
 
 				std::vector<VkVertexInputBindingDescription> bindingDescriptions = getBindingDescriptions(type);
 				std::vector<VkVertexInputAttributeDescription> attributeDescriptions = getAttributeDescriptions(type);
 
-				vh::createGraphicsPipeline(GetDevice(), m_renderPass, 
+				vh::RenCreateGraphicsPipeline(GetDevice(), m_renderPass, 
 					entry.path().string(), (shaders / (filename.substr(0,pos2) + "_frag.spv")).string(),
 					bindingDescriptions, attributeDescriptions,
 					{ m_descriptorSetLayoutPerFrame, descriptorSetLayoutPerObject }, graphicsPipeline);
@@ -190,13 +190,13 @@ namespace vve {
 		vh::createUniformBuffers(GetPhysicalDevice(), GetDevice(), GetVmaAllocator(), sizeof(vh::UniformBufferObject), ubo);
 
 		vh::DescriptorSet descriptorSet{1};
-		vh::createDescriptorSet(GetDevice(), pipelinePerType->m_descriptorSetLayoutPerObject, m_descriptorPool, descriptorSet);
-	    vh::updateDescriptorSetUBO(GetDevice(), ubo, 0, sizeof(vh::UniformBufferObject), descriptorSet);
+		vh::RenCreateDescriptorSet(GetDevice(), pipelinePerType->m_descriptorSetLayoutPerObject, m_descriptorPool, descriptorSet);
+	    vh::RenUpdateDescriptorSetUBO(GetDevice(), ubo, 0, sizeof(vh::UniformBufferObject), descriptorSet);
 
 		if( m_registry.template Has<TextureHandle>(handle) ) {
 			auto tHandle = m_registry.template Get<TextureHandle>(handle);
 			auto& texture = m_registry.template Get<vh::Texture&>(tHandle);
-	    	vh::updateDescriptorSetTexture(GetDevice(), texture, 1, descriptorSet);
+	    	vh::RenUpdateDescriptorSetTexture(GetDevice(), texture, 1, descriptorSet);
 		}
 		m_registry.Put(handle, ubo, descriptorSet);
 		m_registry.template AddTags(handle, (size_t)pipelinePerType->m_graphicsPipeline.m_pipeline);

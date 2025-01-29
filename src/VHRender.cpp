@@ -4,7 +4,7 @@
 
 namespace vh {
 
-    void createRenderPassClear(VkPhysicalDevice physicalDevice, VkDevice device, SwapChain& swapChain, bool clear, VkRenderPass& renderPass) {
+    void RenCreateRenderPassClear(VkPhysicalDevice physicalDevice, VkDevice device, SwapChain& swapChain, bool clear, VkRenderPass& renderPass) {
         VkAttachmentDescription colorAttachment{};
         colorAttachment.format = swapChain.m_swapChainImageFormat;
         colorAttachment.samples = VK_SAMPLE_COUNT_1_BIT;
@@ -16,7 +16,7 @@ namespace vh {
         colorAttachment.finalLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
 
         VkAttachmentDescription depthAttachment{};
-        depthAttachment.format = findDepthFormat(physicalDevice);
+        depthAttachment.format = RenFindDepthFormat(physicalDevice);
         depthAttachment.samples = VK_SAMPLE_COUNT_1_BIT;
         depthAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
         depthAttachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
@@ -62,7 +62,7 @@ namespace vh {
         }
     }
 
-    void createRenderPass(VkPhysicalDevice physicalDevice, VkDevice device, SwapChain& swapChain, bool clear, VkRenderPass& renderPass) {
+    void RenCreateRenderPass(VkPhysicalDevice physicalDevice, VkDevice device, SwapChain& swapChain, bool clear, VkRenderPass& renderPass) {
         VkAttachmentDescription colorAttachment{};
         colorAttachment.format = swapChain.m_swapChainImageFormat;
         colorAttachment.samples = VK_SAMPLE_COUNT_1_BIT;
@@ -74,7 +74,7 @@ namespace vh {
         colorAttachment.finalLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
 
         VkAttachmentDescription depthAttachment{};
-        depthAttachment.format = findDepthFormat(physicalDevice);
+        depthAttachment.format = RenFindDepthFormat(physicalDevice);
         depthAttachment.samples = VK_SAMPLE_COUNT_1_BIT;
         depthAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_LOAD;
         depthAttachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
@@ -121,7 +121,7 @@ namespace vh {
     }
 
 
-    void createDescriptorSetLayout(VkDevice device, const std::vector<VkDescriptorSetLayoutBinding>& bind, VkDescriptorSetLayout& descriptorSetLayouts) {
+    void RenCreateDescriptorSetLayout(VkDevice device, const std::vector<VkDescriptorSetLayoutBinding>& bind, VkDescriptorSetLayout& descriptorSetLayouts) {
 		uint32_t i = 0;
 		std::vector<VkDescriptorSetLayoutBinding> bindings = bind;
 		for( auto& uboLayoutBinding : bindings ) {
@@ -138,11 +138,9 @@ namespace vh {
         if (vkCreateDescriptorSetLayout(device, &layoutInfo, nullptr, &descriptorSetLayouts) != VK_SUCCESS) {
             throw std::runtime_error("failed to create descriptor set layout 0!");
         }
-
     }
 
-
-    VkShaderModule createShaderModule(VkDevice device, const std::vector<char>& code) {
+    VkShaderModule RenCreateShaderModule(VkDevice device, const std::vector<char>& code) {
         VkShaderModuleCreateInfo createInfo{};
         createInfo.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
         createInfo.codeSize = code.size();
@@ -156,7 +154,7 @@ namespace vh {
         return shaderModule;
     }
 
-    void createGraphicsPipeline(VkDevice device, VkRenderPass renderPass, 
+    void RenCreateGraphicsPipeline(VkDevice device, VkRenderPass renderPass, 
 		std::string vertShaderPath, std::string fragShaderPath,
 		std::vector<VkVertexInputBindingDescription> bindingDescription, 
 		std::vector<VkVertexInputAttributeDescription> attributeDescriptions,
@@ -165,8 +163,8 @@ namespace vh {
 		std::vector<VkPipelineShaderStageCreateInfo> shaderStages;
 
         VkPipelineShaderStageCreateInfo vertShaderStageInfo{};
-        auto vertShaderCode = readFile(vertShaderPath);
-        VkShaderModule vertShaderModule = createShaderModule(device, vertShaderCode);
+        auto vertShaderCode = VulReadFile(vertShaderPath);
+        VkShaderModule vertShaderModule = RenCreateShaderModule(device, vertShaderCode);
         vertShaderStageInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
         vertShaderStageInfo.stage = VK_SHADER_STAGE_VERTEX_BIT;
         vertShaderStageInfo.module = vertShaderModule;
@@ -176,8 +174,8 @@ namespace vh {
 		VkShaderModule fragShaderModule{};
 		if( !fragShaderPath.empty() ) {
 	        VkPipelineShaderStageCreateInfo fragShaderStageInfo{};
-	        auto fragShaderCode = readFile(fragShaderPath);
-	        fragShaderModule = createShaderModule(device, fragShaderCode);
+	        auto fragShaderCode = VulReadFile(fragShaderPath);
+	        fragShaderModule = RenCreateShaderModule(device, fragShaderCode);
 	        fragShaderStageInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
 	        fragShaderStageInfo.stage = VK_SHADER_STAGE_FRAGMENT_BIT;
 	        fragShaderStageInfo.module = fragShaderModule;
@@ -287,7 +285,7 @@ namespace vh {
         vkDestroyShaderModule(device, vertShaderModule, nullptr);
     }
 
-    void createFramebuffers(VkDevice device, SwapChain& swapChain, DepthImage& depthImage, VkRenderPass renderPass) {
+    void RenCreateFramebuffers(VkDevice device, SwapChain& swapChain, DepthImage& depthImage, VkRenderPass renderPass) {
         swapChain.m_swapChainFramebuffers.resize(swapChain.m_swapChainImageViews.size());
 
         for (size_t i = 0; i < swapChain.m_swapChainImageViews.size(); i++) {
@@ -311,7 +309,7 @@ namespace vh {
         }
     }
 
-    void createDescriptorPool(VkDevice device, uint32_t sizes, VkDescriptorPool& descriptorPool) {
+    void RenCreateDescriptorPool(VkDevice device, uint32_t sizes, VkDescriptorPool& descriptorPool) {
 
 		std::vector<VkDescriptorPoolSize> pool_sizes;
 		pool_sizes.push_back({ VK_DESCRIPTOR_TYPE_SAMPLER, sizes });
@@ -339,7 +337,7 @@ namespace vh {
     }
 
 
-    void createDescriptorSet(VkDevice device, VkDescriptorSetLayout& descriptorSetLayouts, 
+    void RenCreateDescriptorSet(VkDevice device, VkDescriptorSetLayout& descriptorSetLayouts, 
 		VkDescriptorPool descriptorPool, DescriptorSet& descriptorSet) {
 
 		descriptorSet.m_descriptorSetPerFrameInFlight.resize(MAX_FRAMES_IN_FLIGHT);
@@ -355,7 +353,7 @@ namespace vh {
     }
 
 
-    void updateDescriptorSetUBO(VkDevice device, UniformBuffers& uniformBuffers, size_t binding, size_t size, DescriptorSet& descriptorSet) {
+    void RenUpdateDescriptorSetUBO(VkDevice device, UniformBuffers& uniformBuffers, size_t binding, size_t size, DescriptorSet& descriptorSet) {
 
 		size_t i = 0;
 	    for ( auto& ds : descriptorSet.m_descriptorSetPerFrameInFlight ) {
@@ -378,7 +376,7 @@ namespace vh {
 		}
     }
 
-    void updateDescriptorSetTexture(VkDevice device, Texture& texture, size_t binding, DescriptorSet& descriptorSet) {
+    void RenUpdateDescriptorSetTexture(VkDevice device, Texture& texture, size_t binding, DescriptorSet& descriptorSet) {
 
 		size_t i = 0;
 	    for ( auto& ds : descriptorSet.m_descriptorSetPerFrameInFlight ) {
@@ -402,10 +400,9 @@ namespace vh {
 		}
     }
 
-
-    void createDepthResources(VkPhysicalDevice physicalDevice, VkDevice device, VmaAllocator vmaAllocator
+    void RenCreateDepthResources(VkPhysicalDevice physicalDevice, VkDevice device, VmaAllocator vmaAllocator
         , SwapChain& swapChain, DepthImage& depthImage) {
-        VkFormat depthFormat = findDepthFormat(physicalDevice);
+        VkFormat depthFormat = RenFindDepthFormat(physicalDevice);
 
         createImage(physicalDevice, device, vmaAllocator, swapChain.m_swapChainExtent.width
             , swapChain.m_swapChainExtent.height, depthFormat
@@ -414,7 +411,7 @@ namespace vh {
         depthImage.m_depthImageView = createImageView(device, depthImage.m_depthImage, depthFormat, VK_IMAGE_ASPECT_DEPTH_BIT);
     }
 
-    VkFormat findSupportedFormat(VkPhysicalDevice physicalDevice, const std::vector<VkFormat>& candidates
+    VkFormat RenFindSupportedFormat(VkPhysicalDevice physicalDevice, const std::vector<VkFormat>& candidates
         , VkImageTiling tiling, VkFormatFeatureFlags features) {
 
         for (VkFormat format : candidates) {
@@ -431,15 +428,15 @@ namespace vh {
         throw std::runtime_error("failed to find supported format!");
     }
 
-    VkFormat findDepthFormat(VkPhysicalDevice physicalDevice) {
-        return findSupportedFormat(physicalDevice, 
+    VkFormat RenFindDepthFormat(VkPhysicalDevice physicalDevice) {
+        return RenFindSupportedFormat(physicalDevice, 
             {VK_FORMAT_D32_SFLOAT, VK_FORMAT_D32_SFLOAT_S8_UINT, VK_FORMAT_D24_UNORM_S8_UINT},
             VK_IMAGE_TILING_OPTIMAL,
             VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT
         );
     }
 
-    bool hasStencilComponent(VkFormat format) {
+    bool RenHasStencilComponent(VkFormat format) {
         return format == VK_FORMAT_D32_SFLOAT_S8_UINT || format == VK_FORMAT_D24_UNORM_S8_UINT;
     }
 
