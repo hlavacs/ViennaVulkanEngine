@@ -78,7 +78,7 @@ namespace vve {
 				std::vector<VkVertexInputAttributeDescription> attributeDescriptions = getAttributeDescriptions(type);
 
 				vh::createGraphicsPipeline(GetDevice(), m_renderPass, 
-					entry.path().string(), (shaders / (type + "_frag.spv")).string(),
+					entry.path().string(), (shaders / (filename.substr(0,pos2) + "_frag.spv")).string(),
 					bindingDescriptions, attributeDescriptions,
 					{ m_descriptorSetLayoutPerFrame, descriptorSetLayoutPerObject }, graphicsPipeline);
 				
