@@ -42,7 +42,7 @@ namespace vve
 		VkDescriptorSetLayout m_descriptorSetLayoutPerObject;
 	    vh::Pipeline m_graphicsPipeline;
 
-		std::map<int, PipelinePerType> m_pipelinesPerType2;
+		std::map<int, PipelinePerType> m_pipelinesPerType;
 
 
 	    VkRenderPass m_renderPass;

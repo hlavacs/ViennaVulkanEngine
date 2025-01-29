@@ -82,7 +82,7 @@ namespace vve {
 					bindingDescriptions, attributeDescriptions,
 					{ m_descriptorSetLayoutPerFrame, descriptorSetLayoutPerObject }, graphicsPipeline);
 				
-				m_pipelinesPerType2[pri] = { type, descriptorSetLayoutPerObject, graphicsPipeline };
+				m_pipelinesPerType[pri] = { type, descriptorSetLayoutPerObject, graphicsPipeline };
 			}
 		}
 
@@ -150,25 +150,29 @@ namespace vve {
 		vh::startRecordCommandBuffer(m_commandBuffers[GetCurrentFrame()], GetImageIndex(), 
 			GetSwapChain(), m_renderPass, m_graphicsPipeline, false, ((WindowSDL*)m_window)->GetClearColor(), GetCurrentFrame());
 		
-		for( auto[handle, name, ghandle, LtoW, uniformBuffers, descriptorsets] : m_registry.template GetView<vecs::Handle, Name, MeshHandle, LocalToWorldMatrix&, vh::UniformBuffers&, vh::DescriptorSet&>() ) {
-			vh::UniformBufferObject ubo{};
-			ubo.model = LtoW(); 		
-			ubo.modelInverseTranspose = glm::inverse( glm::transpose(ubo.model) );
-			if( m_registry.template Has<vh::Color>(ghandle) ) {
-				auto color = m_registry.template Get<vh::Color&>(ghandle);
-				ubo.color = color;
+		for( auto& pipelinePerType : m_pipelinesPerType) {
+			for( auto[handle, name, ghandle, LtoW, uniformBuffers, descriptorsets] : 
+				m_registry.template GetView<vecs::Handle, Name, MeshHandle, LocalToWorldMatrix&, vh::UniformBuffers&, 
+					vh::DescriptorSet&>({(size_t)pipelinePerType.second.m_graphicsPipeline.m_pipeline}) ) {
+
+				vh::UniformBufferObject ubo{};
+				ubo.model = LtoW(); 		
+				ubo.modelInverseTranspose = glm::inverse( glm::transpose(ubo.model) );
+				if( m_registry.template Has<vh::Color>(ghandle) ) {
+					auto color = m_registry.template Get<vh::Color&>(ghandle);
+					ubo.color = color;
+				}
+
+				memcpy(uniformBuffers.m_uniformBuffersMapped[GetCurrentFrame()], &ubo, sizeof(ubo));
+				vh::Mesh& mesh = m_registry.template Get<vh::Mesh&>(ghandle);
+
+				vh::bindPipeline(m_commandBuffers[GetCurrentFrame()], GetImageIndex(), 
+					GetSwapChain(), m_renderPass, pipelinePerType.second.m_graphicsPipeline, false, 
+					((WindowSDL*)m_window)->GetClearColor(), GetCurrentFrame());
+
+				vh::recordObject( m_commandBuffers[GetCurrentFrame()], pipelinePerType.second.m_graphicsPipeline, 
+					{ m_descriptorSetPerFrame, descriptorsets }, mesh, GetCurrentFrame() );
 			}
-
-			memcpy(uniformBuffers.m_uniformBuffersMapped[GetCurrentFrame()], &ubo, sizeof(ubo));
-			vh::Mesh& mesh = m_registry.template Get<vh::Mesh&>(ghandle);
-			auto pipelinePerType = getPipelinePerType(getPipelineType(ObjectHandle{handle}, mesh.m_verticesData));
-
-			vh::bindPipeline(m_commandBuffers[GetCurrentFrame()], GetImageIndex(), 
-				GetSwapChain(), m_renderPass, pipelinePerType->m_graphicsPipeline, false, 
-				((WindowSDL*)m_window)->GetClearColor(), GetCurrentFrame());
-		
-			vh::recordObject( m_commandBuffers[GetCurrentFrame()], pipelinePerType->m_graphicsPipeline, 
-				{ m_descriptorSetPerFrame, descriptorsets }, mesh, GetCurrentFrame() );
 		}
 
 		vh::endRecordCommandBuffer(m_commandBuffers[GetCurrentFrame()]);
@@ -214,7 +218,7 @@ namespace vve {
 	}
 
 	RendererForward::PipelinePerType* RendererForward::getPipelinePerType(std::string type) {
-		for( auto& [pri, pipeline] : m_pipelinesPerType2 ) {
+		for( auto& [pri, pipeline] : m_pipelinesPerType ) {
 			bool found = true;
 			for( auto& c : pipeline.m_type ) {found = found && ( type.find(c) != std::string::npos ); }
 			if( found ) return &pipeline;
@@ -230,7 +234,7 @@ namespace vve {
 		
         vkDestroyCommandPool(GetDevice(), m_commandPool, nullptr);
 
-		for( auto& [type, pipeline] : m_pipelinesPerType2 ) {
+		for( auto& [type, pipeline] : m_pipelinesPerType ) {
 			vkDestroyDescriptorSetLayout(GetDevice(), pipeline.m_descriptorSetLayoutPerObject, nullptr);
 			vkDestroyPipeline(GetDevice(), pipeline.m_graphicsPipeline.m_pipeline, nullptr);
 			vkDestroyPipelineLayout(GetDevice(), pipeline.m_graphicsPipeline.m_pipelineLayout, nullptr);
