@@ -32,7 +32,7 @@ namespace vve
 		void addAttributeDescription( std::string type, std::string C, int& binding, int& location, VkFormat format, auto& attd );
         auto getAttributeDescriptions(std::string type) -> std::vector<VkVertexInputAttributeDescription>;
 
-		PipelinePerType* getPipelinePerType2(std::string type);
+		PipelinePerType* getPipelinePerType(std::string type);
 		std::string getPipelineType(ObjectHandle handle, vh::VertexData &vertexData);
 
 		vh::UniformBuffers m_uniformBuffersPerFrame;

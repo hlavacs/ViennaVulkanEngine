@@ -161,13 +161,14 @@ namespace vve {
 
 			memcpy(uniformBuffers.m_uniformBuffersMapped[GetCurrentFrame()], &ubo, sizeof(ubo));
 			vh::Mesh& mesh = m_registry.template Get<vh::Mesh&>(ghandle);
-			//auto pipelinePerType = getPipelinePerType(getPipelineType(ObjectHandle{handle}, mesh.m_verticesData), mesh.m_verticesData);
-			auto pipelinePerType = getPipelinePerType2(getPipelineType(ObjectHandle{handle}, mesh.m_verticesData));
+			auto pipelinePerType = getPipelinePerType(getPipelineType(ObjectHandle{handle}, mesh.m_verticesData));
 
 			vh::bindPipeline(m_commandBuffers[GetCurrentFrame()], GetImageIndex(), 
-				GetSwapChain(), m_renderPass, pipelinePerType->m_graphicsPipeline, false, ((WindowSDL*)m_window)->GetClearColor(), GetCurrentFrame());
+				GetSwapChain(), m_renderPass, pipelinePerType->m_graphicsPipeline, false, 
+				((WindowSDL*)m_window)->GetClearColor(), GetCurrentFrame());
 		
-			vh::recordObject2( m_commandBuffers[GetCurrentFrame()], pipelinePerType->m_graphicsPipeline, { descriptorsets, m_descriptorSetPerFrame }, mesh, GetCurrentFrame() );
+			vh::recordObject( m_commandBuffers[GetCurrentFrame()], pipelinePerType->m_graphicsPipeline, 
+				{ m_descriptorSetPerFrame, descriptorsets }, mesh, GetCurrentFrame() );
 		}
 
 		vh::endRecordCommandBuffer(m_commandBuffers[GetCurrentFrame()]);
@@ -179,13 +180,13 @@ namespace vve {
 		ObjectHandle handle = message.template GetData<MsgObjectCreate>().m_object;
 		auto gHandle = m_registry.template Get<MeshHandle>(handle);
 		auto mesh = m_registry.template Get<vh::Mesh&>(gHandle);
-		auto pipelinePerType2 = getPipelinePerType2(getPipelineType(handle, mesh.m_verticesData));
+		auto pipelinePerType = getPipelinePerType(getPipelineType(handle, mesh.m_verticesData));
 
 		vh::UniformBuffers ubo;
 		vh::createUniformBuffers(GetPhysicalDevice(), GetDevice(), GetVmaAllocator(), sizeof(vh::UniformBufferObject), ubo);
 
 		vh::DescriptorSet descriptorSet{1};
-		vh::createDescriptorSet(GetDevice(), pipelinePerType2->m_descriptorSetLayoutPerObject, m_descriptorPool, descriptorSet);
+		vh::createDescriptorSet(GetDevice(), pipelinePerType->m_descriptorSetLayoutPerObject, m_descriptorPool, descriptorSet);
 	    vh::updateDescriptorSetUBO(GetDevice(), ubo, 0, sizeof(vh::UniformBufferObject), descriptorSet);
 
 		if( m_registry.template Has<TextureHandle>(handle) ) {
@@ -194,6 +195,7 @@ namespace vve {
 	    	vh::updateDescriptorSetTexture(GetDevice(), texture, 1, descriptorSet);
 		}
 		m_registry.Put(handle, ubo, descriptorSet);
+		m_registry.template AddTags(handle, (size_t)pipelinePerType->m_graphicsPipeline.m_pipeline);
 
 		assert( m_registry.template Has<vh::UniformBuffers>(handle) );
 		assert( m_registry.template Has<vh::DescriptorSet>(handle) );
@@ -211,7 +213,7 @@ namespace vve {
 		return type;
 	}
 
-	RendererForward::PipelinePerType* RendererForward::getPipelinePerType2(std::string type) {
+	RendererForward::PipelinePerType* RendererForward::getPipelinePerType(std::string type) {
 		for( auto& [pri, pipeline] : m_pipelinesPerType2 ) {
 			bool found = true;
 			for( auto& c : pipeline.m_type ) {found = found && ( type.find(c) != std::string::npos ); }
