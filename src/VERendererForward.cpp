@@ -45,11 +45,11 @@ namespace vve {
 			{{ .descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, .stageFlags = VK_SHADER_STAGE_VERTEX_BIT } },
 			m_descriptorSetLayoutPerFrame );
 
-        vh::createCommandPool(GetSurface(), GetPhysicalDevice(), GetDevice(), m_commandPool);
-        vh::createCommandBuffers(GetDevice(), m_commandPool, m_commandBuffers);
+        vh::ComCreateCommandPool(GetSurface(), GetPhysicalDevice(), GetDevice(), m_commandPool);
+        vh::ComCreateCommandBuffers(GetDevice(), m_commandPool, m_commandBuffers);
         vh::RenCreateDescriptorPool(GetDevice(), 1000, m_descriptorPool);
 
-		vh::createUniformBuffers(GetPhysicalDevice(), GetDevice(), GetVmaAllocator(), sizeof(vh::UniformBufferFrame), m_uniformBuffersPerFrame);
+		vh::BufCreateUniformBuffers(GetPhysicalDevice(), GetDevice(), GetVmaAllocator(), sizeof(vh::UniformBufferFrame), m_uniformBuffersPerFrame);
 		vh::RenCreateDescriptorSet(GetDevice(), m_descriptorSetLayoutPerFrame, m_descriptorPool, m_descriptorSetPerFrame);
 	    vh::RenUpdateDescriptorSetUBO(GetDevice(), m_uniformBuffersPerFrame, 0, sizeof(vh::UniformBufferFrame), m_descriptorSetPerFrame);   
 
@@ -147,7 +147,7 @@ namespace vve {
 
 		vkResetCommandBuffer(m_commandBuffers[GetCurrentFrame()],  0);
         
-		vh::startRecordCommandBuffer(m_commandBuffers[GetCurrentFrame()], GetImageIndex(), 
+		vh::ComStartRecordCommandBuffer(m_commandBuffers[GetCurrentFrame()], GetImageIndex(), 
 			GetSwapChain(), m_renderPass, m_graphicsPipeline, false, ((WindowSDL*)m_window)->GetClearColor(), GetCurrentFrame());
 		
 		for( auto& pipeline : m_pipelinesPerType) {
@@ -166,16 +166,16 @@ namespace vve {
 				memcpy(uniformBuffers.m_uniformBuffersMapped[GetCurrentFrame()], &ubo, sizeof(ubo));
 				vh::Mesh& mesh = m_registry.template Get<vh::Mesh&>(ghandle);
 
-				vh::bindPipeline(m_commandBuffers[GetCurrentFrame()], GetImageIndex(), 
+				vh::ComBindPipeline(m_commandBuffers[GetCurrentFrame()], GetImageIndex(), 
 					GetSwapChain(), m_renderPass, pipeline.second.m_graphicsPipeline, false, 
 					((WindowSDL*)m_window)->GetClearColor(), GetCurrentFrame());
 
-				vh::recordObject( m_commandBuffers[GetCurrentFrame()], pipeline.second.m_graphicsPipeline, 
+				vh::ComRecordObject( m_commandBuffers[GetCurrentFrame()], pipeline.second.m_graphicsPipeline, 
 					{ m_descriptorSetPerFrame, descriptorsets }, pipeline.second.m_type, mesh, GetCurrentFrame() );
 			}
 		}
 
-		vh::endRecordCommandBuffer(m_commandBuffers[GetCurrentFrame()]);
+		vh::ComEndRecordCommandBuffer(m_commandBuffers[GetCurrentFrame()]);
 	    SubmitCommandBuffer(m_commandBuffers[GetCurrentFrame()]);
 		return false;
     }
@@ -187,7 +187,7 @@ namespace vve {
 		auto pipelinePerType = getPipelinePerType(getPipelineType(handle, mesh.m_verticesData));
 
 		vh::UniformBuffers ubo;
-		vh::createUniformBuffers(GetPhysicalDevice(), GetDevice(), GetVmaAllocator(), sizeof(vh::UniformBufferObject), ubo);
+		vh::BufCreateUniformBuffers(GetPhysicalDevice(), GetDevice(), GetVmaAllocator(), sizeof(vh::UniformBufferObject), ubo);
 
 		vh::DescriptorSet descriptorSet{1};
 		vh::RenCreateDescriptorSet(GetDevice(), pipelinePerType->m_descriptorSetLayoutPerObject, m_descriptorPool, descriptorSet);
@@ -243,7 +243,7 @@ namespace vve {
         vkDestroyDescriptorPool(GetDevice(), m_descriptorPool, nullptr);
 		vkDestroyRenderPass(GetDevice(), m_renderPass, nullptr);
 
-		vh::destroyBuffer2(GetDevice(), GetVmaAllocator(), m_uniformBuffersPerFrame);
+		vh::BufDestroyBuffer2(GetDevice(), GetVmaAllocator(), m_uniformBuffersPerFrame);
 
 		vkDestroyDescriptorSetLayout(GetDevice(), m_descriptorSetLayoutPerFrame, nullptr);
 		return false;

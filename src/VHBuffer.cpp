@@ -3,7 +3,7 @@
 
 namespace vh {
 
-    void createBuffer(VkPhysicalDevice physicalDevice, VkDevice device, VmaAllocator vmaAllocator
+    void BufCreateBuffer(VkPhysicalDevice physicalDevice, VkDevice device, VmaAllocator vmaAllocator
         , VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties
         , VmaAllocationCreateFlags vmaFlags, VkBuffer& buffer
         , VmaAllocation& allocation, VmaAllocationInfo* allocationInfo) {
@@ -19,63 +19,63 @@ namespace vh {
         vmaCreateBuffer(vmaAllocator, &bufferInfo, &allocInfo, &buffer, &allocation, allocationInfo);
     }
 
-    void destroyBuffer(VkDevice device, VmaAllocator vmaAllocator, VkBuffer buffer, VmaAllocation& allocation) {
+    void BufDestroyBuffer(VkDevice device, VmaAllocator vmaAllocator, VkBuffer buffer, VmaAllocation& allocation) {
         vmaDestroyBuffer(vmaAllocator, buffer, allocation);
     }
 
-    void destroyBuffer2(VkDevice device, VmaAllocator vmaAllocator, UniformBuffers buffers) {
+    void BufDestroyBuffer2(VkDevice device, VmaAllocator vmaAllocator, UniformBuffers buffers) {
 		for (size_t i = 0; i < buffers.m_uniformBuffers.size(); i++) {
 			vmaDestroyBuffer(vmaAllocator, buffers.m_uniformBuffers[i], buffers.m_uniformBuffersAllocation[i]);
 		}
 	}
 
-    void copyBuffer(VkDevice device, VkQueue graphicsQueue, VkCommandPool commandPool, VkBuffer srcBuffer
+    void BufCopyBuffer(VkDevice device, VkQueue graphicsQueue, VkCommandPool commandPool, VkBuffer srcBuffer
         , VkBuffer dstBuffer, VkDeviceSize size) {
 
-        VkCommandBuffer commandBuffer = beginSingleTimeCommands(device, commandPool);
+        VkCommandBuffer commandBuffer = ComBeginSingleTimeCommands(device, commandPool);
 
         VkBufferCopy copyRegion{};
         copyRegion.size = size;
         vkCmdCopyBuffer(commandBuffer, srcBuffer, dstBuffer, 1, &copyRegion);
 
-        endSingleTimeCommands(device, graphicsQueue, commandPool, commandBuffer);
+        ComEndSingleTimeCommands(device, graphicsQueue, commandPool, commandBuffer);
     }
 
 
-  	void createTextureImage(VkPhysicalDevice physicalDevice, VkDevice device, VmaAllocator vmaAllocator, 
+  	void BufCreateTextureImage(VkPhysicalDevice physicalDevice, VkDevice device, VmaAllocator vmaAllocator, 
   			VkQueue graphicsQueue, VkCommandPool commandPool, void* pixels, int texWidth, int texHeight, 
 			size_t imageSize, vh::Texture& texture) {
 
         VkBuffer stagingBuffer;
         VmaAllocation stagingBufferAllocation;
         VmaAllocationInfo allocInfo;
-        createBuffer(physicalDevice, device, vmaAllocator, imageSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT
+        BufCreateBuffer(physicalDevice, device, vmaAllocator, imageSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT
             , VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT
             , VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT | VMA_ALLOCATION_CREATE_MAPPED_BIT
             , stagingBuffer, stagingBufferAllocation, &allocInfo);
 
 		memcpy(allocInfo.pMappedData, pixels, imageSize);
 
-        createImage(physicalDevice, device, vmaAllocator, texWidth, texHeight, VK_FORMAT_R8G8B8A8_SRGB
+        BufCreateImage(physicalDevice, device, vmaAllocator, texWidth, texHeight, VK_FORMAT_R8G8B8A8_SRGB
             , VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT
             , VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, texture.m_textureImage, texture.m_textureImageAllocation); 
 
-        transitionImageLayout(device, graphicsQueue, commandPool, texture.m_textureImage, VK_FORMAT_R8G8B8A8_SRGB
+        BufTransitionImageLayout(device, graphicsQueue, commandPool, texture.m_textureImage, VK_FORMAT_R8G8B8A8_SRGB
             , VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
-        copyBufferToImage(device, graphicsQueue, commandPool, stagingBuffer, texture.m_textureImage
+        BufCopyBufferToImage(device, graphicsQueue, commandPool, stagingBuffer, texture.m_textureImage
                 , static_cast<uint32_t>(texWidth), static_cast<uint32_t>(texHeight));
-        transitionImageLayout(device, graphicsQueue, commandPool, texture.m_textureImage, VK_FORMAT_R8G8B8A8_SRGB
+        BufTransitionImageLayout(device, graphicsQueue, commandPool, texture.m_textureImage, VK_FORMAT_R8G8B8A8_SRGB
             , VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
 
-        destroyBuffer(device, vmaAllocator, stagingBuffer, stagingBufferAllocation);
+        BufDestroyBuffer(device, vmaAllocator, stagingBuffer, stagingBufferAllocation);
     }
 
-    void createTextureImageView(VkDevice device, Texture& texture) {
-        texture.m_textureImageView = createImageView(device, texture.m_textureImage, VK_FORMAT_R8G8B8A8_SRGB
+    void BufCreateTextureImageView(VkDevice device, Texture& texture) {
+        texture.m_textureImageView = BufCreateImageView(device, texture.m_textureImage, VK_FORMAT_R8G8B8A8_SRGB
                                         , VK_IMAGE_ASPECT_COLOR_BIT);
     }
 
-    void createTextureSampler(VkPhysicalDevice physicalDevice, VkDevice device, Texture &texture) {
+    void BufCreateTextureSampler(VkPhysicalDevice physicalDevice, VkDevice device, Texture &texture) {
         VkPhysicalDeviceProperties properties{};
         vkGetPhysicalDeviceProperties(physicalDevice, &properties);
 
@@ -99,7 +99,7 @@ namespace vh {
         }
     }
 
-    VkImageView createImageView(VkDevice device, VkImage image, VkFormat format, VkImageAspectFlags aspectFlags) {
+    VkImageView BufCreateImageView(VkDevice device, VkImage image, VkFormat format, VkImageAspectFlags aspectFlags) {
         VkImageViewCreateInfo viewInfo{};
         viewInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
         viewInfo.image = image;
@@ -119,7 +119,7 @@ namespace vh {
         return imageView;
     }
 
-    void createImage(VkPhysicalDevice physicalDevice, VkDevice device, VmaAllocator vmaAllocator, uint32_t width, uint32_t height
+    void BufCreateImage(VkPhysicalDevice physicalDevice, VkDevice device, VmaAllocator vmaAllocator, uint32_t width, uint32_t height
         , VkFormat format, VkImageTiling tiling, VkImageUsageFlags usage, VkMemoryPropertyFlags properties
         , VkImage& image, VmaAllocation& imageAllocation) {
 
@@ -145,14 +145,14 @@ namespace vh {
         vmaCreateImage(vmaAllocator, &imageInfo, &allocInfo, &image, &imageAllocation, nullptr);
     }
 
-    void destroyImage(VkDevice device, VmaAllocator vmaAllocator, VkImage image, VmaAllocation& imageAllocation) {
+    void BufDestroyImage(VkDevice device, VmaAllocator vmaAllocator, VkImage image, VmaAllocation& imageAllocation) {
         vmaDestroyImage(vmaAllocator, image, imageAllocation);
     }
 
-    void transitionImageLayout(VkDevice device, VkQueue graphicsQueue, VkCommandPool commandPool
+    void BufTransitionImageLayout(VkDevice device, VkQueue graphicsQueue, VkCommandPool commandPool
         , VkImage image, VkFormat format, VkImageLayout oldLayout, VkImageLayout newLayout) {
 
-        VkCommandBuffer commandBuffer = beginSingleTimeCommands(device, commandPool);
+        VkCommandBuffer commandBuffer = ComBeginSingleTimeCommands(device, commandPool);
 
         VkImageMemoryBarrier barrier{};
         barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
@@ -202,13 +202,13 @@ namespace vh {
             1, &barrier
         );
 
-        endSingleTimeCommands(device, graphicsQueue, commandPool, commandBuffer);
+        ComEndSingleTimeCommands(device, graphicsQueue, commandPool, commandBuffer);
     }
 
-    void copyBufferToImage(VkDevice device, VkQueue graphicsQueue, VkCommandPool commandPool
+    void BufCopyBufferToImage(VkDevice device, VkQueue graphicsQueue, VkCommandPool commandPool
         , VkBuffer buffer, VkImage image, uint32_t width, uint32_t height) {
 
-        VkCommandBuffer commandBuffer = beginSingleTimeCommands(device, commandPool);
+        VkCommandBuffer commandBuffer = ComBeginSingleTimeCommands(device, commandPool);
 
         VkBufferImageCopy region{};
         region.bufferOffset = 0;
@@ -227,11 +227,11 @@ namespace vh {
 
         vkCmdCopyBufferToImage(commandBuffer, buffer, image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &region);
 
-        endSingleTimeCommands(device, graphicsQueue, commandPool, commandBuffer);
+        ComEndSingleTimeCommands(device, graphicsQueue, commandPool, commandBuffer);
     }
 
 
-    void createVertexBuffer(VkPhysicalDevice physicalDevice, VkDevice device, VmaAllocator vmaAllocator
+    void BufCreateVertexBuffer(VkPhysicalDevice physicalDevice, VkDevice device, VmaAllocator vmaAllocator
         , VkQueue graphicsQueue, VkCommandPool commandPool, Mesh& geometry) {
 
         VkDeviceSize bufferSize = geometry.m_verticesData.getSize();
@@ -239,25 +239,25 @@ namespace vh {
         VkBuffer stagingBuffer;
         VmaAllocation stagingBufferAllocation;
         VmaAllocationInfo allocInfo;
-        createBuffer(physicalDevice, device, vmaAllocator, bufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT
+        BufCreateBuffer(physicalDevice, device, vmaAllocator, bufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT
             , VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT 
             , VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT | VMA_ALLOCATION_CREATE_MAPPED_BIT
             , stagingBuffer, stagingBufferAllocation, &allocInfo);
 
 		geometry.m_verticesData.copyData( allocInfo.pMappedData );
 	
-        createBuffer(physicalDevice, device, vmaAllocator, bufferSize
+        BufCreateBuffer(physicalDevice, device, vmaAllocator, bufferSize
             , VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT
             , VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, 0, geometry.m_vertexBuffer
             , geometry.m_vertexBufferAllocation);
 
-        copyBuffer(device, graphicsQueue, commandPool, stagingBuffer, geometry.m_vertexBuffer, bufferSize);
+        BufCopyBuffer(device, graphicsQueue, commandPool, stagingBuffer, geometry.m_vertexBuffer, bufferSize);
 
-        destroyBuffer(device, vmaAllocator, stagingBuffer, stagingBufferAllocation);
+        BufDestroyBuffer(device, vmaAllocator, stagingBuffer, stagingBufferAllocation);
     }
 
 
-    void createIndexBuffer(VkPhysicalDevice physicalDevice, VkDevice device, VmaAllocator vmaAllocator
+    void BufCreateIndexBuffer(VkPhysicalDevice physicalDevice, VkDevice device, VmaAllocator vmaAllocator
         , VkQueue graphicsQueue, VkCommandPool commandPool, Mesh& geometry) {
 
         VkDeviceSize bufferSize = sizeof(geometry.m_indices[0]) * geometry.m_indices.size();
@@ -265,24 +265,24 @@ namespace vh {
         VkBuffer stagingBuffer;
         VmaAllocation stagingBufferAllocation;
         VmaAllocationInfo allocInfo;
-        createBuffer(physicalDevice, device, vmaAllocator, bufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT
+        BufCreateBuffer(physicalDevice, device, vmaAllocator, bufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT
             , VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT 
             , VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT | VMA_ALLOCATION_CREATE_MAPPED_BIT
             , stagingBuffer, stagingBufferAllocation, &allocInfo);
 
 		memcpy(allocInfo.pMappedData, geometry.m_indices.data(), bufferSize);
 
-        createBuffer(physicalDevice, device, vmaAllocator, bufferSize
+        BufCreateBuffer(physicalDevice, device, vmaAllocator, bufferSize
             , VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT
             , VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, 0
             , geometry.m_indexBuffer, geometry.m_indexBufferAllocation);
 
-        copyBuffer(device, graphicsQueue, commandPool, stagingBuffer, geometry.m_indexBuffer, bufferSize);
+        BufCopyBuffer(device, graphicsQueue, commandPool, stagingBuffer, geometry.m_indexBuffer, bufferSize);
 
-        destroyBuffer(device, vmaAllocator, stagingBuffer, stagingBufferAllocation);
+        BufDestroyBuffer(device, vmaAllocator, stagingBuffer, stagingBufferAllocation);
     }
 
-    void createUniformBuffers(VkPhysicalDevice physicalDevice, VkDevice device, VmaAllocator& vmaAllocator, 
+    void BufCreateUniformBuffers(VkPhysicalDevice physicalDevice, VkDevice device, VmaAllocator& vmaAllocator, 
 		VkDeviceSize bufferSize, UniformBuffers &uniformBuffers) {
 
 		uniformBuffers.m_bufferSize = bufferSize;
@@ -292,7 +292,7 @@ namespace vh {
 
         for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
             VmaAllocationInfo allocInfo;
-            createBuffer(physicalDevice, device, vmaAllocator, bufferSize, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT
+            BufCreateBuffer(physicalDevice, device, vmaAllocator, bufferSize, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT
                 , VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT 
                 , VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT | VMA_ALLOCATION_CREATE_MAPPED_BIT
                 , uniformBuffers.m_uniformBuffers[i] 

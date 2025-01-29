@@ -33,8 +33,8 @@ namespace vve {
 		vh::VulSetupImgui( ((WindowSDL*)m_window)->GetSDLWindow(), GetInstance(), GetPhysicalDevice(), GetQueueFamilies(), GetDevice(), GetGraphicsQueue(), 
 			m_commandPool, m_descriptorPool, m_renderPass);  
 
-        vh::createCommandPool(GetSurface(), GetPhysicalDevice(), GetDevice(), m_commandPool); 
-        vh::createCommandBuffers(GetDevice(), m_commandPool, m_commandBuffers);
+        vh::ComCreateCommandPool(GetSurface(), GetPhysicalDevice(), GetDevice(), m_commandPool); 
+        vh::ComCreateCommandBuffers(GetDevice(), m_commandPool, m_commandBuffers);
 		return false;
 	}
 
@@ -51,14 +51,14 @@ namespace vve {
 
         vkResetCommandBuffer(m_commandBuffers[GetCurrentFrame()],  0);
 
-		vh::startRecordCommandBuffer(m_commandBuffers[GetCurrentFrame()], GetImageIndex(), 
+		vh::ComStartRecordCommandBuffer(m_commandBuffers[GetCurrentFrame()], GetImageIndex(), 
 			GetSwapChain(), m_renderPass, m_graphicsPipeline, 
 			false, ((WindowSDL*)m_window)->GetClearColor(), GetCurrentFrame());
 		
 		ImGui::Render();
         ImGui_ImplVulkan_RenderDrawData(ImGui::GetDrawData(), m_commandBuffers[GetCurrentFrame()]);
 
-		vh::endRecordCommandBuffer(m_commandBuffers[GetCurrentFrame()]);
+		vh::ComEndRecordCommandBuffer(m_commandBuffers[GetCurrentFrame()]);
 
 		SubmitCommandBuffer(m_commandBuffers[GetCurrentFrame()]);
 		return false;
