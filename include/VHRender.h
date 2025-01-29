@@ -24,13 +24,6 @@ namespace vh {
 		std::vector<VkVertexInputAttributeDescription> attributeDescriptions,
 		std::vector<VkDescriptorSetLayout> descriptorSetLayout, Pipeline& graphicsPipeline);
 
-    void createGraphicsPipeline2(VkDevice device, VkRenderPass renderPass, 
-		std::string vertShaderPath, std::string fragShaderPath,
-		VertexData &vertexData,
-		std::vector<VkDescriptorSetLayout> descriptorSetLayout, 
-		Pipeline& graphicsPipeline);
-
-
     void createFramebuffers(VkDevice device, SwapChain& swapChain, DepthImage& depthImage, VkRenderPass renderPass);
 
     void createDepthResources(VkPhysicalDevice physicalDevice, VkDevice device, VmaAllocator vmaAllocator, SwapChain& swapChain, DepthImage& depthImage);

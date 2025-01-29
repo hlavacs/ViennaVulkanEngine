@@ -9,7 +9,7 @@
 /// N...Vertex data contains normals
 /// T...Vertex data contains tangents
 /// C...Vertex data contains colors
-/// U...Vertex data contains texture coordinates
+/// U...Vertex data contains texture UV coordinates
 /// O...Object has color in UBO
 /// E...Object has texture map
 /// R...Object has normal map
@@ -52,8 +52,87 @@ namespace vve {
 		vh::createUniformBuffers(GetPhysicalDevice(), GetDevice(), GetVmaAllocator(), sizeof(vh::UniformBufferFrame), m_uniformBuffersPerFrame);
 		vh::createDescriptorSet(GetDevice(), m_descriptorSetLayoutPerFrame, m_descriptorPool, m_descriptorSetPerFrame);
 	    vh::updateDescriptorSetUBO(GetDevice(), m_uniformBuffersPerFrame, 0, sizeof(vh::UniformBufferFrame), m_descriptorSetPerFrame);   
+
+		const std::filesystem::path shaders{"shaders\\Forward"};
+		for( const auto& entry : std::filesystem::directory_iterator(shaders) ) {
+			auto filename = entry.path().filename().string();
+			if( filename.find("_vert.spv") != std::string::npos && filename[0] == 'S' ) {
+				size_t pos1 = filename.find("_");
+				size_t pos2 = filename.find("_vert.spv");
+				auto pri = std::stoi( filename.substr(1, pos1-1) );
+				std::string type = filename.substr(pos1+1, pos2 - pos1 - 1);
+				vh::Pipeline graphicsPipeline;
+
+				VkDescriptorSetLayout descriptorSetLayoutPerObject;
+				std::vector<VkDescriptorSetLayoutBinding> bindings{
+					{ .descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, .stageFlags = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT }
+				};
+
+				if(type.find("U") != std::string::npos) { //texture map
+					bindings.push_back( { .descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, .stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT } );
+				}
+
+				vh::createDescriptorSetLayout( GetDevice(), bindings, descriptorSetLayoutPerObject );
+
+				std::vector<VkVertexInputBindingDescription> bindingDescriptions = getBindingDescriptions(type);
+				std::vector<VkVertexInputAttributeDescription> attributeDescriptions = getAttributeDescriptions(type);
+
+				vh::createGraphicsPipeline(GetDevice(), m_renderPass, 
+					entry.path().string(), (shaders / (type + "_frag.spv")).string(),
+					bindingDescriptions, attributeDescriptions,
+					{ m_descriptorSetLayoutPerFrame, descriptorSetLayoutPerObject }, graphicsPipeline);
+				
+				m_pipelinesPerType2[pri] = { type, descriptorSetLayoutPerObject, graphicsPipeline };
+			}
+		}
+
 		return false;
 	}
+
+	void RendererForward::getBindingDescription( std::string type, std::string C, int &binding, int stride, auto& bdesc ) {
+		if( type.find(C) == std::string::npos ) return;
+		VkVertexInputBindingDescription bindingDescription{};
+		bindingDescription.binding = binding++;
+		bindingDescription.stride = stride;
+		bindingDescription.inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
+		bdesc.push_back( bindingDescription );
+	}
+
+	auto RendererForward::getBindingDescriptions( std::string type ) -> std::vector<VkVertexInputBindingDescription> {
+		std::vector<VkVertexInputBindingDescription> bindingDescriptions{};
+			
+		int binding=0;
+		getBindingDescription( type, "P", binding, size_pos, bindingDescriptions );
+		getBindingDescription( type, "N", binding, size_nor, bindingDescriptions );
+		getBindingDescription( type, "U", binding, size_tex, bindingDescriptions );
+		getBindingDescription( type, "C", binding, size_col, bindingDescriptions );
+		getBindingDescription( type, "T", binding, size_tan, bindingDescriptions );
+		return bindingDescriptions;
+	}
+
+	void RendererForward::addAttributeDescription( std::string type, std::string C, int& binding, int& location, VkFormat format, auto& attd ) {
+		if( type.find(C) == std::string::npos ) return;
+		VkVertexInputAttributeDescription attributeDescription{};
+		attributeDescription.binding = binding++;
+		attributeDescription.location = location++;
+		attributeDescription.format = format;
+		attributeDescription.offset = 0;
+		attd.push_back( attributeDescription );
+	}
+
+    auto RendererForward::getAttributeDescriptions(std::string type) -> std::vector<VkVertexInputAttributeDescription> {
+        std::vector<VkVertexInputAttributeDescription> attributeDescriptions{};
+
+		int binding=0;
+		int location=0;
+		addAttributeDescription( type, "P", binding, location, VK_FORMAT_R32G32B32_SFLOAT, attributeDescriptions );
+		addAttributeDescription( type, "N", binding, location, VK_FORMAT_R32G32B32_SFLOAT, attributeDescriptions );
+		addAttributeDescription( type, "U", binding, location, VK_FORMAT_R32G32_SFLOAT,    attributeDescriptions );
+		addAttributeDescription( type, "C", binding, location, VK_FORMAT_R32G32B32A32_SFLOAT, attributeDescriptions );
+		addAttributeDescription( type, "T", binding, location, VK_FORMAT_R32G32B32_SFLOAT, attributeDescriptions );
+        return attributeDescriptions;
+    }
+
 
     bool RendererForward::OnRecordNextFrame(Message message) {
 		static auto startTime = std::chrono::high_resolution_clock::now();
@@ -82,12 +161,13 @@ namespace vve {
 
 			memcpy(uniformBuffers.m_uniformBuffersMapped[GetCurrentFrame()], &ubo, sizeof(ubo));
 			vh::Mesh& mesh = m_registry.template Get<vh::Mesh&>(ghandle);
-			auto pipelinePerType = getPipelinePerType(getPipelineType(ObjectHandle{handle}, mesh.m_verticesData), mesh.m_verticesData);
+			//auto pipelinePerType = getPipelinePerType(getPipelineType(ObjectHandle{handle}, mesh.m_verticesData), mesh.m_verticesData);
+			auto pipelinePerType = getPipelinePerType2(getPipelineType(ObjectHandle{handle}, mesh.m_verticesData));
 
 			vh::bindPipeline(m_commandBuffers[GetCurrentFrame()], GetImageIndex(), 
-				GetSwapChain(), m_renderPass, pipelinePerType.m_graphicsPipeline, false, ((WindowSDL*)m_window)->GetClearColor(), GetCurrentFrame());
+				GetSwapChain(), m_renderPass, pipelinePerType->m_graphicsPipeline, false, ((WindowSDL*)m_window)->GetClearColor(), GetCurrentFrame());
 		
-			vh::recordObject2( m_commandBuffers[GetCurrentFrame()], pipelinePerType.m_graphicsPipeline, { descriptorsets, m_descriptorSetPerFrame }, mesh, GetCurrentFrame() );
+			vh::recordObject2( m_commandBuffers[GetCurrentFrame()], pipelinePerType->m_graphicsPipeline, { descriptorsets, m_descriptorSetPerFrame }, mesh, GetCurrentFrame() );
 		}
 
 		vh::endRecordCommandBuffer(m_commandBuffers[GetCurrentFrame()]);
@@ -99,13 +179,13 @@ namespace vve {
 		ObjectHandle handle = message.template GetData<MsgObjectCreate>().m_object;
 		auto gHandle = m_registry.template Get<MeshHandle>(handle);
 		auto mesh = m_registry.template Get<vh::Mesh&>(gHandle);
-		auto pipelinePerType = getPipelinePerType(getPipelineType(handle, mesh.m_verticesData), mesh.m_verticesData);
+		auto pipelinePerType2 = getPipelinePerType2(getPipelineType(handle, mesh.m_verticesData));
 
 		vh::UniformBuffers ubo;
 		vh::createUniformBuffers(GetPhysicalDevice(), GetDevice(), GetVmaAllocator(), sizeof(vh::UniformBufferObject), ubo);
 
 		vh::DescriptorSet descriptorSet{1};
-		vh::createDescriptorSet(GetDevice(), pipelinePerType.m_descriptorSetLayoutPerObject, m_descriptorPool, descriptorSet);
+		vh::createDescriptorSet(GetDevice(), pipelinePerType2->m_descriptorSetLayoutPerObject, m_descriptorPool, descriptorSet);
 	    vh::updateDescriptorSetUBO(GetDevice(), ubo, 0, sizeof(vh::UniformBufferObject), descriptorSet);
 
 		if( m_registry.template Has<TextureHandle>(handle) ) {
@@ -121,8 +201,6 @@ namespace vve {
 	}
 
 
-
-
 	/// @brief 
 	/// @param handle 
 	/// @param vertexData 
@@ -133,36 +211,24 @@ namespace vve {
 		return type;
 	}
 
-	RendererForward::PipelinePerType& RendererForward::getPipelinePerType(std::string type, vh::VertexData &vertexData) {
-		if( m_pipelinesPerType.contains(type) ) return m_pipelinesPerType[type];
-
-		VkDescriptorSetLayout descriptorSetLayoutPerObject;
-		std::vector<VkDescriptorSetLayoutBinding> bindings{
-			{ .descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, .stageFlags = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT }
-		};
-
-		if(type.find("U") != std::string::npos) {
-			bindings.push_back( { .descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, .stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT } );
+	RendererForward::PipelinePerType* RendererForward::getPipelinePerType2(std::string type) {
+		for( auto& [pri, pipeline] : m_pipelinesPerType2 ) {
+			bool found = true;
+			for( auto& c : pipeline.m_type ) {found = found && ( type.find(c) != std::string::npos ); }
+			if( found ) return &pipeline;
 		}
-
-		vh::createDescriptorSetLayout( GetDevice(), bindings, descriptorSetLayoutPerObject );
-
-		vh::Pipeline graphicsPipeline;
-		std::filesystem::path vertShaderPath = "shaders\\Forward\\" + type + "_vert.spv";
-		std::filesystem::path fragShaderPath = "shaders\\Forward\\" + type + "_frag.spv";
-		vh::createGraphicsPipeline2(GetDevice(), m_renderPass, vertShaderPath.string(), fragShaderPath.string(), 
-			vertexData,
-			{ m_descriptorSetLayoutPerFrame, descriptorSetLayoutPerObject }, graphicsPipeline);
-
-		return m_pipelinesPerType[type] = { type, descriptorSetLayoutPerObject, graphicsPipeline };
+		std::cout << "Pipeline not found for type: " << type << std::endl;
+		exit(-1);
+		return nullptr;
 	}
+
 
     bool RendererForward::OnQuit(Message message) {
         vkDeviceWaitIdle(GetDevice());
 		
         vkDestroyCommandPool(GetDevice(), m_commandPool, nullptr);
 
-		for( auto& [type, pipeline] : m_pipelinesPerType ) {
+		for( auto& [type, pipeline] : m_pipelinesPerType2 ) {
 			vkDestroyDescriptorSetLayout(GetDevice(), pipeline.m_descriptorSetLayoutPerObject, nullptr);
 			vkDestroyPipeline(GetDevice(), pipeline.m_graphicsPipeline.m_pipeline, nullptr);
 			vkDestroyPipelineLayout(GetDevice(), pipeline.m_graphicsPipeline.m_pipelineLayout, nullptr);

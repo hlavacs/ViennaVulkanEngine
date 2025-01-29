@@ -64,6 +64,9 @@ namespace vve
 		auto GetVulkanState() -> VulkanState&;
 		void SubmitCommandBuffer( VkCommandBuffer commandBuffer );
 
+
+		
+
 		bool OnAnnounce(Message message);
 		std::string 		m_windowName;
         Window* 			m_window;

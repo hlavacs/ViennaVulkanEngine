@@ -160,50 +160,6 @@ namespace vh {
 			size = m_tangents.size()  * size_tan; memcpy( (char*)data + offset, m_tangents.data(), size );  offset += size;
 		}
 
-		void getBindingDescription( auto &vec, int &binding, int stride, auto& bdesc ) {
-			if( vec.size() == 0 ) return;
-			VkVertexInputBindingDescription bindingDescription{};
-			bindingDescription.binding = binding++;
-			bindingDescription.stride = stride;
-			bindingDescription.inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
-			bdesc.push_back( bindingDescription );
-		}
-
-		auto getBindingDescriptions() {
-			std::vector<VkVertexInputBindingDescription> bindingDescriptions{};
-			
-			int binding=0;
-			getBindingDescription( m_positions, binding, size_pos, bindingDescriptions );
-			getBindingDescription( m_normals,   binding, size_nor, bindingDescriptions );
-			getBindingDescription( m_texCoords, binding, size_tex, bindingDescriptions );
-			getBindingDescription( m_colors,    binding, size_col, bindingDescriptions );
-			getBindingDescription( m_tangents,  binding, size_tan, bindingDescriptions );
-			return bindingDescriptions;
-		}
-
-		void addAttributeDescription( auto &vec, int& binding, int& location, VkFormat format, auto& attd ) {
-			if( vec.size() == 0 ) return;
-			VkVertexInputAttributeDescription attributeDescription{};
-			attributeDescription.binding = binding++;
-			attributeDescription.location = location++;
-			attributeDescription.format = format;
-			attributeDescription.offset = 0;
-			attd.push_back( attributeDescription );
-		}
-
-        auto getAttributeDescriptions() {
-            std::vector<VkVertexInputAttributeDescription> attributeDescriptions{};
-
-			int binding=0;
-			int location=0;
-			addAttributeDescription( m_positions, binding, location, VK_FORMAT_R32G32B32_SFLOAT, attributeDescriptions );
-			addAttributeDescription( m_normals,   binding, location, VK_FORMAT_R32G32B32_SFLOAT, attributeDescriptions );
-			addAttributeDescription( m_texCoords, binding, location, VK_FORMAT_R32G32_SFLOAT,    attributeDescriptions );
-			addAttributeDescription( m_colors,    binding, location, VK_FORMAT_R32G32B32A32_SFLOAT, attributeDescriptions );
-			addAttributeDescription( m_tangents,  binding, location, VK_FORMAT_R32G32B32_SFLOAT, attributeDescriptions );
-            return attributeDescriptions;
-        }
-
 		VkResult CmdBindVertexBuffers( VkCommandBuffer commandBuffer, VkBuffer vertexBuffer ) {
 			std::vector<VkDeviceSize> offsets = getOffsets();
 			std::vector<VkBuffer> vertexBuffers(offsets.size(), vertexBuffer);

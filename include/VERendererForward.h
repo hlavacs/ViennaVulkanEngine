@@ -21,7 +21,18 @@ namespace vve
 		bool OnObjectCreate( Message message );
         bool OnQuit(Message message);
 
-		PipelinePerType& getPipelinePerType(std::string type, vh::VertexData &vertexData);
+		static const int size_pos = sizeof(glm::vec3);
+		static const int size_nor = sizeof(glm::vec3);
+		static const int size_tex = sizeof(glm::vec2);
+		static const int size_col = sizeof(glm::vec4);
+		static const int size_tan = sizeof(glm::vec3);
+
+		void getBindingDescription( std::string type, std::string C, int &binding, int stride, auto& bdesc );
+		auto getBindingDescriptions(std::string type) -> std::vector<VkVertexInputBindingDescription>;
+		void addAttributeDescription( std::string type, std::string C, int& binding, int& location, VkFormat format, auto& attd );
+        auto getAttributeDescriptions(std::string type) -> std::vector<VkVertexInputAttributeDescription>;
+
+		PipelinePerType* getPipelinePerType2(std::string type);
 		std::string getPipelineType(ObjectHandle handle, vh::VertexData &vertexData);
 
 		vh::UniformBuffers m_uniformBuffersPerFrame;
@@ -31,7 +42,8 @@ namespace vve
 		VkDescriptorSetLayout m_descriptorSetLayoutPerObject;
 	    vh::Pipeline m_graphicsPipeline;
 
-		std::unordered_map<std::string, PipelinePerType> m_pipelinesPerType;
+		std::map<int, PipelinePerType> m_pipelinesPerType2;
+
 
 	    VkRenderPass m_renderPass;
 	    VkDescriptorPool m_descriptorPool;    
