@@ -4,6 +4,25 @@
 #include "VEInclude.h"
 
 
+/// Pipeline code:
+/// P...Vertex data contains positions
+/// N...Vertex data contains normals
+/// T...Vertex data contains tangents
+/// C...Vertex data contains colors
+/// U...Vertex data contains texture coordinates
+/// O...Object has color in UBO
+/// E...Object has texture map
+/// R...Object has normal map
+/// S...Object has specular map
+/// M...Object has metallic map
+/// A...Object has roughness map
+/// D...Object has displacement map
+/// F...Object has ambient occlusion map
+/// L...Object has emissive map
+/// B...Object has brdf map
+/// H...Object has height map
+/// P...Object is transparent
+
 namespace vve {
 
     RendererForward::RendererForward( std::string systemName, Engine& engine, std::string windowName ) 
@@ -101,9 +120,16 @@ namespace vve {
 		return false; //true if handled
 	}
 
+
+
+
+	/// @brief 
+	/// @param handle 
+	/// @param vertexData 
+	/// @return 
 	std::string RendererForward::getPipelineType(ObjectHandle handle, vh::VertexData &vertexData) {
 		std::string type = vertexData.getType();
-		if( m_registry.template Has<vh::Color>(handle) && type.find("U") == std::string::npos ) type += "O";
+		if( m_registry.template Has<vh::Color>(handle) && type.find("C") == std::string::npos && type.find("U") == std::string::npos ) type += "O";
 		return type;
 	}
 

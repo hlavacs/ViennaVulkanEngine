@@ -129,13 +129,4 @@ namespace vh
 } // namespace vh
 
 
-namespace std {
-
-	size_t hash<vh::Vertex>::operator()(vh::Vertex const& vertex) const {
-		size_t h = 0;
-		std::hash_combine(h, vertex.pos.x, vertex.pos.y, vertex.pos.z, vertex.color.r, vertex.color.g, vertex.color.b, vertex.texCoord.x, vertex.texCoord.y);
-        return h;
-    };
-
-}
 

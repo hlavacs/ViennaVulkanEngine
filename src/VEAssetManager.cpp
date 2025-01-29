@@ -85,30 +85,30 @@ namespace vve {
 			vh::Mesh VVEMesh{};
 		    for (unsigned int j = 0; j < mesh->mNumVertices; j++) {
 		        aiVector3D vertex = mesh->mVertices[j];
-				VVEMesh.m_vertices.push_back(vh::Vertex{ {vertex.x, vertex.y, vertex.z} });
+				//VVEMesh.m_vertices.push_back(vh::Vertex{ {vertex.x, vertex.y, vertex.z} });
 				VVEMesh.m_verticesData.m_positions.push_back({vertex.x, vertex.y, vertex.z});
 			
 				if (mesh->HasNormals()) {
 		            aiVector3D normal = mesh->mNormals[j];
-					VVEMesh.m_vertices[j].normal = vec3_t{normal.x, normal.y, normal.z};
+					//VVEMesh.m_vertices[j].normal = vec3_t{normal.x, normal.y, normal.z};
 					VVEMesh.m_verticesData.m_normals.push_back({normal.x, normal.y, normal.z});
 				}
 
 				if( mesh->HasTangentsAndBitangents() ) {
 					aiVector3D tangent = mesh->mTangents[j];
-					VVEMesh.m_vertices[j].tangent = vec3_t{tangent.x, tangent.y, tangent.z};
+					//VVEMesh.m_vertices[j].tangent = vec3_t{tangent.x, tangent.y, tangent.z};
 					VVEMesh.m_verticesData.m_tangents.push_back({tangent.x, tangent.y, tangent.z});
 				}
 
 				if (mesh->HasTextureCoords(0)) { 
 			        aiVector3D texCoord = mesh->mTextureCoords[0][j];
-					VVEMesh.m_vertices[j].texCoord = vec2_t{texCoord.x, texCoord.y};
+					//VVEMesh.m_vertices[j].texCoord = vec2_t{texCoord.x, texCoord.y};
 					VVEMesh.m_verticesData.m_texCoords.push_back({texCoord.x, texCoord.y});
 				}
 
 				if (mesh->HasVertexColors(0)) { 
 				    aiColor4D color = mesh->mColors[0][j];
-					VVEMesh.m_vertices[j].color = vec4_t{color.r, color.g, color.b, color.a};
+					//VVEMesh.m_vertices[j].color = vec4_t{color.r, color.g, color.b, color.a};
 					VVEMesh.m_verticesData.m_colors.push_back({color.r, color.g, color.b, color.a});
 				}
 		    }

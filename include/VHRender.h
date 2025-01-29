@@ -20,6 +20,8 @@ namespace vh {
 
     void createGraphicsPipeline(VkDevice device, VkRenderPass renderPass, 
 		std::string vertShaderPath, std::string fragShaderPath,
+		std::vector<VkVertexInputBindingDescription> bindingDescription, 
+		std::vector<VkVertexInputAttributeDescription> attributeDescriptions,
 		std::vector<VkDescriptorSetLayout> descriptorSetLayout, Pipeline& graphicsPipeline);
 
     void createGraphicsPipeline2(VkDevice device, VkRenderPass renderPass, 

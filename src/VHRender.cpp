@@ -158,6 +158,8 @@ namespace vh {
 
     void createGraphicsPipeline(VkDevice device, VkRenderPass renderPass, 
 		std::string vertShaderPath, std::string fragShaderPath,
+		std::vector<VkVertexInputBindingDescription> bindingDescription, 
+		std::vector<VkVertexInputAttributeDescription> attributeDescriptions,
 		std::vector<VkDescriptorSetLayout> descriptorSetLayouts, Pipeline& graphicsPipeline) {
 
 		std::vector<VkPipelineShaderStageCreateInfo> shaderStages;
@@ -186,12 +188,10 @@ namespace vh {
         VkPipelineVertexInputStateCreateInfo vertexInputInfo{};
         vertexInputInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
 
-	    auto bindingDescription = Vertex::getBindingDescription();
-	    auto attributeDescriptions = Vertex::getAttributeDescriptions();
 		if( !fragShaderPath.empty() ) {
 	        vertexInputInfo.vertexBindingDescriptionCount = 1;
 	        vertexInputInfo.vertexAttributeDescriptionCount = static_cast<uint32_t>(attributeDescriptions.size());
-	        vertexInputInfo.pVertexBindingDescriptions = &bindingDescription;
+	        vertexInputInfo.pVertexBindingDescriptions = bindingDescription.data();
 	        vertexInputInfo.pVertexAttributeDescriptions = attributeDescriptions.data();
 		}
 
@@ -288,7 +288,7 @@ namespace vh {
     }
 
 
-	    void createGraphicsPipeline2(VkDevice device, VkRenderPass renderPass, 
+	void createGraphicsPipeline2(VkDevice device, VkRenderPass renderPass, 
 		std::string vertShaderPath, std::string fragShaderPath,
 		VertexData &vertexData,
 		std::vector<VkDescriptorSetLayout> descriptorSetLayouts, Pipeline& graphicsPipeline) {
