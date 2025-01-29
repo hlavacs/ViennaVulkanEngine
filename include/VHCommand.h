@@ -21,7 +21,7 @@ namespace vh {
     void endRecordCommandBuffer(VkCommandBuffer commandBuffer);
 
     void recordObject(VkCommandBuffer commandBuffer, Pipeline& graphicsPipeline, 
-			const std::vector<DescriptorSet>&& descriptorSets, Mesh& mesh, uint32_t currentFrame);
+			const std::vector<DescriptorSet>&& descriptorSets, std::string type, Mesh& mesh, uint32_t currentFrame);
 
 	void submitCommandBuffers(VkDevice device, VkQueue graphicsQueue, std::vector<VkCommandBuffer>& commandBuffers,
 		std::vector<VkSemaphore>& imageAvailableSemaphores, std::vector<Semaphores>& semaphores, VkSemaphore& signalSemaphore,

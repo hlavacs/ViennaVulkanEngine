@@ -150,10 +150,10 @@ namespace vve {
 		vh::startRecordCommandBuffer(m_commandBuffers[GetCurrentFrame()], GetImageIndex(), 
 			GetSwapChain(), m_renderPass, m_graphicsPipeline, false, ((WindowSDL*)m_window)->GetClearColor(), GetCurrentFrame());
 		
-		for( auto& pipelinePerType : m_pipelinesPerType) {
+		for( auto& pipeline : m_pipelinesPerType) {
 			for( auto[handle, name, ghandle, LtoW, uniformBuffers, descriptorsets] : 
 				m_registry.template GetView<vecs::Handle, Name, MeshHandle, LocalToWorldMatrix&, vh::UniformBuffers&, 
-					vh::DescriptorSet&>({(size_t)pipelinePerType.second.m_graphicsPipeline.m_pipeline}) ) {
+					vh::DescriptorSet&>({(size_t)pipeline.second.m_graphicsPipeline.m_pipeline}) ) {
 
 				vh::UniformBufferObject ubo{};
 				ubo.model = LtoW(); 		
@@ -167,11 +167,11 @@ namespace vve {
 				vh::Mesh& mesh = m_registry.template Get<vh::Mesh&>(ghandle);
 
 				vh::bindPipeline(m_commandBuffers[GetCurrentFrame()], GetImageIndex(), 
-					GetSwapChain(), m_renderPass, pipelinePerType.second.m_graphicsPipeline, false, 
+					GetSwapChain(), m_renderPass, pipeline.second.m_graphicsPipeline, false, 
 					((WindowSDL*)m_window)->GetClearColor(), GetCurrentFrame());
 
-				vh::recordObject( m_commandBuffers[GetCurrentFrame()], pipelinePerType.second.m_graphicsPipeline, 
-					{ m_descriptorSetPerFrame, descriptorsets }, mesh, GetCurrentFrame() );
+				vh::recordObject( m_commandBuffers[GetCurrentFrame()], pipeline.second.m_graphicsPipeline, 
+					{ m_descriptorSetPerFrame, descriptorsets }, pipeline.second.m_type, mesh, GetCurrentFrame() );
 			}
 		}
 

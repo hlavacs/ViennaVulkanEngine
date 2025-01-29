@@ -142,9 +142,9 @@ namespace vh {
     }
 
     void recordObject(VkCommandBuffer commandBuffer, Pipeline& graphicsPipeline, 
-			const std::vector<DescriptorSet>&& descriptorSets, Mesh& mesh, uint32_t currentFrame) {
+			const std::vector<DescriptorSet>&& descriptorSets, std::string type, Mesh& mesh, uint32_t currentFrame) {
 
-        auto offsets = mesh.m_verticesData.getOffsets();
+        auto offsets = mesh.m_verticesData.getOffsets(type);
         std::vector<VkBuffer> vertexBuffers(offsets.size(), mesh.m_vertexBuffer);
        	vkCmdBindVertexBuffers(commandBuffer, 0, offsets.size(), vertexBuffers.data(), offsets.data());
 
@@ -156,7 +156,6 @@ namespace vh {
 		}
 
         vkCmdDrawIndexed(commandBuffer, static_cast<uint32_t>(mesh.m_indices.size()), 1, 0, 0, 0);
-
 	}
 
 	void submitCommandBuffers(VkDevice device, VkQueue graphicsQueue, std::vector<VkCommandBuffer>& commandBuffers, 

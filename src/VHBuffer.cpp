@@ -244,19 +244,7 @@ namespace vh {
             , VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT | VMA_ALLOCATION_CREATE_MAPPED_BIT
             , stagingBuffer, stagingBufferAllocation, &allocInfo);
 
-        //MemCopy(device, geometry.m_vertices.data(), allocInfo, bufferSize);
-
-		auto offset{0};
-		auto copy = [&](auto& vec) {
-			if( vec.size() == 0 ) return;
-			MemCopy(device, vec.data(), allocInfo, vec.size() * sizeof(vec[0]), offset);
-			offset += vec.size() * sizeof(vec[0]);
-		};
-		copy( geometry.m_verticesData.m_positions );
-		copy( geometry.m_verticesData.m_normals );
-		copy( geometry.m_verticesData.m_texCoords );
-		copy( geometry.m_verticesData.m_colors );
-		copy( geometry.m_verticesData.m_tangents );
+		geometry.m_verticesData.copyData( allocInfo.pMappedData );
 	
         createBuffer(physicalDevice, device, vmaAllocator, bufferSize
             , VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT

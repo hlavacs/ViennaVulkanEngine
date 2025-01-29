@@ -108,6 +108,13 @@ namespace vh {
         VkSampler       m_textureSampler;
     };
 
+
+	/// Pipeline code:
+	/// P...Vertex data contains positions
+	/// N...Vertex data contains normals
+	/// T...Vertex data contains tangents
+	/// C...Vertex data contains colors
+	/// U...Vertex data contains texture UV coordinates
 	struct VertexData {
 
 		static const int size_pos = sizeof(glm::vec3);
@@ -140,6 +147,14 @@ namespace vh {
 					m_tangents.size()  * sizeof(glm::vec3);
 		}
 
+		VkDeviceSize getSize( std::string type ) {
+			return 	type.find("P") != std::string::npos ? m_positions.size() * sizeof(glm::vec3) : 0 + 
+					type.find("N") != std::string::npos ? m_normals.size()   * sizeof(glm::vec3) : 0 + 
+					type.find("U") != std::string::npos ? m_texCoords.size() * sizeof(glm::vec2) : 0 + 
+					type.find("C") != std::string::npos ? m_colors.size()    * sizeof(glm::vec4) : 0 + 
+					type.find("T") != std::string::npos ? m_tangents.size()  * sizeof(glm::vec3) : 0;
+		}
+
 		std::vector<VkDeviceSize> getOffsets() {
 			int offset=0;
 			std::vector<VkDeviceSize> offsets{};
@@ -148,6 +163,17 @@ namespace vh {
 			if( int size = m_texCoords.size() * size_tex; size > 0 ) { offsets.push_back(offset); offset += size; }
 			if( int size = m_colors.size()    * size_col; size > 0 ) { offsets.push_back(offset); offset += size; }
 			if( int size = m_tangents.size()  * size_tan; size > 0 ) { offsets.push_back(offset); offset += size; }
+			return offsets;
+		}
+
+		std::vector<VkDeviceSize> getOffsets( std::string type ) {
+			int offset=0;
+			std::vector<VkDeviceSize> offsets{};
+			if( type.find("P") != std::string::npos ) { offsets.push_back(offset); offset += m_positions.size() * size_pos; }
+			if( type.find("N") != std::string::npos ) { offsets.push_back(offset); offset += m_normals.size()   * size_nor; }
+			if( type.find("U") != std::string::npos ) { offsets.push_back(offset); offset += m_texCoords.size() * size_tex; }
+			if( type.find("C") != std::string::npos ) { offsets.push_back(offset); offset += m_colors.size()    * size_col; }
+			if( type.find("T") != std::string::npos ) { offsets.push_back(offset); offset += m_tangents.size()  * size_tan; }
 			return offsets;
 		}
 
@@ -160,16 +186,17 @@ namespace vh {
 			size = m_tangents.size()  * size_tan; memcpy( (char*)data + offset, m_tangents.data(), size );  offset += size;
 		}
 
-		VkResult CmdBindVertexBuffers( VkCommandBuffer commandBuffer, VkBuffer vertexBuffer ) {
-			std::vector<VkDeviceSize> offsets = getOffsets();
-			std::vector<VkBuffer> vertexBuffers(offsets.size(), vertexBuffer);
-			vkCmdBindVertexBuffers( commandBuffer, 0, offsets.size(), vertexBuffers.data(), offsets.data() );
-			return VK_SUCCESS;
+		void copyData( void* data, std::string type  ) {
+			int offset=0, size = 0;
+			if( type.find("P") != std::string::npos ) { size = m_positions.size() * size_pos; memcpy( data, m_positions.data(), size ); offset += size; }
+			if( type.find("N") != std::string::npos ) { size = m_normals.size()   * size_nor; memcpy( (char*)data + offset, m_normals.data(), size ); offset += size; }
+			if( type.find("U") != std::string::npos ) { size = m_texCoords.size() * size_tex; memcpy( (char*)data + offset, m_texCoords.data(), size ); offset += size; }
+			if( type.find("C") != std::string::npos ) { size = m_colors.size()    * size_col; memcpy( (char*)data + offset, m_colors.data(), size ); offset += size; }
+			if( type.find("T") != std::string::npos ) { size = m_tangents.size()  * size_tan; memcpy( (char*)data + offset, m_tangents.data(), size ); offset += size; }
 		}
     };
 
     struct Mesh {
-        //std::vector<Vertex>     m_vertices;
 		VertexData				m_verticesData;
         std::vector<uint32_t>   m_indices;
         VkBuffer                m_vertexBuffer;
