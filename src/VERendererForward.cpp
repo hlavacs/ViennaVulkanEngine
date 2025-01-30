@@ -42,7 +42,7 @@ namespace vve {
         vh::RenCreateRenderPass(GetPhysicalDevice(), GetDevice(), GetSwapChain(), false, m_renderPass);
 		
 		vh::RenCreateDescriptorSetLayout( GetDevice(), //Per frame
-			{{ .descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, .stageFlags = VK_SHADER_STAGE_VERTEX_BIT } },
+			{{ .descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, .stageFlags = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT } },
 			m_descriptorSetLayoutPerFrame );
 
         vh::ComCreateCommandPool(GetSurface(), GetPhysicalDevice(), GetDevice(), m_commandPool);
@@ -61,6 +61,9 @@ namespace vve {
 				size_t pos2 = filename.find("_vert.spv");
 				auto pri = std::stoi( filename.substr(1, pos1-1) );
 				std::string type = filename.substr(pos1+1, pos2 - pos1 - 1);
+
+				std::cout << "Pipeline: " << filename << " Priority: " << pri << " Type: " << type << std::endl;
+				
 				vh::Pipeline graphicsPipeline;
 
 				VkDescriptorSetLayout descriptorSetLayoutPerObject;
