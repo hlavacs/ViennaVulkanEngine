@@ -34,7 +34,7 @@ export public struct Light {
     public float3 attenuation; // x = constant, y = linear, z = quadratic
 };
 
-[[vk::constant_id(0)]] const int MAX_LIGHTS = 10;
+[[vk::constant_id(0)]] export public const int MAX_LIGHTS = 10;
 
 export public struct Camera {
     public float4x4 view;
@@ -46,6 +46,7 @@ export public struct UniformBufferFrame {
     public int3   numberLights; // x = point, y = directional, z = spotlight
     public Light  lights[MAX_LIGHTS];
 };
+
 
 //-----------------------------------------------------------------------
 
