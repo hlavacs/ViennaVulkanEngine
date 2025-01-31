@@ -20,8 +20,8 @@ namespace vve {
 
 			{this,      0, "TEXTURE_CREATE",   [this](Message& message){ return OnTextureCreate(message);} },
 			{this,      0, "TEXTURE_DESTROY",  [this](Message& message){ return OnTextureDestroy(message);} },
-			{this,      0, "GEOMETRY_CREATE",  [this](Message& message){ return OnGeometryCreate(message);} },
-			{this,      0, "GEOMETRY_DESTROY", [this](Message& message){ return OnGeometryDestroy(message);} },
+			{this,      0, "MESH_CREATE",  [this](Message& message){ return OnMeshCreate(message);} },
+			{this,      0, "MESH_DESTROY", [this](Message& message){ return OnMeshDestroy(message);} },
 			{this,   2000, "QUIT", [this](Message& message){ return OnQuit(message);} },
 		} );
     }
@@ -201,16 +201,16 @@ namespace vve {
 		return false;
 	}
 
-	bool RendererVulkan::OnGeometryCreate( Message message ) {
-		auto handle = message.template GetData<MsgGeometryCreate>().m_handle;
+	bool RendererVulkan::OnMeshCreate( Message message ) {
+		auto handle = message.template GetData<MsgMeshCreate>().m_handle;
 		auto& geometry = m_registry.template Get<vh::Mesh&>(handle);
 		vh::BufCreateVertexBuffer(GetPhysicalDevice(), GetDevice(), GetVulkanState().m_vmaAllocator, GetGraphicsQueue(), m_commandPool, geometry);
 		vh::BufCreateIndexBuffer( GetPhysicalDevice(), GetDevice(), GetVulkanState().m_vmaAllocator, GetGraphicsQueue(), m_commandPool, geometry);
 		return false;
 	}
 
-	bool RendererVulkan::OnGeometryDestroy( Message message ) {
-		auto handle = message.template GetData<MsgGeometryDestroy>().m_handle;
+	bool RendererVulkan::OnMeshDestroy( Message message ) {
+		auto handle = message.template GetData<MsgMeshDestroy>().m_handle;
 		auto& geometry = m_registry.template Get<vh::Mesh&>(handle);
 		vh::BufDestroyBuffer(GetDevice(), GetVulkanState().m_vmaAllocator, geometry.m_indexBuffer, geometry.m_indexBufferAllocation);
 		vh::BufDestroyBuffer(GetDevice(), GetVulkanState().m_vmaAllocator, geometry.m_vertexBuffer, geometry.m_vertexBufferAllocation);

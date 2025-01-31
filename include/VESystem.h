@@ -64,8 +64,8 @@ namespace vve {
 		"OBJECT_SET_PARENT",	
 		"TEXTURE_CREATE",  
 		"TEXTURE_DESTROY", 
-		"GEOMETRY_CREATE",	
-		"GEOMETRY_DESTROY",	
+		"MESH_CREATE",	
+		"MESH_DESTROY",	
         "LAST" //
     };
 
@@ -136,8 +136,8 @@ namespace vve {
 
 		struct MsgTextureCreate : public MsgBase { MsgTextureCreate(System* s, System* r, void *pixels, vecs::Handle handle); void* m_pixels; vecs::Handle m_handle; };
 	    struct MsgTextureDestroy : public MsgBase { MsgTextureDestroy(System* s, System* r, vecs::Handle handle); vecs::Handle m_handle; };
-	    struct MsgGeometryCreate : public MsgBase { MsgGeometryCreate(System* s, System* r, vecs::Handle handle); vecs::Handle m_handle; };
-	    struct MsgGeometryDestroy : public MsgBase { MsgGeometryDestroy(System* s, System* r, vecs::Handle handle); vecs::Handle m_handle; };
+	    struct MsgMeshCreate : public MsgBase { MsgMeshCreate(System* s, System* r, vecs::Handle handle); vecs::Handle m_handle; };
+	    struct MsgMeshDestroy : public MsgBase { MsgMeshDestroy(System* s, System* r, vecs::Handle handle); vecs::Handle m_handle; };
 	
 
 	    struct Message {

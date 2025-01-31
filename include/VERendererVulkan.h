@@ -24,8 +24,8 @@ namespace vve {
 		
 		bool OnTextureCreate( Message message );
 		bool OnTextureDestroy( Message message );
-		bool OnGeometryCreate( Message message );
-		bool OnGeometryDestroy( Message message );
+		bool OnMeshCreate( Message message );
+		bool OnMeshDestroy( Message message );
 
         bool OnQuit(Message message);
 
