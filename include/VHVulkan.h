@@ -78,7 +78,8 @@ namespace vh {
 
 	struct UniformBufferFrame {
 	    alignas(16) CameraMatrix camera;
-	    alignas(16) Light lights[5];
+		alignas(16) glm::ivec3 numLights{0,0,0}; //x=number point lights, y=number directional lights, z=number spotlights
+	    alignas(16) Light lights[1];
 	};
 
 	struct UniformBuffers {

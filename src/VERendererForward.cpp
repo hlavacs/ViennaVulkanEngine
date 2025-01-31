@@ -53,6 +53,11 @@ namespace vve {
 		vh::RenCreateDescriptorSet(GetDevice(), m_descriptorSetLayoutPerFrame, m_descriptorPool, m_descriptorSetPerFrame);
 	    vh::RenUpdateDescriptorSetUBO(GetDevice(), m_uniformBuffersPerFrame, 0, sizeof(vh::UniformBufferFrame), m_descriptorSetPerFrame);   
 
+		CreatePipelines();
+		return false;
+	}
+
+	void RendererForward::CreatePipelines() {
 		const std::filesystem::path shaders{"shaders\\Forward"};
 		for( const auto& entry : std::filesystem::directory_iterator(shaders) ) {
 			auto filename = entry.path().filename().string();
@@ -81,16 +86,16 @@ namespace vve {
 				vh::RenCreateGraphicsPipeline(GetDevice(), m_renderPass, 
 					entry.path().string(), (shaders / (filename.substr(0,pos2) + "_frag.spv")).string(),
 					bindingDescriptions, attributeDescriptions,
-					{ m_descriptorSetLayoutPerFrame, descriptorSetLayoutPerObject }, graphicsPipeline);
+					{ m_descriptorSetLayoutPerFrame, descriptorSetLayoutPerObject }, 
+					{},
+					graphicsPipeline);
 				
 				m_pipelinesPerType[pri] = { type, descriptorSetLayoutPerObject, graphicsPipeline };
 
 				std::cout << "Pipeline (" << graphicsPipeline.m_pipeline << "): " << filename << " Priority: " << pri << " Type: " << type << std::endl;
-
 			}
 		}
 
-		return false;
 	}
 
 	void RendererForward::getBindingDescription( std::string type, std::string C, int &binding, int stride, auto& bdesc ) {

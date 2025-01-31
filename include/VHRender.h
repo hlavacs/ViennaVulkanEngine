@@ -22,7 +22,9 @@ namespace vh {
 		std::string vertShaderPath, std::string fragShaderPath,
 		std::vector<VkVertexInputBindingDescription> bindingDescription, 
 		std::vector<VkVertexInputAttributeDescription> attributeDescriptions,
-		std::vector<VkDescriptorSetLayout> descriptorSetLayout, Pipeline& graphicsPipeline);
+		std::vector<VkDescriptorSetLayout> descriptorSetLayout,
+		std::vector<size_t> specializationConstants,
+		Pipeline& graphicsPipeline);
 
     void RenCreateFramebuffers(VkDevice device, SwapChain& swapChain, DepthImage& depthImage, VkRenderPass renderPass);
 

@@ -61,7 +61,7 @@ namespace vve {
 		vh::RenCreateDescriptorSetLayout( GetDevice(), {}, m_descriptorSetLayoutPerFrame );
 			
         vh::RenCreateGraphicsPipeline(GetDevice(), m_renderPass, "shaders\\Vulkan\\vert.spv", "", {}, {},
-			 { m_descriptorSetLayoutPerFrame }, m_graphicsPipeline);
+			 { m_descriptorSetLayoutPerFrame }, {}, m_graphicsPipeline);
 
         vh::ComCreateCommandPool(GetSurface(), GetPhysicalDevice(), GetDevice(), m_commandPool);
         vh::RenCreateDepthResources(GetPhysicalDevice(), GetDevice(), GetVmaAllocator(), GetSwapChain(), GetDepthImage());

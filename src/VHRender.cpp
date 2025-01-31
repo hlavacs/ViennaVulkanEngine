@@ -158,7 +158,9 @@ namespace vh {
 		std::string vertShaderPath, std::string fragShaderPath,
 		std::vector<VkVertexInputBindingDescription> bindingDescription, 
 		std::vector<VkVertexInputAttributeDescription> attributeDescriptions,
-		std::vector<VkDescriptorSetLayout> descriptorSetLayouts, Pipeline& graphicsPipeline) {
+		std::vector<VkDescriptorSetLayout> descriptorSetLayouts, 
+		std::vector<size_t> specializationConstants,
+		Pipeline& graphicsPipeline) {
 
 		std::vector<VkPipelineShaderStageCreateInfo> shaderStages;
 

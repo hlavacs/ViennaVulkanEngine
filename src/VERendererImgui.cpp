@@ -26,7 +26,7 @@ namespace vve {
  		vh::RenCreateDescriptorSetLayout( GetDevice(), {}, m_descriptorSetLayoutPerFrame );
 			
         vh::RenCreateGraphicsPipeline(GetDevice(), m_renderPass, "shaders\\Imgui\\vert.spv", "", {}, {},
-			 { m_descriptorSetLayoutPerFrame }, m_graphicsPipeline);
+			 { m_descriptorSetLayoutPerFrame }, {}, m_graphicsPipeline);
 
         vh::RenCreateDescriptorPool(GetDevice(), 1000, m_descriptorPool);
 

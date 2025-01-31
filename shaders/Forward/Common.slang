@@ -3,17 +3,6 @@ module common;
 
 //-----------------------------------------------------------------------
 
-export public struct Camera {
-    public float4x4 view;
-    public float4x4 proj;
-};
-
-export public struct UniformBufferFrame {
-    public Camera camera;
-};
-
-//-----------------------------------------------------------------------
-
 export public struct UniformBufferObjectTexture {
     public float4x4 model;
     public float4x4 modelInvTranspose;
@@ -45,11 +34,19 @@ export public struct Light {
     public float3 attenuation; // x = constant, y = linear, z = quadratic
 };
 
-[[vk::constant_id(0)]] const int numberLights = 5;
+[[vk::constant_id(0)]] const int sizeLightArray = 10;
 
-export public struct UniformBufferLights {
-    public Light lights[numberLights];
+export public struct Camera {
+    public float4x4 view;
+    public float4x4 proj;
 };
+
+export public struct UniformBufferFrame {
+    public Camera camera;
+    public float3 numberLights; // x = point, y = directional, z = spotlight
+    public Light lights[sizeLightArray];
+};
+
 
 float3 calculateLighting(Light light, float3 normal, float3 viewPos, float3 fragPos) {
     float3 result = float3(0.0);
