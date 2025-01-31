@@ -38,10 +38,11 @@ export public struct UniformBufferFrame {
     public Camera camera;
 };
 
-export public struct UniformBufferLights {
-    public Light lights[5];
-};
+[[vk::constant_id(0)]] const int numberLights = 5;
 
+export public struct UniformBufferLights {
+    public Light lights[numberLights];
+};
 
 float3 calculateLighting(Light light, float3 normal, float3 viewPos, float3 fragPos) {
     float3 result = float3(0.0);
