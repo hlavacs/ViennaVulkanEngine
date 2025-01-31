@@ -34,19 +34,17 @@ namespace vve {
 
 		m_cameraNodeHandle = m_registry.Insert(
 								Name(m_cameraNodeName),
-								ParentHandle{m_rootHandle},
-								Children{},
+								//Children{},
 								Position{glm::vec3(view[3])}, 
 								Rotation{mat3_t{1.0f}},
 								Scale{vec3_t{1.0f, 1.0f, 1.0f}}, 
 								LocalToParentMatrix{mat4_t{1.0f}}, 
 								LocalToWorldMatrix{mat4_t{1.0f}} );
 
-		m_registry.template Get<Children&>(m_rootHandle)().push_back(m_cameraNodeHandle);
+		SetParent( ObjectHandle{m_cameraNodeHandle}, ParentHandle{m_rootHandle} );
 
 		m_cameraHandle = m_registry.Insert(
 								Name(m_cameraName),
-								ParentHandle{m_cameraNodeHandle},
 								Camera{(real_t)window->GetWidth() / (real_t)window->GetHeight()}, 
 								Position{vec3_t{0.0f, 0.0f, 0.0f}}, 
 								Rotation{mat3_t{view}},
@@ -55,7 +53,19 @@ namespace vve {
 								LocalToWorldMatrix{mat4_t{1.0f}}, 
 								ViewMatrix{view} );
 
-		m_registry.template Get<Children&>(m_cameraNodeHandle)().push_back(m_cameraHandle);
+		SetParent( ObjectHandle{m_cameraHandle}, ParentHandle{m_cameraNodeHandle} );
+
+		auto lightHandle = m_registry.Insert(
+								Name{"Light0"},
+								PointLight{vh::Light{glm::vec3(10.0f, 10.0f, 10.0f)}},
+								Position{glm::vec3(0.0f, 0.0f, 2.0f)}, 
+								Rotation{mat3_t{1.0f}},
+								Scale{vec3_t{1.0f, 1.0f, 1.0f}}, 
+								LocalToParentMatrix{mat4_t{1.0f}}, 
+								LocalToWorldMatrix{mat4_t{1.0f}} );
+
+		SetParent( ObjectHandle{lightHandle}, ParentHandle{m_rootHandle} );
+
 		return false;
 	}
 

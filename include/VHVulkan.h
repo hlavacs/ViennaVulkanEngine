@@ -69,17 +69,17 @@ namespace vh {
 
 	//x==1...point, x==2...directional, x==3...spotlight
 	struct Light {
-	    alignas(16) glm::vec3 positionW;
-	    alignas(16) glm::vec3 directionW;
-	    alignas(16) glm::vec3 color; 
-	    alignas(16) glm::vec4 param; //x=type, y=intensity, z=power, w=ambient
-		alignas(16) glm::vec3 attenuation; //x=constant, y=linear, z=quadratic
+	    alignas(16) glm::vec3 positionW{100.0f, 100.0f, 100.0f};
+	    alignas(16) glm::vec3 directionW{1.0f, 1.0f, 1.0f};
+	    alignas(16) glm::vec3 color{1.0f, 1.0f, 1.0f}; 
+	    alignas(16) glm::vec4 param{1.0f, 1.0f, 1.0, 1.0f}; //x=type, y=intensity, z=power, w=ambient
+		alignas(16) glm::vec3 attenuation{1.0f, 0.0f, 0.0f}; //x=constant, y=linear, z=quadratic
 	};
 
 	const int MAX_LIGHTS = 10;
 	struct UniformBufferFrame {
 	    alignas(16) CameraMatrix camera;
-		alignas(16) glm::ivec3 numLights{0,1,0}; //x=number point lights, y=number directional lights, z=number spotlights
+		alignas(16) glm::ivec3 numLights{1,0,0}; //x=number point lights, y=number directional lights, z=number spotlights
 	    alignas(16) Light lights[MAX_LIGHTS];
 	};
 

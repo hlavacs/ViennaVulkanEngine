@@ -27,6 +27,9 @@ namespace vve {
 	using Children = vsty::strong_type_t<std::vector<vecs::Handle>, vsty::counter<>>;
 	using MeshName = vsty::strong_type_t<std::string, vsty::counter<>>;
 	using TextureName = vsty::strong_type_t<std::string, vsty::counter<>>;
+	using PointLight = vsty::strong_type_t<vh::Light, vsty::counter<>>;
+	using DirectionalLight = vsty::strong_type_t<vh::Light, vsty::counter<>>;
+	using SpotLight = vsty::strong_type_t<vh::Light, vsty::counter<>>;
 	
 	//-------------------------------------------------------------------------------------------------------
 
