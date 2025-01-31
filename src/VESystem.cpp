@@ -13,6 +13,7 @@ namespace vve {
     System::MsgAnnounce::MsgAnnounce(System* s) : MsgBase{"ANNOUNCE", s} {};
     System::MsgExtensions::MsgExtensions(System* s, std::vector<const char*> instExt, std::vector<const char*> devExt) : MsgBase{"EXTENSIONS", s}, m_instExt{instExt}, m_devExt{devExt} {};
    	System::MsgInit::MsgInit(System* s, System* r) : MsgBase{"INIT", s, r} {};
+   	System::MsgLoadLevel::MsgLoadLevel(System* s, System* r, std::string level) : MsgBase{"LOAD_LEVEL", s, r}, m_level{level} {};
     System::MsgFrameStart::MsgFrameStart(System* s, System* r, double dt) : MsgBase{"FRAME_START", s, r, dt} {};
     System::MsgPollEvents::MsgPollEvents(System* s, System* r, double dt) : MsgBase{"POLL_EVENTS", s, r, dt} {};
     System::MsgUpdate::MsgUpdate(System* s, System* r, double dt): MsgBase{"UPDATE", s, r, dt} {}; 

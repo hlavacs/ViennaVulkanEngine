@@ -38,6 +38,7 @@ namespace vve {
         "ANNOUNCE", //System announce themselves
         "EXTENSIONS", //System announce extensions they need
         "INIT",			//initialize the system
+		"LOAD_LEVEL",	//Load a level
         "FRAME_START", //
         "POLL_EVENTS", //
         "UPDATE", //
@@ -93,6 +94,7 @@ namespace vve {
 	    struct MsgAnnounce : public MsgBase { MsgAnnounce(System* s); };
 	    struct MsgExtensions : public MsgBase { MsgExtensions(System* s, std::vector<const char*> instExt, std::vector<const char*> devExt ); std::vector<const char*> m_instExt; std::vector<const char*> m_devExt;};
 	    struct MsgInit : public MsgBase { MsgInit(System* s, System* r=nullptr); };
+	    struct MsgLoadLevel : public MsgBase { MsgLoadLevel(System* s, System* r, std::string level); std::string m_level;};
 	    struct MsgFrameStart : public MsgBase { MsgFrameStart(System* s, System* r, double dt); };
 	    struct MsgPollEvents : public MsgBase { MsgPollEvents(System* s, System* r, double dt); };
 	    struct MsgUpdate : public MsgBase { MsgUpdate(System* s, System* r, double dt); double m_dt; };

@@ -12,6 +12,7 @@ public:
     MyGUI( vve::Engine& engine ) : vve::System("MyGUI", engine ) {
 
 		m_engine.RegisterCallback( { 
+			//{this,      0, "LOAD_LEVEL", [this](Message& message){ return OnLoadLevel(message);} },
 			{this, -10000, "RECORD_NEXT_FRAME", [this](Message& message){ return OnRecordNextFrame(message);} },
 			{this,      0, "SDL_KEY_DOWN", [this](Message& message){ return OnKeyDown(message);} },
 			{this,      0, "SDL_KEY_REPEAT", [this](Message& message){ return OnKeyRepeat(message);} },
@@ -20,6 +21,27 @@ public:
     };
     
     ~MyGUI() {};
+
+	bool OnLoadLevel( Message message ) {
+		auto msg = message.template GetData<vve::System::MsgLoadLevel>();	
+		std::cout << "Loading level: " << msg.m_level << std::endl;
+
+		auto handle = m_registry.Insert(
+								vve::Name{msg.m_level},
+								vve::Position{ { 0.0f, 0.0f, 0.0f } }, 
+								vve::Rotation{vve::Rotation{glm::rotate(glm::mat4(1.0f), 3.14152f, glm::vec3(0.0f,0.0f,1.0f))}}, 
+								vve::Scale{ { 1000.0f, 1000.0f, 1000.0f } } );
+
+		m_engine.SendMessage( 
+					MsgSceneLoad{
+						this, 
+						nullptr, 
+						vve::ObjectHandle{handle}, 
+						vve::ParentHandle{}, 
+						vve::Name{"assets\\test\\plane\\plane_t_n_s.obj"} });
+
+		return false;
+	};
 
     float clear_color[3]{ 0.45f, 0.55f, 0.60f};
 

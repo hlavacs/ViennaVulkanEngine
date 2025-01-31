@@ -30,7 +30,7 @@ namespace vve {
 
 		// Create camera
 		auto window = m_engine.GetWindow(m_windowName);
-        auto view = glm::inverse( glm::lookAt(glm::vec3(4.0f, 1.9f, 3.8f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f)) );
+        auto view = glm::inverse( glm::lookAt(glm::vec3(0.0f, -2.0f, 3.5f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f)) );
 
 		m_cameraNodeHandle = m_registry.Insert(
 								Name(m_cameraNodeName),
@@ -90,19 +90,33 @@ namespace vve {
 
 	bool SceneManager::OnSceneLoad(Message message) {
 		auto& msg = message.template GetData<MsgSceneLoad>();
+		ObjectHandle oHandle = msg.m_object;
+		assert( oHandle().IsValid() );
 		ParentHandle pHandle = msg.m_parent;
-		if( !pHandle().IsValid() ) pHandle = { m_rootHandle };
+		if( !pHandle().IsValid() ) { pHandle = { m_rootHandle }; }
+		SetParent(oHandle, pHandle);
+
+		auto exists = [&]<typename T>( vecs::Handle handle, T&& component ) {
+			if( !m_registry.template Has<T>(handle) ) { 
+				m_registry.template Put(pHandle, std::forward<T>(component)); 
+			}
+		};
+
+		exists(oHandle, Name{"Node0"});
+		exists(oHandle, Position{vec3_t{0.0f}});
+		exists(oHandle, Rotation{mat4_t{1.0f}});
+		exists(oHandle, Scale{vec3_t{1.0f}});
+		exists(oHandle, LocalToParentMatrix{mat4_t{1.0f}});
+		exists(oHandle, LocalToWorldMatrix{mat4_t{1.0f}});
 
 		std::filesystem::path filepath = msg.m_sceneName();
 		auto directory = filepath.parent_path();
-
-		static float x = 0.0f;
-		uint64_t id = 0;
-		ProcessNode(msg.m_scene->mRootNode, pHandle, directory, msg.m_scene, id, x);
+		uint64_t id = 1;
+		ProcessNode(msg.m_scene->mRootNode, ParentHandle(oHandle), directory, msg.m_scene, id);
 		return false;
 	}
 
-	void SceneManager::ProcessNode(aiNode* node, ParentHandle parent, std::filesystem::path& directory, const aiScene* scene, uint64_t& id, float& x) {
+	void SceneManager::ProcessNode(aiNode* node, ParentHandle parent, std::filesystem::path& directory, const aiScene* scene, uint64_t& id) {
 		auto transform = node->mTransformation;
 		aiVector3D scaling, position;
     	aiQuaternion rotation;
@@ -116,11 +130,9 @@ namespace vve {
 								node->mName.C_Str()[0] != 0 ? Name{node->mName.C_Str()} : Name{"Node" + std::to_string(id++)},
 								parent,
 								Children{},
-								Position{ { position.x, position.y + x, position.z } }, Rotation{rotMat3x3}, Scale{{ scaling.x, scaling.y, scaling.z }},
+								Position{ { position.x, position.y, position.z } }, Rotation{rotMat3x3}, Scale{{ scaling.x, scaling.y, scaling.z }},
 								LocalToParentMatrix{mat4_t{1.0f}}, 
 								LocalToWorldMatrix{mat4_t{1.0f}});
-
-		x += 2.0f;
 
 		if(parent().IsValid()) {
 			auto& children = m_registry.Get<Children&>(parent);
@@ -162,22 +174,27 @@ namespace vve {
 		}
 
 		for (unsigned int i = 0; i < node->mNumChildren; i++) {
-			float xx=0.0f;
-			ProcessNode(node->mChildren[i], ParentHandle{nHandle}, directory, scene, id, xx);
+			ProcessNode(node->mChildren[i], ParentHandle{nHandle}, directory, scene, id);
 		}
 	}
 
+
     bool SceneManager::OnObjectSetParent(Message message) {
 		auto msg = message.template GetData<MsgObjectSetParent>();
-		auto oHandle = msg.m_object;
-		auto pHandle = msg.m_parent;
-		auto& parent = m_registry.template Get<ParentHandle&>(msg.m_object);
-		auto& childrenOld = m_registry.template Get<Children&>(parent());
-		auto& childrenNew = m_registry.template Get<Children&>(msg.m_parent);
-		childrenOld().erase(std::remove(childrenOld().begin(), childrenOld().end(), oHandle), childrenOld().end());
+		SetParent(msg.m_object, msg.m_parent);
+		return false;
+	}
+
+	void SceneManager::SetParent(ObjectHandle oHandle, ParentHandle pHandle) {
+		auto& parent = m_registry.template Get<ParentHandle&>(oHandle);
+		if( parent().IsValid() ) {
+			auto& childrenOld = m_registry.template Get<Children&>(parent());
+			childrenOld().erase(std::remove(childrenOld().begin(), childrenOld().end(), oHandle), childrenOld().end());
+		}
+
+		auto& childrenNew = m_registry.template Get<Children&>(pHandle);
 		childrenNew().push_back(oHandle);
 		parent = pHandle;
-		return false;
 	}
 
 

@@ -48,11 +48,10 @@ namespace vve {
 		void PrintCallbacks();
 
 	protected:
-		void LoadLevel( std::string levelName );
-		void CreateWindow();
-		void CreateRenderer();
-		void CreateSystems();
-		void CreateGUI();
+		virtual void CreateWindow();
+		virtual void CreateRenderer();
+		virtual void CreateSystems();
+		virtual void CreateGUI();
 
 		std::unordered_map<std::string, std::unique_ptr<System>> m_systems{};
 

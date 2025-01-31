@@ -57,11 +57,6 @@ namespace vve {
 			}
 		}
 	}
-
-	void Engine::LoadLevel( std::string levelName ) {
-		// Load level
-		std::cout << "Loading level: " << levelName << std::endl;
-	};
 	
 	void Engine::CreateWindow(){
 		RegisterSystem(std::make_unique<WindowSDL>(m_windowName, *this, m_windowName, 800, 600 ) );
@@ -97,7 +92,7 @@ namespace vve {
 			CreateGUI();		
 			SendMessage( MsgAnnounce{this} );
 			SendMessage( MsgInit{this} );
-			LoadLevel("");
+			SendMessage( MsgLoadLevel{this, nullptr, ""} );
 		}
 		m_initialized = true;
 		m_last = std::chrono::high_resolution_clock::now();

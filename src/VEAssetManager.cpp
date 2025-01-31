@@ -52,6 +52,9 @@ namespace vve {
 		    }
 
 		    aiColor3D color;
+		    if (material->Get(AI_MATKEY_COLOR_AMBIENT, color) == AI_SUCCESS) {
+		        std::cout << "Ambient Color: " << color.r << ", " << color.g << ", " << color.b << std::endl;
+		    }
 		    if (material->Get(AI_MATKEY_COLOR_DIFFUSE, color) == AI_SUCCESS) {
 		        std::cout << "Diffuse Color: " << color.r << ", " << color.g << ", " << color.b << std::endl;
 		    }

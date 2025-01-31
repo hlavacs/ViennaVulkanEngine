@@ -61,8 +61,6 @@ namespace vve {
 				size_t pos2 = filename.find("_vert.spv");
 				auto pri = std::stoi( filename.substr(1, pos1-1) );
 				std::string type = filename.substr(pos1+1, pos2 - pos1 - 1);
-
-				std::cout << "Pipeline: " << filename << " Priority: " << pri << " Type: " << type << std::endl;
 				
 				vh::Pipeline graphicsPipeline;
 
@@ -86,6 +84,9 @@ namespace vve {
 					{ m_descriptorSetLayoutPerFrame, descriptorSetLayoutPerObject }, graphicsPipeline);
 				
 				m_pipelinesPerType[pri] = { type, descriptorSetLayoutPerObject, graphicsPipeline };
+
+				std::cout << "Pipeline (" << graphicsPipeline.m_pipeline << "): " << filename << " Priority: " << pri << " Type: " << type << std::endl;
+
 			}
 		}
 
@@ -156,7 +157,8 @@ namespace vve {
 		for( auto& pipeline : m_pipelinesPerType) {
 			for( auto[handle, name, ghandle, LtoW, uniformBuffers, descriptorsets] : 
 				m_registry.template GetView<vecs::Handle, Name, MeshHandle, LocalToWorldMatrix&, vh::UniformBuffers&, 
-					vh::DescriptorSet&>({(size_t)pipeline.second.m_graphicsPipeline.m_pipeline}) ) {
+					vh::DescriptorSet&>
+						({(size_t)pipeline.second.m_graphicsPipeline.m_pipeline}) ) {
 
 				vh::UniformBufferObject ubo{};
 				ubo.model = LtoW(); 		
