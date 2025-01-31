@@ -45,9 +45,9 @@ namespace vh {
     };
 
 	struct Color {
-		glm::vec4 m_ambientColor{0.0f};
-		glm::vec4 m_diffuseColor{0.0f};
-		glm::vec4 m_specularColor{0.0f};
+		alignas(16) glm::vec4 m_ambientColor{0.0f};
+		alignas(16) glm::vec4 m_diffuseColor{0.0f};
+		alignas(16) glm::vec4 m_specularColor{0.0f};
 	};
 
 	struct UniformBufferObject {
@@ -56,9 +56,23 @@ namespace vh {
 		alignas(16) vh::Color color{}; //can be used as parameter for shader		
 	};
 	
-	struct UniformBufferFrame {
+	struct CameraMatrix {
 	    alignas(16) glm::mat4 view;
 	    alignas(16) glm::mat4 proj;
+	};
+
+	//x==1...point, x==2...directional, x==3...spotlight
+	struct Light {
+	    alignas(16) glm::vec3 positionW;
+	    alignas(16) glm::vec3 directionW;
+	    alignas(16) glm::vec3 color; 
+	    alignas(16) glm::vec4 param; //x=type, y=intensity, z=power, w=ambient
+		alignas(16) glm::vec3 attenuation; //x=constant, y=linear, z=quadratic
+	};
+
+	struct UniformBufferFrame {
+	    alignas(16) CameraMatrix camera;
+	    alignas(16) Light lights[5];
 	};
 
 	struct UniformBuffers {

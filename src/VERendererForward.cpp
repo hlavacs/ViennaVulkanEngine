@@ -144,8 +144,8 @@ namespace vve {
 
 		auto [view, proj] = *m_registry.template GetView<ViewMatrix&, ProjectionMatrix&>().begin();
 		vh::UniformBufferFrame ubc;
-		ubc.view = view;
-        ubc.proj = proj;
+		ubc.camera.view = view;
+        ubc.camera.proj = proj;
 		memcpy(m_uniformBuffersPerFrame.m_uniformBuffersMapped[GetCurrentFrame()], &ubc, sizeof(ubc));
 
 		vkResetCommandBuffer(m_commandBuffers[GetCurrentFrame()],  0);

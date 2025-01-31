@@ -13,7 +13,6 @@ namespace vve {
 		auto Matrix() -> mat4_t { mat4_t proj = glm::perspective(glm::radians(m_fov), m_aspect, m_near, m_far); proj[1][1] *= -1; return proj; }
 	};
 	
-
 	struct VectorDefaultValue { static constexpr auto value = vec3_t{INFINITY, INFINITY, INFINITY}; };
 	struct MaxtrixDefaultValue { static constexpr auto value = mat4_t{INFINITY}; };
 

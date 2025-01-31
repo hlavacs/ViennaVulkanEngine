@@ -13,7 +13,7 @@ struct VertexStageOutput {
 
 // binding 0,1 means that the uniform buffer is bound to binding 0, set 0
 [[vk::binding(0,0)]]
-ParameterBlock<UniformBufferCamera> gParamsFrame;
+ParameterBlock<UniformBufferFrame> gParamsFrame;
 
 // binding 0,0 means that the uniform buffer is bound to binding 0, set 1
 [[vk::binding(0,1)]]
@@ -27,13 +27,13 @@ VertexStageOutput vertexMain(
     float3 tangent : TANGENT)
 {
     float3 worldPosition = mul(gParamsObject.model, float4(position, 1.0)).xyz;
-    float3 viewPosition = mul(gParamsFrame.view, float4(worldPosition, 1.0)).xyz;   
+    float3 viewPosition = mul(gParamsFrame.camera.view, float4(worldPosition, 1.0)).xyz;   
 
     VertexStageOutput output;
     output.coarseVertex.uv = uv;
     output.coarseVertex.normal = mul(gParamsObject.modelInvTranspose, float4(normal, 1.0)).xyz;
     output.coarseVertex.tangent = mul(gParamsObject.model, float4(tangent, 1.0)).xyz;
-    output.sv_position = mul(gParamsFrame.proj, float4(viewPosition, 1.0));
+    output.sv_position = mul(gParamsFrame.camera.proj, float4(viewPosition, 1.0));
 
     return output;
 }
