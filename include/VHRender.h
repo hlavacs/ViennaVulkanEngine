@@ -23,7 +23,7 @@ namespace vh {
 		std::vector<VkVertexInputBindingDescription> bindingDescription, 
 		std::vector<VkVertexInputAttributeDescription> attributeDescriptions,
 		std::vector<VkDescriptorSetLayout> descriptorSetLayout,
-		std::vector<size_t> specializationConstants,
+		std::vector<int32_t> specializationConstants,
 		Pipeline& graphicsPipeline);
 
     void RenCreateFramebuffers(VkDevice device, SwapChain& swapChain, DepthImage& depthImage, VkRenderPass renderPass);

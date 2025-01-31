@@ -76,10 +76,11 @@ namespace vh {
 		alignas(16) glm::vec3 attenuation; //x=constant, y=linear, z=quadratic
 	};
 
+	const int MAX_LIGHTS = 10;
 	struct UniformBufferFrame {
 	    alignas(16) CameraMatrix camera;
-		alignas(16) glm::ivec3 numLights{0,0,0}; //x=number point lights, y=number directional lights, z=number spotlights
-	    alignas(16) Light lights[1];
+		alignas(16) glm::ivec3 numLights{0,1,0}; //x=number point lights, y=number directional lights, z=number spotlights
+	    alignas(16) Light lights[MAX_LIGHTS];
 	};
 
 	struct UniformBuffers {

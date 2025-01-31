@@ -4,7 +4,6 @@ namespace vve
 {
     class RendererForward : public Renderer {
 
-
 		struct PipelinePerType {
 			std::string m_type;
 			VkDescriptorSetLayout m_descriptorSetLayoutPerObject;
@@ -44,7 +43,6 @@ namespace vve
 	    vh::Pipeline m_graphicsPipeline;
 
 		std::map<int, PipelinePerType> m_pipelinesPerType;
-
 
 	    VkRenderPass m_renderPass;
 	    VkDescriptorPool m_descriptorPool;    

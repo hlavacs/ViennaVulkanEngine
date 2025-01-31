@@ -155,12 +155,25 @@ namespace vh {
     }
 
     void RenCreateGraphicsPipeline(VkDevice device, VkRenderPass renderPass, 
-		std::string vertShaderPath, std::string fragShaderPath,
-		std::vector<VkVertexInputBindingDescription> bindingDescription, 
-		std::vector<VkVertexInputAttributeDescription> attributeDescriptions,
-		std::vector<VkDescriptorSetLayout> descriptorSetLayouts, 
-		std::vector<size_t> specializationConstants,
-		Pipeline& graphicsPipeline) {
+			std::string vertShaderPath, std::string fragShaderPath,
+			std::vector<VkVertexInputBindingDescription> bindingDescription, 
+			std::vector<VkVertexInputAttributeDescription> attributeDescriptions,
+			std::vector<VkDescriptorSetLayout> descriptorSetLayouts, 
+			std::vector<int32_t> specializationConstants,
+			Pipeline& graphicsPipeline) {
+
+	    // Specialization constant setup
+	    std::vector<VkSpecializationMapEntry> specializationEntries;
+		for( uint32_t i=0; i<specializationConstants.size(); i++ ) {
+			specializationEntries.push_back( 
+				VkSpecializationMapEntry{.constantID = i, .offset = i * (uint32_t)sizeof(int32_t), .size = (uint32_t)sizeof(int32_t)} );
+		}
+		
+	    VkSpecializationInfo specializationInfo{};
+	    specializationInfo.mapEntryCount = specializationEntries.size();
+	    specializationInfo.pMapEntries = specializationEntries.data();
+	    specializationInfo.dataSize = sizeof(int32_t) * specializationConstants.size();
+	    specializationInfo.pData = specializationConstants.data();
 
 		std::vector<VkPipelineShaderStageCreateInfo> shaderStages;
 
@@ -171,6 +184,7 @@ namespace vh {
         vertShaderStageInfo.stage = VK_SHADER_STAGE_VERTEX_BIT;
         vertShaderStageInfo.module = vertShaderModule;
         vertShaderStageInfo.pName = "main";
+		vertShaderStageInfo.pSpecializationInfo = &specializationInfo;
 		shaderStages.push_back(vertShaderStageInfo);
 
 		VkShaderModule fragShaderModule{};
@@ -182,6 +196,7 @@ namespace vh {
 	        fragShaderStageInfo.stage = VK_SHADER_STAGE_FRAGMENT_BIT;
 	        fragShaderStageInfo.module = fragShaderModule;
 	        fragShaderStageInfo.pName = "main";
+			vertShaderStageInfo.pSpecializationInfo = &specializationInfo;
 			shaderStages.push_back(fragShaderStageInfo);
 		}
 

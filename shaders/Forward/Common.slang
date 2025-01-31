@@ -34,7 +34,7 @@ export public struct Light {
     public float3 attenuation; // x = constant, y = linear, z = quadratic
 };
 
-[[vk::constant_id(0)]] const int sizeLightArray = 10;
+[[vk::constant_id(0)]] const int MAX_LIGHTS = 10;
 
 export public struct Camera {
     public float4x4 view;
@@ -43,8 +43,8 @@ export public struct Camera {
 
 export public struct UniformBufferFrame {
     public Camera camera;
-    public int3 numberLights; // x = point, y = directional, z = spotlight
-    public Light lights[sizeLightArray];
+    public int3   numberLights; // x = point, y = directional, z = spotlight
+    public Light  lights[MAX_LIGHTS];
 };
 
 //-----------------------------------------------------------------------
@@ -114,7 +114,7 @@ float3 calculateSpotLight(Light light, float3 normal, float3 viewPos, float3 fra
 	return attenuation * intensity * (ambient + diffuse + specular);
 }
 
-float3 calculateLighting(Light light[sizeLightArray], int3 numberLights, float3 normal, float3 viewPos, float3 fragPos) {
+float3 calculateLighting(Light light[MAX_LIGHTS], int3 numberLights, float3 normal, float3 viewPos, float3 fragPos) {
     float3 result = float3(0.0);
 
     /*float3 ambient = light.param.w * light.color;
