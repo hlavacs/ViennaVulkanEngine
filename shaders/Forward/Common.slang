@@ -28,10 +28,22 @@ export public struct Camera {
     public float4x4 proj;
 };
 
-export public struct UniformBufferObject {
+/*export public struct UniformBufferObject {
     public float4x4 model;
     public float4x4 modelInvTranspose;
     public Color    color;
+};*/
+
+export public struct UniformBufferObjectTexture {
+    public float4x4 model;
+    public float4x4 modelInvTranspose;
+    public float2 	uvscale;
+};
+
+export public struct UniformBufferObjectColor {
+    public float4x4 model;
+    public float4x4 modelInvTranspose;
+    public Color color;
 };
 
 export public struct UniformBufferFrame {

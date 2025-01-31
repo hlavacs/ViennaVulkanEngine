@@ -41,7 +41,6 @@ namespace vh {
         ComEndSingleTimeCommands(device, graphicsQueue, commandPool, commandBuffer);
     }
 
-
   	void BufCreateTextureImage(VkPhysicalDevice physicalDevice, VkDevice device, VmaAllocator vmaAllocator, 
   			VkQueue graphicsQueue, VkCommandPool commandPool, void* pixels, int texWidth, int texHeight, 
 			size_t imageSize, vh::Texture& texture) {

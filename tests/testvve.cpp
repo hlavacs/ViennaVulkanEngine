@@ -12,7 +12,7 @@ public:
     MyGUI( vve::Engine& engine ) : vve::System("MyGUI", engine ) {
 
 		m_engine.RegisterCallback( { 
-			//{this,      0, "LOAD_LEVEL", [this](Message& message){ return OnLoadLevel(message);} },
+			{this,      0, "LOAD_LEVEL", [this](Message& message){ return OnLoadLevel(message);} },
 			{this, -10000, "RECORD_NEXT_FRAME", [this](Message& message){ return OnRecordNextFrame(message);} },
 			{this,      0, "SDL_KEY_DOWN", [this](Message& message){ return OnKeyDown(message);} },
 			{this,      0, "SDL_KEY_REPEAT", [this](Message& message){ return OnKeyRepeat(message);} },
@@ -25,12 +25,15 @@ public:
 	bool OnLoadLevel( Message message ) {
 		auto msg = message.template GetData<vve::System::MsgLoadLevel>();	
 		std::cout << "Loading level: " << msg.m_level << std::endl;
+		std::string level = std::string("Level: ") + msg.m_level;
 
 		auto handle = m_registry.Insert(
-								vve::Name{msg.m_level},
-								vve::Position{ { 0.0f, 0.0f, 0.0f } }, 
-								vve::Rotation{vve::Rotation{glm::rotate(glm::mat4(1.0f), 3.14152f, glm::vec3(0.0f,0.0f,1.0f))}}, 
-								vve::Scale{ { 1000.0f, 1000.0f, 1000.0f } } );
+								vve::Name{level},
+								vve::Position{ { 0.0f, 1.0f, -1.0f } },
+								vve::Rotation{ mat3_t { glm::rotate(glm::mat4(1.0f), 3.14152f / 2.0f, glm::vec3(1.0f,0.0f,0.0f)) }}, 
+								vve::Scale{ { 1000.0f, 1000.0f, 1000.0f } },
+								vve::UVScale{ { 1000.0f, 1000.0f } }
+						);
 
 		m_engine.SendMessage( 
 					MsgSceneLoad{

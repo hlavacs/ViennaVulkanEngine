@@ -8,7 +8,7 @@ struct CoarseVertex {
 
 // binding 0,1 means that the uniform buffer is bound to binding 0, set 1
 [[vk::binding(0, 1)]]
-ParameterBlock<UniformBufferObject> gParamsObject;
+ParameterBlock<UniformBufferObjectTexture> gParamsObject;
 
 // binding 1,1 means that the uniform buffer is bound to binding 1, set 1
 [[vk::binding(1,1)]]

@@ -104,7 +104,7 @@ namespace vve {
 
 		exists(oHandle, Name{"Node0"});
 		exists(oHandle, Position{vec3_t{0.0f}});
-		exists(oHandle, Rotation{mat4_t{1.0f}});
+		exists(oHandle, Rotation{mat3_t{1.0f}});
 		exists(oHandle, Scale{vec3_t{1.0f}});
 		exists(oHandle, LocalToParentMatrix{mat4_t{1.0f}});
 		exists(oHandle, LocalToWorldMatrix{mat4_t{1.0f}});
@@ -128,16 +128,14 @@ namespace vve {
 
 		auto nHandle = m_registry.Insert(
 								node->mName.C_Str()[0] != 0 ? Name{node->mName.C_Str()} : Name{"Node" + std::to_string(id++)},
-								parent,
 								Children{},
-								Position{ { position.x, position.y, position.z } }, Rotation{rotMat3x3}, Scale{{ scaling.x, scaling.y, scaling.z }},
+								Position{ { position.x, position.y, position.z } }, 
+								Rotation{rotMat3x3}, 
+								Scale{{ scaling.x, scaling.y, scaling.z }},
 								LocalToParentMatrix{mat4_t{1.0f}}, 
 								LocalToWorldMatrix{mat4_t{1.0f}});
 
-		if(parent().IsValid()) {
-			auto& children = m_registry.Get<Children&>(parent);
-			children().push_back(nHandle);
-		}
+		SetParent(ObjectHandle{nHandle}, parent);
 
 		if ( node->mNumMeshes > 0) {
 		    auto mesh = scene->mMeshes[node->mMeshes[0]];

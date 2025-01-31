@@ -8,7 +8,7 @@ namespace vve {
 	struct Camera {
 		real_t m_aspect = 1.0f;
 		real_t m_near = 0.1f;
-		real_t m_far = 100.0f;
+		real_t m_far = 1000.0f;
 		real_t m_fov = 45.0f;
 		auto Matrix() -> mat4_t { mat4_t proj = glm::perspective(glm::radians(m_fov), m_aspect, m_near, m_far); proj[1][1] *= -1; return proj; }
 	};
@@ -19,6 +19,7 @@ namespace vve {
 	using Position = vsty::strong_type_t<vec3_t, vsty::counter<>, VectorDefaultValue >;
 	using Rotation = vsty::strong_type_t<mat3_t, vsty::counter<>, MaxtrixDefaultValue>;
 	using Scale = vsty::strong_type_t<vec3_t, vsty::counter<>, VectorDefaultValue>;
+	using UVScale = vsty::strong_type_t<vec2_t, vsty::counter<>>;
 	using LocalToParentMatrix = vsty::strong_type_t<mat4_t, vsty::counter<>, MaxtrixDefaultValue>;
 	using LocalToWorldMatrix = vsty::strong_type_t<mat4_t, vsty::counter<>, MaxtrixDefaultValue>;
 	using ViewMatrix = vsty::strong_type_t<mat4_t, vsty::counter<>, MaxtrixDefaultValue>;

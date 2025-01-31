@@ -45,17 +45,23 @@ namespace vh {
     };
 
 	struct Color {
-		alignas(16) glm::vec4 m_ambientColor{0.0f};
-		alignas(16) glm::vec4 m_diffuseColor{0.0f};
+		alignas(16) glm::vec4 m_ambientColor{0.0f}; 
+		alignas(16) glm::vec4 m_diffuseColor{0.0f};	
 		alignas(16) glm::vec4 m_specularColor{0.0f};
 	};
 
-	struct UniformBufferObject {
+	struct UniformBufferObjectColor {
 	    alignas(16) glm::mat4 model;
 	    alignas(16) glm::mat4 modelInverseTranspose;
-		alignas(16) vh::Color color{}; //can be used as parameter for shader		
+		alignas(16) vh::Color color{}; 		
 	};
-	
+
+	struct UniformBufferObjectTexture {
+	    alignas(16) glm::mat4 model;
+	    alignas(16) glm::mat4 modelInverseTranspose;
+		alignas(16) glm::vec2 uvScale; 		
+	};
+
 	struct CameraMatrix {
 	    alignas(16) glm::mat4 view;
 	    alignas(16) glm::mat4 proj;

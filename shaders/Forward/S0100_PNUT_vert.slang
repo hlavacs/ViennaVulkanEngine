@@ -17,7 +17,7 @@ ParameterBlock<UniformBufferFrame> gParamsFrame;
 
 // binding 0,0 means that the uniform buffer is bound to binding 0, set 1
 [[vk::binding(0,1)]]
-ParameterBlock<UniformBufferObject> gParamsObject;
+ParameterBlock<UniformBufferObjectTexture> gParamsObject;
 
 [shader("vertex")]
 VertexStageOutput vertexMain(
