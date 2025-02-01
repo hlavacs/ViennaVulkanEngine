@@ -12,7 +12,17 @@ namespace vve {
 		real_t m_fov = 45.0f;
 		auto Matrix() -> mat4_t { mat4_t proj = glm::perspective(glm::radians(m_fov), m_aspect, m_near, m_far); proj[1][1] *= -1; return proj; }
 	};
-	
+
+	using TextureHandle = vsty::strong_type_t<vecs::Handle, vsty::counter<>>; //need this to use Texture as a unique comonent
+	using MeshHandle = vsty::strong_type_t<vecs::Handle, vsty::counter<>>; //need this to use Mesh as a unique component
+	using CameraHandle = vsty::strong_type_t<vecs::Handle, vsty::counter<>>; //need this to use Camera as a unique component
+	using NodeHandle = vsty::strong_type_t<vecs::Handle, vsty::counter<>>; //need this to use Node as a unique component	
+	using Children = vsty::strong_type_t<std::vector<vecs::Handle>, vsty::counter<>>;
+
+	using Filename = vsty::strong_type_t<std::string, vsty::counter<>>; //need this to use Filename as a unique component
+	using MeshName = vsty::strong_type_t<std::string, vsty::counter<>>;
+	using TextureName = vsty::strong_type_t<std::string, vsty::counter<>>;
+
 	struct VectorDefaultValue { static constexpr auto value = vec3_t{INFINITY, INFINITY, INFINITY}; };
 	struct MaxtrixDefaultValue { static constexpr auto value = mat4_t{INFINITY}; };
 
@@ -24,9 +34,7 @@ namespace vve {
 	using LocalToWorldMatrix = vsty::strong_type_t<mat4_t, vsty::counter<>, MaxtrixDefaultValue>;
 	using ViewMatrix = vsty::strong_type_t<mat4_t, vsty::counter<>, MaxtrixDefaultValue>;
 	using ProjectionMatrix = vsty::strong_type_t<mat4_t, vsty::counter<>, MaxtrixDefaultValue>;
-	using Children = vsty::strong_type_t<std::vector<vecs::Handle>, vsty::counter<>>;
-	using MeshName = vsty::strong_type_t<std::string, vsty::counter<>>;
-	using TextureName = vsty::strong_type_t<std::string, vsty::counter<>>;
+
 	using PointLight = vsty::strong_type_t<vh::Light, vsty::counter<>>;
 	using DirectionalLight = vsty::strong_type_t<vh::Light, vsty::counter<>>;
 	using SpotLight = vsty::strong_type_t<vh::Light, vsty::counter<>>;
@@ -52,10 +60,10 @@ namespace vve {
 		void ProcessNode(aiNode* node, ParentHandle parent, std::filesystem::path& directory, const aiScene* scene, uint64_t& id);
 		void SetParent(ObjectHandle object, ParentHandle parent);
 
-		std::shared_mutex m_mutex;
-		vecs::Handle m_cameraHandle;
-		vecs::Handle m_cameraNodeHandle;
-		vecs::Handle m_rootHandle;
+		//std::shared_mutex m_mutex;
+		CameraHandle m_cameraHandle;
+		NodeHandle m_cameraNodeHandle;
+		NodeHandle m_rootHandle;
     };
 
 };  // namespace vve

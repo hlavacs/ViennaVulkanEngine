@@ -11,7 +11,7 @@ namespace vve {
 		engine.RegisterCallback( { 
 			{this,                            2000, "INIT", [this](Message& message){ return OnInit(message);} },
 			{this,                               0, "SCENE_LOAD", [this](Message& message){ return OnSceneLoad(message);} },
-			{this, std::numeric_limits<int>::max(), "SCENE_LOAD", [this](Message& message){ return OnSceneLoad2(message);} },
+			{this, std::numeric_limits<int>::max(), "SCENE_LOAD", [this](Message& message){ return OnSceneRelease(message);} },
 			{this,                               0, "OBJECT_CREATE", [this](Message& message){ return OnObjectCreate(message);} },
 			{this, std::numeric_limits<int>::max(), "TEXTURE_CREATE",   [this](Message& message){ return OnTextureCreate(message);} },
 			{this,                               0, "QUIT", [this](Message& message){ return OnQuit(message);} },
@@ -129,7 +129,7 @@ namespace vve {
 		return false;
 	}
 
-    bool AssetManager::OnSceneLoad2(Message& message) {
+    bool AssetManager::OnSceneRelease(Message& message) {
 		auto msg = message.template GetData<MsgSceneLoad>();
 		aiReleaseImport(msg.m_scene);
 		return true;

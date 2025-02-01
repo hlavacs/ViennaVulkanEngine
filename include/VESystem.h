@@ -17,9 +17,6 @@ namespace vve {
 	using Name = vsty::strong_type_t<std::string, vsty::counter<>>;
 	using ObjectHandle = vsty::strong_type_t<vecs::Handle, vsty::counter<>>;
 	using ParentHandle = vsty::strong_type_t<vecs::Handle, vsty::counter<>>;
-	using TextureHandle = vsty::strong_type_t<vecs::Handle, vsty::counter<>>; //need this to use Texture as a unique comonent
-	using MeshHandle = vsty::strong_type_t<vecs::Handle, vsty::counter<>>; //need this to use Mesh as a unique component
-	using CameraHandle = vsty::strong_type_t<vecs::Handle, vsty::counter<>>; //need this to use Camera as a unique component
 }
 
 namespace std {
@@ -141,6 +138,7 @@ namespace vve {
 	    struct MsgMeshCreate : public MsgBase { MsgMeshCreate(System* s, System* r, vecs::Handle handle); vecs::Handle m_handle; };
 	    struct MsgMeshDestroy : public MsgBase { MsgMeshDestroy(System* s, System* r, vecs::Handle handle); vecs::Handle m_handle; };
 	
+		//------------------------------------------------------------------------------------------------
 
 	    struct Message {
 	        template<typename T>
