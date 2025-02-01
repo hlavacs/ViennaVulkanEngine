@@ -44,7 +44,6 @@ namespace vve {
         "RENDER_NEXT_FRAME",	// render the next frame
         "PRESENT_NEXT_FRAME", // present the next frame
         "FRAME_END", //
-        "DELETED", //React to something being deleted
         "SDL", // 
         "SDL_MOUSE_MOVE", //
         "SDL_MOUSE_BUTTON_DOWN", //
@@ -64,6 +63,7 @@ namespace vve {
 		"TEXTURE_DESTROY", 
 		"MESH_CREATE",	
 		"MESH_DESTROY",	
+        "DELETED", //React to something being deleted
         "LAST" //
     };
 
@@ -100,7 +100,6 @@ namespace vve {
 	    struct MsgRecordNextFrame : public MsgBase { MsgRecordNextFrame(System* s, System* r, double dt ); };
 	    struct MsgPresentNextFrame : public MsgBase { MsgPresentNextFrame(System* s, System* r, double dt);  };
 	    struct MsgFrameEnd : public MsgBase { MsgFrameEnd(System* s, System* r, double dt); };
-	    struct MsgDelete : public MsgBase { MsgDelete(System* s, System* r, double dt ); void* m_ptr; uint64_t m_id; };
 	    struct MsgMouseMove : public MsgBase { MsgMouseMove(System* s, System* r, double dt, int x, int y); int m_x; int m_y; };
 	    struct MsgMouseButtonDown : public MsgBase { MsgMouseButtonDown(System* s, System* r, double dt, int button); int m_button; };
 	    struct MsgMouseButtonUp : public MsgBase { MsgMouseButtonUp(System* s, System* r, double dt, int button);  int m_button; };
@@ -137,7 +136,8 @@ namespace vve {
 	    struct MsgTextureDestroy : public MsgBase { MsgTextureDestroy(System* s, System* r, vecs::Handle handle); vecs::Handle m_handle; };
 	    struct MsgMeshCreate : public MsgBase { MsgMeshCreate(System* s, System* r, vecs::Handle handle); vecs::Handle m_handle; };
 	    struct MsgMeshDestroy : public MsgBase { MsgMeshDestroy(System* s, System* r, vecs::Handle handle); vecs::Handle m_handle; };
-	
+		struct MsgDelete : public MsgBase { MsgDelete(System* s, System* r, double dt ); void* m_ptr; uint64_t m_id; };
+
 		//------------------------------------------------------------------------------------------------
 
 	    struct Message {
