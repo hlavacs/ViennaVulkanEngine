@@ -52,9 +52,9 @@ namespace vve {
 			  FileDialog::ShowFileDialog(&FileDialog::file_dialog_open, file_dialog_buffer, sizeof(file_dialog_buffer), FileDialog::file_dialog_open_type);
 			}
 
-            if (ImGui::Button("Load")) {                          // Buttons return true when clicked (most widgets return true when edited/activated)				
+            if (ImGui::Button("Create")) {                          // Buttons return true when clicked (most widgets return true when edited/activated)				
 				m_engine.SendMessage( 
-					MsgSceneLoad{
+					MsgSceneCreate{
 						this, 
 						nullptr, 
 						ObjectHandle( m_registry.Insert( Position{ { x, y, 0.0f } }, Rotation{mat3_t{1.0f}}, Scale{vec3_t{1.0f}}) ), 
@@ -79,9 +79,9 @@ namespace vve {
 			  FileDialog::ShowFileDialog(&FileDialog::file_dialog_open, file_dialog_buffer, sizeof(file_dialog_buffer), FileDialog::file_dialog_open_type);
 			}
 
-            if (ImGui::Button("Load2")) {                          // Buttons return true when clicked (most widgets return true when edited/activated)		
+            if (ImGui::Button("Create2")) {                          // Buttons return true when clicked (most widgets return true when edited/activated)		
 				m_engine.SendMessage( 
-					MsgSceneLoad{
+					MsgSceneCreate{
 						this, 
 						nullptr, 
 						ObjectHandle( m_registry.Insert( Position{ { x, y, 0.0f } }, Rotation{mat3_t{1.0f}}, Scale{vec3_t{1.0f}}) ), 

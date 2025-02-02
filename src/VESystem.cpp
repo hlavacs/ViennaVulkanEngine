@@ -25,7 +25,6 @@ namespace vve {
     System::MsgRecordNextFrame::MsgRecordNextFrame(System* s, System* r, double dt): MsgBase{"RECORD_NEXT_FRAME", s, r, dt} {}; 
     System::MsgPresentNextFrame::MsgPresentNextFrame(System* s, System* r, double dt): MsgBase{"PRESENT_NEXT_FRAME", s, r, dt} {}; 
     System::MsgFrameEnd:: MsgFrameEnd(System* s, System* r, double dt): MsgBase{"FRAME_END", s, r, dt} {};
-    System::MsgDelete:: MsgDelete(System* s, System* r, double dt): MsgBase{"DELETED", s, r, dt} {}; 
     
 	//------------------------------------------------------------------------
 
@@ -44,7 +43,10 @@ namespace vve {
 
 	System::MsgSceneLoad::MsgSceneLoad(System* s, System* r, ObjectHandle object, ParentHandle parent, Name sceneName) : 
 		MsgBase{"SCENE_LOAD", s, r}, m_object{object}, m_parent{parent}, m_sceneName{sceneName} {};
-	
+
+	System::MsgSceneCreate::MsgSceneCreate(System* s, System* r, ObjectHandle object, ParentHandle parent, Name sceneName) : 
+		MsgBase{"SCENE_CREATE", s, r}, m_object{object}, m_parent{parent}, m_sceneName{sceneName} {};
+
 	System::MsgObjectCreate::MsgObjectCreate(System* s, System* r, ObjectHandle object, ParentHandle parent) : 
 		MsgBase{"OBJECT_CREATE", s, r}, m_object{object}, m_parent{parent} {};
 	
@@ -57,6 +59,9 @@ namespace vve {
     System::MsgTextureDestroy::MsgTextureDestroy(System* s, System* r, vecs::Handle handle) : MsgBase{"TEXTURE_DESTROY", s, r}, m_handle{handle} {};
 	System::MsgMeshCreate::MsgMeshCreate(System* s, System* r, vecs::Handle handle) : MsgBase{"MESH_CREATE", s, r}, m_handle{handle} {};
     System::MsgMeshDestroy::MsgMeshDestroy(System* s, System* r, vecs::Handle handle) : MsgBase{"MESH_DESTROY", s, r}, m_handle{handle} {};
+    System::MsgDeleted:: MsgDeleted(System* s, System* r, double dt): MsgBase{"DELETED", s, r, dt} {}; 
+
+	//------------------------------------------------------------------------
 
     System::System( std::string systemName, Engine& engine ) : 
 		m_name(systemName), m_engine(engine), m_registry{engine.GetRegistry()} {

@@ -36,7 +36,7 @@ public:
 						);
 
 		m_engine.SendMessage( 
-					MsgSceneLoad{
+					MsgSceneCreate{
 						this, 
 						nullptr, 
 						vve::ObjectHandle{handle}, 

@@ -13,7 +13,7 @@ namespace vve {
 		engine.RegisterCallback( { 
 			{this,  2000, "INIT", [this](Message& message){ return OnInit(message);} },
 			{this, std::numeric_limits<int>::max(), "UPDATE", [this](Message& message){ return OnUpdate(message);} },
-			{this,                            1000, "SCENE_LOAD", [this](Message& message){ return OnSceneLoad(message);} },
+			{this,                            1000, "SCENE_CREATE", [this](Message& message){ return OnSceneCreate(message);} },
 			{this, std::numeric_limits<int>::max(), "OBJECT_SET_PARENT", [this](Message& message){ return OnObjectSetParent(message);} }
 		} );
 	}
@@ -98,8 +98,8 @@ namespace vve {
 		return false;
 	}
 
-	bool SceneManager::OnSceneLoad(Message message) {
-		auto& msg = message.template GetData<MsgSceneLoad>();
+	bool SceneManager::OnSceneCreate(Message message) {
+		auto& msg = message.template GetData<MsgSceneCreate>();
 		ObjectHandle oHandle = msg.m_object;
 		assert( oHandle().IsValid() );
 		ParentHandle pHandle = msg.m_parent;
@@ -185,7 +185,6 @@ namespace vve {
 			ProcessNode(node->mChildren[i], ParentHandle{nHandle}, directory, scene, id);
 		}
 	}
-
 
     bool SceneManager::OnObjectSetParent(Message message) {
 		auto msg = message.template GetData<MsgObjectSetParent>();

@@ -15,7 +15,9 @@ namespace vve {
 
     private:
 		bool OnInit(Message message);
+		bool OnSceneCreate(Message& message);
 		bool OnSceneLoad(Message& message);
+		bool SceneLoad(System* s, System* r, ObjectHandle object, ParentHandle parent, Name sceneName, const C_STRUCT aiScene*& scene);
 		bool OnSceneRelease(Message& message);
 		bool OnObjectCreate(Message message);
 		bool OnTextureCreate(Message message);

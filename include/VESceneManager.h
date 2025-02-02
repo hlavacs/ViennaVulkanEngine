@@ -86,7 +86,7 @@ namespace vve {
     private:
 		bool OnInit(Message message);
 		bool OnUpdate(Message message);
-		bool OnSceneLoad(Message message);
+		bool OnSceneCreate(Message message);
 		bool OnObjectSetParent(Message message);
 		void ProcessNode(aiNode* node, ParentHandle parent, std::filesystem::path& directory, const aiScene* scene, uint64_t& id);
 		void SetParent(ObjectHandle object, ParentHandle parent);

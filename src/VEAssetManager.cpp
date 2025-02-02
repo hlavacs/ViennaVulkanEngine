@@ -11,7 +11,9 @@ namespace vve {
 		engine.RegisterCallback( { 
 			{this,                            2000, "INIT", [this](Message& message){ return OnInit(message);} },
 			{this,                               0, "SCENE_LOAD", [this](Message& message){ return OnSceneLoad(message);} },
+			{this,                               0, "SCENE_CREATE", [this](Message& message){ return OnSceneCreate(message);} },
 			{this, std::numeric_limits<int>::max(), "SCENE_LOAD", [this](Message& message){ return OnSceneRelease(message);} },
+			//{this, std::numeric_limits<int>::max(), "SCENE_CREATE", [this](Message& message){ return OnSceneRelease(message);} },
 			{this,                               0, "OBJECT_CREATE", [this](Message& message){ return OnObjectCreate(message);} },
 			{this, std::numeric_limits<int>::max(), "TEXTURE_CREATE",   [this](Message& message){ return OnTextureCreate(message);} },
 			{this,                               0, "QUIT", [this](Message& message){ return OnQuit(message);} },
@@ -24,17 +26,28 @@ namespace vve {
 		return false;
 	}
 
+	bool AssetManager::OnSceneCreate( Message& message ) {
+		auto& msg = message.template GetData<MsgSceneCreate>();
+		return SceneLoad(msg.m_sender, msg.m_receiver, msg.m_object, msg.m_parent, msg.m_sceneName, msg.m_scene);
+	}
+
     bool AssetManager::OnSceneLoad(Message& message) {
 		auto& msg = message.template GetData<MsgSceneLoad>();
-		std::filesystem::path filepath = msg.m_sceneName();
+		SceneLoad(msg.m_sender, msg.m_receiver, msg.m_object, msg.m_parent, msg.m_sceneName, msg.m_scene);
+		aiReleaseImport(msg.m_scene);
+		return true; //the message is consumed -> no more processing allowed
+	}
+
+	bool AssetManager::SceneLoad(System* s, System* r, ObjectHandle object, ParentHandle parent, Name sceneName, const C_STRUCT aiScene*& scene) {
+		std::filesystem::path filepath = sceneName();
 		auto directory = filepath.parent_path();
 		
-		msg.m_scene = aiImportFile(msg.m_sceneName().c_str(), aiProcessPreset_TargetRealtime_Fast | aiProcess_FlipUVs);
+		scene = aiImportFile(sceneName().c_str(), aiProcessPreset_TargetRealtime_Fast | aiProcess_FlipUVs);
 
 		//Assimp::DefaultLogger::create("", Assimp::Logger::VERBOSE);
 		//Assimp::Importer importer;
 		//msg.m_scene = importer.ReadFile(path().c_str(), aiProcess_Triangulate | aiProcess_GenNormals);
-		if (!msg.m_scene || msg.m_scene->mFlags & AI_SCENE_FLAGS_INCOMPLETE || !msg.m_scene->mRootNode) {
+		if (!scene || scene->mFlags & AI_SCENE_FLAGS_INCOMPLETE || !scene->mRootNode) {
 		    //std::cerr << "Assimp Error: " << importer.GetErrorString() << std::endl;
 		    std::cerr << "Assimp Error: " << aiGetErrorString() << std::endl;
 		}
@@ -43,8 +56,8 @@ namespace vve {
 
 		// Process materials
 
-		for (unsigned int i = 0; i < msg.m_scene->mNumMaterials; i++) {
-		    aiMaterial* material = msg.m_scene->mMaterials[i];
+		for (unsigned int i = 0; i < scene->mNumMaterials; i++) {
+		    aiMaterial* material = scene->mMaterials[i];
 
 		    aiString name;
 		    if (material->Get(AI_MATKEY_NAME, name) == AI_SUCCESS) {
@@ -77,8 +90,8 @@ namespace vve {
 		}
 
 		// Process meshes
-		for (unsigned int i = 0; i <msg.m_scene->mNumMeshes; i++) {
-		    aiMesh* mesh = msg.m_scene->mMeshes[i];
+		for (unsigned int i = 0; i <scene->mNumMeshes; i++) {
+		    aiMesh* mesh = scene->mMeshes[i];
 			assert(mesh->HasPositions() && mesh->HasNormals());
 
 		    std::cout << "Mesh " << i << " " << mesh->mName.C_Str() << " has " << mesh->mNumVertices << " vertices." << std::endl;
