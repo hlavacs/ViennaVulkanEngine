@@ -14,7 +14,6 @@ namespace vve {
 		auto GetAssetHandle(Name name) -> vecs::Handle&;	
 
     private:
-		bool OnInit(Message message);
 		bool OnSceneCreate(Message& message);
 		bool OnSceneLoad(Message& message);
 		bool SceneLoad(System* s, System* r, ObjectHandle object, ParentHandle parent, Name sceneName, const C_STRUCT aiScene*& scene);

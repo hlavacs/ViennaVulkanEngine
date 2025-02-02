@@ -22,10 +22,6 @@ namespace vve {
 
     AssetManager::~AssetManager() {}
 
-    bool AssetManager::OnInit(Message message) {
-		return false;
-	}
-
 	bool AssetManager::OnSceneCreate( Message& message ) {
 		auto& msg = message.template GetData<MsgSceneCreate>();
 		return SceneLoad(msg.m_sender, msg.m_receiver, msg.m_object, msg.m_parent, msg.m_sceneName, msg.m_scene);
