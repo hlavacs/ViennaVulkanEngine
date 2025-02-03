@@ -15,6 +15,7 @@
 namespace vve {
 
 	using Name = vsty::strong_type_t<std::string, vsty::counter<>>;
+	using Filename = vsty::strong_type_t<std::string, vsty::counter<>>;
 	using ObjectHandle = vsty::strong_type_t<vecs::Handle, vsty::counter<>>;
 	using ParentHandle = vsty::strong_type_t<vecs::Handle, vsty::counter<>>;
 }

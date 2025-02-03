@@ -9,11 +9,9 @@ namespace vve {
 
     AssetManager::AssetManager(std::string systemName, Engine& engine ) : System{systemName, engine } {
 		engine.RegisterCallback( { 
-			{this,                            2000, "INIT", [this](Message& message){ return OnInit(message);} },
 			{this,                               0, "SCENE_LOAD", [this](Message& message){ return OnSceneLoad(message);} },
 			{this,                               0, "SCENE_CREATE", [this](Message& message){ return OnSceneCreate(message);} },
-			{this, std::numeric_limits<int>::max(), "SCENE_LOAD", [this](Message& message){ return OnSceneRelease(message);} },
-			//{this, std::numeric_limits<int>::max(), "SCENE_CREATE", [this](Message& message){ return OnSceneRelease(message);} },
+			{this, std::numeric_limits<int>::max(), "SCENE_CREATE", [this](Message& message){ return OnSceneRelease(message);} },
 			{this,                               0, "OBJECT_CREATE", [this](Message& message){ return OnObjectCreate(message);} },
 			{this, std::numeric_limits<int>::max(), "TEXTURE_CREATE",   [this](Message& message){ return OnTextureCreate(message);} },
 			{this,                               0, "QUIT", [this](Message& message){ return OnQuit(message);} },
@@ -139,7 +137,7 @@ namespace vve {
 	}
 
     bool AssetManager::OnSceneRelease(Message& message) {
-		auto msg = message.template GetData<MsgSceneLoad>();
+		auto msg = message.template GetData<MsgSceneCreate>();
 		aiReleaseImport(msg.m_scene);
 		return true;
 	}
