@@ -51,7 +51,7 @@ namespace vve {
 		MsgBase{"OBJECT_CREATE", s, r}, m_object{object}, m_parent{parent} {};
 	
 	System::MsgObjectSetParent::MsgObjectSetParent(System* s, System* r, ObjectHandle object, ParentHandle parent) : MsgBase("OBJECT_SET_PARENT", s, r), m_object{object}, m_parent{parent} {};
-	System::MsgObjectDestroy::MsgObjectDestroy(System* s, System* r, vecs::Handle handle) : MsgBase("OBJECT_DESTROY", s, r), m_handle{handle} {};
+	System::MsgObjectDestroy::MsgObjectDestroy(System* s, System* r, ObjectHandle handle) : MsgBase("OBJECT_DESTROY", s, r), m_handle{handle} {};
 
 	//------------------------------------------------------------------------
 
@@ -88,13 +88,9 @@ namespace vve {
 
 
 namespace std {
-	
-	size_t hash<vve::Name>::operator()(vve::Name const& name) const {
-		return std::hash<std::string>{}(name());
-	}
-
 	size_t hash<vve::System>::operator()(vve::System& system)  {
 		return std::hash<decltype(system.GetName())>{}(system.GetName());
     };
 
 };  // namespace std
+

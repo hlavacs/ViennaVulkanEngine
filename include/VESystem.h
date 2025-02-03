@@ -19,13 +19,10 @@ namespace vve {
 	using Filename = vsty::strong_type_t<std::string, vsty::counter<>>;
 	using ObjectHandle = vsty::strong_type_t<vecs::Handle, vsty::counter<>>;
 	using ParentHandle = vsty::strong_type_t<vecs::Handle, vsty::counter<>>;
+	using MapHandle = vsty::strong_type_t<vecs::Handle, vsty::counter<>>;
 }
 
 namespace std {
-    template<> struct hash<vve::Name> {
-        size_t operator()(vve::Name const& name) const; 
-    };
-
     template<> struct hash<vve::System> {
         size_t operator()(vve::System & system) ; 
     };
@@ -38,6 +35,7 @@ namespace vve {
         "EXTENSIONS", //System announce extensions they need
         "INIT",			//initialize the system
 		"LOAD_LEVEL",	//Load a level
+        "QUIT", //
 		//---------------------
         "FRAME_START", //
         "POLL_EVENTS", //
@@ -57,7 +55,6 @@ namespace vve {
         "SDL_KEY_DOWN", //
         "SDL_KEY_UP", //
         "SDL_KEY_REPEAT", //
-        "QUIT", //
 		//---------------------
 		"SCENE_LOAD",	
 		"SCENE_CREATE",	
@@ -97,7 +94,8 @@ namespace vve {
 	    struct MsgExtensions : public MsgBase { MsgExtensions(System* s, std::vector<const char*> instExt, std::vector<const char*> devExt ); std::vector<const char*> m_instExt; std::vector<const char*> m_devExt;};
 	    struct MsgInit : public MsgBase { MsgInit(System* s, System* r=nullptr); };
 	    struct MsgLoadLevel : public MsgBase { MsgLoadLevel(System* s, System* r, std::string level); std::string m_level;};
-	    
+	    struct MsgQuit : public MsgBase { MsgQuit(System* s, System* r=nullptr); };
+
 		//------------------------------------------------------------------------------------------------
 		
 		struct MsgFrameStart : public MsgBase { MsgFrameStart(System* s, System* r, double dt); };
@@ -120,7 +118,6 @@ namespace vve {
 	    struct MsgKeyUp : public MsgBase { MsgKeyUp(System* s, System* r, double dt, int key);  int m_key; };
 	    struct MsgKeyRepeat : public MsgBase { MsgKeyRepeat(System* s, System* r, double dt, int key); int m_key; };
 	    struct MsgSDL : public MsgBase { MsgSDL(System* s, System* r, double dt, SDL_Event event ); double m_dt; SDL_Event m_event; };
-		struct MsgQuit : public MsgBase { MsgQuit(System* s, System* r=nullptr); };
 
 		//------------------------------------------------------------------------------------------------
 
@@ -147,7 +144,7 @@ namespace vve {
 		};
 
 		struct MsgObjectSetParent : public MsgBase { MsgObjectSetParent(System* s, System* r, ObjectHandle object, ParentHandle Parent); ObjectHandle m_object; ParentHandle m_parent;};
-		struct MsgObjectDestroy : public MsgBase { MsgObjectDestroy(System* s, System* r, vecs::Handle handle); vecs::Handle m_handle; };
+		struct MsgObjectDestroy : public MsgBase { MsgObjectDestroy(System* s, System* r, ObjectHandle); ObjectHandle m_handle; };
 
 		//------------------------------------------------------------------------------------------------
 
@@ -200,7 +197,7 @@ namespace vve {
 
     protected:
 		bool OnAnnounce(Message message);
-        std::string 							m_name;
+        SystemName 								m_name;
         Engine& 								m_engine;
 		vecs::Registry<VVE_ARCHITECTURE_TYPE>&	m_registry;
     };
