@@ -84,7 +84,7 @@ namespace vve {
 				m_engine.SendMessage( MsgSceneLoad{ this, nullptr, Name{path_obj2} });		
 				vh::Color color{ { 0.0f, 0.0f, 0.0f, 1.0f }, { 1.0f, 0.0f, 1.0f, 1.0f }, { 0.0f, 0.0f, 0.0f, 1.0f } };
 				auto handle = m_registry.Insert( 
-						Position{ { x, y, 0.0f } }, Rotation{mat3_t{1.0f}}, Scale{vec3_t{0.5f}}, color, MeshName{"sphere"} );
+						Position{ { x, y, 0.0f } }, Rotation{mat3_t{1.0f}}, Scale{vec3_t{0.05f}}, color, MeshName{"sphere"} );
 
 				m_engine.SendMessage(MsgObjectCreate{ this, nullptr, ObjectHandle(handle), ParentHandle{} });
 

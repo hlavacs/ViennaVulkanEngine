@@ -13,7 +13,8 @@ namespace vve {
 			{this,                               0, "SCENE_CREATE", [this](Message& message){ return OnSceneCreate(message);} },
 			{this, std::numeric_limits<int>::max(), "SCENE_CREATE", [this](Message& message){ return OnSceneRelease(message);} },
 			{this,                               0, "OBJECT_CREATE", [this](Message& message){ return OnObjectCreate(message);} },
-			{this, std::numeric_limits<int>::max(), "TEXTURE_CREATE",   [this](Message& message){ return OnTextureCreate(message);} },
+			{this, 								 0, "TEXTURE_CREATE",   [this](Message& message){ return OnTextureCreate(message);} },
+			{this, std::numeric_limits<int>::max(), "TEXTURE_CREATE",   [this](Message& message){ return OnTextureRelease(message);} },
 			{this,                               0, "QUIT", [this](Message& message){ return OnQuit(message);} },
 		} );
 	}
@@ -71,16 +72,11 @@ namespace vve {
 		    if (material->GetTexture(aiTextureType_DIFFUSE, 0, &texturePath) == AI_SUCCESS) {
 				auto texturePathStr = directory / std::string{texturePath.C_Str()};
 		        std::cout << "Diffuse Texture: " << texturePathStr.string() << std::endl;	
-				auto fileName = Name{texturePathStr.string()};
-				if( m_handleMap.contains(fileName) ) continue;
-				int texWidth, texHeight, texChannels;
-		        stbi_uc* pixels = stbi_load(fileName().c_str(), &texWidth, &texHeight, &texChannels, STBI_rgb_alpha);
-		        assert(pixels);
-		        VkDeviceSize imageSize = texWidth * texHeight * 4;
-				auto handle = m_registry.Insert(fileName, vh::Texture{texWidth, texHeight, imageSize, pixels});
-				m_handleMap[fileName] = handle;
-				m_fileNameMap.insert( std::make_pair( filepath, Name{texturePathStr.string().c_str()} ) );
-				m_engine.SendMessage( MsgTextureCreate{this, nullptr, pixels, TextureHandle{handle} } );
+				
+				auto tHandle = TextureHandle{m_registry.Insert(Name{texturePathStr.string()})};
+				auto pixels = LoadTexture(tHandle);
+				if( pixels != nullptr) m_engine.SendMessage( MsgTextureCreate{this, nullptr, pixels, tHandle } );
+
 		    }
 		}
 
@@ -147,19 +143,25 @@ namespace vve {
 		auto msg = message.template GetData<MsgObjectCreate>();
 		if( m_registry.Has<MeshName>(msg.m_object) ) {
 			auto meshName = m_registry.Get<MeshName>(msg.m_object);
-			m_registry.Put(	msg.m_object, MeshHandle{m_handleMap[meshName()]} );
+			m_registry.Put(	msg.m_object, MeshHandle{m_handleMap[meshName]} );
 		}
 		if( m_registry.Has<TextureName>(msg.m_object) ) {
 			auto textureName = m_registry.Get<TextureName>(msg.m_object);
-			m_registry.Put(	msg.m_object, TextureHandle{m_handleMap[textureName()]} );
+			m_registry.Put(	msg.m_object, TextureHandle{m_handleMap[textureName]} );
 		}
-		//m_registry.Put(	msg.m_object, MeshHandle{m_handleMap[msg.m_geomName()]}, TextureHandle{m_handleMap[msg.m_txtName()]} );
 		return false;
 	}
 
 	bool AssetManager::OnTextureCreate(Message message) {
 		auto msg = message.template GetData<MsgTextureCreate>();
-		stbi_image_free(msg.m_pixels);
+		if( msg.m_sender == this ) return false;
+		if( LoadTexture(TextureHandle{msg.m_handle}) != nullptr ) return true;
+		return false;
+	}
+
+	bool AssetManager::OnTextureRelease(Message message) {
+		auto msg = message.template GetData<MsgTextureCreate>();
+		stbi_image_free(msg.m_pixels); //last thing release resources
 		return true;
 	}
 
@@ -167,27 +169,18 @@ namespace vve {
 		return false;
 	}
 
-	auto AssetManager::LoadTexture(Name fileName) -> TextureHandle {
-		if( m_handleMap.contains(fileName()) ) return TextureHandle{m_handleMap[fileName()]};
+	auto AssetManager::LoadTexture(TextureHandle tHandle) -> stbi_uc* {
+		auto fileName = m_registry.Get<Name&>(tHandle);
+		if( m_handleMap.contains(fileName()) ) return nullptr;
 
 		int texWidth, texHeight, texChannels;
         stbi_uc* pixels = stbi_load(fileName().c_str(), &texWidth, &texHeight, &texChannels, STBI_rgb_alpha);
         VkDeviceSize imageSize = texWidth * texHeight * 4;
-        if (!pixels) { return {}; }
+        if (!pixels) { return nullptr; }
 
-		auto handle = m_registry.Insert(fileName, vh::Texture{texWidth, texHeight, imageSize, pixels});
-		m_handleMap[fileName()] = handle;
-		m_engine.SendMessage( MsgTextureCreate{this, nullptr, pixels, TextureHandle{handle} } );
-		return TextureHandle{handle};
-	}
-
-	auto AssetManager::GetAsset(Name fileName) -> vecs::Handle {
-		if( !m_handleMap.contains(fileName()) ) return {};
-		return m_handleMap[fileName]; 
-	}
-
-	auto AssetManager::GetAssetHandle(Name name) -> vecs::Handle& { 
-		return m_handleMap[name()]; 
+		m_registry.Put(tHandle, vh::Texture{texWidth, texHeight, imageSize, pixels});
+		m_handleMap[fileName] = tHandle;
+		return pixels;
 	}
 
 
