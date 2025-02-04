@@ -11,7 +11,8 @@ namespace vve {
 
     SceneManager::SceneManager(std::string systemName, Engine& engine ) : System{systemName, engine } {
 		engine.RegisterCallback( { 
-			{this,  2000, "INIT", [this](Message& message){ return OnInit(message);} },
+			{this,  						  2000,	"INIT", [this](Message& message){ return OnInit(message);} },
+			{this,  							 0, "WINDOW_SIZE", [this](Message& message){ return OnWindowSize(message);} },
 			{this, std::numeric_limits<int>::max(), "UPDATE", [this](Message& message){ return OnUpdate(message);} },
 			{this,                            1000, "SCENE_CREATE", [this](Message& message){ return OnSceneCreate(message);} },
 			{this,                               0, "OBJECT_CREATE", [this](Message& message){ return OnObjectCreate(message);} },
@@ -70,6 +71,14 @@ namespace vve {
 		return false;
 	}
 
+    bool SceneManager::OnWindowSize(Message message) {
+		auto window = m_engine.GetWindow(m_windowName);
+		auto [name, camera] = m_registry.template Get<Name&, Camera&>(m_cameraHandle);
+		camera.m_aspect = (real_t)window->GetWidth() / (real_t)window->GetHeight();
+		return false;
+	}
+
+
     bool SceneManager::OnUpdate(Message message) {
 		auto children = m_registry.template Get<Children&>(m_rootHandle);
 
@@ -80,9 +89,10 @@ namespace vve {
 			//std::cout << "Handle: " << handle << " Name: " << name() << " Position: " << p().x << ", " << p().y << ", " << p().z << std::endl;
 
 			if( registry.template Has<Camera>(handle) ) {
-				auto camera = registry.template Get<Camera&>(handle);
+				auto [name, camera] = registry.template Get<Name&, Camera&>(handle);
 				registry.Put(handle, ViewMatrix{glm::inverse(LtoW())});
 				registry.Put(handle, ProjectionMatrix{camera.Matrix()});
+				//std::cout << "Camera: " << name() << " R: " << camera.m_aspect << std::endl;
 			}
 
 			if( registry.template Has<Children&>(handle) ) {

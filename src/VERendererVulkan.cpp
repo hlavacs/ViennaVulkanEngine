@@ -87,6 +87,7 @@ namespace vve {
 
         if (result == VK_ERROR_OUT_OF_DATE_KHR ) {
             DevRecreateSwapChain(GetVulkanState().m_windowSDL->GetSDLWindow(), GetSurface(), GetPhysicalDevice(), GetDevice(), GetVmaAllocator(), GetSwapChain(), GetDepthImage(), m_renderPass);
+			m_engine.SendMessage( MsgWindowSize{this, nullptr} );
         } else assert (result == VK_SUCCESS || result == VK_SUBOPTIMAL_KHR);
 		return false;
     }
@@ -122,6 +123,7 @@ namespace vve {
         if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR || GetFramebufferResized()) {
             GetFramebufferResized() = false;
             vh::DevRecreateSwapChain(GetVulkanState().m_windowSDL->GetSDLWindow(), GetSurface(), GetPhysicalDevice(), GetDevice(), GetVmaAllocator(), GetSwapChain(), GetDepthImage(), m_renderPass);
+			m_engine.SendMessage( MsgWindowSize{this, nullptr} );
         } else assert(result == VK_SUCCESS);
 		return false;
     }

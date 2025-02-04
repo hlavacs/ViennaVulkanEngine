@@ -85,6 +85,7 @@ namespace vve {
 
     private:
 		bool OnInit(Message message);
+		bool OnWindowSize(Message message);
 		bool OnUpdate(Message message);
 		bool OnSceneCreate(Message message);
 		bool OnObjectCreate(Message message);

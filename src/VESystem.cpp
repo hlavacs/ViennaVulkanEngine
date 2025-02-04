@@ -14,7 +14,9 @@ namespace vve {
     System::MsgExtensions::MsgExtensions(System* s, std::vector<const char*> instExt, std::vector<const char*> devExt) : MsgBase{"EXTENSIONS", s}, m_instExt{instExt}, m_devExt{devExt} {};
    	System::MsgInit::MsgInit(System* s, System* r) : MsgBase{"INIT", s, r} {};
    	System::MsgLoadLevel::MsgLoadLevel(System* s, System* r, std::string level) : MsgBase{"LOAD_LEVEL", s, r}, m_level{level} {};
-    
+    System::MsgWindowSize::MsgWindowSize(System* s, System* r) : MsgBase{"WINDOW_SIZE", s, r} {};
+    System::MsgQuit::MsgQuit(System* s, System* r) : MsgBase{"QUIT", s, r} {};
+
 	//------------------------------------------------------------------------
 	
     System::MsgFrameStart::MsgFrameStart(System* s, System* r, double dt) : MsgBase{"FRAME_START", s, r, dt} {};
@@ -37,7 +39,6 @@ namespace vve {
     System::MsgKeyUp::MsgKeyUp(System* s, System* r, double dt, int key): MsgBase{"SDL_KEY_UP", s, r, dt}, m_key{key} {}; 
     System::MsgKeyRepeat::MsgKeyRepeat(System* s, System* r, double dt, int key): MsgBase{"SDL_KEY_REPEAT", s, r, dt}, m_key{key} {};   
     System::MsgSDL::MsgSDL(System* s, System* r, double dt, SDL_Event event): MsgBase{"SDL", s, r}, m_dt{dt}, m_event{event} {};   
-    System::MsgQuit::MsgQuit(System* s, System* r) : MsgBase{"QUIT", s, r} {};
     
 	//------------------------------------------------------------------------
 

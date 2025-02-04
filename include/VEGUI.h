@@ -17,7 +17,6 @@ namespace vve {
 
 	private:
 		bool OnAnnounce(Message message);
-		bool OnRecordNextFrame(Message message);
 		bool OnKeyDown(Message message);
 		bool OnKeyUp(Message message);
 		bool OnMouseButtonDown(Message message);

@@ -35,6 +35,7 @@ namespace vve {
         "EXTENSIONS", //System announce extensions they need
         "INIT",			//initialize the system
 		"LOAD_LEVEL",	//Load a level
+		"WINDOW_SIZE",	//Window size has changed
         "QUIT", //
 		//---------------------
         "FRAME_START", //
@@ -94,6 +95,7 @@ namespace vve {
 	    struct MsgExtensions : public MsgBase { MsgExtensions(System* s, std::vector<const char*> instExt, std::vector<const char*> devExt ); std::vector<const char*> m_instExt; std::vector<const char*> m_devExt;};
 	    struct MsgInit : public MsgBase { MsgInit(System* s, System* r=nullptr); };
 	    struct MsgLoadLevel : public MsgBase { MsgLoadLevel(System* s, System* r, std::string level); std::string m_level;};
+	    struct MsgWindowSize : public MsgBase { MsgWindowSize(System* s, System* r=nullptr); };
 	    struct MsgQuit : public MsgBase { MsgQuit(System* s, System* r=nullptr); };
 
 		//------------------------------------------------------------------------------------------------

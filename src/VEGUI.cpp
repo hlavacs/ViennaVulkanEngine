@@ -7,7 +7,6 @@ namespace vve {
 		System(systemName, engine), m_windowName(windowName) {
 		m_engine.RegisterCallback( { 
  		  	{this,    0, "ANNOUNCE", [this](Message& message){ return OnAnnounce(message);} }, 
-		  	{this, 1000, "RECORD_NEXT_FRAME", [this](Message& message){ return OnRecordNextFrame(message);} },
 			{this, std::numeric_limits<int>::max(), "SDL_KEY_DOWN", [this](Message& message){ return OnKeyDown(message);} },
 			{this, std::numeric_limits<int>::max(), "SDL_KEY_REPEAT", [this](Message& message){ return OnKeyDown(message);} },
 			{this, std::numeric_limits<int>::max(), "SDL_KEY_UP", [this](Message& message){ return OnKeyUp(message);} },
@@ -18,7 +17,6 @@ namespace vve {
 		} );
 	};
 
-
     bool GUI::OnAnnounce(Message message) {
 		auto msg = message.template GetData<MsgAnnounce>();
 		if( msg.m_sender->GetName() == m_windowName ) {
@@ -26,74 +24,6 @@ namespace vve {
 		}
 		return false;
 	}
-
-    bool GUI::OnRecordNextFrame(Message message) {
-        if( m_windowSDL->GetIsMinimized()) { return false; }
-
-		/*static float x = 0.0f, y = 0.0f;
-
-        {
-            ImGui::Begin("Load Object");                          // Create a window called "Hello, world!" and append into it.
-
-			static char* file_dialog_buffer = nullptr;
-			static char path_obj[500] = "assets\\viking_room\\viking_room.obj";
-			ImGui::TextUnformatted("File: ");
-			ImGui::SameLine();
-			ImGui::InputText("##path1", path_obj, sizeof(path_obj));
-			ImGui::SameLine();
-			if (ImGui::Button("Browse##path_obj")) {
-			  file_dialog_buffer = path_obj;
-			  FileDialog::file_dialog_open = true;
-			  FileDialog::file_dialog_open_type = FileDialog::FileDialogType::OpenFile;
-			}
-			
-			if (FileDialog::file_dialog_open) {
-			  FileDialog::ShowFileDialog(&FileDialog::file_dialog_open, file_dialog_buffer, sizeof(file_dialog_buffer), FileDialog::file_dialog_open_type);
-			}
-
-            if (ImGui::Button("Create")) {                          // Buttons return true when clicked (most widgets return true when edited/activated)				
-				m_engine.SendMessage( 
-					MsgSceneCreate{
-						this, 
-						nullptr, 
-						ObjectHandle( m_registry.Insert( Position{ { x, y, 0.0f } }, Rotation{mat3_t{1.0f}}, Scale{vec3_t{1.0f}}) ), 
-						ParentHandle{}, 
-						Name{path_obj} });
-
-				x += 2.0f;
-			}
-
-			static char path_obj2[500] = "assets\\standard\\sphere.obj";
-			ImGui::TextUnformatted("File: ");
-			ImGui::SameLine();
-			ImGui::InputText("##path2", path_obj2, sizeof(path_obj2));
-			ImGui::SameLine();
-			if (ImGui::Button("Browse2##path_obj2")) {
-			  file_dialog_buffer = path_obj2;
-			  FileDialog::file_dialog_open = true;
-			  FileDialog::file_dialog_open_type = FileDialog::FileDialogType::OpenFile;
-			}
-
-			if (FileDialog::file_dialog_open) {
-			  FileDialog::ShowFileDialog(&FileDialog::file_dialog_open, file_dialog_buffer, sizeof(file_dialog_buffer), FileDialog::file_dialog_open_type);
-			}
-
-            if (ImGui::Button("Create2")) {                          // Buttons return true when clicked (most widgets return true when edited/activated)		
-				
-				m_engine.SendMessage( MsgSceneLoad{ this, nullptr, Name{path_obj2} });		
-				vh::Color color{ { 0.0f, 0.0f, 0.0f, 1.0f }, { 1.0f, 0.0f, 1.0f, 1.0f }, { 0.0f, 0.0f, 0.0f, 1.0f } };
-				auto handle = m_registry.Insert( 
-						Position{ { x, y, 0.0f } }, Rotation{mat3_t{1.0f}}, Scale{vec3_t{0.05f}}, color, MeshName{"assets\\standard\\sphere.obj\\sphere"} );
-
-				m_engine.SendMessage(MsgObjectCreate{ this, nullptr, ObjectHandle(handle), ParentHandle{} });
-
-				x += 2.0f;		
-			}
-
-            ImGui::End();
-        }*/
-		return false;
-    }
 
 	bool GUI::OnKeyDown(Message message) {
 		GetCamera();
