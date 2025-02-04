@@ -132,13 +132,14 @@ namespace vve {
 		exists(oHandle, LocalToWorldMatrix{mat4_t{1.0f}});
 
 		std::filesystem::path filepath = msg.m_sceneName();
-		auto directory = filepath.parent_path();
 		uint64_t id = 1;
-		ProcessNode(msg.m_scene->mRootNode, ParentHandle(oHandle), directory, msg.m_scene, id);
+		ProcessNode(msg.m_scene->mRootNode, ParentHandle(oHandle), filepath, msg.m_scene, id);
 		return false;
 	}
 
-	void SceneManager::ProcessNode(aiNode* node, ParentHandle parent, std::filesystem::path& directory, const aiScene* scene, uint64_t& id) {
+	void SceneManager::ProcessNode(aiNode* node, ParentHandle parent, std::filesystem::path& filepath, const aiScene* scene, uint64_t& id) {
+		auto directory = filepath.parent_path();
+
 		auto transform = node->mTransformation;
 		aiVector3D scaling, position;
     	aiQuaternion rotation;
@@ -161,7 +162,7 @@ namespace vve {
 
 		if ( node->mNumMeshes > 0) {
 		    auto mesh = scene->mMeshes[node->mMeshes[0]];
-			m_registry.template Put(nHandle, MeshName{mesh->mName.C_Str()});
+			m_registry.template Put(nHandle, MeshName{(filepath / mesh->mName.C_Str()).string()});
 			
 			auto material = scene->mMaterials[mesh->mMaterialIndex];
 		    aiString texturePath;
@@ -194,7 +195,7 @@ namespace vve {
 		}
 
 		for (unsigned int i = 0; i < node->mNumChildren; i++) {
-			ProcessNode(node->mChildren[i], ParentHandle{nHandle}, directory, scene, id);
+			ProcessNode(node->mChildren[i], ParentHandle{nHandle}, filepath, scene, id);
 		}
 	}
 

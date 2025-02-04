@@ -89,7 +89,7 @@ namespace vve {
 		bool OnSceneCreate(Message message);
 		bool OnObjectCreate(Message message);
 		bool OnObjectSetParent(Message message);
-		void ProcessNode(aiNode* node, ParentHandle parent, std::filesystem::path& directory, const aiScene* scene, uint64_t& id);
+		void ProcessNode(aiNode* node, ParentHandle parent, std::filesystem::path& filepath, const aiScene* scene, uint64_t& id);
 		void SetParent(ObjectHandle object, ParentHandle parent);
 
 		//std::shared_mutex m_mutex;

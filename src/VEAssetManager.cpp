@@ -73,7 +73,7 @@ namespace vve {
 				auto tHandle = TextureHandle{m_registry.Insert(Name{texturePathStr.string()})};
 				auto pixels = LoadTexture(tHandle);
 				if( pixels != nullptr) m_engine.SendMessage( MsgTextureCreate{this, nullptr, tHandle } );
-
+				m_fileNameMap.insert( std::make_pair(filepath, (Name{texturePathStr.string()})) );
 		    }
 		}
 
@@ -83,7 +83,7 @@ namespace vve {
 			assert(mesh->HasPositions() && mesh->HasNormals());
 
 		    std::cout << "Mesh " << i << " " << mesh->mName.C_Str() << " has " << mesh->mNumVertices << " vertices." << std::endl;
-			Name name{mesh->mName.C_Str()};
+			Name name{ (filepath / mesh->mName.C_Str()).string()};
 			if( m_handleMap.contains(name) ) continue;
 
 			vh::Mesh VVEMesh{};
