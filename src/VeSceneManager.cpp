@@ -146,7 +146,7 @@ namespace vve {
 		aiMatrix3x3 rotMat = rotation.GetMatrix();
 		mat3_t rotMat3x3 = mat3_t(rotMat.a1, rotMat.a2, rotMat.a3, rotMat.b1, rotMat.b2, rotMat.b3, rotMat.c1, rotMat.c2, rotMat.c3);
 
-		std::cout << "Node: " << node->mName.C_Str() << std::endl;
+		std::cout << "\nCreate Node: " << node->mName.C_Str() << std::endl;
 
 		auto nHandle = m_registry.Insert(
 								node->mName.C_Str()[0] != 0 ? Name{node->mName.C_Str()} : Name{"Node" + std::to_string(id++)},
