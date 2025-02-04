@@ -4,6 +4,7 @@
 
 #include "VHInclude.h"
 #include "VEInclude.h"
+#include "L2DFileDialog.h"
 
 
 class MyGUI : public vve::System {
@@ -29,7 +30,7 @@ public:
 
 		m_engine.SendMessage( MsgSceneLoad{ this, nullptr, vve::Name{"assets\\test\\plane\\plane_t_n_s.obj"} });
 		auto handle = m_registry.Insert( 
-						vve::Position{ {0.0f,0.0f,0.0f } }, 
+						vve::Position{ {0.0f,0.0f,-1.0f } }, 
 						vve::Rotation{ mat3_t { glm::rotate(glm::mat4(1.0f), 3.14152f / 2.0f, glm::vec3(1.0f,0.0f,0.0f)) }}, 
 						vve::Scale{vec3_t{1000.0f,1000.0f,1000.0f}}, 
 						vve::MeshName{"assets\\test\\plane\\plane_t_n_s.obj\\plane"},
@@ -38,75 +39,78 @@ public:
 					);
 		m_engine.SendMessage(MsgObjectCreate{ this, nullptr, vve::ObjectHandle(handle), vve::ParentHandle{} });
 
-		/*auto handle = m_registry.Insert(
-								vve::Name{level},
-								vve::Position{ { 0.0f, 1.0f, -1.0f } },
-								vve::Rotation{ mat3_t { glm::rotate(glm::mat4(1.0f), 3.14152f / 2.0f, glm::vec3(1.0f,0.0f,0.0f)) }}, 
-								vve::Scale{ { 1000.0f, 1000.0f, 1000.0f } },
-								vve::UVScale{ { 1000.0f, 1000.0f } }
-						);
-
-		m_engine.SendMessage( 
-					MsgSceneCreate{
-						this, 
-						nullptr, 
-						vve::ObjectHandle{handle}, 
-						vve::ParentHandle{}, 
-						vve::Name{"assets\\test\\plane\\plane_t_n_s.obj"} });
-		*/
 		return false;
 	};
-
-    float clear_color[3]{ 0.45f, 0.55f, 0.60f};
 
     bool OnRecordNextFrame(Message message) {
       
         static bool show_demo_window = false;
         static bool show_another_window = false;
 
-        if( m_engine.GetWindow("VVE Window")->GetIsMinimized()) {
-			return false;
-		}
+        if( m_engine.GetWindow("VVE Window")->GetIsMinimized()) {return false;}
 
-        // 1. Show the big demo window (Most of the sample code is in ImGui::ShowDemoWindow()! You can browse its code to learn more about Dear ImGui!).
-        if (show_demo_window) {
-            ImGui::ShowDemoWindow(&show_demo_window);
-        }
+		static float x = 0.0f, y = 0.0f;
 
-        // 2. Show a simple window that we create ourselves. We use a Begin/End pair to create a named window.
         {
-            static float f = 0.0f;
-            static int counter = 0;
+            ImGui::Begin("Load Object");                          // Create a window called "Hello, world!" and append into it.
 
-            ImGui::Begin("Hello, world!");                          // Create a window called "Hello, world!" and append into it.
+			static char* file_dialog_buffer = nullptr;
+			static char path_obj[500] = "assets\\viking_room\\viking_room.obj";
+			ImGui::TextUnformatted("File: ");
+			ImGui::SameLine();
+			ImGui::InputText("##path1", path_obj, sizeof(path_obj));
+			ImGui::SameLine();
+			if (ImGui::Button("Browse##path_obj")) {
+			  file_dialog_buffer = path_obj;
+			  FileDialog::file_dialog_open = true;
+			  FileDialog::file_dialog_open_type = FileDialog::FileDialogType::OpenFile;
+			}
+			
+			if (FileDialog::file_dialog_open) {
+			  FileDialog::ShowFileDialog(&FileDialog::file_dialog_open, file_dialog_buffer, sizeof(file_dialog_buffer), FileDialog::file_dialog_open_type);
+			}
 
-            ImGui::Text("This is some useful text.");               // Display some text (you can use a format strings too)
-            ImGui::Checkbox("Demo Window", &show_demo_window);      // Edit bools storing our window open/close state
-            ImGui::Checkbox("Another Window", &show_another_window);
+            if (ImGui::Button("Create")) {                          // Buttons return true when clicked (most widgets return true when edited/activated)				
+				m_engine.SendMessage( 
+					MsgSceneCreate{
+						this, 
+						nullptr, 
+						vve::ObjectHandle( m_registry.Insert( vve::Position{ { x, y, 0.0f } }, vve::Rotation{mat3_t{1.0f}}, vve::Scale{vec3_t{1.0f}}) ), 
+						vve::ParentHandle{}, 
+						vve::Name{path_obj} });
 
-            ImGui::SliderFloat("float", &f, 0.0f, 1.0f);            // Edit 1 float using a slider from 0.0f to 1.0f
-            ImGui::ColorEdit3("clear color", (float*)&clear_color); // Edit 3 floats representing a color
+				x += 2.0f;
+			}
 
-            if (ImGui::Button("Button"))                            // Buttons return true when clicked (most widgets return true when edited/activated)
-                counter++;
-            ImGui::SameLine();
-            ImGui::Text("counter = %d", counter);
+			static char path_obj2[500] = "assets\\standard\\sphere.obj";
+			ImGui::TextUnformatted("File: ");
+			ImGui::SameLine();
+			ImGui::InputText("##path2", path_obj2, sizeof(path_obj2));
+			ImGui::SameLine();
+			if (ImGui::Button("Browse2##path_obj2")) {
+			  file_dialog_buffer = path_obj2;
+			  FileDialog::file_dialog_open = true;
+			  FileDialog::file_dialog_open_type = FileDialog::FileDialogType::OpenFile;
+			}
 
-            //ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / m_io->Framerate, m_io->Framerate);
-            ImGui::End();
-        }
+			if (FileDialog::file_dialog_open) {
+			  FileDialog::ShowFileDialog(&FileDialog::file_dialog_open, file_dialog_buffer, sizeof(file_dialog_buffer), FileDialog::file_dialog_open_type);
+			}
 
-        // 3. Show another simple window.
-        if (show_another_window)
-        {
-            ImGui::Begin("Another Window", &show_another_window);   // Pass a pointer to our bool variable (the window will have a closing button that will clear the bool when clicked)
-            ImGui::Text("Hello from another window!");
-            if (ImGui::Button("Close Me"))
-                show_another_window = false;
+            if (ImGui::Button("Create2")) {                          // Buttons return true when clicked (most widgets return true when edited/activated)		
+				
+				m_engine.SendMessage( MsgSceneLoad{ this, nullptr, vve::Name{path_obj2} });		
+				vh::Color color{ { 0.0f, 0.0f, 0.0f, 1.0f }, { 1.0f, 0.0f, 1.0f, 1.0f }, { 0.0f, 0.0f, 0.0f, 1.0f } };
+				auto handle = m_registry.Insert(vve::Position{ { x, y, 0.0f } }, vve::Rotation{mat3_t{1.0f}}, vve::Scale{vec3_t{0.05f}}, color, vve::MeshName{"assets\\standard\\sphere.obj\\sphere"} );
+
+				m_engine.SendMessage(MsgObjectCreate{ this, nullptr, vve::ObjectHandle(handle), vve::ParentHandle{} });
+
+				x += 2.0f;		
+			}
+
             ImGui::End();
         }
 		
-        m_engine.GetWindow("VVE Window")->SetClearColor( glm::vec4{ clear_color[0], clear_color[1], clear_color[2], 1.0f} );
 		return false;
     }
 

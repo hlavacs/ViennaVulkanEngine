@@ -1,6 +1,5 @@
 #include "VHInclude.h"
 #include "VEInclude.h"
-#include "L2DFileDialog.h"
 
 namespace vve {
 
@@ -31,7 +30,7 @@ namespace vve {
     bool GUI::OnRecordNextFrame(Message message) {
         if( m_windowSDL->GetIsMinimized()) { return false; }
 
-		static float x = 0.0f, y = 0.0f;
+		/*static float x = 0.0f, y = 0.0f;
 
         {
             ImGui::Begin("Load Object");                          // Create a window called "Hello, world!" and append into it.
@@ -92,7 +91,7 @@ namespace vve {
 			}
 
             ImGui::End();
-        }
+        }*/
 		return false;
     }
 

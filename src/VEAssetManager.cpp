@@ -14,8 +14,7 @@ namespace vve {
 			{this, std::numeric_limits<int>::max(), "SCENE_CREATE", [this](Message& message){ return OnSceneCreate(message);} },
 			{this,                               0, "OBJECT_CREATE", [this](Message& message){ return OnObjectCreate(message);} },
 			{this, 								 0, "TEXTURE_CREATE",   [this](Message& message){ return OnTextureCreate(message);} },
-			{this, std::numeric_limits<int>::max(), "TEXTURE_CREATE",   [this](Message& message){ return OnTextureRelease(message);} },
-			{this,                               0, "QUIT", [this](Message& message){ return OnQuit(message);} },
+			{this, std::numeric_limits<int>::max(), "TEXTURE_CREATE",   [this](Message& message){ return OnTextureRelease(message);} }
 		} );
 	}
 
@@ -155,10 +154,6 @@ namespace vve {
 		auto texture = m_registry.template Get<vh::Texture&>(msg.m_handle);
 		stbi_image_free(texture.m_pixels); //last thing release resources
 		return true;
-	}
-
-	bool AssetManager::OnQuit( Message message ) {
-		return false;
 	}
 
 	auto AssetManager::LoadTexture(TextureHandle tHandle) -> stbi_uc* {

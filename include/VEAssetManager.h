@@ -17,7 +17,6 @@ namespace vve {
 		bool OnObjectCreate(Message message);
 		bool OnTextureCreate(Message message);
 		bool OnTextureRelease(Message message);
-		bool OnQuit( Message message );
 		auto LoadTexture(TextureHandle handle) -> stbi_uc*;
 		
 		bool SceneLoad(Name sceneName, const C_STRUCT aiScene* scene);
