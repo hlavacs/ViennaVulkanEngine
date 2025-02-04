@@ -22,17 +22,18 @@ namespace vve {
 
 	bool AssetManager::OnSceneCreate( Message& message ) {
 		auto& msg = message.template GetData<MsgSceneCreate>();
-		return SceneLoad(msg.m_sender, msg.m_receiver, msg.m_object, msg.m_parent, msg.m_sceneName, msg.m_scene);
+		return SceneLoad(msg.m_sender, msg.m_receiver, msg.m_sceneName, msg.m_scene);
 	}
 
     bool AssetManager::OnSceneLoad(Message& message) {
 		auto& msg = message.template GetData<MsgSceneLoad>();
-		SceneLoad(msg.m_sender, msg.m_receiver, msg.m_object, msg.m_parent, msg.m_sceneName, msg.m_scene);
-		aiReleaseImport(msg.m_scene);
+		const aiScene * scene;
+		SceneLoad(msg.m_sender, msg.m_receiver, msg.m_sceneName, scene);
+		aiReleaseImport(scene);
 		return true; //the message is consumed -> no more processing allowed
 	}
 
-	bool AssetManager::SceneLoad(System* s, System* r, ObjectHandle object, ParentHandle parent, Name sceneName, const C_STRUCT aiScene*& scene) {
+	bool AssetManager::SceneLoad(System* s, System* r, Name sceneName, const C_STRUCT aiScene*& scene) {
 		std::filesystem::path filepath = sceneName();
 		auto directory = filepath.parent_path();
 		

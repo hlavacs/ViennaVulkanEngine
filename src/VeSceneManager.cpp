@@ -14,6 +14,7 @@ namespace vve {
 			{this,  2000, "INIT", [this](Message& message){ return OnInit(message);} },
 			{this, std::numeric_limits<int>::max(), "UPDATE", [this](Message& message){ return OnUpdate(message);} },
 			{this,                            1000, "SCENE_CREATE", [this](Message& message){ return OnSceneCreate(message);} },
+			{this,                               0, "OBJECT_CREATE", [this](Message& message){ return OnObjectCreate(message);} },
 			{this, std::numeric_limits<int>::max(), "OBJECT_SET_PARENT", [this](Message& message){ return OnObjectSetParent(message);} }
 		} );
 	}
@@ -95,6 +96,17 @@ namespace vve {
 		for( auto child : children() ) {
 			update(m_registry, LocalToWorldMatrix{mat4_t{1.0f}}, child, update);
 		}
+		return false;
+	}
+
+	bool SceneManager::OnObjectCreate(Message message) {
+		auto& msg = message.template GetData<MsgObjectCreate>();
+		if( msg.m_sender == this ) return false;
+		ObjectHandle oHandle = msg.m_object;
+		assert( oHandle().IsValid() );
+		ParentHandle pHandle = msg.m_parent;
+		if( !pHandle().IsValid() ) { pHandle = { m_rootHandle }; }
+		SetParent(oHandle, pHandle);
 		return false;
 	}
 

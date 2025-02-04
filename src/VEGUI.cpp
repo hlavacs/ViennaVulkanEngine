@@ -64,7 +64,7 @@ namespace vve {
 				x += 2.0f;
 			}
 
-			static char path_obj2[500] = "assets\\test\\cube1.obj";
+			static char path_obj2[500] = "assets\\standard\\sphere.obj";
 			ImGui::TextUnformatted("File: ");
 			ImGui::SameLine();
 			ImGui::InputText("##path2", path_obj2, sizeof(path_obj2));
@@ -80,13 +80,13 @@ namespace vve {
 			}
 
             if (ImGui::Button("Create2")) {                          // Buttons return true when clicked (most widgets return true when edited/activated)		
-				m_engine.SendMessage( 
-					MsgSceneCreate{
-						this, 
-						nullptr, 
-						ObjectHandle( m_registry.Insert( Position{ { x, y, 0.0f } }, Rotation{mat3_t{1.0f}}, Scale{vec3_t{1.0f}}) ), 
-						ParentHandle{}, 
-						Name{path_obj2} });		
+				
+				m_engine.SendMessage( MsgSceneLoad{ this, nullptr, Name{path_obj2} });		
+				vh::Color color{ { 0.0f, 0.0f, 0.0f, 1.0f }, { 1.0f, 0.0f, 1.0f, 1.0f }, { 0.0f, 0.0f, 0.0f, 1.0f } };
+				auto handle = m_registry.Insert( 
+						Position{ { x, y, 0.0f } }, Rotation{mat3_t{1.0f}}, Scale{vec3_t{0.5f}}, color, MeshName{"sphere"} );
+
+				m_engine.SendMessage(MsgObjectCreate{ this, nullptr, ObjectHandle(handle), ParentHandle{} });
 
 				x += 2.0f;		
 			}

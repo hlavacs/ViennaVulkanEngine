@@ -200,9 +200,11 @@ namespace vve {
 
 	bool RendererForward::OnObjectCreate( Message message ) {
 		ObjectHandle oHandle = message.template GetData<MsgObjectCreate>().m_object;
-		auto gHandle = m_registry.template Get<MeshHandle>(oHandle);
-		auto mesh = m_registry.template Get<vh::Mesh&>(gHandle);
-		auto pipelinePerType = getPipelinePerType(getPipelineType(oHandle, mesh.m_verticesData));
+		assert( m_registry.template Has<MeshHandle>(oHandle) );	
+		auto meshHandle = m_registry.template Get<MeshHandle>(oHandle);
+		auto mesh = m_registry.template Get<vh::Mesh&>(meshHandle);
+		auto type = getPipelineType(oHandle, mesh.m_verticesData);
+		auto pipelinePerType = getPipelinePerType(type);
 
 		vh::UniformBuffers ubo;
 		size_t sizeUbo = 0;
@@ -236,7 +238,8 @@ namespace vve {
 	/// @return 
 	std::string RendererForward::getPipelineType(ObjectHandle handle, vh::VertexData &vertexData) {
 		std::string type = vertexData.getType();
-		if( m_registry.template Has<vh::Color>(handle) && type.find("C") == std::string::npos && type.find("U") == std::string::npos ) type += "O";
+		if( m_registry.template Has<TextureHandle>(handle) && type.find("U") != std::string::npos ) type += "E";
+		if( m_registry.template Has<vh::Color>(handle) && type.find("C") == std::string::npos && type.find("E") == std::string::npos ) type += "O";
 		return type;
 	}
 

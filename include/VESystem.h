@@ -121,13 +121,7 @@ namespace vve {
 
 		//------------------------------------------------------------------------------------------------
 
-	    struct MsgSceneLoad : public MsgBase { 
-			MsgSceneLoad(System* s, System* r, ObjectHandle object, ParentHandle parent, Name sceneName); 
-			ObjectHandle m_object{}; 
-			ParentHandle m_parent{}; 
-			Name m_sceneName;
-			const C_STRUCT aiScene* m_scene{};
-		};
+	    struct MsgSceneLoad : public MsgBase { MsgSceneLoad(System* s, System* r, Name sceneName); Name m_sceneName; };
 
 	    struct MsgSceneCreate : public MsgBase { 
 			MsgSceneCreate(System* s, System* r, ObjectHandle object, ParentHandle parent, Name sceneName); 
