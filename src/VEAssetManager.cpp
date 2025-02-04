@@ -82,8 +82,8 @@ namespace vve {
 		    aiMesh* mesh = scene->mMeshes[i];
 			assert(mesh->HasPositions() && mesh->HasNormals());
 
-		    std::cout << "Mesh " << i << " " << mesh->mName.C_Str() << " has " << mesh->mNumVertices << " vertices." << std::endl;
 			Name name{ (filepath / mesh->mName.C_Str()).string()};
+		    std::cout << "Mesh " << i << " " << name() << " has " << mesh->mNumVertices << " vertices." << std::endl;
 			if( m_handleMap.contains(name) ) continue;
 
 			vh::Mesh VVEMesh{};

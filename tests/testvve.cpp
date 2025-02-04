@@ -27,7 +27,18 @@ public:
 		std::cout << "Loading level: " << msg.m_level << std::endl;
 		std::string level = std::string("Level: ") + msg.m_level;
 
-		auto handle = m_registry.Insert(
+		m_engine.SendMessage( MsgSceneLoad{ this, nullptr, vve::Name{"assets\\test\\plane\\plane_t_n_s.obj"} });
+		auto handle = m_registry.Insert( 
+						vve::Position{ {0.0f,0.0f,0.0f } }, 
+						vve::Rotation{ mat3_t { glm::rotate(glm::mat4(1.0f), 3.14152f / 2.0f, glm::vec3(1.0f,0.0f,0.0f)) }}, 
+						vve::Scale{vec3_t{1000.0f,1000.0f,1000.0f}}, 
+						vve::MeshName{"assets\\test\\plane\\plane_t_n_s.obj\\plane"},
+						vve::TextureName{"assets\\test\\plane\\grass.jpg"},
+						vve::UVScale{ { 1000.0f, 1000.0f } }
+					);
+		m_engine.SendMessage(MsgObjectCreate{ this, nullptr, vve::ObjectHandle(handle), vve::ParentHandle{} });
+
+		/*auto handle = m_registry.Insert(
 								vve::Name{level},
 								vve::Position{ { 0.0f, 1.0f, -1.0f } },
 								vve::Rotation{ mat3_t { glm::rotate(glm::mat4(1.0f), 3.14152f / 2.0f, glm::vec3(1.0f,0.0f,0.0f)) }}, 
@@ -42,7 +53,7 @@ public:
 						vve::ObjectHandle{handle}, 
 						vve::ParentHandle{}, 
 						vve::Name{"assets\\test\\plane\\plane_t_n_s.obj"} });
-
+		*/
 		return false;
 	};
 
