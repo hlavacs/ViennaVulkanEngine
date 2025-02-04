@@ -182,9 +182,10 @@ namespace vve {
 
 	bool RendererVulkan::OnTextureCreate( Message message ) {
 		auto msg = message.template GetData<MsgTextureCreate>();
-		auto pixels = msg.m_pixels;
 		auto handle = msg.m_handle;
 		auto& texture = m_registry.template Get<vh::Texture&>(handle);
+		auto pixels = texture.m_pixels;
+
 		vh::BufCreateTextureImage(GetPhysicalDevice(), GetDevice(), GetVulkanState().m_vmaAllocator, GetGraphicsQueue(), m_commandPool, pixels, texture.m_width, texture.m_height, texture.m_size, texture);
 		vh::BufCreateTextureImageView(GetDevice(), texture);
 		vh::BufCreateTextureSampler(GetPhysicalDevice(), GetDevice(), texture);

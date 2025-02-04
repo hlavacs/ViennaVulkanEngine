@@ -75,7 +75,7 @@ namespace vve {
 				
 				auto tHandle = TextureHandle{m_registry.Insert(Name{texturePathStr.string()})};
 				auto pixels = LoadTexture(tHandle);
-				if( pixels != nullptr) m_engine.SendMessage( MsgTextureCreate{this, nullptr, pixels, tHandle } );
+				if( pixels != nullptr) m_engine.SendMessage( MsgTextureCreate{this, nullptr, tHandle } );
 
 		    }
 		}
@@ -161,7 +161,8 @@ namespace vve {
 
 	bool AssetManager::OnTextureRelease(Message message) {
 		auto msg = message.template GetData<MsgTextureCreate>();
-		stbi_image_free(msg.m_pixels); //last thing release resources
+		auto texture = m_registry.template Get<vh::Texture&>(msg.m_handle);
+		stbi_image_free(texture.m_pixels); //last thing release resources
 		return true;
 	}
 

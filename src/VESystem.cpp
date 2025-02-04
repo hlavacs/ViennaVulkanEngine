@@ -54,7 +54,7 @@ namespace vve {
 
 	//------------------------------------------------------------------------
 
-	System::MsgTextureCreate::MsgTextureCreate(System* s, System* r, void *pixels, vecs::Handle handle) : MsgBase{"TEXTURE_CREATE", s, r}, m_pixels{pixels}, m_handle{handle} {};
+	System::MsgTextureCreate::MsgTextureCreate(System* s, System* r, vecs::Handle handle) : MsgBase{"TEXTURE_CREATE", s, r}, m_handle{handle} {};
     System::MsgTextureDestroy::MsgTextureDestroy(System* s, System* r, vecs::Handle handle) : MsgBase{"TEXTURE_DESTROY", s, r}, m_handle{handle} {};
 	System::MsgMeshCreate::MsgMeshCreate(System* s, System* r, vecs::Handle handle) : MsgBase{"MESH_CREATE", s, r}, m_handle{handle} {};
     System::MsgMeshDestroy::MsgMeshDestroy(System* s, System* r, vecs::Handle handle) : MsgBase{"MESH_DESTROY", s, r}, m_handle{handle} {};
