@@ -48,6 +48,9 @@ namespace vve
 	    VkDescriptorPool m_descriptorPool;    
 	    VkCommandPool m_commandPool;
 	    std::vector<VkCommandBuffer> m_commandBuffers;
+
+		int32_t m_numberLights{10};
+		glm::ivec3 m_numberLightsPerType{0,0,0};
     };
 
 };   // namespace vve

@@ -3,6 +3,28 @@ module common;
 
 //-----------------------------------------------------------------------
 
+export public struct Camera {
+    public float4x4 view;
+    public float4x4 proj;
+};
+
+// x==1...point, x==2...directional, x==3...spotlight
+export public struct Light {
+    public float3 positionW;
+    public float3 directionW;
+    public float3x3 lightSpaceMatrix;
+    public float3 color;
+    public float4 param;       // x = type, y = intensity, z = power, w = ambient
+    public float3 attenuation; // x = constant, y = linear, z = quadratic
+};
+
+export public struct UniformBufferFrame {
+    public Camera camera;
+    public uint3 numberLights; // x = point, y = directional, z = spotlight
+};
+
+//-----------------------------------------------------------------------
+
 export public struct UniformBufferObject {
     public float4x4 model;
     public float4x4 modelInvTranspose;
@@ -32,28 +54,7 @@ export public struct UniformBufferObjectColor {
 
 //-----------------------------------------------------------------------
 
-// x==1...point, x==2...directional, x==3...spotlight
-export public struct Light {
-    public float3 positionW;
-    public float3 directionW;
-	public float3x3 lightSpaceMatrix;
-    public float3 color;
-    public float4 param;       // x = type, y = intensity, z = power, w = ambient
-    public float3 attenuation; // x = constant, y = linear, z = quadratic
-};
-
 [[vk::constant_id(0)]] export public const int MAX_LIGHTS = 10;
-
-export public struct Camera {
-    public float4x4 view;
-    public float4x4 proj;
-};
-
-export public struct UniformBufferFrame {
-    public Camera camera;
-    public int3   numberLights; // x = point, y = directional, z = spotlight
-};
-
 
 //-----------------------------------------------------------------------
 
