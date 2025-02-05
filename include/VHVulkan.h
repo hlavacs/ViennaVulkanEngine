@@ -74,11 +74,12 @@ namespace vh {
 
 	//x==1...point, x==2...directional, x==3...spotlight
 	struct Light {
-	    alignas(16) glm::vec3 positionW{100.0f, 100.0f, 100.0f};
-	    alignas(16) glm::vec3 directionW{1.0f, 1.0f, 1.0f};
-	    alignas(16) glm::vec3 color{1.0f, 1.0f, 1.0f}; 
-	    alignas(16) glm::vec4 param{1.0f, 1.0f, 1.0, 1.0f}; //x=type, y=intensity, z=power, w=ambient
-		alignas(16) glm::vec3 attenuation{1.0f, 0.0f, 0.0f}; //x=constant, y=linear, z=quadratic
+	    alignas(16) glm::vec3 	positionW{100.0f, 100.0f, 100.0f};
+	    alignas(16) glm::vec3 	directionW{1.0f, 1.0f, 1.0f};
+		alignas(16) glm::mat3x3 lightSpaceMatrix{1.0f};
+	    alignas(16) glm::vec3 	color{1.0f, 1.0f, 1.0f}; 
+	    alignas(16) glm::vec4 	param{1.0f, 1.0f, 1.0, 1.0f}; //x=type, y=intensity, z=power, w=ambient
+		alignas(16) glm::vec3 	attenuation{1.0f, 0.0f, 0.0f}; //x=constant, y=linear, z=quadratic
 	};
 
 	const int MAX_LIGHTS = 10;

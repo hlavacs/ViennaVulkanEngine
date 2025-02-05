@@ -15,6 +15,10 @@ struct VertexStageOutput {
 [[vk::binding(0,0)]]
 ParameterBlock<UniformBufferFrame> gParamsFrame;
 
+// binding 1,0 means that the uniform buffer is bound to binding 1, set 0
+[[vk::binding(1, 0)]]
+ConstantBuffer<Light[MAX_LIGHTS]> gLights;
+
 // binding 0,0 means that the uniform buffer is bound to binding 0, set 1
 [[vk::binding(0,1)]]
 ParameterBlock<UniformBufferObjectTexture> gParamsObject;
