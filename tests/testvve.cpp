@@ -53,60 +53,94 @@ public:
 
         {
             ImGui::Begin("Load Object");                          // Create a window called "Hello, world!" and append into it.
-
 			static char* file_dialog_buffer = nullptr;
-			static char path_obj[500] = "assets\\viking_room\\viking_room.obj";
-			ImGui::TextUnformatted("File: ");
-			ImGui::SameLine();
-			ImGui::InputText("##path1", path_obj, sizeof(path_obj));
-			ImGui::SameLine();
-			if (ImGui::Button("Browse##path_obj")) {
-			  file_dialog_buffer = path_obj;
-			  FileDialog::file_dialog_open = true;
-			  FileDialog::file_dialog_open_type = FileDialog::FileDialogType::OpenFile;
-			}
-			
-			if (FileDialog::file_dialog_open) {
-			  FileDialog::ShowFileDialog(&FileDialog::file_dialog_open, file_dialog_buffer, sizeof(file_dialog_buffer), FileDialog::file_dialog_open_type);
-			}
 
-            if (ImGui::Button("Create")) {                          // Buttons return true when clicked (most widgets return true when edited/activated)				
-				m_engine.SendMessage( 
-					MsgSceneCreate{
-						this, 
-						nullptr, 
-						vve::ObjectHandle( m_registry.Insert( vve::Position{ { x, y, 0.0f } }, vve::Rotation{mat3_t{1.0f}}, vve::Scale{vec3_t{1.0f}}) ), 
-						vve::ParentHandle{}, 
-						vve::Name{path_obj} });
+			{
+				static char path_obj[500] = "assets\\viking_room\\viking_room.obj";
+				ImGui::TextUnformatted("File: ");
+				ImGui::SameLine();
+				ImGui::InputText("##path1", path_obj, sizeof(path_obj));
+				ImGui::SameLine();
+				if (ImGui::Button("Browse##path_obj")) {
+				  file_dialog_buffer = path_obj;
+				  FileDialog::file_dialog_open = true;
+				  FileDialog::file_dialog_open_type = FileDialog::FileDialogType::OpenFile;
+				}
 
-				x += 2.0f;
-			}
+				if (FileDialog::file_dialog_open) {
+				  FileDialog::ShowFileDialog(&FileDialog::file_dialog_open, file_dialog_buffer, sizeof(file_dialog_buffer), FileDialog::file_dialog_open_type);
+				}
 
-			static char path_obj2[500] = "assets\\standard\\sphere.obj";
-			ImGui::TextUnformatted("File: ");
-			ImGui::SameLine();
-			ImGui::InputText("##path2", path_obj2, sizeof(path_obj2));
-			ImGui::SameLine();
-			if (ImGui::Button("Browse2##path_obj2")) {
-			  file_dialog_buffer = path_obj2;
-			  FileDialog::file_dialog_open = true;
-			  FileDialog::file_dialog_open_type = FileDialog::FileDialogType::OpenFile;
+	            if (ImGui::Button("Create")) {                          // Buttons return true when clicked (most widgets return true when edited/activated)				
+					m_engine.SendMessage( 
+						MsgSceneCreate{
+							this, 
+							nullptr, 
+							vve::ObjectHandle( m_registry.Insert( vve::Position{ { x, y, 0.0f } }, vve::Rotation{mat3_t{1.0f}}, vve::Scale{vec3_t{1.0f}}) ), 
+							vve::ParentHandle{}, 
+							vve::Name{path_obj} });
+
+					x += 2.0f;
+				}
 			}
 
-			if (FileDialog::file_dialog_open) {
-			  FileDialog::ShowFileDialog(&FileDialog::file_dialog_open, file_dialog_buffer, sizeof(file_dialog_buffer), FileDialog::file_dialog_open_type);
+			{
+				static char path_obj2[500] = "assets\\standard\\sphere.obj";
+				ImGui::TextUnformatted("File: ");
+				ImGui::SameLine();
+				ImGui::InputText("##path2", path_obj2, sizeof(path_obj2));
+				ImGui::SameLine();
+				if (ImGui::Button("Browse2##path_obj2")) {
+				  file_dialog_buffer = path_obj2;
+				  FileDialog::file_dialog_open = true;
+				  FileDialog::file_dialog_open_type = FileDialog::FileDialogType::OpenFile;
+				}
+
+				if (FileDialog::file_dialog_open) {
+				  FileDialog::ShowFileDialog(&FileDialog::file_dialog_open, file_dialog_buffer, sizeof(file_dialog_buffer), FileDialog::file_dialog_open_type);
+				}
+
+	            if (ImGui::Button("Create2")) {                          // Buttons return true when clicked (most widgets return true when edited/activated)		
+
+					m_engine.SendMessage( MsgSceneLoad{ this, nullptr, vve::Name{path_obj2} });		
+					vh::Color color{ { 0.0f, 0.0f, 0.0f, 1.0f }, { 0.0f, 1.0f, 1.0f, 1.0f }, { 0.0f, 0.0f, 0.0f, 1.0f } };
+					auto handle = m_registry.Insert(vve::Position{ { x, y, 0.0f } }, vve::Rotation{mat3_t{1.0f}}, vve::Scale{vec3_t{0.05f}}, color, vve::MeshName{"assets\\standard\\sphere.obj\\sphere"} );
+
+					m_engine.SendMessage(MsgObjectCreate{ this, nullptr, vve::ObjectHandle(handle), vve::ParentHandle{} });
+
+					x += 2.0f;		
+				}
 			}
 
-            if (ImGui::Button("Create2")) {                          // Buttons return true when clicked (most widgets return true when edited/activated)		
-				
-				m_engine.SendMessage( MsgSceneLoad{ this, nullptr, vve::Name{path_obj2} });		
-				vh::Color color{ { 0.0f, 0.0f, 0.0f, 1.0f }, { 1.0f, 0.0f, 1.0f, 1.0f }, { 0.0f, 0.0f, 0.0f, 1.0f } };
-				auto handle = m_registry.Insert(vve::Position{ { x, y, 0.0f } }, vve::Rotation{mat3_t{1.0f}}, vve::Scale{vec3_t{0.05f}}, color, vve::MeshName{"assets\\standard\\sphere.obj\\sphere"} );
+			{
+				static char path_obj3[500] = "assets\\test\\cube1.obj";
+				ImGui::TextUnformatted("File: ");
+				ImGui::SameLine();
+				ImGui::InputText("##path3", path_obj3, sizeof(path_obj3));
+				ImGui::SameLine();
+				if (ImGui::Button("Browse2##path_obj3")) {
+				  file_dialog_buffer = path_obj3;
+				  FileDialog::file_dialog_open = true;
+				  FileDialog::file_dialog_open_type = FileDialog::FileDialogType::OpenFile;
+				}
 
-				m_engine.SendMessage(MsgObjectCreate{ this, nullptr, vve::ObjectHandle(handle), vve::ParentHandle{} });
+				if (FileDialog::file_dialog_open) {
+				  FileDialog::ShowFileDialog(&FileDialog::file_dialog_open, file_dialog_buffer, sizeof(file_dialog_buffer), FileDialog::file_dialog_open_type);
+				}
 
-				x += 2.0f;		
+	            if (ImGui::Button("Create3")) {                          // Buttons return true when clicked (most widgets return true when edited/activated)		
+
+					m_engine.SendMessage( 
+						MsgSceneCreate{
+							this, 
+							nullptr, 
+							vve::ObjectHandle( m_registry.Insert( vve::Position{ { x, y, 0.0f } }, vve::Rotation{mat3_t{1.0f}}, vve::Scale{vec3_t{1.0f}}) ), 
+							vve::ParentHandle{}, 
+							vve::Name{path_obj3} });
+					x += 2.0f;		
+				}
 			}
+
 
             ImGui::End();
         }

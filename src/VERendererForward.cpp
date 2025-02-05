@@ -165,7 +165,12 @@ namespace vve {
 					vh::DescriptorSet&>
 						({(size_t)pipeline.second.m_graphicsPipeline.m_pipeline}) ) {
 
-				if( m_registry.template Has<TextureHandle>(oHandle) ) {
+				bool hasTexture = m_registry.template Has<TextureHandle>(oHandle);
+				bool hasColor = m_registry.template Has<vh::Color>(oHandle);
+				bool hasVertexColor = pipeline.second.m_type.find("C") != std::string::npos;
+				if( !hasTexture && !hasColor && !hasVertexColor ) continue;
+
+				if( hasTexture ) {
 					vh::UniformBufferObjectTexture uboTexture{};
 					uboTexture.model = LtoW(); 		
 					uboTexture.modelInverseTranspose = glm::inverse( glm::transpose(uboTexture.model) );
@@ -175,11 +180,16 @@ namespace vve {
 					}
 					uboTexture.uvScale = uvScale;
 					memcpy(uniformBuffers.m_uniformBuffersMapped[GetCurrentFrame()], &uboTexture, sizeof(uboTexture));
-				} else if( m_registry.template Has<vh::Color>(oHandle) ) {
+				} else if( hasColor ) {
 					vh::UniformBufferObjectColor uboColor{};
 					uboColor.model = LtoW(); 		
 					uboColor.modelInverseTranspose = glm::inverse( glm::transpose(uboColor.model) );
 					uboColor.color = m_registry.template Get<vh::Color>(oHandle);
+					memcpy(uniformBuffers.m_uniformBuffersMapped[GetCurrentFrame()], &uboColor, sizeof(uboColor));
+				} else if( hasVertexColor ) {
+					vh::UniformBufferObject uboColor{};
+					uboColor.model = LtoW(); 
+					uboColor.modelInverseTranspose = glm::inverse( glm::transpose(uboColor.model) );
 					memcpy(uniformBuffers.m_uniformBuffersMapped[GetCurrentFrame()], &uboColor, sizeof(uboColor));
 				}
 
@@ -206,18 +216,25 @@ namespace vve {
 		auto type = getPipelineType(oHandle, mesh.m_verticesData);
 		auto pipelinePerType = getPipelinePerType(type);
 
+		bool hasTexture = m_registry.template Has<TextureHandle>(oHandle);
+		bool hasColor = m_registry.template Has<vh::Color>(oHandle);
+		bool hasVertexColor = pipelinePerType->m_type.find("C") != std::string::npos;
+		if( !hasTexture && !hasColor && !hasVertexColor ) return false;	
+
 		vh::UniformBuffers ubo;
 		size_t sizeUbo = 0;
 		vh::DescriptorSet descriptorSet{1};
 		vh::RenCreateDescriptorSet(GetDevice(), pipelinePerType->m_descriptorSetLayoutPerObject, m_descriptorPool, descriptorSet);
 
-		if( m_registry.template Has<TextureHandle>(oHandle) ) {
+		if( hasTexture ) {
 			sizeUbo = sizeof(vh::UniformBufferObjectTexture);
 			auto tHandle = m_registry.template Get<TextureHandle>(oHandle);
 			auto& texture = m_registry.template Get<vh::Texture&>(tHandle);
 	    	vh::RenUpdateDescriptorSetTexture(GetDevice(), texture, 1, descriptorSet);
-		} else if( m_registry.template Has<vh::Color>(oHandle) ) {
+		} else if(hasColor) {
 			sizeUbo = sizeof(vh::UniformBufferObjectColor);
+		} else if(hasVertexColor) {
+			sizeUbo = sizeof(vh::UniformBufferObject);
 		}
 
 		vh::BufCreateUniformBuffers(GetPhysicalDevice(), GetDevice(), GetVmaAllocator(), sizeUbo, ubo);

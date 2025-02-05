@@ -50,6 +50,11 @@ namespace vh {
 		alignas(16) glm::vec4 m_specularColor{0.0f};
 	};
 
+	struct UniformBufferObject {
+	    alignas(16) glm::mat4 model;
+	    alignas(16) glm::mat4 modelInverseTranspose;
+	};
+
 	struct UniformBufferObjectColor {
 	    alignas(16) glm::mat4 model;
 	    alignas(16) glm::mat4 modelInverseTranspose;

@@ -16,7 +16,7 @@ ParameterBlock<UniformBufferFrame> gParamsFrame;
 
 // binding 0,0 means that the uniform buffer is bound to binding 0, set 1
 [[vk::binding(0,1)]]
-ParameterBlock<UniformBufferObjectColor> gParamsObject;
+ParameterBlock<UniformBufferObject> gParamsObject;
 
 [shader("vertex")]
 VertexStageOutput vertexMain( 
@@ -31,7 +31,7 @@ VertexStageOutput vertexMain(
     output.coarseVertex.fragColor = color;
     output.coarseVertex.normal = mul(gParamsObject.modelInvTranspose, float4(normal, 1.0)).xyz;
     output.sv_position = mul(gParamsFrame.camera.proj, float4(viewPosition, 1.0));
-
+ 
     return output;
 }
 

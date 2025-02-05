@@ -3,6 +3,13 @@ module common;
 
 //-----------------------------------------------------------------------
 
+export public struct UniformBufferObject {
+    public float4x4 model;
+    public float4x4 modelInvTranspose;
+};
+
+//-----------------------------------------------------------------------
+
 export public struct UniformBufferObjectTexture {
     public float4x4 model;
     public float4x4 modelInvTranspose;
