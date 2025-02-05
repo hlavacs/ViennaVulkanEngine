@@ -14,6 +14,7 @@ public:
 
 		m_engine.RegisterCallback( { 
 			{this,      0, "LOAD_LEVEL", [this](Message& message){ return OnLoadLevel(message);} },
+			{this,      0, "UPDATE", [this](Message& message){ return OnUpdate(message);} },
 			{this, -10000, "RECORD_NEXT_FRAME", [this](Message& message){ return OnRecordNextFrame(message);} },
 			{this,      0, "SDL_KEY_DOWN", [this](Message& message){ return OnKeyDown(message);} },
 			{this,      0, "SDL_KEY_REPEAT", [this](Message& message){ return OnKeyRepeat(message);} },
@@ -39,8 +40,16 @@ public:
 					);
 		m_engine.SendMessage(MsgObjectCreate{ this, nullptr, vve::ObjectHandle(handle), vve::ParentHandle{} });
 
+
+		
+
 		return false;
 	};
+
+	bool OnUpdate( Message message ) {
+		auto msg = message.template GetData<vve::System::MsgUpdate>();
+		return false;
+	}
 
     bool OnRecordNextFrame(Message message) {
       

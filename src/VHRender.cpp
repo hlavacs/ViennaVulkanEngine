@@ -393,15 +393,15 @@ namespace vh {
 		}
     }
 
-    void RenUpdateDescriptorSetTexture(VkDevice device, Texture& texture, size_t binding, DescriptorSet& descriptorSet) {
+    void RenUpdateDescriptorSetTexture(VkDevice device, Map& texture, size_t binding, DescriptorSet& descriptorSet) {
 
 		size_t i = 0;
 	    for ( auto& ds : descriptorSet.m_descriptorSetPerFrameInFlight ) {
 
 	        VkDescriptorImageInfo imageInfo{};
 	        imageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-	        imageInfo.imageView = texture.m_textureImageView;
-	        imageInfo.sampler = texture.m_textureSampler;
+	        imageInfo.imageView = texture.m_mapImageView;
+	        imageInfo.sampler = texture.m_mapSampler;
 
 	        VkWriteDescriptorSet descriptorWrites{};
 

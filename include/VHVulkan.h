@@ -120,15 +120,15 @@ namespace vh {
         VkImageView     m_depthImageView;
     };
 
-    struct Texture {
+    struct Map {
 		int 			m_width;
 		int				m_height;
 		VkDeviceSize	m_size;
 		void *			m_pixels{nullptr};
-		VkImage         m_textureImage;
-        VmaAllocation   m_textureImageAllocation;
-        VkImageView     m_textureImageView;
-        VkSampler       m_textureSampler;
+		VkImage         m_mapImage;
+        VmaAllocation   m_mapImageAllocation;
+        VkImageView     m_mapImageView;
+        VkSampler       m_mapSampler;
     };
 
 

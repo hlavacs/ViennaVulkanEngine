@@ -229,7 +229,7 @@ namespace vve {
 		if( hasTexture ) {
 			sizeUbo = sizeof(vh::UniformBufferObjectTexture);
 			auto tHandle = m_registry.template Get<TextureHandle>(oHandle);
-			auto& texture = m_registry.template Get<vh::Texture&>(tHandle);
+			auto& texture = m_registry.template Get<vh::Map&>(tHandle);
 	    	vh::RenUpdateDescriptorSetTexture(GetDevice(), texture, 1, descriptorSet);
 		} else if(hasColor) {
 			sizeUbo = sizeof(vh::UniformBufferObjectColor);

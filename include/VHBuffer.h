@@ -14,11 +14,11 @@ namespace vh {
 
     void BufCopyBuffer(VkDevice device, VkQueue graphicsQueue, VkCommandPool commandPool, VkBuffer srcBuffer, VkBuffer dstBuffer, VkDeviceSize size);
 
-	void BufCreateTextureImage(VkPhysicalDevice physicalDevice, VkDevice device, VmaAllocator vmaAllocator, VkQueue graphicsQueue, VkCommandPool commandPool, void* pixels, int width, int height, size_t size, Texture& texture);
+	void BufCreateTextureImage(VkPhysicalDevice physicalDevice, VkDevice device, VmaAllocator vmaAllocator, VkQueue graphicsQueue, VkCommandPool commandPool, void* pixels, int width, int height, size_t size, Map& texture);
 
-    void BufCreateTextureImageView(VkDevice device, Texture& texture);
+    void BufCreateTextureImageView(VkDevice device, Map& texture);
 
-    void BufCreateTextureSampler(VkPhysicalDevice physicalDevice, VkDevice device, Texture &texture);
+    void BufCreateTextureSampler(VkPhysicalDevice physicalDevice, VkDevice device, Map &texture);
 
     VkImageView BufCreateImageView(VkDevice device, VkImage image, VkFormat format, VkImageAspectFlags aspectFlags);
 

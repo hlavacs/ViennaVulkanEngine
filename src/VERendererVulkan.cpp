@@ -139,10 +139,10 @@ namespace vve {
 
         vkDestroyDescriptorPool(GetDevice(), m_descriptorPool, nullptr);
 
-		for( decltype(auto) texture : m_registry.template GetView<vh::Texture&>() ) {
-			vkDestroySampler(GetDevice(), texture.m_textureSampler, nullptr);
-        	vkDestroyImageView(GetDevice(), texture.m_textureImageView, nullptr);
-	        vh::BufDestroyImage(GetDevice(), GetVmaAllocator(), texture.m_textureImage, texture.m_textureImageAllocation);
+		for( decltype(auto) texture : m_registry.template GetView<vh::Map&>() ) {
+			vkDestroySampler(GetDevice(), texture.m_mapSampler, nullptr);
+        	vkDestroyImageView(GetDevice(), texture.m_mapImageView, nullptr);
+	        vh::BufDestroyImage(GetDevice(), GetVmaAllocator(), texture.m_mapImage, texture.m_mapImageAllocation);
 		}
 
 		vkDestroyDescriptorSetLayout(GetDevice(), m_descriptorSetLayoutPerFrame, nullptr);
@@ -185,7 +185,7 @@ namespace vve {
 	bool RendererVulkan::OnTextureCreate( Message message ) {
 		auto msg = message.template GetData<MsgTextureCreate>();
 		auto handle = msg.m_handle;
-		auto& texture = m_registry.template Get<vh::Texture&>(handle);
+		auto& texture = m_registry.template Get<vh::Map&>(handle);
 		auto pixels = texture.m_pixels;
 
 		vh::BufCreateTextureImage(GetPhysicalDevice(), GetDevice(), GetVulkanState().m_vmaAllocator, GetGraphicsQueue(), m_commandPool, pixels, texture.m_width, texture.m_height, texture.m_size, texture);
@@ -196,10 +196,10 @@ namespace vve {
 
 	bool RendererVulkan::OnTextureDestroy( Message message ) {
 		auto handle = message.template GetData<MsgTextureDestroy>().m_handle;
-		auto& texture = m_registry.template Get<vh::Texture&>(handle);
-		vkDestroySampler(GetDevice(), texture.m_textureSampler, nullptr);
-		vkDestroyImageView(GetDevice(), texture.m_textureImageView, nullptr);
-		vh::BufDestroyImage(GetDevice(), GetVulkanState().m_vmaAllocator, texture.m_textureImage, texture.m_textureImageAllocation);
+		auto& texture = m_registry.template Get<vh::Map&>(handle);
+		vkDestroySampler(GetDevice(), texture.m_mapSampler, nullptr);
+		vkDestroyImageView(GetDevice(), texture.m_mapImageView, nullptr);
+		vh::BufDestroyImage(GetDevice(), GetVulkanState().m_vmaAllocator, texture.m_mapImage, texture.m_mapImageAllocation);
 		m_registry.Erase(handle);
 		return false;
 	}
