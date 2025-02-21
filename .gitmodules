@@ -1,9 +1,1 @@
-[submodule "extern/imgui"]
-	path = extern/imgui
-	url = https://github.com/ocornut/imgui.git
-[submodule "extern/ViennaEntityComponentSystem"]
-	path = extern/ViennaEntityComponentSystem
-	url = https://github.com/hlavacs/ViennaEntityComponentSystem.git
-[submodule "extern/assimp"]
-	path = extern/assimp
-	url = https://github.com/assimp/assimp.git
+
