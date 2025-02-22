@@ -41,7 +41,6 @@ set(BUILD ${PROJECT_SOURCE_DIR}/build)  # engine include directory
 set(INCLUDE ${PROJECT_SOURCE_DIR}/include)  # engine include directory
 set(EXTERN ${PROJECT_SOURCE_DIR}/extern)    # external libraries
 
-
 include(FetchContent) # once in the project to include the module
 
 FetchContent_Declare(viennastrongtype
@@ -80,8 +79,7 @@ set(zlib_BINARY_DIR ${assimp_BINARY_DIR}/contrib/zlib)    # external libraries
 
 FetchContent_Declare(imgui
                      GIT_REPOSITORY https://github.com/ocornut/imgui.git 
-                     GIT_TAG v1.89.9
-                     GIT_SHALLOW FALSE)
+                     GIT_TAG master)
 FetchContent_MakeAvailable(Imgui)
 
 set(VECS_SOURCE_DIR   ${viennaentitycomponentsystem_SOURCE_DIR})    # external libraries 
@@ -107,5 +105,5 @@ add_subdirectory(src)
 #add_subdirectory(examples)
 
 # Testing
-#include(CTest)
-#add_subdirectory(tests)
+include(CTest)
+add_subdirectory(tests)

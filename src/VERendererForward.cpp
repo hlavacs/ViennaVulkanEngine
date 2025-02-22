@@ -241,7 +241,7 @@ namespace vve {
 	    vh::RenUpdateDescriptorSetUBO(GetDevice(), ubo, 0, sizeUbo, descriptorSet);
 
 		m_registry.Put(oHandle, ubo, descriptorSet);
-		m_registry.template AddTags(oHandle, (size_t)pipelinePerType->m_graphicsPipeline.m_pipeline);
+		m_registry.AddTags(oHandle, (size_t)pipelinePerType->m_graphicsPipeline.m_pipeline);
 
 		assert( m_registry.template Has<vh::UniformBuffers>(oHandle) );
 		assert( m_registry.template Has<vh::DescriptorSet>(oHandle) );

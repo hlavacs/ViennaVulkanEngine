@@ -130,7 +130,7 @@ namespace vve {
 
 		auto exists = [&]<typename T>( vecs::Handle handle, T&& component ) {
 			if( !m_registry.template Has<T>(handle) ) { 
-				m_registry.template Put(pHandle, std::forward<T>(component)); 
+				m_registry.Put(pHandle, std::forward<T>(component)); 
 			}
 		};
 
@@ -172,7 +172,7 @@ namespace vve {
 
 		if ( node->mNumMeshes > 0) {
 		    auto mesh = scene->mMeshes[node->mMeshes[0]];
-			m_registry.template Put(nHandle, MeshName{(filepath / mesh->mName.C_Str()).string()});
+			m_registry.Put(nHandle, MeshName{(filepath / mesh->mName.C_Str()).string()});
 			
 			auto material = scene->mMaterials[mesh->mMaterialIndex];
 		    aiString texturePath;
@@ -180,7 +180,7 @@ namespace vve {
 		    if (material->GetTexture(aiTextureType_DIFFUSE, 0, &texturePath) == AI_SUCCESS) {
 				texturePathStr = (directory / std::string{texturePath.C_Str()}).string();
 		        std::cout << "Diffuse Texture: " << texturePathStr << std::endl;
-				m_registry.template Put(nHandle, TextureName{texturePathStr});
+				m_registry.Put(nHandle, TextureName{texturePathStr});
 			}
 
 			vh::Color color;
@@ -198,7 +198,7 @@ namespace vve {
 		        std::cout << "Diffuse Color: " << color.m_diffuseColor.r << color.m_diffuseColor.g << color.m_diffuseColor.b << color.m_diffuseColor.a << std::endl;
 			}
 			if( hasColor ) {
-				m_registry.template Put(nHandle, color);
+				m_registry.Put(nHandle, color);
 			}
 
 			m_engine.SendMessage( MsgObjectCreate{this, nullptr, ObjectHandle{nHandle}, ParentHandle{parent} }); 

@@ -46,7 +46,7 @@ namespace vve {
 				m_vulkanStateHandle = handle;
 				return state;
 			}
-			m_vulkanStateHandle = m_registry.template Insert(VulkanState{});
+			m_vulkanStateHandle = m_registry.Insert(VulkanState{});
 		}
 		auto& state = m_registry.template Get<VulkanState&>(m_vulkanStateHandle);
 		return state;
