@@ -1,13 +1,13 @@
 set(TARGET viennavulkanengine)
 
 set(SOURCE
-  ${IMGUI}/imgui.cpp
-  ${IMGUI}/imgui_demo.cpp
-  ${IMGUI}/imgui_draw.cpp
-  ${IMGUI}/backends/imgui_impl_sdl2.cpp
-  ${IMGUI}/backends/imgui_impl_vulkan.cpp
-  ${IMGUI}/imgui_tables.cpp
-  ${IMGUI}/imgui_widgets.cpp
+  ${imgui_SOURCE_DIR}/imgui.cpp
+  ${imgui_SOURCE_DIR}/imgui_demo.cpp
+  ${imgui_SOURCE_DIR}/imgui_draw.cpp
+  ${imgui_SOURCE_DIR}/backends/imgui_impl_sdl2.cpp
+  ${imgui_SOURCE_DIR}/backends/imgui_impl_vulkan.cpp
+  ${imgui_SOURCE_DIR}/imgui_tables.cpp
+  ${imgui_SOURCE_DIR}/imgui_widgets.cpp
 
   VEEngine.cpp
   VEGUI.cpp
@@ -61,14 +61,15 @@ target_include_directories(${TARGET} PUBLIC $ENV{VULKAN_SDK}/Include/glm)
 target_include_directories(${TARGET} PUBLIC $ENV{VULKAN_SDK}/Include/vma)
 target_include_directories(${TARGET} PUBLIC ${INCLUDE})
 target_include_directories(${TARGET} PUBLIC ${EXTERN})
-target_include_directories(${TARGET} PUBLIC ${ASSIMP}/include)
-target_include_directories(${TARGET} PUBLIC ${BUILD}/extern/assimp/include)
-target_include_directories(${TARGET} PUBLIC ${IMGUI})
-target_include_directories(${TARGET} PUBLIC ${IMGUI}/backends)
+target_include_directories(${TARGET} PUBLIC ${assimp_SOURCE_DIR})
+target_include_directories(${TARGET} PUBLIC ${assimp_SOURCE_DIR}/include)
+target_include_directories(${TARGET} PUBLIC ${assimp_BINARY_DIR}/include)
+target_include_directories(${TARGET} PUBLIC ${imgui_SOURCE_DIR})
+target_include_directories(${TARGET} PUBLIC ${imgui_SOURCE_DIR}/backends)
 target_include_directories(${TARGET} PUBLIC ${GLM}/glm)
-target_include_directories(${TARGET} PUBLIC ${VECS}/include)
-target_include_directories(${TARGET} PUBLIC ${VTLL}/include)
-target_include_directories(${TARGET} PUBLIC ${VSTY}/include)
+target_include_directories(${TARGET} PUBLIC ${VECS_SOURCE_DIR}/include)
+target_include_directories(${TARGET} PUBLIC ${VTLL_SOURCE_DIR}/include)
+target_include_directories(${TARGET} PUBLIC ${VSTY_SOURCE_DIR}/include)
 
 target_compile_features(${TARGET} PUBLIC cxx_std_20)
 
