@@ -1,1 +1,2 @@
-#add_subdirectory(basic_test)
+add_subdirectory(helper)
+add_subdirectory(game)

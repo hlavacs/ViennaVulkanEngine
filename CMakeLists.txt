@@ -39,27 +39,22 @@ set(VULKAN $ENV{VULKAN_SDK})
 # set variables for directories
 set(BUILD ${PROJECT_SOURCE_DIR}/build)  # engine include directory
 set(INCLUDE ${PROJECT_SOURCE_DIR}/include)  # engine include directory
-set(EXTERN ${PROJECT_SOURCE_DIR}/extern)    # external libraries
 
 include(FetchContent) # once in the project to include the module
 
-FetchContent_Declare(viennastrongtype
-                     GIT_REPOSITORY https://github.com/hlavacs/ViennaStrongType.git 
-                     GIT_TAG main
+FetchContent_Declare(stb_image
+                     GIT_REPOSITORY https://github.com/nothings/stb.git
+                     GIT_TAG master
 )
-FetchContent_MakeAvailable(viennastrongtype)
-
-FetchContent_Declare(viennatypelistlibrary
-                     GIT_REPOSITORY https://github.com/hlavacs/ViennaTypeListLibrary.git 
-                     GIT_TAG main
-)
-FetchContent_MakeAvailable(viennatypelistlibrary)
+FetchContent_MakeAvailable(stb_image)
 
 FetchContent_Declare(viennaentitycomponentsystem
                      GIT_REPOSITORY https://github.com/hlavacs/ViennaEntityComponentSystem.git
                      GIT_TAG main
 )
 FetchContent_MakeAvailable(viennaentitycomponentsystem)
+FetchContent_MakeAvailable(viennastrongtype)
+FetchContent_MakeAvailable(viennatypelistlibrary)
 
 FetchContent_Declare(assimp
                      GIT_REPOSITORY https://github.com/assimp/assimp.git 
@@ -86,6 +81,7 @@ set(VECS_SOURCE_DIR   ${viennaentitycomponentsystem_SOURCE_DIR})    # external l
 set(VTLL_SOURCE_DIR   ${viennatypelistlibrary_SOURCE_DIR})    # external libraries 
 set(VSTY_SOURCE_DIR   ${viennastrongtype_SOURCE_DIR})    # external libraries 
 
+message(STATUS "STB IMAGE: ${stb_image_SOURCE_DIR}")
 message(STATUS "IMGUI: ${imgui_SOURCE_DIR}")
 message(STATUS "ASSIMP: ${assimp_SOURCE_DIR}")
 message(STATUS "ASSIMP: ${assimp_BINARY_DIR}")
@@ -95,14 +91,9 @@ message(STATUS "VECS: ${VECS_SOURCE_DIR}")
 message(STATUS "VTLL: ${VTLL_SOURCE_DIR}")
 message(STATUS "VSTY: ${VSTY_SOURCE_DIR}")
 
-
-# Include Assimp
-#add_subdirectory(${ASSIMP} ${ASSIMP} EXCLUDE_FROM_ALL)
-
 # Add directories for compiling
-#add_subdirectory(extern)
 add_subdirectory(src)
-#add_subdirectory(examples)
+add_subdirectory(examples)
 
 # Testing
 include(CTest)
