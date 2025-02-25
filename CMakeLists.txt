@@ -21,15 +21,6 @@ endif()
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-# Doxygen
-find_package(Doxygen)
-if(Doxygen_FOUND)
-  message(STATUS "Doxygen found, building docs")
-  add_subdirectory(docs)
-else()
-  message(STATUS "Doxygen not found, not building docs")
-endif()
-
 # Vulkan SDK
 find_package(Vulkan REQUIRED)
 set(VULKAN $ENV{VULKAN_SDK})
@@ -87,7 +78,11 @@ set(ASSIMP_BUILD_SAMPLES OFF CACHE BOOL "" FORCE)
 FetchContent_MakeAvailable(assimp)
 include_directories(${assimp_SOURCE_DIR}/include)
 include_directories(${assimp_BINARY_DIR}/include)
-if (MSVC)
+
+message("COMPILER: ${CMAKE_CXX_COMPILER_ID}")
+message("BUILD TYPE: ${CMAKE_BUILD_TYPE}")
+
+IF(${CMAKE_CXX_COMPILER_ID} STREQUAL "MSVC")
 	IF(${CMAKE_BUILD_TYPE} STREQUAL "Release")
 		message(STATUS "MSVC Release mode" )
 		set(ASSIMP_ZLIB ${zlib_BINARY_DIR}/Release/zlibstatic.lib)
@@ -135,3 +130,30 @@ add_subdirectory(examples)
 # Testing
 include(CTest)
 add_subdirectory(tests)
+
+
+# Doxygen
+find_package(Doxygen)
+
+if(DOXYGEN_FOUND)
+
+	set(DOXYGEN_DIRS
+		${CMAKE_SOURCE_DIR}/src
+		${CMAKE_SOURCE_DIR}/include
+		${viennaentitycomponentsystem_SOURCE_DIR}/include
+		${viennatypelistlibrary_SOURCE_DIR}/include
+		${viennastrongtype_SOURCE_DIR}/include
+	)
+
+	string(REPLACE ";" " " DOXYGEN_DIRS_STR "${DOXYGEN_DIRS} ")  
+	set(DOXYGEN_INPUT_DIR ${DOXYGEN_DIRS_STR})
+	set(DOXYGEN_OUTPUT_DIR "${CMAKE_BINARY_DIR}/docs")
+	set(DOXYGEN_CONFIG_FILE "${CMAKE_BINARY_DIR}/Doxyfile")
+
+	configure_file(${CMAKE_SOURCE_DIR}/Doxyfile.in ${DOXYGEN_CONFIG_FILE} @ONLY)
+
+	doxygen_add_docs(docs
+		${DOXYGEN_INPUT_DIR}
+		COMMENT "Generate MyProject documentation"
+	)
+endif()

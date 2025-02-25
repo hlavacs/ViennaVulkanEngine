@@ -9,7 +9,7 @@ VVE features are:
 - Multiplatform (almost) out of the box: Win 11, Linux, MacOS (using MoltenVK).
 
 
-For initialising all submodules run this in a CMD window:\  
+Build with cmake:
 
-git submodule update --init --recursive
+
 
