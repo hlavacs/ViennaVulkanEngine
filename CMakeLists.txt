@@ -32,7 +32,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 #  message(STATUS "Doxygen not found, not building docs")
 #endif()
 
-# Vulkan
+# Vulkan SDK
 find_package(Vulkan REQUIRED)
 set(VULKAN $ENV{VULKAN_SDK})
 include_directories(${TARGET} PUBLIC ${VULKAN}/Include)
@@ -46,8 +46,9 @@ include_directories(${TARGET} PUBLIC ${VULKAN}/Include/vma)
 set(INCLUDE ${PROJECT_SOURCE_DIR}/include)  # engine include directory
 include_directories(${TARGET} PUBLIC ${INCLUDE})
 
-include(FetchContent) # once in the project to include the module
+include(FetchContent) # enable Fetch Content
 
+#--------------------------------- Fetch std image ---------------------------------#
 FetchContent_Declare(stb_image
                      GIT_REPOSITORY https://github.com/nothings/stb.git
                      GIT_TAG master
@@ -55,6 +56,7 @@ FetchContent_Declare(stb_image
 FetchContent_MakeAvailable(stb_image)
 include_directories (${stb_image_SOURCE_DIR})
 
+#--------------------------------- Fetch ImGui file dialog ---------------------------------#
 FetchContent_Declare(l2dfiledialog
                      GIT_REPOSITORY https://github.com/Limeoats/L2DFileDialog.git
                      GIT_TAG master
@@ -62,6 +64,7 @@ FetchContent_Declare(l2dfiledialog
 FetchContent_MakeAvailable(l2dfiledialog)
 include_directories (${l2dfiledialog_SOURCE_DIR}/L2DFileDialog/src)
 
+#--------------------------------- Fetch Vienna Entity Component System ---------------------------------#
 FetchContent_Declare(viennaentitycomponentsystem
                      GIT_REPOSITORY https://github.com/hlavacs/ViennaEntityComponentSystem.git
                      GIT_TAG main
@@ -73,6 +76,7 @@ include_directories (${viennaentitycomponentsystem_SOURCE_DIR}/include)
 include_directories (${viennastrongtype_SOURCE_DIR}/include)
 include_directories (${viennatypelistlibrary_SOURCE_DIR}/include)
 
+#--------------------------------- Fetch Assimp ---------------------------------#
 FetchContent_Declare(assimp
                      GIT_REPOSITORY https://github.com/assimp/assimp.git 
                      GIT_TAG master
@@ -85,7 +89,6 @@ set(ASSIMP_BUILD_SAMPLES OFF CACHE BOOL "" FORCE)
 FetchContent_MakeAvailable(assimp)
 include_directories(${assimp_SOURCE_DIR}/include)
 include_directories(${assimp_BINARY_DIR}/include)
-#set(zlib_BINARY_DIR ${assimp_BINARY_DIR}/contrib/zlib)    # external libraries 
 if (MSVC)
 	IF(${CMAKE_BUILD_TYPE} STREQUAL "Release")
 		message(STATUS "MSVC Release mode" )
@@ -108,6 +111,7 @@ else()
 	endif()
 endif()
 
+#--------------------------------- Fetch ImGui ---------------------------------#
 FetchContent_Declare(imgui
                      GIT_REPOSITORY https://github.com/ocornut/imgui.git 
                      GIT_TAG master)
@@ -115,20 +119,15 @@ FetchContent_MakeAvailable(Imgui)
 include_directories (${imgui_SOURCE_DIR})
 include_directories(${imgui_SOURCE_DIR}/backends)
 
-set(VECS_SOURCE_DIR   ${viennaentitycomponentsystem_SOURCE_DIR})    # external libraries 
-set(VTLL_SOURCE_DIR   ${viennatypelistlibrary_SOURCE_DIR})    # external libraries 
-set(VSTY_SOURCE_DIR   ${viennastrongtype_SOURCE_DIR})    # external libraries 
-
 message(STATUS "STB IMAGE: ${stb_image_SOURCE_DIR}")
 message(STATUS "FILE DIALOG: ${l2dfiledialog_SOURCE_DIR}")
 message(STATUS "IMGUI: ${imgui_SOURCE_DIR}")
 message(STATUS "ASSIMP: ${assimp_SOURCE_DIR}")
 message(STATUS "ASSIMP: ${assimp_BINARY_DIR}")
 message(STATUS "ZLIB: ${zlib_SOURCE_DIR}")
-#message(STATUS "ZLIB: ${zlib_BINARY_DIR}")
-message(STATUS "VECS: ${VECS_SOURCE_DIR}")
-message(STATUS "VTLL: ${VTLL_SOURCE_DIR}")
-message(STATUS "VSTY: ${VSTY_SOURCE_DIR}")
+message(STATUS "VECS: ${viennaentitycomponentsystem_SOURCE_DIR}")
+message(STATUS "VTLL: ${viennatypelistlibrary_SOURCE_DIR}")
+message(STATUS "VSTY: ${viennastrongtype_SOURCE_DIR}")
 
 # Add directories for compiling
 add_subdirectory(src)
