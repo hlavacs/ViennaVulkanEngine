@@ -54,24 +54,6 @@ set(HEADERS
 
 add_library (${TARGET} STATIC ${SOURCE} ${HEADERS})
 
-target_include_directories(${TARGET} PUBLIC $ENV{VULKAN_SDK}/Include)
-target_include_directories(${TARGET} PUBLIC $ENV{VULKAN_SDK}/Include/SDL2)
-target_include_directories(${TARGET} PUBLIC $ENV{VULKAN_SDK}/Include/Volk)
-target_include_directories(${TARGET} PUBLIC $ENV{VULKAN_SDK}/Include/glm)
-target_include_directories(${TARGET} PUBLIC $ENV{VULKAN_SDK}/Include/vma)
-target_include_directories(${TARGET} PUBLIC ${INCLUDE})
-#target_include_directories(${TARGET} PUBLIC ${EXTERN})
-target_include_directories(${TARGET} PUBLIC ${stb_image_SOURCE_DIR})
-target_include_directories(${TARGET} PUBLIC ${assimp_SOURCE_DIR})
-target_include_directories(${TARGET} PUBLIC ${assimp_SOURCE_DIR}/include)
-target_include_directories(${TARGET} PUBLIC ${assimp_BINARY_DIR}/include)
-target_include_directories(${TARGET} PUBLIC ${imgui_SOURCE_DIR})
-target_include_directories(${TARGET} PUBLIC ${imgui_SOURCE_DIR}/backends)
-target_include_directories(${TARGET} PUBLIC ${GLM}/glm)
-target_include_directories(${TARGET} PUBLIC ${VECS_SOURCE_DIR}/include)
-target_include_directories(${TARGET} PUBLIC ${VTLL_SOURCE_DIR}/include)
-target_include_directories(${TARGET} PUBLIC ${VSTY_SOURCE_DIR}/include)
-
 target_compile_features(${TARGET} PUBLIC cxx_std_20)
 
 source_group(

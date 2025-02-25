@@ -5,7 +5,7 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "(Windows) Debug",
+            "name": "MSVC Test Debug",
             "type": "cppvsdbg",
             "request": "launch",
             "program": "${workspaceFolder}/build/tests/Debug/testvve.exe",  
@@ -14,9 +14,9 @@
             "cwd": "${workspaceFolder}",
             "environment": [],
             "externalConsole": false
-          },
-          {
-            "name": "(Windows) Release",
+        },
+        {
+            "name": "MSVC Test Release",
             "type": "cppvsdbg",
             "request": "launch",
             "program": "${workspaceFolder}/build/tests/Release/testvve.exe",  
@@ -25,12 +25,34 @@
             "cwd": "${workspaceFolder}",
             "environment": [],
             "externalConsole": false
-          },
-		      {
-            "name": "Clang Launch",
+        },
+		{
+            "name": "Clang Test",
             "type": "cppvsdbg",
             "request": "launch",
             "program": "${workspaceFolder}/build/tests/testvve.exe",  
+            "args": [],
+            "stopAtEntry": false,
+            "cwd": "${workspaceFolder}",
+            "environment": [],
+            "externalConsole": false
+        },
+		{
+            "name": "Clang Helper",
+            "type": "cppvsdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/build/examples/helper/helper.exe",  
+            "args": [],
+            "stopAtEntry": false,
+            "cwd": "${workspaceFolder}",
+            "environment": [],
+            "externalConsole": false
+        },
+		{
+            "name": "Clang Game",
+            "type": "cppvsdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/build/examples/game/game.exe",  
             "args": [],
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}",

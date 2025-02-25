@@ -35,10 +35,17 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 # Vulkan
 find_package(Vulkan REQUIRED)
 set(VULKAN $ENV{VULKAN_SDK})
+include_directories(${TARGET} PUBLIC ${VULKAN}/Include)
+include_directories(${TARGET} PUBLIC ${VULKAN}/Include/SDL2)
+include_directories(${TARGET} PUBLIC ${VULKAN}/Include/Volk)
+include_directories(${TARGET} PUBLIC ${VULKAN}/Include/glm)
+include_directories(${TARGET} PUBLIC ${VULKAN}/Include/vma)
 
 # set variables for directories
-set(BUILD ${PROJECT_SOURCE_DIR}/build)  # engine include directory
+#set(BUILD ${PROJECT_SOURCE_DIR}/build)  # engine include directory
+
 set(INCLUDE ${PROJECT_SOURCE_DIR}/include)  # engine include directory
+include_directories(${TARGET} PUBLIC ${INCLUDE})
 
 include(FetchContent) # once in the project to include the module
 
@@ -47,6 +54,14 @@ FetchContent_Declare(stb_image
                      GIT_TAG master
 )
 FetchContent_MakeAvailable(stb_image)
+include_directories (${stb_image_SOURCE_DIR})
+
+FetchContent_Declare(l2dfiledialog
+                     GIT_REPOSITORY https://github.com/Limeoats/L2DFileDialog.git
+                     GIT_TAG master
+)
+FetchContent_MakeAvailable(l2dfiledialog)
+include_directories (${l2dfiledialog_SOURCE_DIR}/L2DFileDialog/src)
 
 FetchContent_Declare(viennaentitycomponentsystem
                      GIT_REPOSITORY https://github.com/hlavacs/ViennaEntityComponentSystem.git
@@ -55,20 +70,23 @@ FetchContent_Declare(viennaentitycomponentsystem
 FetchContent_MakeAvailable(viennaentitycomponentsystem)
 FetchContent_MakeAvailable(viennastrongtype)
 FetchContent_MakeAvailable(viennatypelistlibrary)
+include_directories (${viennaentitycomponentsystem_SOURCE_DIR}/include)
+include_directories (${viennastrongtype_SOURCE_DIR}/include)
+include_directories (${viennatypelistlibrary_SOURCE_DIR}/include)
 
 FetchContent_Declare(assimp
                      GIT_REPOSITORY https://github.com/assimp/assimp.git 
                      GIT_TAG master
 )
-
 set(BUILD_SHARED_LIBS OFF)
 #set(ASSIMP_BUILD_DOCS ON)
 set(ASSIMP_BUILD_ZLIB ON CACHE BOOL "" FORCE)
 set(ASSIMP_BUILD_TESTS OFF CACHE BOOL "" FORCE)
 set(ASSIMP_BUILD_ASSIMP_TOOLS OFF CACHE BOOL "" FORCE)
 set(ASSIMP_BUILD_SAMPLES OFF CACHE BOOL "" FORCE)
-
 FetchContent_MakeAvailable(Assimp)
+include_directories(${assimp_SOURCE_DIR}/include)
+include_directories(${assimp_BINARY_DIR}/include)
 
 set(zlib_BINARY_DIR ${assimp_BINARY_DIR}/contrib/zlib)    # external libraries 
 
@@ -76,12 +94,15 @@ FetchContent_Declare(imgui
                      GIT_REPOSITORY https://github.com/ocornut/imgui.git 
                      GIT_TAG master)
 FetchContent_MakeAvailable(Imgui)
+include_directories (${imgui_SOURCE_DIR})
+include_directories(${imgui_SOURCE_DIR}/backends)
 
 set(VECS_SOURCE_DIR   ${viennaentitycomponentsystem_SOURCE_DIR})    # external libraries 
 set(VTLL_SOURCE_DIR   ${viennatypelistlibrary_SOURCE_DIR})    # external libraries 
 set(VSTY_SOURCE_DIR   ${viennastrongtype_SOURCE_DIR})    # external libraries 
 
 message(STATUS "STB IMAGE: ${stb_image_SOURCE_DIR}")
+message(STATUS "FILE DIALOG: ${l2dfiledialog_SOURCE_DIR}")
 message(STATUS "IMGUI: ${imgui_SOURCE_DIR}")
 message(STATUS "ASSIMP: ${assimp_SOURCE_DIR}")
 message(STATUS "ASSIMP: ${assimp_BINARY_DIR}")
