@@ -115,7 +115,7 @@ namespace vve {
 		ObjectHandle oHandle = msg.m_object;
 		assert( oHandle().IsValid() );
 		ParentHandle pHandle = msg.m_parent;
-		if( !pHandle().IsValid() ) { pHandle = { m_rootHandle }; }
+		if( !pHandle().IsValid() ) { pHandle = ParentHandle{ m_rootHandle }; }
 		SetParent(oHandle, pHandle);
 		return false;
 	}
@@ -125,7 +125,7 @@ namespace vve {
 		ObjectHandle oHandle = msg.m_object;
 		assert( oHandle().IsValid() );
 		ParentHandle pHandle = msg.m_parent;
-		if( !pHandle().IsValid() ) { pHandle = { m_rootHandle }; }
+		if( !pHandle().IsValid() ) { pHandle = ParentHandle{ m_rootHandle }; }
 		SetParent(oHandle, pHandle);
 
 		auto exists = [&]<typename T>( vecs::Handle handle, T&& component ) {

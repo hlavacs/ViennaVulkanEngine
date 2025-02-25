@@ -178,18 +178,18 @@ namespace vh {
 		}
 
 		std::vector<VkDeviceSize> getOffsets() {
-			int offset=0;
+			size_t offset=0;
 			std::vector<VkDeviceSize> offsets{};
-			if( int size = m_positions.size() * size_pos; size > 0 ) { offsets.push_back(offset); offset += size; }
-			if( int size = m_normals.size()   * size_nor; size > 0 ) { offsets.push_back(offset); offset += size; }
-			if( int size = m_texCoords.size() * size_tex; size > 0 ) { offsets.push_back(offset); offset += size; }
-			if( int size = m_colors.size()    * size_col; size > 0 ) { offsets.push_back(offset); offset += size; }
-			if( int size = m_tangents.size()  * size_tan; size > 0 ) { offsets.push_back(offset); offset += size; }
+			if( size_t size = m_positions.size() * size_pos; size > 0 ) { offsets.push_back(offset); offset += size; }
+			if( size_t size = m_normals.size()   * size_nor; size > 0 ) { offsets.push_back(offset); offset += size; }
+			if( size_t size = m_texCoords.size() * size_tex; size > 0 ) { offsets.push_back(offset); offset += size; }
+			if( size_t size = m_colors.size()    * size_col; size > 0 ) { offsets.push_back(offset); offset += size; }
+			if( size_t size = m_tangents.size()  * size_tan; size > 0 ) { offsets.push_back(offset); offset += size; }
 			return offsets;
 		}
 
 		std::vector<VkDeviceSize> getOffsets( std::string type ) {
-			int offset=0;
+			size_t offset=0;
 			std::vector<VkDeviceSize> offsets{};
 			if( type.find("P") != std::string::npos ) { offsets.push_back(offset); offset += m_positions.size() * size_pos; }
 			if( type.find("N") != std::string::npos ) { offsets.push_back(offset); offset += m_normals.size()   * size_nor; }
@@ -200,7 +200,7 @@ namespace vh {
 		}
 
 		void copyData( void* data ) {
-			int offset=0, size = 0;
+			size_t offset=0, size = 0;
 			size = m_positions.size() * size_pos; memcpy( data, m_positions.data(), size );                 offset += size;
 			size = m_normals.size()   * size_nor; memcpy( (char*)data + offset, m_normals.data(), size );   offset += size;
 			size = m_texCoords.size() * size_tex; memcpy( (char*)data + offset, m_texCoords.data(), size ); offset += size;
@@ -209,7 +209,7 @@ namespace vh {
 		}
 
 		void copyData( void* data, std::string type  ) {
-			int offset=0, size = 0;
+			size_t offset=0, size = 0;
 			if( type.find("P") != std::string::npos ) { size = m_positions.size() * size_pos; memcpy( data, m_positions.data(), size ); offset += size; }
 			if( type.find("N") != std::string::npos ) { size = m_normals.size()   * size_nor; memcpy( (char*)data + offset, m_normals.data(), size ); offset += size; }
 			if( type.find("U") != std::string::npos ) { size = m_texCoords.size() * size_tex; memcpy( (char*)data + offset, m_texCoords.data(), size ); offset += size; }

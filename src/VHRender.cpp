@@ -170,7 +170,7 @@ namespace vh {
 		}
 		
 	    VkSpecializationInfo specializationInfo{};
-	    specializationInfo.mapEntryCount = specializationEntries.size();
+	    specializationInfo.mapEntryCount = (uint32_t)specializationEntries.size();
 	    specializationInfo.pMapEntries = specializationEntries.data();
 	    specializationInfo.dataSize = sizeof(int32_t) * specializationConstants.size();
 	    specializationInfo.pData = specializationConstants.data();
@@ -204,7 +204,7 @@ namespace vh {
         vertexInputInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
 
 		if( !fragShaderPath.empty() ) {
-	        vertexInputInfo.vertexBindingDescriptionCount = bindingDescription.size();
+	        vertexInputInfo.vertexBindingDescriptionCount = (uint32_t)bindingDescription.size();
 	        vertexInputInfo.vertexAttributeDescriptionCount = static_cast<uint32_t>(attributeDescriptions.size());
 	        vertexInputInfo.pVertexBindingDescriptions = bindingDescription.data();
 	        vertexInputInfo.pVertexAttributeDescriptions = attributeDescriptions.data();
@@ -279,7 +279,7 @@ namespace vh {
 
         VkGraphicsPipelineCreateInfo pipelineInfo{};
         pipelineInfo.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
-        pipelineInfo.stageCount = shaderStages.size();
+        pipelineInfo.stageCount = (uint32_t)shaderStages.size();
         pipelineInfo.pStages = shaderStages.data();
         pipelineInfo.pVertexInputState = &vertexInputInfo;
         pipelineInfo.pInputAssemblyState = &inputAssembly;

@@ -41,8 +41,7 @@ include_directories(${TARGET} PUBLIC ${VULKAN}/Include/Volk)
 include_directories(${TARGET} PUBLIC ${VULKAN}/Include/glm)
 include_directories(${TARGET} PUBLIC ${VULKAN}/Include/vma)
 
-# set variables for directories
-#set(BUILD ${PROJECT_SOURCE_DIR}/build)  # engine include directory
+# Fetch GitHub projects and set variables for include directories
 
 set(INCLUDE ${PROJECT_SOURCE_DIR}/include)  # engine include directory
 include_directories(${TARGET} PUBLIC ${INCLUDE})
@@ -79,16 +78,35 @@ FetchContent_Declare(assimp
                      GIT_TAG master
 )
 set(BUILD_SHARED_LIBS OFF)
-#set(ASSIMP_BUILD_DOCS ON)
 set(ASSIMP_BUILD_ZLIB ON CACHE BOOL "" FORCE)
 set(ASSIMP_BUILD_TESTS OFF CACHE BOOL "" FORCE)
 set(ASSIMP_BUILD_ASSIMP_TOOLS OFF CACHE BOOL "" FORCE)
 set(ASSIMP_BUILD_SAMPLES OFF CACHE BOOL "" FORCE)
-FetchContent_MakeAvailable(Assimp)
+FetchContent_MakeAvailable(assimp)
 include_directories(${assimp_SOURCE_DIR}/include)
 include_directories(${assimp_BINARY_DIR}/include)
-
-set(zlib_BINARY_DIR ${assimp_BINARY_DIR}/contrib/zlib)    # external libraries 
+#set(zlib_BINARY_DIR ${assimp_BINARY_DIR}/contrib/zlib)    # external libraries 
+if (MSVC)
+	IF(${CMAKE_BUILD_TYPE} STREQUAL "Release")
+		message(STATUS "MSVC Release mode" )
+		set(ASSIMP_ZLIB ${assimp_BINARY_DIR}/contrib/zlib/Release/zlibstatic.lib)
+		set(ASSIMP_LIB  ${assimp_BINARY_DIR}/lib/Release/assimp-vc143-mt.lib)
+	else()
+		message(STATUS "MSVC Debug mode" ) 
+		set(ASSIMP_ZLIB ${assimp_BINARY_DIR}/contrib/zlib/Debug/zlibstaticd.lib)
+		set(ASSIMP_LIB  ${assimp_BINARY_DIR}/lib/Debug/assimp-vc143-mtd.lib)
+	endif()
+else()
+	IF(${CMAKE_BUILD_TYPE} STREQUAL "Release")
+		message(STATUS "Clang Release mode" )
+		set(ASSIMP_ZLIB ${assimp_BINARY_DIR}/contrib/zlib/zlibstatic.lib)
+		set(ASSIMP_LIB  ${assimp_BINARY_DIR}/lib/assimp.lib)
+	else()
+		message(STATUS "Clang Debug mode" )
+		set(ASSIMP_ZLIB ${assimp_BINARY_DIR}/contrib/zlib/zlibstaticd.lib)
+		set(ASSIMP_LIB  ${assimp_BINARY_DIR}/lib/assimpd.lib)
+	endif()
+endif()
 
 FetchContent_Declare(imgui
                      GIT_REPOSITORY https://github.com/ocornut/imgui.git 
@@ -107,7 +125,7 @@ message(STATUS "IMGUI: ${imgui_SOURCE_DIR}")
 message(STATUS "ASSIMP: ${assimp_SOURCE_DIR}")
 message(STATUS "ASSIMP: ${assimp_BINARY_DIR}")
 message(STATUS "ZLIB: ${zlib_SOURCE_DIR}")
-message(STATUS "ZLIB: ${zlib_BINARY_DIR}")
+#message(STATUS "ZLIB: ${zlib_BINARY_DIR}")
 message(STATUS "VECS: ${VECS_SOURCE_DIR}")
 message(STATUS "VTLL: ${VTLL_SOURCE_DIR}")
 message(STATUS "VSTY: ${VSTY_SOURCE_DIR}")
