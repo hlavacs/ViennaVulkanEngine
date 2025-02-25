@@ -1,7 +1,3 @@
 .vs/
 build/
-docs/
-extern/imgui/
-extern/glm/
-extern/ViennaEntityComponentSystem/
-
+imgui.ini

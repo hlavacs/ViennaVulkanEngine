@@ -145,7 +145,7 @@ namespace vh {
 
         auto offsets = mesh.m_verticesData.getOffsets(type);
         std::vector<VkBuffer> vertexBuffers(offsets.size(), mesh.m_vertexBuffer);
-       	vkCmdBindVertexBuffers(commandBuffer, 0, offsets.size(), vertexBuffers.data(), offsets.data());
+       	vkCmdBindVertexBuffers(commandBuffer, 0, (uint32_t)offsets.size(), vertexBuffers.data(), offsets.data());
 
         vkCmdBindIndexBuffer(commandBuffer, mesh.m_indexBuffer, 0, VK_INDEX_TYPE_UINT32);
 
