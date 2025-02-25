@@ -1,7 +1,7 @@
 rem git clone -b nexgen.develop https://github.com/hlavacs/ViennaVulkanEngine.git
 rem cd ViennaVulkanEngine
 
-# compile with Clang
+rem compile with Clang
 set BUILD_TYPE=Debug
 cmake -S . -Bbuild -A x64 -G "Visual Studio 17 2022" -T ClangCL -DCMAKE_CXX_COMPILER=clang-cl++ -Bbuild -DCMAKE_BUILD_TYPE=%BUILD_TYPE%
 cd build
