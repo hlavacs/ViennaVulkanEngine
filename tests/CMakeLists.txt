@@ -1,7 +1,5 @@
 set(TARGET testvve)
-
 set(SOURCE testvve.cpp)
-
 set(HEADERS )
 
 add_executable(${TARGET} ${SOURCE} ${HEADERS})

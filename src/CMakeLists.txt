@@ -49,7 +49,6 @@ set(HEADERS
   ${INCLUDE}/VHRender.h
   ${INCLUDE}/VHCommand.h
   ${INCLUDE}/VHSync.h
-  
 )
 
 add_library (${TARGET} STATIC ${SOURCE} ${HEADERS})
