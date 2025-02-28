@@ -46,7 +46,6 @@ inline auto to_vec4 (const aiColor4D &color) {
 #include "VECS.h"
 #include "VESystem.h"
 #include "VEEngine.h"
-#include "VESound.h"
 #include "VEGUI.h"
 #include "VEWindow.h"
 #include "VEWindowSDL.h"
@@ -56,5 +55,6 @@ inline auto to_vec4 (const aiColor4D &color) {
 #include "VERendererVulkan.h"
 #include "VESceneManager.h"
 #include "VEAssetManager.h"
+#include "VESoundManager.h"
 
 

@@ -3,7 +3,7 @@
 
 namespace vve {
 
-	Sound::Sound(std::string systemName, Engine& engine ) : System(systemName, engine){
+	SoundManager::SoundManager(std::string systemName, Engine& engine ) : System(systemName, engine){
 		m_engine.RegisterCallback( { 
  		  	{this, 0, "ANNOUNCE", [this](Message& message){ return OnAnnounce(message);} },
  		  	{this, 0, "UPDATE", [this](Message& message){ return OnUpdate(message);} },
@@ -12,12 +12,12 @@ namespace vve {
 		} );
 	};
 
-    bool Sound::OnAnnounce(Message message) {
+    bool SoundManager::OnAnnounce(Message message) {
 		auto msg = message.template GetData<MsgAnnounce>();
 		return false;
 	}
 
-    bool Sound::OnPlaySound(Message message) {
+    bool SoundManager::OnPlaySound(Message message) {
         auto msg = message.template GetData<MsgPlaySound>();
         Name filepath = msg.m_filepath;
         int cont = msg.m_cont;
@@ -38,12 +38,12 @@ namespace vve {
 		return false;
     }
 
-    bool Sound::OnUpdate(Message message) {
+    bool SoundManager::OnUpdate(Message message) {
         auto msg = message.template GetData<MsgUpdate>();
 		return false;
     }
 
-    bool Sound::OnQuit(Message message) {
+    bool SoundManager::OnQuit(Message message) {
         auto msg = message.template GetData<MsgQuit>();
         for(auto& [name, sound] : m_sounds) {
             if(sound.m_deviceId) SDL_CloseAudioDevice(sound.m_deviceId);

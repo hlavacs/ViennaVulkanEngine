@@ -17,11 +17,11 @@ namespace vve {
         SDL_AudioDeviceID m_deviceId{0};
     };
 
-	class Sound : public System {
+	class SoundManager : public System {
 
 	public:
-        Sound(std::string systemName, Engine& engine);
-    	~Sound() {};
+        SoundManager(std::string systemName, Engine& engine);
+    	~SoundManager() {};
 
     private:
         std::map<Name, PlayingSound> m_sounds;
