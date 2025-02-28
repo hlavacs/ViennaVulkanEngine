@@ -43,7 +43,7 @@ namespace vve {
 		if( key == SDL_SCANCODE_ESCAPE  ) { m_engine.Stop(); return false; }
 		if( key == SDL_SCANCODE_LSHIFT || key == SDL_SCANCODE_RSHIFT  ) { m_shiftPressed = true; return false; }
 
-		auto [pn, rn, sn] 		 = m_registry.template Get<Position&, Rotation&, Scale&>(m_cameraNodeHandle);
+		auto [pn, rn, sn, LtoPn] = m_registry.template Get<Position&, Rotation&, Scale&, LocalToParentMatrix>(m_cameraNodeHandle);
 		auto [pc, rc, sc, LtoPc] = m_registry.template Get<Position&, Rotation&, Scale&, LocalToParentMatrix>(m_cameraHandle);		
 	
 		vec3_t translate = vec3_t(0.0f, 0.0f, 0.0f); //total translation
@@ -54,12 +54,12 @@ namespace vve {
 
 		int dx{0}, dy{0};
 		switch( key )  {
-			case SDL_SCANCODE_W : { translate = mat3_t{ LtoPc } * vec3_t(0.0f, 0.0f, -1.0f); break; }
-			case SDL_SCANCODE_S : { translate = mat3_t{ LtoPc } * vec3_t(0.0f, 0.0f, 1.0f); break; }
-			case SDL_SCANCODE_A : { translate = mat3_t{ LtoPc } * vec3_t(-1.0f, 0.0f, 0.0f); break; }
+			case SDL_SCANCODE_W : { translate = vec3_t{ LtoPn() * LtoPc() * vec4_t{0.0f, 0.0f, -1.0f, 0.0f} }; break; }
+			case SDL_SCANCODE_S : { translate = vec3_t{ LtoPn() * LtoPc() * vec4_t{0.0f, 0.0f, 1.0f, 0.0f} }; break; }
+			case SDL_SCANCODE_A : { translate = vec3_t{ LtoPn() * LtoPc() * vec4_t{-1.0f, 0.0f, 0.0f, 0.0f} }; break; }
+			case SDL_SCANCODE_D : { translate = vec3_t{ LtoPn() * LtoPc() * vec4_t{1.0f, 0.0f, 0.0f, 0.0f} }; break; }
 			case SDL_SCANCODE_Q : { translate = vec3_t(0.0f, 0.0f, -1.0f); break; }
 			case SDL_SCANCODE_E : { translate = vec3_t(0.0f, 0.0f, 1.0f); break; }
-			case SDL_SCANCODE_D : { translate = mat3_t{ LtoPc } * vec3_t(1.0f, 0.0f, 0.0f); break; }
 			case SDL_SCANCODE_LEFT : { dx=-1; break; }
 			case SDL_SCANCODE_RIGHT : { dx=1; break; }
 			case SDL_SCANCODE_UP : { dy=1; break; }
