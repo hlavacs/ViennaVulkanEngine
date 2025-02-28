@@ -47,10 +47,12 @@ namespace vve {
 		auto [pc, rc, sc, LtoPc] = m_registry.template Get<Position&, Rotation&, Scale&, LocalToParentMatrix>(m_cameraHandle);		
 	
 		vec3_t translate = vec3_t(0.0f, 0.0f, 0.0f); //total translation
-		vec3_t axis = vec3_t(1.0f); //total rotation around the axes, is 4d !
-		float angle = 0.0f;
-		float rotSpeed = 2.0f;
+		vec3_t axis1 = vec3_t(1.0f); //total rotation around the axes, is 4d !
+		float angle1 = 0.0f;
+		vec3_t axis2 = vec3_t(1.0f); //total rotation around the axes, is 4d !
+		float angle2 = 0.0f;
 
+		int dx{0}, dy{0};
 		switch( key )  {
 			case SDL_SCANCODE_W : { translate = mat3_t{ LtoPc } * vec3_t(0.0f, 0.0f, -1.0f); break; }
 			case SDL_SCANCODE_S : { translate = mat3_t{ LtoPc } * vec3_t(0.0f, 0.0f, 1.0f); break; }
@@ -58,19 +60,24 @@ namespace vve {
 			case SDL_SCANCODE_Q : { translate = vec3_t(0.0f, 0.0f, -1.0f); break; }
 			case SDL_SCANCODE_E : { translate = vec3_t(0.0f, 0.0f, 1.0f); break; }
 			case SDL_SCANCODE_D : { translate = mat3_t{ LtoPc } * vec3_t(1.0f, 0.0f, 0.0f); break; }
-			case SDL_SCANCODE_LEFT : { angle = rotSpeed * (float)dt * 1.0f; axis = glm::vec3(0.0, 0.0, 1.0); break; }
-			case SDL_SCANCODE_RIGHT : { angle = rotSpeed * (float)dt * -1.0f; axis = glm::vec3(0.0, 0.0, 1.0); break; }
-			case SDL_SCANCODE_UP : { angle = rotSpeed * (float)dt * -1.0f; 
-									 axis = vec3_t{ LtoPc() * vec4_t{1.0f, 0.0f, 0.0f, 0.0f} }; break; }
-			case SDL_SCANCODE_DOWN : { angle = rotSpeed * (float)dt * 1.0f;
-									   axis = vec3_t{ LtoPc() * vec4_t{1.0f, 0.0f, 0.0f, 0.0f} }; break; }
+			case SDL_SCANCODE_LEFT : { dx=-1; break; }
+			case SDL_SCANCODE_RIGHT : { dx=1; break; }
+			case SDL_SCANCODE_UP : { dy=1; break; }
+			case SDL_SCANCODE_DOWN : { dy=-1; break; }
 		}
 
-		float speed = m_shiftPressed ? 30.0f : 3.0f; ///add the new translation vector to the previous one
+		float speed = m_shiftPressed ? 30.0f : 2.0f; ///add the new translation vector to the previous one
 		pn = pn() + translate * (real_t)dt * speed;
 
-		///combination of yaw and pitch, both wrt to parent space
-		rc = mat3_t{ glm::rotate(mat4_t{1.0f}, angle, axis) * mat4_t{ rc } };
+		float rotSpeed = m_shiftPressed ? 2.0f : 1.0f;
+		angle1 = rotSpeed * (float)dt * -dx; //left right
+		axis1 = glm::vec3(0.0, 0.0, 1.0);
+		rn = mat3_t{ glm::rotate(mat4_t{1.0f}, angle1, axis1) * mat4_t{ rn } };
+
+		angle2 = rotSpeed * (float)dt * -dy; //up down
+		axis2 = vec3_t{ LtoPc() * vec4_t{1.0f, 0.0f, 0.0f, 0.0f} };
+		rc = mat3_t{ glm::rotate(mat4_t{1.0f}, angle2, axis2) * mat4_t{ rc } };
+
 		return false;
     }
 
@@ -117,13 +124,11 @@ namespace vve {
 		float angle1 = 0.0f;
 		vec3_t axis2 = vec3_t(1.0f); //total rotation around the axes, is 4d !
 		float angle2 = 0.0f;
-		float rotSpeed = 1.0f;
 
-		//std::cout << "Mouse move: " << dx << ", " << dy << std::endl;
-
-		angle1 = rotSpeed * (float)dt * dx; //left right
+		float rotSpeed = m_shiftPressed ? 1.0f : 0.5f;
+		angle1 = rotSpeed * (float)dt * -dx; //left right
 		axis1 = glm::vec3(0.0, 0.0, 1.0);
-		rc = mat3_t{ glm::rotate(mat4_t{1.0f}, angle1, axis1) * mat4_t{ rc } };
+		rn = mat3_t{ glm::rotate(mat4_t{1.0f}, angle1, axis1) * mat4_t{ rn } };
 
 		angle2 = rotSpeed * (float)dt * -dy; //up down
 		axis2 = vec3_t{ LtoPc() * vec4_t{1.0f, 0.0f, 0.0f, 0.0f} };
