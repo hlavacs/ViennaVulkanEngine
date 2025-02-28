@@ -24,16 +24,16 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 # Vulkan SDK
 find_package(Vulkan REQUIRED)
 set(VULKAN $ENV{VULKAN_SDK})
-include_directories(${TARGET} PUBLIC ${VULKAN}/Include)
-include_directories(${TARGET} PUBLIC ${VULKAN}/Include/SDL2)
-include_directories(${TARGET} PUBLIC ${VULKAN}/Include/Volk)
-include_directories(${TARGET} PUBLIC ${VULKAN}/Include/glm)
-include_directories(${TARGET} PUBLIC ${VULKAN}/Include/vma)
+include_directories(${VULKAN}/Include)
+include_directories(${VULKAN}/Include/SDL2)
+include_directories(${VULKAN}/Include/Volk)
+include_directories(${VULKAN}/Include/glm)
+include_directories(${VULKAN}/Include/vma)
 
 # Fetch GitHub projects and set variables for include directories
 
 set(INCLUDE ${PROJECT_SOURCE_DIR}/include)  # engine include directory
-include_directories(${TARGET} PUBLIC ${INCLUDE})
+include_directories(${INCLUDE})
 
 include(FetchContent) # enable Fetch Content
 
