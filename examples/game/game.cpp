@@ -12,7 +12,7 @@ class MyGame : public vve::System {
             STATE_DEAD
         };
 
-        const float m_max_time = 50.0f;
+        const float m_max_time = 30.0f;
 
     public:
         MyGame( vve::Engine& engine ) : vve::System("MyGame", engine ) {

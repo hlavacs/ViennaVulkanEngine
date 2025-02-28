@@ -142,10 +142,12 @@ namespace vve {
 		GetCamera();
 		auto msg = message.template GetData<MsgMouseWheel>();
 		real_t dt = (real_t)msg.m_dt;
-		auto [pn, rn, sn] 		 = m_registry.template Get<Position&, Rotation&, Scale&>(m_cameraNodeHandle);
+		auto [pn, rn, sn, LtoPn] = m_registry.template Get<Position&, Rotation&, Scale&, LocalToParentMatrix>(m_cameraNodeHandle);
 		auto [pc, rc, sc, LtoPc] = m_registry.template Get<Position&, Rotation&, Scale&, LocalToParentMatrix>(m_cameraHandle);		
-		float speed = m_shiftPressed ? 2000.0f : 500.0f; ///add the new translation vector to the previous one
-		pn = pn() + mat3_t{ LtoPc } * vec3_t(0.0f, 0.0f, -msg.m_y) * (real_t)dt * speed;
+		
+		float speed = m_shiftPressed ? 1000.0f : 100.0f; ///add the new translation vector to the previous one
+		auto translate = vec3_t{ LtoPn() * LtoPc() * vec4_t{0.0f, 0.0f, -1.0f, 0.0f} };
+		pn = pn() + translate * (real_t)dt * (real_t)msg.m_y * speed;
 		return false;
 	}
 
