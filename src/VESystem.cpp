@@ -15,6 +15,7 @@ namespace vve {
    	System::MsgInit::MsgInit(System* s, System* r) : MsgBase{"INIT", s, r} {};
    	System::MsgLoadLevel::MsgLoadLevel(System* s, System* r, std::string level) : MsgBase{"LOAD_LEVEL", s, r}, m_level{level} {};
     System::MsgWindowSize::MsgWindowSize(System* s, System* r) : MsgBase{"WINDOW_SIZE", s, r} {};
+    System::MsgPlaySound::MsgPlaySound(System* s, System* r, Name filepath, int cont) : MsgBase{"PLAY_SOUND", s, r}, m_filepath{filepath}, m_cont{cont} {};
     System::MsgQuit::MsgQuit(System* s, System* r) : MsgBase{"QUIT", s, r} {};
 
 	//------------------------------------------------------------------------
@@ -59,7 +60,7 @@ namespace vve {
     System::MsgTextureDestroy::MsgTextureDestroy(System* s, System* r, vecs::Handle handle) : MsgBase{"TEXTURE_DESTROY", s, r}, m_handle{handle} {};
 	System::MsgMeshCreate::MsgMeshCreate(System* s, System* r, vecs::Handle handle) : MsgBase{"MESH_CREATE", s, r}, m_handle{handle} {};
     System::MsgMeshDestroy::MsgMeshDestroy(System* s, System* r, vecs::Handle handle) : MsgBase{"MESH_DESTROY", s, r}, m_handle{handle} {};
-    System::MsgDeleted:: MsgDeleted(System* s, System* r, double dt): MsgBase{"DELETED", s, r, dt} {}; 
+    System::MsgDeleted:: MsgDeleted(System* s, System* r, double dt): MsgBase{"DELETED", s, r} {}; 
 
 	//------------------------------------------------------------------------
 

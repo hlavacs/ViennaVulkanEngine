@@ -21,6 +21,7 @@ namespace vve {
 
    	class System;
    	class Engine;
+	class Sound;
 	class GUI;
     class Window;
 	class WindowSDL;
@@ -45,6 +46,7 @@ inline auto to_vec4 (const aiColor4D &color) {
 #include "VECS.h"
 #include "VESystem.h"
 #include "VEEngine.h"
+#include "VESound.h"
 #include "VEGUI.h"
 #include "VEWindow.h"
 #include "VEWindowSDL.h"

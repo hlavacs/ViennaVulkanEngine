@@ -1,6 +1,7 @@
 
 #include <iostream>
 #include <utility>
+#include <format>
 #include "VHInclude.h"
 #include "VEInclude.h"
 
@@ -35,9 +36,7 @@ class MyGame : public vve::System {
         inline static std::string plane_mesh { "assets\\test\\plane\\plane_t_n_s.obj\\plane" };
         inline static std::string plane_txt  { "assets\\test\\plane\\grass.jpg" };
 
-        inline static std::string cube_obj  { "assets\\test\\cube1.obj" };
-        inline static std::string cube_mesh { "assets\\test\\cube1.obj\\cube" };
-        inline static std::string cube_txt  { "assets\\test\\cube1.png" };
+        inline static std::string cube_obj  { "assets\\test\\crate0\\cube.obj" };
 
         bool OnLoadLevel( Message message ) {
             auto msg = message.template GetData<vve::System::MsgLoadLevel>();	
@@ -74,9 +73,10 @@ class MyGame : public vve::System {
             return false;
         };
     
-        bool OnUpdate( Message message ) {
+        bool OnUpdate( Message& message ) {
             auto msg = message.template GetData<vve::System::MsgUpdate>();
             m_time_left -= msg.m_dt;
+            //std::cout << "dt: " << msg.m_dt << std::endl;
 
             m_registry.Get<vve::Position&>(m_cameraNodeHandle)().z = 0.5f;
             return false;
@@ -86,12 +86,26 @@ class MyGame : public vve::System {
             if( m_engine.GetWindow("VVE Window")->GetIsMinimized()) {return false;}
 
             if( m_state == State::STATE_RUNNING ) {
-                ImGui::Begin("Time Left");
-                std::string time_left = "Time Left: " + std::to_string(m_time_left) + " s";
-                ImGui::TextUnformatted(time_left.c_str());
+                if( m_time_left <= 0.0f ) {
+                    m_state = State::STATE_DEAD;
+                    return false;
+                }
+                ImGui::Begin("Game State");
+                char buffer[100];
+                std::snprintf(buffer, 100, "Time Left: %.2f s", m_time_left);
+                ImGui::TextUnformatted(buffer);
                 ImGui::End();
             }
-            
+
+            if( m_state == State::STATE_DEAD ) {
+                ImGui::Begin("Game State");
+                ImGui::TextUnformatted("Game Over");
+                if (ImGui::Button("Restart")) {
+                    m_state = State::STATE_RUNNING;
+                    m_time_left = 30.0f;
+                }
+                ImGui::End();
+            }
             return false;
         }
 

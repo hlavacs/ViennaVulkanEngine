@@ -36,7 +36,8 @@ namespace vve {
         "INIT",			//initialize the system
 		"LOAD_LEVEL",	//Load a level
 		"WINDOW_SIZE",	//Window size has changed
-        "QUIT", //
+		"PLAY_SOUND",	//Play a sound
+        "QUIT", //Quit the game
 		//---------------------
         "FRAME_START", //
         "POLL_EVENTS", //
@@ -96,13 +97,14 @@ namespace vve {
 	    struct MsgInit : public MsgBase { MsgInit(System* s, System* r=nullptr); };
 	    struct MsgLoadLevel : public MsgBase { MsgLoadLevel(System* s, System* r, std::string level); std::string m_level;};
 	    struct MsgWindowSize : public MsgBase { MsgWindowSize(System* s, System* r=nullptr); };
+	    struct MsgPlaySound : public MsgBase { MsgPlaySound(System* s, System* r, Name filepath, int cont=1); Name m_filepath; int m_cont; }; //0..stop 1..play once 2..loop
 	    struct MsgQuit : public MsgBase { MsgQuit(System* s, System* r=nullptr); };
 
 		//------------------------------------------------------------------------------------------------
 		
 		struct MsgFrameStart : public MsgBase { MsgFrameStart(System* s, System* r, double dt); };
 	    struct MsgPollEvents : public MsgBase { MsgPollEvents(System* s, System* r, double dt); };
-	    struct MsgUpdate : public MsgBase { MsgUpdate(System* s, System* r, double dt); double m_dt; };
+	    struct MsgUpdate : public MsgBase { MsgUpdate(System* s, System* r, double dt); };
 	    struct MsgPrepareNextFrame : public MsgBase { MsgPrepareNextFrame(System* s, System* r, double dt); };
 	    struct MsgRenderNextFrame : public MsgBase { MsgRenderNextFrame(System* s, System* r, double dt);  };
 	    struct MsgRecordNextFrame : public MsgBase { MsgRecordNextFrame(System* s, System* r, double dt ); };

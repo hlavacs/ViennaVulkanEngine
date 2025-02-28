@@ -102,6 +102,7 @@ namespace vve {
 		auto now = std::chrono::high_resolution_clock::now();
 		double dt = std::chrono::duration_cast<std::chrono::duration<double>>(now - m_last).count();
 		m_last = now;
+
 		SendMessage( MsgFrameStart{this, nullptr, dt} ) ;
 		SendMessage( MsgPollEvents{this, nullptr, dt} ) ;
 		SendMessage( MsgUpdate{this, nullptr, dt} ) ;
