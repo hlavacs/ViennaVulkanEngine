@@ -6,14 +6,14 @@ namespace vve {
 	GUI::GUI(std::string systemName, Engine& engine, std::string windowName ) : 
 		System(systemName, engine), m_windowName(windowName) {
 		m_engine.RegisterCallback( { 
- 		  	{this,    0, "ANNOUNCE", [this](Message& message){ return OnAnnounce(message);} }, 
-			{this, std::numeric_limits<int>::max(), "SDL_KEY_DOWN", [this](Message& message){ return OnKeyDown(message);} },
-			{this, std::numeric_limits<int>::max(), "SDL_KEY_REPEAT", [this](Message& message){ return OnKeyDown(message);} },
-			{this, std::numeric_limits<int>::max(), "SDL_KEY_UP", [this](Message& message){ return OnKeyUp(message);} },
-			{this, std::numeric_limits<int>::max(), "SDL_MOUSE_BUTTON_DOWN", [this](Message& message){ return OnMouseButtonDown(message);} },
-			{this, std::numeric_limits<int>::max(), "SDL_MOUSE_BUTTON_UP", [this](Message& message){return OnMouseButtonUp(message);} },
-			{this, std::numeric_limits<int>::max(), "SDL_MOUSE_MOVE", [this](Message& message){ return OnMouseMove(message); } },
-			{this, std::numeric_limits<int>::max(), "SDL_MOUSE_WHEEL", [this](Message& message){ return OnMouseWheel(message); } }
+ 		  	{this, 0, "ANNOUNCE", [this](Message& message){ return OnAnnounce(message);} }, 
+			{this, 0, "SDL_KEY_DOWN", [this](Message& message){ return OnKeyDown(message);} },
+			{this, 0, "SDL_KEY_REPEAT", [this](Message& message){ return OnKeyDown(message);} },
+			{this, 0, "SDL_KEY_UP", [this](Message& message){ return OnKeyUp(message);} },
+			{this, 0, "SDL_MOUSE_BUTTON_DOWN", [this](Message& message){ return OnMouseButtonDown(message);} },
+			{this, 0, "SDL_MOUSE_BUTTON_UP", [this](Message& message){return OnMouseButtonUp(message);} },
+			{this, 0, "SDL_MOUSE_MOVE", [this](Message& message){ return OnMouseMove(message); } },
+			{this, 0, "SDL_MOUSE_WHEEL", [this](Message& message){ return OnMouseWheel(message); } }
 		} );
 	};
 

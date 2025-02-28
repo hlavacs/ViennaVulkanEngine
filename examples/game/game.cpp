@@ -16,12 +16,20 @@ class MyGame : public vve::System {
     
             m_engine.RegisterCallback( { 
                 {this,      0, "LOAD_LEVEL", [this](Message& message){ return OnLoadLevel(message);} },
-                {this,      0, "UPDATE", [this](Message& message){ return OnUpdate(message);} },
+                {this,  10000, "UPDATE", [this](Message& message){ return OnUpdate(message);} },
                 {this, -10000, "RECORD_NEXT_FRAME", [this](Message& message){ return OnRecordNextFrame(message);} }
             } );
         };
         
         ~MyGame() {};
+
+        void GetCamera() {
+            if(m_cameraHandle.IsValid() == false) { 
+                auto [handle, camera, parent] = *m_registry.GetView<vecs::Handle, vve::Camera&, vve::ParentHandle>().begin(); 
+                m_cameraHandle = handle;
+                m_cameraNodeHandle = parent;
+            };
+        }
     
         inline static std::string plane_obj  { "assets\\test\\plane\\plane_t_n_s.obj" };
         inline static std::string plane_mesh { "assets\\test\\plane\\plane_t_n_s.obj\\plane" };
@@ -53,8 +61,6 @@ class MyGame : public vve::System {
     
             // ----------------- Load Cube -----------------
 
-            //m_engine.SendMessage( MsgSceneLoad{ this, nullptr, vve::Name{"assets\\test\\cube1.obj"} });
-
             m_handleCube = m_registry.Insert( 
                             vve::Position{ { x, y, 0.5f } }, 
                             vve::Rotation{mat3_t{1.0f}}, 
@@ -62,11 +68,17 @@ class MyGame : public vve::System {
 
             m_engine.SendMessage(MsgSceneCreate{ this, nullptr, vve::ObjectHandle(m_handleCube), vve::ParentHandle{}, vve::Name{cube_obj} });
 
+            GetCamera();
+            m_registry.Get<vve::Rotation&>(m_cameraHandle)() = mat3_t{ glm::rotate(mat4_t{1.0f}, 3.14152f/2.0f, vec3_t{1.0f, 0.0f, 0.0f}) };
+
             return false;
         };
     
         bool OnUpdate( Message message ) {
             auto msg = message.template GetData<vve::System::MsgUpdate>();
+            m_time_left -= msg.m_dt;
+
+            m_registry.Get<vve::Position&>(m_cameraNodeHandle)().z = 0.5f;
             return false;
         }
     
@@ -74,8 +86,9 @@ class MyGame : public vve::System {
             if( m_engine.GetWindow("VVE Window")->GetIsMinimized()) {return false;}
 
             if( m_state == State::STATE_RUNNING ) {
-                ImGui::Begin("Time Left"); 
-                ImGui::TextUnformatted("Time Left: ");
+                ImGui::Begin("Time Left");
+                std::string time_left = "Time Left: " + std::to_string(m_time_left) + " s";
+                ImGui::TextUnformatted(time_left.c_str());
                 ImGui::End();
             }
             
@@ -87,6 +100,8 @@ class MyGame : public vve::System {
         float m_time_left = 30.0f;
         vecs::Handle m_handlePlane{};
         vecs::Handle m_handleCube{};
+		vecs::Handle m_cameraHandle{};
+		vecs::Handle m_cameraNodeHandle{};
         float x = 0.0f, y = 0.0f;
     };
     
