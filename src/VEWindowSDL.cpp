@@ -23,7 +23,7 @@ namespace vve {
 
     bool WindowSDL::OnInit(Message message) {
         if(!m_sdl_initialized) {
-            if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_TIMER | SDL_INIT_GAMECONTROLLER) != 0) {
+            if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_TIMER | SDL_INIT_GAMECONTROLLER | SDL_INIT_AUDIO) != 0) {
                 printf("Error: %s\n", SDL_GetError());
                 exit(1);
             }

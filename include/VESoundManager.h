@@ -12,6 +12,8 @@ namespace vve {
         std::string m_filepath{};
         int m_cont{0};
         SDL_AudioSpec m_wavSpec;
+        Uint32 m_playLength{0};
+        Uint32 m_playedLength{0};
         Uint32 m_wavLength{0};
         Uint8 *m_wavBuffer{nullptr};
         SDL_AudioDeviceID m_deviceId{0};

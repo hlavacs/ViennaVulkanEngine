@@ -12,6 +12,8 @@ class MyGame : public vve::System {
             STATE_DEAD
         };
 
+        const float m_max_time = 50.0f;
+
     public:
         MyGame( vve::Engine& engine ) : vve::System("MyGame", engine ) {
     
@@ -70,7 +72,7 @@ class MyGame : public vve::System {
             GetCamera();
             m_registry.Get<vve::Rotation&>(m_cameraHandle)() = mat3_t{ glm::rotate(mat4_t{1.0f}, 3.14152f/2.0f, vec3_t{1.0f, 0.0f, 0.0f}) };
 
-            m_engine.SendMessage(MsgPlaySound{ this, nullptr, vve::Name{"assets\\sounds\\ophelia.wav"}, 1 });
+            m_engine.SendMessage(MsgPlaySound{ this, nullptr, vve::Name{"assets\\sounds\\ophelia.wav"}, 2 });
 
             return false;
         };
@@ -78,20 +80,17 @@ class MyGame : public vve::System {
         bool OnUpdate( Message& message ) {
             auto msg = message.template GetData<vve::System::MsgUpdate>();
             m_time_left -= msg.m_dt;
-            //std::cout << "dt: " << msg.m_dt << std::endl;
-
+            if( m_state == State::STATE_RUNNING && m_time_left <= 0.0f ) { 
+                m_state = State::STATE_DEAD; 
+                m_engine.SendMessage(MsgPlaySound{ this, nullptr, vve::Name{"assets\\sounds\\ophelia.wav"}, 0 });
+                m_engine.SendMessage(MsgPlaySound{ this, nullptr, vve::Name{"assets\\sounds\\gameover.wav"}, 1 });
+            }
             m_registry.Get<vve::Position&>(m_cameraNodeHandle)().z = 0.5f;
             return false;
         }
     
         bool OnRecordNextFrame(Message message) {           
-            if( m_engine.GetWindow("VVE Window")->GetIsMinimized()) {return false;}
-
             if( m_state == State::STATE_RUNNING ) {
-                if( m_time_left <= 0.0f ) {
-                    m_state = State::STATE_DEAD;
-                    return false;
-                }
                 ImGui::Begin("Game State");
                 char buffer[100];
                 std::snprintf(buffer, 100, "Time Left: %.2f s", m_time_left);
@@ -104,7 +103,8 @@ class MyGame : public vve::System {
                 ImGui::TextUnformatted("Game Over");
                 if (ImGui::Button("Restart")) {
                     m_state = State::STATE_RUNNING;
-                    m_time_left = 30.0f;
+                    m_time_left = m_max_time;
+                    m_engine.SendMessage(MsgPlaySound{ this, nullptr, vve::Name{"assets\\sounds\\ophelia.wav"}, 2 });
                 }
                 ImGui::End();
             }
@@ -113,7 +113,7 @@ class MyGame : public vve::System {
 
     private:
         State m_state = State::STATE_RUNNING;
-        float m_time_left = 30.0f;
+        float m_time_left = m_max_time;
         vecs::Handle m_handlePlane{};
         vecs::Handle m_handleCube{};
 		vecs::Handle m_cameraHandle{};
