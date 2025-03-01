@@ -80,13 +80,25 @@ class MyGame : public vve::System {
         bool OnUpdate( Message& message ) {
             auto msg = message.template GetData<vve::System::MsgUpdate>();
             m_time_left -= msg.m_dt;
-            if( m_state == State::STATE_RUNNING && m_time_left <= 0.0f ) { 
-                m_state = State::STATE_DEAD; 
-                m_engine.SendMessage(MsgPlaySound{ this, nullptr, vve::Name{"assets\\sounds\\ophelia.wav"}, 0 });
-                m_engine.SendMessage(MsgPlaySound{ this, nullptr, vve::Name{"assets\\sounds\\gameover.wav"}, 1 });
-            }
             auto pos = m_registry.Get<vve::Position&>(m_cameraNodeHandle);
             pos()().z = 0.5f;
+            if( m_state == State::STATE_RUNNING ) {
+                if( m_time_left <= 0.0f ) { 
+                    m_state = State::STATE_DEAD; 
+                    m_engine.SendMessage(MsgPlaySound{ this, nullptr, vve::Name{"assets\\sounds\\ophelia.wav"}, 0 });
+                    m_engine.SendMessage(MsgPlaySound{ this, nullptr, vve::Name{"assets\\sounds\\gameover.wav"}, 1 });
+                    return false;
+                }
+                auto posCube = m_registry.Get<vve::Position&>(m_handleCube);
+                float distance = glm::length( vec2_t{pos()().x, pos()().y} - vec2_t{posCube()().x, posCube()().y} );
+                if( distance < 1.5f) {
+                    posCube()().x = (rand() % 100) - 50;
+                    posCube()().y = (rand() % 100) - 50;
+                    m_time_left += 20;
+                    m_engine.SendMessage(MsgPlaySound{ this, nullptr, vve::Name{"assets\\sounds\\bell.wav"}, 1 });
+                }
+            }
+
             return false;
         }
     
