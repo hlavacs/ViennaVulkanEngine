@@ -85,7 +85,8 @@ class MyGame : public vve::System {
                 m_engine.SendMessage(MsgPlaySound{ this, nullptr, vve::Name{"assets\\sounds\\ophelia.wav"}, 0 });
                 m_engine.SendMessage(MsgPlaySound{ this, nullptr, vve::Name{"assets\\sounds\\gameover.wav"}, 1 });
             }
-            m_registry.Get<vve::Position&>(m_cameraNodeHandle)().z = 0.5f;
+            auto pos = m_registry.Get<vve::Position&>(m_cameraNodeHandle);
+            pos()().z = 0.5f;
             return false;
         }
     

@@ -74,7 +74,7 @@ namespace vve {
 
     class System {
 
-	protected:
+	public:
 
 		struct VulkanState;
 	
@@ -195,9 +195,9 @@ namespace vve {
 
     protected:
 		bool OnAnnounce(Message message);
-        SystemName 								m_name;
-        Engine& 								m_engine;
-		vecs::Registry<VVE_ARCHITECTURE_TYPE>&	m_registry;
+        SystemName 		m_name;
+        Engine& 		m_engine;
+		vecs::Registry&	m_registry;
     };
 
 };

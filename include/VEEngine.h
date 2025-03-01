@@ -61,7 +61,7 @@ namespace vve {
 		bool m_running{false};
 		std::chrono::time_point<std::chrono::high_resolution_clock> m_last;
 
-		vecs::Registry<VVE_ARCHITECTURE_TYPE> m_registry;
+		vecs::Registry m_registry;
 		
 		using PriorityMap = std::multimap<int, MessageCallback>;
 		using MessageMap = std::map<size_t, PriorityMap>;

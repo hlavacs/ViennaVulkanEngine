@@ -67,16 +67,16 @@ namespace vve {
 		}
 
 		float speed = m_shiftPressed ? 30.0f : 2.0f; ///add the new translation vector to the previous one
-		pn = pn() + translate * (real_t)dt * speed;
+		pn() = pn()() + translate * (real_t)dt * speed;
 
 		float rotSpeed = m_shiftPressed ? 2.0f : 1.0f;
 		angle1 = rotSpeed * (float)dt * -dx; //left right
 		axis1 = glm::vec3(0.0, 0.0, 1.0);
-		rn = mat3_t{ glm::rotate(mat4_t{1.0f}, angle1, axis1) * mat4_t{ rn } };
+		rn() = mat3_t{ glm::rotate(mat4_t{1.0f}, angle1, axis1) * mat4_t{ rn() } };
 
 		angle2 = rotSpeed * (float)dt * -dy; //up down
 		axis2 = vec3_t{ LtoPc() * vec4_t{1.0f, 0.0f, 0.0f, 0.0f} };
-		rc = mat3_t{ glm::rotate(mat4_t{1.0f}, angle2, axis2) * mat4_t{ rc } };
+		rc() = mat3_t{ glm::rotate(mat4_t{1.0f}, angle2, axis2) * mat4_t{ rc() } };
 
 		return false;
     }
@@ -128,11 +128,11 @@ namespace vve {
 		float rotSpeed = m_shiftPressed ? 1.0f : 0.5f;
 		angle1 = rotSpeed * (float)dt * -dx; //left right
 		axis1 = glm::vec3(0.0, 0.0, 1.0);
-		rn = mat3_t{ glm::rotate(mat4_t{1.0f}, angle1, axis1) * mat4_t{ rn } };
+		rn() = mat3_t{ glm::rotate(mat4_t{1.0f}, angle1, axis1) * mat4_t{ rn() } };
 
 		angle2 = rotSpeed * (float)dt * -dy; //up down
 		axis2 = vec3_t{ LtoPc() * vec4_t{1.0f, 0.0f, 0.0f, 0.0f} };
-		rc = mat3_t{ glm::rotate(mat4_t{1.0f}, angle2, axis2) * mat4_t{ rc } };
+		rc() = mat3_t{ glm::rotate(mat4_t{1.0f}, angle2, axis2) * mat4_t{ rc() } };
 
 		return false;
 	}
@@ -147,7 +147,7 @@ namespace vve {
 		
 		float speed = m_shiftPressed ? 1000.0f : 100.0f; ///add the new translation vector to the previous one
 		auto translate = vec3_t{ LtoPn() * LtoPc() * vec4_t{0.0f, 0.0f, -1.0f, 0.0f} };
-		pn = pn() + translate * (real_t)dt * (real_t)msg.m_y * speed;
+		pn() = pn()() + translate * (real_t)dt * (real_t)msg.m_y * speed;
 		return false;
 	}
 

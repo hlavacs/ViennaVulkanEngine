@@ -6,22 +6,15 @@
 
 namespace vve {
 
-    using ArchitectureType = int;
-	const ArchitectureType ENGINETYPE_SEQUENTIAL = 0;
-	const ArchitectureType ENGINETYPE_PARALLEL = 1;
-
-	#define VVE_ARCHITECTURE_TYPE ENGINETYPE_SEQUENTIAL
-
 	#define MAX_MESSAGE_SIZE 256
 
     struct Empty {};
 
-    template<ArchitectureType ATYPE>
-    using Mutex = std::conditional_t<VVE_ARCHITECTURE_TYPE == ENGINETYPE_SEQUENTIAL, Empty, std::shared_mutex>;
+    using Mutex = std::shared_mutex;
 
    	class System;
    	class Engine;
-	class Sound;
+	class SoundManager;
 	class GUI;
     class Window;
 	class WindowSDL;
@@ -43,6 +36,7 @@ inline auto to_vec4 (const aiColor4D &color) {
 	return glm::vec4{color.r, color.g, color.b, color.a};
 }
 
+#include "VSTY.h"
 #include "VECS.h"
 #include "VESystem.h"
 #include "VEEngine.h"

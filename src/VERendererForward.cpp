@@ -150,8 +150,8 @@ namespace vve {
 
 		auto [view, proj] = *m_registry.template GetView<ViewMatrix&, ProjectionMatrix&>().begin();
 		vh::UniformBufferFrame ubc;
-		ubc.camera.view = view;
-        ubc.camera.proj = proj;
+		ubc.camera.view = view();
+        ubc.camera.proj = proj();
 		memcpy(m_uniformBuffersPerFrame.m_uniformBuffersMapped[GetCurrentFrame()], &ubc, sizeof(ubc));
 
 		vkResetCommandBuffer(m_commandBuffers[GetCurrentFrame()],  0);
@@ -179,25 +179,25 @@ namespace vve {
 						uvScale = m_registry.template Get<UVScale>(oHandle);
 					}
 					uboTexture.uvScale = uvScale;
-					memcpy(uniformBuffers.m_uniformBuffersMapped[GetCurrentFrame()], &uboTexture, sizeof(uboTexture));
+					memcpy(uniformBuffers().m_uniformBuffersMapped[GetCurrentFrame()], &uboTexture, sizeof(uboTexture));
 				} else if( hasColor ) {
 					vh::UniformBufferObjectColor uboColor{};
 					uboColor.model = LtoW(); 		
 					uboColor.modelInverseTranspose = glm::inverse( glm::transpose(uboColor.model) );
 					uboColor.color = m_registry.template Get<vh::Color>(oHandle);
-					memcpy(uniformBuffers.m_uniformBuffersMapped[GetCurrentFrame()], &uboColor, sizeof(uboColor));
+					memcpy(uniformBuffers().m_uniformBuffersMapped[GetCurrentFrame()], &uboColor, sizeof(uboColor));
 				} else if( hasVertexColor ) {
 					vh::UniformBufferObject uboColor{};
 					uboColor.model = LtoW(); 
 					uboColor.modelInverseTranspose = glm::inverse( glm::transpose(uboColor.model) );
-					memcpy(uniformBuffers.m_uniformBuffersMapped[GetCurrentFrame()], &uboColor, sizeof(uboColor));
+					memcpy(uniformBuffers().m_uniformBuffersMapped[GetCurrentFrame()], &uboColor, sizeof(uboColor));
 				}
 
 				vh::ComBindPipeline(m_commandBuffers[GetCurrentFrame()], GetImageIndex(), 
 					GetSwapChain(), m_renderPass, pipeline.second.m_graphicsPipeline, false, 
 					((WindowSDL*)m_window)->GetClearColor(), GetCurrentFrame());
 
-				vh::Mesh& mesh = m_registry.template Get<vh::Mesh&>(ghandle);
+				auto mesh = m_registry.template Get<vh::Mesh&>(ghandle);
 				vh::ComRecordObject( m_commandBuffers[GetCurrentFrame()], pipeline.second.m_graphicsPipeline, 
 					{ m_descriptorSetPerFrame, descriptorsets }, pipeline.second.m_type, mesh, GetCurrentFrame() );
 			}
@@ -213,7 +213,7 @@ namespace vve {
 		assert( m_registry.template Has<MeshHandle>(oHandle) );	
 		auto meshHandle = m_registry.template Get<MeshHandle>(oHandle);
 		auto mesh = m_registry.template Get<vh::Mesh&>(meshHandle);
-		auto type = getPipelineType(oHandle, mesh.m_verticesData);
+		auto type = getPipelineType(oHandle, mesh().m_verticesData);
 		auto pipelinePerType = getPipelinePerType(type);
 
 		bool hasTexture = m_registry.template Has<TextureHandle>(oHandle);
@@ -229,7 +229,7 @@ namespace vve {
 		if( hasTexture ) {
 			sizeUbo = sizeof(vh::UniformBufferObjectTexture);
 			auto tHandle = m_registry.template Get<TextureHandle>(oHandle);
-			auto& texture = m_registry.template Get<vh::Map&>(tHandle);
+			auto texture = m_registry.template Get<vh::Map&>(tHandle);
 	    	vh::RenUpdateDescriptorSetTexture(GetDevice(), texture, 1, descriptorSet);
 		} else if(hasColor) {
 			sizeUbo = sizeof(vh::UniformBufferObjectColor);

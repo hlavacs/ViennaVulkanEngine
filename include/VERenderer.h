@@ -61,11 +61,8 @@ namespace vve
 		auto GetImageIndex() -> uint32_t&;
 		auto GetFramebufferResized() -> bool&;
 
-		auto GetVulkanState() -> VulkanState&;
+		auto GetVulkanState() -> vecs::Ref<VulkanState>;
 		void SubmitCommandBuffer( VkCommandBuffer commandBuffer );
-
-
-		
 
 		bool OnAnnounce(Message message);
 		std::string 		m_windowName;
