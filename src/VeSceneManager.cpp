@@ -23,9 +23,12 @@ namespace vve {
     SceneManager::~SceneManager() {}
 
     bool SceneManager::OnInit(Message message) {
+		m_worldHandle = m_registry.Insert( Name{m_worldName}, LocalToWorldMatrix{mat4_t{1.0f}} ); 
+								
 		m_rootHandle = m_registry.Insert(
 									Name{m_rootName},
 									ParentHandle{},
+									ChildHandle{},
 									Children{},
 									Position{glm::vec3(0.0f, 0.0f, 0.0f)},
 									LocalToWorldMatrix{mat4_t{1.0f}} ); //insert root node
@@ -59,7 +62,7 @@ namespace vve {
 
 		auto lightHandle = m_registry.Insert(
 								Name{"Light0"},
-								PointLight{vh::Light{glm::vec3(10.0f, 10.0f, 10.0f)}},
+								PointLight{vh::LightParams{glm::vec3(0.0f, 1.0f, 0.0f)}},
 								Position{glm::vec3(0.0f, 0.0f, 2.0f)}, 
 								Rotation{mat3_t{1.0f}},
 								Scale{vec3_t{1.0f, 1.0f, 1.0f}}, 

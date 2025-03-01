@@ -7,6 +7,8 @@ namespace vve {
 	//Nodes
 
 	using NodeHandle = vsty::strong_type_t<vecs::Handle, vsty::counter<>>; //need this to use Node as a unique component	
+	using ChildHandle = vsty::strong_type_t<vecs::Handle, vsty::counter<>>;
+	using SiblingHandle = vsty::strong_type_t<vecs::Handle, vsty::counter<>>;
 	using Children = vsty::strong_type_t<std::vector<vecs::Handle>, vsty::counter<>>;
 
 	//-------------------------------------------------------------------------------------------------------
@@ -23,11 +25,11 @@ namespace vve {
 	using CameraHandle = vsty::strong_type_t<vecs::Handle, vsty::counter<>>; //need this to use Camera as a unique component
 
 	//-------------------------------------------------------------------------------------------------------
-	//Llights
+	//Lights
 
-	using PointLight = vsty::strong_type_t<vh::Light, vsty::counter<>>;
-	using DirectionalLight = vsty::strong_type_t<vh::Light, vsty::counter<>>;
-	using SpotLight = vsty::strong_type_t<vh::Light, vsty::counter<>>;
+	using PointLight = vsty::strong_type_t<vh::LightParams, vsty::counter<>>;
+	using DirectionalLight = vsty::strong_type_t<vh::LightParams, vsty::counter<>>;
+	using SpotLight = vsty::strong_type_t<vh::LightParams, vsty::counter<>>;
 
 	using LightHandle = vsty::strong_type_t<vecs::Handle, vsty::counter<>>; //need this to use Light as a unique component
 	using PointLightHandle = vsty::strong_type_t<vecs::Handle, vsty::counter<>>; //need this to use PointLight as a unique component
@@ -75,6 +77,7 @@ namespace vve {
     class SceneManager : public System {
 
 		const std::string m_windowName = "VVE Window";
+		const std::string m_worldName = "VVE WorldSceneNode";
 		const std::string m_rootName = "VVE RootSceneNode";
 		const std::string m_cameraName = "VVE Camera";
 		const std::string m_cameraNodeName = "VVE CameraNode";
@@ -96,6 +99,7 @@ namespace vve {
 		//std::shared_mutex m_mutex;
 		CameraHandle m_cameraHandle;
 		NodeHandle m_cameraNodeHandle;
+		NodeHandle m_worldHandle;
 		NodeHandle m_rootHandle;
     };
 

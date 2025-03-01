@@ -72,14 +72,18 @@ namespace vh {
 	    alignas(16) glm::mat4 proj;
 	};
 
-	//x==1...point, x==2...directional, x==3...spotlight
+	struct LightParams {
+		alignas(16) glm::vec3 	color{1.0f, 1.0f, 1.0f}; 
+		alignas(16) glm::vec4 	param{1.0f, 1.0f, 1.0, 1.0f}; //x=type, y=intensity, z=power, w=ambient
+		alignas(16) glm::vec3 	attenuation{1.0f, 0.0f, 0.0f}; //x=constant, y=linear, z=quadratic
+	};
+
+	//param.x==1...point, param.x==2...directional, param.x==3...spotlight
 	struct Light {
 	    alignas(16) glm::vec3 	positionW{100.0f, 100.0f, 100.0f};
-	    alignas(16) glm::vec3 	directionW{1.0f, 1.0f, 1.0f};
+	    alignas(16) glm::vec3 	directionW{1.0f, 1.0f, 1.0f}; //always local y-axis
+	    alignas(16) LightParams params;
 		alignas(16) glm::mat3x3 lightSpaceMatrix{1.0f};
-	    alignas(16) glm::vec3 	color{1.0f, 1.0f, 1.0f}; 
-	    alignas(16) glm::vec4 	param{1.0f, 1.0f, 1.0, 1.0f}; //x=type, y=intensity, z=power, w=ambient
-		alignas(16) glm::vec3 	attenuation{1.0f, 0.0f, 0.0f}; //x=constant, y=linear, z=quadratic
 	};
 
 	struct UniformBufferFrame {
