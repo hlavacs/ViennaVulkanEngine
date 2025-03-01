@@ -12,7 +12,13 @@ class MyGame : public vve::System {
             STATE_DEAD
         };
 
-        const float m_max_time = 30.0f;
+        const float c_max_time = 30.0f;
+        const int c_field_size = 50;
+        const int c_number_cubes = 10;
+
+        int nextRandom() {
+            return rand() % (c_field_size) - c_field_size/2;
+        }
 
     public:
         MyGame( vve::Engine& engine ) : vve::System("MyGame", engine ) {
@@ -63,7 +69,7 @@ class MyGame : public vve::System {
             // ----------------- Load Cube -----------------
 
             m_handleCube = m_registry.Insert( 
-                            vve::Position{ { x, y, 0.5f } }, 
+                            vve::Position{ { nextRandom(), nextRandom(), 0.5f } }, 
                             vve::Rotation{mat3_t{1.0f}}, 
                             vve::Scale{vec3_t{1.0f}});
 
@@ -92,10 +98,17 @@ class MyGame : public vve::System {
                 auto posCube = m_registry.Get<vve::Position&>(m_handleCube);
                 float distance = glm::length( vec2_t{pos()().x, pos()().y} - vec2_t{posCube()().x, posCube()().y} );
                 if( distance < 1.5f) {
-                    posCube()().x = (rand() % 100) - 50;
-                    posCube()().y = (rand() % 100) - 50;
-                    m_time_left += 20;
-                    m_engine.SendMessage(MsgPlaySound{ this, nullptr, vve::Name{"assets\\sounds\\bell.wav"}, 1 });
+                    m_cubes_left--;
+                    posCube()().x = nextRandom();
+                    posCube()().y = nextRandom();
+                    if( m_cubes_left == 0 ) {
+                        m_time_left += 20;
+                        m_cubes_left = c_number_cubes;
+                        m_engine.SendMessage(MsgPlaySound{ this, nullptr, vve::Name{"assets\\sounds\\bell.wav"}, 1 });
+                    } else {
+                        m_engine.SendMessage(MsgPlaySound{ this, nullptr, vve::Name{"assets\\sounds\\explosion.wav"}, 1 });
+
+                    }
                 }
             }
 
@@ -108,6 +121,8 @@ class MyGame : public vve::System {
                 char buffer[100];
                 std::snprintf(buffer, 100, "Time Left: %.2f s", m_time_left);
                 ImGui::TextUnformatted(buffer);
+                std::snprintf(buffer, 100, "Cubes Left: %d", m_cubes_left);
+                ImGui::TextUnformatted(buffer);
                 ImGui::End();
             }
 
@@ -116,7 +131,8 @@ class MyGame : public vve::System {
                 ImGui::TextUnformatted("Game Over");
                 if (ImGui::Button("Restart")) {
                     m_state = State::STATE_RUNNING;
-                    m_time_left = m_max_time;
+                    m_time_left = c_max_time;
+                    m_cubes_left = c_number_cubes;
                     m_engine.SendMessage(MsgPlaySound{ this, nullptr, vve::Name{"assets\\sounds\\ophelia.wav"}, 2 });
                 }
                 ImGui::End();
@@ -126,12 +142,12 @@ class MyGame : public vve::System {
 
     private:
         State m_state = State::STATE_RUNNING;
-        float m_time_left = m_max_time;
+        float m_time_left = c_max_time;
+        int m_cubes_left = c_number_cubes;  
         vecs::Handle m_handlePlane{};
         vecs::Handle m_handleCube{};
 		vecs::Handle m_cameraHandle{};
 		vecs::Handle m_cameraNodeHandle{};
-        float x = 0.0f, y = 0.0f;
     };
     
     
