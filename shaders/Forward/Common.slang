@@ -8,14 +8,19 @@ export public struct Camera {
     public float4x4 proj;
 };
 
+//param.x==1...point, param.x==2...directional, param.x==3...spotlight
+export public struct LightParams {
+	public float3 color; 
+	public float4 param; //x=type, y=intensity, z=power, w=ambient
+	public float3 attenuation; //x=constant, y=linear, z=quadratic
+};
+
 // x==1...point, x==2...directional, x==3...spotlight
 export public struct Light {
-    public float3 positionW;
-    public float3 directionW;
-    public float3x3 lightSpaceMatrix;
-    public float3 color;
-    public float4 param;       // x = type, y = intensity, z = power, w = ambient
-    public float3 attenuation; // x = constant, y = linear, z = quadratic
+    public float3 		positionW;
+    public float3 		directionW;
+    public LightParams 	params;
+    public float4x4 	lightSpaceMatrix;
 };
 
 export public struct UniformBufferFrame {
@@ -54,27 +59,28 @@ export public struct UniformBufferObjectColor {
 
 //-----------------------------------------------------------------------
 
-[[vk::constant_id(0)]] export public const int MAX_LIGHTS = 10;
+//[[vk::constant_id(0)]] export public uniform const int MAX_LIGHTS = 10;
+export public uniform const int MAX_LIGHTS = 10;
 
 //-----------------------------------------------------------------------
 
 float3 calculatePointLight(Light light, float3 normalW, float3 viewPosW, float3 fragPosW) {
 	float3 result = float3(0.0);
 
-	float3 ambient = light.param.w * light.color;
+	float3 ambient = light.params.param.w * light.params.color;
 	float3 lightDir = normalize(light.positionW - fragPosW);
 	float3 viewDir = normalize(viewPosW - fragPosW);
 
 	// Compute diffuse and specular components
 	float diff = max(dot(normalW, lightDir), 0.0);
 	float3 reflectDir = reflect(-lightDir, normalW);
-	float spec = pow(max(dot(viewDir, reflectDir), 0.0), light.param.z);
-	float3 diffuse = diff * light.color * light.param.y;
-	float3 specular = spec * light.color * light.param.y;
+	float spec = pow(max(dot(viewDir, reflectDir), 0.0), light.params.param.z);
+	float3 diffuse = diff * light.params.color * light.params.param.y;
+	float3 specular = spec * light.params.color * light.params.param.y;
 
 	// Compute attenuation
 	float distance = length(light.positionW - fragPosW);
-	float attenuation = 1.0 / (light.attenuation.x + light.attenuation.y * distance + light.attenuation.z * distance * distance);
+	float attenuation = 1.0 / (light.params.attenuation.x + light.params.attenuation.y * distance + light.params.attenuation.z * distance * distance);
 
 	return attenuation * (ambient + diffuse + specular);
 
@@ -83,16 +89,16 @@ float3 calculatePointLight(Light light, float3 normalW, float3 viewPosW, float3 
 float3 calculateDirectionalLight(Light light, float3 normalW, float3 viewPosW, float3 fragPosW) {
 	float3 result = float3(0.0);
 
-	float3 ambient = light.param.w * light.color;
+	float3 ambient = light.params.param.w * light.params.color;
 	float3 lightDir = normalize(light.directionW);
 	float3 viewDir = normalize(viewPosW - fragPosW);
 
 	// Compute diffuse and specular components
 	float diff = max(dot(normalW, lightDir), 0.0);
 	float3 reflectDir = reflect(-lightDir, normalW);
-	float spec = pow(max(dot(viewDir, reflectDir), 0.0), light.param.z);
-	float3 diffuse = diff * light.color * light.param.y;
-	float3 specular = spec * light.color * light.param.y;
+	float spec = pow(max(dot(viewDir, reflectDir), 0.0), light.params.param.z);
+	float3 diffuse = diff * light.params.color * light.params.param.y;
+	float3 specular = spec * light.params.color * light.params.param.y;
 
 	return ambient + diffuse + specular;
 }
@@ -100,20 +106,20 @@ float3 calculateDirectionalLight(Light light, float3 normalW, float3 viewPosW, f
 float3 calculateSpotLight(Light light, float3 normalW, float3 viewPosW, float3 fragPosW) {
 	float3 result = float3(0.0);
 
-	float3 ambient = light.param.w * light.color;
+	float3 ambient = light.params.param.w * light.params.color;
 	float3 lightDir = normalize(light.positionW - fragPosW);
 	float3 viewDir = normalize(viewPosW - fragPosW);
 
 	// Compute diffuse and specular components
 	float diff = max(dot(normalW, lightDir), 0.0);
 	float3 reflectDir = reflect(-lightDir, normalW);
-	float spec = pow(max(dot(viewDir, reflectDir), 0.0), light.param.z);
-	float3 diffuse = diff * light.color * light.param.y;
-	float3 specular = spec * light.color * light.param.y;
+	float spec = pow(max(dot(viewDir, reflectDir), 0.0), light.params.param.z);
+	float3 diffuse = diff * light.params.color * light.params.param.y;
+	float3 specular = spec * light.params.color * light.params.param.y;
 
 	// Compute attenuation
 	float distance = length(light.positionW - fragPosW);
-	float attenuation = 1.0 / (light.attenuation.x + light.attenuation.y * distance + light.attenuation.z * distance * distance);
+	float attenuation = 1.0 / (light.params.attenuation.x + light.params.attenuation.y * distance + light.params.attenuation.z * distance * distance);
 
 	// Compute spotlight cone
 	float theta = dot(lightDir, normalize(light.directionW));
@@ -123,7 +129,7 @@ float3 calculateSpotLight(Light light, float3 normalW, float3 viewPosW, float3 f
 	return attenuation * intensity * (ambient + diffuse + specular);
 }
 
-float3 calculateLighting(Light light[MAX_LIGHTS], int3 numberLights, float3 normalW, float3 viewPosW, float3 fragPosW) {
+float3 calculateLighting(Light light[], int3 numberLights, float3 normalW, float3 viewPosW, float3 fragPosW) {
     float3 result = float3(0.0);
 
 	for( int i = 0; i < numberLights.x; i++ ) {// Point light
@@ -157,7 +163,7 @@ float calculateShadow(Sampler2D shadowMap, float3 lightSpacePos) {
     return (projCoords.z > shadowDepth + 0.005) ? 0.3 : 1.0; // 0.3 for shadowed, 1.0 for lit
 }
 
-float3 applyShadow(Light light, float3 lighting, float3 fragPos, float3 normal, Sampler2D shadowMap) {
+float3 applyShadow(Light light[], float3 lighting, float3 fragPos, float3 normal, Sampler2D shadowMap) {
     float3 lightSpacePos = float3(0.0); // Replace with actual transformation to light space
     float shadowFactor = calculateShadow(shadowMap, lightSpacePos);
     return shadowFactor * lighting;
