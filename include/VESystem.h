@@ -19,8 +19,8 @@ namespace vve {
 	using Filename = vsty::strong_type_t<std::string, vsty::counter<>>;
 	using ObjectHandle = vsty::strong_type_t<vecs::Handle, vsty::counter<>>;
 	using ParentHandle = vsty::strong_type_t<vecs::Handle, vsty::counter<>>;
-	using MapHandle = vsty::strong_type_t<vecs::Handle, vsty::counter<>>;
-}
+	using ChildHandle = vsty::strong_type_t<vecs::Handle, vsty::counter<>>;
+	using SiblingHandle = vsty::strong_type_t<vecs::Handle, vsty::counter<>>;}
 
 namespace std {
     template<> struct hash<vve::System> {

@@ -16,7 +16,8 @@ namespace vve {
 			{this, std::numeric_limits<int>::max(), "UPDATE", [this](Message& message){ return OnUpdate(message);} },
 			{this,                            1000, "SCENE_CREATE", [this](Message& message){ return OnSceneCreate(message);} },
 			{this,                               0, "OBJECT_CREATE", [this](Message& message){ return OnObjectCreate(message);} },
-			{this, std::numeric_limits<int>::max(), "OBJECT_SET_PARENT", [this](Message& message){ return OnObjectSetParent(message);} }
+			{this, std::numeric_limits<int>::max(), "OBJECT_SET_PARENT", [this](Message& message){ return OnObjectSetParent(message);} },
+			{this,                               0, "OBJECT_DESTROY", [this](Message& message){ return OnObjectDestroy(message);} }
 		} );
 	}
 
@@ -230,6 +231,20 @@ namespace vve {
 		parent() = pHandle;
 	}
 
+    bool SceneManager::OnObjectDestroy(Message message) {
+		auto msg = message.template GetData<MsgObjectDestroy>();
+		DestroyObject(msg.m_handle);
+		return false;
+	}
+
+	void SceneManager::DestroyObject(vecs::Handle handle) {
+		auto children = m_registry.template Get<Children&>(handle);
+		for( auto child : children() ) {
+			DestroyObject(child);
+		}
+		children().clear();
+		m_registry.Erase(handle);
+	}
 
 
 };  // namespace vve

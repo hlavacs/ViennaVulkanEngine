@@ -6,9 +6,6 @@ namespace vve {
 	//-------------------------------------------------------------------------------------------------------
 	//Nodes
 
-	using NodeHandle = vsty::strong_type_t<vecs::Handle, vsty::counter<>>; //need this to use Node as a unique component	
-	using ChildHandle = vsty::strong_type_t<vecs::Handle, vsty::counter<>>;
-	using SiblingHandle = vsty::strong_type_t<vecs::Handle, vsty::counter<>>;
 	using Children = vsty::strong_type_t<std::vector<vecs::Handle>, vsty::counter<>>;
 
 	//-------------------------------------------------------------------------------------------------------
@@ -92,15 +89,17 @@ namespace vve {
 		bool OnUpdate(Message message);
 		bool OnSceneCreate(Message message);
 		bool OnObjectCreate(Message message);
-		bool OnObjectSetParent(Message message);
 		void ProcessNode(aiNode* node, ParentHandle parent, std::filesystem::path& filepath, const aiScene* scene, uint64_t& id);
+		bool OnObjectSetParent(Message message);
 		void SetParent(ObjectHandle object, ParentHandle parent);
+		bool OnObjectDestroy(Message message);
+		void DestroyObject(vecs::Handle handle);
 
 		//std::shared_mutex m_mutex;
 		CameraHandle m_cameraHandle;
-		NodeHandle m_cameraNodeHandle;
-		NodeHandle m_worldHandle;
-		NodeHandle m_rootHandle;
+		ObjectHandle m_cameraNodeHandle;
+		ObjectHandle m_worldHandle;
+		ObjectHandle m_rootHandle;
     };
 
 };  // namespace vve

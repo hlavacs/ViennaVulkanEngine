@@ -18,7 +18,7 @@ namespace vve {
 			{this,      0, "RECORD_NEXT_FRAME", [this](Message& message){ return OnRecordNextFrame(message);} },
 			{this,      0, "RENDER_NEXT_FRAME", [this](Message& message){ return OnRenderNextFrame(message);} },
 
-			{this,      0, "TEXTURE_CREATE",   [this](Message& message){ return OnTextureCreate(message);} },
+			{this,   1000, "TEXTURE_CREATE",   [this](Message& message){ return OnTextureCreate(message);} },
 			{this,      0, "TEXTURE_DESTROY",  [this](Message& message){ return OnTextureDestroy(message);} },
 			{this,      0, "MESH_CREATE",  [this](Message& message){ return OnMeshCreate(message);} },
 			{this,      0, "MESH_DESTROY", [this](Message& message){ return OnMeshDestroy(message);} },
