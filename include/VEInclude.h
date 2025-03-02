@@ -47,6 +47,7 @@ inline auto to_vec4 (const aiColor4D &color) {
 #include "VERendererImgui.h"
 #include "VERendererForward.h"
 #include "VERendererVulkan.h"
+#include "VERendererDeferred.h"
 #include "VESceneManager.h"
 #include "VEAssetManager.h"
 #include "VESoundManager.h"
