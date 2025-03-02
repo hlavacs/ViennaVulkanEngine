@@ -12,7 +12,7 @@ class MyGame : public vve::System {
             STATE_DEAD
         };
 
-        const float c_max_time = 30.0f;
+        const float c_max_time = 35.0f;
         const int c_field_size = 50;
         const int c_number_cubes = 10;
 
@@ -107,7 +107,6 @@ class MyGame : public vve::System {
                         m_engine.SendMessage(MsgPlaySound{ this, nullptr, vve::Name{"assets\\sounds\\bell.wav"}, 1 });
                     } else {
                         m_engine.SendMessage(MsgPlaySound{ this, nullptr, vve::Name{"assets\\sounds\\explosion.wav"}, 1 });
-
                     }
                 }
             }
