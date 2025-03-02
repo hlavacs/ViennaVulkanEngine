@@ -87,26 +87,26 @@ namespace vve {
 
 		auto update = [](auto& registry, mat4_t& parentToWorld, vecs::Handle& handle, auto& self) -> void {
 			auto [name, p, r, s, LtoP, LtoW] = registry.template Get<Name&, Position&, Rotation&, Scale&, LocalToParentMatrix&, LocalToWorldMatrix&>(handle);
-			LtoP() = glm::translate(mat4_t{1.0f}, p()()) * mat4_t(r()()) * glm::scale(mat4_t{1.0f}, s()());
-			LtoW() = parentToWorld * LtoP()();
+			LtoP() = glm::translate(mat4_t{1.0f}, p()) * mat4_t(r()) * glm::scale(mat4_t{1.0f}, s());
+			LtoW() = parentToWorld * LtoP();
 			//std::cout << "Handle: " << handle << " Name: " << name() << " Position: " << p().x << ", " << p().y << ", " << p().z << std::endl;
 
 			if( registry.template Has<Camera>(handle) ) {
 				auto [name, camera] = registry.template Get<Name&, Camera&>(handle);
-				registry.Put(handle, ViewMatrix{glm::inverse(LtoW()())});
+				registry.Put(handle, ViewMatrix{glm::inverse(LtoW())});
 				registry.Put(handle, ProjectionMatrix{camera().Matrix()});
 				//std::cout << "Camera: " << name() << " R: " << camera.m_aspect << std::endl;
 			}
 
 			if( registry.template Has<Children&>(handle) ) {
 				auto children = registry.template Get<Children&>(handle);
-				for( auto child : children()() ) {
+				for( auto child : children() ) {
 					self(registry, LtoW(), child, self);
 				}
 			}
 		};
 
-		for( auto child : children()() ) {
+		for( auto child : children() ) {
 			update(m_registry, LocalToWorldMatrix{mat4_t{1.0f}}, child, update);
 		}
 		return false;
@@ -220,13 +220,13 @@ namespace vve {
 
 	void SceneManager::SetParent(ObjectHandle oHandle, ParentHandle pHandle) {
 		auto parent = m_registry.template Get<ParentHandle&>(oHandle);
-		if( parent()().IsValid() ) {
+		if( parent().IsValid() ) {
 			auto childrenOld = m_registry.template Get<Children&>(parent());
-			childrenOld()().erase(std::remove(childrenOld()().begin(), childrenOld()().end(), oHandle), childrenOld()().end());
+			childrenOld().erase(std::remove(childrenOld().begin(), childrenOld().end(), oHandle), childrenOld().end());
 		}
 
 		auto childrenNew = m_registry.template Get<Children&>(pHandle);
-		childrenNew()().push_back(oHandle);
+		childrenNew().push_back(oHandle);
 		parent() = pHandle;
 	}
 
