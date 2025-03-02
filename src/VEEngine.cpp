@@ -114,6 +114,18 @@ namespace vve {
 		SendMessage( MsgFrameEnd{this, nullptr, dt} ) ;
 	}
 
+	auto Engine::GetHandle(std::string name) -> vecs::Handle { 
+		return m_handleMap[name]; 
+	}
+
+	auto Engine::SetHandle(std::string name, vecs::Handle h) -> void {
+		m_handleMap[name] = h;
+	}
+
+	auto  Engine::ContainsHandle(std::string name) -> bool {
+		return m_handleMap.contains(name);
+	}
+
 	void Engine::Quit(){
 		SendMessage( MsgQuit{this, nullptr} );
 	}

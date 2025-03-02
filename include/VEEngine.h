@@ -7,7 +7,6 @@
 
 namespace vve {
 
-
 	class Engine : public System {
 
 	public:
@@ -41,11 +40,16 @@ namespace vve {
 		void Quit();
 		auto GetDebug() -> bool { return m_debug; }
 		auto GetRegistry() -> auto& { return m_registry; }
+		auto GetHandle(std::string name) -> vecs::Handle;
+		auto SetHandle(std::string name, vecs::Handle h) -> void;
+		auto ContainsHandle(std::string name) -> bool;
 		void SendMessage( Message message );
 		auto GetSystem( std::string name ) -> System*;
 		auto GetWindow( std::string name ) -> Window* { return (Window*)GetSystem(name); }
 		auto GetRenderer( std::string name ) -> Renderer* { return (Renderer*)GetSystem(name); }
 		auto GetSceneMgr(std::string name) -> SceneManager* { return (SceneManager*)GetSystem(name); }
+		auto GetSoundMgr(std::string name) -> SoundManager* { return (SoundManager*)GetSystem(name); }
+		auto GetAssetMgr(std::string name) -> AssetManager* { return (AssetManager*)GetSystem(name); }
 		void PrintCallbacks();
 
 	protected:
@@ -61,8 +65,9 @@ namespace vve {
 		bool m_running{false};
 		std::chrono::time_point<std::chrono::high_resolution_clock> m_last;
 
-		vecs::Registry m_registry;
-		
+		vecs::Registry m_registry; //VECS lives here
+		std::unordered_map<std::string, vecs::Handle> m_handleMap; //from string to handle
+
 		using PriorityMap = std::multimap<int, MessageCallback>;
 		using MessageMap = std::map<size_t, PriorityMap>;
 		MessageMap m_messageMap{};

@@ -83,7 +83,7 @@ namespace vve {
 
 			Name name{ (filepath / mesh->mName.C_Str()).string()};
 		    std::cout << "Mesh " << i << " " << name() << " has " << mesh->mNumVertices << " vertices." << std::endl;
-			if( m_handleMap.contains(name) ) continue;
+			if( m_engine.ContainsHandle(name) ) continue;
 
 			vh::Mesh VVEMesh{};
 		    for (unsigned int j = 0; j < mesh->mNumVertices; j++) {
@@ -122,7 +122,7 @@ namespace vve {
 			}
 
 			auto gHandle = m_registry.Insert( name, VVEMesh );
-			m_handleMap[name] = gHandle;
+			m_engine.SetHandle(name, gHandle);
 			m_fileNameMap.insert( std::make_pair(filepath, name) );
 			m_engine.SendMessage( MsgMeshCreate{this, nullptr, gHandle} );
 		}
@@ -133,11 +133,11 @@ namespace vve {
 		auto msg = message.template GetData<MsgObjectCreate>();
 		if( m_registry.Has<MeshName>(msg.m_object) ) {
 			auto meshName = m_registry.Get<MeshName>(msg.m_object);
-			m_registry.Put(	msg.m_object, MeshHandle{m_handleMap[meshName]} );
+			m_registry.Put(	msg.m_object, MeshHandle{ m_engine.GetHandle(meshName) } );
 		}
 		if( m_registry.Has<TextureName>(msg.m_object) ) {
 			auto textureName = m_registry.Get<TextureName>(msg.m_object);
-			m_registry.Put(	msg.m_object, TextureHandle{m_handleMap[textureName]} );
+			m_registry.Put(	msg.m_object, TextureHandle{m_engine.GetHandle(textureName)} );
 		}
 		return false;
 	}
@@ -158,14 +158,14 @@ namespace vve {
 
 	auto AssetManager::LoadTexture(TextureHandle tHandle) -> stbi_uc* {
 		auto fileName = m_registry.Get<Name&>(tHandle);
-		if( m_handleMap.contains(fileName()) ) return nullptr;
+		if( m_engine.ContainsHandle(fileName()) ) return nullptr;
 
 		int texWidth, texHeight, texChannels;
         stbi_uc* pixels = stbi_load(fileName().c_str(), &texWidth, &texHeight, &texChannels, STBI_rgb_alpha);
         VkDeviceSize imageSize = texWidth * texHeight * 4;
         if (!pixels) { return nullptr; }
 
-		m_handleMap[fileName()] = tHandle;
+		m_engine.SetHandle(fileName(), tHandle );
 		m_registry.Put(tHandle, vh::Map{texWidth, texHeight, imageSize, pixels});
 		return pixels;
 	}

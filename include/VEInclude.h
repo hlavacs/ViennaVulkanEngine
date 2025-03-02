@@ -14,7 +14,6 @@ namespace vve {
 
    	class System;
    	class Engine;
-	class SoundManager;
 	class GUI;
     class Window;
 	class WindowSDL;
@@ -24,6 +23,7 @@ namespace vve {
 	class RendererVulkan;
    	class SceneManager;
    	class AssetManager;
+	class SoundManager;
 }
 
 #include <assimp/cimport.h>

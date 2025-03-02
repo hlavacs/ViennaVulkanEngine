@@ -22,7 +22,6 @@ namespace vve {
 		bool SceneLoad(Name sceneName, const C_STRUCT aiScene* scene);
 
 	private:
-		std::unordered_map<std::string, vecs::Handle> m_handleMap; //from string to handle
 		std::unordered_multimap<std::filesystem::path, std::string> m_fileNameMap; //from path to string
     };
 
