@@ -16,6 +16,7 @@ namespace vve
 
     private:
         bool OnInit(Message message);
+        bool OnPrepareNextFrame(Message message);
         bool OnRecordNextFrame(Message message);
 		bool OnObjectCreate( Message message );
         bool OnQuit(Message message);
@@ -35,9 +36,14 @@ namespace vve
 		PipelinePerType* getPipelinePerType(std::string type);
 		std::string getPipelineType(ObjectHandle handle, vh::VertexData &vertexData);
 
+		//parameters per frame
 		vh::UniformBuffers m_uniformBuffersPerFrame;
 		VkDescriptorSetLayout m_descriptorSetLayoutPerFrame;
 		vh::DescriptorSet m_descriptorSetPerFrame{0};
+
+		vh::UniformBuffers m_uniformBuffersLights;
+		VkDescriptorSetLayout m_descriptorSetLayoutLights;
+		vh::DescriptorSet m_descriptorSetLights{0};
 
 		VkDescriptorSetLayout m_descriptorSetLayoutPerObject;
 	    vh::Pipeline m_graphicsPipeline;
@@ -49,7 +55,8 @@ namespace vve
 	    VkCommandPool m_commandPool;
 	    std::vector<VkCommandBuffer> m_commandBuffers;
 
-		int32_t m_numberLights{10};
+		size_t m_maxNumberLights{10};
+		std::vector<vh::Light> m_lights;
 		glm::ivec3 m_numberLightsPerType{0,0,0};
     };
 

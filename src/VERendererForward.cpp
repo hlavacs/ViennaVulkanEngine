@@ -30,6 +30,7 @@ namespace vve {
 
   		engine.RegisterCallback( { 
   			{this,  3000, "INIT", [this](Message& message){ return OnInit(message);} },
+  			{this,  2000, "PREPARE_NEXT_FRAME", [this](Message& message){ return OnPrepareNextFrame(message);} },
   			{this,  2000, "RECORD_NEXT_FRAME", [this](Message& message){ return OnRecordNextFrame(message);} },
 			{this,  2000, "OBJECT_CREATE", [this](Message& message){ return OnObjectCreate(message);} },
   			{this,     0, "QUIT", [this](Message& message){ return OnQuit(message);} }
@@ -45,13 +46,21 @@ namespace vve {
 			{{ .descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, .stageFlags = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT } },
 			m_descriptorSetLayoutPerFrame );
 
-        vh::ComCreateCommandPool(GetSurface(), GetPhysicalDevice(), GetDevice(), m_commandPool);
-        vh::ComCreateCommandBuffers(GetDevice(), m_commandPool, m_commandBuffers);
-        vh::RenCreateDescriptorPool(GetDevice(), 1000, m_descriptorPool);
+		vh::RenCreateDescriptorSetLayout( GetDevice(), //Lights
+			{{ .descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, .stageFlags = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT } },
+			m_descriptorSetLayoutLights );
+
+		vh::ComCreateCommandPool(GetSurface(), GetPhysicalDevice(), GetDevice(), m_commandPool);
+		vh::ComCreateCommandBuffers(GetDevice(), m_commandPool, m_commandBuffers);
+		vh::RenCreateDescriptorPool(GetDevice(), 1000, m_descriptorPool);
 
 		vh::BufCreateUniformBuffers(GetPhysicalDevice(), GetDevice(), GetVmaAllocator(), sizeof(vh::UniformBufferFrame), m_uniformBuffersPerFrame);
 		vh::RenCreateDescriptorSet(GetDevice(), m_descriptorSetLayoutPerFrame, m_descriptorPool, m_descriptorSetPerFrame);
-	    vh::RenUpdateDescriptorSetUBO(GetDevice(), m_uniformBuffersPerFrame, 0, sizeof(vh::UniformBufferFrame), m_descriptorSetPerFrame);   
+		vh::RenUpdateDescriptorSetUBO(GetDevice(), m_uniformBuffersPerFrame, 0, sizeof(vh::UniformBufferFrame), m_descriptorSetPerFrame);   
+
+		vh::BufCreateUniformBuffers(GetPhysicalDevice(), GetDevice(), GetVmaAllocator(), m_maxNumberLights*sizeof(vh::Light), m_uniformBuffersLights);
+		vh::RenCreateDescriptorSet(GetDevice(),m_descriptorSetLayoutLights, m_descriptorPool, m_descriptorSetLights);
+		vh::RenUpdateDescriptorSetUBO(GetDevice(), m_uniformBuffersLights, 0, m_maxNumberLights*sizeof(vh::Light), m_descriptorSetLights);   
 
 		CreatePipelines();
 		return false;
@@ -68,6 +77,7 @@ namespace vve {
 				std::string type = filename.substr(pos1+1, pos2 - pos1 - 1);
 				
 				vh::Pipeline graphicsPipeline;
+
 
 				VkDescriptorSetLayout descriptorSetLayoutPerObject;
 				std::vector<VkDescriptorSetLayoutBinding> bindings{
@@ -87,7 +97,7 @@ namespace vve {
 					entry.path().string(), (shaders / (filename.substr(0,pos2) + "_frag.spv")).string(),
 					bindingDescriptions, attributeDescriptions,
 					{ m_descriptorSetLayoutPerFrame, descriptorSetLayoutPerObject }, 
-					{m_numberLights},
+					{(int)m_maxNumberLights},
 					graphicsPipeline);
 				
 				m_pipelinesPerType[pri] = { type, descriptorSetLayoutPerObject, graphicsPipeline };
@@ -142,17 +152,40 @@ namespace vve {
         return attributeDescriptions;
     }
 
+	bool RendererForward::OnPrepareNextFrame(Message message) {
+		auto msg = message.template GetData<MsgPrepareNextFrame>();
 
-    bool RendererForward::OnRecordNextFrame(Message message) {
-		static auto startTime = std::chrono::high_resolution_clock::now();
-        auto currentTime = std::chrono::high_resolution_clock::now();
-        float time = std::chrono::duration<float, std::chrono::seconds::period>(currentTime - startTime).count();
+		//Copy lights to the uniform buffer
+		m_lights.resize(m_maxNumberLights);
+		m_numberLightsPerType.x = 0;
+		vh::UniformBufferFrame ubc; //contains camera view and projection matrices and number of lights
+		for( auto [handle, light] : m_registry.template GetView<vecs::Handle, vh::PointLight&>() ) {
+			if( m_numberLightsPerType.x++ >= m_maxNumberLights ) break;
+			m_lights[m_numberLightsPerType.x] = { .positionW = light().positionW, .params = light().params };
+		}
+		size_t total = m_numberLightsPerType.x;
+		for( auto [handle, light] : m_registry.template GetView<vecs::Handle, vh::DirectionalLight&>() ) {
+			if( total + m_numberLightsPerType.y++ >= m_maxNumberLights ) break;
+			m_lights[m_numberLightsPerType.x] = { .directionW = light().directionW, .params = light().params };
+		}
+		total += m_numberLightsPerType.y;
+		for( auto [handle, light] : m_registry.template GetView<vecs::Handle, vh::SpotLight&>() ) {
+			if( total + m_numberLightsPerType.z++ >= m_maxNumberLights ) break;
+			m_lights[m_numberLightsPerType.x] = { .directionW = light().directionW, .params = light().params };
+		}
+		total += m_numberLightsPerType.z;
+		ubc.numLights = m_numberLightsPerType;
+		memcpy(m_uniformBuffersLights.m_uniformBuffersMapped[GetCurrentFrame()], m_lights.data(), total*sizeof(vh::Light));
 
+		//Copy camera view and projection matrices to the uniform buffer
 		auto [view, proj] = *m_registry.template GetView<ViewMatrix&, ProjectionMatrix&>().begin();
-		vh::UniformBufferFrame ubc;
 		ubc.camera.view = view();
         ubc.camera.proj = proj();
 		memcpy(m_uniformBuffersPerFrame.m_uniformBuffersMapped[GetCurrentFrame()], &ubc, sizeof(ubc));
+		return false;
+	}
+
+    bool RendererForward::OnRecordNextFrame(Message message) {
 
 		vkResetCommandBuffer(m_commandBuffers[GetCurrentFrame()],  0);
         
@@ -285,10 +318,11 @@ namespace vve {
 
         vkDestroyDescriptorPool(GetDevice(), m_descriptorPool, nullptr);
 		vkDestroyRenderPass(GetDevice(), m_renderPass, nullptr);
-
 		vh::BufDestroyBuffer2(GetDevice(), GetVmaAllocator(), m_uniformBuffersPerFrame);
-
+		vh::BufDestroyBuffer2(GetDevice(), GetVmaAllocator(), m_uniformBuffersLights);
 		vkDestroyDescriptorSetLayout(GetDevice(), m_descriptorSetLayoutPerFrame, nullptr);
+		vkDestroyDescriptorSetLayout(GetDevice(), m_descriptorSetLayoutLights, nullptr);
+
 		return false;
     }
 
