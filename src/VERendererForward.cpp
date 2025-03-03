@@ -171,7 +171,7 @@ namespace vve {
 		total += m_numberLightsPerType.y;
 		for( auto [handle, light] : m_registry.template GetView<vecs::Handle, vh::SpotLight&>() ) {
 			if( total + m_numberLightsPerType.z++ >= m_maxNumberLights ) break;
-			m_lights[m_numberLightsPerType.x] = { .directionW = light().directionW, .params = light().params };
+			m_lights[m_numberLightsPerType.x] = { .positionW = light().positionW, .directionW = light().directionW, .params = light().params };
 		}
 		total += m_numberLightsPerType.z;
 		ubc.numLights = m_numberLightsPerType;
