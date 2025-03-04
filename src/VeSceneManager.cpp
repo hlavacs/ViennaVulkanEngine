@@ -12,6 +12,7 @@ namespace vve {
     SceneManager::SceneManager(std::string systemName, Engine& engine ) : System{systemName, engine } {
 		engine.RegisterCallback( { 
 			{this,  						  2000,	"INIT", [this](Message& message){ return OnInit(message);} },
+			{this,      						 0, "LOAD_LEVEL", [this](Message& message){ return OnLoadLevel(message);} },
 			{this,  							 0, "WINDOW_SIZE", [this](Message& message){ return OnWindowSize(message);} },
 			{this, std::numeric_limits<int>::max(), "UPDATE", [this](Message& message){ return OnUpdate(message);} },
 			{this,                            1000, "SCENE_CREATE", [this](Message& message){ return OnSceneCreate(message);} },
@@ -23,7 +24,7 @@ namespace vve {
 
     SceneManager::~SceneManager() {}
 
-    bool SceneManager::OnInit(Message message) {
+	bool SceneManager::OnInit(Message message) {
 		m_worldHandle = m_registry.Insert( Name{m_worldName}, LocalToWorldMatrix{mat4_t{1.0f}} ); 
 								
 		m_rootHandle = m_registry.Insert(
@@ -33,6 +34,7 @@ namespace vve {
 									Children{},
 									Position{glm::vec3(0.0f, 0.0f, 0.0f)},
 									LocalToWorldMatrix{mat4_t{1.0f}} ); //insert root node
+
 
 		// Create camera
 		auto window = m_engine.GetWindow(m_windowName);
@@ -60,17 +62,27 @@ namespace vve {
 								ViewMatrix{view} );
 
 		SetParent( ObjectHandle{m_cameraHandle}, ParentHandle{m_cameraNodeHandle} );
+		return false;
+	}
 
+    bool SceneManager::OnLoadLevel(Message message) {
+
+		vh::Color color{ { 0.0f, 0.0f, 0.0f, 1.0f }, { 1.0f, 1.0f, 0.0f, 1.0f }, { 0.0f, 0.0f, 0.0f, 1.0f } };
+		m_engine.SendMessage( MsgSceneLoad{ this, nullptr, vve::Name{"assets\\standard\\sphere.obj"} });		
 		auto lightHandle = m_registry.Insert(
 								Name{"Light0"},
 								PointLight{vh::LightParams{glm::vec3(0.8f, 0.8f, 0.8f)}},
 								Position{glm::vec3(10.0f, 10.0f, 10.0f)},
 								Rotation{mat3_t{1.0f}},
-								Scale{vec3_t{1.0f, 1.0f, 1.0f}}, 
+								Scale{vec3_t{0.01f, 0.01f, 0.01f}}, 
 								LocalToParentMatrix{mat4_t{1.0f}}, 
-								LocalToWorldMatrix{mat4_t{1.0f}} );
+								LocalToWorldMatrix{mat4_t{1.0f}},
+								color,
+								vve::MeshName{"assets\\standard\\sphere.obj\\sphere"}
+							);
 
 		SetParent( ObjectHandle{lightHandle}, ParentHandle{m_rootHandle} );
+		m_engine.SendMessage(MsgObjectCreate{ this, nullptr, vve::ObjectHandle(lightHandle), vve::ParentHandle{} });
 
 		return false;
 	}

@@ -31,7 +31,7 @@ public:
 
 		m_engine.SendMessage( MsgSceneLoad{ this, nullptr, vve::Name{"assets\\test\\plane\\plane_t_n_s.obj"}, aiProcess_FlipWindingOrder });
 		auto handle = m_registry.Insert( 
-						vve::Position{ {0.0f,0.0f,-1.0f } }, 
+						vve::Position{ {0.0f,0.0f,0.0f } }, 
 						vve::Rotation{ mat3_t { glm::rotate(glm::mat4(1.0f), 3.14152f / 2.0f, glm::vec3(1.0f,0.0f,0.0f)) }}, 
 						vve::Scale{vec3_t{1000.0f,1000.0f,1000.0f}}, 
 						vve::MeshName{"assets\\test\\plane\\plane_t_n_s.obj\\plane"},
@@ -79,7 +79,7 @@ public:
 				}
 
 				static aiPostProcessSteps flags = aiProcess_Triangulate;
-				static bool checkbox = true;
+				static bool checkbox = false;
 				ImGui::Checkbox("Flip winding order##Winding1", &checkbox);
 				if( checkbox ) flags = aiProcess_FlipWindingOrder;
 
@@ -90,13 +90,7 @@ public:
 					m_handles.push_back( handle );
 
 					m_engine.SendMessage( 
-						MsgSceneCreate{
-							this, 
-							nullptr, 
-							vve::ObjectHandle{handle}, 
-							vve::ParentHandle{}, 
-							vve::Name{path_obj},
-							flags });
+						MsgSceneCreate{	this, nullptr, vve::ObjectHandle{handle}, vve::ParentHandle{}, vve::Name{path_obj}, flags });
 					x += 2.0f;
 				}
 			}
@@ -119,7 +113,7 @@ public:
 				}
 
 				static aiPostProcessSteps flags = aiProcess_Triangulate;
-				static bool checkbox = true;
+				static bool checkbox = false;
 				ImGui::SameLine();
 				ImGui::Checkbox("Flip winding order##Winding2", &checkbox);
 				if( checkbox ) flags = aiProcess_FlipWindingOrder;
@@ -163,7 +157,7 @@ public:
 				ImGui::SameLine();
 	            if (ImGui::Button("Create##Create3")) {                          // Buttons return true when clicked (most widgets return true when edited/activated)		
 
-					auto handle = m_registry.Insert( vve::Position{ { x, y, 0.0f } }, vve::Rotation{mat3_t{1.0f}}, vve::Scale{vec3_t{1.0f}});
+					auto handle = m_registry.Insert( vve::Position{ { x, y, 0.5f } }, vve::Rotation{mat3_t{1.0f}}, vve::Scale{vec3_t{1.0f}});
 					m_handles.push_back( handle );
 
 					m_engine.SendMessage( 
