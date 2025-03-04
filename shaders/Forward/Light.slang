@@ -56,8 +56,10 @@ export public float3 calculateSpotLight(Light light, float3 nW, float3 viewPosW,
 
 	// Compute diffuse and specular components
 	float diff = max(dot(normalW, lightDir), 0.0);
+	
 	float3 reflectDir = reflect(-lightDir, -normalW);
 	float spec = pow(max(dot(viewDir, reflectDir), 0.0), light.params.param.z);
+
 	float3 diffuse = diff * light.params.color * light.params.param.y;
 	float3 specular = spec * light.params.color * light.params.param.y;
 
@@ -66,9 +68,7 @@ export public float3 calculateSpotLight(Light light, float3 nW, float3 viewPosW,
 	float attenuation = 1.0 / (light.params.attenuation.x + light.params.attenuation.y * distance + light.params.attenuation.z * distance * distance);
 
 	// Compute spotlight cone
-	float theta = dot(lightDir, normalize(light.directionW));
-	float epsilon = 0.9; // Adjust for spotlight cone
-	float intensity = 1.0 /clamp((theta - epsilon) / (1.0 - epsilon), 0.0, 1.0);
+	float intensity = pow(max(dot(lightDir, -normalize(light.directionW)), 0.0), light.params.param.z);
 
 	return attenuation * intensity * (ambient + diffuse + specular);
 }

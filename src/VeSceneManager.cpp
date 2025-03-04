@@ -42,7 +42,7 @@ namespace vve {
 
 		m_cameraNodeHandle = m_registry.Insert(
 								Name(m_cameraNodeName),
-								//Children{},
+								Children{},
 								Position{glm::vec3(view[3])}, 
 								Rotation{mat3_t{1.0f}},
 								Scale{vec3_t{1.0f, 1.0f, 1.0f}}, 
@@ -70,50 +70,54 @@ namespace vve {
 		vh::Color color{ { 0.0f, 0.0f, 0.0f, 1.0f }, { 1.0f, 1.0f, 0.0f, 1.0f }, { 0.0f, 0.0f, 0.0f, 1.0f } };
 		m_engine.SendMessage( MsgSceneLoad{ this, nullptr, vve::Name{"assets\\standard\\sphere.obj"} });		
 		
-		
+		float intensity1 = 0.8f;
 		auto lightHandle = m_registry.Insert(
-								Name{"Light0"},
-								PointLight{vh::LightParams{glm::vec3(0.8f, 0.8f, 0.8f)}},
-								Position{glm::vec3(10.0f, 10.0f, 10.0f)},
-								Rotation{mat3_t{1.0f}},
-								Scale{vec3_t{0.01f, 0.01f, 0.01f}}, 
-								LocalToParentMatrix{mat4_t{1.0f}}, 
-								LocalToWorldMatrix{mat4_t{1.0f}},
-								color,
-								vve::MeshName{"assets\\standard\\sphere.obj\\sphere"}
-							);
-
-		SetParent( ObjectHandle{lightHandle}, ParentHandle{m_rootHandle} );
-		m_engine.SendMessage(MsgObjectCreate{ this, nullptr, vve::ObjectHandle(lightHandle), vve::ParentHandle{} });
-		
-		
-		auto lightHandle2 = m_registry.Insert(
 			Name{"Light1"},
-			DirectionalLight{vh::LightParams{glm::vec3(0.8f, 0.8f, 0.8f)}},
-			Position{glm::vec3(10.0f, 10.0f, 10.0f)},
-			Rotation{mat3_t{glm::rotate(glm::mat4(1.0f), -3.14152f / 10.0f, glm::vec3(1.0f,0.0f,0.0f)) }},
-			Scale{vec3_t{1.0f, 1.0f, 1.0f}}, 
+			PointLight{vh::LightParams{
+				glm::vec3(0.8f, 0.8f, 0.8f), glm::vec4(0.0f, intensity1, 10.0, 0.1f), glm::vec3(1.0f, 0.01f, 0.005f), 
+			}},
+			Position{glm::vec3(0.0f, 10.0f, 10.0f)},
+			Rotation{mat3_t{1.0f}},
+			Scale{vec3_t{0.01f, 0.01f, 0.01f}}, 
 			LocalToParentMatrix{mat4_t{1.0f}}, 
 			LocalToWorldMatrix{mat4_t{1.0f}},
 			color,
 			vve::MeshName{"assets\\standard\\sphere.obj\\sphere"}
 		);
-		SetParent( ObjectHandle{lightHandle2}, ParentHandle{m_rootHandle} );
-		
+		SetParent( ObjectHandle{lightHandle}, ParentHandle{m_rootHandle} );
+		m_engine.SendMessage(MsgObjectCreate{ this, nullptr, vve::ObjectHandle(lightHandle), vve::ParentHandle{} });
 
-		auto lightHandle3 = m_registry.Insert(
+		float intensity2 = 0.8f;
+		auto lightHandle2 = m_registry.Insert(
 			Name{"Light2"},
-			SpotLight{vh::LightParams{glm::vec3(0.8f, 0.8f, 0.8f)}},
-			Position{glm::vec3(-10.0f, -20.0f, 20.0f)},
+			DirectionalLight{vh::LightParams{
+				glm::vec3(0.8f, 0.8f, 0.8f), glm::vec4(0.0f, intensity2, 10.0, 0.1f), glm::vec3(1.0f, 0.01f, 0.005f), 
+			}},
+			Position{glm::vec3(10.0f, 10.0f, 10.0f)},
 			Rotation{mat3_t{glm::rotate(glm::mat4(1.0f), -3.14152f / 10.0f, glm::vec3(1.0f,0.0f,0.0f)) }},
-			Scale{vec3_t{1.0f, 1.0f, 1.0f}}, 
+			Scale{vec3_t{1.0f}}, 
 			LocalToParentMatrix{mat4_t{1.0f}}, 
 			LocalToWorldMatrix{mat4_t{1.0f}}
 		);
+		SetParent( ObjectHandle{lightHandle2}, ParentHandle{m_rootHandle} );
 
+		vh::Color color3{ { 0.0f, 0.0f, 0.0f, 1.0f }, { 1.0f, 0.3f, 0.3f, 1.0f }, { 0.0f, 0.0f, 0.0f, 1.0f } };
+		float intensity3 = 0.8f;
+		auto lightHandle3 = m_registry.Insert(
+			Name{"Light3"},
+			SpotLight{vh::LightParams{
+				glm::vec3(0.8f, 0.8f, 0.8f), glm::vec4(0.0f, intensity3, 10.0, 0.1f), glm::vec3(1.0f, 0.01f, 0.005f), 
+			}},
+			Position{glm::vec3(20.0f, -10.0f, 10.0f)},
+			Rotation{mat3_t{glm::rotate(glm::mat4(1.0f), -3.14152f / 5.0f, glm::vec3(1.0f,0.0f,0.0f)) }},
+			Scale{vec3_t{0.01f, 0.05f, 0.01f}}, 
+			LocalToParentMatrix{mat4_t{1.0f}}, 
+			LocalToWorldMatrix{mat4_t{1.0f}},
+			color3,
+			vve::MeshName{"assets\\standard\\sphere.obj\\sphere"}
+		);
 		SetParent( ObjectHandle{lightHandle3}, ParentHandle{m_rootHandle} );
-		
-
+		m_engine.SendMessage(MsgObjectCreate{ this, nullptr, vve::ObjectHandle(lightHandle3), vve::ParentHandle{} });
 
 		return false;
 	}
