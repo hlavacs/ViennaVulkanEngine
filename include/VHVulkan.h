@@ -76,7 +76,7 @@ namespace vh {
 	//param.x==1...point, param.x==2...directional, param.x==3...spotlight
 	struct LightParams {
 		alignas(16) glm::vec3 	color{1.0f, 0.0f, 0.0f}; 
-		alignas(16) glm::vec4 	params{0.0f, 1.0f, 1.0, 0.05f}; //x=type, y=intensity, z=power, w=ambient
+		alignas(16) glm::vec4 	params{0.0f, 1.0f, 10.0, 0.1f}; //x=type, y=intensity, z=power, w=ambient
 		alignas(16) glm::vec3 	attenuation{1.0f, 0.01f, 0.01f}; //x=constant, y=linear, z=quadratic
 	};
 
