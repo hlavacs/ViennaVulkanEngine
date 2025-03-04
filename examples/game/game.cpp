@@ -53,7 +53,7 @@ class MyGame : public vve::System {
 
             // ----------------- Load Plane -----------------
 
-            m_engine.SendMessage( MsgSceneLoad{ this, nullptr, vve::Name{plane_obj} });
+            m_engine.SendMessage( MsgSceneLoad{ this, nullptr, vve::Name{plane_obj}, aiProcess_FlipWindingOrder });
 
             auto m_handlePlane = m_registry.Insert( 
                             vve::Position{ {0.0f,0.0f,0.0f } }, 
@@ -73,7 +73,7 @@ class MyGame : public vve::System {
                             vve::Rotation{mat3_t{1.0f}}, 
                             vve::Scale{vec3_t{1.0f}});
 
-            m_engine.SendMessage(MsgSceneCreate{ this, nullptr, vve::ObjectHandle(m_handleCube), vve::ParentHandle{}, vve::Name{cube_obj} });
+            m_engine.SendMessage(MsgSceneCreate{ this, nullptr, vve::ObjectHandle(m_handleCube), vve::ParentHandle{}, vve::Name{cube_obj}, aiProcess_FlipWindingOrder });
 
             GetCamera();
             m_registry.Get<vve::Rotation&>(m_cameraHandle)() = mat3_t{ glm::rotate(mat4_t{1.0f}, 3.14152f/2.0f, vec3_t{1.0f, 0.0f, 0.0f}) };

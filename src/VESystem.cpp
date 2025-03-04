@@ -43,10 +43,11 @@ namespace vve {
     
 	//------------------------------------------------------------------------
 
-	System::MsgSceneLoad::MsgSceneLoad(System* s, System* r, Name sceneName) : 	MsgBase{"SCENE_LOAD", s, r}, m_sceneName{sceneName} {};
+	System::MsgSceneLoad::MsgSceneLoad(System* s, System* r, Name sceneName, aiPostProcessSteps ai_flags) 
+		: MsgBase{"SCENE_LOAD", s, r}, m_sceneName{sceneName}, m_ai_flags{ai_flags} {};
 
-	System::MsgSceneCreate::MsgSceneCreate(System* s, System* r, ObjectHandle object, ParentHandle parent, Name sceneName) : 
-		MsgBase{"SCENE_CREATE", s, r}, m_object{object}, m_parent{parent}, m_sceneName{sceneName} {};
+	System::MsgSceneCreate::MsgSceneCreate(System* s, System* r, ObjectHandle object, ParentHandle parent, Name sceneName, aiPostProcessSteps ai_flags) : 
+		MsgBase{"SCENE_CREATE", s, r}, m_object{object}, m_parent{parent}, m_sceneName{sceneName}, m_ai_flags{ai_flags} {};
 
 	System::MsgObjectCreate::MsgObjectCreate(System* s, System* r, ObjectHandle object, ParentHandle parent) : 
 		MsgBase{"OBJECT_CREATE", s, r}, m_object{object}, m_parent{parent} {};

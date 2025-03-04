@@ -64,7 +64,7 @@ namespace vve {
 		auto lightHandle = m_registry.Insert(
 								Name{"Light0"},
 								PointLight{vh::LightParams{glm::vec3(0.8f, 0.8f, 0.8f)}},
-								Position{glm::vec3(20.0f, 20.0f, 20.0f)},
+								Position{glm::vec3(10.0f, 10.0f, 10.0f)},
 								Rotation{mat3_t{1.0f}},
 								Scale{vec3_t{1.0f, 1.0f, 1.0f}}, 
 								LocalToParentMatrix{mat4_t{1.0f}}, 

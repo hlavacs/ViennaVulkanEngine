@@ -125,13 +125,14 @@ namespace vve {
 
 		//------------------------------------------------------------------------------------------------
 
-	    struct MsgSceneLoad : public MsgBase { MsgSceneLoad(System* s, System* r, Name sceneName); Name m_sceneName; };
+	    struct MsgSceneLoad : public MsgBase { MsgSceneLoad(System* s, System* r, Name sceneName, aiPostProcessSteps ai_flags=aiProcess_Triangulate); Name m_sceneName; aiPostProcessSteps m_ai_flags; };
 
 	    struct MsgSceneCreate : public MsgBase { 
-			MsgSceneCreate(System* s, System* r, ObjectHandle object, ParentHandle parent, Name sceneName); 
+			MsgSceneCreate(System* s, System* r, ObjectHandle object, ParentHandle parent, Name sceneName, aiPostProcessSteps ai_flags=aiProcess_Triangulate); 
 			ObjectHandle m_object{}; 
 			ParentHandle m_parent{}; 
 			Name m_sceneName;
+			aiPostProcessSteps m_ai_flags;
 			const C_STRUCT aiScene* m_scene{};
 		};
 

@@ -182,10 +182,10 @@ namespace vve {
 		memcpy(m_uniformBuffersLights.m_uniformBuffersMapped[GetCurrentFrame()], m_lights.data(), total*sizeof(vh::Light));
 
 		//Copy camera view and projection matrices to the uniform buffer
-		auto [pos, view, proj] = *m_registry.template GetView<Position&, ViewMatrix&, ProjectionMatrix&>().begin();
+		auto [lToW, view, proj] = *m_registry.template GetView<LocalToWorldMatrix&, ViewMatrix&, ProjectionMatrix&>().begin();
 		ubc.camera.view = view();
         ubc.camera.proj = proj();
-		ubc.camera.positionW = pos();
+		ubc.camera.positionW = lToW()[3];
 		memcpy(m_uniformBuffersPerFrame.m_uniformBuffersMapped[GetCurrentFrame()], &ubc, sizeof(ubc));
 		return false;
 	}

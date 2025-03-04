@@ -22,10 +22,11 @@ namespace vve {
 
 	bool AssetManager::OnSceneCreate( Message& message ) {
 		auto& msg = message.template GetData<MsgSceneCreate>();
+		auto flags = msg.m_ai_flags;
 		auto phase = message.GetPhase(); //called in 2 phases, 0 and std::numeric_limits<int>::max()
 
-		if( phase < std::numeric_limits<int>::max() ) { //first phase?
-			msg.m_scene = aiImportFile(msg.m_sceneName().c_str(), aiProcessPreset_TargetRealtime_Fast | aiProcess_FlipUVs); //need this for scenemanager to create nodes
+		if( phase < std::numeric_limits<int>::max() ) { //first phase?  
+			msg.m_scene = aiImportFile(msg.m_sceneName().c_str(),  aiProcessPreset_TargetRealtime_Fast | aiProcess_FlipUVs | flags); //need this for scenemanager to create nodes
 			if (!msg.m_scene || msg.m_scene->mFlags & AI_SCENE_FLAGS_INCOMPLETE || !msg.m_scene->mRootNode) {std::cerr << "Assimp Error: " << aiGetErrorString() << std::endl;}
 			else if( !m_fileNameMap.contains(msg.m_sceneName())) { SceneLoad(msg.m_sceneName, msg.m_scene); }
 			return false;
@@ -36,7 +37,8 @@ namespace vve {
 
     bool AssetManager::OnSceneLoad(Message& message) {
 		auto& msg = message.template GetData<MsgSceneLoad>();
-		const aiScene * scene = aiImportFile(msg.m_sceneName().c_str(), aiProcessPreset_TargetRealtime_Fast | aiProcess_FlipUVs); //need this for scenemanager to create nodes
+		auto flags = msg.m_ai_flags;
+		const aiScene * scene = aiImportFile(msg.m_sceneName().c_str(),  aiProcessPreset_TargetRealtime_Fast | aiProcess_FlipUVs | flags); //need this for scenemanager to create nodes
 		if (!scene || scene->mFlags & AI_SCENE_FLAGS_INCOMPLETE || !scene->mRootNode) {std::cerr << "Assimp Error: " << aiGetErrorString() << std::endl;}
 		else if( !m_fileNameMap.contains(msg.m_sceneName())) { SceneLoad(msg.m_sceneName, scene); }
 		aiReleaseImport(scene);

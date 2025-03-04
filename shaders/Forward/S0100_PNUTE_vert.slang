@@ -32,8 +32,8 @@ VertexStageOutput vertexMain(
 
     VertexStageOutput output;
     output.coarseVertex.positionW   = positionW;
+    output.coarseVertex.normalW     = mul(gParamsObject.modelInvTranspose, float4(normalL, 0.0)).xyz;
     output.coarseVertex.uv          = gParamsObject.uvscale * uv;
-    output.coarseVertex.normalW     = mul(gParamsObject.modelInvTranspose, float4(normalL, 1.0)).xyz;
     output.coarseVertex.tangentW    = mul(gParamsObject.model, float4(tangentL, 1.0)).xyz;
     output.sv_position              = mul(gParamsFrame.camera.proj, float4(positionV, 1.0));
 

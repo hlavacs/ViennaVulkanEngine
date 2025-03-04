@@ -66,7 +66,7 @@ namespace vve {
 			case SDL_SCANCODE_DOWN : { dy=-1; break; }
 		}
 
-		float speed = m_shiftPressed ? 30.0f : 2.0f; ///add the new translation vector to the previous one
+		float speed = m_shiftPressed ? 20.0f : 10.0f; ///add the new translation vector to the previous one
 		pn() = pn() + translate * (real_t)dt * speed;
 
 		float rotSpeed = m_shiftPressed ? 2.0f : 1.0f;
@@ -145,7 +145,7 @@ namespace vve {
 		auto [pn, rn, sn, LtoPn] = m_registry.template Get<Position&, Rotation&, Scale&, LocalToParentMatrix>(m_cameraNodeHandle);
 		auto [pc, rc, sc, LtoPc] = m_registry.template Get<Position&, Rotation&, Scale&, LocalToParentMatrix>(m_cameraHandle);		
 		
-		float speed = m_shiftPressed ? 1000.0f : 100.0f; ///add the new translation vector to the previous one
+		float speed = m_shiftPressed ? 500.0f : 100.0f; ///add the new translation vector to the previous one
 		auto translate = vec3_t{ LtoPn() * LtoPc() * vec4_t{0.0f, 0.0f, -1.0f, 0.0f} };
 		pn() = pn() + translate * (real_t)dt * (real_t)msg.m_y * speed;
 		return false;
