@@ -1,9 +1,10 @@
 import Common;
 
 struct CoarseVertex {
-    float3 normal;
-    float2 uv;
-    float3 tangent;
+    float3 positionW : POSITION;
+    float3 normalW : NORMAL;
+    float2 uv : TEXCOORD;
+    float3 tangentW : TANGENT;
 };
 
 // set 0 ... per frame
@@ -35,9 +36,14 @@ ParameterBlock<UniformBufferObjectTexture> gParamsObject;
 Sampler2D texSampler;
 
 [shader("fragment")]
-float4 fragmentMain(CoarseVertex coarseVertex : CoarseVertex) : SV_Target 
+float4 fragmentMain(CoarseVertex cv : CoarseVertex) : SV_Target 
 {
-    return texSampler.Sample(coarseVertex.uv);
+    Camera camera = gParamsFrame.camera;
+    uint3 numberLights = gParamsFrame.numberLights;
+
+    float4 tex = texSampler.Sample(cv.uv);
+    float3 l = calculateLighting(gLights, numberLights, cv.normalW, camera.positionW, cv.positionW);
+    return float4( tex.xyz*l, tex.w );
 }
 
 

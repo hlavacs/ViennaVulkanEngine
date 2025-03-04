@@ -28,7 +28,7 @@ namespace vve {
 								
 		m_rootHandle = m_registry.Insert(
 									Name{m_rootName},
-									ParentHandle{},
+									ParentHandle{m_worldHandle},
 									ChildHandle{},
 									Children{},
 									Position{glm::vec3(0.0f, 0.0f, 0.0f)},
@@ -63,8 +63,8 @@ namespace vve {
 
 		auto lightHandle = m_registry.Insert(
 								Name{"Light0"},
-								PointLight{vh::LightParams{glm::vec3(0.0f, 1.0f, 0.0f)}},
-								Position{glm::vec3(0.0f, 0.0f, 2.0f)}, 
+								PointLight{vh::LightParams{glm::vec3(0.8f, 0.8f, 0.8f)}},
+								Position{glm::vec3(20.0f, 20.0f, 20.0f)},
 								Rotation{mat3_t{1.0f}},
 								Scale{vec3_t{1.0f, 1.0f, 1.0f}}, 
 								LocalToParentMatrix{mat4_t{1.0f}}, 

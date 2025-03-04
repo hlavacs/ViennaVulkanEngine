@@ -70,36 +70,21 @@ namespace vh {
 	struct CameraMatrix {
 	    alignas(16) glm::mat4 view;
 	    alignas(16) glm::mat4 proj;
+	    alignas(16) glm::vec3 positionW;
 	};
 
 	//param.x==1...point, param.x==2...directional, param.x==3...spotlight
 	struct LightParams {
-		alignas(16) glm::vec3 	color{1.0f, 1.0f, 1.0f}; 
-		alignas(16) glm::vec4 	param{1.0f, 1.0f, 1.0, 1.0f}; //x=type, y=intensity, z=power, w=ambient
+		alignas(16) glm::vec3 	color{1.0f, 0.0f, 0.0f}; 
+		alignas(16) glm::vec4 	params{0.0f, 1.0f, 1.0, 0.1f}; //x=type, y=intensity, z=power, w=ambient
 		alignas(16) glm::vec3 	attenuation{1.0f, 0.0f, 0.0f}; //x=constant, y=linear, z=quadratic
-	};
-
-	struct PointLight {
-	    alignas(16) glm::vec3 		positionW{100.0f, 100.0f, 100.0f};
-		alignas(16) LightParams 	params;
-	};
-
-	struct DirectionalLight {
-	    alignas(16) glm::vec3 		directionW{100.0f, 100.0f, -100.0f};
-		alignas(16) LightParams 	params;
-	};
-
-	struct SpotLight {
-	    alignas(16) glm::vec3 		positionW{100.0f, 100.0f, 100.0f};
-	    alignas(16) glm::vec3 		directionW{100.0f, 100.0f, -100.0f};
-		alignas(16) LightParams 	params;
 	};
 
 	//params.param.x==1...point, params.param.x==2...directional, params.param.x==3...spotlight
 	struct Light {
 	    alignas(16) glm::vec3 	positionW{100.0f, 100.0f, 100.0f};
-	    alignas(16) glm::vec3 	directionW{1.0f, 1.0f, 1.0f}; //always local y-axis
-	    alignas(16) LightParams params;
+	    alignas(16) glm::vec3 	directionW{-1.0f, -1.0f, -1.0f}; 
+	    alignas(16) LightParams lightParams;
 		alignas(16) glm::mat4 	lightSpaceMatrix{1.0f};
 	};
 

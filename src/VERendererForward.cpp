@@ -43,24 +43,24 @@ namespace vve {
         vh::RenCreateRenderPass(GetPhysicalDevice(), GetDevice(), GetSwapChain(), false, m_renderPass);
 		
 		vh::RenCreateDescriptorSetLayout( GetDevice(), //Per frame
-			{{ .descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, .stageFlags = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT } },
+			{ 
+				{ 	.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 
+					.stageFlags = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT },
+				{ 	.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 
+					.stageFlags = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT }
+			},
 			m_descriptorSetLayoutPerFrame );
-
-		vh::RenCreateDescriptorSetLayout( GetDevice(), //Lights
-			{{ .descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, .stageFlags = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT } },
-			m_descriptorSetLayoutLights );
 
 		vh::ComCreateCommandPool(GetSurface(), GetPhysicalDevice(), GetDevice(), m_commandPool);
 		vh::ComCreateCommandBuffers(GetDevice(), m_commandPool, m_commandBuffers);
 		vh::RenCreateDescriptorPool(GetDevice(), 1000, m_descriptorPool);
 
-		vh::BufCreateUniformBuffers(GetPhysicalDevice(), GetDevice(), GetVmaAllocator(), sizeof(vh::UniformBufferFrame), m_uniformBuffersPerFrame);
 		vh::RenCreateDescriptorSet(GetDevice(), m_descriptorSetLayoutPerFrame, m_descriptorPool, m_descriptorSetPerFrame);
+		vh::BufCreateUniformBuffers(GetPhysicalDevice(), GetDevice(), GetVmaAllocator(), sizeof(vh::UniformBufferFrame), m_uniformBuffersPerFrame);
 		vh::RenUpdateDescriptorSetUBO(GetDevice(), m_uniformBuffersPerFrame, 0, sizeof(vh::UniformBufferFrame), m_descriptorSetPerFrame);   
 
 		vh::BufCreateUniformBuffers(GetPhysicalDevice(), GetDevice(), GetVmaAllocator(), m_maxNumberLights*sizeof(vh::Light), m_uniformBuffersLights);
-		vh::RenCreateDescriptorSet(GetDevice(),m_descriptorSetLayoutLights, m_descriptorPool, m_descriptorSetLights);
-		vh::RenUpdateDescriptorSetUBO(GetDevice(), m_uniformBuffersLights, 0, m_maxNumberLights*sizeof(vh::Light), m_descriptorSetLights);   
+		vh::RenUpdateDescriptorSetUBO(GetDevice(), m_uniformBuffersLights, 1, m_maxNumberLights*sizeof(vh::Light), m_descriptorSetPerFrame);   
 
 		CreatePipelines();
 		return false;
@@ -157,30 +157,35 @@ namespace vve {
 
 		//Copy lights to the uniform buffer
 		m_lights.resize(m_maxNumberLights);
-		m_numberLightsPerType.x = 0;
+		m_numberLightsPerType = glm::ivec3{0};
+		size_t total{0};
 		vh::UniformBufferFrame ubc; //contains camera view and projection matrices and number of lights
-		for( auto [handle, light] : m_registry.template GetView<vecs::Handle, vh::PointLight&>() ) {
-			if( m_numberLightsPerType.x++ >= m_maxNumberLights ) break;
-			m_lights[m_numberLightsPerType.x] = { .positionW = light().positionW, .params = light().params };
+		for( auto [handle, light, lToW] : m_registry.template GetView<vecs::Handle, PointLight&, LocalToWorldMatrix&>() ) {
+			++m_numberLightsPerType.x;
+			light().params.x = 0.0f;
+			m_lights[total] = { .positionW = glm::vec3{lToW()[3]}, .lightParams = light() };
+			if( ++total >= m_maxNumberLights ) break;
 		}
-		size_t total = m_numberLightsPerType.x;
-		for( auto [handle, light] : m_registry.template GetView<vecs::Handle, vh::DirectionalLight&>() ) {
-			if( total + m_numberLightsPerType.y++ >= m_maxNumberLights ) break;
-			m_lights[m_numberLightsPerType.x] = { .directionW = light().directionW, .params = light().params };
+		for( auto [handle, light, lToW] : m_registry.template GetView<vecs::Handle, DirectionalLight&, LocalToWorldMatrix&>() ) {
+			++m_numberLightsPerType.y;
+			light().params.x = 1.0f;
+			m_lights[total] = { .directionW = glm::vec3{lToW()[1]}, .lightParams = light() };
+			if( ++total >= m_maxNumberLights ) break;
 		}
-		total += m_numberLightsPerType.y;
-		for( auto [handle, light] : m_registry.template GetView<vecs::Handle, vh::SpotLight&>() ) {
-			if( total + m_numberLightsPerType.z++ >= m_maxNumberLights ) break;
-			m_lights[m_numberLightsPerType.x] = { .positionW = light().positionW, .directionW = light().directionW, .params = light().params };
+		for( auto [handle, light, lToW] : m_registry.template GetView<vecs::Handle, SpotLight&, LocalToWorldMatrix&>() ) {
+			++m_numberLightsPerType.z;
+			light().params.x = 2.0f;
+			m_lights[total] = { .positionW = glm::vec3{lToW()[3]}, .directionW = glm::vec3{lToW()[1]}, .lightParams = light() };
+			if( ++total >= m_maxNumberLights ) break;
 		}
-		total += m_numberLightsPerType.z;
 		ubc.numLights = m_numberLightsPerType;
 		memcpy(m_uniformBuffersLights.m_uniformBuffersMapped[GetCurrentFrame()], m_lights.data(), total*sizeof(vh::Light));
 
 		//Copy camera view and projection matrices to the uniform buffer
-		auto [view, proj] = *m_registry.template GetView<ViewMatrix&, ProjectionMatrix&>().begin();
+		auto [pos, view, proj] = *m_registry.template GetView<Position&, ViewMatrix&, ProjectionMatrix&>().begin();
 		ubc.camera.view = view();
         ubc.camera.proj = proj();
+		ubc.camera.positionW = pos();
 		memcpy(m_uniformBuffersPerFrame.m_uniformBuffersMapped[GetCurrentFrame()], &ubc, sizeof(ubc));
 		return false;
 	}
@@ -194,8 +199,7 @@ namespace vve {
 		
 		for( auto& pipeline : m_pipelinesPerType) {
 			for( auto[oHandle, name, ghandle, LtoW, uniformBuffers, descriptorsets] : 
-				m_registry.template GetView<vecs::Handle, Name, MeshHandle, LocalToWorldMatrix&, vh::UniformBuffers&, 
-					vh::DescriptorSet&>
+				m_registry.template GetView<vecs::Handle, Name, MeshHandle, LocalToWorldMatrix&, vh::UniformBuffers&, vh::DescriptorSet&>
 						({(size_t)pipeline.second.m_graphicsPipeline.m_pipeline}) ) {
 
 				bool hasTexture = m_registry.template Has<TextureHandle>(oHandle);
@@ -321,7 +325,6 @@ namespace vve {
 		vh::BufDestroyBuffer2(GetDevice(), GetVmaAllocator(), m_uniformBuffersPerFrame);
 		vh::BufDestroyBuffer2(GetDevice(), GetVmaAllocator(), m_uniformBuffersLights);
 		vkDestroyDescriptorSetLayout(GetDevice(), m_descriptorSetLayoutPerFrame, nullptr);
-		vkDestroyDescriptorSetLayout(GetDevice(), m_descriptorSetLayoutLights, nullptr);
 
 		return false;
     }

@@ -38,12 +38,9 @@ namespace vve
 
 		//parameters per frame
 		vh::UniformBuffers m_uniformBuffersPerFrame;
+		vh::UniformBuffers m_uniformBuffersLights;
 		VkDescriptorSetLayout m_descriptorSetLayoutPerFrame;
 		vh::DescriptorSet m_descriptorSetPerFrame{0};
-
-		vh::UniformBuffers m_uniformBuffersLights;
-		VkDescriptorSetLayout m_descriptorSetLayoutLights;
-		vh::DescriptorSet m_descriptorSetLights{0};
 
 		VkDescriptorSetLayout m_descriptorSetLayoutPerObject;
 	    vh::Pipeline m_graphicsPipeline;

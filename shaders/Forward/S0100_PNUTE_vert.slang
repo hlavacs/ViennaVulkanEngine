@@ -1,9 +1,10 @@
 import Common;
 
 struct CoarseVertex {
-    float3 normal;
-    float2 uv;
-    float3 tangent;
+    float3 positionW : POSITION;
+    float3 normalW : NORMAL;
+    float2 uv : TEXCOORD;
+    float3 tangentW : TANGENT;
 };
 
 struct VertexStageOutput {
@@ -21,19 +22,20 @@ ParameterBlock<UniformBufferObjectTexture> gParamsObject;
 
 [shader("vertex")]
 VertexStageOutput vertexMain(
-    float3 position: POSITION,
-    float3 normal: NORMAL,
-    float2 uv: UV,
-    float3 tangent : TANGENT)
+    float3 positionL: POSITION,
+    float3 normalL: NORMAL,
+    float2 uv: TEXCOORD,
+    float3 tangentL : TANGENT)
 {
-    float3 worldPosition = mul(gParamsObject.model, float4(position, 1.0)).xyz;
-    float3 viewPosition = mul(gParamsFrame.camera.view, float4(worldPosition, 1.0)).xyz;   
+    float3 positionW = mul(gParamsObject.model, float4(positionL, 1.0)).xyz;
+    float3 positionV = mul(gParamsFrame.camera.view, float4(positionW, 1.0)).xyz;  
 
     VertexStageOutput output;
-    output.coarseVertex.uv = gParamsObject.uvscale * uv;
-    output.coarseVertex.normal = mul(gParamsObject.modelInvTranspose, float4(normal, 1.0)).xyz;
-    output.coarseVertex.tangent = mul(gParamsObject.model, float4(tangent, 1.0)).xyz;
-    output.sv_position = mul(gParamsFrame.camera.proj, float4(viewPosition, 1.0));
+    output.coarseVertex.positionW   = positionW;
+    output.coarseVertex.uv          = gParamsObject.uvscale * uv;
+    output.coarseVertex.normalW     = mul(gParamsObject.modelInvTranspose, float4(normalL, 1.0)).xyz;
+    output.coarseVertex.tangentW    = mul(gParamsObject.model, float4(tangentL, 1.0)).xyz;
+    output.sv_position              = mul(gParamsFrame.camera.proj, float4(positionV, 1.0));
 
     return output;
 }
