@@ -55,7 +55,7 @@ public:
 
         if( m_engine.GetWindow("VVE Window")->GetIsMinimized()) {return false;}
 
-		static float x = 2.0f, y = 0.0f;
+		static float x = 0.0f, y = 0.0f;
 
         {
             ImGui::Begin("Load Object");                          // Create a window called "Hello, world!" and append into it.
@@ -146,7 +146,6 @@ public:
 					x += 2.0f;		
 				}
 			}
-
 
             ImGui::End();
         }

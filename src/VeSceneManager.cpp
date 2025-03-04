@@ -143,7 +143,7 @@ namespace vve {
 		exists(oHandle, Rotation{mat3_t{1.0f}});
 		exists(oHandle, Scale{vec3_t{1.0f}});
 		exists(oHandle, LocalToParentMatrix{mat4_t{1.0f}});
-		exists(oHandle, LocalToWorldMatrix{mat4_t{1.0f}});
+		exists(oHandle, LocalToWorldMatrix{mat4_t{0.0f}});
 
 		std::filesystem::path filepath = msg.m_sceneName();
 		uint64_t id = 1;
@@ -170,7 +170,7 @@ namespace vve {
 								Rotation{rotMat3x3}, 
 								Scale{{ scaling.x, scaling.y, scaling.z }},
 								LocalToParentMatrix{mat4_t{1.0f}}, 
-								LocalToWorldMatrix{mat4_t{1.0f}});
+								LocalToWorldMatrix{mat4_t{0.0f}});
 
 		SetParent(ObjectHandle{nHandle}, parent);
 
@@ -244,6 +244,7 @@ namespace vve {
 		}
 		children().clear();
 		m_registry.Erase(handle);
+		//m_regisry.SendMessage(MsgObjectDestroy);
 	}
 
 
