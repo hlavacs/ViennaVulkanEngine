@@ -86,7 +86,7 @@ public:
 				ImGui::SameLine();
 	            if (ImGui::Button("Create##Create1")) {                          // Buttons return true when clicked (most widgets return true when edited/activated)				
 					
-					auto handle = m_registry.Insert( vve::Position{ { x, y, 0.0f } }, vve::Rotation{mat3_t{1.0f}}, vve::Scale{vec3_t{1.0f}}); 
+					auto handle = m_registry.Insert( vve::Position{ { x, y, 0.1f } }, vve::Rotation{mat3_t{1.0f}}, vve::Scale{vec3_t{1.0f}}); 
 					m_handles.push_back( handle );
 
 					m_engine.SendMessage( 
@@ -123,7 +123,7 @@ public:
 
 					m_engine.SendMessage( MsgSceneLoad{ this, nullptr, vve::Name{path_obj2}, flags });		
 					vh::Color color{ { 0.0f, 0.0f, 0.0f, 1.0f }, { 0.0f, 1.0f, 1.0f, 1.0f }, { 0.0f, 0.0f, 0.0f, 1.0f } };
-					auto handle = m_registry.Insert(vve::Position{ { x, y, 0.0f } }, vve::Rotation{mat3_t{1.0f}}, vve::Scale{vec3_t{0.05f}}, color, vve::MeshName{"assets\\standard\\sphere.obj\\sphere"} );
+					auto handle = m_registry.Insert(vve::Position{ { x, y, 0.5f } }, vve::Rotation{mat3_t{1.0f}}, vve::Scale{vec3_t{0.05f}}, color, vve::MeshName{"assets\\standard\\sphere.obj\\sphere"} );
 					m_handles.push_back( handle );
 
 					m_engine.SendMessage(MsgObjectCreate{ this, nullptr, vve::ObjectHandle(handle), vve::ParentHandle{} });
