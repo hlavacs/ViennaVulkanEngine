@@ -78,6 +78,11 @@ namespace vve {
 		axis2 = vec3_t{ LtoPc() * vec4_t{1.0f, 0.0f, 0.0f, 0.0f} };
 		rc() = mat3_t{ glm::rotate(mat4_t{1.0f}, angle2, axis2) * mat4_t{ rc() } };
 
+		glm::vec4 ctopp = LtoPc()[3];
+		glm::vec4 ptppp = LtoPn()[3];
+		std::cout << "Camera Parent: (" << pn().x << ", " << pn().y << ", " << pn().z << ") " <<
+	    		        " Camera PT: (" << ptppp.x << ", " << ptppp.y << ", " << ptppp.z << ") " << std::endl;
+
 		return false;
     }
 
