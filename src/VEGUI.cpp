@@ -80,8 +80,11 @@ namespace vve {
 
 		glm::vec4 ctopp = LtoPc()[3];
 		glm::vec4 ptppp = LtoPn()[3];
-		std::cout << "Camera Parent: (" << pn().x << ", " << pn().y << ", " << pn().z << ") " <<
-	    		        " Camera PT: (" << ptppp.x << ", " << ptppp.y << ", " << ptppp.z << ") " << std::endl;
+		//std::cout << "Camera Parent: (" << pn().x << ", " << pn().y << ", " << pn().z << ") " <<
+	    //		        " Camera PT: (" << ptppp.x << ", " << ptppp.y << ", " << ptppp.z << ") " << std::endl;
+
+		glm::vec4 test = LtoPc() * vec4_t{0.0f, 0.0f, -1.0f, 0.0f};
+		std::cout << "Test: (" << test.x << ", " << test.y << ", " << test.z << ") " << std::endl;
 
 		return false;
     }
