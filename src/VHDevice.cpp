@@ -91,7 +91,7 @@ namespace vh {
     void DevCleanupSwapChain(VkDevice device, VmaAllocator vmaAllocator, SwapChain& swapChain, DepthImage& depthImage) {
         vkDestroyImageView(device, depthImage.m_depthImageView, nullptr);
 
-        BufDestroyImage(device, vmaAllocator, depthImage.m_depthImage, depthImage.m_depthImageAllocation);
+        ImgDestroyImage(device, vmaAllocator, depthImage.m_depthImage, depthImage.m_depthImageAllocation);
 
         for (auto framebuffer : swapChain.m_swapChainFramebuffers) {
             vkDestroyFramebuffer(device, framebuffer, nullptr);
@@ -306,7 +306,7 @@ namespace vh {
         swapChain.m_swapChainImageViews.resize(swapChain.m_swapChainImages.size());
 
         for (uint32_t i = 0; i < swapChain.m_swapChainImages.size(); i++) {
-            swapChain.m_swapChainImageViews[i] = BufCreateImageView(device, swapChain.m_swapChainImages[i]
+            swapChain.m_swapChainImageViews[i] = ImgCreateImageView(device, swapChain.m_swapChainImages[i]
                 , swapChain.m_swapChainImageFormat, VK_IMAGE_ASPECT_COLOR_BIT);
         }
     }

@@ -114,7 +114,7 @@ namespace vve {
 		vh::ComSubmitCommandBuffers(GetDevice(), GetGraphicsQueue(), GetVulkanState()().m_commandBuffersSubmit, 
 			m_imageAvailableSemaphores, m_semaphores, signalSemaphore, m_fences, GetCurrentFrame());
 				
-   		vh::BufTransitionImageLayout(GetDevice(), GetGraphicsQueue(), m_commandPool, 
+   		vh::ImgTransitionImageLayout(GetDevice(), GetGraphicsQueue(), m_commandPool, 
 			GetSwapChain().m_swapChainImages[GetImageIndex()], GetSwapChain().m_swapChainImageFormat, 
 			VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR);
 
@@ -142,7 +142,7 @@ namespace vve {
 		for( decltype(auto) texture : m_registry.template GetView<vh::Map&>() ) {
 			vkDestroySampler(GetDevice(), texture().m_mapSampler, nullptr);
         	vkDestroyImageView(GetDevice(), texture().m_mapImageView, nullptr);
-	        vh::BufDestroyImage(GetDevice(), GetVmaAllocator(), texture().m_mapImage, texture().m_mapImageAllocation);
+	        vh::ImgDestroyImage(GetDevice(), GetVmaAllocator(), texture().m_mapImage, texture().m_mapImageAllocation);
 		}
 
 		vkDestroyDescriptorSetLayout(GetDevice(), m_descriptorSetLayoutPerFrame, nullptr);
@@ -188,9 +188,9 @@ namespace vve {
 		auto texture = m_registry.template Get<vh::Map&>(handle);
 		auto pixels = texture().m_pixels;
 
-		vh::BufCreateTextureImage(GetPhysicalDevice(), GetDevice(), GetVulkanState()().m_vmaAllocator, GetGraphicsQueue(), m_commandPool, pixels, texture().m_width, texture().m_height, texture().m_size, texture);
-		vh::BufCreateTextureImageView(GetDevice(), texture);
-		vh::BufCreateTextureSampler(GetPhysicalDevice(), GetDevice(), texture);
+		vh::ImgCreateTextureImage(GetPhysicalDevice(), GetDevice(), GetVulkanState()().m_vmaAllocator, GetGraphicsQueue(), m_commandPool, pixels, texture().m_width, texture().m_height, texture().m_size, texture);
+		vh::ImgCreateTextureImageView(GetDevice(), texture);
+		vh::ImgCreateTextureSampler(GetPhysicalDevice(), GetDevice(), texture);
 		return false;
 	}
 
@@ -199,7 +199,7 @@ namespace vve {
 		auto texture = m_registry.template Get<vh::Map&>(handle);
 		vkDestroySampler(GetDevice(), texture().m_mapSampler, nullptr);
 		vkDestroyImageView(GetDevice(), texture().m_mapImageView, nullptr);
-		vh::BufDestroyImage(GetDevice(), GetVulkanState()().m_vmaAllocator, texture().m_mapImage, texture().m_mapImageAllocation);
+		vh::ImgDestroyImage(GetDevice(), GetVulkanState()().m_vmaAllocator, texture().m_mapImage, texture().m_mapImageAllocation);
 		m_registry.Erase(handle);
 		return false;
 	}

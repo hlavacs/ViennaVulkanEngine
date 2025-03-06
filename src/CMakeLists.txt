@@ -21,7 +21,8 @@ set(SOURCE
   VESystem.cpp
   VEWindow.cpp
   VEWindowSDL.cpp
-  VHBUffer.cpp
+  VHBuffer.cpp
+  VHImage.cpp
   VHVulkan.cpp
   VHDevice.cpp
   VHRender.cpp
@@ -45,6 +46,7 @@ set(HEADERS
   ${INCLUDE}/VEWindowSDL.h
   ${INCLUDE}/VHInclude.h
   ${INCLUDE}/VHBuffer.h
+  ${INCLUDE}/VHImage.h
   ${INCLUDE}/VHVulkan.h
   ${INCLUDE}/VHDevice.h
   ${INCLUDE}/VHRender.h

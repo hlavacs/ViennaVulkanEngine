@@ -14,23 +14,6 @@ namespace vh {
 
     void BufCopyBuffer(VkDevice device, VkQueue graphicsQueue, VkCommandPool commandPool, VkBuffer srcBuffer, VkBuffer dstBuffer, VkDeviceSize size);
 
-	void BufCreateTextureImage(VkPhysicalDevice physicalDevice, VkDevice device, VmaAllocator vmaAllocator, VkQueue graphicsQueue, VkCommandPool commandPool, void* pixels, int width, int height, size_t size, Map& texture);
-
-    void BufCreateTextureImageView(VkDevice device, Map& texture);
-
-    void BufCreateTextureSampler(VkPhysicalDevice physicalDevice, VkDevice device, Map &texture);
-
-    VkImageView BufCreateImageView(VkDevice device, VkImage image, VkFormat format, VkImageAspectFlags aspectFlags);
-
-    void BufCreateImage(VkPhysicalDevice physicalDevice, VkDevice device, VmaAllocator vmaAllocator, uint32_t width, uint32_t height
-        , VkFormat format, VkImageTiling tiling, VkImageUsageFlags usage, VkMemoryPropertyFlags properties
-        , VkImage& image, VmaAllocation& imageAllocation);
-
-    void BufDestroyImage(VkDevice device, VmaAllocator vmaAllocator, VkImage image, VmaAllocation& imageAllocation);
-
-    void BufTransitionImageLayout(VkDevice device, VkQueue graphicsQueue, VkCommandPool commandPool
-        , VkImage image, VkFormat format, VkImageLayout oldLayout, VkImageLayout newLayout);
-
     void BufCopyBufferToImage(VkDevice device, VkQueue graphicsQueue, VkCommandPool commandPool
         , VkBuffer buffer, VkImage image, uint32_t width, uint32_t height);
 
@@ -42,5 +25,6 @@ namespace vh {
 
     void BufCreateUniformBuffers(VkPhysicalDevice physicalDevice, VkDevice device, VmaAllocator& vmaAllocator, 
 		VkDeviceSize bufferSize, UniformBuffers &uniformBuffers);
+        
 
 }; // namespace vh
