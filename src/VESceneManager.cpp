@@ -8,7 +8,8 @@ namespace vve {
 	
 
 	//-------------------------------------------------------------------------------------------------------
-
+	//Scene Manager class
+	
     SceneManager::SceneManager(std::string systemName, Engine& engine ) : System{systemName, engine } {
 		engine.RegisterCallback( { 
 			{this,  						  2000,	"INIT", [this](Message& message){ return OnInit(message);} },
