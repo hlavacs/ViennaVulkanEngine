@@ -13,7 +13,8 @@ namespace vve {
 			{this, 0, "SDL_MOUSE_BUTTON_DOWN", [this](Message& message){ return OnMouseButtonDown(message);} },
 			{this, 0, "SDL_MOUSE_BUTTON_UP", [this](Message& message){return OnMouseButtonUp(message);} },
 			{this, 0, "SDL_MOUSE_MOVE", [this](Message& message){ return OnMouseMove(message); } },
-			{this, 0, "SDL_MOUSE_WHEEL", [this](Message& message){ return OnMouseWheel(message); } }
+			{this, 0, "SDL_MOUSE_WHEEL", [this](Message& message){ return OnMouseWheel(message); } },
+			{this, 0, "FRAME_END", [this](Message& message){ return OnFrameEnd(message); } }
 		} );
 	};
 
@@ -42,6 +43,9 @@ namespace vve {
 
 		if( key == SDL_SCANCODE_ESCAPE  ) { m_engine.Stop(); return false; }
 		if( key == SDL_SCANCODE_LSHIFT || key == SDL_SCANCODE_RSHIFT  ) { m_shiftPressed = true; return false; }
+
+		if( key == SDL_SCANCODE_O  ) { m_makeScreenshot = true; return false; }
+		if( key == SDL_SCANCODE_P  ) { m_makeScreenshotDepth = true; return false; }
 
 		auto [pn, rn, sn, LtoPn] = m_registry.template Get<Position&, Rotation&, Scale&, LocalToParentMatrix>(m_cameraNodeHandle);
 		auto [pc, rc, sc, LtoPc] = m_registry.template Get<Position&, Rotation&, Scale&, LocalToParentMatrix>(m_cameraHandle);		
@@ -166,6 +170,76 @@ namespace vve {
 			m_cameraNodeHandle = parent;
 		};
 	}
+
+
+	bool GUI::OnFrameEnd(Message message)
+	{
+		/*
+		if (m_makeScreenshot)
+		{
+			VkExtent2D extent = getWindowPointer()->getExtent();
+			uint32_t imageSize = extent.width * extent.height * 4;
+			VkImage image = getEnginePointer()->getRenderer()->getSwapChainImage();
+
+			uint8_t *dataImage = new uint8_t[imageSize];
+
+			vh::vhBufCopySwapChainImageToHost(getEnginePointer()->getRenderer()->getDevice(),
+				getEnginePointer()->getRenderer()->getVmaAllocator(),
+				getEnginePointer()->getRenderer()->getGraphicsQueue(),
+				getEnginePointer()->getRenderer()->getCommandPool(),
+				image, VK_FORMAT_R8G8B8A8_UNORM,
+				VK_IMAGE_ASPECT_COLOR_BIT, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR,
+				dataImage, extent.width, extent.height, imageSize);
+
+			m_numScreenshot++;
+
+			std::string name("../../media/screenshots/screenshot" + std::to_string(m_numScreenshot - 1) + ".jpg");
+			stbi_write_jpg(name.c_str(), extent.width, extent.height, 4, dataImage, 4 * extent.width);
+			delete[] dataImage;
+
+			m_makeScreenshot = false;
+		}
+		*/
+		/*
+		if (m_makeScreenshotDepth) {
+
+			VETexture *map = getRendererShaderPointer()->getShadowMap(getRendererPointer()->getImageIndex())[0];
+			//VkImageLayout layout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+			VkImageLayout layout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+
+			VkExtent2D extent = map->m_extent;
+			uint32_t imageSize = extent.width * extent.height;
+			VkImage image = map->m_image;
+
+			float *dataImage = new float[imageSize];
+			unsigned char*dataImage2 = new unsigned char[imageSize];
+
+			vh::vhBufCopyImageToHost(getRendererPointer()->getDevice(),
+				getRendererPointer()->getVmaAllocator(),
+				getRendererPointer()->getGraphicsQueue(),
+				getRendererPointer()->getCommandPool(),
+				image, map->m_format, VK_IMAGE_ASPECT_DEPTH_BIT, layout,
+				(unsigned char*)dataImage, extent.width, extent.height, imageSize * 4);
+
+			for (uint32_t v = 0; v < extent.height; v++) {
+				for (uint32_t u = 0; u < extent.width; u++) {
+					dataImage2[v*extent.width + u] = (unsigned char)((dataImage[v*extent.width + u]-0.5)*256.0f*2.0f);
+					//std::cout << dataImage[v*extent.width + u] << " ";
+				}
+			}
+
+			std::string name("../../media/screenshots/screenshot" + std::to_string(m_numScreenshot) + ".jpg");
+			stbi_write_jpg(name.c_str(), extent.width, extent.height, 1, dataImage2, extent.width);
+			delete[] dataImage;
+			delete[] dataImage2;
+
+			m_numScreenshot++;
+			m_makeScreenshotDepth = false;
+			}
+		*/
+		return false;
+	};
+
 
 };  // namespace vve
 

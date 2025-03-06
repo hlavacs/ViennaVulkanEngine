@@ -23,6 +23,7 @@ namespace vve {
 		bool OnMouseButtonUp(Message message);
 		bool OnMouseMove(Message message);
 		bool OnMouseWheel(Message message);
+		bool OnFrameEnd(Message message);
 		void GetCamera();
 
 		std::string m_windowName;
@@ -33,6 +34,9 @@ namespace vve {
 		int m_y = -1;
 		vecs::Handle m_cameraHandle{};
 		vecs::Handle m_cameraNodeHandle{};
+		bool m_makeScreenshot{false};
+		int m_numScreenshot{0};
+		bool m_makeScreenshotDepth{false};
 
 	};
 

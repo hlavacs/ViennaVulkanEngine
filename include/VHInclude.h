@@ -72,6 +72,17 @@ namespace vve {
 #include "backends/imgui_impl_sdl2.h"
 #include "backends/imgui_impl_vulkan.h"
 
+
+#define VHCHECKRESULT(x)          \
+    {                             \
+        VkResult retval = (x);    \
+        if (retval != VK_SUCCESS) \
+        {                         \
+			std::out << "ERROR: " << std::endl; \\
+            exit(retval);		        \
+        }                        \
+    }
+
 #include "VHVulkan.h"
 #include "VHBuffer.h"
 #include "VHImage.h"

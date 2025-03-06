@@ -164,5 +164,107 @@ namespace vh {
     }
 
 
+    /**
+	* \brief Copy a swap chain image to a data buffer, after it has been rendered into
+	*
+	* \param[in] device Logical Vulkan device
+	* \param[in] allocator VMA allocator
+	* \param[in] graphicsQueue Device queue for submitting commands
+	* \param[in] commandPool Command pool for allocating command buffers
+	* \param[in] image The source image
+	* \param[in] format The pixel format of this image
+	* \param[in] aspect Color or depth
+	* \param[in] layout The layout that this image is currently and should be again after the copy
+	* \param[in] bufferData The destination buffer data
+	* \param[in] width �mage width
+	* \param[in] height Image height
+	* \param[in] imageSize Size of the image in bytes
+	* \returns VK_SUCCESS or a Vulkan error code
+	*
+	*/
+	VkResult ImgCopySwapChainImageToHost(VkDevice device, VmaAllocator allocator, VkQueue graphicsQueue, VkCommandPool commandPool, VkImage image, VkFormat format, VkImageAspectFlagBits aspect, VkImageLayout layout,
+		/*gli::byte*/ unsigned char *bufferData,
+		uint32_t width,
+		uint32_t height,
+		uint32_t imageSize)
+	{
+		VkBuffer stagingBuffer;
+		VmaAllocation stagingBufferAllocation;
+		
+        //BufCreateBuffer(allocator, imageSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT, VMA_MEMORY_USAGE_CPU_ONLY, &stagingBuffer, &stagingBufferAllocation);
+
+		//ImgTransitionImageLayout(device, graphicsQueue, commandPool,image, format, aspect, 1, 1, layout, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
+
+		//BufCopyImageToBuffer(device, graphicsQueue, commandPool, image, aspect, stagingBuffer, 1, width, height);
+
+		//ImgTransitionImageLayout(device, graphicsQueue, commandPool,image, format, aspect, 1, 1, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, layout);
+
+		void *data;
+		vmaMapMemory(allocator, stagingBufferAllocation, &data);
+		memcpy(bufferData, data, (size_t)imageSize);
+		vmaUnmapMemory(allocator, stagingBufferAllocation);
+
+		for (uint32_t i = 0; i < width * height; i++)
+		{
+			/*gli::byte*/ unsigned char r = bufferData[4 * i + 0];
+			/*gli::byte*/ unsigned char g = bufferData[4 * i + 1];
+			/*gli::byte*/ unsigned char b = bufferData[4 * i + 2];
+			/*gli::byte*/ unsigned char a = bufferData[4 * i + 3];
+
+			bufferData[4 * i + 0] = b;
+			bufferData[4 * i + 1] = g;
+			bufferData[4 * i + 2] = r;
+			bufferData[4 * i + 3] = a;
+		}
+
+		vmaDestroyBuffer(allocator, stagingBuffer, stagingBufferAllocation);
+		return VK_SUCCESS;
+	}
+
+	/**
+	* \brief Copy a swap chain image to a data buffer, after it has been rendered into
+	*
+	* \param[in] device Logical Vulkan device
+	* \param[in] allocator VMA allocator
+	* \param[in] graphicsQueue Device queue for submitting commands
+	* \param[in] commandPool Command pool for allocating command buffers
+	* \param[in] image The source image
+	* \param[in] format Format of the image
+	* \param[in] aspect Color or depth
+	* \param[in] layout The layout the image is currently in
+	* \param[in] bufferData The destination buffer data
+	* \param[in] width �mage width
+	* \param[in] height Image height
+	* \param[in] imageSize Size of the image in bytes
+	* \returns VK_SUCCESS or a Vulkan error code
+	*
+	*/
+	VkResult ImgCopyImageToHost(VkDevice device, VmaAllocator allocator, VkQueue graphicsQueue, VkCommandPool commandPool, VkImage image, VkFormat format, VkImageAspectFlagBits aspect, VkImageLayout layout,
+		/*gli::byte*/ unsigned char *bufferData,
+		uint32_t width,
+		uint32_t height,
+		uint32_t imageSize)
+	{
+		VkBuffer stagingBuffer;
+		VmaAllocation stagingBufferAllocation;
+
+		//BufCreateBuffer(allocator, imageSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT, VMA_MEMORY_USAGE_CPU_ONLY,&stagingBuffer, &stagingBufferAllocation);
+
+		//ImgTransitionImageLayout(device, graphicsQueue, commandPool, image, format, aspect, 1, 1, layout, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
+
+		//ImgCopyImageToBuffer(device, graphicsQueue, commandPool, image, aspect, stagingBuffer, 1, width, height);
+
+		//ImgTransitionImageLayout(device, graphicsQueue, commandPool, image, format, aspect, 1, 1, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, layout);
+
+		void *data;
+		vmaMapMemory(allocator, stagingBufferAllocation, &data);
+		memcpy(bufferData, data, (size_t)imageSize);
+		vmaUnmapMemory(allocator, stagingBufferAllocation);
+
+		vmaDestroyBuffer(allocator, stagingBuffer, stagingBufferAllocation);
+		return VK_SUCCESS;
+	}
+
+
 }
 
