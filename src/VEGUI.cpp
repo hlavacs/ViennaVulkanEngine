@@ -87,8 +87,8 @@ namespace vve {
 		//std::cout << "Camera Parent: (" << pn().x << ", " << pn().y << ", " << pn().z << ") " <<
 	    //		        " Camera PT: (" << ptppp.x << ", " << ptppp.y << ", " << ptppp.z << ") " << std::endl;
 
-		glm::vec4 test = LtoPc() * vec4_t{0.0f, 0.0f, -1.0f, 0.0f};
-		std::cout << "Test: (" << test.x << ", " << test.y << ", " << test.z << ") " << std::endl;
+		//glm::vec4 test = LtoPc() * vec4_t{0.0f, 0.0f, -1.0f, 0.0f};
+		//std::cout << "Test: (" << test.x << ", " << test.y << ", " << test.z << ") " << std::endl;
 
 		return false;
     }
@@ -172,34 +172,35 @@ namespace vve {
 	}
 
 
-	bool GUI::OnFrameEnd(Message message)
-	{
-		/*
-		if (m_makeScreenshot)
-		{
-			VkExtent2D extent = getWindowPointer()->getExtent();
-			uint32_t imageSize = extent.width * extent.height * 4;
-			VkImage image = getEnginePointer()->getRenderer()->getSwapChainImage();
+	bool GUI::OnFrameEnd(Message message) {
+		if (m_makeScreenshot) {
+			auto vstate = *m_registry.template GetView<VulkanState&>().begin();
 
-			uint8_t *dataImage = new uint8_t[imageSize];
 
-			vh::vhBufCopySwapChainImageToHost(getEnginePointer()->getRenderer()->getDevice(),
+			//VkExtent2D extent = getWindowPointer()->getExtent();
+			//uint32_t imageSize = extent.width * extent.height * 4;
+			//VkImage image = getEnginePointer()->getRenderer()->getSwapChainImage();
+
+			//uint8_t *dataImage = new uint8_t[imageSize];
+
+			/*vh::ImgCopySwapChainImageToHost(
+				getEnginePointer()->getRenderer()->getDevice(),
 				getEnginePointer()->getRenderer()->getVmaAllocator(),
 				getEnginePointer()->getRenderer()->getGraphicsQueue(),
 				getEnginePointer()->getRenderer()->getCommandPool(),
 				image, VK_FORMAT_R8G8B8A8_UNORM,
 				VK_IMAGE_ASPECT_COLOR_BIT, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR,
 				dataImage, extent.width, extent.height, imageSize);
-
+			*/
 			m_numScreenshot++;
 
-			std::string name("../../media/screenshots/screenshot" + std::to_string(m_numScreenshot - 1) + ".jpg");
-			stbi_write_jpg(name.c_str(), extent.width, extent.height, 4, dataImage, 4 * extent.width);
-			delete[] dataImage;
+			std::string name("screenshots/screenshot" + std::to_string(m_numScreenshot - 1) + ".jpg");
+			//stbi_write_jpg(name.c_str(), extent.width, extent.height, 4, dataImage, 4 * extent.width);
+			//delete[] dataImage;
 
 			m_makeScreenshot = false;
 		}
-		*/
+
 		/*
 		if (m_makeScreenshotDepth) {
 

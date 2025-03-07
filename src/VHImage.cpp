@@ -182,11 +182,9 @@ namespace vh {
 	* \returns VK_SUCCESS or a Vulkan error code
 	*
 	*/
-	VkResult ImgCopySwapChainImageToHost(VkDevice device, VmaAllocator allocator, VkQueue graphicsQueue, VkCommandPool commandPool, VkImage image, VkFormat format, VkImageAspectFlagBits aspect, VkImageLayout layout,
-		/*gli::byte*/ unsigned char *bufferData,
-		uint32_t width,
-		uint32_t height,
-		uint32_t imageSize)
+	VkResult ImgCopySwapChainImageToHost(VkDevice device, VmaAllocator allocator, VkQueue graphicsQueue, 
+        VkCommandPool commandPool, VkImage image, VkFormat format, VkImageAspectFlagBits aspect, VkImageLayout layout,
+		/*gli::byte*/ unsigned char *bufferData, uint32_t width, uint32_t height, uint32_t imageSize) 
 	{
 		VkBuffer stagingBuffer;
 		VmaAllocation stagingBufferAllocation;
@@ -239,7 +237,8 @@ namespace vh {
 	* \returns VK_SUCCESS or a Vulkan error code
 	*
 	*/
-	VkResult ImgCopyImageToHost(VkDevice device, VmaAllocator allocator, VkQueue graphicsQueue, VkCommandPool commandPool, VkImage image, VkFormat format, VkImageAspectFlagBits aspect, VkImageLayout layout,
+	VkResult ImgCopyImageToHost(VkDevice device, VmaAllocator allocator, VkQueue graphicsQueue, 
+        VkCommandPool commandPool, VkImage image, VkFormat format, VkImageAspectFlagBits aspect, VkImageLayout layout,
 		/*gli::byte*/ unsigned char *bufferData,
 		uint32_t width,
 		uint32_t height,

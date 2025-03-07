@@ -15,30 +15,31 @@ namespace vve
         RAYTRACING
     };
 
+	struct VulkanState {
+		VkSurfaceKHR 	m_surface{VK_NULL_HANDLE};
+		WindowSDL*		m_windowSDL;
+		VmaAllocator 	m_vmaAllocator;
+		VkInstance 		m_instance{VK_NULL_HANDLE};
+		VkDebugUtilsMessengerEXT m_debugMessenger;
+		VkPhysicalDevice m_physicalDevice{VK_NULL_HANDLE};
+		VkDevice 		m_device{VK_NULL_HANDLE};
+		vh::QueueFamilyIndices m_queueFamilies;
+		VkQueue 		m_graphicsQueue{VK_NULL_HANDLE};
+		VkQueue 		m_presentQueue{VK_NULL_HANDLE};
+		vh::SwapChain 	m_swapChain;
+		vh::DepthImage 	m_depthImage;
+		std::vector<VkCommandBuffer> m_commandBuffersSubmit;
+
+		uint32_t m_currentFrame = MAX_FRAMES_IN_FLIGHT - 1;
+		uint32_t m_imageIndex;
+		bool m_framebufferResized = false;
+	};
+
+	auto GetVulkanState2(vecs::Registry& registry) -> std::tuple< vecs::Handle, vecs::Ref<VulkanState>>;
+
+
     class Renderer : public System {
         friend class Engine;
-
-	protected:	
-		struct VulkanState {
-        	VkSurfaceKHR 	m_surface{VK_NULL_HANDLE};
-	        WindowSDL*		m_windowSDL;
-			VmaAllocator 	m_vmaAllocator;
-	        VkInstance 		m_instance{VK_NULL_HANDLE};
-		    VkDebugUtilsMessengerEXT m_debugMessenger;
-		    VkPhysicalDevice m_physicalDevice{VK_NULL_HANDLE};
-		    VkDevice 		m_device{VK_NULL_HANDLE};
-		    vh::QueueFamilyIndices m_queueFamilies;
-		    VkQueue 		m_graphicsQueue{VK_NULL_HANDLE};
-		    VkQueue 		m_presentQueue{VK_NULL_HANDLE};
-		    vh::SwapChain 	m_swapChain;
-			vh::DepthImage 	m_depthImage;
-			std::vector<VkCommandBuffer> m_commandBuffersSubmit;
-
-	    	uint32_t m_currentFrame = MAX_FRAMES_IN_FLIGHT - 1;
-        	uint32_t m_imageIndex;
-	    	bool m_framebufferResized = false;
-		};
-
 		using VulkanStateHandle = vsty::strong_type_t<vecs::Handle, vsty::counter<>>;
 
     public:

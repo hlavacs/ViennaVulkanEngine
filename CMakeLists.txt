@@ -7,12 +7,13 @@ project (
 )
 
 if (MSVC)
-  add_compile_options(/DIMGUI_IMPL_VULKAN_NO_PROTOTYPES)
+	add_compile_options(/DIMGUI_IMPL_VULKAN_NO_PROTOTYPES)
 	add_compile_options(/D_CRT_SECURE_NO_WARNINGS) #for assimp
-  add_compile_options(/DASSIMP_BUILD_ZLIB=ON) #for assimp
+	add_compile_options(/DASSIMP_BUILD_ZLIB=ON) #for assimp
 else()
-  add_compile_options(-DIMGUI_IMPL_VULKAN_NO_PROTOTYPES)
+	add_compile_options(-DIMGUI_IMPL_VULKAN_NO_PROTOTYPES)
 	add_compile_options(-Wno-nullability-completeness)
+	add_compile_options(-Wformat=0)
 	add_compile_options(-D_CRT_SECURE_NO_WARNINGS) #for assimp
 	add_compile_options(-DASSIMP_BUILD_ZLIB=ON) #for assimp
 endif()

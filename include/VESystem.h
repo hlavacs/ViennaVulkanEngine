@@ -76,8 +76,6 @@ namespace vve {
 
 	public:
 
-		struct VulkanState;
-	
 	    struct MsgTypePhase {
 	        size_t m_type;
 	        int m_phase;

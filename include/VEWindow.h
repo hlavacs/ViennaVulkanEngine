@@ -1,11 +1,17 @@
 #pragma once
 
-#include <string>
-#include <vector>
-#include <map>
-
 
 namespace vve {
+
+    struct WindowState {
+        int 			m_width{0};
+        int 			m_height{0};
+        std::string 	m_windowName{""};
+        glm::vec4 		m_clearColor{0.0f, 0.0f, 0.0f, 1.00f};
+        bool 			m_isMinimized{false};
+    };
+
+    auto GetWindowState(vecs::Registry& registry) -> std::tuple<vecs::Handle, vecs::Ref<WindowState>>;
 
     class Window : public System {
 
