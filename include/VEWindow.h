@@ -34,6 +34,7 @@ namespace vve {
         glm::vec4 		m_clearColor{0.45f, 0.55f, 0.60f, 1.00f};
 	    bool 			m_isMinimized = false;
         std::vector<const char*> m_instanceExtensions;
+		vecs::Handle 	m_windowStateHandle{};
 
     };
 

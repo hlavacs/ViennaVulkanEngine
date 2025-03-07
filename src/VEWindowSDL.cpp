@@ -17,6 +17,8 @@ namespace vve {
 			{this,     0, "POLL_EVENTS", [this](Message& message){ return OnPollEvents(message);} },
 			{this,  3000, "QUIT", [this](Message& message){ return OnQuit(message);} },
 		} );
+
+        m_windowStateHandle = m_registry.Insert(WindowState{width, height, windowName});
     }
 
     WindowSDL::~WindowSDL() {}

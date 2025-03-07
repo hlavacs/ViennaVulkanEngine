@@ -24,6 +24,8 @@ namespace vve {
 			{this,      0, "MESH_DESTROY", [this](Message& message){ return OnMeshDestroy(message);} },
 			{this,   2000, "QUIT", [this](Message& message){ return OnQuit(message);} },
 		} );
+
+		m_vulkanStateHandle = m_registry.Insert(VulkanState{});
     }
 
     RendererVulkan::~RendererVulkan() {}

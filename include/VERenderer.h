@@ -4,8 +4,7 @@
 #include <any>
 
 
-namespace vve
-{
+namespace vve {
 
 	class RendererVulkan;
 
@@ -37,10 +36,8 @@ namespace vve
 
 	auto GetVulkanState2(vecs::Registry& registry) -> std::tuple< vecs::Handle, vecs::Ref<VulkanState>>;
 
-
     class Renderer : public System {
         friend class Engine;
-		using VulkanStateHandle = vsty::strong_type_t<vecs::Handle, vsty::counter<>>;
 
     public:
         Renderer(std::string systemName, Engine& m_engine, std::string windowName);
@@ -66,9 +63,9 @@ namespace vve
 		void SubmitCommandBuffer( VkCommandBuffer commandBuffer );
 
 		bool OnAnnounce(Message message);
-		std::string 		m_windowName;
-        Window* 			m_window;
-		VulkanStateHandle 	m_vulkanStateHandle{};
+		std::string 	m_windowName;
+        Window* 		m_window;
+		vecs::Handle 	m_vulkanStateHandle{};
     };
 
 };   // namespace vve

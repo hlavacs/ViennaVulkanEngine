@@ -14,8 +14,6 @@ namespace vve {
 		engine.RegisterCallback( { 
 			{this,      0, "ANNOUNCE", [this](Message& message){ return OnAnnounce(message);} }
 		} );
-
-		auto handle = m_registry.Insert(VulkanState{});
 	};
 
     Renderer::~Renderer(){};
@@ -47,20 +45,12 @@ namespace vve {
 	};
 
 	auto Renderer::GetVulkanState() -> vecs::Ref<VulkanState> { 
-
-		return std::get<1>(GetVulkanState2(m_registry));
-
-		/*
-		if( m_vulkanStateHandle().IsValid() == false ) {
-			for( auto [handle, state] : m_registry.template GetView<vecs::Handle, VulkanState&>() ) {
-				m_vulkanStateHandle = handle;
-				return state;
-			}
-			m_vulkanStateHandle = m_registry.Insert(VulkanState{});
+		if(!m_vulkanStateHandle.IsValid()) {
+			auto [handle, state] = GetVulkanState2(m_registry);
+			m_vulkanStateHandle = handle;
+			return state;
 		}
-		auto state = m_registry.template Get<VulkanState&>(m_vulkanStateHandle);
-		return state;
-		*/
+		return m_registry.template Get<VulkanState&>(m_vulkanStateHandle);
 	}
 
 };  // namespace vve
