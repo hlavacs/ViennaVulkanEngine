@@ -28,6 +28,8 @@ namespace vve {
 		bool GetIsMinimized() { return m_isMinimized; }
 
     protected:
+        auto GetWindowState2() -> vecs::Ref<WindowState>;
+
         int 			m_width;
         int 			m_height;
         std::string 	m_windowName;

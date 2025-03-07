@@ -13,5 +13,16 @@ namespace vve {
     }
 
     Window::~Window(){}
+
     void Window::SetClearColor(glm::vec4 clearColor){ m_clearColor = clearColor; };
+
+    auto Window::GetWindowState2() -> vecs::Ref<WindowState> {
+        if(!m_windowStateHandle.IsValid()) {
+            auto [handle, state] = GetWindowState(m_registry);
+            m_windowStateHandle = handle;
+            return state;
+        }
+        return m_registry.template Get<WindowState&>(m_windowStateHandle);
+    }
+
 };   // namespace vve
