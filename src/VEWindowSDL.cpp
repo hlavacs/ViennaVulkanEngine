@@ -17,8 +17,6 @@ namespace vve {
 			{this,     0, "POLL_EVENTS", [this](Message& message){ return OnPollEvents(message);} },
 			{this,  3000, "QUIT", [this](Message& message){ return OnQuit(message);} },
 		} );
-
-        m_windowStateHandle = m_registry.Insert(WindowState{width, height, windowName});
     }
 
     WindowSDL::~WindowSDL() {}
@@ -37,7 +35,9 @@ namespace vve {
         }
         // Create window with Vulkan graphics context
         SDL_WindowFlags window_flags = (SDL_WindowFlags)(SDL_WINDOW_VULKAN | SDL_WINDOW_RESIZABLE | SDL_WINDOW_ALLOW_HIGHDPI);
-        m_sdlWindow = SDL_CreateWindow(m_windowName.c_str(), SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, m_width, m_height, window_flags);
+        m_sdlWindow = SDL_CreateWindow(m_windowName.c_str(), SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, 
+                        GetWindowState2()().m_width, GetWindowState2()().m_height, window_flags);
+
         if (m_sdlWindow == nullptr) {
             printf("Error: SDL_CreateWindow(): %s\n", SDL_GetError());
             exit(1);
@@ -130,7 +130,7 @@ namespace vve {
         }
 
         // Resize swap chain?
-        SDL_GetWindowSize(m_sdlWindow, &m_width, &m_height);
+        SDL_GetWindowSize(m_sdlWindow, &GetWindowState2()().m_width, &GetWindowState2()().m_height);
        
         return false;
     }

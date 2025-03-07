@@ -53,7 +53,9 @@ namespace vve {
 
 		vh::ComStartRecordCommandBuffer(m_commandBuffers[GetCurrentFrame()], GetImageIndex(), 
 			GetSwapChain(), m_renderPass, m_graphicsPipeline, 
-			false, ((WindowSDL*)m_window)->GetClearColor(), GetCurrentFrame());
+			false, 
+			std::get<1>(GetWindowState(m_registry))().m_clearColor, //((WindowSDL*)m_window)->GetClearColor(), 
+			GetCurrentFrame());
 		
 		ImGui::Render();
         ImGui_ImplVulkan_RenderDrawData(ImGui::GetDrawData(), m_commandBuffers[GetCurrentFrame()]);

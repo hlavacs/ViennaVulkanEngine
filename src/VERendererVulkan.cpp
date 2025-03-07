@@ -101,7 +101,9 @@ namespace vve {
 
 		vh::ComStartRecordCommandBuffer(m_commandBuffers[GetCurrentFrame()], GetImageIndex(), 
 			GetSwapChain(), m_renderPass, m_graphicsPipeline, 
-			true, ((WindowSDL*)m_window)->GetClearColor(), GetCurrentFrame());
+			true, 
+			std::get<1>(GetWindowState(m_registry))().m_clearColor, //((WindowSDL*)m_window)->GetClearColor(), 
+			GetCurrentFrame());
 
 		vh::ComEndRecordCommandBuffer(m_commandBuffers[GetCurrentFrame()]);
 

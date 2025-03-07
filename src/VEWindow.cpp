@@ -9,12 +9,12 @@ namespace vve {
     }
 
     Window::Window(std::string systemName, Engine& engine,std::string windowName, int width, int height ) 
-            : System(systemName, engine), m_width(width), m_height(height), m_windowName(windowName) {
+            : System(systemName, engine), m_windowName(windowName) {
+                
+        m_windowStateHandle = m_registry.Insert(WindowState{width, height, windowName});
     }
 
     Window::~Window(){}
-
-    void Window::SetClearColor(glm::vec4 clearColor){ m_clearColor = clearColor; };
 
     auto Window::GetWindowState2() -> vecs::Ref<WindowState> {
         if(!m_windowStateHandle.IsValid()) {

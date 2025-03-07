@@ -191,11 +191,16 @@ namespace vve {
 	}
 
     bool RendererForward::OnRecordNextFrame(Message message) {
+		auto msg = message.template GetData<MsgRecordNextFrame>();
+
+		auto [handle, wstate] = GetWindowState(m_registry);
 
 		vkResetCommandBuffer(m_commandBuffers[GetCurrentFrame()],  0);
         
 		vh::ComStartRecordCommandBuffer(m_commandBuffers[GetCurrentFrame()], GetImageIndex(), 
-			GetSwapChain(), m_renderPass, m_graphicsPipeline, false, ((WindowSDL*)m_window)->GetClearColor(), GetCurrentFrame());
+			GetSwapChain(), m_renderPass, m_graphicsPipeline, false, 
+			wstate().m_clearColor,   //((WindowSDL*)m_window)->GetClearColor(), 
+			GetCurrentFrame());
 		
 		for( auto& pipeline : m_pipelinesPerType) {
 			for( auto[oHandle, name, ghandle, LtoW, uniformBuffers, descriptorsets] : 
@@ -232,7 +237,8 @@ namespace vve {
 
 				vh::ComBindPipeline(m_commandBuffers[GetCurrentFrame()], GetImageIndex(), 
 					GetSwapChain(), m_renderPass, pipeline.second.m_graphicsPipeline, false, 
-					((WindowSDL*)m_window)->GetClearColor(), GetCurrentFrame());
+					wstate().m_clearColor, //((WindowSDL*)m_window)->GetClearColor(), 
+					GetCurrentFrame());
 
 				auto mesh = m_registry.template Get<vh::Mesh&>(ghandle);
 				vh::ComRecordObject( m_commandBuffers[GetCurrentFrame()], pipeline.second.m_graphicsPipeline, 
