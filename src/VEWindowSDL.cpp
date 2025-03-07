@@ -33,10 +33,13 @@ namespace vve {
         #endif
             m_sdl_initialized = true;
         }
+
+        auto wstate = GetWindowState2();
+
         // Create window with Vulkan graphics context
         SDL_WindowFlags window_flags = (SDL_WindowFlags)(SDL_WINDOW_VULKAN | SDL_WINDOW_RESIZABLE | SDL_WINDOW_ALLOW_HIGHDPI);
-        m_sdlWindow = SDL_CreateWindow(GetWindowState2()().m_windowName.c_str(), SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, 
-                        GetWindowState2()().m_width, GetWindowState2()().m_height, window_flags);
+        m_sdlWindow = SDL_CreateWindow(wstate().m_windowName.c_str(), SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, 
+            wstate().m_width, wstate().m_height, window_flags);
 
         if (m_sdlWindow == nullptr) {
             printf("Error: SDL_CreateWindow(): %s\n", SDL_GetError());
@@ -47,9 +50,9 @@ namespace vve {
         SDL_Vulkan_GetInstanceExtensions(m_sdlWindow, &extensions_count, nullptr);
         extensions.resize(extensions_count);
         SDL_Vulkan_GetInstanceExtensions(m_sdlWindow, &extensions_count, extensions.data());
-        m_instanceExtensions.insert(m_instanceExtensions.end(), extensions.begin(), extensions.end());
+        wstate().m_instanceExtensions.insert(wstate().m_instanceExtensions.end(), extensions.begin(), extensions.end());
 
-		m_engine.SendMessage( MsgExtensions{this, m_instanceExtensions, {}} );
+		m_engine.SendMessage( MsgExtensions{this, wstate().m_instanceExtensions, {}} );
 		return false;
     }
 

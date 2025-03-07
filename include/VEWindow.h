@@ -20,12 +20,8 @@ namespace vve {
         Window( std::string systemName, Engine& engine, std::string windowTitle, int width, int height );
         virtual ~Window();
 
-        auto GetInstanceExtensions() -> std::vector<const char*> { return m_instanceExtensions; }; 
-
     protected:
         auto GetWindowState2() -> vecs::Ref<WindowState>;
-
-        std::vector<const char*> m_instanceExtensions;
 		vecs::Handle 	m_windowStateHandle{};
 
     };
