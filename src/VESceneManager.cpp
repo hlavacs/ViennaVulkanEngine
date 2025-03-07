@@ -53,10 +53,10 @@ namespace vve {
 		SetParent( ObjectHandle{m_cameraNodeHandle}, ParentHandle{m_rootHandle} );
 
 		auto [handle, wstate] = GetWindowState(m_registry);
-		
+
 		m_cameraHandle = m_registry.Insert(
 								Name(m_cameraName),
-								Camera{(real_t)wstate().m_width / (real_t)wstate().m_width}, 
+								Camera{(real_t)(wstate().m_width) / (real_t)(wstate().m_height)}, 
 								Position{vec3_t{0.0f, 0.0f, 0.0f}}, 
 								Rotation{mat3_t{view}},
 								Scale{vec3_t{1.0f, 1.0f, 1.0f}}, 
@@ -145,6 +145,7 @@ namespace vve {
 
 			if( registry.template Has<Camera>(handle) ) {
 				auto [name, camera] = registry.template Get<Name&, Camera&>(handle);
+				auto cam = camera();
 				registry.Put(handle, ViewMatrix{glm::inverse(LtoW())});
 				registry.Put(handle, ProjectionMatrix{camera().Matrix()});
 				//std::cout << "Camera: " << name() << " R: " << camera.m_aspect << std::endl;

@@ -59,7 +59,7 @@ namespace vve {
 	}
 	
 	void Engine::CreateWindow(){
-		RegisterSystem(std::make_unique<WindowSDL>(m_windowName, *this, m_windowName, 800, 600 ) );
+		RegisterSystem(std::make_unique<WindowSDL>(m_windowName, *this, m_windowName, 1200, 600 ) );
 	};
 	
 	void Engine::CreateRenderer(){
