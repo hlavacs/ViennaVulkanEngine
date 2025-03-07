@@ -35,7 +35,7 @@ namespace vve {
         }
         // Create window with Vulkan graphics context
         SDL_WindowFlags window_flags = (SDL_WindowFlags)(SDL_WINDOW_VULKAN | SDL_WINDOW_RESIZABLE | SDL_WINDOW_ALLOW_HIGHDPI);
-        m_sdlWindow = SDL_CreateWindow(m_windowName.c_str(), SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, 
+        m_sdlWindow = SDL_CreateWindow(GetWindowState2()().m_windowName.c_str(), SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, 
                         GetWindowState2()().m_width, GetWindowState2()().m_height, window_flags);
 
         if (m_sdlWindow == nullptr) {
@@ -60,6 +60,8 @@ namespace vve {
         // - When io.WantCaptureKeyboard is true, do not dispatch keyboard input data to your main application, or clear/overwrite your copy of the keyboard data.
         // Generally you may always pass all inputs to dear imgui, and hide them from your application based on those two flags.
 
+        auto wstate = GetWindowState2();
+
         static std::vector<SDL_Scancode> key;
         static std::vector<int8_t> button;
         key.clear();
@@ -75,13 +77,13 @@ namespace vve {
 						m_engine.Stop();
 						break;
                 	case SDL_WINDOWEVENT_MINIMIZED: 
-                    	m_isMinimized = true;
+                    	wstate().m_isMinimized = true;
                     	break;
                 	case SDL_WINDOWEVENT_MAXIMIZED: 
-                    	m_isMinimized = false;
+                        wstate().m_isMinimized = false;
                     	break;
                 	case SDL_WINDOWEVENT_RESTORED:
-                    	m_isMinimized = false;
+                        wstate().m_isMinimized = false;
                     	break;
                 }
             } else {

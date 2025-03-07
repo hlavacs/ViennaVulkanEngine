@@ -54,7 +54,9 @@ public:
         static bool show_demo_window = false;
         static bool show_another_window = false;
 
-        if( m_engine.GetWindow("VVE Window")->GetIsMinimized()) {return false;}
+		auto [handle, wstate] = vve::GetWindowState(m_registry);
+
+        if( wstate().m_isMinimized) {return false;}
 
 		static float x = 0.0f, y = 0.0f;
 

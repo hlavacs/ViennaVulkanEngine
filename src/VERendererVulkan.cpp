@@ -77,7 +77,9 @@ namespace vve {
     }
 
     bool RendererVulkan::OnPrepareNextFrame(Message message) {
-        if(m_window->GetIsMinimized()) return false;
+		auto [handle, wstate] = GetWindowState(m_registry);
+
+        if(wstate().m_isMinimized) return false;
 
         GetCurrentFrame() = (GetCurrentFrame() + 1) % MAX_FRAMES_IN_FLIGHT;
 		GetVulkanState()().m_commandBuffersSubmit.clear();
@@ -95,7 +97,9 @@ namespace vve {
     }
 
     bool RendererVulkan::OnRecordNextFrame(Message message) {
-		if(GetVulkanState()().m_windowSDL->GetIsMinimized()) return false;
+		auto [handle, wstate] = GetWindowState(m_registry);
+
+		if(wstate().m_isMinimized) return false;
 
         vkResetCommandBuffer(m_commandBuffers[GetCurrentFrame()],  0);
 
@@ -112,7 +116,9 @@ namespace vve {
 	}
 
     bool RendererVulkan::OnRenderNextFrame(Message message) {
-        if(m_window->GetIsMinimized()) return false;
+		auto [handle, wstate] = GetWindowState(m_registry);
+
+        if(wstate().m_isMinimized) return false;
         
 		VkSemaphore signalSemaphore;
 		vh::ComSubmitCommandBuffers(GetDevice(), GetGraphicsQueue(), GetVulkanState()().m_commandBuffersSubmit, 

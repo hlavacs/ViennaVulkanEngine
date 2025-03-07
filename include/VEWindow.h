@@ -19,16 +19,12 @@ namespace vve {
     public:
         Window( std::string systemName, Engine& engine, std::string windowTitle, int width, int height );
         virtual ~Window();
-        
-        auto GetWindowName() -> std::string { return m_windowName; };
+
         auto GetInstanceExtensions() -> std::vector<const char*> { return m_instanceExtensions; }; 
-		bool GetIsMinimized() { return m_isMinimized; }
 
     protected:
         auto GetWindowState2() -> vecs::Ref<WindowState>;
 
-        std::string 	m_windowName;
-	    bool 			m_isMinimized = false;
         std::vector<const char*> m_instanceExtensions;
 		vecs::Handle 	m_windowStateHandle{};
 

@@ -9,8 +9,8 @@ namespace vve {
     }
 
     Window::Window(std::string systemName, Engine& engine,std::string windowName, int width, int height ) 
-            : System(systemName, engine), m_windowName(windowName) {
-                
+            : System(systemName, engine) {
+
         m_windowStateHandle = m_registry.Insert(WindowState{width, height, windowName});
     }
 
