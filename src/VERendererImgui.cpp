@@ -34,7 +34,7 @@ namespace vve {
 
 		auto wsdlstate = WindowSDL::GetState(m_registry);
 
-		vh::VulSetupImgui( std::get<2>(wsdlstate)().m_sdlWindow,  //((WindowSDL*)m_window)->GetSDLWindow(), 
+		vh::VulSetupImgui( std::get<2>(wsdlstate)().m_sdlWindow, 
 			vstate().m_instance, vstate().m_physicalDevice, 
 			vstate().m_queueFamilies, vstate().m_device, vstate().m_graphicsQueue, 
 			m_commandPool, m_descriptorPool, m_renderPass);  
@@ -65,7 +65,7 @@ namespace vve {
 		vh::ComStartRecordCommandBuffer(m_commandBuffers[vstate().m_currentFrame], vstate().m_imageIndex, 
 			vstate().m_swapChain, m_renderPass, m_graphicsPipeline, 
 			false, 
-			std::get<1>(Window::GetState(m_registry, m_windowName))().m_clearColor, //((WindowSDL*)m_window)->GetClearColor(), 
+			std::get<1>(Window::GetState(m_registry, m_windowName))().m_clearColor, 
 			vstate().m_currentFrame);
 		
 		ImGui::Render();
