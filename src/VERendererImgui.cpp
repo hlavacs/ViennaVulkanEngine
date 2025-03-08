@@ -21,24 +21,26 @@ namespace vve {
     RendererImgui::~RendererImgui() {};
 
     bool RendererImgui::OnInit(Message message) {
-        vh::RenCreateRenderPass(GetPhysicalDevice(), GetDevice(), GetSwapChain(), false, m_renderPass);
+		auto vstate = GetVulkanState();
+
+        vh::RenCreateRenderPass(vstate().m_physicalDevice, vstate().m_device, vstate().m_swapChain, false, m_renderPass);
 		
- 		vh::RenCreateDescriptorSetLayout( GetDevice(), {}, m_descriptorSetLayoutPerFrame );
+ 		vh::RenCreateDescriptorSetLayout( vstate().m_device, {}, m_descriptorSetLayoutPerFrame );
 			
-        vh::RenCreateGraphicsPipeline(GetDevice(), m_renderPass, "shaders\\Imgui\\vert.spv", "", {}, {},
+        vh::RenCreateGraphicsPipeline(vstate().m_device, m_renderPass, "shaders\\Imgui\\vert.spv", "", {}, {},
 			 { m_descriptorSetLayoutPerFrame }, {}, m_graphicsPipeline);
 
-        vh::RenCreateDescriptorPool(GetDevice(), 1000, m_descriptorPool);
+        vh::RenCreateDescriptorPool(vstate().m_device, 1000, m_descriptorPool);
 
 		auto wsdlstate = WindowSDL::GetState(m_registry);
 
 		vh::VulSetupImgui( std::get<2>(wsdlstate)().m_sdlWindow,  //((WindowSDL*)m_window)->GetSDLWindow(), 
-			GetInstance(), GetPhysicalDevice(), 
-			GetQueueFamilies(), GetDevice(), GetGraphicsQueue(), 
+			vstate().m_instance, vstate().m_physicalDevice, 
+			vstate().m_queueFamilies, vstate().m_device, vstate().m_graphicsQueue, 
 			m_commandPool, m_descriptorPool, m_renderPass);  
 
-        vh::ComCreateCommandPool(GetSurface(), GetPhysicalDevice(), GetDevice(), m_commandPool); 
-        vh::ComCreateCommandBuffers(GetDevice(), m_commandPool, m_commandBuffers);
+        vh::ComCreateCommandPool(vstate().m_surface, vstate().m_physicalDevice, vstate().m_device, m_commandPool); 
+        vh::ComCreateCommandBuffers(vstate().m_device, m_commandPool, m_commandBuffers);
 		return false;
 	}
 
@@ -54,23 +56,24 @@ namespace vve {
 
     bool RendererImgui::OnRecordNextFrame(Message message) {
 		auto [handle, wstate] = Window::GetState(m_registry, m_windowName);
+		auto vstate = GetVulkanState();
 
         if(wstate().m_isMinimized) return false;
 
-        vkResetCommandBuffer(m_commandBuffers[GetCurrentFrame()],  0);
+        vkResetCommandBuffer(m_commandBuffers[vstate().m_currentFrame],  0);
 
-		vh::ComStartRecordCommandBuffer(m_commandBuffers[GetCurrentFrame()], GetImageIndex(), 
-			GetSwapChain(), m_renderPass, m_graphicsPipeline, 
+		vh::ComStartRecordCommandBuffer(m_commandBuffers[vstate().m_currentFrame], vstate().m_imageIndex, 
+			vstate().m_swapChain, m_renderPass, m_graphicsPipeline, 
 			false, 
 			std::get<1>(Window::GetState(m_registry, m_windowName))().m_clearColor, //((WindowSDL*)m_window)->GetClearColor(), 
-			GetCurrentFrame());
+			vstate().m_currentFrame);
 		
 		ImGui::Render();
-        ImGui_ImplVulkan_RenderDrawData(ImGui::GetDrawData(), m_commandBuffers[GetCurrentFrame()]);
+        ImGui_ImplVulkan_RenderDrawData(ImGui::GetDrawData(), m_commandBuffers[vstate().m_currentFrame]);
 
-		vh::ComEndRecordCommandBuffer(m_commandBuffers[GetCurrentFrame()]);
+		vh::ComEndRecordCommandBuffer(m_commandBuffers[vstate().m_currentFrame]);
 
-		SubmitCommandBuffer(m_commandBuffers[GetCurrentFrame()]);
+		SubmitCommandBuffer(m_commandBuffers[vstate().m_currentFrame]);
 		return false;
     }
 
@@ -81,17 +84,19 @@ namespace vve {
     }
 
     bool RendererImgui::OnQuit(Message message) {
-        vkDeviceWaitIdle(GetDevice());
+		auto vstate = GetVulkanState();
+
+        vkDeviceWaitIdle(vstate().m_device);
 		ImGui_ImplVulkan_Shutdown();
         ImGui_ImplSDL2_Shutdown();
         ImGui::DestroyContext();
 
-        vkDestroyCommandPool(GetDevice(), m_commandPool, nullptr);
-        vkDestroyRenderPass(GetDevice(), m_renderPass, nullptr);
-		vkDestroyPipeline(GetDevice(), m_graphicsPipeline.m_pipeline, nullptr);
-        vkDestroyPipelineLayout(GetDevice(), m_graphicsPipeline.m_pipelineLayout, nullptr);   
-        vkDestroyDescriptorPool(GetDevice(), m_descriptorPool, nullptr);
-		vkDestroyDescriptorSetLayout(GetDevice(), m_descriptorSetLayoutPerFrame, nullptr);
+        vkDestroyCommandPool(vstate().m_device, m_commandPool, nullptr);
+        vkDestroyRenderPass(vstate().m_device, m_renderPass, nullptr);
+		vkDestroyPipeline(vstate().m_device, m_graphicsPipeline.m_pipeline, nullptr);
+        vkDestroyPipelineLayout(vstate().m_device, m_graphicsPipeline.m_pipelineLayout, nullptr);   
+        vkDestroyDescriptorPool(vstate().m_device, m_descriptorPool, nullptr);
+		vkDestroyDescriptorSetLayout(vstate().m_device, m_descriptorSetLayoutPerFrame, nullptr);
 		return false;
     }
 

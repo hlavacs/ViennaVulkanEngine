@@ -34,7 +34,6 @@ namespace vve {
 		bool m_framebufferResized = false;
 	};
 
-	auto GetVulkanState2(vecs::Registry& registry) -> std::tuple< vecs::Handle, vecs::Ref<VulkanState>>;
 
     class Renderer : public System {
         friend class Engine;
@@ -42,23 +41,9 @@ namespace vve {
     public:
         Renderer(std::string systemName, Engine& m_engine, std::string windowName);
         virtual ~Renderer();
-        
-    protected:
-		auto GetSurface() -> VkSurfaceKHR&;
-		auto GetInstance() -> VkInstance&;
-		auto GetPhysicalDevice() -> VkPhysicalDevice&;
-		auto GetDevice() -> VkDevice&;
-		auto GetQueueFamilies() -> vh::QueueFamilyIndices&;
-		auto GetGraphicsQueue() -> VkQueue&;
-		auto GetPresentQueue() -> VkQueue&;
-		auto GetCommandPool() -> VkCommandPool&;
-		auto GetVmaAllocator() -> VmaAllocator&;
-		auto GetSwapChain() -> vh::SwapChain&;
-		auto GetDepthImage() -> vh::DepthImage&;
-		auto GetCurrentFrame() -> uint32_t&;
-		auto GetImageIndex() -> uint32_t&;
-		auto GetFramebufferResized() -> bool&;
+		static auto GetVulkanState2(vecs::Registry& registry) -> std::tuple< vecs::Handle, vecs::Ref<VulkanState>>;
 
+    protected:
 		auto GetVulkanState() -> vecs::Ref<VulkanState>;
 		void SubmitCommandBuffer( VkCommandBuffer commandBuffer );
 
