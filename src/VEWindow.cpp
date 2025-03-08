@@ -16,14 +16,15 @@ namespace vve {
         return { {}, {} };
     }
 
+    auto Window::GetState2() -> vecs::Ref<WindowState> {
+        return m_registry.template Get<WindowState&>(m_windowStateHandle);
+    }    
+    
+    
     Window::Window(std::string systemName, Engine& engine,std::string windowName, int width, int height ) 
             : System(systemName, engine) {
     }
 
     Window::~Window(){}
-
-    auto Window::GetState2() -> vecs::Ref<WindowState> {
-        return m_registry.template Get<WindowState&>(m_windowStateHandle);
-    }
 
 };   // namespace vve
