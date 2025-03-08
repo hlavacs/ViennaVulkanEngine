@@ -199,7 +199,7 @@ namespace vve {
         
 		vh::ComStartRecordCommandBuffer(m_commandBuffers[GetCurrentFrame()], GetImageIndex(), 
 			GetSwapChain(), m_renderPass, m_graphicsPipeline, false, 
-			wstate().m_clearColor,   //((WindowSDL*)m_window)->GetClearColor(), 
+			wstate().m_clearColor,  
 			GetCurrentFrame());
 		
 		for( auto& pipeline : m_pipelinesPerType) {
@@ -237,7 +237,7 @@ namespace vve {
 
 				vh::ComBindPipeline(m_commandBuffers[GetCurrentFrame()], GetImageIndex(), 
 					GetSwapChain(), m_renderPass, pipeline.second.m_graphicsPipeline, false, 
-					wstate().m_clearColor, //((WindowSDL*)m_window)->GetClearColor(), 
+					wstate().m_clearColor, 
 					GetCurrentFrame());
 
 				auto mesh = m_registry.template Get<vh::Mesh&>(ghandle);
