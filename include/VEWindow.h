@@ -12,16 +12,16 @@ namespace vve {
         std::vector<const char*>    m_instanceExtensions{};
     };
 
-    auto GetWindowState(vecs::Registry& registry, const std::string&& windowName = "") -> std::tuple<vecs::Handle, vecs::Ref<WindowState>>;
 
     class Window : public System {
 
     public:
         Window( std::string systemName, Engine& engine, std::string windowTitle, int width, int height );
         virtual ~Window();
+        static auto GetState(vecs::Registry& registry, const std::string&& windowName = "") -> std::tuple<vecs::Handle, vecs::Ref<WindowState>>;
 
     protected:
-        auto GetWindowState2() -> vecs::Ref<WindowState>;
+        auto GetState2() -> vecs::Ref<WindowState>;
 		vecs::Handle 	m_windowStateHandle{};
 
     };

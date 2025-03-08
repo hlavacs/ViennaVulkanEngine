@@ -11,8 +11,12 @@ namespace vve {
 	//-------------------------------------------------------------------------------------------------------
 	// SDL Window
 
-    class WindowSDL : public Window {
+    struct WindowSDLState {
+        bool 		m_sdl_initialized{false};
+        SDL_Window* m_sdlWindow{nullptr};
+    };
 
+    class WindowSDL : public Window {
  
     public:
         WindowSDL(std::string systemName, Engine& engine, std::string windowTitle, int width, int height );

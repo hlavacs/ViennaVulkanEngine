@@ -54,7 +54,7 @@ public:
         static bool show_demo_window = false;
         static bool show_another_window = false;
 
-		auto [handle, wstate] = vve::GetWindowState(m_registry);
+		auto [handle, wstate] = vve::Window::GetState(m_registry);
 
         if( wstate().m_isMinimized) {return false;}
 

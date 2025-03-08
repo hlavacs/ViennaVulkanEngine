@@ -77,7 +77,7 @@ namespace vve {
     }
 
     bool RendererVulkan::OnPrepareNextFrame(Message message) {
-		auto [handle, wstate] = GetWindowState(m_registry);
+		auto [handle, wstate] = Window::GetState(m_registry);
 
         if(wstate().m_isMinimized) return false;
 
@@ -97,7 +97,7 @@ namespace vve {
     }
 
     bool RendererVulkan::OnRecordNextFrame(Message message) {
-		auto [handle, wstate] = GetWindowState(m_registry);
+		auto [handle, wstate] = Window::GetState(m_registry);
 
 		if(wstate().m_isMinimized) return false;
 
@@ -106,7 +106,7 @@ namespace vve {
 		vh::ComStartRecordCommandBuffer(m_commandBuffers[GetCurrentFrame()], GetImageIndex(), 
 			GetSwapChain(), m_renderPass, m_graphicsPipeline, 
 			true, 
-			std::get<1>(GetWindowState(m_registry))().m_clearColor, //((WindowSDL*)m_window)->GetClearColor(), 
+			std::get<1>(Window::GetState(m_registry))().m_clearColor, //((WindowSDL*)m_window)->GetClearColor(), 
 			GetCurrentFrame());
 
 		vh::ComEndRecordCommandBuffer(m_commandBuffers[GetCurrentFrame()]);
@@ -116,7 +116,7 @@ namespace vve {
 	}
 
     bool RendererVulkan::OnRenderNextFrame(Message message) {
-		auto [handle, wstate] = GetWindowState(m_registry);
+		auto [handle, wstate] = Window::GetState(m_registry);
 
         if(wstate().m_isMinimized) return false;
         

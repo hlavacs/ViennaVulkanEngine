@@ -52,7 +52,7 @@ namespace vve {
 
 		SetParent( ObjectHandle{m_cameraNodeHandle}, ParentHandle{m_rootHandle} );
 
-		auto [handle, wstate] = GetWindowState(m_registry);
+		auto [handle, wstate] = Window::GetState(m_registry);
 
 		m_cameraHandle = m_registry.Insert(
 								Name(m_cameraName),
@@ -128,7 +128,7 @@ namespace vve {
     bool SceneManager::OnWindowSize(Message message) {
 		auto window = m_engine.GetWindow(m_windowName);
 		auto [name, camera] = m_registry.template Get<Name&, Camera&>(m_cameraHandle);
-		auto [handle, wstate] = GetWindowState(m_registry);
+		auto [handle, wstate] = Window::GetState(m_registry);
 		camera().m_aspect = (real_t)wstate().m_width / (real_t)wstate().m_height;
 		return false;
 	}

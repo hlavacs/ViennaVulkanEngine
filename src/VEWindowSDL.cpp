@@ -17,6 +17,8 @@ namespace vve {
 			{this,     0, "POLL_EVENTS", [this](Message& message){ return OnPollEvents(message);} },
 			{this,  3000, "QUIT", [this](Message& message){ return OnQuit(message);} },
 		} );
+
+        m_windowStateHandle = m_registry.Insert(WindowState{width, height, windowName}, WindowSDLState{}, Name{windowName});
     }
 
     WindowSDL::~WindowSDL() {}
@@ -34,12 +36,14 @@ namespace vve {
             m_sdl_initialized = true;
         }
 
-        auto wstate = GetWindowState2();
+        auto wstate = GetState2();
 
         // Create window with Vulkan graphics context
         SDL_WindowFlags window_flags = (SDL_WindowFlags)(SDL_WINDOW_VULKAN | SDL_WINDOW_RESIZABLE | SDL_WINDOW_ALLOW_HIGHDPI);
         m_sdlWindow = SDL_CreateWindow(wstate().m_windowName.c_str(), SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, 
             wstate().m_width, wstate().m_height, window_flags);
+
+        m_registry.Put(m_windowStateHandle, WindowSDLState{true, m_sdlWindow});
 
         if (m_sdlWindow == nullptr) {
             printf("Error: SDL_CreateWindow(): %s\n", SDL_GetError());
@@ -63,7 +67,7 @@ namespace vve {
         // - When io.WantCaptureKeyboard is true, do not dispatch keyboard input data to your main application, or clear/overwrite your copy of the keyboard data.
         // Generally you may always pass all inputs to dear imgui, and hide them from your application based on those two flags.
 
-        auto wstate = GetWindowState2();
+        auto wstate = GetState2();
 
         static std::vector<SDL_Scancode> key;
         static std::vector<int8_t> button;
@@ -135,7 +139,7 @@ namespace vve {
         }
 
         // Resize swap chain?
-        SDL_GetWindowSize(m_sdlWindow, &GetWindowState2()().m_width, &GetWindowState2()().m_height);
+        SDL_GetWindowSize(m_sdlWindow, &GetState2()().m_width, &GetState2()().m_height);
        
         return false;
     }
