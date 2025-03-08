@@ -88,7 +88,8 @@ namespace vh {
 	* \returns VK_SUCCESS or a Vulkan error code
 	*
 	*/
-	VkResult BufCopyImageToBuffer(VkDevice device, VkQueue graphicsQueue, VkCommandPool commandPool, VkImage image, VkImageAspectFlagBits aspect, VkBuffer buffer, uint32_t layerCount, uint32_t width, uint32_t height)
+	VkResult BufCopyImageToBuffer(VkDevice device, VkQueue graphicsQueue, VkCommandPool commandPool, 
+        VkImage image, VkImageAspectFlagBits aspect, VkBuffer buffer, uint32_t layerCount, uint32_t width, uint32_t height)
 	{
 		std::vector<VkBufferImageCopy> regions;
 
@@ -127,7 +128,7 @@ namespace vh {
 
 		vkCmdCopyImageToBuffer(commandBuffer, image, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, buffer, (uint32_t)regions.size(), regions.data());
 
-		ComEndSingleTimeCommands(device, graphicsQueue, commandPool, commandBuffer);
+		return ComEndSingleTimeCommands(device, graphicsQueue, commandPool, commandBuffer);
 	}
 
 

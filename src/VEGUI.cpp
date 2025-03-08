@@ -174,12 +174,12 @@ namespace vve {
 
 	bool GUI::OnFrameEnd(Message message) {
 		if (m_makeScreenshot) {
-			auto vstate = *m_registry.template GetView<VulkanState&>().begin();
+			auto vstate = std::get<1>(Renderer::GetState(m_registry));
+			auto wstate = std::get<1>(Window::GetState(m_registry, m_windowName));
 
-
-			//VkExtent2D extent = getWindowPointer()->getExtent();
-			//uint32_t imageSize = extent.width * extent.height * 4;
-			//VkImage image = getEnginePointer()->getRenderer()->getSwapChainImage();
+			VkExtent2D extent = { (uint32_t)wstate().m_width, (uint32_t)wstate().m_height };
+			uint32_t imageSize = extent.width * extent.height * 4;
+			VkImage image = vstate().m_swapChain.m_swapChainImages[vstate().m_imageIndex]; 
 
 			//uint8_t *dataImage = new uint8_t[imageSize];
 
