@@ -21,7 +21,7 @@ namespace vve {
     RendererImgui::~RendererImgui() {};
 
     bool RendererImgui::OnInit(Message message) {
-		auto vstate = GetVulkanState();
+		auto vstate = GetState2();
 
         vh::RenCreateRenderPass(vstate().m_physicalDevice, vstate().m_device, vstate().m_swapChain, false, m_renderPass);
 		
@@ -56,7 +56,7 @@ namespace vve {
 
     bool RendererImgui::OnRecordNextFrame(Message message) {
 		auto [handle, wstate] = Window::GetState(m_registry, m_windowName);
-		auto vstate = GetVulkanState();
+		auto vstate = GetState2();
 
         if(wstate().m_isMinimized) return false;
 
@@ -84,7 +84,7 @@ namespace vve {
     }
 
     bool RendererImgui::OnQuit(Message message) {
-		auto vstate = GetVulkanState();
+		auto vstate = GetState2();
 
         vkDeviceWaitIdle(vstate().m_device);
 		ImGui_ImplVulkan_Shutdown();

@@ -16,7 +16,6 @@ namespace vve {
 
 	struct VulkanState {
 		VkSurfaceKHR 	m_surface{VK_NULL_HANDLE};
-		WindowSDL*		m_windowSDL;
 		VmaAllocator 	m_vmaAllocator;
 		VkInstance 		m_instance{VK_NULL_HANDLE};
 		VkDebugUtilsMessengerEXT m_debugMessenger;
@@ -41,10 +40,10 @@ namespace vve {
     public:
         Renderer(std::string systemName, Engine& m_engine, std::string windowName);
         virtual ~Renderer();
-		static auto GetVulkanState2(vecs::Registry& registry) -> std::tuple< vecs::Handle, vecs::Ref<VulkanState>>;
+		static auto GetState(vecs::Registry& registry) -> std::tuple< vecs::Handle, vecs::Ref<VulkanState>>;
 
     protected:
-		auto GetVulkanState() -> vecs::Ref<VulkanState>;
+		auto GetState2() -> vecs::Ref<VulkanState>;
 		void SubmitCommandBuffer( VkCommandBuffer commandBuffer );
 
 		std::string 	m_windowName;

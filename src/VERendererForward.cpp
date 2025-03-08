@@ -40,7 +40,7 @@ namespace vve {
     RendererForward::~RendererForward(){};
 
     bool RendererForward::OnInit(Message message) {
-		auto vstate = GetVulkanState();
+		auto vstate = GetState2();
 
         vh::RenCreateRenderPass(vstate().m_physicalDevice, vstate().m_device, vstate().m_swapChain, false, m_renderPass);
 		
@@ -69,7 +69,7 @@ namespace vve {
 	}
 
 	void RendererForward::CreatePipelines() {
-		auto vstate = GetVulkanState();
+		auto vstate = GetState2();
 
 		const std::filesystem::path shaders{"shaders\\Forward"};
 		for( const auto& entry : std::filesystem::directory_iterator(shaders) ) {
@@ -158,7 +158,7 @@ namespace vve {
 
 	bool RendererForward::OnPrepareNextFrame(Message message) {
 		auto msg = message.template GetData<MsgPrepareNextFrame>();
-		auto vstate = GetVulkanState();
+		auto vstate = GetState2();
 
 		//Copy lights to the uniform buffer
 		m_lights.resize(m_maxNumberLights);
@@ -197,7 +197,7 @@ namespace vve {
 
     bool RendererForward::OnRecordNextFrame(Message message) {
 		auto msg = message.template GetData<MsgRecordNextFrame>();
-		auto vstate = GetVulkanState();
+		auto vstate = GetState2();
 
 		auto [handle, wstate] = Window::GetState(m_registry, m_windowName);
 
@@ -258,7 +258,7 @@ namespace vve {
     }
 
 	bool RendererForward::OnObjectCreate( Message message ) {
-		auto vstate = GetVulkanState();
+		auto vstate = GetState2();
 
 		ObjectHandle oHandle = message.template GetData<MsgObjectCreate>().m_object;
 		assert( m_registry.template Has<MeshHandle>(oHandle) );	
@@ -324,7 +324,7 @@ namespace vve {
 
 
     bool RendererForward::OnQuit(Message message) {
-		auto vstate = GetVulkanState();
+		auto vstate = GetState2();
 
         vkDeviceWaitIdle(vstate().m_device);
 		

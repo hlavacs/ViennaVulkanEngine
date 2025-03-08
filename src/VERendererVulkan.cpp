@@ -38,7 +38,7 @@ namespace vve {
 	}
 
     bool RendererVulkan::OnInit(Message message) {
-		auto vstate = GetVulkanState();
+		auto vstate = GetState2();
 
 		if (m_engine.GetDebug()) {
             m_instanceExtensions.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
@@ -84,7 +84,7 @@ namespace vve {
 
     bool RendererVulkan::OnPrepareNextFrame(Message message) {
 		auto [handle, wstate] = Window::GetState(m_registry, m_windowName);
-		auto vstate = GetVulkanState();
+		auto vstate = GetState2();
 
         if(wstate().m_isMinimized) return false;
 
@@ -109,7 +109,7 @@ namespace vve {
 
     bool RendererVulkan::OnRecordNextFrame(Message message) {
 		auto [handle, wstate] = Window::GetState(m_registry, m_windowName);
-		auto vstate = GetVulkanState();
+		auto vstate = GetState2();
 
 		if(wstate().m_isMinimized) return false;
 
@@ -129,7 +129,7 @@ namespace vve {
 
     bool RendererVulkan::OnRenderNextFrame(Message message) {
 		auto [handle, wstate] = Window::GetState(m_registry, m_windowName);
-		auto vstate = GetVulkanState();
+		auto vstate = GetState2();
 
         if(wstate().m_isMinimized) return false;
         
@@ -156,7 +156,7 @@ namespace vve {
     }
     
     bool RendererVulkan::OnQuit(Message message) {
-		auto vstate = GetVulkanState();
+		auto vstate = GetState2();
 
         vkDeviceWaitIdle(vstate().m_device);
 
@@ -211,7 +211,7 @@ namespace vve {
 
 
 	bool RendererVulkan::OnTextureCreate( Message message ) {
-		auto vstate = GetVulkanState();
+		auto vstate = GetState2();
 
 		auto msg = message.template GetData<MsgTextureCreate>();
 		auto handle = msg.m_handle;
@@ -225,7 +225,7 @@ namespace vve {
 	}
 
 	bool RendererVulkan::OnTextureDestroy( Message message ) {
-		auto vstate = GetVulkanState();
+		auto vstate = GetState2();
 
 		auto handle = message.template GetData<MsgTextureDestroy>().m_handle;
 		auto texture = m_registry.template Get<vh::Map&>(handle);
@@ -237,7 +237,7 @@ namespace vve {
 	}
 
 	bool RendererVulkan::OnMeshCreate( Message message ) {
-		auto vstate = GetVulkanState();
+		auto vstate = GetState2();
 
 		auto handle = message.template GetData<MsgMeshCreate>().m_handle;
 		auto mesh = m_registry.template Get<vh::Mesh&>(handle);
@@ -247,7 +247,7 @@ namespace vve {
 	}
 
 	bool RendererVulkan::OnMeshDestroy( Message message ) {
-		auto vstate = GetVulkanState();
+		auto vstate = GetState2();
 
 		auto handle = message.template GetData<MsgMeshDestroy>().m_handle;
 		auto mesh = m_registry.template Get<vh::Mesh&>(handle);
