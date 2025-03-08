@@ -193,7 +193,7 @@ namespace vve {
     bool RendererForward::OnRecordNextFrame(Message message) {
 		auto msg = message.template GetData<MsgRecordNextFrame>();
 
-		auto [handle, wstate] = Window::GetState(m_registry);
+		auto [handle, wstate] = Window::GetState(m_registry, m_windowName);
 
 		vkResetCommandBuffer(m_commandBuffers[GetCurrentFrame()],  0);
         

@@ -62,9 +62,7 @@ namespace vve {
 		auto GetVulkanState() -> vecs::Ref<VulkanState>;
 		void SubmitCommandBuffer( VkCommandBuffer commandBuffer );
 
-		bool OnAnnounce(Message message);
 		std::string 	m_windowName;
-        Window* 		m_window;
 		vecs::Handle 	m_vulkanStateHandle{};
     };
 

@@ -18,7 +18,7 @@ namespace vve {
     public:
         Window( std::string systemName, Engine& engine, std::string windowTitle, int width, int height );
         virtual ~Window();
-        static auto GetState(vecs::Registry& registry, const std::string&& windowName = "") -> std::tuple<vecs::Handle, vecs::Ref<WindowState>>;
+        static auto GetState(vecs::Registry& registry, const std::string& windowName = "") -> std::tuple<vecs::Handle, vecs::Ref<WindowState>>;
 
     protected:
         auto GetState2() -> vecs::Ref<WindowState>;

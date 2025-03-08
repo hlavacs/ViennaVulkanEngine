@@ -4,7 +4,7 @@
 
 namespace vve {
 
-    auto Window::GetState(vecs::Registry& registry, const std::string&& windowName) -> std::tuple<vecs::Handle, vecs::Ref<WindowState>> {
+    auto Window::GetState(vecs::Registry& registry, const std::string& windowName) -> std::tuple<vecs::Handle, vecs::Ref<WindowState>> {
         for( auto ret: registry.template GetView<vecs::Handle, WindowState&>() ) {
             auto [handle, wstate] = ret;
             if( windowName.empty() ) return ret;

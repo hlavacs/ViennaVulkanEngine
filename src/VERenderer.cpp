@@ -11,20 +11,9 @@ namespace vve {
 
     Renderer::Renderer(std::string systemName, Engine& engine, std::string windowName ) : 
 		System{systemName, engine }, m_windowName(windowName) {
-		engine.RegisterCallback( { 
-			{this,      0, "ANNOUNCE", [this](Message& message){ return OnAnnounce(message);} }
-		} );
 	};
 
     Renderer::~Renderer(){};
-
-    bool Renderer::OnAnnounce( Message message ) {
-		auto msg = message.template GetData<MsgAnnounce>();
-		if( msg.m_sender->GetName() == m_windowName ) {
-			m_window = dynamic_cast<Window*>(msg.m_sender);
-		}
-		return false;
-	};
 
 	auto Renderer::GetSurface() -> VkSurfaceKHR& { return GetVulkanState()().m_surface; };
 	auto Renderer::GetInstance() -> VkInstance& { return GetVulkanState()().m_instance; }
