@@ -33,7 +33,6 @@ namespace vve {
 		bool m_framebufferResized = false;
 	};
 
-
     class Renderer : public System {
         friend class Engine;
 
@@ -43,11 +42,15 @@ namespace vve {
 		static auto GetState(vecs::Registry& registry) -> std::tuple< vecs::Handle, vecs::Ref<VulkanState>>;
 
     protected:
+		bool OnInit(Message message);
 		auto GetState2() -> vecs::Ref<VulkanState>;
 		void SubmitCommandBuffer( VkCommandBuffer commandBuffer );
 
-		std::string 	m_windowName;
-		vecs::Handle 	m_vulkanStateHandle{};
+		std::string 				m_windowName;
+		vecs::Ref<WindowState> 		m_windowState{};
+		vecs::Ref<WindowSDLState> 	m_windowSDLState{};
+		vecs::Handle 				m_vulkanStateHandle{};
+		vecs::Ref<VulkanState> 		m_vulkanState{};
     };
 
 };   // namespace vve

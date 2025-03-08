@@ -26,6 +26,7 @@ namespace vve {
 		} );
 
 		m_vulkanStateHandle = m_registry.Insert(VulkanState{});
+		GetState2();
     }
 
     RendererVulkan::~RendererVulkan() {}
@@ -38,69 +39,62 @@ namespace vve {
 	}
 
     bool RendererVulkan::OnInit(Message message) {
-		auto vstate = GetState2();
-
 		if (m_engine.GetDebug()) {
             m_instanceExtensions.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
         }
 
-    	vh::DevCreateInstance( m_validationLayers, m_instanceExtensions, m_engine.GetDebug(), vstate().m_instance);
+    	vh::DevCreateInstance( m_validationLayers, m_instanceExtensions, m_engine.GetDebug(), m_vulkanState().m_instance);
 		if (m_engine.GetDebug()) {
-	        vh::DevSetupDebugMessenger(vstate().m_instance, vstate().m_debugMessenger);
+	        vh::DevSetupDebugMessenger(m_vulkanState().m_instance, m_vulkanState().m_debugMessenger);
 		}
 
-		auto wsdlstate = WindowSDL::GetState(m_registry);
-
-		if (SDL_Vulkan_CreateSurface(std::get<2>(wsdlstate)().m_sdlWindow, vstate().m_instance, &vstate().m_surface) == 0) {
+		if (SDL_Vulkan_CreateSurface(m_windowSDLState().m_sdlWindow, m_vulkanState().m_instance, &m_vulkanState().m_surface) == 0) {
             printf("Failed to create Vulkan surface.\n");
         }
 
-        vh::DevPickPhysicalDevice(vstate().m_instance, m_deviceExtensions, vstate().m_surface, vstate().m_physicalDevice);
-        vh::DevCreateLogicalDevice(vstate().m_surface, vstate().m_physicalDevice, vstate().m_queueFamilies, m_validationLayers, 
-			m_deviceExtensions, m_engine.GetDebug(), vstate().m_device, vstate().m_graphicsQueue, vstate().m_presentQueue);
-        vh::DevInitVMA(vstate().m_instance, vstate().m_physicalDevice, vstate().m_device, vstate().m_vmaAllocator);  
-        vh::DevCreateSwapChain(std::get<2>(wsdlstate)().m_sdlWindow, 
-			vstate().m_surface, vstate().m_physicalDevice, vstate().m_device, vstate().m_swapChain);
+        vh::DevPickPhysicalDevice(m_vulkanState().m_instance, m_deviceExtensions, m_vulkanState().m_surface, m_vulkanState().m_physicalDevice);
+        vh::DevCreateLogicalDevice(m_vulkanState().m_surface, m_vulkanState().m_physicalDevice, m_vulkanState().m_queueFamilies, m_validationLayers, 
+			m_deviceExtensions, m_engine.GetDebug(), m_vulkanState().m_device, m_vulkanState().m_graphicsQueue, m_vulkanState().m_presentQueue);
+        vh::DevInitVMA(m_vulkanState().m_instance, m_vulkanState().m_physicalDevice, m_vulkanState().m_device, m_vulkanState().m_vmaAllocator);  
+        vh::DevCreateSwapChain(m_windowSDLState().m_sdlWindow, 
+			m_vulkanState().m_surface, m_vulkanState().m_physicalDevice, m_vulkanState().m_device, m_vulkanState().m_swapChain);
         
 		
-		vh::DevCreateImageViews(vstate().m_device, vstate().m_swapChain);
-        vh::RenCreateRenderPassClear(vstate().m_physicalDevice, vstate().m_device, vstate().m_swapChain, true, m_renderPass);
+		vh::DevCreateImageViews(m_vulkanState().m_device, m_vulkanState().m_swapChain);
+        vh::RenCreateRenderPassClear(m_vulkanState().m_physicalDevice, m_vulkanState().m_device, m_vulkanState().m_swapChain, true, m_renderPass);
 
-		vh::RenCreateDescriptorSetLayout( vstate().m_device, {}, m_descriptorSetLayoutPerFrame );
+		vh::RenCreateDescriptorSetLayout( m_vulkanState().m_device, {}, m_descriptorSetLayoutPerFrame );
 			
-        vh::RenCreateGraphicsPipeline(vstate().m_device, m_renderPass, "shaders\\Vulkan\\vert.spv", "", {}, {},
+        vh::RenCreateGraphicsPipeline(m_vulkanState().m_device, m_renderPass, "shaders\\Vulkan\\vert.spv", "", {}, {},
 			 { m_descriptorSetLayoutPerFrame }, {}, m_graphicsPipeline);
 
-        vh::ComCreateCommandPool(vstate().m_surface, vstate().m_physicalDevice, vstate().m_device, m_commandPool);
-        vh::RenCreateDepthResources(vstate().m_physicalDevice, vstate().m_device, vstate().m_vmaAllocator, vstate().m_swapChain, vstate().m_depthImage);
-        vh::RenCreateFramebuffers(vstate().m_device, vstate().m_swapChain, vstate().m_depthImage, m_renderPass);
+        vh::ComCreateCommandPool(m_vulkanState().m_surface, m_vulkanState().m_physicalDevice, m_vulkanState().m_device, m_commandPool);
+        vh::RenCreateDepthResources(m_vulkanState().m_physicalDevice, m_vulkanState().m_device, m_vulkanState().m_vmaAllocator, m_vulkanState().m_swapChain, m_vulkanState().m_depthImage);
+        vh::RenCreateFramebuffers(m_vulkanState().m_device, m_vulkanState().m_swapChain, m_vulkanState().m_depthImage, m_renderPass);
 
-        vh::ComCreateCommandBuffers(vstate().m_device, m_commandPool, m_commandBuffers);
-        vh::RenCreateDescriptorPool(vstate().m_device, 1000, m_descriptorPool);
-        vh::SynCreateSemaphores(vstate().m_device, 3, m_imageAvailableSemaphores, m_semaphores);
-		vh::SynCreateFences(vstate().m_device, MAX_FRAMES_IN_FLIGHT, m_fences);
+        vh::ComCreateCommandBuffers(m_vulkanState().m_device, m_commandPool, m_commandBuffers);
+        vh::RenCreateDescriptorPool(m_vulkanState().m_device, 1000, m_descriptorPool);
+        vh::SynCreateSemaphores(m_vulkanState().m_device, 3, m_imageAvailableSemaphores, m_semaphores);
+		vh::SynCreateFences(m_vulkanState().m_device, MAX_FRAMES_IN_FLIGHT, m_fences);
 		return false;
     }
 
     bool RendererVulkan::OnPrepareNextFrame(Message message) {
-		auto [handle, wstate] = Window::GetState(m_registry, m_windowName);
-		auto vstate = GetState2();
+        if(m_windowState().m_isMinimized) return false;
 
-        if(wstate().m_isMinimized) return false;
+        m_vulkanState().m_currentFrame = (m_vulkanState().m_currentFrame + 1) % MAX_FRAMES_IN_FLIGHT;
+		m_vulkanState().m_commandBuffersSubmit.clear();
 
-        vstate().m_currentFrame = (vstate().m_currentFrame + 1) % MAX_FRAMES_IN_FLIGHT;
-		vstate().m_commandBuffersSubmit.clear();
+		vkWaitForFences(m_vulkanState().m_device, 1, &m_fences[m_vulkanState().m_currentFrame], VK_TRUE, UINT64_MAX);
 
-		vkWaitForFences(vstate().m_device, 1, &m_fences[vstate().m_currentFrame], VK_TRUE, UINT64_MAX);
-
-        VkResult result = vkAcquireNextImageKHR(vstate().m_device, vstate().m_swapChain.m_swapChain, UINT64_MAX,
-                            m_imageAvailableSemaphores[vstate().m_currentFrame], VK_NULL_HANDLE, &vstate().m_imageIndex);
+        VkResult result = vkAcquireNextImageKHR(m_vulkanState().m_device, m_vulkanState().m_swapChain.m_swapChain, UINT64_MAX,
+                            m_imageAvailableSemaphores[m_vulkanState().m_currentFrame], VK_NULL_HANDLE, &m_vulkanState().m_imageIndex);
 
         if (result == VK_ERROR_OUT_OF_DATE_KHR ) {
-			auto wsdlstate = WindowSDL::GetState(m_registry);
-            DevRecreateSwapChain( std::get<2>(wsdlstate)().m_sdlWindow, 
-				vstate().m_surface, vstate().m_physicalDevice, vstate().m_device, vstate().m_vmaAllocator, 
-				vstate().m_swapChain, vstate().m_depthImage, m_renderPass);
+			auto m_windowSDLState = WindowSDL::GetState(m_registry);
+            DevRecreateSwapChain( std::get<2>(m_windowSDLState)().m_sdlWindow, 
+				m_vulkanState().m_surface, m_vulkanState().m_physicalDevice, m_vulkanState().m_device, m_vulkanState().m_vmaAllocator, 
+				m_vulkanState().m_swapChain, m_vulkanState().m_depthImage, m_renderPass);
 
 			m_engine.SendMessage( MsgWindowSize{this, nullptr} );
         } else assert (result == VK_SUCCESS || result == VK_SUBOPTIMAL_KHR);
@@ -108,47 +102,40 @@ namespace vve {
     }
 
     bool RendererVulkan::OnRecordNextFrame(Message message) {
-		auto [handle, wstate] = Window::GetState(m_registry, m_windowName);
-		auto vstate = GetState2();
+		if(m_windowState().m_isMinimized) return false;
 
-		if(wstate().m_isMinimized) return false;
+        vkResetCommandBuffer(m_commandBuffers[m_vulkanState().m_currentFrame],  0);
 
-        vkResetCommandBuffer(m_commandBuffers[vstate().m_currentFrame],  0);
-
-		vh::ComStartRecordCommandBuffer(m_commandBuffers[vstate().m_currentFrame], vstate().m_imageIndex, 
-			vstate().m_swapChain, m_renderPass, m_graphicsPipeline, 
-			true, 
+		vh::ComStartRecordCommandBuffer(m_commandBuffers[m_vulkanState().m_currentFrame], m_vulkanState().m_imageIndex, 
+			m_vulkanState().m_swapChain, m_renderPass, m_graphicsPipeline, true, 
 			std::get<1>(Window::GetState(m_registry, m_windowName))().m_clearColor, 
-			vstate().m_currentFrame);
+			m_vulkanState().m_currentFrame);
 
-		vh::ComEndRecordCommandBuffer(m_commandBuffers[vstate().m_currentFrame]);
+		vh::ComEndRecordCommandBuffer(m_commandBuffers[m_vulkanState().m_currentFrame]);
 
-		SubmitCommandBuffer(m_commandBuffers[vstate().m_currentFrame]);
+		SubmitCommandBuffer(m_commandBuffers[m_vulkanState().m_currentFrame]);
 		return false;
 	}
 
     bool RendererVulkan::OnRenderNextFrame(Message message) {
-		auto [handle, wstate] = Window::GetState(m_registry, m_windowName);
-		auto vstate = GetState2();
-
-        if(wstate().m_isMinimized) return false;
+        if(m_windowState().m_isMinimized) return false;
         
 		VkSemaphore signalSemaphore;
-		vh::ComSubmitCommandBuffers(vstate().m_device, vstate().m_graphicsQueue, vstate().m_commandBuffersSubmit, 
-			m_imageAvailableSemaphores, m_semaphores, signalSemaphore, m_fences, vstate().m_currentFrame);
+		vh::ComSubmitCommandBuffers(m_vulkanState().m_device, m_vulkanState().m_graphicsQueue, m_vulkanState().m_commandBuffersSubmit, 
+			m_imageAvailableSemaphores, m_semaphores, signalSemaphore, m_fences, m_vulkanState().m_currentFrame);
 				
-   		vh::ImgTransitionImageLayout(vstate().m_device, vstate().m_graphicsQueue, m_commandPool, 
-			vstate().m_swapChain.m_swapChainImages[vstate().m_imageIndex], vstate().m_swapChain.m_swapChainImageFormat, 
+   		vh::ImgTransitionImageLayout(m_vulkanState().m_device, m_vulkanState().m_graphicsQueue, m_commandPool, 
+			m_vulkanState().m_swapChain.m_swapChainImages[m_vulkanState().m_imageIndex], m_vulkanState().m_swapChain.m_swapChainImageFormat, 
 			VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR);
 
-		VkResult result = vh::ComPresentImage(vstate().m_presentQueue, vstate().m_swapChain, vstate().m_imageIndex, signalSemaphore);
+		VkResult result = vh::ComPresentImage(m_vulkanState().m_presentQueue, m_vulkanState().m_swapChain, m_vulkanState().m_imageIndex, signalSemaphore);
 
-        if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR || vstate().m_framebufferResized) {
-            vstate().m_framebufferResized = false;
-			auto wsdlstate = WindowSDL::GetState(m_registry);
-            vh::DevRecreateSwapChain(std::get<2>(wsdlstate)().m_sdlWindow, 
-				vstate().m_surface, vstate().m_physicalDevice, vstate().m_device, vstate().m_vmaAllocator, 
-				vstate().m_swapChain, vstate().m_depthImage, m_renderPass);
+        if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR || m_vulkanState().m_framebufferResized) {
+            m_vulkanState().m_framebufferResized = false;
+			auto m_windowSDLState = WindowSDL::GetState(m_registry);
+            vh::DevRecreateSwapChain(std::get<2>(m_windowSDLState)().m_sdlWindow, 
+				m_vulkanState().m_surface, m_vulkanState().m_physicalDevice, m_vulkanState().m_device, m_vulkanState().m_vmaAllocator, 
+				m_vulkanState().m_swapChain, m_vulkanState().m_depthImage, m_renderPass);
 
 			m_engine.SendMessage( MsgWindowSize{this, nullptr} );
         } else assert(result == VK_SUCCESS);
@@ -156,53 +143,51 @@ namespace vve {
     }
     
     bool RendererVulkan::OnQuit(Message message) {
-		auto vstate = GetState2();
+        vkDeviceWaitIdle(m_vulkanState().m_device);
 
-        vkDeviceWaitIdle(vstate().m_device);
+        vh::DevCleanupSwapChain(m_vulkanState().m_device, m_vulkanState().m_vmaAllocator, m_vulkanState().m_swapChain, m_vulkanState().m_depthImage);
 
-        vh::DevCleanupSwapChain(vstate().m_device, vstate().m_vmaAllocator, vstate().m_swapChain, vstate().m_depthImage);
+        vkDestroyPipeline(m_vulkanState().m_device, m_graphicsPipeline.m_pipeline, nullptr);
+        vkDestroyPipelineLayout(m_vulkanState().m_device, m_graphicsPipeline.m_pipelineLayout, nullptr);
 
-        vkDestroyPipeline(vstate().m_device, m_graphicsPipeline.m_pipeline, nullptr);
-        vkDestroyPipelineLayout(vstate().m_device, m_graphicsPipeline.m_pipelineLayout, nullptr);
-
-        vkDestroyDescriptorPool(vstate().m_device, m_descriptorPool, nullptr);
+        vkDestroyDescriptorPool(m_vulkanState().m_device, m_descriptorPool, nullptr);
 
 		for( decltype(auto) texture : m_registry.template GetView<vh::Map&>() ) {
-			vkDestroySampler(vstate().m_device, texture().m_mapSampler, nullptr);
-        	vkDestroyImageView(vstate().m_device, texture().m_mapImageView, nullptr);
-	        vh::ImgDestroyImage(vstate().m_device, vstate().m_vmaAllocator, texture().m_mapImage, texture().m_mapImageAllocation);
+			vkDestroySampler(m_vulkanState().m_device, texture().m_mapSampler, nullptr);
+        	vkDestroyImageView(m_vulkanState().m_device, texture().m_mapImageView, nullptr);
+	        vh::ImgDestroyImage(m_vulkanState().m_device, m_vulkanState().m_vmaAllocator, texture().m_mapImage, texture().m_mapImageAllocation);
 		}
 
-		vkDestroyDescriptorSetLayout(vstate().m_device, m_descriptorSetLayoutPerFrame, nullptr);
+		vkDestroyDescriptorSetLayout(m_vulkanState().m_device, m_descriptorSetLayoutPerFrame, nullptr);
 
 		for( auto geometry : m_registry.template GetView<vh::Mesh&>() ) {
-	        vh::BufDestroyBuffer(vstate().m_device, vstate().m_vmaAllocator, geometry().m_indexBuffer, geometry().m_indexBufferAllocation);
-	        vh::BufDestroyBuffer(vstate().m_device, vstate().m_vmaAllocator, geometry().m_vertexBuffer, geometry().m_vertexBufferAllocation);
+	        vh::BufDestroyBuffer(m_vulkanState().m_device, m_vulkanState().m_vmaAllocator, geometry().m_indexBuffer, geometry().m_indexBufferAllocation);
+	        vh::BufDestroyBuffer(m_vulkanState().m_device, m_vulkanState().m_vmaAllocator, geometry().m_vertexBuffer, geometry().m_vertexBufferAllocation);
 		}
 
 		for( auto ubo : m_registry.template GetView<vh::UniformBuffers&>() ) {
-			vh::BufDestroyBuffer2(vstate().m_device, vstate().m_vmaAllocator, ubo);
+			vh::BufDestroyBuffer2(m_vulkanState().m_device, m_vulkanState().m_vmaAllocator, ubo);
 		}
 
-        vkDestroyCommandPool(vstate().m_device, m_commandPool, nullptr);
+        vkDestroyCommandPool(m_vulkanState().m_device, m_commandPool, nullptr);
 
-        vkDestroyRenderPass(vstate().m_device, m_renderPass, nullptr);
+        vkDestroyRenderPass(m_vulkanState().m_device, m_renderPass, nullptr);
 
-		vh::SynDestroyFences(vstate().m_device, m_fences);
+		vh::SynDestroyFences(m_vulkanState().m_device, m_fences);
 
-		vh::SynDestroySemaphores(vstate().m_device, m_imageAvailableSemaphores, m_semaphores);
+		vh::SynDestroySemaphores(m_vulkanState().m_device, m_imageAvailableSemaphores, m_semaphores);
 
-        vmaDestroyAllocator(vstate().m_vmaAllocator);
+        vmaDestroyAllocator(m_vulkanState().m_vmaAllocator);
 
-        vkDestroyDevice(vstate().m_device, nullptr);
+        vkDestroyDevice(m_vulkanState().m_device, nullptr);
 
-        vkDestroySurfaceKHR(vstate().m_instance, vstate().m_surface, nullptr);
+        vkDestroySurfaceKHR(m_vulkanState().m_instance, m_vulkanState().m_surface, nullptr);
 
 		if (m_engine.GetDebug()) {
-            vh::DevDestroyDebugUtilsMessengerEXT(vstate().m_instance, vstate().m_debugMessenger, nullptr);
+            vh::DevDestroyDebugUtilsMessengerEXT(m_vulkanState().m_instance, m_vulkanState().m_debugMessenger, nullptr);
         }
 
-        vkDestroyInstance(vstate().m_instance, nullptr);
+        vkDestroyInstance(m_vulkanState().m_instance, nullptr);
 		return false;
     }
 
@@ -211,48 +196,48 @@ namespace vve {
 
 
 	bool RendererVulkan::OnTextureCreate( Message message ) {
-		auto vstate = GetState2();
+		auto m_vulkanState = GetState2();
 
 		auto msg = message.template GetData<MsgTextureCreate>();
 		auto handle = msg.m_handle;
 		auto texture = m_registry.template Get<vh::Map&>(handle);
 		auto pixels = texture().m_pixels;
 
-		vh::ImgCreateTextureImage(vstate().m_physicalDevice, vstate().m_device, vstate().m_vmaAllocator, vstate().m_graphicsQueue, m_commandPool, pixels, texture().m_width, texture().m_height, texture().m_size, texture);
-		vh::ImgCreateTextureImageView(vstate().m_device, texture);
-		vh::ImgCreateTextureSampler(vstate().m_physicalDevice, vstate().m_device, texture);
+		vh::ImgCreateTextureImage(m_vulkanState().m_physicalDevice, m_vulkanState().m_device, m_vulkanState().m_vmaAllocator, m_vulkanState().m_graphicsQueue, m_commandPool, pixels, texture().m_width, texture().m_height, texture().m_size, texture);
+		vh::ImgCreateTextureImageView(m_vulkanState().m_device, texture);
+		vh::ImgCreateTextureSampler(m_vulkanState().m_physicalDevice, m_vulkanState().m_device, texture);
 		return false;
 	}
 
 	bool RendererVulkan::OnTextureDestroy( Message message ) {
-		auto vstate = GetState2();
+		auto m_vulkanState = GetState2();
 
 		auto handle = message.template GetData<MsgTextureDestroy>().m_handle;
 		auto texture = m_registry.template Get<vh::Map&>(handle);
-		vkDestroySampler(vstate().m_device, texture().m_mapSampler, nullptr);
-		vkDestroyImageView(vstate().m_device, texture().m_mapImageView, nullptr);
-		vh::ImgDestroyImage(vstate().m_device, vstate().m_vmaAllocator, texture().m_mapImage, texture().m_mapImageAllocation);
+		vkDestroySampler(m_vulkanState().m_device, texture().m_mapSampler, nullptr);
+		vkDestroyImageView(m_vulkanState().m_device, texture().m_mapImageView, nullptr);
+		vh::ImgDestroyImage(m_vulkanState().m_device, m_vulkanState().m_vmaAllocator, texture().m_mapImage, texture().m_mapImageAllocation);
 		m_registry.Erase(handle);
 		return false;
 	}
 
 	bool RendererVulkan::OnMeshCreate( Message message ) {
-		auto vstate = GetState2();
+		auto m_vulkanState = GetState2();
 
 		auto handle = message.template GetData<MsgMeshCreate>().m_handle;
 		auto mesh = m_registry.template Get<vh::Mesh&>(handle);
-		vh::BufCreateVertexBuffer(vstate().m_physicalDevice, vstate().m_device, vstate().m_vmaAllocator, vstate().m_graphicsQueue, m_commandPool, mesh);
-		vh::BufCreateIndexBuffer( vstate().m_physicalDevice, vstate().m_device, vstate().m_vmaAllocator, vstate().m_graphicsQueue, m_commandPool, mesh);
+		vh::BufCreateVertexBuffer(m_vulkanState().m_physicalDevice, m_vulkanState().m_device, m_vulkanState().m_vmaAllocator, m_vulkanState().m_graphicsQueue, m_commandPool, mesh);
+		vh::BufCreateIndexBuffer( m_vulkanState().m_physicalDevice, m_vulkanState().m_device, m_vulkanState().m_vmaAllocator, m_vulkanState().m_graphicsQueue, m_commandPool, mesh);
 		return false;
 	}
 
 	bool RendererVulkan::OnMeshDestroy( Message message ) {
-		auto vstate = GetState2();
+		auto m_vulkanState = GetState2();
 
 		auto handle = message.template GetData<MsgMeshDestroy>().m_handle;
 		auto mesh = m_registry.template Get<vh::Mesh&>(handle);
-		vh::BufDestroyBuffer(vstate().m_device, vstate().m_vmaAllocator, mesh().m_indexBuffer, mesh().m_indexBufferAllocation);
-		vh::BufDestroyBuffer(vstate().m_device, vstate().m_vmaAllocator, mesh().m_vertexBuffer, mesh().m_vertexBufferAllocation);
+		vh::BufDestroyBuffer(m_vulkanState().m_device, m_vulkanState().m_vmaAllocator, mesh().m_indexBuffer, mesh().m_indexBufferAllocation);
+		vh::BufDestroyBuffer(m_vulkanState().m_device, m_vulkanState().m_vmaAllocator, mesh().m_vertexBuffer, mesh().m_vertexBufferAllocation);
 		m_registry.Erase(handle);
 		return false;
 	}
