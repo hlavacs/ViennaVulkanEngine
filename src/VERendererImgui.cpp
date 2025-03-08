@@ -30,7 +30,11 @@ namespace vve {
 
         vh::RenCreateDescriptorPool(GetDevice(), 1000, m_descriptorPool);
 
-		vh::VulSetupImgui( ((WindowSDL*)m_window)->GetSDLWindow(), GetInstance(), GetPhysicalDevice(), GetQueueFamilies(), GetDevice(), GetGraphicsQueue(), 
+		auto wsdlstate = WindowSDL::GetState(m_registry);
+
+		vh::VulSetupImgui( std::get<2>(wsdlstate)().m_sdlWindow,  //((WindowSDL*)m_window)->GetSDLWindow(), 
+			GetInstance(), GetPhysicalDevice(), 
+			GetQueueFamilies(), GetDevice(), GetGraphicsQueue(), 
 			m_commandPool, m_descriptorPool, m_renderPass);  
 
         vh::ComCreateCommandPool(GetSurface(), GetPhysicalDevice(), GetDevice(), m_commandPool); 

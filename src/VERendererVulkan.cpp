@@ -48,7 +48,10 @@ namespace vve {
 	        vh::DevSetupDebugMessenger(GetInstance(), GetVulkanState()().m_debugMessenger);
 		}
 
-		if (SDL_Vulkan_CreateSurface(GetVulkanState()().m_windowSDL->GetSDLWindow(), GetInstance(), &GetVulkanState()().m_surface) == 0) {
+		auto wsdlstate = WindowSDL::GetState(m_registry);
+
+		if (SDL_Vulkan_CreateSurface(std::get<2>(wsdlstate)().m_sdlWindow,   //GetVulkanState()().m_windowSDL->GetSDLWindow(), 
+			GetInstance(), &GetVulkanState()().m_surface) == 0) {
             printf("Failed to create Vulkan surface.\n");
         }
 
@@ -56,8 +59,11 @@ namespace vve {
         vh::DevCreateLogicalDevice(GetSurface(), GetPhysicalDevice(), GetVulkanState()().m_queueFamilies, m_validationLayers, 
 			m_deviceExtensions, m_engine.GetDebug(), GetVulkanState()().m_device, GetVulkanState()().m_graphicsQueue, GetVulkanState()().m_presentQueue);
         vh::DevInitVMA(GetInstance(), GetPhysicalDevice(), GetDevice(), GetVulkanState()().m_vmaAllocator);  
-        vh::DevCreateSwapChain(GetVulkanState()().m_windowSDL->GetSDLWindow(), GetSurface(), GetPhysicalDevice(), GetDevice(), GetVulkanState()().m_swapChain);
-        vh::DevCreateImageViews(GetDevice(), GetSwapChain());
+        vh::DevCreateSwapChain(std::get<2>(wsdlstate)().m_sdlWindow, //GetVulkanState()().m_windowSDL->GetSDLWindow(), 
+			GetSurface(), GetPhysicalDevice(), GetDevice(), GetVulkanState()().m_swapChain);
+        
+		
+		vh::DevCreateImageViews(GetDevice(), GetSwapChain());
         vh::RenCreateRenderPassClear(GetPhysicalDevice(), GetDevice(), GetSwapChain(), true, m_renderPass);
 
 		vh::RenCreateDescriptorSetLayout( GetDevice(), {}, m_descriptorSetLayoutPerFrame );
@@ -90,7 +96,11 @@ namespace vve {
                             m_imageAvailableSemaphores[GetCurrentFrame()], VK_NULL_HANDLE, &GetImageIndex());
 
         if (result == VK_ERROR_OUT_OF_DATE_KHR ) {
-            DevRecreateSwapChain(GetVulkanState()().m_windowSDL->GetSDLWindow(), GetSurface(), GetPhysicalDevice(), GetDevice(), GetVmaAllocator(), GetSwapChain(), GetDepthImage(), m_renderPass);
+			auto wsdlstate = WindowSDL::GetState(m_registry);
+            DevRecreateSwapChain( std::get<2>(wsdlstate)().m_sdlWindow, //GetVulkanState()().m_windowSDL->GetSDLWindow(), 
+				GetSurface(), GetPhysicalDevice(), GetDevice(), GetVmaAllocator(), 
+				GetSwapChain(), GetDepthImage(), m_renderPass);
+
 			m_engine.SendMessage( MsgWindowSize{this, nullptr} );
         } else assert (result == VK_SUCCESS || result == VK_SUBOPTIMAL_KHR);
 		return false;
@@ -132,7 +142,11 @@ namespace vve {
 
         if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR || GetFramebufferResized()) {
             GetFramebufferResized() = false;
-            vh::DevRecreateSwapChain(GetVulkanState()().m_windowSDL->GetSDLWindow(), GetSurface(), GetPhysicalDevice(), GetDevice(), GetVmaAllocator(), GetSwapChain(), GetDepthImage(), m_renderPass);
+			auto wsdlstate = WindowSDL::GetState(m_registry);
+            vh::DevRecreateSwapChain(std::get<2>(wsdlstate)().m_sdlWindow, //GetVulkanState()().m_windowSDL->GetSDLWindow(), 
+				GetSurface(), GetPhysicalDevice(), GetDevice(), GetVmaAllocator(), 
+				GetSwapChain(), GetDepthImage(), m_renderPass);
+
 			m_engine.SendMessage( MsgWindowSize{this, nullptr} );
         } else assert(result == VK_SUCCESS);
 		return false;

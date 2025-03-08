@@ -21,15 +21,17 @@ namespace vve {
     public:
         WindowSDL(std::string systemName, Engine& engine, std::string windowTitle, int width, int height );
         virtual ~WindowSDL();
-        auto GetSDLWindow() -> SDL_Window* { return m_sdlWindow; }
+        //auto GetSDLWindow() -> SDL_Window* { return m_sdlWindow; }
+        static auto GetState(vecs::Registry& registry, const std::string&& windowName = "") -> std::tuple<vecs::Handle, vecs::Ref<WindowState>, vecs::Ref<WindowSDLState>>;
 
     private:
         bool OnInit(Message message);
         bool OnPollEvents(Message message);
         bool OnQuit(Message message);
+        auto GetState2() -> std::tuple<vecs::Ref<WindowState>,  vecs::Ref<WindowSDLState>>;
 
-        inline static bool 		m_sdl_initialized{false};
-        SDL_Window* 			m_sdlWindow{nullptr};
+        //inline static bool 		m_sdl_initialized{false};
+        //SDL_Window* 			m_sdlWindow{nullptr};
         int 					m_minImageCount = 2;
         bool 					m_swapChainRebuild = false;
         std::set<SDL_Scancode> 	m_keysDown;

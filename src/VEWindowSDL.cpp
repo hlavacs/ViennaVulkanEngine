@@ -8,6 +8,22 @@ namespace vve {
 
 	//-------------------------------------------------------------------------------------------------------
 	// SDL Window
+
+    auto WindowSDL::GetState(vecs::Registry& registry, const std::string&& windowName) -> std::tuple<vecs::Handle, vecs::Ref<WindowState>, vecs::Ref<WindowSDLState>> {
+        for( auto ret: registry.template GetView<vecs::Handle, WindowState&, WindowSDLState&>() ) {
+            auto [handle, wstate, wsdlstate] = ret;
+            if( windowName.empty() ) return ret;
+            if( wstate().m_windowName == windowName ) return ret;
+        }
+        std::cout << "Window not found: " << windowName << std::endl;
+        assert(false);
+        exit(-1);   
+        return { {}, {}, {} };
+    }
+
+    auto WindowSDL::GetState2() -> std::tuple<vecs::Ref<WindowState>, vecs::Ref<WindowSDLState>> {
+        return m_registry.template Get<WindowState&, WindowSDLState&>(m_windowStateHandle);
+    }
 	
     WindowSDL::WindowSDL( std::string systemName, Engine& engine,std::string windowName, int width, int height) 
                 : Window(systemName, engine, windowName, width, height ) {
@@ -18,13 +34,17 @@ namespace vve {
 			{this,  3000, "QUIT", [this](Message& message){ return OnQuit(message);} },
 		} );
 
-        m_windowStateHandle = m_registry.Insert(WindowState{width, height, windowName}, WindowSDLState{}, Name{windowName});
+        m_windowStateHandle = m_registry.Insert(WindowState{width, height, windowName}, WindowSDLState{});
     }
 
     WindowSDL::~WindowSDL() {}
 
     bool WindowSDL::OnInit(Message message) {
-        if(!m_sdl_initialized) {
+        auto state = GetState2();
+        auto wstate = std::get<0>(state);
+        auto wsdlstate = std::get<1>(state);
+        
+        if(!wsdlstate().m_sdl_initialized) {
             if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_TIMER | SDL_INIT_GAMECONTROLLER | SDL_INIT_AUDIO) != 0) {
                 printf("Error: %s\n", SDL_GetError());
                 exit(1);
@@ -33,27 +53,26 @@ namespace vve {
         #ifdef SDL_HINT_IME_SHOW_UI
             SDL_SetHint(SDL_HINT_IME_SHOW_UI, "1");
         #endif
-            m_sdl_initialized = true;
+        wsdlstate().m_sdl_initialized = true;
         }
-
-        auto wstate = GetState2();
 
         // Create window with Vulkan graphics context
         SDL_WindowFlags window_flags = (SDL_WindowFlags)(SDL_WINDOW_VULKAN | SDL_WINDOW_RESIZABLE | SDL_WINDOW_ALLOW_HIGHDPI);
-        m_sdlWindow = SDL_CreateWindow(wstate().m_windowName.c_str(), SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, 
-            wstate().m_width, wstate().m_height, window_flags);
+        auto sdlWindow = SDL_CreateWindow(wstate().m_windowName.c_str(), 
+                            SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, 
+                            wstate().m_width, wstate().m_height, window_flags);
 
-        m_registry.Put(m_windowStateHandle, WindowSDLState{true, m_sdlWindow});
+        m_registry.Put(m_windowStateHandle, WindowSDLState{true, sdlWindow});
 
-        if (m_sdlWindow == nullptr) {
+        if (sdlWindow == nullptr) {
             printf("Error: SDL_CreateWindow(): %s\n", SDL_GetError());
             exit(1);
         }
         uint32_t extensions_count = 0;
         std::vector<const char*> extensions;
-        SDL_Vulkan_GetInstanceExtensions(m_sdlWindow, &extensions_count, nullptr);
+        SDL_Vulkan_GetInstanceExtensions(sdlWindow, &extensions_count, nullptr);
         extensions.resize(extensions_count);
-        SDL_Vulkan_GetInstanceExtensions(m_sdlWindow, &extensions_count, extensions.data());
+        SDL_Vulkan_GetInstanceExtensions(sdlWindow, &extensions_count, extensions.data());
         wstate().m_instanceExtensions.insert(wstate().m_instanceExtensions.end(), extensions.begin(), extensions.end());
 
 		m_engine.SendMessage( MsgExtensions{this, wstate().m_instanceExtensions, {}} );
@@ -67,7 +86,9 @@ namespace vve {
         // - When io.WantCaptureKeyboard is true, do not dispatch keyboard input data to your main application, or clear/overwrite your copy of the keyboard data.
         // Generally you may always pass all inputs to dear imgui, and hide them from your application based on those two flags.
 
-        auto wstate = GetState2();
+        auto state = GetState2();
+        auto wstate = std::get<0>(state);
+        auto wsdlstate = std::get<1>(state);
 
         static std::vector<SDL_Scancode> key;
         static std::vector<int8_t> button;
@@ -133,20 +154,20 @@ namespace vve {
         if(key.size() > 0) { for( auto& k : key ) { m_keysDown.insert(k) ; } }
         if(button.size() > 0) { for( auto& b : button ) {m_mouseButtonsDown.insert(b);} }
 
-        if (SDL_GetWindowFlags(m_sdlWindow) & SDL_WINDOW_MINIMIZED) {
+        if (SDL_GetWindowFlags(wsdlstate().m_sdlWindow) & SDL_WINDOW_MINIMIZED) {
             SDL_Delay(10);
             return false;
         }
 
         // Resize swap chain?
-        SDL_GetWindowSize(m_sdlWindow, &GetState2()().m_width, &GetState2()().m_height);
+        SDL_GetWindowSize(wsdlstate().m_sdlWindow, &wstate().m_width, &wstate().m_height);
        
         return false;
     }
 
     bool WindowSDL::OnQuit(Message message) {
         auto rend = ((RendererVulkan*)(m_engine.GetSystem(m_engine.m_rendererVulkanaName)));
-		SDL_DestroyWindow(m_sdlWindow);
+		SDL_DestroyWindow(std::get<1>(GetState2())().m_sdlWindow);
         SDL_Quit(); 
 		return false;
     }
