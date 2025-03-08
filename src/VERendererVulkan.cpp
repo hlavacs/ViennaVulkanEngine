@@ -68,6 +68,7 @@ namespace vve {
         vh::RenCreateGraphicsPipeline(m_vulkanState().m_device, m_renderPass, "shaders\\Vulkan\\vert.spv", "", {}, {},
 			 { m_descriptorSetLayoutPerFrame }, {}, m_graphicsPipeline);
 
+		vh::ComCreateCommandPool(m_vulkanState().m_surface, m_vulkanState().m_physicalDevice, m_vulkanState().m_device, m_vulkanState().m_commandPool);
         vh::ComCreateCommandPool(m_vulkanState().m_surface, m_vulkanState().m_physicalDevice, m_vulkanState().m_device, m_commandPool);
         vh::RenCreateDepthResources(m_vulkanState().m_physicalDevice, m_vulkanState().m_device, m_vulkanState().m_vmaAllocator, m_vulkanState().m_swapChain, m_vulkanState().m_depthImage);
         vh::RenCreateFramebuffers(m_vulkanState().m_device, m_vulkanState().m_swapChain, m_vulkanState().m_depthImage, m_renderPass);
@@ -170,6 +171,7 @@ namespace vve {
 		}
 
         vkDestroyCommandPool(m_vulkanState().m_device, m_commandPool, nullptr);
+        vkDestroyCommandPool(m_vulkanState().m_device, m_vulkanState().m_commandPool, nullptr);
 
         vkDestroyRenderPass(m_vulkanState().m_device, m_renderPass, nullptr);
 

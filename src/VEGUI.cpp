@@ -181,7 +181,11 @@ namespace vve {
 			uint32_t imageSize = extent.width * extent.height * 4;
 			VkImage image = vstate().m_swapChain.m_swapChainImages[vstate().m_imageIndex]; 
 
-			//uint8_t *dataImage = new uint8_t[imageSize];
+			uint8_t *dataImage = new uint8_t[imageSize];
+
+			vh::ImgCopySwapChainImageToHost( vstate().m_device, vstate().m_vmaAllocator, vstate().m_graphicsQueue,
+				vstate().m_commandPool, image, VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_ASPECT_COLOR_BIT, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR,
+				dataImage, extent.width, extent.height, imageSize);
 
 			/*vh::ImgCopySwapChainImageToHost(
 				getEnginePointer()->getRenderer()->getDevice(),
@@ -195,8 +199,8 @@ namespace vve {
 			m_numScreenshot++;
 
 			std::string name("screenshots/screenshot" + std::to_string(m_numScreenshot - 1) + ".jpg");
-			//stbi_write_jpg(name.c_str(), extent.width, extent.height, 4, dataImage, 4 * extent.width);
-			//delete[] dataImage;
+			stbi_write_jpg(name.c_str(), extent.width, extent.height, 4, dataImage, 4 * extent.width);
+			delete[] dataImage;
 
 			m_makeScreenshot = false;
 		}

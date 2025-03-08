@@ -26,6 +26,7 @@ namespace vve {
 		VkQueue 		m_presentQueue{VK_NULL_HANDLE};
 		vh::SwapChain 	m_swapChain;
 		vh::DepthImage 	m_depthImage;
+		VkCommandPool 	m_commandPool{VK_NULL_HANDLE};
 		std::vector<VkCommandBuffer> m_commandBuffersSubmit;
 
 		uint32_t m_currentFrame = MAX_FRAMES_IN_FLIGHT - 1;

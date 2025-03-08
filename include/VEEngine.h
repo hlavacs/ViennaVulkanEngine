@@ -1,10 +1,5 @@
 #pragma once
 
-#include <memory>
-#include <unordered_map>
-#include "glm/glm.hpp"
-
-
 namespace vve {
 
 	class Engine : public System {
