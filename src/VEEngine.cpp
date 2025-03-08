@@ -130,12 +130,6 @@ namespace vve {
 		SendMessage( MsgQuit{this, nullptr} );
 	}
 
-	auto Engine::GetSystem( std::string name ) -> System* { 
-		auto system = m_systems[name].get();
-		assert(system != nullptr);
-		return system;
-	}	
-
 	void Engine::Stop() {
 		m_running = false;
 	};

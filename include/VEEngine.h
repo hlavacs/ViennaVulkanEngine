@@ -39,18 +39,12 @@ namespace vve {
 		void Step();
 		void Quit();
 		auto GetDebug() -> bool { return m_debug; }
-		auto GetRegistry() -> auto& { return m_registry; }
+		void SendMessage( Message message );
+		void PrintCallbacks();
 		auto GetHandle(std::string name) -> vecs::Handle;
 		auto SetHandle(std::string name, vecs::Handle h) -> void;
 		auto ContainsHandle(std::string name) -> bool;
-		void SendMessage( Message message );
-		auto GetSystem( std::string name ) -> System*;
-		auto GetWindow( std::string name ) -> Window* { return (Window*)GetSystem(name); }
-		auto GetRenderer( std::string name ) -> Renderer* { return (Renderer*)GetSystem(name); }
-		auto GetSceneMgr(std::string name) -> SceneManager* { return (SceneManager*)GetSystem(name); }
-		auto GetSoundMgr(std::string name) -> SoundManager* { return (SoundManager*)GetSystem(name); }
-		auto GetAssetMgr(std::string name) -> AssetManager* { return (AssetManager*)GetSystem(name); }
-		void PrintCallbacks();
+		auto GetRegistry() -> auto& { return m_registry; }
 
 	protected:
 		virtual void CreateWindow();

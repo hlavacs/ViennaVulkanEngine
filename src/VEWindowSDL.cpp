@@ -166,7 +166,6 @@ namespace vve {
     }
 
     bool WindowSDL::OnQuit(Message message) {
-        auto rend = ((RendererVulkan*)(m_engine.GetSystem(m_engine.m_rendererVulkanaName)));
 		SDL_DestroyWindow(std::get<1>(GetState2())().m_sdlWindow);
         SDL_Quit(); 
 		return false;

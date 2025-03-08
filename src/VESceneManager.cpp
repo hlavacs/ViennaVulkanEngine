@@ -38,7 +38,6 @@ namespace vve {
 
 
 		// Create camera
-		auto window = m_engine.GetWindow(m_windowName);
         auto view = glm::inverse( glm::lookAt(glm::vec3(0.0f, -2.0f, 3.5f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f)) );
 
 		m_cameraNodeHandle = m_registry.Insert(
@@ -126,7 +125,6 @@ namespace vve {
 	}
 
     bool SceneManager::OnWindowSize(Message message) {
-		auto window = m_engine.GetWindow(m_windowName);
 		auto [name, camera] = m_registry.template Get<Name&, Camera&>(m_cameraHandle);
 		auto [handle, wstate] = Window::GetState(m_registry);
 		camera().m_aspect = (real_t)wstate().m_width / (real_t)wstate().m_height;
