@@ -6,7 +6,7 @@ namespace vh {
 
     VkCommandBuffer ComBeginSingleTimeCommands(VkDevice device, VkCommandPool commandPool);
 
-    void ComEndSingleTimeCommands(VkDevice device, VkQueue graphicsQueue, VkCommandPool commandPool, VkCommandBuffer commandBuffer);
+    VkResult ComEndSingleTimeCommands(VkDevice device, VkQueue graphicsQueue, VkCommandPool commandPool, VkCommandBuffer commandBuffer);
     
 	void ComCreateCommandBuffers(VkDevice device, VkCommandPool commandPool, std::vector<VkCommandBuffer>& commandBuffers);
 

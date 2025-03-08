@@ -2,10 +2,14 @@
 
 namespace vh {
 
-    void BufCreateBuffer(VkPhysicalDevice physicalDevice, VkDevice device, VmaAllocator vmaAllocator
-        , VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties
-        , VmaAllocationCreateFlags vmaFlags, VkBuffer& buffer
-        , VmaAllocation& allocation, VmaAllocationInfo* allocationInfo) {
+    void BufCreateBuffer(VmaAllocator vmaAllocator
+        , VkDeviceSize size
+        , VkBufferUsageFlags usage
+        , VkMemoryPropertyFlags properties
+        , VmaAllocationCreateFlags vmaFlags
+        , VkBuffer& buffer
+        , VmaAllocation& allocation
+        , VmaAllocationInfo* allocationInfo) {
     
         VkBufferCreateInfo bufferInfo = { VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO };
         bufferInfo.size = size;
@@ -67,6 +71,67 @@ namespace vh {
     }
 
 
+
+
+	/**
+	* \brief Copy a VKImage to a VKBuffer
+	*
+	* \param[in] device Logical Vulkan device
+	* \param[in] graphicsQueue Device queue for submitting commands
+	* \param[in] commandPool Command pool for allocating command buffers
+	* \param[in] image The source image
+	* \param[in] aspect Aspect on how to use the image (color or depth)
+	* \param[in] buffer The destination buffer
+	* \param[in] layerCount Number of image layers
+	* \param[in] width �mage width
+	* \param[in] height Image height
+	* \returns VK_SUCCESS or a Vulkan error code
+	*
+	*/
+	VkResult BufCopyImageToBuffer(VkDevice device, VkQueue graphicsQueue, VkCommandPool commandPool, VkImage image, VkImageAspectFlagBits aspect, VkBuffer buffer, uint32_t layerCount, uint32_t width, uint32_t height)
+	{
+		std::vector<VkBufferImageCopy> regions;
+
+		VkBufferImageCopy region = {};
+		region.bufferOffset = 0;
+		region.bufferRowLength = 0;
+		region.bufferImageHeight = 0;
+		region.imageSubresource.aspectMask = aspect;
+		region.imageSubresource.mipLevel = 0;
+		region.imageSubresource.baseArrayLayer = 0;
+		region.imageSubresource.layerCount = layerCount;
+		region.imageOffset = { 0, 0, 0 };
+		region.imageExtent = { width, height, 1 };
+		regions.push_back(region);
+
+		return BufCopyImageToBuffer(device, graphicsQueue, commandPool, image, buffer, regions, width, height);
+	}
+
+	/**
+	* \brief Copy a VKImage to a VKBuffer
+	*
+	* \param[in] device Logical Vulkan device
+	* \param[in] graphicsQueue Device queue for submitting commands
+	* \param[in] commandPool Command pool for allocating command buffers
+	* \param[in] image The source image
+	* \param[in] buffer The destination buffer
+	* \param[in] regions Copy regions detailing the image parts that should be copied
+	* \param[in] width �mage width
+	* \param[in] height Image height
+	* \returns VK_SUCCESS or a Vulkan error code
+	*
+	*/
+	VkResult BufCopyImageToBuffer(VkDevice device, VkQueue graphicsQueue, VkCommandPool commandPool, VkImage image, VkBuffer buffer, std::vector<VkBufferImageCopy> &regions, uint32_t width, uint32_t height)
+	{
+		VkCommandBuffer commandBuffer = ComBeginSingleTimeCommands(device, commandPool);
+
+		vkCmdCopyImageToBuffer(commandBuffer, image, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, buffer, (uint32_t)regions.size(), regions.data());
+
+		ComEndSingleTimeCommands(device, graphicsQueue, commandPool, commandBuffer);
+	}
+
+
+
     void BufCreateVertexBuffer(VkPhysicalDevice physicalDevice, VkDevice device, VmaAllocator vmaAllocator
         , VkQueue graphicsQueue, VkCommandPool commandPool, Mesh& geometry) {
 
@@ -75,14 +140,14 @@ namespace vh {
         VkBuffer stagingBuffer;
         VmaAllocation stagingBufferAllocation;
         VmaAllocationInfo allocInfo;
-        BufCreateBuffer(physicalDevice, device, vmaAllocator, bufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT
+        BufCreateBuffer( vmaAllocator, bufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT
             , VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT 
             , VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT | VMA_ALLOCATION_CREATE_MAPPED_BIT
             , stagingBuffer, stagingBufferAllocation, &allocInfo);
 
 		geometry.m_verticesData.copyData( allocInfo.pMappedData );
 	
-        BufCreateBuffer(physicalDevice, device, vmaAllocator, bufferSize
+        BufCreateBuffer( vmaAllocator, bufferSize
             , VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT
             , VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, 0, geometry.m_vertexBuffer
             , geometry.m_vertexBufferAllocation);
@@ -101,14 +166,14 @@ namespace vh {
         VkBuffer stagingBuffer;
         VmaAllocation stagingBufferAllocation;
         VmaAllocationInfo allocInfo;
-        BufCreateBuffer(physicalDevice, device, vmaAllocator, bufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT
+        BufCreateBuffer( vmaAllocator, bufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT
             , VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT 
             , VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT | VMA_ALLOCATION_CREATE_MAPPED_BIT
             , stagingBuffer, stagingBufferAllocation, &allocInfo);
 
 		memcpy(allocInfo.pMappedData, geometry.m_indices.data(), bufferSize);
 
-        BufCreateBuffer(physicalDevice, device, vmaAllocator, bufferSize
+        BufCreateBuffer( vmaAllocator, bufferSize
             , VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT
             , VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, 0
             , geometry.m_indexBuffer, geometry.m_indexBufferAllocation);
@@ -128,7 +193,7 @@ namespace vh {
 
         for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
             VmaAllocationInfo allocInfo;
-            BufCreateBuffer(physicalDevice, device, vmaAllocator, bufferSize, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT
+            BufCreateBuffer( vmaAllocator, bufferSize, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT
                 , VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT 
                 , VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT | VMA_ALLOCATION_CREATE_MAPPED_BIT
                 , uniformBuffers.m_uniformBuffers[i] 

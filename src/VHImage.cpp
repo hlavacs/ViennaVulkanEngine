@@ -9,7 +9,7 @@ namespace vh {
         VkBuffer stagingBuffer;
         VmaAllocation stagingBufferAllocation;
         VmaAllocationInfo allocInfo;
-        BufCreateBuffer(physicalDevice, device, vmaAllocator, imageSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT
+        BufCreateBuffer( vmaAllocator, imageSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT
             , VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT
             , VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT | VMA_ALLOCATION_CREATE_MAPPED_BIT
             , stagingBuffer, stagingBufferAllocation, &allocInfo);
@@ -188,14 +188,21 @@ namespace vh {
 	{
 		VkBuffer stagingBuffer;
 		VmaAllocation stagingBufferAllocation;
-		
-        //BufCreateBuffer(allocator, imageSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT, VMA_MEMORY_USAGE_CPU_ONLY, &stagingBuffer, &stagingBufferAllocation);
+        VmaAllocationInfo allocInfo;
 
-		//ImgTransitionImageLayout(device, graphicsQueue, commandPool,image, format, aspect, 1, 1, layout, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
+        BufCreateBuffer(allocator, (VkDeviceSize)imageSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT, 
+            VMA_MEMORY_USAGE_CPU_ONLY, VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT | VMA_ALLOCATION_CREATE_MAPPED_BIT,
+            stagingBuffer, stagingBufferAllocation, &allocInfo);
 
-		//BufCopyImageToBuffer(device, graphicsQueue, commandPool, image, aspect, stagingBuffer, 1, width, height);
+		ImgTransitionImageLayout(device, graphicsQueue, commandPool, image, format, 
+            //aspect, 1, 1, 
+            layout, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
 
-		//ImgTransitionImageLayout(device, graphicsQueue, commandPool,image, format, aspect, 1, 1, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, layout);
+		BufCopyImageToBuffer(device, graphicsQueue, commandPool, image, aspect , stagingBuffer, 1, width, height);
+
+		ImgTransitionImageLayout(device, graphicsQueue, commandPool, image, format, 
+            //aspect, 1, 1, 
+            VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, layout);
 
 		void *data;
 		vmaMapMemory(allocator, stagingBufferAllocation, &data);
@@ -239,15 +246,15 @@ namespace vh {
 	*/
 	VkResult ImgCopyImageToHost(VkDevice device, VmaAllocator allocator, VkQueue graphicsQueue, 
         VkCommandPool commandPool, VkImage image, VkFormat format, VkImageAspectFlagBits aspect, VkImageLayout layout,
-		/*gli::byte*/ unsigned char *bufferData,
-		uint32_t width,
-		uint32_t height,
-		uint32_t imageSize)
+		/*gli::byte*/ unsigned char *bufferData, uint32_t width, uint32_t height, uint32_t imageSize)
 	{
 		VkBuffer stagingBuffer;
 		VmaAllocation stagingBufferAllocation;
+        VmaAllocationInfo allocInfo;
 
-		//BufCreateBuffer(allocator, imageSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT, VMA_MEMORY_USAGE_CPU_ONLY,&stagingBuffer, &stagingBufferAllocation);
+        BufCreateBuffer(allocator, (VkDeviceSize)imageSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT, 
+            VMA_MEMORY_USAGE_CPU_ONLY, VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT | VMA_ALLOCATION_CREATE_MAPPED_BIT,
+            stagingBuffer, stagingBufferAllocation, &allocInfo);
 
 		//ImgTransitionImageLayout(device, graphicsQueue, commandPool, image, format, aspect, 1, 1, layout, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
 
