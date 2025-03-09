@@ -149,6 +149,7 @@ if(DOXYGEN_FOUND)
 	string(REPLACE ";" " " DOXYGEN_DIRS_STR "${DOXYGEN_DIRS} ")  
 	set(DOXYGEN_INPUT_DIR ${DOXYGEN_DIRS_STR})
 	set(DOXYGEN_OUTPUT_DIR "${CMAKE_BINARY_DIR}/docs")
+	set(DOXYGEN_EXCLUDE_DIR "${viennaentitycomponentsystem_SOURCE_DIR}/include/old")
 	set(DOXYGEN_CONFIG_FILE "${CMAKE_BINARY_DIR}/Doxyfile")
 
 	configure_file(${CMAKE_SOURCE_DIR}/Doxyfile.in ${DOXYGEN_CONFIG_FILE} @ONLY)
