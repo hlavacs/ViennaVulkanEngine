@@ -1,6 +1,6 @@
 set(TARGET game)
 set(SOURCE game.cpp)
-set(HEADERS game.h)
+set(HEADERS )
 
 add_executable(${TARGET} ${SOURCE} ${HEADERS})
 
