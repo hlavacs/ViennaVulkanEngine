@@ -19,6 +19,7 @@ namespace vve {
 		const std::string m_rendererName = "VVE Renderer";
 		const std::string m_rendererVulkanaName = "VVE Renderer Vulkan";
 		const std::string m_rendererForwardName = "VVE Renderer Forward";
+		const std::string m_rendererDeferredName = "VVE Renderer Deferred";
 		const std::string m_rendererImguiName = "VVE Renderer Imgui";
 		const std::string m_guiName = "VVE GUI";
 
