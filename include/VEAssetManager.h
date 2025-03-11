@@ -19,7 +19,7 @@ namespace vve {
 		bool OnTextureRelease(Message message);
 		auto LoadTexture(TextureHandle handle) -> stbi_uc*;
 		
-		bool SceneLoad(Name sceneName, const C_STRUCT aiScene* scene);
+		bool SceneLoad(Filename sceneName, const C_STRUCT aiScene* scene);
 
 	private:
 		std::unordered_multimap<std::filesystem::path, std::string> m_fileNameMap; //from path to string

@@ -45,7 +45,7 @@ namespace vve {
 		return true; //the message is consumed -> no more processing allowed
 	}
 
-	bool AssetManager::SceneLoad(Name sceneName, const C_STRUCT aiScene* scene) {
+	bool AssetManager::SceneLoad(Filename sceneName, const C_STRUCT aiScene* scene) {
 		std::filesystem::path filepath = sceneName();
 		auto directory = filepath.parent_path();
 

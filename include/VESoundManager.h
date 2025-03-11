@@ -26,7 +26,7 @@ namespace vve {
     	~SoundManager() {};
 
     private:
-        std::map<Name, PlayingSound> m_sounds;
+        std::map<Filename, PlayingSound> m_sounds;
 
         bool OnAnnounce(Message message);
         bool OnUpdate(Message message);

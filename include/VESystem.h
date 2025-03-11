@@ -95,7 +95,7 @@ namespace vve {
 	    struct MsgInit : public MsgBase { MsgInit(System* s, System* r=nullptr); };
 	    struct MsgLoadLevel : public MsgBase { MsgLoadLevel(System* s, System* r, std::string level); std::string m_level;};
 	    struct MsgWindowSize : public MsgBase { MsgWindowSize(System* s, System* r=nullptr); };
-	    struct MsgPlaySound : public MsgBase { MsgPlaySound(System* s, System* r, Name filepath, int cont=1); Name m_filepath; int m_cont; }; //0..stop 1..play once 2..loop
+	    struct MsgPlaySound : public MsgBase { MsgPlaySound(System* s, System* r, Filename filepath, int cont=1); Filename m_filepath; int m_cont; }; //0..stop 1..play once 2..loop
 	    struct MsgQuit : public MsgBase { MsgQuit(System* s, System* r=nullptr); };
 
 		//------------------------------------------------------------------------------------------------
@@ -123,13 +123,13 @@ namespace vve {
 
 		//------------------------------------------------------------------------------------------------
 
-	    struct MsgSceneLoad : public MsgBase { MsgSceneLoad(System* s, System* r, Name sceneName, aiPostProcessSteps ai_flags=aiProcess_Triangulate); Name m_sceneName; aiPostProcessSteps m_ai_flags; };
+	    struct MsgSceneLoad : public MsgBase { MsgSceneLoad(System* s, System* r, Filename sceneName, aiPostProcessSteps ai_flags=aiProcess_Triangulate); Filename m_sceneName; aiPostProcessSteps m_ai_flags; };
 
 	    struct MsgSceneCreate : public MsgBase { 
-			MsgSceneCreate(System* s, System* r, ObjectHandle object, ParentHandle parent, Name sceneName, aiPostProcessSteps ai_flags=aiProcess_Triangulate); 
+			MsgSceneCreate(System* s, System* r, ObjectHandle object, ParentHandle parent, Filename sceneName, aiPostProcessSteps ai_flags=aiProcess_Triangulate); 
 			ObjectHandle m_object{}; 
 			ParentHandle m_parent{}; 
-			Name m_sceneName;
+			Filename m_sceneName;
 			aiPostProcessSteps m_ai_flags;
 			const C_STRUCT aiScene* m_scene{};
 		};

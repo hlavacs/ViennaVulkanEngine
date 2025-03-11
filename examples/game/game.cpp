@@ -53,7 +53,7 @@ class MyGame : public vve::System {
 
             // ----------------- Load Plane -----------------
 
-            m_engine.SendMessage( MsgSceneLoad{ this, nullptr, vve::Name{plane_obj}, aiProcess_FlipWindingOrder });
+            m_engine.SendMessage( MsgSceneLoad{ this, nullptr, vve::Filename{plane_obj}, aiProcess_FlipWindingOrder });
 
             auto m_handlePlane = m_registry.Insert( 
                             vve::Position{ {0.0f,0.0f,0.0f } }, 
@@ -73,12 +73,12 @@ class MyGame : public vve::System {
                             vve::Rotation{mat3_t{1.0f}}, 
                             vve::Scale{vec3_t{1.0f}});
 
-            m_engine.SendMessage(MsgSceneCreate{ this, nullptr, vve::ObjectHandle(m_handleCube), vve::ParentHandle{}, vve::Name{cube_obj}, aiProcess_FlipWindingOrder });
+            m_engine.SendMessage(MsgSceneCreate{ this, nullptr, vve::ObjectHandle(m_handleCube), vve::ParentHandle{}, vve::Filename{cube_obj}, aiProcess_FlipWindingOrder });
 
             GetCamera();
             m_registry.Get<vve::Rotation&>(m_cameraHandle)() = mat3_t{ glm::rotate(mat4_t{1.0f}, 3.14152f/2.0f, vec3_t{1.0f, 0.0f, 0.0f}) };
 
-            m_engine.SendMessage(MsgPlaySound{ this, nullptr, vve::Name{"assets\\sounds\\ophelia.wav"}, 2 });
+            m_engine.SendMessage(MsgPlaySound{ this, nullptr, vve::Filename{"assets\\sounds\\ophelia.wav"}, 2 });
 
             return false;
         };
@@ -91,8 +91,8 @@ class MyGame : public vve::System {
             if( m_state == State::STATE_RUNNING ) {
                 if( m_time_left <= 0.0f ) { 
                     m_state = State::STATE_DEAD; 
-                    m_engine.SendMessage(MsgPlaySound{ this, nullptr, vve::Name{"assets\\sounds\\ophelia.wav"}, 0 });
-                    m_engine.SendMessage(MsgPlaySound{ this, nullptr, vve::Name{"assets\\sounds\\gameover.wav"}, 1 });
+                    m_engine.SendMessage(MsgPlaySound{ this, nullptr, vve::Filename{"assets\\sounds\\ophelia.wav"}, 0 });
+                    m_engine.SendMessage(MsgPlaySound{ this, nullptr, vve::Filename{"assets\\sounds\\gameover.wav"}, 1 });
                     return false;
                 }
                 auto posCube = m_registry.Get<vve::Position&>(m_handleCube);
@@ -104,9 +104,9 @@ class MyGame : public vve::System {
                     if( m_cubes_left == 0 ) {
                         m_time_left += 20;
                         m_cubes_left = c_number_cubes;
-                        m_engine.SendMessage(MsgPlaySound{ this, nullptr, vve::Name{"assets\\sounds\\bell.wav"}, 1 });
+                        m_engine.SendMessage(MsgPlaySound{ this, nullptr, vve::Filename{"assets\\sounds\\bell.wav"}, 1 });
                     } else {
-                        m_engine.SendMessage(MsgPlaySound{ this, nullptr, vve::Name{"assets\\sounds\\explosion.wav"}, 1 });
+                        m_engine.SendMessage(MsgPlaySound{ this, nullptr, vve::Filename{"assets\\sounds\\explosion.wav"}, 1 });
                     }
                 }
             }
@@ -132,7 +132,7 @@ class MyGame : public vve::System {
                     m_state = State::STATE_RUNNING;
                     m_time_left = c_max_time;
                     m_cubes_left = c_number_cubes;
-                    m_engine.SendMessage(MsgPlaySound{ this, nullptr, vve::Name{"assets\\sounds\\ophelia.wav"}, 2 });
+                    m_engine.SendMessage(MsgPlaySound{ this, nullptr, vve::Filename{"assets\\sounds\\ophelia.wav"}, 2 });
                 }
                 ImGui::End();
             }

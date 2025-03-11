@@ -71,7 +71,7 @@ namespace vve {
     bool SceneManager::OnLoadLevel(Message message) {
 
 		vh::Color color{ { 0.0f, 0.0f, 0.0f, 1.0f }, { 1.0f, 1.0f, 0.0f, 1.0f }, { 0.0f, 0.0f, 0.0f, 1.0f } };
-		m_engine.SendMessage( MsgSceneLoad{ this, nullptr, vve::Name{"assets\\standard\\sphere.obj"} });		
+		m_engine.SendMessage( MsgSceneLoad{ this, nullptr, vve::Filename{"assets\\standard\\sphere.obj"} });		
 		
 		float intensity1 = 0.8f;
 		auto lightHandle = m_registry.Insert(
@@ -284,7 +284,7 @@ namespace vve {
 
     bool SceneManager::OnObjectDestroy(Message message) {
 		auto msg = message.template GetData<MsgObjectDestroy>();
-		if( msg.m_phase > 0) {
+		if( msg.m_phase > 0) { //last phase -> Uniform Buffers have been deallocated
 			m_registry.Erase(msg.m_handle);
 			return false;
 		}
@@ -299,7 +299,6 @@ namespace vve {
 		for( auto child : children() ) {
 			m_engine.SendMessage(MsgObjectDestroy(this, nullptr, ObjectHandle(child)));
 		}
-		children().clear();
 		return false;
 	}
 

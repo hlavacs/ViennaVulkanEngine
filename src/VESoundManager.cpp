@@ -30,7 +30,7 @@ namespace vve {
 
     bool SoundManager::OnPlaySound(Message message) {
         auto msg = message.template GetData<MsgPlaySound>();
-        Name filepath = msg.m_filepath;
+        Filename filepath = msg.m_filepath;
         int cont = msg.m_cont;
 
         PlayingSound& sound = m_sounds[filepath];
