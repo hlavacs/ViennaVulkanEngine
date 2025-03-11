@@ -94,7 +94,6 @@ namespace vve {
 		bool OnObjectSetParent(Message message);
 		void SetParent(ObjectHandle object, ParentHandle parent);
 		bool OnObjectDestroy(Message message);
-		void DestroyObject(vecs::Handle handle);
 
 		//std::shared_mutex m_mutex;
 		CameraHandle m_cameraHandle;

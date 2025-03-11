@@ -1,6 +1,8 @@
 
 #include <iostream>
 #include <utility>
+#include <stack>
+
 
 #include "VHInclude.h"
 #include "VEInclude.h"
@@ -31,7 +33,7 @@ public:
 		std::string level = std::string("Level: ") + msg.m_level;
 
 		m_engine.SendMessage( MsgSceneLoad{ this, nullptr, vve::Name{"assets\\test\\plane\\plane_t_n_s.obj"}, aiProcess_FlipWindingOrder });
-		auto handle = m_registry.Insert( 
+		m_planeHandle = m_registry.Insert( 
 						vve::Position{ {0.0f,0.0f,0.0f } }, 
 						vve::Rotation{ mat3_t { glm::rotate(glm::mat4(1.0f), 3.14152f / 2.0f, glm::vec3(1.0f,0.0f,0.0f)) }}, 
 						vve::Scale{vec3_t{1000.0f,1000.0f,1000.0f}}, 
@@ -39,7 +41,7 @@ public:
 						vve::TextureName{"assets\\test\\plane\\grass.jpg"},
 						vve::UVScale{ { 1000.0f, 1000.0f } }
 					);
-		m_engine.SendMessage(MsgObjectCreate{ this, nullptr, vve::ObjectHandle(handle), vve::ParentHandle{} });
+		m_engine.SendMessage(MsgObjectCreate{ this, nullptr, vve::ObjectHandle(m_planeHandle), vve::ParentHandle{} });
 
 		return false;
 	};
@@ -90,7 +92,7 @@ public:
 	            if (ImGui::Button("Create##Create1")) {                          // Buttons return true when clicked (most widgets return true when edited/activated)				
 					
 					auto handle = m_registry.Insert( vve::Position{ { x, y, 0.1f } }, vve::Rotation{mat3_t{1.0f}}, vve::Scale{vec3_t{1.0f}}); 
-					m_handles.push_back( handle );
+					m_handles.push( handle );
 
 					m_engine.SendMessage( 
 						MsgSceneCreate{	this, nullptr, vve::ObjectHandle{handle}, vve::ParentHandle{}, vve::Name{path_obj}, flags });
@@ -127,7 +129,7 @@ public:
 					m_engine.SendMessage( MsgSceneLoad{ this, nullptr, vve::Name{path_obj2}, flags });		
 					vh::Color color{ { 0.0f, 0.0f, 0.0f, 1.0f }, { 0.0f, 1.0f, 1.0f, 1.0f }, { 0.0f, 0.0f, 0.0f, 1.0f } };
 					auto handle = m_registry.Insert(vve::Position{ { x, y, 0.5f } }, vve::Rotation{mat3_t{1.0f}}, vve::Scale{vec3_t{0.05f}}, color, vve::MeshName{"assets\\standard\\sphere.obj\\sphere"} );
-					m_handles.push_back( handle );
+					m_handles.push( handle );
 
 					m_engine.SendMessage(MsgObjectCreate{ this, nullptr, vve::ObjectHandle(handle), vve::ParentHandle{} });
 
@@ -161,7 +163,7 @@ public:
 	            if (ImGui::Button("Create##Create3")) {                          // Buttons return true when clicked (most widgets return true when edited/activated)		
 
 					auto handle = m_registry.Insert( vve::Position{ { x, y, 0.5f } }, vve::Rotation{mat3_t{1.0f}}, vve::Scale{vec3_t{1.0f}});
-					m_handles.push_back( handle );
+					m_handles.push( handle );
 
 					m_engine.SendMessage( 
 						MsgSceneCreate{
@@ -177,7 +179,11 @@ public:
 
 			{
 				if (ImGui::Button("Erase one ##Erase1")) {
-					
+					if( !m_handles.empty() ) {
+						auto handle = m_handles.top();
+						m_engine.SendMessage(MsgObjectDestroy(this, nullptr, vve::ObjectHandle(handle)));
+						m_handles.pop();
+					}
 				}
 			}
 
@@ -204,7 +210,8 @@ public:
     }
 
 	private:
-		std::vector<vecs::Handle> m_handles; //queue scenes here
+		vecs::Handle m_planeHandle{};
+		std::stack<vecs::Handle> m_handles; //queue scenes here
 };
 
 

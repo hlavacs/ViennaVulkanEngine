@@ -33,6 +33,7 @@ namespace vve {
   			{this,  2000, "PREPARE_NEXT_FRAME", [this](Message& message){ return OnPrepareNextFrame(message);} },
   			{this,  2000, "RECORD_NEXT_FRAME", [this](Message& message){ return OnRecordNextFrame(message);} },
 			{this,  2000, "OBJECT_CREATE", [this](Message& message){ return OnObjectCreate(message);} },
+			{this, 10000, "OBJECT_DESTROY", [this](Message& message){ return OnObjectDestroy(message);} },
   			{this,     0, "QUIT", [this](Message& message){ return OnQuit(message);} }
   		} );
     };
@@ -289,6 +290,18 @@ namespace vve {
 		assert( m_registry.template Has<vh::UniformBuffers>(oHandle) );
 		assert( m_registry.template Has<vh::DescriptorSet>(oHandle) );
 		return false; //true if handled
+	}
+
+	bool RendererForward::OnObjectDestroy( Message message ) {
+		auto msg = message.template GetData<MsgObjectDestroy>();
+		auto oHandle = msg.m_handle();
+
+		assert(m_registry.Exists(oHandle) );
+
+		if( !m_registry.template Has<vh::UniformBuffers>(oHandle) ) return false;
+		auto ubo = m_registry.template Get<vh::UniformBuffers&>(oHandle);
+		vh::BufDestroyBuffer2(m_vulkanState().m_device, m_vulkanState().m_vmaAllocator, ubo);
+		return false;
 	}
 
 

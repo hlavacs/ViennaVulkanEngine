@@ -19,7 +19,8 @@ namespace vve {
 			{this,                            1000, "SCENE_CREATE", [this](Message& message){ return OnSceneCreate(message);} },
 			{this,                               0, "OBJECT_CREATE", [this](Message& message){ return OnObjectCreate(message);} },
 			{this, std::numeric_limits<int>::max(), "OBJECT_SET_PARENT", [this](Message& message){ return OnObjectSetParent(message);} },
-			{this,                               0, "OBJECT_DESTROY", [this](Message& message){ return OnObjectDestroy(message);} }
+			{this,                               0, "OBJECT_DESTROY", [this](Message& message){ return OnObjectDestroy(message);} },
+			{this,                           20000, "OBJECT_DESTROY", [this](Message& message){ return OnObjectDestroy(message);} }
 		} );
 	}
 
@@ -136,7 +137,7 @@ namespace vve {
 		auto children = m_registry.template Get<Children&>(m_rootHandle);
 
 		auto update = [](auto& registry, mat4_t& parentToWorld, vecs::Handle& handle, auto& self) -> void {
-			auto [name, p, r, s, LtoP, LtoW] = registry.template Get<Name&, Position&, Rotation&, Scale&, LocalToParentMatrix&, LocalToWorldMatrix&>(handle);
+			auto [name, p, r, s, LtoP, LtoW] = registry.template Get<Name, Position&, Rotation&, Scale&, LocalToParentMatrix&, LocalToWorldMatrix&>(handle);
 			LtoP() = glm::translate(mat4_t{1.0f}, p()) * mat4_t(r()) * glm::scale(mat4_t{1.0f}, s());
 			LtoW() = parentToWorld * LtoP();
 			//std::cout << "Handle: " << handle << " Name: " << name() << " Position: " << p().x << ", " << p().y << ", " << p().z << std::endl;
@@ -283,18 +284,23 @@ namespace vve {
 
     bool SceneManager::OnObjectDestroy(Message message) {
 		auto msg = message.template GetData<MsgObjectDestroy>();
-		DestroyObject(msg.m_handle);
-		return false;
-	}
+		if( msg.m_phase > 0) {
+			m_registry.Erase(msg.m_handle);
+			return false;
+		}
 
-	void SceneManager::DestroyObject(vecs::Handle handle) {
-		auto children = m_registry.template Get<Children&>(handle);
+		auto parent = m_registry.template Get<ParentHandle&>(msg.m_handle);
+		if( parent().IsValid() ) {
+			auto children = m_registry.template Get<Children&>(parent());
+			children().erase(std::remove(children().begin(), children().end(), msg.m_handle), children().end());
+		}
+
+		auto children = m_registry.template Get<Children>(msg.m_handle);
 		for( auto child : children() ) {
-			DestroyObject(child);
+			m_engine.SendMessage(MsgObjectDestroy(this, nullptr, ObjectHandle(child)));
 		}
 		children().clear();
-		m_registry.Erase(handle);
-		//m_regisry.SendMessage(MsgObjectDestroy);
+		return false;
 	}
 
 
