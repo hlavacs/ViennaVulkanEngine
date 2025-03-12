@@ -120,10 +120,10 @@ namespace vve {
 
 		//------------------------------------------------------------------------------------------------
 
-		struct MsgTextureCreate : public MsgBase { MsgTextureCreate(vecs::Handle handle, System* sender=nullptr); vecs::Handle m_handle; System* m_sender; };
-	    struct MsgTextureDestroy : public MsgBase { MsgTextureDestroy(vecs::Handle handle); vecs::Handle m_handle; };
-	    struct MsgMeshCreate : public MsgBase { MsgMeshCreate( vecs::Handle handle); vecs::Handle m_handle; };
-	    struct MsgMeshDestroy : public MsgBase { MsgMeshDestroy(vecs::Handle handle); vecs::Handle m_handle; };
+		struct MsgTextureCreate : public MsgBase { MsgTextureCreate(TextureHandle handle, System* sender=nullptr); TextureHandle m_handle; System* m_sender; };
+	    struct MsgTextureDestroy : public MsgBase { MsgTextureDestroy(TextureHandle handle); TextureHandle m_handle; };
+	    struct MsgMeshCreate : public MsgBase { MsgMeshCreate( MeshHandle handle); MeshHandle m_handle; };
+	    struct MsgMeshDestroy : public MsgBase { MsgMeshDestroy(MeshHandle handle); MeshHandle m_handle; };
 		struct MsgDeleted : public MsgBase { MsgDeleted(double dt ); void* m_ptr; uint64_t m_id; };
 
 		//------------------------------------------------------------------------------------------------

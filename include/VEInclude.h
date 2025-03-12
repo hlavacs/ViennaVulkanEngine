@@ -66,6 +66,8 @@ namespace vve {
 	using DirectionalLightHandle = vsty::strong_type_t<vecs::Handle, vsty::counter<>>; //need this to use DirectionalLight as a unique component
 	using SpotLightHandle = vsty::strong_type_t<vecs::Handle, vsty::counter<>>; //need this to use SpotLight as a unique component
 
+	using MeshHandle = vsty::strong_type_t<vecs::Handle, vsty::counter<>>; //need this to use Texture as a unique comonent
+
 	using TextureHandle = vsty::strong_type_t<vecs::Handle, vsty::counter<>>; //need this to use Texture as a unique comonent
 	using NormalMapHandle = vsty::strong_type_t<vecs::Handle, vsty::counter<>>; //need this to use NormalMap as a unique component
 	using HeightMapHandle = vsty::strong_type_t<vecs::Handle, vsty::counter<>>; //need this to use HeightMap as a unique component

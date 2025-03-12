@@ -127,7 +127,7 @@ namespace vve {
 			auto gHandle = m_registry.Insert( name, VVEMesh );
 			m_engine.SetHandle(name, gHandle);
 			m_fileNameMap.insert( std::make_pair(filepath, name) );
-			m_engine.SendMessage( MsgMeshCreate{gHandle} );
+			m_engine.SendMessage( MsgMeshCreate{MeshHandle{gHandle}} );
 		}
 		return false;
 	}

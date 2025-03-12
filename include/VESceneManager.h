@@ -30,7 +30,6 @@ namespace vve {
 	//Mesh
 
 	using MeshName = vsty::strong_type_t<std::string, vsty::counter<>>;
-	using MeshHandle = vsty::strong_type_t<vecs::Handle, vsty::counter<>>; //need this to use Mesh as a unique component	using SceneName = vsty::strong_type_t<std::string, vsty::counter<>>; //need this to use Filename as a unique component
 
 	//-------------------------------------------------------------------------------------------------------
 	//Maps
