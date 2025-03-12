@@ -79,6 +79,7 @@ class MyGame : public vve::System {
             m_registry.Get<vve::Rotation&>(m_cameraHandle)() = mat3_t{ glm::rotate(mat4_t{1.0f}, 3.14152f/2.0f, vec3_t{1.0f, 0.0f, 0.0f}) };
 
             m_engine.SendMessage(MsgPlaySound{ vve::Filename{"assets\\sounds\\ophelia.wav"}, 2, 50 });
+			m_engine.SendMessage(MsgSetVolume{ (int)m_volume });
 
             return false;
         };
@@ -122,6 +123,9 @@ class MyGame : public vve::System {
                 ImGui::TextUnformatted(buffer);
                 std::snprintf(buffer, 100, "Cubes Left: %d", m_cubes_left);
                 ImGui::TextUnformatted(buffer);
+				if (ImGui::SliderFloat("Sound Volume", &m_volume, 0, 100.0)) {
+					m_engine.SendMessage(MsgSetVolume{ (int)m_volume });
+				}
                 ImGui::End();
             }
 
@@ -147,6 +151,7 @@ class MyGame : public vve::System {
         vecs::Handle m_handleCube{};
 		vecs::Handle m_cameraHandle{};
 		vecs::Handle m_cameraNodeHandle{};
+		float m_volume{50.0f};
     };
     
     

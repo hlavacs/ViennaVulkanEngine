@@ -14,6 +14,7 @@ namespace vve {
 		"LOAD_LEVEL",	//Load a level
 		"WINDOW_SIZE",	//Window size has changed
 		"PLAY_SOUND",	//Play a sound
+		"SET_VOLUME",	//Set the sound volume to something btw 0 and 100
         "QUIT", //Quit the game
 		//---------------------
         "FRAME_START", //
@@ -70,6 +71,7 @@ namespace vve {
 	    struct MsgLoadLevel : public MsgBase { MsgLoadLevel(std::string level); std::string m_level;};
 	    struct MsgWindowSize : public MsgBase { MsgWindowSize(); };
 	    struct MsgPlaySound : public MsgBase { MsgPlaySound(Filename filepath, int cont=1, int volume=100); Filename m_filepath; int m_cont; int m_volume; SoundHandle m_soundHandle{}; }; //0..stop 1..play once 2..loop
+	    struct MsgSetVolume : public MsgBase { MsgSetVolume(int volume=100); int m_volume; }; 
 	    struct MsgQuit : public MsgBase { MsgQuit(); };
 
 		//------------------------------------------------------------------------------------------------

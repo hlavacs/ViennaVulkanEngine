@@ -7,7 +7,8 @@ namespace vve {
 		m_engine.RegisterCallback( { 
  		  	{this,    0, "UPDATE", [this](Message& message){ return OnUpdate(message);} },
  		  	{this, 1000, "PLAY_SOUND", [this](Message& message){ return OnPlaySound(message);} },
- 		  	{this,    0, "QUIT", [this](Message& message){ return OnQuit(message);} },
+ 		  	{this,    0, "SET_VOLUME", [this](Message& message){ return OnSetVolume(message);} },
+ 		  	{this,    0, "QUIT", [this](Message& message){ return OnQuit(message);} }
 		} );
         SoundManager::m_soundManager = this;
     };
@@ -22,10 +23,11 @@ namespace vve {
         if(sound().m_playLength == 0 ) { return; }
         len = ( len > sound().m_playLength ? sound().m_playLength : len );
         SDL_memcpy(stream, sound().m_wavBuffer + sound().m_playedLength, len);
-		auto vol = sound().m_volume;
+		float vol = sound().m_volume * m_volume / (10000.0f);
 		for( int i=0; i<len; i+=2) {
-			auto sample = reinterpret_cast<int16_t*>(&stream[i]);
-			*sample *= vol / 100.0f;
+			if(sound().m_wavSpec.format == AUDIO_U16LSB) *(reinterpret_cast<uint16_t*>(&stream[i])) *= vol;
+			if(sound().m_wavSpec.format == AUDIO_S16LSB) *(reinterpret_cast<int16_t*>(&stream[i])) *= vol;
+			if(sound().m_wavSpec.format == AUDIO_S32LSB) *(reinterpret_cast<int32_t*>(&stream[i])) *= vol;
 		}
         sound().m_playedLength += len;
         sound().m_playLength -= len;
@@ -62,6 +64,12 @@ namespace vve {
         sound().m_cont = 0;
 		return false;
     }
+
+	bool SoundManager::OnSetVolume(Message& message) {
+		auto msg = message.template GetData<MsgSetVolume>();
+		m_volume = msg.m_volume;
+		return false;
+	}
 
     bool SoundManager::OnUpdate(Message message) {
         auto msg = message.template GetData<MsgUpdate>();
