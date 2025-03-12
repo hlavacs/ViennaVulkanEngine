@@ -38,11 +38,8 @@ namespace vve {
             sound().m_cont = cont;
             if( sound().m_wavBuffer == nullptr) {
                 SDL_LoadWAV(filepath().c_str(), &sound().m_wavSpec, &sound().m_wavBuffer, &sound().m_wavLength);
-                sound().m_wavSpec.callback = VVEAudioCallback;
-                
-                std::uintptr_t i = reinterpret_cast<std::uintptr_t>(soundHandle().GetValue());
-                sound().m_wavSpec.userdata = reinterpret_cast<void*>(i); // sound();
-
+                sound().m_wavSpec.callback = VVEAudioCallback;               
+                sound().m_wavSpec.userdata = reinterpret_cast<void*>(soundHandle().GetValue()); // turn handle to void*
                 sound().m_deviceId = SDL_OpenAudioDevice(NULL, 0, &sound().m_wavSpec, NULL, 0);
             }
             sound().m_playLength = sound().m_wavLength;
