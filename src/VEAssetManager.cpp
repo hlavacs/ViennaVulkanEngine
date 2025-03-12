@@ -13,8 +13,9 @@ namespace vve {
 			{this,                               0, "SCENE_CREATE", [this](Message& message){ return OnSceneCreate(message);} },
 			{this, std::numeric_limits<int>::max(), "SCENE_CREATE", [this](Message& message){ return OnSceneCreate(message);} },
 			{this,                               0, "OBJECT_CREATE", [this](Message& message){ return OnObjectCreate(message);} },
-			{this, 								 0, "TEXTURE_CREATE",   [this](Message& message){ return OnTextureCreate(message);} },
-			{this, std::numeric_limits<int>::max(), "TEXTURE_CREATE",   [this](Message& message){ return OnTextureRelease(message);} }
+			{this, 								 0, "TEXTURE_CREATE", [this](Message& message){ return OnTextureCreate(message);} },
+			{this, std::numeric_limits<int>::max(), "TEXTURE_CREATE", [this](Message& message){ return OnTextureRelease(message);} },
+			{this, 								 0, "PLAY_SOUND", [this](Message& message){ return OnPlaySound(message);} },
 		} );
 	}
 
@@ -156,6 +157,21 @@ namespace vve {
 		auto texture = m_registry.template Get<vh::Map&>(msg.m_handle);
 		stbi_image_free(texture().m_pixels); //last thing release resources
 		return true;
+	}
+
+	bool AssetManager::OnPlaySound(Message& message) {
+		auto& msg = message.template GetData<MsgPlaySound>();
+		auto fileName = msg.m_filepath();
+		if( m_engine.ContainsHandle(fileName) ) {
+			msg.m_soundHandle = m_engine.GetHandle(fileName);
+			return false;
+		}
+
+		SoundState state{};
+		state.m_filepath = fileName;
+		msg.m_soundHandle = m_registry.Insert(state);
+		m_engine.SetHandle(fileName, msg.m_soundHandle);
+		return false;
 	}
 
 	auto AssetManager::LoadTexture(TextureHandle tHandle) -> stbi_uc* {

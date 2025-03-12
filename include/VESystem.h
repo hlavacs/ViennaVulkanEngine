@@ -12,6 +12,12 @@
 #include <filesystem>
 
 
+namespace std {
+    template<> struct hash<vve::System> {
+        size_t operator()(vve::System & system) ; 
+    };
+};
+
 namespace vve {
 
 	using Name = vsty::strong_type_t<std::string, vsty::counter<>>;
@@ -20,15 +26,9 @@ namespace vve {
 	using ObjectHandle = vsty::strong_type_t<vecs::Handle, vsty::counter<>>;
 	using ParentHandle = vsty::strong_type_t<vecs::Handle, vsty::counter<>>;
 	using ChildHandle = vsty::strong_type_t<vecs::Handle, vsty::counter<>>;
-	using SiblingHandle = vsty::strong_type_t<vecs::Handle, vsty::counter<>>;}
+	using SiblingHandle = vsty::strong_type_t<vecs::Handle, vsty::counter<>>;
+	using SoundHandle = vsty::strong_type_t<vecs::Handle, vsty::counter<>>;
 
-namespace std {
-    template<> struct hash<vve::System> {
-        size_t operator()(vve::System & system) ; 
-    };
-};
-
-namespace vve {
 
     const std::unordered_set<std::string> MsgTypeNames {
         "EXTENSIONS", //System announce extensions they need
@@ -91,7 +91,7 @@ namespace vve {
 	    struct MsgInit : public MsgBase { MsgInit(); };
 	    struct MsgLoadLevel : public MsgBase { MsgLoadLevel(std::string level); std::string m_level;};
 	    struct MsgWindowSize : public MsgBase { MsgWindowSize(); };
-	    struct MsgPlaySound : public MsgBase { MsgPlaySound(Filename filepath, int cont=1); Filename m_filepath; int m_cont; }; //0..stop 1..play once 2..loop
+	    struct MsgPlaySound : public MsgBase { MsgPlaySound(Filename filepath, int cont=1); Filename m_filepath; int m_cont; SoundHandle m_soundHandle{}; }; //0..stop 1..play once 2..loop
 	    struct MsgQuit : public MsgBase { MsgQuit(); };
 
 		//------------------------------------------------------------------------------------------------

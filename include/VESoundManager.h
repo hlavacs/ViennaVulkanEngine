@@ -8,7 +8,7 @@ namespace vve {
 
 	//-------------------------------------------------------------------------------------------------------
 
-    struct PlayingSound {
+    struct SoundState {
         std::string m_filepath{};
         int m_cont{0};
         SDL_AudioSpec m_wavSpec;
@@ -26,10 +26,8 @@ namespace vve {
     	~SoundManager() {};
 
     private:
-        std::map<Filename, PlayingSound> m_sounds;
-
         bool OnUpdate(Message message);
-        bool OnPlaySound(Message message);
+        bool OnPlaySound(Message& message);
         bool OnQuit(Message message);
     };
 
