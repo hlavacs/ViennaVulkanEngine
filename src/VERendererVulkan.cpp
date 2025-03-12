@@ -97,7 +97,7 @@ namespace vve {
 				m_vulkanState().m_surface, m_vulkanState().m_physicalDevice, m_vulkanState().m_device, m_vulkanState().m_vmaAllocator, 
 				m_vulkanState().m_swapChain, m_vulkanState().m_depthImage, m_renderPass);
 
-			m_engine.SendMessage( MsgWindowSize{this, nullptr} );
+			m_engine.SendMessage( MsgWindowSize{} );
         } else assert (result == VK_SUCCESS || result == VK_SUBOPTIMAL_KHR);
 		return false;
     }
@@ -138,7 +138,7 @@ namespace vve {
 				m_vulkanState().m_surface, m_vulkanState().m_physicalDevice, m_vulkanState().m_device, m_vulkanState().m_vmaAllocator, 
 				m_vulkanState().m_swapChain, m_vulkanState().m_depthImage, m_renderPass);
 
-			m_engine.SendMessage( MsgWindowSize{this, nullptr} );
+			m_engine.SendMessage( MsgWindowSize{} );
         } else assert(result == VK_SUCCESS);
 		return false;
     }

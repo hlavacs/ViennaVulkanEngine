@@ -73,7 +73,7 @@ namespace vve {
 				
 				auto tHandle = TextureHandle{m_registry.Insert(Name{texturePathStr.string()})};
 				auto pixels = LoadTexture(tHandle);
-				if( pixels != nullptr) m_engine.SendMessage( MsgTextureCreate{this, nullptr, tHandle } );
+				if( pixels != nullptr) m_engine.SendMessage( MsgTextureCreate{tHandle, this } );
 				m_fileNameMap.insert( std::make_pair(filepath, (Name{texturePathStr.string()})) );
 		    }
 		}
@@ -126,7 +126,7 @@ namespace vve {
 			auto gHandle = m_registry.Insert( name, VVEMesh );
 			m_engine.SetHandle(name, gHandle);
 			m_fileNameMap.insert( std::make_pair(filepath, name) );
-			m_engine.SendMessage( MsgMeshCreate{this, nullptr, gHandle} );
+			m_engine.SendMessage( MsgMeshCreate{gHandle} );
 		}
 		return false;
 	}

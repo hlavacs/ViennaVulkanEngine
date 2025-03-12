@@ -81,50 +81,48 @@ namespace vve {
 	    };
 
 	    struct MsgBase {
-			MsgBase(std::string type, System* s, System* r=nullptr, double dt=0);
+			MsgBase(std::string type, double dt=0);
 	        size_t m_type;
-	        System* m_sender{nullptr};
-	        System* m_receiver{nullptr};
 	        double m_dt{0};
 	        int m_phase{0}; //is set when delivering the message, NOT by sender!
 	    };
 
-	    struct MsgExtensions : public MsgBase { MsgExtensions(System* s, std::vector<const char*> instExt, std::vector<const char*> devExt ); std::vector<const char*> m_instExt; std::vector<const char*> m_devExt;};
-	    struct MsgInit : public MsgBase { MsgInit(System* s, System* r=nullptr); };
-	    struct MsgLoadLevel : public MsgBase { MsgLoadLevel(System* s, System* r, std::string level); std::string m_level;};
-	    struct MsgWindowSize : public MsgBase { MsgWindowSize(System* s, System* r=nullptr); };
-	    struct MsgPlaySound : public MsgBase { MsgPlaySound(System* s, System* r, Filename filepath, int cont=1); Filename m_filepath; int m_cont; }; //0..stop 1..play once 2..loop
-	    struct MsgQuit : public MsgBase { MsgQuit(System* s, System* r=nullptr); };
+	    struct MsgExtensions : public MsgBase { MsgExtensions(std::vector<const char*> instExt, std::vector<const char*> devExt ); std::vector<const char*> m_instExt; std::vector<const char*> m_devExt;};
+	    struct MsgInit : public MsgBase { MsgInit(); };
+	    struct MsgLoadLevel : public MsgBase { MsgLoadLevel(std::string level); std::string m_level;};
+	    struct MsgWindowSize : public MsgBase { MsgWindowSize(); };
+	    struct MsgPlaySound : public MsgBase { MsgPlaySound(Filename filepath, int cont=1); Filename m_filepath; int m_cont; }; //0..stop 1..play once 2..loop
+	    struct MsgQuit : public MsgBase { MsgQuit(); };
 
 		//------------------------------------------------------------------------------------------------
 		
-		struct MsgFrameStart : public MsgBase { MsgFrameStart(System* s, System* r, double dt); };
-	    struct MsgPollEvents : public MsgBase { MsgPollEvents(System* s, System* r, double dt); };
-	    struct MsgUpdate : public MsgBase { MsgUpdate(System* s, System* r, double dt); };
-	    struct MsgPrepareNextFrame : public MsgBase { MsgPrepareNextFrame(System* s, System* r, double dt); };
-	    struct MsgRenderNextFrame : public MsgBase { MsgRenderNextFrame(System* s, System* r, double dt);  };
-	    struct MsgRecordNextFrame : public MsgBase { MsgRecordNextFrame(System* s, System* r, double dt ); };
-	    struct MsgPresentNextFrame : public MsgBase { MsgPresentNextFrame(System* s, System* r, double dt);  };
-	    struct MsgFrameEnd : public MsgBase { MsgFrameEnd(System* s, System* r, double dt); };
+		struct MsgFrameStart : public MsgBase { MsgFrameStart(double dt); };
+	    struct MsgPollEvents : public MsgBase { MsgPollEvents(double dt); };
+	    struct MsgUpdate : public MsgBase { MsgUpdate(double dt); };
+	    struct MsgPrepareNextFrame : public MsgBase { MsgPrepareNextFrame(double dt); };
+	    struct MsgRenderNextFrame : public MsgBase { MsgRenderNextFrame(double dt);  };
+	    struct MsgRecordNextFrame : public MsgBase { MsgRecordNextFrame(double dt ); };
+	    struct MsgPresentNextFrame : public MsgBase { MsgPresentNextFrame(double dt);  };
+	    struct MsgFrameEnd : public MsgBase { MsgFrameEnd(double dt); };
 	    
 		//------------------------------------------------------------------------------------------------
 
-		struct MsgMouseMove : public MsgBase { MsgMouseMove(System* s, System* r, double dt, int x, int y); int m_x; int m_y; };
-	    struct MsgMouseButtonDown : public MsgBase { MsgMouseButtonDown(System* s, System* r, double dt, int button); int m_button; };
-	    struct MsgMouseButtonUp : public MsgBase { MsgMouseButtonUp(System* s, System* r, double dt, int button);  int m_button; };
-	    struct MsgMouseButtonRepeat : public MsgBase { MsgMouseButtonRepeat(System* s, System* r, double dt, int button);  int m_button; };
-	    struct MsgMouseWheel : public MsgBase { MsgMouseWheel(System* s, System* r, double dt, int x, int y);  int m_x; int m_y; };
-	    struct MsgKeyDown : public MsgBase { MsgKeyDown(System* s, System* r, double dt, int key);  int m_key; };
-	    struct MsgKeyUp : public MsgBase { MsgKeyUp(System* s, System* r, double dt, int key);  int m_key; };
-	    struct MsgKeyRepeat : public MsgBase { MsgKeyRepeat(System* s, System* r, double dt, int key); int m_key; };
-	    struct MsgSDL : public MsgBase { MsgSDL(System* s, System* r, double dt, SDL_Event event ); double m_dt; SDL_Event m_event; };
+		struct MsgMouseMove : public MsgBase { MsgMouseMove(double dt, int x, int y); int m_x; int m_y; };
+	    struct MsgMouseButtonDown : public MsgBase { MsgMouseButtonDown(double dt, int button); int m_button; };
+	    struct MsgMouseButtonUp : public MsgBase { MsgMouseButtonUp(double dt, int button);  int m_button; };
+	    struct MsgMouseButtonRepeat : public MsgBase { MsgMouseButtonRepeat(double dt, int button);  int m_button; };
+	    struct MsgMouseWheel : public MsgBase { MsgMouseWheel(double dt, int x, int y);  int m_x; int m_y; };
+	    struct MsgKeyDown : public MsgBase { MsgKeyDown(double dt, int key);  int m_key; };
+	    struct MsgKeyUp : public MsgBase { MsgKeyUp(double dt, int key);  int m_key; };
+	    struct MsgKeyRepeat : public MsgBase { MsgKeyRepeat(double dt, int key); int m_key; };
+	    struct MsgSDL : public MsgBase { MsgSDL(double dt, SDL_Event event ); double m_dt; SDL_Event m_event; };
 
 		//------------------------------------------------------------------------------------------------
 
-	    struct MsgSceneLoad : public MsgBase { MsgSceneLoad(System* s, System* r, Filename sceneName, aiPostProcessSteps ai_flags=aiProcess_Triangulate); Filename m_sceneName; aiPostProcessSteps m_ai_flags; };
+	    struct MsgSceneLoad : public MsgBase { MsgSceneLoad(Filename sceneName, aiPostProcessSteps ai_flags=aiProcess_Triangulate); Filename m_sceneName; aiPostProcessSteps m_ai_flags; };
 
 	    struct MsgSceneCreate : public MsgBase { 
-			MsgSceneCreate(System* s, System* r, ObjectHandle object, ParentHandle parent, Filename sceneName, aiPostProcessSteps ai_flags=aiProcess_Triangulate); 
+			MsgSceneCreate(ObjectHandle object, ParentHandle parent, Filename sceneName, aiPostProcessSteps ai_flags=aiProcess_Triangulate); 
 			ObjectHandle m_object{}; 
 			ParentHandle m_parent{}; 
 			Filename m_sceneName;
@@ -133,21 +131,22 @@ namespace vve {
 		};
 
 	    struct MsgObjectCreate : public MsgBase { 
-			MsgObjectCreate(System* s, System* r, ObjectHandle object, ParentHandle parent); 
+			MsgObjectCreate(ObjectHandle object, ParentHandle parent, System* sender=nullptr); 
 			ObjectHandle m_object{}; 
 			ParentHandle m_parent{}; 
+			System* m_sender{};
 		};
 
-		struct MsgObjectSetParent : public MsgBase { MsgObjectSetParent(System* s, System* r, ObjectHandle object, ParentHandle Parent); ObjectHandle m_object; ParentHandle m_parent;};
-		struct MsgObjectDestroy : public MsgBase { MsgObjectDestroy(System* s, System* r, ObjectHandle); ObjectHandle m_handle; };
+		struct MsgObjectSetParent : public MsgBase { MsgObjectSetParent( ObjectHandle object, ParentHandle Parent); ObjectHandle m_object; ParentHandle m_parent;};
+		struct MsgObjectDestroy : public MsgBase { MsgObjectDestroy(ObjectHandle); ObjectHandle m_handle; };
 
 		//------------------------------------------------------------------------------------------------
 
-		struct MsgTextureCreate : public MsgBase { MsgTextureCreate(System* s, System* r, vecs::Handle handle); vecs::Handle m_handle; };
-	    struct MsgTextureDestroy : public MsgBase { MsgTextureDestroy(System* s, System* r, vecs::Handle handle); vecs::Handle m_handle; };
-	    struct MsgMeshCreate : public MsgBase { MsgMeshCreate(System* s, System* r, vecs::Handle handle); vecs::Handle m_handle; };
-	    struct MsgMeshDestroy : public MsgBase { MsgMeshDestroy(System* s, System* r, vecs::Handle handle); vecs::Handle m_handle; };
-		struct MsgDeleted : public MsgBase { MsgDeleted(System* s, System* r, double dt ); void* m_ptr; uint64_t m_id; };
+		struct MsgTextureCreate : public MsgBase { MsgTextureCreate(vecs::Handle handle, System* sender=nullptr); vecs::Handle m_handle; System* m_sender; };
+	    struct MsgTextureDestroy : public MsgBase { MsgTextureDestroy(vecs::Handle handle); vecs::Handle m_handle; };
+	    struct MsgMeshCreate : public MsgBase { MsgMeshCreate( vecs::Handle handle); vecs::Handle m_handle; };
+	    struct MsgMeshDestroy : public MsgBase { MsgMeshDestroy(vecs::Handle handle); vecs::Handle m_handle; };
+		struct MsgDeleted : public MsgBase { MsgDeleted(double dt ); void* m_ptr; uint64_t m_id; };
 
 		//------------------------------------------------------------------------------------------------
 
@@ -160,8 +159,6 @@ namespace vve {
 	        };
 
 	        auto GetType() -> size_t { return reinterpret_cast<MsgBase*>(m_data)->m_type; };
-	        auto GetSender() -> void* { return reinterpret_cast<MsgBase*>(m_data)->m_sender; };
-	        auto GetReceiver() -> void* { return reinterpret_cast<MsgBase*>(m_data)->m_receiver; };
 	        auto GetDt() -> double { return reinterpret_cast<MsgBase*>(m_data)->m_dt; };
 	        void SetPhase(int phase) { reinterpret_cast<MsgBase*>(m_data)->m_phase = phase; };
 	        auto GetPhase() -> int { return reinterpret_cast<MsgBase*>(m_data)->m_phase; };

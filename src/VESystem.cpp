@@ -5,62 +5,61 @@
 
 namespace vve {
 	
-	System::MsgBase::MsgBase(std::string type, System* s, System* r, double dt) : m_sender{s}, m_receiver{r}, m_dt{dt} {
+	System::MsgBase::MsgBase(std::string type, double dt) : m_dt{dt} {
 		assert( MsgTypeNames.find(type) != MsgTypeNames.end() );
 		m_type = std::hash<std::string>{}(type);
 	};
 
-    System::MsgExtensions::MsgExtensions(System* s, std::vector<const char*> instExt, std::vector<const char*> devExt) : MsgBase{"EXTENSIONS", s}, m_instExt{instExt}, m_devExt{devExt} {};
-   	System::MsgInit::MsgInit(System* s, System* r) : MsgBase{"INIT", s, r} {};
-   	System::MsgLoadLevel::MsgLoadLevel(System* s, System* r, std::string level) : MsgBase{"LOAD_LEVEL", s, r}, m_level{level} {};
-    System::MsgWindowSize::MsgWindowSize(System* s, System* r) : MsgBase{"WINDOW_SIZE", s, r} {};
-    System::MsgPlaySound::MsgPlaySound(System* s, System* r, Filename filepath, int cont) : MsgBase{"PLAY_SOUND", s, r}, m_filepath{filepath}, m_cont{cont} {};
-    System::MsgQuit::MsgQuit(System* s, System* r) : MsgBase{"QUIT", s, r} {};
+    System::MsgExtensions::MsgExtensions(std::vector<const char*> instExt, std::vector<const char*> devExt) : MsgBase{"EXTENSIONS"}, m_instExt{instExt}, m_devExt{devExt} {};
+   	System::MsgInit::MsgInit() : MsgBase{"INIT"} {};
+   	System::MsgLoadLevel::MsgLoadLevel(std::string level) : MsgBase{"LOAD_LEVEL"}, m_level{level} {};
+    System::MsgWindowSize::MsgWindowSize() : MsgBase{"WINDOW_SIZE"} {};
+    System::MsgPlaySound::MsgPlaySound(Filename filepath, int cont) : MsgBase{"PLAY_SOUND"}, m_filepath{filepath}, m_cont{cont} {};
+    System::MsgQuit::MsgQuit() : MsgBase{"QUIT"} {};
 
 	//------------------------------------------------------------------------
 	
-    System::MsgFrameStart::MsgFrameStart(System* s, System* r, double dt) : MsgBase{"FRAME_START", s, r, dt} {};
-	System::MsgPollEvents::MsgPollEvents(System* s, System* r, double dt) : MsgBase{"POLL_EVENTS", s, r, dt} {};
-    System::MsgUpdate::MsgUpdate(System* s, System* r, double dt): MsgBase{"UPDATE", s, r, dt} {}; 
-	System::MsgPrepareNextFrame::MsgPrepareNextFrame(System* s, System* r, double dt): MsgBase{"PREPARE_NEXT_FRAME", s, r, dt} {}; 
-    System::MsgRenderNextFrame::MsgRenderNextFrame(System* s, System* r, double dt): MsgBase{"RENDER_NEXT_FRAME", s, r, dt} {}; 
-    System::MsgRecordNextFrame::MsgRecordNextFrame(System* s, System* r, double dt): MsgBase{"RECORD_NEXT_FRAME", s, r, dt} {}; 
-    System::MsgPresentNextFrame::MsgPresentNextFrame(System* s, System* r, double dt): MsgBase{"PRESENT_NEXT_FRAME", s, r, dt} {}; 
-    System::MsgFrameEnd:: MsgFrameEnd(System* s, System* r, double dt): MsgBase{"FRAME_END", s, r, dt} {};
+    System::MsgFrameStart::MsgFrameStart(double dt) : MsgBase{"FRAME_START", dt} {};
+	System::MsgPollEvents::MsgPollEvents(double dt) : MsgBase{"POLL_EVENTS", dt} {};
+    System::MsgUpdate::MsgUpdate(double dt): MsgBase{"UPDATE", dt} {}; 
+	System::MsgPrepareNextFrame::MsgPrepareNextFrame(double dt): MsgBase{"PREPARE_NEXT_FRAME", dt} {}; 
+    System::MsgRenderNextFrame::MsgRenderNextFrame(double dt): MsgBase{"RENDER_NEXT_FRAME", dt} {}; 
+    System::MsgRecordNextFrame::MsgRecordNextFrame(double dt): MsgBase{"RECORD_NEXT_FRAME", dt} {}; 
+    System::MsgPresentNextFrame::MsgPresentNextFrame(double dt): MsgBase{"PRESENT_NEXT_FRAME", dt} {}; 
+    System::MsgFrameEnd:: MsgFrameEnd(double dt): MsgBase{"FRAME_END", dt} {};
     
 	//------------------------------------------------------------------------
 
-	System::MsgMouseMove:: MsgMouseMove(System* s, System* r, double dt, int x, int y): MsgBase{"SDL_MOUSE_MOVE", s, r, dt}, m_x{x}, m_y{y} {}; 
-    System::MsgMouseButtonDown:: MsgMouseButtonDown(System* s, System* r, double dt, int button): MsgBase{"SDL_MOUSE_BUTTON_DOWN", s, r, dt}, m_button{button} {}; 
-    System::MsgMouseButtonUp::MsgMouseButtonUp(System* s, System* r, double dt, int button): MsgBase{"SDL_MOUSE_BUTTON_UP", s, r, dt}, m_button{button} {}; 
-    System::MsgMouseButtonRepeat::MsgMouseButtonRepeat(System* s, System* r, double dt, int button): MsgBase{"SDL_MOUSE_BUTTON_REPEAT", s, r, dt}, m_button{button} {}; 
-    System::MsgMouseWheel::MsgMouseWheel(System* s, System* r, double dt, int x, int y): MsgBase{"SDL_MOUSE_WHEEL", s, r, dt}, m_x{x}, m_y{y} {}; 
-    System::MsgKeyDown::MsgKeyDown(System* s, System* r, double dt, int key): MsgBase{"SDL_KEY_DOWN", s, r, dt}, m_key{key} {}; 
-    System::MsgKeyUp::MsgKeyUp(System* s, System* r, double dt, int key): MsgBase{"SDL_KEY_UP", s, r, dt}, m_key{key} {}; 
-    System::MsgKeyRepeat::MsgKeyRepeat(System* s, System* r, double dt, int key): MsgBase{"SDL_KEY_REPEAT", s, r, dt}, m_key{key} {};   
-    System::MsgSDL::MsgSDL(System* s, System* r, double dt, SDL_Event event): MsgBase{"SDL", s, r}, m_dt{dt}, m_event{event} {};   
+	System::MsgMouseMove:: MsgMouseMove(double dt, int x, int y): MsgBase{"SDL_MOUSE_MOVE", dt}, m_x{x}, m_y{y} {}; 
+    System::MsgMouseButtonDown:: MsgMouseButtonDown(double dt, int button): MsgBase{"SDL_MOUSE_BUTTON_DOWN", dt}, m_button{button} {}; 
+    System::MsgMouseButtonUp::MsgMouseButtonUp(double dt, int button): MsgBase{"SDL_MOUSE_BUTTON_UP", dt}, m_button{button} {}; 
+    System::MsgMouseButtonRepeat::MsgMouseButtonRepeat(double dt, int button): MsgBase{"SDL_MOUSE_BUTTON_REPEAT", dt}, m_button{button} {}; 
+    System::MsgMouseWheel::MsgMouseWheel(double dt, int x, int y): MsgBase{"SDL_MOUSE_WHEEL", dt}, m_x{x}, m_y{y} {}; 
+    System::MsgKeyDown::MsgKeyDown(double dt, int key): MsgBase{"SDL_KEY_DOWN", dt}, m_key{key} {}; 
+    System::MsgKeyUp::MsgKeyUp(double dt, int key): MsgBase{"SDL_KEY_UP", dt}, m_key{key} {}; 
+    System::MsgKeyRepeat::MsgKeyRepeat(double dt, int key): MsgBase{"SDL_KEY_REPEAT", dt}, m_key{key} {};   
+    System::MsgSDL::MsgSDL(double dt, SDL_Event event): MsgBase{"SDL"}, m_dt{dt}, m_event{event} {};   
     
 	//------------------------------------------------------------------------
 
-	System::MsgSceneLoad::MsgSceneLoad(System* s, System* r, Filename sceneName, aiPostProcessSteps ai_flags) 
-		: MsgBase{"SCENE_LOAD", s, r}, m_sceneName{sceneName}, m_ai_flags{ai_flags} {};
+	System::MsgSceneLoad::MsgSceneLoad(Filename sceneName, aiPostProcessSteps ai_flags) : MsgBase{"SCENE_LOAD"}, m_sceneName{sceneName}, m_ai_flags{ai_flags} {};
 
-	System::MsgSceneCreate::MsgSceneCreate(System* s, System* r, ObjectHandle object, ParentHandle parent, Filename sceneName, aiPostProcessSteps ai_flags) : 
-		MsgBase{"SCENE_CREATE", s, r}, m_object{object}, m_parent{parent}, m_sceneName{sceneName}, m_ai_flags{ai_flags} {};
+	System::MsgSceneCreate::MsgSceneCreate(ObjectHandle object, ParentHandle parent, Filename sceneName, aiPostProcessSteps ai_flags) : 
+		MsgBase{"SCENE_CREATE"}, m_object{object}, m_parent{parent}, m_sceneName{sceneName}, m_ai_flags{ai_flags} {};
 
-	System::MsgObjectCreate::MsgObjectCreate(System* s, System* r, ObjectHandle object, ParentHandle parent) : 
-		MsgBase{"OBJECT_CREATE", s, r}, m_object{object}, m_parent{parent} {};
+	System::MsgObjectCreate::MsgObjectCreate(ObjectHandle object, ParentHandle parent, System* sender) 
+		: MsgBase{"OBJECT_CREATE"}, m_object{object}, m_parent{parent}, m_sender{sender} {};
 	
-	System::MsgObjectSetParent::MsgObjectSetParent(System* s, System* r, ObjectHandle object, ParentHandle parent) : MsgBase("OBJECT_SET_PARENT", s, r), m_object{object}, m_parent{parent} {};
-	System::MsgObjectDestroy::MsgObjectDestroy(System* s, System* r, ObjectHandle handle) : MsgBase("OBJECT_DESTROY", s, r), m_handle{handle} {};
+	System::MsgObjectSetParent::MsgObjectSetParent(ObjectHandle object, ParentHandle parent) : MsgBase("OBJECT_SET_PARENT"), m_object{object}, m_parent{parent} {};
+	System::MsgObjectDestroy::MsgObjectDestroy(ObjectHandle handle) : MsgBase("OBJECT_DESTROY"), m_handle{handle} {};
 
 	//------------------------------------------------------------------------
 
-	System::MsgTextureCreate::MsgTextureCreate(System* s, System* r, vecs::Handle handle) : MsgBase{"TEXTURE_CREATE", s, r}, m_handle{handle} {};
-    System::MsgTextureDestroy::MsgTextureDestroy(System* s, System* r, vecs::Handle handle) : MsgBase{"TEXTURE_DESTROY", s, r}, m_handle{handle} {};
-	System::MsgMeshCreate::MsgMeshCreate(System* s, System* r, vecs::Handle handle) : MsgBase{"MESH_CREATE", s, r}, m_handle{handle} {};
-    System::MsgMeshDestroy::MsgMeshDestroy(System* s, System* r, vecs::Handle handle) : MsgBase{"MESH_DESTROY", s, r}, m_handle{handle} {};
-    System::MsgDeleted:: MsgDeleted(System* s, System* r, double dt): MsgBase{"DELETED", s, r} {}; 
+	System::MsgTextureCreate::MsgTextureCreate(vecs::Handle handle, System* sender) : MsgBase{"TEXTURE_CREATE"}, m_handle{handle}, m_sender{sender} {};
+    System::MsgTextureDestroy::MsgTextureDestroy(vecs::Handle handle) : MsgBase{"TEXTURE_DESTROY"}, m_handle{handle} {};
+	System::MsgMeshCreate::MsgMeshCreate(vecs::Handle handle) : MsgBase{"MESH_CREATE"}, m_handle{handle} {};
+    System::MsgMeshDestroy::MsgMeshDestroy(vecs::Handle handle) : MsgBase{"MESH_DESTROY"}, m_handle{handle} {};
+    System::MsgDeleted:: MsgDeleted(double dt): MsgBase{"DELETED"} {}; 
 
 	//------------------------------------------------------------------------
 

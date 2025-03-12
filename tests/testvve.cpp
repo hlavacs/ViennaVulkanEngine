@@ -32,7 +32,7 @@ public:
 		std::cout << "Loading level: " << msg.m_level << std::endl;
 		std::string level = std::string("Level: ") + msg.m_level;
 
-		m_engine.SendMessage( MsgSceneLoad{ this, nullptr, vve::Filename{"assets\\test\\plane\\plane_t_n_s.obj"}, aiProcess_FlipWindingOrder });
+		m_engine.SendMessage( MsgSceneLoad{ vve::Filename{"assets\\test\\plane\\plane_t_n_s.obj"}, aiProcess_FlipWindingOrder });
 		m_planeHandle = m_registry.Insert( 
 						vve::Position{ {0.0f,0.0f,0.0f } }, 
 						vve::Rotation{ mat3_t { glm::rotate(glm::mat4(1.0f), 3.14152f / 2.0f, glm::vec3(1.0f,0.0f,0.0f)) }}, 
@@ -41,7 +41,7 @@ public:
 						vve::TextureName{"assets\\test\\plane\\grass.jpg"},
 						vve::UVScale{ { 1000.0f, 1000.0f } }
 					);
-		m_engine.SendMessage(MsgObjectCreate{ this, nullptr, vve::ObjectHandle(m_planeHandle), vve::ParentHandle{} });
+		m_engine.SendMessage(MsgObjectCreate{  vve::ObjectHandle(m_planeHandle), vve::ParentHandle{} });
 
 		return false;
 	};
@@ -95,7 +95,7 @@ public:
 					m_handles.push( handle );
 
 					m_engine.SendMessage( 
-						MsgSceneCreate{	this, nullptr, vve::ObjectHandle{handle}, vve::ParentHandle{}, vve::Filename{path_obj}, flags });
+						MsgSceneCreate{	 vve::ObjectHandle{handle}, vve::ParentHandle{}, vve::Filename{path_obj}, flags });
 					x += 2.0f;
 				}
 			}
@@ -126,12 +126,12 @@ public:
 				ImGui::SameLine();
 	            if (ImGui::Button("Create##Create2")) {                          // Buttons return true when clicked (most widgets return true when edited/activated)		
 
-					m_engine.SendMessage( MsgSceneLoad{ this, nullptr, vve::Filename{path_obj2}, flags });		
+					m_engine.SendMessage( MsgSceneLoad{ vve::Filename{path_obj2}, flags });		
 					vh::Color color{ { 0.0f, 0.0f, 0.0f, 1.0f }, { 0.0f, 1.0f, 1.0f, 1.0f }, { 0.0f, 0.0f, 0.0f, 1.0f } };
 					auto handle = m_registry.Insert(vve::Position{ { x, y, 0.5f } }, vve::Rotation{mat3_t{1.0f}}, vve::Scale{vec3_t{0.05f}}, color, vve::MeshName{"assets\\standard\\sphere.obj\\sphere"} );
 					m_handles.push( handle );
 
-					m_engine.SendMessage(MsgObjectCreate{ this, nullptr, vve::ObjectHandle(handle), vve::ParentHandle{} });
+					m_engine.SendMessage(MsgObjectCreate{  vve::ObjectHandle(handle), vve::ParentHandle{} });
 
 					x += 2.0f;		
 				}
@@ -167,8 +167,6 @@ public:
 
 					m_engine.SendMessage( 
 						MsgSceneCreate{
-							this, 
-							nullptr, 
 							vve::ObjectHandle( handle ), 
 							vve::ParentHandle{}, 
 							vve::Filename{path_obj3},
@@ -181,7 +179,7 @@ public:
 				if (ImGui::Button("Erase one ##Erase1")) {
 					if( !m_handles.empty() ) {
 						auto handle = m_handles.top();
-						m_engine.SendMessage(MsgObjectDestroy(this, nullptr, vve::ObjectHandle(handle)));
+						m_engine.SendMessage(MsgObjectDestroy(vve::ObjectHandle(handle)));
 						m_handles.pop();
 						x -= 2.0f;
 					}
