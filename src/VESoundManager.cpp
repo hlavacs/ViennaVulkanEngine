@@ -9,33 +9,40 @@ namespace vve {
  		  	{this, 1000, "PLAY_SOUND", [this](Message& message){ return OnPlaySound(message);} },
  		  	{this,    0, "QUIT", [this](Message& message){ return OnQuit(message);} },
 		} );
-	};
+        SoundManager::m_soundManager = this;
+    };
 
     void VVEAudioCallback(void *userdata, Uint8 *stream, int len) {
-        SoundState* sound = (SoundState*)userdata;
-        if(sound->m_playLength == 0 ) {
-            return;
-        }
-        len = ( len > sound->m_playLength ? sound->m_playLength : len );
-        SDL_memcpy(stream, sound->m_wavBuffer + sound->m_playedLength, len);
-        sound->m_playedLength += len;
-        sound->m_playLength -= len;
+        size_t i = reinterpret_cast<std::uintptr_t>(userdata);
+        SoundManager::m_soundManager->AudioCallback(vecs::Handle{i}, stream, len);
+    }
+
+    void SoundManager::AudioCallback(vecs::Handle handle, Uint8 *stream, int len) {
+        auto sound = m_registry.template Get<SoundState&>(handle);
+        if(sound().m_playLength == 0 ) { return; }
+        len = ( len > sound().m_playLength ? sound().m_playLength : len );
+        SDL_memcpy(stream, sound().m_wavBuffer + sound().m_playedLength, len);
+        sound().m_playedLength += len;
+        sound().m_playLength -= len;
     }
 
     bool SoundManager::OnPlaySound(Message& message) {
         auto msg = message.template GetData<MsgPlaySound>();
         Filename filepath = msg.m_filepath;
-        SoundHandle soundHandle = SoundHandle{ msg.m_soundHandle };
+        auto soundHandle = msg.m_soundHandle;
         int cont = msg.m_cont;
 
-        auto sound = m_registry.template Get<SoundState&>(soundHandle());
+        auto sound = m_registry.template Get<SoundState&>(soundHandle);
 
         if(cont == 1 || cont == 2) {
             sound().m_cont = cont;
             if( sound().m_wavBuffer == nullptr) {
                 SDL_LoadWAV(filepath().c_str(), &sound().m_wavSpec, &sound().m_wavBuffer, &sound().m_wavLength);
                 sound().m_wavSpec.callback = VVEAudioCallback;
-                sound().m_wavSpec.userdata = &sound();
+                
+                std::uintptr_t i = reinterpret_cast<std::uintptr_t>(soundHandle().GetValue());
+                sound().m_wavSpec.userdata = reinterpret_cast<void*>(i); // sound();
+
                 sound().m_deviceId = SDL_OpenAudioDevice(NULL, 0, &sound().m_wavSpec, NULL, 0);
             }
             sound().m_playLength = sound().m_wavLength;
