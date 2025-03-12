@@ -28,7 +28,6 @@ namespace vve {
     private:
         std::map<Filename, PlayingSound> m_sounds;
 
-        bool OnAnnounce(Message message);
         bool OnUpdate(Message message);
         bool OnPlaySound(Message message);
         bool OnQuit(Message message);

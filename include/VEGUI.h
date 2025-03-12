@@ -27,7 +27,6 @@ namespace vve {
 		void GetCamera();
 
 		std::string m_windowName;
-		WindowSDL* m_windowSDL;
 		bool m_mouseButtonDown=false;
 		bool m_shiftPressed=false;
 		int m_x = -1;

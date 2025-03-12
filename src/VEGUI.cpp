@@ -6,7 +6,6 @@ namespace vve {
 	GUI::GUI(std::string systemName, Engine& engine, std::string windowName ) : 
 		System(systemName, engine), m_windowName(windowName) {
 		m_engine.RegisterCallback( { 
- 		  	{this, 0, "ANNOUNCE", [this](Message& message){ return OnAnnounce(message);} }, 
 			{this, 0, "SDL_KEY_DOWN", [this](Message& message){ return OnKeyDown(message);} },
 			{this, 0, "SDL_KEY_REPEAT", [this](Message& message){ return OnKeyDown(message);} },
 			{this, 0, "SDL_KEY_UP", [this](Message& message){ return OnKeyUp(message);} },
@@ -18,13 +17,6 @@ namespace vve {
 		} );
 	};
 
-    bool GUI::OnAnnounce(Message message) {
-		auto msg = message.template GetData<MsgAnnounce>();
-		if( msg.m_sender->GetName() == m_windowName ) {
-			m_windowSDL = (WindowSDL*)msg.m_sender;
-		}
-		return false;
-	}
 
 	bool GUI::OnKeyDown(Message message) {
 		GetCamera();

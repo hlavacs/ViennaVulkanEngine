@@ -91,7 +91,6 @@ namespace vve {
 			CreateRenderer();
 			CreateSystems();
 			CreateGUI();		
-			SendMessage( MsgAnnounce{this} );
 			SendMessage( MsgInit{this} );
 			SendMessage( MsgLoadLevel{this, nullptr, ""} );
 		}

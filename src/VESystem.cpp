@@ -10,7 +10,6 @@ namespace vve {
 		m_type = std::hash<std::string>{}(type);
 	};
 
-    System::MsgAnnounce::MsgAnnounce(System* s) : MsgBase{"ANNOUNCE", s} {};
     System::MsgExtensions::MsgExtensions(System* s, std::vector<const char*> instExt, std::vector<const char*> devExt) : MsgBase{"EXTENSIONS", s}, m_instExt{instExt}, m_devExt{devExt} {};
    	System::MsgInit::MsgInit(System* s, System* r) : MsgBase{"INIT", s, r} {};
    	System::MsgLoadLevel::MsgLoadLevel(System* s, System* r, std::string level) : MsgBase{"LOAD_LEVEL", s, r}, m_level{level} {};
@@ -65,25 +64,8 @@ namespace vve {
 
 	//------------------------------------------------------------------------
 
-    System::System( std::string systemName, Engine& engine ) : 
-		m_name(systemName), m_engine(engine), m_registry{engine.GetRegistry()} {
-
-		if( this != &engine ) {
-			engine.RegisterCallback( { 
-				{this, 0, "ANNOUNCE", [this](Message& message){ return OnAnnounce(message);} }
-			} );
-		}
-	};
-
+    System::System( std::string systemName, Engine& engine ) : m_name(systemName), m_engine(engine), m_registry{engine.GetRegistry()} {};
     System::~System(){};
-
-    bool System::OnAnnounce(Message message) {
-		auto msg = message.template GetData<MsgAnnounce>();
-		if( msg.m_sender == &m_engine ) {
-			m_engine.SendMessage( MsgAnnounce{this} );
-		}
-		return false;
-    }
 
 
 };   // namespace vve

@@ -31,7 +31,6 @@ namespace std {
 namespace vve {
 
     const std::unordered_set<std::string> MsgTypeNames {
-        "ANNOUNCE", //System announce themselves
         "EXTENSIONS", //System announce extensions they need
         "INIT",			//initialize the system
 		"LOAD_LEVEL",	//Load a level
@@ -90,7 +89,6 @@ namespace vve {
 	        int m_phase{0}; //is set when delivering the message, NOT by sender!
 	    };
 
-	    struct MsgAnnounce : public MsgBase { MsgAnnounce(System* s); };
 	    struct MsgExtensions : public MsgBase { MsgExtensions(System* s, std::vector<const char*> instExt, std::vector<const char*> devExt ); std::vector<const char*> m_instExt; std::vector<const char*> m_devExt;};
 	    struct MsgInit : public MsgBase { MsgInit(System* s, System* r=nullptr); };
 	    struct MsgLoadLevel : public MsgBase { MsgLoadLevel(System* s, System* r, std::string level); std::string m_level;};
@@ -193,7 +191,6 @@ namespace vve {
         auto GetName() -> std::string { return m_name; };
 
     protected:
-		bool OnAnnounce(Message message);
         SystemName 		m_name;
         Engine& 		m_engine;
 		vecs::Registry&	m_registry;
