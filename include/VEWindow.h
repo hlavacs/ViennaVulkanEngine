@@ -12,7 +12,6 @@ namespace vve {
         std::vector<const char*>    m_instanceExtensions{};
     };
 
-
     class Window : public System {
 
     public:

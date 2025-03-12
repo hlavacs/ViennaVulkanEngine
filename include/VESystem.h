@@ -1,17 +1,5 @@
 #pragma once
 
-#include <vector>
-#include <cstdint>
-#include <variant>
-#include <mutex>
-#include <functional>
-#include <typeindex>
-#include <typeinfo>
-#include <type_traits>
-#include <unordered_set>
-#include <filesystem>
-
-
 namespace std {
     template<> struct hash<vve::System> {
         size_t operator()(vve::System & system) ; 
@@ -19,16 +7,6 @@ namespace std {
 };
 
 namespace vve {
-
-	using Name = vsty::strong_type_t<std::string, vsty::counter<>>;
-	using SystemName = vsty::strong_type_t<std::string, vsty::counter<>>;
-	using Filename = vsty::strong_type_t<std::string, vsty::counter<>>;
-	using ObjectHandle = vsty::strong_type_t<vecs::Handle, vsty::counter<>>;
-	using ParentHandle = vsty::strong_type_t<vecs::Handle, vsty::counter<>>;
-	using ChildHandle = vsty::strong_type_t<vecs::Handle, vsty::counter<>>;
-	using SiblingHandle = vsty::strong_type_t<vecs::Handle, vsty::counter<>>;
-	using SoundHandle = vsty::strong_type_t<vecs::Handle, vsty::counter<>>;
-
 
     const std::unordered_set<std::string> MsgTypeNames {
         "EXTENSIONS", //System announce extensions they need
