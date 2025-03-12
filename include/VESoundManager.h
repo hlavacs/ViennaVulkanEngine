@@ -24,14 +24,15 @@ namespace vve {
 	public:
         SoundManager(std::string systemName, Engine& engine);
     	~SoundManager() {};
-        void AudioCallback(vecs::Handle handle, Uint8 *stream, int len);
 
         static inline SoundManager* m_soundManager{nullptr};
+        static inline void SDL2AudioCallback(void *userdata, Uint8 *stream, int len);
 
     private:
         bool OnUpdate(Message message);
         bool OnPlaySound(Message& message);
         bool OnQuit(Message message);
+        void AudioCallback(vecs::Handle handle, Uint8 *stream, int len);
     };
 
 };  // namespace vve

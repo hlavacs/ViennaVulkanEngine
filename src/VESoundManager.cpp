@@ -12,7 +12,7 @@ namespace vve {
         SoundManager::m_soundManager = this;
     };
 
-    void VVEAudioCallback(void *userdata, Uint8 *stream, int len) {
+    void SoundManager::SDL2AudioCallback(void *userdata, Uint8 *stream, int len) {
         size_t i = reinterpret_cast<std::uintptr_t>(userdata);
         SoundManager::m_soundManager->AudioCallback(vecs::Handle{i}, stream, len);
     }
@@ -38,7 +38,7 @@ namespace vve {
             sound().m_cont = cont;
             if( sound().m_wavBuffer == nullptr) {
                 SDL_LoadWAV(filepath().c_str(), &sound().m_wavSpec, &sound().m_wavBuffer, &sound().m_wavLength);
-                sound().m_wavSpec.callback = VVEAudioCallback;               
+                sound().m_wavSpec.callback = SDL2AudioCallback;               
                 sound().m_wavSpec.userdata = reinterpret_cast<void*>(soundHandle().GetValue()); // turn handle to void*
                 sound().m_deviceId = SDL_OpenAudioDevice(NULL, 0, &sound().m_wavSpec, NULL, 0);
             }
