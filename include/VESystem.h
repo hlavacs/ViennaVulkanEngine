@@ -69,7 +69,7 @@ namespace vve {
 	    struct MsgInit : public MsgBase { MsgInit(); };
 	    struct MsgLoadLevel : public MsgBase { MsgLoadLevel(std::string level); std::string m_level;};
 	    struct MsgWindowSize : public MsgBase { MsgWindowSize(); };
-	    struct MsgPlaySound : public MsgBase { MsgPlaySound(Filename filepath, int cont=1); Filename m_filepath; int m_cont; SoundHandle m_soundHandle{}; }; //0..stop 1..play once 2..loop
+	    struct MsgPlaySound : public MsgBase { MsgPlaySound(Filename filepath, int cont=1, int volume=100); Filename m_filepath; int m_cont; int m_volume; SoundHandle m_soundHandle{}; }; //0..stop 1..play once 2..loop
 	    struct MsgQuit : public MsgBase { MsgQuit(); };
 
 		//------------------------------------------------------------------------------------------------

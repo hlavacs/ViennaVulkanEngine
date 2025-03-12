@@ -22,6 +22,11 @@ namespace vve {
         if(sound().m_playLength == 0 ) { return; }
         len = ( len > sound().m_playLength ? sound().m_playLength : len );
         SDL_memcpy(stream, sound().m_wavBuffer + sound().m_playedLength, len);
+		auto vol = sound().m_volume;
+		for( int i=0; i<len; i+=2) {
+			auto sample = reinterpret_cast<int16_t*>(&stream[i]);
+			*sample *= vol / 100.0f;
+		}
         sound().m_playedLength += len;
         sound().m_playLength -= len;
     }
@@ -42,8 +47,10 @@ namespace vve {
                 sound().m_wavSpec.userdata = reinterpret_cast<void*>(soundHandle().GetValue()); // turn handle to void*
                 sound().m_deviceId = SDL_OpenAudioDevice(NULL, 0, &sound().m_wavSpec, NULL, 0);
             }
+			auto s = sound();
             sound().m_playLength = sound().m_wavLength;
             sound().m_playedLength = 0;
+			sound().m_volume = msg.m_volume;
             int success = SDL_QueueAudio(sound().m_deviceId, sound().m_wavBuffer, sound().m_wavLength);
             SDL_PauseAudioDevice(sound().m_deviceId, 0);
             return true;

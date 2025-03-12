@@ -16,6 +16,7 @@ namespace vve {
         Uint32 m_playedLength{0};
         Uint32 m_wavLength{0};
         Uint8 *m_wavBuffer{nullptr};
+		Uint32 m_volume{100};
         SDL_AudioDeviceID m_deviceId{0};
     };
 

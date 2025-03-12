@@ -14,7 +14,7 @@ namespace vve {
    	System::MsgInit::MsgInit() : MsgBase{"INIT"} {};
    	System::MsgLoadLevel::MsgLoadLevel(std::string level) : MsgBase{"LOAD_LEVEL"}, m_level{level} {};
     System::MsgWindowSize::MsgWindowSize() : MsgBase{"WINDOW_SIZE"} {};
-    System::MsgPlaySound::MsgPlaySound(Filename filepath, int cont) : MsgBase{"PLAY_SOUND"}, m_filepath{filepath}, m_cont{cont} {};
+    System::MsgPlaySound::MsgPlaySound(Filename filepath, int cont, int volume) : MsgBase{"PLAY_SOUND"}, m_filepath{filepath}, m_cont{cont}, m_volume{volume} {};
     System::MsgQuit::MsgQuit() : MsgBase{"QUIT"} {};
 
 	//------------------------------------------------------------------------
