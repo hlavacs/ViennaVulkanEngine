@@ -22,6 +22,7 @@ namespace vh {
 
         ImgTransitionImageLayout(device, graphicsQueue, commandPool, texture.m_mapImage, VK_FORMAT_R8G8B8A8_SRGB
             , VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
+			
         BufCopyBufferToImage(device, graphicsQueue, commandPool, stagingBuffer, texture.m_mapImage
                  , static_cast<uint32_t>(texWidth), static_cast<uint32_t>(texHeight));
         ImgTransitionImageLayout(device, graphicsQueue, commandPool, texture.m_mapImage, VK_FORMAT_R8G8B8A8_SRGB
@@ -148,7 +149,10 @@ namespace vh {
             sourceStage = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
             destinationStage = VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT;
         } else {
-            throw std::invalid_argument("unsupported layout transition!");
+            barrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
+            barrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
+            sourceStage = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
+            destinationStage = VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT;
         }
 
         vkCmdPipelineBarrier(
