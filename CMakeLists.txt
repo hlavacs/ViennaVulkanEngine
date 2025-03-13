@@ -66,6 +66,24 @@ include_directories (${viennaentitycomponentsystem_SOURCE_DIR}/include)
 include_directories (${viennastrongtype_SOURCE_DIR}/include)
 include_directories (${viennatypelistlibrary_SOURCE_DIR}/include)
 
+#--------------------------------- Fetch SDL3 ---------------------------------#
+set(SDL_STATIC true)
+FetchContent_Declare(sdl3
+                     GIT_REPOSITORY https://github.com/libsdl-org/SDL.git
+                     GIT_TAG main
+)
+FetchContent_MakeAvailable(sdl3)
+include_directories (${sdl3_SOURCE_DIR}/include)
+
+#--------------------------------- Fetch SDL Mixer ---------------------------------#
+set(SDL3_DIR ${SDL3_BINARY_DIR})
+FetchContent_Declare(sdlmixer
+                     GIT_REPOSITORY https://github.com/libsdl-org/SDL_mixer.git
+                     GIT_TAG main
+)
+FetchContent_MakeAvailable(sdlmixer)
+include_directories (${sdlmixer_SOURCE_DIR}/include)
+
 #--------------------------------- Fetch Assimp ---------------------------------#
 FetchContent_Declare(assimp
                      GIT_REPOSITORY https://github.com/assimp/assimp.git 
@@ -113,16 +131,18 @@ FetchContent_MakeAvailable(Imgui)
 include_directories (${imgui_SOURCE_DIR})
 include_directories(${imgui_SOURCE_DIR}/backends)
 
+message(STATUS "VECS: ${viennaentitycomponentsystem_SOURCE_DIR}")
+message(STATUS "VTLL: ${viennatypelistlibrary_SOURCE_DIR}")
+message(STATUS "VSTY: ${viennastrongtype_SOURCE_DIR}")
 message(STATUS "STB IMAGE: ${stb_image_SOURCE_DIR}")
 message(STATUS "FILE DIALOG: ${l2dfiledialog_SOURCE_DIR}")
 message(STATUS "IMGUI: ${imgui_SOURCE_DIR}")
+message(STATUS "SDL3 SRC: ${sdl3_SOURCE_DIR}")
+message(STATUS "SDL Mixer SRC: ${sdlmixer_SOURCE_DIR}")
 message(STATUS "ASSIMP SRC: ${assimp_SOURCE_DIR}")
 message(STATUS "ASSIMP BIN: ${assimp_BINARY_DIR}")
 message(STATUS "ZLIB SRC: ${zlib_SOURCE_DIR}")
 message(STATUS "ZLIB BIN: ${zlib_BINARY_DIR}")
-message(STATUS "VECS: ${viennaentitycomponentsystem_SOURCE_DIR}")
-message(STATUS "VTLL: ${viennatypelistlibrary_SOURCE_DIR}")
-message(STATUS "VSTY: ${viennastrongtype_SOURCE_DIR}")
 
 # Add directories for compiling
 add_subdirectory(src)
