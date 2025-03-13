@@ -175,9 +175,9 @@ namespace vve {
 
 			uint8_t *dataImage = new uint8_t[imageSize];
 
-			vh::ImgCopySwapChainImageToHost( vstate().m_device, vstate().m_vmaAllocator, vstate().m_graphicsQueue,
+			vh::ImgCopyImageToHost( vstate().m_device, vstate().m_vmaAllocator, vstate().m_graphicsQueue,
 				vstate().m_commandPool, image, VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_ASPECT_COLOR_BIT, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR,
-				dataImage, extent.width, extent.height, imageSize);
+				dataImage, extent.width, extent.height, imageSize, 2, 1, 0, 3);
 
 			m_numScreenshot++;
 
