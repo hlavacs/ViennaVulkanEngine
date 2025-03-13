@@ -71,8 +71,6 @@ namespace vh {
     }
 
 
-
-
 	/**
 	* \brief Copy a VKImage to a VKBuffer
 	*
@@ -125,12 +123,9 @@ namespace vh {
 	VkResult BufCopyImageToBuffer(VkDevice device, VkQueue graphicsQueue, VkCommandPool commandPool, VkImage image, VkBuffer buffer, std::vector<VkBufferImageCopy> &regions, uint32_t width, uint32_t height)
 	{
 		VkCommandBuffer commandBuffer = ComBeginSingleTimeCommands(device, commandPool);
-
 		vkCmdCopyImageToBuffer(commandBuffer, image, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, buffer, (uint32_t)regions.size(), regions.data());
-
 		return ComEndSingleTimeCommands(device, graphicsQueue, commandPool, commandBuffer);
 	}
-
 
 
     void BufCreateVertexBuffer(VkPhysicalDevice physicalDevice, VkDevice device, VmaAllocator vmaAllocator

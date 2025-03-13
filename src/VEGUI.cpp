@@ -179,15 +179,6 @@ namespace vve {
 				vstate().m_commandPool, image, VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_ASPECT_COLOR_BIT, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR,
 				dataImage, extent.width, extent.height, imageSize);
 
-			/*vh::ImgCopySwapChainImageToHost(
-				getEnginePointer()->getRenderer()->getDevice(),
-				getEnginePointer()->getRenderer()->getVmaAllocator(),
-				getEnginePointer()->getRenderer()->getGraphicsQueue(),
-				getEnginePointer()->getRenderer()->getCommandPool(),
-				image, VK_FORMAT_R8G8B8A8_UNORM,
-				VK_IMAGE_ASPECT_COLOR_BIT, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR,
-				dataImage, extent.width, extent.height, imageSize);
-			*/
 			m_numScreenshot++;
 
 			std::string name("screenshots/screenshot" + std::to_string(m_numScreenshot - 1) + ".jpg");

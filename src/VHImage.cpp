@@ -139,20 +139,23 @@ namespace vh {
         } else if (oldLayout == VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL && newLayout == VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL) {
             barrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
             barrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
-
             sourceStage = VK_PIPELINE_STAGE_TRANSFER_BIT;
             destinationStage = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
         } else if(oldLayout == VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL && newLayout == VK_IMAGE_LAYOUT_PRESENT_SRC_KHR) {
             barrier.srcAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
             barrier.dstAccessMask = 0;
-
             sourceStage = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
             destinationStage = VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT;
+        } else if(oldLayout == VK_IMAGE_LAYOUT_PRESENT_SRC_KHR && newLayout == VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL) {
+            barrier.srcAccessMask = 0;
+            barrier.dstAccessMask = 0;
+            sourceStage = 0;
+            destinationStage = 0;
         } else {
-            barrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
-            barrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
-            sourceStage = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
-            destinationStage = VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT;
+            barrier.srcAccessMask = 0;
+            barrier.dstAccessMask = 0;
+            sourceStage = VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT;
+            destinationStage = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
         }
 
         vkCmdPipelineBarrier(
@@ -260,11 +263,15 @@ namespace vh {
             VMA_MEMORY_USAGE_CPU_ONLY, VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT | VMA_ALLOCATION_CREATE_MAPPED_BIT,
             stagingBuffer, stagingBufferAllocation, &allocInfo);
 
-		//ImgTransitionImageLayout(device, graphicsQueue, commandPool, image, format, aspect, 1, 1, layout, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
+		ImgTransitionImageLayout(device, graphicsQueue, commandPool, image, format, 
+			//aspect, 1, 1, 
+			layout, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
 
-		//ImgCopyImageToBuffer(device, graphicsQueue, commandPool, image, aspect, stagingBuffer, 1, width, height);
+		BufCopyImageToBuffer(device, graphicsQueue, commandPool, image, aspect, stagingBuffer, 1, width, height);
 
-		//ImgTransitionImageLayout(device, graphicsQueue, commandPool, image, format, aspect, 1, 1, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, layout);
+		ImgTransitionImageLayout(device, graphicsQueue, commandPool, image, format, 
+			//aspect, 1, 1, 
+			VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, layout);
 
 		void *data;
 		vmaMapMemory(allocator, stagingBufferAllocation, &data);
