@@ -2,19 +2,24 @@
 
 namespace vve {
 
-	struct EngineState {
-		const std::string& name;
-		uint32_t apiVersion;
-		bool debug;		
-		bool initialized;
-		bool running;	
-	};
+
 
 	class Engine : public System {
 
-		const uint32_t c_minimumVersion = VK_MAKE_VERSION(1, 1, 0); //for VMA
+		static const uint32_t c_minimumVersion = VK_MAKE_VERSION(1, 1, 0); //for VMA
+		static const uint32_t c_maximumVersion = VK_MAKE_VERSION(1, 3, 0); //for VMA
 
 	public:
+
+		struct EngineState {
+			const std::string& name;
+			uint32_t& apiVersion;
+			uint32_t minimumVersion = c_minimumVersion;
+			uint32_t maximumVersion = c_maximumVersion;
+			bool debug;		
+			bool initialized;
+			bool running;	
+		};
 
 		const std::string m_windowName = "VVE Window";
 		const std::string m_sceneManagerName = "VVE SceneManager";
@@ -33,7 +38,7 @@ namespace vve {
 			std::function<bool(Message&)> m_callback;
 		};
 
-		Engine(std::string name, uint32_t apiVersion = VK_MAKE_VERSION(1, 1, 0), bool debug=false);
+		Engine(std::string name, uint32_t apiVersion = c_maximumVersion, bool debug=false);
 		virtual ~Engine();
 		void RegisterSystem( std::unique_ptr<System>&& system );
 		void RegisterCallback( std::vector<MessageCallback> callbacks);

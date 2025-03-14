@@ -45,7 +45,9 @@ namespace vve {
             m_instanceExtensions.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
         }
 
-    	vh::DevCreateInstance( m_validationLayers, m_instanceExtensions, engineState.name, engineState.apiVersion, engineState.debug, m_vulkanState().m_instance);
+		m_vulkanState().m_apiVersionInstance = engineState.apiVersion;
+    	vh::DevCreateInstance( m_validationLayers, m_instanceExtensions, engineState.name, m_vulkanState().m_apiVersionInstance, engineState.debug, m_vulkanState().m_instance);
+
 		if (engineState.debug) {
 	        vh::DevSetupDebugMessenger(m_vulkanState().m_instance, m_vulkanState().m_debugMessenger);
 		}
@@ -54,8 +56,13 @@ namespace vve {
             printf("Failed to create Vulkan surface.\n");
         }
 
-        vh::DevPickPhysicalDevice(m_vulkanState().m_instance, m_deviceExtensions, m_vulkanState().m_surface, m_vulkanState().m_physicalDevice);
-        vh::DevCreateLogicalDevice(m_vulkanState().m_surface, m_vulkanState().m_physicalDevice, m_vulkanState().m_queueFamilies, m_validationLayers, 
+		m_vulkanState().m_apiVersionDevice = engineState.apiVersion;
+        vh::DevPickPhysicalDevice(m_vulkanState().m_instance, m_vulkanState().m_apiVersionDevice, m_deviceExtensions, m_vulkanState().m_surface, m_vulkanState().m_physicalDevice);
+		uint32_t vm = VK_VERSION_MINOR(m_vulkanState().m_apiVersionDevice);	
+		uint32_t minor = std::min( vm, VK_VERSION_MINOR(engineState.apiVersion) );
+		engineState.apiVersion = VK_MAKE_VERSION( VK_VERSION_MAJOR(engineState.apiVersion), minor, 0);
+	
+		vh::DevCreateLogicalDevice(m_vulkanState().m_surface, m_vulkanState().m_physicalDevice, m_vulkanState().m_queueFamilies, m_validationLayers, 
 			m_deviceExtensions, engineState.debug, m_vulkanState().m_device, m_vulkanState().m_graphicsQueue, m_vulkanState().m_presentQueue);
         vh::DevInitVMA(m_vulkanState().m_instance, m_vulkanState().m_physicalDevice, m_vulkanState().m_device, engineState.apiVersion, m_vulkanState().m_vmaAllocator);  
         vh::DevCreateSwapChain(m_windowSDLState().m_sdlWindow, 

@@ -9,7 +9,7 @@ namespace vh {
 	
     void DevCreateInstance(const std::vector<const char*>& validationLayers, 
 		const std::vector<const char *>& extensions, const std::string& name, 
-		uint32_t apiVersion, bool debug, VkInstance &instance) {
+		uint32_t& apiVersion, bool debug, VkInstance &instance) {
 
         volkInitialize();
 
@@ -51,7 +51,19 @@ namespace vh {
         }
         volkInstance = instance;
 
-   		volkLoadInstance(instance);       
+   		volkLoadInstance(instance);
+		
+		if (vkEnumerateInstanceVersion) {
+			VkResult result = vkEnumerateInstanceVersion(&apiVersion);
+		} else {
+			apiVersion = VK_MAKE_VERSION(1, 0, 0);
+		}
+
+		std::cout << "Vulkan API Version available on this system: " << apiVersion <<  
+			" Major: " << VK_VERSION_MAJOR(apiVersion) << 
+			" Minor: " << VK_VERSION_MINOR(apiVersion) << 
+			" Patch: " << VK_VERSION_PATCH(apiVersion) << std::endl;
+
     }
 
     VkResult DevCreateDebugUtilsMessengerEXT(VkInstance instance, const VkDebugUtilsMessengerCreateInfoEXT* pCreateInfo
@@ -162,7 +174,7 @@ namespace vh {
         }
     }
 
-    void DevPickPhysicalDevice(VkInstance instance, const std::vector<const char *>& deviceExtensions, VkSurfaceKHR surface, VkPhysicalDevice& physicalDevice) {
+    void DevPickPhysicalDevice(VkInstance instance, uint32_t& apiVersion, const std::vector<const char *>& deviceExtensions, VkSurfaceKHR surface, VkPhysicalDevice& physicalDevice) {
 
         uint32_t deviceCount = 0;
         vkEnumeratePhysicalDevices(instance, &deviceCount, nullptr);
@@ -180,17 +192,22 @@ namespace vh {
             vkGetPhysicalDeviceProperties2(device, &deviceProperties2);
 
             if (deviceProperties2.properties.deviceType == VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU 
-                && DevIsDeviceSuitable(device, deviceExtensions, surface)) {
-
+                	&& DevIsDeviceSuitable(device, deviceExtensions, surface)) {
                 physicalDevice = device;
+				apiVersion = deviceProperties2.properties.apiVersion;
                 break;
             }
         }
 
         if (physicalDevice == VK_NULL_HANDLE) {
             for (const auto& device : devices) {
-                if (DevIsDeviceSuitable(device, deviceExtensions, surface)) {
+				VkPhysicalDeviceProperties2 deviceProperties2{};
+				deviceProperties2.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROPERTIES_2;
+				vkGetPhysicalDeviceProperties2(device, &deviceProperties2);
+
+				if (DevIsDeviceSuitable(device, deviceExtensions, surface)) {
                     physicalDevice = device;
+					apiVersion = deviceProperties2.properties.apiVersion;
                     break;
                 }
             }

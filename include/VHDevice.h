@@ -5,7 +5,7 @@ namespace vh {
 
     void DevCreateInstance(const std::vector<const char*>& validationLayers, 
 		const std::vector<const char *>& extensions, const std::string& name, 
-		uint32_t apiVersion, bool debug, VkInstance &instance);
+		uint32_t& apiVersion, bool debug, VkInstance &instance);
 	
 	VkResult DevCreateDebugUtilsMessengerEXT(VkInstance instance, const VkDebugUtilsMessengerCreateInfoEXT* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkDebugUtilsMessengerEXT* pDebugMessenger);
 	
@@ -27,7 +27,7 @@ namespace vh {
 
 	void DevCreateSurface(VkInstance instance, SDL_Window *sdlWindow, VkSurfaceKHR& surface);
     
-	void DevPickPhysicalDevice(VkInstance instance, const std::vector<const char*>& deviceExtensions, VkSurfaceKHR surface, VkPhysicalDevice& physicalDevice);
+	void DevPickPhysicalDevice(VkInstance instance, uint32_t& apiVersion, const std::vector<const char*>& deviceExtensions, VkSurfaceKHR surface, VkPhysicalDevice& physicalDevice);
 
     void DevCreateLogicalDevice(VkSurfaceKHR surface, VkPhysicalDevice physicalDevice, QueueFamilyIndices& queueFamilies, 
 		const std::vector<const char*>& validationLayers, const std::vector<const char*>& deviceExtensions, bool debug, 

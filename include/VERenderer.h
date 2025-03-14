@@ -15,7 +15,8 @@ namespace vve {
     };
 
 	struct VulkanState {
-		uint32_t 		m_apiVersion{VK_API_VERSION_1_0};
+		uint32_t 		m_apiVersionInstance{VK_API_VERSION_1_1};
+		uint32_t 		m_apiVersionDevice{VK_API_VERSION_1_1};
 		VkInstance 		m_instance{VK_NULL_HANDLE};
 		VkSurfaceKHR 	m_surface{VK_NULL_HANDLE};
 		VmaAllocator 	m_vmaAllocator;
