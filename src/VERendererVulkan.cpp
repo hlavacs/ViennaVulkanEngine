@@ -56,10 +56,13 @@ namespace vve {
             printf("Failed to create Vulkan surface.\n");
         }
 
-		m_vulkanState().m_apiVersionDevice = engineState.apiVersion;
+		m_vulkanState().m_apiVersionDevice = engineState.minimumVersion;
         vh::DevPickPhysicalDevice(m_vulkanState().m_instance, m_vulkanState().m_apiVersionDevice, m_deviceExtensions, m_vulkanState().m_surface, m_vulkanState().m_physicalDevice);
-		uint32_t vm = VK_VERSION_MINOR(m_vulkanState().m_apiVersionDevice);	
-		uint32_t minor = std::min( vm, VK_VERSION_MINOR(engineState.apiVersion) );
+		uint32_t minor = std::min( VK_VERSION_MINOR(m_vulkanState().m_apiVersionDevice), VK_VERSION_MINOR(engineState.apiVersion) );
+		if( minor < VK_VERSION_MINOR(engineState.apiVersion) ) {
+			std::cout << "Minimum VVE Vulkan API version is 1." << VK_VERSION_MINOR(engineState.minimumVersion) << "!\n";
+			exit(1);
+		}
 		engineState.apiVersion = VK_MAKE_VERSION( VK_VERSION_MAJOR(engineState.apiVersion), minor, 0);
 	
 		vh::DevCreateLogicalDevice(m_vulkanState().m_surface, m_vulkanState().m_physicalDevice, m_vulkanState().m_queueFamilies, m_validationLayers, 

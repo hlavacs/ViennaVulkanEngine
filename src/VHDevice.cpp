@@ -192,7 +192,8 @@ namespace vh {
             vkGetPhysicalDeviceProperties2(device, &deviceProperties2);
 
             if (deviceProperties2.properties.deviceType == VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU 
-                	&& DevIsDeviceSuitable(device, deviceExtensions, surface)) {
+                	&& DevIsDeviceSuitable(device, deviceExtensions, surface)
+					&& VK_VERSION_MINOR(deviceProperties2.properties.apiVersion) >= VK_VERSION_MINOR(apiVersion) ) {
                 physicalDevice = device;
 				apiVersion = deviceProperties2.properties.apiVersion;
                 break;
@@ -205,7 +206,8 @@ namespace vh {
 				deviceProperties2.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROPERTIES_2;
 				vkGetPhysicalDeviceProperties2(device, &deviceProperties2);
 
-				if (DevIsDeviceSuitable(device, deviceExtensions, surface)) {
+				if (DevIsDeviceSuitable(device, deviceExtensions, surface)
+						&& VK_VERSION_MINOR(deviceProperties2.properties.apiVersion) >= VK_VERSION_MINOR(apiVersion)) {
                     physicalDevice = device;
 					apiVersion = deviceProperties2.properties.apiVersion;
                     break;
