@@ -5,12 +5,17 @@
 
 namespace vve {
 	
-	Engine::Engine(std::string name, bool debug) : System(name, *this) {
+	Engine::Engine(std::string name, uint32_t apiVersion, bool debug) : System(name, *this), m_apiVersion(apiVersion) {
+		if( VK_VERSION_MAJOR(apiVersion) == 1 && VK_VERSION_MINOR(apiVersion) < VK_VERSION_MINOR(c_minimumVersion)) {
+			std::cout << "Minimum VVE Vulkan API version is 1.1!\n";
+			exit(1);
+		}
+
 	#ifndef NDEBUG
 		m_debug = true;
 	#endif
 		m_debug = m_debug | debug;
-		auto transform = [&](const auto& str) { m_msgTypeMap[std::hash<std::string>{}(str)] = str; };
+		auto transform = [&](const std::string& str) { m_msgTypeMap[std::hash<std::string>{}(str)] = str; };
 		std::ranges::for_each( MsgTypeNames, transform );
 	};
 	

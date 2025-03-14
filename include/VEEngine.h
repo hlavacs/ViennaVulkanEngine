@@ -2,7 +2,17 @@
 
 namespace vve {
 
+	struct EngineState {
+		const std::string& name;
+		uint32_t apiVersion;
+		bool debug;		
+		bool initialized;
+		bool running;	
+	};
+
 	class Engine : public System {
+
+		const uint32_t c_minimumVersion = VK_MAKE_VERSION(1, 1, 0); //for VMA
 
 	public:
 
@@ -23,7 +33,7 @@ namespace vve {
 			std::function<bool(Message&)> m_callback;
 		};
 
-		Engine(std::string name, bool debug=false);
+		Engine(std::string name, uint32_t apiVersion = VK_MAKE_VERSION(1, 1, 0), bool debug=false);
 		virtual ~Engine();
 		void RegisterSystem( std::unique_ptr<System>&& system );
 		void RegisterCallback( std::vector<MessageCallback> callbacks);
@@ -33,13 +43,13 @@ namespace vve {
 		void Init();
 		void Step();
 		void Quit();
-		auto GetDebug() -> bool { return m_debug; }
 		void SendMessage( Message message );
 		void PrintCallbacks();
 		auto GetHandle(std::string name) -> vecs::Handle;
 		auto SetHandle(std::string name, vecs::Handle h) -> void;
 		auto ContainsHandle(std::string name) -> bool;
 		auto GetRegistry() -> auto& { return m_registry; }
+		auto GetState() { return EngineState{m_name, m_apiVersion, m_debug, m_initialized, m_running}; }
 
 	protected:
 		virtual void CreateWindow();
@@ -49,9 +59,11 @@ namespace vve {
 
 		std::unordered_map<std::string, std::unique_ptr<System>> m_systems{};
 
+		uint32_t m_apiVersion;
 		bool m_debug{false};
 		bool m_initialized{false};
 		bool m_running{false};
+
 		std::chrono::time_point<std::chrono::high_resolution_clock> m_last;
 
 		vecs::Registry m_registry; //VECS lives here

@@ -157,8 +157,7 @@ class MyGame : public vve::System {
     
     
     int main() {
-    
-        vve::Engine engine("My Engine") ;
+        vve::Engine engine("My Engine", VK_MAKE_VERSION(1, 1, 0)) ;
         MyGame mygui{engine};  
         engine.Run();
     

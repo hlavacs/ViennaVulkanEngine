@@ -8,7 +8,8 @@ namespace vh {
 	VkInstance volkInstance;
 	
     void DevCreateInstance(const std::vector<const char*>& validationLayers, 
-		const std::vector<const char *>& extensions, bool debug, VkInstance &instance) {
+		const std::vector<const char *>& extensions, const std::string& name, 
+		uint32_t apiVersion, bool debug, VkInstance &instance) {
 
         volkInitialize();
 
@@ -18,11 +19,11 @@ namespace vh {
 
         VkApplicationInfo appInfo{};
         appInfo.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;
-        appInfo.pApplicationName = "Hello Triangle";
+        appInfo.pApplicationName = name.c_str();
         appInfo.applicationVersion = VK_MAKE_VERSION(1, 0, 0);
-        appInfo.pEngineName = "Tutorial";
-        appInfo.engineVersion = VK_MAKE_VERSION(1, 0, 0);
-        appInfo.apiVersion = VK_API_VERSION_1_3;
+        appInfo.pEngineName = "Vienna Vulkan Engine";
+        appInfo.engineVersion = VK_MAKE_VERSION(2, 0, 0);
+        appInfo.apiVersion = apiVersion;
 
         VkInstanceCreateInfo createInfo{};
         createInfo.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
@@ -73,14 +74,14 @@ namespace vh {
         }
     }
 
-    void DevInitVMA(VkInstance instance, VkPhysicalDevice physicalDevice, VkDevice device, VmaAllocator& allocator) {
+    void DevInitVMA(VkInstance instance, VkPhysicalDevice physicalDevice, VkDevice device, uint32_t apiVersion, VmaAllocator& allocator) {
         VmaVulkanFunctions vulkanFunctions = {};
         vulkanFunctions.vkGetInstanceProcAddr = vkGetInstanceProcAddr;
         vulkanFunctions.vkGetDeviceProcAddr = vkGetDeviceProcAddr;
 
         VmaAllocatorCreateInfo allocatorCreateInfo = {};
         allocatorCreateInfo.flags = VMA_ALLOCATOR_CREATE_EXT_MEMORY_BUDGET_BIT;
-        allocatorCreateInfo.vulkanApiVersion = VK_API_VERSION_1_2;
+        allocatorCreateInfo.vulkanApiVersion =  apiVersion;
         allocatorCreateInfo.physicalDevice = physicalDevice;
         allocatorCreateInfo.device = device;
         allocatorCreateInfo.instance = instance;

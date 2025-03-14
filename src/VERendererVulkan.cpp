@@ -17,7 +17,6 @@ namespace vve {
 			{this,      0, "PREPARE_NEXT_FRAME", [this](Message& message){ return OnPrepareNextFrame(message);} },
 			{this,      0, "RECORD_NEXT_FRAME", [this](Message& message){ return OnRecordNextFrame(message);} },
 			{this,      0, "RENDER_NEXT_FRAME", [this](Message& message){ return OnRenderNextFrame(message);} },
-
 			{this,   1000, "TEXTURE_CREATE",   [this](Message& message){ return OnTextureCreate(message);} },
 			{this,      0, "TEXTURE_DESTROY",  [this](Message& message){ return OnTextureDestroy(message);} },
 			{this,      0, "MESH_CREATE",  [this](Message& message){ return OnMeshCreate(message);} },
@@ -39,12 +38,15 @@ namespace vve {
 	}
 
     bool RendererVulkan::OnInit(Message message) {
-		if (m_engine.GetDebug()) {
+
+		auto engineState = m_engine.GetState();
+
+		if (engineState.debug) {
             m_instanceExtensions.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
         }
 
-    	vh::DevCreateInstance( m_validationLayers, m_instanceExtensions, m_engine.GetDebug(), m_vulkanState().m_instance);
-		if (m_engine.GetDebug()) {
+    	vh::DevCreateInstance( m_validationLayers, m_instanceExtensions, engineState.name, engineState.apiVersion, engineState.debug, m_vulkanState().m_instance);
+		if (engineState.debug) {
 	        vh::DevSetupDebugMessenger(m_vulkanState().m_instance, m_vulkanState().m_debugMessenger);
 		}
 
@@ -54,12 +56,11 @@ namespace vve {
 
         vh::DevPickPhysicalDevice(m_vulkanState().m_instance, m_deviceExtensions, m_vulkanState().m_surface, m_vulkanState().m_physicalDevice);
         vh::DevCreateLogicalDevice(m_vulkanState().m_surface, m_vulkanState().m_physicalDevice, m_vulkanState().m_queueFamilies, m_validationLayers, 
-			m_deviceExtensions, m_engine.GetDebug(), m_vulkanState().m_device, m_vulkanState().m_graphicsQueue, m_vulkanState().m_presentQueue);
-        vh::DevInitVMA(m_vulkanState().m_instance, m_vulkanState().m_physicalDevice, m_vulkanState().m_device, m_vulkanState().m_vmaAllocator);  
+			m_deviceExtensions, engineState.debug, m_vulkanState().m_device, m_vulkanState().m_graphicsQueue, m_vulkanState().m_presentQueue);
+        vh::DevInitVMA(m_vulkanState().m_instance, m_vulkanState().m_physicalDevice, m_vulkanState().m_device, engineState.apiVersion, m_vulkanState().m_vmaAllocator);  
         vh::DevCreateSwapChain(m_windowSDLState().m_sdlWindow, 
 			m_vulkanState().m_surface, m_vulkanState().m_physicalDevice, m_vulkanState().m_device, m_vulkanState().m_swapChain);
         
-		
 		vh::DevCreateImageViews(m_vulkanState().m_device, m_vulkanState().m_swapChain);
         vh::RenCreateRenderPassClear(m_vulkanState().m_physicalDevice, m_vulkanState().m_device, m_vulkanState().m_swapChain, true, m_renderPass);
 
@@ -185,7 +186,7 @@ namespace vve {
 
         vkDestroySurfaceKHR(m_vulkanState().m_instance, m_vulkanState().m_surface, nullptr);
 
-		if (m_engine.GetDebug()) {
+		if (m_engine.GetState().debug) {
             vh::DevDestroyDebugUtilsMessengerEXT(m_vulkanState().m_instance, m_vulkanState().m_debugMessenger, nullptr);
         }
 
