@@ -18,6 +18,10 @@ namespace vve {
 		auto state = m_engine.GetState();
 
 		switch( VK_VERSION_MINOR(state.apiVersion) ) {
+			case 0:
+				std::cout << "Minimum Vulkan API version is 1.1!\n";
+				exit(1);
+				break;
 			case 1:
 				m_engine.RegisterSystem(std::make_unique<RendererForward11>(m_name() + "1.1", m_engine, m_windowName));
 				break;
