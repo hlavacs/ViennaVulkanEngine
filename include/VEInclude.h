@@ -45,6 +45,7 @@ namespace vve {
 	class Renderer;
 	class RendererImgui;
 	class RendererForward;
+	class RendererForward11;
 	class RendererVulkan;
    	class SceneManager;
    	class AssetManager;
@@ -83,6 +84,7 @@ namespace vve {
 #include "VERenderer.h"
 #include "VERendererImgui.h"
 #include "VERendererForward.h"
+#include "VERendererForward11.h"
 #include "VERendererVulkan.h"
 #include "VESceneManager.h"
 #include "VEAssetManager.h"

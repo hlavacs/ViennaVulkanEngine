@@ -55,6 +55,7 @@ namespace vve {
 		auto ContainsHandle(std::string name) -> bool;
 		auto GetRegistry() -> auto& { return m_registry; }
 		auto GetState() { return EngineState{m_name, m_apiVersion, m_debug, m_initialized, m_running}; }
+		auto GetSystem(std::string name) -> System* { return m_systems[name].get(); }
 
 	protected:
 		virtual void CreateWindow();

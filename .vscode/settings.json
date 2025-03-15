@@ -92,6 +92,7 @@
 		"valarray": "cpp",
 		"unordered_set": "cpp",
 		"stack": "cpp",
-		"print": "cpp"
+		"print": "cpp",
+		"coroutine": "cpp"
 	}
 }

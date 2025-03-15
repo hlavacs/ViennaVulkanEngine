@@ -20,11 +20,7 @@ namespace vve {
 	}
 
     Renderer::Renderer(std::string systemName, Engine& engine, std::string windowName ) : 
-		System{systemName, engine }, m_windowName(windowName) {
-		engine.RegisterCallback( { 
-			{this, 0, "INIT", [this](Message& message){ return OnInit(message);} }
-		} );
-	};
+		System{systemName, engine }, m_windowName(windowName) {	};
 
     Renderer::~Renderer(){};
 
@@ -34,7 +30,6 @@ namespace vve {
 		m_windowSDLState = std::get<2>(state);
 		return false;
 	}
-
 
 	void Renderer::SubmitCommandBuffer( VkCommandBuffer commandBuffer ) { 
 		GetState2()().m_commandBuffersSubmit.push_back(commandBuffer); 

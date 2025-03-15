@@ -38,6 +38,7 @@ namespace vve {
 	}
 
     bool RendererVulkan::OnInit(Message message) {
+		Renderer::OnInit(message);
 
 		auto engineState = m_engine.GetState();
 
