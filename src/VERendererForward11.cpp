@@ -5,11 +5,11 @@
 /// Pipeline code:
 /// P...Vertex data contains positions
 /// N...Vertex data contains normals
-/// T...Vertex data contains tangents
-/// C...Vertex data contains colors
 /// U...Vertex data contains texture UV coordinates
-/// O...Object has color in UBO
+/// T...Vertex data contains tangents
 /// E...Object has texture map
+/// C...Vertex data contains colors
+/// O...Object has color in UBO
 /// R...Object has normal map
 /// S...Object has specular map
 /// M...Object has metallic map
@@ -79,7 +79,6 @@ namespace vve {
 				std::string type = filename.substr(pos1+1, pos2 - pos1 - 1);
 				
 				vh::Pipeline graphicsPipeline;
-
 
 				VkDescriptorSetLayout descriptorSetLayoutPerObject;
 				std::vector<VkDescriptorSetLayoutBinding> bindings{

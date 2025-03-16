@@ -1,8 +1,9 @@
 import Common;
 
 struct CoarseVertex {
-    float3 normal;
-    float4 fragColor;
+    float3 positionW : POSITION;
+    float3 normalW : NORMAL;
+    float4 fragColor : COLOR;
 };
 
 struct VertexStageOutput {
@@ -27,8 +28,9 @@ VertexStageOutput vertexMain(
     float3 viewPosition = mul(gParamsFrame.camera.view, float4(worldPosition, 1.0)).xyz;
 
     VertexStageOutput output;
+    output.coarseVertex.positionW = mul(gParamsObject.model, float4(normal, 1.0)).xyz;
+    output.coarseVertex.normalW = mul(gParamsObject.modelInvTranspose, float4(normal, 1.0)).xyz;
     output.coarseVertex.fragColor = gParamsObject.color.diffuse;
-    output.coarseVertex.normal = mul(gParamsObject.modelInvTranspose, float4(normal, 1.0)).xyz;
     output.sv_position = mul(gParamsFrame.camera.proj, float4(viewPosition, 1.0));
 
     return output;

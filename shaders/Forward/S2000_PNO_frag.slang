@@ -1,8 +1,9 @@
 import Common;
 
 struct CoarseVertex {
-    float3 normal;
-    float4 fragColor;
+    float3 positionW : POSITION;
+    float3 normalW : NORMAL;
+    float4 fragColor : COLOR;
 };
 
 // set 0 ... per frame
@@ -25,9 +26,12 @@ Texture2DArray myTextureArrays[MAX_LIGHTS]; // one shadow map array per light
 
 
 [shader("fragment")]
-float4 fragmentMain(CoarseVertex coarseVertex : CoarseVertex) : SV_Target 
+float4 fragmentMain(CoarseVertex cv: CoarseVertex) : SV_Target
 {
-    return coarseVertex.fragColor;
+    Camera camera = gParamsFrame.camera;
+    uint3 numberLights = gParamsFrame.numberLights;
+    float3 l = calculateLighting(gLights, numberLights, cv.normalW, camera.positionW, cv.positionW);
+    return float4(l,1) * cv.fragColor;
 }
 
 
