@@ -18,7 +18,7 @@ namespace vve {
 	RendererShadow11::~RendererShadow11(){};
 
 	bool RendererShadow11::OnInit(Message message) {
-		auto state = m_engine.GetState();
+		Renderer::OnInit(message);
 
 		return false;
 	}

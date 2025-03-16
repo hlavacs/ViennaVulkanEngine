@@ -5,34 +5,36 @@
 
 namespace vve {
 
-    auto Renderer::GetState(vecs::Registry& registry) -> std::tuple<vecs::Handle, vecs::Ref<VulkanState>> {
-        return *registry.template GetView<vecs::Handle, VulkanState&>().begin();
-    }
-
-	auto Renderer::GetState2() -> vecs::Ref<VulkanState> { 
-		if(!m_vulkanStateHandle.IsValid() || !m_vulkanState.IsValid()) {
-			auto [handle, state] = GetState(m_registry);
-			m_vulkanStateHandle = handle;
-			m_vulkanState = state;
-			return state;
-		}
-		return m_vulkanState;
-	}
-
     Renderer::Renderer(std::string systemName, Engine& engine, std::string windowName ) : 
 		System{systemName, engine }, m_windowName(windowName) {	};
 
     Renderer::~Renderer(){};
 
+	auto Renderer::GetState(vecs::Registry& registry) -> std::tuple<vecs::Handle, vecs::Ref<VulkanState>> {
+        return *registry.template GetView<vecs::Handle, VulkanState&>().begin();
+    }
+
 	bool Renderer::OnInit(Message message) {
-		auto state = WindowSDL::GetState(m_registry);
-		m_windowState = std::get<1>(state);
-		m_windowSDLState = std::get<2>(state);
+		auto [handle, stateW, stateSDL] = WindowSDL::GetState(m_registry);
+		m_windowState = stateW;
+		m_windowSDLState = stateSDL;
+
+		auto view = m_registry.template GetView<vecs::Handle, VulkanState&>();
+		auto iterBegin = view.begin();
+		auto iterEnd = view.end();
+		if( !(iterBegin != iterEnd)) {
+			m_vulkanStateHandle = m_registry.Insert(VulkanState{});
+			m_vulkanState = m_registry.template Get<VulkanState&>(m_vulkanStateHandle);
+			return false;
+		}
+		auto [handleV, stateV] = *iterBegin;
+		m_vulkanStateHandle = handleV;
+		m_vulkanState = stateV;
 		return false;
 	}
 
 	void Renderer::SubmitCommandBuffer( VkCommandBuffer commandBuffer ) { 
-		GetState2()().m_commandBuffersSubmit.push_back(commandBuffer); 
+		m_vulkanState().m_commandBuffersSubmit.push_back(commandBuffer); 
 	};
 
 };  // namespace vve

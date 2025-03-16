@@ -46,7 +46,6 @@ namespace vve {
 
     protected:
 		bool OnInit(Message message);
-		auto GetState2() -> vecs::Ref<VulkanState>;
 		void SubmitCommandBuffer( VkCommandBuffer commandBuffer );
 
 		std::string 				m_windowName;

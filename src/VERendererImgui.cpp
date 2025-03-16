@@ -22,7 +22,6 @@ namespace vve {
 
     bool RendererImgui::OnInit(Message message) {
 		Renderer::OnInit(message);
-		GetState2();
 
         vh::RenCreateRenderPass(m_vulkanState().m_physicalDevice, m_vulkanState().m_device, m_vulkanState().m_swapChain, false, m_renderPass);
 		
@@ -44,9 +43,7 @@ namespace vve {
 	}
 
     bool RendererImgui::OnPrepareNextFrame(Message message) {
-		auto [handle, wstate] = Window::GetState(m_registry, m_windowName);
-
-        if(wstate().m_isMinimized) return false;
+        if(m_windowState().m_isMinimized) return false;
 	    ImGui_ImplVulkan_NewFrame();
 		ImGui_ImplSDL2_NewFrame();
         ImGui::NewFrame();
@@ -54,17 +51,13 @@ namespace vve {
     }
 
     bool RendererImgui::OnRecordNextFrame(Message message) {
-		auto [handle, wstate] = Window::GetState(m_registry, m_windowName);
-
-        if(wstate().m_isMinimized) return false;
+        if(m_windowState().m_isMinimized) return false;
 
         vkResetCommandBuffer(m_commandBuffers[m_vulkanState().m_currentFrame],  0);
 
 		vh::ComStartRecordCommandBuffer(m_commandBuffers[m_vulkanState().m_currentFrame], m_vulkanState().m_imageIndex, 
 			m_vulkanState().m_swapChain, m_renderPass, m_graphicsPipeline, 
-			false, 
-			std::get<1>(Window::GetState(m_registry, m_windowName))().m_clearColor, 
-			m_vulkanState().m_currentFrame);
+			false, m_windowState().m_clearColor, m_vulkanState().m_currentFrame);
 		
 		ImGui::Render();
         ImGui_ImplVulkan_RenderDrawData(ImGui::GetDrawData(), m_commandBuffers[m_vulkanState().m_currentFrame]);

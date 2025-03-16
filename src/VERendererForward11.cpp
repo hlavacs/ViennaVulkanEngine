@@ -40,7 +40,6 @@ namespace vve {
 
     bool RendererForward11::OnInit(Message message) {
 		Renderer::OnInit(message);
-		GetState2();
 
         vh::RenCreateRenderPass(m_vulkanState().m_physicalDevice, m_vulkanState().m_device, m_vulkanState().m_swapChain, false, m_renderPass);
 		
