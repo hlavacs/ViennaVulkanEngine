@@ -23,10 +23,10 @@ namespace vve {
 				exit(1);
 				break;
 			default:
-				m_engine.RegisterSystem(std::make_unique<RendererForward11>(m_name() + "1.1", m_engine, m_windowName));
+			m_engine.RegisterSystem(std::make_unique<RendererShadow11>(m_name() + "Shadow1.1", m_engine, m_windowName));
+			m_engine.RegisterSystem(std::make_unique<RendererForward11>(m_name() + "Light1.1", m_engine, m_windowName));
 		};
 		return false;
 	}
-
 
 };   // namespace vve
