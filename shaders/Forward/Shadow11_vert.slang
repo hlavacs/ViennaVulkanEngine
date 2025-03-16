@@ -25,6 +25,11 @@ ParameterBlock<UniformBufferObjectTexture> gParamsObject;
 
 //----------------------------------------------------------------------------
 
+[[vk::push_constant]]
+ShadowPushConstant shadowPushConstants;
+
+//----------------------------------------------------------------------------
+
 [shader("vertex")]
 VertexStageOutput vertexMain(float3 positionL: POSITION )
 {

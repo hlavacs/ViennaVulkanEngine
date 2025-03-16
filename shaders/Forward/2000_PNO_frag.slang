@@ -17,7 +17,7 @@ ParameterBlock<UniformBufferFrame> gParamsFrame;
 ConstantBuffer<Light[MAX_LIGHTS]> gLights;
 
 [[vk::binding(2, 0)]]
-Texture2DArray shadowMapArray[MAX_SHADOW_MAPS]; // shadow maps for the lights
+Texture2DArray shadowMapArray[MAX_LIGHTS]; // shadow maps for the lights
 
 [[vk::binding(3, 0)]]
 SamplerState shadowSampler; // shadow map sampler

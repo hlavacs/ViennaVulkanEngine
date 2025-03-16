@@ -348,7 +348,7 @@ namespace vh {
             }
         }
 
-        return VK_PRESENT_MODE_FIFO_KHR;
+        return VK_PRESENT_MODE_FIFO_KHR;    
     }
 
     VkExtent2D DevChooseSwapExtent(const VkSurfaceCapabilitiesKHR& capabilities, SDL_Window* sdlWindow) {

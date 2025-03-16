@@ -15,7 +15,7 @@ ParameterBlock<UniformBufferFrame> gParamsFrame;
 ConstantBuffer<Light[MAX_LIGHTS]> gLights;
 
 [[vk::binding(2, 0)]]
-RWTexture2DArray shadowMapArray[MAX_SHADOW_MAPS]; // shadow maps for the lights
+RWTexture2DArray shadowMapArray[MAX_LIGHTS]; // shadow maps for the lights
 
 //----------------------------------------------------------------------------
 
@@ -23,6 +23,11 @@ RWTexture2DArray shadowMapArray[MAX_SHADOW_MAPS]; // shadow maps for the lights
 
 [[vk::binding(0, 1)]]
 ParameterBlock<UniformBufferObjectTexture> gParamsObject;
+
+//----------------------------------------------------------------------------
+
+[[vk::push_constant]]
+ShadowPushConstant shadowPushConstants;
 
 //----------------------------------------------------------------------------
 

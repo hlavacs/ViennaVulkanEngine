@@ -28,6 +28,7 @@ ParameterBlock<UniformBufferObjectTexture> gParamsObject;
 
 //----------------------------------------------------------------------------
 
+
 [shader("vertex")]
 VertexStageOutput vertexMain(
     float3 positionL: POSITION,

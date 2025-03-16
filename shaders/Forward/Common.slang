@@ -20,13 +20,18 @@ export public struct LightParams {
 export public struct Light {
     public float3 		positionW;
     public float3 		directionW;
-    public LightParams 	params;
-    public float4x4 	lightSpaceMatrix;
+    public LightParams 	param;
+    public float4x4 	lightSpaceMatrix[6];
 };
 
 export public struct UniformBufferFrame {
     public Camera camera;
     public uint3 numberLights; // x = point, y = directional, z = spotlight
+};
+
+export public struct ShadowPushConstant {
+    public int lightIndex;
+    public int layerIndex;
 };
 
 //-----------------------------------------------------------------------
@@ -62,7 +67,6 @@ export public struct UniformBufferObjectColor {
 
 //[[vk::constant_id(0)]] export public uniform const int MAX_LIGHTS = 10;
 export public uniform const int MAX_LIGHTS = 10;
-export public uniform const int MAX_SHADOW_MAPS = 60;
 
 __include "Common_Shadow.slang";
 __include "Common_Light.slang";

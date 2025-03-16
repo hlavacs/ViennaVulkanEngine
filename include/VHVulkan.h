@@ -85,7 +85,7 @@ namespace vh {
 	    alignas(16) glm::vec3 	positionW{100.0f, 100.0f, 100.0f};
 	    alignas(16) glm::vec3 	directionW{-1.0f, -1.0f, -1.0f}; 
 	    alignas(16) LightParams lightParams;
-		alignas(16) glm::mat4 	lightSpaceMatrix{1.0f};
+		alignas(16) glm::mat4 	lightSpaceMatrix[6];
 	};
 
 	struct UniformBufferFrame {
