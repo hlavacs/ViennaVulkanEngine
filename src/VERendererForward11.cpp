@@ -72,10 +72,10 @@ namespace vve {
 		const std::filesystem::path shaders{"shaders\\Forward"};
 		for( const auto& entry : std::filesystem::directory_iterator(shaders) ) {
 			auto filename = entry.path().filename().string();
-			if( filename.find("_vert.spv") != std::string::npos && filename[0] == 'S' ) {
+			if( filename.find("_vert.spv") != std::string::npos && std::isdigit(filename[0]) ) {
 				size_t pos1 = filename.find("_");
 				size_t pos2 = filename.find("_vert.spv");
-				auto pri = std::stoi( filename.substr(1, pos1-1) );
+				auto pri = std::stoi( filename.substr(0, pos1-1) );
 				std::string type = filename.substr(pos1+1, pos2 - pos1 - 1);
 				
 				vh::Pipeline graphicsPipeline;

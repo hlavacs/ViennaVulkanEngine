@@ -12,9 +12,10 @@ struct VertexStageOutput {
     float4       sv_position  : SV_Position;
 };
 
+// binding B,S means that the resource is bound to binding B, set S
+
 // set 0 ... per frame
 
-// binding 0,0 means that the uniform buffer is bound to binding 0, set 0
 [[vk::binding(0,0)]]
 ParameterBlock<UniformBufferFrame> gParamsFrame;
 
@@ -22,7 +23,6 @@ ParameterBlock<UniformBufferFrame> gParamsFrame;
 
 // set 1 ... per object
 
-// binding 0,1 means that the uniform buffer is bound to binding 0, set 1
 [[vk::binding(0,1)]]
 ParameterBlock<UniformBufferObjectTexture> gParamsObject;
 

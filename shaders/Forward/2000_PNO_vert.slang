@@ -11,9 +11,10 @@ struct VertexStageOutput {
     float4       sv_position  : SV_Position;
 };
 
+// binding B,S means that the resource is bound to binding B, set S
+
 // set 0 ... per frame
 
-// binding 0,1 means that the uniform buffer is bound to binding 0, set 0
 [[vk::binding(0,0)]]
 ParameterBlock<UniformBufferFrame> gParamsFrame;
 
@@ -21,17 +22,15 @@ ParameterBlock<UniformBufferFrame> gParamsFrame;
 
 // set 1 ... per object
 
-// binding 0,0 means that the uniform buffer is bound to binding 0, set 1
 [[vk::binding(0,1)]]
-ParameterBlock<UniformBufferObject> gParamsObject;
+ParameterBlock<UniformBufferObjectColor> gParamsObject;
 
 //----------------------------------------------------------------------------
 
 [shader("vertex")]
 VertexStageOutput vertexMain( 
 	float3 position : POSITION,
-    float3 normal   : NORMAL,
-    float4 color 	: COLOR)
+    float3 normal   : NORMAL)
 {
     float3 worldPosition = mul(gParamsObject.model, float4(position, 1.0)).xyz;
     float3 viewPosition = mul(gParamsFrame.camera.view, float4(worldPosition, 1.0)).xyz;
@@ -39,9 +38,9 @@ VertexStageOutput vertexMain(
     VertexStageOutput output;
     output.coarseVertex.positionW = mul(gParamsObject.model, float4(normal, 1.0)).xyz;
     output.coarseVertex.normalW = mul(gParamsObject.modelInvTranspose, float4(normal, 1.0)).xyz;
-    output.coarseVertex.fragColor = color;
+    output.coarseVertex.fragColor = gParamsObject.color.diffuse;
     output.sv_position = mul(gParamsFrame.camera.proj, float4(viewPosition, 1.0));
- 
+
     return output;
 }
 
