@@ -11,13 +11,21 @@ struct VertexStageOutput {
     float4       sv_position  : SV_Position;
 };
 
-// binding 0,1 means that the uniform buffer is bound to binding 0, set 0
+// set 0 ... per frame
+
+// binding 0,0 means that the uniform buffer is bound to binding 0, set 0
 [[vk::binding(0,0)]]
 ParameterBlock<UniformBufferFrame> gParamsFrame;
 
-// binding 0,0 means that the uniform buffer is bound to binding 0, set 1
+//----------------------------------------------------------------------------
+
+// set 1 ... per object
+
+// binding 0,1 means that the uniform buffer is bound to binding 0, set 1
 [[vk::binding(0,1)]]
 ParameterBlock<UniformBufferObjectColor> gParamsObject;
+
+//----------------------------------------------------------------------------
 
 [shader("vertex")]
 VertexStageOutput vertexMain( 

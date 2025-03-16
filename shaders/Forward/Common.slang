@@ -62,8 +62,13 @@ export public struct UniformBufferObjectColor {
 
 //[[vk::constant_id(0)]] export public uniform const int MAX_LIGHTS = 10;
 export public uniform const int MAX_LIGHTS = 10;
+export public uniform const int MAX_SHADOW_MAPS = 60;
 
-__include "Shadow.slang";
-__include "Light.slang";
+__include "Common_Shadow.slang";
+__include "Common_Light.slang";
 
-
+[shader("fragment")]
+float4 dummyShader(float3 positionW: POSITION)
+{
+    return float4(0, 0, 0, 0);
+}
