@@ -21,7 +21,11 @@ namespace vve {
 		VkSurfaceKHR 	m_surface{VK_NULL_HANDLE};
 		VmaAllocator 	m_vmaAllocator;
 		VkDebugUtilsMessengerEXT m_debugMessenger;
-		VkPhysicalDevice m_physicalDevice{VK_NULL_HANDLE};
+		
+		VkPhysicalDevice 			m_physicalDevice{VK_NULL_HANDLE};
+		VkPhysicalDeviceFeatures 	m_physicalDeviceFeatures;
+		VkPhysicalDeviceProperties 	m_physicalDeviceProperties;
+
 		VkDevice 		m_device{VK_NULL_HANDLE};
 		vh::QueueFamilyIndices m_queueFamilies;
 		VkQueue 		m_graphicsQueue{VK_NULL_HANDLE};

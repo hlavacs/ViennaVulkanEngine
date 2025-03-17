@@ -62,6 +62,9 @@ namespace vve {
 			exit(1);
 		}
 		engineState.apiVersion = VK_MAKE_VERSION( VK_VERSION_MAJOR(engineState.apiVersion), minor, 0);
+		vkGetPhysicalDeviceProperties(m_vulkanState().m_physicalDevice, &m_vulkanState().m_physicalDeviceProperties);
+		vkGetPhysicalDeviceFeatures(m_vulkanState().m_physicalDevice, &m_vulkanState().m_physicalDeviceFeatures);
+		VulkanState state = m_vulkanState();
 	
 		vh::DevCreateLogicalDevice(m_vulkanState().m_surface, m_vulkanState().m_physicalDevice, m_vulkanState().m_queueFamilies, m_validationLayers, 
 			m_deviceExtensions, engineState.debug, m_vulkanState().m_device, m_vulkanState().m_graphicsQueue, m_vulkanState().m_presentQueue);

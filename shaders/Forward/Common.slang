@@ -65,7 +65,6 @@ export public struct UniformBufferObjectColor {
 
 //-----------------------------------------------------------------------
 
-//[[vk::constant_id(0)]] export public uniform const int MAX_LIGHTS = 10;
 export public uniform const int MAX_LIGHTS = 10;
 
 __include "Common_Shadow.slang";
