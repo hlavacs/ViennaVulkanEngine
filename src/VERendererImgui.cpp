@@ -56,8 +56,7 @@ namespace vve {
         vkResetCommandBuffer(m_commandBuffers[m_vulkanState().m_currentFrame],  0);
 
 		vh::ComStartRecordCommandBuffer(m_commandBuffers[m_vulkanState().m_currentFrame], m_vulkanState().m_imageIndex, 
-			m_vulkanState().m_swapChain, m_renderPass, m_graphicsPipeline, 
-			false, m_windowState().m_clearColor, m_vulkanState().m_currentFrame);
+			m_vulkanState().m_swapChain, m_renderPass, false, m_windowState().m_clearColor, m_vulkanState().m_currentFrame);
 		
 		ImGui::Render();
         ImGui_ImplVulkan_RenderDrawData(ImGui::GetDrawData(), m_commandBuffers[m_vulkanState().m_currentFrame]);

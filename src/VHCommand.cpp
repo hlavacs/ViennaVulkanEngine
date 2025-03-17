@@ -68,8 +68,7 @@ namespace vh {
 
 
 	void ComStartRecordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageIndex
-        , SwapChain& swapChain, VkRenderPass renderPass, Pipeline& graphicsPipeline
-        , bool clear, glm::vec4 clearColor, uint32_t currentFrame) {
+        , SwapChain& swapChain, VkRenderPass renderPass, bool clear, glm::vec4 clearColor, uint32_t currentFrame) {
 
         VkCommandBufferBeginInfo beginInfo{};
         beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
@@ -95,22 +94,6 @@ namespace vh {
 		}
 
         vkCmdBeginRenderPass(commandBuffer, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
-
-        /*vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsPipeline.m_pipeline);
-
-        VkViewport viewport{};
-        viewport.x = 0.0f;
-        viewport.y = 0.0f;
-        viewport.width = (float) swapChain.m_swapChainExtent.width;
-        viewport.height = (float) swapChain.m_swapChainExtent.height;
-        viewport.minDepth = 0.0f;
-        viewport.maxDepth = 1.0f;
-        vkCmdSetViewport(commandBuffer, 0, 1, &viewport);
-  
-        VkRect2D scissor{};
-        scissor.offset = {0, 0};
-        scissor.extent = swapChain.m_swapChainExtent;
-        vkCmdSetScissor(commandBuffer, 0, 1, &scissor);*/
     }
 
 	void ComBindPipeline(VkCommandBuffer commandBuffer, uint32_t imageIndex

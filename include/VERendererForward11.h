@@ -46,7 +46,7 @@ namespace vve
 		vh::DescriptorSet m_descriptorSetPerFrame{0};
 
 		VkDescriptorSetLayout m_descriptorSetLayoutPerObject;
-	    vh::Pipeline m_graphicsPipeline;
+	    //vh::Pipeline m_graphicsPipeline;
 
 		std::map<int, PipelinePerType> m_pipelinesPerType;
 
@@ -55,8 +55,7 @@ namespace vve
 	    VkCommandPool m_commandPool;
 	    std::vector<VkCommandBuffer> m_commandBuffers;
 
-		size_t m_maxNumberLights{10};
-		std::vector<vh::Light> m_lights;
+		size_t m_maxNumberLights{16};
 		glm::ivec3 m_numberLightsPerType{0,0,0};
     };
 

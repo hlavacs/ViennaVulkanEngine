@@ -155,31 +155,30 @@ namespace vve {
 	bool RendererForward11::OnPrepareNextFrame(Message message) {
 		auto msg = message.template GetData<MsgPrepareNextFrame>();
 
-		//Copy lights to the uniform buffer
-		m_lights.resize(m_maxNumberLights);
+		std::vector<vh::Light> lights{m_maxNumberLights};
 		m_numberLightsPerType = glm::ivec3{0};
 		size_t total{0};
 		vh::UniformBufferFrame ubc; //contains camera view and projection matrices and number of lights
 		for( auto [handle, light, lToW] : m_registry.template GetView<vecs::Handle, PointLight&, LocalToWorldMatrix&>() ) {
 			++m_numberLightsPerType.x;
 			light().params.x = 0.0f;
-			m_lights[total] = { .positionW = glm::vec3{lToW()[3]}, .lightParams = light() };
+			lights[total] = { .positionW = glm::vec3{lToW()[3]}, .lightParams = light() };
 			if( ++total >= m_maxNumberLights ) break;
 		}
 		for( auto [handle, light, lToW] : m_registry.template GetView<vecs::Handle, DirectionalLight&, LocalToWorldMatrix&>() ) {
 			++m_numberLightsPerType.y;
 			light().params.x = 1.0f;
-			m_lights[total] = { .directionW = glm::vec3{lToW()[1]}, .lightParams = light() };
+			lights[total] = { .directionW = glm::vec3{lToW()[1]}, .lightParams = light() };
 			if( ++total >= m_maxNumberLights ) break;
 		}
 		for( auto [handle, light, lToW] : m_registry.template GetView<vecs::Handle, SpotLight&, LocalToWorldMatrix&>() ) {
 			++m_numberLightsPerType.z;
 			light().params.x = 2.0f;
-			m_lights[total] = { .positionW = glm::vec3{lToW()[3]}, .directionW = glm::vec3{lToW()[1]}, .lightParams = light() };
+			lights[total] = { .positionW = glm::vec3{lToW()[3]}, .directionW = glm::vec3{lToW()[1]}, .lightParams = light() };
 			if( ++total >= m_maxNumberLights ) break;
 		}
 		ubc.numLights = m_numberLightsPerType;
-		memcpy(m_uniformBuffersLights.m_uniformBuffersMapped[m_vulkanState().m_currentFrame], m_lights.data(), total*sizeof(vh::Light));
+		memcpy(m_uniformBuffersLights.m_uniformBuffersMapped[m_vulkanState().m_currentFrame], lights.data(), total*sizeof(vh::Light));
 
 		//Copy camera view and projection matrices to the uniform buffer
 		auto [lToW, view, proj] = *m_registry.template GetView<LocalToWorldMatrix&, ViewMatrix&, ProjectionMatrix&>().begin();
@@ -196,9 +195,8 @@ namespace vve {
 		vkResetCommandBuffer(m_commandBuffers[m_vulkanState().m_currentFrame],  0);
         
 		vh::ComStartRecordCommandBuffer(m_commandBuffers[m_vulkanState().m_currentFrame], m_vulkanState().m_imageIndex, 
-			m_vulkanState().m_swapChain, m_renderPass, m_graphicsPipeline, false, 
-			m_windowState().m_clearColor,  
-			m_vulkanState().m_currentFrame);
+			m_vulkanState().m_swapChain, m_renderPass, false, 
+			m_windowState().m_clearColor,  m_vulkanState().m_currentFrame);
 		
 		for( auto& pipeline : m_pipelinesPerType) {
 			for( auto[oHandle, name, ghandle, LtoW, uniformBuffers, descriptorsets] : 
