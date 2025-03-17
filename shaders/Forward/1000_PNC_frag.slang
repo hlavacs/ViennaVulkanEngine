@@ -11,7 +11,7 @@ struct CoarseVertex {
 // set 0 ... per frame
 
 [[vk::binding(0, 0)]]
-ParameterBlock<UniformBufferFrame> gParamsFrame;
+ConstantBuffer<UniformBufferFrame> gParamsFrame;
 
 [[vk::binding(1, 0)]]
 ConstantBuffer<Light[MAX_LIGHTS]> gLights;

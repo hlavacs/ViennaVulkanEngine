@@ -65,7 +65,7 @@ export public struct UniformBufferObjectColor {
 
 //-----------------------------------------------------------------------
 
-export public uniform const int MAX_LIGHTS = 10;
+export public uniform const int MAX_LIGHTS = 16;
 
 __include "Common_Shadow.slang";
 __include "Common_Light.slang";

@@ -17,14 +17,14 @@ struct VertexStageOutput {
 // set 0 ... per frame
 
 [[vk::binding(0,0)]]
-ParameterBlock<UniformBufferFrame> gParamsFrame;
+ConstantBuffer<UniformBufferFrame> gParamsFrame;
 
 //----------------------------------------------------------------------------
 
 // set 1 ... per object
 
 [[vk::binding(0,1)]]
-ParameterBlock<UniformBufferObjectTexture> gParamsObject;
+ConstantBuffer<UniformBufferObjectTexture> gParamsObject;
 
 //----------------------------------------------------------------------------
 
