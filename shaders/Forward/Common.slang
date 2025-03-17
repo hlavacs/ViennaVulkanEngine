@@ -30,8 +30,7 @@ export public struct UniformBufferFrame {
 };
 
 export public struct ShadowPushConstant {
-    public int lightIndex;
-    public int layerIndex;
+    public int shadowIndex;
 };
 
 //-----------------------------------------------------------------------
