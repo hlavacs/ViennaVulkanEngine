@@ -13,7 +13,23 @@ namespace vve
         bool OnPrepareNextFrame(Message message);
         bool OnRecordNextFrame(Message message);
         bool OnQuit(Message message);
-    };
+
+	    VkRenderPass m_renderPass;
+	    VkDescriptorPool m_descriptorPool;    
+	    VkCommandPool m_commandPool;
+	    std::vector<VkCommandBuffer> m_commandBuffers;
+
+		vh::UniformBuffers m_uniformBuffersPerFrame;
+		vh::UniformBuffers m_uniformBuffersLights;
+		VkDescriptorSetLayout m_descriptorSetLayoutPerFrame;
+		vh::DescriptorSet m_descriptorSetPerFrame{0};
+
+		VkDescriptorSetLayout m_descriptorSetLayoutPerObject;
+		vh::Pipeline m_graphicsPipeline;		
+
+		size_t m_maxNumberLights{16};
+		glm::ivec3 m_numberLightsPerType{0,0,0};
+	};
 
 };   // namespace vve
 

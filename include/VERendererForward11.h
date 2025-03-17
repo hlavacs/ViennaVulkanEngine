@@ -44,12 +44,7 @@ namespace vve
 		vh::UniformBuffers m_uniformBuffersLights;
 		VkDescriptorSetLayout m_descriptorSetLayoutPerFrame;
 		vh::DescriptorSet m_descriptorSetPerFrame{0};
-
-		VkDescriptorSetLayout m_descriptorSetLayoutPerObject;
-	    //vh::Pipeline m_graphicsPipeline;
-
 		std::map<int, PipelinePerType> m_pipelinesPerType;
-
 	    VkRenderPass m_renderPass;
 	    VkDescriptorPool m_descriptorPool;    
 	    VkCommandPool m_commandPool;
