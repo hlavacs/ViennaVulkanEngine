@@ -15,7 +15,7 @@ ConstantBuffer<UniformBufferFrame> gParamsFrame;
 ConstantBuffer<Light[MAX_LIGHTS]> gLights;
 
 [[vk::binding(2, 0)]]
-RWTexture2DArray shadowMapArray[MAX_LIGHTS]; // shadow maps for the lights
+RWTexture2DArray shadowMapArray; // shadow maps for the lights
 
 //----------------------------------------------------------------------------
 
