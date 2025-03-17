@@ -65,7 +65,7 @@ namespace vve {
 		vkGetPhysicalDeviceProperties(m_vulkanState().m_physicalDevice, &m_vulkanState().m_physicalDeviceProperties);
 		vkGetPhysicalDeviceFeatures(m_vulkanState().m_physicalDevice, &m_vulkanState().m_physicalDeviceFeatures);
 		VulkanState state = m_vulkanState();
-	
+
 		vh::DevCreateLogicalDevice(m_vulkanState().m_surface, m_vulkanState().m_physicalDevice, m_vulkanState().m_queueFamilies, m_validationLayers, 
 			m_deviceExtensions, engineState.debug, m_vulkanState().m_device, m_vulkanState().m_graphicsQueue, m_vulkanState().m_presentQueue);
         vh::DevInitVMA(m_vulkanState().m_instance, m_vulkanState().m_physicalDevice, m_vulkanState().m_device, engineState.apiVersion, m_vulkanState().m_vmaAllocator);  
