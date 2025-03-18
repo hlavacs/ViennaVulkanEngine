@@ -25,6 +25,7 @@ namespace vh {
 			
         BufCopyBufferToImage(device, graphicsQueue, commandPool, stagingBuffer, texture.m_mapImage
                  , static_cast<uint32_t>(texWidth), static_cast<uint32_t>(texHeight));
+
         ImgTransitionImageLayout(device, graphicsQueue, commandPool, texture.m_mapImage, VK_FORMAT_R8G8B8A8_SRGB
             , VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
 
@@ -253,6 +254,35 @@ namespace vh {
 			bufferData[4 * i + a] = ac;
 		}
 	}
+
+
+    void ImgClearShadowMap(VkDevice device, VkQueue graphicsQueue, VkCommandPool commandPool, 
+            VmaAllocator vmaAllocator, vh::Map& map, float value) {
+
+        VkBuffer stagingBuffer;
+        VmaAllocation stagingBufferAllocation;
+        VmaAllocationInfo allocInfo;
+
+        /*BufCreateBuffer( vmaAllocator, map.m_size, VK_BUFFER_USAGE_TRANSFER_SRC_BIT
+            , VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT
+            , VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT | VMA_ALLOCATION_CREATE_MAPPED_BIT
+            , stagingBuffer, stagingBufferAllocation, &allocInfo);
+
+        for(uint32_t i=0; i<map.m_width*map.m_height; i++) { ((float*)allocInfo.pMappedData)[i] = value; });
+
+        ImgTransitionImageLayout(device, graphicsQueue, commandPool, texture.m_mapImage, VK_FORMAT_R8G8B8A8_SRGB
+            , VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
+			
+        BufCopyBufferToImage(device, graphicsQueue, commandPool, stagingBuffer, texture.m_mapImage
+                 , static_cast<uint32_t>(map.m_width), static_cast<uint32_t>(map.m_height));
+                 
+        ImgTransitionImageLayout(device, graphicsQueue, commandPool, texture.m_mapImage, VK_FORMAT_R8G8B8A8_SRGB
+            , VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+
+        BufDestroyBuffer(device, vmaAllocator, stagingBuffer, stagingBufferAllocation);
+        */
+    }
+
 
 }
 

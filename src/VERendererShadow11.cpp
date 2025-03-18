@@ -53,17 +53,20 @@ namespace vve {
 			for( int i = 0; i < MAX_FRAMES_IN_FLIGHT; i++ ) {
 				vh::Map map;
 				vh::ImgCreateImage2(m_vulkanState().m_physicalDevice, m_vulkanState().m_device, m_vulkanState().m_vmaAllocator
-					, 1024, 1024, 1, 1, number
-					, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT
+					, MAP_DIMENSION, MAP_DIMENSION, 1, 1, number
+					, VK_FORMAT_R32_SFLOAT, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT
 					, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, map.m_mapImage, map.m_mapImageAllocation); 
 				
 				vh::ImgTransitionImageLayout(m_vulkanState().m_device, m_vulkanState().m_graphicsQueue, m_vulkanState().m_commandPool
-					, map.m_mapImage, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL );
+					, map.m_mapImage, VK_FORMAT_R32_SFLOAT, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL );
 
 				shadowMap.m_shadowMaps.push_back(map);
 			}
 			m_registry.Put(handle, std::move(shadowMap));
 		}
+		auto shadowMap = m_registry.template Get<ShadowMap&>(handle);
+		vh::ImgClearShadowMap(m_vulkanState().m_device, m_vulkanState().m_graphicsQueue, m_vulkanState().m_commandPool, m_vulkanState().m_vmaAllocator
+			, shadowMap().m_shadowMaps[m_vulkanState().m_currentFrame], std::numeric_limits<float>::max());
 	}
 
 

@@ -131,6 +131,7 @@ namespace vh {
 		VkDeviceSize	m_size;
 		void *			m_pixels{nullptr};
 		VkImage         m_mapImage;
+		uint16_t		m_layers;
         VmaAllocation   m_mapImageAllocation;
         VkImageView     m_mapImageView;
         VkSampler       m_mapSampler;

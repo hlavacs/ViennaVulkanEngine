@@ -94,5 +94,6 @@
 		"stack": "cpp",
 		"print": "cpp",
 		"coroutine": "cpp"
-	}
+	},
+	"C_Cpp.errorSquiggles": "disabled"
 }
