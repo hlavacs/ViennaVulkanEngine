@@ -18,6 +18,7 @@ namespace vve
         bool OnPrepareNextFrame(Message message);
         bool OnRecordNextFrame(Message message);
         bool OnQuit(Message message);
+		void CheckShadowMaps( vecs::Handle handle,  uint32_t number);
 
 	    VkRenderPass m_renderPass;
 	    VkDescriptorPool m_descriptorPool;    

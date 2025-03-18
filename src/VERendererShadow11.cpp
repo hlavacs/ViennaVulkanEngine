@@ -45,65 +45,39 @@ namespace vve {
 		return false;
 	}
 
+
+	void RendererShadow11::CheckShadowMaps( vecs::Handle handle, uint32_t number) {
+		if(!m_registry.template Has<ShadowMap>(handle)) {
+			ShadowMap shadowMap;
+
+			for( int i = 0; i < MAX_FRAMES_IN_FLIGHT; i++ ) {
+				vh::Map map;
+				vh::ImgCreateImage2(m_vulkanState().m_physicalDevice, m_vulkanState().m_device, m_vulkanState().m_vmaAllocator
+					, 1024, 1024, 1, 1, number
+					, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT
+					, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, map.m_mapImage, map.m_mapImageAllocation); 
+				
+				vh::ImgTransitionImageLayout(m_vulkanState().m_device, m_vulkanState().m_graphicsQueue, m_vulkanState().m_commandPool
+					, map.m_mapImage, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL );
+
+				shadowMap.m_shadowMaps.push_back(map);
+			}
+			m_registry.Put(handle, std::move(shadowMap));
+		}
+	}
+
+
 	bool RendererShadow11::OnPrepareNextFrame(Message message) {
 		auto msg = message.template GetData<MsgPrepareNextFrame>();
 
 		for( auto [handle, light] : m_registry.template GetView<vecs::Handle, PointLight&>() ) {
-			if(!m_registry.template Has<ShadowMap>(handle)) {
-				ShadowMap shadowMap;
-
-				for( int i = 0; i < MAX_FRAMES_IN_FLIGHT; i++ ) {
-					vh::Map map;
-					vh::ImgCreateImage2(m_vulkanState().m_physicalDevice, m_vulkanState().m_device, m_vulkanState().m_vmaAllocator
-						, 1024, 1024, 1, 1, 6
-						, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT
-						, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, map.m_mapImage, map.m_mapImageAllocation); 
-					
-					vh::ImgTransitionImageLayout(m_vulkanState().m_device, m_vulkanState().m_graphicsQueue, m_vulkanState().m_commandPool
-						, map.m_mapImage, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL );
-
-					shadowMap.m_shadowMaps.push_back(map);
-				}
-				m_registry.Put(handle, std::move(shadowMap));
-			}
+			CheckShadowMaps(handle, 6);
 		}
 		for( auto [handle, light] : m_registry.template GetView<vecs::Handle, DirectionalLight&>() ) {
-			if(!m_registry.template Has<ShadowMap>(handle)) {
-				ShadowMap shadowMap;
-
-				for( int i = 0; i < MAX_FRAMES_IN_FLIGHT; i++ ) {
-					vh::Map map;
-					vh::ImgCreateImage2(m_vulkanState().m_physicalDevice, m_vulkanState().m_device, m_vulkanState().m_vmaAllocator
-						, 1024, 1024, 1, 1, 3
-						, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT
-						, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, map.m_mapImage, map.m_mapImageAllocation); 
-					
-					vh::ImgTransitionImageLayout(m_vulkanState().m_device, m_vulkanState().m_graphicsQueue, m_vulkanState().m_commandPool
-						, map.m_mapImage, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL );
-
-					shadowMap.m_shadowMaps.push_back(map);
-				}
-				m_registry.Put(handle, shadowMap);
-			}
+			CheckShadowMaps(handle, 3);
 		}
 		for( auto [handle, light] : m_registry.template GetView<vecs::Handle, SpotLight&>() ) {
-			if(!m_registry.template Has<ShadowMap>(handle)) {
-				ShadowMap shadowMap;
-
-				for( int i = 0; i < MAX_FRAMES_IN_FLIGHT; i++ ) {
-					vh::Map map;
-					vh::ImgCreateImage2(m_vulkanState().m_physicalDevice, m_vulkanState().m_device, m_vulkanState().m_vmaAllocator
-						, 1024, 1024, 1, 1, 1
-						, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT
-						, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, map.m_mapImage, map.m_mapImageAllocation); 
-					
-					vh::ImgTransitionImageLayout(m_vulkanState().m_device, m_vulkanState().m_graphicsQueue, m_vulkanState().m_commandPool
-						, map.m_mapImage, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL );
-
-					shadowMap.m_shadowMaps.push_back(map);
-				}
-				m_registry.Put(handle, shadowMap);
-			}
+			CheckShadowMaps(handle, 1);
 		}
 		return false;
 	}
