@@ -2,10 +2,15 @@
 
 namespace vve
 {
+
+	struct ShadowMap {
+		std::vector<vh::Map> m_shadowMaps;
+	};
+
     class RendererShadow11 : public Renderer {
 
 	public:
-	RendererShadow11(std::string systemName, Engine& engine, std::string windowName);
+		RendererShadow11(std::string systemName, Engine& engine, std::string windowName);
         virtual ~RendererShadow11();
 
     private:
