@@ -1,22 +1,21 @@
 
-#include <chrono>
-#include <any>
-
-#include <algorithm>
-#include <iterator>
-#include <ranges>
 #include "VHInclude.h"
 #include "VEInclude.h"
 
 
 namespace vve {
 	
-	Engine::Engine(std::string name, bool debug) : System(name, *this) {
+	Engine::Engine(std::string name, uint32_t apiVersion, bool debug) : System(name, *this), m_apiVersion(apiVersion) {
+		if( VK_VERSION_MAJOR(apiVersion) == 1 && VK_VERSION_MINOR(apiVersion) < VK_VERSION_MINOR(c_minimumVersion)) {
+			std::cout << "Minimum VVE Vulkan API version is 1." << VK_VERSION_MINOR(c_minimumVersion) << "!\n";
+			exit(1);
+		}
+
 	#ifndef NDEBUG
 		m_debug = true;
 	#endif
 		m_debug = m_debug | debug;
-		auto transform = [&](const auto& str) { m_msgTypeMap[std::hash<std::string>{}(str)] = str; };
+		auto transform = [&](const std::string& str) { m_msgTypeMap[std::hash<std::string>{}(str)] = str; };
 		std::ranges::for_each( MsgTypeNames, transform );
 	};
 	
@@ -51,15 +50,12 @@ namespace vve {
 	void Engine::SendMessage( Message message ) {
 		for( auto& [phase, callback] : m_messageMap[message.GetType()] ) {
 			message.SetPhase(phase);
-			void* receiver = message.GetReceiver();
-			if( receiver == nullptr || receiver == callback.m_system ) [[likely]] {
-				if( callback.m_callback(message) ) { return; }
-			}
+			if( callback.m_callback(message) ) { return; }
 		}
 	}
 	
 	void Engine::CreateWindow(){
-		RegisterSystem(std::make_unique<WindowSDL>(m_windowName, *this, m_windowName, 800, 600 ) );
+		RegisterSystem(std::make_unique<WindowSDL>(m_windowName, *this, m_windowName, 1200, 600 ) );
 	};
 	
 	void Engine::CreateRenderer(){
@@ -92,9 +88,8 @@ namespace vve {
 			CreateRenderer();
 			CreateSystems();
 			CreateGUI();		
-			SendMessage( MsgAnnounce{this} );
-			SendMessage( MsgInit{this} );
-			SendMessage( MsgLoadLevel{this, nullptr, ""} );
+			SendMessage( MsgInit{} );
+			SendMessage( MsgLoadLevel{""} );
 		}
 		m_initialized = true;
 		m_last = std::chrono::high_resolution_clock::now();
@@ -105,25 +100,31 @@ namespace vve {
 		double dt = std::chrono::duration_cast<std::chrono::duration<double>>(now - m_last).count();
 		m_last = now;
 
-		SendMessage( MsgFrameStart{this, nullptr, dt} ) ;
-		SendMessage( MsgPollEvents{this, nullptr, dt} ) ;
-		SendMessage( MsgUpdate{this, nullptr, dt} ) ;
-		SendMessage( MsgPrepareNextFrame{this, nullptr, dt} ) ;
-		SendMessage( MsgRecordNextFrame{this, nullptr, dt} ) ;
-		SendMessage( MsgRenderNextFrame{this, nullptr, dt} ) ;
-		SendMessage( MsgPresentNextFrame{this, nullptr, dt} ) ;
-		SendMessage( MsgFrameEnd{this, nullptr, dt} ) ;
+		SendMessage( MsgFrameStart{dt} ) ;
+		SendMessage( MsgPollEvents{dt} ) ;
+		SendMessage( MsgUpdate{dt} ) ;
+		SendMessage( MsgPrepareNextFrame{dt} ) ;
+		SendMessage( MsgRecordNextFrame{dt} ) ;
+		SendMessage( MsgRenderNextFrame{dt} ) ;
+		SendMessage( MsgPresentNextFrame{dt} ) ;
+		SendMessage( MsgFrameEnd{dt} ) ;
+	}
+
+	auto Engine::GetHandle(std::string name) -> vecs::Handle { 
+		return m_handleMap[name]; 
+	}
+
+	auto Engine::SetHandle(std::string name, vecs::Handle h) -> void {
+		m_handleMap[name] = h;
+	}
+
+	auto  Engine::ContainsHandle(std::string name) -> bool {
+		return m_handleMap.contains(name);
 	}
 
 	void Engine::Quit(){
-		SendMessage( MsgQuit{this, nullptr} );
+		SendMessage( MsgQuit{} );
 	}
-
-	auto Engine::GetSystem( std::string name ) -> System* { 
-		auto system = m_systems[name].get();
-		assert(system != nullptr);
-		return system;
-	}	
 
 	void Engine::Stop() {
 		m_running = false;

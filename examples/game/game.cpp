@@ -12,7 +12,7 @@ class MyGame : public vve::System {
             STATE_DEAD
         };
 
-        const float c_max_time = 30.0f;
+        const float c_max_time = 35.0f;
         const int c_field_size = 50;
         const int c_number_cubes = 10;
 
@@ -53,7 +53,7 @@ class MyGame : public vve::System {
 
             // ----------------- Load Plane -----------------
 
-            m_engine.SendMessage( MsgSceneLoad{ this, nullptr, vve::Name{plane_obj} });
+            m_engine.SendMessage( MsgSceneLoad{ vve::Filename{plane_obj}, aiProcess_FlipWindingOrder });
 
             auto m_handlePlane = m_registry.Insert( 
                             vve::Position{ {0.0f,0.0f,0.0f } }, 
@@ -64,7 +64,7 @@ class MyGame : public vve::System {
                             vve::UVScale{ { 1000.0f, 1000.0f } }
                         );
 
-            m_engine.SendMessage(MsgObjectCreate{ this, nullptr, vve::ObjectHandle(m_handlePlane), vve::ParentHandle{} });
+            m_engine.SendMessage(MsgObjectCreate{  vve::ObjectHandle(m_handlePlane), vve::ParentHandle{} });
     
             // ----------------- Load Cube -----------------
 
@@ -73,12 +73,13 @@ class MyGame : public vve::System {
                             vve::Rotation{mat3_t{1.0f}}, 
                             vve::Scale{vec3_t{1.0f}});
 
-            m_engine.SendMessage(MsgSceneCreate{ this, nullptr, vve::ObjectHandle(m_handleCube), vve::ParentHandle{}, vve::Name{cube_obj} });
+            m_engine.SendMessage(MsgSceneCreate{ vve::ObjectHandle(m_handleCube), vve::ParentHandle{}, vve::Filename{cube_obj}, aiProcess_FlipWindingOrder });
 
             GetCamera();
             m_registry.Get<vve::Rotation&>(m_cameraHandle)() = mat3_t{ glm::rotate(mat4_t{1.0f}, 3.14152f/2.0f, vec3_t{1.0f, 0.0f, 0.0f}) };
 
-            m_engine.SendMessage(MsgPlaySound{ this, nullptr, vve::Name{"assets\\sounds\\ophelia.wav"}, 2 });
+            m_engine.SendMessage(MsgPlaySound{ vve::Filename{"assets\\sounds\\ophelia.wav"}, 2, 50 });
+			m_engine.SendMessage(MsgSetVolume{ (int)m_volume });
 
             return false;
         };
@@ -91,8 +92,8 @@ class MyGame : public vve::System {
             if( m_state == State::STATE_RUNNING ) {
                 if( m_time_left <= 0.0f ) { 
                     m_state = State::STATE_DEAD; 
-                    m_engine.SendMessage(MsgPlaySound{ this, nullptr, vve::Name{"assets\\sounds\\ophelia.wav"}, 0 });
-                    m_engine.SendMessage(MsgPlaySound{ this, nullptr, vve::Name{"assets\\sounds\\gameover.wav"}, 1 });
+                    m_engine.SendMessage(MsgPlaySound{ vve::Filename{"assets\\sounds\\ophelia.wav"}, 0, 50 });
+                    m_engine.SendMessage(MsgPlaySound{ vve::Filename{"assets\\sounds\\gameover.wav"}, 1 });
                     return false;
                 }
                 auto posCube = m_registry.Get<vve::Position&>(m_handleCube);
@@ -104,10 +105,9 @@ class MyGame : public vve::System {
                     if( m_cubes_left == 0 ) {
                         m_time_left += 20;
                         m_cubes_left = c_number_cubes;
-                        m_engine.SendMessage(MsgPlaySound{ this, nullptr, vve::Name{"assets\\sounds\\bell.wav"}, 1 });
+                        m_engine.SendMessage(MsgPlaySound{ vve::Filename{"assets\\sounds\\bell.wav"}, 1 });
                     } else {
-                        m_engine.SendMessage(MsgPlaySound{ this, nullptr, vve::Name{"assets\\sounds\\explosion.wav"}, 1 });
-
+                        m_engine.SendMessage(MsgPlaySound{ vve::Filename{"assets\\sounds\\explosion.wav"}, 1 });
                     }
                 }
             }
@@ -123,6 +123,9 @@ class MyGame : public vve::System {
                 ImGui::TextUnformatted(buffer);
                 std::snprintf(buffer, 100, "Cubes Left: %d", m_cubes_left);
                 ImGui::TextUnformatted(buffer);
+				if (ImGui::SliderFloat("Sound Volume", &m_volume, 0, 100.0)) {
+					m_engine.SendMessage(MsgSetVolume{ (int)m_volume });
+				}
                 ImGui::End();
             }
 
@@ -133,7 +136,7 @@ class MyGame : public vve::System {
                     m_state = State::STATE_RUNNING;
                     m_time_left = c_max_time;
                     m_cubes_left = c_number_cubes;
-                    m_engine.SendMessage(MsgPlaySound{ this, nullptr, vve::Name{"assets\\sounds\\ophelia.wav"}, 2 });
+                    m_engine.SendMessage(MsgPlaySound{ vve::Filename{"assets\\sounds\\ophelia.wav"}, 2 });
                 }
                 ImGui::End();
             }
@@ -148,13 +151,13 @@ class MyGame : public vve::System {
         vecs::Handle m_handleCube{};
 		vecs::Handle m_cameraHandle{};
 		vecs::Handle m_cameraNodeHandle{};
+		float m_volume{50.0f};
     };
     
     
     
     int main() {
-    
-        vve::Engine engine("My Engine") ;
+        vve::Engine engine("My Engine", VK_MAKE_VERSION(1, 3, 0)) ;
         MyGame mygui{engine};  
         engine.Run();
     

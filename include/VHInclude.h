@@ -63,6 +63,7 @@ namespace vve {
 }
 
 #include <stb_image.h>
+#include <stb_image_write.h>
 
 #include "Volk/volk.h"
 
@@ -72,8 +73,20 @@ namespace vve {
 #include "backends/imgui_impl_sdl2.h"
 #include "backends/imgui_impl_vulkan.h"
 
+
+#define VHCHECKRESULT(x)          \
+    {                             \
+        VkResult retval = (x);    \
+        if (retval != VK_SUCCESS) \
+        {                         \
+			std::out << "ERROR: " << std::endl; \\
+            exit(retval);		        \
+        }                        \
+    }
+
 #include "VHVulkan.h"
 #include "VHBuffer.h"
+#include "VHImage.h"
 #include "VHDevice.h"
 #include "VHCommand.h"
 #include "VHRender.h"

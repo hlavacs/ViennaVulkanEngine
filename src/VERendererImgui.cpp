@@ -21,25 +21,29 @@ namespace vve {
     RendererImgui::~RendererImgui() {};
 
     bool RendererImgui::OnInit(Message message) {
-        vh::RenCreateRenderPass(GetPhysicalDevice(), GetDevice(), GetSwapChain(), false, m_renderPass);
+		Renderer::OnInit(message);
+
+        vh::RenCreateRenderPass(m_vulkanState().m_physicalDevice, m_vulkanState().m_device, m_vulkanState().m_swapChain, false, m_renderPass);
 		
- 		vh::RenCreateDescriptorSetLayout( GetDevice(), {}, m_descriptorSetLayoutPerFrame );
+ 		vh::RenCreateDescriptorSetLayout( m_vulkanState().m_device, {}, m_descriptorSetLayoutPerFrame );
 			
-        vh::RenCreateGraphicsPipeline(GetDevice(), m_renderPass, "shaders\\Imgui\\vert.spv", "", {}, {},
+        vh::RenCreateGraphicsPipeline(m_vulkanState().m_device, m_renderPass, "shaders\\Imgui\\vert.spv", "", {}, {},
 			 { m_descriptorSetLayoutPerFrame }, {}, m_graphicsPipeline);
 
-        vh::RenCreateDescriptorPool(GetDevice(), 1000, m_descriptorPool);
+        vh::RenCreateDescriptorPool(m_vulkanState().m_device, 1000, m_descriptorPool);
 
-		vh::VulSetupImgui( ((WindowSDL*)m_window)->GetSDLWindow(), GetInstance(), GetPhysicalDevice(), GetQueueFamilies(), GetDevice(), GetGraphicsQueue(), 
+		vh::VulSetupImgui( m_windowSDLState().m_sdlWindow, 
+			m_vulkanState().m_instance, m_vulkanState().m_physicalDevice, 
+			m_vulkanState().m_queueFamilies, m_vulkanState().m_device, m_vulkanState().m_graphicsQueue, 
 			m_commandPool, m_descriptorPool, m_renderPass);  
 
-        vh::ComCreateCommandPool(GetSurface(), GetPhysicalDevice(), GetDevice(), m_commandPool); 
-        vh::ComCreateCommandBuffers(GetDevice(), m_commandPool, m_commandBuffers);
+        vh::ComCreateCommandPool(m_vulkanState().m_surface, m_vulkanState().m_physicalDevice, m_vulkanState().m_device, m_commandPool); 
+        vh::ComCreateCommandBuffers(m_vulkanState().m_device, m_commandPool, m_commandBuffers);
 		return false;
 	}
 
     bool RendererImgui::OnPrepareNextFrame(Message message) {
-        if(m_window->GetIsMinimized()) return false;
+        if(m_windowState().m_isMinimized) return false;
 	    ImGui_ImplVulkan_NewFrame();
 		ImGui_ImplSDL2_NewFrame();
         ImGui::NewFrame();
@@ -47,20 +51,19 @@ namespace vve {
     }
 
     bool RendererImgui::OnRecordNextFrame(Message message) {
-        if(m_window->GetIsMinimized()) return false;
+        if(m_windowState().m_isMinimized) return false;
 
-        vkResetCommandBuffer(m_commandBuffers[GetCurrentFrame()],  0);
+        vkResetCommandBuffer(m_commandBuffers[m_vulkanState().m_currentFrame],  0);
 
-		vh::ComStartRecordCommandBuffer(m_commandBuffers[GetCurrentFrame()], GetImageIndex(), 
-			GetSwapChain(), m_renderPass, m_graphicsPipeline, 
-			false, ((WindowSDL*)m_window)->GetClearColor(), GetCurrentFrame());
+		vh::ComStartRecordCommandBuffer(m_commandBuffers[m_vulkanState().m_currentFrame], m_vulkanState().m_imageIndex, 
+			m_vulkanState().m_swapChain, m_renderPass, false, m_windowState().m_clearColor, m_vulkanState().m_currentFrame);
 		
 		ImGui::Render();
-        ImGui_ImplVulkan_RenderDrawData(ImGui::GetDrawData(), m_commandBuffers[GetCurrentFrame()]);
+        ImGui_ImplVulkan_RenderDrawData(ImGui::GetDrawData(), m_commandBuffers[m_vulkanState().m_currentFrame]);
 
-		vh::ComEndRecordCommandBuffer(m_commandBuffers[GetCurrentFrame()]);
+		vh::ComEndRecordCommandBuffer(m_commandBuffers[m_vulkanState().m_currentFrame]);
 
-		SubmitCommandBuffer(m_commandBuffers[GetCurrentFrame()]);
+		SubmitCommandBuffer(m_commandBuffers[m_vulkanState().m_currentFrame]);
 		return false;
     }
 
@@ -71,17 +74,17 @@ namespace vve {
     }
 
     bool RendererImgui::OnQuit(Message message) {
-        vkDeviceWaitIdle(GetDevice());
+        vkDeviceWaitIdle(m_vulkanState().m_device);
 		ImGui_ImplVulkan_Shutdown();
         ImGui_ImplSDL2_Shutdown();
         ImGui::DestroyContext();
 
-        vkDestroyCommandPool(GetDevice(), m_commandPool, nullptr);
-        vkDestroyRenderPass(GetDevice(), m_renderPass, nullptr);
-		vkDestroyPipeline(GetDevice(), m_graphicsPipeline.m_pipeline, nullptr);
-        vkDestroyPipelineLayout(GetDevice(), m_graphicsPipeline.m_pipelineLayout, nullptr);   
-        vkDestroyDescriptorPool(GetDevice(), m_descriptorPool, nullptr);
-		vkDestroyDescriptorSetLayout(GetDevice(), m_descriptorSetLayoutPerFrame, nullptr);
+        vkDestroyCommandPool(m_vulkanState().m_device, m_commandPool, nullptr);
+        vkDestroyRenderPass(m_vulkanState().m_device, m_renderPass, nullptr);
+		vkDestroyPipeline(m_vulkanState().m_device, m_graphicsPipeline.m_pipeline, nullptr);
+        vkDestroyPipelineLayout(m_vulkanState().m_device, m_graphicsPipeline.m_pipelineLayout, nullptr);   
+        vkDestroyDescriptorPool(m_vulkanState().m_device, m_descriptorPool, nullptr);
+		vkDestroyDescriptorSetLayout(m_vulkanState().m_device, m_descriptorSetLayoutPerFrame, nullptr);
 		return false;
     }
 

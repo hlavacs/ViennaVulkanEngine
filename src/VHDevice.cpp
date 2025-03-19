@@ -8,7 +8,8 @@ namespace vh {
 	VkInstance volkInstance;
 	
     void DevCreateInstance(const std::vector<const char*>& validationLayers, 
-		const std::vector<const char *>& extensions, bool debug, VkInstance &instance) {
+		const std::vector<const char *>& extensions, const std::string& name, 
+		uint32_t& apiVersion, bool debug, VkInstance &instance) {
 
         volkInitialize();
 
@@ -18,11 +19,11 @@ namespace vh {
 
         VkApplicationInfo appInfo{};
         appInfo.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;
-        appInfo.pApplicationName = "Hello Triangle";
+        appInfo.pApplicationName = name.c_str();
         appInfo.applicationVersion = VK_MAKE_VERSION(1, 0, 0);
-        appInfo.pEngineName = "Tutorial";
-        appInfo.engineVersion = VK_MAKE_VERSION(1, 0, 0);
-        appInfo.apiVersion = VK_API_VERSION_1_3;
+        appInfo.pEngineName = "Vienna Vulkan Engine";
+        appInfo.engineVersion = VK_MAKE_VERSION(2, 0, 0);
+        appInfo.apiVersion = apiVersion;
 
         VkInstanceCreateInfo createInfo{};
         createInfo.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
@@ -50,7 +51,19 @@ namespace vh {
         }
         volkInstance = instance;
 
-   		volkLoadInstance(instance);       
+   		volkLoadInstance(instance);
+		
+		if (vkEnumerateInstanceVersion) {
+			VkResult result = vkEnumerateInstanceVersion(&apiVersion);
+		} else {
+			apiVersion = VK_MAKE_VERSION(1, 0, 0);
+		}
+
+		std::cout << "Vulkan API Version available on this system: " << apiVersion <<  
+			" Major: " << VK_VERSION_MAJOR(apiVersion) << 
+			" Minor: " << VK_VERSION_MINOR(apiVersion) << 
+			" Patch: " << VK_VERSION_PATCH(apiVersion) << std::endl;
+
     }
 
     VkResult DevCreateDebugUtilsMessengerEXT(VkInstance instance, const VkDebugUtilsMessengerCreateInfoEXT* pCreateInfo
@@ -73,14 +86,14 @@ namespace vh {
         }
     }
 
-    void DevInitVMA(VkInstance instance, VkPhysicalDevice physicalDevice, VkDevice device, VmaAllocator& allocator) {
+    void DevInitVMA(VkInstance instance, VkPhysicalDevice physicalDevice, VkDevice device, uint32_t apiVersion, VmaAllocator& allocator) {
         VmaVulkanFunctions vulkanFunctions = {};
         vulkanFunctions.vkGetInstanceProcAddr = vkGetInstanceProcAddr;
         vulkanFunctions.vkGetDeviceProcAddr = vkGetDeviceProcAddr;
 
         VmaAllocatorCreateInfo allocatorCreateInfo = {};
         allocatorCreateInfo.flags = VMA_ALLOCATOR_CREATE_EXT_MEMORY_BUDGET_BIT;
-        allocatorCreateInfo.vulkanApiVersion = VK_API_VERSION_1_2;
+        allocatorCreateInfo.vulkanApiVersion =  apiVersion;
         allocatorCreateInfo.physicalDevice = physicalDevice;
         allocatorCreateInfo.device = device;
         allocatorCreateInfo.instance = instance;
@@ -91,7 +104,7 @@ namespace vh {
     void DevCleanupSwapChain(VkDevice device, VmaAllocator vmaAllocator, SwapChain& swapChain, DepthImage& depthImage) {
         vkDestroyImageView(device, depthImage.m_depthImageView, nullptr);
 
-        BufDestroyImage(device, vmaAllocator, depthImage.m_depthImage, depthImage.m_depthImageAllocation);
+        ImgDestroyImage(device, vmaAllocator, depthImage.m_depthImage, depthImage.m_depthImageAllocation);
 
         for (auto framebuffer : swapChain.m_swapChainFramebuffers) {
             vkDestroyFramebuffer(device, framebuffer, nullptr);
@@ -161,7 +174,7 @@ namespace vh {
         }
     }
 
-    void DevPickPhysicalDevice(VkInstance instance, const std::vector<const char *>& deviceExtensions, VkSurfaceKHR surface, VkPhysicalDevice& physicalDevice) {
+    void DevPickPhysicalDevice(VkInstance instance, uint32_t& apiVersion, const std::vector<const char *>& deviceExtensions, VkSurfaceKHR surface, VkPhysicalDevice& physicalDevice) {
 
         uint32_t deviceCount = 0;
         vkEnumeratePhysicalDevices(instance, &deviceCount, nullptr);
@@ -179,17 +192,24 @@ namespace vh {
             vkGetPhysicalDeviceProperties2(device, &deviceProperties2);
 
             if (deviceProperties2.properties.deviceType == VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU 
-                && DevIsDeviceSuitable(device, deviceExtensions, surface)) {
-
+                	&& DevIsDeviceSuitable(device, deviceExtensions, surface)
+					&& VK_VERSION_MINOR(deviceProperties2.properties.apiVersion) >= VK_VERSION_MINOR(apiVersion) ) {
                 physicalDevice = device;
+				apiVersion = deviceProperties2.properties.apiVersion;
                 break;
             }
         }
 
         if (physicalDevice == VK_NULL_HANDLE) {
             for (const auto& device : devices) {
-                if (DevIsDeviceSuitable(device, deviceExtensions, surface)) {
+				VkPhysicalDeviceProperties2 deviceProperties2{};
+				deviceProperties2.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROPERTIES_2;
+				vkGetPhysicalDeviceProperties2(device, &deviceProperties2);
+
+				if (DevIsDeviceSuitable(device, deviceExtensions, surface)
+						&& VK_VERSION_MINOR(deviceProperties2.properties.apiVersion) >= VK_VERSION_MINOR(apiVersion)) {
                     physicalDevice = device;
+					apiVersion = deviceProperties2.properties.apiVersion;
                     break;
                 }
             }
@@ -306,7 +326,7 @@ namespace vh {
         swapChain.m_swapChainImageViews.resize(swapChain.m_swapChainImages.size());
 
         for (uint32_t i = 0; i < swapChain.m_swapChainImages.size(); i++) {
-            swapChain.m_swapChainImageViews[i] = BufCreateImageView(device, swapChain.m_swapChainImages[i]
+            swapChain.m_swapChainImageViews[i] = ImgCreateImageView(device, swapChain.m_swapChainImages[i]
                 , swapChain.m_swapChainImageFormat, VK_IMAGE_ASPECT_COLOR_BIT);
         }
     }
@@ -328,7 +348,7 @@ namespace vh {
             }
         }
 
-        return VK_PRESENT_MODE_FIFO_KHR;
+        return VK_PRESENT_MODE_FIFO_KHR;    
     }
 
     VkExtent2D DevChooseSwapExtent(const VkSurfaceCapabilitiesKHR& capabilities, SDL_Window* sdlWindow) {

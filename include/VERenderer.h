@@ -4,8 +4,7 @@
 #include <any>
 
 
-namespace vve
-{
+namespace vve {
 
 	class RendererVulkan;
 
@@ -15,59 +14,49 @@ namespace vve
         RAYTRACING
     };
 
+	struct VulkanState {
+		uint32_t 		m_apiVersionInstance{VK_API_VERSION_1_1};
+		uint32_t 		m_apiVersionDevice{VK_API_VERSION_1_1};
+		VkInstance 		m_instance{VK_NULL_HANDLE};
+		VkSurfaceKHR 	m_surface{VK_NULL_HANDLE};
+		VmaAllocator 	m_vmaAllocator;
+		VkDebugUtilsMessengerEXT m_debugMessenger;
+		
+		VkPhysicalDevice 			m_physicalDevice{VK_NULL_HANDLE};
+		VkPhysicalDeviceFeatures 	m_physicalDeviceFeatures;
+		VkPhysicalDeviceProperties 	m_physicalDeviceProperties;
+
+		VkDevice 		m_device{VK_NULL_HANDLE};
+		vh::QueueFamilyIndices m_queueFamilies;
+		VkQueue 		m_graphicsQueue{VK_NULL_HANDLE};
+		VkQueue 		m_presentQueue{VK_NULL_HANDLE};
+		vh::SwapChain 	m_swapChain;
+		vh::DepthImage 	m_depthImage;
+		VkCommandPool 	m_commandPool{VK_NULL_HANDLE};
+		std::vector<VkCommandBuffer> m_commandBuffersSubmit;
+
+		uint32_t m_currentFrame = MAX_FRAMES_IN_FLIGHT - 1;
+		uint32_t m_imageIndex;
+		bool m_framebufferResized = false;
+	};
+
     class Renderer : public System {
         friend class Engine;
-
-	protected:	
-		struct VulkanState {
-        	VkSurfaceKHR 	m_surface{VK_NULL_HANDLE};
-	        WindowSDL*		m_windowSDL;
-			VmaAllocator 	m_vmaAllocator;
-	        VkInstance 		m_instance{VK_NULL_HANDLE};
-		    VkDebugUtilsMessengerEXT m_debugMessenger;
-		    VkPhysicalDevice m_physicalDevice{VK_NULL_HANDLE};
-		    VkDevice 		m_device{VK_NULL_HANDLE};
-		    vh::QueueFamilyIndices m_queueFamilies;
-		    VkQueue 		m_graphicsQueue{VK_NULL_HANDLE};
-		    VkQueue 		m_presentQueue{VK_NULL_HANDLE};
-		    vh::SwapChain 	m_swapChain;
-			vh::DepthImage 	m_depthImage;
-			std::vector<VkCommandBuffer> m_commandBuffersSubmit;
-
-	    	uint32_t m_currentFrame = MAX_FRAMES_IN_FLIGHT - 1;
-        	uint32_t m_imageIndex;
-	    	bool m_framebufferResized = false;
-		};
-
-		using VulkanStateHandle = vsty::strong_type_t<vecs::Handle, vsty::counter<>>;
 
     public:
         Renderer(std::string systemName, Engine& m_engine, std::string windowName);
         virtual ~Renderer();
-        
-    protected:
-		auto GetSurface() -> VkSurfaceKHR&;
-		auto GetInstance() -> VkInstance&;
-		auto GetPhysicalDevice() -> VkPhysicalDevice&;
-		auto GetDevice() -> VkDevice&;
-		auto GetQueueFamilies() -> vh::QueueFamilyIndices&;
-		auto GetGraphicsQueue() -> VkQueue&;
-		auto GetPresentQueue() -> VkQueue&;
-		auto GetCommandPool() -> VkCommandPool&;
-		auto GetVmaAllocator() -> VmaAllocator&;
-		auto GetSwapChain() -> vh::SwapChain&;
-		auto GetDepthImage() -> vh::DepthImage&;
-		auto GetCurrentFrame() -> uint32_t&;
-		auto GetImageIndex() -> uint32_t&;
-		auto GetFramebufferResized() -> bool&;
+		static auto GetState(vecs::Registry& registry) -> std::tuple< vecs::Handle, vecs::Ref<VulkanState>>;
 
-		auto GetVulkanState() -> vecs::Ref<VulkanState>;
+    protected:
+		bool OnInit(Message message);
 		void SubmitCommandBuffer( VkCommandBuffer commandBuffer );
 
-		bool OnAnnounce(Message message);
-		std::string 		m_windowName;
-        Window* 			m_window;
-		VulkanStateHandle 	m_vulkanStateHandle{};
+		std::string 				m_windowName;
+		vecs::Ref<WindowState> 		m_windowState{};
+		vecs::Ref<WindowSDLState> 	m_windowSDLState{};
+		vecs::Handle 				m_vulkanStateHandle{};
+		vecs::Ref<VulkanState> 		m_vulkanState{};
     };
 
 };   // namespace vve

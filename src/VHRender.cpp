@@ -226,7 +226,7 @@ namespace vh {
         rasterizer.rasterizerDiscardEnable = VK_FALSE;
         rasterizer.polygonMode = VK_POLYGON_MODE_FILL;
         rasterizer.lineWidth = 1.0f;
-        rasterizer.cullMode = VK_CULL_MODE_NONE; // VK_CULL_MODE_BACK_BIT;
+        rasterizer.cullMode = VK_CULL_MODE_BACK_BIT; //VK_CULL_MODE_NONE
         rasterizer.frontFace = VK_FRONT_FACE_COUNTER_CLOCKWISE;
         rasterizer.depthBiasEnable = VK_FALSE;
 
@@ -421,11 +421,11 @@ namespace vh {
         , SwapChain& swapChain, DepthImage& depthImage) {
         VkFormat depthFormat = RenFindDepthFormat(physicalDevice);
 
-        BufCreateImage(physicalDevice, device, vmaAllocator, swapChain.m_swapChainExtent.width
+        ImgCreateImage(physicalDevice, device, vmaAllocator, swapChain.m_swapChainExtent.width
             , swapChain.m_swapChainExtent.height, depthFormat
             , VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT
             , VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, depthImage.m_depthImage, depthImage.m_depthImageAllocation);
-        depthImage.m_depthImageView = BufCreateImageView(device, depthImage.m_depthImage, depthFormat, VK_IMAGE_ASPECT_DEPTH_BIT);
+        depthImage.m_depthImageView = ImgCreateImageView(device, depthImage.m_depthImage, depthFormat, VK_IMAGE_ASPECT_DEPTH_BIT);
     }
 
     VkFormat RenFindSupportedFormat(VkPhysicalDevice physicalDevice, const std::vector<VkFormat>& candidates

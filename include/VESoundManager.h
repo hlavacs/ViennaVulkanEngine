@@ -8,7 +8,7 @@ namespace vve {
 
 	//-------------------------------------------------------------------------------------------------------
 
-    struct PlayingSound {
+    struct SoundState {
         std::string m_filepath{};
         int m_cont{0};
         SDL_AudioSpec m_wavSpec;
@@ -16,6 +16,7 @@ namespace vve {
         Uint32 m_playedLength{0};
         Uint32 m_wavLength{0};
         Uint8 *m_wavBuffer{nullptr};
+		Uint32 m_volume{100};
         SDL_AudioDeviceID m_deviceId{0};
     };
 
@@ -24,14 +25,18 @@ namespace vve {
 	public:
         SoundManager(std::string systemName, Engine& engine);
     	~SoundManager() {};
+		int GetVolume() { return m_volume; }
+
+        static inline SoundManager* m_soundManager{nullptr};
+        static inline void SDL2AudioCallback(void *userdata, Uint8 *stream, int len);
 
     private:
-        std::map<Name, PlayingSound> m_sounds;
-
-        bool OnAnnounce(Message message);
         bool OnUpdate(Message message);
-        bool OnPlaySound(Message message);
+        bool OnPlaySound(Message& message);
+        bool OnSetVolume(Message& message);
         bool OnQuit(Message message);
+        void AudioCallback(vecs::Handle handle, Uint8 *stream, int len);
+		float m_volume{50.0f};
     };
 
 };  // namespace vve

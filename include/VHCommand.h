@@ -6,13 +6,12 @@ namespace vh {
 
     VkCommandBuffer ComBeginSingleTimeCommands(VkDevice device, VkCommandPool commandPool);
 
-    void ComEndSingleTimeCommands(VkDevice device, VkQueue graphicsQueue, VkCommandPool commandPool, VkCommandBuffer commandBuffer);
+    VkResult ComEndSingleTimeCommands(VkDevice device, VkQueue graphicsQueue, VkCommandPool commandPool, VkCommandBuffer commandBuffer);
     
 	void ComCreateCommandBuffers(VkDevice device, VkCommandPool commandPool, std::vector<VkCommandBuffer>& commandBuffers);
 
     void ComStartRecordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageIndex
-        , SwapChain& swapChain, VkRenderPass renderPass, Pipeline& graphicsPipeline
-        , bool clear, glm::vec4 clearColor, uint32_t currentFrame);
+        , SwapChain& swapChain, VkRenderPass renderPass, bool clear, glm::vec4 clearColor, uint32_t currentFrame);
 
     void ComBindPipeline(VkCommandBuffer commandBuffer, uint32_t imageIndex
         , SwapChain& swapChain, VkRenderPass renderPass, Pipeline& graphicsPipeline

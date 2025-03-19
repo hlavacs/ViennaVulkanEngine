@@ -8,6 +8,7 @@ INPUT                 = @DOXYGEN_INPUT_DIR@
 RECURSIVE             = YES
 FILE_PATTERNS         = *.cpp *.h
 CLASS_DECLARATION	  = YES
+EXCLUDE				  = @DOXYGEN_EXCLUDE_DIR@
 
 # Documentation generation options
 GENERATE_HTML         = YES

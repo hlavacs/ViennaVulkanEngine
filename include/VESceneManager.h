@@ -6,9 +6,6 @@ namespace vve {
 	//-------------------------------------------------------------------------------------------------------
 	//Nodes
 
-	using NodeHandle = vsty::strong_type_t<vecs::Handle, vsty::counter<>>; //need this to use Node as a unique component	
-	using ChildHandle = vsty::strong_type_t<vecs::Handle, vsty::counter<>>;
-	using SiblingHandle = vsty::strong_type_t<vecs::Handle, vsty::counter<>>;
 	using Children = vsty::strong_type_t<std::vector<vecs::Handle>, vsty::counter<>>;
 
 	//-------------------------------------------------------------------------------------------------------
@@ -22,8 +19,6 @@ namespace vve {
 		auto Matrix() -> mat4_t { mat4_t proj = glm::perspective(glm::radians(m_fov), m_aspect, m_near, m_far); proj[1][1] *= -1; return proj; }
 	};
 
-	using CameraHandle = vsty::strong_type_t<vecs::Handle, vsty::counter<>>; //need this to use Camera as a unique component
-
 	//-------------------------------------------------------------------------------------------------------
 	//Lights
 
@@ -31,16 +26,10 @@ namespace vve {
 	using DirectionalLight = vsty::strong_type_t<vh::LightParams, vsty::counter<>>;
 	using SpotLight = vsty::strong_type_t<vh::LightParams, vsty::counter<>>;
 
-	using LightHandle = vsty::strong_type_t<vecs::Handle, vsty::counter<>>; //need this to use Light as a unique component
-	using PointLightHandle = vsty::strong_type_t<vecs::Handle, vsty::counter<>>; //need this to use PointLight as a unique component
-	using DirectionalLightHandle = vsty::strong_type_t<vecs::Handle, vsty::counter<>>; //need this to use DirectionalLight as a unique component
-	using SpotLightHandle = vsty::strong_type_t<vecs::Handle, vsty::counter<>>; //need this to use SpotLight as a unique component
-
 	//-------------------------------------------------------------------------------------------------------
 	//Mesh
 
 	using MeshName = vsty::strong_type_t<std::string, vsty::counter<>>;
-	using MeshHandle = vsty::strong_type_t<vecs::Handle, vsty::counter<>>; //need this to use Mesh as a unique component	using SceneName = vsty::strong_type_t<std::string, vsty::counter<>>; //need this to use Filename as a unique component
 
 	//-------------------------------------------------------------------------------------------------------
 	//Maps
@@ -50,12 +39,6 @@ namespace vve {
 	using HeightMapName = vsty::strong_type_t<std::string, vsty::counter<>>;
 	using LightMapName = vsty::strong_type_t<std::string, vsty::counter<>>;
 	using OcclusionMapName = vsty::strong_type_t<std::string, vsty::counter<>>;
-
-	using TextureHandle = vsty::strong_type_t<vecs::Handle, vsty::counter<>>; //need this to use Texture as a unique comonent
-	using NormalMapHandle = vsty::strong_type_t<vecs::Handle, vsty::counter<>>; //need this to use NormalMap as a unique component
-	using HeightMapHandle = vsty::strong_type_t<vecs::Handle, vsty::counter<>>; //need this to use HeightMap as a unique component
-	using LightMapHandle = vsty::strong_type_t<vecs::Handle, vsty::counter<>>; //need this to use LightMap as a unique component
-	using OcclusionMapHandle = vsty::strong_type_t<vecs::Handle, vsty::counter<>>; //need this to use OcclusionMap as a unique component
 
 	//-------------------------------------------------------------------------------------------------------
 	//Transforms
@@ -88,19 +71,21 @@ namespace vve {
 
     private:
 		bool OnInit(Message message);
+		bool OnLoadLevel(Message message);
 		bool OnWindowSize(Message message);
 		bool OnUpdate(Message message);
 		bool OnSceneCreate(Message message);
 		bool OnObjectCreate(Message message);
-		bool OnObjectSetParent(Message message);
 		void ProcessNode(aiNode* node, ParentHandle parent, std::filesystem::path& filepath, const aiScene* scene, uint64_t& id);
+		bool OnObjectSetParent(Message message);
 		void SetParent(ObjectHandle object, ParentHandle parent);
+		bool OnObjectDestroy(Message message);
 
 		//std::shared_mutex m_mutex;
 		CameraHandle m_cameraHandle;
-		NodeHandle m_cameraNodeHandle;
-		NodeHandle m_worldHandle;
-		NodeHandle m_rootHandle;
+		ObjectHandle m_cameraNodeHandle;
+		ObjectHandle m_worldHandle;
+		ObjectHandle m_rootHandle;
     };
 
 };  // namespace vve
