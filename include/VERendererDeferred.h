@@ -8,7 +8,6 @@ namespace vve {
 
 	private:
 		bool OnInit(Message message);
-		bool OnQuit(Message message);
 	};
 
 }	// namespace vve
