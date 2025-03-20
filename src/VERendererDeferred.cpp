@@ -11,24 +11,25 @@ namespace vve {
 
 		// TODO engine.RegisterCallback -> register Callbacks
 		engine.RegisterCallback({
-			{this, 3000, "INIT", [this](Message& message) { return OnInit(message); } },
-			{this,    0, "QUIT", [this](Message& message) { return OnQuit(message); } }
+			{this, 3000, "INIT", [this](Message& message) { return OnInit(message); } }
 			});
 	}
 
 	RendererDeferred::~RendererDeferred() {};
 
 	bool RendererDeferred::OnInit(Message message) {
-		// TODO
 		std::cout << "RendererDeferred: OnInit callback\n";
+		auto state = m_engine.GetState();
 
-		return false;
-	}
-
-	bool RendererDeferred::OnQuit(Message message) {
-		// TODO
-		std::cout << "RendererDeferred: OnQuit callback\n";
-
+		switch (VK_API_VERSION_MINOR(state.apiVersion)) {
+			case 0:
+				std::cout << "Minimum Vulkan API version is 1.1!\n";
+				exit(1);
+				break;
+			default:
+				// TODO 1.1 Renderer & 1.3 Renderer
+				break;
+		}
 		return false;
 	}
 
