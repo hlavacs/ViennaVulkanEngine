@@ -90,6 +90,7 @@ namespace vve {
 #include "VERendererShadow11.h"
 #include "VERendererVulkan.h"
 #include "VERendererDeferred.h"
+#include "VERendererDeferred11.h"
 #include "VESceneManager.h"
 #include "VEAssetManager.h"
 #include "VESoundManager.h"
