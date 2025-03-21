@@ -12,5 +12,5 @@ target_link_libraries (${TARGET} PUBLIC ${VULKAN_SDK}/${VULKAN_LIB}/${SDL2_LIB})
 #target_link_libraries (${TARGET} PUBLIC ${sdl3_BINARY_DIR}/SDL3-static.lib)
 #target_link_libraries (${TARGET} PUBLIC ${sdlmixer_BINARY_DIR}/SDL3_mixer.lib)
 
-target_link_libraries(${TARGET} PUBLIC ${ASSIMP_ZLIB})
-target_link_libraries (${TARGET} PUBLIC ${ASSIMP_LIB})
+target_link_libraries(${TARGET} PUBLIC "${ASSIMP_ZLIB}")
+target_link_libraries (${TARGET} PUBLIC "${ASSIMP_LIB}")

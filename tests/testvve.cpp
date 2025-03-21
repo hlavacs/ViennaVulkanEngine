@@ -2,12 +2,12 @@
 #include <iostream>
 #include <utility>
 #include <stack>
-
+#include <time.h>
 
 #include "VHInclude.h"
 #include "VEInclude.h"
 
-#include "L2DFileDialog.h"
+//#include "L2DFileDialog.h"
 
 
 class MyGUI : public vve::System {
@@ -74,14 +74,14 @@ public:
 				ImGui::SameLine();
 				if (ImGui::Button("Browse##Browse1")) {
 				  file_dialog_buffer = path_obj;
-				  FileDialog::file_dialog_open = true;
-				  FileDialog::file_dialog_open_type = FileDialog::FileDialogType::OpenFile;
+				  //FileDialog::file_dialog_open = true;
+				  //FileDialog::file_dialog_open_type = FileDialog::FileDialogType::OpenFile;
 				}
 
-				ImGui::SameLine();
-				if (FileDialog::file_dialog_open) {
-				  FileDialog::ShowFileDialog(&FileDialog::file_dialog_open, file_dialog_buffer, sizeof(file_dialog_buffer), FileDialog::file_dialog_open_type);
-				}
+				//ImGui::SameLine();
+				//if (FileDialog::file_dialog_open) {
+				//  FileDialog::ShowFileDialog(&FileDialog::file_dialog_open, file_dialog_buffer, sizeof(file_dialog_buffer), FileDialog::file_dialog_open_type);
+				//}
 
 				static aiPostProcessSteps flags = aiProcess_Triangulate;
 				static bool checkbox = false;
@@ -108,14 +108,14 @@ public:
 				ImGui::SameLine();
 				if (ImGui::Button("Browse##Browse2")) {
 				  file_dialog_buffer = path_obj2;
-				  FileDialog::file_dialog_open = true;
-				  FileDialog::file_dialog_open_type = FileDialog::FileDialogType::OpenFile;
+				  //FileDialog::file_dialog_open = true;
+				  //FileDialog::file_dialog_open_type = FileDialog::FileDialogType::OpenFile;
 				}
 
 				ImGui::SameLine();
-				if (FileDialog::file_dialog_open) {
-				  FileDialog::ShowFileDialog(&FileDialog::file_dialog_open, file_dialog_buffer, sizeof(file_dialog_buffer), FileDialog::file_dialog_open_type);
-				}
+				//if (FileDialog::file_dialog_open) {
+				//  FileDialog::ShowFileDialog(&FileDialog::file_dialog_open, file_dialog_buffer, sizeof(file_dialog_buffer), FileDialog::file_dialog_open_type);
+				//}
 
 				static aiPostProcessSteps flags = aiProcess_Triangulate;
 				static bool checkbox = false;
@@ -145,13 +145,13 @@ public:
 				ImGui::SameLine();
 				if (ImGui::Button("Browse##Browse3")) {
 				  file_dialog_buffer = path_obj3;
-				  FileDialog::file_dialog_open = true;
-				  FileDialog::file_dialog_open_type = FileDialog::FileDialogType::OpenFile;
+				  //FileDialog::file_dialog_open = true;
+				  //FileDialog::file_dialog_open_type = FileDialog::FileDialogType::OpenFile;
 				}
 
-				if (FileDialog::file_dialog_open) {
-				  FileDialog::ShowFileDialog(&FileDialog::file_dialog_open, file_dialog_buffer, sizeof(file_dialog_buffer), FileDialog::file_dialog_open_type);
-				}
+				//if (FileDialog::file_dialog_open) {
+				//  FileDialog::ShowFileDialog(&FileDialog::file_dialog_open, file_dialog_buffer, sizeof(file_dialog_buffer), FileDialog::file_dialog_open_type);
+				//}
 
 				static aiPostProcessSteps flags = aiProcess_Triangulate;
 				static bool checkbox = true;
