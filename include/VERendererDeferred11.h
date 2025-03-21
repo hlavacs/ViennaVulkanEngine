@@ -11,6 +11,8 @@ namespace vve {
 		virtual ~RendererDeferred11();
 
 	private:
+		bool OnInit(Message message);
+		bool OnQuit(Message message);
 	};
 
 }	// namespace vve

@@ -13,4 +13,11 @@ namespace vve {
 	}
 
 	RendererDeferred11::~RendererDeferred11() {};
+
+	bool RendererDeferred11::OnInit(Message message) {
+		// TODO: maybe a reference will be enough here to not make a message copy?
+		Renderer::OnInit(message);
+
+		return false;
+	}
 }
