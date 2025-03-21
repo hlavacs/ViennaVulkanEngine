@@ -78,7 +78,7 @@ public:
 				  //FileDialog::file_dialog_open_type = FileDialog::FileDialogType::OpenFile;
 				}
 
-				//ImGui::SameLine();
+				ImGui::SameLine();
 				//if (FileDialog::file_dialog_open) {
 				//  FileDialog::ShowFileDialog(&FileDialog::file_dialog_open, file_dialog_buffer, sizeof(file_dialog_buffer), FileDialog::file_dialog_open_type);
 				//}
