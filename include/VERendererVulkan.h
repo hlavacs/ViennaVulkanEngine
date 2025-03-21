@@ -33,10 +33,20 @@ namespace vve {
             "VK_LAYER_KHRONOS_validation"
         };
 
-		std::vector<const char*> m_instanceExtensions;
+		std::vector<const char*> m_instanceExtensions = {
+            #ifdef __APPLE__
+            "VK_MVK_macos_surface",
+            // The next line is only required when using API_VERSION_1_0
+            // enabledInstanceExtensions.push_back("VK_KHR_get_physical_device_properties2");
+            ("VK_KHR_portability_enumeration")
+            #endif
+        };
 
         std::vector<const char*> m_deviceExtensions = {
-            VK_KHR_SWAPCHAIN_EXTENSION_NAME
+            "VK_KHR_swapchain"
+            #ifdef __APPLE__
+            , "VK_KHR_portability_subset"
+            #endif
         };
 
 	    VkRenderPass m_renderPass;
