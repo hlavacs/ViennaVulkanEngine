@@ -43,8 +43,10 @@ namespace vve {
             m_instanceExtensions.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
         }
 
+		volkInitialize();
 		m_vulkanState().m_apiVersionInstance = engineState.apiVersion;
     	vh::DevCreateInstance( m_validationLayers, m_instanceExtensions, engineState.name, m_vulkanState().m_apiVersionInstance, engineState.debug, m_vulkanState().m_instance);
+		volkLoadInstance(m_vulkanState().m_instance);
 
 		if (engineState.debug) {
 	        vh::DevSetupDebugMessenger(m_vulkanState().m_instance, m_vulkanState().m_debugMessenger);
@@ -68,7 +70,10 @@ namespace vve {
 
 		vh::DevCreateLogicalDevice(m_vulkanState().m_surface, m_vulkanState().m_physicalDevice, m_vulkanState().m_queueFamilies, m_validationLayers, 
 			m_deviceExtensions, engineState.debug, m_vulkanState().m_device, m_vulkanState().m_graphicsQueue, m_vulkanState().m_presentQueue);
-        vh::DevInitVMA(m_vulkanState().m_instance, m_vulkanState().m_physicalDevice, m_vulkanState().m_device, engineState.apiVersion, m_vulkanState().m_vmaAllocator);  
+        
+		volkLoadDevice(m_vulkanState().m_device);
+		
+		vh::DevInitVMA(m_vulkanState().m_instance, m_vulkanState().m_physicalDevice, m_vulkanState().m_device, engineState.apiVersion, m_vulkanState().m_vmaAllocator);  
         vh::DevCreateSwapChain(m_windowSDLState().m_sdlWindow, 
 			m_vulkanState().m_surface, m_vulkanState().m_physicalDevice, m_vulkanState().m_device, m_vulkanState().m_swapChain);
         

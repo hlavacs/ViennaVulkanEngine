@@ -98,10 +98,7 @@ namespace vh
         io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;      // Enable Gamepad Controls
         //io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;         // IF using Docking Branch
 
-        ImGui_ImplVulkan_LoadFunctions( VK_API_VERSION_1_0, &VulLoadVolk );
-        //ImGui_ImplVulkan_LoadFunctions( VK_API_VERSION_1_0,
-        //    [](const char* function_name) {return (void*)vkGetInstanceProcAddr(volkInstance, function_name); }
-        //);
+        ImGui_ImplVulkan_LoadFunctions( VK_API_VERSION_1_1, &VulLoadVolk );
 
         // Setup Platform/Renderer backends
         ImGui_ImplSDL2_InitForVulkan(sdlWindow);

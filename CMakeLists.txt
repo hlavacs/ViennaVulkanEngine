@@ -6,39 +6,68 @@ project (
   LANGUAGES CXX
 )
 
-if (MSVC)
-	add_compile_options(/DIMGUI_IMPL_VULKAN_NO_PROTOTYPES)
+if (CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
+  	add_compile_options(/D IMGUI_IMPL_VULKAN_NO_PROTOTYPES)
 	add_compile_options(/D_CRT_SECURE_NO_WARNINGS) #for assimp
-	add_compile_options(/DASSIMP_BUILD_ZLIB=ON) #for assimp
-else()
-	add_compile_options(-DIMGUI_IMPL_VULKAN_NO_PROTOTYPES)
+	add_compile_options(/EHsc /std:c++20 /DEBUG /Zi /Istb) #for assimp
+elseif(CMAKE_CXX_COMPILER_ID STREQUAL "AppleClang")
+	add_compile_options(-D IMGUI_IMPL_VULKAN_NO_PROTOTYPES)
 	add_compile_options(-Wno-nullability-completeness)
-	add_compile_options(-Wformat=0)
 	add_compile_options(-D_CRT_SECURE_NO_WARNINGS) #for assimp
-	add_compile_options(-DASSIMP_BUILD_ZLIB=ON) #for assimp
+elseif(CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
+	add_compile_options(-D IMGUI_IMPL_VULKAN_NO_PROTOTYPES)
+	add_compile_options(-Wno-nullability-completeness)
+	add_compile_options(-D_CRT_SECURE_NO_WARNINGS) #for assimp
+elseif(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+	add_compile_options(-D IMGUI_IMPL_VULKAN_NO_PROTOTYPES)
+	add_compile_options(-Wno-nullability-completeness)
+	add_compile_options(-D_CRT_SECURE_NO_WARNINGS) #for assimp
 endif()
+
 
 # enforce C++20 standard
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-# Vulkan SDK
-find_package(Vulkan REQUIRED)
-set(VULKAN $ENV{VULKAN_SDK})
-include_directories(${VULKAN}/Include)
-include_directories(${VULKAN}/Include/SDL2)
-include_directories(${VULKAN}/Include/Volk)
-include_directories(${VULKAN}/Include/glm)
-include_directories(${VULKAN}/Include/vma)
-
-# Fetch GitHub projects and set variables for include directories
-
-set(INCLUDE ${PROJECT_SOURCE_DIR}/include)  # engine include directory
+# engine include directory 
+set(INCLUDE ${PROJECT_SOURCE_DIR}/include)
 include_directories(${INCLUDE})
 
+# Vulkan SDK
+find_package(Vulkan REQUIRED)
+set(VULKAN_SDK $ENV{VULKAN_SDK})
+
+if (WIN32)
+	set(VULKAN_INCLUDE Include)
+	set(VULKAN_LIB Lib)
+	set(SDL2_LIB SDL2.lib)
+  	set(VOLK_LIB volk.lib)
+  	set(VKB_LIB vk-bootstrap.lib)
+elseif (APPLE)
+	set(VULKAN_INCLUDE include)
+    set(VULKAN_LIB lib)
+	set(SDL2_LIB libSDL2-2.0.dylib)
+  	set(VOLK_LIB libvolk.a)
+  	set(VKB_LIB libvk-bootstrap.a)
+elseif (UNIX)
+	set(VULKAN_INCLUDE include)
+	set(VULKAN_LIB lib)
+	set(SDL2LIB libSDL2-2.0.a)
+  	set(VOLK_LIB libvolk.a)
+  	set(VKB_LIB libvk-bootstrap.a)
+endif()
+
+include_directories(${VULKAN_SDK}/${VULKAN_INCLUDE})
+include_directories(${VULKAN_SDK}/${VULKAN_INCLUDE}/SDL2)
+include_directories(${VULKAN_SDK}/${VULKAN_INCLUDE}/volk)
+include_directories(${VULKAN_SDK}/${VULKAN_INCLUDE}/glm)
+include_directories(${VULKAN_SDK}/${VULKAN_INCLUDE}/vma)
+
+
+# Fetch GitHub projects and set variables for include directories
 include(FetchContent) # enable Fetch Content
 
-#--------------------------------- Fetch std image ---------------------------------#
+#--------------------------------- Fetch stb image ---------------------------------#
 FetchContent_Declare(stb_image
                      GIT_REPOSITORY https://github.com/nothings/stb.git
                      GIT_TAG master
@@ -46,7 +75,7 @@ FetchContent_Declare(stb_image
 FetchContent_MakeAvailable(stb_image)
 include_directories (${stb_image_SOURCE_DIR})
 
-#--------------------------------- Fetch ImGui file dialog ---------------------------------#
+#--------------------------------- Fetch file dialog ---------------------------------#
 FetchContent_Declare(l2dfiledialog
                      GIT_REPOSITORY https://github.com/Limeoats/L2DFileDialog.git
                      GIT_TAG master
@@ -131,6 +160,16 @@ FetchContent_MakeAvailable(Imgui)
 include_directories (${imgui_SOURCE_DIR})
 include_directories(${imgui_SOURCE_DIR}/backends)
 
+#--------------------------------- Fetch vk-bootstrap ---------------------------------#
+
+FetchContent_Declare(vkbootstrap
+                     GIT_REPOSITORY https://github.com/charles-lunarg/vk-bootstrap.git 
+                     GIT_TAG main)
+FetchContent_MakeAvailable(vkbootstrap)
+include_directories(${vkbootstrap_SOURCE_DIR}/src)
+
+#--------------------------------- Summary ---------------------------------#
+
 message(STATUS "VECS: ${viennaentitycomponentsystem_SOURCE_DIR}")
 message(STATUS "VTLL: ${viennatypelistlibrary_SOURCE_DIR}")
 message(STATUS "VSTY: ${viennastrongtype_SOURCE_DIR}")
@@ -143,6 +182,7 @@ message(STATUS "ASSIMP SRC: ${assimp_SOURCE_DIR}")
 message(STATUS "ASSIMP BIN: ${assimp_BINARY_DIR}")
 message(STATUS "ZLIB SRC: ${zlib_SOURCE_DIR}")
 message(STATUS "ZLIB BIN: ${zlib_BINARY_DIR}")
+message(STATUS "VKBOOTSTRAP: ${vkbootstrap_SRC_DIR}")
 
 # Add directories for compiling
 add_subdirectory(src)
