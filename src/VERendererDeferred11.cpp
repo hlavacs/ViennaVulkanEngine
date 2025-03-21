@@ -8,7 +8,7 @@ namespace vve {
 
 		engine.RegisterCallback({
 			{this, 3500, "INIT", [this](Message& message) { return OnInit(message); } },
-			//{this,     0, "QUIT", [this](Message& message) { return OnQuit(message); } }
+			{this,     0, "QUIT", [this](Message& message) { return OnQuit(message); } }
 			});
 	}
 
@@ -20,4 +20,11 @@ namespace vve {
 
 		return false;
 	}
-}
+
+	bool RendererDeferred11::OnQuit(Message message) {
+		// TODO: maybe a reference will be enough here to not make a message copy?
+
+		return false;
+	}
+
+}	// namespace vve
