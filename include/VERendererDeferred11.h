@@ -13,6 +13,9 @@ namespace vve {
 	private:
 		bool OnInit(Message message);
 		bool OnQuit(Message message);
+
+		VkDescriptorSetLayout m_descriptorSetLayoutPerFrame{ VK_NULL_HANDLE };
+		VkRenderPass m_renderPass{ VK_NULL_HANDLE };
 	};
 
 }	// namespace vve

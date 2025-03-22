@@ -8,7 +8,7 @@ namespace vve {
 
 		engine.RegisterCallback({
 			{this, 3500, "INIT", [this](Message& message) { return OnInit(message); } },
-			{this,     0, "QUIT", [this](Message& message) { return OnQuit(message); } }
+			{this,	  0, "QUIT", [this](Message& message) { return OnQuit(message); } }
 			});
 	}
 
@@ -17,6 +17,15 @@ namespace vve {
 	bool RendererDeferred11::OnInit(Message message) {
 		// TODO: maybe a reference will be enough here to not make a message copy?
 		Renderer::OnInit(message);
+
+		vh::RenCreateRenderPass(m_vulkanState().m_physicalDevice, m_vulkanState().m_device, m_vulkanState().m_swapChain, false, m_renderPass);
+
+		vh::RenCreateDescriptorSetLayout(m_vulkanState().m_device,
+			{
+				{	.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
+					.stageFlags = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT }
+			},
+			m_descriptorSetLayoutPerFrame);
 
 		return false;
 	}
