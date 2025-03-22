@@ -8,14 +8,9 @@ namespace vh {
         , VmaAllocationCreateFlags vmaFlags, VkBuffer& buffer
         , VmaAllocation& allocation, VmaAllocationInfo* allocationInfo = nullptr);
 
-    void BufCreateBuffers( VmaAllocator vmaAllocator
-        , VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties
-        , VmaAllocationCreateFlags vmaFlags, VkBuffer& buffer
-        , VmaAllocation& allocation, VmaAllocationInfo* allocationInfo = nullptr);
-    
-    void BufCreateUniformBuffers(VkPhysicalDevice physicalDevice, VkDevice device, VmaAllocator& vmaAllocator, 
-        VkDeviceSize bufferSize, Buffer &uniformBuffers);
-          
+    void BufCreateBuffers( VkPhysicalDevice physicalDevice, VkDevice device, VmaAllocator& vmaAllocator, 
+        VkBufferUsageFlags usage, VkDeviceSize bufferSize, Buffer &uniformBuffers);
+        
     void BufDestroyBuffer(VkDevice device, VmaAllocator vmaAllocator, VkBuffer buffer, VmaAllocation& allocation);
 
     void BufDestroyBuffer2(VkDevice device, VmaAllocator vmaAllocator, Buffer buffers);
