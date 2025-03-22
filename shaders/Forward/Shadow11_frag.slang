@@ -27,7 +27,7 @@ ConstantBuffer<UniformBufferObjectTexture> gParamsObject;
 //----------------------------------------------------------------------------
 
 [[vk::push_constant]]
-ShadowPushConstant shadowPushConstants;
+ShadowPushConstant shadowParam;
 
 //----------------------------------------------------------------------------
 
@@ -35,8 +35,8 @@ ShadowPushConstant shadowPushConstants;
 float4 fragmentMain(float3 positionW: POSITION, float3 svPosition: SV_Position, uint instanceID: SV_InstanceID )
 {
     float distance = length(positionW - gParamsFrame.camera.positionW);
-    uint2 uv = (uint2)((svPosition.xy / 2.0 + float2(0.5, 0.5)) * (float2)shadowPushConstants.mapResolution);
-    shadowMapArray[shadowPushConstants.arrayIndex][uint3(uv, shadowPushConstants.layerIndex)] = (uint)(svPosition.z * (1 << 31));
+    uint2 uv = (uint2)((svPosition.xy / 2.0 + 0.5) * (float2)shadowParam.mapResolution) + shadowParam.layerOffset;
+    shadowMapArray[shadowParam.arrayIndex][uint3(uv, shadowParam.layerIndex)] = (uint)(svPosition.z * (1 << 31));
     return float4(0,0,0,0);
 }
 
