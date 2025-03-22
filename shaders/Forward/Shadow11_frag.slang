@@ -27,7 +27,7 @@ ConstantBuffer<UniformBufferObjectTexture> gParamsObject;
 //----------------------------------------------------------------------------
 
 [[vk::push_constant]]
-ShadowPushConstant shadowParam;
+ShadowIndex shadowParam;
 
 //----------------------------------------------------------------------------
 

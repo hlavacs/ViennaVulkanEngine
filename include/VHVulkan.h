@@ -16,6 +16,7 @@
 #include <set>
 #include <unordered_map>
 
+#define MAX_FRAMES_IN_FLIGHT 2
 
 
 namespace std {
@@ -28,21 +29,9 @@ namespace std {
 
 
 namespace vh {
-	
-    struct QueueFamilyIndices {
-        std::optional<uint32_t> graphicsFamily;
-        std::optional<uint32_t> presentFamily;
 
-        bool isComplete() {
-            return graphicsFamily.has_value() && presentFamily.has_value();
-        }
-    };
-
-    struct SwapChainSupportDetails {
-        VkSurfaceCapabilitiesKHR capabilities;
-        std::vector<VkSurfaceFormatKHR> formats;
-        std::vector<VkPresentModeKHR> presentModes;
-    };
+	//--------------------------------------------------------------------
+	//Shader resources
 
 	struct Color {
 		alignas(16) glm::vec4 m_ambientColor{0.0f}; 
@@ -50,18 +39,18 @@ namespace vh {
 		alignas(16) glm::vec4 m_specularColor{0.0f};
 	};
 
-	struct UniformBufferObject {
+	struct BufferPerObject {
 	    alignas(16) glm::mat4 model;
 	    alignas(16) glm::mat4 modelInverseTranspose;
 	};
 
-	struct UniformBufferObjectColor {
+	struct BufferPerObjectColor {
 	    alignas(16) glm::mat4 model;
 	    alignas(16) glm::mat4 modelInverseTranspose;
 		alignas(16) vh::Color color{}; 		
 	};
 
-	struct UniformBufferObjectTexture {
+	struct BufferPerObjectTexture {
 	    alignas(16) glm::mat4 model;
 	    alignas(16) glm::mat4 modelInverseTranspose;
 		alignas(16) glm::vec2 uvScale; 		
@@ -71,6 +60,13 @@ namespace vh {
 	    alignas(16) glm::mat4 view;
 	    alignas(16) glm::mat4 proj;
 	    alignas(16) glm::vec3 positionW;
+	};
+
+	struct ShadowIndex {
+		alignas(16) uint32_t mapResolutionX, mapResolutionY;
+		alignas(16) uint32_t arrayIndex;
+		alignas(16) uint32_t layerIndex;
+		alignas(16) uint32_t layerOffsetU, layerOffsetV;
 	};
 
 	//param.x==1...point, param.x==2...directional, param.x==3...spotlight
@@ -86,12 +82,51 @@ namespace vh {
 	    alignas(16) glm::vec3 	directionW{-1.0f, -1.0f, -1.0f}; 
 	    alignas(16) LightParams lightParams;
 		alignas(16) glm::mat4 	lightSpaceMatrix[6];
+		//alignas(16) ShadowIndex shadowIndex[6];
 	};
 
 	struct UniformBufferFrame {
 	    alignas(16) CameraMatrix camera;
 		alignas(16) glm::ivec3 numLights{1,0,0}; //x=number point lights, y=number directional lights, z=number spotlights
 	};
+
+
+
+	//--------------------------------------------------------------------
+	//Structures used to communicate with the helper layer
+
+    struct QueueFamilyIndices {
+        std::optional<uint32_t> graphicsFamily;
+        std::optional<uint32_t> presentFamily;
+
+        bool isComplete() {
+            return graphicsFamily.has_value() && presentFamily.has_value();
+        }
+    };
+
+    struct SwapChainSupportDetails {
+        VkSurfaceCapabilitiesKHR capabilities;
+        std::vector<VkSurfaceFormatKHR> formats;
+        std::vector<VkPresentModeKHR> presentModes;
+    };
+
+	struct DepthImage {
+        VkImage         m_depthImage;
+        VmaAllocation   m_depthImageAllocation;
+        VkImageView     m_depthImageView;
+    };
+
+    struct Map {
+		int 			m_width;
+		int				m_height;
+		VkDeviceSize	m_size;
+		void *			m_pixels{nullptr};
+		VkImage         m_mapImage;
+		uint16_t		m_layers;
+        VmaAllocation   m_mapImageAllocation;
+        VkImageView     m_mapImageView;
+        VkSampler       m_mapSampler;
+    };
 
 	struct UniformBuffers {
 		VkDeviceSize 				m_bufferSize{0};
@@ -118,32 +153,6 @@ namespace vh {
         VkPipelineLayout m_pipelineLayout;
         VkPipeline m_pipeline;
     };
-
-	struct ShadowPushConstant {
-		uint32_t mapResolutionX, mapResolutionY;
-		uint32_t arrayIndex;
-		uint32_t layerIndex;
-		uint32_t layerOffsetU, layerOffsetV;
-	};
-
-    struct DepthImage {
-        VkImage         m_depthImage;
-        VmaAllocation   m_depthImageAllocation;
-        VkImageView     m_depthImageView;
-    };
-
-    struct Map {
-		int 			m_width;
-		int				m_height;
-		VkDeviceSize	m_size;
-		void *			m_pixels{nullptr};
-		VkImage         m_mapImage;
-		uint16_t		m_layers;
-        VmaAllocation   m_mapImageAllocation;
-        VkImageView     m_mapImageView;
-        VkSampler       m_mapSampler;
-    };
-
 
 	/// Pipeline code:
 	/// P...Vertex data contains positions
@@ -247,7 +256,6 @@ namespace vh {
         std::vector<VkSemaphore> m_renderFinishedSemaphores;
     };
 
-	#define MAX_FRAMES_IN_FLIGHT 2
 
     std::vector<char> VulReadFile(const std::string& filename);
 

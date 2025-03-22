@@ -209,7 +209,7 @@ namespace vve {
 				if( !hasTexture && !hasColor && !hasVertexColor ) continue;
 
 				if( hasTexture ) {
-					vh::UniformBufferObjectTexture uboTexture{};
+					vh::BufferPerObjectTexture uboTexture{};
 					uboTexture.model = LtoW(); 		
 					uboTexture.modelInverseTranspose = glm::inverse( glm::transpose(uboTexture.model) );
 					UVScale uvScale{ { 1.0f, 1.0f }};
@@ -219,13 +219,13 @@ namespace vve {
 					uboTexture.uvScale = uvScale;
 					memcpy(uniformBuffers().m_uniformBuffersMapped[m_vulkanState().m_currentFrame], &uboTexture, sizeof(uboTexture));
 				} else if( hasColor ) {
-					vh::UniformBufferObjectColor uboColor{};
+					vh::BufferPerObjectColor uboColor{};
 					uboColor.model = LtoW(); 		
 					uboColor.modelInverseTranspose = glm::inverse( glm::transpose(uboColor.model) );
 					uboColor.color = m_registry.template Get<vh::Color>(oHandle);
 					memcpy(uniformBuffers().m_uniformBuffersMapped[m_vulkanState().m_currentFrame], &uboColor, sizeof(uboColor));
 				} else if( hasVertexColor ) {
-					vh::UniformBufferObject uboColor{};
+					vh::BufferPerObject uboColor{};
 					uboColor.model = LtoW(); 
 					uboColor.modelInverseTranspose = glm::inverse( glm::transpose(uboColor.model) );
 					memcpy(uniformBuffers().m_uniformBuffersMapped[m_vulkanState().m_currentFrame], &uboColor, sizeof(uboColor));
@@ -266,14 +266,14 @@ namespace vve {
 		vh::RenCreateDescriptorSet(m_vulkanState().m_device, pipelinePerType->m_descriptorSetLayoutPerObject, m_descriptorPool, descriptorSet);
 
 		if( hasTexture ) {
-			sizeUbo = sizeof(vh::UniformBufferObjectTexture);
+			sizeUbo = sizeof(vh::BufferPerObjectTexture);
 			auto tHandle = m_registry.template Get<TextureHandle>(oHandle);
 			auto texture = m_registry.template Get<vh::Map&>(tHandle);
 	    	vh::RenUpdateDescriptorSetTexture(m_vulkanState().m_device, texture, 1, descriptorSet);
 		} else if(hasColor) {
-			sizeUbo = sizeof(vh::UniformBufferObjectColor);
+			sizeUbo = sizeof(vh::BufferPerObjectColor);
 		} else if(hasVertexColor) {
-			sizeUbo = sizeof(vh::UniformBufferObject);
+			sizeUbo = sizeof(vh::BufferPerObject);
 		}
 
 		vh::BufCreateUniformBuffers(m_vulkanState().m_physicalDevice, m_vulkanState().m_device, m_vulkanState().m_vmaAllocator, sizeUbo, ubo);

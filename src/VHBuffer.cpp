@@ -22,6 +22,27 @@ namespace vh {
         vmaCreateBuffer(vmaAllocator, &bufferInfo, &allocInfo, &buffer, &allocation, allocationInfo);
     }
 
+    void BufCreateUniformBuffers(VkPhysicalDevice physicalDevice, VkDevice device, VmaAllocator& vmaAllocator, 
+		VkDeviceSize bufferSize, UniformBuffers &uniformBuffers) {
+
+		uniformBuffers.m_bufferSize = bufferSize;
+        uniformBuffers.m_uniformBuffers.resize(MAX_FRAMES_IN_FLIGHT);
+        uniformBuffers.m_uniformBuffersAllocation.resize(MAX_FRAMES_IN_FLIGHT);
+        uniformBuffers.m_uniformBuffersMapped.resize(MAX_FRAMES_IN_FLIGHT);
+
+        for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
+            VmaAllocationInfo allocInfo;
+            BufCreateBuffer( vmaAllocator, bufferSize, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT
+                , VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT 
+                , VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT | VMA_ALLOCATION_CREATE_MAPPED_BIT
+                , uniformBuffers.m_uniformBuffers[i] 
+                , uniformBuffers.m_uniformBuffersAllocation[i], &allocInfo);
+
+            uniformBuffers.m_uniformBuffersMapped[i] = allocInfo.pMappedData;
+        }
+    }
+
+
     void BufDestroyBuffer(VkDevice device, VmaAllocator vmaAllocator, VkBuffer buffer, VmaAllocation& allocation) {
         vmaDestroyBuffer(vmaAllocator, buffer, allocation);
     }
@@ -177,26 +198,6 @@ namespace vh {
         BufCopyBuffer(device, graphicsQueue, commandPool, stagingBuffer, geometry.m_indexBuffer, bufferSize);
 
         BufDestroyBuffer(device, vmaAllocator, stagingBuffer, stagingBufferAllocation);
-    }
-
-    void BufCreateUniformBuffers(VkPhysicalDevice physicalDevice, VkDevice device, VmaAllocator& vmaAllocator, 
-		VkDeviceSize bufferSize, UniformBuffers &uniformBuffers) {
-
-		uniformBuffers.m_bufferSize = bufferSize;
-        uniformBuffers.m_uniformBuffers.resize(MAX_FRAMES_IN_FLIGHT);
-        uniformBuffers.m_uniformBuffersAllocation.resize(MAX_FRAMES_IN_FLIGHT);
-        uniformBuffers.m_uniformBuffersMapped.resize(MAX_FRAMES_IN_FLIGHT);
-
-        for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
-            VmaAllocationInfo allocInfo;
-            BufCreateBuffer( vmaAllocator, bufferSize, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT
-                , VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT 
-                , VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT | VMA_ALLOCATION_CREATE_MAPPED_BIT
-                , uniformBuffers.m_uniformBuffers[i] 
-                , uniformBuffers.m_uniformBuffersAllocation[i], &allocInfo);
-
-            uniformBuffers.m_uniformBuffersMapped[i] = allocInfo.pMappedData;
-        }
     }
 
 
