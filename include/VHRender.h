@@ -9,11 +9,12 @@ namespace vh {
 
     void RenCreateDescriptorSetLayout(VkDevice device, const std::vector<VkDescriptorSetLayoutBinding>& bindings, VkDescriptorSetLayout& descriptorSetLayouts);
 
-	void RenCreateDescriptorPool(VkDevice device, uint32_t sizes, VkDescriptorPool& descriptorPool);
+	  void RenCreateDescriptorPool(VkDevice device, uint32_t sizes, VkDescriptorPool& descriptorPool);
 
     void RenCreateDescriptorSet(VkDevice device, VkDescriptorSetLayout& descriptorSetLayouts, VkDescriptorPool descriptorPool, DescriptorSet& descriptorSet);
 
-    void RenUpdateDescriptorSetUBO(VkDevice device, Buffer& uniformBuffers, size_t binding, size_t size, DescriptorSet& descriptorSet);
+    void RenUpdateDescriptorSet(VkDevice device, Buffer& uniformBuffers, size_t binding, VkDescriptorType type, size_t size, DescriptorSet& descriptorSet);
+
     void RenUpdateDescriptorSetTexture(VkDevice device, Map& texture, size_t binding, DescriptorSet& descriptorSet);
 
     VkShaderModule RenCreateShaderModule(VkDevice device, const std::vector<char>& code);

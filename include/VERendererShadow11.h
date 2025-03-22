@@ -36,7 +36,7 @@ namespace vve
 		VkDescriptorSetLayout m_descriptorSetLayoutPerObject;
 		vh::Pipeline m_graphicsPipeline;		
 
-		size_t m_maxNumberLights{16};
+		size_t m_maxNumberLights{128};
 		glm::ivec3 m_numberLightsPerType{0,0,0};
 	};
 

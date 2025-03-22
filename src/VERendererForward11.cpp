@@ -61,12 +61,14 @@ namespace vve {
 		//Per frame uniform buffer
 		vh::BufCreateBuffers(m_vulkanState().m_physicalDevice, m_vulkanState().m_device, m_vulkanState().m_vmaAllocator, 
 			VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, sizeof(vh::UniformBufferFrame), m_uniformBuffersPerFrame);
-		vh::RenUpdateDescriptorSetUBO(m_vulkanState().m_device, m_uniformBuffersPerFrame, 0, sizeof(vh::UniformBufferFrame), m_descriptorSetPerFrame);   
+		vh::RenUpdateDescriptorSet(m_vulkanState().m_device, m_uniformBuffersPerFrame, 0, 
+			VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, sizeof(vh::UniformBufferFrame), m_descriptorSetPerFrame);   
 
 		//Per frame light buffer
 		vh::BufCreateBuffers(m_vulkanState().m_physicalDevice, m_vulkanState().m_device, m_vulkanState().m_vmaAllocator, 
 			VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, m_maxNumberLights*sizeof(vh::Light), m_uniformBuffersLights);
-		vh::RenUpdateDescriptorSetUBO(m_vulkanState().m_device, m_uniformBuffersLights, 1, m_maxNumberLights*sizeof(vh::Light), m_descriptorSetPerFrame);   
+		vh::RenUpdateDescriptorSet(m_vulkanState().m_device, m_uniformBuffersLights, 1, 
+			VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, m_maxNumberLights*sizeof(vh::Light), m_descriptorSetPerFrame);   
 
 		CreatePipelines();
 		return false;
@@ -283,7 +285,7 @@ namespace vve {
 
 		vh::BufCreateBuffers(m_vulkanState().m_physicalDevice, m_vulkanState().m_device, m_vulkanState().m_vmaAllocator, 
 			VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, sizeUbo, ubo);
-	    vh::RenUpdateDescriptorSetUBO(m_vulkanState().m_device, ubo, 0, sizeUbo, descriptorSet);
+	    vh::RenUpdateDescriptorSet(m_vulkanState().m_device, ubo, 0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, sizeUbo, descriptorSet);
 
 		m_registry.Put(oHandle, ubo, descriptorSet);
 		m_registry.AddTags(oHandle, (size_t)pipelinePerType->m_graphicsPipeline.m_pipeline);

@@ -125,9 +125,10 @@ namespace vh {
 		uint32_t i = 0;
 		std::vector<VkDescriptorSetLayoutBinding> bindings = bind;
 		for( auto& uboLayoutBinding : bindings ) {
-	        uboLayoutBinding.binding = i++;
+	        uboLayoutBinding.binding = i;
 	        uboLayoutBinding.descriptorCount = 1;
 	        uboLayoutBinding.pImmutableSamplers = nullptr;
+            ++i;
 		}
 
         VkDescriptorSetLayoutCreateInfo layoutInfo{};
@@ -370,7 +371,8 @@ namespace vh {
     }
 
 
-    void RenUpdateDescriptorSetUBO(VkDevice device, Buffer& uniformBuffers, size_t binding, size_t size, DescriptorSet& descriptorSet) {
+    void RenUpdateDescriptorSet(VkDevice device, Buffer& uniformBuffers, size_t binding, VkDescriptorType type, 
+            size_t size, DescriptorSet& descriptorSet) {
 
 		size_t i = 0;
 	    for ( auto& ds : descriptorSet.m_descriptorSetPerFrameInFlight ) {
@@ -385,7 +387,7 @@ namespace vh {
 	        descriptorWrites.dstSet = ds;
 	        descriptorWrites.dstBinding = (uint32_t)binding;
 	        descriptorWrites.dstArrayElement = 0;
-	        descriptorWrites.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+	        descriptorWrites.descriptorType = type;
 	        descriptorWrites.descriptorCount = 1;
 	        descriptorWrites.pBufferInfo = &bufferInfo;
 

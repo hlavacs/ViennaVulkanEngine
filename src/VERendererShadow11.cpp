@@ -8,10 +8,10 @@ namespace vve {
 	RendererShadow11::RendererShadow11( std::string systemName, Engine& engine, std::string windowName ) : Renderer(systemName, engine, windowName ) {
 
 		engine.RegisterCallback( { 
-			{this,  3500, "INIT", [this](Message& message){ return OnInit(message);} },
-			{this,  1500, "PREPARE_NEXT_FRAME", [this](Message& message){ return OnPrepareNextFrame(message);} },
-			{this,  1500, "RECORD_NEXT_FRAME", [this](Message& message){ return OnRecordNextFrame(message);} }, 
-			{this,     0, "QUIT", [this](Message& message){ return OnQuit(message);} }
+			//{this,  3500, "INIT", [this](Message& message){ return OnInit(message);} },
+			//{this,  1500, "PREPARE_NEXT_FRAME", [this](Message& message){ return OnPrepareNextFrame(message);} },
+			//{this,  1500, "RECORD_NEXT_FRAME", [this](Message& message){ return OnRecordNextFrame(message);} }, 
+			//{this,     0, "QUIT", [this](Message& message){ return OnQuit(message);} }
 		} );
 	};
 
@@ -40,12 +40,14 @@ namespace vve {
 		//Per frame uniform buffer
 		vh::BufCreateBuffers(m_vulkanState().m_physicalDevice, m_vulkanState().m_device, m_vulkanState().m_vmaAllocator, 
 			VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, sizeof(vh::UniformBufferFrame), m_uniformBuffersPerFrame);
-		vh::RenUpdateDescriptorSetUBO(m_vulkanState().m_device, m_uniformBuffersPerFrame, 0, sizeof(vh::UniformBufferFrame), m_descriptorSetPerFrame);   
+		vh::RenUpdateDescriptorSet(m_vulkanState().m_device, m_uniformBuffersPerFrame, 0, 
+			VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, sizeof(vh::UniformBufferFrame), m_descriptorSetPerFrame);   
 
 		//Per frame light buffer
 		vh::BufCreateBuffers(m_vulkanState().m_physicalDevice, m_vulkanState().m_device, m_vulkanState().m_vmaAllocator, 
 			VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, m_maxNumberLights*sizeof(vh::Light), m_uniformBuffersLights);
-		vh::RenUpdateDescriptorSetUBO(m_vulkanState().m_device, m_uniformBuffersLights, 1, m_maxNumberLights*sizeof(vh::Light), m_descriptorSetPerFrame);   
+		vh::RenUpdateDescriptorSet(m_vulkanState().m_device, m_uniformBuffersLights, 1, 
+			VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, m_maxNumberLights*sizeof(vh::Light), m_descriptorSetPerFrame);   
 
 		return false;
 	}
