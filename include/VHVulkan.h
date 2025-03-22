@@ -32,34 +32,37 @@ namespace vh {
 
 	//--------------------------------------------------------------------
 	//Shader resources
+	//make sure that their size is a multiple of 16!
 
 	struct Color {
-		alignas(16) glm::vec4 m_ambientColor{0.0f}; 
-		alignas(16) glm::vec4 m_diffuseColor{0.0f};	
-		alignas(16) glm::vec4 m_specularColor{0.0f};
+		glm::vec4 m_ambientColor{0.0f}; 
+		glm::vec4 m_diffuseColor{0.0f};	
+		glm::vec4 m_specularColor{0.0f};
 	};
 
 	struct BufferPerObject {
-	    alignas(16) glm::mat4 model;
-	    alignas(16) glm::mat4 modelInverseTranspose;
+	    glm::mat4 model;
+	    glm::mat4 modelInverseTranspose;
 	};
 
 	struct BufferPerObjectColor {
-	    alignas(16) glm::mat4 model;
-	    alignas(16) glm::mat4 modelInverseTranspose;
-		alignas(16) vh::Color color{}; 		
+	    glm::mat4 model;
+	    glm::mat4 modelInverseTranspose;
+		vh::Color color{}; 		
 	};
 
 	struct BufferPerObjectTexture {
-	    alignas(16) glm::mat4 model;
-	    alignas(16) glm::mat4 modelInverseTranspose;
-		alignas(16) glm::vec2 uvScale; 		
+	    glm::mat4 model;
+	    glm::mat4 modelInverseTranspose;
+		glm::vec2 uvScale;
+		glm::vec2 padding;
 	};
 
 	struct CameraMatrix {
-	    alignas(16) glm::mat4 view;
-	    alignas(16) glm::mat4 proj;
-	    alignas(16) glm::vec3 positionW;
+	    glm::mat4 view;
+	    glm::mat4 proj;
+	    glm::vec3 positionW;
+		float padding;
 	};
 
 	struct ShadowIndex {
@@ -75,7 +78,7 @@ namespace vh {
 		alignas(16) glm::vec3 color{1.0f, 0.0f, 0.0f}; 
 		alignas(16) glm::vec4 params{0.0f, 1.0f, 10.0, 0.15f}; //x=type, y=intensity, z=power, w=ambient
 		alignas(16) glm::vec3 attenuation{1.0f, 0.01f, 0.005f}; //x=constant, y=linear, z=quadratic
-		int			padding;
+		float		padding;
 	};
 
 	//params.param.x==1...point, params.param.x==2...directional, params.param.x==3...spotlight

@@ -7,7 +7,6 @@ export public struct ShadowIndex {
     public uint arrayIndex;
     public uint layerIndex;
     public int2 layerOffset;
-    public int2 padding;
 };
 
 export public uint toDepthMap(float z) {
