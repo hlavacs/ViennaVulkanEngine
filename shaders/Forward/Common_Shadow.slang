@@ -10,11 +10,11 @@ export public struct ShadowIndex {
     public int2 padding;
 };
 
-export public uint toDepthMap(float z) {
+export public uint floatToUNORM(float z) {
     return (uint)(z * (float)(0xFFFFFFFF));
 }
 
-export public float fromDepthMap(uint Z) {
+export public float UNORMTofloat(uint Z) {
     return (float)Z / (float)(0xFFFFFFFF);
 }
 
@@ -28,7 +28,7 @@ export public float calculateShadow(RWTexture2DArray<uint, 1> shadowMap, ShadowI
     uint2 uv = (uint2)(projCoords.xy * (float2)shadowParam.mapResolution) + shadowParam.layerOffset;
 
     // Retrieve shadow map depth value
-    float shadowDepth = fromDepthMap(shadowMap.Load(uint3(uv, shadowParam.layerIndex)).r);
+    float shadowDepth = UNORMTofloat(shadowMap.Load(uint3(uv, shadowParam.layerIndex)).r);
 
     // Compare and return shadow factor
     return (lightSpacePos.z > shadowDepth + 0.005) ? 0.3 : 1.0; // 0.3 for shadowed, 1.0 for lit
