@@ -26,16 +26,29 @@ ConstantBuffer<UniformBufferObjectTexture> gParamsObject;
 
 //----------------------------------------------------------------------------
 
-[[vk::push_constant]]
-ShadowIndex shadowParam;
+void storePointLight(Light light, float3 positionNDC) {
+    // uint2 uv = (uint2)((svPosition.xy / 2.0 + 0.5) * (float2)shadowParam.mapResolution) + shadowParam.layerOffset;
+    // shadowMapArray[shadowParam.arrayIndex][uint3(uv, shadowParam.layerIndex)] = toDepthMap(svPosition.z);
+}
 
-//----------------------------------------------------------------------------
+void storeDirectionalLight(Light light, float3 positionNDC) {
+    // uint2 uv = (uint2)((svPosition.xy / 2.0 + 0.5) * (float2)shadowParam.mapResolution) + shadowParam.layerOffset;
+    // shadowMapArray[shadowParam.arrayIndex][uint3(uv, shadowParam.layerIndex)] = toDepthMap(svPosition.z);
+}
+
+void storeSpotLight(Light light, float3 positionNDC) {
+    // uint2 uv = (uint2)((svPosition.xy / 2.0 + 0.5) * (float2)shadowParam.mapResolution) + shadowParam.layerOffset;
+    // shadowMapArray[shadowParam.arrayIndex][uint3(uv, shadowParam.layerIndex)] = toDepthMap(svPosition.z);
+}
+
 
 [shader("fragment")]
-float4 fragmentMain(float3 positionW: POSITION, float3 svPosition: SV_Position, uint instanceID: SV_InstanceID )
+float4 fragmentMain(float3 positionW: POSITION, float3 positionNDC: SV_Position, uint instanceID: SV_InstanceID )
 {
-    uint2 uv = (uint2)((svPosition.xy / 2.0 + 0.5) * (float2)shadowParam.mapResolution) + shadowParam.layerOffset;
-    shadowMapArray[shadowParam.arrayIndex][uint3(uv, shadowParam.layerIndex)] = toDepthMap(svPosition.z);
+    Light light = gLights[instanceID];
+    if (light.param.param.x == 0) storePointLight(light, positionNDC);
+    if (light.param.param.x == 1) storeDirectionalLight(light, positionNDC);
+    if (light.param.param.x == 2) storeSpotLight(light, positionNDC);
     return float4(0,0,0,0);
 }
 
