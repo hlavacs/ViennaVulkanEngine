@@ -1,6 +1,6 @@
 implementing Common;
 
-// param.x==1...point, param.x==2...directional, param.x==3...spotlight
+// param.x==0...no light, param.x==1...point, param.x==2...directional, param.x==3...spotlight
 export public struct LightParams {
     public float3 color;
     public float4 param;       // x=type, y=intensity, z=power, w=ambient

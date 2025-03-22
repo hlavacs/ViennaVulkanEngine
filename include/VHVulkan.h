@@ -81,7 +81,7 @@ namespace vh {
 		float padding;
 	};
 
-	//params.param.x==1...point, params.param.x==2...directional, params.param.x==3...spotlight
+	//params.param.x==0...no light, params.param.x==1...point, params.param.x==2...directional, params.param.x==3...spotlight
 	struct Light {
 	    alignas(16) glm::vec3 	positionW{100.0f, 100.0f, 100.0f};
 	    alignas(16) glm::vec3 	directionW{-1.0f, -1.0f, -1.0f}; 
