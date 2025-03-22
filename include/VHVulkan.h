@@ -70,7 +70,7 @@ namespace vh {
 		uint32_t 	arrayIndex;
 		uint32_t 	layerIndex;
 		glm::ivec2 	layerOffset;
-		int			padding[2];
+		glm::ivec2 	padding;
 	};
 
 	//param.x==1...point, param.x==2...directional, param.x==3...spotlight
@@ -87,14 +87,13 @@ namespace vh {
 	    alignas(16) glm::vec3 	directionW{-1.0f, -1.0f, -1.0f}; 
 	    alignas(16) LightParams lightParams;
 		alignas(16) glm::mat4 	lightSpaceMatrix[6];
-		//alignas(16) ShadowIndex shadowIndex[6];
+		alignas(16) ShadowIndex shadowIndex[6];
 	};
 
 	struct UniformBufferFrame {
 	    alignas(16) CameraMatrix camera;
 		alignas(16) glm::ivec3 numLights{1,0,0}; //x=number point lights, y=number directional lights, z=number spotlights
 	};
-
 
 
 	//--------------------------------------------------------------------
