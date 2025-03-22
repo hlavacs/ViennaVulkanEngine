@@ -179,7 +179,7 @@ namespace vve {
 	        vh::BufDestroyBuffer(m_vulkanState().m_device, m_vulkanState().m_vmaAllocator, geometry().m_vertexBuffer, geometry().m_vertexBufferAllocation);
 		}
 
-		for( auto ubo : m_registry.template GetView<vh::UniformBuffers&>() ) {
+		for( auto ubo : m_registry.template GetView<vh::Buffer&>() ) {
 			vh::BufDestroyBuffer2(m_vulkanState().m_device, m_vulkanState().m_vmaAllocator, ubo);
 		}
 

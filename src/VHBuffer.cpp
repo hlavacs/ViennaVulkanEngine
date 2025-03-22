@@ -22,8 +22,19 @@ namespace vh {
         vmaCreateBuffer(vmaAllocator, &bufferInfo, &allocInfo, &buffer, &allocation, allocationInfo);
     }
 
+    void BufCreateBuffers(VmaAllocator vmaAllocator
+        , VkDeviceSize size
+        , VkBufferUsageFlags usage
+        , VkMemoryPropertyFlags properties
+        , VmaAllocationCreateFlags vmaFlags
+        , VkBuffer& buffer
+        , VmaAllocation& allocation
+        , VmaAllocationInfo* allocationInfo) {
+
+    }
+
     void BufCreateUniformBuffers(VkPhysicalDevice physicalDevice, VkDevice device, VmaAllocator& vmaAllocator, 
-		VkDeviceSize bufferSize, UniformBuffers &uniformBuffers) {
+		VkDeviceSize bufferSize, Buffer &uniformBuffers) {
 
 		uniformBuffers.m_bufferSize = bufferSize;
         uniformBuffers.m_uniformBuffers.resize(MAX_FRAMES_IN_FLIGHT);
@@ -47,7 +58,7 @@ namespace vh {
         vmaDestroyBuffer(vmaAllocator, buffer, allocation);
     }
 
-    void BufDestroyBuffer2(VkDevice device, VmaAllocator vmaAllocator, UniformBuffers buffers) {
+    void BufDestroyBuffer2(VkDevice device, VmaAllocator vmaAllocator, Buffer buffers) {
 		for (size_t i = 0; i < buffers.m_uniformBuffers.size(); i++) {
 			vmaDestroyBuffer(vmaAllocator, buffers.m_uniformBuffers[i], buffers.m_uniformBuffersAllocation[i]);
 		}

@@ -28,8 +28,8 @@ namespace vve
 	    VkCommandPool m_commandPool;
 	    std::vector<VkCommandBuffer> m_commandBuffers;
 
-		vh::UniformBuffers m_uniformBuffersPerFrame;
-		vh::UniformBuffers m_uniformBuffersLights;
+		vh::Buffer m_uniformBuffersPerFrame;
+		vh::Buffer m_uniformBuffersLights;
 		VkDescriptorSetLayout m_descriptorSetLayoutPerFrame;
 		vh::DescriptorSet m_descriptorSetPerFrame{0};
 

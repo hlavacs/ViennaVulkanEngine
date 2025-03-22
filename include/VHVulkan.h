@@ -133,7 +133,7 @@ namespace vh {
         VkSampler       m_mapSampler;
     };
 
-	struct UniformBuffers {
+	struct Buffer {
 		VkDeviceSize 				m_bufferSize{0};
         std::vector<VkBuffer>       m_uniformBuffers;
         std::vector<VmaAllocation>  m_uniformBuffersAllocation;

@@ -40,8 +40,8 @@ namespace vve
 		std::string getPipelineType(ObjectHandle handle, vh::VertexData &vertexData);
 
 		//parameters per frame
-		vh::UniformBuffers m_uniformBuffersPerFrame;
-		vh::UniformBuffers m_uniformBuffersLights;
+		vh::Buffer m_uniformBuffersPerFrame;
+		vh::Buffer m_uniformBuffersLights;
 		VkDescriptorSetLayout m_descriptorSetLayoutPerFrame;
 		vh::DescriptorSet m_descriptorSetPerFrame{0};
 		std::map<int, PipelinePerType> m_pipelinesPerType;

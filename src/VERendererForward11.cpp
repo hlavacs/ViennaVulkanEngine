@@ -200,7 +200,7 @@ namespace vve {
 		
 		for( auto& pipeline : m_pipelinesPerType) {
 			for( auto[oHandle, name, ghandle, LtoW, uniformBuffers, descriptorsets] : 
-				m_registry.template GetView<vecs::Handle, Name, MeshHandle, LocalToWorldMatrix&, vh::UniformBuffers&, vh::DescriptorSet&>
+				m_registry.template GetView<vecs::Handle, Name, MeshHandle, LocalToWorldMatrix&, vh::Buffer&, vh::DescriptorSet&>
 						({(size_t)pipeline.second.m_graphicsPipeline.m_pipeline}) ) {
 
 				bool hasTexture = m_registry.template Has<TextureHandle>(oHandle);
@@ -260,7 +260,7 @@ namespace vve {
 		bool hasVertexColor = pipelinePerType->m_type.find("C") != std::string::npos;
 		if( !hasTexture && !hasColor && !hasVertexColor ) return false;	
 
-		vh::UniformBuffers ubo;
+		vh::Buffer ubo;
 		size_t sizeUbo = 0;
 		vh::DescriptorSet descriptorSet{1};
 		vh::RenCreateDescriptorSet(m_vulkanState().m_device, pipelinePerType->m_descriptorSetLayoutPerObject, m_descriptorPool, descriptorSet);
@@ -282,7 +282,7 @@ namespace vve {
 		m_registry.Put(oHandle, ubo, descriptorSet);
 		m_registry.AddTags(oHandle, (size_t)pipelinePerType->m_graphicsPipeline.m_pipeline);
 
-		assert( m_registry.template Has<vh::UniformBuffers>(oHandle) );
+		assert( m_registry.template Has<vh::Buffer>(oHandle) );
 		assert( m_registry.template Has<vh::DescriptorSet>(oHandle) );
 		return false; //true if handled
 	}
@@ -293,8 +293,8 @@ namespace vve {
 
 		assert(m_registry.Exists(oHandle) );
 
-		if( !m_registry.template Has<vh::UniformBuffers>(oHandle) ) return false;
-		auto ubo = m_registry.template Get<vh::UniformBuffers&>(oHandle);
+		if( !m_registry.template Has<vh::Buffer>(oHandle) ) return false;
+		auto ubo = m_registry.template Get<vh::Buffer&>(oHandle);
 		vh::BufDestroyBuffer2(m_vulkanState().m_device, m_vulkanState().m_vmaAllocator, ubo);
 		return false;
 	}

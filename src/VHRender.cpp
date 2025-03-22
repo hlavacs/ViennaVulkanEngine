@@ -370,7 +370,7 @@ namespace vh {
     }
 
 
-    void RenUpdateDescriptorSetUBO(VkDevice device, UniformBuffers& uniformBuffers, size_t binding, size_t size, DescriptorSet& descriptorSet) {
+    void RenUpdateDescriptorSetUBO(VkDevice device, Buffer& uniformBuffers, size_t binding, size_t size, DescriptorSet& descriptorSet) {
 
 		size_t i = 0;
 	    for ( auto& ds : descriptorSet.m_descriptorSetPerFrameInFlight ) {
