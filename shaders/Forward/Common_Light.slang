@@ -3,17 +3,21 @@ implementing Common;
 // param.x==1...point, param.x==2...directional, param.x==3...spotlight
 export public struct LightParams {
     public float3 color;
+    float  padding1;
     public float4 param;       // x=type, y=intensity, z=power, w=ambient
     public float3 attenuation; // x=constant, y=linear, z=quadratic
+    float  padding2;
 };
 
 // x==1...point, x==2...directional, x==3...spotlight
 export public struct Light {
-    public float3 positionW;
-    public float3 directionW;
-    public LightParams param;
-    public float4x4 lightSpaceMatrix[6];
-    // public ShadowIndex  shadowIndex[6];
+    public float3 		positionW;
+    float  padding1;
+    public float3 		directionW;
+    float  padding2;
+    public LightParams 	param;
+    public float4x4 	lightSpaceMatrix[6];
+    public ShadowIndex 	shadowIndex[6];
 };
 
 

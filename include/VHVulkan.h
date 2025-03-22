@@ -63,17 +63,19 @@ namespace vh {
 	};
 
 	struct ShadowIndex {
-		alignas(16) uint32_t mapResolutionX, mapResolutionY;
-		alignas(16) uint32_t arrayIndex;
-		alignas(16) uint32_t layerIndex;
-		alignas(16) uint32_t layerOffsetU, layerOffsetV;
+		glm::ivec2 	mapResolution;
+		uint32_t 	arrayIndex;
+		uint32_t 	layerIndex;
+		glm::ivec2 	layerOffset;
+		int			padding[2];
 	};
 
 	//param.x==1...point, param.x==2...directional, param.x==3...spotlight
 	struct LightParams {
-		alignas(16) glm::vec3 	color{1.0f, 0.0f, 0.0f}; 
-		alignas(16) glm::vec4 	params{0.0f, 1.0f, 10.0, 0.15f}; //x=type, y=intensity, z=power, w=ambient
-		alignas(16) glm::vec3 	attenuation{1.0f, 0.01f, 0.005f}; //x=constant, y=linear, z=quadratic
+		alignas(16) glm::vec3 color{1.0f, 0.0f, 0.0f}; 
+		alignas(16) glm::vec4 params{0.0f, 1.0f, 10.0, 0.15f}; //x=type, y=intensity, z=power, w=ambient
+		alignas(16) glm::vec3 attenuation{1.0f, 0.01f, 0.005f}; //x=constant, y=linear, z=quadratic
+		int			padding;
 	};
 
 	//params.param.x==1...point, params.param.x==2...directional, params.param.x==3...spotlight
@@ -82,7 +84,7 @@ namespace vh {
 	    alignas(16) glm::vec3 	directionW{-1.0f, -1.0f, -1.0f}; 
 	    alignas(16) LightParams lightParams;
 		alignas(16) glm::mat4 	lightSpaceMatrix[6];
-		//alignas(16) ShadowIndex shadowIndex[6];
+		alignas(16) ShadowIndex shadowIndex[6];
 	};
 
 	struct UniformBufferFrame {

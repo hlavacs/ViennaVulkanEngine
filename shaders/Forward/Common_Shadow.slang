@@ -3,10 +3,11 @@ implementing Common;
 //-----------------------------------------------------------------------
 
 export public struct ShadowIndex {
-    public uint2 mapResolution;
+    public int2 mapResolution;
     public uint arrayIndex;
     public uint layerIndex;
-    public uint2 layerOffset;
+    public int2 layerOffset;
+    public int2 padding;
 };
 
 export public uint toDepthMap(float z) {

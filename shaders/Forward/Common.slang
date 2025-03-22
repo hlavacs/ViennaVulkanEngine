@@ -7,12 +7,14 @@ export public struct Camera {
     public float4x4 view;
     public float4x4 proj;
     public float3 positionW;
+    float padding;
 };
 
 
 export public struct UniformBufferFrame {
     public Camera camera;
     public uint3 numberLights; // x = point, y = directional, z = spotlight
+    int padding;
 };
 
 
@@ -28,7 +30,8 @@ export public struct UniformBufferObject {
 export public struct UniformBufferObjectTexture {
     public float4x4 model;
     public float4x4 modelInvTranspose;
-    public float2 	uvscale;
+    public float2   uvscale;
+    float2 padding;
 };
 
 //-----------------------------------------------------------------------
@@ -47,7 +50,7 @@ export public struct UniformBufferObjectColor {
 
 //-----------------------------------------------------------------------
 
-export public uniform const int MAX_ARRAY_SIZE = 16;
+export public uniform const int MAX_ARRAY_SIZE = 4;
 
 __include "Common_Shadow.slang";
 __include "Common_Light.slang";
