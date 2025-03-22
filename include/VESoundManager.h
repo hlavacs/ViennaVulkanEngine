@@ -25,7 +25,7 @@ namespace vve {
 	public:
         SoundManager(std::string systemName, Engine& engine);
     	~SoundManager() {};
-		int GetVolume() { return m_volume; }
+		int GetVolume() { return (int)m_volume; }
 
         static inline SoundManager* m_soundManager{nullptr};
         static inline void SDL2AudioCallback(void *userdata, Uint8 *stream, int len);

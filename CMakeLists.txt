@@ -9,7 +9,7 @@ project (
 if (CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
   	add_compile_options(/D IMGUI_IMPL_VULKAN_NO_PROTOTYPES)
 	add_compile_options(/D_CRT_SECURE_NO_WARNINGS) #for assimp
-	add_compile_options(/EHsc /std:c++20 /DEBUG /Zi /Istb) #for assimp
+	add_compile_options(/EHsc /DEBUG /Zi /Istb) #for assimp
 elseif(CMAKE_CXX_COMPILER_ID STREQUAL "AppleClang")
 	add_compile_options(-D IMGUI_IMPL_VULKAN_NO_PROTOTYPES)
 	add_compile_options(-Wno-nullability-completeness)
