@@ -54,7 +54,7 @@ namespace vve {
 		auto SetHandle(std::string name, vecs::Handle h) -> void;
 		auto ContainsHandle(std::string name) -> bool;
 		auto GetRegistry() -> auto& { return m_registry; }
-		auto GetState() { return EngineState{m_name, m_apiVersion, m_debug, m_initialized, m_running}; }
+		auto GetState() { return EngineState{m_name, m_apiVersion, c_minimumVersion, c_maximumVersion, m_debug, m_initialized, m_running}; }
 		auto GetSystem(std::string name) -> System* { return m_systems[name].get(); }
 
 	protected:
