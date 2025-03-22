@@ -17,7 +17,7 @@ export public struct Light {
     float  padding2;
     public LightParams 	param;
     public float4x4 	lightSpaceMatrix[6];
-    public ShadowIndex 	shadowIndex[6];
+    //public ShadowIndex 	shadowIndex[6];
 };
 
 
@@ -94,7 +94,8 @@ export public float3 calculateSpotLight(Light light, float3 nW, float3 viewPosW,
 	return attenuation * intensity * (ambient + diffuse + specular);
 }
 
-export public float3 calculateLighting(Light light[], int3 numberLights, float3 normalW, float3 viewPosW, float3 fragPosW) {
+
+export public float3 calculateLighting(StructuredBuffer<Light> light, int3 numberLights, float3 normalW, float3 viewPosW, float3 fragPosW) {
     float3 result = float3(0.0);
 
 	for( int i = 0; i < numberLights.x; i++ ) {// Point light

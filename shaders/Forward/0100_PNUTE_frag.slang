@@ -15,7 +15,7 @@ struct CoarseVertex {
 ConstantBuffer<UniformBufferFrame> gParamsFrame;
 
 [[vk::binding(1, 0)]]
-ConstantBuffer<Light[MAX_ARRAY_SIZE]> gLights;
+StructuredBuffer<Light> gLights;
 
 [[vk::binding(2, 0)]]
 RWTexture2DArray<uint, 1> shadowMapArray[MAX_ARRAY_SIZE]; // shadow maps for the lights
