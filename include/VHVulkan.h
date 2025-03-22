@@ -78,7 +78,7 @@ namespace vh {
 		alignas(16) glm::vec3 color{1.0f, 0.0f, 0.0f}; 
 		alignas(16) glm::vec4 params{0.0f, 1.0f, 10.0, 0.15f}; //x=type, y=intensity, z=power, w=ambient
 		alignas(16) glm::vec3 attenuation{1.0f, 0.01f, 0.005f}; //x=constant, y=linear, z=quadratic
-		float		padding;
+		float padding;
 	};
 
 	//params.param.x==1...point, params.param.x==2...directional, params.param.x==3...spotlight
