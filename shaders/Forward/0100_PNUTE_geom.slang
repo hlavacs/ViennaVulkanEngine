@@ -22,7 +22,7 @@ ParameterBlock<UniformBufferFrame> gParamsFrame;
 
 [maxvertexcount(6)]
 void main(triangle VertexStageOutput input[3], inout TriangleStream<GSOutput> stream) {
-    for (uint i = 0; i < NUM_LIGHTS; i++) {  
+    for (uint i = 0; i < MAX_ARRAY_SIZE; i++) {  
         for (int j = 0; j < 3; j++) {
             GSOutput output;
             output.position = mul(lightSpaceMatrices[i], input[j].position);

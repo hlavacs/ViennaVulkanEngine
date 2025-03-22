@@ -119,6 +119,13 @@ namespace vh {
         VkPipeline m_pipeline;
     };
 
+	struct ShadowPushConstant {
+		uint32_t mapResolutionX, mapResolutionY;
+		uint32_t arrayIndex;
+		uint32_t layerIndex;
+		uint32_t layerOffsetU, layerOffsetV;
+	};
+
     struct DepthImage {
         VkImage         m_depthImage;
         VmaAllocation   m_depthImageAllocation;

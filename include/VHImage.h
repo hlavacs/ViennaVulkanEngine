@@ -2,7 +2,7 @@
 
 
 namespace vh {
-
+    
 	void ImgCreateTextureImage(VkPhysicalDevice physicalDevice, VkDevice device, VmaAllocator vmaAllocator, VkQueue graphicsQueue, VkCommandPool commandPool, void* pixels, int width, int height, size_t size, Map& texture);
 
     void ImgCreateTextureImageView(VkDevice device, Map& texture);
@@ -36,5 +36,6 @@ namespace vh {
     void ImgClearShadowMap(VkDevice device, VkQueue graphicsQueue, VkCommandPool commandPool, 
         VmaAllocator vmaAllocator, vh::Map& map, float value);
 
+    void ImgPickDepthMapFormat( VkPhysicalDevice physicalDevice, const std::vector<VkFormat>& depthFormats, VkFormat& depthMapFormat );
 }
 

@@ -96,7 +96,7 @@ namespace vve {
 
 	void Engine::Step(){
 		auto now = std::chrono::high_resolution_clock::now();
-		double dt = std::chrono::duration_cast<std::chrono::duration<double>>(now - m_last).count();
+		double dt = std::chrono::duration<double, std::micro>(now - m_last).count() / 1'000'000.0;
 		m_last = now;
 
 		SendMessage( MsgFrameStart{dt} ) ;

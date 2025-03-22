@@ -29,9 +29,6 @@ export public struct UniformBufferFrame {
     public uint3 numberLights; // x = point, y = directional, z = spotlight
 };
 
-export public struct ShadowPushConstant {
-    public int shadowIndex;
-};
 
 //-----------------------------------------------------------------------
 
@@ -64,7 +61,7 @@ export public struct UniformBufferObjectColor {
 
 //-----------------------------------------------------------------------
 
-export public uniform const int MAX_LIGHTS = 16;
+export public uniform const int MAX_ARRAY_SIZE = 16;
 
 __include "Common_Shadow.slang";
 __include "Common_Light.slang";

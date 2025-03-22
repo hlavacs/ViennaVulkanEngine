@@ -283,6 +283,18 @@ namespace vh {
         */
     }
 
+    void ImgPickDepthMapFormat( VkPhysicalDevice physicalDevice, const std::vector<VkFormat>& depthFormats, VkFormat& depthMapFormat ) {
+        for( auto format : depthFormats ) {
+            VkFormatProperties properties;
+            vkGetPhysicalDeviceFormatProperties(physicalDevice, format, &properties);
+            if( properties.optimalTilingFeatures & VK_FORMAT_FEATURE_SAMPLED_IMAGE_BIT &&
+                properties.linearTilingFeatures & VK_FORMAT_FEATURE_STORAGE_IMAGE_BIT
+                ) {
+                depthMapFormat = format;
+                break;
+            }
+        }
+    }
 
 }
 
