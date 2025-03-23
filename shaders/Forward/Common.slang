@@ -50,8 +50,6 @@ export public struct UniformBufferObjectColor {
 
 //-----------------------------------------------------------------------
 
-export public uniform const int MAX_ARRAY_SIZE = 128;
-
 __include "Common_Shadow.slang";
 __include "Common_Light.slang";
 
