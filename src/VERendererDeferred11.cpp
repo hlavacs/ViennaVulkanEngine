@@ -39,6 +39,14 @@ namespace vve {
 			},
 			m_descriptorSetLayoutPerFrame);
 
+		vh::ComCreateCommandPool(m_vulkanState().m_surface, m_vulkanState().m_physicalDevice, m_vulkanState().m_device, m_commandPool);
+		vh::ComCreateCommandBuffers(m_vulkanState().m_device, m_commandPool, m_commandBuffers);
+		// TODO: shrink pool to only what is needed?
+		vh::RenCreateDescriptorPool(m_vulkanState().m_device, 1000, m_descriptorPool);
+		vh::RenCreateDescriptorSet(m_vulkanState().m_device, m_descriptorSetLayoutPerFrame, m_descriptorPool, m_descriptorSetPerFrame);
+
+		vh::BufCreateUniformBuffers(m_vulkanState().m_physicalDevice, m_vulkanState().m_device, m_vulkanState().m_vmaAllocator, sizeof(vh::UniformBufferFrame), m_uniformBuffersPerFrame);
+
 		return false;
 	}
 
