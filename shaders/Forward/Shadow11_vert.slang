@@ -27,7 +27,7 @@ ConstantBuffer<UniformBufferObjectTexture> gParamsObject;
 //----------------------------------------------------------------------------
 
 [[vk::push_constant]]
-ShadowImageArrayOffset offset;
+ShadowImageOffset offset;
 
 //----------------------------------------------------------------------------
 

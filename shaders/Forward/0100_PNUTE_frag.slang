@@ -18,7 +18,7 @@ ConstantBuffer<UniformBufferFrame> gParamsFrame;
 StructuredBuffer<Light> gLights;
 
 [[vk::binding(2, 0)]]
-Sampler2DArray<uint, 1> shadowMapArray; // shadow maps for the lights
+Sampler2DArray<uint, 1> shadowMapImage; // shadow maps for the lights
 
 //----------------------------------------------------------------------------
 
@@ -33,7 +33,7 @@ Sampler2D texSampler;
 //----------------------------------------------------------------------------
 
 [[vk::push_constant]]
-ShadowImageArrayOffset offset;
+ShadowImageOffset offset;
 
 //----------------------------------------------------------------------------
 
