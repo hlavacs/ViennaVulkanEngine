@@ -60,7 +60,7 @@ namespace vve {
         vh::DevPickPhysicalDevice(m_vulkanState().m_instance, m_vulkanState().m_apiVersionDevice, m_deviceExtensions, m_vulkanState().m_surface, m_vulkanState().m_physicalDevice);
 		uint32_t minor = std::min( VK_VERSION_MINOR(m_vulkanState().m_apiVersionDevice), VK_VERSION_MINOR(engineState.apiVersion) );
 		if( minor < VK_VERSION_MINOR(engineState.minimumVersion) ) {
-			std::cout << "Minimum VVE Vulkan API version is 1." << VK_VERSION_MINOR(engineState.minimumVersion) << "!\n";
+			std::cout << "No device found with Vulkan API version at least 1." << VK_VERSION_MINOR(engineState.minimumVersion) << "!\n";
 			exit(1);
 		}
 		engineState.apiVersion = VK_MAKE_VERSION( VK_VERSION_MAJOR(engineState.apiVersion), minor, 0);
