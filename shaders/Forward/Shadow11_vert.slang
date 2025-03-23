@@ -1,12 +1,7 @@
 import Common;
 
-struct CoarseVertex {
-    float3 positionW : POSITION;
-};
-
-struct VertexStageOutput {
-    float3 positionW : POSITION;
-    float4 sv_position  : SV_Position;
+struct VS_OUTPUT {
+    float4 position  : SV_Position;
 };
 
 // binding B,S means that the resource is bound to binding B, set S
@@ -25,17 +20,12 @@ ConstantBuffer<UniformBufferObjectTexture> gParamsObject;
 
 //----------------------------------------------------------------------------
 
-[[vk::push_constant]]
-ShadowIndex shadowPushConstants;
-
-//----------------------------------------------------------------------------
-
 [shader("vertex")]
-VertexStageOutput vertexMain(float3 positionL: POSITION )
+VS_OUTPUT vertexMain(float3 positionL: POSITION )
 {
-    VertexStageOutput output;
-    output.positionW = mul(gParamsObject.model, float4(positionL, 1.0)).xyz;
-    output.sv_position = mul(gParamsFrame.camera.proj, float4(output.positionW, 1.0));
+    VS_OUTPUT output;
+    float4 positionW = mul(gParamsObject.model, float4(positionL, 1.0));
+    output.position = mul(gParamsFrame.camera.proj, positionW);
 
     return output;
 }
