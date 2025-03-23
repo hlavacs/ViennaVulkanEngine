@@ -69,13 +69,13 @@ namespace vve {
 
 		    aiString texturePath;
 		    if (material->GetTexture(aiTextureType_DIFFUSE, 0, &texturePath) == AI_SUCCESS) {
-				auto texturePathStr = directory / std::string{texturePath.C_Str()};
-		        std::cout << "Diffuse Texture: " << texturePathStr.string() << std::endl;	
+				auto texturePathStr = directory.string() + "/" + std::string{texturePath.C_Str()};
+		        std::cout << "Diffuse Texture: " << texturePathStr << std::endl;	
 				
-				auto tHandle = TextureHandle{m_registry.Insert(Name{texturePathStr.string()})};
+				auto tHandle = TextureHandle{m_registry.Insert(Name{texturePathStr})};
 				auto pixels = LoadTexture(tHandle);
 				if( pixels != nullptr) m_engine.SendMessage( MsgTextureCreate{tHandle, this } );
-				m_fileNameMap.insert( std::make_pair(filepath, (Name{texturePathStr.string()})) );
+				m_fileNameMap.insert( std::make_pair(filepath, (Name{texturePathStr})) );
 		    }
 		}
 
@@ -84,7 +84,7 @@ namespace vve {
 		    aiMesh* mesh = scene->mMeshes[i];
 			assert(mesh->HasPositions() && mesh->HasNormals());
 
-			Name name{ (filepath / mesh->mName.C_Str()).string()};
+			Name name{ (filepath.string() + "/" + mesh->mName.C_Str())};
 		    std::cout << "Mesh " << i << " " << name() << " has " << mesh->mNumVertices << " vertices." << std::endl;
 			if( m_engine.ContainsHandle(name) ) continue;
 

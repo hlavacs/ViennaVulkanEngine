@@ -27,7 +27,7 @@ namespace vve {
 		
  		vh::RenCreateDescriptorSetLayout( m_vulkanState().m_device, {}, m_descriptorSetLayoutPerFrame );
 			
-        vh::RenCreateGraphicsPipeline(m_vulkanState().m_device, m_renderPass, "shaders\\Imgui\\vert.spv", "", {}, {},
+        vh::RenCreateGraphicsPipeline(m_vulkanState().m_device, m_renderPass, "shaders/Imgui/vert.spv", "", {}, {},
 			 { m_descriptorSetLayoutPerFrame }, {}, m_graphicsPipeline);
 
         vh::RenCreateDescriptorPool(m_vulkanState().m_device, 1000, m_descriptorPool);

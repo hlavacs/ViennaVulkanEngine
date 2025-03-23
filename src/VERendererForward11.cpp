@@ -75,7 +75,7 @@ namespace vve {
 	}
 
 	void RendererForward11::CreatePipelines() {
-		const std::filesystem::path shaders{"shaders\\Forward"};
+		const std::filesystem::path shaders{"shaders/Forward"};
 		for( const auto& entry : std::filesystem::directory_iterator(shaders) ) {
 			auto filename = entry.path().filename().string();
 			if( filename.find("_vert.spv") != std::string::npos && std::isdigit(filename[0]) ) {

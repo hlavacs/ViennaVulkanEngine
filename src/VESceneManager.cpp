@@ -71,7 +71,7 @@ namespace vve {
     bool SceneManager::OnLoadLevel(Message message) {
 
 		vh::Color color{ { 0.0f, 0.0f, 0.0f, 1.0f }, { 0.9f, 0.1f, 0.1f, 1.0f }, { 0.0f, 0.0f, 0.0f, 1.0f } };
-		m_engine.SendMessage( MsgSceneLoad{ vve::Filename{"assets\\standard\\sphere.obj"} });		
+		m_engine.SendMessage( MsgSceneLoad{ vve::Filename{"assets/standard/sphere.obj"} });		
 		
 		float intensity1 = 0.8f;
 		auto lightHandle = m_registry.Insert(
@@ -85,7 +85,7 @@ namespace vve {
 			LocalToParentMatrix{mat4_t{1.0f}}, 
 			LocalToWorldMatrix{mat4_t{1.0f}},
 			color,
-			vve::MeshName{"assets\\standard\\sphere.obj\\sphere"}
+			vve::MeshName{"assets/standard/sphere.obj/sphere"}
 		);
 		SetParent( ObjectHandle{lightHandle}, ParentHandle{m_rootHandle} );
 		m_engine.SendMessage(MsgObjectCreate{ vve::ObjectHandle(lightHandle), vve::ParentHandle{}, this });
@@ -117,7 +117,7 @@ namespace vve {
 			LocalToParentMatrix{mat4_t{1.0f}}, 
 			LocalToWorldMatrix{mat4_t{1.0f}},
 			color3,
-			vve::MeshName{"assets\\standard\\sphere.obj\\sphere"}
+			vve::MeshName{"assets/standard/sphere.obj/sphere"}
 		);
 		SetParent( ObjectHandle{lightHandle3}, ParentHandle{m_rootHandle} );
 		m_engine.SendMessage(MsgObjectCreate{ vve::ObjectHandle(lightHandle3), vve::ParentHandle{}, this });
@@ -227,13 +227,13 @@ namespace vve {
 
 		if ( node->mNumMeshes > 0) {
 		    auto mesh = scene->mMeshes[node->mMeshes[0]];
-			m_registry.Put(nHandle, MeshName{(filepath / mesh->mName.C_Str()).string()});
+			m_registry.Put(nHandle, MeshName{(filepath.string() + "/" + mesh->mName.C_Str())});
 			
 			auto material = scene->mMaterials[mesh->mMaterialIndex];
 		    aiString texturePath;
 			std::string texturePathStr{};
 		    if (material->GetTexture(aiTextureType_DIFFUSE, 0, &texturePath) == AI_SUCCESS) {
-				texturePathStr = (directory / std::string{texturePath.C_Str()}).string();
+				texturePathStr = (directory.string() + "/" + std::string{texturePath.C_Str()});
 		        std::cout << "Diffuse Texture: " << texturePathStr << std::endl;
 				m_registry.Put(nHandle, TextureName{texturePathStr});
 			}

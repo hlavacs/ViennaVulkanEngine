@@ -59,7 +59,7 @@ namespace vve {
 		m_vulkanState().m_apiVersionDevice = engineState.minimumVersion;
         vh::DevPickPhysicalDevice(m_vulkanState().m_instance, m_vulkanState().m_apiVersionDevice, m_deviceExtensions, m_vulkanState().m_surface, m_vulkanState().m_physicalDevice);
 		uint32_t minor = std::min( VK_VERSION_MINOR(m_vulkanState().m_apiVersionDevice), VK_VERSION_MINOR(engineState.apiVersion) );
-		if( minor < VK_VERSION_MINOR(engineState.apiVersion) ) {
+		if( minor < VK_VERSION_MINOR(engineState.minimumVersion) ) {
 			std::cout << "Minimum VVE Vulkan API version is 1." << VK_VERSION_MINOR(engineState.minimumVersion) << "!\n";
 			exit(1);
 		}
@@ -82,7 +82,7 @@ namespace vve {
 
 		vh::RenCreateDescriptorSetLayout( m_vulkanState().m_device, {}, m_descriptorSetLayoutPerFrame );
 			
-        vh::RenCreateGraphicsPipeline(m_vulkanState().m_device, m_renderPass, "shaders\\Vulkan\\vert.spv", "", {}, {},
+        vh::RenCreateGraphicsPipeline(m_vulkanState().m_device, m_renderPass, "shaders/Vulkan/vert.spv", "", {}, {},
 			 { m_descriptorSetLayoutPerFrame }, {}, m_graphicsPipeline);
 
 		vh::ComCreateCommandPool(m_vulkanState().m_surface, m_vulkanState().m_physicalDevice, m_vulkanState().m_device, m_vulkanState().m_commandPool);
