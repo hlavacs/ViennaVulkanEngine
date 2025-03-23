@@ -94,7 +94,7 @@ namespace vve {
 		auto lightHandle2 = m_registry.Insert(
 			Name{"Light2"},
 			DirectionalLight{vh::LightParams{
-				glm::vec3(0.1f, 0.9f, 0.1f), glm::vec4(0.0f, intensity2, 10.0, 0.1f), glm::vec3(1.0f, 0.01f, 0.005f), 
+				glm::vec3(0.1f, 0.5f, 0.1f), glm::vec4(0.0f, intensity2, 10.0, 0.1f), glm::vec3(1.0f, 0.01f, 0.005f), 
 			}},
 			Position{glm::vec3(10.0f, 10.0f, 10.0f)},
 			Rotation{mat3_t{glm::rotate(glm::mat4(1.0f), -3.14152f / 10.0f, glm::vec3(1.0f,0.0f,0.0f)) }},
@@ -105,11 +105,11 @@ namespace vve {
 		SetParent( ObjectHandle{lightHandle2}, ParentHandle{m_rootHandle} );
 
 		vh::Color color3{ { 0.0f, 0.0f, 0.0f, 1.0f }, { 0.1f, 0.1f, 0.9f, 1.0f }, { 0.0f, 0.0f, 0.0f, 1.0f } };
-		float intensity3 = 0.8f;
+		float intensity3 = 0.9f;
 		auto lightHandle3 = m_registry.Insert(
 			Name{"Light3"},
 			SpotLight{vh::LightParams{
-				glm::vec3(0.1f, 0.1f, 0.9f), glm::vec4(0.0f, intensity3, 10.0, 0.1f), glm::vec3(1.0f, 0.01f, 0.005f), 
+				glm::vec3(0.5f, 0.5f, 0.9f), glm::vec4(0.0f, intensity3, 10.0, 0.1f), glm::vec3(1.0f, 0.01f, 0.005f), 
 			}},
 			Position{glm::vec3(20.0f, -10.0f, 10.0f)},
 			Rotation{mat3_t{glm::rotate(glm::mat4(1.0f), -3.14152f / 5.0f, glm::vec3(1.0f,0.0f,0.0f)) }},

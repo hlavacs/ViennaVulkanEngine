@@ -12,8 +12,6 @@ export public struct Light {
     public float3 		positionW;
     public float3 		directionW;
     public LightParams 	param;
-    public float4x4 	lightSpaceMatrix[6];
-    public ShadowIndex 	shadowIndex[6];
 };
 
 

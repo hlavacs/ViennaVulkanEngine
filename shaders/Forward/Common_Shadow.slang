@@ -4,10 +4,10 @@ implementing Common;
 
 export public struct ShadowIndex {
     public int2 mapResolution;
-    public int arrayIndex;
     public int layerIndex;
+    public int viewportIndex;
     public int2 layerOffset;
-    public int2 padding;
+    public float4x4 lightSpaceMatrix;
 };
 
 export public uint floatToUNORM(float z) {
@@ -34,8 +34,8 @@ export public float calculateShadow(RWTexture2DArray<uint, 1> shadowMap, ShadowI
     return (lightSpacePos.z > shadowDepth + 0.005) ? 0.3 : 1.0; // 0.3 for shadowed, 1.0 for lit
 }
 
-export public float3 applyShadow(Camera camera, Light light, uint lightSpaceIndex, float3 positionW, RWTexture2DArray<uint, 1> shadowMap, ShadowIndex shadowParam) {
-    float4 lightSpacePos = mul(light.lightSpaceMatrix[lightSpaceIndex], float4(positionW, 1.0)); // Replace with actual transformation to light space
+export public float3 applyShadow(Camera camera, Light light, ShadowIndex shadowIndex, uint lightSpaceIndex, float3 positionW, RWTexture2DArray<uint, 1> shadowMap, ShadowIndex shadowParam) {
+    float4 lightSpacePos = mul(shadowIndex.lightSpaceMatrix, float4(positionW, 1.0)); // Replace with actual transformation to light space
     float shadowFactor = calculateShadow(shadowMap, shadowParam, lightSpacePos);
     return shadowFactor;
 }

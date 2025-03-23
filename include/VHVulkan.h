@@ -67,10 +67,10 @@ namespace vh {
 
 	struct ShadowIndex {
 		glm::ivec2 	mapResolution;
-		uint32_t 	arrayIndex;
 		uint32_t 	layerIndex;
-		glm::ivec2 	layerOffset;
-		glm::ivec2 	padding;
+		uint32_t 	viewportIndex;
+		glm::ivec2	layerOffset;
+		glm::mat4 	lightSpaceMatrix;
 	};
 
 	//param.x==1...point, param.x==2...directional, param.x==3...spotlight
@@ -86,8 +86,6 @@ namespace vh {
 	    alignas(16) glm::vec3 	positionW{100.0f, 100.0f, 100.0f};
 	    alignas(16) glm::vec3 	directionW{-1.0f, -1.0f, -1.0f}; 
 	    alignas(16) LightParams lightParams;
-		alignas(16) glm::mat4 	lightSpaceMatrix[6];
-		alignas(16) ShadowIndex shadowIndex[6];
 	};
 
 	struct UniformBufferFrame {
