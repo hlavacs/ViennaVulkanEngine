@@ -1,15 +1,9 @@
 import Common;
 
-struct GS_OUTPUT
-{
-    float4 pos : SV_POSITION;
-};
-
-
 [shader("fragment")]
-float4 fragmentMain(GS_OUTPUT input) : SV_DEPTH
+float4 fragmentMain(float4 position: SV_POSITION) : SV_DEPTH
 {
-    return input.pos.z;
+    return position.z;
 }
 
 
