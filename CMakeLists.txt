@@ -125,10 +125,6 @@ set(ASSIMP_BUILD_TESTS OFF CACHE BOOL "" FORCE)
 set(ASSIMP_BUILD_ASSIMP_TOOLS OFF CACHE BOOL "" FORCE)
 set(ASSIMP_BUILD_SAMPLES OFF CACHE BOOL "" FORCE)
 FetchContent_MakeAvailable(assimp)
-include_directories(${assimp_SOURCE_DIR}/include)
-include_directories(${assimp_BINARY_DIR}/include)
-
-#add_subdirectory(${assimp_SOURCE_DIR}/contrib/zlib)
 
 message("COMPILER: ${CMAKE_CXX_COMPILER_ID}")
 message("BUILD TYPE: ${CMAKE_BUILD_TYPE}")
@@ -137,48 +133,29 @@ if (CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
 
 	if(CMAKE_BUILD_TYPE STREQUAL "Release")
 		message(STATUS "MSVC Release mode" )
-		set(ASSIMP_ZLIB ${zlib_BINARY_DIR}/Release/zlibstatic.lib)
-		set(ASSIMP_LIB  ${assimp_BINARY_DIR}/lib/Release/assimp-vc143-mt.lib)
 	else()
 		message(STATUS "MSVC Debug mode" ) 
-		set(ASSIMP_ZLIB ${zlib_BINARY_DIR}/Debug/zlibstaticd.lib)
-		set(ASSIMP_LIB  ${assimp_BINARY_DIR}/lib/Debug/assimp-vc143-mtd.lib)
 	endif()
 
 elseif(CMAKE_CXX_COMPILER_ID STREQUAL "AppleClang")
 	if(CMAKE_BUILD_TYPE STREQUAL "Release")
 		message(STATUS "AppleClang Release mode" )
-		set(ASSIMP_ZLIB ${zlib_BINARY_DIR}/libzlibstatic.lib)
-		set(ASSIMP_LIB  ${assimp_BINARY_DIR}/lib/libassimp.lib)
 	else()
 		message(STATUS "AppleClang Debug mode" )
-		set(ASSIMP_ZLIB ${zlib_BINARY_DIR}/libzlibstaticd.lib)
-		set(ASSIMP_LIB  ${assimp_BINARY_DIR}/lib/libassimpd.lib)
 	endif()
 elseif(CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
 	if(CMAKE_BUILD_TYPE STREQUAL "Release")
 		message(STATUS "Clang Release mode" )
-		set(ASSIMP_ZLIB ${zlib_BINARY_DIR}/zlibstatic.lib)
-		set(ASSIMP_LIB  ${assimp_BINARY_DIR}/lib/assimp.lib)
 	else()
 		message(STATUS "Clang Debug mode" )
-		set(ASSIMP_ZLIB ${zlib_BINARY_DIR}/zlibstaticd.lib)
-		set(ASSIMP_LIB  ${assimp_BINARY_DIR}/lib/assimpd.lib)
 	endif()
 elseif(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
 	if(CMAKE_BUILD_TYPE STREQUAL "Release")
 		message(STATUS "GNU Release mode" )
-		set(ASSIMP_ZLIB ${zlib_BINARY_DIR}/libzlibstatic.lib)
-		set(ASSIMP_LIB  ${assimp_BINARY_DIR}/lib/libassimp.lib)
 	else()
 		message(STATUS "GNU Debug mode" )
-		set(ASSIMP_ZLIB ${zlib_BINARY_DIR}/libzlibstaticd.lib)
-		set(ASSIMP_LIB  ${assimp_BINARY_DIR}/lib/libassimpd.lib)
 	endif()
 endif()
-message("ASSIMP LIB: " ${ASSIMP_LIB})
-message("ASSIMP ZLIB: " ${ASSIMP_ZLIB})
-
 
 #--------------------------------- Fetch ImGui ---------------------------------#
 FetchContent_Declare(imgui
@@ -194,7 +171,6 @@ FetchContent_Declare(vkbootstrap
                      GIT_REPOSITORY https://github.com/charles-lunarg/vk-bootstrap.git 
                      GIT_TAG main)
 FetchContent_MakeAvailable(vkbootstrap)
-include_directories(${vkbootstrap_SOURCE_DIR}/src)
 
 #--------------------------------- Summary ---------------------------------#
 
