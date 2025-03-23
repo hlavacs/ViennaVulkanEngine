@@ -11,21 +11,26 @@ struct GS_OUTPUT
     uint renderTargetIndex : SV_RenderTargetArrayIndex;
 };
 
-[[vk::binding(4, 0)]]
+//----------------------------------------------------------------------------
+
+[[vk::binding(1, 0)]]
 StructuredBuffer<ShadowIndex> gShadowIndex;
 
+//----------------------------------------------------------------------------
+
 [[vk::push_constant]]
-ShadowImageArrayOffset imageArrayOffset;
+ShadowImageArrayOffset offset;
 
+//----------------------------------------------------------------------------
 
-[maxvertexcount(6)]
+[maxvertexcount(3)]
 [shader("geometry")]
 void geometryMain(triangle VS_OUTPUT input[3], inout TriangleStream<GS_OUTPUT> outputStream, int instanceID: SV_InstanceID) {
     for (uint i = 0; i < MAX_ARRAY_SIZE; i++) {
         for (int j = 0; j < 3; j++) {
             GS_OUTPUT output;
-            output.position = mul(gShadowIndex[instanceID].lightSpaceMatrix, input[j].position);
-            output.viewportIndex = gShadowIndex[instanceID].viewportIndex;
+            output.position = mul(gShadowIndex[offset.shadowIndexOffset + instanceID].lightSpaceMatrix, input[j].position);
+            output.viewportIndex = gShadowIndex[offset.shadowIndexOffset + instanceID].viewportIndex;
             output.renderTargetIndex = i;
             outputStream.Append(output);
         }

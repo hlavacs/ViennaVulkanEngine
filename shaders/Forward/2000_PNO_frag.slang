@@ -17,7 +17,12 @@ ConstantBuffer<UniformBufferFrame> gParamsFrame;
 StructuredBuffer<Light> gLights;
 
 [[vk::binding(2, 0)]]
-RWTexture2DArray<uint, 1> shadowMapArray[MAX_ARRAY_SIZE]; // shadow maps for the lights
+Sampler2DArray<uint, 1> shadowMapArray[MAX_ARRAY_SIZE]; // shadow maps for the lights
+
+//----------------------------------------------------------------------------
+
+[[vk::push_constant]]
+ShadowImageArrayOffset offset;
 
 //----------------------------------------------------------------------------
 
