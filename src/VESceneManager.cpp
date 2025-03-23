@@ -71,7 +71,7 @@ namespace vve {
     bool SceneManager::OnLoadLevel(Message message) {
 
 		vh::Color color{ { 0.0f, 0.0f, 0.0f, 1.0f }, { 0.9f, 0.1f, 0.1f, 1.0f }, { 0.0f, 0.0f, 0.0f, 1.0f } };
-		m_engine.SendMessage( MsgSceneLoad{ vve::Filename{"assets\\standard\\sphere.obj"} });		
+		m_engine.SendMessage( MsgSceneLoad{ vve::Filename{"assets/standard/sphere.obj"} });		
 		
 		float intensity1 = 0.8f;
 		auto lightHandle = m_registry.Insert(
@@ -85,7 +85,7 @@ namespace vve {
 			LocalToParentMatrix{mat4_t{1.0f}}, 
 			LocalToWorldMatrix{mat4_t{1.0f}},
 			color,
-			vve::MeshName{"assets\\standard\\sphere.obj\\sphere"}
+			vve::MeshName{"assets/standard/sphere.obj/sphere"}
 		);
 		SetParent( ObjectHandle{lightHandle}, ParentHandle{m_rootHandle} );
 		m_engine.SendMessage(MsgObjectCreate{ vve::ObjectHandle(lightHandle), vve::ParentHandle{}, this });
@@ -117,7 +117,7 @@ namespace vve {
 			LocalToParentMatrix{mat4_t{1.0f}}, 
 			LocalToWorldMatrix{mat4_t{1.0f}},
 			color3,
-			vve::MeshName{"assets\\standard\\sphere.obj\\sphere"}
+			vve::MeshName{"assets/standard/sphere.obj/sphere"}
 		);
 		SetParent( ObjectHandle{lightHandle3}, ParentHandle{m_rootHandle} );
 		m_engine.SendMessage(MsgObjectCreate{ vve::ObjectHandle(lightHandle3), vve::ParentHandle{}, this });

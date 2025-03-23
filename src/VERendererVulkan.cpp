@@ -82,7 +82,7 @@ namespace vve {
 
 		vh::RenCreateDescriptorSetLayout( m_vulkanState().m_device, {}, m_descriptorSetLayoutPerFrame );
 			
-        vh::RenCreateGraphicsPipeline(m_vulkanState().m_device, m_renderPass, "shaders\\Vulkan\\vert.spv", "", {}, {},
+        vh::RenCreateGraphicsPipeline(m_vulkanState().m_device, m_renderPass, "shaders/Vulkan/vert.spv", "", {}, {},
 			 { m_descriptorSetLayoutPerFrame }, {}, m_graphicsPipeline);
 
 		vh::ComCreateCommandPool(m_vulkanState().m_surface, m_vulkanState().m_physicalDevice, m_vulkanState().m_device, m_vulkanState().m_commandPool);

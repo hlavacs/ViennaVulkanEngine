@@ -40,11 +40,11 @@ class MyGame : public vve::System {
             };
         }
     
-        inline static std::string plane_obj  { "assets\\test\\plane\\plane_t_n_s.obj" };
-        inline static std::string plane_mesh { "assets\\test\\plane\\plane_t_n_s.obj\\plane" };
-        inline static std::string plane_txt  { "assets\\test\\plane\\grass.jpg" };
+        inline static std::string plane_obj  { "assets/test/plane/plane_t_n_s.obj" };
+        inline static std::string plane_mesh { "assets/test/plane/plane_t_n_s.obj/plane" };
+        inline static std::string plane_txt  { "assets/test/plane/grass.jpg" };
 
-        inline static std::string cube_obj  { "assets\\test\\crate0\\cube.obj" };
+        inline static std::string cube_obj  { "assets/test/crate0/cube.obj" };
 
         bool OnLoadLevel( Message message ) {
             auto msg = message.template GetData<vve::System::MsgLoadLevel>();	
@@ -78,7 +78,7 @@ class MyGame : public vve::System {
             GetCamera();
             m_registry.Get<vve::Rotation&>(m_cameraHandle)() = mat3_t{ glm::rotate(mat4_t{1.0f}, 3.14152f/2.0f, vec3_t{1.0f, 0.0f, 0.0f}) };
 
-            m_engine.SendMessage(MsgPlaySound{ vve::Filename{"assets\\sounds\\ophelia.wav"}, 2, 50 });
+            m_engine.SendMessage(MsgPlaySound{ vve::Filename{"assets/sounds/ophelia.wav"}, 2, 50 });
 			m_engine.SendMessage(MsgSetVolume{ (int)m_volume });
 
             return false;
@@ -92,8 +92,8 @@ class MyGame : public vve::System {
             if( m_state == State::STATE_RUNNING ) {
                 if( m_time_left <= 0.0f ) { 
                     m_state = State::STATE_DEAD; 
-                    m_engine.SendMessage(MsgPlaySound{ vve::Filename{"assets\\sounds\\ophelia.wav"}, 0, 50 });
-                    m_engine.SendMessage(MsgPlaySound{ vve::Filename{"assets\\sounds\\gameover.wav"}, 1 });
+                    m_engine.SendMessage(MsgPlaySound{ vve::Filename{"assets/sounds/ophelia.wav"}, 0, 50 });
+                    m_engine.SendMessage(MsgPlaySound{ vve::Filename{"assets/sounds/gameover.wav"}, 1 });
                     return false;
                 }
                 auto posCube = m_registry.Get<vve::Position&>(m_handleCube);
@@ -105,9 +105,9 @@ class MyGame : public vve::System {
                     if( m_cubes_left == 0 ) {
                         m_time_left += 20;
                         m_cubes_left = c_number_cubes;
-                        m_engine.SendMessage(MsgPlaySound{ vve::Filename{"assets\\sounds\\bell.wav"}, 1 });
+                        m_engine.SendMessage(MsgPlaySound{ vve::Filename{"assets/sounds/bell.wav"}, 1 });
                     } else {
-                        m_engine.SendMessage(MsgPlaySound{ vve::Filename{"assets\\sounds\\explosion.wav"}, 1 });
+                        m_engine.SendMessage(MsgPlaySound{ vve::Filename{"assets/sounds/explosion.wav"}, 1 });
                     }
                 }
             }
@@ -136,7 +136,7 @@ class MyGame : public vve::System {
                     m_state = State::STATE_RUNNING;
                     m_time_left = c_max_time;
                     m_cubes_left = c_number_cubes;
-                    m_engine.SendMessage(MsgPlaySound{ vve::Filename{"assets\\sounds\\ophelia.wav"}, 2 });
+                    m_engine.SendMessage(MsgPlaySound{ vve::Filename{"assets/sounds/ophelia.wav"}, 2 });
                 }
                 ImGui::End();
             }

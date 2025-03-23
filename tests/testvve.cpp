@@ -32,13 +32,13 @@ public:
 		std::cout << "Loading level: " << msg.m_level << std::endl;
 		std::string level = std::string("Level: ") + msg.m_level;
 
-		m_engine.SendMessage( MsgSceneLoad{ vve::Filename{"assets\\test\\plane\\plane_t_n_s.obj"}, aiProcess_FlipWindingOrder });
+		m_engine.SendMessage( MsgSceneLoad{ vve::Filename{"assets/test/plane/plane_t_n_s.obj"}, aiProcess_FlipWindingOrder });
 		m_planeHandle = m_registry.Insert( 
 						vve::Position{ {0.0f,0.0f,0.0f } }, 
 						vve::Rotation{ mat3_t { glm::rotate(glm::mat4(1.0f), 3.14152f / 2.0f, glm::vec3(1.0f,0.0f,0.0f)) }}, 
 						vve::Scale{vec3_t{1000.0f,1000.0f,1000.0f}}, 
-						vve::MeshName{"assets\\test\\plane\\plane_t_n_s.obj\\plane"},
-						vve::TextureName{"assets\\test\\plane\\grass.jpg"},
+						vve::MeshName{"assets/test/plane/plane_t_n_s.obj/plane"},
+						vve::TextureName{"assets/test/plane/grass.jpg"},
 						vve::UVScale{ { 1000.0f, 1000.0f } }
 					);
 		m_engine.SendMessage(MsgObjectCreate{  vve::ObjectHandle(m_planeHandle), vve::ParentHandle{} });
@@ -67,7 +67,7 @@ public:
 			ImGui::PushItemWidth(300);
 			static char* file_dialog_buffer = nullptr;
 			{
-				static char path_obj[500] = "assets\\viking_room\\viking_room.obj";
+				static char path_obj[500] = "assets/viking_room/viking_room.obj";
 				ImGui::TextUnformatted("File: ");
 				ImGui::SameLine();
 				ImGui::InputText("##path1", path_obj, sizeof(path_obj));
@@ -101,7 +101,7 @@ public:
 			}
 
 			{
-				static char path_obj2[500] = "assets\\standard\\sphere.obj";
+				static char path_obj2[500] = "assets/standard/sphere.obj";
 				ImGui::TextUnformatted("File: ");
 				ImGui::SameLine();
 				ImGui::InputText("##path2", path_obj2, sizeof(path_obj2));
@@ -128,7 +128,7 @@ public:
 
 					m_engine.SendMessage( MsgSceneLoad{ vve::Filename{path_obj2}, flags });		
 					vh::Color color{ { 0.0f, 0.0f, 0.0f, 1.0f }, { 0.2f, 0.2f, 0.2f, 1.0f }, { 0.0f, 0.0f, 0.0f, 1.0f } };
-					auto handle = m_registry.Insert(vve::Position{ { x, y, 0.5f } }, vve::Rotation{mat3_t{1.0f}}, vve::Scale{vec3_t{0.05f}}, color, vve::MeshName{"assets\\standard\\sphere.obj\\sphere"} );
+					auto handle = m_registry.Insert(vve::Position{ { x, y, 0.5f } }, vve::Rotation{mat3_t{1.0f}}, vve::Scale{vec3_t{0.05f}}, color, vve::MeshName{"assets/standard/sphere.obj/sphere"} );
 					m_handles.push( handle );
 
 					m_engine.SendMessage(MsgObjectCreate{  vve::ObjectHandle(handle), vve::ParentHandle{} });
@@ -138,7 +138,7 @@ public:
 			}
 
 			{
-				static char path_obj3[500] = "assets\\test\\cube1.obj";
+				static char path_obj3[500] = "assets/test/cube1.obj";
 				ImGui::TextUnformatted("File: ");
 				ImGui::SameLine();
 				ImGui::InputText("##path3", path_obj3, sizeof(path_obj3));
