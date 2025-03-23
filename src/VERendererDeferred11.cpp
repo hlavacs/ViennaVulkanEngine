@@ -20,7 +20,7 @@ namespace vve {
 
 		vh::RenCreateRenderPass(m_vulkanState().m_physicalDevice, m_vulkanState().m_device, m_vulkanState().m_swapChain, false, m_renderPass);
 
-		// TODO: maybe split uniform buffer into separate vertex and fragment buffer
+		// TODO: binding 0 might only need vertex globally
 		vh::RenCreateDescriptorSetLayout(
 			m_vulkanState().m_device,
 			{
@@ -36,17 +36,28 @@ namespace vve {
 				{	// Binding 3 : Albedo (Diffuse)
 					.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
 					.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT },
+				{	// Binding 4 : Light uniform buffer
+					.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
+					.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT }
 			},
 			m_descriptorSetLayoutPerFrame);
 
 		vh::ComCreateCommandPool(m_vulkanState().m_surface, m_vulkanState().m_physicalDevice, m_vulkanState().m_device, m_commandPool);
 		vh::ComCreateCommandBuffers(m_vulkanState().m_device, m_commandPool, m_commandBuffers);
-		// TODO: shrink pool to only what is needed?
+		// TODO: shrink pool to only what is needed - why 1000?
 		vh::RenCreateDescriptorPool(m_vulkanState().m_device, 1000, m_descriptorPool);
 		vh::RenCreateDescriptorSet(m_vulkanState().m_device, m_descriptorSetLayoutPerFrame, m_descriptorPool, m_descriptorSetPerFrame);
 
+		// Binding 0 : Vertex and Fragment uniform buffer
 		vh::BufCreateUniformBuffers(m_vulkanState().m_physicalDevice, m_vulkanState().m_device, m_vulkanState().m_vmaAllocator, sizeof(vh::UniformBufferFrame), m_uniformBuffersPerFrame);
+		vh::RenUpdateDescriptorSetUBO(m_vulkanState().m_device, m_uniformBuffersPerFrame, 0, sizeof(vh::UniformBufferFrame), m_descriptorSetPerFrame);
 
+		// Binding 1 : Position
+
+
+		// Binding 4
+		vh::BufCreateUniformBuffers(m_vulkanState().m_physicalDevice, m_vulkanState().m_device, m_vulkanState().m_vmaAllocator, m_maxNumberLights * sizeof(vh::Light), m_uniformBuffersLights);
+		vh::RenUpdateDescriptorSetUBO(m_vulkanState().m_device, m_uniformBuffersLights, 4, m_maxNumberLights * sizeof(vh::Light), m_descriptorSetPerFrame);
 		return false;
 	}
 

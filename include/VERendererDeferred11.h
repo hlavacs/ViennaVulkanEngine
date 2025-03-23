@@ -15,15 +15,20 @@ namespace vve {
 		bool OnQuit(Message message);
 
 		vh::UniformBuffers m_uniformBuffersPerFrame{};
+		// TODO: might need a SSBO for many lights
+		vh::UniformBuffers m_uniformBuffersLights{};
 
 		VkDescriptorSetLayout m_descriptorSetLayoutPerFrame{ VK_NULL_HANDLE };
-		VkDescriptorPool m_descriptorPool;
+		VkDescriptorPool m_descriptorPool{ VK_NULL_HANDLE };
 		vh::DescriptorSet m_descriptorSetPerFrame{};
 
 		VkRenderPass m_renderPass{ VK_NULL_HANDLE };
 
 		VkCommandPool m_commandPool{ VK_NULL_HANDLE };
 		std::vector<VkCommandBuffer> m_commandBuffers;
+
+		// TODO: maybe constexpr is not a good idea? -> also increase number later!!!
+		static constexpr size_t m_maxNumberLights{ 16 };
 	};
 
 }	// namespace vve
