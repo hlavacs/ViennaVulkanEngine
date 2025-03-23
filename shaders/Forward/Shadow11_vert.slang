@@ -39,7 +39,6 @@ VS_OUTPUT vertexMain(float3 positionL: POSITION, int instanceID: SV_InstanceID )
     output.position = mul(gShadowIndex[offset.shadowIndexOffset + instanceID].lightSpaceMatrix, positionW);
     output.viewportIndex = gShadowIndex[offset.shadowIndexOffset + instanceID].viewportIndex;
     output.renderTargetIndex = instanceID;
-
     return output;
 }
 
