@@ -58,7 +58,46 @@
             "cwd": "${workspaceFolder}",
             "environment": [],
             "externalConsole": false
-          }
+        },
+        {
+              "name": "AppleClang Test",
+              "type": "cppdbg",
+              "request": "launch",
+              "program": "${workspaceFolder}/build/tests/testvve",  
+              "args": [],
+              "stopAtEntry": false,
+              "cwd": "${workspaceFolder}",
+              "environment": [],
+              "externalConsole": false,
+              "MIMode": "lldb",
+              "MIDebuggerPath": "/usr/bin/lldb"
+        },
+    {
+              "name": "AppleClang Helper",
+              "type": "cppdbg",
+              "request": "launch",
+              "program": "${workspaceFolder}/build/examples/helper/helper",  
+              "args": [],
+              "stopAtEntry": false,
+              "cwd": "${workspaceFolder}",
+              "environment": [],
+              "externalConsole": false,
+              "MIMode": "lldb",
+              "MIDebuggerPath": "/usr/bin/lldb"
+        },
+        {
+              "name": "AppleClang Game",
+              "type": "cppdbg",
+              "request": "launch",
+              "program": "${workspaceFolder}/build/examples/game/game",  
+              "args": [],
+              "stopAtEntry": false,
+              "cwd": "${workspaceFolder}",
+              "environment": [],
+              "externalConsole": false,
+              "MIMode": "lldb",
+              "MIDebuggerPath": "/usr/bin/lldb"
+        }
     ]
 
 }
