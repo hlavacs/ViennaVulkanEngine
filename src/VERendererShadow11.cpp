@@ -26,7 +26,7 @@ namespace vve {
 			{ 
 				{ 	.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 
 					.stageFlags = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT },
-				{ 	.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 
+				{ 	.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 
 					.stageFlags = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT }
 			},
 			m_descriptorSetLayoutPerFrame );
@@ -43,11 +43,11 @@ namespace vve {
 		vh::RenUpdateDescriptorSet(m_vulkanState().m_device, m_uniformBuffersPerFrame, 0, 
 			VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, sizeof(vh::UniformBufferFrame), m_descriptorSetPerFrame);   
 
-		//Per frame light buffer
+		//Per frame shadow index buffer
 		vh::BufCreateBuffers(m_vulkanState().m_physicalDevice, m_vulkanState().m_device, m_vulkanState().m_vmaAllocator, 
-			VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, m_maxNumberLights*sizeof(vh::Light), m_uniformBuffersLights);
+			VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, m_maxNumberLights*sizeof(vh::ShadowIndex), m_uniformBuffersLights);
 		vh::RenUpdateDescriptorSet(m_vulkanState().m_device, m_uniformBuffersLights, 1, 
-			VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, m_maxNumberLights*sizeof(vh::Light), m_descriptorSetPerFrame);   
+			VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, m_maxNumberLights*sizeof(vh::ShadowIndex), m_descriptorSetPerFrame);   
 
 		return false;
 	}
@@ -76,7 +76,11 @@ namespace vve {
 			, shadowMap().m_shadowMaps[m_vulkanState().m_currentFrame], std::numeric_limits<float>::max());
 	}
 
-
+	/// @brief Prepare the next frame for shadow map rendering.
+	/// Calculate number of lights and number of shadow maps. Calculate ShadowIndex values.
+	/// Determine the number of passes and register record callback as many times. Create/adapt ShadowImage if necessaary.
+	/// @param message 
+	/// @return Returns false.
 	bool RendererShadow11::OnPrepareNextFrame(Message message) {
 		auto msg = message.template GetData<MsgPrepareNextFrame>();
 

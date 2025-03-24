@@ -4,8 +4,8 @@ implementing Common;
 
 export public struct ShadowIndex {
     public int2 mapResolution;
-    public int layerIndex;
-    public int viewportIndex;
+    public uint layerIndex;
+    public uint viewportIndex;
     public int2 layerOffset;
     public float4x4 lightSpaceMatrix;
 };
