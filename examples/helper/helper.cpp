@@ -1,8 +1,8 @@
 
 #include <iostream>
 #include <utility>
-#include "glm.hpp"
-#include "gtc/quaternion.hpp"
+#include "glm/glm.hpp"
+#include "glm/gtc/quaternion.hpp"
 #include "vulkan/vulkan.h"
 #include "helper.h"
 
