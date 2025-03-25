@@ -50,18 +50,20 @@ elseif (APPLE)
 	set(SDL2_LIB libSDL2-2.0.dylib)
   	set(VOLK_LIB libvolk.a)
   	set(VKB_LIB libvk-bootstrap.a)
-elseif (UNIX)
+elseif (UNIX AND NOT APPLE)
 	set(VULKAN_INCLUDE include)
 	set(VULKAN_LIB lib)
-	set(SDL2LIB libSDL2-2.0.a)
+	set(SDL2LIB libSDL2.a)
   	set(VOLK_LIB libvolk.a)
   	set(VKB_LIB libvk-bootstrap.a)
+	include_directories(/usr/include/)
+	include_directories(/usr/include/glm)
 endif()
 
 include_directories(${VULKAN_SDK}/${VULKAN_INCLUDE})
-include_directories(${VULKAN_SDK}/${VULKAN_INCLUDE}/SDL2)
+#include_directories(${VULKAN_SDK}/${VULKAN_INCLUDE}/SDL2)
 include_directories(${VULKAN_SDK}/${VULKAN_INCLUDE}/volk)
-include_directories(${VULKAN_SDK}/${VULKAN_INCLUDE}/glm)
+#include_directories(${VULKAN_SDK}/${VULKAN_INCLUDE}/glm)
 include_directories(${VULKAN_SDK}/${VULKAN_INCLUDE}/vma)
 
 
@@ -96,6 +98,15 @@ include_directories (${viennaentitycomponentsystem_SOURCE_DIR}/include)
 include_directories (${viennastrongtype_SOURCE_DIR}/include)
 include_directories (${viennatypelistlibrary_SOURCE_DIR}/include)
 
+#--------------------------------- Fetch SDL2 ---------------------------------#
+#set(SDL_STATIC true)
+FetchContent_Declare(sdl2
+                     GIT_REPOSITORY https://github.com/libsdl-org/SDL.git
+                     GIT_TAG SDL2
+)
+FetchContent_MakeAvailable(sdl2)
+include_directories (${sdl2_SOURCE_DIR}/include)
+
 #--------------------------------- Fetch SDL3 ---------------------------------#
 #set(SDL_STATIC true)
 #FetchContent_Declare(sdl3
@@ -125,37 +136,38 @@ set(ASSIMP_BUILD_TESTS OFF CACHE BOOL "" FORCE)
 set(ASSIMP_BUILD_ASSIMP_TOOLS OFF CACHE BOOL "" FORCE)
 set(ASSIMP_BUILD_SAMPLES OFF CACHE BOOL "" FORCE)
 FetchContent_MakeAvailable(assimp)
+include_directories (${assimp_SOURCE_DIR}/include)
 
 message("COMPILER: ${CMAKE_CXX_COMPILER_ID}")
 message("BUILD TYPE: ${CMAKE_BUILD_TYPE}")
 
-if (CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
+#if (CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")#
 
-	if(CMAKE_BUILD_TYPE STREQUAL "Release")
-		message(STATUS "MSVC Release mode" )
-	else()
-		message(STATUS "MSVC Debug mode" ) 
-	endif()
-
-elseif(CMAKE_CXX_COMPILER_ID STREQUAL "AppleClang")
-	if(CMAKE_BUILD_TYPE STREQUAL "Release")
-		message(STATUS "AppleClang Release mode" )
-	else()
-		message(STATUS "AppleClang Debug mode" )
-	endif()
-elseif(CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
-	if(CMAKE_BUILD_TYPE STREQUAL "Release")
-		message(STATUS "Clang Release mode" )
-	else()
-		message(STATUS "Clang Debug mode" )
-	endif()
-elseif(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
-	if(CMAKE_BUILD_TYPE STREQUAL "Release")
-		message(STATUS "GNU Release mode" )
-	else()
-		message(STATUS "GNU Debug mode" )
-	endif()
-endif()
+#	if(CMAKE_BUILD_TYPE STREQUAL "Release")
+#		message(STATUS "MSVC Release mode" )
+#	else()
+#		message(STATUS "MSVC Debug mode" ) 
+#	endif()
+#
+#elseif(CMAKE_CXX_COMPILER_ID STREQUAL "AppleClang")
+#	if(CMAKE_BUILD_TYPE STREQUAL "Release")
+#		message(STATUS "AppleClang Release mode" )
+#	else()
+#		message(STATUS "AppleClang Debug mode" )
+#	endif()
+#elseif(CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
+#	if(CMAKE_BUILD_TYPE STREQUAL "Release")
+#		message(STATUS "Clang Release mode" )
+#	else()
+#		message(STATUS "Clang Debug mode" )
+#	endif()
+#elseif(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+#	if(CMAKE_BUILD_TYPE STREQUAL "Release")
+#		message(STATUS "GNU Release mode" )
+#	else()
+#		message(STATUS "GNU Debug mode" )
+#	endif()
+#endif()
 
 #--------------------------------- Fetch ImGui ---------------------------------#
 FetchContent_Declare(imgui
@@ -165,12 +177,21 @@ FetchContent_MakeAvailable(Imgui)
 include_directories (${imgui_SOURCE_DIR})
 include_directories(${imgui_SOURCE_DIR}/backends)
 
+#--------------------------------- Fetch glm ---------------------------------#
+
+FetchContent_Declare(glm
+                     GIT_REPOSITORY https://github.com/g-truc/glm.git 
+                     GIT_TAG master)
+FetchContent_MakeAvailable(glm)
+include_directories(${glm_SOURCE_DIR}/src)
+
 #--------------------------------- Fetch vk-bootstrap ---------------------------------#
 
 FetchContent_Declare(vkbootstrap
                      GIT_REPOSITORY https://github.com/charles-lunarg/vk-bootstrap.git 
                      GIT_TAG main)
 FetchContent_MakeAvailable(vkbootstrap)
+include_directories(${vkbootstrap_SOURCE_DIR}/src)
 
 #--------------------------------- Summary ---------------------------------#
 
@@ -180,6 +201,8 @@ message(STATUS "VSTY: ${viennastrongtype_SOURCE_DIR}")
 message(STATUS "STB IMAGE: ${stb_image_SOURCE_DIR}")
 message(STATUS "FILE DIALOG: ${l2dfiledialog_SOURCE_DIR}")
 message(STATUS "IMGUI: ${imgui_SOURCE_DIR}")
+message(STATUS "SDL2 SRC: ${sdl2_SOURCE_DIR}")
+message(STATUS "SDL2 BINARY: ${sdl2_BINARY_DIR}")
 #message(STATUS "SDL3 SRC: ${sdl3_SOURCE_DIR}")
 #message(STATUS "SDL Mixer SRC: ${sdlmixer_SOURCE_DIR}")
 message(STATUS "ASSIMP SRC: ${assimp_SOURCE_DIR}")
@@ -187,6 +210,7 @@ message(STATUS "ASSIMP BIN: ${assimp_BINARY_DIR}")
 message(STATUS "ZLIB SRC: ${zlib_SOURCE_DIR}")
 message(STATUS "ZLIB BIN: ${zlib_BINARY_DIR}")
 message(STATUS "VKBOOTSTRAP: ${vkbootstrap_SOURCE_DIR}")
+message(STATUS "GLM: ${glm_SOURCE_DIR}")
 
 # Add directories for compiling
 add_subdirectory(src)

@@ -97,6 +97,45 @@
               "externalConsole": false,
               "MIMode": "lldb",
               "MIDebuggerPath": "/usr/bin/lldb"
+        },
+        {
+              "name": "Linux Clang Test",
+              "type": "cppdbg",
+              "request": "launch",
+              "program": "${workspaceFolder}/build/tests/testvve",  
+              "args": [],
+              "stopAtEntry": false,
+              "cwd": "${workspaceFolder}",
+              "environment": [],
+              "externalConsole": false,
+              "MIMode": "gdb",
+              "MIDebuggerPath": "/usr/bin/gdb"
+        },
+    {
+              "name": "Linux Clang Helper",
+              "type": "cppdbg",
+              "request": "launch",
+              "program": "${workspaceFolder}/build/examples/helper/helper",  
+              "args": [],
+              "stopAtEntry": false,
+              "cwd": "${workspaceFolder}",
+              "environment": [],
+              "externalConsole": false,
+              "MIMode": "gdb",
+              "MIDebuggerPath": "/usr/bin/gdb"
+        },
+        {
+              "name": "Linux Clang Game",
+              "type": "cppdbg",
+              "request": "launch",
+              "program": "${workspaceFolder}/build/examples/game/game",  
+              "args": [],
+              "stopAtEntry": false,
+              "cwd": "${workspaceFolder}",
+              "environment": [],
+              "externalConsole": false,
+              "MIMode": "gdb",
+              "MIDebuggerPath": "/usr/bin/gdb"
         }
     ]
 

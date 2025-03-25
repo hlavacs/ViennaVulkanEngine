@@ -68,4 +68,5 @@ source_group(
   PREFIX "Header Files"
   FILES ${HEADER_LIST})
 
-target_link_libraries(${TARGET} assimp vk-bootstrap)
+target_link_libraries(${TARGET} SDL2 assimp vk-bootstrap)
+

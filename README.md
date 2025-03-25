@@ -11,5 +11,10 @@ VVE features are:
 
 Build with cmake:
 
+# Install on Ubuntu
 
+sudo apt install clang
+sudo apt-get install -y libc++-dev libc++abi-dev
+sudo apt-get install libsdl2-dev
+sudo apt install libglm-dev
 
