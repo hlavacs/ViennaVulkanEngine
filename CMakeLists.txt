@@ -128,34 +128,6 @@ include_directories (${assimp_SOURCE_DIR}/include)
 message("COMPILER: ${CMAKE_CXX_COMPILER_ID}")
 message("BUILD TYPE: ${CMAKE_BUILD_TYPE}")
 
-#if (CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")#
-
-#	if(CMAKE_BUILD_TYPE STREQUAL "Release")
-#		message(STATUS "MSVC Release mode" )
-#	else()
-#		message(STATUS "MSVC Debug mode" ) 
-#	endif()
-#
-#elseif(CMAKE_CXX_COMPILER_ID STREQUAL "AppleClang")
-#	if(CMAKE_BUILD_TYPE STREQUAL "Release")
-#		message(STATUS "AppleClang Release mode" )
-#	else()
-#		message(STATUS "AppleClang Debug mode" )
-#	endif()
-#elseif(CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
-#	if(CMAKE_BUILD_TYPE STREQUAL "Release")
-#		message(STATUS "Clang Release mode" )
-#	else()
-#		message(STATUS "Clang Debug mode" )
-#	endif()
-#elseif(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
-#	if(CMAKE_BUILD_TYPE STREQUAL "Release")
-#		message(STATUS "GNU Release mode" )
-#	else()
-#		message(STATUS "GNU Debug mode" )
-#	endif()
-#endif()
-
 #--------------------------------- Fetch ImGui ---------------------------------#
 FetchContent_Declare(imgui
                      GIT_REPOSITORY https://github.com/ocornut/imgui.git 

@@ -82,10 +82,38 @@ build\Debug\28_model_loading.exe
 
 # Installing on Ubuntu
 
-* Donwload the Vulkan SDK tar ball:
-* Install xz to decompress the tarball:
-* Install Visual Studio Code
-* Install Clang:
---sudo apt install clang
---sudo apt-get install -y libc++-dev libc++abi-dev
+Do the following
+
+1. Install Vulkan SDK tarball from LunarG.
+   - Download to your home dir, deompress: 
+   ```
+   sudo apt install xz-utils
+   tar -xf vulkansdk-linux-x86_64-1.4.309.0.tar.xz
+   ```
+   - Move it to a directory VulkanSDK in your home directory
+   - Make setup-env.sh executable
+   ```
+   cd VulkanSDK/1.4.309.0/
+   chmod ugo+x setup-env.sh 
+   ```
+
+   - Insert into .profile to set VULKAN_SDK environment variable, e.g. with vim
+   ```
+   . $HOME/VulkanSDK/1.4.309.0/setup-env.sh
+   ```
+
+
+2. Install Visual Studio Code with the App Center
+
+3. Install Ninja, Cmake and Clang
+   ```
+   sudo apt install cmake
+   sudo apt install ninja-build
+   sudo apt install clang
+   sudo apt-get install -y libc++-dev libc++abi-dev
+   ```
+   
+4. Clone the engine and open it with Visual Studio Code, select Clang as Kit, condigure, build
+
+
 
