@@ -53,10 +53,14 @@ namespace vve {
 		vh::RenUpdateDescriptorSetUBO(m_vulkanState().m_device, m_uniformBuffersPerFrame, 0, sizeof(vh::UniformBufferFrame), m_descriptorSetPerFrame);
 
 		// Binding 1 : Position
-		// TODO: Binding 1,2 and 3
 		vh::ImgCreateTextureImage(m_vulkanState().m_physicalDevice, m_vulkanState().m_device, m_vulkanState().m_vmaAllocator, m_vulkanState().m_graphicsQueue, m_commandPool,
 			m_texturePosition.m_pixels, m_texturePosition.m_width, m_texturePosition.m_height, m_texturePosition.m_size, m_texturePosition);
 		vh::RenUpdateDescriptorSetTexture(m_vulkanState().m_device, m_texturePosition, 1, m_descriptorSetPerFrame);
+
+		// Binding 2 : Normals
+		vh::ImgCreateTextureImage(m_vulkanState().m_physicalDevice, m_vulkanState().m_device, m_vulkanState().m_vmaAllocator, m_vulkanState().m_graphicsQueue, m_commandPool,
+			m_textureNormals.m_pixels, m_textureNormals.m_width, m_textureNormals.m_height, m_textureNormals.m_size, m_textureNormals);
+		vh::RenUpdateDescriptorSetTexture(m_vulkanState().m_device, m_textureNormals, 2, m_descriptorSetPerFrame);
 
 		// Binding 4 : Light
 		vh::BufCreateUniformBuffers(m_vulkanState().m_physicalDevice, m_vulkanState().m_device, m_vulkanState().m_vmaAllocator, m_maxNumberLights * sizeof(vh::Light), m_uniformBuffersLights);
