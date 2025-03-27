@@ -62,6 +62,11 @@ namespace vve {
 			m_textureNormals.m_pixels, m_textureNormals.m_width, m_textureNormals.m_height, m_textureNormals.m_size, m_textureNormals);
 		vh::RenUpdateDescriptorSetTexture(m_vulkanState().m_device, m_textureNormals, 2, m_descriptorSetPerFrame);
 
+		// Binding 3 : Albedo
+		vh::ImgCreateTextureImage(m_vulkanState().m_physicalDevice, m_vulkanState().m_device, m_vulkanState().m_vmaAllocator, m_vulkanState().m_graphicsQueue, m_commandPool,
+			m_textureAlbedo.m_pixels, m_textureAlbedo.m_width, m_textureAlbedo.m_height, m_textureAlbedo.m_size, m_textureAlbedo);
+		vh::RenUpdateDescriptorSetTexture(m_vulkanState().m_device, m_textureAlbedo, 3, m_descriptorSetPerFrame);
+
 		// Binding 4 : Light
 		vh::BufCreateUniformBuffers(m_vulkanState().m_physicalDevice, m_vulkanState().m_device, m_vulkanState().m_vmaAllocator, m_maxNumberLights * sizeof(vh::Light), m_uniformBuffersLights);
 		vh::RenUpdateDescriptorSetUBO(m_vulkanState().m_device, m_uniformBuffersLights, 4, m_maxNumberLights * sizeof(vh::Light), m_descriptorSetPerFrame);
