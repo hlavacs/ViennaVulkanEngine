@@ -17,6 +17,7 @@ namespace vve {
 		vh::UniformBuffers m_uniformBuffersPerFrame{};
 		// TODO: might need a SSBO for many lights
 		vh::UniformBuffers m_uniformBuffersLights{};
+		vh::Map m_texturePosition{};
 
 		VkDescriptorSetLayout m_descriptorSetLayoutPerFrame{ VK_NULL_HANDLE };
 		VkDescriptorPool m_descriptorPool{ VK_NULL_HANDLE };
