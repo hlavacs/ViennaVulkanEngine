@@ -15,7 +15,8 @@ namespace vh {
 
     void ComBindPipeline(VkCommandBuffer commandBuffer, uint32_t imageIndex
         , SwapChain& swapChain, VkRenderPass renderPass, Pipeline& graphicsPipeline
-        , bool clear, glm::vec4 clearColor, uint32_t currentFrame);
+        , std::vector<VkViewport> viewPorts, std::vector<VkRect2D> scissors
+        , glm::vec4 blendConstants, uint32_t currentFrame);
 
     void ComEndRecordCommandBuffer(VkCommandBuffer commandBuffer);
 

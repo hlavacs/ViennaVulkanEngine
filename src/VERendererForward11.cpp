@@ -100,13 +100,20 @@ namespace vve {
 				std::vector<VkVertexInputBindingDescription> bindingDescriptions = getBindingDescriptions(type);
 				std::vector<VkVertexInputAttributeDescription> attributeDescriptions = getAttributeDescriptions(type);
 
+				VkPipelineColorBlendAttachmentState colorBlendAttachment{};
+				colorBlendAttachment.colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT 
+					| VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
+				colorBlendAttachment.srcColorBlendFactor = VK_BLEND_FACTOR_ONE;
+				colorBlendAttachment.dstColorBlendFactor = VK_BLEND_FACTOR_CONSTANT_COLOR;
+				colorBlendAttachment.blendEnable = VK_TRUE;
+
 				vh::RenCreateGraphicsPipeline(m_vulkanState().m_device, m_renderPass, 
 					entry.path().string(), (shaders / (filename.substr(0,pos2) + "_frag.spv")).string(),
 					bindingDescriptions, attributeDescriptions,
 					{ m_descriptorSetLayoutPerFrame, descriptorSetLayoutPerObject }, 
 					{(int)m_maxNumberLights}, //spezialization constants
 					{}, //push constants
-					{}, //blend attachments
+					{colorBlendAttachment}, //blend attachments
 					graphicsPipeline);
 				
 				m_pipelinesPerType[pri] = { type, descriptorSetLayoutPerObject, graphicsPipeline };
@@ -164,6 +171,7 @@ namespace vve {
 	bool RendererForward11::OnPrepareNextFrame(Message message) {
 		auto msg = message.template GetData<MsgPrepareNextFrame>();
 
+		m_pass = 0;
 		std::vector<vh::Light> lights{m_maxNumberLights};
 		m_numberLightsPerType = glm::ivec3{0};
 		size_t total{0};
@@ -208,6 +216,17 @@ namespace vve {
 			m_windowState().m_clearColor,  m_vulkanState().m_currentFrame);
 		
 		for( auto& pipeline : m_pipelinesPerType) {
+
+			vh::ComBindPipeline(
+				m_commandBuffers[m_vulkanState().m_currentFrame], 
+				m_vulkanState().m_imageIndex, 
+				m_vulkanState().m_swapChain, 
+				m_renderPass, 
+				pipeline.second.m_graphicsPipeline, 
+				{}, {},
+				m_pass == 0 ? glm::vec4{0,0,0,0} : glm::vec4{1,1,1,1}, //blend constants
+				m_vulkanState().m_currentFrame);
+
 			for( auto[oHandle, name, ghandle, LtoW, uniformBuffers, descriptorsets] : 
 				m_registry.template GetView<vecs::Handle, Name, MeshHandle, LocalToWorldMatrix&, vh::Buffer&, vh::DescriptorSet&>
 						({(size_t)pipeline.second.m_graphicsPipeline.m_pipeline}) ) {
@@ -222,9 +241,7 @@ namespace vve {
 					uboTexture.model = LtoW(); 		
 					uboTexture.modelInverseTranspose = glm::inverse( glm::transpose(uboTexture.model) );
 					UVScale uvScale{ { 1.0f, 1.0f }};
-					if( m_registry.template Has<UVScale>(oHandle) ) {
-						uvScale = m_registry.template Get<UVScale>(oHandle);
-					}
+					if( m_registry.template Has<UVScale>(oHandle) ) { uvScale = m_registry.template Get<UVScale>(oHandle); }
 					uboTexture.uvScale = uvScale;
 					memcpy(uniformBuffers().m_uniformBuffersMapped[m_vulkanState().m_currentFrame], &uboTexture, sizeof(uboTexture));
 				} else if( hasColor ) {
@@ -240,11 +257,6 @@ namespace vve {
 					memcpy(uniformBuffers().m_uniformBuffersMapped[m_vulkanState().m_currentFrame], &uboColor, sizeof(uboColor));
 				}
 
-				vh::ComBindPipeline(m_commandBuffers[m_vulkanState().m_currentFrame], m_vulkanState().m_imageIndex, 
-					m_vulkanState().m_swapChain, m_renderPass, pipeline.second.m_graphicsPipeline, false, 
-					m_windowState().m_clearColor, 
-					m_vulkanState().m_currentFrame);
-
 				auto mesh = m_registry.template Get<vh::Mesh&>(ghandle);
 				vh::ComRecordObject( m_commandBuffers[m_vulkanState().m_currentFrame], pipeline.second.m_graphicsPipeline, 
 					{ m_descriptorSetPerFrame, descriptorsets }, pipeline.second.m_type, mesh, m_vulkanState().m_currentFrame );
@@ -253,6 +265,7 @@ namespace vve {
 
 		vh::ComEndRecordCommandBuffer(m_commandBuffers[m_vulkanState().m_currentFrame]);
 	    SubmitCommandBuffer(m_commandBuffers[m_vulkanState().m_currentFrame]);
+		++m_pass;
 		return false;
     }
 

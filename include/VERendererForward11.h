@@ -50,6 +50,7 @@ namespace vve
 	    VkCommandPool m_commandPool;
 	    std::vector<VkCommandBuffer> m_commandBuffers;
 
+		size_t m_pass;
 		size_t m_maxNumberLights{16};
 		glm::ivec3 m_numberLightsPerType{0,0,0};
     };

@@ -98,7 +98,8 @@ namespace vh {
 
 	void ComBindPipeline(VkCommandBuffer commandBuffer, uint32_t imageIndex
         , SwapChain& swapChain, VkRenderPass renderPass, Pipeline& graphicsPipeline
-        , bool clear, glm::vec4 clearColor, uint32_t currentFrame) {
+        , std::vector<VkViewport> viewPorts, std::vector<VkRect2D> scissors
+        , glm::vec4 blendConstants, uint32_t currentFrame) {
 
         vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsPipeline.m_pipeline);
 
@@ -109,12 +110,16 @@ namespace vh {
         viewport.height = (float) swapChain.m_swapChainExtent.height;
         viewport.minDepth = 0.0f;
         viewport.maxDepth = 1.0f;
-        vkCmdSetViewport(commandBuffer, 0, 1, &viewport);
+        if( viewPorts.size() == 0) viewPorts.push_back(viewport);
+        vkCmdSetViewport(commandBuffer, 0, viewPorts.size(), viewPorts.data());
   
         VkRect2D scissor{};
         scissor.offset = {0, 0};
         scissor.extent = swapChain.m_swapChainExtent;
-        vkCmdSetScissor(commandBuffer, 0, 1, &scissor);
+         if(scissors.size() == 0) scissors.push_back(scissor);
+       vkCmdSetScissor(commandBuffer, 0, scissors.size(), scissors.data());
+
+        vkCmdSetBlendConstants(commandBuffer, (float*)&blendConstants);
 	}
 
     void ComEndRecordCommandBuffer(VkCommandBuffer commandBuffer) {
