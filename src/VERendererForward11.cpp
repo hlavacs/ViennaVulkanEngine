@@ -262,12 +262,14 @@ namespace vve {
 
 		vh::ComStartRecordCommandBuffer(cmdBuffer, m_vulkanState().m_imageIndex, 
 			m_vulkanState().m_swapChain, 
-			m_pass == 0 ? m_renderPassClear : m_renderPass, m_pass == 0, 
-			//m_renderPass, false, 
+			//m_pass == 0 ? m_renderPassClear : m_renderPass, m_pass == 0, 
+			m_renderPass, false, 
 			//m_windowState().m_clearColor, 
 			{0,0,0,1}, 
 			m_vulkanState().m_currentFrame);
 
+		//for (m_pass=0; m_pass<3; ++m_pass) {
+		
 		float f = 0.0;
 		auto blendconst = (m_pass == 0 ? glm::vec4{f,f,f,1} : glm::vec4{1-f,1-f,1-f,1});
 		
@@ -279,7 +281,8 @@ namespace vve {
 				cmdBuffer, 
 				m_vulkanState().m_imageIndex, 
 				m_vulkanState().m_swapChain, 
-				m_pass == 0 ? m_renderPassClear : m_renderPass, 
+				//m_pass == 0 ? m_renderPassClear : m_renderPass, 
+				m_renderPass, 
 				pipeline.second.m_graphicsPipeline, 
 				{}, {}, //default view ports and scissors
 				blendconst, //blend constants
@@ -307,6 +310,7 @@ namespace vve {
 					{ m_descriptorSetPerFrame, descriptorsets }, pipeline.second.m_type, mesh, m_vulkanState().m_currentFrame );
 			}
 		}
+		//}
 
 		vh::ComEndRecordCommandBuffer(cmdBuffer);
 	    SubmitCommandBuffer(cmdBuffer);
