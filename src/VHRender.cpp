@@ -162,7 +162,8 @@ namespace vh {
 			std::vector<VkDescriptorSetLayout> descriptorSetLayouts, 
 			std::vector<int32_t> specializationConstants,
             std::vector<VkPushConstantRange> pushConstantRanges,
-			Pipeline& graphicsPipeline) {
+            std::vector<VkPipelineColorBlendAttachmentState> blendAttachments,
+            Pipeline& graphicsPipeline) {
 
 	    // Specialization constant setup
 	    std::vector<VkSpecializationMapEntry> specializationEntries;
@@ -250,12 +251,14 @@ namespace vh {
             | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
         colorBlendAttachment.blendEnable = VK_FALSE;
 
+        if( blendAttachments.size() == 0) blendAttachments.push_back(colorBlendAttachment);
+
         VkPipelineColorBlendStateCreateInfo colorBlending{};
         colorBlending.sType = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO;
         colorBlending.logicOpEnable = VK_FALSE;
         colorBlending.logicOp = VK_LOGIC_OP_COPY;
-        colorBlending.attachmentCount = 1;
-        colorBlending.pAttachments = &colorBlendAttachment;
+        colorBlending.attachmentCount = blendAttachments.size();
+        colorBlending.pAttachments = blendAttachments.data();
         colorBlending.blendConstants[0] = 0.0f;
         colorBlending.blendConstants[1] = 0.0f;
         colorBlending.blendConstants[2] = 0.0f;

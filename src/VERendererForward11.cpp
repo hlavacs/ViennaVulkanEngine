@@ -104,8 +104,9 @@ namespace vve {
 					entry.path().string(), (shaders / (filename.substr(0,pos2) + "_frag.spv")).string(),
 					bindingDescriptions, attributeDescriptions,
 					{ m_descriptorSetLayoutPerFrame, descriptorSetLayoutPerObject }, 
-					{(int)m_maxNumberLights},
-					{},
+					{(int)m_maxNumberLights}, //spezialization constants
+					{}, //push constants
+					{}, //blend attachments
 					graphicsPipeline);
 				
 				m_pipelinesPerType[pri] = { type, descriptorSetLayoutPerObject, graphicsPipeline };
