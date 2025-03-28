@@ -24,6 +24,8 @@ namespace vve
 		bool OnObjectDestroy( Message message );
         bool OnQuit(Message message);
 		void CreatePipelines();
+		template<typename T>
+		void RegisterForLight(int& i);
 
 		static const int size_pos = sizeof(glm::vec3);
 		static const int size_nor = sizeof(glm::vec3);

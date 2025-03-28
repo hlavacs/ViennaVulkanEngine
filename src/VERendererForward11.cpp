@@ -112,7 +112,7 @@ namespace vve {
 					bindingDescriptions, attributeDescriptions,
 					{ m_descriptorSetLayoutPerFrame, descriptorSetLayoutPerObject }, 
 					{(int)m_maxNumberLights}, //spezialization constants
-					{}, //push constants
+					{{. stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT, .offset = 0, .size = 8}}, //push constant ranges -> 2 ints
 					{colorBlendAttachment}, //blend attachments
 					graphicsPipeline);
 				
@@ -167,6 +167,17 @@ namespace vve {
 		addAttributeDescription( type, "T", binding, location, VK_FORMAT_R32G32B32_SFLOAT, attributeDescriptions );
         return attributeDescriptions;
     }
+
+
+	template<typename T>
+	void RendererForward11::RegisterForLight(int& i) {
+		for( auto [handle, light] : m_registry.template GetView<vecs::Handle, T&>() ) {
+			m_engine.RegisterCallbacks( { 
+				{this,  1500 + i*1000, "RECORD_NEXT_FRAME", [this](Message& message){ return OnRecordNextFrame(message);} }
+			} );
+			++i;
+		};
+	}
 
 	bool RendererForward11::OnPrepareNextFrame(Message message) {
 		auto msg = message.template GetData<MsgPrepareNextFrame>();
@@ -223,7 +234,7 @@ namespace vve {
 				m_vulkanState().m_swapChain, 
 				m_renderPass, 
 				pipeline.second.m_graphicsPipeline, 
-				{}, {},
+				{}, {}, //default view ports and scissors
 				m_pass == 0 ? glm::vec4{0,0,0,0} : glm::vec4{1,1,1,1}, //blend constants
 				m_vulkanState().m_currentFrame);
 

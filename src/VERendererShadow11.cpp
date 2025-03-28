@@ -75,6 +75,16 @@ namespace vve {
 			, shadowMap().m_shadowMaps[m_vulkanState().m_currentFrame], std::numeric_limits<float>::max());
 	}
 
+	template<typename T>
+	void RendererShadow11::RegisterForLight(int& i) {
+		for( auto [handle, light] : m_registry.template GetView<vecs::Handle, T&>() ) {
+			m_engine.RegisterCallbacks( { 
+				{this,  1500 + i*1000, "RECORD_NEXT_FRAME", [this](Message& message){ return OnRecordNextFrame(message);} }
+			} );
+			++i;
+		};
+	}
+
 	/// @brief Prepare the next frame for shadow map rendering.
 	/// Calculate number of lights and number of shadow maps. Calculate ShadowIndex values.
 	/// Determine the number of passes and register record callback as many times. Create/adapt ShadowImage if necessaary.
@@ -82,32 +92,18 @@ namespace vve {
 	/// @return Returns false.
 	bool RendererShadow11::OnPrepareNextFrame(Message message) {
 		auto msg = message.template GetData<MsgPrepareNextFrame>();
+		m_pass = 0;
 		m_engine.DeregisterCallbacks(this, "RECORD_NEXT_FRAME");
-
 		int i{0};
-		for( auto [handle, light] : m_registry.template GetView<vecs::Handle, PointLight&>() ) {
-			m_engine.RegisterCallbacks( { 
-				{this,  1500 + i*1000, "RECORD_NEXT_FRAME", [this](Message& message){ return OnRecordNextFrame(message);} }
-			} );
-			++i;
-		};
-		for( auto [handle, light] : m_registry.template GetView<vecs::Handle, DirectionalLight&>() ) {
-			m_engine.RegisterCallbacks( { 
-				{this,  1500 + i*1000, "RECORD_NEXT_FRAME", [this](Message& message){ return OnRecordNextFrame(message);} }
-			} );
-			++i;
-		}
-		for( auto [handle, light] : m_registry.template GetView<vecs::Handle, SpotLight&>() ) {
-			m_engine.RegisterCallbacks( { 
-				{this,  1500 + i*1000, "RECORD_NEXT_FRAME", [this](Message& message){ return OnRecordNextFrame(message);} }
-			} );
-			++i;
-		}
+		RegisterForLight<PointLight>(i);
+		RegisterForLight<DirectionalLight>(i);
+		RegisterForLight<SpotLight>(i);
 		return false;
 	}
 
 	bool RendererShadow11::OnRecordNextFrame(Message message) {
 		auto msg = message.template GetData<MsgRecordNextFrame>();
+		++m_pass;
 		return false;
 	}
 

@@ -21,6 +21,8 @@ namespace vve
         bool OnPrepareNextFrame(Message message);
         bool OnRecordNextFrame(Message message);
         bool OnQuit(Message message);
+		template<typename T>
+		void RegisterForLight(int& i);
 		void CheckShadowMaps( vecs::Handle handle,  uint32_t number);
 
 	    VkRenderPass m_renderPass;
@@ -36,6 +38,7 @@ namespace vve
 		VkDescriptorSetLayout m_descriptorSetLayoutPerObject;
 		vh::Pipeline m_graphicsPipeline;		
 
+		size_t m_pass;
 		size_t m_maxNumberLights{128};
 		glm::ivec3 m_numberLightsPerType{0,0,0};
 	};
