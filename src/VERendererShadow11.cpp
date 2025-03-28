@@ -8,10 +8,9 @@ namespace vve {
 	RendererShadow11::RendererShadow11( std::string systemName, Engine& engine, std::string windowName ) : Renderer(systemName, engine, windowName ) {
 
 		engine.RegisterCallbacks( { 
-			//{this,  3500, "INIT", [this](Message& message){ return OnInit(message);} },
-			//{this,  1500, "PREPARE_NEXT_FRAME", [this](Message& message){ return OnPrepareNextFrame(message);} },
-			//{this,  1500, "RECORD_NEXT_FRAME", [this](Message& message){ return OnRecordNextFrame(message);} }, 
-			//{this,     0, "QUIT", [this](Message& message){ return OnQuit(message);} }
+			{this,  3500, "INIT", [this](Message& message){ return OnInit(message);} },
+			{this,  1500, "PREPARE_NEXT_FRAME", [this](Message& message){ return OnPrepareNextFrame(message);} },
+			{this,     0, "QUIT", [this](Message& message){ return OnQuit(message);} }
 		} );
 	};
 
@@ -83,15 +82,26 @@ namespace vve {
 	/// @return Returns false.
 	bool RendererShadow11::OnPrepareNextFrame(Message message) {
 		auto msg = message.template GetData<MsgPrepareNextFrame>();
+		m_engine.DeregisterCallbacks(this, "RECORD_NEXT_FRAME");
 
+		int i{0};
 		for( auto [handle, light] : m_registry.template GetView<vecs::Handle, PointLight&>() ) {
-			CheckShadowMaps(handle, 6);
-		}
+			m_engine.RegisterCallbacks( { 
+				{this,  1500 + i*1000, "RECORD_NEXT_FRAME", [this](Message& message){ return OnRecordNextFrame(message);} }
+			} );
+			++i;
+		};
 		for( auto [handle, light] : m_registry.template GetView<vecs::Handle, DirectionalLight&>() ) {
-			CheckShadowMaps(handle, 3);
+			m_engine.RegisterCallbacks( { 
+				{this,  1500 + i*1000, "RECORD_NEXT_FRAME", [this](Message& message){ return OnRecordNextFrame(message);} }
+			} );
+			++i;
 		}
 		for( auto [handle, light] : m_registry.template GetView<vecs::Handle, SpotLight&>() ) {
-			CheckShadowMaps(handle, 1);
+			m_engine.RegisterCallbacks( { 
+				{this,  1500 + i*1000, "RECORD_NEXT_FRAME", [this](Message& message){ return OnRecordNextFrame(message);} }
+			} );
+			++i;
 		}
 		return false;
 	}
