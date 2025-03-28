@@ -74,7 +74,21 @@ namespace vve {
 	}
 
 	bool RendererDeferred11::OnQuit(Message message) {
-		// TODO: maybe a reference will be enough here to not make a message copy?
+		vkDeviceWaitIdle(m_vulkanState().m_device);
+
+		vkDestroyCommandPool(m_vulkanState().m_device, m_commandPool, nullptr);
+
+		// TODO: Manage pipelines
+
+		vkDestroyDescriptorPool(m_vulkanState().m_device, m_descriptorPool, nullptr);
+		vkDestroyRenderPass(m_vulkanState().m_device, m_renderPass, nullptr);
+		vh::BufDestroyBuffer2(m_vulkanState().m_device, m_vulkanState().m_vmaAllocator, m_uniformBuffersPerFrame);
+
+		vh::BufDestroyBuffer2(m_vulkanState().m_device, m_vulkanState().m_vmaAllocator, m_uniformBuffersLights);
+		vh::ImgDestroyImage(m_vulkanState().m_device, m_vulkanState().m_vmaAllocator, m_texturePosition.m_mapImage, m_texturePosition.m_mapImageAllocation);
+		vh::ImgDestroyImage(m_vulkanState().m_device, m_vulkanState().m_vmaAllocator, m_textureNormals.m_mapImage, m_textureNormals.m_mapImageAllocation);
+		vh::ImgDestroyImage(m_vulkanState().m_device, m_vulkanState().m_vmaAllocator, m_textureAlbedo.m_mapImage, m_textureAlbedo.m_mapImageAllocation);
+		vkDestroyDescriptorSetLayout(m_vulkanState().m_device, m_descriptorSetLayoutPerFrame, nullptr);
 
 		return false;
 	}
