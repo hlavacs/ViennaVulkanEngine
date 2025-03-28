@@ -96,19 +96,25 @@ export public float3 calculateSpotLight(Light light, float3 nW, float3 viewPosW,
 export public float3 calculateLighting(StructuredBuffer<Light> light, int3 numberLights, LightOffset offset, float3 normalW, float3 viewPosW, float3 fragPosW) {
     float3 result = float3(0.0);
 
+    offset.lightOffset = 0;
+    offset.numberLights = numberLights.x + numberLights.y + numberLights.z;
+	
 	for( int i = 0; i < numberLights.x; i++ ) {// Point light
-		int idx = i;
-		result += calculatePointLight(light[idx], normalW, viewPosW, fragPosW);
+        int idx = i;
+        if (idx >= offset.lightOffset + offset.numberLights) return result;
+		if( idx >= offset.lightOffset) result += calculatePointLight(light[idx], normalW, viewPosW, fragPosW);
     }
 
     for (int i = 0; i < numberLights.y; i++) { // Directional light
-		int idx = numberLights.x + i;
-		result += calculateDirectionalLight(light[idx], normalW, viewPosW, fragPosW);
+        int idx = numberLights.x + i;
+        if (idx >= offset.lightOffset + offset.numberLights) return result;
+        if (idx >= offset.lightOffset) result += calculateDirectionalLight(light[idx], normalW, viewPosW, fragPosW);
     }
 
     for (int i = 0; i < numberLights.z; i++) { // Spot light
-		int idx = numberLights.x + numberLights.y + i;
-		result += calculateSpotLight(light[idx], normalW, viewPosW, fragPosW);
+        int idx = numberLights.x + numberLights.y + i;
+        if (idx >= offset.lightOffset + offset.numberLights) return result;
+        if (idx >= offset.lightOffset) result += calculateSpotLight(light[idx], normalW, viewPosW, fragPosW);
     }
 
     return result;
