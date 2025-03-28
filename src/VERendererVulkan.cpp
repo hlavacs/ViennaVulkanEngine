@@ -78,7 +78,9 @@ namespace vve {
 			m_vulkanState().m_surface, m_vulkanState().m_physicalDevice, m_vulkanState().m_device, m_vulkanState().m_swapChain);
         
 		vh::DevCreateImageViews(m_vulkanState().m_device, m_vulkanState().m_swapChain);
-        vh::RenCreateRenderPassClear(m_vulkanState().m_physicalDevice, m_vulkanState().m_device, m_vulkanState().m_swapChain, true, m_renderPass);
+
+		//vh::RenCreateRenderPassClear(m_vulkanState().m_physicalDevice, m_vulkanState().m_device, m_vulkanState().m_swapChain, true, m_renderPass);
+		vh::RenCreateRenderPass(m_vulkanState().m_physicalDevice, m_vulkanState().m_device, m_vulkanState().m_swapChain, m_clear, m_renderPass);
 
 		vh::RenCreateDescriptorSetLayout( m_vulkanState().m_device, {}, m_descriptorSetLayoutPerFrame );
 			
@@ -127,12 +129,12 @@ namespace vve {
 
         vkResetCommandBuffer(m_commandBuffers[m_vulkanState().m_currentFrame],  0);
 
-		vh::ComStartRecordCommandBuffer(m_commandBuffers[m_vulkanState().m_currentFrame], m_vulkanState().m_imageIndex, 
-			m_vulkanState().m_swapChain, m_renderPass, true, m_windowState().m_clearColor, m_vulkanState().m_currentFrame);
+		//vh::ComStartRecordCommandBuffer(m_commandBuffers[m_vulkanState().m_currentFrame], m_vulkanState().m_imageIndex, 
+		//	m_vulkanState().m_swapChain, m_renderPass, m_clear, m_windowState().m_clearColor, m_vulkanState().m_currentFrame);
 
-		vh::ComEndRecordCommandBuffer(m_commandBuffers[m_vulkanState().m_currentFrame]);
+		//vh::ComEndRecordCommandBuffer(m_commandBuffers[m_vulkanState().m_currentFrame]);
 
-		SubmitCommandBuffer(m_commandBuffers[m_vulkanState().m_currentFrame]);
+		//SubmitCommandBuffer(m_commandBuffers[m_vulkanState().m_currentFrame]);
 		return false;
 	}
 

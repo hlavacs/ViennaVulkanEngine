@@ -41,7 +41,10 @@ namespace vve {
     bool RendererForward11::OnInit(Message message) {
 		Renderer::OnInit(message);
 
-        vh::RenCreateRenderPass(m_vulkanState().m_physicalDevice, m_vulkanState().m_device, m_vulkanState().m_swapChain, false, m_renderPass);
+        vh::RenCreateRenderPass(m_vulkanState().m_physicalDevice, m_vulkanState().m_device, m_vulkanState().m_swapChain, 
+			true, m_renderPassClear);
+        vh::RenCreateRenderPass(m_vulkanState().m_physicalDevice, m_vulkanState().m_device, m_vulkanState().m_swapChain, 
+			false, m_renderPass);
 		
 		vh::RenCreateDescriptorSetLayout( m_vulkanState().m_device, //Per frame
 			{ 
@@ -54,6 +57,12 @@ namespace vve {
 
 		vh::ComCreateCommandPool(m_vulkanState().m_surface, m_vulkanState().m_physicalDevice, m_vulkanState().m_device, m_commandPool);
 		vh::ComCreateCommandBuffers(m_vulkanState().m_device, m_commandPool, m_commandBuffers);
+
+		for( int i=0; i<MAX_FRAMES_IN_FLIGHT; ++i) {
+			m_commandPools.resize(MAX_FRAMES_IN_FLIGHT);
+			vh::ComCreateCommandPool(m_vulkanState().m_surface, m_vulkanState().m_physicalDevice, m_vulkanState().m_device, m_commandPools[i]);
+		}
+
 		vh::RenCreateDescriptorPool(m_vulkanState().m_device, 1000, m_descriptorPool);
 
 		vh::RenCreateDescriptorSet(m_vulkanState().m_device, m_descriptorSetLayoutPerFrame, m_descriptorPool, m_descriptorSetPerFrame);
@@ -101,10 +110,13 @@ namespace vve {
 				std::vector<VkVertexInputAttributeDescription> attributeDescriptions = getAttributeDescriptions(type);
 
 				VkPipelineColorBlendAttachmentState colorBlendAttachment{};
-				colorBlendAttachment.colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT 
-					| VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
+				colorBlendAttachment.colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
 				colorBlendAttachment.srcColorBlendFactor = VK_BLEND_FACTOR_ONE;
 				colorBlendAttachment.dstColorBlendFactor = VK_BLEND_FACTOR_CONSTANT_COLOR;
+				colorBlendAttachment.colorBlendOp = VK_BLEND_OP_ADD;
+				colorBlendAttachment.srcAlphaBlendFactor = VK_BLEND_FACTOR_ONE;
+				colorBlendAttachment.dstAlphaBlendFactor = VK_BLEND_FACTOR_ONE;
+				colorBlendAttachment.alphaBlendOp = VK_BLEND_OP_MAX;
 				colorBlendAttachment.blendEnable = VK_TRUE;
 
 				vh::RenCreateGraphicsPipeline(m_vulkanState().m_device, m_renderPass, 
@@ -112,7 +124,7 @@ namespace vve {
 					bindingDescriptions, attributeDescriptions,
 					{ m_descriptorSetLayoutPerFrame, descriptorSetLayoutPerObject }, 
 					{(int)m_maxNumberLights}, //spezialization constants
-					{{. stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT, .offset = 0, .size = 8}}, //push constant ranges -> 2 ints
+					{{.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT, .offset = 0, .size = 8}}, //push constant ranges -> 2 ints
 					{colorBlendAttachment}, //blend attachments
 					graphicsPipeline);
 				
@@ -174,10 +186,7 @@ namespace vve {
 		int n=0;
 		for( auto [handle, light, lToW] : m_registry.template GetView<vecs::Handle, T&, LocalToWorldMatrix&>() ) {
 			++n;
-			//m_engine.RegisterCallbacks( { 
-			//	{this,  1500 + total*1000, "RECORD_NEXT_FRAME", [this](Message& message){ return OnRecordNextFrame(message);} }
-			//} );
-
+			//m_engine.RegisterCallbacks( { {this,  2000 + total*1000, "RECORD_NEXT_FRAME", [this](Message& message){ return OnRecordNextFrame(message);} }} );
 			light().params.x = type;
 			lights[total] = { .positionW = glm::vec3{lToW()[3]}, .directionW = glm::vec3{lToW()[1]}, .lightParams = light() };
 			if( ++total >= m_maxNumberLights ) return n;
@@ -193,6 +202,7 @@ namespace vve {
 		m_numberLightsPerType = glm::ivec3{0};
 		int total{0};
 		vh::UniformBufferFrame ubc; //contains camera view and projection matrices and number of lights
+		vkResetCommandPool( m_vulkanState().m_device, m_commandPools[m_vulkanState().m_currentFrame], 0);
 
 		//m_engine.DeregisterCallbacks(this, "RECORD_NEXT_FRAME");
 
@@ -215,14 +225,25 @@ namespace vve {
 		auto msg = message.template GetData<MsgRecordNextFrame>();
 
 		vkResetCommandBuffer(m_commandBuffers[m_vulkanState().m_currentFrame],  0);
-        
+
+		std::vector<VkCommandBuffer> cmdBuffer(1);
+		vh::ComCreateCommandBuffers(m_vulkanState().m_device, m_commandPools[m_vulkanState().m_currentFrame], cmdBuffer);
+
 		vh::ComStartRecordCommandBuffer(m_commandBuffers[m_vulkanState().m_currentFrame], m_vulkanState().m_imageIndex, 
-			m_vulkanState().m_swapChain, m_renderPass, false, 
-			m_windowState().m_clearColor,  m_vulkanState().m_currentFrame);
+			m_vulkanState().m_swapChain, m_pass == 0 ? m_renderPassClear : m_renderPass, m_pass == 0, 
+			m_windowState().m_clearColor, m_vulkanState().m_currentFrame);
+
+		//vh::ComStartRecordCommandBuffer(cmdBuffer[0], m_vulkanState().m_imageIndex, 
+		//	m_vulkanState().m_swapChain, m_pass == 0 ? m_renderPassClear : m_renderPass, m_pass == 0, 
+		//	m_windowState().m_clearColor, m_vulkanState().m_currentFrame);
+
+		float f = 0.0;
+		auto blendconst = m_pass == 0 ? glm::vec4{f,f,f,f} : glm::vec4{1-f,1-f,1-f,1-f};
 		
 		for( auto& pipeline : m_pipelinesPerType) {
 
 			vh::LightOffset offset{0, m_numberLightsPerType.x + m_numberLightsPerType.y + m_numberLightsPerType.z};
+			//vh::LightOffset offset{m_pass, 1};
 			vh::ComBindPipeline(
 				m_commandBuffers[m_vulkanState().m_currentFrame], 
 				m_vulkanState().m_imageIndex, 
@@ -230,10 +251,10 @@ namespace vve {
 				m_renderPass, 
 				pipeline.second.m_graphicsPipeline, 
 				{}, {}, //default view ports and scissors
-				m_pass == 0 ? glm::vec4{0,0,0,0} : glm::vec4{1,1,1,1}, //blend constants
+				blendconst, //blend constants
 				{
 					{	.layout = pipeline.second.m_graphicsPipeline.m_pipelineLayout, 
-						.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT , 
+						.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT, 
 						.offset = 0, 
 						.size = sizeof(offset), 
 						.pValues = &offset
@@ -274,11 +295,18 @@ namespace vve {
 				auto mesh = m_registry.template Get<vh::Mesh&>(ghandle);
 				vh::ComRecordObject( m_commandBuffers[m_vulkanState().m_currentFrame], pipeline.second.m_graphicsPipeline, 
 					{ m_descriptorSetPerFrame, descriptorsets }, pipeline.second.m_type, mesh, m_vulkanState().m_currentFrame );
+
+				//vh::ComRecordObject( m_commandBuffers[m_vulkanState().m_currentFrame], pipeline.second.m_graphicsPipeline, 
+				//	{ m_descriptorSetPerFrame, descriptorsets }, pipeline.second.m_type, mesh, m_vulkanState().m_currentFrame );
 			}
 		}
 
 		vh::ComEndRecordCommandBuffer(m_commandBuffers[m_vulkanState().m_currentFrame]);
 	    SubmitCommandBuffer(m_commandBuffers[m_vulkanState().m_currentFrame]);
+
+		//vh::ComEndRecordCommandBuffer(cmdBuffer[0]);
+	    //SubmitCommandBuffer(cmdBuffer[0]);
+
 		++m_pass;
 		return false;
     }
@@ -361,7 +389,10 @@ namespace vve {
 
     bool RendererForward11::OnQuit(Message message) {
         vkDeviceWaitIdle(m_vulkanState().m_device);
-		
+
+		for( auto pool : m_commandPools ) {
+			vkDestroyCommandPool(m_vulkanState().m_device, pool, nullptr);
+		}
         vkDestroyCommandPool(m_vulkanState().m_device, m_commandPool, nullptr);
 
 		for( auto& [type, pipeline] : m_pipelinesPerType ) {
@@ -370,8 +401,9 @@ namespace vve {
 			vkDestroyPipelineLayout(m_vulkanState().m_device, pipeline.m_graphicsPipeline.m_pipelineLayout, nullptr);
 		}
 
-        vkDestroyDescriptorPool(m_vulkanState().m_device, m_descriptorPool, nullptr);
+        vkDestroyDescriptorPool(m_vulkanState().m_device, m_descriptorPool, nullptr);		
 		vkDestroyRenderPass(m_vulkanState().m_device, m_renderPass, nullptr);
+		vkDestroyRenderPass(m_vulkanState().m_device, m_renderPassClear, nullptr);
 		vh::BufDestroyBuffer2(m_vulkanState().m_device, m_vulkanState().m_vmaAllocator, m_uniformBuffersPerFrame);
 		vh::BufDestroyBuffer2(m_vulkanState().m_device, m_vulkanState().m_vmaAllocator, m_uniformBuffersLights);
 		vkDestroyDescriptorSetLayout(m_vulkanState().m_device, m_descriptorSetLayoutPerFrame, nullptr);

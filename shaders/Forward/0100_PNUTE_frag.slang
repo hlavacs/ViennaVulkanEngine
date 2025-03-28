@@ -45,7 +45,7 @@ float4 fragmentMain(CoarseVertex cv : CoarseVertex) : SV_Target
 
     float4 tex = texSampler.Sample(cv.uv);
     float3 l = calculateLighting(gLights, numberLights, offset, cv.normalW, camera.positionW, cv.positionW);
-    return float4( tex.xyz*l, tex.w );
+    return float4( tex.xyz*l, 1 );
 }
 
 

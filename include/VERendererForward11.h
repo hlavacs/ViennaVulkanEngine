@@ -47,10 +47,12 @@ namespace vve
 		VkDescriptorSetLayout m_descriptorSetLayoutPerFrame;
 		vh::DescriptorSet m_descriptorSetPerFrame{0};
 		std::map<int, PipelinePerType> m_pipelinesPerType;
+	    VkRenderPass m_renderPassClear;
 	    VkRenderPass m_renderPass;
 	    VkDescriptorPool m_descriptorPool;    
 	    VkCommandPool m_commandPool;
-	    std::vector<VkCommandBuffer> m_commandBuffers;
+		std::vector<VkCommandPool> m_commandPools;
+		std::vector<VkCommandBuffer> m_commandBuffers;
 
 		int m_pass;
 		size_t m_maxNumberLights{16};
