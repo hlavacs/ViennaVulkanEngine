@@ -52,7 +52,6 @@ namespace vve
 	    VkDescriptorPool m_descriptorPool;    
 	    VkCommandPool m_commandPool;
 		std::vector<VkCommandPool> m_commandPools;
-		std::vector<VkCommandBuffer> m_commandBuffers;
 
 		int m_pass;
 		size_t m_maxNumberLights{16};

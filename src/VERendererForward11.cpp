@@ -56,7 +56,6 @@ namespace vve {
 			m_descriptorSetLayoutPerFrame );
 
 		vh::ComCreateCommandPool(m_vulkanState().m_surface, m_vulkanState().m_physicalDevice, m_vulkanState().m_device, m_commandPool);
-		vh::ComCreateCommandBuffers(m_vulkanState().m_device, m_commandPool, m_commandBuffers);
 
 		for( int i=0; i<MAX_FRAMES_IN_FLIGHT; ++i) {
 			m_commandPools.resize(MAX_FRAMES_IN_FLIGHT);
@@ -224,18 +223,14 @@ namespace vve {
     bool RendererForward11::OnRecordNextFrame(Message message) {
 		auto msg = message.template GetData<MsgRecordNextFrame>();
 
-		vkResetCommandBuffer(m_commandBuffers[m_vulkanState().m_currentFrame],  0);
+		std::vector<VkCommandBuffer> cmdBuffers(1);
+		vh::ComCreateCommandBuffers(m_vulkanState().m_device, m_commandPools[m_vulkanState().m_currentFrame], cmdBuffers);
 
-		std::vector<VkCommandBuffer> cmdBuffer(1);
-		vh::ComCreateCommandBuffers(m_vulkanState().m_device, m_commandPools[m_vulkanState().m_currentFrame], cmdBuffer);
+		auto cmdBuffer = cmdBuffers[0];
 
-		vh::ComStartRecordCommandBuffer(m_commandBuffers[m_vulkanState().m_currentFrame], m_vulkanState().m_imageIndex, 
+		vh::ComStartRecordCommandBuffer(cmdBuffer, m_vulkanState().m_imageIndex, 
 			m_vulkanState().m_swapChain, m_pass == 0 ? m_renderPassClear : m_renderPass, m_pass == 0, 
 			m_windowState().m_clearColor, m_vulkanState().m_currentFrame);
-
-		//vh::ComStartRecordCommandBuffer(cmdBuffer[0], m_vulkanState().m_imageIndex, 
-		//	m_vulkanState().m_swapChain, m_pass == 0 ? m_renderPassClear : m_renderPass, m_pass == 0, 
-		//	m_windowState().m_clearColor, m_vulkanState().m_currentFrame);
 
 		float f = 0.0;
 		auto blendconst = m_pass == 0 ? glm::vec4{f,f,f,f} : glm::vec4{1-f,1-f,1-f,1-f};
@@ -245,7 +240,7 @@ namespace vve {
 			vh::LightOffset offset{0, m_numberLightsPerType.x + m_numberLightsPerType.y + m_numberLightsPerType.z};
 			//vh::LightOffset offset{m_pass, 1};
 			vh::ComBindPipeline(
-				m_commandBuffers[m_vulkanState().m_currentFrame], 
+				cmdBuffer, 
 				m_vulkanState().m_imageIndex, 
 				m_vulkanState().m_swapChain, 
 				m_renderPass, 
@@ -293,19 +288,13 @@ namespace vve {
 				}
 
 				auto mesh = m_registry.template Get<vh::Mesh&>(ghandle);
-				vh::ComRecordObject( m_commandBuffers[m_vulkanState().m_currentFrame], pipeline.second.m_graphicsPipeline, 
+				vh::ComRecordObject( cmdBuffer, pipeline.second.m_graphicsPipeline, 
 					{ m_descriptorSetPerFrame, descriptorsets }, pipeline.second.m_type, mesh, m_vulkanState().m_currentFrame );
-
-				//vh::ComRecordObject( m_commandBuffers[m_vulkanState().m_currentFrame], pipeline.second.m_graphicsPipeline, 
-				//	{ m_descriptorSetPerFrame, descriptorsets }, pipeline.second.m_type, mesh, m_vulkanState().m_currentFrame );
 			}
 		}
 
-		vh::ComEndRecordCommandBuffer(m_commandBuffers[m_vulkanState().m_currentFrame]);
-	    SubmitCommandBuffer(m_commandBuffers[m_vulkanState().m_currentFrame]);
-
-		//vh::ComEndRecordCommandBuffer(cmdBuffer[0]);
-	    //SubmitCommandBuffer(cmdBuffer[0]);
+		vh::ComEndRecordCommandBuffer(cmdBuffer);
+	    SubmitCommandBuffer(cmdBuffer);
 
 		++m_pass;
 		return false;
