@@ -23,7 +23,7 @@ class MyGame : public vve::System {
     public:
         MyGame( vve::Engine& engine ) : vve::System("MyGame", engine ) {
     
-            m_engine.RegisterCallback( { 
+            m_engine.RegisterCallbacks( { 
                 {this,      0, "LOAD_LEVEL", [this](Message& message){ return OnLoadLevel(message);} },
                 {this,  10000, "UPDATE", [this](Message& message){ return OnUpdate(message);} },
                 {this, -10000, "RECORD_NEXT_FRAME", [this](Message& message){ return OnRecordNextFrame(message);} }

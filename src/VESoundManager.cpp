@@ -4,7 +4,7 @@
 namespace vve {
 
 	SoundManager::SoundManager(std::string systemName, Engine& engine ) : System(systemName, engine){
-		m_engine.RegisterCallback( { 
+		m_engine.RegisterCallbacks( { 
  		  	{this,    0, "UPDATE", [this](Message& message){ return OnUpdate(message);} },
  		  	{this, 1000, "PLAY_SOUND", [this](Message& message){ return OnPlaySound(message);} },
  		  	{this,    0, "SET_VOLUME", [this](Message& message){ return OnSetVolume(message);} },

@@ -8,7 +8,7 @@ namespace vve {
 	//-------------------------------------------------------------------------------------------------------
 
     AssetManager::AssetManager(std::string systemName, Engine& engine ) : System{systemName, engine } {
-		engine.RegisterCallback( { 
+		engine.RegisterCallbacks( { 
 			{this,                               0, "SCENE_LOAD", [this](Message& message){ return OnSceneLoad(message);} },
 			{this,                               0, "SCENE_CREATE", [this](Message& message){ return OnSceneCreate(message);} },
 			{this, std::numeric_limits<int>::max(), "SCENE_CREATE", [this](Message& message){ return OnSceneCreate(message);} },

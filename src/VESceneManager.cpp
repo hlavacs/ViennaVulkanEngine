@@ -11,7 +11,7 @@ namespace vve {
 	//Scene Manager class
 	
     SceneManager::SceneManager(std::string systemName, Engine& engine ) : System{systemName, engine } {
-		engine.RegisterCallback( { 
+		engine.RegisterCallbacks( { 
 			{this,  						  2000,	"INIT", [this](Message& message){ return OnInit(message);} },
 			{this,      						 0, "LOAD_LEVEL", [this](Message& message){ return OnLoadLevel(message);} },
 			{this,  							 0, "WINDOW_SIZE", [this](Message& message){ return OnWindowSize(message);} },

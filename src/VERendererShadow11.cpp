@@ -7,7 +7,7 @@ namespace vve {
 
 	RendererShadow11::RendererShadow11( std::string systemName, Engine& engine, std::string windowName ) : Renderer(systemName, engine, windowName ) {
 
-		engine.RegisterCallback( { 
+		engine.RegisterCallbacks( { 
 			//{this,  3500, "INIT", [this](Message& message){ return OnInit(message);} },
 			//{this,  1500, "PREPARE_NEXT_FRAME", [this](Message& message){ return OnPrepareNextFrame(message);} },
 			//{this,  1500, "RECORD_NEXT_FRAME", [this](Message& message){ return OnRecordNextFrame(message);} }, 

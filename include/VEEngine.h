@@ -41,8 +41,9 @@ namespace vve {
 		Engine(std::string name, uint32_t apiVersion = c_maximumVersion, bool debug=false);
 		virtual ~Engine();
 		void RegisterSystem( std::unique_ptr<System>&& system );
-		void RegisterCallback( std::vector<MessageCallback> callbacks);
 		void DeregisterSystem( System* system );
+		void RegisterCallbacks( std::vector<MessageCallback> callbacks);
+		void DeregisterCallbacks(System* system, std::string messageName);
 		void Run();
 		void Stop();
 		void Init();

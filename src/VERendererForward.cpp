@@ -7,7 +7,7 @@ namespace vve {
 
 	RendererForward::RendererForward( std::string systemName, Engine& engine, std::string windowName ) : Renderer(systemName, engine, windowName ) {
 
-		engine.RegisterCallback( { 
+		engine.RegisterCallbacks( { 
 			{this,  3000, "INIT", [this](Message& message){ return OnInit(message);} }
 	  } );
 	};

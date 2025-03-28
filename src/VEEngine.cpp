@@ -21,11 +21,20 @@ namespace vve {
 	
 	Engine::~Engine() {};
 
-	void Engine::RegisterCallback( std::vector<MessageCallback> callbacks) {
+	void Engine::RegisterCallbacks( std::vector<MessageCallback> callbacks) {
 		for( auto& callback : callbacks ) {
 			assert(MsgTypeNames.contains(callback.m_messageName));
 			auto& pm = m_messageMap[std::hash<std::string>{}(callback.m_messageName)];
 			pm.insert({callback.m_phase, callback});
+		}
+	}
+
+	void Engine::DeregisterCallbacks(System* system, std::string messageName) {
+		auto& pm = m_messageMap[std::hash<std::string>{}(messageName)];
+		for (auto it = pm.begin(); it != pm.end();) {
+			if( it->second.m_system == system ) {
+				it = pm.erase(it);
+			} else ++it;
 		}
 	}
 

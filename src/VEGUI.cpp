@@ -5,7 +5,7 @@ namespace vve {
 
 	GUI::GUI(std::string systemName, Engine& engine, std::string windowName ) : 
 		System(systemName, engine), m_windowName(windowName) {
-		m_engine.RegisterCallback( { 
+		m_engine.RegisterCallbacks( { 
 			{this, 0, "SDL_KEY_DOWN", [this](Message& message){ return OnKeyDown(message);} },
 			{this, 0, "SDL_KEY_REPEAT", [this](Message& message){ return OnKeyDown(message);} },
 			{this, 0, "SDL_KEY_UP", [this](Message& message){ return OnKeyUp(message);} },

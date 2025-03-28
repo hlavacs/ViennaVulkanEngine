@@ -8,7 +8,7 @@ namespace vve {
     RendererImgui::RendererImgui( std::string systemName, Engine& engine, std::string windowName ) 
         : Renderer(systemName, engine, windowName ) {
 
-		engine.RegisterCallback( { 
+		engine.RegisterCallbacks( { 
 			{this,   4000, "INIT", [this](Message& message){ return OnInit(message);} },
 			{this,   1000, "PREPARE_NEXT_FRAME", [this](Message& message){ return OnPrepareNextFrame(message);} },
 			{this,   3000, "RECORD_NEXT_FRAME", [this](Message& message){ return OnRecordNextFrame(message);} },

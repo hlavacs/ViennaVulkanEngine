@@ -11,7 +11,7 @@ namespace vve {
     RendererVulkan::RendererVulkan(std::string systemName, Engine& engine, std::string windowName ) 
         : Renderer(systemName, engine, windowName) {
 
-        engine.RegisterCallback( { 
+        engine.RegisterCallbacks( { 
 			{this,      0, "EXTENSIONS", [this](Message& message){ return OnExtensions(message);} },
 			{this,   1000, "INIT", [this](Message& message){ return OnInit(message);} }, 
 			{this,      0, "PREPARE_NEXT_FRAME", [this](Message& message){ return OnPrepareNextFrame(message);} },

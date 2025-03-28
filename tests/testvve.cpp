@@ -15,7 +15,7 @@ class MyGUI : public vve::System {
 public:
     MyGUI( vve::Engine& engine ) : vve::System("MyGUI", engine ) {
 
-		m_engine.RegisterCallback( { 
+		m_engine.RegisterCallbacks( { 
 			{this,      0, "LOAD_LEVEL", [this](Message& message){ return OnLoadLevel(message);} },
 			{this,      0, "UPDATE", [this](Message& message){ return OnUpdate(message);} },
 			{this, -10000, "RECORD_NEXT_FRAME", [this](Message& message){ return OnRecordNextFrame(message);} },
