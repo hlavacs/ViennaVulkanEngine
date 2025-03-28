@@ -114,7 +114,7 @@ namespace vve {
 				colorBlendAttachment.dstColorBlendFactor = VK_BLEND_FACTOR_CONSTANT_COLOR;
 				colorBlendAttachment.colorBlendOp = VK_BLEND_OP_ADD;
 				colorBlendAttachment.srcAlphaBlendFactor = VK_BLEND_FACTOR_ONE;
-				colorBlendAttachment.dstAlphaBlendFactor = VK_BLEND_FACTOR_ONE;
+				colorBlendAttachment.dstAlphaBlendFactor = VK_BLEND_FACTOR_CONSTANT_COLOR;
 				colorBlendAttachment.alphaBlendOp = VK_BLEND_OP_MAX;
 				colorBlendAttachment.blendEnable = VK_TRUE;
 
@@ -217,48 +217,10 @@ namespace vve {
         ubc.camera.proj = proj();
 		ubc.camera.positionW = lToW()[3];
 		memcpy(m_uniformBuffersPerFrame.m_uniformBuffersMapped[m_vulkanState().m_currentFrame], &ubc, sizeof(ubc));
-		return false;
-	}
 
-    bool RendererForward11::OnRecordNextFrame(Message message) {
-		auto msg = message.template GetData<MsgRecordNextFrame>();
-
-		std::vector<VkCommandBuffer> cmdBuffers(1);
-		vh::ComCreateCommandBuffers(m_vulkanState().m_device, m_commandPools[m_vulkanState().m_currentFrame], cmdBuffers);
-
-		auto cmdBuffer = cmdBuffers[0];
-
-		vh::ComStartRecordCommandBuffer(cmdBuffer, m_vulkanState().m_imageIndex, 
-			m_vulkanState().m_swapChain, m_pass == 0 ? m_renderPassClear : m_renderPass, m_pass == 0, 
-			m_windowState().m_clearColor, m_vulkanState().m_currentFrame);
-
-		float f = 0.0;
-		auto blendconst = m_pass == 0 ? glm::vec4{f,f,f,f} : glm::vec4{1-f,1-f,1-f,1-f};
-		
 		for( auto& pipeline : m_pipelinesPerType) {
-
-			vh::LightOffset offset{0, m_numberLightsPerType.x + m_numberLightsPerType.y + m_numberLightsPerType.z};
-			//vh::LightOffset offset{m_pass, 1};
-			vh::ComBindPipeline(
-				cmdBuffer, 
-				m_vulkanState().m_imageIndex, 
-				m_vulkanState().m_swapChain, 
-				m_renderPass, 
-				pipeline.second.m_graphicsPipeline, 
-				{}, {}, //default view ports and scissors
-				blendconst, //blend constants
-				{
-					{	.layout = pipeline.second.m_graphicsPipeline.m_pipelineLayout, 
-						.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT, 
-						.offset = 0, 
-						.size = sizeof(offset), 
-						.pValues = &offset
-					}
-				}, //push constants
-				m_vulkanState().m_currentFrame);
-
-			for( auto[oHandle, name, ghandle, LtoW, uniformBuffers, descriptorsets] : 
-				m_registry.template GetView<vecs::Handle, Name, MeshHandle, LocalToWorldMatrix&, vh::Buffer&, vh::DescriptorSet&>
+			for( auto[oHandle, name, ghandle, LtoW, uniformBuffers] : 
+				m_registry.template GetView<vecs::Handle, Name, MeshHandle, LocalToWorldMatrix&, vh::Buffer&>
 						({(size_t)pipeline.second.m_graphicsPipeline.m_pipeline}) ) {
 
 				bool hasTexture = m_registry.template Has<TextureHandle>(oHandle);
@@ -286,6 +248,59 @@ namespace vve {
 					uboColor.modelInverseTranspose = glm::inverse( glm::transpose(uboColor.model) );
 					memcpy(uniformBuffers().m_uniformBuffersMapped[m_vulkanState().m_currentFrame], &uboColor, sizeof(uboColor));
 				}
+			}
+		}
+		return false;
+	}
+
+    bool RendererForward11::OnRecordNextFrame(Message message) {
+		auto msg = message.template GetData<MsgRecordNextFrame>();
+
+		std::vector<VkCommandBuffer> cmdBuffers(1);
+		vh::ComCreateCommandBuffers(m_vulkanState().m_device, m_commandPools[m_vulkanState().m_currentFrame], cmdBuffers);
+		auto cmdBuffer = cmdBuffers[0];
+
+		vh::ComStartRecordCommandBuffer(cmdBuffer, m_vulkanState().m_imageIndex, 
+			m_vulkanState().m_swapChain, 
+			m_pass == 0 ? m_renderPassClear : m_renderPass, m_pass == 0, 
+			//m_renderPass, false, 
+			//m_windowState().m_clearColor, 
+			{0,0,0,1}, 
+			m_vulkanState().m_currentFrame);
+
+		float f = 0.0;
+		auto blendconst = (m_pass == 0 ? glm::vec4{f,f,f,1} : glm::vec4{1-f,1-f,1-f,1});
+		
+		for( auto& pipeline : m_pipelinesPerType) {
+
+			vh::LightOffset offset{0, m_numberLightsPerType.x + m_numberLightsPerType.y + m_numberLightsPerType.z};
+			//vh::LightOffset offset{m_pass, 1};
+			vh::ComBindPipeline(
+				cmdBuffer, 
+				m_vulkanState().m_imageIndex, 
+				m_vulkanState().m_swapChain, 
+				m_pass == 0 ? m_renderPassClear : m_renderPass, 
+				pipeline.second.m_graphicsPipeline, 
+				{}, {}, //default view ports and scissors
+				blendconst, //blend constants
+				{
+					{	.layout = pipeline.second.m_graphicsPipeline.m_pipelineLayout, 
+						.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT, 
+						.offset = 0, 
+						.size = sizeof(offset), 
+						.pValues = &offset
+					}
+				}, //push constants
+				m_vulkanState().m_currentFrame);
+
+			for( auto[oHandle, name, ghandle, LtoW, uniformBuffers, descriptorsets] : 
+				m_registry.template GetView<vecs::Handle, Name, MeshHandle, LocalToWorldMatrix&, vh::Buffer&, vh::DescriptorSet&>
+						({(size_t)pipeline.second.m_graphicsPipeline.m_pipeline}) ) {
+
+				bool hasTexture = m_registry.template Has<TextureHandle>(oHandle);
+				bool hasColor = m_registry.template Has<vh::Color>(oHandle);
+				bool hasVertexColor = pipeline.second.m_type.find("C") != std::string::npos;
+				if( !hasTexture && !hasColor && !hasVertexColor ) continue;
 
 				auto mesh = m_registry.template Get<vh::Mesh&>(ghandle);
 				vh::ComRecordObject( cmdBuffer, pipeline.second.m_graphicsPipeline, 

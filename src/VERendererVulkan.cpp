@@ -129,12 +129,12 @@ namespace vve {
 
         vkResetCommandBuffer(m_commandBuffers[m_vulkanState().m_currentFrame],  0);
 
-		//vh::ComStartRecordCommandBuffer(m_commandBuffers[m_vulkanState().m_currentFrame], m_vulkanState().m_imageIndex, 
-		//	m_vulkanState().m_swapChain, m_renderPass, m_clear, m_windowState().m_clearColor, m_vulkanState().m_currentFrame);
+		vh::ComStartRecordCommandBuffer(m_commandBuffers[m_vulkanState().m_currentFrame], m_vulkanState().m_imageIndex, 
+			m_vulkanState().m_swapChain, m_renderPass, m_clear, m_windowState().m_clearColor, m_vulkanState().m_currentFrame);
 
-		//vh::ComEndRecordCommandBuffer(m_commandBuffers[m_vulkanState().m_currentFrame]);
+		vh::ComEndRecordCommandBuffer(m_commandBuffers[m_vulkanState().m_currentFrame]);
 
-		//SubmitCommandBuffer(m_commandBuffers[m_vulkanState().m_currentFrame]);
+		SubmitCommandBuffer(m_commandBuffers[m_vulkanState().m_currentFrame]);
 		return false;
 	}
 
