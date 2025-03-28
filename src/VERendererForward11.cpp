@@ -170,13 +170,19 @@ namespace vve {
 
 
 	template<typename T>
-	void RendererForward11::RegisterForLight(int& i) {
-		for( auto [handle, light] : m_registry.template GetView<vecs::Handle, T&>() ) {
-			m_engine.RegisterCallbacks( { 
-				{this,  1500 + i*1000, "RECORD_NEXT_FRAME", [this](Message& message){ return OnRecordNextFrame(message);} }
-			} );
-			++i;
+	int RendererForward11::RegisterForLight(float type, std::vector<vh::Light>& lights, int& total) {
+		int n=0;
+		for( auto [handle, light, lToW] : m_registry.template GetView<vecs::Handle, T&, LocalToWorldMatrix&>() ) {
+			++n;
+			//m_engine.RegisterCallbacks( { 
+			//	{this,  1500 + i*1000, "RECORD_NEXT_FRAME", [this](Message& message){ return OnRecordNextFrame(message);} }
+			//} );
+
+			light().params.x = type;
+			lights[total] = { .positionW = glm::vec3{lToW()[3]}, .directionW = glm::vec3{lToW()[1]}, .lightParams = light() };
+			if( ++total >= m_maxNumberLights ) return n;
 		};
+		return n;
 	}
 
 	bool RendererForward11::OnPrepareNextFrame(Message message) {
@@ -185,9 +191,16 @@ namespace vve {
 		m_pass = 0;
 		std::vector<vh::Light> lights{m_maxNumberLights};
 		m_numberLightsPerType = glm::ivec3{0};
-		size_t total{0};
+		int total{0};
 		vh::UniformBufferFrame ubc; //contains camera view and projection matrices and number of lights
-		for( auto [handle, light, lToW] : m_registry.template GetView<vecs::Handle, PointLight&, LocalToWorldMatrix&>() ) {
+
+		//m_engine.DeregisterCallbacks(this, "RECORD_NEXT_FRAME");
+
+		m_numberLightsPerType.x = RegisterForLight<PointLight>(0.0f, lights, total);
+		m_numberLightsPerType.y = RegisterForLight<DirectionalLight>(1.0f, lights, total);
+		m_numberLightsPerType.z = RegisterForLight<SpotLight>(2.0f, lights, total);
+
+		/*for( auto [handle, light, lToW] : m_registry.template GetView<vecs::Handle, PointLight&, LocalToWorldMatrix&>() ) {
 			++m_numberLightsPerType.x;
 			light().params.x = 0.0f;
 			lights[total] = { .positionW = glm::vec3{lToW()[3]}, .lightParams = light() };
@@ -204,7 +217,8 @@ namespace vve {
 			light().params.x = 2.0f;
 			lights[total] = { .positionW = glm::vec3{lToW()[3]}, .directionW = glm::vec3{lToW()[1]}, .lightParams = light() };
 			if( ++total >= m_maxNumberLights ) break;
-		}
+		}*/
+
 		ubc.numLights = m_numberLightsPerType;
 		memcpy(m_uniformBuffersLights.m_uniformBuffersMapped[m_vulkanState().m_currentFrame], lights.data(), total*sizeof(vh::Light));
 
