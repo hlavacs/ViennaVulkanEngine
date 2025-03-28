@@ -20,12 +20,13 @@ namespace vh {
     VkShaderModule RenCreateShaderModule(VkDevice device, const std::vector<char>& code);
 
     void RenCreateGraphicsPipeline(VkDevice device, VkRenderPass renderPass, 
-		std::string vertShaderPath, std::string fragShaderPath,
-		std::vector<VkVertexInputBindingDescription> bindingDescription, 
-		std::vector<VkVertexInputAttributeDescription> attributeDescriptions,
-		std::vector<VkDescriptorSetLayout> descriptorSetLayout,
-		std::vector<int32_t> specializationConstants,
-		Pipeline& graphicsPipeline);
+  		std::string vertShaderPath, std::string fragShaderPath,
+  		std::vector<VkVertexInputBindingDescription> bindingDescription, 
+  		std::vector<VkVertexInputAttributeDescription> attributeDescriptions,
+  		std::vector<VkDescriptorSetLayout> descriptorSetLayout,
+  		std::vector<int32_t> specializationConstants,
+      std::vector<VkPushConstantRange> pushConstantRanges,
+  		Pipeline& graphicsPipeline);
 
     void RenCreateFramebuffers(VkDevice device, SwapChain& swapChain, DepthImage& depthImage, VkRenderPass renderPass);
 

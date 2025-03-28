@@ -161,6 +161,7 @@ namespace vh {
 			std::vector<VkVertexInputAttributeDescription> attributeDescriptions,
 			std::vector<VkDescriptorSetLayout> descriptorSetLayouts, 
 			std::vector<int32_t> specializationConstants,
+            std::vector<VkPushConstantRange> pushConstantRanges,
 			Pipeline& graphicsPipeline) {
 
 	    // Specialization constant setup
@@ -262,7 +263,8 @@ namespace vh {
 
         std::vector<VkDynamicState> dynamicStates = {
             VK_DYNAMIC_STATE_VIEWPORT,
-            VK_DYNAMIC_STATE_SCISSOR
+            VK_DYNAMIC_STATE_SCISSOR,
+            VK_DYNAMIC_STATE_BLEND_CONSTANTS 
         };
         VkPipelineDynamicStateCreateInfo dynamicState{};
         dynamicState.sType = VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO;
@@ -273,6 +275,8 @@ namespace vh {
         pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
         pipelineLayoutInfo.setLayoutCount = (uint32_t)descriptorSetLayouts.size();
         pipelineLayoutInfo.pSetLayouts = descriptorSetLayouts.data();
+        pipelineLayoutInfo.pushConstantRangeCount = pushConstantRanges.size();
+        pipelineLayoutInfo.pPushConstantRanges = pushConstantRanges.size() > 0 ? pushConstantRanges.data() : nullptr;
 
         if (vkCreatePipelineLayout(device, &pipelineLayoutInfo, nullptr, &graphicsPipeline.m_pipelineLayout) != VK_SUCCESS) {
             throw std::runtime_error("failed to create pipeline layout!");

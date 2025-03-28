@@ -105,6 +105,7 @@ namespace vve {
 					bindingDescriptions, attributeDescriptions,
 					{ m_descriptorSetLayoutPerFrame, descriptorSetLayoutPerObject }, 
 					{(int)m_maxNumberLights},
+					{},
 					graphicsPipeline);
 				
 				m_pipelinesPerType[pri] = { type, descriptorSetLayoutPerObject, graphicsPipeline };
