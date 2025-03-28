@@ -14,6 +14,10 @@ export public struct Light {
     public LightParams 	param;
 };
 
+export public struct LightOffset {
+    public int lightOffset;
+    public int numberLights;
+};
 
 //-----------------------------------------------------------------------
 
@@ -89,7 +93,7 @@ export public float3 calculateSpotLight(Light light, float3 nW, float3 viewPosW,
 }
 
 
-export public float3 calculateLighting(StructuredBuffer<Light> light, int3 numberLights, float3 normalW, float3 viewPosW, float3 fragPosW) {
+export public float3 calculateLighting(StructuredBuffer<Light> light, int3 numberLights, LightOffset offset, float3 normalW, float3 viewPosW, float3 fragPosW) {
     float3 result = float3(0.0);
 
 	for( int i = 0; i < numberLights.x; i++ ) {// Point light

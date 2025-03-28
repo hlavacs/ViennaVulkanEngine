@@ -33,7 +33,7 @@ Sampler2D texSampler;
 //----------------------------------------------------------------------------
 
 [[vk::push_constant]]
-ShadowImageOffset offset;
+LightOffset offset;
 
 //----------------------------------------------------------------------------
 
@@ -44,7 +44,7 @@ float4 fragmentMain(CoarseVertex cv : CoarseVertex) : SV_Target
     uint3 numberLights = gParamsFrame.numberLights;
 
     float4 tex = texSampler.Sample(cv.uv);
-    float3 l = calculateLighting(gLights, numberLights, cv.normalW, camera.positionW, cv.positionW);
+    float3 l = calculateLighting(gLights, numberLights, offset, cv.normalW, camera.positionW, cv.positionW);
     return float4( tex.xyz*l, tex.w );
 }
 

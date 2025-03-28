@@ -175,7 +175,7 @@ namespace vve {
 		for( auto [handle, light, lToW] : m_registry.template GetView<vecs::Handle, T&, LocalToWorldMatrix&>() ) {
 			++n;
 			//m_engine.RegisterCallbacks( { 
-			//	{this,  1500 + i*1000, "RECORD_NEXT_FRAME", [this](Message& message){ return OnRecordNextFrame(message);} }
+			//	{this,  1500 + total*1000, "RECORD_NEXT_FRAME", [this](Message& message){ return OnRecordNextFrame(message);} }
 			//} );
 
 			light().params.x = type;
@@ -196,9 +196,9 @@ namespace vve {
 
 		//m_engine.DeregisterCallbacks(this, "RECORD_NEXT_FRAME");
 
-		m_numberLightsPerType.x = RegisterLight<PointLight>(0.0f, lights, total);
-		m_numberLightsPerType.y = RegisterLight<DirectionalLight>(1.0f, lights, total);
-		m_numberLightsPerType.z = RegisterLight<SpotLight>(2.0f, lights, total);
+		m_numberLightsPerType.x = RegisterLight<PointLight>(1.0f, lights, total);
+		m_numberLightsPerType.y = RegisterLight<DirectionalLight>(2.0f, lights, total);
+		m_numberLightsPerType.z = RegisterLight<SpotLight>(3.0f, lights, total);
 		ubc.numLights = m_numberLightsPerType;
 		memcpy(m_uniformBuffersLights.m_uniformBuffersMapped[m_vulkanState().m_currentFrame], lights.data(), total*sizeof(vh::Light));
 

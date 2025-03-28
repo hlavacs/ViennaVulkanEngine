@@ -22,7 +22,7 @@ Sampler2DArray<uint, 1> shadowMapImage; // shadow maps for the lights
 //----------------------------------------------------------------------------
 
 [[vk::push_constant]]
-ShadowImageOffset offset;
+LightOffset offset;
 
 //----------------------------------------------------------------------------
 
@@ -31,7 +31,7 @@ float4 fragmentMain(CoarseVertex cv : CoarseVertex) : SV_Target
 {
     Camera camera = gParamsFrame.camera;
     uint3 numberLights = gParamsFrame.numberLights;
-    float3 l = calculateLighting(gLights, numberLights, cv.normalW, camera.positionW, cv.positionW);
+    float3 l = calculateLighting(gLights, numberLights, offset, cv.normalW, camera.positionW, cv.positionW);
     return float4(l, 1) * cv.fragColor;
 }
 
