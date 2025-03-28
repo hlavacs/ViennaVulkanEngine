@@ -100,6 +100,7 @@ namespace vh {
         , SwapChain& swapChain, VkRenderPass renderPass, Pipeline& graphicsPipeline
         , std::vector<VkViewport> viewPorts, std::vector<VkRect2D> scissors
         , glm::vec4 blendConstants
+        , std::vector<PushConstants> pushConstants
         , uint32_t currentFrame) {
 
         vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsPipeline.m_pipeline);
@@ -121,6 +122,10 @@ namespace vh {
         vkCmdSetScissor(commandBuffer, 0, scissors.size(), scissors.data());
 
         vkCmdSetBlendConstants(commandBuffer, (float*)&blendConstants);
+
+        for( auto& pc : pushConstants ) {
+            vkCmdPushConstants(commandBuffer, pc.layout, pc.stageFlags, pc.offset, pc.size, pc.pValues);
+        }
 	}
 
     void ComEndRecordCommandBuffer(VkCommandBuffer commandBuffer) {

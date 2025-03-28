@@ -222,6 +222,7 @@ namespace vve {
 		
 		for( auto& pipeline : m_pipelinesPerType) {
 
+			vh::LightOffset offset{0, m_numberLightsPerType.x + m_numberLightsPerType.y + m_numberLightsPerType.z};
 			vh::ComBindPipeline(
 				m_commandBuffers[m_vulkanState().m_currentFrame], 
 				m_vulkanState().m_imageIndex, 
@@ -230,6 +231,14 @@ namespace vve {
 				pipeline.second.m_graphicsPipeline, 
 				{}, {}, //default view ports and scissors
 				m_pass == 0 ? glm::vec4{0,0,0,0} : glm::vec4{1,1,1,1}, //blend constants
+				{
+					{	.layout = pipeline.second.m_graphicsPipeline.m_pipelineLayout, 
+						.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT , 
+						.offset = 0, 
+						.size = sizeof(offset), 
+						.pValues = &offset
+					}
+				}, //push constants
 				m_vulkanState().m_currentFrame);
 
 			for( auto[oHandle, name, ghandle, LtoW, uniformBuffers, descriptorsets] : 

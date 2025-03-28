@@ -73,7 +73,12 @@ namespace vh {
 		glm::mat4 	lightSpaceMatrix;
 	};
 
-	//param.x==1...point, param.x==2...directional, param.x==3...spotlight
+	struct ShadowOffset {
+		int shadowIndexOffset;
+		int numbetShadows;
+	};
+
+	//param.x==0...no light, param.x==1...point, param.x==2...directional, param.x==3...spotlight
 	struct LightParams {
 		alignas(16) glm::vec3 color{1.0f, 0.0f, 0.0f}; 
 		alignas(16) glm::vec4 params{0.0f, 1.0f, 10.0, 0.15f}; //x=type, y=intensity, z=power, w=ambient
@@ -88,11 +93,23 @@ namespace vh {
 	    alignas(16) LightParams lightParams;
 	};
 
+	struct LightOffset {
+		int lightOffset;
+		int numberLights;
+	};
+
 	struct UniformBufferFrame {
 	    alignas(16) CameraMatrix camera;
 		alignas(16) glm::ivec3 numLights{1,0,0}; //x=number point lights, y=number directional lights, z=number spotlights
 	};
 
+	struct PushConstants {
+		VkPipelineLayout layout;
+		VkShaderStageFlags stageFlags;
+		int offset;
+		int size;
+		const void* pValues;
+	};
 
 	//--------------------------------------------------------------------
 	//Structures used to communicate with the helper layer
