@@ -170,7 +170,7 @@ namespace vve {
 
 
 	template<typename T>
-	int RendererForward11::RegisterForLight(float type, std::vector<vh::Light>& lights, int& total) {
+	int RendererForward11::RegisterLight(float type, std::vector<vh::Light>& lights, int& total) {
 		int n=0;
 		for( auto [handle, light, lToW] : m_registry.template GetView<vecs::Handle, T&, LocalToWorldMatrix&>() ) {
 			++n;
@@ -196,29 +196,9 @@ namespace vve {
 
 		//m_engine.DeregisterCallbacks(this, "RECORD_NEXT_FRAME");
 
-		m_numberLightsPerType.x = RegisterForLight<PointLight>(0.0f, lights, total);
-		m_numberLightsPerType.y = RegisterForLight<DirectionalLight>(1.0f, lights, total);
-		m_numberLightsPerType.z = RegisterForLight<SpotLight>(2.0f, lights, total);
-
-		/*for( auto [handle, light, lToW] : m_registry.template GetView<vecs::Handle, PointLight&, LocalToWorldMatrix&>() ) {
-			++m_numberLightsPerType.x;
-			light().params.x = 0.0f;
-			lights[total] = { .positionW = glm::vec3{lToW()[3]}, .lightParams = light() };
-			if( ++total >= m_maxNumberLights ) break;
-		}
-		for( auto [handle, light, lToW] : m_registry.template GetView<vecs::Handle, DirectionalLight&, LocalToWorldMatrix&>() ) {
-			++m_numberLightsPerType.y;
-			light().params.x = 1.0f;
-			lights[total] = { .directionW = glm::vec3{lToW()[1]}, .lightParams = light() };
-			if( ++total >= m_maxNumberLights ) break;
-		}
-		for( auto [handle, light, lToW] : m_registry.template GetView<vecs::Handle, SpotLight&, LocalToWorldMatrix&>() ) {
-			++m_numberLightsPerType.z;
-			light().params.x = 2.0f;
-			lights[total] = { .positionW = glm::vec3{lToW()[3]}, .directionW = glm::vec3{lToW()[1]}, .lightParams = light() };
-			if( ++total >= m_maxNumberLights ) break;
-		}*/
-
+		m_numberLightsPerType.x = RegisterLight<PointLight>(0.0f, lights, total);
+		m_numberLightsPerType.y = RegisterLight<DirectionalLight>(1.0f, lights, total);
+		m_numberLightsPerType.z = RegisterLight<SpotLight>(2.0f, lights, total);
 		ubc.numLights = m_numberLightsPerType;
 		memcpy(m_uniformBuffersLights.m_uniformBuffersMapped[m_vulkanState().m_currentFrame], lights.data(), total*sizeof(vh::Light));
 
