@@ -50,7 +50,6 @@ namespace vve
 	    VkRenderPass m_renderPassClear;
 	    VkRenderPass m_renderPass;
 	    VkDescriptorPool m_descriptorPool;    
-	    VkCommandPool m_commandPool;
 		std::vector<VkCommandPool> m_commandPools;
 
 		int m_pass;

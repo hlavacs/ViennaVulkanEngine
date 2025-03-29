@@ -79,7 +79,6 @@ namespace vve {
         
 		vh::DevCreateImageViews(m_vulkanState().m_device, m_vulkanState().m_swapChain);
 
-		//vh::RenCreateRenderPassClear(m_vulkanState().m_physicalDevice, m_vulkanState().m_device, m_vulkanState().m_swapChain, true, m_renderPass);
 		vh::RenCreateRenderPass(m_vulkanState().m_physicalDevice, m_vulkanState().m_device, m_vulkanState().m_swapChain, m_clear, m_renderPass);
 
 		vh::RenCreateDescriptorSetLayout( m_vulkanState().m_device, {}, m_descriptorSetLayoutPerFrame );
@@ -94,8 +93,14 @@ namespace vve {
 		vh::ComCreateCommandPool(m_vulkanState().m_surface, m_vulkanState().m_physicalDevice, m_vulkanState().m_device, m_vulkanState().m_commandPool);
         vh::ComCreateCommandPool(m_vulkanState().m_surface, m_vulkanState().m_physicalDevice, m_vulkanState().m_device, m_commandPool);
         vh::RenCreateDepthResources(m_vulkanState().m_physicalDevice, m_vulkanState().m_device, m_vulkanState().m_vmaAllocator, m_vulkanState().m_swapChain, m_vulkanState().m_depthImage);
-        vh::RenCreateFramebuffers(m_vulkanState().m_device, m_vulkanState().m_swapChain, m_vulkanState().m_depthImage, m_renderPass);
+        
+		for( auto image : m_vulkanState().m_swapChain.m_swapChainImages ) {
+			vh::ImgTransitionImageLayout(m_vulkanState().m_device, m_vulkanState().m_graphicsQueue, m_commandPool,
+			image, m_vulkanState().m_swapChain.m_swapChainImageFormat, 
+			VK_IMAGE_LAYOUT_UNDEFINED , VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
+		}
 
+		vh::RenCreateFramebuffers(m_vulkanState().m_device, m_vulkanState().m_swapChain, m_vulkanState().m_depthImage, m_renderPass);
         vh::ComCreateCommandBuffers(m_vulkanState().m_device, m_commandPool, m_commandBuffers);
         vh::RenCreateDescriptorPool(m_vulkanState().m_device, 1000, m_descriptorPool);
         vh::SynCreateSemaphores(m_vulkanState().m_device, 3, m_imageAvailableSemaphores, m_semaphores);

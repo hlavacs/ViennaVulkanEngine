@@ -55,15 +55,12 @@ namespace vve {
 			},
 			m_descriptorSetLayoutPerFrame );
 
-		vh::ComCreateCommandPool(m_vulkanState().m_surface, m_vulkanState().m_physicalDevice, m_vulkanState().m_device, m_commandPool);
-
 		for( int i=0; i<MAX_FRAMES_IN_FLIGHT; ++i) {
 			m_commandPools.resize(MAX_FRAMES_IN_FLIGHT);
 			vh::ComCreateCommandPool(m_vulkanState().m_surface, m_vulkanState().m_physicalDevice, m_vulkanState().m_device, m_commandPools[i]);
 		}
 
 		vh::RenCreateDescriptorPool(m_vulkanState().m_device, 1000, m_descriptorPool);
-
 		vh::RenCreateDescriptorSet(m_vulkanState().m_device, m_descriptorSetLayoutPerFrame, m_descriptorPool, m_descriptorSetPerFrame);
 		
 		//Per frame uniform buffer
@@ -401,7 +398,6 @@ namespace vve {
 		for( auto pool : m_commandPools ) {
 			vkDestroyCommandPool(m_vulkanState().m_device, pool, nullptr);
 		}
-        vkDestroyCommandPool(m_vulkanState().m_device, m_commandPool, nullptr);
 
 		for( auto& [type, pipeline] : m_pipelinesPerType ) {
 			vkDestroyDescriptorSetLayout(m_vulkanState().m_device, pipeline.m_descriptorSetLayoutPerObject, nullptr);
