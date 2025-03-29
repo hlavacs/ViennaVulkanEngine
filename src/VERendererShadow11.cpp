@@ -70,8 +70,6 @@ namespace vve {
 			m_registry.Put(handle, std::move(shadowMap));
 		}
 		auto shadowMap = m_registry.template Get<ShadowMap&>(handle);
-		vh::ImgClearShadowMap(m_vulkanState().m_device, m_vulkanState().m_graphicsQueue, m_vulkanState().m_commandPool, m_vulkanState().m_vmaAllocator
-			, shadowMap().m_shadowMaps[m_vulkanState().m_currentFrame], std::numeric_limits<float>::max());
 	}
 
 	template<typename T>

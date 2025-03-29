@@ -33,9 +33,6 @@ namespace vh {
     
 	void ImgSwapChannels(unsigned char *bufferData, int r, int g, int b, int a, int width, int height);
 
-    void ImgClearShadowMap(VkDevice device, VkQueue graphicsQueue, VkCommandPool commandPool, 
-        VmaAllocator vmaAllocator, vh::Map& map, float value);
-
     void ImgPickDepthMapFormat( VkPhysicalDevice physicalDevice, const std::vector<VkFormat>& depthFormats, VkFormat& depthMapFormat );
 }
 
