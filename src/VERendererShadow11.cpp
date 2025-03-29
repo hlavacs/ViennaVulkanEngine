@@ -60,12 +60,11 @@ namespace vve {
 				vh::Map map;
 				vh::ImgCreateImage2(m_vulkanState().m_physicalDevice, m_vulkanState().m_device, m_vulkanState().m_vmaAllocator
 					, MAP_DIMENSION, MAP_DIMENSION, 1, 1, number
-					, VK_FORMAT_R32_SFLOAT, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT
+					, VK_FORMAT_R32_SFLOAT, VK_IMAGE_TILING_OPTIMAL
+					, VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT
+					, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL
 					, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, map.m_mapImage, map.m_mapImageAllocation); 
 				
-				vh::ImgTransitionImageLayout(m_vulkanState().m_device, m_vulkanState().m_graphicsQueue, m_vulkanState().m_commandPool
-					, map.m_mapImage, VK_FORMAT_R32_SFLOAT, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL );
-
 				shadowMap.m_shadowMaps.push_back(map);
 			}
 			m_registry.Put(handle, std::move(shadowMap));

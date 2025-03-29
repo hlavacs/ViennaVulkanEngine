@@ -376,6 +376,7 @@ namespace vh {
         ImgCreateImage(physicalDevice, device, vmaAllocator, swapChain.m_swapChainExtent.width
             , swapChain.m_swapChainExtent.height, depthFormat
             , VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT
+            , VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL 
             , VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, depthImage.m_depthImage, depthImage.m_depthImageAllocation);
         depthImage.m_depthImageView = ImgCreateImageView(device, depthImage.m_depthImage, depthFormat, VK_IMAGE_ASPECT_DEPTH_BIT);
     }

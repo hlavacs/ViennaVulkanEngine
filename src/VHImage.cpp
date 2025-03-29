@@ -18,11 +18,8 @@ namespace vh {
 
         ImgCreateImage(physicalDevice, device, vmaAllocator, texWidth, texHeight, VK_FORMAT_R8G8B8A8_SRGB
             , VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT
-            , VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, texture.m_mapImage, texture.m_mapImageAllocation); 
-
-        ImgTransitionImageLayout(device, graphicsQueue, commandPool, texture.m_mapImage, VK_FORMAT_R8G8B8A8_SRGB
-            , VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
-			
+            , VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, texture.m_mapImage, texture.m_mapImageAllocation); 
+		
         BufCopyBufferToImage(device, graphicsQueue, commandPool, stagingBuffer, texture.m_mapImage
                  , static_cast<uint32_t>(texWidth), static_cast<uint32_t>(texHeight));
 
@@ -87,19 +84,19 @@ namespace vh {
     }
 
     void ImgCreateImage(VkPhysicalDevice physicalDevice, VkDevice device, VmaAllocator vmaAllocator, uint32_t width, uint32_t height
-        , VkFormat format, VkImageTiling tiling, VkImageUsageFlags usage, VkMemoryPropertyFlags properties
-        , VkImage& image, VmaAllocation& imageAllocation) {
+        , VkFormat format, VkImageTiling tiling, VkImageUsageFlags usage, VkImageLayout imageLayout
+        , VkMemoryPropertyFlags properties, VkImage& image, VmaAllocation& imageAllocation) {
 
         return ImgCreateImage2(physicalDevice, device, vmaAllocator, 
                     width, height, 1, 1, 1, 
-                    format, tiling, usage, properties, 
+                    format, tiling, usage, imageLayout, properties, 
                     image, imageAllocation);
     }
 
     void ImgCreateImage2(VkPhysicalDevice physicalDevice, VkDevice device, VmaAllocator vmaAllocator
         , uint32_t width, uint32_t height, uint32_t depth, uint32_t layers, uint32_t mipLevels
-        , VkFormat format, VkImageTiling tiling, VkImageUsageFlags usage, VkMemoryPropertyFlags properties
-        , VkImage& image, VmaAllocation& imageAllocation) {
+        , VkFormat format, VkImageTiling tiling, VkImageUsageFlags usage, VkImageLayout imageLayout
+        , VkMemoryPropertyFlags properties, VkImage& image, VmaAllocation& imageAllocation) {
 
         VkImageCreateInfo imageInfo{};
         imageInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
@@ -111,7 +108,7 @@ namespace vh {
         imageInfo.arrayLayers = layers;
         imageInfo.format = format;
         imageInfo.tiling = tiling;
-        imageInfo.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+        imageInfo.initialLayout = imageLayout;
         imageInfo.usage = usage;
         imageInfo.samples = VK_SAMPLE_COUNT_1_BIT;
         imageInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;

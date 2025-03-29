@@ -14,13 +14,13 @@ namespace vh {
     VkImageView ImgCreateImageView2(VkDevice device, VkImage image, VkFormat format, VkImageAspectFlags aspectFlags, uint32_t layers, uint32_t mipLevels);
 
     void ImgCreateImage(VkPhysicalDevice physicalDevice, VkDevice device, VmaAllocator vmaAllocator, uint32_t width, uint32_t height
-        , VkFormat format, VkImageTiling tiling, VkImageUsageFlags usage, VkMemoryPropertyFlags properties
-        , VkImage& image, VmaAllocation& imageAllocation);
+        , VkFormat format, VkImageTiling tiling, VkImageUsageFlags usage, VkImageLayout imageLayout
+        , VkMemoryPropertyFlags properties, VkImage& image, VmaAllocation& imageAllocation);
         
     void ImgCreateImage2(VkPhysicalDevice physicalDevice, VkDevice device, VmaAllocator vmaAllocator
         , uint32_t width, uint32_t height, uint32_t depth, uint32_t layers, uint32_t mipLevels
-        , VkFormat format, VkImageTiling tiling, VkImageUsageFlags usage, VkMemoryPropertyFlags properties
-        , VkImage& image, VmaAllocation& imageAllocation);
+        , VkFormat format, VkImageTiling tiling, VkImageUsageFlags usage, VkImageLayout imageLayout
+        , VkMemoryPropertyFlags properties, VkImage& image, VmaAllocation& imageAllocation);
 
     void ImgDestroyImage(VkDevice device, VmaAllocator vmaAllocator, VkImage image, VmaAllocation& imageAllocation);
 
