@@ -52,24 +52,11 @@ namespace vve {
 		vh::BufCreateUniformBuffers(m_vulkanState().m_physicalDevice, m_vulkanState().m_device, m_vulkanState().m_vmaAllocator, sizeof(vh::UniformBufferFrame), m_uniformBuffersPerFrame);
 		vh::RenUpdateDescriptorSetUBO(m_vulkanState().m_device, m_uniformBuffersPerFrame, 0, sizeof(vh::UniformBufferFrame), m_descriptorSetPerFrame);
 
-		// Binding 1 : Position
-		vh::ImgCreateTextureImage(m_vulkanState().m_physicalDevice, m_vulkanState().m_device, m_vulkanState().m_vmaAllocator, m_vulkanState().m_graphicsQueue, m_commandPool,
-			m_texturePosition.m_pixels, m_texturePosition.m_width, m_texturePosition.m_height, m_texturePosition.m_size, m_texturePosition);
-		vh::RenUpdateDescriptorSetTexture(m_vulkanState().m_device, m_texturePosition, 1, m_descriptorSetPerFrame);
-
-		// Binding 2 : Normals
-		vh::ImgCreateTextureImage(m_vulkanState().m_physicalDevice, m_vulkanState().m_device, m_vulkanState().m_vmaAllocator, m_vulkanState().m_graphicsQueue, m_commandPool,
-			m_textureNormals.m_pixels, m_textureNormals.m_width, m_textureNormals.m_height, m_textureNormals.m_size, m_textureNormals);
-		vh::RenUpdateDescriptorSetTexture(m_vulkanState().m_device, m_textureNormals, 2, m_descriptorSetPerFrame);
-
-		// Binding 3 : Albedo
-		vh::ImgCreateTextureImage(m_vulkanState().m_physicalDevice, m_vulkanState().m_device, m_vulkanState().m_vmaAllocator, m_vulkanState().m_graphicsQueue, m_commandPool,
-			m_textureAlbedo.m_pixels, m_textureAlbedo.m_width, m_textureAlbedo.m_height, m_textureAlbedo.m_size, m_textureAlbedo);
-		vh::RenUpdateDescriptorSetTexture(m_vulkanState().m_device, m_textureAlbedo, 3, m_descriptorSetPerFrame);
-
 		// Binding 4 : Light
 		vh::BufCreateUniformBuffers(m_vulkanState().m_physicalDevice, m_vulkanState().m_device, m_vulkanState().m_vmaAllocator, m_maxNumberLights * sizeof(vh::Light), m_uniformBuffersLights);
 		vh::RenUpdateDescriptorSetUBO(m_vulkanState().m_device, m_uniformBuffersLights, 4, m_maxNumberLights * sizeof(vh::Light), m_descriptorSetPerFrame);
+
+		//CreatePipelines();
 		return false;
 	}
 
@@ -82,12 +69,10 @@ namespace vve {
 
 		vkDestroyDescriptorPool(m_vulkanState().m_device, m_descriptorPool, nullptr);
 		vkDestroyRenderPass(m_vulkanState().m_device, m_renderPass, nullptr);
-		vh::BufDestroyBuffer2(m_vulkanState().m_device, m_vulkanState().m_vmaAllocator, m_uniformBuffersPerFrame);
 
+		vh::BufDestroyBuffer2(m_vulkanState().m_device, m_vulkanState().m_vmaAllocator, m_uniformBuffersPerFrame);
 		vh::BufDestroyBuffer2(m_vulkanState().m_device, m_vulkanState().m_vmaAllocator, m_uniformBuffersLights);
-		vh::ImgDestroyImage(m_vulkanState().m_device, m_vulkanState().m_vmaAllocator, m_texturePosition.m_mapImage, m_texturePosition.m_mapImageAllocation);
-		vh::ImgDestroyImage(m_vulkanState().m_device, m_vulkanState().m_vmaAllocator, m_textureNormals.m_mapImage, m_textureNormals.m_mapImageAllocation);
-		vh::ImgDestroyImage(m_vulkanState().m_device, m_vulkanState().m_vmaAllocator, m_textureAlbedo.m_mapImage, m_textureAlbedo.m_mapImageAllocation);
+
 		vkDestroyDescriptorSetLayout(m_vulkanState().m_device, m_descriptorSetLayoutPerFrame, nullptr);
 
 		return false;

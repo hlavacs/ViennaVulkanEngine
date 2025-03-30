@@ -13,13 +13,11 @@ namespace vve {
 	private:
 		bool OnInit(Message message);
 		bool OnQuit(Message message);
+		void CreatePipelines();
 
 		vh::UniformBuffers m_uniformBuffersPerFrame{};
 		// TODO: might need a SSBO for many lights
 		vh::UniformBuffers m_uniformBuffersLights{};
-		vh::Map m_texturePosition{};
-		vh::Map m_textureNormals{};
-		vh::Map m_textureAlbedo{};
 
 		VkDescriptorSetLayout m_descriptorSetLayoutPerFrame{ VK_NULL_HANDLE };
 		VkDescriptorPool m_descriptorPool{ VK_NULL_HANDLE };
