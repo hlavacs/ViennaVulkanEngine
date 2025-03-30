@@ -18,7 +18,7 @@ namespace vve {
 		// TODO: maybe a reference will be enough here to not make a message copy?
 		Renderer::OnInit(message);
 
-		vh::RenCreateRenderPass(m_vulkanState().m_physicalDevice, m_vulkanState().m_device, m_vulkanState().m_swapChain, false, m_renderPass);
+		vh::RenCreateRenderPassDeferred(m_vulkanState().m_physicalDevice, m_vulkanState().m_device, m_vulkanState().m_swapChain, m_renderPass);
 
 		// TODO: binding 0 might only need vertex globally
 		vh::RenCreateDescriptorSetLayout(
@@ -33,7 +33,7 @@ namespace vve {
 				{	// Binding 2 : Normals
 					.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
 					.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT },
-				{	// Binding 3 : Albedo (Diffuse)
+				{	// Binding 3 : Albedo
 					.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
 					.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT },
 				{	// Binding 4 : Light uniform buffer
