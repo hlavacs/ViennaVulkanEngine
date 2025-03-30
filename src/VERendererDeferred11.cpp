@@ -78,4 +78,15 @@ namespace vve {
 		return false;
 	}
 
+	void RendererDeferred11::CreatePipelines() {
+		const std::filesystem::path shaders{ "shaders\\Deferred" };
+		for (const auto& entry : std::filesystem::directory_iterator(shaders)) {
+			auto filename = entry.path().filename().string();
+			size_t pos1 = filename.find("_");
+			size_t pos2 = filename.find("_vert.spv");
+			auto pri = std::stoi(filename.substr(0, pos1 - 1));
+			std::string type = filename.substr(pos1 + 1, pos2 - pos1 - 1);
+		}
+	}
+
 }	// namespace vve
