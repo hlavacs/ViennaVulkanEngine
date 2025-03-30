@@ -129,7 +129,6 @@ namespace vve {
 				std::cout << "Pipeline (" << graphicsPipeline.m_pipeline << "): " << filename << " Priority: " << pri << " Type: " << type << std::endl;
 			}
 		}
-
 	}
 
 	void RendererForward11::getBindingDescription( std::string type, std::string C, int &binding, int stride, auto& bdesc ) {
@@ -255,6 +254,7 @@ namespace vve {
 
 		std::vector<VkCommandBuffer> cmdBuffers(1);
 		vh::ComCreateCommandBuffers(m_vulkanState().m_device, m_commandPools[m_vulkanState().m_currentFrame], cmdBuffers);
+
 		auto cmdBuffer = cmdBuffers[0];
 
 		vh::ComStartRecordCommandBuffer(cmdBuffer, m_vulkanState().m_imageIndex, 

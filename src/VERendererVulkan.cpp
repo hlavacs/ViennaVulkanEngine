@@ -92,18 +92,23 @@ namespace vve {
 
 		vh::ComCreateCommandPool(m_vulkanState().m_surface, m_vulkanState().m_physicalDevice, m_vulkanState().m_device, m_vulkanState().m_commandPool);
         vh::ComCreateCommandPool(m_vulkanState().m_surface, m_vulkanState().m_physicalDevice, m_vulkanState().m_device, m_commandPool);
-        vh::RenCreateDepthResources(m_vulkanState().m_physicalDevice, m_vulkanState().m_device, m_vulkanState().m_vmaAllocator, m_vulkanState().m_swapChain, m_vulkanState().m_depthImage);
+        
+		vh::RenCreateDepthResources(m_vulkanState().m_physicalDevice, m_vulkanState().m_device, m_vulkanState().m_vmaAllocator, m_vulkanState().m_swapChain, m_vulkanState().m_depthImage);
+		vh::ImgTransitionImageLayout2(m_vulkanState().m_device, m_vulkanState().m_graphicsQueue, m_commandPool,
+			m_vulkanState().m_depthImage.m_depthImage, m_vulkanState().m_swapChain.m_swapChainImageFormat, 
+			VK_IMAGE_ASPECT_DEPTH_BIT, 1, 1, VK_IMAGE_LAYOUT_UNDEFINED , VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL);
         
 		for( auto image : m_vulkanState().m_swapChain.m_swapChainImages ) {
 			vh::ImgTransitionImageLayout(m_vulkanState().m_device, m_vulkanState().m_graphicsQueue, m_commandPool,
-			image, m_vulkanState().m_swapChain.m_swapChainImageFormat, 
-			VK_IMAGE_LAYOUT_UNDEFINED , VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
+				image, m_vulkanState().m_swapChain.m_swapChainImageFormat, 
+				VK_IMAGE_LAYOUT_UNDEFINED , VK_IMAGE_LAYOUT_PRESENT_SRC_KHR);
 		}
 
 		vh::RenCreateFramebuffers(m_vulkanState().m_device, m_vulkanState().m_swapChain, m_vulkanState().m_depthImage, m_renderPass);
         vh::ComCreateCommandBuffers(m_vulkanState().m_device, m_commandPool, m_commandBuffers);
         vh::RenCreateDescriptorPool(m_vulkanState().m_device, 1000, m_descriptorPool);
-        vh::SynCreateSemaphores(m_vulkanState().m_device, 3, m_imageAvailableSemaphores, m_semaphores);
+        vh::SynCreateSemaphores(m_vulkanState().m_device, m_imageAvailableSemaphores, m_renderFinishedSemaphores, 3, m_intermediateSemaphores);
+
 		vh::SynCreateFences(m_vulkanState().m_device, MAX_FRAMES_IN_FLIGHT, m_fences);
 		return false;
     }
@@ -118,6 +123,10 @@ namespace vve {
 
         VkResult result = vkAcquireNextImageKHR(m_vulkanState().m_device, m_vulkanState().m_swapChain.m_swapChain, UINT64_MAX,
                             m_imageAvailableSemaphores[m_vulkanState().m_currentFrame], VK_NULL_HANDLE, &m_vulkanState().m_imageIndex);
+
+		vh::ImgTransitionImageLayout(m_vulkanState().m_device, m_vulkanState().m_graphicsQueue, m_commandPool, 
+			m_vulkanState().m_swapChain.m_swapChainImages[m_vulkanState().m_imageIndex], m_vulkanState().m_swapChain.m_swapChainImageFormat, 
+			VK_IMAGE_LAYOUT_PRESENT_SRC_KHR, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
 
         if (result == VK_ERROR_OUT_OF_DATE_KHR ) {
             DevRecreateSwapChain( m_windowSDLState().m_sdlWindow, 
@@ -148,16 +157,16 @@ namespace vve {
 
     bool RendererVulkan::OnRenderNextFrame(Message message) {
         if(m_windowState().m_isMinimized) return false;
-        
-		VkSemaphore signalSemaphore;
+        	
 		vh::ComSubmitCommandBuffers(m_vulkanState().m_device, m_vulkanState().m_graphicsQueue, m_vulkanState().m_commandBuffersSubmit, 
-			m_imageAvailableSemaphores, m_semaphores, signalSemaphore, m_fences, m_vulkanState().m_currentFrame);
-				
-   		vh::ImgTransitionImageLayout(m_vulkanState().m_device, m_vulkanState().m_graphicsQueue, m_commandPool, 
+			m_imageAvailableSemaphores, m_renderFinishedSemaphores, m_intermediateSemaphores, m_fences, m_vulkanState().m_currentFrame);
+
+		vh::ImgTransitionImageLayout(m_vulkanState().m_device, m_vulkanState().m_graphicsQueue, m_commandPool, 
 			m_vulkanState().m_swapChain.m_swapChainImages[m_vulkanState().m_imageIndex], m_vulkanState().m_swapChain.m_swapChainImageFormat, 
 			VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR);
 
-		VkResult result = vh::ComPresentImage(m_vulkanState().m_presentQueue, m_vulkanState().m_swapChain, m_vulkanState().m_imageIndex, signalSemaphore);
+		VkResult result = vh::ComPresentImage(m_vulkanState().m_presentQueue, m_vulkanState().m_swapChain, 
+			m_vulkanState().m_imageIndex, m_renderFinishedSemaphores[m_vulkanState().m_currentFrame]);
 
         if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR || m_vulkanState().m_framebufferResized) {
             m_vulkanState().m_framebufferResized = false;
@@ -204,7 +213,7 @@ namespace vve {
 
 		vh::SynDestroyFences(m_vulkanState().m_device, m_fences);
 
-		vh::SynDestroySemaphores(m_vulkanState().m_device, m_imageAvailableSemaphores, m_semaphores);
+		vh::SynDestroySemaphores(m_vulkanState().m_device, m_imageAvailableSemaphores, m_renderFinishedSemaphores, m_intermediateSemaphores);
 
         vmaDestroyAllocator(m_vulkanState().m_vmaAllocator);
 

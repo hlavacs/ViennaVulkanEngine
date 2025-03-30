@@ -128,8 +128,18 @@ namespace vh {
         vmaDestroyImage(vmaAllocator, image, imageAllocation);
     }
 
+
     void ImgTransitionImageLayout(VkDevice device, VkQueue graphicsQueue, VkCommandPool commandPool
-         , VkImage image, VkFormat format, VkImageLayout oldLayout, VkImageLayout newLayout) {
+        , VkImage image, VkFormat format, VkImageLayout oldLayout, VkImageLayout newLayout) {
+            ImgTransitionImageLayout2(device, graphicsQueue, commandPool, image, format
+                , VK_IMAGE_ASPECT_COLOR_BIT, 1, 1
+                , oldLayout, newLayout);
+    }
+
+    void ImgTransitionImageLayout2(VkDevice device, VkQueue graphicsQueue, VkCommandPool commandPool
+         , VkImage image, VkFormat format
+         , VkImageAspectFlags aspect, int numMipLevels, int numLayers
+         , VkImageLayout oldLayout, VkImageLayout newLayout) {
 
         VkCommandBuffer commandBuffer = ComBeginSingleTimeCommands(device, commandPool);
 
@@ -140,11 +150,11 @@ namespace vh {
         barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
         barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
         barrier.image = image;
-        barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+        barrier.subresourceRange.aspectMask = aspect;
         barrier.subresourceRange.baseMipLevel = 0;
-        barrier.subresourceRange.levelCount = 1;
+        barrier.subresourceRange.levelCount = numMipLevels;
         barrier.subresourceRange.baseArrayLayer = 0;
-        barrier.subresourceRange.layerCount = 1;
+        barrier.subresourceRange.layerCount = numLayers;
 
         VkPipelineStageFlags sourceStage;
         VkPipelineStageFlags destinationStage;

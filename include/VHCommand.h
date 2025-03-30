@@ -25,10 +25,16 @@ namespace vh {
 			const std::vector<DescriptorSet>&& descriptorSets, std::string type, Mesh& mesh, uint32_t currentFrame);
 
 	void ComSubmitCommandBuffers(VkDevice device, VkQueue graphicsQueue, std::vector<VkCommandBuffer>& commandBuffers,
-		std::vector<VkSemaphore>& imageAvailableSemaphores, std::vector<Semaphores>& semaphores, VkSemaphore& signalSemaphore,
+		std::vector<VkSemaphore>& imageAvailableSemaphores, 
+		std::vector<VkSemaphore>& renderFinishedSemaphores, 
+        std::vector<Semaphores>& intermediateSemaphores, 
 		std::vector<VkFence>& fences, uint32_t currentFrame);
 
-	VkResult ComPresentImage(VkQueue presentQueue, SwapChain swapChain, uint32_t imageIndex, VkSemaphore signalSemaphore);
+    void ComSubmitCommandBuffers2(VkDevice device, VkQueue graphicsQueue, std::vector<VkCommandBuffer>& commandBuffers,
+        std::vector<VkSemaphore>& imageAvailableSemaphores, std::vector<Semaphores>& semaphores, VkSemaphore& signalSemaphore,
+        std::vector<VkFence>& fences, uint32_t currentFrame);
+    
+	VkResult ComPresentImage(VkQueue presentQueue, SwapChain swapChain, uint32_t& imageIndex, VkSemaphore& signalSemaphore);
 
 } // namespace vh
 

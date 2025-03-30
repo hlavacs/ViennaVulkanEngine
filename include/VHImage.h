@@ -27,6 +27,11 @@ namespace vh {
     void ImgTransitionImageLayout(VkDevice device, VkQueue graphicsQueue, VkCommandPool commandPool
         , VkImage image, VkFormat format, VkImageLayout oldLayout, VkImageLayout newLayout);
 
+    void ImgTransitionImageLayout2(VkDevice device, VkQueue graphicsQueue, VkCommandPool commandPool
+        , VkImage image, VkFormat format
+        , VkImageAspectFlags aspect, int numMipLevels, int numLayers
+        , VkImageLayout oldLayout, VkImageLayout newLayout);
+
     VkResult ImgCopyImageToHost(VkDevice device, VmaAllocator allocator, VkQueue graphicsQueue, 
         VkCommandPool commandPool, VkImage image, VkFormat format, VkImageAspectFlagBits aspect, VkImageLayout layout,
         /*gli::byte*/ unsigned char *bufferData, uint32_t width, uint32_t height, uint32_t imageSize, int r, int g, int b, int a);

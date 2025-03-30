@@ -58,7 +58,8 @@ namespace vve {
 	    std::vector<VkCommandBuffer> m_commandBuffers;
 	    std::vector<VkCommandBuffer> m_commandBuffersSubmit;
         std::vector<VkSemaphore> m_imageAvailableSemaphores;
-	    std::vector<vh::Semaphores> m_semaphores;
+        std::vector<VkSemaphore> m_renderFinishedSemaphores;
+	    std::vector<vh::Semaphores> m_intermediateSemaphores;
 		std::vector<VkFence> m_fences;
     };
 };   // namespace vve
