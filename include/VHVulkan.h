@@ -125,6 +125,12 @@ namespace vh {
         VkImageView     m_depthImageView;
     };
 
+	struct GBufferImage {
+		VkImage         m_gbufferImage;
+		VmaAllocation   m_gbufferAllocation;
+		VkImageView     m_gbufferImageView;
+	};
+
     struct Map {
 		int 			m_width;
 		int				m_height;
