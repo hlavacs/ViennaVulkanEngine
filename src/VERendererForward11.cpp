@@ -108,10 +108,10 @@ namespace vve {
 				VkPipelineColorBlendAttachmentState colorBlendAttachment{};
 				colorBlendAttachment.colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
 				colorBlendAttachment.srcColorBlendFactor = VK_BLEND_FACTOR_ONE;
-				colorBlendAttachment.dstColorBlendFactor = VK_BLEND_FACTOR_CONSTANT_COLOR;
+				colorBlendAttachment.dstColorBlendFactor = VK_BLEND_FACTOR_CONSTANT_ALPHA;
 				colorBlendAttachment.colorBlendOp = VK_BLEND_OP_ADD;
-				colorBlendAttachment.srcAlphaBlendFactor = VK_BLEND_FACTOR_ONE;
-				colorBlendAttachment.dstAlphaBlendFactor = VK_BLEND_FACTOR_CONSTANT_COLOR;
+				colorBlendAttachment.srcAlphaBlendFactor = VK_BLEND_FACTOR_CONSTANT_ALPHA;
+				colorBlendAttachment.dstAlphaBlendFactor = VK_BLEND_FACTOR_ONE_MINUS_CONSTANT_ALPHA;
 				colorBlendAttachment.alphaBlendOp = VK_BLEND_OP_MAX;
 				colorBlendAttachment.blendEnable = VK_TRUE;
 
@@ -254,21 +254,15 @@ namespace vve {
 
 		std::vector<VkCommandBuffer> cmdBuffers(1);
 		vh::ComCreateCommandBuffers(m_vulkanState().m_device, m_commandPools[m_vulkanState().m_currentFrame], cmdBuffers);
-
 		auto cmdBuffer = cmdBuffers[0];
 
 		vh::ComStartRecordCommandBuffer(cmdBuffer, m_vulkanState().m_imageIndex, 
 			m_vulkanState().m_swapChain, 
-			//m_pass == 0 ? m_renderPassClear : m_renderPass, m_pass == 0, 
-			m_renderPass, false, 
-			//m_windowState().m_clearColor, 
-			{0,0,0,1}, 
+			m_renderPass, false, {}, 
 			m_vulkanState().m_currentFrame);
 
-		//for (m_pass=0; m_pass<3; ++m_pass) {
-		
 		float f = 0.0;
-		auto blendconst = (m_pass == 0 ? glm::vec4{f,f,f,1} : glm::vec4{1-f,1-f,1-f,1});
+		std::array<float,4> blendconst = (m_pass == 0 ? std::array<float,4>{f,f,f,f} : std::array<float,4>{1-f,1-f,1-f,1-f});
 		
 		for( auto& pipeline : m_pipelinesPerType) {
 
@@ -278,10 +272,9 @@ namespace vve {
 				cmdBuffer, 
 				m_vulkanState().m_imageIndex, 
 				m_vulkanState().m_swapChain, 
-				//m_pass == 0 ? m_renderPassClear : m_renderPass, 
 				m_renderPass, 
 				pipeline.second.m_graphicsPipeline, 
-				{}, {}, //default view ports and scissors
+				{},	{}, //default view ports and scissors
 				blendconst, //blend constants
 				{
 					{	.layout = pipeline.second.m_graphicsPipeline.m_pipelineLayout, 
@@ -307,7 +300,6 @@ namespace vve {
 					{ m_descriptorSetPerFrame, descriptorsets }, pipeline.second.m_type, mesh, m_vulkanState().m_currentFrame );
 			}
 		}
-		//}
 
 		vh::ComEndRecordCommandBuffer(cmdBuffer);
 	    SubmitCommandBuffer(cmdBuffer);

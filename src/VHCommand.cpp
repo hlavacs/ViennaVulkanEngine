@@ -53,7 +53,7 @@ namespace vh {
 
 
     void ComCreateCommandBuffers(VkDevice device, VkCommandPool commandPool, std::vector<VkCommandBuffer>& commandBuffers) {
-        commandBuffers.resize(MAX_FRAMES_IN_FLIGHT);
+        if(commandBuffers.size() == 0) commandBuffers.resize(2);
 
         VkCommandBufferAllocateInfo allocInfo{};
         allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
@@ -86,7 +86,7 @@ namespace vh {
 
 		std::array<VkClearValue, 2> clearValues{};
 		if( clear) {
-	        clearValues[0].color = {{clearColor.r, clearColor.g, clearColor.b, 1.0f}};  
+	        clearValues[0].color = {{clearColor.r, clearColor.g, clearColor.b, clearColor.w}};  
 	        clearValues[1].depthStencil = {1.0f, 0};
 
 	        renderPassInfo.clearValueCount = static_cast<uint32_t>(clearValues.size());
@@ -99,11 +99,9 @@ namespace vh {
 	void ComBindPipeline(VkCommandBuffer commandBuffer, uint32_t imageIndex
         , SwapChain& swapChain, VkRenderPass renderPass, Pipeline& graphicsPipeline
         , std::vector<VkViewport> viewPorts, std::vector<VkRect2D> scissors
-        , glm::vec4 blendConstants
+        , std::array<float,4>& blendConstants
         , std::vector<PushConstants> pushConstants
         , uint32_t currentFrame) {
-
-        vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsPipeline.m_pipeline);
 
         VkViewport viewport{};
         viewport.x = 0.0f;
@@ -121,11 +119,13 @@ namespace vh {
         if(scissors.size() == 0) scissors.push_back(scissor);
         vkCmdSetScissor(commandBuffer, 0, scissors.size(), scissors.data());
 
-        vkCmdSetBlendConstants(commandBuffer, (float*)&blendConstants);
+        vkCmdSetBlendConstants(commandBuffer, &blendConstants[0]);
 
         for( auto& pc : pushConstants ) {
             vkCmdPushConstants(commandBuffer, pc.layout, pc.stageFlags, pc.offset, pc.size, pc.pValues);
         }
+
+        vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsPipeline.m_pipeline);
 	}
 
     void ComEndRecordCommandBuffer(VkCommandBuffer commandBuffer) {
@@ -169,7 +169,7 @@ namespace vh {
 		std::vector<VkSubmitInfo> submitInfos(commandBuffers.size());
 	    VkPipelineStageFlags waitStages[] = {VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT};
 		VkFence fence = VK_NULL_HANDLE;
-            
+         
 		for( int i = 0; i < size; i++ ) {
             submitInfos[i].sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
 	        submitInfos[i].commandBufferCount = 1;
