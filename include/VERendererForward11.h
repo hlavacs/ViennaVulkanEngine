@@ -53,7 +53,7 @@ namespace vve
 		std::vector<VkCommandPool> m_commandPools;
 
 		int m_pass;
-		size_t m_maxNumberLights{16};
+		size_t m_maxNumberLights{128};
 		glm::ivec3 m_numberLightsPerType{0,0,0};
     };
 
