@@ -533,15 +533,15 @@ namespace vh {
     }
 
     void RenCreateGBufferResources(VkPhysicalDevice physicalDevice, VkDevice device, VmaAllocator vmaAllocator
-        , SwapChain& swapChain, GBufferImage& gbufferImage, VkFormat format) {
+        , SwapChain& swapChain, GBufferImage& gbufferImage, VkFormat format, VkSampler sampler) {
         gbufferImage.m_gbufferFormat = format;
+        gbufferImage.m_gbufferSampler = sampler;
 
         ImgCreateImage(physicalDevice, device, vmaAllocator, swapChain.m_swapChainExtent.width
             , swapChain.m_swapChainExtent.height, format
             , VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL
             , VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, gbufferImage.m_gbufferImage, gbufferImage.m_gbufferImageAllocation);
         gbufferImage.m_gbufferImageView = ImgCreateImageView(device, gbufferImage.m_gbufferImage, format, VK_IMAGE_ASPECT_COLOR_BIT);
-        ImgCreateImageSampler(physicalDevice, device, gbufferImage);
     }
 
     VkFormat RenFindSupportedFormat(VkPhysicalDevice physicalDevice, const std::vector<VkFormat>& candidates

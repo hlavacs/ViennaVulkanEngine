@@ -22,7 +22,7 @@ namespace vh {
         , VkFormat format, VkImageTiling tiling, VkImageUsageFlags usage, VkMemoryPropertyFlags properties
         , VkImage& image, VmaAllocation& imageAllocation);
 
-    void ImgCreateImageSampler(VkPhysicalDevice physicalDevice, VkDevice device, GBufferImage& gbufferImage);
+    void ImgCreateImageSampler(VkPhysicalDevice physicalDevice, VkDevice device, VkSampler& sampler);
 
     void ImgDestroyImage(VkDevice device, VmaAllocator vmaAllocator, VkImage image, VmaAllocation& imageAllocation);
 

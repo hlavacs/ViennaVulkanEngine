@@ -123,7 +123,7 @@ namespace vh {
         vmaCreateImage(vmaAllocator, &imageInfo, &allocInfo, &image, &imageAllocation, nullptr);
     }
 
-    void ImgCreateImageSampler(VkPhysicalDevice physicalDevice, VkDevice device, GBufferImage& gbufferImage) {
+    void ImgCreateImageSampler(VkPhysicalDevice physicalDevice, VkDevice device, VkSampler& sampler) {
         VkPhysicalDeviceProperties properties{};
         vkGetPhysicalDeviceProperties(physicalDevice, &properties);
 
@@ -142,7 +142,7 @@ namespace vh {
         samplerInfo.compareOp = VK_COMPARE_OP_ALWAYS;
         samplerInfo.mipmapMode = VK_SAMPLER_MIPMAP_MODE_LINEAR;
 
-        if (vkCreateSampler(device, &samplerInfo, nullptr, &gbufferImage.m_gbufferSampler) != VK_SUCCESS) {
+        if (vkCreateSampler(device, &samplerInfo, nullptr, &sampler) != VK_SUCCESS) {
             throw std::runtime_error("failed to create texture sampler!");
         }
     }

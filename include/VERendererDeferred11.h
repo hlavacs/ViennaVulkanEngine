@@ -20,6 +20,7 @@ namespace vve {
 		vh::UniformBuffers m_uniformBuffersLights{};
 
 		// TODO: Maybe make GBufferAttachment struct for better alignment
+		VkSampler m_sampler{ VK_NULL_HANDLE };
 		vh::GBufferImage m_positionImage{};
 		vh::GBufferImage m_normalsImage{};
 		vh::GBufferImage m_albedoImage{};

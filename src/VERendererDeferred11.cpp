@@ -52,16 +52,17 @@ namespace vve {
 		vh::BufCreateUniformBuffers(m_vulkanState().m_physicalDevice, m_vulkanState().m_device, m_vulkanState().m_vmaAllocator, sizeof(vh::UniformBufferFrame), m_uniformBuffersPerFrame);
 		vh::RenUpdateDescriptorSetUBO(m_vulkanState().m_device, m_uniformBuffersPerFrame, 0, sizeof(vh::UniformBufferFrame), m_descriptorSetPerFrame);
 
+		vh::ImgCreateImageSampler(m_vulkanState().m_physicalDevice, m_vulkanState().m_device, m_sampler);
 		// Binding 1 : Position
-		vh::RenCreateGBufferResources(m_vulkanState().m_physicalDevice, m_vulkanState().m_device, m_vulkanState().m_vmaAllocator, m_vulkanState().m_swapChain, m_positionImage, m_vulkanState().m_swapChain.m_swapChainImageFormat);
+		vh::RenCreateGBufferResources(m_vulkanState().m_physicalDevice, m_vulkanState().m_device, m_vulkanState().m_vmaAllocator, m_vulkanState().m_swapChain, m_positionImage, m_vulkanState().m_swapChain.m_swapChainImageFormat, m_sampler);
 		vh::RenUpdateDescriptorSetGBufferAttachment(m_vulkanState().m_device, m_positionImage, 1, m_descriptorSetPerFrame);
 
 		// Binding 2 : Normals
-		vh::RenCreateGBufferResources(m_vulkanState().m_physicalDevice, m_vulkanState().m_device, m_vulkanState().m_vmaAllocator, m_vulkanState().m_swapChain, m_normalsImage, m_vulkanState().m_swapChain.m_swapChainImageFormat);
+		vh::RenCreateGBufferResources(m_vulkanState().m_physicalDevice, m_vulkanState().m_device, m_vulkanState().m_vmaAllocator, m_vulkanState().m_swapChain, m_normalsImage, m_vulkanState().m_swapChain.m_swapChainImageFormat, m_sampler);
 		vh::RenUpdateDescriptorSetGBufferAttachment(m_vulkanState().m_device, m_normalsImage, 2, m_descriptorSetPerFrame);
 
 		// Binding 3 : Albedo
-		vh::RenCreateGBufferResources(m_vulkanState().m_physicalDevice, m_vulkanState().m_device, m_vulkanState().m_vmaAllocator, m_vulkanState().m_swapChain, m_albedoImage, VK_FORMAT_R8G8B8A8_UNORM);
+		vh::RenCreateGBufferResources(m_vulkanState().m_physicalDevice, m_vulkanState().m_device, m_vulkanState().m_vmaAllocator, m_vulkanState().m_swapChain, m_albedoImage, VK_FORMAT_R8G8B8A8_UNORM, m_sampler);
 		vh::RenUpdateDescriptorSetGBufferAttachment(m_vulkanState().m_device, m_albedoImage, 3, m_descriptorSetPerFrame);
 
 		// Binding 4 : Light
