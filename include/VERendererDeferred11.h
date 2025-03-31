@@ -19,7 +19,7 @@ namespace vve {
 		// TODO: might need a SSBO for many lights
 		vh::UniformBuffers m_uniformBuffersLights{};
 
-		// TODO: Maybe combine with DepthImage struct
+		// TODO: Maybe make GBufferAttachment struct for better alignment
 		vh::GBufferImage m_positionImage{};
 		vh::GBufferImage m_normalsImage{};
 		vh::GBufferImage m_albedoImage{};

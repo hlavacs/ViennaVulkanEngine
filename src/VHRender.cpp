@@ -505,7 +505,7 @@ namespace vh {
             VkDescriptorImageInfo imageInfo{};
             imageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
             imageInfo.imageView = gbufferImage.m_gbufferImageView;
-            //imageInfo.sampler = gbufferImage.m_mapSampler;
+            imageInfo.sampler = gbufferImage.m_gbufferSampler;
 
             VkWriteDescriptorSet descriptorWrites{};
 
@@ -533,8 +533,8 @@ namespace vh {
     }
 
     void RenCreateGBufferResources(VkPhysicalDevice physicalDevice, VkDevice device, VmaAllocator vmaAllocator
-        , SwapChain& swapChain, GBufferImage& gbufferImage) {
-        VkFormat format = gbufferImage.m_gbufferFormat;
+        , SwapChain& swapChain, GBufferImage& gbufferImage, VkFormat format) {
+        gbufferImage.m_gbufferFormat = format;
 
         ImgCreateImage(physicalDevice, device, vmaAllocator, swapChain.m_swapChainExtent.width
             , swapChain.m_swapChainExtent.height, format
