@@ -82,6 +82,7 @@ namespace vve {
 
 		vkDestroyDescriptorPool(m_vulkanState().m_device, m_descriptorPool, nullptr);
 		vkDestroyRenderPass(m_vulkanState().m_device, m_renderPass, nullptr);
+		vkDestroySampler(m_vulkanState().m_device, m_sampler, nullptr);
 
 		vh::BufDestroyBuffer2(m_vulkanState().m_device, m_vulkanState().m_vmaAllocator, m_uniformBuffersPerFrame);
 		vh::ImgDestroyImage(m_vulkanState().m_device, m_vulkanState().m_vmaAllocator, m_positionImage.m_gbufferImage, m_positionImage.m_gbufferImageAllocation);
