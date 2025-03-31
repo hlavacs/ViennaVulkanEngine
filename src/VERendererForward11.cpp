@@ -41,12 +41,12 @@ namespace vve {
     bool RendererForward11::OnInit(Message message) {
 		Renderer::OnInit(message);
 
-        vh::RenCreateRenderPass(m_vulkanState().m_physicalDevice, m_vulkanState().m_device, m_vulkanState().m_swapChain, 
+        vh::RenCreateRenderPass(m_vkState().m_physicalDevice, m_vkState().m_device, m_vkState().m_swapChain, 
 			true, m_renderPassClear);
-        vh::RenCreateRenderPass(m_vulkanState().m_physicalDevice, m_vulkanState().m_device, m_vulkanState().m_swapChain, 
+        vh::RenCreateRenderPass(m_vkState().m_physicalDevice, m_vkState().m_device, m_vkState().m_swapChain, 
 			false, m_renderPass);
 		
-		vh::RenCreateDescriptorSetLayout( m_vulkanState().m_device, //Per frame
+		vh::RenCreateDescriptorSetLayout( m_vkState().m_device, //Per frame
 			{ 
 				{ 	.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 
 					.stageFlags = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT },
@@ -57,22 +57,22 @@ namespace vve {
 
 		for( int i=0; i<MAX_FRAMES_IN_FLIGHT; ++i) {
 			m_commandPools.resize(MAX_FRAMES_IN_FLIGHT);
-			vh::ComCreateCommandPool(m_vulkanState().m_surface, m_vulkanState().m_physicalDevice, m_vulkanState().m_device, m_commandPools[i]);
+			vh::ComCreateCommandPool(m_vkState().m_surface, m_vkState().m_physicalDevice, m_vkState().m_device, m_commandPools[i]);
 		}
 
-		vh::RenCreateDescriptorPool(m_vulkanState().m_device, 1000, m_descriptorPool);
-		vh::RenCreateDescriptorSet(m_vulkanState().m_device, m_descriptorSetLayoutPerFrame, m_descriptorPool, m_descriptorSetPerFrame);
+		vh::RenCreateDescriptorPool(m_vkState().m_device, 1000, m_descriptorPool);
+		vh::RenCreateDescriptorSet(m_vkState().m_device, m_descriptorSetLayoutPerFrame, m_descriptorPool, m_descriptorSetPerFrame);
 		
 		//Per frame uniform buffer
-		vh::BufCreateBuffers(m_vulkanState().m_physicalDevice, m_vulkanState().m_device, m_vulkanState().m_vmaAllocator, 
+		vh::BufCreateBuffers(m_vkState().m_physicalDevice, m_vkState().m_device, m_vkState().m_vmaAllocator, 
 			VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, sizeof(vh::UniformBufferFrame), m_uniformBuffersPerFrame);
-		vh::RenUpdateDescriptorSet(m_vulkanState().m_device, m_uniformBuffersPerFrame, 0, 
+		vh::RenUpdateDescriptorSet(m_vkState().m_device, m_uniformBuffersPerFrame, 0, 
 			VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, sizeof(vh::UniformBufferFrame), m_descriptorSetPerFrame);   
 
 		//Per frame light buffer
-		vh::BufCreateBuffers(m_vulkanState().m_physicalDevice, m_vulkanState().m_device, m_vulkanState().m_vmaAllocator, 
+		vh::BufCreateBuffers(m_vkState().m_physicalDevice, m_vkState().m_device, m_vkState().m_vmaAllocator, 
 			VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, m_maxNumberLights*sizeof(vh::Light), m_uniformBuffersLights);
-		vh::RenUpdateDescriptorSet(m_vulkanState().m_device, m_uniformBuffersLights, 1, 
+		vh::RenUpdateDescriptorSet(m_vkState().m_device, m_uniformBuffersLights, 1, 
 			VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, m_maxNumberLights*sizeof(vh::Light), m_descriptorSetPerFrame);   
 
 		CreatePipelines();
@@ -100,7 +100,7 @@ namespace vve {
 					bindings.push_back( { .descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, .stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT } );
 				}
 
-				vh::RenCreateDescriptorSetLayout( m_vulkanState().m_device, bindings, descriptorSetLayoutPerObject );
+				vh::RenCreateDescriptorSetLayout( m_vkState().m_device, bindings, descriptorSetLayoutPerObject );
 
 				std::vector<VkVertexInputBindingDescription> bindingDescriptions = getBindingDescriptions(type);
 				std::vector<VkVertexInputAttributeDescription> attributeDescriptions = getAttributeDescriptions(type);
@@ -115,7 +115,7 @@ namespace vve {
 				colorBlendAttachment.alphaBlendOp = VK_BLEND_OP_MAX;
 				colorBlendAttachment.blendEnable = VK_TRUE;
 
-				vh::RenCreateGraphicsPipeline(m_vulkanState().m_device, m_renderPass, 
+				vh::RenCreateGraphicsPipeline(m_vkState().m_device, m_renderPass, 
 					entry.path().string(), (shaders / (filename.substr(0,pos2) + "_frag.spv")).string(),
 					bindingDescriptions, attributeDescriptions,
 					{ m_descriptorSetLayoutPerFrame, descriptorSetLayoutPerObject }, 
@@ -197,7 +197,7 @@ namespace vve {
 		m_numberLightsPerType = glm::ivec3{0};
 		int total{0};
 		vh::UniformBufferFrame ubc; //contains camera view and projection matrices and number of lights
-		vkResetCommandPool( m_vulkanState().m_device, m_commandPools[m_vulkanState().m_currentFrame], 0);
+		vkResetCommandPool( m_vkState().m_device, m_commandPools[m_vkState().m_currentFrame], 0);
 
 		//m_engine.DeregisterCallbacks(this, "RECORD_NEXT_FRAME");
 
@@ -205,14 +205,14 @@ namespace vve {
 		m_numberLightsPerType.y = RegisterLight<DirectionalLight>(2.0f, lights, total);
 		m_numberLightsPerType.z = RegisterLight<SpotLight>(3.0f, lights, total);
 		ubc.numLights = m_numberLightsPerType;
-		memcpy(m_uniformBuffersLights.m_uniformBuffersMapped[m_vulkanState().m_currentFrame], lights.data(), total*sizeof(vh::Light));
+		memcpy(m_uniformBuffersLights.m_uniformBuffersMapped[m_vkState().m_currentFrame], lights.data(), total*sizeof(vh::Light));
 
 		//Copy camera view and projection matrices to the uniform buffer
 		auto [lToW, view, proj] = *m_registry.template GetView<LocalToWorldMatrix&, ViewMatrix&, ProjectionMatrix&>().begin();
 		ubc.camera.view = view();
         ubc.camera.proj = proj();
 		ubc.camera.positionW = lToW()[3];
-		memcpy(m_uniformBuffersPerFrame.m_uniformBuffersMapped[m_vulkanState().m_currentFrame], &ubc, sizeof(ubc));
+		memcpy(m_uniformBuffersPerFrame.m_uniformBuffersMapped[m_vkState().m_currentFrame], &ubc, sizeof(ubc));
 
 		for( auto& pipeline : m_pipelinesPerType) {
 			for( auto[oHandle, name, ghandle, LtoW, uniformBuffers] : 
@@ -231,18 +231,18 @@ namespace vve {
 					UVScale uvScale{ { 1.0f, 1.0f }};
 					if( m_registry.template Has<UVScale>(oHandle) ) { uvScale = m_registry.template Get<UVScale>(oHandle); }
 					uboTexture.uvScale = uvScale;
-					memcpy(uniformBuffers().m_uniformBuffersMapped[m_vulkanState().m_currentFrame], &uboTexture, sizeof(uboTexture));
+					memcpy(uniformBuffers().m_uniformBuffersMapped[m_vkState().m_currentFrame], &uboTexture, sizeof(uboTexture));
 				} else if( hasColor ) {
 					vh::BufferPerObjectColor uboColor{};
 					uboColor.model = LtoW(); 		
 					uboColor.modelInverseTranspose = glm::inverse( glm::transpose(uboColor.model) );
 					uboColor.color = m_registry.template Get<vh::Color>(oHandle);
-					memcpy(uniformBuffers().m_uniformBuffersMapped[m_vulkanState().m_currentFrame], &uboColor, sizeof(uboColor));
+					memcpy(uniformBuffers().m_uniformBuffersMapped[m_vkState().m_currentFrame], &uboColor, sizeof(uboColor));
 				} else if( hasVertexColor ) {
 					vh::BufferPerObject uboColor{};
 					uboColor.model = LtoW(); 
 					uboColor.modelInverseTranspose = glm::inverse( glm::transpose(uboColor.model) );
-					memcpy(uniformBuffers().m_uniformBuffersMapped[m_vulkanState().m_currentFrame], &uboColor, sizeof(uboColor));
+					memcpy(uniformBuffers().m_uniformBuffersMapped[m_vkState().m_currentFrame], &uboColor, sizeof(uboColor));
 				}
 			}
 		}
@@ -253,13 +253,13 @@ namespace vve {
 		auto msg = message.template GetData<MsgRecordNextFrame>();
 
 		std::vector<VkCommandBuffer> cmdBuffers(1);
-		vh::ComCreateCommandBuffers(m_vulkanState().m_device, m_commandPools[m_vulkanState().m_currentFrame], cmdBuffers);
+		vh::ComCreateCommandBuffers(m_vkState().m_device, m_commandPools[m_vkState().m_currentFrame], cmdBuffers);
 		auto cmdBuffer = cmdBuffers[0];
 
-		vh::ComStartRecordCommandBuffer(cmdBuffer, m_vulkanState().m_imageIndex, 
-			m_vulkanState().m_swapChain, 
+		vh::ComStartRecordCommandBuffer(cmdBuffer, m_vkState().m_imageIndex, 
+			m_vkState().m_swapChain, 
 			m_renderPass, false, {}, 
-			m_vulkanState().m_currentFrame);
+			m_vkState().m_currentFrame);
 
 		float f = 0.0;
 		std::array<float,4> blendconst = (m_pass == 0 ? std::array<float,4>{f,f,f,f} : std::array<float,4>{1-f,1-f,1-f,1-f});
@@ -270,8 +270,8 @@ namespace vve {
 			//vh::LightOffset offset{m_pass, 1};
 			vh::ComBindPipeline(
 				cmdBuffer, 
-				m_vulkanState().m_imageIndex, 
-				m_vulkanState().m_swapChain, 
+				m_vkState().m_imageIndex, 
+				m_vkState().m_swapChain, 
 				m_renderPass, 
 				pipeline.second.m_graphicsPipeline, 
 				{},	{}, //default view ports and scissors
@@ -284,7 +284,7 @@ namespace vve {
 						.pValues = &offset
 					}
 				}, //push constants
-				m_vulkanState().m_currentFrame);
+				m_vkState().m_currentFrame);
 
 			for( auto[oHandle, name, ghandle, LtoW, uniformBuffers, descriptorsets] : 
 				m_registry.template GetView<vecs::Handle, Name, MeshHandle, LocalToWorldMatrix&, vh::Buffer&, vh::DescriptorSet&>
@@ -297,7 +297,7 @@ namespace vve {
 
 				auto mesh = m_registry.template Get<vh::Mesh&>(ghandle);
 				vh::ComRecordObject( cmdBuffer, pipeline.second.m_graphicsPipeline, 
-					{ m_descriptorSetPerFrame, descriptorsets }, pipeline.second.m_type, mesh, m_vulkanState().m_currentFrame );
+					{ m_descriptorSetPerFrame, descriptorsets }, pipeline.second.m_type, mesh, m_vkState().m_currentFrame );
 			}
 		}
 
@@ -324,22 +324,22 @@ namespace vve {
 		vh::Buffer ubo;
 		size_t sizeUbo = 0;
 		vh::DescriptorSet descriptorSet{1};
-		vh::RenCreateDescriptorSet(m_vulkanState().m_device, pipelinePerType->m_descriptorSetLayoutPerObject, m_descriptorPool, descriptorSet);
+		vh::RenCreateDescriptorSet(m_vkState().m_device, pipelinePerType->m_descriptorSetLayoutPerObject, m_descriptorPool, descriptorSet);
 
 		if( hasTexture ) {
 			sizeUbo = sizeof(vh::BufferPerObjectTexture);
 			auto tHandle = m_registry.template Get<TextureHandle>(oHandle);
 			auto texture = m_registry.template Get<vh::Map&>(tHandle);
-	    	vh::RenUpdateDescriptorSetTexture(m_vulkanState().m_device, texture, 1, descriptorSet);
+	    	vh::RenUpdateDescriptorSetTexture(m_vkState().m_device, texture, 1, descriptorSet);
 		} else if(hasColor) {
 			sizeUbo = sizeof(vh::BufferPerObjectColor);
 		} else if(hasVertexColor) {
 			sizeUbo = sizeof(vh::BufferPerObject);
 		}
 
-		vh::BufCreateBuffers(m_vulkanState().m_physicalDevice, m_vulkanState().m_device, m_vulkanState().m_vmaAllocator, 
+		vh::BufCreateBuffers(m_vkState().m_physicalDevice, m_vkState().m_device, m_vkState().m_vmaAllocator, 
 			VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, sizeUbo, ubo);
-	    vh::RenUpdateDescriptorSet(m_vulkanState().m_device, ubo, 0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, sizeUbo, descriptorSet);
+	    vh::RenUpdateDescriptorSet(m_vkState().m_device, ubo, 0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, sizeUbo, descriptorSet);
 
 		m_registry.Put(oHandle, ubo, descriptorSet);
 		m_registry.AddTags(oHandle, (size_t)pipelinePerType->m_graphicsPipeline.m_pipeline);
@@ -357,7 +357,7 @@ namespace vve {
 
 		if( !m_registry.template Has<vh::Buffer>(oHandle) ) return false;
 		auto ubo = m_registry.template Get<vh::Buffer&>(oHandle);
-		vh::BufDestroyBuffer2(m_vulkanState().m_device, m_vulkanState().m_vmaAllocator, ubo);
+		vh::BufDestroyBuffer2(m_vkState().m_device, m_vkState().m_vmaAllocator, ubo);
 		return false;
 	}
 
@@ -385,24 +385,24 @@ namespace vve {
 	}
 
     bool RendererForward11::OnQuit(Message message) {
-        vkDeviceWaitIdle(m_vulkanState().m_device);
+        vkDeviceWaitIdle(m_vkState().m_device);
 
 		for( auto pool : m_commandPools ) {
-			vkDestroyCommandPool(m_vulkanState().m_device, pool, nullptr);
+			vkDestroyCommandPool(m_vkState().m_device, pool, nullptr);
 		}
 
 		for( auto& [type, pipeline] : m_pipelinesPerType ) {
-			vkDestroyDescriptorSetLayout(m_vulkanState().m_device, pipeline.m_descriptorSetLayoutPerObject, nullptr);
-			vkDestroyPipeline(m_vulkanState().m_device, pipeline.m_graphicsPipeline.m_pipeline, nullptr);
-			vkDestroyPipelineLayout(m_vulkanState().m_device, pipeline.m_graphicsPipeline.m_pipelineLayout, nullptr);
+			vkDestroyDescriptorSetLayout(m_vkState().m_device, pipeline.m_descriptorSetLayoutPerObject, nullptr);
+			vkDestroyPipeline(m_vkState().m_device, pipeline.m_graphicsPipeline.m_pipeline, nullptr);
+			vkDestroyPipelineLayout(m_vkState().m_device, pipeline.m_graphicsPipeline.m_pipelineLayout, nullptr);
 		}
 
-        vkDestroyDescriptorPool(m_vulkanState().m_device, m_descriptorPool, nullptr);		
-		vkDestroyRenderPass(m_vulkanState().m_device, m_renderPass, nullptr);
-		vkDestroyRenderPass(m_vulkanState().m_device, m_renderPassClear, nullptr);
-		vh::BufDestroyBuffer2(m_vulkanState().m_device, m_vulkanState().m_vmaAllocator, m_uniformBuffersPerFrame);
-		vh::BufDestroyBuffer2(m_vulkanState().m_device, m_vulkanState().m_vmaAllocator, m_uniformBuffersLights);
-		vkDestroyDescriptorSetLayout(m_vulkanState().m_device, m_descriptorSetLayoutPerFrame, nullptr);
+        vkDestroyDescriptorPool(m_vkState().m_device, m_descriptorPool, nullptr);		
+		vkDestroyRenderPass(m_vkState().m_device, m_renderPass, nullptr);
+		vkDestroyRenderPass(m_vkState().m_device, m_renderPassClear, nullptr);
+		vh::BufDestroyBuffer2(m_vkState().m_device, m_vkState().m_vmaAllocator, m_uniformBuffersPerFrame);
+		vh::BufDestroyBuffer2(m_vkState().m_device, m_vkState().m_vmaAllocator, m_uniformBuffersLights);
+		vkDestroyDescriptorSetLayout(m_vkState().m_device, m_descriptorSetLayoutPerFrame, nullptr);
 
 		return false;
     }

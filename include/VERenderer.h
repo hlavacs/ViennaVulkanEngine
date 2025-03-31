@@ -57,7 +57,7 @@ namespace vve {
 		vecs::Ref<WindowState> 		m_windowState{};
 		vecs::Ref<WindowSDLState> 	m_windowSDLState{};
 		vecs::Handle 				m_vulkanStateHandle{};
-		vecs::Ref<VulkanState> 		m_vulkanState{};
+		vecs::Ref<VulkanState> 		m_vkState{};
     };
 
 };   // namespace vve
