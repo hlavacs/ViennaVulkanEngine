@@ -22,6 +22,8 @@ namespace vh {
         , VkFormat format, VkImageTiling tiling, VkImageUsageFlags usage, VkMemoryPropertyFlags properties
         , VkImage& image, VmaAllocation& imageAllocation);
 
+    void ImgCreateImageSampler(VkPhysicalDevice physicalDevice, VkDevice device, GBufferImage& gbufferImage);
+
     void ImgDestroyImage(VkDevice device, VmaAllocator vmaAllocator, VkImage image, VmaAllocation& imageAllocation);
 
     void ImgTransitionImageLayout(VkDevice device, VkQueue graphicsQueue, VkCommandPool commandPool
