@@ -127,8 +127,9 @@ namespace vh {
 
 	struct GBufferImage {
 		VkImage         m_gbufferImage;
-		VmaAllocation   m_gbufferAllocation;
+		VmaAllocation   m_gbufferImageAllocation;
 		VkImageView     m_gbufferImageView;
+		VkFormat		m_gbufferFormat;
 	};
 
     struct Map {
