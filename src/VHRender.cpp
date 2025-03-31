@@ -162,7 +162,7 @@ namespace vh {
         attachments[3].initialLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
         attachments[3].finalLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
 
-        VkAttachmentReference colorAttachmentRef[3]{};
+        std::array<VkAttachmentReference, 3> colorAttachmentRef{};
         colorAttachmentRef[0].attachment = 0;
         colorAttachmentRef[0].layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
         colorAttachmentRef[1].attachment = 1;
@@ -171,13 +171,13 @@ namespace vh {
         colorAttachmentRef[2].layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
 
         VkAttachmentReference depthAttachmentRef{};
-        depthAttachmentRef.attachment = 1;
+        depthAttachmentRef.attachment = 3;
         depthAttachmentRef.layout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
 
         VkSubpassDescription subpass{};
         subpass.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
-        subpass.colorAttachmentCount = 3;
-        subpass.pColorAttachments = colorAttachmentRef;
+        subpass.colorAttachmentCount = static_cast<uint32_t>(colorAttachmentRef.size());
+        subpass.pColorAttachments = colorAttachmentRef.data();
         subpass.pDepthStencilAttachment = &depthAttachmentRef;
 
         VkSubpassDependency dependency{};
