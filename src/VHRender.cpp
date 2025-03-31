@@ -498,6 +498,29 @@ namespace vh {
 		}
     }
 
+    void RenUpdateDescriptorSetGBufferAttachment(VkDevice device, GBufferImage& gbufferImage, size_t binding, DescriptorSet& descriptorSet) {
+        size_t i = 0;
+        for (auto& ds : descriptorSet.m_descriptorSetPerFrameInFlight) {
+
+            VkDescriptorImageInfo imageInfo{};
+            imageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+            imageInfo.imageView = gbufferImage.m_gbufferImageView;
+            //imageInfo.sampler = gbufferImage.m_mapSampler;
+
+            VkWriteDescriptorSet descriptorWrites{};
+
+            descriptorWrites.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+            descriptorWrites.dstSet = ds;
+            descriptorWrites.dstBinding = binding;
+            descriptorWrites.dstArrayElement = 0;
+            descriptorWrites.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+            descriptorWrites.descriptorCount = 1;
+            descriptorWrites.pImageInfo = &imageInfo;
+
+            vkUpdateDescriptorSets(device, 1, &descriptorWrites, 0, nullptr);
+        }
+    }
+
     void RenCreateDepthResources(VkPhysicalDevice physicalDevice, VkDevice device, VmaAllocator vmaAllocator
         , SwapChain& swapChain, DepthImage& depthImage) {
         VkFormat depthFormat = RenFindDepthFormat(physicalDevice);
@@ -518,6 +541,7 @@ namespace vh {
             , VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL
             , VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, gbufferImage.m_gbufferImage, gbufferImage.m_gbufferImageAllocation);
         gbufferImage.m_gbufferImageView = ImgCreateImageView(device, gbufferImage.m_gbufferImage, format, VK_IMAGE_ASPECT_COLOR_BIT);
+        ImgCreateImageSampler(physicalDevice, device, gbufferImage);
     }
 
     VkFormat RenFindSupportedFormat(VkPhysicalDevice physicalDevice, const std::vector<VkFormat>& candidates

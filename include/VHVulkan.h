@@ -130,6 +130,7 @@ namespace vh {
 		VmaAllocation   m_gbufferImageAllocation;
 		VkImageView     m_gbufferImageView;
 		VkFormat		m_gbufferFormat;
+		VkSampler       m_gbufferSampler;
 	};
 
     struct Map {
