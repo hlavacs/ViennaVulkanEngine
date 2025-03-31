@@ -83,6 +83,9 @@ namespace vve {
 		vkDestroyRenderPass(m_vulkanState().m_device, m_renderPass, nullptr);
 
 		vh::BufDestroyBuffer2(m_vulkanState().m_device, m_vulkanState().m_vmaAllocator, m_uniformBuffersPerFrame);
+		vh::ImgDestroyImage(m_vulkanState().m_device, m_vulkanState().m_vmaAllocator, m_positionImage.m_gbufferImage, m_positionImage.m_gbufferImageAllocation);
+		vh::ImgDestroyImage(m_vulkanState().m_device, m_vulkanState().m_vmaAllocator, m_normalsImage.m_gbufferImage, m_normalsImage.m_gbufferImageAllocation);
+		vh::ImgDestroyImage(m_vulkanState().m_device, m_vulkanState().m_vmaAllocator, m_albedoImage.m_gbufferImage, m_albedoImage.m_gbufferImageAllocation);
 		vh::BufDestroyBuffer2(m_vulkanState().m_device, m_vulkanState().m_vmaAllocator, m_uniformBuffersLights);
 
 		vkDestroyDescriptorSetLayout(m_vulkanState().m_device, m_descriptorSetLayoutPerFrame, nullptr);
