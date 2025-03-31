@@ -19,6 +19,11 @@ namespace vve {
 		// TODO: might need a SSBO for many lights
 		vh::UniformBuffers m_uniformBuffersLights{};
 
+		// TODO: Maybe combine with DepthImage struct
+		vh::GBufferImage m_positionImage{};
+		vh::GBufferImage m_normalsImage{};
+		vh::GBufferImage m_albedoImage{};
+
 		VkDescriptorSetLayout m_descriptorSetLayoutPerFrame{ VK_NULL_HANDLE };
 		VkDescriptorPool m_descriptorPool{ VK_NULL_HANDLE };
 		vh::DescriptorSet m_descriptorSetPerFrame{};
