@@ -50,8 +50,8 @@ namespace vve {
 			VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, MAX_NUMBER_LIGHTS*sizeof(vh::ShadowIndex), m_descriptorSetPerFrame);   
 
 		ShadowImage shadowImage {
-			.maxImageDimension2D = m_vkState().m_physicalDeviceProperties.limits.maxImageDimension2D,
-			.maxImageArrayLayers = m_vkState().m_physicalDeviceProperties.limits.maxImageArrayLayers
+			.maxImageDimension2D = std::min(m_vkState().m_physicalDeviceProperties.limits.maxImageDimension2D, 3*SHADOW_MAP_DIMENSION),
+			.maxImageArrayLayers = std::min(m_vkState().m_physicalDeviceProperties.limits.maxImageArrayLayers, (uint32_t)16)
 		};
 
 		m_shadowImageHandle = m_registry.Insert(shadowImage);
@@ -60,12 +60,13 @@ namespace vve {
 	}
 
 
-	void RendererShadow11::CheckShadowMaps( uint32_t numberMaps ) {
+	void RendererShadow11::CheckShadowMaps( uint32_t numberMapsRequired ) {
 		auto shadowImage = m_registry.template Get<ShadowImage&>(m_shadowImageHandle);
+		auto numberMaps = std::min(numberMapsRequired, shadowImage().MaxNumberMapsPerImage());
 		if( shadowImage().NumberMapsPerImage() >= numberMaps ) return;
 
-		uint32_t requiredLayers = numberMaps / shadowImage().MaxNumberMapsPerLayer();
-		auto numLayers = std::min(shadowImage().MaxNumberMapsPerImage(), requiredLayers);
+		uint32_t requiredLayers = (uint32_t)std::ceil(numberMaps / (float)shadowImage().MaxNumberMapsPerLayer());
+		auto numLayers = std::min(shadowImage().maxImageArrayLayers, requiredLayers);
 		for( int i = 0; i < shadowImage().shadowImages.size(); i++ ) {
 			vh::ImgDestroyImage(m_vkState().m_device, m_vkState().m_vmaAllocator, 
 				shadowImage().shadowImages[i].m_mapImage, shadowImage().shadowImages[i].m_mapImageAllocation);
@@ -83,6 +84,7 @@ namespace vve {
 			
 			shadowImage().shadowImages.push_back(map);
 		}
+		shadowImage().numberImageArraylayers = numLayers;
 	}
 
 	template<typename T>
@@ -108,6 +110,7 @@ namespace vve {
 		RegisterForLight<PointLight>(i);
 		RegisterForLight<DirectionalLight>(i);
 		RegisterForLight<SpotLight>(i);
+		CheckShadowMaps(i);
 		return false;
 	}
 
