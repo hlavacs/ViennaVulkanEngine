@@ -88,13 +88,13 @@ namespace vve {
 	}
 
 	template<typename T>
-	void RendererShadow11::RegisterForLight(int& i) {
+	uint32_t RendererShadow11::CountShadows(uint32_t shadowsPerLight) {
+		int n=0;
 		for( auto [handle, light] : m_registry.template GetView<vecs::Handle, T&>() ) {
-			m_engine.RegisterCallbacks( { 
-				{this,  1500 + i*1000, "RECORD_NEXT_FRAME", [this](Message& message){ return OnRecordNextFrame(message);} }
-			} );
-			++i;
+
+			++n;
 		};
+		return n*shadowsPerLight;
 	}
 
 	/// @brief Prepare the next frame for shadow map rendering.
@@ -104,13 +104,24 @@ namespace vve {
 	/// @return Returns false.
 	bool RendererShadow11::OnPrepareNextFrame(Message message) {
 		auto msg = message.template GetData<MsgPrepareNextFrame>();
+		auto shadowImage = m_registry.template Get<ShadowImage&>(m_shadowImageHandle);
+
 		m_pass = 0;
-		m_engine.DeregisterCallbacks(this, "RECORD_NEXT_FRAME");
-		int i{0};
-		RegisterForLight<PointLight>(i);
-		RegisterForLight<DirectionalLight>(i);
-		RegisterForLight<SpotLight>(i);
-		CheckShadowMaps(i);
+		uint32_t numShadows = CountShadows<PointLight>(6);
+		numShadows += CountShadows<DirectionalLight>(3);
+		numShadows += CountShadows<SpotLight>(1);
+		CheckShadowMaps(numShadows);
+		uint32_t numPasses = (uint32_t)std::ceil( numShadows / (float)shadowImage().MaxNumberMapsPerImage());
+
+		if( m_numberPasses != numPasses ) {
+			m_numberPasses = numPasses;
+			m_engine.DeregisterCallbacks(this, "RECORD_NEXT_FRAME");
+			for( uint32_t i=0; i<numShadows; ++i) {
+				m_engine.RegisterCallbacks( { 
+					{this,  1500 + i*1000, "RECORD_NEXT_FRAME", [this](Message& message){ return OnRecordNextFrame(message);} }
+				} );
+			}
+		}
 		return false;
 	}
 

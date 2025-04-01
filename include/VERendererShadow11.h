@@ -30,7 +30,7 @@ namespace vve
         bool OnRecordNextFrame(Message message);
         bool OnQuit(Message message);
 		template<typename T>
-		void RegisterForLight(int& i);
+		uint32_t  CountShadows(uint32_t num);
 		void CheckShadowMaps( uint32_t number);
 
 	    VkRenderPass m_renderPass;
@@ -47,7 +47,9 @@ namespace vve
 		vh::Pipeline m_graphicsPipeline;		
 
 		vecs::Handle m_shadowImageHandle;
-		size_t m_pass;
+		uint32_t m_pass;
+		uint32_t m_numberPasses{1};
+
 		glm::ivec3 m_numberLightsPerType{0,0,0};
 	};
 
