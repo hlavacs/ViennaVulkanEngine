@@ -2,6 +2,9 @@
 
 namespace vve
 {
+
+	static const uint32_t MAX_NUMBER_LIGHTS = 128;
+
     class RendererForward11 : public Renderer {
 
 		friend class RendererForward;
@@ -53,7 +56,6 @@ namespace vve
 		std::vector<VkCommandPool> m_commandPools;
 
 		int m_pass;
-		size_t m_maxNumberLights{128};
 		glm::ivec3 m_numberLightsPerType{0,0,0};
     };
 

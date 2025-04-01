@@ -184,7 +184,7 @@ namespace vve {
         if (!pixels) { return nullptr; }
 
 		m_engine.SetHandle(fileName(), tHandle );
-		m_registry.Put(tHandle, vh::Map{texWidth, texHeight, imageSize, pixels});
+		m_registry.Put(tHandle, vh::Map{texWidth, texHeight, 1, imageSize, pixels});
 		return pixels;
 	}
 

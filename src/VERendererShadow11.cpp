@@ -45,32 +45,32 @@ namespace vve {
 
 		//Per frame shadow index buffer
 		vh::BufCreateBuffers(m_vkState().m_physicalDevice, m_vkState().m_device, m_vkState().m_vmaAllocator, 
-			VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, m_maxNumberLights*sizeof(vh::ShadowIndex), m_uniformBuffersLights);
+			VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, MAX_NUMBER_LIGHTS*sizeof(vh::ShadowIndex), m_uniformBuffersLights);
 		vh::RenUpdateDescriptorSet(m_vkState().m_device, m_uniformBuffersLights, 1, 
-			VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, m_maxNumberLights*sizeof(vh::ShadowIndex), m_descriptorSetPerFrame);   
+			VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, MAX_NUMBER_LIGHTS*sizeof(vh::ShadowIndex), m_descriptorSetPerFrame);   
 
 		return false;
 	}
 
 
 	void RendererShadow11::CheckShadowMaps( vecs::Handle handle, uint32_t number) {
-		if(!m_registry.template Has<ShadowMap>(handle)) {
-			ShadowMap shadowMap;
+		if(!m_registry.template Has<ShadowImage>(handle)) {
+			ShadowImage shadowMap;
 
 			for( int i = 0; i < MAX_FRAMES_IN_FLIGHT; i++ ) {
 				vh::Map map;
 				vh::ImgCreateImage2(m_vkState().m_physicalDevice, m_vkState().m_device, m_vkState().m_vmaAllocator
-					, MAP_DIMENSION, MAP_DIMENSION, 1, 1, number
+					, SHADOW_MAP_DIMENSION, SHADOW_MAP_DIMENSION, 1, 1, number
 					, VK_FORMAT_R32_SFLOAT, VK_IMAGE_TILING_OPTIMAL
 					, VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT
 					, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL
 					, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, map.m_mapImage, map.m_mapImageAllocation); 
 				
-				shadowMap.m_shadowMaps.push_back(map);
+				shadowMap.shadowImages.push_back(map);
 			}
 			m_registry.Put(handle, std::move(shadowMap));
 		}
-		auto shadowMap = m_registry.template Get<ShadowMap&>(handle);
+		auto shadowMap = m_registry.template Get<ShadowImage&>(handle);
 	}
 
 	template<typename T>
@@ -108,8 +108,8 @@ namespace vve {
 	bool RendererShadow11::OnQuit(Message message) {
         vkDeviceWaitIdle(m_vkState().m_device);
 
-		for( auto [handle, shadowMap] : m_registry.template GetView<vecs::Handle, ShadowMap&>() ) {
-			for( auto& map : shadowMap().m_shadowMaps ) {
+		for( auto [handle, shadowMap] : m_registry.template GetView<vecs::Handle, ShadowImage&>() ) {
+			for( auto& map : shadowMap().shadowImages ) {
 				vh::ImgDestroyImage(m_vkState().m_device, m_vkState().m_vmaAllocator, map.m_mapImage, map.m_mapImageAllocation);
 			}
 		}

@@ -71,9 +71,9 @@ namespace vve {
 
 		//Per frame light buffer
 		vh::BufCreateBuffers(m_vkState().m_physicalDevice, m_vkState().m_device, m_vkState().m_vmaAllocator, 
-			VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, m_maxNumberLights*sizeof(vh::Light), m_uniformBuffersLights);
+			VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, MAX_NUMBER_LIGHTS*sizeof(vh::Light), m_uniformBuffersLights);
 		vh::RenUpdateDescriptorSet(m_vkState().m_device, m_uniformBuffersLights, 1, 
-			VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, m_maxNumberLights*sizeof(vh::Light), m_descriptorSetPerFrame);   
+			VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, MAX_NUMBER_LIGHTS*sizeof(vh::Light), m_descriptorSetPerFrame);   
 
 		CreatePipelines();
 		return false;
@@ -119,7 +119,7 @@ namespace vve {
 					entry.path().string(), (shaders / (filename.substr(0,pos2) + "_frag.spv")).string(),
 					bindingDescriptions, attributeDescriptions,
 					{ m_descriptorSetLayoutPerFrame, descriptorSetLayoutPerObject }, 
-					{(int)m_maxNumberLights}, //spezialization constants
+					{(int)MAX_NUMBER_LIGHTS}, //spezialization constants
 					{{.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT, .offset = 0, .size = 8}}, //push constant ranges -> 2 ints
 					{colorBlendAttachment}, //blend attachments
 					graphicsPipeline);
@@ -184,7 +184,7 @@ namespace vve {
 			//m_engine.RegisterCallbacks( { {this,  2000 + total*1000, "RECORD_NEXT_FRAME", [this](Message& message){ return OnRecordNextFrame(message);} }} );
 			light().params.x = type;
 			lights[total] = { .positionW = glm::vec3{lToW()[3]}, .directionW = glm::vec3{lToW()[1]}, .lightParams = light() };
-			if( ++total >= m_maxNumberLights ) return n;
+			if( ++total >= MAX_NUMBER_LIGHTS ) return n;
 		};
 		return n;
 	}
@@ -193,7 +193,7 @@ namespace vve {
 		auto msg = message.template GetData<MsgPrepareNextFrame>();
 
 		m_pass = 0;
-		std::vector<vh::Light> lights{m_maxNumberLights};
+		std::vector<vh::Light> lights{MAX_NUMBER_LIGHTS};
 		m_numberLightsPerType = glm::ivec3{0};
 		int total{0};
 		vh::UniformBufferFrame ubc; //contains camera view and projection matrices and number of lights
