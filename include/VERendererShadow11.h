@@ -4,6 +4,9 @@ namespace vve
 {
 
 	static const uint32_t SHADOW_MAP_DIMENSION = 1024;
+	static const uint32_t SHADOW_MAX_MAPS_PER_LAYER = 3;
+	static const uint32_t SHADOW_MAX_NUM_LAYERS = 16;
+	
 
 	struct ShadowImage {
 		uint32_t maxImageDimension2D;

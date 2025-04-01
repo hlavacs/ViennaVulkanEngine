@@ -45,13 +45,13 @@ namespace vve {
 
 		//Per frame shadow index buffer
 		vh::BufCreateBuffers(m_vkState().m_physicalDevice, m_vkState().m_device, m_vkState().m_vmaAllocator, 
-			VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, MAX_NUMBER_LIGHTS*sizeof(vh::ShadowIndex), m_uniformBuffersLights);
+			VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, MAX_NUMBER_LIGHTS*sizeof(vh::ShadowIndex)*6, m_uniformBuffersLights);
 		vh::RenUpdateDescriptorSet(m_vkState().m_device, m_uniformBuffersLights, 1, 
-			VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, MAX_NUMBER_LIGHTS*sizeof(vh::ShadowIndex), m_descriptorSetPerFrame);   
+			VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, MAX_NUMBER_LIGHTS*sizeof(vh::ShadowIndex)*6, m_descriptorSetPerFrame);   
 
 		ShadowImage shadowImage {
-			.maxImageDimension2D = std::min(m_vkState().m_physicalDeviceProperties.limits.maxImageDimension2D, 3*SHADOW_MAP_DIMENSION),
-			.maxImageArrayLayers = std::min(m_vkState().m_physicalDeviceProperties.limits.maxImageArrayLayers, (uint32_t)16)
+			.maxImageDimension2D = std::min(m_vkState().m_physicalDeviceProperties.limits.maxImageDimension2D, SHADOW_MAX_MAPS_PER_LAYER*SHADOW_MAP_DIMENSION),
+			.maxImageArrayLayers = std::min(m_vkState().m_physicalDeviceProperties.limits.maxImageArrayLayers, SHADOW_MAX_NUM_LAYERS)
 		};
 
 		m_shadowImageHandle = m_registry.Insert(shadowImage);
@@ -118,7 +118,7 @@ namespace vve {
 			m_engine.DeregisterCallbacks(this, "RECORD_NEXT_FRAME");
 			for( uint32_t i=0; i<numShadows; ++i) {
 				m_engine.RegisterCallbacks( { 
-					{this,  1500 + i*1000, "RECORD_NEXT_FRAME", [this](Message& message){ return OnRecordNextFrame(message);} }
+					{this,  1500 + (int)i*1000, "RECORD_NEXT_FRAME", [this](Message& message){ return OnRecordNextFrame(message);} }
 				} );
 			}
 		}
