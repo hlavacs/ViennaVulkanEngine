@@ -50,7 +50,7 @@ namespace vve {
 			VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, MAX_NUMBER_LIGHTS*sizeof(vh::ShadowIndex)*6, m_descriptorSetPerFrame);   
 
 		ShadowImage shadowImage {
-			.maxImageDimension2D = std::min(m_vkState().m_physicalDeviceProperties.limits.maxImageDimension2D, SHADOW_MAX_MAPS_PER_LAYER*SHADOW_MAP_DIMENSION),
+			.maxImageDimension2D = std::min(m_vkState().m_physicalDeviceProperties.limits.maxImageDimension2D, SHADOW_MAX_MAPS_PER_ROW*SHADOW_MAP_DIMENSION),
 			.maxImageArrayLayers = std::min(m_vkState().m_physicalDeviceProperties.limits.maxImageArrayLayers, SHADOW_MAX_NUM_LAYERS)
 		};
 
