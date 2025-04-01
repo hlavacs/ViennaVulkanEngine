@@ -49,28 +49,40 @@ namespace vve {
 		vh::RenUpdateDescriptorSet(m_vkState().m_device, m_uniformBuffersLights, 1, 
 			VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, MAX_NUMBER_LIGHTS*sizeof(vh::ShadowIndex), m_descriptorSetPerFrame);   
 
+		ShadowImage shadowImage {
+			.maxImageDimension2D = m_vkState().m_physicalDeviceProperties.limits.maxImageDimension2D,
+			.maxImageArrayLayers = m_vkState().m_physicalDeviceProperties.limits.maxImageArrayLayers
+		};
+
+		m_shadowImageHandle = m_registry.Insert(shadowImage);
+		
 		return false;
 	}
 
 
-	void RendererShadow11::CheckShadowMaps( vecs::Handle handle, uint32_t number) {
-		if(!m_registry.template Has<ShadowImage>(handle)) {
-			ShadowImage shadowMap;
+	void RendererShadow11::CheckShadowMaps( uint32_t numberMaps ) {
+		auto shadowImage = m_registry.template Get<ShadowImage&>(m_shadowImageHandle);
+		if( shadowImage().NumberMapsPerImage() >= numberMaps ) return;
 
-			for( int i = 0; i < MAX_FRAMES_IN_FLIGHT; i++ ) {
-				vh::Map map;
-				vh::ImgCreateImage2(m_vkState().m_physicalDevice, m_vkState().m_device, m_vkState().m_vmaAllocator
-					, SHADOW_MAP_DIMENSION, SHADOW_MAP_DIMENSION, 1, 1, number
-					, VK_FORMAT_R32_SFLOAT, VK_IMAGE_TILING_OPTIMAL
-					, VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT
-					, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL
-					, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, map.m_mapImage, map.m_mapImageAllocation); 
-				
-				shadowMap.shadowImages.push_back(map);
-			}
-			m_registry.Put(handle, std::move(shadowMap));
+		uint32_t requiredLayers = numberMaps / shadowImage().MaxNumberMapsPerLayer();
+		auto numLayers = std::min(shadowImage().MaxNumberMapsPerImage(), requiredLayers);
+		for( int i = 0; i < shadowImage().shadowImages.size(); i++ ) {
+			vh::ImgDestroyImage(m_vkState().m_device, m_vkState().m_vmaAllocator, 
+				shadowImage().shadowImages[i].m_mapImage, shadowImage().shadowImages[i].m_mapImageAllocation);
+			shadowImage().shadowImages.clear();
 		}
-		auto shadowMap = m_registry.template Get<ShadowImage&>(handle);
+
+		for( int i = 0; i < MAX_FRAMES_IN_FLIGHT; i++ ) {
+			vh::Map map;
+			vh::ImgCreateImage2(m_vkState().m_physicalDevice, m_vkState().m_device, m_vkState().m_vmaAllocator
+				, shadowImage().maxImageDimension2D, shadowImage().maxImageDimension2D, 1, numLayers, 1
+				, vh::RenFindDepthFormat(m_vkState().m_physicalDevice), VK_IMAGE_TILING_OPTIMAL
+				, VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_SAMPLED_BIT
+				, VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL
+				, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, map.m_mapImage, map.m_mapImageAllocation); 
+			
+			shadowImage().shadowImages.push_back(map);
+		}
 	}
 
 	template<typename T>

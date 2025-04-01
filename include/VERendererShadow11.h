@@ -8,9 +8,10 @@ namespace vve
 	struct ShadowImage {
 		uint32_t maxImageDimension2D;
 		uint32_t maxImageArrayLayers;
-		uint32_t numberImageArraylayers;
+		uint32_t numberImageArraylayers{0};
 		std::vector<vh::Map> shadowImages;
-		uint32_t MaxNumberMapsPerLayer() { return maxImageDimension2D / SHADOW_MAP_DIMENSION; };
+		uint32_t MaxNumberMapsUV() { return maxImageDimension2D / SHADOW_MAP_DIMENSION; };
+		uint32_t MaxNumberMapsPerLayer() { return MaxNumberMapsUV() * MaxNumberMapsUV(); };
 		uint32_t MaxNumberMapsPerImage() { return maxImageArrayLayers * MaxNumberMapsPerLayer(); };
 		uint32_t NumberMapsPerImage() { return numberImageArraylayers * MaxNumberMapsPerLayer(); };
 	};
@@ -30,7 +31,7 @@ namespace vve
         bool OnQuit(Message message);
 		template<typename T>
 		void RegisterForLight(int& i);
-		void CheckShadowMaps( vecs::Handle handle,  uint32_t number);
+		void CheckShadowMaps( uint32_t number);
 
 	    VkRenderPass m_renderPass;
 	    VkDescriptorPool m_descriptorPool;    
@@ -45,6 +46,7 @@ namespace vve
 		VkDescriptorSetLayout m_descriptorSetLayoutPerObject;
 		vh::Pipeline m_graphicsPipeline;		
 
+		vecs::Handle m_shadowImageHandle;
 		size_t m_pass;
 		glm::ivec3 m_numberLightsPerType{0,0,0};
 	};
