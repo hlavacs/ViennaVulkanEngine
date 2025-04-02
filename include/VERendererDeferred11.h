@@ -30,6 +30,7 @@ namespace vve {
 		vh::DescriptorSet m_descriptorSetPerFrame{};
 
 		VkRenderPass m_geometryPass{ VK_NULL_HANDLE };
+		VkRenderPass m_lightingPass{ VK_NULL_HANDLE };
 
 		VkCommandPool m_commandPool{ VK_NULL_HANDLE };
 		std::vector<VkCommandBuffer> m_commandBuffers;

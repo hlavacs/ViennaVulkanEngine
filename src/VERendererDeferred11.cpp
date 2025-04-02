@@ -19,6 +19,7 @@ namespace vve {
 		Renderer::OnInit(message);
 
 		vh::RenCreateRenderPassGeometry(m_vulkanState().m_physicalDevice, m_vulkanState().m_device, m_vulkanState().m_swapChain, m_geometryPass);
+		vh::RenCreateRenderPass(m_vulkanState().m_physicalDevice, m_vulkanState().m_device, m_vulkanState().m_swapChain, false, m_lightingPass);
 
 		// TODO: binding 0 might only need vertex globally
 		vh::RenCreateDescriptorSetLayout(
@@ -82,6 +83,7 @@ namespace vve {
 
 		vkDestroyDescriptorPool(m_vulkanState().m_device, m_descriptorPool, nullptr);
 		vkDestroyRenderPass(m_vulkanState().m_device, m_geometryPass, nullptr);
+		vkDestroyRenderPass(m_vulkanState().m_device, m_lightingPass, nullptr);
 		vkDestroySampler(m_vulkanState().m_device, m_sampler, nullptr);
 
 		vh::BufDestroyBuffer2(m_vulkanState().m_device, m_vulkanState().m_vmaAllocator, m_uniformBuffersPerFrame);
