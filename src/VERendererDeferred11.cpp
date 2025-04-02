@@ -18,7 +18,7 @@ namespace vve {
 		// TODO: maybe a reference will be enough here to not make a message copy?
 		Renderer::OnInit(message);
 
-		vh::RenCreateRenderPassDeferred(m_vulkanState().m_physicalDevice, m_vulkanState().m_device, m_vulkanState().m_swapChain, m_renderPass);
+		vh::RenCreateRenderPassGeometry(m_vulkanState().m_physicalDevice, m_vulkanState().m_device, m_vulkanState().m_swapChain, m_geometryPass);
 
 		// TODO: binding 0 might only need vertex globally
 		vh::RenCreateDescriptorSetLayout(
@@ -81,7 +81,7 @@ namespace vve {
 		// TODO: Manage pipelines
 
 		vkDestroyDescriptorPool(m_vulkanState().m_device, m_descriptorPool, nullptr);
-		vkDestroyRenderPass(m_vulkanState().m_device, m_renderPass, nullptr);
+		vkDestroyRenderPass(m_vulkanState().m_device, m_geometryPass, nullptr);
 		vkDestroySampler(m_vulkanState().m_device, m_sampler, nullptr);
 
 		vh::BufDestroyBuffer2(m_vulkanState().m_device, m_vulkanState().m_vmaAllocator, m_uniformBuffersPerFrame);
