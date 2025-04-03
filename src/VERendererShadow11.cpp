@@ -53,6 +53,10 @@ namespace vve {
 			.maxImageDimension2D = std::min(m_vkState().m_physicalDeviceProperties.limits.maxImageDimension2D, SHADOW_MAX_MAPS_PER_ROW*SHADOW_MAP_DIMENSION),
 			.maxImageArrayLayers = std::min(m_vkState().m_physicalDeviceProperties.limits.maxImageArrayLayers, SHADOW_MAX_NUM_LAYERS)
 		};
+		if( m_vkState().m_physicalDeviceProperties.limits.maxImageArrayLayers >= MAX_NUMBER_LIGHTS*6) {
+			shadowImage.maxImageDimension2D = SHADOW_MAP_DIMENSION;
+			shadowImage.maxImageArrayLayers = MAX_NUMBER_LIGHTS*6;
+		}
 
 		m_shadowImageHandle = m_registry.Insert(shadowImage);
 		

@@ -12,6 +12,10 @@
 
 class MyGUI : public vve::System {
 
+	int nextRandom( int size, int mid ) {
+		return rand() % size - mid;
+	}
+
 public:
     MyGUI( vve::Engine& engine ) : vve::System("MyGUI", engine ) {
 
@@ -42,6 +46,27 @@ public:
 						vve::UVScale{ { 1000.0f, 1000.0f } }
 					);
 		m_engine.SendMessage(MsgObjectCreate{  vve::ObjectHandle(m_planeHandle), vve::ParentHandle{} });
+
+
+		m_engine.SendMessage( MsgSceneLoad{ vve::Filename{"assets/standard/sphere.obj"} });		
+
+		int num_point_lights = 10;
+		for( int i=0; i<num_point_lights; ++i) {
+			float intensity1 = 0.8f;
+			vh::Color color{ { 0.0f, 0.0f, 0.0f, 1.0f }, { 0.9f, 0.1f, 0.1f, 1.0f }, { 0.0f, 0.0f, 0.0f, 1.0f } };
+			auto lightHandle = m_registry.Insert(
+				vve::Name{"TestLight" + std::to_string(i)},
+				vve::PointLight{vh::LightParams{
+					glm::vec3(0.9f, 0.1f, 0.1f), glm::vec4(0.0f, intensity1, 10.0, 0.1f), glm::vec3(1.0f, 0.01f, 0.005f), 
+				}},
+				vve::Position{glm::vec3(0.0f, 10.0f, 10.0f)},
+				vve::Rotation{mat3_t{1.0f}},
+				vve::Scale{vec3_t{0.01f, 0.01f, 0.01f}}, 
+				color,
+				vve::MeshName{"assets/standard/sphere.obj/sphere"}
+			);
+		}
+
 
 		return false;
 	};
