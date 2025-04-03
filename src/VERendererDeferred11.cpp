@@ -38,7 +38,7 @@ namespace vve {
 					.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
 					.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT },
 				{	// Binding 4 : Light uniform buffer
-					.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
+					.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
 					.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT }
 			},
 			m_descriptorSetLayoutPerFrame);
