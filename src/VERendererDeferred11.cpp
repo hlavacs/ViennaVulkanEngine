@@ -70,7 +70,7 @@ namespace vve {
 		vh::BufCreateBuffers(m_vkState().m_physicalDevice, m_vkState().m_device, m_vkState().m_vmaAllocator, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, m_maxNumberLights * sizeof(vh::Light), m_uniformBuffersLights);
 		vh::RenUpdateDescriptorSet(m_vkState().m_device, m_uniformBuffersLights, 4, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, m_maxNumberLights * sizeof(vh::Light), m_descriptorSetPerFrame);
 
-		CreatePipelines();
+		//CreatePipelines();
 		return false;
 	}
 
@@ -90,6 +90,9 @@ namespace vve {
 		vh::ImgDestroyImage(m_vkState().m_device, m_vkState().m_vmaAllocator, m_positionImage.m_gbufferImage, m_positionImage.m_gbufferImageAllocation);
 		vh::ImgDestroyImage(m_vkState().m_device, m_vkState().m_vmaAllocator, m_normalsImage.m_gbufferImage, m_normalsImage.m_gbufferImageAllocation);
 		vh::ImgDestroyImage(m_vkState().m_device, m_vkState().m_vmaAllocator, m_albedoImage.m_gbufferImage, m_albedoImage.m_gbufferImageAllocation);
+		vkDestroyImageView(m_vkState().m_device, m_positionImage.m_gbufferImageView, nullptr);
+		vkDestroyImageView(m_vkState().m_device, m_normalsImage.m_gbufferImageView, nullptr);
+		vkDestroyImageView(m_vkState().m_device, m_albedoImage.m_gbufferImageView, nullptr);
 		vh::BufDestroyBuffer2(m_vkState().m_device, m_vkState().m_vmaAllocator, m_uniformBuffersLights);
 
 		vkDestroyDescriptorSetLayout(m_vkState().m_device, m_descriptorSetLayoutPerFrame, nullptr);
