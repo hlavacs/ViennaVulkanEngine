@@ -42,8 +42,9 @@ namespace vve {
 		Engine(std::string name, uint32_t apiVersion = c_maximumVersion, bool debug=false);
 		virtual ~Engine();
 		void RegisterSystem( std::unique_ptr<System>&& system );
-		void RegisterCallback( std::vector<MessageCallback> callbacks);
 		void DeregisterSystem( System* system );
+		void RegisterCallbacks( std::vector<MessageCallback> callbacks);
+		void DeregisterCallbacks(System* system, std::string messageName);
 		void Run();
 		void Stop();
 		void Init();
@@ -55,7 +56,7 @@ namespace vve {
 		auto SetHandle(std::string name, vecs::Handle h) -> void;
 		auto ContainsHandle(std::string name) -> bool;
 		auto GetRegistry() -> auto& { return m_registry; }
-		auto GetState() { return EngineState{m_name, m_apiVersion, m_debug, m_initialized, m_running}; }
+		auto GetState() { return EngineState{m_name, m_apiVersion, c_minimumVersion, c_maximumVersion, m_debug, m_initialized, m_running}; }
 		auto GetSystem(std::string name) -> System* { return m_systems[name].get(); }
 
 	protected:

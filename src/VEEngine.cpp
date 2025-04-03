@@ -8,7 +8,7 @@ namespace vve {
 	Engine::Engine(std::string name, uint32_t apiVersion, bool debug) : System(name, *this), m_apiVersion(apiVersion) {
 		if( VK_VERSION_MAJOR(apiVersion) == 1 && VK_VERSION_MINOR(apiVersion) < VK_VERSION_MINOR(c_minimumVersion)) {
 			std::cout << "Minimum VVE Vulkan API version is 1." << VK_VERSION_MINOR(c_minimumVersion) << "!\n";
-			exit(1);
+			m_apiVersion = c_minimumVersion;
 		}
 
 	#ifndef NDEBUG
@@ -21,11 +21,20 @@ namespace vve {
 	
 	Engine::~Engine() {};
 
-	void Engine::RegisterCallback( std::vector<MessageCallback> callbacks) {
+	void Engine::RegisterCallbacks( std::vector<MessageCallback> callbacks) {
 		for( auto& callback : callbacks ) {
 			assert(MsgTypeNames.contains(callback.m_messageName));
 			auto& pm = m_messageMap[std::hash<std::string>{}(callback.m_messageName)];
 			pm.insert({callback.m_phase, callback});
+		}
+	}
+
+	void Engine::DeregisterCallbacks(System* system, std::string messageName) {
+		auto& pm = m_messageMap[std::hash<std::string>{}(messageName)];
+		for (auto it = pm.begin(); it != pm.end();) {
+			if( it->second.m_system == system ) {
+				it = pm.erase(it);
+			} else ++it;
 		}
 	}
 
@@ -97,7 +106,7 @@ namespace vve {
 
 	void Engine::Step(){
 		auto now = std::chrono::high_resolution_clock::now();
-		double dt = std::chrono::duration_cast<std::chrono::duration<double>>(now - m_last).count();
+		double dt = std::chrono::duration<double, std::micro>(now - m_last).count() / 1'000'000.0;
 		m_last = now;
 
 		SendMessage( MsgFrameStart{dt} ) ;

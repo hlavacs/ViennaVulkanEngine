@@ -18,11 +18,12 @@ namespace vh {
 
         ImgCreateImage(physicalDevice, device, vmaAllocator, texWidth, texHeight, VK_FORMAT_R8G8B8A8_SRGB
             , VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT
+            , VK_IMAGE_LAYOUT_UNDEFINED
             , VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, texture.m_mapImage, texture.m_mapImageAllocation); 
-
+		
         ImgTransitionImageLayout(device, graphicsQueue, commandPool, texture.m_mapImage, VK_FORMAT_R8G8B8A8_SRGB
-            , VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
-			
+                , VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
+    
         BufCopyBufferToImage(device, graphicsQueue, commandPool, stagingBuffer, texture.m_mapImage
                  , static_cast<uint32_t>(texWidth), static_cast<uint32_t>(texHeight));
 
@@ -87,19 +88,19 @@ namespace vh {
     }
 
     void ImgCreateImage(VkPhysicalDevice physicalDevice, VkDevice device, VmaAllocator vmaAllocator, uint32_t width, uint32_t height
-        , VkFormat format, VkImageTiling tiling, VkImageUsageFlags usage, VkMemoryPropertyFlags properties
-        , VkImage& image, VmaAllocation& imageAllocation) {
+        , VkFormat format, VkImageTiling tiling, VkImageUsageFlags usage, VkImageLayout imageLayout
+        , VkMemoryPropertyFlags properties, VkImage& image, VmaAllocation& imageAllocation) {
 
         return ImgCreateImage2(physicalDevice, device, vmaAllocator, 
                     width, height, 1, 1, 1, 
-                    format, tiling, usage, properties, 
+                    format, tiling, usage, imageLayout, properties, 
                     image, imageAllocation);
     }
 
     void ImgCreateImage2(VkPhysicalDevice physicalDevice, VkDevice device, VmaAllocator vmaAllocator
         , uint32_t width, uint32_t height, uint32_t depth, uint32_t layers, uint32_t mipLevels
-        , VkFormat format, VkImageTiling tiling, VkImageUsageFlags usage, VkMemoryPropertyFlags properties
-        , VkImage& image, VmaAllocation& imageAllocation) {
+        , VkFormat format, VkImageTiling tiling, VkImageUsageFlags usage, VkImageLayout imageLayout
+        , VkMemoryPropertyFlags properties, VkImage& image, VmaAllocation& imageAllocation) {
 
         VkImageCreateInfo imageInfo{};
         imageInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
@@ -111,7 +112,7 @@ namespace vh {
         imageInfo.arrayLayers = layers;
         imageInfo.format = format;
         imageInfo.tiling = tiling;
-        imageInfo.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+        imageInfo.initialLayout = imageLayout;
         imageInfo.usage = usage;
         imageInfo.samples = VK_SAMPLE_COUNT_1_BIT;
         imageInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
@@ -151,8 +152,18 @@ namespace vh {
         vmaDestroyImage(vmaAllocator, image, imageAllocation);
     }
 
+
     void ImgTransitionImageLayout(VkDevice device, VkQueue graphicsQueue, VkCommandPool commandPool
-         , VkImage image, VkFormat format, VkImageLayout oldLayout, VkImageLayout newLayout) {
+        , VkImage image, VkFormat format, VkImageLayout oldLayout, VkImageLayout newLayout) {
+            ImgTransitionImageLayout2(device, graphicsQueue, commandPool, image, format
+                , VK_IMAGE_ASPECT_COLOR_BIT, 1, 1
+                , oldLayout, newLayout);
+    }
+
+    void ImgTransitionImageLayout2(VkDevice device, VkQueue graphicsQueue, VkCommandPool commandPool
+         , VkImage image, VkFormat format
+         , VkImageAspectFlags aspect, int numMipLevels, int numLayers
+         , VkImageLayout oldLayout, VkImageLayout newLayout) {
 
         VkCommandBuffer commandBuffer = ComBeginSingleTimeCommands(device, commandPool);
 
@@ -163,11 +174,11 @@ namespace vh {
         barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
         barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
         barrier.image = image;
-        barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+        barrier.subresourceRange.aspectMask = aspect;
         barrier.subresourceRange.baseMipLevel = 0;
-        barrier.subresourceRange.levelCount = 1;
+        barrier.subresourceRange.levelCount = numMipLevels;
         barrier.subresourceRange.baseArrayLayer = 0;
-        barrier.subresourceRange.layerCount = 1;
+        barrier.subresourceRange.layerCount = numLayers;
 
         VkPipelineStageFlags sourceStage;
         VkPipelineStageFlags destinationStage;
@@ -192,6 +203,11 @@ namespace vh {
             barrier.dstAccessMask = 0;
             sourceStage = 0;
             destinationStage = 0;
+        } else if(oldLayout == VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL && newLayout == VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL) {
+            barrier.srcAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+            barrier.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_READ_BIT;
+            sourceStage = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+            destinationStage = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
         } else {
             barrier.srcAccessMask = 0;
             barrier.dstAccessMask = 0;
@@ -278,35 +294,20 @@ namespace vh {
 			bufferData[4 * i + a] = ac;
 		}
 	}
+    
 
-
-    void ImgClearShadowMap(VkDevice device, VkQueue graphicsQueue, VkCommandPool commandPool, 
-            VmaAllocator vmaAllocator, vh::Map& map, float value) {
-
-        VkBuffer stagingBuffer;
-        VmaAllocation stagingBufferAllocation;
-        VmaAllocationInfo allocInfo;
-
-        /*BufCreateBuffer( vmaAllocator, map.m_size, VK_BUFFER_USAGE_TRANSFER_SRC_BIT
-            , VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT
-            , VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT | VMA_ALLOCATION_CREATE_MAPPED_BIT
-            , stagingBuffer, stagingBufferAllocation, &allocInfo);
-
-        for(uint32_t i=0; i<map.m_width*map.m_height; i++) { ((float*)allocInfo.pMappedData)[i] = value; });
-
-        ImgTransitionImageLayout(device, graphicsQueue, commandPool, texture.m_mapImage, VK_FORMAT_R8G8B8A8_SRGB
-            , VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
-			
-        BufCopyBufferToImage(device, graphicsQueue, commandPool, stagingBuffer, texture.m_mapImage
-                 , static_cast<uint32_t>(map.m_width), static_cast<uint32_t>(map.m_height));
-                 
-        ImgTransitionImageLayout(device, graphicsQueue, commandPool, texture.m_mapImage, VK_FORMAT_R8G8B8A8_SRGB
-            , VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
-
-        BufDestroyBuffer(device, vmaAllocator, stagingBuffer, stagingBufferAllocation);
-        */
+    void ImgPickDepthMapFormat( VkPhysicalDevice physicalDevice, const std::vector<VkFormat>& depthFormats, VkFormat& depthMapFormat ) {
+        for( auto format : depthFormats ) {
+            VkFormatProperties properties;
+            vkGetPhysicalDeviceFormatProperties(physicalDevice, format, &properties);
+            if( properties.optimalTilingFeatures & VK_FORMAT_FEATURE_SAMPLED_IMAGE_BIT &&
+                properties.linearTilingFeatures & VK_FORMAT_FEATURE_STORAGE_IMAGE_BIT
+                ) {
+                depthMapFormat = format;
+                break;
+            }
+        }
     }
-
 
 }
 

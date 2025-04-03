@@ -2,20 +2,24 @@
 #include <iostream>
 #include <utility>
 #include <stack>
-
+#include <time.h>
 
 #include "VHInclude.h"
 #include "VEInclude.h"
 
-#include "L2DFileDialog.h"
+//#include "L2DFileDialog.h"
 
 
 class MyGUI : public vve::System {
 
+	int nextRandom( int size, int mid ) {
+		return rand() % size - mid;
+	}
+
 public:
     MyGUI( vve::Engine& engine ) : vve::System("MyGUI", engine ) {
 
-		m_engine.RegisterCallback( { 
+		m_engine.RegisterCallbacks( { 
 			{this,      0, "LOAD_LEVEL", [this](Message& message){ return OnLoadLevel(message);} },
 			{this,      0, "UPDATE", [this](Message& message){ return OnUpdate(message);} },
 			{this, -10000, "RECORD_NEXT_FRAME", [this](Message& message){ return OnRecordNextFrame(message);} },
@@ -32,16 +36,37 @@ public:
 		std::cout << "Loading level: " << msg.m_level << std::endl;
 		std::string level = std::string("Level: ") + msg.m_level;
 
-		m_engine.SendMessage( MsgSceneLoad{ vve::Filename{"assets\\test\\plane\\plane_t_n_s.obj"}, aiProcess_FlipWindingOrder });
+		m_engine.SendMessage( MsgSceneLoad{ vve::Filename{"assets/test/plane/plane_t_n_s.obj"}, aiProcess_FlipWindingOrder });
 		m_planeHandle = m_registry.Insert( 
 						vve::Position{ {0.0f,0.0f,0.0f } }, 
 						vve::Rotation{ mat3_t { glm::rotate(glm::mat4(1.0f), 3.14152f / 2.0f, glm::vec3(1.0f,0.0f,0.0f)) }}, 
 						vve::Scale{vec3_t{1000.0f,1000.0f,1000.0f}}, 
-						vve::MeshName{"assets\\test\\plane\\plane_t_n_s.obj\\plane"},
-						vve::TextureName{"assets\\test\\plane\\grass.jpg"},
+						vve::MeshName{"assets/test/plane/plane_t_n_s.obj/plane"},
+						vve::TextureName{"assets/test/plane/grass.jpg"},
 						vve::UVScale{ { 1000.0f, 1000.0f } }
 					);
 		m_engine.SendMessage(MsgObjectCreate{  vve::ObjectHandle(m_planeHandle), vve::ParentHandle{} });
+
+
+		m_engine.SendMessage( MsgSceneLoad{ vve::Filename{"assets/standard/sphere.obj"} });		
+
+		int num_point_lights = 10;
+		for( int i=0; i<num_point_lights; ++i) {
+			float intensity1 = 0.8f;
+			vh::Color color{ { 0.0f, 0.0f, 0.0f, 1.0f }, { 0.9f, 0.1f, 0.1f, 1.0f }, { 0.0f, 0.0f, 0.0f, 1.0f } };
+			auto lightHandle = m_registry.Insert(
+				vve::Name{"TestLight" + std::to_string(i)},
+				vve::PointLight{vh::LightParams{
+					glm::vec3(0.9f, 0.1f, 0.1f), glm::vec4(0.0f, intensity1, 10.0, 0.1f), glm::vec3(1.0f, 0.01f, 0.005f), 
+				}},
+				vve::Position{glm::vec3(0.0f, 10.0f, 10.0f)},
+				vve::Rotation{mat3_t{1.0f}},
+				vve::Scale{vec3_t{0.01f, 0.01f, 0.01f}}, 
+				color,
+				vve::MeshName{"assets/standard/sphere.obj/sphere"}
+			);
+		}
+
 
 		return false;
 	};
@@ -67,21 +92,21 @@ public:
 			ImGui::PushItemWidth(300);
 			static char* file_dialog_buffer = nullptr;
 			{
-				static char path_obj[500] = "assets\\viking_room\\viking_room.obj";
+				static char path_obj[500] = "assets/viking_room/viking_room.obj";
 				ImGui::TextUnformatted("File: ");
 				ImGui::SameLine();
 				ImGui::InputText("##path1", path_obj, sizeof(path_obj));
 				ImGui::SameLine();
 				if (ImGui::Button("Browse##Browse1")) {
 				  file_dialog_buffer = path_obj;
-				  FileDialog::file_dialog_open = true;
-				  FileDialog::file_dialog_open_type = FileDialog::FileDialogType::OpenFile;
+				  //FileDialog::file_dialog_open = true;
+				  //FileDialog::file_dialog_open_type = FileDialog::FileDialogType::OpenFile;
 				}
 
 				ImGui::SameLine();
-				if (FileDialog::file_dialog_open) {
-				  FileDialog::ShowFileDialog(&FileDialog::file_dialog_open, file_dialog_buffer, sizeof(file_dialog_buffer), FileDialog::file_dialog_open_type);
-				}
+				//if (FileDialog::file_dialog_open) {
+				//  FileDialog::ShowFileDialog(&FileDialog::file_dialog_open, file_dialog_buffer, sizeof(file_dialog_buffer), FileDialog::file_dialog_open_type);
+				//}
 
 				static aiPostProcessSteps flags = aiProcess_Triangulate;
 				static bool checkbox = false;
@@ -101,21 +126,21 @@ public:
 			}
 
 			{
-				static char path_obj2[500] = "assets\\standard\\sphere.obj";
+				static char path_obj2[500] = "assets/standard/sphere.obj";
 				ImGui::TextUnformatted("File: ");
 				ImGui::SameLine();
 				ImGui::InputText("##path2", path_obj2, sizeof(path_obj2));
 				ImGui::SameLine();
 				if (ImGui::Button("Browse##Browse2")) {
 				  file_dialog_buffer = path_obj2;
-				  FileDialog::file_dialog_open = true;
-				  FileDialog::file_dialog_open_type = FileDialog::FileDialogType::OpenFile;
+				  //FileDialog::file_dialog_open = true;
+				  //FileDialog::file_dialog_open_type = FileDialog::FileDialogType::OpenFile;
 				}
 
 				ImGui::SameLine();
-				if (FileDialog::file_dialog_open) {
-				  FileDialog::ShowFileDialog(&FileDialog::file_dialog_open, file_dialog_buffer, sizeof(file_dialog_buffer), FileDialog::file_dialog_open_type);
-				}
+				//if (FileDialog::file_dialog_open) {
+				//  FileDialog::ShowFileDialog(&FileDialog::file_dialog_open, file_dialog_buffer, sizeof(file_dialog_buffer), FileDialog::file_dialog_open_type);
+				//}
 
 				static aiPostProcessSteps flags = aiProcess_Triangulate;
 				static bool checkbox = false;
@@ -127,8 +152,8 @@ public:
 	            if (ImGui::Button("Create##Create2")) {                          // Buttons return true when clicked (most widgets return true when edited/activated)		
 
 					m_engine.SendMessage( MsgSceneLoad{ vve::Filename{path_obj2}, flags });		
-					vh::Color color{ { 0.0f, 0.0f, 0.0f, 1.0f }, { 0.0f, 1.0f, 1.0f, 1.0f }, { 0.0f, 0.0f, 0.0f, 1.0f } };
-					auto handle = m_registry.Insert(vve::Position{ { x, y, 0.5f } }, vve::Rotation{mat3_t{1.0f}}, vve::Scale{vec3_t{0.05f}}, color, vve::MeshName{"assets\\standard\\sphere.obj\\sphere"} );
+					vh::Color color{ { 0.0f, 0.0f, 0.0f, 1.0f }, { 0.2f, 0.2f, 0.2f, 1.0f }, { 0.0f, 0.0f, 0.0f, 1.0f } };
+					auto handle = m_registry.Insert(vve::Position{ { x, y, 0.5f } }, vve::Rotation{mat3_t{1.0f}}, vve::Scale{vec3_t{0.05f}}, color, vve::MeshName{"assets/standard/sphere.obj/sphere"} );
 					m_handles.push( handle );
 
 					m_engine.SendMessage(MsgObjectCreate{  vve::ObjectHandle(handle), vve::ParentHandle{} });
@@ -138,20 +163,20 @@ public:
 			}
 
 			{
-				static char path_obj3[500] = "assets\\test\\cube1.obj";
+				static char path_obj3[500] = "assets/test/cube1.obj";
 				ImGui::TextUnformatted("File: ");
 				ImGui::SameLine();
 				ImGui::InputText("##path3", path_obj3, sizeof(path_obj3));
 				ImGui::SameLine();
 				if (ImGui::Button("Browse##Browse3")) {
 				  file_dialog_buffer = path_obj3;
-				  FileDialog::file_dialog_open = true;
-				  FileDialog::file_dialog_open_type = FileDialog::FileDialogType::OpenFile;
+				  //FileDialog::file_dialog_open = true;
+				  //FileDialog::file_dialog_open_type = FileDialog::FileDialogType::OpenFile;
 				}
 
-				if (FileDialog::file_dialog_open) {
-				  FileDialog::ShowFileDialog(&FileDialog::file_dialog_open, file_dialog_buffer, sizeof(file_dialog_buffer), FileDialog::file_dialog_open_type);
-				}
+				//if (FileDialog::file_dialog_open) {
+				//  FileDialog::ShowFileDialog(&FileDialog::file_dialog_open, file_dialog_buffer, sizeof(file_dialog_buffer), FileDialog::file_dialog_open_type);
+				//}
 
 				static aiPostProcessSteps flags = aiProcess_Triangulate;
 				static bool checkbox = true;

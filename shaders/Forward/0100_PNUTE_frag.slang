@@ -15,13 +15,10 @@ struct CoarseVertex {
 ConstantBuffer<UniformBufferFrame> gParamsFrame;
 
 [[vk::binding(1, 0)]]
-ConstantBuffer<Light[MAX_LIGHTS]> gLights;
+StructuredBuffer<Light> gLights;
 
 [[vk::binding(2, 0)]]
-Texture2DArray shadowMapArray[MAX_LIGHTS]; // shadow maps for the lights
-
-[[vk::binding(3, 0)]]
-SamplerState shadowSampler; // shadow map sampler
+Sampler2DArray<uint, 1> shadowMapImage; // shadow maps for the lights
 
 //----------------------------------------------------------------------------
 
@@ -35,6 +32,11 @@ Sampler2D texSampler;
 
 //----------------------------------------------------------------------------
 
+[[vk::push_constant]]
+LightOffset offset;
+
+//----------------------------------------------------------------------------
+
 [shader("fragment")]
 float4 fragmentMain(CoarseVertex cv : CoarseVertex) : SV_Target 
 {
@@ -42,8 +44,8 @@ float4 fragmentMain(CoarseVertex cv : CoarseVertex) : SV_Target
     uint3 numberLights = gParamsFrame.numberLights;
 
     float4 tex = texSampler.Sample(cv.uv);
-    float3 l = calculateLighting(gLights, numberLights, cv.normalW, camera.positionW, cv.positionW);
-    return float4( tex.xyz*l, tex.w );
+    float3 l = calculateLighting(gLights, numberLights, offset, cv.normalW, camera.positionW, cv.positionW);
+    return float4( tex.rgb * l, 1 );
 }
 
 

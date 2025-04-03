@@ -2,6 +2,9 @@
 
 namespace vve
 {
+
+	static const uint32_t MAX_NUMBER_LIGHTS = 128;
+
     class RendererForward11 : public Renderer {
 
 		friend class RendererForward;
@@ -24,6 +27,8 @@ namespace vve
 		bool OnObjectDestroy( Message message );
         bool OnQuit(Message message);
 		void CreatePipelines();
+		template<typename T>
+		int RegisterLight(float type, std::vector<vh::Light>& lights, int& i);
 
 		static const int size_pos = sizeof(glm::vec3);
 		static const int size_nor = sizeof(glm::vec3);
@@ -40,17 +45,17 @@ namespace vve
 		std::string getPipelineType(ObjectHandle handle, vh::VertexData &vertexData);
 
 		//parameters per frame
-		vh::UniformBuffers m_uniformBuffersPerFrame;
-		vh::UniformBuffers m_uniformBuffersLights;
+		vh::Buffer m_uniformBuffersPerFrame;
+		vh::Buffer m_uniformBuffersLights;
 		VkDescriptorSetLayout m_descriptorSetLayoutPerFrame;
 		vh::DescriptorSet m_descriptorSetPerFrame{0};
 		std::map<int, PipelinePerType> m_pipelinesPerType;
+	    VkRenderPass m_renderPassClear;
 	    VkRenderPass m_renderPass;
 	    VkDescriptorPool m_descriptorPool;    
-	    VkCommandPool m_commandPool;
-	    std::vector<VkCommandBuffer> m_commandBuffers;
+		std::vector<VkCommandPool> m_commandPools;
 
-		size_t m_maxNumberLights{16};
+		int m_pass;
 		glm::ivec3 m_numberLightsPerType{0,0,0};
     };
 

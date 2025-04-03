@@ -65,7 +65,9 @@ namespace vve {
 #include <stb_image.h>
 #include <stb_image_write.h>
 
-#include "Volk/volk.h"
+#include "volk.h"
+
+#include <VkBootstrap.h>
 
 #include "vma/vk_mem_alloc.h"
 

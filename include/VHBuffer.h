@@ -8,9 +8,12 @@ namespace vh {
         , VmaAllocationCreateFlags vmaFlags, VkBuffer& buffer
         , VmaAllocation& allocation, VmaAllocationInfo* allocationInfo = nullptr);
 
+    void BufCreateBuffers( VkPhysicalDevice physicalDevice, VkDevice device, VmaAllocator& vmaAllocator, 
+        VkBufferUsageFlags usage, VkDeviceSize bufferSize, Buffer &uniformBuffers);
+        
     void BufDestroyBuffer(VkDevice device, VmaAllocator vmaAllocator, VkBuffer buffer, VmaAllocation& allocation);
 
-    void BufDestroyBuffer2(VkDevice device, VmaAllocator vmaAllocator, UniformBuffers buffers);
+    void BufDestroyBuffer2(VkDevice device, VmaAllocator vmaAllocator, Buffer buffers);
 
     void BufCopyBuffer(VkDevice device, VkQueue graphicsQueue, VkCommandPool commandPool, VkBuffer srcBuffer, VkBuffer dstBuffer, VkDeviceSize size);
 
@@ -27,8 +30,6 @@ namespace vh {
     void BufCreateIndexBuffer(VkPhysicalDevice physicalDevice, VkDevice device, VmaAllocator vmaAllocator
         , VkQueue graphicsQueue, VkCommandPool commandPool, Mesh& geometry);
 
-    void BufCreateUniformBuffers(VkPhysicalDevice physicalDevice, VkDevice device, VmaAllocator& vmaAllocator, 
-		VkDeviceSize bufferSize, UniformBuffers &uniformBuffers);
-        
+  
 
 }; // namespace vh

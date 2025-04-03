@@ -8,3 +8,6 @@ cd build
 cmake --build . --config %CMAKE_BUILD_TYPE%
 doxygen
 cd ..
+
+rem run game from project directory!
+rem build\examples\game\%CMAKE_BUILD_TYPE%\game.exe

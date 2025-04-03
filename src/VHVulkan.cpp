@@ -37,7 +37,7 @@
 #include <stb_image_write.h>
 
 #define VOLK_IMPLEMENTATION
-#include "Volk/volk.h"
+#include "volk/volk.h"
 
 #define VMA_IMPLEMENTATION
 #include "vma/vk_mem_alloc.h"
@@ -55,8 +55,8 @@ namespace vh
     const uint32_t WIDTH = 800;
     const uint32_t HEIGHT = 600;
     
-    const std::string MODEL_PATH   = "assets\\models\\viking_room.obj";
-    const std::string TEXTURE_PATH = "assets\\textures\\viking_room.png";
+    const std::string MODEL_PATH   = "assets/models/viking_room.obj";
+    const std::string TEXTURE_PATH = "assets/textures/viking_room.png";
     
 	extern VkInstance volkInstance;
 
@@ -68,6 +68,7 @@ namespace vh
         std::ifstream file(filename, std::ios::ate | std::ios::binary);
 
         if (!file.is_open()) {
+            std::cout << "failed to open file: " << filename << std::endl;
             throw std::runtime_error("failed to open file!");
         }
 
@@ -98,10 +99,7 @@ namespace vh
         io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;      // Enable Gamepad Controls
         //io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;         // IF using Docking Branch
 
-        ImGui_ImplVulkan_LoadFunctions( VK_API_VERSION_1_0, &VulLoadVolk );
-        //ImGui_ImplVulkan_LoadFunctions( VK_API_VERSION_1_0,
-        //    [](const char* function_name) {return (void*)vkGetInstanceProcAddr(volkInstance, function_name); }
-        //);
+        ImGui_ImplVulkan_LoadFunctions( VK_API_VERSION_1_1, &VulLoadVolk );
 
         // Setup Platform/Renderer backends
         ImGui_ImplSDL2_InitForVulkan(sdlWindow);

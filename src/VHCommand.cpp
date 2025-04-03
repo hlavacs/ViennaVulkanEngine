@@ -53,7 +53,7 @@ namespace vh {
 
 
     void ComCreateCommandBuffers(VkDevice device, VkCommandPool commandPool, std::vector<VkCommandBuffer>& commandBuffers) {
-        commandBuffers.resize(MAX_FRAMES_IN_FLIGHT);
+        if(commandBuffers.size() == 0) commandBuffers.resize(2);
 
         VkCommandBufferAllocateInfo allocInfo{};
         allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
@@ -86,7 +86,7 @@ namespace vh {
 
 		std::array<VkClearValue, 2> clearValues{};
 		if( clear) {
-	        clearValues[0].color = {{clearColor.r, clearColor.g, clearColor.b, 1.0f}};  
+	        clearValues[0].color = {{clearColor.r, clearColor.g, clearColor.b, clearColor.w}};  
 	        clearValues[1].depthStencil = {1.0f, 0};
 
 	        renderPassInfo.clearValueCount = static_cast<uint32_t>(clearValues.size());
@@ -98,9 +98,10 @@ namespace vh {
 
 	void ComBindPipeline(VkCommandBuffer commandBuffer, uint32_t imageIndex
         , SwapChain& swapChain, VkRenderPass renderPass, Pipeline& graphicsPipeline
-        , bool clear, glm::vec4 clearColor, uint32_t currentFrame) {
-
-        vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsPipeline.m_pipeline);
+        , std::vector<VkViewport> viewPorts, std::vector<VkRect2D> scissors
+        , std::array<float,4>& blendConstants
+        , std::vector<PushConstants> pushConstants
+        , uint32_t currentFrame) {
 
         VkViewport viewport{};
         viewport.x = 0.0f;
@@ -109,12 +110,22 @@ namespace vh {
         viewport.height = (float) swapChain.m_swapChainExtent.height;
         viewport.minDepth = 0.0f;
         viewport.maxDepth = 1.0f;
-        vkCmdSetViewport(commandBuffer, 0, 1, &viewport);
+        if(viewPorts.size() == 0) viewPorts.push_back(viewport);
+        vkCmdSetViewport(commandBuffer, 0, viewPorts.size(), viewPorts.data());
   
         VkRect2D scissor{};
         scissor.offset = {0, 0};
         scissor.extent = swapChain.m_swapChainExtent;
-        vkCmdSetScissor(commandBuffer, 0, 1, &scissor);
+        if(scissors.size() == 0) scissors.push_back(scissor);
+        vkCmdSetScissor(commandBuffer, 0, scissors.size(), scissors.data());
+
+        vkCmdSetBlendConstants(commandBuffer, &blendConstants[0]);
+
+        for( auto& pc : pushConstants ) {
+            vkCmdPushConstants(commandBuffer, pc.layout, pc.stageFlags, pc.offset, pc.size, pc.pValues);
+        }
+
+        vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsPipeline.m_pipeline);
 	}
 
     void ComEndRecordCommandBuffer(VkCommandBuffer commandBuffer) {
@@ -142,41 +153,48 @@ namespace vh {
 	}
 
 	void ComSubmitCommandBuffers(VkDevice device, VkQueue graphicsQueue, std::vector<VkCommandBuffer>& commandBuffers, 
-		std::vector<VkSemaphore>& imageAvailableSemaphores, std::vector<Semaphores>& semaphores, VkSemaphore& signalSemaphore,
+		std::vector<VkSemaphore>& imageAvailableSemaphores, 
+		std::vector<VkSemaphore>& renderFinishedSemaphores, 
+        std::vector<Semaphores>& intermediateSemaphores, 
 		std::vector<VkFence>& fences, uint32_t currentFrame) {
 
 		size_t size = commandBuffers.size();
-		if( size > semaphores.size() ) {
-			vh::SynCreateSemaphores(device, size, imageAvailableSemaphores, semaphores);
+		if( size > intermediateSemaphores.size() ) {
+			vh::SynCreateSemaphores(device, imageAvailableSemaphores, renderFinishedSemaphores, size, intermediateSemaphores);
 		}
 
         vkResetFences(device, 1, &fences[currentFrame]);
 
-		VkSemaphore waitSemaphore = imageAvailableSemaphores[currentFrame];
-
+		VkSemaphore* waitSemaphore = &imageAvailableSemaphores[currentFrame];
+		std::vector<VkSubmitInfo> submitInfos(commandBuffers.size());
+	    VkPipelineStageFlags waitStages[] = {VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT};
+		VkFence fence = VK_NULL_HANDLE;
+         
 		for( int i = 0; i < size; i++ ) {
-			VkCommandBuffer commandBuffer = commandBuffers[i];
-			signalSemaphore = semaphores[i].m_renderFinishedSemaphores[currentFrame];
-			VkSubmitInfo submitInfo{};
-	        submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
-	        VkPipelineStageFlags waitStages[] = {VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT};
-	        submitInfo.waitSemaphoreCount = 1;
-	        submitInfo.pWaitSemaphores = &waitSemaphore;
-	        submitInfo.pWaitDstStageMask = waitStages;
-	        submitInfo.commandBufferCount = 1;
-	        submitInfo.pCommandBuffers = &commandBuffer;
-	        submitInfo.signalSemaphoreCount = 1;
-	        submitInfo.pSignalSemaphores = &signalSemaphore;
-			VkFence fence = VK_NULL_HANDLE;
-			if( i== size-1 ) fence = fences[currentFrame];
-	        if (vkQueueSubmit(graphicsQueue, 1, &submitInfo, fence) != VK_SUCCESS) {
-	            throw std::runtime_error("failed to submit draw command buffer!");
-	        }
-			waitSemaphore = signalSemaphore;
+            submitInfos[i].sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+	        submitInfos[i].commandBufferCount = 1;
+	        submitInfos[i].pCommandBuffers = &commandBuffers[i];
+	        
+            submitInfos[i].waitSemaphoreCount = 1;
+	        submitInfos[i].pWaitSemaphores = waitSemaphore;
+	        submitInfos[i].pWaitDstStageMask = waitStages;
+	        
+            VkSemaphore* signalSemaphore = &intermediateSemaphores[i].m_renderFinishedSemaphores[currentFrame];
+			if( i== size-1 ) {
+                fence = fences[currentFrame];
+                signalSemaphore = &renderFinishedSemaphores[currentFrame];
+            }
+            submitInfos[i].signalSemaphoreCount = 1;
+	        submitInfos[i].pSignalSemaphores = signalSemaphore;
+
+			waitSemaphore = &intermediateSemaphores[i].m_renderFinishedSemaphores[currentFrame];
 		}
+  	    if (vkQueueSubmit(graphicsQueue, submitInfos.size(), submitInfos.data(), fence) != VK_SUCCESS) {
+	        throw std::runtime_error("failed to submit draw command buffer!");
+	    }
 	}
 
-	VkResult ComPresentImage(VkQueue presentQueue, SwapChain swapChain, uint32_t imageIndex, VkSemaphore signalSemaphore) {
+	VkResult ComPresentImage(VkQueue presentQueue, SwapChain swapChain, uint32_t& imageIndex, VkSemaphore& signalSemaphore) {
         VkPresentInfoKHR presentInfo{};
         presentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
         presentInfo.waitSemaphoreCount = 1;

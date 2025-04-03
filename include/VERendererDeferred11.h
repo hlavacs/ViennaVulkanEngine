@@ -15,9 +15,9 @@ namespace vve {
 		bool OnQuit(Message message);
 		void CreatePipelines();
 
-		vh::UniformBuffers m_uniformBuffersPerFrame{};
+		vh::Buffer m_uniformBuffersPerFrame{};
 		// TODO: might need a SSBO for many lights
-		vh::UniformBuffers m_uniformBuffersLights{};
+		vh::Buffer m_uniformBuffersLights{};
 
 		// TODO: Maybe make GBufferAttachment struct for better alignment
 		VkSampler m_sampler{ VK_NULL_HANDLE };

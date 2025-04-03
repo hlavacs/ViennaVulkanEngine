@@ -11,7 +11,7 @@ namespace vve {
 	//Scene Manager class
 	
     SceneManager::SceneManager(std::string systemName, Engine& engine ) : System{systemName, engine } {
-		engine.RegisterCallback( { 
+		engine.RegisterCallbacks( { 
 			{this,  						  2000,	"INIT", [this](Message& message){ return OnInit(message);} },
 			{this,      						 0, "LOAD_LEVEL", [this](Message& message){ return OnLoadLevel(message);} },
 			{this,  							 0, "WINDOW_SIZE", [this](Message& message){ return OnWindowSize(message);} },
@@ -70,14 +70,14 @@ namespace vve {
 
     bool SceneManager::OnLoadLevel(Message message) {
 
-		vh::Color color{ { 0.0f, 0.0f, 0.0f, 1.0f }, { 1.0f, 1.0f, 0.0f, 1.0f }, { 0.0f, 0.0f, 0.0f, 1.0f } };
-		m_engine.SendMessage( MsgSceneLoad{ vve::Filename{"assets\\standard\\sphere.obj"} });		
+		vh::Color color{ { 0.0f, 0.0f, 0.0f, 1.0f }, { 0.9f, 0.1f, 0.1f, 1.0f }, { 0.0f, 0.0f, 0.0f, 1.0f } };
+		m_engine.SendMessage( MsgSceneLoad{ vve::Filename{"assets/standard/sphere.obj"} });		
 		
 		float intensity1 = 0.8f;
 		auto lightHandle = m_registry.Insert(
 			Name{"Light1"},
 			PointLight{vh::LightParams{
-				glm::vec3(0.8f, 0.8f, 0.8f), glm::vec4(0.0f, intensity1, 10.0, 0.1f), glm::vec3(1.0f, 0.01f, 0.005f), 
+				glm::vec3(0.9f, 0.1f, 0.1f), glm::vec4(0.0f, intensity1, 10.0, 0.1f), glm::vec3(1.0f, 0.01f, 0.005f), 
 			}},
 			Position{glm::vec3(0.0f, 10.0f, 10.0f)},
 			Rotation{mat3_t{1.0f}},
@@ -85,7 +85,7 @@ namespace vve {
 			LocalToParentMatrix{mat4_t{1.0f}}, 
 			LocalToWorldMatrix{mat4_t{1.0f}},
 			color,
-			vve::MeshName{"assets\\standard\\sphere.obj\\sphere"}
+			vve::MeshName{"assets/standard/sphere.obj/sphere"}
 		);
 		SetParent( ObjectHandle{lightHandle}, ParentHandle{m_rootHandle} );
 		m_engine.SendMessage(MsgObjectCreate{ vve::ObjectHandle(lightHandle), vve::ParentHandle{}, this });
@@ -94,7 +94,7 @@ namespace vve {
 		auto lightHandle2 = m_registry.Insert(
 			Name{"Light2"},
 			DirectionalLight{vh::LightParams{
-				glm::vec3(0.8f, 0.8f, 0.8f), glm::vec4(0.0f, intensity2, 10.0, 0.1f), glm::vec3(1.0f, 0.01f, 0.005f), 
+				glm::vec3(0.1f, 0.5f, 0.1f), glm::vec4(0.0f, intensity2, 10.0, 0.1f), glm::vec3(1.0f, 0.01f, 0.005f), 
 			}},
 			Position{glm::vec3(10.0f, 10.0f, 10.0f)},
 			Rotation{mat3_t{glm::rotate(glm::mat4(1.0f), -3.14152f / 10.0f, glm::vec3(1.0f,0.0f,0.0f)) }},
@@ -104,12 +104,12 @@ namespace vve {
 		);
 		SetParent( ObjectHandle{lightHandle2}, ParentHandle{m_rootHandle} );
 
-		vh::Color color3{ { 0.0f, 0.0f, 0.0f, 1.0f }, { 1.0f, 0.3f, 0.3f, 1.0f }, { 0.0f, 0.0f, 0.0f, 1.0f } };
-		float intensity3 = 0.8f;
+		vh::Color color3{ { 0.0f, 0.0f, 0.0f, 1.0f }, { 0.1f, 0.1f, 0.9f, 1.0f }, { 0.0f, 0.0f, 0.0f, 1.0f } };
+		float intensity3 = 0.9f;
 		auto lightHandle3 = m_registry.Insert(
 			Name{"Light3"},
 			SpotLight{vh::LightParams{
-				glm::vec3(0.8f, 0.8f, 0.8f), glm::vec4(0.0f, intensity3, 10.0, 0.1f), glm::vec3(1.0f, 0.01f, 0.005f), 
+				glm::vec3(0.5f, 0.5f, 0.9f), glm::vec4(0.0f, intensity3, 10.0, 0.1f), glm::vec3(1.0f, 0.01f, 0.005f), 
 			}},
 			Position{glm::vec3(20.0f, -10.0f, 10.0f)},
 			Rotation{mat3_t{glm::rotate(glm::mat4(1.0f), -3.14152f / 5.0f, glm::vec3(1.0f,0.0f,0.0f)) }},
@@ -117,7 +117,7 @@ namespace vve {
 			LocalToParentMatrix{mat4_t{1.0f}}, 
 			LocalToWorldMatrix{mat4_t{1.0f}},
 			color3,
-			vve::MeshName{"assets\\standard\\sphere.obj\\sphere"}
+			vve::MeshName{"assets/standard/sphere.obj/sphere"}
 		);
 		SetParent( ObjectHandle{lightHandle3}, ParentHandle{m_rootHandle} );
 		m_engine.SendMessage(MsgObjectCreate{ vve::ObjectHandle(lightHandle3), vve::ParentHandle{}, this });
@@ -227,13 +227,13 @@ namespace vve {
 
 		if ( node->mNumMeshes > 0) {
 		    auto mesh = scene->mMeshes[node->mMeshes[0]];
-			m_registry.Put(nHandle, MeshName{(filepath / mesh->mName.C_Str()).string()});
+			m_registry.Put(nHandle, MeshName{(filepath.string() + "/" + mesh->mName.C_Str())});
 			
 			auto material = scene->mMaterials[mesh->mMaterialIndex];
 		    aiString texturePath;
 			std::string texturePathStr{};
 		    if (material->GetTexture(aiTextureType_DIFFUSE, 0, &texturePath) == AI_SUCCESS) {
-				texturePathStr = (directory / std::string{texturePath.C_Str()}).string();
+				texturePathStr = (directory.string() + "/" + std::string{texturePath.C_Str()});
 		        std::cout << "Diffuse Texture: " << texturePathStr << std::endl;
 				m_registry.Put(nHandle, TextureName{texturePathStr});
 			}

@@ -24,17 +24,17 @@ namespace vve {
 		auto iterEnd = view.end();
 		if( !(iterBegin != iterEnd)) {
 			m_vulkanStateHandle = m_registry.Insert(VulkanState{});
-			m_vulkanState = m_registry.template Get<VulkanState&>(m_vulkanStateHandle);
+			m_vkState = m_registry.template Get<VulkanState&>(m_vulkanStateHandle);
 			return false;
 		}
 		auto [handleV, stateV] = *iterBegin;
 		m_vulkanStateHandle = handleV;
-		m_vulkanState = stateV;
+		m_vkState = stateV;
 		return false;
 	}
 
 	void Renderer::SubmitCommandBuffer( VkCommandBuffer commandBuffer ) { 
-		m_vulkanState().m_commandBuffersSubmit.push_back(commandBuffer); 
+		m_vkState().m_commandBuffersSubmit.push_back(commandBuffer); 
 	};
 
 };  // namespace vve

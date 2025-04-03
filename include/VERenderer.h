@@ -32,6 +32,7 @@ namespace vve {
 		VkQueue 		m_presentQueue{VK_NULL_HANDLE};
 		vh::SwapChain 	m_swapChain;
 		vh::DepthImage 	m_depthImage;
+		VkFormat		m_depthMapFormat{VK_FORMAT_UNDEFINED};
 		VkCommandPool 	m_commandPool{VK_NULL_HANDLE};
 		std::vector<VkCommandBuffer> m_commandBuffersSubmit;
 
@@ -56,7 +57,7 @@ namespace vve {
 		vecs::Ref<WindowState> 		m_windowState{};
 		vecs::Ref<WindowSDLState> 	m_windowSDLState{};
 		vecs::Handle 				m_vulkanStateHandle{};
-		vecs::Ref<VulkanState> 		m_vulkanState{};
+		vecs::Ref<VulkanState> 		m_vkState{};
     };
 
 };   // namespace vve

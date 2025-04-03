@@ -8,9 +8,15 @@ namespace vh {
 
 	void SynDestroyFences(VkDevice device, std::vector<VkFence>& fences);
 
-    void SynCreateSemaphores(VkDevice device, size_t size, std::vector<VkSemaphore>& imageAvailableSemaphores, std::vector<Semaphores>& renderFinishedSemaphores);
+    void SynCreateSemaphores(VkDevice device, 
+		std::vector<VkSemaphore>& imageAvailableSemaphores, 
+		std::vector<VkSemaphore>& renderFinishedSemaphores, 
+		size_t size, std::vector<Semaphores>& intermediateSemaphores );
 
-    void SynDestroySemaphores(VkDevice device, std::vector<VkSemaphore>& imageAvailableSemaphores, std::vector<Semaphores>& semaphores);
+    void SynDestroySemaphores(VkDevice device, 
+		std::vector<VkSemaphore>& imageAvailableSemaphores, 
+		std::vector<VkSemaphore>& renderFinishedSemaphores, 
+		std::vector<Semaphores>& intermediateSemaphores);
 
     
 

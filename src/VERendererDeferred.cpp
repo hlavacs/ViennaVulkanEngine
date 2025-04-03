@@ -8,7 +8,7 @@ namespace vve {
 		: Renderer(systemName, engine, windowName) {
 
 		// TODO engine.RegisterCallback -> register Callbacks
-		engine.RegisterCallback({
+		engine.RegisterCallbacks({
 			{this, 3000, "INIT", [this](Message& message) { return OnInit(message); } }
 			});
 	}

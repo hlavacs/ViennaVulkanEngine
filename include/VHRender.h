@@ -3,11 +3,9 @@
 
 namespace vh {
 
-   	void RenCreateRenderPassClear(VkPhysicalDevice physicalDevice, VkDevice device, SwapChain& swapChain, bool clear, VkRenderPass& renderPass);
-
     void RenCreateRenderPass(VkPhysicalDevice physicalDevice, VkDevice device, SwapChain& swapChain, bool clear, VkRenderPass& renderPass);
 
-    void RenCreateRenderPassGeometry(VkPhysicalDevice physicalDevice, VkDevice device, SwapChain& swapChain, VkRenderPass& renderPass);
+    void RenCreateRenderPassGeometry(VkPhysicalDevice physicalDevice, VkDevice device, SwapChain& swapChain, bool clear, VkRenderPass& renderPass);
 
     void RenCreateDescriptorSetLayout(VkDevice device, const std::vector<VkDescriptorSetLayoutBinding>& bindings, VkDescriptorSetLayout& descriptorSetLayouts);
 
@@ -15,19 +13,22 @@ namespace vh {
 
     void RenCreateDescriptorSet(VkDevice device, VkDescriptorSetLayout& descriptorSetLayouts, VkDescriptorPool descriptorPool, DescriptorSet& descriptorSet);
 
-    void RenUpdateDescriptorSetUBO(VkDevice device, UniformBuffers& uniformBuffers, size_t binding, size_t size, DescriptorSet& descriptorSet);
+    void RenUpdateDescriptorSet(VkDevice device, Buffer& uniformBuffers, size_t binding, VkDescriptorType type, size_t size, DescriptorSet& descriptorSet);
+
     void RenUpdateDescriptorSetTexture(VkDevice device, Map& texture, size_t binding, DescriptorSet& descriptorSet);
     void RenUpdateDescriptorSetGBufferAttachment(VkDevice device, GBufferImage& gbufferImage, size_t binding, DescriptorSet& descriptorSet);
 
     VkShaderModule RenCreateShaderModule(VkDevice device, const std::vector<char>& code);
 
     void RenCreateGraphicsPipeline(VkDevice device, VkRenderPass renderPass, 
-		std::string vertShaderPath, std::string fragShaderPath,
-		std::vector<VkVertexInputBindingDescription> bindingDescription, 
-		std::vector<VkVertexInputAttributeDescription> attributeDescriptions,
-		std::vector<VkDescriptorSetLayout> descriptorSetLayout,
-		std::vector<int32_t> specializationConstants,
-		Pipeline& graphicsPipeline);
+  		std::string vertShaderPath, std::string fragShaderPath,
+  		std::vector<VkVertexInputBindingDescription> bindingDescription, 
+  		std::vector<VkVertexInputAttributeDescription> attributeDescriptions,
+  		std::vector<VkDescriptorSetLayout> descriptorSetLayout,
+  		std::vector<int32_t> specializationConstants,
+      std::vector<VkPushConstantRange> pushConstantRanges,
+      std::vector<VkPipelineColorBlendAttachmentState> blendAttachments,
+  		Pipeline& graphicsPipeline);
 
     void RenCreateFramebuffers(VkDevice device, SwapChain& swapChain, DepthImage& depthImage, VkRenderPass renderPass);
 

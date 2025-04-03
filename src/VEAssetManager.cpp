@@ -8,7 +8,7 @@ namespace vve {
 	//-------------------------------------------------------------------------------------------------------
 
     AssetManager::AssetManager(std::string systemName, Engine& engine ) : System{systemName, engine } {
-		engine.RegisterCallback( { 
+		engine.RegisterCallbacks( { 
 			{this,                               0, "SCENE_LOAD", [this](Message& message){ return OnSceneLoad(message);} },
 			{this,                               0, "SCENE_CREATE", [this](Message& message){ return OnSceneCreate(message);} },
 			{this, std::numeric_limits<int>::max(), "SCENE_CREATE", [this](Message& message){ return OnSceneCreate(message);} },
@@ -69,13 +69,13 @@ namespace vve {
 
 		    aiString texturePath;
 		    if (material->GetTexture(aiTextureType_DIFFUSE, 0, &texturePath) == AI_SUCCESS) {
-				auto texturePathStr = directory / std::string{texturePath.C_Str()};
-		        std::cout << "Diffuse Texture: " << texturePathStr.string() << std::endl;	
+				auto texturePathStr = directory.string() + "/" + std::string{texturePath.C_Str()};
+		        std::cout << "Diffuse Texture: " << texturePathStr << std::endl;	
 				
-				auto tHandle = TextureHandle{m_registry.Insert(Name{texturePathStr.string()})};
+				auto tHandle = TextureHandle{m_registry.Insert(Name{texturePathStr})};
 				auto pixels = LoadTexture(tHandle);
 				if( pixels != nullptr) m_engine.SendMessage( MsgTextureCreate{tHandle, this } );
-				m_fileNameMap.insert( std::make_pair(filepath, (Name{texturePathStr.string()})) );
+				m_fileNameMap.insert( std::make_pair(filepath, (Name{texturePathStr})) );
 		    }
 		}
 
@@ -84,7 +84,7 @@ namespace vve {
 		    aiMesh* mesh = scene->mMeshes[i];
 			assert(mesh->HasPositions() && mesh->HasNormals());
 
-			Name name{ (filepath / mesh->mName.C_Str()).string()};
+			Name name{ (filepath.string() + "/" + mesh->mName.C_Str())};
 		    std::cout << "Mesh " << i << " " << name() << " has " << mesh->mNumVertices << " vertices." << std::endl;
 			if( m_engine.ContainsHandle(name) ) continue;
 
@@ -184,7 +184,7 @@ namespace vve {
         if (!pixels) { return nullptr; }
 
 		m_engine.SetHandle(fileName(), tHandle );
-		m_registry.Put(tHandle, vh::Map{texWidth, texHeight, imageSize, pixels});
+		m_registry.Put(tHandle, vh::Map{texWidth, texHeight, 1, imageSize, pixels});
 		return pixels;
 	}
 

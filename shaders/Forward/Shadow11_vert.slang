@@ -1,12 +1,10 @@
 import Common;
 
-struct CoarseVertex {
-    float3 positionW : POSITION;
-};
-
-struct VertexStageOutput {
-    float3 positionW : POSITION;
-    float4 sv_position  : SV_Position;
+struct VS_OUTPUT
+{
+    float4 position : SV_Position;
+    uint viewportIndex : SV_ViewportArrayIndex;
+    uint renderTargetIndex : SV_RenderTargetArrayIndex;
 };
 
 // binding B,S means that the resource is bound to binding B, set S
@@ -15,6 +13,9 @@ struct VertexStageOutput {
 
 [[vk::binding(0,0)]]
 ConstantBuffer<UniformBufferFrame> gParamsFrame;
+
+[[vk::binding(1, 0)]]
+StructuredBuffer<ShadowIndex> gShadowIndex;
 
 //----------------------------------------------------------------------------
 
@@ -26,17 +27,18 @@ ConstantBuffer<UniformBufferObjectTexture> gParamsObject;
 //----------------------------------------------------------------------------
 
 [[vk::push_constant]]
-ShadowPushConstant shadowPushConstants;
+ShadowImageOffset offset;
 
 //----------------------------------------------------------------------------
 
 [shader("vertex")]
-VertexStageOutput vertexMain(float3 positionL: POSITION )
+VS_OUTPUT vertexMain(float3 positionL: POSITION, int instanceID: SV_InstanceID )
 {
-    VertexStageOutput output;
-    output.positionW = mul(gParamsObject.model, float4(positionL, 1.0)).xyz;
-    output.sv_position = mul(gParamsFrame.camera.proj, float4(output.positionW, 1.0));
-
+    VS_OUTPUT output;
+    float4 positionW = mul(gParamsObject.model, float4(positionL, 1.0));
+    output.position = mul(gShadowIndex[offset.shadowIndexOffset + instanceID].lightSpaceMatrix, positionW);
+    output.viewportIndex = gShadowIndex[offset.shadowIndexOffset + instanceID].viewportIndex;
+    output.renderTargetIndex = instanceID;
     return output;
 }
 

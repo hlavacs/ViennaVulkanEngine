@@ -16,6 +16,7 @@
 #include <set>
 #include <unordered_map>
 
+#define MAX_FRAMES_IN_FLIGHT 2
 
 
 namespace std {
@@ -28,7 +29,91 @@ namespace std {
 
 
 namespace vh {
-	
+
+	//--------------------------------------------------------------------
+	//Shader resources
+	//make sure that their size is a multiple of 16!
+
+	struct Color {
+		glm::vec4 m_ambientColor{0.0f}; 
+		glm::vec4 m_diffuseColor{0.0f};	
+		glm::vec4 m_specularColor{0.0f};
+	};
+
+	struct BufferPerObject {
+	    glm::mat4 model;
+	    glm::mat4 modelInverseTranspose;
+	};
+
+	struct BufferPerObjectColor {
+	    glm::mat4 model;
+	    glm::mat4 modelInverseTranspose;
+		vh::Color color{}; 		
+	};
+
+	struct BufferPerObjectTexture {
+	    glm::mat4 model;
+	    glm::mat4 modelInverseTranspose;
+		glm::vec2 uvScale;
+		glm::vec2 padding;
+	};
+
+	struct CameraMatrix {
+	    glm::mat4 view;
+	    glm::mat4 proj;
+	    glm::vec3 positionW;
+		float padding;
+	};
+
+	struct ShadowIndex {
+		glm::ivec2 	mapResolution;
+		uint32_t 	layerIndex;
+		uint32_t 	viewportIndex;
+		glm::ivec2	layerOffset;
+		glm::mat4 	lightSpaceMatrix;
+	};
+
+	struct ShadowOffset {
+		int shadowIndexOffset;
+		int numbetShadows;
+	};
+
+	//param.x==0...no light, param.x==1...point, param.x==2...directional, param.x==3...spotlight
+	struct LightParams {
+		alignas(16) glm::vec3 color{1.0f, 0.0f, 0.0f}; 
+		alignas(16) glm::vec4 params{0.0f, 1.0f, 10.0, 0.15f}; //x=type, y=intensity, z=power, w=ambient
+		alignas(16) glm::vec3 attenuation{1.0f, 0.01f, 0.005f}; //x=constant, y=linear, z=quadratic
+		float padding;
+	};
+
+	//params.param.x==0...no light, params.param.x==1...point, params.param.x==2...directional, params.param.x==3...spotlight
+	struct Light {
+	    alignas(16) glm::vec3 	positionW{100.0f, 100.0f, 100.0f};
+	    alignas(16) glm::vec3 	directionW{-1.0f, -1.0f, -1.0f}; 
+	    alignas(16) LightParams lightParams;
+	};
+
+	struct LightOffset {
+		int lightOffset;
+		int numberLights;
+	};
+
+	struct UniformBufferFrame {
+	    alignas(16) CameraMatrix camera;
+		alignas(16) glm::ivec3 numLights{1,0,0}; //x=number point lights, y=number directional lights, z=number spotlights
+	};
+
+	struct PushConstants {
+		VkPipelineLayout layout;
+		VkShaderStageFlags stageFlags;
+		int offset;
+		int size;
+		const void* pValues;
+	};
+
+	//--------------------------------------------------------------------
+	//Structures used to communicate with the helper layer
+
     struct QueueFamilyIndices {
         std::optional<uint32_t> graphicsFamily;
         std::optional<uint32_t> presentFamily;
@@ -44,56 +129,25 @@ namespace vh {
         std::vector<VkPresentModeKHR> presentModes;
     };
 
-	struct Color {
-		alignas(16) glm::vec4 m_ambientColor{0.0f}; 
-		alignas(16) glm::vec4 m_diffuseColor{0.0f};	
-		alignas(16) glm::vec4 m_specularColor{0.0f};
-	};
+	struct DepthImage {
+        VkImage         m_depthImage;
+        VmaAllocation   m_depthImageAllocation;
+        VkImageView     m_depthImageView;
+    };
 
-	struct UniformBufferObject {
-	    alignas(16) glm::mat4 model;
-	    alignas(16) glm::mat4 modelInverseTranspose;
-	};
+    struct Map {
+		int 			m_width;
+		int				m_height;
+		int				m_layers;
+		VkDeviceSize	m_size;
+		void *			m_pixels{nullptr};
+		VkImage         m_mapImage;
+        VmaAllocation   m_mapImageAllocation;
+        VkImageView     m_mapImageView;
+        VkSampler       m_mapSampler;
+    };
 
-	struct UniformBufferObjectColor {
-	    alignas(16) glm::mat4 model;
-	    alignas(16) glm::mat4 modelInverseTranspose;
-		alignas(16) vh::Color color{}; 		
-	};
-
-	struct UniformBufferObjectTexture {
-	    alignas(16) glm::mat4 model;
-	    alignas(16) glm::mat4 modelInverseTranspose;
-		alignas(16) glm::vec2 uvScale; 		
-	};
-
-	struct CameraMatrix {
-	    alignas(16) glm::mat4 view;
-	    alignas(16) glm::mat4 proj;
-	    alignas(16) glm::vec3 positionW;
-	};
-
-	//param.x==1...point, param.x==2...directional, param.x==3...spotlight
-	struct LightParams {
-		alignas(16) glm::vec3 	color{1.0f, 0.0f, 0.0f}; 
-		alignas(16) glm::vec4 	params{0.0f, 1.0f, 10.0, 0.15f}; //x=type, y=intensity, z=power, w=ambient
-		alignas(16) glm::vec3 	attenuation{1.0f, 0.01f, 0.005f}; //x=constant, y=linear, z=quadratic
-	};
-
-	//params.param.x==1...point, params.param.x==2...directional, params.param.x==3...spotlight
-	struct Light {
-	    alignas(16) glm::vec3 	positionW{100.0f, 100.0f, 100.0f};
-	    alignas(16) glm::vec3 	directionW{-1.0f, -1.0f, -1.0f}; 
-	    alignas(16) LightParams lightParams;
-		alignas(16) glm::mat4 	lightSpaceMatrix[6];
-	};
-
-	struct UniformBufferFrame {
-	    alignas(16) CameraMatrix camera;
-		alignas(16) glm::ivec3 numLights{1,0,0}; //x=number point lights, y=number directional lights, z=number spotlights
-	};
-
-	struct UniformBuffers {
+	struct Buffer {
 		VkDeviceSize 				m_bufferSize{0};
         std::vector<VkBuffer>       m_uniformBuffers;
         std::vector<VmaAllocation>  m_uniformBuffersAllocation;
@@ -118,13 +172,6 @@ namespace vh {
         VkPipelineLayout m_pipelineLayout;
         VkPipeline m_pipeline;
     };
-
-    struct DepthImage {
-        VkImage         m_depthImage;
-        VmaAllocation   m_depthImageAllocation;
-        VkImageView     m_depthImageView;
-    };
-
 	struct GBufferImage {
 		VkImage         m_gbufferImage;
 		VmaAllocation   m_gbufferImageAllocation;
@@ -132,20 +179,6 @@ namespace vh {
 		VkFormat		m_gbufferFormat;
 		VkSampler       m_gbufferSampler;
 	};
-
-    struct Map {
-		int 			m_width;
-		int				m_height;
-		VkDeviceSize	m_size;
-		void *			m_pixels{nullptr};
-		VkImage         m_mapImage;
-		uint16_t		m_layers;
-        VmaAllocation   m_mapImageAllocation;
-        VkImageView     m_mapImageView;
-        VkSampler       m_mapSampler;
-    };
-
-
 	/// Pipeline code:
 	/// P...Vertex data contains positions
 	/// N...Vertex data contains normals
@@ -248,7 +281,6 @@ namespace vh {
         std::vector<VkSemaphore> m_renderFinishedSemaphores;
     };
 
-	#define MAX_FRAMES_IN_FLIGHT 2
 
     std::vector<char> VulReadFile(const std::string& filename);
 

@@ -7,31 +7,16 @@ export public struct Camera {
     public float4x4 view;
     public float4x4 proj;
     public float3 positionW;
+    float padding;
 };
 
-//param.x==1...point, param.x==2...directional, param.x==3...spotlight
-export public struct LightParams {
-	public float3 color; 
-	public float4 param; //x=type, y=intensity, z=power, w=ambient
-	public float3 attenuation; //x=constant, y=linear, z=quadratic
-};
-
-// x==1...point, x==2...directional, x==3...spotlight
-export public struct Light {
-    public float3 		positionW;
-    public float3 		directionW;
-    public LightParams 	param;
-    public float4x4 	lightSpaceMatrix[6];
-};
 
 export public struct UniformBufferFrame {
     public Camera camera;
     public uint3 numberLights; // x = point, y = directional, z = spotlight
+    int padding;
 };
 
-export public struct ShadowPushConstant {
-    public int shadowIndex;
-};
 
 //-----------------------------------------------------------------------
 
@@ -45,7 +30,8 @@ export public struct UniformBufferObject {
 export public struct UniformBufferObjectTexture {
     public float4x4 model;
     public float4x4 modelInvTranspose;
-    public float2 	uvscale;
+    public float2   uvscale;
+    float2 padding;
 };
 
 //-----------------------------------------------------------------------
@@ -63,8 +49,6 @@ export public struct UniformBufferObjectColor {
 };
 
 //-----------------------------------------------------------------------
-
-export public uniform const int MAX_LIGHTS = 16;
 
 __include "Common_Shadow.slang";
 __include "Common_Light.slang";

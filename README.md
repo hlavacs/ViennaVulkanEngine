@@ -7,9 +7,113 @@ VVE features are:
 - 100% Vulkan, C++20
 - Windowing through SDL2, other systems are possible.
 - Multiplatform (almost) out of the box: Win 11, Linux, MacOS (using MoltenVK).
+Build with cmake!
+
+# Using Visual Studio Code
+
+If you want to use Visual Studio Code (available for most platforms), install it for your platform. Also install the extensions Cmake an Cmake Tools. Then you can access all cmake features by clicking on Menu View / Command Palette... and enter cmake. You will be presented the cmake options which you can choose from in this sequence:
+* Cmake: Select a Kit : Clang (Wundows, Linux) or AppleClang (MacOS)
+* Cmake: Select Variant (Debug)
+* Cmake: Configure
+* Cmake: Build
+
+For debugging select debug as variant, compile it, then choose the "Run and Debug" option on the left toolbar. In the drop down menu next to the green triangle choose your platform / compiler / variant:
+* MSVC on Windows  - select "(Windows) debug"
+* Clang on Windows - select "Clang Launch Test"
+* Clang on MacOS - select "AppleClang Launch Test"
+* Clang on Linux - select "Linux Clang Launch Test"
+
+Click on the green triangle to start the program.
+
+# Installing on Windows 
+
+## Prerequisites:
+
+You need these tools for compiling:
+* Install MSVC and possibly Clang with it. When you compile from a command prompt, make sure to use "x64 Native Tools Command Prompt".
+* It is recommended to ue Visual Studio Code, so install it also.
+* Make sure you have CMake installed.
+* Install the Vulkan SDK, the environment variable VULKAN_SDK needs to point to it. On Windows this should be done automatially.
+
+## Compiling using CMake
+
+If you do not want to use it, run the following commands in a "x64 Native Tools Command Prompt" from the project directory:
+
+```
+cmake -B build
+cmake --build build --config Debug
+build\Debug\28_model_loading.exe
+```
 
 
-Build with cmake:
+
+# Installing on MacOS
+
+1. **Install Dependencies:**
+   - **Xcode:** Make sure you have Xcode installed on your macOS. You can download it from the Mac App Store.
+   - **Homebrew:** If you don't have Homebrew installed, you can install it by running the following command in your terminal:
+     ```sh
+     /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+     ```
+
+2. **Install Vulkan SDK:**
+   - Download the Vulkan SDK for macOS from the [LunarG website](https://vulkan.lunarg.com/sdk/home).
+   - Install it to a directory "VulkanSDK" in your home directory.
+
+3. **Install MoltenVK:**
+   - You can install MoltenVK using Homebrew:
+     ```sh
+     brew install moltenvk
+     ```
+
+4. **Set VULKAN_SDK**
+   - Edit .zprofile in your home directory to let the environment variable VULKAN_SDK point to the VulkanSDK directory.
+     ```sh
+     export VULKAN_SDK="/Users/<YOURNAME>/VulkanSDK/1.4.309.0/macOS"
+     ```
+   - Log off and on again to apply the changes.
+
+5. **Configuring and Compiling**
+   - Use cmake directly to configure and compile
+   - Or use MS Visual Studio Code, see below (recommended).
+
+
+
+
+# Installing on Ubuntu
+
+Do the following
+
+1. Install Vulkan SDK tarball from LunarG.
+   - Download to your home dir, deompress: 
+   ```
+   sudo apt install xz-utils
+   tar -xf vulkansdk-linux-x86_64-1.4.309.0.tar.xz
+   ```
+   - Move it to a directory VulkanSDK in your home directory
+   - Make setup-env.sh executable
+   ```
+   cd VulkanSDK/1.4.309.0/
+   chmod ugo+x setup-env.sh 
+   ```
+
+   - Insert into .profile to set VULKAN_SDK environment variable, e.g. with vim
+   ```
+   . $HOME/VulkanSDK/1.4.309.0/setup-env.sh
+   ```
+
+
+2. Install Visual Studio Code with the App Center
+
+3. Install Ninja, Cmake and Clang
+   ```
+   sudo apt install cmake
+   sudo apt install ninja-build
+   sudo apt install clang
+   sudo apt-get install -y libc++-dev libc++abi-dev
+   ```
+   
+4. Clone the engine and open it with Visual Studio Code, select Clang as Kit, condigure, build
 
 
 

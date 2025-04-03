@@ -26,11 +26,15 @@ namespace vh {
 		}
 	}
 
-    void SynCreateSemaphores(VkDevice device, size_t size,  std::vector<VkSemaphore>& imageAvailableSemaphores, std::vector<Semaphores>& semaphores ) {
+	void SynCreateSemaphores(VkDevice device, 
+		std::vector<VkSemaphore>& imageAvailableSemaphores, 
+		std::vector<VkSemaphore>& renderFinishedSemaphores, 
+		size_t size, std::vector<Semaphores>& intermediateSemaphores ) {
+
         VkSemaphoreCreateInfo semaphoreInfo{};
         semaphoreInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
 
-		for( size_t i = semaphores.size(); i < size; ++i ) {
+		for( size_t i = intermediateSemaphores.size(); i < size; ++i ) {
 			Semaphores Sem;
 	        for (size_t j = 0; j < MAX_FRAMES_IN_FLIGHT; j++) {
 				VkSemaphore semaphore;
@@ -39,7 +43,7 @@ namespace vh {
 	            }
 				Sem.m_renderFinishedSemaphores.push_back(semaphore);
 	        }
-			semaphores.push_back(Sem);
+			intermediateSemaphores.push_back(Sem);
 		}
 
         for (size_t j = imageAvailableSemaphores.size(); j < MAX_FRAMES_IN_FLIGHT; j++) {
@@ -50,16 +54,30 @@ namespace vh {
 			imageAvailableSemaphores.push_back(semaphore);
         }
 
+		for (size_t j = renderFinishedSemaphores.size(); j < MAX_FRAMES_IN_FLIGHT; j++) {
+			VkSemaphore semaphore;
+            if (vkCreateSemaphore(device, &semaphoreInfo, nullptr, &semaphore) != VK_SUCCESS ) {
+                throw std::runtime_error("failed to create synchronization objects for a frame!");
+            }
+			renderFinishedSemaphores.push_back(semaphore);
+        }
     }
 
-    void SynDestroySemaphores(VkDevice device,  std::vector<VkSemaphore>& imageAvailableSemaphores, std::vector<Semaphores>& semaphores) {
-		for( auto Sem : semaphores ) {
+    void SynDestroySemaphores(VkDevice device,  
+			std::vector<VkSemaphore>& imageAvailableSemaphores, 
+			std::vector<VkSemaphore>& renderFinishedSemaphores, 
+			std::vector<Semaphores>& intermediateSemaphores) {
+
+		for( auto Sem : intermediateSemaphores ) {
 			for ( auto sem : Sem.m_renderFinishedSemaphores ) {
 				vkDestroySemaphore(device, sem, nullptr);
 			}
 		}
 
 		for ( auto sem : imageAvailableSemaphores) {
+			vkDestroySemaphore(device, sem, nullptr);
+		}
+		for ( auto sem : renderFinishedSemaphores) {
 			vkDestroySemaphore(device, sem, nullptr);
 		}
 	}
