@@ -70,7 +70,7 @@ namespace vve {
 		vh::BufCreateBuffers(m_vkState().m_physicalDevice, m_vkState().m_device, m_vkState().m_vmaAllocator, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, m_maxNumberLights * sizeof(vh::Light), m_uniformBuffersLights);
 		vh::RenUpdateDescriptorSet(m_vkState().m_device, m_uniformBuffersLights, 4, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, m_maxNumberLights * sizeof(vh::Light), m_descriptorSetPerFrame);
 
-		//CreatePipelines();
+		CreatePipelines();
 		return false;
 	}
 
@@ -101,7 +101,69 @@ namespace vve {
 	}
 
 	void RendererDeferred11::CreatePipelines() {
+		const std::filesystem::path shaders{ "../../shaders/Deferred" };
+		if (!std::filesystem::exists(shaders)) {
+			std::cerr << "ERROR: Folder does not exist: " << std::filesystem::absolute(shaders) << "\n";
+		}
+		const std::string vert = (shaders / "test_vert.spv").string();
+		const std::string frag = (shaders / "test_frag.spv").string();
+		std::vector<VkVertexInputBindingDescription> bindingDescriptions{};
+		std::vector<VkVertexInputAttributeDescription> attributeDescriptions{};
+		for (int i = 0; i < 3; ++i) {
+			VkVertexInputBindingDescription bindingDescription{};
+			bindingDescription.binding = i;
+			bindingDescription.stride = vh::VertexData::size_pos;
+			bindingDescription.inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
+			bindingDescriptions.push_back(bindingDescription);
+		}
 
+		for (int i = 0; i < 3; ++i) {
+			VkVertexInputAttributeDescription attributeDescription{};
+			attributeDescription.binding = i;
+			attributeDescription.location = i;
+			attributeDescription.format = VK_FORMAT_R32G32B32_SFLOAT;
+			attributeDescription.offset = 0;
+			attributeDescriptions.push_back(attributeDescription);
+		}
+
+		VkDescriptorSetLayout descriptorSetLayoutPerObject{};
+		std::vector<VkDescriptorSetLayoutBinding> bindings{
+			{.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, .stageFlags = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT }, 
+			{.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, .stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT }
+		};
+
+		VkPipelineColorBlendAttachmentState colorBlendAttachment{};
+		colorBlendAttachment.colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
+		colorBlendAttachment.srcColorBlendFactor = VK_BLEND_FACTOR_ONE;
+		colorBlendAttachment.dstColorBlendFactor = VK_BLEND_FACTOR_CONSTANT_ALPHA;
+		colorBlendAttachment.colorBlendOp = VK_BLEND_OP_ADD;
+		colorBlendAttachment.srcAlphaBlendFactor = VK_BLEND_FACTOR_CONSTANT_ALPHA;
+		colorBlendAttachment.dstAlphaBlendFactor = VK_BLEND_FACTOR_ONE_MINUS_CONSTANT_ALPHA;
+		colorBlendAttachment.alphaBlendOp = VK_BLEND_OP_MAX;
+		colorBlendAttachment.blendEnable = VK_TRUE;
+		
+		vh::RenCreateGraphicsPipeline(m_vkState().m_device, m_geometryPass, vert, frag, bindingDescriptions, attributeDescriptions, 
+			{ m_descriptorSetLayoutPerFrame }, { m_maxNumberLights }, 
+			{ {.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT, .offset = 0, .size = 8} }, 
+			{ colorBlendAttachment }, m_graphicsPipeline);
+	}
+
+	void RendererDeferred11::getBindingDescription(int binding, int stride, auto& bdesc) {
+		VkVertexInputBindingDescription bindingDescription{};
+		bindingDescription.binding = binding;
+		bindingDescription.stride = stride;
+		bindingDescription.inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
+		bdesc.push_back(bindingDescription);
+	}
+
+	auto RendererDeferred11::getBindingDescriptions() -> std::vector<VkVertexInputBindingDescription> {
+		std::vector<VkVertexInputBindingDescription> bindingDescriptions{};
+		int binding = 0;
+		getBindingDescription(binding++, vh::VertexData::size_pos, bindingDescriptions);
+		getBindingDescription(binding++, vh::VertexData::size_nor, bindingDescriptions);
+		getBindingDescription(binding++, vh::VertexData::size_tex, bindingDescriptions);
+
+		return bindingDescriptions;
 	}
 
 }	// namespace vve

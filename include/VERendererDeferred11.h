@@ -15,8 +15,10 @@ namespace vve {
 		bool OnQuit(Message message);
 		void CreatePipelines();
 
+		void getBindingDescription(int binding, int stride, auto& bdesc);
+		auto getBindingDescriptions() -> std::vector<VkVertexInputBindingDescription>;
+
 		vh::Buffer m_uniformBuffersPerFrame{};
-		// TODO: might need a SSBO for many lights
 		vh::Buffer m_uniformBuffersLights{};
 
 		// TODO: Maybe make GBufferAttachment struct for better alignment
@@ -31,6 +33,8 @@ namespace vve {
 
 		VkRenderPass m_geometryPass{ VK_NULL_HANDLE };
 		VkRenderPass m_lightingPass{ VK_NULL_HANDLE };
+
+		vh::Pipeline m_graphicsPipeline{};
 
 		VkCommandPool m_commandPool{ VK_NULL_HANDLE };
 		std::vector<VkCommandBuffer> m_commandBuffers;
