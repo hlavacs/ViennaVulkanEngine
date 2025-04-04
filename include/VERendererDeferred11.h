@@ -12,6 +12,7 @@ namespace vve {
 
 	private:
 		bool OnInit(Message message);
+		bool OnPrepareNextFrame(Message message);
 		bool OnQuit(Message message);
 		void CreateGeometryPipeline();
 		void CreateLightingPipeline();
@@ -40,7 +41,7 @@ namespace vve {
 		vh::Pipeline m_geometryPipeline{};
 		vh::Pipeline m_lightingPipeline{};
 
-		VkCommandPool m_commandPool{ VK_NULL_HANDLE };
+		std::vector<VkCommandPool> m_commandPools{};
 		std::vector<VkCommandBuffer> m_commandBuffers;
 
 		// TODO: maybe constexpr is not a good idea? -> also increase number later!!!

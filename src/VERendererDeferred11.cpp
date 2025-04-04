@@ -8,6 +8,7 @@ namespace vve {
 
 		engine.RegisterCallbacks({
 			{this, 3500, "INIT", [this](Message& message) { return OnInit(message); } },
+			{this, 2000, "PREPARE_NEXT_FRAME", [this](Message& message) { return OnPrepareNextFrame(message); } },
 			{this,	  0, "QUIT", [this](Message& message) { return OnQuit(message); } }
 			});
 	}
@@ -43,8 +44,11 @@ namespace vve {
 			},
 			m_descriptorSetLayoutPerFrame);
 
-		vh::ComCreateCommandPool(m_vkState().m_surface, m_vkState().m_physicalDevice, m_vkState().m_device, m_commandPool);
-		vh::ComCreateCommandBuffers(m_vkState().m_device, m_commandPool, m_commandBuffers);
+		//vh::ComCreateCommandPool(m_vkState().m_surface, m_vkState().m_physicalDevice, m_vkState().m_device, m_commandPool);
+		m_commandPools.resize(MAX_FRAMES_IN_FLIGHT);
+		for (int i = 0; i < MAX_FRAMES_IN_FLIGHT; ++i) {
+			vh::ComCreateCommandPool(m_vkState().m_surface, m_vkState().m_physicalDevice, m_vkState().m_device, m_commandPools[i]);
+		}
 		// TODO: shrink pool to only what is needed - why 1000?
 		vh::RenCreateDescriptorPool(m_vkState().m_device, 1000, m_descriptorPool);
 		vh::RenCreateDescriptorSet(m_vkState().m_device, m_descriptorSetLayoutPerFrame, m_descriptorPool, m_descriptorSetPerFrame);
@@ -75,10 +79,21 @@ namespace vve {
 		return false;
 	}
 
+	bool RendererDeferred11::OnPrepareNextFrame(Message message) {
+		std::vector<vh::Light> lights{ m_maxNumberLights };
+
+		vh::UniformBufferFrame ubc;
+		vkResetCommandPool(m_vkState().m_device, m_commandPools[m_vkState().m_currentFrame], 0);
+
+		return false;
+	}
+
 	bool RendererDeferred11::OnQuit(Message message) {
 		vkDeviceWaitIdle(m_vkState().m_device);
 
-		vkDestroyCommandPool(m_vkState().m_device, m_commandPool, nullptr);
+		for (auto pool : m_commandPools) {
+			vkDestroyCommandPool(m_vkState().m_device, pool, nullptr);
+		}
 
 		// TODO: Manage pipelines - rewrite into functions most likely
 		vkDestroyPipeline(m_vkState().m_device, m_geometryPipeline.m_pipeline, nullptr);
@@ -126,10 +141,10 @@ namespace vve {
 		colorBlendAttachment.dstAlphaBlendFactor = VK_BLEND_FACTOR_ONE_MINUS_CONSTANT_ALPHA;
 		colorBlendAttachment.alphaBlendOp = VK_BLEND_OP_MAX;
 		colorBlendAttachment.blendEnable = VK_FALSE;
-		
-		vh::RenCreateGraphicsPipeline(m_vkState().m_device, m_geometryPass, vert, frag, bindingDescriptions, attributeDescriptions, 
-			{ m_descriptorSetLayoutPerFrame }, { m_maxNumberLights }, 
-			{ {.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT, .offset = 0, .size = 8} }, 
+
+		vh::RenCreateGraphicsPipeline(m_vkState().m_device, m_geometryPass, vert, frag, bindingDescriptions, attributeDescriptions,
+			{ m_descriptorSetLayoutPerFrame }, { m_maxNumberLights },
+			{ {.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT, .offset = 0, .size = 8} },
 			{ colorBlendAttachment, colorBlendAttachment, colorBlendAttachment }, m_geometryPipeline, true);
 	}
 
