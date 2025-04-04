@@ -17,6 +17,8 @@ namespace vve {
 
 		void getBindingDescription(int binding, int stride, auto& bdesc);
 		auto getBindingDescriptions() -> std::vector<VkVertexInputBindingDescription>;
+		void getAttributeDescription(int binding, int location, VkFormat format, auto& attd);
+		auto getAttributeDescriptions() -> std::vector<VkVertexInputAttributeDescription>;
 
 		vh::Buffer m_uniformBuffersPerFrame{};
 		vh::Buffer m_uniformBuffersLights{};

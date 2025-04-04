@@ -107,30 +107,8 @@ namespace vve {
 		}
 		const std::string vert = (shaders / "test_vert.spv").string();
 		const std::string frag = (shaders / "test_frag.spv").string();
-		std::vector<VkVertexInputBindingDescription> bindingDescriptions{};
-		std::vector<VkVertexInputAttributeDescription> attributeDescriptions{};
-		for (int i = 0; i < 3; ++i) {
-			VkVertexInputBindingDescription bindingDescription{};
-			bindingDescription.binding = i;
-			bindingDescription.stride = vh::VertexData::size_pos;
-			bindingDescription.inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
-			bindingDescriptions.push_back(bindingDescription);
-		}
-
-		for (int i = 0; i < 3; ++i) {
-			VkVertexInputAttributeDescription attributeDescription{};
-			attributeDescription.binding = i;
-			attributeDescription.location = i;
-			attributeDescription.format = VK_FORMAT_R32G32B32_SFLOAT;
-			attributeDescription.offset = 0;
-			attributeDescriptions.push_back(attributeDescription);
-		}
-
-		VkDescriptorSetLayout descriptorSetLayoutPerObject{};
-		std::vector<VkDescriptorSetLayoutBinding> bindings{
-			{.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, .stageFlags = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT }, 
-			{.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, .stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT }
-		};
+		std::vector<VkVertexInputBindingDescription> bindingDescriptions = getBindingDescriptions();
+		std::vector<VkVertexInputAttributeDescription> attributeDescriptions = getAttributeDescriptions();
 
 		VkPipelineColorBlendAttachmentState colorBlendAttachment{};
 		colorBlendAttachment.colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
@@ -164,6 +142,26 @@ namespace vve {
 		getBindingDescription(binding++, vh::VertexData::size_tex, bindingDescriptions);
 
 		return bindingDescriptions;
+	}
+
+	void RendererDeferred11::getAttributeDescription(int binding, int location, VkFormat format, auto& attd) {
+		VkVertexInputAttributeDescription attributeDescription{};
+		attributeDescription.binding = binding;
+		attributeDescription.location = location;
+		attributeDescription.format = VK_FORMAT_R32G32B32_SFLOAT;
+		attributeDescription.offset = 0;
+		attd.push_back(attributeDescription);
+	}
+
+	auto RendererDeferred11::getAttributeDescriptions() -> std::vector<VkVertexInputAttributeDescription> {
+		std::vector<VkVertexInputAttributeDescription> attributeDescriptions{};
+		int binding = 0;
+		int location = 0;
+		getAttributeDescription(binding++, location++, m_positionImage.m_gbufferFormat, attributeDescriptions);
+		getAttributeDescription(binding++, location++, m_normalsImage.m_gbufferFormat, attributeDescriptions);
+		getAttributeDescription(binding++, location++, m_albedoImage.m_gbufferFormat, attributeDescriptions);
+
+		return attributeDescriptions;
 	}
 
 }	// namespace vve
