@@ -14,6 +14,7 @@ namespace vve {
 		bool OnInit(Message message);
 		bool OnQuit(Message message);
 		void CreateGeometryPipeline();
+		void CreateLightingPipeline();
 
 		void getBindingDescription(int binding, int stride, auto& bdesc);
 		auto getBindingDescriptions() -> std::vector<VkVertexInputBindingDescription>;
@@ -37,12 +38,13 @@ namespace vve {
 		VkRenderPass m_lightingPass{ VK_NULL_HANDLE };
 
 		vh::Pipeline m_geometryPipeline{};
+		vh::Pipeline m_lightingPipeline{};
 
 		VkCommandPool m_commandPool{ VK_NULL_HANDLE };
 		std::vector<VkCommandBuffer> m_commandBuffers;
 
 		// TODO: maybe constexpr is not a good idea? -> also increase number later!!!
-		static constexpr size_t m_maxNumberLights{ 16 };
+		static constexpr uint32_t m_maxNumberLights{ 16 };
 	};
 
 }	// namespace vve

@@ -71,6 +71,7 @@ namespace vve {
 		vh::RenUpdateDescriptorSet(m_vkState().m_device, m_uniformBuffersLights, 4, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, m_maxNumberLights * sizeof(vh::Light), m_descriptorSetPerFrame);
 
 		CreateGeometryPipeline();
+		CreateLightingPipeline();
 		return false;
 	}
 
@@ -127,7 +128,7 @@ namespace vve {
 		vh::RenCreateGraphicsPipeline(m_vkState().m_device, m_geometryPass, vert, frag, bindingDescriptions, attributeDescriptions, 
 			{ m_descriptorSetLayoutPerFrame }, { m_maxNumberLights }, 
 			{ {.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT, .offset = 0, .size = 8} }, 
-			{ colorBlendAttachment, colorBlendAttachment, colorBlendAttachment }, m_geometryPipeline);
+			{ colorBlendAttachment, colorBlendAttachment, colorBlendAttachment }, m_geometryPipeline, true);
 	}
 
 	void RendererDeferred11::getBindingDescription(int binding, int stride, auto& bdesc) {
@@ -166,6 +167,20 @@ namespace vve {
 		getAttributeDescription(binding++, location++, m_albedoImage.m_gbufferFormat, attributeDescriptions);
 
 		return attributeDescriptions;
+	}
+
+	void RendererDeferred11::CreateLightingPipeline() {
+		const std::filesystem::path shaders{ "../../shaders/Deferred" };
+		if (!std::filesystem::exists(shaders)) {
+			std::cerr << "ERROR: Folder does not exist: " << std::filesystem::absolute(shaders) << "\n";
+		}
+		const std::string vert = (shaders / "test_lighting_vert.spv").string();
+		const std::string frag = (shaders / "test_lighting_frag.spv").string();
+
+		vh::RenCreateGraphicsPipeline(m_vkState().m_device, m_lightingPass, vert, frag, {}, {},
+			{ m_descriptorSetLayoutPerFrame }, { m_maxNumberLights },
+			{ {.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT, .offset = 0, .size = 8} },
+			{}, m_lightingPipeline, true);
 	}
 
 }	// namespace vve
