@@ -80,9 +80,11 @@ namespace vve {
 
 		vkDestroyCommandPool(m_vkState().m_device, m_commandPool, nullptr);
 
-		// TODO: Manage pipelines
+		// TODO: Manage pipelines - rewrite into functions most likely
 		vkDestroyPipeline(m_vkState().m_device, m_geometryPipeline.m_pipeline, nullptr);
 		vkDestroyPipelineLayout(m_vkState().m_device, m_geometryPipeline.m_pipelineLayout, nullptr);
+		vkDestroyPipeline(m_vkState().m_device, m_lightingPipeline.m_pipeline, nullptr);
+		vkDestroyPipelineLayout(m_vkState().m_device, m_lightingPipeline.m_pipelineLayout, nullptr);
 
 		vkDestroyDescriptorPool(m_vkState().m_device, m_descriptorPool, nullptr);
 		vkDestroyRenderPass(m_vkState().m_device, m_geometryPass, nullptr);
