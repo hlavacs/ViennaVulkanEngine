@@ -13,10 +13,15 @@ namespace vve {
 	private:
 		bool OnInit(Message message);
 		bool OnQuit(Message message);
-		void CreatePipelines();
+		void CreateGeometryPipeline();
+		void CreateLightingPipeline();
+
+		void getBindingDescription(int binding, int stride, auto& bdesc);
+		auto getBindingDescriptions() -> std::vector<VkVertexInputBindingDescription>;
+		void getAttributeDescription(int binding, int location, VkFormat format, auto& attd);
+		auto getAttributeDescriptions() -> std::vector<VkVertexInputAttributeDescription>;
 
 		vh::Buffer m_uniformBuffersPerFrame{};
-		// TODO: might need a SSBO for many lights
 		vh::Buffer m_uniformBuffersLights{};
 
 		// TODO: Maybe make GBufferAttachment struct for better alignment
@@ -32,11 +37,14 @@ namespace vve {
 		VkRenderPass m_geometryPass{ VK_NULL_HANDLE };
 		VkRenderPass m_lightingPass{ VK_NULL_HANDLE };
 
+		vh::Pipeline m_geometryPipeline{};
+		vh::Pipeline m_lightingPipeline{};
+
 		VkCommandPool m_commandPool{ VK_NULL_HANDLE };
 		std::vector<VkCommandBuffer> m_commandBuffers;
 
 		// TODO: maybe constexpr is not a good idea? -> also increase number later!!!
-		static constexpr size_t m_maxNumberLights{ 16 };
+		static constexpr uint32_t m_maxNumberLights{ 16 };
 	};
 
 }	// namespace vve

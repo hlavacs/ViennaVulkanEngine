@@ -70,7 +70,8 @@ namespace vve {
 		vh::BufCreateBuffers(m_vkState().m_physicalDevice, m_vkState().m_device, m_vkState().m_vmaAllocator, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, m_maxNumberLights * sizeof(vh::Light), m_uniformBuffersLights);
 		vh::RenUpdateDescriptorSet(m_vkState().m_device, m_uniformBuffersLights, 4, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, m_maxNumberLights * sizeof(vh::Light), m_descriptorSetPerFrame);
 
-		//CreatePipelines();
+		CreateGeometryPipeline();
+		CreateLightingPipeline();
 		return false;
 	}
 
@@ -79,7 +80,11 @@ namespace vve {
 
 		vkDestroyCommandPool(m_vkState().m_device, m_commandPool, nullptr);
 
-		// TODO: Manage pipelines
+		// TODO: Manage pipelines - rewrite into functions most likely
+		vkDestroyPipeline(m_vkState().m_device, m_geometryPipeline.m_pipeline, nullptr);
+		vkDestroyPipelineLayout(m_vkState().m_device, m_geometryPipeline.m_pipelineLayout, nullptr);
+		vkDestroyPipeline(m_vkState().m_device, m_lightingPipeline.m_pipeline, nullptr);
+		vkDestroyPipelineLayout(m_vkState().m_device, m_lightingPipeline.m_pipelineLayout, nullptr);
 
 		vkDestroyDescriptorPool(m_vkState().m_device, m_descriptorPool, nullptr);
 		vkDestroyRenderPass(m_vkState().m_device, m_geometryPass, nullptr);
@@ -100,8 +105,84 @@ namespace vve {
 		return false;
 	}
 
-	void RendererDeferred11::CreatePipelines() {
+	void RendererDeferred11::CreateGeometryPipeline() {
+		const std::filesystem::path shaders{ "../../shaders/Deferred" };
+		if (!std::filesystem::exists(shaders)) {
+			std::cerr << "ERROR: Folder does not exist: " << std::filesystem::absolute(shaders) << "\n";
+		}
+		const std::string vert = (shaders / "test_geometry_vert.spv").string();
+		const std::string frag = (shaders / "test_geometry_frag.spv").string();
+		std::vector<VkVertexInputBindingDescription> bindingDescriptions = getBindingDescriptions();
+		std::vector<VkVertexInputAttributeDescription> attributeDescriptions = getAttributeDescriptions();
 
+		VkPipelineColorBlendAttachmentState colorBlendAttachment{};
+		// TODO: colorBlendAttachment.colorWriteMask = 0xf; ???
+		// TODO: rewrite to make use for the 3 attachments clearer
+		colorBlendAttachment.colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
+		colorBlendAttachment.srcColorBlendFactor = VK_BLEND_FACTOR_ONE;
+		colorBlendAttachment.dstColorBlendFactor = VK_BLEND_FACTOR_CONSTANT_ALPHA;
+		colorBlendAttachment.colorBlendOp = VK_BLEND_OP_ADD;
+		colorBlendAttachment.srcAlphaBlendFactor = VK_BLEND_FACTOR_CONSTANT_ALPHA;
+		colorBlendAttachment.dstAlphaBlendFactor = VK_BLEND_FACTOR_ONE_MINUS_CONSTANT_ALPHA;
+		colorBlendAttachment.alphaBlendOp = VK_BLEND_OP_MAX;
+		colorBlendAttachment.blendEnable = VK_FALSE;
+		
+		vh::RenCreateGraphicsPipeline(m_vkState().m_device, m_geometryPass, vert, frag, bindingDescriptions, attributeDescriptions, 
+			{ m_descriptorSetLayoutPerFrame }, { m_maxNumberLights }, 
+			{ {.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT, .offset = 0, .size = 8} }, 
+			{ colorBlendAttachment, colorBlendAttachment, colorBlendAttachment }, m_geometryPipeline, true);
+	}
+
+	void RendererDeferred11::getBindingDescription(int binding, int stride, auto& bdesc) {
+		VkVertexInputBindingDescription bindingDescription{};
+		bindingDescription.binding = binding;
+		bindingDescription.stride = stride;
+		bindingDescription.inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
+		bdesc.push_back(bindingDescription);
+	}
+
+	auto RendererDeferred11::getBindingDescriptions() -> std::vector<VkVertexInputBindingDescription> {
+		std::vector<VkVertexInputBindingDescription> bindingDescriptions{};
+		int binding = 0;
+		getBindingDescription(binding++, vh::VertexData::size_pos, bindingDescriptions);
+		getBindingDescription(binding++, vh::VertexData::size_nor, bindingDescriptions);
+		getBindingDescription(binding++, vh::VertexData::size_tex, bindingDescriptions);
+
+		return bindingDescriptions;
+	}
+
+	void RendererDeferred11::getAttributeDescription(int binding, int location, VkFormat format, auto& attd) {
+		VkVertexInputAttributeDescription attributeDescription{};
+		attributeDescription.binding = binding;
+		attributeDescription.location = location;
+		attributeDescription.format = VK_FORMAT_R32G32B32_SFLOAT;
+		attributeDescription.offset = 0;
+		attd.push_back(attributeDescription);
+	}
+
+	auto RendererDeferred11::getAttributeDescriptions() -> std::vector<VkVertexInputAttributeDescription> {
+		std::vector<VkVertexInputAttributeDescription> attributeDescriptions{};
+		int binding = 0;
+		int location = 0;
+		getAttributeDescription(binding++, location++, m_positionImage.m_gbufferFormat, attributeDescriptions);
+		getAttributeDescription(binding++, location++, m_normalsImage.m_gbufferFormat, attributeDescriptions);
+		getAttributeDescription(binding++, location++, m_albedoImage.m_gbufferFormat, attributeDescriptions);
+
+		return attributeDescriptions;
+	}
+
+	void RendererDeferred11::CreateLightingPipeline() {
+		const std::filesystem::path shaders{ "../../shaders/Deferred" };
+		if (!std::filesystem::exists(shaders)) {
+			std::cerr << "ERROR: Folder does not exist: " << std::filesystem::absolute(shaders) << "\n";
+		}
+		const std::string vert = (shaders / "test_lighting_vert.spv").string();
+		const std::string frag = (shaders / "test_lighting_frag.spv").string();
+
+		vh::RenCreateGraphicsPipeline(m_vkState().m_device, m_lightingPass, vert, frag, {}, {},
+			{ m_descriptorSetLayoutPerFrame }, { m_maxNumberLights },
+			{ {.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT, .offset = 0, .size = 8} },
+			{}, m_lightingPipeline, true);
 	}
 
 }	// namespace vve
