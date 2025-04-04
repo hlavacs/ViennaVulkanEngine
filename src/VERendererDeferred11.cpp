@@ -111,6 +111,8 @@ namespace vve {
 		std::vector<VkVertexInputAttributeDescription> attributeDescriptions = getAttributeDescriptions();
 
 		VkPipelineColorBlendAttachmentState colorBlendAttachment{};
+		// TODO: colorBlendAttachment.colorWriteMask = 0xf; ???
+		// TODO: rewrite to make use for the 3 attachments clearer
 		colorBlendAttachment.colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
 		colorBlendAttachment.srcColorBlendFactor = VK_BLEND_FACTOR_ONE;
 		colorBlendAttachment.dstColorBlendFactor = VK_BLEND_FACTOR_CONSTANT_ALPHA;
@@ -118,12 +120,12 @@ namespace vve {
 		colorBlendAttachment.srcAlphaBlendFactor = VK_BLEND_FACTOR_CONSTANT_ALPHA;
 		colorBlendAttachment.dstAlphaBlendFactor = VK_BLEND_FACTOR_ONE_MINUS_CONSTANT_ALPHA;
 		colorBlendAttachment.alphaBlendOp = VK_BLEND_OP_MAX;
-		colorBlendAttachment.blendEnable = VK_TRUE;
+		colorBlendAttachment.blendEnable = VK_FALSE;
 		
 		vh::RenCreateGraphicsPipeline(m_vkState().m_device, m_geometryPass, vert, frag, bindingDescriptions, attributeDescriptions, 
 			{ m_descriptorSetLayoutPerFrame }, { m_maxNumberLights }, 
 			{ {.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT, .offset = 0, .size = 8} }, 
-			{ colorBlendAttachment }, m_graphicsPipeline);
+			{ colorBlendAttachment, colorBlendAttachment, colorBlendAttachment }, m_graphicsPipeline);
 	}
 
 	void RendererDeferred11::getBindingDescription(int binding, int stride, auto& bdesc) {
