@@ -70,7 +70,7 @@ namespace vve {
 		vh::BufCreateBuffers(m_vkState().m_physicalDevice, m_vkState().m_device, m_vkState().m_vmaAllocator, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, m_maxNumberLights * sizeof(vh::Light), m_uniformBuffersLights);
 		vh::RenUpdateDescriptorSet(m_vkState().m_device, m_uniformBuffersLights, 4, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, m_maxNumberLights * sizeof(vh::Light), m_descriptorSetPerFrame);
 
-		CreatePipelines();
+		CreateGeometryPipeline();
 		return false;
 	}
 
@@ -80,8 +80,8 @@ namespace vve {
 		vkDestroyCommandPool(m_vkState().m_device, m_commandPool, nullptr);
 
 		// TODO: Manage pipelines
-		vkDestroyPipeline(m_vkState().m_device, m_graphicsPipeline.m_pipeline, nullptr);
-		vkDestroyPipelineLayout(m_vkState().m_device, m_graphicsPipeline.m_pipelineLayout, nullptr);
+		vkDestroyPipeline(m_vkState().m_device, m_geometryPipeline.m_pipeline, nullptr);
+		vkDestroyPipelineLayout(m_vkState().m_device, m_geometryPipeline.m_pipelineLayout, nullptr);
 
 		vkDestroyDescriptorPool(m_vkState().m_device, m_descriptorPool, nullptr);
 		vkDestroyRenderPass(m_vkState().m_device, m_geometryPass, nullptr);
@@ -102,13 +102,13 @@ namespace vve {
 		return false;
 	}
 
-	void RendererDeferred11::CreatePipelines() {
+	void RendererDeferred11::CreateGeometryPipeline() {
 		const std::filesystem::path shaders{ "../../shaders/Deferred" };
 		if (!std::filesystem::exists(shaders)) {
 			std::cerr << "ERROR: Folder does not exist: " << std::filesystem::absolute(shaders) << "\n";
 		}
-		const std::string vert = (shaders / "test_vert.spv").string();
-		const std::string frag = (shaders / "test_frag.spv").string();
+		const std::string vert = (shaders / "test_geometry_vert.spv").string();
+		const std::string frag = (shaders / "test_geometry_frag.spv").string();
 		std::vector<VkVertexInputBindingDescription> bindingDescriptions = getBindingDescriptions();
 		std::vector<VkVertexInputAttributeDescription> attributeDescriptions = getAttributeDescriptions();
 
@@ -127,7 +127,7 @@ namespace vve {
 		vh::RenCreateGraphicsPipeline(m_vkState().m_device, m_geometryPass, vert, frag, bindingDescriptions, attributeDescriptions, 
 			{ m_descriptorSetLayoutPerFrame }, { m_maxNumberLights }, 
 			{ {.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT, .offset = 0, .size = 8} }, 
-			{ colorBlendAttachment, colorBlendAttachment, colorBlendAttachment }, m_graphicsPipeline);
+			{ colorBlendAttachment, colorBlendAttachment, colorBlendAttachment }, m_geometryPipeline);
 	}
 
 	void RendererDeferred11::getBindingDescription(int binding, int stride, auto& bdesc) {

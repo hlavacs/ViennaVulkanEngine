@@ -13,7 +13,7 @@ namespace vve {
 	private:
 		bool OnInit(Message message);
 		bool OnQuit(Message message);
-		void CreatePipelines();
+		void CreateGeometryPipeline();
 
 		void getBindingDescription(int binding, int stride, auto& bdesc);
 		auto getBindingDescriptions() -> std::vector<VkVertexInputBindingDescription>;
@@ -36,7 +36,7 @@ namespace vve {
 		VkRenderPass m_geometryPass{ VK_NULL_HANDLE };
 		VkRenderPass m_lightingPass{ VK_NULL_HANDLE };
 
-		vh::Pipeline m_graphicsPipeline{};
+		vh::Pipeline m_geometryPipeline{};
 
 		VkCommandPool m_commandPool{ VK_NULL_HANDLE };
 		std::vector<VkCommandBuffer> m_commandBuffers;
