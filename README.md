@@ -42,7 +42,7 @@ If you do not want to use it, run the following commands in a "x64 Native Tools 
 ```
 cmake -B build
 cmake --build build --config Debug
-build\Debug\28_model_loading.exe
+build\tests\Debug\testvve.exe
 ```
 
 
