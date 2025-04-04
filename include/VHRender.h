@@ -28,7 +28,7 @@ namespace vh {
   		std::vector<int32_t> specializationConstants,
       std::vector<VkPushConstantRange> pushConstantRanges,
       std::vector<VkPipelineColorBlendAttachmentState> blendAttachments,
-  		Pipeline& graphicsPipeline);
+  		Pipeline& graphicsPipeline, bool depthWrite = true);
 
     void RenCreateFramebuffers(VkDevice device, SwapChain& swapChain, DepthImage& depthImage, VkRenderPass renderPass);
 
