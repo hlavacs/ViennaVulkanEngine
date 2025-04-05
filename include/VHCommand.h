@@ -13,6 +13,10 @@ namespace vh {
     void ComStartRecordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageIndex
         , SwapChain& swapChain, VkRenderPass renderPass, bool clear, glm::vec4 clearColor, uint32_t currentFrame);
 
+    // TODO: Probably change ComStartRecordCommandBuffer to this one and rename
+    void ComStartRecordCommandBufferClearValue(VkCommandBuffer commandBuffer, uint32_t imageIndex
+        , SwapChain& swapChain, VkRenderPass renderPass, const std::vector<VkClearValue>& clearValues, uint32_t currentFrame);
+
     void ComBindPipeline(VkCommandBuffer commandBuffer, uint32_t imageIndex
         , SwapChain& swapChain, VkRenderPass renderPass, Pipeline& graphicsPipeline
         , std::vector<VkViewport> viewPorts, std::vector<VkRect2D> scissors
