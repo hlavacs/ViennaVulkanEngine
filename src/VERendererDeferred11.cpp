@@ -9,6 +9,7 @@ namespace vve {
 		engine.RegisterCallbacks({
 			{this, 3500, "INIT", [this](Message& message) { return OnInit(message); } },
 			{this, 2000, "PREPARE_NEXT_FRAME", [this](Message& message) { return OnPrepareNextFrame(message); } },
+			{this, 2000, "RECORD_NEXT_FRAME", [this](Message& message) { return OnRecordNextFrame(message); } },
 			{this,	  0, "QUIT", [this](Message& message) { return OnQuit(message); } }
 			});
 	}
@@ -145,6 +146,64 @@ namespace vve {
 		}
 		
 
+		return false;
+	}
+
+	bool RendererDeferred11::OnRecordNextFrame(Message message) {
+
+		std::vector<VkCommandBuffer> cmdBuffers(1);
+		vh::ComCreateCommandBuffers(m_vkState().m_device, m_commandPools[m_vkState().m_currentFrame], cmdBuffers);
+		auto cmdBuffer = cmdBuffers[0];
+
+		vh::ComStartRecordCommandBuffer(cmdBuffer, m_vkState().m_imageIndex,
+			m_vkState().m_swapChain,
+			m_geometryPass, true, {},
+			m_vkState().m_currentFrame);
+
+		float f = 0.0;
+		std::array<float, 4> blendconst = (0 == 0 ? std::array<float, 4>{f, f, f, f} : std::array<float, 4>{ 1 - f,1 - f,1 - f,1 - f });
+
+		
+
+		vh::LightOffset offset{ 0, m_numberLightsPerType.x + m_numberLightsPerType.y + m_numberLightsPerType.z };
+		//vh::LightOffset offset{m_pass, 1};
+		vh::ComBindPipeline(
+			cmdBuffer,
+			m_vkState().m_imageIndex,
+			m_vkState().m_swapChain,
+			m_geometryPass,
+			m_geometryPipeline,
+			{}, {}, //default view ports and scissors
+			blendconst, //blend constants
+			{
+				{.layout = m_geometryPipeline.m_pipelineLayout,
+					.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT,
+					.offset = 0,
+					.size = sizeof(offset),
+					.pValues = &offset
+				}
+			}, //push constants
+			m_vkState().m_currentFrame);
+
+		for (auto [oHandle, name, ghandle, LtoW, uniformBuffers, descriptorsets] :
+			m_registry.template GetView<vecs::Handle, Name, MeshHandle, LocalToWorldMatrix&, vh::Buffer&, vh::DescriptorSet&>
+			({ (size_t)m_geometryPipeline.m_pipeline })) {
+
+			bool hasTexture = m_registry.template Has<TextureHandle>(oHandle);
+			bool hasColor = m_registry.template Has<vh::Color>(oHandle);
+			//bool hasVertexColor = pipeline.second.m_type.find("C") != std::string::npos;
+			if (!hasTexture && !hasColor /* && !hasVertexColor */ ) continue;
+
+			auto mesh = m_registry.template Get<vh::Mesh&>(ghandle);
+			vh::ComRecordObject(cmdBuffer, m_geometryPipeline,
+				{ m_descriptorSetPerFrame, descriptorsets }, "P", mesh, m_vkState().m_currentFrame);
+		}
+		
+
+		vh::ComEndRecordCommandBuffer(cmdBuffer);
+		SubmitCommandBuffer(cmdBuffer);
+
+		//++m_pass;
 		return false;
 	}
 
