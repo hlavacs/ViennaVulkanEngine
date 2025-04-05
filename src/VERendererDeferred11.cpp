@@ -155,9 +155,17 @@ namespace vve {
 		vh::ComCreateCommandBuffers(m_vkState().m_device, m_commandPools[m_vkState().m_currentFrame], cmdBuffers);
 		auto cmdBuffer = cmdBuffers[0];
 
-		vh::ComStartRecordCommandBuffer(cmdBuffer, m_vkState().m_imageIndex,
+		std::vector<VkClearValue> clearValues(4);
+		glm::vec4 clearColor{};
+		
+		clearValues[0].color = { {clearColor.r, clearColor.g, clearColor.b, clearColor.w} };
+		clearValues[1].color = { {clearColor.r, clearColor.g, clearColor.b, clearColor.w} };
+		clearValues[2].color = { {clearColor.r, clearColor.g, clearColor.b, clearColor.w} };
+		clearValues[3].depthStencil = { 1.0f, 0 };		
+
+		vh::ComStartRecordCommandBufferClearValue(cmdBuffer, m_vkState().m_imageIndex,
 			m_vkState().m_swapChain,
-			m_geometryPass, true, {},
+			m_geometryPass, clearValues,
 			m_vkState().m_currentFrame);
 
 		float f = 0.0;
