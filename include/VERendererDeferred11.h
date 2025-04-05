@@ -21,6 +21,8 @@ namespace vve {
 		auto getBindingDescriptions() -> std::vector<VkVertexInputBindingDescription>;
 		void getAttributeDescription(int binding, int location, VkFormat format, auto& attd);
 		auto getAttributeDescriptions() -> std::vector<VkVertexInputAttributeDescription>;
+		template<typename T>
+		auto RegisterLight(float type, std::vector<vh::Light>& lights, int& i) -> int;
 
 		vh::Buffer m_uniformBuffersPerFrame{};
 		vh::Buffer m_uniformBuffersLights{};
@@ -46,6 +48,7 @@ namespace vve {
 
 		// TODO: maybe constexpr is not a good idea? -> also increase number later!!!
 		static constexpr uint32_t m_maxNumberLights{ 16 };
+		glm::ivec3 m_numberLightsPerType{ 0,0,0 };
 	};
 
 }	// namespace vve

@@ -79,11 +79,71 @@ namespace vve {
 		return false;
 	}
 
-	bool RendererDeferred11::OnPrepareNextFrame(Message message) {
-		std::vector<vh::Light> lights{ m_maxNumberLights };
+	template<typename T>
+	auto RendererDeferred11::RegisterLight(float type, std::vector<vh::Light>& lights, int& total) -> int {
+		int n = 0;
+		for (auto [handle, light, lToW] : m_registry.template GetView<vecs::Handle, T&, LocalToWorldMatrix&>()) {
+			++n;
+			//m_engine.RegisterCallbacks( { {this,  2000 + total*1000, "RECORD_NEXT_FRAME", [this](Message& message){ return OnRecordNextFrame(message);} }} );
+			light().params.x = type;
+			lights[total] = { .positionW = glm::vec3{lToW()[3]}, .directionW = glm::vec3{lToW()[1]}, .lightParams = light() };
+			if (++total >= m_maxNumberLights) return n;
+		};
+		return n;
+	}
 
+	bool RendererDeferred11::OnPrepareNextFrame(Message message) {
 		vh::UniformBufferFrame ubc;
 		vkResetCommandPool(m_vkState().m_device, m_commandPools[m_vkState().m_currentFrame], 0);
+
+		int total{ 0 };
+		std::vector<vh::Light> lights{ m_maxNumberLights };
+		m_numberLightsPerType.x = RegisterLight<PointLight>(1.0f, lights, total);
+		m_numberLightsPerType.y = RegisterLight<DirectionalLight>(2.0f, lights, total);
+		m_numberLightsPerType.z = RegisterLight<SpotLight>(3.0f, lights, total);
+		ubc.numLights = m_numberLightsPerType;
+		memcpy(m_uniformBuffersLights.m_uniformBuffersMapped[m_vkState().m_currentFrame], lights.data(), total * sizeof(vh::Light));
+
+		auto [lToW, view, proj] = *m_registry.template GetView<LocalToWorldMatrix&, ViewMatrix&, ProjectionMatrix&>().begin();
+		ubc.camera.view = view();
+		ubc.camera.proj = proj();
+		ubc.camera.positionW = lToW()[3];
+		memcpy(m_uniformBuffersPerFrame.m_uniformBuffersMapped[m_vkState().m_currentFrame], &ubc, sizeof(ubc));
+
+		
+		for (auto [oHandle, name, ghandle, LtoW, uniformBuffers] :
+			m_registry.template GetView<vecs::Handle, Name, MeshHandle, LocalToWorldMatrix&, vh::Buffer&>
+			({ (size_t)m_geometryPipeline.m_pipeline })) {
+
+			bool hasTexture = m_registry.template Has<TextureHandle>(oHandle);
+			bool hasColor = m_registry.template Has<vh::Color>(oHandle);
+			//bool hasVertexColor = pipeline.second.m_type.find("C") != std::string::npos;
+			//if (!hasTexture && !hasColor && !hasVertexColor) continue;
+
+			if (hasTexture) {
+				vh::BufferPerObjectTexture uboTexture{};
+				uboTexture.model = LtoW();
+				uboTexture.modelInverseTranspose = glm::inverse(glm::transpose(uboTexture.model));
+				UVScale uvScale{ { 1.0f, 1.0f } };
+				if (m_registry.template Has<UVScale>(oHandle)) { uvScale = m_registry.template Get<UVScale>(oHandle); }
+				uboTexture.uvScale = uvScale;
+				memcpy(uniformBuffers().m_uniformBuffersMapped[m_vkState().m_currentFrame], &uboTexture, sizeof(uboTexture));
+			}
+			else if (hasColor) {
+				vh::BufferPerObjectColor uboColor{};
+				uboColor.model = LtoW();
+				uboColor.modelInverseTranspose = glm::inverse(glm::transpose(uboColor.model));
+				uboColor.color = m_registry.template Get<vh::Color>(oHandle);
+				memcpy(uniformBuffers().m_uniformBuffersMapped[m_vkState().m_currentFrame], &uboColor, sizeof(uboColor));
+			}
+			//else if (hasVertexColor) {
+			//	vh::BufferPerObject uboColor{};
+			//	uboColor.model = LtoW();
+			//	uboColor.modelInverseTranspose = glm::inverse(glm::transpose(uboColor.model));
+			//	memcpy(uniformBuffers().m_uniformBuffersMapped[m_vkState().m_currentFrame], &uboColor, sizeof(uboColor));
+			//}
+		}
+		
 
 		return false;
 	}
