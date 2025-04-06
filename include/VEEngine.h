@@ -49,7 +49,7 @@ namespace vve {
 		void Init();
 		void Step();
 		void Quit();
-		void SendMessage( Message message );
+		void SendMsg( Message message );
 		void PrintCallbacks();
 		auto GetHandle(std::string name) -> vecs::Handle;
 		auto SetHandle(std::string name, vecs::Handle h) -> void;
@@ -59,7 +59,7 @@ namespace vve {
 		auto GetSystem(std::string name) -> System* { return m_systems[name].get(); }
 
 	protected:
-		virtual void CreateWindow();
+		virtual void CreateWindows();
 		virtual void CreateRenderer();
 		virtual void CreateSystems();
 		virtual void CreateGUI();

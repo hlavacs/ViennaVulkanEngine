@@ -56,14 +56,14 @@ namespace vve {
 		m_systems.erase(system->GetName());
 	}
 
-	void Engine::SendMessage( Message message ) {
+	void Engine::SendMsg( Message message ) {
 		for( auto& [phase, callback] : m_messageMap[message.GetType()] ) {
 			message.SetPhase(phase);
 			if( callback.m_callback(message) ) { return; }
 		}
 	}
 	
-	void Engine::CreateWindow(){
+	void Engine::CreateWindows(){
 		RegisterSystem(std::make_unique<WindowSDL>(m_windowName, *this, m_windowName, 1200, 600 ) );
 	};
 	
@@ -92,12 +92,12 @@ namespace vve {
 
 	void Engine::Init() {
 		if(!m_initialized) {
-			CreateWindow();
+			CreateWindows();
 			CreateRenderer();
 			CreateSystems();
 			CreateGUI();		
-			SendMessage( MsgInit{} );
-			SendMessage( MsgLoadLevel{""} );
+			SendMsg( MsgInit{} );
+			SendMsg( MsgLoadLevel{""} );
 		}
 		m_initialized = true;
 		m_last = std::chrono::high_resolution_clock::now();
@@ -108,14 +108,14 @@ namespace vve {
 		double dt = std::chrono::duration<double, std::micro>(now - m_last).count() / 1'000'000.0;
 		m_last = now;
 
-		SendMessage( MsgFrameStart{dt} ) ;
-		SendMessage( MsgPollEvents{dt} ) ;
-		SendMessage( MsgUpdate{dt} ) ;
-		SendMessage( MsgPrepareNextFrame{dt} ) ;
-		SendMessage( MsgRecordNextFrame{dt} ) ;
-		SendMessage( MsgRenderNextFrame{dt} ) ;
-		SendMessage( MsgPresentNextFrame{dt} ) ;
-		SendMessage( MsgFrameEnd{dt} ) ;
+		SendMsg( MsgFrameStart{dt} ) ;
+		SendMsg( MsgPollEvents{dt} ) ;
+		SendMsg( MsgUpdate{dt} ) ;
+		SendMsg( MsgPrepareNextFrame{dt} ) ;
+		SendMsg( MsgRecordNextFrame{dt} ) ;
+		SendMsg( MsgRenderNextFrame{dt} ) ;
+		SendMsg( MsgPresentNextFrame{dt} ) ;
+		SendMsg( MsgFrameEnd{dt} ) ;
 	}
 
 	auto Engine::GetHandle(std::string name) -> vecs::Handle { 
@@ -131,7 +131,7 @@ namespace vve {
 	}
 
 	void Engine::Quit(){
-		SendMessage( MsgQuit{} );
+		Message( MsgQuit{} );
 	}
 
 	void Engine::Stop() {
