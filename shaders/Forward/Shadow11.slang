@@ -7,6 +7,7 @@ struct VS_OUTPUT
     uint renderTargetIndex : SV_RenderTargetArrayIndex;
 };
 
+
 // binding B,S means that the resource is bound to binding B, set S
 
 // set 0 ... per frame
@@ -42,5 +43,9 @@ VS_OUTPUT vertexMain(float3 positionL: POSITION, int instanceID: SV_InstanceID )
     return output;
 }
 
-
+[shader("fragment")]
+float4 fragmentMain(float4 position: SV_POSITION) : SV_DEPTH
+{
+    return position.z;
+}
 
