@@ -96,7 +96,7 @@ namespace vh {
         vkCmdBeginRenderPass(commandBuffer, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
     }
 
-    // TODO: Probably change ComStartRecordCommandBuffer to this one and rename
+    // Used by deferred renderer
     void ComStartRecordCommandBufferClearValue(VkCommandBuffer commandBuffer, uint32_t imageIndex
         , SwapChain& swapChain, VkRenderPass renderPass, const std::vector<VkClearValue>& clearValues, uint32_t currentFrame) {
 
