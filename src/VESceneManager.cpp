@@ -71,7 +71,7 @@ namespace vve {
     bool SceneManager::OnLoadLevel(Message message) {
 
 		vh::Color color{ { 0.0f, 0.0f, 0.0f, 1.0f }, { 0.9f, 0.1f, 0.1f, 1.0f }, { 0.0f, 0.0f, 0.0f, 1.0f } };
-		m_engine.SendMessage( MsgSceneLoad{ vve::Filename{"assets/standard/sphere.obj"} });		
+		m_engine.SendMsg( MsgSceneLoad{ vve::Filename{"assets/standard/sphere.obj"} });		
 		
 		float intensity1 = 0.8f;
 		auto lightHandle = m_registry.Insert(
@@ -88,7 +88,7 @@ namespace vve {
 			vve::MeshName{"assets/standard/sphere.obj/sphere"}
 		);
 		SetParent( ObjectHandle{lightHandle}, ParentHandle{m_rootHandle} );
-		m_engine.SendMessage(MsgObjectCreate{ vve::ObjectHandle(lightHandle), vve::ParentHandle{}, this });
+		m_engine.SendMsg(MsgObjectCreate{ vve::ObjectHandle(lightHandle), vve::ParentHandle{}, this });
 
 		float intensity2 = 0.8f;
 		auto lightHandle2 = m_registry.Insert(
@@ -120,7 +120,7 @@ namespace vve {
 			vve::MeshName{"assets/standard/sphere.obj/sphere"}
 		);
 		SetParent( ObjectHandle{lightHandle3}, ParentHandle{m_rootHandle} );
-		m_engine.SendMessage(MsgObjectCreate{ vve::ObjectHandle(lightHandle3), vve::ParentHandle{}, this });
+		m_engine.SendMsg(MsgObjectCreate{ vve::ObjectHandle(lightHandle3), vve::ParentHandle{}, this });
 
 		return false;
 	}
@@ -256,7 +256,7 @@ namespace vve {
 				m_registry.Put(nHandle, color);
 			}
 
-			m_engine.SendMessage( MsgObjectCreate{ObjectHandle{nHandle}, ParentHandle{parent}, this }); 
+			m_engine.SendMsg( MsgObjectCreate{ObjectHandle{nHandle}, ParentHandle{parent}, this }); 
 		}
 
 		for (unsigned int i = 0; i < node->mNumChildren; i++) {
@@ -297,7 +297,7 @@ namespace vve {
 
 		auto children = m_registry.template Get<Children>(msg.m_handle);
 		for( auto child : children() ) {
-			m_engine.SendMessage(MsgObjectDestroy(ObjectHandle(child)));
+			m_engine.SendMsg(MsgObjectDestroy(ObjectHandle(child)));
 		}
 		return false;
 	}

@@ -75,7 +75,7 @@ namespace vve {
         SDL_Vulkan_GetInstanceExtensions(sdlWindow, &extensions_count, extensions.data());
         wstate().m_instanceExtensions.insert(wstate().m_instanceExtensions.end(), extensions.begin(), extensions.end());
 
-		m_engine.SendMessage( MsgExtensions{ wstate().m_instanceExtensions, {}} );
+		m_engine.SendMsg( MsgExtensions{ wstate().m_instanceExtensions, {}} );
 		return false;
     }
 
@@ -97,7 +97,7 @@ namespace vve {
 
         SDL_Event event;
         while (SDL_PollEvent(&event)) {
-            m_engine.SendMessage( MsgSDL{message.GetDt(), event} );
+            m_engine.SendMsg( MsgSDL{message.GetDt(), event} );
 
             if (event.type == SDL_WINDOWEVENT) {
                 switch (event.window.event) {
@@ -120,26 +120,26 @@ namespace vve {
 	                	m_engine.Stop();
 						break;
 	                case SDL_MOUSEMOTION:
-	                    m_engine.SendMessage( MsgMouseMove{message.GetDt(), event.motion.x, event.motion.y} );
+	                    m_engine.SendMsg( MsgMouseMove{message.GetDt(), event.motion.x, event.motion.y} );
 	                    break;
 	                case SDL_MOUSEBUTTONDOWN:
-	                    m_engine.SendMessage( MsgMouseButtonDown{message.GetDt(), event.button.button} );
+	                    m_engine.SendMsg( MsgMouseButtonDown{message.GetDt(), event.button.button} );
 	                    button.push_back( event.button.button );
 	                    break;
 	                case SDL_MOUSEBUTTONUP:
-	                    m_engine.SendMessage( MsgMouseButtonUp{message.GetDt(), event.button.button} );
+	                    m_engine.SendMsg( MsgMouseButtonUp{message.GetDt(), event.button.button} );
 	                    m_mouseButtonsDown.erase( event.button.button );
 	                    break;
 	                case SDL_MOUSEWHEEL:
-	                    m_engine.SendMessage( MsgMouseWheel{message.GetDt(), event.wheel.x, event.wheel.y} );
+	                    m_engine.SendMsg( MsgMouseWheel{message.GetDt(), event.wheel.x, event.wheel.y} );
 	                    break;
 	                case SDL_KEYDOWN:
 	                    if( event.key.repeat ) continue;
-	                    m_engine.SendMessage( MsgKeyDown{message.GetDt(), event.key.keysym.scancode} );
+	                    m_engine.SendMsg( MsgKeyDown{message.GetDt(), event.key.keysym.scancode} );
 	                    key.push_back(event.key.keysym.scancode);
 	                    break;
 	                case SDL_KEYUP:
-	                    m_engine.SendMessage( MsgKeyUp{message.GetDt(), event.key.keysym.scancode} );
+	                    m_engine.SendMsg( MsgKeyUp{message.GetDt(), event.key.keysym.scancode} );
 	                    m_keysDown.erase(event.key.keysym.scancode);
 	                    break;
 	                default:
@@ -148,8 +148,8 @@ namespace vve {
 			}
         }
 
-        for( auto& key1 : m_keysDown ) { m_engine.SendMessage( MsgKeyRepeat{message.GetDt(), key1} ); }
-        for( auto& button1 : m_mouseButtonsDown ) { m_engine.SendMessage( MsgMouseButtonRepeat{message.GetDt(), button1} ); }
+        for( auto& key1 : m_keysDown ) { m_engine.SendMsg( MsgKeyRepeat{message.GetDt(), key1} ); }
+        for( auto& button1 : m_mouseButtonsDown ) { m_engine.SendMsg( MsgMouseButtonRepeat{message.GetDt(), button1} ); }
 
         if(key.size() > 0) { for( auto& k : key ) { m_keysDown.insert(k) ; } }
         if(button.size() > 0) { for( auto& b : button ) {m_mouseButtonsDown.insert(b);} }

@@ -83,9 +83,9 @@ namespace vve {
 		const std::filesystem::path shaders{"shaders/Forward"};
 		for( const auto& entry : std::filesystem::directory_iterator(shaders) ) {
 			auto filename = entry.path().filename().string();
-			if( filename.find("_vert.spv") != std::string::npos && std::isdigit(filename[0]) ) {
+			if( filename.find(".spv") != std::string::npos && std::isdigit(filename[0]) ) {
 				size_t pos1 = filename.find("_");
-				size_t pos2 = filename.find("_vert.spv");
+				size_t pos2 = filename.find(".spv");
 				auto pri = std::stoi( filename.substr(0, pos1-1) );
 				std::string type = filename.substr(pos1+1, pos2 - pos1 - 1);
 				
@@ -116,7 +116,7 @@ namespace vve {
 				colorBlendAttachment.blendEnable = VK_TRUE;
 
 				vh::RenCreateGraphicsPipeline(m_vkState().m_device, m_renderPass, 
-					entry.path().string(), (shaders / (filename.substr(0,pos2) + "_frag.spv")).string(),
+					entry.path().string(), entry.path().string(),
 					bindingDescriptions, attributeDescriptions,
 					{ m_descriptorSetLayoutPerFrame, descriptorSetLayoutPerObject }, 
 					{(int)MAX_NUMBER_LIGHTS}, //spezialization constants
