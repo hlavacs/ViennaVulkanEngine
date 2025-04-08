@@ -50,6 +50,7 @@ namespace vve {
 		for (int i = 0; i < MAX_FRAMES_IN_FLIGHT; ++i) {
 			vh::ComCreateCommandPool(m_vkState().m_surface, m_vkState().m_physicalDevice, m_vkState().m_device, m_commandPools[i]);
 		}
+
 		// TODO: shrink pool to only what is needed - why 1000?
 		vh::RenCreateDescriptorPool(m_vkState().m_device, 1000, m_descriptorPool);
 		vh::RenCreateDescriptorSet(m_vkState().m_device, m_descriptorSetLayoutPerFrame, m_descriptorPool, m_descriptorSetPerFrame);

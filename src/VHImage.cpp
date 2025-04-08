@@ -144,7 +144,7 @@ namespace vh {
         samplerInfo.mipmapMode = VK_SAMPLER_MIPMAP_MODE_LINEAR;
 
         if (vkCreateSampler(device, &samplerInfo, nullptr, &sampler) != VK_SUCCESS) {
-            throw std::runtime_error("failed to create texture sampler!");
+            throw std::runtime_error("failed to create image sampler!");
         }
     }
 
