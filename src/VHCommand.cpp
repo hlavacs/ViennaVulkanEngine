@@ -98,7 +98,7 @@ namespace vh {
 
     // Used by deferred renderer
     void ComStartRecordCommandBufferClearValue(VkCommandBuffer commandBuffer, uint32_t imageIndex
-        , SwapChain& swapChain, VkRenderPass renderPass, const std::vector<VkClearValue>& clearValues, uint32_t currentFrame) {
+        , SwapChain& swapChain, std::vector<VkFramebuffer>& gBufferFramebuffers, VkRenderPass renderPass, const std::vector<VkClearValue>& clearValues, uint32_t currentFrame) {
 
         VkCommandBufferBeginInfo beginInfo{};
         beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
@@ -110,7 +110,7 @@ namespace vh {
         VkRenderPassBeginInfo renderPassInfo{};
         renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
         renderPassInfo.renderPass = renderPass;
-        renderPassInfo.framebuffer = swapChain.m_swapChainFramebuffers[imageIndex];
+        renderPassInfo.framebuffer = gBufferFramebuffers[imageIndex];
         renderPassInfo.renderArea.offset = { 0, 0 };
         renderPassInfo.renderArea.extent = swapChain.m_swapChainExtent;
 
