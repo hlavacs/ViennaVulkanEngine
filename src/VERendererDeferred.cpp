@@ -26,7 +26,7 @@ namespace vve {
 				break;
 			default:
 				// TODO 1.1 Renderer & 1.3 Renderer
-				m_engine.RegisterSystem(std::make_unique<RendererDeferred11>(m_name() + "DefLight1.1", m_engine, m_windowName));
+				m_engine.RegisterSystem(std::make_unique<RendererDeferred11>(m_name() + "Light1.1", m_engine, m_windowName));
 				break;
 		}
 		return false;

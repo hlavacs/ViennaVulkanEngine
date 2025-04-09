@@ -6,7 +6,7 @@ namespace vve {
 
 		friend class RendererDeferred;
 
-		enum GBufferIndex { POSITION = 0, NORMALS = 1, ALBEDO = 2};
+		enum GBufferIndex { POSITION = 0, NORMALS = 1, ALBEDO = 2 };
 
 	public:
 		RendererDeferred11(std::string systemName, Engine& engine, std::string windowName);
@@ -34,7 +34,6 @@ namespace vve {
 
 		// TODO: Maybe make GBufferAttachment struct for better alignment
 		VkSampler m_sampler{ VK_NULL_HANDLE };
-
 		std::array<vh::GBufferImage, 3> m_gBufferAttachments{};
 
 		VkDescriptorSetLayout m_descriptorSetLayoutPerFrame{ VK_NULL_HANDLE };
@@ -48,7 +47,7 @@ namespace vve {
 		vh::Pipeline m_lightingPipeline{};
 
 		std::vector<VkCommandPool> m_commandPools{};
-		std::vector<VkCommandBuffer> m_commandBuffers;
+		std::vector<VkCommandBuffer> m_commandBuffers{};
 
 		// TODO: maybe constexpr is not a good idea? -> also increase number later!!!
 		static constexpr uint32_t m_maxNumberLights{ 16 };
