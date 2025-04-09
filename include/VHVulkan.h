@@ -172,6 +172,8 @@ namespace vh {
         VkPipelineLayout m_pipelineLayout;
         VkPipeline m_pipeline;
     };
+
+	// Deferred Renderer helpers
 	struct GBufferImage {
 		VkImage         m_gbufferImage;
 		VmaAllocation   m_gbufferImageAllocation;
@@ -179,6 +181,7 @@ namespace vh {
 		VkFormat		m_gbufferFormat;
 		VkSampler       m_gbufferSampler;
 	};
+
 	/// Pipeline code:
 	/// P...Vertex data contains positions
 	/// N...Vertex data contains normals

@@ -6,6 +6,8 @@ namespace vve {
 
 		friend class RendererDeferred;
 
+		enum GBufferIndex { POSITION = 0, NORMALS = 1, ALBEDO = 2};
+
 	public:
 		RendererDeferred11(std::string systemName, Engine& engine, std::string windowName);
 		virtual ~RendererDeferred11();
@@ -25,14 +27,15 @@ namespace vve {
 		template<typename T>
 		auto RegisterLight(float type, std::vector<vh::Light>& lights, int& i) -> int;
 
+		std::vector<VkFramebuffer> m_gBufferFramebuffers;
+
 		vh::Buffer m_uniformBuffersPerFrame{};
 		vh::Buffer m_uniformBuffersLights{};
 
 		// TODO: Maybe make GBufferAttachment struct for better alignment
 		VkSampler m_sampler{ VK_NULL_HANDLE };
-		vh::GBufferImage m_positionImage{};
-		vh::GBufferImage m_normalsImage{};
-		vh::GBufferImage m_albedoImage{};
+
+		std::array<vh::GBufferImage, 3> m_gBufferAttachments{};
 
 		VkDescriptorSetLayout m_descriptorSetLayoutPerFrame{ VK_NULL_HANDLE };
 		VkDescriptorPool m_descriptorPool{ VK_NULL_HANDLE };
