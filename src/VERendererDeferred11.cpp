@@ -76,6 +76,8 @@ namespace vve {
 		vh::BufCreateBuffers(m_vkState().m_physicalDevice, m_vkState().m_device, m_vkState().m_vmaAllocator, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, m_maxNumberLights * sizeof(vh::Light), m_uniformBuffersLights);
 		vh::RenUpdateDescriptorSet(m_vkState().m_device, m_uniformBuffersLights, 4, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, m_maxNumberLights * sizeof(vh::Light), m_descriptorSetPerFrame);
 
+		vh::RenCreateGBufferFramebuffers(m_vkState().m_device, m_vkState().m_swapChain, m_gBufferAttachments, m_gBufferFrameBuffers, m_vkState().m_depthImage, m_geometryPass);
+
 		CreateGeometryPipeline();
 		CreateLightingPipeline();
 		return false;
@@ -165,7 +167,7 @@ namespace vve {
 		clearValues[3].depthStencil = { 1.0f, 0 };		
 
 		vh::ComStartRecordCommandBufferClearValue(cmdBuffer, m_vkState().m_imageIndex,
-			m_vkState().m_swapChain,
+			m_vkState().m_swapChain, m_gBufferFrameBuffers,
 			m_geometryPass, clearValues,
 			m_vkState().m_currentFrame);
 

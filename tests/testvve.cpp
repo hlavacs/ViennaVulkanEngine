@@ -247,7 +247,7 @@ int main() {
 	MyGUI mygui{engine};
 
 	engine.Init();
-	engine.PrintCallbacks();
+	//engine.PrintCallbacks();
 
     engine.Run();
 
