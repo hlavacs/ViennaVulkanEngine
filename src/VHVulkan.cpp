@@ -37,10 +37,18 @@
 #include <stb_image_write.h>
 
 #define VOLK_IMPLEMENTATION
+#ifdef __linux__
+#include <volk.h>
+#else
 #include "volk/volk.h"
+#endif
 
 #define VMA_IMPLEMENTATION
+#ifdef __linux__
+#include <vk_mem_alloc.h>
+#else
 #include "vma/vk_mem_alloc.h"
+#endif
 
 #define IMGUI_IMPL_VULKAN_USE_VOLK
 #include "imgui.h"

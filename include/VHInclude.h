@@ -69,7 +69,11 @@ namespace vve {
 
 #include <VkBootstrap.h>
 
+#ifdef __linux__
+#include <vk_mem_alloc.h>
+#else
 #include "vma/vk_mem_alloc.h"
+#endif
 
 #include "imgui.h"
 #include "backends/imgui_impl_sdl2.h"
