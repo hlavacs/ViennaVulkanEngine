@@ -32,6 +32,9 @@ namespace vh {
 
     void RenCreateFramebuffers(VkDevice device, SwapChain& swapChain, DepthImage& depthImage, VkRenderPass renderPass);
 
+    void RenCreateGBufferFramebuffers(VkDevice device, SwapChain& swapChain, std::array<GBufferImage, 3>& gBufferAttachs,
+        std::vector<VkFramebuffer>& m_gBufferFramebuffers, DepthImage& depthImage, VkRenderPass renderPass);
+
     void RenCreateDepthResources(VkPhysicalDevice physicalDevice, VkDevice device, VmaAllocator vmaAllocator, SwapChain& swapChain, DepthImage& depthImage);
     void RenCreateGBufferResources(VkPhysicalDevice physicalDevice, VkDevice device, VmaAllocator vmaAllocator, SwapChain& swapChain, GBufferImage& gbufferImage, VkFormat format, VkSampler sampler);
 

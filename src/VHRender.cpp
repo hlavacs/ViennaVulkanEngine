@@ -378,6 +378,34 @@ namespace vh {
         }
     }
 
+    void RenCreateGBufferFramebuffers(VkDevice device, SwapChain& swapChain, std::array<GBufferImage, 3>& gBufferAttachs, 
+        std::vector<VkFramebuffer>& m_gBufferFramebuffers, DepthImage& depthImage, VkRenderPass renderPass) {
+
+        m_gBufferFramebuffers.resize(MAX_FRAMES_IN_FLIGHT);
+
+        for (size_t i = 0; i < m_gBufferFramebuffers.size(); i++) {
+            std::array<VkImageView, 4> attachments = {
+                gBufferAttachs[0].m_gbufferImageView,   // position
+                gBufferAttachs[1].m_gbufferImageView,   // normals
+                gBufferAttachs[2].m_gbufferImageView,   // albedo
+                depthImage.m_depthImageView
+            };
+
+            VkFramebufferCreateInfo framebufferInfo{};
+            framebufferInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
+            framebufferInfo.renderPass = renderPass;
+            framebufferInfo.attachmentCount = static_cast<uint32_t>(attachments.size());
+            framebufferInfo.pAttachments = attachments.data();
+            framebufferInfo.width = swapChain.m_swapChainExtent.width;
+            framebufferInfo.height = swapChain.m_swapChainExtent.height;
+            framebufferInfo.layers = 1;
+
+            if (vkCreateFramebuffer(device, &framebufferInfo, nullptr, &swapChain.m_swapChainFramebuffers[i]) != VK_SUCCESS) {
+                throw std::runtime_error("failed to create framebuffer!");
+            }
+        }
+    }
+
     void RenCreateDescriptorPool(VkDevice device, uint32_t sizes, VkDescriptorPool& descriptorPool) {
 
 		std::vector<VkDescriptorPoolSize> pool_sizes;
@@ -513,7 +541,7 @@ namespace vh {
 
         ImgCreateImage(physicalDevice, device, vmaAllocator, swapChain.m_swapChainExtent.width
             , swapChain.m_swapChainExtent.height, format
-            , VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL
+            , VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT
             , VK_IMAGE_LAYOUT_UNDEFINED //  Do NOT CHANGE
             , VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, gbufferImage.m_gbufferImage, gbufferImage.m_gbufferImageAllocation);
         gbufferImage.m_gbufferImageView = ImgCreateImageView(device, gbufferImage.m_gbufferImage, format, VK_IMAGE_ASPECT_COLOR_BIT);
