@@ -83,19 +83,6 @@ namespace vve {
 		return false;
 	}
 
-	template<typename T>
-	auto RendererDeferred11::RegisterLight(float type, std::vector<vh::Light>& lights, int& total) -> int {
-		int n = 0;
-		for (auto [handle, light, lToW] : m_registry.template GetView<vecs::Handle, T&, LocalToWorldMatrix&>()) {
-			++n;
-			//m_engine.RegisterCallbacks( { {this,  2000 + total*1000, "RECORD_NEXT_FRAME", [this](Message& message){ return OnRecordNextFrame(message);} }} );
-			light().params.x = type;
-			lights[total] = { .positionW = glm::vec3{lToW()[3]}, .directionW = glm::vec3{lToW()[1]}, .lightParams = light() };
-			if (++total >= m_maxNumberLights) return n;
-		};
-		return n;
-	}
-
 	bool RendererDeferred11::OnPrepareNextFrame(Message message) {
 		vh::UniformBufferFrame ubc;
 		vkResetCommandPool(m_vkState().m_device, m_commandPools[m_vkState().m_currentFrame], 0);
@@ -114,15 +101,13 @@ namespace vve {
 		ubc.camera.positionW = lToW()[3];
 		memcpy(m_uniformBuffersPerFrame.m_uniformBuffersMapped[m_vkState().m_currentFrame], &ubc, sizeof(ubc));
 
-		
 		for (auto [oHandle, name, ghandle, LtoW, uniformBuffers] :
-			m_registry.template GetView<vecs::Handle, Name, MeshHandle, LocalToWorldMatrix&, vh::Buffer&>
-			({ (size_t)m_geometryPipeline.m_pipeline })) {
+			m_registry.template GetView<vecs::Handle, Name, MeshHandle, LocalToWorldMatrix&, vh::Buffer&>({ (size_t)m_geometryPipeline.m_pipeline })) {
 
 			bool hasTexture = m_registry.template Has<TextureHandle>(oHandle);
 			bool hasColor = m_registry.template Has<vh::Color>(oHandle);
-			//bool hasVertexColor = pipeline.second.m_type.find("C") != std::string::npos;
-			//if (!hasTexture && !hasColor && !hasVertexColor) continue;
+			bool hasVertexColor = true;		//pipeline.second.m_type.find("C") != std::string::npos;
+			if (!hasTexture && !hasColor && !hasVertexColor) continue;
 
 			if (hasTexture) {
 				vh::BufferPerObjectTexture uboTexture{};
@@ -140,14 +125,13 @@ namespace vve {
 				uboColor.color = m_registry.template Get<vh::Color>(oHandle);
 				memcpy(uniformBuffers().m_uniformBuffersMapped[m_vkState().m_currentFrame], &uboColor, sizeof(uboColor));
 			}
-			//else if (hasVertexColor) {
-			//	vh::BufferPerObject uboColor{};
-			//	uboColor.model = LtoW();
-			//	uboColor.modelInverseTranspose = glm::inverse(glm::transpose(uboColor.model));
-			//	memcpy(uniformBuffers().m_uniformBuffersMapped[m_vkState().m_currentFrame], &uboColor, sizeof(uboColor));
-			//}
+			else if (hasVertexColor) {
+				vh::BufferPerObject uboColor{};
+				uboColor.model = LtoW();
+				uboColor.modelInverseTranspose = glm::inverse(glm::transpose(uboColor.model));
+				memcpy(uniformBuffers().m_uniformBuffersMapped[m_vkState().m_currentFrame], &uboColor, sizeof(uboColor));
+			}
 		}
-		
 
 		return false;
 	}
@@ -160,11 +144,11 @@ namespace vve {
 
 		std::vector<VkClearValue> clearValues(4);
 		glm::vec4 clearColor{};
-		
+
 		clearValues[0].color = { {clearColor.r, clearColor.g, clearColor.b, clearColor.w} };
 		clearValues[1].color = { {clearColor.r, clearColor.g, clearColor.b, clearColor.w} };
 		clearValues[2].color = { {clearColor.r, clearColor.g, clearColor.b, clearColor.w} };
-		clearValues[3].depthStencil = { 1.0f, 0 };		
+		clearValues[3].depthStencil = { 1.0f, 0 };
 
 		vh::ComStartRecordCommandBufferClearValue(cmdBuffer, m_vkState().m_imageIndex,
 			m_vkState().m_swapChain, m_gBufferFrameBuffers,
@@ -174,10 +158,7 @@ namespace vve {
 		float f = 0.0;
 		std::array<float, 4> blendconst = (0 == 0 ? std::array<float, 4>{f, f, f, f} : std::array<float, 4>{ 1 - f,1 - f,1 - f,1 - f });
 
-		
-
 		vh::LightOffset offset{ 0, m_numberLightsPerType.x + m_numberLightsPerType.y + m_numberLightsPerType.z };
-		//vh::LightOffset offset{m_pass, 1};
 		vh::ComBindPipeline(
 			cmdBuffer,
 			m_vkState().m_imageIndex,
@@ -202,14 +183,13 @@ namespace vve {
 
 			bool hasTexture = m_registry.template Has<TextureHandle>(oHandle);
 			bool hasColor = m_registry.template Has<vh::Color>(oHandle);
-			//bool hasVertexColor = pipeline.second.m_type.find("C") != std::string::npos;
-			if (!hasTexture && !hasColor /* && !hasVertexColor */ ) continue;
+			bool hasVertexColor = true;		// pipeline.second.m_type.find("C") != std::string::npos;
+			if (!hasTexture && !hasColor && !hasVertexColor) continue;
 
 			auto mesh = m_registry.template Get<vh::Mesh&>(ghandle);
 			vh::ComRecordObject(cmdBuffer, m_geometryPipeline,
 				{ m_descriptorSetPerFrame, descriptorsets }, "P", mesh, m_vkState().m_currentFrame);
 		}
-		
 
 		vh::ComEndRecordCommandBuffer(cmdBuffer);
 		SubmitCommandBuffer(cmdBuffer);
@@ -328,6 +308,18 @@ namespace vve {
 		getAttributeDescription(binding++, location++, m_gBufferAttachments[ALBEDO].m_gbufferFormat, attributeDescriptions);
 
 		return attributeDescriptions;
+	}
+
+	template<typename T>
+	auto RendererDeferred11::RegisterLight(float type, std::vector<vh::Light>& lights, int& total) -> int {
+		int n = 0;
+		for (auto [handle, light, lToW] : m_registry.template GetView<vecs::Handle, T&, LocalToWorldMatrix&>()) {
+			++n;
+			light().params.x = type;
+			lights[total] = { .positionW = glm::vec3{lToW()[3]}, .directionW = glm::vec3{lToW()[1]}, .lightParams = light() };
+			if (++total >= m_maxNumberLights) return n;
+		};
+		return n;
 	}
 
 }	// namespace vve

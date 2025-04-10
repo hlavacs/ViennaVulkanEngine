@@ -381,7 +381,7 @@ namespace vh {
     void RenCreateGBufferFramebuffers(VkDevice device, SwapChain& swapChain, std::array<GBufferImage, 3>& gBufferAttachs, 
         std::vector<VkFramebuffer>& m_gBufferFramebuffers, DepthImage& depthImage, VkRenderPass renderPass) {
 
-        m_gBufferFramebuffers.resize(MAX_FRAMES_IN_FLIGHT);
+        m_gBufferFramebuffers.resize(swapChain.m_swapChainImageViews.size());
 
         for (size_t i = 0; i < m_gBufferFramebuffers.size(); i++) {
             std::array<VkImageView, 4> attachments = {

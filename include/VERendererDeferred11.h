@@ -27,7 +27,7 @@ namespace vve {
 		template<typename T>
 		auto RegisterLight(float type, std::vector<vh::Light>& lights, int& i) -> int;
 
-		std::vector<VkFramebuffer> m_gBufferFrameBuffers;
+		std::vector<VkFramebuffer> m_gBufferFrameBuffers{};
 
 		vh::Buffer m_uniformBuffersPerFrame{};
 		vh::Buffer m_uniformBuffersLights{};
