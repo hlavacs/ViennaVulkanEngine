@@ -9,6 +9,8 @@ namespace vve {
 		enum GBufferIndex { POSITION = 0, NORMALS = 1, ALBEDO = 2 };
 
 	public:
+		static constexpr uint32_t MAX_NUMBER_LIGHTS{ 128 };
+
 		RendererDeferred11(std::string systemName, Engine& engine, std::string windowName);
 		virtual ~RendererDeferred11();
 
@@ -52,8 +54,6 @@ namespace vve {
 		std::vector<VkCommandPool> m_commandPools{};
 		std::vector<VkCommandBuffer> m_commandBuffers{};
 
-		// TODO: maybe constexpr is not a good idea? -> also increase number later!!!
-		static constexpr uint32_t m_maxNumberLights{ 16 };
 		glm::ivec3 m_numberLightsPerType{ 0,0,0 };
 	};
 

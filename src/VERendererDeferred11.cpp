@@ -75,8 +75,8 @@ namespace vve {
 		vh::RenCreateGBufferResources(m_vkState().m_physicalDevice, m_vkState().m_device, m_vkState().m_vmaAllocator, m_vkState().m_swapChain, m_gBufferAttachments[ALBEDO], VK_FORMAT_R8G8B8A8_UNORM, m_sampler);
 		vh::RenUpdateDescriptorSetGBufferAttachment(m_vkState().m_device, m_gBufferAttachments[ALBEDO], 3, m_descriptorSetComposition);
 		// Binding 4 : Light
-		vh::BufCreateBuffers(m_vkState().m_physicalDevice, m_vkState().m_device, m_vkState().m_vmaAllocator, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, m_maxNumberLights * sizeof(vh::Light), m_uniformBuffersLights);
-		vh::RenUpdateDescriptorSet(m_vkState().m_device, m_uniformBuffersLights, 4, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, m_maxNumberLights * sizeof(vh::Light), m_descriptorSetComposition);
+		vh::BufCreateBuffers(m_vkState().m_physicalDevice, m_vkState().m_device, m_vkState().m_vmaAllocator, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, MAX_NUMBER_LIGHTS * sizeof(vh::Light), m_uniformBuffersLights);
+		vh::RenUpdateDescriptorSet(m_vkState().m_device, m_uniformBuffersLights, 4, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, MAX_NUMBER_LIGHTS * sizeof(vh::Light), m_descriptorSetComposition);
 
 		// Object Descriptors
 		
@@ -103,7 +103,7 @@ namespace vve {
 		vkResetCommandPool(m_vkState().m_device, m_commandPools[m_vkState().m_currentFrame], 0);
 
 		int total{ 0 };
-		std::vector<vh::Light> lights{ m_maxNumberLights };
+		std::vector<vh::Light> lights{ MAX_NUMBER_LIGHTS };
 		m_numberLightsPerType.x = RegisterLight<PointLight>(1.0f, lights, total);
 		m_numberLightsPerType.y = RegisterLight<DirectionalLight>(2.0f, lights, total);
 		m_numberLightsPerType.z = RegisterLight<SpotLight>(3.0f, lights, total);
@@ -323,7 +323,7 @@ namespace vve {
 		colorBlendAttachment.blendEnable = VK_FALSE;
 
 		vh::RenCreateGraphicsPipeline(m_vkState().m_device, m_geometryPass, vert, frag, bindingDescriptions, attributeDescriptions,
-			{ m_descriptorSetLayoutPerFrame }, { m_maxNumberLights },
+			{ m_descriptorSetLayoutPerFrame }, { MAX_NUMBER_LIGHTS },
 			{ {.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT, .offset = 0, .size = 8} },
 			{ colorBlendAttachment, colorBlendAttachment, colorBlendAttachment }, m_geometryPipeline, true);
 	}
@@ -337,7 +337,7 @@ namespace vve {
 		const std::string frag = (shaders / "test_lighting.spv").string();
 
 		vh::RenCreateGraphicsPipeline(m_vkState().m_device, m_lightingPass, vert, frag, {}, {},
-			{ m_descriptorSetLayoutPerFrame }, { m_maxNumberLights },
+			{ m_descriptorSetLayoutPerFrame }, { MAX_NUMBER_LIGHTS },
 			{ {.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT, .offset = 0, .size = 8} },
 			{}, m_lightingPipeline, true);
 	}
@@ -387,7 +387,7 @@ namespace vve {
 			++n;
 			light().params.x = type;
 			lights[total] = { .positionW = glm::vec3{lToW()[3]}, .directionW = glm::vec3{lToW()[1]}, .lightParams = light() };
-			if (++total >= m_maxNumberLights) return n;
+			if (++total >= MAX_NUMBER_LIGHTS) return n;
 		};
 		return n;
 	}
