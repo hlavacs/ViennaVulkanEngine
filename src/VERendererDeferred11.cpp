@@ -35,7 +35,7 @@ namespace vve {
 				{	// Binding 1 : Position
 					.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
 					.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT },
-				{	// Binding 2 : Normals
+				{	// Binding 2 : Normal
 					.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
 					.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT },
 				{	// Binding 3 : Albedo
@@ -68,9 +68,9 @@ namespace vve {
 		// Binding 1 : Position
 		vh::RenCreateGBufferResources(m_vkState().m_physicalDevice, m_vkState().m_device, m_vkState().m_vmaAllocator, m_vkState().m_swapChain, m_gBufferAttachments[POSITION], m_vkState().m_swapChain.m_swapChainImageFormat, m_sampler);
 		vh::RenUpdateDescriptorSetGBufferAttachment(m_vkState().m_device, m_gBufferAttachments[POSITION], 1, m_descriptorSetComposition);
-		// Binding 2 : Normals
-		vh::RenCreateGBufferResources(m_vkState().m_physicalDevice, m_vkState().m_device, m_vkState().m_vmaAllocator, m_vkState().m_swapChain, m_gBufferAttachments[NORMALS], m_vkState().m_swapChain.m_swapChainImageFormat, m_sampler);
-		vh::RenUpdateDescriptorSetGBufferAttachment(m_vkState().m_device, m_gBufferAttachments[NORMALS], 2, m_descriptorSetComposition);
+		// Binding 2 : Normal
+		vh::RenCreateGBufferResources(m_vkState().m_physicalDevice, m_vkState().m_device, m_vkState().m_vmaAllocator, m_vkState().m_swapChain, m_gBufferAttachments[NORMAL], m_vkState().m_swapChain.m_swapChainImageFormat, m_sampler);
+		vh::RenUpdateDescriptorSetGBufferAttachment(m_vkState().m_device, m_gBufferAttachments[NORMAL], 2, m_descriptorSetComposition);
 		// Binding 3 : Albedo
 		vh::RenCreateGBufferResources(m_vkState().m_physicalDevice, m_vkState().m_device, m_vkState().m_vmaAllocator, m_vkState().m_swapChain, m_gBufferAttachments[ALBEDO], VK_FORMAT_R8G8B8A8_UNORM, m_sampler);
 		vh::RenUpdateDescriptorSetGBufferAttachment(m_vkState().m_device, m_gBufferAttachments[ALBEDO], 3, m_descriptorSetComposition);
@@ -86,9 +86,9 @@ namespace vve {
 		// Binding 1 : Position
 		vh::RenCreateGBufferResources(m_vkState().m_physicalDevice, m_vkState().m_device, m_vkState().m_vmaAllocator, m_vkState().m_swapChain, m_gBufferAttachments[POSITION], m_vkState().m_swapChain.m_swapChainImageFormat, m_sampler);
 		vh::RenUpdateDescriptorSetGBufferAttachment(m_vkState().m_device, m_gBufferAttachments[POSITION], 1, m_descriptorSetObject);
-		// Binding 2 : Normals
-		vh::RenCreateGBufferResources(m_vkState().m_physicalDevice, m_vkState().m_device, m_vkState().m_vmaAllocator, m_vkState().m_swapChain, m_gBufferAttachments[NORMALS], m_vkState().m_swapChain.m_swapChainImageFormat, m_sampler);
-		vh::RenUpdateDescriptorSetGBufferAttachment(m_vkState().m_device, m_gBufferAttachments[NORMALS], 2, m_descriptorSetObject);
+		// Binding 2 : Normal
+		vh::RenCreateGBufferResources(m_vkState().m_physicalDevice, m_vkState().m_device, m_vkState().m_vmaAllocator, m_vkState().m_swapChain, m_gBufferAttachments[NORMAL], m_vkState().m_swapChain.m_swapChainImageFormat, m_sampler);
+		vh::RenUpdateDescriptorSetGBufferAttachment(m_vkState().m_device, m_gBufferAttachments[NORMAL], 2, m_descriptorSetObject);
 
 
 		vh::RenCreateGBufferFramebuffers(m_vkState().m_device, m_vkState().m_swapChain, m_gBufferAttachments, m_gBufferFrameBuffers, m_vkState().m_depthImage, m_geometryPass);
@@ -288,10 +288,10 @@ namespace vve {
 
 		vh::BufDestroyBuffer2(m_vkState().m_device, m_vkState().m_vmaAllocator, m_uniformBuffersPerFrame);
 		vh::ImgDestroyImage(m_vkState().m_device, m_vkState().m_vmaAllocator, m_gBufferAttachments[POSITION].m_gbufferImage, m_gBufferAttachments[POSITION].m_gbufferImageAllocation);
-		vh::ImgDestroyImage(m_vkState().m_device, m_vkState().m_vmaAllocator, m_gBufferAttachments[NORMALS].m_gbufferImage, m_gBufferAttachments[NORMALS].m_gbufferImageAllocation);
+		vh::ImgDestroyImage(m_vkState().m_device, m_vkState().m_vmaAllocator, m_gBufferAttachments[NORMAL].m_gbufferImage, m_gBufferAttachments[NORMAL].m_gbufferImageAllocation);
 		vh::ImgDestroyImage(m_vkState().m_device, m_vkState().m_vmaAllocator, m_gBufferAttachments[ALBEDO].m_gbufferImage, m_gBufferAttachments[ALBEDO].m_gbufferImageAllocation);
 		vkDestroyImageView(m_vkState().m_device, m_gBufferAttachments[POSITION].m_gbufferImageView, nullptr);
-		vkDestroyImageView(m_vkState().m_device, m_gBufferAttachments[NORMALS].m_gbufferImageView, nullptr);
+		vkDestroyImageView(m_vkState().m_device, m_gBufferAttachments[NORMAL].m_gbufferImageView, nullptr);
 		vkDestroyImageView(m_vkState().m_device, m_gBufferAttachments[ALBEDO].m_gbufferImageView, nullptr);
 		vh::BufDestroyBuffer2(m_vkState().m_device, m_vkState().m_vmaAllocator, m_uniformBuffersLights);
 
@@ -305,6 +305,7 @@ namespace vve {
 		if (!std::filesystem::exists(shaders)) {
 			std::cerr << "ERROR: Folder does not exist: " << std::filesystem::absolute(shaders) << "\n";
 		}
+		// TODO: Now that its unified - rewrite?
 		const std::string vert = (shaders / "test_geometry.spv").string();
 		const std::string frag = (shaders / "test_geometry.spv").string();
 		std::vector<VkVertexInputBindingDescription> bindingDescriptions = getBindingDescriptions();
@@ -374,7 +375,7 @@ namespace vve {
 		int binding = 0;
 		int location = 0;
 		getAttributeDescription(binding++, location++, m_gBufferAttachments[POSITION].m_gbufferFormat, attributeDescriptions);
-		getAttributeDescription(binding++, location++, m_gBufferAttachments[NORMALS].m_gbufferFormat, attributeDescriptions);
+		getAttributeDescription(binding++, location++, m_gBufferAttachments[NORMAL].m_gbufferFormat, attributeDescriptions);
 		getAttributeDescription(binding++, location++, m_gBufferAttachments[ALBEDO].m_gbufferFormat, attributeDescriptions);
 
 		return attributeDescriptions;

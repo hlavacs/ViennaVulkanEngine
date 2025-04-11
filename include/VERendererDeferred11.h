@@ -6,7 +6,7 @@ namespace vve {
 
 		friend class RendererDeferred;
 
-		enum GBufferIndex { POSITION = 0, NORMALS = 1, ALBEDO = 2 };
+		enum GBufferIndex { POSITION = 0, NORMAL = 1, ALBEDO = 2 };
 
 	public:
 		static constexpr uint32_t MAX_NUMBER_LIGHTS{ 128 };
