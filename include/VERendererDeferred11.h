@@ -31,7 +31,7 @@ namespace vve {
 
 		std::vector<VkFramebuffer> m_gBufferFrameBuffers{};
 
-		vh::Buffer m_uniformBuffersPerFrame{};
+		vh::Buffer m_uniformBuffersPerFrame{};	// TODO: maybe rename
 		vh::Buffer m_uniformBuffersLights{};
 
 		// TODO: Maybe make GBufferAttachment struct for better alignment
@@ -40,7 +40,8 @@ namespace vve {
 
 		VkDescriptorSetLayout m_descriptorSetLayoutPerFrame{ VK_NULL_HANDLE };
 		VkDescriptorPool m_descriptorPool{ VK_NULL_HANDLE };
-		vh::DescriptorSet m_descriptorSetPerFrame{};
+		vh::DescriptorSet m_descriptorSetComposition{};
+		vh::DescriptorSet m_descriptorSetObject{};
 
 		VkRenderPass m_geometryPass{ VK_NULL_HANDLE };
 		VkRenderPass m_lightingPass{ VK_NULL_HANDLE };
