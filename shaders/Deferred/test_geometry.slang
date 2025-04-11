@@ -23,3 +23,19 @@ VSOutput vertexMain(VSInput input) {
     output.albedo = input.albedo;
     return output;
 }
+
+struct GBufferOutput {
+    float4 pos : SV_Target0;
+    float4 norm : SV_Target1;
+    float4 albedo : SV_Target2;
+};
+
+[shader("fragment")]
+GBufferOutput fragmentMain()
+{
+    GBufferOutput output;
+    output.pos = float4(1.0, 0.0, 0.0, 1.0);    // Red: test for position
+    output.norm = float4(0.0, 1.0, 0.0, 1.0);   // Green: test for normals
+    output.albedo = float4(0.0, 0.0, 1.0, 1.0); // Blue: test for albedo
+    return output;
+}

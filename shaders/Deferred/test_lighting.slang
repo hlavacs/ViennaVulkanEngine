@@ -9,7 +9,7 @@ struct GlobalData { float4 dummy; };
 [vk::binding(0, 0)] ConstantBuffer<GlobalData> gGlobal;
 
 [shader("vertex")]
-VSOutput main(uint vertexId : SV_VertexID)
+VSOutput vertexMain(uint vertexId : SV_VertexID)
 {
     VSOutput output;
 
@@ -21,5 +21,17 @@ VSOutput main(uint vertexId : SV_VertexID)
     };
     output.position = float4(positions[vertexId], 0.0, 1.0);
     output.uv = (positions[vertexId] + 1.0) * 0.5;
+    return output;
+}
+
+struct PSOutput {
+    float4 color : SV_Target;
+};
+
+[shader("fragment")]
+PSOutput fragmentMain(float2 uv: TEXCOORD0)
+{
+    PSOutput output;
+    output.color = float4(1.0, 1.0, 1.0, 1.0); // white for testing
     return output;
 }

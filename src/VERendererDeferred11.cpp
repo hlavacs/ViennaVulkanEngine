@@ -292,8 +292,8 @@ namespace vve {
 		if (!std::filesystem::exists(shaders)) {
 			std::cerr << "ERROR: Folder does not exist: " << std::filesystem::absolute(shaders) << "\n";
 		}
-		const std::string vert = (shaders / "test_geometry_vert.spv").string();
-		const std::string frag = (shaders / "test_geometry_frag.spv").string();
+		const std::string vert = (shaders / "test_geometry.spv").string();
+		const std::string frag = (shaders / "test_geometry.spv").string();
 		std::vector<VkVertexInputBindingDescription> bindingDescriptions = getBindingDescriptions();
 		std::vector<VkVertexInputAttributeDescription> attributeDescriptions = getAttributeDescriptions();
 
@@ -320,8 +320,8 @@ namespace vve {
 		if (!std::filesystem::exists(shaders)) {
 			std::cerr << "ERROR: Folder does not exist: " << std::filesystem::absolute(shaders) << "\n";
 		}
-		const std::string vert = (shaders / "test_lighting_vert.spv").string();
-		const std::string frag = (shaders / "test_lighting_frag.spv").string();
+		const std::string vert = (shaders / "test_lighting.spv").string();
+		const std::string frag = (shaders / "test_lighting.spv").string();
 
 		vh::RenCreateGraphicsPipeline(m_vkState().m_device, m_lightingPass, vert, frag, {}, {},
 			{ m_descriptorSetLayoutPerFrame }, { m_maxNumberLights },
