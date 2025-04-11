@@ -10,6 +10,8 @@ namespace vve {
 			{this, 3500, "INIT", [this](Message& message) { return OnInit(message); } },
 			{this, 2000, "PREPARE_NEXT_FRAME", [this](Message& message) { return OnPrepareNextFrame(message); } },
 			{this, 2000, "RECORD_NEXT_FRAME", [this](Message& message) { return OnRecordNextFrame(message); } },
+			{this,  000, "OBJECT_CREATE", [this](Message& message) { return OnObjectCreate(message); } },
+			{this,10000, "OBJECT_DESTROY", [this](Message& message) { return OnObjectDestroy(message); } },
 			{this,	  0, "QUIT", [this](Message& message) { return OnQuit(message); } }
 			});
 	}
@@ -169,7 +171,7 @@ namespace vve {
 			blendconst, //blend constants
 			{
 				{.layout = m_geometryPipeline.m_pipelineLayout,
-					.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT,
+					.stageFlags = VK_SHADER_STAGE_VERTEX_BIT,
 					.offset = 0,
 					.size = sizeof(offset),
 					.pValues = &offset
@@ -188,13 +190,68 @@ namespace vve {
 
 			auto mesh = m_registry.template Get<vh::Mesh&>(ghandle);
 			vh::ComRecordObject(cmdBuffer, m_geometryPipeline,
-				{ m_descriptorSetPerFrame, descriptorsets }, "P", mesh, m_vkState().m_currentFrame);
+				{ m_descriptorSetPerFrame, descriptorsets }, "C", mesh, m_vkState().m_currentFrame);
 		}
 
 		vh::ComEndRecordCommandBuffer(cmdBuffer);
 		SubmitCommandBuffer(cmdBuffer);
 
 		//++m_pass;
+		return false;
+	}
+
+	bool RendererDeferred11::OnObjectCreate(Message message) {
+		ObjectHandle oHandle = message.template GetData<MsgObjectCreate>().m_object;
+		assert(m_registry.template Has<MeshHandle>(oHandle));
+		auto meshHandle = m_registry.template Get<MeshHandle>(oHandle);
+		auto mesh = m_registry.template Get<vh::Mesh&>(meshHandle);
+		auto type = "C"; // getPipelineType(oHandle, mesh().m_verticesData);
+		auto pipelinePerType = "C"; // getPipelinePerType(type);
+
+		bool hasTexture = m_registry.template Has<TextureHandle>(oHandle);
+		bool hasColor = m_registry.template Has<vh::Color>(oHandle);
+		bool hasVertexColor = true; // pipelinePerType->m_type.find("C") != std::string::npos;
+		if (!hasTexture && !hasColor && !hasVertexColor) return false;
+
+		vh::Buffer ubo;
+		size_t sizeUbo = 0;
+		vh::DescriptorSet descriptorSet{ 1 };
+		vh::RenCreateDescriptorSet(m_vkState().m_device,m_descriptorSetLayoutPerFrame, m_descriptorPool, descriptorSet);
+
+		if (hasTexture) {
+			sizeUbo = sizeof(vh::BufferPerObjectTexture);
+			auto tHandle = m_registry.template Get<TextureHandle>(oHandle);
+			auto texture = m_registry.template Get<vh::Map&>(tHandle);
+			vh::RenUpdateDescriptorSetTexture(m_vkState().m_device, texture, 1, descriptorSet);
+		}
+		else if (hasColor) {
+			sizeUbo = sizeof(vh::BufferPerObjectColor);
+		}
+		else if (hasVertexColor) {
+			sizeUbo = sizeof(vh::BufferPerObject);
+		}
+
+		vh::BufCreateBuffers(m_vkState().m_physicalDevice, m_vkState().m_device, m_vkState().m_vmaAllocator,
+			VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, sizeUbo, ubo);
+		vh::RenUpdateDescriptorSet(m_vkState().m_device, ubo, 0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, sizeUbo, descriptorSet);
+
+		m_registry.Put(oHandle, ubo, descriptorSet);
+		m_registry.AddTags(oHandle, (size_t)m_geometryPipeline.m_pipeline);
+
+		assert(m_registry.template Has<vh::Buffer>(oHandle));
+		assert(m_registry.template Has<vh::DescriptorSet>(oHandle));
+		return false; //true if handled
+	}
+
+	bool RendererDeferred11::OnObjectDestroy(Message message) {
+		auto& msg = message.template GetData<MsgObjectDestroy>();
+		auto& oHandle = msg.m_handle();
+
+		assert(m_registry.Exists(oHandle));
+
+		if (!m_registry.template Has<vh::Buffer>(oHandle)) return false;
+		auto ubo = m_registry.template Get<vh::Buffer&>(oHandle);
+		vh::BufDestroyBuffer2(m_vkState().m_device, m_vkState().m_vmaAllocator, ubo);
 		return false;
 	}
 

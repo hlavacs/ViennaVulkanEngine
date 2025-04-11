@@ -16,6 +16,8 @@ namespace vve {
 		bool OnInit(Message message);
 		bool OnPrepareNextFrame(Message message);
 		bool OnRecordNextFrame(Message message);
+		bool OnObjectCreate(Message message);
+		bool OnObjectDestroy(Message message);
 		bool OnQuit(Message message);
 		void CreateGeometryPipeline();
 		void CreateLightingPipeline();
