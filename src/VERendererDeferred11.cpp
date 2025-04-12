@@ -56,6 +56,7 @@ namespace vve {
 		// TODO: shrink pool to only what is needed - why 1000?
 		vh::RenCreateDescriptorPool(m_vkState().m_device, 1000, m_descriptorPool);
 		vh::RenCreateDescriptorSet(m_vkState().m_device, m_descriptorSetLayoutPerFrame, m_descriptorPool, m_descriptorSetComposition);
+		vh::RenCreateDescriptorSet(m_vkState().m_device, m_descriptorSetLayoutPerFrame, m_descriptorPool, m_descriptorSetObject);
 
 		// Vertex and Light UBO
 		vh::BufCreateBuffers(m_vkState().m_physicalDevice, m_vkState().m_device, m_vkState().m_vmaAllocator,
@@ -185,14 +186,14 @@ namespace vve {
 			m_geometryPipeline,
 			{}, {}, //default view ports and scissors
 			blendconst, //blend constants
-			{
+			{/*
 				{.layout = m_geometryPipeline.m_pipelineLayout,
 					.stageFlags = VK_SHADER_STAGE_VERTEX_BIT,
 					.offset = 0,
 					.size = sizeof(offset),
 					.pValues = &offset
 				}
-			}, //push constants
+			*/}, //push constants
 			m_vkState().m_currentFrame);
 
 		for (auto [oHandle, name, ghandle, LtoW, uniformBuffers, descriptorsets] :
@@ -328,9 +329,9 @@ namespace vve {
 		colorBlendAttachment.dstAlphaBlendFactor = VK_BLEND_FACTOR_ONE_MINUS_CONSTANT_ALPHA;
 		colorBlendAttachment.alphaBlendOp = VK_BLEND_OP_MAX;
 		colorBlendAttachment.blendEnable = VK_FALSE;
-
+		
 		vh::RenCreateGraphicsPipeline(m_vkState().m_device, m_geometryPass, vert, frag, bindingDescriptions, attributeDescriptions,
-			{ m_descriptorSetLayoutPerFrame }, { MAX_NUMBER_LIGHTS },
+			{ m_descriptorSetLayoutPerFrame, m_descriptorSetLayoutPerFrame }, { MAX_NUMBER_LIGHTS },
 			{ {.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT, .offset = 0, .size = 8} },
 			{ colorBlendAttachment, colorBlendAttachment, colorBlendAttachment }, m_geometryPipeline, true);
 	}
@@ -343,6 +344,7 @@ namespace vve {
 		const std::string vert = (shaders / "test_lighting.spv").string();
 		const std::string frag = (shaders / "test_lighting.spv").string();
 
+		// TODO: maybe needs 2 m_descriptorSetLayoutPerFrame
 		vh::RenCreateGraphicsPipeline(m_vkState().m_device, m_lightingPass, vert, frag, {}, {},
 			{ m_descriptorSetLayoutPerFrame }, { MAX_NUMBER_LIGHTS },
 			{ {.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT, .offset = 0, .size = 8} },
