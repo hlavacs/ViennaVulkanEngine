@@ -378,7 +378,7 @@ namespace vh {
         }
     }
 
-    void RenCreateGBufferFramebuffers(VkDevice device, SwapChain& swapChain, std::array<GBufferImage, 3>& gBufferAttachs, 
+    void RenCreateGBufferFrameBuffers(VkDevice device, SwapChain& swapChain, std::array<GBufferImage, 3>& gBufferAttachs, 
         std::vector<VkFramebuffer>& m_gBufferFramebuffers, DepthImage& depthImage, VkRenderPass renderPass) {
 
         m_gBufferFramebuffers.resize(swapChain.m_swapChainImageViews.size());

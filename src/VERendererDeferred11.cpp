@@ -57,41 +57,44 @@ namespace vve {
 		vh::RenCreateDescriptorPool(m_vkState().m_device, 1000, m_descriptorPool);
 		vh::RenCreateDescriptorSet(m_vkState().m_device, m_descriptorSetLayoutPerFrame, m_descriptorPool, m_descriptorSetComposition);
 
-		// Binding 0 : Vertex and Fragment uniform buffer
-		// TODO : Only needed for per Object? - research
-		//vh::BufCreateBuffers(m_vkState().m_physicalDevice, m_vkState().m_device, m_vkState().m_vmaAllocator, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, sizeof(vh::UniformBufferFrame), m_uniformBuffersPerFrame);
-		//vh::RenUpdateDescriptorSet(m_vkState().m_device, m_uniformBuffersPerFrame, 0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, sizeof(vh::UniformBufferFrame), m_descriptorSetPerFrame);
+		// Vertex and Light UBO
+		vh::BufCreateBuffers(m_vkState().m_physicalDevice, m_vkState().m_device, m_vkState().m_vmaAllocator,
+			VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, sizeof(vh::UniformBufferFrame), m_uniformBuffersPerFrame);
+		vh::BufCreateBuffers(m_vkState().m_physicalDevice, m_vkState().m_device, m_vkState().m_vmaAllocator,
+			VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, MAX_NUMBER_LIGHTS * sizeof(vh::Light), m_uniformBuffersLights);
 
-		// Deferred Composition
-
+		// GBuffer Attachments
 		vh::ImgCreateImageSampler(m_vkState().m_physicalDevice, m_vkState().m_device, m_sampler);
+		vh::RenCreateGBufferResources(m_vkState().m_physicalDevice, m_vkState().m_device, m_vkState().m_vmaAllocator, m_vkState().m_swapChain,
+			m_gBufferAttachments[POSITION], m_vkState().m_swapChain.m_swapChainImageFormat, m_sampler);
+		vh::RenCreateGBufferResources(m_vkState().m_physicalDevice, m_vkState().m_device, m_vkState().m_vmaAllocator, m_vkState().m_swapChain,
+			m_gBufferAttachments[NORMAL], m_vkState().m_swapChain.m_swapChainImageFormat, m_sampler);
+		vh::RenCreateGBufferResources(m_vkState().m_physicalDevice, m_vkState().m_device, m_vkState().m_vmaAllocator, m_vkState().m_swapChain,
+			m_gBufferAttachments[ALBEDO], VK_FORMAT_R8G8B8A8_UNORM, m_sampler);
+
+		// Deferred Composition Descriptors
 		// Binding 1 : Position
-		vh::RenCreateGBufferResources(m_vkState().m_physicalDevice, m_vkState().m_device, m_vkState().m_vmaAllocator, m_vkState().m_swapChain, m_gBufferAttachments[POSITION], m_vkState().m_swapChain.m_swapChainImageFormat, m_sampler);
 		vh::RenUpdateDescriptorSetGBufferAttachment(m_vkState().m_device, m_gBufferAttachments[POSITION], 1, m_descriptorSetComposition);
-		// Binding 2 : Normal
-		vh::RenCreateGBufferResources(m_vkState().m_physicalDevice, m_vkState().m_device, m_vkState().m_vmaAllocator, m_vkState().m_swapChain, m_gBufferAttachments[NORMAL], m_vkState().m_swapChain.m_swapChainImageFormat, m_sampler);
+		// Binding 2 : Normal	
 		vh::RenUpdateDescriptorSetGBufferAttachment(m_vkState().m_device, m_gBufferAttachments[NORMAL], 2, m_descriptorSetComposition);
 		// Binding 3 : Albedo
-		vh::RenCreateGBufferResources(m_vkState().m_physicalDevice, m_vkState().m_device, m_vkState().m_vmaAllocator, m_vkState().m_swapChain, m_gBufferAttachments[ALBEDO], VK_FORMAT_R8G8B8A8_UNORM, m_sampler);
 		vh::RenUpdateDescriptorSetGBufferAttachment(m_vkState().m_device, m_gBufferAttachments[ALBEDO], 3, m_descriptorSetComposition);
 		// Binding 4 : Light
-		vh::BufCreateBuffers(m_vkState().m_physicalDevice, m_vkState().m_device, m_vkState().m_vmaAllocator, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, MAX_NUMBER_LIGHTS * sizeof(vh::Light), m_uniformBuffersLights);
-		vh::RenUpdateDescriptorSet(m_vkState().m_device, m_uniformBuffersLights, 4, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, MAX_NUMBER_LIGHTS * sizeof(vh::Light), m_descriptorSetComposition);
+		vh::RenUpdateDescriptorSet(m_vkState().m_device, m_uniformBuffersLights, 4, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 
+			MAX_NUMBER_LIGHTS * sizeof(vh::Light), m_descriptorSetComposition);
 
-		// Object Descriptors
-		
+		// Object Descriptors	
 		// Binding 0 : Vertex and Fragment uniform buffer
-		vh::BufCreateBuffers(m_vkState().m_physicalDevice, m_vkState().m_device, m_vkState().m_vmaAllocator, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, sizeof(vh::UniformBufferFrame), m_uniformBuffersPerFrame);
-		vh::RenUpdateDescriptorSet(m_vkState().m_device, m_uniformBuffersPerFrame, 0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, sizeof(vh::UniformBufferFrame), m_descriptorSetObject);
+		vh::RenUpdateDescriptorSet(m_vkState().m_device, m_uniformBuffersPerFrame, 0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 
+			sizeof(vh::UniformBufferFrame), m_descriptorSetObject);
 		// Binding 1 : Position
-		vh::RenCreateGBufferResources(m_vkState().m_physicalDevice, m_vkState().m_device, m_vkState().m_vmaAllocator, m_vkState().m_swapChain, m_gBufferAttachments[POSITION], m_vkState().m_swapChain.m_swapChainImageFormat, m_sampler);
 		vh::RenUpdateDescriptorSetGBufferAttachment(m_vkState().m_device, m_gBufferAttachments[POSITION], 1, m_descriptorSetObject);
 		// Binding 2 : Normal
-		vh::RenCreateGBufferResources(m_vkState().m_physicalDevice, m_vkState().m_device, m_vkState().m_vmaAllocator, m_vkState().m_swapChain, m_gBufferAttachments[NORMAL], m_vkState().m_swapChain.m_swapChainImageFormat, m_sampler);
 		vh::RenUpdateDescriptorSetGBufferAttachment(m_vkState().m_device, m_gBufferAttachments[NORMAL], 2, m_descriptorSetObject);
 
-
-		vh::RenCreateGBufferFramebuffers(m_vkState().m_device, m_vkState().m_swapChain, m_gBufferAttachments, m_gBufferFrameBuffers, m_vkState().m_depthImage, m_geometryPass);
+		// GBuffer FrameBuffers
+		vh::RenCreateGBufferFrameBuffers(m_vkState().m_device, m_vkState().m_swapChain, m_gBufferAttachments, 
+			m_gBufferFrameBuffers, m_vkState().m_depthImage, m_geometryPass);
 
 		CreateGeometryPipeline();
 		CreateLightingPipeline();
@@ -121,7 +124,7 @@ namespace vve {
 
 			bool hasTexture = m_registry.template Has<TextureHandle>(oHandle);
 			bool hasColor = m_registry.template Has<vh::Color>(oHandle);
-			bool hasVertexColor = true;		//pipeline.second.m_type.find("C") != std::string::npos;
+			bool hasVertexColor = false;		//pipeline.second.m_type.find("C") != std::string::npos;
 			if (!hasTexture && !hasColor && !hasVertexColor) continue;
 
 			if (hasTexture) {
@@ -198,7 +201,7 @@ namespace vve {
 
 			bool hasTexture = m_registry.template Has<TextureHandle>(oHandle);
 			bool hasColor = m_registry.template Has<vh::Color>(oHandle);
-			bool hasVertexColor = true;		// pipeline.second.m_type.find("C") != std::string::npos;
+			bool hasVertexColor = false;		// pipeline.second.m_type.find("C") != std::string::npos;
 			if (!hasTexture && !hasColor && !hasVertexColor) continue;
 
 			auto mesh = m_registry.template Get<vh::Mesh&>(ghandle);
@@ -287,9 +290,12 @@ namespace vve {
 		vkDestroySampler(m_vkState().m_device, m_sampler, nullptr);
 
 		vh::BufDestroyBuffer2(m_vkState().m_device, m_vkState().m_vmaAllocator, m_uniformBuffersPerFrame);
-		vh::ImgDestroyImage(m_vkState().m_device, m_vkState().m_vmaAllocator, m_gBufferAttachments[POSITION].m_gbufferImage, m_gBufferAttachments[POSITION].m_gbufferImageAllocation);
-		vh::ImgDestroyImage(m_vkState().m_device, m_vkState().m_vmaAllocator, m_gBufferAttachments[NORMAL].m_gbufferImage, m_gBufferAttachments[NORMAL].m_gbufferImageAllocation);
-		vh::ImgDestroyImage(m_vkState().m_device, m_vkState().m_vmaAllocator, m_gBufferAttachments[ALBEDO].m_gbufferImage, m_gBufferAttachments[ALBEDO].m_gbufferImageAllocation);
+		vh::ImgDestroyImage(m_vkState().m_device, m_vkState().m_vmaAllocator, m_gBufferAttachments[POSITION].m_gbufferImage, 
+			m_gBufferAttachments[POSITION].m_gbufferImageAllocation);
+		vh::ImgDestroyImage(m_vkState().m_device, m_vkState().m_vmaAllocator, m_gBufferAttachments[NORMAL].m_gbufferImage, 
+			m_gBufferAttachments[NORMAL].m_gbufferImageAllocation);
+		vh::ImgDestroyImage(m_vkState().m_device, m_vkState().m_vmaAllocator, m_gBufferAttachments[ALBEDO].m_gbufferImage, 
+			m_gBufferAttachments[ALBEDO].m_gbufferImageAllocation);
 		vkDestroyImageView(m_vkState().m_device, m_gBufferAttachments[POSITION].m_gbufferImageView, nullptr);
 		vkDestroyImageView(m_vkState().m_device, m_gBufferAttachments[NORMAL].m_gbufferImageView, nullptr);
 		vkDestroyImageView(m_vkState().m_device, m_gBufferAttachments[ALBEDO].m_gbufferImageView, nullptr);
