@@ -223,12 +223,12 @@ namespace vve {
 		assert(m_registry.template Has<MeshHandle>(oHandle));
 		auto meshHandle = m_registry.template Get<MeshHandle>(oHandle);
 		auto mesh = m_registry.template Get<vh::Mesh&>(meshHandle);
-		auto type = "C"; // getPipelineType(oHandle, mesh().m_verticesData);
-		auto pipelinePerType = "C"; // getPipelinePerType(type);
+		//auto type = "PNT"; // getPipelineType(oHandle, mesh().m_verticesData);
+		//auto pipelinePerType = "C"; // getPipelinePerType(type);
 
 		bool hasTexture = m_registry.template Has<TextureHandle>(oHandle);
 		bool hasColor = m_registry.template Has<vh::Color>(oHandle);
-		bool hasVertexColor = true; // pipelinePerType->m_type.find("C") != std::string::npos;
+		bool hasVertexColor = false; // pipelinePerType->m_type.find("C") != std::string::npos;
 		if (!hasTexture && !hasColor && !hasVertexColor) return false;
 
 		vh::Buffer ubo;
