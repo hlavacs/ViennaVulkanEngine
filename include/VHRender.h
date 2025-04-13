@@ -29,6 +29,9 @@ namespace vh {
 
     void RenCreateFramebuffers(VkDevice device, SwapChain& swapChain, DepthImage& depthImage, VkRenderPass renderPass);
 
+    void RenCreateFramebuffers2(VkDevice device,  int width, int height, int layers, const std::vector<std::vector<VkImageView>>& attachments, 
+      VkRenderPass renderPass, std::vector<VkFramebuffer>& frameBuffer);
+
     void RenCreateDepthResources(VkPhysicalDevice physicalDevice, VkDevice device, VmaAllocator vmaAllocator, SwapChain& swapChain, DepthImage& depthImage);
 
     VkFormat RenFindSupportedFormat(VkPhysicalDevice physicalDevice, const std::vector<VkFormat>& candidates, VkImageTiling tiling, VkFormatFeatureFlags features);

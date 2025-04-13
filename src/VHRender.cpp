@@ -288,6 +288,28 @@ namespace vh {
         }
     }
 
+    void RenCreateFramebuffers2( VkDevice device, int width, int height, int layers, const std::vector<std::vector<VkImageView>>& attachments, 
+        VkRenderPass renderPass, std::vector<VkFramebuffer>& VkFramebuffers) {
+
+        VkFramebuffers.resize(attachments.size());
+
+        for(int i=0; i<attachments.size(); ++i ) {
+            VkFramebufferCreateInfo framebufferInfo{};
+            framebufferInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
+            framebufferInfo.renderPass = renderPass;
+            framebufferInfo.attachmentCount = static_cast<uint32_t>(attachments[i].size());
+            framebufferInfo.pAttachments = attachments[i].data();
+            framebufferInfo.width = width;
+            framebufferInfo.height = height;
+            framebufferInfo.layers = 1;
+
+            if (vkCreateFramebuffer(device, &framebufferInfo, nullptr, &VkFramebuffers[i]) != VK_SUCCESS) {
+                throw std::runtime_error("failed to create framebuffer!");
+            }
+        }
+    }
+
+
     void RenCreateDescriptorPool(VkDevice device, uint32_t sizes, VkDescriptorPool& descriptorPool) {
 
 		std::vector<VkDescriptorPoolSize> pool_sizes;
