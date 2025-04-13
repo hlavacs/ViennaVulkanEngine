@@ -47,7 +47,7 @@ namespace vve
 		vh::DescriptorSet m_descriptorSetPerFrame{0};
 
 		VkDescriptorSetLayout m_descriptorSetLayoutPerObject;
-		vh::Pipeline m_graphicsPipeline;		
+		vh::Pipeline m_shadowPipeline;		
 
 		vecs::Handle m_shadowImageHandle;
 		uint32_t m_pass;

@@ -8,6 +8,12 @@ namespace vve {
 
 	class RendererVulkan;
 
+	static const int size_pos = sizeof(glm::vec3);
+	static const int size_nor = sizeof(glm::vec3);
+	static const int size_tex = sizeof(glm::vec2);
+	static const int size_col = sizeof(glm::vec4);
+	static const int size_tan = sizeof(glm::vec3);
+	
     enum class RendererType {
         FORWARD,
         DEFERRED,
@@ -52,6 +58,10 @@ namespace vve {
     protected:
 		bool OnInit(Message message);
 		void SubmitCommandBuffer( VkCommandBuffer commandBuffer );
+		void getBindingDescription( std::string type, std::string C, int &binding, int stride, auto& bdesc );
+		auto getBindingDescriptions(std::string type) -> std::vector<VkVertexInputBindingDescription>;
+		void addAttributeDescription( std::string type, std::string C, int& binding, int& location, VkFormat format, auto& attd );
+        auto getAttributeDescriptions(std::string type) -> std::vector<VkVertexInputAttributeDescription>;
 
 		std::string 				m_windowName;
 		vecs::Ref<WindowState> 		m_windowState{};
