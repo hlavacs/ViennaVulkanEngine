@@ -81,6 +81,22 @@ namespace vve {
         return attributeDescriptions;
     }
 
+	template<typename T>
+	int Renderer::RegisterLight(float type, std::vector<vh::Light>& lights, int& total) {
+		int n=0;
+		for( auto [handle, light, lToW] : m_registry.template GetView<vecs::Handle, T&, LocalToWorldMatrix&>() ) {
+			++n;
+			//m_engine.RegisterCallbacks( { {this,  2000 + total*1000, "RECORD_NEXT_FRAME", [this](Message& message){ return OnRecordNextFrame(message);} }} );
+			light().params.x = type;
+			lights[total] = { .positionW = glm::vec3{lToW()[3]}, .directionW = glm::vec3{lToW()[1]}, .lightParams = light() };
+			if( ++total >= MAX_NUMBER_LIGHTS ) return n;
+		};
+		return n;
+	}
+
+	template auto Renderer::RegisterLight<PointLight>(float type, std::vector<vh::Light>& lights, int& i) -> int;
+	template auto Renderer::RegisterLight<DirectionalLight>(float type, std::vector<vh::Light>& lights, int& i) -> int;
+	template auto Renderer::RegisterLight<SpotLight>(float type, std::vector<vh::Light>& lights, int& i) -> int;
 
 };  // namespace vve
 

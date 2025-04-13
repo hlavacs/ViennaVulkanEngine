@@ -22,10 +22,11 @@ namespace vve {
 
 		vh::RenCreateRenderPass(m_vkState().m_physicalDevice, m_vkState().m_device, m_vkState().m_swapChain, false, m_renderPass);
 
-		vh::RenCreateDescriptorSetLayout( m_vkState().m_device, //Per frame
+		vh::RenCreateDescriptorSetLayout( m_vkState().m_device, //Per frame shadow buffer
 			{ 
 				{ 	.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 
-					.stageFlags = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT },
+					.stageFlags = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT 
+				},
 				{ 	.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 
 					.stageFlags = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT }
 			},
@@ -42,11 +43,11 @@ namespace vve {
 			VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, sizeof(vh::UniformBufferFrame), m_uniformBuffersPerFrame);
 		vh::RenUpdateDescriptorSet(m_vkState().m_device, m_uniformBuffersPerFrame, 0, 
 			VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, sizeof(vh::UniformBufferFrame), m_descriptorSetPerFrame);   
-
+	
 		//Per frame shadow index buffer
 		vh::BufCreateBuffers(m_vkState().m_physicalDevice, m_vkState().m_device, m_vkState().m_vmaAllocator, 
-			VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, MAX_NUMBER_LIGHTS*sizeof(vh::ShadowIndex)*6, m_uniformBuffersLights);
-		vh::RenUpdateDescriptorSet(m_vkState().m_device, m_uniformBuffersLights, 1, 
+			VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, MAX_NUMBER_LIGHTS*sizeof(vh::ShadowIndex)*6, m_storageBuffersShadow);
+		vh::RenUpdateDescriptorSet(m_vkState().m_device, m_storageBuffersShadow, 1, 
 			VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, MAX_NUMBER_LIGHTS*sizeof(vh::ShadowIndex)*6, m_descriptorSetPerFrame);   
 
 		ShadowImage shadowImage {
@@ -57,7 +58,6 @@ namespace vve {
 			shadowImage.maxImageDimension2D = SHADOW_MAP_DIMENSION;
 			shadowImage.maxImageArrayLayers = MAX_NUMBER_LIGHTS*6;
 		}
-
 		m_shadowImageHandle = m_registry.Insert(shadowImage);
 		
 		return false;
@@ -146,14 +146,10 @@ namespace vve {
 
         vkDestroyCommandPool(m_vkState().m_device, m_commandPool, nullptr);
 
-		//vkDestroyDescriptorSetLayout(m_vkState().m_device, m_descriptorSetLayoutPerObject, nullptr);
-		//vkDestroyPipeline(m_vkState().m_device, m_graphicsPipeline.m_pipeline, nullptr);
-		//vkDestroyPipelineLayout(m_vkState().m_device, m_graphicsPipeline.m_pipelineLayout, nullptr);
-	
         vkDestroyDescriptorPool(m_vkState().m_device, m_descriptorPool, nullptr);
 		vkDestroyRenderPass(m_vkState().m_device, m_renderPass, nullptr);
+		vh::BufDestroyBuffer2(m_vkState().m_device, m_vkState().m_vmaAllocator, m_storageBuffersShadow);
 		vh::BufDestroyBuffer2(m_vkState().m_device, m_vkState().m_vmaAllocator, m_uniformBuffersPerFrame);
-		vh::BufDestroyBuffer2(m_vkState().m_device, m_vkState().m_vmaAllocator, m_uniformBuffersLights);
 		vkDestroyDescriptorSetLayout(m_vkState().m_device, m_descriptorSetLayoutPerFrame, nullptr);
 
 		return false;

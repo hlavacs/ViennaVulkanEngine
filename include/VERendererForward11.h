@@ -27,16 +27,13 @@ namespace vve
 		bool OnObjectDestroy( Message message );
         bool OnQuit(Message message);
 		void CreatePipelines();
-		template<typename T>
-		int RegisterLight(float type, std::vector<vh::Light>& lights, int& i);
-
 
 		PipelinePerType* getPipelinePerType(std::string type);
 		std::string getPipelineType(ObjectHandle handle, vh::VertexData &vertexData);
 
 		//parameters per frame
 		vh::Buffer m_uniformBuffersPerFrame;
-		vh::Buffer m_uniformBuffersLights;
+		vh::Buffer m_storageBuffersLights;
 		VkDescriptorSetLayout m_descriptorSetLayoutPerFrame;
 		vh::DescriptorSet m_descriptorSetPerFrame{0};
 		std::map<int, PipelinePerType> m_pipelinesPerType;

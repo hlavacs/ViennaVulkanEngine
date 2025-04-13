@@ -49,9 +49,11 @@ namespace vve {
 		vh::RenCreateDescriptorSetLayout( m_vkState().m_device, //Per frame
 			{ 
 				{ 	.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 
-					.stageFlags = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT },
+					.stageFlags = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT 
+				},
 				{ 	.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 
-					.stageFlags = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT }
+					.stageFlags = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT 
+				}
 			},
 			m_descriptorSetLayoutPerFrame );
 
@@ -69,10 +71,10 @@ namespace vve {
 		vh::RenUpdateDescriptorSet(m_vkState().m_device, m_uniformBuffersPerFrame, 0, 
 			VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, sizeof(vh::UniformBufferFrame), m_descriptorSetPerFrame);   
 
-		//Per frame light buffer
+		//Per frame light storage buffer
 		vh::BufCreateBuffers(m_vkState().m_physicalDevice, m_vkState().m_device, m_vkState().m_vmaAllocator, 
-			VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, MAX_NUMBER_LIGHTS*sizeof(vh::Light), m_uniformBuffersLights);
-		vh::RenUpdateDescriptorSet(m_vkState().m_device, m_uniformBuffersLights, 1, 
+			VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, MAX_NUMBER_LIGHTS*sizeof(vh::Light), m_storageBuffersLights);
+		vh::RenUpdateDescriptorSet(m_vkState().m_device, m_storageBuffersLights, 1, 
 			VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, MAX_NUMBER_LIGHTS*sizeof(vh::Light), m_descriptorSetPerFrame);   
 
 		CreatePipelines();
@@ -131,20 +133,6 @@ namespace vve {
 		}
 	}
 
-
-	template<typename T>
-	int RendererForward11::RegisterLight(float type, std::vector<vh::Light>& lights, int& total) {
-		int n=0;
-		for( auto [handle, light, lToW] : m_registry.template GetView<vecs::Handle, T&, LocalToWorldMatrix&>() ) {
-			++n;
-			//m_engine.RegisterCallbacks( { {this,  2000 + total*1000, "RECORD_NEXT_FRAME", [this](Message& message){ return OnRecordNextFrame(message);} }} );
-			light().params.x = type;
-			lights[total] = { .positionW = glm::vec3{lToW()[3]}, .directionW = glm::vec3{lToW()[1]}, .lightParams = light() };
-			if( ++total >= MAX_NUMBER_LIGHTS ) return n;
-		};
-		return n;
-	}
-
 	bool RendererForward11::OnPrepareNextFrame(Message message) {
 		auto msg = message.template GetData<MsgPrepareNextFrame>();
 
@@ -161,7 +149,7 @@ namespace vve {
 		m_numberLightsPerType.y = RegisterLight<DirectionalLight>(2.0f, lights, total);
 		m_numberLightsPerType.z = RegisterLight<SpotLight>(3.0f, lights, total);
 		ubc.numLights = m_numberLightsPerType;
-		memcpy(m_uniformBuffersLights.m_uniformBuffersMapped[m_vkState().m_currentFrame], lights.data(), total*sizeof(vh::Light));
+		memcpy(m_storageBuffersLights.m_uniformBuffersMapped[m_vkState().m_currentFrame], lights.data(), total*sizeof(vh::Light));
 
 		//Copy camera view and projection matrices to the uniform buffer
 		auto [lToW, view, proj] = *m_registry.template GetView<LocalToWorldMatrix&, ViewMatrix&, ProjectionMatrix&>().begin();
@@ -357,7 +345,7 @@ namespace vve {
 		vkDestroyRenderPass(m_vkState().m_device, m_renderPass, nullptr);
 		vkDestroyRenderPass(m_vkState().m_device, m_renderPassClear, nullptr);
 		vh::BufDestroyBuffer2(m_vkState().m_device, m_vkState().m_vmaAllocator, m_uniformBuffersPerFrame);
-		vh::BufDestroyBuffer2(m_vkState().m_device, m_vkState().m_vmaAllocator, m_uniformBuffersLights);
+		vh::BufDestroyBuffer2(m_vkState().m_device, m_vkState().m_vmaAllocator, m_storageBuffersLights);
 		vkDestroyDescriptorSetLayout(m_vkState().m_device, m_descriptorSetLayoutPerFrame, nullptr);
 
 		return false;

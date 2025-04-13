@@ -13,7 +13,7 @@ namespace vve {
 	static const int size_tex = sizeof(glm::vec2);
 	static const int size_col = sizeof(glm::vec4);
 	static const int size_tan = sizeof(glm::vec3);
-	
+
     enum class RendererType {
         FORWARD,
         DEFERRED,
@@ -62,6 +62,9 @@ namespace vve {
 		auto getBindingDescriptions(std::string type) -> std::vector<VkVertexInputBindingDescription>;
 		void addAttributeDescription( std::string type, std::string C, int& binding, int& location, VkFormat format, auto& attd );
         auto getAttributeDescriptions(std::string type) -> std::vector<VkVertexInputAttributeDescription>;
+
+		template<typename T> 
+		auto RegisterLight(float type, std::vector<vh::Light>& lights, int& i) -> int;
 
 		std::string 				m_windowName;
 		vecs::Ref<WindowState> 		m_windowState{};

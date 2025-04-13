@@ -4,8 +4,8 @@ namespace vve
 {
 
 	static const uint32_t SHADOW_MAP_DIMENSION = 1024;
-	static const uint32_t SHADOW_MAX_MAPS_PER_ROW = 3;
-	static const uint32_t SHADOW_MAX_NUM_LAYERS = 64;
+	static const uint32_t SHADOW_MAX_MAPS_PER_ROW = 1;
+	static const uint32_t SHADOW_MAX_NUM_LAYERS = 128*6;
 	
 
 	struct ShadowImage {
@@ -42,11 +42,9 @@ namespace vve
 	    std::vector<VkCommandBuffer> m_commandBuffers;
 
 		vh::Buffer m_uniformBuffersPerFrame;
-		vh::Buffer m_uniformBuffersLights;
+		vh::Buffer m_storageBuffersShadow;
 		VkDescriptorSetLayout m_descriptorSetLayoutPerFrame;
 		vh::DescriptorSet m_descriptorSetPerFrame{0};
-
-		VkDescriptorSetLayout m_descriptorSetLayoutPerObject;
 		vh::Pipeline m_shadowPipeline;		
 
 		vecs::Handle m_shadowImageHandle;
