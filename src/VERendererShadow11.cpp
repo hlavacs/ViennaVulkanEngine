@@ -22,33 +22,67 @@ namespace vve {
 
 		vh::RenCreateRenderPass(m_vkState().m_physicalDevice, m_vkState().m_device, m_vkState().m_swapChain, false, m_renderPass);
 
-		vh::RenCreateDescriptorSetLayout( m_vkState().m_device, //Per frame shadow buffer
+		vh::ComCreateCommandPool(m_vkState().m_surface, m_vkState().m_physicalDevice, m_vkState().m_device, m_commandPool);
+		vh::ComCreateCommandBuffers(m_vkState().m_device, m_commandPool, m_commandBuffers);
+
+		// -----------------------------------------------------------------------------------------------
+
+		vh::RenCreateDescriptorSetLayout( m_vkState().m_device, //Per frame buffers
 			{ 
 				{ 	.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 
 					.stageFlags = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT 
 				},
 				{ 	.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 
-					.stageFlags = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT }
+					.stageFlags = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT 
+				}
 			},
 			m_descriptorSetLayoutPerFrame );
-
-		vh::ComCreateCommandPool(m_vkState().m_surface, m_vkState().m_physicalDevice, m_vkState().m_device, m_commandPool);
-		vh::ComCreateCommandBuffers(m_vkState().m_device, m_commandPool, m_commandBuffers);
 		vh::RenCreateDescriptorPool(m_vkState().m_device, 1000, m_descriptorPool);
-
 		vh::RenCreateDescriptorSet(m_vkState().m_device, m_descriptorSetLayoutPerFrame, m_descriptorPool, m_descriptorSetPerFrame);
+		
+		// -----------------------------------------------------------------------------------------------
 
+		VkDescriptorSetLayout descriptorSetLayoutPerObject;
+		std::vector<VkDescriptorSetLayoutBinding> bindings {
+			{ .descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, .stageFlags = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT }
+		};
+		vh::RenCreateDescriptorSetLayout( m_vkState().m_device, bindings, descriptorSetLayoutPerObject );
+
+		std::vector<VkVertexInputBindingDescription> bindingDescriptions = getBindingDescriptions("P");
+		std::vector<VkVertexInputAttributeDescription> attributeDescriptions = getAttributeDescriptions("P");
+
+		VkPipelineColorBlendAttachmentState colorBlendAttachment{};
+
+		vh::RenCreateGraphicsPipeline(
+			m_vkState().m_device, 
+			m_renderPass, 
+			"shaders/Forward/Shadow11.spv", "",
+			bindingDescriptions, attributeDescriptions,
+			{ m_descriptorSetLayoutPerFrame, descriptorSetLayoutPerObject }, 
+			{}, //spezialization constants
+			{{.stageFlags = VK_SHADER_STAGE_VERTEX_BIT, .offset = 0, .size = 8}}, //push constant ranges -> 2 ints
+			{}, //blend attachments
+			m_shadowPipeline);
+		
+
+		std::cout << "Pipeline Shadow" << std::endl;
+
+
+		// -----------------------------------------------------------------------------------------------
+		
 		//Per frame uniform buffer
 		vh::BufCreateBuffers(m_vkState().m_physicalDevice, m_vkState().m_device, m_vkState().m_vmaAllocator, 
 			VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, sizeof(vh::UniformBufferFrame), m_uniformBuffersPerFrame);
 		vh::RenUpdateDescriptorSet(m_vkState().m_device, m_uniformBuffersPerFrame, 0, 
 			VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, sizeof(vh::UniformBufferFrame), m_descriptorSetPerFrame);   
 	
-		//Per frame shadow index buffer
+		//Per frame lights buffer
 		vh::BufCreateBuffers(m_vkState().m_physicalDevice, m_vkState().m_device, m_vkState().m_vmaAllocator, 
-			VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, MAX_NUMBER_LIGHTS*sizeof(vh::ShadowIndex)*6, m_storageBuffersShadow);
-		vh::RenUpdateDescriptorSet(m_vkState().m_device, m_storageBuffersShadow, 1, 
+			VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, MAX_NUMBER_LIGHTS*sizeof(vh::ShadowIndex)*6, m_storageBuffersLights);
+		vh::RenUpdateDescriptorSet(m_vkState().m_device, m_storageBuffersLights, 1, 
 			VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, MAX_NUMBER_LIGHTS*sizeof(vh::ShadowIndex)*6, m_descriptorSetPerFrame);   
+
+		// -----------------------------------------------------------------------------------------------
 
 		ShadowImage shadowImage {
 			.maxImageDimension2D = std::min(m_vkState().m_physicalDeviceProperties.limits.maxImageDimension2D, SHADOW_MAX_MAPS_PER_ROW*SHADOW_MAP_DIMENSION),
@@ -78,7 +112,7 @@ namespace vve {
 		}
 
 		for( int i = 0; i < MAX_FRAMES_IN_FLIGHT; i++ ) {
-			vh::Map map;
+			vh::Image map;
 			vh::ImgCreateImage2(m_vkState().m_physicalDevice, m_vkState().m_device, m_vkState().m_vmaAllocator
 				, shadowImage().maxImageDimension2D, shadowImage().maxImageDimension2D, 1, numLayers, 1
 				, vh::RenFindDepthFormat(m_vkState().m_physicalDevice), VK_IMAGE_TILING_OPTIMAL
@@ -148,7 +182,7 @@ namespace vve {
 
         vkDestroyDescriptorPool(m_vkState().m_device, m_descriptorPool, nullptr);
 		vkDestroyRenderPass(m_vkState().m_device, m_renderPass, nullptr);
-		vh::BufDestroyBuffer2(m_vkState().m_device, m_vkState().m_vmaAllocator, m_storageBuffersShadow);
+		vh::BufDestroyBuffer2(m_vkState().m_device, m_vkState().m_vmaAllocator, m_storageBuffersLights);
 		vh::BufDestroyBuffer2(m_vkState().m_device, m_vkState().m_vmaAllocator, m_uniformBuffersPerFrame);
 		vkDestroyDescriptorSetLayout(m_vkState().m_device, m_descriptorSetLayoutPerFrame, nullptr);
 

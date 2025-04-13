@@ -48,12 +48,8 @@ namespace vve {
 		
 		vh::RenCreateDescriptorSetLayout( m_vkState().m_device, //Per frame
 			{ 
-				{ 	.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 
-					.stageFlags = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT 
-				},
-				{ 	.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 
-					.stageFlags = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT 
-				}
+				{ .descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, .stageFlags = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT },
+				{ .descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, .stageFlags = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT }
 			},
 			m_descriptorSetLayoutPerFrame );
 
@@ -65,6 +61,8 @@ namespace vve {
 		vh::RenCreateDescriptorPool(m_vkState().m_device, 1000, m_descriptorPool);
 		vh::RenCreateDescriptorSet(m_vkState().m_device, m_descriptorSetLayoutPerFrame, m_descriptorPool, m_descriptorSetPerFrame);
 		
+		// -----------------------------------------------------------------------------------------------
+
 		//Per frame uniform buffer
 		vh::BufCreateBuffers(m_vkState().m_physicalDevice, m_vkState().m_device, m_vkState().m_vmaAllocator, 
 			VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, sizeof(vh::UniformBufferFrame), m_uniformBuffersPerFrame);
@@ -76,6 +74,8 @@ namespace vve {
 			VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, MAX_NUMBER_LIGHTS*sizeof(vh::Light), m_storageBuffersLights);
 		vh::RenUpdateDescriptorSet(m_vkState().m_device, m_storageBuffersLights, 1, 
 			VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, MAX_NUMBER_LIGHTS*sizeof(vh::Light), m_descriptorSetPerFrame);   
+
+		// -----------------------------------------------------------------------------------------------
 
 		CreatePipelines();
 		return false;
@@ -273,7 +273,7 @@ namespace vve {
 		if( hasTexture ) {
 			sizeUbo = sizeof(vh::BufferPerObjectTexture);
 			auto tHandle = m_registry.template Get<TextureHandle>(oHandle);
-			auto texture = m_registry.template Get<vh::Map&>(tHandle);
+			auto texture = m_registry.template Get<vh::Image&>(tHandle);
 	    	vh::RenUpdateDescriptorSetTexture(m_vkState().m_device, texture, 1, descriptorSet);
 		} else if(hasColor) {
 			sizeUbo = sizeof(vh::BufferPerObjectColor);

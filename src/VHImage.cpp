@@ -4,7 +4,7 @@ namespace vh {
 
     void ImgCreateTextureImage(VkPhysicalDevice physicalDevice, VkDevice device, VmaAllocator vmaAllocator, 
         VkQueue graphicsQueue, VkCommandPool commandPool, void* pixels, int texWidth, int texHeight, 
-        size_t imageSize, vh::Map& texture) {
+        size_t imageSize, vh::Image& texture) {
 
         VkBuffer stagingBuffer;
         VmaAllocation stagingBufferAllocation;
@@ -33,12 +33,12 @@ namespace vh {
         BufDestroyBuffer(device, vmaAllocator, stagingBuffer, stagingBufferAllocation);
     }
 
-    void ImgCreateTextureImageView(VkDevice device, Map& texture) {
+    void ImgCreateTextureImageView(VkDevice device, Image& texture) {
       texture.m_mapImageView = ImgCreateImageView(device, texture.m_mapImage, VK_FORMAT_R8G8B8A8_SRGB
                                       , VK_IMAGE_ASPECT_COLOR_BIT);
     }
 
-    void ImgCreateTextureSampler(VkPhysicalDevice physicalDevice, VkDevice device, Map &texture) {
+    void ImgCreateTextureSampler(VkPhysicalDevice physicalDevice, VkDevice device, Image &texture) {
         VkPhysicalDeviceProperties properties{};
         vkGetPhysicalDeviceProperties(physicalDevice, &properties);
 

@@ -3,11 +3,12 @@
 
 namespace vh {
     
-	void ImgCreateTextureImage(VkPhysicalDevice physicalDevice, VkDevice device, VmaAllocator vmaAllocator, VkQueue graphicsQueue, VkCommandPool commandPool, void* pixels, int width, int height, size_t size, Map& texture);
+	void ImgCreateTextureImage(VkPhysicalDevice physicalDevice, VkDevice device, VmaAllocator vmaAllocator, VkQueue graphicsQueue, VkCommandPool commandPool, 
+        void* pixels, int width, int height, size_t size, Image& texture);
 
-    void ImgCreateTextureImageView(VkDevice device, Map& texture);
+    void ImgCreateTextureImageView(VkDevice device, Image& texture);
 
-    void ImgCreateTextureSampler(VkPhysicalDevice physicalDevice, VkDevice device, Map &texture);
+    void ImgCreateTextureSampler(VkPhysicalDevice physicalDevice, VkDevice device, Image &texture);
 
     VkImageView ImgCreateImageView(VkDevice device, VkImage image, VkFormat format, VkImageAspectFlags aspectFlags);
 

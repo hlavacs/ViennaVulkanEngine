@@ -189,7 +189,7 @@ namespace vve {
 
         vkDestroyDescriptorPool(m_vkState().m_device, m_descriptorPool, nullptr);
 
-		for( decltype(auto) texture : m_registry.template GetView<vh::Map&>() ) {
+		for( decltype(auto) texture : m_registry.template GetView<vh::Image&>() ) {
 			vkDestroySampler(m_vkState().m_device, texture().m_mapSampler, nullptr);
         	vkDestroyImageView(m_vkState().m_device, texture().m_mapImageView, nullptr);
 	        vh::ImgDestroyImage(m_vkState().m_device, m_vkState().m_vmaAllocator, texture().m_mapImage, texture().m_mapImageAllocation);
@@ -236,7 +236,7 @@ namespace vve {
 	bool RendererVulkan::OnTextureCreate( Message message ) {
 		auto msg = message.template GetData<MsgTextureCreate>();
 		auto handle = msg.m_handle;
-		auto texture = m_registry.template Get<vh::Map&>(handle);
+		auto texture = m_registry.template Get<vh::Image&>(handle);
 		auto pixels = texture().m_pixels;
 
 		vh::ImgCreateTextureImage(m_vkState().m_physicalDevice, m_vkState().m_device, m_vkState().m_vmaAllocator, m_vkState().m_graphicsQueue, m_commandPool, pixels, texture().m_width, texture().m_height, texture().m_size, texture);
@@ -247,7 +247,7 @@ namespace vve {
 
 	bool RendererVulkan::OnTextureDestroy( Message message ) {
 		auto handle = message.template GetData<MsgTextureDestroy>().m_handle;
-		auto texture = m_registry.template Get<vh::Map&>(handle);
+		auto texture = m_registry.template Get<vh::Image&>(handle);
 		vkDestroySampler(m_vkState().m_device, texture().m_mapSampler, nullptr);
 		vkDestroyImageView(m_vkState().m_device, texture().m_mapImageView, nullptr);
 		vh::ImgDestroyImage(m_vkState().m_device, m_vkState().m_vmaAllocator, texture().m_mapImage, texture().m_mapImageAllocation);

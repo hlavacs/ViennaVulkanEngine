@@ -154,7 +154,7 @@ namespace vve {
 
 	bool AssetManager::OnTextureRelease(Message message) {
 		auto msg = message.template GetData<MsgTextureCreate>();
-		auto texture = m_registry.template Get<vh::Map&>(msg.m_handle);
+		auto texture = m_registry.template Get<vh::Image&>(msg.m_handle);
 		stbi_image_free(texture().m_pixels); //last thing release resources
 		return true;
 	}
@@ -184,7 +184,7 @@ namespace vve {
         if (!pixels) { return nullptr; }
 
 		m_engine.SetHandle(fileName(), tHandle );
-		m_registry.Put(tHandle, vh::Map{texWidth, texHeight, 1, imageSize, pixels});
+		m_registry.Put(tHandle, vh::Image{texWidth, texHeight, 1, imageSize, pixels});
 		return pixels;
 	}
 

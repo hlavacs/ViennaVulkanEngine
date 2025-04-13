@@ -356,7 +356,7 @@ namespace vh {
 		}
     }
 
-    void RenUpdateDescriptorSetTexture(VkDevice device, Map& texture, size_t binding, DescriptorSet& descriptorSet) {
+    void RenUpdateDescriptorSetTexture(VkDevice device, Image& texture, size_t binding, DescriptorSet& descriptorSet) {
 
 		size_t i = 0;
 	    for ( auto& ds : descriptorSet.m_descriptorSetPerFrameInFlight ) {

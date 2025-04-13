@@ -12,7 +12,7 @@ namespace vve
 		uint32_t maxImageDimension2D;
 		uint32_t maxImageArrayLayers;
 		uint32_t numberImageArraylayers{0};
-		std::vector<vh::Map> shadowImages;
+		std::vector<vh::Image> shadowImages;
 		uint32_t MaxNumberMapsUV() { return maxImageDimension2D / SHADOW_MAP_DIMENSION; };
 		uint32_t MaxNumberMapsPerLayer() { return MaxNumberMapsUV() * MaxNumberMapsUV(); };
 		uint32_t MaxNumberMapsPerImage() { return maxImageArrayLayers * MaxNumberMapsPerLayer(); };
@@ -42,7 +42,7 @@ namespace vve
 	    std::vector<VkCommandBuffer> m_commandBuffers;
 
 		vh::Buffer m_uniformBuffersPerFrame;
-		vh::Buffer m_storageBuffersShadow;
+		vh::Buffer m_storageBuffersLights;
 		VkDescriptorSetLayout m_descriptorSetLayoutPerFrame;
 		vh::DescriptorSet m_descriptorSetPerFrame{0};
 		vh::Pipeline m_shadowPipeline;		

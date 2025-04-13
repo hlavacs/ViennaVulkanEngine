@@ -13,7 +13,7 @@ namespace vh {
 
     void RenUpdateDescriptorSet(VkDevice device, Buffer& uniformBuffers, size_t binding, VkDescriptorType type, size_t size, DescriptorSet& descriptorSet);
 
-    void RenUpdateDescriptorSetTexture(VkDevice device, Map& texture, size_t binding, DescriptorSet& descriptorSet);
+    void RenUpdateDescriptorSetTexture(VkDevice device, Image& texture, size_t binding, DescriptorSet& descriptorSet);
 
     VkShaderModule RenCreateShaderModule(VkDevice device, const std::vector<char>& code);
 
