@@ -13,7 +13,19 @@ struct VSOutput {
 
 struct GlobalData { float4 dummy; };
 
-[vk::binding(0, 0)] ConstantBuffer<GlobalData> gGlobal;
+//[vk::binding(0, 0)] ConstantBuffer<GlobalData> gGlobal;
+
+[vk::binding(1, 0)]
+Sampler2DArray<uint, 1> positionImage;
+
+[vk::binding(2, 0)]
+Sampler2DArray<uint, 1> normalImage;
+
+[vk::binding(3, 0)]
+Sampler2DArray<uint, 1> albedoImage;
+
+//[[vk::binding(4, 0)]]
+//StructuredBuffer<Light> gLights;
 
 [shader("vertex")]
 VSOutput vertexMain(VSInput input) {

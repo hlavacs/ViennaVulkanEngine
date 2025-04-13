@@ -206,8 +206,9 @@ namespace vve {
 			if (!hasTexture && !hasColor && !hasVertexColor) continue;
 
 			auto mesh = m_registry.template Get<vh::Mesh&>(ghandle);
+			// TODO: change PNC to fit shaders after initial testing
 			vh::ComRecordObject(cmdBuffer, m_geometryPipeline,
-				{ m_descriptorSetComposition, descriptorsets }, "P", mesh, m_vkState().m_currentFrame);
+				{ m_descriptorSetComposition, descriptorsets }, "PNT", mesh, m_vkState().m_currentFrame);
 		}
 
 		vh::ComEndRecordCommandBuffer(cmdBuffer);
