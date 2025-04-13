@@ -207,7 +207,7 @@ namespace vve {
 
 			auto mesh = m_registry.template Get<vh::Mesh&>(ghandle);
 			vh::ComRecordObject(cmdBuffer, m_geometryPipeline,
-				{ m_descriptorSetComposition, descriptorsets }, "C", mesh, m_vkState().m_currentFrame);
+				{ m_descriptorSetComposition, descriptorsets }, "P", mesh, m_vkState().m_currentFrame);
 		}
 
 		vh::ComEndRecordCommandBuffer(cmdBuffer);
@@ -373,7 +373,7 @@ namespace vve {
 		VkVertexInputAttributeDescription attributeDescription{};
 		attributeDescription.binding = binding;
 		attributeDescription.location = location;
-		attributeDescription.format = VK_FORMAT_R32G32B32_SFLOAT;
+		attributeDescription.format = format;
 		attributeDescription.offset = 0;
 		attd.push_back(attributeDescription);
 	}
@@ -382,9 +382,9 @@ namespace vve {
 		std::vector<VkVertexInputAttributeDescription> attributeDescriptions{};
 		int binding = 0;
 		int location = 0;
-		getAttributeDescription(binding++, location++, m_gBufferAttachments[POSITION].m_gbufferFormat, attributeDescriptions);
-		getAttributeDescription(binding++, location++, m_gBufferAttachments[NORMAL].m_gbufferFormat, attributeDescriptions);
-		getAttributeDescription(binding++, location++, m_gBufferAttachments[ALBEDO].m_gbufferFormat, attributeDescriptions);
+		getAttributeDescription(binding++, location++, VK_FORMAT_R32G32B32_SFLOAT, attributeDescriptions);
+		getAttributeDescription(binding++, location++, VK_FORMAT_R32G32B32_SFLOAT, attributeDescriptions);
+		getAttributeDescription(binding++, location++, VK_FORMAT_R32G32B32_SFLOAT, attributeDescriptions);
 
 		return attributeDescriptions;
 	}
