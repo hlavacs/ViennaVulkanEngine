@@ -28,7 +28,7 @@ namespace vve {
 		int GetVolume() { return (int)m_volume; }
 
         static inline SoundManager* m_soundManager{nullptr};
-        static inline void SDL2AudioCallback(void *userdata, Uint8 *stream, int len);
+        static inline void SDL3AudioCallback(void *userdata, Uint8 *stream, int len);
 
     private:
         bool OnUpdate(Message message);

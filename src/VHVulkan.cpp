@@ -21,8 +21,8 @@
 #include <unordered_map>
 
 #define SDL_MAIN_HANDLED
-#include <SDL2/SDL.h>
-#include <SDL2/SDL_vulkan.h>
+#include <SDL3/SDL.h>
+#include <SDL3/SDL_vulkan.h>
 
 #define GLM_FORCE_RADIANS
 #define GLM_FORCE_DEPTH_ZERO_TO_ONE
@@ -44,7 +44,7 @@
 
 #define IMGUI_IMPL_VULKAN_USE_VOLK
 #include "imgui.h"
-#include "backends/imgui_impl_sdl2.h"
+#include "backends/imgui_impl_sdl3.h"
 #include "backends/imgui_impl_vulkan.h"
 
 #include "VHVulkan.h"
@@ -102,7 +102,7 @@ namespace vh
         ImGui_ImplVulkan_LoadFunctions( VK_API_VERSION_1_1, &VulLoadVolk );
 
         // Setup Platform/Renderer backends
-        ImGui_ImplSDL2_InitForVulkan(sdlWindow);
+        ImGui_ImplSDL3_InitForVulkan(sdlWindow);
 
         ImGui_ImplVulkan_InitInfo init_info = {};
         init_info.Instance = instance;

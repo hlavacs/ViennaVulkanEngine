@@ -1,4 +1,5 @@
 #include "VHInclude.h"
+//#include "VHInclude2.h"
 #include "VEInclude.h"
 
 
@@ -52,7 +53,7 @@ namespace vve {
 	        vh::DevSetupDebugMessenger(m_vkState().m_instance, m_vkState().m_debugMessenger);
 		}
 
-		if (SDL_Vulkan_CreateSurface(m_windowSDLState().m_sdlWindow, m_vkState().m_instance, &m_vkState().m_surface) == 0) {
+		if (SDL_Vulkan_CreateSurface(m_windowSDLState().m_sdlWindow, m_vkState().m_instance, nullptr, &m_vkState().m_surface) == 0) {
             printf("Failed to create Vulkan surface.\n");
         }
 
@@ -129,7 +130,7 @@ namespace vve {
 			VK_IMAGE_LAYOUT_PRESENT_SRC_KHR, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
 
         if (result == VK_ERROR_OUT_OF_DATE_KHR ) {
-            DevRecreateSwapChain( m_windowSDLState().m_sdlWindow, 
+            vh::DevRecreateSwapChain( m_windowSDLState().m_sdlWindow, 
 				m_vkState().m_surface, m_vkState().m_physicalDevice, m_vkState().m_device, m_vkState().m_vmaAllocator, 
 				m_vkState().m_swapChain, m_vkState().m_depthImage, m_renderPass);
 

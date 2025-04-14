@@ -172,7 +172,7 @@ namespace vh {
     }
 
     void DevCreateSurface(VkInstance instance, SDL_Window *sdlWindow, VkSurfaceKHR& surface) {
-        if (SDL_Vulkan_CreateSurface(sdlWindow, instance, &surface) == 0) {
+        if (SDL_Vulkan_CreateSurface(sdlWindow, instance, nullptr, &surface) == 0) {
             printf("Failed to create Vulkan surface.\n");
         }
     }

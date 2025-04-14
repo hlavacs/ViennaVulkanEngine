@@ -87,11 +87,11 @@ namespace vve {
 	    
 		//------------------------------------------------------------------------------------------------
 
-		struct MsgMouseMove : public MsgBase { MsgMouseMove(double dt, int x, int y); int m_x; int m_y; };
+		struct MsgMouseMove : public MsgBase { MsgMouseMove(double dt, float x, float y); float m_x; float m_y; };
 	    struct MsgMouseButtonDown : public MsgBase { MsgMouseButtonDown(double dt, int button); int m_button; };
 	    struct MsgMouseButtonUp : public MsgBase { MsgMouseButtonUp(double dt, int button);  int m_button; };
 	    struct MsgMouseButtonRepeat : public MsgBase { MsgMouseButtonRepeat(double dt, int button);  int m_button; };
-	    struct MsgMouseWheel : public MsgBase { MsgMouseWheel(double dt, int x, int y);  int m_x; int m_y; };
+	    struct MsgMouseWheel : public MsgBase { MsgMouseWheel(double dt, float x, float y);  float m_x; float m_y; };
 	    struct MsgKeyDown : public MsgBase { MsgKeyDown(double dt, int key);  int m_key; };
 	    struct MsgKeyUp : public MsgBase { MsgKeyUp(double dt, int key);  int m_key; };
 	    struct MsgKeyRepeat : public MsgBase { MsgKeyRepeat(double dt, int key); int m_key; };

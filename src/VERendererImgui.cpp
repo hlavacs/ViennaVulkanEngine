@@ -45,7 +45,7 @@ namespace vve {
     bool RendererImgui::OnPrepareNextFrame(Message message) {
         if(m_windowState().m_isMinimized) return false;
 	    ImGui_ImplVulkan_NewFrame();
-		ImGui_ImplSDL2_NewFrame();
+		ImGui_ImplSDL3_NewFrame();
         ImGui::NewFrame();
 		return false;
     }
@@ -69,14 +69,14 @@ namespace vve {
 
     bool RendererImgui::OnSDL(Message message) {
     	SDL_Event event = message.template GetData<MsgSDL>().m_event;
-    	ImGui_ImplSDL2_ProcessEvent(&event);
+    	ImGui_ImplSDL3_ProcessEvent(&event);
 		return false;
     }
 
     bool RendererImgui::OnQuit(Message message) {
         vkDeviceWaitIdle(m_vkState().m_device);
 		ImGui_ImplVulkan_Shutdown();
-        ImGui_ImplSDL2_Shutdown();
+        ImGui_ImplSDL3_Shutdown();
         ImGui::DestroyContext();
 
         vkDestroyCommandPool(m_vkState().m_device, m_commandPool, nullptr);

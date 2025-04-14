@@ -76,7 +76,7 @@ namespace vve {
 	void Engine::CreateSystems( ){
 		RegisterSystem(std::make_unique<SceneManager>(m_sceneManagerName, *this));
 		RegisterSystem(std::make_unique<AssetManager>(m_assetManagerName, *this));
-		RegisterSystem(std::make_unique<SoundManager>(m_soundManagerName, *this));
+		//RegisterSystem(std::make_unique<SoundManager>(m_soundManagerName, *this));
 	};
 
 	void Engine::CreateGUI() {

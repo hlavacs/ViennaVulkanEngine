@@ -4,8 +4,8 @@
 #include <iomanip>
 
 #define SDL_MAIN_HANDLED
-#include <SDL.h>
-#include <SDL_vulkan.h>
+#include <SDL3/SDL.h>
+#include <SDL3/SDL_vulkan.h>
 
 #define GLM_FORCE_RADIANS
 #define GLM_FORCE_DEPTH_ZERO_TO_ONE
@@ -72,7 +72,7 @@ namespace vve {
 #include "vma/vk_mem_alloc.h"
 
 #include "imgui.h"
-#include "backends/imgui_impl_sdl2.h"
+#include "backends/imgui_impl_sdl3.h"
 #include "backends/imgui_impl_vulkan.h"
 
 

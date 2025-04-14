@@ -4,7 +4,7 @@ set(SOURCE
   ${imgui_SOURCE_DIR}/imgui.cpp
   ${imgui_SOURCE_DIR}/imgui_demo.cpp
   ${imgui_SOURCE_DIR}/imgui_draw.cpp
-  ${imgui_SOURCE_DIR}/backends/imgui_impl_sdl2.cpp
+  ${imgui_SOURCE_DIR}/backends/imgui_impl_sdl3.cpp
   ${imgui_SOURCE_DIR}/backends/imgui_impl_vulkan.cpp
   ${imgui_SOURCE_DIR}/imgui_tables.cpp
   ${imgui_SOURCE_DIR}/imgui_widgets.cpp
@@ -19,7 +19,7 @@ set(SOURCE
   VERendererVulkan.cpp
   VESceneManager.cpp
   VEAssetManager.cpp
-  VESoundManager.cpp
+  #VESoundManager.cpp
   VESystem.cpp
   VEWindow.cpp
   VEWindowSDL.cpp
@@ -44,7 +44,7 @@ set(HEADERS
   ${INCLUDE}/VERendererVulkan.h
   ${INCLUDE}/VESceneManager.h
   ${INCLUDE}/VEAssetManager.h
-  ${INCLUDE}/VESoundManager.h
+  #${INCLUDE}/VESoundManager.h
   ${INCLUDE}/VESystem.h
   ${INCLUDE}/VEWindow.h
   ${INCLUDE}/VEWindowSDL.h
@@ -68,5 +68,5 @@ source_group(
   PREFIX "Header Files"
   FILES ${HEADER_LIST})
 
-target_link_libraries(${TARGET} SDL2 assimp vk-bootstrap volk)
+target_link_libraries(${TARGET} SDL3::SDL3 assimp vk-bootstrap volk)
 
