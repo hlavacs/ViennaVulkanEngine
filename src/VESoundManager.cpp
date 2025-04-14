@@ -47,7 +47,7 @@ namespace vve {
                 SDL_LoadWAV(filepath().c_str(), &sound().m_wavSpec, &sound().m_wavBuffer, &sound().m_wavLength);
                 sound().m_wavSpec.callback = SDL3AudioCallback;               
                 sound().m_wavSpec.userdata = reinterpret_cast<void*>(soundHandle().GetValue()); // turn handle to void*
-                sound().m_deviceId = SDL_OpenAudioDevice(NULL, 0, &sound().m_wavSpec, NULL, 0);
+                sound().m_deviceId = SDL_OpenAudioDevice(0, &sound().m_wavSpec);
             }
 			auto s = sound();
             sound().m_playLength = sound().m_wavLength;
