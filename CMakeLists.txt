@@ -89,21 +89,13 @@ include_directories (${viennastrongtype_SOURCE_DIR}/include)
 include_directories (${viennatypelistlibrary_SOURCE_DIR}/include)
 
 #--------------------------------- Fetch Vienna Vulkan Helper ---------------------------------#
-#FetchContent_Declare(viennavulkanhelper
-#                     GIT_REPOSITORY https://github.com/hlavacs/ViennaVulkanHelper.git
-#                     GIT_TAG main
-#)
-#FetchContent_MakeAvailable(viennavulkanhelper)
-#include_directories (${viennavulkanhelper_SOURCE_DIR}/include)
 
-#--------------------------------- Fetch SDL2 ---------------------------------#
-#set(SDL_STATIC true)
-#FetchContent_Declare(sdl2
-#                     GIT_REPOSITORY https://github.com/libsdl-org/SDL.git
-#                     GIT_TAG SDL2
-#)
-#FetchContent_MakeAvailable(sdl2)
-#include_directories (${sdl2_SOURCE_DIR}/include)
+FetchContent_Declare(viennavulkanhelper
+                     GIT_REPOSITORY https://github.com/hlavacs/ViennaVulkanHelper.git
+                     GIT_TAG main
+)
+FetchContent_MakeAvailable(viennavulkanhelper)
+include_directories (${viennavulkanhelper_SOURCE_DIR}/include)
 
 #--------------------------------- Fetch SDL3 ---------------------------------#
 
@@ -178,8 +170,6 @@ message(STATUS "VSTY: ${viennastrongtype_SOURCE_DIR}")
 message(STATUS "STB IMAGE: ${stb_image_SOURCE_DIR}")
 message(STATUS "FILE DIALOG: ${l2dfiledialog_SOURCE_DIR}")
 message(STATUS "IMGUI: ${imgui_SOURCE_DIR}")
-#message(STATUS "SDL2 SRC: ${sdl2_SOURCE_DIR}")
-#message(STATUS "SDL2 BINARY: ${sdl2_BINARY_DIR}")
 message(STATUS "SDL3 SRC: ${sdl3_SOURCE_DIR}")
 message(STATUS "SDL3 BINARY: ${sdl3_BINARY_DIR}")
 message(STATUS "SDL Mixer SRC: ${sdlmixer_SOURCE_DIR}")

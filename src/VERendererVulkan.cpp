@@ -1,5 +1,5 @@
 #include "VHInclude.h"
-//#include "VHInclude2.h"
+#include "VHInclude2.h"
 #include "VEInclude.h"
 
 
@@ -46,7 +46,15 @@ namespace vve {
 
 		volkInitialize();
 		m_vkState().m_apiVersionInstance = engineState.apiVersion;
-    	vh::DevCreateInstance( m_validationLayers, m_instanceExtensions, engineState.name, m_vkState().m_apiVersionInstance, engineState.debug, m_vkState().m_instance);
+    	vh::DevCreateInstance( 
+			m_validationLayers, 
+			m_instanceExtensions, 
+			engineState.name, 
+			m_vkState().m_apiVersionInstance, 
+			engineState.debug, 
+			m_vkState().m_instance
+		);
+		
 		volkLoadInstance(m_vkState().m_instance);
 
 		if (engineState.debug) {

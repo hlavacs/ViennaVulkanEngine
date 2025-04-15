@@ -5,7 +5,6 @@ namespace vve {
 
 	SoundManager::SoundManager(std::string systemName, Engine& engine ) : System(systemName, engine){
 		m_engine.RegisterCallbacks( { 
- 		  	//{this,    0, "UPDATE", [this](Message& message){ return OnUpdate(message);} },
  		  	{this, 1000, "PLAY_SOUND", [this](Message& message){ return OnPlaySound(message);} },
  		  	{this,    0, "SET_VOLUME", [this](Message& message){ return OnSetVolume(message);} },
  		  	{this,    0, "QUIT", [this](Message& message){ return OnQuit(message);} }
@@ -43,11 +42,6 @@ namespace vve {
         Mix_VolumeMusic(m_volume);
 		return false;
 	}
-
-    bool SoundManager::OnUpdate(Message message) {
-        auto msg = message.template GetData<MsgUpdate>();
-		return false;
-    }
 
     bool SoundManager::OnQuit(Message message) {
         auto msg = message.template GetData<MsgQuit>();
