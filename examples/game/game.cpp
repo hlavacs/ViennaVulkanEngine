@@ -28,6 +28,7 @@ class MyGame : public vve::System {
                 {this,  10000, "UPDATE", [this](Message& message){ return OnUpdate(message);} },
                 {this, -10000, "RECORD_NEXT_FRAME", [this](Message& message){ return OnRecordNextFrame(message);} }
             } );
+            m_engine.SendMsg(MsgSetVolume{ (int)m_volume });
         };
         
         ~MyGame() {};
@@ -151,7 +152,7 @@ class MyGame : public vve::System {
         vecs::Handle m_handleCube{};
 		vecs::Handle m_cameraHandle{};
 		vecs::Handle m_cameraNodeHandle{};
-		float m_volume{MIX_MAX_VOLUME};
+		float m_volume{MIX_MAX_VOLUME / 2.0};
     };
     
     
