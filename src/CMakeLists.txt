@@ -19,7 +19,8 @@ set(SOURCE
   VERendererVulkan.cpp
   VESceneManager.cpp
   VEAssetManager.cpp
-  #VESoundManager.cpp
+  #VESoundManagerSDL2.cpp
+  #VESoundManagerSDL3.cpp
   VESystem.cpp
   VEWindow.cpp
   VEWindowSDL.cpp
@@ -44,7 +45,8 @@ set(HEADERS
   ${INCLUDE}/VERendererVulkan.h
   ${INCLUDE}/VESceneManager.h
   ${INCLUDE}/VEAssetManager.h
-  #${INCLUDE}/VESoundManager.h
+  #${INCLUDE}/VESoundManagerSDL2.h
+  #${INCLUDE}/VESoundManagerSDL3.h
   ${INCLUDE}/VESystem.h
   ${INCLUDE}/VEWindow.h
   ${INCLUDE}/VEWindowSDL.h

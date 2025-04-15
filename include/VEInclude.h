@@ -90,4 +90,5 @@ namespace vve {
 #include "VERendererVulkan.h"
 #include "VESceneManager.h"
 #include "VEAssetManager.h"
-#include "VESoundManager.h"
+//#include "VESoundManagerSDL2.h"
+#include "VESoundManagerSDL3.h"
