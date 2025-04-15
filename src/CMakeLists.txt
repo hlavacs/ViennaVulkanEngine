@@ -20,7 +20,7 @@ set(SOURCE
   VESceneManager.cpp
   VEAssetManager.cpp
   #VESoundManagerSDL2.cpp
-  #VESoundManagerSDL3.cpp
+  VESoundManagerSDL3.cpp
   VESystem.cpp
   VEWindow.cpp
   VEWindowSDL.cpp
@@ -46,7 +46,7 @@ set(HEADERS
   ${INCLUDE}/VESceneManager.h
   ${INCLUDE}/VEAssetManager.h
   #${INCLUDE}/VESoundManagerSDL2.h
-  #${INCLUDE}/VESoundManagerSDL3.h
+  ${INCLUDE}/VESoundManagerSDL3.h
   ${INCLUDE}/VESystem.h
   ${INCLUDE}/VEWindow.h
   ${INCLUDE}/VEWindowSDL.h
@@ -70,5 +70,5 @@ source_group(
   PREFIX "Header Files"
   FILES ${HEADER_LIST})
 
-target_link_libraries(${TARGET} SDL3::SDL3 assimp vk-bootstrap volk)
+target_link_libraries(${TARGET} SDL3::SDL3 SDL3_mixer::SDL3_mixer assimp vk-bootstrap volk)
 

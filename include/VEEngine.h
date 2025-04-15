@@ -81,6 +81,7 @@ namespace vve {
 		MessageMap m_messageMap{};
 
 		std::map<size_t, std::string> m_msgTypeMap;
+
 	};
 
 };  // namespace vve

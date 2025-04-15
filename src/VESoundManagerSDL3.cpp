@@ -11,8 +11,10 @@ namespace vve {
  		  	{this,    0, "QUIT", [this](Message& message){ return OnQuit(message);} }
 		} );
         SoundManager::m_soundManager = this;
+        m_availableCodecs = Mix_Init(MIX_INIT_WAVPACK | MIX_INIT_MP3 | MIX_INIT_OGG | MIX_INIT_FLAC );
+        Mix_OpenAudio(0, NULL);
+        Mix_AllocateChannels(128);  //audio channels
     };
-
 
     bool SoundManager::OnPlaySound(Message& message) {
         auto msg = message.template GetData<MsgPlaySound>();
@@ -22,58 +24,38 @@ namespace vve {
 
         auto sound = m_registry.template Get<SoundState&>(soundHandle);
 
-        if(cont == 1 || cont == 2) {
+        if(cont >= 1 || cont == -1) {
             sound().m_cont = cont;
-            if( sound().m_wavBuffer == nullptr) {
-                SDL_LoadWAV(filepath().c_str(), &sound().m_wavSpec, &sound().m_wavBuffer, &sound().m_wavLength);
-                sound().m_deviceId = SDL_OpenAudioDevice(0, &sound().m_wavSpec);
+            if( sound().m_chunk == nullptr) {
+                sound().m_chunk = Mix_LoadWAV(filepath().c_str());
             }
-			auto s = sound();
-            sound().m_playLength = sound().m_wavLength;
-            sound().m_playedLength = 0;
-			sound().m_volume = msg.m_volume;
-            int success = SDL_QueueAudio(sound().m_deviceId, sound().m_wavBuffer, sound().m_wavLength);
-            SDL_PauseAudioDevice(sound().m_deviceId, 0);
+            sound().m_channel = Mix_PlayChannel(-1, sound().m_chunk, cont == -1 ? cont : cont -1 );
             return true;
         }
-
-        if(sound().m_cont == 0) return false;
-        SDL_PauseAudioDevice(sound().m_deviceId, 1);
-        SDL_ClearQueuedAudio(sound().m_deviceId);
-        sound().m_cont = 0;
+        Mix_HaltChannel(sound().m_channel);
 		return false;
     }
 
 	bool SoundManager::OnSetVolume(Message& message) {
 		auto msg = message.template GetData<MsgSetVolume>();
 		m_volume = msg.m_volume;
+        Mix_Volume(-1, m_volume);
+        Mix_VolumeMusic(m_volume);
 		return false;
 	}
 
     bool SoundManager::OnUpdate(Message message) {
         auto msg = message.template GetData<MsgUpdate>();
-        for(auto sound : m_registry.template GetView<SoundState&>()) {
-            if(sound().m_playLength == 0) {
-                if(sound().m_cont == 1) {
-                    SDL_PauseAudioDevice(sound().m_deviceId, 1);
-                    sound().m_cont = 0;
-                }
-                if(sound().m_cont == 2) {
-                    sound().m_playLength = sound().m_wavLength;
-                    sound().m_playedLength = 0;
-                    int success = SDL_QueueAudio(sound().m_deviceId, sound().m_wavBuffer, sound().m_wavLength);
-                }
-            }
-        }
 		return false;
     }
 
     bool SoundManager::OnQuit(Message message) {
         auto msg = message.template GetData<MsgQuit>();
         for(auto sound : m_registry.template GetView<SoundState&>()) {
-            if(sound().m_deviceId) SDL_CloseAudioDevice(sound().m_deviceId);
-            SDL_FreeWAV(sound().m_wavBuffer);
+            if(sound().m_chunk) Mix_FreeChunk(sound().m_chunk);
+            if(sound().m_music) Mix_FreeMusic(sound().m_music);
         }
+        Mix_Quit();
 		return false;
     }
 

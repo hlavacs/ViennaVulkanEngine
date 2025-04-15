@@ -64,7 +64,7 @@ namespace vve {
 	}
 	
 	void Engine::CreateWindows(){
-		RegisterSystem(std::make_unique<WindowSDL>(m_windowName, *this, m_windowName, 1200, 600 ) );
+		RegisterSystem(std::make_unique<WindowSDL>(m_windowName, *this, m_windowName, 1200, 600 ) );	
 	};
 	
 	void Engine::CreateRenderer(){
@@ -76,7 +76,7 @@ namespace vve {
 	void Engine::CreateSystems( ){
 		RegisterSystem(std::make_unique<SceneManager>(m_sceneManagerName, *this));
 		RegisterSystem(std::make_unique<AssetManager>(m_assetManagerName, *this));
-		//RegisterSystem(std::make_unique<SoundManager>(m_soundManagerName, *this));
+		RegisterSystem(std::make_unique<SoundManager>(m_soundManagerName, *this));
 	};
 
 	void Engine::CreateGUI() {
@@ -111,10 +111,15 @@ namespace vve {
 		SendMsg( MsgFrameStart{dt} ) ;
 		SendMsg( MsgPollEvents{dt} ) ;
 		SendMsg( MsgUpdate{dt} ) ;
-		SendMsg( MsgPrepareNextFrame{dt} ) ;
-		SendMsg( MsgRecordNextFrame{dt} ) ;
-		SendMsg( MsgRenderNextFrame{dt} ) ;
-		SendMsg( MsgPresentNextFrame{dt} ) ;
+
+		auto [handle, stateW, stateSDL] = WindowSDL::GetState(m_registry);
+
+		if(!stateW().m_isMinimized) {
+			SendMsg( MsgPrepareNextFrame{dt} ) ;
+			SendMsg( MsgRecordNextFrame{dt} ) ;
+			SendMsg( MsgRenderNextFrame{dt} ) ;
+			SendMsg( MsgPresentNextFrame{dt} ) ;
+		}
 		SendMsg( MsgFrameEnd{dt} ) ;
 	}
 

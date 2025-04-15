@@ -43,7 +43,6 @@ namespace vve {
 	}
 
     bool RendererImgui::OnPrepareNextFrame(Message message) {
-        if(m_windowState().m_isMinimized) return false;
 	    ImGui_ImplVulkan_NewFrame();
 		ImGui_ImplSDL3_NewFrame();
         ImGui::NewFrame();
@@ -51,7 +50,6 @@ namespace vve {
     }
 
     bool RendererImgui::OnRecordNextFrame(Message message) {
-        if(m_windowState().m_isMinimized) return false;
 
         vkResetCommandBuffer(m_commandBuffers[m_vkState().m_currentFrame],  0);
 

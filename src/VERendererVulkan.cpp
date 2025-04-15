@@ -115,7 +115,6 @@ namespace vve {
     }
 
     bool RendererVulkan::OnPrepareNextFrame(Message message) {
-        if(m_windowState().m_isMinimized) return false;
 
         m_vkState().m_currentFrame = (m_vkState().m_currentFrame + 1) % MAX_FRAMES_IN_FLIGHT;
 		m_vkState().m_commandBuffersSubmit.clear();
@@ -140,7 +139,6 @@ namespace vve {
     }
 
     bool RendererVulkan::OnRecordNextFrame(Message message) {
-		if(m_windowState().m_isMinimized) return false;
 
         vkResetCommandBuffer(m_commandBuffers[m_vkState().m_currentFrame],  0);
 
@@ -157,7 +155,6 @@ namespace vve {
 	}
 
     bool RendererVulkan::OnRenderNextFrame(Message message) {
-        if(m_windowState().m_isMinimized) return false;
         	
 		vh::ComSubmitCommandBuffers(m_vkState().m_device, m_vkState().m_graphicsQueue, m_vkState().m_commandBuffersSubmit, 
 			m_imageAvailableSemaphores, m_renderFinishedSemaphores, m_intermediateSemaphores, m_fences, m_vkState().m_currentFrame);
