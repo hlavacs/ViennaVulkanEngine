@@ -1,53 +1,76 @@
 // This shader is just here for testing purposes
-struct VSInput {
+
+import Common;
+
+struct VertexStageInput {   
     float4 position : POSITION;
     float3 normal : NORMAL;
-    float4 albedo : COLOR;
+    float4 fragColor : COLOR;
 };
 
-struct VSOutput {
-    float4 position : SV_Position;
-    float3 normal : TEXCOORD0;
-    float4 albedo : TEXCOORD1;
+struct CoarseVertex {
+    float3 positionW : POSITION;
+    float3 normalW : NORMAL;
+    float2 uv : TEXCOORD;
+    float3 tangentW : TANGENT;
 };
 
-struct GlobalData { float4 dummy; };
+struct VertexStageOutput {
+    CoarseVertex coarseVertex : CoarseVertex;
+    float4 sv_position : SV_Position;
+};
 
-//[vk::binding(0, 0)] ConstantBuffer<GlobalData> gGlobal;
+[[vk::binding(0, 0)]]
+ConstantBuffer<UniformBufferFrame> gParamsFrame;
 
-[vk::binding(1, 0)]
-Sampler2DArray<uint, 1> positionImage;
+// [[vk::binding(4, 0)]]
+// StructuredBuffer<Light> gLights;
 
-[vk::binding(2, 0)]
-Sampler2DArray<uint, 1> normalImage;
+[[vk::binding(0, 1)]]
+ConstantBuffer<UniformBufferObjectTexture> gParamsObject;
 
-[vk::binding(3, 0)]
-Sampler2DArray<uint, 1> albedoImage;
+[[vk::binding(1, 1)]]
+Sampler2D texSampler;
 
-//[[vk::binding(4, 0)]]
-//StructuredBuffer<Light> gLights;
 
 [shader("vertex")]
-VSOutput vertexMain(VSInput input) {
-    VSOutput output;
-    output.position = input.position;
-    output.normal = input.normal;
-    output.albedo = input.albedo;
+VertexStageOutput geomVertMain(
+    float3 positionL: POSITION,
+    float3 normalL: NORMAL,
+    float2 uv: TEXCOORD)
+{
+    VertexStageOutput output = (VertexStageOutput)0;
+    float3 positionW = mul(gParamsObject.model, float4(positionL, 1.0)).xyz;
+    float3 positionV = mul(gParamsFrame.camera.view, float4(positionW, 1.0)).xyz;
+
+    output.coarseVertex.positionW = positionW;
+    output.coarseVertex.normalW = mul(gParamsObject.modelInvTranspose, float4(normalL, 0.0)).xyz;
+    output.coarseVertex.uv = gParamsObject.uvscale * uv;
+    output.coarseVertex.tangentW = mul(gParamsObject.model, float4(1.0, 1.0, 1.0, 1.0)).xyz;
+    output.sv_position = mul(gParamsFrame.camera.proj, float4(positionV, 1.0));
+
     return output;
 }
 
 struct GBufferOutput {
-    float4 pos : SV_Target0;
-    float4 norm : SV_Target1;
-    float4 albedo : SV_Target2;
+    float4 pos      : SV_Target0;
+    float4 norm     : SV_Target1;
+    float4 albedo   : SV_Target2;
 };
 
 [shader("fragment")]
-GBufferOutput fragmentMain()
+GBufferOutput geomFragMain(CoarseVertex input: CoarseVertex) : SV_Target
 {
     GBufferOutput output;
-    output.pos = float4(1.0, 0.0, 0.0, 1.0);    // Red: test for position
-    output.norm = float4(0.0, 1.0, 0.0, 1.0);   // Green: test for normals
-    output.albedo = float4(0.0, 0.0, 1.0, 1.0); // Blue: test for albedo
+    // output.pos = float4(input.positionW, 1.0);
+    // output.norm = float4(input.normalW, 1.0);
+    // output.albedo = texSampler.Sample(input.uv);
+    output.pos = float4(1.0, 1.0, 0.0, 1.0);
+    output.norm = float4(0.0, 1.0, 0.5, 1.0);
+    output.albedo = float4(0.5, 0.0, 1.0, 1.0);
     return output;
 }
+
+// float4(1.0, 1.0, 0.0, 1.0);  yellow
+// float4(0.0, 1.0, 0.5, 1.0);  light blue
+// float4(0.5, 0.0, 1.0, 1.0);  purple

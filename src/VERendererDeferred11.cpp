@@ -125,7 +125,7 @@ namespace vve {
 
 			bool hasTexture = m_registry.template Has<TextureHandle>(oHandle);
 			bool hasColor = m_registry.template Has<vh::Color>(oHandle);
-			bool hasVertexColor = false;		//pipeline.second.m_type.find("C") != std::string::npos;
+			bool hasVertexColor = true;		//pipeline.second.m_type.find("C") != std::string::npos;
 			if (!hasTexture && !hasColor && !hasVertexColor) continue;
 
 			if (hasTexture) {
@@ -162,7 +162,7 @@ namespace vve {
 		auto cmdBuffer = cmdBuffers[0];
 
 		std::vector<VkClearValue> clearValues(4);
-		glm::vec4 clearColor{};
+		glm::vec4 clearColor{0,0,0,0};
 
 		clearValues[0].color = { {clearColor.r, clearColor.g, clearColor.b, clearColor.w} };
 		clearValues[1].color = { {clearColor.r, clearColor.g, clearColor.b, clearColor.w} };
@@ -175,7 +175,7 @@ namespace vve {
 			m_vkState().m_currentFrame);
 
 		float f = 0.0;
-		std::array<float, 4> blendconst = (0 == 0 ? std::array<float, 4>{f, f, f, f} : std::array<float, 4>{ 1 - f,1 - f,1 - f,1 - f });
+		std::array<float, 4> blendconst = (m_pass == 0 ? std::array<float, 4>{f, f, f, f} : std::array<float, 4>{ 1 - f,1 - f,1 - f,1 - f });
 
 		vh::LightOffset offset{ 0, m_numberLightsPerType.x + m_numberLightsPerType.y + m_numberLightsPerType.z };
 		vh::ComBindPipeline(
@@ -186,14 +186,14 @@ namespace vve {
 			m_geometryPipeline,
 			{}, {}, //default view ports and scissors
 			blendconst, //blend constants
-			{/*
+			{
 				{.layout = m_geometryPipeline.m_pipelineLayout,
-					.stageFlags = VK_SHADER_STAGE_VERTEX_BIT,
+					.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT,
 					.offset = 0,
 					.size = sizeof(offset),
 					.pValues = &offset
 				}
-			*/}, //push constants
+			}, //push constants
 			m_vkState().m_currentFrame);
 
 		for (auto [oHandle, name, ghandle, LtoW, uniformBuffers, descriptorsets] :
@@ -202,19 +202,20 @@ namespace vve {
 
 			bool hasTexture = m_registry.template Has<TextureHandle>(oHandle);
 			bool hasColor = m_registry.template Has<vh::Color>(oHandle);
-			bool hasVertexColor = false;		// pipeline.second.m_type.find("C") != std::string::npos;
+			bool hasVertexColor = true;		// pipeline.second.m_type.find("C") != std::string::npos;
 			if (!hasTexture && !hasColor && !hasVertexColor) continue;
 
 			auto mesh = m_registry.template Get<vh::Mesh&>(ghandle);
 			// TODO: change PNC to fit shaders after initial testing
+			// TODO: m_descriptorSetObject or m_descriptorSetComposition here?
 			vh::ComRecordObject(cmdBuffer, m_geometryPipeline,
-				{ m_descriptorSetComposition, descriptorsets }, "PNT", mesh, m_vkState().m_currentFrame);
+				{ m_descriptorSetObject, descriptorsets }, "PNT", mesh, m_vkState().m_currentFrame);
 		}
 
 		vh::ComEndRecordCommandBuffer(cmdBuffer);
 		SubmitCommandBuffer(cmdBuffer);
 
-		//++m_pass;
+		++m_pass;
 		return false;
 	}
 
@@ -228,7 +229,7 @@ namespace vve {
 
 		bool hasTexture = m_registry.template Has<TextureHandle>(oHandle);
 		bool hasColor = m_registry.template Has<vh::Color>(oHandle);
-		bool hasVertexColor = false; // pipelinePerType->m_type.find("C") != std::string::npos;
+		bool hasVertexColor = true; // pipelinePerType->m_type.find("C") != std::string::npos;
 		if (!hasTexture && !hasColor && !hasVertexColor) return false;
 
 		vh::Buffer ubo;
