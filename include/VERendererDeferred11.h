@@ -55,7 +55,7 @@ namespace vve {
 		std::vector<VkCommandBuffer> m_commandBuffers{};
 
 		glm::ivec3 m_numberLightsPerType{ 0,0,0 };
-		int m_pass;
+		int m_pass{ 0 };
 	};
 
 }	// namespace vve

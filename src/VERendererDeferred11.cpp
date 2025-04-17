@@ -125,7 +125,7 @@ namespace vve {
 
 			bool hasTexture = m_registry.template Has<TextureHandle>(oHandle);
 			bool hasColor = m_registry.template Has<vh::Color>(oHandle);
-			bool hasVertexColor = true;		//pipeline.second.m_type.find("C") != std::string::npos;
+			bool hasVertexColor = false;		//pipeline.second.m_type.find("C") != std::string::npos;
 			if (!hasTexture && !hasColor && !hasVertexColor) continue;
 
 			if (hasTexture) {
@@ -202,7 +202,7 @@ namespace vve {
 
 			bool hasTexture = m_registry.template Has<TextureHandle>(oHandle);
 			bool hasColor = m_registry.template Has<vh::Color>(oHandle);
-			bool hasVertexColor = true;		// pipeline.second.m_type.find("C") != std::string::npos;
+			bool hasVertexColor = false;		// pipeline.second.m_type.find("C") != std::string::npos;
 			if (!hasTexture && !hasColor && !hasVertexColor) continue;
 
 			auto mesh = m_registry.template Get<vh::Mesh&>(ghandle);
@@ -229,7 +229,7 @@ namespace vve {
 
 		bool hasTexture = m_registry.template Has<TextureHandle>(oHandle);
 		bool hasColor = m_registry.template Has<vh::Color>(oHandle);
-		bool hasVertexColor = true; // pipelinePerType->m_type.find("C") != std::string::npos;
+		bool hasVertexColor = false; // pipelinePerType->m_type.find("C") != std::string::npos;
 		if (!hasTexture && !hasColor && !hasVertexColor) return false;
 
 		vh::Buffer ubo;

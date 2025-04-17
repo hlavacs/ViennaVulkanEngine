@@ -2,12 +2,6 @@
 
 import Common;
 
-struct VertexStageInput {   
-    float4 position : POSITION;
-    float3 normal : NORMAL;
-    float4 fragColor : COLOR;
-};
-
 struct CoarseVertex {
     float3 positionW : POSITION;
     float3 normalW : NORMAL;
@@ -20,11 +14,19 @@ struct VertexStageOutput {
     float4 sv_position : SV_Position;
 };
 
+// binding B,S means that the resource is bound to binding B, set S
+
+// set 0 ... per frame
+
 [[vk::binding(0, 0)]]
 ConstantBuffer<UniformBufferFrame> gParamsFrame;
 
 // [[vk::binding(4, 0)]]
 // StructuredBuffer<Light> gLights;
+
+//----------------------------------------------------------------------------
+
+// set 1 ... per object
 
 [[vk::binding(0, 1)]]
 ConstantBuffer<UniformBufferObjectTexture> gParamsObject;
@@ -32,6 +34,7 @@ ConstantBuffer<UniformBufferObjectTexture> gParamsObject;
 [[vk::binding(1, 1)]]
 Sampler2D texSampler;
 
+//----------------------------------------------------------------------------
 
 [shader("vertex")]
 VertexStageOutput geomVertMain(
@@ -65,9 +68,9 @@ GBufferOutput geomFragMain(CoarseVertex input: CoarseVertex) : SV_Target
     // output.pos = float4(input.positionW, 1.0);
     // output.norm = float4(input.normalW, 1.0);
     // output.albedo = texSampler.Sample(input.uv);
-    output.pos = float4(1.0, 1.0, 0.0, 1.0);
-    output.norm = float4(0.0, 1.0, 0.5, 1.0);
-    output.albedo = float4(0.5, 0.0, 1.0, 1.0);
+    output.pos = float4(input.positionW, 1.0);
+    output.norm = float4(1.0);
+    output.albedo = texSampler.Sample(input.uv);
     return output;
 }
 
