@@ -26,26 +26,45 @@ namespace vve {
 		vh::RenCreateRenderPass(m_vkState().m_physicalDevice, m_vkState().m_device, m_vkState().m_swapChain, true, m_lightingPass);
 
 		// TODO: binding 0 might only need vertex globally
+		// Set 0 - Per Frame
 		vh::RenCreateDescriptorSetLayout(
 			m_vkState().m_device,
 			{
 				{	// Binding 0 : Vertex and Fragment uniform buffer
 					.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
 					.stageFlags = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT },
-				{	// Binding 1 : Position
-					.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
-					.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT },
-				{	// Binding 2 : Normal
-					.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
-					.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT },
-				{	// Binding 3 : Albedo
-					.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
-					.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT },
-				{	// Binding 4 : Light uniform buffer
+				{	// Binding 1 : Light uniform buffer
 					.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
 					.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT }
 			},
 			m_descriptorSetLayoutPerFrame);
+
+		vh::RenCreateDescriptorSetLayout(
+			m_vkState().m_device,
+			{
+				{	// Binding 0 : Object ubo
+					.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
+					.stageFlags = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT },
+				{	// Binding 1 : Albedo
+					.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
+					.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT }
+			},
+			m_descriptorSetLayoutPerObject);
+
+		vh::RenCreateDescriptorSetLayout(
+			m_vkState().m_device,
+			{
+				{	// Binding 0 : Position
+					.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
+					.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT },
+				{	// Binding 1 : Normal
+					.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
+					.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT },
+				{	// Binding 2 : Albedo
+					.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
+					.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT }
+			},
+			m_descriptorSetLayoutComposition);
 
 		//vh::ComCreateCommandPool(m_vkState().m_surface, m_vkState().m_physicalDevice, m_vkState().m_device, m_commandPool);
 		m_commandPools.resize(MAX_FRAMES_IN_FLIGHT);
@@ -55,43 +74,54 @@ namespace vve {
 
 		// TODO: shrink pool to only what is needed - why 1000?
 		vh::RenCreateDescriptorPool(m_vkState().m_device, 1000, m_descriptorPool);
-		vh::RenCreateDescriptorSet(m_vkState().m_device, m_descriptorSetLayoutPerFrame, m_descriptorPool, m_descriptorSetComposition);
-		vh::RenCreateDescriptorSet(m_vkState().m_device, m_descriptorSetLayoutPerFrame, m_descriptorPool, m_descriptorSetObject);
+		vh::RenCreateDescriptorSet(m_vkState().m_device, m_descriptorSetLayoutPerFrame, m_descriptorPool, m_descriptorSetPerFrame);
+		vh::RenCreateDescriptorSet(m_vkState().m_device, m_descriptorSetLayoutPerObject, m_descriptorPool, m_descriptorSetObject);
+		vh::RenCreateDescriptorSet(m_vkState().m_device, m_descriptorSetLayoutComposition, m_descriptorPool, m_descriptorSetComposition);
 
-		// Vertex and Light UBO
+		// Per frame uniform buffer
 		vh::BufCreateBuffers(m_vkState().m_physicalDevice, m_vkState().m_device, m_vkState().m_vmaAllocator,
 			VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, sizeof(vh::UniformBufferFrame), m_uniformBuffersPerFrame);
+		vh::RenUpdateDescriptorSet(m_vkState().m_device, m_uniformBuffersPerFrame, 0,
+			VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, sizeof(vh::UniformBufferFrame), m_descriptorSetPerFrame);
+		// Per frame light buffer
 		vh::BufCreateBuffers(m_vkState().m_physicalDevice, m_vkState().m_device, m_vkState().m_vmaAllocator,
 			VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, MAX_NUMBER_LIGHTS * sizeof(vh::Light), m_uniformBuffersLights);
+		vh::RenUpdateDescriptorSet(m_vkState().m_device, m_uniformBuffersLights, 1,
+			VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, MAX_NUMBER_LIGHTS * sizeof(vh::Light), m_descriptorSetPerFrame);
 
-		// GBuffer Attachments
+		// Composition
 		vh::ImgCreateImageSampler(m_vkState().m_physicalDevice, m_vkState().m_device, m_sampler);
 		vh::RenCreateGBufferResources(m_vkState().m_physicalDevice, m_vkState().m_device, m_vkState().m_vmaAllocator, m_vkState().m_swapChain,
 			m_gBufferAttachments[POSITION], m_vkState().m_swapChain.m_swapChainImageFormat, m_sampler);
+		vh::RenUpdateDescriptorSetGBufferAttachment(m_vkState().m_device, m_gBufferAttachments[POSITION], POSITION, m_descriptorSetComposition);
 		vh::RenCreateGBufferResources(m_vkState().m_physicalDevice, m_vkState().m_device, m_vkState().m_vmaAllocator, m_vkState().m_swapChain,
 			m_gBufferAttachments[NORMAL], m_vkState().m_swapChain.m_swapChainImageFormat, m_sampler);
+		vh::RenUpdateDescriptorSetGBufferAttachment(m_vkState().m_device, m_gBufferAttachments[NORMAL], NORMAL, m_descriptorSetComposition);
 		vh::RenCreateGBufferResources(m_vkState().m_physicalDevice, m_vkState().m_device, m_vkState().m_vmaAllocator, m_vkState().m_swapChain,
 			m_gBufferAttachments[ALBEDO], VK_FORMAT_R8G8B8A8_UNORM, m_sampler);
+		vh::RenUpdateDescriptorSetGBufferAttachment(m_vkState().m_device, m_gBufferAttachments[ALBEDO], ALBEDO, m_descriptorSetComposition);
 
-		// Deferred Composition Descriptors
-		// Binding 1 : Position
-		vh::RenUpdateDescriptorSetGBufferAttachment(m_vkState().m_device, m_gBufferAttachments[POSITION], 1, m_descriptorSetComposition);
-		// Binding 2 : Normal	
-		vh::RenUpdateDescriptorSetGBufferAttachment(m_vkState().m_device, m_gBufferAttachments[NORMAL], 2, m_descriptorSetComposition);
-		// Binding 3 : Albedo
-		vh::RenUpdateDescriptorSetGBufferAttachment(m_vkState().m_device, m_gBufferAttachments[ALBEDO], 3, m_descriptorSetComposition);
-		// Binding 4 : Light
-		vh::RenUpdateDescriptorSet(m_vkState().m_device, m_uniformBuffersLights, 4, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 
-			MAX_NUMBER_LIGHTS * sizeof(vh::Light), m_descriptorSetComposition);
+		//// Object Descriptors	
+		//// Binding 0 : Vertex and Fragment uniform buffer
+		//vh::RenUpdateDescriptorSet(m_vkState().m_device, m_uniformBuffersPerFrame, 0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
+		//	sizeof(vh::UniformBufferFrame), m_descriptorSetObject);
 
-		// Object Descriptors	
-		// Binding 0 : Vertex and Fragment uniform buffer
-		vh::RenUpdateDescriptorSet(m_vkState().m_device, m_uniformBuffersPerFrame, 0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 
-			sizeof(vh::UniformBufferFrame), m_descriptorSetObject);
-		// Binding 1 : Position
-		vh::RenUpdateDescriptorSetGBufferAttachment(m_vkState().m_device, m_gBufferAttachments[POSITION], 1, m_descriptorSetObject);
-		// Binding 2 : Normal
-		vh::RenUpdateDescriptorSetGBufferAttachment(m_vkState().m_device, m_gBufferAttachments[NORMAL], 2, m_descriptorSetObject);
+		//
+		////// Binding 1 : Position
+		////vh::RenUpdateDescriptorSetGBufferAttachment(m_vkState().m_device, m_gBufferAttachments[POSITION], 1, m_descriptorSetObject);
+		////// Binding 2 : Normal
+		////vh::RenUpdateDescriptorSetGBufferAttachment(m_vkState().m_device, m_gBufferAttachments[NORMAL], 2, m_descriptorSetObject);
+
+		//// Deferred Composition Descriptors
+		//// Binding 1 : Position
+		//vh::RenUpdateDescriptorSetGBufferAttachment(m_vkState().m_device, m_gBufferAttachments[POSITION], 1, m_descriptorSetComposition);
+		//// Binding 2 : Normal	
+		//vh::RenUpdateDescriptorSetGBufferAttachment(m_vkState().m_device, m_gBufferAttachments[NORMAL], 2, m_descriptorSetComposition);
+		//// Binding 3 : Albedo
+		//vh::RenUpdateDescriptorSetGBufferAttachment(m_vkState().m_device, m_gBufferAttachments[ALBEDO], 3, m_descriptorSetComposition);
+		////// Binding 4 : Light
+		////vh::RenUpdateDescriptorSet(m_vkState().m_device, m_uniformBuffersLights, 4, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 
+		////	MAX_NUMBER_LIGHTS * sizeof(vh::Light), m_descriptorSetComposition);
 
 		// GBuffer FrameBuffers
 		vh::RenCreateGBufferFrameBuffers(m_vkState().m_device, m_vkState().m_swapChain, m_gBufferAttachments, 
@@ -235,7 +265,7 @@ namespace vve {
 		vh::Buffer ubo;
 		size_t sizeUbo = 0;
 		vh::DescriptorSet descriptorSet{ 1 };
-		vh::RenCreateDescriptorSet(m_vkState().m_device,m_descriptorSetLayoutPerFrame, m_descriptorPool, descriptorSet);
+		vh::RenCreateDescriptorSet(m_vkState().m_device, m_descriptorSetLayoutPerFrame, m_descriptorPool, descriptorSet);
 
 		if (hasTexture) {
 			sizeUbo = sizeof(vh::BufferPerObjectTexture);

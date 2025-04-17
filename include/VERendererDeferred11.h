@@ -41,9 +41,13 @@ namespace vve {
 		std::array<vh::GBufferImage, 3> m_gBufferAttachments{};
 
 		VkDescriptorSetLayout m_descriptorSetLayoutPerFrame{ VK_NULL_HANDLE };
+		// TODO: experimental, remove or rewrite if needed
+		VkDescriptorSetLayout m_descriptorSetLayoutPerObject{ VK_NULL_HANDLE };
+		VkDescriptorSetLayout m_descriptorSetLayoutComposition{ VK_NULL_HANDLE };
 		VkDescriptorPool m_descriptorPool{ VK_NULL_HANDLE };
-		vh::DescriptorSet m_descriptorSetComposition{};
+		vh::DescriptorSet m_descriptorSetPerFrame{};
 		vh::DescriptorSet m_descriptorSetObject{};
+		vh::DescriptorSet m_descriptorSetComposition{};
 
 		VkRenderPass m_geometryPass{ VK_NULL_HANDLE };
 		VkRenderPass m_lightingPass{ VK_NULL_HANDLE };
