@@ -47,6 +47,9 @@ namespace vve {
 					.stageFlags = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT },
 				{	// Binding 1 : Albedo
 					.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
+					.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT },
+				{	// Binding 2 : Normal
+					.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
 					.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT }
 			},
 			m_descriptorSetLayoutPerObject);
@@ -239,7 +242,7 @@ namespace vve {
 			// TODO: change PNC to fit shaders after initial testing
 			// TODO: m_descriptorSetObject or m_descriptorSetComposition here?
 			vh::ComRecordObject(cmdBuffer, m_geometryPipeline,
-				{ m_descriptorSetObject, descriptorsets }, "PNT", mesh, m_vkState().m_currentFrame);
+				{ m_descriptorSetPerFrame, descriptorsets }, "PNT", mesh, m_vkState().m_currentFrame);
 		}
 
 		vh::ComEndRecordCommandBuffer(cmdBuffer);
@@ -265,7 +268,7 @@ namespace vve {
 		vh::Buffer ubo;
 		size_t sizeUbo = 0;
 		vh::DescriptorSet descriptorSet{ 1 };
-		vh::RenCreateDescriptorSet(m_vkState().m_device, m_descriptorSetLayoutPerFrame, m_descriptorPool, descriptorSet);
+		vh::RenCreateDescriptorSet(m_vkState().m_device, m_descriptorSetLayoutPerObject, m_descriptorPool, descriptorSet);
 
 		if (hasTexture) {
 			sizeUbo = sizeof(vh::BufferPerObjectTexture);
@@ -335,6 +338,8 @@ namespace vve {
 		vh::BufDestroyBuffer2(m_vkState().m_device, m_vkState().m_vmaAllocator, m_uniformBuffersLights);
 
 		vkDestroyDescriptorSetLayout(m_vkState().m_device, m_descriptorSetLayoutPerFrame, nullptr);
+		vkDestroyDescriptorSetLayout(m_vkState().m_device, m_descriptorSetLayoutPerObject, nullptr);
+		vkDestroyDescriptorSetLayout(m_vkState().m_device, m_descriptorSetLayoutComposition, nullptr);
 
 		return false;
 	}
@@ -363,7 +368,7 @@ namespace vve {
 		colorBlendAttachment.blendEnable = VK_FALSE;
 		
 		vh::RenCreateGraphicsPipeline(m_vkState().m_device, m_geometryPass, vert, frag, bindingDescriptions, attributeDescriptions,
-			{ m_descriptorSetLayoutPerFrame, m_descriptorSetLayoutPerFrame }, { MAX_NUMBER_LIGHTS },
+			{ m_descriptorSetLayoutPerFrame, m_descriptorSetLayoutPerObject }, { MAX_NUMBER_LIGHTS },
 			{ {.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT, .offset = 0, .size = 8} },
 			{ colorBlendAttachment, colorBlendAttachment, colorBlendAttachment }, m_geometryPipeline, true);
 	}
@@ -378,7 +383,7 @@ namespace vve {
 
 		// TODO: maybe needs 2 m_descriptorSetLayoutPerFrame
 		vh::RenCreateGraphicsPipeline(m_vkState().m_device, m_lightingPass, vert, frag, {}, {},
-			{ m_descriptorSetLayoutPerFrame }, { MAX_NUMBER_LIGHTS },
+			{ m_descriptorSetLayoutPerFrame, m_descriptorSetLayoutComposition }, { MAX_NUMBER_LIGHTS },
 			{ {.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT, .offset = 0, .size = 8} },
 			{}, m_lightingPipeline, true);
 	}
