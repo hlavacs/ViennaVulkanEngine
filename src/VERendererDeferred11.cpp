@@ -242,7 +242,7 @@ namespace vve {
 			// TODO: change PNC to fit shaders after initial testing
 			// TODO: m_descriptorSetObject or m_descriptorSetComposition here?
 			vh::ComRecordObject(cmdBuffer, m_geometryPipeline,
-				{ m_descriptorSetPerFrame, descriptorsets }, "PNT", mesh, m_vkState().m_currentFrame);
+				{ m_descriptorSetPerFrame, descriptorsets }, "PNUT", mesh, m_vkState().m_currentFrame);
 		}
 
 		vh::ComEndRecordCommandBuffer(cmdBuffer);
@@ -402,6 +402,7 @@ namespace vve {
 		getBindingDescription(binding++, vh::VertexData::size_pos, bindingDescriptions);
 		getBindingDescription(binding++, vh::VertexData::size_nor, bindingDescriptions);
 		getBindingDescription(binding++, vh::VertexData::size_tex, bindingDescriptions);
+		getBindingDescription(binding++, vh::VertexData::size_tan, bindingDescriptions);
 
 		return bindingDescriptions;
 	}
@@ -421,6 +422,7 @@ namespace vve {
 		int location = 0;
 		getAttributeDescription(binding++, location++, VK_FORMAT_R32G32B32_SFLOAT, attributeDescriptions);
 		getAttributeDescription(binding++, location++, VK_FORMAT_R32G32B32_SFLOAT, attributeDescriptions);
+		getAttributeDescription(binding++, location++, VK_FORMAT_R32G32_SFLOAT, attributeDescriptions);
 		getAttributeDescription(binding++, location++, VK_FORMAT_R32G32B32_SFLOAT, attributeDescriptions);
 
 		return attributeDescriptions;

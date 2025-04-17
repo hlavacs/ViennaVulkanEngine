@@ -51,7 +51,7 @@ export public struct UniformBufferObjectColor {
 //-----------------------------------------------------------------------
 
 // __include "Common_Shadow.slang";
-// __include "Common_Light.slang";
+__include "Common_Light.slang";
 
 // [shader("fragment")]
 // float4 dummyShader(float3 positionW: POSITION)
