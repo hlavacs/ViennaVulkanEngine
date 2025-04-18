@@ -79,7 +79,7 @@ namespace vve {
 		// TODO: shrink pool to only what is needed - why 1000?
 		vh::RenCreateDescriptorPool(m_vkState().m_device, 1000, m_descriptorPool);
 		vh::RenCreateDescriptorSet(m_vkState().m_device, m_descriptorSetLayoutPerFrame, m_descriptorPool, m_descriptorSetPerFrame);
-		vh::RenCreateDescriptorSet(m_vkState().m_device, m_descriptorSetLayoutPerObject, m_descriptorPool, m_descriptorSetPerObject);
+		//vh::RenCreateDescriptorSet(m_vkState().m_device, m_descriptorSetLayoutPerObject, m_descriptorPool, m_descriptorSetPerObject);
 		vh::RenCreateDescriptorSet(m_vkState().m_device, m_descriptorSetLayoutComposition, m_descriptorPool, m_descriptorSetComposition);
 
 		// Per frame uniform buffer
@@ -393,7 +393,7 @@ namespace vve {
 	}
 
 	void RendererDeferred11::CreateGeometryPipeline() {
-		const std::filesystem::path shaders{ "../../shaders/Deferred" };
+		const std::filesystem::path shaders{ "shaders/Deferred" };
 		if (!std::filesystem::exists(shaders)) {
 			std::cerr << "ERROR: Folder does not exist: " << std::filesystem::absolute(shaders) << "\n";
 		}
@@ -416,13 +416,13 @@ namespace vve {
 		colorBlendAttachment.blendEnable = VK_FALSE;
 		
 		vh::RenCreateGraphicsPipeline(m_vkState().m_device, m_geometryPass, vert, frag, bindingDescriptions, attributeDescriptions,
-			{ m_descriptorSetLayoutPerFrame, m_descriptorSetLayoutPerObject }, { MAX_NUMBER_LIGHTS },
+			{ m_descriptorSetLayoutPerFrame, m_descriptorSetLayoutPerObject, m_descriptorSetLayoutComposition }, { MAX_NUMBER_LIGHTS },
 			{ {.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT, .offset = 0, .size = 8} },
 			{ colorBlendAttachment, colorBlendAttachment, colorBlendAttachment }, m_geometryPipeline, true);
 	}
 
 	void RendererDeferred11::CreateLightingPipeline() {
-		const std::filesystem::path shaders{ "../../shaders/Deferred" };
+		const std::filesystem::path shaders{ "shaders/Deferred" };
 		if (!std::filesystem::exists(shaders)) {
 			std::cerr << "ERROR: Folder does not exist: " << std::filesystem::absolute(shaders) << "\n";
 		}
@@ -431,7 +431,7 @@ namespace vve {
 
 		// TODO: WHY does it need 3 layouts?
 		vh::RenCreateGraphicsPipeline(m_vkState().m_device, m_lightingPass, vert, frag, {}, {},
-			{ m_descriptorSetLayoutPerFrame, m_descriptorSetLayoutComposition, m_descriptorSetLayoutComposition }, { MAX_NUMBER_LIGHTS },
+			{ m_descriptorSetLayoutPerFrame, m_descriptorSetLayoutPerObject, m_descriptorSetLayoutComposition }, { MAX_NUMBER_LIGHTS },
 			{ {.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT, .offset = 0, .size = 8} },
 			{}, m_lightingPipeline, false);
 	}

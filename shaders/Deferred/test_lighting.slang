@@ -48,6 +48,6 @@ PSOutput fragmentMain(VSOutput in)
 
     float3 color = diffuse + ambient;
 
-    out.color = float4(1.0, 0.5, 0.2, 1.0);
+    out.color = float4(1.0, 0.0, 1.0, 1.0);
     return out;
 }
