@@ -47,18 +47,18 @@ namespace vve {
 		volkInitialize();
 		m_vkState().m_apiVersionInstance = engineState.apiVersion;
     	vvh::DevCreateInstance( {
-			m_validationLayers, 
-			m_instanceExtensions, 
-			engineState.name, 
-			m_vkState().m_apiVersionInstance, 
-			engineState.debug, 
-			m_vkState().m_instance
+			.m_validationLayers 	= m_validationLayers, 
+			.m_instanceExtensions 	= m_instanceExtensions, 
+			.m_name 				= engineState.name, 
+			.m_apiVersion 			= engineState.apiVersion, 
+			.m_debug 				= engineState.debug, 
+			.m_instance 			= m_vkState().m_instance
 		});
 		
 		volkLoadInstance(m_vkState().m_instance);
 
 		if (engineState.debug) {
-	        vh::DevSetupDebugMessenger(m_vkState().m_instance, m_vkState().m_debugMessenger);
+	        vh::DevSetupDebugMessenger(m_vkState().m_instance, m_vkState().m_debugMessenger );
 		}
 
 		if (SDL_Vulkan_CreateSurface(m_windowSDLState().m_sdlWindow, m_vkState().m_instance, nullptr, &m_vkState().m_surface) == 0) {
@@ -68,15 +68,16 @@ namespace vve {
 		m_vkState().m_apiVersionDevice = engineState.minimumVersion;
         
 		vvh::DevPickPhysicalDevice( {
-			m_vkState().m_instance, 
-			m_deviceExtensions, 
-			m_vkState().m_surface, 
-			m_vkState().m_apiVersionDevice, 
-			m_vkState().m_physicalDevice
+			.m_instance 		= m_vkState().m_instance, 
+			.m_deviceExtensions = m_deviceExtensions, 
+			.m_surface 			= m_vkState().m_surface, 
+			.m_apiVersion 		= m_vkState().m_apiVersionDevice, 
+			.m_physicalDevice 	= m_vkState().m_physicalDevice
 		});
 		
 		
 		uint32_t minor = std::min( VK_VERSION_MINOR(m_vkState().m_apiVersionDevice), VK_VERSION_MINOR(engineState.apiVersion) );
+		minor = std::min( minor, VK_VERSION_MINOR(engineState.maximumVersion));
 		if( minor < VK_VERSION_MINOR(engineState.minimumVersion) ) {
 			std::cout << "No device found with Vulkan API version at least 1." << VK_VERSION_MINOR(engineState.minimumVersion) << "!\n";
 			exit(1);
@@ -84,23 +85,34 @@ namespace vve {
 		engineState.apiVersion = VK_MAKE_VERSION( VK_VERSION_MAJOR(engineState.apiVersion), minor, 0);
 		vkGetPhysicalDeviceProperties(m_vkState().m_physicalDevice, &m_vkState().m_physicalDeviceProperties);
 		vkGetPhysicalDeviceFeatures(m_vkState().m_physicalDevice, &m_vkState().m_physicalDeviceFeatures);
-		vh::ImgPickDepthMapFormat(m_vkState().m_physicalDevice, {VK_FORMAT_R32_UINT}, m_vkState().m_depthMapFormat);
 
 		vvh::DevCreateLogicalDevice( {
-			m_vkState().m_surface, 
-			m_vkState().m_physicalDevice, 
-			m_validationLayers, 
-			m_deviceExtensions, 
-			engineState.debug, 
-			m_vkState().m_queueFamilies, 
-			m_vkState().m_device, 
-			m_vkState().m_graphicsQueue, 
-			m_vkState().m_presentQueue
+			.m_surface 			= m_vkState().m_surface, 
+			.m_physicalDevice 	= m_vkState().m_physicalDevice, 
+			.m_validationLayers = m_validationLayers, 
+			.m_deviceExtensions = m_deviceExtensions, 
+			.m_debug 			= engineState.debug, 
+			.m_queueFamilies 	= m_vkState().m_queueFamilies, 
+			.m_device 			= m_vkState().m_device, 
+			.m_graphicsQueue 	= m_vkState().m_graphicsQueue, 
+			.m_presentQueue 	= m_vkState().m_presentQueue
 		});
         
 		volkLoadDevice(m_vkState().m_device);
 		
-		vh::DevInitVMA(m_vkState().m_instance, m_vkState().m_physicalDevice, m_vkState().m_device, engineState.apiVersion, m_vkState().m_vmaAllocator);  
+		vvh::DevInitVMA({
+			.m_instance 		= m_vkState().m_instance, 
+			.m_physicalDevice 	= m_vkState().m_physicalDevice, 
+			.m_device 			= m_vkState().m_device, 
+			.m_apiVersion 		= engineState.apiVersion, 
+			.m_vmaAllocator 	= m_vkState().m_vmaAllocator
+		});  
+
+		m_vkState().m_depthMapFormat = vvh::ImgPickDepthMapFormat({
+			.m_physicalDevice 	= m_vkState().m_physicalDevice, 
+			.m_depthFormats 	= {VK_FORMAT_R32_UINT} 
+		});
+
         vh::DevCreateSwapChain(m_windowSDLState().m_sdlWindow, 
 			m_vkState().m_surface, m_vkState().m_physicalDevice, m_vkState().m_device, m_vkState().m_swapChain);
         

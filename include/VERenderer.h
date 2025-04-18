@@ -25,7 +25,7 @@ namespace vve {
 		uint32_t 		m_apiVersionDevice{VK_API_VERSION_1_1};
 		VkInstance 		m_instance{VK_NULL_HANDLE};
 		VkSurfaceKHR 	m_surface{VK_NULL_HANDLE};
-		VmaAllocator 	m_vmaAllocator;
+		VmaAllocator 	m_vmaAllocator{nullptr};
 		VkDebugUtilsMessengerEXT m_debugMessenger;
 		
 		VkPhysicalDevice 			m_physicalDevice{VK_NULL_HANDLE};
