@@ -30,12 +30,15 @@ namespace vve {
 		void CreateGeometryPipeline();
 		void CreateLightingPipeline();
 
-		void getBindingDescription(int binding, int stride, auto& bdesc);
-		auto getBindingDescriptions() -> std::vector<VkVertexInputBindingDescription>;
-		void getAttributeDescription(int binding, int location, VkFormat format, auto& attd);
-		auto getAttributeDescriptions() -> std::vector<VkVertexInputAttributeDescription>;
+		void getBindingDescription(std::string type, std::string C, int& binding, int stride, auto& bdesc);
+		auto getBindingDescriptions(std::string type) -> std::vector<VkVertexInputBindingDescription>;
+		void getAttributeDescription(std::string type, std::string C, int& binding, int& location, VkFormat format, auto& attd);
+		auto getAttributeDescriptions(std::string type) -> std::vector<VkVertexInputAttributeDescription>;
 		template<typename T>
 		auto RegisterLight(float type, std::vector<vh::Light>& lights, int& i) -> int;
+
+		auto getPipelinePerType(std::string type) -> PipelinePerType*;
+		auto getPipelineType(ObjectHandle handle, vh::VertexData& vertexData) -> std::string;
 
 		std::vector<VkFramebuffer> m_gBufferFrameBuffers{};
 

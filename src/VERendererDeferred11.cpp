@@ -407,8 +407,8 @@ namespace vve {
 
 				vh::RenCreateDescriptorSetLayout(m_vkState().m_device, bindings, descriptorSetLayoutPerObject);
 
-				std::vector<VkVertexInputBindingDescription> bindingDescriptions = getBindingDescriptions();
-				std::vector<VkVertexInputAttributeDescription> attributeDescriptions = getAttributeDescriptions();
+				std::vector<VkVertexInputBindingDescription> bindingDescriptions = getBindingDescriptions(type);
+				std::vector<VkVertexInputAttributeDescription> attributeDescriptions = getAttributeDescriptions(type);
 
 				VkPipelineColorBlendAttachmentState colorBlendAttachment{};
 				// TODO: colorBlendAttachment.colorWriteMask = 0xf; ???
@@ -447,7 +447,8 @@ namespace vve {
 			{}, m_lightingPipeline, false);
 	}
 
-	void RendererDeferred11::getBindingDescription(int binding, int stride, auto& bdesc) {
+	void RendererDeferred11::getBindingDescription(std::string type, std::string C, int& binding, int stride, auto& bdesc) {
+		if (type.find(C) == std::string::npos) return;
 		VkVertexInputBindingDescription bindingDescription{};
 		bindingDescription.binding = binding;
 		bindingDescription.stride = stride;
@@ -455,18 +456,20 @@ namespace vve {
 		bdesc.push_back(bindingDescription);
 	}
 
-	auto RendererDeferred11::getBindingDescriptions() -> std::vector<VkVertexInputBindingDescription> {
+	auto RendererDeferred11::getBindingDescriptions(std::string type) -> std::vector<VkVertexInputBindingDescription> {
 		std::vector<VkVertexInputBindingDescription> bindingDescriptions{};
 		int binding = 0;
-		getBindingDescription(binding++, vh::VertexData::size_pos, bindingDescriptions);
-		getBindingDescription(binding++, vh::VertexData::size_nor, bindingDescriptions);
-		getBindingDescription(binding++, vh::VertexData::size_tex, bindingDescriptions);
-		getBindingDescription(binding++, vh::VertexData::size_tan, bindingDescriptions);
+		getBindingDescription(type, "P", binding, vh::VertexData::size_pos, bindingDescriptions);
+		getBindingDescription(type, "N", binding, vh::VertexData::size_nor, bindingDescriptions);
+		getBindingDescription(type, "U", binding, vh::VertexData::size_tex, bindingDescriptions);
+		getBindingDescription(type, "C", binding, vh::VertexData::size_col, bindingDescriptions);
+		getBindingDescription(type, "T", binding, vh::VertexData::size_tan, bindingDescriptions);
 
 		return bindingDescriptions;
 	}
 
-	void RendererDeferred11::getAttributeDescription(int binding, int location, VkFormat format, auto& attd) {
+	void RendererDeferred11::getAttributeDescription(std::string type, std::string C, int& binding, int& location, VkFormat format, auto& attd) {
+		if (type.find(C) == std::string::npos) return;
 		VkVertexInputAttributeDescription attributeDescription{};
 		attributeDescription.binding = binding;
 		attributeDescription.location = location;
@@ -475,14 +478,15 @@ namespace vve {
 		attd.push_back(attributeDescription);
 	}
 
-	auto RendererDeferred11::getAttributeDescriptions() -> std::vector<VkVertexInputAttributeDescription> {
+	auto RendererDeferred11::getAttributeDescriptions(std::string type) -> std::vector<VkVertexInputAttributeDescription> {
 		std::vector<VkVertexInputAttributeDescription> attributeDescriptions{};
 		int binding = 0;
 		int location = 0;
-		getAttributeDescription(binding++, location++, VK_FORMAT_R32G32B32_SFLOAT, attributeDescriptions);
-		getAttributeDescription(binding++, location++, VK_FORMAT_R32G32B32_SFLOAT, attributeDescriptions);
-		getAttributeDescription(binding++, location++, VK_FORMAT_R32G32_SFLOAT, attributeDescriptions);
-		getAttributeDescription(binding++, location++, VK_FORMAT_R32G32B32_SFLOAT, attributeDescriptions);
+		getAttributeDescription(type, "P", binding, location, VK_FORMAT_R32G32B32_SFLOAT, attributeDescriptions);
+		getAttributeDescription(type, "N", binding, location, VK_FORMAT_R32G32B32_SFLOAT, attributeDescriptions);
+		getAttributeDescription(type, "U", binding, location, VK_FORMAT_R32G32_SFLOAT, attributeDescriptions);
+		getAttributeDescription(type, "C", binding, location, VK_FORMAT_R32G32B32A32_SFLOAT, attributeDescriptions);
+		getAttributeDescription(type, "T", binding, location, VK_FORMAT_R32G32B32_SFLOAT, attributeDescriptions);
 
 		return attributeDescriptions;
 	}
@@ -497,6 +501,24 @@ namespace vve {
 			if (++total >= MAX_NUMBER_LIGHTS) return n;
 		};
 		return n;
+	}
+
+	std::string RendererDeferred11::getPipelineType(ObjectHandle handle, vh::VertexData& vertexData) {
+		std::string type = vertexData.getType();
+		if (m_registry.template Has<TextureHandle>(handle) && type.find("U") != std::string::npos) type += "E";
+		if (m_registry.template Has<vh::Color>(handle) && type.find("C") == std::string::npos && type.find("E") == std::string::npos) type += "O";
+		return type;
+	}
+
+	RendererDeferred11::PipelinePerType* RendererDeferred11::getPipelinePerType(std::string type) {
+		for (auto& [pri, pipeline] : m_geomPipesPerType) {
+			bool found = true;
+			for (auto& c : pipeline.m_type) { found = found && (type.find(c) != std::string::npos); }
+			if (found) return &pipeline;
+		}
+		std::cout << "Pipeline not found for type: " << type << std::endl;
+		exit(-1);
+		return nullptr;
 	}
 
 }	// namespace vve
