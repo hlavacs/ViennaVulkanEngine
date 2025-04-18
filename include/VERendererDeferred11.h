@@ -46,7 +46,6 @@ namespace vve {
 		VkDescriptorSetLayout m_descriptorSetLayoutComposition{ VK_NULL_HANDLE };
 		VkDescriptorPool m_descriptorPool{ VK_NULL_HANDLE };
 		vh::DescriptorSet m_descriptorSetPerFrame{};
-		vh::DescriptorSet m_descriptorSetPerObject{};
 		vh::DescriptorSet m_descriptorSetComposition{};
 
 		VkRenderPass m_geometryPass{ VK_NULL_HANDLE };

@@ -105,28 +105,6 @@ namespace vve {
 			m_gBufferAttachments[ALBEDO], VK_FORMAT_R8G8B8A8_UNORM, m_sampler);
 		vh::RenUpdateDescriptorSetGBufferAttachment(m_vkState().m_device, m_gBufferAttachments[ALBEDO], ALBEDO, m_descriptorSetComposition);
 
-		//// Object Descriptors	
-		//// Binding 0 : Vertex and Fragment uniform buffer
-		//vh::RenUpdateDescriptorSet(m_vkState().m_device, m_uniformBuffersPerFrame, 0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
-		//	sizeof(vh::UniformBufferFrame), m_descriptorSetPerObject);
-
-		//
-		////// Binding 1 : Position
-		////vh::RenUpdateDescriptorSetGBufferAttachment(m_vkState().m_device, m_gBufferAttachments[POSITION], 1, m_descriptorSetPerObject);
-		////// Binding 2 : Normal
-		////vh::RenUpdateDescriptorSetGBufferAttachment(m_vkState().m_device, m_gBufferAttachments[NORMAL], 2, m_descriptorSetPerObject);
-
-		//// Deferred Composition Descriptors
-		//// Binding 1 : Position
-		//vh::RenUpdateDescriptorSetGBufferAttachment(m_vkState().m_device, m_gBufferAttachments[POSITION], 1, m_descriptorSetComposition);
-		//// Binding 2 : Normal	
-		//vh::RenUpdateDescriptorSetGBufferAttachment(m_vkState().m_device, m_gBufferAttachments[NORMAL], 2, m_descriptorSetComposition);
-		//// Binding 3 : Albedo
-		//vh::RenUpdateDescriptorSetGBufferAttachment(m_vkState().m_device, m_gBufferAttachments[ALBEDO], 3, m_descriptorSetComposition);
-		////// Binding 4 : Light
-		////vh::RenUpdateDescriptorSet(m_vkState().m_device, m_uniformBuffersLights, 4, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 
-		////	MAX_NUMBER_LIGHTS * sizeof(vh::Light), m_descriptorSetComposition);
-
 		// GBuffer FrameBuffers
 		vh::RenCreateGBufferFrameBuffers(m_vkState().m_device, m_vkState().m_swapChain, m_gBufferAttachments, 
 			m_gBufferFrameBuffers, m_vkState().m_depthImage, m_geometryPass);
@@ -137,6 +115,8 @@ namespace vve {
 	}
 
 	bool RendererDeferred11::OnPrepareNextFrame(Message message) {
+		m_pass = 0;
+
 		vh::UniformBufferFrame ubc;
 		vkResetCommandPool(m_vkState().m_device, m_commandPools[m_vkState().m_currentFrame], 0);
 
