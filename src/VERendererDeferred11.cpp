@@ -450,7 +450,7 @@ namespace vve {
 	void RendererDeferred11::getBindingDescription(std::string type, std::string C, int& binding, int stride, auto& bdesc) {
 		if (type.find(C) == std::string::npos) return;
 		VkVertexInputBindingDescription bindingDescription{};
-		bindingDescription.binding = binding;
+		bindingDescription.binding = binding++;
 		bindingDescription.stride = stride;
 		bindingDescription.inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
 		bdesc.push_back(bindingDescription);
@@ -471,8 +471,8 @@ namespace vve {
 	void RendererDeferred11::getAttributeDescription(std::string type, std::string C, int& binding, int& location, VkFormat format, auto& attd) {
 		if (type.find(C) == std::string::npos) return;
 		VkVertexInputAttributeDescription attributeDescription{};
-		attributeDescription.binding = binding;
-		attributeDescription.location = location;
+		attributeDescription.binding = binding++;
+		attributeDescription.location = location++;
 		attributeDescription.format = format;
 		attributeDescription.offset = 0;
 		attd.push_back(attributeDescription);
