@@ -38,7 +38,7 @@ namespace vve {
 					.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT }
 			},
 			m_descriptorSetLayoutPerFrame);
-
+		// Set 1 - Per Object
 		vh::RenCreateDescriptorSetLayout(
 			m_vkState().m_device,
 			{
@@ -48,12 +48,13 @@ namespace vve {
 				{	// Binding 1 : Albedo
 					.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
 					.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT },
-				{	// Binding 2 : Normal
-					.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
-					.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT }
+				//{	// Binding 2 : Normal
+				// IF Used later - rewrite to be same order as composition!?
+				//	.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
+				//	.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT }
 			},
 			m_descriptorSetLayoutPerObject);
-
+		// Set 2 - Composition
 		vh::RenCreateDescriptorSetLayout(
 			m_vkState().m_device,
 			{
@@ -428,9 +429,9 @@ namespace vve {
 		const std::string vert = (shaders / "test_lighting.spv").string();
 		const std::string frag = (shaders / "test_lighting.spv").string();
 
-		// TODO: maybe needs 2 m_descriptorSetLayoutPerFrame
+		// TODO: WHY does it need 3 layouts?
 		vh::RenCreateGraphicsPipeline(m_vkState().m_device, m_lightingPass, vert, frag, {}, {},
-			{ m_descriptorSetLayoutPerFrame, m_descriptorSetLayoutComposition }, { MAX_NUMBER_LIGHTS },
+			{ m_descriptorSetLayoutPerFrame, m_descriptorSetLayoutComposition, m_descriptorSetLayoutComposition }, { MAX_NUMBER_LIGHTS },
 			{ {.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT, .offset = 0, .size = 8} },
 			{}, m_lightingPipeline, true);
 	}

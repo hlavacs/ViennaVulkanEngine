@@ -1,26 +1,19 @@
 // This shader is just here for testing purposes
+import Common;
+
 struct VSOutput {
     float4 position : SV_Position;
     float2 uv       : TEXCOORD0;
 };
 
-struct GlobalData { float4 dummy; };
-
-[vk::binding(0, 0)] ConstantBuffer<GlobalData> gGlobal;
-
 [shader("vertex")]
-VSOutput vertexMain(uint vertexId : SV_VertexID)
+VSOutput vertexMain(uint vertexID : SV_VertexID)
 {
-    VSOutput output;
+    VSOutput output = (VSOutput)0;
 
-    float2 positions[4] = {
-        float2(-1.0, -1.0),
-        float2( 1.0, -1.0),
-        float2(-1.0,  1.0),
-        float2( 1.0,  1.0)
-    };
-    output.position = float4(positions[vertexId], 0.0, 1.0);
-    output.uv = (positions[vertexId] + 1.0) * 0.5;
+    float2 pos[3] = { { -1, -1 }, { 3, -1 }, { -1, 3 } };
+    output.position = float4(pos[vertexID], 0.0, 1.0);
+    output.uv = (pos[vertexID] + 1.0) * 0.5;
     return output;
 }
 
@@ -28,10 +21,33 @@ struct PSOutput {
     float4 color : SV_Target;
 };
 
+[[vk::binding(0, 2)]]
+Sampler2D gPosition; // Position from geometry shader
+
+[[vk::binding(1, 2)]]
+Sampler2D gNormal; // Normal from geometry shader
+
+[[vk::binding(2, 2)]]
+Sampler2D gAlbedo; // Albedo from geometry shader
+
+[[vk::binding(1, 0)]]
+StructuredBuffer<Light> gLights;
+
 [shader("fragment")]
-PSOutput fragmentMain(float2 uv: TEXCOORD0)
+PSOutput fragmentMain(VSOutput in)
 {
-    PSOutput output;
-    output.color = float4(1.0, 1.0, 1.0, 1.0); // white for testing
-    return output;
+    // this is a dummy shader
+    PSOutput out;
+
+    float3 worldPos = gPosition.Sample(in.uv).xyz;
+    float3 normMap = gNormal.Sample(in.uv).xyz;
+    float3 albedo = gAlbedo.Sample(in.uv).xyz;
+
+    float3 diffuse = 0.5;
+    float3 ambient = 0.3;
+
+    float3 color = diffuse + ambient;
+
+    out.color = float4(1.0, 0.5, 0.2, 1.0);
+    return out;
 }
