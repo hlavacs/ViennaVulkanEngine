@@ -8,6 +8,12 @@ namespace vve {
 
 		enum GBufferIndex { POSITION = 0, NORMAL = 1, ALBEDO = 2 };
 
+		struct PipelinePerType {
+			std::string m_type;
+			VkDescriptorSetLayout m_descriptorSetLayoutPerObject{};
+			vh::Pipeline m_graphicsPipeline{};
+		};
+
 	public:
 		static constexpr uint32_t MAX_NUMBER_LIGHTS{ 128 };
 
@@ -41,8 +47,6 @@ namespace vve {
 		std::array<vh::GBufferImage, 3> m_gBufferAttachments{};
 
 		VkDescriptorSetLayout m_descriptorSetLayoutPerFrame{ VK_NULL_HANDLE };
-		// TODO: experimental, remove or rewrite if needed
-		VkDescriptorSetLayout m_descriptorSetLayoutPerObject{ VK_NULL_HANDLE };
 		VkDescriptorSetLayout m_descriptorSetLayoutComposition{ VK_NULL_HANDLE };
 		VkDescriptorPool m_descriptorPool{ VK_NULL_HANDLE };
 		vh::DescriptorSet m_descriptorSetPerFrame{};
@@ -51,7 +55,8 @@ namespace vve {
 		VkRenderPass m_geometryPass{ VK_NULL_HANDLE };
 		VkRenderPass m_lightingPass{ VK_NULL_HANDLE };
 
-		vh::Pipeline m_geometryPipeline{};
+		std::map<int, PipelinePerType> m_geomPipesPerType;
+		//vh::Pipeline m_geometryPipeline{};
 		vh::Pipeline m_lightingPipeline{};
 
 		std::vector<VkCommandPool> m_commandPools{};

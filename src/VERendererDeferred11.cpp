@@ -39,22 +39,22 @@ namespace vve {
 			},
 			m_descriptorSetLayoutPerFrame);
 		// Set 1 - Per Object
-		vh::RenCreateDescriptorSetLayout(
-			m_vkState().m_device,
-			{
-				{	// Binding 0 : Object ubo
-					.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
-					.stageFlags = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT },
-				{	// Binding 1 : Albedo
-					.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
-					.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT },
-				//{	// Binding 2 : Normal
-				// IF Used later - rewrite to be same order as composition!?
-				//	.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
-				//	.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT }
-			},
-			m_descriptorSetLayoutPerObject);
-		// Set 2 - Composition
+		//vh::RenCreateDescriptorSetLayout(
+		//	m_vkState().m_device,
+		//	{
+		//		{	// Binding 0 : Object ubo
+		//			.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
+		//			.stageFlags = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT },
+		//		{	// Binding 1 : Albedo
+		//			.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
+		//			.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT },
+		//		//{	// Binding 2 : Normal
+		//		// IF Used later - rewrite to be same order as composition!?
+		//		//	.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
+		//		//	.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT }
+		//	},
+		//	m_descriptorSetLayoutPerObject);
+		// Set 1 - Composition
 		vh::RenCreateDescriptorSetLayout(
 			m_vkState().m_device,
 			{
@@ -134,35 +134,37 @@ namespace vve {
 		ubc.camera.positionW = lToW()[3];
 		memcpy(m_uniformBuffersPerFrame.m_uniformBuffersMapped[m_vkState().m_currentFrame], &ubc, sizeof(ubc));
 
-		for (auto [oHandle, name, ghandle, LtoW, uniformBuffers] :
-			m_registry.template GetView<vecs::Handle, Name, MeshHandle, LocalToWorldMatrix&, vh::Buffer&>({ (size_t)m_geometryPipeline.m_pipeline })) {
+		for (auto& pipeline : m_geomPipesPerType) {
+			for (auto [oHandle, name, ghandle, LtoW, uniformBuffers] :
+				m_registry.template GetView<vecs::Handle, Name, MeshHandle, LocalToWorldMatrix&, vh::Buffer&>({ (size_t)pipeline.second.m_graphicsPipeline.m_pipeline })) {
 
-			bool hasTexture = m_registry.template Has<TextureHandle>(oHandle);
-			bool hasColor = m_registry.template Has<vh::Color>(oHandle);
-			bool hasVertexColor = false;		//pipeline.second.m_type.find("C") != std::string::npos;
-			if (!hasTexture && !hasColor && !hasVertexColor) continue;
+				bool hasTexture = m_registry.template Has<TextureHandle>(oHandle);
+				bool hasColor = m_registry.template Has<vh::Color>(oHandle);
+				bool hasVertexColor = pipeline.second.m_type.find("C") != std::string::npos;
+				if (!hasTexture && !hasColor && !hasVertexColor) continue;
 
-			if (hasTexture) {
-				vh::BufferPerObjectTexture uboTexture{};
-				uboTexture.model = LtoW();
-				uboTexture.modelInverseTranspose = glm::inverse(glm::transpose(uboTexture.model));
-				UVScale uvScale{ { 1.0f, 1.0f } };
-				if (m_registry.template Has<UVScale>(oHandle)) { uvScale = m_registry.template Get<UVScale>(oHandle); }
-				uboTexture.uvScale = uvScale;
-				memcpy(uniformBuffers().m_uniformBuffersMapped[m_vkState().m_currentFrame], &uboTexture, sizeof(uboTexture));
-			}
-			else if (hasColor) {
-				vh::BufferPerObjectColor uboColor{};
-				uboColor.model = LtoW();
-				uboColor.modelInverseTranspose = glm::inverse(glm::transpose(uboColor.model));
-				uboColor.color = m_registry.template Get<vh::Color>(oHandle);
-				memcpy(uniformBuffers().m_uniformBuffersMapped[m_vkState().m_currentFrame], &uboColor, sizeof(uboColor));
-			}
-			else if (hasVertexColor) {
-				vh::BufferPerObject uboColor{};
-				uboColor.model = LtoW();
-				uboColor.modelInverseTranspose = glm::inverse(glm::transpose(uboColor.model));
-				memcpy(uniformBuffers().m_uniformBuffersMapped[m_vkState().m_currentFrame], &uboColor, sizeof(uboColor));
+				if (hasTexture) {
+					vh::BufferPerObjectTexture uboTexture{};
+					uboTexture.model = LtoW();
+					uboTexture.modelInverseTranspose = glm::inverse(glm::transpose(uboTexture.model));
+					UVScale uvScale{ { 1.0f, 1.0f } };
+					if (m_registry.template Has<UVScale>(oHandle)) { uvScale = m_registry.template Get<UVScale>(oHandle); }
+					uboTexture.uvScale = uvScale;
+					memcpy(uniformBuffers().m_uniformBuffersMapped[m_vkState().m_currentFrame], &uboTexture, sizeof(uboTexture));
+				}
+				else if (hasColor) {
+					vh::BufferPerObjectColor uboColor{};
+					uboColor.model = LtoW();
+					uboColor.modelInverseTranspose = glm::inverse(glm::transpose(uboColor.model));
+					uboColor.color = m_registry.template Get<vh::Color>(oHandle);
+					memcpy(uniformBuffers().m_uniformBuffersMapped[m_vkState().m_currentFrame], &uboColor, sizeof(uboColor));
+				}
+				else if (hasVertexColor) {
+					vh::BufferPerObject uboColor{};
+					uboColor.model = LtoW();
+					uboColor.modelInverseTranspose = glm::inverse(glm::transpose(uboColor.model));
+					memcpy(uniformBuffers().m_uniformBuffersMapped[m_vkState().m_currentFrame], &uboColor, sizeof(uboColor));
+				}
 			}
 		}
 
@@ -191,40 +193,43 @@ namespace vve {
 		float f = 0.0;
 		std::array<float, 4> blendconst = (m_pass == 0 ? std::array<float, 4>{f, f, f, f} : std::array<float, 4>{ 1 - f,1 - f,1 - f,1 - f });
 
-		// TODO: Probably remove here and if, add to lighting
 		vh::LightOffset offset{ 0, m_numberLightsPerType.x + m_numberLightsPerType.y + m_numberLightsPerType.z };
-		vh::ComBindPipeline(
-			cmdBuffer,
-			m_vkState().m_imageIndex,
-			m_vkState().m_swapChain,
-			m_geometryPass,
-			m_geometryPipeline,
-			{}, {}, //default view ports and scissors
-			blendconst, //blend constants
-			{
-				{	.layout = m_geometryPipeline.m_pipelineLayout,
-					.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT,
-					.offset = 0,
-					.size = sizeof(offset),
-					.pValues = &offset
-				}
-			}, //push constants
-			m_vkState().m_currentFrame);
 
-		for (auto [oHandle, name, ghandle, LtoW, uniformBuffers, descriptorsets] :
-			m_registry.template GetView<vecs::Handle, Name, MeshHandle, LocalToWorldMatrix&, vh::Buffer&, vh::DescriptorSet&>
-			({ (size_t)m_geometryPipeline.m_pipeline })) {
+		for (auto& pipeline : m_geomPipesPerType) {
+			// TODO: Probably remove here and if, add to lighting
+			vh::ComBindPipeline(
+				cmdBuffer,
+				m_vkState().m_imageIndex,
+				m_vkState().m_swapChain,
+				m_geometryPass,
+				pipeline.second.m_graphicsPipeline,
+				{}, {}, //default view ports and scissors
+				blendconst, //blend constants
+				{
+					{.layout = pipeline.second.m_graphicsPipeline.m_pipelineLayout,
+						.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT,
+						.offset = 0,
+						.size = sizeof(offset),
+						.pValues = &offset
+					}
+				}, //push constants
+				m_vkState().m_currentFrame);
 
-			bool hasTexture = m_registry.template Has<TextureHandle>(oHandle);
-			bool hasColor = m_registry.template Has<vh::Color>(oHandle);
-			bool hasVertexColor = false;		// pipeline.second.m_type.find("C") != std::string::npos;
-			if (!hasTexture && !hasColor && !hasVertexColor) continue;
+			for (auto [oHandle, name, ghandle, LtoW, uniformBuffers, descriptorsets] :
+				m_registry.template GetView<vecs::Handle, Name, MeshHandle, LocalToWorldMatrix&, vh::Buffer&, vh::DescriptorSet&>
+				({ (size_t)pipeline.second.m_graphicsPipeline.m_pipeline })) {
 
-			auto mesh = m_registry.template Get<vh::Mesh&>(ghandle);
-			// TODO: change PNC to fit shaders after initial testing
-			// TODO: m_descriptorSetPerObject or m_descriptorSetComposition here?
-			vh::ComRecordObject(cmdBuffer, m_geometryPipeline,
-				{ m_descriptorSetPerFrame, descriptorsets }, "PNUT", mesh, m_vkState().m_currentFrame);
+				bool hasTexture = m_registry.template Has<TextureHandle>(oHandle);
+				bool hasColor = m_registry.template Has<vh::Color>(oHandle);
+				bool hasVertexColor = pipeline.second.m_type.find("C") != std::string::npos;
+				if (!hasTexture && !hasColor && !hasVertexColor) continue;
+
+				auto mesh = m_registry.template Get<vh::Mesh&>(ghandle);
+				// TODO: change PNC to fit shaders after initial testing
+				// TODO: m_descriptorSetPerObject or m_descriptorSetComposition here?
+				vh::ComRecordObject(cmdBuffer, pipeline.second.m_graphicsPipeline,
+					{ m_descriptorSetPerFrame, descriptorsets }, pipeline.second.m_type, mesh, m_vkState().m_currentFrame);
+			}
 		}
 
 		vh::ComEndRecordCommandBuffer(cmdBuffer);
@@ -257,6 +262,8 @@ namespace vve {
 			}, //push constants
 			m_vkState().m_currentFrame);
 
+		// TODO .... do I need that? Think about it - for lighting pass???
+		// TODO .... probably remove push constant from geom pass, only need ligthing in lighting pass!
 		for (auto [oHandle, name, ghandle, LtoW, uniformBuffers, descriptorsets] :
 			m_registry.template GetView<vecs::Handle, Name, MeshHandle, LocalToWorldMatrix&, vh::Buffer&, vh::DescriptorSet&>
 			({ (size_t)m_lightingPipeline.m_pipeline })) {
@@ -285,8 +292,8 @@ namespace vve {
 		assert(m_registry.template Has<MeshHandle>(oHandle));
 		auto meshHandle = m_registry.template Get<MeshHandle>(oHandle);
 		auto mesh = m_registry.template Get<vh::Mesh&>(meshHandle);
-		//auto type = "PNT"; // getPipelineType(oHandle, mesh().m_verticesData);
-		//auto pipelinePerType = "C"; // getPipelinePerType(type);
+		auto type = getPipelineType(oHandle, mesh().m_verticesData);
+		auto pipelinePerType = getPipelinePerType(type);
 
 		bool hasTexture = m_registry.template Has<TextureHandle>(oHandle);
 		bool hasColor = m_registry.template Has<vh::Color>(oHandle);
@@ -296,7 +303,7 @@ namespace vve {
 		vh::Buffer ubo;
 		size_t sizeUbo = 0;
 		vh::DescriptorSet descriptorSet{ 1 };
-		vh::RenCreateDescriptorSet(m_vkState().m_device, m_descriptorSetLayoutPerObject, m_descriptorPool, descriptorSet);
+		vh::RenCreateDescriptorSet(m_vkState().m_device, pipelinePerType->m_descriptorSetLayoutPerObject, m_descriptorPool, descriptorSet);
 
 		if (hasTexture) {
 			sizeUbo = sizeof(vh::BufferPerObjectTexture);
@@ -316,7 +323,7 @@ namespace vve {
 		vh::RenUpdateDescriptorSet(m_vkState().m_device, ubo, 0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, sizeUbo, descriptorSet);
 
 		m_registry.Put(oHandle, ubo, descriptorSet);
-		m_registry.AddTags(oHandle, (size_t)m_geometryPipeline.m_pipeline);
+		m_registry.AddTags(oHandle, (size_t)pipelinePerType->m_graphicsPipeline.m_pipeline);
 
 		assert(m_registry.template Has<vh::Buffer>(oHandle));
 		assert(m_registry.template Has<vh::DescriptorSet>(oHandle));
@@ -343,8 +350,11 @@ namespace vve {
 		}
 
 		// TODO: Manage pipelines - rewrite into functions most likely
-		vkDestroyPipeline(m_vkState().m_device, m_geometryPipeline.m_pipeline, nullptr);
-		vkDestroyPipelineLayout(m_vkState().m_device, m_geometryPipeline.m_pipelineLayout, nullptr);
+		for (auto& [type, pipeline] : m_geomPipesPerType) {
+			vkDestroyDescriptorSetLayout(m_vkState().m_device, pipeline.m_descriptorSetLayoutPerObject, nullptr);
+			vkDestroyPipeline(m_vkState().m_device, pipeline.m_graphicsPipeline.m_pipeline, nullptr);
+			vkDestroyPipelineLayout(m_vkState().m_device, pipeline.m_graphicsPipeline.m_pipelineLayout, nullptr);
+		}
 		vkDestroyPipeline(m_vkState().m_device, m_lightingPipeline.m_pipeline, nullptr);
 		vkDestroyPipelineLayout(m_vkState().m_device, m_lightingPipeline.m_pipelineLayout, nullptr);
 
@@ -366,7 +376,6 @@ namespace vve {
 		vh::BufDestroyBuffer2(m_vkState().m_device, m_vkState().m_vmaAllocator, m_uniformBuffersLights);
 
 		vkDestroyDescriptorSetLayout(m_vkState().m_device, m_descriptorSetLayoutPerFrame, nullptr);
-		vkDestroyDescriptorSetLayout(m_vkState().m_device, m_descriptorSetLayoutPerObject, nullptr);
 		vkDestroyDescriptorSetLayout(m_vkState().m_device, m_descriptorSetLayoutComposition, nullptr);
 
 		return false;
@@ -377,28 +386,50 @@ namespace vve {
 		if (!std::filesystem::exists(shaders)) {
 			std::cerr << "ERROR: Folder does not exist: " << std::filesystem::absolute(shaders) << "\n";
 		}
-		// TODO: Now that its unified - rewrite?
-		const std::string vert = (shaders / "test_geometry.spv").string();
-		const std::string frag = (shaders / "test_geometry.spv").string();
-		std::vector<VkVertexInputBindingDescription> bindingDescriptions = getBindingDescriptions();
-		std::vector<VkVertexInputAttributeDescription> attributeDescriptions = getAttributeDescriptions();
+		for (const auto& entry : std::filesystem::directory_iterator(shaders)) {
+			auto filename = entry.path().filename().string();
+			if (filename.find(".spv") != std::string::npos && std::isdigit(filename[0])) {
+				size_t pos1 = filename.find("_");
+				size_t pos2 = filename.find(".spv");
+				auto pri = std::stoi(filename.substr(0, pos1 - 1));
+				std::string type = filename.substr(pos1 + 1, pos2 - pos1 - 1);
 
-		VkPipelineColorBlendAttachmentState colorBlendAttachment{};
-		// TODO: colorBlendAttachment.colorWriteMask = 0xf; ???
-		// TODO: rewrite to make use for the 3 attachments clearer
-		colorBlendAttachment.colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
-		colorBlendAttachment.srcColorBlendFactor = VK_BLEND_FACTOR_ONE;
-		colorBlendAttachment.dstColorBlendFactor = VK_BLEND_FACTOR_CONSTANT_ALPHA;
-		colorBlendAttachment.colorBlendOp = VK_BLEND_OP_ADD;
-		colorBlendAttachment.srcAlphaBlendFactor = VK_BLEND_FACTOR_CONSTANT_ALPHA;
-		colorBlendAttachment.dstAlphaBlendFactor = VK_BLEND_FACTOR_ONE_MINUS_CONSTANT_ALPHA;
-		colorBlendAttachment.alphaBlendOp = VK_BLEND_OP_MAX;
-		colorBlendAttachment.blendEnable = VK_FALSE;
-		
-		vh::RenCreateGraphicsPipeline(m_vkState().m_device, m_geometryPass, vert, frag, bindingDescriptions, attributeDescriptions,
-			{ m_descriptorSetLayoutPerFrame, m_descriptorSetLayoutPerObject, m_descriptorSetLayoutComposition }, { MAX_NUMBER_LIGHTS },
-			{ {.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT, .offset = 0, .size = 8} },
-			{ colorBlendAttachment, colorBlendAttachment, colorBlendAttachment }, m_geometryPipeline, true);
+				vh::Pipeline graphicsPipeline;
+
+				VkDescriptorSetLayout descriptorSetLayoutPerObject;
+				std::vector<VkDescriptorSetLayoutBinding> bindings{
+					{.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, .stageFlags = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT }
+				};
+
+				if (type.find("U") != std::string::npos) { //texture map
+					bindings.push_back({ .descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, .stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT });
+				}
+
+				vh::RenCreateDescriptorSetLayout(m_vkState().m_device, bindings, descriptorSetLayoutPerObject);
+
+				std::vector<VkVertexInputBindingDescription> bindingDescriptions = getBindingDescriptions();
+				std::vector<VkVertexInputAttributeDescription> attributeDescriptions = getAttributeDescriptions();
+
+				VkPipelineColorBlendAttachmentState colorBlendAttachment{};
+				// TODO: colorBlendAttachment.colorWriteMask = 0xf; ???
+				// TODO: rewrite to make use for the 3 attachments clearer
+				colorBlendAttachment.colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
+				colorBlendAttachment.srcColorBlendFactor = VK_BLEND_FACTOR_ONE;
+				colorBlendAttachment.dstColorBlendFactor = VK_BLEND_FACTOR_CONSTANT_ALPHA;
+				colorBlendAttachment.colorBlendOp = VK_BLEND_OP_ADD;
+				colorBlendAttachment.srcAlphaBlendFactor = VK_BLEND_FACTOR_CONSTANT_ALPHA;
+				colorBlendAttachment.dstAlphaBlendFactor = VK_BLEND_FACTOR_ONE_MINUS_CONSTANT_ALPHA;
+				colorBlendAttachment.alphaBlendOp = VK_BLEND_OP_MAX;
+				colorBlendAttachment.blendEnable = VK_FALSE;
+
+				vh::RenCreateGraphicsPipeline(m_vkState().m_device, m_geometryPass, entry.path().string(), entry.path().string(), bindingDescriptions, attributeDescriptions,
+					{ m_descriptorSetLayoutPerFrame, descriptorSetLayoutPerObject }, { MAX_NUMBER_LIGHTS },
+					{ {.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT, .offset = 0, .size = 8} },
+					{ colorBlendAttachment, colorBlendAttachment, colorBlendAttachment }, graphicsPipeline, true);
+
+				m_geomPipesPerType[pri] = { type, descriptorSetLayoutPerObject, graphicsPipeline };
+			}
+		}
 	}
 
 	void RendererDeferred11::CreateLightingPipeline() {
@@ -411,7 +442,7 @@ namespace vve {
 
 		// TODO: WHY does it need 3 layouts?
 		vh::RenCreateGraphicsPipeline(m_vkState().m_device, m_lightingPass, vert, frag, {}, {},
-			{ m_descriptorSetLayoutPerFrame, m_descriptorSetLayoutPerObject, m_descriptorSetLayoutComposition }, { MAX_NUMBER_LIGHTS },
+			{ m_descriptorSetLayoutPerFrame, m_descriptorSetLayoutComposition }, { MAX_NUMBER_LIGHTS },
 			{ {.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT, .offset = 0, .size = 8} },
 			{}, m_lightingPipeline, false);
 	}
