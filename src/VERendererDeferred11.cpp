@@ -78,7 +78,7 @@ namespace vve {
 		// TODO: shrink pool to only what is needed - why 1000?
 		vh::RenCreateDescriptorPool(m_vkState().m_device, 1000, m_descriptorPool);
 		vh::RenCreateDescriptorSet(m_vkState().m_device, m_descriptorSetLayoutPerFrame, m_descriptorPool, m_descriptorSetPerFrame);
-		vh::RenCreateDescriptorSet(m_vkState().m_device, m_descriptorSetLayoutPerObject, m_descriptorPool, m_descriptorSetObject);
+		vh::RenCreateDescriptorSet(m_vkState().m_device, m_descriptorSetLayoutPerObject, m_descriptorPool, m_descriptorSetPerObject);
 		vh::RenCreateDescriptorSet(m_vkState().m_device, m_descriptorSetLayoutComposition, m_descriptorPool, m_descriptorSetComposition);
 
 		// Per frame uniform buffer
@@ -107,13 +107,13 @@ namespace vve {
 		//// Object Descriptors	
 		//// Binding 0 : Vertex and Fragment uniform buffer
 		//vh::RenUpdateDescriptorSet(m_vkState().m_device, m_uniformBuffersPerFrame, 0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
-		//	sizeof(vh::UniformBufferFrame), m_descriptorSetObject);
+		//	sizeof(vh::UniformBufferFrame), m_descriptorSetPerObject);
 
 		//
 		////// Binding 1 : Position
-		////vh::RenUpdateDescriptorSetGBufferAttachment(m_vkState().m_device, m_gBufferAttachments[POSITION], 1, m_descriptorSetObject);
+		////vh::RenUpdateDescriptorSetGBufferAttachment(m_vkState().m_device, m_gBufferAttachments[POSITION], 1, m_descriptorSetPerObject);
 		////// Binding 2 : Normal
-		////vh::RenUpdateDescriptorSetGBufferAttachment(m_vkState().m_device, m_gBufferAttachments[NORMAL], 2, m_descriptorSetObject);
+		////vh::RenUpdateDescriptorSetGBufferAttachment(m_vkState().m_device, m_gBufferAttachments[NORMAL], 2, m_descriptorSetPerObject);
 
 		//// Deferred Composition Descriptors
 		//// Binding 1 : Position
@@ -190,12 +190,12 @@ namespace vve {
 
 	bool RendererDeferred11::OnRecordNextFrame(Message message) {
 
-		std::vector<VkCommandBuffer> cmdBuffers(1);
+		std::vector<VkCommandBuffer> cmdBuffers(2);
 		vh::ComCreateCommandBuffers(m_vkState().m_device, m_commandPools[m_vkState().m_currentFrame], cmdBuffers);
 		auto cmdBuffer = cmdBuffers[0];
 
 		std::vector<VkClearValue> clearValues(4);
-		glm::vec4 clearColor{0,0,0,0};
+		glm::vec4 clearColor{0,0,1,0};
 
 		clearValues[0].color = { {clearColor.r, clearColor.g, clearColor.b, clearColor.w} };
 		clearValues[1].color = { {clearColor.r, clearColor.g, clearColor.b, clearColor.w} };
@@ -210,6 +210,7 @@ namespace vve {
 		float f = 0.0;
 		std::array<float, 4> blendconst = (m_pass == 0 ? std::array<float, 4>{f, f, f, f} : std::array<float, 4>{ 1 - f,1 - f,1 - f,1 - f });
 
+		// TODO: Probably remove here and if, add to lighting
 		vh::LightOffset offset{ 0, m_numberLightsPerType.x + m_numberLightsPerType.y + m_numberLightsPerType.z };
 		vh::ComBindPipeline(
 			cmdBuffer,
@@ -220,7 +221,7 @@ namespace vve {
 			{}, {}, //default view ports and scissors
 			blendconst, //blend constants
 			{
-				{.layout = m_geometryPipeline.m_pipelineLayout,
+				{	.layout = m_geometryPipeline.m_pipelineLayout,
 					.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT,
 					.offset = 0,
 					.size = sizeof(offset),
@@ -240,13 +241,59 @@ namespace vve {
 
 			auto mesh = m_registry.template Get<vh::Mesh&>(ghandle);
 			// TODO: change PNC to fit shaders after initial testing
-			// TODO: m_descriptorSetObject or m_descriptorSetComposition here?
+			// TODO: m_descriptorSetPerObject or m_descriptorSetComposition here?
 			vh::ComRecordObject(cmdBuffer, m_geometryPipeline,
 				{ m_descriptorSetPerFrame, descriptorsets }, "PNUT", mesh, m_vkState().m_currentFrame);
 		}
 
 		vh::ComEndRecordCommandBuffer(cmdBuffer);
 		SubmitCommandBuffer(cmdBuffer);
+
+		// ---------------------------------------------------------------------
+		// Lighting pass
+
+		auto cmdBuffer2 = cmdBuffers[1];
+		vh::ComStartRecordCommandBufferClearValue(cmdBuffer2, m_vkState().m_imageIndex,
+			m_vkState().m_swapChain, m_vkState().m_swapChain.m_swapChainFramebuffers,
+			m_lightingPass, clearValues,
+			m_vkState().m_currentFrame);
+
+		vh::ComBindPipeline(
+			cmdBuffer2,
+			m_vkState().m_imageIndex,
+			m_vkState().m_swapChain,
+			m_lightingPass,
+			m_lightingPipeline,
+			{}, {}, //default view ports and scissors
+			blendconst, //blend constants
+			{
+				{	.layout = m_lightingPipeline.m_pipelineLayout,
+					.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT,
+					.offset = 0,
+					.size = sizeof(offset),
+					.pValues = &offset
+				}
+			}, //push constants
+			m_vkState().m_currentFrame);
+
+		for (auto [oHandle, name, ghandle, LtoW, uniformBuffers, descriptorsets] :
+			m_registry.template GetView<vecs::Handle, Name, MeshHandle, LocalToWorldMatrix&, vh::Buffer&, vh::DescriptorSet&>
+			({ (size_t)m_lightingPipeline.m_pipeline })) {
+
+			bool hasTexture = m_registry.template Has<TextureHandle>(oHandle);
+			bool hasColor = m_registry.template Has<vh::Color>(oHandle);
+			bool hasVertexColor = false;		// pipeline.second.m_type.find("C") != std::string::npos;
+			if (!hasTexture && !hasColor && !hasVertexColor) continue;
+
+			auto mesh = m_registry.template Get<vh::Mesh&>(ghandle);
+			// TODO: change PNC to fit shaders after initial testing
+			// TODO: m_descriptorSetPerObject or m_descriptorSetComposition here?
+			vh::ComRecordObject(cmdBuffer2, m_lightingPipeline,
+				{ m_descriptorSetPerFrame, descriptorsets }, "PNUT", mesh, m_vkState().m_currentFrame);
+		}
+
+		vh::ComEndRecordCommandBuffer(cmdBuffer2);
+		SubmitCommandBuffer(cmdBuffer2);
 
 		++m_pass;
 		return false;
