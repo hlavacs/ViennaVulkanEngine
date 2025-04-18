@@ -23,7 +23,7 @@ namespace vve {
 		Renderer::OnInit(message);
 
 		vh::RenCreateRenderPassGeometry(m_vkState().m_physicalDevice, m_vkState().m_device, m_vkState().m_swapChain, true, m_geometryPass);
-		vh::RenCreateRenderPass(m_vkState().m_physicalDevice, m_vkState().m_device, m_vkState().m_swapChain, true, m_lightingPass);
+		vh::RenCreateRenderPass(m_vkState().m_physicalDevice, m_vkState().m_device, m_vkState().m_swapChain, false, m_lightingPass);
 
 		// TODO: binding 0 might only need vertex globally
 		// Set 0 - Per Frame
@@ -433,7 +433,7 @@ namespace vve {
 		vh::RenCreateGraphicsPipeline(m_vkState().m_device, m_lightingPass, vert, frag, {}, {},
 			{ m_descriptorSetLayoutPerFrame, m_descriptorSetLayoutComposition, m_descriptorSetLayoutComposition }, { MAX_NUMBER_LIGHTS },
 			{ {.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT, .offset = 0, .size = 8} },
-			{}, m_lightingPipeline, true);
+			{}, m_lightingPipeline, false);
 	}
 
 	void RendererDeferred11::getBindingDescription(int binding, int stride, auto& bdesc) {
