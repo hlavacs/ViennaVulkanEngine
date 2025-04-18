@@ -46,14 +46,14 @@ namespace vve {
 
 		volkInitialize();
 		m_vkState().m_apiVersionInstance = engineState.apiVersion;
-    	vh::DevCreateInstance( 
+    	vvh::DevCreateInstance( {
 			m_validationLayers, 
 			m_instanceExtensions, 
 			engineState.name, 
 			m_vkState().m_apiVersionInstance, 
 			engineState.debug, 
 			m_vkState().m_instance
-		);
+		});
 		
 		volkLoadInstance(m_vkState().m_instance);
 
@@ -66,7 +66,16 @@ namespace vve {
         }
 
 		m_vkState().m_apiVersionDevice = engineState.minimumVersion;
-        vh::DevPickPhysicalDevice(m_vkState().m_instance, m_vkState().m_apiVersionDevice, m_deviceExtensions, m_vkState().m_surface, m_vkState().m_physicalDevice);
+        
+		vvh::DevPickPhysicalDevice( {
+			m_vkState().m_instance, 
+			m_deviceExtensions, 
+			m_vkState().m_surface, 
+			m_vkState().m_apiVersionDevice, 
+			m_vkState().m_physicalDevice
+		});
+		
+		
 		uint32_t minor = std::min( VK_VERSION_MINOR(m_vkState().m_apiVersionDevice), VK_VERSION_MINOR(engineState.apiVersion) );
 		if( minor < VK_VERSION_MINOR(engineState.minimumVersion) ) {
 			std::cout << "No device found with Vulkan API version at least 1." << VK_VERSION_MINOR(engineState.minimumVersion) << "!\n";
@@ -77,8 +86,17 @@ namespace vve {
 		vkGetPhysicalDeviceFeatures(m_vkState().m_physicalDevice, &m_vkState().m_physicalDeviceFeatures);
 		vh::ImgPickDepthMapFormat(m_vkState().m_physicalDevice, {VK_FORMAT_R32_UINT}, m_vkState().m_depthMapFormat);
 
-		vh::DevCreateLogicalDevice(m_vkState().m_surface, m_vkState().m_physicalDevice, m_vkState().m_queueFamilies, m_validationLayers, 
-			m_deviceExtensions, engineState.debug, m_vkState().m_device, m_vkState().m_graphicsQueue, m_vkState().m_presentQueue);
+		vvh::DevCreateLogicalDevice( {
+			m_vkState().m_surface, 
+			m_vkState().m_physicalDevice, 
+			m_validationLayers, 
+			m_deviceExtensions, 
+			engineState.debug, 
+			m_vkState().m_queueFamilies, 
+			m_vkState().m_device, 
+			m_vkState().m_graphicsQueue, 
+			m_vkState().m_presentQueue
+		});
         
 		volkLoadDevice(m_vkState().m_device);
 		

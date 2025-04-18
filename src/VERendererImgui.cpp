@@ -32,10 +32,17 @@ namespace vve {
 
         vh::RenCreateDescriptorPool(m_vkState().m_device, 1000, m_descriptorPool);
 
-		vh::VulSetupImgui( m_windowSDLState().m_sdlWindow, 
-			m_vkState().m_instance, m_vkState().m_physicalDevice, 
-			m_vkState().m_queueFamilies, m_vkState().m_device, m_vkState().m_graphicsQueue, 
-			m_commandPool, m_descriptorPool, m_renderPass);  
+		vvh::SetupImgui( 
+			m_windowSDLState().m_sdlWindow, 
+			m_vkState().m_instance, 
+			m_vkState().m_physicalDevice, 
+			m_vkState().m_queueFamilies, 
+			m_vkState().m_device, 
+			m_vkState().m_graphicsQueue, 
+			m_commandPool, 
+			m_descriptorPool, 
+			m_renderPass
+		);  
 
         vh::ComCreateCommandPool(m_vkState().m_surface, m_vkState().m_physicalDevice, m_vkState().m_device, m_commandPool); 
         vh::ComCreateCommandBuffers(m_vkState().m_device, m_commandPool, m_commandBuffers);

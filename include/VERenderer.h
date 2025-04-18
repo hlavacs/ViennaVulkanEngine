@@ -33,7 +33,7 @@ namespace vve {
 		VkPhysicalDeviceProperties 	m_physicalDeviceProperties;
 
 		VkDevice 		m_device{VK_NULL_HANDLE};
-		vh::QueueFamilyIndices m_queueFamilies;
+		vvh::QueueFamilyIndices m_queueFamilies;
 		VkQueue 		m_graphicsQueue{VK_NULL_HANDLE};
 		VkQueue 		m_presentQueue{VK_NULL_HANDLE};
 		vh::SwapChain 	m_swapChain;
