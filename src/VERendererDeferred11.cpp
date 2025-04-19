@@ -79,7 +79,6 @@ namespace vve {
 		// TODO: shrink pool to only what is needed - why 1000?
 		vh::RenCreateDescriptorPool(m_vkState().m_device, 1000, m_descriptorPool);
 		vh::RenCreateDescriptorSet(m_vkState().m_device, m_descriptorSetLayoutPerFrame, m_descriptorPool, m_descriptorSetPerFrame);
-		//vh::RenCreateDescriptorSet(m_vkState().m_device, m_descriptorSetLayoutPerObject, m_descriptorPool, m_descriptorSetPerObject);
 		vh::RenCreateDescriptorSet(m_vkState().m_device, m_descriptorSetLayoutComposition, m_descriptorPool, m_descriptorSetComposition);
 
 		// Per frame uniform buffer
@@ -270,6 +269,7 @@ namespace vve {
 
 			bool hasTexture = m_registry.template Has<TextureHandle>(oHandle);
 			bool hasColor = m_registry.template Has<vh::Color>(oHandle);
+			// TODO: fix lighting pipeline
 			bool hasVertexColor = false;		// pipeline.second.m_type.find("C") != std::string::npos;
 			if (!hasTexture && !hasColor && !hasVertexColor) continue;
 
@@ -277,7 +277,7 @@ namespace vve {
 			// TODO: change PNC to fit shaders after initial testing
 			// TODO: m_descriptorSetPerObject or m_descriptorSetComposition here?
 			vh::ComRecordObject(cmdBuffer2, m_lightingPipeline,
-				{ m_descriptorSetPerFrame, descriptorsets }, "PNUT", mesh, m_vkState().m_currentFrame);
+				{ m_descriptorSetPerFrame, m_descriptorSetComposition }, "PNUT", mesh, m_vkState().m_currentFrame);
 		}
 
 		vh::ComEndRecordCommandBuffer(cmdBuffer2);
@@ -423,7 +423,7 @@ namespace vve {
 				colorBlendAttachment.blendEnable = VK_FALSE;
 
 				vh::RenCreateGraphicsPipeline(m_vkState().m_device, m_geometryPass, entry.path().string(), entry.path().string(), bindingDescriptions, attributeDescriptions,
-					{ m_descriptorSetLayoutPerFrame, descriptorSetLayoutPerObject }, { MAX_NUMBER_LIGHTS },
+					{ m_descriptorSetLayoutPerFrame, m_descriptorSetLayoutComposition, descriptorSetLayoutPerObject }, { MAX_NUMBER_LIGHTS },
 					{ {.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT, .offset = 0, .size = 8} },
 					{ colorBlendAttachment, colorBlendAttachment, colorBlendAttachment }, graphicsPipeline, true);
 

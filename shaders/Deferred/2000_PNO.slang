@@ -18,14 +18,11 @@ struct VertexStageOutput {
 [[vk::binding(0, 0)]]
 ConstantBuffer<UniformBufferFrame> gParamsFrame;
 
-[[vk::binding(1, 0)]]
-StructuredBuffer<Light> gLights;
-
 //----------------------------------------------------------------------------
 
-// set 1 ... per object
+// set 2 ... per object
 
-[[vk::binding(0, 1)]]
+[[vk::binding(0, 2)]]
 ConstantBuffer<UniformBufferObjectColor> gParamsObject;
 
 //----------------------------------------------------------------------------

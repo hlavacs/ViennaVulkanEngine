@@ -21,13 +21,13 @@ struct PSOutput {
     float4 color : SV_Target;
 };
 
-[[vk::binding(0, 2)]]
+[[vk::binding(0, 1)]]
 Sampler2D gPosition; // Position from geometry shader
 
-[[vk::binding(1, 2)]]
+[[vk::binding(1, 1)]]
 Sampler2D gNormal; // Normal from geometry shader
 
-[[vk::binding(2, 2)]]
+[[vk::binding(2, 1)]]
 Sampler2D gAlbedo; // Albedo from geometry shader
 
 [[vk::binding(1, 0)]]
