@@ -1,4 +1,4 @@
-cmake_minimum_required (VERSION 3.5.0)
+cmake_minimum_required (VERSION 3.8.0)
 project (
   "ViennaVulkanEngine"
   VERSION 2.0.0
@@ -188,6 +188,10 @@ add_subdirectory(examples)
 include(CTest)
 add_subdirectory(tests)
 
+# set the game as the default startup project in VS
+if(MSVC)
+    set_property(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} PROPERTY VS_STARTUP_PROJECT game)
+endif()
 
 # Doxygen
 find_package(Doxygen)
