@@ -41,10 +41,21 @@ namespace vve {
     bool RendererForward11::OnInit(Message message) {
 		Renderer::OnInit(message);
 
-        vh::RenCreateRenderPass(m_vkState().m_physicalDevice, m_vkState().m_device, m_vkState().m_swapChain, 
-			true, m_renderPassClear);
-        vh::RenCreateRenderPass(m_vkState().m_physicalDevice, m_vkState().m_device, m_vkState().m_swapChain, 
-			false, m_renderPass);
+        vvh::RenCreateRenderPass({
+			m_vkState().m_depthMapFormat, 
+			m_vkState().m_device, 
+			m_vkState().m_swapChain, 
+			true, 
+			m_renderPassClear
+		});
+
+        vvh::RenCreateRenderPass({
+			m_vkState().m_depthMapFormat, 
+			m_vkState().m_device, 
+			m_vkState().m_swapChain, 
+			false, 
+			m_renderPass
+		});
 		
 		vh::RenCreateDescriptorSetLayout( m_vkState().m_device, //Per frame
 			{ 
@@ -200,10 +211,17 @@ namespace vve {
 		vh::ComCreateCommandBuffers(m_vkState().m_device, m_commandPools[m_vkState().m_currentFrame], cmdBuffers);
 		auto cmdBuffer = cmdBuffers[0];
 
-		vh::ComStartRecordCommandBuffer(cmdBuffer, m_vkState().m_imageIndex, 
+		vvh::ComBeginCommandBuffer({cmdBuffer});
+
+		vvh::ComBeginRenderPass({
+			cmdBuffer, 
+			m_vkState().m_imageIndex, 
 			m_vkState().m_swapChain, 
-			m_renderPass, false, {}, 
-			m_vkState().m_currentFrame);
+			m_renderPass, 
+			false, 
+			{}, 
+			m_vkState().m_currentFrame
+		});
 
 		float f = 0.0;
 		std::array<float,4> blendconst = (m_pass == 0 ? std::array<float,4>{f,f,f,f} : std::array<float,4>{1-f,1-f,1-f,1-f});
@@ -212,13 +230,20 @@ namespace vve {
 
 			vh::LightOffset offset{0, m_numberLightsPerType.x + m_numberLightsPerType.y + m_numberLightsPerType.z};
 			//vh::LightOffset offset{m_pass, 1};
-			vh::ComBindPipeline(
+
+			vvh::Pipeline pip {
+				pipeline.second.m_graphicsPipeline.m_pipelineLayout,
+				pipeline.second.m_graphicsPipeline.m_pipeline
+			};
+
+			vvh::ComBindPipeline({
 				cmdBuffer, 
+				pip, 
 				m_vkState().m_imageIndex, 
 				m_vkState().m_swapChain, 
 				m_renderPass, 
-				pipeline.second.m_graphicsPipeline, 
-				{},	{}, //default view ports and scissors
+				{},	
+				{}, 
 				blendconst, //blend constants
 				{
 					{	.layout = pipeline.second.m_graphicsPipeline.m_pipelineLayout, 
@@ -228,7 +253,8 @@ namespace vve {
 						.pValues = &offset
 					}
 				}, //push constants
-				m_vkState().m_currentFrame);
+				m_vkState().m_currentFrame
+			});
 
 			for( auto[oHandle, name, ghandle, LtoW, uniformBuffers, descriptorsets] : 
 				m_registry.template GetView<vecs::Handle, Name, MeshHandle, LocalToWorldMatrix&, vh::Buffer&, vh::DescriptorSet&>

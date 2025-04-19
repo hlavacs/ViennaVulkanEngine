@@ -1,4 +1,5 @@
 #include "VHInclude.h"
+#include "VHInclude2.h"
 #include "VEInclude.h"
 
 
@@ -8,10 +9,10 @@ namespace vve {
 	RendererShadow11::RendererShadow11( std::string systemName, Engine& engine, std::string windowName ) : Renderer(systemName, engine, windowName ) {
 
 		engine.RegisterCallbacks( { 
-			{this,  3500, "INIT", [this](Message& message){ return OnInit(message);} },
-			{this,  1500, "PREPARE_NEXT_FRAME", [this](Message& message){ return OnPrepareNextFrame(message);} },
-			{this,  1500, "RECORD_NEXT_FRAME", [this](Message& message){ return OnRecordNextFrame(message);} },
-			{this,     0, "QUIT", [this](Message& message){ return OnQuit(message);} }
+			//{this,  3500, "INIT", [this](Message& message){ return OnInit(message);} },
+			//{this,  1500, "PREPARE_NEXT_FRAME", [this](Message& message){ return OnPrepareNextFrame(message);} },
+			//{this,  1500, "RECORD_NEXT_FRAME", [this](Message& message){ return OnRecordNextFrame(message);} },
+			//{this,     0, "QUIT", [this](Message& message){ return OnQuit(message);} }
 		} );
 	};
 
@@ -20,7 +21,13 @@ namespace vve {
 	bool RendererShadow11::OnInit(Message message) {
 		Renderer::OnInit(message);
 
-		vh::RenCreateRenderPass(m_vkState().m_physicalDevice, m_vkState().m_device, m_vkState().m_swapChain, false, m_renderPass);
+		vvh::RenCreateRenderPass({
+			m_vkState().m_depthMapFormat, 
+			m_vkState().m_device, 
+			m_vkState().m_swapChain, 
+			false, 
+			m_renderPass
+		});
 
 		vh::ComCreateCommandPool(m_vkState().m_surface, m_vkState().m_physicalDevice, m_vkState().m_device, m_commandPool);
 		vh::ComCreateCommandBuffers(m_vkState().m_device, m_commandPool, m_commandBuffers);

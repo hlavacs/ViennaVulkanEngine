@@ -23,7 +23,13 @@ namespace vve {
     bool RendererImgui::OnInit(Message message) {
 		Renderer::OnInit(message);
 
-        vh::RenCreateRenderPass(m_vkState().m_physicalDevice, m_vkState().m_device, m_vkState().m_swapChain, false, m_renderPass);
+        vvh::RenCreateRenderPass({
+			m_vkState().m_depthMapFormat, 
+			m_vkState().m_device, 
+			m_vkState().m_swapChain, 
+			false, 
+			m_renderPass
+		});
 		
  		vh::RenCreateDescriptorSetLayout( m_vkState().m_device, {}, m_descriptorSetLayoutPerFrame );
 			
@@ -60,8 +66,19 @@ namespace vve {
 
         vkResetCommandBuffer(m_commandBuffers[m_vkState().m_currentFrame],  0);
 
-		vh::ComStartRecordCommandBuffer(m_commandBuffers[m_vkState().m_currentFrame], m_vkState().m_imageIndex, 
-			m_vkState().m_swapChain, m_renderPass, false, m_windowState().m_clearColor, m_vkState().m_currentFrame);
+		vvh::ComBeginCommandBuffer({
+			m_commandBuffers[m_vkState().m_currentFrame]
+		});
+
+		vvh::ComBeginRenderPass({
+			m_commandBuffers[m_vkState().m_currentFrame], 
+			m_vkState().m_imageIndex, 
+			m_vkState().m_swapChain, 
+			m_renderPass, 
+			false, 
+			m_windowState().m_clearColor, 
+			m_vkState().m_currentFrame
+		});
 		
 		ImGui::Render();
         ImGui_ImplVulkan_RenderDrawData(ImGui::GetDrawData(), m_commandBuffers[m_vkState().m_currentFrame]);

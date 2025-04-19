@@ -1,5 +1,4 @@
 #include "VHInclude.h"
-#include "VHInclude2.h"
 #include "VEInclude.h"
 
 
@@ -108,17 +107,25 @@ namespace vve {
 			.m_vmaAllocator 	= m_vkState().m_vmaAllocator
 		});  
 
-		m_vkState().m_depthMapFormat = vvh::ImgPickDepthMapFormat({
-			.m_physicalDevice 	= m_vkState().m_physicalDevice, 
-			.m_depthFormats 	= {VK_FORMAT_R32_UINT} 
+ 		m_vkState().m_depthMapFormat = vvh::RenFindDepthFormat(m_vkState().m_physicalDevice);
+
+       vvh::DevCreateSwapChain( {
+			m_windowSDLState().m_sdlWindow, 
+			m_vkState().m_surface, 
+			m_vkState().m_physicalDevice, 
+			m_vkState().m_device, 
+			m_vkState().m_swapChain
 		});
-
-        vh::DevCreateSwapChain(m_windowSDLState().m_sdlWindow, 
-			m_vkState().m_surface, m_vkState().m_physicalDevice, m_vkState().m_device, m_vkState().m_swapChain);
         
-		vh::DevCreateImageViews(m_vkState().m_device, m_vkState().m_swapChain);
+		vvh::DevCreateImageViews({m_vkState().m_device, m_vkState().m_swapChain});
 
-		vh::RenCreateRenderPass(m_vkState().m_physicalDevice, m_vkState().m_device, m_vkState().m_swapChain, m_clear, m_renderPass);
+		vvh::RenCreateRenderPass({
+			m_vkState().m_depthMapFormat, 
+			m_vkState().m_device, 
+			m_vkState().m_swapChain, 
+			m_clear,
+			m_renderPass
+		});
 
 		vh::RenCreateDescriptorSetLayout( m_vkState().m_device, {}, m_descriptorSetLayoutPerFrame );
 			
@@ -132,7 +139,14 @@ namespace vve {
 		vh::ComCreateCommandPool(m_vkState().m_surface, m_vkState().m_physicalDevice, m_vkState().m_device, m_vkState().m_commandPool);
         vh::ComCreateCommandPool(m_vkState().m_surface, m_vkState().m_physicalDevice, m_vkState().m_device, m_commandPool);
         
-		vh::RenCreateDepthResources(m_vkState().m_physicalDevice, m_vkState().m_device, m_vkState().m_vmaAllocator, m_vkState().m_swapChain, m_vkState().m_depthImage);
+		vvh::RenCreateDepthResources({
+			m_vkState().m_physicalDevice,
+			m_vkState().m_device, 
+			m_vkState().m_vmaAllocator, 
+			m_vkState().m_swapChain, 
+			m_vkState().m_depthImage
+		});
+
 		vh::ImgTransitionImageLayout2(m_vkState().m_device, m_vkState().m_graphicsQueue, m_commandPool,
 			m_vkState().m_depthImage.m_depthImage, m_vkState().m_swapChain.m_swapChainImageFormat, 
 			VK_IMAGE_ASPECT_DEPTH_BIT, 1, 1, VK_IMAGE_LAYOUT_UNDEFINED , VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL);
@@ -143,7 +157,13 @@ namespace vve {
 				VK_IMAGE_LAYOUT_UNDEFINED , VK_IMAGE_LAYOUT_PRESENT_SRC_KHR);
 		}
 
-		vh::RenCreateFramebuffers(m_vkState().m_device, m_vkState().m_swapChain, m_vkState().m_depthImage, m_renderPass);
+		vvh::RenCreateFramebuffers({
+			m_vkState().m_device, 
+			m_vkState().m_depthImage, 
+			m_renderPass,
+			m_vkState().m_swapChain
+		});
+
         vh::ComCreateCommandBuffers(m_vkState().m_device, m_commandPool, m_commandBuffers);
         vh::RenCreateDescriptorPool(m_vkState().m_device, 1000, m_descriptorPool);
         vh::SynCreateSemaphores(m_vkState().m_device, m_imageAvailableSemaphores, m_renderFinishedSemaphores, 3, m_intermediateSemaphores);
@@ -167,9 +187,16 @@ namespace vve {
 			VK_IMAGE_LAYOUT_PRESENT_SRC_KHR, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
 
         if (result == VK_ERROR_OUT_OF_DATE_KHR ) {
-            vh::DevRecreateSwapChain( m_windowSDLState().m_sdlWindow, 
-				m_vkState().m_surface, m_vkState().m_physicalDevice, m_vkState().m_device, m_vkState().m_vmaAllocator, 
-				m_vkState().m_swapChain, m_vkState().m_depthImage, m_renderPass);
+            vvh::DevRecreateSwapChain( {
+				m_windowSDLState().m_sdlWindow, 
+				m_vkState().m_surface, 
+				m_vkState().m_physicalDevice, 
+				m_vkState().m_device, 
+				m_vkState().m_vmaAllocator, 
+				m_vkState().m_swapChain, 
+				m_vkState().m_depthImage, 
+				m_renderPass
+			});
 
 			m_engine.SendMsg( MsgWindowSize{} );
         } else assert (result == VK_SUCCESS || result == VK_SUBOPTIMAL_KHR);
@@ -180,11 +207,20 @@ namespace vve {
 
         vkResetCommandBuffer(m_commandBuffers[m_vkState().m_currentFrame],  0);
 
-		vh::ComStartRecordCommandBuffer(m_commandBuffers[m_vkState().m_currentFrame], m_vkState().m_imageIndex, 
-			m_vkState().m_swapChain, m_renderPass, 
+		vvh::ComBeginCommandBuffer({
+			m_commandBuffers[m_vkState().m_currentFrame]
+		});
+
+
+		vvh::ComBeginRenderPass({
+			m_commandBuffers[m_vkState().m_currentFrame], 
+			m_vkState().m_imageIndex, 
+			m_vkState().m_swapChain, 
+			m_renderPass, 
 			m_clear, 
 			m_windowState().m_clearColor, 
-			m_vkState().m_currentFrame);
+			m_vkState().m_currentFrame
+		});
 
 		vh::ComEndRecordCommandBuffer(m_commandBuffers[m_vkState().m_currentFrame]);
 
@@ -201,14 +237,25 @@ namespace vve {
 			m_vkState().m_swapChain.m_swapChainImages[m_vkState().m_imageIndex], m_vkState().m_swapChain.m_swapChainImageFormat, 
 			VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR);
 
-		VkResult result = vh::ComPresentImage(m_vkState().m_presentQueue, m_vkState().m_swapChain, 
-			m_vkState().m_imageIndex, m_renderFinishedSemaphores[m_vkState().m_currentFrame]);
+		VkResult result = vvh::ComPresentImage({
+			m_vkState().m_presentQueue, 
+			m_vkState().m_swapChain, 
+			m_vkState().m_imageIndex, 
+			m_renderFinishedSemaphores[m_vkState().m_currentFrame]
+		});
 
         if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR || m_vkState().m_framebufferResized) {
             m_vkState().m_framebufferResized = false;
-            vh::DevRecreateSwapChain(m_windowSDLState().m_sdlWindow, 
-				m_vkState().m_surface, m_vkState().m_physicalDevice, m_vkState().m_device, m_vkState().m_vmaAllocator, 
-				m_vkState().m_swapChain, m_vkState().m_depthImage, m_renderPass);
+            vvh::DevRecreateSwapChain({
+				m_windowSDLState().m_sdlWindow, 
+				m_vkState().m_surface, 
+				m_vkState().m_physicalDevice, 
+				m_vkState().m_device, 
+				m_vkState().m_vmaAllocator, 
+				m_vkState().m_swapChain, 
+				m_vkState().m_depthImage, 
+				m_renderPass
+			});
 
 			m_engine.SendMsg( MsgWindowSize{} );
         } else assert(result == VK_SUCCESS);
@@ -218,7 +265,12 @@ namespace vve {
     bool RendererVulkan::OnQuit(Message message) {
         vkDeviceWaitIdle(m_vkState().m_device);
 
-        vh::DevCleanupSwapChain(m_vkState().m_device, m_vkState().m_vmaAllocator, m_vkState().m_swapChain, m_vkState().m_depthImage);
+        vvh::DevCleanupSwapChain({
+			m_vkState().m_device, 
+			m_vkState().m_vmaAllocator, 
+			m_vkState().m_swapChain, 
+			m_vkState().m_depthImage
+		});
 
         vkDestroyPipeline(m_vkState().m_device, m_graphicsPipeline.m_pipeline, nullptr);
         vkDestroyPipelineLayout(m_vkState().m_device, m_graphicsPipeline.m_pipelineLayout, nullptr);
